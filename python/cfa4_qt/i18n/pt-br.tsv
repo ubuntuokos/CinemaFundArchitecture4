@@ -37,8 +37,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	O CFA4 encontrou um erro
 	CFA4 project links	Links do projeto CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 fechou inesperadamente enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 foi fechado enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
 	Cancel Selected	Cancelar selecionados
 	Cannot check the output folder for files to replace: {error}	Não é possível verificar a pasta de saída em busca de arquivos a substituir: {error}
 	Cannot create the output folder: {error}	Não é possível criar a pasta de saída: {error}
@@ -321,4 +319,22 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compactação {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Tachado
+	Caption Export Settings	Configurações de exportação de legendas
+	Export Captions	Exportar legendas
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} já existe, então nada foi exportado. Para substituí-lo, escolha-o na janela de salvar.
+	Delete Redoable Actions	Excluir ações refazíveis
+	Clear History	Limpar histórico
+	Delete the dimmed actions after the current state? They cannot be redone.	Excluir as ações esmaecidas após o estado atual? Elas não poderão ser refeitas.
+	Work Area Bar	Barra da área de trabalho
+	Start: {tc}	Início: {tc}
+	End: {tc}	Fim: {tc}
+	Duration: {tc}	Duração: {tc}
+	Panel menu	Menu do painel
+	Move panel	Mover painel
+	Transparency Grid	Grade de transparência
+	Show Duplicate Frame Markers	Mostrar marcadores de quadros duplicados
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A entrada/saída da sequência tem só 1 quadro. Escolha Sequência inteira para exportar a sequência toda.
+	Set Work Area Bar In Point	Definir ponto de entrada da barra da área de trabalho
+	Set Work Area Bar Out Point	Definir ponto de saída da barra da área de trabalho
+	Delete Clips	Excluir clipes

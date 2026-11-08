@@ -391,6 +391,13 @@ pub struct ExportSettings {
     /// `progress.total`, `finished` and the final status; this call only adds to `done`.
     #[serde(default)]
     pub part_of_batch: bool,
+    /// Most CPU threads the export may use (0 = all of them, as before). Rendering, the software
+    /// encoders and the rest of the export's parallel work run on a pool of this size; a number
+    /// above what the machine has (or above the pool the export already runs in) changes nothing.
+    /// The output does not depend on it. Hardware encoders and the decoders' own threads are not
+    /// counted.
+    #[serde(default)]
+    pub max_threads: u32,
     /// ProRes flavour: `proxy`, `lt`, `standard`, `hq`, `4444` or `4444xq` (empty = HQ).
     #[serde(default)]
     pub prores_profile: String,
@@ -453,7 +460,8 @@ pub struct ExportSettings {
     pub sdr: bool,
     /// Keep the alpha channel in PNG, TIFF, Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ
     /// QuickTime movies (straight alpha, Premiere's "Include Alpha Channel"; OpenEXR stores it
-    /// premultiplied, as the format defines). Off, every frame is flattened over black (#160).
+    /// premultiplied, as the format defines). GIF keeps binary transparency: RGBA8 alpha below
+    /// 128 becomes transparent, otherwise opaque. Off, every frame is flattened over black (#160).
     /// Other formats ignore it.
     #[serde(default)]
     pub alpha: bool,
@@ -520,6 +528,7 @@ pub struct ExportSettings {
     pub sink: Option<OutputSink>,
     /// An already-created primary output file. Internal callers use this to retain an exclusive
     /// reservation made while choosing an output name, rather than reopening that path later.
+    /// MP4 video outputs require read and write access for fast-start finalization.
     #[serde(skip)]
     pub output_file: Option<Arc<std::fs::File>>,
 }
@@ -566,7 +575,13 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        let f = std::fs::File::create(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        let f = std::fs::OpenOptions::new()
+            .read(settings.format.is_mp4_with(settings.multiplexer))
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
         Ok(Out::File(std::io::BufWriter::new(f)))
     }
 
@@ -608,6 +623,20 @@ impl Write for Out {
         match self {
             Out::File(w) => w.flush(),
             Out::Mem(w) => w.flush(),
+        }
+    }
+}
+
+impl std::io::Read for Out {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Out::File(w) => {
+                // Fast-start muxing reads media back to shift it in place. Commit buffered
+                // writes before reading through the same file handle and cursor.
+                w.flush()?;
+                std::io::Read::read(w.get_mut(), buf)
+            }
+            Out::Mem(w) => std::io::Read::read(w, buf),
         }
     }
 }
@@ -683,6 +712,7 @@ impl Default for ExportSettings {
             bitrate_kbps: 20_000,
             burn_captions: false,
             part_of_batch: false,
+            max_threads: 0,
             prores_profile: String::new(),
             dnx_profile: String::new(),
             apv_profile: String::new(),
@@ -895,6 +925,10 @@ pub struct EncoderFrame<'a> {
     pub index: u64,
 }
 
+/// Per-picture work an encoder hands to the export's render threads, see
+/// [`VideoEncoder::prepare_ahead`].
+pub type PrepareAhead = std::sync::Arc<dyn Fn(&EncoderFrame) + Send + Sync>;
+
 pub trait VideoEncoder: Send {
     /// MP4/MOV sample entry (codec config) — may only be complete after the first frame.
     fn sample_entry(&self) -> SampleEntry;
@@ -907,6 +941,13 @@ pub trait VideoEncoder: Send {
     }
     /// First-pass statistics of a two-pass encode (H.264).
     fn pass_stats(&self) -> Option<cfa4_h264enc::PassStats> {
+        None
+    }
+    /// Work on a rendered picture that needs nothing of the encoder's state (H.264: the colour
+    /// conversion), for the render threads to do while earlier pictures are being encoded.
+    /// [`VideoEncoder::encode`] picks the result up by [`EncoderFrame::index`] and does the work
+    /// itself for a picture that has none; the encoded bytes are the same either way.
+    fn prepare_ahead(&self) -> Option<PrepareAhead> {
         None
     }
 }
@@ -1008,7 +1049,8 @@ pub enum Stage {
     Render,
     /// Encoding the rendered frames, colour conversion included (serial).
     Encode,
-    /// The part of [`Stage::Encode`] spent converting RGB to the encoder's YUV.
+    /// Time spent converting RGB to the encoder's YUV: part of [`Stage::Encode`], or, when the encoder
+    /// converts ahead ([`crate::VideoEncoder::prepare_ahead`]), summed over the render threads.
     Convert,
     /// Mixing and encoding audio and writing it to the container.
     Audio,
@@ -1904,6 +1946,22 @@ struct H264Encoder {
     u: Vec<u8>,
     v: Vec<u8>,
     signal: ColorSignal,
+    /// 4:2:0 planes the render threads converted ahead ([`VideoEncoder::prepare_ahead`]), by
+    /// picture index.
+    ready: Arc<Mutex<std::collections::HashMap<u64, Yuv420>>>,
+}
+
+type Yuv420 = (Vec<u8>, Vec<u8>, Vec<u8>);
+
+/// The encoder input of `f`: 8-bit limited-range 4:2:0 in the export's colour signal.
+fn h264_input(f: &EncoderFrame, signal: ColorSignal, y: &mut Vec<u8>, u: &mut Vec<u8>, v: &mut Vec<u8>) {
+    match f.hdr {
+        Some(rgb) => {
+            let (kr, kb) = signal.kr_kb();
+            rgbf_to_yuv420_8(rgb, f.width as usize, f.height as usize, kr, kb, y, u, v)
+        }
+        None => rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, y, u, v),
+    }
 }
 
 impl H264Encoder {
@@ -1928,13 +1986,23 @@ impl VideoEncoder for H264Encoder {
         self.rate.num as u32
     }
     fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
-        timed(Stage::Convert, || match f.hdr {
-            Some(rgb) => {
-                let (kr, kb) = self.signal.kr_kb();
-                rgbf_to_yuv420_8(rgb, f.width as usize, f.height as usize, kr, kb, &mut self.y, &mut self.u, &mut self.v)
+        let ready = {
+            let mut ready = self.ready.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mine = ready.remove(&f.index);
+            // anything older belongs to a batch that was rendered and then not encoded
+            ready.retain(|&i, _| i > f.index);
+            mine
+        };
+        let (w, h) = (f.width as usize, f.height as usize);
+        let chroma = w.div_ceil(2) * h.div_ceil(2);
+        match ready.filter(|(y, u, v)| y.len() == w * h && u.len() == chroma && v.len() == chroma) {
+            Some((y, u, v)) => (self.y, self.u, self.v) = (y, u, v),
+            None => {
+                let (enc, y, u, v, signal) = (&self.enc, &mut self.y, &mut self.u, &mut self.v, self.signal);
+                // on the encoder's own threads: the global pool is busy rendering the next batch
+                timed(Stage::Convert, || enc.install(|| h264_input(f, signal, y, u, v)));
             }
-            None => rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, &mut self.y, &mut self.u, &mut self.v),
-        });
+        }
         let cw = (f.width as usize).div_ceil(2);
         let frame = cfa4_h264enc::YuvFrame { y: &self.y, u: &self.u, v: &self.v, y_stride: f.width as usize, uv_stride: cw };
         let ps = self.enc.try_encode(&frame, f.index as i64 * self.rate.den).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -1950,6 +2018,14 @@ impl VideoEncoder for H264Encoder {
     }
     fn pass_stats(&self) -> Option<cfa4_h264enc::PassStats> {
         self.enc.pass_stats()
+    }
+    fn prepare_ahead(&self) -> Option<PrepareAhead> {
+        let (ready, signal) = (self.ready.clone(), self.signal);
+        Some(Arc::new(move |f: &EncoderFrame| {
+            let (mut y, mut u, mut v) = (Vec::new(), Vec::new(), Vec::new());
+            timed(Stage::Convert, || h264_input(f, signal, &mut y, &mut u, &mut v));
+            ready.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(f.index, (y, u, v));
+        }))
     }
 }
 
@@ -2020,34 +2096,78 @@ fn vp9_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
     })
 }
 
+/// `x.round().clamp(1.0, 254.0) as u8` for the finite values the conversions produce, without
+/// the `roundf` call. For `0.5 <= x < 2^23` the sum `x + 0.5` is a multiple of the spacing of
+/// `x` and never rounds up across an integer, so truncating it rounds half away from zero
+/// exactly as `round` does; anything below 0.5 clamps to 1 either way. NaN gives 0, as the
+/// `round`/`clamp`/`as` chain does.
+#[inline(always)]
+fn code8(x: f32) -> u8 {
+    if x.is_nan() {
+        return 0;
+    }
+    ((x + 0.5) as i32).clamp(1, 254) as u8
+}
+
 /// BT.709 limited-range 8-bit 4:2:0 from straight RGBA8 (2×2 chroma average).
 pub fn rgba_to_yuv420_8(rgba: &[u8], w: usize, h: usize, y: &mut Vec<u8>, u: &mut Vec<u8>, v: &mut Vec<u8>) {
     let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
     y.resize(w * h, 0);
     u.resize(cw * ch, 0);
     v.resize(cw * ch, 0);
-    y.par_chunks_mut(w * 2).zip(u.par_chunks_mut(cw).zip(v.par_chunks_mut(cw))).enumerate().for_each(|(cy, (yr, (ur, vr)))| {
-        let rows = yr.len() / w;
-        let mut us = vec![0f32; cw];
-        let mut vs = vec![0f32; cw];
-        let mut cnt = vec![0f32; cw];
-        for dy in 0..rows {
-            let row = cy * 2 + dy;
-            let src = &rgba[row * w * 4..(row + 1) * w * 4];
-            for x in 0..w {
-                let (r, g, b) = (src[x * 4] as f32 / 255.0, src[x * 4 + 1] as f32 / 255.0, src[x * 4 + 2] as f32 / 255.0);
-                let yy = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                yr[dy * w + x] = (16.0 + 219.0 * yy).round().clamp(1.0, 254.0) as u8;
-                us[x / 2] += (b - yy) / 1.8556;
-                vs[x / 2] += (r - yy) / 1.5748;
-                cnt[x / 2] += 1.0;
+    // per-code tables of exactly the products the formula takes: `c / 255.0` and `k * (c / 255.0)`
+    let unit: [f32; 256] = std::array::from_fn(|c| c as f32 / 255.0);
+    let (kr, kg, kb): ([f32; 256], [f32; 256], [f32; 256]) =
+        (std::array::from_fn(|c| 0.2126 * unit[c]), std::array::from_fn(|c| 0.7152 * unit[c]), std::array::from_fn(|c| 0.0722 * unit[c]));
+    // Per row: gather the luma sums, then the vectorisable part (codes, chroma differences) over
+    // whole rows, then add the differences pairwise in the order the per-pixel loop added them.
+    let rows_init = || (vec![0f32; w], vec![0f32; w], vec![0f32; w], vec![0f32; cw], vec![0f32; cw]);
+    y.par_chunks_mut(w * 2).zip(u.par_chunks_mut(cw).zip(v.par_chunks_mut(cw))).enumerate().for_each_init(
+        rows_init,
+        |(ty, tb, tr, us, vs), (cy, (yr, (ur, vr)))| {
+            let rows = yr.len() / w;
+            us.fill(0.0);
+            vs.fill(0.0);
+            for (dy, yrow) in yr.chunks_exact_mut(w).enumerate() {
+                let row = cy * 2 + dy;
+                let Some(src) = rgba.get(row * w * 4..(row + 1) * w * 4) else { continue };
+                for (p, (yy, (b, r))) in src.as_chunks::<4>().0.iter().zip(ty.iter_mut().zip(tb.iter_mut().zip(tr.iter_mut()))) {
+                    let (pr, pg, pb) = (usize::from(p[0]), usize::from(p[1]), usize::from(p[2]));
+                    *yy = kr[pr] + kg[pg] + kb[pb];
+                    *b = unit[pb];
+                    *r = unit[pr];
+                }
+                for (o, &yy) in yrow.iter_mut().zip(ty.iter()) {
+                    *o = code8(16.0 + 219.0 * yy);
+                }
+                for (b, &yy) in tb.iter_mut().zip(ty.iter()) {
+                    *b = (*b - yy) / 1.8556;
+                }
+                for (r, &yy) in tr.iter_mut().zip(ty.iter()) {
+                    *r = (*r - yy) / 1.5748;
+                }
+                for (acc, pair) in us.iter_mut().zip(tb.as_chunks::<2>().0) {
+                    *acc += pair[0];
+                    *acc += pair[1];
+                }
+                for (acc, pair) in vs.iter_mut().zip(tr.as_chunks::<2>().0) {
+                    *acc += pair[0];
+                    *acc += pair[1];
+                }
+                if w % 2 == 1 {
+                    // the odd last column has a chroma sample of its own
+                    us[cw - 1] += tb[w - 1];
+                    vs[cw - 1] += tr[w - 1];
+                }
             }
-        }
-        for cx in 0..cw {
-            ur[cx] = (128.0 + 224.0 * us[cx] / cnt[cx]).round().clamp(1.0, 254.0) as u8;
-            vr[cx] = (128.0 + 224.0 * vs[cx] / cnt[cx]).round().clamp(1.0, 254.0) as u8;
-        }
-    });
+            for (cx, (uo, vo)) in ur.iter_mut().zip(vr.iter_mut()).enumerate() {
+                // pixels averaged into this chroma sample: 2 per row (1 in an odd last column), `rows` rows
+                let cnt = ((w - 2 * cx).min(2) * rows) as f32;
+                *uo = code8(128.0 + 224.0 * us[cx] / cnt);
+                *vo = code8(128.0 + 224.0 * vs[cx] / cnt);
+            }
+        },
+    );
 }
 
 /// Limited-range 8-bit 4:2:0 from encoded R'G'B' floats with matrix (Kr, Kb).
@@ -2186,7 +2306,10 @@ fn h264_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
     }
     Some(
         cfa4_h264enc::Encoder::new(cfg)
-            .map(|enc| Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal }) as Box<dyn VideoEncoder>)
+            .map(|enc| {
+                Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal, ready: Default::default() })
+                    as Box<dyn VideoEncoder>
+            })
             .map_err(|e| ExportError::Encode(e.to_string())),
     )
 }
@@ -2535,12 +2658,11 @@ impl Write for SharedBuf {
 
 /// Encode straight sRGB RGBA8 pixels as a PNG file (thumbnails, previews).
 pub fn encode_png(rgba: Vec<u8>, w: u32, h: u32) -> Result<Vec<u8>> {
-    encode_still(Format::PngSequence, rgba, w, h, false)
+    encode_still(Format::PngSequence, rgba, w, h, true)
 }
 
-/// Encode one still of an image sequence (also Export Frame). PNG always carries the alpha
-/// channel it is given; `alpha` keeps it in TIFF, Targa and OpenEXR too, which are otherwise written
-/// as RGB.
+/// Encode one still of an image sequence (also Export Frame). `alpha` keeps the alpha channel in
+/// PNG, TIFF, Targa and OpenEXR, which are otherwise written as RGB.
 /// JPEG uses the default export quality ([`encode_still_with_quality`] picks another).
 pub fn encode_still(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool) -> Result<Vec<u8>> {
     encode_still_with_quality(format, rgba, w, h, alpha, ExportSettings::default().quality)
@@ -2570,8 +2692,12 @@ pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: b
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
         Format::DpxSequence => return raster::dpx(&rgba, w, h),
         Format::ExrSequence => return raster::exr(&rgba, w, h, alpha, exr),
-        Format::PngSequence => {
+        Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
+        }
+        Format::PngSequence => {
+            let rgb = raster::rgb(&rgba, w, h)?;
+            image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgb, w, h, image::ExtendedColorType::Rgb8).map_err(enc)?
         }
         Format::TiffSequence | Format::BmpSequence => {
             let img = image::RgbaImage::from_raw(w, h, rgba).ok_or_else(|| ExportError::Encode("frame size".into()))?;
@@ -2587,8 +2713,28 @@ pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: b
     Ok(out.into_inner())
 }
 
-/// Run an export (blocking; call from a worker thread).
+/// A pool of `max_threads` threads to run an export on, or `None` when it should run where it is:
+/// no cap (0), a cap that is not below the pool the caller is in already, or no threads to spare
+/// (the browser).
+fn capped_pool(max_threads: u32) -> Option<rayon::ThreadPool> {
+    let cap = max_threads as usize;
+    if cap == 0 || cap >= rayon::current_num_threads() || cfg!(target_arch = "wasm32") {
+        return None;
+    }
+    rayon::ThreadPoolBuilder::new().num_threads(cap).thread_name(|i| format!("cfa4-export-{i}")).build().ok()
+}
+
+/// Run an export (blocking; call from a worker thread). With `settings.max_threads` set it runs on
+/// a pool of that many threads, so its rendering and software encoding use at most that many cores.
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
+    match capped_pool(settings.max_threads) {
+        Some(pool) => pool.install(|| export_here(project, seq, settings, sources, progress)),
+        None => export_here(project, seq, settings, sources, progress),
+    }
+}
+
+/// [`export`] on the threads it is called from.
+fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
     settings.validate()?;
     if stepped(settings.format) {
         let mut ex = Exporter::new(project.clone(), seq, settings, progress)?;
@@ -2700,7 +2846,18 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
                 let end = (f + batch).min(f1);
                 if let Some(enc) = gif.as_mut() {
                     let frames: Vec<Vec<u8>> = (f..end).into_par_iter().map(|fi| pipe.frame(fi, sources).0).collect();
-                    for (fi, rgba) in (f..end).zip(frames) {
+                    for (fi, mut rgba) in (f..end).zip(frames) {
+                        // GIF89a has one transparent palette index, not partial alpha. Decide
+                        // coverage before quantization and keep the straight colour of visible pixels.
+                        if settings.keeps_alpha() {
+                            for px in rgba.as_chunks_mut::<4>().0 {
+                                if px[3] < 128 {
+                                    *px = [0; 4];
+                                } else {
+                                    px[3] = 255;
+                                }
+                            }
+                        }
                         let img = image::RgbaImage::from_raw(w, h, rgba).ok_or_else(|| ExportError::Encode("frame".into()))?;
                         let delay = image::Delay::from_numer_denom_ms(u32::from(gif_delay_cs(pipe.rate, fi - f0)) * 10, 1);
                         enc.encode_frame(image::Frame::from_parts(img, 0, 0, delay)).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -2770,3 +2927,97 @@ mod determinism_tests;
 
 #[cfg(test)]
 mod hdr_tests;
+
+#[cfg(test)]
+mod convert_tests {
+    use super::*;
+
+    /// The straightforward float formula `rgba_to_yuv420_8` must reproduce bit for bit.
+    fn reference_420_8(rgba: &[u8], w: usize, h: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+        let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
+        let (mut y, mut u, mut v) = (vec![0u8; w * h], vec![0u8; cw * ch], vec![0u8; cw * ch]);
+        for cy in 0..ch {
+            let mut us = vec![0f32; cw];
+            let mut vs = vec![0f32; cw];
+            let mut cnt = vec![0f32; cw];
+            for row in cy * 2..(cy * 2 + 2).min(h) {
+                for x in 0..w {
+                    let p = &rgba[(row * w + x) * 4..];
+                    let (r, g, b) = (p[0] as f32 / 255.0, p[1] as f32 / 255.0, p[2] as f32 / 255.0);
+                    let yy = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                    y[row * w + x] = (16.0 + 219.0 * yy).round().clamp(1.0, 254.0) as u8;
+                    us[x / 2] += (b - yy) / 1.8556;
+                    vs[x / 2] += (r - yy) / 1.5748;
+                    cnt[x / 2] += 1.0;
+                }
+            }
+            for cx in 0..cw {
+                u[cy * cw + cx] = (128.0 + 224.0 * us[cx] / cnt[cx]).round().clamp(1.0, 254.0) as u8;
+                v[cy * cw + cx] = (128.0 + 224.0 * vs[cx] / cnt[cx]).round().clamp(1.0, 254.0) as u8;
+            }
+        }
+        (y, u, v)
+    }
+
+    fn check(rgba: &[u8], w: usize, h: usize) {
+        let (mut y, mut u, mut v) = (Vec::new(), Vec::new(), Vec::new());
+        rgba_to_yuv420_8(rgba, w, h, &mut y, &mut u, &mut v);
+        let (ry, ru, rv) = reference_420_8(rgba, w, h);
+        assert!(y == ry, "{w}x{h}: luma differs");
+        assert!(u == ru, "{w}x{h}: Cb differs");
+        assert!(v == rv, "{w}x{h}: Cr differs");
+    }
+
+    #[test]
+    fn code8_rounds_like_round_around_every_half() {
+        for n in 0..300 {
+            let half = n as f32 + 0.5;
+            let mut x = half;
+            let mut down = half;
+            for _ in 0..64 {
+                for v in [x, down] {
+                    assert_eq!(code8(v), v.round().clamp(1.0, 254.0) as u8, "{v}");
+                }
+                x = f32::from_bits(x.to_bits() + 1);
+                down = f32::from_bits(down.to_bits() - 1);
+            }
+        }
+        for v in [-3.0f32, -0.5, -0.0, 0.0, 0.25, 0.49999997, 0.5, 1.0, 253.5, 254.49998, 1e9, f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert_eq!(code8(v), v.round().clamp(1.0, 254.0) as u8, "{v}");
+        }
+    }
+
+    #[test]
+    fn yuv420_8_matches_the_float_formula_for_every_colour() {
+        // 4096 x 4096 holds each of the 2^24 colours once; neighbouring colours share chroma
+        let (w, h) = (4096, 4096);
+        let mut rgba = vec![255u8; w * h * 4];
+        for (i, p) in rgba.as_chunks_mut::<4>().0.iter_mut().enumerate() {
+            p[0] = (i >> 16) as u8;
+            p[1] = (i >> 8) as u8;
+            p[2] = i as u8;
+        }
+        check(&rgba, w, h);
+    }
+
+    #[test]
+    fn yuv420_8_matches_the_float_formula_at_odd_sizes() {
+        let mut seed = 0x9e37_79b9u32;
+        for (w, h) in [(1, 1), (2, 2), (3, 5), (17, 9), (64, 33), (1921, 3)] {
+            let rgba: Vec<u8> = (0..w * h * 4)
+                .map(|_| {
+                    seed ^= seed << 13;
+                    seed ^= seed >> 17;
+                    seed ^= seed << 5;
+                    (seed >> 24) as u8
+                })
+                .collect();
+            check(&rgba, w, h);
+        }
+        // the extremes, where rounding and clamping meet
+        for c in [[0u8, 0, 0], [255, 255, 255], [255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255], [255, 0, 255]] {
+            let rgba: Vec<u8> = (0..6 * 4).flat_map(|_| [c[0], c[1], c[2], 255]).collect();
+            check(&rgba, 6, 4);
+        }
+    }
+}

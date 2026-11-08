@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import Any
 
-from PySide6.QtCore import QEvent, QMimeData, QPoint, QSettings, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtCore import QEvent, QMimeData, QPoint, QRect, QSettings, QSize, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QAction, QColor, QDesktopServices, QIcon, QImage, QKeyEvent, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -124,7 +124,68 @@ class PathField(QLineEdit):
         super().keyPressEvent(e)
 
 
+def view_part(view: QAbstractItemView, rect: QRect) -> QRect:
+    """An item's ``visualItemRect`` in the view's own coordinates, cut to what the viewport shows."""
+    vp = view.viewport()
+    return rect.translated(vp.pos()).intersected(vp.geometry())
+
+
+class PlaceTree(QTreeWidget):
+    """The places tree with egui's ids for the control channel: ``mediaBrowser.tree.<section>``
+    (a section's title), ``mediaBrowser.tree.<section>.<name>`` (a place) and
+    ``mediaBrowser.tree.dir.<path>`` (a folder below one), for the rows in view."""
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        out: list[tuple[str, QRect, str]] = []
+
+        def walk(it: QTreeWidgetItem, depth: int, section: str) -> None:
+            path = it.data(0, PATH_ROLE)
+            if depth == 0:
+                pid = f"mediaBrowser.tree.{section}"
+            elif depth == 1:
+                pid = f"mediaBrowser.tree.{section}.{it.text(0)}" if path else ""
+            else:
+                pid = f"mediaBrowser.tree.dir.{path}" if path else ""
+            r = view_part(self, self.visualItemRect(it))
+            if pid and not r.isEmpty():
+                out.append((pid, r, it.text(0)))
+            if it.isExpanded():
+                for i in range(it.childCount()):
+                    child = it.child(i)
+                    if child is not None:
+                        walk(child, depth + 1, section)
+
+        for i in range(self.topLevelItemCount()):
+            top = self.topLevelItem(i)
+            if top is not None:
+                walk(top, 0, str(top.data(0, SECTION_ROLE)))
+        return out
+
+
 class FileList(QTreeWidget):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.column_keys: list[str] = []  # the columns' egui names (the header shows them translated)
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        """egui's ids: ``mediaBrowser.header.<column>`` and ``mediaBrowser.entry.<name>`` (rows in view)."""
+        out: list[tuple[str, QRect, str]] = []
+        head = self.header()
+        if not self.isHeaderHidden():
+            for i, key in enumerate(self.column_keys[: self.columnCount()]):
+                x = head.sectionViewportPosition(i)
+                r = QRect(head.x() + x, head.y(), head.sectionSize(i), head.height()).intersected(head.geometry())
+                if not r.isEmpty():
+                    out.append((f"mediaBrowser.header.{key}", r, key))
+        for i in range(self.topLevelItemCount()):
+            it = self.topLevelItem(i)
+            e = it.data(0, ENTRY_ROLE) if it is not None else None
+            if isinstance(e, dict) and e.get("name"):
+                r = view_part(self, self.visualItemRect(it))
+                if not r.isEmpty():
+                    out.append((f"mediaBrowser.entry.{e['name']}", r, str(e["name"])))
+        return out
+
     def mimeData(self, items: list[QTreeWidgetItem]) -> QMimeData:
         return files_mime([str(i.data(0, PATH_ROLE)) for i in items if not (i.data(0, ENTRY_ROLE) or {}).get("isDir")])
 
@@ -136,6 +197,18 @@ class Thumbnails(QListWidget):
     """Thumbnail View; reports the pointer's fraction across the thumbnail under it (hover scrub)."""
 
     hovered = Signal(object, float)  # QListWidgetItem or None, fraction
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        """egui's ``mediaBrowser.entry.<name>`` for the thumbnails in view."""
+        out: list[tuple[str, QRect, str]] = []
+        for i in range(self.count()):
+            it = self.item(i)
+            e = it.data(ENTRY_ROLE) if it is not None else None
+            if isinstance(e, dict) and e.get("name") and not it.isHidden():
+                r = view_part(self, self.visualItemRect(it))
+                if not r.isEmpty():
+                    out.append((f"mediaBrowser.entry.{e['name']}", r, str(e["name"])))
+        return out
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -310,7 +383,7 @@ class MediaBrowserPanel(QWidget):
         row2.addStretch(1)
 
         # ---- tree | files
-        self.tree = QTreeWidget(self)
+        self.tree = PlaceTree(self)
         self.tree.setObjectName("mediaBrowser.tree")
         self.tree.setHeaderHidden(True)
         self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -489,6 +562,7 @@ class MediaBrowserPanel(QWidget):
         self.list.clear()
         self.list.setColumnCount(len(columns))
         self.list.setHeaderLabels([tr(c) for c in columns])
+        self.list.column_keys = columns
         for i, c in enumerate(columns):
             self.list.setColumnWidth(i, 220 if c == "Name" else 110)
         dim = theme.current().c("text_dim")

@@ -39,7 +39,7 @@ class FourFormatArtifactTests(unittest.TestCase):
                 self.make_tar(path)
         self.write_sums()
 
-    def make_tar(self, path, *, remove=(), wrong_version=False, unsafe=False):
+    def make_tar(self, path, *, remove=(), wrong_version=False, unsafe=False, extra=()):
         entries = {
             "install.sh": b"#!/bin/sh\n",
             "bin/cfa4": b"native editor",
@@ -52,6 +52,14 @@ class FourFormatArtifactTests(unittest.TestCase):
                  f"version=\"{'0.9.9' if wrong_version else VERSION}\"/></releases>"
                  f"</component>").encode(),
             f"share/icons/hicolor/scalable/apps/{audit.APP_ID}.svg": b"<svg/>",
+            f"{audit.FFMPEG_DIR}/lib/libavcodec.so.62": b"\x7fELF fixture",
+            f"{audit.FFMPEG_DIR}/lib/libavformat.so.62": b"\x7fELF fixture",
+            f"{audit.FFMPEG_DIR}/lib/libavutil.so.60": b"\x7fELF fixture",
+            f"{audit.FFMPEG_DIR}/lib/libdav1d.so.7": b"\x7fELF fixture",
+            f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/BUILDINFO": b"FFmpeg 9.0.2",
+            f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/COPYING.GPLv3": b"GPL",
+            f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/LICENSE.md": b"licence",
+            **{name: b"fixture" for name in extra},
         }
         with tarfile.open(path, "w:gz") as archive:
             for filename, content in entries.items():
@@ -111,6 +119,32 @@ class FourFormatArtifactTests(unittest.TestCase):
         self.make_tar(path, unsafe=True)
         with self.assertRaisesRegex(audit.AuditError, "unsafe"):
             audit.verify_tarball(path, VERSION)
+
+    def test_reject_tarball_without_ffmpeg(self):
+        path = self.dist / self.names[3]
+        self.make_tar(path, remove={f"{audit.FFMPEG_DIR}/lib/libavcodec.so.62"})
+        with self.assertRaisesRegex(audit.AuditError, "lacks FFmpeg 9.0.2 lib/libavcodec"):
+            audit.verify_tarball(path, VERSION)
+
+    def test_reject_tarball_without_ffmpeg_licence(self):
+        path = self.dist / self.names[3]
+        self.make_tar(path, remove={f"{audit.FFMPEG_DIR}/share/doc/ffmpeg/BUILDINFO"})
+        with self.assertRaisesRegex(audit.AuditError, "licence/source file"):
+            audit.verify_tarball(path, VERSION)
+
+    def test_reject_patent_restricted_codec_in_base_tarball(self):
+        path = self.dist / self.names[3]
+        self.make_tar(path, extra={f"{audit.FFMPEG_DIR}/lib/libx264.so.164"})
+        with self.assertRaisesRegex(audit.AuditError, "patent-restricted"):
+            audit.verify_tarball(path, VERSION)
+
+    def test_ffmpeg_check_accepts_deb_layout(self):
+        names = {f"{audit.FFMPEG_DEB_DIR}/{n}" for n in (
+            "lib/libavcodec.so.62", "lib/libavformat.so.62", "lib/libavutil.so.60", *audit.FFMPEG_DOCS)}
+        audit.verify_ffmpeg(names, audit.FFMPEG_DEB_DIR, ".deb")
+        with self.assertRaisesRegex(audit.AuditError, "patent-restricted"):
+            audit.verify_ffmpeg(names | {"opt/cfa4/ffmpeg-9.0.2-restricted/lib/libavcodec.so.62"},
+                                audit.FFMPEG_DEB_DIR, ".deb")
 
     def test_reject_other_cpu_architecture_in_appimage(self):
         path = self.dist / self.names[1]
