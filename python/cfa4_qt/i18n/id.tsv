@@ -318,6 +318,13 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	kompresi {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Coret
+	Caption Export Settings	Pengaturan Ekspor Teks
+	Export Captions	Ekspor Teks
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} sudah ada, jadi tidak ada yang diekspor. Untuk menggantinya, pilih file itu di dialog simpan.
+	Delete Redoable Actions	Hapus Tindakan yang Dapat Diulang
+	Clear History	Bersihkan Riwayat
+	Delete the dimmed actions after the current state? They cannot be redone.	Hapus tindakan redup setelah keadaan saat ini? Tindakan itu tidak dapat diulang lagi.
 	Work Area Bar	Bilah Area Kerja
 	Start: {tc}	Awal: {tc}
 	End: {tc}	Akhir: {tc}
@@ -329,3 +336,4 @@
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Masuk/keluar sekuens hanya 1 frame. Pilih Seluruh sekuens untuk mengekspor seluruh sekuens.
 	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
 	Set Work Area Bar Out Point	Atur Titik Keluar Bilah Area Kerja
+	Delete Clips	Hapus Klip

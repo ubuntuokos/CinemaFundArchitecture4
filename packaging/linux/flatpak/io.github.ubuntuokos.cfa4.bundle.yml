@@ -53,6 +53,10 @@ modules:
       # Already has the release's version and date substituted by package.sh.
       - install -Dm644 share/metainfo/io.github.ubuntuokos.cfa4.metainfo.xml /app/share/metainfo/io.github.ubuntuokos.cfa4.metainfo.xml
       - mkdir -p /app/share/icons /app/share/doc && cp -R share/icons/hicolor /app/share/icons/ && cp -R share/doc/cfa4 /app/share/doc/
+      # CFA4's FFmpeg 9.0.2 (ADR 0005 step 4) with the libraries it loads that the runtime lacks and
+      # their licences: the binaries find it in ../lib/cfa4/ffmpeg-9.0.2 ($ORIGIN RUNPATH). No
+      # patent-restricted encoder: x264/x265 exist only in the cfa4-restricted-extras .deb.
+      - mkdir -p /app/lib/cfa4 && cp -R lib/cfa4/ffmpeg-9.0.2 /app/lib/cfa4/
     sources:
       - type: dir
         path: stage

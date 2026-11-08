@@ -568,6 +568,70 @@ def test_installing_a_graphics_template_asks_for_its_file(app, tmp_path: Path, m
     assert path_params(cmd, parent, None) == {"__cancel__": True}
 
 
+def test_caption_export_asks_for_the_file_format(app, tmp_path: Path, monkeypatch):
+    """upstream #3523: File ▸ Export ▸ Captions… opens Caption Export Settings (every format
+    `captions.export` writes); the save panel offers only that format; a name typed with another
+    caption extension is written in that format, any other name gets the chosen extension, and a
+    file that name would replace without the panel having asked is left alone. The format written
+    last is offered next time."""
+    from cfa4_qt import dialogs
+    from cfa4_qt.dialogs import CaptionExportDialog, caption_destination, path_params
+
+    for typed, saved, ext in [
+        ("subs", "subs.vtt", "vtt"),
+        ("subs.", "subs.vtt", "vtt"),
+        ("subs.vtt", "subs.vtt", "vtt"),
+        ("SUBS.VTT", "SUBS.VTT", "vtt"),
+        ("subs.srt", "subs.srt", "srt"),
+        ("Subs.SCC", "Subs.SCC", "scc"),
+        ("subs.final", "subs.final.vtt", "vtt"),
+        ("/home/a.b/subs", "/home/a.b/subs.vtt", "vtt"),
+        ("/home/a.b/Main Edit.ttml", "/home/a.b/Main Edit.ttml", "ttml"),
+    ]:
+        assert caption_destination(typed, "vtt") == (saved, ext), typed
+
+    dlg = CaptionExportDialog(None, "vtt")
+    combo = dlg.findChild(QtWidgets.QComboBox, "captionExport.format")
+    assert combo.count() == 7 and dlg.chosen() == "vtt"
+    assert dlg.findChild(QtWidgets.QPushButton, "captionExport.ok") is not None
+
+    class Window(QtWidgets.QMainWindow):
+        def __init__(self) -> None:
+            super().__init__()
+            self.settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+            self.sequence = {"name": "Main Edit"}
+
+    win = Window()
+    cmd = Command("captions.export", "Captions…", ["File", "Export"], "", '{"path":str,"track":id?,"format":str?}', True)
+    picked: list[str] = []
+    monkeypatch.setattr(CaptionExportDialog, "exec", lambda self: (picked.append(self.chosen()), self.format.setCurrentIndex(self.format.findData("vtt")), QtWidgets.QDialog.DialogCode.Accepted)[-1])
+    asked = []
+    answer = [str(tmp_path / "subs")]
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **_k: (asked.append(a), (answer[0], a[3]))[-1])
+    # SRT first; the save panel offers WebVTT only, named after the sequence
+    assert path_params(cmd, win, None, {"track": 7}) == {"path": str(tmp_path / "subs.vtt"), "format": "vtt"}
+    assert picked == ["srt"] and asked[-1][2] == "Main_Edit.vtt" and asked[-1][3] == "WebVTT (*.vtt)"
+    # WebVTT is offered next time; a format given by the caller wins
+    path_params(cmd, win, None, {})
+    assert picked[-1] == "vtt"
+    path_params(cmd, win, None, {"format": "scc"})
+    assert picked[-1] == "scc"
+    # `keep` typed when keep.vtt exists: nothing is written, and the status line says why
+    (tmp_path / "keep.vtt").write_text("WEBVTT\n", encoding="utf-8")
+    answer[0] = str(tmp_path / "keep")
+    assert path_params(cmd, win, None, {}) == {"__cancel__": True}
+    assert "keep.vtt" in win.statusBar().currentMessage()
+    # choosing keep.vtt itself (the panel asked) replaces it; another caption extension is kept
+    answer[0] = str(tmp_path / "keep.vtt")
+    assert path_params(cmd, win, None, {}) == {"path": str(tmp_path / "keep.vtt"), "format": "vtt"}
+    answer[0] = str(tmp_path / "subs.srt")
+    assert path_params(cmd, win, None, {}) == {"path": str(tmp_path / "subs.srt"), "format": "srt"}
+    # Cancel in either dialog cancels
+    monkeypatch.setattr(CaptionExportDialog, "exec", lambda _self: QtWidgets.QDialog.DialogCode.Rejected)
+    assert path_params(cmd, win, None, {}) == {"__cancel__": True}
+    assert dialogs.caption_format("WebVTT") == "vtt" and dialogs.caption_format("bogus") is None
+
+
 def test_save_as_asks_before_the_added_suffix_replaces_a_project(app, tmp_path: Path, monkeypatch):
     """Regression: Save As returning ``cut`` (All files filter) wrote over an existing
     ``cut.fcproj`` without asking: the dialog only checked the name without the suffix."""
@@ -4602,7 +4666,9 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         assert dock_commands.dock_at(win, pos) == "History"
         QtGui.QCursor.setPos(pos)
         menu = dock_commands.panel_menu(win, "History")
-        assert [a.objectName() for a in menu.actions()] == ["panel.menu.History.close", "panel.menu.History.undock", "panel.menu.History.restoreWorkspace"]
+        assert [a.objectName() for a in menu.actions() if not a.isSeparator()] == [
+            "panel.menu.History.close", "panel.menu.History.undock", "panel.menu.History.restoreWorkspace",
+            "panel.menu.History.deleteRedoable", "panel.menu.History.clear"]  # (upstream #3075)
         menu.actions()[1].trigger()
         assert hist.isFloating()
         menu.actions()[0].trigger()
@@ -7512,6 +7578,7 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     assert encoder_format("mxf-op1a", "proRes") == "prores" and encoder_format("hls", "") == "h264"
     assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
     assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
+    assert supports_alpha("gif", "", ""), "GIF keeps binary transparency, as the engine says (#3423)"
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
@@ -9785,6 +9852,15 @@ def test_essential_graphics(app, tmp_path: Path):
         assert wait_until(app, lambda: len(eg.editor.data.get("layers") or []) == 2, 10_000)
         win.execute("graphics.selectLayer", {"clip": clip, "layers": [0]})
         assert wait_until(app, lambda: eg.editor.layer == 0 and eg.editor.data.get("kind") == "text", 10_000)
+
+        # upstream #3433: the S button strikes the text through, as U underlines it
+        strike = eg.findChild(QtWidgets.QToolButton, "graphics.prop.strikethrough")
+        assert strike is not None and not strike.isChecked()
+        eg.editor.scroll.ensureWidgetVisible(strike)
+        strike.click()
+        assert wait_until(app, lambda: eg.editor.param("strikethrough") is True and strike.isChecked(), 10_000), eg.editor.param("strikethrough")
+        strike.click()
+        assert wait_until(app, lambda: eg.editor.param("strikethrough") is False and not strike.isChecked(), 10_000)
 
         # a scrub of Opacity (half a percent a pixel) is one undo step
         spin = eg.findChild(HotSpin, "graphics.prop.opacity")
@@ -12865,6 +12941,58 @@ def test_real_engine_timeline_work_area_bar(app, tmp_path: Path):
         assert toggle.isChecked()
         toggle.trigger()
         assert wait_until(app, lambda: area() is None, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_history_panel_menu_deletes_redoable_and_clears(app, tmp_path: Path, monkeypatch):
+    """upstream #3075: the History panel menu's Delete Redoable Actions (OK first; Cancel keeps
+    them) and Clear History; neither changes the project."""
+    from cfa4_qt import dock_commands
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+
+    def rows() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    def action(name: str):
+        menu = dock_commands.panel_menu(win, "History")
+        return next(a for a in menu.actions() if a.objectName() == f"panel.menu.History.{name}")
+
+    answers: list = []
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        for t in (1.0, 2.0, 3.0):
+            win.execute("markers.add", {"seconds": t})
+        assert wait_until(app, lambda: len(rows()) >= 4, 10_000), rows()
+        steps = len(rows())
+        win.execute("edit.undo", {})
+        win.execute("edit.undo", {})
+        assert wait_until(app, lambda: action("deleteRedoable").isEnabled(), 10_000)
+        markers = len((win.sequence or {}).get("markers") or [])
+        # Cancel keeps the redo steps; OK deletes them, the project stays as it is
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        action("deleteRedoable").trigger()
+        wait_until(app, lambda: False, 300)
+        assert len(rows()) == steps and win.command_enabled("history.deleteRedoable")
+        answers.append(QtWidgets.QMessageBox.StandardButton.Ok)
+        action("deleteRedoable").trigger()
+        assert wait_until(app, lambda: len(rows()) == steps - 2 and not win.command_enabled("history.deleteRedoable"), 10_000), rows()
+        assert len((win.sequence or {}).get("markers") or []) == markers
+        # Clear History leaves only Open
+        action("clear").trigger()
+        assert wait_until(app, lambda: rows() == [rows()[0]] and not win.command_enabled("history.clear"), 10_000), rows()
+        assert len((win.sequence or {}).get("markers") or []) == markers
+        assert not answers
     finally:
         win._quit_confirmed = True
         win.close()

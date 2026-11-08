@@ -1613,6 +1613,179 @@ fn own_importer_reads_32_bit_flac_at_full_scale() {
         }
     }
 }
+/// Four blue stripes with alpha 0, 127, 128 and 255. Reverse them on frame two, then
+/// clear the whole picture: a decoder must not retain opaque pixels from earlier frames.
+struct GifAlphaSource(cfa4_media::SharedSource);
+
+impl MediaSource for GifAlphaSource {
+    fn info(&self) -> &cfa4_media::MediaInfo {
+        self.0.info()
+    }
+
+    fn video_frame(&self, req: FrameRequest) -> cfa4_media::Result<Arc<cfa4_frame::VideoFrame>> {
+        let frame = FrameRate::FPS_24.frame_at(req.time);
+        let mut rgba = Vec::with_capacity(64 * 36 * 4);
+        for _ in 0..36 {
+            for x in 0..64 {
+                let stripe = if frame == 1 { 3 - x / 16 } else { x / 16 };
+                let alpha = if frame >= 2 { 0 } else { [0, 127, 128, 255][stripe] };
+                rgba.extend_from_slice(&[0, 0, 255, alpha]);
+            }
+        }
+        Ok(Arc::new(cfa4_frame::VideoFrame::rgba8(64, 36, rgba)))
+    }
+
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<cfa4_frame::AudioBuffer> {
+        self.0.audio(start, frames, sample_rate)
+    }
+}
+
+#[test]
+fn gif_alpha_threshold_and_disposal_roundtrip() {
+    use image::AnimationDecoder;
+    let (p, seq, mut sources) = matte([0.0, 0.0, 1.0, 1.0], 64, 36, None);
+    for source in sources.0.values_mut() {
+        *source = Arc::new(GifAlphaSource(source.clone()));
+    }
+    for alpha in [false, true] {
+        let dir = Scratch::new(&format!("gif-alpha-{alpha}"));
+        let settings = ExportSettings {
+            format: Format::Gif,
+            path: dir.path("alpha.gif"),
+            alpha,
+            range: Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(3))),
+            ..Default::default()
+        };
+        let result = export(&p, seq, &settings, &sources, &Progress::default()).unwrap();
+        assert_eq!(result.frames, 3);
+        let bytes = std::fs::read(&settings.path).unwrap();
+        let decoder = image::codecs::gif::GifDecoder::new(std::io::Cursor::new(bytes)).unwrap();
+        let frames = decoder.into_frames().collect_frames().unwrap();
+        assert_eq!(frames.len(), 3);
+        for (i, frame) in frames.iter().enumerate() {
+            assert_eq!(frame.buffer().dimensions(), (64, 36));
+            assert_eq!(frame.delay().numer_denom_ms(), (u32::from(gif_delay_cs(FrameRate::FPS_24, i as i64)) * 10, 1));
+            for stripe in 0..4 {
+                let source_alpha = if i == 2 { 0 } else { [0, 127, 128, 255][if i == 1 { 3 - stripe } else { stripe }] };
+                let px = frame.buffer().get_pixel(stripe as u32 * 16 + 8, 18).0;
+                let expected_alpha = if alpha && source_alpha < 128 { 0 } else { 255 };
+                assert_eq!(px[3], expected_alpha, "alpha={alpha}, frame={i}, stripe={stripe}: {px:?}");
+                if expected_alpha != 0 {
+                    assert!(px[0] < 15 && px[1] < 15, "blue: {px:?}");
+                    if source_alpha == 0 {
+                        assert!(px[2] < 15, "flattened transparent pixel: {px:?}");
+                    } else if alpha || source_alpha == 255 {
+                        assert!(px[2] > 240, "straight blue survives palette quantization: {px:?}");
+                    } else {
+                        assert!((100..240).contains(&px[2]), "partial alpha flattened over black: {px:?}");
+                    }
+                }
+            }
+        }
+        if let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("GIF transparency") {
+            let decoded = std::process::Command::new(ffmpeg)
+                .args(["-v", "error", "-i", &settings.path, "-frames:v", "3", "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "rgba", "-"])
+                .output()
+                .unwrap();
+            assert!(decoded.status.success(), "{}", String::from_utf8_lossy(&decoded.stderr));
+            assert_eq!(decoded.stdout.len(), 3 * 64 * 36 * 4);
+            for (actual, expected) in decoded.stdout.as_chunks::<{ 64 * 36 * 4 }>().0.iter().zip(&frames) {
+                for (actual, expected) in actual.as_chunks::<4>().0.iter().zip(expected.buffer().pixels()) {
+                    assert_eq!(actual[3], expected.0[3], "ffmpeg alpha, alpha={alpha}");
+                    if actual[3] == 255 {
+                        assert_eq!(*actual, expected.0, "ffmpeg opaque color, alpha={alpha}");
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// A full grayscale ramp, repeated four times, with one transparent pixel surrounded by
+/// opaque black / near-black pixels. Moving the hole also exercises animated frame disposal.
+struct GifPaletteSource(cfa4_media::SharedSource);
+
+impl MediaSource for GifPaletteSource {
+    fn info(&self) -> &cfa4_media::MediaInfo {
+        self.0.info()
+    }
+
+    fn video_frame(&self, req: FrameRequest) -> cfa4_media::Result<Arc<cfa4_frame::VideoFrame>> {
+        let second = FrameRate::FPS_24.frame_at(req.time) != 0;
+        let hole = if second { (17, 17) } else { (16, 16) };
+        let mut rgba = Vec::with_capacity(32 * 32 * 4);
+        for y in 0..32 {
+            for x in 0..32 {
+                let shade = ((y * 32 + x) % 256) as u8;
+                let shade = if second { 255 - shade } else { shade };
+                let px = if (x, y) == hole {
+                    [0, 0, 0, 0]
+                } else if (x, y) == (hole.0 - 1, hole.1) || (x, y) == (hole.0 + 1, hole.1) {
+                    [0, 0, 0, 255]
+                } else if (x, y) == (hole.0, hole.1 - 1) || (x, y) == (hole.0, hole.1 + 1) {
+                    [1, 2, 3, 255]
+                } else {
+                    [shade, shade, shade, 255]
+                };
+                rgba.extend_from_slice(&px);
+            }
+        }
+        Ok(Arc::new(cfa4_frame::VideoFrame::rgba8(32, 32, rgba)))
+    }
+
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<cfa4_frame::AudioBuffer> {
+        self.0.audio(start, frames, sample_rate)
+    }
+}
+
+#[test]
+fn gif_palette_quantization_preserves_isolated_transparency_and_dark_pixels() {
+    use image::AnimationDecoder;
+    let (p, seq, mut sources) = matte([0.0, 0.0, 0.0, 1.0], 32, 32, None);
+    for source in sources.0.values_mut() {
+        *source = Arc::new(GifPaletteSource(source.clone()));
+    }
+    let dir = Scratch::new("gif-palette-alpha");
+    let settings = ExportSettings {
+        format: Format::Gif,
+        path: dir.path("palette.gif"),
+        alpha: true,
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(2))),
+        ..Default::default()
+    };
+    // Count the actual rendered colors after binary-alpha conversion, not just source colors:
+    // exceeding GIF's 256-entry palette must survive the render pipeline on both frames.
+    let pipe = pipeline::Pipeline::new(p.clone(), seq, &settings, false).unwrap();
+    let expected: Vec<Vec<[u8; 4]>> = (0..2)
+        .map(|i| {
+            let rgba = pipe.frame(i, &sources).0;
+            let pixels: Vec<_> = rgba.as_chunks::<4>().0.iter().map(|&[r, g, b, a]| if a < 128 { [0; 4] } else { [r, g, b, 255] }).collect();
+            let colors: std::collections::HashSet<_> = pixels.iter().copied().collect();
+            assert!(colors.len() >= 257, "frame {i}: only {} post-conversion colors", colors.len());
+            assert_eq!(pixels.iter().filter(|p| p[3] == 0).count(), 1, "frame {i}: an isolated transparent pixel");
+            assert!(colors.contains(&[0, 0, 0, 255]), "frame {i}: opaque black");
+            assert!(colors.contains(&[1, 2, 3, 255]), "frame {i}: opaque near-black");
+            pixels
+        })
+        .collect();
+    assert_eq!(export(&p, seq, &settings, &sources, &Progress::default()).unwrap().frames, 2);
+    let bytes = std::fs::read(&settings.path).unwrap();
+    let frames = image::codecs::gif::GifDecoder::new(std::io::Cursor::new(bytes)).unwrap().into_frames().collect_frames().unwrap();
+    assert_eq!(frames.len(), 2);
+    for (i, (frame, expected)) in frames.iter().zip(&expected).enumerate() {
+        assert_eq!(frame.buffer().dimensions(), (32, 32));
+        for (at, (actual, expected)) in frame.buffer().pixels().zip(expected).enumerate() {
+            assert_eq!(actual[3], expected[3], "frame {i}, pixel {at}: alpha must be exact, including opaque dark pixels");
+            if expected[3] == 255 {
+                // Palette reduction is lossy. For this grayscale ramp, allow at most 16/255
+                // error per RGB channel (about 6% of the range), never any loss of opacity.
+                for channel in 0..3 {
+                    assert!(actual[channel].abs_diff(expected[channel]) <= 16, "frame {i}, pixel {at}: {:?} vs {expected:?}", actual.0);
+                }
+            }
+        }
+    }
+}
 
 /// `matte_secs` with markers on the sequence.
 fn with_markers(p: Arc<Project>, seq: ItemId, marks: &[(i64, &str, &str, cfa4_project::MarkerKind)]) -> Arc<Project> {

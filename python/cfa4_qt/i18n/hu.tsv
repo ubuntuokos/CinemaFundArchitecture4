@@ -2373,6 +2373,13 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Strikethrough	Áthúzott
+	Caption Export Settings	Feliratexport beállításai
+	Export Captions	Feliratok exportálása
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} már létezik, ezért semmi sem lett exportálva. A cseréjéhez válaszd ki a mentési ablakban.
+	Delete Redoable Actions	Újra végrehajtható műveletek törlése
+	Clear History	Előzmények törlése
+	Delete the dimmed actions after the current state? They cannot be redone.	Törlöd a jelenlegi állapot utáni, halványan látszó műveleteket? Ezek nem hajthatók végre újra.
 	Work Area Bar	Munkaterület-sáv
 	Start: {tc}	Kezdet: {tc}
 	End: {tc}	Vég: {tc}
@@ -2456,3 +2463,4 @@ export.summary	Low	alacsony
 	more tabs	további fülek
 	Set Work Area Bar In Point	A munkaterület-sáv kezdőpontjának beállítása
 	Set Work Area Bar Out Point	A munkaterület-sáv végpontjának beállítása
+	Delete Clips	Klipek törlése

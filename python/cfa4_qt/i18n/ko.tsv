@@ -318,6 +318,13 @@
 	{v} Mbps	{v}Mbps
 	{word} compression	{word} 압축
 	{w}x{h} ({par})	{w}×{h}({par})
+	Strikethrough	취소선
+	Caption Export Settings	캡션 내보내기 설정
+	Export Captions	캡션 내보내기
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} 파일이 이미 있어 아무것도 내보내지 않았습니다. 바꾸려면 저장 대화상자에서 그 파일을 선택하세요.
+	Delete Redoable Actions	다시 실행 가능한 작업 삭제
+	Clear History	작업 내역 지우기
+	Delete the dimmed actions after the current state? They cannot be redone.	현재 상태 이후의 흐리게 표시된 작업을 삭제할까요? 다시 실행할 수 없게 됩니다.
 	Work Area Bar	작업 영역 막대
 	Start: {tc}	시작: {tc}
 	End: {tc}	끝: {tc}
@@ -329,3 +336,4 @@
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	시퀀스 시작/종료 범위가 1프레임뿐입니다. 시퀀스 전체를 내보내려면 전체 시퀀스를 선택하세요.
 	Set Work Area Bar In Point	작업 영역 막대 시작 지점 설정
 	Set Work Area Bar Out Point	작업 영역 막대 끝 지점 설정
+	Delete Clips	클립 삭제

@@ -44,6 +44,16 @@ is, to find it again. An explicit `time` keeps its place, outside the clip too, 
 only the playhead (when no `time` is given) is held to the clip's last tick. `effects.deleteKeyframe`
 returns `{"removed": true}` or `{"removed": false}` (no keyframe sat exactly at `mediaTime`).
 
+### Effect parameter replies
+
+`effects.setParam` returns `{"keyframes": n, "param": id, "value": value}` on success.
+The keyframe count is zero for a static parameter: this is a successful static edit,
+not a failure. `param` identifies the edited parameter and `value` reports the accepted
+value; a choice supplied by name is returned as its numeric option index. An animated
+edit reports the value written at the requested time, rather than the static fallback.
+For example, setting opacity `blend` to `"Screen"` returns
+`{"keyframes": 0, "param": "blend", "value": 8}`.
+
 ### From an installed release
 
 The release packages ship `cfa4-cli` alongside the desktop app, so no build is needed:
