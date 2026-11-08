@@ -8,7 +8,8 @@
 //! Times are written as frames at the sequence rate (`rate` is the exact rate as a float, e.g.
 //! 23.976023976023978) and read back exactly by snapping the rate to its rational form. Fields
 //! OTIO has no schema for (effects and their keyframes, labels, links, groups, clip gain, track
-//! state, sequence settings, media info, generators) round-trip through `metadata.cfa4`.
+//! state, sequence settings, media info, generators) round-trip through `metadata.cfa4`; files
+//! from before the rename keep them under the upstream key (`cfa4_project::legacy`), read the same.
 //! Nested sequences are `Stack` items inside tracks.
 
 use std::collections::HashMap;
@@ -71,8 +72,11 @@ fn schema_name(v: &Value) -> &str {
     schema(v).split('.').next().unwrap_or("")
 }
 
+/// CFA4's own data in an object's `metadata`: the `cfa4` key, or the upstream application's key in
+/// files written before the rename (#41, OTIO-2.2). Exports write `cfa4` only.
 fn fc(v: &Value) -> Option<&Value> {
-    v.get("metadata").and_then(|m| m.get("cfa4"))
+    let m = v.get("metadata")?;
+    m.get("cfa4").or_else(|| m.get(cfa4_project::legacy::OTIO_METADATA_KEY))
 }
 
 fn name_of(v: &Value) -> String {
