@@ -2739,6 +2739,54 @@ def test_tick_signals_carry_64_bit_times(app):
 
 # ----- Effect Controls -----
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_effect_controls_text_font_pickers(app, tmp_path: Path):
+    """upstream #3588: a text layer's Font and Font Style in Effect Controls pick from drop-downs
+    of the installed families and that family's styles (plus Bold, Italic, Bold Italic)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1440, 900)
+    win.show()
+    engine.start()
+    ec = win.effect_controls
+
+    def picker(pid: str):
+        return next((r for (_i, p), r in ec.rows.items() if p == pid and r.font_picker), None)
+
+    def value(pid: str) -> str:
+        for e in (ec.clip or {}).get("effects") or []:
+            if e.get("effect") == "graphic_text":
+                return str(next(p for p in e["params"] if p["id"] == pid).get("value"))
+        return ""
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("graphics.newText", {"text": "Fonts"})
+        assert wait_until(app, lambda: picker("font") is not None and picker("font_style") is not None, 30_000)
+        font, style = picker("font"), picker("font_style")
+        assert isinstance(font.editor, QtWidgets.QComboBox) and isinstance(style.editor, QtWidgets.QComboBox)
+        assert wait_until(app, lambda: font.editor.count() > 1, 20_000), [font.editor.itemText(i) for i in range(font.editor.count())]
+        assert font.editor.currentText() == value("font")
+        styles = [style.editor.itemText(i) for i in range(style.editor.count())]
+        assert {"Bold", "Italic", "Bold Italic"} <= set(styles) and style.editor.currentText() == value("font_style")
+        # picking another family sets the parameter (one edit), and Font Style follows it
+        other = next(font.editor.itemText(i) for i in range(font.editor.count()) if font.editor.itemText(i) != value("font"))
+        font.editor.setCurrentText(other)
+        font.editor.activated.emit(font.editor.currentIndex())
+        assert wait_until(app, lambda: value("font") == other and picker("font").editor.currentText() == other, 10_000), value("font")
+        style = picker("font_style")
+        style.editor.setCurrentText("Bold Italic")
+        style.editor.activated.emit(style.editor.currentIndex())
+        assert wait_until(app, lambda: value("font_style") == "Bold Italic", 10_000), value("font_style")
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_effect_controls(app, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
 
