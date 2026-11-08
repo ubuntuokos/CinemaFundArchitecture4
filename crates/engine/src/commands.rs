@@ -1709,13 +1709,24 @@ fn build() -> Vec<CommandSpec> {
                 "canDisable": false,
                 "hardwareDecoding": cfa4_codecs::hw::hardware_decoding(),
             })];
-            for r in cfa4_media::backend_reports() {
-                let mut v = serde_json::to_value(&r).unwrap_or_else(|_| json!({}));
-                v["canDisable"] = json!(true);
-                v["preference"] = json!(format!("mediaBackends.{}", r.id));
-                list.push(v);
-            }
-            Ok(json!({"backends": list, "importable": cfa4_media::importable_extensions()}))
+            // the router's order (ADR 0005 step 2): `tried` is the place after the engine, `null`
+            // for a backend that is off, not in this build or left out of the routing table
+            let tried: Vec<&str> = cfa4_media::fallbacks().iter().map(|f| f.id).collect();
+            let mut supplementary: Vec<(usize, Value)> = cfa4_media::backend_reports()
+                .into_iter()
+                .map(|r| {
+                    let place = tried.iter().position(|id| *id == r.id);
+                    let mut v = serde_json::to_value(&r).unwrap_or_else(|_| json!({}));
+                    v["canDisable"] = json!(true);
+                    v["preference"] = json!(format!("mediaBackends.{}", r.id));
+                    v["tried"] = json!(place.map(|i| i.saturating_add(1)));
+                    (place.unwrap_or(usize::MAX), v)
+                })
+                .collect();
+            supplementary.sort_by_key(|(place, _)| *place);
+            list.extend(supplementary.into_iter().map(|(_, v)| v));
+            let route = cfa4_route::report::snapshot().chains.into_iter().find(|c| c.task.as_str() == crate::media_route::FALLBACK_TASK);
+            Ok(json!({"backends": list, "route": route, "importable": cfa4_media::importable_extensions()}))
         }),
         query!("prefs.get", "Get Preferences", r#"{"key":str?}"#, |s, p| match str_p(p, "key") {
             Some(k) => s.prefs.get(k).ok_or_else(|| bad("prefs.get", format!("unknown preference `{k}`"))),
@@ -2248,13 +2259,19 @@ fn build() -> Vec<CommandSpec> {
         cmd!("sequence.lift", "Lift", ["Sequence"], Some(";"), "{}", has_in_out, |s, _| {
             let r = in_out_range(s)?;
             let tg = s.targeting().targeted;
-            s.edit_sequence("Lift", |q, ctx, _| Ok(edit::lift(q, &tg, r, ctx)))?;
-            Ok(Value::Null)
+            let cut = s.edit_sequence("Lift", |q, ctx, st| {
+                let cut = cut_range(q, &tg, r, ctx, st.copy_paste_sequence_markers);
+                edit::lift(q, &tg, r, ctx);
+                Ok(cut)
+            })?;
+            let copied = store_cut(s, cut);
+            Ok(json!({"copied": copied}))
         }),
         cmd!("sequence.extract", "Extract", ["Sequence"], Some("'"), "{}", has_in_out, |s, _| {
             let r = in_out_range(s)?;
             let tg = s.targeting().targeted;
-            s.edit_sequence("Extract", |q, ctx, st| {
+            let cut = s.edit_sequence("Extract", |q, ctx, st| {
+                let cut = cut_range(q, &tg, r, ctx, st.copy_paste_sequence_markers);
                 edit::extract(q, &tg, r, ctx);
                 if st.ripple_sequence_markers {
                     crate::sequence_tools::ripple_markers(&mut q.markers, r.end(), -r.duration);
@@ -2262,10 +2279,11 @@ fn build() -> Vec<CommandSpec> {
                 q.mark_in = None;
                 q.mark_out = None;
                 q.split = Default::default();
-                Ok(())
+                Ok(cut)
             })?;
+            let copied = store_cut(s, cut);
             s.set_playhead(r.start);
-            Ok(Value::Null)
+            Ok(json!({"copied": copied}))
         }),
         cmd!(
             "sequence.applyVideoTransition",
@@ -2959,7 +2977,7 @@ fn build() -> Vec<CommandSpec> {
                 .map(Tick)
                 .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
                 .unwrap_or_default();
-            // `followLinks: false` rolls only this pair: Trim mode already lists linked partners as edit points of their own
+            // `followLinks: false` rolls only this pair; the default clamps linked cuts together.
             let follow = s.state.linked_selection && p.get("followLinks").and_then(Value::as_bool).unwrap_or(true);
             let (x, n, linked) = s.edit_sequence("Rolling Edit", |q, ctx, _| {
                 let pairs = linked_roll_pairs(q, l, r, follow);
@@ -3878,8 +3896,52 @@ fn copy_selection(s: &mut Session) {
             }
         }
     }
-    s.state.clipboard = clip;
-    s.state.clipboard_markers = markers;
+    set_clipboard(&mut s.state, (clip, markers));
+}
+
+/// Timeline clips (track kind, track index, item) and the sequence markers that go with them.
+type Clipboard = (Vec<(TrackKind, usize, cfa4_project::TrackItem)>, Vec<Marker>);
+
+fn set_clipboard(st: &mut crate::EditorState, (clips, markers): Clipboard) {
+    st.clipboard = clips;
+    st.clipboard_markers = markers;
+}
+
+/// Put a Lift or Extract cut on the clipboard; returns how many clips it holds (0 leaves the
+/// clipboard as it was).
+fn store_cut(s: &mut Session, cut: Option<Clipboard>) -> usize {
+    let Some(cut) = cut else { return 0 };
+    let copied = cut.0.len();
+    set_clipboard(&mut s.state, cut);
+    copied
+}
+
+/// What Lift and Extract put on the clipboard, as in Premiere (#3019): the clips of the unlocked
+/// `tracks` (the targeted ones) in `range`, cut at its edges and held the way Copy holds them.
+/// Extract also cuts sync-locked tracks only to keep them in sync; that material is not copied.
+/// Reads the sequence before the edit; None when the range has no clips on those tracks.
+fn cut_range(q: &cfa4_project::Sequence, tracks: &[TrackId], range: TimeRange, ctx: &mut edit::EditCtx, with_markers: bool) -> Option<Clipboard> {
+    let mut links = std::collections::HashMap::new();
+    let mut clips = Vec::new();
+    for (kind, list) in [(TrackKind::Video, &q.video_tracks), (TrackKind::Audio, &q.audio_tracks)] {
+        for (ti, t) in list.iter().enumerate().filter(|(_, t)| !t.locked && tracks.contains(&t.id)) {
+            let mut t = t.clone();
+            edit::split_track_at(&mut t, range.start, ctx, &mut links);
+            edit::split_track_at(&mut t, range.end(), ctx, &mut links);
+            clips.extend(t.items.into_iter().filter(|i| i.start >= range.start && i.end() <= range.end()).map(|i| (kind, ti, i)));
+        }
+    }
+    let min = clips.iter().map(|c| c.2.start).min()?;
+    let max = clips.iter().map(|c| c.2.end()).max()?;
+    for c in &mut clips {
+        c.2.start -= min;
+    }
+    let markers = if with_markers {
+        q.markers.iter().filter(|m| m.start >= min && m.start < max).map(|m| Marker { start: m.start - min, ..m.clone() }).collect()
+    } else {
+        Vec::new()
+    };
+    Some((clips, markers))
 }
 
 /// Paste the clipboard at the playhead (`insert` ripples later clips right instead of
