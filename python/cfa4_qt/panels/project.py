@@ -76,9 +76,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import theme
 from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND
 from .media_browser import FILES_MIME, dropped_files
+from .monitor_view import SOURCE_MIME
 from .timeline import ITEM_MIME, LABEL_COLORS
 from .timeline_media import TimelineMedia
 
@@ -334,6 +336,64 @@ class _Drops:
             e.acceptProposedAction()
             return True
         return False
+
+
+class NewItemButton(QToolButton):
+    """The footer's New Item button. Project items dropped on it make a sequence that matches the
+    first clip (File ▸ New ▸ Sequence From Clip), as in Premiere; a Source Monitor drag, whose
+    In/Out range and video/audio choice only a timeline drop keeps, is not taken."""
+
+    dropped = Signal(list)  # the dragged item ids
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.drop_hover = False
+
+    @staticmethod
+    def dragged_items(m: QMimeData) -> list[int]:
+        if m.hasFormat(SOURCE_MIME) or not m.hasFormat(ITEM_MIME):
+            return []
+        return _ids(m, ITEM_MIME)
+
+    def _hover(self, on: bool) -> None:
+        if self.drop_hover != on:
+            self.drop_hover = on
+            self.update()
+
+    def dragEnterEvent(self, e: Any) -> None:
+        if self.dragged_items(e.mimeData()):
+            e.acceptProposedAction()
+            self._hover(True)
+        else:
+            e.ignore()
+
+    def dragMoveEvent(self, e: Any) -> None:
+        if self.dragged_items(e.mimeData()):
+            e.acceptProposedAction()
+        else:
+            e.ignore()
+
+    def dragLeaveEvent(self, e: Any) -> None:
+        self._hover(False)
+        super().dragLeaveEvent(e)
+
+    def dropEvent(self, e: Any) -> None:
+        self._hover(False)
+        items = self.dragged_items(e.mimeData())
+        if not items:
+            e.ignore()
+            return
+        e.acceptProposedAction()
+        self.dropped.emit(items)
+
+    def paintEvent(self, e: Any) -> None:
+        super().paintEvent(e)
+        if self.drop_hover:  # the drop target, outlined in the accent colour
+            p = QPainter(self)
+            p.setPen(QPen(QColor(theme.current().accent), 1.5))
+            p.drawRoundedRect(QRectF(self.rect()).adjusted(1, 1, -1, -1), 3, 3)
+            p.end()
 
 
 def project_row_parts(view: QAbstractItemView, prefix: str, rows: list[tuple[Any, Any, Any, int]]) -> list[tuple[str, QRectF, str]]:
@@ -1196,7 +1256,7 @@ class BinView(QWidget):
             ("new-item", "✚", N_("New Item")),
             ("project.delete", "🗑", N_("Clear (Delete)")),
         ):
-            b = QToolButton(self)
+            b = NewItemButton(self) if key == "new-item" else QToolButton(self)
             b.setObjectName(f"{prefix}.button.{key}")
             b.setText(text)
             b.setToolTip(tr(tip))
@@ -1206,6 +1266,8 @@ class BinView(QWidget):
                 menu = QMenu(b)
                 b.setMenu(menu)
                 menu.aboutToShow.connect(lambda m=menu: self._fill_new_item(m))
+                # a clip dropped here makes a sequence that matches it (upstream #2940)
+                b.dropped.connect(lambda items: self.panel.command.emit("file.newSequenceFromClip", {"items": items}))
             else:
                 b.clicked.connect(lambda _c=False, k=key: self._footer(k))
             foot.addWidget(b)

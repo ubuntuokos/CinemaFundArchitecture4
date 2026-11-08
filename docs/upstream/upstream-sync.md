@@ -93,7 +93,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3402 | #3364: warn about one-frame In/Out exports | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #538 | PR nyitva |
 | 0.15.0 | #3433 | feat(text): strikethrough for graphic text | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.15.0 | #3522 | Timeline: grouped clips select together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #545 | PR nyitva |
-| 0.15.0 | #3587 | Effect Controls: an effect dropped on the panel is applied to the clip it shows | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.15.0 | #3587 | Effect Controls: an effect dropped on the panel is applied to the clip it shows | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #546 | PR nyitva |
 | 0.15.0 | #3608 | render: a monitor frame that is one opaque video picture goes straight to sRGB bytes | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #705 | PR nyitva |
 | 0.15.0 | #3327 | Project panel search finds names holding every typed word | D | átvesz (Qt6) | kézi port | U0-D | #547 | PR nyitva |
 | 0.15.0 | #3523 | Captions: File ▸ Export ▸ Captions… asks for the file format (#3365) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
@@ -147,7 +147,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #3209 | Program: drag a marquee or Shift-click to select several mask vertices, and move them together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #552 | PR nyitva |
 | 0.14.0 | #3211 | Lift and Extract put the removed range on the clipboard | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #553 | PR nyitva |
 | 0.14.0 | #3224 | engine: keep linked edit points together in Trim Mode (#3085) | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #554 | PR nyitva |
-| 0.14.0 | #3301 | Alt-drag of a clip edge trims only that side of a link | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.14.0 | #3301 | Alt-drag of a clip edge trims only that side of a link | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #555 | PR nyitva |
 | 0.14.0 | #2445 | ime: an edit that ends while composing commits the marked text | D | átvesz (Qt6) | kézi port | U0-D | #557 | PR nyitva |
 | 0.14.0 | #3226 | i18n(fr): translate the 42 strings French still lacked | E | átvesz | kézi port | U0-E | – | tervezett |
 | 0.14.0 | #634 | Linux: default to XWayland for file drag-and-drop on Wayland desktops | F | kihagy: winit/egui-specifikus | kézi port | – | – | lezárva |
@@ -276,10 +276,10 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3212 | Timeline: Show Duplicate Frame Markers marks media frames used more than once | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #565 | PR nyitva |
 | 0.13.0 | #3227 | Audio Track Mixer: Show/Hide Tracks and Meter Input(s) Only are commands with Premiere's keys | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #601 | PR nyitva |
 | 0.13.0 | #3233 | Monitors: Transparency Grid shows the picture's transparent areas | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #566 | PR nyitva |
-| 0.13.0 | #2862 | Scroll the timeline clip menu when it is taller than the screen (#2852) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
-| 0.13.0 | #2940 | Project panel: a clip dropped on New Item makes a sequence from it (fixes #2855) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
-| 0.13.0 | #3011 | meters: drop to silence right after Stop | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
-| 0.13.0 | #3039 | Timeline: the Razor tool cuts captions | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
+| 0.13.0 | #2862 | Scroll the timeline clip menu when it is taller than the screen (#2852) | D | átvesz (Qt6) | kézi port | U0-D | #579 | PR nyitva |
+| 0.13.0 | #2940 | Project panel: a clip dropped on New Item makes a sequence from it (fixes #2855) | D | átvesz (Qt6) | kézi port | U0-D | #581 | PR nyitva |
+| 0.13.0 | #3011 | meters: drop to silence right after Stop | D | átvesz (Qt6) | kézi port | U0-D | #567 | PR nyitva |
+| 0.13.0 | #3039 | Timeline: the Razor tool cuts captions | D | átvesz (Qt6) | kézi port | U0-D | #560 | PR nyitva |
 | 0.13.0 | #3042 | Text panel: the Captions list follows the playhead | D | átvesz (Qt6) | kézi port | U0-D | #561 | PR nyitva |
 | 0.13.0 | #3062 | Say why H.265 and AV1 are unavailable without a hardware encoder | D | kihagy: a CFA4-nek beépített H.265- és AV1-kódolója van (`Format::has_builtin_encoder`), a formátum sosem elérhetetlen | kézi port | – | – | lezárva |
 | 0.13.0 | #3243 | Follow-ups to #3240: alpha upload table, duplicate markers off the UI thread, cut drag over the clips | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |

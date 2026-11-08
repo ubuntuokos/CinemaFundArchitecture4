@@ -784,8 +784,11 @@ class TrackMixerPanel(QWidget):
         self.time_label.setText(format_timecode(playhead, ft))
         self.duration_label.setText(format_timecode(int((sequence or {}).get("duration") or 0), ft))
 
-    def set_levels(self, peaks: dict[Any, list[float]], dt: float) -> None:
-        """egui's ballistics on each strip: instant attack, 20 dB/s fall, holds 6 dB/s."""
+    def set_levels(self, peaks: dict[Any, list[float]], dt: float, live: bool = True) -> None:
+        """egui's ballistics on each strip: instant attack, 20 dB/s fall, holds 6 dB/s while
+        `live` (playing or recording). Once stopped, bars and peak holds drop within a quarter
+        second instead of easing down for seconds, which read as audio still playing."""
+        level_fall, hold_fall = (20.0, 6.0) if live else (360.0, 360.0)
         if getattr(self, "meter_input_only", False):
             # armed tracks show the recording input; other meters are idle
             peaks = {
@@ -803,8 +806,8 @@ class TrackMixerPanel(QWidget):
             changed = False
             for c in range(n):
                 lv, hd = st.levels[c], st.holds[c]
-                st.levels[c] = max(-90.0, lv - 20.0 * dt)
-                st.holds[c] = max(-90.0, hd - 6.0 * dt)
+                st.levels[c] = max(-90.0, lv - level_fall * dt)
+                st.holds[c] = max(-90.0, hd - hold_fall * dt)
                 if fresh and c < len(fresh):
                     db = to_db(fresh[c])
                     st.levels[c] = max(st.levels[c], db)
@@ -1198,5 +1201,5 @@ class ClipMixerPanel(QWidget):
             else:
                 st.hide()
 
-    def set_levels(self, peaks: dict[Any, list[float]], dt: float) -> None:
-        TrackMixerPanel.set_levels(self, peaks, dt)  # same ballistics, keyed by track id
+    def set_levels(self, peaks: dict[Any, list[float]], dt: float, live: bool = True) -> None:
+        TrackMixerPanel.set_levels(self, peaks, dt, live)  # same ballistics, keyed by track id

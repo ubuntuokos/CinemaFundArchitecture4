@@ -687,12 +687,24 @@ fn clamp_trim_linked(q: &cfa4_project::Sequence, clips: &[ClipId], edge: Edge, m
 /// trim drag shows this, so the edge stops at the end of the media or the neighbouring clip
 /// instead of following the pointer past it (#653).
 pub fn trim_delta(s: &Session, clip: ClipId, edge: Edge, mode: TrimMode, delta: Tick) -> Result<Tick> {
+    trim_delta_linked(s, clip, edge, mode, delta, true)
+}
+
+/// [`trim_delta`] for a trim that, with `linked` false (Alt held), leaves the clip's linked
+/// partners alone (#3300).
+pub fn trim_delta_linked(s: &Session, clip: ClipId, edge: Edge, mode: TrimMode, delta: Tick, linked: bool) -> Result<Tick> {
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let durations = |id: ItemId| crate::media_duration(&s.project, &s.media, id);
     let starts = |id: ItemId| crate::media_start(&s.project, id);
     let mut next = s.project.next_id;
     let ctx = edit::EditCtx { next_id: &mut next, media_duration: &durations, media_start: &starts, min_duration: q.settings.frame_rate.frame_duration() };
-    clamp_trim_linked(q, &with_links(s, &[clip]), edge, mode, delta, &ctx)
+    let clips = if linked { with_links(s, &[clip]) } else { vec![clip] };
+    clamp_trim_linked(q, &clips, edge, mode, delta, &ctx)
+}
+
+/// `clip` and, unless `p` has `"linked": false` (Alt held), its linked partners.
+fn with_links_p(s: &Session, p: &Value, clip: ClipId) -> Vec<ClipId> {
+    if bool_p(p, "linked").unwrap_or(true) { with_links(s, &[clip]) } else { vec![clip] }
 }
 
 /// The delta a roll of every cut in `pairs` can apply together: `delta` clamped by each pair's
@@ -2856,7 +2868,7 @@ fn build() -> Vec<CommandSpec> {
             "Trim Edit",
             [],
             None,
-            r#"{"clip":id,"edge":"in|out","mode":"regular|ripple","delta":ticks|"deltaFrames":i64}"#,
+            r#"{"clip":id,"edge":"in|out","mode":"regular|ripple","delta":ticks|"deltaFrames":i64,"linked":bool?}"#,
             has_seq,
             |s, p| {
                 let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.trim", "need `clip`"))?;
@@ -2868,7 +2880,7 @@ fn build() -> Vec<CommandSpec> {
                     .map(Tick)
                     .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
                     .unwrap_or_default();
-                let clips = with_links(s, &[c]);
+                let clips = with_links_p(s, p, c);
                 let applied = s.edit_sequence(if mode == TrimMode::Ripple { "Ripple Trim" } else { "Trim" }, |q, ctx, st| {
                     if q.find_item(c).is_some_and(|(t, _)| q.track(t).is_some_and(|tr| tr.locked)) {
                         return Err(edit::EditError::Locked.into());
@@ -3052,7 +3064,7 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("timeline.rateStretch", "Rate Stretch", [], None, r#"{"clip":id,"edge":"in|out","delta":ticks}"#, has_seq, |s, p| {
+        cmd!("timeline.rateStretch", "Rate Stretch", [], None, r#"{"clip":id,"edge":"in|out","delta":ticks,"linked":bool?}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.rateStretch", "need `clip`"))?;
             let edge = if str_p(p, "edge") == Some("in") { Edge::In } else { Edge::Out };
             let d = p
@@ -3061,7 +3073,7 @@ fn build() -> Vec<CommandSpec> {
                 .map(Tick)
                 .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
                 .unwrap_or_default();
-            let clips = with_links(s, &[c]);
+            let clips = with_links_p(s, p, c);
             let sp = s.edit_sequence("Rate Stretch", |q, ctx, _| Ok(edit::rate_stretch_items(q, &clips, edge, d, ctx)?))?;
             Ok(json!({"speed": sp}))
         }),
@@ -3178,6 +3190,12 @@ fn build() -> Vec<CommandSpec> {
             }
             let (fw, fh) = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).unwrap_or((1920, 1080));
             let label = format!("Apply {}", def.name);
+            // standard effects run on the clip's source picture, so "auto" points (the centre) are
+            // measured in it, not in the sequence frame
+            let source_sizes: std::collections::BTreeMap<ClipId, (u32, u32)> = s
+                .active_sequence()
+                .map(|q| clips.iter().filter_map(|c| q.find_item(*c).and_then(|(_, i)| s.project.source_size(i.item)).map(|sz| (*c, sz))).collect())
+                .unwrap_or_default();
             s.edit_sequence(&label, |q, _, _| {
                 let mut n = 0;
                 for t in q.all_tracks_mut() {
@@ -3186,13 +3204,20 @@ fn build() -> Vec<CommandSpec> {
                     }
                     for i in t.items.iter_mut().filter(|i| clips.contains(&i.id)) {
                         let mut inst = def.instance();
-                        resolve_auto_points(&mut inst, (fw, fh), (fw, fh));
+                        let size = source_sizes.get(&i.id).copied().unwrap_or((fw, fh));
+                        // intrinsic effects (Motion) are laid out in the sequence frame, as `reset_params` does
+                        let frame = if def.intrinsic { (fw, fh) } else { size };
+                        resolve_auto_points(&mut inst, frame, size);
                         // standard effects go before the intrinsic ones (render order)
                         let pos = i.effects.iter().position(|e| e.def().is_some_and(|d| d.intrinsic)).unwrap_or(i.effects.len());
                         let pos = if is_audio { i.effects.len() } else { pos };
                         i.effects.insert(pos, inst);
                         n += 1;
                     }
+                }
+                // a video effect on only audio clips changes nothing: refuse before the edit commits an empty undo step
+                if n == 0 {
+                    return Err(bad("effects.apply", format!("`{}` does not apply to the selected clips", def.name)));
                 }
                 Ok(n)
             })?;
@@ -3388,12 +3413,13 @@ fn build() -> Vec<CommandSpec> {
             let c = clip_p(p, "clip").ok_or_else(|| bad("effects.reset", "need `clip`"))?;
             let idx = u64_p(p, "index").unwrap_or(0) as usize;
             let frame = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).unwrap_or((1920, 1080));
+            let source = s.active_sequence().and_then(|q| q.find_item(c)).and_then(|(_, i)| s.project.source_size(i.item)).unwrap_or(frame);
             let ph = s.playhead();
             s.edit_sequence("Reset Effect", |q, _, _| {
                 let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
                 let mt = it.source_time_at(ph.clamp(it.start, (it.end() - Tick(1)).max(it.start)));
                 if let Some(e) = it.effects.get_mut(idx) {
-                    reset_params(e, None, frame, mt);
+                    reset_params(e, None, frame, source, mt);
                 }
                 Ok(())
             })?;
@@ -3404,6 +3430,7 @@ fn build() -> Vec<CommandSpec> {
             let pid = str_p(p, "param").ok_or_else(|| bad("effects.resetParam", "need `param`"))?.to_string();
             let eff = p.get("effect").cloned().unwrap_or(json!("motion"));
             let frame = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).unwrap_or((1920, 1080));
+            let source = s.active_sequence().and_then(|q| q.find_item(c)).and_then(|(_, i)| s.project.source_size(i.item)).unwrap_or(frame);
             let ph = s.playhead();
             s.edit_sequence("Reset Parameter", |q, _, _| {
                 let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
@@ -3414,7 +3441,7 @@ fn build() -> Vec<CommandSpec> {
                     _ => None,
                 }
                 .ok_or_else(|| bad("effects.resetParam", "no such effect on clip"))?;
-                if !reset_params(e, Some(&pid), frame, mt) {
+                if !reset_params(e, Some(&pid), frame, source, mt) {
                     return Err(bad("effects.resetParam", format!("no param `{pid}`")));
                 }
                 Ok(())
@@ -3706,11 +3733,12 @@ fn build() -> Vec<CommandSpec> {
 /// Put `e`'s parameters (all of them, or only `only`) back to their defaults, as Premiere's reset
 /// buttons do: a parameter that is not animated gets its default as its static value, and an
 /// animated one keeps its keyframes and gets the default as a keyframe at media time `mt`.
-/// Masks are left alone. Returns whether any parameter was reset.
-fn reset_params(e: &mut cfa4_project::EffectInstance, only: Option<&str>, frame: (u32, u32), mt: Tick) -> bool {
+/// Masks are left alone. Returns whether any parameter was reset. "Auto" points are centred as
+/// when the effect was added: a standard effect's in the clip's `source` picture it runs on.
+fn reset_params(e: &mut cfa4_project::EffectInstance, only: Option<&str>, frame: (u32, u32), source: (u32, u32), mt: Tick) -> bool {
     let Some(d) = e.def() else { return false };
     let mut fresh = d.instance();
-    resolve_auto_points(&mut fresh, frame, frame);
+    resolve_auto_points(&mut fresh, if d.intrinsic { frame } else { source }, source);
     let mut any = false;
     for (id, prm) in fresh.params {
         if only.is_some_and(|o| o != id) {
@@ -3727,11 +3755,17 @@ fn reset_params(e: &mut cfa4_project::EffectInstance, only: Option<&str>, frame:
     any
 }
 
+/// `effects.addKeyframe` / `deleteKeyframe` / `moveKeyframe` / `setKeyframe` / `setKeyframeInterpolation`.
+/// An explicit `time` keeps its place, outside the clip too (#1055, as in `effects.setParam`); only
+/// the playhead fallback is pinned to the clip's last tick. `add` replies `{added, mediaTime}`:
+/// whether it added the keyframe or (it is a toggle) removed the one there, and the media time of
+/// that keyframe. `delete` replies `{removed}`: whether a keyframe sat exactly at `mediaTime`.
 fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
     let c = clip_p(p, "clip").ok_or_else(|| bad("keyframe", "need `clip`"))?;
     let pid = str_p(p, "param").ok_or_else(|| bad("keyframe", "need `param`"))?.to_string();
     let eff = p.get("effect").cloned().unwrap_or(json!("motion"));
-    let ph = time_p(s, p, "").unwrap_or(s.playhead());
+    let at = time_p(s, p, "");
+    let playhead = s.playhead();
     let mtime = p.get("mediaTime").and_then(Value::as_i64).map(Tick);
     let to = p.get("to").and_then(Value::as_i64).map(Tick);
     let interp = str_p(p, "interpolation").map(str::to_string);
@@ -3748,8 +3782,9 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
         s.history.merge_key = None;
     }
     s.edit_sequence_as(label, merge.as_deref(), |q, _, _| {
+        let mut reply = Value::Null;
         let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
-        let mt_now = it.source_time_at(ph.clamp(it.start, (it.end() - Tick(1)).max(it.start)));
+        let mt_now = it.source_time_at(at.unwrap_or_else(|| playhead.clamp(it.start, (it.end() - Tick(1)).max(it.start))));
         let e = match &eff {
             Value::Number(n) => it.effects.get_mut(n.as_u64().unwrap_or(0) as usize),
             Value::String(sid) => it.effects.iter_mut().find(|e| &e.effect == sid),
@@ -3760,12 +3795,15 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
         match op {
             "add" => {
                 // toggle: remove if a keyframe sits at the playhead, else add
-                if !prm.remove_keyframe_at(mt_now) {
+                let added = !prm.remove_keyframe_at(mt_now);
+                if added {
                     prm.add_keyframe(mt_now);
                 }
+                reply = json!({"added": added, "mediaTime": mt_now.0});
             }
             "delete" => {
-                prm.remove_keyframe_at(mtime.ok_or_else(|| bad("keyframe", "need `mediaTime`"))?);
+                let removed = prm.remove_keyframe_at(mtime.ok_or_else(|| bad("keyframe", "need `mediaTime`"))?);
+                reply = json!({"removed": removed});
             }
             "move" => {
                 let from = mtime.ok_or_else(|| bad("keyframe", "need `mediaTime`"))?;
@@ -3809,9 +3847,8 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
                 k.interp = kind;
             }
         }
-        Ok(())
-    })?;
-    Ok(Value::Null)
+        Ok(reply)
+    })
 }
 
 fn in_out_range(s: &Session) -> Result<TimeRange> {

@@ -2749,8 +2749,9 @@ class MainWindow(QMainWindow):
         else:
             self._mixer_heard = None
         self.mixer.input_level = self.voiceover.take_level() if self.voiceover.recording else 0.0
-        self.mixer.set_levels(peaks, dt)
-        self.clip_mixer.set_levels(peaks, dt)
+        live = bool(mon.playing or self.voiceover.recording)
+        self.mixer.set_levels(peaks, dt, live)
+        self.clip_mixer.set_levels(peaks, dt, live)
 
     def _mixer_transport(self, key: str) -> None:
         mon = self.monitor

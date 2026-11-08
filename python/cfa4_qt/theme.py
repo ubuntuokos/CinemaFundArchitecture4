@@ -15,7 +15,7 @@ from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QGuiApplication, QPalette
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QProxyStyle, QStyle
 
 from .i18n import N_
 
@@ -349,6 +349,20 @@ QCheckBox, QRadioButton, QLabel {{ color: {t.text}; }}
 """
 
 
+class MenuScrollStyle(QProxyStyle):
+    """Fusion, with menus taller than the screen scrolling (arrows at the top and bottom, the
+    wheel) instead of running off the bottom of the screen or splitting into columns: the
+    timeline's clip menu is the longest."""
+
+    def __init__(self) -> None:
+        super().__init__("Fusion")
+
+    def styleHint(self, hint: QStyle.StyleHint, option: Any = None, widget: Any = None, data: Any = None) -> int:
+        if hint == QStyle.StyleHint.SH_Menu_Scrollable:
+            return 1
+        return super().styleHint(hint, option, widget, data)
+
+
 def apply(t: Tokens, app: QApplication | None = None) -> None:
     """Make ``t`` the look of the whole application."""
     global _current
@@ -356,8 +370,9 @@ def apply(t: Tokens, app: QApplication | None = None) -> None:
     app = app or QApplication.instance()  # type: ignore[assignment]
     if not isinstance(app, QApplication):
         return
-    if app.style().name().lower() != "fusion":
-        app.setStyle("Fusion")
+    if not app.property("cfa4MenuScrollStyle"):  # app.style() is the style sheet's wrapper
+        app.setStyle(MenuScrollStyle())
+        app.setProperty("cfa4MenuScrollStyle", True)
     app.setPalette(palette(t))
     sheet = style_sheet(t)
     if app.styleSheet() != sheet:  # re-polishing every widget is the slow part

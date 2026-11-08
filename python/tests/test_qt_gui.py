@@ -5599,6 +5599,15 @@ def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
         img = canvas.grab().toImage()
         c = img.pixelColor(int(r.left()) + 2, int(r.bottom()) - 2)
         assert abs(c.red() - 0x8C) + abs(c.green() - 0x6C) + abs(c.blue() - 0xB4) < 40, c.name()  # added: selected
+        # upstream #3039: the Razor tool cuts the caption where it is clicked; undo joins it again
+        canvas.tool = "razor"
+        QtTest.QTest.mouseClick(canvas, btn, pos=r.center().toPoint())
+        assert wait_until(app, lambda: len(captions()) == 2, 10_000), captions()
+        assert captions()[0]["start"] == cap["start"] and captions()[1]["end"] == cap["end"]
+        assert captions()[0]["end"] == captions()[1]["start"]
+        canvas.command.emit("edit.undo", {})
+        assert wait_until(app, lambda: len(captions()) == 1, 10_000)
+        canvas.tool = "selection"
         # a click elsewhere then on the block selects it alone
         QtTest.QTest.mouseClick(canvas, btn, pos=r.center().toPoint())
         assert wait_until(app, lambda: canvas.caption_selection == [cap["id"]], 10_000)
@@ -12565,6 +12574,228 @@ def test_real_engine_edit_copy_paste_with_captions_selected(app, tmp_path: Path)
         assert wait_until(app, lambda: len(spans()) == 2, 10_000), spans()
         menu("edit.undo")
         assert wait_until(app, lambda: spans() == [(a0, a1, "hi")], 10_000), spans()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_mixer_meters_drop_quickly_after_stop(app):
+    """While playing the mixer's bars fall 20 dB/s and the peak holds 6 dB/s; once stopped both
+    drop to silence within a quarter second, so the meters do not read as audio still playing."""
+    from cfa4_qt.panels.mixer import TrackMixerPanel
+
+    mixer = TrackMixerPanel()
+    mixer.resize(600, 400)
+    mixer.show()
+    mixer.set_state({"strips": [{"id": 7, "ref": "A1", "kind": "audio", "name": "Audio 1", "channels": 2}]}, None, 0)
+    app.processEvents()
+    strip = mixer.strips[0]
+    mixer.set_levels({7: [0.5, 0.5]}, 0.05)
+    assert strip.levels[0] > -7.0 and strip.holds[0] > -7.0
+    for _ in range(5):
+        mixer.set_levels({}, 0.05, live=True)
+    assert -15.0 < strip.levels[0] < -10.0 and strip.holds[0] > -9.0  # easing down while live
+    for _ in range(5):
+        mixer.set_levels({}, 0.05, live=False)
+    assert strip.levels == [-90.0, -90.0] and strip.holds == [-90.0, -90.0]
+    mixer.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_effect_controls_takes_dropped_effects(app, tmp_path: Path):
+    """upstream #3587: an effect dropped on Effect Controls goes on the clip it shows; an audio
+    effect the video clip refuses goes on its linked audio clip; transitions stay Timeline drops."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.effects import effect_mime
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1440, 900)
+    win.show()
+    engine.start()
+    ec = win.effect_controls
+    Qt = QtCore.Qt
+    at = QtCore.QPointF(40, 40)
+
+    def drop(effect: str) -> None:
+        mime = effect_mime(effect)
+        ec.dragEnterEvent(QtGui.QDragEnterEvent(at.toPoint(), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        ec.dropEvent(QtGui.QDropEvent(at, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+
+    def effects_of(cid: int) -> list[str]:
+        for kind in ("video", "audio"):
+            for track in (win.sequence or {}).get(kind) or []:
+                for c in track.get("items") or []:
+                    if c.get("clip") == cid:
+                        return [str(e.get("effect")) for e in c.get("effects") or []]
+        return []
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        assert wait_until(app, lambda: len(getattr(win.effects, "effects", [])) > 10, 30_000)
+        clip = win.sequence["video"][0]["items"][1]
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        assert wait_until(app, lambda: ec.clip_id == clip["clip"] and len(ec.clips) == 2, 30_000), ec.clips
+        audio = ec.clips[1]["clip"]
+
+        # an effect over the panel shows the accent frame; leaving hides it
+        mime = effect_mime("gaussian_blur")
+        ec.dragEnterEvent(QtGui.QDragEnterEvent(at.toPoint(), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert ec.drop_target.isVisible() and ec.drop_target.objectName() == "effectControls.dropTarget"
+        ec.dragLeaveEvent(QtGui.QDragLeaveEvent())
+        assert not ec.drop_target.isVisible()
+
+        # a video effect goes on the shown video clip
+        drop("gaussian_blur")
+        assert wait_until(app, lambda: "gaussian_blur" in effects_of(clip["clip"]), 10_000), effects_of(clip["clip"])
+        # an audio effect the video clip refuses goes on its linked audio clip
+        drop("parametric_eq")
+        assert wait_until(app, lambda: "parametric_eq" in effects_of(audio), 10_000), effects_of(audio)
+        assert "parametric_eq" not in effects_of(clip["clip"])
+        # a transition is not taken: it needs an edge in the Timeline
+        assert ec._dropped_effect(effect_mime("cross_dissolve")) is None
+        assert ec._dropped_effect(effect_mime("gaussian_blur")) == "gaussian_blur"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_long_menus_scroll_instead_of_splitting_into_columns(app):
+    """A menu taller than the screen (the timeline's clip menu on a short screen) scrolls in one
+    column, as upstream's clip menu does, instead of running off the screen or into columns."""
+    from cfa4_qt import theme
+
+    theme.apply(theme.current())
+    style = app.style()
+    theme.apply(theme.current())
+    assert app.style() is style, "re-applying the theme keeps the style (no re-polish)"
+    assert style.styleHint(QtWidgets.QStyle.StyleHint.SH_Menu_Scrollable) == 1
+    menu = QtWidgets.QMenu()
+    for i in range(300):
+        menu.addAction(f"Clip menu item {i}")
+    area = app.primaryScreen().availableGeometry()
+    menu.popup(area.topLeft())
+    app.processEvents()
+    assert menu.height() <= area.height() and menu.width() < 400, menu.geometry()
+    menu.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_clip_dropped_on_new_item_makes_a_matching_sequence(app, tmp_path: Path):
+    """A clip dragged onto the Project panel's New Item button makes a sequence from it, as File ▸
+    New ▸ Sequence From Clip does (upstream #2940): named after the clip, the clip on the timeline,
+    the sequence open. A Source Monitor drag (its In/Out range is for the timeline) or a bin is
+    not taken."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.monitor_view import SOURCE_MIME
+    from cfa4_qt.panels.project import BIN_MIME, NewItemButton, drag_mime
+    from PySide6.QtCore import Qt
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    main = win.project_panel.main
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and bool(main.data.get("rows")), 30_000)
+        button = main.findChild(NewItemButton, "project.button.new-item")
+        assert button is not None and button.acceptDrops()
+        clip = next(i for i in _items(win.project) if i.get("item") == movie_id())
+        sequences = lambda: sum(1 for i in _items(win.project) if str(i.get("type")).lower() == "sequence")
+        n0, first = sequences(), win.sequence.get("id")
+        assert n0 >= 1, "the demo has a sequence"
+
+        def drop(mime: QtCore.QMimeData) -> bool:
+            pos = QtCore.QPointF(button.rect().center())
+            enter = QtGui.QDragEnterEvent(pos.toPoint(), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+            button.dragEnterEvent(enter)
+            if not enter.isAccepted():
+                return False
+            assert button.drop_hover, "the button shows it takes the drop"
+            button.grab()  # paints the outline
+            button.dropEvent(QtGui.QDropEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+            assert not button.drop_hover
+            return True
+
+        source = drag_mime([movie_id()], [])
+        source.setData(SOURCE_MIME, b"{}")
+        assert not drop(source), "a Source Monitor drag is not taken"
+        bins = QtCore.QMimeData()
+        bins.setData(BIN_MIME, b"1")
+        assert not drop(bins), "a bin is not a clip"
+        assert drop(drag_mime([movie_id()], []))
+        assert wait_until(app, lambda: sequences() == n0 + 1 and (win.sequence or {}).get("id") != first, 20_000)
+        assert win.sequence.get("name") == clip.get("name"), "named after the clip"
+        on_timeline = [c.get("item") for t in win.sequence.get("video") or [] for c in t.get("items") or []]
+        assert movie_id() in on_timeline, win.sequence.get("video")
+    finally:
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_alt_drag_trims_one_side_of_a_link(app, tmp_path: Path):
+    """upstream #3301: dragging a clip's edge trims its linked partner too; with Alt held as the
+    drag starts, only that side of the link is trimmed."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    left = QtCore.Qt.MouseButton.LeftButton
+    alt, none = QtCore.Qt.KeyboardModifier.AltModifier, QtCore.Qt.KeyboardModifier.NoModifier
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    def item(cid: int) -> dict:
+        for kind in ("video", "audio"):
+            for t in (win.sequence or {}).get(kind) or []:
+                for c in t.get("items") or []:
+                    if c.get("clip") == cid:
+                        return c
+        raise AssertionError(cid)
+
+    def drag_out_edge(cid: int, dx: int, mods) -> None:
+        row = v1()
+        r = canvas.clip_rect(row, item(cid))
+        a = QtCore.QPoint(int(r.right()) - 1, int(r.center().y()))
+        b = a + QtCore.QPoint(dx, 0)
+        QtTest.QTest.mousePress(canvas, left, mods, a)
+        for i in range(1, 5):
+            QtTest.QTest.mouseMove(canvas, a + (b - a) * (i / 4))
+        QtTest.QTest.mouseRelease(canvas, left, mods, b)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        # (an Out edge with no transition on it: a press there grabs the edge, not the transition)
+        ends = {t.get("from") for t in v1().track.get("transitions") or []}
+        video = next(c for c in v1().track["items"] if c["clip"] not in ends and c.get("link") is not None)
+        link = video.get("link")
+        assert link is not None, video
+        sound = next(c for t in win.sequence["audio"] for c in t.get("items") or [] if c.get("link") == link)
+        v_end, a_end = video["end"], sound["end"]
+        # Alt: only the picture's Out edge moves
+        drag_out_edge(video["clip"], -40, alt)
+        assert wait_until(app, lambda: item(video["clip"])["end"] < v_end, 10_000), item(video["clip"])
+        assert item(sound["clip"])["end"] == a_end, "the linked sound stays"
+        # without Alt the linked sound follows
+        v_end = item(video["clip"])["end"]
+        drag_out_edge(video["clip"], -40, none)
+        assert wait_until(app, lambda: item(video["clip"])["end"] < v_end and item(sound["clip"])["end"] < a_end, 10_000), (
+            item(video["clip"]), item(sound["clip"]))
     finally:
         win._quit_confirmed = True
         win.close()
