@@ -69,7 +69,7 @@ olvasása. A lista az `otio.rs` átolvasásán alapul, a valós hatást az 1. f�
 | # | Hiány | Hatás | Hely a kódban | Fázis |
 | --- | --- | --- | --- | --- |
 | H1 | Idegen metaadatok elvesznek: csak a `metadata.cfa4` kulcsot olvassa | Resolve/Kdenlive saját adatai egy oda-vissza úton eltűnnek | `apply_clip_meta`, `fc()` | 2 |
-| H2 | A #41 óta a kulcs `cfa4`, de a régi, upstream nevű kulcsot már nem olvassa | Az átnevezés előtt mentett OTIO fájlok saját adatai elvesznek | `fc()` | 2 |
+| H2 | ~~A #41 óta a kulcs `cfa4`, de a régi, upstream nevű kulcsot már nem olvassa~~ Megoldva (OTIO-2.2): `fc()` a `cfa4` kulcs hiányában a régit olvassa (`cfa4_project::legacy::OTIO_METADATA_KEY`) | Az átnevezés előtt mentett OTIO fájlok saját adatai megmaradnak | `fc()` | 2 |
 | H3 | `ImageSequenceReference`: csak a `target_url_base` olvasódik, a minta (`name_prefix`, `start_frame`, `frame_zero_padding` stb.) nem | Képszekvencia egyetlen hibás fájlként érkezik | `media()` | 2 |
 | H4 | Több médiahivatkozás (`media_references`) közül csak az aktív marad meg | Proxy/nagy felbontású változatok elvesznek; export csak `DEFAULT_MEDIA` | `clip()`, `media_ref()` | 2 |
 | H5 | Szekvencia-beállítás idegen fájlnál alapértelmezett 1920×1080 | Rossz felbontás például 4K Resolve-projektnél | `sequence()`, `settings_for` | 2 |
@@ -163,7 +163,7 @@ Mindegyiknél: miről szól, mik a lehetőségek, és mi a jóváhagyott dönté
      címkék, sávhangerő) egy „fiókba” teszi a fájlon belül. Ennek a neve az upstreamből örökölt név volt.
    - Lehetőségek: (a) átnevezés `cfa4`-re, a régi fiók olvasása megmarad; (b) marad a
      régi név.
-   - Döntés: (a). Az átnevezést a #41 elvégezte; a régi fiók olvasása az OTIO-2.2-ben jön.
+   - Döntés: (a). Az átnevezést a #41 elvégezte; a régi fiók olvasását az OTIO-2.2 pótolta.
 2. **Clean-room szabály enyhítése** — *döntés: (b)*
    - Miről szól: a „clean-room” azt jelenti, hogy egy formátumot csak a nyilvános leírásából
      szabad megírni, más programok forráskódjába belenézni tilos.
@@ -203,7 +203,7 @@ Ezek nem az OTIO-terv feladatai, de hatnak rá; mindegyikhez kell egy felelős.
 - [ ] **ADR F10 nyitott kérdései:** OpenFX-kivétel, CLA vagy DCO, NVENC — az első külső GPL-kód
   beemelése előtt.
 - [x] **Közös márkacsere-terv:** a #41 elvégezte (crate-nevek `cfa4-*`, OTIO metaadat-kulcs `cfa4`,
-  projektfájlok és menük); a régi OTIO-kulcs olvasása az OTIO-2.2-ben marad.
+  projektfájlok és menük); a régi OTIO-kulcs olvasását az OTIO-2.2 pótolta.
 - [ ] **Kapcsolat az upstream eredetivel:** GPL-3 után az upstream újdonságai átvehetők, de a CFA4
   módosításai nem mehetnek vissza. Ha követni akarjuk az eredetit, az `interchange` crate-et inkább
   bővíteni kell, mint átírni.

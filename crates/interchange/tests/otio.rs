@@ -252,6 +252,82 @@ fn lossless_roundtrip_with_cfa4_metadata() {
     assert_eq!(structure(&imp2.project, imp2.sequences[0], TrackKind::Video), structure(&p, s, TrackKind::Video));
 }
 
+/// Renames every `metadata.cfa4` object in an OTIO document to `key`.
+fn rename_metadata_key(v: &mut serde_json::Value, key: &str) {
+    match v {
+        serde_json::Value::Object(o) => {
+            if let Some(serde_json::Value::Object(m)) = o.get_mut("metadata")
+                && let Some(ours) = m.remove("cfa4")
+            {
+                m.insert(key.to_string(), ours);
+            }
+            o.values_mut().for_each(|x| rename_metadata_key(x, key));
+        }
+        serde_json::Value::Array(a) => a.iter_mut().for_each(|x| rename_metadata_key(x, key)),
+        _ => {}
+    }
+}
+
+#[test]
+fn reads_upstream_metadata_key() {
+    // OTIO-2.2: files written before the cfa4 rename keep their effects, labels and track state.
+    let (p, s) = project();
+    let (bytes, _) = cfa4_interchange::export(&p, s, Format::Otio, &ExportOptions::default()).unwrap();
+    let mut doc: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    rename_metadata_key(&mut doc, cfa4_project::legacy::OTIO_METADATA_KEY);
+    let old = serde_json::to_vec(&doc).unwrap();
+    assert!(!String::from_utf8_lossy(&old).contains("\"cfa4\""));
+    let (imp, rep) = import(&old, Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let si = only_seq(&imp);
+    let (q, qs, ps) = (&imp.project, imp.project.sequence(si).unwrap(), p.sequence(s).unwrap());
+    for kind in [TrackKind::Video, TrackKind::Audio] {
+        assert_eq!(structure(q, si, kind), structure(&p, s, kind));
+    }
+    assert_eq!(qs.settings, ps.settings);
+    assert!(qs.video_tracks[1].locked);
+    assert_eq!(qs.audio_tracks[1].volume_db, -3.0);
+    let (qa, pa) = (&qs.video_tracks[0].items[0], &ps.video_tracks[0].items[0]);
+    assert_eq!(format!("{:?}", qa.effects), format!("{:?}", pa.effects));
+    assert_eq!(qa.label, Label::Teal);
+    assert_eq!(qs.audio_tracks[1].items[0].gain_db, 4.5);
+    assert_eq!(qs.video_tracks[0].transitions[0].effect.effect, "iris_round");
+
+    // Saving again writes only the cfa4 key.
+    let (again, _) = cfa4_interchange::export(q, si, Format::Otio, &ExportOptions::default()).unwrap();
+    let again = String::from_utf8(again).unwrap();
+    assert!(again.contains("\"cfa4\"") && !again.contains(&format!("\"{}\"", cfa4_project::legacy::OTIO_METADATA_KEY)));
+}
+
+#[test]
+fn cfa4_metadata_key_wins_over_upstream_key() {
+    let (p, s) = project();
+    let (bytes, _) = cfa4_interchange::export(&p, s, Format::Otio, &ExportOptions::default()).unwrap();
+    let mut doc: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    // A stale upstream copy on the first clip with a different label must be ignored.
+    fn add_stale(v: &mut serde_json::Value) -> bool {
+        match v {
+            serde_json::Value::Object(o) => {
+                if o.get("OTIO_SCHEMA").and_then(|x| x.as_str()).is_some_and(|x| x.starts_with("Clip."))
+                    && let Some(serde_json::Value::Object(m)) = o.get_mut("metadata")
+                    && let Some(mut stale) = m.get("cfa4").cloned()
+                {
+                    stale["label"] = serde_json::to_value(Label::Rose).unwrap();
+                    m.insert(cfa4_project::legacy::OTIO_METADATA_KEY.to_string(), stale);
+                    return true;
+                }
+                o.values_mut().any(add_stale)
+            }
+            serde_json::Value::Array(a) => a.iter_mut().any(add_stale),
+            _ => false,
+        }
+    }
+    assert!(add_stale(&mut doc));
+    let (imp, _) = import(&serde_json::to_vec(&doc).unwrap(), Format::Otio, None).unwrap();
+    let qs = imp.project.sequence(only_seq(&imp)).unwrap();
+    assert_eq!(qs.video_tracks[0].items[0].label, Label::Teal);
+}
+
 #[test]
 fn collections_and_bare_tracks() {
     let one = r#"{"OTIO_SCHEMA": "SerializableCollection.1", "name": "Bundle", "children": [

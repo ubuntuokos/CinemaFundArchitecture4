@@ -71,8 +71,11 @@ fn schema_name(v: &Value) -> &str {
     schema(v).split('.').next().unwrap_or("")
 }
 
+/// Our own data in an object's `metadata`: `cfa4`, or the upstream key in files written before
+/// the rename (OTIO-2.2). When both are present, `cfa4` wins.
 fn fc(v: &Value) -> Option<&Value> {
-    v.get("metadata").and_then(|m| m.get("cfa4"))
+    let m = v.get("metadata")?;
+    m.get("cfa4").or_else(|| m.get(cfa4_project::legacy::OTIO_METADATA_KEY))
 }
 
 fn name_of(v: &Value) -> String {
