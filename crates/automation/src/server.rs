@@ -108,7 +108,8 @@ pub struct ClickParams {
     /// left | right | middle
     #[serde(default)]
     pub button: Option<String>,
-    /// 2 for double-click.
+    /// Number of clicks (omitted: one). Use 2 for double-click; the app rejects counts it cannot
+    /// send.
     #[serde(default)]
     pub count: Option<u32>,
     /// {"shift":bool,"alt":bool,"command":bool,"ctrl":bool}
@@ -122,6 +123,7 @@ pub struct DragParams {
     pub from: Value,
     /// End point, same forms.
     pub to: Value,
+    /// Movement steps (omitted: the app's default). The app rejects step counts outside its limit.
     #[serde(default)]
     pub steps: Option<u32>,
     #[serde(default)]
@@ -573,7 +575,7 @@ impl Cfa4Mcp {
         if let Err(e) = b.call("ui.screenshot", json!({"path": path.to_string_lossy(), "panel": panel})).await {
             return Ok(fail(e));
         }
-        let bytes = match std::fs::read(&path) {
+        let bytes = match tokio::fs::read(&path).await {
             Ok(b) => b,
             Err(e) => return Ok(fail(format!("screenshot: {e}"))),
         };
