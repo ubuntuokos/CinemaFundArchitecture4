@@ -37,6 +37,7 @@ impl Fx {
     fn item(&mut self, start: i64, dur: i64, src_in: i64) -> TrackItem {
         self.next += 1;
         TrackItem {
+            interchange: Default::default(),
             id: ClipId(self.next),
             item: ItemId(1),
             name: format!("c{}", self.next),

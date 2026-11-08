@@ -45,6 +45,25 @@ Not represented: speed changes and frame holds (exported at 100 % with a report 
 graphics and synthetic media (gaps), video effects other than transitions, clip
 markers (written to the master mob, so they come back as media markers), OMF video and markers.
 
+## Other programs' OTIO metadata
+
+OTIO keeps each program's own data under its own key in `metadata` (Resolve `Resolve_OTIO`,
+Kdenlive `kdenlive`, CFA4 `cfa4`). On import every key but `cfa4` is kept in the project, in the
+`interchange` field of the sequence, track and clip it was on, and on export it is written back
+unchanged next to `cfa4` (OTIO-2.1). Where it is kept:
+
+| OTIO object | Kept on | Written back on |
+|---|---|---|
+| `Timeline` | the sequence | the `Timeline` |
+| top-level `Stack` (the timeline's tracks) | the sequence; a `Timeline` key of the same name wins | the `Timeline` |
+| `Track` | the track | the `Track` |
+| `Clip` | the clip | the `Clip` |
+| `Stack` inside a track | the nested sequence | the `Stack` |
+| (the clip instance of a nested sequence) | the clip | the `Stack`, under `cfa4.clip.interchange` |
+
+Not kept yet: metadata on markers, transitions, effects and media references. CFA4's own work has
+no such keys, and an empty field is not written to the project file.
+
 ## Nested sequences
 
 For the formats Premiere Pro exports (FCP7 XML, OTIO, EDL, AAF, OMF) a nested sequence is written
