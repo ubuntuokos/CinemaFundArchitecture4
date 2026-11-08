@@ -321,6 +321,9 @@
 	Caption Export Settings	Réglages d’exportation des sous-titres
 	Export Captions	Exporter les sous-titres
 	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} existe déjà : rien n’a été exporté. Pour le remplacer, choisissez-le dans la fenêtre d’enregistrement.
+	Delete Redoable Actions	Supprimer les actions rétablissables
+	Clear History	Effacer l’historique
+	Delete the dimmed actions after the current state? They cannot be redone.	Supprimer les actions estompées après l’état actuel ? Elles ne pourront pas être rétablies.
 	Work Area Bar	Barre de zone de travail
 	Start: {tc}	Début : {tc}
 	End: {tc}	Fin : {tc}

@@ -321,6 +321,9 @@
 	Caption Export Settings	キャプション書き出し設定
 	Export Captions	キャプションを書き出し
 	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} は既に存在するため、何も書き出しませんでした。置き換えるには、保存ダイアログでそのファイルを選んでください。
+	Delete Redoable Actions	やり直し可能な操作を削除
+	Clear History	ヒストリーを消去
+	Delete the dimmed actions after the current state? They cannot be redone.	現在の状態より後の淡色表示の操作を削除しますか？ やり直しできなくなります。
 	Work Area Bar	ワークエリアバー
 	Start: {tc}	開始: {tc}
 	End: {tc}	終了: {tc}

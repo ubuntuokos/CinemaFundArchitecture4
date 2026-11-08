@@ -321,6 +321,9 @@
 	Caption Export Settings	字幕导出设置
 	Export Captions	导出字幕
 	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} 已存在，因此未导出任何内容。要替换它，请在保存对话框中选择该文件。
+	Delete Redoable Actions	删除可重做的操作
+	Clear History	清除历史记录
+	Delete the dimmed actions after the current state? They cannot be redone.	删除当前状态之后显示为灰色的操作吗？这些操作将无法重做。
 	Work Area Bar	工作区栏
 	Start: {tc}	开始：{tc}
 	End: {tc}	结束：{tc}
