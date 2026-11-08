@@ -16,7 +16,9 @@
 use std::io::Write;
 
 mod aac_out;
+pub mod atomic;
 mod audio_out;
+pub mod copy;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
