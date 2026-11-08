@@ -416,3 +416,24 @@
 	Styling	Stile
 	The spreadsheet's folder	La cartella del foglio di calcolo
 	Total: {time}	Totale: {time}
+	(empty row)	(riga vuota)
+	Accepting every change would replace these, because their block changed: {names}	Accettando tutte le modifiche verrebbero sostituiti questi, perché il loro blocco è cambiato: {names}
+	Added	Aggiunto
+	Before → After	Prima → Dopo
+	CFA4 credits file (*.cfa4credits)	File titoli di coda CFA4 (*.cfa4credits)
+	Change	Modifica
+	Changed	Modificato
+	Comparing…	Confronto in corso…
+	Keep my edits on the pages (where their block is unchanged)	Mantieni le mie modifiche sulle pagine (dove il loro blocco è invariato)
+	Locate Spreadsheet…	Individua foglio di calcolo…
+	Refresh Credits from Spreadsheet	Aggiorna titoli di coda dal foglio di calcolo
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Aggiornato: {n} modifiche applicate, {kept} modifiche manuali mantenute.
+	Refreshing…	Aggiornamento…
+	Removed	Rimosso
+	Save as Credits File…	Salva come file titoli di coda…
+	Saved: {path}	Salvato: {path}
+	Select None	Deseleziona tutto
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Foglio di calcolo, foglio di lavoro, stile e tabella in un unico file, da aprire su qualsiasi computer
+	The spreadsheet {file} has not changed since the credits were placed.	Il foglio di calcolo {file} non è cambiato da quando sono stati posizionati i titoli di coda.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} modifiche in {file} da quando sono stati posizionati i titoli di coda. Deseleziona quelle che non vuoi.
+	{n} layers were edited by hand on the pages.	{n} livelli sono stati modificati a mano sulle pagine.

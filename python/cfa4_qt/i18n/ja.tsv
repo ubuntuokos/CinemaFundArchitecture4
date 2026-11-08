@@ -416,3 +416,24 @@
 	Styling	スタイル
 	The spreadsheet's folder	スプレッドシートのフォルダー
 	Total: {time}	合計: {time}
+	(empty row)	(空の行)
+	Accepting every change would replace these, because their block changed: {names}	すべての変更を承認すると、次のものは置き換えられます(ブロックが変更されているため): {names}
+	Added	追加
+	Before → After	変更前 → 変更後
+	CFA4 credits file (*.cfa4credits)	CFA4クレジットファイル (*.cfa4credits)
+	Change	変更
+	Changed	変更済み
+	Comparing…	比較中…
+	Keep my edits on the pages (where their block is unchanged)	ページ上の手動の編集を保持する(ブロックが変更されていない部分)
+	Locate Spreadsheet…	スプレッドシートを探す…
+	Refresh Credits from Spreadsheet	スプレッドシートからクレジットを更新
+	Refreshed: {n} changes applied, {kept} hand edits kept.	更新しました: {n}件の変更を適用、{kept}件の手動編集を保持。
+	Refreshing…	更新中…
+	Removed	削除
+	Save as Credits File…	クレジットファイルとして保存…
+	Saved: {path}	保存しました: {path}
+	Select None	選択解除
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	スプレッドシート、ワークシート、スタイル、表を1つのファイルにまとめ、どのマシンでも開けます
+	The spreadsheet {file} has not changed since the credits were placed.	スプレッドシート{file}は、クレジットを配置してから変更されていません。
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	クレジットを配置してから{file}に{n}件の変更があります。不要なものはチェックを外してください。
+	{n} layers were edited by hand on the pages.	ページ上で{n}個のレイヤーが手動で編集されました。

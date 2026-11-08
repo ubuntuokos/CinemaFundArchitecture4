@@ -416,3 +416,24 @@
 	Styling	스타일
 	The spreadsheet's folder	스프레드시트 폴더
 	Total: {time}	합계: {time}
+	(empty row)	(빈 행)
+	Accepting every change would replace these, because their block changed: {names}	모든 변경을 수락하면 다음 항목은 블록이 변경되었기 때문에 교체됩니다: {names}
+	Added	추가됨
+	Before → After	변경 전 → 변경 후
+	CFA4 credits file (*.cfa4credits)	CFA4 크레딧 파일 (*.cfa4credits)
+	Change	변경
+	Changed	변경됨
+	Comparing…	비교 중…
+	Keep my edits on the pages (where their block is unchanged)	페이지의 수동 편집 내용 유지(블록이 변경되지 않은 부분)
+	Locate Spreadsheet…	스프레드시트 찾기…
+	Refresh Credits from Spreadsheet	스프레드시트에서 크레딧 새로 고침
+	Refreshed: {n} changes applied, {kept} hand edits kept.	새로 고침 완료: 변경 {n}건 적용, 수동 편집 {kept}건 유지.
+	Refreshing…	새로 고치는 중…
+	Removed	삭제됨
+	Save as Credits File…	크레딧 파일로 저장…
+	Saved: {path}	저장됨: {path}
+	Select None	선택 해제
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	스프레드시트, 워크시트, 스타일, 표를 하나의 파일에 담아 어느 컴퓨터에서나 열 수 있습니다
+	The spreadsheet {file} has not changed since the credits were placed.	스프레드시트 {file}은(는) 크레딧을 배치한 이후 변경되지 않았습니다.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	크레딧을 배치한 이후 {file}에 변경이 {n}건 있습니다. 원하지 않는 항목은 체크를 해제하세요.
+	{n} layers were edited by hand on the pages.	페이지에서 레이어 {n}개를 수동으로 편집했습니다.
