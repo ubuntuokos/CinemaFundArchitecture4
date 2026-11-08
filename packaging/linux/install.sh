@@ -62,6 +62,14 @@ if [ -f "$source_dir/bin/cfa4-qt" ]; then
   mkdir -p -- "$prefix/lib/cfa4/python"
   cp -R -- "$source_dir/lib/cfa4/python/cfa4_qt" "$prefix/lib/cfa4/python/"
 fi
+# CFA4's FFmpeg 9.0.2 (ADR 0005): the binaries find it in ../lib/cfa4/ffmpeg-9.0.2 ($ORIGIN RUNPATH)
+# when /opt/cfa4 has none. Replaced as a whole, so no library of an older release stays behind.
+ffmpeg_dir=lib/cfa4/ffmpeg-9.0.2
+if [ -d "$source_dir/$ffmpeg_dir/lib" ]; then
+  rm -rf -- "${prefix:?}/$ffmpeg_dir"
+  mkdir -p -- "$prefix/lib/cfa4"
+  cp -R -- "$source_dir/$ffmpeg_dir" "$prefix/$ffmpeg_dir"
+fi
 
 # Use an absolute path so launching from the application menu does not depend on PATH.
 # Escape the Exec argument, then the desktop entry's string value (two separate layers).
@@ -85,6 +93,15 @@ if command -v update-mime-database >/dev/null 2>&1; then
 fi
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
   gtk-update-icon-cache -q -t -f "$prefix/share/icons/hicolor" || echo 'warning: icon cache refresh failed' >&2
+fi
+# The few libraries the tarball leaves to the system (VA-API, DRM, zlib, libstdc++, GStreamer):
+# name what a minimal system lacks instead of failing at the first start.
+if command -v ldd >/dev/null 2>&1; then
+  missing="$(ldd "$prefix/bin/cfa4" 2>/dev/null | awk '$2 == "=>" && $3 == "not" {print $1}' | sort -u | tr '\n' ' ' || true)"
+  if [ -n "$missing" ]; then
+    echo "warning: CFA4 needs these libraries from Ubuntu's archive: $missing" >&2
+    echo "  e.g. sudo apt install libva2 libva-drm2 libdrm2 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0" >&2
+  fi
 fi
 printf 'Installed CFA4 in %s\nLaunch it from the application menu or run "%s/bin/cfa4".\n' "$prefix" "$prefix"
 case ":${PATH:-}:" in

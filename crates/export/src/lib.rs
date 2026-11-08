@@ -391,6 +391,13 @@ pub struct ExportSettings {
     /// `progress.total`, `finished` and the final status; this call only adds to `done`.
     #[serde(default)]
     pub part_of_batch: bool,
+    /// Most CPU threads the export may use (0 = all of them, as before). Rendering, the software
+    /// encoders and the rest of the export's parallel work run on a pool of this size; a number
+    /// above what the machine has (or above the pool the export already runs in) changes nothing.
+    /// The output does not depend on it. Hardware encoders and the decoders' own threads are not
+    /// counted.
+    #[serde(default)]
+    pub max_threads: u32,
     /// ProRes flavour: `proxy`, `lt`, `standard`, `hq`, `4444` or `4444xq` (empty = HQ).
     #[serde(default)]
     pub prores_profile: String,
@@ -453,7 +460,8 @@ pub struct ExportSettings {
     pub sdr: bool,
     /// Keep the alpha channel in PNG, TIFF, Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ
     /// QuickTime movies (straight alpha, Premiere's "Include Alpha Channel"; OpenEXR stores it
-    /// premultiplied, as the format defines). Off, every frame is flattened over black (#160).
+    /// premultiplied, as the format defines). GIF keeps binary transparency: RGBA8 alpha below
+    /// 128 becomes transparent, otherwise opaque. Off, every frame is flattened over black (#160).
     /// Other formats ignore it.
     #[serde(default)]
     pub alpha: bool,
@@ -520,6 +528,7 @@ pub struct ExportSettings {
     pub sink: Option<OutputSink>,
     /// An already-created primary output file. Internal callers use this to retain an exclusive
     /// reservation made while choosing an output name, rather than reopening that path later.
+    /// MP4 video outputs require read and write access for fast-start finalization.
     #[serde(skip)]
     pub output_file: Option<Arc<std::fs::File>>,
 }
@@ -566,7 +575,13 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        let f = std::fs::File::create(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        let f = std::fs::OpenOptions::new()
+            .read(settings.format.is_mp4_with(settings.multiplexer))
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
         Ok(Out::File(std::io::BufWriter::new(f)))
     }
 
@@ -608,6 +623,20 @@ impl Write for Out {
         match self {
             Out::File(w) => w.flush(),
             Out::Mem(w) => w.flush(),
+        }
+    }
+}
+
+impl std::io::Read for Out {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Out::File(w) => {
+                // Fast-start muxing reads media back to shift it in place. Commit buffered
+                // writes before reading through the same file handle and cursor.
+                w.flush()?;
+                std::io::Read::read(w.get_mut(), buf)
+            }
+            Out::Mem(w) => std::io::Read::read(w, buf),
         }
     }
 }
@@ -683,6 +712,7 @@ impl Default for ExportSettings {
             bitrate_kbps: 20_000,
             burn_captions: false,
             part_of_batch: false,
+            max_threads: 0,
             prores_profile: String::new(),
             dnx_profile: String::new(),
             apv_profile: String::new(),
@@ -2683,8 +2713,28 @@ pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: b
     Ok(out.into_inner())
 }
 
-/// Run an export (blocking; call from a worker thread).
+/// A pool of `max_threads` threads to run an export on, or `None` when it should run where it is:
+/// no cap (0), a cap that is not below the pool the caller is in already, or no threads to spare
+/// (the browser).
+fn capped_pool(max_threads: u32) -> Option<rayon::ThreadPool> {
+    let cap = max_threads as usize;
+    if cap == 0 || cap >= rayon::current_num_threads() || cfg!(target_arch = "wasm32") {
+        return None;
+    }
+    rayon::ThreadPoolBuilder::new().num_threads(cap).thread_name(|i| format!("cfa4-export-{i}")).build().ok()
+}
+
+/// Run an export (blocking; call from a worker thread). With `settings.max_threads` set it runs on
+/// a pool of that many threads, so its rendering and software encoding use at most that many cores.
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
+    match capped_pool(settings.max_threads) {
+        Some(pool) => pool.install(|| export_here(project, seq, settings, sources, progress)),
+        None => export_here(project, seq, settings, sources, progress),
+    }
+}
+
+/// [`export`] on the threads it is called from.
+fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
     settings.validate()?;
     if stepped(settings.format) {
         let mut ex = Exporter::new(project.clone(), seq, settings, progress)?;
@@ -2796,7 +2846,18 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
                 let end = (f + batch).min(f1);
                 if let Some(enc) = gif.as_mut() {
                     let frames: Vec<Vec<u8>> = (f..end).into_par_iter().map(|fi| pipe.frame(fi, sources).0).collect();
-                    for (fi, rgba) in (f..end).zip(frames) {
+                    for (fi, mut rgba) in (f..end).zip(frames) {
+                        // GIF89a has one transparent palette index, not partial alpha. Decide
+                        // coverage before quantization and keep the straight colour of visible pixels.
+                        if settings.keeps_alpha() {
+                            for px in rgba.as_chunks_mut::<4>().0 {
+                                if px[3] < 128 {
+                                    *px = [0; 4];
+                                } else {
+                                    px[3] = 255;
+                                }
+                            }
+                        }
                         let img = image::RgbaImage::from_raw(w, h, rgba).ok_or_else(|| ExportError::Encode("frame".into()))?;
                         let delay = image::Delay::from_numer_denom_ms(u32::from(gif_delay_cs(pipe.rate, fi - f0)) * 10, 1);
                         enc.encode_frame(image::Frame::from_parts(img, 0, 0, delay)).map_err(|e| ExportError::Encode(e.to_string()))?;
