@@ -79,6 +79,11 @@ pub(crate) fn has_selection(s: &Session) -> std::result::Result<(), String> {
     has_seq(s)?;
     if s.state.selection.is_empty() { Err("no clips selected".into()) } else { Ok(()) }
 }
+/// Clips or captions selected (Copy / Cut work on either).
+fn has_clips_or_captions(s: &Session) -> std::result::Result<(), String> {
+    has_seq(s)?;
+    if s.state.selection.is_empty() && s.state.caption_selection.is_empty() { Err("no clips or captions selected".into()) } else { Ok(()) }
+}
 /// Clips or captions selected (Clear / Ripple Delete work on either).
 fn has_any_selection(s: &Session) -> std::result::Result<(), String> {
     has_seq(s)?;
@@ -120,7 +125,7 @@ pub(crate) fn has_project_selection(s: &Session) -> std::result::Result<(), Stri
 }
 fn has_clipboard(s: &Session) -> std::result::Result<(), String> {
     has_seq(s)?;
-    if s.state.clipboard.is_empty() { Err("clipboard is empty".into()) } else { Ok(()) }
+    if s.state.clipboard.is_empty() && s.state.caption_clipboard.is_empty() { Err("clipboard is empty".into()) } else { Ok(()) }
 }
 
 /// The ids a caller named under `many` (a list) or `one` (a single id), when the command documents
@@ -1779,7 +1784,13 @@ fn build() -> Vec<CommandSpec> {
         // ================= Edit =================
         cmd!("edit.undo", "Undo", ["Edit"], Some("Cmd+Z"), "{}", can_undo, |s, _| Ok(json!({"undone": s.undo()}))),
         cmd!("edit.redo", "Redo", ["Edit"], Some("Cmd+Shift+Z"), "{}", can_redo, |s, _| Ok(json!({"redone": s.redo()}))),
-        cmd!("edit.cut", "Cut", ["Edit"], Some("Cmd+X"), "{}", has_selection, |s, _| {
+        cmd!("edit.cut", "Cut", ["Edit"], Some("Cmd+X"), "{}", has_clips_or_captions, |s, _| {
+            if s.state.selection.is_empty() {
+                crate::captions::copy(s);
+                let caps = s.state.caption_selection.clone();
+                crate::captions::delete(s, &caps, false)?;
+                return Ok(Value::Null);
+            }
             copy_selection(s);
             let sel = with_links(s, &s.state.selection.clone());
             s.edit_sequence("Cut", |q, _, st| {
@@ -1789,7 +1800,10 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(Value::Null)
         }),
-        cmd!("edit.copy", "Copy", ["Edit"], Some("Cmd+C"), "{}", has_selection, |s, _| {
+        cmd!("edit.copy", "Copy", ["Edit"], Some("Cmd+C"), "{}", has_clips_or_captions, |s, _| {
+            if s.state.selection.is_empty() {
+                return Ok(json!({"copied": crate::captions::copy(s)}));
+            }
             copy_selection(s);
             Ok(json!({"copied": s.state.clipboard.len()}))
         }),
@@ -3905,6 +3919,8 @@ type Clipboard = (Vec<(TrackKind, usize, cfa4_project::TrackItem)>, Vec<Marker>)
 fn set_clipboard(st: &mut crate::EditorState, (clips, markers): Clipboard) {
     st.clipboard = clips;
     st.clipboard_markers = markers;
+    // timeline clips on the clipboard replace copied captions (#3041): Paste pastes what was copied last
+    st.caption_clipboard.clear();
 }
 
 /// Put a Lift or Extract cut on the clipboard; returns how many clips it holds (0 leaves the
@@ -3948,6 +3964,9 @@ fn cut_range(q: &cfa4_project::Sequence, tracks: &[TrackId], range: TimeRange, c
 /// overwriting). Caption clipboards go to the caption track. Pasted clips get fresh ids, links
 /// and groups of their own, are selected, and the playhead moves to their end.
 fn paste(s: &mut Session, insert: bool) -> Result<Value> {
+    if !s.state.caption_clipboard.is_empty() {
+        return crate::captions::paste(s, insert);
+    }
     let at = s.playhead();
     let clip = s.state.clipboard.clone();
     let markers = if s.state.copy_paste_sequence_markers { s.state.clipboard_markers.clone() } else { Vec::new() };

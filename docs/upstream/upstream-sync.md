@@ -268,7 +268,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #2819 | M8: Fujifilm F-Log, F-Log2 and F-Log2 C colour spaces (F-Gamut / F-Gamut C) | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.13.0 | #3038 | media: import animated WebP as a clip | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.13.0 | #3040 | Timeline: Option-drag duplicates captions | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #559 | PR nyitva |
-| 0.13.0 | #3041 | Edit: Copy, Cut and Paste work on captions selected in the Timeline | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.13.0 | #3041 | Edit: Copy, Cut and Paste work on captions selected in the Timeline | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #699 | PR nyitva |
 | 0.13.0 | #3075 | History: the panel menu deletes redoable actions and clears the history | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3087 | Timeline: the work area bar, with Set Work Area Bar In and Out Point | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3115 | effect controls: drag a transition's cut to move it with the transition | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
