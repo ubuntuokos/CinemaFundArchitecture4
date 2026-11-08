@@ -4113,6 +4113,26 @@ def test_real_engine_transitions_in_the_timeline_and_effect_controls(app, tmp_pa
         QtTest.QTest.mouseClick(lane, left, nomod, QtCore.QPoint(int(ruler.left() + 5), int(ruler.center().y())))
         assert wait_until(app, lambda: win.sequence["playhead"] < transition()[1]["start"], 10_000)
 
+        # its cut line, dragged: the cut and the transition move together (one roll, one undo
+        # step), the clips' In and Out points change and the sequence keeps its length (#3115)
+        def clip(cid: int) -> dict:
+            return next(c for r in canvas.rows for c in r.track.get("items") or [] if c.get("clip") == cid)
+
+        a_id, b_id = view.data["a"]["clip"], view.data["b"]["clip"]
+        a0, b0, x0, steps = dict(clip(a_id)), dict(clip(b_id)), dict(transition()[1]), history()
+        lane.repaint()
+        cut = lane.cut_rect()
+        assert cut is not None
+        drag(lane, cut.center(), cut.center() + QtCore.QPointF(30, 0))
+        assert wait_until(app, lambda: clip(b_id)["start"] != b0["start"], 10_000)
+        a1, b1, x1 = clip(a_id), clip(b_id), transition()[1]
+        moved = b1["start"] - b0["start"]
+        assert moved > 0 and moved % view.duration.frame == 0, moved
+        assert a1["start"] + a1["duration"] == b1["start"], "clip A ends at the new cut"
+        assert a1["start"] == a0["start"] and b1["start"] + b1["duration"] == b0["start"] + b0["duration"], "the sequence keeps its length"
+        assert (x1["start"], x1["duration"]) == (x0["start"] + moved, x0["duration"]), "the transition moved with the cut"
+        assert wait_until(app, lambda: history() == steps + 1, 10_000)
+
         # a double-click: Set Transition Duration
         row, x = transition()
         mid = canvas.transition_rect(row, x).center().toPoint()
@@ -7041,6 +7061,21 @@ def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path:
         assert c.call("ui.click", {"x": x + w / 2, "y": y + h / 2})["ok"]
         assert wait_until(app, lambda: win.timeline.canvas.tool == "razor", 5_000)
         c.call("ui.set", {"tool": "selection"})
+        # the MCP bridge sends null for an omitted count / steps: the defaults (upstream #3004);
+        # out-of-range and non-integer values are still refused before any input
+        assert c.call("ui.click", {"id": razor_id, "count": None})["ok"]
+        assert wait_until(app, lambda: win.timeline.canvas.tool == "razor", 5_000)
+        c.call("ui.set", {"tool": "selection"})
+        for bad in ({"count": 3}, {"count": True}, {"count": "2"}):
+            r = c.call("ui.click", {"id": razor_id, **bad})
+            assert r["ok"] is False and "count" in r["error"], (bad, r)
+        assert win.timeline.canvas.tool == "selection", "a refused click clicks nothing"
+        tools_sel = next(e for e in els if e["id"] != razor_id)["id"]
+        assert c.call("ui.drag", {"from": {"id": tools_sel}, "to": {"id": tools_sel}, "steps": None})["ok"]
+        for bad in ({"steps": 0}, {"steps": 10_000}, {"steps": 1.5}):
+            r = c.call("ui.drag", {"from": {"id": tools_sel}, "to": {"id": tools_sel}, **bad})
+            assert r["ok"] is False and "steps" in r["error"], (bad, r)
+        c.call("ui.set", {"tool": "selection"})
         # a dialog: menu invoke opens it, ui.elements lists its fields, typing fills one
         r = c.call("ui.menu.invoke", {"command": "markers.addFlashCue"})
         assert r["ok"], r
@@ -7565,6 +7600,7 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     assert encoder_format("mxf-op1a", "proRes") == "prores" and encoder_format("hls", "") == "h264"
     assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
     assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
+    assert supports_alpha("gif", "", ""), "GIF keeps binary transparency, as the engine says (#3423)"
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)

@@ -31,6 +31,7 @@ PR- és beolvasztási szabályok, gazda: [`docs/coordination.md`](../coordinatio
 | [Spec Kit – SK-F0 állapotfelmérés](spec-kit/SK-F0-2026-10-31.md) | CFA4-DEV-SPEC-KIT-001 1.1: verzió (v1.2.5), érvényes szabályok, ütközések K1–K4, meglévő integrációk, költségbaseline (BLOCKED). SK-F1 nincs engedélyezve |
 | [Spec Kit – SK-F1 izolált próba](spec-kit/SK-F1-2026-11-01.md) | CFA4-DEV-SPEC-KIT-001 1.2: v1.2.5 eldobható worktree-ben; AC-SK-04, -12, -13, -14, -15 PASS (kontextus-többlet 0 token); SkillSpector: csak téves riasztás; új: a beépített workflow kapu nélkül futtatja az implementet. SK-F2 nincs engedélyezve |
 | [Spec Kit – SK-F2 hivatkozó constitution és preset](spec-kit/SK-F2-2026-11-01.md) | CFA4-DEV-SPEC-KIT-001 1.2: hivatkozó constitution és `cfa4-policy` preset (forrás: `docs/development/spec-kit/cfa4-policy/`); a #449 után megismételve: AC-SK-02, -03, -04, -13, -14, -15, -16 PASS (preset csak `init --preset`-tel). SK-F3 nincs engedélyezve |
+| [Worktrunk – F0 (felhős környezet)](worktrunk/WT-F0-2026-11-06.md) | CFA4-DEV-WORKTRUNK-001 1.1 ([terv](../development/worktrunk/README.md)): Ubuntu 24.04.5, git 2.43.0, ext4, rustc 1.97.1. A terv előfeltevése (közös klón egy gépen) a felhős munkamenetekre nem áll; a tulajdonos 2026-11-06-án NOT_APPLICABLE-ként lezárta |
 
 ## Fázisok
 

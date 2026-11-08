@@ -194,7 +194,7 @@ See [§0](#0-never-crash). It outranks every other engineering rule.
 
 ### 3.2 The rest
 
-See `CLAUDE.md`: pure Rust, dependency layering (`cargo xtask layers`), exact `Tick` time, everything is
+See `CLAUDE.md`: pure Rust, dependency layering (`cargo xtask layers`), exact `Tick` time, calendar time through `chrono`, everything is
 a command, everything is agent-drivable, and the quality gates before every commit.
 
 

@@ -76,6 +76,17 @@ workflow and confirm all mandatory jobs pass; a green static gate alone
 does not qualify as full CI validation. An unrun, skipped, or failing job is
 **not** proof that the full CI passed.
 
+GitHub Actions caches are branch-scoped: a run sees only caches saved on its own
+ref and on `main`. The full jobs never run on `main`, so the cache they saved was
+never reused, and the pinned FFmpeg 9.0.2 oracle and the Rust release
+dependencies were rebuilt in every full validation. `.github/workflows/ci-cache-warm.yml`
+builds both on `main` (when the FFmpeg scripts, `Cargo.lock`, a `Cargo.toml` or
+`rust-toolchain.toml` change, weekly against the 7-day cache eviction, or by
+`workflow_dispatch`) and saves them there; `rust-release-tests` in `ci-linux.yml`
+only restores them, and a miss falls back to building. The two jobs share
+`scripts/ci/install-ffmpeg-oracle-deps.sh` and the same job-level `CARGO_*`
+environment, because rust-cache hashes those into its key: change them together.
+
 The older `cargo xtask wasm` code remains in source for historical compatibility,
 but WASM is **not** a supported CFA4 target or quality gate.
 

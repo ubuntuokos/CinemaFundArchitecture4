@@ -72,14 +72,14 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3594 | File safety: Make Offline with deleteFiles only removes the media file the item was linked to | A | átvesz | kézi port | U0-A4 | #456 | PR nyitva |
 | 0.15.0 | #3659 | Reject out-of-range SCC timecode fields | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.15.0 | #3347 | speech: a pause inside a word's span ends the word (#3346) | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
-| 0.15.0 | #3405 | engine: Duplicate puts the copy in the bin of its source (#3368) | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3405 | engine: Duplicate puts the copy in the bin of its source (#3368) | B | átvesz | kézi port | U0-B | #610 | PR nyitva |
 | 0.15.0 | #3409 | engine: effects.addKeyframe keeps an explicit time at the out point and says what it did (#3386) | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
 | 0.15.0 | #3416 | Shorten atomic_write temp names so long project names still save | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3423 | Export: preserve optional binary transparency in animated GIFs (#3396) | B | átvesz | kézi port | U0-B2b | – | tervezett |
 | 0.15.0 | #3432 | Strip UTF-8 byte order mark when parsing .cube LUT files | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3440 | Fix trim_caption moving edges of captions shorter than one frame | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3452 | fix(codecs): frame lookup inside a frame with one timestamp unit per frame | B | átvesz | kézi port | U0-B | #701 | PR nyitva |
-| 0.15.0 | #3470 | Export: write fast-start MP4 files for upload compatibility (#3459) | B | átvesz | kézi port | U0-B2b | – | tervezett |
+| 0.15.0 | #3470 | Export: write fast-start MP4 files for upload compatibility (#3459) | B | átvesz | kézi port | U0-B | #610 | PR nyitva |
 | 0.15.0 | #3471 | frame: move rotated chroma buffers instead of cloning (#3468) | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3474 | Media cache: a folder of its own inside a custom location (fixes #2772) | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
 | 0.15.0 | #3565 | Fix graphics template width scaling across canvas sizes (#3415) | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
@@ -89,7 +89,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3627 | fix(engine): accept time objects for timeline.place sourceIn and duration | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3637 | Free decoder frame caches and plane pools when an export ends | B | átvesz | kézi port | U0-B2b | – | tervezett |
 | 0.15.0 | #3535 | control: say why the control server is not serving (#3436) | C | átvesz | kézi port | U0-C | #593 | PR nyitva |
-| 0.15.0 | #3631 | Add timeline.delete alias and document headless clip removal | C | átvesz | kézi port | U0-C | – | tervezett |
+| 0.15.0 | #3631 | Add timeline.delete alias and document headless clip removal | C | átvesz | kézi port | U0-C | #537 | PR nyitva |
 | 0.15.0 | #3402 | #3364: warn about one-frame In/Out exports | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #538 | PR nyitva |
 | 0.15.0 | #3433 | feat(text): strikethrough for graphic text | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #541 | PR nyitva |
 | 0.15.0 | #3522 | Timeline: grouped clips select together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #545 | PR nyitva |
@@ -129,7 +129,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #2597 | Centre Transform's auto points in the clip's picture on apply and reset (#2588) | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
 | 0.14.0 | #2638 | Stop writing an empty ref for FCPXML titles and adjustment layers | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #2653 | Stop writing an empty ref for FCPXML titles and adjustment layers (#2638) | B | átvesz (azonos a #2638-vel) | kézi port | U0-B1 | #458 | PR nyitva |
-| 0.14.0 | #3190 | Stop reading on-the-hour times with a spurious "zero" | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.14.0 | #3190 | Stop reading on-the-hour times with a spurious "zero" | B | átvesz | kézi port | U0-B | #610 | PR nyitva |
 | 0.14.0 | #3216 | frame: 10-bit Y'CbCr normalisation through per-code tables | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #3229 | Fit typewriter transition grid and caret to the layer's content | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #3235 | Enable only the Alt-selected side of a linked clip | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
@@ -140,10 +140,10 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #3286 | Keep draft-decoder counter assertions in one test | F | kihagy: az upstream közös tesztbináris-gondja, a CFA4-ben minden tesztfájl külön folyamat | kézi port | – | – | lezárva |
 | 0.14.0 | #3321 | fix(av1): drop the duplicate strictly_increasing and its test | B | átvesz (a #2888 és #3081 duplikátumát szünteti meg) | tisztán | U0-A1 | #446 | PR nyitva |
 | 0.14.0 | #3456 | Speed up H.264 export by a fifth with byte-identical output | B | átvesz | kézi port | U0-B2b | #702 | PR nyitva |
-| 0.14.0 | #1841 | #1545: effects.apply answers with the applied instances (clip, index, effect) | C | átvesz | tisztán | U0-C | – | tervezett |
-| 0.14.0 | #1870 | #1216: a cap on the CPU threads an export uses (maxThreads) | C | átvesz | kézi port | U0-C | – | tervezett |
-| 0.14.0 | #2415 | #2340: uncompressed QuickTime video (raw 24-bit RGB, 2vuy, v210) decodes | C | átvesz | kézi port | U0-C | – | tervezett |
-| 0.14.0 | #3281 | Report parameter and accepted value from effects.setParam | C | átvesz | kézi port | U0-C | – | tervezett |
+| 0.14.0 | #1841 | #1545: effects.apply answers with the applied instances (clip, index, effect) | C | átvesz | tisztán | U0-C | #537 | PR nyitva |
+| 0.14.0 | #1870 | #1216: a cap on the CPU threads an export uses (maxThreads) | C | átvesz | kézi port | U0-C | #537 | PR nyitva |
+| 0.14.0 | #2415 | #2340: uncompressed QuickTime video (raw 24-bit RGB, 2vuy, v210) decodes | C | átvesz | kézi port | U0-C | #537 | PR nyitva |
+| 0.14.0 | #3281 | Report parameter and accepted value from effects.setParam | C | átvesz | kézi port | U0-C | #537 | PR nyitva |
 | 0.14.0 | #3209 | Program: drag a marquee or Shift-click to select several mask vertices, and move them together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #552 | PR nyitva |
 | 0.14.0 | #3211 | Lift and Extract put the removed range on the clipboard | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #553 | PR nyitva |
 | 0.14.0 | #3224 | engine: keep linked edit points together in Trim Mode (#3085) | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #554 | PR nyitva |
@@ -251,7 +251,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3081 | security(codecs): validate VP9 empty tiles and AV1 film grain scaling points | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
 | 0.13.0 | #3082 | security(audio): bound sequence sample rates and AAF/OMF export channel buffers | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #3083 | security(engine): require local trust for ingest destinations | A | átvesz | tisztán | U0-A4 | #456 | PR nyitva |
-| 0.13.0 | #2586 | Escape tab/newline/CR in XML attribute values | B | átvesz | tisztán | U0-B | – | tervezett |
+| 0.13.0 | #2586 | Escape tab/newline/CR in XML attribute values | B | átvesz | tisztán | U0-B | #610 | PR nyitva |
 | 0.13.0 | #2601 | Fix false overlaps for empty time ranges | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.13.0 | #2629 | Keep WebVTT cues whose identifier starts with NOTE | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.13.0 | #2662 | Use chrono instead of hand-rolled UTC conversion | B | átvesz | kézi port | U0-B2b | – | tervezett |
@@ -261,17 +261,17 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #2992 | HEVC2797: share immutable gray rows across unavailable references | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
 | 0.13.0 | #2993 | REC2792: retain recovery candidates when discard fails | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.13.0 | #2995 | Only materialise kept frames when filling an H.264 frame_num gap | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
-| 0.13.0 | #3004 | control: preserve MCP pointer input defaults (#2784) | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.13.0 | #3004 | control: preserve MCP pointer input defaults (#2784) | B | átvesz | kézi port | U0-B | #610 | PR nyitva |
 | 0.13.0 | #3072 | Don't treat pieces with different settings as through edits | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.13.0 | #3088 | Keep WebVTT cues whose identifier is STYLE or REGION | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.13.0 | #3236 | Timeline: a transition stays within its clips after a regular trim | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
-| 0.13.0 | #2819 | M8: Fujifilm F-Log, F-Log2 and F-Log2 C colour spaces (F-Gamut / F-Gamut C) | C | átvesz | kézi port | U0-C | – | tervezett |
+| 0.13.0 | #2819 | M8: Fujifilm F-Log, F-Log2 and F-Log2 C colour spaces (F-Gamut / F-Gamut C) | C | átvesz | kézi port | U0-C | #537 | PR nyitva |
 | 0.13.0 | #3038 | media: import animated WebP as a clip | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.13.0 | #3040 | Timeline: Option-drag duplicates captions | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #559 | PR nyitva |
 | 0.13.0 | #3041 | Edit: Copy, Cut and Paste work on captions selected in the Timeline | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #699 | PR nyitva |
 | 0.13.0 | #3075 | History: the panel menu deletes redoable actions and clears the history | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #562 | PR nyitva |
 | 0.13.0 | #3087 | Timeline: the work area bar, with Set Work Area Bar In and Out Point | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #563 | PR nyitva |
-| 0.13.0 | #3115 | effect controls: drag a transition's cut to move it with the transition | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.13.0 | #3115 | effect controls: drag a transition's cut to move it with the transition | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #596 | PR nyitva |
 | 0.13.0 | #3155 | Timeline: a Rolling Edit drag stops at the roll's limits | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #564 | PR nyitva (motor; a Qt-előnézet korlátozása külön) |
 | 0.13.0 | #3212 | Timeline: Show Duplicate Frame Markers marks media frames used more than once | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #565 | PR nyitva |
 | 0.13.0 | #3227 | Audio Track Mixer: Show/Hide Tracks and Meter Input(s) Only are commands with Premiere's keys | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #601 | PR nyitva |
@@ -311,7 +311,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.11.0 | #2723 | security: validate CLI paths/args in dev tools (SonarCloud S2083/S8707/S8705) | A | átvesz | kézi port | U0-A1 | #446 | PR nyitva |
 | 0.11.0 | #1955 | Order auto-saves by real time so rotation keeps the newest | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.11.0 | #2388 | #2342: CLI file.exportMedia waits for the export before the process exits | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
-| 0.11.0 | #2724 | fix: use async file I/O in async MCP screenshot handler (SonarCloud rust:S7493) | B | átvesz | tisztán | U0-B | – | tervezett |
+| 0.11.0 | #2724 | fix: use async file I/O in async MCP screenshot handler (SonarCloud rust:S7493) | B | átvesz | tisztán | U0-B | #610 | PR nyitva |
 | 0.11.0 | #2555 | Re-open a failed audio output while playing instead of going silent for good | D | átvesz (Qt6) | kézi port | U0-D | #602 | PR nyitva |
 | 0.11.0 | #1943 | fix(macos): ask to save on Cmd-Q instead of quitting outright | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
 | 0.11.0 | #2006 | fix(macos): ask to save on Cmd-Q instead of quitting outright (#1943) | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
