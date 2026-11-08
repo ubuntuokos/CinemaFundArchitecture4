@@ -3,6 +3,21 @@ use crate::capabilities::*;
 const STRICT: Policy = Policy { allow_experimental: false };
 const LAX: Policy = Policy { allow_experimental: true };
 
+/// Replace the built-in software encoder row of `codec` with an unsupported one, as on a stream
+/// the software encoder cannot take, so the other backends' rows decide.
+fn without_software_encoder(r: &mut Registry, codec: Codec) {
+    let key = Key::codec(Operation::Encode, codec);
+    r.insert(Entry {
+        key,
+        backend: Backend::Native,
+        level: SupportLevel::Unsupported,
+        evidence: "test: no software encoder".into(),
+        limits: None,
+        routes: Vec::new(),
+    })
+    .unwrap();
+}
+
 fn h264_high_420_8() -> StreamFormat {
     StreamFormat { profile: "high".into(), chroma: "4:2:0".into(), bit_depth: 8 }
 }
@@ -150,6 +165,7 @@ fn the_mpeg2_encoder_and_program_and_transport_stream_muxers_are_registered() {
 #[test]
 fn smart_render_picks_the_encoder_that_fits_the_stream() {
     let mut r = Registry::native();
+    without_software_encoder(&mut r, Codec::Hevc);
     let hevc = Key::codec(Operation::Encode, Codec::Hevc);
     for key in [
         Key::codec(Operation::GopIndex, Codec::Hevc),
@@ -198,11 +214,19 @@ fn smart_render_picks_the_encoder_that_fits_the_stream() {
 }
 
 #[test]
-fn baseline_av1_has_no_encoder_and_mpeg2_demuxes_from_iso_and_matroska() {
+fn software_encoders_cover_hevc_and_av1_and_mpeg2_demuxes_from_iso_and_matroska() {
     let r = Registry::native();
-    let d = r.decide(Key::codec(Operation::Encode, Codec::Av1), LAX);
-    assert!(!d.allowed);
-    assert_eq!(d.level, SupportLevel::Unsupported);
+    for (codec, depths) in [(Codec::Hevc, vec![8, 10]), (Codec::Av1, vec![8])] {
+        let d = r.decide(Key::codec(Operation::Encode, codec), STRICT);
+        assert!(d.allowed, "{codec:?}: {:?}", d.reasons);
+        assert_eq!(d.backend, Some(Backend::Native), "{codec:?}");
+        assert_eq!(r.encoder_limits(codec, STRICT).map(|l| l.bit_depths.clone()), Some(depths), "{codec:?}");
+    }
+    // the transport stream muxer takes AAC, not yet H.264 or HEVC (SCE-001 P2a)
+    assert!(r.decide(Key::in_container(Operation::Mux, Codec::Aac, Container::MpegTs), STRICT).allowed);
+    for codec in [Codec::H264, Codec::Hevc] {
+        assert!(!r.decide(Key::in_container(Operation::Mux, codec, Container::MpegTs), LAX).allowed, "{codec:?}");
+    }
     for c in [Container::Mp4, Container::Mov, Container::Matroska, Container::MpegPs, Container::MpegTs, Container::Mxf] {
         assert!(r.decide(Key::in_container(Operation::Demux, Codec::Mpeg2Video, c), STRICT).allowed, "{c:?}");
     }
@@ -211,6 +235,7 @@ fn baseline_av1_has_no_encoder_and_mpeg2_demuxes_from_iso_and_matroska() {
 #[test]
 fn hardware_encoders_wait_for_a_probe() {
     let mut r = Registry::native();
+    without_software_encoder(&mut r, Codec::Hevc);
     let hevc = Key::codec(Operation::Encode, Codec::Hevc);
     let d = r.decide(hevc, STRICT);
     assert!(!d.allowed);
@@ -246,11 +271,17 @@ fn probes_are_order_independent_and_unavailable_wins() {
         routes: Vec::new(),
     };
 
-    let mut a = Registry::native();
+    let fresh = || {
+        let mut r = Registry::native();
+        without_software_encoder(&mut r, Codec::Av1);
+        without_software_encoder(&mut r, Codec::Hevc);
+        r
+    };
+    let mut a = fresh();
     a.apply_probes([yes.clone(), no.clone(), other.clone()]).unwrap();
-    let mut b = Registry::native();
+    let mut b = fresh();
     b.apply_probes([other.clone(), no.clone(), yes.clone(), yes.clone()]).unwrap();
-    let mut c = Registry::native();
+    let mut c = fresh();
     c.apply_probes([no.clone()]).unwrap();
     c.apply_probes([yes.clone(), other.clone()]).unwrap();
 
