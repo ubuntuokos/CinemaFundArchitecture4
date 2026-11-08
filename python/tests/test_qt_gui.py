@@ -12664,3 +12664,58 @@ def test_long_menus_scroll_instead_of_splitting_into_columns(app):
     app.processEvents()
     assert menu.height() <= area.height() and menu.width() < 400, menu.geometry()
     menu.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_clip_dropped_on_new_item_makes_a_matching_sequence(app, tmp_path: Path):
+    """A clip dragged onto the Project panel's New Item button makes a sequence from it, as File ▸
+    New ▸ Sequence From Clip does (upstream #2940): named after the clip, the clip on the timeline,
+    the sequence open. A Source Monitor drag (its In/Out range is for the timeline) or a bin is
+    not taken."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.monitor_view import SOURCE_MIME
+    from cfa4_qt.panels.project import BIN_MIME, NewItemButton, drag_mime
+    from PySide6.QtCore import Qt
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    main = win.project_panel.main
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and bool(main.data.get("rows")), 30_000)
+        button = main.findChild(NewItemButton, "project.button.new-item")
+        assert button is not None and button.acceptDrops()
+        clip = next(i for i in _items(win.project) if i.get("item") == movie_id())
+        sequences = lambda: sum(1 for i in _items(win.project) if str(i.get("type")).lower() == "sequence")
+        n0, first = sequences(), win.sequence.get("id")
+        assert n0 >= 1, "the demo has a sequence"
+
+        def drop(mime: QtCore.QMimeData) -> bool:
+            pos = QtCore.QPointF(button.rect().center())
+            enter = QtGui.QDragEnterEvent(pos.toPoint(), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+            button.dragEnterEvent(enter)
+            if not enter.isAccepted():
+                return False
+            assert button.drop_hover, "the button shows it takes the drop"
+            button.grab()  # paints the outline
+            button.dropEvent(QtGui.QDropEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+            assert not button.drop_hover
+            return True
+
+        source = drag_mime([movie_id()], [])
+        source.setData(SOURCE_MIME, b"{}")
+        assert not drop(source), "a Source Monitor drag is not taken"
+        bins = QtCore.QMimeData()
+        bins.setData(BIN_MIME, b"1")
+        assert not drop(bins), "a bin is not a clip"
+        assert drop(drag_mime([movie_id()], []))
+        assert wait_until(app, lambda: sequences() == n0 + 1 and (win.sequence or {}).get("id") != first, 20_000)
+        assert win.sequence.get("name") == clip.get("name"), "named after the clip"
+        on_timeline = [c.get("item") for t in win.sequence.get("video") or [] for c in t.get("items") or []]
+        assert movie_id() in on_timeline, win.sequence.get("video")
+    finally:
+        win.close()
+        engine.stop()
