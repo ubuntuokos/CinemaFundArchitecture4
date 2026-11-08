@@ -296,6 +296,7 @@ jobs:
     timeout-minutes: 45
     env:
       CFA4_OTIO_ORACLE_DIR: target/fixtures/otio-oracle
+      CFA4_OTIO_SAMPLES_DIR: target/fixtures/otio-samples
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -318,7 +319,13 @@ jobs:
       - name: OpenTimelineIO oracle (exit 0 PASS, 1 FAIL, 2 cannot run)
         run: python -m cfa4_devtools.otio_oracle "$CFA4_OTIO_ORACLE_DIR"
       - name: Oracle unit tests, including the fixture-backed ones
-        run: python -m pytest -q -rs python/tests/test_otio_oracle.py
+        run: python -m pytest -q -rs python/tests/test_otio_oracle.py python/tests/test_otio_samples.py
+      # OTIO-1.2, the other direction: OTIO writes samples for every schema the reader handles and
+      # CFA4 imports them (only the expected warnings, the same timing as OTIO).
+      - name: Write the OTIO samples (creates CFA4_OTIO_SAMPLES_DIR)
+        run: python -m cfa4_devtools.otio_samples "$CFA4_OTIO_SAMPLES_DIR"
+      - name: Import the OTIO samples with CFA4
+        run: cargo test --locked -p cfa4-interchange --test otio oracle_samples
 
   # Owner decision 2026-10-30: the Qt6 GUI is not finished yet, so its tests run and are reported,
   # but they do NOT block merging (this job is not part of full-validation-gate). Move it into the
