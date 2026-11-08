@@ -49,7 +49,7 @@ from PySide6.QtWidgets import (
 
 from .. import theme
 from ..calc import evaluate
-from ..i18n import N_, tr
+from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_ticks, parse_timecode
 from . import timeline_menus
 from .effects import EFFECT_MIME, dropped_effect
@@ -1041,6 +1041,63 @@ class TimelineCanvas(QWidget):
         for _i, r, state in self.render_bar_spans():
             p.fillRect(r, QColor(RENDER_BAR[state][0]))
         self._paint_split_marks(p)
+        # the work area bar (upstream #3087), as dragged while a drag of it runs
+        area = self.work_area()
+        if area is not None:
+            r = self.work_area_rect(*area)
+            p.save()
+            p.setClipRect(QRectF(HEADER_W, 0, max(0.0, self.width() - HEADER_W), RULER_H))
+            p.fillRect(r, T.c("tl_ruler_text"))
+            for x in (r.left(), r.right()):
+                p.fillRect(QRectF(x - 1.5, r.top() - 1, 3, r.height() + 2), T.c("text"))
+            p.restore()
+
+    # ----- the work area bar (upstream #3087) -----
+    def work_area(self) -> tuple[int, int] | None:
+        """The work area bar's (start, end): as dragged during a drag of it, else the sequence's."""
+        d = self._drag
+        if d is not None and d.kind == "workArea" and d.volume is not None:
+            return d.volume["start"], d.volume["end"]
+        w = (self.sequence or {}).get("workArea")
+        if isinstance(w, dict) and isinstance(w.get("start"), int) and isinstance(w.get("end"), int) and w["end"] > w["start"]:
+            return w["start"], w["end"]
+        return None
+
+    def work_area_rect(self, start: int, end: int) -> QRectF:
+        """Where the ruler draws (and hit-tests) the bar: its top row, above the time labels."""
+        x0, x1 = self.x_of(start), self.x_of(end)
+        return QRectF(x0, 1.0, max(1.0, x1 - x0), 5.0)
+
+    def work_area_at(self, pos: QPoint | QPointF) -> str | None:
+        """The part of the work area bar at ``pos``: ``"in"`` / ``"out"`` (an end; a narrower zone
+        on a short bar keeps its middle grabbable), ``""`` (its middle), or None."""
+        area = self.work_area()
+        if area is None or not (pos.y() < RULER_H and pos.x() >= HEADER_W):
+            return None
+        r = self.work_area_rect(*area)
+        zone = min(float(EDGE_PX), r.width() / 3)
+        if not math.isfinite(zone) or not r.adjusted(-zone, -1, zone, 1).contains(QPointF(pos)):
+            return None
+        if abs(pos.x() - r.left()) <= zone:
+            return "in"
+        if abs(r.right() - pos.x()) <= zone:
+            return "out"
+        return ""
+
+    def _work_area_drag(self, d: Drag, pos: QPoint) -> None:
+        v = d.volume or {}
+        ft = max(1, self.frame_ticks())
+        raw = (pos.x() - d.origin.x()) * TICKS_PER_SECOND / max(1e-9, self.pps)
+        delta = round(raw / ft) * ft
+        s0, e0 = v["s0"], v["e0"]
+        if d.edge == "in":
+            v["start"], v["end"] = max(0, min(e0 - ft, self.snap(s0 + delta, set()))), e0
+        elif d.edge == "out":
+            v["start"], v["end"] = s0, max(s0 + ft, self.snap(e0 + delta, set()))
+        else:
+            delta = max(delta, -s0)
+            v["start"], v["end"] = s0 + delta, e0 + delta
+        self.update()
 
     def split_marks(self) -> list[tuple[str, float, float, bool, str]]:
         """The sequence's split edit points in view: (automation id, x, top, is an In, tag). An In
@@ -2046,6 +2103,14 @@ class TimelineCanvas(QWidget):
         """egui's Timeline Display Settings (the toolbar's wrench)."""
         menu = QMenu(self)
         menu.setObjectName("timeline.settings")
+        # the work area bar shown or hidden (upstream #3087: the Timeline panel menu's Work Area Bar)
+        a = menu.addAction(tr("Work Area Bar"))
+        a.setObjectName("timeline.settings.workAreaBar")
+        a.setCheckable(True)
+        a.setChecked(self.work_area() is not None)
+        a.setEnabled(self.sequence is not None)
+        a.toggled.connect(lambda on: self.command.emit("sequence.workAreaBar", {"show": bool(on)}))
+        menu.addSeparator()
         # media frames used more than once get a colored stripe (upstream #3212)
         a = menu.addAction(tr("Show Duplicate Frame Markers"))
         a.setObjectName("timeline.settings.showDuplicateFrameMarkers")
@@ -2125,6 +2190,11 @@ class TimelineCanvas(QWidget):
             row, cell = self.header_hit(pos)
             if row is not None and cell is not None:
                 self._press_header(row, cell)
+            return
+        part = self.work_area_at(pos)
+        if part is not None:
+            s0, e0 = self.work_area() or (0, 0)
+            self._drag = Drag("workArea", None, pos, 0, edge=part, volume={"s0": s0, "e0": e0, "start": s0, "end": e0})
             return
         if pos.y() < RULER_H and pos.x() >= HEADER_W:
             self._drag = Drag("scrub", None, pos, self.playhead)
@@ -2357,9 +2427,20 @@ class TimelineCanvas(QWidget):
         if d is not None and d.kind == "caption":
             self._caption_drag(d, pos)
             return
-        if d is None and pos.y() < RULER_H and pos.x() >= HEADER_W:
-            state = self.render_bar_at(pos)
-            self.setToolTip(tr(RENDER_BAR[state][1]) if state is not None else "")
+        if d is not None and d.kind == "workArea":
+            self._work_area_drag(d, pos)
+            return
+        if d is None and pos.y() < RULER_H:
+            part = self.work_area_at(pos)
+            if part is not None:
+                self.setCursor(Qt.CursorShape.SizeHorCursor if part else Qt.CursorShape.OpenHandCursor)
+                area = self.work_area() or (0, 0)
+                ft = self.frame_ticks()
+                self.setToolTip("\n".join((fmt("Start: {tc}", tc=format_timecode(area[0], ft)), fmt("End: {tc}", tc=format_timecode(area[1], ft)),
+                                            fmt("Duration: {tc}", tc=format_timecode(area[1] - area[0], ft)))))
+            elif pos.x() >= HEADER_W:
+                state = self.render_bar_at(pos)
+                self.setToolTip(tr(RENDER_BAR[state][1]) if state is not None else "")
         if d is None and RULER_H <= pos.y() < self.tracks_top():
             head = self.caption_header_at(pos)
             tips = {"locked": tr("Toggle Caption Track Lock"), "enabled": tr("Toggle Caption Track Output")}
@@ -2522,6 +2603,14 @@ class TimelineCanvas(QWidget):
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         d, self._drag = self._drag, None
+        if d is not None and d.kind == "workArea" and d.volume is not None:
+            v = d.volume
+            if (v["start"], v["end"]) != (v["s0"], v["e0"]):
+                self.command.emit("sequence.setWorkArea", {"start": v["start"], "end": v["end"]})
+                if self.sequence is not None:
+                    self.sequence["workArea"] = {"start": v["start"], "end": v["end"]}  # local echo
+            self.update()
+            return
         if d is not None and d.kind == "caption":
             self._caption_release(d, copy=bool(e.modifiers() & Qt.KeyboardModifier.AltModifier))
             return
@@ -2617,6 +2706,14 @@ class TimelineCanvas(QWidget):
 
     def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
         pos = e.position().toPoint()
+        if self.work_area_at(pos) is not None:
+            # the bar spans the part of the sequence the ruler shows (upstream #3087)
+            ft = max(1, self.frame_ticks())
+            start = max(0, round(self.time_at(HEADER_W) / ft) * ft)
+            end = min(self.duration, round(self.time_at(self.width()) / ft) * ft)
+            if end > start:
+                self.command.emit("sequence.setWorkArea", {"start": start, "end": end})
+            return
         if RULER_H <= pos.y() < self.tracks_top():
             hit = self.caption_at(pos)
             if hit is not None:  # egui: the Text panel's Captions tab, at that caption

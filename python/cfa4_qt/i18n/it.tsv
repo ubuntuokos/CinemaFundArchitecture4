@@ -318,8 +318,14 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compressione {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Work Area Bar	Barra dell’area di lavoro
+	Start: {tc}	Inizio: {tc}
+	End: {tc}	Fine: {tc}
+	Duration: {tc}	Durata: {tc}
 	Panel menu	Menu del pannello
 	Move panel	Sposta pannello
 	Transparency Grid	Griglia di trasparenza
 	Show Duplicate Frame Markers	Mostra indicatori dei fotogrammi duplicati
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	L’attacco/stacco della sequenza è di un solo fotogramma. Scegli Intera sequenza per esportare tutta la sequenza.
+	Set Work Area Bar In Point	Imposta punto di attacco della barra dell’area di lavoro
+	Set Work Area Bar Out Point	Imposta punto di stacco della barra dell’area di lavoro
