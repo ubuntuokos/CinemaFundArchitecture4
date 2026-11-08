@@ -178,7 +178,7 @@ Current classification:
 
 | Component | Package |
 |---|---|
-| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` |
+| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` (FFmpeg 9.0.2 `--restricted` build in `/opt/cfa4/ffmpeg-9.0.2-restricted`; `packaging/linux/package.sh --formats "deb restricted"`, ADR 0005 step 4) |
 | CFA4's own codecs (H.264, HEVC, AAC, AC-3 and the other decoders, the H.264 encoder) | base package (owner decision, 2026-10-25) |
 
 A new patent-encumbered component goes to `cfa4-restricted-extras` unless the owner decides

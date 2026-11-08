@@ -14,5 +14,7 @@ fn main() {
     }
     let base = std::env::var("CFA4_FFMPEG_PREFIX").unwrap_or_else(|_| "/opt/cfa4/ffmpeg-9.0.2".into());
     println!("cargo:rustc-link-arg-bins=-Wl,--enable-new-dtags");
-    println!("cargo:rustc-link-arg-bins=-Wl,-rpath,{base}-restricted/lib:{base}/lib");
+    // Third: the copy a relocatable package (tarball, AppImage, Flatpak) carries next to the binary
+    // (packaging/linux/stage-ffmpeg.sh). The .deb installs into /opt/cfa4, the first two entries.
+    println!("cargo:rustc-link-arg-bins=-Wl,-rpath,{base}-restricted/lib:{base}/lib:$ORIGIN/../lib/cfa4/ffmpeg-9.0.2/lib");
 }
