@@ -13052,3 +13052,55 @@ def test_every_dock_widget_is_eguis_panel_id(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_dock_tabs_more_list_as_egui(app, tmp_path: Path):
+    """egui's » on a panel group's tab strip (dock.rs ``panel.tabs.more.<path>``, the path as
+    the dock gutters'): shown only while the group's tabs don't all fit; it lists the group's
+    panels (``panel.tabs.list.<Panel>``, the shown one ticked) and a pick shows that panel."""
+    from cfa4_qt import dock_commands
+    from cfa4_qt.dock_gutters import layout_leaves, leaf_paths
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None, 60_000)
+        bars = [b for b in win.findChildren(QtWidgets.QTabBar, options=QtCore.Qt.FindChildOption.FindDirectChildrenOnly) if b.isVisible() and b.count() > 2]
+        assert bars, "the default layout has tab groups"
+        bar = max(bars, key=lambda b: b.count())
+        dock_commands.sync_tabs_more(win)
+        more = getattr(bar, "_cfa4_more", None)
+        assert more is None or not more.isVisible() or not dock_commands.tabs_fit(bar)
+        # narrow the group until its tabs don't fit: » shows at the strip's right end
+        title = dock_commands._title_of_tab(win, bar, bar.currentIndex())
+        dock = win.docks[title]
+        win.resizeDocks([dock], [140], QtCore.Qt.Orientation.Horizontal)
+        assert wait_until(app, lambda: not dock_commands.tabs_fit(bar), 5_000), (bar.width(), bar.count())
+        assert wait_until(app, lambda: getattr(bar, "_cfa4_more", None) is not None and bar._cfa4_more.isVisible(), 5_000)
+        more = bar._cfa4_more
+        paths = {p for _leaf, p in leaf_paths(layout_leaves(win))}
+        assert more.objectName().startswith("panel.tabs.more.") and more.objectName()[len("panel.tabs.more."):] in paths, (more.objectName(), paths)
+        assert more.geometry().right() <= bar.width()
+        more.click()
+        assert wait_until(app, lambda: getattr(win, "last_tabs_list", None) is not None and win.last_tabs_list.isVisible(), 5_000)
+        acts = {a.objectName(): a for a in win.last_tabs_list.actions()}
+        titles = [dock_commands._title_of_tab(win, bar, i) for i in range(bar.count())]
+        assert list(acts) == [f"panel.tabs.list.{dock_commands.panel_id(t)}" for t in titles]
+        assert [a.isChecked() for a in acts.values()] == [i == bar.currentIndex() for i in range(bar.count())]
+        other = next(i for i in range(bar.count()) if i != bar.currentIndex())
+        list(acts.values())[other].trigger()
+        win.last_tabs_list.close()
+        assert wait_until(app, lambda: bar.currentIndex() == other, 5_000)
+        # a wide group: » goes
+        win.resizeDocks([dock], [1200], QtCore.Qt.Orientation.Horizontal)
+        assert wait_until(app, lambda: dock_commands.tabs_fit(bar) and not more.isVisible(), 5_000), (bar.width(), more.isVisible())
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
