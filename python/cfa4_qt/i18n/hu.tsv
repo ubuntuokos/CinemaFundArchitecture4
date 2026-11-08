@@ -2374,6 +2374,9 @@ export.summary	Low	alacsony
 	Warning	Figyelmeztetés
 	Error	Hiba
 	Strikethrough	Áthúzott
+	Caption Export Settings	Feliratexport beállításai
+	Export Captions	Feliratok exportálása
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} már létezik, ezért semmi sem lett exportálva. A cseréjéhez válaszd ki a mentési ablakban.
 	Delete Redoable Actions	Újra végrehajtható műveletek törlése
 	Clear History	Előzmények törlése
 	Delete the dimmed actions after the current state? They cannot be redone.	Törlöd a jelenlegi állapot utáni, halványan látszó műveleteket? Ezek nem hajthatók végre újra.
