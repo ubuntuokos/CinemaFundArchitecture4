@@ -3680,3 +3680,11 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 3996×2160（1.85:1）、5.1 24 ビット 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 4096×1716（2.39:1）、5.1 24 ビット 48 kHz PCM
+	Show Duplicate Frame Markers	重複フレームマーカーを表示
+# Settings ▸ Media & Playback ▸ Media Backends (ADR 0005)
+	Media Backends	メディアバックエンド
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 エンジンで開けないファイルに FFmpeg を使用（FFmpeg 9.0.2 以降、GPL-3 ビルド）
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	エンジンでも FFmpeg でも開けないファイルにシステムの GStreamer を使用
+	Work Area Bar	ワークエリアバー
+	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
+	Set Work Area Bar Out Point	ワークエリアバーのアウトポイントを設定

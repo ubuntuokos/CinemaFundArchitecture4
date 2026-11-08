@@ -168,6 +168,11 @@ fn render_in_to_out_renders_only_the_marked_frames() {
     assert_eq!(spans(&s), vec![(0, 6, Yellow), (6, 12, Green), (12, 24, Yellow), (24, 48, NoBar)]);
     assert_eq!(states(&s), vec!["yellow", "none"], "a partly rendered segment is not green");
     assert_eq!(crate::previews::bar_json(&s).unwrap()["segments"][0]["renderedFrames"], 6);
+    // the bar as the GUIs draw it: ticks and lowercase states
+    let r = FrameRate::FPS_24;
+    let bar = crate::previews::bar_json(&s).unwrap()["bar"].clone();
+    assert_eq!(bar[1], json!({"start": r.tick_of(6).0, "end": r.tick_of(12).0, "state": "green"}), "{bar}");
+    assert_eq!(bar.as_array().unwrap().len(), 4, "{bar}");
     for f in [5, 12, 30] {
         assert!(s.previews.frame(&s.media, &s.project, seq, f, 1.0).is_none(), "frame {f} has no preview");
     }
@@ -221,6 +226,27 @@ fn previews_survive_save_and_open() {
     let mut t = Session::default();
     t.execute("file.open", json!({"path": path})).unwrap();
     assert_eq!(states(&t), vec!["green", "none"], "hashes are stable across save/load");
+    let _ = std::fs::remove_dir_all(&folder);
+}
+
+#[test]
+fn saving_without_previews_creates_no_previews_folder() {
+    // #2343: a project with nothing rendered leaves only the file it was asked to write
+    let mut s = Session::default();
+    let folder = tmp("save-empty");
+    std::fs::create_dir_all(&folder).unwrap();
+    let path = folder.join("Film.fcproj").to_string_lossy().to_string();
+    s.execute("file.save", json!({"path": path})).unwrap();
+    assert_eq!(s.previews.dir().unwrap(), folder.join("CFA4 Previews").join("Film"));
+    assert!(!folder.join("CFA4 Previews").exists());
+    // the first render creates it
+    let (mut r, _) = session("save-empty-render");
+    r.execute("file.save", json!({"path": path})).unwrap();
+    assert!(!folder.join("CFA4 Previews").exists());
+    let v = r.execute("sequence.renderEffectsInToOut", json!({"wait": true})).unwrap();
+    job_ok(&r, &v);
+    assert!(folder.join("CFA4 Previews").join("Film").is_dir());
+    assert_eq!(states(&r), vec!["green", "none"]);
     let _ = std::fs::remove_dir_all(&folder);
 }
 
