@@ -9839,6 +9839,15 @@ def test_essential_graphics(app, tmp_path: Path):
         win.execute("graphics.selectLayer", {"clip": clip, "layers": [0]})
         assert wait_until(app, lambda: eg.editor.layer == 0 and eg.editor.data.get("kind") == "text", 10_000)
 
+        # upstream #3433: the S button strikes the text through, as U underlines it
+        strike = eg.findChild(QtWidgets.QToolButton, "graphics.prop.strikethrough")
+        assert strike is not None and not strike.isChecked()
+        eg.editor.scroll.ensureWidgetVisible(strike)
+        strike.click()
+        assert wait_until(app, lambda: eg.editor.param("strikethrough") is True and strike.isChecked(), 10_000), eg.editor.param("strikethrough")
+        strike.click()
+        assert wait_until(app, lambda: eg.editor.param("strikethrough") is False and not strike.isChecked(), 10_000)
+
         # a scrub of Opacity (half a percent a pixel) is one undo step
         spin = eg.findChild(HotSpin, "graphics.prop.opacity")
         eg.editor.scroll.ensureWidgetVisible(spin)
