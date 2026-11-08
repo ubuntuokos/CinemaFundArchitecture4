@@ -318,6 +318,9 @@
 	{v} Mbps	{v} Mbit/s
 	{word} compression	compression {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Delete Redoable Actions	Supprimer les actions rétablissables
+	Clear History	Effacer l’historique
+	Delete the dimmed actions after the current state? They cannot be redone.	Supprimer les actions estompées après l’état actuel ? Elles ne pourront pas être rétablies.
 	Work Area Bar	Barre de zone de travail
 	Start: {tc}	Début : {tc}
 	End: {tc}	Fin : {tc}

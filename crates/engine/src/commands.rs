@@ -112,6 +112,9 @@ fn can_undo(s: &Session) -> std::result::Result<(), String> {
 fn can_redo(s: &Session) -> std::result::Result<(), String> {
     if s.history.can_redo() { Ok(()) } else { Err("nothing to redo".into()) }
 }
+fn has_history(s: &Session) -> std::result::Result<(), String> {
+    if s.history.can_undo() || s.history.can_redo() { Ok(()) } else { Err("the history is empty".into()) }
+}
 fn has_in_out(s: &Session) -> std::result::Result<(), String> {
     let seq = s.active_sequence().ok_or("no sequence is open")?;
     if seq.mark_in.is_some() || seq.mark_out.is_some() { Ok(()) } else { Err("mark an In or Out point first".into()) }
@@ -1796,6 +1799,9 @@ fn build() -> Vec<CommandSpec> {
         // ================= Edit =================
         cmd!("edit.undo", "Undo", ["Edit"], Some("Cmd+Z"), "{}", can_undo, |s, _| Ok(json!({"undone": s.undo()}))),
         cmd!("edit.redo", "Redo", ["Edit"], Some("Cmd+Shift+Z"), "{}", can_redo, |s, _| Ok(json!({"redone": s.redo()}))),
+        // the History panel menu; neither one changes the project or its unsaved state
+        cmd!("history.deleteRedoable", "Delete Redoable Actions", [], None, "{}", can_redo, |s, _| Ok(json!({"deleted": s.history.delete_redoable()}))),
+        cmd!("history.clear", "Clear History", [], None, "{}", has_history, |s, _| Ok(json!({"deleted": s.history.clear()}))),
         cmd!("edit.cut", "Cut", ["Edit"], Some("Cmd+X"), "{}", has_clips_or_captions, |s, _| {
             if s.state.selection.is_empty() {
                 crate::captions::copy(s);
