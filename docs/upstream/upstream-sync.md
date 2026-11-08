@@ -276,7 +276,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3212 | Timeline: Show Duplicate Frame Markers marks media frames used more than once | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #565 | PR nyitva |
 | 0.13.0 | #3227 | Audio Track Mixer: Show/Hide Tracks and Meter Input(s) Only are commands with Premiere's keys | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #601 | PR nyitva |
 | 0.13.0 | #3233 | Monitors: Transparency Grid shows the picture's transparent areas | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #566 | PR nyitva |
-| 0.13.0 | #2862 | Scroll the timeline clip menu when it is taller than the screen (#2852) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
+| 0.13.0 | #2862 | Scroll the timeline clip menu when it is taller than the screen (#2852) | D | átvesz (Qt6) | kézi port | U0-D | #579 | PR nyitva |
 | 0.13.0 | #2940 | Project panel: a clip dropped on New Item makes a sequence from it (fixes #2855) | D | átvesz (Qt6) | kézi port | U0-D | #581 | PR nyitva |
 | 0.13.0 | #3011 | meters: drop to silence right after Stop | D | átvesz (Qt6) | kézi port | U0-D | #567 | PR nyitva |
 | 0.13.0 | #3039 | Timeline: the Razor tool cuts captions | D | átvesz (Qt6) | kézi port | U0-D | #560 | PR nyitva |
