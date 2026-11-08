@@ -2259,13 +2259,19 @@ fn build() -> Vec<CommandSpec> {
         cmd!("sequence.lift", "Lift", ["Sequence"], Some(";"), "{}", has_in_out, |s, _| {
             let r = in_out_range(s)?;
             let tg = s.targeting().targeted;
-            s.edit_sequence("Lift", |q, ctx, _| Ok(edit::lift(q, &tg, r, ctx)))?;
-            Ok(Value::Null)
+            let cut = s.edit_sequence("Lift", |q, ctx, st| {
+                let cut = cut_range(q, &tg, r, ctx, st.copy_paste_sequence_markers);
+                edit::lift(q, &tg, r, ctx);
+                Ok(cut)
+            })?;
+            let copied = store_cut(s, cut);
+            Ok(json!({"copied": copied}))
         }),
         cmd!("sequence.extract", "Extract", ["Sequence"], Some("'"), "{}", has_in_out, |s, _| {
             let r = in_out_range(s)?;
             let tg = s.targeting().targeted;
-            s.edit_sequence("Extract", |q, ctx, st| {
+            let cut = s.edit_sequence("Extract", |q, ctx, st| {
+                let cut = cut_range(q, &tg, r, ctx, st.copy_paste_sequence_markers);
                 edit::extract(q, &tg, r, ctx);
                 if st.ripple_sequence_markers {
                     crate::sequence_tools::ripple_markers(&mut q.markers, r.end(), -r.duration);
@@ -2273,10 +2279,11 @@ fn build() -> Vec<CommandSpec> {
                 q.mark_in = None;
                 q.mark_out = None;
                 q.split = Default::default();
-                Ok(())
+                Ok(cut)
             })?;
+            let copied = store_cut(s, cut);
             s.set_playhead(r.start);
-            Ok(Value::Null)
+            Ok(json!({"copied": copied}))
         }),
         cmd!(
             "sequence.applyVideoTransition",
@@ -3889,8 +3896,52 @@ fn copy_selection(s: &mut Session) {
             }
         }
     }
-    s.state.clipboard = clip;
-    s.state.clipboard_markers = markers;
+    set_clipboard(&mut s.state, (clip, markers));
+}
+
+/// Timeline clips (track kind, track index, item) and the sequence markers that go with them.
+type Clipboard = (Vec<(TrackKind, usize, cfa4_project::TrackItem)>, Vec<Marker>);
+
+fn set_clipboard(st: &mut crate::EditorState, (clips, markers): Clipboard) {
+    st.clipboard = clips;
+    st.clipboard_markers = markers;
+}
+
+/// Put a Lift or Extract cut on the clipboard; returns how many clips it holds (0 leaves the
+/// clipboard as it was).
+fn store_cut(s: &mut Session, cut: Option<Clipboard>) -> usize {
+    let Some(cut) = cut else { return 0 };
+    let copied = cut.0.len();
+    set_clipboard(&mut s.state, cut);
+    copied
+}
+
+/// What Lift and Extract put on the clipboard, as in Premiere (#3019): the clips of the unlocked
+/// `tracks` (the targeted ones) in `range`, cut at its edges and held the way Copy holds them.
+/// Extract also cuts sync-locked tracks only to keep them in sync; that material is not copied.
+/// Reads the sequence before the edit; None when the range has no clips on those tracks.
+fn cut_range(q: &cfa4_project::Sequence, tracks: &[TrackId], range: TimeRange, ctx: &mut edit::EditCtx, with_markers: bool) -> Option<Clipboard> {
+    let mut links = std::collections::HashMap::new();
+    let mut clips = Vec::new();
+    for (kind, list) in [(TrackKind::Video, &q.video_tracks), (TrackKind::Audio, &q.audio_tracks)] {
+        for (ti, t) in list.iter().enumerate().filter(|(_, t)| !t.locked && tracks.contains(&t.id)) {
+            let mut t = t.clone();
+            edit::split_track_at(&mut t, range.start, ctx, &mut links);
+            edit::split_track_at(&mut t, range.end(), ctx, &mut links);
+            clips.extend(t.items.into_iter().filter(|i| i.start >= range.start && i.end() <= range.end()).map(|i| (kind, ti, i)));
+        }
+    }
+    let min = clips.iter().map(|c| c.2.start).min()?;
+    let max = clips.iter().map(|c| c.2.end()).max()?;
+    for c in &mut clips {
+        c.2.start -= min;
+    }
+    let markers = if with_markers {
+        q.markers.iter().filter(|m| m.start >= min && m.start < max).map(|m| Marker { start: m.start - min, ..m.clone() }).collect()
+    } else {
+        Vec::new()
+    };
+    Some((clips, markers))
 }
 
 /// Paste the clipboard at the playhead (`insert` ripples later clips right instead of
