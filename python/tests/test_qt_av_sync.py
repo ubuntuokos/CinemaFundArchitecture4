@@ -203,3 +203,59 @@ def test_real_engine_picture_follows_the_sound_as_egui(app, tmp_path: Path, monk
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_a_lost_output_is_opened_again_while_playing(app, tmp_path: Path, monkeypatch):
+    """egui's #2555: an output that fails (or could not be opened at Play) is opened again every
+    AUDIO_RETRY_S while playing goes on by the wall clock, where the picture got to, as pause/play
+    does by hand: a device that recovers, or appears after Play, sounds again and is the clock
+    again. Stop forgets the retry."""
+    import cfa4_qt.panels.monitor as monitor_mod
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.timecode import frame_ticks
+
+    monkeypatch.setattr(monitor_mod, "SINK_FAILURES", ("fatal",))
+    monkeypatch.setattr(monitor_mod, "AUDIO_RETRY_S", 0.3)
+    FakeSink.made.clear()
+    device = {"present": False}
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    mon = win.monitor
+    mon.make_sink = lambda rate: FakeSink(rate) if device["present"] else None
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        ft = frame_ticks((win.sequence or {}).get("settings"))
+        mon.seek(ft * 240)
+        # no device at Play: the wall clock plays, silently, and the output is tried again
+        mon.play(1.0)
+        assert mon.playing and not mon.audio_clock and not FakeSink.made
+        moved = mon.playhead
+        assert wait_until(app, lambda: mon.playhead > moved, 5_000), "the wall clock plays"
+        device["present"] = True  # the device appears mid-play
+        assert wait_until(app, lambda: len(FakeSink.made) == 1 and mon.audio_clock, 5_000), "opened without pause/play"
+        assert mon._play_from >= moved, "it starts where the picture got to"
+        sink = FakeSink.made[0]
+        sink.us = 500_000
+        heard_from = mon._play_from
+        assert wait_until(app, lambda: mon.playhead == (heard_from + monitor_mod.TICKS_PER_SECOND // 2) // ft * ft, 5_000)
+        # the device fails: the wall clock takes over, and the output is opened again
+        sink.failed = True
+        assert wait_until(app, lambda: not mon.audio_clock, 5_000)
+        assert wait_until(app, lambda: len(FakeSink.made) == 2 and mon.audio_clock, 5_000), "reopened on the timer"
+        assert mon.playing, "playing went on through the loss"
+        # Stop forgets the retry
+        FakeSink.made[-1].failed = True
+        assert wait_until(app, lambda: not mon.audio_clock, 5_000)
+        mon.stop()
+        assert mon._audio_retry_at is None
+        n = len(FakeSink.made)
+        wait_until(app, lambda: False, 600)
+        assert len(FakeSink.made) == n, "nothing is opened after Stop"
+    finally:
+        win.close()
+        engine.stop()

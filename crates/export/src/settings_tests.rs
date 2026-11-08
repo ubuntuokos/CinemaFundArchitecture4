@@ -426,7 +426,8 @@ fn openexr_sequences_compress() {
     }
 }
 
-/// `alpha` keeps straight alpha in PNG and TIFF sequences; off (the default) flattens over black (#160).
+/// `alpha` keeps straight alpha in PNG and TIFF sequences; off (the default) flattens over black (#160)
+/// and writes RGB files without an alpha channel (#1863).
 #[test]
 fn image_sequences_keep_alpha_when_asked() {
     let (p, seq, m) = matte([0.0, 0.0, 1.0, 0.5], 64, 36, None);
@@ -436,16 +437,36 @@ fn image_sequences_keep_alpha_when_asked() {
             let mut s = ExportSettings { format: fmt, path: dir.path(&format!("a.{ext}")), alpha, ..Default::default() };
             s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(2)));
             export(&p, seq, &s, &m, &Progress::default()).unwrap();
-            let img = image::open(dir.0.join(format!("a000.{ext}"))).unwrap();
+            let file = dir.0.join(format!("a000.{ext}"));
+            if fmt == Format::PngSequence {
+                let colour_type = std::fs::read(&file).unwrap()[25];
+                assert_eq!(colour_type, if alpha { 6 } else { 2 }, "PNG colour type, alpha={alpha}");
+            }
+            let img = image::open(&file).unwrap();
             let px = img.to_rgba8().get_pixel(32, 18).0;
+            assert_eq!(img.color().has_alpha(), alpha, "{fmt:?} alpha channel written, alpha={alpha}");
             if alpha {
-                assert!(img.color().has_alpha(), "{fmt:?} must be written with an alpha channel");
                 assert!((100..=160).contains(&px[3]) && px[2] > 200 && px[0] < 15, "{fmt:?} straight alpha: {px:?}");
             } else {
                 assert!(px[3] == 255 && px[2] > 100 && px[2] < 240 && px[0] < 15, "{fmt:?} flattened over black: {px:?}");
             }
         }
     }
+    // the PNG size estimate counts the channels actually written, as TIFF's does
+    let rate = FrameRate::FPS_24;
+    let png = |alpha| ExportSettings { format: Format::PngSequence, alpha, ..Default::default() }.estimate_bytes(320, 180, rate, 48_000, rate.tick_of(1));
+    assert_eq!(png(false) * 4, png(true) * 3, "PNG estimate: {} RGB vs {} RGBA", png(false), png(true));
+}
+
+/// Thumbnails (`encode_png`) and an 8-bit PNG Export Frame keep the alpha they are given: only the
+/// sequence's `alpha` switch drops it (#1863).
+#[test]
+fn png_stills_keep_their_alpha_channel() {
+    let half = cfa4_render::Image::filled(4, 2, [0.0, 0.0, 0.5, 0.5]);
+    let thumb = encode_png(half.to_rgba8(), 4, 2).unwrap();
+    assert_eq!(thumb[25], 6, "encode_png colour type");
+    let frame = still::encode(&half, still::StillFormat::Png, 8).unwrap();
+    assert_eq!(frame[25], 6, "Export Frame PNG colour type");
 }
 
 #[test]
@@ -1698,4 +1719,86 @@ fn own_importer_reads_32_bit_flac_at_full_scale() {
             }
         }
     }
+}
+
+/// `matte_secs` with markers on the sequence.
+fn with_markers(p: Arc<Project>, seq: ItemId, marks: &[(i64, &str, &str, cfa4_project::MarkerKind)]) -> Arc<Project> {
+    let mut p = Arc::try_unwrap(p).unwrap_or_else(|a| (*a).clone());
+    let q = p.sequence_mut(seq).unwrap();
+    for (i, (ms, name, comment, kind)) in marks.iter().enumerate() {
+        q.markers.push(cfa4_project::Marker {
+            id: cfa4_project::MarkerId(i as u64 + 1),
+            start: Tick(ms * (TICKS_PER_SECOND / 1000)),
+            duration: Tick::ZERO,
+            name: name.to_string(),
+            comment: comment.to_string(),
+            kind: *kind,
+            color: Label::Iris,
+        });
+    }
+    Arc::new(p)
+}
+
+#[test]
+fn chapter_markers_become_export_chapters() {
+    use cfa4_project::MarkerKind::{Chapter as C, Comment};
+    let (p, seq, _) = matte_secs([0.0, 0.0, 0.0, 1.0], 64, 36, None, 4);
+    let p = with_markers(
+        p,
+        seq,
+        &[
+            (3_000, "Third", "", C),
+            (500, "", "", Comment),
+            (1_500, "", "from comment", C),
+            (1_000, "First", "x", C),
+            (3_500, "", "", C),
+            (4_500, "Outside", "", C),
+        ],
+    );
+    let range = TimeRange::new(Tick(TICKS_PER_SECOND), Tick(3 * TICKS_PER_SECOND));
+    let got = export_chapters(&p, seq, &ExportSettings::default(), range);
+    let want = [(0, "First"), (5_000_000, "from comment"), (20_000_000, "Third"), (25_000_000, "Chapter 4")];
+    let got: Vec<(u64, &str)> = got.iter().map(|c| (c.start_100ns, c.title.as_str())).collect();
+    assert_eq!(got, want);
+    let off = ExportSettings { chapters: false, ..Default::default() };
+    assert!(export_chapters(&p, seq, &off, range).is_empty());
+}
+
+#[test]
+fn chapters_reach_mp4_m4a_and_hls_init() {
+    use cfa4_project::MarkerKind::Chapter as C;
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 2);
+    let p = with_markers(p, seq, &[(0, "Intro", "", C), (1_000, "Ünnep", "", C)]);
+    let want = vec![cfa4_isobmff::Chapter { start_100ns: 0, title: "Intro".into() }, cfa4_isobmff::Chapter { start_100ns: 10_000_000, title: "Ünnep".into() }];
+    let dir = Scratch::new("chapters");
+    let range = Some(TimeRange::new(Tick::ZERO, Tick(2 * TICKS_PER_SECOND)));
+    let chapters_of = |path: &str| cfa4_isobmff::open(std::fs::read(path).unwrap()).unwrap().metadata.chapters;
+
+    let mp4 = dir.path("c.mp4");
+    export(&p, seq, &ExportSettings { format: Format::H264, path: mp4.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
+        .unwrap();
+    assert_eq!(chapters_of(&mp4), want);
+    if let Some(j) = ffprobe_json(&["-show_chapters"], &mp4) {
+        let titles: Vec<&str> = j["chapters"].as_array().unwrap().iter().map(|c| c["tags"]["title"].as_str().unwrap()).collect();
+        assert_eq!(titles, ["Intro", "Ünnep"]);
+    }
+    let off = dir.path("off.mp4");
+    export(
+        &p,
+        seq,
+        &ExportSettings { format: Format::H264, path: off.clone(), range, bitrate_kbps: 300, chapters: false, ..Default::default() },
+        &m,
+        &Progress::default(),
+    )
+    .unwrap();
+    assert!(chapters_of(&off).is_empty());
+
+    let m4a = dir.path("c.m4a");
+    export(&p, seq, &ExportSettings { format: Format::Aac, path: m4a.clone(), range, ..Default::default() }, &m, &Progress::default()).unwrap();
+    assert_eq!(chapters_of(&m4a), want);
+
+    let hls = dir.path("c.m3u8");
+    export(&p, seq, &ExportSettings { format: Format::Hls, path: hls.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
+        .unwrap();
+    assert_eq!(chapters_of(&hls_files(&hls, 36).init), want);
 }

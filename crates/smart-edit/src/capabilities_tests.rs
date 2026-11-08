@@ -274,10 +274,10 @@ fn backend_preference_comes_from_the_routing_table() {
         }
     }
     let names = |d: &Decision| d.reasons.iter().map(|s| s.split(':').next().unwrap_or("").to_string()).collect::<Vec<_>>();
-    // shipped codec_encode order: nvenc, vaapi, ffmpeg, gstreamer-va, software
+    // shipped codec_encode order: nvenc, vaapi, software, ffmpeg, gstreamer-va (own engine first, ADR 0005)
     let d = r.decide(encode, STRICT);
     assert_eq!(d.backend, Some(Backend::Platform), "a hardware encoder the table puts first wins over our software one");
-    assert_eq!(names(&d), vec!["Platform", "Ffmpeg", "Gstreamer", "Native"]);
+    assert_eq!(names(&d), vec!["Platform", "Native", "Ffmpeg", "Gstreamer"]);
     // no routing family for demuxing: our own code first
     assert_eq!(r.decide(demux, STRICT).backend, Some(Backend::Native));
 
