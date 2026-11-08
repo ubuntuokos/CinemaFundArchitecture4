@@ -75,10 +75,11 @@ fn fc(v: &Value) -> Option<&Value> {
     v.get("metadata").and_then(|m| m.get("cfa4"))
 }
 
-/// The `metadata` keys other programs wrote (everything but CFA4's own), kept to be written back.
+/// The `metadata` keys other programs wrote (everything but CFA4's own, under `cfa4` or the upstream
+/// key), kept to be written back.
 fn foreign(v: &Value) -> BTreeMap<String, Value> {
     let Some(m) = v.get("metadata").and_then(Value::as_object) else { return BTreeMap::new() };
-    m.iter().filter(|(k, _)| k.as_str() != "cfa4").map(|(k, v)| (k.clone(), v.clone())).collect()
+    m.iter().filter(|(k, _)| k.as_str() != "cfa4" && k.as_str() != cfa4_project::legacy::OTIO_METADATA_KEY).map(|(k, v)| (k.clone(), v.clone())).collect()
 }
 
 /// A `metadata` object: the foreign keys read on import, plus CFA4's own under `cfa4`.
