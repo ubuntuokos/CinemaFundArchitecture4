@@ -318,6 +318,7 @@
 	{v} Mbps	{v} Mbit/s
 	{word} compression	compression {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Barré
 	Caption Export Settings	Réglages d’exportation des sous-titres
 	Export Captions	Exporter les sous-titres
 	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} existe déjà : rien n’a été exporté. Pour le remplacer, choisissez-le dans la fenêtre d’enregistrement.
