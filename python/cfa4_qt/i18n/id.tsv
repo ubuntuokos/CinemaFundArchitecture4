@@ -452,3 +452,23 @@
 	“{text}” is outside the title-safe area	“{text}” berada di luar area aman judul
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” terlalu gelap di atas hitam (kontras {ratio}:1; minimal 4,5:1 diperlukan)
 	“{text}” is {px} px high; 24 px or more reads well	“{text}” setinggi {px} px; 24 px atau lebih nyaman dibaca
+	Cards last whole beats (cuts on the beat)	Kartu berlangsung sepanjang ketukan utuh (potongan tepat di ketukan)
+	Fit Credits to Music	Sesuaikan Kredit dengan Musik
+	Fit to This Length	Sesuaikan dengan Durasi Ini
+	Fitting removed.	Penyesuaian dihapus.
+	Fitting…	Menyesuaikan…
+	Length of the credits	Durasi kredit
+	Length:	Durasi:
+	Length: {time}	Durasi: {time}
+	Listening to the music…	Mendengarkan musik…
+	No music to measure ({problem}); type the length.	Tidak ada musik untuk diukur ({problem}); ketik durasinya.
+	Remove Fitting	Hapus Penyesuaian
+	Select a credits page on the timeline.	Pilih halaman kredit di lini masa.
+	Start the credits where the music starts	Mulai kredit saat musik dimulai
+	The credits now last {time}.	Kredit kini berdurasi {time}.
+	The whole music ({time})	Seluruh musik ({time})
+	To the last bar line ({time})	Hingga garis birama terakhir ({time})
+	Until the sound ends ({time})	Hingga suara berakhir ({time})
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	kredit tanpa penyesuaian: {time}
+	the sound ends at {time}	suara berakhir pada {time}

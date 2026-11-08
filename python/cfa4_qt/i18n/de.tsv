@@ -452,3 +452,23 @@
 	“{text}” is outside the title-safe area	„{text}“ liegt außerhalb des titelsicheren Bereichs
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ist auf Schwarz zu dunkel (Kontrast {ratio}:1; mindestens 4.5:1 erforderlich)
 	“{text}” is {px} px high; 24 px or more reads well	„{text}“ ist {px} px hoch; ab 24 px ist es gut lesbar
+	Cards last whole beats (cuts on the beat)	Karten dauern ganze Schläge (Schnitt auf den Schlag)
+	Fit Credits to Music	Abspann an die Musik anpassen
+	Fit to This Length	Auf diese Länge anpassen
+	Fitting removed.	Anpassung entfernt.
+	Fitting…	Anpassen…
+	Length of the credits	Länge des Abspanns
+	Length:	Länge:
+	Length: {time}	Länge: {time}
+	Listening to the music…	Musik wird analysiert…
+	No music to measure ({problem}); type the length.	Keine Musik zum Messen ({problem}); geben Sie die Länge ein.
+	Remove Fitting	Anpassung entfernen
+	Select a credits page on the timeline.	Wählen Sie eine Abspannseite auf der Zeitleiste aus.
+	Start the credits where the music starts	Abspann dort beginnen, wo die Musik beginnt
+	The credits now last {time}.	Der Abspann dauert jetzt {time}.
+	The whole music ({time})	Die gesamte Musik ({time})
+	To the last bar line ({time})	Bis zum letzten Taktstrich ({time})
+	Until the sound ends ({time})	Bis der Ton endet ({time})
+	tempo {bpm} BPM	Tempo {bpm} BPM
+	the credits without fitting: {time}	der Abspann ohne Anpassung: {time}
+	the sound ends at {time}	der Ton endet bei {time}

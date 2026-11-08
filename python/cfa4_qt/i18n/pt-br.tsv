@@ -453,3 +453,23 @@
 	“{text}” is outside the title-safe area	“{text}” está fora da área segura de título
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” está escuro demais sobre preto (contraste {ratio}:1; é preciso pelo menos 4,5:1)
 	“{text}” is {px} px high; 24 px or more reads well	“{text}” tem {px} px de altura; a partir de 24 px fica legível
+	Cards last whole beats (cuts on the beat)	As cartelas duram batidas inteiras (cortes no tempo)
+	Fit Credits to Music	Ajustar créditos à música
+	Fit to This Length	Ajustar a esta duração
+	Fitting removed.	Ajuste removido.
+	Fitting…	Ajustando…
+	Length of the credits	Duração dos créditos
+	Length:	Duração:
+	Length: {time}	Duração: {time}
+	Listening to the music…	Ouvindo a música…
+	No music to measure ({problem}); type the length.	Sem música para medir ({problem}); digite a duração.
+	Remove Fitting	Remover ajuste
+	Select a credits page on the timeline.	Selecione uma página de créditos na linha do tempo.
+	Start the credits where the music starts	Iniciar os créditos onde a música começa
+	The credits now last {time}.	Os créditos agora duram {time}.
+	The whole music ({time})	A música inteira ({time})
+	To the last bar line ({time})	Até a última barra de compasso ({time})
+	Until the sound ends ({time})	Até o som terminar ({time})
+	tempo {bpm} BPM	andamento {bpm} BPM
+	the credits without fitting: {time}	os créditos sem ajuste: {time}
+	the sound ends at {time}	o som termina em {time}

@@ -452,3 +452,23 @@
 	“{text}” is outside the title-safe area	“{text}”이(가) 타이틀 세이프 영역을 벗어났습니다
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”이(가) 검은색 위에서 너무 어둡습니다(대비 {ratio}:1, 최소 4.5:1 필요)
 	“{text}” is {px} px high; 24 px or more reads well	“{text}”의 높이는 {px} px입니다. 24 px 이상이면 읽기 좋습니다
+	Cards last whole beats (cuts on the beat)	카드를 박자 단위의 길이로 유지(박자에 맞춰 자르기)
+	Fit Credits to Music	크레딧을 음악에 맞추기
+	Fit to This Length	이 길이에 맞추기
+	Fitting removed.	길이 맞춤이 해제되었습니다.
+	Fitting…	맞추는 중…
+	Length of the credits	크레딧 길이
+	Length:	길이:
+	Length: {time}	길이: {time}
+	Listening to the music…	음악 분석 중…
+	No music to measure ({problem}); type the length.	측정할 음악이 없습니다({problem}). 길이를 입력하세요.
+	Remove Fitting	길이 맞춤 해제
+	Select a credits page on the timeline.	타임라인에서 크레딧 페이지를 선택하세요.
+	Start the credits where the music starts	음악이 시작되는 지점에서 크레딧 시작
+	The credits now last {time}.	크레딧 길이가 이제 {time}입니다.
+	The whole music ({time})	음악 전체({time})
+	To the last bar line ({time})	마지막 마디선까지({time})
+	Until the sound ends ({time})	소리가 끝날 때까지({time})
+	tempo {bpm} BPM	템포 {bpm} BPM
+	the credits without fitting: {time}	맞춤 없는 크레딧: {time}
+	the sound ends at {time}	소리가 {time}에 끝납니다
