@@ -12803,6 +12803,75 @@ def test_real_engine_alt_drag_trims_one_side_of_a_link(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_work_area_bar(app, tmp_path: Path):
+    """upstream #3087: the Timeline's work area bar: shown from the Display Settings menu (it then
+    spans the sequence), an end dragged moves that end, the middle moves the bar, a double-click
+    spans what the ruler shows, and the menu hides it again."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def area():
+        return (win.sequence or {}).get("workArea")
+
+    def drag(a: QtCore.QPoint, b: QtCore.QPoint) -> None:
+        QtTest.QTest.mousePress(canvas, btn, pos=a)
+        for i in range(1, 5):
+            QtTest.QTest.mouseMove(canvas, a + (b - a) * (i / 4))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=b)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        assert area() is None and canvas.work_area() is None
+        menu = canvas.display_menu()
+        toggle = next(a for a in menu.actions() if a.objectName() == "timeline.settings.workAreaBar")
+        assert not toggle.isChecked()
+        toggle.trigger()
+        assert wait_until(app, lambda: area() is not None, 10_000)
+        full = dict(area())
+        assert full["start"] == 0 and full["end"] > 0
+        r = canvas.work_area_rect(full["start"], full["end"])
+        mid_y = int(r.center().y())
+        # the In end dragged right moves only the start
+        a = QtCore.QPoint(int(r.left()) + 1, mid_y)
+        assert canvas.work_area_at(a) == "in"
+        drag(a, a + QtCore.QPoint(120, 0))
+        assert wait_until(app, lambda: area()["start"] > 0 and area()["end"] == full["end"], 10_000), area()
+        moved = dict(area())
+        # the middle moves the whole bar left (not before 0)
+        r = canvas.work_area_rect(moved["start"], moved["end"])
+        m = QtCore.QPoint(int(r.center().x()), mid_y)
+        assert canvas.work_area_at(m) == ""
+        drag(m, m - QtCore.QPoint(60, 0))
+        assert wait_until(app, lambda: area()["start"] < moved["start"], 10_000), area()
+        assert area()["end"] - area()["start"] == moved["end"] - moved["start"]
+        # a double-click spans what the ruler shows
+        r = canvas.work_area_rect(area()["start"], area()["end"])
+        QtTest.QTest.mouseDClick(canvas, btn, pos=QtCore.QPoint(int(r.center().x()), mid_y))
+        assert wait_until(app, lambda: area()["start"] == 0, 10_000), area()
+        # hidden again from the menu
+        menu = canvas.display_menu()
+        toggle = next(a for a in menu.actions() if a.objectName() == "timeline.settings.workAreaBar")
+        assert toggle.isChecked()
+        toggle.trigger()
+        assert wait_until(app, lambda: area() is None, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_timeline_video_audio_divider_as_egui(app, tmp_path: Path):
     """egui's divider between the video and the audio tracks (timeline.rs split_y / DIVIDER_H):
     a drag moves it within 10–90 %, each area scrolls on its own (V1 sits at the bottom of the

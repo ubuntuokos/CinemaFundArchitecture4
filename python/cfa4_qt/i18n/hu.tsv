@@ -2373,6 +2373,10 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Work Area Bar	Munkaterület-sáv
+	Start: {tc}	Kezdet: {tc}
+	End: {tc}	Vég: {tc}
+	Duration: {tc}	Időtartam: {tc}
 	Show/Hide Tracks…	Sávok megjelenítése/elrejtése…
 	Panel menu	Panelmenü
 	Move panel	Panel áthelyezése
@@ -2450,3 +2454,5 @@ export.summary	Low	alacsony
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
 	more tabs	további fülek
+	Set Work Area Bar In Point	A munkaterület-sáv kezdőpontjának beállítása
+	Set Work Area Bar Out Point	A munkaterület-sáv végpontjának beállítása

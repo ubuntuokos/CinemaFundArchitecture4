@@ -318,8 +318,14 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	kompresi {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Work Area Bar	Bilah Area Kerja
+	Start: {tc}	Awal: {tc}
+	End: {tc}	Akhir: {tc}
+	Duration: {tc}	Durasi: {tc}
 	Panel menu	Menu panel
 	Move panel	Pindahkan panel
 	Transparency Grid	Kisi Transparansi
 	Show Duplicate Frame Markers	Tampilkan Penanda Frame Duplikat
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Masuk/keluar sekuens hanya 1 frame. Pilih Seluruh sekuens untuk mengekspor seluruh sekuens.
+	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
+	Set Work Area Bar Out Point	Atur Titik Keluar Bilah Area Kerja
