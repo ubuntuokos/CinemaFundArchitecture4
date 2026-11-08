@@ -4,9 +4,11 @@ DV video decoder in pure Rust: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s) and 
 (SMPTE 314M). Layer L0: depends only on `thiserror` and (optional, feature `threads`, default
 on) `rayon`. No `unsafe`, no panics on damaged input.
 
-This is step DV-1 of the DV/DVCPRO plan: the crate decodes DIF frames. Wiring into the
-importers (raw `.dv` / `.dif`, AVI, MOV, MXF; 4:1:1 enters as 4:2:2) is DV-2, DVCPRO 50
-and DVCPRO HD are DV-3, DV audio is DV-4.
+The crate decodes DIF frames (step DV-1 of the DV/DVCPRO plan). `cfa4-codecs` imports them
+(DV-2) from raw `.dv` / `.dif` files (`DifSource`), type-2 AVI, MOV / MP4 and MXF; 4:1:1 enters
+the engine as 4:2:2, and the stream info's aspect, sampling and colour come from the first
+frame (`cfa4_codecs::video::dv_stream_info`). DVCPRO 50 and DVCPRO HD are DV-3, DV audio and
+type-1 AVI are DV-4.
 
 ## Sources and licence
 

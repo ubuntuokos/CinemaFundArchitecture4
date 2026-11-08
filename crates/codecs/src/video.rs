@@ -955,6 +955,101 @@ pub fn dnx_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
     matches!(e.codec, CodecConfig::Dnx { .. }).then(|| Ok(Box::new(DnxDecoder) as Box<dyn VideoDecoder>))
 }
 
+/// Our DV decoder (`cfa4-dv`: DV25 / DVCAM, DVCPRO 25; every frame is intra, video segments
+/// decode in parallel).
+pub struct DvDecoder {
+    dec: cfa4_dv::Decoder,
+}
+
+impl Default for DvDecoder {
+    fn default() -> Self {
+        Self { dec: cfa4_dv::Decoder::new() }
+    }
+}
+
+/// Colour of DV: BT.601 matrix, video range; SMPTE 170M primaries at 525 lines, BT.470 BG at 625.
+pub fn dv_color(system: cfa4_dv::System) -> cfa4_color::ColorInfo {
+    let primaries = match system {
+        cfa4_dv::System::Lines525 => cfa4_color::Primaries::Bt601_525,
+        cfa4_dv::System::Lines625 => cfa4_color::Primaries::Bt601_625,
+    };
+    cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt601, primaries, ..cfa4_color::ColorInfo::REC709 }
+}
+
+/// What a container's stream info shows for DV, read from its first frame: the format name, the
+/// pixel format the decoder returns (4:1:1 enters as 4:2:2), the sample aspect and the colour.
+pub struct DvStreamInfo {
+    pub profile: cfa4_dv::Profile,
+    pub codec: String,
+    pub pixel_format: String,
+    pub par: (u32, u32),
+    pub color: cfa4_color::ColorInfo,
+}
+
+pub fn dv_stream_info(first_frame: &[u8]) -> Option<DvStreamInfo> {
+    let profile = cfa4_dv::probe(first_frame)?;
+    let codec = match profile.format {
+        cfa4_dv::Format::Dv25 => "DV",
+        cfa4_dv::Format::Dvcpro25 => "DVCPRO 25",
+        cfa4_dv::Format::Dvcpro50 => "DVCPRO 50",
+        cfa4_dv::Format::DvcproHd => "DVCPRO HD",
+    };
+    let codec = if profile.is_supported() { codec.to_string() } else { format!("{codec} (unsupported)") };
+    let pixel_format = match profile.chroma {
+        cfa4_dv::ChromaFormat::Yuv420 => "YUV 4:2:0 8-bit",
+        cfa4_dv::ChromaFormat::Yuv411 | cfa4_dv::ChromaFormat::Yuv422 => "YUV 4:2:2 8-bit",
+    }
+    .to_string();
+    Some(DvStreamInfo { par: profile.sample_aspect(), color: dv_color(profile.system), codec, pixel_format, profile })
+}
+
+/// Convert a decoded DV picture to a [`VideoFrame`]. CFA4 has no 4:1:1 frame type (owner
+/// decision, 2026-11-01): 4:1:1 pictures are upsampled to 4:2:2.
+pub fn dv_to_video_frame(p: cfa4_dv::Picture) -> VideoFrame {
+    use std::sync::Arc;
+    let par = p.profile.sample_aspect();
+    let color = dv_color(p.profile.system);
+    let (chroma, cb, cr) = match p.chroma_422() {
+        Some((cb, cr)) => (cfa4_frame::Chroma::C422, cb, cr),
+        None => {
+            let c = match p.profile.chroma {
+                cfa4_dv::ChromaFormat::Yuv420 => cfa4_frame::Chroma::C420,
+                _ => cfa4_frame::Chroma::C422,
+            };
+            (c, p.cb, p.cr)
+        }
+    };
+    let data = cfa4_frame::PixelData::Yuv8 { planes: [Arc::new(p.y), Arc::new(cb), Arc::new(cr)], chroma, alpha: None };
+    VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO }
+}
+
+impl VideoDecoder for DvDecoder {
+    fn decode(&mut self, sample: &[u8], pts: i64) -> Result<Vec<DecodedFrame>> {
+        let p = self.dec.decode(sample).map_err(|e| match e {
+            cfa4_dv::Error::Unsupported(_) => CodecError::Unsupported(e.to_string()),
+            _ => CodecError::Decode(e.to_string()),
+        })?;
+        Ok(vec![DecodedFrame { pts, frame: dv_to_video_frame(p), draft: false }])
+    }
+    fn flush(&mut self) -> Vec<DecodedFrame> {
+        Vec::new()
+    }
+    fn reset(&mut self) {}
+    fn name(&self) -> &str {
+        "CFA4 DV"
+    }
+    fn intra_only(&self) -> bool {
+        true
+    }
+    fn is_random_access(&self, _sample: &[u8]) -> Option<bool> {
+        Some(true)
+    }
+}
+
+pub fn dv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    matches!(e.codec, CodecConfig::Dv { .. }).then(|| Ok(Box::new(DvDecoder::default()) as Box<dyn VideoDecoder>))
+}
+
 /// Our GoPro CineForm (CFHD) decoder (intra samples; channels reconstruct in parallel).
 pub struct CineformDecoder;
 
@@ -1178,6 +1273,13 @@ fn esds_object_type(raw: &[u8]) -> Option<u8> {
     raw.get(p).copied()
 }
 
+/// Uncompressed QuickTime / MP4 video (`raw ` 24-bit RGB, `2vuy`, `v210`, #2340).
+pub fn raw_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    let v = e.video.as_ref()?;
+    let format = RawFormat::from_mov(e.format.0, v.depth)?;
+    Some(RawVideoDecoder::new(format, u32::from(v.width), u32::from(v.height), false).map(|d| Box::new(d) as Box<dyn VideoDecoder>))
+}
+
 pub fn mpeg2_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
     match &e.codec {
         CodecConfig::Unknown { fourcc, raw } if is_mpeg2_entry(&fourcc.0, raw) => {
@@ -1252,6 +1354,11 @@ pub enum RawFormat {
     Nv12,
     /// Luma only (`Y800`, `GREY`, `Y8  `).
     Gray8,
+    /// 24-bit R, G, B; rows unpadded (QuickTime `raw ` at depth 24).
+    Rgb24,
+    /// 10-bit 4:2:2 Y'CbCr, six pixels in four little-endian words, rows padded to 128 bytes
+    /// (QuickTime `v210`); shown at 8 bits.
+    V210,
 }
 
 impl RawFormat {
@@ -1277,13 +1384,24 @@ impl RawFormat {
         })
     }
 
+    /// The layout of a QuickTime / MP4 video sample entry (`raw ` RGB at depth 24, `2vuy`, `v210`).
+    pub fn from_mov(fourcc: [u8; 4], depth: u16) -> Option<RawFormat> {
+        match (&fourcc, depth) {
+            (b"raw ", 24) => Some(RawFormat::Rgb24),
+            (b"2vuy", _) => Some(RawFormat::Uyvy),
+            (b"v210", _) => Some(RawFormat::V210),
+            _ => None,
+        }
+    }
+
     pub fn label(self) -> &'static str {
         match self {
-            RawFormat::Bgr24 => "Uncompressed RGB 24-bit",
+            RawFormat::Bgr24 | RawFormat::Rgb24 => "Uncompressed RGB 24-bit",
             RawFormat::Bgrx32 => "Uncompressed RGB 32-bit",
             RawFormat::Yuy2 | RawFormat::Uyvy => "Uncompressed YUV 4:2:2",
             RawFormat::I420 | RawFormat::Yv12 | RawFormat::Nv12 => "Uncompressed YUV 4:2:0",
             RawFormat::Gray8 => "Uncompressed greyscale",
+            RawFormat::V210 => "Uncompressed YUV 4:2:2 10-bit",
         }
     }
 }
@@ -1337,6 +1455,42 @@ impl RawVideoDecoder {
                     }
                 }
                 VideoFrame::rgba8(self.width, self.height, rgba)
+            }
+            RawFormat::Rgb24 => {
+                let stride = w * 3;
+                if s.len() < stride * h {
+                    return Err(short());
+                }
+                let mut rgba = Vec::with_capacity(w * h * 4);
+                for px in s.get(..stride * h).unwrap_or_default().as_chunks::<3>().0 {
+                    rgba.extend_from_slice(&[px[0], px[1], px[2], 255]);
+                }
+                VideoFrame::rgba8(self.width, self.height, rgba)
+            }
+            RawFormat::V210 => {
+                // 6 pixels per 16 bytes; each row padded to a multiple of 128 bytes (48 pixels)
+                let stride = w.div_ceil(48) * 128;
+                if s.len() < stride * h {
+                    return Err(short());
+                }
+                let (mut y, mut u, mut v) = (Vec::with_capacity(w * h), Vec::with_capacity(cw * h), Vec::with_capacity(cw * h));
+                for row in s.chunks_exact(stride).take(h) {
+                    // the row's 10-bit samples in order: Cb Y Cr Y Cb Y Cr Y …, kept at 8 bits
+                    let mut comps = row.as_chunks::<4>().0.iter().flat_map(|b| {
+                        let word = u32::from_le_bytes(*b);
+                        [word & 0x3ff, (word >> 10) & 0x3ff, (word >> 20) & 0x3ff].map(|c| (c >> 2) as u8)
+                    });
+                    for x in 0..cw {
+                        let (Some(cb), Some(y0), Some(cr), Some(y1)) = (comps.next(), comps.next(), comps.next(), comps.next()) else { break };
+                        u.push(cb);
+                        v.push(cr);
+                        y.push(y0);
+                        if 2 * x + 1 < w {
+                            y.push(y1);
+                        }
+                    }
+                }
+                self.yuv([y, u, v], cfa4_frame::Chroma::C422)
             }
             RawFormat::Yuy2 | RawFormat::Uyvy => {
                 let stride = cw * 4;

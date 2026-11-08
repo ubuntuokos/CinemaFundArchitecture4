@@ -110,7 +110,8 @@ fn gpu_matches_cpu_plan() {
     };
     let mut c = GpuCompositor::new(&dev, &q);
     let pixels =
-        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24);
+        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24)
+            .unwrap();
     let rgba = Arc::new(VideoFrame::rgba8(320, 180, pixels));
     let (w, h) = (320usize, 180usize);
     let plan = FramePlan::Layers {
@@ -451,7 +452,8 @@ fn gpu_draws_yuv_alpha_plane_like_the_cpu() {
     };
     let (w, h) = (320usize, 180usize);
     let pixels =
-        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24);
+        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24)
+            .unwrap();
     let background = Arc::new(VideoFrame::rgba8(320, 180, pixels));
     for bits in [8, 10, 12] {
         let mut c = GpuCompositor::new(&dev, &q);
