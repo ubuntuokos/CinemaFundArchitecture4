@@ -3203,6 +3203,10 @@ fn build() -> Vec<CommandSpec> {
                         n += 1;
                     }
                 }
+                // a video effect on only audio clips changes nothing: refuse before the edit commits an empty undo step
+                if n == 0 {
+                    return Err(bad("effects.apply", format!("`{}` does not apply to the selected clips", def.name)));
+                }
                 Ok(n)
             })?;
             Ok(Value::Null)
