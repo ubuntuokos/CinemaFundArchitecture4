@@ -2267,7 +2267,7 @@ class MainWindow(QMainWindow):
             return
         project_path = (self.project or {}).get("path")
         # a panel that already knows the file (an export dialog, a script) is not asked again
-        asked = {} if params.get("path") else path_params(cmd, self, project_path if isinstance(project_path, str) else None) or {}
+        asked = {} if params.get("path") else path_params(cmd, self, project_path if isinstance(project_path, str) else None, params) or {}
         if asked.get("__cancel__"):
             return
         self.engine.execute(
