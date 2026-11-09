@@ -78,15 +78,23 @@ fn units_are_interleaved_by_decode_time() {
 
 #[test]
 fn program_streams_carry_video_and_dvd_lpcm() {
+    for bits in [16, 20, 24] {
+        program_stream_with_lpcm(bits);
+    }
+}
+
+fn program_stream_with_lpcm(bits: u32) {
     let pics = video(12);
-    let mut m = Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::Mpeg2Video, MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2 }], 10_080_000).unwrap();
+    let lpcm = MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2, bits };
+    let mut m = Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::Mpeg2Video, lpcm], 10_080_000).unwrap();
+    // 4 pictures: 7680 stereo sample frames, 3840 groups of two at 20 and 24 bits
+    let block_len = 3840 * 2 * lpcm_unit_bytes(2, bits) / if bits == 16 { 1 } else { 2 };
     let mut pcm = Vec::new();
     for (k, p) in pics.iter().enumerate() {
         m.write(0, p, k as i64 * FRAME, None, k % 5 == 0).unwrap();
         if k % 4 == 3 {
-            // 4 pictures: 7680 stereo 16-bit samples
             let start = (k as i64 - 3) * FRAME;
-            let block: Vec<u8> = (0..7680 * 4).map(|i| (i * 7 + k) as u8).collect();
+            let block: Vec<u8> = (0..block_len).map(|i| (i * 7 + k) as u8).collect();
             m.write(1, &block, start, None, true).unwrap();
             pcm.extend(block);
         }
@@ -98,13 +106,15 @@ fn program_streams_carry_video_and_dvd_lpcm() {
     assert!(f.warnings.is_empty(), "{:?}", f.warnings);
     let v = f.find(Kind::Video, |c| *c == Codec::Mpeg2Video).unwrap();
     let a = f.find(Kind::Audio, |c| *c == Codec::LpcmDvd).unwrap();
-    assert_eq!(f.streams[a].lpcm, Some(LpcmFormat { sample_rate: 48_000, channels: 2, bits: 16 }));
+    assert_eq!(f.streams[a].lpcm, Some(LpcmFormat { sample_rate: 48_000, channels: 2, bits }));
     for (k, p) in pics.iter().enumerate() {
         assert_eq!(&f.read_unit(&data, v, k).unwrap(), p);
     }
     let units = &f.streams[a].units;
     let got: Vec<u8> = (0..units.len()).flat_map(|k| f.read_unit(&data, a, k).unwrap()).collect();
     assert_eq!(got, pcm);
+    // every packet holds whole frames (groups at 20 and 24 bits)
+    assert!(units.iter().enumerate().all(|(k, _)| f.read_unit(&data, a, k).unwrap().len() % lpcm_unit_bytes(2, bits) == 0), "{bits} bits");
     // each block's first packet carries its time; continuation packets none
     let stamped: Vec<i64> = units.iter().filter_map(|u| u.pts).collect();
     assert_eq!(stamped, [0, 4, 8].map(|k| Muxer::<Vec<u8>>::DELAY + k * FRAME));
@@ -115,10 +125,12 @@ fn program_streams_carry_video_and_dvd_lpcm() {
 
 #[test]
 fn bad_input_is_an_error() {
-    let lpcm = MuxCodec::LpcmDvd { sample_rate: 22_050, channels: 2 };
+    let lpcm = MuxCodec::LpcmDvd { sample_rate: 22_050, channels: 2, bits: 16 };
+    assert!(Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::Mpeg2Video, lpcm], 1_000_000).is_err());
+    let lpcm = MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2, bits: 32 };
     assert!(Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::Mpeg2Video, lpcm], 1_000_000).is_err());
     assert!(Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::AacAdts], 1_000_000).is_err());
-    assert!(Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2 }], 1_000_000).is_err());
+    assert!(Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2, bits: 16 }], 1_000_000).is_err());
     assert!(Muxer::new(Vec::new(), MuxFormat::Ts, &[], 1_000_000).is_err());
     let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::Mpeg2Video], 0).unwrap();
     assert!(m.write(1, &[1], 0, None, true).is_err());

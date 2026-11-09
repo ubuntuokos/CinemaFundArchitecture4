@@ -27,9 +27,10 @@ pub enum MuxCodec {
     Mpeg2Video,
     /// AAC in ADTS frames (transport streams only).
     AacAdts,
-    /// 16-bit big-endian interleaved DVD LPCM (program streams only), 1-8 channels at 48, 96, 44.1
-    /// or 32 kHz.
-    LpcmDvd { sample_rate: u32, channels: u32 },
+    /// Big-endian DVD LPCM (program streams only), 1-8 channels at 48, 96, 44.1 or 32 kHz, 16,
+    /// 20 or 24 bits. 16-bit samples are interleaved; 20- and 24-bit units are whole groups of two
+    /// sample frames: the upper 16 bits of all the group's samples, then their low 4 / 8 bits.
+    LpcmDvd { sample_rate: u32, channels: u32, bits: u32 },
 }
 
 /// The container.
@@ -118,9 +119,9 @@ impl<W: Write> Muxer<W> {
                 (MuxFormat::Ts | MuxFormat::M2ts, MuxCodec::LpcmDvd { .. }) => {
                     return Err(MuxError::Unsupported("DVD LPCM is written to program streams only".into()));
                 }
-                (_, MuxCodec::LpcmDvd { sample_rate, channels }) => {
-                    if lpcm_rate_code(sample_rate).is_none() || !(1..=8).contains(&channels) {
-                        return Err(MuxError::Unsupported(format!("DVD LPCM has no {channels} channels at {sample_rate} Hz")));
+                (_, MuxCodec::LpcmDvd { sample_rate, channels, bits }) => {
+                    if lpcm_rate_code(sample_rate).is_none() || !(1..=8).contains(&channels) || lpcm_quant_code(bits).is_none() {
+                        return Err(MuxError::Unsupported(format!("DVD LPCM has no {channels} channels of {bits} bits at {sample_rate} Hz")));
                     }
                     lpcm += 1;
                 }
@@ -362,11 +363,11 @@ impl<W: Write> Muxer<W> {
             let sub_len = if matches!(codec, MuxCodec::LpcmDvd { .. }) { 7 } else { 0 };
             let room = PACK_SIZE - fixed - 9 - ts_len - sub_len;
             let mut take = room.min(u.data.len() - at);
-            if let MuxCodec::LpcmDvd { channels, .. } = codec {
-                // whole sample frames in every packet
-                let frame = 2 * channels as usize;
+            if let MuxCodec::LpcmDvd { channels, bits, .. } = codec {
+                // whole sample frames (20 and 24 bits: groups of two) in every packet
+                let frame = lpcm_unit_bytes(channels, bits);
                 if take < u.data.len() - at {
-                    take -= take % frame;
+                    take -= take % frame.max(1);
                 }
             }
             let mut pack = Vec::with_capacity(PACK_SIZE);
@@ -375,11 +376,12 @@ impl<W: Write> Muxer<W> {
                 self.system_header(&mut pack);
             }
             let sub = match codec {
-                MuxCodec::LpcmDvd { sample_rate, channels } => {
+                MuxCodec::LpcmDvd { sample_rate, channels, bits } => {
                     let rate = lpcm_rate_code(sample_rate).unwrap_or(0);
+                    let quant = lpcm_quant_code(bits).unwrap_or(0);
                     // sub-stream id, frame headers, first access unit pointer, then the LPCM
-                    // header: frame number, 16-bit / rate / channels, dynamic range (none)
-                    vec![0xA0 + lpcm_index, 1, 0, 4, 0, rate << 4 | (channels as u8 - 1), 0x80]
+                    // header: frame number, quantization / rate / channels, dynamic range (none)
+                    vec![0xA0 + lpcm_index, 1, 0, 4, 0, quant << 6 | rate << 4 | (channels as u8 - 1), 0x80]
                 }
                 _ => Vec::new(),
             };
@@ -449,6 +451,27 @@ fn stream_id(codec: MuxCodec) -> u8 {
         MuxCodec::Mpeg2Video => 0xE0,
         MuxCodec::AacAdts => 0xC0,
         MuxCodec::LpcmDvd { .. } => 0xBD,
+    }
+}
+
+/// The DVD LPCM quantization word length code: 16, 20 or 24 bits.
+fn lpcm_quant_code(bits: u32) -> Option<u8> {
+    Some(match bits {
+        16 => 0,
+        20 => 1,
+        24 => 2,
+        _ => return None,
+    })
+}
+
+/// The smallest whole DVD LPCM unit in bytes: a sample frame at 16 bits, a group of two frames at
+/// 20 and 24 bits.
+pub fn lpcm_unit_bytes(channels: u32, bits: u32) -> usize {
+    let ch = channels as usize;
+    match bits {
+        20 => 5 * ch,
+        24 => 6 * ch,
+        _ => 2 * ch,
     }
 }
 

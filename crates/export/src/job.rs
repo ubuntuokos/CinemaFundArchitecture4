@@ -241,6 +241,11 @@ fn make_venc(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate) -> Resu
 }
 
 impl Exporter {
+    /// The DVD LPCM word length of an MPEG-2 program stream export: 24 when asked for, else 16.
+    fn lpcm_bits(&self) -> u32 {
+        if self.settings.audio.sample_format() == crate::SampleFormat::Int24 { 24 } else { 16 }
+    }
+
     /// Set up an export (encoder, output size, colour signalling); sets `progress.total`.
     pub fn new(project: Arc<Project>, seq: ItemId, settings: &ExportSettings, progress: &Progress) -> Result<Self> {
         timed(Stage::Setup, || Self::set_up(project, seq, settings, progress))
@@ -525,11 +530,11 @@ impl Exporter {
                     let header = crate::aac_out::AdtsHeader::from_asc(&cfg.asc)?;
                     Some(MpegAudio::Aac { header, sample_rate: a.sr, priming: enc.priming() })
                 }
-                (Some(a), None) => Some(MpegAudio::Lpcm { sample_rate: a.sr, channels: a.channels as u32 }),
+                (Some(a), None) => Some(MpegAudio::Lpcm { sample_rate: a.sr, channels: a.channels as u32, bits: self.lpcm_bits() }),
             };
             let audio_bps = match (&self.audio, &self.aenc) {
                 (Some(_), Some(_)) => u64::from(self.settings.audio.bitrate_kbps) * 1000,
-                (Some(a), None) => u64::from(a.sr) * a.channels as u64 * 16,
+                (Some(a), None) => u64::from(a.sr) * a.channels as u64 * u64::from(self.lpcm_bits()),
                 _ => 0,
             };
             let peak = self.settings.max_bitrate_kbps.unwrap_or(self.settings.bitrate_kbps);

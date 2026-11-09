@@ -1622,6 +1622,7 @@ fn sample_formats_each_codec_and_container_stores() {
     assert_eq!(supported(Format::Flac, AudioCodec::Auto), [Int16, Int24, Int32]);
     assert_eq!(supported(Format::ProRes, AudioCodec::Flac), [Int16, Int24, Int32]);
     assert!(supported(Format::H264, AudioCodec::Auto).is_empty(), "MP4 is AAC");
+    assert_eq!(supported(Format::Mpeg2, AudioCodec::Auto), [Int16, Int24], "DVD LPCM");
     // `bits` rounds down to a size; `float` only with 32
     let fmt = |bits, float| AudioSettings { bits, float, ..Default::default() }.sample_format();
     assert_eq!(

@@ -588,8 +588,8 @@ impl ExportSettings {
         match self.audio_codec() {
             AudioCodec::Aac | AudioCodec::Opus => false,
             AudioCodec::Flac => !f.is_float(),
-            // DVD LPCM in MPEG-2 program streams: 16-bit
-            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => f == SampleFormat::Int16,
+            // DVD LPCM in MPEG-2 program streams: 16 or 24 bits
+            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => matches!(f, SampleFormat::Int16 | SampleFormat::Int24),
             // a DCP is always 24-bit (the export sets it)
             AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Dcp => !f.is_float(),
             AudioCodec::Pcm | AudioCodec::Auto => !(f.is_float() && self.format.is_mxf()),

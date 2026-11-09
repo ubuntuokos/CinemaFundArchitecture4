@@ -162,7 +162,7 @@ pub enum Format {
     #[serde(rename = "mxf-opatom", alias = "MxfOpAtom")]
     MxfOpAtom,
     /// MPEG-2 video (ITU-T H.262, Main Profile 4:2:0 or 4:2:2 Profile, IBBP) in an MPEG-2 program stream
-    /// with 16-bit DVD LPCM (`.mpg`), a transport stream with AAC (`.ts`, `.m2ts`), or an
+    /// with 16- or 24-bit DVD LPCM (`.mpg`), a transport stream with AAC (`.ts`, `.m2ts`), or an
     /// elementary stream without audio (`.m2v`): [`Mpeg2Container`].
     #[serde(rename = "mpeg2", alias = "Mpeg2")]
     Mpeg2,
@@ -806,7 +806,7 @@ impl ExportSettings {
             && !self.supports_sample_format(sample_format)
         {
             if self.format == Format::Mpeg2 {
-                return Err(ExportError::Unsupported("MPEG-2 program streams carry 16-bit LPCM: set the sample size to 16".into()));
+                return Err(ExportError::Unsupported("MPEG-2 program streams carry 16- or 24-bit LPCM: set the sample size to 16 or 24".into()));
             }
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
