@@ -71,8 +71,8 @@ a GNOME-os és a Budgie csak Waylandet használ, több másik pedig még X11-et 
 | Változat (26.04 LTS) | Asztali környezet | Megjegyzés |
 |---|---|---|
 | Ubuntu | GNOME 50 | csak Wayland |
-| Kubuntu | KDE Plasma | **elsődleges fejlesztői környezet** (a referenciagép Kubuntu 26.04.1) |
-| Ubuntu Studio | KDE Plasma | kreatív célközönség, kiemelten fontos |
+| Kubuntu | KDE Plasma | **elsődleges fejlesztői környezet** |
+| Ubuntu Studio | KDE Plasma | kreatív célközönség, kiemelten fontos; **a tulajdonos referenciagépe** ([`docs/development/reference-machine.md`](docs/development/reference-machine.md)) |
 | Xubuntu | Xfce | |
 | Lubuntu | LXQt | Qt-alapú, könnyű |
 | Ubuntu Budgie | Budgie | csak Wayland |
@@ -90,7 +90,7 @@ Csomagformátumok: `.deb`, AppImage, Flatpak, `tar.gz` (lásd F3–F6 auditok).
 ## 4. Egyesítendő programok és képességeik
 
 A CFA4 ezeknek a programoknak a **képességeit** veszi át; a nevüket, logóikat és védjegyeiket nem.
-Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (2. pont, Licenc).
+Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (1. pont, Licenc).
 Zárt programok (Adobe Premiere, DaVinci Resolve) és GPL-2.0-only projektek (pl. HandBrake) kódja
 nem vehető át: ezek képességét saját kóddal kell megvalósítani. A kodekek és konténerek saját,
 clean-room megvalósításúak; külső kodek-crate függőségként használható. A szabályok:
@@ -106,6 +106,13 @@ clean-room megvalósításúak; külső kodek-crate függőségként használhat
 | **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
 | **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
 | **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
+| **Venturi** | vágás, hang (Rust, egui) | GPL-3.0-or-later, kódja átvehető forrásmegjelöléssel. Hardveres kódoló önellenőrzése próbakódolással; ügynökbiztos MCP (0600 Unix socket, visszatartás mozdulat alatt); inkrementális hangerőmérés; előre dekódoló puffer elvei; VST3 külön folyamatban; stabil azonosítók; felhasználói telepítő. Az MI-réteg után: Silero VAD szünettörlés, Whisper-kompatibilis átirat – [`docs/venturi-parity.md`](docs/venturi-parity.md) V1–V10 |
+| **Kinewright** | ügynökvezérelt vágás (Rust) | Atomikus, revízióhoz kötött ügynöki szerkesztési terv egy visszavonási lépéssel; ügynökönkénti idővonal-ág; típusos incidensek biztonságos javítással; kis MCP-felület; mért ügynöki teljesítmény; export utáni hang- és képellenőrzés; storyboard és ütemelemzés. Csak az elveket írjuk újra (GPL-3.0-only) – [`docs/open-editors-parity.md`](docs/open-editors-parity.md) E1, E2, E4–E6, E14, E15 |
+| **Cutlass** | MI-asszisztenses vágás (Rust) | Próba homokozóban, élesítés egy lépésben; MI-asszisztens panel helyi végponttal; Lottie-animációk; Python-szkriptelés – E1, E3, E5, E10, E11 |
+| **Concat** | CapCut-szerű vágás (Rust) | Csak ötlet, kód nem (AGPL): modelljegyzék rögzített SHA-256-tal és saját tükörrel, modelljelöltek (kivágás, felskálázás, hangklónozás) – E7–E9 |
+| **Gausian Native Editor** | natív vágás (Rust) | Automatikus proxydöntés a média és a hardver alapján; SQLite-séma minta a nyilvántartáshoz – E12, K17 |
+| **OpenCut** | vágás (Rust, GPUI) | A projektformátum géppel olvasható sémája és CLI-ellenőrzése – E13 |
+| **Lumina**, **RueyMediaEditor** | vágás (Rust + Qt/QML, Tauri) | Csak referencia: képességeik a CFA4-ben már megvannak, vagy még csak tervek |
 
 További, eddig hiányzó területek:
 
@@ -132,8 +139,11 @@ Tervezett irányok:
 - vágás: jelenetek és csendek felismerése, durva vágás átirat alapján;
 - konvertálás és publikálás: platformonkénti beállítás-javaslat.
 
-Szabály: a modellek a felhasználó gépén futnak: CPU-n, vagy bármely gyártó GPU-ján, illetve NPU-n,
-ha van (lásd 2.4: gyártófüggetlen gyorsítás). Minden modellnél
+Szabály: a modellek a felhasználó gépén futnak, bármely gyártó GPU-ján, illetve NPU-n, ha van (lásd
+2.4: gyártófüggetlen gyorsítás). Az AI-funkciók alsó határa legalább 12 GB-os GPU és 16 GB RAM
+(ajánlott 32 GB); ez alatt az AI nem támogatott, a CFA4 többi része fut. A CPU a GPU melletti másik
+igazolt út lehet, önálló, GPU nélküli AI-út nincs (tulajdonosi döntés, 2026-11-07; CFA4-AI_modules
+ADR 0008, 3. és 9. pont). A 2.4 CPU-s tartaléka a médiafeldolgozásra vonatkozik. Minden modellnél
 rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a felhasználó tudta nélkül.
 
 ## 6. Prioritási sorrend

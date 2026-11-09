@@ -49,6 +49,7 @@ pub fn text_styles(t: &TextProps) -> (TextStyle, ParagraphStyle) {
             faux_italic: t.faux_italic,
             caps: caps_of(t.caps),
             underline: t.underline,
+            strikethrough: t.strikethrough,
         },
         ParagraphStyle {
             align: match t.align {
@@ -91,6 +92,7 @@ pub fn text_runs(t: &TextProps, base: &TextStyle) -> Vec<StyleRun> {
                 faux_italic: c.faux_italic.unwrap_or(base.faux_italic),
                 caps: c.caps.map_or(base.caps, caps_of),
                 underline: c.underline.unwrap_or(base.underline),
+                strikethrough: c.strikethrough.unwrap_or(base.strikethrough),
                 ..base.clone()
             },
         })
@@ -575,7 +577,17 @@ fn content_bounds(specs: &[LayerSpec]) -> Option<[f64; 4]> {
 /// with Responsive Design – Time, pins and the roll / crawl offset applied. Includes hidden
 /// layers (their `enabled` is false).
 pub fn item_layer_specs(item: &TrackItem, mt: Tick, canvas: (u32, u32)) -> Vec<(usize, LayerSpec)> {
-    let (t, u, d) = graphic_time(item, mt);
+    let (_, u, d) = graphic_time(item, mt);
+    let (idx, mut specs) = unrolled_specs(item, mt, canvas);
+    if let Some(meta) = item.graphic.as_deref() {
+        apply_roll(meta, &mut specs, u, d, canvas);
+    }
+    idx.into_iter().zip(specs).collect()
+}
+
+/// The layers before the roll / crawl offset (responsive timing and pins applied).
+fn unrolled_specs(item: &TrackItem, mt: Tick, canvas: (u32, u32)) -> (Vec<usize>, Vec<LayerSpec>) {
+    let (t, _, _) = graphic_time(item, mt);
     let mut idx = Vec::new();
     let mut specs = Vec::new();
     for (i, e) in item.effects.iter().enumerate() {
@@ -587,10 +599,16 @@ pub fn item_layer_specs(item: &TrackItem, mt: Tick, canvas: (u32, u32)) -> Vec<(
         }
     }
     apply_pins(&mut specs, canvas);
-    if let Some(meta) = item.graphic.as_deref() {
-        apply_roll(meta, &mut specs, u, d, canvas);
-    }
-    idx.into_iter().zip(specs).collect()
+    (idx, specs)
+}
+
+/// The roll / crawl offset [`item_layer_specs`] adds to every layer's position at media time
+/// `mt`: an editor subtracts it to get the position the layer was given.
+pub fn item_roll_offset(item: &TrackItem, mt: Tick, canvas: (u32, u32)) -> (f64, f64) {
+    let Some(meta) = item.graphic.as_deref().filter(|m| m.roll.mode != cfa4_project::RollMode::Off) else { return (0.0, 0.0) };
+    let (_, u, d) = graphic_time(item, mt);
+    let (_, specs) = unrolled_specs(item, mt, canvas);
+    content_bounds(&specs).map_or((0.0, 0.0), |cb| roll_offset(&meta.roll, u, d, canvas, cb))
 }
 
 /// Move every layer by the roll / crawl offset at clip time `u` of a clip `d` long.

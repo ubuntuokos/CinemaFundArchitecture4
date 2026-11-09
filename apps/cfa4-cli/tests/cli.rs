@@ -3,7 +3,7 @@
 use std::io::Write;
 use std::process::{Command, Output, Stdio};
 
-use serde_json::Value;
+use serde_json::{Value, json};
 
 fn cli(args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_cfa4-cli")).args(args).output().expect("spawn cfa4-cli")
@@ -55,7 +55,7 @@ fn long_help_matches_help_command() {
 
 #[test]
 fn probe_reports_mpeg_transport_and_program_streams() {
-    let Some(ffmpeg) = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists()) else {
+    let Some(ffmpeg) = ["/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists()) else {
         eprintln!("SKIPPED (probe_reports_mpeg_transport_and_program_streams): ffmpeg not found");
         return;
     };
@@ -142,8 +142,55 @@ fn export_wav_waits_for_job() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+#[test]
+fn run_waits_for_an_export_on_its_last_line() {
+    // #2342: `file.exportMedia` as the last line of a script is written before `run` exits
+    let dir = std::env::temp_dir().join(format!("fc-cli-run-x-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let out = dir.join("last.wav");
+    // `"wait": null` waits too: only an explicit `false` doesn't
+    let script = json!({"id": "file.exportMedia", "params": {"path": out.to_str().unwrap(), "format": "wav", "wait": null}}).to_string();
+    let mut child = Command::new(env!("CARGO_BIN_EXE_cfa4-cli")).args(["--demo", "run", "-"]).stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
+    child.stdin.take().unwrap().write_all(format!("{script}\n").as_bytes()).unwrap();
+    let o = child.wait_with_output().unwrap();
+    assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stdout));
+    assert!(std::fs::metadata(&out).map(|m| m.len() > 44).unwrap_or(false), "{}", String::from_utf8_lossy(&o.stdout));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// `export --preset`: a built-in preset by name (dash or en dash), a custom range, a user preset
 /// from `--data-dir`, `--list-presets`, `--queue`, and a clean failure for an unknown preset.
+#[test]
+fn single_frame_in_out_export_warns_in_json_and_stderr() {
+    let dir = std::env::temp_dir().join(format!("fc-cli-single-frame-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let project = dir.join("marked.fcproj");
+    let script = dir.join("marks.jsonl");
+    std::fs::write(&script, "{\"id\":\"markers.markIn\",\"params\":{\"frame\":12}}\n{\"id\":\"markers.markOut\",\"params\":{\"frame\":12}}\n").unwrap();
+    let setup = cli(&["--demo", "--save-as", project.to_str().unwrap(), "run", script.to_str().unwrap()]);
+    assert!(setup.status.success(), "{}", String::from_utf8_lossy(&setup.stderr));
+    for (name, bounds, warned) in [
+        ("marked.wav", vec![], true),
+        ("explicit.wav", vec!["--start", "0", "--end", "0.04"], false),
+        ("queued.wav", vec!["--queue"], true),
+        ("queued-explicit.wav", vec!["--queue", "--start", "0", "--end", "0.04"], false),
+    ] {
+        let path = dir.join(name);
+        let mut args = vec!["--project", project.to_str().unwrap(), "export", path.to_str().unwrap()];
+        args.extend(bounds);
+        let output = cli(&args);
+        let v = json_out(&output);
+        assert_eq!(v["warnings"].as_array().unwrap().len(), usize::from(warned));
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(stderr.contains("In/Out range is 1 frame"), warned, "{stderr}");
+        if warned {
+            assert!(stderr.contains("--range entire"), "{stderr}");
+        }
+        assert!(path.exists());
+    }
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
 #[test]
 fn export_with_presets() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/export-tests").join(format!("cli-{}", std::process::id()));
@@ -156,7 +203,7 @@ fn export_with_presets() {
     let v = json_out(&o);
     assert_eq!(v["preset"], "Apple ProRes 422 Proxy");
     assert!(std::fs::metadata(&out).map(|m| m.len() > 1000).unwrap_or(false));
-    if let Some(ffprobe) = ["/opt/homebrew/bin/ffprobe", "/usr/local/bin/ffprobe", "/usr/bin/ffprobe"].into_iter().find(|p| std::path::Path::new(p).exists()) {
+    if let Some(ffprobe) = ["/usr/local/bin/ffprobe", "/usr/bin/ffprobe"].into_iter().find(|p| std::path::Path::new(p).exists()) {
         let p = Command::new(ffprobe)
             .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name,profile,width", "-of", "csv=p=0", out.to_str().unwrap()])
             .output()

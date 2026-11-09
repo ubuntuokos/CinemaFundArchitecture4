@@ -239,7 +239,56 @@ fn frame_bytes(img: &cfa4_render::Image, p: &Value) -> Vec<u8> {
     bytes
 }
 
+/// `draft`: decode for reduced-resolution playback (Settings ▸ Playback ▸ Draft decoding), as
+/// egui's monitors do while playing at 1/2 or lower. The engine keeps draft pictures apart, so a
+/// paused frame, an export or a render never gets one.
 fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
+    let draft = match p.get("draft") {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(b)) => *b,
+        Some(_) => return Err("`draft` must be true or false".into()),
+    };
+    let (mut info, bytes) = cfa4_media::cancel::with_draft(draft, || render_frame_at(s, p))?;
+    info["draft"] = json!(draft);
+    Ok((info, bytes))
+}
+
+/// The Program monitor's GPU compositor (cfa4-gpu, the one egui's monitors draw with), read back
+/// as the RGBA8 frame `frame.render` sends, and whether its adapter is a software rasteriser (the
+/// CPU renderer is faster than one); `None` on a machine without a usable adapter, where the CPU
+/// renderer draws every frame. Made by the first frame that asks for it.
+struct DisplayGpu(cfa4_gpu::ExportRenderer);
+
+impl cfa4_engine::DisplayRenderer for DisplayGpu {
+    fn render_rgba8(
+        &mut self,
+        project: &cfa4_project::Project,
+        seq: cfa4_project::ItemId,
+        t: cfa4_time::Tick,
+        opts: cfa4_render::RenderOptions,
+        sources: &dyn cfa4_render::SourceProvider,
+    ) -> Option<(usize, usize, Vec<u8>, bool)> {
+        self.0.render_display_rgba8(project, seq, t, opts, sources)
+    }
+}
+
+fn display_renderer() -> Option<&'static (std::sync::Mutex<DisplayGpu>, bool)> {
+    static R: std::sync::OnceLock<Option<(std::sync::Mutex<DisplayGpu>, bool)>> = std::sync::OnceLock::new();
+    R.get_or_init(|| {
+        // a driver that panics while the device opens leaves every frame to the CPU renderer
+        // (AGENTS.md §0) instead of failing each `frame.render` that would retry it
+        match std::panic::catch_unwind(cfa4_gpu::ExportRenderer::new) {
+            Ok(r) => r.map(|r| (r.is_software(), r)).map(|(sw, r)| (std::sync::Mutex::new(DisplayGpu(r)), sw)),
+            Err(_) => {
+                log::error!("the GPU compositor failed to start; the monitors' frames render on the CPU");
+                None
+            }
+        }
+    })
+    .as_ref()
+}
+
+fn render_frame_at(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     if wants_source(p)? {
         let item = source_item(s, p)?;
         let (w, h) = item_size(s, item);
@@ -261,12 +310,32 @@ fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let (w, h) = (seq.settings.width, seq.settings.height);
     let scale = frame_scale(w, h, p)?;
     let t = time_param(s, p)?;
-    let (img, offline) = s.try_render_program_with_offline_at(scale, t).map_err(|e| e.to_string())?;
-    let bytes = frame_bytes(&img, p);
+    // the Alpha display mode needs the linear picture's alpha; otherwise an opaque video frame goes
+    // straight to sRGB bytes (upstream #3608)
+    let mut drew_on_gpu = false;
+    let (fw, fh, bytes, offline) = if p.get("alpha").and_then(Value::as_bool).unwrap_or(false) {
+        let (img, offline) = s.try_render_program_with_offline_at(scale, t).map_err(|e| e.to_string())?;
+        (img.w, img.h, frame_bytes(&img, p), offline)
+    } else {
+        // absent: a hardware GPU's compositor when there is one; true: any adapter's, software
+        // rasterisers included (tests); false: the CPU renderer
+        let gpu = match p.get("gpu") {
+            None | Some(Value::Null) => None,
+            Some(Value::Bool(b)) => Some(*b),
+            Some(_) => return Err("`gpu` must be true or false".into()),
+        };
+        let display = if gpu == Some(false) { None } else { display_renderer().filter(|r| gpu == Some(true) || !r.1) };
+        let mut guard = display.map(|(m, _)| m.lock().unwrap_or_else(std::sync::PoisonError::into_inner));
+        let renderer = guard.as_mut().map(|r| &mut **r as &mut dyn cfa4_engine::DisplayRenderer);
+        let (fw, fh, bytes, offline, on_gpu) = s.try_render_program_rgba8_using(scale, t, renderer).map_err(|e| e.to_string())?;
+        drew_on_gpu = on_gpu;
+        (fw, fh, bytes, offline)
+    };
     let offline: Vec<Value> = offline.iter().filter_map(|o| serde_json::to_value(o).ok()).collect();
     let par = cfa4_project::par_ratio(seq.settings.par);
+    let renderer = if drew_on_gpu { "gpu" } else { "cpu" };
     Ok((
-        json!({"w": img.w, "h": img.h, "fullW": w, "fullH": h, "pixelAspect": par, "format": "rgba8", "time": t.0, "offline": offline, "target": "program"}),
+        json!({"w": fw, "h": fh, "fullW": w, "fullH": h, "pixelAspect": par, "format": "rgba8", "time": t.0, "offline": offline, "target": "program", "renderer": renderer}),
         bytes,
     ))
 }
@@ -293,6 +362,13 @@ fn interleave(channels: &[Vec<f32>], frames: usize) -> Vec<u8> {
 
 fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let frames = audio_frames(p)?;
+    let speed = match p.get("speed") {
+        None => 1.0,
+        Some(v) => v.as_f64().filter(|x| x.is_finite()).ok_or("`speed` must be a number")?,
+    };
+    if speed != 1.0 {
+        return render_shuttle(s, p, frames, speed);
+    }
     if wants_source(p)? {
         let item = source_item(s, p)?;
         let media = media_of(s, item);
@@ -357,6 +433,84 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         meta["meter"]["strips"] = Value::Array(strips);
     }
     Ok((meta, bytes))
+}
+
+thread_local! {
+    /// Each target's shuttle stream (see `serve_shuttle`).
+    static SHUTTLES: std::cell::RefCell<Vec<crate::serve_shuttle::Shuttle>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// `audio.render {speed}`: the sound of J / L shuttling at 0.5–4× (`serve_shuttle`). `start` is a
+/// frame of the `mixRate` stream the reply names (device rate / speed); the reply plays at
+/// `sampleRate`, so consecutive blocks run `speed` times as fast as the timeline.
+fn render_shuttle(s: &Session, p: &Value, frames: usize, speed: f64) -> Result<(Value, Vec<u8>), String> {
+    use crate::serve_shuttle::{Shuttle, mix_rate};
+    let source = wants_source(p)?;
+    let (target, device) = if source {
+        let sr = p
+            .get("sampleRate")
+            .map(|v| v.as_u64().and_then(|x| u32::try_from(x).ok()).filter(|x| (8_000..=192_000).contains(x)).ok_or("`sampleRate` must be 8000..=192000"))
+            .transpose()?
+            .unwrap_or(48_000);
+        ("source", sr)
+    } else {
+        ("program", s.active_sequence().ok_or("no active sequence")?.settings.sample_rate.max(1))
+    };
+    let rate = mix_rate(device, speed).ok_or("`speed` must be 0.5..=4 (other speeds are silent)")?;
+    let start = match p.get("start") {
+        Some(v) => v.as_i64().ok_or("`start` must be a frame index at `mixRate`")?,
+        None => match p.get("time").or(p.get("seconds")).or(p.get("frame")) {
+            Some(_) => time_param(s, p)?.to_units_floor(i64::from(rate)),
+            None if source => s.state.source_playhead.to_units_floor(i64::from(rate)),
+            None => time_param(s, p)?.to_units_floor(i64::from(rate)),
+        },
+    };
+    let maintain = s.prefs.audio.maintain_pitch_shuttling;
+    let provider = s.media.provider(s.project.clone(), s.services.clone());
+    let silent = |n: usize| vec![vec![0.0_f32; n]; 2];
+    let channels = SHUTTLES.with(|cell| -> Result<Vec<Vec<f32>>, String> {
+        let mut shuttles = cell.borrow_mut();
+        let i = match shuttles.iter().position(|sh| sh.matches(target, device, rate, maintain)) {
+            Some(i) => i,
+            None => {
+                shuttles.retain(|sh| !sh.is_for(target));
+                shuttles.push(Shuttle::new(target, device, rate, maintain).ok_or("`speed` cannot be played at this rate")?);
+                shuttles.len() - 1
+            }
+        };
+        let sh = shuttles.get_mut(i).ok_or("shuttle stream lost")?;
+        if source {
+            let media = media_of(s, source_item(s, p)?);
+            let has_audio = s.project.item(media).is_some_and(|i| i.has_audio());
+            let decoder = if has_audio { cfa4_render::SourceProvider::source(&provider, media) } else { None };
+            let mut raw = |s0: i64, m: usize, r: u32| match &decoder {
+                Some(d) if s0 >= 0 => match d.audio(s0, m, r) {
+                    Ok(sound) => {
+                        cfa4_render::audio::to_layout(sound, cfa4_audio_dsp::channels::Layout::Stereo, cfa4_audio_dsp::channels::Mixdown::default()).channels
+                    }
+                    Err(_) => silent(m),
+                },
+                _ => silent(m),
+            };
+            Ok(sh.render(start, frames, None, &mut raw))
+        } else {
+            let seq = s.active_sequence().ok_or("no active sequence")?;
+            let seq_sr = seq.settings.sample_rate.max(1);
+            let live = &s.previews.live;
+            let mut raw = |s0: i64, m: usize, _r: u32| {
+                let graph = cfa4_render::mixer::mix_graph(&s.project, seq, s0, m, &provider, Some(live));
+                cfa4_render::audio::to_layout(graph, cfa4_audio_dsp::channels::Layout::Stereo, cfa4_audio_dsp::channels::Mixdown::FrontRear).channels
+            };
+            let out = sh.render(start, frames, Some(seq_sr), &mut raw);
+            let _ = live.take_meters(); // shuttling is not metered
+            Ok(out)
+        }
+    })?;
+    let bytes = interleave(&channels, frames);
+    Ok((
+        json!({"sampleRate": device, "mixRate": rate, "speed": speed, "channels": channels.len(), "frames": frames, "start": start, "format": "f32le", "target": target}),
+        bytes,
+    ))
 }
 
 fn wants_meter(p: &Value) -> bool {
@@ -679,7 +833,21 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Err(e) => Reply::err(id, e),
         },
         "frame.render" => match render_frame(s, &params) {
-            Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Ok((mut meta, bytes)) => match params.get("shm").and_then(Value::as_str) {
+                // through shared memory when the client asks; a frame that cannot go there is
+                // sent as usual (with the reason, so the client can stop asking)
+                Some(ring) => match crate::serve_shm::put(ring, &bytes) {
+                    Ok(shm) => {
+                        meta["shm"] = shm;
+                        Reply::ok(id, meta)
+                    }
+                    Err(e) => {
+                        meta["shmError"] = json!(e);
+                        Reply::with_binary(id, meta, bytes)
+                    }
+                },
+                None => Reply::with_binary(id, meta, bytes),
+            },
             Err(e) => Reply::err(id, e),
         },
         "scopes.image" => match time_param(s, &params).and_then(|t| crate::serve_scopes::image(s, &params, t)) {
@@ -756,6 +924,8 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 "canUndo": s.history.can_undo(),
                 "canRedo": s.history.can_redo(),
                 "playhead": s.playhead().0,
+                // a project opened with missing media: the frontend opens Link Media (egui's)
+                "linkMediaPrompt": s.offline.prompt,
             }),
         ),
         "app.quit" => return None,
@@ -767,6 +937,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
 /// Serves until stdin closes or `app.quit` arrives.
 pub fn run(mut s: Session) {
     let rx = spawn_reader();
+    // open the GPU compositor's device now, so the monitor's first frame does not wait for it
+    let _ = std::thread::Builder::new().name("cfa4-display-gpu".into()).spawn(|| {
+        display_renderer();
+    });
     let stdout = std::io::stdout();
     let mut out = stdout.lock();
     let mut jobs = false;
@@ -825,6 +999,7 @@ pub fn run(mut s: Session) {
         }
     }
     s.shutdown();
+    crate::serve_shm::cleanup();
 }
 
 #[cfg(test)]
@@ -889,6 +1064,13 @@ mod tests {
         assert!(w > 0 && w <= 64 && h > 0);
         assert_eq!(frame.binary.as_ref().map(Vec::len), Some((w * h * 4) as usize));
         assert_eq!(frame.json["binary"], json!(w * h * 4));
+        assert_eq!(frame.json["result"]["draft"], json!(false), "not draft unless asked");
+        // draft decoding for reduced-resolution playback: the same picture size, marked draft
+        let draft = handle(&mut s, json!(51), "frame.render", json!({"maxWidth": 64, "seconds": 1.0, "draft": true})).expect("reply");
+        assert_eq!(draft.json["ok"], json!(true), "{}", draft.json);
+        assert_eq!((draft.json["result"]["w"].as_u64(), draft.json["result"]["draft"].as_bool()), (Some(w), Some(true)));
+        let bad = handle(&mut s, json!(52), "frame.render", json!({"maxWidth": 64, "draft": "yes"})).expect("reply");
+        assert_eq!(bad.json["ok"], json!(false), "{}", bad.json);
         let audio = handle(&mut s, json!(6), "audio.render", json!({"start": 0, "frames": 480})).expect("reply");
         assert_eq!(audio.json["ok"], json!(true), "{}", audio.json);
         let ch = audio.json["result"]["channels"].as_u64().unwrap_or(0) as usize;
@@ -1013,6 +1195,79 @@ mod tests {
     }
 
     #[test]
+    fn frames_go_through_shared_memory_when_asked() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let piped = handle(&mut s, json!(1), "frame.render", json!({"maxWidth": 96, "seconds": 1.0})).expect("reply");
+        let bytes = piped.binary.clone().expect("frame through the pipe");
+        let shared = handle(&mut s, json!(2), "frame.render", json!({"maxWidth": 96, "seconds": 1.0, "shm": "program"})).expect("reply");
+        assert_eq!(shared.json["ok"], json!(true), "{}", shared.json);
+        assert!(shared.binary.is_none() && shared.json.get("binary").is_none(), "no binary tail");
+        let info = &shared.json["result"]["shm"];
+        assert_eq!(
+            (shared.json["result"]["w"].clone(), shared.json["result"]["h"].clone()),
+            (piped.json["result"]["w"].clone(), piped.json["result"]["h"].clone())
+        );
+        let file = std::fs::read(info["path"].as_str().unwrap_or_default()).expect("the ring file");
+        let (o, n) = (info["offset"].as_u64().unwrap_or(0) as usize, info["len"].as_u64().unwrap_or(0) as usize);
+        assert_eq!(file.get(o..o + n), Some(&bytes[..]), "the same frame");
+        // a ring that cannot be: the frame comes through the pipe, with the reason
+        let bad = handle(&mut s, json!(3), "frame.render", json!({"maxWidth": 96, "seconds": 1.0, "shm": "../x"})).expect("reply");
+        assert_eq!(bad.binary.as_deref(), Some(&bytes[..]));
+        assert!(bad.json["result"]["shmError"].is_string());
+        crate::serve_shm::cleanup();
+        assert!(!std::path::Path::new(info["path"].as_str().unwrap_or_default()).exists());
+    }
+
+    #[test]
+    fn audio_render_plays_shuttling_at_its_speed() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let sr = s.active_sequence().map(|q| q.settings.sample_rate).expect("demo sequence");
+        let samples =
+            |r: &Reply| -> Vec<f32> { r.binary.as_deref().unwrap_or(&[]).chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect() };
+        let ask = |s: &mut Session, id: i64, p: Value| handle(s, json!(id), "audio.render", p).expect("reply");
+        // 2× L: the timeline mixed at half the device rate, played at the device rate
+        let rate = i64::from(sr / 2);
+        let mut heard = Vec::new();
+        for (i, at) in [10 * rate, 10 * rate + 4800].into_iter().enumerate() {
+            let r = ask(&mut s, i as i64, json!({"start": at, "frames": 4800, "speed": 2.0, "meter": true}));
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            let m = &r.json["result"];
+            assert_eq!((m["sampleRate"].as_u64(), m["mixRate"].as_u64(), m["channels"].as_u64()), (Some(u64::from(sr)), Some(rate as u64), Some(2)));
+            assert!(m.get("meter").is_none(), "shuttling is not metered");
+            let block = samples(&r);
+            assert_eq!(block.len(), 4800 * 2);
+            assert!(block.iter().all(|x| x.is_finite() && x.abs() <= 4.0));
+            heard.extend(block);
+        }
+        assert!(heard.iter().any(|x| x.abs() > 0.001), "the demo plays sound at 10 s");
+        // Preferences ▸ Audio ▸ Maintain pitch while shuttling changes what is heard
+        s.prefs.audio.maintain_pitch_shuttling = false;
+        let plain = samples(&ask(&mut s, 3, json!({"start": 10 * rate, "frames": 4800, "speed": 2.0})));
+        assert_eq!(plain.len(), 4800 * 2);
+        assert_ne!(plain[..], heard[..4800 * 2], "pitch correction off");
+        // a sequence block straight through the mix at 2× without correction is every other frame
+        // of 1× (as the device plays it) — same sound, so similar level
+        let level = |v: &[f32]| v.iter().map(|x| f64::from(*x).powi(2)).sum::<f64>() / v.len().max(1) as f64;
+        let normal = samples(&ask(&mut s, 4, json!({"start": 20 * rate, "frames": 9600})));
+        assert!(level(&plain) > level(&normal) * 0.1 && level(&plain) < level(&normal) * 10.0 + 1e-6, "{} vs {}", level(&plain), level(&normal));
+        // outside 0.5–4× (and backwards) there is no sound to give: a clear refusal
+        for (i, speed) in [8.0, 0.25, -2.0].into_iter().enumerate() {
+            let r = ask(&mut s, 10 + i as i64, json!({"start": 0, "frames": 480, "speed": speed}));
+            assert_eq!(r.json["ok"], json!(false), "{speed}×");
+        }
+        assert_eq!(ask(&mut s, 20, json!({"frames": 480, "speed": "fast"})).json["ok"], json!(false));
+        // the Source monitor shuttles too
+        let movie = s.project.items.values().find(|i| i.as_media().is_some_and(|m| !m.info.audio_streams.is_empty())).map(|i| i.id).expect("demo sound");
+        s.execute("source.open", json!({"item": movie.0})).expect("open source");
+        let src = ask(&mut s, 21, json!({"target": "source", "start": 0, "frames": 4800, "speed": 0.5}));
+        assert_eq!(src.json["ok"], json!(true), "{}", src.json);
+        assert_eq!(src.json["result"]["mixRate"], json!(96_000));
+        assert_eq!(samples(&src).len(), 4800 * 2);
+    }
+
+    #[test]
     fn renders_the_source_monitor_picture_and_sound() {
         let mut s = Session::default();
         let _ = s.execute("file.openDemoProject", json!({}));
@@ -1101,5 +1356,39 @@ mod tests {
         let v = event_json(&Event::Toast { message: "hi".into(), error: true });
         assert_eq!(v, json!({"event": "toast", "message": "hi", "error": true}));
         assert!(v.get("id").is_none());
+    }
+
+    /// The Program frame is composited on the GPU, as egui's monitors do, when there is an adapter
+    /// (`gpu: true` takes a software one too), and matches the CPU renderer's picture.
+    #[test]
+    fn program_frames_composite_on_the_gpu_as_the_monitors() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let bad = handle(&mut s, json!(1), "frame.render", json!({"maxWidth": 96, "gpu": "yes"})).expect("reply");
+        assert_eq!(bad.json["ok"], json!(false), "{}", bad.json);
+        for (i, seconds) in [0.0, 1.0, 4.0].into_iter().enumerate() {
+            let id = 10 * i as u64;
+            let cpu = handle(&mut s, json!(id), "frame.render", json!({"maxWidth": 480, "seconds": seconds, "gpu": false})).expect("reply");
+            assert_eq!(cpu.json["result"]["renderer"], json!("cpu"), "{}", cpu.json);
+            let gpu = handle(&mut s, json!(id + 1), "frame.render", json!({"maxWidth": 480, "seconds": seconds, "gpu": true})).expect("reply");
+            let Some((_, software)) = display_renderer() else {
+                assert_eq!(gpu.json["result"]["renderer"], json!("cpu"), "no adapter: the CPU draws it");
+                eprintln!("SKIPPED (GPU display frames): no adapter");
+                return;
+            };
+            assert_eq!(gpu.json["result"]["renderer"], json!("gpu"), "{}", gpu.json);
+            assert_eq!((&gpu.json["result"]["w"], &gpu.json["result"]["h"]), (&cpu.json["result"]["w"], &cpu.json["result"]["h"]));
+            let (a, b) = (gpu.binary.expect("gpu frame"), cpu.binary.expect("cpu frame"));
+            assert_eq!(a.len(), b.len());
+            let mut d: Vec<u8> =
+                a.as_chunks::<4>().0.iter().zip(b.as_chunks::<4>().0).map(|(x, y)| (0..3).map(|k| x[k].abs_diff(y[k])).max().unwrap_or(0)).collect();
+            assert!(a.iter().skip(3).step_by(4).all(|&v| v == 255), "opaque");
+            d.sort_unstable();
+            let (p99, mean) = (d[d.len() * 99 / 100], d.iter().map(|&v| f64::from(v)).sum::<f64>() / d.len() as f64);
+            assert!(p99 <= 6 && mean < 1.5, "{seconds} s: GPU vs CPU p99 {p99}, mean {mean:.3}");
+            // without `gpu`, a software rasteriser leaves the frame to the (faster) CPU renderer
+            let auto = handle(&mut s, json!(id + 2), "frame.render", json!({"maxWidth": 480, "seconds": seconds})).expect("reply");
+            assert_eq!(auto.json["result"]["renderer"], json!(if *software { "cpu" } else { "gpu" }));
+        }
     }
 }

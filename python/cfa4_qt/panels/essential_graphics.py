@@ -39,7 +39,6 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSlider,
     QStackedWidget,
-    QTabBar,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -48,6 +47,7 @@ from PySide6.QtWidgets import (
 from .. import theme
 from ..hot_number import HotSpin
 from ..i18n import N_, fmt, tr
+from .tab_ids import IdTabBar
 
 TEMPLATE_MIME = "application/x-cfa4-template"
 LABEL_W = 130  # egui's label column
@@ -277,6 +277,19 @@ class TemplateList(QListWidget):
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragOnly)
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
 
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``gfxTemplates.item.<template id>`` for the cards in view."""
+        vp = self.viewport()
+        out = []
+        for i in range(self.count()):
+            it = self.item(i)
+            if it is None or it.isHidden() or not it.data(Qt.ItemDataRole.UserRole):
+                continue
+            r = self.visualItemRect(it).translated(vp.pos()).intersected(vp.geometry())
+            if not r.isEmpty():
+                out.append((f"gfxTemplates.item.{it.data(Qt.ItemDataRole.UserRole)}", QRectF(r), it.text()))
+        return out
+
     def startDrag(self, _actions: Any) -> None:
         item = self.currentItem()
         if item is None:
@@ -432,6 +445,21 @@ class TemplateBrowser(QWidget):
             self.panel.refresh_library()
 
 
+# character properties a Type-tool selection carries, with their ``graphics.setCharStyle`` names (egui's ``char_style_key``)
+CHAR_STYLE_KEYS = {
+    "font": "font",
+    "font_style": "fontStyle",
+    "size": "size",
+    "fill_color": "color",
+    "faux_bold": "bold",
+    "faux_italic": "italic",
+    "underline": "underline",
+    "tracking": "tracking",
+    "baseline_shift": "baselineShift",
+    "caps": "caps",
+}
+
+
 class GraphicEditor(QWidget):
     """Essential Graphics ▸ Edit (and egui's Properties panel for a graphic clip)."""
 
@@ -444,6 +472,7 @@ class GraphicEditor(QWidget):
         self._shape: tuple[Any, ...] | None = None
         self._updaters: list[Callable[[dict[str, Any]], None]] = []
         self._labels: list[QLabel] = []
+        self._selection_queued = False
         self.placeholder = QWidget(self)
         pv = QVBoxLayout(self.placeholder)
         pv.addStretch(1)
@@ -499,6 +528,26 @@ class GraphicEditor(QWidget):
     def param(self, pid: str) -> Any:
         return ((self.data.get("params") or {}).get(pid) or {}).get("value")
 
+    def char_range(self) -> tuple[int, int] | None:
+        """The characters of the selected text layer selected with the Type tool on the Program
+        monitor: character properties apply to them (egui's ``Ctx.range``)."""
+        if self.layer is None or self.data.get("kind") != "text":
+            return None
+        r = self.panel.text_selection(self.clip, self.layer)
+        return r if isinstance(r, tuple) and len(r) == 2 else None
+
+    def selection_changed(self) -> None:
+        """The Type tool's selection moved: stopwatches follow it (queued: it is noticed while painting)."""
+        if not self._selection_queued:
+            self._selection_queued = True
+            QTimer.singleShot(0, self._apply_selection)
+
+    def _apply_selection(self) -> None:
+        self._selection_queued = False
+        if self.data.get("clip") is not None:
+            for update in self._updaters:
+                update(self.data)
+
     def set_state(self, data: Any) -> None:
         data = data if isinstance(data, dict) else {}
         self.data = data
@@ -544,7 +593,11 @@ class GraphicEditor(QWidget):
         """A layer property; a scrub's later steps merge into its first undo step."""
         if self.layer is None:
             return
+        key, chars = CHAR_STYLE_KEYS.get(pid), self.char_range()
         params: dict[str, Any] = {"clip": self.clip, "layer": self.layer, "props": {pid: value}}
+        if key is not None and chars is not None:
+            # a Type-tool selection: the selected characters take it (egui's Ctx::set)
+            params = {"clip": self.clip, "layer": self.layer, "start": chars[0], "end": chars[1], "style": {key: value}}
         if not begin:
             params.update(merge=True, begin=False)
         elif self.panel.scrubbing():
@@ -552,7 +605,7 @@ class GraphicEditor(QWidget):
         monitor = getattr(self.window(), "monitor", None)
         if monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
             params["time"] = monitor.playhead  # the shown frame: the engine's playhead stays where playback started
-        self.panel.send("graphics.set", params)
+        self.panel.send("graphics.setCharStyle" if "style" in params else "graphics.set", params)
 
     # ----- building -----
     def _clear(self) -> None:
@@ -605,7 +658,16 @@ class GraphicEditor(QWidget):
                     "effects.toggleAnimation", {"clip": self.clip, "effect": self.data.get("effectIndex"), "param": p}
                 )
             )
-            self._updaters.append(lambda d, b=sw, p=pid: b.setChecked(bool(((d.get("params") or {}).get(p) or {}).get("animated"))))
+            keep = sw.sizePolicy()
+            keep.setRetainSizeWhenHidden(True)
+            sw.setSizePolicy(keep)
+
+            def follow(d: dict[str, Any], b: QToolButton = sw, p: str = pid) -> None:
+                b.setChecked(bool(((d.get("params") or {}).get(p) or {}).get("animated")))
+                # selected characters have no keyframes: no stopwatch while they take the property
+                b.setVisible(not (p in CHAR_STYLE_KEYS and self.char_range() is not None))
+
+            self._updaters.append(follow)
         else:
             sw.setEnabled(False)
         h.addWidget(sw)
@@ -1025,6 +1087,7 @@ class GraphicEditor(QWidget):
             ("all_caps", "TT", tr("All Caps"), ""),
             ("small_caps", "Tt", tr("Small Caps"), ""),
             ("underline", "U", tr("Underline"), "text-decoration: underline;"),
+            ("strikethrough", "S", tr("Strikethrough"), "text-decoration: line-through;"),
         ):
             b = QToolButton(self.body)
             b.setObjectName(f"graphics.prop.{pid}")
@@ -1264,7 +1327,7 @@ class EssentialGraphicsPanel(QWidget):
         self.settings: QSettings | None = None
         self.dialog: QDialog | None = None
         self._tab_chosen = ""  # "browse" / "edit" once picked; "" follows the selection (egui's)
-        self.tabs = QTabBar(self)
+        self.tabs = IdTabBar(["essentialGraphics.tab.browse", "essentialGraphics.tab.edit"], self)
         self.tabs.setObjectName("essentialGraphics.tabs")
         self.tabs.setDrawBase(False)
         self.tabs.setExpanding(False)
@@ -1286,6 +1349,8 @@ class EssentialGraphicsPanel(QWidget):
         lay.addWidget(self.stack, 1)
         self._library_asked = False
         self._fonts_asked = False
+        # the Program monitor's Type-tool selection in a layer: (clip, layer) → (start, end) or None
+        self.text_selection: Callable[[Any, int], tuple[int, int] | None] = lambda _c, _l: None
         self._show_tab()
 
     def attach_settings(self, settings: QSettings) -> None:
@@ -1298,6 +1363,50 @@ class EssentialGraphicsPanel(QWidget):
 
     def send(self, command: str, params: dict[str, Any]) -> None:
         self.command.emit(command, params)
+
+    # ----- egui's GfxTemplatesState: tab, query, category, selected (ui.gfxTemplates) -----
+    def ui_state(self) -> dict[str, Any]:
+        b = self.browser
+        return {"tab": self._tab_chosen, "query": b.search.text(), "category": str(b.category.currentData() or ""),
+                "selected": (b.selected() or {}).get("id")}
+
+    def set_ui_state(self, patch: dict[str, Any]) -> None:
+        """Merge ``patch``; a bad value raises ValueError or TypeError and changes nothing."""
+        self.check_ui_state(patch)
+        self._apply_ui_state(patch)
+
+    def check_ui_state(self, patch: dict[str, Any]) -> None:
+        b = self.browser
+        for k, v in patch.items():
+            if k not in ("tab", "query", "category", "selected"):
+                raise ValueError(f"no field {k!r} (known: tab, query, category, selected, export, replace)")
+            if k == "tab" and v not in ("", "browse", "edit"):
+                raise ValueError('tab is "browse", "edit" or "" (Edit when a graphic is selected)')
+            if k in ("query", "category") and not isinstance(v, str):
+                raise TypeError(f"{k} takes a string")
+            if k == "category" and v and b.category.findData(v) < 0:
+                raise ValueError(f"no category {v!r} in the library")
+            if k == "selected" and v is not None and not any(e.get("id") == v for e in b.entries):
+                raise ValueError(f"no template {v!r} in the library")
+
+    def _apply_ui_state(self, patch: dict[str, Any]) -> None:
+        b = self.browser
+        if "tab" in patch:
+            self.set_tab(patch["tab"])
+        if "category" in patch:
+            b.category.setCurrentIndex(max(0, b.category.findData(patch["category"])))
+        if "query" in patch:
+            b.search.setText(patch["query"])
+        if "category" in patch or "query" in patch:
+            b._fill()
+        if "selected" in patch:
+            b.list.clearSelection()
+            for i in range(b.list.count()):
+                item = b.list.item(i)
+                if patch["selected"] is not None and item.data(Qt.ItemDataRole.UserRole) == patch["selected"]:
+                    item.setSelected(True)
+                    b.list.scrollToItem(item)
+            b._selected()
 
     def tab(self) -> str:
         if self._tab_chosen:

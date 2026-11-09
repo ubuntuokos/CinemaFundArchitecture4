@@ -45,28 +45,28 @@ impl ByteReader for MemReader {
 }
 
 /// Files [`FileReader`]s keep open at most, together (#67). Each open media source used to hold
-/// its own descriptor, so a project with hundreds of sources hit the soft descriptor limit (256 on
-/// macOS, 1024 on Linux) and the rest showed as failed or offline. Past this many, the least
+/// its own descriptor, so a project with hundreds of sources hit the soft descriptor limit (1024 on
+/// Linux) and the rest showed as failed or offline. Past this many, the least
 /// recently read file is closed and its reader reopens it on demand.
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 pub const MAX_OPEN_FILES: usize = 128;
 
 /// The open files of a set of [`FileReader`]s, least recently used first.
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 #[derive(Debug)]
 pub(crate) struct FilePool {
     cap: usize,
     state: std::sync::Mutex<PoolState>,
 }
 
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 #[derive(Debug, Default)]
 struct PoolState {
     next_id: u64,
     open: std::collections::VecDeque<(u64, Arc<std::fs::File>)>,
 }
 
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 impl FilePool {
     pub(crate) fn new(cap: usize) -> Self {
         Self { cap: cap.max(1), state: Default::default() }
@@ -117,13 +117,13 @@ impl FilePool {
     }
 }
 
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 static FILE_POOL: std::sync::LazyLock<Arc<FilePool>> = std::sync::LazyLock::new(|| Arc::new(FilePool::new(MAX_OPEN_FILES)));
 
 /// A file on disk, read in place: only the requested ranges are read, so opening a clip costs its
 /// index rather than its size. The file is kept open in a shared pool of at most
 /// [`MAX_OPEN_FILES`] and reopened by path when the pool closed it.
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 #[derive(Debug)]
 pub struct FileReader {
     path: std::path::PathBuf,
@@ -132,7 +132,7 @@ pub struct FileReader {
     pool: Arc<FilePool>,
 }
 
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 impl FileReader {
     pub fn open(path: &std::path::Path) -> io::Result<Self> {
         Self::open_in(path, &FILE_POOL)
@@ -165,14 +165,14 @@ impl FileReader {
     }
 }
 
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 impl Drop for FileReader {
     fn drop(&mut self) {
         self.pool.remove(self.id);
     }
 }
 
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 impl ByteReader for FileReader {
     fn len(&self) -> u64 {
         self.len
@@ -180,26 +180,7 @@ impl ByteReader for FileReader {
     /// Positional reads: threads decoding different parts of the file do not share a cursor.
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<()> {
         let file = self.file()?;
-        #[cfg(unix)]
-        {
-            std::os::unix::fs::FileExt::read_exact_at(&*file, buf, offset)
-        }
-        #[cfg(windows)]
-        {
-            let (mut done, mut at) = (0usize, offset);
-            while let Some(rest) = buf.get_mut(done..).filter(|r| !r.is_empty()) {
-                match std::os::windows::fs::FileExt::seek_read(&*file, rest, at) {
-                    Ok(0) => return Err(eof()),
-                    Ok(n) => {
-                        done = done.saturating_add(n);
-                        at = at.saturating_add(n as u64);
-                    }
-                    Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
-                    Err(e) => return Err(e),
-                }
-            }
-            Ok(())
-        }
+        std::os::unix::fs::FileExt::read_exact_at(&*file, buf, offset)
     }
 }
 
@@ -229,6 +210,11 @@ pub fn open_reader(name: &str, reader: SharedReader, reader_openers: &[ReaderOpe
 /// Media Browser's properties and thumbnails, #157): reading a multi-gigabyte AVI into
 /// memory to show its duration, or to find out it isn't supported, thrashes the disk.
 pub fn open_reader_within(name: &str, reader: SharedReader, reader_openers: &[ReaderOpener], extra: &[Opener], max_whole: u64) -> Result<SharedSource> {
+    open_reader_plain(name, reader, reader_openers, extra, max_whole).map(crate::auro::wrap)
+}
+
+/// [`open_reader_within`] without the Auro-3D step ([`crate::auro`]).
+fn open_reader_plain(name: &str, reader: SharedReader, reader_openers: &[ReaderOpener], extra: &[Opener], max_whole: u64) -> Result<SharedSource> {
     let head = read_range(&*reader, 0, HEAD_LEN).map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
     // A HEIF still has an ISO-BMFF header and could otherwise be consumed by
     // the MP4 reader opener. Import it through the bounded still-image path.
@@ -238,7 +224,7 @@ pub fn open_reader_within(name: &str, reader: SharedReader, reader_openers: &[Re
             return Err(MediaError::Unsupported(format!("{name}: HEIF image exceeds the import size limit")));
         }
         let bytes = read_range(&*reader, 0, usize::try_from(reader.len()).unwrap_or(usize::MAX)).map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
-        return crate::open_bytes(name, bytes.into(), extra);
+        return crate::open_bytes_plain(name, bytes.into(), extra);
     }
     for o in reader_openers {
         if let Some(r) = o(name, &head, &reader) {
@@ -252,7 +238,7 @@ pub fn open_reader_within(name: &str, reader: SharedReader, reader_openers: &[Re
         return Err(MediaError::Unsupported(format!("{name}: no streaming reader for this format, and it is too large to read whole here")));
     }
     let all = read_range(&*reader, 0, usize::try_from(reader.len()).unwrap_or(usize::MAX)).map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
-    crate::open_bytes(name, all.into(), extra)
+    crate::open_bytes_plain(name, all.into(), extra)
 }
 
 #[cfg(test)]
@@ -269,7 +255,7 @@ mod tests {
         assert_eq!(read_range(&r, 8, 100).unwrap(), b"89");
     }
 
-    #[cfg(any(unix, windows))]
+    #[cfg(unix)]
     #[test]
     fn file_reader_reads_ranges_in_place() {
         let dir = std::env::temp_dir().join(format!("cfa4-file-reader-{}", std::process::id()));
@@ -293,7 +279,7 @@ mod tests {
 
     /// #67: more readers than the pool keeps open stay readable; past the cap the least recently
     /// read file is closed and reopened on demand, and a file truncated meanwhile is refused.
-    #[cfg(any(unix, windows))]
+    #[cfg(unix)]
     #[test]
     fn more_file_readers_than_the_pool_holds_stay_readable() {
         let dir = std::env::temp_dir().join(format!("cfa4-file-pool-{}", std::process::id()));

@@ -1,7 +1,7 @@
 # Releasing CFA4
 
 Every push to the `release` branch runs `.github/workflows/release.yml`. The workflow builds
-installers for macOS, Windows, Linux (AppImage, deb, rpm, tarball, Flatpak) and FreeBSD, and creates or updates a **draft**
+Linux packages for Ubuntu 26.04 (AppImage, deb, tarball, Flatpak; no RPM), and creates or updates a **draft**
 GitHub Release named `CFA4 v<version>`. Nobody sees a draft until a maintainer publishes it.
 
 User-facing names say **CFA4**. Files, binaries and ids stay lowercase
@@ -20,11 +20,10 @@ User-facing names say **CFA4**. Files, binaries and ids stay lowercase
    Commit the change (`Cargo.toml` + `Cargo.lock`) through the normal review flow, as a
    `Release: CFA4 v0.3.0` commit whose message says what changed for users.
 2. **Merge `main` into `release`** (or fast-forward it) and push. The workflow starts by itself.
-3. **Wait for the draft.** When every job is done (macOS notarization is the slow part), the
+3. **Wait for the draft.** When every job is done, the
    Releases page has a draft `CFA4 v0.3.0`, targeting the pushed commit, with every artifact
    and `SHA256SUMS.txt`. The notes are generated from the merged pull requests.
-4. **Check it.** Download an installer or two and read the job summaries. A `::warning::` there
-   means a signing secret was missing and that artifact is unsigned.
+4. **Check it.** Download a package or two and read the job summaries.
 5. **Publish** the draft in the GitHub UI. Publishing creates the `v0.3.0` tag. A version with a
    pre-release suffix (`-rc.1`) is marked as a pre-release.
 
@@ -33,18 +32,17 @@ Once the draft is published, the workflow refuses to touch that version again: b
 
 **Test runs:** *Actions › Release › Run workflow* runs the whole pipeline by hand. The optional
 `version` input (such as `0.3.0-rc.1`) overrides `Cargo.toml` for that run only; each build job
-applies it with `cargo xtask version set` before building. The signing jobs (macOS, Windows)
-and the draft-release job run in the `release` environment, which only the `release` branch can
-use, so pick that branch for a full run. Run from any other branch, it is a dry run: the jobs that
-sign nothing (Linux, Flatpak, FreeBSD, web) build and upload their artifacts to the run, the
-signing jobs are refused, and the draft-release job, which needs them, is skipped.
+applies it with `cargo xtask version set` before building. The draft-release job runs in the
+`release` environment, which only the `release` branch can use, so pick that branch for a full
+run. Run from any other branch, it is a dry run: the build jobs (Linux, Flatpak) build and upload
+their artifacts to the run, and the draft-release job is skipped.
 
 ## What gets built
 
 | Platform | Artifacts | Built on |
 |---|---|---|
-| Linux x86_64 | `cfa4-<v>-linux-x86_64.{AppImage,deb,rpm,tar.gz}` | `ubuntu-22.04` |
-| Linux aarch64 | `cfa4-<v>-linux-aarch64.{AppImage,deb,rpm,tar.gz}` | `ubuntu-22.04-arm` |
+| Linux x86_64 | `cfa4-<v>-linux-x86_64.{AppImage,deb,tar.gz}` | `ubuntu-22.04` |
+| Linux aarch64 | `cfa4-<v>-linux-aarch64.{AppImage,deb,tar.gz}` | `ubuntu-22.04-arm` |
 | Linux riscv64 | `cfa4-<v>-linux-riscv64.tar.gz` | `ubuntu-24.04`, cross-compiled (glibc 2.39+; CLI smoke-tested under QEMU) |
 | AppImage updates | `cfa4-<v>-linux-{x86_64,aarch64}.AppImage.zsync` | with the AppImage |
 | Flatpak | `cfa4-<v>-linux-x86_64.flatpak`, `cfa4-<v>-linux-aarch64.flatpak` | `ubuntu-24.04`, `ubuntu-24.04-arm` (repackaged Linux tarball) |
@@ -61,8 +59,8 @@ deliberately, in every job at once.
 ### Linux
 
 `packaging/linux/package.sh` builds the release binaries and packages them as an AppImage, a
-`.deb` and an `.rpm` (with [nfpm](https://nfpm.goreleaser.com), from `nfpm.yaml`) and a plain
-`.tar.gz` tree. The packages install both programs, the desktop entry, the AppStream metainfo, the
+`.deb` (with [nfpm](https://nfpm.goreleaser.com), from `nfpm.yaml`) and a plain `.tar.gz` tree.
+CFA4 ships no RPM. The packages install both programs, the desktop entry, the AppStream metainfo, the
 icons and the licence files.
 
 The Linux tarball includes `install.sh`. Extract it, open a terminal in the extracted
@@ -73,6 +71,23 @@ Run the installer again to update. For a system-wide installation, use
 `sudo ./install.sh --prefix /usr/local`. A custom absolute `--prefix` is also supported;
 its `share` directory must be in the desktop's data search path to appear in the menu.
 Prefixes containing `=`, `%` or control characters are rejected for desktop-launcher compatibility.
+
+**FFmpeg 9.0.2 ([ADR 0005](adr/ADR-0005-media-backends.md) step 4).** Every package carries CFA4's
+own FFmpeg build, made beforehand on the packaging host with `scripts/dev/build-ffmpeg-9.0.2.sh`
+(GPL-3, never `nonfree`, no x264/x265; `CFA4_FFMPEG_BUILD` points `package.sh` at another prefix).
+`package.sh` links the binaries against it with the `ffmpeg` feature and checks their RUNPATH;
+`packaging/linux/stage-ffmpeg.sh` copies only the run-time libraries, under their SONAMEs, with
+`$ORIGIN` as their RUNPATH. The `.deb` installs them into `/opt/cfa4/ffmpeg-9.0.2` and lists the
+Ubuntu packages they load as `Depends`; the tarball, the AppImage and the Flatpak carry them in
+`lib/cfa4/ffmpeg-9.0.2` next to the binaries, together with the third-party libraries they load
+(except glibc, libstdc++, zlib, VA-API, DRM and the display stack) and those libraries' copyright
+files. `share/doc/ffmpeg` holds FFmpeg's licences and `BUILDINFO` (upstream source, checksum or
+commit, configure flags): publish that unmodified upstream source next to each release, as GPL-3
+§6 requires for the binaries. `package.sh --formats "deb restricted"` also builds
+`cfa4-restricted-extras-<v>-linux-x86_64.deb` from the `--restricted` build (x264, x265), the
+separate package of the Ubuntu model (`docs/licensing.md` §7); it is never part of the four
+default formats. `--without-ffmpeg` exists only for local tarball tests, and
+`scripts/release/verify_cfa4_packages.py` rejects such a package.
 
 The jobs run on `ubuntu-26.04`, so the binaries need glibc 2.43 or newer (measured with
 `scripts/dev/audit-runtime-deps.sh`, see `docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md`). The deb
@@ -109,14 +124,6 @@ the job fails and asks for a version bump (`cargo xtask version set`).
 
 ## Secrets
 
-The macOS, Windows and draft-release jobs run in the `release` environment, which only the
-`release` branch can use and which holds the signing secrets. The other jobs sign nothing and get
-no secrets. Every secret is optional: a missing one produces unsigned artifacts and a
-warning, never a failed build.
-
-| Secret | Used for |
-|---|---|
-| `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `KEYCHAIN_PASSWORD` | the Developer ID certificate (base64 `.p12`), imported into a temporary keychain |
-| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | notarization (`APPLE_PASSWORD` is an app-specific password) |
-| `WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD` | Windows signing with a `.pfx` |
-| `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_SIGNING_ENDPOINT`, `AZURE_SIGNING_ACCOUNT`, `AZURE_CERT_PROFILE` | Windows signing with Azure Trusted Signing |
+The draft-release job runs in the `release` environment, which only the `release` branch can
+use. The build jobs get no secrets. No signing secrets are used: the macOS and Windows signing
+jobs went with those platforms.

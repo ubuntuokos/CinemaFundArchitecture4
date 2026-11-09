@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the tarball installer with disposable binaries and installation directories."""
 
+import json
 import os
 from pathlib import Path
 import shutil
@@ -85,6 +86,134 @@ class InstallTests(unittest.TestCase):
             time.sleep(0.01)
         self.assertEqual(launched.read_text().splitlines(), [str(prefix / "bin/cfa4"), str(document)])
 
+    def add_qt_gui(self, main_body):
+        """The real cfa4-qt launcher and a stand-in cfa4_qt package whose main() runs main_body."""
+        shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin/cfa4-qt")
+        package = self.bundle / "lib/cfa4/python/cfa4_qt"
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text("")
+        (package / "__main__.py").write_text(main_body)
+
+    def fake_pyside6(self, prefix, modules=("QtCore", "QtGui", "QtWidgets", "QtNetwork", "QtTest")):
+        """A stand-in PySide6 with these modules, first on the installed launcher's path, so the
+        host's PySide6 (installed or not) does not matter."""
+        fake = prefix / "lib/cfa4/python/PySide6"
+        fake.mkdir()
+        (fake / "__init__.py").write_text("")
+        for module in modules:
+            (fake / f"{module}.py").write_text("")
+
+    def run_qt(self, prefix, **env):
+        clean = {k: v for k, v in os.environ.items() if k not in ("CFA4_ENGINE", "PYTHONPATH")}
+        return subprocess.run(
+            ["python3", str(prefix / "bin/cfa4-qt"), "--demo"], cwd=self.root,
+            env={**clean, **env}, capture_output=True, text=True, timeout=30, check=False,
+        )
+
+    def test_qt_gui_installs_and_starts_with_the_engine_beside_it(self):
+        self.add_qt_gui(
+            "import json, os, sys\n"
+            "def main():\n"
+            "    print(json.dumps({'path': sys.path[0], 'engine': os.environ.get('CFA4_ENGINE'),"
+            " 'argv': sys.argv[1:], 'module': __file__}))\n"
+            "    return 0\n"
+        )
+        prefix = self.root / "qt prefix"
+        for _ in range(2):  # an update replaces the GUI package
+            result = self.install("--prefix", prefix)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(os.access(prefix / "bin/cfa4-qt", os.X_OK))
+        self.fake_pyside6(prefix)
+        started = self.run_qt(prefix)
+        self.assertEqual(started.returncode, 0, started.stderr)
+        seen = json.loads(started.stdout)
+        python = prefix / "lib/cfa4/python"
+        self.assertEqual(seen["path"], str(python))
+        self.assertEqual(seen["module"], str(python / "cfa4_qt/__main__.py"))
+        self.assertEqual(seen["engine"], str(prefix / "bin/cfa4-cli"))
+        self.assertEqual(seen["argv"], ["--demo"])
+        # an engine named by the user wins
+        seen = json.loads(self.run_qt(prefix, CFA4_ENGINE="/opt/other/cfa4-cli").stdout)
+        self.assertEqual(seen["engine"], "/opt/other/cfa4-cli")
+        # an empty CFA4_ENGINE names no engine: the one beside the launcher still serves
+        seen = json.loads(self.run_qt(prefix, CFA4_ENGINE="").stdout)
+        self.assertEqual(seen["engine"], str(prefix / "bin/cfa4-cli"))
+
+    def test_qt_gui_without_pyside6_names_the_packages(self):
+        # the GUI imports Qt only inside main(): the launcher checks the modules before it
+        self.add_qt_gui("def main():\n    raise SystemExit('main() must not run')\n")
+        prefix = self.root / "destination"
+        self.assertEqual(self.install("--prefix", prefix).returncode, 0)
+        self.fake_pyside6(prefix, ("QtCore",))
+        started = self.run_qt(prefix)
+        self.assertEqual(started.returncode, 1, started.stderr)
+        self.assertIn("PySide6.QtGui", started.stderr)
+        self.assertIn("python3-pyside6.qtwidgets", started.stderr)
+        self.assertNotIn("main() must not run", started.stderr)
+
+    def test_qt_gui_prefers_the_bundled_pyside6(self):
+        """The AppImage and the Flatpak carry PySide6 in lib/cfa4/pyside6 (stage-pyside6.py): it
+        comes right after the GUI's package, before the host's; a damaged bundle says so instead of
+        naming apt packages (docs/qt-parity.md 1.10)."""
+        self.add_qt_gui(
+            "import json, sys\n"
+            "import PySide6\n"
+            "def main():\n"
+            "    print(json.dumps({'path': sys.path[:2], 'pyside6': PySide6.__file__}))\n"
+            "    return 0\n"
+        )
+        prefix = self.root / "bundle prefix"
+        self.assertEqual(self.install("--prefix", prefix).returncode, 0)
+        bundled = prefix / "lib/cfa4/pyside6/PySide6"
+        bundled.mkdir(parents=True)
+        (bundled / "__init__.py").write_text("")
+        for module in ("QtCore", "QtGui", "QtWidgets", "QtNetwork", "QtTest"):
+            (bundled / f"{module}.py").write_text("")
+        started = self.run_qt(prefix)
+        self.assertEqual(started.returncode, 0, started.stderr)
+        seen = json.loads(started.stdout)
+        self.assertEqual(seen["path"], [str(prefix / "lib/cfa4/python"), str(prefix / "lib/cfa4/pyside6")])
+        self.assertEqual(seen["pyside6"], str(bundled / "__init__.py"))
+        (bundled / "QtWidgets.py").unlink()
+        started = self.run_qt(prefix)
+        self.assertEqual(started.returncode, 1)
+        self.assertIn("bundled in", started.stderr)
+        self.assertNotIn("apt install", started.stderr)
+
+    def test_qt_launcher_without_its_package_does_not_install(self):
+        shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin/cfa4-qt")
+        prefix = self.root / "destination"
+        result = self.install("--prefix", prefix)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("extract the complete tarball", result.stderr)
+        self.assertFalse(prefix.exists(), "refused before anything is written")
+
+    def test_ffmpeg_libraries_install_beside_the_binaries_and_replace_older_ones(self):
+        ffmpeg = self.bundle / "lib/cfa4/ffmpeg-9.0.2"
+        (ffmpeg / "lib").mkdir(parents=True)
+        (ffmpeg / "share/doc/ffmpeg").mkdir(parents=True)
+        (ffmpeg / "lib/libavcodec.so.62").write_text("new\n")
+        (ffmpeg / "share/doc/ffmpeg/BUILDINFO").write_text("FFmpeg 9.0.2\n")
+        prefix = self.root / "destination"
+        stale = prefix / "lib/cfa4/ffmpeg-9.0.2/lib/libavcodec.so.61"
+        stale.parent.mkdir(parents=True)
+        stale.write_text("old\n")
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        installed = prefix / "lib/cfa4/ffmpeg-9.0.2"
+        self.assertEqual((installed / "lib/libavcodec.so.62").read_text(), "new\n")
+        self.assertTrue((installed / "share/doc/ffmpeg/BUILDINFO").is_file())
+        self.assertFalse(stale.exists(), "a library of an older release stays behind")
+
+    def test_release_package_refuses_without_ffmpeg_for_other_formats(self):
+        result = subprocess.run(
+            ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "deb", "--without-ffmpeg"],
+            env={**os.environ, "CFA4_ALLOW_LOCAL_PACKAGING": "1"},
+            capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--without-ffmpeg is for local tarball tests only", result.stderr)
+
     def test_invalid_arguments_fail_before_writing(self):
         for args in (("--prefix",), ("--prefix", "relative"), ("--prefix", "/"), ("--unknown",),
                      ("--prefix", "///"), ("--prefix", "/tmp/../"), ("--prefix", str(self.bundle)),
@@ -115,10 +244,14 @@ class InstallTests(unittest.TestCase):
             binary.write_text("#!/bin/sh\necho 'CFA4 fixture'\n")
             binary.chmod(0o755)
         dist = self.root / "dist"
+        # stand-in binaries have no crate sources to list, so ship a stand-in notice file
+        notices = self.root / "THIRD-PARTY-LICENSES.txt"
+        notices.write_text("CFA4 – third-party licence notices (fixture)\n")
         result = subprocess.run(
-            ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "tar"],
+            # shell-script stand-ins cannot link FFmpeg: the local-test tarball without it
+            ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "tar", "--without-ffmpeg"],
             env={**os.environ, "CARGO_TARGET_DIR": str(target), "DIST": str(dist),
-                 "CFA4_ALLOW_LOCAL_PACKAGING": "1"},
+                 "CFA4_ALLOW_LOCAL_PACKAGING": "1", "CFA4_THIRD_PARTY_LICENSES_FILE": str(notices)},
             capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -128,6 +261,16 @@ class InstallTests(unittest.TestCase):
             installer = next(m for m in archive.getmembers() if m.name.endswith("/install.sh"))
             self.assertEqual(installer.mode & 0o777, 0o755)
             self.assertEqual(archive.extractfile(installer).read(), (HERE / "install.sh").read_bytes())
+            names = archive.getnames()
+            qt = next(m for m in archive.getmembers() if m.name.endswith("/bin/cfa4-qt"))
+            self.assertEqual(qt.mode & 0o777, 0o755)
+            self.assertEqual(archive.extractfile(qt).read(), (HERE / "cfa4-qt").read_bytes())
+            for path in ("lib/cfa4/python/cfa4_qt/__main__.py", "lib/cfa4/python/cfa4_qt/i18n/hu.tsv",
+                         "lib/cfa4/python/cfa4_qt/i18n/shared/de.tsv",
+                         "lib/cfa4/python/cfa4_qt/i18n/shared/fr.tsv.attribution"):
+                self.assertTrue(any(n.endswith("/" + path) for n in names), path)
+            self.assertFalse([n for n in names if "__pycache__" in n])
+            self.assertTrue(any(n.endswith("/share/doc/cfa4/THIRD-PARTY-LICENSES.txt") for n in names), names)
 
 
 if __name__ == "__main__":
