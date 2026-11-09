@@ -286,6 +286,21 @@ not change the other. Copied or pasted credits pages are credits of their own: r
 copy leaves the original alone. Import and refresh are each one undo step, and a refresh that
 fails leaves the old pages as they were.
 
+## Packaging and living beside Cinecred
+
+`.cfa4credits` and templates (`.cfa4credtpl`) are CFA4's own file types in CFA4's namespace:
+`application/x-cfa4-credits` and `application/x-cfa4-credits-template`
+(`packaging/linux/io.github.ubuntuokos.cfa4.mime.xml`). The packages (.deb, tarball) install a
+hidden desktop entry, `io.github.ubuntuokos.cfa4.credits.desktop`, that opens them with the Qt
+GUI (`cfa4-qt FILE`, or `cfa4-qt --credits FILE` for a spreadsheet too): the full Credits
+workspace, with the file; a template is chosen as the template and, with no spreadsheet yet, its
+sample sheet opens.
+
+The credits module is a library inside CFA4: no program, service, network port or settings of
+its own, and it claims no Cinecred file (spreadsheets, `Styling.toml`): Cinecred and CFA4 run
+side by side, each with its own settings, and removing one leaves the other working
+(`scripts/ci/test_cfa4_xdg.py` checks the types, the entry and the module).
+
 ## The Credits workspace
 
 The Credits window opens **compact** from the editor: the spreadsheet and its worksheet, the

@@ -14060,3 +14060,56 @@ def test_real_engine_credits_workspace(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_credits_files_from_the_command_line(tmp_path: Path):
+    from cfa4_qt.__main__ import credits_file
+
+    assert credits_file(str(tmp_path / "a.cfa4credits")) == str((tmp_path / "a.cfa4credits").resolve())
+    assert credits_file(str(tmp_path / "B.CFA4CREDTPL"))
+    assert credits_file(str(tmp_path / "film.fcproj")) is None and credits_file(None) is None and credits_file("") is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_file_and_template_open_in_the_workspace(app, tmp_path: Path):
+    """C9: a credits file or template handed over by the file manager opens in the full Credits
+    workspace; a template with no spreadsheet brings its sample."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text("Head,Body\nDirected by,Jordan Lee\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.save" in win.registry.commands, 60_000)
+        saved = tmp_path / "film.cfa4credits"
+        engine.execute("graphics.credits.save", {"to": str(saved), "from": {"path": str(sheet)}})
+        assert wait_until(app, saved.is_file, 20_000)
+        win.open_credits_file(str(saved))
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible() and dlg.full_view
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1, 30_000), dlg.status.text()
+        dlg.close()
+        # a template file: chosen as the template, its sample sheet opened
+        got: list = []
+        engine.execute("graphics.credits.templates", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: bool(got), 20_000)
+        tid = got[0]["templates"][0]["id"]
+        tpl = tmp_path / "look.cfa4credtpl"
+        engine.execute("graphics.credits.template.save", {"name": "Look", "where": "file", "to": str(tpl), "from": {"path": str(sheet), "template": tid}})
+        assert wait_until(app, tpl.is_file, 20_000)
+        dlg.path.setText("")
+        win.open_credits_file(str(tpl))
+        assert dlg.isVisible() and dlg.full_view
+        assert wait_until(app, lambda: dlg.path.text().endswith("look.sample.csv") and dlg.pages.rowCount() >= 1, 30_000), dlg.status.text()
+        assert dlg.template.currentData() == str(tpl) and dlg.params().get("template") == str(tpl)
+        # the templates reload when the window opens again: the file stays chosen
+        dlg.load_templates()
+        assert wait_until(app, lambda: dlg.template.findData(str(tpl)) >= 0 and dlg.template.currentData() == str(tpl), 20_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

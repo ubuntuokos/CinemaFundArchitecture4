@@ -147,6 +147,8 @@ if [[ "$WITH_FFMPEG" == 1 ]]; then
   fi
 fi
 install -Dm644 "$HERE/$APP_ID.desktop" "$STAGE/usr/share/applications/$APP_ID.desktop"
+# credits files open in the Qt GUI's Credits workspace (cfa4-qt; hidden from the menus)
+install -Dm644 "$HERE/$APP_ID.credits.desktop" "$STAGE/usr/share/applications/$APP_ID.credits.desktop"
 install -Dm644 "$HERE/$APP_ID.mime.xml" "$STAGE/usr/share/mime/packages/$APP_ID.xml"
 mkdir -p "$STAGE/usr/share/metainfo"
 sed -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/$CFA4_BUILD_DATE/g" \
@@ -161,6 +163,7 @@ bash "$ROOT/scripts/ci/check-package-docs.sh" "$STAGE/usr/share/doc/cfa4"
 
 if command -v desktop-file-validate >/dev/null; then
   desktop-file-validate "$STAGE/usr/share/applications/$APP_ID.desktop"
+  desktop-file-validate "$STAGE/usr/share/applications/$APP_ID.credits.desktop"
 fi
 if command -v appstreamcli >/dev/null; then
   appstreamcli validate --no-net --explain "$STAGE/usr/share/metainfo/$APP_ID.metainfo.xml"

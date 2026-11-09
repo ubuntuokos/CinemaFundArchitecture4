@@ -224,7 +224,7 @@ A tulajdonos döntése (2026-10-25): **az élő adás kell, de egyelőre terveze
 - **Műsorterv (rundown)** csak akkor, ha a tulajdonos a mélységről így dönt (`VISION.md` 8. pont).
 - **Együttélés:** saját port és beállításmappa, OBS-szel egyszerre futtatva tesztelve (C9).
 
-### C9 – Csomagolás és együttélés (K)
+### C9 – Csomagolás és együttélés (K) – **KÉSZ (2026-11-09)**
 
 Az eredeti terv §23–24-e, a CFA4 csomagolására szabva.
 
@@ -235,6 +235,25 @@ Az eredeti terv §23–24-e, a CFA4 csomagolására szabva.
   csomagolásba kerül.
 - Ellenőrzés: Cinecred és CFA4 ugyanazon a gépen, egyszerre futtatva, külön beállításokkal;
   eltávolítás után a másik működik.
+
+Elkészült (2026-11-09, `cfa4/credits-c9`):
+
+- MIME: `application/x-cfa4-credits` (`*.cfa4credits`) és `application/x-cfa4-credits-template`
+  (`*.cfa4credtpl`) a csomag MIME-fájljában; Cinecred fájljait (táblázatok, `Styling.toml`) nem
+  veszi át.
+- Rejtett asztali bejegyzés (`io.github.ubuntuokos.cfa4.credits.desktop`): a fájlkezelőből
+  megnyitott stáblista-fájl vagy -sablon a Qt6 felület teljes stáblista-munkaterületén nyílik
+  (`cfa4-qt FÁJL`, `cfa4-qt --credits FÁJL`). A .deb és a tarball telepíti (az AppImage csak a saját
+  fő bejegyzését használja). A fő bejegyzés (egui) nem kapja meg ezeket a típusokat.
+- Csomag-ellenőrzés (`scripts/ci/test_cfa4_xdg.py`): a típusok, a bejegyzés, és hogy a
+  stáblista-modulnak nincs saját programja, szolgáltatása, hálózati portja.
+- Együttélési próba (2026-11-09, felhős Ubuntu-konténer, Xvfb): a Cinecred 1.9.1 hivatalos
+  `.deb` csomagja és a CFA4 típusai, bejegyzése együtt telepítve, fájlütközés nélkül (a Cinecred
+  nem regisztrál MIME-típust). A Cinecred futott, közben a `cfa4-qt --credits` rendben elindult
+  és leállt, saját beállításmappával. A Cinecred eltávolítása után a CFA4 típusai és bejegyzése
+  maradtak (`gio`: `application/x-cfa4-credits`, a `Styling.toml` továbbra is
+  `application/toml`), a `cfa4-qt` ugyanúgy működött. A referenciagépen (Kubuntu 26.04)
+  asztali munkamenetben érdemes egyszer megismételni.
 
 ## 5. Sorrend és függőségek
 

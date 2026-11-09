@@ -3013,6 +3013,20 @@ class MainWindow(QMainWindow):
             self.credits_dialog.tool_requested.connect(self.invoke)
         self.credits_dialog.open_with(path)
 
+    def open_credits_file(self, path: str) -> None:
+        """A credits file, template or spreadsheet opened from the file manager or the command
+        line: the full Credits workspace with it (a template is chosen, with its sample sheet)."""
+        self.open_credits()
+        dlg = self.credits_dialog
+        if dlg is None:
+            return
+        dlg.set_full_view(True)
+        if path.lower().endswith(".cfa4credtpl"):
+            dlg.use_template_file(path)
+        else:
+            dlg.path.setText(path)
+            dlg.refresh()
+
     def open_credits_refresh(self, clip: int | None = None) -> None:
         """Graphics and Titles ▸ Refresh Credits from Spreadsheet…: the changes, row by row."""
         if self.credits_refresh is None:
