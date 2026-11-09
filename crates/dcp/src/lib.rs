@@ -14,7 +14,7 @@
 //! Only reading. No signature check (the presence of `Signer` / `ds:Signature` is recorded), no
 //! hashing of the assets, no file discovery: those belong to `cfa4-dcp-validate` (DCP-03 / DCP-05).
 //!
-//! Layer L0: depends on `roxmltree`, `serde` and `thiserror` only. No `unsafe`, no panics on
+//! Layer L0: depends on `roxmltree`, `serde`, `thiserror` and `chrono` (date checks) only. No `unsafe`, no panics on
 //! malformed input, DTDs are refused and the node count is capped.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
@@ -236,8 +236,12 @@ impl fmt::Display for Rational {
 }
 
 /// Decodes the base64 SHA-1 digest of a `Hash` element (ST 429-8 / 429-7: 28 characters).
+///
+/// `Hash` is an `xs:base64Binary`, whose whitespace is collapsed: XML whitespace anywhere in the
+/// text (a line break, spaces between groups) is not part of the value.
 pub fn decode_sha1(s: &str) -> Option<[u8; 20]> {
-    let v = decode_base64(s.trim())?;
+    let compact: String = s.chars().filter(|c| !matches!(c, ' ' | '\t' | '\n' | '\r')).collect();
+    let v = decode_base64(&compact)?;
     v.try_into().ok()
 }
 

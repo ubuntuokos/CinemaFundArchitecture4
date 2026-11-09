@@ -64,7 +64,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
     let annotation = r.text(root, p, "AnnotationText");
     let creator = r.required_text(root, p, "Creator");
     let volume_count = r.u64(root, p, "VolumeCount", true);
-    let issue_date = r.required_text(root, p, "IssueDate");
+    let issue_date = r.date_time(root, p, "IssueDate", true);
     let issuer = r.required_text(root, p, "Issuer");
     let extensions = r.unknown(root, p, ROOT);
     let mut assets = Vec::new();
@@ -79,8 +79,9 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
                 let packing_list = match r.child(a, &ap, "PackingList") {
                     None => false,
                     Some(n) => match n.text().unwrap_or("").trim() {
-                        // Interop writes an empty element; SMPTE xs:boolean
-                        "" | "true" | "1" => true,
+                        // Interop writes an empty element; SMPTE is an xs:boolean, where empty is invalid
+                        "" if standard == Standard::Interop => true,
+                        "true" | "1" => true,
                         "false" | "0" => false,
                         other => {
                             r.issue(IssueKind::Invalid, &format!("{ap}/PackingList"), n, format!("PackingList '{other}' is not a boolean"));

@@ -49,12 +49,12 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> PackingList {
     let p = "PackingList";
     let id = r.uuid(root, p, "Id", true);
     let annotation = r.text(root, p, "AnnotationText");
-    let issue_date = r.required_text(root, p, "IssueDate");
+    let issue_date = r.date_time(root, p, "IssueDate", true);
     let issuer = r.required_text(root, p, "Issuer");
     let creator = r.required_text(root, p, "Creator");
     let group_id = r.uuid(root, p, "GroupId", false);
     let has_signer = r.child(root, p, "Signer").is_some();
-    let has_signature = Reader::children(root, "Signature").any(|n| n.tag_name().namespace() == Some(crate::ns::XMLDSIG));
+    let has_signature = crate::xml::has_signature(root);
     let extensions = r.unknown(root, p, ROOT);
     let mut assets = Vec::new();
     match r.child(root, p, "AssetList") {
@@ -66,7 +66,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> PackingList {
                 let id = r.uuid(a, &ap, "Id", true);
                 let annotation = r.text(a, &ap, "AnnotationText");
                 let (hash, sha1) = r.hash(a, &ap, "Hash", true);
-                let size = r.u64(a, &ap, "Size", true);
+                let size = r.positive(a, &ap, "Size", true);
                 let mime_type = r.required_text(a, &ap, "Type");
                 let original_file_name = r.text(a, &ap, "OriginalFileName");
                 r.unknown(a, &ap, ASSET);

@@ -359,3 +359,62 @@ fn hostile_input_never_panics() {
         }
     }
 }
+
+#[test]
+fn hash_whitespace_is_collapsed() {
+    assert_eq!(decode_sha1("2jmj7l5rSw0yVb/v\n  lWAYkK/YBwk="), decode_sha1(H));
+    let t = SMPTE_PKL.replace("<Hash>2jmj7l5rSw0yVb/vlWAYkK/YBwk=</Hash>", "<Hash>2jmj7l5rSw0y\n Vb/vlWAYkK/YBwk=</Hash>");
+    let Ok(Document::PackingList(p)) = parse(&t, Limits::default()) else { panic!("not a PKL") };
+    assert!(p.assets[0].sha1.is_some());
+    assert!(!p.issues.iter().any(|i| i.path == "PackingList/AssetList/Asset[1]/Hash"));
+}
+
+#[test]
+fn schema_elements_must_be_in_the_document_namespace() {
+    let t = SMPTE_PKL.replace("<Issuer>CFA4</Issuer>", "<x:Issuer xmlns:x=\"urn:other\">CFA4</x:Issuer>");
+    let Ok(Document::PackingList(p)) = parse(&t, Limits::default()) else { panic!("not a PKL") };
+    assert_eq!(p.issuer, None);
+    assert!(p.issues.iter().any(|i| i.kind == IssueKind::Missing && i.path == "PackingList/Issuer"));
+    assert!(p.extensions.contains(&"{urn:other}Issuer".to_string()));
+    // a foreign reel asset keeps its default-namespace children (the export's AuxData)
+    let c = composition(&smpte_cpl());
+    assert_eq!(c.reels[0].assets[3].id.map(|u| u.to_string()).as_deref(), Some("urn:uuid:71111111-2222-4333-8444-555555555555"));
+}
+
+#[test]
+fn smpte_packing_list_flag_is_a_boolean() {
+    let smpte = INTEROP_AM.replace(ns::INTEROP_AM, ns::SMPTE_AM);
+    let Ok(Document::AssetMap(m)) = parse(&smpte, Limits::default()) else { panic!("not an asset map") };
+    assert!(!m.assets[0].packing_list);
+    assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/AssetList/Asset[1]/PackingList"));
+}
+
+#[test]
+fn pkl_size_is_positive_and_issue_date_a_date_time() {
+    let t = SMPTE_PKL
+        .replace("<Size>1024</Size>", "<Size>0</Size>")
+        .replace("<IssueDate>2026-11-05T00:00:00+00:00</IssueDate>", "<IssueDate>not-a-date</IssueDate>");
+    let Ok(Document::PackingList(p)) = parse(&t, Limits::default()) else { panic!("not a PKL") };
+    assert_eq!(p.assets[0].size, None);
+    assert!(p.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "PackingList/AssetList/Asset[1]/Size"));
+    assert_eq!(p.issue_date, None);
+    assert!(p.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "PackingList/IssueDate"));
+    for ok in ["2026-11-09T21:00:00Z", "2026-11-09T21:00:00+01:00", "2026-11-09T21:00:00.25-05:30", "2026-11-09T21:00:00", "2024-02-29T00:00:00Z"] {
+        assert!(xml::is_date_time(ok), "{ok}");
+    }
+    for bad in ["", "2026-11-09", "2026-11-09 21:00:00Z", "2026-02-29T00:00:00Z", "2026-13-01T00:00:00Z", "2026-11-09T25:00:00Z", "2026-11-09t21:00:00z"] {
+        assert!(!xml::is_date_time(bad), "{bad}");
+    }
+}
+
+#[test]
+fn smpte_picture_needs_rational_frame_rate_and_aspect_ratio() {
+    let t = smpte_cpl()
+        .replace("<FrameRate>24 1</FrameRate>", "")
+        .replace("<ScreenAspectRatio>1998 1080</ScreenAspectRatio>", "<ScreenAspectRatio>1.85</ScreenAspectRatio>");
+    let c = composition(&t);
+    let has = |kind: IssueKind, path: &str| c.issues.iter().any(|i| i.kind == kind && i.path == path);
+    assert!(has(IssueKind::Missing, "CompositionPlaylist/ReelList/Reel[1]/AssetList/MainPicture[1]/FrameRate"), "{:#?}", c.issues);
+    assert!(has(IssueKind::Invalid, "CompositionPlaylist/ReelList/Reel[1]/AssetList/MainPicture[1]/ScreenAspectRatio"));
+    // Interop keeps its decimal form without an issue (`interop_cpl_with_stereo_subtitle_and_markers`)
+}

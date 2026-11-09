@@ -35,14 +35,16 @@ impl<'a, 'input> Reader<'a, 'input> {
         self.issues.push(Issue { kind, path: path.to_string(), pos, message: message.into() });
     }
 
-    /// The element children of `node` with this local name (any namespace).
+    /// The element children of `node` with this local name in the document's namespace (the root
+    /// element's). An element of the same name in another namespace is not a schema element; the
+    /// reader reports it as unknown.
     pub fn children<'n>(node: Node<'n, 'input>, name: &'n str) -> impl Iterator<Item = Node<'n, 'input>> + 'n {
-        node.children().filter(move |c| c.is_element() && c.tag_name().name() == name)
+        node.children().filter(move |c| c.is_element() && c.tag_name().name() == name && in_document_ns(*c))
     }
 
     /// The single child `name`; a repeat is an issue and the first one wins.
     pub fn child(&mut self, node: Node<'a, 'input>, path: &str, name: &str) -> Option<Node<'a, 'input>> {
-        let mut it = node.children().filter(|c| c.is_element() && c.tag_name().name() == name);
+        let mut it = node.children().filter(|c| c.is_element() && c.tag_name().name() == name && in_document_ns(*c));
         let first = it.next()?;
         if let Some(second) = it.next() {
             self.issue(IssueKind::Repeated, &format!("{path}/{name}"), second, format!("{name} appears more than once; the first is used"));
@@ -101,6 +103,17 @@ impl<'a, 'input> Reader<'a, 'input> {
         self.parsed(node, path, name, required, "a non-negative integer", |t| t.parse::<u64>().ok())
     }
 
+    /// A strictly positive integer (`xs:positiveInteger`).
+    pub fn positive(&mut self, node: Node<'a, 'input>, path: &str, name: &str, required: bool) -> Option<u64> {
+        self.parsed(node, path, name, required, "a positive integer", |t| t.parse::<u64>().ok().filter(|v| *v > 0))
+    }
+
+    /// An `xs:dateTime` (`2026-11-09T21:00:00Z`, `…+01:00`, or without a zone), kept as written.
+    /// The calendar check (month length, leap years) is `chrono`'s.
+    pub fn date_time(&mut self, node: Node<'a, 'input>, path: &str, name: &str, required: bool) -> Option<String> {
+        self.parsed(node, path, name, required, "an xs:dateTime", |t| is_date_time(t).then(|| t.to_string()))
+    }
+
     pub fn rational(&mut self, node: Node<'a, 'input>, path: &str, name: &str, required: bool) -> Option<Rational> {
         self.parsed(node, path, name, required, "two integers with a positive denominator", Rational::parse)
     }
@@ -121,7 +134,10 @@ impl<'a, 'input> Reader<'a, 'input> {
         let mut out = Vec::new();
         for c in node.children().filter(|c| c.is_element()) {
             let name = c.tag_name();
-            if known.contains(&name.name()) {
+            if known.contains(&name.name()) && in_document_ns(c) {
+                continue;
+            }
+            if name.name() == "Signature" && name.namespace() == Some(crate::ns::XMLDSIG) {
                 continue;
             }
             let full = qualified(c);
@@ -130,6 +146,24 @@ impl<'a, 'input> Reader<'a, 'input> {
         }
         out
     }
+}
+
+/// `xs:dateTime`: date `T` time, optional fraction, optional `Z` or `±hh:mm`.
+pub(crate) fn is_date_time(t: &str) -> bool {
+    if t.contains([' ', 't', 'z']) {
+        return false;
+    }
+    chrono::DateTime::parse_from_rfc3339(t).is_ok() || chrono::NaiveDateTime::parse_from_str(t, "%Y-%m-%dT%H:%M:%S%.f").is_ok()
+}
+
+/// The element is in the namespace of its document's root element.
+pub(crate) fn in_document_ns(node: Node) -> bool {
+    node.tag_name().namespace() == node.document().root_element().tag_name().namespace()
+}
+
+/// `ds:Signature` (XML-DSig) is a child of `node`.
+pub(crate) fn has_signature(node: Node) -> bool {
+    node.children().any(|c| c.is_element() && c.tag_name().name() == "Signature" && c.tag_name().namespace() == Some(crate::ns::XMLDSIG))
 }
 
 /// `{namespace}name`, or `name` without a namespace.
