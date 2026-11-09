@@ -25,9 +25,9 @@
 use std::fmt;
 use std::io::{Seek, Write};
 
-use cfa4_isobmff::{Brand, ByteSource, Mp4File, Mp4Writer, Sample, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
+use cfa4_isobmff::{Brand, ByteSource, CodecConfig, Mp4File, Mp4Writer, Sample, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
 use cfa4_smart_edit::capabilities::{Codec, Container};
-use cfa4_smart_edit::media_index::{FrameIndexEntry, StreamIndex};
+use cfa4_smart_edit::media_index::{FrameIndexEntry, RandomAccessKind, StreamIndex};
 use cfa4_smart_edit::plan::{ExportExecutionPlan, PLAN_VERSION};
 use cfa4_smart_edit::timestamp::Rational;
 use serde::{Deserialize, Serialize};
@@ -265,6 +265,9 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
         if data.len() as u64 != u64::from(s.size) {
             return Err(SmartCutError::StaleIndex { detail: format!("packet {d}: read {} bytes, expected {}", data.len(), s.size) });
         }
+        if let (CodecConfig::Avc(avc), Some(frame)) = (&r.entry.codec, index.frames.get(d)) {
+            check_access_point(d, &data, avc.length_size, frame)?;
+        }
         let ws = WriteSample { data: &data, duration: s.duration, composition_offset: composition_offset(s, d)?, is_sync: s.is_sync };
         w.write_sample(t, ws).map_err(io)?;
         report.samples += 1;
@@ -343,6 +346,20 @@ pub(crate) fn check_sample(d: usize, sample: &Sample, frame: &FrameIndexEntry) -
     // the plan's access points come from the index: the file must mark the same sync samples
     if frame.keyframe != sample.is_sync {
         return stale(format!("packet {d} is {}a sync sample, the index says otherwise", if sample.is_sync { "" } else { "not " }));
+    }
+    Ok(())
+}
+
+/// Packet `d` must be the kind of picture the index says where the plan relies on it: an IDR in
+/// the index is an IDR in the bitstream and the other way round, so a source re-encoded with
+/// other access points (same sizes, timestamps and sync table) is not cut by a stale plan.
+pub(crate) fn check_access_point(d: usize, data: &[u8], length_size: u8, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
+    let nals = cfa4_bitstream::length_prefixed_nals(data, usize::from(length_size))
+        .map_err(|e| SmartCutError::StaleIndex { detail: format!("packet {d} does not split into NAL units: {e}") })?;
+    let idr = nals.iter().any(|n| n.first().map(|b| b & 0x1f) == Some(5));
+    if idr != (frame.random_access == RandomAccessKind::Idr) {
+        let is = if idr { "is" } else { "is not" };
+        return Err(SmartCutError::StaleIndex { detail: format!("packet {d} {is} an IDR picture, the index says otherwise") });
     }
     Ok(())
 }

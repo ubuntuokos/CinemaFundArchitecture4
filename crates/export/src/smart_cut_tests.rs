@@ -199,6 +199,16 @@ fn an_index_of_another_file_is_refused() {
     index.frames[12].keyframe = !index.frames[12].keyframe;
     let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
     assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("sync")), "{err:?}");
+    // same sync table, but the index's IDR is no longer one in the bitstream (or the other way)
+    let mut index = f.index.clone();
+    let idr = index.frames.iter().position(|x| x.decode_index >= 10 && x.random_access == cfa4_smart_edit::media_index::RandomAccessKind::Idr).unwrap();
+    index.frames[idr].random_access = cfa4_smart_edit::media_index::RandomAccessKind::IntraOnly;
+    let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("IDR")), "{err:?}");
+    let encoding = crate::boundary_reencode::BoundaryEncoding { threads: 1, ..Default::default() };
+    let fa = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 20, CutMode::FrameAccurate, Container::Mp4);
+    let err = crate::boundary_reencode::check_mp4_boundary_reencode(&fa.plan, &index, &f.source(), &encoding).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("IDR")), "{err:?}");
     // the boundary re-encoder checks every packet, the copied ones too
     let p = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 20, CutMode::FrameAccurate, Container::Mp4);
     let mut index = f.index.clone();

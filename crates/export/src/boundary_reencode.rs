@@ -29,14 +29,14 @@ use std::io::{Seek, Write};
 use cfa4_bitstream::{length_prefixed_nals, unescape_rbsp};
 use cfa4_h264::params::{Pps, Sps};
 use cfa4_h264::slice::{NalHeader, SliceHeader};
-use cfa4_h264enc::{ColorConfig, Encoder, EncoderConfig, PacketFormat, Profile, RateControl, YuvFrame};
+use cfa4_h264enc::{ColorConfig, Encoder, EncoderConfig, Packet as EncodedPacket, PacketFormat, Profile, RateControl, YuvFrame};
 use cfa4_isobmff::{AvcConfig, ByteSource, CodecConfig, Mp4Writer, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
 use cfa4_smart_edit::capabilities::Codec;
 use cfa4_smart_edit::media_index::StreamIndex;
 use cfa4_smart_edit::plan::{ExportExecutionPlan, PLAN_VERSION, SegmentMode};
 use serde::{Deserialize, Serialize};
 
-use crate::smart_cut::{Mp4CopySource, SmartCutError, brand, check_sample, check_timebase, io};
+use crate::smart_cut::{Mp4CopySource, SmartCutError, brand, check_access_point, check_sample, check_timebase, io};
 
 const NAL_IDR: u8 = 5;
 const NAL_SLICE: u8 = 1;
@@ -317,11 +317,17 @@ fn encoder_config(
     // the encoder's VUI repeats the source's aspect and colour, which every SPS must share
     let vui = |s: &Sps| {
         let v = s.vui.clone().unwrap_or_default();
-        (v.sar, v.colour_primaries, v.transfer_characteristics, v.matrix_coefficients, v.full_range)
+        (v.sar, v.colour_primaries, v.transfer_characteristics, v.matrix_coefficients, v.full_range, v.chroma_loc)
     };
     let looks = used.first().map(|s| vui(s));
     if used.iter().any(|s| Some(vui(s)) != looks) {
         return Err(incompatible("the source parameter sets differ in aspect ratio or colour"));
+    }
+    // the encoder writes no chroma location, which means type 0 (left, co-sited vertically centred)
+    if let Some(Some((top, bottom))) = looks.map(|l| l.5)
+        && (top, bottom) != (0, 0)
+    {
+        return Err(incompatible(format!("chroma sample location {top}/{bottom} cannot be signalled by the encoder")));
     }
     let profile = match sps.profile_idc {
         66 => Profile::Baseline,
@@ -347,7 +353,7 @@ fn encoder_config(
     cfg.threads = encoding.threads;
     cfg.sps_id = sps_id;
     cfg.pps_id = pps_id;
-    if let Some((sar, primaries, transfer, matrix, full_range)) = looks {
+    if let Some((sar, primaries, transfer, matrix, full_range, _)) = looks {
         cfg.sar = sar;
         cfg.color = ColorConfig { primaries, transfer, matrix, full_range };
     }
@@ -543,7 +549,19 @@ fn setup<'a, S: ByteSource + ?Sized>(
     }
     let video = p.entry.video.as_ref();
     let (width, height) = video.map_or((0, 0), |v| (u32::from(v.width), u32::from(v.height)));
-    let mut cfg = encoder_config(p.avc, &params, width, height, (p.track.timescale, frame), encoding)?;
+    // the encoder's VUI counts the rate in u32 halves: reduce the fraction, refuse what does not fit
+    let (mut num, mut den) = (p.track.timescale, frame.max(1));
+    let (mut a, mut b) = (num, den);
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    if a > 1 {
+        (num, den) = (num / a, den / a);
+    }
+    if num > u32::MAX / 2 {
+        return Err(incompatible(format!("the frame rate {num}/{den} does not fit the encoder's timing fields")));
+    }
+    let mut cfg = encoder_config(p.avc, &params, width, height, (num, den), encoding)?;
     // SEI metadata of the decoded packets: HDR is carried over, user data refuses the plan
     for seg in &p.segs {
         let Seg::Reencode { decode_first, decode_last, .. } = *seg else { continue };
@@ -582,7 +600,8 @@ fn setup<'a, S: ByteSource + ?Sized>(
         }
     }
     // the encoder's parameter-set ids are free only if no packet redefines a parameter set
-    // in-band (avc3, or avc1 streams that repeat them)
+    // in-band (avc3, or avc1 streams that repeat them); every planned packet is also checked
+    // against the index's access points
     for seg in &p.segs {
         let (first, last) = match *seg {
             Seg::Copy { first, last } => (first, last),
@@ -592,6 +611,10 @@ fn setup<'a, S: ByteSource + ?Sized>(
             let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
             if nals(&data, p.avc.length_size)?.iter().any(|nal| matches!(nal.first().map(|b| b & 0x1f), Some(7 | 8))) {
                 return Err(incompatible(format!("packet {d} carries in-band parameter sets")));
+            }
+            // and the planned access points are still there
+            if let Some(frame) = index.frames.get(d) {
+                check_access_point(d, &data, p.avc.length_size, frame)?;
             }
         }
     }
@@ -708,20 +731,14 @@ pub fn execute_mp4_boundary_reencode<W: Write + Seek, S: ByteSource + ?Sized>(
                 cfg.first_idr_pic_id = id;
                 let (width, height) = (cfg.width, cfg.height);
                 let mut encoder = Encoder::new(cfg).map_err(|e| SmartCutError::Encode { detail: e.to_string() })?;
-                let mut packets = Vec::new();
-                let mut k = 0i64;
-                while let Some(pic) = decoder.next_picture()? {
-                    if (pic.width, pic.height) != (width, height) {
-                        return Err(incompatible("the boundary pictures change size"));
-                    }
-                    packets.extend(encoder.encode(&planes(&pic)?, k).map_err(|e| SmartCutError::Encode { detail: e.to_string() })?);
-                    k += 1;
-                }
-                packets.extend(encoder.flush());
-                if packets.len() != pictures.len() {
-                    return Err(SmartCutError::Encode { detail: format!("{} packets for {} pictures", packets.len(), pictures.len()) });
-                }
-                for (k, (packet, &d)) in packets.iter().zip(pictures).enumerate() {
+                // every packet is written as the encoder emits it (no reordering: one in, one out)
+                let mut written = 0usize;
+                let mut write = |w: &mut Mp4Writer<W>, report: &mut BoundaryReport, packet: &EncodedPacket| -> Result<(), SmartCutError> {
+                    let k = written;
+                    let d = pictures
+                        .get(k)
+                        .copied()
+                        .ok_or_else(|| SmartCutError::Encode { detail: format!("more packets than the {} pictures", pictures.len()) })?;
                     let duration = p.durations.get(d).copied().ok_or(SmartCutError::Timestamps { decode_index: d as u64 })?;
                     if packet.pts != k as i64 || packet.dts != k as i64 || (k == 0) != packet.keyframe {
                         return Err(SmartCutError::Encode { detail: format!("unexpected packet order at picture {k}") });
@@ -730,6 +747,24 @@ pub fn execute_mp4_boundary_reencode<W: Write + Seek, S: ByteSource + ?Sized>(
                     report.reencoded += 1;
                     report.payload_bytes = report.payload_bytes.saturating_add(packet.data.len() as u64);
                     report.duration = report.duration.saturating_add(u64::from(duration));
+                    written += 1;
+                    Ok(())
+                };
+                let mut k = 0i64;
+                while let Some(pic) = decoder.next_picture()? {
+                    if (pic.width, pic.height) != (width, height) {
+                        return Err(incompatible("the boundary pictures change size"));
+                    }
+                    for packet in encoder.encode(&planes(&pic)?, k).map_err(|e| SmartCutError::Encode { detail: e.to_string() })? {
+                        write(&mut w, &mut report, &packet)?;
+                    }
+                    k += 1;
+                }
+                for packet in encoder.flush() {
+                    write(&mut w, &mut report, &packet)?;
+                }
+                if written != pictures.len() {
+                    return Err(SmartCutError::Encode { detail: format!("{written} packets for {} pictures", pictures.len()) });
                 }
                 last_idr = (pictures.len() == 1).then_some(u32::from(id));
             }
