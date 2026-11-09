@@ -1,7 +1,7 @@
 # CFA4-DEV-AI-ORCHESTRATION-001 – AI-fejlesztési infrastruktúra
 
-**Állapot:** FINAL 1.1 – APPROVED (2026-10-29). **Végrehajtás:** F0 folyamatban
-([#336](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/336)); F1–F9 és E0–E6
+**Állapot:** FINAL 1.1 – APPROVED (2026-10-29); FINAL 1.2 felhős kiegészítés (döntések: 2026-11-06). **Végrehajtás:** F0 és F1 (felhős) bizonyítéka felülvizsgálatra vár
+([#336](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/336)); F2–F9 és E0–E6
 **nincs engedélyezve**. A terv jóváhagyása nem jelent telepítési, kódmódosítási, merge- vagy
 release-engedélyt.
 
@@ -18,6 +18,9 @@ nélkül is működnie kell (FINAL 1.0, 8.16).
 | [`CFA4-DEV-AI-ORCHESTRATION-001-FINAL-1.1-record.txt`](CFA4-DEV-AI-ORCHESTRATION-001-FINAL-1.1-record.txt) | A jóváhagyási beszélgetés szövege: FINAL 1.0 jóváhagyási feljegyzés (1–90. sor), FINAL 1.1 AIQT-kiegészítés: TC-11–TC-15, AC-08–AC-14, negatív tesztek (96–839. sor), FINAL 1.1 végleges jóváhagyás (841–982. sor) | `e34aecb6…f9978308` |
 | [`../../reference/aiqt/1.0.6/`](../../reference/aiqt/1.0.6/README.md) | AIQT 1.0.6 teljes szabvány, bájtra változatlanul | `fa4076e7…a3131516` |
 | [`../../audit/AI-ORCHESTRATION-F0-2026-10-30.md`](../../audit/AI-ORCHESTRATION-F0-2026-10-30.md) | F0-audit: baseline, VERIFIED/PENDING/BLOCKED mátrix, gap-elemzés | – |
+| [`CFA4-DEV-AI-ORCHESTRATION-001-FINAL-1.2-felho.md`](CFA4-DEV-AI-ORCHESTRATION-001-FINAL-1.2-felho.md) | FINAL 1.2 kiegészítés: felhős fejlesztési környezet (R1/R2/R3 rétegek, D-C1–D-C5 tulajdonosi döntések, 2026-11-06): a ThinkRail és a Pi szünetel, új TC-02 szabály, AC-01/04/06 felosztása, 8.15a | – |
+| [`../../audit/AI-ORCHESTRATION-F0-v3-2026-11-06.md`](../../audit/AI-ORCHESTRATION-F0-v3-2026-11-06.md) | F0-audit v3: a terv helyi célgép-feltevései a felhős fejlesztési környezetben, felhős TC-02, tulajdonosi döntési pontok | – |
+| [`../../audit/AI-ORCHESTRATION-F1-felho-2026-11-06.md`](../../audit/AI-ORCHESTRATION-F1-felho-2026-11-06.md) | F1 felhős felmérés (AC-01a, TC-14): működés PASS, jogosultságok FAIL, javasolt ruleset- és hálózati szűkítés | – |
 
 A végrehajtási megbízás szövege a #336 issue törzse.
 
@@ -50,3 +53,9 @@ A FINAL 1.1 9. pontja szerinti alkalmazási profil (AIQT-pont ↔ TC-komponens �
 átvett és kihagyott pontok indoklással). **Tervezett helye:**
 `docs/development/ai-orchestration/CFA4-AIQT-PROFILE-001.md`. Még nem készült el; az F2 fázis
 része, külön jóváhagyás után.
+
+## Altervek
+
+| Terv | TC | Állapot |
+|---|---|---|
+| [CFA4-DEV-WORKTRUNK-001](../worktrunk/README.md) – Worktrunk-alapú párhuzamos worktree-kezelés | TC-02 Workspace Coordinator | LEZÁRVA – NOT_APPLICABLE (2026-11-06): a felhős munkamenetek saját konténerben, klónnal és ággal futnak |
