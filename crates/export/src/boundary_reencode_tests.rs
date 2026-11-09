@@ -256,3 +256,12 @@ fn the_display_matrix_is_kept() {
     let (copy, _) = crate::smart_cut::execute_mp4_copy(&p, &f.index, &f.source(), Cursor::new(Vec::new())).unwrap();
     assert_eq!(cfa4_isobmff::open(copy.into_inner().as_slice()).unwrap().tracks[0].matrix, rotated);
 }
+
+#[test]
+fn rbsp_bytes_match_the_unescaped_rbsp() {
+    let cases: [&[u8]; 5] = [&[0, 0, 3, 1], &[0, 0, 3, 0, 0, 3], &[0, 0, 0, 3], &[1, 0, 0, 3, 3, 0, 0], &[0x80]];
+    for nal in cases {
+        let streamed: Vec<u8> = crate::boundary_reencode::rbsp_bytes(nal).collect();
+        assert_eq!(streamed, cfa4_bitstream::unescape_rbsp(nal), "{nal:?}");
+    }
+}

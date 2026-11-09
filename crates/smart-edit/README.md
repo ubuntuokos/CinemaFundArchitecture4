@@ -167,7 +167,9 @@ H.264 encoder:
   picture with its source picture (luma PSNR, `BoundaryEncoding::min_psnr`).
 
 Rendered segments (gaps, effects) and timeline plans are refused here (`render-segment`,
-`timeline-plan`); they belong to the timeline Smart Render executor.
+`timeline-plan`); they belong to the timeline Smart Render executor. Until it exists, the
+registry's `timeline-render` rows are unsupported, so `plan_smart_render` reports every timeline
+plan as not executable. Writing and verifying hold one boundary's decoded pictures at a time.
 
 ## Smart Render planner (WP-05)
 

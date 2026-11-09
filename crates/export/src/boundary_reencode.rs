@@ -268,7 +268,8 @@ fn idr_pic_id(data: &[u8], length_size: u8, params: &SourceParams) -> Result<Opt
             continue;
         }
         let header = NalHeader::parse(first).map_err(|e| SmartCutError::Decode { detail: e.to_string() })?;
-        let rbsp = unescape_rbsp(nal.get(1..).unwrap_or_default());
+        // the slice header is at the start of the NAL: read a bounded prefix, not the whole slice
+        let rbsp: Vec<u8> = rbsp_bytes(nal.get(1..).unwrap_or_default()).take(SLICE_HEADER_MAX).collect();
         let (sh, _, _) = SliceHeader::parse(&rbsp, header, |id| {
             let pps = params.ppss.get(id as usize).and_then(Option::as_ref).ok_or_else(|| cfa4_h264::Error::MissingParameterSet(format!("PPS {id}")))?;
             let sps = params
@@ -425,6 +426,24 @@ const SEI_DROPPABLE: [u32; 4] = [0, 1, 3, 6];
 /// display) and a little more; longer payloads are kept truncated, so a hostile file cannot make large copies.
 const SEI_KEEP: usize = 32;
 
+/// The longest slice header read for its `idr_pic_id` (the header is far shorter; the slice data
+/// after it is not needed).
+const SLICE_HEADER_MAX: usize = 4096;
+
+/// The RBSP bytes of a NAL payload, without its emulation-prevention bytes, read in place (no copy
+/// of the NAL is made).
+pub(crate) fn rbsp_bytes(payload: &[u8]) -> impl Iterator<Item = u8> + '_ {
+    let mut zeros = 0u8;
+    payload.iter().copied().filter(move |&b| {
+        if zeros >= 2 && b == 0x03 {
+            zeros = 0;
+            return false;
+        }
+        zeros = if b == 0 { zeros.saturating_add(1) } else { 0 };
+        true
+    })
+}
+
 /// The SEI messages (payload type, the first [`SEI_KEEP`] bytes of the payload) of a
 /// length-prefixed sample.
 fn sei_messages(data: &[u8], length_size: u8) -> Result<Vec<(u32, Vec<u8>)>, SmartCutError> {
@@ -433,15 +452,13 @@ fn sei_messages(data: &[u8], length_size: u8) -> Result<Vec<(u32, Vec<u8>)>, Sma
         if nal.first().map(|b| b & 0x1f) != Some(6) {
             continue;
         }
-        let rbsp = unescape_rbsp(nal.get(1..).unwrap_or_default());
-        let mut at = 0usize;
+        let mut rbsp = rbsp_bytes(nal.get(1..).unwrap_or_default()).peekable();
         // stop at the rbsp trailing bits
-        while rbsp.get(at).is_some_and(|&b| b != 0x80) {
+        while rbsp.peek().is_some_and(|&b| b != 0x80) {
             let mut read = || -> Option<u32> {
                 let mut v = 0u32;
                 loop {
-                    let b = *rbsp.get(at)?;
-                    at += 1;
+                    let b = rbsp.next()?;
                     v = v.checked_add(u32::from(b))?;
                     if b != 0xff {
                         return Some(v);
@@ -449,11 +466,13 @@ fn sei_messages(data: &[u8], length_size: u8) -> Result<Vec<(u32, Vec<u8>)>, Sma
                 }
             };
             let (Some(kind), Some(size)) = (read(), read()) else { break };
-            let end = at.checked_add(size as usize).filter(|&e| e <= rbsp.len());
-            let Some(end) = end else { break };
-            let kept = end.min(at.saturating_add(SEI_KEEP));
-            out.push((kind, rbsp.get(at..kept).unwrap_or_default().to_vec()));
-            at = end;
+            let size = size as usize;
+            let kept: Vec<u8> = rbsp.by_ref().take(size.min(SEI_KEEP)).collect();
+            let skipped = rbsp.by_ref().take(size.saturating_sub(SEI_KEEP)).count();
+            if kept.len().saturating_add(skipped) != size {
+                break; // truncated message
+            }
+            out.push((kind, kept));
         }
     }
     Ok(out)
@@ -784,14 +803,19 @@ pub fn verify_mp4_boundary_reencode<S: ByteSource + ?Sized, O: ByteSource>(
     }
     // decode the whole output; compare the re-encoded pictures with the source
     let decode_err = |e: cfa4_h264::Error| fail(format!("the output does not decode: {e}"));
-    let mut source_pictures = BTreeMap::new();
-    for seg in &p.segs {
-        if let Seg::Reencode { decode_first, decode_last, pictures } = seg {
-            for (pic, &d) in decode_boundary(source, p.avc, *decode_first, *decode_last, pictures)?.into_iter().zip(pictures) {
-                source_pictures.insert(d, pic);
-            }
-        }
-    }
+    // the source pictures of a boundary are decoded when the output reaches it (the output
+    // decodes in presentation order, one boundary after the other) and dropped after it, so
+    // memory holds one boundary's pictures
+    let boundaries: Vec<(usize, usize, &Vec<usize>)> = p
+        .segs
+        .iter()
+        .filter_map(|seg| match seg {
+            Seg::Reencode { decode_first, decode_last, pictures } => Some((*decode_first, *decode_last, pictures)),
+            Seg::Copy { .. } => None,
+        })
+        .collect();
+    let boundary_of: BTreeMap<usize, usize> = boundaries.iter().enumerate().flat_map(|(b, (_, _, pictures))| pictures.iter().map(move |&d| (d, b))).collect();
+    let mut source_pictures: (Option<usize>, BTreeMap<usize, cfa4_h264::Picture>) = (None, BTreeMap::new());
     let by_pts: BTreeMap<i64, Option<usize>> = track.samples.iter().zip(&expected).map(|(s, (_, re))| (s.pts, re.first().copied())).collect();
     let mut decoder = cfa4_h264::Decoder::from_avcc(&avc.to_bytes()).map_err(decode_err)?;
     let mut decoded = 0usize;
@@ -799,8 +823,16 @@ pub fn verify_mp4_boundary_reencode<S: ByteSource + ?Sized, O: ByteSource>(
     let mut check = |pic: cfa4_h264::Picture| -> Result<(), SmartCutError> {
         decoded += 1;
         if let Some(Some(d)) = by_pts.get(&pic.pts) {
-            let reference = source_pictures.get(d).ok_or_else(|| fail(format!("no source picture for packet {d}")))?;
-            let psnr = luma_psnr(&pic, reference).ok_or_else(|| fail(format!("re-encoded picture of packet {d} has another size")))?;
+            let b = boundary_of.get(d).copied().ok_or_else(|| fail(format!("no source picture for packet {d}")))?;
+            if source_pictures.0 != Some(b) {
+                let (first, last, pictures) = boundaries.get(b).copied().ok_or_else(|| fail(format!("no source picture for packet {d}")))?;
+                source_pictures = (
+                    Some(b),
+                    decode_boundary(source, p.avc, first, last, pictures)?.into_iter().zip(pictures.iter().copied()).map(|(pic, d)| (d, pic)).collect(),
+                );
+            }
+            let reference = source_pictures.1.remove(d).ok_or_else(|| fail(format!("no source picture for packet {d}")))?;
+            let psnr = luma_psnr(&pic, &reference).ok_or_else(|| fail(format!("re-encoded picture of packet {d} has another size")))?;
             if psnr < encoding.min_psnr {
                 return Err(fail(format!("re-encoded picture of packet {d}: {psnr:.1} dB < {:.1} dB", encoding.min_psnr)));
             }

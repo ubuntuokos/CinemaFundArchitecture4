@@ -128,12 +128,14 @@ pub enum Operation {
     Mux,
     /// Re-encode boundary segments and join them with copied packets (WP-06).
     BoundaryReencode,
+    /// Execute a timeline plan: segments from several sources, rendered gaps and effects (WP-06).
+    TimelineRender,
 }
 
 impl Operation {
     /// Whether the operation is about a codec inside a container (the key needs one).
     pub fn needs_container(self) -> bool {
-        matches!(self, Operation::Demux | Operation::PacketCopy | Operation::Mux | Operation::BoundaryReencode)
+        matches!(self, Operation::Demux | Operation::PacketCopy | Operation::Mux | Operation::BoundaryReencode | Operation::TimelineRender)
     }
 }
 
@@ -733,6 +735,7 @@ fn describe_op(op: Operation) -> &'static str {
         Operation::Encode => "encoding",
         Operation::Mux => "muxing",
         Operation::BoundaryReencode => "boundary re-encode",
+        Operation::TimelineRender => "timeline Smart Render",
     }
 }
 
@@ -851,6 +854,10 @@ pub(crate) fn native_entries() -> Vec<Entry> {
                 v.push(row(k(BoundaryReencode, codec, container), Native, Supported, evidence));
             } else if codec.is_video() {
                 v.push(row(k(BoundaryReencode, codec, container), Native, Unsupported, "boundary re-encode is implemented only for H.264 into MP4 / MOV"));
+            }
+            if codec.is_video() {
+                // the single-source executors refuse timeline plans (several sources, rendered segments)
+                v.push(row(k(TimelineRender, codec, container), Native, Unsupported, "the timeline Smart Render executor is not implemented yet"));
             }
         }
     }
