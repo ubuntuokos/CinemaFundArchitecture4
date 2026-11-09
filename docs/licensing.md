@@ -24,6 +24,13 @@
 - A **CFA4 logó** (név, embléma, szóvédjegy, ikonok) István saját, védett jele, **nem** GPL alatti; a
   feltételek: [`assets/cfa4/LICENSE-logo.txt`](../assets/cfa4/LICENSE-logo.txt). A kód GPL marad.
 
+- **Portolás vagy eredeti nyelv (tulajdonosi döntés, 2026-11-03):** az átvett kódot alapból
+  Rustra portoljuk. Ha a portolás aránytalanul sok időt venne igénybe, a kód maradhat az eredeti
+  nyelvén, **ha nem lassítja a CFA4-et**: ilyenkor a szerkesztő folyamatán kívül, felügyelt
+  workerként vagy külső programként fut, Rust-interfész mögött, és a lassulásmentességet a
+  referenciagépen mérjük. A licencszabályok (fejlécek, 5. pont regisztere) ugyanúgy érvényesek.
+  Részletek: [`AGENTS.md`](../AGENTS.md) CFA4-szakasz.
+
 *Ez a dokumentum projektszabályzat, nem jogi tanácsadás. Kereskedelmi kiadás előtt érdemes
 jogásszal átnézetni.*
 

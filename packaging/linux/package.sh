@@ -6,7 +6,9 @@
 # Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb tar restricted"]
 #        [--without-ffmpeg].
 # Prerequisites: cargo; nfpm for deb; for AppImage: reviewed local appimagetool
-# plus CFA4_APPIMAGETOOL_SHA256; optional zsyncmake. Never auto-download tools.
+# plus CFA4_APPIMAGETOOL_SHA256, and CFA4_PYSIDE6_WHEELS (a local wheelhouse with the PySide6 6.12
+# wheels pinned in requirements/linux-amd64.txt, for the Qt GUI); optional zsyncmake. Never
+# auto-download tools.
 # FFmpeg (ADR 0005 step 4): CFA4's own FFmpeg 9.0.2 build from scripts/dev/build-ffmpeg-9.0.2.sh
 # (CFA4_FFMPEG_BUILD, default /opt/cfa4/ffmpeg-9.0.2) ships in every format: the .deb installs it
 # into /opt/cfa4/ffmpeg-9.0.2, the tarball/AppImage/Flatpak carry it in lib/cfa4/ffmpeg-9.0.2.
@@ -83,6 +85,10 @@ else
   warn "--without-ffmpeg: a local test tarball without the FFmpeg backend, not a release package"
 fi
 
+if has appimage && [[ ! -d "${CFA4_PYSIDE6_WHEELS:-}" ]]; then
+  echo "error: the AppImage carries the Qt GUI's PySide6: set CFA4_PYSIDE6_WHEELS to a local wheelhouse with the wheels pinned in requirements/linux-amd64.txt" >&2
+  exit 1
+fi
 echo "==> CFA4 $VERSION for Linux $ARCH ($FORMATS)"
 
 if [ "$SKIP_BUILD" = 0 ]; then
@@ -114,8 +120,9 @@ fi
 install -Dm755 "$BIN/cfa4" "$STAGE/usr/bin/cfa4"
 install -Dm755 "$BIN/cfa4-cli" "$STAGE/usr/bin/cfa4-cli"
 strip "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
-# The Qt 6 GUI (ADR F8 phase 7): its Python package and the cfa4-qt launcher. PySide6 is a package
-# dependency from Ubuntu's archive (python3-pyside6.*, LGPL-3.0), never bundled. The shared egui
+# The Qt 6 GUI (ADR F8 phase 7): its Python package and the cfa4-qt launcher. In the .deb and the
+# tarball PySide6 comes from Ubuntu's archive (python3-pyside6.*, LGPL-3.0); the AppImage (below) and
+# the Flatpak (flatpak-bundle.sh) carry their own (stage-pyside6.py). The shared egui
 # catalogs (with their attribution sidecars) go with it, so an installed GUI translates as a
 # checkout does.
 install -Dm755 "$HERE/cfa4-qt" "$STAGE/usr/bin/cfa4-qt"
@@ -201,12 +208,13 @@ fi
 if has appimage; then
   APPDIR="$WORK/CFA4.AppDir"
   cp -R "$STAGE" "$APPDIR"
-  # The AppImage stays the egui app: it cannot depend on the host's python3-pyside6 packages and
-  # does not bundle PySide6, so the Qt GUI (cfa4-qt and its Python package) ships only in .deb/tar.
-  rm -rf "$APPDIR/usr/bin/cfa4-qt" "$APPDIR/usr/lib/cfa4/python"
-  rmdir "$APPDIR/usr/lib/cfa4" "$APPDIR/usr/lib" 2>/dev/null || true
+  # The Qt GUI with its own PySide6 / Qt 6 (an AppImage cannot depend on the host's
+  # python3-pyside6), from the hash-pinned wheels, with their licences and source offer.
+  python3 "$HERE/stage-pyside6.py" --wheels "${CFA4_PYSIDE6_WHEELS:?set CFA4_PYSIDE6_WHEELS to the local PySide6 wheelhouse}" \
+    --dest "$APPDIR/usr/lib/cfa4/pyside6" --doc "$APPDIR/usr/share/doc/cfa4/pyside6" --host-xcb
   # Keep usr/share/doc: licences, NOTICE and attributions must ship inside the AppImage too.
-  ln -s usr/bin/cfa4 "$APPDIR/AppRun"
+  # AppRun starts egui, or the Qt GUI with --qt / CFA4_GUI=qt.
+  install -m755 "$HERE/AppRun" "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
   # the CFA4 logo is raster artwork: the 256 px PNG is the AppImage icon
   cp "$ROOT/assets/cfa4/hicolor/256x256/apps/$APP_ID.png" "$APPDIR/$APP_ID.png"
