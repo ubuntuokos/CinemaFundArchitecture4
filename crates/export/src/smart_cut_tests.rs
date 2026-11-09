@@ -186,6 +186,22 @@ fn an_index_of_another_file_is_refused() {
     index.frames[12].size += 1;
     let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
     assert!(matches!(err, SmartCutError::StaleIndex { .. }), "{err:?}");
+    // same access units, other timestamps (a remux at another frame rate) or timebase
+    let mut index = f.index.clone();
+    index.frames[12].pts = index.frames[12].pts.map(|t| t + 1);
+    let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("PTS")), "{err:?}");
+    let mut index = f.index.clone();
+    index.timebase.den *= 2;
+    let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("timebase")), "{err:?}");
+    // the boundary re-encoder checks every packet, the copied ones too
+    let p = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 20, CutMode::FrameAccurate, Container::Mp4);
+    let mut index = f.index.clone();
+    index.frames[30].dts = index.frames[30].dts.map(|t| t - 1);
+    let encoding = crate::boundary_reencode::BoundaryEncoding { threads: 1, ..Default::default() };
+    let err = crate::boundary_reencode::execute_mp4_boundary_reencode(&p.plan, &index, &f.source(), &encoding, Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("DTS")), "{err:?}");
 }
 
 #[test]

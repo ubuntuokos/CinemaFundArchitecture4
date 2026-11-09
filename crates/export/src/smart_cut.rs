@@ -25,10 +25,11 @@
 use std::fmt;
 use std::io::{Seek, Write};
 
-use cfa4_isobmff::{Brand, ByteSource, Mp4File, Mp4Writer, SampleEntry, TrackConfig, WriteSample, WriterOptions};
+use cfa4_isobmff::{Brand, ByteSource, Mp4File, Mp4Writer, Sample, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
 use cfa4_smart_edit::capabilities::{Codec, Container};
-use cfa4_smart_edit::media_index::StreamIndex;
+use cfa4_smart_edit::media_index::{FrameIndexEntry, StreamIndex};
 use cfa4_smart_edit::plan::{ExportExecutionPlan, PLAN_VERSION};
+use cfa4_smart_edit::timestamp::Rational;
 use serde::{Deserialize, Serialize};
 
 /// Why a plan could not be executed or its output did not verify.
@@ -177,6 +178,7 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
             detail: format!("{} indexed pictures, {} samples in track {}", index.frames.len(), track.samples.len(), track.id),
         });
     }
+    check_timebase(index, track)?;
     // the copy segments, in output order, must read one run of packets in decode order
     let mut range: Option<(u64, u64)> = None;
     for (i, s) in plan.segments.iter().enumerate() {
@@ -202,9 +204,7 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         let (Some(sample), Some(frame)) = (track.samples.get(d), index.frames.get(d)) else {
             return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is missing") });
         };
-        if u64::from(sample.size) != u64::from(frame.size) {
-            return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is {} bytes, the index says {}", sample.size, frame.size) });
-        }
+        check_sample(d, sample, frame)?;
         match description {
             None => description = Some(sample.description_index),
             Some(x) if x == sample.description_index => {}
@@ -317,4 +317,28 @@ pub fn verify_mp4_copy<S: ByteSource + ?Sized, O: ByteSource>(
         report.duration = report.duration.saturating_add(u64::from(out.duration));
     }
     Ok(report)
+}
+
+/// The index must be on the track's timebase: plan positions and durations are read from both.
+pub(crate) fn check_timebase(index: &StreamIndex, track: &Track) -> Result<(), SmartCutError> {
+    let timebase = Rational::new(1, i64::from(track.timescale));
+    if index.timebase != timebase {
+        return Err(SmartCutError::StaleIndex {
+            detail: format!("the index timebase is {}/{}, track {} counts 1/{}", index.timebase.num, index.timebase.den, track.id, track.timescale),
+        });
+    }
+    Ok(())
+}
+
+/// Packet `d` of the source must be the one that was indexed: same size and timestamps, so a
+/// remuxed or replaced file (another frame rate, the same access units) is not cut by a stale plan.
+pub(crate) fn check_sample(d: usize, sample: &Sample, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
+    let stale = |detail: String| Err(SmartCutError::StaleIndex { detail });
+    if u64::from(sample.size) != u64::from(frame.size) {
+        return stale(format!("packet {d} is {} bytes, the index says {}", sample.size, frame.size));
+    }
+    if frame.pts != Some(sample.pts) || frame.dts != Some(sample.dts) {
+        return stale(format!("packet {d} has PTS {} / DTS {}, the index says {:?} / {:?}", sample.pts, sample.dts, frame.pts, frame.dts));
+    }
+    Ok(())
 }
