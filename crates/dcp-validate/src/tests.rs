@@ -46,7 +46,7 @@ fn package(root: &Path, paths: [&str; 3]) {
         uuid(3)
     );
     let cpl = format!(
-        r#"<CompositionPlaylist xmlns="http://www.smpte-ra.org/schemas/429-7/2006/CPL"><Id>{}</Id><IssueDate>2026-11-09T00:00:00Z</IssueDate><ContentTitleText>T</ContentTitleText><ContentKind>test</ContentKind><ReelList><Reel><Id>{}</Id><AssetList>
+        r#"<CompositionPlaylist xmlns="http://www.smpte-ra.org/schemas/429-7/2006/CPL"><Id>{}</Id><IssueDate>2026-11-09T00:00:00Z</IssueDate><ContentTitleText>T</ContentTitleText><ContentKind>test</ContentKind><ContentVersion><Id>urn:uuid:00000005-2222-4333-8444-555555555555</Id><LabelText>T</LabelText></ContentVersion><ReelList><Reel><Id>{}</Id><AssetList>
 <MainPicture><Id>{}</Id><EditRate>24 1</EditRate><IntrinsicDuration>1</IntrinsicDuration><Duration>1</Duration><FrameRate>24 1</FrameRate><ScreenAspectRatio>1998 1080</ScreenAspectRatio></MainPicture>
 </AssetList></Reel></ReelList></CompositionPlaylist>"#,
         uuid(2),
@@ -379,4 +379,13 @@ fn limits_and_unopened_documents_are_unchecked() {
 /// holds the package's ids, and test logs are not the place for them.
 fn outcome(r: &ValidationReport) -> Vec<(&str, Status)> {
     r.findings.iter().map(|f| (f.rule.as_str(), f.status)).collect()
+}
+
+#[test]
+fn duplicate_chunk_paths_fail() {
+    let d = dir("dup-path");
+    package(&d, ["pkl.xml", "cpl.xml", "cpl.xml"]);
+    let r = validate(&d, "quick-scan");
+    assert_eq!(statuses(&r, AM_DOCUMENT), [Status::Fail]);
+    assert_eq!(r.verdict, Verdict::Fail);
 }

@@ -1,6 +1,6 @@
 //! The native backend: reads the package with `cfa4-dcp` and checks the rules it implements.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::path::PathBuf;
 
 use cfa4_dcp::{AssetMap, Document, Issue, IssueKind, Standard, Uuid};
@@ -186,6 +186,8 @@ impl Run<'_> {
         let mut files = BTreeMap::new();
         let total = am.assets.len().min(self.request.limits.max_assets);
         let mut count = 0usize;
+        // ST 429-9 Annex A: path values are unique
+        let mut paths: HashSet<&str> = HashSet::new();
         for (k, a) in am.assets.iter().take(total).enumerate() {
             if k % 64 == 0 {
                 self.control.report("discover", k as u64, total as u64);
@@ -196,6 +198,16 @@ impl Run<'_> {
             for c in &a.chunks {
                 let Some(path) = &c.path else { continue };
                 count += 1;
+                if !paths.insert(path.as_str()) {
+                    let at = Location {
+                        file: Some(name.into()),
+                        element: Some(format!("Chunk/Path '{path}'")),
+                        line: Some(c.pos.line),
+                        column: Some(c.pos.column),
+                        asset: a.id,
+                    };
+                    self.fail(AM_DOCUMENT, at, format!("'{path}' is the path of more than one chunk"));
+                }
                 let at = Location {
                     file: Some(name.into()),
                     element: Some(format!("Chunk/Path '{path}'")),
@@ -235,6 +247,10 @@ impl Run<'_> {
         // Only the ids of XML assets are kept from each packing list, not the parsed documents.
         let mut xml: BTreeSet<Uuid> = BTreeSet::new();
         let pkl_ids: Vec<Uuid> = am.assets.iter().filter(|a| a.packing_list).filter_map(|a| a.id).collect();
+        let pkl_set: BTreeSet<Uuid> = pkl_ids.iter().copied().collect();
+        // XML assets the packing lists name but the asset map cannot open are counted, not kept, so
+        // the set stays bounded by the asset map.
+        let mut xml_unopened = 0usize;
         let mut over_limit = false;
         for id in &pkl_ids {
             if self.control.is_cancelled() {
@@ -258,7 +274,16 @@ impl Run<'_> {
                     if let Some(id) = p.id {
                         self.docs.packing_lists.push(id);
                     }
-                    xml.extend(p.assets.iter().filter(|a| a.mime_type.as_deref().is_some_and(|t| t.contains("xml"))).filter_map(|a| a.id));
+                    for id in p.assets.iter().filter(|a| a.mime_type.as_deref().is_some_and(|t| t.contains("xml"))).filter_map(|a| a.id) {
+                        if pkl_set.contains(&id) {
+                            continue;
+                        }
+                        if files.contains_key(&id) {
+                            xml.insert(id);
+                        } else {
+                            xml_unopened = xml_unopened.saturating_add(1);
+                        }
+                    }
                 }
                 Ok(other) => self.fail(PKL_DOCUMENT, Location::file(path.as_str()), format!("declared as a packing list, but it is a {}", kind(&other))),
                 Err(e) => self.fail(PKL_DOCUMENT, Location::file(path.as_str()), format!("cannot be read: {e}")),
@@ -277,7 +302,11 @@ impl Run<'_> {
             return;
         }
 
-        let xml: Vec<Uuid> = xml.into_iter().filter(|id| !pkl_ids.contains(id)).collect();
+        if xml_unopened > 0 {
+            let msg = format!("{xml_unopened} XML asset references of the packing lists are not among the asset map's readable files, so they were not opened");
+            self.findings.push(Finding::new(CPL_DOCUMENT, Status::Unchecked, msg));
+        }
+        let xml: Vec<Uuid> = xml.into_iter().collect();
         let total = xml.len();
         let mut cpls = 0usize;
         for (k, id) in xml.iter().enumerate() {
