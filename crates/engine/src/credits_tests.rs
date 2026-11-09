@@ -1002,3 +1002,24 @@ fn preview_blocks_survive_hostile_cells() {
     assert_eq!(b["body"].as_array().unwrap().len(), 40);
     assert_eq!(b["bodyCount"], 201);
 }
+
+#[test]
+fn refresh_fit_and_template_name_the_new_group() {
+    let mut s = demo("credits-new-group");
+    let dir = tmp_dir("credits-new-group-sheet");
+    let sheet = dir.join("credits.csv");
+    std::fs::write(&sheet, "Head,Body,Page Style\nDirected by,Jordan Lee,Card\n").unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": sheet})).unwrap();
+    let g = v["group"].as_u64().unwrap();
+    std::fs::write(&sheet, "Head,Body,Page Style\nDirected by,Jordan Lee,Card\nMusic,Ann Smith,Card\n").unwrap();
+    let r = s.execute("graphics.credits.refresh", json!({"clip": g})).unwrap();
+    let g2 = r["group"].as_u64().unwrap();
+    assert_eq!(Some(g2), r["clips"][0]["clip"].as_u64());
+    // the new group goes on to the next command
+    let f = s.execute("graphics.credits.fit", json!({"clip": g2, "seconds": 12})).unwrap();
+    let g3 = f["group"].as_u64().unwrap();
+    assert_eq!(Some(g3), f["clips"][0]["clip"].as_u64());
+    let id = s.execute("graphics.credits.templates", json!({})).unwrap()["templates"][0]["id"].as_str().unwrap().to_string();
+    let t = s.execute("graphics.credits.template.apply", json!({"clip": g3, "id": id})).unwrap();
+    assert_eq!(t["group"].as_u64(), t["clips"][0]["clip"].as_u64());
+}

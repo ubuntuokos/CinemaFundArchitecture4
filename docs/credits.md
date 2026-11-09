@@ -380,16 +380,16 @@ CFA4) and the running order (rundown) follow in their own plan,
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
-| `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
+| `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, group, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
 | `graphics.credits.save` | Credits window: *Save as Credits File…* | `to` (.cfa4credits), and `clip` (placed credits; default the selection) or `from` {import parameters} → `{path, rows}` |
 | `graphics.credits.diff` | (query) | `clip`?, `source`? (the spreadsheet's new place) → `{group, clip (a page of the group), source, changes: [{id, kind: added/removed/changed, oldRows, newRows (1-based), before, after}], manual: [{key, page, layer, text, survivesAll}]}` |
-| `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step |
+| `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, group, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step. The pages are new clips: `group` (the first page) names the credits for the next command |
 | `graphics.credits.styles` | (query) | `styling` → style names, inline style names, column names and a starter styling |
 | `graphics.credits.templates` | (query) | → `{templates: [{id, name, description, category, source, license, path, pages, fit}]}` |
 | `graphics.credits.template.get` | (query) | `id` (id, name or `.cfa4credtpl` path) → `{template, sampleCsv}` |
 | `graphics.credits.template.save` | Credits window: *Save as Template…* | `name`, `description`?, `license`?, `source`?, `where` (`user`, `project`, `file` with `to`), and `clip` (placed credits) or `from` {import parameters} or `styling` (+ `sample`) → `{id, category, path?}`; to the project: one undo step |
 | `graphics.credits.template.delete` | (query) | `id` (user or project templates) |
-| `graphics.credits.template.apply` | Graphics and Titles ▸ Apply Credits Template… | `id`, `clip`? → `{clips, end, template, warnings}`; one undo step |
+| `graphics.credits.template.apply` | Graphics and Titles ▸ Apply Credits Template… | `id`, `clip`? → `{clips, group, end, template, warnings}`; one undo step |
 | `graphics.credits.template.newSheet` | Credits window: *New Spreadsheet from Template…* | `id`, `to` (.csv) → `{path, rows}` |
 
 Problems in the sheet (unknown styles, bad numbers, unsupported `{{…}}` tags) are warnings with

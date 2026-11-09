@@ -1043,8 +1043,11 @@ fn refresh(s: &mut Session, p: &Value) -> Result<Value> {
     let overrides: Overrides = if keep_manual { baselined(s, CMD, &pd.doc, &pd.manual) } else { Vec::new() };
     let out = replace_group(s, CMD, "Refresh Credits", &pd.group, &doc, laid, &overrides, None)?;
     let kept: u64 = out.0.iter().filter_map(|v| v["keptEdits"].as_u64()).sum();
+    // the pages are new clips: the group is named again by its first page, as on import
+    let new_group = out.0.first().and_then(|v| v["clip"].as_u64());
     Ok(json!({
         "clips": out.0,
+        "group": new_group,
         "end": out.1.0,
         "accepted": accept.len(),
         "changes": pd.changes.len(),
@@ -1565,7 +1568,8 @@ fn fit_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     let overrides: Overrides = baselined(s, CMD, &group_doc(CMD, &group)?, &manual);
     let label = if off { "Unfit Credits" } else { "Fit Credits to Music" };
     let out = replace_group(s, CMD, label, &group, &doc, laid, &overrides, start)?;
-    Ok(json!({"clips": out.0, "end": out.1.0, "fit": doc.fit, "report": report, "warnings": warnings}))
+    let group = out.0.first().and_then(|v| v["clip"].as_u64());
+    Ok(json!({"clips": out.0, "group": group, "end": out.1.0, "fit": doc.fit, "report": report, "warnings": warnings}))
 }
 
 fn styles(_: &mut Session, p: &Value) -> Result<Value> {
@@ -1828,7 +1832,8 @@ fn template_apply(s: &mut Session, p: &Value) -> Result<Value> {
         }
     }
     let out = replace_group(s, CMD, "Apply Credits Template", &group, &doc, laid, &overrides, None)?;
-    Ok(json!({"clips": out.0, "end": out.1.0, "template": t.id, "warnings": warnings}))
+    let group = out.0.first().and_then(|v| v["clip"].as_u64());
+    Ok(json!({"clips": out.0, "group": group, "end": out.1.0, "template": t.id, "warnings": warnings}))
 }
 
 /// Write a template's sample sheet as a CSV file to start new credits from.
