@@ -53,6 +53,7 @@ and `cfa4-cli`.
 | `heif` | L0 | HEIF / HEIC still-image container reader: items, grids, transforms, alpha references ([README](../crates/heif/README.md)) |
 | `prores` | L0 | ProRes decoder and encoder |
 | `dnx` | L0 | DNxHD / DNxHR (SMPTE ST 2019-1 VC-3) decoder and DNxHR encoder |
+| `hap` | L0 | Hap video decoder: `Hap1`, `Hap5`, `HapY`, `HapM`, `HapA`; Snappy, chunks, DXT1 / DXT5 / RGTC1 / scaled YCoCg textures to RGBA ([README](../crates/hap/README.md)) |
 | `apv` | L0 | Advanced Professional Video (IETF RFC 9924) decoder and encoder ([README](../crates/apv/README.md)) |
 | `jxl` | L0 | JPEG XL decoder (ISO/IEC 18181): safe port of jxl-oxide, VarDCT and Modular, all restoration filters, patches, splines, noise; first frame of a file to interleaved floats; animation, ICC colour and encoder: #138–#141 ([README](../crates/jxl/README.md)) |
 | `dng` | L0 | DNG / CinemaDNG camera RAW decoder: TIFF container, uncompressed and lossless JPEG raw data, DNG processing to linear Rec. 709 ([README](../crates/dng/README.md)) |

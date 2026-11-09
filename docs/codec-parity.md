@@ -39,6 +39,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | GIF (animated) | encode | decode as a clip (#402) | encode | — | 80% | — |
 | WebP | none | stills: lossy (VP8, with or without alpha) and lossless (VP8L) via the pure-Rust `image-webp`; animations as clips, composed on the canvas by CFA4's own code (#87) | none | stills and animations (offsets, disposal, blending, lossy / lossless / mixed) bit-exact against libwebp's `dwebp` and `anim_dump`; damaged-file fuzzing | ahead | — |
 | Uncompressed / v210 / RGB | decode + encode (AVI, MOV) | partial (MOV PCM-style video not verified) | none | — | 30% | 8–15 h |
+| Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | — | own decoder ([`cfa4-hap`](../crates/hap/README.md), backlog CB-3.2): DXT1 / DXT5 / scaled YCoCg / RGTC1, Snappy, chunks; in QuickTime / MP4 and AVI, to RGBA. **No** Hap R (BC7), Hap HDR (BC6H), Hap in Matroska | none | bit-exact vs ffmpeg on 7 ffmpeg-written files and 5 with random or rewritten textures | 85% | — |
 
 ## Audio
 

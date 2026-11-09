@@ -1081,6 +1081,7 @@ dependencies = [
  "cfa4-dv",
  "cfa4-frame",
  "cfa4-h264",
+ "cfa4-hap",
  "cfa4-hevc",
  "cfa4-iab",
  "cfa4-isobmff",
@@ -1398,6 +1399,13 @@ dependencies = [
  "cfa4-bitstream",
  "cfa4-testkit",
  "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-hap"
+version = "0.10.0"
+dependencies = [
  "thiserror 2.0.21",
 ]
 

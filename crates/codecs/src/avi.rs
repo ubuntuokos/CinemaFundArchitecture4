@@ -37,6 +37,8 @@ enum VCodec {
     Dv,
     H264,
     Hevc,
+    /// Hap: the FourCC.
+    Hap([u8; 4]),
     Raw(RawFormat),
     /// No decoder: the codec's name.
     Unsupported(String),
@@ -62,6 +64,7 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
             (VCodec::Unsupported("MPEG-4 Part 2 (DivX / Xvid)".into()), "MPEG-4 Part 2 (DivX / Xvid)".into())
         }
+        _ if crate::hap::is_hap(&b.compression) => (VCodec::Hap(b.compression), "Hap".into()),
         b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Dv, "DV".into()),
         _ => {
             let name = fourcc_text(b.compression);
@@ -524,6 +527,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
             VCodec::H264 => Ok(Box::new(crate::video::H264Decoder::annexb())),
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
+            VCodec::Hap(fourcc) => make_video_decoder(&crate::hap::sample_entry(*fourcc, w, h)),
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),
             VCodec::Unsupported(name) => Err(CodecError::Unsupported(format!("no decoder for {name} video"))),
         }

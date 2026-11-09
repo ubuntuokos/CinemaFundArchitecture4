@@ -27,6 +27,7 @@ pub mod audio;
 pub mod avi;
 pub mod dif;
 pub mod gop;
+pub mod hap;
 pub mod hw;
 mod hw_frame;
 pub mod j2k;
@@ -81,7 +82,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 13] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 14] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -95,6 +96,7 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 13] = [
     video::mpeg2_factory,
     video::raw_factory,
     video::dv_factory,
+    hap::hap_factory,
 ];
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {
