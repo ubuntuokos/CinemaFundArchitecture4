@@ -164,8 +164,8 @@ impl ExportRenderer {
 
     /// One frame as the desktop monitors show it: composited on the GPU (transitions included)
     /// into the sRGB display texture, over black, and read back as RGBA8 (`w`, `h`, pixels).
-    /// `None` when the plan is already a CPU picture (HDR, wide gamut: the CPU renderer draws it
-    /// directly) or the GPU cannot draw this frame.
+    /// A plan that is already a CPU picture (HDR, wide gamut) comes back as that picture's bytes,
+    /// so the caller does not render it a second time. `None` when the GPU cannot draw this frame.
     pub fn render_display_rgba8(
         &mut self,
         project: &Project,
@@ -178,8 +178,8 @@ impl ExportRenderer {
             return None;
         }
         let plan = plan_frame(project, seq, t, opts, sources);
-        if matches!(plan, FramePlan::Image(_)) {
-            return None;
+        if let FramePlan::Image(img) = &plan {
+            return Some((img.w, img.h, img.over_black_rgba8()));
         }
         let prep = prepare(&plan);
         self.compositor.composite_prepared(&plan, Some(&prep));

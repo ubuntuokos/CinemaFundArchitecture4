@@ -274,7 +274,18 @@ impl cfa4_engine::DisplayRenderer for DisplayGpu {
 
 fn display_renderer() -> Option<&'static (std::sync::Mutex<DisplayGpu>, bool)> {
     static R: std::sync::OnceLock<Option<(std::sync::Mutex<DisplayGpu>, bool)>> = std::sync::OnceLock::new();
-    R.get_or_init(|| cfa4_gpu::ExportRenderer::new().map(|r| (r.is_software(), r)).map(|(sw, r)| (std::sync::Mutex::new(DisplayGpu(r)), sw))).as_ref()
+    R.get_or_init(|| {
+        // a driver that panics while the device opens leaves every frame to the CPU renderer
+        // (AGENTS.md §0) instead of failing each `frame.render` that would retry it
+        match std::panic::catch_unwind(cfa4_gpu::ExportRenderer::new) {
+            Ok(r) => r.map(|r| (r.is_software(), r)).map(|(sw, r)| (std::sync::Mutex::new(DisplayGpu(r)), sw)),
+            Err(_) => {
+                log::error!("the GPU compositor failed to start; the monitors' frames render on the CPU");
+                None
+            }
+        }
+    })
+    .as_ref()
 }
 
 fn render_frame_at(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
