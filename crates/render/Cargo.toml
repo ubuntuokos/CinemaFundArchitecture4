@@ -25,7 +25,5 @@ serde_json = { workspace = true }
 
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["png"] }
-
 # Thread CPU clock for load-robust performance tests.
-[target.'cfg(unix)'.dev-dependencies]
 rustix = { version = "1", default-features = false, features = ["std", "time"] }

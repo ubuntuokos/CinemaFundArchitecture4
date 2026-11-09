@@ -53,7 +53,7 @@ fn discard_fixture(tag: &str) -> (Session, std::path::PathBuf) {
 }
 
 fn block_discard(dir: &std::path::Path) {
-    // An ordinary file cannot be removed as a directory, on Windows or Unix.
+    // An ordinary file cannot be removed as a directory.
     std::fs::remove_dir_all(dir).unwrap();
     std::fs::write(dir, b"occupied directory path").unwrap();
 }

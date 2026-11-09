@@ -41,9 +41,6 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 # Thread/process CPU clocks for frame-job profiling (safe wrappers; see frames.rs).
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "1", default-features = false, features = ["std", "time"] }
-# the same clocks on Windows (GetThreadTimes / GetProcessTimes behind a safe API; MIT OR Apache-2.0)
-[target.'cfg(windows)'.dependencies]
-cpu-time = "1"
 
 [dev-dependencies]
 pollster = "0.4"

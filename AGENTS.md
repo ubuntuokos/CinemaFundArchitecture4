@@ -114,7 +114,7 @@ panic path, and fix a crash before building on top of it.
    above; [ADR 0001](docs/adr/0001-platform-ffi.md) addendum), which follow the same containment
    rules as `crates/platform`, and
    `crates/platform`, which needs `unsafe` to call the operating system's media APIs (hardware
-   video decoding through VideoToolbox, Media Foundation / Direct3D 11, VA-API and NVDEC; hardware encoding) and does nothing else. It
+   video decoding through VA-API and NVDEC; NVENC hardware encoding) and does nothing else. It
    uses `unsafe_code = "deny"` with `#[allow(unsafe_code)]` only on its FFI modules, a
    `// SAFETY:` comment on every `unsafe` block, a safe `Result`-returning public API, and the
    pure-Rust decoder as the tested fallback ([ADR 0001](docs/adr/0001-platform-ffi.md)).
