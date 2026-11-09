@@ -37,7 +37,7 @@ Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. 
 |---|---|---|---|---|
 | 1 | 2026-11-02 | K1 | FFV1 | Huffyuv |
 | 2 | 2026-11-09 | K1 | Ut Video | MagicYUV |
-| 3 | 2026-11-16 | K1 | Lagarith | HAP |
+| 3 | 2026-11-16 | K1 | Lagarith 📄 | HAP |
 | 4 | 2026-11-23 | K1 | G.711 / G.722 | ADPCM (IMA, Microsoft) |
 | 5 | 2026-11-30 | K1 | WavPack | Monkey's Audio (APE) |
 | 6 | 2026-12-07 | K1 | Speex | AMR-NB / AMR-WB |
@@ -86,6 +86,7 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-09 | minor | A Lagarith 📄 lett (nincs teljes nyilvános leírás, ffmpeg-kódoló sincs): a tulajdonos 2026-12-28-ig dönt róla, addig a 4. hét tételei (G.711 / G.722, ADPCM; #818) jöttek előre |
 | 2026-11-09 | minor | A H.266 / VVC kivéve: saját, jóváhagyott terve van (CFA4-VVC-PLAN-001, #721). 82 tétel, 41 hét (2027-08-15-ig); a 22. héttől minden tétel egy hellyel előrébb jött. A 2. hét MagicYUV-ja tulajdonosi döntésre vár, ezért a HAP (CB-3.2) előrejött |
 | 2026-11-08 | major | Áthelyezve a CFA4-AI_modules tárolóból a CinemaFundArchitecture4-be. Kivéve a CineForm, a JPEG XL, az AVIF, a DTS, a DTS-HD MA és a TrueHD (itt már megvan vagy tervben van); 83 tétel, 42 hét, a döntési határidők újraszámolva |
 | 2026-10-27 | major | Létrehozva: 89 tétel, heti 2, 45 hét (2026-11-02 – 2027-09-12), döntési kapukkal |
