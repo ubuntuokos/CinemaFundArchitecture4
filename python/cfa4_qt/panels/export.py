@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtCore import QObject, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QFrame,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -36,8 +37,10 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -246,6 +249,30 @@ def deep_merge(dst: dict[str, Any], src: dict[str, Any]) -> dict[str, Any]:
         else:
             dst[k] = v
     return dst
+
+
+QUEUE_COLUMN_W = 500
+QUEUE_ACTIONS_COL = 6
+
+
+class QueueTable(QTableWidget):
+    """The export queue; each row is egui's ``export.queue.item.<id>`` part (its status as the label)."""
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        out = []
+        offset = self.viewport().pos()
+        for row in range(self.rowCount()):
+            first = self.item(row, 0)
+            if first is None or self.isRowHidden(row):
+                continue
+            rect = QRect()
+            for col in range(self.columnCount()):
+                rect = rect.united(self.visualRect(self.model().index(row, col)))
+            rect = rect.intersected(self.viewport().rect())
+            if rect.isValid():
+                status = self.item(row, 3)
+                out.append((f"export.queue.item.{first.data(Qt.ItemDataRole.UserRole)}", rect.translated(offset), status.text() if status else ""))
+        return out
 
 
 class ExportDialog(QDialog):
@@ -540,17 +567,24 @@ class ExportDialog(QDialog):
         buttons.addWidget(close)
 
         # ----- queue -----
-        self.table = QTableWidget(0, 6, self)
+        self.table = QueueTable(0, 7, self)
         self.table.setObjectName("export.queue")
         self.table.setHorizontalHeaderLabels(
-            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining")]
+            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining"), ""]
         )
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        queue_buttons = QHBoxLayout()
-        for name, text, slot in (
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        # what egui's narrow column shows first: the export, its status and progress, its buttons
+        header.moveSection(QUEUE_ACTIONS_COL, 5)
+        header.moveSection(2, 6)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(4, 64)
+        # two rows of four: the column is narrow (egui's is 300 px)
+        queue_buttons = QGridLayout()
+        for n_button, (name, text, slot) in enumerate((
             ("start", N_("Start Queue"), lambda: self._queue_command("export.queue.start", {})),
             ("stop", N_("Stop Queue"), lambda: self._queue_command("export.queue.stop", {})),
             ("cancel", N_("Cancel Selected"), lambda: self._selected_command("export.queue.cancel")),
@@ -560,15 +594,14 @@ class ExportDialog(QDialog):
             # egui's Up / Down: the order the queue encodes in (not past the export encoding now)
             ("up", N_("Up"), lambda: self._move_selected(-1)),
             ("down", N_("Down"), lambda: self._move_selected(1)),
-        ):
+        )):
             b = QPushButton(tr(text), self)
             b.setObjectName(f"export.queue.{name}")
             b.clicked.connect(slot)
-            queue_buttons.addWidget(b)
+            queue_buttons.addWidget(b, n_button // 4, n_button % 4)
             if name in ("up", "down"):
                 setattr(self, f"queue_{name}", b)
         self.table.itemSelectionChanged.connect(self._update_move_buttons)
-        queue_buttons.addStretch(1)
         # egui's "Queue (n)" heading, and its hint while the queue is empty
         self.queue_box = queue_box = QGroupBox(tr("Queue ({n})").format(n=0), self)
         queue_box.setObjectName("export.queueBox")
@@ -580,6 +613,31 @@ class ExportDialog(QDialog):
         qv.addWidget(self.queue_empty)
         qv.addWidget(self.table)
         qv.addLayout(queue_buttons)
+
+        # egui's left column: "Destinations" (Media File, the only one) over the queue
+        self.destinations = QLabel(tr("Destinations"), self)
+        self.destinations.setObjectName("export.destinations")
+        font = self.destinations.font()
+        font.setBold(True)
+        self.destinations.setFont(font)
+        self.media_file = QLabel(tr("Media File"), self)
+        self.media_file.setObjectName("export.destination.mediaFile")
+        self.media_file.setMinimumHeight(26)
+        self.media_file.setContentsMargins(10, 0, 10, 0)
+        # egui fills the row with the selected-row colour: Media File is always the chosen destination
+        self.media_file.setAutoFillBackground(True)
+        pal = self.media_file.palette()
+        pal.setColor(self.media_file.backgroundRole(), pal.color(pal.ColorRole.Highlight))
+        pal.setColor(self.media_file.foregroundRole(), pal.color(pal.ColorRole.HighlightedText))
+        self.media_file.setPalette(pal)
+        queue_column = QWidget(self)
+        queue_column.setObjectName("export.queueColumn")
+        qc = QVBoxLayout(queue_column)
+        qc.setContentsMargins(0, 0, 0, 0)
+        qc.addWidget(self.destinations)
+        qc.addWidget(self.media_file)
+        qc.addWidget(queue_box, 1)
+        self.queue_column = queue_column
 
         top = QHBoxLayout()
         left = QVBoxLayout()
@@ -611,13 +669,24 @@ class ExportDialog(QDialog):
         self.no_sequence.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.no_sequence.setEnabled(False)
         self.no_sequence.hide()
+        settings_column = QWidget(self)
+        sc = QVBoxLayout(settings_column)
+        sc.setContentsMargins(0, 0, 0, 0)
+        sc.addWidget(scroll, 1)
+        sc.addWidget(self.no_sequence, 1)
+        sc.addWidget(self.summary)
+        sc.addLayout(buttons)
+        # egui's columns: the queue on the left (300 px there), the settings and preview beside it
+        self.splitter = splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        splitter.setObjectName("export.columns")
+        splitter.setChildrenCollapsible(False)
+        splitter.addWidget(queue_column)
+        splitter.addWidget(settings_column)
+        splitter.setStretchFactor(1, 1)
+        splitter.setSizes([QUEUE_COLUMN_W, 1080])
         layout = QVBoxLayout(self)
-        layout.addWidget(scroll, 3)
-        layout.addWidget(self.no_sequence, 3)
-        layout.addWidget(self.summary)
-        layout.addLayout(buttons)
-        layout.addWidget(queue_box, 1)
-        self.resize(1080, 860)
+        layout.addWidget(splitter)
+        self.resize(QUEUE_COLUMN_W + 1080, 860)
 
         # egui's collapsible settings sections (`ExportUi::open_sections`)
         self.sections: dict[str, Section] = {
@@ -1344,6 +1413,54 @@ class ExportDialog(QDialog):
         self.queue_up.setEnabled(row is not None and self._can_move(row, -1))
         self.queue_down.setEnabled(row is not None and self._can_move(row, 1))
 
+    def _row_actions(self, row: int, it: dict[str, Any], status: str) -> None:
+        """egui's buttons on each queued export: Up, Down, Cancel (ready or encoding) or Retry,
+        and Remove, ids ``export.queue.item.<id>.<key>``; rebuilt only when what they offer changes,
+        so a poll does not replace a button under the pointer."""
+        qid = it.get("id")
+        items = self._queue_items
+        wanted = (
+            qid,
+            row > 0 and status != "encoding",
+            row + 1 < len(items),
+            status in ("ready", "encoding"),
+            status != "encoding",
+        )
+        cell = self.table.cellWidget(row, QUEUE_ACTIONS_COL)
+        if cell is not None and getattr(cell, "cfa4_actions", None) == wanted:
+            return
+        _id, up, down, cancel, remove = wanted
+        cell = QWidget(self.table)
+        cell.cfa4_actions = wanted  # type: ignore[attr-defined]
+        h = QHBoxLayout(cell)
+        h.setContentsMargins(2, 0, 2, 0)
+        h.setSpacing(2)
+        specs = [
+            ("up", N_("Up"), up, "export.queue.move", {"id": qid, "by": -1}),
+            ("down", N_("Down"), down, "export.queue.move", {"id": qid, "by": 1}),
+            ("cancel", N_("Cancel"), True, "export.queue.cancel", {"id": qid})
+            if cancel
+            else ("retry", N_("Retry"), True, "export.queue.retry", {"id": qid, "start": True}),
+            ("remove", N_("Remove"), remove, "export.queue.remove", {"id": qid}),
+        ]
+        small = cell.font()
+        small.setPointSizeF(max(6.0, small.pointSizeF() - 1.5))
+        for key, text, enabled, command, params in specs:
+            b = QToolButton(cell)
+            b.setText(tr(text))
+            b.setFont(small)
+            b.setObjectName(f"export.queue.item.{qid}.{key}")
+            b.setEnabled(bool(enabled))
+            b.clicked.connect(lambda _c=False, c=command, p=params: self._item_command(c, p))
+            h.addWidget(b)
+        self.table.setCellWidget(row, QUEUE_ACTIONS_COL, cell)
+        self.table.resizeColumnToContents(QUEUE_ACTIONS_COL)
+
+    def _item_command(self, command: str, params: dict[str, Any]) -> None:
+        if command == "export.queue.move":
+            self._follow = params.get("id")  # the selection follows the moved export, as Up / Down's
+        self._queue_command(command, params)
+
     def refresh_queue(self) -> None:
         if self.engine.running:
             self.engine.execute("export.queue.list", {}, on_reply=self._on_queue, on_error=lambda _m: None)
@@ -1373,6 +1490,9 @@ class ExportDialog(QDialog):
                 cell.setText(text)
                 if col == 0:
                     cell.setData(Qt.ItemDataRole.UserRole, it.get("id"))
+                if col == 1:  # the file name, as egui's "sequence → file"; the whole path on hover
+                    cell.setText(Path(text).name if text else "")
+                    cell.setToolTip(text)
                 if col == 3:
                     cell.setToolTip(str(it.get("statusText") or ""))
             bar = self.table.cellWidget(row, 4)
@@ -1386,6 +1506,7 @@ class ExportDialog(QDialog):
                 bar.setValue(0)
             if status == "done":
                 bar.setValue(1000)
+            self._row_actions(row, it, status)
             key = it.get("id")
             if self._known_status.get(key) != status and status in FINISHED and key in self._known_status:
                 # it finished while we watched it
