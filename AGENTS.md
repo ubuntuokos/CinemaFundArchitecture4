@@ -77,6 +77,15 @@ attribution and original copyright/licence requirements remain in force.
   (§0), the licence rules above, the media-backend routing (`cfa4-route`), vendor neutrality, and the
   `cfa4-restricted-extras` model for patent-encumbered components
   ([docs/licensing.md](docs/licensing.md) §7).
+- **Translations live in `i18n/`** (owner decision, 2026-11-09). Every interface translation of
+  every CFA4 part (the Qt GUI, engine command and menu labels, credits, live graphics and the live
+  studio, and every part still to come) goes in the top-level `i18n/` directory, one catalog per
+  language in the shared TSV format, with its `.attribution` sidecar where one is needed. No part
+  keeps its own translation directory, and no frontend's source tree (`crates/ui-egui`, which is
+  being retired) owns them. Until the move (step 1 of the egui removal in
+  `docs/plans/CFA4-QT6-FINISH-001.md`, PR #779; the move is its own PR), add strings to the existing catalogs
+  (`crates/ui-egui/src/i18n/`, `python/cfa4_qt/i18n/`) and create no new catalog directory
+  anywhere else.
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.
