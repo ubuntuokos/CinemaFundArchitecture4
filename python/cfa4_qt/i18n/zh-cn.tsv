@@ -318,8 +318,22 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 压缩
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Strikethrough	删除线
+	Caption Export Settings	字幕导出设置
+	Export Captions	导出字幕
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} 已存在，因此未导出任何内容。要替换它，请在保存对话框中选择该文件。
+	Delete Redoable Actions	删除可重做的操作
+	Clear History	清除历史记录
+	Delete the dimmed actions after the current state? They cannot be redone.	删除当前状态之后显示为灰色的操作吗？这些操作将无法重做。
+	Work Area Bar	工作区栏
+	Start: {tc}	开始：{tc}
+	End: {tc}	结束：{tc}
+	Duration: {tc}	持续时间：{tc}
 	Panel menu	面板菜单
 	Move panel	移动面板
 	Transparency Grid	透明网格
 	Show Duplicate Frame Markers	显示重复帧标记
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	序列入点/出点只有 1 帧。要导出整个序列，请选择“整个序列”。
+	Set Work Area Bar In Point	设置工作区栏入点
+	Set Work Area Bar Out Point	设置工作区栏出点
+	Delete Clips	删除剪辑

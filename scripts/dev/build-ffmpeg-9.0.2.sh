@@ -112,6 +112,30 @@ if [[ ! -w "$(dirname "$prefix")" && "$(id -u)" != 0 ]]; then
 fi
 "${install_cmd[@]}" >"${tmp}/install.log"
 
+# Licence and source information next to the libraries: packaging/linux/stage-ffmpeg.sh ships this
+# directory with every CFA4 package that contains this build (GPL-3: the corresponding source is
+# the unmodified upstream release named here, configured with the flags below).
+doc="${tmp}/doc"
+mkdir -p "$doc"
+cp "$src"/LICENSE.md "$src"/COPYING.* "$doc/"
+{
+  echo "FFmpeg ${version}, built for CFA4 by scripts/dev/build-ffmpeg-9.0.2.sh (ADR 0005)."
+  echo "Licence: GPL version 3 or later (--enable-gpl --enable-version3, never --enable-nonfree)."
+  case "${CFA4_FFMPEG_SOURCE:-tarball}" in
+    tarball) echo "Source: ${source_url} (SHA-256 ${sha256}), unmodified." ;;
+    git) echo "Source: ${git_url} tag ${git_tag}, commit ${git_commit}, unmodified." ;;
+  esac
+  echo "Build: $( (( restricted )) && echo 'restricted (x264, x265; cfa4-restricted-extras)' || echo 'base (no patent-restricted codecs)')"
+  echo "configure flags:"
+  printf '  %s\n' "${flags[@]}"
+} >"${doc}/BUILDINFO"
+docdir="${prefix}/share/doc/ffmpeg"
+if [[ "${install_cmd[0]}" == sudo ]]; then
+  sudo mkdir -p "$docdir" && sudo cp "$doc"/* "$docdir/"
+else
+  mkdir -p "$docdir" && cp "$doc"/* "$docdir/"
+fi
+
 ffmpeg="${prefix}/bin/ffmpeg"
 actual="$("$ffmpeg" -version | awk 'NR==1 {print $3}')"
 [[ "$actual" == "$version" || "$actual" == "n$version" ]] || { echo "built ${actual}, expected ${version}" >&2; exit 1; }

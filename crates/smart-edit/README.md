@@ -20,7 +20,7 @@ reg.apply_probes(probes)?;                     // run-time checks (hardware enco
 let d = reg.decide(Key::codec(Operation::Encode, Codec::Hevc), Policy::default());
 // d.allowed, d.backend, d.level, d.reasons (one line per backend considered)
 let cut = reg.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, Policy::default());
-// cut.allowed is false until GOP indexing (WP-02) and packet copy (WP-04) are implemented
+// cut.allowed: packet copy is implemented for H.264 into MP4 / MOV (WP-04)
 let json = serde_json::to_string(&reg.report())?; // machine-readable, stable order
 ```
 
@@ -121,8 +121,26 @@ The planner reads nothing but its arguments and writes nothing. Its output is th
 - **Executability** comes from the registry (`smart_cut`, plus `smart_render` with the encoder
   limits when something is re-encoded) and from the copy guarantee. A bit-exact copy cannot change
   the packet framing (H.264 from MP4 into MPEG-TS), and a compatible copy needs a proven
-  conversion, which is not registered yet. Until packet copy (WP-04) and the boundary re-encode
-  (WP-06) exist, the built-in registry returns every plan with `executable: false`.
+  conversion, which is not registered yet. The built-in registry runs H.264 copy plans into MP4 /
+  MOV (WP-04); a plan with a boundary re-encode stays `executable: false` until WP-06.
+
+## Smart Cut executor (WP-04)
+
+The executor lives in the export crate (`cfa4_export::smart_cut`), because this crate only plans.
+`execute_mp4_copy(plan, stream_index, source, writer)` writes the copy segments of a lossless plan
+from an MP4 / MOV source into a new MP4 / MOV file. It copies the sample payloads unchanged and keeps
+the sample entry (`avcC`), the durations and the composition offsets. Decode time starts at 0, and
+an edit list starts the presentation at the first copied picture. `verify_mp4_copy` reads the result
+back and compares every sample with its source sample (SCE-001 §18).
+
+The executor refuses, before writing anything:
+- a plan that re-encodes (`not-lossless`, WP-06);
+- an index that no longer matches the source track (`stale-index`);
+- copy segments that do not form one run in decode order;
+- mixed sample entries;
+- any codec or container other than H.264 in MP4 / MOV.
+
+The caller writes to a temporary file and renames it into place, like every export.
 
 
 `cargo test -p cfa4-smart-edit`: synthetic MPEG-2 GOP structures (open, closed, broken link, missing
@@ -130,11 +148,15 @@ sequence header, configuration change, stream starting mid-GOP), H.264 from `cfa
 hand-built NAL units (recovery point SEI, parameter-set changes, length-prefixed framing),
 mutation fuzzing of both analysers, cache validity; `tests/index_oracle.rs` indexes ffmpeg-made
 MPEG-TS references (MPEG-2 open / closed GOP, x264 closed / open GOP) and checks every picture
-type and the presentation order against ffprobe. Capability registry: built-in table validity, the WP-03 gate (no Smart Cut allowed
-before it is implemented, for every codec and container pair), composite decisions, encoder
+type and the presentation order against ffprobe. Capability registry: built-in table validity, the Smart Cut gate (Smart Cut
+allowed only where it is implemented, for every codec and container pair), composite decisions, encoder
 limits, probe order independence, backend order from the routing table, report round trip and hostile JSON.
 Smart Cut planner: whole-GOP copies, first / last picture, mid-GOP cuts in both modes with the
 safe points, head and tail boundaries, leading pictures, open GOPs, configuration changes,
 undecodable pictures, invalid ranges and timestamps, copy guarantees, encoder limits, JSON round
 trip, an encoded H.264 stream, and random indexes and requests (the segments always cover the
 range; copied packets output exactly their pictures).
+Smart Cut executor (`cargo test -p cfa4-export smart_cut`): GOP-boundary cuts and whole streams into MP4
+and MOV, with and without B-frames, read back and re-indexed. The tests also check refusals (re-encode plans,
+stale indexes, malformed plans) and that a changed payload or a truncated file fails verification.
+FFmpeg (oracle only) decodes the copy to exactly the source pictures of the range (framemd5).

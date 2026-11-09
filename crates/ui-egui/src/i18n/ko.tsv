@@ -3652,3 +3652,10 @@
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 4096×1716(2.39:1), 5.1 24비트 48kHz PCM
 	Show Duplicate Frame Markers	중복 프레임 마커 표시
+	Work Area Bar	작업 영역 막대
+	Set Work Area Bar In Point	작업 영역 막대 시작 지점 설정
+	Set Work Area Bar Out Point	작업 영역 막대 끝 지점 설정
+	Delete Redoable Actions	다시 실행 가능한 작업 삭제
+	Clear History	작업 내역 지우기
+	Delete Clips	클립 삭제
+	Strikethrough	취소선

@@ -159,6 +159,32 @@ class InstallTests(unittest.TestCase):
         self.assertIn("extract the complete tarball", result.stderr)
         self.assertFalse(prefix.exists(), "refused before anything is written")
 
+    def test_ffmpeg_libraries_install_beside_the_binaries_and_replace_older_ones(self):
+        ffmpeg = self.bundle / "lib/cfa4/ffmpeg-9.0.2"
+        (ffmpeg / "lib").mkdir(parents=True)
+        (ffmpeg / "share/doc/ffmpeg").mkdir(parents=True)
+        (ffmpeg / "lib/libavcodec.so.62").write_text("new\n")
+        (ffmpeg / "share/doc/ffmpeg/BUILDINFO").write_text("FFmpeg 9.0.2\n")
+        prefix = self.root / "destination"
+        stale = prefix / "lib/cfa4/ffmpeg-9.0.2/lib/libavcodec.so.61"
+        stale.parent.mkdir(parents=True)
+        stale.write_text("old\n")
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        installed = prefix / "lib/cfa4/ffmpeg-9.0.2"
+        self.assertEqual((installed / "lib/libavcodec.so.62").read_text(), "new\n")
+        self.assertTrue((installed / "share/doc/ffmpeg/BUILDINFO").is_file())
+        self.assertFalse(stale.exists(), "a library of an older release stays behind")
+
+    def test_release_package_refuses_without_ffmpeg_for_other_formats(self):
+        result = subprocess.run(
+            ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "deb", "--without-ffmpeg"],
+            env={**os.environ, "CFA4_ALLOW_LOCAL_PACKAGING": "1"},
+            capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--without-ffmpeg is for local tarball tests only", result.stderr)
+
     def test_invalid_arguments_fail_before_writing(self):
         for args in (("--prefix",), ("--prefix", "relative"), ("--prefix", "/"), ("--unknown",),
                      ("--prefix", "///"), ("--prefix", "/tmp/../"), ("--prefix", str(self.bundle)),
@@ -193,7 +219,8 @@ class InstallTests(unittest.TestCase):
         notices = self.root / "THIRD-PARTY-LICENSES.txt"
         notices.write_text("CFA4 – third-party licence notices (fixture)\n")
         result = subprocess.run(
-            ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "tar"],
+            # shell-script stand-ins cannot link FFmpeg: the local-test tarball without it
+            ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "tar", "--without-ffmpeg"],
             env={**os.environ, "CARGO_TARGET_DIR": str(target), "DIST": str(dist),
                  "CFA4_ALLOW_LOCAL_PACKAGING": "1", "CFA4_THIRD_PARTY_LICENSES_FILE": str(notices)},
             capture_output=True, text=True, timeout=30,

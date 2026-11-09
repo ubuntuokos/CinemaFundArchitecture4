@@ -24,6 +24,22 @@ Copyright: The Inter Project Authors; The JetBrains Mono Project Authors;
 License: OFL-1.1
  See /usr/share/doc/cfa4/OFL-Inter.txt, OFL-JetBrainsMono.txt and OFL-NotoSerif.txt.
 
+Files: opt/cfa4/ffmpeg-9.0.2/* (.deb), lib/cfa4/ffmpeg-9.0.2/* (tarball, AppImage, Flatpak)
+Copyright: the FFmpeg developers
+License: GPL-3.0-or-later
+ CFA4's own build of FFmpeg 9.0.2 (ADR 0005), configured with --enable-gpl
+ --enable-version3, never --enable-nonfree, without x264 and x265. Its licences
+ and BUILDINFO (the unmodified upstream source and the configure flags) are in
+ share/doc/ffmpeg beside the libraries. In the tarball, AppImage and Flatpak the
+ third-party libraries it loads are bundled too; their copyright files are in
+ lib/cfa4/ffmpeg-9.0.2/share/doc/third-party.
+
+Files: opt/cfa4/ffmpeg-9.0.2-restricted/* (cfa4-restricted-extras only)
+Copyright: the FFmpeg developers; x264 and x265 come from Ubuntu's archive
+License: GPL-3.0-or-later
+ The same FFmpeg build with x264 and x265, in the separate cfa4-restricted-extras
+ package (docs/licensing.md section 7); never in the cfa4 package.
+
 Files: code derived from the upstream work (see NOTICE)
 Copyright: Upstream contributors
 License: MIT or Apache-2.0

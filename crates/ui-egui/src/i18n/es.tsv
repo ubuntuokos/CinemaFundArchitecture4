@@ -3686,3 +3686,10 @@
 	Media Backends	Backends de medios
 	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Usar FFmpeg para los archivos que el motor de CFA4 no puede abrir (FFmpeg 9.0.2 o posterior, compilación GPL-3)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Usar el GStreamer del sistema para los archivos que ni el motor ni FFmpeg pueden abrir
+	Work Area Bar	Barra de área de trabajo
+	Set Work Area Bar In Point	Definir punto de entrada de la barra de área de trabajo
+	Set Work Area Bar Out Point	Definir punto de salida de la barra de área de trabajo
+	Delete Redoable Actions	Eliminar acciones rehacibles
+	Clear History	Borrar historial
+	Delete Clips	Eliminar clips
+	Strikethrough	Tachado
