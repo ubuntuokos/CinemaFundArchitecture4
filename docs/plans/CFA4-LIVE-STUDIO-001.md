@@ -24,7 +24,8 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
 4. **A jelenetek a projektben élnek** (a `.fcproj` része), nem külön stúdiógyűjteményben.
 5. **A libobs forrása:** saját, rögzített verziójú fordítás (D1).
 6. **A libobs külön folyamatban fut** (`cfa4-studio-host`, D2).
-7. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
+7. **Böngészőforrás WPE WebKittel** az Ubuntu tárolójából, Chromium nélkül (D3).
+8. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
    egyeztetés szerinti felsorolással (IV. fejezet).
 
 ## II. Kiinduló helyzet
@@ -108,7 +109,7 @@ munkával ütközésnél a Qt6 megy előre.
 | **S6** – Streamelés | RTMP/RTMPS, SRT, RIST, WHIP; több cél; újrakapcsolódás; stream-kulcs a kulcstartóban | próbaadás helyi kiszolgálóra (mediamtx) és egy valódi szolgáltatásra |
 | **S7** – Kódolók | VA-API (Intel/AMD), NVENC (opcionális), QSV, SVT-AV1 a `cfa4-route`-on át; restricted-extras | a router választ, CPU-tartalék mindig van; a referenciagép GPU-in mérve |
 | **S8** – Videószűrők | key-ek, színkorrekció, LUT, maszk, vágás, késleltetés; a CFA4 saját effektjei forrásszűrőként | a szűrők képe összevetve a CFA4 renderelővel |
-| **S9** – További kimenetek | replay buffer, virtuális kamera (v4l2loopback), böngészőforrás (CEF, D3), NDI (nyitott) | mindegyik a referenciagépen |
+| **S9** – További kimenetek | replay buffer, virtuális kamera (v4l2loopback), böngészőforrás (WPE WebKit, D3), NDI (nyitott) | mindegyik a referenciagépen |
 | **S10** – Vezérlés és átállás | obs-websocket 5 kiszolgáló a CFA4-ben, OBS-import (jelenetgyűjtemény, profil) | Stream Deck / websocket-kliens vezérli; egy valódi OBS-gyűjtemény átjön |
 | **S11** – Mérés és stabilitás | statisztika-panel, tartós terheléses próbák, hibainjektálás, dokumentáció | 8 órás adás a referenciagépen, összeomlás nélkül |
 | **S12+** – Rust-csere | a libobs részei sorban saját Rust kódra: 1. kompozitálás és átmenetek (a CFA4 renderelője), 2. szűrők, 3. kimenetek és kódolás (GStreamer/saját muxerek), 4. rögzítés (PipeWire, V4L2) | minden csere ugyanazon a traiten, a régi úttal összemérve; ha valamelyik lassabb, marad a libobs |
@@ -119,7 +120,7 @@ munkával ütközésnél a Qt6 megy előre.
 |---|---|---|
 | D1 | A libobs forrása | **Eldöntve (2026-11-09): saját, rögzített verziójú fordítás (33.x) a CFA4 csomagban**, ellenőrzőösszeggel, mint az FFmpeg 9.0.2 |
 | D2 | Hol fut a libobs | **Eldöntve (2026-11-09): külön folyamatban** (`cfa4-studio-host`): a motor indítja, felügyeli, összeomlás után újraindítja; a szerkesztő és a projekt megmarad |
-| D3 | Böngészőforrás (CEF, Chromium): beépítjük-e, és mikor? | az S9-ben, külön csomagként (nagy méret, saját frissítési rend) |
+| D3 | Böngészőforrás | **Eldöntve (2026-11-09): WPE WebKit az Ubuntu tárolójából** (`libwpewebkit`, `wpebackend-fdo`, csomagfüggőségként), saját Rust libobs-forrással, az S9-ben; Chromium (CEF) nincs. A `window.obsstudio` JS-felületet a forrás adja; a gyakori streameres widgetek az S9-ben kipróbálva |
 | D4 | NDI és más zárt protokollok | csak nyílt protokollok (SRT, RIST, WHIP); NDI-t nem (zárt SDK) |
 | D5 | Az élő stúdió helye a menüben és a munkaterületek között | önálló „Élő” munkaterület a Szerkesztés, Szín, Hang mellett |
 | D6 | Műsorterv (rundown) | a VISION 8. pontjában nyitott; ebben a tervben nincs |
@@ -130,7 +131,8 @@ munkával ütközésnél a Qt6 megy előre.
 - **Két grafikus réteg:** a libobs saját OpenGL/EGL rétegét és a CFA4 renderelőjét egy gépen,
   egy GPU-n kell futtatni; a GPU-memória és a színterek (sRGB/Rec.709/HDR) egyezését mérni kell.
 - **Wayland:** képernyőrögzítés csak az XDG-portálon át, felhasználói engedéllyel.
-- **Méret:** a libobs + kódolók + (később) CEF jelentősen növeli a csomagot; a CEF külön csomag.
+- **Méret:** a libobs + kódolók növelik a csomagot; a böngészőforrás WPE WebKitje az Ubuntu tárolójából jön (nem a CFA4 csomagjában).
+- **Webes widgetek:** Chromiumra készülnek; WebKitben egy-egy elem eltérhet (S9-ben a gyakori szolgáltatásokkal kipróbálva).
 - **Licenc és szabadalom:** x264/x265 csak a restricted-extras csomagban; a libobs részeinek
   licencei a `NOTICE`-ba és az `ATTRIBUTION.md`-be kerülnek.
 - **A Qt6 munka:** az élő munkaterület a Qt6 felületre épül; ütközésnél a Qt6 megy előre.
