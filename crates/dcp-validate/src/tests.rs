@@ -126,8 +126,20 @@ fn interop_asset_map_name_and_both_names() {
     let r = validate(&d, "quick-scan");
     assert_eq!(statuses(&r, AM_PRESENT), [Status::Warning]);
     assert_eq!(r.verdict, Verdict::Pass, "a warning does not fail");
+    // a SMPTE asset map under the Interop name
     std::fs::remove_file(d.join("ASSETMAP.xml")).unwrap();
-    assert_eq!(validate(&d, "quick-scan").verdict, Verdict::Pass);
+    let r = validate(&d, "quick-scan");
+    assert_eq!(statuses(&r, AM_PRESENT), [Status::Fail]);
+    assert_eq!(r.verdict, Verdict::Fail);
+    // an Interop asset map under ASSETMAP passes; under ASSETMAP.xml it is a warning
+    let am = std::fs::read_to_string(d.join("ASSETMAP"))
+        .unwrap()
+        .replace(AM_NS, cfa4_dcp::ns::INTEROP_AM)
+        .replace("<PackingList>true</PackingList>", "<PackingList/>");
+    std::fs::write(d.join("ASSETMAP"), &am).unwrap();
+    assert_eq!(statuses(&validate(&d, "quick-scan"), AM_PRESENT), [Status::Pass]);
+    std::fs::rename(d.join("ASSETMAP"), d.join("ASSETMAP.xml")).unwrap();
+    assert_eq!(statuses(&validate(&d, "quick-scan"), AM_PRESENT), [Status::Warning]);
 }
 
 #[test]
@@ -141,8 +153,8 @@ fn unsafe_and_missing_paths() {
     assert_eq!(f.location.file.as_deref(), Some("ASSETMAP.xml"));
     assert_eq!(f.location.line, Some(3));
     assert_eq!(f.location.asset, cfa4_dcp::Uuid::parse(&uuid(2)));
-    // the CPL was refused, so the packing list has no readable playlist
-    assert_eq!(statuses(&r, CPL_DOCUMENT), [Status::Fail]);
+    // the CPL was refused, so it could not be opened
+    assert_eq!(statuses(&r, CPL_DOCUMENT), [Status::Unchecked]);
 
     let d = dir("missing");
     package(&d, ["pkl.xml", "cpl.xml", "gone.mxf"]);
@@ -341,4 +353,24 @@ fn documents_over_the_limit_are_unchecked_not_passed() {
     let r = run(0);
     assert_eq!(statuses(&r, PKL_DOCUMENT), [Status::Unchecked]);
     assert_eq!(r.verdict, Verdict::Incomplete);
+}
+
+#[test]
+fn limits_and_unopened_documents_are_unchecked() {
+    let d = dir("asset-limit");
+    package(&d, GOOD);
+    let mut req = ValidationRequest::new(&d, Profile::builtin("quick-scan").unwrap());
+    req.limits.max_assets = 2;
+    let r = NativeValidator.validate(&req, &ValidationControl::new()).unwrap();
+    assert_eq!(statuses(&r, AM_PATH_SAFE), [Status::Unchecked]);
+    assert_eq!(statuses(&r, AM_FILE_EXISTS), [Status::Unchecked]);
+    assert_ne!(r.verdict, Verdict::Pass);
+
+    let d = dir("pkl-gone");
+    package(&d, ["gone.xml", "cpl.xml", "picture.mxf"]);
+    std::fs::remove_file(d.join("pkl.xml")).unwrap();
+    let r = validate(&d, "quick-scan");
+    assert_eq!(statuses(&r, AM_FILE_EXISTS), [Status::Fail]);
+    assert_eq!(statuses(&r, PKL_DOCUMENT), [Status::Unchecked]);
+    assert_eq!(r.verdict, Verdict::Fail);
 }

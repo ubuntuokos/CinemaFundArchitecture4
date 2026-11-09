@@ -145,6 +145,17 @@ impl Run<'_> {
                 return;
             }
         };
+        match (am.standard, name) {
+            // ST 429-9:2014 names the file ASSETMAP.xml; the extensionless name is Interop's
+            (Standard::Smpte, "ASSETMAP") => {
+                self.fail(AM_PRESENT, Location::file(name), "a SMPTE asset map must be named ASSETMAP.xml (ST 429-9); ASSETMAP is the Interop name")
+            }
+            (Standard::Interop, "ASSETMAP.xml") => self.findings.push(
+                Finding::new(AM_PRESENT, Status::Warning, "an Interop asset map is named ASSETMAP; some players do not look for ASSETMAP.xml")
+                    .at(Location::file(name)),
+            ),
+            _ => {}
+        }
         self.passed.insert(AM_PRESENT, format!("{name} read"));
         self.done.insert(AM_PRESENT);
         self.docs.asset_map = am.id;
@@ -205,6 +216,11 @@ impl Run<'_> {
                 }
             }
         }
+        if am.assets.len() > total {
+            let msg = format!("only the first {total} of {} assets were checked (limit)", am.assets.len());
+            self.findings.push(Finding::new(AM_PATH_SAFE, Status::Unchecked, msg.clone()));
+            self.findings.push(Finding::new(AM_FILE_EXISTS, Status::Unchecked, msg));
+        }
         self.passed.insert(AM_PATH_SAFE, format!("{count} chunk paths inside the package"));
         self.passed.insert(AM_FILE_EXISTS, format!("{} files present", self.assets_checked));
         self.done.insert(AM_PATH_SAFE);
@@ -224,7 +240,11 @@ impl Run<'_> {
             if self.control.is_cancelled() {
                 return;
             }
-            let Some((path, file)) = files.get(id) else { continue };
+            let Some((path, file)) = files.get(id) else {
+                let msg = format!("packing list {id} could not be opened (see DCP.AM.004 / DCP.AM.005)");
+                self.findings.push(Finding::new(PKL_DOCUMENT, Status::Unchecked, msg).at(Location { asset: Some(*id), ..Location::default() }));
+                continue;
+            };
             read += 1;
             if read > limits.max_documents {
                 over_limit = true;
@@ -265,7 +285,11 @@ impl Run<'_> {
             if self.control.is_cancelled() {
                 return;
             }
-            let Some((path, file)) = files.get(id) else { continue };
+            let Some((path, file)) = files.get(id) else {
+                let msg = format!("XML asset {id} of a packing list is not in the asset map's readable files, so it was not opened");
+                self.findings.push(Finding::new(CPL_DOCUMENT, Status::Unchecked, msg).at(Location { asset: Some(*id), ..Location::default() }));
+                continue;
+            };
             read += 1;
             if read > limits.max_documents {
                 let msg = format!("more than {} documents; the remaining XML assets were not read", limits.max_documents);
