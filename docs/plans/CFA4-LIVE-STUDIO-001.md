@@ -23,7 +23,8 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
    mehet, ha nem lassítja a CFA4-et, és később Rustra portolható; `AGENTS.md`, 2026-11-07).
 4. **A jelenetek a projektben élnek** (a `.fcproj` része), nem külön stúdiógyűjteményben.
 5. **A libobs forrása:** saját, rögzített verziójú fordítás (D1).
-6. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
+6. **A libobs külön folyamatban fut** (`cfa4-studio-host`, D2).
+7. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
    egyeztetés szerinti felsorolással (IV. fejezet).
 
 ## II. Kiinduló helyzet
@@ -73,7 +74,7 @@ Qt6 felület (Python)          CFA4 motor (cfa4-cli serve)          cfa4-studio-
                                jelenetmodell a projektben           kódolás, felvétel, stream
 ```
 
-1. **Külön folyamat a libobs-nak** (`cfa4-studio-host`, Rust): a libobs C kód, és egy hibája ne
+1. **Külön folyamat a libobs-nak** (`cfa4-studio-host`, Rust; D2, eldöntve 2026-11-09): a libobs C kód, és egy hibája ne
    vigye magával a szerkesztőt (never-crash, `AGENTS.md` §0). A motor indítja, felügyeli, és
    összeomlás után újraindítja; az adás közben ez a leggyorsabb helyreállás.
 2. **Rust burok a libobs körül** (`crates/obs`, FFI a [ADR 0001](../adr/0001-platform-ffi.md)
@@ -117,7 +118,7 @@ munkával ütközésnél a Qt6 megy előre.
 | # | Kérdés | Javaslat |
 |---|---|---|
 | D1 | A libobs forrása | **Eldöntve (2026-11-09): saját, rögzített verziójú fordítás (33.x) a CFA4 csomagban**, ellenőrzőösszeggel, mint az FFmpeg 9.0.2 |
-| D2 | Külön folyamat a libobs-nak, vagy a motorban fut? | külön folyamat (never-crash, újraindítható) |
+| D2 | Hol fut a libobs | **Eldöntve (2026-11-09): külön folyamatban** (`cfa4-studio-host`): a motor indítja, felügyeli, összeomlás után újraindítja; a szerkesztő és a projekt megmarad |
 | D3 | Böngészőforrás (CEF, Chromium): beépítjük-e, és mikor? | az S9-ben, külön csomagként (nagy méret, saját frissítési rend) |
 | D4 | NDI és más zárt protokollok | csak nyílt protokollok (SRT, RIST, WHIP); NDI-t nem (zárt SDK) |
 | D5 | Az élő stúdió helye a menüben és a munkaterületek között | önálló „Élő” munkaterület a Szerkesztés, Szín, Hang mellett |
