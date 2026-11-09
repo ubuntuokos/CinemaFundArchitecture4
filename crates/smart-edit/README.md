@@ -153,8 +153,12 @@ H.264 encoder:
   source SPS/PPS unchanged followed by the encoder's. Every re-encoded segment starts with an IDR, a
   copy after one must start with an IDR, and neighbouring IDRs get different `idr_pic_id`s.
 - **Compatibility first (SCE-001 §8):** Baseline, Main or High profile, 8-bit 4:2:0, progressive,
-  4-byte NAL lengths, an even picture size and free parameter-set ids; anything else is refused
-  (`incompatible`) before a byte is written, never spliced unsafely.
+  4-byte NAL lengths, an even picture size, free parameter-set ids, a constant frame rate in the
+  re-encoded pictures and no SEI user data (captions) in them; anything else is refused
+  (`incompatible`) before a byte is written, never spliced unsafely. HDR mastering-display and
+  content-light SEIs are carried into the re-encoded pictures. `check_mp4_boundary_reencode` makes
+  the same checks without decoding, so a planner or the UI can show the refusal first (the
+  registry's `StreamFormat` does not describe interlacing, frame rate or SEI).
 - **Timing:** source durations are kept; the re-encoded pictures (no reordering) get the composition
   delay of the copied run, so the presentation has no gap at a splice.
 - **Validation:** `verify_mp4_boundary_reencode` checks the copied samples against the source, the

@@ -140,3 +140,58 @@ fn ffmpeg_decodes_the_spliced_stream() {
         assert_eq!(cut[5..25], src[10..30], "bframes {bframes}: the copied pictures are the source pictures");
     }
 }
+
+/// The fixture remuxed with each sample changed by `edit(decode index, payload) -> (payload,
+/// duration)`.
+fn remux(f: &Fixture, edit: impl Fn(usize, Vec<u8>) -> (Vec<u8>, u32)) -> Fixture {
+    use cfa4_isobmff::{Brand, Mp4Writer, TrackConfig, WriteSample, WriterOptions};
+    let track = &f.file.tracks[0];
+    let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+    let t = mux.add_track(TrackConfig::new(track.entries[0].clone(), track.timescale)).unwrap();
+    for (d, s) in track.samples.iter().enumerate() {
+        let (data, duration) = edit(d, f.file.read_sample(f.bytes.as_slice(), 0, d).unwrap());
+        mux.write_sample(t, WriteSample { data: &data, duration, composition_offset: (s.pts - s.dts) as i32, is_sync: s.is_sync }).unwrap();
+    }
+    let bytes = mux.finish().unwrap().into_inner();
+    let file = cfa4_isobmff::open(bytes.as_slice()).unwrap();
+    let index = crate::smart_cut_tests::index_of(&file, &bytes);
+    Fixture { bytes, file, index }
+}
+
+/// What the executor would refuse is known before decoding (`check_mp4_boundary_reencode`), and
+/// the executor refuses it before writing: captions in SEI user data, a variable frame rate.
+#[test]
+fn sources_a_boundary_re_encode_would_damage_are_refused_up_front() {
+    use crate::boundary_reencode::check_mp4_boundary_reencode;
+    let f = fixture(40, 10, 0);
+    let p0 = f.pts0();
+    let cut = |f: &Fixture| plan(&f.index, f.bytes.len(), p0 + 5, p0 + 33, CutMode::FrameAccurate, Container::Mp4).plan;
+    assert_eq!(check_mp4_boundary_reencode(&cut(&f), &f.index, &f.source(), &encoding()), Ok(()));
+    let refused = |f: &Fixture| {
+        let p = cut(f);
+        let e = check_mp4_boundary_reencode(&p, &f.index, &f.source(), &encoding()).unwrap_err();
+        let mut out = Cursor::new(Vec::new());
+        assert_eq!(execute_mp4_boundary_reencode(&p, &f.index, &f.source(), &encoding(), &mut out).unwrap_err(), e);
+        assert!(out.get_ref().is_empty());
+        e
+    };
+    // a CEA-708 style user_data_registered SEI (ITU-T T.35, country 0xB5) on picture 3
+    let captions = remux(&f, |d, data| {
+        let mut out = data;
+        if d == 3 {
+            let sei = [0x06, 0x04, 0x03, 0xB5, 0x00, 0x31, 0x80];
+            let mut with = (sei.len() as u32).to_be_bytes().to_vec();
+            with.extend_from_slice(&sei);
+            with.extend_from_slice(&out);
+            out = with;
+        }
+        (out, 1)
+    });
+    assert!(matches!(refused(&captions), SmartCutError::Incompatible { detail } if detail.contains("SEI")));
+    // picture 7 (inside the re-encoded head) is shown twice as long
+    let vfr = remux(&f, |d, data| (data, if d == 7 { 2 } else { 1 }));
+    assert!(matches!(refused(&vfr), SmartCutError::Incompatible { detail } if detail.contains("frame rate")));
+    // a variable rate inside the copied GOPs is no obstacle
+    let copied_vfr = remux(&f, |d, data| (data, if d == 20 { 2 } else { 1 }));
+    assert_eq!(check_mp4_boundary_reencode(&cut(&copied_vfr), &copied_vfr.index, &copied_vfr.source(), &encoding()), Ok(()));
+}
