@@ -14193,3 +14193,54 @@ def tr_(text: str) -> str:
     from cfa4_qt.i18n import tr
 
     return tr(text)
+
+
+def test_credits_engine_notes_are_translated():
+    """Every note the credits engine writes has a template in credits_messages (so it is shown in
+    the user's language), and the values come through."""
+    import re as _re
+    from pathlib import Path as _P
+
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits_messages import NOTES, note_text
+
+    root = _P(__file__).resolve().parents[2] / "crates" / "credits" / "src"
+    engine = _P(__file__).resolve().parents[2] / "crates" / "engine" / "src" / "credits.rs"
+    # literal openings of the engine's notes (up to the first value): each must be matched by one
+    found = set()
+    for src in [*root.glob("*.rs"), engine]:
+        # tests, and the checks (validate.rs: issues with codes, shown by issue_text) are not notes
+        if "test" in src.name or src.name == "validate.rs":
+            continue
+        text = src.read_text(encoding="utf-8")
+        for m in _re.finditer(r'(?:warn\([^,]+,\s*|message:\s*|notes\.(?:push|insert)\((?:0,\s*)?)(?:format!\(\s*)?"([^"]+)"', text):
+            found.add(m.group(1))
+    assert len(found) >= 20, found
+    samples = {
+        "letter style `Bold` does not exist; the text keeps the block's style": "Bold",
+        "page 3: there is no transition `wobble`; the pages cut": "wobble",
+        "the cards and gaps alone are 12.5 s; the asked length is shorter, so the scroll pages keep their natural length": "12.5",
+        "the Cinecred project has 2 credits spreadsheets; `Credits.csv` is used (choose another with `credits`)": "Credits.csv",
+    }
+    TR.set_language("hu")
+    try:
+        for message, value in samples.items():
+            out = note_text(message)
+            assert out != message and value in out, (message, out)
+        # every template is in the Hungarian catalog
+        for _pattern, template in NOTES:
+            assert TR.has(template), template
+        # an unknown note stays as the engine wrote it
+        assert note_text("something new") == "something new"
+    finally:
+        TR.set_language("en")
+    # each engine note (its fixed opening) is matched by a pattern, with any value put in
+    for literal in found:
+        filled = _re.sub(r"\{[^}]*\}", "1", literal)
+        filled = filled.replace("`1`", "`x`")
+        # the three reasons and the three kinds of style each have their own pattern
+        if "{why}" in literal or literal.startswith("{what} are"):
+            continue
+        if literal.startswith("{what}"):
+            filled = "picture" + filled[1:]
+        assert any(p.match(filled) for p, _t in NOTES), literal

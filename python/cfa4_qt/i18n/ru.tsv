@@ -183,3 +183,39 @@
 	Live Graphics…	Графика в эфире…
 	PREVIEW	ПРЕДПРОСМОТР
 	PROGRAM	ПРОГРАММА
+
+# Credits engine notes (python/cfa4_qt/panels/credits_messages.py)
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	тег изображения или видео стоит один в ячейке основного текста (или с одним именем, как портрет); остальные теги удалены
+	the page gap is not a duration; the page style's is used	пауза между страницами не является длительностью; используется значение стиля страницы
+	the page runtime is not a positive duration; the page style's is used	длительность страницы не является положительной; используется значение стиля страницы
+	background “{file}” was not found; it is left out	фон “{file}” не найден; он пропущен
+	card page {page} is taller than the frame; use a roll page	страница-карточка {page} выше кадра; используйте прокручиваемую страницу
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	цвет “{colour}” стиля букв “{style}” не в формате #rrggbb; он пропущен
+	colour “{colour}” is not #rrggbb; black is used	цвет “{colour}” не в формате #rrggbb; используется чёрный
+	colour “{colour}” is not #rrggbb; white is used	цвет “{colour}” не в формате #rrggbb; используется белый
+	content style “{style}” does not exist; “{used}” is used	стиль содержимого “{style}” не существует; используется “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	стиль букв “{style}” не существует; текст сохраняет стиль блока
+	page gap “{value}” is not a duration	пауза между страницами “{value}” не является длительностью
+	page runtime “{value}” is not a duration	длительность страницы “{value}” не является длительностью
+	page style “{style}” does not exist; a roll page is used	стиль страницы “{style}” не существует; используется прокручиваемая страница
+	page {page}: the background names no file; it is left out	страница {page}: для фона не указан файл; он пропущен
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	страница {page}: длительность достигается изменением скорости прокрутки (на странице нет промежутков между блоками, которые можно растянуть)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	страница {page}: длительность достигается изменением скорости прокрутки (титры слишком длинные даже без промежутков)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: длительность достигается изменением скорости прокрутки (промежутки пришлось бы увеличить более чем в 20 раз)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: для перехода страницы должны соприкасаться (пауза между страницами 0); он пропущен
+	page {page}: there is no transition “{name}”; the pages cut	страница {page}: перехода “{name}” нет; страницы сменяются склейкой
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положение оси “{value}” не поддерживается (поддерживается смещение в пикселях, при желании с “parallel”)
+	vertical gap “{value}” is not a number	вертикальный промежуток “{value}” не является числом
+	picture “{file}” was not found or cannot be read; it is left out	изображение “{file}” не найдено или не читается; оно пропущено
+	video “{file}” was not found or cannot be read; it is left out	видео “{file}” не найдено или не читается; оно пропущено
+	there is no roll page without its own runtime to stretch; the length cannot change	нет прокручиваемой страницы с собственной длительностью, которую можно растянуть; длину изменить нельзя
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	одни карточки и промежутки занимают {seconds} s; запрошенная длина меньше, поэтому прокручиваемые страницы сохраняют естественную длину
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	стиль букв “{style}”: используется только первый цветной слой (без контуров, теней и полос)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	длительность всех титров целиком не переносится; используйте Подогнать титры под музыку (или длину)
+	page style “{style}”: fade curves become linear fades	стиль страницы “{style}”: кривые затухания становятся линейными
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	у стиля содержимого “{style}” нет заголовка в Cinecred; заголовки, написанные в таблице, по-прежнему показываются
+	content style “{style}”: sorting the names is not carried over	стиль содержимого “{style}”: сортировка имён не переносится
+	transition curves are not carried over	кривые переходов не переносятся
+	picture styles (pictures keep their own size) are not carried over	стили изображений (изображения сохраняют свой размер) не переносятся
+	video (tape) styles are not carried over	стили видео (ленты) не переносятся
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	в проекте Cinecred {n} таблиц титров; используется “{name}” (выберите другую в поле Таблица)

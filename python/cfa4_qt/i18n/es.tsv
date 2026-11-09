@@ -574,3 +574,39 @@
 	Live Graphics…	Gráficos en directo…
 	PREVIEW	VISTA PREVIA
 	PROGRAM	PROGRAMA
+
+# Credits engine notes (python/cfa4_qt/panels/credits_messages.py)
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	una etiqueta de imagen o vídeo está sola en una celda del cuerpo (o con un solo nombre, como retrato); las demás etiquetas se eliminaron
+	the page gap is not a duration; the page style's is used	el intervalo entre páginas no es una duración; se usa el del estilo de página
+	the page runtime is not a positive duration; the page style's is used	la duración de la página no es una duración positiva; se usa la del estilo de página
+	background “{file}” was not found; it is left out	no se encontró el fondo “{file}”; se omite
+	card page {page} is taller than the frame; use a roll page	la página de tarjeta {page} es más alta que el fotograma; usa una página de rodillo
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	el color “{colour}” del estilo de letra “{style}” no es #rrggbb; se omite
+	colour “{colour}” is not #rrggbb; black is used	el color “{colour}” no es #rrggbb; se usa negro
+	colour “{colour}” is not #rrggbb; white is used	el color “{colour}” no es #rrggbb; se usa blanco
+	content style “{style}” does not exist; “{used}” is used	el estilo de contenido “{style}” no existe; se usa “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	el estilo de letra “{style}” no existe; el texto conserva el estilo del bloque
+	page gap “{value}” is not a duration	el intervalo entre páginas “{value}” no es una duración
+	page runtime “{value}” is not a duration	la duración de página “{value}” no es una duración
+	page style “{style}” does not exist; a roll page is used	el estilo de página “{style}” no existe; se usa una página de rodillo
+	page {page}: the background names no file; it is left out	página {page}: el fondo no indica ningún archivo; se omite
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (la página no tiene espacios entre bloques que estirar)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (los créditos son demasiado largos incluso sin espacios)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (los espacios tendrían que crecer más de 20 veces)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	página {page}: la transición requiere que las páginas se toquen (intervalo entre páginas 0); se omite
+	page {page}: there is no transition “{name}”; the pages cut	página {page}: no existe la transición “{name}”; las páginas se cortan
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	la posición del eje “{value}” no es compatible (sí lo es un desplazamiento en píxeles, opcionalmente con “parallel”)
+	vertical gap “{value}” is not a number	el espacio vertical “{value}” no es un número
+	picture “{file}” was not found or cannot be read; it is left out	no se encontró la imagen “{file}” o no se puede leer; se omite
+	video “{file}” was not found or cannot be read; it is left out	no se encontró el vídeo “{file}” o no se puede leer; se omite
+	there is no roll page without its own runtime to stretch; the length cannot change	no hay ninguna página de rodillo con duración propia que estirar; la duración no puede cambiar
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	solo las tarjetas y los espacios suman {seconds} s; la duración pedida es menor, así que las páginas de rodillo mantienen su duración natural
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	estilo de letra “{style}”: solo se usa la primera capa de color (sin contornos, sombras ni franjas)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	la duración total de los créditos no se transfiere; usa Ajustar créditos a la música (o una duración)
+	page style “{style}”: fade curves become linear fades	estilo de página “{style}”: las curvas de fundido pasan a ser fundidos lineales
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	el estilo de contenido “{style}” no tiene encabezado en Cinecred; los encabezados escritos en la hoja se siguen mostrando
+	content style “{style}”: sorting the names is not carried over	estilo de contenido “{style}”: la ordenación de los nombres no se transfiere
+	transition curves are not carried over	las curvas de transición no se transfieren
+	picture styles (pictures keep their own size) are not carried over	los estilos de imagen (las imágenes conservan su propio tamaño) no se transfieren
+	video (tape) styles are not carried over	los estilos de vídeo (cinta) no se transfieren
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	el proyecto de Cinecred tiene {n} hojas de cálculo de créditos; se usa “{name}” (elige otra en el campo Hoja de cálculo)

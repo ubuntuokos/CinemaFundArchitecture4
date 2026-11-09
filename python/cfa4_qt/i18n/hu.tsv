@@ -2715,3 +2715,39 @@ export.summary	Low	alacsony
 	Live Graphics…	Élő grafika…
 	PREVIEW	ELŐNÉZET
 	PROGRAM	PROGRAM
+
+# Credits engine notes (python/cfa4_qt/panels/credits_messages.py)
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	kép- vagy videócímke egyedül áll a törzscellában (vagy egyetlen névvel, portréként); a többi címke el lett távolítva
+	the page gap is not a duration; the page style's is used	az oldalköz nem időtartam; az oldalstílus értéke lesz használva
+	the page runtime is not a positive duration; the page style's is used	az oldal hossza nem pozitív időtartam; az oldalstílus értéke lesz használva
+	background “{file}” was not found; it is left out	a(z) “{file}” háttér nem található; kimarad
+	card page {page} is taller than the frame; use a roll page	a(z) {page}. kártyaoldal magasabb a keretnél; használj gördülő oldalt
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	a(z) “{style}” betűstílus “{colour}” színe nem #rrggbb; kimarad
+	colour “{colour}” is not #rrggbb; black is used	a(z) “{colour}” szín nem #rrggbb; fekete lesz használva
+	colour “{colour}” is not #rrggbb; white is used	a(z) “{colour}” szín nem #rrggbb; fehér lesz használva
+	content style “{style}” does not exist; “{used}” is used	a(z) “{style}” tartalomstílus nem létezik; helyette “{used}” lesz használva
+	letter style “{style}” does not exist; the text keeps the block's style	a(z) “{style}” betűstílus nem létezik; a szöveg megtartja a blokk stílusát
+	page gap “{value}” is not a duration	a(z) “{value}” oldalköz nem időtartam
+	page runtime “{value}” is not a duration	a(z) “{value}” oldalhossz nem időtartam
+	page style “{style}” does not exist; a roll page is used	a(z) “{style}” oldalstílus nem létezik; gördülő oldal lesz használva
+	page {page}: the background names no file; it is left out	{page}. oldal: a háttér nem nevez meg fájlt; kimarad
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	{page}. oldal: a hossz a gördülési sebesség módosításával érhető el (az oldalon nincsenek nyújtható közök a blokkok között)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	{page}. oldal: a hossz a gördülési sebesség módosításával érhető el (a stáblista még közök nélkül is túl hosszú)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page}. oldal: a hossz a gördülési sebesség módosításával érhető el (a közöknek több mint 20-szorosára kellene nőniük)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page}. oldal: az átmenethez az oldalaknak érintkezniük kell (oldalköz 0); kimarad
+	page {page}: there is no transition “{name}”; the pages cut	{page}. oldal: nincs “{name}” átmenet; az oldalak vágással váltanak
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	a(z) “{value}” gerincpozíció nem támogatott (a képpontban megadott eltolás igen, opcionálisan “parallel” megjelöléssel)
+	vertical gap “{value}” is not a number	a(z) “{value}” függőleges köz nem szám
+	picture “{file}” was not found or cannot be read; it is left out	a(z) “{file}” kép nem található vagy nem olvasható; kimarad
+	video “{file}” was not found or cannot be read; it is left out	a(z) “{file}” videó nem található vagy nem olvasható; kimarad
+	there is no roll page without its own runtime to stretch; the length cannot change	nincs saját játékidő nélküli gördülő oldal, amelyet nyújtani lehetne; a hossz nem változhat
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	a kártyák és a közök önmagukban {seconds} s hosszúak; a kért hossz ennél rövidebb, ezért a gördülő oldalak megtartják természetes hosszukat
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	a(z) “{style}” betűstílus: csak az első színes réteg lesz használva (nincs körvonal, árnyék vagy csík)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	az egész stáblista hossza nem kerül át; használd helyette a Stáblista igazítása a zenéhez menüpontot (vagy egy hosszt)
+	page style “{style}”: fade curves become linear fades	a(z) “{style}” oldalstílus: a halványítási görbék lineáris halványítássá válnak
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	a(z) “{style}” tartalomstílusnak nincs fejléce a Cinecredben; a táblázatban megadott fejlécek továbbra is megjelennek
+	content style “{style}”: sorting the names is not carried over	a(z) “{style}” tartalomstílus: a nevek rendezése nem kerül át
+	transition curves are not carried over	az átmeneti görbék nem kerülnek át
+	picture styles (pictures keep their own size) are not carried over	a képstílusok (a képek megtartják saját méretüket) nem kerülnek át
+	video (tape) styles are not carried over	a videó- (szalag-) stílusok nem kerülnek át
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	a Cinecred-projekt {n} stáblista-táblázatot tartalmaz; a(z) “{name}” lesz használva (válassz másikat a Táblázat mezőben)

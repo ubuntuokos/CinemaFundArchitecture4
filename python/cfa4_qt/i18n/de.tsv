@@ -574,3 +574,39 @@
 	Live Graphics…	Live-Grafik…
 	PREVIEW	VORSCHAU
 	PROGRAM	PROGRAMM
+
+# Credits engine notes (python/cfa4_qt/panels/credits_messages.py)
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	Ein Bild- oder Video-Tag steht allein in einer Textzelle (oder mit einem Namen als Porträt); die übrigen Tags wurden entfernt
+	the page gap is not a duration; the page style's is used	der Seitenabstand ist keine Dauer; der des Seitenstils wird verwendet
+	the page runtime is not a positive duration; the page style's is used	die Seitenlaufzeit ist keine positive Dauer; die des Seitenstils wird verwendet
+	background “{file}” was not found; it is left out	Hintergrund “{file}” wurde nicht gefunden; er wird weggelassen
+	card page {page} is taller than the frame; use a roll page	Kartenseite {page} ist höher als das Bild; verwende eine Rollseite
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	Farbe “{colour}” des Buchstabenstils “{style}” ist nicht #rrggbb; sie wird weggelassen
+	colour “{colour}” is not #rrggbb; black is used	Farbe “{colour}” ist nicht #rrggbb; Schwarz wird verwendet
+	colour “{colour}” is not #rrggbb; white is used	Farbe “{colour}” ist nicht #rrggbb; Weiß wird verwendet
+	content style “{style}” does not exist; “{used}” is used	Inhaltsstil “{style}” existiert nicht; “{used}” wird verwendet
+	letter style “{style}” does not exist; the text keeps the block's style	Buchstabenstil “{style}” existiert nicht; der Text behält den Stil des Blocks
+	page gap “{value}” is not a duration	Seitenabstand “{value}” ist keine Dauer
+	page runtime “{value}” is not a duration	Seitenlaufzeit “{value}” ist keine Dauer
+	page style “{style}” does not exist; a roll page is used	Seitenstil “{style}” existiert nicht; eine Rollseite wird verwendet
+	page {page}: the background names no file; it is left out	Seite {page}: Der Hintergrund nennt keine Datei; er wird weggelassen
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	Seite {page}: Die Laufzeit wird durch Ändern der Rollgeschwindigkeit erreicht (die Seite hat keine Abstände zwischen den Blöcken, die sich dehnen ließen)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	Seite {page}: Die Laufzeit wird durch Ändern der Rollgeschwindigkeit erreicht (der Abspann ist selbst ohne Abstände zu lang)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	Seite {page}: Die Laufzeit wird durch Ändern der Rollgeschwindigkeit erreicht (die Abstände müssten auf mehr als das 20-Fache wachsen)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	Seite {page}: Der Übergang setzt voraus, dass die Seiten aneinanderstoßen (Seitenabstand 0); er wird weggelassen
+	page {page}: there is no transition “{name}”; the pages cut	Seite {page}: Es gibt keinen Übergang “{name}”; die Seiten werden hart geschnitten
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	Achsenposition “{value}” wird nicht unterstützt (ein Pixelversatz, optional mit “parallel”, wird unterstützt)
+	vertical gap “{value}” is not a number	Vertikaler Abstand “{value}” ist keine Zahl
+	picture “{file}” was not found or cannot be read; it is left out	Bild “{file}” wurde nicht gefunden oder kann nicht gelesen werden; es wird weggelassen
+	video “{file}” was not found or cannot be read; it is left out	Video “{file}” wurde nicht gefunden oder kann nicht gelesen werden; es wird weggelassen
+	there is no roll page without its own runtime to stretch; the length cannot change	Es gibt keine Rollseite ohne eigene Laufzeit, die sich dehnen ließe; die Länge kann nicht geändert werden
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	Die Karten und Abstände allein dauern {seconds} s; die gewünschte Länge ist kürzer, daher behalten die Rollseiten ihre natürliche Länge
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	Buchstabenstil “{style}”: Nur die erste farbige Ebene wird verwendet (keine Konturen, Schatten oder Streifen)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	die Laufzeit des gesamten Abspanns wird nicht übernommen; verwende stattdessen Abspann an Musik anpassen (oder eine Länge)
+	page style “{style}”: fade curves become linear fades	Seitenstil “{style}”: Überblendkurven werden zu linearen Überblendungen
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	Inhaltsstil “{style}” hat in Cinecred keine Überschrift; in der Tabelle geschriebene Überschriften werden weiterhin angezeigt
+	content style “{style}”: sorting the names is not carried over	Inhaltsstil “{style}”: Das Sortieren der Namen wird nicht übernommen
+	transition curves are not carried over	Übergangskurven werden nicht übernommen
+	picture styles (pictures keep their own size) are not carried over	Bildstile (Bilder behalten ihre eigene Größe) werden nicht übernommen
+	video (tape) styles are not carried over	Video- (Band-)Stile werden nicht übernommen
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Das Cinecred-Projekt hat {n} Abspann-Tabellen; “{name}” wird verwendet (wähle im Feld Tabelle eine andere)
