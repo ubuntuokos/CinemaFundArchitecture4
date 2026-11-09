@@ -89,7 +89,7 @@ fn moved_project(root: &Path) -> String {
     s.project = Arc::new(p);
     let path = root.join("p.fcproj").to_string_lossy().into_owned();
     s.execute("file.save", json!({"path": path})).unwrap();
-    drop(s); // Close decoder files before moving their directory on Windows.
+    drop(s); // Close decoder files before moving their directory.
     std::fs::create_dir_all(root.join("Moved")).unwrap();
     std::fs::rename(&media, root.join("Moved").join("Media")).unwrap();
     path
