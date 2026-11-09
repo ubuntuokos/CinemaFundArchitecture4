@@ -475,8 +475,18 @@ mod tests {
     /// The core menus every other catalog must cover: the entries of the menus-only Ukrainian
     /// catalog, which `ukrainian_entries_cover_the_original_menu_catalog` keeps to menu labels. Brazilian Portuguese played this role while it was
     /// menus-only.
+    /// Where the Ukrainian and Russian catalogs' original menu section ends; after it comes the
+    /// rest of the interface (2026-11-09).
+    const REST_OF_INTERFACE: &str = "\n# The rest of the interface";
+
+    /// The original, menus-only section of a Ukrainian or Russian catalog.
+    fn menu_section(text: &str) -> &str {
+        text.find(REST_OF_INTERFACE).map_or(text, |i| &text[..i])
+    }
+
+    /// The core menu labels: the original Ukrainian menu catalog.
     fn core_menu_labels() -> Vec<String> {
-        let (entries, _) = catalog::parse_entries(include_str!("uk.tsv"));
+        let (entries, _) = catalog::parse_entries(menu_section(include_str!("uk.tsv")));
         entries.into_iter().map(|(_, en, _)| en).collect()
     }
 
@@ -1083,14 +1093,22 @@ mod tests {
         set_current(Language::En);
     }
 
+    /// Ukrainian covers the whole interface since 2026-11-09: its original section is the core
+    /// menus (every entry a menu label), and every later entry has a Spanish counterpart (no dead
+    /// entries).
     #[test]
     fn ukrainian_entries_cover_the_original_menu_catalog() {
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
-        let (entries, _) = catalog::parse_entries(include_str!("uk.tsv"));
+        let (entries, _) = catalog::parse_entries(menu_section(include_str!("uk.tsv")));
         for (_, en, _) in entries {
             assert!(known(&en), "not a menu label: {en}");
+        }
+        let (all, errors) = catalog::parse_entries(include_str!("uk.tsv"));
+        assert!(errors.is_empty(), "{errors:?}");
+        for (ctx, en, _) in &all {
+            assert!(ctx.is_empty() && Language::Es.has(en), "Ukrainian entry without a Spanish one: {ctx:?} {en:?}");
         }
         for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert_ne!(Language::Uk.tr(en), en, "untranslated Ukrainian menu: {en}");
@@ -1186,14 +1204,20 @@ mod tests {
         }
     }
 
+    /// Russian, like Ukrainian, covers the whole interface since 2026-11-09.
     #[test]
     fn russian_entries_cover_the_original_menu_catalog() {
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
-        let (entries, _) = catalog::parse_entries(include_str!("ru.tsv"));
+        let (entries, _) = catalog::parse_entries(menu_section(include_str!("ru.tsv")));
         for (_, en, _) in entries {
             assert!(known(&en), "not a menu label: {en}");
+        }
+        let (all, errors) = catalog::parse_entries(include_str!("ru.tsv"));
+        assert!(errors.is_empty(), "{errors:?}");
+        for (ctx, en, _) in &all {
+            assert!(ctx.is_empty() && Language::Es.has(en), "Russian entry without a Spanish one: {ctx:?} {en:?}");
         }
         for en in core_menu_labels() {
             assert!(Language::Ru.has(&en), "missing Russian menu label: {en}");
@@ -1215,8 +1239,7 @@ mod tests {
         for (ctx, en, _) in &entries {
             assert!(ctx.is_empty() && Language::Es.has(en), "Indonesian entry without a Spanish one: {ctx:?} {en:?}");
         }
-        let (core, _) = catalog::parse_entries(include_str!("uk.tsv"));
-        for (_, en, _) in core {
+        for en in core_menu_labels() {
             assert!(Language::Id.has(&en), "missing Indonesian menu label: {en}");
         }
         for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
@@ -1244,8 +1267,7 @@ mod tests {
         for (ctx, en, _) in &entries {
             assert!(ctx.is_empty() && Language::Es.has(en), "Italian entry without a Spanish one: {ctx:?} {en:?}");
         }
-        let (core, _) = catalog::parse_entries(include_str!("uk.tsv"));
-        for (_, en, _) in core {
+        for en in core_menu_labels() {
             assert!(Language::It.has(&en), "missing Italian menu label: {en}");
         }
         for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
