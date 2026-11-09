@@ -125,16 +125,13 @@ pub struct AudioDevices {
 #[derive(Default)]
 pub struct HostHooks {
     pub pick_files: Option<Box<dyn FnMut(&[&str]) -> Vec<String>>>,
-    /// The cursor in physical screen pixels. Where the windowing layer reports no pointer while files are dragged in from the OS (Windows), a drop is placed where this says it landed.
+    /// The cursor in physical screen pixels. Where the windowing layer reports no pointer while files are dragged in from the OS, a drop is placed where this says it landed.
     pub cursor_screen_position: Option<Box<dyn Fn() -> Option<(i32, i32)>>>,
     pub pick_save: Option<Box<dyn FnMut(&str) -> Option<String>>>,
     pub pick_open_project: Option<Box<dyn FnMut() -> Option<String>>>,
     /// Save dialog with a filter: (filter name, extensions, suggested file name) → path. The
     /// suggestion may be a full path, and the dialog then starts in its folder.
     pub pick_save_as: Option<Box<dyn FnMut(&str, &[&str], &str) -> Option<String>>>,
-    /// The menu tree changed (labels, shortcuts, enablement, checkmarks): update the native menu
-    /// bar. Called from the frame loop only when something differs from the last call.
-    pub menu_changed: Option<Box<dyn FnMut(&[menus::MenuItem])>>,
     /// The user's preferred languages (locale tags, most preferred first) for Interface Language ▸
     /// System Language. Without it, System Language is English.
     pub system_languages: Option<Box<dyn Fn() -> Vec<String>>>,
@@ -150,7 +147,7 @@ pub struct HostHooks {
     /// runs `hint.command` with `hint.params` plus `"path"` itself once the user has chosen.
     pub pick_file_for_relink: Option<Box<dyn FnMut(&[&str], Option<RelinkHint>) -> Option<String>>>,
     /// Bring the window on screen for control-channel UI requests *without* taking keyboard focus
-    /// (macOS: `orderFrontRegardless`). Without it the app only requests a repaint: it never
+    /// Without it the app only requests a repaint: it never
     /// activates itself for an agent, because the user's keystrokes would land here.
     pub raise_without_focus: Option<Box<dyn FnMut()>>,
     /// Open a file in its default application, or (`true`) reveal it in the file manager (Edit ▸
@@ -307,12 +304,6 @@ pub struct Cfa4App {
     deferred: Vec<(ControlRequest, f64)>,
     last_ui_time: f64,
     pub(crate) synthetic: Vec<egui::Event>,
-    /// macOS: a Control+Click already translated to a secondary (context) click, so its release is
-    /// translated too even if Control is let go mid-click. AppKit delivers Control+Click to the
-    /// view as a *primary* press with the Control modifier (`rightMouseDown:` only fires for a
-    /// right button or two-finger click), so the app does the platform's translation itself.
-    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-    mac_ctrl_click_armed: bool,
     /// The mouse press in progress (its start time) and the undo history when it began, for Escape
     /// to take back what the press changed (#580).
     value_press: Option<(f64, cfa4_engine::UndoMark)>,
@@ -364,8 +355,6 @@ pub struct Cfa4App {
     bindings: Vec<menus::KeyBinding>,
     /// Shortcut-set revision `bindings` were built from.
     bindings_rev: u64,
-    /// The menu tree last sent to `hooks.menu_changed` (the native menu bar).
-    menu_sent: Vec<menus::MenuItem>,
     /// Keyboard Shortcuts dialog state.
     pub shortcut_editor: panels::shortcuts_dialog::EditorState,
     pub toast: Option<(String, f64)>,
@@ -567,7 +556,6 @@ impl Cfa4App {
             deferred: Vec::new(),
             last_ui_time: 0.0,
             synthetic: Vec::new(),
-            mac_ctrl_click_armed: false,
             value_press: None,
             loudness: None,
             status_seen: (String::new(), 0.0),
@@ -594,7 +582,6 @@ impl Cfa4App {
             last_time: 0.0,
             bindings: Vec::new(),
             bindings_rev: 0,
-            menu_sent: Vec::new(),
             shortcut_editor: Default::default(),
             toast: None,
             graphics_notice: None,
@@ -1495,7 +1482,7 @@ impl Cfa4App {
     }
 
     /// Where files dragged in from the OS are over the window. The OS reports no cursor motion during such a drag
-    /// (winit, Windows), so ask it through the host hook, else use the last pointer position egui saw.
+    /// (winit), so ask it through the host hook, else use the last pointer position egui saw.
     fn drop_pointer(&self, ctx: &egui::Context) -> Option<egui::Pos2> {
         let os_pointer = self
             .hooks
@@ -1507,23 +1494,6 @@ impl Cfa4App {
     }
 
     // ---------------------------------------------------------------- input
-
-    /// Sends the menu tree to the native menu bar when it changed, so its items show the same
-    /// labels, shortcuts and enablement as the in-window menus (Undo with nothing to undo is
-    /// disabled). Without a native menu bar this does nothing.
-    fn sync_native_menu(&mut self) {
-        if self.hooks.menu_changed.is_none() {
-            return;
-        }
-        let items = menus::menu_items(self);
-        if items == self.menu_sent {
-            return;
-        }
-        if let Some(hook) = self.hooks.menu_changed.as_mut() {
-            hook(&items);
-        }
-        self.menu_sent = items;
-    }
 
     /// Whether keyboard focus is on a dock divider or a floating panel's resize grip, as drawn last pass.
     fn divider_focused(&self, ctx: &egui::Context) -> bool {
@@ -1666,8 +1636,7 @@ impl Cfa4App {
         let now = ctx.input(|i| i.time);
         let mut reqs: Vec<(ControlRequest, f64)> = std::mem::take(&mut self.deferred);
         while let Ok(req) = rx.try_recv() {
-            // UI requests need rendered frames: raise the window if `ui` hasn't run recently
-            // (occluded macOS windows stop running `ui`).
+            // UI requests need rendered frames: raise the window if `ui` hasn't run recently.
             if req.method.starts_with("ui.") && now - self.last_ui_time > 0.25 {
                 self.raise_for_control(ctx);
             }
@@ -1854,7 +1823,6 @@ impl Cfa4App {
         }
         self.begin_press(&ctx);
         self.handle_shortcuts(&ctx);
-        self.sync_native_menu();
         self.advance_playback(&ctx);
         self.advance_source_playback(&ctx);
         self.scrub_audio(&ctx);
@@ -1969,11 +1937,7 @@ impl Cfa4App {
 
     /// Contextual hint for the status bar (Premiere shows tool/gesture hints here).
     fn hint_text(&self) -> String {
-        let mac = cfg!(target_os = "macos");
         match self.ui.tool {
-            state::Tool::Selection if mac => {
-                tl!("Click to select, or click in empty space and drag to marquee select. Use Shift, Opt, and Cmd for other options.")
-            }
             state::Tool::Selection => tl!("Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options."),
             state::Tool::TrackSelectForward => tl!("Click to select all clips to the right in all tracks. Shift-click for a single track."),
             state::Tool::TrackSelectBackward => tl!("Click to select all clips to the left in all tracks. Shift-click for a single track."),
@@ -1985,7 +1949,6 @@ impl Cfa4App {
             state::Tool::Slip => tl!("Drag a clip to slip its source in/out without moving it."),
             state::Tool::Slide => tl!("Drag a clip to slide it between its neighbours."),
             state::Tool::Hand => tl!("Drag to scroll the timeline."),
-            state::Tool::Zoom if mac => tl!("Click to zoom in; Opt-click to zoom out."),
             state::Tool::Zoom => tl!("Click to zoom in; Alt-click to zoom out."),
             _ => "",
         }
@@ -2054,44 +2017,9 @@ impl Cfa4App {
     }
 }
 
-/// On macOS a Control+Click means "right click": AppKit delivers it to the view as a *primary*
-/// press carrying the Control modifier (`rightMouseDown:` only fires for a real right button or
-/// two-finger click), so the app translates it to a secondary click before egui computes pointer
-/// state. `armed` pairs the press with its release, so the release is still a context click when
-/// Control is let go mid-click. Called from [`eframe::App::raw_input_hook`], which runs before
-/// egui's pass; only wired in on macOS, where Ctrl+Click is not a selection modifier.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-fn synthesize_mac_ctrl_click(armed: &mut bool, raw_input: &mut egui::RawInput) {
-    for event in &mut raw_input.events {
-        match event {
-            egui::Event::PointerButton { button, pressed, modifiers, .. } if *button == egui::PointerButton::Primary => {
-                if *pressed {
-                    if modifiers.ctrl {
-                        *button = egui::PointerButton::Secondary;
-                        *armed = true;
-                    } else {
-                        // A plain primary press ends any pairing left open (eg. the pointer left
-                        // the window mid-click, which egui also forgets).
-                        *armed = false;
-                    }
-                } else if *armed {
-                    *button = egui::PointerButton::Secondary;
-                    *armed = false;
-                }
-            }
-            egui::Event::PointerGone => *armed = false,
-            _ => {}
-        }
-    }
-}
-
 impl eframe::App for Cfa4App {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, raw_input: &mut egui::RawInput) {
         self.native_window_focused = Some(raw_input.focused);
-        #[cfg(target_os = "macos")]
-        if !self.control_input_only {
-            synthesize_mac_ctrl_click(&mut self.mac_ctrl_click_armed, raw_input);
-        }
         if self.control_input_only {
             // Preserve screenshot responses and all viewport lifecycle/geometry metadata.
             raw_input.events.retain(|event| matches!(event, egui::Event::Screenshot { .. }));
@@ -2165,8 +2093,7 @@ impl eframe::App for Cfa4App {
         let had_synthetic = !self.synthetic.is_empty();
         self.drain_control(ctx);
         if !self.synthetic.is_empty() && !had_synthetic {
-            // Occluded macOS windows stop running `ui`; bring the window forward (without taking
-            // keyboard focus) so the input is processed.
+            // Bring the window forward (without taking keyboard focus) so the input is processed.
             self.raise_for_control(ctx);
         }
         if !self.synthetic.is_empty() {
@@ -2293,11 +2220,9 @@ pub fn playback_mix(session: &Session, seq_id: cfa4_project::ItemId, sr: u32) ->
 }
 
 /// The windowing layer (egui-winit, and egui's web backend) reports the clipboard shortcuts as
-/// `Event::Copy` / `Event::Cut` / `Event::Paste` instead of key presses: Ctrl+C/X/V on Windows and
-/// Linux, plus Ctrl+Insert, Shift+Insert and Shift+Delete on Windows. The shortcut bindings only
-/// match key presses, so Copy, Cut, Paste, Paste Insert, Paste Attributes and (on Windows) Ripple
-/// Delete never fired from the keyboard (#199). macOS was unaffected because its native menu bar
-/// takes the key equivalents first.
+/// `Event::Copy` / `Event::Cut` / `Event::Paste` instead of key presses (Ctrl+C/X/V). The shortcut
+/// bindings only match key presses, so Copy, Cut, Paste, Paste Insert and Paste Attributes never
+/// fired from the keyboard (#199).
 ///
 /// Add the key press each event stands for, with the modifiers held, so the bindings see it. The
 /// original event stays for anything else that reads it. Only called when no text field has
@@ -2310,10 +2235,8 @@ fn clipboard_events_as_keys(events: &mut Vec<egui::Event>, modifiers: egui::Modi
             Event::Copy if modifiers.command => Some(Key::C),
             Event::Copy => Some(Key::Copy),
             Event::Cut if modifiers.command => Some(Key::X),
-            Event::Cut if modifiers.shift => Some(Key::Delete),
             Event::Cut => Some(Key::Cut),
             Event::Paste(_) if modifiers.command => Some(Key::V),
-            Event::Paste(_) if modifiers.shift => Some(Key::Insert),
             Event::Paste(_) => Some(Key::Paste),
             _ => None,
         })
@@ -2349,109 +2272,12 @@ mod clipboard_key_tests {
     }
 
     #[test]
-    fn windows_insert_and_delete_variants() {
-        // Shift+Delete (Ripple Delete) arrives as Cut on Windows; Shift+Insert as Paste
-        assert_eq!(keys(vec![Event::Cut], Modifiers::SHIFT), vec![(Key::Delete, Modifiers::SHIFT)]);
-        assert_eq!(keys(vec![Event::Paste("x".into())], Modifiers::SHIFT), vec![(Key::Insert, Modifiers::SHIFT)]);
-    }
-
-    #[test]
     fn other_events_are_left_alone() {
         let mut events = vec![Event::Text("a".into()), Event::Copy];
         super::clipboard_events_as_keys(&mut events, Modifiers::COMMAND);
         assert_eq!(events.len(), 3);
         assert!(matches!(events[0], Event::Text(_)));
         assert!(matches!(events[1], Event::Copy));
-    }
-}
-
-#[cfg(test)]
-mod mac_ctrl_click_tests {
-    use egui::{Event, Modifiers, PointerButton, RawInput};
-
-    fn click(button: PointerButton, pressed: bool, ctrl: bool) -> Event {
-        Event::PointerButton { pos: egui::pos2(40.0, 12.0), button, pressed, modifiers: if ctrl { Modifiers::CTRL } else { Modifiers::NONE } }
-    }
-
-    fn buttons(raw: &mut RawInput) -> Vec<(PointerButton, bool)> {
-        raw.events
-            .iter()
-            .filter_map(|e| match e {
-                Event::PointerButton { button, pressed, .. } => Some((*button, *pressed)),
-                _ => None,
-            })
-            .collect()
-    }
-
-    /// AppKit delivers Control+Click as a primary press with the Control modifier; it must reach
-    /// egui as a secondary click so `secondary_clicked()` (the context menus) fires on macOS.
-    #[test]
-    fn ctrl_click_is_a_secondary_click() {
-        let mut raw = RawInput { events: vec![click(PointerButton::Primary, true, true), click(PointerButton::Primary, false, true)], ..Default::default() };
-        let mut armed = false;
-        super::synthesize_mac_ctrl_click(&mut armed, &mut raw);
-        assert!(!armed);
-        assert_eq!(buttons(&mut raw), vec![(PointerButton::Secondary, true), (PointerButton::Secondary, false)]);
-    }
-
-    /// End to end: the rewritten events are what egui's pointer state sees, so the context
-    /// menus (`secondary_clicked()`) fire on a Control+Click exactly like on a real right click.
-    #[test]
-    fn synthesized_click_fires_secondary_clicked() {
-        let ctx = egui::Context::default();
-        let mut raw = RawInput { events: vec![click(PointerButton::Primary, true, true), click(PointerButton::Primary, false, true)], ..Default::default() };
-        let mut armed = false;
-        super::synthesize_mac_ctrl_click(&mut armed, &mut raw);
-        let mut secondary = false;
-        // No renderer here: drop the pass output, clearing its texture deltas so epaint's drop
-        // guard does not panic on the font texture.
-        let mut out = ctx.run_ui(raw, |ctx| secondary = ctx.input(|i| i.pointer.secondary_clicked()));
-        out.textures_delta.clear();
-        assert!(secondary);
-    }
-
-    /// Releasing Control before the mouse button still closes the click as a context click; the
-    /// mouse release alone must not become a stray primary click.
-    #[test]
-    fn release_is_paired_to_the_ctrl_press() {
-        let mut raw = RawInput {
-            events: vec![
-                click(PointerButton::Primary, true, true),
-                click(PointerButton::Primary, false, false), // Control already released
-            ],
-            ..Default::default()
-        };
-        let mut armed = false;
-        super::synthesize_mac_ctrl_click(&mut armed, &mut raw);
-        assert!(!armed);
-        assert_eq!(buttons(&mut raw), vec![(PointerButton::Secondary, true), (PointerButton::Secondary, false)]);
-    }
-
-    /// A plain click keeps its meaning (on macOS Cmd is the selection modifier, not Control).
-    #[test]
-    fn plain_click_is_untouched() {
-        let mut raw = RawInput { events: vec![click(PointerButton::Primary, true, false), click(PointerButton::Primary, false, false)], ..Default::default() };
-        super::synthesize_mac_ctrl_click(&mut false, &mut raw);
-        assert_eq!(buttons(&mut raw), vec![(PointerButton::Primary, true), (PointerButton::Primary, false)]);
-    }
-
-    /// A half-open pairing (pointer left the window mid-click) must not turn the next plain click
-    /// into a context click.
-    #[test]
-    fn new_plain_press_clears_a_stale_pairing() {
-        let mut raw = RawInput {
-            events: vec![
-                click(PointerButton::Primary, true, true),
-                Event::PointerGone,
-                click(PointerButton::Primary, true, false),
-                click(PointerButton::Primary, false, false),
-            ],
-            ..Default::default()
-        };
-        let mut armed = false;
-        super::synthesize_mac_ctrl_click(&mut armed, &mut raw);
-        assert!(!armed);
-        assert_eq!(buttons(&mut raw), vec![(PointerButton::Secondary, true), (PointerButton::Primary, true), (PointerButton::Primary, false),]);
     }
 }
 
@@ -2859,45 +2685,5 @@ mod screen_px_tests {
             let p = screen_px_to_ui((10, 20), ppp, egui::pos2(0.0, 0.0));
             assert!(p.x.is_finite() && p.y.is_finite());
         }
-    }
-}
-
-#[cfg(test)]
-mod native_menu_tests {
-    use super::*;
-    use std::cell::RefCell;
-    use std::rc::Rc;
-
-    fn enabled(items: &[menus::MenuItem], id: &str) -> Option<bool> {
-        items.iter().find(|it| it.id == id).map(|it| it.enabled)
-    }
-
-    /// The native menu bar (macOS) gets the menu tree whenever it changes, so Edit ▸ Undo and Redo
-    /// follow the history instead of staying enabled (#902).
-    #[test]
-    fn native_menu_follows_undo_and_redo_availability() {
-        let sent: Rc<RefCell<Vec<Vec<menus::MenuItem>>>> = Rc::default();
-        let mut app = Cfa4App::new(Session::default());
-        let sink = sent.clone();
-        app.hooks.menu_changed = Some(Box::new(move |items: &[menus::MenuItem]| sink.borrow_mut().push(items.to_vec())));
-
-        app.sync_native_menu();
-        let last = |sent: &Rc<RefCell<Vec<Vec<menus::MenuItem>>>>, id: &str| sent.borrow().last().and_then(|items| enabled(items, id));
-        assert_eq!(last(&sent, "edit.undo"), Some(false), "nothing to undo in an empty project");
-        assert_eq!(last(&sent, "edit.redo"), Some(false), "nothing to redo in an empty project");
-        assert_eq!(last(&sent, "file.newProject"), Some(true));
-
-        app.sync_native_menu();
-        assert_eq!(sent.borrow().len(), 1, "an unchanged menu is not sent again");
-
-        app.session.execute("file.newSequence", json!({"width":16,"height":16})).unwrap();
-        app.sync_native_menu();
-        assert_eq!(last(&sent, "edit.undo"), Some(true), "an edit can be undone");
-        assert_eq!(last(&sent, "edit.redo"), Some(false));
-
-        app.session.execute("edit.undo", json!({})).unwrap();
-        app.sync_native_menu();
-        assert_eq!(last(&sent, "edit.undo"), Some(false));
-        assert_eq!(last(&sent, "edit.redo"), Some(true), "the undone edit can be redone");
     }
 }

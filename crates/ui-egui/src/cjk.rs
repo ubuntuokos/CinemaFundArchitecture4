@@ -6,18 +6,7 @@ use std::sync::{Arc, OnceLock};
 use egui::{FontData, FontDefinitions, FontFamily};
 
 const SAMPLE: &str = "中文轨道配乐音效简体汉语繁體漢語车";
-const PREFERRED: &[&str] = &[
-    "Microsoft YaHei UI",
-    "Microsoft YaHei",
-    "PingFang SC",
-    "Noto Sans CJK SC",
-    "Noto Sans SC",
-    "Source Han Sans SC",
-    "Source Han Sans CN",
-    "WenQuanYi Micro Hei",
-    "Microsoft JhengHei UI",
-    "Microsoft JhengHei",
-];
+const PREFERRED: &[&str] = &["Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", "Source Han Sans CN", "WenQuanYi Micro Hei"];
 
 pub(crate) fn extra_fonts() -> impl Iterator<Item = &'static cfa4_text::fonts::ExtraFont> {
     cfa4_text::fonts::CFA4_FONTS.iter().filter(|f| f.scripts.iter().any(|s| matches!(*s, "Hans" | "Hant")))
@@ -26,7 +15,7 @@ pub(crate) fn extra_fonts() -> impl Iterator<Item = &'static cfa4_text::fonts::E
 // Hangul: neither the UI fonts nor the Chinese/Japanese fallbacks have it, so typed, pasted and
 // IME-composed Korean drew as missing-glyph boxes (upstream #2093).
 const KOREAN_SAMPLE: &str = "한국어입력테스트";
-const KOREAN_PREFERRED: &[&str] = &["Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans KR", "Source Han Sans K", "NanumGothic"];
+const KOREAN_PREFERRED: &[&str] = &["Noto Sans CJK KR", "Noto Sans KR", "Source Han Sans K", "NanumGothic"];
 
 fn system_font() -> Option<Arc<FontData>> {
     static FONT: OnceLock<Option<Arc<FontData>>> = OnceLock::new();
@@ -38,7 +27,7 @@ fn korean_font() -> Option<Arc<FontData>> {
     FONT.get_or_init(|| find_system_font(KOREAN_SAMPLE, KOREAN_PREFERRED)).clone()
 }
 
-/// A font collection's face index matters: Windows CJK UI fonts commonly live in TTC files.
+/// A font collection's face index matters: CJK fonts commonly live in TTC files.
 /// Keep the owned bytes behind an Arc so theme reinstalls do not reread or leak a font file.
 fn find_system_font(sample: &str, preferred: &[&str]) -> Option<Arc<FontData>> {
     if cfg!(target_arch = "wasm32") {

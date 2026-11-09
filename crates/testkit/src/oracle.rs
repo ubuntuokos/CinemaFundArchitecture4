@@ -3,32 +3,23 @@
 //! Search order for a tool `T` (`ffmpeg` or `ffprobe`):
 //! 1. `CFA4_FFMPEG` / `CFA4_FFPROBE`: an explicit path (a set-but-wrong path is an error,
 //!    not a silent skip);
-//! 2. every directory on `PATH` (`T`, and `T.exe` on Windows);
-//! 3. well-known install locations (`/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`,
-//!    `C:\ffmpeg\bin`, …).
+//! 2. every directory on `PATH`;
+//! 3. well-known install locations (`/usr/local/bin`, `/usr/bin`, `/snap/bin`).
 //!
 //! When a tool is missing, tests print `SKIPPED: …` and pass — unless
 //! `CFA4_REQUIRE_ORACLES=1` is set (CI), which turns every skip into a failure.
 
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::sync::OnceLock;
 
 /// Environment variable that makes missing oracles a hard failure.
 pub const REQUIRE_ENV: &str = "CFA4_REQUIRE_ORACLES";
 
-const KNOWN_DIRS: &[&str] = &[
-    "/opt/homebrew/bin",
-    "/usr/local/bin",
-    "/usr/bin",
-    "/opt/local/bin",
-    "/snap/bin",
-    r"C:\ffmpeg\bin",
-    r"C:\Program Files\ffmpeg\bin",
-    r"C:\ProgramData\chocolatey\bin",
-];
+const KNOWN_DIRS: &[&str] = &["/usr/local/bin", "/usr/bin", "/snap/bin"];
 
 fn exe_names(name: &str) -> Vec<String> {
-    if cfg!(windows) { vec![format!("{name}.exe"), name.to_string()] } else { vec![name.to_string(), format!("{name}.exe")] }
+    vec![name.to_string()]
 }
 
 fn is_file(p: &Path) -> bool {
@@ -116,6 +107,19 @@ pub fn ffmpeg_or_skip(context: &str) -> Option<PathBuf> {
     tool_or_skip("ffmpeg", ffmpeg(), context)
 }
 
+/// Whether `ffmpeg -encoders` lists `encoder` (e.g. `libx265`): lets a test tell "this ffmpeg lacks the encoder"
+/// (skip) from "the encoder is there but failed" (a real failure).
+pub fn ffmpeg_has_encoder(ffmpeg: &Path, encoder: &str) -> bool {
+    let Ok(out) = Command::new(ffmpeg).args(["-hide_banner", "-encoders"]).stdin(Stdio::null()).output() else { return false };
+    encoders_output_lists(&String::from_utf8_lossy(&out.stdout), encoder)
+}
+
+/// Pure function of the `ffmpeg -encoders` output: whether `encoder` is one of the listed names.
+fn encoders_output_lists(output: &str, encoder: &str) -> bool {
+    // rows look like ` V....D libx264   libx264 H.264 …`; the name is the second whitespace-separated token
+    output.lines().any(|line| line.split_whitespace().nth(1) == Some(encoder))
+}
+
 /// ffprobe, or `None` after reporting a skip (see [`skip`]).
 pub fn ffprobe_or_skip(context: &str) -> Option<PathBuf> {
     tool_or_skip("ffprobe", ffprobe(), context)
@@ -177,12 +181,19 @@ pub fn ffmpeg_with_format_or_skip(context: &str, format_name: &str, min_version:
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn encoder_lookup_matches_the_name_column_only() {
+        let out = " V....D libx264              libx264 H.264 / AVC\n V....D libx265              libx265 H.265 / HEVC (libx265)\n A....D aac                  AAC (libx264 inside)\n";
+        assert!(encoders_output_lists(out, "libx264"));
+        assert!(encoders_output_lists(out, "libx265"));
+        assert!(!encoders_output_lists(out, "libsvtav1"));
+        assert!(!encoders_output_lists(out, "H.264"));
+    }
     use std::ffi::OsString;
 
-    fn tmpdir(tag: &str) -> PathBuf {
-        let d = std::env::temp_dir().join(format!("cfa4-testkit-{tag}-{}", std::process::id()));
-        std::fs::create_dir_all(&d).unwrap();
-        d
+    fn tmpdir(_tag: &str) -> PathBuf {
+        tempfile::tempdir().unwrap().keep()
     }
 
     #[test]
@@ -199,13 +210,13 @@ mod tests {
     }
 
     #[test]
-    fn path_search_finds_plain_and_exe_names() {
+    fn path_search_finds_the_tool() {
         let a = tmpdir("path-a");
         let b = tmpdir("path-b");
-        std::fs::write(b.join("ffprobe.exe"), b"").unwrap();
+        std::fs::write(b.join("ffprobe"), b"").unwrap();
         let path = std::env::join_paths([&a, &b]).unwrap();
         let got = find_tool_in("ffprobe", None, Some(&path), &[]).unwrap();
-        assert_eq!(got, Some(b.join("ffprobe.exe")));
+        assert_eq!(got, Some(b.join("ffprobe")));
         std::fs::write(a.join("ffprobe"), b"").unwrap();
         let got = find_tool_in("ffprobe", None, Some(&path), &[]).unwrap();
         assert!(got.is_some_and(|p| p.starts_with(&a)), "earlier PATH entry wins");

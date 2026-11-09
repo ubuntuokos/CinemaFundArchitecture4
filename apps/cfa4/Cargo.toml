@@ -14,6 +14,10 @@ default = []
 # Optional GStreamer fallback media backend (ADR 0002; needs libgstreamer1.0-dev and
 # libgstreamer-plugins-base1.0-dev to build). Without it the app behaves exactly as before.
 gstreamer = ["cfa4-gstreamer/gstreamer"]
+# FFmpeg (>= 9.0.2, GPL-3 build) supplementary media backend (ADR 0005; needs the FFmpeg development
+# files, e.g. PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-9.0.2/lib/pkgconfig from
+# scripts/dev/build-ffmpeg-9.0.2.sh). Without it the app behaves exactly as before.
+ffmpeg = ["cfa4-ffmpeg/ffmpeg"]
 # Speech-to-text (Text panel ▸ Transcribe) with Whisper on the CPU, and model downloads.
 whisper = ["cfa4-engine/whisper", "cfa4-engine/speech-download"]
 # Natural Text to Speech voices (Kokoro-82M on the CPU, downloaded on first use).
@@ -29,15 +33,18 @@ cfa4-gpu = { workspace = true }
 cfa4-ui-egui = { workspace = true }
 cfa4-platform = { workspace = true }
 cfa4-gstreamer = { workspace = true }
+cfa4-ffmpeg = { workspace = true }
 egui = { workspace = true }
 eframe = { workspace = true, features = ["default_fonts", "wgpu", "accesskit", "wayland", "x11"] }
 serde_json = { workspace = true }
+# Constant-time comparison of control-channel credentials.
+subtle = "2.6"
 log = { workspace = true }
 rfd = { workspace = true }
 cpal = "0.16"
 # Files and images on the system clipboard for Paste (#611); egui already uses it for text.
 arboard = "3"
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
+chrono = { workspace = true, features = ["clock"] }
 sys-locale = "0.3"
 # Help menu / About links in the system browser (MIT).
 open = "5"

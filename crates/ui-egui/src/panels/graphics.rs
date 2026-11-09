@@ -776,14 +776,15 @@ pub fn monitor_overlay(app: &mut Cfa4App, ui: &mut egui::Ui, pic: Rect, frame: (
                         let p0 = v.spec.transform.position;
                         actions.push((
                             "graphics.set".into(),
-                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + delta.x, p0.y + delta.y]}}),
+                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + delta.x, p0.y + delta.y]}, "shown": true}),
                         ));
                     }
                 }
                 DragKind::Handle(n) if moved => {
                     if let Some(v) = v {
                         let props = HandleDrag::new(v, n, d.start, cur, ui.input(|i| i.modifiers.shift)).props(v);
-                        actions.push(("graphics.set".into(), json!({"clip": v.clip.0, "layer": v.layer, "props": props})));
+                        // the handle's Position is the shown (pinned) one, as a body drag's
+                        actions.push(("graphics.set".into(), json!({"clip": v.clip.0, "layer": v.layer, "props": props, "shown": true})));
                     }
                 }
                 DragKind::Anchor if moved => {
@@ -793,7 +794,7 @@ pub fn monitor_overlay(app: &mut Cfa4App, ui: &mut egui::Ui, pic: Rect, frame: (
                         let (p0, a0) = (v.spec.transform.position, v.spec.transform.anchor);
                         actions.push((
                             "graphics.set".into(),
-                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + canvas.x, p0.y + canvas.y], "anchor": [a0.x + local.x, a0.y + local.y]}}),
+                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + canvas.x, p0.y + canvas.y], "anchor": [a0.x + local.x, a0.y + local.y]}, "shown": true}),
                         ));
                     }
                 }
@@ -995,7 +996,7 @@ fn start_edit_at(app: &mut Cfa4App, ui: &egui::Ui, v: &LayerView, p: Pos2, actio
 }
 
 /// Edit ▸ Select All while text is edited on the monitor selects all of that text, not the
-/// timeline clips: on macOS the native menu takes Cmd+A before the text sees the key (#1102).
+/// timeline clips (#1102).
 /// False when no text is being edited.
 pub(crate) fn select_all_edited_text(app: &mut Cfa4App) -> bool {
     let Some((clip, layer)) = app.ui.gfx_edit.as_ref().map(|e| (e.clip, e.layer)) else { return false };

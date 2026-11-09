@@ -238,7 +238,9 @@ pub fn check_candidate(s: &Session, item: ItemId, path: &str, o: &MatchOptions) 
         }
     }
     if c.problems.is_empty() {
-        match s.media.open_file(path, &*s.services) {
+        // opened as the item interprets it: a carrier played as its own channels is compared
+        // (and relinked) as one (#323)
+        match s.media.open_file(path, &*s.services).map(|src| crate::media_pool::interpreted(m, src)) {
             Ok(src) => {
                 let info = src.info().clone();
                 let fd = m.info.frame_rate().frame_duration();
@@ -323,8 +325,9 @@ struct Plan {
 /// Apply planned relinks as one undo step.
 fn apply(s: &mut Session, plans: Vec<Plan>, align_timecode: bool, label: &str) -> Result<Vec<Value>> {
     let rows: Vec<Value> = plans.iter().map(|p| json!({"item": p.item.0, "path": p.cand.path})).collect();
-    let sources: Vec<(ItemId, String, cfa4_media::SharedSource)> =
-        plans.iter().filter_map(|p| p.cand.source.clone().map(|src| (p.item, p.cand.path.clone(), src))).collect();
+    let carrier = |i: ItemId| s.project.item(i).and_then(|it| it.as_media()).is_some_and(|m| m.interpret.auro_as_carrier);
+    let sources: Vec<(ItemId, String, cfa4_media::SharedSource, bool)> =
+        plans.iter().filter_map(|p| p.cand.source.clone().map(|src| (p.item, p.cand.path.clone(), src, carrier(p.item)))).collect();
     s.edit(label, |proj, _| {
         for p in &plans {
             let Some(m) = proj.item_mut(p.item).and_then(|i| i.as_media_mut()) else { continue };
@@ -357,8 +360,8 @@ fn apply(s: &mut Session, plans: Vec<Plan>, align_timecode: bool, label: &str) -
     for p in &plans {
         s.media.allow(&p.cand.path);
     }
-    for (item, path, src) in sources {
-        s.media.insert_file(item, &path, src);
+    for (item, path, src, carrier) in sources {
+        s.media.insert_file_as(item, &path, src, carrier);
     }
     let gone: Vec<ItemId> = plans.iter().map(|p| p.item).collect();
     s.offline.missing.retain(|i| !gone.contains(i));
@@ -421,6 +424,10 @@ pub fn relink(s: &mut Session, p: &Value) -> Result<Value> {
         // and let the item take the new file's own info instead of keeping the old file's.
         let Ok(src) = s.media.open_file(&path, &*s.services) else {
             return Err(EngineError::Other(format!("{path} can't be opened")));
+        };
+        let src = match s.project.item(item).and_then(|i| i.as_media()) {
+            Some(m) => crate::media_pool::interpreted(m, src),
+            None => src,
         };
         c.info = Some(src.info().clone());
         c.source = Some(src);
@@ -489,9 +496,14 @@ pub fn index_folder(root: &Path, limit: usize) -> BTreeMap<String, Vec<PathBuf>>
             if name.starts_with('.') {
                 continue;
             }
-            if p.is_dir() {
+            let Ok(file_type) = e.file_type() else { continue };
+            // A relink search must stay within the folder explicitly chosen by the user. In
+            // particular, following a directory symlink can make a small loop defeat the file
+            // budget and walk an unrelated tree. Symlinked files are still candidates.
+            let is_file = if file_type.is_symlink() { std::fs::metadata(&p).is_ok_and(|m| m.is_file()) } else { file_type.is_file() };
+            if file_type.is_dir() {
                 queue.push_back(p);
-            } else {
+            } else if is_file {
                 out.entry(name.to_ascii_lowercase()).or_default().push(p);
                 n += 1;
                 if n >= limit {
@@ -536,6 +548,20 @@ pub fn search(s: &Session, p: &Value) -> Result<Value> {
     Ok(json!({"results": out}))
 }
 
+/// Whether Make Offline ▸ delete may remove `path` for item `id`: a regular file (not a link or
+/// a folder) with a media extension, whose size and fingerprint equal the ones recorded when the
+/// item was imported or linked. An item with no recorded identity (a New Offline File placeholder,
+/// or a project from an older build) has no evidence it was ever linked to this file, so it goes
+/// offline and its file is left alone; relinking it records an identity.
+fn deletable_media(s: &Session, id: ItemId, path: &str) -> bool {
+    let p = Path::new(path);
+    if !cfa4_media::is_importable(p) || !std::fs::symlink_metadata(p).is_ok_and(|m| m.is_file()) {
+        return false;
+    }
+    let recorded = s.project.item(id).and_then(|i| i.as_media()).and_then(|m| m.identity);
+    recorded.is_some_and(|want| identity_of(&*s.services, path).is_ok_and(|have| have == want))
+}
+
 /// `media.makeOffline {items?, deleteFiles?}`.
 pub fn make_offline(s: &mut Session, p: &Value) -> Result<Value> {
     let items: Vec<ItemId> = match p.get("items").and_then(Value::as_array) {
@@ -563,8 +589,14 @@ pub fn make_offline(s: &mut Session, p: &Value) -> Result<Value> {
     })?;
     let mut deleted = Vec::new();
     if delete {
-        for (_, path) in &files {
-            if std::fs::remove_file(path).is_ok() {
+        for (id, path) in &files {
+            // Stored paths in an opened document are not authority to delete arbitrary files.
+            // Delete only the resolved path that the media pool permits opening, and only when
+            // it is a regular media file that is still the one the item was linked to.
+            if let Ok(path) = s.media.follow(path)
+                && deletable_media(s, *id, &path)
+                && std::fs::remove_file(&path).is_ok()
+            {
                 deleted.push(path.clone());
             }
         }
@@ -583,14 +615,14 @@ fn status_json(s: &Session, id: ItemId) -> Option<Value> {
     let status = match &path {
         None => "generated",
         Some(_) if m.offline => "offline",
-        Some(p) if s.services.file_size(p).is_err() => "missing",
+        Some(p) if s.media.follow(p).ok().is_none_or(|file| s.services.file_size(&file).is_err()) => "missing",
         Some(_) => match s.media.offline_status(id) {
             Some(o) if o.reason == cfa4_render::offline::OfflineReason::Unreadable => "unreadable",
             _ => "online",
         },
     };
     let proxy = match &m.proxy {
-        Some(MediaRef::File { path }) => json!({"path": path, "online": s.services.file_size(path).is_ok()}),
+        Some(MediaRef::File { path }) => json!({"path": path, "online": s.media.follow(path).is_ok_and(|file| s.services.file_size(&file).is_ok())}),
         _ => Value::Null,
     };
     Some(json!({

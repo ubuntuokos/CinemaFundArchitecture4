@@ -7,7 +7,7 @@ if (( $# )); then
   if [[ $# == 2 && "$1" == "--formats" ]]; then
     FORMATS="$2"
   else
-    echo "Usage: $0 [--formats 'deb appimage flatpak tar']" >&2
+    echo "Usage: $0 [--formats 'deb appimage flatpak tar restricted']" >&2
     exit 2
   fi
 fi
@@ -18,7 +18,7 @@ fi
 set -f
 for format in $FORMATS; do
   case "$format" in
-    deb|appimage|flatpak|tar) ;;
+    deb|appimage|flatpak|tar|restricted) ;;
     *) echo "error: unsupported CFA4 package format: $format" >&2; exit 2 ;;
   esac
 done
@@ -43,7 +43,38 @@ if has tar || has deb || has appimage; then
     check_command "$tool"
   done
 fi
-if has deb; then
+if has tar || has deb || has appimage; then
+  # The release build links the system GStreamer (ADR 0002 step 6): its development files.
+  check_command pkg-config
+  for module in gstreamer-1.0 gstreamer-base-1.0 gstreamer-app-1.0 gstreamer-video-1.0 gstreamer-pbutils-1.0; do
+    if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists "$module"; then
+      echo "OK: $module"
+    else
+      fail "$module development files are missing (apt: libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev)"
+    fi
+  done
+fi
+# CFA4's FFmpeg 9.0.2 (ADR 0005 step 4) ships in every format; it is built beforehand by
+# scripts/dev/build-ffmpeg-9.0.2.sh (never here) and staged by packaging/linux/stage-ffmpeg.sh.
+ffmpeg_build="${CFA4_FFMPEG_BUILD:-/opt/cfa4/ffmpeg-9.0.2}"
+check_ffmpeg_build() {
+  local build="$1" hint="$2"
+  if [[ -x "$build/bin/ffmpeg" && -s "$build/lib/pkgconfig/libavcodec.pc" && -s "$build/share/doc/ffmpeg/BUILDINFO" ]]; then
+    echo "OK: FFmpeg build $build"
+  else
+    fail "FFmpeg 9.0.2 build missing or incomplete in $build (run scripts/dev/build-ffmpeg-9.0.2.sh$hint)"
+  fi
+}
+if has tar || has deb || has appimage || has restricted; then
+  for tool in readelf patchelf ldd dpkg-query; do
+    check_command "$tool"
+  done
+  check_ffmpeg_build "$ffmpeg_build" ""
+fi
+if has restricted; then
+  check_ffmpeg_build "$ffmpeg_build-restricted" " --restricted"
+fi
+if has deb || has restricted; then
   check_command nfpm
   check_command dpkg-deb
 fi
@@ -77,6 +108,29 @@ if has appimage; then
     else
       fail "appimagetool SHA-256 mismatch; refusing unverified tool"
     fi
+  fi
+fi
+
+if has appimage || has flatpak; then
+  # The AppImage and the Flatpak carry the Qt GUI's PySide6 / Qt 6 (packaging/linux/stage-pyside6.py)
+  # from a local wheelhouse of the wheels pinned in requirements/linux-amd64.txt; their hashes are
+  # checked when they are staged.
+  wheels="${CFA4_PYSIDE6_WHEELS:-}"
+  if [[ -z "$wheels" || ! -d "$wheels" ]]; then
+    fail "CFA4_PYSIDE6_WHEELS must name a local wheelhouse with the pinned PySide6 6.12 wheels"
+  else
+    for wheel in pyside6_essentials pyside6_addons shiboken6; do
+      if compgen -G "$wheels/$wheel-6.12.0-*manylinux*x86_64.whl" >/dev/null; then
+        echo "OK: $wheel wheel"
+      else
+        fail "$wheel-6.12.0 manylinux x86_64 wheel missing from $wheels"
+      fi
+    done
+  fi
+  if [[ -s /usr/share/common-licenses/LGPL-3 && -s /usr/share/common-licenses/LGPL-2.1 ]]; then
+    echo "OK: LGPL licence texts"
+  else
+    fail "/usr/share/common-licenses/LGPL-3 and LGPL-2.1 (base-files) are needed for the bundled Qt"
   fi
 fi
 

@@ -2,7 +2,15 @@
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
 default-members = ["crates/*", "apps/*", "xtask"]
-exclude = ["vendor/cfa4-libs/*"]
+# Cargo does not expand globs here: each vendored crate is named, so `--workspace` does not
+# build their tests (their dev-dependencies stay out of Cargo.lock; scripts/dev/test-vendored-ui.sh).
+exclude = [
+    "vendor/cfa4-libs/docpath",
+    "vendor/cfa4-libs/ui",
+    "vendor/ffmpeg-bindings/rsmedia",
+    "vendor/ffmpeg-bindings/rsmpeg",
+    "vendor/ffmpeg-bindings/rusty_ffmpeg",
+]
 
 [workspace.package]
 version = "0.10.0"
@@ -25,8 +33,10 @@ cfa4-mxf = { path = "crates/mxf" }
 cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
+cfa4-dv = { path = "crates/dv" }
 cfa4-ac3 = { path = "crates/ac3" }
 cfa4-dts = { path = "crates/dts" }
+cfa4-auro = { path = "crates/auro" }
 cfa4-truehd = { path = "crates/truehd" }
 cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }
@@ -65,6 +75,7 @@ cfa4-render = { path = "crates/render" }
 cfa4-gpu = { path = "crates/gpu" }
 cfa4-scopes = { path = "crates/scopes" }
 cfa4-export = { path = "crates/export" }
+cfa4-smart-edit = { path = "crates/smart-edit" }
 cfa4-format = { path = "crates/format" }
 cfa4-engine = { path = "crates/engine" }
 cfa4-ui-egui = { path = "crates/ui-egui" }
@@ -72,12 +83,19 @@ cfa4-automation = { path = "crates/automation" }
 cfa4-platform = { path = "crates/platform" }
 cfa4-testkit = { path = "crates/testkit" }
 cfa4-gstreamer = { path = "crates/gstreamer" }
+cfa4-ffmpeg = { path = "crates/ffmpeg" }
+# FFmpeg bindings of cfa4-ffmpeg (ADR 0005), vendored snapshots (vendor/ffmpeg-bindings/*/SOURCE_MANIFEST.json)
+rsmedia = { version = "0.7.1", path = "vendor/ffmpeg-bindings/rsmedia", default-features = false, features = ["ndarray", "ffmpeg9", "link_system_ffmpeg"] }
+rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-features = false, features = ["ffmpeg9", "link_system_ffmpeg"] }
+rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
 
 # foundation
 thiserror = "2"
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 log = "0.4"
+# All date/time conversion goes through chrono (no hand-rolled calendar code beyond the 400-year range extension; AGENTS.md).
+chrono = { version = "0.4.45", default-features = false, features = ["std"] }
 rayon = "1"
 proptest = "1"
 roxmltree = "0.21"

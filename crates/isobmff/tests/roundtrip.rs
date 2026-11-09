@@ -221,3 +221,104 @@ fn all_empty_samples_roundtrip() {
         assert!(f.tracks[0].samples.iter().all(|s| s.size == 0));
     }
 }
+
+#[test]
+fn chapters_roundtrip_in_every_writer() {
+    let chapters = vec![
+        Chapter { start_100ns: 0, title: "Bevezető".into() },
+        Chapter { start_100ns: 12_345_678, title: String::new() },
+        Chapter { start_100ns: u64::MAX, title: "end".into() },
+    ];
+    for brand in [Brand::Mp4, Brand::Mov] {
+        for fast in [false, true] {
+            let mut opts = WriterOptions::new(brand);
+            opts.chapters = chapters.clone();
+            let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
+            w.add_track(TrackConfig::new(entry(0), 1000)).unwrap();
+            w.write_sample(0, WriteSample { data: &[1, 2, 3], duration: 40, composition_offset: 0, is_sync: true }).unwrap();
+            let out = if fast { w.finish_faststart() } else { w.finish() }.unwrap().into_inner();
+            assert_eq!(open(out.as_slice()).unwrap().metadata.chapters, chapters, "{brand:?} faststart={fast}");
+        }
+    }
+    let mut opts = WriterOptions::new(Brand::Mp4);
+    opts.chapters = chapters.clone();
+    let mut w = FragmentedWriter::new(Vec::new(), opts);
+    w.add_track(TrackConfig::new(entry(0), 1000)).unwrap();
+    w.write_sample(0, WriteSample { data: &[1, 2, 3], duration: 40, composition_offset: 0, is_sync: true }).unwrap();
+    let out = w.finish().unwrap();
+    assert_eq!(open(out.as_slice()).unwrap().metadata.chapters, chapters);
+}
+
+/// The QuickTime chapter track (`text` + `tref/chap`) alone, read back without `chpl`.
+#[test]
+fn chapter_track_roundtrip() {
+    let chapters = vec![
+        Chapter { start_100ns: 30_000_000, title: "beyond the end".into() },
+        Chapter { start_100ns: 12_000_000, title: "Kettő".into() },
+        Chapter { start_100ns: 5_000_000, title: "Egy".into() },
+        Chapter { start_100ns: 12_005_000, title: "same millisecond".into() },
+    ];
+    let want = vec![Chapter { start_100ns: 5_000_000, title: "Egy".into() }, Chapter { start_100ns: 12_000_000, title: "Kettő".into() }];
+    for brand in [Brand::Mp4, Brand::Mov] {
+        for fast in [false, true] {
+            let mut w = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(brand)).unwrap();
+            let v = w.add_track(TrackConfig::new(entry(0), 1000)).unwrap();
+            assert!(matches!(w.add_chapter_track(5, &chapters), Err(Error::NoSuchTrack(5))));
+            assert!(w.add_chapter_track(v, &[]).is_err());
+            let c = w.add_chapter_track(v, &chapters).unwrap();
+            assert!(w.add_chapter_track(v, &chapters).is_err(), "one chapter track");
+            assert!(w.add_chapter_track(c, &chapters).is_err());
+            assert!(w.write_sample(c, WriteSample { data: &[0], duration: 1, composition_offset: 0, is_sync: true }).is_err());
+            for _ in 0..50 {
+                w.write_sample(v, WriteSample { data: &[1, 2, 3], duration: 40, composition_offset: 0, is_sync: true }).unwrap();
+            }
+            let out = if fast { w.finish_faststart() } else { w.finish() }.unwrap().into_inner();
+            let f = open(out.as_slice()).unwrap();
+            assert_eq!(f.metadata.chapters, want, "{brand:?} faststart={fast}");
+            let t = &f.tracks[c];
+            assert_eq!((t.kind, t.handler, t.enabled), (TrackKind::Other, FourCc(*b"text"), false));
+            assert_eq!(f.tracks[v].references, vec![(FourCc(*b"chap"), vec![t.id])]);
+            // the chapters end with the video (2 s), not later
+            assert_eq!(f.duration, 2000, "{brand:?}");
+        }
+    }
+    // a chapter at 0 needs no edit list; both chapter lists together read as one
+    let mut opts = WriterOptions::new(Brand::Mp4);
+    let both = vec![Chapter { start_100ns: 0, title: "A".into() }, Chapter { start_100ns: 10_000_000, title: "B".into() }];
+    opts.chapters = both.clone();
+    let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
+    w.add_track(TrackConfig::new(entry(2), 48_000)).unwrap();
+    let c = w.add_chapter_track(0, &both).unwrap();
+    w.write_sample(0, WriteSample { data: &[1], duration: 96_000, composition_offset: 0, is_sync: true }).unwrap();
+    let f = open(w.finish().unwrap().into_inner().as_slice()).unwrap();
+    assert_eq!(f.metadata.chapters, both);
+    assert!(f.tracks[c].edits.is_empty());
+    assert_eq!(f.tracks[c].samples.iter().map(|s| s.duration).collect::<Vec<_>>(), [1000, 1000]);
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(256))]
+
+    /// Any bytes in a `chpl` payload: no panic, and never more chapters than the count byte says.
+    #[test]
+    fn chpl_payload_never_panics(payload in proptest::collection::vec(any::<u8>(), 0..600)) {
+        let mut w = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+        w.add_track(TrackConfig::new(entry(0), 1000)).unwrap();
+        w.write_sample(0, WriteSample { data: &[0], duration: 1, composition_offset: 0, is_sync: true }).unwrap();
+        let mut out = w.finish().unwrap().into_inner();
+        // Append a moov-level udta/chpl with the arbitrary payload to the trailing moov.
+        let chpl_len = 8 + payload.len();
+        let udta_len = 8 + chpl_len;
+        let moov = out.windows(4).rposition(|x| x == b"moov").unwrap() - 4;
+        let moov_len = u32::from_be_bytes(out[moov..moov + 4].try_into().unwrap()) as usize + udta_len;
+        out[moov..moov + 4].copy_from_slice(&(moov_len as u32).to_be_bytes());
+        out.extend_from_slice(&(udta_len as u32).to_be_bytes());
+        out.extend_from_slice(b"udta");
+        out.extend_from_slice(&(chpl_len as u32).to_be_bytes());
+        out.extend_from_slice(b"chpl");
+        out.extend_from_slice(&payload);
+        let f = open(out.as_slice()).unwrap();
+        let count = usize::from(payload.get(if payload.first().copied().unwrap_or(0) >= 1 { 8 } else { 4 }).copied().unwrap_or(0));
+        prop_assert!(f.metadata.chapters.len() <= count);
+    }
+}

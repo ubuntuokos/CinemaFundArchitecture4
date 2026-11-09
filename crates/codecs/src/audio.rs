@@ -14,12 +14,78 @@ use symphonia::core::probe::Hint;
 
 use crate::{CodecError, Result};
 
+#[cfg(test)]
+#[path = "audio_panic_tests.rs"]
+mod panic_tests;
+
+/// A decoder that unwound may have partially changed its state. Keep it quarantined, including
+/// across seeks, until its owner creates a fresh decoder. Ordinary decode errors remain retryable.
+struct SymphoniaDecoder {
+    decoder: Box<dyn Decoder>,
+    failed: bool,
+}
+
+fn audio_panic(operation: &str) -> CodecError {
+    CodecError::Decode(format!("audio decoder panicked while {operation}; reopen the media to retry"))
+}
+
+/// Converts decoder panics to `CodecError::Decode` only when built with `panic = "unwind"`.
+/// The default `wasm32-unknown-unknown` target uses `panic = "abort"`, so decoder panics cannot
+/// be caught or converted. Process aborts and allocation failures that abort remain unrecoverable.
+fn guard_audio<T>(operation: &str, f: impl FnOnce() -> Result<T>) -> Result<T> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).map_err(|_| audio_panic(operation))?
+}
+
+impl SymphoniaDecoder {
+    fn new(params: &CodecParameters) -> Result<Self> {
+        guard_audio("initializing Symphonia", || {
+            let decoder = symphonia::default::get_codecs().make(params, &DecoderOptions::default()).map_err(|e| CodecError::Unsupported(e.to_string()))?;
+            Ok(Self { decoder, failed: false })
+        })
+    }
+
+    fn call<T>(&mut self, operation: &str, f: impl FnOnce(&mut dyn Decoder) -> T) -> Result<T> {
+        if self.failed {
+            return Err(CodecError::Decode("audio decoder is unavailable after a panic; reopen the media to retry".into()));
+        }
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| f(self.decoder.as_mut()))) {
+            Ok(result) => Ok(result),
+            Err(_) => {
+                self.failed = true;
+                Err(audio_panic(operation))
+            }
+        }
+    }
+
+    // Keep the two errors distinct: standalone imports skip ordinary corrupt packets, but must
+    // stop on a panic rather than report partially decoded audio as a successful import.
+    fn decode(&mut self, packet: &Packet) -> Result<symphonia::core::errors::Result<Vec<Vec<f32>>>> {
+        self.call("decoding a Symphonia packet", |decoder| {
+            let buf = decoder.decode(packet)?;
+            let spec = *buf.spec();
+            let ch = spec.channels.count().max(1);
+            let mut sb = SampleBuffer::<f32>::new(buf.capacity() as u64, spec);
+            sb.copy_interleaved_ref(buf);
+            let mut out = vec![Vec::with_capacity(sb.samples().len() / ch); ch];
+            for frame in sb.samples().chunks_exact(ch) {
+                for (channel, sample) in out.iter_mut().zip(frame) {
+                    channel.push(*sample);
+                }
+            }
+            Ok(out)
+        })
+    }
+}
+
 enum Inner {
     /// Our own AAC-LC decoder. `up` interpolates HE-AAC's core to the output rate (see [`Upsample2x`]).
     /// Surround output is reordered to WAV/SMPTE order (see [`aac_to_wav_order`]).
     Aac { dec: Box<cfa4_aac::Decoder>, asc: Vec<u8>, up: Option<Box<Upsample2x>> },
     /// AAC whose configuration arrives with the first frame (ADTS / LATM).
     AacPending,
+    /// xHE-AAC (USAC, audio object type 42), decoded at the stream's own level: DRC and loudness
+    /// normalization ([`cfa4_aac::drc`]) are a playback-side choice, not applied on import.
+    Usac { dec: Box<cfa4_aac::usac::UsacDecoder>, asc: Vec<u8> },
     /// MPEG audio at this rate whose layer arrives with the first frame (MP4 / QuickTime name the
     /// codec, not the layer; layers I / II go to our decoder, layer III to symphonia's).
     MpegPending(u32),
@@ -27,7 +93,7 @@ enum Inner {
     /// `order` maps output channel → decoded channel (Vorbis → WAV/SMPTE order for surround).
     Opus { dec: Box<cfa4_opus::Decoder>, order: Option<&'static [usize]> },
     /// Bootstrap decoders (MP3, ALAC, FLAC, HE-AAC…) via symphonia.
-    Symphonia(Box<dyn Decoder>),
+    Symphonia(SymphoniaDecoder),
     /// Our AC-3 and E-AC-3 decoder (ATSC A/52, Annex E).
     Ac3(Box<cfa4_ac3::Decoder>),
     /// DTS: the core, DTS-HD High Resolution and Master Audio (`cfa4-dts`).
@@ -120,7 +186,7 @@ impl PacketDecoder {
         if let Some(x) = extra {
             p.with_extra_data(x.into_boxed_slice());
         }
-        let dec = symphonia::default::get_codecs().make(&p, &DecoderOptions::default()).map_err(|e| CodecError::Unsupported(e.to_string()))?;
+        let dec = SymphoniaDecoder::new(&p)?;
         Ok(Self { inner: Inner::Symphonia(dec), channels: 0 })
     }
     /// AAC: our decoder for AAC-LC and the AAC-LC core of HE-AAC (v1/v2); symphonia for other
@@ -130,6 +196,9 @@ impl PacketDecoder {
         if let Ok(dec) = cfa4_aac::Decoder::new(asc) {
             let up = upsamples_core(dec.sample_rate(), sample_rate).then(|| Box::new(Upsample2x::new(dec.channels())));
             return Ok(Self { inner: Inner::Aac { dec: Box::new(dec), asc: asc.to_vec(), up }, channels: 0 });
+        }
+        if let Ok(dec) = cfa4_aac::usac::UsacDecoder::new(asc) {
+            return Ok(Self { inner: Inner::Usac { dec: Box::new(dec), asc: asc.to_vec() }, channels: 0 });
         }
         Self::new(CODEC_TYPE_AAC, sample_rate, Some(asc.to_vec()))
     }
@@ -209,6 +278,7 @@ impl PacketDecoder {
             // the decoder needs the STREAMINFO body: `dfLa` holds it after the 4-byte block header
             C::Flac(f) => Self::new(CODEC_TYPE_FLAC, rate, f.metadata_blocks.get(4..38).map(<[u8]>::to_vec)),
             C::Opus(o) => Self::opus(cfa4_opus::OpusHead::from_dops(&o.to_bytes()).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
+            C::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => Err(CodecError::Unsupported(AURO_CX_UNSUPPORTED.into())),
             other => Err(CodecError::Unsupported(format!("{} audio", other.name()))),
         }
     }
@@ -225,6 +295,12 @@ impl PacketDecoder {
                     out = up.process(out);
                 }
                 let out = reorder(out, aac_to_wav_order(dec.config().channel_config));
+                self.channels = out.len();
+                return Ok(out);
+            }
+            Inner::Usac { dec, .. } => {
+                let out = dec.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
+                let out = reorder(out, aac_to_wav_order(dec.config().channel_configuration_index));
                 self.channels = out.len();
                 return Ok(out);
             }
@@ -301,20 +377,8 @@ impl PacketDecoder {
             }
         };
         let pkt = Packet::new_from_slice(0, ts, 0, data);
-        let buf = dec.decode(&pkt).map_err(|e| CodecError::Decode(e.to_string()))?;
-        let spec = *buf.spec();
-        let ch = spec.channels.count().max(1);
-        self.channels = ch;
-        let mut sb = SampleBuffer::<f32>::new(buf.capacity() as u64, spec);
-        sb.copy_interleaved_ref(buf);
-        let s = sb.samples();
-        let n = s.len() / ch;
-        let mut out = vec![Vec::with_capacity(n); ch];
-        for i in 0..n {
-            for (c, o) in out.iter_mut().enumerate() {
-                o.push(s[i * ch + c]);
-            }
-        }
+        let out = dec.decode(&pkt)?.map_err(|e| CodecError::Decode(e.to_string()))?;
+        self.channels = out.len();
         Ok(out)
     }
     pub fn reset(&mut self) {
@@ -327,9 +391,22 @@ impl PacketDecoder {
                     up.reset();
                 }
             }
+            Inner::Usac { dec, asc } => {
+                if let Ok(d) = cfa4_aac::usac::UsacDecoder::new(asc) {
+                    **dec = d;
+                }
+            }
             Inner::Mpa(d) => d.reset(),
             Inner::Opus { dec, .. } => dec.reset(),
-            Inner::Symphonia(d) => d.reset(),
+            Inner::Symphonia(d) => {
+                // The legacy reset API cannot return an error. Log it now and keep the failure
+                // latched so the next decode reports it to the caller as well.
+                if !d.failed
+                    && let Err(error) = d.call("resetting Symphonia", |decoder| decoder.reset())
+                {
+                    log::error!("{error}");
+                }
+            }
             Inner::Ac3(d) => d.reset(),
             Inner::Dts(d) => d.reset(),
             Inner::TrueHd(d) => d.reset(),
@@ -353,7 +430,9 @@ pub fn mpeg_audio_layer(frame: &[u8]) -> Option<u8> {
 /// AAC-LC config at 24 kHz or less) SBR is only visible as fill-element data in the access units,
 /// so the first ones are decoded to look for it. `None` if `asc` is not one our decoder reads.
 pub fn aac_output_rate<'a>(asc: &[u8], first_units: impl IntoIterator<Item = &'a [u8]>) -> Option<u32> {
-    let mut dec = cfa4_aac::Decoder::new(asc).ok()?;
+    let Ok(mut dec) = cfa4_aac::Decoder::new(asc) else {
+        return cfa4_aac::usac::UsacDecoder::new(asc).ok().map(|d| d.sample_rate());
+    };
     let core = dec.sample_rate();
     if let Some(ext) = dec.config().extension_sample_rate {
         return Some(ext);
@@ -405,7 +484,11 @@ pub enum FixedFrames<'a> {
 pub fn fixed_packet_samples(codec: FixedFrames, first: &[u8], rate: u32) -> Option<i64> {
     let mpegts = match codec {
         FixedFrames::Aac(asc) => {
-            let core = cfa4_aac::Decoder::new(asc).ok()?.sample_rate();
+            let Ok(dec) = cfa4_aac::Decoder::new(asc) else {
+                let usac = cfa4_aac::usac::UsacDecoder::new(asc).ok()?;
+                return (usac.sample_rate() == rate).then_some(usac.frame_length() as i64);
+            };
+            let core = dec.sample_rate();
             return Some(if upsamples_core(core, rate) { 2048 } else { 1024 });
         }
         FixedFrames::Eac3 => {
@@ -853,6 +936,16 @@ pub struct AudioFileSource {
 
 impl AudioFileSource {
     pub fn decode(name: &str, bytes: Arc<[u8]>) -> Result<Self> {
+        Self::decode_with(name, bytes, SymphoniaDecoder::new)
+    }
+
+    fn decode_with(name: &str, bytes: Arc<[u8]>, make_decoder: impl FnOnce(&CodecParameters) -> Result<SymphoniaDecoder>) -> Result<Self> {
+        // Probing, demuxing, decoder construction and sample conversion can all see hostile input.
+        // Everything owned by this attempt is discarded if it unwinds; no partial source escapes.
+        guard_audio(&format!("opening {name}"), || Self::decode_inner(name, bytes, make_decoder))
+    }
+
+    fn decode_inner(name: &str, bytes: Arc<[u8]>, make_decoder: impl FnOnce(&CodecParameters) -> Result<SymphoniaDecoder>) -> Result<Self> {
         let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
         if matches!(ext.as_str(), "mp2" | "mp3")
             && let Some((layer, rate, samples)) = decode_mpeg_layer12(&bytes)
@@ -896,25 +989,18 @@ impl AudioFileSource {
         let mut format = probed.format;
         let track = format.default_track().ok_or_else(|| CodecError::Unsupported("no audio track".into()))?.clone();
         let rate = track.codec_params.sample_rate.unwrap_or(48_000);
-        let mut dec =
-            symphonia::default::get_codecs().make(&track.codec_params, &DecoderOptions::default()).map_err(|e| CodecError::Unsupported(e.to_string()))?;
+        let mut dec = make_decoder(&track.codec_params)?;
         let mut samples: Vec<Vec<f32>> = Vec::new();
         while let Ok(pkt) = format.next_packet() {
             if pkt.track_id() != track.id {
                 continue;
             }
-            let Ok(buf) = dec.decode(&pkt) else { continue };
-            let spec = *buf.spec();
-            let ch = spec.channels.count().max(1);
+            let Ok(channels) = dec.decode(&pkt)? else { continue };
             if samples.is_empty() {
-                samples = vec![Vec::new(); ch];
+                samples = vec![Vec::new(); channels.len()];
             }
-            let mut sb = SampleBuffer::<f32>::new(buf.capacity() as u64, spec);
-            sb.copy_interleaved_ref(buf);
-            for (i, v) in sb.samples().iter().enumerate() {
-                if let Some(c) = samples.get_mut(i % ch) {
-                    c.push(*v);
-                }
+            for (out, channel) in samples.iter_mut().zip(channels) {
+                out.extend(channel);
             }
         }
         if samples.is_empty() {
@@ -953,6 +1039,11 @@ fn id3v2_len(bytes: &[u8]) -> usize {
         _ => 0,
     }
 }
+
+/// Why an Auro-CX track (MP4 sample entry `a3ds`, #322) does not play: Auro-CX is a codec of its
+/// own, not an Auro-Codec carrier in PCM (`cfa4-auro`), and has no public specification or
+/// open decoder.
+pub const AURO_CX_UNSUPPORTED: &str = "Auro-CX audio (a3ds): there is no public specification or open decoder, so CFA4 cannot decode it";
 
 /// Most samples (all channels together) a standalone ADTS file decodes into memory: 4 GiB of f32,
 /// about three hours of 48 kHz stereo. Longer files are refused rather than allocated.

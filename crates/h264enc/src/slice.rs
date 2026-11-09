@@ -201,6 +201,57 @@ pub struct SliceEnc<'a, 'b> {
     stats: SliceStats,
 }
 
+/// Motion vectors already costed in one search: one bit per point of the square of
+/// `2 * half + 1` points (`step` quarter samples apart) around `centre`. A point outside the
+/// square, off the grid or past the `W` words always counts as new.
+struct Visited<const W: usize> {
+    centre: Mv,
+    half: i32,
+    step: i32,
+    bits: [u64; W],
+}
+
+impl<const W: usize> Visited<W> {
+    fn new(centre: Mv, half: i32, step: i32) -> Self {
+        Visited { centre, half, step: step.max(1), bits: [0; W] }
+    }
+
+    /// Marks `m`; false when it was marked before.
+    fn first(&mut self, m: Mv) -> bool {
+        let (dx, dy) = (m.x as i32 - self.centre.x as i32, m.y as i32 - self.centre.y as i32);
+        if dx % self.step != 0 || dy % self.step != 0 {
+            return true;
+        }
+        let side = 2 * self.half + 1;
+        let (gx, gy) = (dx / self.step + self.half, dy / self.step + self.half);
+        if gx < 0 || gy < 0 || gx >= side || gy >= side {
+            return true;
+        }
+        let i = (gy * side + gx) as usize;
+        let Some(word) = self.bits.get_mut(i / 64) else { return true };
+        let bit = 1u64 << (i % 64);
+        let fresh = *word & bit == 0;
+        *word |= bit;
+        fresh
+    }
+}
+
+/// The transform trial's bit estimate of a level `v`: `0.4` for zero, `3 + 2·log2|v|` otherwise.
+/// Levels below 256 (nearly all) read it from a table of exactly those values.
+#[inline]
+fn level_bits(table: &[f64; 256], v: i16) -> f64 {
+    let a = v.unsigned_abs();
+    match table.get(usize::from(a)) {
+        Some(&b) => b,
+        None => 3.0 + 2.0 * (a as f64).log2(),
+    }
+}
+
+fn level_bits_table() -> &'static [f64; 256] {
+    static T: std::sync::OnceLock<[f64; 256]> = std::sync::OnceLock::new();
+    T.get_or_init(|| std::array::from_fn(|a| if a == 0 { 0.4 } else { 3.0 + 2.0 * (a as f64).log2() }))
+}
+
 impl<'a, 'b> SliceEnc<'a, 'b> {
     pub fn new(f: &'a FrameEnc<'a>, band: Band<'b>, mbs: &'b mut [MbInfo], y0: usize, y1: usize, slice_no: u16) -> Self {
         SliceEnc { f, band, mbs, y0, y1, slice_no, last_qp: f.qp, prev_dqp_nz: false, cabac: None, cavlc: None, skip_run: 0, stats: SliceStats::default() }
@@ -784,45 +835,46 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
     /// Code an inter candidate's residual given its luma/chroma prediction.
     fn code_inter(&self, src: &Src, py: &[u8; 256], pu: &[u8; 64], pv: &[u8; 64], qp: u8, c: &mut Cand) {
         let t8_allowed = self.f.p.t8x8;
-        let use8 = if t8_allowed {
+        let (use8, cbpl) = if t8_allowed {
             if self.f.p.adaptive_t8 {
-                // Compare 4x4 and 8x8 transform by SSD + lambda * (approximate) bits.
-                let mut c4 = c.clone();
-                let cbp4 = self.code_luma4(&src.y, py, qp, Deadzone::INTER, self.f.p.decimate, &mut c4);
+                // Compare 4x4 and 8x8 transform by SSD + lambda * (approximate) bits. Neither
+                // coder reads the fields it writes, so the 4x4 trial is coded into `c` itself
+                // and the 8x8 trial into a copy that replaces `c` when it wins: the winner is
+                // not coded a second time.
                 let mut c8 = c.clone();
                 let cbp8 = self.code_luma8(&src.y, py, qp, Deadzone::INTER, self.f.p.decimate, &mut c8);
+                let cbp4 = self.code_luma4(&src.y, py, qp, Deadzone::INTER, self.f.p.decimate, c);
                 let lam = self.f.lam.ssd[qp as usize];
+                let lb = level_bits_table();
                 let cost = |cc: &Cand, cbp: u8, eight: bool| {
                     let d = ssd(&src.y, 16, &cc.ry, 16, 16, 16) as f64;
                     let mut bits = 0f64;
                     if eight {
                         for b in 0..4 {
                             if (cbp >> b) & 1 != 0 {
-                                bits += cc.code.luma8[b].iter().map(|&v| if v == 0 { 0.4 } else { 3.0 + 2.0 * (v.unsigned_abs() as f64).log2() }).sum::<f64>();
+                                bits += cc.code.luma8[b].iter().map(|&v| level_bits(lb, v)).sum::<f64>();
                             }
                         }
                     } else {
                         for b in 0..16 {
                             if (cbp >> (b / 4)) & 1 != 0 {
-                                bits += 1.0
-                                    + cc.code.luma4[b].iter().map(|&v| if v == 0 { 0.4 } else { 3.0 + 2.0 * (v.unsigned_abs() as f64).log2() }).sum::<f64>();
+                                bits += 1.0 + cc.code.luma4[b].iter().map(|&v| level_bits(lb, v)).sum::<f64>();
                             }
                         }
                     }
                     d + lam * bits
                 };
-                let _ = (cbp4, cbp8);
-                cost(&c8, cbp8, true) <= cost(&c4, cbp4, false)
+                if cost(&c8, cbp8, true) <= cost(c, cbp4, false) {
+                    *c = c8;
+                    (true, cbp8)
+                } else {
+                    (false, cbp4)
+                }
             } else {
-                true
+                (true, self.code_luma8(&src.y, py, qp, Deadzone::INTER, self.f.p.decimate, c))
             }
         } else {
-            false
-        };
-        let cbpl = if use8 {
-            self.code_luma8(&src.y, py, qp, Deadzone::INTER, self.f.p.decimate, c)
-        } else {
-            self.code_luma4(&src.y, py, qp, Deadzone::INTER, self.f.p.decimate, c)
+            (false, self.code_luma4(&src.y, py, qp, Deadzone::INTER, self.f.p.decimate, c))
         };
         c.code.t8x8 = use8 && cbpl != 0;
         c.info.t8x8 = c.code.t8x8;
@@ -1330,13 +1382,19 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
         // hexagon search (full-pel units = 4 quarter samples)
         let range = p.me_range;
         let centre0 = best;
+        // a point costed once is never better than the best since: skip it when it comes up again
+        let mut seen = Visited::<40>::new(centre0, range, 4);
+        seen.first(centre0);
         const HEX: [(i32, i32); 6] = [(-2, 0), (2, 0), (-1, -2), (1, -2), (-1, 2), (1, 2)];
         for _ in 0..range {
             let mut moved = false;
             let c = best;
             for &(dx, dy) in &HEX {
                 let m = Mv::new(c.x as i32 + dx * 4, c.y as i32 + dy * 4);
-                if ((m.x as i32 - centre0.x as i32).abs() >> 2) > range || ((m.y as i32 - centre0.y as i32).abs() >> 2) > range || !self.mv_ok(bx, by, w, h, m)
+                if ((m.x as i32 - centre0.x as i32).abs() >> 2) > range
+                    || ((m.y as i32 - centre0.y as i32).abs() >> 2) > range
+                    || !self.mv_ok(bx, by, w, h, m)
+                    || !seen.first(m)
                 {
                     continue;
                 }
@@ -1356,7 +1414,7 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
             let c = best;
             for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1)] {
                 let m = Mv::new(c.x as i32 + dx * 4, c.y as i32 + dy * 4);
-                if !self.mv_ok(bx, by, w, h, m) {
+                if !self.mv_ok(bx, by, w, h, m) || !seen.first(m) {
                     continue;
                 }
                 let k = fcost(m);
@@ -1376,6 +1434,8 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
             satd(src, sstride, buf, 16, w, h) + ((lam * mv_bits(mv, mvp)) >> 8)
         };
         let mut bs = scost(best, &mut buf);
+        let mut seen = Visited::<2>::new(best, 4, 1);
+        seen.first(best);
         if p.subpel >= 1 {
             for step in [2, 1] {
                 if step == 1 && p.subpel < 2 {
@@ -1386,7 +1446,7 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
                     let c = best;
                     for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1)] {
                         let m = Mv::new(c.x as i32 + dx * step, c.y as i32 + dy * step);
-                        if !self.mv_ok(bx, by, w, h, m) {
+                        if !self.mv_ok(bx, by, w, h, m) || !seen.first(m) {
                             continue;
                         }
                         let k = scost(m, &mut buf);
@@ -1580,9 +1640,15 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
         }
         ci.code.mvd = mvds;
         Self::cand_inter_info(&mut ci, best_part, [[0; 4], [-1; 4]], [best_mvs, [Mv::ZERO; 4]], mvds);
-        self.code_inter(src, &py_, &pu, &pv, qp, &mut ci);
+        // The residual decides a P_Skip and the RD comparisons; otherwise it only matters when the
+        // inter candidate is kept, so it is coded after an intra candidate had its chance.
+        let skip_candidate = best_part == Part::P16x16 && best_mvs[0] == skip_mv && skip_ok;
+        let coded_now = skip_candidate || f.p.rd;
+        if coded_now {
+            self.code_inter(src, &py_, &pu, &pv, qp, &mut ci);
+        }
         ci.cost = best_cost;
-        if ci.code.cbp == 0 && best_part == Part::P16x16 && best_mvs[0] == skip_mv && skip_ok {
+        if skip_candidate && ci.code.cbp == 0 {
             ci.code.kind = MbKind::PSkip;
             ci.info.t8x8 = false;
             ci.info.mvd = [[[0; 2]; 16]; 2];
@@ -1599,6 +1665,9 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
             } else if ic.cost < best_cost {
                 return ic;
             }
+        }
+        if !coded_now {
+            self.code_inter(src, &py_, &pu, &pv, qp, &mut ci);
         }
         if f.p.rd && skip_ok && ci.code.cbp != 0 {
             // RD check against P_Skip
@@ -1664,8 +1733,9 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
     }
 
     /// B 16x8 / 8x16 candidate: search each partition in both lists, choose L0/L1/Bi per partition, then derive
-    /// the motion vector predictors in decoding order from the chosen directions.
-    fn b_partition(&self, mx: usize, my: usize, part: Part, src: &Src, qp: u8, lam: u32, seeds: [Mv; 2]) -> Option<Box<Cand>> {
+    /// the motion vector predictors in decoding order from the chosen directions. With `beat`, a
+    /// candidate whose cost does not come below it is `None` before its residual is coded.
+    fn b_partition(&self, mx: usize, my: usize, part: Part, src: &Src, qp: u8, lam: u32, seeds: [Mv; 2], beat: Option<u64>) -> Option<Box<Cand>> {
         let f = self.f;
         let rp = [f.l0?, f.l1?];
         let (px, py) = (mx * 16, my * 16);
@@ -1700,6 +1770,9 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
             }
             cost += bestd.0;
             dirs[pi] = bestd.1 as u8;
+            if beat.is_some_and(|b| cost >= b) {
+                return None;
+            }
             let s = srcs[bestd.1];
             for r in y..y + h {
                 py_[r * 16 + x..r * 16 + x + w].copy_from_slice(&s.0[r * 16 + x..r * 16 + x + w]);
@@ -1860,8 +1933,15 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
         let (py_, pu, pv) = if dir == 2 { bi } else { preds[dir] };
         ci.cost = costs[dir];
         let better_than_direct = best.as_ref().is_none_or(|b| ci.cost < b.cost);
+        // Without RD only costs decide from here on: the 16x16 candidate's residual is coded at
+        // the end, if it is still the best then.
+        let mut deferred = false;
         if better_than_direct || f.p.rd {
-            self.code_inter(src, &py_, &pu, &pv, qp, &mut ci);
+            if f.p.rd {
+                self.code_inter(src, &py_, &pu, &pv, qp, &mut ci);
+            } else {
+                deferred = true;
+            }
             best = Some(match best {
                 None => ci,
                 Some(b) => {
@@ -1877,10 +1957,13 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
         // --- 16x8 / 8x16 partitions with a per-partition prediction direction
         if f.p.partitions && best.cost > 256 * 4 {
             for part in [Part::P16x8, Part::P8x16] {
-                if let Some(c) = self.b_partition(mx, my, part, src, qp, lam, [res[0].0, res[1].0]) {
+                // without RD only the cost decides, so a losing candidate's residual is not coded
+                let beat = (!f.p.rd).then_some(best.cost);
+                if let Some(c) = self.b_partition(mx, my, part, src, qp, lam, [res[0].0, res[1].0], beat) {
                     let better = if f.p.rd { self.rd_cost(mx, my, &c, src, qp) < self.rd_cost(mx, my, &best, src, qp) } else { c.cost < best.cost };
                     if better {
                         best = c;
+                        deferred = false;
                     }
                 }
             }
@@ -1895,6 +1978,9 @@ impl<'a, 'b> SliceEnc<'a, 'b> {
             } else if ic.cost < best.cost {
                 return ic;
             }
+        }
+        if deferred {
+            self.code_inter(src, &py_, &pu, &pv, qp, &mut best);
         }
         best
     }

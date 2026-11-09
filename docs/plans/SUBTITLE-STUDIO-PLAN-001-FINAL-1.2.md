@@ -229,7 +229,7 @@ Az 1.1 §8 táblázata érvényes, a következő szűréssel (`docs/licensing.md
 | libass | ISC | Elsődleges ASS-megjelenítési referencia (AC-06 orákulum); üzemi beépítése ADR-t igényel a „pure Rust” szabály miatt |
 | Rust-crate-ek (subparse, ass-rs stb.) | Egyenként, `cargo deny check licenses` | Csak ha jobbak a meglévő `cfa4-captions` olvasóknál; a meglévők nem cserélendők ok nélkül |
 | OxiMedia | Az 1.1 §8.1 szerint | Kísérleti; a #345 (metrikák) mintája szerint csak ellenőrzött részfunkció |
-| Kdenlive | GPL | Munkafolyamat-referencia (`docs/kdenlive-parity.md`) |
+| Kdenlive | GPL | Munkafolyamat-referencia (`docs/plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md`) |
 
 Ismeretlen licencű projekt (például a Samaku, ha az ellenőrzés nem talál licencet) csak
 funkcionális referencia lehet, kódja nem.

@@ -10,6 +10,10 @@
 //! [`Decoder::with_objects`] decodes the object presentation instead and renders its objects to a
 //! loudspeaker [`Layout`] (up to 7.1.4) with [`crate::render`]. A stream without an object
 //! presentation, or with objects the renderer cannot place, gives its channel presentation then.
+//!
+//! [`ObjectDecoder`] gives the object presentation itself, unrendered: one mono signal per object
+//! and the objects' metadata updates ([`crate::render::Event`]) on the same sample clock, for a
+//! caller that keeps the objects as objects (an IAB track of a DCP).
 
 use crate::process::decode::Decoder as AuDecoder;
 use crate::process::extract::Extractor;
@@ -215,6 +219,111 @@ impl Decoder {
     }
 }
 
+/// Object audio of one or more access units, unrendered.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ObjectChunk {
+    pub sample_rate: u32,
+    /// One mono signal per object (bed objects first), in -1.0 ..= 1.0, all of one length.
+    pub objects: Vec<Vec<f32>>,
+    /// Metadata updates; `offset` counts samples from the start of the stream.
+    pub events: Vec<crate::render::Event>,
+}
+
+/// Decodes the object presentation of a Dolby Atmos TrueHD stream without rendering it.
+#[derive(Default)]
+pub struct ObjectDecoder {
+    extractor: Extractor,
+    parser: Parser,
+    decoder: AuDecoder,
+    /// Whether the last major sync declared an object presentation.
+    objects: Option<bool>,
+    /// Samples decoded so far: the clock of the events.
+    position: u64,
+}
+
+impl ObjectDecoder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Samples decoded so far.
+    pub fn position(&self) -> u64 {
+        self.position
+    }
+
+    /// Decodes the access units in `data` (a raw `.thd` / `.mlp` stream in pieces, or container
+    /// packets). A stream without an object presentation, or with intermediate spatial format
+    /// objects, is an error; access units before the first major sync give nothing.
+    pub fn decode(&mut self, data: &[u8]) -> Result<ObjectChunk, Error> {
+        self.extractor.push_bytes(data);
+        let mut out = ObjectChunk::default();
+        while let Some(frame) = self.extractor.next() {
+            let Ok(frame) = frame else { continue };
+            let au = match self.parser.parse(&frame) {
+                Ok(au) => au,
+                Err(e) => {
+                    self.resync();
+                    return Err(Error::Decode(e.to_string()));
+                }
+            };
+            if let Some(ms) = &au.major_sync_info {
+                let map = PresentationMap::for_format_sync(ms.format_sync, ms.substream_info, ms.extended_substream_info);
+                let has = matches!(map.presentation_type_by_index(OBJECT_PRESENTATION), PresentationType::Independent);
+                if !has {
+                    return Err(Error::Decode("not a Dolby Atmos stream (no object presentation)".into()));
+                }
+                self.objects = Some(true);
+            }
+            if self.objects != Some(true) {
+                continue;
+            }
+            let d = match self.decoder.decode_presentation(&au, OBJECT_PRESENTATION) {
+                Ok(d) => d,
+                Err(e) => {
+                    self.resync();
+                    return Err(Error::Decode(e.to_string()));
+                }
+            };
+            let samples = d.pcm_data.get(..d.sample_length).unwrap_or_default();
+            for p in &d.oamd {
+                let Some(events) = crate::render::events(p, d.channel_count) else {
+                    return Err(Error::Decode("Atmos intermediate spatial format objects are not supported".into()));
+                };
+                out.events.extend(events.into_iter().map(|mut e| {
+                    e.offset = self.position.saturating_add(e.offset);
+                    e
+                }));
+            }
+            if out.sample_rate != d.sampling_frequency && !out.objects.is_empty() {
+                return Err(Error::Decode("the sample rate changes within the stream".into()));
+            }
+            out.sample_rate = d.sampling_frequency;
+            let have = out.objects.first().map_or(0, Vec::len);
+            let count = d.channel_count.min(crate::render::MAX_OBJECTS);
+            if out.objects.len() < count {
+                out.objects.resize(count, vec![0.0; have]);
+            }
+            for (c, o) in out.objects.iter_mut().enumerate() {
+                if c < count {
+                    o.extend(samples.iter().map(|s| s.get(c).copied().unwrap_or(0) as f32 * SCALE));
+                } else {
+                    o.resize(o.len() + samples.len(), 0.0);
+                }
+            }
+            self.position = self.position.saturating_add(samples.len() as u64);
+        }
+        Ok(out)
+    }
+
+    /// After a bad access unit, decoding resumes at the next major sync.
+    fn resync(&mut self) {
+        self.extractor = Default::default();
+        self.parser.reset_for_next_major_sync();
+        self.decoder.reset_for_next_major_sync();
+        self.objects = None;
+    }
+}
+
 /// The channel layout of the presentation [`Decoder`] decodes, from the first major sync in
 /// `data`, in output order. For probing a stream's channel count without decoding it.
 pub fn stream_labels(data: &[u8]) -> Result<(u32, Vec<Option<ChannelLabel>>), Error> {
@@ -283,6 +392,18 @@ mod tests {
         assert!(!d.channels.is_empty());
         assert_eq!(d.labels.len(), d.channels.len());
         assert!(d.channels.iter().all(|c| c.len() == d.channels[0].len()));
+    }
+
+    /// The object decoder refuses a stream without an object presentation instead of giving its
+    /// channels as objects.
+    #[test]
+    fn the_object_decoder_refuses_a_stream_without_objects() {
+        let mut dec = ObjectDecoder::new();
+        let e = dec.decode(crate::process::EXAMPLE_DATA).unwrap_err();
+        assert!(e.to_string().contains("not a Dolby Atmos stream"), "{e}");
+        assert_eq!(dec.position(), 0);
+        // nothing at all before the first major sync
+        assert_eq!(ObjectDecoder::new().decode(&[0u8; 64]).unwrap(), ObjectChunk::default());
     }
 
     /// A stream without an object presentation decodes the same with an object renderer, and a

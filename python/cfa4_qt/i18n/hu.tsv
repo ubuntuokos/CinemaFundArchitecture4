@@ -23,7 +23,9 @@
 	Add Range Marker	Tartományjelölő hozzáadása
 	Add Range Marker to In and Out	Tartományjelölő a kezdő- és végpont közé
 	Add Tracks…	Sávok hozzáadása…
-	Add to Queue	Hozzáadás a sorhoz
+	Full screen	Teljes képernyő
+	Master volume: use the Audio Track Mixer	Fő hangerő: az Audio Track Mixerben állítható
+	Send to Queue	Küldés a sorba
 	Add/Remove Keyframe	Kulcskocka hozzáadása/eltávolítása
 	Adjust	Beállítás
 	Adjustment Layer	Korrekciós réteg
@@ -55,8 +57,8 @@
 	Audio Out	Hang végpont
 	Audio Track Mixer	Hangsávkeverő
 	Audio Transitions	Hangátmenetek
-	Audio bitrate	Hang bitrátája
-	Audio codec	Hangkodek
+	Audio Bitrate	Hang bitrátája
+	Audio Format	Hangformátum
 	Auto Bezier	Automatikus Bézier
 	Automate to Sequence…	Automatikus szekvenciába rendezés…
 	Automatic	Automatikus
@@ -66,7 +68,7 @@
 	Bezier	Bézier
 	Bin	Tároló
 	Bin From Selection	Tároló a kijelölésből
-	Bitrate mode	Bitrátamód
+	Bitrate Encoding	Bitráta-kódolás
 	Black Video…	Fekete videó…
 	Blend Mode	Keverési mód
 	Blue	Kék
@@ -81,8 +83,6 @@
 	Bypass	Megkerülés
 	CBR	CBR
 	CFA4	CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 úgy zárult be, hogy a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
 	Cancel Selected	Kijelöltek megszakítása
 	Cancelled	Megszakítva
 	Cannot create the output folder: {error}	A kimeneti mappa nem hozható létre: {error}
@@ -96,7 +96,10 @@
 	Cerulean	Égszínkék
 	Channel Volume	Csatornahangerő
 	Checked:	Megvizsgálva:
-	Choose an output file.	Válasszon kimeneti fájlt.
+	Choose a file name and location.	Adj meg fájlnevet és helyet.
+	Choose folder	Mappa kiválasztása
+	Media File	Médiafájl
+	Sequence name	Szekvencia neve
 	Clear	Törlés
 	Clear Finished	Befejezettek törlése
 	Clear In	Kezdőpont törlése
@@ -183,7 +186,11 @@
 	Export Media	Média exportálása
 	Export Media…	Média exportálása…
 	Export Queue	Exportálási sor
-	Export audio	Hang exportálása
+	Queue ({n})	Sor ({n})
+	Send exports here with Send to Queue, then start the queue.	A Küldés a sorba gombbal ide küldheti az exportokat, majd indítsa el a sort.
+	Open a sequence to export	Nyisson meg egy szekvenciát az exportáláshoz
+	The sequence has no caption track.	A szekvenciának nincs feliratsávja.
+	Export Audio	Hang exportálása
 	Export failed: {path}	Az exportálás nem sikerült: {path}
 	Export finished: {path}	Az exportálás elkészült: {path}
 	Extract	Kivonás
@@ -207,12 +214,14 @@
 	Frame Blending	Kockamosás
 	Frame Hold Options…	Kimerevítés beállításai…
 	Frame Sampling	Kockamintavétel
-	Frame size	Képméret
+	Frame Size	Képméret
 	From Bin	Tárolóból
 	From Source Monitor	A forrásmonitorról
 	From Source Monitor, Match Frame	A forrásmonitorról, egyező kockával
 	From file…	Fájlból…
 	From the preset	Az előbeállításból
+	Adaptive ({bpp} bits per pixel)	Adaptív ({bpp} bit képpontonként)
+	Set a fixed bitrate	Rögzített bitráta beállítása
 	Gain	Erősítés
 	General…	Általános…
 	Generate	Előállítás
@@ -319,7 +328,9 @@
 	Next in Track	Következő a sávon
 	No	Nem
 	No sequence	Nincs szekvencia
-	No sequence open. Double-click a sequence in the Project panel.	Nincs megnyitott szekvencia. Kattintson duplán egy szekvenciára a Projekt panelen.
+	Drop media here to create sequence.	Szekvencia létrehozásához húzzon ide médiát.
+	Open Demo Project	Demóprojekt megnyitása
+	Double-click a sequence in the Project panel to open it here.	A megnyitáshoz kattintson duplán egy szekvenciára a Projekt panelen.
 	Noise & Grain	Zaj és szemcse
 	Noise Reduction	Zajcsökkentés
 	Normal	Normál
@@ -420,7 +431,6 @@
 	Save as Template…	Mentés sablonként…
 	Save changes to '{name}' before closing?	Menti a(z) „{name}” változásait bezárás előtt?
 	Save changes to '{name}' before continuing?	Menti a(z) „{name}” változásait a folytatás előtt?
-	Discard the unsaved changes to '{name}' and revert to the saved version?	Elveti a(z) „{name}” mentetlen változásait, és visszaáll a mentett változatra?
 	Scale	Méretezés
 	Scale Width	Szélesség méretezése
 	Scale to Frame Size	Méretezés a képkockához
@@ -483,7 +493,7 @@
 	Synchronize…	Szinkronizálás…
 	Synthetic	Szintetikus
 	Tan	Homok
-	Target bitrate	Célbitráta
+	Target Bitrate	Célbitráta
 	Teal	Kékeszöld
 	Text	Szöveg
 	Text to Speech	Szövegfelolvasás
@@ -1236,6 +1246,8 @@
 	Color Management · {n} items	Színkezelés · {n} elem
 	Media colour space (from file metadata): {detected}	Média színtere (a fájl metaadataiból): {detected}
 	Override media colour space:	Média színterének felülírása:
+	Decode Auro-3D height channels	Auro-3D magassági csatornák dekódolása
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Kikapcsolva a fájl saját csatornái szólnak, mint Auro-3D dekóder nélkül.
 	Use file metadata	A fájl metaadatai szerint
 	Motion Graphics Templates	Mozgógrafikai sablonok
 	Clip Fx Editor	Klip effektszerkesztő
@@ -1411,7 +1423,7 @@
 	Growing Files	Növekvő fájlok
 	HDR Graphics White (Nits)	HDR grafikai fehér (nit)
 	Hardware decoding	Hardveres dekódolás
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Hardveres dekódolás: az Automatikus a rendszer videodekóderét használja (macOS-en VideoToolbox, Windowson Media Foundation, Linuxon VA-API vagy NVDEC H.264-hez és HEVC-hez) a támogatott adatfolyamokhoz, minden máshoz, vagy ha a hardver hibázik, a CFA4 saját dekóderét. A már megnyitott média az újranyitásig megtartja a dekóderét.
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Hardveres dekódolás: az Automatikus a rendszer videodekóderét használja (VA-API vagy NVDEC H.264-hez és HEVC-hez) a támogatott adatfolyamokhoz, minden máshoz, vagy ha a hardver hibázik, a CFA4 saját dekóderét. A már megnyitott média az újranyitásig megtartja a dekóderét.
 	Highlight Color	Kiemelés színe
 	Hindi	Hindi
 	Hindi digits	Hindi számjegyek
@@ -1654,6 +1666,434 @@
 	Target Duration:	Célhossz:
 	Variations:	Változatok:
 	the selected clip is not remixed	a kijelölt klip nincs remixelve
+# Settings ▸ Media Backends and Help ▸ Restricted Codecs (ADR 0005, docs/licensing.md §7)
+	After installing, restart CFA4.	Telepítés után indítsa újra a CFA4-et.
+	Available, switched off	Elérhető, kikapcsolva
+	Left out by the routing table	Az útválasztási tábla kihagyta
+	CFA4 engine	CFA4-motor
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	A CFA4 saját motorja minden fájlt megnyit, amelyet tud. Az alábbi kiegészítő hátterek ebben a sorrendben, csak azoknál a fájloknál lépnek be, amelyeket a motor még nem tud megnyitni. Egy háttér kikapcsolása az ezután megnyitott fájlokra vonatkozik.
+	Capabilities	Képességek
+	Copy command	Parancs másolása
+	H.264 software encoding (x264)	H.264 szoftveres kódolás (x264)
+	HEVC software encoding (x265)	HEVC szoftveres kódolás (x265)
+	In use	Használatban
+	Licence	Licenc
+	Media Backends	Médiahátterek
+	Media Backends…	Médiahátterek…
+	Not available	Nem érhető el
+	Not part of this build	Ez a változat nem tartalmazza
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Saját Rust-dekóderek és -kódolók: mindig ezek az elsők, és ezek a tartalék, ha egy kiegészítő háttér hibázik
+	Restricted Codecs…	Korlátozott kodekek…
+	Restricted codecs	Korlátozott kodekek
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Egyes kodekek szabad szoftverek, de szabadalommal védett formátumot valósítanak meg. Az Ubuntuhoz hasonlóan a CFA4 alapból nem telepíti őket: az alapcsomag nélkülük is működik, és Ön dönti el, telepíti-e őket. Használatuk egyes országokban korlátozott lehet; ellenőrizze, hogy ahol Ön van, megengedett-e.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Kiegészítő dekóder azokhoz a formátumokhoz, amelyeket a saját motor még nem olvas (10 bites és 4:2:2-es kameraanyag, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Kiegészítő dekóder a rendszer GStreamerjéből (Ogg Theora, FLV, WMV és más formátumok); LGPL, az Ubuntu tárolóiból
+	The engine did not answer: {message}	A motor nem válaszolt: {message}
+	To install them: {command}	Telepítésük: {command}
+	Use this backend	Ennek a háttérnek a használata
+	Version	Verzió
+	installed	telepítve
+	not installed	nincs telepítve
+	on	be
+	 (removed from {list})	 (eltávolítva innen: {list})
+	 and 	 és 
+	Add another shortcut	Újabb billentyűparancs hozzáadása
+	Application shortcuts work whatever panel has focus	Az alkalmazás billentyűparancsai bármely panel fókuszában működnek
+	Assign {key} to {command}	{key} hozzárendelése ehhez: {command}
+	Cleared {n} shortcut(s) of {command}	{n} billentyűparancs törölve: {command}
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Kattintson egy parancs Billentyűparancs cellájára, és nyomja le a billentyűket a hozzárendeléshez; a + újabbat ad hozzá.
+	Click a key on the keyboard to see its shortcuts	Kattintson a billentyűzet egy billentyűjére a parancsai megtekintéséhez
+	Click and press keys to assign	Kattintson, és nyomja le a hozzárendelendő billentyűket
+	Command	Parancs
+	Commands:	Parancsok:
+	Conflict: {key} is assigned to {commands} ({ctx})	Ütközés: a(z) {key} ezekhez van rendelve: {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Exportálás: nincs fájl kiválasztva (ügynököknek: shortcuts.export {path})
+	Export…	Exportálás…
+	Import: no file chosen (agents: shortcuts.import {path})	Importálás: nincs fájl kiválasztva (ügynököknek: shortcuts.import {path})
+	Key:	Billentyű:
+	Keyboard Shortcuts	Billentyűparancsok
+	Keyboard Shortcuts…	Billentyűparancsok…
+	Keyboard: US	Billentyűzet: amerikai
+	Loaded “{name}”	Betöltve: „{name}”
+	Modifier held / selected	Lenyomott / kiválasztott módosítóbillentyű
+	Modifiers	Módosítók
+	My Shortcuts	Saját billentyűparancsok
+	No matching commands	Nincs egyező parancs
+	Nothing is assigned to this key	Ehhez a billentyűhöz nincs semmi rendelve
+	Panel shortcuts override application shortcuts while that panel has focus	A panel billentyűparancsai felülírják az alkalmazáséit, amíg a panelé a fókusz
+	Save preset as:	Készlet mentése másként:
+	Saved preset “{name}”	Készlet mentve: „{name}”
+	Search commands or keys	Parancsok vagy billentyűk keresése
+	Selected: {command}	Kiválasztva: {command}
+	Shortcut	Billentyűparancs
+	Type a shortcut… (Esc cancels)	Nyomja le a billentyűparancsot… (Esc: mégse)
+	{active} (modified)	{active} (módosítva)
+	{key} can't be used as a shortcut	A(z) {key} nem használható billentyűparancsként
+	{panel} Panel	{panel} panel
+	Docking Action	Dokkolási művelet
+	Dock Panel	Panel dokkolása
+	Undock Panel	Panel leválasztása
+	Close Panel	Panel bezárása
+	Restore Workspace	Munkaterület visszaállítása
+	Add Guide	Segédvonal hozzáadása
+	Add Guide…	Segédvonal hozzáadása…
+	Clear Guides	Segédvonalak törlése
+	Guide Templates	Segédvonal-sablonok
+	Guides	Segédvonalak
+	Lock Guides	Segédvonalak zárolása
+	Manage Guides	Segédvonalak kezelése
+	Manage Guides…	Segédvonalak kezelése…
+	No saved guide templates.	Nincs mentett segédvonal-sablon.
+	Orientation:	Irány:
+	Position:	Pozíció:
+	Reference  {tc}	Referencia  {tc}
+	Reference: next frame	Referencia: következő képkocka
+	Reference: previous frame	Referencia: előző képkocka
+	Save Guides as Template	Segédvonalak mentése sablonként
+	Save Guides as Template…	Segédvonalak mentése sablonként…
+	Saved guide template “{name}”	Segédvonal-sablon mentve: „{name}”
+	Set	Beállítás
+	Set Comparison Reference	Összehasonlítási referencia beállítása
+	Set the reference to the playhead	A referencia beállítása a lejátszófejre
+	Show Guides	Segédvonalak megjelenítése
+	Show Rulers	Vonalzók megjelenítése
+	Snap in Program Monitor	Illesztés a programmonitoron
+	The template needs a name.	A sablonnak nevet kell adni.
+	There are no guides to save.	Nincs menthető segédvonal.
+	Join Through Edits	Átmenő vágások egyesítése
+	Replace With Clip From Source Monitor	Csere a forrásmonitor klipjére
+	Reveal Nested Sequence	Beágyazott szekvencia megjelenítése
+	Reveal in Project	Megjelenítés a projektben
+	Unlink	Szétválasztás
+	Apply Default Transitions	Alapértelmezett átmenetek alkalmazása
+	Ripple Trim In	Kezdőpont hullámvágása
+	Ripple Trim Out	Végpont hullámvágása
+	Roll Edit	Gördülő vágás
+	Trim In	Kezdőpont igazítása
+	Trim Out	Végpont igazítása
+	Expand All Tracks	Minden sáv kibontása
+	Minimize All Tracks	Minden sáv minimalizálása
+	Increase Video Tracks Height	Videosávok magasságának növelése
+	Decrease Video Tracks Height	Videosávok magasságának csökkentése
+	Increase Audio Tracks Height	Hangsávok magasságának növelése
+	Decrease Audio Tracks Height	Hangsávok magasságának csökkentése
+	Drag to change the track height	Húzza a sáv magasságának módosításához
+	Head	Eleje
+	Head and Tail	Eleje és vége
+	Continuous	Folyamatos
+	Show Video Thumbnails	Videó-bélyegképek megjelenítése
+	Show Audio Waveform	Hanghullámforma megjelenítése
+	Timeline Display Settings	Idővonal megjelenítési beállításai
+	Snap in Timeline (S)	Illesztés az idővonalon (S)
+	Caption track options	Feliratsáv beállításai
+	Insert and overwrite sequences as nests or individual clips	Szekvenciák beszúrása és felülírása beágyazva vagy külön klipekként
+	Close Other Timeline Panels	Többi idővonalpanel bezárása
+	Show Keyframes	Kulcskockák megjelenítése
+	Clip Keyframes	Klip-kulcskockák
+	Track Keyframes	Sáv-kulcskockák
+	Send {n} Level	{n}. küldés szintje
+	Delete Caption Track	Feliratsáv törlése
+	Delete Empty Caption Tracks	Üres feliratsávok törlése
+	Toggle Caption Track Lock	Feliratsáv zárolásának váltása
+	Toggle Caption Track Output	Feliratsáv kimenetének váltása
+	Drag In point	Kezdőpont húzása
+	Drag Out point	Végpont húzása
+	Move marked range	Jelölt tartomány mozgatása
+	Auto Tone Map Media (HDR and log into SDR)	Média automatikus tónusleképezése (HDR és log SDR-re)
+	CFA4 always composites in linear light	A CFA4 mindig lineáris fényben komponál
+	Captured View:	Rögzített nézet:
+	Channel Format:	Csatornaformátum:
+	Color Management	Színkezelés
+	Composite in Linear Color	Komponálás lineáris színben
+	Configure…	Beállítás…
+	Custom ({ratio})	Egyéni ({ratio})
+	Display Format:	Megjelenítési formátum:
+	Editing Mode:	Szerkesztési mód:
+	Fields:	Félképek:
+	Frame Size:	Képméret:
+	Height:	Magasság:
+	Layout:	Elrendezés:
+	Maximum Bit Depth	Maximális bitmélység
+	Maximum Render Quality	Maximális renderelési minőség
+	Milliseconds	Ezredmásodperc
+	Monoscopic	Monoszkopikus
+	New Sequence	Új szekvencia
+	No Fields (Progressive Scan)	Nincs félkép (progresszív)
+	Not supported in CFA4 yet	A CFA4 ezt még nem támogatja
+	Number of Channels:	Csatornák száma:
+	Pixel Aspect Ratio:	Képpont-méretarány:
+	Preview File Format:	Előnézeti fájlformátum:
+	Projection:	Vetítés:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Mintavételi frekvencia:
+	Scale motion effects proportionally when changing frame size	Mozgáseffektusok arányos méretezése a képméret változásakor
+	Sequence Settings	Szekvenciabeállítások
+	Square Pixels (1.0)	Négyzetes képpontok (1.0)
+	Timebase:	Időalap:
+	Tracks	Sávok
+	VR Properties	VR-tulajdonságok
+	Video Previews	Videoelőnézetek
+	Wide gamut color (composite in BT.2020)	Széles színtartomány (komponálás BT.2020-ban)
+	Width:	Szélesség:
+	Working Color Space:	Munka-színtér:
+	horizontal	vízszintes
+	no sequence is open	nincs megnyitott szekvencia
+	tracks	sáv
+	vertical	függőleges
+	{rate} fps Drop-Frame Timecode	{rate} fps Drop-Frame időkód
+	{rate} fps Non Drop-Frame Timecode	{rate} fps Non Drop-Frame időkód
+	{rate} fps Timecode	{rate} fps időkód
+	{rate} frames/second	{rate} képkocka/másodperc
+	Always Deinterlace	Mindig váltottsor-mentesítés
+	Audio Attributes	Hangattribútumok
+	Ch. {n}	{n}. csat.
+	Clip Channel Format:	Klip csatornaformátuma:
+	Clip Speed / Duration	Klip sebessége / időtartama
+	Clip {n}	{n}. klip
+	Contains:	Tartalmaz:
+	Edit Subclip	Alklip szerkesztése
+	End:	Vége:
+	Field Options	Félkép-beállítások
+	File Name:	Fájlnév:
+	Flicker Removal	Vibrálás eltávolítása
+	Frame Hold Options	Képkocka kitartásának beállításai
+	Frame Rate:	Képkockasebesség:
+	Hold Filters	Szűrők kitartása
+	Hold On	Kitartás
+	In Point	Kezdőpont
+	Make Subclip	Alklip készítése
+	Media Source Channels	Médiaforrás csatornái
+	Media Start:	Média kezdete:
+	Modify Clip: Audio Channels	Klip módosítása: hangcsatornák
+	Modify Clip: Timecode	Klip módosítása: időkód
+	Nested Sequence Name	Beágyazott szekvencia neve
+	New Offline File	Új offline fájl
+	No effects	Nincsenek effektusok
+	Number of Audio Clips:	Hangklipek száma:
+	Out Point	Végpont
+	Paste Attributes	Attribútumok beillesztése
+	Playhead	Lejátszófej
+	Processing Options	Feldolgozási beállítások
+	Remove Attributes	Attribútumok eltávolítása
+	Restrict Trims To Subclip Boundaries	Vágás korlátozása az alklip határaira
+	Reverse Field Dominance	Félkép-dominancia megfordítása
+	Reverse Speed	Fordított sebesség
+	Ripple Edit, Shifting Trailing Clips	Hullámszerkesztés, a későbbi klipek eltolásával
+	Scale Attribute Times	Attribútumidők méretezése
+	Sequence Time	Szekvenciaidő
+	Set Timecode:	Időkód beállítása:
+	Source Timecode	Forrás-időkód
+	Source channels the selected audio clips play:	A kijelölt hangklipek által lejátszott forráscsatornák:
+	Speed:	Sebesség:
+	Start:	Kezdet:
+	Subclip: {name}	Alklip: {name}
+	Tape Name:	Szalag neve:
+	Timecode:	Időkód:
+	Use the file's timecode	A fájl időkódjának használata
+	Video Attributes	Videoattribútumok
+	no dialog	nincs párbeszédablak
+# menu dialogs (4.8)
+	Action Safe Area	Akcióbiztos terület
+	Action and Title Safe Areas	Akció- és címbiztos területek
+	Action:	Művelet:
+	All	Mind
+	Analyze	Elemzés
+	Any	Bármelyik
+	Apply Default Audio Transition	Alapértelmezett hangáttűnés alkalmazása
+	Apply Default Video Transition	Alapértelmezett videóáttűnés alkalmazása
+	Apply a cut at each detected cut point	Vágás minden észlelt vágáspontnál
+	At Unnumbered Markers	A számozatlan jelölőknél
+	Audio Only	Csak hang
+	Audio Previews:	Hang-előnézetek:
+	Audio analysis:	Hangelemzés:
+	Audio effects	Hangeffektek
+	Audio on track {t}	Hang a(z) {t} sávon
+	Automate To Sequence	Automatizálás szekvenciába
+	Average Data Rate	Átlagos adatsebesség
+	Capture	Rögzítés
+	Capture Format:	Rögzítési formátum:
+	Captured and Generated:	Rögzített és generált:
+	Case Sensitive	Kis- és nagybetű különbözik
+	Clip Names and Markers	Klipnevek és jelölők
+	Clip Overlap:	Klipátfedés:
+	Clips	Klipek
+	Codec: {codec}	Kodek: {codec}
+	Color Matte Color	Színháttér színe
+	Color:	Szín:
+	Colour	Szín
+	Comments:	Megjegyzések:
+	Copy and Create Proxies	Másolás és proxyk létrehozása
+	Create Proxies	Proxyk létrehozása
+	Create Search Bin	Keresőmappa létrehozása
+	Create a bin of subclips from each detected cut point	Alklipek mappája minden észlelt vágáspontból
+	Create a clip marker at each detected cut point	Klipjelölő minden észlelt vágáspontnál
+	Destination:	Cél:
+	Disabled clips	Letiltott klipek
+	Edit Offline File	Offline fájl szerkesztése
+	Empty tracks	Üres sávok
+	Existing XMP files written by other applications are left unchanged.	A más alkalmazások által írt meglévő XMP-fájlok változatlanok maradnak.
+	File Size	Fájlméret
+	Find in:	Keresés itt:
+	Find:	Keresés:
+	Flash Cue Marker	Flash Cue jelölő
+	Frames per Still:	Képkocka állóképenként:
+	Gaps	Hézagok
+	Ignore Audio	Hang figyelmen kívül hagyása
+	Ignore Options	Kihagyási beállítások
+	Ignore Video	Videó figyelmen kívül hagyása
+	Ingest Settings	Betöltési beállítások
+	Insert Edit	Beszúró vágás
+	Keep:	Megtartás:
+	Language:	Nyelv:
+	Log Note:	Naplójegyzet:
+	Match {n} of {total}	{n}. találat / {total}
+	Match:	Egyezés:
+	Media Name:	Médianév:
+	Method:	Módszer:
+	Move clips to the lowest track possible	Klipek áthelyezése a lehető legalsó sávra
+	New Color Matte	Új színháttér
+	Next to the media	A média mellett
+	Normalize Mix Track	Keveréksáv normalizálása
+	Normalize Mix Track to:	Keveréksáv normalizálása erre:
+	Ordering:	Sorrend:
+	Overwrite Edit	Felülíró vágás
+	Path: {path}	Útvonal: {path}
+	Placement:	Elhelyezés:
+	Project Auto Save:	Projekt automatikus mentése:
+	Recognize when different speakers are talking	Különböző beszélők felismerése
+	Renderer:	Renderelő:
+	Same as Project	Ugyanaz, mint a projekt
+	Save as Template	Mentés sablonként
+	Saved template {path}	Sablon mentve: {path}
+	Scene Edit Detection	Jelenetváltás-észlelés
+	Scene Edit Detection: analysing in the background (see Progress)	Jelenetváltás-észlelés: elemzés a háttérben (lásd: Folyamat)
+	Scene:	Jelenet:
+	Scratch Disks	Munkalemezek
+	Search:	Keresés:
+	Selection Order	Kijelölési sorrend
+	Sensitivity:	Érzékenység:
+	Sequentially	Egymás után
+	Shot/Take:	Snitt/felvétel:
+	Simplify	Egyszerűsítés
+	Simplify Sequence	Szekvencia egyszerűsítése
+	Sort Order	Rendezési sorrend
+	Source Settings	Forrásbeállítások
+	Template Name:	Sablon neve:
+	Text (graphics and captions)	Szöveg (grafikák és feliratok)
+	Title Safe Area	Címbiztos terület
+	To {name}	Ide: {name}
+	Total Duration	Teljes időtartam
+	Transcode	Átkódolás
+	Transcribe Sequence	Szekvencia átirata
+	Transitions	Áttűnések
+	Update Metadata	Metaadatok frissítése
+	Video Only	Csak videó
+	Video Previews:	Videó-előnézetek:
+	Video Rendering and Playback	Videórenderelés és lejátszás
+	Video and Audio	Videó és hang
+	Video effects	Videóeffektek
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	A kijelölt klip(ek) ({n}) metaadatainak írása a média melletti XMP-fájlokba?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} csatorna
+# MPEG-2 export settings
+	Constant quantiser	Állandó kvantáló
+	Container	Konténer
+# menu long tail, frontend side (4.8)
+	 (unavailable)	 (nem érhető el)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Konténerek
+	Decoders	Dekóderek
+	Dynamic Audio Waveforms	Dinamikus hanghullámformák
+	Export formats	Exportformátumok
+	Reveal Log Files…	Naplófájlok megjelenítése…
+	Session log: {path}	Munkamenet-napló: {path}
+	System Compatibility Report	Rendszerkompatibilitási jelentés
+	System Compatibility Report…	Rendszerkompatibilitási jelentés…
+	not available now	most nem érhető el
+	{name} Selection.fcproj	{name} kijelölés.fcproj
+# colour dialogs (4.9)
+	Auto tone map media (HDR and log into SDR)	Automatikus tónusleképezés (HDR és log SDR-re)
+	Sequence Color Management	Szekvencia színkezelése
+	Working Color Space	Munka-színtér
+# media dialogs (4.10)
+	Align Timecode	Időkód igazítása
+	All media is online.	Minden média elérhető.
+	Calculate	Számítás
+	Clip ID (fingerprint)	Klipazonosító (ujjlenyomat)
+	Clip Name	Klipnév
+	Collect Files and Copy to New Location	Fájlok összegyűjtése és másolása új helyre
+	Consolidate and Transcode	Összevonás és átkódolás
+	Creating {n} proxy file(s)…	{n} proxyfájl készül…
+	Destination	Cél
+	Destination Path	Célútvonal
+	Disk space: original {original} · resulting {result} ({n} files)	Lemezterület: eredeti {original} · eredmény {result} ({n} fájl)
+	Disk space: —	Lemezterület: —
+	Exact name matches only	Csak pontos névegyezés
+	Exclude Unused Clips	Nem használt klipek kihagyása
+	File Name	Fájlnév
+	Folder	Mappa
+	Format and size	Formátum és méret
+	Frame Size / Rate	Képméret / képkockasebesség
+	Include Handles:	Ráhagyás:
+	Include Preview Files	Előnézeti fájlokkal együtt
+	Include Proxies	Proxykkal együtt
+	Link Media	Média csatolása
+	Linked {n} clip(s)	{n} klip csatolva
+	Locate…	Megkeresés…
+	Make Offline	Offline állapotba
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	{n} kijelölt klip offline állapotba kerül. A klipjeik az offline táblát mutatják, amíg újra nem csatolja őket.
+	Match file properties:	Egyező fájltulajdonságok:
+	Media files are deleted	A médiafájlok törlődnek
+	Media files remain on disk	A médiafájlok a lemezen maradnak
+	Missing	Hiányzik
+	Next to the original media, in a Proxies folder	Az eredeti média mellett, egy Proxies mappában
+	No candidates yet — Search a folder or Locate the file.	Még nincs találat — keressen egy mappában, vagy keresse meg a fájlt.
+	Nothing found with that name.	Nincs ilyen nevű fájl.
+	Offline	Offline
+	Offline All	Mind offline
+	Options	Beállítások
+	Project Manager	Projektkezelő
+	Project Manager: writing {path}	Projektkezelő: írás ide: {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	A proxyk a háttérben készülnek, és elkészültük után csatolódnak. Az export mindig a teljes felbontású médiát használja.
+	Relink others automatically	A többi automatikus újracsatolása
+	Resulting Project	Eredményprojekt
+	Search in:	Keresés itt:
+	Sequences	Szekvenciák
+	select a clip in the Project panel	jelöljön ki egy klipet a Projekt panelen
+	{name} (copy)	{name} (másolat)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} klip nem találja a médiáját. Keresse meg őket, keressen egy mappában, vagy hagyja őket offline.
+	{n} clip(s) selected.	{n} klip kijelölve.
+	✔ matches	✔ egyezik
+	✔ same file	✔ ugyanaz a fájl
+	✖ different file	✖ másik fájl
+	AAF Export Settings	AAF exportálási beállítások
+	Audio File Format:	Hangfájl formátuma:
+	Bits per Sample:	Bit/minta:
+	Breakout to mono	Szétbontás monóra
+	Depth:	Bitmélység:
+	Embed	Beágyazás
+	Encapsulate	Becsomagolás
+	Exported frame to {path}	Képkocka exportálva ide: {path}
+	Exported {path}	Exportálva: {path}
+	Format:	Formátum:
+	Frame time: {timecode}	Képkocka ideje: {timecode}
+	Handle Frames:	Ráhagyás (képkocka):
+	Import into project	Importálás a projektbe
+	Keep existing file	Meglévő fájl megtartása
+	Link to Media	Hivatkozás a médiára
+	Mixdown video	Videó lekeverése
+	OMF Export Settings	OMF exportálási beállítások
+	OMF Title:	OMF cím:
+	Path:	Útvonal:
+	Render audio clip effects	Hangklip-effektusok renderelése
+	Replace	Csere
+	Separate Audio	Külön hang
+	Separate Files	Külön fájlok
+	This file already exists: {path}	Ez a fájl már létezik: {path}
+	Trim audio files	Hangfájlok vágása
+	{bits} Bit	{bits} bit
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Markerjelentés (CSV)
 	DCP (Digital Cinema Package)	DCP (digitális moziformátum)
 	Digital Cinema	Digitális mozi
 	DCP resolution	DCP-felbontás
@@ -1676,8 +2116,8 @@
 	Public service announcement	Közérdekű közlemény
 	Off (5.1 only)	Ki (csak 5.1)
 	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS ágy az 5.1-es keverésből
-	IAB from a file (IMF or DCP IAB MXF, .iab)	IAB fájlból (IMF vagy DCP IAB MXF, .iab)
-	IAB MXF or .iab file	IAB MXF vagy .iab fájl
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB fájlból (IAB MXF, .iab vagy Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab vagy Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Nincs: csak FSK-szinkron (SMPTE ST 429-19)
 	5.1: the IAB rendered (not ST 429-19)	5.1: a renderelt IAB (nem ST 429-19)
 	5.1: the timeline mix (not ST 429-19)	5.1: az idővonal keverése (nem ST 429-19)
@@ -1685,9 +2125,10 @@
 	Immersive audio	Immerzív hang
 	IAB source	IAB-forrás
 	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Az 5.1-es keverésből 7.1 DS ágy lesz (IAB Profile 1); a fő hangsáv 14. csatornája viszi az FSK szinkronjelet.
-	Choose an IAB track file (IMF or DCP) or a raw IAB stream.	Válassz IAB sávfájlt (IMF vagy DCP) vagy nyers IAB-folyamot.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Válassz IAB sávfájlt (IMF vagy DCP), nyers IAB-folyamot vagy Dolby Atmos TrueHD-t: .thd folyamot, vagy Atmos sávot tartalmazó MKV, MP4 vagy M2TS fájlt.
 	Reading the IAB source…	Az IAB-forrás olvasása…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} képkocka, {fps} fps, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} mp, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum, IAB-objektumok lesznek belőlük
 	Some frames are re-coded for the DCP (DLC, 24 bit).	Néhány képkockát a DCP-hez újrakódolunk (DLC, 24 bit).
 	Beyond IAB Profile 1: {notes}	Az IAB Profile 1-en túl: {notes}
 	Not a usable IAB source: {error}	Nem használható IAB-forrás: {error}
@@ -1704,18 +2145,28 @@
 	B pictures	B-képek
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
 	Chroma	Króma
-	Constant quantiser	Állandó kvantáló
-	Container	Konténer
 	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
-	Keyframe distance	Kulcskockák távolsága
+	Key Frame Distance	Kulcskockák távolsága
 	None (I and P only)	Nincs (csak I és P)
 	Off (target bitrate)	Ki (célbitráta)
 	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
 	Transport Stream (.ts, AAC audio)	Transzportfolyam (.ts, AAC hang)
 	Field order	Mezősorrend
-	Progressive	Progresszív
 	Interlaced, upper field first	Váltottsoros, felső mező először
 	Interlaced, lower field first	Váltottsoros, alsó mező először
+	Estimated file size: {size}	Becsült fájlméret: {size}
+	File Name & Location	Fájlnév és hely
+	Quick Export	Gyors exportálás
+	Quick Export: open a sequence first	Gyors exportálás: előbb nyiss meg egy szekvenciát
+	Quick Export: {path}	Gyors exportálás: {path}
+	Export presets	Exportálási előbeállítások
+	Favorites only	Csak a kedvencek
+	More presets…	További előbeállítások…
+	Preset Manager	Előbeállítás-kezelő
+	Save current settings as:	A jelenlegi beállítások mentése ezen a néven:
+	Search presets	Előbeállítások keresése
+	Show in the Preset menu	Megjelenítés az Előbeállítás menüben
+	User	Felhasználói
 	Add Beat Markers	Ütemjelölők hozzáadása
 	Clear Beat Markers	Ütemjelölők törlése
 	Clear Check Markers	Ellenőrző jelölők törlése
@@ -1738,3 +2189,282 @@
 	{n} exports queued (the Export window shows the queue)	{n} export a sorban (az Exportálás ablak mutatja a sort)
 	{n} variant sequences made, {q} exports queued	{n} változatszekvencia elkészült, {q} export a sorban
 	no column for {names}	nincs oszlop ehhez: {names}
+	Compression	Tömörítés
+	Film Scan 1	Filmszkennelés 1
+	Film Scan 2	Filmszkennelés 2
+	Film Scan 3	Filmszkennelés 3
+	Include Alpha Channel	Alfacsatorna megtartása
+	Medium	Közepes
+	Profile	Profil
+	Quality	Minőség
+	ZIP (1 scan line)	ZIP (1 sor)
+	ZIP (16 scan lines)	ZIP (16 sor)
+	Bottom Center	Lent középen
+	Bottom Left	Lent balra
+	Bottom Right	Lent jobbra
+	Burn Captions Into Video	Feliratok beégetése a videóba
+	Center Left	Középen balra
+	Center Right	Középen jobbra
+	Create Sidecar File	Külön feliratfájl készítése
+	Export Options	Exportálási beállítások
+	File Format	Fájlformátum
+	Image	Kép
+	Image Overlay	Képátfedés
+	Images	Képek
+	Loudness Normalization	Hangosság-normalizálás
+	Luma Min / Max	Luma min. / max.
+	Name Overlay	Névátfedés
+	PNG or JPEG file	PNG- vagy JPEG-fájl
+	Prefix	Előtag
+	Size / Opacity	Méret / átlátszatlanság
+	SubRip Subtitle (.srt)	SubRip felirat (.srt)
+	Target Loudness	Célhangosság
+	Timecode Overlay	Időkód-átfedés
+	Top Center	Fent középen
+	Top Left	Fent balra
+	Top Right	Fent jobbra
+	True Peak Limit	Valódi csúcsérték-korlát
+	Video Limiter	Videókorlátozó
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Copyright	Szerzői jog
+	Creator	Készítő
+	Multiplexer	Multiplexer
+	Title	Cím
+	Audio only	Csak hang
+	Scale To Fill	Kitöltés méretezéssel
+	Scale To Fit	Igazítás méretezéssel
+	Scaling	Méretezés
+	Stretch To Fill	Kitöltés nyújtással
+	Summary	Összegzés
+	Quick Export cancelled	A gyors exportálás megszakítva
+	0 fastest, 8 smallest	0 a leggyorsabb, 8 a legkisebb
+	16 bit	16 bit
+	24 bit	24 bit
+	32 bit	32 bit
+	32 bit float	32 bites lebegőpontos
+	Anamorphic 2:1 (2.0)	Anamorf 2:1 (2,0)
+	Aspect	Képpontarány
+	Channels	Csatornák
+	Composite on the GPU when available	Kompozitálás a GPU-n, ha elérhető
+	Compression Level	Tömörítési szint
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0,9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1,0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1,5)
+	Field Order	Mezősorrend
+	GPU Rendering	GPU-s renderelés
+	HD Anamorphic 1080 (1.333)	HD anamorf 1080 (1,333)
+	Lower First	Alsó mező először
+	Match Source	Forráshoz igazítás
+	Maximum Bitrate	Maximális bitráta
+	Progressive	Progresszív
+	Quality (CRF)	Minőség (CRF)
+	Render at Maximum Depth	Renderelés maximális bitmélységgel
+	Sample Size	Mintaméret
+	Upper First	Felső mező először
+	Use Maximum Render Quality	Maximális renderelési minőség
+	Home	Kezdőlap
+	Browse files…	Fájlok tallózása…
+	Movies, audio and stills from disk	Filmek, hangok és állóképek a lemezről
+	Demo footage	Bemutató felvételek
+	Six procedural 1080p clips with sound	Hat generált 1080p klip hanggal
+	Demo project	Bemutató projekt
+	A cut sequence with transitions, effects and music	Vágott szekvencia áttűnésekkel, effektekkel és zenével
+	Bars and Tone	Színsávok és hangjel
+	SMPTE HD bars with 1 kHz reference tone	SMPTE HD színsávok 1 kHz-es referenciahanggal
+	CFA4 on GitHub	A CFA4 a GitHubon
+	Report a CFA4 issue…	CFA4-hiba bejelentése…
+	Recent	Legutóbbiak
+	CFA4 project links	CFA4 projektlinkek
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	Adj médiát a projekthez. Húzd a fájlokat bárhová az ablakba, vagy válassz forrást lent.
+	Shuttle Slow Left	Lassú léptetés balra
+	Shuttle Slow Right	Lassú léptetés jobbra
+	Play Around	Lejátszás a vágáspont körül
+	Out: {name}	Ki: {name}
+	In: {name}	Be: {name}
+	(gap)	(rés)
+	Outgoing clip (drag to trim the Out point)	Kimenő klip (húzással a végpontját igazítod)
+	Incoming clip (drag to trim the In point)	Bejövő klip (húzással a kezdőpontját igazítod)
+	Drag to roll the edit	Húzással gördíted a vágáspontot
+	Play Around Edit (Space loops, Shift+K once)	Lejátszás a vágáspont körül (Szóköz: ismétlés, Shift+K: egyszer)
+	Trim Backward Many	Igazítás sok képkockával vissza
+	Trim Backward	Igazítás vissza
+	Apply Default Transitions to Selection (Shift+D)	Alapértelmezett átmenetek a kijelölésre (Shift+D)
+	Trim Forward	Igazítás előre
+	Trim Forward Many	Igazítás sok képkockával előre
+	Exit Trim Mode	Kilépés a vágásmódból
+	Up	Fel
+	Down	Le
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	A hangkimenet hibát jelzett: lejátszás hang nélkül (ellenőrizd: Beállítások ▸ Hanghardver)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	A hangkimenet nem válaszol: lejátszás hang nélkül (ellenőrizd: Beállítások ▸ Hanghardver)
+	Settings not taken	A beállítás nem lett átvéve
+	Encoder	Kódoló
+	Software, or hardware where available	Szoftveres, vagy ahol elérhető, hardveres
+	Main (8-bit; Main 10 for HDR sequences)	Main (8 bites; HDR-szekvenciáknál Main 10)
+	Main 10 (10-bit, HDR)	Main 10 (10 bites, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bites; HDR-szekvenciáknál 10 bites)
+	Main (10-bit, HDR)	Main (10 bites, HDR)
+	FLAC stores whole-number samples only	A FLAC csak egész számú mintákat tárol
+	MXF export writes integer PCM only	Az MXF-exportálás csak egész számú PCM-et ír
+	Not supported by CFA4's encoders yet	A CFA4 kódolói még nem támogatják
+	Restore	Visszaállítás
+	Overwrite with Current View	Felülírás a jelenlegi nézettel
+	Saves the view, columns, sort, thumbnail and font size.	Menti a nézetet, az oszlopokat, a rendezést, a bélyegképet és a betűméretet.
+	Search fields	Mezők keresése
+	Show:	Megjelenítés:
+	{n}. (empty)	{n}. (üres)
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	No video	Nincs videó
+	No audio	Nincs hang
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 (HDR-hez)
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 profil
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main profil, 4:2:0
+	no B pictures	B-képek nélkül
+	1 B picture between anchors	1 B-kép a horgonyképek között
+	AV1 Main (10-bit for HDR)	AV1 Main (HDR-hez 10 bites)
+	10-bit RGB	10 bites RGB
+	12-bit X'Y'Z'	12 bites X'Y'Z'
+	16-bit half float	16 bites, félpontos lebegőpontos
+	linear	lineáris
+	uncompressed	tömörítetlen
+	Animated GIF	Animált GIF
+	Waveform Audio	Waveform hang
+	AAC Audio	AAC hang
+	Opus Audio	Opus hang
+	HLS (HTTP Live Streaming)	HLS (élő HTTP-közvetítés)
+	fragmented MP4 segments	fragmentált MP4-szegmensek
+	Program Stream	programfolyam
+	Transport Stream	transzportfolyam
+	BDAV Transport Stream	BDAV transzportfolyam
+	Elementary Stream	elemi folyam
+	Image sequence	képsorozat
+export.summary	High	magas
+export.summary	Medium	közepes
+export.summary	Low	alacsony
+	{w}x{h} ({par})	{w}×{h} ({par})
+	{fps} fps	{fps} fps
+	{profile} auto level	{profile}, automatikus szint
+	{n} pass	{n} menet
+	CRF (constant quality) {crf}	CRF (állandó minőség) {crf}
+	{v} Mbps	{v} Mbps
+	Target {v} Mbps	cél {v} Mbps
+	Max {v} Mbps	max. {v} Mbps
+	average {v} Mbps	átlag {v} Mbps
+	CBR {v} Mbps	CBR {v} Mbps
+	VBR Target {v} Mbps	VBR, cél {v} Mbps
+	keyframe every {n} frames	kulcskocka {n} képkockánként
+	constant quantiser {q}	állandó kvantáló {q}
+	{n} B pictures between anchors	{n} B-kép a horgonyképek között
+	quantizer {q}	kvantáló {q}
+	quality {q}	minőség {q}
+	{word} compression	{word} tömörítés
+	{sampling} {bits}-bit	{sampling} {bits} bites
+	FLAC (lossless) {bits}-bit	FLAC (veszteségmentes) {bits} bites
+	level {n}	{n}. szint
+	Uncompressed {bits}-bit PCM	tömörítetlen {bits} bites PCM
+	Uncompressed {bits}-bit float PCM	tömörítetlen {bits} bites lebegőpontos PCM
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} mp
+	{n} ch {rate} Hz	{n} csatorna, {rate} Hz
+	All Events	Minden esemény
+	Warnings and Errors	Figyelmeztetések és hibák
+	Errors Only	Csak hibák
+	Clear All	Összes törlése
+	No events.	Nincs esemény.
+	just now	az imént
+	{n} s ago	{n} mp-e
+	{n} min ago	{n} perce
+	{n} h ago	{n} órája
+	Warning	Figyelmeztetés
+	Error	Hiba
+	Strikethrough	Áthúzott
+	Caption Export Settings	Feliratexport beállításai
+	Export Captions	Feliratok exportálása
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} már létezik, ezért semmi sem lett exportálva. A cseréjéhez válaszd ki a mentési ablakban.
+	Delete Redoable Actions	Újra végrehajtható műveletek törlése
+	Clear History	Előzmények törlése
+	Delete the dimmed actions after the current state? They cannot be redone.	Törlöd a jelenlegi állapot utáni, halványan látszó műveleteket? Ezek nem hajthatók végre újra.
+	Work Area Bar	Munkaterület-sáv
+	Start: {tc}	Kezdet: {tc}
+	End: {tc}	Vég: {tc}
+	Duration: {tc}	Időtartam: {tc}
+	Show/Hide Tracks…	Sávok megjelenítése/elrejtése…
+	Panel menu	Panelmenü
+	Move panel	Panel áthelyezése
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Kattintással kijelölés, üres helyen húzással keretes kijelölés. További lehetőségek: Shift, Alt és Ctrl.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Kattintással az összes sáv tőle jobbra eső klipjei kijelölődnek. Shift-kattintás: csak egy sáv.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Kattintással az összes sáv tőle balra eső klipjei kijelölődnek. Shift-kattintás: csak egy sáv.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Vágáspont húzása hullámvágással; a későbbi klipek követik, így nem marad rés.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Vágáspont görgetése: az egyik klip vége és a következő eleje együtt mozog.
+	Drag an edge to change the clip's speed so it fills the new duration.	A szél húzása úgy változtatja a klip sebességét, hogy kitöltse az új hosszt.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Zeneklip szélének húzásával a zene az új hosszra keveredik, zeneileg illő ütéseknél.
+	Click to split a clip. Shift-click to split all tracks.	Kattintással a klip kettévágódik. Shift-kattintás: minden sáv.
+	Drag a clip to slip its source in/out without moving it.	Klip húzásával a forrás kezdő- és végpontja eltolódik, a klip helyben marad.
+	Drag a clip to slide it between its neighbours.	Klip húzásával a klip a szomszédai között csúszik.
+	Drag to scroll the timeline.	Húzással az idővonal görgethető.
+	Click to zoom in; Alt-click to zoom out.	Kattintás: nagyítás; Alt-kattintás: kicsinyítés.
+	Exporting	Exportálás
+	About	Névjegy
+	Contributors	Közreműködők
+	Models	Modellek
+	Show	Megjelenítés
+	Sort	Rendezés
+	Reverse the order	Fordított sorrend
+	Grab bag	Névfelhő
+	Table	Táblázat
+	No contributor data was built into this copy.	Ebben a példányban nincsenek közreműködői adatok.
+	No model credits were built into this copy.	Ebben a példányban nincsenek modell-adatok.
+	Company	Cég
+	Model	Modell
+	Commits	Commitok
+	% of all commits	Az összes commit %-a
+	Lines +/−	Sorok +/−
+	Version {version}	Verzió: {version}
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Betűtípusok: Inter, Noto Serif és JetBrains Mono (SIL OFL 1.1).
+	Username	Felhasználónév
+	Display name	Megjelenített név
+	Real name	Valódi név
+	Name (A–Z)	Név (A–Z)
+	Merged PRs	Beolvasztott PR-ok
+	Lines added	Hozzáadott sorok
+	Lines deleted	Törölt sorok
+	Line delta	Sorkülönbség
+	Binary assets added	Hozzáadott bináris fájlok
+	Binary assets removed	Eltávolított bináris fájlok
+	First commit	Első commit
+	Last commit	Utolsó commit
+	CFA4 was closed while “{name}” had unsaved changes.	A CFA4 bezárult, miközben a(z) „{name}” nem mentett változásokat tartalmazott.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott.
+	Recover unsaved changes from {when}?	Visszaállítja a(z) {when} időpontban rögzített nem mentett változásokat?
+	The project had not been saved yet.	A projektet még nem mentették.
+	{n} sessions have unsaved changes:	{n} munkamenetben vannak nem mentett változások:
+	Are you sure you want to discard your changes to '{file}'?	Biztosan elveti a(z) „{file}” változásait?
+	the project has not been saved yet	a projekt még nincs mentve
+	Export As Motion Graphics Template	Exportálás mozgógrafikai sablonként
+	Category:	Kategória:
+	Editable properties:	Szerkeszthető tulajdonságok:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	CFA4 grafikai sablonként (.fcgt) kerül a sablonmappába.
+	My Templates	Saját sablonok
+	{n} Font	{n} betűtípusa
+	{n} Size	{n} mérete
+	{n} Color	{n} színe
+	{n} Position	{n} pozíciója
+	Show {n}	{n} megjelenítése
+	Exported graphics template to {path}	A grafikai sablon exportálva ide: {path}
+	Replace Fonts in Projects	Betűtípusok cseréje a projektekben
+	Fonts used in the project:	A projektben használt betűtípusok:
+	{f} (missing)	{f} (hiányzik)
+	Replace:	Csere:
+	with:	erre:
+	Replaced {n} font uses	{n} betűtípus-használat lecserélve
+	Track Color	Sáv színe
+	Unrendered: should play back in real time	Rendereletlen: valós időben lejátszható
+	Unrendered: render to play back in real time	Rendereletlen: valós idejű lejátszáshoz renderelni kell
+	Rendered preview	Renderelt előnézet
+	Transparency Grid	Átlátszósági rács
+	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
+	more tabs	további fülek
+	Set Work Area Bar In Point	A munkaterület-sáv kezdőpontjának beállítása
+	Set Work Area Bar Out Point	A munkaterület-sáv végpontjának beállítása
+	Delete Clips	Klipek törlése
+	Destinations	Célhelyek

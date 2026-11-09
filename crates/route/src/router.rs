@@ -495,12 +495,8 @@ mod tests {
         let reasons: Vec<_> = d.declined.iter().map(|x| (x.backend.as_str(), x.reason.clone())).collect();
         assert_eq!(
             reasons,
-            vec![
-                ("nvdec", Reason::Disabled),
-                ("vaapi", Reason::NotRegistered),
-                ("ffmpeg", Reason::NotImplemented),
-                ("gstreamer-vulkan-video", Reason::NotImplemented)
-            ]
+            // the engine's software path comes before the supplementary backends: nothing after it
+            vec![("nvdec", Reason::Disabled), ("vaapi", Reason::NotRegistered)]
         );
 
         r.set_enabled(&BackendId::new("nvdec").unwrap(), true);

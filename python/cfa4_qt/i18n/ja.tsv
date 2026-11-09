@@ -1,0 +1,343 @@
+# Japanese (ja) catalog for the strings only the CFA4 Qt GUI has; everything else comes from the
+# shared catalog crates/ui-egui/src/i18n/ja.tsv. Same format: context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English text using ordinary
+# Japanese video-editing vocabulary (トラック, 再生ヘッド, シーケンス, ビン, マーカー, トランジション).
+# No proprietary localisation resource, string table or product UI was consulted or copied; add
+# entries the same way. Product, format and technology names (CFA4, AAC, IAB, DCP…) keep their
+# spelling.
+
+	#	#
+	'{name}' already exists. Replace it?	「{name}」は既に存在します。置き換えますか？
+	(none)	（なし）
+	0 fastest, 8 smallest	0 が最速、8 が最小
+	2K	2K
+	4:2:0 (Main Profile)	4:2:0（Main プロファイル）
+	4:2:2 (4:2:2 Profile)	4:2:2（4:2:2 プロファイル）
+	4K	4K
+	5.1: the IAB rendered (not ST 429-19)	5.1：レンダリングした IAB（ST 429-19 ではない）
+	5.1: the timeline mix (not ST 429-19)	5.1：タイムラインのミックス（ST 429-19 ではない）
+	8 Bit	8 ビット
+	AAC	AAC
+	Add pause	ポーズを追加
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	「ポーズを追加」は [pause 1s] を挿入します。数値を変えるとポーズの長さが変わります（例：[pause 500ms]、[pause 2s]）。
+	Add to timeline	タイムラインに追加
+	Advertisement	広告
+	All Supported Files	対応しているすべてのファイル
+	All files	すべてのファイル
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	`serve` のないエンジンは Qt GUI のないブランチからビルドされています。Qt GUI のブランチに切り替えて再ビルドするか、--engine パス を指定してください。
+	Arrangement {n}	配置 {n}
+	Audio Files	オーディオファイル
+	Automation mode	オートメーションモード
+	B pictures	B ピクチャ
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV トランスポートストリーム（.m2ts、AAC オーディオ）
+	Basic voices (built in)	基本音声（内蔵）
+	Beyond IAB Profile 1: {notes}	IAB プロファイル 1 の範囲外：{notes}
+	CFA4	CFA4
+	CFA4 encountered an error	CFA4 でエラーが発生しました
+	CFA4 project links	CFA4 プロジェクトのリンク
+	Cancel Selected	選択項目をキャンセル
+	Cannot check the output folder for files to replace: {error}	置き換えるファイルがあるか出力フォルダーを確認できません：{error}
+	Cannot create the output folder: {error}	出力フォルダーを作成できません：{error}
+	Center at Cut	カット位置を中央に
+	Check Before Export: no problems found	書き出し前チェック：問題は見つかりませんでした
+	Check Before Export: {n} problems marked on the timeline (red markers)	書き出し前チェック：{n} 件の問題をタイムラインにマークしました（赤いマーカー）
+	Checked:	確認済み：
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	IAB トラックファイル（IMF または DCP）、生の IAB ストリーム、または Dolby Atmos TrueHD（.thd ストリーム、または Atmos トラックを含む MKV・MP4・M2TS ファイル）を選んでください。
+	Choose a file name and location.	ファイル名と場所を選んでください。
+	Choose folder	フォルダーを選択
+	Click and press keys to assign	クリックしてから割り当てるキーを押してください
+	Compression	圧縮
+	Compression Level	圧縮レベル
+	Constant quality (CRF)	固定品質（CRF）
+	Constant quantiser	固定量子化
+	Container	コンテナ
+	Content kind	コンテンツの種類
+	Custom Start	カスタム開始
+	DCP container	DCP コンテナ
+	DCP resolution	DCP 解像度
+	Decode Auro-3D height channels	Auro-3D のハイトチャンネルをデコード
+	Delete this preset	このプリセットを削除
+	Depth:	深度：
+	Discard the active take	現在のテイクを破棄
+	Dock Panel	パネルをドッキング
+	Docking Action	ドッキング操作
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD、{seconds} 秒、{rate} Hz。最大 {beds} ベッドチャンネルと {objects} オブジェクトを IAB オブジェクトに変換
+	Double-click a clip in the Project panel to open it here.	プロジェクトパネルのクリップをダブルクリックするとここに開きます。
+	Download	ダウンロード
+	Download natural voices ({mb} MB)…	自然な音声をダウンロード（{mb} MB）…
+	Download of the natural voices failed: {e}	自然な音声のダウンロードに失敗しました：{e}
+	Download the natural voices? {mb} MB, once.	自然な音声をダウンロードしますか？ {mb} MB、初回のみ。
+	Downloading…	ダウンロード中…
+	Drag Audio Only	オーディオのみをドラッグ
+	Drag In point	インポイントをドラッグ
+	Drag Out point	アウトポイントをドラッグ
+	Drag Video Only	ビデオのみをドラッグ
+	Drag Video and Audio	ビデオとオーディオをドラッグ
+	Drag to change the track height	ドラッグしてトラックの高さを変更
+	Drag to reorder; tick the columns to show.	ドラッグで並べ替え、表示する列にチェックを入れてください。
+	Drag to roll the edit	ドラッグして編集点をローリング
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Lumetri とマスクツールで編集（Qt GUI にはまだありません）
+	Editing the selected narration	選択したナレーションを編集中
+	Elementary Stream (.m2v, no audio)	エレメンタリーストリーム（.m2v、オーディオなし）
+	End at Cut	カット位置で終了
+	Engine restarted	エンジンを再起動しました
+	Engine stopped	エンジンが停止しました
+	Entire Sequence	シーケンス全体
+	Export Media	メディアを書き出し
+	Export Media…	メディアを書き出し…
+	Export Queue	書き出しキュー
+	Export captions…	キャプションを書き出し…
+	Export failed: {path}	書き出しに失敗しました：{path}
+	Export finished: {path}	書き出しが完了しました：{path}
+	Export the labels to a preset file…	ラベルをプリセットファイルに書き出し…
+	Exported frame to {path}	フレームを {path} に書き出しました
+	Extra Large	特大
+	Extra high	最高
+	Extra low	最低
+	FLAC	FLAC
+	Failed	失敗
+	Feature	長編
+	Film Scan 1	フィルムスキャン 1
+	Film Scan 2	フィルムスキャン 2
+	Film Scan 3	フィルムスキャン 3
+	Flat (1.85:1)	フラット（1.85:1）
+	Format:	形式：
+	Frame time: {timecode}	フレームの時間：{timecode}
+	From the preset	プリセットに従う
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	{source} と github.com/cmusphinx/cmudict（発音）から。ライセンス：{license}。各ファイルは固定された SHA-256 で検証されます。
+	Full container (1.90:1)	フルコンテナ（1.90:1）
+	Go to Next Keyframe	次のキーフレームへ移動
+	Go to Previous Keyframe	前のキーフレームへ移動
+	Go to caption	キャプションへ移動
+	Go to graphic	グラフィックへ移動
+	Hear this voice	この音声を聞く
+	IAB 7.1 DS bed from the 5.1 mix	5.1 ミックスから IAB 7.1 DS ベッド
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF、.iab、または Dolby Atmos TrueHD（.thd、.mkv、.mp4、.m2ts）
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	ファイルからの IAB（IAB MXF、.iab、または Dolby Atmos TrueHD）
+	IAB source	IAB ソース
+	Images	画像
+	Immersive audio	イマーシブオーディオ
+	Import a preset file…	プリセットファイルを読み込み…
+	Import into project	プロジェクトに読み込む
+	Incoming clip (drag to trim the In point)	後続クリップ（ドラッグしてインポイントをトリム）
+	Input channel mapping	入力チャンネルの割り当て
+	Keep existing file	既存のファイルを残す
+	Label Color Presets	ラベルカラーのプリセット
+	Large	大
+	Linear Gradient	線形グラデーション
+	Main sound channels 1-6	メインサウンドのチャンネル 1〜6
+	Marker report (CSV)	マーカーレポート（CSV）
+	Match sequence	シーケンスに合わせる
+	Media offline	メディアオフライン
+	Medium (default)	中（既定）
+	More transport controls	その他の再生コントロール
+	Motion Graphics Templates	モーショングラフィックステンプレート
+	Move marked range	マークした範囲を移動
+	Mute Track	トラックをミュート
+	Narration added on {track}	{track} にナレーションを追加しました
+	Narration updated	ナレーションを更新しました
+	Natural voices	自然な音声
+	Natural voices installed	自然な音声をインストールしました
+	Natural voices need a one-time download.	自然な音声には初回のダウンロードが必要です。
+	New narration	新規ナレーション
+	No matching text.	一致するテキストはありません。
+	No sequence	シーケンスなし
+	No sequence open. Double-click a sequence in the Project panel.	シーケンスが開いていません。プロジェクトパネルでシーケンスをダブルクリックしてください。
+	No text graphics in this sequence. Add text with the Type tool.	このシーケンスにはテキストグラフィックがありません。横書き文字ツールでテキストを追加してください。
+	None (I and P only)	なし（I と P のみ）
+	None: FSK sync only (SMPTE ST 429-19)	なし：FSK 同期のみ（SMPTE ST 429-19）
+	Not a usable IAB source: {error}	使用できない IAB ソースです：{error}
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Qt GUI にはまだありません（docs/qt-parity.md を参照）
+	Off (5.1 only)	オフ（5.1 のみ）
+	Off (target bitrate)	オフ（ターゲットビットレート）
+	Off: the file plays its own channels, as without an Auro-3D decoder.	オフ：Auro-3D デコーダーがない場合と同じく、ファイル本来のチャンネルを再生します。
+	Open Project	プロジェクトを開く
+	Open a sequence to search its graphics	グラフィックを検索するにはシーケンスを開いてください
+	Opus	Opus
+	Outgoing clip (drag to trim the Out point)	先行クリップ（ドラッグしてアウトポイントをトリム）
+	Output file	出力ファイル
+	Output folder	出力フォルダー
+	PCM (uncompressed)	PCM（非圧縮）
+	Pace	話す速さ
+	Path:	パス：
+	Program Stream (.mpg, LPCM audio)	プログラムストリーム（.mpg、LPCM オーディオ）
+	Projects and Interchange	プロジェクトと交換形式
+	Public service announcement	公共広告
+	Qt Multimedia is not available	Qt Multimedia を利用できません
+	Quick Export cancelled	クイック書き出しをキャンセルしました
+	Quit	終了
+	Rating	レーティング
+	Reading the IAB source…	IAB ソースを読み込み中…
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Replace	置き換え
+	Reset Panel Layout	パネルレイアウトをリセット
+	Retry	再試行
+	Revert to the preset's colors and names	プリセットの色と名前に戻す
+	Ripple Trim In	インをリップルトリム
+	Ripple Trim Out	アウトをリップルトリム
+	Roll Edit	ローリング編集
+	Save as New Workspace	新規ワークスペースとして保存
+	Saved guide template “{name}”	ガイドテンプレート「{name}」を保存しました
+	Scope (2.39:1)	スコープ（2.39:1）
+	Scope settings	スコープの設定
+	Select Playback Resolution	再生解像度を選択
+	Select Zoom Level	ズームレベルを選択
+	Select a clip in the Timeline.	タイムラインでクリップを選択してください。
+	Sequence In/Out	シーケンスのイン／アウト
+	Session log: {path}	セッションログ：{path}
+	Settings	設定
+	Short	短編
+	Show clip durations	クリップのデュレーションを表示
+	Show in File Manager	ファイルマネージャーで表示
+	Show the presets folder	プリセットフォルダーを表示
+	Small	小
+	Social Safe Zones	SNS 用セーフゾーン
+	Solid	単色
+	Solo Track	トラックをソロ
+	Some frames are re-coded for the DCP (DLC, 24 bit).	一部のフレームは DCP 用に再エンコードされます（DLC、24 ビット）。
+	Some panel labels change language after a restart.	一部のパネルのラベルは再起動後に言語が変わります。
+	Source clips	ソースクリップ
+	Source patch	ソースパッチ
+	Spreadsheets	スプレッドシート
+	Start at Cut	カット位置から開始
+	Starting engine…	エンジンを起動中…
+	Still Images	静止画
+	Stop Queue	キューを停止
+	Synthesizing narration…	ナレーションを合成中…
+	Synthesizing…	合成中…
+	Teaser	ティーザー
+	Template: {name}	テンプレート：{name}
+	Test	テスト
+	Text colour	テキストの色
+	Text to Speech: another sequence is open now; the narration was not placed	音声読み上げ：別のシーケンスが開いているため、ナレーションは配置されませんでした
+	Text to Speech: {e}	音声読み上げ：{e}
+	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 ミックスは 7.1 DS ベッド（IAB プロファイル 1）になり、メインサウンドのチャンネル 14 に FSK 同期信号が入ります。
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	CFA4 エンジン（cfa4-cli）が見つかりません。次のコマンドでビルドしてください：cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4 エンジンが予期せず停止したため再起動しました。未保存の変更は復元ジャーナルに保持されており、復元が提案されます。
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4 エンジンが予期せず停止しました。未保存の変更は復元ジャーナルに保持されています。CFA4 を再起動すると復元できます。
+	The audio input could not be started	オーディオ入力を開始できませんでした
+	The audio input does not support a usable format	オーディオ入力が使用可能な形式に対応していません
+	The engine stopped	エンジンが停止しました
+	The template needs a name.	テンプレートには名前が必要です。
+	The voice-over input buffer is full: the take ends here	ボイスオーバー入力のバッファーがいっぱいです。テイクはここで終了します
+	There are no guides to save.	保存するガイドがありません。
+	There is no audio input device	オーディオ入力デバイスがありません
+	This file already exists: {path}	このファイルは既に存在します：{path}
+	Toggle Animation	アニメーションのオン／オフ
+	Toggle Caption Track Lock	キャプショントラックのロックを切り替え
+	Toggle Caption Track Output	キャプショントラックの出力を切り替え
+	Toggle Sync Lock	同期ロックを切り替え
+	Toggle Track Lock	トラックのロックを切り替え
+	Toggle Track Output	トラックの出力を切り替え
+	Toggle the effect on or off	エフェクトのオン／オフ
+	Toggle track targeting	トラックのターゲットを切り替え
+	Toggle visibility	表示／非表示を切り替え
+	Track	トラック
+	Track output assignment	トラックの出力割り当て
+	Trailer	予告編
+	Transitional	トランジショナル
+	Transport Stream (.ts, AAC audio)	トランスポートストリーム（.ts、AAC オーディオ）
+	Trim In	インをトリム
+	Trim Out	アウトをトリム
+	Twirl open or shut	展開／折りたたみ
+	Type what you want the voice to say	音声に話させる内容を入力してください
+	Undock Panel	パネルのドッキングを解除
+	Use hardware encoding when available	利用可能な場合はハードウェアエンコードを使用
+	Video Files	ビデオファイル
+	Vocal pitch	声の高さ
+	Voice-over input: {error}	ボイスオーバー入力：{error}
+	ZIP (1 scan line)	ZIP（1 ライン）
+	ZIP (16 scan lines)	ZIP（16 ライン）
+	an audio track	オーディオトラック
+	an unknown time	不明な時刻
+	automatic	自動
+	no audio output (check Settings ▸ Audio Hardware)	オーディオ出力がありません（設定 ▸ オーディオハードウェア を確認してください）
+	no column for {names}	{names} の列がありません
+	no dialog	ダイアログなし
+	no multi-camera clip at the playhead	再生ヘッドの位置にマルチカメラクリップがありません
+	no sequence is open	シーケンスが開いていません
+	not available	利用できません
+	not available now	現在は利用できません
+	optional	任意
+	select a clip in the Project panel	プロジェクトパネルでクリップを選択してください
+	the job disappeared	ジョブが見つからなくなりました
+	the selected clip is not remixed	選択したクリップはリミックスされていません
+	{bits} Bit	{bits} ビット
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} フレーム、{fps} fps、{rate} Hz。最大 {beds} ベッドチャンネルと {objects} オブジェクト
+	{name} (Modified)	{name}（変更済み）
+	{name} (download)	{name}（ダウンロード）
+	{n} beat markers added ({bpm} BPM)	{n} 個のビートマーカーを追加しました（{bpm} BPM）
+	{n} exports queued (the Export window shows the queue)	{n} 件の書き出しをキューに追加しました（書き出しウィンドウにキューが表示されます）
+	{n} variant sequences made, {q} exports queued	{n} 個のバリアントシーケンスを作成し、{q} 件の書き出しをキューに追加しました
+	{w} × {h}	{w} × {h}
+	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	アンカー間の B ピクチャ 1 枚
+	10-bit RGB	10 ビット RGB
+	12-bit X'Y'Z'	12 ビット X'Y'Z'
+	16-bit half float	16 ビット半精度浮動小数点
+	AV1 Main (10-bit for HDR)	AV1 Main（HDR は 10 ビット）
+	BDAV Transport Stream	BDAV トランスポートストリーム
+	CBR {v} Mbps	CBR {v} Mbps
+	CRF (constant quality) {crf}	CRF（固定品質）{crf}
+	Elementary Stream	エレメンタリーストリーム
+	FLAC (lossless) {bits}-bit	FLAC（ロスレス）{bits} ビット
+	HEVC Main / Main 10 for HDR	HEVC Main / HDR は Main 10
+	Image sequence	画像シーケンス
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 プロファイル
+	MPEG-2 Main Profile 4:2:0	MPEG-2 メインプロファイル 4:2:0
+	Max {v} Mbps	最大 {v} Mbps
+	No audio	オーディオなし
+	No video	ビデオなし
+	Program Stream	プログラムストリーム
+	Target {v} Mbps	ターゲット {v} Mbps
+	Transport Stream	トランスポートストリーム
+	Uncompressed {bits}-bit PCM	非圧縮 {bits} ビット PCM
+	Uncompressed {bits}-bit float PCM	非圧縮 {bits} ビット浮動小数点 PCM
+	VBR Target {v} Mbps	VBR ターゲット {v} Mbps
+	average {v} Mbps	平均 {v} Mbps
+	constant quantiser {q}	固定量子化 {q}
+	fragmented MP4 segments	断片化 MP4 セグメント
+	keyframe every {n} frames	{n} フレームごとにキーフレーム
+	level {n}	レベル {n}
+	linear	リニア
+	no B pictures	B ピクチャなし
+	quality {q}	品質 {q}
+	quantizer {q}	量子化 {q}
+	uncompressed	非圧縮
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} fps
+	{n} B pictures between anchors	アンカー間の B ピクチャ {n} 枚
+	{n} ch {rate} Hz	{n} ch {rate} Hz
+	{n} pass	{n} パス
+	{profile} auto level	{profile} レベル自動
+	{sampling} {bits}-bit	{sampling} {bits} ビット
+	{seconds} s	{seconds} 秒
+	{v} Mbps	{v} Mbps
+	{word} compression	{word} 圧縮
+	{w}x{h} ({par})	{w}×{h}（{par}）
+	Strikethrough	取り消し線
+	Caption Export Settings	キャプション書き出し設定
+	Export Captions	キャプションを書き出し
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} は既に存在するため、何も書き出しませんでした。置き換えるには、保存ダイアログでそのファイルを選んでください。
+	Delete Redoable Actions	やり直し可能な操作を削除
+	Clear History	ヒストリーを消去
+	Delete the dimmed actions after the current state? They cannot be redone.	現在の状態より後の淡色表示の操作を削除しますか？ やり直しできなくなります。
+	Work Area Bar	ワークエリアバー
+	Start: {tc}	開始: {tc}
+	End: {tc}	終了: {tc}
+	Duration: {tc}	デュレーション: {tc}
+	Panel menu	パネルメニュー
+	Move panel	パネルを移動
+	Transparency Grid	透明グリッド
+	Show Duplicate Frame Markers	重複フレームマーカーを表示
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	シーケンスのイン／アウトは 1 フレームだけです。シーケンス全体を書き出すには「シーケンス全体」を選んでください。
+	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
+	Set Work Area Bar Out Point	ワークエリアバーのアウトポイントを設定
+	Delete Clips	クリップを削除
+	Field order	フィールドオーダー
+	Progressive	プログレッシブ
+	Interlaced, upper field first	インターレース（上位フィールド優先）
+	Interlaced, lower field first	インターレース（下位フィールド優先）

@@ -1,0 +1,343 @@
+# Indonesian (id) catalog for the strings only the CFA4 Qt GUI has; everything else comes from the
+# shared catalog crates/ui-egui/src/i18n/id.tsv. Same format: context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English text using ordinary
+# Indonesian video-editing vocabulary (trek, kepala putar, sekuens, wadah, penanda, transisi). No
+# proprietary localisation resource, string table or product UI was consulted or copied; add
+# entries the same way. Product, format and technology names (CFA4, AAC, IAB, DCP…) keep their
+# spelling.
+
+	#	#
+	'{name}' already exists. Replace it?	'{name}' sudah ada. Ganti?
+	(none)	(tidak ada)
+	0 fastest, 8 smallest	0 tercepat, 8 terkecil
+	2K	2K
+	4:2:0 (Main Profile)	4:2:0 (Profil Main)
+	4:2:2 (4:2:2 Profile)	4:2:2 (Profil 4:2:2)
+	4K	4K
+	5.1: the IAB rendered (not ST 429-19)	5.1: IAB yang dirender (bukan ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: campuran linimasa (bukan ST 429-19)
+	8 Bit	8 Bit
+	AAC	AAC
+	Add pause	Tambah jeda
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	Tambah jeda menyisipkan [pause 1s]. Ubah angkanya untuk jeda yang lebih panjang atau lebih pendek, mis. [pause 500ms] atau [pause 2s].
+	Add to timeline	Tambahkan ke linimasa
+	Advertisement	Iklan
+	All Supported Files	Semua berkas yang didukung
+	All files	Semua berkas
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Mesin tanpa `serve` dibuat dari cabang tanpa GUI Qt: pindah ke cabang GUI Qt lalu buat ulang, atau berikan --engine JALUR.
+	Arrangement {n}	Susunan {n}
+	Audio Files	Berkas audio
+	Automation mode	Mode otomasi
+	B pictures	Gambar B
+	BDAV Transport Stream (.m2ts, AAC audio)	Aliran transpor BDAV (.m2ts, audio AAC)
+	Basic voices (built in)	Suara dasar (bawaan)
+	Beyond IAB Profile 1: {notes}	Di luar Profil IAB 1: {notes}
+	CFA4	CFA4
+	CFA4 encountered an error	CFA4 mengalami galat
+	CFA4 project links	Tautan proyek CFA4
+	Cancel Selected	Batalkan yang dipilih
+	Cannot check the output folder for files to replace: {error}	Tidak dapat memeriksa folder keluaran untuk berkas yang akan diganti: {error}
+	Cannot create the output folder: {error}	Tidak dapat membuat folder keluaran: {error}
+	Center at Cut	Tengahkan di potongan
+	Check Before Export: no problems found	Periksa sebelum ekspor: tidak ada masalah
+	Check Before Export: {n} problems marked on the timeline (red markers)	Periksa sebelum ekspor: {n} masalah ditandai di linimasa (penanda merah)
+	Checked:	Diperiksa:
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Pilih berkas trek IAB (IMF atau DCP), aliran IAB mentah, atau Dolby Atmos TrueHD: aliran .thd atau berkas MKV, MP4, atau M2TS dengan trek Atmos.
+	Choose a file name and location.	Pilih nama berkas dan lokasi.
+	Choose folder	Pilih folder
+	Click and press keys to assign	Klik lalu tekan tombol untuk menetapkan
+	Compression	Kompresi
+	Compression Level	Tingkat kompresi
+	Constant quality (CRF)	Kualitas konstan (CRF)
+	Constant quantiser	Kuantiser konstan
+	Container	Kontainer
+	Content kind	Jenis konten
+	Custom Start	Awal khusus
+	DCP container	Kontainer DCP
+	DCP resolution	Resolusi DCP
+	Decode Auro-3D height channels	Dekode kanal ketinggian Auro-3D
+	Delete this preset	Hapus prasetel ini
+	Depth:	Kedalaman:
+	Discard the active take	Buang rekaman aktif
+	Dock Panel	Tambatkan panel
+	Docking Action	Tindakan penambatan
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} d, {rate} Hz; hingga {beds} kanal dasar dan {objects} objek, dijadikan objek IAB
+	Double-click a clip in the Project panel to open it here.	Klik ganda klip di panel Proyek untuk membukanya di sini.
+	Download	Unduh
+	Download natural voices ({mb} MB)…	Unduh suara alami ({mb} MB)…
+	Download of the natural voices failed: {e}	Gagal mengunduh suara alami: {e}
+	Download the natural voices? {mb} MB, once.	Unduh suara alami? {mb} MB, sekali saja.
+	Downloading…	Mengunduh…
+	Drag Audio Only	Seret audio saja
+	Drag In point	Seret titik masuk
+	Drag Out point	Seret titik keluar
+	Drag Video Only	Seret video saja
+	Drag Video and Audio	Seret video dan audio
+	Drag to change the track height	Seret untuk mengubah tinggi trek
+	Drag to reorder; tick the columns to show.	Seret untuk mengurutkan ulang; centang kolom yang akan ditampilkan.
+	Drag to roll the edit	Seret untuk menggulir suntingan
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Disunting di Lumetri dan alat masker (belum ada di GUI Qt)
+	Editing the selected narration	Menyunting narasi yang dipilih
+	Elementary Stream (.m2v, no audio)	Aliran elementer (.m2v, tanpa audio)
+	End at Cut	Akhiri di potongan
+	Engine restarted	Mesin dimulai ulang
+	Engine stopped	Mesin berhenti
+	Entire Sequence	Seluruh sekuens
+	Export Media	Ekspor media
+	Export Media…	Ekspor media…
+	Export Queue	Antrean ekspor
+	Export captions…	Ekspor teks…
+	Export failed: {path}	Ekspor gagal: {path}
+	Export finished: {path}	Ekspor selesai: {path}
+	Export the labels to a preset file…	Ekspor label ke berkas prasetel…
+	Exported frame to {path}	Bingkai diekspor ke {path}
+	Extra Large	Sangat besar
+	Extra high	Sangat tinggi
+	Extra low	Sangat rendah
+	FLAC	FLAC
+	Failed	Gagal
+	Feature	Film panjang
+	Film Scan 1	Pindaian film 1
+	Film Scan 2	Pindaian film 2
+	Film Scan 3	Pindaian film 3
+	Flat (1.85:1)	Flat (1,85:1)
+	Format:	Format:
+	Frame time: {timecode}	Waktu bingkai: {timecode}
+	From the preset	Dari prasetel
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Dari {source} dan github.com/cmusphinx/cmudict (pelafalan). Lisensi: {license}. Setiap berkas diperiksa terhadap SHA-256 yang ditetapkan.
+	Full container (1.90:1)	Kontainer penuh (1,90:1)
+	Go to Next Keyframe	Ke bingkai kunci berikutnya
+	Go to Previous Keyframe	Ke bingkai kunci sebelumnya
+	Go to caption	Ke teks
+	Go to graphic	Ke grafik
+	Hear this voice	Dengarkan suara ini
+	IAB 7.1 DS bed from the 5.1 mix	Dasar IAB 7.1 DS dari campuran 5.1
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab, atau Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB dari berkas (IAB MXF, .iab, atau Dolby Atmos TrueHD)
+	IAB source	Sumber IAB
+	Images	Gambar
+	Immersive audio	Audio imersif
+	Import a preset file…	Impor berkas prasetel…
+	Import into project	Impor ke proyek
+	Incoming clip (drag to trim the In point)	Klip masuk (seret untuk memangkas titik masuk)
+	Input channel mapping	Pemetaan kanal masukan
+	Keep existing file	Simpan berkas yang ada
+	Label Color Presets	Prasetel warna label
+	Large	Besar
+	Linear Gradient	Gradien linear
+	Main sound channels 1-6	Kanal suara utama 1-6
+	Marker report (CSV)	Laporan penanda (CSV)
+	Match sequence	Sama dengan sekuens
+	Media offline	Media luring
+	Medium (default)	Sedang (bawaan)
+	More transport controls	Kontrol transpor lainnya
+	Motion Graphics Templates	Templat grafik gerak
+	Move marked range	Pindahkan rentang bertanda
+	Mute Track	Bisukan trek
+	Narration added on {track}	Narasi ditambahkan di {track}
+	Narration updated	Narasi diperbarui
+	Natural voices	Suara alami
+	Natural voices installed	Suara alami terpasang
+	Natural voices need a one-time download.	Suara alami perlu diunduh sekali.
+	New narration	Narasi baru
+	No matching text.	Tidak ada teks yang cocok.
+	No sequence	Tanpa sekuens
+	No sequence open. Double-click a sequence in the Project panel.	Tidak ada sekuens yang terbuka. Klik ganda sekuens di panel Proyek.
+	No text graphics in this sequence. Add text with the Type tool.	Tidak ada grafik teks di sekuens ini. Tambahkan teks dengan alat Teks.
+	None (I and P only)	Tidak ada (hanya I dan P)
+	None: FSK sync only (SMPTE ST 429-19)	Tidak ada: hanya sinkronisasi FSK (SMPTE ST 429-19)
+	Not a usable IAB source: {error}	Bukan sumber IAB yang dapat dipakai: {error}
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Belum ada di GUI Qt (lihat docs/qt-parity.md)
+	Off (5.1 only)	Mati (hanya 5.1)
+	Off (target bitrate)	Mati (laju bit target)
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Mati: berkas memutar kanalnya sendiri, seperti tanpa dekoder Auro-3D.
+	Open Project	Buka proyek
+	Open a sequence to search its graphics	Buka sekuens untuk mencari grafiknya
+	Opus	Opus
+	Outgoing clip (drag to trim the Out point)	Klip keluar (seret untuk memangkas titik keluar)
+	Output file	Berkas keluaran
+	Output folder	Folder keluaran
+	PCM (uncompressed)	PCM (tanpa kompresi)
+	Pace	Tempo
+	Path:	Jalur:
+	Program Stream (.mpg, LPCM audio)	Aliran program (.mpg, audio LPCM)
+	Projects and Interchange	Proyek dan pertukaran
+	Public service announcement	Iklan layanan masyarakat
+	Qt Multimedia is not available	Qt Multimedia tidak tersedia
+	Quick Export cancelled	Ekspor cepat dibatalkan
+	Quit	Keluar
+	Rating	Klasifikasi usia
+	Reading the IAB source…	Membaca sumber IAB…
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Replace	Ganti
+	Reset Panel Layout	Atur ulang tata letak panel
+	Retry	Coba lagi
+	Revert to the preset's colors and names	Kembalikan ke warna dan nama prasetel
+	Ripple Trim In	Pangkas riak titik masuk
+	Ripple Trim Out	Pangkas riak titik keluar
+	Roll Edit	Suntingan gulir
+	Save as New Workspace	Simpan sebagai ruang kerja baru
+	Saved guide template “{name}”	Templat panduan “{name}” disimpan
+	Scope (2.39:1)	Scope (2,39:1)
+	Scope settings	Pengaturan alat ukur
+	Select Playback Resolution	Pilih resolusi pemutaran
+	Select Zoom Level	Pilih tingkat zoom
+	Select a clip in the Timeline.	Pilih klip di linimasa.
+	Sequence In/Out	Masuk/keluar sekuens
+	Session log: {path}	Log sesi: {path}
+	Settings	Pengaturan
+	Short	Film pendek
+	Show clip durations	Tampilkan durasi klip
+	Show in File Manager	Tampilkan di pengelola berkas
+	Show the presets folder	Tampilkan folder prasetel
+	Small	Kecil
+	Social Safe Zones	Zona aman media sosial
+	Solid	Padat
+	Solo Track	Solokan trek
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Beberapa bingkai dikodekan ulang untuk DCP (DLC, 24 bit).
+	Some panel labels change language after a restart.	Beberapa label panel berganti bahasa setelah dimulai ulang.
+	Source clips	Klip sumber
+	Source patch	Penetapan sumber
+	Spreadsheets	Lembar kerja
+	Start at Cut	Mulai di potongan
+	Starting engine…	Memulai mesin…
+	Still Images	Gambar diam
+	Stop Queue	Hentikan antrean
+	Synthesizing narration…	Menyintesis narasi…
+	Synthesizing…	Menyintesis…
+	Teaser	Teaser
+	Template: {name}	Templat: {name}
+	Test	Uji
+	Text colour	Warna teks
+	Text to Speech: another sequence is open now; the narration was not placed	Teks ke ucapan: sekuens lain sedang terbuka; narasi tidak ditempatkan
+	Text to Speech: {e}	Teks ke ucapan: {e}
+	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Campuran 5.1 menjadi dasar 7.1 DS (Profil IAB 1); kanal 14 suara utama membawa sinyal sinkronisasi FSK.
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Mesin CFA4 (cfa4-cli) tidak ditemukan. Buat dengan: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Mesin CFA4 berhenti tiba-tiba dan dimulai ulang. Perubahan yang belum disimpan tersimpan di jurnal pemulihan, yang menawarkan untuk memulihkannya.
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Mesin CFA4 berhenti tiba-tiba. Perubahan yang belum disimpan tersimpan di jurnal pemulihan; mulai ulang CFA4 untuk memulihkannya.
+	The audio input could not be started	Masukan audio tidak dapat dimulai
+	The audio input does not support a usable format	Masukan audio tidak mendukung format yang dapat dipakai
+	The engine stopped	Mesin berhenti
+	The template needs a name.	Templat perlu nama.
+	The voice-over input buffer is full: the take ends here	Penyangga masukan sulih suara penuh: rekaman berakhir di sini
+	There are no guides to save.	Tidak ada panduan untuk disimpan.
+	There is no audio input device	Tidak ada perangkat masukan audio
+	This file already exists: {path}	Berkas ini sudah ada: {path}
+	Toggle Animation	Aktifkan/nonaktifkan animasi
+	Toggle Caption Track Lock	Kunci/buka kunci trek teks
+	Toggle Caption Track Output	Aktifkan/nonaktifkan keluaran trek teks
+	Toggle Sync Lock	Aktifkan/nonaktifkan kunci sinkronisasi
+	Toggle Track Lock	Kunci/buka kunci trek
+	Toggle Track Output	Aktifkan/nonaktifkan keluaran trek
+	Toggle the effect on or off	Nyalakan atau matikan efek
+	Toggle track targeting	Aktifkan/nonaktifkan target trek
+	Toggle visibility	Tampilkan/sembunyikan
+	Track	Trek
+	Track output assignment	Penetapan keluaran trek
+	Trailer	Trailer
+	Transitional	Peralihan
+	Transport Stream (.ts, AAC audio)	Aliran transpor (.ts, audio AAC)
+	Trim In	Pangkas titik masuk
+	Trim Out	Pangkas titik keluar
+	Twirl open or shut	Buka atau tutup
+	Type what you want the voice to say	Ketik apa yang harus diucapkan suara
+	Undock Panel	Lepas tambatan panel
+	Use hardware encoding when available	Gunakan pengodean perangkat keras bila tersedia
+	Video Files	Berkas video
+	Vocal pitch	Nada suara
+	Voice-over input: {error}	Masukan sulih suara: {error}
+	ZIP (1 scan line)	ZIP (1 baris)
+	ZIP (16 scan lines)	ZIP (16 baris)
+	an audio track	trek audio
+	an unknown time	waktu yang tidak diketahui
+	automatic	otomatis
+	no audio output (check Settings ▸ Audio Hardware)	tidak ada keluaran audio (periksa Pengaturan ▸ Perangkat keras audio)
+	no column for {names}	tidak ada kolom untuk {names}
+	no dialog	tidak ada dialog
+	no multi-camera clip at the playhead	tidak ada klip multikamera di kepala putar
+	no sequence is open	tidak ada sekuens yang terbuka
+	not available	tidak tersedia
+	not available now	tidak tersedia saat ini
+	optional	opsional
+	select a clip in the Project panel	pilih klip di panel Proyek
+	the job disappeared	tugas menghilang
+	the selected clip is not remixed	klip yang dipilih belum di-remix
+	{bits} Bit	{bits} Bit
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} bingkai, {fps} fps, {rate} Hz; hingga {beds} kanal dasar dan {objects} objek
+	{name} (Modified)	{name} (diubah)
+	{name} (download)	{name} (unduhan)
+	{n} beat markers added ({bpm} BPM)	{n} penanda ketukan ditambahkan ({bpm} BPM)
+	{n} exports queued (the Export window shows the queue)	{n} ekspor dalam antrean (jendela Ekspor menampilkan antrean)
+	{n} variant sequences made, {q} exports queued	{n} sekuens varian dibuat, {q} ekspor dalam antrean
+	{w} × {h}	{w} × {h}
+	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	1 gambar B di antara gambar jangkar
+	10-bit RGB	RGB 10-bit
+	12-bit X'Y'Z'	X'Y'Z' 12-bit
+	16-bit half float	floating point setengah presisi 16-bit
+	AV1 Main (10-bit for HDR)	AV1 Main (10-bit untuk HDR)
+	BDAV Transport Stream	aliran transport BDAV
+	CBR {v} Mbps	CBR {v} Mbps
+	CRF (constant quality) {crf}	CRF (kualitas konstan) {crf}
+	Elementary Stream	aliran elementer
+	FLAC (lossless) {bits}-bit	FLAC (lossless) {bits}-bit
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 untuk HDR
+	Image sequence	urutan gambar
+	MPEG-2 4:2:2 Profile	profil MPEG-2 4:2:2
+	MPEG-2 Main Profile 4:2:0	profil Main MPEG-2 4:2:0
+	Max {v} Mbps	maks. {v} Mbps
+	No audio	Tanpa audio
+	No video	Tanpa video
+	Program Stream	aliran program
+	Target {v} Mbps	target {v} Mbps
+	Transport Stream	aliran transport
+	Uncompressed {bits}-bit PCM	PCM {bits}-bit tanpa kompresi
+	Uncompressed {bits}-bit float PCM	PCM floating point {bits}-bit tanpa kompresi
+	VBR Target {v} Mbps	VBR, target {v} Mbps
+	average {v} Mbps	rata-rata {v} Mbps
+	constant quantiser {q}	kuantiser konstan {q}
+	fragmented MP4 segments	segmen MP4 terfragmentasi
+	keyframe every {n} frames	keyframe setiap {n} frame
+	level {n}	level {n}
+	linear	linear
+	no B pictures	tanpa gambar B
+	quality {q}	kualitas {q}
+	quantizer {q}	kuantiser {q}
+	uncompressed	tanpa kompresi
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} fps
+	{n} B pictures between anchors	{n} gambar B di antara gambar jangkar
+	{n} ch {rate} Hz	{n} kanal, {rate} Hz
+	{n} pass	{n} lintasan
+	{profile} auto level	{profile}, level otomatis
+	{sampling} {bits}-bit	{sampling} {bits}-bit
+	{seconds} s	{seconds} d
+	{v} Mbps	{v} Mbps
+	{word} compression	kompresi {word}
+	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Coret
+	Caption Export Settings	Pengaturan Ekspor Teks
+	Export Captions	Ekspor Teks
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} sudah ada, jadi tidak ada yang diekspor. Untuk menggantinya, pilih file itu di dialog simpan.
+	Delete Redoable Actions	Hapus Tindakan yang Dapat Diulang
+	Clear History	Bersihkan Riwayat
+	Delete the dimmed actions after the current state? They cannot be redone.	Hapus tindakan redup setelah keadaan saat ini? Tindakan itu tidak dapat diulang lagi.
+	Work Area Bar	Bilah Area Kerja
+	Start: {tc}	Awal: {tc}
+	End: {tc}	Akhir: {tc}
+	Duration: {tc}	Durasi: {tc}
+	Panel menu	Menu panel
+	Move panel	Pindahkan panel
+	Transparency Grid	Kisi Transparansi
+	Show Duplicate Frame Markers	Tampilkan Penanda Frame Duplikat
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Masuk/keluar sekuens hanya 1 frame. Pilih Seluruh sekuens untuk mengekspor seluruh sekuens.
+	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
+	Set Work Area Bar Out Point	Atur Titik Keluar Bilah Area Kerja
+	Delete Clips	Hapus Klip
+	Field order	Urutan field
+	Progressive	Progresif
+	Interlaced, upper field first	Interlaced, field atas dahulu
+	Interlaced, lower field first	Interlaced, field bawah dahulu

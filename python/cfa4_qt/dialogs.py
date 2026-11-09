@@ -10,6 +10,8 @@ from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -77,9 +79,12 @@ class ParamDialog(QDialog):
         return out
 
 
-def path_params(command: Command, parent: QWidget, project_path: str | None) -> dict[str, Any] | None:
+def path_params(
+    command: Command, parent: QWidget, project_path: str | None, given: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
     """Params from a native file dialog for commands that take paths. ``None``: not a path
-    command (or a dialog not needed). ``{}`` with ``__cancel__``: the user cancelled."""
+    command (or a dialog not needed). ``{}`` with ``__cancel__``: the user cancelled. ``given``:
+    the parameters the caller already has (a Text panel's ``track``, a ``format``)."""
     cid = command.id
     names = {p.name for p in command.param_specs}
     start = project_path or ""
@@ -108,14 +113,8 @@ def path_params(command: Command, parent: QWidget, project_path: str | None) -> 
             if Path(path).exists() and not confirm_replace(parent, tr("Export Frame"), path):
                 return {"__cancel__": True}
         return {"path": path, "format": fmt}
-    if cid == "captions.export":  # the format follows the extension (the engine's)
-        filt = tr("Captions") + " (*.srt *.vtt *.scc *.mcc *.stl *.ttml *.xml *.dfxp);;" + tr("All files") + " (*)"
-        path, _ = QFileDialog.getSaveFileName(parent, tr(command.label), "", filt)
-        if not path:
-            return {"__cancel__": True}
-        if not Path(path).suffix:
-            path += ".srt"
-        return {"path": path}
+    if cid == "captions.export":
+        return caption_export_params(parent, given or {})
     if cid == "graphics.template.install":
         filt = tr("Motion Graphics Templates") + " (*.fcgt)"
         path, _ = QFileDialog.getOpenFileName(parent, tr(command.label), "", filt)
@@ -140,6 +139,97 @@ def path_params(command: Command, parent: QWidget, project_path: str | None) -> 
         path, _ = QFileDialog.getOpenFileName(parent, tr(command.label), "", tr("All files") + " (*)")
         return {"path": path} if path else {"__cancel__": True}
     return None
+
+
+# The formats `captions.export` writes (cfa4_captions::Format::ALL): extension, name.
+CAPTION_FORMATS = (
+    ("srt", "SubRip (SRT)"),
+    ("vtt", "WebVTT"),
+    ("scc", "Scenarist SCC (CEA-608)"),
+    ("mcc", "MacCaption MCC (CEA-608/708)"),
+    ("stl", "EBU STL"),
+    ("ttml", "TTML (IMSC1)"),
+    ("dfxp", "DFXP (TTML1)"),
+)
+CAPTION_FORMAT_KEY = "captionExport/format"  # the format written last, offered next time
+
+
+def caption_format(name: Any) -> str | None:
+    """The extension of the caption format ``name`` names (an extension or the engine's names)."""
+    key = str(name or "").strip().lstrip(".").lower()
+    aliases = {"subrip": "srt", "webvtt": "vtt", "ebu": "stl", "ebu stl": "stl", "imsc1": "ttml", "xml": "ttml"}
+    key = aliases.get(key, key)
+    return key if any(key == ext for ext, _ in CAPTION_FORMATS) else None
+
+
+def caption_destination(path: str, chosen: str) -> tuple[str, str]:
+    """Where to write, and in which format, from the save dialog's answer and the chosen format
+    (upstream #3523): a caption format's extension, in any case, is the user's choice (that file, in
+    that format); any other name gets the chosen format's extension (``subs`` and ``subs.`` give
+    ``subs.vtt``, ``subs.final`` gives ``subs.final.vtt``)."""
+    typed = Path(path).suffix.lstrip(".").lower()
+    if typed and any(typed == ext for ext, _ in CAPTION_FORMATS):
+        return path, typed
+    return f"{path.rstrip('.')}.{chosen}", chosen
+
+
+class CaptionExportDialog(QDialog):
+    """File ▸ Export ▸ Captions… and the Text panel's Export captions… (upstream #3523): the File
+    Format of every format ``captions.export`` writes. Automation ids: ``captionExport.format``,
+    ``captionExport.ok``, ``captionExport.cancel``."""
+
+    def __init__(self, parent: QWidget | None, chosen: str) -> None:
+        super().__init__(parent)
+        self.setObjectName("captionExport")
+        self.setWindowTitle(tr("Caption Export Settings"))
+        form = QFormLayout(self)
+        self.format = QComboBox(self)
+        self.format.setObjectName("captionExport.format")
+        for ext, name in CAPTION_FORMATS:
+            self.format.addItem(name, ext)
+        self.format.setCurrentIndex(max(0, self.format.findData(chosen)))
+        self.format.setMinimumWidth(240)
+        form.addRow(tr("File Format"), self.format)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("captionExport.ok")
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setObjectName("captionExport.cancel")
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def chosen(self) -> str:
+        return str(self.format.currentData())
+
+
+def caption_export_params(parent: QWidget, given: dict[str, Any]) -> dict[str, Any]:
+    """Caption Export Settings, then a save panel offering only the chosen format. A ``format``
+    in ``given`` is selected, else the one written last, else SRT. If the save panel's name gets a
+    new extension and that file exists, nothing is written: the panel only asked about the name as
+    typed."""
+    settings = getattr(parent, "settings", None)
+    last = settings.value(CAPTION_FORMAT_KEY, "") if settings is not None else ""
+    chosen = caption_format(given.get("format")) or caption_format(last) or "srt"
+    dlg = CaptionExportDialog(parent, chosen)
+    if dlg.exec() != QDialog.DialogCode.Accepted:
+        return {"__cancel__": True}
+    chosen = dlg.chosen()
+    name = dict(CAPTION_FORMATS)[chosen]
+    seq = getattr(parent, "sequence", None)
+    stem = str((seq or {}).get("name") or "").strip() if isinstance(seq, dict) else ""
+    stem = "".join("_" if c in " /\\:" else c for c in stem) or "Captions"
+    answered, _ = QFileDialog.getSaveFileName(parent, tr("Export Captions"), f"{stem}.{chosen}", f"{name} (*.{chosen})")
+    if not answered:
+        return {"__cancel__": True}
+    path, written = caption_destination(answered, chosen)
+    if path != answered and Path(path).exists():
+        message = fmt("{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.", name=Path(path).name)
+        bar = getattr(parent, "statusBar", None)
+        if callable(bar):
+            bar().showMessage(message, 6000)
+        return {"__cancel__": True}
+    if settings is not None:
+        settings.setValue(CAPTION_FORMAT_KEY, written)
+    return {"path": path, "format": written}
 
 
 def confirm_replace(parent: QWidget, title: str, path: str) -> bool:
@@ -187,6 +277,18 @@ class InterpretFootageDialog(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setMaximumHeight(300)
         layout.addWidget(scroll)
+        # Auro-3D (#323): shown for a carrier only, on = the restored layout, off = its own channels
+        self.auro = QCheckBox(tr("Decode Auro-3D height channels"), self)
+        self.auro.setObjectName("interpretFootage.auro")
+        self.auro_hint = QLabel(tr("Off: the file plays its own channels, as without an Auro-3D decoder."), self)
+        self.auro_hint.setWordWrap(True)
+        for w in (self.auro, self.auro_hint):
+            w.setVisible(False)
+            layout.addWidget(w)
+        # each selected carrier's setting; mixed settings show the box partly checked and stay
+        # as they are unless the user picks one value for all
+        self._auro_states: list[bool] = []
+        self.auro.clicked.connect(lambda _c=False: self.auro.setTristate(False))
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("interpretFootage.ok")
         buttons.button(QDialogButtonBox.StandardButton.Cancel).setObjectName("interpretFootage.cancel")
@@ -197,6 +299,8 @@ class InterpretFootageDialog(QDialog):
             engine.execute("color.spaces", {}, on_reply=lambda r, _b: self._spaces(r))
             if items:
                 engine.execute("media.colorInfo", {"item": items[0]}, on_reply=lambda r, _b: self._info(r))
+                for item in items:
+                    engine.execute("media.auroInfo", {"item": item}, on_reply=lambda r, _b: self._auro_info(r))
 
     def _add_choice(self, cid: str, label: str) -> None:
         b = QRadioButton(label, self)
@@ -221,6 +325,19 @@ class InterpretFootageDialog(QDialog):
         self._override = result.get("override") if isinstance(result.get("override"), str) else None
         self._select(self._override)
 
+    def _auro_info(self, result: Any) -> None:
+        if not isinstance(result, dict) or result.get("carrier") is not True:
+            return
+        self._auro_states.append(result.get("decoding") is not False)
+        mixed = len(set(self._auro_states)) > 1
+        self.auro.setTristate(mixed)
+        if mixed:
+            self.auro.setCheckState(Qt.CheckState.PartiallyChecked)
+        else:
+            self.auro.setChecked(self._auro_states[0])
+        for w in (self.auro, self.auro_hint):
+            w.setVisible(True)
+
     def _select(self, cid: str | None) -> None:
         if cid is not None and cid in self.choices:
             self.choices[cid].setChecked(True)
@@ -230,6 +347,11 @@ class InterpretFootageDialog(QDialog):
 
     def accept(self) -> None:
         params: dict[str, Any] = {"colorSpace": self.chosen()}
+        state = self.auro.checkState()
+        if self._auro_states and state != Qt.CheckState.PartiallyChecked:
+            on = state == Qt.CheckState.Checked
+            if any(was != on for was in self._auro_states):
+                params["auroDecoding"] = on
         if self.items:
             params["items"] = self.items
         self.send("clip.interpretFootage", params)

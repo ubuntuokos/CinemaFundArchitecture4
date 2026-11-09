@@ -24,6 +24,13 @@
 - A **CFA4 logó** (név, embléma, szóvédjegy, ikonok) István saját, védett jele, **nem** GPL alatti; a
   feltételek: [`assets/cfa4/LICENSE-logo.txt`](../assets/cfa4/LICENSE-logo.txt). A kód GPL marad.
 
+- **Portolás vagy eredeti nyelv (tulajdonosi döntés, 2026-11-03):** az átvett kódot alapból
+  Rustra portoljuk. Ha a portolás aránytalanul sok időt venne igénybe, a kód maradhat az eredeti
+  nyelvén, **ha nem lassítja a CFA4-et**: ilyenkor a szerkesztő folyamatán kívül, felügyelt
+  workerként vagy külső programként fut, Rust-interfész mögött, és a lassulásmentességet a
+  referenciagépen mérjük. A licencszabályok (fejlécek, 5. pont regisztere) ugyanúgy érvényesek.
+  Részletek: [`AGENTS.md`](../AGENTS.md) CFA4-szakasz.
+
 *Ez a dokumentum projektszabályzat, nem jogi tanácsadás. Kereskedelmi kiadás előtt érdemes
 jogásszal átnézetni.*
 
@@ -131,13 +138,16 @@ that adds them names the source and revision.
 
 | CFA4 path | Origin (project, URL, revision, path) | Copyright holders | Licence |
 |---|---|---|---|
+| `crates/dv/src/vlc.rs`, `crates/dv/src/quant.rs`, `crates/dv/src/layout.rs` (tables and placement re-expressed in Rust; the three-pass bit distribution in `segment.rs` follows libdv's `parse.c`) | libdv 1.0.0, <https://libdv.sourceforge.net/>, Ubuntu `libdv_1.0.0.orig.tar.gz` (sha256 `a305734033a9c25541a59e8dd1c254409953269ea7c710c39e540bd8853389ba`), `libdv/vlc.c`, `parse.c`, `quant.c`, `weighting.c`, `place.c` | Charles 'Buck' Krasic, Erik Walthinsen | LGPL-2.1-or-later (`crates/dv/COPYING.LGPL-2.1`) |
 | `crates/dts/src/` (except `cfa4.rs`) | `dca` crate 0.9.0 of harletty-bridge, <https://github.com/harletty/harletty-bridge>, commit `74cf6edaef6742777d3eb4da35387fd370f2e9f3`, `dca/src/`; itself a port of FFmpeg `libavcodec/dca*.c`, `dcadsp.c`, `dcadct.c`, `synth_filter.c` | foo86 and the FFmpeg developers; the harletty-bridge contributors | LGPL-2.1-or-later (`crates/dts/COPYING.LGPL-2.1`; published by harletty-bridge as Apache-2.0, `crates/dts/LICENSE.harletty-bridge`). FFmpeg-derived code, an owner-approved exception to the FFmpeg-only-in-tests rule (#83) |
+| `crates/auro/src/` (except `cfa4.rs`; `synth.rs` adapted from the crate's tests), `crates/auro/tests/synthetic.rs` | `auro` crate 0.9.0 of harletty-bridge, <https://github.com/harletty/harletty-bridge>, commit `74cf6edaef6742777d3eb4da35387fd370f2e9f3`, `auro/src/`, `auro/tests/synthetic.rs` | the harletty-bridge contributors | Apache-2.0 (`crates/auro/LICENSE.harletty-bridge`); CFA4 changes GPL-3.0-or-later. Implements the Auro-Codec mechanism of US 8,620,465 B2: owner decision #299 (2026-10-27) |
 | `crates/jxl/src/` (105 files, each with a provenance header) | jxl-oxide, <https://github.com/tirr-c/jxl-oxide>, crates jxl-oxide 0.12, jxl-render 0.12.4, jxl-bitstream 1.1.0, jxl-modular, jxl-vardct, jxl-frame, jxl-image, jxl-grid, jxl-color, jxl-coding, jxl-oxide-common, jxl-threadpool (crates.io releases of 2025; repository revisions 74c45ba5, 1d4e4289, f37ac036, b2042ccf); rewritten without `unsafe` and panics | Wonwoo Choi and the jxl-oxide contributors | MIT OR Apache-2.0 (`crates/jxl/LICENSE-MIT`, `crates/jxl/LICENSE-APACHE`); CFA4 changes GPL-3.0-or-later |
 | `crates/opus/src/celt/encoder.rs`, encoder parts of `crates/opus/src/celt/{bands,energy,mdct}.rs` | RFC 6716 reference implementation (libopus `celt/`): algorithm structure and tuning constants of the encoder analysis (transient detector, stereo / intensity decisions, PVQ search, coarse / fine energy quantisation, forward MDCT folding), reimplemented in Rust; no files copied | IETF Trust and the RFC 6716 authors (Xiph.Org Foundation, Skype Limited, Octasic, J.-M. Valin, T. B. Terriberry, and others) | BSD-3-Clause |
 | `crates/cineform/src/tables.rs` (codebooks), and the tag syntax, companding and inverse 2/6 wavelet re-expressed in `crates/cineform/src/{decode,vlc,wavelet}.rs` | GoPro CineForm SDK, https://github.com/gopro/cineform-sdk, rev. `11574d0295771edccadd17af14af74a539f924c7`, `Common/table9.inc`, `Common/table17.inc`, `Codec/codec.h`, `Codec/spatial.c`, `Codec/InvertHorizontalStrip16s.c`, `Codec/vlc.c` | (C) 2017 GoPro, Inc. | Apache-2.0 OR MIT (MIT used) |
 | `crates/j2k/src/ht.rs`, `crates/j2k/src/ht_tables.rs` (HTJ2K block decoder, ported) | OpenJPH, https://github.com/aous72/OpenJPH, 0.28.1 (Ubuntu `openjph_0.28.1.orig.tar.gz`), `src/core/coding/ojph_block_decoder32.cpp`, `ojph_block_common.cpp`, `table0.h`, `table1.h` | Aous Naman; Kakadu Software Pty Ltd; The University of New South Wales | BSD-2-Clause (`crates/j2k/src/LICENSE-OpenJPH`) |
 | `crates/truehd/src/` (except `cfa4.rs`, `anyhow.rs`) | `truehd` crate 0.7.2, <https://github.com/truehdd/truehdd>, crates.io release 0.7.2, `truehd/src/` | Rainbaby | Apache-2.0 (`crates/truehd/LICENSE`) |
 | `.claude/skills/cfa4-skill-review/SKILL.md` | NVIDIA SkillSpector, <https://github.com/NVIDIA/SkillSpector>, commit `54921c8c7c23008c8af2328d5ab492a904b6ece4`, `skills/skill-inspector/SKILL.md`; CFA4 Hungarian adaptation | NVIDIA CORPORATION & AFFILIATES (Copyright 2026) | Apache-2.0 upstream; CFA4 adaptation GPL-3.0-or-later (`LICENSE-APACHE`) |
+| `crates/aac/src/usac/`, `crates/aac/src/drc/`, `crates/aac/tools/usac_tables.py` | libxaac, <https://github.com/ittiam-systems/libxaac> (Android `platform/external/libxaac`), commit `2fbadd57bca46693b7a077bcf1513131106d960c`, `decoder/` (USAC) and `decoder/drc_src/` (MPEG-D DRC); fixed point converted to floating point, the arithmetic-coder tables generated from its sources | The Android Open Source Project; Ittiam Systems Pvt. Ltd | Apache-2.0 (`crates/aac/LICENSE.libxaac`, `crates/aac/NOTICE.libxaac`) |
 
 ## 6. Dependency checks
 
@@ -175,7 +185,7 @@ Current classification:
 
 | Component | Package |
 |---|---|
-| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` |
+| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` (FFmpeg 9.0.2 `--restricted` build in `/opt/cfa4/ffmpeg-9.0.2-restricted`; `packaging/linux/package.sh --formats "deb restricted"`, ADR 0005 step 4) |
 | CFA4's own codecs (H.264, HEVC, AAC, AC-3 and the other decoders, the H.264 encoder) | base package (owner decision, 2026-10-25) |
 
 A new patent-encumbered component goes to `cfa4-restricted-extras` unless the owner decides

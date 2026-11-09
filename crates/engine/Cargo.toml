@@ -43,6 +43,7 @@ cfa4-route = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+chrono = { workspace = true }
 log = { workspace = true }
 cfa4-docpath = { workspace = true }
 web-time = "1"
@@ -52,4 +53,5 @@ cfa4-testkit = { workspace = true }
 cfa4-dng = { workspace = true, features = ["writer"] }
 cfa4-isobmff = { workspace = true }
 cfa4-iab = { workspace = true }
+cfa4-auro = { workspace = true, features = ["test-util"] }
 image = { version = "0.25", default-features = false, features = ["png", "gif"] }
