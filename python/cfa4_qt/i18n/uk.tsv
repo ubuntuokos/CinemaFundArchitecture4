@@ -1,0 +1,336 @@
+# Ukrainian (uk) catalog for the strings only the CFA4 Qt GUI has; everything else comes from the
+# shared catalog crates/ui-egui/src/i18n/uk.tsv. Same format: context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English text using ordinary
+# Ukrainian video-editing vocabulary. No proprietary localisation resource, string table or product UI
+# was consulted or copied.
+
+	#	#
+	'{name}' already exists. Replace it?	«{name}» уже існує. Замінити?
+	(none)	(немає)
+	0 fastest, 8 smallest	0 — найшвидший, 8 — найменший
+	2K	2K
+	4:2:0 (Main Profile)	4:2:0 (профіль Main)
+	4:2:2 (4:2:2 Profile)	4:2:2 (профіль 4:2:2)
+	4K	4K
+	5.1: the IAB rendered (not ST 429-19)	5.1: відрендерений IAB (не ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: мікс таймлайна (не ST 429-19)
+	8 Bit	8 біт
+	AAC	AAC
+	Add pause	Додати паузу
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	«Додати паузу» вставляє [pause 1s]. Змініть число, щоб пауза була довшою чи коротшою, наприклад [pause 500ms] або [pause 2s].
+	Add to timeline	Додати на таймлайн
+	Advertisement	Реклама
+	All Supported Files	Усі підтримувані файли
+	All files	Усі файли
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Рушій без `serve` зібрано з гілки без графічного інтерфейсу Qt: перейдіть на гілку з Qt GUI і зберіть знову або передайте --engine PATH.
+	Arrangement {n}	Аранжування {n}
+	Audio Files	Аудіофайли
+	Automation mode	Режим автоматизації
+	B pictures	B-кадри
+	BDAV Transport Stream (.m2ts, AAC audio)	Транспортний потік BDAV (.m2ts, звук AAC)
+	Basic voices (built in)	Базові голоси (вбудовані)
+	Beyond IAB Profile 1: {notes}	Понад профіль IAB 1: {notes}
+	CFA4	CFA4
+	CFA4 encountered an error	У CFA4 сталася помилка
+	CFA4 project links	Посилання проєкту CFA4
+	Cancel Selected	Скасувати вибрані
+	Cannot check the output folder for files to replace: {error}	Не вдається перевірити вихідну теку на наявність файлів для заміни: {error}
+	Cannot create the output folder: {error}	Не вдається створити вихідну теку: {error}
+	Center at Cut	Центрувати за склейкою
+	Check Before Export: no problems found	Перевірка перед експортом: проблем не знайдено
+	Check Before Export: {n} problems marked on the timeline (red markers)	Перевірка перед експортом: проблем, позначених на таймлайні: {n} (червоні маркери)
+	Checked:	Перевірено:
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Виберіть файл доріжки IAB (IMF або DCP), необроблений потік IAB або Dolby Atmos TrueHD: потік .thd або файл MKV, MP4 чи M2TS з доріжкою Atmos.
+	Choose a file name and location.	Виберіть назву та розташування файлу.
+	Choose folder	Вибрати теку
+	Click and press keys to assign	Клацніть і натисніть клавіші для призначення
+	Compression	Стиснення
+	Compression Level	Рівень стиснення
+	Constant quality (CRF)	Стала якість (CRF)
+	Constant quantiser	Сталий квантувальник
+	Container	Контейнер
+	Content kind	Тип вмісту
+	Custom Start	Довільний початок
+	DCP container	Контейнер DCP
+	DCP resolution	Роздільність DCP
+	Decode Auro-3D height channels	Декодувати висотні канали Auro-3D
+	Delete this preset	Видалити цей пресет
+	Depth:	Глибина:
+	Discard the active take	Відкинути активний дубль
+	Dock Panel	Закріпити панель
+	Docking Action	Дія закріплення
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} с, {rate} Гц; до {beds} каналів bed та {objects} об'єктів, перетворено на об'єкти IAB
+	Double-click a clip in the Project panel to open it here.	Двічі клацніть кліп на панелі «Проєкт», щоб відкрити його тут.
+	Download	Завантажити
+	Download natural voices ({mb} MB)…	Завантажити природні голоси ({mb} МБ)…
+	Download of the natural voices failed: {e}	Не вдалося завантажити природні голоси: {e}
+	Download the natural voices? {mb} MB, once.	Завантажити природні голоси? {mb} МБ, один раз.
+	Downloading…	Завантаження…
+	Drag Audio Only	Перетягнути лише аудіо
+	Drag In point	Перетягнути точку входу
+	Drag Out point	Перетягнути точку виходу
+	Drag Video Only	Перетягнути лише відео
+	Drag Video and Audio	Перетягнути відео й аудіо
+	Drag to change the track height	Перетягніть, щоб змінити висоту доріжки
+	Drag to reorder; tick the columns to show.	Перетягніть, щоб змінити порядок; позначте стовпці для показу.
+	Drag to roll the edit	Перетягніть, щоб зсунути стик монтажу
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Редагується в інструментах Lumetri і масок (ще немає в Qt GUI)
+	Editing the selected narration	Редагування вибраного озвучення
+	Elementary Stream (.m2v, no audio)	Елементарний потік (.m2v, без звуку)
+	End at Cut	Кінець на склейці
+	Engine restarted	Рушій перезапущено
+	Engine stopped	Рушій зупинено
+	Entire Sequence	Уся секвенція
+	Export Media	Експорт медіа
+	Export Media…	Експорт медіа…
+	Export Queue	Черга експорту
+	Export captions…	Експорт субтитрів…
+	Export failed: {path}	Збій експорту: {path}
+	Export finished: {path}	Експорт завершено: {path}
+	Export the labels to a preset file…	Експортувати мітки у файл пресета…
+	Exported frame to {path}	Кадр експортовано до {path}
+	Extra Large	Дуже великий
+	Extra high	Дуже високе
+	Extra low	Дуже низьке
+	FLAC	FLAC
+	Failed	Збій
+	Feature	Повнометражний
+	Film Scan 1	Плівковий скан 1
+	Film Scan 2	Плівковий скан 2
+	Film Scan 3	Плівковий скан 3
+	Flat (1.85:1)	Flat (1.85:1)
+	Format:	Формат:
+	Frame time: {timecode}	Час кадру: {timecode}
+	From the preset	З пресета
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Із {source} та github.com/cmusphinx/cmudict (вимова). Ліцензія: {license}. Кожен файл перевіряється за зафіксованою SHA-256.
+	Full container (1.90:1)	Повний контейнер (1.90:1)
+	Go to Next Keyframe	До наступного ключового кадру
+	Go to Previous Keyframe	До попереднього ключового кадру
+	Go to caption	Перейти до субтитру
+	Go to graphic	Перейти до графіки
+	Hear this voice	Прослухати цей голос
+	IAB 7.1 DS bed from the 5.1 mix	Bed IAB 7.1 DS із міксу 5.1
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab або Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB із файлу (IAB MXF, .iab або Dolby Atmos TrueHD)
+	IAB source	Джерело IAB
+	Images	Зображення
+	Immersive audio	Імерсивний звук
+	Import a preset file…	Імпортувати файл пресета…
+	Import into project	Імпортувати в проєкт
+	Incoming clip (drag to trim the In point)	Вхідний кліп (перетягніть, щоб підрізати точку входу)
+	Input channel mapping	Відповідність вхідних каналів
+	Keep existing file	Залишити наявний файл
+	Label Color Presets	Пресети кольорів міток
+	Large	Великий
+	Linear Gradient	Лінійний градієнт
+	Main sound channels 1-6	Основні канали звуку 1-6
+	Marker report (CSV)	Звіт про маркери (CSV)
+	Match sequence	Як у секвенції
+	Media offline	Медіафайл недоступний
+	Medium (default)	Середній (типово)
+	More transport controls	Інші елементи керування відтворенням
+	Motion Graphics Templates	Шаблони моушн-графіки
+	Move marked range	Перемістити позначений діапазон
+	Mute Track	Вимкнути звук доріжки
+	Narration added on {track}	Озвучення додано на {track}
+	Narration updated	Озвучення оновлено
+	Natural voices	Природні голоси
+	Natural voices installed	Природні голоси встановлено
+	Natural voices need a one-time download.	Для природних голосів потрібне одноразове завантаження.
+	New narration	Нове озвучення
+	No matching text.	Немає відповідного тексту.
+	No sequence	Немає секвенції
+	No sequence open. Double-click a sequence in the Project panel.	Немає відкритої секвенції. Двічі клацніть секвенцію на панелі «Проєкт».
+	No text graphics in this sequence. Add text with the Type tool.	У цій секвенції немає текстової графіки. Додайте текст інструментом «Текст».
+	None (I and P only)	Немає (лише I та P)
+	None: FSK sync only (SMPTE ST 429-19)	Немає: лише синхронізація FSK (SMPTE ST 429-19)
+	Not a usable IAB source: {error}	Непридатне джерело IAB: {error}
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Ще немає в Qt GUI (див. docs/qt-parity.md)
+	Off (5.1 only)	Вимк. (лише 5.1)
+	Off (target bitrate)	Вимк. (цільовий бітрейт)
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Вимк.: файл відтворює свої канали, як без декодера Auro-3D.
+	Open Project	Відкрити проєкт
+	Open a sequence to search its graphics	Відкрийте секвенцію, щоб шукати за її графікою
+	Opus	Opus
+	Outgoing clip (drag to trim the Out point)	Вихідний кліп (перетягніть, щоб підрізати точку виходу)
+	Output file	Вихідний файл
+	Output folder	Вихідна тека
+	PCM (uncompressed)	PCM (без стиснення)
+	Pace	Темп
+	Path:	Шлях:
+	Program Stream (.mpg, LPCM audio)	Програмний потік (.mpg, звук LPCM)
+	Projects and Interchange	Проєкти та обмін
+	Public service announcement	Соціальна реклама
+	Qt Multimedia is not available	Qt Multimedia недоступна
+	Quick Export cancelled	Швидкий експорт скасовано
+	Quit	Вийти
+	Rating	Рейтинг
+	Reading the IAB source…	Читання джерела IAB…
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Replace	Замінити
+	Reset Panel Layout	Скинути розкладку панелей
+	Retry	Повторити
+	Revert to the preset's colors and names	Повернути кольори та назви пресета
+	Ripple Trim In	Підрізати вхід зі зсувом
+	Ripple Trim Out	Підрізати вихід зі зсувом
+	Roll Edit	Зсув стику
+	Save as New Workspace	Зберегти як нове робоче середовище
+	Saved guide template “{name}”	Шаблон напрямних «{name}» збережено
+	Scope (2.39:1)	Scope (2.39:1)
+	Scope settings	Параметри Scope
+	Select Playback Resolution	Вибір роздільності відтворення
+	Select Zoom Level	Вибір масштабу
+	Select a clip in the Timeline.	Виберіть кліп на таймлайні.
+	Sequence In/Out	Вхід/вихід секвенції
+	Session log: {path}	Журнал сеансу: {path}
+	Settings	Налаштування
+	Short	Короткометражний
+	Show clip durations	Показувати тривалість кліпів
+	Show in File Manager	Показати у файловому менеджері
+	Show the presets folder	Показати теку пресетів
+	Small	Малий
+	Social Safe Zones	Безпечні зони для соцмереж
+	Solid	Суцільний
+	Solo Track	Соло доріжки
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Деякі кадри перекодовуються для DCP (DLC, 24 біти).
+	Some panel labels change language after a restart.	Назви деяких панелей змінять мову після перезапуску.
+	Source clips	Вихідні кліпи
+	Source patch	Патч джерела
+	Spreadsheets	Електронні таблиці
+	Start at Cut	Початок на склейці
+	Starting engine…	Запуск рушія…
+	Still Images	Нерухомі зображення
+	Stop Queue	Зупинити чергу
+	Synthesizing narration…	Синтез озвучення…
+	Synthesizing…	Синтез…
+	Teaser	Тизер
+	Template: {name}	Шаблон: {name}
+	Test	Тест
+	Text colour	Колір тексту
+	Text to Speech: another sequence is open now; the narration was not placed	Синтез мовлення: тепер відкрито іншу секвенцію; озвучення не розміщено
+	Text to Speech: {e}	Синтез мовлення: {e}
+	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Мікс 5.1 стає bed 7.1 DS (IAB Profile 1); канал 14 основного звуку несе сигнал синхронізації FSK.
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Рушій CFA4 (cfa4-cli) не знайдено. Зберіть його командою: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Рушій CFA4 несподівано зупинився й був перезапущений. Незбережені зміни збережено в журналі відновлення; він запропонує їх відновити.
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Рушій CFA4 несподівано зупинився. Незбережені зміни збережено в журналі відновлення; перезапустіть CFA4, щоб відновити їх.
+	The audio input could not be started	Не вдалося запустити аудіовхід
+	The audio input does not support a usable format	Аудіовхід не підтримує придатний формат
+	The engine stopped	Рушій зупинено
+	The template needs a name.	Шаблону потрібна назва.
+	The voice-over input buffer is full: the take ends here	Буфер входу закадрового голосу переповнений: дубль закінчується тут
+	There are no guides to save.	Немає напрямних для збереження.
+	There is no audio input device	Немає пристрою аудіовходу
+	This file already exists: {path}	Цей файл уже існує: {path}
+	Toggle Animation	Увімк./вимк. анімацію
+	Toggle Caption Track Lock	Увімк./вимк. блокування доріжки субтитрів
+	Toggle Caption Track Output	Увімк./вимк. вивід доріжки субтитрів
+	Toggle Sync Lock	Увімк./вимк. блокування синхронізації
+	Toggle Track Lock	Увімк./вимк. блокування доріжки
+	Toggle Track Output	Увімк./вимк. вивід доріжки
+	Toggle the effect on or off	Увімкнути або вимкнути ефект
+	Toggle track targeting	Перемкнути цільову доріжку
+	Toggle visibility	Перемкнути видимість
+	Track	Доріжка
+	Track output assignment	Призначення виходу доріжки
+	Trailer	Трейлер
+	Transitional	Перехідний
+	Transport Stream (.ts, AAC audio)	Транспортний потік (.ts, звук AAC)
+	Trim In	Підрізати вхід
+	Trim Out	Підрізати вихід
+	Twirl open or shut	Розгорнути або згорнути
+	Type what you want the voice to say	Введіть, що має вимовити голос
+	Undock Panel	Відкріпити панель
+	Use hardware encoding when available	Використовувати апаратне кодування, якщо доступно
+	Video Files	Відеофайли
+	Vocal pitch	Висота голосу
+	Voice-over input: {error}	Вхід закадрового голосу: {error}
+	ZIP (1 scan line)	ZIP (1 рядок розгортки)
+	ZIP (16 scan lines)	ZIP (16 рядків розгортки)
+	an audio track	звукова доріжка
+	an unknown time	невідомий час
+	automatic	автоматично
+	no audio output (check Settings ▸ Audio Hardware)	немає аудіовиходу (перевірте Налаштування ▸ Аудіообладнання)
+	no column for {names}	немає стовпця для {names}
+	no dialog	немає діалогу
+	no multi-camera clip at the playhead	немає мультикамерного кліпу під курсором відтворення
+	no sequence is open	немає відкритої секвенції
+	not available	недоступно
+	not available now	наразі недоступно
+	optional	необов'язково
+	select a clip in the Project panel	виберіть кліп на панелі «Проєкт»
+	the job disappeared	завдання зникло
+	the selected clip is not remixed	вибраний кліп не ремікшується
+	{bits} Bit	{bits} біт
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} кадрів, {fps} кадр/с, {rate} Гц; до {beds} каналів bed та {objects} об'єктів
+	{name} (Modified)	{name} (змінено)
+	{name} (download)	{name} (завантажити)
+	{n} beat markers added ({bpm} BPM)	Додано маркерів ритму: {n} ({bpm} BPM)
+	{n} exports queued (the Export window shows the queue)	У чергу поставлено експортів: {n} (чергу показано у вікні експорту)
+	{n} variant sequences made, {q} exports queued	Створено варіантів секвенцій: {n}, експортів у черзі: {q}
+	{w} × {h}	{w} × {h}
+	…	…
+	1 B picture between anchors	1 B-кадр між опорними
+	10-bit RGB	10-бітний RGB
+	12-bit X'Y'Z'	12-бітний X'Y'Z'
+	16-bit half float	16-бітний half float
+	AV1 Main (10-bit for HDR)	AV1 Main (10 біт для HDR)
+	BDAV Transport Stream	Транспортний потік BDAV
+	CBR {v} Mbps	CBR {v} Мбіт/с
+	CRF (constant quality) {crf}	CRF (стала якість) {crf}
+	Elementary Stream	Елементарний потік
+	FLAC (lossless) {bits}-bit	FLAC (без втрат) {bits} біт
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 для HDR
+	Image sequence	Послідовність зображень
+	MPEG-2 4:2:2 Profile	MPEG-2 профіль 4:2:2
+	MPEG-2 Main Profile 4:2:0	MPEG-2 профіль Main 4:2:0
+	Max {v} Mbps	Макс. {v} Мбіт/с
+	No audio	Без звуку
+	No video	Без відео
+	Program Stream	Програмний потік
+	Target {v} Mbps	Ціль {v} Мбіт/с
+	Transport Stream	Транспортний потік
+	Uncompressed {bits}-bit PCM	Нестиснений PCM, {bits} біт
+	Uncompressed {bits}-bit float PCM	Нестиснений PCM float, {bits} біт
+	VBR Target {v} Mbps	VBR, ціль {v} Мбіт/с
+	average {v} Mbps	у середньому {v} Мбіт/с
+	constant quantiser {q}	сталий квантувальник {q}
+	fragmented MP4 segments	фрагментовані сегменти MP4
+	keyframe every {n} frames	ключовий кадр кожні {n} кадрів
+	level {n}	рівень {n}
+	linear	лінійний
+	no B pictures	без B-кадрів
+	quality {q}	якість {q}
+	quantizer {q}	квантувальник {q}
+	uncompressed	без стиснення
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} кадр/с
+	{n} B pictures between anchors	{n} B-кадрів між опорними
+	{n} ch {rate} Hz	{n} кан., {rate} Гц
+	{n} pass	Проходів: {n}
+	{profile} auto level	{profile}, автоматичний рівень
+	{sampling} {bits}-bit	{sampling} {bits} біт
+	{seconds} s	{seconds} с
+	{v} Mbps	{v} Мбіт/с
+	{word} compression	Стиснення: {word}
+	{w}x{h} ({par})	{w}x{h} ({par})
+	Strikethrough	Закреслений
+	Caption Export Settings	Параметри експорту субтитрів
+	Export Captions	Експорт субтитрів
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} уже існує, тому нічого не експортовано. Щоб замінити його, виберіть його в діалозі збереження.
+	Delete Redoable Actions	Видалити дії для повторення
+	Clear History	Очистити історію
+	Delete the dimmed actions after the current state? They cannot be redone.	Видалити затемнені дії після поточного стану? Їх не можна буде повторити.
+	Work Area Bar	Смуга робочої області
+	Start: {tc}	Початок: {tc}
+	End: {tc}	Кінець: {tc}
+	Duration: {tc}	Тривалість: {tc}
+	Panel menu	Меню панелі
+	Move panel	Перемістити панель
+	Transparency Grid	Сітка прозорості
+	Show Duplicate Frame Markers	Показувати маркери дублікатів кадрів
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Вхід/вихід секвенції — лише 1 кадр. Виберіть «Уся секвенція», щоб експортувати секвенцію повністю.
+	Set Work Area Bar In Point	Задати точку входу смуги робочої області
+	Set Work Area Bar Out Point	Задати точку виходу смуги робочої області
+	Delete Clips	Видалити кліпи

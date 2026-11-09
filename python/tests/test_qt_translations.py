@@ -1,8 +1,8 @@
 """The Qt GUI is translated into every finished language (parity row 1.8).
 
 The Qt GUI reads the shared catalogs (`crates/ui-egui/src/i18n/`) plus its own
-(`python/cfa4_qt/i18n/`) for the strings only it has. Russian and Ukrainian are partial in egui
-too, so they are not checked here. Hungarian must cover every string
+(`python/cfa4_qt/i18n/`) for the strings only it has. Russian and Ukrainian are finished since
+2026-11-09 and checked like the others. Hungarian must cover every string
 (`test_hungarian_catalog_covers_the_qt_gui`); the others must cover at least COVERAGE of them, so a
 new string can land before its translations do. No Qt import: this runs in the plain Python CI
 job.
@@ -17,7 +17,7 @@ import pytest
 from cfa4_qt.i18n import LANGUAGES, Translator, parse_catalog
 
 QT = Path(__file__).resolve().parents[1] / "cfa4_qt"
-PARTIAL = {"en", "ru", "uk"}
+PARTIAL = {"en"}
 FINISHED = sorted(set(LANGUAGES) - PARTIAL)
 COVERAGE = 0.98
 PLACEHOLDER = re.compile(r"\{\w+\}")

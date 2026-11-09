@@ -1,0 +1,336 @@
+# Russian (ru) catalog for the strings only the CFA4 Qt GUI has; everything else comes from the
+# shared catalog crates/ui-egui/src/i18n/ru.tsv. Same format: context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English text using ordinary
+# Russian video-editing vocabulary. No proprietary localisation resource, string table or product UI
+# was consulted or copied.
+
+	#	#
+	'{name}' already exists. Replace it?	«{name}» уже существует. Заменить?
+	(none)	(нет)
+	0 fastest, 8 smallest	0 — самый быстрый, 8 — самый маленький
+	2K	2K
+	4:2:0 (Main Profile)	4:2:0 (профиль Main)
+	4:2:2 (4:2:2 Profile)	4:2:2 (профиль 4:2:2)
+	4K	4K
+	5.1: the IAB rendered (not ST 429-19)	5.1: отрендеренный IAB (не ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: микс таймлайна (не ST 429-19)
+	8 Bit	8 бит
+	AAC	AAC
+	Add pause	Добавить паузу
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	«Добавить паузу» вставляет [pause 1s]. Измените число, чтобы пауза была длиннее или короче, например [pause 500ms] или [pause 2s].
+	Add to timeline	Добавить на таймлайн
+	Advertisement	Реклама
+	All Supported Files	Все поддерживаемые файлы
+	All files	Все файлы
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Движок без `serve` собран из ветки без графического интерфейса Qt: перейдите на ветку с Qt GUI и соберите заново либо передайте --engine PATH.
+	Arrangement {n}	Аранжировка {n}
+	Audio Files	Аудиофайлы
+	Automation mode	Режим автоматизации
+	B pictures	B-кадры
+	BDAV Transport Stream (.m2ts, AAC audio)	Транспортный поток BDAV (.m2ts, звук AAC)
+	Basic voices (built in)	Базовые голоса (встроенные)
+	Beyond IAB Profile 1: {notes}	Сверх профиля IAB 1: {notes}
+	CFA4	CFA4
+	CFA4 encountered an error	В CFA4 произошла ошибка
+	CFA4 project links	Ссылки проекта CFA4
+	Cancel Selected	Отменить выбранные
+	Cannot check the output folder for files to replace: {error}	Не удаётся проверить выходную папку на наличие заменяемых файлов: {error}
+	Cannot create the output folder: {error}	Не удаётся создать выходную папку: {error}
+	Center at Cut	Центрировать по склейке
+	Check Before Export: no problems found	Проверка перед экспортом: проблем не найдено
+	Check Before Export: {n} problems marked on the timeline (red markers)	Проверка перед экспортом: проблем на таймлайне отмечено: {n} (красные маркеры)
+	Checked:	Проверено:
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Выберите файл дорожки IAB (IMF или DCP), необработанный поток IAB либо Dolby Atmos TrueHD: поток .thd или файл MKV, MP4 либо M2TS с дорожкой Atmos.
+	Choose a file name and location.	Выберите имя и расположение файла.
+	Choose folder	Выбрать папку
+	Click and press keys to assign	Нажмите и нажмите клавиши для назначения
+	Compression	Сжатие
+	Compression Level	Уровень сжатия
+	Constant quality (CRF)	Постоянное качество (CRF)
+	Constant quantiser	Постоянный квантователь
+	Container	Контейнер
+	Content kind	Тип контента
+	Custom Start	Произвольное начало
+	DCP container	Контейнер DCP
+	DCP resolution	Разрешение DCP
+	Decode Auro-3D height channels	Декодировать высотные каналы Auro-3D
+	Delete this preset	Удалить этот пресет
+	Depth:	Глубина:
+	Discard the active take	Отбросить активный дубль
+	Dock Panel	Закрепить панель
+	Docking Action	Действие закрепления
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} с, {rate} Гц; до {beds} каналов bed и {objects} объектов, преобразовано в объекты IAB
+	Double-click a clip in the Project panel to open it here.	Дважды щёлкните клип на панели «Проект», чтобы открыть его здесь.
+	Download	Скачать
+	Download natural voices ({mb} MB)…	Скачать естественные голоса ({mb} МБ)…
+	Download of the natural voices failed: {e}	Не удалось скачать естественные голоса: {e}
+	Download the natural voices? {mb} MB, once.	Скачать естественные голоса? {mb} МБ, один раз.
+	Downloading…	Скачивание…
+	Drag Audio Only	Перетащить только аудио
+	Drag In point	Перетащить точку входа
+	Drag Out point	Перетащить точку выхода
+	Drag Video Only	Перетащить только видео
+	Drag Video and Audio	Перетащить видео и аудио
+	Drag to change the track height	Перетащите, чтобы изменить высоту дорожки
+	Drag to reorder; tick the columns to show.	Перетащите для изменения порядка; отметьте столбцы для показа.
+	Drag to roll the edit	Перетащите, чтобы сдвинуть стык монтажа
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Редактируется в инструментах Lumetri и масок (пока нет в Qt GUI)
+	Editing the selected narration	Правка выбранной озвучки
+	Elementary Stream (.m2v, no audio)	Элементарный поток (.m2v, без звука)
+	End at Cut	Конец на склейке
+	Engine restarted	Движок перезапущен
+	Engine stopped	Движок остановлен
+	Entire Sequence	Вся секвенция
+	Export Media	Экспорт медиа
+	Export Media…	Экспорт медиа…
+	Export Queue	Очередь экспорта
+	Export captions…	Экспорт субтитров…
+	Export failed: {path}	Сбой экспорта: {path}
+	Export finished: {path}	Экспорт завершён: {path}
+	Export the labels to a preset file…	Экспортировать метки в файл пресета…
+	Exported frame to {path}	Кадр экспортирован в {path}
+	Extra Large	Очень большой
+	Extra high	Очень высокое
+	Extra low	Очень низкое
+	FLAC	FLAC
+	Failed	Сбой
+	Feature	Полнометражный
+	Film Scan 1	Плёночный скан 1
+	Film Scan 2	Плёночный скан 2
+	Film Scan 3	Плёночный скан 3
+	Flat (1.85:1)	Flat (1.85:1)
+	Format:	Формат:
+	Frame time: {timecode}	Время кадра: {timecode}
+	From the preset	Из пресета
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Из {source} и github.com/cmusphinx/cmudict (произношения). Лицензия: {license}. Каждый файл проверяется по зафиксированной SHA-256.
+	Full container (1.90:1)	Полный контейнер (1.90:1)
+	Go to Next Keyframe	К следующему ключевому кадру
+	Go to Previous Keyframe	К предыдущему ключевому кадру
+	Go to caption	Перейти к субтитру
+	Go to graphic	Перейти к графике
+	Hear this voice	Прослушать этот голос
+	IAB 7.1 DS bed from the 5.1 mix	Bed IAB 7.1 DS из микса 5.1
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab или Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB из файла (IAB MXF, .iab или Dolby Atmos TrueHD)
+	IAB source	Источник IAB
+	Images	Изображения
+	Immersive audio	Иммерсивный звук
+	Import a preset file…	Импортировать файл пресета…
+	Import into project	Импортировать в проект
+	Incoming clip (drag to trim the In point)	Входящий клип (перетащите, чтобы подрезать точку входа)
+	Input channel mapping	Сопоставление входных каналов
+	Keep existing file	Оставить существующий файл
+	Label Color Presets	Пресеты цветов меток
+	Large	Большой
+	Linear Gradient	Линейный градиент
+	Main sound channels 1-6	Основные каналы звука 1-6
+	Marker report (CSV)	Отчёт по маркерам (CSV)
+	Match sequence	Как у секвенции
+	Media offline	Медиафайл недоступен
+	Medium (default)	Средний (по умолчанию)
+	More transport controls	Другие элементы управления воспроизведением
+	Motion Graphics Templates	Шаблоны моушн-графики
+	Move marked range	Переместить отмеченный диапазон
+	Mute Track	Отключить звук дорожки
+	Narration added on {track}	Озвучка добавлена на {track}
+	Narration updated	Озвучка обновлена
+	Natural voices	Естественные голоса
+	Natural voices installed	Естественные голоса установлены
+	Natural voices need a one-time download.	Для естественных голосов нужна однократная загрузка.
+	New narration	Новая озвучка
+	No matching text.	Нет подходящего текста.
+	No sequence	Нет секвенции
+	No sequence open. Double-click a sequence in the Project panel.	Нет открытой секвенции. Дважды щёлкните секвенцию на панели «Проект».
+	No text graphics in this sequence. Add text with the Type tool.	В этой секвенции нет текстовой графики. Добавьте текст инструментом «Текст».
+	None (I and P only)	Нет (только I и P)
+	None: FSK sync only (SMPTE ST 429-19)	Нет: только синхронизация FSK (SMPTE ST 429-19)
+	Not a usable IAB source: {error}	Непригодный источник IAB: {error}
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Пока нет в Qt GUI (см. docs/qt-parity.md)
+	Off (5.1 only)	Выкл. (только 5.1)
+	Off (target bitrate)	Выкл. (целевой битрейт)
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Выкл.: файл воспроизводит свои каналы, как без декодера Auro-3D.
+	Open Project	Открыть проект
+	Open a sequence to search its graphics	Откройте секвенцию, чтобы искать по её графике
+	Opus	Opus
+	Outgoing clip (drag to trim the Out point)	Исходящий клип (перетащите, чтобы подрезать точку выхода)
+	Output file	Выходной файл
+	Output folder	Выходная папка
+	PCM (uncompressed)	PCM (без сжатия)
+	Pace	Темп
+	Path:	Путь:
+	Program Stream (.mpg, LPCM audio)	Программный поток (.mpg, звук LPCM)
+	Projects and Interchange	Проекты и обмен
+	Public service announcement	Социальная реклама
+	Qt Multimedia is not available	Qt Multimedia недоступна
+	Quick Export cancelled	Быстрый экспорт отменён
+	Quit	Выйти
+	Rating	Рейтинг
+	Reading the IAB source…	Чтение источника IAB…
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Replace	Заменить
+	Reset Panel Layout	Сбросить раскладку панелей
+	Retry	Повторить
+	Revert to the preset's colors and names	Вернуть цвета и названия пресета
+	Ripple Trim In	Подрезать вход со сдвигом
+	Ripple Trim Out	Подрезать выход со сдвигом
+	Roll Edit	Сдвиг стыка
+	Save as New Workspace	Сохранить как новое рабочее пространство
+	Saved guide template “{name}”	Шаблон направляющих «{name}» сохранён
+	Scope (2.39:1)	Scope (2.39:1)
+	Scope settings	Параметры Scope
+	Select Playback Resolution	Выбор разрешения воспроизведения
+	Select Zoom Level	Выбор масштаба
+	Select a clip in the Timeline.	Выберите клип на таймлайне.
+	Sequence In/Out	Вход/выход секвенции
+	Session log: {path}	Журнал сеанса: {path}
+	Settings	Настройки
+	Short	Короткометражный
+	Show clip durations	Показывать длительность клипов
+	Show in File Manager	Показать в файловом менеджере
+	Show the presets folder	Показать папку пресетов
+	Small	Маленький
+	Social Safe Zones	Безопасные зоны для соцсетей
+	Solid	Сплошной
+	Solo Track	Соло дорожки
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Некоторые кадры перекодируются для DCP (DLC, 24 бит).
+	Some panel labels change language after a restart.	Названия некоторых панелей сменят язык после перезапуска.
+	Source clips	Исходные клипы
+	Source patch	Патч источника
+	Spreadsheets	Электронные таблицы
+	Start at Cut	Начало на склейке
+	Starting engine…	Запуск движка…
+	Still Images	Неподвижные изображения
+	Stop Queue	Остановить очередь
+	Synthesizing narration…	Синтез озвучки…
+	Synthesizing…	Синтез…
+	Teaser	Тизер
+	Template: {name}	Шаблон: {name}
+	Test	Тест
+	Text colour	Цвет текста
+	Text to Speech: another sequence is open now; the narration was not placed	Синтез речи: открыта другая секвенция; озвучка не размещена
+	Text to Speech: {e}	Синтез речи: {e}
+	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Микс 5.1 превращается в bed 7.1 DS (IAB Profile 1); канал 14 основного звука несёт сигнал синхронизации FSK.
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Движок CFA4 (cfa4-cli) не найден. Соберите его командой: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Движок CFA4 неожиданно остановился и был перезапущен. Несохранённые изменения сохранены в журнале восстановления; он предложит их восстановить.
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Движок CFA4 неожиданно остановился. Несохранённые изменения сохранены в журнале восстановления; перезапустите CFA4, чтобы восстановить их.
+	The audio input could not be started	Не удалось запустить аудиовход
+	The audio input does not support a usable format	Аудиовход не поддерживает подходящий формат
+	The engine stopped	Движок остановлен
+	The template needs a name.	Шаблону нужно имя.
+	The voice-over input buffer is full: the take ends here	Буфер входа закадрового голоса переполнен: дубль заканчивается здесь
+	There are no guides to save.	Нет направляющих для сохранения.
+	There is no audio input device	Нет устройства аудиовхода
+	This file already exists: {path}	Этот файл уже существует: {path}
+	Toggle Animation	Вкл./выкл. анимацию
+	Toggle Caption Track Lock	Вкл./выкл. блокировку дорожки субтитров
+	Toggle Caption Track Output	Вкл./выкл. вывод дорожки субтитров
+	Toggle Sync Lock	Вкл./выкл. блокировку синхронизации
+	Toggle Track Lock	Вкл./выкл. блокировку дорожки
+	Toggle Track Output	Вкл./выкл. вывод дорожки
+	Toggle the effect on or off	Включить или отключить эффект
+	Toggle track targeting	Переключить целевую дорожку
+	Toggle visibility	Переключить видимость
+	Track	Дорожка
+	Track output assignment	Назначение выхода дорожки
+	Trailer	Трейлер
+	Transitional	Переходный
+	Transport Stream (.ts, AAC audio)	Транспортный поток (.ts, звук AAC)
+	Trim In	Подрезать вход
+	Trim Out	Подрезать выход
+	Twirl open or shut	Развернуть или свернуть
+	Type what you want the voice to say	Введите, что должен произнести голос
+	Undock Panel	Открепить панель
+	Use hardware encoding when available	Использовать аппаратное кодирование, если доступно
+	Video Files	Видеофайлы
+	Vocal pitch	Высота голоса
+	Voice-over input: {error}	Вход закадрового голоса: {error}
+	ZIP (1 scan line)	ZIP (1 строка развёртки)
+	ZIP (16 scan lines)	ZIP (16 строк развёртки)
+	an audio track	звуковая дорожка
+	an unknown time	неизвестное время
+	automatic	автоматически
+	no audio output (check Settings ▸ Audio Hardware)	нет аудиовыхода (проверьте Настройки ▸ Аудиооборудование)
+	no column for {names}	нет столбца для {names}
+	no dialog	нет диалога
+	no multi-camera clip at the playhead	нет мультикамерного клипа под курсором воспроизведения
+	no sequence is open	нет открытой секвенции
+	not available	недоступно
+	not available now	сейчас недоступно
+	optional	необязательно
+	select a clip in the Project panel	выберите клип на панели «Проект»
+	the job disappeared	задание исчезло
+	the selected clip is not remixed	выбранный клип не ремикшируется
+	{bits} Bit	{bits} бит
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} кадров, {fps} кадр/с, {rate} Гц; до {beds} каналов bed и {objects} объектов
+	{name} (Modified)	{name} (изменено)
+	{name} (download)	{name} (скачать)
+	{n} beat markers added ({bpm} BPM)	Добавлено маркеров ритма: {n} ({bpm} BPM)
+	{n} exports queued (the Export window shows the queue)	В очередь поставлено экспортов: {n} (очередь показана в окне экспорта)
+	{n} variant sequences made, {q} exports queued	Создано вариантов секвенций: {n}, экспортов в очереди: {q}
+	{w} × {h}	{w} × {h}
+	…	…
+	1 B picture between anchors	1 B-кадр между опорными
+	10-bit RGB	10-бит RGB
+	12-bit X'Y'Z'	12-бит X'Y'Z'
+	16-bit half float	16-бит half float
+	AV1 Main (10-bit for HDR)	AV1 Main (10 бит для HDR)
+	BDAV Transport Stream	Транспортный поток BDAV
+	CBR {v} Mbps	CBR {v} Мбит/с
+	CRF (constant quality) {crf}	CRF (постоянное качество) {crf}
+	Elementary Stream	Элементарный поток
+	FLAC (lossless) {bits}-bit	FLAC (без потерь) {bits} бит
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 для HDR
+	Image sequence	Последовательность изображений
+	MPEG-2 4:2:2 Profile	MPEG-2 профиль 4:2:2
+	MPEG-2 Main Profile 4:2:0	MPEG-2 профиль Main 4:2:0
+	Max {v} Mbps	Макс. {v} Мбит/с
+	No audio	Без звука
+	No video	Без видео
+	Program Stream	Программный поток
+	Target {v} Mbps	Цель {v} Мбит/с
+	Transport Stream	Транспортный поток
+	Uncompressed {bits}-bit PCM	Несжатый PCM, {bits} бит
+	Uncompressed {bits}-bit float PCM	Несжатый PCM float, {bits} бит
+	VBR Target {v} Mbps	VBR, цель {v} Мбит/с
+	average {v} Mbps	в среднем {v} Мбит/с
+	constant quantiser {q}	постоянный квантователь {q}
+	fragmented MP4 segments	фрагментированные сегменты MP4
+	keyframe every {n} frames	ключевой кадр каждые {n} кадров
+	level {n}	уровень {n}
+	linear	линейный
+	no B pictures	без B-кадров
+	quality {q}	качество {q}
+	quantizer {q}	квантователь {q}
+	uncompressed	без сжатия
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} кадр/с
+	{n} B pictures between anchors	{n} B-кадров между опорными
+	{n} ch {rate} Hz	{n} кан., {rate} Гц
+	{n} pass	Проходов: {n}
+	{profile} auto level	{profile}, автоуровень
+	{sampling} {bits}-bit	{sampling} {bits} бит
+	{seconds} s	{seconds} с
+	{v} Mbps	{v} Мбит/с
+	{word} compression	Сжатие: {word}
+	{w}x{h} ({par})	{w}x{h} ({par})
+	Strikethrough	Зачёркнутый
+	Caption Export Settings	Параметры экспорта субтитров
+	Export Captions	Экспорт субтитров
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} уже существует, поэтому ничего не экспортировано. Чтобы заменить его, выберите его в диалоге сохранения.
+	Delete Redoable Actions	Удалить действия для повтора
+	Clear History	Очистить историю
+	Delete the dimmed actions after the current state? They cannot be redone.	Удалить затемнённые действия после текущего состояния? Их нельзя будет повторить.
+	Work Area Bar	Полоса рабочей области
+	Start: {tc}	Начало: {tc}
+	End: {tc}	Конец: {tc}
+	Duration: {tc}	Длительность: {tc}
+	Panel menu	Меню панели
+	Move panel	Переместить панель
+	Transparency Grid	Сетка прозрачности
+	Show Duplicate Frame Markers	Показывать маркеры дубликатов кадров
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Вход/выход секвенции — всего 1 кадр. Выберите «Вся секвенция», чтобы экспортировать секвенцию целиком.
+	Set Work Area Bar In Point	Задать точку входа полосы рабочей области
+	Set Work Area Bar Out Point	Задать точку выхода полосы рабочей области
+	Delete Clips	Удалить клипы
