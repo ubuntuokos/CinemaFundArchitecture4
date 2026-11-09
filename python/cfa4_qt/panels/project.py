@@ -76,9 +76,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import theme
 from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND
 from .media_browser import FILES_MIME, dropped_files
+from .monitor_view import SOURCE_MIME
 from .timeline import ITEM_MIME, LABEL_COLORS
 from .timeline_media import TimelineMedia
 
@@ -115,6 +117,12 @@ SORT_ICONS = (
     N_("Audio Info"),
     N_("Date Created"),
 )
+def egui_name(key: str) -> str:
+    """egui's automation-id spelling of a view mode or font size (its enum's name: ``icon`` →
+    ``Icon``, ``extraLarge`` → ``ExtraLarge``)."""
+    return key[:1].upper() + key[1:]
+
+
 FONT_SIZES = (("small", N_("Small"), 10.5), ("medium", N_("Medium (default)"), 12.0), ("large", N_("Large"), 14.0), ("extraLarge", N_("Extra Large"), 16.0))
 TOGGLES = (
     ("previewArea", N_("Preview Area"), ""),
@@ -160,6 +168,13 @@ def label_color(row: dict[str, Any]) -> QColor:
     return QColor(LABEL_COLORS.get(str(row.get("label") or "").lower(), "#8f6fd8"))
 
 
+def name_matches(name: str, needle: str) -> bool:
+    """The search finds a name holding every word typed, in any order (upstream #3327), as the
+    engine's ``project.panel`` does."""
+    name = name.lower()
+    return all(word in name for word in needle.lower().split())
+
+
 def fallback_rows(node: Any, depth: int = 0, expanded: set[int] | None = None, needle: str = "") -> list[dict[str, Any]]:
     """The List view's rows from ``project.inspect``'s bin tree (an engine without
     ``project.panel``): every bin open, as the panel showed before."""
@@ -168,7 +183,7 @@ def fallback_rows(node: Any, depth: int = 0, expanded: set[int] | None = None, n
         if not isinstance(child, dict):
             continue
         if "item" in child:
-            if needle and needle not in str(child.get("name") or "").lower():
+            if not name_matches(str(child.get("name") or ""), needle):
                 continue
             out.append(
                 {
@@ -323,11 +338,149 @@ class _Drops:
         return False
 
 
+class NewItemButton(QToolButton):
+    """The footer's New Item button. Project items dropped on it make a sequence that matches the
+    first clip (File ▸ New ▸ Sequence From Clip), as in Premiere; a Source Monitor drag, whose
+    In/Out range and video/audio choice only a timeline drop keeps, is not taken."""
+
+    dropped = Signal(list)  # the dragged item ids
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.drop_hover = False
+
+    @staticmethod
+    def dragged_items(m: QMimeData) -> list[int]:
+        if m.hasFormat(SOURCE_MIME) or not m.hasFormat(ITEM_MIME):
+            return []
+        return _ids(m, ITEM_MIME)
+
+    def _hover(self, on: bool) -> None:
+        if self.drop_hover != on:
+            self.drop_hover = on
+            self.update()
+
+    def dragEnterEvent(self, e: Any) -> None:
+        if self.dragged_items(e.mimeData()):
+            e.acceptProposedAction()
+            self._hover(True)
+        else:
+            e.ignore()
+
+    def dragMoveEvent(self, e: Any) -> None:
+        if self.dragged_items(e.mimeData()):
+            e.acceptProposedAction()
+        else:
+            e.ignore()
+
+    def dragLeaveEvent(self, e: Any) -> None:
+        self._hover(False)
+        super().dragLeaveEvent(e)
+
+    def dropEvent(self, e: Any) -> None:
+        self._hover(False)
+        items = self.dragged_items(e.mimeData())
+        if not items:
+            e.ignore()
+            return
+        e.acceptProposedAction()
+        self.dropped.emit(items)
+
+    def paintEvent(self, e: Any) -> None:
+        super().paintEvent(e)
+        if self.drop_hover:  # the drop target, outlined in the accent colour
+            p = QPainter(self)
+            p.setPen(QPen(QColor(theme.current().accent), 1.5))
+            p.drawRoundedRect(QRectF(self.rect()).adjusted(1, 1, -1, -1), 3, 3)
+            p.end()
+
+
+def project_row_parts(view: QAbstractItemView, prefix: str, rows: list[tuple[Any, Any, Any, int]]) -> list[tuple[str, QRectF, str]]:
+    """egui's ids for a Project view's rows in view: ``<prefix>.bin.<id>`` (with ``.toggle``, its
+    expand arrow, in the List view) and ``<prefix>.item.<id>``. ``rows``: (model item, bin id, item
+    id, depth) of each row."""
+    vp = view.viewport()
+    shown = vp.geometry()
+    out: list[tuple[str, QRectF, str]] = []
+    for it, bin_id, item_id, depth in rows:
+        r = view.visualItemRect(it).translated(vp.pos())
+        vis = r.intersected(shown)
+        if vis.isEmpty():
+            continue
+        name = it.text(0) if isinstance(it, QTreeWidgetItem) else it.text()
+        if bin_id is not None:
+            out.append((f"{prefix}.bin.{bin_id}", QRectF(vis), name))
+            if isinstance(view, QTreeWidget):
+                ind = view.indentation()
+                arrow = QRect(r.left() - ind, r.top(), ind, r.height()).intersected(shown)
+                if not arrow.isEmpty():
+                    out.append((f"{prefix}.bin.{bin_id}.toggle", QRectF(arrow), "Expand"))
+        elif item_id is not None:
+            out.append((f"{prefix}.item.{item_id}", QRectF(vis), name))
+    return out
+
+
+def empty_part(view: QAbstractItemView, prefix: str) -> list[tuple[str, QRectF, str]]:
+    """egui's ``<prefix>.empty``: the view's empty space under its rows or cards (a click
+    deselects, a double-click imports, a right-click opens the background menu)."""
+    vp = view.viewport()
+    shown = vp.geometry()
+    bottom = shown.top()
+    model = view.model()
+    stack = [view.rootIndex()]
+    while stack:  # every row in view (expanded children too)
+        parent = stack.pop()
+        for row in range(model.rowCount(parent) if model is not None else 0):
+            idx = model.index(row, 0, parent)
+            r = view.visualRect(idx)
+            if r.isValid() and not r.isEmpty():
+                bottom = max(bottom, r.translated(vp.pos()).bottom() + 1)
+            if isinstance(view, QTreeWidget) and view.isExpanded(idx):
+                stack.append(idx)
+    rest = QRect(shown.left(), bottom, shown.width(), shown.bottom() + 1 - bottom)
+    return [(f"{prefix}.empty", QRectF(rest), "Empty area")] if rest.height() > 0 else []
+
+
 class ProjectTree(QTreeWidget, _Drops):
     """The List view."""
 
     files_dropped = Signal(list)  # paths dragged from the Media Browser or a file manager
     moved = Signal(list, object)  # (item and bin ids, target bin or None for the shown bin)
+    empty_double_clicked = Signal()
+
+    def mouseDoubleClickEvent(self, e: Any) -> None:
+        if self.itemAt(e.position().toPoint()) is None:
+            self.empty_double_clicked.emit()  # egui's: a double-click on empty space imports
+            return
+        super().mouseDoubleClickEvent(e)
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """The rows in view (``project_row_parts``) and the column headers,
+        ``<prefix>.list.header.<column>`` (egui's names; the header shows them translated)."""
+        prefix = getattr(self, "part_prefix", "project")
+        rows: list[tuple[Any, Any, Any, int]] = []
+
+        def walk(it: QTreeWidgetItem, depth: int) -> None:
+            rows.append((it, it.data(0, BIN_ROLE), it.data(0, ITEM_ROLE), depth))
+            if it.isExpanded():
+                for i in range(it.childCount()):
+                    child = it.child(i)
+                    if child is not None:
+                        walk(child, depth + 1)
+
+        for i in range(self.topLevelItemCount()):
+            top = self.topLevelItem(i)
+            if top is not None:
+                walk(top, 0)
+        out = project_row_parts(self, prefix, rows) + empty_part(self, prefix)
+        head = self.header()
+        if not self.isHeaderHidden():
+            for i, key in enumerate(list(getattr(self, "column_keys", []))[: self.columnCount()]):
+                r = QRect(head.x() + head.sectionViewportPosition(i), head.y(), head.sectionSize(i), head.height()).intersected(head.geometry())
+                if not r.isEmpty():
+                    out.append((f"{prefix}.list.header.{key}", QRectF(r), key))
+        return out
 
     def mimeData(self, items: list[QTreeWidgetItem]) -> QMimeData:
         return drag_mime(
@@ -362,7 +515,24 @@ class IconList(QListWidget, _Drops):
 
     files_dropped = Signal(list)
     moved = Signal(list, object)
+    empty_double_clicked = Signal()
     hovered = Signal(object, object)  # item id (or None) and the media time (ticks: 64-bit) under the pointer
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``<prefix>.bin.<id>`` / ``<prefix>.item.<id>`` for the cards in view."""
+        rows = []
+        for i in range(self.count()):
+            it = self.item(i)
+            if it is not None and not it.isHidden():
+                rows.append((it, it.data(BIN_ROLE), it.data(ITEM_ROLE), 0))
+        prefix = getattr(self, "part_prefix", "project")
+        return project_row_parts(self, prefix, rows) + empty_part(self, prefix)
+
+    def mouseDoubleClickEvent(self, e: Any) -> None:
+        if self.itemAt(e.position().toPoint()) is None:
+            self.empty_double_clicked.emit()  # egui's: a double-click on empty space imports
+            return
+        super().mouseDoubleClickEvent(e)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -971,6 +1141,7 @@ class BinView(QWidget):
 
         self.tree = ProjectTree(self)
         self.tree.setObjectName(f"{prefix}.list" if prefix != "project" else "project.tree")
+        self.tree.part_prefix = prefix  # egui's ids for its rows
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tree.setDragEnabled(True)
         self.tree.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
@@ -999,6 +1170,7 @@ class BinView(QWidget):
         self.tree.itemCollapsed.connect(lambda it: self._twirl(it, False))
 
         self.icons = IconList(self)
+        self.icons.part_prefix = prefix
         self.icons.setObjectName(f"{prefix}.icons")
         self.icons.setViewMode(QListWidget.ViewMode.IconMode)
         self.icons.setResizeMode(QListWidget.ResizeMode.Adjust)
@@ -1022,6 +1194,8 @@ class BinView(QWidget):
             v.moved.connect(self._moved)
         self.tree.itemDoubleClicked.connect(lambda it, _c: self._open(it.data(0, ITEM_ROLE), it.data(0, BIN_ROLE), it.data(0, ROW_ROLE)))
         self.icons.itemDoubleClicked.connect(lambda it: self._open(it.data(ITEM_ROLE), it.data(BIN_ROLE), it.data(ROW_ROLE)))
+        self.tree.empty_double_clicked.connect(lambda: self.panel.invoke.emit("file.import"))
+        self.icons.empty_double_clicked.connect(lambda: self.panel.invoke.emit("file.import"))
         self.tree.itemSelectionChanged.connect(self._selection_changed)
         self.icons.itemSelectionChanged.connect(self._selection_changed)
         self.tree.itemChanged.connect(lambda it, col: col == 0 and self._renamed(it.data(0, ITEM_ROLE), it.data(0, BIN_ROLE), it.text(0)))
@@ -1049,7 +1223,7 @@ class BinView(QWidget):
         self.view_buttons: dict[str, QToolButton] = {}
         for key, text, tip in (("list", "☰", N_("List View")), ("icon", "▦", N_("Icon View")), ("freeform", "⧉", N_("Freeform View"))):
             b = QToolButton(self)
-            b.setObjectName(f"{prefix}.view.{key}")
+            b.setObjectName(f"{prefix}.view.{egui_name(key)}")  # egui's ViewMode spelling
             b.setText(text)
             b.setToolTip(tr(tip))
             b.setCheckable(True)
@@ -1082,7 +1256,7 @@ class BinView(QWidget):
             ("new-item", "✚", N_("New Item")),
             ("project.delete", "🗑", N_("Clear (Delete)")),
         ):
-            b = QToolButton(self)
+            b = NewItemButton(self) if key == "new-item" else QToolButton(self)
             b.setObjectName(f"{prefix}.button.{key}")
             b.setText(text)
             b.setToolTip(tr(tip))
@@ -1092,6 +1266,8 @@ class BinView(QWidget):
                 menu = QMenu(b)
                 b.setMenu(menu)
                 menu.aboutToShow.connect(lambda m=menu: self._fill_new_item(m))
+                # a clip dropped here makes a sequence that matches it (upstream #2940)
+                b.dropped.connect(lambda items: self.panel.command.emit("file.newSequenceFromClip", {"items": items}))
             else:
                 b.clicked.connect(lambda _c=False, k=key: self._footer(k))
             foot.addWidget(b)
@@ -1285,6 +1461,7 @@ class BinView(QWidget):
             self._shown = shape
             tree.setColumnCount(len(names))
             tree.setHeaderLabels([tr(n) for n in names])
+            tree.column_keys = names
             header = tree.header()
             header.blockSignals(True)
             for i, c in enumerate(columns):
@@ -2562,7 +2739,7 @@ class ProjectPanel(QWidget):
         item("find", N_("Find…"), lambda: self.invoke.emit("edit.find"))
         m.addSeparator()
         for key, label in (("list", N_("List")), ("icon", N_("Icon")), ("freeform", N_("Freeform"))):
-            item(f"view.{key}", label, lambda _c=False, k=key: view.set_mode(k), True, view.mode == key)
+            item(f"view.{egui_name(key)}", label, lambda _c=False, k=key: view.set_mode(k), True, view.mode == key)
         m.addSeparator()
         for key, label, shortcut in TOGGLES:
             on = bool(self.view.get(key))
@@ -2573,7 +2750,7 @@ class ProjectPanel(QWidget):
         cur = (self.view.get("view") or {}).get("fontSize")
         for key, label, _pts in FONT_SIZES:
             a = fs.addAction(tr(label))
-            a.setObjectName(f"project.menu.fontSize.{key}")
+            a.setObjectName(f"project.menu.fontSize.{egui_name(key)}")
             a.setCheckable(True)
             a.setChecked(cur == key)
             a.triggered.connect(lambda _c=False, k=key: self.set_view({"fontSize": k}))

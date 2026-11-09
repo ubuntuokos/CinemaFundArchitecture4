@@ -82,10 +82,13 @@ fn new_ids() -> Vec<String> {
 fn premiere_table_has_no_dangling_ids_or_new_conflicts() {
     let ui: Vec<String> = cfa4_ui_egui::menus::external_commands().into_iter().map(|c| c.id).collect();
     for (id, keys, panel) in presets::premiere() {
-        assert!(cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id), "Premiere table: `{id}` ({keys} {panel}) is not a command");
+        assert!(
+            cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id) || presets::QT_ONLY.contains(&id),
+            "Premiere table: `{id}` ({keys} {panel}) is not a command"
+        );
     }
     for (id, _, _) in presets::CFA4_PANEL.iter().chain(presets::PREMIERE_PANEL) {
-        assert!(cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id), "panel table: `{id}` is not a command");
+        assert!(cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id) || presets::QT_ONLY.contains(id), "panel table: `{id}` is not a command");
     }
     let mut s = Session::default();
     s.shortcuts.register_external(cfa4_ui_egui::menus::external_commands());
@@ -180,12 +183,11 @@ fn new_keys_work_in_the_app() {
     assert_eq!(d.app().ui.program.zoom, None);
 }
 
-/// Off macOS the menus show `Ctrl+…`, so that is what agents send: a `Ctrl` chord through
+/// The menus show `Ctrl+…`, so that is what agents send: a `Ctrl` chord through
 /// `ui.key` (and `ctrl` in `ui.click` modifiers) must act like the physical key, which egui-winit
 /// reports as `ctrl` + `command`. Bindings are written `Cmd+…`, so this failed to match (#245).
-#[cfg(not(target_os = "macos"))]
 #[test]
-fn ctrl_chords_fire_shortcuts_off_macos() {
+fn ctrl_chords_fire_shortcuts() {
     let mut d = Driver::new();
     let seq = d.exec("sequence.inspect", json!({}));
     let second = &seq["video"][0]["items"].as_array().unwrap()[1];
@@ -223,7 +225,7 @@ fn ctrl_chords_fire_shortcuts_off_macos() {
 
 #[test]
 fn delete_key_clears_the_selected_timeline_clip() {
-    // #243: on Windows and Linux keyboards Delete is the forward-delete key; with the Timeline
+    // #243: on PC keyboards Delete is the forward-delete key; with the Timeline
     // focused it ran Project ▸ Clear (nothing selected there), so the clip stayed.
     let mut d = Driver::new();
     let items = |d: &mut Driver| d.exec("sequence.inspect", json!({}))["video"][0]["items"].as_array().unwrap().clone();

@@ -1,5 +1,4 @@
-//! Bit-exactness against ffmpeg's decoder on libx265 / VideoToolbox fixtures (skipped when ffmpeg is
-//! absent).
+//! Bit-exactness against ffmpeg's decoder on libx265 fixtures (skipped when ffmpeg is absent).
 
 mod common;
 
@@ -73,8 +72,6 @@ fixture_tests!(
     main12,
     hd_1080p,
     uhd_4k_main10,
-    vt_main,
-    vt_main10,
 );
 
 /// Draft mode: sub-layer non-reference pictures skip deblocking and SAO and are flagged; every

@@ -35,6 +35,7 @@ mod marker_export;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
+pub mod media_route;
 pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
@@ -205,7 +206,7 @@ impl Services for FsServices {
         Some(std::sync::Arc::new(|p: &str| std::fs::read(p)))
     }
     /// Media are read in place from the open file: a clip costs its index, not its size.
-    #[cfg(any(unix, windows))]
+    #[cfg(unix)]
     fn reader(&self, path: &str) -> Option<std::io::Result<cfa4_media::SharedReader>> {
         Some(cfa4_media::reader::FileReader::open(std::path::Path::new(path)).map(|r| std::sync::Arc::new(r) as cfa4_media::SharedReader))
     }
@@ -250,6 +251,22 @@ impl History {
     }
     pub fn can_redo(&self) -> bool {
         !self.redo.is_empty()
+    }
+    /// The History panel's Delete Redoable Actions: removes every step that Redo would bring
+    /// back. The project and the undo steps stay as they are. Returns how many steps were removed.
+    pub fn delete_redoable(&mut self) -> usize {
+        let n = self.redo.len();
+        self.redo.clear();
+        n
+    }
+    /// The History panel's Clear History: removes every undo and redo step. The project stays as
+    /// it is. Returns how many steps were removed.
+    pub fn clear(&mut self) -> usize {
+        let n = self.undo.len() + self.redo.len();
+        self.undo.clear();
+        self.redo.clear();
+        self.merge_key = None;
+        n
     }
 }
 
@@ -378,6 +395,10 @@ pub struct EditorState {
     /// Sequence ▸ Show Through Edits: the timeline marks cuts between continuous pieces of a clip.
     #[serde(default)]
     pub show_through_edits: bool,
+    /// Timeline Display Settings ▸ Show Duplicate Frame Markers: a stripe along the bottom of a
+    /// clip under the media frames another clip also shows.
+    #[serde(default)]
+    pub show_duplicate_frame_markers: bool,
     /// Markers ▸ Ripple Sequence Markers: ripple edits move (and delete) sequence markers too.
     #[serde(default)]
     pub ripple_sequence_markers: bool,
@@ -390,6 +411,11 @@ pub struct EditorState {
     /// Sequence markers copied with the clipboard clips (start relative to the copied range).
     #[serde(skip)]
     pub clipboard_markers: Vec<cfa4_project::Marker>,
+    /// Captions copied from the Timeline, with their caption track's index (starts relative to the
+    /// copied range). Copying clips empties it and copying captions empties `clipboard`, so Paste
+    /// places whichever was copied last.
+    #[serde(skip)]
+    pub caption_clipboard: Vec<(usize, cfa4_project::Caption)>,
     /// The last Edit ▸ Find… (Find Next continues it).
     #[serde(default)]
     pub find: Option<project_tools::FindState>,
@@ -1183,6 +1209,22 @@ impl Session {
         Ok((img, provider.offline_used()))
     }
 
+    /// [`Self::try_render_program_with_offline_at`] as opaque sRGB RGBA8 bytes (`w`, `h`, pixels):
+    /// a frame that is one opaque video picture goes straight to bytes
+    /// ([`cfa4_render::render_sequence_rgba8`]), without the linear float picture in between.
+    pub fn try_render_program_rgba8_with_offline_at(&self, scale: f32, t: Tick) -> Result<(usize, usize, Vec<u8>, Vec<media_pool::OfflineMedia>)> {
+        let provider = self.media.provider(self.project.clone(), self.services.clone()).recording();
+        let seq = self.renderable_sequence(scale)?;
+        let t = self.sequence_rate().snap(t.max(Tick::ZERO));
+        let opts = cfa4_render::RenderOptions { scale, captions: true, ..Default::default() };
+        let (w, h, mut px) = cfa4_render::render_sequence_rgba8(&self.project, seq, t, opts, &provider);
+        // opaque, as `Image::over_black_rgba8`: the fallback keeps the picture's alpha in the fourth byte
+        for a in px.iter_mut().skip(3).step_by(4) {
+            *a = 255;
+        }
+        Ok((w, h, px, provider.offline_used()))
+    }
+
     fn render_program_with(&self, scale: f32, t: Tick, provider: &dyn cfa4_render::SourceProvider) -> Result<cfa4_render::Image> {
         let seq = self.renderable_sequence(scale)?;
         let t = self.sequence_rate().snap(t.max(Tick::ZERO));
@@ -1275,6 +1317,8 @@ mod file_tests;
 #[cfg(test)]
 mod gap_selection_tests;
 #[cfg(test)]
+mod history_tests;
+#[cfg(test)]
 mod image_sequence_tests;
 #[cfg(test)]
 mod individual_selection_tests;
@@ -1284,6 +1328,8 @@ mod interchange_auto_points_tests;
 mod keyboard_tests;
 #[cfg(test)]
 mod linked_speed_tests;
+#[cfg(test)]
+mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
 #[cfg(test)]
@@ -1366,6 +1412,8 @@ mod trim_tests;
 mod vfx_tests;
 #[cfg(test)]
 mod voiceover_tests;
+#[cfg(test)]
+mod work_area_tests;
 
 #[cfg(test)]
 mod source_placement_tests;

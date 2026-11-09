@@ -20,6 +20,21 @@ pub(crate) fn escape(s: &str) -> String {
     o
 }
 
+/// Like `escape`, but also encodes whitespace that attribute-value
+/// normalization would otherwise turn into spaces.
+pub(crate) fn escape_attr(s: &str) -> String {
+    let mut o = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '\n' => o.push_str("&#10;"),
+            '\r' => o.push_str("&#13;"),
+            '\t' => o.push_str("&#9;"),
+            c => o.push_str(&escape(c.encode_utf8(&mut [0; 4]))),
+        }
+    }
+    o
+}
+
 /// Pretty-printing XML writer (two-space indent, one element per line).
 pub(crate) struct XmlWriter {
     out: String,
@@ -46,7 +61,7 @@ impl XmlWriter {
         self.out.push('<');
         self.out.push_str(name);
         for (k, v) in attrs {
-            let _ = write!(self.out, " {k}=\"{}\"", escape(v));
+            let _ = write!(self.out, " {k}=\"{}\"", escape_attr(v));
         }
     }
 
@@ -185,5 +200,17 @@ mod tests {
     fn rejects_internal_dtd_entity_expansion() {
         let text = "<!DOCTYPE root [<!ENTITY word 'expanded'>]><root>&word;</root>";
         assert_eq!(parse(text).unwrap_err(), "internal DTD subsets are not supported");
+    }
+
+    #[test]
+    fn attr_whitespace_roundtrip() {
+        let mut w = XmlWriter::new(None);
+        w.open("a", &[("name", "x\ny\tz\r")]);
+        w.text("b", "a\nb");
+        let s = w.finish();
+        let d = parse(&s).unwrap();
+        let a = d.root_element();
+        assert_eq!(a.attribute("name"), Some("x\ny\tz\r"));
+        assert_eq!(child(a, "b").and_then(|b| b.text()), Some("a\nb"));
     }
 }

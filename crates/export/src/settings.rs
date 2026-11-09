@@ -62,7 +62,7 @@ impl H264Profile {
 }
 
 /// Export ▸ Hardware encoding: whether H.264 may be encoded by the system's hardware video encoder
-/// (VideoToolbox on macOS, NVENC on NVIDIA GPUs on Windows) instead of CFA4's own encoder. Off
+/// (NVENC on NVIDIA GPUs) instead of CFA4's own encoder. Off
 /// by default: hardware encoders make different streams, and exports are otherwise byte-identical
 /// from run to run and machine to machine.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -82,7 +82,7 @@ pub enum HardwareEncoding {
 /// clip takes the same time (`docs/performance.md`). The GPU matches the CPU within the
 /// compositor's parity tolerance, not bit for bit, so an export's bytes can depend on the
 /// machine's GPU. Off = the CPU reference renderer, byte-reproducible everywhere; Off is the
-/// default (opt-in per export) until GPU export has been measured on Windows and macOS.
+/// default (opt-in per export).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum GpuRendering {
@@ -525,11 +525,11 @@ impl ExportSettings {
     }
 
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,
-    /// Targa and OpenEXR sequences, ProRes 4444 / 4444 XQ and GoPro CineForm RGBA QuickTime
-    /// movies.
+    /// Targa and OpenEXR sequences, GIF (binary transparency), ProRes 4444 / 4444 XQ and GoPro
+    /// CineForm RGBA QuickTime movies.
     pub fn supports_alpha(&self) -> bool {
         match self.format {
-            Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence => true,
+            Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence | Format::Gif => true,
             Format::ProRes => crate::prores_profile(&self.prores_profile).chroma() == cfa4_prores::ChromaFormat::Yuv444,
             Format::Cineform => crate::cineform_profile(&self.cineform_profile) == cfa4_cineform::EncodedFormat::Rgba4444,
             _ => false,
@@ -693,7 +693,7 @@ impl ExportSettings {
                 px * fps * 2.0 * q * f
             }
             Format::Mjpeg | Format::JpegSequence => px * 8.0 * (0.4 + self.quality as f64 / 100.0 * 2.0) * fps / 8.0,
-            Format::PngSequence => px * 4.0 * 0.45 * 8.0 * fps,
+            Format::PngSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 0.45 * 8.0 * fps,
             Format::BmpSequence => px * 3.0 * 8.0 * fps,
             Format::TiffSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 8.0 * fps,
             Format::TgaSequence => px * if self.keeps_alpha() { 4.0 } else { 3.0 } * 8.0 * fps,

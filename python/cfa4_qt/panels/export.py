@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtCore import QObject, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QFrame,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -36,8 +37,10 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -126,8 +129,10 @@ def encoder_format(fmt: str, mxf_codec: str) -> str:
 
 
 def supports_alpha(fmt: str, prores_profile: str, cineform_profile: str) -> bool:
-    """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``)."""
-    if fmt in ("png", "tiff", "tga", "exr"):
+    """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``).
+
+    GIF keeps binary transparency (alpha below 128 transparent, the rest opaque)."""
+    if fmt in ("png", "tiff", "tga", "exr", "gif"):
         return True
     if fmt == "prores":
         return prores_profile in ("4444", "4444xq")
@@ -246,6 +251,30 @@ def deep_merge(dst: dict[str, Any], src: dict[str, Any]) -> dict[str, Any]:
     return dst
 
 
+QUEUE_COLUMN_W = 500
+QUEUE_ACTIONS_COL = 6
+
+
+class QueueTable(QTableWidget):
+    """The export queue; each row is egui's ``export.queue.item.<id>`` part (its status as the label)."""
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        out = []
+        offset = self.viewport().pos()
+        for row in range(self.rowCount()):
+            first = self.item(row, 0)
+            if first is None or self.isRowHidden(row):
+                continue
+            rect = QRect()
+            for col in range(self.columnCount()):
+                rect = rect.united(self.visualRect(self.model().index(row, col)))
+            rect = rect.intersected(self.viewport().rect())
+            if rect.isValid():
+                status = self.item(row, 3)
+                out.append((f"export.queue.item.{first.data(Qt.ItemDataRole.UserRole)}", rect.translated(offset), status.text() if status else ""))
+        return out
+
+
 class ExportDialog(QDialog):
     """Non-modal: the editor stays usable while the queue encodes."""
 
@@ -265,6 +294,8 @@ class ExportDialog(QDialog):
         self.formats: dict[str, dict[str, Any]] = {}
         self._loading = False
         self._known_status: dict[Any, str] = {}
+        self._queue_items: list[dict[str, Any]] = []  # the queue as last listed, in order
+        self._follow: Any = None  # a moved item's id: the selection follows it
         # settings the user changed since the preset was chosen: only these override the preset
         self.touched: set[str] = set()
         self._want_preset: str | None = None
@@ -343,7 +374,7 @@ class ExportDialog(QDialog):
         self.start = QDoubleSpinBox(self)
         self.end = QDoubleSpinBox(self)
         for spin, name in ((self.start, "start"), (self.end, "end")):
-            spin.setObjectName(f"export.{name}Seconds")
+            spin.setObjectName(f"export.range.{name}")
             spin.setDecimals(3)
             spin.setRange(0.0, 1e7)
             spin.setSuffix(" s")
@@ -352,29 +383,59 @@ class ExportDialog(QDialog):
         range_row.addWidget(self.start)
         range_row.addWidget(QLabel("–", self))
         range_row.addWidget(self.end)
+        # A one-frame Sequence In/Out is valid but easily left behind by accident: the engine's
+        # `export.resolve` reports it in `warnings`, shown here until the range changes.
+        self.range_warning = QLabel(tr("Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence."), self)
+        self.range_warning.setObjectName("export.range.warning")
+        self.range_warning.setWordWrap(True)
+        self.range_warning.setStyleSheet("color: #d04040")
+        self.range_warning.setVisible(False)
 
         self.width_spin = QSpinBox(self)
         self.height_spin = QSpinBox(self)
         for spin, name in ((self.width_spin, "width"), (self.height_spin, "height")):
-            spin.setObjectName(f"export.{name}")
+            spin.setObjectName(f"export.video.{name}")
             spin.setRange(0, 16384)
             spin.setSpecialValueText(tr("Match sequence"))
+        # egui's Frame Size row: Match Source, else the width × height (the sequence's when turned off)
+        self.match_size = QCheckBox(tr("Match Source"), self)
+        self.match_size.setObjectName("export.video.matchSize")
+        self.match_size.setChecked(True)
+        self.size_times = QLabel("×", self)
         size_row = QHBoxLayout()
+        size_row.addWidget(self.match_size)
         size_row.addWidget(self.width_spin)
-        size_row.addWidget(QLabel("×", self))
+        size_row.addWidget(self.size_times)
         size_row.addWidget(self.height_spin)
+        size_row.addStretch(1)
         self.bitrate_mode = QComboBox(self)
-        self.bitrate_mode.setObjectName("export.bitrateMode")
+        self.bitrate_mode.setObjectName("export.video.bitrateMode")
         for key, label in BITRATE_MODES:
             self.bitrate_mode.addItem(tr(label), key)
-        self.bitrate = QSpinBox(self)
-        self.bitrate.setObjectName("export.bitrateKbps")
-        self.bitrate.setRange(0, 1_000_000)
-        self.bitrate.setSuffix(" kbps")
-        self.bitrate.setSpecialValueText(tr("From the preset"))
+        # Target Bitrate as egui's: Mbps, the preset's value; an adaptive preset (Match Source) shows
+        # its bits per pixel with Set, which turns it into a fixed bitrate
+        self.bitrate = QDoubleSpinBox(self)
+        self.bitrate.setObjectName("export.video.target")
+        self.bitrate.setRange(0.1, 800.0)
+        self.bitrate.setDecimals(1)
+        self.bitrate.setSingleStep(0.1)
+        self.bitrate.setSuffix(" Mbps")
+        self.adaptive = QLabel(self)
+        self.adaptive.setObjectName("export.video.adaptive")
+        self.fixed_bitrate = QPushButton(tr("Set"), self)
+        self.fixed_bitrate.setObjectName("export.video.fixedBitrate")
+        self.fixed_bitrate.setToolTip(tr("Set a fixed bitrate"))
+        self.fixed_bitrate.clicked.connect(self._set_fixed_bitrate)
+        self.bitrate_box = QWidget(self)
+        br = QHBoxLayout(self.bitrate_box)
+        br.setContentsMargins(0, 0, 0, 0)
+        br.addWidget(self.bitrate, 1)
+        br.addWidget(self.adaptive, 1)
+        br.addWidget(self.fixed_bitrate)
+        self._target_kbps = 0  # the resolved target (an adaptive preset's computed bitrate)
         # MPEG-2 only: GOP length, B pictures, constant quantiser, 4:2:2 Profile
         self.gop = QSpinBox(self)
-        self.gop.setObjectName("export.keyframeDistance")
+        self.gop.setObjectName("export.mpeg2Gop")
         self.gop.setRange(0, 1000)
         self.gop.setSpecialValueText(tr("From the preset"))
         self.gop.setSuffix(" " + tr("frames"))
@@ -408,7 +469,7 @@ class ExportDialog(QDialog):
         self.quality.setObjectName("export.video.quality")
         self.quality.setRange(1, 100)
         self.hardware = QCheckBox(tr("Use hardware encoding when available"), self)
-        self.hardware.setObjectName("export.hardwareEncoding")
+        self.hardware.setObjectName("export.video.hardwareEncoding")
         self.captions = CaptionsSection(self)
         self.effects = EffectsSection(self)
         self.metadata = MetadataSection(self)
@@ -420,15 +481,15 @@ class ExportDialog(QDialog):
         self.multiplexer.addItem("MP4", "mp4")
         self.multiplexer.addItem("QuickTime", "mov")
         self.audio = QCheckBox(tr("Export Audio"), self)
-        self.audio.setObjectName("export.audio")
+        self.audio.setObjectName("export.audio.include")
         self.audio.setChecked(True)  # sound is part of an export unless the user leaves it out
         self.audio_codec = QComboBox(self)
-        self.audio_codec.setObjectName("export.audioCodec")
+        self.audio_codec.setObjectName("export.audio.codec")
         for key, label in AUDIO_CODECS:
             self.audio_codec.addItem(tr(label), key)
         # AAC and Opus: the engine clamps Opus to 6..510 kbps
         self.audio_bitrate = QSpinBox(self)
-        self.audio_bitrate.setObjectName("export.audioBitrateKbps")
+        self.audio_bitrate.setObjectName("export.audio.bitrate")
         self.audio_bitrate.setRange(0, 1_000)
         self.audio_bitrate.setSuffix(" kbps")
         self.audio_bitrate.setSpecialValueText(tr("From the preset"))
@@ -451,13 +512,15 @@ class ExportDialog(QDialog):
         f.addRow(tr("DCP container"), self.dcp_aspect)
         f.addRow(tr("Content kind"), self.dcp_kind)
         f.addRow(tr("Range"), range_row)
+        f.addRow("", self.range_warning)
         video = Section("video", tr("Video"), self)
         video.setObjectName("export.video")
         fv = QFormLayout(video.body)
         fv.addRow(tr("Frame Size"), size_row)
         fv.addRow(tr("Bitrate Encoding"), self.bitrate_mode)
-        fv.addRow(tr("Target Bitrate"), self.bitrate)
-        fv.addRow(tr("Key Frame Distance"), self.gop)
+        fv.addRow(tr("Target Bitrate"), self.bitrate_box)
+        fv.addRow(tr("Key Frame Distance"), self.gop)  # MPEG-2's GOP length; H.26x: the rows' own
+        fv.setRowVisible(self.gop, False)  # until MPEG-2 is chosen
         fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
@@ -489,11 +552,11 @@ class ExportDialog(QDialog):
         self.summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self.export_button = QPushButton(tr("Export"), self)
-        self.export_button.setObjectName("export.start")
+        self.export_button.setObjectName("export.button")
         self.export_button.setDefault(True)
         self.export_button.clicked.connect(lambda: self._enqueue(start=True))
         self.queue_button = QPushButton(tr("Send to Queue"), self)
-        self.queue_button.setObjectName("export.addToQueue")
+        self.queue_button.setObjectName("export.sendToQueue")
         self.queue_button.clicked.connect(lambda: self._enqueue(start=False))
         close = QPushButton(tr("Close"), self)
         close.clicked.connect(self.hide)
@@ -504,33 +567,77 @@ class ExportDialog(QDialog):
         buttons.addWidget(close)
 
         # ----- queue -----
-        self.table = QTableWidget(0, 6, self)
+        self.table = QueueTable(0, 7, self)
         self.table.setObjectName("export.queue")
         self.table.setHorizontalHeaderLabels(
-            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining")]
+            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining"), ""]
         )
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        queue_buttons = QHBoxLayout()
-        for name, text, slot in (
-            ("startQueue", N_("Start Queue"), lambda: self._queue_command("export.queue.start", {})),
-            ("stopQueue", N_("Stop Queue"), lambda: self._queue_command("export.queue.stop", {})),
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        # what egui's narrow column shows first: the export, its status and progress, its buttons
+        header.moveSection(QUEUE_ACTIONS_COL, 5)
+        header.moveSection(2, 6)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(4, 64)
+        # two rows of four: the column is narrow (egui's is 300 px)
+        queue_buttons = QGridLayout()
+        for n_button, (name, text, slot) in enumerate((
+            ("start", N_("Start Queue"), lambda: self._queue_command("export.queue.start", {})),
+            ("stop", N_("Stop Queue"), lambda: self._queue_command("export.queue.stop", {})),
             ("cancel", N_("Cancel Selected"), lambda: self._selected_command("export.queue.cancel")),
             ("retry", N_("Retry"), lambda: self._selected_command("export.queue.retry", {"start": True})),
             ("remove", N_("Remove"), lambda: self._selected_command("export.queue.remove")),
             ("clear", N_("Clear Finished"), lambda: self._queue_command("export.queue.clear", {})),
-        ):
+            # egui's Up / Down: the order the queue encodes in (not past the export encoding now)
+            ("up", N_("Up"), lambda: self._move_selected(-1)),
+            ("down", N_("Down"), lambda: self._move_selected(1)),
+        )):
             b = QPushButton(tr(text), self)
             b.setObjectName(f"export.queue.{name}")
             b.clicked.connect(slot)
-            queue_buttons.addWidget(b)
-        queue_buttons.addStretch(1)
-        queue_box = QGroupBox(tr("Export Queue"), self)
+            queue_buttons.addWidget(b, n_button // 4, n_button % 4)
+            if name in ("up", "down"):
+                setattr(self, f"queue_{name}", b)
+        self.table.itemSelectionChanged.connect(self._update_move_buttons)
+        # egui's "Queue (n)" heading, and its hint while the queue is empty
+        self.queue_box = queue_box = QGroupBox(tr("Queue ({n})").format(n=0), self)
+        queue_box.setObjectName("export.queueBox")
+        self.queue_empty = QLabel(tr("Send exports here with Send to Queue, then start the queue."), self)
+        self.queue_empty.setObjectName("export.queue.empty")
+        self.queue_empty.setWordWrap(True)
+        self.queue_empty.setEnabled(False)
         qv = QVBoxLayout(queue_box)
+        qv.addWidget(self.queue_empty)
         qv.addWidget(self.table)
         qv.addLayout(queue_buttons)
+
+        # egui's left column: "Destinations" (Media File, the only one) over the queue
+        self.destinations = QLabel(tr("Destinations"), self)
+        self.destinations.setObjectName("export.destinations")
+        font = self.destinations.font()
+        font.setBold(True)
+        self.destinations.setFont(font)
+        self.media_file = QLabel(tr("Media File"), self)
+        self.media_file.setObjectName("export.destination.mediaFile")
+        self.media_file.setMinimumHeight(26)
+        self.media_file.setContentsMargins(10, 0, 10, 0)
+        # egui fills the row with the selected-row colour: Media File is always the chosen destination
+        self.media_file.setAutoFillBackground(True)
+        pal = self.media_file.palette()
+        pal.setColor(self.media_file.backgroundRole(), pal.color(pal.ColorRole.Highlight))
+        pal.setColor(self.media_file.foregroundRole(), pal.color(pal.ColorRole.HighlightedText))
+        self.media_file.setPalette(pal)
+        queue_column = QWidget(self)
+        queue_column.setObjectName("export.queueColumn")
+        qc = QVBoxLayout(queue_column)
+        qc.setContentsMargins(0, 0, 0, 0)
+        qc.addWidget(self.destinations)
+        qc.addWidget(self.media_file)
+        qc.addWidget(queue_box, 1)
+        self.queue_column = queue_column
 
         top = QHBoxLayout()
         left = QVBoxLayout()
@@ -555,12 +662,31 @@ class ExportDialog(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setWidget(settings_page)
+        self.settings_scroll = scroll
+        # egui's placeholder in place of the settings while no sequence is open; the queue stays
+        self.no_sequence = QLabel(tr("Open a sequence to export"), self)
+        self.no_sequence.setObjectName("export.noSequence")
+        self.no_sequence.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.no_sequence.setEnabled(False)
+        self.no_sequence.hide()
+        settings_column = QWidget(self)
+        sc = QVBoxLayout(settings_column)
+        sc.setContentsMargins(0, 0, 0, 0)
+        sc.addWidget(scroll, 1)
+        sc.addWidget(self.no_sequence, 1)
+        sc.addWidget(self.summary)
+        sc.addLayout(buttons)
+        # egui's columns: the queue on the left (300 px there), the settings and preview beside it
+        self.splitter = splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        splitter.setObjectName("export.columns")
+        splitter.setChildrenCollapsible(False)
+        splitter.addWidget(queue_column)
+        splitter.addWidget(settings_column)
+        splitter.setStretchFactor(1, 1)
+        splitter.setSizes([QUEUE_COLUMN_W, 1080])
         layout = QVBoxLayout(self)
-        layout.addWidget(scroll, 3)
-        layout.addWidget(self.summary)
-        layout.addLayout(buttons)
-        layout.addWidget(queue_box, 1)
-        self.resize(1080, 860)
+        layout.addWidget(splitter)
+        self.resize(QUEUE_COLUMN_W + 1080, 860)
 
         # egui's collapsible settings sections (`ExportUi::open_sections`)
         self.sections: dict[str, Section] = {
@@ -579,6 +705,9 @@ class ExportDialog(QDialog):
             w.valueChanged.connect(self._changed)
         for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate), ("gop", self.gop), ("bFrames", self.b_frames), ("quantizer", self.quantizer)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
+        self.match_size.toggled.connect(self._match_size_toggled)
+        for w in (self.width_spin, self.height_spin):
+            w.valueChanged.connect(lambda _v: self._sync_size_shown())
         for c in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
             c.currentIndexChanged.connect(self._changed)
         self.dcp_immersive.currentIndexChanged.connect(self._immersive_changed)
@@ -603,6 +732,7 @@ class ExportDialog(QDialog):
         self.multiplexer.currentIndexChanged.connect(lambda _i: (self._touch("multiplexer"), self._container_changed()))
         self.path.textChanged.connect(self._changed)
         self._range_changed()
+        self._sync_size_shown()
 
     # ----- opening -----
     def open_for(self, sequence: dict[str, Any] | None, project_path: str | None) -> None:
@@ -612,6 +742,7 @@ class ExportDialog(QDialog):
         self.sequence_label.setText(name)
         self.export_button.setEnabled(sequence is not None)
         self.queue_button.setEnabled(sequence is not None)
+        self.sequence_updated(sequence)
         if sequence is not None:
             duration = int(sequence.get("duration") or 0) / 254_016_000_000
             self.end.setValue(duration)
@@ -625,6 +756,16 @@ class ExportDialog(QDialog):
         self.refresh_queue()
         self._poll.start()
         self.refresh_preview()
+
+    def sequence_updated(self, sequence: dict[str, Any] | None) -> None:
+        """What the window shows of the open sequence: egui's placeholder while there is none, and
+        the Captions hint while it has no caption track."""
+        none = sequence is None
+        self.settings_scroll.setVisible(not none)
+        self.summary.setVisible(not none)
+        self.no_sequence.setVisible(none)
+        tracks = (sequence or {}).get("captionTracks")
+        self.captions.set_has_track(isinstance(tracks, list) and bool(tracks))
 
     def refresh_preview(self) -> None:
         """The preview's frame: the sequence at the playhead (egui's export preview)."""
@@ -731,7 +872,6 @@ class ExportDialog(QDialog):
         else:
             self.width_spin.setValue(0)
             self.height_spin.setValue(0)
-        self.bitrate.setValue(0)
         self.audio_bitrate.setValue(0)
         self.gop.setValue(0)
         self.b_frames.setValue(2)
@@ -757,10 +897,11 @@ class ExportDialog(QDialog):
         self.audio_codec.setEnabled(bool(fmt.get("audio", True)))
         self.audio_bitrate.setEnabled(bool(fmt.get("audio", True)))
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
-        self.bitrate.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
+        self.bitrate_box.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         mpeg2 = self.format.currentData() == "mpeg2"
         for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(mpeg2)
+        self.video_form.setRowVisible(self.gop, mpeg2)  # H.264 / H.265 / AV1 have egui's own row
         self._sync_format_rows()
         video = bool(fmt.get("video", True))
         self.captions.setVisible(video)
@@ -775,9 +916,10 @@ class ExportDialog(QDialog):
         self._immersive_changed()
         if dcp:
             # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
-            for w in (self.width_spin, self.height_spin, self.bitrate_mode, self.bitrate, self.audio_codec, self.audio_bitrate):
+            for w in (self.match_size, self.width_spin, self.height_spin, self.bitrate_mode, self.bitrate_box, self.audio_codec, self.audio_bitrate):
                 w.setEnabled(False)
         else:
+            self.match_size.setEnabled(True)
             self.width_spin.setEnabled(True)
             self.height_spin.setEnabled(True)
         self._container_changed()
@@ -814,6 +956,7 @@ class ExportDialog(QDialog):
             self.alpha.setChecked(settings["alpha"])
             self.alpha.blockSignals(False)
         self.rows.show_settings(settings, self.touched)
+        self._show_bitrate(settings)
         if "bitrateMode" not in self.touched and isinstance(settings.get("bitrateMode"), str):
             # the preset's mode (CRF shows its Quality row)
             i = self.bitrate_mode.findData(settings["bitrateMode"])
@@ -855,8 +998,33 @@ class ExportDialog(QDialog):
                 shown[key] = False
         return shown
 
+    def _match_size_toggled(self, on: bool) -> None:
+        """egui's Match Source for the frame size: off starts from the sequence's size."""
+        if on:
+            w = h = 0
+        else:
+            st = (self.sequence or {}).get("settings")
+            st = st if isinstance(st, dict) else {}
+            w, h = st.get("width"), st.get("height")
+            w = w if isinstance(w, int) and not isinstance(w, bool) and w > 0 else 1920
+            h = h if isinstance(h, int) and not isinstance(h, bool) and h > 0 else 1080
+        self.width_spin.setValue(w)
+        self.height_spin.setValue(h)
+        self._sync_size_shown()
+
+    def _sync_size_shown(self) -> None:
+        """The size fields show only while the frame size does not match the source."""
+        match = not (self.width_spin.value() and self.height_spin.value())
+        self.match_size.blockSignals(True)
+        self.match_size.setChecked(match)
+        self.match_size.blockSignals(False)
+        for w in (self.width_spin, self.size_times, self.height_spin):
+            w.setVisible(not match)
+
     def _sync_rows(self) -> None:
         self.rows.sync(self._rows_shown())
+        # egui: Quality (CRF) takes the Target Bitrate's place
+        self.video_form.setRowVisible(self.bitrate_box, self.bitrate_mode.currentData() != "crf")
 
     def _muxed(self) -> bool:
         return self.format.currentData() in ("h264", "hevc")
@@ -1002,8 +1170,8 @@ class ExportDialog(QDialog):
         if self.bitrate_mode.isEnabled():
             if "bitrateMode" in self.touched:
                 p["bitrateMode"] = self.bitrate_mode.currentData()
-            if self.bitrate.value():
-                p["bitrateKbps"] = self.bitrate.value()
+            if "bitrate" in self.touched:
+                p["bitrateKbps"] = round(self.bitrate.value() * 1000)
         if "hardware" in self.touched:
             p["hardwareEncoding"] = "auto" if self.hardware.isChecked() else "off"
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
@@ -1067,11 +1235,38 @@ class ExportDialog(QDialog):
             return
         self.engine.execute("export.resolve", self.params(), on_reply=self._on_resolved, on_error=self._summary_error)
 
+    def _show_bitrate(self, settings: dict[str, Any]) -> None:
+        """The preset's target in Mbps, or its adaptive bitrate (bits per pixel) with Set."""
+        bpp = settings.get("adaptiveBitrate")
+        adaptive = "bitrate" not in self.touched and isinstance(bpp, (int, float)) and not isinstance(bpp, bool)
+        self.bitrate.setVisible(not adaptive)
+        self.adaptive.setVisible(adaptive)
+        self.fixed_bitrate.setVisible(adaptive)
+        if adaptive:
+            self.adaptive.setText(tr("Adaptive ({bpp} bits per pixel)").format(bpp=decimal(f"{float(bpp):g}")))
+        kbps = settings.get("bitrateKbps")
+        if "bitrate" not in self.touched and isinstance(kbps, int) and not isinstance(kbps, bool) and kbps > 0:
+            self.bitrate.blockSignals(True)
+            self.bitrate.setValue(kbps / 1000)
+            self.bitrate.blockSignals(False)
+
+    def _set_fixed_bitrate(self) -> None:
+        """egui's Set: the adaptive preset's bitrate for this sequence becomes a fixed target."""
+        if self._target_kbps > 0:
+            self.bitrate.blockSignals(True)
+            self.bitrate.setValue(self._target_kbps / 1000)
+            self.bitrate.blockSignals(False)
+        self._touch("bitrate")
+        self._show_bitrate(self.resolved_settings)
+
     def _on_resolved(self, result: Any, _b: bytes | None) -> None:
         r = result if isinstance(result, dict) else {}
         self._agent_before = None
+        target = (r.get("output") or {}).get("targetKbps")
+        self._target_kbps = target if isinstance(target, int) and not isinstance(target, bool) else 0
         if isinstance(r.get("settings"), dict):
             self.resolved_settings = r["settings"]
+            self.rows.show_resolved(r)
             self._show_settings(r["settings"])
         path = (r.get("settings") or {}).get("path") if isinstance(r.get("settings"), dict) else None
         self.preview.show_resolved(r, str(path or self.path.text()), self.range.currentText(), "scaling" in self.touched)
@@ -1092,6 +1287,7 @@ class ExportDialog(QDialog):
             parts.append(f"{r['frames']} {tr('frames')}")
         self.summary.setText(" · ".join(parts))
         self.summary.setStyleSheet("")
+        self.range_warning.setVisible(bool(r.get("warnings")))
         self.export_button.setEnabled(True)
         self.queue_button.setEnabled(True)
 
@@ -1117,6 +1313,7 @@ class ExportDialog(QDialog):
             message = f"{tr('Settings not taken')}: {message}"
         self.summary.setText(message)
         self.summary.setStyleSheet("color: #d04040")
+        self.range_warning.setVisible(False)
         self.export_button.setEnabled(False)
         self.queue_button.setEnabled(False)
 
@@ -1192,6 +1389,78 @@ class ExportDialog(QDialog):
             if item is not None and item.data(Qt.ItemDataRole.UserRole) is not None:
                 self._queue_command(command, {"id": item.data(Qt.ItemDataRole.UserRole), **(extra or {})})
 
+    def _selected_row(self) -> int | None:
+        rows = sorted({i.row() for i in self.table.selectedIndexes()})
+        return rows[0] if len(rows) == 1 and rows[0] < len(self._queue_items) else None
+
+    def _move_selected(self, by: int) -> None:
+        """Move the selected export one place earlier (-1) or later (1) in the queue, as egui's
+        Up / Down (``export.queue.move``); the selection follows it."""
+        row = self._selected_row()
+        if row is None or not self._can_move(row, by):
+            return
+        self._follow = self._queue_items[row].get("id")
+        self._queue_command("export.queue.move", {"id": self._follow, "by": by})
+
+    def _can_move(self, row: int, by: int) -> bool:
+        items = self._queue_items
+        if by < 0:  # egui: not up from the top, nor an export that is encoding
+            return row > 0 and str(items[row].get("status") or "").lower() != "encoding"
+        return row + 1 < len(items)
+
+    def _update_move_buttons(self) -> None:
+        row = self._selected_row()
+        self.queue_up.setEnabled(row is not None and self._can_move(row, -1))
+        self.queue_down.setEnabled(row is not None and self._can_move(row, 1))
+
+    def _row_actions(self, row: int, it: dict[str, Any], status: str) -> None:
+        """egui's buttons on each queued export: Up, Down, Cancel (ready or encoding) or Retry,
+        and Remove, ids ``export.queue.item.<id>.<key>``; rebuilt only when what they offer changes,
+        so a poll does not replace a button under the pointer."""
+        qid = it.get("id")
+        items = self._queue_items
+        wanted = (
+            qid,
+            row > 0 and status != "encoding",
+            row + 1 < len(items),
+            status in ("ready", "encoding"),
+            status != "encoding",
+        )
+        cell = self.table.cellWidget(row, QUEUE_ACTIONS_COL)
+        if cell is not None and getattr(cell, "cfa4_actions", None) == wanted:
+            return
+        _id, up, down, cancel, remove = wanted
+        cell = QWidget(self.table)
+        cell.cfa4_actions = wanted  # type: ignore[attr-defined]
+        h = QHBoxLayout(cell)
+        h.setContentsMargins(2, 0, 2, 0)
+        h.setSpacing(2)
+        specs = [
+            ("up", N_("Up"), up, "export.queue.move", {"id": qid, "by": -1}),
+            ("down", N_("Down"), down, "export.queue.move", {"id": qid, "by": 1}),
+            ("cancel", N_("Cancel"), True, "export.queue.cancel", {"id": qid})
+            if cancel
+            else ("retry", N_("Retry"), True, "export.queue.retry", {"id": qid, "start": True}),
+            ("remove", N_("Remove"), remove, "export.queue.remove", {"id": qid}),
+        ]
+        small = cell.font()
+        small.setPointSizeF(max(6.0, small.pointSizeF() - 1.5))
+        for key, text, enabled, command, params in specs:
+            b = QToolButton(cell)
+            b.setText(tr(text))
+            b.setFont(small)
+            b.setObjectName(f"export.queue.item.{qid}.{key}")
+            b.setEnabled(bool(enabled))
+            b.clicked.connect(lambda _c=False, c=command, p=params: self._item_command(c, p))
+            h.addWidget(b)
+        self.table.setCellWidget(row, QUEUE_ACTIONS_COL, cell)
+        self.table.resizeColumnToContents(QUEUE_ACTIONS_COL)
+
+    def _item_command(self, command: str, params: dict[str, Any]) -> None:
+        if command == "export.queue.move":
+            self._follow = params.get("id")  # the selection follows the moved export, as Up / Down's
+        self._queue_command(command, params)
+
     def refresh_queue(self) -> None:
         if self.engine.running:
             self.engine.execute("export.queue.list", {}, on_reply=self._on_queue, on_error=lambda _m: None)
@@ -1199,6 +1468,9 @@ class ExportDialog(QDialog):
     def _on_queue(self, result: Any, _b: bytes | None) -> None:
         data = result if isinstance(result, dict) else {}
         items = [i for i in data.get("items") or [] if isinstance(i, dict)]
+        self._queue_items = items
+        self.queue_box.setTitle(tr("Queue ({n})").format(n=len(items)))
+        self.queue_empty.setVisible(not items)
         self.table.setRowCount(len(items))
         for row, it in enumerate(items):
             status = str(it.get("status") or "").lower()
@@ -1218,6 +1490,9 @@ class ExportDialog(QDialog):
                 cell.setText(text)
                 if col == 0:
                     cell.setData(Qt.ItemDataRole.UserRole, it.get("id"))
+                if col == 1:  # the file name, as egui's "sequence → file"; the whole path on hover
+                    cell.setText(Path(text).name if text else "")
+                    cell.setToolTip(text)
                 if col == 3:
                     cell.setToolTip(str(it.get("statusText") or ""))
             bar = self.table.cellWidget(row, 4)
@@ -1231,11 +1506,18 @@ class ExportDialog(QDialog):
                 bar.setValue(0)
             if status == "done":
                 bar.setValue(1000)
+            self._row_actions(row, it, status)
             key = it.get("id")
             if self._known_status.get(key) != status and status in FINISHED and key in self._known_status:
                 # it finished while we watched it
                 self.finished_export.emit(str(it.get("path") or ""), status == "done")
             self._known_status[key] = status
+        if self._follow is not None:
+            row = next((r for r, it in enumerate(items) if it.get("id") == self._follow), None)
+            self._follow = None
+            if row is not None:
+                self.table.selectRow(row)
+        self._update_move_buttons()
         running = bool(data.get("running")) or any(str(i.get("status") or "").lower() == "encoding" for i in items)
         if not running and not self.isVisible():
             self._poll.stop()

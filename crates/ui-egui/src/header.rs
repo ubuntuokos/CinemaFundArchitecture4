@@ -1,7 +1,6 @@
 //! The header bar (Premiere 26 layout, 38 pt): Home and Import / Edit / Export on the left, the
-//! document title centred, the workspace name and quick actions on the right. On macOS the menus
-//! live in the native menu bar (set up by the app); elsewhere a compact in-window menu bar follows
-//! the mode tabs.
+//! document title centred, the workspace name and quick actions on the right. A compact in-window
+//! menu bar follows the mode tabs.
 
 use egui::{Color32, Rect, Sense, Stroke, pos2, vec2};
 

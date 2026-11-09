@@ -25,4 +25,4 @@ cfa4-project = { workspace = true }
 cfa4-render = { workspace = true }
 cfa4-gpu = { workspace = true }
 pollster = "0.4"
-wgpu = { version = "30", features = ["wgsl", "metal", "vulkan", "dx12", "gles"] }
+wgpu = { version = "30", features = ["wgsl", "vulkan", "gles"] }
