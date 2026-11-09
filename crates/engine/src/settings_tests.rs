@@ -644,6 +644,8 @@ fn transcription_without_speech_to_text_says_so() {
 
 #[test]
 fn hardware_decoding_setting_drives_the_decoder_switch() {
+    // the only test that moves the process-wide switch (settings::HW_SWITCH_OWNER)
+    settings::HW_SWITCH_OWNER.with(|o| o.set(true));
     let mut s = Session::default();
     assert_eq!(s.prefs.playback.hardware_decoding, "auto", "Auto by default");
     set(&mut s, "playback.hardwareDecoding", json!("off"));
