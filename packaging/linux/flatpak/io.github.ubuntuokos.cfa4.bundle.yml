@@ -57,6 +57,11 @@ modules:
       # their licences: the binaries find it in ../lib/cfa4/ffmpeg-9.0.2 ($ORIGIN RUNPATH). No
       # patent-restricted encoder: x264/x265 exist only in the cfa4-restricted-extras .deb.
       - mkdir -p /app/lib/cfa4 && cp -R lib/cfa4/ffmpeg-9.0.2 /app/lib/cfa4/
+      # The Qt 6 GUI (docs/qt-parity.md 1.10): `flatpak run --command=cfa4-qt io.github.ubuntuokos.cfa4`.
+      # Its Python package, and the PySide6 / Qt 6 that flatpak-bundle.sh staged from the pinned
+      # wheels (the runtime's python3 runs it; the licences went to share/doc/cfa4/pyside6 above).
+      - install -Dm755 bin/cfa4-qt /app/bin/cfa4-qt
+      - cp -R lib/cfa4/python lib/cfa4/pyside6 /app/lib/cfa4/
     sources:
       - type: dir
         path: stage
