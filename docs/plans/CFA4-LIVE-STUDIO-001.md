@@ -26,7 +26,8 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
 6. **A libobs külön folyamatban fut** (`cfa4-studio-host`, D2).
 7. **Böngészőforrás WPE WebKittel** az Ubuntu tárolójából, Chromium nélkül (D3).
 8. **Csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); zárt SDK-t igénylő (pl. NDI) nincs (D4).
-9. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
+9. **Önálló „Élő” munkaterület** a Qt6 felületen; a C10 Élő grafika ablaka beleolvad (D5).
+10. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
    egyeztetés szerinti felsorolással (IV. fejezet).
 
 ## II. Kiinduló helyzet
@@ -123,7 +124,7 @@ munkával ütközésnél a Qt6 megy előre.
 | D2 | Hol fut a libobs | **Eldöntve (2026-11-09): külön folyamatban** (`cfa4-studio-host`): a motor indítja, felügyeli, összeomlás után újraindítja; a szerkesztő és a projekt megmarad |
 | D3 | Böngészőforrás | **Eldöntve (2026-11-09): WPE WebKit az Ubuntu tárolójából** (`libwpewebkit`, `wpebackend-fdo`, csomagfüggőségként), saját Rust libobs-forrással, az S9-ben; Chromium (CEF) nincs. A `window.obsstudio` JS-felületet a forrás adja; a gyakori streameres widgetek az S9-ben kipróbálva |
 | D4 | Zárt protokollok | **Eldöntve (2026-11-09): csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); NDI és más zárt SDK-t igénylő protokoll nincs |
-| D5 | Az élő stúdió helye a menüben és a munkaterületek között | önálló „Élő” munkaterület a Szerkesztés, Szín, Hang mellett |
+| D5 | Az élő stúdió helye | **Eldöntve (2026-11-09): önálló „Élő” munkaterület** a szerkesztés, szín, hang mellett (középen előnézet és program, lent jelenetek, források, hangkeverő, oldalt átmenetek és vezérlés); a C10 Élő grafika ablaka ide kerül át; közös projekt |
 | D6 | Műsorterv (rundown) | a VISION 8. pontjában nyitott; ebben a tervben nincs |
 | D7 | Ütemezés: a Qt6 befejezése után, vagy azzal párhuzamosan? | az S0 most indulhat (nem érinti a Qt6 fájljait), az S1-től a Qt6 után |
 
