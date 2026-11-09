@@ -75,7 +75,7 @@ fn quick_scan_of_a_good_package_passes() {
     let d = dir("good");
     package(&d, GOOD);
     let r = validate(&d, "quick-scan");
-    assert_eq!(r.verdict, Verdict::Pass, "{}", r.to_markdown());
+    assert_eq!(r.verdict, Verdict::Pass, "{:?}", outcome(&r));
     assert_eq!(r.standard, Some(cfa4_dcp::Standard::Smpte));
     assert_eq!(r.documents.packing_lists, [cfa4_dcp::Uuid::parse(&uuid(1)).unwrap()]);
     assert_eq!(r.documents.compositions, [cfa4_dcp::Uuid::parse(&uuid(2)).unwrap()]);
@@ -315,7 +315,7 @@ fn report_json_and_markdown() {
     assert_eq!(ValidationReport::from_json(&json.replace("cfa4-dcp-report/1", "other/1")), None);
     let md = r.to_markdown();
     assert!(md.starts_with("# DCP validation: Fail"));
-    assert!(md.contains("a\\|b.mxf"), "{md}");
+    assert!(md.contains("a\\|b.mxf"));
     let first = md.lines().position(|l| l.starts_with("| Fail")).unwrap();
     let pass = md.lines().position(|l| l.starts_with("| Pass")).unwrap();
     assert!(first < pass, "failures first");
@@ -373,4 +373,10 @@ fn limits_and_unopened_documents_are_unchecked() {
     assert_eq!(statuses(&r, AM_FILE_EXISTS), [Status::Fail]);
     assert_eq!(statuses(&r, PKL_DOCUMENT), [Status::Unchecked]);
     assert_eq!(r.verdict, Verdict::Fail);
+}
+
+/// Rule and status of every finding, for assertion messages. The report text is not printed: it
+/// holds the package's ids, and test logs are not the place for them.
+fn outcome(r: &ValidationReport) -> Vec<(&str, Status)> {
+    r.findings.iter().map(|f| (f.rule.as_str(), f.status)).collect()
 }

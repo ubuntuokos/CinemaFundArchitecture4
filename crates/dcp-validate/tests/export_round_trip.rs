@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use cfa4_dcp_validate::rules::{AM_PRESENT, STD_CONSISTENT};
-use cfa4_dcp_validate::{DcpValidator, NativeValidator, Profile, Status, ValidationControl, ValidationRequest, Verdict};
+use cfa4_dcp_validate::{DcpValidator, NativeValidator, Profile, Status, ValidationControl, ValidationReport, ValidationRequest, Verdict};
 use cfa4_export::{ExportSettings, Format, Progress, export};
 use cfa4_media::generators::GeneratorSource;
 use cfa4_media::{Generator, MediaSource};
@@ -67,21 +67,27 @@ fn cfa4_dcp_export_passes_the_native_quick_scan() {
 
     let run = |profile: &str| NativeValidator.validate(&ValidationRequest::new(&dir, Profile::builtin(profile).unwrap()), &ValidationControl::new()).unwrap();
     let quick = run("quick-scan");
-    assert_eq!(quick.verdict, Verdict::Pass, "{}", quick.to_markdown());
+    assert_eq!(quick.verdict, Verdict::Pass, "{:?}", outcome(&quick));
     assert_eq!(quick.standard, Some(cfa4_dcp::Standard::Smpte));
     assert_eq!(quick.documents.packing_lists.len(), 1);
     assert_eq!(quick.documents.compositions.len(), 1);
     assert!(quick.documents.asset_map.is_some());
     // picture, sound, CPL, PKL
     assert!(quick.assets_checked >= 4, "{}", quick.assets_checked);
-    assert!(quick.findings.iter().all(|f| f.status == Status::Pass), "{}", quick.to_markdown());
+    assert!(quick.findings.iter().all(|f| f.status == Status::Pass), "{:?}", outcome(&quick));
 
     let smpte = run("smpte-cinema");
     assert!(smpte.findings.iter().any(|f| f.rule == STD_CONSISTENT && f.status == Status::Pass));
     assert!(smpte.findings.iter().any(|f| f.rule == AM_PRESENT && f.status == Status::Pass));
     // the rules of later work packages are reported, so the profile is not passed yet
-    assert_eq!(smpte.verdict, Verdict::Incomplete, "{}", smpte.to_markdown());
-    assert_eq!(smpte.counts.fail, 0, "{}", smpte.to_markdown());
+    assert_eq!(smpte.verdict, Verdict::Incomplete, "{:?}", outcome(&smpte));
+    assert_eq!(smpte.counts.fail, 0, "{:?}", outcome(&smpte));
 
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Rule and status of every finding, for assertion messages. The report text is not printed: it
+/// holds the package's ids, and test logs are not the place for them.
+fn outcome(r: &ValidationReport) -> Vec<(&str, Status)> {
+    r.findings.iter().map(|f| (f.rule.as_str(), f.status)).collect()
 }
