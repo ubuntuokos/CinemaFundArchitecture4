@@ -129,15 +129,36 @@ impl<'a, 'input> Reader<'a, 'input> {
     }
 
     /// Reports every element child of `node` whose local name is not in `known` as `Unknown`, and
-    /// returns their `{namespace}name` for the model.
+    /// returns their `{namespace}name` for the model. `known` is in schema order (the documents are
+    /// `xs:sequence`s), so a known element after one that comes later in `known` is `Invalid`.
     pub fn unknown(&mut self, node: Node<'a, 'input>, path: &str, known: &[&str]) -> Vec<String> {
         let mut out = Vec::new();
+        let mut last: Option<usize> = None;
+        let mut misordered = false;
         for c in node.children().filter(|c| c.is_element()) {
             let name = c.tag_name();
-            if known.contains(&name.name()) && in_document_ns(c) {
+            let signature = name.name() == "Signature" && name.namespace() == Some(crate::ns::XMLDSIG);
+            let index = if signature {
+                known.iter().position(|k| *k == "Signature")
+            } else {
+                known.iter().position(|k| *k == name.name()).filter(|_| in_document_ns(c))
+            };
+            if let Some(i) = index {
+                // the first element out of order is reported; the ones after it would only repeat it
+                if let Some(l) = last.filter(|l| i < *l && !misordered) {
+                    misordered = true;
+                    let after = known.get(l).copied().unwrap_or("");
+                    self.issue(
+                        IssueKind::Invalid,
+                        &format!("{path}/{}", name.name()),
+                        c,
+                        format!("{} is out of schema order: it must come before {after}", name.name()),
+                    );
+                }
+                last = Some(last.map_or(i, |l| l.max(i)));
                 continue;
             }
-            if name.name() == "Signature" && name.namespace() == Some(crate::ns::XMLDSIG) {
+            if signature {
                 continue;
             }
             let full = qualified(c);

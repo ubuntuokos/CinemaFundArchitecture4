@@ -418,3 +418,30 @@ fn smpte_picture_needs_rational_frame_rate_and_aspect_ratio() {
     assert!(has(IssueKind::Invalid, "CompositionPlaylist/ReelList/Reel[1]/AssetList/MainPicture[1]/ScreenAspectRatio"));
     // Interop keeps its decimal form without an issue (`interop_cpl_with_stereo_subtitle_and_markers`)
 }
+
+#[test]
+fn schema_order_and_positive_volume_fields() {
+    let t = INTEROP_AM
+        .replace("<VolumeCount>1</VolumeCount>", "<VolumeCount>0</VolumeCount>")
+        .replace("<Issuer>x</Issuer>", "")
+        .replace("<Creator>x</Creator>", "<Issuer>x</Issuer><Creator>x</Creator>");
+    let Ok(Document::AssetMap(m)) = parse(&t, Limits::default()) else { panic!("not an asset map") };
+    assert_eq!(m.volume_count, None);
+    assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/VolumeCount"));
+    let order: Vec<&Issue> = m.issues.iter().filter(|i| i.message.contains("schema order")).collect();
+    assert_eq!(order.len(), 1, "{:#?}", m.issues);
+    assert_eq!(order[0].path, "AssetMap/Creator");
+    assert_eq!(m.issuer.as_deref(), Some("x"), "an out-of-order element is still read");
+    let t = r#"<VolumeIndex xmlns="http://www.smpte-ra.org/schemas/429-9/2007/AM"><Index>0</Index></VolumeIndex>"#;
+    let Ok(Document::VolumeIndex(v)) = parse(t, Limits::default()) else { panic!("not a volume index") };
+    assert_eq!(v.index, None);
+    // KeyId comes before Hash in a track file asset
+    let c = composition(&smpte_cpl().replacen("<Hash>", "<KeyId>urn:uuid:81111111-2222-4333-8444-555555555555</KeyId><Hash>", 1));
+    assert!(c.issues.is_empty(), "{:#?}", c.issues);
+    let c = composition(&smpte_cpl().replacen(
+        "<FrameRate>24 1</FrameRate>",
+        "<FrameRate>24 1</FrameRate><KeyId>urn:uuid:81111111-2222-4333-8444-555555555555</KeyId>",
+        1,
+    ));
+    assert!(c.issues.iter().any(|i| i.path.ends_with("MainPicture[1]/KeyId") && i.message.contains("schema order")), "{:#?}", c.issues);
+}
