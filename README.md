@@ -53,7 +53,8 @@ voluntary donation; it unlocks nothing, because nothing is locked.
 
 - GitHub Sponsors: <https://github.com/sponsors/ubuntuokos> (the **Sponsor** button on GitHub)
 - Ko-fi: <https://ko-fi.com/istvanhorvath>
-- Liberapay and PayPal: links coming soon.
+- Liberapay: <https://liberapay.com/CFA4Hugo>
+- PayPal: link coming soon.
 
 ## Upstream provenance
 
