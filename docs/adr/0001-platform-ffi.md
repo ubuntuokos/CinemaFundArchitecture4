@@ -183,3 +183,19 @@ such components. Their bindings keep this ADR's containment rules:
 
 The planned Rust rewrite of such a component is tracked as its own task in the plan or ADR that
 introduced it.
+
+## Addendum (2026-11-09): libobs binding (`cfa4-obs`, live studio S0)
+
+The first binding under the 2026-11-07 addendum: `crates/obs` (`cfa4-obs`, L5) binds libobs 33.0.1,
+the OBS Studio core (C, GPL-2.0-or-later), for the live studio
+([CFA4-LIVE-STUDIO-001](../plans/CFA4-LIVE-STUDIO-001.md) S0). It follows the containment rules
+above: `unsafe_code = "deny"` with `#[allow(unsafe_code)]` only on `libobs::sys`, a `// SAFETY:`
+comment on every block, a safe `Result` API behind the `StudioBackend` trait, the declarations
+(`libobs::ffi`) checked against the installed headers by `ffi::abi_tests`, and the raw-video
+callback under `catch_unwind`. libobs (and `libX11` / `libwayland-client` for its display) is
+loaded at run time from the pinned CFA4 build, never the system's. Two choices of point 4 and 3:
+
+- **Separate process** (plan D2): libobs runs only in `cfa4-studio-host`; the engine supervises it
+  and restarts it after a crash, so a libobs fault is a status change, not a CFA4 crash.
+- **Rust fallback:** the pure-Rust software backend behind the same trait; `auto` uses it when
+  libobs cannot start, and later phases replace libobs with Rust part by part (plan S12+).

@@ -93,10 +93,12 @@ const LAYERS: &[(&str, u8)] = &[
     ("platform", 5),
     ("gstreamer", 5),
     ("ffmpeg", 5),
+    ("obs", 5),
     ("ui-egui", 5),
     ("automation", 5),
     ("cfa4", 6),
     ("cli", 6),
+    ("studio-host", 6),
 ];
 
 /// L0 crates that are not codecs/containers (no `bitstream`-only restriction).

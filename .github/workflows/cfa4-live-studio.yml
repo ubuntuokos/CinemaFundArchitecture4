@@ -1,0 +1,58 @@
+name: CFA4 live studio (libobs 33.0.1 build and studio host)
+
+# CFA4-LIVE-STUDIO-001 S0: builds the pinned libobs (source checked against its SHA-256, licence
+# and checksums installed next to it) on top of CFA4's FFmpeg 9.0.2, then runs the cfa4-obs and
+# cfa4-studio-host tests with libobs itself in the host under Xvfb (empty scene frames, crash and
+# restart). Manual only, like the other full-validation jobs (AGENTS.md CFA4 section): run it with
+# workflow_dispatch or the PR `cfa4-full-validation` label (remove and re-add to repeat).
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-live-studio-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  libobs-studio-host:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.label.name == 'cfa4-full-validation')
+    name: libobs 33.0.1 build and studio host tests (Xvfb)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    env:
+      CFA4_LIBOBS_DIR: /opt/cfa4/libobs-33.0.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential nasm pkg-config curl cmake ninja-build extra-cmake-modules \
+            libsimde-dev uthash-dev libjansson-dev zlib1g-dev uuid-dev \
+            libx11-dev libx11-xcb-dev libxcb1-dev libxcb-xinput-dev libxcb-randr0-dev \
+            libxcb-xfixes0-dev libxcb-composite0-dev libxcb-shm0-dev libglib2.0-dev libpulse-dev \
+            libwayland-dev libxkbcommon-dev libdrm-dev libegl-dev libgl-dev libopengl-dev \
+            libva-dev libdav1d-dev libopus-dev \
+            xvfb libegl-mesa0 libgl1-mesa-dri
+      - name: Build CFA4 FFmpeg 9.0.2 (shared, GPL-3)
+        run: sudo mkdir -p /opt/cfa4 && sudo chown "$(id -u)" /opt/cfa4 && bash scripts/dev/build-ffmpeg-9.0.2.sh
+      - name: Build pinned libobs 33.0.1
+        run: bash scripts/dev/build-libobs-33.0.1.sh
+      - name: Licence and checksum files
+        run: |
+          cat /opt/cfa4/libobs-33.0.1/share/doc/libobs/BUILDINFO
+          cat /opt/cfa4/libobs-33.0.1/share/doc/libobs/SHA256SUMS
+          test -s /opt/cfa4/libobs-33.0.1/share/doc/libobs/COPYING
+      - name: Clippy (live studio crates)
+        run: cargo clippy --locked -p cfa4-obs -p cfa4-studio-host --all-targets -- -D warnings
+      - name: Tests with libobs in the host (Xvfb)
+        run: |
+          Xvfb :99 -screen 0 1280x720x24 &
+          export DISPLAY=:99
+          sleep 2
+          cargo test --locked -p cfa4-obs -p cfa4-studio-host -- --nocapture

@@ -84,6 +84,7 @@ cfa4-platform = { path = "crates/platform" }
 cfa4-testkit = { path = "crates/testkit" }
 cfa4-gstreamer = { path = "crates/gstreamer" }
 cfa4-ffmpeg = { path = "crates/ffmpeg" }
+cfa4-obs = { path = "crates/obs" }
 # FFmpeg bindings of cfa4-ffmpeg (ADR 0005), vendored snapshots (vendor/ffmpeg-bindings/*/SOURCE_MANIFEST.json)
 rsmedia = { version = "0.7.1", path = "vendor/ffmpeg-bindings/rsmedia", default-features = false, features = ["ndarray", "ffmpeg9", "link_system_ffmpeg"] }
 rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-features = false, features = ["ffmpeg9", "link_system_ffmpeg"] }
