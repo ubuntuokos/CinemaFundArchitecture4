@@ -69,7 +69,7 @@ jobs:
             zlib1g-dev libva-dev libdrm-dev libffmpeg-nvenc-dev libvpl-dev \
             libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev \
             binutils patchelf libc-bin dpkg desktop-file-utils appstream \
-            flatpak flatpak-builder ostree \
+            flatpak flatpak-builder ostree elfutils \
             libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
             libxcb-util1 libxkbcommon-x11-0
       - name: Allow unprivileged user namespaces for flatpak-builder (bubblewrap)
