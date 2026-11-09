@@ -215,11 +215,14 @@ class InstallTests(unittest.TestCase):
             binary.write_text("#!/bin/sh\necho 'CFA4 fixture'\n")
             binary.chmod(0o755)
         dist = self.root / "dist"
+        # stand-in binaries have no crate sources to list, so ship a stand-in notice file
+        notices = self.root / "THIRD-PARTY-LICENSES.txt"
+        notices.write_text("CFA4 – third-party licence notices (fixture)\n")
         result = subprocess.run(
             # shell-script stand-ins cannot link FFmpeg: the local-test tarball without it
             ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "tar", "--without-ffmpeg"],
             env={**os.environ, "CARGO_TARGET_DIR": str(target), "DIST": str(dist),
-                 "CFA4_ALLOW_LOCAL_PACKAGING": "1"},
+                 "CFA4_ALLOW_LOCAL_PACKAGING": "1", "CFA4_THIRD_PARTY_LICENSES_FILE": str(notices)},
             capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -238,6 +241,7 @@ class InstallTests(unittest.TestCase):
                          "lib/cfa4/python/cfa4_qt/i18n/shared/fr.tsv.attribution"):
                 self.assertTrue(any(n.endswith("/" + path) for n in names), path)
             self.assertFalse([n for n in names if "__pycache__" in n])
+            self.assertTrue(any(n.endswith("/share/doc/cfa4/THIRD-PARTY-LICENSES.txt") for n in names), names)
 
 
 if __name__ == "__main__":
