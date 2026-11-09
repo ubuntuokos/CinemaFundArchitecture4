@@ -143,6 +143,35 @@ The executor refuses, before writing anything:
 The caller writes to a temporary file and renames it into place, like every export.
 
 
+## Smart Render planner (WP-05)
+
+`plan_smart_render(&registry, &indexes, &edit_decision_list, &request, policy)` plans the export of
+a whole timeline. The result is the same `ExportExecutionPlan`, and each segment names its source and
+timeline item (`source`). The engine builds the `EditDecisionList` from a project snapshot:
+
+- output ranges on the frame grid;
+- each range filled by a source clip or a gap;
+- the reasons the timeline changes a clip's pictures (`RenderCause`: effect, transition, composite,
+  overlay, transform, speed, frame rate, colour conversion, proxy / nested).
+
+The planner sorts every output range into one of these kinds:
+- **Rendered** (`Render`):
+  - a gap;
+  - a changed clip, with its causes;
+  - a clip in another codec;
+  - a clip whose pictures do not fill its range exactly (another frame rate).
+- **Copied with re-encoded boundaries:** an unchanged clip, planned like a frame-accurate Smart
+  Cut. Each boundary segment's `decode` span starts at the clean access point before it and holds
+  every picture its output pictures predict from.
+- **Re-encoded for the seam** (`IncompatibleStream`): a copyable run whose codec configuration
+  differs from the output stream, or is unknown. The output stream's configuration is fixed by the
+  request or by the first copied run.
+
+Unchanged clips that continue each other in the same source are joined first, so a razor cut alone
+costs no re-encode. Output times are on the tick timebase (`TICK_TIMEBASE`). Execution is WP-06.
+
+## Tests
+
 `cargo test -p cfa4-smart-edit`: synthetic MPEG-2 GOP structures (open, closed, broken link, missing
 sequence header, configuration change, stream starting mid-GOP), H.264 from `cfa4-h264enc` and
 hand-built NAL units (recovery point SEI, parameter-set changes, length-prefixed framing),
@@ -160,3 +189,7 @@ Smart Cut executor (`cargo test -p cfa4-export smart_cut`): GOP-boundary cuts an
 and MOV, with and without B-frames, read back and re-indexed. The tests also check refusals (re-encode plans,
 stale indexes, malformed plans) and that a changed payload or a truncated file fails verification.
 FFmpeg (oracle only) decodes the copy to exactly the source pictures of the range (framemd5).
+Smart Render planner: whole-GOP clips, boundaries with their reference pictures, joined splits, gaps
+and changed clips, codec configuration seams, other codecs and frame rates, refusals, registry
+blockers, JSON round trip, and random timelines (the segments cover the output, decoding starts at a
+clean access point and reaches every output picture).
