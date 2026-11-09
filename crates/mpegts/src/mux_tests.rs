@@ -149,20 +149,23 @@ fn h264_and_hevc_access_units_go_out_unchanged() {
         // H.264: IDR 0x65, reference P 0x41, non-reference B 0x01; HEVC: IDR_W_RADL 19, TRAIL_R 1, TRAIL_N 0
         let (idr, p, b) = if hevc { (19 << 1, 1 << 1, 0) } else { (0x65, 0x41, 0x01) };
         let codec = if hevc { MuxCodec::Hevc } else { MuxCodec::H264 };
-        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[codec, MuxCodec::MpegAudio { lsf: false }], 20_000_000).unwrap();
+        // audio first: the PCR still goes on the video PID
+        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::MpegAudio { lsf: false }, codec], 20_000_000).unwrap();
         let mut units = Vec::new();
         for k in 0..30u8 {
             let (nal, pts) = match k % 3 {
                 0 => (if k % 15 == 0 { idr } else { p }, i64::from(k) + 2),
                 _ => (b, i64::from(k) - 1),
             };
-            let u = annexb_unit(hevc, nal, 200 + 1500 * usize::from(k), k);
-            m.write(0, &u, pts * FRAME, Some((i64::from(k) - 1) * FRAME), k % 15 == 0).unwrap();
+            // unit 15 (an IDR) is over 64 KiB: PES_packet_length 0
+            let size = if k == 15 { 90_000 } else { 200 + 1500 * usize::from(k) };
+            let u = annexb_unit(hevc, nal, size, k);
+            m.write(1, &u, pts * FRAME, Some((i64::from(k) - 1) * FRAME), k % 15 == 0).unwrap();
             units.push((u, pts * FRAME, (i64::from(k) - 1) * FRAME, k % 15 == 0, nal == b));
         }
         let audio: Vec<Vec<u8>> = (0..40u8).map(mp2_frame).collect();
         for (k, f) in audio.iter().enumerate() {
-            m.write(1, f, k as i64 * 2160, None, true).unwrap();
+            m.write(0, f, k as i64 * 2160, None, true).unwrap();
         }
         let data = m.finish().unwrap();
         let f = open(&data).unwrap();
@@ -181,10 +184,66 @@ fn h264_and_hevc_access_units_go_out_unchanged() {
         for (k, want) in audio.iter().enumerate() {
             assert_eq!(&f.read_unit(&data, a, k).unwrap(), want);
         }
-        // the tables go out before every random-access point: one PAT per IDR at least
-        let pats = data.chunks(188).filter(|p| p[1] & 0x1F == 0 && p[2] == 0).count();
-        assert!(pats >= 2, "{pats}");
+        check_packets(&data, 0x101, units.iter().map(|u| (u.0.len(), u.3)).collect());
     }
+}
+
+/// Transport-level checks of video PID `pid` whose units have (size, key): the PMT names it as
+/// PCR PID and the PCR on it never pauses over 50 ms (H.222.0: 100 ms; here a unit is 40 ms); each unit's first packet has the
+/// random_access_indicator exactly when it is a key unit, and the PAT and PMT right before it then;
+/// PES_packet_length is 0 exactly for units too long for it.
+fn check_packets(data: &[u8], pid: u16, units: Vec<(usize, bool)>) {
+    let packets: Vec<&[u8]> = data.chunks(188).collect();
+    let pid_of = |p: &[u8]| u16::from(p[1] & 0x1F) << 8 | u16::from(p[2]);
+    let pmt = packets.iter().find(|p| pid_of(p) == 0x1000).unwrap();
+    assert_eq!(u16::from(pmt[13] & 0x1F) << 8 | u16::from(pmt[14]), pid, "PCR_PID");
+    let mut starts = Vec::new();
+    let mut last_pcr: Option<i64> = None;
+    for (i, p) in packets.iter().enumerate() {
+        if pid_of(p) != pid {
+            continue;
+        }
+        let af = p[3] & 0x20 != 0 && p[4] > 0;
+        if af && p[5] & 0x10 != 0 {
+            let base = i64::from(p[6]) << 25 | i64::from(p[7]) << 17 | i64::from(p[8]) << 9 | i64::from(p[9]) << 1 | i64::from(p[10] >> 7);
+            let t = base * 300 + (i64::from(p[10] & 1) << 8 | i64::from(p[11]));
+            if let Some(l) = last_pcr {
+                assert!(t - l <= 50 * 27_000, "PCR gap {} ms", (t - l) / 27_000);
+            }
+            last_pcr = Some(t);
+        }
+        if p[1] & 0x40 != 0 {
+            let rai = af && p[5] & 0x40 != 0;
+            let pes = if p[3] & 0x20 != 0 { 5 + usize::from(p[4]) } else { 4 };
+            let len = u16::from(p[pes + 4]) << 8 | u16::from(p[pes + 5]);
+            starts.push((i, rai, len));
+        }
+    }
+    assert_eq!(starts.len(), units.len());
+    for (k, ((i, rai, len), (size, key))) in starts.into_iter().zip(units).enumerate() {
+        assert_eq!(rai, key, "unit {k}");
+        assert_eq!(len == 0, size > 0xFFF0, "unit {k}: {size} bytes, length field {len}");
+        if key {
+            assert_eq!((pid_of(packets[i - 2]), pid_of(packets[i - 1])), (0, 0x1000), "unit {k}: tables first");
+        }
+    }
+}
+
+#[test]
+fn mpeg_audio_stream_type_follows_the_frame_version_and_units_fit_a_pes_packet() {
+    let mut lsf_frame = mp2_frame(0);
+    lsf_frame[1] = 0xF4; // MPEG-2 layer II
+    for (lsf, frame, ok) in [(false, mp2_frame(0), true), (true, mp2_frame(0), false), (true, lsf_frame.clone(), true), (false, lsf_frame, false)] {
+        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::MpegAudio { lsf }], 1_000_000).unwrap();
+        assert_eq!(m.write(0, &frame, 0, None, true).is_ok(), ok, "lsf {lsf}");
+        if ok {
+            let data = m.finish().unwrap();
+            let pmt = data.chunks(188).find(|p| p[1] & 0x1F == 0x10 && p[2] == 0).unwrap();
+            assert_eq!(pmt[17], if lsf { 0x04 } else { 0x03 });
+        }
+    }
+    let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::AacAdts], 1_000_000).unwrap();
+    assert!(m.write(0, &vec![0; 70_000], 0, None, true).is_err());
 }
 
 #[test]
