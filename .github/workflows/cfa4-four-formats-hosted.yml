@@ -12,7 +12,7 @@ name: CFA4 four-format build on a hosted Ubuntu 26.04 runner (no publication)
 #   - nfpm 2.46.0 (.deb from the goreleaser GitHub release, SHA-256 from its checksums.txt);
 #   - appimagetool 1.9.1 (tagged GitHub release, SHA-256 pinned below);
 #   - Flatpak org.freedesktop.Platform and Sdk 25.08 from Flathub (user installation);
-#   - CFA4's FFmpeg 9.0.2 from scripts/dev/build-ffmpeg-9.0.2.sh (cached between runs).
+#   - CFA4's FFmpeg 9.0.2 prebuilt by cfa4-ffmpeg-prebuilt.yml (scripts/dev/fetch-ffmpeg-9.0.2.sh).
 #
 # RELEASE HOLD: no package leaves the runner. The job publishes only the SHA256SUMS and the F5
 # staged runtime report in the job summary; nothing is uploaded, released or signed.
@@ -23,6 +23,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/cfa4-four-formats-hosted.yml'
+      - 'scripts/dev/fetch-ffmpeg-9.0.2.sh'
 
 permissions:
   contents: read
@@ -95,19 +96,8 @@ jobs:
           rustup show
           rustc --version
           cargo --version
-      - name: Prepare the /opt/cfa4 prefix for the FFmpeg cache
-        run: |
-          sudo mkdir -p /opt/cfa4
-          sudo chown "$(id -u):$(id -g)" /opt/cfa4
-      - name: Cache CFA4 FFmpeg 9.0.2 (release build)
-        id: ffmpeg-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /opt/cfa4/ffmpeg-9.0.2
-          key: cfa4-release-ffmpeg-9.0.2-ubuntu-26.04-${{ hashFiles('scripts/dev/build-ffmpeg-9.0.2.sh', '.github/workflows/cfa4-four-formats-hosted.yml') }}
-      - name: Build CFA4 FFmpeg 9.0.2 (GPL-3, base build, no patent-restricted codecs)
-        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
-        run: bash scripts/dev/build-ffmpeg-9.0.2.sh
+      - name: Install CFA4 FFmpeg 9.0.2 (prebuilt, SHA-256 pinned; GPL-3 base build)
+        run: bash scripts/dev/fetch-ffmpeg-9.0.2.sh
       - name: Verify offline packaging prerequisites
         run: bash scripts/release/check-cfa4-package-prereqs.sh
       - name: Build four private test packages and SHA256SUMS

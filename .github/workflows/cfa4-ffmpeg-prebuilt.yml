@@ -78,7 +78,7 @@ jobs:
         run: |
           sudo mkdir -p /opt/cfa4
           sudo chown "$(id -u):$(id -g)" /opt/cfa4
-          bash scripts/dev/build-ffmpeg-9.0.2.sh
+          CFA4_FFMPEG_FROM_SOURCE=1 bash scripts/dev/build-ffmpeg-9.0.2.sh
       - name: Package, record the runtime libraries and checksum
         if: steps.existing.outputs.published != 'true'
         run: |
@@ -91,7 +91,7 @@ jobs:
             echo
             echo "Ubuntu packages providing the libraries these binaries load:"
             for lib in "$prefix"/lib/lib*.so.* "$prefix"/bin/ffmpeg "$prefix"/bin/ffprobe; do
-              { ldd "$lib" || true; } | awk '$3 ~ /^\// {print $3}'
+              { ldd "$lib" || true; } | awk '$3 ~ /^\// {print $3}' | xargs -r readlink -f
             done | sort -u | while read -r path; do
               case "$path" in "$prefix"/*) continue ;; esac
               { dpkg-query -S -- "$path" 2>/dev/null || true; } | cut -d: -f1 | head -n1
