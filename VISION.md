@@ -141,8 +141,11 @@ Tervezett irányok:
 - vágás: jelenetek és csendek felismerése, durva vágás átirat alapján;
 - konvertálás és publikálás: platformonkénti beállítás-javaslat.
 
-Szabály: a modellek a felhasználó gépén futnak: CPU-n, vagy bármely gyártó GPU-ján, illetve NPU-n,
-ha van (lásd 2.4: gyártófüggetlen gyorsítás). Minden modellnél
+Szabály: a modellek a felhasználó gépén futnak, bármely gyártó GPU-ján, illetve NPU-n, ha van (lásd
+2.4: gyártófüggetlen gyorsítás). Az AI-funkciók alsó határa legalább 12 GB-os GPU és 16 GB RAM
+(ajánlott 32 GB); ez alatt az AI nem támogatott, a CFA4 többi része fut. A CPU a GPU melletti másik
+igazolt út lehet, önálló, GPU nélküli AI-út nincs (tulajdonosi döntés, 2026-11-07; CFA4-AI_modules
+ADR 0008, 3. és 9. pont). A 2.4 CPU-s tartaléka a médiafeldolgozásra vonatkozik. Minden modellnél
 rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a felhasználó tudta nélkül.
 
 ## 6. Prioritási sorrend

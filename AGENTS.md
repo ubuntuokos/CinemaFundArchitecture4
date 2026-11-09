@@ -22,6 +22,15 @@ attribution and original copyright/licence requirements remain in force.
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
+- **Port or keep the original language** (owner decision, 2026-11-03): reusable code is ported to
+  Rust by default. When a port would take disproportionately long, the code may stay in its original
+  language (C++, Python, …) **if it does not slow CFA4 down**. In practice it then runs outside the
+  editor process, as a supervised worker or external program behind a Rust interface (for AI: the
+  ADR 0006 worker protocol), so a crash is an error and never a CFA4 crash; "does not slow down" is
+  measured on the reference machine (playback and render frame times unchanged while it runs). The
+  licence rules below still apply (headers kept, reused-code register row), and the in-process
+  rules (pure Rust, no `unsafe`, layering) are unchanged. Record the port-vs-keep reason in the plan
+  or ADR that brings the code in.
 - **Licence: GPL-3.0-or-later** (`LICENSE`; policy in [docs/licensing.md](docs/licensing.md)).
   This overrides every inherited "MIT OR Apache-2.0 only" / "no GPL/LGPL" rule below.
   - Code MAY be reused from GPL-3.0-compatible projects (GPL-2.0-or-later, GPL-3.0, LGPL,
@@ -45,12 +54,12 @@ attribution and original copyright/licence requirements remain in force.
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
   notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE` and the `ATTRIBUTION.md` author columns.
 - **Media backends** ([ADR 0005](docs/adr/ADR-0005-media-backends.md)): our own Rust engine is the base. Supplementary
-  backends (FFmpeg ≥ 9.0.2, linked and shipped only through the planned `cfa4-ffmpeg` crate,
+  backends (FFmpeg ≥ 9.0.2, linked and shipped only through the `cfa4-ffmpeg` crate (`crates/ffmpeg`, no `unsafe`),
   GPL-3 build only, never `--enable-nonfree`, no copied FFmpeg source; the GStreamer that Ubuntu ships in its repositories as the default, plus an
   isolated CFA4-owned runtime (`cfa4-gstreamer-runtime`, `/opt/cfa4/gstreamer`, no patent-restricted
   elements) only when a feature needs a newer version, never replacing the system one; further engines later)
   are registered with the automatic task router (`cfa4-route`, ADR 0004) and picked by its table,
-  default order own paths → FFmpeg → GStreamer → own software codecs. Callers use only the engine's
+  default order own hardware paths → own software codecs → FFmpeg → GStreamer (`crates/route/routing.toml`). Callers use only the engine's
   interfaces through the router, never a backend directly; order changes need tests and measurement.
   The pinned ffmpeg/ffprobe 9.0.2 CLI stays a separate external test oracle and fixture generator.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
@@ -61,6 +70,16 @@ attribution and original copyright/licence requirements remain in force.
   copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
   is always the fallback; GStreamer and FFmpeg (ADR 0005) are the exceptions to the inherited "pure
   Rust in the product" rule.
+- **Non-Rust components** (owner decision, 2026-11-07; [ADR 0001](docs/adr/0001-platform-ffi.md)
+  addendum of the same date). A component written in another language (C, C++ or other: codec
+  libraries, tools, runtimes) conflicts with CFA4's rules **only if it slows CFA4 down**
+  (playback, seek, UI responsiveness, export, start-up), as measured on the reference machine
+  ([`docs/development/reference-machine.md`](docs/development/reference-machine.md)). Step-by-step
+  implementation is allowed: large components may stay in their own language for now and are
+  rewritten in Rust over later releases. The other rules still apply to them unchanged: never crash
+  (§0), the licence rules above, the media-backend routing (`cfa4-route`), vendor neutrality, and the
+  `cfa4-restricted-extras` model for patent-encumbered components
+  ([docs/licensing.md](docs/licensing.md) §7).
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.
@@ -93,9 +112,12 @@ panic path, and fix a crash before building on top of it.
    fallback that is truly correct (never one that silently corrupts a project). An unfinished feature
    returns an "unsupported" error. The only exception is a call that is provably infallible from local
    code alone (a literal that always parses): a single-item `#[allow(clippy::expect_used)]` with the reason.
-3. **No `unsafe`** (`unsafe_code = "forbid"` for the workspace). The single exception is
+3. **No `unsafe`** (`unsafe_code = "forbid"` for the workspace). The exceptions are
+   the bindings of non-Rust components allowed by the owner decision of 2026-11-07 (CFA4 section
+   above; [ADR 0001](docs/adr/0001-platform-ffi.md) addendum), which follow the same containment
+   rules as `crates/platform`, and
    `crates/platform`, which needs `unsafe` to call the operating system's media APIs (hardware
-   video decoding through VideoToolbox, Media Foundation / Direct3D 11, VA-API and NVDEC; hardware encoding) and does nothing else. It
+   video decoding through VA-API and NVDEC; NVENC hardware encoding) and does nothing else. It
    uses `unsafe_code = "deny"` with `#[allow(unsafe_code)]` only on its FFI modules, a
    `// SAFETY:` comment on every `unsafe` block, a safe `Result`-returning public API, and the
    pure-Rust decoder as the tested fallback ([ADR 0001](docs/adr/0001-platform-ffi.md)).
@@ -197,7 +219,7 @@ See [§0](#0-never-crash). It outranks every other engineering rule.
 
 ### 3.2 The rest
 
-See `CLAUDE.md`: pure Rust, dependency layering (`cargo xtask layers`), exact `Tick` time, everything is
+See `CLAUDE.md`: pure Rust, dependency layering (`cargo xtask layers`), exact `Tick` time, calendar time through `chrono`, everything is
 a command, everything is agent-drivable, and the quality gates before every commit.
 
 

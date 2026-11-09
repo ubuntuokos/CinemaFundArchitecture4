@@ -25,7 +25,7 @@ pub struct CommandSpec {
     pub label: &'static str,
     /// Menu placement, e.g. `["Sequence"]` or `["File", "New"]`. Empty = not in menus.
     pub menu: &'static [&'static str],
-    /// Default shortcut (egui-style names, `Cmd` = ⌘ on macOS / Ctrl elsewhere).
+    /// Default shortcut (egui-style names, `Cmd` = Ctrl).
     pub shortcut: Option<&'static str>,
     /// Parameter description (JSON-ish, for agents and the MCP schema).
     pub params: &'static str,
@@ -1997,7 +1997,8 @@ fn build() -> Vec<CommandSpec> {
                 let mut out = Vec::new();
                 for id in sel {
                     if let Some(it) = p.item(id).cloned() {
-                        let nid = p.add_item(&format!("{} Copy", it.name), it.label, it.kind.clone(), None);
+                        let bin = p.root.parent_of(id);
+                        let nid = p.add_item(&format!("{} Copy", it.name), it.label, it.kind.clone(), bin);
                         out.push(nid);
                     }
                 }

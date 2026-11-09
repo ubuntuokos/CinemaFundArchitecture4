@@ -112,6 +112,7 @@ const SAME_LAYER: &[(&str, &str)] = &[
     ("playback", "render"),
     ("playback", "gpu"),
     ("export", "render"),
+    ("export", "smart-edit"),
     ("scopes", "gpu"),
     ("gpu", "render"),
     ("cli", "cfa4"),

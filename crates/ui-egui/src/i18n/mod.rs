@@ -328,7 +328,7 @@ pub fn chinese_font_available() -> bool {
 }
 
 /// Whether the interface can show Korean: `theme::install` adds an installed system Hangul face
-/// (Malgun Gothic, Apple SD Gothic Neo, Noto Sans CJK KR…, see `cjk.rs`) when there is one; none
+/// (Noto Sans CJK KR, NanumGothic…, see `cjk.rs`) when there is one; none
 /// is bundled. False on systems (and the web) without one.
 pub fn korean_font_available() -> bool {
     crate::cjk::korean_available()
@@ -473,16 +473,14 @@ mod tests {
     }
 
     /// The core menus every other catalog must cover: the entries of the menus-only Ukrainian
-    /// catalog, which `ukrainian_entries_cover_the_original_menu_catalog` keeps to menu labels (and
-    /// the native macOS Settings menu). Brazilian Portuguese played this role while it was
+    /// catalog, which `ukrainian_entries_cover_the_original_menu_catalog` keeps to menu labels. Brazilian Portuguese played this role while it was
     /// menus-only.
     fn core_menu_labels() -> Vec<String> {
         let (entries, _) = catalog::parse_entries(include_str!("uk.tsv"));
         entries.into_iter().map(|(_, en, _)| en).collect()
     }
 
-    /// Brazilian Portuguese covers the whole interface (the Spanish catalog's entries and the native
-    /// macOS Settings menu), but, like Japanese and French, the tests require only the menus, so
+    /// Brazilian Portuguese covers the whole interface (the Spanish catalog's entries), but, like Japanese and French, the tests require only the menus, so
     /// strings added later show in English until they are translated. Every entry must still have a
     /// Spanish counterpart: a renamed or removed source would otherwise leave a dead entry.
     #[test]
@@ -490,7 +488,7 @@ mod tests {
         let (entries, errors) = catalog::parse_entries(include_str!("pt-br.tsv"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "Portuguese entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "Portuguese entry without a Spanish one: {ctx:?} {en:?}");
         }
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let mut missing: Vec<String> = Vec::new();
@@ -499,7 +497,7 @@ mod tests {
                 missing.push(text.to_string());
             }
         };
-        for top in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for top in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             need(top);
         }
         for it in crate::menus::menu_items(&app) {
@@ -516,7 +514,6 @@ mod tests {
         // beyond the menus: panels, effects and their parameters, settings, status messages
         for (en, pt) in [
             ("File", "Arquivo"),
-            ("Settings", "Preferências"),
             ("Gaussian Blur", "Desfoque gaussiano"),
             ("Audio Track Mixer", "Misturador de faixas de áudio"),
             ("Keyboard Shortcuts", "Atalhos de teclado"),
@@ -646,8 +643,7 @@ mod tests {
                 if p.is_dir() {
                     dirs.push(p);
                 } else if p.extension().is_some_and(|e| e == "rs") {
-                    // a Windows checkout with core.autocrlf has CRLF, which the `\n` below would not match
-                    let text = std::fs::read_to_string(&p).unwrap_or_default().replace("\r\n", "\n");
+                    let text = std::fs::read_to_string(&p).unwrap_or_default();
                     let cut = text.find("#[cfg(test)]\nmod tests").unwrap_or(text.len());
                     out.push((p.display().to_string(), text[..cut].to_string()));
                 }
@@ -1094,16 +1090,15 @@ mod tests {
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
         let (entries, _) = catalog::parse_entries(include_str!("uk.tsv"));
         for (_, en, _) in entries {
-            assert!(known(&en) || en == "Settings", "not a menu label: {en}");
+            assert!(known(&en), "not a menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert_ne!(Language::Uk.tr(en), en, "untranslated Ukrainian menu: {en}");
         }
     }
 
-    /// German covers the whole interface (every entry of the Spanish catalog, the native macOS app
-    /// menu included), but, like French, the tests require only the core menus and the native app
-    /// menu, so strings added later show in English until they are translated. Every entry must
+    /// German covers the whole interface (every entry of the Spanish catalog), but, like French,
+    /// the tests require only the core menus, so strings added later show in English until they are translated. Every entry must
     /// still have a Spanish counterpart: a renamed or removed source would otherwise leave a dead
     /// German entry.
     #[test]
@@ -1117,10 +1112,9 @@ mod tests {
             assert!(Language::De.has(&en), "missing German menu label: {en}");
         }
         // "Clip" and "Audio" are the same word in German, so check for an entry, not a change
-        for en in crate::menus::MENUS.into_iter().chain(["Audio"]).chain(crate::menus::NATIVE_APP_MENU) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::De.has(en), "untranslated German menu: {en}");
         }
-        assert_eq!(Language::De.tr("Settings"), "Voreinstellungen");
         assert_eq!(Language::De.tr("Quit CFA4"), "CFA4 beenden");
         // beyond the menus: panels, effects and their parameters, settings, status messages
         for (en, de) in [
@@ -1139,8 +1133,8 @@ mod tests {
         set_current(Language::En);
     }
 
-    /// French covers the whole interface (the Spanish catalog's entries and the native macOS
-    /// Settings menu), but, like Japanese, the tests require only the core menus, so strings added
+    /// French covers the whole interface (the Spanish catalog's entries), but, like
+    /// Japanese, the tests require only the core menus, so strings added
     /// later show in English until they are translated. Every entry must still have a Spanish
     /// counterpart: a renamed or removed source would otherwise leave a dead French entry.
     #[test]
@@ -1148,18 +1142,16 @@ mod tests {
         let (entries, errors) = catalog::parse_entries(include_str!("fr.tsv"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "French entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "French entry without a Spanish one: {ctx:?} {en:?}");
         }
         for en in core_menu_labels() {
             assert!(Language::Fr.has(&en), "missing French menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::Fr.has(en), "untranslated French menu: {en}");
         }
         // beyond the menus: panels, effects and their parameters, settings, status messages
-        for (en, fr) in
-            [("Settings", "Préférences"), ("Gaussian Blur", "Flou gaussien"), ("Audio Track Mixer", "Mixeur de pistes audio"), ("Sequence", "Séquence")]
-        {
+        for (en, fr) in [("Gaussian Blur", "Flou gaussien"), ("Audio Track Mixer", "Mixeur de pistes audio"), ("Sequence", "Séquence")] {
             assert_eq!(Language::Fr.tr(en), fr);
         }
         set_current(Language::Fr);
@@ -1168,23 +1160,23 @@ mod tests {
         set_current(Language::En);
     }
 
-    /// Korean covers the whole interface (the Spanish catalog's entries and the native macOS
-    /// Settings menu); like French, the tests require the core menus, and every entry must still
+    /// Korean covers the whole interface (the Spanish catalog's entries); like
+    /// French, the tests require the core menus, and every entry must still
     /// have a Spanish counterpart so a renamed or removed source can't leave a dead Korean entry.
     #[test]
     fn korean_covers_the_menus_and_has_no_dead_entries() {
         let (entries, errors) = catalog::parse_entries(include_str!("ko.tsv"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "Korean entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "Korean entry without a Spanish one: {ctx:?} {en:?}");
         }
         for en in core_menu_labels() {
             assert!(Language::Ko.has(&en), "missing Korean menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::Ko.has(en), "untranslated Korean menu: {en}");
         }
-        for (en, ko) in [("File", "파일"), ("Edit", "편집"), ("Sequence", "시퀀스"), ("Settings", "설정")] {
+        for (en, ko) in [("File", "파일"), ("Edit", "편집"), ("Sequence", "시퀀스")] {
             assert_eq!(Language::Ko.tr(en), ko);
         }
         assert_eq!(Language::Ko.name(), "한국어");
@@ -1201,19 +1193,19 @@ mod tests {
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
         let (entries, _) = catalog::parse_entries(include_str!("ru.tsv"));
         for (_, en, _) in entries {
-            assert!(known(&en) || en == "Settings", "not a menu label: {en}");
+            assert!(known(&en), "not a menu label: {en}");
         }
         for en in core_menu_labels() {
             assert!(Language::Ru.has(&en), "missing Russian menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert_ne!(Language::Ru.tr(en), en, "untranslated Russian menu: {en}");
         }
     }
 
-    /// Indonesian covers the whole interface (the Spanish catalog's entries and the native macOS
-    /// Settings menu), but, like Japanese and French, the tests require only the core menus (the
-    /// menus-only Ukrainian catalog, the top-level menus and the native macOS Settings menu), so
+    /// Indonesian covers the whole interface (the Spanish catalog's entries), but, like
+    /// Japanese and French, the tests require only the core menus (the menus-only Ukrainian
+    /// catalog and the top-level menus), so
     /// strings added later show in English until they are translated. Every entry must still have a
     /// Spanish counterpart: a renamed or removed source would otherwise leave a dead entry.
     #[test]
@@ -1221,23 +1213,18 @@ mod tests {
         let (entries, errors) = catalog::parse_entries(include_str!("id.tsv"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "Indonesian entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "Indonesian entry without a Spanish one: {ctx:?} {en:?}");
         }
         let (core, _) = catalog::parse_entries(include_str!("uk.tsv"));
         for (_, en, _) in core {
             assert!(Language::Id.has(&en), "missing Indonesian menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::Id.has(en), "untranslated Indonesian menu: {en}");
         }
         // beyond the menus: panels, effects and their parameters, settings, status messages
-        for (en, id) in [
-            ("Settings", "Preferensi"),
-            ("Gaussian Blur", "Buram Gaussian"),
-            ("Audio Track Mixer", "Mixer Trek Audio"),
-            ("Sequence", "Sekuens"),
-            ("Playhead", "Kepala Putar"),
-        ] {
+        for (en, id) in [("Gaussian Blur", "Buram Gaussian"), ("Audio Track Mixer", "Mixer Trek Audio"), ("Sequence", "Sekuens"), ("Playhead", "Kepala Putar")]
+        {
             assert_eq!(Language::Id.tr(en), id);
         }
         set_current(Language::Id);
@@ -1246,8 +1233,8 @@ mod tests {
         set_current(Language::En);
     }
 
-    /// Italian covers the whole interface (the Spanish catalog's entries and the native macOS
-    /// Settings menu); like Indonesian, the tests require only the core menus, so strings added
+    /// Italian covers the whole interface (the Spanish catalog's entries); like
+    /// Indonesian, the tests require only the core menus, so strings added
     /// later show in English until they are translated, and every entry must have a Spanish
     /// counterpart.
     #[test]
@@ -1255,18 +1242,17 @@ mod tests {
         let (entries, errors) = catalog::parse_entries(include_str!("it.tsv"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "Italian entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "Italian entry without a Spanish one: {ctx:?} {en:?}");
         }
         let (core, _) = catalog::parse_entries(include_str!("uk.tsv"));
         for (_, en, _) in core {
             assert!(Language::It.has(&en), "missing Italian menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::It.has(en), "untranslated Italian menu: {en}");
         }
         // beyond the menus: panels, effects and their parameters, settings, status messages
         for (en, it) in [
-            ("Settings", "Impostazioni"),
             ("Gaussian Blur", "Sfocatura gaussiana"),
             ("Audio Track Mixer", "Mixer tracce audio"),
             ("Sequence", "Sequenza"),
