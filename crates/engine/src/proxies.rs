@@ -186,7 +186,7 @@ impl ReservedOutput {
 impl Drop for ReservedOutput {
     fn drop(&mut self) {
         if !self.keep {
-            // Release our handle before removal, which is required on Windows.
+            // Release our handle before removal so the file can be deleted.
             self.file.take();
             let _ = std::fs::remove_file(&self.path);
         }
@@ -204,7 +204,7 @@ fn reserve_unique_path(dir: &Path, stem: &str, suffix: &str, ext: &str, taken: &
             n += 1;
             continue;
         }
-        match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+        match std::fs::OpenOptions::new().read(true).write(true).create_new(true).open(&path) {
             Ok(file) => {
                 return Ok(ReservedOutput { path, file: Some(Arc::new(file)), keep: false });
             }

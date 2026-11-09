@@ -7,7 +7,9 @@ Duration reads and takes timecode, a frame count or a calculation in frames, and
 hot number. Dragging the transition's middle in its timeline slides it over the cut, dragging one
 of its ends changes its duration from that end (the Timeline's rules, applied by the engine);
 clicking or dragging the ruler moves the playhead. Every change is one ``sequence.setTransition``
-and a drag or a scrub is one undo step. The engine describes it with ``transitions.inspect``.
+and a drag or a scrub is one undo step. Dragging the cut line where it crosses the transition moves
+the cut and the transition together (one ``timeline.roll`` on release: the clips' In and Out points
+change and the sequence keeps its length). The engine describes it with ``transitions.inspect``.
 """
 
 from __future__ import annotations
@@ -50,6 +52,7 @@ from .timeline import duration_frames
 RULER_H = 24
 BAR_H = 18
 EDGE_PX = 7.0  # how far into the transition from either end a press grabs that end
+CUT_PX = 3.0  # how far either side of the cut line a press over the transition grabs the cut
 ALIGNMENTS = (("center", N_("Center at Cut")), ("start", N_("Start at Cut")), ("end", N_("End at Cut")))
 
 
@@ -130,6 +133,21 @@ class TransitionLane(QWidget):
         r = self.row_rect(1)
         return QRectF(x0, r.top(), max(1.0, x1 - x0), r.height())
 
+    def cut_x(self) -> float:
+        """Where the cut line is drawn: moved by a cut drag until it is released."""
+        d = self.view.data or {}
+        moved = self._drag["delta"] if self._drag is not None and self._drag.get("edge") == "cut" else 0
+        return self.x_of(as_int(d.get("cut")) + moved)
+
+    def cut_rect(self) -> QRectF | None:
+        """The cut line where it crosses the transition, between two clips (a one-sided transition
+        has no cut to move)."""
+        d = self.view.data or {}
+        if not isinstance(d.get("a"), dict) or not isinstance(d.get("b"), dict):
+            return None
+        x, r0, r2 = self.cut_x(), self.row_rect(0), self.row_rect(2)
+        return QRectF(x - CUT_PX, r0.top(), 2 * CUT_PX, r2.bottom() - r0.top())
+
     def grab(self, x: float) -> str:
         """The end a press at ``x`` grabs ("in", "out") or "" for the middle."""
         span = self.span_rect()
@@ -169,8 +187,9 @@ class TransitionLane(QWidget):
             p.setPen(t.c("text"))
             p.drawText(span.adjusted(5, 0, -2, 0), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                        tr(str(d.get("name") or "")))
-        cx = self.x_of(as_int(d.get("cut")))
-        p.setPen(QPen(t.c("text_dim"), 1))
+        cx = self.cut_x()
+        dragging_cut = self._drag is not None and self._drag.get("edge") == "cut"
+        p.setPen(QPen(t.c("accent") if dragging_cut else t.c("text_dim"), 2 if dragging_cut else 1))
         p.drawLine(QPointF(cx, self.row_rect(0).top()), QPointF(cx, self.row_rect(2).bottom()))
         v0, v1 = self.span_of_view()
         ph = as_int(d.get("playhead"), v0 - 1)
@@ -224,6 +243,10 @@ class TransitionLane(QWidget):
         if self.ruler_rect().contains(pos):
             self._seeking = True
             self._seek(pos.x())
+        elif (cut := self.cut_rect()) is not None and cut.contains(pos):
+            # the cut line over the transition: moves the cut and the transition together, as
+            # Premiere's "Move a cut and transition together" (one timeline.roll on release)
+            self._drag = {"edge": "cut", "x": pos.x(), "view": self.span_of_view(), "delta": 0}
         elif self.span_rect().contains(pos):
             self._drag = {"edge": self.grab(pos.x()), "x": pos.x(), "view": self.span_of_view(), "delta": 0,
                           "start": as_int(d.get("start")), "duration": as_int(d.get("duration")), "begun": False}
@@ -235,7 +258,9 @@ class TransitionLane(QWidget):
             return
         drag = self._drag
         if drag is None:
-            if self.span_rect().contains(pos):
+            if (cut := self.cut_rect()) is not None and cut.contains(pos):
+                self.setCursor(Qt.CursorShape.SplitHCursor)
+            elif self.span_rect().contains(pos):
                 self.setCursor(Qt.CursorShape.SizeHorCursor if self.grab(pos.x()) else Qt.CursorShape.OpenHandCursor)
             else:
                 self.unsetCursor()
@@ -246,13 +271,20 @@ class TransitionLane(QWidget):
         if delta == drag["delta"]:
             return
         drag["delta"] = delta
+        if drag["edge"] == "cut":
+            self.update()  # the cut line follows; the edit is made on release
+            return
         self.view.send({"drag": {"edge": drag["edge"] or None, "delta": delta, "start": drag["start"],
                                  "duration": drag["duration"]}, "merge": True, "begin": not drag["begun"]})
         drag["begun"] = True
 
     def mouseReleaseEvent(self, _e: QMouseEvent) -> None:
         self._seeking = False
-        self._drag = None
+        drag, self._drag = self._drag, None
+        d = self.view.data or {}
+        if drag is not None and drag["edge"] == "cut" and drag["delta"]:
+            a, b = d.get("a") or {}, d.get("b") or {}
+            self.view.panel.command.emit("timeline.roll", {"left": a.get("clip"), "right": b.get("clip"), "delta": drag["delta"]})
         self.update()
 
     def _seek(self, x: float) -> None:

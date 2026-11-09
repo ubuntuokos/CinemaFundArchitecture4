@@ -95,6 +95,7 @@ fn categories_follow_premiere_order() {
             "graphics",
             "labels",
             "media",
+            "mediaBackends",
             "mediaAnalysis",
             "mediaCache",
             "memory",
@@ -455,9 +456,10 @@ fn media_cache_location_policy_and_clean() {
     assert_eq!(cache, dir.join("data").join("Media Cache"));
     // unsaved projects keep their previews in the media cache
     assert!(s.previews.dir().unwrap().starts_with(cache.join("Previews")), "{:?}", s.previews.dir());
-    // a custom location moves them
-    let custom = dir.join("cache2");
-    set(&mut s, "mediaCache.location", json!(custom.to_string_lossy()));
+    // a custom location moves them, into a folder of CFA4's own inside it
+    let location = dir.join("cache2");
+    set(&mut s, "mediaCache.location", json!(location.to_string_lossy()));
+    let custom = location.join(settings::CUSTOM_CACHE_FOLDER);
     assert_eq!(s.media_cache_dir().unwrap(), custom);
     assert!(s.previews.dir().unwrap().starts_with(custom.join("Previews")));
     // stale files from earlier sessions
@@ -489,6 +491,58 @@ fn media_cache_location_policy_and_clean() {
     assert_eq!(r["files"], 0);
     let r = s.execute("mediaCache.clean", json!({"all": true})).unwrap();
     assert_eq!(r["files"], 1);
+    s.shutdown();
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// #2772: a custom media cache location is a folder the user picked (the home folder, a footage
+/// folder), so the policy and "Delete…" work in a folder of CFA4's own inside it and leave
+/// everything else alone; neither a symlink inside the cache nor one in place of it is followed.
+#[test]
+fn media_cache_cleaning_keeps_the_files_of_the_chosen_folder() {
+    let dir = tmp_dir("prefs-cache-keep");
+    let mut s = Session::default();
+    s.start_autosave(crate::autosave::AutosaveConfig::new(dir.join("data"))).unwrap();
+    let location = dir.join("Videos");
+    let footage = location.join("holiday");
+    std::fs::create_dir_all(&footage).unwrap();
+    let keep = location.join("keep.txt");
+    std::fs::write(&keep, b"mine").unwrap();
+    std::fs::write(footage.join("clip.mov"), vec![0u8; 1000]).unwrap();
+    std::fs::create_dir_all(location.join("empty")).unwrap();
+    let old = std::time::SystemTime::now() - std::time::Duration::from_secs(10 * 86_400);
+    for f in [&keep, &footage.join("clip.mov")] {
+        std::fs::File::options().write(true).open(f).unwrap().set_modified(old).unwrap();
+    }
+    set(&mut s, "mediaCache.location", json!(location.to_string_lossy()));
+    let p = settings::MediaCachePrefs { management: "olderThan".into(), older_than_days: 0, ..Default::default() };
+    let cache = s.media_cache_dir().unwrap();
+    settings::enforce_policy(&cache, &p, None, std::time::SystemTime::now());
+    s.execute("mediaCache.clean", json!({"all": true})).unwrap();
+    assert!(keep.exists() && footage.join("clip.mov").exists(), "files of the chosen folder are kept");
+    assert!(location.join("empty").exists(), "so are its empty folders");
+    // An empty folder outside the cache, reached through a symlink inside it, stays.
+    #[cfg(unix)]
+    {
+        let outside = dir.join("outside").join("empty");
+        std::fs::create_dir_all(&outside).unwrap();
+        std::fs::create_dir_all(&cache).unwrap();
+        std::os::unix::fs::symlink(dir.join("outside"), cache.join("link")).unwrap();
+        // The link is newer than the policy's age, so it stays and pruning walks past it.
+        let p = settings::MediaCachePrefs { management: "olderThan".into(), older_than_days: 5, ..Default::default() };
+        settings::enforce_policy(&cache, &p, None, std::time::SystemTime::now());
+        assert!(outside.exists(), "pruning followed a symlink out of the cache");
+        // A link in place of the cache folder itself, to a folder of the user's: nothing in it goes.
+        std::fs::remove_dir_all(&cache).unwrap();
+        let documents = dir.join("Documents");
+        std::fs::create_dir_all(documents.join("drafts")).unwrap();
+        std::fs::write(documents.join("letter.txt"), b"mine").unwrap();
+        std::os::unix::fs::symlink(&documents, &cache).unwrap();
+        let p = settings::MediaCachePrefs { management: "olderThan".into(), older_than_days: 0, ..Default::default() };
+        assert_eq!(settings::enforce_policy(&cache, &p, None, std::time::SystemTime::now()), (0, 0));
+        s.execute("mediaCache.clean", json!({"all": true})).unwrap();
+        assert!(documents.join("letter.txt").exists() && documents.join("drafts").exists(), "cleaning followed a linked cache folder");
+    }
     s.shutdown();
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -590,6 +644,8 @@ fn transcription_without_speech_to_text_says_so() {
 
 #[test]
 fn hardware_decoding_setting_drives_the_decoder_switch() {
+    // the only test that moves the process-wide switch (settings::HW_SWITCH_OWNER)
+    settings::HW_SWITCH_OWNER.with(|o| o.set(true));
     let mut s = Session::default();
     assert_eq!(s.prefs.playback.hardware_decoding, "auto", "Auto by default");
     set(&mut s, "playback.hardwareDecoding", json!("off"));
@@ -891,7 +947,7 @@ fn schema_reports_groups_and_hides_the_unwired_duplicate_hardware_fields() {
     assert_eq!(r["groups"].as_array().unwrap().len(), settings::groups().len());
     assert!(r["categories"].as_array().unwrap().iter().all(|c| c["group"].is_string()));
     // hardware decoding has one control (Playback, wired); the Media page copy and the
-    // macOS-only ProRes hardware encoding switch are gone from the schema
+    // ProRes hardware encoding switch are gone from the schema
     for gone in ["media.hardwareDecoding", "media.proresHardwareEncoding"] {
         assert!(settings::field(gone).is_none(), "{gone}");
     }

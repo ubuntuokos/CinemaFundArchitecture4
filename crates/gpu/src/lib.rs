@@ -38,7 +38,6 @@ use cfa4_frame::{Chroma, PixelData, VideoFrame};
 use cfa4_render::Blend;
 use cfa4_render::plan::{FramePlan, PlanLayer, PlanStep};
 
-pub mod adapter;
 pub mod export_renderer;
 pub mod fx;
 pub mod lut;

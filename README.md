@@ -67,8 +67,10 @@ router. The system GStreamer from Ubuntu's repositories is the default; an isola
 runtime is used only when a feature needs a newer version. See
 [ADR 0005](docs/adr/ADR-0005-media-backends.md) and [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
 
-PySide6/Qt6 is an **optional** developer dependency under LGPLv3 (compatible with CFA4's GPL)
-with its own licensing obligations. The Qt shell does not bundle Qt for distribution.
+PySide6/Qt6 is the Qt GUI's dependency under LGPLv3 (compatible with CFA4's GPL) with its own
+licensing obligations. The .deb and the tarball use Ubuntu's `python3-pyside6.*`; the AppImage and
+the Flatpak carry the pinned PySide6 / Qt 6 libraries unmodified, with their licences and source
+offer (`packaging/linux/stage-pyside6.py`, owner decision 2026-11-09).
 
 ## Project documentation
 
@@ -78,6 +80,5 @@ with its own licensing obligations. The Qt shell does not bundle Qt for distribu
 - [Known inherited gaps](docs/gaps.md)
 - [Licenses and attribution](ATTRIBUTION.md)
 
-The legacy Windows/macOS/FreeBSD packaging/source components
-are not removed in this preparation step to avoid breaking existing crate dependencies;
-none are supported CFA4 release targets.
+The macOS and Windows source paths, backends and tests have been removed (2026-10-27); FreeBSD
+and WebAssembly leftovers remain for now. None of these is a supported CFA4 target.

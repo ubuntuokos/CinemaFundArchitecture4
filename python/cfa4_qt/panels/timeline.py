@@ -49,7 +49,7 @@ from PySide6.QtWidgets import (
 
 from .. import theme
 from ..calc import evaluate
-from ..i18n import N_, tr
+from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_ticks, parse_timecode
 from . import timeline_menus
 from .effects import EFFECT_MIME, dropped_effect
@@ -59,6 +59,7 @@ from .media_browser import FILES_MIME, dropped_files
 from .mixer import FADER_MAX_DB, FADER_MIN_DB, db_to_pos, pos_to_db
 from .monitor_view import SOURCE_MIME, source_payload
 from .timeline_media import TimelineMedia
+from .timeline_zoom import TimelineZoomBar
 from .transport import icon_color, transport_icon
 
 ITEM_MIME = "application/x-cfa4-item"
@@ -86,13 +87,34 @@ def waveform_level(amplitude: float) -> float:
     return max(0.0, min(1.0, (20.0 * math.log10(max(a, 1e-5)) + 48.0) / 48.0))
 EDGE_PX = 6
 CAPTION_ROW_H = 28  # egui's timeline_captions::ROW_H
-CAPTION_DIVIDER_H = 5  # between the caption rows and the video tracks (egui's DIVIDER_H)
+DIVIDER_H = 5  # egui's DIVIDER_H: between the video and the audio tracks, and under the caption rows
+CAPTION_DIVIDER_H = DIVIDER_H
+SPLIT_MIN, SPLIT_MAX = 0.1, 0.9  # egui's clamp of the video / audio split
 MAX_CAPTION_TRACKS = 64
 CAPTION_FILL = "#6b4f8f"  # egui's caption blocks (fill, selected fill)
 CAPTION_FILL_SEL = "#8c6cb4"
 SNAP_PX = 8
 TRANSITION_TOP = 17  # a transition covers its row under the clips' name strip (egui's)
 TRANSITION_EDGE_PX = 7  # how far into a transition from either end a press grabs that end
+
+# the render bar along the ruler's bottom (egui's): green = rendered preview, yellow = should play
+# in real time, red = needs rendering, nothing = plays natively
+RENDER_BAR_H = 2
+RENDER_BAR = {
+    "yellow": ("#f0f04f", N_("Unrendered: should play back in real time")),
+    "red": ("#e34850", N_("Unrendered: render to play back in real time")),
+    "green": ("#2d9d78", N_("Rendered preview")),
+}
+
+# split edit points on the ruler (egui's): a short bracket with a V or A tag, video above, audio
+# below; (field of the sequence's ``split``, is an In, tag, automation id)
+SPLIT_MARKS = (
+    ("videoIn", True, "V", "timeline.split.videoIn"),
+    ("videoOut", False, "V", "timeline.split.videoOut"),
+    ("audioIn", True, "A", "timeline.split.audioIn"),
+    ("audioOut", False, "A", "timeline.split.audioOut"),
+)
+SPLIT_COLOR = "#d0d0d0"
 
 # label names (engine colour labels) -> display colour
 LABEL_COLORS = {
@@ -131,6 +153,17 @@ def ruler_step(frame: int, pps: float, min_px: float) -> int:
     return 3600 * sec * frame
 
 
+def project_has_sequence(project: Any, depth: int = 0) -> bool:
+    """Whether ``project.inspect``'s tree holds a sequence anywhere (bins included)."""
+    if isinstance(project, dict):
+        if str(project.get("type") or "").lower() == "sequence" and "item" in project:
+            return True
+        return depth < 64 and any(project_has_sequence(v, depth + 1) for v in project.values() if isinstance(v, (dict, list)))
+    if isinstance(project, list):
+        return depth < 64 and any(project_has_sequence(v, depth + 1) for v in project)
+    return False
+
+
 @dataclass
 class Row:
     track_id: Any
@@ -152,6 +185,25 @@ class HeaderCell:
 
 
 # track header switches: (key, label, tooltip) per kind, left to right after patch and target
+# a track's colour label (egui #1186): the strip at the header's left edge opens the colour menu,
+# the colour fills 5 px of it and tints the header and the lane (the switches start right after it)
+COLOR_STRIP_W = 8
+TRACK_HEADER_TINT = 0.18
+TRACK_LANE_TINT = 0.10
+
+
+def track_label_color(track: dict[str, Any]) -> QColor | None:
+    """The colour of a track's label (``label`` from ``sequence.inspect``), or None without one."""
+    name = str(track.get("label") or "").lower()
+    return QColor(LABEL_COLORS[name]) if name in LABEL_COLORS else None
+
+
+def tint(c: QColor, alpha: float) -> QColor:
+    t = QColor(c)
+    t.setAlphaF(alpha)
+    return t
+
+
 HEADER_SWITCHES = {
     "video": (("locked", "", N_("Toggle Track Lock")), ("syncLock", "⇄", N_("Toggle Sync Lock")), ("enabled", "", N_("Toggle Track Output"))),
     "audio": (("locked", "", N_("Toggle Track Lock")), ("syncLock", "⇄", N_("Toggle Sync Lock")), ("muted", "M", N_("Mute Track")), ("solo", "S", N_("Solo Track"))),
@@ -176,6 +228,17 @@ class Drag:
     begun: bool = False  # transition: its first change went (the rest merge into that undo step)
     track_kind: str = ""  # height: "video" | "audio"
     volume: dict[str, Any] | None = None  # volumeLine / volumeKey: the grab (egui's LineDrag / KeyDrag)
+    linked: bool = True  # trim / stretch: linked partners follow; False when Alt was held at the press (upstream #3301)
+    new_track: tuple[str, QRectF] | None = None  # move: dropped past the outer track, onto a new one (kind, band)
+    # roll: the delta the engine says the roll would apply (`timeline.rollDelta`), shown instead of
+    # the pointer's once it answers, and the delta that answer was for
+    shown: int | None = None
+    asked: int | None = None
+
+
+# Duplicate frame marker colors, one per master clip with repeated frames in the order they appear
+# in the sequence (the engine's DUPLICATE_FRAME_COLORS)
+DUPLICATE_FRAME_COLORS = ("#e84a4a", "#3d9be9", "#4cc25a", "#f2c22e", "#b05ce0", "#f08a2c", "#2cd4c8", "#ec5eb0", "#9acd32", "#f5f5f5")
 
 
 def as_int(v: Any, default: int = 0) -> int:
@@ -410,6 +473,7 @@ class TimelineCanvas(QWidget):
     command = Signal(str, dict)  # engine command id, params
     seek = Signal(object)  # ticks, while scrubbing (local preview); object, not a 32-bit int
     files_dropped = Signal(list, object, object)  # paths (Media Browser, file manager), time, track id
+    files_dropped_empty = Signal(list)  # paths dropped on an empty Timeline: import, then a sequence from them
     voiceover = Signal(object)  # an audio track header's microphone: record on that track (id) / stop
     voiceover_settings = Signal()  # …its menu: Voice-Over Record Settings…
     caption_opened = Signal()  # a caption block double-clicked: the Text panel's Captions tab
@@ -425,10 +489,17 @@ class TimelineCanvas(QWidget):
         self.voiceover_track: str | None = None  # the track a voice-over records on (A1…)
         self.rows: list[Row] = []
         self.media = TimelineMedia(self)
+        self.zoom_bar: QWidget | None = None  # the panel's zoom scroll bar, repainted with the view
         self.media.updated.connect(self.update)
         self.pps = 40.0  # pixels per second
         self.scroll_ticks = 0
-        self.scroll_y = 0  # pixels the track rows are scrolled up under the ruler
+        # egui's TimelineView: the video tracks above the divider and the audio tracks below it
+        # scroll on their own; ``split`` is the video tracks' share of the track area
+        self.v_scroll = 0  # 0: V1 at the bottom of the video area; more brings higher tracks in
+        self.a_scroll = 0  # 0: A1 at the top of the audio area
+        self.split = 0.5
+        self.max_v_scroll = 0
+        self.max_a_scroll = 0
         self.video_h = VIDEO_H  # every video track's height (egui's video_track_h)
         self.audio_h = AUDIO_H
         self.saved_heights: tuple[int, int] | None = None  # before Expand / Minimize All Tracks
@@ -448,6 +519,10 @@ class TimelineCanvas(QWidget):
         self.last_dialog: QDialog | None = None
         # the main window: runs the context menus' commands, knows which are enabled
         self.menu_host: timeline_menus.MenuHost | None = None
+        self._hover_color: Any = None  # the track whose colour strip the pointer is over
+        self.render_bar: list[dict[str, Any]] = []  # ``sequence.renderBar``'s ``bar`` spans
+        self.project_has_sequence = False  # the empty Timeline's hint (egui's): set from project.inspect
+        self._demo_hover = False
         self.last_menu: QMenu | None = None
         self.font_small = QFont(self.font())
         self.font_small.setPointSizeF(max(7.0, self.font().pointSizeF() * 0.85))
@@ -463,20 +538,75 @@ class TimelineCanvas(QWidget):
         self.updateGeometry()
         self.update()
 
+    def set_render_bar(self, bar: Any) -> None:
+        spans = [b for b in bar if isinstance(b, dict) and b.get("state") in RENDER_BAR] if isinstance(bar, list) else []
+        if spans != self.render_bar:
+            self.render_bar = spans
+            self.update()
+
+    def render_bar_spans(self) -> list[tuple[int, QRectF, str]]:
+        """The render bar's coloured spans in view: (index in ``sequence.renderBar``'s bar, the
+        span on the ruler's bottom edge, its state)."""
+        ruler = QRectF(HEADER_W, 0, max(0.0, self.width() - HEADER_W), RULER_H)
+        out = []
+        for i, b in enumerate(self.render_bar):
+            x0, x1 = self.x_of(as_int(b.get("start"))), self.x_of(as_int(b.get("end")))
+            r = QRectF(x0, RULER_H - RENDER_BAR_H, x1 - x0, RENDER_BAR_H).intersected(ruler)
+            if r.width() > 0:
+                out.append((i, r, str(b.get("state"))))
+        return out
+
+    def render_bar_at(self, pos: QPoint) -> str | None:
+        """The state of the render bar span under ``pos`` (egui's hit area: 2 px above and below)."""
+        at = QPointF(pos)
+        for _i, r, state in self.render_bar_spans():
+            if r.adjusted(0, -2, 0, 2).contains(at):
+                return state
+        return None
+
+    # ----- the video and audio areas (egui's split_y / video_area / audio_area) -----
+    def split_y(self) -> int:
+        """The top of the divider between the video tracks (above) and the audio tracks (below)."""
+        top = self.tracks_top()
+        return top + int((max(0, self.height() - top - DIVIDER_H)) * self.split)
+
+    def video_area(self) -> QRect:
+        top = self.tracks_top()
+        return QRect(0, top, self.width(), max(0, self.split_y() - top))
+
+    def audio_area(self) -> QRect:
+        top = self.split_y() + DIVIDER_H
+        return QRect(0, top, self.width(), max(0, self.height() - MASTER_H - top))
+
+    def divider_rect(self) -> QRect:
+        return QRect(0, self.split_y(), self.width(), DIVIDER_H)
+
+    def row_area(self, row: Row) -> QRect:
+        return self.video_area() if row.kind == "video" else self.audio_area()
+
     def _layout_rows(self) -> None:
         self.rows = []
         if not self.sequence:
             return
-        y = self.tracks_top() - self.scroll_y
+        # egui's video_row_tops: V1 at the bottom of the video area, the tracks stacked upward, with
+        # one empty track's height above the top one (where a drop adds a video track, #1522)
         videos = list(self.sequence.get("video") or [])
-        for i in reversed(range(len(videos))):  # highest video track on top
+        va, aa = self.video_area(), self.audio_area()
+        n, vh = len(videos), self.video_h
+        total = (n + 1) * vh
+        v_off = max(0, va.height() - total)
+        self.max_v_scroll = max(0, total - va.height())
+        self.v_scroll = max(0, min(int(self.v_scroll), self.max_v_scroll))
+        for i in reversed(range(n)):  # highest video track on top
             t = videos[i]
-            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "video", y, self.video_h, t, f"V{i + 1}"))
-            y += self.video_h
-        y += 4
-        for i, t in enumerate(self.sequence.get("audio") or []):
-            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "audio", y, self.audio_h, t, f"A{i + 1}"))
-            y += self.audio_h
+            top = va.top() + v_off + (n - i) * vh - (self.max_v_scroll - self.v_scroll)
+            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "video", top, vh, t, f"V{i + 1}"))
+        audios = list(self.sequence.get("audio") or [])
+        self.max_a_scroll = max(0, len(audios) * self.audio_h - aa.height())
+        self.a_scroll = max(0, min(int(self.a_scroll), self.max_a_scroll))
+        for i, t in enumerate(audios):
+            top = aa.top() + i * self.audio_h - self.a_scroll
+            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "audio", top, self.audio_h, t, f"A{i + 1}"))
 
     # ----- track heights (egui's timeline.rs header edges, keyboard.rs commands) -----
     def set_track_heights(self, video: int | None = None, audio: int | None = None) -> None:
@@ -484,8 +614,7 @@ class TimelineCanvas(QWidget):
             self.video_h = max(DRAG_MIN_H, min(KEY_MAX_H, int(video)))
         if audio is not None:
             self.audio_h = max(DRAG_MIN_H, min(KEY_MAX_H, int(audio)))
-        self._layout_rows()
-        self.set_scroll_y(self.scroll_y)  # the content may have shrunk under the offset
+        self._layout_rows()  # the offsets stay within the new range
         self.updateGeometry()
         self.update()
         self.scrolled_y.emit()  # the scroll bar's range follows the content
@@ -516,6 +645,9 @@ class TimelineCanvas(QWidget):
             return None
         y = pos.y()
         for i, r in enumerate(self.rows):
+            area = self.row_area(r)
+            if not area.top() <= y < area.bottom() + 3:
+                continue
             bottom = r.top + r.height
             if bottom - 3 <= y < bottom + 2:
                 return r
@@ -523,30 +655,39 @@ class TimelineCanvas(QWidget):
                 return r
         return None
 
-    def content_height(self) -> int:
-        """Height of every track row together (below the ruler), unscrolled."""
-        if not self.rows:
-            return 0
-        return self.rows[-1].top + self.rows[-1].height + self.scroll_y - self.tracks_top() + 8
+    def set_v_scroll(self, v: int) -> None:
+        """egui's ``v_scroll``: how far the video tracks are moved down (0: V1 at the bottom)."""
+        self.set_offsets(v, self.a_scroll)
 
-    def max_scroll_y(self) -> int:
-        return max(0, self.content_height() - max(0, self.height() - self.tracks_top() - MASTER_H))
+    def set_a_scroll(self, a: int) -> None:
+        """egui's ``a_scroll``: how far the audio tracks are scrolled up (0: A1 at the top)."""
+        self.set_offsets(self.v_scroll, a)
 
-    def set_scroll_y(self, y: int) -> None:
-        y = max(0, min(int(y), self.max_scroll_y()))
-        if y != self.scroll_y:
-            self.scroll_y = y
+    def set_split(self, f: float) -> None:
+        """egui's ``split``: the video tracks' share of the track area, 0.1 to 0.9."""
+        f = max(SPLIT_MIN, min(SPLIT_MAX, float(f)))
+        if f != self.split:
+            self.split = f
             self._layout_rows()
             self.update()
             self.scrolled_y.emit()
 
+    def set_offsets(self, v: int, a: int) -> None:
+        before = (self.v_scroll, self.a_scroll)
+        self.v_scroll, self.a_scroll = int(v), int(a)
+        self._layout_rows()  # clamps both
+        if (self.v_scroll, self.a_scroll) != before:
+            self.update()
+        self.scrolled_y.emit()
+
     def sizeHint(self) -> QSize:
-        return QSize(800, self.tracks_top() + min(self.content_height(), 400))
+        return QSize(800, 400)
 
     def resizeEvent(self, e) -> None:
         super().resizeEvent(e)
-        # a taller panel may show everything: keep the offset within range
-        self.set_scroll_y(self.scroll_y)
+        # a taller panel may show everything: keep the offset within range (and the room for a
+        # new video track above the top one follows the height)
+        self._layout_rows()
         self.scrolled_y.emit()
 
     @property
@@ -567,11 +708,37 @@ class TimelineCanvas(QWidget):
     def time_at(self, x: float) -> int:
         return max(0, int(self.scroll_ticks + (x - HEADER_W) * TICKS_PER_SECOND / self.pps))
 
+    def new_track_at(self, y: float) -> tuple[str, QRectF] | None:
+        """egui's ``new_track_at`` (#483): a drop at ``y`` in the empty space above the top video
+        track adds a video track, below the last audio track an audio track; never over a track,
+        the caption rows, the divider or the Mix row. The kind and the band the new track would take."""
+        if not self.rows or self.row_at(int(y)) is not None:
+            return None
+        top, mix, split = self.tracks_top(), self.height() - MASTER_H, self.split_y()
+        w = max(0.0, self.width() - HEADER_W)
+        if y < split:
+            v_top = min([r.top for r in self.rows if r.kind == "video"], default=split)
+            if top <= y < v_top:
+                start = max(top, v_top - self.video_h)
+                return "video", QRectF(HEADER_W, start, w, v_top - start)
+            return None
+        bottom = max([r.top + r.height for r in self.rows if r.kind == "audio"], default=split + DIVIDER_H)
+        if bottom <= y < mix:
+            return "audio", QRectF(HEADER_W, bottom, w, min(mix, bottom + self.audio_h) - bottom)
+        return None
+
+    def new_row(self, kind: str, band: QRectF) -> Row:
+        """A stand-in row for a new track (``"new"``) of ``kind`` in ``band``."""
+        n = sum(1 for r in self.rows if r.kind == kind) + 1
+        return Row("new", "", kind, int(band.top()), int(band.height()), {}, f"{'V' if kind == 'video' else 'A'}{n}")
+
     def row_at(self, y: int) -> Row | None:
         if y < self.tracks_top() or y >= self.height() - MASTER_H:  # under the ruler, captions or the Mix row: hidden
             return None
+        va, aa = self.video_area(), self.audio_area()
         for r in self.rows:
-            if r.top <= y < r.top + r.height:
+            area = va if r.kind == "video" else aa
+            if r.top <= y < r.top + r.height and area.top() <= y <= area.bottom():  # scrolled out of its area: hidden
                 return r
         return None
 
@@ -673,96 +840,127 @@ class TimelineCanvas(QWidget):
 
     # ----- painting -----
     def paintEvent(self, _event: QPaintEvent) -> None:
+        if self.zoom_bar is not None:
+            self.zoom_bar.update()  # zoom and scroll change in many places: the bar follows each paint
         self.media.begin_paint()
         p = QPainter(self)
-        pal = self.palette()
         T = theme.current()
         p.fillRect(self.rect(), T.c("tl_bg"))
         if not self.sequence:
-            p.setPen(pal.text().color())
-            p.drawText(
-                self.rect(),
-                Qt.AlignmentFlag.AlignCenter,
-                tr("No sequence open. Double-click a sequence in the Project panel."),
-            )
+            self._paint_empty(p)
             return
         p.save()
         top = self.tracks_top()
         p.setClipRect(QRect(0, top, self.width(), max(0, self.height() - top - MASTER_H)))
-        selected = set(self.selection)
-        fm = QFontMetrics(self.font_small)
-        p.setFont(self.font_small)
-        for row in self.rows:
-            band = QRect(HEADER_W, row.top, self.width() - HEADER_W, row.height)
-            p.fillRect(band, T.c("tl_track_bg_alt") if row.kind == "video" else T.c("tl_track_bg"))
-            p.setPen(QPen(T.c("separator")))
-            p.drawLine(HEADER_W, row.top + row.height - 1, self.width(), row.top + row.height - 1)
-            if row.track.get("locked"):
-                p.fillRect(band, QBrush(QColor(128, 128, 128, 90), Qt.BrushStyle.BDiagPattern))
-            dim = row.kind == "video" and not row.track.get("enabled", True) or row.kind == "audio" and row.track.get("muted")
-            for clip in row.track.get("items") or []:
-                r = self.clip_rect(row, clip)
-                if r.right() < HEADER_W or r.left() > self.width():
-                    continue
-                base = QColor(
-                    LABEL_COLORS.get(
-                        str(clip.get("label") or "").lower(), "#5b7fb8" if row.kind == "video" else "#4f9a6a"
-                    )
-                )
-                if not clip.get("enabled", True) or dim:
-                    base = base.darker(180)
-                p.fillRect(r, base)
-                if self._drag and self._drag.kind == "move" and clip.get("clip") in selected:
-                    ghost = r.translated(
-                        self._drag.delta * self.pps / TICKS_PER_SECOND, self._drag.row_delta * row.height
-                    )
-                    p.setPen(QPen(QColor("#ffffff"), 1, Qt.PenStyle.DashLine))
-                    p.drawRect(ghost)
-                pen = QPen(
-                    T.c("clip_selected_border") if clip.get("clip") in selected else base.darker(160),
-                    2 if clip.get("clip") in selected else 1,
-                )
-                self._paint_clip_media(p, row, clip, r, base)
-                if row.kind == "audio" and row.track_id not in self.track_lanes:
-                    self._paint_volume(p, row, clip, r)
-                p.setPen(pen)
-                p.drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5))
-                text = str(clip.get("name") or "")
-                if clip.get("effects"):
-                    text = "fx " + text
-                p.setPen(QColor("#ffffff"))
-                clip_text = fm.elidedText(text, Qt.TextElideMode.ElideRight, int(r.width()) - 8)
-                p.drawText(r.adjusted(4, 2, -4, -2), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, clip_text)
-            chosen = set(self.transition_selection)
-            for x in row.track.get("transitions") or []:
-                if isinstance(x, dict):
-                    r = self.transition_rect(row, x)
-                    if r.right() >= HEADER_W and r.left() <= self.width():
-                        self._paint_transition(p, r, x, row.kind == "audio", x.get("id") in chosen)
-        for row in self.rows:
-            self._paint_through_edits(p, row)
-        for row in self.rows:
-            self._paint_lane(p, row)
-        self._paint_edit_points(p)
-        if self._effect_target:  # egui's: the clip outlined, a transition's edge marked
-            row, clip, edge = self._effect_target
-            r = self.clip_rect(row, clip)
-            accent = QColor(theme.current().accent)
-            p.setPen(QPen(accent, 2))
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 3, 3)
-            if edge:
-                x = r.left() if edge == "in" else r.right()
-                p.fillRect(QRectF(x - 1.5, r.top(), 3, r.height()), accent)
-        if self._drop_preview:
-            t, row = self._drop_preview
-            x = self.x_of(t)
-            p.fillRect(QRectF(x, row.top, 3, row.height), QColor("#ffd54a"))
+        theme_header = theme.current().c("tl_header_bg")
+        p.fillRect(QRect(0, top, HEADER_W, self.height() - top), theme_header)
+        # egui's: the video tracks clipped to the area above the divider, the audio tracks to the
+        # area below it (each scrolls on its own)
+        all_rows = self.rows
+        try:
+            for kind, area in (("video", self.video_area()), ("audio", self.audio_area())):
+                self.rows = [r for r in all_rows if r.kind == kind]
+                p.setClipRect(area)
+                selected = set(self.selection)
+                fm = QFontMetrics(self.font_small)
+                p.setFont(self.font_small)
+                for row in self.rows:
+                    band = QRect(HEADER_W, row.top, self.width() - HEADER_W, row.height)
+                    p.fillRect(band, T.c("tl_track_bg_alt") if row.kind == "video" else T.c("tl_track_bg"))
+                    lc = track_label_color(row.track)
+                    if lc is not None:
+                        p.fillRect(band, tint(lc, TRACK_LANE_TINT))
+                    p.setPen(QPen(T.c("separator")))
+                    p.drawLine(HEADER_W, row.top + row.height - 1, self.width(), row.top + row.height - 1)
+                    if row.track.get("locked"):
+                        p.fillRect(band, QBrush(QColor(128, 128, 128, 90), Qt.BrushStyle.BDiagPattern))
+                    dim = row.kind == "video" and not row.track.get("enabled", True) or row.kind == "audio" and row.track.get("muted")
+                    for clip in row.track.get("items") or []:
+                        r = self.clip_rect(row, clip)
+                        if r.right() < HEADER_W or r.left() > self.width():
+                            continue
+                        base = QColor(
+                            LABEL_COLORS.get(
+                                str(clip.get("label") or "").lower(), "#5b7fb8" if row.kind == "video" else "#4f9a6a"
+                            )
+                        )
+                        if not clip.get("enabled", True) or dim:
+                            base = base.darker(180)
+                        p.fillRect(r, base)
+                        if self._drag and self._drag.kind == "move" and clip.get("clip") in selected:
+                            ghost = r.translated(
+                                self._drag.delta * self.pps / TICKS_PER_SECOND, self._drag.row_delta * row.height
+                            )
+                            p.setPen(QPen(QColor("#ffffff"), 1, Qt.PenStyle.DashLine))
+                            p.drawRect(ghost)
+                        pen = QPen(
+                            T.c("clip_selected_border") if clip.get("clip") in selected else base.darker(160),
+                            2 if clip.get("clip") in selected else 1,
+                        )
+                        self._paint_clip_media(p, row, clip, r, base)
+                        self._paint_duplicate_frames(p, clip, r)
+                        if row.kind == "audio" and row.track_id not in self.track_lanes:
+                            self._paint_volume(p, row, clip, r)
+                        p.setPen(pen)
+                        p.drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5))
+                        text = str(clip.get("name") or "")
+                        if clip.get("effects"):
+                            text = "fx " + text
+                        p.setPen(QColor("#ffffff"))
+                        clip_text = fm.elidedText(text, Qt.TextElideMode.ElideRight, int(r.width()) - 8)
+                        p.drawText(r.adjusted(4, 2, -4, -2), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, clip_text)
+                    chosen = set(self.transition_selection)
+                    for x in row.track.get("transitions") or []:
+                        if isinstance(x, dict):
+                            r = self.transition_rect(row, x)
+                            if r.right() >= HEADER_W and r.left() <= self.width():
+                                self._paint_transition(p, r, x, row.kind == "audio", x.get("id") in chosen)
+                for row in self.rows:
+                    self._paint_through_edits(p, row)
+                for row in self.rows:
+                    self._paint_lane(p, row)
+                self._paint_edit_points(p)
+                if self._effect_target and self._effect_target[0].kind == kind:  # egui's: the clip outlined, a transition's edge marked
+                    row, clip, edge = self._effect_target
+                    r = self.clip_rect(row, clip)
+                    accent = QColor(theme.current().accent)
+                    p.setPen(QPen(accent, 2))
+                    p.setBrush(Qt.BrushStyle.NoBrush)
+                    p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 3, 3)
+                    if edge:
+                        x = r.left() if edge == "in" else r.right()
+                        p.fillRect(QRectF(x - 1.5, r.top(), 3, r.height()), accent)
+                if self._drop_preview and self._drop_preview[1].kind == kind:
+                    t, row = self._drop_preview
+                    x = self.x_of(t)
+                    if row.track_id == "new":  # egui: the band of the track the drop adds
+                        p.fillRect(QRectF(HEADER_W, row.top, self.width() - HEADER_W, row.height), QColor(255, 255, 255, 18))
+                    p.fillRect(QRectF(x, row.top, 3, row.height), QColor("#ffd54a"))
+                previews = self.new_track_previews()
+                if previews:
+                    accent = QColor(theme.current().accent)
+                    fill = QColor(accent)
+                    fill.setAlphaF(0.4)
+                    p.save()
+                    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+                    p.setFont(self.font_small)
+                    for _cid, body, name in previews:
+                        p.setPen(QPen(accent, 1.5))
+                        p.setBrush(fill)
+                        p.drawRoundedRect(body.adjusted(0.75, 0.75, -0.75, -0.75), 3, 3)
+                        if body.height() >= 20:
+                            p.setPen(T.c("text"))
+                            p.drawText(body.adjusted(4, 2, -2, 0), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, name)
+                    p.restore()
+                self._paint_headers(p, fill=False)
+        finally:
+            self.rows = all_rows
+        p.setClipRect(QRect(0, top, self.width(), max(0, self.height() - top - MASTER_H)))
+        p.fillRect(self.divider_rect(), T.c("app_bg"))  # egui's divider between video and audio
         if self._drag and self._drag.kind in ("trim", "roll", "stretch", "remix") and self._drag.clip is not None:
-            x = self.x_of(self._drag.origin_time + self._drag.delta)
+            x = self.x_of(self._drag.origin_time + self.drag_preview_delta())
             p.setPen(QPen(QColor("#ffd54a"), 2))
             p.drawLine(int(x), RULER_H, int(x), self.height())
-        self._paint_headers(p)
         p.restore()
         self._paint_captions(p)
         self._paint_mix(p)
@@ -897,6 +1095,161 @@ class TimelineCanvas(QWidget):
                     QRectF(max(x0, HEADER_W), RULER_H - 4, max(0.0, x1 - max(x0, HEADER_W)), 4),
                     T.c("in_out_shade"),
                 )
+        for _i, r, state in self.render_bar_spans():
+            p.fillRect(r, QColor(RENDER_BAR[state][0]))
+        self._paint_split_marks(p)
+        # the work area bar (upstream #3087), as dragged while a drag of it runs
+        area = self.work_area()
+        if area is not None:
+            r = self.work_area_rect(*area)
+            p.save()
+            p.setClipRect(QRectF(HEADER_W, 0, max(0.0, self.width() - HEADER_W), RULER_H))
+            p.fillRect(r, T.c("tl_ruler_text"))
+            for x in (r.left(), r.right()):
+                p.fillRect(QRectF(x - 1.5, r.top() - 1, 3, r.height() + 2), T.c("text"))
+            p.restore()
+
+    # ----- the work area bar (upstream #3087) -----
+    def work_area(self) -> tuple[int, int] | None:
+        """The work area bar's (start, end): as dragged during a drag of it, else the sequence's."""
+        d = self._drag
+        if d is not None and d.kind == "workArea" and d.volume is not None:
+            return d.volume["start"], d.volume["end"]
+        w = (self.sequence or {}).get("workArea")
+        if isinstance(w, dict) and isinstance(w.get("start"), int) and isinstance(w.get("end"), int) and w["end"] > w["start"]:
+            return w["start"], w["end"]
+        return None
+
+    def work_area_rect(self, start: int, end: int) -> QRectF:
+        """Where the ruler draws (and hit-tests) the bar: its top row, above the time labels."""
+        x0, x1 = self.x_of(start), self.x_of(end)
+        return QRectF(x0, 1.0, max(1.0, x1 - x0), 5.0)
+
+    def work_area_at(self, pos: QPoint | QPointF) -> str | None:
+        """The part of the work area bar at ``pos``: ``"in"`` / ``"out"`` (an end; a narrower zone
+        on a short bar keeps its middle grabbable), ``""`` (its middle), or None."""
+        area = self.work_area()
+        if area is None or not (pos.y() < RULER_H and pos.x() >= HEADER_W):
+            return None
+        r = self.work_area_rect(*area)
+        zone = min(float(EDGE_PX), r.width() / 3)
+        if not math.isfinite(zone) or not r.adjusted(-zone, -1, zone, 1).contains(QPointF(pos)):
+            return None
+        if abs(pos.x() - r.left()) <= zone:
+            return "in"
+        if abs(r.right() - pos.x()) <= zone:
+            return "out"
+        return ""
+
+    def _work_area_drag(self, d: Drag, pos: QPoint) -> None:
+        v = d.volume or {}
+        ft = max(1, self.frame_ticks())
+        raw = (pos.x() - d.origin.x()) * TICKS_PER_SECOND / max(1e-9, self.pps)
+        delta = round(raw / ft) * ft
+        s0, e0 = v["s0"], v["e0"]
+        if d.edge == "in":
+            v["start"], v["end"] = max(0, min(e0 - ft, self.snap(s0 + delta, set()))), e0
+        elif d.edge == "out":
+            v["start"], v["end"] = s0, max(s0 + ft, self.snap(e0 + delta, set()))
+        else:
+            delta = max(delta, -s0)
+            v["start"], v["end"] = s0 + delta, e0 + delta
+        self.update()
+
+    def split_marks(self) -> list[tuple[str, float, float, bool, str]]:
+        """The sequence's split edit points in view: (automation id, x, top, is an In, tag). An In
+        sits on its frame's left edge, an Out on its frame's right edge (egui's)."""
+        split = (self.sequence or {}).get("split")
+        if not isinstance(split, dict):
+            return []
+        out = []
+        for key, is_in, tag, pid in SPLIT_MARKS:
+            t = split.get(key)
+            if not isinstance(t, int):
+                continue
+            x = self.x_of(t if is_in else t + self.frame_ticks())
+            if x < HEADER_W:
+                continue
+            top = 3.0 if tag == "V" else RULER_H - 10.0
+            out.append((pid, x, top, is_in, tag))
+        return out
+
+    def _paint_split_marks(self, p: QPainter) -> None:
+        col = QColor(SPLIT_COLOR)
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        font = QFont(self.font_small)
+        font.setPixelSize(9)
+        p.setFont(font)
+        for _pid, x, top, is_in, tag in self.split_marks():
+            dx = 4.0 if is_in else -4.0
+            p.setPen(QPen(col, 1.5))
+            p.drawLine(QPointF(x, top), QPointF(x, top + 7.0))
+            p.drawLine(QPointF(x, top), QPointF(x + dx, top))
+            p.drawText(QRectF(x + 2 * dx - 5, top - 1.5, 10, 10), Qt.AlignmentFlag.AlignCenter, tag)
+        p.restore()
+
+    # ----- the empty Timeline (egui's timeline.rs empty_state) -----
+    def demo_button_rect(self) -> QRectF:
+        c = QRectF(self.rect()).center()
+        return QRectF(c.x() - 85, c.y() + 20 - 13, 170, 26)
+
+    def _paint_empty(self, p: QPainter) -> None:
+        """egui's: "Drop media here to create sequence.", the Open Demo Project button, and, when
+        the project has a sequence, how to open it here."""
+        T = theme.current()
+        c = QRectF(self.rect()).center()
+        font = QFont(self.font())
+        font.setPixelSize(13)
+        p.setFont(font)
+        p.setPen(T.c("text_dim"))
+        p.drawText(QRectF(0, c.y() - 12 - 12, self.width(), 24), Qt.AlignmentFlag.AlignCenter, tr("Drop media here to create sequence."))
+        if self.project_has_sequence:
+            font.setPixelSize(12)
+            p.setFont(font)
+            p.drawText(
+                QRectF(0, c.y() + 50 - 12, self.width(), 24), Qt.AlignmentFlag.AlignCenter, tr("Double-click a sequence in the Project panel to open it here.")
+            )
+        b = self.demo_button_rect()
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(T.c("accent_hover" if self._demo_hover else "accent"))
+        p.drawRoundedRect(b, 13, 13)
+        font.setPixelSize(12)
+        font.setWeight(QFont.Weight.DemiBold)
+        p.setFont(font)
+        p.setPen(QColor("#ffffff"))
+        p.drawText(b, Qt.AlignmentFlag.AlignCenter, tr("Open Demo Project"))
+        p.restore()
+
+    # ----- Show Duplicate Frame Markers (upstream #3212) -----
+    def duplicate_frames(self) -> dict[Any, tuple[int, list[tuple[int, int]]]]:
+        """clip -> (color index, its repeated-frame timeline ranges), from the engine's sequence."""
+        out: dict[Any, tuple[int, list[tuple[int, int]]]] = {}
+        for d in (self.sequence or {}).get("duplicateFrames") or []:
+            if not isinstance(d, dict):
+                continue
+            ranges = [(r["start"], r["end"]) for r in d.get("ranges") or []
+                      if isinstance(r, dict) and isinstance(r.get("start"), int) and isinstance(r.get("end"), int) and r["end"] > r["start"]]
+            if ranges:
+                out[d.get("clip")] = (as_int(d.get("color")), ranges)
+        return out
+
+    def _paint_duplicate_frames(self, p: QPainter, clip: dict[str, Any], r: QRectF) -> None:
+        """A stripe along the clip's bottom under each repeated frame, in its master clip's color
+        (as the clip is drawn now, also while it is dragged)."""
+        found = self.duplicate_frames().get(clip.get("clip"))
+        if found is None:
+            return
+        color = QColor(DUPLICATE_FRAME_COLORS[min(max(found[0], 0), len(DUPLICATE_FRAME_COLORS) - 1)])
+        shift = r.left() - self.x_of(as_int(clip.get("start")))
+        p.save()
+        p.setClipRect(r)
+        for a, b in found[1]:
+            x0, x1 = self.x_of(a) + shift, self.x_of(b) + shift
+            p.fillRect(QRectF(x0, r.bottom() - 3, max(1.0, x1 - x0), 3), color)
+        p.restore()
 
     # ----- markers (egui's timeline_hit.rs marker_rect / marker_range_rect) -----
     def marker_rect(self, marker: dict[str, Any]) -> QRectF:
@@ -932,17 +1285,86 @@ class TimelineCanvas(QWidget):
             format_timecode(self.playhead, self.frame_ticks()),
         )
 
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ids for the Timeline's painted parts, for what is in view: ``timeline.timecode``,
+        ``timeline.ruler``, ``timeline.tracks``, ``timeline.marker.<id>`` / ``markerRange.<id>``, each
+        track header's ``timeline.track.<V1|A1…>.<switch>`` and ``.resize`` / ``.resizeTop`` edges,
+        ``timeline.clip.<id>`` (with ``.volume``, a point on an audio clip's Volume line) and
+        ``timeline.transition.<id>`` with its ``.in`` / ``.out`` ends."""
+        if not self.sequence:
+            return [("timeline.openDemo", self.demo_button_rect(), "Open Demo Project")]
+        top = self.tracks_top()
+        w = float(self.width())
+        bottom = float(max(top, self.height() - MASTER_H))
+        content = QRectF(HEADER_W, top, max(0.0, w - HEADER_W), bottom - top)
+        column = QRectF(0, top, HEADER_W, bottom - top)
+        ruler = QRectF(HEADER_W, 0, max(0.0, w - HEADER_W), RULER_H)
+        out: list[tuple[str, QRectF, str]] = [
+            ("timeline.timecode", QRectF(0, 0, HEADER_W, RULER_H), format_timecode(self.playhead, self.frame_ticks())),
+            ("timeline.ruler", ruler, "time ruler"),
+            ("timeline.tracks", content, "tracks"),
+            ("timeline.divider", QRectF(self.divider_rect()), "Drag to share the tracks between video and audio"),
+        ]
+        for m in self.sequence.get("markers") or []:
+            if isinstance(m, dict) and m.get("id") is not None:
+                band = self.marker_band(m)
+                if band is not None:
+                    out.append((f"timeline.markerRange.{m['id']}", band.intersected(ruler), str(m.get("name") or "")))
+                out.append((f"timeline.marker.{m['id']}", self.marker_rect(m).intersected(ruler), str(m.get("name") or "")))
+        for i, r, state in self.render_bar_spans():
+            out.append((f"timeline.renderBar.{i}", r.adjusted(0, -2, 0, 2).intersected(ruler), RENDER_BAR[state][1]))
+        for pid, x, top, is_in, tag in self.split_marks():
+            side = "In" if is_in else "Out"
+            out.append((pid, QRectF(x - 6, top - 1, 12, 9).intersected(ruler), f"Split {tag} {side}"))
+        for cid, body, name in self.new_track_previews():
+            out.append((f"timeline.newTrackPreview.{cid}", body.intersected(content), name))
+        for i, row in enumerate(self.rows):
+            area = QRectF(self.row_area(row))  # a track scrolled out of its area is not in view
+            col, cont = column.intersected(area), content.intersected(area)
+            for c in self.header_cells(row):
+                key = "sourcePatch" if c.key == "patch" else c.key
+                out.append((f"timeline.track.{row.short}.{key}", QRectF(c.rect).intersected(col), c.tip))
+            edge = QRectF(0, row.top + row.height - 3, HEADER_W, 5).intersected(col)
+            out.append((f"timeline.track.{row.short}.resize", edge, "Drag to change the track height"))
+            if i == 0 and row.kind == "video":
+                out.append((f"timeline.track.{row.short}.resizeTop", QRectF(0, row.top - 2, HEADER_W, 5).intersected(col), "Drag to change the track height"))
+            volume_ok = self._volume_row_ok(row)
+            for clip in row.track.get("items") or []:
+                if not isinstance(clip, dict) or clip.get("clip") is None:
+                    continue
+                r = self.clip_rect(row, clip)
+                vis = r.intersected(cont)
+                out.append((f"timeline.clip.{clip['clip']}", vis, str(clip.get("name") or "")))
+                if volume_ok and isinstance(clip.get("volume"), dict) and volume_band(r).height() >= 6 and vis.width() > 0:
+                    # a point on the line, away from the trim zones at the edges (egui's)
+                    zone = min(EDGE_PX, r.width() / 3)
+                    x0, x1 = max(vis.left(), r.left() + zone), min(vis.right(), r.right() - zone)
+                    if x1 > x0:
+                        xm = (x0 + x1) / 2
+                        out.append((f"timeline.clip.{clip['clip']}.volume", QRectF(xm - 6, self.volume_line_y(clip, r, xm) - 4, 12, 8), "Volume"))
+            for x in row.track.get("transitions") or []:
+                if not isinstance(x, dict) or x.get("id") is None:
+                    continue
+                r = self.transition_rect(row, x)
+                zone = min(TRANSITION_EDGE_PX, r.width() / 3)
+                out.append((f"timeline.transition.{x['id']}", r.intersected(cont), str(x.get("effect") or x.get("name") or "")))
+                out.append((f"timeline.transition.{x['id']}.in", QRectF(r.left(), r.top(), zone, r.height()).intersected(cont), "start"))
+                out.append((f"timeline.transition.{x['id']}.out", QRectF(r.right() - zone, r.top(), zone, r.height()).intersected(cont), "end"))
+        return [(pid, r, label) for pid, r, label in out if r.width() > 0 and r.height() > 0]
+
     def header_cells(self, row: Row) -> list[HeaderCell]:
         """The switches of one track header, left to right: source patch, targeting, then lock,
         sync lock and output (video) or mute and solo (audio)."""
         t = (self.sequence or {}).get("targeting") or {}
         dest = t.get("videoDest") if row.kind == "video" else t.get("audioDest")
         y = row.top + (row.height - CELL) // 2
+        x0 = COLOR_STRIP_W
         cells = [
-            HeaderCell("patch", QRect(4, y, CELL + 4, CELL), row.short if dest == row.track_id else "", dest == row.track_id, tr("Source patch")),
-            HeaderCell("target", QRect(30, y, CELL + 4, CELL), row.short, row.track_id in (t.get("targeted") or []), tr("Toggle track targeting")),
+            HeaderCell("color", QRect(0, row.top, COLOR_STRIP_W, row.height), "", track_label_color(row.track) is not None, tr("Track Color")),
+            HeaderCell("patch", QRect(x0, y, CELL + 4, CELL), row.short if dest == row.track_id else "", dest == row.track_id, tr("Source patch")),
+            HeaderCell("target", QRect(x0 + 26, y, CELL + 4, CELL), row.short, row.track_id in (t.get("targeted") or []), tr("Toggle track targeting")),
         ]
-        x = 58
+        x = x0 + 54
         for key, text, tip in HEADER_SWITCHES[row.kind]:
             value = row.track.get(key)
             on = bool(value) if key != "enabled" else value is not False
@@ -1164,6 +1586,16 @@ class TimelineCanvas(QWidget):
             return True
         _i, t, c, g = hit
         cid = c.get("id")
+        if self.tool == "razor":
+            # the Razor tool cuts the caption where it is clicked (Shift: every caption on an
+            # unlocked caption track at that time), as it cuts clips (upstream #3039)
+            if t.get("locked") is not True:
+                at = self.snap(self.time_at(pos.x()), set())
+                if mods & Qt.KeyboardModifier.ShiftModifier:
+                    self.command.emit("captions.split", {"time": at})
+                elif as_int(c.get("start")) < at < as_int(c.get("end")):
+                    self.command.emit("captions.split", {"caption": cid, "time": at})
+            return True
         add = bool(mods & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier))
         if add:
             self.command.emit("captions.select", {"captions": [cid], "add": True})
@@ -1180,31 +1612,44 @@ class TimelineCanvas(QWidget):
         d.delta = round(raw / ft) * ft  # whole frames (egui's snap_nearest)
         self.update()
 
-    def _caption_release(self, d: Drag) -> None:
-        """The drag's one ``captions.*`` command: move (the selection, when the caption is in it)
-        or trim; a click without a drag selects only that caption."""
+    def _caption_release(self, d: Drag, copy: bool = False) -> None:
+        """The drag's one ``captions.*`` command: move (the selection, when the caption is in it;
+        ``copy``, Alt held: duplicate them there instead) or trim; a click without a drag selects
+        only that caption."""
         cid = (d.clip or {}).get("id")
         info = d.volume or {}
         if d.delta != 0 and not info.get("locked"):
             if d.edge == "move":
                 sel = self.caption_selection
-                self.command.emit("captions.move", {"captions": sel if cid in sel else [cid], "delta": d.delta})
+                # Alt held as the drag ends copies them (Premiere's Option-drag; upstream #3040)
+                self.command.emit("captions.duplicate" if copy else "captions.move", {"captions": sel if cid in sel else [cid], "delta": d.delta})
             else:
                 self.command.emit("captions.trim", {"caption": cid, "edge": d.edge, "delta": d.delta})
         elif not info.get("add") and self.caption_selection != [cid]:
             self.command.emit("captions.select", {"captions": [cid]})
         self.update()
 
-    def _paint_headers(self, p: QPainter) -> None:
+    def _paint_headers(self, p: QPainter, fill: bool = True) -> None:
         pal = self.palette()
         T = theme.current()
-        p.fillRect(QRect(0, 0, HEADER_W, self.height()), T.c("tl_header_bg"))
+        if fill:
+            p.fillRect(QRect(0, 0, HEADER_W, self.height()), T.c("tl_header_bg"))
         accent = T.c("track_target")
         for row in self.rows:
             r = QRect(0, row.top, HEADER_W - 1, row.height)
             p.fillRect(r.adjusted(2, 1, -2, -1), pal.button())
+            lc = track_label_color(row.track)
+            if lc is not None:
+                p.fillRect(r, tint(lc, TRACK_HEADER_TINT))
             cells = self.header_cells(row)
             for c in cells:
+                if c.key == "color":
+                    strip = QRect(c.rect.left(), c.rect.top(), 5, c.rect.height())
+                    if lc is not None:
+                        p.fillRect(strip, lc)
+                    elif self._hover_color == row.track_id:
+                        p.fillRect(strip, T.c("hover"))
+                    continue
                 if c.key in ("patch", "target"):
                     if c.on:
                         p.fillRect(c.rect, accent)
@@ -1283,7 +1728,30 @@ class TimelineCanvas(QWidget):
             return None, None
         return row, next((c for c in self.header_cells(row) if c.rect.contains(pos)), None)
 
+    def track_color_menu(self, row: Row) -> QMenu:
+        """egui's Track Color menu: None, then the label colours (``timeline.track.<V1>.color.<Label>``)."""
+        prefix = f"timeline.track.{row.short}.color"
+        menu = QMenu(self)
+        menu.setObjectName(f"{prefix}.menu")
+        current = str(row.track.get("label") or "").lower()
+        a = menu.addAction(tr("None"))
+        a.setObjectName(f"{prefix}.None")
+        a.setCheckable(True)
+        a.setChecked(not current)
+        a.triggered.connect(lambda _c=False: self.command.emit("timeline.setTrack", {"track": row.track_id, "label": ""}))
+        for name, color in LABEL_COLORS.items():
+            title = name.capitalize()
+            a = menu.addAction(timeline_menus.swatch(color), tr(title))
+            a.setObjectName(f"{prefix}.{title}")
+            a.setCheckable(True)
+            a.setChecked(current == name)
+            a.triggered.connect(lambda _c=False, t=title: self.command.emit("timeline.setTrack", {"track": row.track_id, "label": t}))
+        return menu
+
     def _press_header(self, row: Row, cell: HeaderCell) -> None:
+        if cell.key == "color":
+            self._popup(self.track_color_menu(row), self.mapToGlobal(cell.rect.bottomLeft()))
+            return
         if cell.key == "keyframes":
             self._popup(self.lane_menu(row), self.mapToGlobal(cell.rect.bottomLeft()))
             return
@@ -1696,6 +2164,20 @@ class TimelineCanvas(QWidget):
         """egui's Timeline Display Settings (the toolbar's wrench)."""
         menu = QMenu(self)
         menu.setObjectName("timeline.settings")
+        # the work area bar shown or hidden (upstream #3087: the Timeline panel menu's Work Area Bar)
+        a = menu.addAction(tr("Work Area Bar"))
+        a.setObjectName("timeline.settings.workAreaBar")
+        a.setCheckable(True)
+        a.setChecked(self.work_area() is not None)
+        a.setEnabled(self.sequence is not None)
+        a.toggled.connect(lambda on: self.command.emit("sequence.workAreaBar", {"show": bool(on)}))
+        menu.addSeparator()
+        # media frames used more than once get a colored stripe (upstream #3212)
+        a = menu.addAction(tr("Show Duplicate Frame Markers"))
+        a.setObjectName("timeline.settings.showDuplicateFrameMarkers")
+        a.setCheckable(True)
+        a.setChecked((self.sequence or {}).get("showDuplicateFrameMarkers") is True)
+        a.toggled.connect(lambda on: self.command.emit("sequence.showDuplicateFrameMarkers", {"on": bool(on)}))
         a = menu.addAction(tr("Show Video Thumbnails"))
         a.setObjectName("timeline.settings.showThumbnails")
         a.setCheckable(True)
@@ -1744,6 +2226,10 @@ class TimelineCanvas(QWidget):
         return menu
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
+        if not self.sequence:
+            if e.button() == Qt.MouseButton.LeftButton and self.demo_button_rect().contains(e.position()):
+                self.command.emit("file.openDemoProject", {})
+            return
         if self.sequence and e.button() == Qt.MouseButton.RightButton:
             row, cell = self.header_hit(e.position().toPoint())
             if row is not None and cell is not None and cell.key == "voiceover":
@@ -1756,6 +2242,9 @@ class TimelineCanvas(QWidget):
         pos = e.position().toPoint()
         if self._caption_press(pos, e.modifiers()):
             return
+        if self.divider_rect().contains(pos):  # egui's tl-divider: drag the video / audio split
+            self._drag = Drag("divider", None, pos, 0)
+            return
         if pos.x() < HEADER_W and pos.y() >= RULER_H:
             edge_row = self.height_edge_at(pos)
             if edge_row is not None:
@@ -1766,13 +2255,18 @@ class TimelineCanvas(QWidget):
             if row is not None and cell is not None:
                 self._press_header(row, cell)
             return
+        part = self.work_area_at(pos)
+        if part is not None:
+            s0, e0 = self.work_area() or (0, 0)
+            self._drag = Drag("workArea", None, pos, 0, edge=part, volume={"s0": s0, "e0": e0, "start": s0, "end": e0})
+            return
         if pos.y() < RULER_H and pos.x() >= HEADER_W:
             self._drag = Drag("scrub", None, pos, self.playhead)
             self._scrub_to(pos.x())
             return
         mods = e.modifiers()
         if self.tool == "hand":
-            self._drag = Drag("hand", None, pos, 0, scroll=(self.scroll_ticks, self.scroll_y))
+            self._drag = Drag("hand", None, pos, 0, scroll=(self.scroll_ticks, self.v_scroll))
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
             return
         if self.tool == "zoom":
@@ -1820,12 +2314,14 @@ class TimelineCanvas(QWidget):
                 self.command.emit("timeline.select", {"clips": [cid]})
                 return
             origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
+            alone = bool(e.modifiers() & Qt.KeyboardModifier.AltModifier)  # Alt: only this side of a link
             if self.tool == "rateStretch":
-                self._drag = Drag("stretch", clip, pos, origin, edge=edge)
+                self._drag = Drag("stretch", clip, pos, origin, edge=edge, linked=not alone)
             elif self.tool == "rolling" and row is not None and self.neighbour(row, clip, edge) is not None:
                 self._drag = Drag("roll", clip, pos, origin, edge=edge, partner=self.neighbour(row, clip, edge))
             else:  # ripple, or a roll at a cut with nothing on the other side: a trim
-                self._drag = Drag("trim", clip, pos, origin, edge=edge, mode="ripple" if self.tool == "ripple" else "regular")
+                self._drag = Drag("trim", clip, pos, origin, edge=edge, mode="ripple" if self.tool == "ripple" else "regular",
+                                  linked=not alone)
             return
         if self.tool == "razor":
             t = self.time_at(pos.x())
@@ -1836,8 +2332,9 @@ class TimelineCanvas(QWidget):
         additive = bool(e.modifiers() & (Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier))
         sel = self.selection
         if additive:
-            new = [c for c in sel if c != cid] if cid in sel else [*sel, cid]
-            self.command.emit("timeline.select", {"clips": new})
+            # the engine flips the clip with its group and links as a whole (upstream #3522): a
+            # locally computed list would keep the clip's group mates, which bring it straight back
+            self.command.emit("timeline.select", {"clips": [cid], "toggle": True})
             return
         if cid not in sel:
             self.command.emit("timeline.select", {"clips": [cid]})
@@ -1845,7 +2342,8 @@ class TimelineCanvas(QWidget):
                 self.sequence["selection"] = [cid]  # local echo until the engine's reply
         if edge:
             origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
-            self._drag = Drag("trim", clip, pos, origin, edge=edge)
+            # Alt: only this side of a link (upstream #3301)
+            self._drag = Drag("trim", clip, pos, origin, edge=edge, linked=not e.modifiers() & Qt.KeyboardModifier.AltModifier)
         else:
             self._drag = Drag("move", clip, pos, int(clip.get("start") or 0))
 
@@ -1949,6 +2447,12 @@ class TimelineCanvas(QWidget):
             cut = int(clip.get("end") if edge == "out" else clip.get("start") or 0)
             host.edit_point_kind(abs(self.x_of(cut) - pos.x()), other is not None, select)
 
+    def leaveEvent(self, e: QEvent) -> None:
+        if self._hover_color is not None:
+            self._hover_color = None
+            self.update()
+        super().leaveEvent(e)
+
     def _popup(self, menu: QMenu, global_pos: QPoint) -> None:
         menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.last_menu = menu
@@ -1975,11 +2479,32 @@ class TimelineCanvas(QWidget):
         self._drag = Drag("transition", None, pos, 0, edge=edge, mode="toggle" if shift else "pick", transition=dict(x))
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        if not self.sequence:
+            hover = self.demo_button_rect().contains(e.position())
+            if hover != self._demo_hover:
+                self._demo_hover = hover
+                self.setCursor(Qt.CursorShape.PointingHandCursor if hover else Qt.CursorShape.ArrowCursor)
+                self.update()
+            return
         pos = e.position().toPoint()
         d = self._drag
         if d is not None and d.kind == "caption":
             self._caption_drag(d, pos)
             return
+        if d is not None and d.kind == "workArea":
+            self._work_area_drag(d, pos)
+            return
+        if d is None and pos.y() < RULER_H:
+            part = self.work_area_at(pos)
+            if part is not None:
+                self.setCursor(Qt.CursorShape.SizeHorCursor if part else Qt.CursorShape.OpenHandCursor)
+                area = self.work_area() or (0, 0)
+                ft = self.frame_ticks()
+                self.setToolTip("\n".join((fmt("Start: {tc}", tc=format_timecode(area[0], ft)), fmt("End: {tc}", tc=format_timecode(area[1], ft)),
+                                            fmt("Duration: {tc}", tc=format_timecode(area[1] - area[0], ft)))))
+            elif pos.x() >= HEADER_W:
+                state = self.render_bar_at(pos)
+                self.setToolTip(tr(RENDER_BAR[state][1]) if state is not None else "")
         if d is None and RULER_H <= pos.y() < self.tracks_top():
             head = self.caption_header_at(pos)
             tips = {"locked": tr("Toggle Caption Track Lock"), "enabled": tr("Toggle Caption Track Output")}
@@ -1990,14 +2515,27 @@ class TimelineCanvas(QWidget):
             else:
                 self.unsetCursor()
             return
+        if d is not None and d.kind == "divider":
+            room = max(1, self.height() - self.tracks_top() - DIVIDER_H)
+            self.set_split(self.split + (pos.y() - d.origin.y()) / room)
+            d.origin = pos
+            return
+        if d is None and self.divider_rect().contains(pos):
+            self.setToolTip("")
+            self.setCursor(Qt.CursorShape.SizeVerCursor)
+            return
         if d is None and pos.x() < HEADER_W:
             if self.height_edge_at(pos) is not None:
                 self.setToolTip(tr("Drag to change the track height"))
                 self.setCursor(Qt.CursorShape.SizeVerCursor)
                 return
-            _row, cell = self.header_hit(pos)
+            row, cell = self.header_hit(pos)
             self.setToolTip(cell.tip if cell is not None else "")
             self.unsetCursor()
+            hover = row.track_id if row is not None and cell is not None and cell.key == "color" else None
+            if hover != self._hover_color:
+                self._hover_color = hover
+                self.update()
             return
         if d is not None and d.kind in ("volumeLine", "volumeKey"):
             self._volume_drag(d, pos)
@@ -2043,7 +2581,7 @@ class TimelineCanvas(QWidget):
         if d.kind == "hand":
             dx, dy = pos.x() - d.origin.x(), pos.y() - d.origin.y()
             self.scroll_ticks = max(0, int(d.scroll[0] - dx * TICKS_PER_SECOND / self.pps))
-            self.set_scroll_y(d.scroll[1] - dy)
+            self.set_v_scroll(d.scroll[1] + dy)  # egui's Pan: the video tracks follow the pointer
             self.update()
             return
         if d.kind in ("slip", "slide"):
@@ -2074,8 +2612,50 @@ class TimelineCanvas(QWidget):
             d.row_delta = 0
             if start_row and now_row and start_row.kind == now_row.kind:
                 d.row_delta = self.rows.index(now_row) - self.rows.index(start_row)
+            # egui (#1104, #1187): past the outer track of its kind, the clips go onto a new one
+            # (not when one of them sits on a locked track)
+            d.new_track = None
+            if start_row is not None and now_row is None:
+                nt = self.new_track_at(pos.y())
+                if nt is not None and nt[0] == start_row.kind and not any(r.track.get("locked") for r in self._moved_rows(d)):
+                    d.new_track = nt
         d.delta = target - d.origin_time
+        if d.kind == "roll":
+            self._ask_roll_limit(d)
         self.update()
+
+    def _ask_roll_limit(self, d: Drag) -> None:
+        """egui's #3155: a Rolling Edit drag stops where the roll on release stops (the media and
+        the frame left in each clip, linked pairs too), so the engine is asked what the roll would
+        apply; its answer is shown when it is for the latest delta of this drag."""
+        engine = getattr(self.media, "engine", None)
+        if engine is None or d.partner is None or d.clip is None or d.asked == d.delta:
+            return
+        left, right = (d.clip, d.partner) if d.edge == "out" else (d.partner, d.clip)
+        d.asked = asked = d.delta
+
+        def answer(result: Any, _b: bytes | None = None) -> None:
+            if self._drag is d and d.asked == asked and isinstance(result, dict):
+                shown = result.get("delta")
+                if isinstance(shown, int) and not isinstance(shown, bool):
+                    d.shown = shown
+                    self.update()
+
+        engine.execute(
+            "timeline.rollDelta",
+            {"left": left.get("clip"), "right": right.get("clip"), "delta": int(asked)},
+            on_reply=answer,
+            on_error=lambda _m: None,
+        )
+
+    def drag_preview_delta(self) -> int:
+        """The delta the drag shows: a roll's as the engine limits it, else the pointer's."""
+        d = self._drag
+        if d is None:
+            return 0
+        if d.kind == "roll" and d.shown is not None and d.asked == d.delta:
+            return d.shown
+        return d.delta
 
     def _drag_transition(self, d: Drag, pos: QPoint) -> None:
         """An end changes its duration from that end, the middle slides it over the cut: the
@@ -2096,8 +2676,16 @@ class TimelineCanvas(QWidget):
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         d, self._drag = self._drag, None
+        if d is not None and d.kind == "workArea" and d.volume is not None:
+            v = d.volume
+            if (v["start"], v["end"]) != (v["s0"], v["e0"]):
+                self.command.emit("sequence.setWorkArea", {"start": v["start"], "end": v["end"]})
+                if self.sequence is not None:
+                    self.sequence["workArea"] = {"start": v["start"], "end": v["end"]}  # local echo
+            self.update()
+            return
         if d is not None and d.kind == "caption":
-            self._caption_release(d)
+            self._caption_release(d, copy=bool(e.modifiers() & Qt.KeyboardModifier.AltModifier))
             return
         if d is not None and d.kind == "laneKey" and d.volume is not None and d.volume.get("at") is not None:
             t, v = self._lane_value_at(d)
@@ -2105,7 +2693,7 @@ class TimelineCanvas(QWidget):
                                                      "newTime": t, "value": v})
             self.update()
             return
-        if d is None or e.button() != Qt.MouseButton.LeftButton or d.kind in ("height", "volumeLine", "volumeKey", "laneKey"):
+        if d is None or e.button() != Qt.MouseButton.LeftButton or d.kind in ("height", "volumeLine", "volumeKey", "laneKey", "divider"):
             return
         if d.kind == "scrub":
             self.command.emit("playhead.set", {"time": self.playhead})
@@ -2118,7 +2706,7 @@ class TimelineCanvas(QWidget):
                 elif self.transition_selection != [tid] or self.selection:
                     self.command.emit("timeline.select", {"transitions": [tid]})
             return
-        if d.clip is None or (d.delta == 0 and d.row_delta == 0):
+        if d.clip is None or (d.delta == 0 and d.row_delta == 0 and d.new_track is None):
             self.update()
             return
         if d.kind == "hand":
@@ -2127,7 +2715,7 @@ class TimelineCanvas(QWidget):
         if d.kind == "trim":
             mode = "ripple" if d.mode == "ripple" or e.modifiers() & Qt.KeyboardModifier.ControlModifier else "regular"
             self.command.emit(
-                "timeline.trim", {"clip": d.clip.get("clip"), "edge": d.edge, "mode": mode, "delta": d.delta}
+                "timeline.trim", {"clip": d.clip.get("clip"), "edge": d.edge, "mode": mode, "delta": d.delta, "linked": d.linked}
             )
             return
         if d.kind == "roll" and d.partner is not None:
@@ -2139,7 +2727,7 @@ class TimelineCanvas(QWidget):
             self.command.emit("clip.remix", {"clip": d.clip.get("clip"), "duration": length})
             return
         if d.kind == "stretch":
-            self.command.emit("timeline.rateStretch", {"clip": d.clip.get("clip"), "edge": d.edge, "delta": d.delta})
+            self.command.emit("timeline.rateStretch", {"clip": d.clip.get("clip"), "edge": d.edge, "delta": d.delta, "linked": d.linked})
             return
         if d.kind in ("slip", "slide"):
             self.command.emit(f"timeline.{d.kind}", {"clip": d.clip.get("clip"), "delta": d.delta})
@@ -2153,9 +2741,8 @@ class TimelineCanvas(QWidget):
             row, clip = found
             idx = self.rows.index(row) + d.row_delta
             target_row = self.rows[idx] if 0 <= idx < len(self.rows) and self.rows[idx].kind == row.kind else row
-            moves.append(
-                {"clip": cid, "track": target_row.track_id, "time": max(0, int(clip.get("start") or 0) + d.delta)}
-            )
+            track = "new" if d.new_track is not None else target_row.track_id
+            moves.append({"clip": cid, "track": track, "time": max(0, int(clip.get("start") or 0) + d.delta)})
         insert = bool(e.modifiers() & Qt.KeyboardModifier.ControlModifier)
         copy = bool(e.modifiers() & Qt.KeyboardModifier.AltModifier)
         params: dict[str, Any] = {"moves": moves, "linked": False}
@@ -2165,8 +2752,41 @@ class TimelineCanvas(QWidget):
             params["copy"] = True
         self.command.emit("timeline.move", params)
 
+    def _moved_rows(self, d: Drag) -> list[Row]:
+        """The rows the clips a move drags sit on (the selection, or the grabbed clip)."""
+        ids = set(self.selection or [(d.clip or {}).get("clip")])
+        return [r for r in self.rows if any(c.get("clip") in ids for c in r.track.get("items") or [])]
+
+    def new_track_previews(self) -> list[tuple[Any, QRectF, str]]:
+        """While a move drags clips onto a new track: (clip id, where it lands in the new track's
+        band, its name), for those of the band's kind (egui's ``timeline.newTrackPreview.<id>``)."""
+        d = self._drag
+        if d is None or d.kind != "move" or d.new_track is None:
+            return []
+        kind, band = d.new_track
+        ids = set(self.selection or [(d.clip or {}).get("clip")])
+        out = []
+        for r in self.rows:
+            if r.kind != kind:
+                continue
+            for c in r.track.get("items") or []:
+                if c.get("clip") in ids:
+                    start = max(0, as_int(c.get("start")) + d.delta)
+                    x0, x1 = self.x_of(start), self.x_of(start + as_int(c.get("end")) - as_int(c.get("start")))
+                    body = QRectF(x0, band.top() + 1, x1 - x0, band.height() - 2).intersected(band)
+                    out.append((c.get("clip"), body, str(c.get("name") or "")))
+        return out
+
     def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
         pos = e.position().toPoint()
+        if self.work_area_at(pos) is not None:
+            # the bar spans the part of the sequence the ruler shows (upstream #3087)
+            ft = max(1, self.frame_ticks())
+            start = max(0, round(self.time_at(HEADER_W) / ft) * ft)
+            end = min(self.duration, round(self.time_at(self.width()) / ft) * ft)
+            if end > start:
+                self.command.emit("sequence.setWorkArea", {"start": start, "end": end})
+            return
         if RULER_H <= pos.y() < self.tracks_top():
             hit = self.caption_at(pos)
             if hit is not None:  # egui: the Text panel's Captions tab, at that caption
@@ -2217,8 +2837,13 @@ class TimelineCanvas(QWidget):
         elif e.modifiers() & Qt.KeyboardModifier.ShiftModifier or (
             e.position().x() < HEADER_W and e.angleDelta().y()
         ):
-            # Shift+wheel, or the wheel over the track headers: scroll the tracks up and down
-            self.set_scroll_y(self.scroll_y - int(dy / 120 * 40))
+            # Shift+wheel, or the wheel over the track headers: the tracks under the pointer up and
+            # down (egui's: the video tracks above the divider, the audio tracks below it)
+            step = int(dy / 120 * 40)
+            if e.position().y() < self.split_y():
+                self.set_v_scroll(self.v_scroll + step)
+            else:
+                self.set_a_scroll(self.a_scroll - step)
         else:
             self.scroll_ticks = max(0, int(self.scroll_ticks - dy / 120 * 80 * TICKS_PER_SECOND / self.pps))
             self.update()
@@ -2230,6 +2855,8 @@ class TimelineCanvas(QWidget):
         ours = m.hasFormat(ITEM_MIME) or m.hasFormat(SOURCE_MIME) or m.hasFormat(FILES_MIME) or m.hasFormat(TEMPLATE_MIME) or m.hasFormat(EFFECT_MIME)
         if (ours or m.hasUrls()) and self.sequence:
             e.acceptProposedAction()
+        elif not self.sequence and (m.hasFormat(ITEM_MIME) or m.hasFormat(FILES_MIME) or m.hasUrls()):
+            e.acceptProposedAction()  # egui's: dropped media makes a sequence
 
     def effect_target(self, pos: QPoint, effect: str) -> tuple[Row, dict[str, Any], str] | None:
         """The clip an effect dropped at ``pos`` goes on; a transition's edge is the nearer one."""
@@ -2243,6 +2870,11 @@ class TimelineCanvas(QWidget):
         return row, clip, "in" if pos.x() - r.left() < r.right() - pos.x() else "out"
 
     def dragMoveEvent(self, e) -> None:
+        if not self.sequence:
+            m = e.mimeData()
+            if m.hasFormat(ITEM_MIME) or m.hasFormat(FILES_MIME) or m.hasUrls():
+                e.acceptProposedAction()
+            return
         pos = e.position().toPoint()
         effect = dropped_effect(e.mimeData())
         if effect is not None:
@@ -2256,6 +2888,12 @@ class TimelineCanvas(QWidget):
             return
         row = self.row_at(pos.y())
         source = source_payload(e.mimeData().data(SOURCE_MIME)) if e.mimeData().hasFormat(SOURCE_MIME) else None
+        if row is None and pos.x() >= HEADER_W and not e.mimeData().hasFormat(TEMPLATE_MIME):
+            # egui (#483): the empty space above the top video track or below the last audio
+            # track adds a track of that kind
+            nt = self.new_track_at(pos.y())
+            if nt is not None and (source is None or source["video" if nt[0] == "video" else "audio"]):
+                row = self.new_row(*nt)
         # a Source span lands only on tracks of a stream it carries (egui's)
         wrong_stream = source is not None and row is not None and not source["video" if row.kind == "video" else "audio"]
         if row is None or pos.x() < HEADER_W or wrong_stream or (e.mimeData().hasFormat(TEMPLATE_MIME) and row.kind != "video"):
@@ -2273,8 +2911,11 @@ class TimelineCanvas(QWidget):
         videos = [v.get("id") for v in seq.get("video") or [] if isinstance(v, dict)]
         audios = [a.get("id") for a in seq.get("audio") or [] if isinstance(a, dict)]
         mine, other = (videos, audios) if row.kind == "video" else (audios, videos)
-        index = mine.index(row.track_id) if row.track_id in mine else 0
-        partner = other[index] if index < len(other) else (other[0] if other else None)
+        if row.track_id == "new":  # egui: the other stream on the track of that number, or a new one too
+            partner = other[len(mine)] if len(mine) < len(other) else "new"
+        else:
+            index = mine.index(row.track_id) if row.track_id in mine else 0
+            partner = other[index] if index < len(other) else (other[0] if other else None)
         vt, at = (row.track_id, partner) if row.kind == "video" else (partner, row.track_id)
         return {
             "item": source["item"],
@@ -2293,7 +2934,28 @@ class TimelineCanvas(QWidget):
         self._effect_target = None
         self.update()
 
+    def _drop_on_empty(self, e) -> None:
+        """egui's: project items dropped on an empty Timeline make a sequence from the first, the
+        rest following it back to back (``file.newSequence {fromItems}``); files are imported first."""
+        m = e.mimeData()
+        if m.hasFormat(ITEM_MIME):
+            try:
+                items = [int(x) for x in bytes(m.data(ITEM_MIME)).decode().split(",") if x]
+            except ValueError:
+                return
+            if items:
+                self.command.emit("file.newSequence", {"fromItems": items})
+                e.acceptProposedAction()
+            return
+        paths = dropped_files(m)
+        if paths:
+            self.files_dropped_empty.emit(paths)
+            e.acceptProposedAction()
+
     def dropEvent(self, e) -> None:
+        if not self.sequence:
+            self._drop_on_empty(e)
+            return
         preview, self._drop_preview = self._drop_preview, None
         target, self._effect_target = self._effect_target, None
         self.update()
@@ -2339,7 +3001,18 @@ class TimelineCanvas(QWidget):
                 self.files_dropped.emit(paths, t, row.track_id)
                 e.acceptProposedAction()
             return
-        if items:  # one after another, as one undo step (each at ``t`` would overwrite the last)
+        if items and row.track_id == "new":
+            # egui: a new track of that kind, the other stream on the track of the same number
+            # (or on a new one as well)
+            seq = self.sequence or {}
+            videos = [v.get("id") for v in seq.get("video") or [] if isinstance(v, dict)]
+            audios = [a.get("id") for a in seq.get("audio") or [] if isinstance(a, dict)]
+            if row.kind == "video":
+                vt, at = "new", audios[len(videos)] if len(videos) < len(audios) else "new"
+            else:
+                vt, at = videos[len(audios)] if len(audios) < len(videos) else "new", "new"
+            self.command.emit("timeline.place", {"items": items, "time": t, "track": vt, "audioTrack": at})
+        elif items:  # one after another, as one undo step (each at ``t`` would overwrite the last)
             self.command.emit("timeline.place", {"items": items, "time": t, "track": row.track_id})
         e.acceptProposedAction()
 
@@ -2356,6 +3029,20 @@ TOOLBAR = (
 TOOLBAR_TOGGLES = {"nest": "nest", "snap": "snapping", "linked": "linkedSelection"}  # key → inspect toggle
 
 
+class SequenceTabs(QTabBar):
+    """The Timeline's sequence tabs. Each tab is egui's ``timeline.tab.<id>`` part (dock.rs: a
+    click shows that sequence), next to the shown tab's ``timeline.tab.<id>.close`` button."""
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        out = []
+        for i in range(self.count()):
+            sid = self.tabData(i)
+            r = self.tabRect(i)
+            if isinstance(sid, int) and not isinstance(sid, bool) and r.intersects(self.rect()):
+                out.append((f"timeline.tab.{sid}", r.intersected(self.rect()), self.tabText(i)))
+        return out
+
+
 class TimelinePanel(QWidget):
     """Toolbar (tools, zoom) + canvas + horizontal scroll bar."""
 
@@ -2369,7 +3056,7 @@ class TimelinePanel(QWidget):
         bar.addWidget(self.title)
         # egui's Timeline tabs: one per open sequence (× on the shown one, drag to reorder,
         # middle-click closes, right-click: Close Panel / Close Other Timeline Panels)
-        self.tabs = QTabBar(self)
+        self.tabs = SequenceTabs(self)
         self.tabs.setObjectName("timeline.tabs")
         self.tabs.setTabsClosable(True)
         self.tabs.setMovable(True)
@@ -2386,6 +3073,17 @@ class TimelinePanel(QWidget):
         self._tab_ids: list[int] = []
         self.last_tab_menu: QMenu | None = None
         bar.addWidget(self.tabs, 1)
+        # egui's » (dock.rs ``timeline.tabs.more``): shown while the tabs don't all fit; it lists
+        # every open sequence (``timeline.tabs.list.<id>``, the shown one ticked), a pick shows it
+        self.tabs_more = QToolButton(self)
+        self.tabs_more.setObjectName("timeline.tabs.more")
+        self.tabs_more.setText("»")
+        self.tabs_more.setToolTip(tr("more tabs"))
+        self.tabs_more.setAutoRaise(True)
+        self.tabs_more.clicked.connect(self._show_tabs_list)
+        self.tabs_more.hide()
+        self.last_tabs_list: QMenu | None = None
+        bar.addWidget(self.tabs_more)
         # egui's toolbar: Nest, Snap, Linked Selection (on: pressed), Captions, Add Marker, the
         # Timeline Display Settings menu
         self.toggles: dict[str, QToolButton] = {}
@@ -2415,23 +3113,31 @@ class TimelinePanel(QWidget):
             b.setText(text)
             b.clicked.connect(slot)
             bar.addWidget(b)
-        self.hscroll = QScrollBar(Qt.Orientation.Horizontal, self)
-        self.hscroll.valueChanged.connect(self._on_scroll)
-        self.vscroll = QScrollBar(Qt.Orientation.Vertical, self)
-        self.vscroll.setObjectName("timeline.vscroll")
-        self.vscroll.valueChanged.connect(self.canvas.set_scroll_y)
+        self.zoom_bar = TimelineZoomBar(self.canvas, self)
+        self.canvas.zoom_bar = self.zoom_bar
+        # egui's two vertical scroll bars, beside the video area and beside the audio area
+        self.vcolumn = QWidget(self)
+        self.vcolumn.setObjectName("timeline.vscrollColumn")
+        self.vscroll_video = QScrollBar(Qt.Orientation.Vertical, self.vcolumn)
+        self.vscroll_video.setObjectName("timeline.vscroll.video")
+        self.vscroll_audio = QScrollBar(Qt.Orientation.Vertical, self.vcolumn)
+        self.vscroll_audio.setObjectName("timeline.vscroll.audio")
+        self.vcolumn.setFixedWidth(self.vscroll_audio.sizeHint().width())
+        # the video bar's thumb sits at the bottom while V1 is at the bottom of its area (egui's invert)
+        self.vscroll_video.valueChanged.connect(lambda v: self.canvas.set_v_scroll(self.vscroll_video.maximum() - v))
+        self.vscroll_audio.valueChanged.connect(self.canvas.set_a_scroll)
         self.canvas.scrolled_y.connect(self._sync_vscroll)
         middle = QHBoxLayout()
         middle.setContentsMargins(0, 0, 0, 0)
         middle.setSpacing(0)
         middle.addWidget(self.canvas, 1)
-        middle.addWidget(self.vscroll)
+        middle.addWidget(self.vcolumn)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addLayout(bar)
         layout.addLayout(middle, 1)
-        layout.addWidget(self.hscroll)
+        layout.addWidget(self.zoom_bar)
 
     def changeEvent(self, e: QEvent) -> None:
         super().changeEvent(e)
@@ -2467,6 +3173,30 @@ class TimelinePanel(QWidget):
         self.tabs.blockSignals(False)
         self.tabs.setVisible(bool(ids))
         self.title.setVisible(not ids)
+        self._sync_tabs_more()
+
+    def tabs_fit(self) -> bool:
+        return sum(self.tabs.tabSizeHint(i).width() for i in range(self.tabs.count())) <= self.tabs.width()
+
+    def _sync_tabs_more(self) -> None:
+        self.tabs_more.setVisible(self.tabs.isVisibleTo(self) and self.tabs.count() > 1 and not self.tabs_fit())
+
+    def _show_tabs_list(self) -> None:
+        menu = QMenu(self)
+        menu.setObjectName("timeline.tabs.list")
+        menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        active = (self.canvas.sequence or {}).get("id")
+        for i in range(self.tabs.count()):
+            sid = self.tab_id(i)
+            if sid is None:
+                continue
+            a = menu.addAction(self.tabs.tabText(i))
+            a.setObjectName(f"timeline.tabs.list.{sid}")
+            a.setCheckable(True)
+            a.setChecked(sid == active)
+            a.triggered.connect(lambda _c=False, s_=sid: s_ != (self.canvas.sequence or {}).get("id") and self.canvas.command.emit("sequence.open", {"item": s_}))
+        self.last_tabs_list = menu
+        menu.popup(self.tabs_more.mapToGlobal(self.tabs_more.rect().bottomLeft()))
 
     def _tab_picked(self, i: int) -> None:
         sid = self.tab_id(i)
@@ -2493,7 +3223,7 @@ class TimelinePanel(QWidget):
         if i >= 0 and i != self.tabs.currentIndex():
             self.tabs.setCurrentIndex(i)
         menu = QMenu(self)
-        menu.setObjectName("panel.menu.Timeline")
+        menu.setObjectName("panel.menu.Timeline.popup")
         menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         a = menu.addAction(tr("Close Panel"))
         a.setObjectName("panel.menu.Timeline.close")
@@ -2507,6 +3237,8 @@ class TimelinePanel(QWidget):
         menu.popup(self.tabs.mapToGlobal(pos))
 
     def eventFilter(self, obj: QObject, e: QEvent) -> bool:
+        if obj is self.tabs and e.type() == QEvent.Type.Resize:
+            self._sync_tabs_more()
         if (
             obj is self.tabs
             and e.type() == QEvent.Type.MouseButtonRelease
@@ -2542,26 +3274,22 @@ class TimelinePanel(QWidget):
             b.blockSignals(False)
         self.title.setText(f"{tr('Timeline')}: {seq.get('name')}" if seq else tr("Timeline"))
         self._sync_scroll()
-        self.canvas.set_scroll_y(self.canvas.scroll_y)  # tracks added or removed
-        self._sync_vscroll()
+        self._sync_vscroll()  # tracks added or removed
 
     def _sync_vscroll(self) -> None:
-        top = self.canvas.max_scroll_y()
-        self.vscroll.blockSignals(True)
-        self.vscroll.setRange(0, top)
-        self.vscroll.setPageStep(max(1, self.canvas.height() - self.canvas.tracks_top() - MASTER_H))
-        self.vscroll.setSingleStep(20)
-        self.vscroll.setValue(self.canvas.scroll_y)
-        self.vscroll.blockSignals(False)
-        self.vscroll.setVisible(top > 0)
+        c = self.canvas
+        for bar, area, top, value in (
+            (self.vscroll_video, c.video_area(), c.max_v_scroll, c.max_v_scroll - c.v_scroll),
+            (self.vscroll_audio, c.audio_area(), c.max_a_scroll, c.a_scroll),
+        ):
+            bar.blockSignals(True)
+            bar.setRange(0, top)
+            bar.setPageStep(max(1, area.height()))
+            bar.setSingleStep(20)
+            bar.setValue(value)
+            bar.blockSignals(False)
+            bar.setGeometry(0, area.top(), self.vcolumn.width(), area.height())
+            bar.setVisible(top > 0 and area.height() >= 20)  # egui's: none when there is nothing to scroll
 
     def _sync_scroll(self) -> None:
-        seconds = max(10, int(self.canvas.duration / TICKS_PER_SECOND) + 10)
-        self.hscroll.blockSignals(True)
-        self.hscroll.setRange(0, seconds * 10)
-        self.hscroll.setValue(int(self.canvas.scroll_ticks / TICKS_PER_SECOND * 10))
-        self.hscroll.blockSignals(False)
-
-    def _on_scroll(self, v: int) -> None:
-        self.canvas.scroll_ticks = int(v / 10 * TICKS_PER_SECOND)
-        self.canvas.update()
+        self.zoom_bar.update()

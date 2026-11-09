@@ -175,8 +175,19 @@ pub fn probe(path: &str, image_sequence: bool) -> Result<Value, String> {
         v["ogg"] = ogg_details(&src);
         return Ok(v);
     }
-    let src = cfa4_codecs::open_bytes(&name, bytes.clone()).map_err(|e| format!("{path}: {e}"))?;
+    let native = cfa4_codecs::open_bytes(&name, bytes.clone());
+    let native_error = native.as_ref().err().map(|e| e.to_string());
+    let native_codec = native.as_ref().ok().and_then(|s| s.info().video.as_ref().map(|v| v.codec.clone()));
+    // what an import would open: the engine first, then the supplementary backends (FFmpeg,
+    // GStreamer; ADR 0005) for files it rejects, opens without their video, or cannot decode
+    let src = cfa4_media::open_with_fallback(std::path::Path::new(path), native).map_err(|e| format!("{path}: {e}"))?;
     let mut v = serde_json::to_value(src.info()).unwrap_or_default();
+    let codec = src.info().video.as_ref().map(|v| v.codec.clone());
+    let replaced = native_error.is_some() || (native_codec.is_some() && codec != native_codec);
+    v["openedBy"] = json!(if replaced { "supplementary backend" } else { "CFA4 engine" });
+    if let Some(e) = native_error {
+        v["engineError"] = json!(e);
+    }
     if cfa4_media::wav::sniff(head)
         && let Ok(w) = cfa4_media::wav::WavSource::parse(&name, bytes)
         && let Some(tr) = w.time_reference()

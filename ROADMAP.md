@@ -3,9 +3,9 @@
 - UI.6: Compact Source and Program monitors separate timecodes from view settings and retain Source drag choices. Transport controls use the shared toolbar sizing helper, with overflow actions in an operable More menu and a scrolling fallback at tiny widths.
 - UI.3: Panel tabs, edge splits, tab reordering and floating groups use the shared docking model and drop resolver. Floating geometry is saved with named workspaces while legacy layout JSON remains readable. Dock dividers use bounded shared geometry and keyboard-accessible resize handles. Tools and dock tabs expose actual widget focus, paint focus outlines, and support keyboard traversal/activation. Control input reaches focused widgets in background windows; optional input isolation supports unattended validation. Existing workspace trees and saved layout formats are retained.
 
-**Stage: alpha** · next: beta, ~19 points of ready-for-real-work and ~400–700 h away, plus opening Premiere's `.prproj` ([why](docs/target-app-parity.md#stage); passes the [core-workflow gate](docs/roadmap.md#alpha-gate))
+**Stage: alpha** · next: beta, ~19 points of ready-for-real-work and ~370–670 h away, plus opening Premiere's `.prproj` ([why](docs/target-app-parity.md#stage); passes the [core-workflow gate](docs/roadmap.md#alpha-gate))
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-13 · **Change:** minor (language table: German covers the whole interface) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-27 · **Change:** minor (Ubuntu 26.04 is the only platform: macOS, Windows and RPM dropped) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Progress toward parity with Adobe Premiere Pro. This page is the summary; the detail is in
 [docs/target-app-parity.md](docs/target-app-parity.md) (assessment, methodology, calibration),
@@ -20,8 +20,8 @@ Progress toward parity with Adobe Premiere Pro. This page is the summary; the de
 | **Ready for real work** | **~56%** (51–61%) | How close CFA4 is to replacing Premiere for an editor on real projects: depth, correctness, file compatibility, speed, stability, ecosystem. Estimated depth per area, combined by a [written formula](docs/target-app-parity.md#three-readiness-numbers) |
 | **Mainstream practitioner** | **~55%** | A typical professional editor's weekly work only, discounted ×0.90 interaction, ×0.92 stability, ×0.88 file exchange with Premiere users ([method](docs/target-app-parity.md#mainstream-practitioner)) |
 | **Essentials user** | **~60%** | Import, cut, title, music, export at default settings, discounted ×0.88 launch / stability, ×0.90 discoverability, ×0.95 opening files people send ([method](docs/target-app-parity.md#essentials-user)) |
-| **To beta** | **~400–700 Opus 5.5 agent-hours** | Estimated, calibrated from this repo's PR history |
-| **To full parity** | **~1,550–2,750 agent-hours** | ~70% parallelizes; plugins, AI models, native-speaker review and some hardware need a human |
+| **To beta** | **~370–670 Opus 5.5 agent-hours** | Estimated, calibrated from this repo's PR history |
+| **To full parity** | **~1,500–2,670 agent-hours** | ~70% parallelizes; plugins, AI models, native-speaker review and some hardware need a human |
 | Code (measured) | 45 crates, ~343k lines of Rust, 2,520 tests, 268 merged PRs, 69 authors | `git`, `gh`, `grep` |
 
 Two numbers, because they answer different questions. The gap between them is the work that
@@ -31,9 +31,9 @@ matters most now: breadth is nearly done, depth is not.
 
 | Audience | Ready % | Opus 5.5 agent wall-clock hours to ~95% | Work that dominates |
 |---|---|---|---|
-| Full target (ready for real work) | ~56% | ~1,450–2,600 (~70% parallelizes) | Plugin hosting, AI models, localization incl. RTL / Devanagari, camera RAW and delivery codecs, `.prproj`, hardware acceleration, UI fidelity |
-| Mainstream practitioner | ~55% | ~500–850 (~65% parallelizes) | `.prproj` import (60–120), UI fidelity (120–200), stability and PR CI (40–80), 10-bit / 4:2:2 camera decode (30–50), playback / hardware (60–100), import and export gaps (60–100) |
-| Essentials user | ~60% | ~180–350 (~60% parallelizes) | Launch crashes on Windows / Intel / older macOS (40–80), discoverability and timeline friction (60–110), playback lag (30–60), common import gaps (20–40), audio devices (15–30) |
+| Full target (ready for real work) | ~56% | ~1,400–2,520 (~70% parallelizes) | Plugin hosting, AI models, localization incl. RTL / Devanagari, camera RAW and delivery codecs, `.prproj`, hardware acceleration, UI fidelity |
+| Mainstream practitioner | ~55% | ~490–830 (~65% parallelizes) | `.prproj` import (60–120), UI fidelity (120–200), stability and PR CI (30–60), 10-bit / 4:2:2 camera decode (30–50), playback / hardware (60–100), import and export gaps (60–100) |
+| Essentials user | ~60% | ~170–330 (~60% parallelizes) | Launch crashes (30–60), discoverability and timeline friction (60–110), playback lag (30–60), common import gaps (20–40), audio devices (15–30) |
 
 Method and calibration: [docs/target-app-parity.md](docs/target-app-parity.md#three-readiness-numbers).
 
@@ -45,11 +45,11 @@ Method and calibration: [docs/target-app-parity.md](docs/target-app-parity.md#th
 | UI / UX fidelity | ~60% | 120–200 | [ui-parity.md](docs/ui-parity.md) |
 | File formats (containers, `.prproj`, interchange, captions, stills) | ~60% | 140–240 | [file-format-parity.md](docs/file-format-parity.md) |
 | Codecs | ~60% | 150–250 | [codec-parity.md](docs/codec-parity.md) |
-| Hardware acceleration | ~45% | 120–200 | [hardware-parity.md](docs/hardware-parity.md) |
+| Hardware acceleration | ~45% | 100–170 | [hardware-parity.md](docs/hardware-parity.md) |
 | Localization | ~35% | 150–230 | [localization-parity.md](docs/localization-parity.md) |
 | Performance | ~55% | 60–120 | [performance.md](docs/performance.md) |
-| Stability | ~45% | 60–120 | [gaps.md G4](docs/gaps.md#g4-crashes-at-start-up-and-no-test-ci-on-pull-requests) |
-| Platforms (macOS, Windows, Linux, FreeBSD, web) | ~60% | 50–90 | [gaps.md G9](docs/gaps.md#g9-windows-and-linux-at-run-time) |
+| Stability | ~45% | 50–100 | [gaps.md G4](docs/gaps.md#g4-crashes-at-start-up-and-no-test-ci-on-pull-requests) |
+| Platform (Ubuntu 26.04, every flavour, Wayland and X11) | ~60% | 30–60 | [gaps.md G9](docs/gaps.md#g9-ubuntu-2604-at-run-time-every-flavour-wayland-and-x11) |
 | Plugins and ecosystem | ~5% | 200–400 | [gaps.md G11](docs/gaps.md#g11-no-plugin-hosting) |
 | AI features | ~25% | 150–300 | [gaps.md G12](docs/gaps.md#g12-ai-features) |
 
@@ -96,14 +96,14 @@ Also shipped: Ukrainian (menus only, 10%). Detail: [docs/localization-parity.md]
 
 Ranked; detail and "done when" in [docs/roadmap.md](docs/roadmap.md) and [docs/gaps.md](docs/gaps.md).
 
-1. **No launch crashes, and CI on pull requests** (macOS 12, Intel UHD, Windows 11 reports; no workflow runs the tests today). 40–80 h.
+1. **No launch crashes, and CI on pull requests** (Ubuntu 26.04, every flavour). 30–60 h.
 2. **Open Premiere's `.prproj`**, the beta blocker. 60–120 h.
 3. **10-bit / 4:2:2 camera media without hardware** (H.264 High 10 / 4:2:2, HEVC 4:2:2; #626). 30–50 h.
 4. **Measure fidelity against Premiere** and add `cargo xtask parity`. 50–90 h.
 5. **Real-world media corpus and workflow acceptance tests.** 40–70 h.
-6. **Hardware acceleration, continued** (#30): zero-copy upload, more effects on the GPU, Quick Sync / AMD encoders, VideoToolbox Main 10. 120–200 h.
+6. **Hardware acceleration, continued** (#30): zero-copy upload, more effects on the GPU, VA-API encoding (Intel / AMD), VA-API VP9 / AV1. 100–170 h.
 7. **UI fidelity:** Program monitor transform handles, Effect Controls, docking. 120–200 h.
-8. **Plugin hosting** (VST3 / AU, then OpenFX). Owner decision needed. 200–400 h.
+8. **Plugin hosting** (VST3, then OpenFX). Owner decision needed. 200–400 h.
 
 ## Progress log
 
@@ -166,6 +166,7 @@ Ranked; detail and "done when" in [docs/roadmap.md](docs/roadmap.md) and [docs/g
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-27 | minor | Ubuntu 26.04 is the only platform (macOS, Windows and RPM dropped): platform row and G9 30–60 h, stability 50–100 h, hardware 100–170 h; beta ~370–670 h, full parity ~1,500–2,670 h |
 | 2026-10-13 | minor | Language table: German covers the whole interface (~100%) |
 | 2026-10-12 | trivial | Progress log: Transform shutter on adjustment layers (#1088) |
 | 2026-10-11 | minor | Language table: German ships the menus (#630, 10.6%) |
