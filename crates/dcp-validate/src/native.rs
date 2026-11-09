@@ -99,8 +99,12 @@ impl Run<'_> {
         self.findings.push(Finding::new(rule, Status::Fail, message).at(at));
     }
 
-    /// Marks `rules` as done with `Unchecked`, because what they need could not be read.
+    /// Marks `rules` as done with `Unchecked`, because what they need could not be read. After a
+    /// cancel they are left not done, so the report says they were interrupted.
     fn unreadable(&mut self, rules: &[&'static str], why: &str) {
+        if self.control.is_cancelled() {
+            return;
+        }
         for &r in rules {
             self.findings.push(Finding::new(r, Status::Unchecked, why.to_string()));
             self.done.insert(r);
@@ -274,7 +278,7 @@ impl Run<'_> {
                     if let Some(id) = p.id {
                         self.docs.packing_lists.push(id);
                     }
-                    for id in p.assets.iter().filter(|a| a.mime_type.as_deref().is_some_and(|t| t.contains("xml"))).filter_map(|a| a.id) {
+                    for id in p.assets.iter().filter(|a| a.mime_type.as_deref().is_some_and(|t| t.to_ascii_lowercase().contains("xml"))).filter_map(|a| a.id) {
                         if pkl_set.contains(&id) {
                             continue;
                         }

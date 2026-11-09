@@ -220,6 +220,10 @@ fn cancellation_interrupts() {
     let r = NativeValidator.validate(&ValidationRequest::new(&d, Profile::builtin("quick-scan").unwrap()), &c).unwrap();
     assert_eq!(r.verdict, Verdict::Interrupted);
     assert!(r.counts.interrupted > 0);
+    // a cancel is reported even when discovery stops early
+    let r = NativeValidator.validate(&ValidationRequest::new(dir("cancel-no-am"), Profile::builtin("quick-scan").unwrap()), &c).unwrap();
+    assert_eq!(r.verdict, Verdict::Interrupted);
+    assert_eq!(statuses(&r, PKL_DOCUMENT), [Status::Interrupted]);
 }
 
 #[test]
@@ -388,4 +392,15 @@ fn duplicate_chunk_paths_fail() {
     let r = validate(&d, "quick-scan");
     assert_eq!(statuses(&r, AM_DOCUMENT), [Status::Fail]);
     assert_eq!(r.verdict, Verdict::Fail);
+}
+
+#[test]
+fn xml_media_type_is_case_insensitive() {
+    let d = dir("mime-case");
+    package(&d, GOOD);
+    let pkl = std::fs::read_to_string(d.join("pkl.xml")).unwrap();
+    std::fs::write(d.join("pkl.xml"), pkl.replace("text/xml", "Text/XML;charset=UTF-8")).unwrap();
+    let r = validate(&d, "quick-scan");
+    assert_eq!(r.verdict, Verdict::Pass, "{:?}", outcome(&r));
+    assert_eq!(r.documents.compositions, [cfa4_dcp::Uuid::parse(&uuid(2)).unwrap()]);
 }
