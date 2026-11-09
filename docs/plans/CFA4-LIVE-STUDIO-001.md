@@ -22,7 +22,8 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
    **részenként saját Rust kódra** cseréljük (a „Rust first” szabály szerint: nem-Rust komponens
    mehet, ha nem lassítja a CFA4-et, és később Rustra portolható; `AGENTS.md`, 2026-11-07).
 4. **A jelenetek a projektben élnek** (a `.fcproj` része), nem külön stúdiógyűjteményben.
-5. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
+5. **A libobs forrása:** saját, rögzített verziójú fordítás (D1).
+6. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
    egyeztetés szerinti felsorolással (IV. fejezet).
 
 ## II. Kiinduló helyzet
@@ -87,8 +88,8 @@ Qt6 felület (Python)          CFA4 motor (cfa4-cli serve)          cfa4-studio-
    `.fcproj` részei (serde), a parancsok szerkesztik (visszavonható), és a motor ebből állítja
    össze a libobs jeleneteit. Jelszavak és stream-kulcsok nem kerülnek a projektbe: a felhasználói
    kulcstartóban (Secret Service) vannak.
-6. **A libobs forrása:** rögzített verziójú, saját fordítás a CFA4 csomagban (mint az FFmpeg
-   9.0.2), mert az Ubuntu csomagja régebbi és böngészőforrás nélküli (D1).
+6. **A libobs forrása (D1, eldöntve 2026-11-09):** rögzített verziójú, saját fordítás a CFA4
+   csomagban (mint az FFmpeg 9.0.2), mert az Ubuntu csomagja régebbi és böngészőforrás nélküli.
 
 ## VI. Fázisok
 
@@ -115,7 +116,7 @@ munkával ütközésnél a Qt6 megy előre.
 
 | # | Kérdés | Javaslat |
 |---|---|---|
-| D1 | A libobs forrása: saját rögzített fordítás (33.x) vagy az Ubuntu tárolójának csomagja? | saját fordítás a CFA4 csomagban (újabb, egységes, böngészőforrással is) |
+| D1 | A libobs forrása | **Eldöntve (2026-11-09): saját, rögzített verziójú fordítás (33.x) a CFA4 csomagban**, ellenőrzőösszeggel, mint az FFmpeg 9.0.2 |
 | D2 | Külön folyamat a libobs-nak, vagy a motorban fut? | külön folyamat (never-crash, újraindítható) |
 | D3 | Böngészőforrás (CEF, Chromium): beépítjük-e, és mikor? | az S9-ben, külön csomagként (nagy méret, saját frissítési rend) |
 | D4 | NDI és más zárt protokollok | csak nyílt protokollok (SRT, RIST, WHIP); NDI-t nem (zárt SDK) |
