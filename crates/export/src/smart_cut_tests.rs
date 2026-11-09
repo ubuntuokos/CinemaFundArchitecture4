@@ -209,6 +209,15 @@ fn an_index_of_another_file_is_refused() {
     let fa = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 20, CutMode::FrameAccurate, Container::Mp4);
     let err = crate::boundary_reencode::check_mp4_boundary_reencode(&fa.plan, &index, &f.source(), &encoding).unwrap_err();
     assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("IDR")), "{err:?}");
+    // the plan's length must still match the source's durations
+    let mut longer = p.plan.clone();
+    longer.expected_duration.value += 1;
+    let err = execute_mp4_copy(&longer, &f.index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("last")), "{err:?}");
+    let mut longer = fa.plan.clone();
+    longer.expected_duration.value += 1;
+    let err = crate::boundary_reencode::check_mp4_boundary_reencode(&longer, &f.index, &f.source(), &encoding).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("last")), "{err:?}");
     // the boundary re-encoder checks every packet, the copied ones too
     let p = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 20, CutMode::FrameAccurate, Container::Mp4);
     let mut index = f.index.clone();

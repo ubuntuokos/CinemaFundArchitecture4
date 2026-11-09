@@ -240,6 +240,12 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
 ) -> Result<(W, CopyReport), SmartCutError> {
     let r = copy_range(plan, index, source)?;
     let samples = r.track.samples.get(r.first..=r.last).unwrap_or_default();
+    // the copied run must still last as long as planned (a replaced file with another final
+    // sample duration is refused; check_timebase made the units the same)
+    let total = samples.iter().fold(0i64, |t, s| t.saturating_add(i64::from(s.duration)));
+    if total != plan.expected_duration.value || plan.expected_duration.timebase != index.timebase {
+        return Err(SmartCutError::StaleIndex { detail: format!("the copied packets last {total}, the plan says {}", plan.expected_duration.value) });
+    }
     let base_dts = samples.first().map(|s| s.dts).unwrap_or(0);
     // the presentation starts at the earliest copied picture
     let mut start: i64 = i64::MAX;

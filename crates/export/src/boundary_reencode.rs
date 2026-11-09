@@ -232,6 +232,26 @@ fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &Strea
             delay = Some(d);
         }
     }
+    // the planned length must still be the source's: the last picture's duration is read from the
+    // reopened track, so a replaced file with another final duration is refused here
+    let mut total: i64 = 0;
+    for seg in &segs {
+        let shown: Box<dyn Iterator<Item = usize> + '_> = match seg {
+            Seg::Copy { first, last } => Box::new(*first..=*last),
+            Seg::Reencode { pictures, .. } => Box::new(pictures.iter().copied()),
+        };
+        for d in shown {
+            total = total.saturating_add(i64::from(durations.get(d).copied().unwrap_or(0)));
+        }
+    }
+    if plan.expected_duration.timebase != index.timebase || plan.expected_duration.value != total {
+        return Err(SmartCutError::StaleIndex {
+            detail: format!(
+                "the planned pictures last {total} on the source, the plan says {} ({:?})",
+                plan.expected_duration.value, plan.expected_duration.timebase
+            ),
+        });
+    }
     Ok(Prepared { track, entry, avc, segs, delay: delay.unwrap_or(0), durations })
 }
 
@@ -490,10 +510,11 @@ pub(crate) fn rbsp_bytes(payload: &[u8]) -> impl Iterator<Item = u8> + '_ {
     })
 }
 
-/// The SEI messages (payload type, the first [`SEI_KEEP`] bytes of the payload) of a
-/// length-prefixed sample.
-fn sei_messages(data: &[u8], length_size: u8) -> Result<Vec<(u32, Vec<u8>)>, SmartCutError> {
-    let mut out = Vec::new();
+/// Call `visit` with each SEI message of a length-prefixed sample (payload type, the first
+/// [`SEI_KEEP`] bytes of the payload), as it is parsed: nothing is collected, so a sample of many
+/// tiny messages costs no memory.
+fn visit_sei(data: &[u8], length_size: u8, mut visit: impl FnMut(u32, &[u8]) -> Result<(), SmartCutError>) -> Result<(), SmartCutError> {
+    let mut kept = Vec::with_capacity(SEI_KEEP);
     for nal in nals(data, length_size)? {
         if nal.first().map(|b| b & 0x1f) != Some(6) {
             continue;
@@ -513,15 +534,16 @@ fn sei_messages(data: &[u8], length_size: u8) -> Result<Vec<(u32, Vec<u8>)>, Sma
             };
             let (Some(kind), Some(size)) = (read(), read()) else { break };
             let size = size as usize;
-            let kept: Vec<u8> = rbsp.by_ref().take(size.min(SEI_KEEP)).collect();
+            kept.clear();
+            kept.extend(rbsp.by_ref().take(size.min(SEI_KEEP)));
             let skipped = rbsp.by_ref().take(size.saturating_sub(SEI_KEEP)).count();
             if kept.len().saturating_add(skipped) != size {
                 break; // truncated message
             }
-            out.push((kind, kept));
+            visit(kind, &kept)?;
         }
     }
-    Ok(out)
+    Ok(())
 }
 
 /// Everything that can be checked without decoding: the plan against the source, the encoder
@@ -567,25 +589,24 @@ fn setup<'a, S: ByteSource + ?Sized>(
         let Seg::Reencode { decode_first, decode_last, .. } = *seg else { continue };
         for d in decode_first..=decode_last {
             let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
-            for (kind, payload) in sei_messages(&data, p.avc.length_size)? {
+            visit_sei(&data, p.avc.length_size, |kind, payload| {
                 match kind {
                     SEI_USER_DATA_REGISTERED => {
                         return Err(incompatible(format!("packet {d} carries SEI user data (captions or other per-picture metadata) a re-encode would drop")));
                     }
-                    SEI_USER_DATA_UNREGISTERED if !is_encoder_note(&payload) => {
+                    SEI_USER_DATA_UNREGISTERED if !is_encoder_note(payload) => {
                         return Err(incompatible(format!("packet {d} carries unregistered SEI user data a re-encode would drop")));
                     }
                     // one encoder configuration serves every boundary: the HDR values must agree
                     SEI_MASTERING_DISPLAY => {
-                        let value =
-                            <[u8; 24]>::try_from(payload.as_slice()).map_err(|_| incompatible(format!("packet {d}: malformed mastering-display SEI")))?;
+                        let value = <[u8; 24]>::try_from(payload).map_err(|_| incompatible(format!("packet {d}: malformed mastering-display SEI")))?;
                         if cfg.mastering_display.is_some_and(|known| known != value) {
                             return Err(incompatible(format!("packet {d}: the mastering-display SEI changes between the re-encoded pictures")));
                         }
                         cfg.mastering_display = Some(value);
                     }
                     SEI_CONTENT_LIGHT => {
-                        let [a, b, c, e] = payload[..] else { return Err(incompatible(format!("packet {d}: malformed content-light SEI"))) };
+                        let [a, b, c, e] = *payload else { return Err(incompatible(format!("packet {d}: malformed content-light SEI"))) };
                         let value = (u16::from_be_bytes([a, b]), u16::from_be_bytes([c, e]));
                         if cfg.content_light.is_some_and(|known| known != value) {
                             return Err(incompatible(format!("packet {d}: the content-light SEI changes between the re-encoded pictures")));
@@ -596,7 +617,8 @@ fn setup<'a, S: ByteSource + ?Sized>(
                     other if SEI_DROPPABLE.contains(&other) => {}
                     other => return Err(incompatible(format!("packet {d} carries SEI payload type {other}, which a re-encode cannot carry over"))),
                 }
-            }
+                Ok(())
+            })?;
         }
     }
     // the encoder's parameter-set ids are free only if no packet redefines a parameter set
