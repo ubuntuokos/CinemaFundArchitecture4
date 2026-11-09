@@ -95,6 +95,7 @@ pub struct ExportRenderer {
     #[expect(dead_code, reason = "kept for future frame-accuracy flows (readback fences)")]
     queue: wgpu::Queue,
     compositor: GpuCompositor,
+    software: bool,
 }
 
 impl ExportRenderer {
@@ -102,8 +103,8 @@ impl ExportRenderer {
     /// wgpu backend.
     pub fn new() -> Option<Self> {
         // `None` is kept too: a machine without an adapter does not search again on every export
-        static SHARED: std::sync::OnceLock<Option<(wgpu::Instance, wgpu::Device, wgpu::Queue)>> = std::sync::OnceLock::new();
-        let (instance, device, queue) = SHARED
+        static SHARED: std::sync::OnceLock<Option<(wgpu::Instance, wgpu::Device, wgpu::Queue, bool)>> = std::sync::OnceLock::new();
+        let (instance, device, queue, software) = SHARED
             .get_or_init(|| {
                 // A build without a wgpu backend for this platform (`cargo build -p cfa4-cli`
                 // alone: this crate asks for none) has no GPU to offer, and `Instance::default()`
@@ -113,12 +114,13 @@ impl ExportRenderer {
                 }
                 let instance = wgpu::Instance::default();
                 let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default())).ok()?;
+                let software = adapter.get_info().device_type == wgpu::DeviceType::Cpu;
                 let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
                 // wgpu's default handler panics on a validation or out-of-memory error; log it and
                 // send the remaining frames to the CPU instead.
                 device.on_uncaptured_error(std::sync::Arc::new(|e: wgpu::Error| mark_device_failed(&format!("GPU error: {e}"))));
                 device.set_device_lost_callback(|reason, msg| mark_device_failed(&format!("GPU device lost ({reason:?}): {msg}")));
-                Some((instance, device, queue))
+                Some((instance, device, queue, software))
             })
             .as_ref()?
             .clone();
@@ -126,7 +128,13 @@ impl ExportRenderer {
             return None;
         }
         let compositor = GpuCompositor::new(&device, &queue);
-        Some(Self { _instance: instance, device, queue, compositor })
+        Some(Self { _instance: instance, device, queue, compositor, software })
+    }
+
+    /// Whether the device is a software rasteriser (lavapipe, llvmpipe): it composites on the
+    /// CPU, more slowly than the CPU renderer.
+    pub fn is_software(&self) -> bool {
+        self.software
     }
 
     /// One frame as `render_sequence` would return it (premultiplied linear-light RGBA at the
@@ -152,6 +160,35 @@ impl ExportRenderer {
             // Transitions: the export path leaves them to the CPU reference renderer.
             FramePlan::Composite { .. } => None,
         }
+    }
+
+    /// One frame as the desktop monitors show it: composited on the GPU (transitions included)
+    /// into the sRGB display texture, over black, and read back as RGBA8 (`w`, `h`, pixels).
+    /// `None` when the plan is already a CPU picture (HDR, wide gamut: the CPU renderer draws it
+    /// directly) or the GPU cannot draw this frame.
+    pub fn render_display_rgba8(
+        &mut self,
+        project: &Project,
+        seq: ItemId,
+        t: Tick,
+        opts: RenderOptions,
+        sources: &dyn SourceProvider,
+    ) -> Option<(usize, usize, Vec<u8>)> {
+        if device_failed() {
+            return None;
+        }
+        let plan = plan_frame(project, seq, t, opts, sources);
+        if matches!(plan, FramePlan::Image(_)) {
+            return None;
+        }
+        let prep = prepare(&plan);
+        self.compositor.composite_prepared(&plan, Some(&prep));
+        let (w, h, px) = self.compositor.read_output()?;
+        if device_failed() {
+            return None;
+        }
+        timing::add_frame();
+        Some((w as usize, h as usize, px))
     }
 }
 
