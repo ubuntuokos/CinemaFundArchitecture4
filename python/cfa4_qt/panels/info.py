@@ -100,6 +100,14 @@ class MarkerList(QWidget):
     def row_rect(self, i: int) -> QRect:
         return QRect(0, i * self.ROW, self.width(), self.ROW)
 
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        """egui's ``markers.row.<id>`` for each marker's row (a click goes to it)."""
+        return [
+            (f"markers.row.{m['id']}", self.row_rect(i), str(m.get("name") or ""))
+            for i, m in enumerate(self.markers)
+            if isinstance(m, dict) and m.get("id") is not None
+        ]
+
     def label_text(self, m: dict[str, Any]) -> str:
         tc = format_timecode(int(m.get("start") or 0), self.frame)
         if int(m.get("duration") or 0) > 0:
@@ -352,20 +360,53 @@ class InfoPanel(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("panel.Info")
-        self.text = QLabel(self)
-        self.text.setObjectName("info.text")
-        self.text.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        self.text.setTextFormat(Qt.TextFormat.RichText)
-        self.text.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.text.setWordWrap(True)
+        body = QWidget()
+        col = QVBoxLayout(body)
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(2)
+        # egui's two headers are their own labels, so the control channel finds them as egui's
+        # ``info.item`` and ``info.sequence`` (each labelled with its name); the lines under each
+        # header are one rich-text label
+        self.item_header = self._header("info.item")
+        self.item_lines = self._lines("info.details")
+        self.sequence_header = self._header("info.sequence")
+        self.text = self._lines("info.text")
+        for w in (self.item_header, self.item_lines, self.sequence_header, self.text):
+            col.addWidget(w)
+        col.addStretch(1)
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setWidget(self.text)
+        scroll.setWidget(body)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(scroll)
         self.lines: list[tuple[str, str]] = []  # (key, value), headers have an empty value
+        self._shown = False
+
+    def _header(self, name: str) -> QLabel:
+        w = QLabel(self)
+        w.setObjectName(name)
+        w.setTextFormat(Qt.TextFormat.PlainText)
+        f = QFont(w.font())
+        f.setBold(True)
+        w.setFont(f)
+        w.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        w.hide()
+        return w
+
+    def _lines(self, name: str) -> QLabel:
+        w = QLabel(self)
+        w.setObjectName(name)
+        w.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        w.setTextFormat(Qt.TextFormat.RichText)
+        w.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        w.setWordWrap(True)
+        return w
+
+    def plain_text(self) -> str:
+        """Everything the panel shows, as plain text (headers and lines)."""
+        return "\n".join(f"{k} {v}".strip() for k, v in self.lines)
 
     @staticmethod
     def _fps(settings: Any) -> str:
@@ -378,7 +419,9 @@ class InfoPanel(QWidget):
         return f"{v:.3f}".rstrip("0").rstrip(".")
 
     def update_info(self, item: dict[str, Any] | None, sequence: dict[str, Any] | None, playhead: int) -> None:
-        lines: list[tuple[str, str]] = []
+        item_lines: list[tuple[str, str]] = []
+        seq_lines: list[tuple[str, str]] = []
+        lines = item_lines
         fields = {str(f.get("name")): str(f.get("value") or "") for f in (item or {}).get("fields") or [] if isinstance(f, dict)}
         if item and fields:
             lines.append((str(item.get("name") or ""), ""))
@@ -391,6 +434,7 @@ class InfoPanel(QWidget):
             lines.append((tr("Duration:"), fields.get("Media Duration", "")))
             lines.append(("—", ""))
         if sequence:
+            lines = seq_lines
             s = sequence.get("settings") or {}
             ft = frame_ticks(s)
             lines.append((str(sequence.get("name") or ""), ""))
@@ -408,23 +452,37 @@ class InfoPanel(QWidget):
                 lines.append((fmt("Video {n}:", n=i + 1), under(video[i])))
             for i, t in enumerate(sequence.get("audio") or []):
                 lines.append((fmt("Audio {n}:", n=i + 1), under(t)))
-        if lines == self.lines:
+        lines = item_lines + seq_lines
+        if self._shown and lines == self.lines:
             return
-        self.lines = lines
+        self.lines, self._shown = lines, True
         T = theme.current()
-        html = []
-        for k, v in lines:
-            if k == "—":
-                html.append(f"<hr style='border-color:{T.separator}'>")
-            elif not v and not k.endswith(":"):
-                html.append(f"<p style='margin:2px 0'><b>{_esc(k)}</b></p>")
-            else:
-                html.append(
-                    f"<table cellspacing=0 cellpadding=0><tr><td width=90 style='color:{T.text_dim}'>{_esc(k)}</td><td>{_esc(v)}</td></tr></table>"
-                )
-        if not lines:
-            html.append(f"<span style='color:{T.text_faint}'>{_esc(tr('(no sequence)'))}</span>")
-        self.text.setText("".join(html))
+
+        def html(part: list[tuple[str, str]]) -> str:
+            out = []
+            for k, v in part:
+                if k == "—":
+                    out.append(f"<hr style='border-color:{T.separator}'>")
+                else:
+                    out.append(
+                        f"<table cellspacing=0 cellpadding=0><tr><td width=90 style='color:{T.text_dim}'>{_esc(k)}</td><td>{_esc(v)}</td></tr></table>"
+                    )
+            return "".join(out)
+
+        self.item_header.setVisible(bool(item_lines))
+        self.item_lines.setVisible(bool(item_lines))
+        if item_lines:
+            self.item_header.setText(item_lines[0][0])
+            self.item_lines.setText(html(item_lines[1:]))
+        self.sequence_header.setVisible(bool(seq_lines))
+        if seq_lines:
+            self.sequence_header.setText(seq_lines[0][0])
+            self.text.setText(html(seq_lines[1:]))
+        elif not item_lines:
+            self.text.setText(f"<span style='color:{T.text_faint}'>{_esc(tr('(no sequence)'))}</span>")
+        else:
+            self.text.setText("")
+        self.text.setVisible(bool(seq_lines) or not item_lines)
 
 
 def _esc(s: str) -> str:

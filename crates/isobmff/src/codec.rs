@@ -180,6 +180,10 @@ pub enum CodecConfig {
     },
     /// GoPro CineForm (`CFHD`).
     Cineform,
+    /// DV / DVCPRO / DVCPRO HD (`dvc `, `dvcp`, `dvpp`, `dv5n`, `dv5p`, `dvh1`…, `AVdv`, `AVd1`).
+    Dv {
+        fourcc: FourCc,
+    },
     /// Advanced Professional Video (`apv1` + `apvC`).
     Apv(ApvConfig),
     Aac(AacConfig),
@@ -230,6 +234,7 @@ impl CodecConfig {
             CodecConfig::Jpeg { .. } => "mjpeg",
             CodecConfig::Dnx { .. } => "dnxhd",
             CodecConfig::Cineform => "cfhd",
+            CodecConfig::Dv { .. } => "dvvideo",
             CodecConfig::Apv(_) => "apv",
             CodecConfig::Aac(_) => "aac",
             CodecConfig::Mp3 => "mp3",
@@ -875,6 +880,20 @@ fn is_video_fourcc(f: &[u8; 4]) -> bool {
             | b"mjpb"
             | b"AVdn"
             | b"AVdh"
+            | b"dvc "
+            | b"dvcp"
+            | b"dvpp"
+            | b"dv5n"
+            | b"dv5p"
+            | b"dvh1"
+            | b"dvh2"
+            | b"dvh3"
+            | b"dvh5"
+            | b"dvh6"
+            | b"dvhp"
+            | b"dvhq"
+            | b"AVdv"
+            | b"AVd1"
             | b"mp4v"
             | b"encv"
             | b"raw "
@@ -1001,6 +1020,9 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
                 b"jpeg" | b"mjpa" | b"mjpb" => CodecConfig::Jpeg { fourcc: format },
                 b"AVdn" | b"AVdh" => CodecConfig::Dnx { fourcc: format },
                 b"CFHD" => CodecConfig::Cineform,
+                b"dvc " | b"dvcp" | b"dvpp" | b"dv5n" | b"dv5p" | b"dvh1" | b"dvh2" | b"dvh3" | b"dvh5" | b"dvh6" | b"dvhp" | b"dvhq" | b"AVdv" | b"AVd1" => {
+                    CodecConfig::Dv { fourcc: format }
+                }
                 b"apv1" => CodecConfig::Apv(ApvConfig::default()),
                 _ => unknown(),
             },
@@ -1334,6 +1356,15 @@ impl SampleEntry {
         if let Some(v) = e.video.as_mut() {
             v.depth = 24;
             v.compressor_name = "GoPro CineForm".into();
+        }
+        e
+    }
+    /// DV entry (`dvc ` for DV25, `dvcp` for DVCPRO 25 at 625 lines, …).
+    pub fn dv(fourcc: FourCc, width: u16, height: u16) -> Self {
+        let mut e = Self::video(fourcc, CodecConfig::Dv { fourcc }, width, height);
+        if let Some(v) = e.video.as_mut() {
+            v.depth = 24;
+            v.compressor_name = "DV".into();
         }
         e
     }

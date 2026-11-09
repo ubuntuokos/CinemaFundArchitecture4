@@ -123,6 +123,52 @@ pub trait VideoSamples: Sync {
     fn make_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>>;
 }
 
+/// The track time (units of `num / den` s) to look up the frame shown at `t` by, for a track whose
+/// nominal rate is `rate`. `snap`: move the request back to the start of its frame first, see
+/// [`snap_coarse_units`].
+///
+/// Rounded to the nearest unit (#73): muxers round frame times to the timescale (Matroska usually
+/// to 1 ms), so a stamp can sit up to half a unit after the true time, and flooring missed every
+/// frame stamped late.
+pub(crate) fn lookup_time(t: cfa4_time::Tick, num: i64, den: i64, rate: cfa4_time::FrameRate, snap: bool) -> i64 {
+    (if snap { rate.snap(t) } else { t }).to_rational_round(num, den)
+}
+
+/// Whether to look frames up by first moving the request back to the start of its frame (nominal
+/// rate `rate`), for a track whose samples are stamped `stamps` (units of `num / den` s).
+///
+/// #73's tolerance of half a unit is only harmless while a unit is short against a frame. With a
+/// unit of half a frame or more (an MP4 whose timescale is its frame rate, one unit per frame),
+/// half a unit is a quarter of a frame or more, and from its middle on every frame was looked up
+/// as the next one. Such a track can't place frames between its units anyway, so the request
+/// first moves back to the start of its frame, which then rounds onto that frame's own stamp.
+///
+/// Only when every stamp is where that lookup lands for its nearest nominal frame: a coarse unit
+/// is no constant rate. A variable-rate track with samples 2, 1, 2 units long at two units a frame
+/// has a stamp between two nominal frames, and snapping would move a request at it onto the
+/// frame before. Such a track keeps #73's lookup by the nearest unit.
+pub(crate) fn snap_coarse_units(stamps: impl IntoIterator<Item = i64>, num: i64, den: i64, rate: cfa4_time::FrameRate) -> bool {
+    let unit = cfa4_time::Tick::from_rational(1, num, den);
+    if unit.0.saturating_mul(2) < rate.frame_duration().0 {
+        return false;
+    }
+    stamps.into_iter().all(|p| lookup_time(rate.snap_nearest(cfa4_time::Tick::from_rational(p, num, den)), num, den, rate, true) == p)
+}
+
+/// A container's sync sample for `i` when leading pictures need the GOP before: `sync` is the
+/// index's own sync sample, `leads(i, key)` says `i` is shown before `key`. One step per GOP, so a
+/// loop: a crafted index can chain tens of thousands of GOPs (#2803). A `sync` past `i` stops the
+/// walk instead of looping on it.
+pub(crate) fn open_gop_sync(mut i: usize, sync: impl Fn(usize) -> usize, leads: impl Fn(usize, usize) -> bool) -> usize {
+    loop {
+        let key = sync(i);
+        if key == 0 || key > i || !leads(i, key) {
+            return key;
+        }
+        i = key - 1;
+    }
+}
+
 /// The sync sample to start decoding at for sample `i`: its sync sample, or an earlier one when
 /// `i` is a leading picture of an open GOP (stored after its random-access picture, shown before
 /// it, like the RASL pictures after every HEVC CRA of iPhone video). Those are predicted from the
@@ -391,6 +437,21 @@ impl Pool {
         released
     }
 
+    /// Empty every cache whose lock is free (see [`release_idle`]). Decoders are dropped with no
+    /// cache lock held, as for [`Self::trim_decoders`].
+    fn release_idle(&self) {
+        let all: Vec<Arc<Shared>> = self.caches.lock().unwrap_or_else(PoisonError::into_inner).iter().filter_map(Weak::upgrade).collect();
+        let mut released = Vec::new();
+        for c in &all {
+            // try-locked: a cache another thread holds is decoding, so it is in use
+            if let Some(mut st) = try_state(c) {
+                st.release_frames(self, || true);
+                released.extend(st.release_decoder(self));
+            }
+        }
+        drop(released);
+    }
+
     /// Evict the frames of caches idle for [`RECENT`], least recently used first, down to the
     /// budget. Caches in use keep theirs (each within its own budget): a frame evicted before it is shown costs a
     /// re-decode from the keyframe.
@@ -408,6 +469,17 @@ impl Pool {
             }
         }
     }
+}
+
+/// Free the decoded frames and the decoders of every cache that nobody is using right now,
+/// process-wide. The frame budget only trims caches that were idle for [`RECENT`] while another
+/// cache is asking for frames, so after a long job (an export) every source keeps up to
+/// [`FRAME_CACHE_CEILING`] of frames and its decoders until the session ends. Whoever finishes
+/// such a job calls this. A cache a thread is decoding on (its lock is held) is skipped, so
+/// concurrent users lose nothing; a cache emptied here only re-decodes from a sync sample when
+/// asked again.
+pub fn release_idle() {
+    Pool::global().release_idle();
 }
 
 /// Caches that hold a decoder right now, process-wide (`perf.stats`).
@@ -432,11 +504,13 @@ pub struct GopCache {
     budget: usize,
 }
 
-/// The cache always has room for this many frames, whatever their size: a frame-threaded decoder
-/// runs up to ~2x its thread count ahead of the frame it returns, and playback prefetches ahead
-/// of the playhead, so a byte budget alone would evict 4K frames before they are shown and force
-/// a re-decode from the keyframe.
+/// The cache reserves room for this many small frames: a frame-threaded decoder runs up to ~2x
+/// its thread count ahead of the frame it returns, and playback prefetches ahead of the playhead.
 const MIN_FRAMES: usize = 64;
+/// A source cache never retains more decoded pixels than this, regardless of frame dimensions.
+/// In particular, untrusted VP9 `show_existing_frame` samples must not turn the small-frame
+/// reserve above into an unbounded number of full-resolution copies.
+const FRAME_CACHE_CEILING: usize = 384 << 20;
 
 /// A running decoder up to this many samples before the wanted sample's sync sample keeps going
 /// rather than restarting at the sync sample.
@@ -519,7 +593,7 @@ impl GopCache {
             pool: pool.clone(),
         });
         pool.register(&shared);
-        Self { shared, explicit_color, rotation: 0, crop: None, budget: 384 << 20 }
+        Self { shared, explicit_color, rotation: 0, crop: None, budget: FRAME_CACHE_CEILING }
     }
 
     /// Turn every decoded frame clockwise by `quarter_turns` × 90° (the container's display
@@ -554,6 +628,12 @@ impl GopCache {
         self.store_finished(st, pts, self.finish(f), draft);
     }
 
+    /// The small-frame reserve may use the configured cache budget, but may never enlarge it.
+    fn cache_budget(&self, frame_bytes: usize) -> usize {
+        let reserve = MIN_FRAMES.saturating_mul(frame_bytes).min(FRAME_CACHE_CEILING);
+        self.budget.min(FRAME_CACHE_CEILING).max(reserve)
+    }
+
     /// Cache a frame [`Self::finish`] has been applied to.
     fn store_finished(&self, st: &mut State, pts: i64, f: VideoFrame, draft: bool) {
         st.last_used = Instant::now();
@@ -563,7 +643,7 @@ impl GopCache {
         } else {
             st.drafts.remove(&pts);
         }
-        let budget = self.budget.max(MIN_FRAMES * f.byte_size());
+        let budget = self.cache_budget(f.byte_size());
         let before = st.bytes;
         st.bytes += f.byte_size();
         if let Some(old) = st.frames.insert(pts, Arc::new(f)) {
@@ -866,6 +946,19 @@ impl GopCache {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn open_gop_sync_walks_a_long_chain_of_leading_pictures_without_recursing() {
+        // Every GOP of 3 starts at a key whose leading picture is shown before it (#2803).
+        let gops = 200_000usize;
+        let sync = |i: usize| i - i % 3;
+        let leads = |i: usize, key: usize| i == key + 2;
+        assert_eq!(super::open_gop_sync(gops * 3 - 1, sync, leads), 0);
+        // A picture that is not a leading one keeps its own key.
+        assert_eq!(super::open_gop_sync(7, sync, |_, _| false), 6);
+        // An index whose sync sample lies past `i` ends the walk instead of looping.
+        assert_eq!(super::open_gop_sync(5, |_| 9, |_, _| true), 9);
+    }
+
     use super::*;
     use crate::video::DecodedFrame;
     use std::collections::VecDeque;
@@ -1439,6 +1532,17 @@ mod tests {
     }
 
     #[test]
+    fn large_frames_cannot_enlarge_the_gop_cache_ceiling() {
+        let mut c = GopCache::new(None);
+        c.budget = usize::MAX;
+        assert_eq!(c.cache_budget(1), FRAME_CACHE_CEILING);
+        assert_eq!(c.cache_budget(FRAME_CACHE_CEILING), FRAME_CACHE_CEILING);
+        c.budget = 0;
+        assert_eq!(c.cache_budget(4), MIN_FRAMES * 4, "small frames retain the playback reserve");
+        assert_eq!(c.cache_budget(FRAME_CACHE_CEILING), FRAME_CACHE_CEILING, "large frames are capped instead of reserving 64 copies");
+    }
+
+    #[test]
     fn evicted_frames_are_decoded_into_again() {
         let s = Big(200);
         // room for MIN_FRAMES pictures only
@@ -1634,5 +1738,40 @@ mod tests {
         assert_eq!(index_of(&c.frame(&s, 81_000).expect("frame")), 81);
         assert_eq!(s.resets.load(Ordering::Relaxed), resets);
         assert!(s.decodes.load(Ordering::Relaxed) - decodes <= 8 + 2);
+    }
+
+    #[test]
+    fn release_idle_empties_idle_caches_and_leaves_one_in_use_alone() {
+        let pool = Arc::new(Pool::new(MAX_LIVE_DECODERS, IDLE, FRAME_BUDGET).tiered(RECENT, HARD_DECODERS));
+        let s: Vec<Samples> = (0..3).map(|_| samples(300, 250, 3, false)).collect();
+        let c: Vec<GopCache> = (0..3).map(|_| GopCache::in_pool(None, pool.clone())).collect();
+        for k in 0..3 {
+            assert_eq!(index_of(&c[k].frame(&s[k], 10_000).expect("frame")), 10);
+        }
+        assert!(pool.bytes.load(Ordering::Relaxed) > 0);
+        assert_eq!(pool.decoders.load(Ordering::Relaxed), 3);
+
+        // a cache another thread holds (it is decoding) keeps its frames and decoder
+        let busy = c[2].shared.state.lock().unwrap();
+        let held_bytes = busy.bytes;
+        pool.release_idle();
+        assert_eq!(busy.bytes, held_bytes);
+        assert!(busy.decoder.is_some() && !busy.frames.is_empty());
+        drop(busy);
+        for k in 0..2 {
+            let st = c[k].shared.state.lock().unwrap();
+            assert!(st.frames.is_empty() && st.drafts.is_empty() && st.bytes == 0 && st.decoder.is_none() && st.spare.is_empty());
+        }
+        assert_eq!(pool.bytes.load(Ordering::Relaxed), held_bytes, "only the busy cache still counts");
+        assert_eq!(pool.decoders.load(Ordering::Relaxed), 1);
+
+        // an emptied cache decodes again from its sync sample, and a second release is harmless
+        assert_eq!(index_of(&c[0].frame(&s[0], 20_000).expect("frame")), 20);
+        assert_eq!(pool.bytes.load(Ordering::Relaxed), held_bytes + c[0].shared.state.lock().unwrap().bytes);
+        // the cache that was in use is idle now: nothing is left, and a second release is harmless
+        pool.release_idle();
+        pool.release_idle();
+        assert_eq!(pool.bytes.load(Ordering::Relaxed), 0);
+        assert_eq!(pool.decoders.load(Ordering::Relaxed), 0);
     }
 }
