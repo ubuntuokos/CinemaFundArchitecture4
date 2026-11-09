@@ -497,6 +497,20 @@ fn setup<'a, S: ByteSource + ?Sized>(
             }
         }
     }
+    // the encoder's parameter-set ids are free only if no packet redefines a parameter set
+    // in-band (avc3, or avc1 streams that repeat them)
+    for seg in &p.segs {
+        let (first, last) = match *seg {
+            Seg::Copy { first, last } => (first, last),
+            Seg::Reencode { decode_first, decode_last, .. } => (decode_first, decode_last),
+        };
+        for d in first..=last {
+            let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
+            if nals(&data, p.avc.length_size)?.iter().any(|nal| matches!(nal.first().map(|b| b & 0x1f), Some(7 | 8))) {
+                return Err(incompatible(format!("packet {d} carries in-band parameter sets")));
+            }
+        }
+    }
     // a copied run after a re-encoded one must start at an IDR
     for pair in p.segs.windows(2) {
         if let [Seg::Reencode { .. }, Seg::Copy { first, .. }] = pair {
@@ -509,10 +523,17 @@ fn setup<'a, S: ByteSource + ?Sized>(
     Ok(Setup { p, params, cfg: Some(cfg) })
 }
 
-/// An unregistered SEI that only names the encoder (x264, CFA4 and others write one): nothing a
-/// viewer needs, so a re-encode may drop it.
+/// UUIDs of the unregistered SEIs in which known encoders only name themselves and their
+/// settings: x264 and the CFA4 H.264 encoder.
+const ENCODER_NOTES: [[u8; 16]; 2] = [
+    [0xdc, 0x45, 0xe9, 0xbd, 0xe6, 0xd9, 0x48, 0xb7, 0x96, 0x2c, 0xd8, 0x20, 0xd9, 0x23, 0xee, 0xef],
+    [0x7a, 0x3c, 0x1f, 0x52, 0xd4, 0x0b, 0x4e, 0x8e, 0x9d, 0x61, 0x2f, 0xc4, 0x93, 0x05, 0xb7, 0x1a],
+];
+
+/// An unregistered SEI of a known encoder that only names it: nothing a viewer needs, so a
+/// re-encode may drop it. Any other unregistered SEI may be application metadata.
 fn is_encoder_note(payload: &[u8]) -> bool {
-    payload.get(16..).is_some_and(|text| text.iter().all(|&b| b == 0 || b == b'\n' || (0x20..0x7f).contains(&b)))
+    payload.get(..16).is_some_and(|uuid| ENCODER_NOTES.iter().any(|known| known == uuid))
 }
 
 /// Check, without decoding or writing anything, that [`execute_mp4_boundary_reencode`] can run

@@ -188,6 +188,35 @@ fn sources_a_boundary_re_encode_would_damage_are_refused_up_front() {
         (out, 1)
     });
     assert!(matches!(refused(&captions), SmartCutError::Incompatible { detail } if detail.contains("SEI")));
+    // application metadata in an unregistered SEI (an unknown UUID with printable text)
+    let metadata = remux(&f, |d, data| {
+        let mut out = data;
+        if d == 2 {
+            let mut sei = vec![0x06, 0x05, 20];
+            sei.extend_from_slice(&[0x11; 16]);
+            sei.extend_from_slice(b"note");
+            sei.push(0x80);
+            let mut with = (sei.len() as u32).to_be_bytes().to_vec();
+            with.extend_from_slice(&sei);
+            with.extend_from_slice(&out);
+            out = with;
+        }
+        (out, 1)
+    });
+    assert!(matches!(refused(&metadata), SmartCutError::Incompatible { detail } if detail.contains("unregistered")));
+    // a parameter set repeated in-band, here inside a copied GOP
+    let inband = remux(&f, |d, data| {
+        let mut out = data;
+        if d == 20 {
+            let Some(cfa4_isobmff::CodecConfig::Avc(avc)) = f.file.tracks[0].codec() else { unreachable!() };
+            let mut with = (avc.pps[0].len() as u32).to_be_bytes().to_vec();
+            with.extend_from_slice(&avc.pps[0]);
+            with.extend_from_slice(&out);
+            out = with;
+        }
+        (out, 1)
+    });
+    assert!(matches!(refused(&inband), SmartCutError::Incompatible { detail } if detail.contains("in-band")));
     // picture 7 (inside the re-encoded head) is shown twice as long
     let vfr = remux(&f, |d, data| (data, if d == 7 { 2 } else { 1 }));
     assert!(matches!(refused(&vfr), SmartCutError::Incompatible { detail } if detail.contains("frame rate")));
