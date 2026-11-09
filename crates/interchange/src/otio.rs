@@ -11,7 +11,7 @@
 //! state, sequence settings, media info, generators) round-trip through `metadata.cfa4`.
 //! Nested sequences are `Stack` items inside tracks.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use cfa4_media::{Generator, MediaInfo};
 use cfa4_project::{
@@ -73,6 +73,20 @@ fn schema_name(v: &Value) -> &str {
 
 fn fc(v: &Value) -> Option<&Value> {
     v.get("metadata").and_then(|m| m.get("cfa4"))
+}
+
+/// The `metadata` keys other programs wrote (everything but CFA4's own, under `cfa4` or the upstream
+/// key), kept to be written back.
+fn foreign(v: &Value) -> BTreeMap<String, Value> {
+    let Some(m) = v.get("metadata").and_then(Value::as_object) else { return BTreeMap::new() };
+    m.iter().filter(|(k, _)| k.as_str() != "cfa4" && k.as_str() != cfa4_project::legacy::OTIO_METADATA_KEY).map(|(k, v)| (k.clone(), v.clone())).collect()
+}
+
+/// A `metadata` object: the foreign keys read on import, plus CFA4's own under `cfa4`.
+fn metadata(own: Value, kept: &BTreeMap<String, Value>) -> Value {
+    let mut m: serde_json::Map<String, Value> = kept.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    m.insert("cfa4".into(), own);
+    Value::Object(m)
 }
 
 fn name_of(v: &Value) -> String {
@@ -140,7 +154,7 @@ pub(crate) fn export(p: &Project, seq_id: ItemId, opts: &ExportOptions, report: 
         "OTIO_SCHEMA": "Timeline.1",
         "name": name,
         "global_start_time": rt(rate.tick_of(seq.start_timecode), rate),
-        "metadata": {"cfa4": x.seq_meta(seq_id)},
+        "metadata": metadata(x.seq_meta(seq_id), &seq.interchange),
         "tracks": stack,
     });
     serde_json::to_string_pretty(&tl).map_err(|e| Error::Other(e.to_string()))
@@ -181,7 +195,8 @@ impl Exp<'_, '_> {
             "effects": [],
             "markers": markers,
             "enabled": true,
-            "metadata": if range.is_some() { json!({"cfa4": self.seq_meta(id)}) } else { json!({}) },
+            // a top-level sequence keeps its foreign metadata on the Timeline
+            "metadata": if range.is_some() { metadata(self.seq_meta(id), &seq.interchange) } else { json!({}) },
         })
     }
 
@@ -211,10 +226,10 @@ impl Exp<'_, '_> {
             "effects": [],
             "markers": [],
             "enabled": t.enabled,
-            "metadata": {"cfa4": {
+            "metadata": metadata(json!({
                 "locked": t.locked, "sync_lock": t.sync_lock, "muted": t.muted, "solo": t.solo,
                 "channels": t.channels, "volume_db": t.volume_db, "pan": t.pan, "effects": t.effects,
-            }},
+            }), &t.interchange),
         })
     }
 
@@ -300,6 +315,10 @@ impl Exp<'_, '_> {
             s["metadata"]["cfa4"]["clip"] = meta["cfa4"].clone();
             // Nested sequence markers stay on the Stack; clip instance markers live on the clip metadata.
             s["metadata"]["cfa4"]["clip"]["markers"] = json!(markers);
+            // the Stack's own foreign metadata belongs to the nested sequence; the instance's goes here
+            if !it.interchange.is_empty() {
+                s["metadata"]["cfa4"]["clip"]["interchange"] = json!(it.interchange);
+            }
             return s;
         }
         let _ = generator_of(self.p, base);
@@ -320,7 +339,7 @@ impl Exp<'_, '_> {
             "enabled": it.enabled,
             "media_references": {"DEFAULT_MEDIA": mref},
             "active_media_reference_key": "DEFAULT_MEDIA",
-            "metadata": meta,
+            "metadata": metadata(meta["cfa4"].clone(), &it.interchange),
         })
     }
 }
@@ -448,6 +467,13 @@ impl Imp<'_, '_> {
         let meta = fc(tl).or_else(|| fc(stack));
         let rate = tl.get("global_start_time").and_then(read_rate).or_else(|| first_rate(stack)).unwrap_or_default();
         let id = self.sequence(stack, &name, meta, rate);
+        // the Timeline's foreign metadata, over the top-level Stack's
+        let kept = foreign(tl);
+        if !kept.is_empty()
+            && let Some(s) = self.b.p.sequence_mut(id)
+        {
+            s.interchange.extend(kept);
+        }
         if let Some(st) = tl.get("global_start_time").and_then(read_rt)
             && let Some(s) = self.b.p.sequence_mut(id)
         {
@@ -472,6 +498,7 @@ impl Imp<'_, '_> {
             seq.master_effects = effects_from(m.get("master_effects")).unwrap_or_default();
         }
         seq.markers = self.markers(stack);
+        seq.interchange = foreign(stack);
         for t in stack.get("children").and_then(Value::as_array).into_iter().flatten() {
             match schema_name(t) {
                 "Track" => {
@@ -495,6 +522,7 @@ impl Imp<'_, '_> {
             track.name = n;
         }
         track.enabled = t.get("enabled").and_then(Value::as_bool).unwrap_or(true);
+        track.interchange = foreign(t);
         if let Some(m) = fc(t) {
             let g = |k: &str| m.get(k).and_then(Value::as_bool);
             track.locked = g("locked").unwrap_or(false);
@@ -675,6 +703,7 @@ impl Imp<'_, '_> {
         }
         let meta = fc(c).cloned();
         self.apply_clip_meta(&mut ti, c, meta.as_ref());
+        ti.interchange = foreign(c);
         Some(ti)
     }
 
@@ -702,6 +731,9 @@ impl Imp<'_, '_> {
             ti.markers = self.markers(cm);
         }
         self.apply_clip_meta(&mut ti, c, clip_meta.as_ref());
+        if let Some(k) = clip_meta.as_ref().and_then(|m| m.get("interchange")).and_then(|k| serde_json::from_value(k.clone()).ok()) {
+            ti.interchange = k;
+        }
         Some(ti)
     }
 

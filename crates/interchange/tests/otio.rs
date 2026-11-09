@@ -467,6 +467,89 @@ fn oracle_fixtures() {
     }
 }
 
+/// OTIO-2.1 (H1): `metadata` keys other programs wrote come back unchanged on export, on the
+/// timeline, tracks, clips and nested stacks, next to CFA4's own `cfa4` key.
+#[test]
+fn foreign_metadata_round_trips() {
+    let rt = |v: i64| format!(r#"{{"OTIO_SCHEMA": "RationalTime.1", "rate": 25, "value": {v}}}"#);
+    let tr = |s: i64, d: i64| format!(r#"{{"OTIO_SCHEMA": "TimeRange.1", "start_time": {}, "duration": {}}}"#, rt(s), rt(d));
+    let file = |p: &str| format!(r#"{{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "{p}", "available_range": {}}}"#, tr(0, 500));
+    let doc = format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Foreign", "metadata": {{"Resolve_OTIO": {{"Resolve OTIO Meta Version": "1.0"}}, "note": [1, 2.5, null]}},
+          "tracks": {{"OTIO_SCHEMA": "Stack.1", "children": [
+            {{"OTIO_SCHEMA": "Track.1", "kind": "Video", "name": "V1", "metadata": {{"Resolve_OTIO": {{"Locked": false}}}}, "children": [
+                {{"OTIO_SCHEMA": "Clip.2", "name": "a", "source_range": {}, "metadata": {{"kdenlive": {{"clip_id": 7, "tags": ["x"]}}}},
+                  "media_references": {{"DEFAULT_MEDIA": {}}}, "active_media_reference_key": "DEFAULT_MEDIA"}},
+                {{"OTIO_SCHEMA": "Stack.1", "name": "Inner", "source_range": {}, "metadata": {{"app": {{"nested": true}}}}, "children": [
+                    {{"OTIO_SCHEMA": "Track.1", "kind": "Video", "name": "V1", "children": [
+                        {{"OTIO_SCHEMA": "Clip.2", "name": "b", "source_range": {}, "metadata": {{"app": {{"inner": 1}}}},
+                          "media_references": {{"DEFAULT_MEDIA": {}}}, "active_media_reference_key": "DEFAULT_MEDIA"}}]}}]}}]}}]}}}}"#,
+        tr(10, 20),
+        file("/m/a.mov"),
+        tr(0, 25),
+        tr(0, 50),
+        file("/m/b.mov"),
+    );
+    let (imp, rep) = import(doc.as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let sid = only_seq(&imp);
+    let s = imp.project.sequence(sid).unwrap();
+    assert_eq!(s.interchange["Resolve_OTIO"]["Resolve OTIO Meta Version"], "1.0");
+    assert_eq!(s.tracks(TrackKind::Video)[0].interchange["Resolve_OTIO"]["Locked"], false);
+    assert_eq!(s.tracks(TrackKind::Video)[0].items[0].interchange["kdenlive"]["clip_id"], 7);
+
+    let foreign = |v: &serde_json::Value| -> serde_json::Value {
+        let mut m = v["metadata"].as_object().cloned().unwrap_or_default();
+        m.remove("cfa4");
+        serde_json::Value::Object(m)
+    };
+    let check = |text: &str| {
+        let out: serde_json::Value = serde_json::from_str(text).unwrap();
+        assert_eq!(foreign(&out), serde_json::json!({"Resolve_OTIO": {"Resolve OTIO Meta Version": "1.0"}, "note": [1, 2.5, null]}));
+        assert!(out["metadata"]["cfa4"].is_object(), "CFA4's own key is still written");
+        let v1 = &out["tracks"]["children"][0];
+        assert_eq!(foreign(v1), serde_json::json!({"Resolve_OTIO": {"Locked": false}}));
+        let kids = v1["children"].as_array().unwrap();
+        let clip = kids.iter().find(|c| c["name"] == "a").unwrap();
+        assert_eq!(foreign(clip), serde_json::json!({"kdenlive": {"clip_id": 7, "tags": ["x"]}}));
+        let inner = kids.iter().find(|c| c["OTIO_SCHEMA"] == "Stack.1").unwrap();
+        assert_eq!(foreign(inner), serde_json::json!({"app": {"nested": true}}));
+        let b = &inner["children"][0]["children"][0];
+        assert_eq!(foreign(b), serde_json::json!({"app": {"inner": 1}}));
+    };
+    let (bytes, rep) = cfa4_interchange::export(&imp.project, sid, Format::Otio, &ExportOptions::default()).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let text = String::from_utf8(bytes).unwrap();
+    check(&text);
+    // and once more through CFA4: nothing is lost or duplicated
+    let (again, _) = import(text.as_bytes(), Format::Otio, None).unwrap();
+    let (bytes, _) = cfa4_interchange::export(&again.project, only_seq(&again), Format::Otio, &ExportOptions::default()).unwrap();
+    check(&String::from_utf8(bytes).unwrap());
+}
+
+/// CFA4's own work carries no foreign metadata: nothing but `cfa4` is written.
+#[test]
+fn own_work_writes_only_cfa4_metadata() {
+    let (p, s) = project();
+    let (bytes, _) = cfa4_interchange::export(&p, s, Format::Otio, &ExportOptions::default()).unwrap();
+    let out: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    fn walk(v: &serde_json::Value, bad: &mut Vec<String>) {
+        match v {
+            serde_json::Value::Object(o) => {
+                if let Some(m) = o.get("metadata").and_then(serde_json::Value::as_object) {
+                    bad.extend(m.keys().filter(|k| k.as_str() != "cfa4").cloned());
+                }
+                o.values().for_each(|x| walk(x, bad));
+            }
+            serde_json::Value::Array(a) => a.iter().for_each(|x| walk(x, bad)),
+            _ => {}
+        }
+    }
+    let mut bad = Vec::new();
+    walk(&out, &mut bad);
+    assert!(bad.is_empty(), "unexpected metadata keys {bad:?}");
+}
+
 /// `Marker.1` (before OTIO 0.15) stores the marked range under `range`; found by the OTIO-1.2 samples.
 #[test]
 fn legacy_marker1_reads_its_range() {
