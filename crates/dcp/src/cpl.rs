@@ -154,8 +154,9 @@ const ASSET: &[&str] = &[
     "IntrinsicDuration",
     "EntryPoint",
     "Duration",
-    "Hash",
+    // TrackFileAssetType (ST 429-7 / Interop): KeyId, then Hash
     "KeyId",
+    "Hash",
     "FrameRate",
     "ScreenAspectRatio",
     "Language",
@@ -287,7 +288,7 @@ fn read_asset<'a, 'i>(r: &mut Reader<'a, 'i>, a: Node<'a, 'i>, ap: &str, standar
             let kp = format!("{mp}/Marker[{}]", k + 1);
             let label = r.required_text(m, &kp, "Label");
             let offset = r.u64(m, &kp, "Offset", true);
-            r.unknown(m, &kp, &["Label", "Offset", "AnnotationText"]);
+            r.unknown(m, &kp, &["Label", "AnnotationText", "Offset"]);
             let pos = r.pos(m);
             markers.push(Marker { label, offset, pos });
         }

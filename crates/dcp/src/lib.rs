@@ -349,7 +349,10 @@ pub fn read(path: &Path, limits: Limits) -> Result<Document> {
     if size > limits.max_bytes {
         return Err(Error::TooLarge { size, limit: limits.max_bytes });
     }
-    let mut bytes = Vec::with_capacity(usize::try_from(size).unwrap_or(0));
+    // The reported size is only a hint (a sparse or growing file); a reservation that cannot be made
+    // is an error, never an abort.
+    let mut bytes = Vec::new();
+    bytes.try_reserve_exact(usize::try_from(size).unwrap_or(usize::MAX)).map_err(|_| Error::TooLarge { size, limit: limits.max_bytes })?;
     // `take` guards against a file that grows while it is read.
     file.take(limits.max_bytes.saturating_add(1)).read_to_end(&mut bytes)?;
     parse_bytes(&bytes, limits)

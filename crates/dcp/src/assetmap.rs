@@ -63,7 +63,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
     let id = r.uuid(root, p, "Id", true);
     let annotation = r.text(root, p, "AnnotationText");
     let creator = r.required_text(root, p, "Creator");
-    let volume_count = r.u64(root, p, "VolumeCount", true);
+    let volume_count = r.positive(root, p, "VolumeCount", true);
     let issue_date = r.date_time(root, p, "IssueDate", true);
     let issuer = r.required_text(root, p, "Issuer");
     let extensions = r.unknown(root, p, ROOT);
@@ -98,7 +98,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
                         for (k, c) in Reader::children(cl, "Chunk").enumerate() {
                             let cp = format!("{ap}/ChunkList/Chunk[{}]", k + 1);
                             let path = r.required_text(c, &cp, "Path");
-                            let volume_index = r.u64(c, &cp, "VolumeIndex", false);
+                            let volume_index = r.positive(c, &cp, "VolumeIndex", false);
                             let offset = r.u64(c, &cp, "Offset", false);
                             let length = r.u64(c, &cp, "Length", false);
                             r.unknown(c, &cp, CHUNK);
@@ -121,7 +121,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
 pub(crate) fn read_volume_index(doc: &Document, standard: Standard) -> VolumeIndex {
     let mut r = Reader::new(doc);
     let root = doc.root_element();
-    let index = r.u64(root, "VolumeIndex", "Index", true);
+    let index = r.positive(root, "VolumeIndex", "Index", true);
     r.unknown(root, "VolumeIndex", &["Index"]);
     VolumeIndex { standard, index, issues: r.issues }
 }
