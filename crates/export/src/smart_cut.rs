@@ -255,6 +255,8 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
     let mut cfg = TrackConfig::new(r.entry.clone(), r.track.timescale);
     cfg.language = r.track.language.clone();
     cfg.media_start = (start > 0).then_some(start);
+    // keep the display transform (rotated phone footage…)
+    cfg.matrix = Some(r.track.matrix);
     let t = w.add_track(cfg).map_err(io)?;
     let mut report = CopyReport { samples: 0, payload_bytes: 0, duration: 0, timescale: r.track.timescale };
     for (k, s) in samples.iter().enumerate() {

@@ -144,10 +144,16 @@ fn ffmpeg_decodes_the_spliced_stream() {
 /// The fixture remuxed with each sample changed by `edit(decode index, payload) -> (payload,
 /// duration)`.
 fn remux(f: &Fixture, edit: impl Fn(usize, Vec<u8>) -> (Vec<u8>, u32)) -> Fixture {
+    remux_with(f, None, edit)
+}
+
+fn remux_with(f: &Fixture, matrix: Option<[i32; 9]>, edit: impl Fn(usize, Vec<u8>) -> (Vec<u8>, u32)) -> Fixture {
     use cfa4_isobmff::{Brand, Mp4Writer, TrackConfig, WriteSample, WriterOptions};
     let track = &f.file.tracks[0];
     let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
-    let t = mux.add_track(TrackConfig::new(track.entries[0].clone(), track.timescale)).unwrap();
+    let mut cfg = TrackConfig::new(track.entries[0].clone(), track.timescale);
+    cfg.matrix = matrix;
+    let t = mux.add_track(cfg).unwrap();
     for (d, s) in track.samples.iter().enumerate() {
         let (data, duration) = edit(d, f.file.read_sample(f.bytes.as_slice(), 0, d).unwrap());
         mux.write_sample(t, WriteSample { data: &data, duration, composition_offset: (s.pts - s.dts) as i32, is_sync: s.is_sync }).unwrap();
@@ -204,6 +210,19 @@ fn sources_a_boundary_re_encode_would_damage_are_refused_up_front() {
         (out, 1)
     });
     assert!(matches!(refused(&metadata), SmartCutError::Incompatible { detail } if detail.contains("unregistered")));
+    // an alternative transfer characteristics SEI (type 147) the encoder cannot reproduce
+    let transfer = remux(&f, |d, data| {
+        let mut out = data;
+        if d == 0 {
+            let sei = [0x06, 0x93, 0x01, 18, 0x80];
+            let mut with = (sei.len() as u32).to_be_bytes().to_vec();
+            with.extend_from_slice(&sei);
+            with.extend_from_slice(&out);
+            out = with;
+        }
+        (out, 1)
+    });
+    assert!(matches!(refused(&transfer), SmartCutError::Incompatible { detail } if detail.contains("147")));
     // a parameter set repeated in-band, here inside a copied GOP
     let inband = remux(&f, |d, data| {
         let mut out = data;
@@ -223,4 +242,17 @@ fn sources_a_boundary_re_encode_would_damage_are_refused_up_front() {
     // a variable rate inside the copied GOPs is no obstacle
     let copied_vfr = remux(&f, |d, data| (data, if d == 20 { 2 } else { 1 }));
     assert_eq!(check_mp4_boundary_reencode(&cut(&copied_vfr), &copied_vfr.index, &copied_vfr.source(), &encoding()), Ok(()));
+}
+
+/// A rotated source (portrait phone footage) keeps its display matrix, copied or re-encoded.
+#[test]
+fn the_display_matrix_is_kept() {
+    let rotated = [0, 0x10000, 0, -0x10000, 0, 0, 0, 0, 0x4000_0000];
+    let f = remux_with(&fixture(40, 10, 0), Some(rotated), |_, data| (data, 1));
+    assert_eq!(f.file.tracks[0].matrix, rotated);
+    let (out, _, _) = run(&f, 5, 33, CutMode::FrameAccurate);
+    assert_eq!(cfa4_isobmff::open(out.as_slice()).unwrap().tracks[0].matrix, rotated);
+    let p = plan(&f.index, f.bytes.len(), f.pts0() + 10, f.pts0() + 30, CutMode::GopBoundary, Container::Mp4).plan;
+    let (copy, _) = crate::smart_cut::execute_mp4_copy(&p, &f.index, &f.source(), Cursor::new(Vec::new())).unwrap();
+    assert_eq!(cfa4_isobmff::open(copy.into_inner().as_slice()).unwrap().tracks[0].matrix, rotated);
 }

@@ -415,7 +415,19 @@ const SEI_USER_DATA_UNREGISTERED: u32 = 5;
 const SEI_MASTERING_DISPLAY: u32 = 137;
 const SEI_CONTENT_LIGHT: u32 = 144;
 
-/// The SEI messages (payload type, payload) of a length-prefixed sample.
+/// SEI payloads that a re-encode may drop or regenerate: buffering period, picture timing,
+/// filler and recovery point (the encoder writes its own access points); the metadata types it
+/// carries over or checks are handled by name. Any other SEI refuses the plan, since dropping it
+/// could change how the pictures are shown (alternative transfer, colour remapping, frame
+/// packing…).
+const SEI_DROPPABLE: [u32; 4] = [0, 1, 3, 6];
+
+/// Longest SEI payload kept for inspection (an unregistered SEI's UUID, the 24-byte mastering
+/// display) and a little more; longer payloads are kept truncated, so a hostile file cannot make large copies.
+const SEI_KEEP: usize = 32;
+
+/// The SEI messages (payload type, the first [`SEI_KEEP`] bytes of the payload) of a
+/// length-prefixed sample.
 fn sei_messages(data: &[u8], length_size: u8) -> Result<Vec<(u32, Vec<u8>)>, SmartCutError> {
     let mut out = Vec::new();
     for nal in nals(data, length_size)? {
@@ -440,7 +452,8 @@ fn sei_messages(data: &[u8], length_size: u8) -> Result<Vec<(u32, Vec<u8>)>, Sma
             let (Some(kind), Some(size)) = (read(), read()) else { break };
             let end = at.checked_add(size as usize).filter(|&e| e <= rbsp.len());
             let Some(end) = end else { break };
-            out.push((kind, rbsp.get(at..end).unwrap_or_default().to_vec()));
+            let kept = end.min(at.saturating_add(SEI_KEEP));
+            out.push((kind, rbsp.get(at..kept).unwrap_or_default().to_vec()));
             at = end;
         }
     }
@@ -492,7 +505,9 @@ fn setup<'a, S: ByteSource + ?Sized>(
                             cfg.content_light = Some((u16::from_be_bytes([a, b]), u16::from_be_bytes([c, e])));
                         }
                     }
-                    _ => {}
+                    SEI_USER_DATA_UNREGISTERED => {}
+                    other if SEI_DROPPABLE.contains(&other) => {}
+                    other => return Err(incompatible(format!("packet {d} carries SEI payload type {other}, which a re-encode cannot carry over"))),
                 }
             }
         }
@@ -606,6 +621,8 @@ pub fn execute_mp4_boundary_reencode<W: Write + Seek, S: ByteSource + ?Sized>(
     let mut tcfg = TrackConfig::new(entry, track.timescale);
     tcfg.language = track.language.clone();
     tcfg.media_start = (p.delay > 0).then_some(p.delay);
+    // keep the display transform (rotated phone footage…)
+    tcfg.matrix = Some(track.matrix);
     let t = w.add_track(tcfg).map_err(io)?;
     let delay = i32::try_from(p.delay).map_err(|_| SmartCutError::Timestamps { decode_index: 0 })?;
     let mut report = BoundaryReport { samples: 0, copied: 0, reencoded: 0, payload_bytes: 0, duration: 0, timescale: track.timescale, min_psnr: None };
