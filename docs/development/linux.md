@@ -163,9 +163,25 @@ and **not approved for publication**.
 
 Existing inherited Rust code is MIT OR Apache-2.0 and retains attribution (`NOTICE`).
 PySide6 / parts of Qt6 have LGPLv3 (or commercial) terms, with modules possibly GPL-only.
-Keep PySide6 dynamically loaded in an isolated Python environment and do not bundle
-the Qt runtime, redistribute LGPL components or introduce GPL-only Qt modules
-without an explicit distribution/license compliance review.
+Keep PySide6 dynamically loaded and do not introduce GPL-only Qt modules without an explicit
+distribution/licence compliance review. The .deb and the tarball use Ubuntu's
+`python3-pyside6.*`. The AppImage and the Flatpak, which cannot depend on them, carry PySide6 /
+Qt 6 (owner decision 2026-11-09): `packaging/linux/stage-pyside6.py` takes the wheels pinned in
+`requirements/linux-amd64.txt` from a local wheelhouse (`CFA4_PYSIDE6_WHEELS`; it never
+downloads, and refuses a wheel whose SHA-256 is not pinned), keeps only the modules, plugins and
+Qt libraries the GUI loads, unmodified and replaceable in `lib/cfa4/pyside6`, and writes the
+LGPL texts and the source offer to `share/doc/cfa4/pyside6`. To fill the wheelhouse once, on a
+machine with network access:
+
+```bash
+python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_x86_64 \
+  --python-version 3.13 --implementation cp -d /path/to/wheels \
+  pyside6-essentials==6.12.0 pyside6-addons==6.12.0 shiboken6==6.12.0
+export CFA4_PYSIDE6_WHEELS=/path/to/wheels
+```
+
+The AppImage starts egui; `--qt` (or `CFA4_GUI=qt`) starts the Qt GUI with the host's
+`python3`. In the Flatpak: `flatpak run --command=cfa4-qt io.github.ubuntuokos.cfa4`.
 Read https://www.qt.io/development/open-source-lgpl-obligations .
 
 **Branding:** the inherited upstream brand marks, screenshots, application icons and names have
