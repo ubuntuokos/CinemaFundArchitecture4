@@ -476,3 +476,37 @@ fn content_kind_version_and_volume_count() {
     };
     assert!(m.issues.is_empty(), "{:#?}", m.issues);
 }
+
+#[test]
+fn smpte_chunks_ratings_and_text_only_values() {
+    let smpte = INTEROP_AM.replace(ns::INTEROP_AM, ns::SMPTE_AM).replace("<PackingList/>", "<PackingList>true</PackingList>");
+    let am = |t: &str| {
+        let Ok(Document::AssetMap(m)) = parse(t, Limits::default()) else { panic!("not an asset map") };
+        m
+    };
+    assert!(am(&smpte).issues.is_empty(), "{:#?}", am(&smpte).issues);
+    // SMPTE: one chunk per asset, starting at 0
+    let m = am(&smpte.replace("<Offset>0</Offset>", "<Offset>5</Offset>"));
+    assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/AssetList/Asset[1]/ChunkList/Chunk[1]/Offset"), "{:#?}", m.issues);
+    let two = "<Chunk><Path>picture.mxf</Path></Chunk><Chunk><Path>picture2.mxf</Path></Chunk>";
+    let m = am(&smpte.replace("<Chunk><Path>picture.mxf</Path></Chunk>", two));
+    assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/AssetList/Asset[2]/ChunkList"), "{:#?}", m.issues);
+    // Interop allows both
+    let m = am(&INTEROP_AM.replace("<Offset>0</Offset>", "<Offset>5</Offset>").replace("<Chunk><Path>picture.mxf</Path></Chunk>", two));
+    assert!(m.issues.is_empty(), "{:#?}", m.issues);
+
+    // markup inside a text value
+    let m = am(&smpte.replace("<Creator>x</Creator>", "<Creator>x<b>y</b></Creator>"));
+    assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/Creator"), "{:#?}", m.issues);
+
+    // RatingList: each Rating needs Agency and Label
+    let rated = "<RatingList><Rating><Agency>http://www.mpaa.org/2003-ratings</Agency><Label>PG-13</Label></Rating></RatingList>";
+    let c = composition(&smpte_cpl().replace("<RatingList/>", rated));
+    assert!(c.issues.is_empty(), "{:#?}", c.issues);
+    assert_eq!(c.ratings, vec![Rating { agency: Some("http://www.mpaa.org/2003-ratings".into()), label: Some("PG-13".into()) }]);
+    let c = composition(&smpte_cpl().replace("<RatingList/>", "<RatingList><Rating><Label>PG-13</Label><Extra/></Rating><Bogus/></RatingList>"));
+    let has = |kind: IssueKind, path: &str| c.issues.iter().any(|i| i.kind == kind && i.path == path);
+    assert!(has(IssueKind::Missing, "CompositionPlaylist/RatingList/Rating[1]/Agency"), "{:#?}", c.issues);
+    assert!(c.issues.iter().any(|i| i.path.starts_with("CompositionPlaylist/RatingList/Rating[1]/Extra")), "{:#?}", c.issues);
+    assert!(c.issues.iter().any(|i| i.path.starts_with("CompositionPlaylist/RatingList/Bogus")), "{:#?}", c.issues);
+}

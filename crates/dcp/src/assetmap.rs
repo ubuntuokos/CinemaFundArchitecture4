@@ -106,6 +106,12 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
                             let path = r.required_text(c, &cp, "Path");
                             let volume_index = r.positive(c, &cp, "VolumeIndex", false);
                             let offset = r.u64(c, &cp, "Offset", false);
+                            // SMPTE ST 429-9: an asset is stored whole in one file, so its one chunk starts at 0
+                            if standard == Standard::Smpte && offset.is_some_and(|o| o != 0) {
+                                if let Some(n) = r.child(c, &cp, "Offset") {
+                                    r.issue(IssueKind::Invalid, &format!("{cp}/Offset"), n, "SMPTE Chunk Offset must be 0");
+                                }
+                            }
                             let length = r.u64(c, &cp, "Length", false);
                             r.unknown(c, &cp, CHUNK);
                             let pos = r.pos(c);
@@ -113,6 +119,13 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
                         }
                         if chunks.is_empty() {
                             r.issue(IssueKind::Missing, &format!("{ap}/ChunkList/Chunk"), cl, "ChunkList has no Chunk");
+                        } else if standard == Standard::Smpte && chunks.len() > 1 {
+                            r.issue(
+                                IssueKind::Invalid,
+                                &format!("{ap}/ChunkList"),
+                                cl,
+                                format!("SMPTE ChunkList must have exactly one Chunk, found {}", chunks.len()),
+                            );
                         }
                     }
                 }

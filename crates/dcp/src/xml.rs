@@ -56,7 +56,14 @@ impl<'a, 'input> Reader<'a, 'input> {
     /// `Missing` issue.
     pub fn value(&mut self, node: Node<'a, 'input>, path: &str, name: &str, required: bool) -> Option<(String, Node<'a, 'input>)> {
         match self.child(node, path, name) {
-            Some(c) => Some((c.text().unwrap_or("").trim().to_string(), c)),
+            Some(c) => {
+                // a simple-typed value holds text only; markup inside it is not part of the value
+                if let Some(e) = c.children().find(|n| n.is_element()) {
+                    let msg = format!("{name} must hold text only, found element <{}>", e.tag_name().name());
+                    self.issue(IssueKind::Invalid, &format!("{path}/{name}"), e, msg);
+                }
+                Some((c.text().unwrap_or("").trim().to_string(), c))
+            }
             None => {
                 if required {
                     self.issue(IssueKind::Missing, &format!("{path}/{name}"), node, format!("{name} is missing"));
