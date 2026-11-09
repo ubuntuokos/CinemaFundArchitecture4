@@ -44,7 +44,7 @@ class TimelineStrip(QWidget):
     """The pages along time, as long as they last; clicking one chooses it. The mark is the
     moment the preview shows."""
 
-    page_clicked = Signal(int)
+    page_clicked = Signal(object)  # the page index (an object: integer signals are 32-bit in PySide6)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
