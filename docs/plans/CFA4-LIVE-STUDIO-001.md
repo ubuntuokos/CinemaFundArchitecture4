@@ -27,7 +27,8 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
 7. **Böngészőforrás WPE WebKittel** az Ubuntu tárolójából, Chromium nélkül (D3).
 8. **Csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); zárt SDK-t igénylő (pl. NDI) nincs (D4).
 9. **Önálló „Élő” munkaterület** a Qt6 felületen; a C10 Élő grafika ablaka beleolvad (D5).
-10. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
+10. **Műsorterv (rundown)** a terv része, az S4a fázisban (D6).
+11. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
    egyeztetés szerinti felsorolással (IV. fejezet).
 
 ## II. Kiinduló helyzet
@@ -107,6 +108,7 @@ munkával ütközésnél a Qt6 megy előre.
 | **S2** – Rögzítő bemenetek | kamera (V4L2), képernyő és ablak (PipeWire-portál), hangbemenet/-kimenet (PipeWire) | kamera + képernyő + mikrofon egy jelenetben, a referenciagépen mérve |
 | **S3** – Hangkeverő | sávok, hangerő, némítás, monitorozás, VU-mérők, hangszűrők, szinkroneltolás | a keverő minden forrásra; a szűrők hangja mérve |
 | **S4** – Stúdió mód | előnézet/program, átmenetek, multiview, kivetítők, gyorsbillentyűk | TAKE-kel jelenetváltás átmenettel; a C10 élő grafika is itt fut |
+| **S4a** – Műsorterv (rundown) | tételek és blokkok a projektben (jelenet, C10-grafika, bejátszás, megjegyzés), tervezett hossz, adás közben „következő tétel” egy gombbal, hátralévő és csúszási idő; később import (CSV/táblázat) és ügynöki vezérlés | egy próbaműsor végigvezetve a tételeken, az időszámlálás mérve |
 | **S5** – Felvétel | MKV/MP4/fMP4/MOV, sávok, szétválasztás, fejezetjelek; a felvétel egy mozdulattal a projekt idővonalára | egy órás felvétel elejtett képkocka nélkül a referenciagépen |
 | **S6** – Streamelés | RTMP/RTMPS, SRT, RIST, WHIP; több cél; újrakapcsolódás; stream-kulcs a kulcstartóban | próbaadás helyi kiszolgálóra (mediamtx) és egy valódi szolgáltatásra |
 | **S7** – Kódolók | VA-API (Intel/AMD), NVENC (opcionális), QSV, SVT-AV1 a `cfa4-route`-on át; restricted-extras | a router választ, CPU-tartalék mindig van; a referenciagép GPU-in mérve |
@@ -125,7 +127,7 @@ munkával ütközésnél a Qt6 megy előre.
 | D3 | Böngészőforrás | **Eldöntve (2026-11-09): WPE WebKit az Ubuntu tárolójából** (`libwpewebkit`, `wpebackend-fdo`, csomagfüggőségként), saját Rust libobs-forrással, az S9-ben; Chromium (CEF) nincs. A `window.obsstudio` JS-felületet a forrás adja; a gyakori streameres widgetek az S9-ben kipróbálva |
 | D4 | Zárt protokollok | **Eldöntve (2026-11-09): csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); NDI és más zárt SDK-t igénylő protokoll nincs |
 | D5 | Az élő stúdió helye | **Eldöntve (2026-11-09): önálló „Élő” munkaterület** a szerkesztés, szín, hang mellett (középen előnézet és program, lent jelenetek, források, hangkeverő, oldalt átmenetek és vezérlés); a C10 Élő grafika ablaka ide kerül át; közös projekt |
-| D6 | Műsorterv (rundown) | a VISION 8. pontjában nyitott; ebben a tervben nincs |
+| D6 | Műsorterv (rundown) | **Eldöntve (2026-11-09): a terv része**, az S4a fázisban (az S4 stúdió mód után); a `VISION.md` 8. pontjának nyitott kérdését ezzel a tulajdonos lezárta |
 | D7 | Ütemezés: a Qt6 befejezése után, vagy azzal párhuzamosan? | az S0 most indulhat (nem érinti a Qt6 fájljait), az S1-től a Qt6 után |
 
 ## VIII. Kockázatok
