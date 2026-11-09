@@ -265,3 +265,24 @@ fn rbsp_bytes_match_the_unescaped_rbsp() {
         assert_eq!(streamed, cfa4_bitstream::unescape_rbsp(nal), "{nal:?}");
     }
 }
+
+#[test]
+fn non_finite_encoding_numbers_are_refused() {
+    let f = fixture(40, 10, 0);
+    let p0 = f.pts0();
+    let p = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 30, CutMode::FrameAccurate, Container::Mp4).plan;
+    for bad in [
+        BoundaryEncoding { min_psnr: f64::NAN, ..encoding() },
+        BoundaryEncoding { crf: f32::INFINITY, ..encoding() },
+        BoundaryEncoding { crf: 80.0, ..encoding() },
+    ] {
+        let e = execute_mp4_boundary_reencode(&p, &f.index, &f.source(), &bad, Cursor::new(Vec::new())).unwrap_err();
+        assert!(matches!(&e, SmartCutError::Encode { detail } if detail.contains("finite")), "{e}");
+        assert!(crate::boundary_reencode::check_mp4_boundary_reencode(&p, &f.index, &f.source(), &bad).is_err());
+    }
+    // verification with a NaN threshold would accept anything
+    let (out, _) = execute_mp4_boundary_reencode(&p, &f.index, &f.source(), &encoding(), Cursor::new(Vec::new())).unwrap();
+    let nan = BoundaryEncoding { min_psnr: f64::NAN, ..encoding() };
+    let e = verify_mp4_boundary_reencode(&p, &f.index, &f.source(), &nan, out.into_inner().as_slice()).unwrap_err();
+    assert!(matches!(e, SmartCutError::Verification { .. }), "{e}");
+}

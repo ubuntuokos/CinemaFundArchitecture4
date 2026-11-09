@@ -330,7 +330,7 @@ pub(crate) fn check_timebase(index: &StreamIndex, track: &Track) -> Result<(), S
     Ok(())
 }
 
-/// Packet `d` of the source must be the one that was indexed: same size and timestamps, so a
+/// Packet `d` of the source must be the one that was indexed: same size, timestamps and sync flag, so a
 /// remuxed or replaced file (another frame rate, the same access units) is not cut by a stale plan.
 pub(crate) fn check_sample(d: usize, sample: &Sample, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
     let stale = |detail: String| Err(SmartCutError::StaleIndex { detail });
@@ -339,6 +339,10 @@ pub(crate) fn check_sample(d: usize, sample: &Sample, frame: &FrameIndexEntry) -
     }
     if frame.pts != Some(sample.pts) || frame.dts != Some(sample.dts) {
         return stale(format!("packet {d} has PTS {} / DTS {}, the index says {:?} / {:?}", sample.pts, sample.dts, frame.pts, frame.dts));
+    }
+    // the plan's access points come from the index: the file must mark the same sync samples
+    if frame.keyframe != sample.is_sync {
+        return stale(format!("packet {d} is {}a sync sample, the index says otherwise", if sample.is_sync { "" } else { "not " }));
     }
     Ok(())
 }

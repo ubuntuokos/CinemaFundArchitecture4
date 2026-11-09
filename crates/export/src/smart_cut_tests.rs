@@ -195,6 +195,10 @@ fn an_index_of_another_file_is_refused() {
     index.timebase.den *= 2;
     let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
     assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("timebase")), "{err:?}");
+    let mut index = f.index.clone();
+    index.frames[12].keyframe = !index.frames[12].keyframe;
+    let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("sync")), "{err:?}");
     // the boundary re-encoder checks every packet, the copied ones too
     let p = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 20, CutMode::FrameAccurate, Container::Mp4);
     let mut index = f.index.clone();

@@ -169,7 +169,8 @@ H.264 encoder:
 Rendered segments (gaps, effects) and timeline plans are refused here (`render-segment`,
 `timeline-plan`); they belong to the timeline Smart Render executor. Until it exists, the
 registry's `timeline-render` rows are unsupported, so `plan_smart_render` reports every timeline
-plan as not executable. Writing and verifying hold one boundary's decoded pictures at a time.
+plan as not executable. Writing and verifying decode the boundaries picture by picture (the
+encoder's VUI comes from the source SPS), so no boundary is held in memory whole.
 
 ## Smart Render planner (WP-05)
 
