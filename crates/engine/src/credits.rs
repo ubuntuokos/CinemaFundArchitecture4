@@ -370,15 +370,63 @@ fn look_json(pg: &cfa4_credits::PageOut) -> (Value, Value) {
     (bg, tr)
 }
 
+/// Most body cells of a block the preview lists (the rest are counted).
+const PREVIEW_BODY_CELLS: usize = 40;
+/// Longest text of a cell in the preview (characters).
+const PREVIEW_CELL_CHARS: usize = 200;
+
+fn cell_text(text: &str) -> String {
+    let t = cfa4_credits::markup::plain(text);
+    if t.chars().count() > PREVIEW_CELL_CHARS { t.chars().take(PREVIEW_CELL_CHARS - 1).chain(['…']).collect() } else { t }
+}
+
+/// A page's blocks for the Credits workspace: what each says, its style and rows, and the moment
+/// of the page (0–1, as `graphics.credits.thumbnail`'s `at`) that shows it best.
+fn blocks_json(page: Option<&cfa4_credits::Page>, out: &cfa4_credits::PageOut, frame_h: f64) -> Value {
+    let Some(page) = page else { return Value::Array(vec![]) };
+    let travel = frame_h + out.content_height.max(0.0);
+    Value::Array(
+        page.blocks
+            .iter()
+            .map(|b| {
+                let top = out.block_tops.iter().find(|(r, _)| *r == b.row).map(|x| x.1);
+                // a roll shows a block when its top reaches the middle of the frame
+                let at = match (out.behaviour, top) {
+                    (cfa4_credits::Behaviour::Scroll, Some(t)) if travel > 0.0 => ((frame_h / 2.0 + t) / travel).clamp(0.0, 1.0),
+                    _ => 0.5,
+                };
+                json!({
+                    "style": b.style,
+                    "head": b.head.as_deref().map(cell_text),
+                    "body": b.body.iter().take(PREVIEW_BODY_CELLS).map(|c| cell_text(c)).collect::<Vec<_>>(),
+                    "bodyCount": b.body.len(),
+                    "tails": b.tails.len(),
+                    "pictures": b.pictures.len() + b.portraits.iter().filter(|x| x.is_some()).count(),
+                    "row": b.row,
+                    "lastRow": b.body_rows.iter().copied().max().unwrap_or(b.row).max(b.row),
+                    "spine": b.spine,
+                    "parallel": b.parallel,
+                    "at": at,
+                })
+            })
+            .collect(),
+    )
+}
+
 fn preview(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.preview";
     let (doc, sheet, base) = doc_p(s, CMD, p)?;
     let l = lay_doc(s, CMD, &doc, base.clone())?;
+    let credits = doc.credits().map_err(|e| bad(CMD, e.to_string()))?;
+    let frame_h = s.active_sequence().map(|q| f64::from(q.settings.height)).unwrap_or(1080.0);
     let issues = issues_json(s, CMD, &doc, base, &l)?;
     let total: i64 = l.pages.iter().fold(0i64, |a, pg| a.saturating_add(pg.duration.0).saturating_add(pg.gap_after.0));
     Ok(json!({
-        "pages": l.pages.iter().map(|pg| json!({
+        "pages": l.pages.iter().enumerate().map(|(i, pg)| json!({
             "name": pg.name,
+            "style": credits.pages.get(i).map(|x| x.style.clone()),
+            "row": credits.pages.get(i).map(|x| x.row),
+            "blocks": blocks_json(credits.pages.get(i), pg, frame_h),
             "behaviour": behaviour_name(pg.behaviour),
             "duration": pg.duration.0,
             "seconds": pg.duration.0 as f64 / cfa4_time::TICKS_PER_SECOND as f64,

@@ -181,7 +181,7 @@ Az eredeti terv §4-éből („Cinecred-kompatibilis import”).
   részek figyelmeztetésként; Cinecred oszlop- és címkenevei minden nyelvén; a táblázatból
   frissítés ugyanúgy működik. A formátum forrása a `licensing.md` §5-ben nyilvántartva.
 
-### C8 – Qt6 stáblista-munkaterület (N)
+### C8 – Qt6 stáblista-munkaterület (N) – **KÉSZ (2026-11-09)**
 
 Az eredeti terv §14–16-a. A Qt6-felület (#48 → #50 → #54) már a motor összes parancsát eléri,
 ezért a C8 **első része elkészült** (`cfa4/qt6-credits`):
@@ -192,14 +192,20 @@ ezért a C8 **első része elkészült** (`cfa4/qt6-credits`):
   időpontban (`graphics.credits.thumbnail`); elhelyezés a lejátszófejnél egy visszavonási
   lépésben. Nem modális, magyarul.
 
-Hátravan:
+A második rész (2026-11-09, `cfa4/credits-c8`; a tulajdonos döntése 2026-11-09: a Qt6 a
+végéhez közeledik, a hátralévő fázisok mehetnek):
 
-- Elrendezés az eredeti terv szerint: bal oldalon oldalak és blokkok, középen előnézet, jobb
-  oldalon tulajdonságok, alul idővonal.
-- **Kontextusfüggő felület** (§16): a vágóprogramból megnyitva csak a vágáshoz szükséges
-  funkciók látszanak; a teljes nézet egy gombbal érhető el.
-- a C1–C6 új képességeinek felülete (újratöltés eltérés-listával, ellenőrzések, zenéhez
-  igazítás, hátterek, sablonok) ebben az ablakban, illetve dokkolható panelben.
+- **Elrendezés** az eredeti terv szerint: bal oldalon az oldalak és a kiválasztott oldal
+  blokkjai, középen az előnézet, jobbra a tulajdonságok (stílus, sorok, nevek, lábak, képek,
+  gerinc, a blokk szövege), alul az oldalak az időben (kattintásra kiválaszt), alatta az
+  ellenőrzések. Egy gördülő oldal blokkját választva az előnézet oda ugrik, ahol a blokk a kép
+  közepére ér (`graphics.credits.preview` → `blocks[].at`).
+- **Kontextusfüggő felület** (§16): a vágóprogramból megnyitva kompakt (táblázat, oldalak, kép,
+  elhelyezés); a **Teljes nézet** gomb mutat mindent.
+- A C1–C6 képességei innen is elérhetők: *Elhelyezett stáblista frissítése…*, *Igazítás a
+  zenéhez…*, *Sablon alkalmazása…* (a szerkesztő parancsai a kijelölt stáblistán), a sablonok,
+  hátterek, átmenetek és ellenőrzések pedig a munkaterületen. Dokkolható panel helyett nem modális
+  ablak: a munkaterület a vágás mellett nyitva maradhat.
 
 ### C10 – Élő grafika (tervezet)
 

@@ -498,3 +498,26 @@
 	Cinecred Project…	Proyek Cinecred…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Buka folder proyek Cinecred (Styling.toml dan spreadsheet kreditnya)
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Spreadsheet, file kredit, dan proyek Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+
+# Credits workspace (python/cfa4_qt/panels/credits_workspace.py)
+	(empty block)	(blok kosong)
+	Apply Template…	Terapkan Templat…
+	Blocks	Blok
+	Change them in the spreadsheet; the credits follow when you save it.	Ubah di spreadsheet; kredit mengikuti saat disimpan.
+	Compact View	Tampilan Ringkas
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Bandingkan kredit terpilih di timeline dengan spreadsheet-nya, baris demi baris
+	Fit the selected credits to the music under them	Sesuaikan kredit terpilih dengan musik di bawahnya
+	Fit to Music…	Sesuaikan dengan Musik…
+	Full View	Tampilan Lengkap
+	Give the selected credits on the timeline another template	Beri kredit terpilih di timeline templat lain
+	Names	Nama
+	No pages	Tidak ada halaman
+	Refresh Placed Credits…	Segarkan Kredit Terpasang…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Tampilkan semua: blok, properti, halaman sepanjang waktu, pemeriksaan, dan alat kredit
+	Spine	Poros
+	Tails	Keterangan
+	The blocks of the chosen page; choose one to see it in the preview	Blok halaman yang dipilih; pilih satu untuk melihatnya di pratinjau
+	The pages along time; click one to choose it	Halaman sepanjang waktu; klik salah satu untuk memilihnya
+	{n} more	{n} lagi
+	Block	Blok
+	parallel	paralel

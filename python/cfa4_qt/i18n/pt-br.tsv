@@ -499,3 +499,26 @@
 	Cinecred Project…	Projeto Cinecred…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Abra uma pasta de projeto Cinecred (Styling.toml e sua planilha de créditos)
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Planilhas, arquivos de créditos e projetos Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+
+# Credits workspace (python/cfa4_qt/panels/credits_workspace.py)
+	(empty block)	(bloco vazio)
+	Apply Template…	Aplicar modelo…
+	Blocks	Blocos
+	Change them in the spreadsheet; the credits follow when you save it.	Altere na planilha; os créditos acompanham ao salvar.
+	Compact View	Visualização compacta
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Comparar os créditos selecionados na linha do tempo com a planilha, linha por linha
+	Fit the selected credits to the music under them	Ajustar os créditos selecionados à música abaixo deles
+	Fit to Music…	Ajustar à música…
+	Full View	Visualização completa
+	Give the selected credits on the timeline another template	Dar outro modelo aos créditos selecionados na linha do tempo
+	Names	Nomes
+	No pages	Nenhuma página
+	Refresh Placed Credits…	Atualizar créditos posicionados…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Mostrar tudo: blocos, propriedades, as páginas ao longo do tempo, verificações e ferramentas de créditos
+	Spine	Eixo
+	Tails	Notas
+	The blocks of the chosen page; choose one to see it in the preview	Os blocos da página escolhida; escolha um para vê-lo na pré-visualização
+	The pages along time; click one to choose it	As páginas ao longo do tempo; clique em uma para escolhê-la
+	{n} more	mais {n}
+	Block	Bloco
+	parallel	paralelo

@@ -498,3 +498,26 @@
 	Cinecred Project…	Cinecred 프로젝트…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred 프로젝트 폴더 열기(Styling.toml 및 크레딧 스프레드시트)
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	스프레드시트, 크레딧 파일, Cinecred 프로젝트 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+
+# Credits workspace (python/cfa4_qt/panels/credits_workspace.py)
+	(empty block)	(빈 블록)
+	Apply Template…	템플릿 적용…
+	Blocks	블록
+	Change them in the spreadsheet; the credits follow when you save it.	스프레드시트에서 변경하세요. 저장하면 크레딧에 반영됩니다.
+	Compact View	간단히 보기
+	Compare the selected credits on the timeline with their spreadsheet, row by row	타임라인에서 선택한 크레딧을 스프레드시트와 행별로 비교
+	Fit the selected credits to the music under them	선택한 크레딧을 아래 음악에 맞추기
+	Fit to Music…	음악에 맞추기…
+	Full View	전체 보기
+	Give the selected credits on the timeline another template	타임라인에서 선택한 크레딧에 다른 템플릿 적용
+	Names	이름
+	No pages	페이지 없음
+	Refresh Placed Credits…	배치된 크레딧 새로 고침…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	모두 표시: 블록, 속성, 시간에 따른 페이지, 검사 및 크레딧 도구
+	Spine	축
+	Tails	부가 설명
+	The blocks of the chosen page; choose one to see it in the preview	선택한 페이지의 블록입니다. 하나를 고르면 미리 보기에 표시됩니다
+	The pages along time; click one to choose it	시간에 따른 페이지입니다. 클릭해 선택하세요
+	{n} more	{n}개 더
+	Block	블록
+	parallel	병렬

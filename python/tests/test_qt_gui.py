@@ -13974,3 +13974,89 @@ def test_real_engine_credits_window_opens_a_cinecred_project(app, tmp_path: Path
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_credits_workspace_strip_and_block_helpers(app):
+    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans
+
+    pages = [{"duration": 100, "gapAfter": 0}, {"duration": 50, "gapAfter": -20}, {"duration": 30}, {"duration": "x"}]
+    assert page_spans(pages) == [(0.0, 100.0), (100.0, 150.0), (130.0, 160.0), (160.0, 160.0)]
+    assert page_spans([{"duration": float("nan"), "gapAfter": float("inf")}]) == [(0.0, 0.0)]
+    strip = TimelineStrip()
+    strip.resize(162, 34)
+    strip.set_pages([*pages[:3], "bad"])
+    assert strip.index_at(10) == 0 and strip.index_at(140) == 2 and strip.index_at(500) == -1
+    chosen = []
+    strip.page_clicked.connect(chosen.append)
+    QtTest.QTest.mouseClick(strip, QtCore.Qt.MouseButton.LeftButton, pos=QtCore.QPoint(110, 17))
+    assert chosen == [1]
+    strip.set_current(1, 7)
+    assert strip.at == 1.0
+    strip.grab()  # paints without pages and with them
+    TimelineStrip().grab()
+    assert block_label({"head": "Cast", "body": ["A", "B"], "bodyCount": 2}) == "Cast  (+2)"
+    assert block_label({"body": ["A", "B"], "bodyCount": 5}) == "A  (+4)"
+    assert block_label({}) and block_label({"body": [None, 3]})
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_workspace(app, tmp_path: Path):
+    """C8: the Credits window opens compact from the editor; the full view shows the page's
+    blocks, their properties, the pages along time, the checks and the credits tools; choosing a
+    block of a roll moves the preview to it."""
+    from cfa4_qt.i18n import tr
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Head,Body,Tail,Content Style,Page Style\n"
+        ",THE LONG WAY HOME,,Heading,Card\n"
+        "Directed by,Jordan Lee,,Centered,Scroll\n"
+        ",,,,\n"
+        "Cast,Ann Smith,as Ann,Gutter,\n"
+        ",Bob Jones,,,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.refresh" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible() and not dlg.full_view
+        assert not dlg.blocks.isVisible() and not dlg.properties.isVisible() and not dlg.timeline.isVisible()
+        assert not dlg.styling.isVisible() and dlg.path.isVisible() and dlg.import_button.isVisible()
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2, 30_000), dlg.status.text()
+        dlg.findChild(QtWidgets.QPushButton, "credits.fullView").click()
+        assert dlg.full_view and dlg.blocks.isVisible() and dlg.properties.isVisible() and dlg.timeline.isVisible()
+        assert dlg.styling.isVisible() and all(b.isVisible() for b in dlg.tools)
+        assert dlg.timeline.spans and len(dlg.timeline.spans) == 2
+        # the roll's blocks and their properties
+        dlg.timeline.page_clicked.emit(1)
+        assert dlg.pages.currentRow() == 1 and dlg.blocks.count() == 2
+        assert dlg.properties.value("page.kind") == tr("Roll") and dlg.properties.value("page.blocks") == "2"
+        before = dlg.position.value()
+        dlg.blocks.setCurrentRow(1)
+        assert dlg.properties.value("block.rows") == "5–6" and dlg.properties.value("block.cells") == "2"
+        assert "Bob Jones" in dlg.properties.block_text.text() and dlg.properties.value("block.style") == "Gutter"
+        assert dlg.position.value() != before
+        assert wait_until(app, lambda: dlg.picture.pixmap() is not None and not dlg.picture.pixmap().isNull(), 30_000)
+        # the tools are the editor's commands: refresh opens its window
+        dlg.findChild(QtWidgets.QPushButton, "credits.tool.refresh").click()
+        assert wait_until(app, lambda: win.credits_refresh is not None and win.credits_refresh.isVisible(), 10_000)
+        win.credits_refresh.close()
+        # reopened from the editor while open, the view stays as chosen
+        win.invoke("graphics.credits.import")
+        assert dlg.full_view
+        dlg.close()
+        win.invoke("graphics.credits.import")
+        assert not dlg.full_view
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

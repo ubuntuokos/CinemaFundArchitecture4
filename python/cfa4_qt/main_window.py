@@ -3010,6 +3010,7 @@ class MainWindow(QMainWindow):
         if self.credits_dialog is None:
             self.credits_dialog = CreditsDialog(self.engine, self)
             self.credits_dialog.imported.connect(lambda _n: self.schedule_refresh())
+            self.credits_dialog.tool_requested.connect(self.invoke)
         self.credits_dialog.open_with(path)
 
     def open_credits_refresh(self, clip: int | None = None) -> None:

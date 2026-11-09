@@ -966,3 +966,39 @@ fn a_cinecred_project_folder_opens_as_credits() {
     assert!(s.execute("graphics.credits.preview", json!({"path": proj, "credits": "other.csv"})).is_ok());
     assert!(s.execute("graphics.credits.preview", json!({"path": proj, "credits": "nope.csv"})).is_err());
 }
+
+#[test]
+fn preview_lists_each_pages_blocks_and_where_a_roll_shows_them() {
+    let mut s = demo("credits-preview-blocks");
+    let v = s.execute("graphics.credits.preview", json!({"csv": SHEET})).unwrap();
+    let pages = v["pages"].as_array().unwrap();
+    assert_eq!(pages.len(), 2);
+    let card = &pages[0];
+    assert_eq!(card["blocks"][0]["body"][0], "THE LONG WAY HOME");
+    assert_eq!(card["blocks"][0]["at"], 0.5);
+    let roll = pages[1]["blocks"].as_array().unwrap();
+    assert_eq!(roll.len(), 2);
+    assert_eq!(roll[0]["head"], "Directed by");
+    assert_eq!(roll[1]["head"], "Cast");
+    assert_eq!(roll[1]["bodyCount"], 2);
+    assert_eq!(roll[1]["tails"], 1);
+    assert_eq!(roll[1]["row"], 5);
+    assert_eq!(roll[1]["lastRow"], 6);
+    assert!(pages[1]["row"].as_u64().unwrap() >= 3);
+    // the later block comes into view later in the roll
+    let (a, b) = (roll[0]["at"].as_f64().unwrap(), roll[1]["at"].as_f64().unwrap());
+    assert!(0.0 < a && a < b && b < 1.0, "{a} {b}");
+}
+
+#[test]
+fn preview_blocks_survive_hostile_cells() {
+    let mut s = demo("credits-preview-blocks-hostile");
+    let long = "é".repeat(5_000);
+    let many: String = (0..200).map(|i| format!(",Name {i}\n")).collect();
+    let csv = format!("Head,Body\n{long},{long}\n{many}");
+    let v = s.execute("graphics.credits.preview", json!({"csv": csv})).unwrap();
+    let b = &v["pages"][0]["blocks"][0];
+    assert!(b["head"].as_str().unwrap().chars().count() <= 200);
+    assert_eq!(b["body"].as_array().unwrap().len(), 40);
+    assert_eq!(b["bodyCount"], 201);
+}

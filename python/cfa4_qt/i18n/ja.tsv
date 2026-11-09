@@ -498,3 +498,26 @@
 	Cinecred Project…	Cinecredプロジェクト…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecredプロジェクトフォルダーを開く(Styling.tomlとそのクレジットスプレッドシート)
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	スプレッドシート、クレジットファイル、Cinecredプロジェクト (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+
+# Credits workspace (python/cfa4_qt/panels/credits_workspace.py)
+	(empty block)	（空のブロック）
+	Apply Template…	テンプレートを適用…
+	Blocks	ブロック
+	Change them in the spreadsheet; the credits follow when you save it.	スプレッドシートで変更してください。保存するとクレジットに反映されます。
+	Compact View	コンパクト表示
+	Compare the selected credits on the timeline with their spreadsheet, row by row	タイムライン上の選択したクレジットをスプレッドシートと行ごとに比較
+	Fit the selected credits to the music under them	選択したクレジットを下の音楽に合わせる
+	Fit to Music…	音楽に合わせる…
+	Full View	全体表示
+	Give the selected credits on the timeline another template	タイムライン上の選択したクレジットに別のテンプレートを適用
+	Names	名前
+	No pages	ページがありません
+	Refresh Placed Credits…	配置したクレジットを更新…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	すべて表示：ブロック、プロパティ、時間に沿ったページ、チェック、クレジットツール
+	Spine	軸
+	Tails	補足
+	The blocks of the chosen page; choose one to see it in the preview	選択したページのブロック。選ぶとプレビューに表示されます
+	The pages along time; click one to choose it	時間に沿ったページ。クリックして選択
+	{n} more	ほか {n} 件
+	Block	ブロック
+	parallel	並列

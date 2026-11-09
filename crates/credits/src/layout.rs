@@ -109,6 +109,9 @@ pub struct PageOut {
     /// A card's entrance: where its content starts relative to where it ends (frame pixels) and
     /// how long the move takes; pictures move the same way from their own `delay`.
     pub entrance: Option<(f64, f64, Tick)>,
+    /// Each block's first row (1-based) with the top of its highest line in the content (frame
+    /// pixels), in row order: where a block is, for the Credits workspace's preview.
+    pub block_tops: Vec<(usize, f64)>,
 }
 
 /// Laid-out credits.
@@ -978,6 +981,15 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
         let k = block_rows.iter().position(|r| *r == row).unwrap_or(0) as i64;
         Tick(stagger.0.saturating_mul(k)).min(latest)
     };
+    let mut block_tops: Vec<(usize, f64)> = Vec::new();
+    for p in &pieces {
+        let top = if p.top.is_finite() { p.top } else { 0.0 };
+        match block_tops.iter_mut().find(|(r, _)| *r == p.row) {
+            Some((_, t)) => *t = t.min(top),
+            None => block_tops.push((p.row, top)),
+        }
+    }
+    block_tops.sort_by_key(|(r, _)| *r);
     for p in pieces {
         let p_key = p.key;
         layer_rows.push(p.row);
@@ -1053,6 +1065,7 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
         transition,
         transition_in: Tick::ZERO,
         entrance: motion,
+        block_tops,
     })
 }
 
