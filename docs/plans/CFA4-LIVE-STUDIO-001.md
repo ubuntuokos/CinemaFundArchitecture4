@@ -1,10 +1,10 @@
 # CFA4-LIVE-STUDIO-001 – Az OBS Studio képességei a CFA4-ben
 
-**Verzió:** 1.0 (tervezet)
+**Verzió:** 1.0
 **Dátum:** 2026-11-09
 **Projekt:** CinemaFundArchitecture4 (CFA4)
-**Állapot:** tervezet; a tulajdonossal lépésenként egyeztetve (2026-11-09), jóváhagyásra vár. A fejlesztés
-indítása külön döntéshez kötött.
+**Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-09-én lépésenként egyeztette és jóváhagyta; az **S0
+fázis indítását is jóváhagyta** (2026-11-09). Az S1-től a munka a Qt6 felület befejezése után indul (D7).
 **Kapcsolódik:** [`VISION.md`](../../VISION.md) 4. pont (élő adás), [`docs/credits-plan.md`](../credits-plan.md)
 C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI),
 [ADR 0004](../adr/ADR-0004-compute-routing.md) (`cfa4-route`), [ADR 0005](../adr/ADR-0005-media-backends.md)
@@ -38,7 +38,7 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
   (a libobs is; egyes részek ISC, MIT, BSD, LGPL – mind GPL-3-mal összeférő), tehát a
   GPL-3.0-or-later CFA4-be átvehető, forrásmegjelöléssel (`NOTICE`, `ATTRIBUTION.md`).
 - **Ubuntu:** a 24.04 tárolójában `libobs-dev` 30.0.2 van, böngészőforrás (obs-browser, CEF)
-  nélkül; a 26.04-é újabb, de a böngészőforrás ott sincs benne (a C10-es próba ezt mutatta).
+  nélkül (a C10-es próba ezt mutatta); a 26.04-es csomag verzióját az S0-ban ellenőrizzük.
 - **Ami a CFA4-ben már megvan:** saját renderelő és grafika (címek, stáblista), az élő grafikai
   futtató (C10: cue-k, TAKE / NEXT / HOLD / UPDATE / OUT, élő oldal 127.0.0.1-en, obs-websocket
   kliens), a `cfa4-route` GPU/NPU/CPU-router, a GStreamer és az FFmpeg mint kiegészítő
@@ -62,7 +62,7 @@ egy mozdulattal a vágóprogramba kerül.
 | 1 | Jelenetek | jelenetek, források, csoportok, egymásba ágyazott jelenet, sorrend, zárolás, láthatóság, transzformáció (méret, forgatás, vágás, igazítás) |
 | 2 | Bemenetek | kamera (V4L2), képernyő és ablak (PipeWire, XDG-portál), hangbemenet és -kimenet rögzítése (PipeWire/Pulse), médiafájl és lejátszási lista, kép és képsorozat, szín, szöveg, böngészőforrás, CFA4-grafika és -stáblista (C10), CFA4-idővonal mint forrás, hálózati bemenet SRT-n, RIST-en, WHIP-en (csak nyílt protokollok, D4) |
 | 3 | Videószűrők | chroma key, color key, luma key, színkorrekció, LUT, maszk/keverés, élesítés, vágás/párnázás, görgetés, képarány, késleltetés |
-| 4 | Hang | keverő sávonként, hangerő, némítás, monitorozás, sávkiosztás (6 sáv), szűrők: zajszűrő (RNNoise), zajkapu, kompresszor, limiter, expander, erősítés, EQ, VST helyett beépített láncok, szinkroneltolás |
+| 4 | Hang | keverő sávonként, hangerő, némítás, monitorozás, sávkiosztás (6 sáv), szűrők: zajszűrő (RNNoise), zajkapu, kompresszor, limiter, expander, erősítés, EQ, beépített szűrőláncok, szinkroneltolás |
 | 5 | Stúdió mód | előnézet és program, átmenetek (vágás, áttűnés, csúsztatás, stinger, luma wipe, színen át), átmenet-felülírás jelenetenként, multiview, kivetítők (teljes képernyős monitorok), gyorsbillentyűk |
 | 6 | Kimenetek | felvétel (MKV, MP4, fragmentált MP4, MOV), streamelés (RTMP/RTMPS, SRT, RIST, WHIP/WebRTC), több cél egyszerre, replay buffer, virtuális kamera (v4l2loopback), felvétel szétválasztása, fejezetjelek |
 | 7 | Kódolók | gyártófüggetlen hardveres kódolás (VA-API: Intel/AMD; NVENC opcionálisan; Intel QSV) a `cfa4-route`-on át; szoftveres: AV1 (SVT-AV1/rav1e), H.264/HEVC csak a `cfa4-restricted-extras` csomaggal (szabadalmi modell) |
@@ -121,7 +121,7 @@ munkával ütközésnél a Qt6 megy előre.
 
 ## VII. Döntések (2026-11-09-én lépésenként egyeztetve, mind eldöntve)
 
-| # | Kérdés | Javaslat |
+| # | Kérdés | Döntés |
 |---|---|---|
 | D1 | A libobs forrása | **Eldöntve (2026-11-09): saját, rögzített verziójú fordítás (33.x) a CFA4 csomagban**, ellenőrzőösszeggel, mint az FFmpeg 9.0.2 |
 | D2 | Hol fut a libobs | **Eldöntve (2026-11-09): külön folyamatban** (`cfa4-studio-host`): a motor indítja, felügyeli, összeomlás után újraindítja; a szerkesztő és a projekt megmarad |
