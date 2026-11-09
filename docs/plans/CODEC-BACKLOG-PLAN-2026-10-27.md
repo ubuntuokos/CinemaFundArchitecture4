@@ -1,10 +1,10 @@
 # Kodek-backlog végrehajtási terv
 
-> **Utolsó frissítés:** 2026-11-08 · **Változás:** major (áthelyezve a CFA4-AI_modules tárolóból; a már meglévő kodekek kivéve, az ütemterv újraszámolva) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
+> **Utolsó frissítés:** 2026-11-09 · **Változás:** minor (a H.266 / VVC kivéve, mert saját terve van, #721; az ütemterv a 22. héttől egy hellyel előrébb jött) · **Forrás:** [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md)
 
-A [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md) 83 tétele heti ütemezésben. **Követelmény: minden héten
-legalább 2 tétel elkészül** (a tulajdonos döntése, 2026-10-27). Így a backlog 42 hét alatt fogy el:
-**2026-11-02-tól 2027-08-22-ig**. Ha egy héten több is elkészül, a következő tételek előrébb jönnek.
+A [CODEC-BACKLOG-2026-10-27.md](CODEC-BACKLOG-2026-10-27.md) 82 tétele heti ütemezésben. **Követelmény: minden héten
+legalább 2 tétel elkészül** (a tulajdonos döntése, 2026-10-27). Így a backlog 41 hét alatt fogy el:
+**2026-11-02-tól 2027-08-15-ig**. Ha egy héten több is elkészül, a következő tételek előrébb jönnek.
 
 Az ütemterv a meglévő kodekmunkával (M9, B3) **párhuzamosan, alacsony prioritással** fut. Ha a
 backlognak meg kell várnia az M9 és a B3 lezárását, minden dátum ugyanannyi héttel tolódik.
@@ -23,7 +23,7 @@ Az enkódolás nem része a tételnek, csak ha a sor külön jelzi.
 
 | Jel | Jelentés | Határidő |
 |---|---|---|
-| ⚖️ | Licenc / szabadalom (VVC, MPEG-H, AC-4): tulajdonosi döntés kell | A 21. hétig (2027-03-22) |
+| ⚖️ | Licenc / szabadalom (MPEG-H, AC-4): tulajdonosi döntés kell | A 21. hétig (2027-03-22) |
 | 📄 | Nincs teljes nyilvános specifikáció, a clean-room szabály miatt tulajdonosi döntés kell | A K2-esekre a 9. hétig (2026-12-28), a K3-asokra a 22. hétig (2027-03-29) |
 
 Ha egy tételre a döntés nemleges vagy késik, az a hét a következő szabad tétellel telik meg, így a
@@ -31,7 +31,7 @@ heti 2 tétel nem csúszik. A nemleges döntésű tételek kikerülnek a backlog
 
 ## Ütemterv
 
-Sávok: K1 az 1–6. hét, K2 a 7–23. hét, K3 a 23–40. hét, K4 a 41–42. hét.
+Sávok: K1 az 1–6. hét, K2 a 7–22. hét, K3 a 23–40. hét, K4 a 40–41. hét.
 
 | Hét | Kezdete | Sáv | 1. tétel | 2. tétel |
 |---|---|---|---|---|
@@ -56,27 +56,26 @@ Sávok: K1 az 1–6. hét, K2 a 7–23. hét, K3 a 23–40. hét, K4 a 41–42. 
 | 19 | 2027-03-08 | K2 | AVS3 | AVS Audio |
 | 20 | 2027-03-15 | K2 | AVS2 Audio | AVS3 Audio |
 | 21 | 2027-03-22 | K2 | Audio Vivid | DRA |
-| 22 | 2027-03-29 | K2 | H.266 / VVC ⚖️ | MPEG-H 3D Audio ⚖️ |
-| 23 | 2027-04-05 | K2 / K3 | AC-4 ⚖️ | Bink Video 📄 |
-| 24 | 2027-04-12 | K3 | Bink 2 📄 | Bink Audio 📄 |
-| 25 | 2027-04-19 | K3 | Smacker + Smacker Audio 📄 | id RoQ 📄 |
-| 26 | 2027-04-26 | K3 | Interplay MVE + ACM 📄 | CRI ADX 📄 |
-| 27 | 2027-05-03 | K3 | CRI HCA 📄 | Sofdec.Prime 📄 |
-| 28 | 2027-05-10 | K3 | Sofdec2 (konténer) 📄 | Nintendo THP 📄 |
-| 29 | 2027-05-17 | K3 | Nintendo Mobiclip 📄 | Nintendo HVQM / HVQM4 📄 |
-| 30 | 2027-05-24 | K3 | Nintendo DSP ADPCM + BRSTM 📄 | BCSTM / BFSTM 📄 |
-| 31 | 2027-05-31 | K3 | PSP MPEG-4 AVC (PMF) 📄 | Yamaha + OKI ADPCM 📄 |
-| 32 | 2027-06-07 | K3 | NTT TwinVQ 📄 | AMV Video 📄 |
-| 33 | 2027-06-14 | K3 | Cinepak 📄 | Intel Indeo 2 / 3 📄 |
-| 34 | 2027-06-21 | K3 | Intel Indeo 4 / 5 📄 | Sorenson Video 1 📄 |
-| 35 | 2027-06-28 | K3 | Sorenson Video 3 📄 | Microsoft RLE + Video 1 📄 |
-| 36 | 2027-07-05 | K3 | Autodesk FLIC / FLC | HuffYUV MT |
-| 37 | 2027-07-12 | K3 | QDesign Music 2 📄 | Voxware MetaSound 📄 |
-| 38 | 2027-07-19 | K3 | TrueSpeech 📄 | Apple MACE 3 / 6 📄 |
-| 39 | 2027-07-26 | K3 | QCELP | AVS2 3D / Multiview |
-| 40 | 2027-08-02 | K3 | AVS3 panoráma / immerszív profilok | AVS3 RTC Speech |
-| 41 | 2027-08-09 | K4 | TPG | SMT (Smart Media Transport) |
-| 42 | 2027-08-16 | K4 | AVS3 Immersive Media | — |
+| 22 | 2027-03-29 | K2 | MPEG-H 3D Audio ⚖️ | AC-4 ⚖️ |
+| 23 | 2027-04-05 | K3 | Bink Video 📄 | Bink 2 📄 |
+| 24 | 2027-04-12 | K3 | Bink Audio 📄 | Smacker + Smacker Audio 📄 |
+| 25 | 2027-04-19 | K3 | id RoQ 📄 | Interplay MVE + ACM 📄 |
+| 26 | 2027-04-26 | K3 | CRI ADX 📄 | CRI HCA 📄 |
+| 27 | 2027-05-03 | K3 | Sofdec.Prime 📄 | Sofdec2 (konténer) 📄 |
+| 28 | 2027-05-10 | K3 | Nintendo THP 📄 | Nintendo Mobiclip 📄 |
+| 29 | 2027-05-17 | K3 | Nintendo HVQM / HVQM4 📄 | Nintendo DSP ADPCM + BRSTM 📄 |
+| 30 | 2027-05-24 | K3 | BCSTM / BFSTM 📄 | PSP MPEG-4 AVC (PMF) 📄 |
+| 31 | 2027-05-31 | K3 | Yamaha + OKI ADPCM 📄 | NTT TwinVQ 📄 |
+| 32 | 2027-06-07 | K3 | AMV Video 📄 | Cinepak 📄 |
+| 33 | 2027-06-14 | K3 | Intel Indeo 2 / 3 📄 | Intel Indeo 4 / 5 📄 |
+| 34 | 2027-06-21 | K3 | Sorenson Video 1 📄 | Sorenson Video 3 📄 |
+| 35 | 2027-06-28 | K3 | Microsoft RLE + Video 1 📄 | Autodesk FLIC / FLC |
+| 36 | 2027-07-05 | K3 | HuffYUV MT | QDesign Music 2 📄 |
+| 37 | 2027-07-12 | K3 | Voxware MetaSound 📄 | TrueSpeech 📄 |
+| 38 | 2027-07-19 | K3 | Apple MACE 3 / 6 📄 | QCELP |
+| 39 | 2027-07-26 | K3 | AVS2 3D / Multiview | AVS3 panoráma / immerszív profilok |
+| 40 | 2027-08-02 | K3 / K4 | AVS3 RTC Speech | TPG |
+| 41 | 2027-08-09 | K4 | SMT (Smart Media Transport) | AVS3 Immersive Media |
 
 ## Követés
 
@@ -87,5 +86,6 @@ valamelyik nem készült el, a következő hétre kell vinni a pótlással együ
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-09 | minor | A H.266 / VVC kivéve: saját, jóváhagyott terve van (CFA4-VVC-PLAN-001, #721). 82 tétel, 41 hét (2027-08-15-ig); a 22. héttől minden tétel egy hellyel előrébb jött. A 2. hét MagicYUV-ja tulajdonosi döntésre vár, ezért a HAP (CB-3.2) előrejött |
 | 2026-11-08 | major | Áthelyezve a CFA4-AI_modules tárolóból a CinemaFundArchitecture4-be. Kivéve a CineForm, a JPEG XL, az AVIF, a DTS, a DTS-HD MA és a TrueHD (itt már megvan vagy tervben van); 83 tétel, 42 hét, a döntési határidők újraszámolva |
 | 2026-10-27 | major | Létrehozva: 89 tétel, heti 2, 45 hét (2026-11-02 – 2027-09-12), döntési kapukkal |

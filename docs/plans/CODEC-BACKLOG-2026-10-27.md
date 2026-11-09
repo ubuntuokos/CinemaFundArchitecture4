@@ -1,6 +1,6 @@
 # Kodek-backlog (alacsony prioritás)
 
-> **Utolsó frissítés:** 2026-11-08 · **Változás:** major (áthelyezve a CFA4-AI_modules tárolóból, és összevetve a CinemaFundArchitecture4 meglévő kodekjeivel) · **Hely a tervben:** a kodekfejlesztés legvégén, az [M9](../roadmap.md#milestones-history-and-remaining) és a [B3](../roadmap.md#beta-milestones) után
+> **Utolsó frissítés:** 2026-11-09 · **Változás:** minor (a H.266 / VVC a „máshol tervben” táblába került, #721) · **Hely a tervben:** a kodekfejlesztés legvégén, az [M9](../roadmap.md#milestones-history-and-remaining) és a [B3](../roadmap.md#beta-milestones) után
 
 A tulajdonos 2026-10-27-én két kodeklistát adott át (általánosan használt, valamint ritkább és
 ázsiai videó-, audio- és képkodekek). Ebből a fájlból **kimaradt minden, ami ebben a tárolóban
@@ -42,6 +42,7 @@ Ami a listán volt, és már máshol tervben van (ott kell követni, nem itt):
 | MPEG-4 Part 2 (DivX / Xvid), JPEG XS, FLV | [G10](../gaps.md#g10-container-and-codec-gaps-on-import), [codec-parity.md](../codec-parity.md), [file-format-parity.md](../file-format-parity.md) |
 | Kamera-RAW (Canon Cinema RAW Light és a többi) | #383, [codec-parity.md](../codec-parity.md) |
 | MP3 és MPEG-2 enkóder | [G13](../gaps.md#g13-delivery-formats), [codec-parity.md](../codec-parity.md) |
+| H.266 / VVC | CFA4-VVC-PLAN-001 (#721, jóváhagyva 2026-11-07) |
 
 ## K1 – elterjedt vagy professzionális (a backlogon belül először)
 
@@ -61,7 +62,6 @@ Ami a listán volt, és már máshol tervben van (ott kell követni, nem itt):
 
 | Kodek / formátum | Típus | Megjegyzés |
 |---|---|---|
-| H.266 / VVC | videó | Szabadalmi helyzet: tulajdonosi döntés |
 | MPEG-5 EVC | videó | |
 | LCEVC | videó | Kiegészítő réteg más kodekekhez |
 | AVS1 / AVS-P2, AVS+ | videó | Kínai |
@@ -123,5 +123,6 @@ A K2-es AVS-munkához (AVS2, AVS3, AVS-audiók) kötődnek, és csak utána, a b
 
 | Dátum | Változás | Összefoglaló |
 |---|---|---|
+| 2026-11-09 | minor | A H.266 / VVC átkerült a „máshol tervben” táblába: saját, jóváhagyott terve van (CFA4-VVC-PLAN-001, #721) |
 | 2026-11-08 | major | Áthelyezve a CFA4-AI_modules tárolóból (ott: PR #9) a CinemaFundArchitecture4-be, a tulajdonos döntésére. Összevetve az itteni kodekekkel: kimaradt a CineForm, a DTS / DTS-HD MA, a TrueHD és a JPEG XL (saját dekóder van), az AVIF (G10). A „máshol tervben” tábla ehhez a tárolóhoz igazítva. Saját dekóder a cél, az FFmpeg-tartalék nem számít megoldásnak |
 | 2026-10-27 | major | Létrehozva a tulajdonos 2026-10-27-i kodeklistájából (a CFA4-AI_modules tárolóban) |
