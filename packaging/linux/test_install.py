@@ -218,11 +218,14 @@ class InstallTests(unittest.TestCase):
         # stand-in binaries have no crate sources to list, so ship a stand-in notice file
         notices = self.root / "THIRD-PARTY-LICENSES.txt"
         notices.write_text("CFA4 – third-party licence notices (fixture)\n")
+        sbom = self.root / "cfa4.cdx.json"
+        sbom.write_text('{"bomFormat": "CycloneDX", "specVersion": "1.6"}\n')
         result = subprocess.run(
             # shell-script stand-ins cannot link FFmpeg: the local-test tarball without it
             ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "tar", "--without-ffmpeg"],
             env={**os.environ, "CARGO_TARGET_DIR": str(target), "DIST": str(dist),
-                 "CFA4_ALLOW_LOCAL_PACKAGING": "1", "CFA4_THIRD_PARTY_LICENSES_FILE": str(notices)},
+                 "CFA4_ALLOW_LOCAL_PACKAGING": "1", "CFA4_THIRD_PARTY_LICENSES_FILE": str(notices),
+                 "CFA4_SBOM_FILE": str(sbom)},
             capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -242,6 +245,7 @@ class InstallTests(unittest.TestCase):
                 self.assertTrue(any(n.endswith("/" + path) for n in names), path)
             self.assertFalse([n for n in names if "__pycache__" in n])
             self.assertTrue(any(n.endswith("/share/doc/cfa4/THIRD-PARTY-LICENSES.txt") for n in names), names)
+            self.assertTrue(any(n.endswith("/share/doc/cfa4/cfa4.cdx.json") for n in names), names)
 
 
 if __name__ == "__main__":
