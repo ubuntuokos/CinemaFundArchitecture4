@@ -777,3 +777,24 @@ fn oracle_samples() {
     }
     assert!(failures.is_empty(), "{} sample problem(s):\n{}", failures.len(), failures.join("\n"));
 }
+
+/// OTIO-2.2 (H2): files written before the rename (#41) keep CFA4's data under the upstream
+/// application's key. They read exactly like current files, and are written back with `cfa4`.
+#[test]
+fn upstream_metadata_key_is_read_and_written_as_cfa4() {
+    let old = cfa4_project::legacy::OTIO_METADATA_KEY;
+    let (p, s) = project();
+    let (bytes, _) = cfa4_interchange::export(&p, s, Format::Otio, &ExportOptions::default()).unwrap();
+    let current = String::from_utf8(bytes).unwrap();
+    let legacy = current.replace("\"cfa4\":", &format!("\"{old}\":"));
+    assert!(!legacy.contains("\"cfa4\":") && legacy.contains(&format!("\"{old}\":")));
+    let again = |text: &str| {
+        let (imp, rep) = import(text.as_bytes(), Format::Otio, Some("/m")).unwrap();
+        assert!(!rep.has_warnings(), "{rep}");
+        let (bytes, _) = cfa4_interchange::export(&imp.project, only_seq(&imp), Format::Otio, &ExportOptions::default()).unwrap();
+        String::from_utf8(bytes).unwrap()
+    };
+    let from_legacy = again(&legacy);
+    assert_eq!(from_legacy, again(&current), "an old file imports exactly like a current one");
+    assert!(!from_legacy.contains(&format!("\"{old}\":")), "exports write only the cfa4 key");
+}
