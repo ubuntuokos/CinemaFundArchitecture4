@@ -12,7 +12,9 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use web_time::Instant;
 
 use cfa4_credits::{Behaviour, PageOut};
 use cfa4_live::{AudioMode, FrameStore, LiveServer, ObsClient};

@@ -1,5 +1,7 @@
 use std::io::{Read, Write};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use web_time::Instant;
 
 use serde_json::{Value, json};
 
