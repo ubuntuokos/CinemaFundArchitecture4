@@ -23,9 +23,7 @@ Expiration closes the connection without an unsolicited reply; reconnect before 
 (the CLI / MCP bridge does this automatically). Waiting for a UI reply has its separate 60-second
 limit. A partial request that times out is not dispatched.
 
-One JSON request per line → one JSON reply per line. The app opts out of macOS App Nap
-(`apps/cfa4/src/app_nap.rs`): a hidden window would otherwise drop the whole process to
-background priority, and on a busy machine it would stop answering.
+One JSON request per line → one JSON reply per line.
 
 **Only requests are read.** Every line must be a JSON object with a string `method` (`id` and `params`
 are optional; blank lines are skipped). Anything else gets one error reply
@@ -57,7 +55,7 @@ see `docs/qt-parity.md` 1.11 for the methods it has so far):
 | `ui.click` / `ui.move` | `{id}` or `{x,y}`, `button`, `count`, `modifiers` | synthetic pointer input; a `count` that is absent or `null` (as the MCP bridge sends an omitted one) is one click |
 | `ui.drag` | `{from, to, steps, modifiers}` | press–move–release; `steps` absent or `null` uses the default; out-of-range counts are refused before any input |
 | `ui.scroll` | `{id|x,y, dx, dy, modifiers}` | wheel / trackpad |
-| `ui.key` / `ui.type` | `{key}` (`Cmd+K`, `Space`…; off macOS `Ctrl+K` is the same key) / `{text}` | keyboard |
+| `ui.key` / `ui.type` | `{key}` (`Cmd+K`, `Space`…; `Ctrl+K` is the same key) / `{text}` | keyboard |
 | `ui.timeline.hit` / `ui.timeline.locate` | `{x,y,modifiers?}` / `{clip, edge?}` | timeline hit-testing. `hit` reports a clip's `edge` (`In`/`Out`) within 7 px of it (a third of a narrow clip); just left of a cut that is the left clip's Out, from the cut rightwards the right clip's In. `kind` is the trim a press of the current tool with `modifiers` starts there (`trim`, `ripple`, `roll`, `rateStretch`, `remix`), `volume` on an audio clip's Volume line (Selection and Pen tools), or null |
 | `ui.playback` | `{action: play|stop|toggle, speed?}` | |
 | `ui.screenshot` | `{path?, panel?}` | PNG of the window or one panel; fails after 10 s when no frame is presented (window hidden, display asleep) |
@@ -76,7 +74,7 @@ still apply. `engine.commands` and the menus always show the selection's enablem
 
 **Focus.** Driving the app never steals the user's keyboard. Started with `--control`, the app opens
 without activating itself. UI requests and screenshots that need a rendered frame bring the window
-forward without making it key (macOS `orderFrontRegardless`), so the user's typing keeps going to
+forward without giving it keyboard focus, so the user's typing keeps going to
 the app they are in. Only an explicit `ui.focus {}` activates CFA4. Injected keys work on
 focused widgets even when the native window is in the background.
 
@@ -192,8 +190,9 @@ sequence as tone-mapped SDR.
 command with exactly those modifiers), `shortcuts.beginEditing` / `endEditing` / `cancelEditing`
 (an editor dialog in another process: Cancel restores the set it opened with) and
 `shortcuts.registerExternal {commands: [{id, label, menu?, shortcut?}]}` (a frontend's own
-commands, such as the Qt GUI's tools and transport, so they can be listed and bound). Keys use `Cmd` (⌘ /
-Ctrl), `Ctrl` (macOS ⌃), `Alt`, `Shift`. The dialog (Edit ▸ Keyboard Shortcuts…, ⌥⌘K) uses ids
+commands, such as the Qt GUI's tools and transport, so they can be listed and bound). Keys use `Cmd` (Ctrl on
+Linux), `Ctrl` (the separate Control key of Premiere's Mac presets), `Alt`, `Shift`. The dialog
+(Edit ▸ Keyboard Shortcuts…, Ctrl+Alt+K) uses ids
 `shortcuts.*` (`shortcuts.key.K`, `shortcuts.cell.<command>`, `shortcuts.ok`, …).
 
 ## MCP

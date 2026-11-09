@@ -3,6 +3,10 @@
 - **Status:** accepted (2026-10-05, approved by the project owner; recorded in
   [AGENTS.md](../../AGENTS.md) §0 item 3)
 - **Issue:** #30 (hardware acceleration)
+- **Update (2026-10-27):** CFA4 targets Ubuntu 26.04 only. The macOS (VideoToolbox) and Windows
+  (Media Foundation / Direct3D 11) backends have been removed; the decision applies unchanged to
+  the Linux FFI modules that remain (`vaapi::va`, `nvdec::cuvid`, `nvenc::ffi` / `nvenc::session`
+  / `nvenc::device`). Passages below that mention macOS or Windows record the original decision.
 
 ## Context
 
@@ -25,9 +29,9 @@ Containment rules:
 
 1. The crate does not use `lints.workspace = true`. Its own `[lints]` table copies the workspace
    lints except `unsafe_code = "deny"` (not `forbid`), and adds
-   `clippy::undocumented_unsafe_blocks = "deny"`. Only the FFI modules (`videotoolbox`, `media_foundation::gpu` / `media_foundation::mft`,
-   `nvenc::ffi` / `nvenc::session` / `nvenc::device` on Windows and 64-bit Linux, and `vaapi::va` on Linux) carry `#[allow(unsafe_code)]`; the rest of the crate
-   (the fallback logic in `hybrid`, the decoder logic in `media_foundation`, `annexb`, `biplanar`,
+   `clippy::undocumented_unsafe_blocks = "deny"`. Only the FFI modules (`vaapi::va`, `nvdec::cuvid`,
+   `nvenc::ffi` / `nvenc::session` / `nvenc::device`) carry `#[allow(unsafe_code)]`; the rest of the crate
+   (the fallback logic in `hybrid`, the decoder logic in `vaapi` and `nvdec`, `annexb`, `biplanar`,
    the encoder logic in `nvenc`, H.264 and H.265 alike) has no `unsafe`. NVENC's H.265 support
    added no `unsafe` module: it reuses `nvenc::ffi` and `nvenc::session` (new data declarations and
    a second codec-configuration member of an existing union).
@@ -157,3 +161,25 @@ VA-API's. The rules above hold: `libnvcuvid.so.1` and `libcuda.so.1` are loaded 
 the one `nvenc::device` already retains for encoding. Unlike VA-API, NVDEC parses the stream
 itself; its callbacks run inside our parse call and never unwind into C (they record the first
 error and return 0, and the decoder then fails over to software like any other backend).
+
+## Addendum (2026-11-07): non-Rust components (owner decision)
+
+The owner decided that a component written in another language (C, C++ or other) conflicts with
+CFA4's rules **only if it slows CFA4 down**, and that step-by-step implementation is allowed: large
+components may stay in their own language for now and are rewritten in Rust over later releases
+([AGENTS.md](../../AGENTS.md), CFA4 section). This widens the "nowhere else" of this decision for
+such components. Their bindings keep this ADR's containment rules:
+
+1. `unsafe` stays in the binding module or crate of the component, with
+   `#[allow(unsafe_code)]` only on its FFI modules and a `// SAFETY:` comment on every block.
+2. The public API is safe and returns `Result`s; no panic crosses the FFI boundary
+   (`catch_unwind`, AGENTS.md §0).
+3. Callers reach the component through the engine's interfaces and the router (`cfa4-route`,
+   ADR 0004/0005), never directly; the Rust path, where one exists, stays the fallback.
+4. Running the component as a separate process is an equally valid choice when it isolates
+   failures without slowing CFA4 down.
+5. "Slows CFA4 down" is decided by measurement on the reference machine
+   ([reference-machine.md](../development/reference-machine.md)), not by the language.
+
+The planned Rust rewrite of such a component is tracked as its own task in the plan or ADR that
+introduced it.
