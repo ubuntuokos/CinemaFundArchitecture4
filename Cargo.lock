@@ -1158,6 +1158,7 @@ dependencies = [
  "cfa4-project",
  "cfa4-render",
  "cfa4-time",
+ "chrono",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
