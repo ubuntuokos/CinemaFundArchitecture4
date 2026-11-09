@@ -25,7 +25,8 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
 5. **A libobs forrása:** saját, rögzített verziójú fordítás (D1).
 6. **A libobs külön folyamatban fut** (`cfa4-studio-host`, D2).
 7. **Böngészőforrás WPE WebKittel** az Ubuntu tárolójából, Chromium nélkül (D3).
-8. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
+8. **Csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); zárt SDK-t igénylő (pl. NDI) nincs (D4).
+9. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
    egyeztetés szerinti felsorolással (IV. fejezet).
 
 ## II. Kiinduló helyzet
@@ -56,7 +57,7 @@ egy mozdulattal a vágóprogramba kerül.
 | # | Terület | Képességek |
 |---|---|---|
 | 1 | Jelenetek | jelenetek, források, csoportok, egymásba ágyazott jelenet, sorrend, zárolás, láthatóság, transzformáció (méret, forgatás, vágás, igazítás) |
-| 2 | Bemenetek | kamera (V4L2), képernyő és ablak (PipeWire, XDG-portál), hangbemenet és -kimenet rögzítése (PipeWire/Pulse), médiafájl és lejátszási lista, kép és képsorozat, szín, szöveg, böngészőforrás, CFA4-grafika és -stáblista (C10), CFA4-idővonal mint forrás, NDI/SRT bemenet (nyitott, VII.) |
+| 2 | Bemenetek | kamera (V4L2), képernyő és ablak (PipeWire, XDG-portál), hangbemenet és -kimenet rögzítése (PipeWire/Pulse), médiafájl és lejátszási lista, kép és képsorozat, szín, szöveg, böngészőforrás, CFA4-grafika és -stáblista (C10), CFA4-idővonal mint forrás, hálózati bemenet SRT-n, RIST-en, WHIP-en (csak nyílt protokollok, D4) |
 | 3 | Videószűrők | chroma key, color key, luma key, színkorrekció, LUT, maszk/keverés, élesítés, vágás/párnázás, görgetés, képarány, késleltetés |
 | 4 | Hang | keverő sávonként, hangerő, némítás, monitorozás, sávkiosztás (6 sáv), szűrők: zajszűrő (RNNoise), zajkapu, kompresszor, limiter, expander, erősítés, EQ, VST helyett beépített láncok, szinkroneltolás |
 | 5 | Stúdió mód | előnézet és program, átmenetek (vágás, áttűnés, csúsztatás, stinger, luma wipe, színen át), átmenet-felülírás jelenetenként, multiview, kivetítők (teljes képernyős monitorok), gyorsbillentyűk |
@@ -109,7 +110,7 @@ munkával ütközésnél a Qt6 megy előre.
 | **S6** – Streamelés | RTMP/RTMPS, SRT, RIST, WHIP; több cél; újrakapcsolódás; stream-kulcs a kulcstartóban | próbaadás helyi kiszolgálóra (mediamtx) és egy valódi szolgáltatásra |
 | **S7** – Kódolók | VA-API (Intel/AMD), NVENC (opcionális), QSV, SVT-AV1 a `cfa4-route`-on át; restricted-extras | a router választ, CPU-tartalék mindig van; a referenciagép GPU-in mérve |
 | **S8** – Videószűrők | key-ek, színkorrekció, LUT, maszk, vágás, késleltetés; a CFA4 saját effektjei forrásszűrőként | a szűrők képe összevetve a CFA4 renderelővel |
-| **S9** – További kimenetek | replay buffer, virtuális kamera (v4l2loopback), böngészőforrás (WPE WebKit, D3), NDI (nyitott) | mindegyik a referenciagépen |
+| **S9** – További kimenetek | replay buffer, virtuális kamera (v4l2loopback), böngészőforrás (WPE WebKit, D3) | mindegyik a referenciagépen |
 | **S10** – Vezérlés és átállás | obs-websocket 5 kiszolgáló a CFA4-ben, OBS-import (jelenetgyűjtemény, profil) | Stream Deck / websocket-kliens vezérli; egy valódi OBS-gyűjtemény átjön |
 | **S11** – Mérés és stabilitás | statisztika-panel, tartós terheléses próbák, hibainjektálás, dokumentáció | 8 órás adás a referenciagépen, összeomlás nélkül |
 | **S12+** – Rust-csere | a libobs részei sorban saját Rust kódra: 1. kompozitálás és átmenetek (a CFA4 renderelője), 2. szűrők, 3. kimenetek és kódolás (GStreamer/saját muxerek), 4. rögzítés (PipeWire, V4L2) | minden csere ugyanazon a traiten, a régi úttal összemérve; ha valamelyik lassabb, marad a libobs |
@@ -121,7 +122,7 @@ munkával ütközésnél a Qt6 megy előre.
 | D1 | A libobs forrása | **Eldöntve (2026-11-09): saját, rögzített verziójú fordítás (33.x) a CFA4 csomagban**, ellenőrzőösszeggel, mint az FFmpeg 9.0.2 |
 | D2 | Hol fut a libobs | **Eldöntve (2026-11-09): külön folyamatban** (`cfa4-studio-host`): a motor indítja, felügyeli, összeomlás után újraindítja; a szerkesztő és a projekt megmarad |
 | D3 | Böngészőforrás | **Eldöntve (2026-11-09): WPE WebKit az Ubuntu tárolójából** (`libwpewebkit`, `wpebackend-fdo`, csomagfüggőségként), saját Rust libobs-forrással, az S9-ben; Chromium (CEF) nincs. A `window.obsstudio` JS-felületet a forrás adja; a gyakori streameres widgetek az S9-ben kipróbálva |
-| D4 | NDI és más zárt protokollok | csak nyílt protokollok (SRT, RIST, WHIP); NDI-t nem (zárt SDK) |
+| D4 | Zárt protokollok | **Eldöntve (2026-11-09): csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); NDI és más zárt SDK-t igénylő protokoll nincs |
 | D5 | Az élő stúdió helye a menüben és a munkaterületek között | önálló „Élő” munkaterület a Szerkesztés, Szín, Hang mellett |
 | D6 | Műsorterv (rundown) | a VISION 8. pontjában nyitott; ebben a tervben nincs |
 | D7 | Ütemezés: a Qt6 befejezése után, vagy azzal párhuzamosan? | az S0 most indulhat (nem érinti a Qt6 fájljait), az S1-től a Qt6 után |
