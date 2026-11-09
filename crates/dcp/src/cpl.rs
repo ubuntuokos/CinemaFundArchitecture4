@@ -1,6 +1,8 @@
 //! Composition playlist (SMPTE ST 429-7, Interop `PROTO-ASDCP-CPL-20040511`), with the reel assets of
 //! ST 429-10 / 437-Y (stereoscopic picture), ST 429-16 (composition metadata) and any extension asset.
 
+use std::collections::HashMap;
+
 use roxmltree::{Document, Node};
 use serde::{Deserialize, Serialize};
 
@@ -131,6 +133,10 @@ pub struct ReelAsset {
     pub pos: Pos,
 }
 
+/// ST 429-7 §6.8 (and the Interop CPL): the kinds of the default `ContentKind` scope.
+pub const CONTENT_KINDS: &[&str] = &["feature", "trailer", "test", "teaser", "rating", "advertisement", "short", "transitional", "psa", "policy"];
+const CONTENT_KIND_SCOPE: &str = "http://www.smpte-ra.org/schemas/429-7/2006/CPL#standard-content";
+
 const ROOT: &[&str] = &[
     "Id",
     "AnnotationText",
@@ -174,14 +180,36 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> Composition {
     let issuer = r.text(root, p, "Issuer");
     let creator = r.text(root, p, "Creator");
     let content_title = r.required_text(root, p, "ContentTitleText");
-    let content_kind = r.required_text(root, p, "ContentKind");
-    let content_version = r.child(root, p, "ContentVersion").map(|cv| {
-        let cp = format!("{p}/ContentVersion");
-        let id = r.text(cv, &cp, "Id");
-        let label = r.text(cv, &cp, "LabelText");
-        r.unknown(cv, &cp, &["Id", "LabelText"]);
-        ContentVersion { id, label }
+    let content_kind = r.value(root, p, "ContentKind", true).map(|(kind, n)| {
+        // The default scope allows only the ST 429-7 vocabulary; another scope is its own vocabulary.
+        let default_scope = n.attribute("scope").is_none_or(|sc| sc.trim() == CONTENT_KIND_SCOPE);
+        if default_scope && !CONTENT_KINDS.contains(&kind.as_str()) {
+            r.issue(
+                IssueKind::Invalid,
+                &format!("{p}/ContentKind"),
+                n,
+                format!("ContentKind '{kind}' is not one of the standard kinds ({})", CONTENT_KINDS.join(", ")),
+            );
+        }
+        kind
     });
+    // SMPTE requires ContentVersion with both children; Interop makes it optional.
+    let smpte = standard == Standard::Smpte;
+    let content_version = match r.child(root, p, "ContentVersion") {
+        Some(cv) => {
+            let cp = format!("{p}/ContentVersion");
+            let id = r.value(cv, &cp, "Id", smpte).map(|(t, _)| t);
+            let label = r.value(cv, &cp, "LabelText", smpte).map(|(t, _)| t);
+            r.unknown(cv, &cp, &["Id", "LabelText"]);
+            Some(ContentVersion { id, label })
+        }
+        None => {
+            if smpte {
+                r.issue(IssueKind::Missing, &format!("{p}/ContentVersion"), root, "ContentVersion is missing");
+            }
+            None
+        }
+    };
     let has_signer = r.child(root, p, "Signer").is_some();
     let has_signature = crate::xml::has_signature(root);
     let extensions = r.unknown(root, p, ROOT);
@@ -225,19 +253,12 @@ fn read_reel<'a, 'i>(r: &mut Reader<'a, 'i>, reel: Node<'a, 'i>, rp: &str, stand
     match r.child(reel, rp, "AssetList") {
         None => r.issue(IssueKind::Missing, &format!("{rp}/AssetList"), reel, "AssetList is missing"),
         Some(list) => {
-            let mut seen: Vec<(String, usize)> = Vec::new();
+            let mut seen: HashMap<&str, usize> = HashMap::new();
             for a in list.children().filter(|c| c.is_element()) {
-                let name = a.tag_name().name().to_string();
-                let n = match seen.iter_mut().find(|(s, _)| *s == name) {
-                    Some((_, n)) => {
-                        *n += 1;
-                        *n
-                    }
-                    None => {
-                        seen.push((name.clone(), 1));
-                        1
-                    }
-                };
+                let name = a.tag_name().name();
+                let n = seen.entry(name).or_insert(0);
+                *n += 1;
+                let n = *n;
                 let ap = format!("{rp}/AssetList/{name}[{n}]");
                 assets.push(read_asset(r, a, &ap, standard));
             }

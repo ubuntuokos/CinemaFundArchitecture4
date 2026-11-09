@@ -64,6 +64,12 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
     let annotation = r.text(root, p, "AnnotationText");
     let creator = r.required_text(root, p, "Creator");
     let volume_count = r.positive(root, p, "VolumeCount", true);
+    if let (Standard::Smpte, Some(n)) = (standard, volume_count.filter(|n| *n != 1)) {
+        // ST 429-9:2014 §5.4: a SMPTE package is a single volume
+        if let Some(c) = r.child(root, p, "VolumeCount") {
+            r.issue(IssueKind::Invalid, &format!("{p}/VolumeCount"), c, format!("VolumeCount is {n}; SMPTE asset maps have one volume"));
+        }
+    }
     let issue_date = r.date_time(root, p, "IssueDate", true);
     let issuer = r.required_text(root, p, "Issuer");
     let extensions = r.unknown(root, p, ROOT);

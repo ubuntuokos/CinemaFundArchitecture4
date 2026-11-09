@@ -445,3 +445,34 @@ fn schema_order_and_positive_volume_fields() {
     ));
     assert!(c.issues.iter().any(|i| i.path.ends_with("MainPicture[1]/KeyId") && i.message.contains("schema order")), "{:#?}", c.issues);
 }
+
+#[test]
+fn content_kind_version_and_volume_count() {
+    let c = composition(&smpte_cpl().replace("<ContentKind>feature</ContentKind>", "<ContentKind>movie</ContentKind>"));
+    assert!(c.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "CompositionPlaylist/ContentKind"));
+    assert_eq!(c.content_kind.as_deref(), Some("movie"), "the value is kept");
+    let scoped =
+        smpte_cpl().replace("<ContentKind>feature</ContentKind>", "<ContentKind scope=\"http://isdcf.com/ns/cplmd/content-kind\">episode</ContentKind>");
+    assert!(composition(&scoped).issues.is_empty());
+
+    let start = smpte_cpl().find("<ContentVersion>").unwrap();
+    let end = smpte_cpl().find("</ContentVersion>").unwrap() + "</ContentVersion>".len();
+    let mut no_version = smpte_cpl();
+    no_version.replace_range(start..end, "");
+    let c = composition(&no_version);
+    assert!(c.issues.iter().any(|i| i.kind == IssueKind::Missing && i.path == "CompositionPlaylist/ContentVersion"));
+    let c = composition(&smpte_cpl().replace("<LabelText>Test</LabelText>", ""));
+    assert!(c.issues.iter().any(|i| i.kind == IssueKind::Missing && i.path == "CompositionPlaylist/ContentVersion/LabelText"));
+    assert!(composition(INTEROP_CPL).issues.is_empty(), "Interop needs no ContentVersion");
+
+    let two = INTEROP_AM
+        .replace(ns::INTEROP_AM, ns::SMPTE_AM)
+        .replace("<PackingList/>", "<PackingList>true</PackingList>")
+        .replace("<VolumeCount>1</VolumeCount>", "<VolumeCount>2</VolumeCount>");
+    let Ok(Document::AssetMap(m)) = parse(&two, Limits::default()) else { panic!("not an asset map") };
+    assert!(m.issues.iter().any(|i| i.kind == IssueKind::Invalid && i.path == "AssetMap/VolumeCount"));
+    let Ok(Document::AssetMap(m)) = parse(&INTEROP_AM.replace("<VolumeCount>1</VolumeCount>", "<VolumeCount>2</VolumeCount>"), Limits::default()) else {
+        panic!("not an asset map")
+    };
+    assert!(m.issues.is_empty(), "{:#?}", m.issues);
+}
