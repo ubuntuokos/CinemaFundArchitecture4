@@ -22,6 +22,8 @@ pub struct Composition {
     /// `ContentKind` as written (`feature`, `trailer`, …; a `scope` attribute is not interpreted).
     pub content_kind: Option<String>,
     pub content_version: Option<ContentVersion>,
+    /// `RatingList/Rating`, in document order.
+    pub ratings: Vec<Rating>,
     pub reels: Vec<Reel>,
     /// A `Signer` element is present.
     pub has_signer: bool,
@@ -30,6 +32,13 @@ pub struct Composition {
     /// Elements of the root the reader does not know, as `{namespace}name`.
     pub extensions: Vec<String>,
     pub issues: Vec<crate::Issue>,
+}
+
+/// One `RatingList/Rating`: the rating `Label` given by `Agency` (an URI).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Rating {
+    pub agency: Option<String>,
+    pub label: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -210,6 +219,19 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> Composition {
             None
         }
     };
+    // RatingList may be empty; each Rating needs Agency and Label.
+    let mut ratings = Vec::new();
+    if let Some(list) = r.child(root, p, "RatingList") {
+        let lp = format!("{p}/RatingList");
+        r.unknown(list, &lp, &["Rating"]);
+        for (i, rating) in Reader::children(list, "Rating").enumerate() {
+            let rp = format!("{lp}/Rating[{}]", i + 1);
+            let agency = r.required_text(rating, &rp, "Agency");
+            let label = r.required_text(rating, &rp, "Label");
+            r.unknown(rating, &rp, &["Agency", "Label"]);
+            ratings.push(Rating { agency, label });
+        }
+    }
     let has_signer = r.child(root, p, "Signer").is_some();
     let has_signature = crate::xml::has_signature(root);
     let extensions = r.unknown(root, p, ROOT);
@@ -237,6 +259,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> Composition {
         content_title,
         content_kind,
         content_version,
+        ratings,
         reels,
         has_signer,
         has_signature,

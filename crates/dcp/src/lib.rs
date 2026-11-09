@@ -25,7 +25,7 @@ mod pkl;
 mod xml;
 
 pub use assetmap::{AssetMap, AssetMapAsset, Chunk, VolumeIndex};
-pub use cpl::{AssetKind, Composition, ContentVersion, Marker, Reel, ReelAsset, ScreenAspectRatio};
+pub use cpl::{AssetKind, Composition, ContentVersion, Marker, Rating, Reel, ReelAsset, ScreenAspectRatio};
 pub use pkl::{PackingList, PackingListAsset};
 
 use std::fmt;
