@@ -3,8 +3,9 @@ Upstream-Name: CFA4 (CinemaFundArchitecture4)
 Upstream-Contact: https://github.com/ubuntuokos/CinemaFundArchitecture4
 Source: https://github.com/ubuntuokos/CinemaFundArchitecture4
 Comment: Third-party material and upstream attributions are listed in NOTICE and
- ATTRIBUTION.md in this directory. Licences of the Rust dependencies are
- recorded in the project's dependency audit (docs/audit/F1-01-SBOM-*.md).
+ ATTRIBUTION.md in this directory. Every third-party Rust crate in the programs,
+ with its licence and the licence files it ships, is in THIRD-PARTY-LICENSES.txt
+ in this directory.
 
 Files: *
 Copyright: CFA4 contributors
@@ -22,6 +23,22 @@ Copyright: The Inter Project Authors; The JetBrains Mono Project Authors;
  Google LLC / The Noto Project Authors
 License: OFL-1.1
  See /usr/share/doc/cfa4/OFL-Inter.txt, OFL-JetBrainsMono.txt and OFL-NotoSerif.txt.
+
+Files: opt/cfa4/ffmpeg-9.0.2/* (.deb), lib/cfa4/ffmpeg-9.0.2/* (tarball, AppImage, Flatpak)
+Copyright: the FFmpeg developers
+License: GPL-3.0-or-later
+ CFA4's own build of FFmpeg 9.0.2 (ADR 0005), configured with --enable-gpl
+ --enable-version3, never --enable-nonfree, without x264 and x265. Its licences
+ and BUILDINFO (the unmodified upstream source and the configure flags) are in
+ share/doc/ffmpeg beside the libraries. In the tarball, AppImage and Flatpak the
+ third-party libraries it loads are bundled too; their copyright files are in
+ lib/cfa4/ffmpeg-9.0.2/share/doc/third-party.
+
+Files: opt/cfa4/ffmpeg-9.0.2-restricted/* (cfa4-restricted-extras only)
+Copyright: the FFmpeg developers; x264 and x265 come from Ubuntu's archive
+License: GPL-3.0-or-later
+ The same FFmpeg build with x264 and x265, in the separate cfa4-restricted-extras
+ package (docs/licensing.md section 7); never in the cfa4 package.
 
 Files: code derived from the upstream work (see NOTICE)
 Copyright: Upstream contributors

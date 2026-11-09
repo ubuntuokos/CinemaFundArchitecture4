@@ -161,3 +161,25 @@ VA-API's. The rules above hold: `libnvcuvid.so.1` and `libcuda.so.1` are loaded 
 the one `nvenc::device` already retains for encoding. Unlike VA-API, NVDEC parses the stream
 itself; its callbacks run inside our parse call and never unwind into C (they record the first
 error and return 0, and the decoder then fails over to software like any other backend).
+
+## Addendum (2026-11-07): non-Rust components (owner decision)
+
+The owner decided that a component written in another language (C, C++ or other) conflicts with
+CFA4's rules **only if it slows CFA4 down**, and that step-by-step implementation is allowed: large
+components may stay in their own language for now and are rewritten in Rust over later releases
+([AGENTS.md](../../AGENTS.md), CFA4 section). This widens the "nowhere else" of this decision for
+such components. Their bindings keep this ADR's containment rules:
+
+1. `unsafe` stays in the binding module or crate of the component, with
+   `#[allow(unsafe_code)]` only on its FFI modules and a `// SAFETY:` comment on every block.
+2. The public API is safe and returns `Result`s; no panic crosses the FFI boundary
+   (`catch_unwind`, AGENTS.md §0).
+3. Callers reach the component through the engine's interfaces and the router (`cfa4-route`,
+   ADR 0004/0005), never directly; the Rust path, where one exists, stays the fallback.
+4. Running the component as a separate process is an equally valid choice when it isolates
+   failures without slowing CFA4 down.
+5. "Slows CFA4 down" is decided by measurement on the reference machine
+   ([reference-machine.md](../development/reference-machine.md)), not by the language.
+
+The planned Rust rewrite of such a component is tracked as its own task in the plan or ADR that
+introduced it.

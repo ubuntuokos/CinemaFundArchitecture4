@@ -126,8 +126,10 @@ def encoder_format(fmt: str, mxf_codec: str) -> str:
 
 
 def supports_alpha(fmt: str, prores_profile: str, cineform_profile: str) -> bool:
-    """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``)."""
-    if fmt in ("png", "tiff", "tga", "exr"):
+    """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``).
+
+    GIF keeps binary transparency (alpha below 128 transparent, the rest opaque)."""
+    if fmt in ("png", "tiff", "tga", "exr", "gif"):
         return True
     if fmt == "prores":
         return prores_profile in ("4444", "4444xq")
