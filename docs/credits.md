@@ -351,8 +351,9 @@ sequence (a title, a lower third), prepared as **cues**.
 
 The same layout and graphics renderer as the editor draws the program (pictures and picture
 backgrounds included; videos in credits are left out on air). The live state is the session's:
-nothing is saved in the project or undone. A running order (rundown) beyond the cue list is not
-part of it (an open decision, `VISION.md` §8).
+nothing is saved in the project or undone. The full live studio (OBS Studio's capabilities in
+CFA4) and the running order (rundown) follow in their own plan,
+[CFA4-LIVE-STUDIO-001](plans/CFA4-LIVE-STUDIO-001.md).
 
 | Command | Params |
 |---|---|
