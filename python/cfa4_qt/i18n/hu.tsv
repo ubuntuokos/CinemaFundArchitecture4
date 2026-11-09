@@ -2460,6 +2460,7 @@ export.summary	Low	alacsony
 	Transparency Grid	Átlátszósági rács
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
+	more tabs	további fülek
 	Set Work Area Bar In Point	A munkaterület-sáv kezdőpontjának beállítása
 	Set Work Area Bar Out Point	A munkaterület-sáv végpontjának beállítása
 	Delete Clips	Klipek törlése
