@@ -13,6 +13,9 @@
 //! - Transport streams: a PAT and a PMT (program 1) at the start, at every video random-access
 //!   point and at least every 100 ms; a PCR on the first stream's PID every 40 ms at most;
 //!   continuity counters; stuffing in adaptation fields.
+//! - The muxer is payload-opaque: the bytes of an access unit go out unchanged. H.264 / HEVC
+//!   units must already be Annex B with their access unit delimiter, AAC already ADTS framed
+//!   (CFA4-SCE-001 §12.3/3: any conversion happens before, in a bitstream adapter).
 //! - Program streams: 2048-byte packs at most (a pack header before every PES packet, the system
 //!   header in the first), the program end code at the end; DVD LPCM in private stream 1.
 
@@ -25,11 +28,28 @@ use crate::ts::crc32_mpeg;
 pub enum MuxCodec {
     /// MPEG-1 / MPEG-2 video (ES pictures with their sequence / GOP headers).
     Mpeg2Video,
+    /// H.264 access units in Annex B byte stream format, each starting with an access unit
+    /// delimiter (H.222.0 §2.14; transport streams only).
+    H264,
+    /// HEVC access units in Annex B byte stream format, each starting with an access unit
+    /// delimiter (H.222.0 §2.17; transport streams only).
+    Hevc,
     /// AAC in ADTS frames (transport streams only).
     AacAdts,
+    /// MPEG-1 / MPEG-2 audio frames, layers I-III (transport streams only). `lsf`: the
+    /// MPEG-2 lower sampling frequencies (16, 22.05, 24 kHz; stream type 0x04, else 0x03).
+    MpegAudio { lsf: bool },
     /// 16-bit big-endian interleaved DVD LPCM (program streams only), 1-8 channels at 48, 96, 44.1
     /// or 32 kHz.
     LpcmDvd { sample_rate: u32, channels: u32 },
+}
+
+impl MuxCodec {
+    /// A video stream: its random-access points repeat the tables and carry the
+    /// random_access_indicator.
+    pub fn is_video(self) -> bool {
+        matches!(self, MuxCodec::Mpeg2Video | MuxCodec::H264 | MuxCodec::Hevc)
+    }
 }
 
 /// The container.
@@ -114,7 +134,9 @@ impl<W: Write> Muxer<W> {
         let (mut video, mut lpcm) = (0u8, 0u8);
         for (k, &codec) in streams.iter().enumerate() {
             match (format, codec) {
-                (MuxFormat::Ps, MuxCodec::AacAdts) => return Err(MuxError::Unsupported("AAC is written to transport streams only".into())),
+                (MuxFormat::Ps, MuxCodec::AacAdts | MuxCodec::H264 | MuxCodec::Hevc | MuxCodec::MpegAudio { .. }) => {
+                    return Err(MuxError::Unsupported(format!("{codec:?} is written to transport streams only")));
+                }
                 (MuxFormat::Ts | MuxFormat::M2ts, MuxCodec::LpcmDvd { .. }) => {
                     return Err(MuxError::Unsupported("DVD LPCM is written to program streams only".into()));
                 }
@@ -124,7 +146,7 @@ impl<W: Write> Muxer<W> {
                     }
                     lpcm += 1;
                 }
-                (_, MuxCodec::Mpeg2Video) => video += 1,
+                (_, c) if c.is_video() => video += 1,
                 _ => {}
             }
             states.push(StreamState { codec, pid: FIRST_ES_PID + k as u16, cc: 0, last_dts: None });
@@ -141,6 +163,12 @@ impl<W: Write> Muxer<W> {
     /// start, not before −[`Muxer::DELAY`]. Units of one stream come in decode order.
     pub fn write(&mut self, stream: usize, data: &[u8], pts: i64, dts: Option<i64>, key: bool) -> MuxResult<()> {
         let st = self.streams.get_mut(stream).ok_or_else(|| MuxError::Unsupported(format!("no stream {stream}")))?;
+        if !starts_with_delimiter(st.codec, data) {
+            return Err(MuxError::Unsupported(format!(
+                "stream {stream}: a {:?} access unit must be Annex B and start with an access unit delimiter",
+                st.codec
+            )));
+        }
         let dts = dts.unwrap_or(pts);
         if !(-Self::DELAY..1 << 40).contains(&pts) || !(-Self::DELAY..=pts).contains(&dts) {
             return Err(MuxError::Unsupported(format!("timestamps out of range: pts {pts}, dts {dts}")));
@@ -225,7 +253,7 @@ impl<W: Write> Muxer<W> {
     // ---- transport streams -------------------------------------------------------------------
 
     fn write_ts(&mut self, u: &Unit) -> MuxResult<()> {
-        let video = self.streams.get(u.stream).is_some_and(|s| s.codec == MuxCodec::Mpeg2Video);
+        let video = self.streams.get(u.stream).is_some_and(|s| s.codec.is_video());
         if self.last_psi.is_none_or(|t| self.clock - t >= 100 * 27_000) || (video && u.key) {
             self.write_psi()?;
         }
@@ -321,7 +349,11 @@ impl<W: Write> Muxer<W> {
         for s in &self.streams {
             let st = match s.codec {
                 MuxCodec::Mpeg2Video => 0x02,
+                MuxCodec::H264 => 0x1B,
+                MuxCodec::Hevc => 0x24,
                 MuxCodec::AacAdts => 0x0F,
+                MuxCodec::MpegAudio { lsf: false } => 0x03,
+                MuxCodec::MpegAudio { lsf: true } => 0x04,
                 MuxCodec::LpcmDvd { .. } => 0x80,
             };
             pmt.extend_from_slice(&[st, 0xE0 | (s.pid >> 8) as u8, s.pid as u8, 0xF0, 0]);
@@ -446,9 +478,23 @@ impl<W: Write> Muxer<W> {
 /// The PES stream_id of a codec (the first of its kind).
 fn stream_id(codec: MuxCodec) -> u8 {
     match codec {
-        MuxCodec::Mpeg2Video => 0xE0,
-        MuxCodec::AacAdts => 0xC0,
+        MuxCodec::Mpeg2Video | MuxCodec::H264 | MuxCodec::Hevc => 0xE0,
+        MuxCodec::AacAdts | MuxCodec::MpegAudio { .. } => 0xC0,
         MuxCodec::LpcmDvd { .. } => 0xBD,
+    }
+}
+
+/// An H.264 / HEVC unit starts with a start code and an access unit delimiter (H.222.0 §2.14.1,
+/// §2.17.1); other codecs pass.
+fn starts_with_delimiter(codec: MuxCodec, data: &[u8]) -> bool {
+    let nal = match data {
+        [0, 0, 1, h, ..] | [0, 0, 0, 1, h, ..] => *h,
+        _ => return !matches!(codec, MuxCodec::H264 | MuxCodec::Hevc),
+    };
+    match codec {
+        MuxCodec::H264 => nal & 0x1F == 9,
+        MuxCodec::Hevc => (nal >> 1) & 0x3F == 35,
+        _ => true,
     }
 }
 
