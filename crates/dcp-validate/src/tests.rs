@@ -47,7 +47,7 @@ fn package(root: &Path, paths: [&str; 3]) {
     );
     let cpl = format!(
         r#"<CompositionPlaylist xmlns="http://www.smpte-ra.org/schemas/429-7/2006/CPL"><Id>{}</Id><IssueDate>2026-11-09T00:00:00Z</IssueDate><ContentTitleText>T</ContentTitleText><ContentKind>test</ContentKind><ReelList><Reel><Id>{}</Id><AssetList>
-<MainPicture><Id>{}</Id><EditRate>24 1</EditRate><IntrinsicDuration>1</IntrinsicDuration><Duration>1</Duration></MainPicture>
+<MainPicture><Id>{}</Id><EditRate>24 1</EditRate><IntrinsicDuration>1</IntrinsicDuration><Duration>1</Duration><FrameRate>24 1</FrameRate><ScreenAspectRatio>1998 1080</ScreenAspectRatio></MainPicture>
 </AssetList></Reel></ReelList></CompositionPlaylist>"#,
         uuid(2),
         uuid(4),
@@ -323,4 +323,22 @@ fn capabilities() {
     let c = NativeValidator.capabilities();
     assert_eq!(c.id, "native");
     assert!(c.rules.iter().all(|r| rules::find(r).is_some()));
+}
+
+#[test]
+fn documents_over_the_limit_are_unchecked_not_passed() {
+    let d = dir("doc-limit");
+    package(&d, GOOD);
+    let run = |max_documents| {
+        let mut req = ValidationRequest::new(&d, Profile::builtin("quick-scan").unwrap());
+        req.limits.max_documents = max_documents;
+        NativeValidator.validate(&req, &ValidationControl::new()).unwrap()
+    };
+    let r = run(1);
+    assert_eq!(statuses(&r, PKL_DOCUMENT), [Status::Pass]);
+    assert_eq!(statuses(&r, CPL_DOCUMENT), [Status::Unchecked]);
+    assert_eq!(r.verdict, Verdict::Incomplete);
+    let r = run(0);
+    assert_eq!(statuses(&r, PKL_DOCUMENT), [Status::Unchecked]);
+    assert_eq!(r.verdict, Verdict::Incomplete);
 }

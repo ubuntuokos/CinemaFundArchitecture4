@@ -215,45 +215,49 @@ impl Run<'_> {
     fn documents(&mut self, am: &AssetMap, files: &BTreeMap<Uuid, (String, PathBuf)>) {
         let limits = self.request.limits;
         let mut read = 0usize;
-        let mut pkls = Vec::new();
+        let mut pkls_read = 0usize;
+        // Only the ids of XML assets are kept from each packing list, not the parsed documents.
+        let mut xml: BTreeSet<Uuid> = BTreeSet::new();
         let pkl_ids: Vec<Uuid> = am.assets.iter().filter(|a| a.packing_list).filter_map(|a| a.id).collect();
+        let mut over_limit = false;
         for id in &pkl_ids {
+            if self.control.is_cancelled() {
+                return;
+            }
             let Some((path, file)) = files.get(id) else { continue };
             read += 1;
             if read > limits.max_documents {
+                over_limit = true;
                 break;
             }
             match cfa4_dcp::read(file, limits.document) {
                 Ok(Document::PackingList(p)) => {
+                    pkls_read += 1;
                     self.issues(PKL_DOCUMENT, path, &p.issues);
                     self.standards.push((path.clone(), p.standard));
                     if let Some(id) = p.id {
                         self.docs.packing_lists.push(id);
                     }
-                    pkls.push(p);
+                    xml.extend(p.assets.iter().filter(|a| a.mime_type.as_deref().is_some_and(|t| t.contains("xml"))).filter_map(|a| a.id));
                 }
                 Ok(other) => self.fail(PKL_DOCUMENT, Location::file(path.as_str()), format!("declared as a packing list, but it is a {}", kind(&other))),
                 Err(e) => self.fail(PKL_DOCUMENT, Location::file(path.as_str()), format!("cannot be read: {e}")),
             }
         }
+        if over_limit {
+            let msg = format!("more than {} documents; the remaining packing lists were not read", limits.max_documents);
+            self.findings.push(Finding::new(PKL_DOCUMENT, Status::Unchecked, msg));
+        }
         if pkl_ids.is_empty() {
             self.fail(PKL_DOCUMENT, Location::default(), "the asset map declares no packing list");
         }
-        self.passed.insert(PKL_DOCUMENT, format!("{} packing lists read", pkls.len()));
+        self.passed.insert(PKL_DOCUMENT, format!("{pkls_read} packing lists read"));
         self.done.insert(PKL_DOCUMENT);
         if self.control.is_cancelled() {
             return;
         }
 
-        let xml: Vec<Uuid> = pkls
-            .iter()
-            .flat_map(|p| p.assets.iter())
-            .filter(|a| a.mime_type.as_deref().is_some_and(|t| t.contains("xml")))
-            .filter_map(|a| a.id)
-            .filter(|id| !pkl_ids.contains(id))
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect();
+        let xml: Vec<Uuid> = xml.into_iter().filter(|id| !pkl_ids.contains(id)).collect();
         let total = xml.len();
         let mut cpls = 0usize;
         for (k, id) in xml.iter().enumerate() {
@@ -264,7 +268,8 @@ impl Run<'_> {
             let Some((path, file)) = files.get(id) else { continue };
             read += 1;
             if read > limits.max_documents {
-                self.fail(CPL_DOCUMENT, Location::default(), format!("more than {} XML documents; the rest is not read", limits.max_documents));
+                let msg = format!("more than {} documents; the remaining XML assets were not read", limits.max_documents);
+                self.findings.push(Finding::new(CPL_DOCUMENT, Status::Unchecked, msg));
                 break;
             }
             match cfa4_dcp::read(file, limits.document) {
@@ -281,7 +286,7 @@ impl Run<'_> {
                 Err(e) => self.fail(CPL_DOCUMENT, Location::file(path.as_str()).with_asset(*id), format!("XML asset cannot be read: {e}")),
             }
         }
-        if cpls == 0 && !pkls.is_empty() {
+        if cpls == 0 && pkls_read > 0 && !self.findings.iter().any(|f| f.rule == CPL_DOCUMENT && f.status == Status::Unchecked) {
             self.fail(CPL_DOCUMENT, Location::default(), "no composition playlist among the packing list assets");
         }
         self.passed.insert(CPL_DOCUMENT, format!("{cpls} composition playlists read"));
