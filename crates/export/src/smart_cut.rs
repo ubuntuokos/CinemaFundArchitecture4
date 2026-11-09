@@ -39,6 +39,9 @@ pub enum SmartCutError {
     PlanVersion { found: u32 },
     /// Some segment must be re-encoded or rendered (WP-06), or the plan has no segments.
     NotLossless,
+    /// A timeline plan, whose segments name their own sources: the Smart Render executor (WP-06)
+    /// runs those.
+    TimelinePlan,
     /// Only H.264 is copied from MP4 / MOV into MP4 / MOV in this release.
     Unsupported { codec: Codec, source: Container, output: Container },
     /// The source has no track at this index.
@@ -64,6 +67,7 @@ impl fmt::Display for SmartCutError {
         match self {
             SmartCutError::PlanVersion { found } => write!(f, "plan version {found} is not {PLAN_VERSION}"),
             SmartCutError::NotLossless => write!(f, "the plan re-encodes or renders a segment; only copy plans run here"),
+            SmartCutError::TimelinePlan => write!(f, "a timeline plan cannot run as a Smart Cut of one source"),
             SmartCutError::Unsupported { codec, source, output } => {
                 write!(f, "packet copy of {} from {} to {} is not supported", codec.label(), source.label(), output.label())
             }
@@ -141,6 +145,10 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
     }
     if !plan.is_lossless() {
         return Err(SmartCutError::NotLossless);
+    }
+    // a timeline plan (Smart Render, several sources) runs in the WP-06 executor
+    if plan.segments.iter().any(|s| s.source.is_some()) {
+        return Err(SmartCutError::TimelinePlan);
     }
     let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
     if plan.codec != Codec::H264 || brand(plan.source_container).is_none() || brand(plan.output_container).is_none() || index.codec != Codec::H264 {

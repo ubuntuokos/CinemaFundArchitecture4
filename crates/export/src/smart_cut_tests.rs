@@ -211,6 +211,11 @@ fn malformed_plans_are_refused() {
     p.segments.clear();
     assert_eq!(run(&p), SmartCutError::NotLossless);
 
+    // a timeline plan names a source per segment
+    let mut p = good.clone();
+    p.segments[0].source = Some(cfa4_smart_edit::plan::SegmentSource { source_id: "other.mp4".into(), container: Container::Mp4, item: 0 });
+    assert_eq!(run(&p), SmartCutError::TimelinePlan);
+
     // two copy segments with a gap in decode order
     let mut p = good.clone();
     let mut second = p.segments[0].clone();
