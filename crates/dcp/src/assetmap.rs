@@ -107,10 +107,11 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
                             let volume_index = r.positive(c, &cp, "VolumeIndex", false);
                             let offset = r.u64(c, &cp, "Offset", false);
                             // SMPTE ST 429-9: an asset is stored whole in one file, so its one chunk starts at 0
-                            if standard == Standard::Smpte && offset.is_some_and(|o| o != 0) {
-                                if let Some(n) = r.child(c, &cp, "Offset") {
-                                    r.issue(IssueKind::Invalid, &format!("{cp}/Offset"), n, "SMPTE Chunk Offset must be 0");
-                                }
+                            if standard == Standard::Smpte
+                                && offset.is_some_and(|o| o != 0)
+                                && let Some(n) = r.child(c, &cp, "Offset")
+                            {
+                                r.issue(IssueKind::Invalid, &format!("{cp}/Offset"), n, "SMPTE Chunk Offset must be 0");
                             }
                             let length = r.u64(c, &cp, "Length", false);
                             r.unknown(c, &cp, CHUNK);
