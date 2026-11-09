@@ -12,6 +12,8 @@ name: CFA4 four-format build on a hosted Ubuntu 26.04 runner (no publication)
 #   - nfpm 2.46.0 (.deb from the goreleaser GitHub release, SHA-256 from its checksums.txt);
 #   - appimagetool 1.9.1 (tagged GitHub release, SHA-256 pinned below);
 #   - Flatpak org.freedesktop.Platform and Sdk 25.08 from Flathub (user installation);
+#   - the PySide6 6.12.0 wheels pinned in requirements/linux-amd64.txt (pip download; their
+#     SHA-256 is checked against the pins when packaging/linux/stage-pyside6.py stages them);
 #   - CFA4's FFmpeg 9.0.2 prebuilt by cfa4-ffmpeg-prebuilt.yml (scripts/dev/fetch-ffmpeg-9.0.2.sh).
 #
 # RELEASE HOLD: no package leaves the runner. The job publishes only the SHA256SUMS and the F5
@@ -47,6 +49,8 @@ jobs:
       # The hosted runner has no FUSE; the AppImage runtime extracts itself instead.
       APPIMAGE_EXTRACT_AND_RUN: '1'
       CFA4_FFMPEG_BUILD: /opt/cfa4/ffmpeg-9.0.2
+      # AppImage and Flatpak carry the Qt GUI's PySide6 (docs/development/linux.md, 2026-11-09).
+      CFA4_PYSIDE6_WHEELS: ${{ github.workspace }}/../wheels
       CARGO_TERM_COLOR: never
     steps:
       - name: Checkout CFA4 repository
@@ -98,6 +102,12 @@ jobs:
           cargo --version
       - name: Install CFA4 FFmpeg 9.0.2 (prebuilt, SHA-256 pinned; GPL-3 base build)
         run: bash scripts/dev/fetch-ffmpeg-9.0.2.sh
+      - name: Fill the PySide6 wheelhouse (pinned wheels; stage-pyside6.py checks their SHA-256)
+        run: |
+          python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_x86_64 \
+            --python-version 3.13 --implementation cp -d "$CFA4_PYSIDE6_WHEELS" \
+            pyside6-essentials==6.12.0 pyside6-addons==6.12.0 shiboken6==6.12.0
+          ls -l "$CFA4_PYSIDE6_WHEELS"
       - name: Verify offline packaging prerequisites
         run: bash scripts/release/check-cfa4-package-prereqs.sh
       - name: Build four private test packages and SHA256SUMS
