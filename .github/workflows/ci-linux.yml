@@ -76,7 +76,7 @@ jobs:
     needs: platform-scope
     name: Rust CLI build and runtime smoke (Ubuntu)
     runs-on: ubuntu-26.04
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -94,6 +94,29 @@ jobs:
         run: |
           target/release/cfa4-cli --version
           target/release/cfa4-cli --demo inspect project
+      # The Qt GUI's tests that drive the real engine (`REAL` in test_qt_gui.py) need this build;
+      # the Qt 6 GUI job runs without it and skips them. Non-blocking, like that job, until the Qt6
+      # GUI is complete (docs/coordination.md §3.4).
+      - name: Headless Qt runtime libraries
+        run: |
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0
+      - name: Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Install Python development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          python -m pip install --no-deps -e .
+      - name: Qt 6 GUI tests with the real engine (non-blocking)
+        continue-on-error: true
+        timeout-minutes: 60
+        env:
+          QT_QPA_PLATFORM: offscreen
+          CFA4_ENGINE: ${{ github.workspace }}/target/release/cfa4-cli
+        run: python -m pytest -q -rf --durations=15 python/tests/test_qt_gui.py
 
   gstreamer-backend:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
