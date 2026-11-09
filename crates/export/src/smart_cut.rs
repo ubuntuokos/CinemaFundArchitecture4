@@ -60,6 +60,16 @@ pub enum SmartCutError {
     Io { detail: String },
     /// The written file does not hold the copied samples unchanged.
     Verification { detail: String },
+    /// A segment the boundary re-encode executor does not run (a rendered segment: gap, effect…).
+    RenderSegment { segment: usize },
+    /// The re-encoded pictures cannot be spliced with the copied stream safely (profile, chroma
+    /// format, bit depth, interlacing, parameter-set ids, a copy that does not start at an IDR…).
+    /// Nothing is spliced; the export needs a full render instead (SCE-001 §8).
+    Incompatible { detail: String },
+    /// Decoding the source pictures of a boundary segment failed.
+    Decode { detail: String },
+    /// Encoding the boundary pictures failed.
+    Encode { detail: String },
 }
 
 impl fmt::Display for SmartCutError {
@@ -79,6 +89,10 @@ impl fmt::Display for SmartCutError {
             SmartCutError::Timestamps { decode_index } => write!(f, "the timestamps of packet {decode_index} do not fit the output"),
             SmartCutError::Io { detail } => write!(f, "I/O: {detail}"),
             SmartCutError::Verification { detail } => write!(f, "verification failed: {detail}"),
+            SmartCutError::RenderSegment { segment } => write!(f, "segment {segment} must be rendered; only copy and boundary re-encode segments run here"),
+            SmartCutError::Incompatible { detail } => write!(f, "the boundary re-encode cannot be spliced with the copied stream: {detail}"),
+            SmartCutError::Decode { detail } => write!(f, "decoding the boundary pictures failed: {detail}"),
+            SmartCutError::Encode { detail } => write!(f, "encoding the boundary pictures failed: {detail}"),
         }
     }
 }
@@ -123,11 +137,11 @@ struct CopyRange<'a> {
     entry: &'a SampleEntry,
 }
 
-fn io(e: impl fmt::Display) -> SmartCutError {
+pub(crate) fn io(e: impl fmt::Display) -> SmartCutError {
     SmartCutError::Io { detail: e.to_string() }
 }
 
-fn brand(c: Container) -> Option<Brand> {
+pub(crate) fn brand(c: Container) -> Option<Brand> {
     match c {
         Container::Mp4 => Some(Brand::Mp4),
         Container::Mov => Some(Brand::Mov),

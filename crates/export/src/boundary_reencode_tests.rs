@@ -1,0 +1,142 @@
+//! WP-06: a frame-accurate Smart Cut copies the whole GOPs and re-encodes only the boundary
+//! pictures; the output is one valid H.264 stream with the planned timeline.
+
+use std::io::Cursor;
+use std::process::Command;
+
+use cfa4_smart_edit::capabilities::Container;
+use cfa4_smart_edit::copy_planner::CutMode;
+use cfa4_smart_edit::plan::{SegmentMode, SegmentReason, SegmentSource};
+
+use crate::boundary_reencode::{BoundaryEncoding, BoundaryReport, execute_mp4_boundary_reencode, verify_mp4_boundary_reencode};
+use crate::smart_cut::SmartCutError;
+use crate::smart_cut_tests::{Fixture, fixture, plan};
+
+fn encoding() -> BoundaryEncoding {
+    BoundaryEncoding { threads: 1, ..BoundaryEncoding::default() }
+}
+
+/// Plan `[from, to)` frames (relative to the first picture), run it and verify it.
+fn run(f: &Fixture, from: i64, to: i64, mode: CutMode) -> (Vec<u8>, BoundaryReport, cfa4_smart_edit::plan::ExportExecutionPlan) {
+    let p0 = f.pts0();
+    let p = plan(&f.index, f.bytes.len(), p0 + from, p0 + to, mode, Container::Mp4).plan;
+    let (out, report) = execute_mp4_boundary_reencode(&p, &f.index, &f.source(), &encoding(), Cursor::new(Vec::new())).unwrap();
+    let out = out.into_inner();
+    let verified = verify_mp4_boundary_reencode(&p, &f.index, &f.source(), &encoding(), out.as_slice()).unwrap();
+    assert_eq!((verified.samples, verified.copied, verified.reencoded), (report.samples, report.copied, report.reencoded));
+    (out, verified, p)
+}
+
+#[test]
+fn a_frame_accurate_cut_re_encodes_only_the_boundaries() {
+    use SegmentMode::{BoundaryReencode, StrictCopy};
+    use SegmentReason::{HeadBoundary, TailBoundary, WholeGops};
+    // without B-frames the copy may end anywhere; with them the tail after the IDR at 30 is
+    // re-encoded, and the copied IDR is followed directly by the re-encoded one
+    let cases = [
+        (0u8, vec![(BoundaryReencode, HeadBoundary), (StrictCopy, WholeGops)], (23u64, 5u64), vec![0usize, 5, 15, 25]),
+        (2, vec![(BoundaryReencode, HeadBoundary), (StrictCopy, WholeGops), (BoundaryReencode, TailBoundary)], (21, 7), vec![0, 5, 15, 25, 26]),
+    ];
+    for (bframes, modes, (copied, reencoded), sync) in cases {
+        let f = fixture(40, 10, bframes);
+        let (out, report, p) = run(&f, 5, 33, CutMode::FrameAccurate);
+        assert_eq!(p.segments.iter().map(|s| (s.mode, s.reason)).collect::<Vec<_>>(), modes, "bframes {bframes}");
+        assert_eq!((report.samples, report.copied, report.reencoded), (28, copied, reencoded), "bframes {bframes}");
+        assert_eq!((report.duration, report.timescale), (28, 25));
+        assert!(report.min_psnr.unwrap() >= 30.0, "{report:?}");
+        // one track, one sample entry with both parameter-set pairs, an IDR at every splice
+        let back = cfa4_isobmff::open(out.as_slice()).unwrap();
+        let track = &back.tracks[0];
+        let Some(cfa4_isobmff::CodecConfig::Avc(avc)) = track.codec() else { panic!("not H.264") };
+        assert_eq!((avc.sps.len(), avc.pps.len()), (2, 2));
+        let found: Vec<usize> = track.samples.iter().enumerate().filter(|(_, s)| s.is_sync).map(|(i, _)| i).collect();
+        assert_eq!(found, sync, "bframes {bframes}");
+    }
+}
+
+#[test]
+fn a_range_shorter_than_a_gop_is_re_encoded_whole() {
+    let f = fixture(40, 10, 2);
+    let (_, report, p) = run(&f, 12, 17, CutMode::FrameAccurate);
+    assert_eq!(p.segments.len(), 1);
+    assert_eq!(p.segments[0].reason, SegmentReason::NoCopyableRange);
+    assert_eq!((report.samples, report.copied, report.reencoded), (5, 0, 5));
+}
+
+#[test]
+fn a_gop_boundary_plan_runs_as_a_pure_copy() {
+    let f = fixture(40, 10, 2);
+    let (_, report, _) = run(&f, 10, 30, CutMode::GopBoundary);
+    assert_eq!((report.samples, report.copied, report.reencoded, report.min_psnr), (20, 20, 0, None));
+}
+
+#[test]
+fn rendered_and_timeline_segments_are_refused_before_writing() {
+    let f = fixture(40, 10, 0);
+    let p0 = f.pts0();
+    let base = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 33, CutMode::FrameAccurate, Container::Mp4).plan;
+    let refuse = |p: &cfa4_smart_edit::plan::ExportExecutionPlan| {
+        let mut out = Cursor::new(Vec::new());
+        let e = execute_mp4_boundary_reencode(p, &f.index, &f.source(), &encoding(), &mut out).unwrap_err();
+        assert!(out.get_ref().is_empty(), "{e}: nothing is written");
+        e
+    };
+    let mut render = base.clone();
+    render.segments[0].mode = SegmentMode::Render;
+    assert_eq!(refuse(&render), SmartCutError::RenderSegment { segment: 0 });
+    let mut timeline = base.clone();
+    timeline.segments[1].source = Some(SegmentSource { source_id: "a".into(), container: Container::Mp4, item: 0 });
+    assert_eq!(refuse(&timeline), SmartCutError::TimelinePlan);
+    let mut gap = base.clone();
+    gap.segments.swap(0, 1);
+    assert_eq!(refuse(&gap), SmartCutError::NotContiguous { segment: 1 });
+    let mut mkv = base.clone();
+    mkv.output_container = Container::Matroska;
+    assert!(matches!(refuse(&mkv), SmartCutError::Unsupported { .. }));
+}
+
+#[test]
+fn verification_catches_a_poor_or_damaged_re_encode() {
+    let f = fixture(40, 10, 0);
+    let p0 = f.pts0();
+    let p = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 33, CutMode::FrameAccurate, Container::Mp4).plan;
+    let (out, _) = execute_mp4_boundary_reencode(&p, &f.index, &f.source(), &encoding(), Cursor::new(Vec::new())).unwrap();
+    let out = out.into_inner();
+    let strict = BoundaryEncoding { min_psnr: 99.5, ..encoding() };
+    let e = verify_mp4_boundary_reencode(&p, &f.index, &f.source(), &strict, out.as_slice()).unwrap_err();
+    assert!(matches!(&e, SmartCutError::Verification { detail } if detail.contains("dB")), "{e}");
+    // the first copied sample (output sample 5) changed
+    let back = cfa4_isobmff::open(out.as_slice()).unwrap();
+    let s = back.tracks[0].samples[5];
+    let mut damaged = out.clone();
+    let at = (s.offset + u64::from(s.size) - 1) as usize;
+    damaged[at] ^= 0x55;
+    let e = verify_mp4_boundary_reencode(&p, &f.index, &f.source(), &encoding(), damaged.as_slice()).unwrap_err();
+    assert!(matches!(e, SmartCutError::Verification { .. }), "{e}");
+}
+
+/// FFmpeg as the oracle (SCE-001 §18): the output decodes without errors to 28 pictures, and the
+/// copied pictures are bit-identical to the source pictures.
+#[test]
+fn ffmpeg_decodes_the_spliced_stream() {
+    let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("Smart Render boundary decode") else { return };
+    for bframes in [0, 2] {
+        let f = fixture(40, 10, bframes);
+        let (out, _, _) = run(&f, 5, 33, CutMode::FrameAccurate);
+        let dir = std::env::temp_dir().join(format!("cfa4-boundary-{}-{bframes}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let (src_path, out_path) = (dir.join("source.mp4"), dir.join("cut.mp4"));
+        std::fs::write(&src_path, &f.bytes).unwrap();
+        std::fs::write(&out_path, &out).unwrap();
+        let hashes = |path: &std::path::Path| -> Vec<String> {
+            let o = Command::new(&ffmpeg).args(["-v", "error", "-xerror", "-i"]).arg(path).args(["-map", "0:v", "-f", "framemd5", "-"]).output().unwrap();
+            assert!(o.status.success() && o.stderr.is_empty(), "{}", String::from_utf8_lossy(&o.stderr));
+            String::from_utf8_lossy(&o.stdout).lines().filter(|l| !l.starts_with('#')).map(|l| l.rsplit(',').next().unwrap().trim().to_string()).collect()
+        };
+        let (src, cut) = (hashes(&src_path), hashes(&out_path));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(src.len(), 40);
+        assert_eq!(cut.len(), 28, "bframes {bframes}");
+        assert_eq!(cut[5..25], src[10..30], "bframes {bframes}: the copied pictures are the source pictures");
+    }
+}

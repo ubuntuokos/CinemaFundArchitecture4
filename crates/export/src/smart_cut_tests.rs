@@ -19,7 +19,7 @@ const FPS: u32 = 25;
 const STRICT: Policy = Policy { allow_experimental: false };
 
 /// An MP4 with one H.264 track (64×48, 25 fps, IDR every `keyint` pictures, `bframes` B-frames).
-fn source_mp4(frames: usize, keyint: u32, bframes: u8, brand: Brand) -> Vec<u8> {
+pub(crate) fn source_mp4(frames: usize, keyint: u32, bframes: u8, brand: Brand) -> Vec<u8> {
     use cfa4_h264enc::{Encoder, EncoderConfig, PacketFormat, RateControl, YuvFrame};
     let (w, h) = (64usize, 48usize);
     let mut cfg = EncoderConfig::new(w as u32, h as u32, FPS, 1);
@@ -49,7 +49,7 @@ fn source_mp4(frames: usize, keyint: u32, bframes: u8, brand: Brand) -> Vec<u8> 
 }
 
 /// The WP-02 index of the first track, as an importer builds it.
-fn index_of(file: &Mp4File, bytes: &[u8]) -> StreamIndex {
+pub(crate) fn index_of(file: &Mp4File, bytes: &[u8]) -> StreamIndex {
     let track = &file.tracks[0];
     let Some(cfa4_isobmff::CodecConfig::Avc(avc)) = track.codec() else { panic!("not H.264") };
     let ps: Vec<&[u8]> = avc.sps.iter().chain(&avc.pps).map(Vec::as_slice).collect();
@@ -58,16 +58,16 @@ fn index_of(file: &Mp4File, bytes: &[u8]) -> StreamIndex {
     index_h264(track.id, Rational::new(1, i64::from(track.timescale)), NalFormat::LengthPrefixed(avc.length_size), &ps, packets).unwrap()
 }
 
-fn media(stream: &StreamIndex, size: usize) -> MediaIndex {
+pub(crate) fn media(stream: &StreamIndex, size: usize) -> MediaIndex {
     MediaIndex::new("test.mp4", SourceFingerprint { size: size as u64, modified_ns: None, content_id: None }, vec![stream.clone()])
 }
 
-fn tick(frames: i64) -> Tick {
+pub(crate) fn tick(frames: i64) -> Tick {
     MediaTime::new(frames, Rational::new(1, i64::from(FPS))).to_tick().unwrap()
 }
 
 /// Plan `[from, to)` (in frames on the source PTS timeline) with the native registry.
-fn plan(stream: &StreamIndex, size: usize, from: i64, to: i64, mode: CutMode, output: Container) -> SmartCutPlan {
+pub(crate) fn plan(stream: &StreamIndex, size: usize, from: i64, to: i64, mode: CutMode, output: Container) -> SmartCutPlan {
     let req = SmartCutRequest {
         stream_id: stream.stream_id,
         in_point: tick(from),
@@ -81,13 +81,13 @@ fn plan(stream: &StreamIndex, size: usize, from: i64, to: i64, mode: CutMode, ou
     plan_smart_cut(&Registry::native(), &media(stream, size), &req, STRICT).unwrap()
 }
 
-struct Fixture {
-    bytes: Vec<u8>,
-    file: Mp4File,
-    index: StreamIndex,
+pub(crate) struct Fixture {
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) file: Mp4File,
+    pub(crate) index: StreamIndex,
 }
 
-fn fixture(frames: usize, keyint: u32, bframes: u8) -> Fixture {
+pub(crate) fn fixture(frames: usize, keyint: u32, bframes: u8) -> Fixture {
     let bytes = source_mp4(frames, keyint, bframes, Brand::Mp4);
     let file = cfa4_isobmff::open(bytes.as_slice()).unwrap();
     let index = index_of(&file, &bytes);
@@ -95,11 +95,11 @@ fn fixture(frames: usize, keyint: u32, bframes: u8) -> Fixture {
 }
 
 impl Fixture {
-    fn source(&self) -> Mp4CopySource<'_, [u8]> {
+    pub(crate) fn source(&self) -> Mp4CopySource<'_, [u8]> {
         Mp4CopySource { file: &self.file, bytes: self.bytes.as_slice(), track: 0 }
     }
     /// The first presentation time of the source (its edit list), in frames.
-    fn pts0(&self) -> i64 {
+    pub(crate) fn pts0(&self) -> i64 {
         self.file.tracks[0].samples.iter().map(|s| s.pts).min().unwrap()
     }
 }
