@@ -19,7 +19,7 @@ predictor matches it (one packet of pre-roll restores that).
 
 ## Fidelity
 
-Every decoder is bit-exact with ffmpeg's (an external oracle only, never linked) on ffmpeg-encoded
+Every decoder is bit-exact with ffmpeg 9.0.2's (an external oracle only, never linked) on ffmpeg-encoded
 tones, sweeps, noise and clipped signals, and on random codewords and blocks
 (`tests/ffmpeg_oracle.rs`; container round trips in `crates/codecs/tests/adpcm_oracle.rs`). Where a
 specification leaves a choice to the implementation, the choice was fitted black-box against
@@ -28,8 +28,9 @@ ffmpeg's output:
 - G.722: the receive QMF's final scaling (Σ >> 11 to 16 bits, saturated); UPPOL2 negates the
   saturated 4·AL1 with 16-bit saturation (0 − (−32768) = 32767), as the Recommendation's arithmetic
   says.
-- IMA ADPCM: WAV blocks compute the difference exactly, `((2·|code| + 1) · step) >> 3`; QuickTime
-  `ima4` builds it from shifts and adds (`step/8 + …`).
+- IMA ADPCM: the difference is built from shifts and adds (`step/8 + …`) in both packings, as in
+  ffmpeg 9.0.2, the project's oracle (ffmpeg 6.x computed the WAV packing's difference exactly,
+  `((2·|code| + 1) · step) >> 3`, and differs by a few LSB).
 - Microsoft ADPCM: the prediction divides by 256 (rounding toward zero); the adaptive delta is
   capped at `i32::MAX / 768`.
 

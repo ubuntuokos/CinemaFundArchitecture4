@@ -27,36 +27,27 @@ impl Channel {
         Self { predictor, index: index.clamp(0, 88) }
     }
 
-    /// Decode one 4-bit code. `exact` computes the difference as `(magnitude + ½)·step / 4` in one
-    /// product; otherwise it is built from the step by shifts and adds (the reference practice's
-    /// "step/8 + step/4·b0 + step/2·b1 + step·b2", which rounds each term down).
-    fn decode(&mut self, code: u8, exact: bool) -> i16 {
+    /// Decode one 4-bit code. The difference is built from the step by shifts and adds (the
+    /// reference practice's "step/8 + step/4·b0 + step/2·b1 + step·b2", each term rounded down),
+    /// as ffmpeg 9.0.2, the project's oracle, does in both packings. (ffmpeg 6.x computed the WAV
+    /// packing's difference in one product, `((2·m + 1)·step) >> 3`, a few LSB apart.)
+    fn decode(&mut self, code: u8) -> i16 {
         let step = STEPS.get(self.index as usize).copied().unwrap_or(7);
-        let diff = if exact {
-            ((2 * i32::from(code & 7) + 1) * step) >> 3
-        } else {
-            let mut diff = step >> 3;
-            if code & 4 != 0 {
-                diff += step;
-            }
-            if code & 2 != 0 {
-                diff += step >> 1;
-            }
-            if code & 1 != 0 {
-                diff += step >> 2;
-            }
-            diff
-        };
+        let mut diff = step >> 3;
+        if code & 4 != 0 {
+            diff += step;
+        }
+        if code & 2 != 0 {
+            diff += step >> 1;
+        }
+        if code & 1 != 0 {
+            diff += step >> 2;
+        }
         self.predictor = if code & 8 != 0 { self.predictor - diff } else { self.predictor + diff }.clamp(-32768, 32767);
         self.index = (self.index + INDEX.get(usize::from(code & 7)).copied().unwrap_or(-1)).clamp(0, 88);
         self.predictor as i16
     }
 }
-
-/// ffmpeg-compatible difference rounding: the WAV packing computes it exactly, QuickTime with
-/// shifts and adds (fitted black-box against ffmpeg's decoders).
-const WAV_EXACT: bool = true;
-const QT_EXACT: bool = false;
 
 /// Sample frames in an IMA WAV block of `len` bytes (a short final block holds fewer).
 pub fn wav_block_frames(len: usize, channels: usize) -> usize {
@@ -84,8 +75,8 @@ pub fn decode_wav_block(block: &[u8], channels: usize, out: &mut [Vec<i16>]) -> 
     for group in body.chunks_exact(head) {
         for ((words, st), o) in group.chunks_exact(4).zip(state.iter_mut()).zip(out.iter_mut()) {
             for &b in words {
-                o.push(st.decode(b & 15, WAV_EXACT));
-                o.push(st.decode(b >> 4, WAV_EXACT));
+                o.push(st.decode(b & 15));
+                o.push(st.decode(b >> 4));
             }
         }
     }
@@ -117,8 +108,8 @@ pub fn decode_qt(data: &[u8], channels: usize, last: &mut [Option<i16>], out: &m
             };
             let mut st = Channel::new(i32::from(predictor), i32::from(h & 0x7F));
             for &b in p.get(2..).unwrap_or_default() {
-                o.push(st.decode(b & 15, QT_EXACT));
-                o.push(st.decode(b >> 4, QT_EXACT));
+                o.push(st.decode(b & 15));
+                o.push(st.decode(b >> 4));
             }
             *prev = Some(st.predictor as i16);
         }
