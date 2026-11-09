@@ -1,4 +1,4 @@
-use super::tests::{adts_frame, mpeg2_frame};
+use super::tests::{ac3_frame, adts_frame, mpeg2_frame};
 use super::*;
 
 /// 25 fps pictures (I then P), 90 kHz apart.
@@ -121,6 +121,52 @@ fn program_stream_with_lpcm(bits: u32) {
     // packs: a header before every PES packet, none over 2048 bytes
     let packs: Vec<usize> = data.windows(4).enumerate().filter(|(_, w)| *w == [0, 0, 1, 0xBA]).map(|(i, _)| i).collect();
     assert!(packs.windows(2).all(|w| w[1] - w[0] <= 2048));
+}
+
+/// Pictures and 1536-sample AC-3 syncframes at 48 kHz (2880 ticks apart), in `format`.
+fn with_ac3(format: MuxFormat) -> (Vec<u8>, Vec<Vec<u8>>, Vec<Vec<u8>>) {
+    let pics = video(12);
+    // the 15 syncframes of the 12 pictures (0.48 s)
+    let frames: Vec<Vec<u8>> = (0..15).map(|k| ac3_frame(k as u8 + 1)).collect();
+    let mut m = Muxer::new(Vec::new(), format, &[MuxCodec::Mpeg2Video, MuxCodec::Ac3], 10_080_000).unwrap();
+    let mut next = 0;
+    for (k, p) in pics.iter().enumerate() {
+        m.write(0, p, k as i64 * FRAME, None, k % 5 == 0).unwrap();
+        // the syncframes that start before the next picture
+        while next < frames.len() && next as i64 * 2880 < (k as i64 + 1) * FRAME {
+            m.write(1, &frames[next], next as i64 * 2880, None, true).unwrap();
+            next += 1;
+        }
+    }
+    (m.finish().unwrap(), pics, frames)
+}
+
+#[test]
+fn program_and_transport_streams_carry_ac3() {
+    for format in [MuxFormat::Ps, MuxFormat::Ts, MuxFormat::M2ts] {
+        let (data, pics, frames) = with_ac3(format);
+        let f = open(&data).unwrap();
+        assert!(f.warnings.is_empty(), "{format:?}: {:?}", f.warnings);
+        let v = f.find(Kind::Video, |c| *c == Codec::Mpeg2Video).unwrap();
+        let a = f.find(Kind::Audio, |c| *c == Codec::Ac3).unwrap();
+        for (k, p) in pics.iter().enumerate() {
+            assert_eq!(&f.read_unit(&data, v, k).unwrap(), p, "{format:?} picture {k}");
+        }
+        let units = &f.streams[a].units;
+        assert_eq!(units.len(), frames.len(), "{format:?}");
+        for (k, fr) in frames.iter().enumerate() {
+            assert_eq!(&f.read_unit(&data, a, k).unwrap(), fr, "{format:?} syncframe {k}");
+            assert_eq!(units[k].pts, Some(Muxer::<Vec<u8>>::DELAY + k as i64 * 2880), "{format:?} syncframe {k}");
+        }
+        match format {
+            MuxFormat::Ps => assert_eq!(f.streams[a].id, StreamId::Ps { stream_id: 0xBD, sub_id: Some(0x80) }),
+            _ => {
+                assert_eq!(f.streams[a].stream_type, 0x81);
+                // the PMT carries the `AC-3` registration descriptor
+                assert!(data.windows(6).any(|w| w == [0x05, 4, b'A', b'C', b'-', b'3']), "{format:?}");
+            }
+        }
+    }
 }
 
 #[test]

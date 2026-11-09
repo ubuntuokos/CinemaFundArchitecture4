@@ -2572,10 +2572,14 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         assert dlg.format.currentData() == "mpeg2" and dlg.container.isEnabled()
         assert dlg.container.currentData() == "ts"
         dlg.container.setCurrentIndex(dlg.container.findData("es"))
-        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled()
+        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled() and not dlg.audio_codec.isEnabled()
         dlg.container.setCurrentIndex(dlg.container.findData("ts"))
-        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled()
+        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled() and dlg.audio_codec.isEnabled()
         assert dlg.params()["mpeg2Container"] == "ts"
+        # AC-3 instead of the container's own audio (#268)
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("ac3"))
+        assert dlg.params()["audioCodec"] == "ac3"
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("auto"))
         # GOP, quantiser and chroma go to the engine once chosen
         dlg.gop.setValue(12)
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("422"))

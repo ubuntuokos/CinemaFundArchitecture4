@@ -800,9 +800,21 @@ impl ExportSettings {
         if self.audio.float && self.audio.bits != 32 {
             return Err(ExportError::Unsupported("floating-point audio is 32-bit: set the sample size to 32".into()));
         }
+        if self.has_audio() && self.audio_codec() == AudioCodec::Ac3 {
+            if !crate::mpeg_out::AC3_BITRATES.contains(&self.audio.bitrate_kbps) {
+                return Err(ExportError::Unsupported(format!(
+                    "AC-3 has no {} kbps: choose one of {}",
+                    self.audio.bitrate_kbps,
+                    crate::mpeg_out::AC3_BITRATES.map(|b| b.to_string()).join(", ")
+                )));
+            }
+            if self.audio.sample_rate.is_some_and(|r| !matches!(r, 32_000 | 44_100 | 48_000)) {
+                return Err(ExportError::Unsupported("AC-3 is 32, 44.1 or 48 kHz".into()));
+            }
+        }
         let sample_format = self.audio.sample_format();
         if (self.has_audio() || self.format.is_audio_only())
-            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus)
+            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus | AudioCodec::Ac3)
             && !self.supports_sample_format(sample_format)
         {
             if self.format == Format::Mpeg2 {

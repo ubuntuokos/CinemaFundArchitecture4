@@ -49,6 +49,7 @@ WHOLE = (
     N_("Waveform Audio"),
     N_("AAC Audio"),
     N_("Opus Audio"),
+    N_("Dolby Digital (AC-3)"),
     N_("HLS (HTTP Live Streaming)"),
     N_("DCP (Digital Cinema Package)"),
     N_("fragmented MP4 segments"),
