@@ -1,0 +1,15 @@
+[package]
+name = "cfa4-live"
+description = "CFA4 live graphics plumbing: the local Browser Source server (127.0.0.1 only) and an obs-websocket 5 client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde_json = { workspace = true }
+sha2 = "0.10"
+base64 = "0.22"

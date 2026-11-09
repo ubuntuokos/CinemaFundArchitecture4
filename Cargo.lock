@@ -1216,6 +1216,7 @@ dependencies = [
  "cfa4-iab",
  "cfa4-interchange",
  "cfa4-isobmff",
+ "cfa4-live",
  "cfa4-media",
  "cfa4-mxf",
  "cfa4-project",
@@ -1488,6 +1489,15 @@ dependencies = [
  "image",
  "rayon",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-live"
+version = "0.10.0"
+dependencies = [
+ "base64 0.22.1",
+ "serde_json",
+ "sha2",
 ]
 
 [[package]]

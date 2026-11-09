@@ -74,7 +74,7 @@ impl cfa4_credits::validate::FontInfo for EngineFonts {
 const MAX_PICTURE: u64 = 256 << 20;
 
 /// The file a picture tag names: absolute, or relative to `base`.
-fn picture_path(base: Option<&std::path::Path>, file: &str) -> Option<std::path::PathBuf> {
+pub(crate) fn picture_path(base: Option<&std::path::Path>, file: &str) -> Option<std::path::PathBuf> {
     let f = std::path::Path::new(file.trim());
     let p = if f.is_absolute() { f.to_path_buf() } else { base?.join(f) };
     if p.is_file() {
@@ -178,7 +178,7 @@ type SheetInfo = cfa4_credits::office::Sheet;
 /// The credits document a command names: a `.cfa4credits` file, a spreadsheet (`path`, read
 /// now) or inline CSV text (`csv`). `styling` and `pictureDir` override the document's.
 /// Returns the document, the worksheet information and the folder pictures are read from.
-fn doc_p(s: &Session, cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::path::PathBuf>)> {
+pub(crate) fn doc_p(s: &Session, cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::path::PathBuf>)> {
     // `styling` wins over `template`; a template brings its styling (and its fitting, below)
     let template = match str_p(p, "template") {
         Some(id) if p.get("styling").is_none_or(Value::is_null) => Some(find_template(s, cmd, id)?),
@@ -322,7 +322,7 @@ fn notes_json(info: &SheetInfo, l: &Laid) -> Value {
 }
 
 /// Lay out a credits document for the active sequence.
-fn lay_doc(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>) -> Result<Laid> {
+pub(crate) fn lay_doc(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>) -> Result<Laid> {
     lay_doc_report(s, cmd, doc, base).map(|(l, _)| l)
 }
 
@@ -1157,6 +1157,64 @@ fn place_picture(
 /// applied, and each picture's place outlined (pictures themselves are clips of their own after
 /// the import). `guides` draws the action-safe (93 %) and title-safe (90 %) areas, the centre
 /// and the page's spines; `grid` the baseline grid (one gap unit apart, moving with the page).
+/// A laid-out credits page drawn at `t` (page time) into straight-alpha RGBA8, `w` pixels wide
+/// (the height follows the sequence), transparent where nothing is: the background (pictures and
+/// videos as grey when `stand_in`, else left to the caller), then the text with its roll, crawl or
+/// fades. `outline_pictures` draws the picture placeholders as grey frames (the Credits window).
+/// Returns the pixels, their size and the scale from frame pixels.
+pub(crate) fn render_page(
+    s: &Session,
+    cmd: &str,
+    pg: &cfa4_credits::PageOut,
+    t: Tick,
+    w: u32,
+    stand_in: bool,
+    outline_pictures: bool,
+) -> Result<(Vec<u8>, u32, u32, f64)> {
+    let (cw, ch) = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).ok_or(EngineError::NoSequence)?;
+    let rate = s.sequence_rate();
+    let h = ((f64::from(w) * f64::from(ch) / f64::from(cw.max(1))).round() as u32).max(1);
+    let mut layers = pg.layers.clone();
+    if outline_pictures {
+        for e in &mut layers {
+            if e.effect == "graphic_shape" {
+                e.params.insert("stroke".into(), Param::new(ParamValue::Bool(true)));
+                e.params.insert("stroke_color".into(), Param::new(ParamValue::Color([0.6, 0.6, 0.6, 1.0])));
+                e.params.insert("stroke_width".into(), Param::new(ParamValue::Float(f64::from(ch) / 360.0)));
+            }
+        }
+    }
+    let mut img = cfa4_render::image::Image::new(w as usize, h as usize);
+    let k = f64::from(w) / f64::from(cw.max(1));
+    let mut pr = cfa4_project::Project::new("credits preview");
+    let g = pr.add_item("G", cfa4_project::Label::Rose, cfa4_project::ItemKind::Graphic { width: cw, height: ch, rate }, None);
+    let range = cfa4_time::TimeRange::new(Tick::ZERO, pg.duration.max(rate.frame_duration()));
+    let mut render = |layers: Vec<EffectInstance>, meta: cfa4_project::GraphicMeta, img: &mut cfa4_render::image::Image| -> Result<()> {
+        let mut it = pr.make_track_item(g, cfa4_project::TrackKind::Video, Tick::ZERO, range, rate).ok_or_else(|| bad(cmd, "bad preview item"))?;
+        it.effects.extend(layers);
+        it.graphic = Some(Box::new(meta));
+        cfa4_render::graphic_clip::render_graphic(&it, it.source_in + t, (cw, ch), &cfa4_geom::Affine::scale(k, k), img);
+        Ok(())
+    };
+    // the background stands still behind the page
+    if let Some(bg) = &pg.background {
+        let file_kind = matches!(bg.kind, cfa4_credits::BackgroundKind::Image | cfa4_credits::BackgroundKind::Video);
+        if !file_kind || stand_in {
+            let mut stand = bg.clone();
+            if file_kind {
+                stand.kind = cfa4_credits::BackgroundKind::Color;
+                stand.color = "#3a3a3a".into();
+            }
+            let mut e = background_layer(&stand, (f64::from(cw), f64::from(ch)));
+            let opacity = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0);
+            e.params.insert("opacity".into(), Param::new(ParamValue::Float(opacity)));
+            render(vec![e], cfa4_project::GraphicMeta::default(), &mut img)?;
+        }
+    }
+    render(layers, pg.meta.clone(), &mut img)?;
+    Ok((img.to_rgba8(), w, h, k))
+}
+
 fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.thumbnail";
     let (doc, _, base) = doc_p(s, CMD, p)?;
@@ -1168,43 +1226,9 @@ fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
     let rate = s.sequence_rate();
     let at = p.get("at").and_then(Value::as_f64).filter(|v| v.is_finite()).unwrap_or(0.5).clamp(0.0, 1.0);
     let w = u64_p(p, "width").unwrap_or(480).clamp(16, 1920) as u32;
-    let h = ((f64::from(w) * f64::from(ch) / f64::from(cw.max(1))).round() as u32).max(1);
-    let mut layers = pg.layers;
-    for e in &mut layers {
-        if e.effect == "graphic_shape" {
-            e.params.insert("stroke".into(), Param::new(ParamValue::Bool(true)));
-            e.params.insert("stroke_color".into(), Param::new(ParamValue::Color([0.6, 0.6, 0.6, 1.0])));
-            e.params.insert("stroke_width".into(), Param::new(ParamValue::Float(f64::from(ch) / 360.0)));
-        }
-    }
     let t = rate.snap(Tick((pg.duration.0 as f64 * at) as i64)).min(Tick(pg.duration.0.saturating_sub(rate.frame_duration().0).max(0)));
-    let mut img = cfa4_render::image::Image::new(w as usize, h as usize);
-    let k = f64::from(w) / f64::from(cw.max(1));
-    let mut pr = cfa4_project::Project::new("credits preview");
-    let g = pr.add_item("G", cfa4_project::Label::Rose, cfa4_project::ItemKind::Graphic { width: cw, height: ch, rate }, None);
-    let range = cfa4_time::TimeRange::new(Tick::ZERO, pg.duration);
-    let mut render = |layers: Vec<EffectInstance>, meta: cfa4_project::GraphicMeta, img: &mut cfa4_render::image::Image| -> Result<()> {
-        let mut it = pr.make_track_item(g, cfa4_project::TrackKind::Video, Tick::ZERO, range, rate).ok_or_else(|| bad(CMD, "bad preview item"))?;
-        it.effects.extend(layers);
-        it.graphic = Some(Box::new(meta));
-        cfa4_render::graphic_clip::render_graphic(&it, it.source_in + t, (cw, ch), &cfa4_geom::Affine::scale(k, k), img);
-        Ok(())
-    };
-    // the background stands still behind the page
-    if let Some(bg) = &pg.background {
-        let mut stand_in = bg.clone();
-        if matches!(bg.kind, cfa4_credits::BackgroundKind::Image | cfa4_credits::BackgroundKind::Video) {
-            stand_in.kind = cfa4_credits::BackgroundKind::Color;
-            stand_in.color = "#3a3a3a".into();
-        }
-        let mut e = background_layer(&stand_in, (f64::from(cw), f64::from(ch)));
-        let opacity = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0);
-        e.params.insert("opacity".into(), Param::new(ParamValue::Float(opacity)));
-        render(vec![e], cfa4_project::GraphicMeta::default(), &mut img)?;
-    }
+    let (mut rgba, w, h, k) = render_page(s, CMD, &pg, t, w, true, true)?;
     let roll = pg.meta.roll.clone();
-    render(layers, pg.meta, &mut img)?;
-    let mut rgba = img.to_rgba8();
     let mut lines: Vec<Guide> = Vec::new();
     let (fw, fh) = (f64::from(cw), f64::from(ch));
     if p.get("grid").and_then(Value::as_bool).unwrap_or(false) && pg.behaviour != cfa4_credits::Behaviour::Crawl {
