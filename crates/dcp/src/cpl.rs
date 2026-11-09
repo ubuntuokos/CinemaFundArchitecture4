@@ -169,7 +169,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> Composition {
     let p = "CompositionPlaylist";
     let id = r.uuid(root, p, "Id", true);
     let annotation = r.text(root, p, "AnnotationText");
-    let issue_date = r.required_text(root, p, "IssueDate");
+    let issue_date = r.date_time(root, p, "IssueDate", true);
     let issuer = r.text(root, p, "Issuer");
     let creator = r.text(root, p, "Creator");
     let content_title = r.required_text(root, p, "ContentTitleText");
@@ -182,7 +182,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> Composition {
         ContentVersion { id, label }
     });
     let has_signer = r.child(root, p, "Signer").is_some();
-    let has_signature = Reader::children(root, "Signature").any(|n| n.tag_name().namespace() == Some(crate::ns::XMLDSIG));
+    let has_signature = crate::xml::has_signature(root);
     let extensions = r.unknown(root, p, ROOT);
     let mut reels = Vec::new();
     match r.child(root, p, "ReelList") {
@@ -191,7 +191,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> Composition {
             r.unknown(list, "CompositionPlaylist/ReelList", &["Reel"]);
             for (i, reel) in Reader::children(list, "Reel").enumerate() {
                 let rp = format!("CompositionPlaylist/ReelList/Reel[{}]", i + 1);
-                reels.push(read_reel(&mut r, reel, &rp));
+                reels.push(read_reel(&mut r, reel, &rp, standard));
             }
             if reels.is_empty() {
                 r.issue(IssueKind::Missing, "CompositionPlaylist/ReelList/Reel", list, "ReelList has no Reel");
@@ -216,7 +216,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> Composition {
     }
 }
 
-fn read_reel<'a, 'i>(r: &mut Reader<'a, 'i>, reel: Node<'a, 'i>, rp: &str) -> Reel {
+fn read_reel<'a, 'i>(r: &mut Reader<'a, 'i>, reel: Node<'a, 'i>, rp: &str, standard: Standard) -> Reel {
     let id = r.uuid(reel, rp, "Id", true);
     let annotation = r.text(reel, rp, "AnnotationText");
     r.unknown(reel, rp, REEL);
@@ -238,7 +238,7 @@ fn read_reel<'a, 'i>(r: &mut Reader<'a, 'i>, reel: Node<'a, 'i>, rp: &str) -> Re
                     }
                 };
                 let ap = format!("{rp}/AssetList/{name}[{n}]");
-                assets.push(read_asset(r, a, &ap));
+                assets.push(read_asset(r, a, &ap, standard));
             }
             if assets.is_empty() {
                 r.issue(IssueKind::Missing, &format!("{rp}/AssetList"), list, "AssetList has no asset");
@@ -249,8 +249,9 @@ fn read_reel<'a, 'i>(r: &mut Reader<'a, 'i>, reel: Node<'a, 'i>, rp: &str) -> Re
     Reel { id, annotation, assets, pos }
 }
 
-fn read_asset<'a, 'i>(r: &mut Reader<'a, 'i>, a: Node<'a, 'i>, ap: &str) -> ReelAsset {
+fn read_asset<'a, 'i>(r: &mut Reader<'a, 'i>, a: Node<'a, 'i>, ap: &str, standard: Standard) -> ReelAsset {
     let kind = AssetKind::from_name(a.tag_name().name());
+    let picture = matches!(kind, AssetKind::MainPicture | AssetKind::MainStereoscopicPicture);
     let element = qualified(a);
     let id = r.uuid(a, ap, "Id", true);
     let annotation = r.text(a, ap, "AnnotationText");
@@ -260,19 +261,24 @@ fn read_asset<'a, 'i>(r: &mut Reader<'a, 'i>, a: Node<'a, 'i>, ap: &str) -> Reel
     let duration = r.u64(a, ap, "Duration", false);
     let (hash, sha1) = r.hash(a, ap, "Hash", false);
     let key_id = r.uuid(a, ap, "KeyId", false);
-    let frame_rate = r.rational(a, ap, "FrameRate", false);
-    let screen_aspect_ratio = r.value(a, ap, "ScreenAspectRatio", false).and_then(|(t, n)| {
+    let frame_rate = r.rational(a, ap, "FrameRate", picture);
+    let screen_aspect_ratio = r.value(a, ap, "ScreenAspectRatio", picture).and_then(|(t, n)| {
         if let Some(q) = Rational::parse(&t) {
             return Some(ScreenAspectRatio::Ratio(q));
         }
         if is_decimal(&t) {
+            if standard == Standard::Smpte {
+                // ST 429-7 types it as a Rational; the decimal form is Interop's
+                r.issue(IssueKind::Invalid, &format!("{ap}/ScreenAspectRatio"), n, format!("ScreenAspectRatio '{t}' is a decimal; SMPTE writes two integers"));
+            }
             return Some(ScreenAspectRatio::Decimal(t));
         }
         r.issue(IssueKind::Invalid, &format!("{ap}/ScreenAspectRatio"), n, format!("ScreenAspectRatio '{t}' is neither two integers nor a decimal"));
         None
     });
     let language = r.text(a, ap, "Language");
-    let data_type = r.text(a, ap, "DataType");
+    // `DataType` belongs to the extension asset's own schema (e.g. `axd:DataType`), so any namespace
+    let data_type = a.children().find(|c| c.is_element() && c.tag_name().name() == "DataType").map(|c| c.text().unwrap_or("").trim().to_string());
     let mut markers = Vec::new();
     if let Some(ml) = r.child(a, ap, "MarkerList") {
         let mp = format!("{ap}/MarkerList");
@@ -289,7 +295,10 @@ fn read_asset<'a, 'i>(r: &mut Reader<'a, 'i>, a: Node<'a, 'i>, ap: &str) -> Reel
     let extensions = if kind.is_core() {
         r.unknown(a, ap, ASSET)
     } else {
-        a.children().filter(|c| c.is_element() && !ASSET.contains(&c.tag_name().name())).map(qualified).collect()
+        a.children()
+            .filter(|c| c.is_element() && c.tag_name().name() != "DataType" && !(ASSET.contains(&c.tag_name().name()) && crate::xml::in_document_ns(*c)))
+            .map(qualified)
+            .collect()
     };
     let pos = r.pos(a);
     ReelAsset {
