@@ -16,9 +16,9 @@ pub fn ffmpeg() -> Option<PathBuf> {
     if let Some(p) = std::env::var_os("CFA4_FFMPEG") {
         return Some(PathBuf::from(p));
     }
-    let fixed = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].iter().map(PathBuf::from).find(|p| p.exists());
-    // otherwise whatever `ffmpeg` / `ffmpeg.exe` is on PATH (Windows has no fixed location)
-    fixed.or_else(|| std::env::split_paths(&std::env::var_os("PATH")?).map(|d| d.join(format!("ffmpeg{}", std::env::consts::EXE_SUFFIX))).find(|p| p.is_file()))
+    let fixed = ["/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].iter().map(PathBuf::from).find(|p| p.exists());
+    // otherwise whatever `ffmpeg` is on PATH
+    fixed.or_else(|| std::env::split_paths(&std::env::var_os("PATH")?).map(|d| d.join("ffmpeg")).find(|p| p.is_file()))
 }
 
 /// A fixture: file name, lavfi video source, seconds, with audio, video encoder arguments.
@@ -50,7 +50,7 @@ const X265_MAIN10: &[&str] = &[
     "-x265-params",
     "log-level=error",
 ];
-/// AV1 where ffmpeg has libaom but not SVT-AV1 (the Windows builds): slower to encode, same role.
+/// AV1 where ffmpeg has libaom but not SVT-AV1: slower to encode, same role.
 const AV1_AOM: &[&str] = &["-c:v", "libaom-av1", "-crf", "35", "-b:v", "0", "-cpu-used", "8", "-row-mt", "1", "-g", "48", "-pix_fmt", "yuv420p"];
 const PRORES: &[&str] = &["-c:v", "prores_ks", "-profile:v", "3", "-pix_fmt", "yuv422p10le", "-vendor", "apl0"];
 

@@ -24,6 +24,7 @@ for script in \
   scripts/ci/test-gpu-hardware-log.sh \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/check-package-docs.sh \
+  scripts/ci/install-ffmpeg-oracle-deps.sh \
   scripts/ci/install-ffmpeg-9.0.2.sh \
   scripts/dev/fetch-ffmpeg-9.0.2.sh; do
   bash -n "$script"

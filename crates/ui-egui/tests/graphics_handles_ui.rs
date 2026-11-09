@@ -638,7 +638,7 @@ fn double_click_and_select_all_select_the_text_being_edited() {
     let edit = |d: &Driver| d.harness.state().ui.gfx_edit.as_ref().map(|e| (e.clip, e.layer, e.anchor, e.caret));
     assert_eq!(edit(&d), Some((clip, 0, 0, "Title".len())), "the double-click selects the whole text");
 
-    // caret at the end, then Select All as the native macOS menu sends it (it takes Cmd+A first)
+    // caret at the end, then Select All as the menu command sends it
     if let Some(e) = d.harness.state_mut().ui.gfx_edit.as_mut() {
         (e.anchor, e.caret) = (5, 5);
     }

@@ -10,10 +10,7 @@ use support::{SR, busy_rig};
 
 /// 24 tracks × 3 inserts (EQ, Dynamics, Studio Reverb) + a compressed submix at 48 kHz, one core.
 #[test]
-// Off Unix there is no per-thread CPU clock (`thread_cpu_secs`), so the timing falls back to wall
-// time, which a loaded CI host (Windows runners run the suite in parallel) can push under the
-// threshold: genuinely timing-flaky there. On Unix it measures this thread's CPU time and stays on.
-#[cfg_attr(not(unix), ignore = "wall-clock timing without a thread CPU clock is load-dependent; run with --ignored")]
+// Measures this thread's CPU time, so a loaded CI host does not push it under the threshold.
 fn perf_24_tracks_3_effects_realtime_factor() {
     let r = busy_rig(24);
     let secs = if cfg!(debug_assertions) { 2.0 } else { 10.0 };
@@ -35,16 +32,8 @@ fn perf_24_tracks_3_effects_realtime_factor() {
     assert!(rt > min, "realtime factor {rt:.2}");
 }
 
-/// CPU seconds used by the calling thread (None where there is no thread clock; callers fall back
-/// to wall time).
+/// CPU seconds used by the calling thread.
 fn thread_cpu_secs() -> Option<f64> {
-    #[cfg(unix)]
-    {
-        let t = rustix::time::clock_gettime(rustix::time::ClockId::ThreadCPUTime);
-        Some(t.tv_sec as f64 + t.tv_nsec as f64 * 1e-9)
-    }
-    #[cfg(not(unix))]
-    {
-        None
-    }
+    let t = rustix::time::clock_gettime(rustix::time::ClockId::ThreadCPUTime);
+    Some(t.tv_sec as f64 + t.tv_nsec as f64 * 1e-9)
 }

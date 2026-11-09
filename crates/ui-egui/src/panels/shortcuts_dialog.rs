@@ -68,7 +68,7 @@ fn egui_key(name: &str) -> Option<egui::Key> {
 /// Canonical chord text from an egui key event.
 pub fn chord_of(key: egui::Key, m: egui::Modifiers) -> Option<String> {
     let name = KEYS.iter().find(|k| egui_key(k) == Some(key))?;
-    let mods = Mods { cmd: m.command || m.mac_cmd, ctrl: m.ctrl && cfg!(target_os = "macos"), alt: m.alt, shift: m.shift };
+    let mods = Mods { cmd: m.command, ctrl: false, alt: m.alt, shift: m.shift };
     Some(format!("{}{}", mods.prefix(), name))
 }
 
@@ -106,7 +106,7 @@ fn assign(app: &mut Cfa4App, command: &str, keys: &str, add: bool) {
     }
 }
 
-/// A modifier key on its own. egui reports pressing Shift, Ctrl, Alt or the Windows / Cmd key as a
+/// A modifier key on its own. egui reports pressing Shift, Ctrl, Alt or the Super key as a
 /// key event of its own, before the key it modifies arrives (#164).
 fn is_modifier_key(key: egui::Key) -> bool {
     use egui::Key::*;
@@ -256,7 +256,7 @@ fn header(app: &mut Cfa4App, ui: &mut egui::Ui, t: &Tokens) {
             });
         }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            ui.label(RichText::new(if cfg!(target_os = "macos") { tl!("Keyboard: US (macOS)") } else { tl!("Keyboard: US") }).size(12.0).color(t.text_dim));
+            ui.label(RichText::new(tl!("Keyboard: US")).size(12.0).color(t.text_dim));
         });
     });
     if let Some(mut name) = app.shortcut_editor.save_name.clone() {
@@ -394,45 +394,15 @@ const NAV_ROWS: [&[(&str, f32)]; 6] = [
     &[("Left", 0.0), ("Down", 1.0), ("Right", 2.0)],
 ];
 
-fn key_legend(name: &str, mac: bool) -> String {
+fn key_legend(name: &str) -> String {
     match name {
         "#Caps" => "Caps Lock".into(),
         "#Shift" => "⇧ Shift".into(),
-        "#Ctrl" => {
-            if mac {
-                "⌃ Control".into()
-            } else {
-                "Win".into()
-            }
-        }
-        "#Alt" => {
-            if mac {
-                "⌥ Option".into()
-            } else {
-                "Alt".into()
-            }
-        }
-        "#Cmd" => {
-            if mac {
-                "⌘ Command".into()
-            } else {
-                "Ctrl".into()
-            }
-        }
-        "Backspace" => {
-            if mac {
-                "⌫ Delete".into()
-            } else {
-                "Backspace".into()
-            }
-        }
-        "Delete" => {
-            if mac {
-                "⌦ Fwd Del".into()
-            } else {
-                "Delete".into()
-            }
-        }
+        "#Ctrl" => "Super".into(),
+        "#Alt" => "Alt".into(),
+        "#Cmd" => "Ctrl".into(),
+        "Backspace" => "Backspace".into(),
+        "Delete" => "Delete".into(),
         "Enter" => "↩ Return".into(),
         "Escape" => "Esc".into(),
         "PageUp" => "Page Up".into(),
@@ -446,13 +416,11 @@ fn key_legend(name: &str, mac: bool) -> String {
 }
 
 fn keyboard(app: &mut Cfa4App, ui: &mut egui::Ui, area: Rect, t: &Tokens) {
-    let mac = cfg!(target_os = "macos");
     // held modifiers count as the filter too (outside recording)
     let held = ui.input(|i| i.modifiers);
     let mut mods = app.shortcut_editor.mods;
     if app.shortcut_editor.recording.is_none() {
         mods.cmd |= held.command;
-        mods.ctrl |= held.ctrl && mac;
         mods.alt |= held.alt;
         mods.shift |= held.shift;
     }
@@ -516,18 +484,12 @@ fn keyboard(app: &mut Cfa4App, ui: &mut egui::Ui, area: Rect, t: &Tokens) {
             let g = ui.fonts_mut(|f| f.layout_job(job));
             ui.painter().galley(r.min + vec2(4.0, 3.0), g, Color32::WHITE);
         }
-        ui.painter().text(
-            r.left_bottom() + vec2(4.0, -3.0),
-            Align2::LEFT_BOTTOM,
-            key_legend(name, mac),
-            FontId::proportional(fs),
-            Color32::from_white_alpha(220),
-        );
+        ui.painter().text(r.left_bottom() + vec2(4.0, -3.0), Align2::LEFT_BOTTOM, key_legend(name), FontId::proportional(fs), Color32::from_white_alpha(220));
         let tip = match (&app_cmd, &panel_cmd) {
             (Some(a), Some(b)) => format!("{} / {} ({})", label_of(app, a), label_of(app, b), panel.clone().unwrap_or_default()),
             (Some(a), None) => label_of(app, a),
             (None, Some(b)) => label_of(app, b),
-            _ => key_legend(name, mac),
+            _ => key_legend(name),
         };
         app.auto.add(&id, r, &tip);
         if resp.clicked() {
@@ -711,7 +673,7 @@ fn key_detail(app: &mut Cfa4App, ui: &mut egui::Ui, height: f32, t: &Tokens) {
     ui.horizontal(|ui| {
         ui.label(RichText::new(tl!("Key:")).size(13.0).strong().color(t.text));
         if let Some(k) = &key {
-            ui.label(RichText::new(key_legend(k, plat.is_mac())).size(13.0).color(t.hot_text));
+            ui.label(RichText::new(key_legend(k)).size(13.0).color(t.hot_text));
         }
     });
     let (hr, _) = ui.allocate_exact_size(vec2(ui.available_width(), 22.0), Sense::hover());
@@ -727,7 +689,7 @@ fn key_detail(app: &mut Cfa4App, ui: &mut egui::Ui, height: f32, t: &Tokens) {
             let mods = Chord::parse(keys).map(|c| {
                 let k = Chord { mods: c.mods, key: c.key };
                 let d = k.display(plat);
-                let legend = key_legend(c.key, plat.is_mac());
+                let legend = key_legend(c.key);
                 let m = d.trim_end_matches(&legend).trim_end_matches(c.key).trim_end_matches('+').to_string();
                 if m.is_empty() { tl!("None").to_string() } else { m }
             });
