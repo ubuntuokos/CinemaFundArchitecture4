@@ -56,6 +56,9 @@ rm -rf "$WORK"
 mkdir -p "$WORK/stage"
 tar -xzf "$TARBALL" -C "$WORK/stage" --strip-components=1
 [ -x "$WORK/stage/bin/cfa4" ] || { echo "error: $TARBALL has no bin/cfa4" >&2; exit 1; }
+# ADR 0005 step 4: a release bundle carries CFA4's FFmpeg 9.0.2 (package.sh without --without-ffmpeg)
+[ -f "$WORK/stage/lib/cfa4/ffmpeg-9.0.2/share/doc/ffmpeg/BUILDINFO" ] \
+  || { echo "error: $TARBALL has no lib/cfa4/ffmpeg-9.0.2 (build it with package.sh, not --without-ffmpeg)" >&2; exit 1; }
 cp "$HERE/flatpak/$APP_ID.bundle.yml" "$WORK/$APP_ID.yml"
 
 # Never fetch source or runtime dependencies. The SDK is already present.
