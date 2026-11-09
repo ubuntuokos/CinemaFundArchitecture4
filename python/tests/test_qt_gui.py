@@ -2374,9 +2374,7 @@ def test_export_sends_the_audio_bitrate(app):
 
 
 # egui's Export ids the Qt window has no widget for yet, and why
-EXPORT_IDS_NOT_IN_QT = {
-    "export.destination.mediaFile": "no Destinations column: Media File is the only destination",
-}
+EXPORT_IDS_NOT_IN_QT: dict[str, str] = {}
 
 
 def test_export_widgets_carry_eguis_automation_ids(app):
@@ -13333,6 +13331,81 @@ def test_real_engine_dock_tabs_more_list_as_egui(app, tmp_path: Path):
         win.resizeDocks([dock], [1200], QtCore.Qt.Orientation.Horizontal)
         assert wait_until(app, lambda: dock_commands.tabs_fit(bar) and not more.isVisible(), 5_000), (bar.width(), more.isVisible())
     finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_queue_column_as_egui(app, tmp_path: Path):
+    """egui's Export left column: "Destinations" with Media File (always the chosen one) over the
+    queue, the settings beside it; each queued export carries egui's Up / Down / Cancel or Retry /
+    Remove buttons (``export.queue.item.<id>.<key>``) and is the ``export.queue.item.<id>`` part."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+
+    def done_exec(cid: str, params: dict) -> dict:
+        out: list = []
+        engine.execute(cid, params, on_reply=lambda r, _b: out.append(r), on_error=lambda m: out.append(("error", m)))
+        assert wait_until(app, lambda: out, 10_000), cid
+        assert not (isinstance(out[0], tuple) and out[0][0] == "error"), out[0]
+        return out[0]
+
+    dlg = None
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        names = ["a.mov", "b.mov", "c.mov"]
+        for n in names:
+            done_exec("export.queue.add", {"preset": "Apple ProRes 422 HQ", "path": str(tmp_path / n), "range": "entire"})
+        ids = [i["id"] for i in done_exec("export.queue.list", {})["items"]]
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and dlg.isVisible()
+
+        def order() -> list[str]:
+            return [Path(dlg.table.item(r, 1).text()).name for r in range(dlg.table.rowCount())]
+
+        assert wait_until(app, lambda: order() == names, 10_000), order()
+        # the left column: Destinations, Media File, then the queue; the settings to its right
+        dest = dlg.findChild(QtWidgets.QLabel, "export.destinations")
+        media = dlg.findChild(QtWidgets.QLabel, "export.destination.mediaFile")
+        assert dest.text() == "Destinations" and dest.font().bold() and media.text() == "Media File"
+        def top(w: QtWidgets.QWidget) -> QtCore.QPoint:
+            return w.mapTo(dlg, QtCore.QPoint(0, 0))
+
+        assert top(dest).y() < top(media).y() < top(dlg.queue_box).y()
+        assert top(dlg.queue_box).x() < top(dlg.settings_scroll).x(), "the queue is left of the settings"
+        assert abs(top(dlg.queue_box).x() - top(media).x()) < 20
+        assert dlg.queue_column.width() < dlg.width() // 2, "a narrow column, as egui's"
+        assert dlg.table.item(0, 1).toolTip().endswith("a.mov")
+
+        def button(i: int, key: str) -> QtWidgets.QToolButton | None:
+            return dlg.findChild(QtWidgets.QToolButton, f"export.queue.item.{ids[i]}.{key}")
+
+        assert not button(0, "up").isEnabled() and button(0, "down").isEnabled()
+        assert button(2, "up").isEnabled() and not button(2, "down").isEnabled()
+        assert button(1, "cancel").isEnabled() and button(1, "remove").isEnabled() and button(1, "retry") is None
+        parts = {pid: label for pid, _r, label in dlg.table.automation_parts()}
+        assert set(parts) == {f"export.queue.item.{i}" for i in ids} and parts[f"export.queue.item.{ids[0]}"] == "Ready"
+        # Up on the last export moves it, and the selection follows it
+        button(2, "up").click()
+        assert wait_until(app, lambda: order() == ["a.mov", "c.mov", "b.mov"], 10_000), order()
+        assert dlg._selected_row() == 1
+        assert [Path(i["path"]).name for i in done_exec("export.queue.list", {})["items"]] == ["a.mov", "c.mov", "b.mov"]
+        # Cancel turns into Retry; Remove takes it out
+        button(0, "cancel").click()
+        assert wait_until(app, lambda: button(0, "retry") is not None and button(0, "cancel") is None, 10_000)
+        button(0, "remove").click()
+        assert wait_until(app, lambda: order() == ["c.mov", "b.mov"], 10_000), order()
+        assert f"export.queue.item.{ids[0]}" not in {pid for pid, _r, _l in dlg.table.automation_parts()}
+    finally:
+        if dlg is not None:
+            dlg.close()
         win._quit_confirmed = True
         win.close()
         engine.stop()
