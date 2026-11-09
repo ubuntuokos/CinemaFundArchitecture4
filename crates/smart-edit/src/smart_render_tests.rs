@@ -237,11 +237,14 @@ fn invalid_timelines_are_refused() {
 #[test]
 fn the_registry_decides_whether_the_plan_runs() {
     let tl = edl(vec![item(0, 14, clip("a.mp4", 9, "x")), item(14, 7, EditContent::Gap)]);
-    // the built-in registry of this branch: no packet copy, no boundary re-encode yet
+    // the built-in registry: H.264 packet copy into MP4 (WP-04), no boundary re-encode yet (WP-06)
     let p = plan_smart_render(&Registry::native(), &sources(), &tl, &request(), STRICT).unwrap();
     assert!(!p.executable);
-    assert!(p.blockers.iter().any(|b| b.contains("packet-copy")), "{:?}", p.blockers);
+    assert!(!p.blockers.iter().any(|b| b.contains("packet-copy")), "{:?}", p.blockers);
     assert!(p.blockers.iter().any(|b| b.contains("boundary re-encode")), "{:?}", p.blockers);
+    let copy_only = edl(vec![item(0, 14, clip("a.mp4", 7, "x"))]);
+    let p = plan_smart_render(&Registry::native(), &sources(), &copy_only, &request(), STRICT).unwrap();
+    assert!(p.executable, "{:?}", p.blockers);
     let unique: std::collections::BTreeSet<&String> = p.blockers.iter().collect();
     assert_eq!(unique.len(), p.blockers.len(), "no repeats");
     // a re-encoded boundary needs the stream format for the encoder limits
