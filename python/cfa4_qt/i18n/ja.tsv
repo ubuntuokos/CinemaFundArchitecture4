@@ -521,3 +521,56 @@
 	{n} more	ほか {n} 件
 	Block	ブロック
 	parallel	並列
+
+# Live graphics (python/cfa4_qt/panels/live.py)
+	In the page (OBS takes it from the Browser Source)	ページ内（OBS がブラウザソースから取得）
+	Separate (a media source in OBS)	別（OBS のメディアソース）
+	No sound	音声なし
+	credits	クレジット
+	graphic	グラフィック
+	{n} pages	{n} ページ
+	Live Graphics	ライブグラフィック
+	Prepared cues; double-click one to put it in preview	準備したキュー。ダブルクリックでプレビューへ
+	Add Credits…	クレジットを追加…
+	A credits spreadsheet, credits file or Cinecred project as a cue	クレジットのスプレッドシート、クレジットファイル、Cinecred プロジェクトをキューとして
+	Add Selected Graphic	選択したグラフィックを追加
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	タイムラインで選択したグラフィッククリップ（タイトル、テロップ）をキューとして
+	Cues	キュー
+	TAKE	テイク
+	The preview cue goes on air from its first page	プレビューのキューを最初のページから送出
+	PREVIOUS	前へ
+	The page before (on the first page: from its start)	前のページ（最初のページでは先頭から）
+	NEXT	次へ
+	The next page; after the last one, the preview cue	次のページ。最後の後はプレビューのキュー
+	HOLD	ホールド
+	Stop the program where it is	番組をその場で止める
+	CONTINUE	再開
+	Go on from where it stopped	止めたところから続ける
+	UPDATE	更新
+	Read the spreadsheet (or the clip) again; on air it changes at once	スプレッドシート（またはクリップ）を読み直す。送出中は即座に変わる
+	OUT	アウト
+	Take everything off air	すべてを送出から外す
+	Start Live Page	ライブページを開始
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	OBS のブラウザソース向けにこのコンピューターで番組を配信（127.0.0.1 のみ）
+	not running	停止中
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ ツール ▸ WebSocket サーバー設定
+	Connect to OBS	OBS に接続
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	このコンピューターの OBS に接続し、ブラウザソース「CFA4 Live」をライブページに向ける
+	Port	ポート
+	Password	パスワード
+	Live page	ライブページ
+	Sound	音声
+	OBS	OBS
+	Nothing in preview	プレビューは空です
+	page {page} of {pages}	{pages} ページ中 {page} ページ
+	held	ホールド中
+	ended	終了
+	Off air	送出なし
+	Stop Live Page	ライブページを停止
+	Connected to OBS {version}; source “{source}”	OBS {version} に接続済み。ソース「{source}」
+	Point OBS Again	OBS を再設定
+	Select a graphic clip on the timeline first.	先にタイムラインでグラフィッククリップを選択してください。
+	Connecting to OBS…	OBS に接続中…
+	Live Graphics…	ライブグラフィック…
+	PREVIEW	プレビュー
+	PROGRAM	プログラム

@@ -207,7 +207,7 @@ végéhez közeledik, a hátralévő fázisok mehetnek):
   hátterek, átmenetek és ellenőrzések pedig a munkaterületen. Dokkolható panel helyett nem modális
   ablak: a munkaterület a vágás mellett nyitva maradhat.
 
-### C10 – Élő grafika (tervezet)
+### C10 – Élő grafika – **KÉSZ (2026-11-09; a műsorterv nélkül)**
 
 A tulajdonos döntése (2026-10-25): **az élő adás kell, de egyelőre tervezet** (`VISION.md` 4. és
 8. pont, #60). Az eredeti terv §17–19-éből ez a fázis vázlata; ütemezése és mélysége külön döntés.
@@ -223,6 +223,32 @@ A tulajdonos döntése (2026-10-25): **az élő adás kell, de egyelőre terveze
   hagyva.
 - **Műsorterv (rundown)** csak akkor, ha a tulajdonos a mélységről így dönt (`VISION.md` 8. pont).
 - **Együttélés:** saját port és beállításmappa, OBS-szel egyszerre futtatva tesztelve (C9).
+
+Elkészült (2026-11-09, `cfa4/credits-c10`; a tulajdonos döntése 2026-11-09: a hátralévő
+fázisok mehetnek):
+
+- **Futtató** (`crates/engine/src/live.rs`, `live.*` parancsok): elemek (cue-k) stáblistából
+  (táblázat, stáblista-fájl, sablon) vagy a szekvencia grafikus klipjéből (cím, alsó harmad);
+  PREVIEW, TAKE, NEXT / PREVIOUS, HOLD / CONTINUE, UPDATE (a táblázat vagy a klip újraolvasva,
+  adásban azonnal), OUT. A kártya a NEXT-ig a kiúsztatás előtti utolsó teljes pillanaton áll; a
+  gördülő és futó oldal végigfut a következő oldalba. Ugyanaz az elrendezés és grafikus
+  renderelő, mint a szerkesztőben (képek és képhátterek is; a stáblistában lévő videók adásban
+  kimaradnak). Munkamenet-állapot: semmi nem kerül a projektbe, nem vonható vissza.
+- **Élő oldal** (`crates/live`, új L1 crate): HTTP csak a 127.0.0.1-en (más hosztnév,
+  módszer elutasítva), az OBS böngészőforrásának; átlátszó PNG, állapot, a hang bájttartományokkal.
+- **Hang:** a három mód (az oldalban / külön médiaforrásként / nincs).
+- **OBS-kapcsolat:** obs-websocket 5 (jelszóval), a „CFA4 Live” böngészőforrás (és külön
+  módban a „CFA4 Live Audio” médiaforrás) létrehozása vagy átirányítása; csak a saját gépen.
+  Az OBS nem irányítja a CFA4-et.
+- **Qt6:** Grafika és címek ▸ Élő grafika… ablak: elemlista, ELŐNÉZET / PROGRAM monitor, a
+  vezérlőgombok, élő oldal, hangmód, OBS-kapcsolat; magyarul és a többi kész nyelven.
+- **Nem része:** műsorterv (rundown) az elemlistán túl – nyitott döntés (`VISION.md` 8. pont).
+- **Próba valódi OBS-szel** (2026-11-09, felhőben, Xvfb, Ubuntu OBS 30.0.2, obs-websocket
+  5.3.4): rossz vagy hiányzó jelszó érthető hibát ad; jó jelszóval kapcsolódik; külön hangmódban
+  a „CFA4 Live Audio” médiaforrás létrejön a program-jelenetben, újabb beállításkor frissül. Az
+  Ubuntu saját OBS-csomagjából hiányzik a böngészőforrás (obs-browser), ezt a CFA4 érthetően
+  jelzi (telepítés az OBS PPA-ból vagy Flatpakból, vagy kézzel felvett böngészőforrás). A
+  böngészőforrásos ágat a referenciagépen, a hivatalos OBS-sel érdemes egyszer kipróbálni.
 
 ### C9 – Csomagolás és együttélés (K) – **KÉSZ (2026-11-09)**
 

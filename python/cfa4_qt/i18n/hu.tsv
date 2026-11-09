@@ -2662,3 +2662,56 @@ export.summary	Low	alacsony
 	{n} more	még {n}
 	Block	Blokk
 	parallel	párhuzamos
+
+# Live graphics (python/cfa4_qt/panels/live.py)
+	In the page (OBS takes it from the Browser Source)	Az oldalban (az OBS a böngészőforrásból veszi)
+	Separate (a media source in OBS)	Külön (médiaforrás az OBS-ben)
+	No sound	Nincs hang
+	credits	stáblista
+	graphic	grafika
+	{n} pages	{n} oldal
+	Live Graphics	Élő grafika
+	Prepared cues; double-click one to put it in preview	Előkészített elemek; dupla kattintással előnézetbe kerül
+	Add Credits…	Stáblista hozzáadása…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Stáblista-táblázat, stáblista-fájl vagy Cinecred-projekt mint elem
+	Add Selected Graphic	Kijelölt grafika hozzáadása
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Az idővonalon kijelölt grafikus klip (cím, alsó harmad) mint elem
+	Cues	Elemek
+	TAKE	ADÁSBA
+	The preview cue goes on air from its first page	Az előnézeti elem az első oldalától adásba megy
+	PREVIOUS	ELŐZŐ
+	The page before (on the first page: from its start)	Az előző oldal (az első oldalon: annak elejétől)
+	NEXT	KÖVETKEZŐ
+	The next page; after the last one, the preview cue	A következő oldal; az utolsó után az előnézeti elem
+	HOLD	MEGÁLLÍT
+	Stop the program where it is	A program megáll, ahol tart
+	CONTINUE	FOLYTAT
+	Go on from where it stopped	Folytatás onnan, ahol megállt
+	UPDATE	FRISSÍT
+	Read the spreadsheet (or the clip) again; on air it changes at once	A táblázat (vagy a klip) újraolvasása; adásban azonnal változik
+	OUT	LE
+	Take everything off air	Minden lekerül az adásból
+	Start Live Page	Élő oldal indítása
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	A program kiszolgálása ezen a gépen az OBS böngészőforrásának (csak 127.0.0.1)
+	not running	nem fut
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Eszközök ▸ WebSocket-kiszolgáló beállításai
+	Connect to OBS	Kapcsolódás az OBS-hez
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Kapcsolódás az ezen a gépen futó OBS-hez, és a „CFA4 Live” böngészőforrás ráirányítása az élő oldalra
+	Port	Port
+	Password	Jelszó
+	Live page	Élő oldal
+	Sound	Hang
+	OBS	OBS
+	Nothing in preview	Nincs semmi előnézetben
+	page {page} of {pages}	{page}. oldal / {pages}
+	held	megállítva
+	ended	véget ért
+	Off air	Nincs adásban
+	Stop Live Page	Élő oldal leállítása
+	Connected to OBS {version}; source “{source}”	Kapcsolódva: OBS {version}; forrás: „{source}”
+	Point OBS Again	OBS újra beállítása
+	Select a graphic clip on the timeline first.	Előbb jelölj ki egy grafikus klipet az idővonalon.
+	Connecting to OBS…	Kapcsolódás az OBS-hez…
+	Live Graphics…	Élő grafika…
+	PREVIEW	ELŐNÉZET
+	PROGRAM	PROGRAM

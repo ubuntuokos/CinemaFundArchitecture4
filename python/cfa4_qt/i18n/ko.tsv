@@ -521,3 +521,56 @@
 	{n} more	{n}개 더
 	Block	블록
 	parallel	병렬
+
+# Live graphics (python/cfa4_qt/panels/live.py)
+	In the page (OBS takes it from the Browser Source)	페이지 안 (OBS가 브라우저 소스에서 가져옴)
+	Separate (a media source in OBS)	별도 (OBS의 미디어 소스)
+	No sound	소리 없음
+	credits	크레딧
+	graphic	그래픽
+	{n} pages	{n}페이지
+	Live Graphics	라이브 그래픽
+	Prepared cues; double-click one to put it in preview	준비된 큐입니다. 두 번 클릭하면 미리 보기로 갑니다
+	Add Credits…	크레딧 추가…
+	A credits spreadsheet, credits file or Cinecred project as a cue	크레딧 스프레드시트, 크레딧 파일 또는 Cinecred 프로젝트를 큐로
+	Add Selected Graphic	선택한 그래픽 추가
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	타임라인에서 선택한 그래픽 클립(제목, 하단 자막)을 큐로
+	Cues	큐
+	TAKE	테이크
+	The preview cue goes on air from its first page	미리 보기 큐를 첫 페이지부터 송출
+	PREVIOUS	이전
+	The page before (on the first page: from its start)	이전 페이지 (첫 페이지에서는 처음부터)
+	NEXT	다음
+	The next page; after the last one, the preview cue	다음 페이지. 마지막 다음에는 미리 보기 큐
+	HOLD	정지
+	Stop the program where it is	프로그램을 그 자리에서 멈춤
+	CONTINUE	계속
+	Go on from where it stopped	멈춘 곳에서 이어서
+	UPDATE	업데이트
+	Read the spreadsheet (or the clip) again; on air it changes at once	스프레드시트(또는 클립)를 다시 읽음. 송출 중이면 바로 바뀜
+	OUT	아웃
+	Take everything off air	모두 송출에서 내림
+	Start Live Page	라이브 페이지 시작
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	OBS 브라우저 소스용으로 이 컴퓨터에서 프로그램 제공 (127.0.0.1만)
+	not running	실행 안 함
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ 도구 ▸ WebSocket 서버 설정
+	Connect to OBS	OBS에 연결
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	이 컴퓨터의 OBS에 연결하고 “CFA4 Live” 브라우저 소스를 라이브 페이지로 지정
+	Port	포트
+	Password	비밀번호
+	Live page	라이브 페이지
+	Sound	소리
+	OBS	OBS
+	Nothing in preview	미리 보기에 없음
+	page {page} of {pages}	{pages}페이지 중 {page}페이지
+	held	정지됨
+	ended	끝남
+	Off air	송출 안 함
+	Stop Live Page	라이브 페이지 중지
+	Connected to OBS {version}; source “{source}”	OBS {version}에 연결됨. 소스 “{source}”
+	Point OBS Again	OBS 다시 설정
+	Select a graphic clip on the timeline first.	먼저 타임라인에서 그래픽 클립을 선택하세요.
+	Connecting to OBS…	OBS에 연결 중…
+	Live Graphics…	라이브 그래픽…
+	PREVIEW	미리 보기
+	PROGRAM	프로그램

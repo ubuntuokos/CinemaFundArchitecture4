@@ -521,3 +521,56 @@
 	{n} more	{n} weitere
 	Block	Block
 	parallel	parallel
+
+# Live graphics (python/cfa4_qt/panels/live.py)
+	In the page (OBS takes it from the Browser Source)	In der Seite (OBS übernimmt ihn aus der Browserquelle)
+	Separate (a media source in OBS)	Separat (eine Medienquelle in OBS)
+	No sound	Kein Ton
+	credits	Abspann
+	graphic	Grafik
+	{n} pages	{n} Seiten
+	Live Graphics	Live-Grafik
+	Prepared cues; double-click one to put it in preview	Vorbereitete Einträge; Doppelklick legt einen in die Vorschau
+	Add Credits…	Abspann hinzufügen…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Eine Abspann-Tabelle, Abspanndatei oder ein Cinecred-Projekt als Eintrag
+	Add Selected Graphic	Ausgewählte Grafik hinzufügen
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Der in der Zeitleiste ausgewählte Grafikclip (Titel, Bauchbinde) als Eintrag
+	Cues	Einträge
+	TAKE	TAKE
+	The preview cue goes on air from its first page	Der Vorschau-Eintrag geht ab seiner ersten Seite auf Sendung
+	PREVIOUS	ZURÜCK
+	The page before (on the first page: from its start)	Die vorige Seite (auf der ersten Seite: von ihrem Anfang)
+	NEXT	WEITER
+	The next page; after the last one, the preview cue	Die nächste Seite; nach der letzten der Vorschau-Eintrag
+	HOLD	HALT
+	Stop the program where it is	Das Programm hält an, wo es ist
+	CONTINUE	FORTSETZEN
+	Go on from where it stopped	Von dort weiter, wo es anhielt
+	UPDATE	AKTUALISIEREN
+	Read the spreadsheet (or the clip) again; on air it changes at once	Die Tabelle (oder den Clip) neu lesen; auf Sendung ändert es sich sofort
+	OUT	AUS
+	Take everything off air	Alles von der Sendung nehmen
+	Start Live Page	Live-Seite starten
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Das Programm auf diesem Computer für die Browserquelle von OBS bereitstellen (nur 127.0.0.1)
+	not running	läuft nicht
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Werkzeuge ▸ WebSocket-Servereinstellungen
+	Connect to OBS	Mit OBS verbinden
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Mit OBS auf diesem Computer verbinden und dessen Browserquelle „CFA4 Live“ auf die Live-Seite richten
+	Port	Port
+	Password	Passwort
+	Live page	Live-Seite
+	Sound	Ton
+	OBS	OBS
+	Nothing in preview	Nichts in der Vorschau
+	page {page} of {pages}	Seite {page} von {pages}
+	held	angehalten
+	ended	beendet
+	Off air	Nicht auf Sendung
+	Stop Live Page	Live-Seite beenden
+	Connected to OBS {version}; source “{source}”	Verbunden mit OBS {version}; Quelle „{source}“
+	Point OBS Again	OBS erneut einrichten
+	Select a graphic clip on the timeline first.	Zuerst einen Grafikclip in der Zeitleiste auswählen.
+	Connecting to OBS…	Verbindung zu OBS…
+	Live Graphics…	Live-Grafik…
+	PREVIEW	VORSCHAU
+	PROGRAM	PROGRAMM

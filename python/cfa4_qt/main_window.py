@@ -59,6 +59,7 @@ from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
 from .panels.media_dialogs import (
@@ -293,6 +294,7 @@ class MainWindow(QMainWindow):
         # the header mode (egui's ``ui.mode``): Import shows the Home page over the panels
         self.mode = "Edit"
         self.credits_dialog: CreditsDialog | None = None
+        self.live_dialog: LiveDialog | None = None
         self.credits_refresh: CreditsRefreshDialog | None = None
         self.credits_fit: CreditsFitDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
@@ -2083,6 +2085,10 @@ class MainWindow(QMainWindow):
 
     def ui_command(self, cid: str, params: dict[str, Any] | None = None) -> bool:
         """egui's UI commands (voice-over, multi-camera, docking, …): True when ``cid`` was one."""
+        if cid == "live.window" and not params:
+            # Graphics and Titles ▸ Live Graphics…: the Live window
+            self.open_live()
+            return True
         if cid == "graphics.credits.import" and not params:
             # from the menu or a key, the Credits window; an agent's parameters import directly
             self.open_credits()
@@ -3012,6 +3018,13 @@ class MainWindow(QMainWindow):
             self.credits_dialog.imported.connect(lambda _n: self.schedule_refresh())
             self.credits_dialog.tool_requested.connect(self.invoke)
         self.credits_dialog.open_with(path)
+
+    def open_live(self) -> None:
+        """Graphics and Titles ▸ Live Graphics…: cues, PREVIEW / PROGRAM, TAKE … OUT, the live page
+        for OBS."""
+        if self.live_dialog is None:
+            self.live_dialog = LiveDialog(self.engine, self, selected_clips=lambda: [c for c in (self.sequence or {}).get("selection") or [] if isinstance(c, int)])
+        self.live_dialog.open_window()
 
     def open_credits_file(self, path: str) -> None:
         """A credits file, template or spreadsheet opened from the file manager or the command

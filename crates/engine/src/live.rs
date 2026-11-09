@@ -751,7 +751,20 @@ fn server_stop(s: &mut Session, _p: &Value) -> Result<Value> {
     Ok(status(s))
 }
 
-/// Point OBS at the page (and, for the separate sound, a media source at `/audio`).
+/// What went wrong in OBS, in words that say what to do about it.
+fn obs_message(e: &cfa4_live::ObsError) -> String {
+    match e {
+        // obs-websocket's InvalidInputKind: OBS without the obs-browser plugin (Ubuntu's own
+        // package lacks it)
+        cfa4_live::ObsError::Request { code: 605, request, .. } if request == "CreateInput" => {
+            "this OBS has no Browser Source (the obs-browser plugin; Ubuntu's own OBS package leaves it out): install OBS from obsproject.com's PPA or Flatpak, or add a Browser Source by hand with the live page's address".into()
+        }
+        other => other.to_string(),
+    }
+}
+
+/// Point OBS at the page (and, for the separate sound, a media source at `/audio`). Each part
+/// is tried on its own; what failed is in `browserError` / `audioError`.
 fn obs_point(s: &mut Session, cmd: &str) -> Result<Value> {
     let Some(url) = s.live.server.as_ref().map(LiveServer::url) else {
         return Err(bad(cmd, "start the live page first (live.server.start)"));
@@ -761,12 +774,16 @@ fn obs_point(s: &mut Session, cmd: &str) -> Result<Value> {
     let mode = s.live.audio_mode;
     let link = s.live.obs.as_mut().ok_or_else(|| bad(cmd, "not connected to OBS (live.obs.connect)"))?;
     let scene = link.scene.clone();
-    let main =
-        link.client.point_browser_source(&link.source, &url, w, h, scene.as_deref(), mode == AudioMode::Embedded).map_err(|e| bad(cmd, e.to_string()))?;
-    let mut done = json!({"source": link.source, "url": url, "result": format!("{main:?}")});
+    let mut done = json!({"source": link.source, "url": url});
+    match link.client.point_browser_source(&link.source, &url, w, h, scene.as_deref(), mode == AudioMode::Embedded) {
+        Ok(r) => done["browser"] = json!(format!("{r:?}")),
+        Err(e) => done["browserError"] = json!(obs_message(&e)),
+    }
     if mode == AudioMode::Separate {
-        let a = link.client.point_media_source(OBS_AUDIO_SOURCE, &format!("{url}audio"), scene.as_deref()).map_err(|e| bad(cmd, e.to_string()))?;
-        done["audio"] = json!(format!("{a:?}"));
+        match link.client.point_media_source(OBS_AUDIO_SOURCE, &format!("{url}audio"), scene.as_deref()) {
+            Ok(r) => done["audio"] = json!(format!("{r:?}")),
+            Err(e) => done["audioError"] = json!(obs_message(&e)),
+        }
     }
     link.last = done.clone();
     Ok(done)

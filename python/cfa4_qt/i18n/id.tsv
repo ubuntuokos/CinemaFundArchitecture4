@@ -521,3 +521,56 @@
 	{n} more	{n} lagi
 	Block	Blok
 	parallel	paralel
+
+# Live graphics (python/cfa4_qt/panels/live.py)
+	In the page (OBS takes it from the Browser Source)	Di halaman (OBS mengambilnya dari Browser Source)
+	Separate (a media source in OBS)	Terpisah (sumber media di OBS)
+	No sound	Tanpa suara
+	credits	kredit
+	graphic	grafik
+	{n} pages	{n} halaman
+	Live Graphics	Grafik Langsung
+	Prepared cues; double-click one to put it in preview	Isyarat yang disiapkan; klik ganda untuk menaruhnya di pratinjau
+	Add Credits…	Tambah Kredit…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Spreadsheet kredit, berkas kredit, atau proyek Cinecred sebagai isyarat
+	Add Selected Graphic	Tambah Grafik Terpilih
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Klip grafik yang dipilih di timeline (judul, lower third) sebagai isyarat
+	Cues	Isyarat
+	TAKE	TAKE
+	The preview cue goes on air from its first page	Isyarat pratinjau tayang mulai dari halaman pertamanya
+	PREVIOUS	SEBELUMNYA
+	The page before (on the first page: from its start)	Halaman sebelumnya (di halaman pertama: dari awalnya)
+	NEXT	BERIKUTNYA
+	The next page; after the last one, the preview cue	Halaman berikutnya; setelah yang terakhir, isyarat pratinjau
+	HOLD	TAHAN
+	Stop the program where it is	Hentikan program di posisinya
+	CONTINUE	LANJUTKAN
+	Go on from where it stopped	Lanjutkan dari tempat berhenti
+	UPDATE	PERBARUI
+	Read the spreadsheet (or the clip) again; on air it changes at once	Baca ulang spreadsheet (atau klip); saat tayang langsung berubah
+	OUT	OUT
+	Take everything off air	Turunkan semuanya dari siaran
+	Start Live Page	Mulai Halaman Langsung
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Sajikan program di komputer ini untuk Browser Source OBS (hanya 127.0.0.1)
+	not running	tidak berjalan
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	Hubungkan ke OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Hubungkan ke OBS di komputer ini dan arahkan Browser Source “CFA4 Live” ke halaman langsung
+	Port	Port
+	Password	Kata sandi
+	Live page	Halaman langsung
+	Sound	Suara
+	OBS	OBS
+	Nothing in preview	Tidak ada di pratinjau
+	page {page} of {pages}	halaman {page} dari {pages}
+	held	ditahan
+	ended	selesai
+	Off air	Tidak tayang
+	Stop Live Page	Hentikan Halaman Langsung
+	Connected to OBS {version}; source “{source}”	Terhubung ke OBS {version}; sumber “{source}”
+	Point OBS Again	Atur OBS Lagi
+	Select a graphic clip on the timeline first.	Pilih klip grafik di timeline terlebih dahulu.
+	Connecting to OBS…	Menghubungkan ke OBS…
+	Live Graphics…	Grafik Langsung…
+	PREVIEW	PRATINJAU
+	PROGRAM	PROGRAM

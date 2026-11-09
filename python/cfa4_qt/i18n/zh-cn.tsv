@@ -521,3 +521,56 @@
 	{n} more	另有 {n} 项
 	Block	块
 	parallel	并列
+
+# Live graphics (python/cfa4_qt/panels/live.py)
+	In the page (OBS takes it from the Browser Source)	在页面中（OBS 从浏览器源获取）
+	Separate (a media source in OBS)	单独（OBS 中的媒体源）
+	No sound	无声音
+	credits	演职员表
+	graphic	图形
+	{n} pages	{n} 页
+	Live Graphics	直播图形
+	Prepared cues; double-click one to put it in preview	已准备的提示；双击可放入预览
+	Add Credits…	添加演职员表…
+	A credits spreadsheet, credits file or Cinecred project as a cue	将演职员表表格、演职员表文件或 Cinecred 项目作为提示
+	Add Selected Graphic	添加所选图形
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	将时间线上所选的图形剪辑（标题、下三分之一字幕）作为提示
+	Cues	提示
+	TAKE	切出
+	The preview cue goes on air from its first page	预览中的提示从第一页开始播出
+	PREVIOUS	上一页
+	The page before (on the first page: from its start)	上一页（在第一页时：从开头）
+	NEXT	下一页
+	The next page; after the last one, the preview cue	下一页；最后一页之后为预览中的提示
+	HOLD	暂停
+	Stop the program where it is	让节目停在当前位置
+	CONTINUE	继续
+	Go on from where it stopped	从停下的位置继续
+	UPDATE	更新
+	Read the spreadsheet (or the clip) again; on air it changes at once	重新读取表格（或剪辑）；播出中立即生效
+	OUT	撤下
+	Take everything off air	撤下所有播出内容
+	Start Live Page	启动直播页面
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	在本机为 OBS 浏览器源提供节目（仅 127.0.0.1）
+	not running	未运行
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ 工具 ▸ WebSocket 服务器设置
+	Connect to OBS	连接到 OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	连接到本机的 OBS，并将其浏览器源“CFA4 Live”指向直播页面
+	Port	端口
+	Password	密码
+	Live page	直播页面
+	Sound	声音
+	OBS	OBS
+	Nothing in preview	预览中没有内容
+	page {page} of {pages}	第 {page} 页，共 {pages} 页
+	held	已暂停
+	ended	已结束
+	Off air	未播出
+	Stop Live Page	停止直播页面
+	Connected to OBS {version}; source “{source}”	已连接到 OBS {version}；源“{source}”
+	Point OBS Again	重新设置 OBS
+	Select a graphic clip on the timeline first.	请先在时间线上选择一个图形剪辑。
+	Connecting to OBS…	正在连接到 OBS…
+	Live Graphics…	直播图形…
+	PREVIEW	预览
+	PROGRAM	节目
