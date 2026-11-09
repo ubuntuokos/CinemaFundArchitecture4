@@ -14,3 +14,11 @@ __pycache__/
 *.egg-info/
 .coverage
 coverage.xml
+
+# Claude Code helyi beállítások és titkok – ne kerüljenek a repóba
+.claude/settings.local.json
+**/.claude/settings.local.json
+CLAUDE.local.md
+.env
+.env.*
+!.env.example
