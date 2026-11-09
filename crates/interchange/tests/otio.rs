@@ -467,6 +467,89 @@ fn oracle_fixtures() {
     }
 }
 
+/// OTIO-2.1 (H1): `metadata` keys other programs wrote come back unchanged on export, on the
+/// timeline, tracks, clips and nested stacks, next to CFA4's own `cfa4` key.
+#[test]
+fn foreign_metadata_round_trips() {
+    let rt = |v: i64| format!(r#"{{"OTIO_SCHEMA": "RationalTime.1", "rate": 25, "value": {v}}}"#);
+    let tr = |s: i64, d: i64| format!(r#"{{"OTIO_SCHEMA": "TimeRange.1", "start_time": {}, "duration": {}}}"#, rt(s), rt(d));
+    let file = |p: &str| format!(r#"{{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "{p}", "available_range": {}}}"#, tr(0, 500));
+    let doc = format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Foreign", "metadata": {{"Resolve_OTIO": {{"Resolve OTIO Meta Version": "1.0"}}, "note": [1, 2.5, null]}},
+          "tracks": {{"OTIO_SCHEMA": "Stack.1", "children": [
+            {{"OTIO_SCHEMA": "Track.1", "kind": "Video", "name": "V1", "metadata": {{"Resolve_OTIO": {{"Locked": false}}}}, "children": [
+                {{"OTIO_SCHEMA": "Clip.2", "name": "a", "source_range": {}, "metadata": {{"kdenlive": {{"clip_id": 7, "tags": ["x"]}}}},
+                  "media_references": {{"DEFAULT_MEDIA": {}}}, "active_media_reference_key": "DEFAULT_MEDIA"}},
+                {{"OTIO_SCHEMA": "Stack.1", "name": "Inner", "source_range": {}, "metadata": {{"app": {{"nested": true}}}}, "children": [
+                    {{"OTIO_SCHEMA": "Track.1", "kind": "Video", "name": "V1", "children": [
+                        {{"OTIO_SCHEMA": "Clip.2", "name": "b", "source_range": {}, "metadata": {{"app": {{"inner": 1}}}},
+                          "media_references": {{"DEFAULT_MEDIA": {}}}, "active_media_reference_key": "DEFAULT_MEDIA"}}]}}]}}]}}]}}}}"#,
+        tr(10, 20),
+        file("/m/a.mov"),
+        tr(0, 25),
+        tr(0, 50),
+        file("/m/b.mov"),
+    );
+    let (imp, rep) = import(doc.as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let sid = only_seq(&imp);
+    let s = imp.project.sequence(sid).unwrap();
+    assert_eq!(s.interchange["Resolve_OTIO"]["Resolve OTIO Meta Version"], "1.0");
+    assert_eq!(s.tracks(TrackKind::Video)[0].interchange["Resolve_OTIO"]["Locked"], false);
+    assert_eq!(s.tracks(TrackKind::Video)[0].items[0].interchange["kdenlive"]["clip_id"], 7);
+
+    let foreign = |v: &serde_json::Value| -> serde_json::Value {
+        let mut m = v["metadata"].as_object().cloned().unwrap_or_default();
+        m.remove("cfa4");
+        serde_json::Value::Object(m)
+    };
+    let check = |text: &str| {
+        let out: serde_json::Value = serde_json::from_str(text).unwrap();
+        assert_eq!(foreign(&out), serde_json::json!({"Resolve_OTIO": {"Resolve OTIO Meta Version": "1.0"}, "note": [1, 2.5, null]}));
+        assert!(out["metadata"]["cfa4"].is_object(), "CFA4's own key is still written");
+        let v1 = &out["tracks"]["children"][0];
+        assert_eq!(foreign(v1), serde_json::json!({"Resolve_OTIO": {"Locked": false}}));
+        let kids = v1["children"].as_array().unwrap();
+        let clip = kids.iter().find(|c| c["name"] == "a").unwrap();
+        assert_eq!(foreign(clip), serde_json::json!({"kdenlive": {"clip_id": 7, "tags": ["x"]}}));
+        let inner = kids.iter().find(|c| c["OTIO_SCHEMA"] == "Stack.1").unwrap();
+        assert_eq!(foreign(inner), serde_json::json!({"app": {"nested": true}}));
+        let b = &inner["children"][0]["children"][0];
+        assert_eq!(foreign(b), serde_json::json!({"app": {"inner": 1}}));
+    };
+    let (bytes, rep) = cfa4_interchange::export(&imp.project, sid, Format::Otio, &ExportOptions::default()).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let text = String::from_utf8(bytes).unwrap();
+    check(&text);
+    // and once more through CFA4: nothing is lost or duplicated
+    let (again, _) = import(text.as_bytes(), Format::Otio, None).unwrap();
+    let (bytes, _) = cfa4_interchange::export(&again.project, only_seq(&again), Format::Otio, &ExportOptions::default()).unwrap();
+    check(&String::from_utf8(bytes).unwrap());
+}
+
+/// CFA4's own work carries no foreign metadata: nothing but `cfa4` is written.
+#[test]
+fn own_work_writes_only_cfa4_metadata() {
+    let (p, s) = project();
+    let (bytes, _) = cfa4_interchange::export(&p, s, Format::Otio, &ExportOptions::default()).unwrap();
+    let out: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    fn walk(v: &serde_json::Value, bad: &mut Vec<String>) {
+        match v {
+            serde_json::Value::Object(o) => {
+                if let Some(m) = o.get("metadata").and_then(serde_json::Value::as_object) {
+                    bad.extend(m.keys().filter(|k| k.as_str() != "cfa4").cloned());
+                }
+                o.values().for_each(|x| walk(x, bad));
+            }
+            serde_json::Value::Array(a) => a.iter().for_each(|x| walk(x, bad)),
+            _ => {}
+        }
+    }
+    let mut bad = Vec::new();
+    walk(&out, &mut bad);
+    assert!(bad.is_empty(), "unexpected metadata keys {bad:?}");
+}
+
 /// `Marker.1` (before OTIO 0.15) stores the marked range under `range`; found by the OTIO-1.2 samples.
 #[test]
 fn legacy_marker1_reads_its_range() {
@@ -532,6 +615,16 @@ fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::
         if !close_all(&markers, &tl["markers"]) {
             problems.push(format!("{at}: markers at {markers:?}, expected {}", tl["markers"]));
         }
+        if let Some(rate) = tl["rate"].as_f64()
+            && (seq.settings.frame_rate.as_f64() - rate).abs() > 1e-6
+        {
+            problems.push(format!("{at}: frame rate {}, expected {rate}", seq.settings.frame_rate.as_f64()));
+        }
+        if let Some(tc) = tl["start_timecode"].as_i64()
+            && seq.start_timecode != tc
+        {
+            problems.push(format!("{at}: start timecode {}, expected {tc}", seq.start_timecode));
+        }
         for (kind, label) in [(TrackKind::Video, "Video"), (TrackKind::Audio, "Audio")] {
             let want_tracks: Vec<&serde_json::Value> = tl["tracks"].as_array().into_iter().flatten().filter(|t| t["kind"] == label).collect();
             let tracks = seq.tracks(kind);
@@ -546,6 +639,13 @@ fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::
                 }
                 if wt["transitions"].as_u64() != Some(t.transitions.len() as u64) {
                     problems.push(format!("{at}: {} transitions, expected {}", t.transitions.len(), wt["transitions"]));
+                }
+                if let Some(ranges) = wt["transition_ranges"].as_array() {
+                    let got: Vec<(i64, i64)> = t.transitions.iter().map(|x| (x.start.0, x.duration.0)).collect();
+                    let same = got.len() == ranges.len() && got.iter().zip(ranges).all(|(&(s, d), w)| close(s, &w[0]) && close(d, &w[1]));
+                    if !same {
+                        problems.push(format!("{at}: transitions at {got:?}, expected {}", wt["transition_ranges"]));
+                    }
                 }
                 let items = wt["items"].as_array().map(Vec::as_slice).unwrap_or_default();
                 if t.items.len() != items.len() {
@@ -563,6 +663,7 @@ fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::
                     if !close_all(&markers, &wi["markers"]) {
                         problems.push(format!("{at}: markers at {markers:?}, expected {}", wi["markers"]));
                     }
+                    problems.extend(sample_item_problems(&imp.project, it, wi).into_iter().map(|p| format!("{at}: {p}")));
                 }
             }
         }
@@ -578,6 +679,74 @@ fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::
         if !report.warnings().any(|w| w.message.contains(e)) {
             problems.push(format!("missing warning: {e}"));
         }
+    }
+    problems
+}
+
+/// The checks of one clip or nested sequence beyond its place and markers: enabled, the time effects
+/// and what it points at. Each runs only when `samples.json` has the key.
+fn sample_item_problems(p: &Project, it: &cfa4_project::TrackItem, want: &serde_json::Value) -> Vec<String> {
+    let mut problems = Vec::new();
+    if let Some(enabled) = want["enabled"].as_bool()
+        && it.enabled != enabled
+    {
+        problems.push(format!("enabled {}, expected {enabled}", it.enabled));
+    }
+    if let Some(speed) = want["speed"].as_f64()
+        && (it.speed - speed).abs() > 1e-9
+    {
+        problems.push(format!("speed {}, expected {speed}", it.speed));
+    }
+    if let Some(reverse) = want["reverse"].as_bool()
+        && it.reverse != reverse
+    {
+        problems.push(format!("reverse {}, expected {reverse}", it.reverse));
+    }
+    if let Some(hold) = want["frame_hold"].as_bool()
+        && it.frame_hold.is_some() != hold
+    {
+        problems.push(format!("frame hold {:?}, expected {hold}", it.frame_hold));
+    }
+    let media = &want["media"];
+    let Some(kind) = media["ref"].as_str() else {
+        return problems;
+    };
+    let Some(item) = p.item(it.item) else {
+        problems.push("points at no project item".to_string());
+        return problems;
+    };
+    if kind == "sequence" {
+        if item.as_sequence().is_none() {
+            problems.push("expected a nested sequence".to_string());
+        }
+        return problems;
+    }
+    let Some(m) = item.as_media() else {
+        problems.push(format!("expected {kind} media, found another project item"));
+        return problems;
+    };
+    if let Some(offline) = media["offline"].as_bool()
+        && m.offline != offline
+    {
+        problems.push(format!("offline {}, expected {offline}", m.offline));
+    }
+    match (kind, &m.media) {
+        ("file", MediaRef::File { path }) => {
+            if let Some(want) = media["path"].as_str()
+                && path != want
+            {
+                problems.push(format!("path {path:?}, expected {want:?}"));
+            }
+        }
+        ("generator", MediaRef::Generator(g)) => {
+            // the generator's serde variant name, e.g. "BarsAndTone" or {"ColorMatte": {...}}
+            let v = serde_json::to_value(g).unwrap_or_default();
+            let name = v.as_str().map(str::to_string).or_else(|| v.as_object().and_then(|o| o.keys().next().cloned())).unwrap_or_default();
+            if Some(name.as_str()) != media["generator"].as_str() {
+                problems.push(format!("generator {name}, expected {}", media["generator"]));
+            }
+        }
+        (kind, other) => problems.push(format!("media {other:?}, expected {kind}")),
     }
     problems
 }
@@ -607,4 +776,25 @@ fn oracle_samples() {
         }
     }
     assert!(failures.is_empty(), "{} sample problem(s):\n{}", failures.len(), failures.join("\n"));
+}
+
+/// OTIO-2.2 (H2): files written before the rename (#41) keep CFA4's data under the upstream
+/// application's key. They read exactly like current files, and are written back with `cfa4`.
+#[test]
+fn upstream_metadata_key_is_read_and_written_as_cfa4() {
+    let old = cfa4_project::legacy::OTIO_METADATA_KEY;
+    let (p, s) = project();
+    let (bytes, _) = cfa4_interchange::export(&p, s, Format::Otio, &ExportOptions::default()).unwrap();
+    let current = String::from_utf8(bytes).unwrap();
+    let legacy = current.replace("\"cfa4\":", &format!("\"{old}\":"));
+    assert!(!legacy.contains("\"cfa4\":") && legacy.contains(&format!("\"{old}\":")));
+    let again = |text: &str| {
+        let (imp, rep) = import(text.as_bytes(), Format::Otio, Some("/m")).unwrap();
+        assert!(!rep.has_warnings(), "{rep}");
+        let (bytes, _) = cfa4_interchange::export(&imp.project, only_seq(&imp), Format::Otio, &ExportOptions::default()).unwrap();
+        String::from_utf8(bytes).unwrap()
+    };
+    let from_legacy = again(&legacy);
+    assert_eq!(from_legacy, again(&current), "an old file imports exactly like a current one");
+    assert!(!from_legacy.contains(&format!("\"{old}\":")), "exports write only the cfa4 key");
 }
