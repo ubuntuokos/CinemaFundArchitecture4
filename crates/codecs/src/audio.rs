@@ -102,7 +102,13 @@ enum Inner {
     Mpa(Box<cfa4_mpa::Decoder>),
     /// Dolby TrueHD and MLP (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate).
     TrueHd(Box<cfa4_truehd::cfa4::Decoder>),
+    /// G.711, G.722, IMA and Microsoft ADPCM (`cfa4-adpcm`).
+    Adpcm(Box<cfa4_adpcm::Decoder>),
 }
+
+/// G.722 packets decoded before a random-access target: its adaptive quantizers and predictors
+/// settle within a few hundred samples, so a seek converges onto the continuous decode.
+pub const G722_PRE_ROLL_PACKETS: usize = 8;
 
 /// Opus always decodes at 48 kHz (RFC 7845 §5.1: the input rate in the header is informational).
 pub const OPUS_RATE: u32 = 48_000;
@@ -252,8 +258,9 @@ impl PacketDecoder {
     /// Packets to decode before a random-access target when the codec has no pre-roll of its
     /// own: one, or [`DTS_PRE_ROLL_PACKETS`] for DTS.
     pub fn pre_roll_packets(&self) -> usize {
-        match self.inner {
+        match &self.inner {
             Inner::Dts(_) => DTS_PRE_ROLL_PACKETS,
+            Inner::Adpcm(d) if *d.codec() == cfa4_adpcm::Codec::G722 => G722_PRE_ROLL_PACKETS,
             _ => 1,
         }
     }
@@ -261,6 +268,11 @@ impl PacketDecoder {
     /// pre-roll [`cfa4_truehd::cfa4::MAJOR_SYNC_INTERVAL`] access units (see [`truehd_preroll`]).
     pub fn truehd() -> Self {
         Self { inner: Inner::TrueHd(Box::default()), channels: 0 }
+    }
+    /// G.711, G.722, IMA or Microsoft ADPCM with `channels` channels.
+    pub fn adpcm(codec: cfa4_adpcm::Codec, channels: usize) -> Result<Self> {
+        let d = cfa4_adpcm::Decoder::new(codec, channels).map_err(|e| CodecError::Unsupported(e.to_string()))?;
+        Ok(Self { inner: Inner::Adpcm(Box::new(d)), channels })
     }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
@@ -350,6 +362,10 @@ impl PacketDecoder {
                 self.channels = out.len();
                 return Ok(out);
             }
+            Inner::Adpcm(d) => {
+                let planes = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
+                return Ok(planes.into_iter().map(|p| p.into_iter().map(|s| f32::from(s) / 32768.0).collect()).collect());
+            }
             Inner::Mpa(d) => {
                 // a packet holds one frame or several; a damaged first frame is an error, damage
                 // after a good frame ends the packet
@@ -410,6 +426,7 @@ impl PacketDecoder {
             Inner::Ac3(d) => d.reset(),
             Inner::Dts(d) => d.reset(),
             Inner::TrueHd(d) => d.reset(),
+            Inner::Adpcm(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) => {}
         }
     }
