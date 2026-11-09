@@ -31,7 +31,7 @@ use cfa4_h264::params::{Pps, Sps};
 use cfa4_h264::slice::{NalHeader, SliceHeader};
 use cfa4_h264enc::{ColorConfig, Encoder, EncoderConfig, Packet as EncodedPacket, PacketFormat, Profile, RateControl, YuvFrame};
 use cfa4_isobmff::{AvcConfig, ByteSource, CodecConfig, Mp4Writer, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
-use cfa4_smart_edit::capabilities::Codec;
+use cfa4_smart_edit::capabilities::{Codec, StreamFormat};
 use cfa4_smart_edit::media_index::StreamIndex;
 use cfa4_smart_edit::plan::{ExportExecutionPlan, PLAN_VERSION, SegmentMode};
 use serde::{Deserialize, Serialize};
@@ -663,6 +663,33 @@ const ENCODER_NOTES: [[u8; 16]; 2] = [
 /// re-encode may drop it. Any other unregistered SEI may be application metadata.
 fn is_encoder_note(payload: &[u8]) -> bool {
     payload.get(..16).is_some_and(|uuid| ENCODER_NOTES.iter().any(|known| known == uuid))
+}
+
+/// The stream format a planner judges a boundary re-encode by (profile, chroma format, bit
+/// depth; `capabilities::Registry::smart_render`), read from the first SPS of `avc`. `None` when
+/// the configuration has no SPS or it does not parse.
+pub fn h264_stream_format(avc: &AvcConfig) -> Option<StreamFormat> {
+    let nal = avc.sps.first()?;
+    let sps = Sps::parse(&unescape_rbsp(nal.get(1..)?)).ok()?;
+    let profile = match sps.profile_idc {
+        66 => "baseline",
+        77 => "main",
+        88 => "extended",
+        100 => "high",
+        110 => "high10",
+        122 => "high422",
+        244 => "high444",
+        44 => "cavlc444",
+        _ => "other",
+    };
+    let chroma = match sps.chroma_format_idc {
+        0 => "4:0:0",
+        1 => "4:2:0",
+        2 => "4:2:2",
+        _ => "4:4:4",
+    };
+    let bit_depth = u8::try_from(sps.bit_depth_luma.max(sps.bit_depth_chroma)).unwrap_or(u8::MAX);
+    Some(StreamFormat { profile: profile.into(), chroma: chroma.into(), bit_depth })
 }
 
 /// Check, without decoding or writing anything, that [`execute_mp4_boundary_reencode`] can run

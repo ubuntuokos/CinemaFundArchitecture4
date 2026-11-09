@@ -172,6 +172,12 @@ registry's `timeline-render` rows are unsupported, so `plan_smart_render` report
 plan as not executable. Writing and verifying decode the boundaries picture by picture (the
 encoder's VUI comes from the source SPS), so no boundary is held in memory whole.
 
+`h264_stream_format(avc)` reads the profile, chroma format and bit depth from the source SPS for
+the planner's `SmartCutRequest::format`. The engine commands use it: `export.plan` reports, for a
+re-encoding plan, whether the executor can run it (`boundaryReencode: {ready, problem}`), and
+`export.start` with `"confirm": true` runs it, checks the output and only then writes the file
+(`"crf"` sets the quality of the re-encoded pictures, 16 by default).
+
 ## Smart Render planner (WP-05)
 
 `plan_smart_render(&registry, &indexes, &edit_decision_list, &request, policy)` plans the export of

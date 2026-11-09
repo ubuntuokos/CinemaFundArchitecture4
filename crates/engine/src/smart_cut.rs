@@ -5,18 +5,26 @@
 //!   the access points, GOPs, configuration changes and whether the registry allows a Smart Cut.
 //! - `export.plan` returns the plan for one source range (WP-03): copied segments, re-encoded
 //!   boundaries, and, in GOP-boundary mode, the nearest safe points when the range is not on them.
-//! - `export.start` runs a lossless plan (WP-04): the samples are copied unchanged, the output is
-//!   read back and checked sample by sample, and only then written through the host's atomic file
-//!   writer, so a failed or refused export never leaves a partial file. A plan that re-encodes is
-//!   refused until the Smart Render executor exists (WP-06); nothing is re-encoded silently.
+//!   A plan that re-encodes boundaries also reports whether the boundary re-encoder can run it
+//!   (`boundaryReencode`), with the reason when it cannot (an interlaced, 10-bit, variable-frame-
+//!   rate or captioned source…).
+//! - `export.start` runs the plan and writes the result through the host's atomic file writer only
+//!   after the output was read back and checked, so a failed or refused export never leaves a
+//!   partial file. A lossless plan copies the samples unchanged (WP-04); a frame-accurate plan
+//!   copies the whole GOPs and re-encodes the boundary pictures (WP-06), and runs only with
+//!   `"confirm": true`: nothing is re-encoded silently.
 //!
 //! Times are ticks or time objects (`{"seconds": n}`, `{"frame": n}`, `{"timecode": "…"}`) on the
 //! source stream's PTS timeline; frames and timecodes count at the stream's frame rate.
 
 use std::io::Cursor;
 
+use cfa4_export::boundary_reencode::{
+    BoundaryEncoding, check_mp4_boundary_reencode, execute_mp4_boundary_reencode, h264_stream_format, verify_mp4_boundary_reencode,
+};
+use cfa4_export::smart_cut::{Mp4CopySource, SmartCutError, execute_mp4_copy, verify_mp4_copy};
 use cfa4_isobmff::{ByteSource, CodecConfig, Mp4File, TrackKind};
-use cfa4_smart_edit::capabilities::{Codec, Container, Policy, Registry};
+use cfa4_smart_edit::capabilities::{Codec, Container, Policy, Registry, StreamFormat};
 use cfa4_smart_edit::copy_planner::{CutMode, SmartCutPlan, SmartCutRequest, plan_smart_cut};
 use cfa4_smart_edit::h264_index::{NalFormat, index_h264};
 use cfa4_smart_edit::media_index::{MediaIndex, Packet, SourceFingerprint, StreamIndex};
@@ -53,6 +61,8 @@ struct Source {
     container: Container,
     track: usize,
     index: MediaIndex,
+    /// Profile, chroma format and bit depth, for the boundary re-encode decision.
+    format: Option<StreamFormat>,
 }
 
 impl Source {
@@ -91,6 +101,7 @@ fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> {
     let Some(CodecConfig::Avc(avc)) = t.codec() else {
         return Err(bad(cmd, format!("{path}: Smart Cut copies H.264 video only in this release")));
     };
+    let format = h264_stream_format(avc);
     let ps: Vec<&[u8]> = avc.sps.iter().chain(&avc.pps).map(Vec::as_slice).collect();
     let mut data = Vec::with_capacity(t.samples.len());
     for i in 0..t.samples.len() {
@@ -101,7 +112,7 @@ fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> {
         .map_err(|e| fail(format!("indexing failed: {e:?}")))?;
     let fingerprint = SourceFingerprint { size: bytes.len(), modified_ns: None, content_id: None };
     let container = container_of(path, file.is_quicktime);
-    Ok(Source { path: path.to_string(), bytes, file, container, track, index: MediaIndex::new(path, fingerprint, vec![stream]) })
+    Ok(Source { path: path.to_string(), bytes, file, container, track, index: MediaIndex::new(path, fingerprint, vec![stream]), format })
 }
 
 fn ticks(t: Option<i64>, tb: Rational) -> Value {
@@ -157,7 +168,7 @@ fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan)> 
     };
     match str_p(p, "scope").unwrap_or("source") {
         "source" => {}
-        "timeline" => return Err(bad(cmd, "timeline scope (Smart Render) runs in the Smart Render executor, which is not implemented yet (WP-06)")),
+        "timeline" => return Err(bad(cmd, "timeline scope (Smart Render) runs in the timeline Smart Render executor, which is not implemented yet (WP-06)")),
         x => return Err(bad(cmd, format!("unknown `scope` {x:?}: source"))),
     }
     let output_container = match str_p(p, "output") {
@@ -175,7 +186,7 @@ fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan)> 
         guarantee,
         source_container: src.container,
         output_container,
-        format: None,
+        format: src.format.clone(),
     };
     let plan = plan_smart_cut(&Registry::native(), &src.index, &request, POLICY).map_err(|e| bad(cmd, e.to_string()))?;
     Ok((src, plan))
@@ -190,28 +201,53 @@ fn summary(p: &SmartCutPlan) -> Value {
     })
 }
 
+/// The boundary encoding named in `p` (`"crf"`, default 16).
+fn encoding_p(p: &Value, cmd: &str) -> Result<BoundaryEncoding> {
+    let mut encoding = BoundaryEncoding::default();
+    match p.get("crf") {
+        None | Some(Value::Null) => {}
+        Some(v) => match v.as_f64().filter(|c| (0.0..=51.0).contains(c)) {
+            Some(crf) => encoding.crf = crf as f32,
+            None => return Err(bad(cmd, "`crf` must be a number from 0 to 51")),
+        },
+    }
+    Ok(encoding)
+}
+
+/// The source as the Smart Cut executors read it.
+fn copy_source(src: &Source) -> Mp4CopySource<'_, dyn ByteSource> {
+    Mp4CopySource { file: &src.file, bytes: &*src.bytes, track: src.track }
+}
+
 fn plan(s: &mut Session, p: &Value) -> Result<Value> {
-    let (_, plan) = plan_of(s, p, "export.plan")?;
+    let cmd = "export.plan";
+    let encoding = encoding_p(p, cmd)?;
+    let (src, plan) = plan_of(s, p, cmd)?;
     let summary = summary(&plan);
-    Ok(json!({"plan": plan, "summary": summary}))
+    if !plan.plan.requires_confirmation() {
+        return Ok(json!({"plan": plan, "summary": summary}));
+    }
+    // the boundary re-encoder's refusals, before anything is decoded or written
+    let stream = src.stream().ok_or_else(|| EngineError::Other(format!("{}: no stream was indexed", src.path)))?;
+    let problem = check_mp4_boundary_reencode(&plan.plan, stream, &copy_source(&src), &encoding).err().map(|e| e.to_string());
+    Ok(json!({"plan": plan, "summary": summary, "boundaryReencode": {"ready": problem.is_none(), "problem": problem}}))
 }
 
 fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.start";
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
+    let encoding = encoding_p(p, cmd)?;
     let (src, plan) = plan_of(s, p, cmd)?;
     if output == src.path {
         return Err(bad(cmd, "the output must not be the source file"));
     }
-    if plan.plan.requires_confirmation() {
-        // even with "confirm": true, there is no boundary re-encoder yet
-        let confirmed = bool_p(p, "confirm").unwrap_or(false);
+    let reencodes = plan.plan.requires_confirmation();
+    if reencodes && !bool_p(p, "confirm").unwrap_or(false) {
         return Err(bad(
             cmd,
             format!(
-                "the plan re-encodes {} frames at its boundaries ({}); the Smart Render executor is not implemented yet (WP-06). Use \"mode\": \"gop-boundary\" or cut at the safe points",
-                plan.plan.reencoded_frames(),
-                if confirmed { "confirmed" } else { "not confirmed" }
+                "the plan re-encodes {} frames at its boundaries; run it with \"confirm\": true, or use \"mode\": \"gop-boundary\" to copy without re-encoding",
+                plan.plan.reencoded_frames()
             ),
         ));
     }
@@ -219,14 +255,26 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(EngineError::Other(format!("Smart Cut cannot run: {}", plan.blockers.join("; "))));
     }
     let stream = src.stream().ok_or_else(|| EngineError::Other(format!("{}: no stream was indexed", src.path)))?;
-    let source = cfa4_export::smart_cut::Mp4CopySource { file: &src.file, bytes: &*src.bytes, track: src.track };
-    let (out, report) =
-        cfa4_export::smart_cut::execute_mp4_copy(&plan.plan, stream, &source, Cursor::new(Vec::new())).map_err(|e| EngineError::Other(e.to_string()))?;
-    let bytes = out.into_inner();
-    let verified = cfa4_export::smart_cut::verify_mp4_copy(&plan.plan, stream, &source, bytes.as_slice()).map_err(|e| EngineError::Other(e.to_string()))?;
-    if verified != report {
-        return Err(EngineError::Other("Smart Cut verification read back another file than was written".into()));
-    }
+    let source = copy_source(&src);
+    let other = |e: SmartCutError| EngineError::Other(e.to_string());
+    let (bytes, report) = if reencodes {
+        let (out, report) = execute_mp4_boundary_reencode(&plan.plan, stream, &source, &encoding, Cursor::new(Vec::new())).map_err(other)?;
+        let bytes = out.into_inner();
+        let verified = verify_mp4_boundary_reencode(&plan.plan, stream, &source, &encoding, bytes.as_slice()).map_err(other)?;
+        if (verified.samples, verified.copied, verified.reencoded) != (report.samples, report.copied, report.reencoded) {
+            return Err(EngineError::Other("Smart Cut verification read back another file than was written".into()));
+        }
+        // the verified report carries the measured quality of the re-encoded pictures
+        (bytes, serde_json::to_value(&verified).map_err(|e| EngineError::Other(e.to_string()))?)
+    } else {
+        let (out, report) = execute_mp4_copy(&plan.plan, stream, &source, Cursor::new(Vec::new())).map_err(other)?;
+        let bytes = out.into_inner();
+        let verified = verify_mp4_copy(&plan.plan, stream, &source, bytes.as_slice()).map_err(other)?;
+        if verified != report {
+            return Err(EngineError::Other("Smart Cut verification read back another file than was written".into()));
+        }
+        (bytes, serde_json::to_value(&report).map_err(|e| EngineError::Other(e.to_string()))?)
+    };
     s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
     let summary = summary(&plan);
     Ok(json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary}))
@@ -248,14 +296,14 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.plan",
             "Plan Smart Cut",
-            r#"{"path":str,"in":time,"out":time (exclusive),"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"="source"} → {plan, summary}"#,
+            r#"{"path":str,"in":time,"out":time (exclusive),"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"="source","crf":number=16} → {plan, summary, boundaryReencode?:{ready,problem}}"#,
             plan,
             false,
         ),
         spec(
             "export.start",
             "Run Smart Cut",
-            r#"{"path":str,"in":time,"out":time,"output":str,"mode":…,"guarantee":…,"confirm":bool?} → {output, bytes, report, verified}"#,
+            r#"{"path":str,"in":time,"out":time,"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16} → {output, bytes, report, verified}"#,
             start,
             true,
         ),
