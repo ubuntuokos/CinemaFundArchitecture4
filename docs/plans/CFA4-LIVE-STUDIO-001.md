@@ -28,7 +28,8 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
 8. **Csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); zárt SDK-t igénylő (pl. NDI) nincs (D4).
 9. **Önálló „Élő” munkaterület** a Qt6 felületen; a C10 Élő grafika ablaka beleolvad (D5).
 10. **Műsorterv (rundown)** a terv része, az S4a fázisban (D6).
-11. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
+11. **Ütemezés:** az S0 most indulhat, az S1-től minden a Qt6 befejezése után (D7).
+12. **Bemenetek, kép és hang, stúdió mód, kimenetek, kódolók, vezérlés, átállás, mérés:** az
    egyeztetés szerinti felsorolással (IV. fejezet).
 
 ## II. Kiinduló helyzet
@@ -118,7 +119,7 @@ munkával ütközésnél a Qt6 megy előre.
 | **S11** – Mérés és stabilitás | statisztika-panel, tartós terheléses próbák, hibainjektálás, dokumentáció | 8 órás adás a referenciagépen, összeomlás nélkül |
 | **S12+** – Rust-csere | a libobs részei sorban saját Rust kódra: 1. kompozitálás és átmenetek (a CFA4 renderelője), 2. szűrők, 3. kimenetek és kódolás (GStreamer/saját muxerek), 4. rögzítés (PipeWire, V4L2) | minden csere ugyanazon a traiten, a régi úttal összemérve; ha valamelyik lassabb, marad a libobs |
 
-## VII. Nyitott döntések (lépésenként egyeztetjük)
+## VII. Döntések (2026-11-09-én lépésenként egyeztetve, mind eldöntve)
 
 | # | Kérdés | Javaslat |
 |---|---|---|
@@ -128,7 +129,7 @@ munkával ütközésnél a Qt6 megy előre.
 | D4 | Zárt protokollok | **Eldöntve (2026-11-09): csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); NDI és más zárt SDK-t igénylő protokoll nincs |
 | D5 | Az élő stúdió helye | **Eldöntve (2026-11-09): önálló „Élő” munkaterület** a szerkesztés, szín, hang mellett (középen előnézet és program, lent jelenetek, források, hangkeverő, oldalt átmenetek és vezérlés); a C10 Élő grafika ablaka ide kerül át; közös projekt |
 | D6 | Műsorterv (rundown) | **Eldöntve (2026-11-09): a terv része**, az S4a fázisban (az S4 stúdió mód után); a `VISION.md` 8. pontjának nyitott kérdését ezzel a tulajdonos lezárta |
-| D7 | Ütemezés: a Qt6 befejezése után, vagy azzal párhuzamosan? | az S0 most indulhat (nem érinti a Qt6 fájljait), az S1-től a Qt6 után |
+| D7 | Ütemezés | **Eldöntve (2026-11-09): az S0 most indulhat** (nem érinti a Qt6 fájljait), **az S1-től minden a Qt6 befejezése után** |
 
 ## VIII. Kockázatok
 
