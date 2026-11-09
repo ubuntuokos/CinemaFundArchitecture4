@@ -88,6 +88,13 @@ fn device_failed() -> bool {
     DEVICE_FAILED.load(std::sync::atomic::Ordering::SeqCst)
 }
 
+/// Whether an adapter is a software rasteriser: a CPU device, or one of those that report another
+/// device type but are named for it (SwiftShader, llvmpipe, softpipe), as the desktop app decides.
+pub fn is_software_rasterizer(name: &str, device_type: wgpu::DeviceType) -> bool {
+    let name = name.to_ascii_lowercase();
+    device_type == wgpu::DeviceType::Cpu || ["llvmpipe", "swiftshader", "softpipe"].iter().any(|s| name.contains(s))
+}
+
 pub struct ExportRenderer {
     _instance: wgpu::Instance,
     #[expect(dead_code, reason = "kept for future frame-accuracy flows (readback fences)")]
@@ -114,7 +121,8 @@ impl ExportRenderer {
                 }
                 let instance = wgpu::Instance::default();
                 let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default())).ok()?;
-                let software = adapter.get_info().device_type == wgpu::DeviceType::Cpu;
+                let info = adapter.get_info();
+                let software = is_software_rasterizer(&info.name, info.device_type);
                 let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
                 // wgpu's default handler panics on a validation or out-of-memory error; log it and
                 // send the remaining frames to the CPU instead.
@@ -165,7 +173,8 @@ impl ExportRenderer {
     /// One frame as the desktop monitors show it: composited on the GPU (transitions included)
     /// into the sRGB display texture, over black, and read back as RGBA8 (`w`, `h`, pixels).
     /// A plan that is already a CPU picture (HDR, wide gamut) comes back as that picture's bytes,
-    /// so the caller does not render it a second time. `None` when the GPU cannot draw this frame.
+    /// so the caller does not render it a second time. The last value is whether the GPU drew it
+    /// (false for such a picture). `None` when the GPU cannot draw this frame.
     pub fn render_display_rgba8(
         &mut self,
         project: &Project,
@@ -173,13 +182,13 @@ impl ExportRenderer {
         t: Tick,
         opts: RenderOptions,
         sources: &dyn SourceProvider,
-    ) -> Option<(usize, usize, Vec<u8>)> {
+    ) -> Option<(usize, usize, Vec<u8>, bool)> {
         if device_failed() {
             return None;
         }
         let plan = plan_frame(project, seq, t, opts, sources);
         if let FramePlan::Image(img) = &plan {
-            return Some((img.w, img.h, img.over_black_rgba8()));
+            return Some((img.w, img.h, img.over_black_rgba8(), false));
         }
         let prep = prepare(&plan);
         self.compositor.composite_prepared(&plan, Some(&prep));
@@ -188,7 +197,7 @@ impl ExportRenderer {
             return None;
         }
         timing::add_frame();
-        Some((w as usize, h as usize, px))
+        Some((w as usize, h as usize, px, true))
     }
 }
 
@@ -205,6 +214,16 @@ mod tests {
     use std::sync::Arc;
 
     const EPS: f32 = 1e-4;
+
+    #[test]
+    fn software_rasterizers_are_known_by_type_or_name() {
+        use wgpu::DeviceType as D;
+        assert!(is_software_rasterizer("llvmpipe (LLVM 20.1.2, 256 bits)", D::Cpu));
+        assert!(is_software_rasterizer("SwiftShader Device (Subzero)", D::Other));
+        assert!(is_software_rasterizer("softpipe", D::Other));
+        assert!(!is_software_rasterizer("AMD Radeon RX 7900 XTX (RADV NAVI31)", D::DiscreteGpu));
+        assert!(!is_software_rasterizer("Intel(R) Arc(tm) Graphics (MTL)", D::IntegratedGpu));
+    }
 
     /// A solid colour generator at 320×180 plus a tone generator (mirrors the export tests'
     /// fixture-free project helper).

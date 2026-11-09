@@ -267,7 +267,7 @@ impl cfa4_engine::DisplayRenderer for DisplayGpu {
         t: cfa4_time::Tick,
         opts: cfa4_render::RenderOptions,
         sources: &dyn cfa4_render::SourceProvider,
-    ) -> Option<(usize, usize, Vec<u8>)> {
+    ) -> Option<(usize, usize, Vec<u8>, bool)> {
         self.0.render_display_rgba8(project, seq, t, opts, sources)
     }
 }

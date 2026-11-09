@@ -83,8 +83,9 @@ pub use commands::{CommandSpec, command_specs, find as find_command};
 pub use media_pool::MediaPool;
 
 /// Draws a Program frame as opaque sRGB RGBA8 bytes off the CPU (the desktop monitors' GPU
-/// compositor), for [`Session::try_render_program_rgba8_using`]. `None` leaves the frame to the
-/// CPU renderer.
+/// compositor), for [`Session::try_render_program_rgba8_using`]: `w`, `h`, pixels and whether the
+/// GPU drew it (false when the frame's plan already was a CPU picture it hands back). `None`
+/// leaves the frame to the CPU renderer.
 pub trait DisplayRenderer {
     fn render_rgba8(
         &mut self,
@@ -93,7 +94,7 @@ pub trait DisplayRenderer {
         t: Tick,
         opts: cfa4_render::RenderOptions,
         sources: &dyn cfa4_render::SourceProvider,
-    ) -> Option<(usize, usize, Vec<u8>)>;
+    ) -> Option<(usize, usize, Vec<u8>, bool)>;
 }
 
 /// The OS temp folder; `/tmp` on wasm32, where `std::env::temp_dir()` panics ("no filesystem on
@@ -1232,7 +1233,7 @@ impl Session {
 
     /// [`Self::try_render_program_rgba8_with_offline_at`], composited by `display` (the GPU
     /// compositor the desktop monitors use) when it takes the frame, else by the CPU renderer.
-    /// The last value is whether `display` drew it.
+    /// The last value is whether the GPU drew it.
     #[expect(clippy::type_complexity, reason = "the frame, its offline media and who drew it")]
     pub fn try_render_program_rgba8_using(
         &self,
@@ -1244,11 +1245,11 @@ impl Session {
         let seq = self.renderable_sequence(scale)?;
         let t = self.sequence_rate().snap(t.max(Tick::ZERO));
         let opts = cfa4_render::RenderOptions { scale, captions: true, ..Default::default() };
-        if let Some((w, h, mut px)) = display.and_then(|d| d.render_rgba8(&self.project, seq, t, opts, &provider)) {
+        if let Some((w, h, mut px, on_gpu)) = display.and_then(|d| d.render_rgba8(&self.project, seq, t, opts, &provider)) {
             for a in px.iter_mut().skip(3).step_by(4) {
                 *a = 255;
             }
-            return Ok((w, h, px, provider.offline_used(), true));
+            return Ok((w, h, px, provider.offline_used(), on_gpu));
         }
         let (w, h, mut px) = cfa4_render::render_sequence_rgba8(&self.project, seq, t, opts, &provider);
         // opaque, as `Image::over_black_rgba8`: the fallback keeps the picture's alpha in the fourth byte
