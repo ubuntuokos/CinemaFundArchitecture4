@@ -162,7 +162,7 @@ struct Slot {
 pub struct Session {
     api: &'static Api,
     enc: Handle,
-    // Keeps the Direct3D device / retained CUDA context alive through session destruction.
+    // Keeps the retained CUDA context alive through session destruction.
     _device: Device,
     slots: Vec<Slot>,
     size: (u32, u32),
@@ -181,7 +181,7 @@ pub struct Session {
 }
 
 // SAFETY: an encoder session and its buffers are driver objects used from one thread at a time (the
-// session is `&mut`-driven); Direct3D is free-threaded, and NVENC takes an explicit CUDA context.
+// session is `&mut`-driven), and NVENC takes an explicit CUDA context.
 unsafe impl Send for Session {}
 
 /// A readable form of a driver status.
