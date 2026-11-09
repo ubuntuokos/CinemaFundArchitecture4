@@ -2374,9 +2374,7 @@ def test_export_sends_the_audio_bitrate(app):
 
 
 # egui's Export ids the Qt window has no widget for yet, and why
-EXPORT_IDS_NOT_IN_QT = {
-    "export.destination.mediaFile": "no Destinations column: Media File is the only destination",
-}
+EXPORT_IDS_NOT_IN_QT: dict[str, str] = {}
 
 
 def test_export_widgets_carry_eguis_automation_ids(app):
@@ -4144,7 +4142,8 @@ def test_real_engine_transitions_in_the_timeline_and_effect_controls(app, tmp_pa
         dialog.findChild(QtWidgets.QPushButton, "transitionDuration.ok").click()
         assert wait_until(app, lambda: transition()[1]["duration"] == 8 * view.duration.frame, 10_000)
 
-        # a click on empty space lets go of it
+        # a click on empty space lets go of it (the top video track, scrolled into view)
+        canvas.set_v_scroll(canvas.max_v_scroll)
         QtTest.QTest.mouseClick(canvas, left, nomod, QtCore.QPoint(canvas.width() - 5, canvas.rows[0].top + 5))
         assert wait_until(app, lambda: not win.sequence.get("transitionSelection"), 10_000)
         assert wait_until(app, lambda: not view.isVisible() and ec.title.isVisible(), 10_000)
@@ -4407,38 +4406,50 @@ def test_every_track_is_reachable_in_a_short_timeline(app, tmp_path: Path):
         assert wait_until(app, lambda: win.sequence is not None, 60_000)
         panel = win.timeline
         canvas = panel.canvas
-        canvas.setFixedHeight(200)  # short, like the default dock
+        canvas.setFixedHeight(300)  # short, like the default dock
         wait_until(app, lambda: False, 200)
         names = [r.name for r in canvas.rows]
         assert names[-3:] == ["Audio 1", "Audio 2", "Audio 3"], names
+        aa = canvas.audio_area()
         last = canvas.rows[-1]
-        assert last.top + last.height > canvas.height(), "the demo must not fit, or this test proves nothing"
-        assert panel.vscroll.isVisible() and panel.vscroll.maximum() == canvas.max_scroll_y() > 0
-        panel.vscroll.setValue(panel.vscroll.maximum())
+        assert last.top + last.height > aa.bottom() + 1, "the demo must not fit, or this test proves nothing"
+        bar = panel.vscroll_audio
+        assert bar.isVisible() and bar.maximum() == canvas.max_a_scroll > 0
+        bar.setValue(bar.maximum())
         wait_until(app, lambda: False, 100)
         last = canvas.rows[-1]
-        assert last.top + last.height <= canvas.height(), (last.top, canvas.height())
-        # the music clip on Audio 2 can now be hit, and nothing is hit under the ruler
+        assert last.top + last.height <= aa.bottom() + 1, (last.top, aa.bottom())
+        # the music clip on Audio 2 can now be hit, and nothing is hit under the ruler or the divider
         a2 = next(r for r in canvas.rows if r.name == "Audio 2")
         clip = a2.track["items"][0]
         rect = canvas.clip_rect(a2, clip)
         row, hit_clip, _edge = canvas.hit(rect.center().toPoint())
         assert row is a2 and hit_clip is clip
         assert canvas.row_at(5) is None
-        # Shift+wheel and the wheel over the track headers scroll vertically too
-        panel.vscroll.setValue(0)
-        ev = QtGui.QWheelEvent(
-            QtCore.QPointF(20, 100), QtCore.QPointF(20, 100), QtCore.QPoint(0, 0), QtCore.QPoint(0, -240),
-            QtCore.Qt.MouseButton.NoButton, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.Qt.ScrollPhase.NoScrollPhase, False,
-        )
-        canvas.wheelEvent(ev)
-        assert canvas.scroll_y > 0 and panel.vscroll.value() == canvas.scroll_y
-        # a tall panel shows everything and hides the bar
+        assert canvas.row_at(canvas.divider_rect().center().y()) is None
+        # Shift+wheel and the wheel over the track headers scroll the area under the pointer
+        bar.setValue(0)
+        y = aa.top() + 10
+
+        def wheel(y: int, dy: int) -> None:
+            canvas.wheelEvent(QtGui.QWheelEvent(
+                QtCore.QPointF(20, y), QtCore.QPointF(20, y), QtCore.QPoint(0, 0), QtCore.QPoint(0, dy),
+                QtCore.Qt.MouseButton.NoButton, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.Qt.ScrollPhase.NoScrollPhase, False,
+            ))
+
+        v_before = canvas.v_scroll
+        wheel(y, -240)
+        assert canvas.a_scroll > 0 and bar.value() == canvas.a_scroll and canvas.v_scroll == v_before
+        if canvas.max_v_scroll:  # the video tracks scroll on their own, above the divider
+            wheel(canvas.video_area().top() + 5, 240)
+            assert canvas.v_scroll > v_before
+            assert panel.vscroll_video.value() == canvas.max_v_scroll - canvas.v_scroll
+        # a tall panel shows everything and hides the bars
         canvas.setMinimumHeight(0)
         canvas.setMaximumHeight(16_777_215)
-        canvas.setFixedHeight(900)
+        canvas.setFixedHeight(1200)
         wait_until(app, lambda: False, 200)
-        assert canvas.scroll_y == 0 and not panel.vscroll.isVisible()
+        assert canvas.a_scroll == 0 and not bar.isVisible()
     finally:
         win._quit_confirmed = True
         win.close()
@@ -4639,14 +4650,14 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         win.run_preset("window.dockAction", {"action": {"Activate": {"panel": "History"}}})
         assert not hist.isHidden()
         assert errors == []
-        # without `panel`: the dock holding the focus (Properties' widgets are panel.Inspector)
+        # without `panel`: the dock holding the focus (Properties' widget is egui's panel.Properties)
         props = win.docks["Properties"]
         props.show()
         props.raise_()
         win.activateWindow()
         assert wait_until(app, lambda: props.widget().isVisible() and not props.visibleRegion().isEmpty(), 3_000)
         inner = props.widget()
-        assert inner.objectName() == "panel.Inspector"
+        assert inner.objectName() == "panel.Properties"
         inner.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         inner.setFocus()
         assert wait_until(app, lambda: QtWidgets.QApplication.focusWidget() is inner, 3_000), QtWidgets.QApplication.focusWidget()
@@ -5328,7 +5339,7 @@ def test_real_engine_timeline_mix_row_as_egui(app, tmp_path: Path):
         assert mix.bottom() == canvas.height() - 1 and mix.height() == tl.MASTER_H
         assert canvas.row_at(mix.center().y()) is None
         # the tracks fit above the Mix row: the scroll range leaves it out
-        canvas.set_scroll_y(canvas.max_scroll_y())
+        canvas.set_a_scroll(canvas.max_a_scroll)
         last = canvas.rows[-1]
         assert last.top + last.height <= mix.top() + 8
         # the fader in dB, hot text, right-aligned in the header column
@@ -5663,9 +5674,9 @@ def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
         assert wait_until(app, lambda: len(captions()) == 1, 10_000)
         canvas.zoom_to_fit()
         wait_until(app, lambda: False, 200)
-        # the caption row pushes the tracks down
+        # the caption row pushes the tracks down: the video area starts under it (egui's tracks_area)
         assert canvas.tracks_top() == tl.RULER_H + tl.CAPTION_ROW_H + tl.CAPTION_DIVIDER_H
-        assert canvas.rows[0].top == top_video + tl.CAPTION_ROW_H + tl.CAPTION_DIVIDER_H
+        assert canvas.video_area().top() == canvas.tracks_top() and top_video >= tl.RULER_H
         assert canvas.row_at(tl.RULER_H + 5) is None
         cap = captions()[0]
         r = canvas.caption_block_rect(0, cap)
@@ -12140,9 +12151,13 @@ def test_real_engine_control_channel_names_timeline_parts_as_egui(app, tmp_path:
 
         fixed = {"timeline.timecode", "timeline.ruler", "timeline.tracks"}
         switches = {f"timeline.track.V1.{k}" for k in ("sourcePatch", "target", "locked", "syncLock", "enabled", "resize")}
-        switches.add(f"timeline.track.V{len(win.sequence['video'])}.resizeTop")  # the top video track's outer edge
         switches |= {f"timeline.track.A1.{k}" for k in ("sourcePatch", "target", "locked", "syncLock", "muted", "solo", "voiceover", "keyframes", "resize")}
         assert wait_until(app, lambda: fixed | switches <= set(els()), 10_000), sorted((fixed | switches) - set(els()))
+        # the video area scrolled to its top shows the top track's outer edge
+        canvas.set_v_scroll(canvas.max_v_scroll)
+        top_edge = f"timeline.track.V{len(win.sequence['video'])}.resizeTop"
+        assert wait_until(app, lambda: top_edge in els(), 10_000), sorted(els())
+        canvas.set_v_scroll(0)
         e = els()
         assert e["timeline.track.A1.muted"]["label"] == "Mute Track"
         clips = [i for i in e if re.fullmatch(r"timeline\.clip\.\d+", i)]
@@ -13012,6 +13027,385 @@ def test_real_engine_history_panel_menu_deletes_redoable_and_clears(app, tmp_pat
         assert len((win.sequence or {}).get("markers") or []) == markers
         assert not answers
     finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_video_audio_divider_as_egui(app, tmp_path: Path):
+    """egui's divider between the video and the audio tracks (timeline.rs split_y / DIVIDER_H):
+    a drag moves it within 10–90 %, each area scrolls on its own (V1 sits at the bottom of the
+    video area, A1 at the top of the audio area), and the control channel names and sets it."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+    from PySide6.QtTest import QTest
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setFixedHeight(400)
+        wait_until(app, lambda: False, 200)
+        va, aa, div = canvas.video_area(), canvas.audio_area(), canvas.divider_rect()
+        assert va.bottom() + 1 == div.top() and div.bottom() + 1 == aa.top() and div.height() == tl.DIVIDER_H
+        assert aa.bottom() + 1 == canvas.mix_rect().top()
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        a1 = next(r for r in canvas.rows if r.short == "A1")
+        assert v1.top + v1.height == va.bottom() + 1 and a1.top == aa.top()
+        assert canvas.row_at(div.center().y()) is None
+        # a drag on the divider moves it; it stops at 10 % and 90 %
+        btn = QtCore.Qt.MouseButton.LeftButton
+        x = tl.HEADER_W + 200
+        QTest.mousePress(canvas, btn, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.QPoint(x, div.center().y()))
+        QTest.mouseMove(canvas, QtCore.QPoint(x, div.center().y() + 60))
+        QTest.mouseRelease(canvas, btn, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.QPoint(x, div.center().y() + 60))
+        assert canvas.split > 0.5 and abs(canvas.divider_rect().top() - (div.top() + 60)) <= 2, canvas.split
+        canvas.set_split(2.0)
+        assert canvas.split == tl.SPLIT_MAX
+        canvas.set_split(0.0)
+        assert canvas.split == tl.SPLIT_MIN
+        canvas.set_split(0.5)
+        # the control channel names the divider and reads and sets the split and the offsets
+        c = _ControlClient(app, server.port())
+        els = {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline."})["result"]}
+        assert "timeline.divider" in els, sorted(els)
+        state = c.call("ui.inspect")["result"]["timeline"]
+        assert state["split"] == 0.5 and state["vScroll"] == canvas.v_scroll and state["aScroll"] == canvas.a_scroll
+        assert c.call("ui.set", {"timeline": {"split": 0.3}})["ok"] and canvas.split == 0.3
+        assert c.call("ui.set", {"timeline": {"aScroll": 10_000, "vScroll": 10_000}})["ok"]
+        assert canvas.a_scroll == canvas.max_a_scroll and canvas.v_scroll == canvas.max_v_scroll
+        # the top video track is shown with the room for a new one above it, where a drop adds a track
+        va = canvas.video_area()
+        top = canvas.rows[0]
+        assert top.kind == "video" and top.top == va.top() + canvas.video_h
+        hit = canvas.new_track_at(va.top() + 5)
+        assert hit is not None and hit[0] == "video"
+        assert canvas.new_track_at(canvas.divider_rect().center().y()) is None
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_timeline_sequence_tabs_as_egui(app, tmp_path: Path):
+    """egui's ``timeline.tab.<id>`` (dock.rs): each open sequence's tab is an element with the
+    sequence's name, and ``ui.click`` on it shows that sequence."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        first = win.sequence["id"]
+        win.execute("file.newSequence", {"name": "Second"})
+        assert wait_until(app, lambda: win.timeline.tabs.count() == 2 and win.sequence["id"] != first, 10_000)
+        second = win.sequence["id"]
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline.tab"})["result"]}
+
+        assert wait_until(app, lambda: {f"timeline.tab.{first}", f"timeline.tab.{second}", f"timeline.tab.{second}.close"} <= set(els()), 10_000), sorted(els())
+        assert els()[f"timeline.tab.{second}"]["label"] == "Second"
+        assert c.call("ui.click", {"id": f"timeline.tab.{first}"})["ok"]
+        assert wait_until(app, lambda: win.sequence["id"] == first, 10_000)
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_tabs_more_list_as_egui(app, tmp_path: Path):
+    """egui's » on the Timeline tab strip (dock.rs ``timeline.tabs.more``): shown only while the
+    sequence tabs don't all fit; it lists every open sequence (``timeline.tabs.list.<id>``, the
+    shown one ticked) and a pick shows that sequence."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    panel = win.timeline
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        first = win.sequence["id"]
+        win.execute("file.newSequence", {"name": "Second"})
+        assert wait_until(app, lambda: panel.tabs.count() == 2 and win.sequence["id"] != first, 10_000)
+        second = win.sequence["id"]
+        wait_until(app, lambda: False, 100)
+        assert panel.tabs_fit() and not panel.tabs_more.isVisible()
+        # many long-named sequences: the tabs overflow and » shows
+        for k in range(6):
+            win.execute("file.newSequence", {"name": f"A rather long sequence name {k}"})
+        assert wait_until(app, lambda: panel.tabs.count() == 8, 20_000)
+        assert wait_until(app, lambda: panel.tabs_more.isVisible(), 5_000), [panel.tabs.width(), panel.tabs.sizeHint()]
+        assert panel.tabs_more.objectName() == "timeline.tabs.more"
+        panel.tabs_more.click()
+        assert wait_until(app, lambda: panel.last_tabs_list is not None and panel.last_tabs_list.isVisible(), 5_000)
+        acts = {a.objectName(): a for a in panel.last_tabs_list.actions()}
+        assert len(acts) == 8 and f"timeline.tabs.list.{first}" in acts
+        active = win.sequence["id"]
+        assert acts[f"timeline.tabs.list.{active}"].isChecked()
+        assert sum(a.isChecked() for a in acts.values()) == 1
+        assert acts[f"timeline.tabs.list.{second}"].text() == "Second"
+        acts[f"timeline.tabs.list.{first}"].trigger()
+        panel.last_tabs_list.close()
+        assert wait_until(app, lambda: win.sequence["id"] == first, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
+    """egui's ``project.empty`` (project_views.rs empty_space): the List and Icon views' empty
+    space under the rows is an element; a click there deselects and a double-click imports."""
+    import re
+
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    invoked: list[str] = []
+    snap: dict = {}
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.docks["Project"].raise_()
+        win.project_panel.invoke.disconnect()  # no real Import dialog: only record the command
+        win.project_panel.invoke.connect(lambda cid, *_a: invoked.append(cid))
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "project."})["result"]}
+
+        for mode in ("list", "icon"):
+            win.execute("project.view.set", {"view": mode})
+            snap.clear()
+
+            def ready() -> bool:
+                snap.clear()
+                snap.update(els())
+                return "project.empty" in snap and any(re.fullmatch(r"project\.(bin|item)\.\d+", i) for i in snap)
+
+            assert wait_until(app, ready, 20_000), (mode, sorted(snap))
+            e = dict(snap)
+            y = e["project.empty"]["rect"][1]
+            rows = [v["rect"] for k, v in e.items() if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
+            assert all(ry + rh <= y + 1 for _rx, ry, _rw, rh in rows), (mode, e["project.empty"], rows)
+            item = min(i for i in e if re.fullmatch(r"project\.(bin|item)\.\d+", i))
+            assert c.call("ui.click", {"id": item})["ok"]
+            assert wait_until(app, lambda: bool(win.project_panel.main.selected_items()) or win.project_panel.main.selected_bin is not None, 10_000)
+            assert c.call("ui.click", {"id": "project.empty"})["ok"]
+            assert wait_until(app, lambda: not win.project_panel.main.selected_items(), 10_000), (mode, win.project_panel.main.selected_items())
+            invoked.clear()
+            assert c.call("ui.click", {"id": "project.empty", "count": 2})["ok"]
+            assert wait_until(app, lambda: "file.import" in invoked, 5_000), (mode, invoked)
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_tools_panel_names_hidden_group_tools_as_egui(app):
+    """egui's tools.rs: the tools a group button hides are ``tools.<Tool>`` click aliases on
+    that button's rect, so every tool has its ``tools.<Tool>`` id whichever one a group shows."""
+    from cfa4_qt.panels.tools import GROUPS, TOOLS, ToolsPanel, egui_tool
+
+    panel = ToolsPanel()
+    panel.show()
+    try:
+        wait_until(app, lambda: False, 50)
+        parts = {pid: (rect, label) for pid, rect, label in panel.automation_parts()}
+        shown = {b.objectName() for b in panel.buttons}
+        assert shown | set(parts) == {f"tools.{egui_tool(t)}" for t in TOOLS}
+        assert not shown & set(parts), "a shown tool is the button itself, not an alias"
+        for gi, group in enumerate(GROUPS):
+            for t in group[1:]:
+                rect, label = parts[f"tools.{egui_tool(t.id)}"]
+                assert rect == panel.buttons[gi].geometry() and label == t.label
+        # picking a hidden tool makes it the button, and the shown one becomes an alias
+        roll_group = next(gi for gi, g in enumerate(GROUPS) if any(t.id == "rolling" for t in g))
+        head = GROUPS[roll_group][0].id
+        panel.select("rolling")
+        parts = {pid for pid, _r, _l in panel.automation_parts()}
+        assert panel.buttons[roll_group].objectName() == "tools.Rolling"
+        assert "tools.Rolling" not in parts and f"tools.{egui_tool(head)}" in parts
+    finally:
+        panel.deleteLater()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_every_dock_widget_is_eguis_panel_id(app, tmp_path: Path):
+    """egui's dock_ui.rs registers each panel's content as ``panel.<PanelKind id>``; each Qt dock's
+    widget carries the same name (Properties was ``panel.Inspector``)."""
+    from cfa4_qt.dock_commands import panel_id
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    try:
+        wrong = {t: d.widget().objectName() for t, d in win.docks.items() if d.widget() is not None and d.widget().objectName() != f"panel.{panel_id(t)}"}
+        assert not wrong, wrong
+        assert win.docks["Properties"].widget().objectName() == "panel.Properties"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_dock_tabs_more_list_as_egui(app, tmp_path: Path):
+    """egui's » on a panel group's tab strip (dock.rs ``panel.tabs.more.<path>``, the path as
+    the dock gutters'): shown only while the group's tabs don't all fit; it lists the group's
+    panels (``panel.tabs.list.<Panel>``, the shown one ticked) and a pick shows that panel."""
+    from cfa4_qt import dock_commands
+    from cfa4_qt.dock_gutters import layout_leaves, leaf_paths
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None, 60_000)
+        bars = [b for b in win.findChildren(QtWidgets.QTabBar, options=QtCore.Qt.FindChildOption.FindDirectChildrenOnly) if b.isVisible() and b.count() > 2]
+        assert bars, "the default layout has tab groups"
+        bar = max(bars, key=lambda b: b.count())
+        dock_commands.sync_tabs_more(win)
+        more = getattr(bar, "_cfa4_more", None)
+        assert more is None or not more.isVisible() or not dock_commands.tabs_fit(bar)
+        # narrow the group until its tabs don't fit: » shows at the strip's right end
+        title = dock_commands._title_of_tab(win, bar, bar.currentIndex())
+        dock = win.docks[title]
+        win.resizeDocks([dock], [140], QtCore.Qt.Orientation.Horizontal)
+        assert wait_until(app, lambda: not dock_commands.tabs_fit(bar), 5_000), (bar.width(), bar.count())
+        assert wait_until(app, lambda: getattr(bar, "_cfa4_more", None) is not None and bar._cfa4_more.isVisible(), 5_000)
+        more = bar._cfa4_more
+        paths = {p for _leaf, p in leaf_paths(layout_leaves(win))}
+        assert more.objectName().startswith("panel.tabs.more.") and more.objectName()[len("panel.tabs.more."):] in paths, (more.objectName(), paths)
+        assert more.geometry().right() <= bar.width()
+        more.click()
+        assert wait_until(app, lambda: getattr(win, "last_tabs_list", None) is not None and win.last_tabs_list.isVisible(), 5_000)
+        acts = {a.objectName(): a for a in win.last_tabs_list.actions()}
+        titles = [dock_commands._title_of_tab(win, bar, i) for i in range(bar.count())]
+        assert list(acts) == [f"panel.tabs.list.{dock_commands.panel_id(t)}" for t in titles]
+        assert [a.isChecked() for a in acts.values()] == [i == bar.currentIndex() for i in range(bar.count())]
+        other = next(i for i in range(bar.count()) if i != bar.currentIndex())
+        list(acts.values())[other].trigger()
+        win.last_tabs_list.close()
+        assert wait_until(app, lambda: bar.currentIndex() == other, 5_000)
+        # a wide group: » goes
+        win.resizeDocks([dock], [1200], QtCore.Qt.Orientation.Horizontal)
+        assert wait_until(app, lambda: dock_commands.tabs_fit(bar) and not more.isVisible(), 5_000), (bar.width(), more.isVisible())
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_queue_column_as_egui(app, tmp_path: Path):
+    """egui's Export left column: "Destinations" with Media File (always the chosen one) over the
+    queue, the settings beside it; each queued export carries egui's Up / Down / Cancel or Retry /
+    Remove buttons (``export.queue.item.<id>.<key>``) and is the ``export.queue.item.<id>`` part."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+
+    def done_exec(cid: str, params: dict) -> dict:
+        out: list = []
+        engine.execute(cid, params, on_reply=lambda r, _b: out.append(r), on_error=lambda m: out.append(("error", m)))
+        assert wait_until(app, lambda: out, 10_000), cid
+        assert not (isinstance(out[0], tuple) and out[0][0] == "error"), out[0]
+        return out[0]
+
+    dlg = None
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        names = ["a.mov", "b.mov", "c.mov"]
+        for n in names:
+            done_exec("export.queue.add", {"preset": "Apple ProRes 422 HQ", "path": str(tmp_path / n), "range": "entire"})
+        ids = [i["id"] for i in done_exec("export.queue.list", {})["items"]]
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and dlg.isVisible()
+
+        def order() -> list[str]:
+            return [Path(dlg.table.item(r, 1).text()).name for r in range(dlg.table.rowCount())]
+
+        assert wait_until(app, lambda: order() == names, 10_000), order()
+        # the left column: Destinations, Media File, then the queue; the settings to its right
+        dest = dlg.findChild(QtWidgets.QLabel, "export.destinations")
+        media = dlg.findChild(QtWidgets.QLabel, "export.destination.mediaFile")
+        assert dest.text() == "Destinations" and dest.font().bold() and media.text() == "Media File"
+        def top(w: QtWidgets.QWidget) -> QtCore.QPoint:
+            return w.mapTo(dlg, QtCore.QPoint(0, 0))
+
+        assert top(dest).y() < top(media).y() < top(dlg.queue_box).y()
+        assert top(dlg.queue_box).x() < top(dlg.settings_scroll).x(), "the queue is left of the settings"
+        assert abs(top(dlg.queue_box).x() - top(media).x()) < 20
+        assert dlg.queue_column.width() < dlg.width() // 2, "a narrow column, as egui's"
+        assert dlg.table.item(0, 1).toolTip().endswith("a.mov")
+
+        def button(i: int, key: str) -> QtWidgets.QToolButton | None:
+            return dlg.findChild(QtWidgets.QToolButton, f"export.queue.item.{ids[i]}.{key}")
+
+        assert not button(0, "up").isEnabled() and button(0, "down").isEnabled()
+        assert button(2, "up").isEnabled() and not button(2, "down").isEnabled()
+        assert button(1, "cancel").isEnabled() and button(1, "remove").isEnabled() and button(1, "retry") is None
+        parts = {pid: label for pid, _r, label in dlg.table.automation_parts()}
+        assert set(parts) == {f"export.queue.item.{i}" for i in ids} and parts[f"export.queue.item.{ids[0]}"] == "Ready"
+        # Up on the last export moves it, and the selection follows it
+        button(2, "up").click()
+        assert wait_until(app, lambda: order() == ["a.mov", "c.mov", "b.mov"], 10_000), order()
+        assert dlg._selected_row() == 1
+        assert [Path(i["path"]).name for i in done_exec("export.queue.list", {})["items"]] == ["a.mov", "c.mov", "b.mov"]
+        # Cancel turns into Retry; Remove takes it out
+        button(0, "cancel").click()
+        assert wait_until(app, lambda: button(0, "retry") is not None and button(0, "cancel") is None, 10_000)
+        button(0, "remove").click()
+        assert wait_until(app, lambda: order() == ["c.mov", "b.mov"], 10_000), order()
+        assert f"export.queue.item.{ids[0]}" not in {pid for pid, _r, _l in dlg.table.automation_parts()}
+    finally:
+        if dlg is not None:
+            dlg.close()
         win._quit_confirmed = True
         win.close()
         engine.stop()

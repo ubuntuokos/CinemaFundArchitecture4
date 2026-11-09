@@ -421,11 +421,39 @@ def project_row_parts(view: QAbstractItemView, prefix: str, rows: list[tuple[Any
     return out
 
 
+def empty_part(view: QAbstractItemView, prefix: str) -> list[tuple[str, QRectF, str]]:
+    """egui's ``<prefix>.empty``: the view's empty space under its rows or cards (a click
+    deselects, a double-click imports, a right-click opens the background menu)."""
+    vp = view.viewport()
+    shown = vp.geometry()
+    bottom = shown.top()
+    model = view.model()
+    stack = [view.rootIndex()]
+    while stack:  # every row in view (expanded children too)
+        parent = stack.pop()
+        for row in range(model.rowCount(parent) if model is not None else 0):
+            idx = model.index(row, 0, parent)
+            r = view.visualRect(idx)
+            if r.isValid() and not r.isEmpty():
+                bottom = max(bottom, r.translated(vp.pos()).bottom() + 1)
+            if isinstance(view, QTreeWidget) and view.isExpanded(idx):
+                stack.append(idx)
+    rest = QRect(shown.left(), bottom, shown.width(), shown.bottom() + 1 - bottom)
+    return [(f"{prefix}.empty", QRectF(rest), "Empty area")] if rest.height() > 0 else []
+
+
 class ProjectTree(QTreeWidget, _Drops):
     """The List view."""
 
     files_dropped = Signal(list)  # paths dragged from the Media Browser or a file manager
     moved = Signal(list, object)  # (item and bin ids, target bin or None for the shown bin)
+    empty_double_clicked = Signal()
+
+    def mouseDoubleClickEvent(self, e: Any) -> None:
+        if self.itemAt(e.position().toPoint()) is None:
+            self.empty_double_clicked.emit()  # egui's: a double-click on empty space imports
+            return
+        super().mouseDoubleClickEvent(e)
 
     def automation_parts(self) -> list[tuple[str, QRectF, str]]:
         """The rows in view (``project_row_parts``) and the column headers,
@@ -445,7 +473,7 @@ class ProjectTree(QTreeWidget, _Drops):
             top = self.topLevelItem(i)
             if top is not None:
                 walk(top, 0)
-        out = project_row_parts(self, prefix, rows)
+        out = project_row_parts(self, prefix, rows) + empty_part(self, prefix)
         head = self.header()
         if not self.isHeaderHidden():
             for i, key in enumerate(list(getattr(self, "column_keys", []))[: self.columnCount()]):
@@ -487,6 +515,7 @@ class IconList(QListWidget, _Drops):
 
     files_dropped = Signal(list)
     moved = Signal(list, object)
+    empty_double_clicked = Signal()
     hovered = Signal(object, object)  # item id (or None) and the media time (ticks: 64-bit) under the pointer
 
     def automation_parts(self) -> list[tuple[str, QRectF, str]]:
@@ -496,7 +525,14 @@ class IconList(QListWidget, _Drops):
             it = self.item(i)
             if it is not None and not it.isHidden():
                 rows.append((it, it.data(BIN_ROLE), it.data(ITEM_ROLE), 0))
-        return project_row_parts(self, getattr(self, "part_prefix", "project"), rows)
+        prefix = getattr(self, "part_prefix", "project")
+        return project_row_parts(self, prefix, rows) + empty_part(self, prefix)
+
+    def mouseDoubleClickEvent(self, e: Any) -> None:
+        if self.itemAt(e.position().toPoint()) is None:
+            self.empty_double_clicked.emit()  # egui's: a double-click on empty space imports
+            return
+        super().mouseDoubleClickEvent(e)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -1158,6 +1194,8 @@ class BinView(QWidget):
             v.moved.connect(self._moved)
         self.tree.itemDoubleClicked.connect(lambda it, _c: self._open(it.data(0, ITEM_ROLE), it.data(0, BIN_ROLE), it.data(0, ROW_ROLE)))
         self.icons.itemDoubleClicked.connect(lambda it: self._open(it.data(ITEM_ROLE), it.data(BIN_ROLE), it.data(ROW_ROLE)))
+        self.tree.empty_double_clicked.connect(lambda: self.panel.invoke.emit("file.import"))
+        self.icons.empty_double_clicked.connect(lambda: self.panel.invoke.emit("file.import"))
         self.tree.itemSelectionChanged.connect(self._selection_changed)
         self.icons.itemSelectionChanged.connect(self._selection_changed)
         self.tree.itemChanged.connect(lambda it, col: col == 0 and self._renamed(it.data(0, ITEM_ROLE), it.data(0, BIN_ROLE), it.text(0)))

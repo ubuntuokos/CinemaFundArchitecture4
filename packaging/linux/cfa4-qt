@@ -3,9 +3,10 @@
 
 The GUI's Python package sits in ``<prefix>/lib/cfa4/python`` next to this launcher's
 ``<prefix>/bin``, so the .deb (/usr) and the tarball installed with install.sh (~/.local or any
-prefix) both work. PySide6 comes from Ubuntu's archive (python3-pyside6.*), never bundled. The
-engine is the ``cfa4-cli`` installed beside this launcher unless CFA4_ENGINE or --engine names
-another one.
+prefix) both work. There PySide6 comes from Ubuntu's archive (python3-pyside6.*); the AppImage and
+the Flatpak, which cannot depend on it, carry PySide6 and Qt in ``<prefix>/lib/cfa4/pyside6``
+(packaging/linux/stage-pyside6.py), and that copy wins over any other. The engine is the
+``cfa4-cli`` installed beside this launcher unless CFA4_ENGINE or --engine names another one.
 """
 
 import os
@@ -14,6 +15,9 @@ from pathlib import Path
 
 BIN = Path(__file__).resolve().parent
 sys.path.insert(0, str(BIN.parent / "lib" / "cfa4" / "python"))
+BUNDLED_QT = BIN.parent / "lib" / "cfa4" / "pyside6"
+if BUNDLED_QT.is_dir():  # the AppImage's and the Flatpak's own PySide6, before the host's
+    sys.path.insert(1, str(BUNDLED_QT))
 ENGINE = BIN / "cfa4-cli"
 if not os.environ.get("CFA4_ENGINE") and ENGINE.is_file():  # an empty value names no engine
     os.environ["CFA4_ENGINE"] = str(ENGINE)
@@ -25,6 +29,9 @@ try:  # before the GUI starts: its own message would advise a pip install, not U
 except ModuleNotFoundError as e:
     if not (e.name or "").startswith("PySide6"):
         raise
+    if BUNDLED_QT.is_dir():  # a damaged AppImage or Flatpak: no apt package fixes it
+        sys.stderr.write(f"cfa4-qt: {e}\nThe Qt libraries bundled in {BUNDLED_QT} are incomplete.\n")
+        sys.exit(1)
     packages = " ".join(f"python3-pyside6.{m.lower()}" for m in (*QT_MODULES, "QtMultimedia"))
     sys.stderr.write(f"cfa4-qt: {e}\nThe Qt GUI needs Ubuntu's PySide6 packages: sudo apt install {packages}\n")
     sys.exit(1)
