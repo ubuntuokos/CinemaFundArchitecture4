@@ -7,7 +7,8 @@
 #
 # TARBALL defaults to $DIST/cfa4-<version>-linux-x86_64.tar.gz from package.sh.
 # Only Ubuntu 26.04 x86_64 (AMD64) build hosts are supported.
-# Needs preinstalled flatpak, flatpak-builder, OSTree, Platform+SDK 25.08.
+# Needs preinstalled flatpak, flatpak-builder, OSTree, Platform+SDK 25.08, and CFA4_PYSIDE6_WHEELS
+# (the pinned PySide6 wheels the Qt GUI runs on inside the sandbox; stage-pyside6.py).
 # No remote-add, dependency download or automatic app installation.
 # --test requires CFA4_ALLOW_FLATPAK_INSTALL_TEST=1, and uses --no-pull.
 # Manifest: packaging/linux/flatpak/io.github.ubuntuokos.cfa4.bundle.yml.
@@ -59,6 +60,11 @@ tar -xzf "$TARBALL" -C "$WORK/stage" --strip-components=1
 # ADR 0005 step 4: a release bundle carries CFA4's FFmpeg 9.0.2 (package.sh without --without-ffmpeg)
 [ -f "$WORK/stage/lib/cfa4/ffmpeg-9.0.2/share/doc/ffmpeg/BUILDINFO" ] \
   || { echo "error: $TARBALL has no lib/cfa4/ffmpeg-9.0.2 (build it with package.sh, not --without-ffmpeg)" >&2; exit 1; }
+[ -x "$WORK/stage/bin/cfa4-qt" ] && [ -d "$WORK/stage/lib/cfa4/python/cfa4_qt" ] \
+  || { echo "error: $TARBALL has no Qt GUI (bin/cfa4-qt, lib/cfa4/python)" >&2; exit 1; }
+# The Qt GUI's own PySide6 / Qt 6: the runtime has Python 3 but no PySide6 (docs/qt-parity.md 1.10).
+python3 "$HERE/stage-pyside6.py" --wheels "${CFA4_PYSIDE6_WHEELS:?set CFA4_PYSIDE6_WHEELS to the local PySide6 wheelhouse}" \
+  --dest "$WORK/stage/lib/cfa4/pyside6" --doc "$WORK/stage/share/doc/cfa4/pyside6"
 cp "$HERE/flatpak/$APP_ID.bundle.yml" "$WORK/$APP_ID.yml"
 
 # Never fetch source or runtime dependencies. The SDK is already present.
@@ -75,6 +81,9 @@ if [ "$TEST" = 1 ]; then
   flatpak install --user -y --noninteractive --no-pull --no-related --reinstall "$OUT"
   flatpak info --user "$APP_ID"
   flatpak run --command=cfa4-cli "$APP_ID" --version
+  # the Qt GUI's bundled PySide6 loads inside the sandbox
+  flatpak run --command=python3 "$APP_ID" -c 'import sys; sys.path[:0] = ["/app/lib/cfa4/python", "/app/lib/cfa4/pyside6"]; from PySide6 import QtCore, QtWidgets, QtMultimedia; assert QtCore.__file__.startswith("/app/lib/cfa4/pyside6"), QtCore.__file__; print("PySide6", QtCore.qVersion())'
+
   flatpak run --command=sh "$APP_ID" -c 'ls /app/share/applications /app/share/metainfo /app/share/mime/packages /app/share/icons/hicolor/scalable/apps'
 fi
 echo "==> done"

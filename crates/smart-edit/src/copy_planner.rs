@@ -417,6 +417,8 @@ impl Planner<'_> {
             source_in: MediaTime::new(source_in, self.timebase),
             source_out: MediaTime::new(source_out, self.timebase),
             output_in: MediaTime::new(source_in.checked_sub(origin)?, self.timebase),
+            source: None,
+            render_causes: Vec::new(),
         })
     }
 }
@@ -430,6 +432,9 @@ enum Framing {
     LengthPrefixed,
     /// The same elementary stream in every container (MPEG-2 video).
     Elementary,
+    /// AV1 temporal units of OBUs with size fields and no temporal delimiter, as in MP4, QuickTime
+    /// and Matroska (AV1 in ISOBMFF §2.4, AV1 in Matroska).
+    Obu,
 }
 
 fn framing(codec: Codec, container: Container) -> Option<Framing> {
@@ -440,7 +445,11 @@ fn framing(codec: Codec, container: Container) -> Option<Framing> {
             Container::Mp4 | Container::Mov | Container::Matroska | Container::WebM => Some(Framing::LengthPrefixed),
             Container::Mxf => None,
         },
-        Codec::Av1 | Codec::Aac | Codec::Pcm => None,
+        Codec::Av1 => match container {
+            Container::Mp4 | Container::Mov | Container::Matroska | Container::WebM => Some(Framing::Obu),
+            Container::MpegTs | Container::MpegPs | Container::Mxf => None,
+        },
+        Codec::Aac | Codec::Pcm => None,
     }
 }
 
@@ -449,7 +458,7 @@ fn framing(codec: Codec, container: Container) -> Option<Framing> {
 /// A bit-exact copy keeps the payload bytes, so the framing must be the same in both containers;
 /// a compatible copy may change it, but only through a proven lossless conversion (SCE-001
 /// §2.2, §11), and none is registered yet (the native bitstream adapters come with phase P3).
-fn guarantee_blocker(codec: Codec, source: Container, output: Container, guarantee: CopyGuarantee) -> Option<String> {
+pub(crate) fn guarantee_blocker(codec: Codec, source: Container, output: Container, guarantee: CopyGuarantee) -> Option<String> {
     let (c, s, o) = (codec.label(), source.label(), output.label());
     match (framing(codec, source), framing(codec, output)) {
         (Some(a), Some(b)) if a == b => None,

@@ -43,6 +43,11 @@ updates:
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "eframe"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # zbus is used only by the frozen egui app (apps/cfa4/src/appearance.rs, portal colour
+      # scheme) and must stay on the major version rfd/accesskit pull in; zbus 6 breaks that
+      # code and would add a second zbus (#588). Leaves with the egui frontend.
+      - dependency-name: "zbus"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"
 

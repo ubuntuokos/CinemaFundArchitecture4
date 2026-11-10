@@ -151,7 +151,7 @@ fn time_wrapper() -> Command {
     let time = Path::new("/usr/bin/time");
     if time.exists() {
         let mut c = Command::new(time);
-        c.arg(if cfg!(target_os = "macos") { "-l" } else { "-v" });
+        c.arg("-v");
         c
     } else {
         // No `time`: run the section directly (no peak RSS).
@@ -161,19 +161,15 @@ fn time_wrapper() -> Command {
     }
 }
 
-/// The child's own output: everything before the `time` report (macOS `-l`: a "… real … user …"
-/// line; GNU `-v`: "Command being timed").
+/// The child's own output: everything before the GNU `time -v` report ("Command being timed").
 fn child_lines(stderr: &str) -> Vec<&str> {
-    stderr.lines().take_while(|l| !(l.trim_start().starts_with("Command being timed") || (l.contains(" real ") && l.contains(" user ")))).collect()
+    stderr.lines().take_while(|l| !l.trim_start().starts_with("Command being timed")).collect()
 }
 
-/// Peak RSS in bytes from `/usr/bin/time -l` (macOS: bytes) or `-v` (GNU: kbytes).
+/// Peak RSS in bytes from GNU `/usr/bin/time -v` (kbytes).
 fn peak_rss_bytes(stderr: &str) -> Option<u64> {
     for l in stderr.lines() {
         let t = l.trim();
-        if let Some(n) = t.strip_suffix("maximum resident set size") {
-            return n.trim().parse().ok();
-        }
         if let Some(n) = t.strip_prefix("Maximum resident set size (kbytes):") {
             return n.trim().parse::<u64>().ok().map(|k| k * 1024);
         }

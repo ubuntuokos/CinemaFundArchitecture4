@@ -443,6 +443,7 @@ impl Builder {
     pub fn clip(&mut self, item: ItemId, kind: TrackKind, name: &str, start: Tick, duration: Tick, source_in: Tick) -> TrackItem {
         let label = self.p.item(item).map(|i| i.label).unwrap_or(Label::Iris);
         TrackItem {
+            interchange: Default::default(),
             id: ClipId(self.p.alloc_id()),
             item,
             name: name.to_string(),
@@ -518,6 +519,7 @@ impl Builder {
 
 pub(crate) fn empty_sequence(settings: SequenceSettings) -> Sequence {
     Sequence {
+        interchange: Default::default(),
         settings,
         video_tracks: Vec::new(),
         audio_tracks: Vec::new(),

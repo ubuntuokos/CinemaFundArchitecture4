@@ -1374,7 +1374,7 @@ static CATEGORIES: &[Category] = &[
             b("playback.draftDecode", "Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)", true),
             f("playback.hardwareDecoding", "Hardware decoding", Kind::Choice(HW_DECODE), true),
             Row::Note(
-                "Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
+                "Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
             ),
         ],
     },
@@ -1576,10 +1576,25 @@ pub fn migrate(v: &mut Value) {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Whether this test thread may move the process-wide hardware decoding switch
+    /// ([`crate::autosave::Preferences::apply_hardware_decoding`]).
+    pub(crate) static HW_SWITCH_OWNER: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 impl crate::autosave::Preferences {
     /// Settings ▸ Playback ▸ Hardware decoding as the process-wide switch the hardware decoder
     /// factories consult (new decoders only).
     pub fn apply_hardware_decoding(&self) {
+        // The switch is process-wide and the unit tests run in parallel: in them only the thread
+        // that asked for it moves the switch, so a Session another test creates or changes cannot
+        // flip it under the one test that checks it.
+        #[cfg(test)]
+        if !HW_SWITCH_OWNER.with(std::cell::Cell::get) {
+            self.apply_media_backends();
+            return;
+        }
         cfa4_codecs::hw::set_hardware_decoding(self.playback.hardware_decoding != "off");
         self.apply_media_backends();
     }
