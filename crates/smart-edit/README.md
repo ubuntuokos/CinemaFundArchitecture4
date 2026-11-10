@@ -121,8 +121,8 @@ The planner reads nothing but its arguments and writes nothing. Its output is th
 - **Executability** comes from the registry (`smart_cut`, plus `smart_render` with the encoder
   limits when something is re-encoded) and from the copy guarantee. A bit-exact copy cannot change
   the packet framing (H.264 from MP4 into MPEG-TS), and a compatible copy needs a proven
-  conversion, which is not registered yet. The built-in registry runs H.264 copy plans into MP4 /
-  MOV (WP-04); a plan with a boundary re-encode stays `executable: false` until WP-06.
+  conversion, which is not registered yet. The built-in registry runs H.264 copy plans (WP-04) and
+  H.264 boundary re-encodes (WP-06) into MP4 / MOV.
 
 ## Smart Cut executor (WP-04)
 
@@ -134,7 +134,7 @@ an edit list starts the presentation at the first copied picture. `verify_mp4_co
 back and compares every sample with its source sample (SCE-001 §18).
 
 The executor refuses, before writing anything:
-- a plan that re-encodes (`not-lossless`, WP-06);
+- a plan that re-encodes (`not-lossless`; the boundary re-encode executor below runs those);
 - an index that no longer matches the source track (`stale-index`);
 - copy segments that do not form one run in decode order;
 - mixed sample entries;
@@ -142,6 +142,41 @@ The executor refuses, before writing anything:
 
 The caller writes to a temporary file and renames it into place, like every export.
 
+## Boundary re-encode executor (WP-06)
+
+`cfa4_export::boundary_reencode` runs frame-accurate Smart Cut plans of one H.264 MP4 / MOV source.
+`execute_mp4_boundary_reencode(plan, stream_index, source, encoding, writer)` copies the whole GOPs
+as the copy executor does and decodes and re-encodes only the boundary pictures with the CFA4
+H.264 encoder:
+
+- **One stream:** the encoder uses parameter-set ids the source does not, so one `avcC` holds the
+  source SPS/PPS unchanged followed by the encoder's. Every re-encoded segment starts with an IDR, a
+  copy after one must start with an IDR, and neighbouring IDRs get different `idr_pic_id`s.
+- **Compatibility first (SCE-001 §8):** Baseline, Main or High profile, 8-bit 4:2:0, progressive,
+  4-byte NAL lengths, an even picture size, free parameter-set ids, a constant frame rate in the
+  re-encoded pictures, no SEI user data (captions, unknown unregistered SEIs) in them and no
+  in-band parameter sets; anything else is refused
+  (`incompatible`) before a byte is written, never spliced unsafely. HDR mastering-display and
+  content-light SEIs are carried into the re-encoded pictures. `check_mp4_boundary_reencode` makes
+  the same checks without decoding, so a planner or the UI can show the refusal first (the
+  registry's `StreamFormat` does not describe interlacing, frame rate or SEI).
+- **Timing:** source durations are kept; the re-encoded pictures (no reordering) get the composition
+  delay of the copied run, so the presentation has no gap at a splice.
+- **Validation:** `verify_mp4_boundary_reencode` checks the copied samples against the source, the
+  presentation timeline against the plan, decodes the whole output and compares every re-encoded
+  picture with its source picture (luma PSNR, `BoundaryEncoding::min_psnr`).
+
+Rendered segments (gaps, effects) and timeline plans are refused here (`render-segment`,
+`timeline-plan`); they belong to the timeline Smart Render executor. Until it exists, the
+registry's `timeline-render` rows are unsupported, so `plan_smart_render` reports every timeline
+plan as not executable. Writing and verifying decode the boundaries picture by picture (the
+encoder's VUI comes from the source SPS), so no boundary is held in memory whole.
+
+`h264_stream_format(avc)` reads the profile, chroma format and bit depth from the source SPS for
+the planner's `SmartCutRequest::format`. The engine commands use it: `export.plan` reports, for a
+re-encoding plan, whether the executor can run it (`boundaryReencode: {ready, problem}`), and
+`export.start` with `"confirm": true` runs it, checks the output and only then writes the file
+(`"crf"` sets the quality of the re-encoded pictures, 16 by default).
 
 ## Smart Render planner (WP-05)
 

@@ -94,7 +94,7 @@ fn request() -> SmartRenderRequest {
 fn ready_registry() -> Registry {
     let mut r = Registry::native();
     let row = |key: Key| Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() };
-    for op in [Operation::Demux, Operation::PacketCopy, Operation::Mux, Operation::BoundaryReencode] {
+    for op in [Operation::Demux, Operation::PacketCopy, Operation::Mux, Operation::BoundaryReencode, Operation::TimelineRender] {
         r.insert(row(Key::in_container(op, Codec::H264, Container::Mp4))).unwrap();
     }
     let limits = EncoderLimits { profiles: vec!["high".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
@@ -237,14 +237,14 @@ fn invalid_timelines_are_refused() {
 #[test]
 fn the_registry_decides_whether_the_plan_runs() {
     let tl = edl(vec![item(0, 14, clip("a.mp4", 9, "x")), item(14, 7, EditContent::Gap)]);
-    // the built-in registry: H.264 packet copy into MP4 (WP-04), no boundary re-encode yet (WP-06)
+    // the built-in registry: H.264 packet copy (WP-04) and boundary re-encode (WP-06) into MP4 run
+    // from one source; the timeline executor is the one missing piece
+    let only_timeline = |p: &SmartRenderPlan| !p.executable && p.blockers.iter().all(|b| b.contains("timeline Smart Render"));
     let p = plan_smart_render(&Registry::native(), &sources(), &tl, &request(), STRICT).unwrap();
-    assert!(!p.executable);
-    assert!(!p.blockers.iter().any(|b| b.contains("packet-copy")), "{:?}", p.blockers);
-    assert!(p.blockers.iter().any(|b| b.contains("boundary re-encode")), "{:?}", p.blockers);
+    assert!(only_timeline(&p), "{:?}", p.blockers);
     let copy_only = edl(vec![item(0, 14, clip("a.mp4", 7, "x"))]);
     let p = plan_smart_render(&Registry::native(), &sources(), &copy_only, &request(), STRICT).unwrap();
-    assert!(p.executable, "{:?}", p.blockers);
+    assert!(only_timeline(&p), "{:?}", p.blockers);
     let unique: std::collections::BTreeSet<&String> = p.blockers.iter().collect();
     assert_eq!(unique.len(), p.blockers.len(), "no repeats");
     // a re-encoded boundary needs the stream format for the encoder limits
