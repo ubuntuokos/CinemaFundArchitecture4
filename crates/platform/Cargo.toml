@@ -36,7 +36,7 @@ log = { workspace = true }
 # Linux: libva (VA-API) is loaded at run time with libloading (ISC; already in the lockfile through
 # wgpu), so building needs no libva headers and a system without libva simply decodes in software.
 [target.'cfg(target_os = "linux")'.dependencies]
-libloading = "0.8"
+libloading = "0.9"
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }

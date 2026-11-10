@@ -6,6 +6,10 @@ on:
       - 'python/cfa4_devtools/release_gate.py'
       - 'python/tests/test_release_gate.py'
       - 'docs/audit/f9-release-readiness.json'
+      - 'docs/patent-review.md'
+      - 'python/cfa4_devtools/patent_register.py'
+      - 'python/tests/test_patent_register.py'
+      - 'crates/*/Cargo.toml'
       - '.github/workflows/cfa4-f9-release-hold.yml'
   workflow_dispatch:
 
@@ -24,6 +28,8 @@ jobs:
           PYTHONPATH: python
         run: |
           python3 -m unittest discover -s python/tests -p test_release_gate.py -v
+          python3 -m unittest discover -s python/tests -p test_patent_register.py -v
+          python3 -m cfa4_devtools.patent_register
           python3 -m cfa4_devtools.release_gate
           if python3 -m cfa4_devtools.release_gate --require-ready; then
             echo "::error::Release unexpectedly appears ready while mandatory gates are still open"

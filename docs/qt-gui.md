@@ -7,14 +7,12 @@ Point-by-point parity with egui (the condition for deleting egui): [`qt-parity.m
 
 ## Running it
 
-Until the Qt GUI is merged into `main`, it lives on the `cfa4/qt6-gui` branch: switch to it
-first, or the engine you build has no `serve` command and there is no `cfa4-qt`.
+The Qt GUI and the engine's `serve` command are on `main`.
 
 Ubuntu 26.04 does not let `pip` install into the system Python (PEP 668,
 "externally-managed-environment"), so PySide6 goes into a virtual environment in the checkout:
 
 ```sh
-git switch cfa4/qt6-gui                         # not needed once it is merged into main
 cargo build --release -p cfa4-cli          # the engine (must include `serve`)
 sudo apt install python3-venv                   # once, if `python3 -m venv` is missing
 python3 -m venv .venv
@@ -145,16 +143,23 @@ start with a saved layout and reset; it passes on all four versions, so `PySide6
 
 ## Code map
 
+Decision record: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`; what is left and how egui is
+removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
+
 | File | Role |
 |---|---|
 | `apps/cfa4-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
-| `python/cfa4_qt/panels/effect_controls.py` | Effect Controls: parameters, stopwatch, keyframes (`effects.inspect` + `effects.*` commands) |
-| `python/cfa4_qt/panels/export.py` | Export window: presets, formats, range, overrides, queue with progress |
-| `python/cfa4_qt/panels/credits.py` | Credits window: spreadsheet, worksheet, pictures, styling, pages, warnings, page picture, place at playhead (`graphics.credits.*`, [credits.md](credits.md)) |
 | `python/cfa4_qt/engine.py` | process, framing, request/reply/event plumbing |
 | `python/cfa4_qt/commands.py` | registry → menus, actions, shortcuts; parameter specs |
 | `python/cfa4_qt/main_window.py` | docks, refresh cycle, command routing, close/recovery prompts |
-| `python/cfa4_qt/panels/` | Project, Timeline, Program monitor + playback, Effects, Inspector, History, Events |
+| `python/cfa4_qt/window_menu.py`, `dock_commands.py`, `dock_gutters.py` | Window menu, `window.*` docking commands, dividers between panels |
+| `python/cfa4_qt/control.py` | egui's JSON-lines control channel (`--control`), automation ids |
+| `python/cfa4_qt/crash.py` | never-crash guard for the Python side (log + error window) |
+| `python/cfa4_qt/audio_backend.py`, `media_backends.py` | audio output (QAudioSink), media backend listing |
+| `python/cfa4_qt/theme.py`, `branding.py`, `desktop_entry.py` | egui's design tokens, CFA4 logo, user desktop entry |
+| `python/cfa4_qt/status_bar.py`, `hot_number.py`, `calc.py`, `timecode.py`, `dialogs.py` | shared widgets and helpers |
+| `python/cfa4_qt/credits.py`, `export_summary.py` | About credits, export summary lines |
+| `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Credits ([credits.md](credits.md)), Preferences, …) |
 | `python/cfa4_qt/i18n.py`, `i18n/*.tsv` | translations (shared catalogs + full Hungarian + the Qt-only strings in nine more languages) |
 | `python/tests/test_qt_gui.py` | framing, registry, i18n, window against a fake and the real engine |
 | `python/tests/test_qt_translations.py` | every finished language covers the Qt strings, placeholders kept |
