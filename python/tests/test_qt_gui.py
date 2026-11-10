@@ -13231,8 +13231,15 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
             rows = [v["rect"] for k, v in e.items() if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
             assert all(ry + rh <= y + 1 for _rx, ry, _rw, rh in rows), (mode, e["project.empty"], rows)
             item = min(i for i in e if re.fullmatch(r"project\.(bin|item)\.\d+", i))
-            assert c.call("ui.click", {"id": item})["ok"]
-            assert wait_until(app, lambda: bool(win.project_panel.main.selected_items()) or win.project_panel.main.selected_bin is not None, 10_000)
+            reply = c.call("ui.click", {"id": item})
+            assert reply["ok"], (mode, item, reply)
+            pm = win.project_panel
+            assert wait_until(app, lambda: bool(pm.main.selected_items()) or pm.main.selected_bin is not None, 10_000), (
+                mode,
+                item,
+                e[item],
+                {k: v["rect"] for k, v in els().items() if k.startswith(("project.bin", "project.item", "project.empty"))},
+            )
             reply = c.call("ui.click", {"id": "project.empty"})
             assert reply["ok"], (mode, reply, {k: v["rect"] for k, v in els().items()})
             assert wait_until(app, lambda: not win.project_panel.main.selected_items(), 10_000), (mode, win.project_panel.main.selected_items())
