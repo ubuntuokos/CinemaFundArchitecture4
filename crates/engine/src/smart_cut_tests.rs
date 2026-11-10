@@ -26,6 +26,11 @@ impl crate::Services for MemoryFiles {
 
 /// 40 pictures of H.264 at 25 fps, an IDR every 10, no B-frames (PTS = picture number).
 fn source_mp4() -> Vec<u8> {
+    source_mp4_of(40)
+}
+
+/// `n` pictures of the clip of [`source_mp4`].
+fn source_mp4_of(n: usize) -> Vec<u8> {
     use cfa4_h264enc::{Encoder, EncoderConfig, PacketFormat, RateControl, YuvFrame};
     let (w, h) = (64usize, 48usize);
     let mut cfg = EncoderConfig::new(w as u32, h as u32, 25, 1);
@@ -37,7 +42,7 @@ fn source_mp4() -> Vec<u8> {
     cfg.threads = 1;
     let mut enc = Encoder::new(cfg).unwrap();
     let mut packets = Vec::new();
-    for i in 0..40 {
+    for i in 0..n {
         let y: Vec<u8> = (0..w * h).map(|k| ((k + i * 7) % 251) as u8).collect();
         let c: Vec<u8> = (0..w * h / 4).map(|k| ((k * 3 + i) % 255) as u8).collect();
         packets.extend(enc.encode(&YuvFrame { y: &y, u: &c, v: &c, y_stride: w, uv_stride: w / 2 }, i as i64).unwrap());
@@ -341,4 +346,31 @@ fn the_audio_tracks_are_copied_with_the_cut_and_in_sync() {
     let r = s.execute("export.start", json!({"path": "av.mp4", "in": frame(10), "out": frame(30), "output": "mute.mp4", "audio": false})).unwrap();
     assert_eq!(r["audio"]["tracks"], json!([]));
     assert_eq!(cfa4_isobmff::open(files.0.lock().unwrap()["mute.mp4"].as_slice()).unwrap().tracks.len(), 1);
+}
+
+#[test]
+fn repeated_exports_of_one_source_are_identical_and_follow_a_changed_source() {
+    // SCE-001 §13 edge cases 21–23 (WP-09): the same request writes the same bytes, and a source
+    // replaced on disk is analyzed again instead of being cut from a stale index
+    let (mut s, files) = session();
+    let requests = [
+        ("gop-boundary", json!({"path": "clip.mp4", "in": frame(10), "out": frame(30)})),
+        ("frame-accurate", json!({"path": "clip.mp4", "in": frame(5), "out": frame(30), "mode": "frame-accurate", "confirm": true})),
+    ];
+    for (mode, mut p) in requests {
+        let mut outputs = Vec::new();
+        for n in 0..2 {
+            p["output"] = json!(format!("{mode}-{n}.mp4"));
+            let r = s.execute("export.start", p.clone()).unwrap();
+            assert_eq!(r["verified"], true, "{mode}");
+            outputs.push(files.0.lock().unwrap()[&format!("{mode}-{n}.mp4")].clone());
+        }
+        assert_eq!(outputs[0], outputs[1], "{mode}: a repeated export writes the same bytes");
+    }
+    // the source shrinks to its first 20 pictures: the next cut sees only those
+    files.0.lock().unwrap().insert("clip.mp4".into(), source_mp4_of(20));
+    let a = s.execute("export.analyze", json!({"path": "clip.mp4"})).unwrap();
+    assert_eq!(a["frames"], 20);
+    let err = s.execute("export.start", json!({"path": "clip.mp4", "in": frame(10), "out": frame(30), "output": "late.mp4"})).unwrap_err().to_string();
+    assert!(!files.0.lock().unwrap().contains_key("late.mp4"), "nothing is written for a range past the new end: {err}");
 }
