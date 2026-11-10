@@ -338,3 +338,24 @@
 	Set Work Area Bar In Point	Definir ponto de entrada da barra da área de trabalho
 	Set Work Area Bar Out Point	Definir ponto de saída da barra da área de trabalho
 	Delete Clips	Excluir clipes
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Analisando o clipe…
+	At GOP boundaries (no re-encoding)	Nos limites de GOP (sem recodificar)
+	Bit-exact copy	Cópia idêntica bit a bit
+	Choose the output file.	Escolha o arquivo de saída.
+	Compatible copy	Cópia compatível
+	Copy:	Cópia:
+	Cut:	Corte:
+	Frame accurate (re-encode the boundaries)	Preciso ao quadro (recodificar os limites)
+	Open a video clip in the Source monitor first.	Abra primeiro um clipe de vídeo no monitor de origem.
+	Output:	Saída:
+	Smart Cut Source	Smart Cut da origem
+	Smart Cut Source…	Smart Cut da origem…
+	Smart Cut is not available for this clip: {why}	O Smart Cut não está disponível para este clipe: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut gravado e verificado: {path} ({frames} quadros)
+	The cut cannot run.	O corte não pode ser executado.
+	The engine sent no analysis.	O mecanismo não enviou nenhuma análise.
+	Writing and verifying the cut…	Gravando e verificando o corte…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} em {container}: {gops} GOPs, {points} pontos de corte limpos
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} quadros copiados, {reencoded} quadros recodificados
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} quadros nos limites serão recodificados. Continuar?
