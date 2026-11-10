@@ -358,6 +358,8 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{container} 内の {codec}: {gops} GOP、クリーンなカット点 {points} 個
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} フレームをコピー、{reencoded} フレームを再エンコード
 	{frames} frames at the boundaries are re-encoded. Continue?	境界の {frames} フレームを再エンコードします。続行しますか？
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	GOP 境界を表示
 # Export window Smart Export (WP-08)
 	Export mode	書き出しモード
 	Full Render	フルレンダリング

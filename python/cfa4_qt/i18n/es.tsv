@@ -358,6 +358,8 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} en {container}: {gops} GOP, {points} puntos de corte limpios
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} fotogramas copiados, {reencoded} fotogramas recodificados
 	{frames} frames at the boundaries are re-encoded. Continue?	Se recodifican {frames} fotogramas en los límites. ¿Continuar?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Mostrar límites de GOP
 # Export window Smart Export (WP-08)
 	Export mode	Modo de exportación
 	Full Render	Render completo

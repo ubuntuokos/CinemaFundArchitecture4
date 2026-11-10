@@ -358,6 +358,8 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} dalam {container}: {gops} GOP, {points} titik potong bersih
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} bingkai disalin, {reencoded} bingkai dienkode ulang
 	{frames} frames at the boundaries are re-encoded. Continue?	{frames} bingkai di batas akan dienkode ulang. Lanjutkan?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Tampilkan batas GOP
 # Export window Smart Export (WP-08)
 	Export mode	Mode ekspor
 	Full Render	Render penuh

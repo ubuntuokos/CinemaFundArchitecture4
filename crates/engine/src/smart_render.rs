@@ -29,7 +29,7 @@ use cfa4_smart_edit::capabilities::{Codec, Container, Registry};
 use cfa4_smart_edit::edit_decision::{EditClip, EditContent, EditDecisionList, EditItem, RenderCause};
 use cfa4_smart_edit::plan::{CopyGuarantee, PlanSegment, SegmentMode};
 use cfa4_smart_edit::smart_render::{SmartRenderPlan, SmartRenderRequest, plan_smart_render};
-use cfa4_smart_edit::timestamp::Rational;
+use cfa4_smart_edit::timestamp::{MediaTime, Rational};
 use cfa4_time::{FrameRate, Tick};
 use serde_json::{Value, json};
 
@@ -412,4 +412,54 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
         "verified": true,
         "summary": summary(plan),
     }))
+}
+
+/// Most access points listed per clip (a long clip with a key frame every picture would make the
+/// reply large; the timeline cannot show more than one per pixel anyway).
+const MAX_MARKS_PER_CLIP: usize = 4096;
+
+/// `export.gopMarks`: the access points of every video clip of the sequence, in sequence time, for
+/// the timeline's GOP overlay (WP-08, §10.1). A clip that is not a readable H.264 / HEVC / AV1
+/// MP4 / MOV file, or that plays at another speed, has no marks. `in` says whether the clip starts
+/// on a clean access point (a Smart Cut copies from there; otherwise its head is re-encoded).
+pub(crate) fn gop_marks(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "export.gopMarks";
+    let seq_id = sequence_param(s, p, cmd)?;
+    let project = Arc::clone(&s.project);
+    let seq = project.sequence(seq_id).ok_or_else(|| bad(cmd, "no such sequence"))?;
+    let mut sources: BTreeMap<String, Option<Source>> = BTreeMap::new();
+    let mut clips = Vec::new();
+    for (ti, track) in seq.video_tracks.iter().enumerate() {
+        for item in track.items.iter().filter(|i| i.enabled) {
+            if item.speed != 1.0 || item.reverse || item.frame_hold.is_some() {
+                continue;
+            }
+            let Some(path) = clip_causes(&project, seq, item).1 else { continue };
+            let path = s.media.follow(path).unwrap_or_else(|_| path.to_string());
+            if !sources.contains_key(&path) {
+                let opened = open_source(s, &path, cmd).ok();
+                sources.insert(path.clone(), opened);
+            }
+            let Some(Some(src)) = sources.get(&path) else { continue };
+            let Some(stream) = src.stream() else { continue };
+            let tb = stream.timebase;
+            let mut points = Vec::new();
+            let mut clean_in = false;
+            for f in stream.frames.iter().filter(|f| f.random_access.is_access_point()) {
+                let media = f.pts.and_then(|v| MediaTime::new(v, tb).to_tick()).and_then(|t| src.media_time(t));
+                let Some(at) = media.and_then(|m| m.0.checked_sub(item.source_in.0)).and_then(|d| item.start.0.checked_add(d)).map(Tick) else {
+                    continue;
+                };
+                if at < item.start || at >= item.end() {
+                    continue;
+                }
+                clean_in |= at == item.start && f.random_access.is_clean();
+                if points.len() < MAX_MARKS_PER_CLIP {
+                    points.push(json!({"time": at.0, "clean": f.random_access.is_clean()}));
+                }
+            }
+            clips.push(json!({"clip": item.id.0, "track": ti, "codec": stream.codec, "in": clean_in, "points": points}));
+        }
+    }
+    Ok(json!({"sequence": seq_id.0, "clips": clips}))
 }
