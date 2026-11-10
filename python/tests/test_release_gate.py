@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import unittest
 from copy import deepcopy
+from unittest.mock import patch
 
 from cfa4_devtools import release_gate
 
@@ -49,10 +50,21 @@ class ReleaseDecisionTests(unittest.TestCase):
         for gate in data["gates"]:
             gate["status"] = "PASS"
         data["verdict"] = "REQUIRES_EXPLICIT_FINAL_APPROVAL"
-        result = release_gate.evaluate(data)
+        with patch.object(release_gate.patent_register, "pending_in_base", return_value=[]):
+            result = release_gate.evaluate(data)
         self.assertEqual(result["decision"], "REQUIRES_EXPLICIT_FINAL_APPROVAL")
         data["release_publication_authorized"] = True
-        with self.assertRaisesRegex(release_gate.ReleaseGateError, "cannot be auto-authorized"):
+        with patch.object(release_gate.patent_register, "pending_in_base", return_value=[]), \
+                self.assertRaisesRegex(release_gate.ReleaseGateError, "cannot be auto-authorized"):
+            release_gate.evaluate(data)
+
+    def test_patent_gate_cannot_pass_while_the_register_is_pending(self):
+        data = deepcopy(self.inventory)
+        self.assertIn("patent_review_recorded", release_gate.evaluate(data)["open_gates"])
+        for gate in data["gates"]:
+            if gate["id"] == "patent_review_recorded":
+                gate["status"] = "PASS"
+        with self.assertRaisesRegex(release_gate.ReleaseGateError, "base-package rows are pending"):
             release_gate.evaluate(data)
 
     def test_duplicate_gates_are_rejected(self):

@@ -5,7 +5,7 @@
 # Other distributions and architectures are not CFA4 release targets.
 # Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb tar restricted"]
 #        [--without-ffmpeg].
-# Prerequisites: cargo; nfpm for deb; for AppImage: reviewed local appimagetool
+# Prerequisites: cargo; for deb the pinned nfpm (nfpm.lock, scripts/release/install-nfpm.sh); for AppImage: reviewed local appimagetool
 # plus CFA4_APPIMAGETOOL_SHA256, and CFA4_PYSIDE6_WHEELS (a local wheelhouse with the PySide6 6.12
 # wheels pinned in requirements/linux-amd64.txt, for the Qt GUI); optional zsyncmake. Never
 # auto-download tools.
@@ -180,31 +180,25 @@ fi
 
 # ---- .deb ----------------------------------------------------------------------------------------
 if has deb; then
-  command -v nfpm >/dev/null || { echo "error: nfpm not found (https://nfpm.goreleaser.com/install/)" >&2; exit 1; }
   export VERSION
   # nfpm.yaml pins arch=amd64; only VERSION is read from the environment. The FFmpeg libraries'
-  # Ubuntu packages replace the @FFMPEG_DEPENDS@ line.
-  ffmpeg_depends="$(sed 's/^/      - /' "$WORK/ffmpeg-depends.txt")"
-  sed -e "s|\${STAGE}|$STAGE|g" -e "s|\${FFMPEG_DEB}|$FFMPEG_DEB|g" "$HERE/nfpm.yaml" \
-    | deps="$ffmpeg_depends" awk '/# @FFMPEG_DEPENDS@/ { if (ENVIRON["deps"] != "") print ENVIRON["deps"]; next } { print }' >"$WORK/nfpm.yaml"
-  (cd "$ROOT" && nfpm package -f "$WORK/nfpm.yaml" -p deb -t "$DIST/$BASENAME.deb")
+  # Ubuntu packages replace the @FFMPEG_DEPENDS@ line. Only the pinned nfpm runs (check-nfpm.sh).
+  bash "$HERE/nfpm-package.sh" "$HERE/nfpm.yaml" "$WORK/ffmpeg-depends.txt" "$DIST/$BASENAME.deb" \
+    STAGE="$STAGE" FFMPEG_DEB="$FFMPEG_DEB"
 fi
 
 # ---- cfa4-restricted-extras .deb (only on request: --formats "... restricted") ---------------------
 if has restricted; then
-  command -v nfpm >/dev/null || { echo "error: nfpm not found (https://nfpm.goreleaser.com/install/)" >&2; exit 1; }
+  bash "$HERE/check-nfpm.sh" >/dev/null
   RESTRICTED="$WORK/restricted"
   bash "$HERE/stage-ffmpeg.sh" --restricted --build "$FFMPEG_BUILD-restricted" \
     --dest "$RESTRICTED/opt/cfa4/ffmpeg-$FFMPEG_VERSION-restricted" --depends-out "$WORK/restricted-depends.txt"
   # Exactly this cfa4: the extras replace its FFmpeg libraries through the binaries' RUNPATH.
   # nfpm's semver schema writes 0.2.0-rc.1 as 0.2.0~rc.1, release 1.
   deb_version="${VERSION/-/\~}-1"
-  restricted_depends="$(sed 's/^/      - /' "$WORK/restricted-depends.txt")"
-  sed -e "s|\${RESTRICTED}|$RESTRICTED|g" -e "s|@CFA4_DEB_VERSION@|$deb_version|g" "$HERE/nfpm-restricted.yaml" \
-    | deps="$restricted_depends" awk '/# @FFMPEG_DEPENDS@/ { if (ENVIRON["deps"] != "") print ENVIRON["deps"]; next } { print }' >"$WORK/nfpm-restricted.yaml"
   export VERSION
-  (cd "$ROOT" && nfpm package -f "$WORK/nfpm-restricted.yaml" -p deb \
-    -t "$DIST/cfa4-restricted-extras-$VERSION-linux-$ARCH.deb")
+  bash "$HERE/nfpm-package.sh" "$HERE/nfpm-restricted.yaml" "$WORK/restricted-depends.txt" \
+    "$DIST/cfa4-restricted-extras-$VERSION-linux-$ARCH.deb" RESTRICTED="$RESTRICTED" CFA4_DEB_VERSION="$deb_version"
 fi
 
 # ---- AppImage -----------------------------------------------------------------------------------
