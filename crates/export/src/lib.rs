@@ -20,6 +20,10 @@ use std::io::Write;
 
 mod aac_out;
 mod audio_out;
+pub mod boundary_reencode;
+mod boundary_reencode_hevc;
+#[cfg(test)]
+mod boundary_reencode_hevc_tests;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -38,6 +42,7 @@ mod raster;
 pub mod settings;
 pub mod smart_cut;
 pub mod still;
+pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_mpd};
@@ -48,7 +53,7 @@ pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
 pub use pcm::{image_sequence_path, write_aiff, write_wav};
-pub use pipeline::limit_rgba8;
+pub use pipeline::{Pipeline, limit_rgba8};
 pub use presets::{ExportPreset, builtin_presets};
 pub use settings::*;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -2919,13 +2924,21 @@ mod settings_tests;
 mod surround_tests;
 
 #[cfg(test)]
+mod boundary_reencode_tests;
+#[cfg(test)]
 mod dcp_tests;
 #[cfg(test)]
 mod mpeg2_tests;
 #[cfg(test)]
 mod mxf_tests;
 #[cfg(test)]
+mod smart_cut_av1_tests;
+#[cfg(test)]
+mod smart_cut_hevc_tests;
+#[cfg(test)]
 mod smart_cut_tests;
+#[cfg(test)]
+mod timeline_render_tests;
 
 #[cfg(test)]
 mod determinism_tests;

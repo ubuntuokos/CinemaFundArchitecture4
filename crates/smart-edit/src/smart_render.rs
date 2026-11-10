@@ -327,6 +327,11 @@ pub fn plan_smart_render(
             }
         }
     }
+    // every timeline plan needs a timeline executor, whatever its segments
+    let timeline = registry.decide(Key::in_container(Operation::TimelineRender, request.codec, request.output_container), policy);
+    if !timeline.allowed {
+        blockers.add(timeline.reasons);
+    }
     if rendered {
         for key in [Key::codec(Operation::Encode, request.codec), Key::in_container(Operation::Mux, request.codec, request.output_container)] {
             let d = registry.decide(key, policy);

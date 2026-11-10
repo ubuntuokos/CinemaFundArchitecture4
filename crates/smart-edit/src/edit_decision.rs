@@ -37,6 +37,9 @@ pub enum RenderCause {
     ColorConversion,
     /// The clip is shown through a proxy or a nested sequence.
     Indirect,
+    /// The pictures do not come from a stream the export can copy: a still, a generator, a
+    /// graphic, an adjustment layer, or a file in another codec or container.
+    Source,
 }
 
 /// A source clip on the timeline.

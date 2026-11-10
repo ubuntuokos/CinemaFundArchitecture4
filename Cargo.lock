@@ -1211,6 +1211,7 @@ dependencies = [
  "cfa4-frame",
  "cfa4-geom",
  "cfa4-h264enc",
+ "cfa4-hevc",
  "cfa4-iab",
  "cfa4-interchange",
  "cfa4-isobmff",
@@ -1243,6 +1244,7 @@ dependencies = [
  "cfa4-apv",
  "cfa4-audio-dsp",
  "cfa4-av1",
+ "cfa4-bitstream",
  "cfa4-cineform",
  "cfa4-codecs",
  "cfa4-color",
@@ -1250,6 +1252,7 @@ dependencies = [
  "cfa4-flac",
  "cfa4-frame",
  "cfa4-geom",
+ "cfa4-h264",
  "cfa4-h264enc",
  "cfa4-hevc",
  "cfa4-iab",
@@ -1653,8 +1656,11 @@ dependencies = [
 name = "cfa4-smart-edit"
 version = "0.10.0"
 dependencies = [
+ "cfa4-av1",
  "cfa4-bitstream",
  "cfa4-h264enc",
+ "cfa4-hevc",
+ "cfa4-isobmff",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
  "cfa4-route",

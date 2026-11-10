@@ -527,6 +527,22 @@ fn foreign_metadata_round_trips() {
     check(&String::from_utf8(bytes).unwrap());
 }
 
+/// OTIO-2.1: foreign metadata is kept only up to a per-import budget, so a file with a huge foreign
+/// value is not cloned whole into the project; small keys next to it are still kept, with a warning.
+#[test]
+fn oversized_foreign_metadata_is_dropped_with_warning() {
+    let big = "x".repeat(17 * 1024 * 1024);
+    let doc = format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Big", "metadata": {{"a_small": {{"k": 1}}, "z_huge": "{big}"}},
+          "tracks": {{"OTIO_SCHEMA": "Stack.1", "children": [{{"OTIO_SCHEMA": "Track.1", "kind": "Video", "name": "V1", "children": []}}]}}}}"#
+    );
+    let (imp, rep) = import(doc.as_bytes(), Format::Otio, None).unwrap();
+    let s = imp.project.sequence(only_seq(&imp)).unwrap();
+    assert_eq!(s.interchange.get("a_small"), Some(&serde_json::json!({"k": 1})));
+    assert!(!s.interchange.contains_key("z_huge"), "the oversized value is not kept");
+    assert!(rep.warnings().any(|w| w.message.contains("metadata from other programs")), "{rep}");
+}
+
 /// CFA4's own work carries no foreign metadata: nothing but `cfa4` is written.
 #[test]
 fn own_work_writes_only_cfa4_metadata() {
