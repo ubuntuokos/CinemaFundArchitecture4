@@ -133,7 +133,8 @@ fn start_refuses_before_writing_anything() {
     let mut timeline = ok.clone();
     timeline["output"] = json!("cut.mp4");
     timeline["scope"] = json!("timeline");
-    assert!(run(&mut s, timeline).contains("WP-06"));
+    // the timeline scope exports a sequence (smart_render_tests); this session has none
+    assert!(run(&mut s, timeline).to_lowercase().contains("sequence"));
     assert!(run(&mut s, json!({"path": "missing.mp4", "in": 0, "out": 1, "output": "x.mp4"})).contains("missing.mp4"));
     assert_eq!(files.0.lock().unwrap().keys().collect::<Vec<_>>(), ["clip.mp4"], "nothing was written");
 }

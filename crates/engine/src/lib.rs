@@ -60,6 +60,7 @@ pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
 pub mod smart_cut;
+mod smart_render;
 pub mod social;
 pub mod source_monitor;
 pub mod sync;
@@ -1429,6 +1430,8 @@ mod settings_tests;
 mod shortcuts_tests;
 #[cfg(test)]
 mod smart_cut_tests;
+#[cfg(test)]
+mod smart_render_tests;
 #[cfg(test)]
 mod social_tests;
 #[cfg(test)]

@@ -194,8 +194,21 @@ frame duration and encoding (`TimelineOutput`):
 `verify_mp4_timeline` compares the copied samples with their sources, checks that the output shows
 one picture per frame without gaps, decodes the whole output and compares every re-encoded picture
 with its source picture (luma PSNR); rendered pictures are checked to decode. The registry's
-`timeline-render` rows stay unsupported until the engine runs timeline plans through it, so
-`plan_smart_render` still reports them as not executable.
+`timeline-render` rows are supported for H.264 into MP4 / MOV.
+
+**Engine (`export.plan` / `export.start` with `"scope": "timeline"`).** `crates/engine/src/smart_render.rs`
+turns the sequence's video (`"sequence"`, else the active one) into an `EditDecisionList` and plans
+it. A range is copied only when nothing could change its pictures: exactly one clip is visible; it
+is an H.264 MP4 / MOV file at the sequence's frame size, pixel aspect and frame rate, Rec. 709 with a
+plain colour pipeline; it plays at 100 % with every effect at its defaults (Motion, Opacity and Time
+Remapping included), no transition, no Interpret Footage override, and its edits are on the frame
+grid. Any other range is rendered, with its `RenderCause`s (`source` for stills, generators,
+graphics or files Smart Cut cannot read). The rendered pictures come from the export pipeline
+(`cfa4_export::Pipeline`, full-resolution media). `export.plan` reports the plan, a summary
+(copied, re-encoded and rendered frames) and `timelineRender: {ready, problem}`. `export.start`
+needs `"confirm": true` when anything is re-encoded or rendered, verifies the output and only then
+writes it. The output is the video from the sequence start to the end of its last video clip, without
+audio.
 
 `h264_stream_format(avc)` reads the profile, chroma format and bit depth from the source SPS for
 the planner's `SmartCutRequest::format`. The engine commands use it: `export.plan` reports, for a

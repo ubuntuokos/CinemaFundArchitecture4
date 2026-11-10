@@ -855,9 +855,11 @@ pub(crate) fn native_entries() -> Vec<Entry> {
             } else if codec.is_video() {
                 v.push(row(k(BoundaryReencode, codec, container), Native, Unsupported, "boundary re-encode is implemented only for H.264 into MP4 / MOV"));
             }
-            if codec.is_video() {
-                // the single-source executors refuse timeline plans (several sources, rendered segments)
-                v.push(row(k(TimelineRender, codec, container), Native, Unsupported, "the timeline Smart Render executor is not implemented yet"));
+            if codec == H264 && matches!(container, Mp4 | Mov) {
+                let evidence = "cfa4-export timeline_render (copied runs from several sources, boundaries, rendered segments); crates/export/src/timeline_render_tests.rs, crates/engine/src/smart_render_tests.rs (ffmpeg framemd5)";
+                v.push(row(k(TimelineRender, codec, container), Native, Supported, evidence));
+            } else if codec.is_video() {
+                v.push(row(k(TimelineRender, codec, container), Native, Unsupported, "the timeline Smart Render executor writes only H.264 into MP4 / MOV"));
             }
         }
     }
