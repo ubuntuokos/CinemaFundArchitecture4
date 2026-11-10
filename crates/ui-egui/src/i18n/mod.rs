@@ -77,6 +77,9 @@ pub enum Language {
     El,
     /// Swedish: the whole interface, Latin script (bundled fonts).
     Sv,
+    /// Serbian in Latin script, persisted as `sr-latn`; every Serbian locale (`sr-Latn`, `sr_RS@latin`, `sr-RS`) gets it until a Cyrillic catalog exists.
+    #[serde(rename = "sr-latn")]
+    SrLatn,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -106,11 +109,12 @@ static VIETNAMESE: OnceLock<Catalog> = OnceLock::new();
 static TRADITIONAL: OnceLock<Catalog> = OnceLock::new();
 static GREEK: OnceLock<Catalog> = OnceLock::new();
 static SWEDISH: OnceLock<Catalog> = OnceLock::new();
+static SERBIAN_LATIN: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 23] = [
+    pub const ALL: [Self; 24] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -132,6 +136,7 @@ impl Language {
         Self::ZhHant,
         Self::El,
         Self::Sv,
+        Self::SrLatn,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -159,6 +164,7 @@ impl Language {
             Self::ZhHant => "繁體中文",
             Self::El => "Ελληνικά",
             Self::Sv => "Svenska",
+            Self::SrLatn => "Srpski (latinica)",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -187,6 +193,7 @@ impl Language {
             "zh-hant" => Some(Self::ZhHant),
             "el" => Some(Self::El),
             "sv" => Some(Self::Sv),
+            "sr-latn" => Some(Self::SrLatn),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -203,7 +210,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 20] = [
+        const PRIMARY: [(&str, Language); 21] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -224,6 +231,7 @@ impl Language {
             ("vi", Language::Vi),
             ("el", Language::El),
             ("sv", Language::Sv),
+            ("sr", Language::SrLatn),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -285,6 +293,7 @@ impl Language {
             Self::ZhHant => "zh-hant",
             Self::El => "el",
             Self::Sv => "sv",
+            Self::SrLatn => "sr-latn",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -314,6 +323,7 @@ impl Language {
             Self::ZhHant => Some(TRADITIONAL.get_or_init(|| Catalog::parse(catalog_file!("zh-hant")))),
             Self::El => Some(GREEK.get_or_init(|| Catalog::parse(catalog_file!("el")))),
             Self::Sv => Some(SWEDISH.get_or_init(|| Catalog::parse(catalog_file!("sv")))),
+            Self::SrLatn => Some(SERBIAN_LATIN.get_or_init(|| Catalog::parse(catalog_file!("sr-latn")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -504,6 +514,7 @@ mod tests {
             ("zh-hant", catalog_file!("zh-hant")),
             ("el", catalog_file!("el")),
             ("sv", catalog_file!("sv")),
+            ("sr-latn", catalog_file!("sr-latn")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1185,6 +1196,9 @@ mod tests {
         for tag in ["zh-TW", "zh_TW.UTF-8", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-TW", "ZH-hant"] {
             assert_eq!(l(&[tag]), Language::ZhHant, "{tag}");
         }
+        for tag in ["sr", "sr-Latn", "sr-Latn-RS", "sr_RS@latin", "sr-RS", "sr_RS.UTF-8", "SR-latn"] {
+            assert_eq!(l(&[tag]), Language::SrLatn, "{tag}");
+        }
         assert_eq!(l(&["zh-Latn", "ja-JP"]), Language::Ja);
         for tag in ["de", "DE", "de-DE", "de-AT", "de-CH", "de-LI", "de-LU", "de_DE.UTF-8", "de_AT.UTF-8@euro", "de_CH"] {
             assert_eq!(l(&[tag]), Language::De, "{tag}");
@@ -1671,6 +1685,13 @@ mod tests {
             catalog_file!("sv"),
             "ÅÄÖåäö”",
             &[("File", "Arkiv"), ("Sequence", "Sekvens"), ("Playhead", "Uppspelningshuvud"), ("Cross Dissolve", "Korsövertoning")],
+        ),
+        (
+            Language::SrLatn,
+            "app.language.serbianLatin",
+            catalog_file!("sr-latn"),
+            "ČĆĐŠŽčćđšž„“",
+            &[("File", "Datoteka"), ("Sequence", "Sekvenca"), ("Playhead", "Glava za reprodukciju"), ("Cross Dissolve", "Unakrsno pretapanje")],
         ),
     ];
 

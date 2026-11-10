@@ -47,6 +47,7 @@ LANGUAGES = {
     "zh-hant": "繁體中文",
     "el": "Ελληνικά",
     "sv": "Svenska",
+    "sr-latn": "Srpski (latinica)",
 }
 
 
@@ -143,7 +144,7 @@ BASE_CATALOG = {"en-au": "en-gb"}
 REGIONAL_FALLBACK = {"en-nz": "en-au", "en-ie": "en-gb"}
 
 # languages that write 4,00 instead of 4.00
-DECIMAL_COMMA = frozenset({"hu", "sv", "el", "vi", "cs", "nl", "tr", "pl", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
+DECIMAL_COMMA = frozenset({"hu", "sr-latn", "sv", "el", "vi", "cs", "nl", "tr", "pl", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
 _DECIMAL = re.compile(r"-?\d+\.\d+")
 
 
@@ -168,6 +169,9 @@ def system_language() -> str:
     base = tag.split("-")[0]
     if base == "pt":
         return "pt-br"
+    if base == "sr":
+        # Serbian (sr-Latn, sr_RS@latin, sr-RS…): the Latin-script catalog
+        return "sr-latn"
     if base == "zh":
         # Traditional script or a Traditional region (zh-TW, zh-HK, zh-MO, zh-Hant…); else Simplified
         traditional = {"hant", "tw", "hk", "mo"}
