@@ -2,7 +2,8 @@
 
 **Dátum:** 2026-10-24 · **Állapot:** JÓVÁHAGYVA (a tulajdonos, `ubuntuokos`, 2026-10-24-én
 jóváhagyta, #38). A jóváhagyás a 10. pont minden pontjára kiterjed. **Kiegészítve:** 2026-10-25
-(12. pont, szabadalmilag korlátozott komponensek).
+(12. pont, szabadalmilag korlátozott komponensek) és 2026-10-27 (13. pont, a szabadalmi vizsgálat
+hatóköre és eredményeinek rögzítése).
 
 **Előfeltételek:** a licencváltás (#37, `docs/licensing.md`, már a `main`-ben) és a
 GStreamer-háttérmotor (#40, [ADR 0002](ADR-0002-gstreamer-backend.md), összevonásra vár).
@@ -259,5 +260,43 @@ maradnak.
 
 Ez a 10.5 pontot így pontosítja: az x264 és az x265 csak a `cfa4-restricted-extras` csomagban
 jelenhet meg. Az NVENC licencjogi vizsgálata (5. pont) változatlanul érvényes.
+
+## 13. Kiegészítés (2026-10-27): a szabadalmi vizsgálat hatóköre és eredményeinek rögzítése
+
+**Tulajdonosi döntés (2026-10-27).** A 6., 9. és 10.5 pontban előírt szabadalmi vizsgálat
+hatóköre e pont része, és a vizsgálat eredményét rögzíteni kell. A nyilvántartás:
+[`docs/patent-review.md`](../patent-review.md).
+
+**Hatókör.** A vizsgálat minden formátumra kiterjed, amelyet a CFA4 bármely része kezel:
+
+1. a CFA4 saját kodekjei és konténerei (`crates/*`: dekódolók, kódolók, demuxerek, muxerek),
+   akkor is, ha a 12. pont szerint az alapcsomagban maradnak;
+2. a hardveres utak (`crates/platform`: VA-API, NVDEC; NVENC-kódolás – ennek licencjogi kérdése az
+   5. pontban külön is áll);
+3. a kiegészítő hátterek: az FFmpeg-háttér ([ADR 0005](ADR-0005-media-backends.md)) és a
+   GStreamer ([ADR 0002](ADR-0002-gstreamer-backend.md)) által a kiadott csomagban elérhető
+   formátumok;
+4. a `cfa4-restricted-extras` csomag komponensei (x264, x265);
+5. minden irány külön: dekódolás, kódolás, konténer olvasása és írása.
+
+Ez a 10.5 pontot pontosítja: a vizsgálat nem csak az x264-re és az x265-re vonatkozik.
+
+**Az eredmény rögzítése.** A nyilvántartás formátumonként és irányonként egy sor. Egy eredmény
+akkor számít rögzítettnek, ha a sor `Eredmény` oszlopa `szabad`, `korlátozott` vagy `tisztázatlan`,
+és ki van töltve a dátum, valamint az, hogy ki vizsgálta és mire alapozta (jogi vélemény,
+szabadalmi pool listája, lejárati adat, hivatalos nyilatkozat). A rögzítés a nyilvántartás
+módosításával, PR-ban történik.
+
+**Következmények.**
+
+- `korlátozott` vagy `tisztázatlan` eredmény után a komponens besorolásáról (alapcsomag vagy
+  `cfa4-restricted-extras`) a tulajdonos dönt, a 12. pont szabályai szerint; a döntés a
+  nyilvántartás `Csomag` oszlopába kerül.
+- Új kodek, konténer vagy kódolási út csak a saját nyilvántartási sorával vonható össze; a
+  `python/tests/test_patent_register.py` minden kodek- és konténer-crate sorát ellenőrzi.
+- **Kiadási kapu:** a `patent_review_recorded` a kötelező kiadási kapuk egyike
+  (`python/cfa4_devtools/release_gate.py`, `docs/audit/f9-release-readiness.json`). Csak akkor
+  lehet `PASS`, ha az alapcsomag minden sorának rögzített eredménye van; a kapu ezt magából a
+  nyilvántartásból ellenőrzi, nem csak a kimondott állapotából. Addig nyilvános kiadás nincs.
 
 *Ez műszaki-licenc összefoglaló, nem jogi tanács.*
