@@ -25,10 +25,11 @@
 use std::fmt;
 use std::io::{Seek, Write};
 
-use cfa4_isobmff::{Brand, ByteSource, Mp4File, Mp4Writer, SampleEntry, TrackConfig, WriteSample, WriterOptions};
+use cfa4_isobmff::{Brand, ByteSource, CodecConfig, Mp4File, Mp4Writer, Sample, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
 use cfa4_smart_edit::capabilities::{Codec, Container};
-use cfa4_smart_edit::media_index::StreamIndex;
+use cfa4_smart_edit::media_index::{FrameIndexEntry, RandomAccessKind, StreamIndex};
 use cfa4_smart_edit::plan::{ExportExecutionPlan, PLAN_VERSION};
+use cfa4_smart_edit::timestamp::Rational;
 use serde::{Deserialize, Serialize};
 
 /// Why a plan could not be executed or its output did not verify.
@@ -60,6 +61,16 @@ pub enum SmartCutError {
     Io { detail: String },
     /// The written file does not hold the copied samples unchanged.
     Verification { detail: String },
+    /// A segment the boundary re-encode executor does not run (a rendered segment: gap, effect…).
+    RenderSegment { segment: usize },
+    /// The re-encoded pictures cannot be spliced with the copied stream safely (profile, chroma
+    /// format, bit depth, interlacing, parameter-set ids, a copy that does not start at an IDR…).
+    /// Nothing is spliced; the export needs a full render instead (SCE-001 §8).
+    Incompatible { detail: String },
+    /// Decoding the source pictures of a boundary segment failed.
+    Decode { detail: String },
+    /// Encoding the boundary pictures failed.
+    Encode { detail: String },
 }
 
 impl fmt::Display for SmartCutError {
@@ -79,6 +90,10 @@ impl fmt::Display for SmartCutError {
             SmartCutError::Timestamps { decode_index } => write!(f, "the timestamps of packet {decode_index} do not fit the output"),
             SmartCutError::Io { detail } => write!(f, "I/O: {detail}"),
             SmartCutError::Verification { detail } => write!(f, "verification failed: {detail}"),
+            SmartCutError::RenderSegment { segment } => write!(f, "segment {segment} must be rendered; only copy and boundary re-encode segments run here"),
+            SmartCutError::Incompatible { detail } => write!(f, "the boundary re-encode cannot be spliced with the copied stream: {detail}"),
+            SmartCutError::Decode { detail } => write!(f, "decoding the boundary pictures failed: {detail}"),
+            SmartCutError::Encode { detail } => write!(f, "encoding the boundary pictures failed: {detail}"),
         }
     }
 }
@@ -123,11 +138,11 @@ struct CopyRange<'a> {
     entry: &'a SampleEntry,
 }
 
-fn io(e: impl fmt::Display) -> SmartCutError {
+pub(crate) fn io(e: impl fmt::Display) -> SmartCutError {
     SmartCutError::Io { detail: e.to_string() }
 }
 
-fn brand(c: Container) -> Option<Brand> {
+pub(crate) fn brand(c: Container) -> Option<Brand> {
     match c {
         Container::Mp4 => Some(Brand::Mp4),
         Container::Mov => Some(Brand::Mov),
@@ -163,6 +178,7 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
             detail: format!("{} indexed pictures, {} samples in track {}", index.frames.len(), track.samples.len(), track.id),
         });
     }
+    check_timebase(index, track)?;
     // the copy segments, in output order, must read one run of packets in decode order
     let mut range: Option<(u64, u64)> = None;
     for (i, s) in plan.segments.iter().enumerate() {
@@ -188,9 +204,7 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         let (Some(sample), Some(frame)) = (track.samples.get(d), index.frames.get(d)) else {
             return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is missing") });
         };
-        if u64::from(sample.size) != u64::from(frame.size) {
-            return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is {} bytes, the index says {}", sample.size, frame.size) });
-        }
+        check_sample(d, sample, frame)?;
         match description {
             None => description = Some(sample.description_index),
             Some(x) if x == sample.description_index => {}
@@ -226,6 +240,12 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
 ) -> Result<(W, CopyReport), SmartCutError> {
     let r = copy_range(plan, index, source)?;
     let samples = r.track.samples.get(r.first..=r.last).unwrap_or_default();
+    // the copied run must still last as long as planned (a replaced file with another final
+    // sample duration is refused; check_timebase made the units the same)
+    let total = samples.iter().fold(0i64, |t, s| t.saturating_add(i64::from(s.duration)));
+    if total != plan.expected_duration.value || plan.expected_duration.timebase != index.timebase {
+        return Err(SmartCutError::StaleIndex { detail: format!("the copied packets last {total}, the plan says {}", plan.expected_duration.value) });
+    }
     let base_dts = samples.first().map(|s| s.dts).unwrap_or(0);
     // the presentation starts at the earliest copied picture
     let mut start: i64 = i64::MAX;
@@ -241,6 +261,8 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
     let mut cfg = TrackConfig::new(r.entry.clone(), r.track.timescale);
     cfg.language = r.track.language.clone();
     cfg.media_start = (start > 0).then_some(start);
+    // keep the display transform (rotated phone footage…)
+    cfg.matrix = Some(r.track.matrix);
     let t = w.add_track(cfg).map_err(io)?;
     let mut report = CopyReport { samples: 0, payload_bytes: 0, duration: 0, timescale: r.track.timescale };
     for (k, s) in samples.iter().enumerate() {
@@ -248,6 +270,9 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
         let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
         if data.len() as u64 != u64::from(s.size) {
             return Err(SmartCutError::StaleIndex { detail: format!("packet {d}: read {} bytes, expected {}", data.len(), s.size) });
+        }
+        if let (CodecConfig::Avc(avc), Some(frame)) = (&r.entry.codec, index.frames.get(d)) {
+            check_access_point(d, &data, avc.length_size, frame)?;
         }
         let ws = WriteSample { data: &data, duration: s.duration, composition_offset: composition_offset(s, d)?, is_sync: s.is_sync };
         w.write_sample(t, ws).map_err(io)?;
@@ -301,4 +326,46 @@ pub fn verify_mp4_copy<S: ByteSource + ?Sized, O: ByteSource>(
         report.duration = report.duration.saturating_add(u64::from(out.duration));
     }
     Ok(report)
+}
+
+/// The index must be on the track's timebase: plan positions and durations are read from both.
+pub(crate) fn check_timebase(index: &StreamIndex, track: &Track) -> Result<(), SmartCutError> {
+    let timebase = Rational::new(1, i64::from(track.timescale));
+    if index.timebase != timebase {
+        return Err(SmartCutError::StaleIndex {
+            detail: format!("the index timebase is {}/{}, track {} counts 1/{}", index.timebase.num, index.timebase.den, track.id, track.timescale),
+        });
+    }
+    Ok(())
+}
+
+/// Packet `d` of the source must be the one that was indexed: same size, timestamps and sync flag, so a
+/// remuxed or replaced file (another frame rate, the same access units) is not cut by a stale plan.
+pub(crate) fn check_sample(d: usize, sample: &Sample, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
+    let stale = |detail: String| Err(SmartCutError::StaleIndex { detail });
+    if u64::from(sample.size) != u64::from(frame.size) {
+        return stale(format!("packet {d} is {} bytes, the index says {}", sample.size, frame.size));
+    }
+    if frame.pts != Some(sample.pts) || frame.dts != Some(sample.dts) {
+        return stale(format!("packet {d} has PTS {} / DTS {}, the index says {:?} / {:?}", sample.pts, sample.dts, frame.pts, frame.dts));
+    }
+    // the plan's access points come from the index: the file must mark the same sync samples
+    if frame.keyframe != sample.is_sync {
+        return stale(format!("packet {d} is {}a sync sample, the index says otherwise", if sample.is_sync { "" } else { "not " }));
+    }
+    Ok(())
+}
+
+/// Packet `d` must be the kind of picture the index says where the plan relies on it: an IDR in
+/// the index is an IDR in the bitstream and the other way round, so a source re-encoded with
+/// other access points (same sizes, timestamps and sync table) is not cut by a stale plan.
+pub(crate) fn check_access_point(d: usize, data: &[u8], length_size: u8, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
+    let nals = cfa4_bitstream::length_prefixed_nals(data, usize::from(length_size))
+        .map_err(|e| SmartCutError::StaleIndex { detail: format!("packet {d} does not split into NAL units: {e}") })?;
+    let idr = nals.iter().any(|n| n.first().map(|b| b & 0x1f) == Some(5));
+    if idr != (frame.random_access == RandomAccessKind::Idr) {
+        let is = if idr { "is" } else { "is not" };
+        return Err(SmartCutError::StaleIndex { detail: format!("packet {d} {is} an IDR picture, the index says otherwise") });
+    }
+    Ok(())
 }

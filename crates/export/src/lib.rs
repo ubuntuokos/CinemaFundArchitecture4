@@ -20,6 +20,7 @@ use std::io::Write;
 
 mod aac_out;
 mod audio_out;
+pub mod boundary_reencode;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -2918,6 +2919,8 @@ mod settings_tests;
 #[cfg(test)]
 mod surround_tests;
 
+#[cfg(test)]
+mod boundary_reencode_tests;
 #[cfg(test)]
 mod dcp_tests;
 #[cfg(test)]
