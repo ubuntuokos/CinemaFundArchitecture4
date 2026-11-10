@@ -30,7 +30,8 @@ fi
 command -v go >/dev/null || { echo "error: go is required (apt: golang-go)" >&2; exit 2; }
 
 tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
+# Go writes its module cache read-only (the toolchain ignores -modcacherw)
+trap 'chmod -R u+w "$tmp" 2>/dev/null; rm -rf "$tmp"' EXIT
 # A private, empty module cache and the public proxy and checksum database, whatever the
 # caller's Go environment says; the pinned toolchain and a reproducible, static build.
 export GOPATH="$tmp/gopath" GOMODCACHE="$tmp/gopath/mod" GOCACHE="$tmp/gocache" GOBIN="$tmp/bin"
