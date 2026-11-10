@@ -94,8 +94,10 @@ The index comes from the bitstream, not from the container's keyframe flag:
   reference slot. It needs a sequence header (from `av1C` or in-band). Hidden (forward) key frames
   and intra-only frames are intra but no cut points; a unit that only shows an existing frame
   decodes nothing new. Reference slots are not resolved. A changed sequence header is a
-  configuration change. The registry's AV1 `gop-index` row is supported; copying and re-encoding
-  AV1 are not yet.
+  configuration change. The registry's AV1 `gop-index` and MP4 / MOV `packet-copy` rows are
+  supported (OBU framing, `av1C` kept); re-encoding AV1 is not yet. The executor classifies the
+  copied temporal units again from the first one, so a copy from a key frame whose sequence
+  header is neither in `av1C` nor in-band is refused.
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 
