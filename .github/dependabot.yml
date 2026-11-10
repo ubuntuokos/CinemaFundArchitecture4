@@ -29,6 +29,15 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+      # skrifa and harfrust (crates/text) share read-fonts types (FontRef): they only build when
+      # both sit on the same read-fonts minor, so they must move together (#792). Listed before
+      # cargo-patch because Dependabot puts an update into the first group it matches.
+      cargo-fonts:
+        applies-to: version-updates
+        patterns:
+          - "skrifa"
+          - "harfrust"
+          - "read-fonts"
       cargo-patch:
         applies-to: version-updates
         patterns:
