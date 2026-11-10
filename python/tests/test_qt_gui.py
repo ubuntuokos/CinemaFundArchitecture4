@@ -13409,3 +13409,63 @@ def test_real_engine_export_queue_column_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
+    """Source monitor ▸ Settings ▸ Smart Cut Source…: the marked range of an H.264 clip is copied
+    into a new file on its GOP boundaries (WP-08)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the H.264 clip")
+    clip = tmp_path / "gop.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4"]
+    args += ["-c:v", "libx264", "-g", "25", "-keyint_min", "25", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make an H.264 clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("gop") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("gop"))
+        src = win.source_monitor
+        win.execute("source.open", {"item": item["item"]})
+        assert wait_until(app, lambda: src.has_content(), 60_000)
+        ft = src.frame()
+        src.seek(25 * ft)
+        win.run_command(win.registry.commands["markers.markIn"])
+        src.seek(74 * ft)
+        win.run_command(win.registry.commands["markers.markOut"])
+        assert wait_until(app, lambda: (win.source_state or {}).get("markOut") == 74 * ft, 10_000), win.source_state
+        # the wrench menu offers the action
+        src._fill_wrench_menu()
+        action = next(a for a in src.wrench.menu().actions() if a.objectName() == "source.settings.smartCut")
+        assert action.isEnabled()
+        d = src.open_smart_cut()
+        assert d is not None
+        assert wait_until(app, lambda: d.run.isEnabled() or d.error.isVisible(), 30_000), d.error.text()
+        assert not d.error.isVisible(), d.error.text()
+        assert "50" in d.summary.text(), d.summary.text()
+        out = tmp_path / "gop_cut.mp4"
+        d.output.setText(str(out))
+        said: list[str] = []
+        src.status.connect(said.append)
+        d.run.click()
+        # written, verified, and the dialog closed (deleted) with a status message
+        assert wait_until(app, lambda: any("verified" in m for m in said), 30_000), said
+        assert out.exists() and out.stat().st_size > 0
+        assert "50" in said[-1], said
+    finally:
+        engine.stop()
+        win.close()

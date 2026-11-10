@@ -2465,3 +2465,24 @@ export.summary	Low	alacsony
 	Set Work Area Bar Out Point	A munkaterület-sáv végpontjának beállítása
 	Delete Clips	Klipek törlése
 	Destinations	Célhelyek
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	A klip elemzése…
+	At GOP boundaries (no re-encoding)	GOP-határokon (újrakódolás nélkül)
+	Bit-exact copy	Bitazonos másolat
+	Choose the output file.	Válaszd ki a kimeneti fájlt.
+	Compatible copy	Kompatibilis másolat
+	Copy:	Másolás:
+	Cut:	Vágás:
+	Frame accurate (re-encode the boundaries)	Képkockapontos (a határok újrakódolásával)
+	Open a video clip in the Source monitor first.	Előbb nyiss meg egy videoklipet a Forrásmonitorban.
+	Output:	Kimenet:
+	Smart Cut Source	Forrás vágása (Smart Cut)
+	Smart Cut Source…	Forrás vágása (Smart Cut)…
+	Smart Cut is not available for this clip: {why}	Ehhez a klipehez nem érhető el a Smart Cut: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	A Smart Cut kész és ellenőrizve: {path} ({frames} képkocka)
+	The cut cannot run.	A vágás nem futtatható.
+	The engine sent no analysis.	A motor nem küldött elemzést.
+	Writing and verifying the cut…	A vágás írása és ellenőrzése…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec}, {container}: {gops} GOP, {points} tiszta vágási pont
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} képkocka másolva, {reencoded} képkocka újrakódolva
+	{frames} frames at the boundaries are re-encoded. Continue?	A határokon {frames} képkocka újrakódolódik. Folytatod?

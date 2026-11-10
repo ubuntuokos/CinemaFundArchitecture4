@@ -337,3 +337,24 @@
 	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
 	Set Work Area Bar Out Point	Atur Titik Keluar Bilah Area Kerja
 	Delete Clips	Hapus Klip
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Menganalisis klip…
+	At GOP boundaries (no re-encoding)	Di batas GOP (tanpa enkode ulang)
+	Bit-exact copy	Salinan identik per bit
+	Choose the output file.	Pilih berkas keluaran.
+	Compatible copy	Salinan kompatibel
+	Copy:	Salin:
+	Cut:	Potong:
+	Frame accurate (re-encode the boundaries)	Akurat per bingkai (enkode ulang batas)
+	Open a video clip in the Source monitor first.	Buka klip video di monitor sumber terlebih dahulu.
+	Output:	Keluaran:
+	Smart Cut Source	Smart Cut sumber
+	Smart Cut Source…	Smart Cut sumber…
+	Smart Cut is not available for this clip: {why}	Smart Cut tidak tersedia untuk klip ini: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut ditulis dan diverifikasi: {path} ({frames} bingkai)
+	The cut cannot run.	Pemotongan tidak dapat dijalankan.
+	The engine sent no analysis.	Mesin tidak mengirim analisis.
+	Writing and verifying the cut…	Menulis dan memverifikasi potongan…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} dalam {container}: {gops} GOP, {points} titik potong bersih
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} bingkai disalin, {reencoded} bingkai dienkode ulang
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} bingkai di batas akan dienkode ulang. Lanjutkan?

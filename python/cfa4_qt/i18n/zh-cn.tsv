@@ -337,3 +337,24 @@
 	Set Work Area Bar In Point	设置工作区栏入点
 	Set Work Area Bar Out Point	设置工作区栏出点
 	Delete Clips	删除剪辑
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	正在分析剪辑…
+	At GOP boundaries (no re-encoding)	在 GOP 边界（不重新编码）
+	Bit-exact copy	逐位相同的副本
+	Choose the output file.	请选择输出文件。
+	Compatible copy	兼容副本
+	Copy:	复制：
+	Cut:	剪切：
+	Frame accurate (re-encode the boundaries)	精确到帧（重新编码边界）
+	Open a video clip in the Source monitor first.	请先在源监视器中打开视频剪辑。
+	Output:	输出：
+	Smart Cut Source	智能剪切源
+	Smart Cut Source…	智能剪切源…
+	Smart Cut is not available for this clip: {why}	此剪辑无法使用智能剪切：{why}
+	Smart Cut written and verified: {path} ({frames} frames)	智能剪切已写入并校验：{path}（{frames} 帧）
+	The cut cannot run.	无法执行剪切。
+	The engine sent no analysis.	引擎未发送分析结果。
+	Writing and verifying the cut…	正在写入并校验剪切…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{container} 中的 {codec}：{gops} 个 GOP，{points} 个干净剪切点
+	{copied} frames copied, {reencoded} frames re-encoded	已复制 {copied} 帧，重新编码 {reencoded} 帧
+	{frames} frames at the boundaries are re-encoded. Continue?	边界处的 {frames} 帧将重新编码。是否继续？

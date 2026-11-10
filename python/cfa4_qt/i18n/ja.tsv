@@ -337,3 +337,24 @@
 	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
 	Set Work Area Bar Out Point	ワークエリアバーのアウトポイントを設定
 	Delete Clips	クリップを削除
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	クリップを解析中…
+	At GOP boundaries (no re-encoding)	GOP 境界で（再エンコードなし）
+	Bit-exact copy	ビット単位で同一のコピー
+	Choose the output file.	出力ファイルを選択してください。
+	Compatible copy	互換コピー
+	Copy:	コピー:
+	Cut:	カット:
+	Frame accurate (re-encode the boundaries)	フレーム単位（境界を再エンコード）
+	Open a video clip in the Source monitor first.	先にソースモニターでビデオクリップを開いてください。
+	Output:	出力:
+	Smart Cut Source	ソースのスマートカット
+	Smart Cut Source…	ソースのスマートカット…
+	Smart Cut is not available for this clip: {why}	このクリップではスマートカットを使用できません: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	スマートカットを書き出して検証しました: {path}（{frames} フレーム）
+	The cut cannot run.	カットを実行できません。
+	The engine sent no analysis.	エンジンから解析結果が届きませんでした。
+	Writing and verifying the cut…	カットを書き出して検証中…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{container} 内の {codec}: {gops} GOP、クリーンなカット点 {points} 個
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} フレームをコピー、{reencoded} フレームを再エンコード
+	{frames} frames at the boundaries are re-encoded. Continue?	境界の {frames} フレームを再エンコードします。続行しますか？
