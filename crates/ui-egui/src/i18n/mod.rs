@@ -64,6 +64,8 @@ pub enum Language {
     Pl,
     /// Turkish: the whole interface, Latin script (bundled fonts).
     Tr,
+    /// Dutch: the whole interface, Latin script (bundled fonts).
+    Nl,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -87,11 +89,12 @@ static ITALIAN: OnceLock<Catalog> = OnceLock::new();
 static HUNGARIAN: OnceLock<Catalog> = OnceLock::new();
 static POLISH: OnceLock<Catalog> = OnceLock::new();
 static TURKISH: OnceLock<Catalog> = OnceLock::new();
+static DUTCH: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 18] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -107,6 +110,7 @@ impl Language {
         Self::Hu,
         Self::Pl,
         Self::Tr,
+        Self::Nl,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -128,6 +132,7 @@ impl Language {
             Self::Hu => "Magyar",
             Self::Pl => "Polski",
             Self::Tr => "Türkçe",
+            Self::Nl => "Nederlands",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -150,6 +155,7 @@ impl Language {
             "hu" => Some(Self::Hu),
             "pl" => Some(Self::Pl),
             "tr" => Some(Self::Tr),
+            "nl" => Some(Self::Nl),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -166,7 +172,7 @@ impl Language {
     /// only for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`); Traditional ones (`zh-TW`,
     /// `zh-HK`, `zh-MO`, `zh-Hant…`) are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 15] = [
+        const PRIMARY: [(&str, Language); 16] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -182,6 +188,7 @@ impl Language {
             ("hu", Language::Hu),
             ("pl", Language::Pl),
             ("tr", Language::Tr),
+            ("nl", Language::Nl),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -231,6 +238,7 @@ impl Language {
             Self::Hu => "hu",
             Self::Pl => "pl",
             Self::Tr => "tr",
+            Self::Nl => "nl",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -254,6 +262,7 @@ impl Language {
             Self::Hu => Some(HUNGARIAN.get_or_init(|| Catalog::parse(catalog_file!("hu")))),
             Self::Pl => Some(POLISH.get_or_init(|| Catalog::parse(catalog_file!("pl")))),
             Self::Tr => Some(TURKISH.get_or_init(|| Catalog::parse(catalog_file!("tr")))),
+            Self::Nl => Some(DUTCH.get_or_init(|| Catalog::parse(catalog_file!("nl")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -438,6 +447,7 @@ mod tests {
             ("hu", catalog_file!("hu")),
             ("pl", catalog_file!("pl")),
             ("tr", catalog_file!("tr")),
+            ("nl", catalog_file!("nl")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1147,7 +1157,7 @@ mod tests {
         for none in [&["hun"][..], &["h"], &["-hu"]] {
             assert_eq!(l(none), Language::En, "{none:?}");
         }
-        assert_eq!(l(&["sv-SE", "nl", "es-MX", "ja"]), Language::Es, "the first one the interface has");
+        assert_eq!(l(&["is-IS", "ga", "es-MX", "ja"]), Language::Es, "the first one the interface has");
         assert_eq!(l(&["rm-CH", "de-CH", "fr-CH", "en"]), Language::De);
         assert_eq!(l(&["rm-CH", "fr-CH", "de-CH", "en"]), Language::Fr);
         assert_eq!(l(&["en-GB", "es"]), Language::EnGb);
@@ -1162,7 +1172,7 @@ mod tests {
             assert_eq!(l(&[tag]), Language::En, "{tag}");
         }
         assert_eq!(l(&["en-US", "de"]), Language::En);
-        for none in [&[][..], &["nl"], &["C"], &["POSIX"], &[""], &["e"], &["esp"], &["-es"], &["deu"], &["d"], &["-de"], &["fra"], &["f"], &["-fr"]] {
+        for none in [&[][..], &["ga"], &["C"], &["POSIX"], &[""], &["e"], &["esp"], &["-es"], &["deu"], &["d"], &["-de"], &["fra"], &["f"], &["-fr"]] {
             assert_eq!(l(none), Language::En, "{none:?}");
         }
         assert_eq!(l(&[&"x".repeat(1 << 20), "es"]), Language::Es);
@@ -1185,7 +1195,7 @@ mod tests {
         let count = asked.clone();
         app.hooks.system_languages = Some(Box::new(move || {
             count.set(count.get() + 1);
-            vec!["nl-NL".into(), "es-ES".into()]
+            vec!["ga-IE".into(), "es-ES".into()]
         }));
         app.apply_prefs(&ctx);
         assert_eq!(app.ui.language, Language::Es);
@@ -1562,6 +1572,13 @@ mod tests {
             catalog_file!("tr"),
             "ÇĞİÖŞÜçğıöşü",
             &[("File", "Dosya"), ("Sequence", "Sekans"), ("Playhead", "Oynatma Kafası"), ("Cross Dissolve", "Çapraz Çözülme")],
+        ),
+        (
+            Language::Nl,
+            "app.language.dutch",
+            catalog_file!("nl"),
+            "ÉËÏÖéëïöĳ",
+            &[("File", "Bestand"), ("Sequence", "Reeks"), ("Playhead", "Afspeelkop"), ("Cross Dissolve", "Kruisovervloeier")],
         ),
     ];
 
