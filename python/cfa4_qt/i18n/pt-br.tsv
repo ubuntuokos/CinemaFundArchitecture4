@@ -37,8 +37,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	O CFA4 encontrou um erro
 	CFA4 project links	Links do projeto CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 fechou inesperadamente enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 foi fechado enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
 	Cancel Selected	Cancelar selecionados
 	Cannot check the output folder for files to replace: {error}	Não é possível verificar a pasta de saída em busca de arquivos a substituir: {error}
 	Cannot create the output folder: {error}	Não é possível criar a pasta de saída: {error}
@@ -47,7 +45,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Verificar antes de exportar: {n} problemas marcados na linha do tempo (marcadores vermelhos)
 	Checked:	Verificado:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Escolha um arquivo de faixa IAB (IMF ou DCP), um fluxo IAB bruto ou Dolby Atmos TrueHD: um fluxo .thd ou um arquivo MKV, MP4 ou M2TS com uma faixa Atmos.
-	Choose an output file.	Escolha um arquivo de saída.
+	Choose a file name and location.	Escolha um nome de arquivo e um local.
+	Choose folder	Escolher pasta
 	Click and press keys to assign	Clique e pressione teclas para atribuir
 	Compression	Compactação
 	Compression Level	Nível de compactação
@@ -320,3 +319,76 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compactação {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Tachado
+	Caption Export Settings	Configurações de exportação de legendas
+	Export Captions	Exportar legendas
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} já existe, então nada foi exportado. Para substituí-lo, escolha-o na janela de salvar.
+	Delete Redoable Actions	Excluir ações refazíveis
+	Clear History	Limpar histórico
+	Delete the dimmed actions after the current state? They cannot be redone.	Excluir as ações esmaecidas após o estado atual? Elas não poderão ser refeitas.
+	Work Area Bar	Barra da área de trabalho
+	Start: {tc}	Início: {tc}
+	End: {tc}	Fim: {tc}
+	Duration: {tc}	Duração: {tc}
+	Panel menu	Menu do painel
+	Move panel	Mover painel
+	Transparency Grid	Grade de transparência
+	Show Duplicate Frame Markers	Mostrar marcadores de quadros duplicados
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A entrada/saída da sequência tem só 1 quadro. Escolha Sequência inteira para exportar a sequência toda.
+	Set Work Area Bar In Point	Definir ponto de entrada da barra da área de trabalho
+	Set Work Area Bar Out Point	Definir ponto de saída da barra da área de trabalho
+	Delete Clips	Excluir clipes
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Analisando o clipe…
+	At GOP boundaries (no re-encoding)	Nos limites de GOP (sem recodificar)
+	Bit-exact copy	Cópia idêntica bit a bit
+	Choose the output file.	Escolha o arquivo de saída.
+	Compatible copy	Cópia compatível
+	Copy:	Cópia:
+	Cut:	Corte:
+	Frame accurate (re-encode the boundaries)	Preciso ao quadro (recodificar os limites)
+	Open a video clip in the Source monitor first.	Abra primeiro um clipe de vídeo no monitor de origem.
+	Output:	Saída:
+	Smart Cut Source	Smart Cut da origem
+	Smart Cut Source…	Smart Cut da origem…
+	Smart Cut is not available for this clip: {why}	O Smart Cut não está disponível para este clipe: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut gravado e verificado: {path} ({frames} quadros)
+	The cut cannot run.	O corte não pode ser executado.
+	The engine sent no analysis.	O mecanismo não enviou nenhuma análise.
+	Writing and verifying the cut…	Gravando e verificando o corte…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} em {container}: {gops} GOPs, {points} pontos de corte limpos
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} quadros copiados, {reencoded} quadros recodificados
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} quadros nos limites serão recodificados. Continuar?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Mostrar limites de GOP
+# Export window Smart Export (WP-08)
+	Export mode	Modo de exportação
+	Full Render	Renderização completa
+	Planning…	Planejando…
+	Recommended: Smart Render (asks before re-encoding)	Recomendado: Smart Render (pergunta antes de recodificar)
+	Recommended: Stream Copy (nothing is re-encoded)	Recomendado: Stream Copy (nada é recodificado)
+	Rendered because of: {causes}	Renderizado por causa de: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export gravado e verificado: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – idêntico bit a bit
+	Stream Copy – Compatible	Stream Copy – compatível
+	Stream copy is not possible: {frames} frames need re-encoding.	A cópia de fluxo não é possível: {frames} quadros precisam ser recodificados.
+	The export cannot run.	A exportação não pode ser executada.
+	Wait for the export plan.	Aguarde o plano de exportação.
+	Writing and verifying the export…	Gravando e verificando a exportação…
+	colour conversion	conversão de cor
+	compositing	composição
+	copied	copiado
+	effects	efeitos
+	frame rate	taxa de quadros
+	proxies or nested sequences	proxies ou sequências aninhadas
+	re-encoded at a cut	recodificado em um corte
+	rendered	renderizado
+	sources that cannot be copied	origens que não podem ser copiadas
+	speed changes	mudanças de velocidade
+	titles or overlays	títulos ou sobreposições
+	transforms	transformações
+	transitions	transições
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} quadros copiados, {reencoded} recodificados em cortes, {rendered} renderizados
+	{frames} frames are re-encoded or rendered. Continue?	{frames} quadros serão recodificados ou renderizados. Continuar?

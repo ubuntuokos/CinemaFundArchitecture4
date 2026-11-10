@@ -20,6 +20,13 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[2]
 APP_ID = "io.github.ubuntuokos.cfa4"
 FORMATS = ("deb", "AppImage", "flatpak", "tar.gz")
+# CFA4's FFmpeg 9.0.2 (ADR 0005 step 4): in /opt/cfa4 in the .deb, beside the binaries elsewhere.
+FFMPEG_DIR = "lib/cfa4/ffmpeg-9.0.2"
+FFMPEG_DEB_DIR = "opt/cfa4/ffmpeg-9.0.2"
+FFMPEG_REQUIRED = ("lib/libavcodec.so.", "lib/libavformat.so.", "lib/libavutil.so.")
+FFMPEG_DOCS = ("share/doc/ffmpeg/BUILDINFO", "share/doc/ffmpeg/COPYING.GPLv3", "share/doc/ffmpeg/LICENSE.md")
+# Patent-restricted libraries belong only in cfa4-restricted-extras (docs/licensing.md §7).
+RESTRICTED = re.compile(r"(^|/)libx26[45]\.so")
 
 
 class AuditError(ValueError):
@@ -74,6 +81,19 @@ def verify_checksums(dist: Path, names: tuple[str, ...]) -> dict[str, str]:
     return received
 
 
+def verify_ffmpeg(names: set[str], base: str, package: str) -> None:
+    """The FFmpeg 9.0.2 libraries and their licences under `base`, and no restricted codec."""
+    for prefix in FFMPEG_REQUIRED:
+        if not any(name.startswith(f"{base}/{prefix}") for name in names):
+            raise AuditError(f"{package} lacks FFmpeg 9.0.2 {prefix}* in {base}")
+    for doc in FFMPEG_DOCS:
+        if f"{base}/{doc}" not in names:
+            raise AuditError(f"{package} lacks the FFmpeg licence/source file {base}/{doc}")
+    restricted = sorted(name for name in names if RESTRICTED.search(name))
+    if restricted or any("-restricted/" in name for name in names):
+        raise AuditError(f"{package} contains patent-restricted codecs: {restricted}")
+
+
 def verify_tarball(path: Path, version: str) -> None:
     folder = f"cfa4-{version}-linux-x86_64"
     required = {
@@ -102,6 +122,7 @@ def verify_tarball(path: Path, version: str) -> None:
         missing = required - files.keys()
         if missing:
             raise AuditError(f"tarball missing required entries: {sorted(missing)}")
+        verify_ffmpeg(set(files), FFMPEG_DIR, "tarball")
         for name in ("install.sh", "bin/cfa4", "bin/cfa4-cli"):
             if not files[name].mode & 0o111 or files[name].size == 0:
                 raise AuditError(f"tarball executable invalid: {name}")
@@ -152,6 +173,18 @@ def verify_deb(path: Path, version: str) -> None:
     ):
         if entry not in files:
             raise AuditError(f".deb missing {entry}")
+    names = set()
+    for line in files.splitlines():
+        # dpkg-deb --contents: "-rw-r--r-- root/root 1234 2026-11-08 07:00 ./opt/…"
+        entry = line.split()[-1] if line.split() else ""
+        if entry.startswith("./"):
+            names.add(entry[2:].rstrip("/"))
+    verify_ffmpeg(names, FFMPEG_DEB_DIR, ".deb")
+    if any(name.startswith(f"usr/{FFMPEG_DIR}") for name in names):
+        raise AuditError(".deb carries the relocatable FFmpeg copy; it belongs in /opt/cfa4")
+    depends = dpkg("--field", str(path), "Depends")
+    if "libgstreamer1.0-0" not in depends:
+        raise AuditError(f".deb Depends lacks the system libraries: {depends}")
 
 
 def verify_appimage(path: Path) -> None:

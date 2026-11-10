@@ -105,9 +105,9 @@ nélkülözhetetlen, a CFA4 **saját kóddal valósítja meg**.
   `docs/gaps.md`-be kerül (G11 plugin-hosting, G12 MI, G18 effektmélység), bővítményenként a
   pótolandó képességgel, a nyílt alapként használható projektekkel és a mérési móddal
   (VISION.md 2. pont: bizonyíték, nem állítás).
-- A fizetős CFA4-többletfunkciók **GPL-3.0-or-later licencűek** (a tulajdonos döntése,
-  2026-10-24 délután, a korábbi „külön folyamatként futó zárt modul” lehetőség helyett): eladhatók,
-  de a vevő a forrással együtt továbbadhatja őket. Részletek: `docs/licensing.md` §4.
+- ~~A fizetős CFA4-többletfunkciók GPL-3.0-or-later licencűek (2026-10-24).~~ **Felváltva
+  (tulajdonosi döntés, 2026-11-08):** a CFA4-nek nincs fizetős része, minden funkciója ingyenes és
+  GPL-3.0-or-later; a fejlesztés önkéntes adománnyal támogatható. Részletek: `docs/licensing.md` §4.
 
 ## 5. Döntés: hardveres kódolás gyártónként
 
@@ -170,7 +170,7 @@ ADR F8 megfelelő lépéséhez kötődnek. A becslések durva, ügynökórában 
 |---|---|---|---|
 | **A0** | A #40 (ADR 0002) és ez a PR összevonva; az ADR 0003 bekerül a `docs/audit/README.md` tartalomjegyzékébe | most | 1–2 óra |
 | **A1** | Tesztorákulumok: OpenTimelineIO oda-vissza teszt az `otio.rs`-hez; OpenAPV bitpontos összevetés a `crates/apv`-vel; OpenColorIO + ACES-config ΔE-mérés a `crates/color`-hoz. A termékbe nem kerülnek, hiányzó eszköznél kihagyódnak | most indítható, a Qt6-munkát nem akasztja | 10–20 óra |
-| **A2** | **Külön ADR (a következő szabad számmal, várhatóan 0006): FFI-kivétel elve** (az AGENTS.md §0.3 bővítése: további FFI-crate-ek az ADR 0001 feltételeivel), majd `crates/ocio`: OpenColorIO-színkezelés, ACES-config olvasása | az ADR F8 5. lépésénél (előnézet, GPU) | 40–80 óra |
+| **A2** | **Külön ADR (a következő szabad számmal, várhatóan 0008): FFI-kivétel elve** (az AGENTS.md §0.3 bővítése: további FFI-crate-ek az ADR 0001 feltételeivel), majd `crates/ocio`: OpenColorIO-színkezelés, ACES-config olvasása | az ADR F8 5. lépésénél (előnézet, GPU) | 40–80 óra |
 | **A3** | OpenImageIO + OpenEXR + LibRaw + libheif: PSD, HEIF/HEIC, JPEG 2000, kamera-RAW, a hiányzó EXR-tömörítések, többrészes és mély EXR (G10) | az ADR F8 3. lépése (médiaböngésző) után | 60–120 óra |
 | **A4** | OpenFX-host **külön folyamatban** (lásd 9. pont), első csomag a Natron openfx-misc (G11, G18) | az ADR F8 4. lépése (idővonal) után | 120–250 óra |
 | **A5** | Szoftveres kódolók: x265 (HEVC), x264 (H.264), LAME (MP3) (G13); előtte szabadalmi vizsgálat | az ADR F8 6. lépésénél (export) | 30–60 óra + jogi vizsgálat |
@@ -219,8 +219,8 @@ A PR összevonásával a tulajdonos ezeket hagyja jóvá:
 
 1. Az 1–6. pont döntései és jelöltjei, a 7. pont szakaszai és sorrendje.
 2. Az FFI-kivétel elve: további C/C++ könyvtár csak saját ADR-rel, az ADR 0001 feltételeivel
-   köthető be (az első ilyen az A2 FFI-elv ADR-je, a következő szabad számmal; a 0004 és a 0005 már foglalt:
-   útválasztó és médiahátterek). Az AGENTS.md szövege azzal az ADR-rel
+   köthető be (az első ilyen az A2 FFI-elv ADR-je, a következő szabad számmal; a 0004–0007 már foglalt:
+   útválasztó, médiahátterek, BacklotHub, Media Services). Az AGENTS.md szövege azzal az ADR-rel
    változik, nem ezzel a PR-ral.
 3. A bővítmény-hostok (OpenFX, LV2) külön folyamatban futnak.
 4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet. **Teljesült:** [ADR 0005](ADR-0005-media-backends.md)

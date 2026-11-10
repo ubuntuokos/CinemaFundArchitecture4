@@ -8,6 +8,7 @@ on a worker thread. No shell, no remote calls.
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -61,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
         from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
 
         from cfa4_devtools.qt_settings import SettingsDialog
+        from cfa4_devtools.settings_backend import MEDIA_BACKENDS_PAGE
     except ImportError as exc:
         parser.error(f"Qt 6/PySide6 missing: {exc}; install: python -m pip install -e '.[qt]'")
 
@@ -84,20 +86,37 @@ def main(argv: list[str] | None = None) -> int:
     layout.addWidget(button)
     window.setCentralWidget(container)
 
-    def open_settings() -> None:
+    def open_settings(page: str | None = None) -> None:
         if engine is None:
             status.setText("Settings need the Rust CLI: cargo build --release -p cfa4-cli")
             return
-        SettingsDialog(engine, parent=window).exec()
+        SettingsDialog(engine, parent=window, page=page).exec()
 
     settings_action = QAction("Settings…", window)
     settings_action.setObjectName("menu.edit.settings")
     settings_action.setShortcut(QKeySequence.StandardKey.Preferences)
     if settings_action.shortcut().isEmpty():
         settings_action.setShortcut(QKeySequence("Ctrl+,"))
-    settings_action.triggered.connect(open_settings)
-    window.menuBar().addMenu("&Edit").addAction(settings_action)
+    settings_action.triggered.connect(lambda: open_settings())
+    edit_menu = window.menuBar().addMenu("&Edit")
+    edit_menu.addAction(settings_action)
+    # Edit ▸ Media Backends… and Help ▸ Restricted Codecs…: the Settings window opened at the
+    # Media & Playback ▸ Media Backends page (ADR 0005; Ubuntu model, docs/licensing.md §7)
+    backends_action = QAction("Media Backends…", window)
+    backends_action.setObjectName("menu.edit.mediaBackends")
+    backends_action.triggered.connect(lambda: open_settings(MEDIA_BACKENDS_PAGE))
+    edit_menu.addAction(backends_action)
+    restricted_action = QAction("Restricted Codecs…", window)
+    restricted_action.setObjectName("menu.help.restrictedCodecs")
+    restricted_action.triggered.connect(lambda: open_settings(MEDIA_BACKENDS_PAGE))
+    window.menuBar().addMenu("&Help").addAction(restricted_action)
     window.resize(650, 200)
+    if os.environ.get("CFA4_QT_LIST_MENUS"):
+        # tests: every menu item's automation id, so menu reachability is checked without a display
+        for menu_action in window.menuBar().actions():
+            menu = menu_action.menu()
+            for action in menu.actions() if menu is not None else []:
+                print(action.objectName())
     refresh()
     window.show()
     if args.smoke:

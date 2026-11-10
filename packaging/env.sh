@@ -67,6 +67,40 @@ copy_docs() {
   # The CFA4 logo and icons ship with their own (non-GPL) terms.
   if [ -f "$ROOT/assets/cfa4/LICENSE-logo.txt" ]; then cp "$ROOT/assets/cfa4/LICENSE-logo.txt" "$dest/LICENSE-logo.txt"; fi
   copy_font_licences "$dest"
+  # Every third-party Rust crate in cfa4 and cfa4-cli with the licence files it ships, and the
+  # CycloneDX SBOM of every crate compiled in (#220).
+  # check-package-docs.sh sets CFA4_SKIP_THIRD_PARTY_LICENSES=1 for its build-free source check.
+  # CFA4_THIRD_PARTY_LICENSES_FILE and CFA4_SBOM_FILE ship already written files instead (tests
+  # with stand-in binaries).
+  if [ -n "${CFA4_THIRD_PARTY_LICENSES_FILE:-}" ]; then
+    cp "$CFA4_THIRD_PARTY_LICENSES_FILE" "$dest/THIRD-PARTY-LICENSES.txt"
+    if [ -n "${CFA4_SBOM_FILE:-}" ]; then cp "$CFA4_SBOM_FILE" "$dest/cfa4.cdx.json"; fi
+  elif [ "${CFA4_SKIP_THIRD_PARTY_LICENSES:-0}" != 1 ]; then
+    write_crate_notices "$dest"
+  fi
+}
+
+# Write THIRD-PARTY-LICENSES.txt (python/cfa4_devtools/third_party_licenses.py) and the CycloneDX
+# SBOM cfa4.cdx.json (python/cfa4_devtools/sbom.py) into <dest>, both from one `cargo metadata` for
+# the packaged features. Offline: the crate sources come from the build. The SBOM carries a
+# timestamp only when SOURCE_DATE_EPOCH is set.
+write_crate_notices() {
+  local dest="$1" meta status=0 features="${CFA4_PACKAGE_FEATURES:-cfa4/gstreamer,cfa4-cli/gstreamer,cfa4/ffmpeg,cfa4-cli/ffmpeg}"
+  meta="$(mktemp)"
+  if ! (cd "$ROOT" && cargo metadata --format-version 1 --locked --offline \
+      --filter-platform x86_64-unknown-linux-gnu --features "$features") >"$meta"; then
+    rm -f "$meta"
+    echo "error: cargo metadata failed; build first so the crate sources are on disk" >&2
+    return 1
+  fi
+  PYTHONPATH="$ROOT/python" python3 -m cfa4_devtools.third_party_licenses "$meta" \
+    -o "$dest/THIRD-PARTY-LICENSES.txt" || status=1
+  if [ "$status" = 0 ]; then
+    PYTHONPATH="$ROOT/python" python3 -m cfa4_devtools.sbom "$meta" --lock "$ROOT/Cargo.lock" \
+      --version "$VERSION" -o "$dest/cfa4.cdx.json" || status=1
+  fi
+  rm -f "$meta"
+  return "$status"
 }
 
 # Copy each extra-fonts licence ($CFA4_FONTS_DIR/fonts/<family>/OFL.txt) to <dest>/OFL-<family>.txt.

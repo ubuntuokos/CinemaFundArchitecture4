@@ -27,7 +27,6 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
-    QTabBar,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -36,6 +35,7 @@ from PySide6.QtWidgets import (
 from .. import theme
 from ..i18n import N_, fmt, tr
 from .effect_controls import SEND_DELAY_MS
+from .tab_ids import IdTabBar
 
 # (command id, label) of the four audio types, egui's order
 TYPES = (("dialogue", N_("Dialogue")), ("music", N_("Music")), ("sfx", N_("SFX")), ("ambience", N_("Ambience")))
@@ -422,7 +422,7 @@ class EssentialSoundPanel(QWidget):
         self._send_timer = QTimer(self, singleShot=True, interval=SEND_DELAY_MS)
         self._send_timer.timeout.connect(self.flush)
 
-        self.tabs = QTabBar(self)
+        self.tabs = IdTabBar(["essentialSound.tab.Browse", "essentialSound.tab.Edit"], self)
         self.tabs.setObjectName("essentialSound.tabs")
         self.tabs.setDrawBase(False)
         self.tabs.setExpanding(False)

@@ -42,6 +42,11 @@ it checked and why. `--smoke [--screenshot out.png]`
 starts, waits for the engine, and quits (CI). `--no-autosave` turns off the auto-save and
 crash-recovery journal, `--data-dir` moves it.
 
+**Agents.** `cfa4-qt --control 9876` serves egui's control channel ([control-protocol.md](control-protocol.md)),
+and `cfa4-cli mcp --bridge 127.0.0.1:9876` (the `cfa4` server in `.mcp.json`) drives the Qt window over
+MCP as it drives egui's: commands, the document, the `ui_*` tools, `ui_screenshot`, `render_preview`
+(the Program monitor) and long exports (`test_real_engine_mcp_bridge_drives_the_qt_window`).
+
 ## Architecture
 
 ```text
@@ -86,7 +91,7 @@ line longer than 4 MiB is skipped with an error reply.
 | `hello` | – | `{protocol, engine, pid, autosave, recovery: [candidate…]}` |
 | `engine.execute` | `{command, params}` | the command's result (any engine command id) |
 | `engine.commands` | – | the registry (`command.list`: id, label, menu, shortcut(s), params, enabled) |
-| `frame.render` | `{target?: "program" \| "source", item?, time \| seconds \| frame, scale?, maxWidth?, maxHeight?, alpha?, draft?, shm?}` | `{w, h, fullW, fullH, pixelAspect, format: "rgba8", time, target, draft, offline \| item, shm? \| shmError?}` + `w·h·4` bytes (with `shm: "<ring>"` (1–16 letters, digits, `-`; one ring per monitor) the bytes are not sent: they are written into the next of the ring's 4 slots of a private (0600) file in `$XDG_RUNTIME_DIR` (else `/dev/shm`), named `cfa4-frames-…`, and `shm` is `{path, offset, len, slots, slotSize}`; the client maps the file read-only once, removes it from the directory, and reads each frame in place (the Qt monitors show it without a copy); a frame that cannot go there comes as bytes with `shmError`; the engine removes its ring files when it ends) (sRGB over black; with `alpha: true` the fourth byte is the frame's alpha, for the Alpha display mode); `fullW × fullH` is the frame's own size, `pixelAspect` its pixel aspect ratio (the monitors draw it at its display aspect); `draft: true` decodes for reduced-resolution playback (Settings ▸ Playback ▸ Draft decoding; the engine never hands a draft picture to a request without it) |
+| `frame.render` | `{target?: "program" \| "source", item?, time \| seconds \| frame, scale?, maxWidth?, maxHeight?, alpha?, draft?, gpu?, shm?}` | `{w, h, fullW, fullH, pixelAspect, format: "rgba8", time, target, draft, offline, renderer \| item, shm? \| shmError?}` + `w·h·4` bytes (with `shm: "<ring>"` (1–16 letters, digits, `-`; one ring per monitor) the bytes are not sent: they are written into the next of the ring's 4 slots of a private (0600) file in `$XDG_RUNTIME_DIR` (else `/dev/shm`), named `cfa4-frames-…`, and `shm` is `{path, offset, len, slots, slotSize}`; the client maps the file read-only once, removes it from the directory, and reads each frame in place (the Qt monitors show it without a copy); a frame that cannot go there comes as bytes with `shmError`; the engine removes its ring files when it ends) (sRGB over black; with `alpha: true` the fourth byte is the frame's alpha, for the Alpha display mode); `fullW × fullH` is the frame's own size, `pixelAspect` its pixel aspect ratio (the monitors draw it at its display aspect); `draft: true` decodes for reduced-resolution playback (Settings ▸ Playback ▸ Draft decoding; the engine never hands a draft picture to a request without it); a Program frame (without `alpha`) is composited on the GPU with the compositor egui's monitors use (cfa4-gpu, transitions included) and read back, when the machine has a hardware adapter, otherwise by the CPU renderer: `renderer` says which (`"gpu"` / `"cpu"`); `gpu: false` asks for the CPU renderer, `gpu: true` also takes a software rasteriser (lavapipe, llvmpipe; slower than the CPU renderer, so not used by default) |
 | `audio.render` | `{target?, item?, start (samples) \| time \| seconds, frames, sampleRate? (source only), meter?, speed?}` | `{sampleRate, channels, frames, start, format: "f32le", target, meter?, mixRate?}` + interleaved samples; with `speed` (0.5–4, J / L shuttling; other speeds are refused, they are silent) the timeline is mixed at `mixRate` = `sampleRate / speed`, `start` counts frames at `mixRate` and the samples play at `sampleRate`, so consecutive blocks run `speed` times as fast, pitch-corrected when Preferences ▸ Audio ▸ Maintain pitch while shuttling is on (no `meter`); with `meter: true`, `meter` is `{block, peaks, loudness, reset}`: per `block` samples (1/100 s) the sample peak of each channel (linear) and `[M, S, I LUFS, TP dBTP]` so far (`null` below −70); loudness keeps integrating over consecutive requests of the same target and starts over (`reset: true`) on a jump; for the Program `meter.strips` is `[{id, peaks}]`, each mixer strip's peak over the block (linear, post-fader, per channel; the Mix is id 2⁶⁴−1). The Program is mixed through the live mixer state, so a fader held in the Audio Track Mixer is heard. The Audio Meters and the Audio Track Mixer show these |
 | `scopes.image` | `{kind, time?, waveformType?, paradeType?, colorSpace?, brightness?, scale?, clamp?, rows?}` | `{kind, w, h, format: "rgba8premultiplied", lo, hi, nits, colorSpace, parades, nitsTicks?, extent?, skinToneDeg?, targets?, hls?}` + `w·h·4` bytes: one Lumetri scope's trace image of the active sequence's frame; the GUI draws the graticule |
 | `mediaBrowser.inspect` | `{path?, probe?}` | `{dir, canBack, canForward, canUp, selection, favorite, fileTypes, view, columns, importAsImageSequence, hoverScrub, thumbnailSize, recent, createFolderForImportedProjects, allowDuplicateMedia, ingest, fileTypeChoices, extensions, allColumns, entries: [{name, path, isDir, kind, numbered, inProject, cells}], pending, error?}`: the Media Browser; `cells` are the list columns' texts, probing at most `probe` (8) new files per call (`pending` are left) |
@@ -157,7 +162,7 @@ start with a saved layout and reset; it passes on all four versions, so `PySide6
 
 File ▸ Export ▸ Media… (and `export.queue.add`, Ctrl+M) opens a non-modal Export window. It
 lists the engine's presets (`export.presets.list`) and formats (`export.formats`), shows what
-the current choice resolves to (`export.resolve`: size, rate, bitrate, sound, frames) and sends
+the current choice resolves to (`export.resolve`: size, rate, bitrate, sound, frames; whether the video is HDR, the encoder that writes it, the audio codec used and the sample sizes it can store) and sends
 the export to the engine's queue (`export.queue.add`), which the engine server encodes between
 requests; the queue table polls `export.queue.list` for status, progress and remaining time,
 with start/stop, cancel, retry, remove and clear. **Only the settings the user changed override
@@ -166,3 +171,14 @@ are not sent until touched, so a preset's own choices are never silently replace
 is always sent when set (the fields show the preset's size; 0 × 0 is the preset's or the
 sequence's). `test_real_engine_export_through_the_dialog_and_reimport` exports through the
 window, checks the file with ffprobe (H.264 + AAC, the asked size) and imports it back.
+As in egui, the queue is headed "Queue (n)" with a hint while it is empty, Captions says when the
+sequence has no caption track (the window follows a track added while it is open), and with no
+sequence open a placeholder ("Open a sequence to export") stands in place of the settings while the
+queue stays (`test_real_engine_export_empty_states_as_egui`).
+The window's controls carry egui's automation ids (`export.video.*`, `export.audio.*`,
+`export.range.start`, `export.button`, `export.sendToQueue`, …), checked against
+`crates/ui-egui/src/panels/export_mode.rs` by `test_export_widgets_carry_eguis_automation_ids`.
+Target Bitrate and Maximum Bitrate are in Mbps as in egui and show the preset's values; an
+adaptive (Match Source) preset shows "Adaptive (n bits per pixel)" with Set, which sends a fixed
+`bitrateKbps`. Key Frame Distance (H.264 / H.265 / AV1) is off or a distance in frames
+(`settings.keyframeDistance`); MPEG-2 keeps its own GOP length field (`export.mpeg2Gop`).
