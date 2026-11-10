@@ -7,13 +7,10 @@ name: CFA4 runtime dependencies on Ubuntu 26.04 (F2-01, F9)
 # (packaging/linux/package.sh). The report goes to the job summary and the log; nothing is uploaded
 # or published, and nothing is installed beyond the build packages.
 
+# Manual only (AGENTS.md CI rule): automatic PR checks compile nothing beyond the
+# required `cargo-check` gate, and this job runs a release build.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/workflows/cfa4-runtime-deps.yml'
-      - 'scripts/dev/audit-runtime-deps.sh'
-      - 'python/cfa4_devtools/runtime_deps.py'
 
 permissions:
   contents: read
