@@ -68,6 +68,8 @@ pub enum Language {
     Nl,
     /// Czech: the whole interface, Latin script (bundled fonts).
     Cs,
+    /// Vietnamese: the whole interface, Latin script with tone marks (bundled fonts).
+    Vi,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -93,11 +95,12 @@ static POLISH: OnceLock<Catalog> = OnceLock::new();
 static TURKISH: OnceLock<Catalog> = OnceLock::new();
 static DUTCH: OnceLock<Catalog> = OnceLock::new();
 static CZECH: OnceLock<Catalog> = OnceLock::new();
+static VIETNAMESE: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 19] = [
+    pub const ALL: [Self; 20] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -115,6 +118,7 @@ impl Language {
         Self::Tr,
         Self::Nl,
         Self::Cs,
+        Self::Vi,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -138,6 +142,7 @@ impl Language {
             Self::Tr => "Türkçe",
             Self::Nl => "Nederlands",
             Self::Cs => "Čeština",
+            Self::Vi => "Tiếng Việt",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -162,6 +167,7 @@ impl Language {
             "tr" => Some(Self::Tr),
             "nl" => Some(Self::Nl),
             "cs" => Some(Self::Cs),
+            "vi" => Some(Self::Vi),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -178,7 +184,7 @@ impl Language {
     /// only for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`); Traditional ones (`zh-TW`,
     /// `zh-HK`, `zh-MO`, `zh-Hant…`) are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 17] = [
+        const PRIMARY: [(&str, Language); 18] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -196,6 +202,7 @@ impl Language {
             ("tr", Language::Tr),
             ("nl", Language::Nl),
             ("cs", Language::Cs),
+            ("vi", Language::Vi),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -247,6 +254,7 @@ impl Language {
             Self::Tr => "tr",
             Self::Nl => "nl",
             Self::Cs => "cs",
+            Self::Vi => "vi",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -272,6 +280,7 @@ impl Language {
             Self::Tr => Some(TURKISH.get_or_init(|| Catalog::parse(catalog_file!("tr")))),
             Self::Nl => Some(DUTCH.get_or_init(|| Catalog::parse(catalog_file!("nl")))),
             Self::Cs => Some(CZECH.get_or_init(|| Catalog::parse(catalog_file!("cs")))),
+            Self::Vi => Some(VIETNAMESE.get_or_init(|| Catalog::parse(catalog_file!("vi")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -458,6 +467,7 @@ mod tests {
             ("tr", catalog_file!("tr")),
             ("nl", catalog_file!("nl")),
             ("cs", catalog_file!("cs")),
+            ("vi", catalog_file!("vi")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1596,6 +1606,13 @@ mod tests {
             catalog_file!("cs"),
             "ÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž„“",
             &[("File", "Soubor"), ("Sequence", "Sekvence"), ("Playhead", "Přehrávací hlava"), ("Cross Dissolve", "Křížová prolínačka")],
+        ),
+        (
+            Language::Vi,
+            "app.language.vietnamese",
+            catalog_file!("vi"),
+            "ĂÂĐÊÔƠƯăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ",
+            &[("File", "Tệp"), ("Sequence", "Chuỗi"), ("Playhead", "Đầu phát"), ("Cross Dissolve", "Hòa tan chéo")],
         ),
     ];
 
