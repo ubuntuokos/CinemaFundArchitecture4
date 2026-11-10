@@ -75,11 +75,39 @@ version, arguments, host, date, determinism result). With `--check-determinism` 
 and fails if the files differ, which shows whether a sha256 comparison is enough for regression
 tests or a numeric tolerance is needed.
 
+`--output hlg` and `--output pq` render Rec.2020 with HLG or ST 2084 (PQ) instead of the
+ungraded Log3G10, the two HDR outputs used in RED broadcast work (§5). The rest of the settings
+stay the same.
+
 Keep reference sets under `target/fixtures/` (gitignored) or in the external corpus; never commit
 them (`AGENTS.md`: no large binary fixtures). Sample clips: RED publishes them at
 <https://www.red.com/sample-r3d-files> (R3D NE samples: Nikon's download pages).
 
-## 5. Checked so far, and what is still open
+## 5. Broadcast R3D (RED Cine-Broadcast)
+
+RED's Cine-Broadcast system (camera module, fibre base station, RED Connect) brings R3D into live
+production. What matters for CFA4 (source: RED's Cine-Broadcast operation guide and broadcast
+workflow diagrams, 2026-04):
+
+- **The R3D files are ordinary R3D clips.** In "multi-cam remote record" and "multi-cam /
+  volumetric remote record" the cameras send R3D over 10 GbE to central storage. Those clips come
+  to post through the same REDline path as card media, often from many cameras at once. That makes
+  multi-camera sync by timecode (SMPTE ST 12M, genlocked) the usual case.
+- **Frame rates:** live outputs run at 59.94p. Slow-motion R3D is recorded at 179.82 or
+  239.76 fps (3× / 4× 59.94). Both are exact in CFA4's `Tick` time base (180000/1001 and
+  240000/1001 fps divide 254 016 000 000 ticks evenly).
+- **Colour:** the camera's live UHD output is either RWG / Log3G10 or Rec.2020 / HLG; the second
+  channel is 1080p SDR. `r3d-reference.sh --output log3g10|hlg|pq` covers these.
+- **Broadcast-mode clips** use RED's Broadcast image pipeline, which newer R3D SDK releases changed.
+  REDline 65.0.22 contains SDK 9.1.1, so check `manifest.txt`
+  and use a REDline built on a newer SDK when RED ships one. RED's Broadcast sample clip belongs in
+  the test corpus.
+- **Out of scope for this path:** the live signals themselves (12G-SDI, SMPTE ST 2110-20/-22 with
+  JPEG XS, SRT, the RED Connect server) are not R3D files. Live ingest belongs to the live-studio plan
+  (LIVE-STUDIO-001), and RED Connect is Windows-only (checked 2026-11-10: RED Connect 1.9.0 needs AJA cards,
+  NVIDIA Rivermax and CUDA).
+
+## 6. Checked so far, and what is still open
 
 Checked on 2026-11-10 in a cloud container (Ubuntu, x86_64, no GPU) with build 65.0.22:
 
@@ -95,7 +123,8 @@ container cannot download one:
 - a full `r3d-reference.sh --check-determinism` run (CPU determinism, render time per frame);
 - the exact EXR layout REDline writes (channels, half or float) and whether CFA4's own EXR reader
   (`crates/media/src/still/exr.rs`) opens it unchanged;
-- `--printMeta` field list → mapping to CFA4 clip metadata (timecode, frame rate, ISO, white balance, lens).
+- `--printMeta` field list → mapping to CFA4 clip metadata (timecode, frame rate, ISO, white balance, lens);
+- a Broadcast-mode clip and a high-frame-rate (179.82 / 239.76 fps) clip.
 
 The CFA4 side (finding REDline like `cfa4-testkit` finds ffmpeg, the import route in `cfa4-route`,
 an import job with progress and cancel) belongs to the camera-RAW work package of the codec plan and
