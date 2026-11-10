@@ -359,3 +359,34 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} em {container}: {gops} GOPs, {points} pontos de corte limpos
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} quadros copiados, {reencoded} quadros recodificados
 	{frames} frames at the boundaries are re-encoded. Continue?	{frames} quadros nos limites serão recodificados. Continuar?
+# Export window Smart Export (WP-08)
+	Export mode	Modo de exportação
+	Full Render	Renderização completa
+	Planning…	Planejando…
+	Recommended: Smart Render (asks before re-encoding)	Recomendado: Smart Render (pergunta antes de recodificar)
+	Recommended: Stream Copy (nothing is re-encoded)	Recomendado: Stream Copy (nada é recodificado)
+	Rendered because of: {causes}	Renderizado por causa de: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export gravado e verificado: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – idêntico bit a bit
+	Stream Copy – Compatible	Stream Copy – compatível
+	Stream copy is not possible: {frames} frames need re-encoding.	A cópia de fluxo não é possível: {frames} quadros precisam ser recodificados.
+	The export cannot run.	A exportação não pode ser executada.
+	Wait for the export plan.	Aguarde o plano de exportação.
+	Writing and verifying the export…	Gravando e verificando a exportação…
+	colour conversion	conversão de cor
+	compositing	composição
+	copied	copiado
+	effects	efeitos
+	frame rate	taxa de quadros
+	proxies or nested sequences	proxies ou sequências aninhadas
+	re-encoded at a cut	recodificado em um corte
+	rendered	renderizado
+	sources that cannot be copied	origens que não podem ser copiadas
+	speed changes	mudanças de velocidade
+	titles or overlays	títulos ou sobreposições
+	transforms	transformações
+	transitions	transições
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} quadros copiados, {reencoded} recodificados em cortes, {rendered} renderizados
+	{frames} frames are re-encoded or rendered. Continue?	{frames} quadros serão recodificados ou renderizados. Continuar?

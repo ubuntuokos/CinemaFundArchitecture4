@@ -358,3 +358,34 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} dalam {container}: {gops} GOP, {points} titik potong bersih
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} bingkai disalin, {reencoded} bingkai dienkode ulang
 	{frames} frames at the boundaries are re-encoded. Continue?	{frames} bingkai di batas akan dienkode ulang. Lanjutkan?
+# Export window Smart Export (WP-08)
+	Export mode	Mode ekspor
+	Full Render	Render penuh
+	Planning…	Merencanakan…
+	Recommended: Smart Render (asks before re-encoding)	Disarankan: Smart Render (bertanya sebelum enkode ulang)
+	Recommended: Stream Copy (nothing is re-encoded)	Disarankan: Stream Copy (tidak ada yang dienkode ulang)
+	Rendered because of: {causes}	Dirender karena: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export ditulis dan diverifikasi: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – identik per bit
+	Stream Copy – Compatible	Stream Copy – kompatibel
+	Stream copy is not possible: {frames} frames need re-encoding.	Stream copy tidak mungkin: {frames} bingkai perlu dienkode ulang.
+	The export cannot run.	Ekspor tidak dapat dijalankan.
+	Wait for the export plan.	Tunggu rencana ekspor.
+	Writing and verifying the export…	Menulis dan memverifikasi ekspor…
+	colour conversion	konversi warna
+	compositing	komposit
+	copied	disalin
+	effects	efek
+	frame rate	laju bingkai
+	proxies or nested sequences	proksi atau sekuens bersarang
+	re-encoded at a cut	dienkode ulang di potongan
+	rendered	dirender
+	sources that cannot be copied	sumber yang tidak dapat disalin
+	speed changes	perubahan kecepatan
+	titles or overlays	judul atau hamparan
+	transforms	transformasi
+	transitions	transisi
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} bingkai disalin, {reencoded} dienkode ulang di potongan, {rendered} dirender
+	{frames} frames are re-encoded or rendered. Continue?	{frames} bingkai dienkode ulang atau dirender. Lanjutkan?
