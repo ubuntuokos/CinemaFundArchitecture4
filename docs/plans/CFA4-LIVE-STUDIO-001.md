@@ -1,12 +1,14 @@
 # CFA4-LIVE-STUDIO-001 – Az OBS Studio képességei a CFA4-ben
 
-**Verzió:** 1.0
-**Dátum:** 2026-11-09
+**Verzió:** 1.1
+**Dátum:** 2026-11-10 (1.0: 2026-11-09)
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-09-én lépésenként egyeztette és jóváhagyta; az **S0
 fázis indítását is jóváhagyta** (2026-11-09). Az S1-től a munka a Qt6 felület befejezése után indul (D7).
-**Kapcsolódik:** [`VISION.md`](../../VISION.md) 4. pont (élő adás), [`docs/credits-plan.md`](../credits-plan.md)
-C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI),
+Az 1.1-ben a D3 újra nyitott (a WPE WebKit nincs az Ubuntu 26.04-ben), és rögzítve, hogy a C10 a
+terv előfeltétele.
+**Kapcsolódik:** [`VISION.md`](../../VISION.md) 4. és 8. pont (élő adás), `docs/credits-plan.md`
+C10 (élő grafika, `crates/live`; a #803-ban, előfeltétel), [ADR 0001](../adr/0001-platform-ffi.md) (FFI),
 [ADR 0004](../adr/ADR-0004-compute-routing.md) (`cfa4-route`), [ADR 0005](../adr/ADR-0005-media-backends.md)
 (kiegészítő médiahátterek), [ADR 0002](../adr/ADR-0002-gstreamer-backend.md) (GStreamer),
 [`docs/licensing.md`](../licensing.md), [`docs/coordination.md`](../coordination.md)
@@ -24,7 +26,8 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
 4. **A jelenetek a projektben élnek** (a `.fcproj` része), nem külön stúdiógyűjteményben.
 5. **A libobs forrása:** saját, rögzített verziójú fordítás (D1).
 6. **A libobs külön folyamatban fut** (`cfa4-studio-host`, D2).
-7. **Böngészőforrás WPE WebKittel** az Ubuntu tárolójából, Chromium nélkül (D3).
+7. **Böngészőforrás** az Ubuntu tárolójából; a WPE WebKit-es döntés újra nyitott, mert a WPE nincs az
+   Ubuntu 26.04-ben (D3).
 8. **Csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); zárt SDK-t igénylő (pl. NDI) nincs (D4).
 9. **Önálló „Élő” munkaterület** a Qt6 felületen; a C10 Élő grafika ablaka beleolvad (D5).
 10. **Műsorterv (rundown)** a terv része, az S4a fázisban (D6).
@@ -39,8 +42,12 @@ C10 (élő grafika, `crates/live`), [ADR 0001](../adr/0001-platform-ffi.md) (FFI
   GPL-3.0-or-later CFA4-be átvehető, forrásmegjelöléssel (`NOTICE`, `ATTRIBUTION.md`).
 - **Ubuntu:** a 24.04 tárolójában `libobs-dev` 30.0.2 van, böngészőforrás (obs-browser, CEF)
   nélkül (a C10-es próba ezt mutatta); a 26.04-es csomag verzióját az S0-ban ellenőrizzük.
-- **Ami a CFA4-ben már megvan:** saját renderelő és grafika (címek, stáblista), az élő grafikai
-  futtató (C10: cue-k, TAKE / NEXT / HOLD / UPDATE / OUT, élő oldal 127.0.0.1-en, obs-websocket
+- **Előfeltétel: a C10 élő grafikai futtató.** A `crates/live`, a `live.*` parancsok és az Élő grafika
+  ablak a stáblista-lánc utolsó PR-jában (#803, `cfa4/credits-c10`) vannak, a `main`-ben még nincsenek.
+  Az S1 (CFA4-grafika forrásként) és az S4 (TAKE a stúdió módban) csak a lánc összevonása után
+  indulhat; az S0 nem függ tőle.
+- **Ami a CFA4-ben már megvan vagy a láncban kész:** saját renderelő és grafika (címek, stáblista), az élő grafikai
+  futtató (C10, a #803-ban: cue-k, TAKE / NEXT / HOLD / UPDATE / OUT, élő oldal 127.0.0.1-en, obs-websocket
   kliens), a `cfa4-route` GPU/NPU/CPU-router, a GStreamer és az FFmpeg mint kiegészítő
   háttér, saját kódolók és muxerek, a Qt6 felület, parancsrendszer és vezérlőcsatorna (ügynökök,
   MCP).
@@ -114,18 +121,18 @@ munkával ütközésnél a Qt6 megy előre.
 | **S6** – Streamelés | RTMP/RTMPS, SRT, RIST, WHIP; több cél; újrakapcsolódás; stream-kulcs a kulcstartóban | próbaadás helyi kiszolgálóra (mediamtx) és egy valódi szolgáltatásra |
 | **S7** – Kódolók | VA-API (Intel/AMD), NVENC (opcionális), QSV, SVT-AV1 a `cfa4-route`-on át; restricted-extras | a router választ, CPU-tartalék mindig van; a referenciagép GPU-in mérve |
 | **S8** – Videószűrők | key-ek, színkorrekció, LUT, maszk, vágás, késleltetés; a CFA4 saját effektjei forrásszűrőként | a szűrők képe összevetve a CFA4 renderelővel |
-| **S9** – További kimenetek | replay buffer, virtuális kamera (v4l2loopback), böngészőforrás (WPE WebKit, D3) | mindegyik a referenciagépen |
+| **S9** – További kimenetek | replay buffer, virtuális kamera (v4l2loopback), böngészőforrás (a D3 szerinti motorral) | mindegyik a referenciagépen |
 | **S10** – Vezérlés és átállás | obs-websocket 5 kiszolgáló a CFA4-ben, OBS-import (jelenetgyűjtemény, profil) | Stream Deck / websocket-kliens vezérli; egy valódi OBS-gyűjtemény átjön |
 | **S11** – Mérés és stabilitás | statisztika-panel, tartós terheléses próbák, hibainjektálás, dokumentáció | 8 órás adás a referenciagépen, összeomlás nélkül |
 | **S12+** – Rust-csere | a libobs részei sorban saját Rust kódra: 1. kompozitálás és átmenetek (a CFA4 renderelője), 2. szűrők, 3. kimenetek és kódolás (GStreamer/saját muxerek), 4. rögzítés (PipeWire, V4L2) | minden csere ugyanazon a traiten, a régi úttal összemérve; ha valamelyik lassabb, marad a libobs |
 
-## VII. Döntések (2026-11-09-én lépésenként egyeztetve, mind eldöntve)
+## VII. Döntések (2026-11-09-én lépésenként egyeztetve; a D3 2026-11-10 óta újra nyitott)
 
 | # | Kérdés | Döntés |
 |---|---|---|
 | D1 | A libobs forrása | **Eldöntve (2026-11-09): saját, rögzített verziójú fordítás (33.x) a CFA4 csomagban**, ellenőrzőösszeggel, mint az FFmpeg 9.0.2 |
 | D2 | Hol fut a libobs | **Eldöntve (2026-11-09): külön folyamatban** (`cfa4-studio-host`): a motor indítja, felügyeli, összeomlás után újraindítja; a szerkesztő és a projekt megmarad |
-| D3 | Böngészőforrás | **Eldöntve (2026-11-09): WPE WebKit az Ubuntu tárolójából** (`libwpewebkit`, `wpebackend-fdo`, csomagfüggőségként), saját Rust libobs-forrással, az S9-ben; Chromium (CEF) nincs. A `window.obsstudio` JS-felületet a forrás adja; a gyakori streameres widgetek az S9-ben kipróbálva |
+| D3 | Böngészőforrás | **Újra nyitott (2026-11-10).** A 2026-11-09-i döntés (WPE WebKit az Ubuntu tárolójából) nem teljesíthető: az Ubuntu a 24.04-től kivette a `libwpe`-t és a `wpebackend-fdo`-t, a `wpewebkit` a szinkronizálási tiltólistán van, így a 26.04-ben nincs WPE. **Javaslat, a tulajdonos megerősítésére vár: Qt WebEngine** (`qt6-webengine`, a 26.04-ben 6.10.2; a PySide6-ban is benne van; nyílt, LGPL, az Ubuntu frissíti), a `cfa4-studio-host` folyamatban, képernyőn kívüli renderelés, saját Rust libobs-forrással, az S9-ben. Más lehetőség: WebKitGTK 6.0 (Ubuntu-tárolóban, de GTK-t hoz) vagy saját rögzített CEF (mint az OBS, de saját biztonsági frissítések). A `window.obsstudio` JS-felületet a forrás adja; a gyakori streameres widgetek az S9-ben kipróbálva |
 | D4 | Zárt protokollok | **Eldöntve (2026-11-09): csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); NDI és más zárt SDK-t igénylő protokoll nincs |
 | D5 | Az élő stúdió helye | **Eldöntve (2026-11-09): önálló „Élő” munkaterület** a szerkesztés, szín, hang mellett (középen előnézet és program, lent jelenetek, források, hangkeverő, oldalt átmenetek és vezérlés); a C10 Élő grafika ablaka ide kerül át; közös projekt |
 | D6 | Műsorterv (rundown) | **Eldöntve (2026-11-09): a terv része**, az S4a fázisban (az S4 stúdió mód után); a `VISION.md` 8. pontjának nyitott kérdését ezzel a tulajdonos lezárta |
@@ -136,8 +143,8 @@ munkával ütközésnél a Qt6 megy előre.
 - **Két grafikus réteg:** a libobs saját OpenGL/EGL rétegét és a CFA4 renderelőjét egy gépen,
   egy GPU-n kell futtatni; a GPU-memória és a színterek (sRGB/Rec.709/HDR) egyezését mérni kell.
 - **Wayland:** képernyőrögzítés csak az XDG-portálon át, felhasználói engedéllyel.
-- **Méret:** a libobs + kódolók növelik a csomagot; a böngészőforrás WPE WebKitje az Ubuntu tárolójából jön (nem a CFA4 csomagjában).
-- **Webes widgetek:** Chromiumra készülnek; WebKitben egy-egy elem eltérhet (S9-ben a gyakori szolgáltatásokkal kipróbálva).
+- **Méret:** a libobs + kódolók növelik a csomagot; a böngészőforrás motorja az Ubuntu tárolójából jön (nem a CFA4 csomagjában; D3).
+- **Webes widgetek:** Chromiumra készülnek; a Qt WebEngine Chromium-alapú, WebKitGTK esetén egy-egy elem eltérhet (S9-ben a gyakori szolgáltatásokkal kipróbálva).
 - **Licenc és szabadalom:** x264/x265 csak a restricted-extras csomagban; a libobs részeinek
   licencei a `NOTICE`-ba és az `ATTRIBUTION.md`-be kerülnek.
 - **A Qt6 munka:** az élő munkaterület a Qt6 felületre épül; ütközésnél a Qt6 megy előre.
@@ -149,4 +156,8 @@ munkával ütközésnél a Qt6 megy előre.
 - Az OBS Studio licencei (Debian copyright-fájl: a fő kód és a libobs GPL-2+):
   <https://metadata.ftp-master.debian.org/changelogs/main/o/obs-studio/testing_copyright>
 - Az Ubuntu `libobs-dev` csomagja (24.04: 30.0.2) és a böngészőforrás hiánya: a C10-es próba,
-  [`docs/credits-plan.md`](../credits-plan.md) C10.
+  `docs/credits-plan.md` C10 (a #803-ban, a `main`-ben még nincs).
+- A WPE kikerülése az Ubuntuból: <https://bugs.launchpad.net/bugs/2061605> (a `libwpe` és a
+  `wpebackend-fdo` eltávolítása a 24.04-től; a `wpewebkit` és a `cog` a szinkronizálási tiltólistán).
+- Qt WebEngine az Ubuntu 26.04-ben: <https://packages.ubuntu.com/resolute/libqt6webenginequick6>,
+  <https://lists.snapcraft.io/archives/resolute-changes/2026-February/020982.html> (qt6-webengine 6.10.2).
