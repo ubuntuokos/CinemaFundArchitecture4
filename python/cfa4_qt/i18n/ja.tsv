@@ -391,3 +391,27 @@
 	transitions	トランジション
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} フレームをコピー、{reencoded} をカット位置で再エンコード、{rendered} をレンダリング
 	{frames} frames are re-encoded or rendered. Continue?	{frames} フレームを再エンコードまたはレンダリングします。続行しますか？
+	360° spherical video	360° 全天球ビデオ
+	A profile is already called “{name}”.	「{name}」という名前のプロファイルは既にあります。
+	Applied sequence profile “{name}”	シーケンスプロファイル「{name}」を適用しました
+	Apply to Sequence	シーケンスに適用
+	Built-in profiles are kept: this is saved as a new profile.	組み込みプロファイルは変更されません。新しいプロファイルとして保存されます。
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 のシーケンスはプログレッシブです。プロファイルを適用してもサイズとレートは保持されます
+	Deleted sequence profile “{name}”	シーケンスプロファイル「{name}」を削除しました
+	Display Aspect Ratio:	表示アスペクト比:
+	Edit Sequence Profile	シーケンスプロファイルを編集
+	Enter a description.	説明を入力してください。
+	Interlaced	インターレース
+	New Sequence Profile	新規シーケンスプロファイル
+	New…	新規…
+	Saved sequence profile “{name}”	シーケンスプロファイル「{name}」を保存しました
+	Sequence Profiles	シーケンスプロファイル
+	Sequence Profiles…	シーケンスプロファイル…
+	The description must be at most {n} characters.	説明は {n} 文字以内にしてください。
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	表示アスペクト比がフレームサイズとピクセルアスペクト比に一致しません。
+	The frame is too large.	フレームが大きすぎます。
+	The frame rate must be at most 1000 fps.	フレームレートは 1000 fps 以下にしてください。
+	The pixel aspect ratio must be at most 8:1 either way.	ピクセルアスペクト比はどちらの向きでも 8:1 以下にしてください。
+	not supported by CFA4 sequences yet: {what}	CFA4 のシーケンスではまだサポートされていません: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}、表示 {dn}:{dd}、ピクセル {pn}:{pd}

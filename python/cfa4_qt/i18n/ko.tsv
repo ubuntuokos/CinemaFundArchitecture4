@@ -391,3 +391,27 @@
 	transitions	전환
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} 프레임 복사, {reencoded} 컷에서 재인코딩, {rendered} 렌더링
 	{frames} frames are re-encoded or rendered. Continue?	{frames} 프레임을 재인코딩하거나 렌더링합니다. 계속할까요?
+	360° spherical video	360° 구형 비디오
+	A profile is already called “{name}”.	“{name}” 이름의 프로필이 이미 있습니다.
+	Applied sequence profile “{name}”	시퀀스 프로필 “{name}” 적용됨
+	Apply to Sequence	시퀀스에 적용
+	Built-in profiles are kept: this is saved as a new profile.	기본 제공 프로필은 유지됩니다. 새 프로필로 저장됩니다.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	CFA4 시퀀스는 프로그레시브입니다. 프로필을 적용해도 크기와 속도는 유지됩니다
+	Deleted sequence profile “{name}”	시퀀스 프로필 “{name}” 삭제됨
+	Display Aspect Ratio:	표시 화면 비율:
+	Edit Sequence Profile	시퀀스 프로필 편집
+	Enter a description.	설명을 입력하세요.
+	Interlaced	인터레이스
+	New Sequence Profile	새 시퀀스 프로필
+	New…	새로 만들기…
+	Saved sequence profile “{name}”	시퀀스 프로필 “{name}” 저장됨
+	Sequence Profiles	시퀀스 프로필
+	Sequence Profiles…	시퀀스 프로필…
+	The description must be at most {n} characters.	설명은 최대 {n}자까지 가능합니다.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	표시 화면 비율이 프레임 크기 및 픽셀 종횡비와 일치하지 않습니다.
+	The frame is too large.	프레임이 너무 큽니다.
+	The frame rate must be at most 1000 fps.	프레임 속도는 최대 1000 fps입니다.
+	The pixel aspect ratio must be at most 8:1 either way.	픽셀 종횡비는 어느 방향으로든 8:1을 넘을 수 없습니다.
+	not supported by CFA4 sequences yet: {what}	CFA4 시퀀스에서 아직 지원되지 않음: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, 표시 {dn}:{dd}, 픽셀 {pn}:{pd}

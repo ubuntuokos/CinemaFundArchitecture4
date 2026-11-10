@@ -391,3 +391,27 @@
 	transitions	transisi
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} bingkai disalin, {reencoded} dienkode ulang di potongan, {rendered} dirender
 	{frames} frames are re-encoded or rendered. Continue?	{frames} bingkai dienkode ulang atau dirender. Lanjutkan?
+	360° spherical video	Video sferis 360°
+	A profile is already called “{name}”.	Sudah ada profil bernama “{name}”.
+	Applied sequence profile “{name}”	Profil sekuens “{name}” diterapkan
+	Apply to Sequence	Terapkan ke Sekuens
+	Built-in profiles are kept: this is saved as a new profile.	Profil bawaan tetap dipertahankan: ini disimpan sebagai profil baru.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Sekuens CFA4 bersifat progresif: menerapkan profil mempertahankan ukuran dan lajunya
+	Deleted sequence profile “{name}”	Profil sekuens “{name}” dihapus
+	Display Aspect Ratio:	Rasio Aspek Tampilan:
+	Edit Sequence Profile	Edit Profil Sekuens
+	Enter a description.	Masukkan deskripsi.
+	Interlaced	Interlaced
+	New Sequence Profile	Profil Sekuens Baru
+	New…	Baru…
+	Saved sequence profile “{name}”	Profil sekuens “{name}” disimpan
+	Sequence Profiles	Profil Sekuens
+	Sequence Profiles…	Profil Sekuens…
+	The description must be at most {n} characters.	Deskripsi paling banyak {n} karakter.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Rasio aspek tampilan tidak cocok dengan ukuran frame dan rasio aspek piksel.
+	The frame is too large.	Frame terlalu besar.
+	The frame rate must be at most 1000 fps.	Laju frame paling tinggi 1000 fps.
+	The pixel aspect ratio must be at most 8:1 either way.	Rasio aspek piksel paling tinggi 8:1 ke arah mana pun.
+	not supported by CFA4 sequences yet: {what}	belum didukung oleh sekuens CFA4: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, tampilan {dn}:{dd}, piksel {pn}:{pd}

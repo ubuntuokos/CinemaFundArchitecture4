@@ -2519,3 +2519,27 @@ export.summary	Low	alacsony
 	transitions	átmenetek
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} képkocka másolva, {reencoded} vágásnál újrakódolva, {rendered} renderelve
 	{frames} frames are re-encoded or rendered. Continue?	{frames} képkocka újrakódolódik vagy renderelődik. Folytatod?
+	360° spherical video	360°-os gömbpanoráma-videó
+	A profile is already called “{name}”.	Már van „{name}” nevű profil.
+	Applied sequence profile “{name}”	A(z) „{name}” szekvenciaprofil alkalmazva
+	Apply to Sequence	Alkalmazás a szekvenciára
+	Built-in profiles are kept: this is saved as a new profile.	A beépített profilok nem változnak: ez új profilként mentődik.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	A CFA4 szekvenciái progresszívek: a profil alkalmazásakor a méret és a képkockasebesség marad érvényben
+	Deleted sequence profile “{name}”	A(z) „{name}” szekvenciaprofil törölve
+	Display Aspect Ratio:	Megjelenítési képarány:
+	Edit Sequence Profile	Szekvenciaprofil szerkesztése
+	Enter a description.	Adjon meg egy leírást.
+	Interlaced	Váltottsoros
+	New Sequence Profile	Új szekvenciaprofil
+	New…	Új…
+	Saved sequence profile “{name}”	A(z) „{name}” szekvenciaprofil mentve
+	Sequence Profiles	Szekvenciaprofilok
+	Sequence Profiles…	Szekvenciaprofilok…
+	The description must be at most {n} characters.	A leírás legfeljebb {n} karakter lehet.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	A megjelenítési képarány nem egyezik a képmérettel és a pixelaránnyal.
+	The frame is too large.	A képkocka túl nagy.
+	The frame rate must be at most 1000 fps.	A képkockasebesség legfeljebb 1000 fps lehet.
+	The pixel aspect ratio must be at most 8:1 either way.	A pixelarány egyik irányban sem lehet nagyobb 8:1-nél.
+	not supported by CFA4 sequences yet: {what}	a CFA4 szekvenciái még nem támogatják: {what}
+	{rate} fps	{rate} fps
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, megjelenítés {dn}:{dd}, pixelek {pn}:{pd}

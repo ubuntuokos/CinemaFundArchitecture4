@@ -391,3 +391,27 @@
 	transitions	transitions
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} images copiées, {reencoded} réencodées aux coupes, {rendered} rendues
 	{frames} frames are re-encoded or rendered. Continue?	{frames} images seront réencodées ou rendues. Continuer ?
+	360° spherical video	Vidéo sphérique 360°
+	A profile is already called “{name}”.	Un profil s’appelle déjà « {name} ».
+	Applied sequence profile “{name}”	Profil de séquence « {name} » appliqué
+	Apply to Sequence	Appliquer à la séquence
+	Built-in profiles are kept: this is saved as a new profile.	Les profils intégrés sont conservés : celui-ci est enregistré comme nouveau profil.
+	CFA4 sequences are progressive: applying the profile keeps its size and rate	Les séquences CFA4 sont progressives : l’application du profil conserve leur taille et leur fréquence
+	Deleted sequence profile “{name}”	Profil de séquence « {name} » supprimé
+	Display Aspect Ratio:	Rapport d’affichage :
+	Edit Sequence Profile	Modifier le profil de séquence
+	Enter a description.	Saisissez une description.
+	Interlaced	Entrelacé
+	New Sequence Profile	Nouveau profil de séquence
+	New…	Nouveau…
+	Saved sequence profile “{name}”	Profil de séquence « {name} » enregistré
+	Sequence Profiles	Profils de séquence
+	Sequence Profiles…	Profils de séquence…
+	The description must be at most {n} characters.	La description ne doit pas dépasser {n} caractères.
+	The display aspect ratio does not match the frame size and pixel aspect ratio.	Le rapport d’affichage ne correspond pas à la taille d’image ni au format des pixels.
+	The frame is too large.	L’image est trop grande.
+	The frame rate must be at most 1000 fps.	La fréquence d’images ne doit pas dépasser 1000 i/s.
+	The pixel aspect ratio must be at most 8:1 either way.	Le format des pixels ne doit pas dépasser 8:1 dans un sens ou dans l’autre.
+	not supported by CFA4 sequences yet: {what}	pas encore pris en charge par les séquences CFA4 : {what}
+	{rate} fps	{rate} i/s
+	{w} × {h}, display {dn}:{dd}, pixels {pn}:{pd}	{w} × {h}, affichage {dn}:{dd}, pixels {pn}:{pd}
