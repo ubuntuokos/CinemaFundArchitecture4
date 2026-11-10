@@ -2,7 +2,7 @@
 //! the spatial activity rate control uses. Independent per macroblock row, so rows can run in
 //! parallel.
 
-use crate::idct::basis;
+use crate::idct::{basis, round_i32};
 use crate::mc::{Frame, predict};
 use crate::vlc::{MB_BWD, MB_FWD};
 
@@ -25,6 +25,10 @@ pub(super) struct Plan {
     pub act: f32,
     /// Expected share of the picture's bits (coefficient magnitude), for rate control.
     pub weight: f32,
+    /// Luma deviation from the macroblock mean (the intra cost) and the SAD of the best inter
+    /// prediction (the intra cost when there is none), for scene-cut detection.
+    pub intra_cost: u32,
+    pub inter_sad: u32,
 }
 
 /// Picture-wide analysis inputs.
@@ -45,29 +49,29 @@ pub(super) struct Ctx<'a> {
     pub lambda: u32,
 }
 
-/// Forward 8×8 DCT (the transpose of the decoder's IDCT basis), rounded.
+/// Forward 8×8 DCT (the transpose of the decoder's IDCT basis), rounded. Each 1-D pass uses the
+/// basis symmetry `M[7-x][u] = (-1)^u M[x][u]`: even outputs from the sums, odd from the
+/// differences of mirrored samples.
 pub(super) fn fdct(px: &[i32; 64], out: &mut [i32; 64]) {
     let m = basis();
     // rows: tmp[y][u] = Σ_x M[x][u] f[y][x]
     let mut tmp = [[0f32; 8]; 8];
-    for y in 0..8 {
-        let f: [f32; 8] = std::array::from_fn(|x| px[y * 8 + x] as f32);
+    for (row, t) in px.chunks_exact(8).zip(tmp.iter_mut()) {
+        let s: [f32; 4] = std::array::from_fn(|x| (row[x] + row[7 - x]) as f32);
+        let d: [f32; 4] = std::array::from_fn(|x| (row[x] - row[7 - x]) as f32);
         for u in 0..8 {
-            let mut s = 0f32;
-            for x in 0..8 {
-                s += m[x][u] * f[x];
-            }
-            tmp[y][u] = s;
+            let h = if u & 1 == 0 { &s } else { &d };
+            t[u] = m[0][u] * h[0] + m[1][u] * h[1] + m[2][u] * h[2] + m[3][u] * h[3];
         }
     }
     // columns: F[v][u] = Σ_y M[y][v] tmp[y][u]
-    for v in 0..8 {
-        for u in 0..8 {
-            let mut s = 0f32;
-            for (y, row) in tmp.iter().enumerate() {
-                s += m[y][v] * row[u];
-            }
-            out[v * 8 + u] = s.round() as i32;
+    let s: [[f32; 8]; 4] = std::array::from_fn(|y| std::array::from_fn(|u| tmp[y][u] + tmp[7 - y][u]));
+    let d: [[f32; 8]; 4] = std::array::from_fn(|y| std::array::from_fn(|u| tmp[y][u] - tmp[7 - y][u]));
+    for (v, o) in out.chunks_exact_mut(8).enumerate() {
+        let h = if v & 1 == 0 { &s } else { &d };
+        let (m0, m1, m2, m3) = (m[0][v], m[1][v], m[2][v], m[3][v]);
+        for (u, o) in o.iter_mut().enumerate() {
+            *o = round_i32(m0 * h[0][u] + m1 * h[1][u] + m2 * h[2][u] + m3 * h[3][u]);
         }
     }
 }
@@ -197,18 +201,21 @@ fn search(ctx: &Ctx, r: &Frame, mbx: usize, mby: usize, preds: &[[i32; 2]]) -> (
     // half samples
     let center = [2 * best[0], 2 * best[1]];
     let mut v = center;
-    let mut best_cost = cost_of(center, sad_half(ctx, r, mbx, mby, center));
+    let mut best_sad = sad16(ctx.cur, x, y, r, (x as i32 + best[0]) as usize, (y as i32 + best[1]) as usize, u32::MAX);
+    let mut best_cost = cost_of(center, best_sad);
     for o in [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]] {
         let c = [center[0] + o[0], center[1] + o[1]];
         if fits(r, mbx, mby, ctx.cmbh, c) {
-            let cost = cost_of(c, sad_half(ctx, r, mbx, mby, c));
+            let sad = sad_half(ctx, r, mbx, mby, c);
+            let cost = cost_of(c, sad);
             if cost < best_cost {
                 v = c;
                 best_cost = cost;
+                best_sad = sad;
             }
         }
     }
-    (v, sad_half(ctx, r, mbx, mby, v))
+    (v, best_sad)
 }
 
 /// Samples of block `i` (0-3 luma, then chroma) of a macroblock buffer.
@@ -270,7 +277,8 @@ pub(super) fn analyse_row(ctx: &Ctx, mby: usize) -> Vec<Plan> {
         }
         let mean16 = (sy.iter().map(|&p| p as u32).sum::<u32>() + 128) / 256;
         let intra_cost = sy.iter().map(|&p| (p as u32).abs_diff(mean16)).sum::<u32>();
-        let mut plan = Plan { intra: true, dir: 0, mv: [0, 0], mvb: [0, 0], coef: [[0; 64]; 8], act: 1.0 + min_var, weight: 1.0 };
+        let mut plan =
+            Plan { intra: true, dir: 0, mv: [0, 0], mvb: [0, 0], coef: [[0; 64]; 8], act: 1.0 + min_var, weight: 1.0, intra_cost, inter_sad: intra_cost };
         let left = out.last().filter(|p| !p.intra);
         let at = mby * ctx.mb_width + mbx;
         let candidates = |left: Option<[i32; 2]>, temporal: Option<&[i32; 2]>| {
@@ -301,6 +309,9 @@ pub(super) fn analyse_row(ctx: &Ctx, mby: usize) -> Vec<Plan> {
             predict_mb(rb, mbx, mby, ctx.cmbh, mvb, &mut py, &mut pc, true);
             let sad = sad_pred(&sy, &py);
             consider(sad, sad.saturating_add(bits(mvf)).saturating_add(bits(mvb)), MB_FWD | MB_BWD);
+        }
+        if let Some((sad, _, _)) = best {
+            plan.inter_sad = sad;
         }
         if let Some((sad, _, dir)) = best
             && sad <= intra_cost.saturating_add(512)
