@@ -18,7 +18,7 @@
 //!   [`AudioPlan::dropped`] with the reason, and the caller shows that before writing (nothing is
 //!   dropped silently).
 
-use cfa4_isobmff::{Brand, ByteSource, CodecConfig, Edit, Mp4File, Mp4Writer, Track, TrackConfig, TrackKind, WriteSample, WriterOptions};
+use cfa4_isobmff::{Brand, ByteSource, CodecConfig, Edit, Mp4File, Mp4Writer, SampleEntry, Track, TrackConfig, TrackKind, WriteSample, WriterOptions};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
@@ -204,14 +204,14 @@ fn codec_name(c: &CodecConfig) -> &'static str {
 
 /// A movie timescale in which the video and every audio timescale count exactly (their least
 /// common multiple), or the video timescale when that does not fit.
-fn movie_timescale(video: u32, plan: &AudioPlan) -> u32 {
+fn movie_timescale(video: u32, audio: impl IntoIterator<Item = u32>) -> u32 {
     fn gcd(a: u64, b: u64) -> u64 {
         if b == 0 { a } else { gcd(b, a % b) }
     }
     let video = video.max(1);
     let mut m = u64::from(video);
-    for t in &plan.tracks {
-        let a = u64::from(t.timescale.max(1));
+    for a in audio {
+        let a = u64::from(a.max(1));
         m = m / gcd(m, a) * a;
         if m > u64::from(u32::MAX) {
             return video;
@@ -220,15 +220,73 @@ fn movie_timescale(video: u32, plan: &AudioPlan) -> u32 {
     u32::try_from(m).unwrap_or(video)
 }
 
-/// The edit list of a copied audio track, in the movie timescale (the video timescale).
-fn audio_edits(t: &AudioTrackCopy, movie: u32) -> Vec<Edit> {
-    let to_movie = |v: u64| u64::try_from(rescale(i128::from(v), i128::from(movie), i128::from(t.timescale))).unwrap_or(0);
-    let mut edits = Vec::new();
-    if t.lead_in > 0 {
-        edits.push(Edit { segment_duration: to_movie(t.lead_in), media_time: -1, media_rate: 0x10000 });
+/// An audio track to add next to a video track: copied from a source ([`copied_tracks`]) or
+/// encoded from a mix ([`crate::timeline_audio`]).
+#[derive(Clone, Debug)]
+pub struct AudioTrackInput {
+    /// The source track id (0 for a mix) and the codec name, for the report.
+    pub track_id: u32,
+    pub codec: String,
+    pub entry: SampleEntry,
+    pub timescale: u32,
+    pub language: String,
+    /// Silence before the audio starts, in audio ticks.
+    pub lead_in: u64,
+    /// Media time where the presentation starts (audio ticks; AAC priming and pre-roll).
+    pub media_time: i64,
+    /// Presented audio, in audio ticks.
+    pub presented: u64,
+    /// Payloads and their durations, in decode order (PCM: whole frames, any count).
+    pub samples: Vec<(Vec<u8>, u32)>,
+    /// PCM: the payloads may be merged into other samples; only bytes and total length count.
+    pub pcm: bool,
+    /// When the first payload should be presented, relative to the first video picture, in
+    /// seconds as `num / den` (negative: before it, hidden by the edit list).
+    pub first_at: (i128, i128),
+}
+
+impl AudioTrackInput {
+    fn edits(&self, movie: u32) -> Vec<Edit> {
+        let to_movie = |v: u64| u64::try_from(rescale(i128::from(v), i128::from(movie), i128::from(self.timescale.max(1)))).unwrap_or(0);
+        let mut edits = Vec::new();
+        if self.lead_in > 0 {
+            edits.push(Edit { segment_duration: to_movie(self.lead_in), media_time: -1, media_rate: 0x10000 });
+        }
+        edits.push(Edit { segment_duration: to_movie(self.presented), media_time: self.media_time, media_rate: 0x10000 });
+        edits
     }
-    edits.push(Edit { segment_duration: to_movie(t.presented), media_time: t.media_time, media_rate: 0x10000 });
-    edits
+}
+
+/// The source audio a copy plan writes, read and checked against the source.
+pub fn copied_tracks<S: ByteSource + ?Sized>(source: &Mp4File, bytes: &S, plan: &AudioPlan, cut: CutInterval) -> Result<Vec<AudioTrackInput>, SmartCutError> {
+    let mut out = Vec::new();
+    for t in &plan.tracks {
+        let track = source.tracks.get(t.track).ok_or(SmartCutError::NoTrack { track: t.track })?;
+        let entry = track
+            .samples
+            .get(t.first)
+            .and_then(|s| track.entries.get(usize::try_from(s.description_index.checked_sub(1)?).ok()?))
+            .ok_or_else(|| SmartCutError::StaleIndex { detail: format!("audio track {} changed", t.track_id) })?;
+        let samples = audio_samples(source, bytes, t)?;
+        let first = samples.first().map_or(0, |x| x.1);
+        let (ats, vts) = (i128::from(track.timescale.max(1)), i128::from(cut.timescale.max(1)));
+        // the source audio at the first copied payload against the source video at the cut
+        let a_src = first + i128::from(track.edit_offset);
+        out.push(AudioTrackInput {
+            track_id: t.track_id,
+            codec: t.codec.clone(),
+            entry: entry.clone(),
+            timescale: track.timescale,
+            language: track.language.clone(),
+            lead_in: t.lead_in,
+            media_time: t.media_time,
+            presented: t.presented,
+            samples: samples.into_iter().map(|(d, _, n)| (d, n)).collect(),
+            pcm: t.pcm.is_some(),
+            first_at: (a_src * vts - i128::from(cut.start) * ats, ats * vts),
+        });
+    }
+    Ok(out)
 }
 
 /// One sample to write: its track in the output, data and timing.
@@ -239,17 +297,10 @@ struct Pending {
     sample: WriteSample<'static>,
 }
 
-/// Write `video_only` (a file of one video track from a video executor) again with the audio
-/// tracks of `plan` copied from `source`. The video samples, their timing and sample entry are
-/// unchanged. Returns the new file.
-pub fn mux_with_audio<S: ByteSource + ?Sized>(
-    video_only: &[u8],
-    source: &Mp4File,
-    bytes: &S,
-    plan: &AudioPlan,
-    cut: CutInterval,
-    brand: Brand,
-) -> Result<Vec<u8>, SmartCutError> {
+/// Write `video_only` (a file of one video track from a video executor, presenting `video`
+/// = (duration, timescale)) again with the audio `tracks`. The video samples, their timing and
+/// sample entry are unchanged. Returns the new file.
+pub fn mux_audio_tracks(video_only: &[u8], tracks: &[AudioTrackInput], video: (u64, u32), brand: Brand) -> Result<Vec<u8>, SmartCutError> {
     let v = cfa4_isobmff::open(video_only).map_err(io)?;
     let [vt] = v.tracks.as_slice() else {
         return Err(SmartCutError::Io { detail: format!("the video file has {} tracks, expected 1", v.tracks.len()) });
@@ -257,51 +308,43 @@ pub fn mux_with_audio<S: ByteSource + ?Sized>(
     let [ventry] = vt.entries.as_slice() else {
         return Err(SmartCutError::MixedSampleEntries);
     };
-    let movie = movie_timescale(cut.timescale, plan);
+    let movie = movie_timescale(video.1, tracks.iter().map(|t| t.timescale));
     let mut opts = WriterOptions::new(brand);
     opts.movie_timescale = movie;
     let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).map_err(io)?;
     let mut vcfg = TrackConfig::new(ventry.clone(), vt.timescale);
     vcfg.language = vt.language.clone();
     vcfg.matrix = Some(vt.matrix);
-    // one edit (the usual case) presents exactly the cut; others are rescaled from the old movie
+    // one edit (the usual case) presents exactly the video; others are rescaled from the old movie
     let single = vt.edits.len() == 1;
     vcfg.edits = vt
         .edits
         .iter()
         .map(|e| {
-            let (d, from) = if single { (cut.duration, cut.timescale) } else { (e.segment_duration, v.timescale) };
+            let (d, from) = if single { video } else { (e.segment_duration, v.timescale) };
             Edit { segment_duration: u64::try_from(rescale(i128::from(d), i128::from(movie), i128::from(from.max(1)))).unwrap_or(0), ..*e }
         })
         .collect();
-    let video = w.add_track(vcfg).map_err(io)?;
+    let out_video = w.add_track(vcfg).map_err(io)?;
     let mut pending = Vec::new();
     for (i, s) in vt.samples.iter().enumerate() {
         let data = v.read_sample(video_only, 0, i).map_err(io)?;
         let offset = i32::try_from(s.pts - s.dts).map_err(|_| SmartCutError::Timestamps { decode_index: i as u64 })?;
         let time = i128::from(s.dts) * 1_000_000_000 / i128::from(vt.timescale.max(1));
-        pending.push(Pending {
-            time,
-            out_track: video,
-            data,
-            sample: WriteSample { data: &[], duration: s.duration, composition_offset: offset, is_sync: s.is_sync },
-        });
+        let sample = WriteSample { data: &[], duration: s.duration, composition_offset: offset, is_sync: s.is_sync };
+        pending.push(Pending { time, out_track: out_video, data, sample });
     }
-    for t in &plan.tracks {
-        let track = source.tracks.get(t.track).ok_or(SmartCutError::NoTrack { track: t.track })?;
-        let entry = track
-            .samples
-            .get(t.first)
-            .and_then(|s| track.entries.get(usize::try_from(s.description_index.checked_sub(1)?).ok()?))
-            .ok_or_else(|| SmartCutError::StaleIndex { detail: format!("audio track {} changed", t.track_id) })?;
-        let mut cfg = TrackConfig::new(entry.clone(), track.timescale);
-        cfg.language = track.language.clone();
-        cfg.edits = audio_edits(t, movie);
+    for t in tracks {
+        let mut cfg = TrackConfig::new(t.entry.clone(), t.timescale);
+        cfg.language = t.language.clone();
+        cfg.edits = t.edits(movie);
         let out = w.add_track(cfg).map_err(io)?;
-        let base = track.samples.get(t.first).map_or(0, |s| i128::from(s.dts));
-        for (data, dts, duration) in audio_samples(source, bytes, t)? {
-            let time = (dts - base) * 1_000_000_000 / i128::from(track.timescale.max(1));
-            pending.push(Pending { time, out_track: out, data, sample: WriteSample { data: &[], duration, composition_offset: 0, is_sync: true } });
+        let mut dts = 0i128;
+        for (data, duration) in &t.samples {
+            let time = dts * 1_000_000_000 / i128::from(t.timescale.max(1));
+            let sample = WriteSample { data: &[], duration: *duration, composition_offset: 0, is_sync: true };
+            pending.push(Pending { time, out_track: out, data: data.clone(), sample });
+            dts += i128::from(*duration);
         }
     }
     // interleave the tracks by decode time (stable: equal times keep the video first)
@@ -310,6 +353,20 @@ pub fn mux_with_audio<S: ByteSource + ?Sized>(
         w.write_sample(p.out_track, WriteSample { data: &p.data, ..p.sample }).map_err(io)?;
     }
     Ok(w.finish().map_err(io)?.into_inner())
+}
+
+/// Write `video_only` again with the audio tracks of `plan` copied from `source` (see
+/// [`mux_audio_tracks`]).
+pub fn mux_with_audio<S: ByteSource + ?Sized>(
+    video_only: &[u8],
+    source: &Mp4File,
+    bytes: &S,
+    plan: &AudioPlan,
+    cut: CutInterval,
+    brand: Brand,
+) -> Result<Vec<u8>, SmartCutError> {
+    let tracks = copied_tracks(source, bytes, plan, cut)?;
+    mux_audio_tracks(video_only, &tracks, (cut.duration, cut.timescale), brand)
 }
 
 /// The payloads a track copy writes: (bytes, source decode time of the first byte, duration).
@@ -357,22 +414,15 @@ fn audio_samples<S: ByteSource + ?Sized>(source: &Mp4File, bytes: &S, t: &AudioT
     Ok(out)
 }
 
-/// Read back a file written by [`mux_with_audio`]: the video track must be the one of
-/// `video_only` unchanged, every audio track must hold the copied source audio unchanged, and
-/// its start against the video must match the source within half an audio tick.
-pub fn verify_audio_copy<S: ByteSource + ?Sized>(
-    output: &[u8],
-    video_only: &[u8],
-    source: &Mp4File,
-    bytes: &S,
-    plan: &AudioPlan,
-    cut: CutInterval,
-) -> Result<Vec<AudioTrackReport>, SmartCutError> {
+/// Read back a file written by [`mux_audio_tracks`]: the video track must be the one of
+/// `video_only` unchanged, every audio track must hold its payloads unchanged, and its first
+/// payload must be presented where [`AudioTrackInput::first_at`] says, within half an audio tick.
+pub fn verify_audio_tracks(output: &[u8], video_only: &[u8], tracks: &[AudioTrackInput]) -> Result<Vec<AudioTrackReport>, SmartCutError> {
     let fail = |detail: String| SmartCutError::Verification { detail };
     let file = cfa4_isobmff::open(output).map_err(|e| fail(format!("the output does not open: {e}")))?;
     let v = cfa4_isobmff::open(video_only).map_err(io)?;
-    if file.tracks.len() != 1 + plan.tracks.len() {
-        return Err(fail(format!("the output has {} tracks, expected {}", file.tracks.len(), 1 + plan.tracks.len())));
+    if file.tracks.len() != 1 + tracks.len() {
+        return Err(fail(format!("the output has {} tracks, expected {}", file.tracks.len(), 1 + tracks.len())));
     }
     let (Some(vt), Some(ot)) = (v.tracks.first(), file.tracks.first()) else { return Err(fail("no video track".into())) };
     if ot.samples.len() != vt.samples.len() || ot.entries != vt.entries || ot.edit_offset != vt.edit_offset || ot.timescale != vt.timescale {
@@ -385,44 +435,54 @@ pub fn verify_audio_copy<S: ByteSource + ?Sized>(
             return Err(fail(format!("video sample {i} changed when the audio was added")));
         }
     }
+    // the first video picture of the output (edit list applied), in video ticks
+    let v_out = ot.samples.iter().map(|s| i128::from(s.pts)).min().unwrap_or(0) + i128::from(ot.edit_offset);
+    let vts = i128::from(ot.timescale.max(1));
     let mut reports = Vec::new();
-    for (k, t) in plan.tracks.iter().enumerate() {
+    for (k, t) in tracks.iter().enumerate() {
         let out = file.tracks.get(k + 1).ok_or_else(|| fail(format!("audio track {} is missing", t.track_id)))?;
-        let src = source.tracks.get(t.track).ok_or(SmartCutError::NoTrack { track: t.track })?;
-        let expected = audio_samples(source, bytes, t)?;
         let written: Vec<u8> = (0..out.samples.len()).map(|i| file.read_sample(output, k + 1, i)).collect::<Result<Vec<_>, _>>().map_err(io)?.concat();
-        let copied: Vec<u8> = expected.iter().flat_map(|e| e.0.iter().copied()).collect();
-        if written != copied {
+        let expected: Vec<u8> = t.samples.iter().flat_map(|e| e.0.iter().copied()).collect();
+        if written != expected {
             return Err(fail(format!("audio track {}: the written audio differs from the source", t.track_id)));
         }
-        if t.pcm.is_none() && (out.samples.len() != expected.len() || out.samples.iter().zip(&expected).any(|(s, e)| s.duration != e.2)) {
+        let durations = |it: &mut dyn Iterator<Item = u32>| it.map(u64::from).sum::<u64>();
+        let same_packets = out.samples.len() == t.samples.len() && out.samples.iter().zip(&t.samples).all(|(s, e)| s.duration == e.1);
+        let same_length = durations(&mut out.samples.iter().map(|s| s.duration)) == durations(&mut t.samples.iter().map(|e| e.1));
+        if !(same_length && (t.pcm || same_packets)) {
             return Err(fail(format!("audio track {}: the packets or their durations changed", t.track_id)));
         }
-        // the first copied audio, presented in the output and in the source, against the video
-        let (Some(first), Some(first_src)) = (expected.first(), src.samples.get(t.first)) else {
+        if t.samples.is_empty() {
             return Err(fail(format!("audio track {} is empty", t.track_id)));
-        };
-        if first.1 < i128::from(first_src.dts) {
-            return Err(fail(format!("audio track {} starts before its first copied sample", t.track_id)));
         }
-        // presentation (edit lists applied) of the first copied audio and of the first video
-        // picture, in the output and in the source
+        // output audio (first payload) − output video, against `first_at`; scaled by ats·vts·den
+        let ats = i128::from(out.timescale.max(1));
+        let (num, den) = (t.first_at.0, t.first_at.1.max(1));
         let a_out = i128::from(out.edit_offset);
-        let a_src = first.1 + i128::from(src.edit_offset);
-        let v_out = ot.samples.iter().map(|s| i128::from(s.pts)).min().unwrap_or(0) + i128::from(ot.edit_offset);
-        let (ats, vts) = (i128::from(src.timescale.max(1)), i128::from(cut.timescale.max(1)));
-        // error · ats · vts = (output audio − output video) − (source audio − source video)
-        let err = (a_out - a_src) * vts - (v_out - i128::from(cut.start)) * ats;
-        if 2 * err.abs() > vts {
-            return Err(fail(format!("audio track {} is out of sync by {} audio ticks", t.track_id, err as f64 / vts as f64)));
+        let err = a_out * vts * den - v_out * ats * den - num * ats * vts;
+        if 2 * err.abs() > vts * den {
+            return Err(fail(format!("audio track {} is out of sync by {} audio ticks", t.track_id, err as f64 / (vts * den) as f64)));
         }
         reports.push(AudioTrackReport {
             track_id: t.track_id,
             codec: t.codec.clone(),
             samples: out.samples.len() as u64,
             payload_bytes: written.len() as u64,
-            sync_error_ns: ticks(rescale(err, 1_000_000_000, ats * vts)).unwrap_or(i64::MAX),
+            sync_error_ns: ticks(rescale(err, 1_000_000_000, ats * vts * den)).unwrap_or(i64::MAX),
         });
     }
     Ok(reports)
+}
+
+/// [`verify_audio_tracks`] for the audio of `plan` copied from `source`.
+pub fn verify_audio_copy<S: ByteSource + ?Sized>(
+    output: &[u8],
+    video_only: &[u8],
+    source: &Mp4File,
+    bytes: &S,
+    plan: &AudioPlan,
+    cut: CutInterval,
+) -> Result<Vec<AudioTrackReport>, SmartCutError> {
+    let tracks = copied_tracks(source, bytes, plan, cut)?;
+    verify_audio_tracks(output, video_only, &tracks)
 }
