@@ -65,11 +65,13 @@ pub struct TrackConfig {
     pub media_start: Option<i64>,
     /// `hdlr` name; a sensible default is used when `None`.
     pub handler_name: Option<String>,
+    /// `tkhd` display matrix (rotation of portrait footage…); the identity when `None`.
+    pub matrix: Option<[i32; 9]>,
 }
 
 impl TrackConfig {
     pub fn new(entry: SampleEntry, timescale: u32) -> Self {
-        TrackConfig { entry, timescale, language: "und".into(), edits: Vec::new(), media_start: None, handler_name: None }
+        TrackConfig { entry, timescale, language: "und".into(), edits: Vec::new(), media_start: None, handler_name: None, matrix: None }
     }
 }
 
@@ -268,7 +270,7 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
     b.u16(0);
     b.i16(if t.handler == Handler::Audio { 0x100 } else { 0 });
     b.u16(0);
-    for v in MATRIX {
+    for v in t.cfg.matrix.unwrap_or(MATRIX) {
         b.i32(v);
     }
     let (w, h) = match &t.cfg.entry.video {
