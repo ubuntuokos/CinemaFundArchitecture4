@@ -46,8 +46,14 @@ impl PictureType {
 pub enum RandomAccessKind {
     /// Decoding cannot start here.
     None,
-    /// H.264 IDR picture: the decoder is reset; nothing after it refers to anything before it.
+    /// H.264 or HEVC IDR picture: the decoder is reset; nothing after it refers to anything before it.
     Idr,
+    /// HEVC CRA picture: decoding can start here. Its RASL pictures (shown before it, decoded after
+    /// it) refer to the pictures before it; with none (`rasl` false) it is a clean start.
+    Cra { rasl: bool },
+    /// HEVC BLA picture (a spliced CRA): its RASL pictures cannot be decoded; with none it is a
+    /// clean start.
+    Bla { rasl: bool },
     /// H.264 I picture with a recovery point SEI (`recovery_frame_cnt` 0, `exact_match`): later
     /// pictures in output order decode exactly; leading pictures may not.
     RecoveryPoint { exact_match: bool, broken_link: bool },
@@ -72,7 +78,7 @@ impl RandomAccessKind {
     /// Starting here, every picture at or after this one in presentation order decodes
     /// exactly, and nothing at or after it refers to anything before it in decode order.
     pub fn is_clean(self) -> bool {
-        matches!(self, RandomAccessKind::Idr | RandomAccessKind::ClosedGop)
+        matches!(self, RandomAccessKind::Idr | RandomAccessKind::ClosedGop | RandomAccessKind::Cra { rasl: false } | RandomAccessKind::Bla { rasl: false })
     }
 }
 
