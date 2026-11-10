@@ -18,6 +18,12 @@ use crate::smart_cut::{Mp4CopySource, SmartCutError, execute_mp4_copy, verify_mp
 
 /// 40 pictures of HEVC from the CFA4 encoder (64×48, 25 fps, an IDR every 10, P pictures).
 pub(crate) fn cfa4_hevc_mp4() -> Vec<u8> {
+    cfa4_hevc_mp4_with(false)
+}
+
+/// [`cfa4_hevc_mp4`]; with `in_band`, every IDR sample also carries the VPS / SPS / PPS (as in
+/// `hev1` streams).
+pub(crate) fn cfa4_hevc_mp4_with(in_band: bool) -> Vec<u8> {
     use cfa4_hevc::encode::{Encoder, EncoderConfig, PacketFormat, YuvFrame};
     let mut cfg = EncoderConfig::new(64, 48, 25, 1);
     cfg.keyint = 10;
@@ -33,8 +39,14 @@ pub(crate) fn cfa4_hevc_mp4() -> Vec<u8> {
     let entry = SampleEntry::hevc(HevcConfig::parse(&enc.hvcc()).unwrap(), 64, 48);
     let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
     let t = mux.add_track(TrackConfig::new(entry, 25)).unwrap();
+    let mut prefix = Vec::new();
+    for ps in enc.parameter_sets() {
+        prefix.extend((ps.len() as u32).to_be_bytes());
+        prefix.extend(ps);
+    }
     for p in &packets {
-        mux.write_sample(t, WriteSample { data: &p.data, duration: 1, composition_offset: (p.pts - p.dts) as i32, is_sync: p.keyframe }).unwrap();
+        let data = if in_band && p.keyframe { [prefix.as_slice(), &p.data].concat() } else { p.data.clone() };
+        mux.write_sample(t, WriteSample { data: &data, duration: 1, composition_offset: (p.pts - p.dts) as i32, is_sync: p.keyframe }).unwrap();
     }
     mux.finish().unwrap().into_inner()
 }

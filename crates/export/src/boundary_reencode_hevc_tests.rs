@@ -10,7 +10,7 @@ use cfa4_smart_edit::plan::{ExportExecutionPlan, SegmentMode, SegmentReason};
 
 use crate::boundary_reencode::{BoundaryEncoding, BoundaryReport, check_mp4_boundary_reencode, execute_mp4_boundary_reencode, verify_mp4_boundary_reencode};
 use crate::smart_cut::SmartCutError;
-use crate::smart_cut_hevc_tests::{Source, cfa4_hevc_mp4, framemd5, has_libx265, x265_mp4};
+use crate::smart_cut_hevc_tests::{Source, cfa4_hevc_mp4, cfa4_hevc_mp4_with, framemd5, has_libx265, x265_mp4};
 
 fn encoding() -> BoundaryEncoding {
     BoundaryEncoding { threads: 1, ..BoundaryEncoding::default() }
@@ -123,16 +123,8 @@ fn ffmpeg_decodes_spliced_hevc() {
 /// Parameter sets inside the samples could collide with the encoder's ids: refused.
 #[test]
 fn in_band_parameter_sets_are_refused() {
-    let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("HEVC in-band parameter sets") else { return };
-    if !has_libx265(&ffmpeg) {
-        cfa4_testkit::skip("boundary_reencode_hevc_tests", "ffmpeg has no libx265");
-        return;
-    }
-    let dir = std::env::temp_dir().join(format!("cfa4-hevc-inband-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
-    let src = frame_accurate(x265_mp4(&ffmpeg, &dir, "inband.mp4", "keyint=25:min-keyint=25:scenecut=0:bframes=0:repeat-headers=1:log-level=error"));
-    let plan = src.plan(10, 60);
+    let src = frame_accurate(cfa4_hevc_mp4_with(true));
+    let plan = src.plan(5, 33);
     let e = check_mp4_boundary_reencode(&plan, &src.index, &src.source(), &encoding()).unwrap_err();
     assert!(matches!(&e, SmartCutError::Incompatible { detail } if detail.contains("in-band")), "{e}");
-    let _ = std::fs::remove_dir_all(&dir);
 }
