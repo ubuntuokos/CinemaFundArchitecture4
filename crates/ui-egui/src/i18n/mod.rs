@@ -66,6 +66,8 @@ pub enum Language {
     Tr,
     /// Dutch: the whole interface, Latin script (bundled fonts).
     Nl,
+    /// Czech: the whole interface, Latin script (bundled fonts).
+    Cs,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -90,11 +92,12 @@ static HUNGARIAN: OnceLock<Catalog> = OnceLock::new();
 static POLISH: OnceLock<Catalog> = OnceLock::new();
 static TURKISH: OnceLock<Catalog> = OnceLock::new();
 static DUTCH: OnceLock<Catalog> = OnceLock::new();
+static CZECH: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 18] = [
+    pub const ALL: [Self; 19] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -111,6 +114,7 @@ impl Language {
         Self::Pl,
         Self::Tr,
         Self::Nl,
+        Self::Cs,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -133,6 +137,7 @@ impl Language {
             Self::Pl => "Polski",
             Self::Tr => "Türkçe",
             Self::Nl => "Nederlands",
+            Self::Cs => "Čeština",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -156,6 +161,7 @@ impl Language {
             "pl" => Some(Self::Pl),
             "tr" => Some(Self::Tr),
             "nl" => Some(Self::Nl),
+            "cs" => Some(Self::Cs),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -172,7 +178,7 @@ impl Language {
     /// only for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`); Traditional ones (`zh-TW`,
     /// `zh-HK`, `zh-MO`, `zh-Hant…`) are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 16] = [
+        const PRIMARY: [(&str, Language); 17] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -189,6 +195,7 @@ impl Language {
             ("pl", Language::Pl),
             ("tr", Language::Tr),
             ("nl", Language::Nl),
+            ("cs", Language::Cs),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -239,6 +246,7 @@ impl Language {
             Self::Pl => "pl",
             Self::Tr => "tr",
             Self::Nl => "nl",
+            Self::Cs => "cs",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -263,6 +271,7 @@ impl Language {
             Self::Pl => Some(POLISH.get_or_init(|| Catalog::parse(catalog_file!("pl")))),
             Self::Tr => Some(TURKISH.get_or_init(|| Catalog::parse(catalog_file!("tr")))),
             Self::Nl => Some(DUTCH.get_or_init(|| Catalog::parse(catalog_file!("nl")))),
+            Self::Cs => Some(CZECH.get_or_init(|| Catalog::parse(catalog_file!("cs")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -448,6 +457,7 @@ mod tests {
             ("pl", catalog_file!("pl")),
             ("tr", catalog_file!("tr")),
             ("nl", catalog_file!("nl")),
+            ("cs", catalog_file!("cs")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1579,6 +1589,13 @@ mod tests {
             catalog_file!("nl"),
             "ÉËÏÖéëïöĳ",
             &[("File", "Bestand"), ("Sequence", "Reeks"), ("Playhead", "Afspeelkop"), ("Cross Dissolve", "Kruisovervloeier")],
+        ),
+        (
+            Language::Cs,
+            "app.language.czech",
+            catalog_file!("cs"),
+            "ÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž„“",
+            &[("File", "Soubor"), ("Sequence", "Sekvence"), ("Playhead", "Přehrávací hlava"), ("Cross Dissolve", "Křížová prolínačka")],
         ),
     ];
 

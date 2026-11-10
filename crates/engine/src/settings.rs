@@ -1062,6 +1062,7 @@ static CATEGORIES: &[Category] = &[
                     ("pl", "Polski"),
                     ("tr", "Türkçe"),
                     ("nl", "Nederlands"),
+                    ("cs", "Čeština"),
                 ]),
                 true,
             ),
