@@ -19,7 +19,7 @@ const FPS: u32 = 25;
 const STRICT: Policy = Policy { allow_experimental: false };
 
 /// An MP4 with one H.264 track (64×48, 25 fps, IDR every `keyint` pictures, `bframes` B-frames).
-fn source_mp4(frames: usize, keyint: u32, bframes: u8, brand: Brand) -> Vec<u8> {
+pub(crate) fn source_mp4(frames: usize, keyint: u32, bframes: u8, brand: Brand) -> Vec<u8> {
     use cfa4_h264enc::{Encoder, EncoderConfig, PacketFormat, RateControl, YuvFrame};
     let (w, h) = (64usize, 48usize);
     let mut cfg = EncoderConfig::new(w as u32, h as u32, FPS, 1);
@@ -49,7 +49,7 @@ fn source_mp4(frames: usize, keyint: u32, bframes: u8, brand: Brand) -> Vec<u8> 
 }
 
 /// The WP-02 index of the first track, as an importer builds it.
-fn index_of(file: &Mp4File, bytes: &[u8]) -> StreamIndex {
+pub(crate) fn index_of(file: &Mp4File, bytes: &[u8]) -> StreamIndex {
     let track = &file.tracks[0];
     let Some(cfa4_isobmff::CodecConfig::Avc(avc)) = track.codec() else { panic!("not H.264") };
     let ps: Vec<&[u8]> = avc.sps.iter().chain(&avc.pps).map(Vec::as_slice).collect();
@@ -58,16 +58,16 @@ fn index_of(file: &Mp4File, bytes: &[u8]) -> StreamIndex {
     index_h264(track.id, Rational::new(1, i64::from(track.timescale)), NalFormat::LengthPrefixed(avc.length_size), &ps, packets).unwrap()
 }
 
-fn media(stream: &StreamIndex, size: usize) -> MediaIndex {
+pub(crate) fn media(stream: &StreamIndex, size: usize) -> MediaIndex {
     MediaIndex::new("test.mp4", SourceFingerprint { size: size as u64, modified_ns: None, content_id: None }, vec![stream.clone()])
 }
 
-fn tick(frames: i64) -> Tick {
+pub(crate) fn tick(frames: i64) -> Tick {
     MediaTime::new(frames, Rational::new(1, i64::from(FPS))).to_tick().unwrap()
 }
 
 /// Plan `[from, to)` (in frames on the source PTS timeline) with the native registry.
-fn plan(stream: &StreamIndex, size: usize, from: i64, to: i64, mode: CutMode, output: Container) -> SmartCutPlan {
+pub(crate) fn plan(stream: &StreamIndex, size: usize, from: i64, to: i64, mode: CutMode, output: Container) -> SmartCutPlan {
     let req = SmartCutRequest {
         stream_id: stream.stream_id,
         in_point: tick(from),
@@ -81,13 +81,13 @@ fn plan(stream: &StreamIndex, size: usize, from: i64, to: i64, mode: CutMode, ou
     plan_smart_cut(&Registry::native(), &media(stream, size), &req, STRICT).unwrap()
 }
 
-struct Fixture {
-    bytes: Vec<u8>,
-    file: Mp4File,
-    index: StreamIndex,
+pub(crate) struct Fixture {
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) file: Mp4File,
+    pub(crate) index: StreamIndex,
 }
 
-fn fixture(frames: usize, keyint: u32, bframes: u8) -> Fixture {
+pub(crate) fn fixture(frames: usize, keyint: u32, bframes: u8) -> Fixture {
     let bytes = source_mp4(frames, keyint, bframes, Brand::Mp4);
     let file = cfa4_isobmff::open(bytes.as_slice()).unwrap();
     let index = index_of(&file, &bytes);
@@ -95,11 +95,11 @@ fn fixture(frames: usize, keyint: u32, bframes: u8) -> Fixture {
 }
 
 impl Fixture {
-    fn source(&self) -> Mp4CopySource<'_, [u8]> {
+    pub(crate) fn source(&self) -> Mp4CopySource<'_, [u8]> {
         Mp4CopySource { file: &self.file, bytes: self.bytes.as_slice(), track: 0 }
     }
     /// The first presentation time of the source (its edit list), in frames.
-    fn pts0(&self) -> i64 {
+    pub(crate) fn pts0(&self) -> i64 {
         self.file.tracks[0].samples.iter().map(|s| s.pts).min().unwrap()
     }
 }
@@ -186,6 +186,45 @@ fn an_index_of_another_file_is_refused() {
     index.frames[12].size += 1;
     let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
     assert!(matches!(err, SmartCutError::StaleIndex { .. }), "{err:?}");
+    // same access units, other timestamps (a remux at another frame rate) or timebase
+    let mut index = f.index.clone();
+    index.frames[12].pts = index.frames[12].pts.map(|t| t + 1);
+    let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("PTS")), "{err:?}");
+    let mut index = f.index.clone();
+    index.timebase.den *= 2;
+    let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("timebase")), "{err:?}");
+    let mut index = f.index.clone();
+    index.frames[12].keyframe = !index.frames[12].keyframe;
+    let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("sync")), "{err:?}");
+    // same sync table, but the index's IDR is no longer one in the bitstream (or the other way)
+    let mut index = f.index.clone();
+    let idr = index.frames.iter().position(|x| x.decode_index >= 10 && x.random_access == cfa4_smart_edit::media_index::RandomAccessKind::Idr).unwrap();
+    index.frames[idr].random_access = cfa4_smart_edit::media_index::RandomAccessKind::IntraOnly;
+    let err = execute_mp4_copy(&p.plan, &index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("IDR")), "{err:?}");
+    let encoding = crate::boundary_reencode::BoundaryEncoding { threads: 1, ..Default::default() };
+    let fa = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 20, CutMode::FrameAccurate, Container::Mp4);
+    let err = crate::boundary_reencode::check_mp4_boundary_reencode(&fa.plan, &index, &f.source(), &encoding).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("IDR")), "{err:?}");
+    // the plan's length must still match the source's durations
+    let mut longer = p.plan.clone();
+    longer.expected_duration.value += 1;
+    let err = execute_mp4_copy(&longer, &f.index, &f.source(), Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("last")), "{err:?}");
+    let mut longer = fa.plan.clone();
+    longer.expected_duration.value += 1;
+    let err = crate::boundary_reencode::check_mp4_boundary_reencode(&longer, &f.index, &f.source(), &encoding).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("last")), "{err:?}");
+    // the boundary re-encoder checks every packet, the copied ones too
+    let p = plan(&f.index, f.bytes.len(), p0 + 5, p0 + 20, CutMode::FrameAccurate, Container::Mp4);
+    let mut index = f.index.clone();
+    index.frames[30].dts = index.frames[30].dts.map(|t| t - 1);
+    let encoding = crate::boundary_reencode::BoundaryEncoding { threads: 1, ..Default::default() };
+    let err = crate::boundary_reencode::execute_mp4_boundary_reencode(&p.plan, &index, &f.source(), &encoding, Cursor::new(Vec::new())).unwrap_err();
+    assert!(matches!(&err, SmartCutError::StaleIndex { detail } if detail.contains("DTS")), "{err:?}");
 }
 
 #[test]

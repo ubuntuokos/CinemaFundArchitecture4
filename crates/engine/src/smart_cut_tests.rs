@@ -88,6 +88,8 @@ fn plan_names_the_safe_points_or_the_boundaries() {
     let r = s.execute("export.plan", json!({"path": "clip.mp4", "in": frame(5), "out": frame(30), "mode": "frame-accurate"})).unwrap();
     assert_eq!(r["summary"]["requiresConfirmation"], true);
     assert_eq!(r["summary"]["reencodedFrames"], 5);
+    assert_eq!(r["boundaryReencode"], json!({"ready": true, "problem": null}));
+    assert!(s.execute("export.plan", json!({"path": "clip.mp4", "in": frame(5), "out": frame(30), "crf": 60})).unwrap_err().to_string().contains("crf"));
 }
 
 #[test]
@@ -110,13 +112,12 @@ fn start_refuses_before_writing_anything() {
     let (mut s, files) = session();
     let run = |s: &mut Session, p: Value| s.execute("export.start", p).unwrap_err().to_string();
     let base = json!({"path": "clip.mp4", "in": frame(5), "out": frame(30), "output": "cut.mp4"});
-    // a re-encoding plan: no boundary re-encoder yet, confirmed or not
-    for confirm in [false, true] {
-        let mut p = base.clone();
-        p["mode"] = json!("frame-accurate");
-        p["confirm"] = json!(confirm);
-        assert!(run(&mut s, p).contains("WP-06"));
-    }
+    // a re-encoding plan runs only when confirmed
+    let mut p = base.clone();
+    p["mode"] = json!("frame-accurate");
+    assert!(run(&mut s, p.clone()).contains("confirm"));
+    p["confirm"] = json!(false);
+    assert!(run(&mut s, p).contains("confirm"));
     let ok = json!({"path": "clip.mp4", "in": frame(10), "out": frame(30)});
     assert!(run(&mut s, ok.clone()).contains("output"));
     let mut same = ok.clone();
@@ -135,4 +136,21 @@ fn start_refuses_before_writing_anything() {
     assert!(run(&mut s, timeline).contains("WP-06"));
     assert!(run(&mut s, json!({"path": "missing.mp4", "in": 0, "out": 1, "output": "x.mp4"})).contains("missing.mp4"));
     assert_eq!(files.0.lock().unwrap().keys().collect::<Vec<_>>(), ["clip.mp4"], "nothing was written");
+}
+
+#[test]
+fn start_re_encodes_the_boundaries_of_a_confirmed_frame_accurate_cut() {
+    let (mut s, files) = session();
+    let source = files.0.lock().unwrap()["clip.mp4"].clone();
+    let p = json!({"path": "clip.mp4", "in": frame(5), "out": frame(30), "output": "cut.mp4", "mode": "frame-accurate", "confirm": true});
+    let r = s.execute("export.start", p).unwrap();
+    assert_eq!(r["verified"], true);
+    let counts = (r["report"]["samples"].as_u64(), r["report"]["copied"].as_u64(), r["report"]["reencoded"].as_u64());
+    assert_eq!(counts, (Some(25), Some(20), Some(5)), "{}", r["report"]);
+    assert!(r["report"]["minPsnr"].as_f64().is_some_and(|db| db >= 30.0), "{}", r["report"]);
+    let files = files.0.lock().unwrap();
+    assert_eq!(files["clip.mp4"], source, "the source is untouched");
+    let out = cfa4_isobmff::open(files["cut.mp4"].as_slice()).unwrap();
+    let sync: Vec<usize> = out.tracks[0].samples.iter().enumerate().filter(|(_, x)| x.is_sync).map(|(i, _)| i).collect();
+    assert_eq!(sync, [0, 5, 15]);
 }
