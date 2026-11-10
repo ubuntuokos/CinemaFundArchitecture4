@@ -6,6 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+from cfa4_devtools import patent_register
+
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT = ROOT / "docs/audit/f9-release-readiness.json"
 REQUIRED = frozenset({
@@ -25,7 +27,10 @@ REQUIRED = frozenset({
     "full_qt6_nle_parity",
     "licensing_brand_attribution_sbom",
     "protected_main_integration",
+    # ADR 0003 §13: every base-package format of docs/patent-review.md has a recorded result
+    "patent_review_recorded",
 })
+PATENT_GATE = "patent_review_recorded"
 FORMATS = {"deb", "AppImage", "flatpak", "tar.gz"}
 
 
@@ -65,6 +70,19 @@ def evaluate(data: dict) -> dict:
         by_id[key] = item
     if set(by_id) != REQUIRED:
         raise ReleaseGateError(f"release gate set mismatch: {sorted(set(REQUIRED)^set(by_id))}")
+    if by_id[PATENT_GATE]["status"] == "PASS":
+        # the gate is checked against the register itself, not only its stated status
+        try:
+            rows = patent_register.load()
+        except (OSError, patent_register.RegisterError) as exc:
+            raise ReleaseGateError(f"{PATENT_GATE}: unreadable patent register: {exc}") from exc
+        pending = patent_register.pending_in_base(rows)
+        missing = patent_register.missing_crates(rows)
+        if pending or missing:
+            raise ReleaseGateError(
+                f"{PATENT_GATE}: PASS while {len(pending)} base-package rows are pending"
+                f" and {len(missing)} format crates have no row (docs/patent-review.md)"
+            )
     open_ids = sorted(key for key, item in by_id.items() if item["status"] != "PASS")
     decision = "HOLD" if open_ids else "REQUIRES_EXPLICIT_FINAL_APPROVAL"
     if data.get("verdict") != decision:
