@@ -175,7 +175,7 @@ folyamatban, 7. nyitott).
 | ASS / SSA feliratok | ❌ | **K9**, a Subtitle Studio-terv feladata (F2). Kdenlive- vagy Subtitle Edit-kódból is átvehető, fájlonként ellenőrizve |
 | Beszédfelismerés (Whisper) | 🟡 | Megvan (`transcript.generate`), a kiadott buildekben ki van kapcsolva (G19). **K2** |
 | Szöveg alapú vágás | ✅ | `transcript.*`, `textPanel.*` |
-| Felirat fordítása | ❌ | **K6**. A Kdenlive által használt SeamlessM4T nem kereskedelmi licencű; kereskedelmi használatot engedő, a felhasználó által letöltött modell kell (11.3) |
+| Felirat fordítása | ❌ | **K6**. Alapértelmezés kereskedelmi használatot is engedő, a felhasználó által letöltött modell (11.3); a Kdenlive által használt SeamlessM4T (CC-BY-NC) választható, a felhasználó tölti le, nem kereskedelmi figyelmeztetéssel (tulajdonosi döntések 2026-11-07, 2026-11-08) |
 | Címszerkesztő | ✅ | `graphics.*` |
 | Címszerkesztő-illesztés, lekerekített téglalap | 🟡 | `view.snapInProgramMonitor`; a többi: **K57** (11.7) |
 | Görgetett stáblista | ✅ | `crates/credits`, táblázatból is (F10, #36) |
@@ -408,8 +408,9 @@ A Kdenlive AI-funkciói nem saját futtatókörnyezettel jönnek át, hanem a CF
 - **K4 (háttéreltávolítás, M6, F4 kapu):** SAM2 ONNX Runtime-workerben, gyártófüggetlen
   futtatókkal (CUDA/TensorRT, MIGraphX, OpenVINO, CPU). A Kdenlive SAM2-szkriptje
   (Apache-2.0 OR GPL-3.0) csak referencia, a CFA4 nem futtatja.
-- **K6 és K28 (fordítás, M10):** csak kereskedelmi használatot engedő modell. A SeamlessM4T és
-  az NLLB (CC-BY-NC) kizárva.
+- **K6 és K28 (fordítás, M10):** alapértelmezés kereskedelmi használatot is engedő modell. A
+  SeamlessM4T és az NLLB (CC-BY-NC) választható, a felhasználó tölti le, és a felület nem
+  kereskedelmi licencre figyelmeztet (~~kizárva~~, felváltva: 2026-11-07, 2026-11-08).
 - **K26 (hangleválasztás):** Demucs (MIT) a közös PyTorch-workerben, vagy ONNX-exporttal.
   **K27 (kényszerített igazítás):** CTC-modell candle-on vagy ONNX-en, licencellenőrzés után.
 - **Futtatókörnyezet:** a Kdenlive CUDA-verziónkénti venv- és requirements-rendszerét nem
@@ -624,7 +625,7 @@ azonosító, teszt, és az 1–8. pont táblájában a sor ✅-re vált.
 | GStreamer | a kiadott csomagok GStreamerrel épülnek (alapból az Ubuntu rendszercsomagja); elkülönített `cfa4-gstreamer-runtime` csak akkor, ha egy funkció újabb verziót kér (ADR 0002, ADR 0005) |
 | `gyroflow-core` (K13) | kell |
 | Hálózati render (K14) | több gép és több GPU engedélyezett; csak renderelő kliens is készül |
-| Fordítómodell (K6) | nyitott, kereskedelmi használatot is engedő modell (jelölt: Opus-MT/Marian magyar–angol, licencellenőrzés után), amelyet a felhasználó a K18 letöltővel tölt le; a CFA4 nem szállít modellt (S2, 2026-10-30; III. pont E4). A felhasználó cserélheti. SeamlessM4T és NLLB nem (CC-BY-NC). Külső fordítószolgáltatás: Subtitle Studio D3 |
+| Fordítómodell (K6) | nyitott, kereskedelmi használatot is engedő modell (jelölt: Opus-MT/Marian magyar–angol, licencellenőrzés után), amelyet a felhasználó a K18 letöltővel tölt le; a CFA4 nem szállít modellt (S2, 2026-10-30; III. pont E4). A felhasználó cserélheti, a SeamlessM4T-re és az NLLB-re is (CC-BY-NC: választható, nem kereskedelmi figyelmeztetéssel; 2026-11-07, 2026-11-08). Külső fordítószolgáltatás: Subtitle Studio D3 |
 | Hardveres kódolás (K11) | a gyártói meghajtót a felhasználó telepíti, hiány esetén telepítési link |
 | SQLite-nyilvántartás (K17) | kell |
 | Online források (K18) | fontos |
@@ -641,7 +642,7 @@ azonosító, teszt, és az 1–8. pont táblájában a sor ✅-re vált.
 | Kötelező CPU-tartalék; kivétel csak a valós idejű MI-előnézet | ADR 0004 (#55), 1. döntés | K32, K35 |
 | MI-futtatók sorrendje: ONNX Runtime (F2–F4) → candle (F5) → közös PyTorch (F6); NPU: OpenVINO. A Burn szerepe (ADR 0004 2. fázis) az ADR 0004 és 0006 összehangolásán múlik (13. pont) | ADR 0006 6. pont; ADR 0004 | K4, K32 |
 | A CFA4 nem szállít modellt; a fordítómodellt is a felhasználó tölti le, a betöltött modell licence látszik, nem kereskedelmi licencre figyelmeztet | S2 (2026-10-30); a 2026-10-25-i „csomagban egy modell” döntést felváltja | K6, K28 |
-| SeamlessM4T, NLLB, MMS-súlyok kizárva (CC-BY-NC) | licencellenőrzés, 2026-10-25 | K6, K27 |
+| ~~SeamlessM4T, NLLB, MMS-súlyok kizárva (CC-BY-NC)~~ Felváltva: választhatók, a felhasználó tölti le, nem kereskedelmi figyelmeztetéssel; a CFA4-nek nincs fizetős része | licencellenőrzés 2026-10-25; tulajdonosi döntések 2026-11-07 (a súly licence a felhasználó felelőssége) és 2026-11-08 (nincs fizetős rész) | K6, K27 |
 | Az MI ugyanazokat a parancsokat hívja, mint az ember, előnézettel és visszavonhatóan; idővonal-módosítás csak emberi jóváhagyással | 11.1, 11.2 (FA3-tervekből) | K2, K4, K6, K26–K35 |
 | Előbb stabil kézi szerkesztés, csak utána MI | VISION.md 6.; FA3-terv | sorrend: K1, K3 és a nem MI-s pontok az MI-réteg és az MI-pontok előtt |
 | Whisper a kiadott buildekben (ma ki van kapcsolva) | `docs/gaps.md` G19 | K2 |
