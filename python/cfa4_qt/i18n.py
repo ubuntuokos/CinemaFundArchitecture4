@@ -24,7 +24,9 @@ CATALOG_DIR = PACKAGED_CATALOGS if PACKAGED_CATALOGS.is_dir() else ROOT / "i18n"
 
 # language code -> name shown in the View ▸ Language menu (in that language)
 LANGUAGES = {
-    "en": "English",
+    "en": "English (US)",
+    "en-gb": "English (UK)",
+    "en-au": "English (Australia)",
     "hu": "Magyar",
     "de": "Deutsch",
     "es": "Español",
@@ -90,11 +92,17 @@ class Translator:
         self._plain, self._contextual = {}, {}
         if language == "en":
             return
-        try:
-            text = (CATALOG_DIR / f"{language}.tsv").read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            return
-        self._plain, self._contextual = parse_catalog(text)
+        # a regional variant reads its base catalog first (Australian English on top of British)
+        for code in (BASE_CATALOG.get(language), language):
+            if code is None:
+                continue
+            try:
+                text = (CATALOG_DIR / f"{code}.tsv").read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            plain, contextual = parse_catalog(text)
+            self._plain.update(plain)
+            self._contextual.update(contextual)
 
     def tr(self, text: str) -> str:
         return self._plain.get(text, text)
@@ -121,6 +129,11 @@ class Translator:
         return value
 
 
+# regional variants that read another catalog first, their own entries winning
+BASE_CATALOG = {"en-au": "en-gb"}
+# system locales with no catalog of their own that are shown in a close variant
+REGIONAL_FALLBACK = {"en-nz": "en-au", "en-ie": "en-gb"}
+
 # languages that write 4,00 instead of 4.00
 DECIMAL_COMMA = frozenset({"hu", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
 _DECIMAL = re.compile(r"-?\d+\.\d+")
@@ -142,6 +155,8 @@ def system_language() -> str:
     tag = wanted.split(".")[0].replace("_", "-").lower()
     if tag in LANGUAGES:
         return tag
+    if tag in REGIONAL_FALLBACK:
+        return REGIONAL_FALLBACK[tag]
     base = tag.split("-")[0]
     if base == "pt":
         return "pt-br"

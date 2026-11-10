@@ -60,6 +60,13 @@ pub enum Language {
     Ko,
     /// Hungarian: the whole interface, Latin script (bundled fonts).
     Hu,
+    /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
+    /// where it differs (`en-gb.tsv`).
+    #[serde(rename = "en-gb")]
+    EnGb,
+    /// Australian English, persisted as `en-au`: the British catalog with `en-au.tsv`'s entries on top.
+    #[serde(rename = "en-au")]
+    EnAu,
 }
 
 static JAPANESE: OnceLock<Catalog> = OnceLock::new();
@@ -74,14 +81,31 @@ static KOREAN: OnceLock<Catalog> = OnceLock::new();
 static INDONESIAN: OnceLock<Catalog> = OnceLock::new();
 static ITALIAN: OnceLock<Catalog> = OnceLock::new();
 static HUNGARIAN: OnceLock<Catalog> = OnceLock::new();
+static BRITISH: OnceLock<Catalog> = OnceLock::new();
+static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 13] =
-        [Self::En, Self::Ja, Self::Es, Self::PtBr, Self::Uk, Self::ZhCn, Self::De, Self::Ru, Self::Fr, Self::Id, Self::Ko, Self::It, Self::Hu];
+    pub const ALL: [Self; 15] = [
+        Self::En,
+        Self::Ja,
+        Self::Es,
+        Self::PtBr,
+        Self::Uk,
+        Self::ZhCn,
+        Self::De,
+        Self::Ru,
+        Self::Fr,
+        Self::Id,
+        Self::Ko,
+        Self::It,
+        Self::Hu,
+        Self::EnGb,
+        Self::EnAu,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
-            Self::En => "English",
+            Self::En => "English (US)",
             Self::Ja => "日本語",
             Self::Es => "Español",
             Self::PtBr => "Português (Brasil)",
@@ -94,6 +118,8 @@ impl Language {
             Self::It => "Italiano",
             Self::Ko => "한국어",
             Self::Hu => "Magyar",
+            Self::EnGb => "English (UK)",
+            Self::EnAu => "English (Australia)",
         }
     }
 
@@ -112,6 +138,8 @@ impl Language {
             "it" => Some(Self::It),
             "ko" => Some(Self::Ko),
             "hu" => Some(Self::Hu),
+            "en-gb" => Some(Self::EnGb),
+            "en-au" => Some(Self::EnAu),
             _ => None,
         }
     }
@@ -145,6 +173,20 @@ impl Language {
             .find_map(|tag| {
                 let mut parts = tag.split(['-', '_', '.', '@']);
                 let primary = parts.next().unwrap_or_default();
+                if primary.eq_ignore_ascii_case("en") {
+                    // the region after `en`, if any: British spelling for the UK and Ireland,
+                    // Australian for Australia and New Zealand, US (the source) otherwise
+                    let rest = tag.get(primary.len()..).unwrap_or_default();
+                    let region = if rest.starts_with(['-', '_']) { parts.next().unwrap_or_default() } else { "" };
+                    let is = |codes: &[&str]| codes.iter().any(|c| region.eq_ignore_ascii_case(c));
+                    return Some(if is(&["gb", "uk", "ie"]) {
+                        Language::EnGb
+                    } else if is(&["au", "nz"]) {
+                        Language::EnAu
+                    } else {
+                        Language::En
+                    });
+                }
                 if primary.eq_ignore_ascii_case("zh") {
                     // the subtag after `zh` (a script or a region), if any; `.UTF-8` / `@x` end it
                     let rest = tag.get(primary.len()..).unwrap_or_default();
@@ -173,6 +215,8 @@ impl Language {
             Self::It => "it",
             Self::Ko => "ko",
             Self::Hu => "hu",
+            Self::EnGb => "en-gb",
+            Self::EnAu => "en-au",
         }
     }
 
@@ -192,6 +236,9 @@ impl Language {
             Self::It => Some(ITALIAN.get_or_init(|| Catalog::parse(catalog_file!("it")))),
             Self::Ko => Some(KOREAN.get_or_init(|| Catalog::parse(catalog_file!("ko")))),
             Self::Hu => Some(HUNGARIAN.get_or_init(|| Catalog::parse(catalog_file!("hu")))),
+            Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
+            // later rows win, so the Australian entries override the British ones
+            Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
         }
     }
 
@@ -371,6 +418,8 @@ mod tests {
             ("it", catalog_file!("it")),
             ("ko", catalog_file!("ko")),
             ("hu", catalog_file!("hu")),
+            ("en-gb", catalog_file!("en-gb")),
+            ("en-au", catalog_file!("en-au")),
         ] {
             let (entries, errors) = catalog::parse_entries(text);
             assert!(errors.is_empty(), "{code}: {errors:?}");
@@ -1081,7 +1130,17 @@ mod tests {
         assert_eq!(l(&["sv-SE", "nl", "es-MX", "ja"]), Language::Es, "the first one the interface has");
         assert_eq!(l(&["rm-CH", "de-CH", "fr-CH", "en"]), Language::De);
         assert_eq!(l(&["rm-CH", "fr-CH", "de-CH", "en"]), Language::Fr);
-        assert_eq!(l(&["en-GB", "es"]), Language::En);
+        assert_eq!(l(&["en-GB", "es"]), Language::EnGb);
+        assert_eq!(l(&["en-US", "en-GB"]), Language::En, "the first one wins");
+        for tag in ["en-GB", "en_GB.UTF-8", "en-IE", "en_IE@euro", "EN-gb"] {
+            assert_eq!(l(&[tag]), Language::EnGb, "{tag}");
+        }
+        for tag in ["en-AU", "en_AU.UTF-8", "en-NZ", "en_NZ"] {
+            assert_eq!(l(&[tag]), Language::EnAu, "{tag}");
+        }
+        for tag in ["en", "en-US", "en_US.UTF-8", "en-CA", "en-IN", "en-Latn"] {
+            assert_eq!(l(&[tag]), Language::En, "{tag}");
+        }
         assert_eq!(l(&["en-US", "de"]), Language::En);
         for none in [&[][..], &["nl"], &["C"], &["POSIX"], &[""], &["e"], &["esp"], &["-es"], &["deu"], &["d"], &["-de"], &["fra"], &["f"], &["-fr"]] {
             assert_eq!(l(none), Language::En, "{none:?}");
@@ -1339,6 +1398,46 @@ mod tests {
         set_current(Language::Hu);
         assert!(matches_query("Gaussian Blur", "elmosás"));
         assert!(matches_query("Gaussian Blur", "gaussian"));
+        set_current(Language::En);
+    }
+
+    /// British and Australian English: the source strings are US English, so `en-gb.tsv` lists only
+    /// the strings whose British spelling differs, each one a real source (it has a Spanish entry)
+    /// that it actually changes; Australian reads the British catalog with its own entries on top.
+    #[test]
+    fn english_variants_respell_only_what_differs() {
+        let (entries, errors) = catalog::parse_entries(catalog_file!("en-gb"));
+        assert!(errors.is_empty(), "{errors:?}");
+        assert!(entries.len() > 100, "{}", entries.len());
+        for (ctx, en, gb) in &entries {
+            assert!(ctx.is_empty() && Language::Es.has(en), "British entry for a string the interface does not have: {en:?}");
+            assert_ne!(en, gb, "a British entry that changes nothing");
+        }
+        let (australian, errors) = catalog::parse_entries(catalog_file!("en-au"));
+        assert!(errors.is_empty(), "{errors:?}");
+        for (_, en, au) in &australian {
+            assert!(Language::Es.has(en), "Australian entry for a string the interface does not have: {en:?}");
+            assert_ne!(Some(au.as_str()), Language::EnGb.catalog().and_then(|c| c.plain(en)), "an Australian entry the British one already gives: {en:?}");
+        }
+        for (en, gb) in [
+            ("Color", "Colour"),
+            ("Center", "Centre"),
+            ("Gaussian Blur", "Gaussian Blur"),
+            ("Normalize Max Peak to:", "Normalise Max Peak to:"),
+            ("Remove from Favorites", "Remove from Favourites"),
+            ("Title – Centered", "Title – Centred"),
+            ("File", "File"),
+        ] {
+            assert_eq!((Language::EnGb.tr(en), Language::EnAu.tr(en), Language::En.tr(en)), (gb, gb, en));
+        }
+        assert!(!Language::EnGb.has("File"), "unchanged strings have no entry");
+        assert_eq!([Language::En, Language::EnGb, Language::EnAu].map(Language::name), ["English (US)", "English (UK)", "English (Australia)"]);
+        for l in [Language::EnGb, Language::EnAu] {
+            assert_eq!(Language::parse(l.code()), Some(l));
+        }
+        set_current(Language::EnGb);
+        assert!(matches_query("Color Balance", "colour"));
+        assert!(matches_query("Color Balance", "color"));
         set_current(Language::En);
     }
 

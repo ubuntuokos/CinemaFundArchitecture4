@@ -1044,7 +1044,9 @@ static CATEGORIES: &[Category] = &[
                 "Interface Language",
                 Kind::Choice(&[
                     ("system", "System Language"),
-                    ("en", "English"),
+                    ("en", "English (US)"),
+                    ("en-gb", "English (UK)"),
+                    ("en-au", "English (Australia)"),
                     ("ja", "日本語"),
                     ("es", "Español"),
                     ("pt-br", "Português (Brasil)"),

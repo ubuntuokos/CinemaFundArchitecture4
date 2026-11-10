@@ -12,7 +12,7 @@ Portuguese (Brazil), Russian, Simplified Chinese.
 
 Edit ▸ Language (also Settings ▸ General, `general.interfaceLanguage`) switches the interface and
 persists across restarts; System Language (the default) follows the OS's or browser's preferred
-languages and falls back to English. Commands `app.language.<english|japanese|spanish|portuguese|ukrainian|chinese|german|russian|french|indonesian|italian|korean|hungarian>`
+languages and falls back to English. Commands `app.language.<english|japanese|spanish|portuguese|ukrainian|chinese|german|russian|french|indonesian|italian|korean|hungarian|british|australian>`
 are reachable over the control channel. One catalog per language,
 the top-level `i18n/<code>.tsv`, shared by egui and the Qt GUI (format in the header of `es.tsv`; owner decision 2026-11-09: every CFA4 translation lives there); UI code wraps strings in
 `tl!("…")` / `tlf!("…{name}", name)`, and registry names (effects and their parameters, settings,
@@ -43,7 +43,9 @@ whole interface, one PR) at ~4–8 h per language for the catalog plus tests.
 
 | Language | Code | UI strings | Dialogs / tooltips / help | Script support | Native review | Status | To `full` |
 |---|---|---|---|---|---|---|---|
-| English | en | 3,498 (100%, source) | yes; no help docs in-app | Latin | n/a | **full** | — |
+| English (US) | en | 3,498 (100%, source) | yes; no help docs in-app | Latin | n/a | **full** | — |
+| English (UK) | en-gb | the source with British spelling where it differs (`en-gb.tsv`: colour, centre, favourite, -ise…; ~200 entries); System Language picks it for `en-GB` and `en-IE` | as English | Latin | not recorded | **full** | — |
+| English (Australia) | en-au | the British catalog plus `en-au.tsv` (Australian differences; none yet); System Language picks it for `en-AU` and `en-NZ` | as English | Latin | not recorded | **full** | — |
 | Simplified Chinese | zh-cn | 3,485 (99.6%) | dialogs, Settings, effects, shortcuts, status; engine errors English | CJK font fallback; system IME via winit | not recorded | partial | 6–10 h + review |
 | Spanish | es | 3,496 (99.9%) | as above | Latin | not recorded | partial | 4–8 h + review |
 | Hindi | hi | 0 (0%) | — | **no Devanagari shaping in the interface** | — | none | 30–50 h (shaping in UI + catalog + fonts) |
@@ -76,6 +78,7 @@ Every language needs native-speaker review (human).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | English (UK) and English (Australia) added (US English is the source, shown as English (US)); de, es, fr, it, ja, ko, zh-cn, pt-br and id completed (718 entries) |
 | 2026-11-10 | minor | Every catalog moved to the top-level `i18n/` (owner decision 2026-11-09), one per language for egui and the Qt GUI (the Qt-only strings in a "Qt GUI" section; where the two had translated the same string differently, the Qt GUI's wording was kept); Hungarian (hu) completed (1,572 new entries) and added to egui's Edit ▸ Language, Settings and System Language |
 | 2026-10-27 | minor | Ubuntu 26.04 only: the macOS app-menu entries (Settings, Hide CFA4, Hide Others) and macOS hints left the catalogs; Korean font list names Linux fonts |
 | 2026-10-13 | minor | German (de) covers the whole interface: every entry of the Spanish catalog (3,590); the tests require the core menus and the macOS app menu and reject entries without a Spanish one |

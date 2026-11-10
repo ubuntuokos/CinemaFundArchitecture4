@@ -17,7 +17,8 @@ from cfa4_qt.i18n import LANGUAGES, Translator, parse_catalog
 
 QT = Path(__file__).resolve().parents[1] / "cfa4_qt"
 CATALOGS = Path(__file__).resolve().parents[2] / "i18n"
-PARTIAL = {"en", "ru", "uk"}
+# English is the source; the British and Australian catalogs hold only the spellings that differ
+PARTIAL = {"en", "en-gb", "en-au", "ru", "uk"}
 FINISHED = sorted(set(LANGUAGES) - PARTIAL)
 COVERAGE = 0.98
 PLACEHOLDER = re.compile(r"\{\w+\}")

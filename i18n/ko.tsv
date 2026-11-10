@@ -4090,3 +4090,8 @@
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 비디오 1920×1080, 평균 18Mbps, AAC 192kbps, .ts
 	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 엔진이 열 수 없는 파일에 FFmpeg 사용(FFmpeg 9.0.2 이상, GPL-3 빌드)
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	엔진과 FFmpeg 모두 열 수 없는 파일에 시스템의 GStreamer 사용
+
+# Language names in the language menu: the English variants keep their English names.
+	English (US)	English (US)
+	English (UK)	English (UK)
+	English (Australia)	English (Australia)

@@ -26,7 +26,9 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("window.dockPanel", "Dock Panel", [], None),
     uic!("window.floatPanel", "Undock Panel", [], None),
     uic!("window.closePanel", "Close Panel", [], None),
-    uic!("app.language.english", "English", ["Edit", "Language"], None),
+    uic!("app.language.english", "English (US)", ["Edit", "Language"], None),
+    uic!("app.language.british", "English (UK)", ["Edit", "Language"], None),
+    uic!("app.language.australian", "English (Australia)", ["Edit", "Language"], None),
     uic!("app.language.japanese", "日本語", ["Edit", "Language"], None),
     uic!("app.language.spanish", "Español", ["Edit", "Language"], None),
     uic!("app.language.portuguese", "Português (Brasil)", ["Edit", "Language"], None),
@@ -199,6 +201,8 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             | "app.language.italian"
             | "app.language.korean"
             | "app.language.hungarian"
+            | "app.language.british"
+            | "app.language.australian"
     ) {
         // Japanese needs the extra-fonts (built with CFA4_FONTS_DIR) or a font installed on the system
         if id == "app.language.japanese" && !crate::i18n::install_japanese_font(ctx) {
@@ -225,6 +229,8 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             "app.language.italian" => crate::i18n::Language::It,
             "app.language.korean" => crate::i18n::Language::Ko,
             "app.language.hungarian" => crate::i18n::Language::Hu,
+            "app.language.british" => crate::i18n::Language::EnGb,
+            "app.language.australian" => crate::i18n::Language::EnAu,
             _ => crate::i18n::Language::En,
         };
         // The preference is updated in memory before it is written, so a failed write (read-only
@@ -701,6 +707,8 @@ pub fn menu_items(app: &Cfa4App) -> Vec<MenuItem> {
             "app.language.italian" => it.checked = Some(app.ui.language == crate::i18n::Language::It),
             "app.language.korean" => it.checked = Some(app.ui.language == crate::i18n::Language::Ko),
             "app.language.hungarian" => it.checked = Some(app.ui.language == crate::i18n::Language::Hu),
+            "app.language.british" => it.checked = Some(app.ui.language == crate::i18n::Language::EnGb),
+            "app.language.australian" => it.checked = Some(app.ui.language == crate::i18n::Language::EnAu),
             _ => {}
         }
         if it.id.starts_with("view.") {

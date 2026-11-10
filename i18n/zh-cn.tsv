@@ -4094,3 +4094,8 @@
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 视频 1920×1080，平均 18 Mbps，AAC 192 kbps，.ts
 	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	对 CFA4 引擎无法打开的文件使用 FFmpeg（FFmpeg 9.0.2 或更高版本，GPL-3 构建）
 	Use the system's GStreamer for files neither the engine nor FFmpeg can open	对引擎和 FFmpeg 都无法打开的文件使用系统的 GStreamer
+
+# Language names in the language menu: the English variants keep their English names.
+	English (US)	English (US)
+	English (UK)	English (UK)
+	English (Australia)	English (Australia)
