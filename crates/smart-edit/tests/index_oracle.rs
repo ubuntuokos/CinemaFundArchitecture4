@@ -1,10 +1,11 @@
 //! WP-02 / WP-07 gate: the GOP index of ffmpeg-made MPEG-2, H.264 and HEVC reference streams (MPEG-TS, open and
-//! closed GOPs, B pictures) against ffprobe. ffmpeg/ffprobe are external fixture generators and
+//! closed GOPs, B pictures) and AV1 streams (MP4, hidden alt-ref frames) against ffprobe. ffmpeg/ffprobe are external fixture generators and
 //! oracles only (never linked); the tests skip without them (`CFA4_REQUIRE_ORACLES=1` fails).
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use cfa4_smart_edit::av1_index::index_av1;
 use cfa4_smart_edit::h264_index::{NalFormat, index_h264};
 use cfa4_smart_edit::hevc_index::index_hevc;
 use cfa4_smart_edit::media_index::{DependencyStatus, Packet, PictureType, RandomAccessKind, StreamIndex};
@@ -223,4 +224,88 @@ fn hevc_open_gop_reference() {
     let clean: Vec<u64> = ix.gops.iter().filter(|g| g.kind.is_clean()).map(|g| g.start).collect();
     assert_eq!(ix.clean_access_points(), clean);
     assert_eq!(clean.len(), ix.gops.len() - rasl.len());
+}
+
+/// An AV1 MP4 made by ffmpeg with `codec_args`, and its index.
+fn av1_mp4(ff: &Path, name: &str, codec_args: &[&str]) -> Option<(PathBuf, StreamIndex)> {
+    let out = cfa4_testkit::fixtures_dir("smart-edit").join(name);
+    let file = cfa4_testkit::fixtures::generate(&out, |tmp| {
+        let st = Command::new(ff).args(["-y", "-v", "error"]).args(SOURCE).args(codec_args).args(["-an", "-f", "mp4"]).arg(tmp).stdin(Stdio::null()).status();
+        matches!(st, Ok(s) if s.success())
+    })?;
+    let data = std::fs::read(&file).unwrap();
+    let mp4 = cfa4_isobmff::open(data.as_slice()).unwrap();
+    let t = &mp4.tracks[0];
+    let Some(cfa4_isobmff::CodecConfig::Av1(av1c)) = t.codec() else { panic!("not AV1") };
+    let units: Vec<Vec<u8>> = (0..t.samples.len()).map(|i| mp4.read_sample(data.as_slice(), 0, i).unwrap()).collect();
+    let packets = t.samples.iter().zip(&units).map(|(s, d)| Packet { data: d, pts: Some(s.pts), dts: Some(s.dts), keyframe: s.is_sync });
+    let ix = index_av1(t.id, Rational::new(1, i64::from(t.timescale)), &av1c.config_obus, packets).unwrap();
+    Some((file, ix))
+}
+
+/// ffprobe's shown frames: (pts, key frame), in presentation order.
+fn probe_keys(fp: &Path, file: &Path) -> Vec<(i64, bool)> {
+    let o = Command::new(fp)
+        .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "frame=pts,key_frame", "-of", "compact=p=0"])
+        .arg(file)
+        .output()
+        .unwrap();
+    assert!(o.status.success());
+    let mut rows: Vec<(i64, bool)> = String::from_utf8_lossy(&o.stdout)
+        .lines()
+        .filter_map(|l| {
+            let field = |name: &str| l.split('|').find_map(|kv| kv.strip_prefix(name)?.strip_prefix('=')?.trim().parse::<i64>().ok());
+            Some((field("pts")?, field("key_frame")? == 1))
+        })
+        .collect();
+    rows.sort();
+    rows
+}
+
+fn check_av1(fp: &Path, file: &Path, ix: &StreamIndex) {
+    let shown = probe_keys(fp, file);
+    assert_eq!(ix.frames.len(), shown.len(), "one temporal unit per shown frame: {}", file.display());
+    // positions in presentation order, so the two timelines need not share an origin
+    let keys: Vec<usize> = shown.iter().enumerate().filter(|(_, (_, k))| *k).map(|(i, _)| i).collect();
+    let ours: Vec<usize> = ix
+        .frames
+        .iter()
+        .filter(|f| f.random_access == RandomAccessKind::KeyFrame)
+        .filter_map(|f| f.presentation_index.and_then(|p| usize::try_from(p).ok()))
+        .collect();
+    assert_eq!(ours, keys, "{}", file.display());
+    assert!(!ours.is_empty() && ours[0] == 0);
+    assert!(ix.frames.iter().all(|f| matches!(f.dependency_status, DependencyStatus::Independent | DependencyStatus::WithinGop)), "{:?}", ix.frames);
+    assert!(ix.timestamp_problems.is_empty(), "{:?}", ix.timestamp_problems);
+    // every clean start is a sync sample of the container
+    assert!(ix.frames.iter().filter(|f| f.random_access == RandomAccessKind::KeyFrame).all(|f| f.keyframe));
+}
+
+#[test]
+fn av1_libaom_reference() {
+    let (ff, fp) = cfa4_testkit::require_oracles!();
+    if !has_encoder(&ff, "libaom-av1") {
+        cfa4_testkit::skip("index_oracle::av1_libaom_reference", "ffmpeg has no libaom-av1");
+        return;
+    }
+    // alt-ref (hidden) frames, a key frame every 25 pictures
+    let args = ["-c:v", "libaom-av1", "-cpu-used", "8", "-g", "25", "-keyint_min", "25", "-lag-in-frames", "16", "-pix_fmt", "yuv420p"];
+    let Some((file, ix)) = av1_mp4(&ff, "av1_libaom.mp4", &args) else { panic!("ffmpeg could not make the fixture") };
+    check_av1(&fp, &file, &ix);
+    assert_eq!(ix.clean_access_points().len(), 4, "{:?}", ix.gops);
+    // alt-ref frames are decoded hidden and shown later: some units show an existing frame
+    assert!(ix.frames.iter().any(|f| !f.reference), "no show_existing_frame unit: {:?}", ix.frames);
+}
+
+#[test]
+fn av1_svt_reference() {
+    let (ff, fp) = cfa4_testkit::require_oracles!();
+    if !has_encoder(&ff, "libsvtav1") {
+        cfa4_testkit::skip("index_oracle::av1_svt_reference", "ffmpeg has no libsvtav1");
+        return;
+    }
+    let args = ["-c:v", "libsvtav1", "-preset", "12", "-g", "25", "-svtav1-params", "scd=0:irefresh-type=2", "-pix_fmt", "yuv420p"];
+    let Some((file, ix)) = av1_mp4(&ff, "av1_svt.mp4", &args) else { panic!("ffmpeg could not make the fixture") };
+    check_av1(&fp, &file, &ix);
+    assert!(ix.clean_access_points().len() >= 4, "{:?}", ix.gops);
 }

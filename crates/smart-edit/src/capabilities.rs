@@ -801,7 +801,7 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(c(GopIndex, Mpeg2Video), Native, Supported, "cfa4-smart-edit mpeg2_index; crates/smart-edit/tests/index_oracle.rs (open / closed GOP, ffprobe)"),
         row(c(GopIndex, H264), Native, Supported, "cfa4-smart-edit h264_index; crates/smart-edit/tests/index_oracle.rs (IDR / open GOP, ffprobe)"),
         row(c(GopIndex, Hevc), Native, Supported, "cfa4-smart-edit hevc_index; crates/smart-edit/tests/index_oracle.rs (IDR / CRA open GOP, ffprobe)"),
-        row(c(GopIndex, Av1), Native, Unsupported, "not implemented yet (WP-07)"),
+        row(c(GopIndex, Av1), Native, Supported, "cfa4-smart-edit av1_index; crates/smart-edit/tests/index_oracle.rs (libaom alt-ref, SVT-AV1, ffprobe)"),
         // encode
         row(c(Encode, Hevc), Platform, NeedsProbe, "hardware encoder registered by cfa4-platform (NVENC); export::available(Format::Hevc)"),
         row(c(Encode, Av1), Native, Unsupported, "CFA4 has no software AV1 encoder"),
