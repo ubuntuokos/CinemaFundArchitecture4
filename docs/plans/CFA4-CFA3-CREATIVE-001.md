@@ -1,234 +1,247 @@
-# CFA4-CFA3-CREATIVE-001: a CFA3 Creative Studio képességeinek átvétele a CFA4-be
+# CFA4-CFA3-CREATIVE-001: a CFA3 Creative Studio képességeinek átvétele
 
-> **Állapot:** tervezet 1.1, **tulajdonosi jóváhagyásra vár**. Jóváhagyás előtt semmilyen
-> fejlesztés nem indul belőle. · **Készült:** 2026-11-10, átdolgozva 2026-11-11 · **CFA4:**
-> `main` @ `67b6666` · **Bemenet:** [`docs/cfa3-creative-studio-sources.md`](../cfa3-creative-studio-sources.md)
-> (70 megtartott forrás, PR #876) · **Összevetve:** [`VISION.md`](../../VISION.md),
-> [`docs/roadmap.md`](../roadmap.md), [`docs/gaps.md`](../gaps.md),
-> [ADR-0003](../adr/ADR-0003-aswf-and-conversion-sources.md),
-> [ADR-0004](../adr/ADR-0004-compute-routing.md),
-> [Kdenlive-terv](CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md),
-> [Feliratozó terv 1.2](SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md),
-> [OBJECT-MASK-PLAN-001](OBJECT-MASK-PLAN-001-2026-11-03.md),
-> [`open-editors-parity.md`](../open-editors-parity.md),
-> [`file-format-parity.md`](../file-format-parity.md)
+> **Állapot:** tervezet 1.2, tulajdonosi jóváhagyásra vár. Jóváhagyás előtt semmi nem indul. ·
+> **Dátum:** 2026-11-11 · **Alapja:** [`cfa3-creative-studio-sources.md`](../cfa3-creative-studio-sources.md)
+> (a CFA3-ból megtartott 70 forrás)
 
-## 0. Röviden
+## 1. Mi ez a terv?
 
-- **Mind a 70 forrás benne van.** 11 területen **51 munkacsomag** (CS-…) fedi le őket, a későbbi,
-  nagy területeket is: szinkron, 2D animáció, 3D, MI-generálás, zene.
-- **A sorrendet a tulajdonos dönti el, igény szerint.** A terv nem ütemez. Csomagonként csak a
-  **technikai előfeltételt** adja meg (mi kell hozzá, hogy egyáltalán elkészülhessen), és azt,
-  hogy melyik **korábbi tulajdonosi döntés** érinti. Ilyen például: a felület csak Qt6-ban készül;
-  MI-funkció csak az MI-réteg után jön. Ezeket a tulajdonos csomagonként felülbírálhatja.
-- **Minden csomag külön jóváhagyással indul.** A terv elfogadása a tartalmat hagyja jóvá, nem
-  indít el semmit.
-- Ahol egy képességnek már van helye egy meglévő tervben, a csomag oda mutat. Ilyen az ADR-0003,
-  a Kdenlive K26, a Feliratozó terv, az OBJECT-MASK terv és az open-editors E3. **Nem jön létre
-  párhuzamos feladat**, de a képesség itt is szerepel, hogy a terv teljes legyen.
-- Becslés: az új munka **~2 300–4 500 ügynökóra**. Ehhez jön a meglévő tervekben már becsült
-  rész. A 3D, a festés/animáció és a szinkron becslése a legbizonytalanabb, ezekhez indítás előtt
-  részletes csomagterv készül.
+A CFA3 Creative Studio 70 nyílt forrású programjából és könyvtárából összegyűjti, milyen
+**képességeket** kaphat a CFA4. Minden képesség egy **munkacsomag**: összesen 51, 11 területen.
 
-## 1. Elvek
+- **Minden benne van**, a későbbi dolgok is.
+- **Sorrend nincs benne.** Azt a tulajdonos dönti el, igény szerint.
+- Egy csomag csak külön engedéllyel indul. A terv elfogadása nem indít el semmit.
 
-1. **Képességet veszünk át, nem alkalmazást** (tulajdonosi döntés, 2026-10-25). Egy forrásból
-   csak azt, ami a CFA4-ből hiányzik vagy jobbá teszi.
-2. **Licenc** ([`licensing.md`](../licensing.md)):
-   - GPL-3-kompatibilis kód átvehető, forrásmegjelöléssel és az 5. pont nyilvántartásában.
-   - Az AGPL és a nem szabad licencű forrásból csak ötlet vehető át, saját kóddal.
-   - Kodek és formátum alapból specifikációból készül (AGENTS.md §2).
-3. **Gyártófüggetlenség.** Minden gyorsítás a `cfa4-route` routeren át megy (ADR-0004), NVIDIA-kötés
-   nélkül.
-4. **Helyi MI** (VISION.md 5. pont). Felhős szolgáltatás nincs. A CFA3 AI Video Tools tervének
-   Runway- és Kling-adaptere ezért nem szerepel. Minden modellnél rögzíteni kell a súly licencét és
-   forrását.
-5. **Minden funkció** parancs (`crates/engine`), menüből elérhető, és ha kell, saját
-   beállításpanelt kap. A felület csak Qt6-ban készül.
-6. **Meglévő tervvel átfedés esetén** az a terv viszi a munkát. Ez a terv csak hivatkozik rá, és
-   jelzi, ha a CFA3-forrás új jelöltet ad hozzá (`coordination.md` 2.8).
+## 2. Áttekintés
 
-Az előfeltétel-oszlop rövidítései:
+| # | Terület | Mit kap a CFA4 | Csomag | Becslés (óra) |
+|---|---|---|---|---|
+| 1 | Alap | lezárt licenckérdések | 1 | 3–6 |
+| 2 | Videó | programozott idővonal, csomópontos kompozitálás, átnézés, MI-s médiakeresés | 6 | 300–600 |
+| 3 | Szín és kép | színkezelés, kamera-RAW, objektívkorrekció, szűrők, zajszűrés, panoráma, SVG | 12 | 300–580 |
+| 4 | Festés és 2D animáció | Krita-szerű festés, ecsetek, kockánkénti animáció | 5 | 390–760 |
+| 5 | Hang | Audacity-szerű hangszerkesztő, mastering, DAW-átadás, beszédtisztítás | 6 | 240–440 |
+| 6 | Szinkron | átirat → fordítás → gépi vagy saját hang → időzítés | 3 | 205–410 |
+| 7 | Zene | aláfestő zene generálása helyben | 1 | 60–120 |
+| 8 | 3D | 3D jelenet és címek, anyagok, csontváz-animáció, render | 5 | 450–910 |
+| 9 | MI kép és videó | helyi kép- és videógenerálás, ComfyUI-kapcsolat | 5 | 240–480 |
+| 10 | Metaadat | tartalom-eredet (C2PA), XMP-bővítés | 2 | 45–80 |
+| 11 | Felület | munkaterület-sáv, panelek a CFA3 tervképe alapján | 5 | 35–70 |
+| | **Összesen** | | **51** | **~2 300–4 500** |
 
-- **Qt6:** a felülethez a Qt6 GUI kell (`qt-parity.md`). Tulajdonosi döntés: a felület csak Qt6-ban
-  készül.
-- **MI-r.:** az MI-réteg üzembe helyezése (`open-editors-parity.md` 0. pont, 2026-10-27-i
-  döntés).
-- **CS-A0:** a licenctisztázás lezárása.
-- **ADR:** külön ADR kell, FFI- vagy bővítményhost-kivétel miatt (AGENTS.md §0.3, ADR-0001).
+Az órák ügynökórák. Ahol egy csomag már egy meglévő CFA4-tervben szerepel, ott a munka abban a
+tervben készül. Ezt a csomag leírása jelzi („→ már tervezve”), és az órája nincs benne az
+összegben.
 
-A „(ott)” becslés azt jelenti, hogy a munkát és a becslést a megnevezett meglévő terv tartalmazza.
+## 3. Döntések, amelyek a tulajdonostól kellenek
 
-## 2. Munkacsomagok területenként
+1. **Elfogadod a tartalmat?** Ez semmit nem indít el.
+2. **Melyik csomaggal kezdjünk?**
+3. **3D:** teljes 3D jelenetszerkesztés (8. terület egésze), vagy csak 3D címek és a
+   Blender-kapcsolat (3D-1)?
+4. **Hangkonverzió** (Szinkron-2): csak a saját hang, vagy írásos engedéllyel más hangja is?
+5. **G'MIC-szűrők és zajszűrő (Szín-6, Szín-7):** felkerüljenek a bővítményjelöltek közé?
 
-A „Forrás” oszlop a [`cfa3-creative-studio-sources.md`](../cfa3-creative-studio-sources.md)
-neveit használja. A becslés ügynökóra.
+## 4. A csomagok
 
-### 2.1 Alap
+A „Mi kell hozzá” oszlop szavai:
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-A0** | Licenctisztázás: CImg és G'MIC (CeCILL-2.1 vagy CeCILL-C részenként), OpenUSD (TOST), G'MIC community (nincs licencfájl), digiKam, Hugin, Enblend, Enfuse (eredeti tároló), YuE-súly (CC-BY-NC). Minden MI-modell súlylicencének rögzítése. | a 9 „tisztázandó” tétel, minden MI-tétel | – | – | 3–6 |
+- **Qt6-felület:** a csomag felülete a kész Qt6-felületre épül.
+- **MI-réteg:** a helyi MI-réteg üzembe helyezése után készülhet.
+- **licenc tisztázása:** az Alap-1 csomag után.
+- Ha üres („–”), bármikor indítható.
 
-### 2.2 Videó, idővonal, kompozitálás
+### 4.1 Alap
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-V1** | Programozott, determinisztikus idővonal: sorozat leírása kódból/JSON-ból, ismételhető render | hyperframes | – (motor), Qt6 (felület) | open-editors E1/E5 mintája | 30–60 |
-| **CS-V2** | Átnézés (review): lejátszási listák, jegyzetek képkockára, conform | xSTUDIO | Qt6 | **ADR-0003 A7** | (ott) |
-| **CS-V3** | Csomópontos (node) kompozitálás, Fusion-szerű (VISION.md 4. pont, DaVinci-sor) | Natron | Qt6, ADR | ADR-0003 A4 (OpenFX-host); a csomópontos szerkesztő új | 200–400 |
-| **CS-V4** | Médiaképesség-router minták összevetése a `cfa4-route`-tal (jelenet-feladat folyamat) | Pixelle-Video | – | ADR-0004 | 6–12 |
-| **CS-V5** | Ügynökvezérelt szerkesztés és szemantikus médiakeresés (mit lát a klipen) | Monet | MI-r. | G12 (media-intelligence search) | 60–120 |
-| **CS-V6** | Képességfelmérés: hiányzik-e valami a CFA4-ből, amit ezek tudnak | Donkey, OpenCut | – | open-editors E13 (OpenCut) | 6–12 |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Alap-1** Licenctisztázás | Kilenc forrás licence és az MI-modellek licence lezárva, hogy tudjuk, mi vehető át | – | 3–6 |
 
-### 2.3 Szín és kép
+### 4.2 Videó
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-S1** | OpenColorIO/ACES színkezelés | OpenColorIO | ADR | **ADR-0003 A1–A2** | (ott) |
-| **CS-S2** | Képformátumok: PSD (rétegzett), EXR PIZ/DWA/B44, többrészes és mély EXR, HEIF | OpenImageIO, OpenEXR, PhotoshopAPI | ADR | **ADR-0003 A3**. A PhotoshopAPI (BSD-3) új jelölt a rétegzett PSD-hez. | (ott) + 5–10 |
-| **CS-S3** | ICC-profilok: beágyazott profil olvasása, CMYK-képek helyes megjelenítése (G10, #139) | LittleCMS | – | file-format-parity (JPEG XL ICC) | 20–35 |
-| **CS-S4** | Kamera-RAW folyamat: dekódolás, fehéregyensúly, demozaikolás, nem destruktív RAW-beállítások klipen | LibRaw, RawSpeed, Rawler, darktable, RawTherapee, vkdt; RapidRAW (csak ötlet) | – | ADR-0003 A3 (LibRaw), `crates/dng` | 60–120 |
-| **CS-S5** | Objektívkorrekció adatbázisból: torzítás, vignettálás, kromatikus aberráció objektívtípus szerint | Lensfun | CS-A0 (az adatbázis licence) | – | 20–40 |
-| **CS-S6** | G'MIC-szűrők külön folyamatban (CLI), szűrőböngésző | G'MIC, G'MIC-Qt, CImg, G'MIC community | CS-A0, ADR | G11 (bővítmények) | 40–80 |
-| **CS-S7** | Zajszűrés (kép és render), CPU-n és bármely GPU-n | Open Image Denoise | ADR | G18 (effektmélység) | 20–40 |
-| **CS-S8** | Nagy képek és nem destruktív képgráf (32 bites lebegőpontos feldolgozás, nagyon nagy állóképek) | GEGL, babl, libvips | – | – | 40–80 |
-| **CS-S9** | Panoráma-illesztés és expozíció-fúzió (HDR) állóképekből és képsorokból | Hugin, Enblend, Enfuse | CS-A0 | – | 40–70 |
-| **CS-S10** | Médiakatalógus: címkék, értékelés, arc- és tárgyfelismerés a projektben | digiKam / Showfoto | CS-A0; az arcfelismeréshez MI-r. | Media Intelligence (TASKSTORE-PG-001) | 40–80 |
-| **CS-S11** | SVG-import állóképként és grafikaként (tiszta Rust); később GPU-s vektorrajz | resvg, tiny-skia, Vello | – | – | 12–25 (+ Vello 20–40) |
-| **CS-S12** | Számítógépes látás: objektumkövetés, stabilizálás, maszk | OpenCV | MI-r. a maszkhoz | **OBJECT-MASK-PLAN-001**, M5 (Warp Stabilizer) | (ott) |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Videó-1** Programozott idővonal | Sorozat összeállítása leírásból (szkript, JSON), mindig ugyanazzal az eredménnyel | – | 30–60 |
+| **Videó-2** Átnézés | Lejátszási listák, megjegyzés képkockára, conform → már tervezve (ADR-0003) | Qt6-felület | – |
+| **Videó-3** Csomópontos kompozitálás | DaVinci Fusion-szerű csomópontos szerkesztő effektekhez és VFX-hez | Qt6-felület | 200–400 |
+| **Videó-4** Router-összevetés | Más programok feladatelosztásának összevetése a CFA4 routerével | – | 6–12 |
+| **Videó-5** MI-s médiakeresés | Keresés abban, ami a klipeken látszik; ügynökvezérelt szerkesztés | MI-réteg | 60–120 |
+| **Videó-6** Képességfelmérés | Mit tud még két nyílt vágóprogram, ami a CFA4-ből hiányzik | – | 6–12 |
 
-### 2.4 Festés és 2D animáció (Krita-képességek)
+### 4.3 Szín és kép
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-F1** | `.ora` import rétegekkel, `.kra` import (összesített kép; a rétegformátum nem specifikált) | OpenRaster, Krita | – | – | 15–30 |
-| **CS-F2** | Ecsetmotor: nyomásérzékeny ecsetek, MyPaint-ecsetkészletek | libmypaint | – | – | 30–60 |
-| **CS-F3** | Festés munkaterület: festés klipre és képkockára, rétegek, maszkok, keverési módok, retusálás | Krita | Qt6, CS-F2 | – | 120–220 |
-| **CS-F4** | Kockánkénti 2D animáció: hagymahéj, expozíciós lap, képkocka-idővonal | Krita, OpenToonz | Qt6, CS-F3 | VISION.md 4. pont (Krita-sor) | 100–200 |
-| **CS-F5** | Hagyományos animációs munkafolyamat: beszkennelt rajzok, tisztázás, festés (ink & paint), kamera | OpenToonz | CS-F4 | – | 120–250 |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Szín-1** OpenColorIO | ACES-színkezelés → már tervezve (ADR-0003) | – | – |
+| **Szín-2** Képformátumok | Rétegzett PSD, a hiányzó EXR-változatok, HEIF → már tervezve (ADR-0003); új jelölt a PSD-hez | – | 5–10 |
+| **Szín-3** ICC-profilok | Beágyazott színprofilok és CMYK-képek helyes megjelenítése | – | 20–35 |
+| **Szín-4** Kamera-RAW | RAW-fájlok fejlesztése a klipen: fehéregyensúly, expozíció, nem destruktívan | – | 60–120 |
+| **Szín-5** Objektívkorrekció | Torzítás és vignettálás javítása objektívtípus szerint, adatbázisból | licenc tisztázása | 20–40 |
+| **Szín-6** G'MIC-szűrők | Több száz képszűrő külön folyamatban, szűrőböngészővel | licenc tisztázása | 40–80 |
+| **Szín-7** Zajszűrés | Kép- és renderzaj csökkentése, bármely GPU-n vagy CPU-n | – | 20–40 |
+| **Szín-8** Nagy képek | Nagyon nagy állóképek és 32 bites, nem destruktív képfeldolgozás | – | 40–80 |
+| **Szín-9** Panoráma és HDR | Képek összeillesztése panorámává, expozíciók egyesítése | licenc tisztázása | 40–70 |
+| **Szín-10** Médiakatalógus | Címkék, értékelés, arc- és tárgyfelismerés a projektben | licenc tisztázása; arcfelismeréshez MI-réteg | 40–80 |
+| **Szín-11** SVG | SVG-fájlok importja élesen méretezhető grafikaként; később GPU-s vektorrajz | – | 12–25 |
+| **Szín-12** Követés, stabilizálás | Tárgykövetés, stabilizálás, maszk → már tervezve (OBJECT-MASK terv) | MI-réteg | – |
 
-### 2.5 Hang
+### 4.4 Festés és 2D animáció
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-H1** | DAWproject export/import (hangátadás DAW-ba) | DAWproject | – (motor), Qt6 (menü) | – | 25–45 |
-| **CS-H2** | Többsávos hangszerkesztő munkaterület (Audacity/Ardour-szerű): hullámforma-szerkesztés, spektrális nézet, sávok, címkék | Ardour, Qtractor; Zrythm (csak ötlet) | Qt6 | VISION.md 4. pont (Audacity-sor), ADR-0003 A6 | 150–280 |
-| **CS-H3** | Referencia alapú mastering (az Essential Sound része) | Matchering | – (DSP), Qt6 (panel) | – | 25–40 |
-| **CS-H4** | Hangleválasztás: beszéd, zene, effekt | Audio Separator, BS-RoFormer | MI-r. | **Kdenlive K26** (Demucs). A RoFormer új mérendő jelölt. | (ott) + 5–10 |
-| **CS-H5** | Beszédtisztítás és beszélőszétválasztás | ClearerVoice-Studio | MI-r. | G12 (Enhance Speech), M7 (ML speech enhancement) | 30–60 |
-| **CS-H6** | Helyi beszédfelismerés felirathoz (vibe-minták: modellkezelés, gyors átirat) | vibe | – | **Feliratozó terv**, G19 | (ott) |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Festés-1** Rajzfájlok importja | Krita (`.kra`) és OpenRaster (`.ora`) fájlok megnyitása | – | 15–30 |
+| **Festés-2** Ecsetmotor | Nyomásérzékeny ecsetek, MyPaint-ecsetkészletek | – | 30–60 |
+| **Festés-3** Festés munkaterület | Festés klipre és képkockára, rétegek, maszkok, retusálás | Qt6-felület, Festés-2 | 120–220 |
+| **Festés-4** 2D animáció | Kockánkénti animáció hagymahéjjal és képkocka-idővonallal | Festés-3 | 100–200 |
+| **Festés-5** Hagyományos animáció | Beszkennelt rajzok tisztázása, kifestése, kameramozgás | Festés-4 | 120–250 |
 
-### 2.6 Szinkronizálás
+### 4.5 Hang
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-SZ1** | Szinkron munkafolyamat: átirat → fordítás → helyi gépi hang vagy saját felvétel → időzítés a vágáshoz és a szájmozgáshoz, sávkezelés (eredeti / M&E / szinkron) | (CS-H4, CS-H5, CS-H6 kimenete) | MI-r., CS-H4 | VISION.md 4. pont „Szinkronizálás”; Feliratozó terv (narráció) | 150–300 |
-| **CS-SZ2** | Hangkonverzió: a szinkronhang az eredeti szereplő hangszínével (csak hozzájárulással, rögzített eredettel) | Seed-VC | MI-r., CS-SZ1 | – | 40–80 |
-| **CS-SZ3** | Hang-vízjel MI-vel generált hangra | AudioSeal | MI-r. | – | 15–30 |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Hang-1** DAW-átadás | A hangsávok átadása zenei programba (DAWproject-formátum) | – | 25–45 |
+| **Hang-2** Hangszerkesztő | Audacity-szerű munkaterület: hullámforma, spektrum, sávok, címkék | Qt6-felület | 150–280 |
+| **Hang-3** Mastering | A hang automatikus igazítása egy mintadalhoz | – | 25–40 |
+| **Hang-4** Hangleválasztás | Beszéd, zene és effekt szétválasztása → már tervezve (Kdenlive-terv); új modelljelölt | MI-réteg | 5–10 |
+| **Hang-5** Beszédtisztítás | Zaj eltávolítása a beszédből, beszélők szétválasztása | MI-réteg | 30–60 |
+| **Hang-6** Beszédfelismerés | Helyi átirat a feliratozáshoz → már tervezve (Feliratozó terv) | – | – |
 
-### 2.7 Zene- és hanggenerálás (MI)
+### 4.6 Szinkron
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-Z1** | Aláfestő zene generálása helyben (hossz, hangulat, tempó a vágáshoz igazítva) | ACE-Step, DiffRhythm, YuE (súlya NC: CS-A0) | MI-r., CS-A0 | G12 („Generated … music”) | 60–120 |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Szinkron-1** Szinkron munkafolyamat | Átirat → fordítás → gépi vagy saját hang → időzítés a vágáshoz és a szájmozgáshoz | MI-réteg, Hang-4 | 150–300 |
+| **Szinkron-2** Hangkonverzió | A szinkronhang az eredeti szereplő hangszínével (csak engedéllyel) | Szinkron-1 | 40–80 |
+| **Szinkron-3** Hang-vízjel | Az MI-vel készült hang megjelölése | MI-réteg | 15–30 |
 
-### 2.8 3D és renderelés
+### 4.7 Zene
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-D1** | Blender oda-vissza: Blender-jelenet renderelt eredménye hivatkozott klipként, változásjelzéssel | Blender | – | open-editors (külső alkalmazás oda-vissza) | 30–60 |
-| **CS-D2** | 3D jelenet és 3D címek a CFA4-ben (OpenUSD-alapú jelenetleírás) | OpenUSD | CS-A0 (TOST), Qt6 | VISION.md 8. pont (a 3D mélysége nyitott döntés) | 200–400 |
-| **CS-D3** | Anyagok (MaterialX) a 3D jelenethez | MaterialX | CS-D2 | ADR-0003 A7 | 40–80 |
-| **CS-D4** | Csontváz-animáció: lejátszás, keverés, tömörítés | ACL, ozz-animation | CS-D2 | – | 60–120 |
-| **CS-D5** | Fotórealisztikus render: útkövetés (Cycles), CPU-s sugárkövetés (OSPRay) a routeren át | Cycles, OSPRay | CS-D2, ADR | – | 120–250 |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Zene-1** Aláfestő zene | Zene generálása helyben, a vágás hosszához és tempójához igazítva | MI-réteg, licenc tisztázása | 60–120 |
 
-### 2.9 Helyi MI: kép és videó
+### 4.8 3D
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-M1** | ComfyUI-híd: munkafolyamat futtatása, eredmény klipként, eredetadattal | ComfyUI | MI-r. | open-editors (külső alkalmazás oda-vissza) | 30–60 |
-| **CS-M2** | Helyi videógenerálás: szövegből, képből és videóból videó; állókép animálása; videó meghosszabbítása | Wan2.2, Helios | MI-r.; VRAM-mérés a referenciagépen (RTX A4000, 16 GB) | G12 (Generative Extend, B-roll) | 80–160 |
-| **CS-M3** | Ötletből vagy forgatókönyvből videó: felvétellista, folytonosság, durva vágás | ViMax | MI-r., CS-M2 | G12 („Promo first cut”) | 60–120 |
-| **CS-M4** | Egyszerű helyi képgenerálás (kezdőbarát felület, stílusok) | Fooocus | MI-r. | – | 30–60 |
-| **CS-M5** | Rétegmegőrző MI-képszerkesztés a festés munkaterületen (kitöltés, kibővítés, vázlatból kép) | Krita AI Diffusion | MI-r., CS-F3 | – | 40–80 |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **3D-1** Blender-kapcsolat | Blenderben készült jelenet klipként; jelzés, ha a jelenet megváltozott | – | 30–60 |
+| **3D-2** 3D jelenet és címek | 3D-s jelenet és 3D címek a CFA4-ben | Qt6-felület, licenc tisztázása | 200–400 |
+| **3D-3** Anyagok | Felületek, anyagok a 3D jelenethez | 3D-2 | 40–80 |
+| **3D-4** Csontváz-animáció | Szereplők mozgatása csontvázzal | 3D-2 | 60–120 |
+| **3D-5** Fotórealisztikus render | Valósághű fény és árnyék renderelése | 3D-2 | 120–250 |
 
-### 2.10 Metaadat és tartalom-eredet
+### 4.9 MI kép és videó
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-E1** | C2PA: eredetmanifeszt exportkor (CFA4-verzió, MI-modellek, generált elemek), meglévő C2PA kiolvasása importkor | C2PA (c2pa-rs) | MI-r. (a modelladatokhoz) | OBJECT-MASK `provenance` | 30–50 |
-| **CS-E2** | XMP bővítése: oldalfájl (sidecar) írás-olvasás, XMP az exportban (az Update Metadata (XMP) megvan) | xmp-toolkit-rs, XMP-specifikáció | – | M3.11 (XMP) | 15–30 |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **MI-1** ComfyUI-kapcsolat | ComfyUI-munkafolyamat futtatása, az eredmény klipként | MI-réteg | 30–60 |
+| **MI-2** Videógenerálás | Videó szövegből vagy képből, állókép animálása, videó meghosszabbítása | MI-réteg; a gépigényt előbb mérni kell | 80–160 |
+| **MI-3** Ötletből videó | Ötletből vagy forgatókönyvből felvétellista és durva vágás | MI-2 | 60–120 |
+| **MI-4** Képgenerálás | Egyszerű helyi képgenerálás, kezdőknek is | MI-réteg | 30–60 |
+| **MI-5** MI a festésben | Kitöltés, kibővítés, vázlatból kép a festés munkaterületen | MI-réteg, Festés-3 | 40–80 |
 
-### 2.11 Felületi minták (a CFA3 Creative Studio tervképéből)
+### 4.10 Metaadat
 
-| Csomag | Tartalom | Forrás | Előfeltétel | Meglévő terv | Becslés |
-|---|---|---|---|---|---|
-| **CS-U1** | Munkaterület-sáv: Projekt, Szerkesztés, Festés, Animáció, Felirat, Hang, Keverés, MI, Export | CFA3 tervkép | Qt6 | Qt6 GUI projekt; „Élő” munkaterület (LIVE-STUDIO-001) | 10–20 |
-| **CS-U2** | Feliratszerkesztő panel az idővonal mellett (idővonal, szerkesztés, stílus, fordítás, OCR/MI lap, hullámforma) | CFA3 tervkép | Qt6 | **Feliratozó terv** (§4 hullámforma) | (ott) |
-| **CS-U3** | Tulajdonságok/effektek panel Videó, Hang, Felirat, MI lappal | CFA3 tervkép | Qt6 | Qt6 GUI projekt (Effect Controls) | 10–20 |
-| **CS-U4** | MI-asszisztens panel feladatgombokkal | CFA3 tervkép | Qt6, MI-r. | **open-editors E3** | (ott) |
-| **CS-U5** | Festés- és hangszerkesztő panel a vágóablakban | CFA3 tervkép | Qt6, CS-F3, CS-H2 | – | 15–30 |
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Meta-1** Tartalom-eredet | Az exportált fájl jelzi, mi készült MI-vel és milyen modellel (C2PA) | MI-réteg | 30–50 |
+| **Meta-2** XMP-bővítés | Metaadat külön fájlban és az exportban | – | 15–30 |
 
-A CS-U1, CS-U3 és CS-U5 a Qt6 GUI projekttel érintkezik. Ezekről a tulajdonos és a gazda közösen
-dönt (`coordination.md` 2.8), mielőtt bármelyik indul.
+### 4.11 Felület
 
-## 3. Technikai függőségek (nem sorrend)
+| Csomag | Mit ad a CFA4-nek | Mi kell hozzá | Óra |
+|---|---|---|---|
+| **Felület-1** Munkaterület-sáv | Projekt, Szerkesztés, Festés, Animáció, Felirat, Hang, Keverés, MI, Export | Qt6-felület | 10–20 |
+| **Felület-2** Feliratpanel | Feliratszerkesztő az idővonal mellett → már tervezve (Feliratozó terv) | Qt6-felület | – |
+| **Felület-3** Tulajdonságok panel | Videó, Hang, Felirat, MI lapok egy panelen | Qt6-felület | 10–20 |
+| **Felület-4** MI-asszisztens panel | MI-feladatok gombokkal → már tervezve (open-editors E3) | MI-réteg | – |
+| **Felület-5** Festés és hang a vágóablakban | Festő- és hangszerkesztő panel a külön program helyett | Festés-3, Hang-2 | 15–30 |
 
-Az alábbi csomagok csak a megadott csomag után készülhetnek el. A többi egymástól független,
-bármilyen sorrendben indítható.
+A Felület-1, -3 és -5 a Qt6-felület munkájához kapcsolódik. Ezekről indítás előtt a tulajdonos
+és a gazda közösen dönt.
 
-- CS-A0 → CS-S5, CS-S6, CS-S9, CS-S10, CS-Z1, CS-D2
-- CS-F2 → CS-F3 → CS-F4 → CS-F5; CS-F3 → CS-M5, CS-U5
-- CS-H2 → CS-U5
-- CS-H4 → CS-SZ1 → CS-SZ2
-- CS-D2 → CS-D3, CS-D4, CS-D5
-- CS-M2 → CS-M3
+## 5. Ami minden csomagra érvényes
 
-## 4. Elfogadási feltételek (minden csomagra)
+- **Licenc:** GPL-3-kompatibilis kód átvehető, forrásmegjelöléssel. AGPL-ből csak ötlet.
+- Minden funkció **menüből elérhető**, és ha kell, saját beállításpanelt kap.
+- **Nincs NVIDIA-kötés, nincs felhős MI.** A modellek helyben futnak, és a felhasználó tudta nélkül
+  nem töltődnek le.
+- **Kész csak mért bizonyítékkal:** a csomag az összevetéssel együtt kész, nem állítással.
+- **Hibás fájl** nem okozhat összeomlást.
+- **A 100 óránál nagyobb csomagokhoz** indítás előtt részletes terv készül (Videó-3, Festés-3–5,
+  Hang-2, Szinkron-1, 3D-2, 3D-5).
 
-Egy csomag akkor kész, ha:
+## A. függelék: melyik forrás melyik csomaghoz tartozik
 
-1. teljesíti a kapukat (`cargo xtask ci`, `cargo test --workspace`, `cargo deny check licenses`);
-2. minden átvett kód szerepel a `licensing.md` 5. pontjában;
-3. a funkció parancsként, menüből és (ha kell) saját beállításpanelről elérhető;
-4. sérült bemenetre hibaüzenet jön, nem összeomlás (AGENTS.md §0), fájlformátumnál fuzz-teszttel;
-5. van mért bizonyíték a forrással vagy referenciával szemben, nem állítás. A mérés módját a
-   csomag indításakor, a részletes csomagtervben kell rögzíteni (például: SVG legfeljebb 1 LSB a
-   resvg referenciájától; DAWproject `Tick`-pontos oda-vissza; mastering legfeljebb 0,5 LU és
-   1 dB a Matchering kimenetétől);
-6. MI-csomagnál a modell licence, forrása és SHA-256-ja rögzítve van, és a modell nem töltődik le a
-   felhasználó tudta nélkül.
-
-A nagy csomagokhoz (több mint ~100 óra: CS-V3, CS-F3–F5, CS-H2, CS-SZ1, CS-D2, CS-D5) indítás előtt
-részletes csomagterv készül, külön jóváhagyással.
-
-## 5. Kockázatok
-
-- **Hatókör.** 51 csomag, a CFA4 hátralévő, kb. 3 évének jelentős része. Egyszerre csak annyi
-  fusson, amennyit a tulajdonos kijelöl (a cél 5–10 párhuzamos terv).
-- **Licenc.** A 9 tisztázandó tétel lezárásáig (CS-A0) az érintett csomagok nem indulhatnak.
-- **Hardver.** A videó- és zenegeneráló modellek VRAM-igénye meghaladhatja a 16 GB-ot. Ezt
-  modellenként mérni kell a referenciagépen, mielőtt a csomag elindul.
-- **Idegen kód a folyamatban.** A C/C++ bővítmények (G'MIC, OIDN, Cycles, OSPRay) külön
-  folyamatban futnak vagy ADR-rel kapnak FFI-kivételt, hogy összeomlásuk ne vigye magával a
-  programot (ADR-0003 9. pont).
-- **Átfedés más tervekkel.** Ha egy csomag egy meglévő terv területére ér, a gazdának jelezni
-  kell, nem párhuzamosan megírni.
-
-## 6. Tulajdonosi döntések
-
-| # | Kérdés |
+| Csomag | Forrás(ok) |
 |---|---|
-| **D1** | Elfogadod-e a terv tartalmát (51 csomag, 2. pont)? Az elfogadás nem indít el egyetlen csomagot sem. |
-| **D2** | Melyik csomaggal vagy csomagokkal kezdjünk, és milyen sorrendben? |
-| **D3** | A G'MIC (CS-S6) és az Open Image Denoise (CS-S7) felkerüljön-e az ADR-0003 6. pontjának bővítményjelöltjei közé (külön PR az ADR-0003-hoz)? |
-| **D4** | A 3D mélysége (VISION.md 8. pont): a CS-D2–D5 teljes 3D jelenetszerkesztés legyen, vagy csak 3D címek és a Blender oda-vissza (CS-D1)? |
-| **D5** | A hangkonverzió (CS-SZ2) idegen hangszínnel: milyen hozzájárulási szabály kell (csak saját hang, vagy rögzített engedéllyel más hangja is)? |
+| Alap-1 | CImg, G'MIC, G'MIC community, OpenUSD, digiKam, Hugin, Enblend, Enfuse, YuE |
+| Videó-1 | hyperframes |
+| Videó-2 | xSTUDIO |
+| Videó-3 | Natron |
+| Videó-4 | Pixelle-Video |
+| Videó-5 | Monet |
+| Videó-6 | Donkey, OpenCut |
+| Szín-1 | OpenColorIO |
+| Szín-2 | OpenImageIO, OpenEXR, PhotoshopAPI |
+| Szín-3 | LittleCMS |
+| Szín-4 | LibRaw, RawSpeed, Rawler, darktable, RawTherapee, vkdt, RapidRAW (csak ötlet, AGPL) |
+| Szín-5 | Lensfun |
+| Szín-6 | G'MIC, G'MIC-Qt, CImg, G'MIC community |
+| Szín-7 | Open Image Denoise |
+| Szín-8 | GEGL, babl, libvips |
+| Szín-9 | Hugin, Enblend, Enfuse |
+| Szín-10 | digiKam / Showfoto |
+| Szín-11 | resvg, tiny-skia, Vello |
+| Szín-12 | OpenCV |
+| Festés-1 | OpenRaster, Krita |
+| Festés-2 | libmypaint |
+| Festés-3 | Krita |
+| Festés-4 | Krita, OpenToonz |
+| Festés-5 | OpenToonz |
+| Hang-1 | DAWproject |
+| Hang-2 | Ardour, Qtractor, Zrythm (csak ötlet, AGPL) |
+| Hang-3 | Matchering |
+| Hang-4 | Audio Separator, BS-RoFormer |
+| Hang-5 | ClearerVoice-Studio |
+| Hang-6 | vibe |
+| Szinkron-2 | Seed-VC |
+| Szinkron-3 | AudioSeal |
+| Zene-1 | ACE-Step, DiffRhythm, YuE |
+| 3D-1 | Blender |
+| 3D-2 | OpenUSD |
+| 3D-3 | MaterialX |
+| 3D-4 | ACL, ozz-animation |
+| 3D-5 | Cycles, OSPRay |
+| MI-1 | ComfyUI |
+| MI-2 | Wan2.2, Helios |
+| MI-3 | ViMax |
+| MI-4 | Fooocus |
+| MI-5 | Krita AI Diffusion |
+| Meta-1 | C2PA (c2pa-rs) |
+| Meta-2 | xmp-toolkit-rs, XMP-specifikáció |
+| Felület-1–5 | a CFA3 Creative Studio tervképe |
+
+A licenceket és a forrástárolókat a [`cfa3-creative-studio-sources.md`](../cfa3-creative-studio-sources.md)
+tartalmazza.
+
+## B. függelék: kapcsolódó CFA4-dokumentumok
+
+[`VISION.md`](../../VISION.md) ·
+[ADR-0003](../adr/ADR-0003-aswf-and-conversion-sources.md) (ASWF, bővítmények) ·
+[ADR-0004](../adr/ADR-0004-compute-routing.md) (router) ·
+[Kdenlive-terv](CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md) ·
+[Feliratozó terv](SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md) ·
+[OBJECT-MASK terv](OBJECT-MASK-PLAN-001-2026-11-03.md) ·
+[`open-editors-parity.md`](../open-editors-parity.md) ·
+[`licensing.md`](../licensing.md) ·
+[`coordination.md`](../coordination.md)
 
 ## Változástörténet
 
 | Dátum | Verzió | Változás |
 |---|---|---|
-| 2026-11-11 | 1.1 tervezet | Tulajdonosi kérésre átdolgozva: mind a 70 forrás bekerült, 51 munkacsomagban. Az ütemezés kikerült, a sorrendet a tulajdonos dönti el igény szerint. Csak a technikai előfeltételek maradtak. |
-| 2026-11-10 | 1.0 tervezet | Létrehozva (6 munkacsomag, a többi forrás más tervekre vagy későbbre utalva) |
+| 2026-11-11 | 1.2 tervezet | A tulajdonos szerint átláthatatlan volt: összesítő és döntések előre, egyszerű táblák rövidítések nélkül, a források függelékben |
+| 2026-11-11 | 1.1 tervezet | Mind a 70 forrás bekerült (51 csomag), ütemezés nélkül |
+| 2026-11-10 | 1.0 tervezet | Első változat (6 csomag) |
