@@ -1,6 +1,6 @@
 # CFA4-QT6-FINISH-001 – a Qt6 GUI befejezése és az egui eltávolítása
 
-**Állapot:** TERVEZET 1.0 (2026-11-08), tulajdonosi jóváhagyásra vár. Fejlesztés csak a jóváhagyott
+**Állapot:** TERVEZET 1.1 (2026-11-10; 1.0: 2026-11-08), tulajdonosi jóváhagyásra vár. Fejlesztés csak a jóváhagyott
 fázisokban indul. A 7. fejezet döntési pontjait a tulajdonos hozza meg.
 
 **Kapcsolódó dokumentumok:** döntés és fázisok: [`docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`](../adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md);
@@ -11,6 +11,12 @@ PR-szabályok: [`docs/coordination.md`](../coordination.md).
 ha a Qt6 GUI pontról pontra mindent tud, amit az egui (a `qt-parity.md` minden sora ✅), **és** a
 tulajdonos ezt kifejezetten jóváhagyja, a jóváhagyás az ADR F8-ba kerül. Ez a terv ezen nem változtat.
 
+**Fordítások (tulajdonosi döntés, 2026-11-09, #831):** a CFA4 minden fordítása a felső szintű `i18n/`
+könyvtárban van, nyelvenként egyetlen katalógusban (`i18n/<kód>.tsv`, a `.attribution` kísérőfájlokkal),
+amelyet az egui és a Qt GUI is onnan olvas. Az áthelyezést és a Qt-katalógusok összevonását a #865
+(I18N-HOME) végzi. E terv minden fázisában új vagy módosított fordítás csak az `i18n/` alá kerülhet,
+sem a `crates/ui-egui/src/i18n/`, sem a `python/cfa4_qt/i18n/` alá.
+
 ## 1. Kiinduló állapot (`main`, 2026-11-08)
 
 A `qt-parity.md` 63 sorából 59 ✅, 4 🟡, ❌ nincs.
@@ -18,7 +24,7 @@ A `qt-parity.md` 63 sorából 59 ✅, 4 🟡, ❌ nincs.
 | Sor | Mi hiányzik a sor szerint | Jellege |
 |---|---|---|
 | 1.9 Wayland/X11 minden Ubuntu 26.04 változaton | kézi ellenőrzés a valódi asztalokon (tört skálázás, beviteli módok); CI-ben X11 (Xvfb) és Wayland (weston) már fut | kézi teszt + javítások |
-| 1.10 Csomagolás | Qt az AppImage-ben és a Flatpakban; az asztali bejegyzés még az egui-t indítja | fejlesztés + döntés (D1) |
+| 1.10 Csomagolás | a Qt-t hordozó AppImage és Flatpak ellenőrzése valódi Ubuntu 26.04 asztalon (a felülvizsgált appimagetool és a Flatpak SDK kell hozzá); az asztali bejegyzés még az egui-t indítja | kézi ellenőrzés + Q5 |
 | 4.2 Export mód | a sor nem nevezi meg (a táblázat szabálya szerint kellene) | tisztázás; nyitott: #764 |
 | 5.5 GPU képút | GPU-feltöltés RGBA8-másolat nélkül (dmabuf / GL textúra) | fejlesztés + mérés |
 
@@ -80,28 +86,41 @@ A mai út: a motor RGBA8 képkockát ír egy osztott memóriás gyűrűbe, a Qt 
 
 ### Q4 – Csomagolás (1.10)
 
-1. A D1 döntés szerint (7. fejezet): az AppImage és a Flatpak Qt-tal, vagy ezek nélkül.
-2. Ha Qt-tal: a PySide6/Qt beágyazásának licencvizsgálata (`AGENTS.md`: „bundling Qt/PySide binaries
-   still needs a packaging review”). Figyelem: a nyitott #757 a Qt be nem ágyazását őrző ellenőrzést
-   vezetne be; a két irány ütközik, ezt a gazda és a tulajdonos dönti el (`coordination.md` §2.8).
+Az irány eldőlt (tulajdonosi döntés, 2026-11-09; a #757 beolvadt): a .deb és a tar.gz az Ubuntu
+`python3-pyside6.*` csomagjait használja, semmit nem ágyaz be; az AppImage és a Flatpak a saját
+PySide6 / Qt 6.12 példányát hordozza, kizárólag a `packaging/linux/stage-pyside6.py`-n keresztül
+(a `requirements/linux-amd64.txt`-ben rögzített hash-ű kerekekből, letöltés nélkül, WebEngine nélkül,
+az LGPL-szövegekkel és a forrásajánlattal). Ezt a `python/tests/test_qt_not_bundled.py` őrzi, a
+licencleírás a `docs/audit/F1-01-SBOM-2026-10-25.md` 4. fejezete. A korábbi ütközés a #757-tel tehát
+megszűnt, a Q4 ehhez igazodik:
+
+1. Az AppImage és a Flatpak megépítése a felülvizsgált appimagetoollal és a Flatpak SDK-val, majd
+   ellenőrzése valódi Ubuntu 26.04 asztalon (a Q2 listájával együtt is futhat).
+2. A beágyazás minden változása a `stage-pyside6.py`-n, a `test_qt_not_bundled.py`-n és az SBOM 4.
+   fejezetén egyszerre megy át; más út a Qt bejuttatására nincs.
 3. Az asztali bejegyzés (`packaging/linux/io.github.ubuntuokos.cfa4.desktop`, most `Exec=cfa4`) átállítása
    a Qt GUI-ra az egui eltávolításával együtt történik (Q5), nem előtte.
 
-**Átvétel:** a négy formátum a D1 szerint, telepítési teszttel; az 1.10 ✅.
+**Átvétel:** a négy formátum telepítési teszttel, az AppImage és a Flatpak valódi asztalon ellenőrizve;
+az 1.10 ✅ (az asztali bejegyzés a Q5-tel).
 
 ### Q5 – Az egui eltávolítása
 
 Csak akkor indul, ha minden sor ✅ **és** a tulajdonos jóváhagyása az ADR F8-ban rögzítve van.
 Előtte fel kell számolni azt, ami ma az egui forrására támaszkodik:
 
-1. **Közös fordítási katalógusok áthelyezése.** A Qt GUI a `crates/ui-egui/src/i18n/*.tsv` fájlokat
-   olvassa (`python/cfa4_qt/i18n.py`, `SHARED_CATALOGS`), a csomagolás is onnan másolja
-   (`packaging/linux/package.sh`). Ezeket (a `.attribution` fájlokkal együtt) a Qt csomagba vagy egy
-   közös helyre kell átköltöztetni, a hivatkozásokkal együtt.
+1. **Fordítási katalógusok: a felső szintű `i18n/`.** A tulajdonos döntése (2026-11-09) szerint minden
+   fordítás az `i18n/<kód>.tsv` alatt van; ezt a #865 (I18N-HOME) valósítja meg: `git mv` a
+   `crates/ui-egui/src/i18n/`-ből (a `.attribution` fájlokkal), a Qt-katalógusok „Qt GUI” szakaszként
+   ugyanabba a fájlba, az egui a `catalog_file!` makróval, a `cfa4_qt.i18n` egyetlen `CATALOG_DIR`-ből
+   olvas, a `packaging/linux/package.sh` onnan másol. A #865 a #827 (ru/uk) után olvad be, és az orosz
+   és ukrán katalógust is áthozza. Ha a #865 bent van, a Q5-ben itt már nincs teendő: az egui törlése
+   a katalógusokat nem érinti. Ha a Q5 indulásakor még nincs bent, előbb a #865 kerül sorra.
 2. **Tesztek, amelyek az egui forrását olvassák.** `test_qt_gui.py` (például
-   `crates/ui-egui/src/panels/export_mode.rs`, `crates/ui-egui/src/credits.rs`),
-   `test_qt_translations.py`, `test_qt_installed_catalogs.py`. Az összevetést rögzített elvárt listára
-   kell cserélni, mielőtt a forrás eltűnik.
+   `crates/ui-egui/src/panels/export_mode.rs`, `crates/ui-egui/src/credits.rs`), valamint minden teszt,
+   amely a #865 után is a `crates/ui-egui/` alatti fájlt nyit meg (a `test_qt_translations.py` és a
+   `test_qt_installed_catalogs.py` a #865-tel már az `i18n/`-t olvassa). Az összevetést rögzített
+   elvárt listára kell cserélni, mielőtt a forrás eltűnik.
 3. **Asztali bejegyzés és csomagok:** `Exec`/`TryExec` a `cfa4-qt`-ra; az `nfpm.yaml` és a csomagszkriptek
    az egui binárisa nélkül.
 4. **A munkaterület:** az `apps/cfa4` és a `crates/ui-egui` törlése (a `members` glob miatt a
@@ -123,21 +142,27 @@ lezárul (ACCEPTED, QT6_GUI_DONE), a `qt-parity.md` archív dokumentum lesz.
 
 ## 3. Sorrend
 
-Q1 és Q2 előkészítése párhuzamosan indulhat (más fájlokat érintenek). Q3 független. Q4 a D1 után.
+Q1 és Q2 előkészítése párhuzamosan indulhat (más fájlokat érintenek). Q3 független. Q4 bármikor indulhat (a D1 eldőlt), a valódi asztalon a Q2-vel együtt is futhat.
 Q5 utolsó, minden ✅ és a tulajdonos jóváhagyása után.
 
 ## 4. Becslés
 
 Becslés, nem mérés: Q1 1–2 nap, Q2 előkészítése 1 nap + a kézi tesztek a tulajdonos idejéből,
-Q3 1. lépése 2–4 nap (a 2. lépés, ha kell, további 1–2 hét), Q4 a D1-től függően 0–5 nap,
+Q3 1. lépése 2–4 nap (a 2. lépés, ha kell, további 1–2 hét), Q4 1–2 nap + a kézi ellenőrzés a tulajdonos idejéből,
 Q5 2–4 nap. A szűk keresztmetszet a beolvasztás (a gazda, kötegelve, `coordination.md` §3a).
 
 ## 5. Kockázatok
 
 - **5.5:** a GL/RHI-út PySide6 alatt Waylanden és X11-en eltérően viselkedhet; a tartalék út ezért kötelező.
-- **1.10:** a beágyazott PySide6 licenc- és méretkérdés; ütközik a #757 irányával.
-- **Q5:** a fordítási katalógusok és az egui-forrást olvasó tesztek kihagyása eltörné a Qt GUI-t
-  vagy a CI-t; ezért ezek a Q5 első lépései.
+- **1.10:** a beágyazott PySide6 (143 MB) mérete és frissítése: minden PySide6-emelés új kerékhash-t,
+  új átmeneti állományt és SBOM-frissítést jelent; a licencet a `stage-pyside6.py` és a
+  `test_qt_not_bundled.py` kezeli.
+- **Q5:** az egui-forrást olvasó tesztek kihagyása eltörné a CI-t; ezért ezek a Q5 első lépései.
+  A fordítási katalógusok a #865 után már nem az egui alatt vannak; ha a #865 nincs bent, az egui
+  törlése a Qt GUI fordításait is elvinné.
+- **Fordítások:** a #865 beolvadásáig nyitott ágak (például a stáblista-lánc, #803) még a régi
+  útvonalakra írhatnak; ezeket a `main` beolvasztásakor az `i18n/` alá kell áthozni
+  („mindig az újabb van érvényben”).
 
 ## 6. Ami nincs ebben a tervben
 
@@ -146,10 +171,9 @@ a Qt6 GUI elkészültét várják), valamint a csomagkiadás (F9) egésze.
 
 ## 7. Döntési pontok a tulajdonosnak
 
-- **D1 – AppImage és Flatpak:** (a) PySide6/Qt beágyazva, licencvizsgálattal; (b) ez a két formátum
-  Qt nélkül marad, amíg nincs megoldás, és az 1.10 a .deb + tar.gz alapján lesz ✅; (c) a két formátum
-  kimarad a kiadásból. Javaslat: (b), mert a .deb és a tar.gz már az Ubuntu PySide6-ját használja,
-  és nem ütközik a #757-tel.
+- **D1 – AppImage és Flatpak: eldőlt** (tulajdonosi döntés, 2026-11-09): a két formátum a saját
+  PySide6 / Qt 6.12 példányát hordozza a `stage-pyside6.py`-n keresztül, a .deb és a tar.gz az
+  Ubuntu PySide6-ját használja (lásd Q4; a #757 őre ezt rögzíti).
 - **D2 – 5.5 terjedelme:** az 1. lépés (textúrafeltöltés) elég-e a ✅-hoz, vagy a dmabuf is kell.
   Javaslat: az 1. lépés és a mérés után döntsön a tulajdonos.
 - **D3 – 1.9 asztallistája:** melyik asztalok kötelezők a ✅-hoz. Javaslat: GNOME és KDE Plasma
