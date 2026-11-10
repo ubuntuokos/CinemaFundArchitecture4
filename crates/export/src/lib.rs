@@ -19,6 +19,7 @@
 use std::io::Write;
 
 mod aac_out;
+pub mod audio_copy;
 mod audio_out;
 pub mod boundary_reencode;
 mod boundary_reencode_hevc;
@@ -2923,6 +2924,8 @@ mod settings_tests;
 #[cfg(test)]
 mod surround_tests;
 
+#[cfg(test)]
+mod audio_copy_tests;
 #[cfg(test)]
 mod boundary_reencode_tests;
 #[cfg(test)]
