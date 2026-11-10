@@ -237,16 +237,30 @@ fn invalid_timelines_are_refused() {
 #[test]
 fn the_registry_decides_whether_the_plan_runs() {
     let tl = edl(vec![item(0, 14, clip("a.mp4", 9, "x")), item(14, 7, EditContent::Gap)]);
-    // the built-in registry: H.264 packet copy (WP-04) and boundary re-encode (WP-06) into MP4 run
-    // from one source; the timeline executor is the one missing piece
-    let only_timeline = |p: &SmartRenderPlan| !p.executable && p.blockers.iter().all(|b| b.contains("timeline Smart Render"));
+    // the built-in registry runs H.264 timelines into MP4 (WP-06: copy, boundary re-encode and the
+    // timeline executor)
     let p = plan_smart_render(&Registry::native(), &sources(), &tl, &request(), STRICT).unwrap();
-    assert!(only_timeline(&p), "{:?}", p.blockers);
+    assert!(p.executable, "{:?}", p.blockers);
+    // without the timeline executor no timeline plan runs, even a pure copy
+    let mut r = Registry::native();
+    let key = Key::in_container(Operation::TimelineRender, Codec::H264, Container::Mp4);
+    r.insert(Entry {
+        key,
+        backend: Backend::Native,
+        level: SupportLevel::Unsupported,
+        evidence: "no timeline Smart Render".into(),
+        limits: None,
+        routes: Vec::new(),
+    })
+    .unwrap();
+    let only_timeline = |p: &SmartRenderPlan| !p.executable && p.blockers.iter().all(|b| b.contains("timeline Smart Render"));
     let copy_only = edl(vec![item(0, 14, clip("a.mp4", 7, "x"))]);
-    let p = plan_smart_render(&Registry::native(), &sources(), &copy_only, &request(), STRICT).unwrap();
-    assert!(only_timeline(&p), "{:?}", p.blockers);
-    let unique: std::collections::BTreeSet<&String> = p.blockers.iter().collect();
-    assert_eq!(unique.len(), p.blockers.len(), "no repeats");
+    for tl in [&tl, &copy_only] {
+        let p = plan_smart_render(&r, &sources(), tl, &request(), STRICT).unwrap();
+        assert!(only_timeline(&p), "{:?}", p.blockers);
+        let unique: std::collections::BTreeSet<&String> = p.blockers.iter().collect();
+        assert_eq!(unique.len(), p.blockers.len(), "no repeats");
+    }
     // a re-encoded boundary needs the stream format for the encoder limits
     let EditContent::Clip(mut c) = clip("a.mp4", 9, "x") else { unreachable!() };
     c.format = None;

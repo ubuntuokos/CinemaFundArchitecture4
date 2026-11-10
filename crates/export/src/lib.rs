@@ -50,7 +50,7 @@ pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
 pub use pcm::{image_sequence_path, write_aiff, write_wav};
-pub use pipeline::limit_rgba8;
+pub use pipeline::{Pipeline, limit_rgba8};
 pub use presets::{ExportPreset, builtin_presets};
 pub use settings::*;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};

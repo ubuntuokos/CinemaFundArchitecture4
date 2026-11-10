@@ -1,5 +1,6 @@
 //! Smart Cut of a source file (CFA4-SMART-CUT-RENDER-R1, WP-04; CFA4-SCE-001 v1.5 §11): the
-//! `export.analyze`, `export.plan` and `export.start` commands with source scope.
+//! `export.analyze`, `export.plan` and `export.start` commands with source scope (the timeline
+//! scope, Smart Render of a sequence, is [`crate::smart_render`]).
 //!
 //! - `export.analyze` opens an MP4 / MOV source, indexes its H.264 video track (WP-02) and reports
 //!   the access points, GOPs, configuration changes and whether the registry allows a Smart Cut.
@@ -39,7 +40,7 @@ use crate::{EngineError, Result, Session};
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 
 /// Exports use the strict policy: experimental capabilities never count (developer setting off).
-const POLICY: Policy = Policy { allow_experimental: false };
+pub(crate) const POLICY: Policy = Policy { allow_experimental: false };
 
 /// The host's random-access reader as a container byte source.
 struct Reader(cfa4_media::SharedReader);
@@ -54,19 +55,19 @@ impl ByteSource for Reader {
 }
 
 /// An opened source: its bytes, container, video track and index.
-struct Source {
-    path: String,
-    bytes: Box<dyn ByteSource>,
-    file: Mp4File,
-    container: Container,
-    track: usize,
-    index: MediaIndex,
+pub(crate) struct Source {
+    pub(crate) path: String,
+    pub(crate) bytes: Box<dyn ByteSource>,
+    pub(crate) file: Mp4File,
+    pub(crate) container: Container,
+    pub(crate) track: usize,
+    pub(crate) index: MediaIndex,
     /// Profile, chroma format and bit depth, for the boundary re-encode decision.
-    format: Option<StreamFormat>,
+    pub(crate) format: Option<StreamFormat>,
 }
 
 impl Source {
-    fn stream(&self) -> Option<&StreamIndex> {
+    pub(crate) fn stream(&self) -> Option<&StreamIndex> {
         self.index.streams.first()
     }
     /// The stream's frame rate (timescale / first sample duration), for frame and timecode times.
@@ -89,7 +90,7 @@ fn container_of(path: &str, quicktime: bool) -> Container {
 }
 
 /// Open `path`, find its first H.264 video track and index it.
-fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> {
+pub(crate) fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> {
     let fail = |e: String| EngineError::Other(format!("{path}: {e}"));
     let bytes: Box<dyn ByteSource> = match s.services.reader(path) {
         Some(r) => Box::new(Reader(r.map_err(|e| fail(e.to_string()))?)),
@@ -149,6 +150,24 @@ fn analyze(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
+/// The copy guarantee named in `p` (`"guarantee"`, default bit-exact).
+pub(crate) fn guarantee_p(p: &Value, cmd: &str) -> Result<CopyGuarantee> {
+    match str_p(p, "guarantee").unwrap_or("bit-exact") {
+        "bit-exact" => Ok(CopyGuarantee::BitExact),
+        "compatible" => Ok(CopyGuarantee::Compatible),
+        g => Err(bad(cmd, format!("unknown `guarantee` {g:?}: bit-exact or compatible"))),
+    }
+}
+
+/// Whether `p` names the timeline scope (Smart Render of a sequence) rather than one source file.
+fn timeline_scope(p: &Value, cmd: &str) -> Result<bool> {
+    match str_p(p, "scope").unwrap_or("source") {
+        "source" => Ok(false),
+        "timeline" => Ok(true),
+        x => Err(bad(cmd, format!("unknown `scope` {x:?}: source or timeline"))),
+    }
+}
+
 /// The plan of the range named in `p`.
 fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan)> {
     let path = path_p(p, cmd)?;
@@ -161,16 +180,7 @@ fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan)> 
         "frame-accurate" => CutMode::FrameAccurate,
         m => return Err(bad(cmd, format!("unknown `mode` {m:?}: gop-boundary or frame-accurate"))),
     };
-    let guarantee = match str_p(p, "guarantee").unwrap_or("bit-exact") {
-        "bit-exact" => CopyGuarantee::BitExact,
-        "compatible" => CopyGuarantee::Compatible,
-        g => return Err(bad(cmd, format!("unknown `guarantee` {g:?}: bit-exact or compatible"))),
-    };
-    match str_p(p, "scope").unwrap_or("source") {
-        "source" => {}
-        "timeline" => return Err(bad(cmd, "timeline scope (Smart Render) runs in the timeline Smart Render executor, which is not implemented yet (WP-06)")),
-        x => return Err(bad(cmd, format!("unknown `scope` {x:?}: source"))),
-    }
+    let guarantee = guarantee_p(p, cmd)?;
     let output_container = match str_p(p, "output") {
         Some(o) if o.to_ascii_lowercase().ends_with(".mov") => Container::Mov,
         Some(o) if o.to_ascii_lowercase().ends_with(".mp4") || o.to_ascii_lowercase().ends_with(".m4v") => Container::Mp4,
@@ -202,7 +212,7 @@ fn summary(p: &SmartCutPlan) -> Value {
 }
 
 /// The boundary encoding named in `p` (`"crf"`, default 16).
-fn encoding_p(p: &Value, cmd: &str) -> Result<BoundaryEncoding> {
+pub(crate) fn encoding_p(p: &Value, cmd: &str) -> Result<BoundaryEncoding> {
     let mut encoding = BoundaryEncoding::default();
     match p.get("crf") {
         None | Some(Value::Null) => {}
@@ -221,6 +231,9 @@ fn copy_source(src: &Source) -> Mp4CopySource<'_, dyn ByteSource> {
 
 fn plan(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.plan";
+    if timeline_scope(p, cmd)? {
+        return crate::smart_render::plan(s, p);
+    }
     let encoding = encoding_p(p, cmd)?;
     let (src, plan) = plan_of(s, p, cmd)?;
     let summary = summary(&plan);
@@ -235,6 +248,9 @@ fn plan(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.start";
+    if timeline_scope(p, cmd)? {
+        return crate::smart_render::start(s, p);
+    }
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
     let encoding = encoding_p(p, cmd)?;
     let (src, plan) = plan_of(s, p, cmd)?;
@@ -296,14 +312,14 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.plan",
             "Plan Smart Cut",
-            r#"{"path":str,"in":time,"out":time (exclusive),"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"="source","crf":number=16} → {plan, summary, boundaryReencode?:{ready,problem}}"#,
+            r#"{"path":str,"in":time,"out":time (exclusive),"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
             plan,
             false,
         ),
         spec(
             "export.start",
             "Run Smart Cut",
-            r#"{"path":str,"in":time,"out":time,"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16} → {output, bytes, report, verified}"#,
+            r#"{"path":str,"in":time,"out":time,"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16}; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified}"#,
             start,
             true,
         ),
