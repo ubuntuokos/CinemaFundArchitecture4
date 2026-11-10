@@ -2519,3 +2519,6 @@ export.summary	Low	alacsony
 	transitions	átmenetek
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} képkocka másolva, {reencoded} vágásnál újrakódolva, {rendered} renderelve
 	{frames} frames are re-encoded or rendered. Continue?	{frames} képkocka újrakódolódik vagy renderelődik. Folytatod?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Hang másolva: {tracks}
+	Audio track {track} is not copied: {why}	A(z) {track}. hangsáv nem kerül át: {why}
