@@ -3645,3 +3645,31 @@
 	Clear History	Очистить историю
 	Delete Clips	Удалить клипы
 	Strikethrough	Зачёркнутый
+	Animate zoom, scrolling and menus	Анимировать масштаб, прокрутку и меню
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 бит
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 бит с альфа-каналом
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 бит
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 бит, Film Scan 1, PCM 24 бит 48 кГц
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 бит с альфа-каналом, Film Scan 1, PCM 24 бит 48 кГц
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 бит, Film Scan 1, PCM 24 бит 48 кГц
+	Reset Interface Zoom	Сбросить масштаб интерфейса
+	Track Color	Цвет дорожки
+	Open a sequence to search its graphics	Откройте секвенцию, чтобы искать в её графике
+	No text graphics in this sequence. Add text with the Type tool.	В этой секвенции нет текстовой графики. Добавьте текст инструментом «Текст».
+	No matching text.	Совпадающий текст не найден.
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 Program Stream
+	MPEG-2 Transport Stream HD 1080	MPEG-2 Transport Stream HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480, 29,97 кадр/с, 16:9 анаморфный, 6 Мбит/с, GOP 18, LPCM 16 бит 48 кГц, .mpg (поток, готовый для DVD; без авторинга VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576, 25 кадр/с, 16:9 анаморфный, 6 Мбит/с, GOP 15, LPCM 16 бит 48 кГц, .mpg (поток, готовый для DVD; без авторинга VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Видео MPEG-2 (Main Profile 4:2:0, 0,4 бита на пиксель) с размером кадра и частотой секвенции, LPCM 16 бит 48 кГц, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Видео MPEG-2 1920×1080, в среднем 18 Мбит/с, AAC 192 кбит/с, .ts
+	Media Backends	Медиабэкенды
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Использовать FFmpeg для файлов, которые движок CFA4 не открывает (FFmpeg 9.0.2 или новее, сборка GPL-3)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Использовать системный GStreamer для файлов, которые не открывают ни движок, ни FFmpeg
+	Analyze Source for Smart Cut	Анализ источника для Smart Cut
+	Plan Smart Cut	Спланировать Smart Cut
+	Run Smart Cut	Выполнить Smart Cut

@@ -484,6 +484,24 @@ mod tests {
         text.find(REST_OF_INTERFACE).map_or(text, |i| &text[..i])
     }
 
+    /// Share of the Spanish catalog (the reference that covers the whole interface) `lang`
+    /// translates. Russian and Ukrainian claim the whole interface, so they must keep at least
+    /// [`WHOLE_INTERFACE`] of it; a string added since can land before its translation does.
+    fn spanish_coverage(lang: Language) -> (usize, usize, Vec<String>) {
+        let (es, _) = catalog::parse_entries(include_str!("es.tsv"));
+        let plain: Vec<String> = es.into_iter().filter(|(ctx, _, _)| ctx.is_empty()).map(|(_, en, _)| en).collect();
+        let missing: Vec<String> = plain.iter().filter(|en| !lang.has(en)).cloned().collect();
+        (plain.len() - missing.len(), plain.len(), missing)
+    }
+
+    const WHOLE_INTERFACE: f64 = 0.98;
+
+    fn assert_whole_interface(lang: Language) {
+        let (covered, total, missing) = spanish_coverage(lang);
+        assert!(total > 3000, "the Spanish catalog shrank: {total}");
+        assert!(covered as f64 >= WHOLE_INTERFACE * total as f64, "{lang:?} covers {covered} of {total}; missing: {missing:?}");
+    }
+
     /// The core menu labels: the original Ukrainian menu catalog.
     fn core_menu_labels() -> Vec<String> {
         let (entries, _) = catalog::parse_entries(menu_section(include_str!("uk.tsv")));
@@ -1093,11 +1111,12 @@ mod tests {
         set_current(Language::En);
     }
 
-    /// Ukrainian covers the whole interface since 2026-11-09: its original section is the core
-    /// menus (every entry a menu label), and every later entry has a Spanish counterpart (no dead
-    /// entries).
+    /// Ukrainian covers the whole interface since 2026-11-09 (at least [`WHOLE_INTERFACE`] of the
+    /// Spanish catalog): its original section is the core menus (every entry a menu label), and
+    /// every later entry has a Spanish counterpart (no dead entries).
     #[test]
     fn ukrainian_entries_cover_the_original_menu_catalog() {
+        assert_whole_interface(Language::Uk);
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
@@ -1204,9 +1223,11 @@ mod tests {
         }
     }
 
-    /// Russian, like Ukrainian, covers the whole interface since 2026-11-09.
+    /// Russian, like Ukrainian, covers the whole interface since 2026-11-09 (at least
+    /// [`WHOLE_INTERFACE`] of the Spanish catalog).
     #[test]
     fn russian_entries_cover_the_original_menu_catalog() {
+        assert_whole_interface(Language::Ru);
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
