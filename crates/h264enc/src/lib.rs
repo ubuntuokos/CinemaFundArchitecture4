@@ -166,6 +166,14 @@ pub struct EncoderConfig {
     /// Requested level_idc (41 = level 4.1); None = the lowest level that fits. A level too low
     /// for the stream is raised to the one it needs.
     pub level: Option<u8>,
+    /// seq_parameter_set_id (0–31) and pic_parameter_set_id (0–255) of the stream. A stream spliced
+    /// into another one (Smart Render boundary re-encode) uses ids the other stream does not, so one
+    /// `avcC` can carry both parameter-set pairs.
+    pub sps_id: u8,
+    pub pps_id: u8,
+    /// idr_pic_id of the first IDR picture (later IDRs alternate with it), so a spliced segment
+    /// can differ from the IDR next to it.
+    pub first_idr_pic_id: u16,
 }
 
 impl EncoderConfig {
@@ -192,6 +200,9 @@ impl EncoderConfig {
             content_light: None,
             aud: true,
             level: None,
+            sps_id: 0,
+            pps_id: 0,
+            first_idr_pic_id: 0,
         }
     }
 }
@@ -361,6 +372,9 @@ impl Encoder {
         if cfg.bframes > 3 {
             return Err(Error::InvalidConfig("bframes must be 0..=3".into()));
         }
+        if cfg.sps_id > 31 {
+            return Err(Error::InvalidConfig("sps_id must be 0..=31".into()));
+        }
         if cfg.profile == Profile::Baseline {
             cfg.bframes = 0;
         }
@@ -455,6 +469,7 @@ impl Encoder {
         };
         let reorder = if cfg.bframes > 0 { 1 } else { 0 };
         let sps = Sps {
+            id: u32::from(cfg.sps_id),
             profile_idc,
             constraint_flags: constraint,
             level_idc: level,
@@ -477,7 +492,15 @@ impl Encoder {
                 max_dec_frame_buffering: max_refs as u32,
             },
         };
-        let pps = Pps { cabac, pic_init_qp: 26, chroma_qp_offset: params.chroma_qp_offset, transform_8x8: params.t8x8, high };
+        let pps = Pps {
+            id: u32::from(cfg.pps_id),
+            sps_id: u32::from(cfg.sps_id),
+            cabac,
+            pic_init_qp: 26,
+            chroma_qp_offset: params.chroma_qp_offset,
+            transform_8x8: params.t8x8,
+            high,
+        };
         let sps_nal = nal::nal(3, NAL_SPS, &sps.rbsp());
         let pps_nal = nal::nal(3, NAL_PPS, &pps.rbsp());
         let threads = if cfg.threads == 0 { std::thread::available_parallelism().map_or(1, |n| n.get()) } else { cfg.threads };
@@ -767,7 +790,8 @@ impl Encoder {
                 slice_type: st,
                 nal_ref_idc,
                 idr,
-                idr_pic_id: self.idr_count % 2,
+                idr_pic_id: (u32::from(self.cfg.first_idr_pic_id) + self.idr_count % 2) & 0xFFFF,
+                pps_id: u32::from(self.cfg.pps_id),
                 frame_num: self.next_frame_num % (1 << LOG2_MAX_FRAME_NUM),
                 log2_max_frame_num: LOG2_MAX_FRAME_NUM,
                 poc_lsb: (poc as u32) % (1 << LOG2_MAX_POC_LSB),

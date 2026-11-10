@@ -12348,9 +12348,12 @@ def test_real_engine_timeline_split_marks_as_egui(app, tmp_path: Path):
         img = canvas.grab().toImage()
         dpr = img.devicePixelRatio()
         x, top = marks["timeline.split.videoIn"]
-        col = img.pixelColor(round(x * dpr), int((top + 4) * dpr))
         want = QtGui.QColor(SPLIT_COLOR)
-        assert abs(col.red() - want.red()) < 40 and abs(col.green() - want.green()) < 40, col.name()
+        # the 1.5 px antialiased stroke centred on x covers a different pixel column as x's fraction
+        # changes with the canvas width: take the closest of the columns around it
+        cols = [img.pixelColor(px, int((top + 4) * dpr)) for px in range(int((x - 1) * dpr), int((x + 1) * dpr) + 1)]
+        col = min(cols, key=lambda c: abs(c.red() - want.red()) + abs(c.green() - want.green()))
+        assert abs(col.red() - want.red()) < 40 and abs(col.green() - want.green()) < 40, (x, canvas.width(), [c.name() for c in cols])
     finally:
         server.close()
         win._quit_confirmed = True
@@ -13191,7 +13194,8 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
-    win.resize(1600, 1000)
+    # tall enough that the demo's four bin cards leave empty space under them in the Icon view
+    win.resize(1600, 1600)
     win.show()
     engine.start()
     server = ControlServer(win)
@@ -13212,7 +13216,11 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
             win.execute("project.view.set", {"view": mode})
             snap.clear()
 
-            def ready() -> bool:
+            def ready(mode: str = mode) -> bool:
+                # this view's rows, not the previous view's still on screen
+                main = win.project_panel.main
+                if main.mode != mode or not (main.icons if mode == "icon" else main.tree).isVisible():
+                    return False
                 snap.clear()
                 snap.update(els())
                 return "project.empty" in snap and any(re.fullmatch(r"project\.(bin|item)\.\d+", i) for i in snap)
@@ -13223,12 +13231,21 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
             rows = [v["rect"] for k, v in e.items() if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
             assert all(ry + rh <= y + 1 for _rx, ry, _rw, rh in rows), (mode, e["project.empty"], rows)
             item = min(i for i in e if re.fullmatch(r"project\.(bin|item)\.\d+", i))
-            assert c.call("ui.click", {"id": item})["ok"]
-            assert wait_until(app, lambda: bool(win.project_panel.main.selected_items()) or win.project_panel.main.selected_bin is not None, 10_000)
-            assert c.call("ui.click", {"id": "project.empty"})["ok"]
+            reply = c.call("ui.click", {"id": item})
+            assert reply["ok"], (mode, item, reply)
+            main = win.project_panel.main
+            assert wait_until(app, lambda m=main: bool(m.selected_items()) or m.selected_bin is not None, 10_000), (
+                mode,
+                item,
+                e[item],
+                {k: v["rect"] for k, v in els().items() if k.startswith(("project.bin", "project.item", "project.empty"))},
+            )
+            reply = c.call("ui.click", {"id": "project.empty"})
+            assert reply["ok"], (mode, reply, {k: v["rect"] for k, v in els().items()})
             assert wait_until(app, lambda: not win.project_panel.main.selected_items(), 10_000), (mode, win.project_panel.main.selected_items())
             invoked.clear()
-            assert c.call("ui.click", {"id": "project.empty", "count": 2})["ok"]
+            reply = c.call("ui.click", {"id": "project.empty", "count": 2})
+            assert reply["ok"], (mode, reply, {k: v["rect"] for k, v in els().items()})
             assert wait_until(app, lambda: "file.import" in invoked, 5_000), (mode, invoked)
     finally:
         server.close()
@@ -13409,3 +13426,185 @@ def test_real_engine_export_queue_column_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
+    """Source monitor ▸ Settings ▸ Smart Cut Source…: the marked range of an H.264 clip is copied
+    into a new file on its GOP boundaries (WP-08)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the H.264 clip")
+    clip = tmp_path / "gop.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4"]
+    args += ["-c:v", "libx264", "-g", "25", "-keyint_min", "25", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make an H.264 clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("gop") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("gop"))
+        src = win.source_monitor
+        win.execute("source.open", {"item": item["item"]})
+        assert wait_until(app, lambda: src.has_content(), 60_000)
+        ft = src.frame()
+        src.seek(25 * ft)
+        win.run_command(win.registry.commands["markers.markIn"])
+        src.seek(74 * ft)
+        win.run_command(win.registry.commands["markers.markOut"])
+        assert wait_until(app, lambda: (win.source_state or {}).get("markOut") == 74 * ft, 10_000), win.source_state
+        # the wrench menu offers the action
+        src._fill_wrench_menu()
+        action = next(a for a in src.wrench.menu().actions() if a.objectName() == "source.settings.smartCut")
+        assert action.isEnabled()
+        d = src.open_smart_cut()
+        assert d is not None
+        assert wait_until(app, lambda: d.run.isEnabled() or d.error.isVisible(), 30_000), d.error.text()
+        assert not d.error.isVisible(), d.error.text()
+        assert "50" in d.summary.text(), d.summary.text()
+        out = tmp_path / "gop_cut.mp4"
+        d.output.setText(str(out))
+        said: list[str] = []
+        src.status.connect(said.append)
+        d.run.click()
+        # written, verified, and the dialog closed (deleted) with a status message
+        assert wait_until(app, lambda: any("verified" in m for m in said), 30_000), said
+        assert out.exists() and out.stat().st_size > 0
+        assert "50" in said[-1], said
+    finally:
+        engine.stop()
+        win.close()
+
+
+def test_smart_export_plan_text():
+    """The Smart Export preview names what is copied, re-encoded and rendered, and why a copy mode
+    cannot run (WP-08)."""
+    from cfa4_qt.panels.smart_export import describe, plan_segments, smart_output
+
+    seg = lambda mode, first, last, causes=(): {"mode": mode, "presentation": {"first": first, "last": last}, "render_causes": list(causes)}
+    result = {
+        "plan": {"executable": True, "blockers": [], "plan": {"segments": [seg("strict-copy", 0, 49), seg("boundary-reencode", 50, 54), seg("render", 55, 79, ["effect"])]}},
+        "summary": {"lossless": False, "requiresConfirmation": True, "copiedFrames": 50, "reencodedFrames": 5, "renderedFrames": 25},
+        "timelineRender": {"ready": True, "problem": None},
+    }
+    assert [(k, n) for k, n, _c in plan_segments(result)] == [("copy", 50), ("boundary", 5), ("render", 25)]
+    lines, problem, confirm = describe(result, "smart")
+    assert "50" in lines[0] and "25" in lines[0] and "effects (25)" in lines[1]
+    assert problem is None and confirm
+    _lines, problem, _c = describe(result, "bit-exact")
+    assert problem is not None and "30" in problem
+    lines, _p, _c = describe(result, "auto")
+    assert "Smart Render" in lines[-1]
+    assert smart_output("/x/cut") == "/x/cut.mp4" and smart_output("/x/cut.mov") == "/x/cut.mov" and smart_output("/x/a.mxf") == "/x/a.mp4"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_smart_export_copies_a_sequence(app, tmp_path: Path):
+    """Export window ▸ Smart Export: a sequence of one H.264 clip is planned as a copy, previewed,
+    and written by stream copy (WP-08)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the H.264 clip")
+    clip = tmp_path / "gop.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4"]
+    args += ["-c:v", "libx264", "-g", "25", "-keyint_min", "25", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make an H.264 clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("gop") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("gop"))
+        win.execute("file.newSequenceFromClip", {"items": [item["item"]]})
+        assert wait_until(app, lambda: win.sequence is not None and "gop" in str(win.sequence.get("name")), 30_000), win.sequence
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and dlg.isVisible()
+        out = tmp_path / "out" / "smart.mp4"
+        (tmp_path / "out").mkdir()
+        dlg.path.setText(str(out))
+        box = dlg.smart
+        assert not box.bar.isVisible(), "Full Render shows no plan"
+        box.mode.setCurrentIndex(box.mode.findData("bit-exact"))
+        assert wait_until(app, lambda: box.result is not None or bool(box.error.text()), 30_000), box.error.text()
+        assert box.problem is None, box.problem
+        assert "100 frames copied" in box.text.text(), box.text.text()
+        assert [k for k, _n, _c in box.bar.segments] == ["copy"]
+        dlg.export_button.click()
+        assert wait_until(app, lambda: "verified" in dlg.summary.text() or "#d04040" in dlg.summary.styleSheet(), 60_000), dlg.summary.text()
+        assert "verified" in dlg.summary.text(), dlg.summary.text()
+        assert out.is_file() and out.stat().st_size > 0
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_shows_gop_boundaries(app, tmp_path: Path):
+    """Timeline Display Settings ▸ Show GOP Boundaries: each video clip's access points in sequence
+    time, fetched with export.gopMarks (WP-08)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the H.264 clip")
+    clip = tmp_path / "gop.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4"]
+    args += ["-c:v", "libx264", "-g", "25", "-keyint_min", "25", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make an H.264 clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("gop") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("gop"))
+        win.execute("file.newSequenceFromClip", {"items": [item["item"]]})
+        assert wait_until(app, lambda: win.sequence is not None and "gop" in str(win.sequence.get("name")), 30_000)
+        canvas = win.timeline.canvas
+        menu = canvas.display_menu()
+        action = next(a for a in menu.actions() if a.objectName() == "timeline.settings.showGopMarks")
+        assert not action.isChecked()
+        action.setChecked(True)
+        assert canvas.show_gop_marks
+        assert wait_until(app, lambda: bool(canvas.gop_marks), 30_000)
+        (marks,) = canvas.gop_marks.values()
+        tps = 254_016_000_000
+        assert [p["time"] for p in marks["points"]] == [n * tps for n in range(4)], marks
+        assert marks["in"] is True and marks["codec"] == "h264"
+        canvas.repaint()  # the overlay paints without errors
+    finally:
+        win._quit_confirmed = True
+        win.close()

@@ -477,6 +477,7 @@ class TimelineCanvas(QWidget):
     voiceover = Signal(object)  # an audio track header's microphone: record on that track (id) / stop
     voiceover_settings = Signal()  # …its menu: Voice-Over Record Settings…
     caption_opened = Signal()  # a caption block double-clicked: the Text panel's Captions tab
+    gop_marks_wanted = Signal()  # Show GOP Boundaries turned on: the window fetches export.gopMarks
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -521,6 +522,9 @@ class TimelineCanvas(QWidget):
         self.menu_host: timeline_menus.MenuHost | None = None
         self._hover_color: Any = None  # the track whose colour strip the pointer is over
         self.render_bar: list[dict[str, Any]] = []  # ``sequence.renderBar``'s ``bar`` spans
+        # Show GOP Boundaries (WP-08): each video clip's access points (``export.gopMarks``)
+        self.show_gop_marks = False
+        self.gop_marks: dict[int, dict[str, Any]] = {}
         self.project_has_sequence = False  # the empty Timeline's hint (egui's): set from project.inspect
         self._demo_hover = False
         self.last_menu: QMenu | None = None
@@ -536,6 +540,12 @@ class TimelineCanvas(QWidget):
             self.playhead = self.sequence["playhead"]
         self._layout_rows()
         self.updateGeometry()
+        self.update()
+
+    def set_gop_marks(self, result: Any) -> None:
+        """``export.gopMarks``'s clips, by clip id."""
+        clips = (result or {}).get("clips") if isinstance(result, dict) else None
+        self.gop_marks = {c["clip"]: c for c in clips or [] if isinstance(c, dict) and isinstance(c.get("clip"), int)}
         self.update()
 
     def set_render_bar(self, bar: Any) -> None:
@@ -899,6 +909,8 @@ class TimelineCanvas(QWidget):
                         )
                         self._paint_clip_media(p, row, clip, r, base)
                         self._paint_duplicate_frames(p, clip, r)
+                        if row.kind == "video" and self.show_gop_marks:
+                            self._paint_gop_marks(p, clip, r)
                         if row.kind == "audio" and row.track_id not in self.track_lanes:
                             self._paint_volume(p, row, clip, r)
                         p.setPen(pen)
@@ -1235,6 +1247,32 @@ class TimelineCanvas(QWidget):
             if ranges:
                 out[d.get("clip")] = (as_int(d.get("color")), ranges)
         return out
+
+    def _paint_gop_marks(self, p: QPainter, clip: dict[str, Any], r: QRectF) -> None:
+        """Show GOP Boundaries: a tick at each access point of the clip (a clean one, where a copy
+        may start, in blue; an open-GOP one, which is no cut point, in amber), and a flag at the
+        clip's head: green when it starts on a clean access point (copied as it is), amber when
+        its head is re-encoded (§10.1)."""
+        marks = self.gop_marks.get(clip.get("clip"))  # type: ignore[arg-type]
+        if not marks or r.height() < 10:
+            return
+        p.save()
+        p.setClipRect(r)
+        bottom = r.bottom() - 1
+        for point in marks.get("points") or []:
+            t = point.get("time") if isinstance(point, dict) else None
+            if not isinstance(t, int):
+                continue
+            x = self.x_of(t)
+            if x < r.left() - 1 or x > r.right() + 1:
+                continue
+            p.setPen(QPen(QColor("#5ab8f0") if point.get("clean") else QColor("#d9a33a"), 1))
+            p.drawLine(QPointF(x, bottom - 7), QPointF(x, bottom))
+        head = QColor("#3fa36b") if marks.get("in") else QColor("#d9a33a")
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(head)
+        p.drawPolygon(QPolygonF([QPointF(r.left() + 1, bottom - 6), QPointF(r.left() + 7, bottom), QPointF(r.left() + 1, bottom)]))
+        p.restore()
 
     def _paint_duplicate_frames(self, p: QPainter, clip: dict[str, Any], r: QRectF) -> None:
         """A stripe along the clip's bottom under each repeated frame, in its master clip's color
@@ -2201,6 +2239,12 @@ class TimelineCanvas(QWidget):
         a.setCheckable(True)
         a.setChecked(((self.sequence or {}).get("toggles") or {}).get("showThroughEdits") is True)
         a.toggled.connect(lambda on: self.command.emit("sequence.showThroughEdits", {"on": on}))
+        # WP-08: the clips' access points, and whether each clip starts on one (Smart Cut / Render)
+        a = menu.addAction(tr("Show GOP Boundaries"))
+        a.setObjectName("timeline.settings.showGopMarks")
+        a.setCheckable(True)
+        a.setChecked(self.show_gop_marks)
+        a.toggled.connect(self.set_show_gop_marks)
         menu.addSeparator()
         # the menu's own Expand / Minimize: fixed heights, as egui's wrench menu
         a = menu.addAction(tr("Expand All Tracks"))
@@ -2210,6 +2254,12 @@ class TimelineCanvas(QWidget):
         a.setObjectName("timeline.settings.minimizeAllTracks")
         a.triggered.connect(lambda _c=False: self.set_track_heights(26, 26))
         return menu
+
+    def set_show_gop_marks(self, on: bool) -> None:
+        self.show_gop_marks = bool(on)
+        if self.show_gop_marks:
+            self.gop_marks_wanted.emit()
+        self.update()
 
     def _set_display(self, **kw: Any) -> None:
         for k, v in kw.items():

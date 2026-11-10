@@ -760,6 +760,7 @@ mod tests {
 
     fn clip() -> TrackItem {
         TrackItem {
+            interchange: Default::default(),
             id: crate::ClipId(1),
             item: crate::ItemId(2),
             name: "d".into(),

@@ -337,3 +337,57 @@
 	Set Work Area Bar In Point	Définir le point d'entrée de la barre de zone de travail
 	Set Work Area Bar Out Point	Définir le point de sortie de la barre de zone de travail
 	Delete Clips	Supprimer les clips
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Analyse du clip…
+	At GOP boundaries (no re-encoding)	Aux limites de GOP (sans réencodage)
+	Bit-exact copy	Copie identique au bit près
+	Choose the output file.	Choisissez le fichier de sortie.
+	Compatible copy	Copie compatible
+	Copy:	Copie :
+	Cut:	Coupe :
+	Frame accurate (re-encode the boundaries)	À l’image près (réencoder les limites)
+	Open a video clip in the Source monitor first.	Ouvrez d’abord un clip vidéo dans le moniteur source.
+	Output:	Sortie :
+	Smart Cut Source	Smart Cut de la source
+	Smart Cut Source…	Smart Cut de la source…
+	Smart Cut is not available for this clip: {why}	Smart Cut n’est pas disponible pour ce clip : {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut écrit et vérifié : {path} ({frames} images)
+	The cut cannot run.	La coupe ne peut pas être exécutée.
+	The engine sent no analysis.	Le moteur n’a envoyé aucune analyse.
+	Writing and verifying the cut…	Écriture et vérification de la coupe…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} dans {container} : {gops} GOP, {points} points de coupe propres
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} images copiées, {reencoded} images réencodées
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} images aux limites seront réencodées. Continuer ?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Afficher les limites de GOP
+# Export window Smart Export (WP-08)
+	Export mode	Mode d’exportation
+	Full Render	Rendu complet
+	Planning…	Planification…
+	Recommended: Smart Render (asks before re-encoding)	Recommandé : Smart Render (demande avant de réencoder)
+	Recommended: Stream Copy (nothing is re-encoded)	Recommandé : Stream Copy (rien n’est réencodé)
+	Rendered because of: {causes}	Rendu à cause de : {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export écrit et vérifié : {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – identique au bit près
+	Stream Copy – Compatible	Stream Copy – compatible
+	Stream copy is not possible: {frames} frames need re-encoding.	La copie de flux est impossible : {frames} images doivent être réencodées.
+	The export cannot run.	L’exportation ne peut pas être exécutée.
+	Wait for the export plan.	Attendez le plan d’exportation.
+	Writing and verifying the export…	Écriture et vérification de l’exportation…
+	colour conversion	conversion des couleurs
+	compositing	compositing
+	copied	copié
+	effects	effets
+	frame rate	fréquence d’images
+	proxies or nested sequences	proxys ou séquences imbriquées
+	re-encoded at a cut	réencodé à une coupe
+	rendered	rendu
+	sources that cannot be copied	sources impossibles à copier
+	speed changes	changements de vitesse
+	titles or overlays	titres ou incrustations
+	transforms	transformations
+	transitions	transitions
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} images copiées, {reencoded} réencodées aux coupes, {rendered} rendues
+	{frames} frames are re-encoded or rendered. Continue?	{frames} images seront réencodées ou rendues. Continuer ?
