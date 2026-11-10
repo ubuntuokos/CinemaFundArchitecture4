@@ -79,6 +79,13 @@ The index comes from the bitstream, not from the container's keyframe flag:
   stay `Unknown`. Reference lists are not resolved (`references` is `None`): a picture after an
   intra picture but before any signalled access point is `Unknown`; before any intra picture it is
   `Undecodable`.
+- **HEVC** (`index_hevc`, WP-07; base layer only): IDR = clean access point; a CRA or BLA picture
+  is an access point (`cra` / `bla`), clean only when no RASL picture follows it. RASL pictures
+  cross the access point (undecodable after a BLA or at the start of the stream); RADL and trailing
+  pictures stay within the GOP. The picture type is the first slice segment's `slice_type` (it
+  needs the PPS for `num_extra_slice_header_bits`; without it the type is `Unknown`, the access
+  points are still found). A picture coded with other VPS / SPS / PPS payloads is a configuration
+  change. The registry's HEVC `gop-index` row is supported; copying and re-encoding HEVC are not yet.
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 

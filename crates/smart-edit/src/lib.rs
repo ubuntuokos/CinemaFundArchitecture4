@@ -27,6 +27,7 @@ pub mod capabilities;
 pub mod copy_planner;
 pub mod edit_decision;
 pub mod h264_index;
+pub mod hevc_index;
 pub mod media_index;
 pub mod mpeg2_index;
 pub mod plan;
@@ -37,6 +38,8 @@ pub mod timestamp;
 mod capabilities_tests;
 #[cfg(test)]
 mod copy_planner_tests;
+#[cfg(test)]
+mod hevc_index_tests;
 #[cfg(test)]
 mod index_tests;
 #[cfg(test)]

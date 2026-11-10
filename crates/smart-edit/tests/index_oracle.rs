@@ -1,4 +1,4 @@
-//! WP-02 gate: the GOP index of ffmpeg-made MPEG-2 and H.264 reference streams (MPEG-TS, open and
+//! WP-02 / WP-07 gate: the GOP index of ffmpeg-made MPEG-2, H.264 and HEVC reference streams (MPEG-TS, open and
 //! closed GOPs, B pictures) against ffprobe. ffmpeg/ffprobe are external fixture generators and
 //! oracles only (never linked); the tests skip without them (`CFA4_REQUIRE_ORACLES=1` fails).
 
@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use cfa4_smart_edit::h264_index::{NalFormat, index_h264};
+use cfa4_smart_edit::hevc_index::index_hevc;
 use cfa4_smart_edit::media_index::{DependencyStatus, Packet, PictureType, RandomAccessKind, StreamIndex};
 use cfa4_smart_edit::mpeg2_index::index_mpeg2;
 use cfa4_smart_edit::timestamp::Rational;
@@ -56,6 +57,7 @@ fn index_ts(file: &Path) -> StreamIndex {
     match stream.codec {
         cfa4_mpegts::Codec::Mpeg2Video => index_mpeg2(0, Rational::MPEG_90K, packets).unwrap(),
         cfa4_mpegts::Codec::H264 => index_h264(0, Rational::MPEG_90K, NalFormat::AnnexB, &[], packets).unwrap(),
+        cfa4_mpegts::Codec::Hevc => index_hevc(0, Rational::MPEG_90K, NalFormat::AnnexB, &[], packets).unwrap(),
         ref c => panic!("unexpected codec {c:?}"),
     }
 }
@@ -177,4 +179,48 @@ fn h264_open_gop_reference() {
     let rp = ix.frames.iter().filter(|f| matches!(f.random_access, RandomAccessKind::RecoveryPoint { exact_match: true, .. })).count();
     assert_eq!(rp, 3, "{:?}", ix.gops);
     assert!(ix.frames.iter().any(|f| f.dependency_status == DependencyStatus::CrossesAccessPoint));
+}
+
+#[test]
+fn hevc_closed_gop_reference() {
+    let (ff, fp) = cfa4_testkit::require_oracles!();
+    if !has_encoder(&ff, "libx265") {
+        cfa4_testkit::skip("index_oracle::hevc_closed_gop_reference", "ffmpeg has no libx265");
+        return;
+    }
+    let args = ["-c:v", "libx265", "-pix_fmt", "yuv420p", "-x265-params", "keyint=25:min-keyint=25:scenecut=0:open-gop=0:bframes=3:log-level=error"];
+    let Some(file) = fixture(&ff, "hevc_closed_gop.ts", &args) else { panic!("ffmpeg could not make the fixture") };
+    let ix = index_ts(&file);
+    check_against_ffprobe(&fp, &file, &ix);
+    assert_eq!(ix.clean_access_points().len(), 4, "{:?}", ix.gops);
+    assert!(ix.gops.iter().all(|g| g.kind.is_clean()), "{:?}", ix.gops);
+    assert!(ix.frames.iter().all(|f| matches!(f.dependency_status, DependencyStatus::Independent | DependencyStatus::WithinGop)));
+    assert!(ix.frames.iter().any(|f| f.picture_type == PictureType::B));
+}
+
+#[test]
+fn hevc_open_gop_reference() {
+    let (ff, fp) = cfa4_testkit::require_oracles!();
+    if !has_encoder(&ff, "libx265") {
+        cfa4_testkit::skip("index_oracle::hevc_open_gop_reference", "ffmpeg has no libx265");
+        return;
+    }
+    let args = ["-c:v", "libx265", "-pix_fmt", "yuv420p", "-x265-params", "keyint=25:min-keyint=25:scenecut=0:open-gop=1:bframes=3:log-level=error"];
+    let Some(file) = fixture(&ff, "hevc_open_gop.ts", &args) else { panic!("ffmpeg could not make the fixture") };
+    let ix = index_ts(&file);
+    check_against_ffprobe(&fp, &file, &ix);
+    // x265 open GOP: an IDR first, then a CRA every 25 pictures; a CRA whose RASL leading pictures
+    // need the GOP before is no clean start (the last one, flushed without leading pictures, is)
+    assert_eq!(ix.gops.len(), 4, "{:?}", ix.gops);
+    assert_eq!(ix.gops[0].kind, RandomAccessKind::Idr);
+    assert!(ix.gops[1..].iter().all(|g| matches!(g.kind, RandomAccessKind::Cra { .. })), "{:?}", ix.gops);
+    let rasl: Vec<&cfa4_smart_edit::media_index::GopInfo> = ix.gops.iter().filter(|g| g.kind == RandomAccessKind::Cra { rasl: true }).collect();
+    assert!(rasl.len() >= 2, "{:?}", ix.gops);
+    for g in &rasl {
+        let gop = &ix.frames[g.start as usize..(g.start + g.count) as usize];
+        assert!(gop.iter().any(|f| f.dependency_status == DependencyStatus::CrossesAccessPoint), "{g:?}");
+    }
+    let clean: Vec<u64> = ix.gops.iter().filter(|g| g.kind.is_clean()).map(|g| g.start).collect();
+    assert_eq!(ix.clean_access_points(), clean);
+    assert_eq!(clean.len(), ix.gops.len() - rasl.len());
 }
