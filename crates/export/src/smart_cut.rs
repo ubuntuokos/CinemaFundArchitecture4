@@ -8,8 +8,9 @@
 //! dropped or re-encoded silently.
 //!
 //! - **Payloads:** every copied sample is written with the source bytes unchanged. MP4 → MP4 / MOV
-//!   keeps the length-prefixed NAL framing and the source sample entry (`avcC`), so a
-//!   `compatible` plan needs no representation change either and runs the same way.
+//!   keeps the length-prefixed NAL framing (H.264, HEVC) or the OBU temporal units (AV1) and the
+//!   source sample entry (`avcC`, `hvcC`, `av1C`), so a `compatible` plan needs no representation
+//!   change either and runs the same way.
 //! - **Timing:** the output starts at decode time 0; sample durations and composition offsets
 //!   (PTS − DTS) are copied, and an edit list starts the presentation at the first copied picture.
 //! - **Consistency:** the executor refuses when the index the plan was built from no longer
@@ -26,6 +27,7 @@ use std::fmt;
 use std::io::{Seek, Write};
 
 use cfa4_isobmff::{Brand, ByteSource, CodecConfig, Mp4File, Mp4Writer, Sample, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
+use cfa4_smart_edit::av1_index::Av1AccessPoints;
 use cfa4_smart_edit::capabilities::{Codec, Container};
 use cfa4_smart_edit::media_index::{FrameIndexEntry, RandomAccessKind, StreamIndex};
 use cfa4_smart_edit::plan::{ExportExecutionPlan, PLAN_VERSION};
@@ -71,6 +73,10 @@ pub enum SmartCutError {
     Decode { detail: String },
     /// Encoding the boundary pictures failed.
     Encode { detail: String },
+    /// A timeline plan names a source the executor was not given.
+    MissingSource { source_id: String },
+    /// Rendering a picture of a rendered segment failed.
+    Render { segment: usize, detail: String },
 }
 
 impl fmt::Display for SmartCutError {
@@ -94,6 +100,8 @@ impl fmt::Display for SmartCutError {
             SmartCutError::Incompatible { detail } => write!(f, "the boundary re-encode cannot be spliced with the copied stream: {detail}"),
             SmartCutError::Decode { detail } => write!(f, "decoding the boundary pictures failed: {detail}"),
             SmartCutError::Encode { detail } => write!(f, "encoding the boundary pictures failed: {detail}"),
+            SmartCutError::MissingSource { source_id } => write!(f, "the plan reads {source_id}, which was not opened"),
+            SmartCutError::Render { segment, detail } => write!(f, "rendering segment {segment} failed: {detail}"),
         }
     }
 }
@@ -166,7 +174,11 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         return Err(SmartCutError::TimelinePlan);
     }
     let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
-    if plan.codec != Codec::H264 || brand(plan.source_container).is_none() || brand(plan.output_container).is_none() || index.codec != Codec::H264 {
+    if !matches!(plan.codec, Codec::H264 | Codec::Hevc | Codec::Av1)
+        || brand(plan.source_container).is_none()
+        || brand(plan.output_container).is_none()
+        || index.codec != plan.codec
+    {
         return Err(unsupported);
     }
     let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
@@ -215,8 +227,10 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         .and_then(|x| x.checked_sub(1))
         .and_then(|x| track.entries.get(usize::try_from(x).ok()?))
         .ok_or_else(|| SmartCutError::StaleIndex { detail: format!("track {} has no sample entry for the copied packets", track.id) })?;
-    if !matches!(entry.codec, cfa4_isobmff::CodecConfig::Avc(_)) {
-        return Err(unsupported);
+    // the sample entry carries the plan's codec (`avcC` for H.264, `hvcC` for HEVC, `av1C` for AV1)
+    match (&entry.codec, plan.codec) {
+        (CodecConfig::Avc(_), Codec::H264) | (CodecConfig::Hevc(_), Codec::Hevc) | (CodecConfig::Av1(_), Codec::Av1) => {}
+        _ => return Err(unsupported),
     }
     Ok(CopyRange { track, first, last, entry })
 }
@@ -265,14 +279,26 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
     cfg.matrix = Some(r.track.matrix);
     let t = w.add_track(cfg).map_err(io)?;
     let mut report = CopyReport { samples: 0, payload_bytes: 0, duration: 0, timescale: r.track.timescale };
+    // AV1 temporal units are classified in decode order from the first copied one
+    let mut av1 = match &r.entry.codec {
+        CodecConfig::Av1(c) => Some(Av1AccessPoints::new(&c.config_obus)),
+        _ => None,
+    };
     for (k, s) in samples.iter().enumerate() {
         let d = r.first + k;
         let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
         if data.len() as u64 != u64::from(s.size) {
             return Err(SmartCutError::StaleIndex { detail: format!("packet {d}: read {} bytes, expected {}", data.len(), s.size) });
         }
-        if let (CodecConfig::Avc(avc), Some(frame)) = (&r.entry.codec, index.frames.get(d)) {
-            check_access_point(d, &data, avc.length_size, frame)?;
+        match (&r.entry.codec, index.frames.get(d)) {
+            (CodecConfig::Avc(avc), Some(frame)) => check_access_point(d, &data, avc.length_size, frame)?,
+            (CodecConfig::Hevc(hevc), Some(frame)) => check_hevc_access_point(d, &data, hevc.length_size, frame)?,
+            (CodecConfig::Av1(_), Some(frame)) => {
+                if let Some(av1) = av1.as_mut() {
+                    check_av1_access_point(d, av1.next(&data), frame)?;
+                }
+            }
+            _ => {}
         }
         let ws = WriteSample { data: &data, duration: s.duration, composition_offset: composition_offset(s, d)?, is_sync: s.is_sync };
         w.write_sample(t, ws).map_err(io)?;
@@ -368,4 +394,67 @@ pub(crate) fn check_access_point(d: usize, data: &[u8], length_size: u8, frame: 
         return Err(SmartCutError::StaleIndex { detail: format!("packet {d} {is} an IDR picture, the index says otherwise") });
     }
     Ok(())
+}
+
+/// [`check_access_point`] for HEVC: an IRAP picture in the index (IDR, CRA, BLA) is one in the
+/// bitstream and the other way round, and an IDR stays an IDR.
+pub(crate) fn check_hevc_access_point(d: usize, data: &[u8], length_size: u8, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
+    let nals = cfa4_bitstream::length_prefixed_nals(data, usize::from(length_size))
+        .map_err(|e| SmartCutError::StaleIndex { detail: format!("packet {d} does not split into NAL units: {e}") })?;
+    // VCL NAL unit types of the base layer
+    let types: Vec<u8> = nals
+        .iter()
+        .filter_map(|n| match &n[..] {
+            [h0, h1, ..] if h0 & 1 == 0 && h1 >> 3 == 0 => Some((h0 >> 1) & 0x3F),
+            _ => None,
+        })
+        .filter(|t| *t < 32)
+        .collect();
+    let irap = types.iter().any(|t| (16..=23).contains(t));
+    let idr = types.iter().any(|t| matches!(t, 19 | 20));
+    let kind = frame.random_access;
+    if irap != kind.is_access_point() || idr != (kind == RandomAccessKind::Idr) {
+        let is = if idr {
+            "an IDR"
+        } else if irap {
+            "a CRA / BLA"
+        } else {
+            "not an IRAP"
+        };
+        return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is {is} picture, the index says {kind:?}") });
+    }
+    Ok(())
+}
+
+/// [`check_access_point`] for AV1: the temporal unit is a clean access point (a shown key frame
+/// with a sequence header known), an intra unit or neither, as the index says. A copy that starts
+/// at a key frame without a sequence header in `av1C` or in-band is refused here.
+pub(crate) fn check_av1_access_point(d: usize, found: RandomAccessKind, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
+    if found != frame.random_access {
+        return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is a {found:?} temporal unit, the index says {:?}", frame.random_access) });
+    }
+    Ok(())
+}
+
+/// Profile, chroma format and bit depth of an AV1 stream from its `av1C` (for the boundary
+/// re-encode decision: the registry has no AV1 encoder, so the decision names what is missing).
+pub fn av1_stream_format(av1c: &cfa4_isobmff::Av1Config) -> cfa4_smart_edit::capabilities::StreamFormat {
+    let profile = match av1c.seq_profile {
+        0 => "main",
+        1 => "high",
+        2 => "professional",
+        _ => "other",
+    };
+    let chroma = match (av1c.monochrome, av1c.chroma_subsampling_x, av1c.chroma_subsampling_y) {
+        (true, _, _) => "4:0:0",
+        (false, true, true) => "4:2:0",
+        (false, true, false) => "4:2:2",
+        (false, false, _) => "4:4:4",
+    };
+    let bit_depth = match (av1c.high_bitdepth, av1c.twelve_bit) {
+        (true, true) => 12,
+        (true, false) => 10,
+        (false, _) => 8,
+    };
+    cfa4_smart_edit::capabilities::StreamFormat { profile: profile.into(), chroma: chroma.into(), bit_depth }
 }

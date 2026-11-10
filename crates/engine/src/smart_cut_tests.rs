@@ -133,7 +133,8 @@ fn start_refuses_before_writing_anything() {
     let mut timeline = ok.clone();
     timeline["output"] = json!("cut.mp4");
     timeline["scope"] = json!("timeline");
-    assert!(run(&mut s, timeline).contains("WP-06"));
+    // the timeline scope exports a sequence (smart_render_tests); this session has none
+    assert!(run(&mut s, timeline).to_lowercase().contains("sequence"));
     assert!(run(&mut s, json!({"path": "missing.mp4", "in": 0, "out": 1, "output": "x.mp4"})).contains("missing.mp4"));
     assert_eq!(files.0.lock().unwrap().keys().collect::<Vec<_>>(), ["clip.mp4"], "nothing was written");
 }
@@ -153,4 +154,103 @@ fn start_re_encodes_the_boundaries_of_a_confirmed_frame_accurate_cut() {
     let out = cfa4_isobmff::open(files["cut.mp4"].as_slice()).unwrap();
     let sync: Vec<usize> = out.tracks[0].samples.iter().enumerate().filter(|(_, x)| x.is_sync).map(|(i, _)| i).collect();
     assert_eq!(sync, [0, 5, 15]);
+}
+
+/// 40 pictures of HEVC from the CFA4 encoder (64×48, 25 fps, an IDR every 10, P pictures).
+fn hevc_mp4() -> Vec<u8> {
+    use cfa4_hevc::encode::{Encoder, EncoderConfig, PacketFormat, RateControl, YuvFrame};
+    let mut cfg = EncoderConfig::new(64, 48, 25, 1);
+    cfg.keyint = 10;
+    cfg.rate = RateControl::Qp(30);
+    cfg.format = PacketFormat::LengthPrefixed;
+    cfg.slices = 1;
+    let mut enc = Encoder::new(cfg).unwrap();
+    let mut packets = Vec::new();
+    for i in 0..40usize {
+        let y: Vec<u8> = (0..64 * 48).map(|k| ((k + i * 7) % 251) as u8).collect();
+        let c: Vec<u8> = (0..32 * 24).map(|k| ((k * 3 + i) % 255) as u8).collect();
+        packets.extend(enc.encode(&YuvFrame::U8 { y: &y, u: &c, v: &c, y_stride: 64, uv_stride: 32 }, i as i64).unwrap());
+    }
+    packets.extend(enc.flush().unwrap());
+    let entry = SampleEntry::hevc(cfa4_isobmff::HevcConfig::parse(&enc.hvcc()).unwrap(), 64, 48);
+    let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+    let t = mux.add_track(TrackConfig::new(entry, 25)).unwrap();
+    for p in &packets {
+        mux.write_sample(t, WriteSample { data: &p.data, duration: 1, composition_offset: (p.pts - p.dts) as i32, is_sync: p.keyframe }).unwrap();
+    }
+    mux.finish().unwrap().into_inner()
+}
+
+/// WP-07: the same commands cut HEVC sources: a copy on IDR pictures, and a confirmed
+/// frame-accurate cut whose head is re-encoded with the CFA4 HEVC encoder.
+#[test]
+fn hevc_sources_are_analyzed_copied_and_re_encoded_at_the_boundaries() {
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("hevc.mp4".into(), hevc_mp4());
+    let r = s.execute("export.analyze", json!({"path": "hevc.mp4"})).unwrap();
+    assert_eq!(r["codec"], "hevc");
+    assert_eq!(r["smartCut"]["allowed"], true, "{}", r["smartCut"]);
+    let points: Vec<u64> = r["accessPoints"].as_array().unwrap().iter().map(|p| p["presentation"].as_u64().unwrap()).collect();
+    assert_eq!(points, [0, 10, 20, 30]);
+    let r = s.execute("export.start", json!({"path": "hevc.mp4", "in": frame(10), "out": frame(30), "output": "copy.mp4"})).unwrap();
+    assert_eq!((r["verified"].as_bool(), r["report"]["samples"].as_u64()), (Some(true), Some(20)), "{r}");
+    let r = s.execute("export.plan", json!({"path": "hevc.mp4", "in": frame(5), "out": frame(30), "mode": "frame-accurate"})).unwrap();
+    assert_eq!(r["boundaryReencode"], json!({"ready": true, "problem": null}), "{r}");
+    let p = json!({"path": "hevc.mp4", "in": frame(5), "out": frame(30), "output": "cut.mp4", "mode": "frame-accurate", "confirm": true});
+    let r = s.execute("export.start", p).unwrap();
+    let counts = (r["report"]["samples"].as_u64(), r["report"]["copied"].as_u64(), r["report"]["reencoded"].as_u64());
+    assert_eq!(counts, (Some(25), Some(20), Some(5)), "{}", r["report"]);
+    let files = files.0.lock().unwrap();
+    let out = cfa4_isobmff::open(files["cut.mp4"].as_slice()).unwrap();
+    assert!(matches!(out.tracks[0].codec(), Some(cfa4_isobmff::CodecConfig::Hevc(_))));
+}
+
+/// 40 synthetic AV1 temporal units (64×48, 25 fps, a shown key frame every 10, the sequence
+/// header in `av1C`): enough for the index and the copy, not for a decoder.
+fn av1_mp4() -> Vec<u8> {
+    let obu = |kind: u8, payload: &[u8]| {
+        let mut out = vec![(kind << 3) | 0x02, payload.len() as u8];
+        out.extend_from_slice(payload);
+        out
+    };
+    let cfg =
+        cfa4_isobmff::Av1Config { chroma_subsampling_x: true, chroma_subsampling_y: true, config_obus: obu(1, &[0x00, 0x01, 0x80]), ..Default::default() };
+    let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+    let t = mux.add_track(TrackConfig::new(SampleEntry::av1(cfg, 64, 48), 25)).unwrap();
+    for i in 0..40u8 {
+        let key = i % 10 == 0;
+        let data = obu(6, &[(u8::from(!key) << 5) | 0x10, i, 0x55]);
+        mux.write_sample(t, WriteSample { data: &data, duration: 1, composition_offset: 0, is_sync: key }).unwrap();
+    }
+    mux.finish().unwrap().into_inner()
+}
+
+#[test]
+fn av1_sources_are_analyzed_and_copied_but_not_re_encoded() {
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("av1.mp4".into(), av1_mp4());
+    let r = s.execute("export.analyze", json!({"path": "av1.mp4"})).unwrap();
+    assert_eq!(r["codec"], "av1");
+    assert_eq!(r["smartCut"]["allowed"], true, "{}", r["smartCut"]);
+    let points: Vec<u64> = r["accessPoints"].as_array().unwrap().iter().map(|p| p["presentation"].as_u64().unwrap()).collect();
+    assert_eq!(points, [0, 10, 20, 30]);
+    assert!(r["accessPoints"].as_array().unwrap().iter().all(|p| p["kind"] == "key-frame" && p["clean"] == true), "{}", r["accessPoints"]);
+    for output in ["copy.mp4", "copy.mov"] {
+        let r = s.execute("export.start", json!({"path": "av1.mp4", "in": frame(10), "out": frame(30), "output": output})).unwrap();
+        assert_eq!((r["verified"].as_bool(), r["report"]["samples"].as_u64()), (Some(true), Some(20)), "{r}");
+    }
+    {
+        let files = files.0.lock().unwrap();
+        let out = cfa4_isobmff::open(files["copy.mov"].as_slice()).unwrap();
+        assert!(out.is_quicktime);
+        assert!(matches!(out.tracks[0].codec(), Some(cfa4_isobmff::CodecConfig::Av1(_))));
+    }
+    // CFA4 has no AV1 encoder: a frame-accurate cut off the key frames is not offered
+    let r = s.execute("export.plan", json!({"path": "av1.mp4", "in": frame(5), "out": frame(30), "mode": "frame-accurate"}));
+    let text = match r {
+        Ok(v) => v.to_string(),
+        Err(e) => e.to_string(),
+    };
+    assert!(text.contains("AV1"), "{text}");
+    assert!(!files.0.lock().unwrap().contains_key("cut.mp4"));
 }

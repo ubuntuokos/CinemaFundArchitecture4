@@ -79,6 +79,25 @@ The index comes from the bitstream, not from the container's keyframe flag:
   stay `Unknown`. Reference lists are not resolved (`references` is `None`): a picture after an
   intra picture but before any signalled access point is `Unknown`; before any intra picture it is
   `Undecodable`.
+- **HEVC** (`index_hevc`, WP-07; base layer only): IDR = clean access point; a CRA or BLA picture
+  is an access point (`cra` / `bla`), clean only when no RASL picture follows it. RASL pictures
+  cross the access point (undecodable after a BLA or at the start of the stream); RADL and trailing
+  pictures stay within the GOP. The picture type is the first slice segment's `slice_type` (it
+  needs the PPS for `num_extra_slice_header_bits`; without it the type is `Unknown`, the access
+  points are still found). A picture coded with other VPS / SPS / PPS payloads is a configuration
+  change. The registry's HEVC `gop-index` and MP4 / MOV `packet-copy` rows are supported;
+  re-encoding HEVC is not yet. A copy from an IDR stops before the RASL pictures of the next CRA
+  (they are marked as crossing the access point), so in an open-GOP stream the safe cut-out is
+  the end of the pictures before them.
+- **AV1** (`index_av1`, WP-07; base spatial layer): one packet is one temporal unit. A unit that
+  starts with a shown key frame is a clean access point (`key-frame`): it refreshes every
+  reference slot. It needs a sequence header (from `av1C` or in-band). Hidden (forward) key frames
+  and intra-only frames are intra but no cut points; a unit that only shows an existing frame
+  decodes nothing new. Reference slots are not resolved. A changed sequence header is a
+  configuration change. The registry's AV1 `gop-index` and MP4 / MOV `packet-copy` rows are
+  supported (OBU framing, `av1C` kept); re-encoding AV1 is not yet. The executor classifies the
+  copied temporal units again from the first one, so a copy from a key frame whose sequence
+  header is neither in `av1C` nor in-band is refused.
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 
@@ -129,16 +148,18 @@ The planner reads nothing but its arguments and writes nothing. Its output is th
 The executor lives in the export crate (`cfa4_export::smart_cut`), because this crate only plans.
 `execute_mp4_copy(plan, stream_index, source, writer)` writes the copy segments of a lossless plan
 from an MP4 / MOV source into a new MP4 / MOV file. It copies the sample payloads unchanged and keeps
-the sample entry (`avcC`), the durations and the composition offsets. Decode time starts at 0, and
+the sample entry (`avcC` or `hvcC`), the durations and the composition offsets. Decode time starts at 0, and
 an edit list starts the presentation at the first copied picture. `verify_mp4_copy` reads the result
 back and compares every sample with its source sample (SCE-001 §18).
 
 The executor refuses, before writing anything:
 - a plan that re-encodes (`not-lossless`; the boundary re-encode executor below runs those);
-- an index that no longer matches the source track (`stale-index`);
+- an index that no longer matches the source track (`stale-index`; for HEVC also an IDR, CRA or
+  BLA picture where the index has none, or the other way round);
 - copy segments that do not form one run in decode order;
 - mixed sample entries;
-- any codec or container other than H.264 in MP4 / MOV.
+- a plan, index and sample entry of different codecs;
+- any codec or container other than H.264 or HEVC in MP4 / MOV.
 
 The caller writes to a temporary file and renames it into place, like every export.
 
@@ -167,16 +188,70 @@ H.264 encoder:
   picture with its source picture (luma PSNR, `BoundaryEncoding::min_psnr`).
 
 Rendered segments (gaps, effects) and timeline plans are refused here (`render-segment`,
-`timeline-plan`); they belong to the timeline Smart Render executor. Until it exists, the
-registry's `timeline-render` rows are unsupported, so `plan_smart_render` reports every timeline
-plan as not executable. Writing and verifying decode the boundaries picture by picture (the
+`timeline-plan`); they belong to the timeline Smart Render executor below. Writing and verifying decode the boundaries picture by picture (the
 encoder's VUI comes from the source SPS), so no boundary is held in memory whole.
+
+**HEVC (WP-07, `boundary_reencode_hevc`):** the same functions run HEVC plans with the CFA4 HEVC
+decoder and encoder (Main or Main 10, I and P pictures). The output `hvcC` holds the source VPS /
+SPS / PPS unchanged followed by the encoder's, under free ids. Every re-encoded segment starts with
+an IDR; a copy after one starts at a clean access point, and when that is a CRA or BLA picture the
+last re-encoded sample ends with an end-of-sequence NAL unit, so the copied picture starts a new
+coded video sequence. Refused before writing: profiles other than Main / Main 10, anything but
+4:2:0 at 8 or 10 bits, interlaced sources, other NAL length sizes, odd picture sizes, in-band
+parameter sets and SEI user data (the x265 encoder note is dropped; decoded picture hash, active
+parameter sets and decoding unit SEIs are regenerated or dropped). `hevc_stream_format(hvcc)` gives
+the registry's `StreamFormat`; the registry lists the CFA4 HEVC encoder (Main / Main 10, 4:2:0,
+8 / 10 bits) and HEVC boundary re-encode into MP4 / MOV as supported.
+
+## Timeline Smart Render executor (WP-06)
+
+`cfa4_export::timeline_render` runs a `plan_smart_render` plan into one H.264 MP4 / MOV stream.
+`execute_mp4_timeline(plan, sources, frames, output, writer)` takes every source the plan reads
+(`TimelineSource`: its index and MP4 track, by `source_id`), the caller's renderer for the `Render`
+segments (`RenderedFrames`: 8-bit 4:2:0 pictures of the output size) and the output picture size,
+frame duration and encoding (`TimelineOutput`):
+
+- **Copied runs** keep their payloads. Every copied run must have the same `avcC`, timescale and
+  composition delay; a run starts at an IDR unless it continues the previous run of the same source.
+- **Re-encoded runs** (boundaries, `incompatible-stream`) are decoded from their source as in the
+  boundary executor; their aspect ratio and colour must match the copied stream.
+- **Rendered segments** (gaps, effects, transitions…) are encoded from the caller's pictures; the
+  executor knows nothing of effects. With nothing copied the output is High profile at the
+  timeline's frame rate.
+- **One stream, constant frame rate:** the output `avcC` is the copied SPS/PPS followed by the
+  encoder's, every encoded run starts with an IDR with an `idr_pic_id` its neighbours do not use,
+  and every copied or re-encoded source picture must last exactly one output frame (the planner
+  renders a clip at another frame rate).
+
+`check_mp4_timeline` makes the same refusals without decoding or rendering.
+`verify_mp4_timeline` compares the copied samples with their sources, checks that the output shows
+one picture per frame without gaps, decodes the whole output and compares every re-encoded picture
+with its source picture (luma PSNR); rendered pictures are checked to decode. The registry's
+`timeline-render` rows are supported for H.264 into MP4 / MOV.
+
+**Engine (`export.plan` / `export.start` with `"scope": "timeline"`).** `crates/engine/src/smart_render.rs`
+turns the sequence's video (`"sequence"`, else the active one) into an `EditDecisionList` and plans
+it. A range is copied only when nothing could change its pictures: exactly one clip is visible; it
+is an H.264 MP4 / MOV file at the sequence's frame size, pixel aspect and frame rate, Rec. 709 with a
+plain colour pipeline; it plays at 100 % with every effect at its defaults (Motion, Opacity and Time
+Remapping included), no transition, no Interpret Footage override, and its edits are on the frame
+grid. Any other range is rendered, with its `RenderCause`s (`source` for stills, generators,
+graphics or files Smart Cut cannot read). The rendered pictures come from the export pipeline
+(`cfa4_export::Pipeline`, full-resolution media). `export.plan` reports the plan, a summary
+(copied, re-encoded and rendered frames) and `timelineRender: {ready, problem}`. `export.start`
+needs `"confirm": true` when anything is re-encoded or rendered, verifies the output and only then
+writes it. The output is the video from the sequence start to the end of its last video clip, without
+audio.
 
 `h264_stream_format(avc)` reads the profile, chroma format and bit depth from the source SPS for
 the planner's `SmartCutRequest::format`. The engine commands use it: `export.plan` reports, for a
 re-encoding plan, whether the executor can run it (`boundaryReencode: {ready, problem}`), and
 `export.start` with `"confirm": true` runs it, checks the output and only then writes the file
 (`"crf"` sets the quality of the re-encoded pictures, 16 by default).
+The source-scope commands (`export.analyze`, `export.plan`, `export.start` with a `path`) open
+HEVC sources too (WP-07): `hevc_stream_format(hvcc)` gives their format, and the copy and boundary
+re-encode executors run their plans. The timeline scope copies H.264 only; an HEVC clip on a
+sequence is rendered (`source` cause).
 
 ## Smart Render planner (WP-05)
 
@@ -224,6 +299,12 @@ Smart Cut executor (`cargo test -p cfa4-export smart_cut`): GOP-boundary cuts an
 and MOV, with and without B-frames, read back and re-indexed. The tests also check refusals (re-encode plans,
 stale indexes, malformed plans) and that a changed payload or a truncated file fails verification.
 FFmpeg (oracle only) decodes the copy to exactly the source pictures of the range (framemd5).
+HEVC (`smart_cut_hevc_tests`): GOPs of the CFA4 encoder copied unchanged with their `hvcC`, a stale
+IDR refused, and x265 closed and open GOPs with B pictures decoded by FFmpeg to the source pictures.
+HEVC boundary re-encode (`boundary_reencode_hevc_tests`): a head boundary of the CFA4 encoder's
+stream, refusals (stale index, in-band parameter sets, codec mismatch), a failing PSNR threshold,
+and x265 closed and open GOPs with B pictures cut frame-accurately: FFmpeg decodes every picture
+and the copied ones are the source pictures, also when the copy starts at a clean CRA picture.
 Smart Render planner: whole-GOP clips, boundaries with their reference pictures, joined splits, gaps
 and changed clips, codec configuration seams, other codecs and frame rates, refusals, registry
 blockers, JSON round trip, and random timelines (the segments cover the output, decoding starts at a

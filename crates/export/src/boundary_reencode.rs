@@ -1,5 +1,6 @@
 //! Boundary re-encode executor (WP-06 of `CFA4-SMART-CUT-RENDER-R1`, *határ-újrakódolás*): runs a
-//! frame-accurate Smart Cut plan of one H.264 MP4 / MOV source. The whole GOPs inside the range
+//! frame-accurate Smart Cut plan of one H.264 MP4 / MOV source (HEVC plans go to
+//! [`crate::boundary_reencode_hevc`], WP-07). The whole GOPs inside the range
 //! are copied packet for packet, as [`crate::smart_cut`] does; only the pictures between a cut and
 //! the nearest clean access point are decoded and re-encoded with the CFA4 H.264 encoder.
 //!
@@ -30,12 +31,13 @@ use cfa4_bitstream::{length_prefixed_nals, unescape_rbsp};
 use cfa4_h264::params::{Pps, Sps};
 use cfa4_h264::slice::{NalHeader, SliceHeader};
 use cfa4_h264enc::{ColorConfig, Encoder, EncoderConfig, Packet as EncodedPacket, PacketFormat, Profile, RateControl, YuvFrame};
-use cfa4_isobmff::{AvcConfig, ByteSource, CodecConfig, Mp4Writer, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
+use cfa4_isobmff::{AvcConfig, ByteSource, CodecConfig, Mp4File, Mp4Writer, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
 use cfa4_smart_edit::capabilities::{Codec, StreamFormat};
 use cfa4_smart_edit::media_index::StreamIndex;
 use cfa4_smart_edit::plan::{ExportExecutionPlan, PLAN_VERSION, SegmentMode};
 use serde::{Deserialize, Serialize};
 
+pub use crate::boundary_reencode_hevc::hevc_stream_format;
 use crate::smart_cut::{Mp4CopySource, SmartCutError, brand, check_access_point, check_sample, check_timebase, io};
 
 const NAL_IDR: u8 = 5;
@@ -82,7 +84,7 @@ pub struct BoundaryReport {
 }
 
 /// One planned segment, resolved against the source track.
-enum Seg {
+pub(crate) enum Seg {
     /// Source samples `first..=last` (decode order), copied.
     Copy { first: usize, last: usize },
     /// Source samples `decode_first..=decode_last` decoded; `pictures` (decode indices, in
@@ -91,41 +93,37 @@ enum Seg {
 }
 
 /// The source parameter sets, parsed.
-struct SourceParams {
-    spss: Vec<Option<Sps>>,
-    ppss: Vec<Option<Pps>>,
+pub(crate) struct SourceParams {
+    pub(crate) spss: Vec<Option<Sps>>,
+    pub(crate) ppss: Vec<Option<Pps>>,
 }
 
-struct Prepared<'a> {
-    track: &'a Track,
-    entry: &'a SampleEntry,
-    avc: &'a AvcConfig,
-    segs: Vec<Seg>,
+/// A plan resolved against its source track (any codec the executors handle).
+pub(crate) struct Prepared<'a> {
+    pub(crate) track: &'a Track,
+    pub(crate) entry: &'a SampleEntry,
+    pub(crate) segs: Vec<Seg>,
     /// Composition delay (PTS − DTS) of the re-encoded pictures: the delay of the copied run.
-    delay: i64,
+    pub(crate) delay: i64,
     /// Presentation duration of each source picture, by decode index.
-    durations: Vec<u32>,
+    pub(crate) durations: Vec<u32>,
 }
 
-fn incompatible(detail: impl Into<String>) -> SmartCutError {
+pub(crate) fn incompatible(detail: impl Into<String>) -> SmartCutError {
     SmartCutError::Incompatible { detail: detail.into() }
 }
 
-fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &StreamIndex, source: &Mp4CopySource<'a, S>) -> Result<Prepared<'a>, SmartCutError> {
-    if plan.plan_version != PLAN_VERSION {
-        return Err(SmartCutError::PlanVersion { found: plan.plan_version });
-    }
-    if plan.segments.iter().any(|s| s.source.is_some()) {
-        return Err(SmartCutError::TimelinePlan);
-    }
-    let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
-    if plan.codec != Codec::H264 || brand(plan.source_container).is_none() || brand(plan.output_container).is_none() || index.codec != Codec::H264 {
-        return Err(unsupported);
-    }
-    let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
-    if index.stream_id != track.id {
-        return Err(SmartCutError::WrongStream { expected: track.id, found: index.stream_id });
-    }
+/// The source pictures in presentation order (decode indices), the presentation position of
+/// each packet and how long each picture is shown (by decode index).
+pub(crate) struct SourceTiming {
+    pub(crate) order: Vec<usize>,
+    pub(crate) position: Vec<u64>,
+    pub(crate) durations: Vec<u32>,
+}
+
+/// The timing of `track`, after checking that `index` still describes it (sizes, timestamps, sync
+/// flags, presentation order).
+pub(crate) fn source_timing(index: &StreamIndex, track: &Track) -> Result<SourceTiming, SmartCutError> {
     let n = track.samples.len();
     if index.frames.len() != n {
         return Err(SmartCutError::StaleIndex { detail: format!("{} indexed pictures, {n} samples in track {}", index.frames.len(), track.id) });
@@ -158,6 +156,49 @@ fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &Strea
             _ => return Err(SmartCutError::Timestamps { decode_index: d as u64 }),
         }
     }
+    Ok(SourceTiming { order, position, durations })
+}
+
+/// [`prepare`] for an H.264 plan, with the source's `avcC`.
+fn prepare_h264<'a, S: ByteSource + ?Sized>(
+    plan: &ExportExecutionPlan,
+    index: &StreamIndex,
+    source: &Mp4CopySource<'a, S>,
+) -> Result<(Prepared<'a>, &'a AvcConfig), SmartCutError> {
+    let p = prepare(plan, index, source)?;
+    let CodecConfig::Avc(avc) = &p.entry.codec else {
+        return Err(SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container });
+    };
+    Ok((p, avc))
+}
+
+/// Resolve `plan` against the source track: the segments, the one sample entry they read (of the
+/// plan's codec), the composition delay and the picture durations.
+pub(crate) fn prepare<'a, S: ByteSource + ?Sized>(
+    plan: &ExportExecutionPlan,
+    index: &StreamIndex,
+    source: &Mp4CopySource<'a, S>,
+) -> Result<Prepared<'a>, SmartCutError> {
+    if plan.plan_version != PLAN_VERSION {
+        return Err(SmartCutError::PlanVersion { found: plan.plan_version });
+    }
+    if plan.segments.iter().any(|s| s.source.is_some()) {
+        return Err(SmartCutError::TimelinePlan);
+    }
+    let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
+    if !matches!(plan.codec, Codec::H264 | Codec::Hevc)
+        || brand(plan.source_container).is_none()
+        || brand(plan.output_container).is_none()
+        || index.codec != plan.codec
+    {
+        return Err(unsupported);
+    }
+    let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
+    if index.stream_id != track.id {
+        return Err(SmartCutError::WrongStream { expected: track.id, found: index.stream_id });
+    }
+    let SourceTiming { order, position, durations } = source_timing(index, track)?;
+    let n = track.samples.len();
     let mut segs = Vec::with_capacity(plan.segments.len());
     let mut used = BTreeSet::new();
     let mut next_position: Option<u64> = None;
@@ -217,7 +258,9 @@ fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &Strea
         .and_then(|x| x.checked_sub(1))
         .and_then(|x| track.entries.get(usize::try_from(x).ok()?))
         .ok_or_else(|| SmartCutError::StaleIndex { detail: format!("track {} has no sample entry for the planned packets", track.id) })?;
-    let CodecConfig::Avc(avc) = &entry.codec else { return Err(unsupported) };
+    if !matches!((&entry.codec, plan.codec), (CodecConfig::Avc(_), Codec::H264) | (CodecConfig::Hevc(_), Codec::Hevc)) {
+        return Err(unsupported);
+    }
     // the copied runs set the composition delay; they must agree on it
     let mut delay = None;
     for seg in &segs {
@@ -252,10 +295,10 @@ fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &Strea
             ),
         });
     }
-    Ok(Prepared { track, entry, avc, segs, delay: delay.unwrap_or(0), durations })
+    Ok(Prepared { track, entry, segs, delay: delay.unwrap_or(0), durations })
 }
 
-fn parse_params(avc: &AvcConfig) -> Result<SourceParams, SmartCutError> {
+pub(crate) fn parse_params(avc: &AvcConfig) -> Result<SourceParams, SmartCutError> {
     let mut spss: Vec<Option<Sps>> = vec![None; 32];
     let mut ppss: Vec<Option<Pps>> = vec![None; 256];
     for nal in &avc.sps {
@@ -272,12 +315,12 @@ fn parse_params(avc: &AvcConfig) -> Result<SourceParams, SmartCutError> {
 }
 
 /// The NAL units of a length-prefixed sample.
-fn nals(data: &[u8], length_size: u8) -> Result<Vec<&[u8]>, SmartCutError> {
+pub(crate) fn nals(data: &[u8], length_size: u8) -> Result<Vec<&[u8]>, SmartCutError> {
     length_prefixed_nals(data, usize::from(length_size)).map_err(|e| SmartCutError::Decode { detail: e.to_string() })
 }
 
 /// `Some(idr_pic_id)` when the sample is an IDR picture, `None` for any other picture.
-fn idr_pic_id(data: &[u8], length_size: u8, params: &SourceParams) -> Result<Option<u32>, SmartCutError> {
+pub(crate) fn idr_pic_id(data: &[u8], length_size: u8, params: &SourceParams) -> Result<Option<u32>, SmartCutError> {
     for nal in nals(data, length_size)? {
         let Some(&first) = nal.first() else { continue };
         let kind = first & 0x1f;
@@ -306,7 +349,7 @@ fn idr_pic_id(data: &[u8], length_size: u8, params: &SourceParams) -> Result<Opt
 }
 
 /// The encoder settings that match the source stream, or why there are none.
-fn encoder_config(
+pub(crate) fn encoder_config(
     avc: &AvcConfig,
     params: &SourceParams,
     width: u32,
@@ -382,7 +425,7 @@ fn encoder_config(
 
 /// The source pictures of a re-encoded segment, decoded on demand in presentation order: only the
 /// decoder's reference pictures and its reorder queue are held, never the whole segment.
-struct BoundaryDecoder<'s, 'a, S: ByteSource + ?Sized> {
+pub(crate) struct BoundaryDecoder<'s, 'a, S: ByteSource + ?Sized> {
     source: &'s Mp4CopySource<'a, S>,
     decoder: cfa4_h264::Decoder,
     next: usize,
@@ -394,7 +437,13 @@ struct BoundaryDecoder<'s, 'a, S: ByteSource + ?Sized> {
 }
 
 impl<'s, 'a, S: ByteSource + ?Sized> BoundaryDecoder<'s, 'a, S> {
-    fn new(source: &'s Mp4CopySource<'a, S>, avc: &AvcConfig, decode_first: usize, decode_last: usize, pictures: &[usize]) -> Result<Self, SmartCutError> {
+    pub(crate) fn new(
+        source: &'s Mp4CopySource<'a, S>,
+        avc: &AvcConfig,
+        decode_first: usize,
+        decode_last: usize,
+        pictures: &[usize],
+    ) -> Result<Self, SmartCutError> {
         let decoder = cfa4_h264::Decoder::from_avcc(&avc.to_bytes()).map_err(|e| SmartCutError::Decode { detail: e.to_string() })?;
         let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
         let mut wanted = BTreeSet::new();
@@ -405,7 +454,7 @@ impl<'s, 'a, S: ByteSource + ?Sized> BoundaryDecoder<'s, 'a, S> {
     }
 
     /// The next wanted picture, or `None` after the last one.
-    fn next_picture(&mut self) -> Result<Option<cfa4_h264::Picture>, SmartCutError> {
+    pub(crate) fn next_picture(&mut self) -> Result<Option<cfa4_h264::Picture>, SmartCutError> {
         let decode_err = |e: cfa4_h264::Error| SmartCutError::Decode { detail: e.to_string() };
         loop {
             if let Some(p) = self.ready.pop_front() {
@@ -437,7 +486,7 @@ impl<'s, 'a, S: ByteSource + ?Sized> BoundaryDecoder<'s, 'a, S> {
     }
 }
 
-fn planes(p: &cfa4_h264::Picture) -> Result<YuvFrame<'_>, SmartCutError> {
+pub(crate) fn planes(p: &cfa4_h264::Picture) -> Result<YuvFrame<'_>, SmartCutError> {
     let (Some(y), Some(u), Some(v)) = (p.y.as_u8(), p.u.as_u8(), p.v.as_u8()) else {
         return Err(incompatible("the boundary pictures are not 8-bit"));
     };
@@ -448,7 +497,7 @@ fn planes(p: &cfa4_h264::Picture) -> Result<YuvFrame<'_>, SmartCutError> {
 }
 
 /// Luma PSNR of two 8-bit pictures of the same size (99 dB when identical).
-fn luma_psnr(a: &cfa4_h264::Picture, b: &cfa4_h264::Picture) -> Option<f64> {
+pub(crate) fn luma_psnr(a: &cfa4_h264::Picture, b: &cfa4_h264::Picture) -> Option<f64> {
     if (a.width, a.height) != (b.width, b.height) {
         return None;
     }
@@ -469,6 +518,7 @@ fn luma_psnr(a: &cfa4_h264::Picture, b: &cfa4_h264::Picture) -> Option<f64> {
 
 struct Setup<'a> {
     p: Prepared<'a>,
+    avc: &'a AvcConfig,
     params: SourceParams,
     /// The encoder settings, when something is re-encoded.
     cfg: Option<EncoderConfig>,
@@ -513,13 +563,16 @@ pub(crate) fn rbsp_bytes(payload: &[u8]) -> impl Iterator<Item = u8> + '_ {
 /// Call `visit` with each SEI message of a length-prefixed sample (payload type, the first
 /// [`SEI_KEEP`] bytes of the payload), as it is parsed: nothing is collected, so a sample of many
 /// tiny messages costs no memory.
-fn visit_sei(data: &[u8], length_size: u8, mut visit: impl FnMut(u32, &[u8]) -> Result<(), SmartCutError>) -> Result<(), SmartCutError> {
+fn visit_sei(data: &[u8], length_size: u8, codec: Codec, mut visit: impl FnMut(u32, &[u8]) -> Result<(), SmartCutError>) -> Result<(), SmartCutError> {
     let mut kept = Vec::with_capacity(SEI_KEEP);
     for nal in nals(data, length_size)? {
-        if nal.first().map(|b| b & 0x1f) != Some(6) {
-            continue;
-        }
-        let mut rbsp = rbsp_bytes(nal.get(1..).unwrap_or_default()).peekable();
+        // H.264: a 1-byte header, type 6; HEVC: a 2-byte header, prefix (39) or suffix (40) SEI
+        let payload = match (codec, nal) {
+            (Codec::Hevc, [h0, _, rest @ ..]) if matches!((h0 >> 1) & 0x3f, 39 | 40) => rest,
+            (Codec::H264, [h0, rest @ ..]) if h0 & 0x1f == 6 => rest,
+            _ => continue,
+        };
+        let mut rbsp = rbsp_bytes(payload).peekable();
         // stop at the rbsp trailing bits
         while rbsp.peek().is_some_and(|&b| b != 0x80) {
             let mut read = || -> Option<u32> {
@@ -555,13 +608,13 @@ fn setup<'a, S: ByteSource + ?Sized>(
     source: &Mp4CopySource<'a, S>,
     encoding: &BoundaryEncoding,
 ) -> Result<Setup<'a>, SmartCutError> {
-    let p = prepare(plan, index, source)?;
-    let params = parse_params(p.avc)?;
+    let (p, avc) = prepare_h264(plan, index, source)?;
+    let params = parse_params(avc)?;
     let mut reencoded = p.segs.iter().filter_map(|s| match s {
         Seg::Reencode { decode_first, decode_last, pictures } => Some((*decode_first, *decode_last, pictures)),
         Seg::Copy { .. } => None,
     });
-    let Some(first) = reencoded.next() else { return Ok(Setup { p, params, cfg: None }) };
+    let Some(first) = reencoded.next() else { return Ok(Setup { p, avc, params, cfg: None }) };
     // one frame rate: the encoder signals a fixed one in its VUI
     let frame = first.2.first().and_then(|&d| p.durations.get(d)).copied().unwrap_or(1);
     for (_, _, pictures) in std::iter::once(first).chain(reencoded) {
@@ -583,42 +636,13 @@ fn setup<'a, S: ByteSource + ?Sized>(
     if num > u32::MAX / 2 {
         return Err(incompatible(format!("the frame rate {num}/{den} does not fit the encoder's timing fields")));
     }
-    let mut cfg = encoder_config(p.avc, &params, width, height, (num, den), encoding)?;
+    let mut cfg = encoder_config(avc, &params, width, height, (num, den), encoding)?;
     // SEI metadata of the decoded packets: HDR is carried over, user data refuses the plan
     for seg in &p.segs {
         let Seg::Reencode { decode_first, decode_last, .. } = *seg else { continue };
         for d in decode_first..=decode_last {
             let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
-            visit_sei(&data, p.avc.length_size, |kind, payload| {
-                match kind {
-                    SEI_USER_DATA_REGISTERED => {
-                        return Err(incompatible(format!("packet {d} carries SEI user data (captions or other per-picture metadata) a re-encode would drop")));
-                    }
-                    SEI_USER_DATA_UNREGISTERED if !is_encoder_note(payload) => {
-                        return Err(incompatible(format!("packet {d} carries unregistered SEI user data a re-encode would drop")));
-                    }
-                    // one encoder configuration serves every boundary: the HDR values must agree
-                    SEI_MASTERING_DISPLAY => {
-                        let value = <[u8; 24]>::try_from(payload).map_err(|_| incompatible(format!("packet {d}: malformed mastering-display SEI")))?;
-                        if cfg.mastering_display.is_some_and(|known| known != value) {
-                            return Err(incompatible(format!("packet {d}: the mastering-display SEI changes between the re-encoded pictures")));
-                        }
-                        cfg.mastering_display = Some(value);
-                    }
-                    SEI_CONTENT_LIGHT => {
-                        let [a, b, c, e] = *payload else { return Err(incompatible(format!("packet {d}: malformed content-light SEI"))) };
-                        let value = (u16::from_be_bytes([a, b]), u16::from_be_bytes([c, e]));
-                        if cfg.content_light.is_some_and(|known| known != value) {
-                            return Err(incompatible(format!("packet {d}: the content-light SEI changes between the re-encoded pictures")));
-                        }
-                        cfg.content_light = Some(value);
-                    }
-                    SEI_USER_DATA_UNREGISTERED => {}
-                    other if SEI_DROPPABLE.contains(&other) => {}
-                    other => return Err(incompatible(format!("packet {d} carries SEI payload type {other}, which a re-encode cannot carry over"))),
-                }
-                Ok(())
-            })?;
+            check_reencoded_sei(&data, avc.length_size, d, &mut cfg)?;
         }
     }
     // the encoder's parameter-set ids are free only if no packet redefines a parameter set
@@ -631,12 +655,12 @@ fn setup<'a, S: ByteSource + ?Sized>(
         };
         for d in first..=last {
             let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
-            if nals(&data, p.avc.length_size)?.iter().any(|nal| matches!(nal.first().map(|b| b & 0x1f), Some(7 | 8))) {
+            if nals(&data, avc.length_size)?.iter().any(|nal| matches!(nal.first().map(|b| b & 0x1f), Some(7 | 8))) {
                 return Err(incompatible(format!("packet {d} carries in-band parameter sets")));
             }
             // and the planned access points are still there
             if let Some(frame) = index.frames.get(d) {
-                check_access_point(d, &data, p.avc.length_size, frame)?;
+                check_access_point(d, &data, avc.length_size, frame)?;
             }
         }
     }
@@ -644,19 +668,75 @@ fn setup<'a, S: ByteSource + ?Sized>(
     for pair in p.segs.windows(2) {
         if let [Seg::Reencode { .. }, Seg::Copy { first, .. }] = pair {
             let data = source.file.read_sample(source.bytes, source.track, *first).map_err(io)?;
-            if idr_pic_id(&data, p.avc.length_size, &params)?.is_none() {
+            if idr_pic_id(&data, avc.length_size, &params)?.is_none() {
                 return Err(incompatible(format!("the copy after a boundary starts at packet {first}, which is not an IDR picture")));
             }
         }
     }
-    Ok(Setup { p, params, cfg: Some(cfg) })
+    Ok(Setup { p, avc, params, cfg: Some(cfg) })
+}
+
+/// Check the SEI messages of packet `d`, which is decoded and re-encoded: HDR static metadata is
+/// carried into `cfg` (one value for every re-encoded picture), user data and anything that would
+/// change how the pictures are shown refuses the plan.
+pub(crate) fn check_reencoded_sei(data: &[u8], length_size: u8, d: usize, cfg: &mut EncoderConfig) -> Result<(), SmartCutError> {
+    let mut hdr = HdrMetadata { mastering_display: cfg.mastering_display, content_light: cfg.content_light };
+    check_sei(data, length_size, Codec::H264, d, &mut hdr)?;
+    (cfg.mastering_display, cfg.content_light) = (hdr.mastering_display, hdr.content_light);
+    Ok(())
+}
+
+/// HDR static metadata carried through a re-encoded boundary (one value for every re-encoded
+/// picture).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct HdrMetadata {
+    pub(crate) mastering_display: Option<[u8; 24]>,
+    pub(crate) content_light: Option<(u16, u16)>,
+}
+
+/// [`check_reencoded_sei`] for either codec, collecting the HDR metadata into `cfg`.
+pub(crate) fn check_sei(data: &[u8], length_size: u8, codec: Codec, d: usize, cfg: &mut HdrMetadata) -> Result<(), SmartCutError> {
+    // HEVC adds SEIs the re-encode regenerates or drops without changing the pictures: active
+    // parameter sets (129), decoding unit information (130) and the decoded picture hash (132)
+    let droppable = |kind: u32| SEI_DROPPABLE.contains(&kind) || (codec == Codec::Hevc && matches!(kind, 129 | 130 | 132));
+    visit_sei(data, length_size, codec, |kind, payload| {
+        match kind {
+            SEI_USER_DATA_REGISTERED => {
+                return Err(incompatible(format!("packet {d} carries SEI user data (captions or other per-picture metadata) a re-encode would drop")));
+            }
+            SEI_USER_DATA_UNREGISTERED if !is_encoder_note(payload) => {
+                return Err(incompatible(format!("packet {d} carries unregistered SEI user data a re-encode would drop")));
+            }
+            // one encoder configuration serves every boundary: the HDR values must agree
+            SEI_MASTERING_DISPLAY => {
+                let value = <[u8; 24]>::try_from(payload).map_err(|_| incompatible(format!("packet {d}: malformed mastering-display SEI")))?;
+                if cfg.mastering_display.is_some_and(|known| known != value) {
+                    return Err(incompatible(format!("packet {d}: the mastering-display SEI changes between the re-encoded pictures")));
+                }
+                cfg.mastering_display = Some(value);
+            }
+            SEI_CONTENT_LIGHT => {
+                let [a, b, c, e] = *payload else { return Err(incompatible(format!("packet {d}: malformed content-light SEI"))) };
+                let value = (u16::from_be_bytes([a, b]), u16::from_be_bytes([c, e]));
+                if cfg.content_light.is_some_and(|known| known != value) {
+                    return Err(incompatible(format!("packet {d}: the content-light SEI changes between the re-encoded pictures")));
+                }
+                cfg.content_light = Some(value);
+            }
+            SEI_USER_DATA_UNREGISTERED => {}
+            other if droppable(other) => {}
+            other => return Err(incompatible(format!("packet {d} carries SEI payload type {other}, which a re-encode cannot carry over"))),
+        }
+        Ok(())
+    })
 }
 
 /// UUIDs of the unregistered SEIs in which known encoders only name themselves and their
-/// settings: x264 and the CFA4 H.264 encoder.
-const ENCODER_NOTES: [[u8; 16]; 2] = [
+/// settings: x264, the CFA4 H.264 encoder and x265.
+const ENCODER_NOTES: [[u8; 16]; 3] = [
     [0xdc, 0x45, 0xe9, 0xbd, 0xe6, 0xd9, 0x48, 0xb7, 0x96, 0x2c, 0xd8, 0x20, 0xd9, 0x23, 0xee, 0xef],
     [0x7a, 0x3c, 0x1f, 0x52, 0xd4, 0x0b, 0x4e, 0x8e, 0x9d, 0x61, 0x2f, 0xc4, 0x93, 0x05, 0xb7, 0x1a],
+    [0x2c, 0xa2, 0xde, 0x09, 0xb5, 0x17, 0x47, 0xdb, 0xbb, 0x55, 0xa4, 0xfe, 0x7f, 0xc2, 0xfc, 0x4e],
 ];
 
 /// An unregistered SEI of a known encoder that only names it: nothing a viewer needs, so a
@@ -702,6 +782,9 @@ pub fn check_mp4_boundary_reencode<S: ByteSource + ?Sized>(
     source: &Mp4CopySource<'_, S>,
     encoding: &BoundaryEncoding,
 ) -> Result<(), SmartCutError> {
+    if plan.codec == Codec::Hevc {
+        return crate::boundary_reencode_hevc::check(plan, index, source, encoding);
+    }
     setup(plan, index, source, encoding).map(|_| ())
 }
 
@@ -718,12 +801,15 @@ pub fn execute_mp4_boundary_reencode<W: Write + Seek, S: ByteSource + ?Sized>(
     encoding: &BoundaryEncoding,
     out: W,
 ) -> Result<(W, BoundaryReport), SmartCutError> {
-    let Setup { p, params, cfg } = setup(plan, index, source, encoding)?;
+    if plan.codec == Codec::Hevc {
+        return crate::boundary_reencode_hevc::execute(plan, index, source, encoding, out);
+    }
+    let Setup { p, avc: source_avc, params, cfg } = setup(plan, index, source, encoding)?;
     let track = p.track;
     // the encoder's VUI comes from the source SPS (setup), so nothing is decoded before writing;
     // each boundary is decoded picture by picture as it is encoded
     // the output avcC: the source parameter sets, then the encoder's
-    let mut avc = p.avc.clone();
+    let mut avc = source_avc.clone();
     if let Some(cfg) = &cfg {
         let probe = Encoder::new(cfg.clone()).map_err(|e| SmartCutError::Encode { detail: e.to_string() })?;
         let enc = AvcConfig::parse(&probe.avcc()).map_err(|e| SmartCutError::Encode { detail: e.to_string() })?;
@@ -760,7 +846,7 @@ pub fn execute_mp4_boundary_reencode<W: Write + Seek, S: ByteSource + ?Sized>(
                     }
                     let offset = s.pts.checked_sub(s.dts).and_then(|o| i32::try_from(o).ok()).ok_or(SmartCutError::Timestamps { decode_index: d as u64 })?;
                     w.write_sample(t, WriteSample { data: &data, duration: s.duration, composition_offset: offset, is_sync: s.is_sync }).map_err(io)?;
-                    last_idr = if d == *last { idr_pic_id(&data, p.avc.length_size, &params)? } else { None };
+                    last_idr = if d == *last { idr_pic_id(&data, source_avc.length_size, &params)? } else { None };
                     report.copied += 1;
                     report.payload_bytes = report.payload_bytes.saturating_add(data.len() as u64);
                     report.duration = report.duration.saturating_add(u64::from(s.duration));
@@ -768,13 +854,13 @@ pub fn execute_mp4_boundary_reencode<W: Write + Seek, S: ByteSource + ?Sized>(
             }
             Seg::Reencode { decode_first, decode_last, pictures } => {
                 let Some(mut cfg) = cfg.clone() else { return Err(SmartCutError::NotLossless) };
-                let mut decoder = BoundaryDecoder::new(source, p.avc, *decode_first, *decode_last, pictures)?;
+                let mut decoder = BoundaryDecoder::new(source, source_avc, *decode_first, *decode_last, pictures)?;
                 // the IDR ids next to this segment
                 let mut taken = BTreeSet::new();
                 taken.extend(last_idr);
                 if let Some(Seg::Copy { first, .. }) = p.segs.get(i + 1) {
                     let data = source.file.read_sample(source.bytes, source.track, *first).map_err(io)?;
-                    taken.extend(idr_pic_id(&data, p.avc.length_size, &params)?);
+                    taken.extend(idr_pic_id(&data, source_avc.length_size, &params)?);
                 }
                 let id = (0u16..4).find(|x| !taken.contains(&u32::from(*x))).unwrap_or(0);
                 cfg.first_idr_pic_id = id;
@@ -824,34 +910,25 @@ pub fn execute_mp4_boundary_reencode<W: Write + Seek, S: ByteSource + ?Sized>(
     Ok((out, report))
 }
 
-/// Read back a file written by [`execute_mp4_boundary_reencode`] and check it: the copied samples
-/// are the source samples, the presentation timeline is the planned one without gaps, the whole
-/// output decodes, and every re-encoded picture reaches `encoding.min_psnr` against its source
-/// picture.
-pub fn verify_mp4_boundary_reencode<S: ByteSource + ?Sized, O: ByteSource>(
+/// What each output sample should be: the copied source packet (or `None` for a re-encoded one)
+/// and the source picture a re-encoded sample shows.
+pub(crate) type ExpectedSamples = Vec<(Option<usize>, Vec<usize>)>;
+
+/// The codec-independent part of verifying a boundary re-encode: the output track `0` of `file`
+/// has the planned samples, the copied ones are the source packets, and the presentation timeline
+/// is the planned one without gaps. Returns the expected samples and the report so far (without
+/// `min_psnr`).
+pub(crate) fn check_output_samples<S: ByteSource + ?Sized, O: ByteSource>(
     plan: &ExportExecutionPlan,
-    index: &StreamIndex,
+    p: &Prepared<'_>,
     source: &Mp4CopySource<'_, S>,
-    encoding: &BoundaryEncoding,
-    output: O,
-) -> Result<BoundaryReport, SmartCutError> {
+    file: &Mp4File,
+    output: &O,
+) -> Result<(ExpectedSamples, BoundaryReport), SmartCutError> {
     let fail = |detail: String| SmartCutError::Verification { detail };
-    if !encoding.min_psnr.is_finite() {
-        return Err(fail(format!("min_psnr {} is not a finite threshold", encoding.min_psnr)));
-    }
-    let p = prepare(plan, index, source)?;
-    let file = cfa4_isobmff::open(&output).map_err(|e| fail(format!("the output does not open: {e}")))?;
     let [track] = file.tracks.as_slice() else {
         return Err(fail(format!("the output has {} tracks, expected 1", file.tracks.len())));
     };
-    if track.timescale != p.track.timescale {
-        return Err(fail(format!("timescale {} instead of {}", track.timescale, p.track.timescale)));
-    }
-    let [entry] = track.entries.as_slice() else { return Err(fail("the output has more than one sample entry".into())) };
-    let CodecConfig::Avc(avc) = &entry.codec else { return Err(fail("the output is not H.264".into())) };
-    if !avc.sps.starts_with(&p.avc.sps) || !avc.pps.starts_with(&p.avc.pps) {
-        return Err(fail("the source parameter sets changed".into()));
-    }
     // what each output sample should be: (copied source packet or None, source picture shown)
     let mut expected: Vec<(Option<usize>, Vec<usize>)> = Vec::new();
     let mut shown = Vec::new();
@@ -874,7 +951,7 @@ pub fn verify_mp4_boundary_reencode<S: ByteSource + ?Sized, O: ByteSource>(
     }
     let mut report = BoundaryReport { samples: 0, copied: 0, reencoded: 0, payload_bytes: 0, duration: 0, timescale: track.timescale, min_psnr: None };
     for (k, (out, (copied, shown_by))) in track.samples.iter().zip(&expected).enumerate() {
-        let data = file.read_sample(&output, 0, k).map_err(|e| fail(format!("sample {k}: {e}")))?;
+        let data = file.read_sample(output, 0, k).map_err(|e| fail(format!("sample {k}: {e}")))?;
         if let Some(d) = *copied {
             let src = p.track.samples.get(d).ok_or_else(|| fail(format!("source packet {d} is missing")))?;
             let same = source.file.read_sample(source.bytes, source.track, d).map_err(io)? == data;
@@ -905,6 +982,42 @@ pub fn verify_mp4_boundary_reencode<S: ByteSource + ?Sized, O: ByteSource>(
         }
         at = at.saturating_add(i64::from(p.durations.get(d).copied().unwrap_or(0)));
     }
+    report.samples = report.copied + report.reencoded;
+    Ok((expected, report))
+}
+
+/// Read back a file written by [`execute_mp4_boundary_reencode`] and check it: the copied samples
+/// are the source samples, the presentation timeline is the planned one without gaps, the whole
+/// output decodes, and every re-encoded picture reaches `encoding.min_psnr` against its source
+/// picture.
+pub fn verify_mp4_boundary_reencode<S: ByteSource + ?Sized, O: ByteSource>(
+    plan: &ExportExecutionPlan,
+    index: &StreamIndex,
+    source: &Mp4CopySource<'_, S>,
+    encoding: &BoundaryEncoding,
+    output: O,
+) -> Result<BoundaryReport, SmartCutError> {
+    if plan.codec == Codec::Hevc {
+        return crate::boundary_reencode_hevc::verify(plan, index, source, encoding, output);
+    }
+    let fail = |detail: String| SmartCutError::Verification { detail };
+    if !encoding.min_psnr.is_finite() {
+        return Err(fail(format!("min_psnr {} is not a finite threshold", encoding.min_psnr)));
+    }
+    let (p, source_avc) = prepare_h264(plan, index, source)?;
+    let file = cfa4_isobmff::open(&output).map_err(|e| fail(format!("the output does not open: {e}")))?;
+    let [track] = file.tracks.as_slice() else {
+        return Err(fail(format!("the output has {} tracks, expected 1", file.tracks.len())));
+    };
+    if track.timescale != p.track.timescale {
+        return Err(fail(format!("timescale {} instead of {}", track.timescale, p.track.timescale)));
+    }
+    let [entry] = track.entries.as_slice() else { return Err(fail("the output has more than one sample entry".into())) };
+    let CodecConfig::Avc(avc) = &entry.codec else { return Err(fail("the output is not H.264".into())) };
+    if !avc.sps.starts_with(&source_avc.sps) || !avc.pps.starts_with(&source_avc.pps) {
+        return Err(fail("the source parameter sets changed".into()));
+    }
+    let (expected, mut report) = check_output_samples(plan, &p, source, &file, &output)?;
     // decode the whole output; compare the re-encoded pictures with the source
     let decode_err = |e: cfa4_h264::Error| fail(format!("the output does not decode: {e}"));
     // the source pictures of a boundary are decoded picture by picture as the output reaches
@@ -929,7 +1042,7 @@ pub fn verify_mp4_boundary_reencode<S: ByteSource + ?Sized, O: ByteSource>(
             let b = boundary_of.get(d).copied().ok_or_else(|| fail(format!("no source picture for packet {d}")))?;
             if source_pictures.as_ref().is_none_or(|(current, _)| *current != b) {
                 let (first, last, pictures) = boundaries.get(b).copied().ok_or_else(|| fail(format!("no source picture for packet {d}")))?;
-                source_pictures = Some((b, BoundaryDecoder::new(source, p.avc, first, last, pictures)?));
+                source_pictures = Some((b, BoundaryDecoder::new(source, source_avc, first, last, pictures)?));
             }
             let want = p.track.samples.get(*d).map(|s| s.pts);
             let reference = match source_pictures.as_mut() {
