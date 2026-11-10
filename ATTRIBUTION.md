@@ -28,6 +28,7 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `i18n/pt-br.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Brazilian Portuguese interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
 | `i18n/ru.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Russian interface translations | MIT OR Apache-2.0 |
 | `i18n/uk.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Ukrainian interface translations | MIT OR Apache-2.0 |
+| `i18n/pl.tsv` | CFA4 contributors; the craft-i18n contributors for the imported section (see NOTICE) | Original work: clean-room Polish interface translations; 570 rows imported from craft-i18n (`locales/pl/`) | GPL-3.0-or-later; the imported section MIT OR Apache-2.0 |
 | `assets/fonts/Inter-Regular.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |
 | `assets/fonts/Inter-Medium.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |
 | `assets/fonts/Inter-SemiBold.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |

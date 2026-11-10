@@ -60,6 +60,8 @@ pub enum Language {
     Ko,
     /// Hungarian: the whole interface, Latin script (bundled fonts).
     Hu,
+    /// Polish: the whole interface, Latin script (bundled fonts).
+    Pl,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -81,11 +83,12 @@ static KOREAN: OnceLock<Catalog> = OnceLock::new();
 static INDONESIAN: OnceLock<Catalog> = OnceLock::new();
 static ITALIAN: OnceLock<Catalog> = OnceLock::new();
 static HUNGARIAN: OnceLock<Catalog> = OnceLock::new();
+static POLISH: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 15] = [
+    pub const ALL: [Self; 16] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -99,6 +102,7 @@ impl Language {
         Self::Ko,
         Self::It,
         Self::Hu,
+        Self::Pl,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -118,6 +122,7 @@ impl Language {
             Self::It => "Italiano",
             Self::Ko => "한국어",
             Self::Hu => "Magyar",
+            Self::Pl => "Polski",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -138,6 +143,7 @@ impl Language {
             "it" => Some(Self::It),
             "ko" => Some(Self::Ko),
             "hu" => Some(Self::Hu),
+            "pl" => Some(Self::Pl),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -154,7 +160,7 @@ impl Language {
     /// only for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`); Traditional ones (`zh-TW`,
     /// `zh-HK`, `zh-MO`, `zh-Hant…`) are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 13] = [
+        const PRIMARY: [(&str, Language); 14] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -168,6 +174,7 @@ impl Language {
             ("it", Language::It),
             ("ko", Language::Ko),
             ("hu", Language::Hu),
+            ("pl", Language::Pl),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -215,6 +222,7 @@ impl Language {
             Self::It => "it",
             Self::Ko => "ko",
             Self::Hu => "hu",
+            Self::Pl => "pl",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -236,6 +244,7 @@ impl Language {
             Self::It => Some(ITALIAN.get_or_init(|| Catalog::parse(catalog_file!("it")))),
             Self::Ko => Some(KOREAN.get_or_init(|| Catalog::parse(catalog_file!("ko")))),
             Self::Hu => Some(HUNGARIAN.get_or_init(|| Catalog::parse(catalog_file!("hu")))),
+            Self::Pl => Some(POLISH.get_or_init(|| Catalog::parse(catalog_file!("pl")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -418,6 +427,7 @@ mod tests {
             ("it", catalog_file!("it")),
             ("ko", catalog_file!("ko")),
             ("hu", catalog_file!("hu")),
+            ("pl", catalog_file!("pl")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1522,6 +1532,75 @@ mod tests {
         let alphabet = "ÁÉÍÓÖŐÚÜŰáéíóöőúüű„”»«";
         let letters = entries.iter().flat_map(|(_, _, hu)| hu.chars()).filter(|ch| ch.is_alphabetic() || "„”»«“’–—−…".contains(*ch));
         assert_bundled_fonts_cover(alphabet.chars().chain(Language::Hu.name().chars()).chain(letters));
+    }
+
+    /// The languages translated in full from craft-i18n's locale list (2026-11-10 on): language, menu
+    /// command, catalog, alphabet (every letter the bundled fonts must draw, even ones no entry uses yet) and a
+    /// few spot checks. Like Hungarian, each must stay complete: a new string needs an entry in each
+    /// of them in the same change.
+    const COMPLETE: &[(Language, &str, &str, &str, &[(&str, &str)])] = &[(
+        Language::Pl,
+        "app.language.polish",
+        catalog_file!("pl"),
+        "ĄĆĘŁŃÓŚŹŻąćęłńóśźż„”«»",
+        &[("File", "Plik"), ("Sequence", "Sekwencja"), ("Playhead", "Głowica odtwarzania"), ("Cross Dissolve", "Przenikanie krzyżowe")],
+    )];
+
+    #[test]
+    fn complete_languages_cover_the_whole_interface() {
+        let (spanish, _) = catalog::parse_entries(catalog_file!("es"));
+        for &(language, _, _, _, checks) in COMPLETE {
+            let code = language.code();
+            let missing: Vec<&str> = spanish.iter().filter(|(ctx, en, _)| ctx.is_empty() && !language.has(en)).map(|(_, en, _)| en.as_str()).collect();
+            assert!(missing.is_empty(), "{code}: untranslated entries: {missing:#?}");
+            for en in core_menu_labels().iter().map(String::as_str).chain(crate::menus::MENUS).chain(["Audio"]) {
+                assert!(language.has(en), "{code}: untranslated menu: {en}");
+            }
+            for &(en, tr) in checks {
+                assert_eq!(language.tr(en), tr, "{code}");
+            }
+            assert_eq!(language.tr("An untranslated label"), "An untranslated label");
+            assert_eq!(Language::parse(code), Some(language));
+            assert_eq!(Language::from_locales(&[code.to_string()]), language, "{code}");
+            assert_eq!(Language::from_locales(&[format!("{code}_XX.UTF-8")]), language, "{code}");
+        }
+    }
+
+    #[test]
+    fn complete_languages_render_with_bundled_fonts() {
+        for &(language, _, text, alphabet, _) in COMPLETE {
+            let (entries, _) = catalog::parse_entries(text);
+            // the alphabet, the name, and every letter, quotation mark, dash and ellipsis the entries
+            // use (symbols such as ✔ come from the English sources)
+            let letters = entries.iter().flat_map(|(_, _, tr)| tr.chars()).filter(|ch| ch.is_alphabetic() || "„”«»“‘’–—−…".contains(*ch));
+            assert_bundled_fonts_cover(alphabet.chars().chain(language.name().chars()).chain(letters));
+        }
+    }
+
+    #[test]
+    fn complete_languages_switch_from_the_language_menu() {
+        let ctx = egui::Context::default();
+        let mut app = crate::Cfa4App::new(cfa4_engine::Session::default());
+        for &(language, command, _, _, _) in COMPLETE {
+            let result = crate::menus::invoke(&mut app, &ctx, command, serde_json::json!({})).unwrap();
+            assert_eq!(result, serde_json::json!(language.code()));
+            assert_eq!((app.ui.language, current()), (language, language));
+            assert_eq!(app.session.prefs.general.interface_language, language.code());
+            for it in crate::menus::menu_items(&app).iter().filter(|it| it.id.starts_with("app.language.")) {
+                assert_eq!(it.checked, Some(it.id == command), "{}", it.id);
+            }
+            let items = crate::menus::menu_items(&app);
+            let label = |id: &str| items.iter().find(|it| it.id == id).map(|it| it.label.clone());
+            assert_eq!(label("file.saveAs").as_deref(), Some(language.tr("Save As…")));
+            assert_ne!(label("file.saveAs").as_deref(), Some("Save As…"));
+            assert_eq!(label(command).as_deref(), Some(language.name()));
+            let prefs = serde_json::to_string(&app.session.prefs).unwrap();
+            let mut restarted = cfa4_engine::Session::default();
+            restarted.prefs = serde_json::from_str(&prefs).unwrap();
+            assert_eq!(crate::Cfa4App::new(restarted).ui.language, language);
+        }
+        crate::menus::invoke(&mut app, &ctx, "app.language.english", serde_json::json!({})).unwrap();
+        set_current(Language::En);
     }
 
     #[test]
