@@ -1,0 +1,76 @@
+# Russian (ru) catalog for the strings only the CFA4 Qt GUI has; everything else comes from the
+# shared catalog crates/ui-egui/src/i18n/ru.tsv. Same format: context <TAB> source <TAB> translation.
+# Partial: it covers the Tools menu and the Smart Cut / Smart Export / GOP boundary strings.
+#
+# Clean-room: every entry was written from the plain meaning of the English text using ordinary
+# Russian video-editing vocabulary (дорожка, клип, эпизод, монтажная склейка, перекодирование).
+# No proprietary localisation resource, string table or product UI was consulted or copied; add
+# entries the same way. Product, format and technology names (CFA4, GOP, Smart Cut…) keep their
+# spelling.
+
+	Video Tools	Видеоинструменты
+	Audio Tools	Аудиоинструменты
+	Publication Tools	Инструменты публикации
+	Smart Export…	Smart Export…
+	Smart Export	Smart Export
+	Smart Cut Source	Smart Cut исходника
+	Smart Cut Source…	Smart Cut исходника…
+	Smart Render	Smart Render
+	Show GOP Boundaries	Показывать границы GOP
+	Open a video clip in the Source monitor first.	Сначала откройте видеоклип в мониторе исходника.
+	Add Beat Markers	Добавить маркеры долей
+	Batch Variants from Spreadsheet…	Пакетные варианты из таблицы…
+	Check Before Export…	Проверка перед экспортом…
+	Social Deliverables…	Материалы для соцсетей…
+	Export Media…	Экспорт медиа…
+	Quick Export	Быстрый экспорт
+	Text to Speech	Синтез речи
+	Analyzing the clip…	Анализ клипа…
+	At GOP boundaries (no re-encoding)	По границам GOP (без перекодирования)
+	Automatic	Автоматически
+	Bit-exact copy	Побитовая копия
+	Browse…	Обзор…
+	Cancel	Отмена
+	Choose a file name and location.	Выберите имя и расположение файла.
+	Choose the output file.	Выберите выходной файл.
+	Compatible copy	Совместимая копия
+	Copy:	Копирование:
+	Cut:	Вырезка:
+	Export mode	Режим экспорта
+	Frame accurate (re-encode the boundaries)	С точностью до кадра (перекодировать границы)
+	Full Render	Полный рендеринг
+	Output:	Выход:
+	Planning…	Планирование…
+	Recommended: Smart Render (asks before re-encoding)	Рекомендуется: Smart Render (спрашивает перед перекодированием)
+	Recommended: Stream Copy (nothing is re-encoded)	Рекомендуется: копирование потока (ничего не перекодируется)
+	Rendered because of: {causes}	Рендерится из-за: {causes}
+	Smart Cut is not available for this clip: {why}	Smart Cut недоступен для этого клипа: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut записан и проверен: {path} (кадров: {frames})
+	Smart Export written and verified: {path}	Smart Export записан и проверен: {path}
+	Stream Copy – Bit-exact	Копирование потока – побитовое
+	Stream Copy – Compatible	Копирование потока – совместимое
+	Stream copy is not possible: {frames} frames need re-encoding.	Копирование потока невозможно: требуется перекодировать кадров: {frames}.
+	The cut cannot run.	Вырезку нельзя выполнить.
+	The engine sent no analysis.	Движок не прислал анализ.
+	The export cannot run.	Экспорт нельзя выполнить.
+	Wait for the export plan.	Дождитесь плана экспорта.
+	Writing and verifying the cut…	Запись и проверка вырезки…
+	Writing and verifying the export…	Запись и проверка экспорта…
+	colour conversion	преобразования цвета
+	compositing	композитинга
+	copied	скопировано
+	effects	эффектов
+	frame rate	частоты кадров
+	proxies or nested sequences	прокси или вложенных эпизодов
+	re-encoded at a cut	перекодировано на склейке
+	rendered	отрендерено
+	sources that cannot be copied	исходников, которые нельзя скопировать
+	speed changes	изменений скорости
+	titles or overlays	титров или наложений
+	transforms	трансформаций
+	transitions	переходов
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} в {container}: GOP: {gops}, чистых точек реза: {points}
+	{copied} frames copied, {reencoded} frames re-encoded	Кадров скопировано: {copied}, перекодировано: {reencoded}
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Кадров скопировано: {copied}, перекодировано на склейках: {reencoded}, отрендерено: {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	Кадров будет перекодировано или отрендерено: {frames}. Продолжить?
+	{frames} frames at the boundaries are re-encoded. Continue?	Кадров на границах будет перекодировано: {frames}. Продолжить?

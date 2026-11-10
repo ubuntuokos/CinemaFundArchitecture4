@@ -391,3 +391,8 @@
 	transitions	transiciones
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogramas copiados, {reencoded} recodificados en cortes, {rendered} renderizados
 	{frames} frames are re-encoded or rendered. Continue?	Se recodifican o renderizan {frames} fotogramas. ¿Continuar?
+# Tools menu (Video / Audio / Publication Tools)
+	Video Tools	Herramientas de vídeo
+	Audio Tools	Herramientas de audio
+	Publication Tools	Herramientas de publicación
+	Smart Export…	Smart Export…

@@ -391,3 +391,8 @@
 	transitions	transitions
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} images copiées, {reencoded} réencodées aux coupes, {rendered} rendues
 	{frames} frames are re-encoded or rendered. Continue?	{frames} images seront réencodées ou rendues. Continuer ?
+# Tools menu (Video / Audio / Publication Tools)
+	Video Tools	Outils vidéo
+	Audio Tools	Outils audio
+	Publication Tools	Outils de publication
+	Smart Export…	Smart Export…

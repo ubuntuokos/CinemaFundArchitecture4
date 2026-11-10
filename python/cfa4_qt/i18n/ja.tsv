@@ -391,3 +391,8 @@
 	transitions	トランジション
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} フレームをコピー、{reencoded} をカット位置で再エンコード、{rendered} をレンダリング
 	{frames} frames are re-encoded or rendered. Continue?	{frames} フレームを再エンコードまたはレンダリングします。続行しますか？
+# Tools menu (Video / Audio / Publication Tools)
+	Video Tools	ビデオツール
+	Audio Tools	オーディオツール
+	Publication Tools	公開ツール
+	Smart Export…	スマート書き出し…

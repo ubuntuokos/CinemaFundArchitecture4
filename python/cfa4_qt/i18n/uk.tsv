@@ -1,0 +1,76 @@
+# Ukrainian (uk) catalog for the strings only the CFA4 Qt GUI has; everything else comes from the
+# shared catalog crates/ui-egui/src/i18n/uk.tsv. Same format: context <TAB> source <TAB> translation.
+# Partial: it covers the Tools menu and the Smart Cut / Smart Export / GOP boundary strings.
+#
+# Clean-room: every entry was written from the plain meaning of the English text using ordinary
+# Ukrainian video-editing vocabulary (доріжка, кліп, епізод, монтажна склейка, перекодування).
+# No proprietary localisation resource, string table or product UI was consulted or copied; add
+# entries the same way. Product, format and technology names (CFA4, GOP, Smart Cut…) keep their
+# spelling.
+
+	Video Tools	Відеоінструменти
+	Audio Tools	Аудіоінструменти
+	Publication Tools	Інструменти публікації
+	Smart Export…	Smart Export…
+	Smart Export	Smart Export
+	Smart Cut Source	Smart Cut джерела
+	Smart Cut Source…	Smart Cut джерела…
+	Smart Render	Smart Render
+	Show GOP Boundaries	Показувати межі GOP
+	Open a video clip in the Source monitor first.	Спочатку відкрийте відеокліп у моніторі джерела.
+	Add Beat Markers	Додати маркери долей
+	Batch Variants from Spreadsheet…	Пакетні варіанти з таблиці…
+	Check Before Export…	Перевірка перед експортом…
+	Social Deliverables…	Матеріали для соцмереж…
+	Export Media…	Експорт медіа…
+	Quick Export	Швидкий експорт
+	Text to Speech	Синтез мовлення
+	Analyzing the clip…	Аналіз кліпу…
+	At GOP boundaries (no re-encoding)	За межами GOP (без перекодування)
+	Automatic	Автоматично
+	Bit-exact copy	Побітова копія
+	Browse…	Огляд…
+	Cancel	Скасувати
+	Choose a file name and location.	Виберіть назву та розташування файлу.
+	Choose the output file.	Виберіть вихідний файл.
+	Compatible copy	Сумісна копія
+	Copy:	Копіювання:
+	Cut:	Вирізання:
+	Export mode	Режим експорту
+	Frame accurate (re-encode the boundaries)	З точністю до кадру (перекодувати межі)
+	Full Render	Повний рендеринг
+	Output:	Вихід:
+	Planning…	Планування…
+	Recommended: Smart Render (asks before re-encoding)	Рекомендовано: Smart Render (запитує перед перекодуванням)
+	Recommended: Stream Copy (nothing is re-encoded)	Рекомендовано: копіювання потоку (нічого не перекодовується)
+	Rendered because of: {causes}	Рендериться через: {causes}
+	Smart Cut is not available for this clip: {why}	Smart Cut недоступний для цього кліпу: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut записано й перевірено: {path} (кадрів: {frames})
+	Smart Export written and verified: {path}	Smart Export записано й перевірено: {path}
+	Stream Copy – Bit-exact	Копіювання потоку – побітове
+	Stream Copy – Compatible	Копіювання потоку – сумісне
+	Stream copy is not possible: {frames} frames need re-encoding.	Копіювання потоку неможливе: потрібно перекодувати кадрів: {frames}.
+	The cut cannot run.	Вирізання неможливо виконати.
+	The engine sent no analysis.	Рушій не надіслав аналіз.
+	The export cannot run.	Експорт неможливо виконати.
+	Wait for the export plan.	Дочекайтеся плану експорту.
+	Writing and verifying the cut…	Запис і перевірка вирізання…
+	Writing and verifying the export…	Запис і перевірка експорту…
+	colour conversion	перетворення кольору
+	compositing	композитингу
+	copied	скопійовано
+	effects	ефектів
+	frame rate	частоти кадрів
+	proxies or nested sequences	проксі або вкладених епізодів
+	re-encoded at a cut	перекодовано на склейці
+	rendered	відрендерено
+	sources that cannot be copied	джерел, які не можна скопіювати
+	speed changes	змін швидкості
+	titles or overlays	титрів або накладань
+	transforms	трансформацій
+	transitions	переходів
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} у {container}: GOP: {gops}, чистих точок різу: {points}
+	{copied} frames copied, {reencoded} frames re-encoded	Кадрів скопійовано: {copied}, перекодовано: {reencoded}
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Кадрів скопійовано: {copied}, перекодовано на склейках: {reencoded}, відрендерено: {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	Кадрів буде перекодовано або відрендерено: {frames}. Продовжити?
+	{frames} frames at the boundaries are re-encoded. Continue?	Кадрів на межах буде перекодовано: {frames}. Продовжити?

@@ -391,3 +391,8 @@
 	transitions	transisi
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} bingkai disalin, {reencoded} dienkode ulang di potongan, {rendered} dirender
 	{frames} frames are re-encoded or rendered. Continue?	{frames} bingkai dienkode ulang atau dirender. Lanjutkan?
+# Tools menu (Video / Audio / Publication Tools)
+	Video Tools	Alat video
+	Audio Tools	Alat audio
+	Publication Tools	Alat publikasi
+	Smart Export…	Smart Export…
