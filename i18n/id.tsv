@@ -4007,3 +4007,100 @@
 	transitions	transisi
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} bingkai disalin, {reencoded} dienkode ulang di potongan, {rendered} dirender
 	{frames} frames are re-encoded or rendered. Continue?	{frames} bingkai dienkode ulang atau dirender. Lanjutkan?
+
+# Completed 2026-11-10: the strings this catalog still lacked (egui and Qt GUI). Same clean-room rule.
+
+	Adjustment Layer	Lapisan Penyesuaian
+	Burn in captions	Tanamkan teks
+	Delete Keyframe	Hapus Bingkai Kunci
+	Enabled	Aktif
+	End	Akhir
+	Set a fixed bitrate	Tetapkan laju bit tetap
+	Go to End	Ke Akhir
+	Go to Start	Ke Awal
+	Graphic	Grafik
+	Inspector	Inspektor
+	Merged Clip	Klip Gabungan
+	New Sequence…	Sekuens Baru…
+	Noise Reduction	Pengurangan Derau
+	Restoration	Restorasi
+	Save changes to '{name}' before closing?	Simpan perubahan pada “{name}” sebelum menutup?
+	Save changes to '{name}' before continuing?	Simpan perubahan pada “{name}” sebelum melanjutkan?
+	Selected	Terpilih
+	Source In	Titik Masuk Sumber
+	Start	Awal
+	Still Image	Gambar Diam
+	Subclip	Subklip
+	off	mati
+	Render	Render
+	Job	Tugas
+	Voice-over recording is not in the Qt GUI yet	Perekaman sulih suara belum ada di antarmuka Qt
+	English	Bahasa Inggris
+	After installing, restart CFA4.	Setelah memasang, mulai ulang CFA4.
+	Available, switched off	Tersedia, dimatikan
+	Left out by the routing table	Dikecualikan oleh tabel perutean
+	CFA4 engine	Mesin CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Mesin CFA4 sendiri membuka setiap berkas yang bisa dibukanya. Backend pelengkap di bawah mengambil alih, dengan urutan ini, hanya untuk berkas yang belum bisa dibuka mesin. Mematikan backend berlaku untuk berkas yang dibuka sesudahnya.
+	Capabilities	Kemampuan
+	Copy command	Salin perintah
+	H.264 software encoding (x264)	Pengodean perangkat lunak H.264 (x264)
+	HEVC software encoding (x265)	Pengodean perangkat lunak HEVC (x265)
+	In use	Digunakan
+	Licence	Lisensi
+	Media Backends	Backend Media
+	Media Backends…	Backend Media…
+	Not available	Tidak tersedia
+	Not part of this build	Tidak termasuk dalam build ini
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Dekoder dan enkoder Rust sendiri: selalu dipakai lebih dulu, dan menjadi cadangan saat backend pelengkap gagal
+	Restricted Codecs…	Kodek Terbatas…
+	Restricted codecs	Kodek terbatas
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Beberapa kodek adalah perangkat lunak bebas tetapi menerapkan format yang dipatenkan. Seperti Ubuntu, CFA4 tidak memasangnya secara bawaan: paket dasar berfungsi tanpanya, dan Anda yang memutuskan apakah akan memasangnya. Penggunaannya mungkin dibatasi di beberapa negara; pastikan diizinkan di tempat Anda.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Dekoder pelengkap untuk format yang belum dibaca mesin sendiri (media kamera 10-bit dan 4:2:2, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Dekoder pelengkap dari GStreamer sistem (Ogg Theora, FLV, WMV, dan format lain); LGPL, dari repositori Ubuntu
+	The engine did not answer: {message}	Mesin tidak menjawab: {message}
+	To install them: {command}	Untuk memasangnya: {command}
+	Use this backend	Gunakan backend ini
+	installed	terpasang
+	not installed	tidak terpasang
+	on	hidup
+	Up	Naik
+	Down	Turun
+	Settings not taken	Pengaturan tidak diterapkan
+	the project has not been saved yet	proyek belum disimpan
+	more tabs	tab lainnya
+	A file dialog is already open	Dialog berkas sudah terbuka
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24-bit
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, stereo 48 kHz 24-bit, tanpa kehilangan
+	FLAC (lossless)	FLAC (tanpa kehilangan)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12-bit
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12-bit dengan Alfa
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10-bit
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, PCM 24-bit 48 kHz
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit dengan saluran alfa, Film Scan 1, PCM 24-bit 48 kHz
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, PCM 24-bit 48 kHz
+	Drag inward to round the corners	Seret ke dalam untuk membulatkan sudut
+	Resize floating panel	Ubah ukuran panel mengambang
+	Safe graphics mode: {mode}	Mode grafik aman: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Permulaan sebelumnya gagal dengan grafik bawaan. Memperbarui driver grafik biasanya mengatasinya.
+	Use Default Graphics	Gunakan Grafik Bawaan
+	The default graphics are used from the next start.	Grafik bawaan digunakan mulai permulaan berikutnya.
+	DirectX 12 only	Hanya DirectX 12
+	software rendering	rendering perangkat lunak
+	Opens in your web browser: {url}	Dibuka di peramban web Anda: {url}
+	Saves this session's log and shows it in your file manager.	Menyimpan log sesi ini dan menampilkannya di pengelola berkas.
+	Shows a report on this computer.	Menampilkan laporan tentang komputer ini.
+	Shows the version, community links and credits in a CFA4 window.	Menampilkan versi, tautan komunitas, dan kredit di jendela CFA4.
+	Couldn't open your web browser	Tidak dapat membuka peramban web
+	Open this address in your browser yourself:	Buka sendiri alamat ini di peramban Anda:
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	Program Stream MPEG-2
+	MPEG-2 Transport Stream HD 1080	Transport Stream MPEG-2 HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 pada 29,97 fps, 16:9 anamorfik, 6 Mbps, GOP 18, LPCM 16-bit 48 kHz, .mpg (aliran siap DVD; tanpa authoring VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 pada 25 fps, 16:9 anamorfik, 6 Mbps, GOP 15, LPCM 16-bit 48 kHz, .mpg (aliran siap DVD; tanpa authoring VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Video MPEG-2 (Main Profile 4:2:0, 0,4 bit per piksel) dengan ukuran dan laju bingkai sekuens, LPCM 16-bit 48 kHz, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Video MPEG-2 1920×1080, rata-rata 18 Mbps, AAC 192 kbps, .ts
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Gunakan FFmpeg untuk berkas yang tidak bisa dibuka mesin CFA4 (FFmpeg 9.0.2 atau lebih baru, build GPL-3)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Gunakan GStreamer sistem untuk berkas yang tidak bisa dibuka mesin maupun FFmpeg

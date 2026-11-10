@@ -4043,3 +4043,63 @@
 	transitions	transiciones
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogramas copiados, {reencoded} recodificados en cortes, {rendered} renderizados
 	{frames} frames are re-encoded or rendered. Continue?	Se recodifican o renderizan {frames} fotogramas. ¿Continuar?
+
+# Completed 2026-11-10: the strings this catalog still lacked (egui and Qt GUI). Same clean-room rule.
+
+	Adjustment Layer	Capa de ajuste
+	Burn in captions	Incrustar subtítulos
+	Delete Keyframe	Eliminar fotograma clave
+	Enabled	Activado
+	End	Final
+	Set a fixed bitrate	Establecer una velocidad de bits fija
+	Go to End	Ir al final
+	Go to Start	Ir al inicio
+	Graphic	Gráfico
+	Inspector	Inspector
+	Merged Clip	Clip combinado
+	New Sequence…	Nueva secuencia…
+	Noise Reduction	Reducción de ruido
+	Restoration	Restauración
+	Save changes to '{name}' before closing?	¿Guardar los cambios de «{name}» antes de cerrar?
+	Save changes to '{name}' before continuing?	¿Guardar los cambios de «{name}» antes de continuar?
+	Selected	Seleccionado
+	Source In	Entrada de origen
+	Start	Inicio
+	Still Image	Imagen fija
+	Subclip	Subclip
+	off	desactivado
+	Render	Procesar
+	Job	Tarea
+	Voice-over recording is not in the Qt GUI yet	La grabación de voz en off aún no está en la interfaz Qt
+	English	Inglés
+	After installing, restart CFA4.	Después de instalar, reinicie CFA4.
+	Available, switched off	Disponible, desactivado
+	Left out by the routing table	Excluido por la tabla de enrutamiento
+	CFA4 engine	Motor de CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	El motor propio de CFA4 abre todos los archivos que puede. Los backends complementarios de abajo intervienen, en este orden, solo con los archivos que el motor aún no puede abrir. Desactivar un backend afecta a los archivos que se abran después.
+	Capabilities	Capacidades
+	Copy command	Copiar comando
+	H.264 software encoding (x264)	Codificación H.264 por software (x264)
+	HEVC software encoding (x265)	Codificación HEVC por software (x265)
+	In use	En uso
+	Licence	Licencia
+	Media Backends…	Backends de medios…
+	Not available	No disponible
+	Not part of this build	No incluido en esta compilación
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Decodificadores y codificadores propios en Rust: siempre se usan primero y son el respaldo cuando falla un backend complementario
+	Restricted Codecs…	Códecs restringidos…
+	Restricted codecs	Códecs restringidos
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Algunos códecs son software libre, pero implementan formatos patentados. Como Ubuntu, CFA4 no los instala de forma predeterminada: el paquete base funciona sin ellos y usted decide si instalarlos. Su uso puede estar restringido en algunos países; compruebe que esté permitido donde se encuentra.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Decodificador complementario para formatos que el motor propio aún no lee (medios de cámara de 10 bits y 4:2:2, AVI, DV, WMV, MPEG-4 Parte 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Decodificador complementario del GStreamer del sistema (Ogg Theora, FLV, WMV y otros formatos); LGPL, de los repositorios de Ubuntu
+	The engine did not answer: {message}	El motor no respondió: {message}
+	To install them: {command}	Para instalarlos: {command}
+	Use this backend	Usar este backend
+	installed	instalado
+	not installed	no instalado
+	on	activado
+	Up	Subir
+	Down	Bajar
+	Settings not taken	Ajustes no aplicados
+	the project has not been saved yet	el proyecto aún no se ha guardado
+	more tabs	más pestañas

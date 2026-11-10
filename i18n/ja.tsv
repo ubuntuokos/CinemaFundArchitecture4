@@ -4045,3 +4045,63 @@
 	transitions	トランジション
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} フレームをコピー、{reencoded} をカット位置で再エンコード、{rendered} をレンダリング
 	{frames} frames are re-encoded or rendered. Continue?	{frames} フレームを再エンコードまたはレンダリングします。続行しますか？
+
+# Completed 2026-11-10: the strings this catalog still lacked (egui and Qt GUI). Same clean-room rule.
+
+	Adjustment Layer	調整レイヤー
+	Burn in captions	キャプションを焼き込む
+	Delete Keyframe	キーフレームを削除
+	Enabled	有効
+	End	終了
+	Set a fixed bitrate	固定ビットレートを設定
+	Go to End	最後へ移動
+	Go to Start	最初へ移動
+	Graphic	グラフィック
+	Inspector	インスペクター
+	Merged Clip	統合クリップ
+	New Sequence…	新規シーケンス…
+	Noise Reduction	ノイズ除去
+	Restoration	修復
+	Save changes to '{name}' before closing?	閉じる前に「{name}」の変更を保存しますか？
+	Save changes to '{name}' before continuing?	続行する前に「{name}」の変更を保存しますか？
+	Selected	選択済み
+	Source In	ソースのイン
+	Start	開始
+	Still Image	静止画
+	Subclip	サブクリップ
+	off	オフ
+	Render	レンダリング
+	Job	ジョブ
+	Voice-over recording is not in the Qt GUI yet	ナレーション録音は Qt GUI にまだありません
+	English	英語
+	After installing, restart CFA4.	インストール後に CFA4 を再起動してください。
+	Available, switched off	利用可能、オフ
+	Left out by the routing table	ルーティング表で除外
+	CFA4 engine	CFA4 エンジン
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	CFA4 独自のエンジンは開けるファイルをすべて開きます。下の補助バックエンドは、エンジンがまだ開けないファイルに限り、この順序で引き継ぎます。バックエンドをオフにすると、その後に開くファイルに反映されます。
+	Capabilities	機能
+	Copy command	コマンドをコピー
+	H.264 software encoding (x264)	H.264 ソフトウェアエンコード (x264)
+	HEVC software encoding (x265)	HEVC ソフトウェアエンコード (x265)
+	In use	使用中
+	Licence	ライセンス
+	Media Backends…	メディアバックエンド…
+	Not available	利用不可
+	Not part of this build	このビルドには含まれていません
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	独自の Rust デコーダーとエンコーダー: 常に最初に使われ、補助バックエンドが失敗したときの代替にもなります
+	Restricted Codecs…	制限付きコーデック…
+	Restricted codecs	制限付きコーデック
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	一部のコーデックはフリーソフトウェアですが、特許のある形式を実装しています。Ubuntu と同じく、CFA4 はこれらを標準ではインストールしません。基本パッケージはこれらなしで動作し、インストールするかどうかはお客様が決めます。国によっては使用が制限されている場合があります。お住まいの地域で許可されているか確認してください。
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	独自エンジンがまだ読めない形式のための補助デコーダー (10 ビットと 4:2:2 のカメラメディア、AVI、DV、WMV、MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	システムの GStreamer による補助デコーダー (Ogg Theora、FLV、WMV ほか)。LGPL、Ubuntu のリポジトリから
+	The engine did not answer: {message}	エンジンが応答しませんでした: {message}
+	To install them: {command}	インストールするには: {command}
+	Use this backend	このバックエンドを使用
+	installed	インストール済み
+	not installed	未インストール
+	on	オン
+	Up	上へ
+	Down	下へ
+	Settings not taken	設定は適用されませんでした
+	the project has not been saved yet	プロジェクトはまだ保存されていません
+	more tabs	その他のタブ

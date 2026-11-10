@@ -4009,3 +4009,100 @@
 	transitions	transições
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} quadros copiados, {reencoded} recodificados em cortes, {rendered} renderizados
 	{frames} frames are re-encoded or rendered. Continue?	{frames} quadros serão recodificados ou renderizados. Continuar?
+
+# Completed 2026-11-10: the strings this catalog still lacked (egui and Qt GUI). Same clean-room rule.
+
+	Adjustment Layer	Camada de ajuste
+	Burn in captions	Gravar legendas na imagem
+	Delete Keyframe	Excluir quadro-chave
+	Enabled	Ativado
+	End	Fim
+	Set a fixed bitrate	Definir uma taxa de bits fixa
+	Go to End	Ir para o fim
+	Go to Start	Ir para o início
+	Graphic	Gráfico
+	Inspector	Inspetor
+	Merged Clip	Clipe mesclado
+	New Sequence…	Nova sequência…
+	Noise Reduction	Redução de ruído
+	Restoration	Restauração
+	Save changes to '{name}' before closing?	Salvar as alterações em “{name}” antes de fechar?
+	Save changes to '{name}' before continuing?	Salvar as alterações em “{name}” antes de continuar?
+	Selected	Selecionado
+	Source In	Entrada da origem
+	Start	Início
+	Still Image	Imagem estática
+	Subclip	Subclipe
+	off	desligado
+	Render	Renderizar
+	Job	Tarefa
+	Voice-over recording is not in the Qt GUI yet	A gravação de narração ainda não está na interface Qt
+	English	Inglês
+	After installing, restart CFA4.	Após instalar, reinicie o CFA4.
+	Available, switched off	Disponível, desligado
+	Left out by the routing table	Excluído pela tabela de roteamento
+	CFA4 engine	Mecanismo do CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	O mecanismo próprio do CFA4 abre todos os arquivos que consegue. Os back-ends complementares abaixo assumem, nesta ordem, apenas os arquivos que o mecanismo ainda não consegue abrir. Desligar um back-end afeta os arquivos abertos depois.
+	Capabilities	Recursos
+	Copy command	Copiar comando
+	H.264 software encoding (x264)	Codificação H.264 por software (x264)
+	HEVC software encoding (x265)	Codificação HEVC por software (x265)
+	In use	Em uso
+	Licence	Licença
+	Media Backends	Back-ends de mídia
+	Media Backends…	Back-ends de mídia…
+	Not available	Não disponível
+	Not part of this build	Não incluído nesta compilação
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Decodificadores e codificadores próprios em Rust: sempre usados primeiro e a alternativa quando um back-end complementar falha
+	Restricted Codecs…	Codecs restritos…
+	Restricted codecs	Codecs restritos
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Alguns codecs são software livre, mas implementam formatos patenteados. Como o Ubuntu, o CFA4 não os instala por padrão: o pacote básico funciona sem eles, e você decide se quer instalá-los. O uso pode ser restrito em alguns países; verifique se é permitido onde você está.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Decodificador complementar para formatos que o mecanismo próprio ainda não lê (mídia de câmera de 10 bits e 4:2:2, AVI, DV, WMV, MPEG-4 Parte 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Decodificador complementar do GStreamer do sistema (Ogg Theora, FLV, WMV e outros formatos); LGPL, dos repositórios do Ubuntu
+	The engine did not answer: {message}	O mecanismo não respondeu: {message}
+	To install them: {command}	Para instalá-los: {command}
+	Use this backend	Usar este back-end
+	installed	instalado
+	not installed	não instalado
+	on	ligado
+	Up	Subir
+	Down	Descer
+	Settings not taken	Configurações não aplicadas
+	the project has not been saved yet	o projeto ainda não foi salvo
+	more tabs	mais guias
+	A file dialog is already open	Uma caixa de diálogo de arquivo já está aberta
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 bits
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, estéreo 48 kHz 24 bits, sem perdas
+	FLAC (lossless)	FLAC (sem perdas)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 bits
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 bits com alfa
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bits
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 bits, Film Scan 1, PCM 24 bits 48 kHz
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 bits com canal alfa, Film Scan 1, PCM 24 bits 48 kHz
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bits, Film Scan 1, PCM 24 bits 48 kHz
+	Drag inward to round the corners	Arraste para dentro para arredondar os cantos
+	Resize floating panel	Redimensionar painel flutuante
+	Safe graphics mode: {mode}	Modo gráfico seguro: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Uma inicialização anterior falhou com os gráficos padrão. Atualizar o driver gráfico costuma resolver isso.
+	Use Default Graphics	Usar gráficos padrão
+	The default graphics are used from the next start.	Os gráficos padrão serão usados a partir da próxima inicialização.
+	DirectX 12 only	Somente DirectX 12
+	software rendering	renderização por software
+	Opens in your web browser: {url}	Abre no navegador: {url}
+	Saves this session's log and shows it in your file manager.	Salva o registro desta sessão e o mostra no gerenciador de arquivos.
+	Shows a report on this computer.	Mostra um relatório sobre este computador.
+	Shows the version, community links and credits in a CFA4 window.	Mostra a versão, os links da comunidade e os créditos em uma janela do CFA4.
+	Couldn't open your web browser	Não foi possível abrir o navegador
+	Open this address in your browser yourself:	Abra você mesmo este endereço no navegador:
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	Fluxo de programa MPEG-2
+	MPEG-2 Transport Stream HD 1080	Fluxo de transporte MPEG-2 HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 a 29,97 fps, 16:9 anamórfico, 6 Mbps, GOP 18, LPCM 16 bits 48 kHz, .mpg (fluxo pronto para DVD; sem autoria de VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 a 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, LPCM 16 bits 48 kHz, .mpg (fluxo pronto para DVD; sem autoria de VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Vídeo MPEG-2 (Main Profile 4:2:0, 0,4 bit por pixel) no tamanho e na taxa de quadros da sequência, LPCM 16 bits 48 kHz, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Vídeo MPEG-2 1920×1080, 18 Mbps em média, AAC 192 kbps, .ts
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Usar o FFmpeg para arquivos que o mecanismo do CFA4 não consegue abrir (FFmpeg 9.0.2 ou posterior, compilação GPL-3)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Usar o GStreamer do sistema para arquivos que nem o mecanismo nem o FFmpeg conseguem abrir

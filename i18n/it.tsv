@@ -4016,3 +4016,83 @@
 	transitions	transizioni
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogrammi copiati, {reencoded} ricodificati ai tagli, {rendered} renderizzati
 	{frames} frames are re-encoded or rendered. Continue?	{frames} fotogrammi vengono ricodificati o renderizzati. Continuare?
+
+# Completed 2026-11-10: the strings this catalog still lacked (egui and Qt GUI). Same clean-room rule.
+
+	Adjustment Layer	Livello di regolazione
+	Burn in captions	Imprimi i sottotitoli
+	Delete Keyframe	Elimina fotogramma chiave
+	Enabled	Attivato
+	End	Fine
+	Set a fixed bitrate	Imposta un bitrate fisso
+	Go to End	Vai alla fine
+	Go to Start	Vai all'inizio
+	Graphic	Grafica
+	Inspector	Ispettore
+	Merged Clip	Clip unita
+	New Sequence…	Nuova sequenza…
+	Noise Reduction	Riduzione del rumore
+	Restoration	Restauro
+	Save changes to '{name}' before closing?	Salvare le modifiche a «{name}» prima di chiudere?
+	Save changes to '{name}' before continuing?	Salvare le modifiche a «{name}» prima di continuare?
+	Selected	Selezionato
+	Source In	Attacco sorgente
+	Start	Inizio
+	Still Image	Immagine fissa
+	Subclip	Sottoclip
+	off	disattivato
+	Render	Rendering
+	Job	Processo
+	Voice-over recording is not in the Qt GUI yet	La registrazione della voce fuori campo non è ancora nell'interfaccia Qt
+	English	Inglese
+	After installing, restart CFA4.	Dopo l'installazione, riavvia CFA4.
+	Available, switched off	Disponibile, disattivato
+	Left out by the routing table	Escluso dalla tabella di instradamento
+	CFA4 engine	Motore di CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Il motore di CFA4 apre ogni file che può. I backend supplementari qui sotto subentrano, in quest'ordine, solo per i file che il motore non sa ancora aprire. Disattivare un backend riguarda i file aperti in seguito.
+	Capabilities	Funzionalità
+	Copy command	Copia comando
+	H.264 software encoding (x264)	Codifica software H.264 (x264)
+	HEVC software encoding (x265)	Codifica software HEVC (x265)
+	In use	In uso
+	Licence	Licenza
+	Media Backends	Backend multimediali
+	Media Backends…	Backend multimediali…
+	Not available	Non disponibile
+	Not part of this build	Non incluso in questa build
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Decoder ed encoder Rust propri: usati sempre per primi, e la riserva quando un backend supplementare non riesce
+	Restricted Codecs…	Codec soggetti a restrizioni…
+	Restricted codecs	Codec soggetti a restrizioni
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Alcuni codec sono software libero ma implementano formati brevettati. Come Ubuntu, CFA4 non li installa per impostazione predefinita: il pacchetto di base funziona senza, e sei tu a decidere se installarli. Il loro uso può essere limitato in alcuni paesi; verifica che sia consentito dove ti trovi.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Decoder supplementare per i formati che il motore proprio non legge ancora (media di videocamera a 10 bit e 4:2:2, AVI, DV, WMV, MPEG-4 Parte 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Decoder supplementare dal GStreamer di sistema (Ogg Theora, FLV, WMV e altri formati); LGPL, dai repository di Ubuntu
+	The engine did not answer: {message}	Il motore non ha risposto: {message}
+	To install them: {command}	Per installarli: {command}
+	Use this backend	Usa questo backend
+	installed	installato
+	not installed	non installato
+	on	attivato
+	Up	Su
+	Down	Giù
+	Settings not taken	Impostazioni non applicate
+	the project has not been saved yet	il progetto non è ancora stato salvato
+	more tabs	altre schede
+	no Korean font is installed on this system; the interface stays in English	nessun font coreano è installato su questo sistema; l'interfaccia resta in inglese
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 bit
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 bit con alfa
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bit
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 bit, Film Scan 1, PCM 24 bit 48 kHz
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 bit con canale alfa, Film Scan 1, PCM 24 bit 48 kHz
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bit, Film Scan 1, PCM 24 bit 48 kHz
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	Program stream MPEG-2
+	MPEG-2 Transport Stream HD 1080	Transport stream MPEG-2 HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 a 29,97 fps, 16:9 anamorfico, 6 Mbps, GOP 18, LPCM 16 bit 48 kHz, .mpg (flusso pronto per DVD; senza authoring VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 a 25 fps, 16:9 anamorfico, 6 Mbps, GOP 15, LPCM 16 bit 48 kHz, .mpg (flusso pronto per DVD; senza authoring VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Video MPEG-2 (Main Profile 4:2:0, 0,4 bit per pixel) alle dimensioni e alla frequenza dei fotogrammi della sequenza, LPCM 16 bit 48 kHz, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Video MPEG-2 1920×1080, 18 Mbps medi, AAC 192 kbps, .ts
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Usa FFmpeg per i file che il motore di CFA4 non può aprire (FFmpeg 9.0.2 o successivo, build GPL-3)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Usa il GStreamer di sistema per i file che né il motore né FFmpeg possono aprire

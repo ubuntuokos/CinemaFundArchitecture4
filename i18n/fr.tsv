@@ -4022,3 +4022,82 @@
 	transitions	transitions
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} images copiées, {reencoded} réencodées aux coupes, {rendered} rendues
 	{frames} frames are re-encoded or rendered. Continue?	{frames} images seront réencodées ou rendues. Continuer ?
+
+# Completed 2026-11-10: the strings this catalog still lacked (egui and Qt GUI). Same clean-room rule.
+
+	Adjustment Layer	Calque de réglage
+	Burn in captions	Incruster les sous-titres
+	Delete Keyframe	Supprimer l'image clé
+	Enabled	Activé
+	End	Fin
+	Set a fixed bitrate	Définir un débit fixe
+	Go to End	Aller à la fin
+	Go to Start	Aller au début
+	Graphic	Graphique
+	Inspector	Inspecteur
+	Merged Clip	Élément fusionné
+	New Sequence…	Nouvelle séquence…
+	Noise Reduction	Réduction du bruit
+	Restoration	Restauration
+	Save changes to '{name}' before closing?	Enregistrer les modifications de « {name} » avant de fermer ?
+	Save changes to '{name}' before continuing?	Enregistrer les modifications de « {name} » avant de continuer ?
+	Selected	Sélectionné
+	Source In	Entrée source
+	Start	Début
+	Still Image	Image fixe
+	Subclip	Sous-élément
+	off	désactivé
+	Render	Rendu
+	Job	Tâche
+	Voice-over recording is not in the Qt GUI yet	L'enregistrement de voix off n'est pas encore dans l'interface Qt
+	English	Anglais
+	After installing, restart CFA4.	Après l'installation, redémarrez CFA4.
+	Available, switched off	Disponible, désactivé
+	Left out by the routing table	Écarté par la table de routage
+	CFA4 engine	Moteur CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Le moteur propre de CFA4 ouvre tous les fichiers qu'il peut. Les backends complémentaires ci-dessous prennent le relais, dans cet ordre, uniquement pour les fichiers que le moteur ne sait pas encore ouvrir. Désactiver un backend concerne les fichiers ouverts ensuite.
+	Capabilities	Capacités
+	Copy command	Copier la commande
+	H.264 software encoding (x264)	Encodage logiciel H.264 (x264)
+	HEVC software encoding (x265)	Encodage logiciel HEVC (x265)
+	In use	Utilisé
+	Licence	Licence
+	Media Backends	Backends multimédias
+	Media Backends…	Backends multimédias…
+	Not available	Non disponible
+	Not part of this build	Absent de cette version
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Décodeurs et encodeurs Rust propres : toujours utilisés en premier, et solution de repli quand un backend complémentaire échoue
+	Restricted Codecs…	Codecs restreints…
+	Restricted codecs	Codecs restreints
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Certains codecs sont des logiciels libres mais mettent en œuvre des formats brevetés. Comme Ubuntu, CFA4 ne les installe pas par défaut : le paquet de base fonctionne sans eux, et c'est vous qui décidez de les installer. Leur usage peut être restreint dans certains pays ; vérifiez qu'il est autorisé là où vous êtes.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Décodeur complémentaire pour les formats que le moteur propre ne lit pas encore (médias de caméra 10 bits et 4:2:2, AVI, DV, WMV, MPEG-4 Partie 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Décodeur complémentaire issu du GStreamer du système (Ogg Theora, FLV, WMV et autres formats) ; LGPL, depuis les dépôts d'Ubuntu
+	The engine did not answer: {message}	Le moteur n'a pas répondu : {message}
+	To install them: {command}	Pour les installer : {command}
+	Use this backend	Utiliser ce backend
+	installed	installé
+	not installed	non installé
+	on	activé
+	Up	Monter
+	Down	Descendre
+	Settings not taken	Réglages non appliqués
+	the project has not been saved yet	le projet n'a pas encore été enregistré
+	more tabs	autres onglets
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RVB 12 bits
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RVB 12 bits avec alpha
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bits
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RVB 4:4:4 12 bits, Film Scan 1, PCM 24 bits 48 kHz
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RVBA 4:4:4:4 12 bits avec couche alpha, Film Scan 1, PCM 24 bits 48 kHz
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bits, Film Scan 1, PCM 24 bits 48 kHz
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	Flux programme MPEG-2
+	MPEG-2 Transport Stream HD 1080	Flux de transport MPEG-2 HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 à 29,97 i/s, 16:9 anamorphosé, 6 Mb/s, GOP 18, LPCM 16 bits 48 kHz, .mpg (flux prêt pour DVD ; sans création de VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 à 25 i/s, 16:9 anamorphosé, 6 Mb/s, GOP 15, LPCM 16 bits 48 kHz, .mpg (flux prêt pour DVD ; sans création de VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Vidéo MPEG-2 (Main Profile 4:2:0, 0,4 bit par pixel) à la taille et à la cadence de la séquence, LPCM 16 bits 48 kHz, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Vidéo MPEG-2 1920×1080, 18 Mb/s en moyenne, AAC 192 kb/s, .ts
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Utiliser FFmpeg pour les fichiers que le moteur CFA4 ne peut pas ouvrir (FFmpeg 9.0.2 ou ultérieur, version GPL-3)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Utiliser le GStreamer du système pour les fichiers que ni le moteur ni FFmpeg ne peuvent ouvrir

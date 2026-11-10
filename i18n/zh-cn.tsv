@@ -4010,3 +4010,87 @@
 	transitions	转场
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	已复制 {copied} 帧，在剪切处重新编码 {reencoded} 帧，渲染 {rendered} 帧
 	{frames} frames are re-encoded or rendered. Continue?	{frames} 帧将重新编码或渲染。是否继续？
+
+# Completed 2026-11-10: the strings this catalog still lacked (egui and Qt GUI). Same clean-room rule.
+
+	Adjustment Layer	调整图层
+	Burn in captions	烧录字幕
+	Delete Keyframe	删除关键帧
+	Enabled	已启用
+	End	结束
+	Set a fixed bitrate	设置固定比特率
+	Go to End	转到结尾
+	Go to Start	转到开头
+	Graphic	图形
+	Inspector	检查器
+	Merged Clip	合并剪辑
+	New Sequence…	新建序列…
+	Noise Reduction	降噪
+	Restoration	修复
+	Save changes to '{name}' before closing?	关闭前是否保存对“{name}”的更改？
+	Save changes to '{name}' before continuing?	继续前是否保存对“{name}”的更改？
+	Selected	已选中
+	Source In	源入点
+	Start	开始
+	Still Image	静止图像
+	Subclip	子剪辑
+	off	关
+	Render	渲染
+	Job	作业
+	Voice-over recording is not in the Qt GUI yet	Qt 界面中尚无画外音录制
+	Dark Theme	深色主题
+	English	英语
+	Light Theme	浅色主题
+	After installing, restart CFA4.	安装后请重新启动 CFA4。
+	Available, switched off	可用，已关闭
+	Left out by the routing table	被路由表排除
+	CFA4 engine	CFA4 引擎
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	CFA4 自有引擎会打开它能打开的所有文件。下方的补充后端按此顺序接手，且只处理引擎尚无法打开的文件。关闭某个后端只影响之后打开的文件。
+	Capabilities	功能
+	Copy command	复制命令
+	H.264 software encoding (x264)	H.264 软件编码 (x264)
+	HEVC software encoding (x265)	HEVC 软件编码 (x265)
+	In use	使用中
+	Licence	许可证
+	Media Backends	媒体后端
+	Media Backends…	媒体后端…
+	Not available	不可用
+	Not part of this build	不包含在此版本中
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	自有 Rust 解码器和编码器：始终优先使用，并在补充后端失败时作为后备
+	Restricted Codecs…	受限编解码器…
+	Restricted codecs	受限编解码器
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	有些编解码器是自由软件，但实现了受专利保护的格式。与 Ubuntu 一样，CFA4 默认不安装它们：基础软件包无需它们即可工作，是否安装由您决定。某些国家/地区可能限制其使用；请确认您所在地区允许使用。
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	用于自有引擎尚不能读取之格式的补充解码器（10 位和 4:2:2 摄像机媒体、AVI、DV、WMV、MPEG-4 Part 2…）
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	来自系统 GStreamer 的补充解码器（Ogg Theora、FLV、WMV 等格式）；LGPL，来自 Ubuntu 软件源
+	The engine did not answer: {message}	引擎没有响应：{message}
+	To install them: {command}	安装方法：{command}
+	Use this backend	使用此后端
+	installed	已安装
+	not installed	未安装
+	on	开
+	Up	上移
+	Down	下移
+	Settings not taken	设置未生效
+	the project has not been saved yet	项目尚未保存
+	more tabs	更多标签页
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 位
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 位（带 Alpha）
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 位
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime，GoPro CineForm RGB 4:4:4 12 位，Film Scan 1，24 位 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime，GoPro CineForm RGBA 4:4:4:4 12 位（带 Alpha 通道），Film Scan 1，24 位 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime，GoPro CineForm YUV 4:2:2 10 位，Film Scan 1，24 位 48 kHz PCM
+	Fill Type	填充类型
+	Gradient Angle	渐变角度
+	Use Effect Shutter Angle	使用效果快门角度
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 节目流
+	MPEG-2 Transport Stream HD 1080	MPEG-2 传输流 HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480，29.97 fps，16:9 变形，6 Mbps，GOP 18，16 位 48 kHz LPCM，.mpg（可用于 DVD 的流；不制作 VIDEO_TS）
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576，25 fps，16:9 变形，6 Mbps，GOP 15，16 位 48 kHz LPCM，.mpg（可用于 DVD 的流；不制作 VIDEO_TS）
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	采用序列帧大小和帧速率的 MPEG-2 视频（Main Profile 4:2:0，每像素 0.4 位），16 位 48 kHz LPCM，.mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 视频 1920×1080，平均 18 Mbps，AAC 192 kbps，.ts
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	对 CFA4 引擎无法打开的文件使用 FFmpeg（FFmpeg 9.0.2 或更高版本，GPL-3 构建）
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	对引擎和 FFmpeg 都无法打开的文件使用系统的 GStreamer
