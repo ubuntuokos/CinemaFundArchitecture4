@@ -63,9 +63,12 @@ pub enum RandomAccessKind {
     /// MPEG-2 I picture after a sequence header in an open GOP: its leading B pictures need the
     /// previous GOP.
     OpenGop { broken_link: bool },
+    /// AV1 temporal unit that starts with a shown key frame: every reference slot is refreshed, so
+    /// it is a clean start.
+    KeyFrame,
     /// An intra picture without the signalling that makes it an access point (an H.264 non-IDR I
     /// picture without recovery point SEI, an MPEG-2 I picture without a sequence header before
-    /// it). Not a safe cut point on its own.
+    /// it, an AV1 intra-only or hidden key frame). Not a safe cut point on its own.
     IntraOnly,
 }
 
@@ -78,7 +81,14 @@ impl RandomAccessKind {
     /// Starting here, every picture at or after this one in presentation order decodes
     /// exactly, and nothing at or after it refers to anything before it in decode order.
     pub fn is_clean(self) -> bool {
-        matches!(self, RandomAccessKind::Idr | RandomAccessKind::ClosedGop | RandomAccessKind::Cra { rasl: false } | RandomAccessKind::Bla { rasl: false })
+        matches!(
+            self,
+            RandomAccessKind::Idr
+                | RandomAccessKind::ClosedGop
+                | RandomAccessKind::KeyFrame
+                | RandomAccessKind::Cra { rasl: false }
+                | RandomAccessKind::Bla { rasl: false }
+        )
     }
 }
 

@@ -89,6 +89,15 @@ The index comes from the bitstream, not from the container's keyframe flag:
   re-encoding HEVC is not yet. A copy from an IDR stops before the RASL pictures of the next CRA
   (they are marked as crossing the access point), so in an open-GOP stream the safe cut-out is
   the end of the pictures before them.
+- **AV1** (`index_av1`, WP-07; base spatial layer): one packet is one temporal unit. A unit that
+  starts with a shown key frame is a clean access point (`key-frame`): it refreshes every
+  reference slot. It needs a sequence header (from `av1C` or in-band). Hidden (forward) key frames
+  and intra-only frames are intra but no cut points; a unit that only shows an existing frame
+  decodes nothing new. Reference slots are not resolved. A changed sequence header is a
+  configuration change. The registry's AV1 `gop-index` and MP4 / MOV `packet-copy` rows are
+  supported (OBU framing, `av1C` kept); re-encoding AV1 is not yet. The executor classifies the
+  copied temporal units again from the first one, so a copy from a key frame whose sequence
+  header is neither in `av1C` nor in-band is refused.
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 

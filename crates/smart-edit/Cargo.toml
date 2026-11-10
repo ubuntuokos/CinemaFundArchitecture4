@@ -18,7 +18,9 @@ serde = { workspace = true }
 
 [dev-dependencies]
 cfa4-h264enc = { workspace = true }
+cfa4-av1 = { workspace = true }
 cfa4-hevc = { workspace = true }
+cfa4-isobmff = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }

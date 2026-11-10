@@ -8,8 +8,9 @@
 //! dropped or re-encoded silently.
 //!
 //! - **Payloads:** every copied sample is written with the source bytes unchanged. MP4 → MP4 / MOV
-//!   keeps the length-prefixed NAL framing and the source sample entry (`avcC` for H.264, `hvcC`
-//!   for HEVC), so a `compatible` plan needs no representation change either and runs the same way.
+//!   keeps the length-prefixed NAL framing (H.264, HEVC) or the OBU temporal units (AV1) and the
+//!   source sample entry (`avcC`, `hvcC`, `av1C`), so a `compatible` plan needs no representation
+//!   change either and runs the same way.
 //! - **Timing:** the output starts at decode time 0; sample durations and composition offsets
 //!   (PTS − DTS) are copied, and an edit list starts the presentation at the first copied picture.
 //! - **Consistency:** the executor refuses when the index the plan was built from no longer
@@ -26,6 +27,7 @@ use std::fmt;
 use std::io::{Seek, Write};
 
 use cfa4_isobmff::{Brand, ByteSource, CodecConfig, Mp4File, Mp4Writer, Sample, SampleEntry, Track, TrackConfig, WriteSample, WriterOptions};
+use cfa4_smart_edit::av1_index::Av1AccessPoints;
 use cfa4_smart_edit::capabilities::{Codec, Container};
 use cfa4_smart_edit::media_index::{FrameIndexEntry, RandomAccessKind, StreamIndex};
 use cfa4_smart_edit::plan::{ExportExecutionPlan, PLAN_VERSION};
@@ -172,7 +174,7 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         return Err(SmartCutError::TimelinePlan);
     }
     let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
-    if !matches!(plan.codec, Codec::H264 | Codec::Hevc)
+    if !matches!(plan.codec, Codec::H264 | Codec::Hevc | Codec::Av1)
         || brand(plan.source_container).is_none()
         || brand(plan.output_container).is_none()
         || index.codec != plan.codec
@@ -225,9 +227,9 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         .and_then(|x| x.checked_sub(1))
         .and_then(|x| track.entries.get(usize::try_from(x).ok()?))
         .ok_or_else(|| SmartCutError::StaleIndex { detail: format!("track {} has no sample entry for the copied packets", track.id) })?;
-    // the sample entry carries the plan's codec (`avcC` for H.264, `hvcC` for HEVC)
+    // the sample entry carries the plan's codec (`avcC` for H.264, `hvcC` for HEVC, `av1C` for AV1)
     match (&entry.codec, plan.codec) {
-        (CodecConfig::Avc(_), Codec::H264) | (CodecConfig::Hevc(_), Codec::Hevc) => {}
+        (CodecConfig::Avc(_), Codec::H264) | (CodecConfig::Hevc(_), Codec::Hevc) | (CodecConfig::Av1(_), Codec::Av1) => {}
         _ => return Err(unsupported),
     }
     Ok(CopyRange { track, first, last, entry })
@@ -277,6 +279,11 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
     cfg.matrix = Some(r.track.matrix);
     let t = w.add_track(cfg).map_err(io)?;
     let mut report = CopyReport { samples: 0, payload_bytes: 0, duration: 0, timescale: r.track.timescale };
+    // AV1 temporal units are classified in decode order from the first copied one
+    let mut av1 = match &r.entry.codec {
+        CodecConfig::Av1(c) => Some(Av1AccessPoints::new(&c.config_obus)),
+        _ => None,
+    };
     for (k, s) in samples.iter().enumerate() {
         let d = r.first + k;
         let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
@@ -286,6 +293,11 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
         match (&r.entry.codec, index.frames.get(d)) {
             (CodecConfig::Avc(avc), Some(frame)) => check_access_point(d, &data, avc.length_size, frame)?,
             (CodecConfig::Hevc(hevc), Some(frame)) => check_hevc_access_point(d, &data, hevc.length_size, frame)?,
+            (CodecConfig::Av1(_), Some(frame)) => {
+                if let Some(av1) = av1.as_mut() {
+                    check_av1_access_point(d, av1.next(&data), frame)?;
+                }
+            }
             _ => {}
         }
         let ws = WriteSample { data: &data, duration: s.duration, composition_offset: composition_offset(s, d)?, is_sync: s.is_sync };
@@ -410,6 +422,16 @@ pub(crate) fn check_hevc_access_point(d: usize, data: &[u8], length_size: u8, fr
             "not an IRAP"
         };
         return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is {is} picture, the index says {kind:?}") });
+    }
+    Ok(())
+}
+
+/// [`check_access_point`] for AV1: the temporal unit is a clean access point (a shown key frame
+/// with a sequence header known), an intra unit or neither, as the index says. A copy that starts
+/// at a key frame without a sequence header in `av1C` or in-band is refused here.
+pub(crate) fn check_av1_access_point(d: usize, found: RandomAccessKind, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
+    if found != frame.random_access {
+        return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is a {found:?} temporal unit, the index says {:?}", frame.random_access) });
     }
     Ok(())
 }
