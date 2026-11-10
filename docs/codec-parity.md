@@ -39,6 +39,9 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | GIF (animated) | encode | decode as a clip (#402) | encode | — | 80% | — |
 | WebP | none | stills: lossy (VP8, with or without alpha) and lossless (VP8L) via the pure-Rust `image-webp`; animations as clips, composed on the canvas by CFA4's own code (#87) | none | stills and animations (offsets, disposal, blending, lossy / lossless / mixed) bit-exact against libwebp's `dwebp` and `anim_dump`; damaged-file fuzzing | ahead | — |
 | Uncompressed / v210 / RGB | decode + encode (AVI, MOV) | partial (MOV PCM-style video not verified) | none | — | 30% | 8–15 h |
+| FFV1 (RFC 9043) | not a Premiere import format | own decoder ([`cfa4-ffv1`](../crates/ffv1/README.md), backlog CB-1.1): versions 0, 1, 3, Golomb Rice and range coding (default and custom state tables), YCbCr 4:2:0 / 4:2:2 / 4:4:4 / 4:1:0 (subsamplings without a frame type are shown upsampled to 4:4:4), gray, alpha, RGB (RCT) with alpha, 8–16 bits, slices, CRCs, non-key frames; in AVI and Matroska. RGB above 8 bits is shown rounded to 8 bits | none | bit-exact vs ffmpeg on 26 codec fixtures and 4 AVI / Matroska files (all frames, also seeking backwards) | ahead | — |
+| Huffyuv | — | own decoder ([`cfa4-huffyuv`](../crates/huffyuv/README.md), backlog CB-1.2): YUY2, RGB24, RGBA, left / gradient / median prediction, interlaced; in AVI and Matroska. **No** 1.x files with the built-in classic tables, no FFmpeg `FFVH` variant | none | bit-exact vs ffmpeg on 12 codec fixtures and 4 AVI / Matroska files | 85% | — |
+| Ut Video | — | own decoder ([`cfa4-utvideo`](../crates/utvideo/README.md), backlog CB-2.1): 8-bit `ULY0` / `ULH0` / `ULY2` / `ULH2` / `ULY4` / `ULH4` / `ULRG` / `ULRA`, no / left / median prediction, slices; in AVI and Matroska. **No** interlaced, 10-bit `UQ..` or `UM..` streams | none | bit-exact vs ffmpeg on 14 codec fixtures and 4 AVI / Matroska files | 80% | — |
 
 ## Audio
 
