@@ -435,3 +435,26 @@ pub(crate) fn check_av1_access_point(d: usize, found: RandomAccessKind, frame: &
     }
     Ok(())
 }
+
+/// Profile, chroma format and bit depth of an AV1 stream from its `av1C` (for the boundary
+/// re-encode decision: the registry has no AV1 encoder, so the decision names what is missing).
+pub fn av1_stream_format(av1c: &cfa4_isobmff::Av1Config) -> cfa4_smart_edit::capabilities::StreamFormat {
+    let profile = match av1c.seq_profile {
+        0 => "main",
+        1 => "high",
+        2 => "professional",
+        _ => "other",
+    };
+    let chroma = match (av1c.monochrome, av1c.chroma_subsampling_x, av1c.chroma_subsampling_y) {
+        (true, _, _) => "4:0:0",
+        (false, true, true) => "4:2:0",
+        (false, true, false) => "4:2:2",
+        (false, false, _) => "4:4:4",
+    };
+    let bit_depth = match (av1c.high_bitdepth, av1c.twelve_bit) {
+        (true, true) => 12,
+        (true, false) => 10,
+        (false, _) => 8,
+    };
+    cfa4_smart_edit::capabilities::StreamFormat { profile: profile.into(), chroma: chroma.into(), bit_depth }
+}

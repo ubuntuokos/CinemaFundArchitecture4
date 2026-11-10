@@ -24,9 +24,10 @@ use std::io::Cursor;
 use cfa4_export::boundary_reencode::{
     BoundaryEncoding, check_mp4_boundary_reencode, execute_mp4_boundary_reencode, h264_stream_format, hevc_stream_format, verify_mp4_boundary_reencode,
 };
-use cfa4_export::smart_cut::{Mp4CopySource, SmartCutError, execute_mp4_copy, verify_mp4_copy};
+use cfa4_export::smart_cut::{Mp4CopySource, SmartCutError, av1_stream_format, execute_mp4_copy, verify_mp4_copy};
 use cfa4_isobmff::{ByteSource, CodecConfig, Mp4File, TrackKind};
-use cfa4_smart_edit::capabilities::{Codec, Container, Policy, Registry, StreamFormat};
+use cfa4_smart_edit::av1_index::index_av1;
+use cfa4_smart_edit::capabilities::{Container, Policy, Registry, StreamFormat};
 use cfa4_smart_edit::copy_planner::{CutMode, SmartCutPlan, SmartCutRequest, plan_smart_cut};
 use cfa4_smart_edit::h264_index::{NalFormat, index_h264};
 use cfa4_smart_edit::hevc_index::index_hevc;
@@ -91,7 +92,7 @@ fn container_of(path: &str, quicktime: bool) -> Container {
     if quicktime || path.to_ascii_lowercase().ends_with(".mov") { Container::Mov } else { Container::Mp4 }
 }
 
-/// Open `path`, find its first video track (H.264 or HEVC) and index it.
+/// Open `path`, find its first video track (H.264, HEVC or AV1) and index it.
 pub(crate) fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> {
     let fail = |e: String| EngineError::Other(format!("{path}: {e}"));
     let bytes: Box<dyn ByteSource> = match s.services.reader(path) {
@@ -101,22 +102,29 @@ pub(crate) fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> 
     let file = cfa4_isobmff::open(&*bytes).map_err(|e| fail(format!("not an MP4 / MOV file Smart Cut can read ({e})")))?;
     let track = file.tracks.iter().position(|t| t.kind == TrackKind::Video).ok_or_else(|| bad(cmd, format!("{path} has no video track")))?;
     let t = file.tracks.get(track).ok_or_else(|| bad(cmd, format!("{path} has no video track")))?;
-    let (format, ps, length_size, codec): (_, Vec<&[u8]>, _, _) = match t.codec() {
-        Some(CodecConfig::Avc(avc)) => (h264_stream_format(avc), avc.sps.iter().chain(&avc.pps).map(Vec::as_slice).collect(), avc.length_size, Codec::H264),
-        Some(CodecConfig::Hevc(hvcc)) => {
-            let ps = hvcc.arrays.iter().flat_map(|a| a.nalus.iter().map(Vec::as_slice)).collect();
-            (hevc_stream_format(hvcc), ps, hvcc.length_size, Codec::Hevc)
-        }
-        _ => return Err(bad(cmd, format!("{path}: Smart Cut copies H.264 and HEVC video only in this release"))),
-    };
+    let config = t.codec();
+    if !matches!(config, Some(CodecConfig::Avc(_) | CodecConfig::Hevc(_) | CodecConfig::Av1(_))) {
+        return Err(bad(cmd, format!("{path}: Smart Cut copies H.264, HEVC and AV1 video only in this release")));
+    }
     let mut data = Vec::with_capacity(t.samples.len());
     for i in 0..t.samples.len() {
         data.push(file.read_sample(&*bytes, track, i).map_err(|e| fail(format!("sample {i}: {e}")))?);
     }
     let packets = t.samples.iter().zip(&data).map(|(x, d)| Packet { data: d, pts: Some(x.pts), dts: Some(x.dts), keyframe: x.is_sync });
-    let (tb, nal) = (Rational::new(1, i64::from(t.timescale)), NalFormat::LengthPrefixed(length_size));
-    let stream = if codec == Codec::Hevc { index_hevc(t.id, tb, nal, &ps, packets) } else { index_h264(t.id, tb, nal, &ps, packets) }
-        .map_err(|e| fail(format!("indexing failed: {e:?}")))?;
+    let tb = Rational::new(1, i64::from(t.timescale));
+    let (format, stream) = match config {
+        Some(CodecConfig::Avc(avc)) => {
+            let ps: Vec<&[u8]> = avc.sps.iter().chain(&avc.pps).map(Vec::as_slice).collect();
+            (h264_stream_format(avc), index_h264(t.id, tb, NalFormat::LengthPrefixed(avc.length_size), &ps, packets))
+        }
+        Some(CodecConfig::Hevc(hvcc)) => {
+            let ps: Vec<&[u8]> = hvcc.arrays.iter().flat_map(|a| a.nalus.iter().map(Vec::as_slice)).collect();
+            (hevc_stream_format(hvcc), index_hevc(t.id, tb, NalFormat::LengthPrefixed(hvcc.length_size), &ps, packets))
+        }
+        Some(CodecConfig::Av1(av1c)) => (Some(av1_stream_format(av1c)), index_av1(t.id, tb, &av1c.config_obus, packets)),
+        _ => return Err(bad(cmd, format!("{path}: Smart Cut copies H.264, HEVC and AV1 video only in this release"))),
+    };
+    let stream = stream.map_err(|e| fail(format!("indexing failed: {e:?}")))?;
     let fingerprint = SourceFingerprint { size: bytes.len(), modified_ns: None, content_id: None };
     let container = container_of(path, file.is_quicktime);
     Ok(Source { path: path.to_string(), bytes, file, container, track, index: MediaIndex::new(path, fingerprint, vec![stream]), format })

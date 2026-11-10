@@ -204,3 +204,53 @@ fn hevc_sources_are_analyzed_copied_and_re_encoded_at_the_boundaries() {
     let out = cfa4_isobmff::open(files["cut.mp4"].as_slice()).unwrap();
     assert!(matches!(out.tracks[0].codec(), Some(cfa4_isobmff::CodecConfig::Hevc(_))));
 }
+
+/// 40 synthetic AV1 temporal units (64×48, 25 fps, a shown key frame every 10, the sequence
+/// header in `av1C`): enough for the index and the copy, not for a decoder.
+fn av1_mp4() -> Vec<u8> {
+    let obu = |kind: u8, payload: &[u8]| {
+        let mut out = vec![(kind << 3) | 0x02, payload.len() as u8];
+        out.extend_from_slice(payload);
+        out
+    };
+    let cfg =
+        cfa4_isobmff::Av1Config { chroma_subsampling_x: true, chroma_subsampling_y: true, config_obus: obu(1, &[0x00, 0x01, 0x80]), ..Default::default() };
+    let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+    let t = mux.add_track(TrackConfig::new(SampleEntry::av1(cfg, 64, 48), 25)).unwrap();
+    for i in 0..40u8 {
+        let key = i % 10 == 0;
+        let data = obu(6, &[(u8::from(!key) << 5) | 0x10, i, 0x55]);
+        mux.write_sample(t, WriteSample { data: &data, duration: 1, composition_offset: 0, is_sync: key }).unwrap();
+    }
+    mux.finish().unwrap().into_inner()
+}
+
+#[test]
+fn av1_sources_are_analyzed_and_copied_but_not_re_encoded() {
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("av1.mp4".into(), av1_mp4());
+    let r = s.execute("export.analyze", json!({"path": "av1.mp4"})).unwrap();
+    assert_eq!(r["codec"], "av1");
+    assert_eq!(r["smartCut"]["allowed"], true, "{}", r["smartCut"]);
+    let points: Vec<u64> = r["accessPoints"].as_array().unwrap().iter().map(|p| p["presentation"].as_u64().unwrap()).collect();
+    assert_eq!(points, [0, 10, 20, 30]);
+    assert!(r["accessPoints"].as_array().unwrap().iter().all(|p| p["kind"] == "key-frame" && p["clean"] == true), "{}", r["accessPoints"]);
+    for output in ["copy.mp4", "copy.mov"] {
+        let r = s.execute("export.start", json!({"path": "av1.mp4", "in": frame(10), "out": frame(30), "output": output})).unwrap();
+        assert_eq!((r["verified"].as_bool(), r["report"]["samples"].as_u64()), (Some(true), Some(20)), "{r}");
+    }
+    {
+        let files = files.0.lock().unwrap();
+        let out = cfa4_isobmff::open(files["copy.mov"].as_slice()).unwrap();
+        assert!(out.is_quicktime);
+        assert!(matches!(out.tracks[0].codec(), Some(cfa4_isobmff::CodecConfig::Av1(_))));
+    }
+    // CFA4 has no AV1 encoder: a frame-accurate cut off the key frames is not offered
+    let r = s.execute("export.plan", json!({"path": "av1.mp4", "in": frame(5), "out": frame(30), "mode": "frame-accurate"}));
+    let text = match r {
+        Ok(v) => v.to_string(),
+        Err(e) => e.to_string(),
+    };
+    assert!(text.contains("AV1"), "{text}");
+    assert!(!files.0.lock().unwrap().contains_key("cut.mp4"));
+}
