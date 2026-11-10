@@ -13471,6 +13471,81 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
         win.close()
 
 
+def test_smart_export_plan_text():
+    """The Smart Export preview names what is copied, re-encoded and rendered, and why a copy mode
+    cannot run (WP-08)."""
+    from cfa4_qt.panels.smart_export import describe, plan_segments, smart_output
+
+    seg = lambda mode, first, last, causes=(): {"mode": mode, "presentation": {"first": first, "last": last}, "render_causes": list(causes)}
+    result = {
+        "plan": {"executable": True, "blockers": [], "plan": {"segments": [seg("strict-copy", 0, 49), seg("boundary-reencode", 50, 54), seg("render", 55, 79, ["effect"])]}},
+        "summary": {"lossless": False, "requiresConfirmation": True, "copiedFrames": 50, "reencodedFrames": 5, "renderedFrames": 25},
+        "timelineRender": {"ready": True, "problem": None},
+    }
+    assert [(k, n) for k, n, _c in plan_segments(result)] == [("copy", 50), ("boundary", 5), ("render", 25)]
+    lines, problem, confirm = describe(result, "smart")
+    assert "50" in lines[0] and "25" in lines[0] and "effects (25)" in lines[1]
+    assert problem is None and confirm
+    _lines, problem, _c = describe(result, "bit-exact")
+    assert problem is not None and "30" in problem
+    lines, _p, _c = describe(result, "auto")
+    assert "Smart Render" in lines[-1]
+    assert smart_output("/x/cut") == "/x/cut.mp4" and smart_output("/x/cut.mov") == "/x/cut.mov" and smart_output("/x/a.mxf") == "/x/a.mp4"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_smart_export_copies_a_sequence(app, tmp_path: Path):
+    """Export window ▸ Smart Export: a sequence of one H.264 clip is planned as a copy, previewed,
+    and written by stream copy (WP-08)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the H.264 clip")
+    clip = tmp_path / "gop.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4"]
+    args += ["-c:v", "libx264", "-g", "25", "-keyint_min", "25", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make an H.264 clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("gop") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("gop"))
+        win.execute("file.newSequenceFromClip", {"items": [item["item"]]})
+        assert wait_until(app, lambda: win.sequence is not None and "gop" in str(win.sequence.get("name")), 30_000), win.sequence
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and dlg.isVisible()
+        out = tmp_path / "out" / "smart.mp4"
+        (tmp_path / "out").mkdir()
+        dlg.path.setText(str(out))
+        box = dlg.smart
+        assert not box.bar.isVisible(), "Full Render shows no plan"
+        box.mode.setCurrentIndex(box.mode.findData("bit-exact"))
+        assert wait_until(app, lambda: box.result is not None or bool(box.error.text()), 30_000), box.error.text()
+        assert box.problem is None, box.problem
+        assert "100 frames copied" in box.text.text(), box.text.text()
+        assert [k for k, _n, _c in box.bar.segments] == ["copy"]
+        dlg.export_button.click()
+        assert wait_until(app, lambda: "verified" in dlg.summary.text() or "#d04040" in dlg.summary.styleSheet(), 60_000), dlg.summary.text()
+        assert "verified" in dlg.summary.text(), dlg.summary.text()
+        assert out.is_file() and out.stat().st_size > 0
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_timeline_shows_gop_boundaries(app, tmp_path: Path):
     """Timeline Display Settings ▸ Show GOP Boundaries: each video clip's access points in sequence

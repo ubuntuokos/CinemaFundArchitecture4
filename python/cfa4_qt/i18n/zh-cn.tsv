@@ -360,3 +360,34 @@
 	{frames} frames at the boundaries are re-encoded. Continue?	边界处的 {frames} 帧将重新编码。是否继续？
 # Timeline GOP overlay (WP-08)
 	Show GOP Boundaries	显示 GOP 边界
+# Export window Smart Export (WP-08)
+	Export mode	导出模式
+	Full Render	完全渲染
+	Planning…	正在规划…
+	Recommended: Smart Render (asks before re-encoding)	推荐：智能渲染（重新编码前询问）
+	Recommended: Stream Copy (nothing is re-encoded)	推荐：流复制（不重新编码）
+	Rendered because of: {causes}	渲染原因：{causes}
+	Smart Export	智能导出
+	Smart Export written and verified: {path}	智能导出已写入并校验：{path}
+	Smart Render	智能渲染
+	Stream Copy – Bit-exact	流复制 – 逐位相同
+	Stream Copy – Compatible	流复制 – 兼容
+	Stream copy is not possible: {frames} frames need re-encoding.	无法流复制：{frames} 帧需要重新编码。
+	The export cannot run.	无法执行导出。
+	Wait for the export plan.	请等待导出计划。
+	Writing and verifying the export…	正在写入并校验导出…
+	colour conversion	颜色转换
+	compositing	合成
+	copied	已复制
+	effects	效果
+	frame rate	帧速率
+	proxies or nested sequences	代理或嵌套序列
+	re-encoded at a cut	在剪切处重新编码
+	rendered	已渲染
+	sources that cannot be copied	无法复制的源
+	speed changes	速度变化
+	titles or overlays	标题或叠加
+	transforms	变换
+	transitions	转场
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	已复制 {copied} 帧，在剪切处重新编码 {reencoded} 帧，渲染 {rendered} 帧
+	{frames} frames are re-encoded or rendered. Continue?	{frames} 帧将重新编码或渲染。是否继续？

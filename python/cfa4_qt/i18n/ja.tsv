@@ -360,3 +360,34 @@
 	{frames} frames at the boundaries are re-encoded. Continue?	境界の {frames} フレームを再エンコードします。続行しますか？
 # Timeline GOP overlay (WP-08)
 	Show GOP Boundaries	GOP 境界を表示
+# Export window Smart Export (WP-08)
+	Export mode	書き出しモード
+	Full Render	フルレンダリング
+	Planning…	計画中…
+	Recommended: Smart Render (asks before re-encoding)	推奨: スマートレンダー（再エンコード前に確認）
+	Recommended: Stream Copy (nothing is re-encoded)	推奨: ストリームコピー（再エンコードなし）
+	Rendered because of: {causes}	レンダリングの理由: {causes}
+	Smart Export	スマート書き出し
+	Smart Export written and verified: {path}	スマート書き出しを書き込み検証しました: {path}
+	Smart Render	スマートレンダー
+	Stream Copy – Bit-exact	ストリームコピー – ビット単位で同一
+	Stream Copy – Compatible	ストリームコピー – 互換
+	Stream copy is not possible: {frames} frames need re-encoding.	ストリームコピーはできません: {frames} フレームの再エンコードが必要です。
+	The export cannot run.	書き出しを実行できません。
+	Wait for the export plan.	書き出し計画を待ってください。
+	Writing and verifying the export…	書き出しを書き込み検証中…
+	colour conversion	カラー変換
+	compositing	合成
+	copied	コピー
+	effects	エフェクト
+	frame rate	フレームレート
+	proxies or nested sequences	プロキシまたはネストされたシーケンス
+	re-encoded at a cut	カット位置で再エンコード
+	rendered	レンダリング
+	sources that cannot be copied	コピーできないソース
+	speed changes	速度変更
+	titles or overlays	タイトルまたはオーバーレイ
+	transforms	トランスフォーム
+	transitions	トランジション
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} フレームをコピー、{reencoded} をカット位置で再エンコード、{rendered} をレンダリング
+	{frames} frames are re-encoded or rendered. Continue?	{frames} フレームを再エンコードまたはレンダリングします。続行しますか？

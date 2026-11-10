@@ -360,3 +360,34 @@
 	{frames} frames at the boundaries are re-encoded. Continue?	{frames} fotogrammi ai confini vengono ricodificati. Continuare?
 # Timeline GOP overlay (WP-08)
 	Show GOP Boundaries	Mostra i confini dei GOP
+# Export window Smart Export (WP-08)
+	Export mode	Modalità di esportazione
+	Full Render	Rendering completo
+	Planning…	Pianificazione…
+	Recommended: Smart Render (asks before re-encoding)	Consigliato: Smart Render (chiede prima di ricodificare)
+	Recommended: Stream Copy (nothing is re-encoded)	Consigliato: Stream Copy (nulla viene ricodificato)
+	Rendered because of: {causes}	Renderizzato per: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export scritto e verificato: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – identico bit per bit
+	Stream Copy – Compatible	Stream Copy – compatibile
+	Stream copy is not possible: {frames} frames need re-encoding.	La copia del flusso non è possibile: {frames} fotogrammi vanno ricodificati.
+	The export cannot run.	L’esportazione non può essere eseguita.
+	Wait for the export plan.	Attendi il piano di esportazione.
+	Writing and verifying the export…	Scrittura e verifica dell’esportazione…
+	colour conversion	conversione colore
+	compositing	compositing
+	copied	copiato
+	effects	effetti
+	frame rate	frequenza fotogrammi
+	proxies or nested sequences	proxy o sequenze nidificate
+	re-encoded at a cut	ricodificato a un taglio
+	rendered	renderizzato
+	sources that cannot be copied	sorgenti non copiabili
+	speed changes	cambi di velocità
+	titles or overlays	titoli o sovrapposizioni
+	transforms	trasformazioni
+	transitions	transizioni
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogrammi copiati, {reencoded} ricodificati ai tagli, {rendered} renderizzati
+	{frames} frames are re-encoded or rendered. Continue?	{frames} fotogrammi vengono ricodificati o renderizzati. Continuare?
