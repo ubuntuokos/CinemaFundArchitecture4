@@ -25,7 +25,7 @@ pub struct CommandSpec {
     pub label: &'static str,
     /// Menu placement, e.g. `["Sequence"]` or `["File", "New"]`. Empty = not in menus.
     pub menu: &'static [&'static str],
-    /// Default shortcut (egui-style names, `Cmd` = ⌘ on macOS / Ctrl elsewhere).
+    /// Default shortcut (egui-style names, `Cmd` = Ctrl).
     pub shortcut: Option<&'static str>,
     /// Parameter description (JSON-ish, for agents and the MCP schema).
     pub params: &'static str,
@@ -3834,6 +3834,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::fx_editor::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
+    v.extend(crate::smart_cut::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());

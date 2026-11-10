@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-30 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-11-08 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -23,8 +23,10 @@ logóit vagy ikonjait.
 **Licenc:** a CFA4 egésze **GPL-3.0-or-later** (`LICENSE`, `NOTICE`). Így a lehető legkevesebbet
 kell újraírni: GPL-kompatibilis kód és könyvtár felhasználható. Ami nem használható fel, azt más
 módon kell megvalósítani. Az örökölt upstream kód eredeti MIT/Apache-megjegyzései (`NOTICE`) megmaradnak.
-**Üzleti modell:** a kész CFA4 ingyenes és szabadon terjeszthető; csak a pluszfunkciók és a
-hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](docs/licensing.md).
+**Nincs fizetős rész** (tulajdonosi döntés, 2026-11-08): a CFA4 minden része ingyenes és szabadon
+terjeszthető; nincs fizetős kiegészítő, licenckulcs, vízjel, használati korlát vagy fizetős
+támogatási idő. A CFA4 **önkéntes adománnyal** támogatható. A licencszabályok:
+[`docs/licensing.md`](docs/licensing.md).
 
 ## 2. Alapelvek (nem változnak külön döntés nélkül)
 
@@ -139,8 +141,11 @@ Tervezett irányok:
 - vágás: jelenetek és csendek felismerése, durva vágás átirat alapján;
 - konvertálás és publikálás: platformonkénti beállítás-javaslat.
 
-Szabály: a modellek a felhasználó gépén futnak: CPU-n, vagy bármely gyártó GPU-ján, illetve NPU-n,
-ha van (lásd 2.4: gyártófüggetlen gyorsítás). Minden modellnél
+Szabály: a modellek a felhasználó gépén futnak, bármely gyártó GPU-ján, illetve NPU-n, ha van (lásd
+2.4: gyártófüggetlen gyorsítás). Az AI-funkciók alsó határa legalább 12 GB-os GPU és 16 GB RAM
+(ajánlott 32 GB); ez alatt az AI nem támogatott, a CFA4 többi része fut. A CPU a GPU melletti másik
+igazolt út lehet, önálló, GPU nélküli AI-út nincs (tulajdonosi döntés, 2026-11-07; CFA4-AI_modules
+ADR 0008, 3. és 9. pont). A 2.4 CPU-s tartaléka a médiafeldolgozásra vonatkozik. Minden modellnél
 rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a felhasználó tudta nélkül.
 
 ## 6. Prioritási sorrend

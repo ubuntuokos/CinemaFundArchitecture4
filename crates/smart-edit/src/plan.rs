@@ -5,10 +5,15 @@
 //!
 //! A plan is data: building one reads no file and writes none, and the same index, registry and
 //! request always give the same plan.
+//!
+//! A plan of one clip names its source in [`ExportExecutionPlan::source_id`]. A timeline plan
+//! (Smart Render) names the timeline there, and each segment that reads a source names it in
+//! [`PlanSegment::source`].
 
 use serde::{Deserialize, Serialize};
 
 use crate::capabilities::{Codec, Container};
+use crate::edit_decision::RenderCause;
 use crate::timestamp::MediaTime;
 
 /// Version of the plan data model.
@@ -73,6 +78,15 @@ pub enum SegmentReason {
     /// The range holds no copyable span (it is shorter than a GOP, or no clean access point lies
     /// inside it): re-encoded as a whole.
     NoCopyableRange,
+    /// A timeline gap: nothing to copy, the output is rendered (black and silence).
+    Gap,
+    /// The timeline changes the pictures (effect, transition, speed…; see
+    /// [`PlanSegment::render_causes`]): rendered.
+    Transformed,
+    /// The pictures could be copied, but their stream does not match the output stream (another
+    /// codec configuration, or one that is not known): re-encoded so that the output stays one
+    /// stream.
+    IncompatibleStream,
 }
 
 /// Inclusive span of positions (presentation or decode order).
@@ -87,6 +101,15 @@ impl Span {
     pub fn count(self) -> u64 {
         self.last.saturating_sub(self.first).saturating_add(1)
     }
+}
+
+/// Where a segment of a timeline plan reads its pictures.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SegmentSource {
+    pub source_id: String,
+    pub container: Container,
+    /// Index of the timeline item ([`crate::edit_decision::EditItem`]) the segment comes from.
+    pub item: u32,
 }
 
 /// One segment of a plan, for one stream.
@@ -108,6 +131,13 @@ pub struct PlanSegment {
     pub source_out: MediaTime,
     /// Where the segment starts in the output, from 0 at the first output picture.
     pub output_in: MediaTime,
+    /// The source of a timeline segment; `None` in a plan of one clip (the plan's source) and for
+    /// a gap.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<SegmentSource>,
+    /// Why a `Render` segment is rendered, as the timeline says.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub render_causes: Vec<RenderCause>,
 }
 
 impl PlanSegment {

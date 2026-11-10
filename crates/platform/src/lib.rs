@@ -2,14 +2,12 @@
 //! system's codecs.
 //!
 //! [`register`] puts the platform's hardware decoder factory in front of CFA4's own decoders
-//! (`cfa4_codecs::register_video_decoder`). Today that is VideoToolbox on macOS for H.264
-//! (`avcC`) and HEVC (`hvcC`) streams, 8- and 10-bit, 4:2:0 and 4:2:2; Media Foundation / DXVA on
-//! Windows; NVDEC ([`nvdec`], NVIDIA's driver) and VA-API ([`vaapi`]) on Linux for H.264 and HEVC; on other systems (and on
-//! Linux with neither) registration does nothing and reports [`Availability::Unavailable`]. It also registers a
+//! (`cfa4_codecs::register_video_decoder`): NVDEC ([`nvdec`], NVIDIA's driver) and VA-API
+//! ([`vaapi`]) for H.264 and HEVC; without either, registration does nothing and reports [`Availability::Unavailable`]. It also registers a
 //! hardware H.264 encoder factory (`cfa4_export::register_encoder`) that only acts when an
-//! export asks for it (`ExportSettings::hardware_encoding` = `Auto`), see [`hardware_encode`]; on
-//! macOS and on Windows (NVENC, [`nvenc`]) it also makes the H.265 export format available, and on Windows
-//! (Main 10) lets HDR sequences export as HDR H.265.
+//! export asks for it (`ExportSettings::hardware_encoding` = `Auto`), see [`hardware_encode`]; with
+//! NVENC ([`nvenc`]) it also makes the H.265 export format available and (Main 10) lets HDR
+//! sequences export as HDR H.265.
 //!
 //! Hardware decoding never makes a file undecodable:
 //!

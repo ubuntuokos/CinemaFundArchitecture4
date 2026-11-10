@@ -82,6 +82,17 @@ def splits(leaves: list[Leaf], path: str = "") -> list[Split]:
     return []
 
 
+def leaf_paths(leaves: list[Leaf], path: str = "") -> list[tuple[Leaf, str]]:
+    """Each leaf with its egui group path (the ``a`` / ``b`` sides of the splits around it)."""
+    if len(leaves) < 2:
+        return [(leaf, path) for leaf in leaves]
+    for vertical in (False, True):
+        cut = _cut(leaves, vertical)
+        if cut is not None:
+            return [*leaf_paths(cut[0], path + "a"), *leaf_paths(cut[1], path + "b")]
+    return [(leaf, path) for leaf in leaves]
+
+
 def _union(leaves: list[Leaf]) -> QRect:
     r = QRect(leaves[0].rect)
     for leaf in leaves[1:]:

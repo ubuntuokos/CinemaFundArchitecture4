@@ -89,4 +89,4 @@
 
 Az ADR 0003 eredetileg az FFI-kivétel elvének szánta a 0004-es számot. A 0004 az útvonalválasztóé
 (#55), a 0005 ezé az ADR-é; az FFI-elv ADR-je elkészültekor a következő szabad számot kapja
-(várhatóan 0006). Az ADR 0003 hivatkozásai ennek megfelelően módosultak.
+(a 0006 a BacklotHub, a 0007 a Media Services ADR-jéé, így várhatóan 0008). Az ADR 0003 hivatkozásai ennek megfelelően módosultak.

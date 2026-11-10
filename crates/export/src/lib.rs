@@ -11,12 +11,19 @@
 //! [`ExportSettings`] carries every Export-mode setting (frame size, rate, bitrate encoding, audio
 //! format, multiplexer, captions, effects, metadata) as serde data; [`presets`] defines the
 //! built-in presets.
+//!
+//! [`smart_cut`] runs the lossless Smart Cut plans of `cfa4-smart-edit`: H.264 samples copied
+//! unchanged from an MP4 / MOV source into a new MP4 / MOV file, and verified by reading it back.
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 use std::io::Write;
 
 mod aac_out;
 mod audio_out;
+pub mod boundary_reencode;
+mod boundary_reencode_hevc;
+#[cfg(test)]
+mod boundary_reencode_hevc_tests;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -33,7 +40,9 @@ mod pipeline;
 pub mod presets;
 mod raster;
 pub mod settings;
+pub mod smart_cut;
 pub mod still;
+pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_mpd};
@@ -44,7 +53,7 @@ pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
 pub use pcm::{image_sequence_path, write_aiff, write_wav};
-pub use pipeline::limit_rgba8;
+pub use pipeline::{Pipeline, limit_rgba8};
 pub use presets::{ExportPreset, builtin_presets};
 pub use settings::*;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -486,8 +495,7 @@ pub struct ExportSettings {
     /// 18 is visually near-lossless.
     #[serde(default = "default_crf")]
     pub crf: f32,
-    /// May H.264 be encoded by the system's hardware encoder (VideoToolbox on macOS, NVENC on
-    /// Windows)? Off unless asked for: hardware output depends on the machine, so it is not
+    /// May H.264 be encoded by the system's hardware encoder (NVENC)? Off unless asked for: hardware output depends on the machine, so it is not
     /// byte-reproducible like the built-in encoder's (`determinism_tests`).
     #[serde(default)]
     pub hardware_encoding: HardwareEncoding,
@@ -2916,11 +2924,21 @@ mod settings_tests;
 mod surround_tests;
 
 #[cfg(test)]
+mod boundary_reencode_tests;
+#[cfg(test)]
 mod dcp_tests;
 #[cfg(test)]
 mod mpeg2_tests;
 #[cfg(test)]
 mod mxf_tests;
+#[cfg(test)]
+mod smart_cut_av1_tests;
+#[cfg(test)]
+mod smart_cut_hevc_tests;
+#[cfg(test)]
+mod smart_cut_tests;
+#[cfg(test)]
+mod timeline_render_tests;
 
 #[cfg(test)]
 mod determinism_tests;

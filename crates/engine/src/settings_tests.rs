@@ -644,6 +644,8 @@ fn transcription_without_speech_to_text_says_so() {
 
 #[test]
 fn hardware_decoding_setting_drives_the_decoder_switch() {
+    // the only test that moves the process-wide switch (settings::HW_SWITCH_OWNER)
+    settings::HW_SWITCH_OWNER.with(|o| o.set(true));
     let mut s = Session::default();
     assert_eq!(s.prefs.playback.hardware_decoding, "auto", "Auto by default");
     set(&mut s, "playback.hardwareDecoding", json!("off"));
@@ -945,7 +947,7 @@ fn schema_reports_groups_and_hides_the_unwired_duplicate_hardware_fields() {
     assert_eq!(r["groups"].as_array().unwrap().len(), settings::groups().len());
     assert!(r["categories"].as_array().unwrap().iter().all(|c| c["group"].is_string()));
     // hardware decoding has one control (Playback, wired); the Media page copy and the
-    // macOS-only ProRes hardware encoding switch are gone from the schema
+    // ProRes hardware encoding switch are gone from the schema
     for gone in ["media.hardwareDecoding", "media.proresHardwareEncoding"] {
         assert!(settings::field(gone).is_none(), "{gone}");
     }

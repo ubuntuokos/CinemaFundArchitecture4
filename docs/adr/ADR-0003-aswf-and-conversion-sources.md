@@ -2,7 +2,8 @@
 
 **Dátum:** 2026-10-24 · **Állapot:** JÓVÁHAGYVA (a tulajdonos, `ubuntuokos`, 2026-10-24-én
 jóváhagyta, #38). A jóváhagyás a 10. pont minden pontjára kiterjed. **Kiegészítve:** 2026-10-25
-(12. pont, szabadalmilag korlátozott komponensek).
+(12. pont, szabadalmilag korlátozott komponensek) és 2026-10-27 (13. pont, a szabadalmi vizsgálat
+hatóköre és eredményeinek rögzítése).
 
 **Előfeltételek:** a licencváltás (#37, `docs/licensing.md`, már a `main`-ben) és a
 GStreamer-háttérmotor (#40, [ADR 0002](ADR-0002-gstreamer-backend.md), összevonásra vár).
@@ -104,9 +105,9 @@ nélkülözhetetlen, a CFA4 **saját kóddal valósítja meg**.
   `docs/gaps.md`-be kerül (G11 plugin-hosting, G12 MI, G18 effektmélység), bővítményenként a
   pótolandó képességgel, a nyílt alapként használható projektekkel és a mérési móddal
   (VISION.md 2. pont: bizonyíték, nem állítás).
-- A fizetős CFA4-többletfunkciók **GPL-3.0-or-later licencűek** (a tulajdonos döntése,
-  2026-10-24 délután, a korábbi „külön folyamatként futó zárt modul” lehetőség helyett): eladhatók,
-  de a vevő a forrással együtt továbbadhatja őket. Részletek: `docs/licensing.md` §4.
+- ~~A fizetős CFA4-többletfunkciók GPL-3.0-or-later licencűek (2026-10-24).~~ **Felváltva
+  (tulajdonosi döntés, 2026-11-08):** a CFA4-nek nincs fizetős része, minden funkciója ingyenes és
+  GPL-3.0-or-later; a fejlesztés önkéntes adománnyal támogatható. Részletek: `docs/licensing.md` §4.
 
 ## 5. Döntés: hardveres kódolás gyártónként
 
@@ -169,7 +170,7 @@ ADR F8 megfelelő lépéséhez kötődnek. A becslések durva, ügynökórában 
 |---|---|---|---|
 | **A0** | A #40 (ADR 0002) és ez a PR összevonva; az ADR 0003 bekerül a `docs/audit/README.md` tartalomjegyzékébe | most | 1–2 óra |
 | **A1** | Tesztorákulumok: OpenTimelineIO oda-vissza teszt az `otio.rs`-hez; OpenAPV bitpontos összevetés a `crates/apv`-vel; OpenColorIO + ACES-config ΔE-mérés a `crates/color`-hoz. A termékbe nem kerülnek, hiányzó eszköznél kihagyódnak | most indítható, a Qt6-munkát nem akasztja | 10–20 óra |
-| **A2** | **Külön ADR (a következő szabad számmal, várhatóan 0006): FFI-kivétel elve** (az AGENTS.md §0.3 bővítése: további FFI-crate-ek az ADR 0001 feltételeivel), majd `crates/ocio`: OpenColorIO-színkezelés, ACES-config olvasása | az ADR F8 5. lépésénél (előnézet, GPU) | 40–80 óra |
+| **A2** | **Külön ADR (a következő szabad számmal, várhatóan 0008): FFI-kivétel elve** (az AGENTS.md §0.3 bővítése: további FFI-crate-ek az ADR 0001 feltételeivel), majd `crates/ocio`: OpenColorIO-színkezelés, ACES-config olvasása | az ADR F8 5. lépésénél (előnézet, GPU) | 40–80 óra |
 | **A3** | OpenImageIO + OpenEXR + LibRaw + libheif: PSD, HEIF/HEIC, JPEG 2000, kamera-RAW, a hiányzó EXR-tömörítések, többrészes és mély EXR (G10) | az ADR F8 3. lépése (médiaböngésző) után | 60–120 óra |
 | **A4** | OpenFX-host **külön folyamatban** (lásd 9. pont), első csomag a Natron openfx-misc (G11, G18) | az ADR F8 4. lépése (idővonal) után | 120–250 óra |
 | **A5** | Szoftveres kódolók: x265 (HEVC), x264 (H.264), LAME (MP3) (G13); előtte szabadalmi vizsgálat | az ADR F8 6. lépésénél (export) | 30–60 óra + jogi vizsgálat |
@@ -218,8 +219,8 @@ A PR összevonásával a tulajdonos ezeket hagyja jóvá:
 
 1. Az 1–6. pont döntései és jelöltjei, a 7. pont szakaszai és sorrendje.
 2. Az FFI-kivétel elve: további C/C++ könyvtár csak saját ADR-rel, az ADR 0001 feltételeivel
-   köthető be (az első ilyen az A2 FFI-elv ADR-je, a következő szabad számmal; a 0004 és a 0005 már foglalt:
-   útválasztó és médiahátterek). Az AGENTS.md szövege azzal az ADR-rel
+   köthető be (az első ilyen az A2 FFI-elv ADR-je, a következő szabad számmal; a 0004–0007 már foglalt:
+   útválasztó, médiahátterek, BacklotHub, Media Services). Az AGENTS.md szövege azzal az ADR-rel
    változik, nem ezzel a PR-ral.
 3. A bővítmény-hostok (OpenFX, LV2) külön folyamatban futnak.
 4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet. **Teljesült:** [ADR 0005](ADR-0005-media-backends.md)
@@ -259,5 +260,43 @@ maradnak.
 
 Ez a 10.5 pontot így pontosítja: az x264 és az x265 csak a `cfa4-restricted-extras` csomagban
 jelenhet meg. Az NVENC licencjogi vizsgálata (5. pont) változatlanul érvényes.
+
+## 13. Kiegészítés (2026-10-27): a szabadalmi vizsgálat hatóköre és eredményeinek rögzítése
+
+**Tulajdonosi döntés (2026-10-27).** A 6., 9. és 10.5 pontban előírt szabadalmi vizsgálat
+hatóköre e pont része, és a vizsgálat eredményét rögzíteni kell. A nyilvántartás:
+[`docs/patent-review.md`](../patent-review.md).
+
+**Hatókör.** A vizsgálat minden formátumra kiterjed, amelyet a CFA4 bármely része kezel:
+
+1. a CFA4 saját kodekjei és konténerei (`crates/*`: dekódolók, kódolók, demuxerek, muxerek),
+   akkor is, ha a 12. pont szerint az alapcsomagban maradnak;
+2. a hardveres utak (`crates/platform`: VA-API, NVDEC; NVENC-kódolás – ennek licencjogi kérdése az
+   5. pontban külön is áll);
+3. a kiegészítő hátterek: az FFmpeg-háttér ([ADR 0005](ADR-0005-media-backends.md)) és a
+   GStreamer ([ADR 0002](ADR-0002-gstreamer-backend.md)) által a kiadott csomagban elérhető
+   formátumok;
+4. a `cfa4-restricted-extras` csomag komponensei (x264, x265);
+5. minden irány külön: dekódolás, kódolás, konténer olvasása és írása.
+
+Ez a 10.5 pontot pontosítja: a vizsgálat nem csak az x264-re és az x265-re vonatkozik.
+
+**Az eredmény rögzítése.** A nyilvántartás formátumonként és irányonként egy sor. Egy eredmény
+akkor számít rögzítettnek, ha a sor `Eredmény` oszlopa `szabad`, `korlátozott` vagy `tisztázatlan`,
+és ki van töltve a dátum, valamint az, hogy ki vizsgálta és mire alapozta (jogi vélemény,
+szabadalmi pool listája, lejárati adat, hivatalos nyilatkozat). A rögzítés a nyilvántartás
+módosításával, PR-ban történik.
+
+**Következmények.**
+
+- `korlátozott` vagy `tisztázatlan` eredmény után a komponens besorolásáról (alapcsomag vagy
+  `cfa4-restricted-extras`) a tulajdonos dönt, a 12. pont szabályai szerint; a döntés a
+  nyilvántartás `Csomag` oszlopába kerül.
+- Új kodek, konténer vagy kódolási út csak a saját nyilvántartási sorával vonható össze; a
+  `python/tests/test_patent_register.py` minden kodek- és konténer-crate sorát ellenőrzi.
+- **Kiadási kapu:** a `patent_review_recorded` a kötelező kiadási kapuk egyike
+  (`python/cfa4_devtools/release_gate.py`, `docs/audit/f9-release-readiness.json`). Csak akkor
+  lehet `PASS`, ha az alapcsomag minden sorának rögzített eredménye van; a kapu ezt magából a
+  nyilvántartásból ellenőrzi, nem csak a kimondott állapotából. Addig nyilvános kiadás nincs.
 
 *Ez műszaki-licenc összefoglaló, nem jogi tanács.*
