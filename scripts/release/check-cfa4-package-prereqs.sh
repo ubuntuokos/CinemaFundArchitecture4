@@ -75,7 +75,12 @@ if has restricted; then
   check_ffmpeg_build "$ffmpeg_build-restricted" " --restricted"
 fi
 if has deb || has restricted; then
-  check_command nfpm
+  # Only the pinned nfpm (packaging/linux/nfpm.lock): hash first, then version.
+  if nfpm_path="$(bash "$ROOT/packaging/linux/check-nfpm.sh")"; then
+    echo "OK: pinned nfpm $nfpm_path"
+  else
+    fail "the pinned nfpm (packaging/linux/nfpm.lock; build it with scripts/release/install-nfpm.sh)"
+  fi
   check_command dpkg-deb
 fi
 if has flatpak; then
@@ -94,6 +99,8 @@ if has flatpak; then
   fi
 fi
 if has appimage; then
+  # verify_cfa4_packages.py lists the AppImage's squashfs without running it
+  check_command unsquashfs
   tool="${APPIMAGETOOL:-$(command -v appimagetool || true)}"
   if [[ -z "$tool" || ! -f "$tool" || ! -x "$tool" ]]; then
     fail "reviewed appimagetool not executable (set APPIMAGETOOL)"

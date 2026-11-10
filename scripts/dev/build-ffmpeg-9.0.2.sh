@@ -17,7 +17,8 @@
 # the extras switches every FFmpeg library at once.
 #
 # Environment: CFA4_FFMPEG_PREFIX (base prefix), CFA4_FFMPEG_JOBS (make -j), CFA4_FFMPEG_SOURCE
-# (`tarball`, the default, or `git` for the GitHub mirror when ffmpeg.org is not reachable).
+# (`tarball`, the default, or `git` for the GitHub mirror when ffmpeg.org is not reachable),
+# CFA4_FFMPEG_FROM_SOURCE=1 (compile even where scripts/dev/fetch-ffmpeg-9.0.2.sh has a prebuilt one).
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
@@ -46,6 +47,21 @@ base="${CFA4_FFMPEG_PREFIX:-/opt/cfa4/ffmpeg-${version}}"
 prefix="$base"
 (( restricted )) && prefix="${base}-restricted"
 jobs="${CFA4_FFMPEG_JOBS:-$(nproc)}"
+
+# The base build in its default prefix is published prebuilt (scripts/dev/fetch-ffmpeg-9.0.2.sh,
+# GitHub prerelease, SHA-256 pinned): install that instead of compiling, unless
+# CFA4_FFMPEG_FROM_SOURCE=1 (the prebuilt workflow itself) or the host has no prebuilt archive.
+if (( ! restricted )) && [[ "$prefix" == "/opt/cfa4/ffmpeg-${version}" && "${CFA4_FFMPEG_FROM_SOURCE:-0}" != 1 ]]; then
+  status=0
+  bash "$(dirname "${BASH_SOURCE[0]}")/fetch-ffmpeg-9.0.2.sh" || status=$?
+  if (( status == 0 )); then
+    exit 0
+  elif (( status != 3 )); then
+    echo "the prebuilt FFmpeg could not be installed; set CFA4_FFMPEG_FROM_SOURCE=1 to compile it" >&2
+    exit "$status"
+  fi
+  echo "no prebuilt FFmpeg ${version} for this host; building from source" >&2
+fi
 
 need=(nasm pkg-config)
 for tool in "${need[@]}" curl tar make cc; do
