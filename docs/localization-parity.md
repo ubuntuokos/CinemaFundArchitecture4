@@ -61,6 +61,7 @@ whole interface, one PR) at ~4–8 h per language for the catalog plus tests.
 | *Other shipped:* Ukrainian | uk | 351 (10.0%) | menus only | Cyrillic (bundled) | not recorded | menus only | 5–9 h |
 | *Other shipped:* Hungarian | hu | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings); the tests require it to stay complete (`hungarian_covers_the_whole_interface`) | as Spanish | Latin with ő/ű (bundled fonts, `hungarian_renders_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
 | *Other shipped:* Polish | pl | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings; 570 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin with ą ę ł ś ź ż (bundled fonts, `complete_languages_render_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
+| *Other shipped:* Turkish | tr | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings; 500 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin with ç ğ ı İ ö ş ü (bundled fonts, `complete_languages_render_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
 
 UI strings are catalog entries (the non-comment lines of `i18n/<code>.tsv`; English counts the
 source strings in the code), so the rows were measured at different times: at this change the
@@ -80,6 +81,7 @@ Every language needs native-speaker review (human).
 | Date | Change | Summary |
 |---|---|---|
 | 2026-11-10 | minor | Polish (pl) added, complete: 4,072 entries (570 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
+| 2026-11-10 | minor | Turkish (tr) added, complete: 4,072 entries (500 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
 | 2026-11-10 | minor | English (UK) and English (Australia) added (US English is the source, shown as English (US)); de, es, fr, it, ja, ko, zh-cn, pt-br and id completed (718 entries) |
 | 2026-11-10 | minor | Every catalog moved to the top-level `i18n/` (owner decision 2026-11-09), one per language for egui and the Qt GUI (the Qt-only strings in a "Qt GUI" section; where the two had translated the same string differently, the Qt GUI's wording was kept); Hungarian (hu) completed (1,572 new entries) and added to egui's Edit ▸ Language, Settings and System Language |
 | 2026-10-27 | minor | Ubuntu 26.04 only: the macOS app-menu entries (Settings, Hide CFA4, Hide Others) and macOS hints left the catalogs; Korean font list names Linux fonts |

@@ -1060,6 +1060,7 @@ static CATEGORIES: &[Category] = &[
                     ("ko", "한국어"),
                     ("hu", "Magyar"),
                     ("pl", "Polski"),
+                    ("tr", "Türkçe"),
                 ]),
                 true,
             ),

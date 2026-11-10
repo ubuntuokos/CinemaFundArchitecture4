@@ -62,6 +62,8 @@ pub enum Language {
     Hu,
     /// Polish: the whole interface, Latin script (bundled fonts).
     Pl,
+    /// Turkish: the whole interface, Latin script (bundled fonts).
+    Tr,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -84,11 +86,12 @@ static INDONESIAN: OnceLock<Catalog> = OnceLock::new();
 static ITALIAN: OnceLock<Catalog> = OnceLock::new();
 static HUNGARIAN: OnceLock<Catalog> = OnceLock::new();
 static POLISH: OnceLock<Catalog> = OnceLock::new();
+static TURKISH: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 16] = [
+    pub const ALL: [Self; 17] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -103,6 +106,7 @@ impl Language {
         Self::It,
         Self::Hu,
         Self::Pl,
+        Self::Tr,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -123,6 +127,7 @@ impl Language {
             Self::Ko => "한국어",
             Self::Hu => "Magyar",
             Self::Pl => "Polski",
+            Self::Tr => "Türkçe",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -144,6 +149,7 @@ impl Language {
             "ko" => Some(Self::Ko),
             "hu" => Some(Self::Hu),
             "pl" => Some(Self::Pl),
+            "tr" => Some(Self::Tr),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -160,7 +166,7 @@ impl Language {
     /// only for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`); Traditional ones (`zh-TW`,
     /// `zh-HK`, `zh-MO`, `zh-Hant…`) are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 14] = [
+        const PRIMARY: [(&str, Language); 15] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -175,6 +181,7 @@ impl Language {
             ("ko", Language::Ko),
             ("hu", Language::Hu),
             ("pl", Language::Pl),
+            ("tr", Language::Tr),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -223,6 +230,7 @@ impl Language {
             Self::Ko => "ko",
             Self::Hu => "hu",
             Self::Pl => "pl",
+            Self::Tr => "tr",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -245,6 +253,7 @@ impl Language {
             Self::Ko => Some(KOREAN.get_or_init(|| Catalog::parse(catalog_file!("ko")))),
             Self::Hu => Some(HUNGARIAN.get_or_init(|| Catalog::parse(catalog_file!("hu")))),
             Self::Pl => Some(POLISH.get_or_init(|| Catalog::parse(catalog_file!("pl")))),
+            Self::Tr => Some(TURKISH.get_or_init(|| Catalog::parse(catalog_file!("tr")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -428,6 +437,7 @@ mod tests {
             ("ko", catalog_file!("ko")),
             ("hu", catalog_file!("hu")),
             ("pl", catalog_file!("pl")),
+            ("tr", catalog_file!("tr")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1538,13 +1548,22 @@ mod tests {
     /// command, catalog, alphabet (every letter the bundled fonts must draw, even ones no entry uses yet) and a
     /// few spot checks. Like Hungarian, each must stay complete: a new string needs an entry in each
     /// of them in the same change.
-    const COMPLETE: &[(Language, &str, &str, &str, &[(&str, &str)])] = &[(
-        Language::Pl,
-        "app.language.polish",
-        catalog_file!("pl"),
-        "ĄĆĘŁŃÓŚŹŻąćęłńóśźż„”«»",
-        &[("File", "Plik"), ("Sequence", "Sekwencja"), ("Playhead", "Głowica odtwarzania"), ("Cross Dissolve", "Przenikanie krzyżowe")],
-    )];
+    const COMPLETE: &[(Language, &str, &str, &str, &[(&str, &str)])] = &[
+        (
+            Language::Pl,
+            "app.language.polish",
+            catalog_file!("pl"),
+            "ĄĆĘŁŃÓŚŹŻąćęłńóśźż„”«»",
+            &[("File", "Plik"), ("Sequence", "Sekwencja"), ("Playhead", "Głowica odtwarzania"), ("Cross Dissolve", "Przenikanie krzyżowe")],
+        ),
+        (
+            Language::Tr,
+            "app.language.turkish",
+            catalog_file!("tr"),
+            "ÇĞİÖŞÜçğıöşü",
+            &[("File", "Dosya"), ("Sequence", "Sekans"), ("Playhead", "Oynatma Kafası"), ("Cross Dissolve", "Çapraz Çözülme")],
+        ),
+    ];
 
     #[test]
     fn complete_languages_cover_the_whole_interface() {
