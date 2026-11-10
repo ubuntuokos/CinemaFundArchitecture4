@@ -21,13 +21,13 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `assets/cfa4/hicolor/256x256/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/512x512/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
-| `crates/ui-egui/src/i18n/it.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Italian interface translations | MIT OR Apache-2.0 |
-| `crates/ui-egui/src/i18n/id.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Indonesian interface translations | MIT OR Apache-2.0 |
-| `crates/ui-egui/src/i18n/ko.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Korean interface translations | MIT OR Apache-2.0 |
-| `crates/ui-egui/src/i18n/fr.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room French interface translations | MIT OR Apache-2.0 |
-| `crates/ui-egui/src/i18n/pt-br.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Brazilian Portuguese interface translations | MIT OR Apache-2.0 |
-| `crates/ui-egui/src/i18n/ru.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Russian interface translations | MIT OR Apache-2.0 |
-| `crates/ui-egui/src/i18n/uk.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Ukrainian interface translations | MIT OR Apache-2.0 |
+| `i18n/it.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Italian interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
+| `i18n/id.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Indonesian interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
+| `i18n/ko.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Korean interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
+| `i18n/fr.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room French interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
+| `i18n/pt-br.tsv` | Upstream contributors (see NOTICE); CFA4 contributors for the Qt GUI section | Original work: clean-room Brazilian Portuguese interface translations | MIT OR Apache-2.0; the Qt GUI section GPL-3.0-or-later |
+| `i18n/ru.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Russian interface translations | MIT OR Apache-2.0 |
+| `i18n/uk.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Ukrainian interface translations | MIT OR Apache-2.0 |
 | `assets/fonts/Inter-Regular.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |
 | `assets/fonts/Inter-Medium.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |
 | `assets/fonts/Inter-SemiBold.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |

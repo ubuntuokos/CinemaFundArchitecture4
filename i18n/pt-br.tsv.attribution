@@ -5,4 +5,4 @@ source:       original work
 license:      MIT OR Apache-2.0
 license-file: LICENSE-MIT and LICENSE-APACHE
 added:        2026-10-11 by vangel76
-notes:        Original English-to-Brazilian-Portuguese interface translations using clean-room NLE vocabulary.
+notes:        Original English-to-Brazilian-Portuguese interface translations using clean-room NLE vocabulary. The "Qt GUI" section at the end (merged from python/cfa4_qt/i18n/ on 2026-11-10) is CFA4 contributors' clean-room work under GPL-3.0-or-later (LICENSE).

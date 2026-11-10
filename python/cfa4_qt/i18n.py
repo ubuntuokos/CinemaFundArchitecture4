@@ -1,10 +1,11 @@
 """Translation catalogs for the Qt GUI.
 
-Same TSV format as the shared catalogs (`context <TAB> source <TAB> translation`, documented at
-the top of ``crates/ui-egui/src/i18n/es.tsv``). The Qt GUI reads the shared catalogs, so menu
-and command labels translate the same way in both frontends while egui still exists, plus its own
-catalogs in ``python/cfa4_qt/i18n/`` (Hungarian, and Qt-only strings). A missing or malformed
-catalog never breaks the UI: the English source text is shown instead.
+Every CFA4 translation lives in the repository's top-level ``i18n/<code>.tsv``, one catalog per
+language shared with egui (owner decision 2026-11-09), so menu and command labels translate the
+same way in both frontends. Format: ``context <TAB> source <TAB> translation``, documented at the
+top of ``i18n/es.tsv``. An installed package has no checkout, so packaging/linux/package.sh copies
+the catalogs into ``cfa4_qt/i18n``. A missing or malformed catalog never breaks the UI: the English
+source text is shown instead.
 """
 
 from __future__ import annotations
@@ -16,10 +17,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-# the shared catalogs: egui's in a checkout; an installed package ships a copy of them next to
-# the Qt catalogs (packaging/linux/package.sh)
-SHARED_CATALOGS = ROOT / "crates" / "ui-egui" / "src" / "i18n"
-CATALOG_DIRS = (HERE / "i18n", SHARED_CATALOGS if SHARED_CATALOGS.is_dir() else HERE / "i18n" / "shared")
+# the catalogs: an installed package's own copy (packaging/linux/package.sh), else the checkout's
+# top-level i18n/ (a checkout has no python/cfa4_qt/i18n/)
+PACKAGED_CATALOGS = HERE / "i18n"
+CATALOG_DIR = PACKAGED_CATALOGS if PACKAGED_CATALOGS.is_dir() else ROOT / "i18n"
 
 # language code -> name shown in the View ▸ Language menu (in that language)
 LANGUAGES = {
@@ -89,16 +90,11 @@ class Translator:
         self._plain, self._contextual = {}, {}
         if language == "en":
             return
-        # later directories never override earlier ones: the Qt catalog wins over the shared one
-        for directory in reversed(CATALOG_DIRS):
-            path = directory / f"{language}.tsv"
-            try:
-                text = path.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
-                continue
-            plain, contextual = parse_catalog(text)
-            self._plain.update(plain)
-            self._contextual.update(contextual)
+        try:
+            text = (CATALOG_DIR / f"{language}.tsv").read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            return
+        self._plain, self._contextual = parse_catalog(text)
 
     def tr(self, text: str) -> str:
         return self._plain.get(text, text)

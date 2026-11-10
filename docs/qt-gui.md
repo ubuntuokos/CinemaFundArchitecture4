@@ -154,7 +154,7 @@ start with a saved layout and reset; it passes on all four versions, so `PySide6
 | `python/cfa4_qt/commands.py` | registry → menus, actions, shortcuts; parameter specs |
 | `python/cfa4_qt/main_window.py` | docks, refresh cycle, command routing, close/recovery prompts |
 | `python/cfa4_qt/panels/` | Project, Timeline, Program monitor + playback, Effects, Inspector, History, Events |
-| `python/cfa4_qt/i18n.py`, `i18n/*.tsv` | translations (shared catalogs + full Hungarian + the Qt-only strings in nine more languages) |
+| `python/cfa4_qt/i18n.py`, top-level `i18n/*.tsv` | translations: one catalog per language shared with egui (full Hungarian; the Qt-only strings in a "Qt GUI" section of the other ten) |
 | `python/tests/test_qt_gui.py` | framing, registry, i18n, window against a fake and the real engine |
 | `python/tests/test_qt_translations.py` | every finished language covers the Qt strings, placeholders kept |
 

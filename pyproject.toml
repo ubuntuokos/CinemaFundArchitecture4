@@ -27,9 +27,6 @@ cfa4-qt-shell = "cfa4_devtools.qt_app:main"
 where = ["python"]
 include = ["cfa4_devtools*", "cfa4_qt*"]
 
-[tool.setuptools.package-data]
-cfa4_qt = ["i18n/*.tsv"]
-
 [tool.ruff]
 target-version = "py312"
 line-length = 120
