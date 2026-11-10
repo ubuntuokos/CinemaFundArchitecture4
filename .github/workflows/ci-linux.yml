@@ -99,8 +99,9 @@ jobs:
       # GUI is complete (docs/coordination.md §3.4).
       - name: Headless Qt runtime libraries
         run: |
+          # QtMultimedia (audio output choice) loads libpulse even with no sound server
           sudo apt-get install -y --no-install-recommends \
-            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0
+            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0 libpulse0 libpulse-mainloop-glib0
       - name: Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
