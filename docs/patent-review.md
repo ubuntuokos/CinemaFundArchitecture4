@@ -1,6 +1,6 @@
 # Szabadalmi vizsgálat – nyilvántartás
 
-> **Létrehozva:** 2026-10-27 · **Szabály:** [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) 13. pont ·
+> **Létrehozva:** 2026-10-27 · **Frissítve:** 2026-11-10 · **Szabály:** [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) 13. pont ·
 > **Kapcsolódik:** Ubuntu-modell ([`licensing.md`](licensing.md) 7. pont, ADR 0003 12. pont)
 
 Ebben a fájlban rögzül minden szabadalmi vizsgálat eredménye. Sorai a CFA4 által kezelt
@@ -32,23 +32,29 @@ szabadalommal védett formátumot.
 
 | Formátum | Irány | Komponens | Csomag | Eredmény | Dátum | Vizsgáló / forrás |
 |---|---|---|---|---|---|---|
-| H.264 / AVC | dekódolás | `crates/h264`; `crates/platform` (VA-API, NVDEC); FFmpeg-háttér | alap | függőben | | |
+| H.264 / AVC (High 10-ig) | dekódolás | `crates/h264`; `crates/platform` (VA-API, NVDEC); FFmpeg-háttér | alap | függőben | | |
 | H.264 / AVC | kódolás | `crates/h264enc`; `crates/platform` (NVENC); x264 (FFmpeg-háttér) | alap; x264: kiegészítő | függőben | | |
-| H.265 / HEVC | dekódolás | `crates/hevc`; `crates/platform` (VA-API, NVDEC); FFmpeg-háttér | alap | függőben | | |
-| H.265 / HEVC | kódolás | `crates/platform` (NVENC); x265 (FFmpeg-háttér) | alap; x265: kiegészítő | függőben | | |
+| H.265 / HEVC (Main, Main 10, RExt 4:2:2 / 4:4:4, 12 bit) | dekódolás | `crates/hevc`; `crates/platform` (VA-API, NVDEC); FFmpeg-háttér | alap | függőben | | |
+| H.265 / HEVC | kódolás | `crates/hevc` (szoftveres, Main / Main 10); `crates/platform` (NVENC); x265 (FFmpeg-háttér) | alap; x265: kiegészítő | függőben | | |
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
 | VC-1 / WMV | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
-| DV / DVCPRO | dekódolás | FFmpeg-háttér | alap | függőben | | |
+| DV / DVCPRO 25 (IEC 61834-2, SMPTE 314M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
 | AV1 | dekódolás | `crates/av1`; FFmpeg-háttér (dav1d) | alap | függőben | | |
 | AV1 | kódolás | tervezett (rav1e) | – | függőben | | |
 | VP8 | dekódolás | `crates/vp8`; FFmpeg-háttér (libvpx) | alap | függőben | | |
+| VP8 | kódolás | FFmpeg-háttér (libvpx) | alap | függőben | | |
 | VP9 | dekódolás | `crates/vp9`; FFmpeg-háttér (libvpx) | alap | függőben | | |
-| VP8 / VP9 | kódolás | FFmpeg-háttér (libvpx) | alap | függőben | | |
+| VP9 | kódolás | `crates/vp9` (0. profil); FFmpeg-háttér (libvpx) | alap | függőben | | |
 | APV | dekódolás, kódolás | `crates/apv` | alap | függőben | | |
 | Apple ProRes | dekódolás, kódolás | `crates/prores` | alap | függőben | | |
 | DNxHD / DNxHR (VC-3) | dekódolás, kódolás | `crates/dnx` | alap | függőben | | |
-| JPEG 2000 | dekódolás | `crates/j2k` | alap | függőben | | |
+| JPEG 2000 (Part 1) | dekódolás, kódolás (DCI 2K / 4K profilok) | `crates/j2k` | alap | függőben | | |
+| HTJ2K (JPEG 2000 Part 15) | dekódolás | `crates/j2k` (az OpenJPH blokkdekódolójának portja) | alap | függőben | | |
+| GoPro CineForm (CFHD) | dekódolás, kódolás | `crates/cineform` (a CineForm SDK portja) | alap | függőben | | |
+| JPEG XL | dekódolás | `crates/jxl` (a jxl-oxide portja) | alap | függőben | | |
+| HEIF / HEIC állókép | olvasás (a képelemek HEVC-dekódolása a `crates/hevc` sorában) | `crates/heif` | alap | függőben | | |
+| Animált WebP | dekódolás (VP8 / VP8L) | `crates/media` (a VP8-dekódolás a `crates/vp8` sorában) | alap | függőben | | |
 | DNG / CinemaDNG (lossless JPEG) | dekódolás | `crates/dng` | alap | függőben | | |
 
 ## Hang
@@ -56,7 +62,12 @@ szabadalommal védett formátumot.
 | Formátum | Irány | Komponens | Csomag | Eredmény | Dátum | Vizsgáló / forrás |
 |---|---|---|---|---|---|---|
 | AAC | dekódolás, kódolás | `crates/aac`; FFmpeg-háttér | alap | függőben | | |
-| AC-3 / E-AC-3 (Dolby Digital, Dolby Digital Plus) | dekódolás | `crates/ac3`; FFmpeg-háttér | alap | függőben | | |
+| AC-3 / E-AC-3 (Dolby Digital, Dolby Digital Plus) | dekódolás, kódolás | `crates/ac3`; FFmpeg-háttér | alap | függőben | | |
+| Dolby TrueHD / MLP | dekódolás | `crates/truehd` (a truehd crate portja); Blu-ray MPEG-TS (AC-3 maggal) a `crates/mpegts` sorában | alap | függőben | | |
+| Dolby Atmos (TrueHD-objektumok) | dekódolás, renderelés 7.1.4-re, DCP-exportban IAB-objektumként | `crates/truehd` | alap | függőben | | |
+| DTS Coherent Acoustics, DTS-HD MA / HRA, DTS:X alap | dekódolás | `crates/dts` (az FFmpeg dca-dekódolójának portja) | alap | függőben | | |
+| Auro-3D (Auro-Codec) | felismerés, magassági csatornák dekódolása 24 bites PCM-hordozóból | `crates/auro` | alap | függőben | | |
+| IAB – Immersive Audio Bitstream (SMPTE ST 2098-2) | dekódolás, renderelés, írás; IAB MXF-ben | `crates/iab`; `crates/mxf` | alap | függőben | | |
 | MPEG-1/2 Audio Layer I / II | dekódolás | `crates/mpa`; FFmpeg-háttér | alap | függőben | | |
 | MP3 (MPEG Audio Layer III) | dekódolás | FFmpeg-háttér | alap | függőben | | |
 | MP3 (MPEG Audio Layer III) | kódolás | FFmpeg-háttér (LAME) | alap | függőben | | |
@@ -79,9 +90,9 @@ szabadalommal védett formátumot.
 | AAF (Compound File Binary) | olvasás, írás | `crates/cfb` | alap | függőben | | |
 | Konténer- és kodekközpont | olvasás | `crates/codecs` (a fenti sorok formátumai) | alap | függőben | | |
 
-## Nyitott PR-ok, amelyek összevonásuk előtt felveszik a sorukat
+## Hátterek és exportutak
 
-TrueHD / MLP (#75, #112), DTS és DTS-HD (#134), Dolby Atmos objektumok (#128), AC-3 / E-AC-3
-kódoló (#121), HEVC szoftveres kódoló (#181), H.264 High 10 (#165), HEVC RExt (#168), VP9-kódoló
-(#152), JPEG 2000 kódoló (#118), HTJ2K (#114), GoPro CineForm (#158, #160), JPEG XL (#143),
-HEIF / HEIC (#137), animált WebP (#135), IAB (#110).
+| Formátum | Irány | Komponens | Csomag | Eredmény | Dátum | Vizsgáló / forrás |
+|---|---|---|---|---|---|---|
+| FFmpeg-háttér: a fenti sorok „FFmpeg-háttér” bejegyzései és a csak FFmpeg-gel megnyitható formátumok | dekódolás (tartalékút a saját motor mögött, ADR 0005) | `crates/ffmpeg` (FFmpeg 9.0.2 alap-build); x264 / x265: `--restricted` build | alap; `--restricted` build: kiegészítő | függőben | | |
+| Smart Cut / Smart Render: H.264, HEVC, AV1, MPEG-2 videó | bitfolyam-elemzés (GOP-index), csomagmásolás, határ-újrakódolás (`crates/h264enc`) | `crates/smart-edit` | alap | függőben | | |
