@@ -288,3 +288,57 @@ fn a_project_media_item_is_cut_on_its_marked_range() {
     assert!(e.to_string().contains("media file"), "{e}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// [`source_mp4`] with an AAC track (stand-in packets of 1024 samples at 48 kHz, 2112 samples of
+/// priming hidden by its edit list) and a 16-bit mono PCM track, both as long as the video.
+fn av_mp4() -> Vec<u8> {
+    use cfa4_isobmff::PcmConfig;
+    let video = source_mp4();
+    let v = cfa4_isobmff::open(video.as_slice()).unwrap();
+    let vt = &v.tracks[0];
+    let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+    let t = mux.add_track(TrackConfig::new(vt.entries[0].clone(), vt.timescale)).unwrap();
+    for (i, s) in vt.samples.iter().enumerate() {
+        let data = v.read_sample(video.as_slice(), 0, i).unwrap();
+        mux.write_sample(t, WriteSample { data: &data, duration: s.duration, composition_offset: (s.pts - s.dts) as i32, is_sync: s.is_sync }).unwrap();
+    }
+    let mut aac = TrackConfig::new(SampleEntry::aac(vec![0x11, 0x90], 2, 48_000), 48_000);
+    aac.media_start = Some(2112);
+    let a = mux.add_track(aac).unwrap();
+    for i in 0..(48_000 * 8 / 5 + 2112) / 1024 + 1 {
+        let data: Vec<u8> = (0..200).map(|k| ((i * 31 + k) % 256) as u8).collect();
+        mux.write_sample(a, WriteSample { data: &data, duration: 1024, composition_offset: 0, is_sync: true }).unwrap();
+    }
+    let pcm = PcmConfig { bits: 16, float: false, big_endian: false, signed: true, channels: 1, sample_rate: 48_000.0 };
+    let p = mux.add_track(TrackConfig::new(SampleEntry::pcm(pcm), 48_000)).unwrap();
+    let samples: Vec<u8> = (0..48_000 * 8 / 5).flat_map(|i: u32| ((i % 30_000) as i16).to_le_bytes()).collect();
+    mux.write_sample(p, WriteSample { data: &samples, duration: 0, composition_offset: 0, is_sync: true }).unwrap();
+    mux.finish().unwrap().into_inner()
+}
+
+#[test]
+fn the_audio_tracks_are_copied_with_the_cut_and_in_sync() {
+    // SCE-001 §9 (WP-09b): AAC and PCM are copied next to the video, verified, and named in the plan
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("av.mp4".into(), av_mp4());
+    let r = s.execute("export.plan", json!({"path": "av.mp4", "in": frame(10), "out": frame(30)})).unwrap();
+    assert_eq!(r["audio"]["tracks"], json!([{"trackId": 2, "codec": "aac"}, {"trackId": 3, "codec": "pcm"}]), "{}", r["audio"]);
+    assert_eq!(r["audio"]["dropped"], json!([]));
+    for (mode, extra) in [("gop-boundary", json!({"in": frame(10)})), ("frame-accurate", json!({"in": frame(5), "confirm": true}))] {
+        let mut p = json!({"path": "av.mp4", "out": frame(30), "mode": mode, "output": format!("{mode}.mp4")});
+        for (k, v) in extra.as_object().unwrap() {
+            p[k] = v.clone();
+        }
+        let r = s.execute("export.start", p).unwrap();
+        let verified = r["audio"]["verified"].as_array().unwrap();
+        assert_eq!(verified.len(), 2, "{mode}: {}", r["audio"]);
+        assert!(verified.iter().all(|t| t["syncErrorNs"].as_i64().unwrap().abs() <= 10_417), "{mode}: {}", r["audio"]);
+        let out = cfa4_isobmff::open(files.0.lock().unwrap()[&format!("{mode}.mp4")].as_slice()).unwrap();
+        assert_eq!(out.tracks.len(), 3, "{mode}");
+        assert_eq!(out.tracks[2].samples.iter().map(|x| u64::from(x.duration)).sum::<u64>(), if mode == "gop-boundary" { 38_400 } else { 48_000 }, "{mode}");
+    }
+    // "audio": false writes the video alone
+    let r = s.execute("export.start", json!({"path": "av.mp4", "in": frame(10), "out": frame(30), "output": "mute.mp4", "audio": false})).unwrap();
+    assert_eq!(r["audio"]["tracks"], json!([]));
+    assert_eq!(cfa4_isobmff::open(files.0.lock().unwrap()["mute.mp4"].as_slice()).unwrap().tracks.len(), 1);
+}
