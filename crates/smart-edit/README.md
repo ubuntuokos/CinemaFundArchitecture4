@@ -86,6 +86,13 @@ The index comes from the bitstream, not from the container's keyframe flag:
   needs the PPS for `num_extra_slice_header_bits`; without it the type is `Unknown`, the access
   points are still found). A picture coded with other VPS / SPS / PPS payloads is a configuration
   change. The registry's HEVC `gop-index` row is supported; copying and re-encoding HEVC are not yet.
+- **AV1** (`index_av1`, WP-07; base spatial layer): one packet is one temporal unit. A unit that
+  starts with a shown key frame is a clean access point (`key-frame`): it refreshes every
+  reference slot. It needs a sequence header (from `av1C` or in-band). Hidden (forward) key frames
+  and intra-only frames are intra but no cut points; a unit that only shows an existing frame
+  decodes nothing new. Reference slots are not resolved. A changed sequence header is a
+  configuration change. The registry's AV1 `gop-index` row is supported; copying and re-encoding
+  AV1 are not yet.
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 
