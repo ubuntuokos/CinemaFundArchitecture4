@@ -93,7 +93,7 @@ impl Source {
     }
 
     /// The media time of stream time `t` (the inverse of [`Source::stream_time`]).
-    fn media_time(&self, t: Tick) -> Option<Tick> {
+    pub(crate) fn media_time(&self, t: Tick) -> Option<Tick> {
         t.0.checked_add(self.media_offset()?.0).map(Tick)
     }
 
@@ -399,6 +399,13 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16}; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified}"#,
             start,
             true,
+        ),
+        spec(
+            "export.gopMarks",
+            "GOP Marks of the Sequence",
+            r#"{"sequence":id?} → {sequence, clips:[{clip, track, codec, in (starts on a clean access point), points:[{time (sequence ticks), clean}]}]}"#,
+            crate::smart_render::gop_marks,
+            false,
         ),
     ]
 }

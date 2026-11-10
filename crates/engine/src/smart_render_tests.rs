@@ -231,3 +231,22 @@ fn hevc_clips_on_a_sequence_are_rendered() {
     assert!(!segments.is_empty() && segments.iter().all(|s| s["mode"] == "render" && s["render_causes"] == json!(["source"])), "{plan}");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// The timeline's GOP overlay (WP-08): each clip's access points in sequence time, and whether it
+/// starts on one.
+#[test]
+fn gop_marks_place_each_clips_access_points_on_the_sequence() {
+    // a: source 10–29 at 0; b: source 5–24 at 20 (an IDR every 10 source frames)
+    let mut fx = fixture("gop-marks", 0, &[(0, 0, 10, 20), (1, 20, 5, 20)]);
+    let r = fx.s.execute("export.gopMarks", json!({})).unwrap();
+    assert_eq!(r["sequence"], fx.seq.0);
+    let clips = r["clips"].as_array().unwrap();
+    assert_eq!(clips.len(), 2, "{r}");
+    let times = |c: &Value| c["points"].as_array().unwrap().iter().map(|p| p["time"].as_i64().unwrap()).collect::<Vec<_>>();
+    assert_eq!(times(&clips[0]), [f(0).0, f(10).0]);
+    assert_eq!(times(&clips[1]), [f(25).0, f(35).0]);
+    assert_eq!((clips[0]["in"].as_bool(), clips[1]["in"].as_bool()), (Some(true), Some(false)));
+    assert_eq!(clips[0]["codec"], "h264");
+    assert!(clips.iter().all(|c| c["points"].as_array().unwrap().iter().all(|p| p["clean"] == true)));
+    let _ = std::fs::remove_dir_all(&fx.dir);
+}
