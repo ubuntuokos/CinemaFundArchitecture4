@@ -167,10 +167,35 @@ H.264 encoder:
   picture with its source picture (luma PSNR, `BoundaryEncoding::min_psnr`).
 
 Rendered segments (gaps, effects) and timeline plans are refused here (`render-segment`,
-`timeline-plan`); they belong to the timeline Smart Render executor. Until it exists, the
-registry's `timeline-render` rows are unsupported, so `plan_smart_render` reports every timeline
-plan as not executable. Writing and verifying decode the boundaries picture by picture (the
+`timeline-plan`); they belong to the timeline Smart Render executor below. Writing and verifying decode the boundaries picture by picture (the
 encoder's VUI comes from the source SPS), so no boundary is held in memory whole.
+
+## Timeline Smart Render executor (WP-06)
+
+`cfa4_export::timeline_render` runs a `plan_smart_render` plan into one H.264 MP4 / MOV stream.
+`execute_mp4_timeline(plan, sources, frames, output, writer)` takes every source the plan reads
+(`TimelineSource`: its index and MP4 track, by `source_id`), the caller's renderer for the `Render`
+segments (`RenderedFrames`: 8-bit 4:2:0 pictures of the output size) and the output picture size,
+frame duration and encoding (`TimelineOutput`):
+
+- **Copied runs** keep their payloads. Every copied run must have the same `avcC`, timescale and
+  composition delay; a run starts at an IDR unless it continues the previous run of the same source.
+- **Re-encoded runs** (boundaries, `incompatible-stream`) are decoded from their source as in the
+  boundary executor; their aspect ratio and colour must match the copied stream.
+- **Rendered segments** (gaps, effects, transitions…) are encoded from the caller's pictures; the
+  executor knows nothing of effects. With nothing copied the output is High profile at the
+  timeline's frame rate.
+- **One stream, constant frame rate:** the output `avcC` is the copied SPS/PPS followed by the
+  encoder's, every encoded run starts with an IDR with an `idr_pic_id` its neighbours do not use,
+  and every copied or re-encoded source picture must last exactly one output frame (the planner
+  renders a clip at another frame rate).
+
+`check_mp4_timeline` makes the same refusals without decoding or rendering.
+`verify_mp4_timeline` compares the copied samples with their sources, checks that the output shows
+one picture per frame without gaps, decodes the whole output and compares every re-encoded picture
+with its source picture (luma PSNR); rendered pictures are checked to decode. The registry's
+`timeline-render` rows stay unsupported until the engine runs timeline plans through it, so
+`plan_smart_render` still reports them as not executable.
 
 `h264_stream_format(avc)` reads the profile, chroma format and bit depth from the source SPS for
 the planner's `SmartCutRequest::format`. The engine commands use it: `export.plan` reports, for a

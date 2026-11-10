@@ -91,9 +91,9 @@ enum Seg {
 }
 
 /// The source parameter sets, parsed.
-struct SourceParams {
-    spss: Vec<Option<Sps>>,
-    ppss: Vec<Option<Pps>>,
+pub(crate) struct SourceParams {
+    pub(crate) spss: Vec<Option<Sps>>,
+    pub(crate) ppss: Vec<Option<Pps>>,
 }
 
 struct Prepared<'a> {
@@ -107,25 +107,21 @@ struct Prepared<'a> {
     durations: Vec<u32>,
 }
 
-fn incompatible(detail: impl Into<String>) -> SmartCutError {
+pub(crate) fn incompatible(detail: impl Into<String>) -> SmartCutError {
     SmartCutError::Incompatible { detail: detail.into() }
 }
 
-fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &StreamIndex, source: &Mp4CopySource<'a, S>) -> Result<Prepared<'a>, SmartCutError> {
-    if plan.plan_version != PLAN_VERSION {
-        return Err(SmartCutError::PlanVersion { found: plan.plan_version });
-    }
-    if plan.segments.iter().any(|s| s.source.is_some()) {
-        return Err(SmartCutError::TimelinePlan);
-    }
-    let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
-    if plan.codec != Codec::H264 || brand(plan.source_container).is_none() || brand(plan.output_container).is_none() || index.codec != Codec::H264 {
-        return Err(unsupported);
-    }
-    let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
-    if index.stream_id != track.id {
-        return Err(SmartCutError::WrongStream { expected: track.id, found: index.stream_id });
-    }
+/// The source pictures in presentation order (decode indices), the presentation position of
+/// each packet and how long each picture is shown (by decode index).
+pub(crate) struct SourceTiming {
+    pub(crate) order: Vec<usize>,
+    pub(crate) position: Vec<u64>,
+    pub(crate) durations: Vec<u32>,
+}
+
+/// The timing of `track`, after checking that `index` still describes it (sizes, timestamps, sync
+/// flags, presentation order).
+pub(crate) fn source_timing(index: &StreamIndex, track: &Track) -> Result<SourceTiming, SmartCutError> {
     let n = track.samples.len();
     if index.frames.len() != n {
         return Err(SmartCutError::StaleIndex { detail: format!("{} indexed pictures, {n} samples in track {}", index.frames.len(), track.id) });
@@ -158,6 +154,26 @@ fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &Strea
             _ => return Err(SmartCutError::Timestamps { decode_index: d as u64 }),
         }
     }
+    Ok(SourceTiming { order, position, durations })
+}
+
+fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &StreamIndex, source: &Mp4CopySource<'a, S>) -> Result<Prepared<'a>, SmartCutError> {
+    if plan.plan_version != PLAN_VERSION {
+        return Err(SmartCutError::PlanVersion { found: plan.plan_version });
+    }
+    if plan.segments.iter().any(|s| s.source.is_some()) {
+        return Err(SmartCutError::TimelinePlan);
+    }
+    let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
+    if plan.codec != Codec::H264 || brand(plan.source_container).is_none() || brand(plan.output_container).is_none() || index.codec != Codec::H264 {
+        return Err(unsupported);
+    }
+    let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
+    if index.stream_id != track.id {
+        return Err(SmartCutError::WrongStream { expected: track.id, found: index.stream_id });
+    }
+    let SourceTiming { order, position, durations } = source_timing(index, track)?;
+    let n = track.samples.len();
     let mut segs = Vec::with_capacity(plan.segments.len());
     let mut used = BTreeSet::new();
     let mut next_position: Option<u64> = None;
@@ -255,7 +271,7 @@ fn prepare<'a, S: ByteSource + ?Sized>(plan: &ExportExecutionPlan, index: &Strea
     Ok(Prepared { track, entry, avc, segs, delay: delay.unwrap_or(0), durations })
 }
 
-fn parse_params(avc: &AvcConfig) -> Result<SourceParams, SmartCutError> {
+pub(crate) fn parse_params(avc: &AvcConfig) -> Result<SourceParams, SmartCutError> {
     let mut spss: Vec<Option<Sps>> = vec![None; 32];
     let mut ppss: Vec<Option<Pps>> = vec![None; 256];
     for nal in &avc.sps {
@@ -272,12 +288,12 @@ fn parse_params(avc: &AvcConfig) -> Result<SourceParams, SmartCutError> {
 }
 
 /// The NAL units of a length-prefixed sample.
-fn nals(data: &[u8], length_size: u8) -> Result<Vec<&[u8]>, SmartCutError> {
+pub(crate) fn nals(data: &[u8], length_size: u8) -> Result<Vec<&[u8]>, SmartCutError> {
     length_prefixed_nals(data, usize::from(length_size)).map_err(|e| SmartCutError::Decode { detail: e.to_string() })
 }
 
 /// `Some(idr_pic_id)` when the sample is an IDR picture, `None` for any other picture.
-fn idr_pic_id(data: &[u8], length_size: u8, params: &SourceParams) -> Result<Option<u32>, SmartCutError> {
+pub(crate) fn idr_pic_id(data: &[u8], length_size: u8, params: &SourceParams) -> Result<Option<u32>, SmartCutError> {
     for nal in nals(data, length_size)? {
         let Some(&first) = nal.first() else { continue };
         let kind = first & 0x1f;
@@ -306,7 +322,7 @@ fn idr_pic_id(data: &[u8], length_size: u8, params: &SourceParams) -> Result<Opt
 }
 
 /// The encoder settings that match the source stream, or why there are none.
-fn encoder_config(
+pub(crate) fn encoder_config(
     avc: &AvcConfig,
     params: &SourceParams,
     width: u32,
@@ -382,7 +398,7 @@ fn encoder_config(
 
 /// The source pictures of a re-encoded segment, decoded on demand in presentation order: only the
 /// decoder's reference pictures and its reorder queue are held, never the whole segment.
-struct BoundaryDecoder<'s, 'a, S: ByteSource + ?Sized> {
+pub(crate) struct BoundaryDecoder<'s, 'a, S: ByteSource + ?Sized> {
     source: &'s Mp4CopySource<'a, S>,
     decoder: cfa4_h264::Decoder,
     next: usize,
@@ -394,7 +410,13 @@ struct BoundaryDecoder<'s, 'a, S: ByteSource + ?Sized> {
 }
 
 impl<'s, 'a, S: ByteSource + ?Sized> BoundaryDecoder<'s, 'a, S> {
-    fn new(source: &'s Mp4CopySource<'a, S>, avc: &AvcConfig, decode_first: usize, decode_last: usize, pictures: &[usize]) -> Result<Self, SmartCutError> {
+    pub(crate) fn new(
+        source: &'s Mp4CopySource<'a, S>,
+        avc: &AvcConfig,
+        decode_first: usize,
+        decode_last: usize,
+        pictures: &[usize],
+    ) -> Result<Self, SmartCutError> {
         let decoder = cfa4_h264::Decoder::from_avcc(&avc.to_bytes()).map_err(|e| SmartCutError::Decode { detail: e.to_string() })?;
         let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
         let mut wanted = BTreeSet::new();
@@ -405,7 +427,7 @@ impl<'s, 'a, S: ByteSource + ?Sized> BoundaryDecoder<'s, 'a, S> {
     }
 
     /// The next wanted picture, or `None` after the last one.
-    fn next_picture(&mut self) -> Result<Option<cfa4_h264::Picture>, SmartCutError> {
+    pub(crate) fn next_picture(&mut self) -> Result<Option<cfa4_h264::Picture>, SmartCutError> {
         let decode_err = |e: cfa4_h264::Error| SmartCutError::Decode { detail: e.to_string() };
         loop {
             if let Some(p) = self.ready.pop_front() {
@@ -437,7 +459,7 @@ impl<'s, 'a, S: ByteSource + ?Sized> BoundaryDecoder<'s, 'a, S> {
     }
 }
 
-fn planes(p: &cfa4_h264::Picture) -> Result<YuvFrame<'_>, SmartCutError> {
+pub(crate) fn planes(p: &cfa4_h264::Picture) -> Result<YuvFrame<'_>, SmartCutError> {
     let (Some(y), Some(u), Some(v)) = (p.y.as_u8(), p.u.as_u8(), p.v.as_u8()) else {
         return Err(incompatible("the boundary pictures are not 8-bit"));
     };
@@ -448,7 +470,7 @@ fn planes(p: &cfa4_h264::Picture) -> Result<YuvFrame<'_>, SmartCutError> {
 }
 
 /// Luma PSNR of two 8-bit pictures of the same size (99 dB when identical).
-fn luma_psnr(a: &cfa4_h264::Picture, b: &cfa4_h264::Picture) -> Option<f64> {
+pub(crate) fn luma_psnr(a: &cfa4_h264::Picture, b: &cfa4_h264::Picture) -> Option<f64> {
     if (a.width, a.height) != (b.width, b.height) {
         return None;
     }
@@ -589,36 +611,7 @@ fn setup<'a, S: ByteSource + ?Sized>(
         let Seg::Reencode { decode_first, decode_last, .. } = *seg else { continue };
         for d in decode_first..=decode_last {
             let data = source.file.read_sample(source.bytes, source.track, d).map_err(io)?;
-            visit_sei(&data, p.avc.length_size, |kind, payload| {
-                match kind {
-                    SEI_USER_DATA_REGISTERED => {
-                        return Err(incompatible(format!("packet {d} carries SEI user data (captions or other per-picture metadata) a re-encode would drop")));
-                    }
-                    SEI_USER_DATA_UNREGISTERED if !is_encoder_note(payload) => {
-                        return Err(incompatible(format!("packet {d} carries unregistered SEI user data a re-encode would drop")));
-                    }
-                    // one encoder configuration serves every boundary: the HDR values must agree
-                    SEI_MASTERING_DISPLAY => {
-                        let value = <[u8; 24]>::try_from(payload).map_err(|_| incompatible(format!("packet {d}: malformed mastering-display SEI")))?;
-                        if cfg.mastering_display.is_some_and(|known| known != value) {
-                            return Err(incompatible(format!("packet {d}: the mastering-display SEI changes between the re-encoded pictures")));
-                        }
-                        cfg.mastering_display = Some(value);
-                    }
-                    SEI_CONTENT_LIGHT => {
-                        let [a, b, c, e] = *payload else { return Err(incompatible(format!("packet {d}: malformed content-light SEI"))) };
-                        let value = (u16::from_be_bytes([a, b]), u16::from_be_bytes([c, e]));
-                        if cfg.content_light.is_some_and(|known| known != value) {
-                            return Err(incompatible(format!("packet {d}: the content-light SEI changes between the re-encoded pictures")));
-                        }
-                        cfg.content_light = Some(value);
-                    }
-                    SEI_USER_DATA_UNREGISTERED => {}
-                    other if SEI_DROPPABLE.contains(&other) => {}
-                    other => return Err(incompatible(format!("packet {d} carries SEI payload type {other}, which a re-encode cannot carry over"))),
-                }
-                Ok(())
-            })?;
+            check_reencoded_sei(&data, p.avc.length_size, d, &mut cfg)?;
         }
     }
     // the encoder's parameter-set ids are free only if no packet redefines a parameter set
@@ -650,6 +643,42 @@ fn setup<'a, S: ByteSource + ?Sized>(
         }
     }
     Ok(Setup { p, params, cfg: Some(cfg) })
+}
+
+/// Check the SEI messages of packet `d`, which is decoded and re-encoded: HDR static metadata is
+/// carried into `cfg` (one value for every re-encoded picture), user data and anything that would
+/// change how the pictures are shown refuses the plan.
+pub(crate) fn check_reencoded_sei(data: &[u8], length_size: u8, d: usize, cfg: &mut EncoderConfig) -> Result<(), SmartCutError> {
+    visit_sei(data, length_size, |kind, payload| {
+        match kind {
+            SEI_USER_DATA_REGISTERED => {
+                return Err(incompatible(format!("packet {d} carries SEI user data (captions or other per-picture metadata) a re-encode would drop")));
+            }
+            SEI_USER_DATA_UNREGISTERED if !is_encoder_note(payload) => {
+                return Err(incompatible(format!("packet {d} carries unregistered SEI user data a re-encode would drop")));
+            }
+            // one encoder configuration serves every boundary: the HDR values must agree
+            SEI_MASTERING_DISPLAY => {
+                let value = <[u8; 24]>::try_from(payload).map_err(|_| incompatible(format!("packet {d}: malformed mastering-display SEI")))?;
+                if cfg.mastering_display.is_some_and(|known| known != value) {
+                    return Err(incompatible(format!("packet {d}: the mastering-display SEI changes between the re-encoded pictures")));
+                }
+                cfg.mastering_display = Some(value);
+            }
+            SEI_CONTENT_LIGHT => {
+                let [a, b, c, e] = *payload else { return Err(incompatible(format!("packet {d}: malformed content-light SEI"))) };
+                let value = (u16::from_be_bytes([a, b]), u16::from_be_bytes([c, e]));
+                if cfg.content_light.is_some_and(|known| known != value) {
+                    return Err(incompatible(format!("packet {d}: the content-light SEI changes between the re-encoded pictures")));
+                }
+                cfg.content_light = Some(value);
+            }
+            SEI_USER_DATA_UNREGISTERED => {}
+            other if SEI_DROPPABLE.contains(&other) => {}
+            other => return Err(incompatible(format!("packet {d} carries SEI payload type {other}, which a re-encode cannot carry over"))),
+        }
+        Ok(())
+    })
 }
 
 /// UUIDs of the unregistered SEIs in which known encoders only name themselves and their

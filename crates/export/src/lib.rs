@@ -39,6 +39,7 @@ mod raster;
 pub mod settings;
 pub mod smart_cut;
 pub mod still;
+pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_mpd};
@@ -2929,6 +2930,8 @@ mod mpeg2_tests;
 mod mxf_tests;
 #[cfg(test)]
 mod smart_cut_tests;
+#[cfg(test)]
+mod timeline_render_tests;
 
 #[cfg(test)]
 mod determinism_tests;

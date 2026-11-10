@@ -20,6 +20,11 @@ const STRICT: Policy = Policy { allow_experimental: false };
 
 /// An MP4 with one H.264 track (64×48, 25 fps, IDR every `keyint` pictures, `bframes` B-frames).
 pub(crate) fn source_mp4(frames: usize, keyint: u32, bframes: u8, brand: Brand) -> Vec<u8> {
+    source_mp4_seeded(frames, keyint, bframes, brand, 0)
+}
+
+/// [`source_mp4`] with other pictures (`seed` 0 is `source_mp4`); the codec configuration is the same.
+pub(crate) fn source_mp4_seeded(frames: usize, keyint: u32, bframes: u8, brand: Brand, seed: usize) -> Vec<u8> {
     use cfa4_h264enc::{Encoder, EncoderConfig, PacketFormat, RateControl, YuvFrame};
     let (w, h) = (64usize, 48usize);
     let mut cfg = EncoderConfig::new(w as u32, h as u32, FPS, 1);
@@ -32,7 +37,7 @@ pub(crate) fn source_mp4(frames: usize, keyint: u32, bframes: u8, brand: Brand) 
     let mut enc = Encoder::new(cfg).unwrap();
     let mut packets = Vec::new();
     for i in 0..frames {
-        let y: Vec<u8> = (0..w * h).map(|k| ((k + i * 7) % 251) as u8).collect();
+        let y: Vec<u8> = (0..w * h).map(|k| ((k + i * 7 + seed * 13) % 251) as u8).collect();
         let c: Vec<u8> = (0..w * h / 4).map(|k| ((k * 3 + i) % 255) as u8).collect();
         packets.extend(enc.encode(&YuvFrame { y: &y, u: &c, v: &c, y_stride: w, uv_stride: w / 2 }, i as i64).unwrap());
     }

@@ -71,6 +71,10 @@ pub enum SmartCutError {
     Decode { detail: String },
     /// Encoding the boundary pictures failed.
     Encode { detail: String },
+    /// A timeline plan names a source the executor was not given.
+    MissingSource { source_id: String },
+    /// Rendering a picture of a rendered segment failed.
+    Render { segment: usize, detail: String },
 }
 
 impl fmt::Display for SmartCutError {
@@ -94,6 +98,8 @@ impl fmt::Display for SmartCutError {
             SmartCutError::Incompatible { detail } => write!(f, "the boundary re-encode cannot be spliced with the copied stream: {detail}"),
             SmartCutError::Decode { detail } => write!(f, "decoding the boundary pictures failed: {detail}"),
             SmartCutError::Encode { detail } => write!(f, "encoding the boundary pictures failed: {detail}"),
+            SmartCutError::MissingSource { source_id } => write!(f, "the plan reads {source_id}, which was not opened"),
+            SmartCutError::Render { segment, detail } => write!(f, "rendering segment {segment} failed: {detail}"),
         }
     }
 }
