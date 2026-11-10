@@ -254,3 +254,37 @@ fn av1_sources_are_analyzed_and_copied_but_not_re_encoded() {
     assert!(text.contains("AV1"), "{text}");
     assert!(!files.0.lock().unwrap().contains_key("cut.mp4"));
 }
+
+/// The Source monitor's clip as the source: a project media item, its marked range by default and
+/// media times (WP-08, the Source monitor's Smart Cut).
+#[test]
+fn a_project_media_item_is_cut_on_its_marked_range() {
+    let dir = crate::media_test_util::tmp_dir("smart-cut-item");
+    let path = dir.join("clip.mp4");
+    std::fs::write(&path, source_mp4()).unwrap();
+    let (mut s, items, seq) = crate::media_test_util::session_with(&[path.as_path()]);
+    let item = items[0];
+    let rate = cfa4_time::FrameRate { num: 25, den: 1 };
+    let r = s.execute("export.analyze", json!({"item": item.0})).unwrap();
+    assert_eq!(r["item"], item.0);
+    let media: Vec<i64> = r["accessPoints"].as_array().unwrap().iter().map(|p| p["mediaTime"].as_i64().unwrap()).collect();
+    assert_eq!(media, [0, 10, 20, 30].map(|n| rate.tick_of(n).0));
+    // In at 10, Out (inclusive) at 29: the marked range is copied
+    let mut p = (*s.project).clone();
+    if let Some(cfa4_project::ItemKind::Media(m)) = p.item_mut(item).map(|i| &mut i.kind) {
+        (m.mark_in, m.mark_out) = (Some(rate.tick_of(10)), Some(rate.tick_of(29)));
+    }
+    s.project = Arc::new(p);
+    let out = dir.join("cut.mp4").to_string_lossy().into_owned();
+    let r = s.execute("export.plan", json!({"item": item.0})).unwrap();
+    assert_eq!(r["summary"]["copiedFrames"], 20, "{r}");
+    let r = s.execute("export.start", json!({"item": item.0, "output": out})).unwrap();
+    assert_eq!((r["verified"].as_bool(), r["report"]["samples"].as_u64()), (Some(true), Some(20)), "{r}");
+    // explicit media times win over the marks
+    let r = s.execute("export.plan", json!({"item": item.0, "in": frame(0), "out": frame(10)})).unwrap();
+    assert_eq!(r["summary"]["copiedFrames"], 10, "{r}");
+    // a sequence is no Smart Cut source
+    let e = s.execute("export.analyze", json!({"item": seq.0})).unwrap_err();
+    assert!(e.to_string().contains("media file"), "{e}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
