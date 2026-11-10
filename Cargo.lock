@@ -1109,6 +1109,7 @@ dependencies = [
  "cfa4-truehd",
  "cfa4-vp8",
  "cfa4-vp9",
+ "cfa4-wavpack",
  "image",
  "log",
  "rayon",
@@ -1812,6 +1813,14 @@ dependencies = [
  "cfa4-bitstream",
  "cfa4-testkit",
  "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-wavpack"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 

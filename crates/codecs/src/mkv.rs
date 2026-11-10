@@ -104,6 +104,15 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         let au = cfa4_truehd::cfa4::samples_per_au(out_rate).unwrap_or(0);
         return contiguous_starts(packets, (au / 2).max(stamp_tolerance(t, rate)));
     }
+    if matches!(t.codec, Codec::WavPack { .. }) {
+        // a WavPack frame starts with its sample count
+        let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime {
+            stamp: at(s.pts),
+            stamped: own_stamp(s),
+            samples: file.read_sample(bytes, ti, i).ok().and_then(|p| p.get(..4).map(|b| i64::from(u32::from_le_bytes([b[0], b[1], b[2], b[3]])))),
+        });
+        return contiguous_starts(packets, stamp_tolerance(t, rate));
+    }
     if let Codec::Pcm { bits, .. } = &t.codec {
         // PCM packets hold whole sample frames: 1600 at 48 kHz are 33.33 ms, stamped 33 ms apart
         let channels = t.audio.as_ref().map_or(1, |a| a.channels.max(1));
@@ -368,6 +377,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::Mp3 => "MP3".into(),
         Codec::Mp2 | Codec::Mp1 => "MPEG Audio".into(),
         Codec::TrueHd => "Dolby TrueHD".into(),
+        Codec::WavPack { .. } => "WavPack".into(),
         Codec::Other(id) if id == "V_MPEG2" => "MPEG-2 Video".into(),
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         other => other.name().to_string(),
@@ -535,6 +545,7 @@ impl MkvSource {
             Codec::Ac3 | Codec::Eac3 => PacketDecoder::ac3(),
             Codec::Dts => Ok(PacketDecoder::dts()),
             Codec::TrueHd => Ok(PacketDecoder::truehd()),
+            Codec::WavPack { version } => Ok(PacketDecoder::wavpack(*version)),
             // symphonia wants the STREAMINFO block body: skip `fLaC` + the 4-byte block header.
             Codec::Flac { private } => PacketDecoder::new(CODEC_TYPE_FLAC, rate, private.get(8..42).map(<[u8]>::to_vec)),
             Codec::Vorbis { headers } if headers.len() == 3 => {
