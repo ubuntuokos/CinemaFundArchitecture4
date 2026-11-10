@@ -8,8 +8,8 @@
 //! dropped or re-encoded silently.
 //!
 //! - **Payloads:** every copied sample is written with the source bytes unchanged. MP4 → MP4 / MOV
-//!   keeps the length-prefixed NAL framing and the source sample entry (`avcC`), so a
-//!   `compatible` plan needs no representation change either and runs the same way.
+//!   keeps the length-prefixed NAL framing and the source sample entry (`avcC` for H.264, `hvcC`
+//!   for HEVC), so a `compatible` plan needs no representation change either and runs the same way.
 //! - **Timing:** the output starts at decode time 0; sample durations and composition offsets
 //!   (PTS − DTS) are copied, and an edit list starts the presentation at the first copied picture.
 //! - **Consistency:** the executor refuses when the index the plan was built from no longer
@@ -172,7 +172,11 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         return Err(SmartCutError::TimelinePlan);
     }
     let unsupported = SmartCutError::Unsupported { codec: plan.codec, source: plan.source_container, output: plan.output_container };
-    if plan.codec != Codec::H264 || brand(plan.source_container).is_none() || brand(plan.output_container).is_none() || index.codec != Codec::H264 {
+    if !matches!(plan.codec, Codec::H264 | Codec::Hevc)
+        || brand(plan.source_container).is_none()
+        || brand(plan.output_container).is_none()
+        || index.codec != plan.codec
+    {
         return Err(unsupported);
     }
     let track = source.file.tracks.get(source.track).ok_or(SmartCutError::NoTrack { track: source.track })?;
@@ -221,8 +225,10 @@ fn copy_range<'a, S: ByteSource + ?Sized>(
         .and_then(|x| x.checked_sub(1))
         .and_then(|x| track.entries.get(usize::try_from(x).ok()?))
         .ok_or_else(|| SmartCutError::StaleIndex { detail: format!("track {} has no sample entry for the copied packets", track.id) })?;
-    if !matches!(entry.codec, cfa4_isobmff::CodecConfig::Avc(_)) {
-        return Err(unsupported);
+    // the sample entry carries the plan's codec (`avcC` for H.264, `hvcC` for HEVC)
+    match (&entry.codec, plan.codec) {
+        (CodecConfig::Avc(_), Codec::H264) | (CodecConfig::Hevc(_), Codec::Hevc) => {}
+        _ => return Err(unsupported),
     }
     Ok(CopyRange { track, first, last, entry })
 }
@@ -277,8 +283,10 @@ pub fn execute_mp4_copy<W: Write + Seek, S: ByteSource + ?Sized>(
         if data.len() as u64 != u64::from(s.size) {
             return Err(SmartCutError::StaleIndex { detail: format!("packet {d}: read {} bytes, expected {}", data.len(), s.size) });
         }
-        if let (CodecConfig::Avc(avc), Some(frame)) = (&r.entry.codec, index.frames.get(d)) {
-            check_access_point(d, &data, avc.length_size, frame)?;
+        match (&r.entry.codec, index.frames.get(d)) {
+            (CodecConfig::Avc(avc), Some(frame)) => check_access_point(d, &data, avc.length_size, frame)?,
+            (CodecConfig::Hevc(hevc), Some(frame)) => check_hevc_access_point(d, &data, hevc.length_size, frame)?,
+            _ => {}
         }
         let ws = WriteSample { data: &data, duration: s.duration, composition_offset: composition_offset(s, d)?, is_sync: s.is_sync };
         w.write_sample(t, ws).map_err(io)?;
@@ -372,6 +380,36 @@ pub(crate) fn check_access_point(d: usize, data: &[u8], length_size: u8, frame: 
     if idr != (frame.random_access == RandomAccessKind::Idr) {
         let is = if idr { "is" } else { "is not" };
         return Err(SmartCutError::StaleIndex { detail: format!("packet {d} {is} an IDR picture, the index says otherwise") });
+    }
+    Ok(())
+}
+
+/// [`check_access_point`] for HEVC: an IRAP picture in the index (IDR, CRA, BLA) is one in the
+/// bitstream and the other way round, and an IDR stays an IDR.
+pub(crate) fn check_hevc_access_point(d: usize, data: &[u8], length_size: u8, frame: &FrameIndexEntry) -> Result<(), SmartCutError> {
+    let nals = cfa4_bitstream::length_prefixed_nals(data, usize::from(length_size))
+        .map_err(|e| SmartCutError::StaleIndex { detail: format!("packet {d} does not split into NAL units: {e}") })?;
+    // VCL NAL unit types of the base layer
+    let types: Vec<u8> = nals
+        .iter()
+        .filter_map(|n| match &n[..] {
+            [h0, h1, ..] if h0 & 1 == 0 && h1 >> 3 == 0 => Some((h0 >> 1) & 0x3F),
+            _ => None,
+        })
+        .filter(|t| *t < 32)
+        .collect();
+    let irap = types.iter().any(|t| (16..=23).contains(t));
+    let idr = types.iter().any(|t| matches!(t, 19 | 20));
+    let kind = frame.random_access;
+    if irap != kind.is_access_point() || idr != (kind == RandomAccessKind::Idr) {
+        let is = if idr {
+            "an IDR"
+        } else if irap {
+            "a CRA / BLA"
+        } else {
+            "not an IRAP"
+        };
+        return Err(SmartCutError::StaleIndex { detail: format!("packet {d} is {is} picture, the index says {kind:?}") });
     }
     Ok(())
 }

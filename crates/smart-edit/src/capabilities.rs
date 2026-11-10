@@ -820,6 +820,7 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(k(Mux, H264, Mxf), Native, Supported, "cfa4-mxf OP1a AVC; crates/export/src/mxf_tests.rs"),
         row(k(Mux, H264, Matroska), Native, Experimental, "cfa4-matroska MkvWriter exists; not reachable from export"),
         row(k(Mux, Hevc, Mp4), Native, Supported, "cfa4-isobmff Mp4Writer; crates/isobmff/tests/oracle_mux.rs (remux_hevc.mp4)"),
+        row(k(Mux, Hevc, Mov), Native, Supported, "cfa4-isobmff Mp4Writer (QuickTime brand); crates/export/src/smart_cut_hevc_tests.rs (ffmpeg framemd5)"),
         row(k(Mux, Hevc, Matroska), Native, Experimental, "cfa4-matroska MkvWriter exists; not reachable from export"),
         row(k(Mux, Av1, Mp4), Native, Supported, "cfa4-isobmff Mp4Writer; crates/isobmff/tests/oracle_mux.rs (remux_av1.mp4)"),
         row(k(Mux, Av1, Matroska), Native, Experimental, "cfa4-matroska MkvWriter exists; not reachable from export"),
@@ -838,15 +839,18 @@ pub(crate) fn native_entries() -> Vec<Entry> {
     let mut mpeg2 = row(c(Encode, Mpeg2Video), Native, Supported, "cfa4-mpeg2v encoder; crates/export/src/mpeg2_tests.rs, crates/mpeg2v/src/encode/tests.rs");
     mpeg2.limits = Some(EncoderLimits { profiles: vec!["main".into(), "422".into()], chroma: vec!["4:2:0".into(), "4:2:2".into()], bit_depths: vec![8] });
     v.push(mpeg2);
-    // packet copy and boundary re-encode: H.264 into MP4 / MOV (WP-04 cfa4-export smart_cut, WP-06
-    // cfa4-export boundary_reencode)
+    // packet copy: H.264 and HEVC into MP4 / MOV (WP-04, WP-07 cfa4-export smart_cut); boundary
+    // re-encode: H.264 (WP-06 cfa4-export boundary_reencode)
     for codec in Codec::ALL {
         for container in Container::ALL {
             if codec == H264 && matches!(container, Mp4 | Mov) {
                 let evidence = "cfa4-export smart_cut (MP4 / MOV source); crates/export/src/smart_cut_tests.rs (payload check, ffmpeg framemd5)";
                 v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
+            } else if codec == Hevc && matches!(container, Mp4 | Mov) {
+                let evidence = "cfa4-export smart_cut (MP4 / MOV source, hvcC); crates/export/src/smart_cut_hevc_tests.rs (payload check, ffmpeg framemd5)";
+                v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
             } else {
-                v.push(row(k(PacketCopy, codec, container), Native, Unsupported, "packet-copy export is implemented only for H.264 into MP4 / MOV"));
+                v.push(row(k(PacketCopy, codec, container), Native, Unsupported, "packet-copy export is implemented only for H.264 and HEVC into MP4 / MOV"));
             }
             if codec == H264 && matches!(container, Mp4 | Mov) {
                 let evidence =
