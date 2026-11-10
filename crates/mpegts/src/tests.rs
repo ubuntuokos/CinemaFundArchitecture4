@@ -118,7 +118,7 @@ pub(crate) fn mpeg2_frame(coding_type: u8, tref: u16, fields: bool, filler: usiz
 }
 
 /// MPEG-1 layer II frame, 48 kHz 192 kb/s (576 bytes).
-fn mp2_frame(k: u8) -> Vec<u8> {
+pub(crate) fn mp2_frame(k: u8) -> Vec<u8> {
     let mut v = vec![0xFF, 0xFD, 0xA4, 0x00];
     v.extend((0..572).map(|i| (i as u8) ^ k));
     v
