@@ -75,6 +75,8 @@ pub enum Language {
     ZhHant,
     /// Greek: the whole interface, Greek script (bundled fonts).
     El,
+    /// Swedish: the whole interface, Latin script (bundled fonts).
+    Sv,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -103,11 +105,12 @@ static CZECH: OnceLock<Catalog> = OnceLock::new();
 static VIETNAMESE: OnceLock<Catalog> = OnceLock::new();
 static TRADITIONAL: OnceLock<Catalog> = OnceLock::new();
 static GREEK: OnceLock<Catalog> = OnceLock::new();
+static SWEDISH: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 22] = [
+    pub const ALL: [Self; 23] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -128,6 +131,7 @@ impl Language {
         Self::Vi,
         Self::ZhHant,
         Self::El,
+        Self::Sv,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -154,6 +158,7 @@ impl Language {
             Self::Vi => "Tiếng Việt",
             Self::ZhHant => "繁體中文",
             Self::El => "Ελληνικά",
+            Self::Sv => "Svenska",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -181,6 +186,7 @@ impl Language {
             "vi" => Some(Self::Vi),
             "zh-hant" => Some(Self::ZhHant),
             "el" => Some(Self::El),
+            "sv" => Some(Self::Sv),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -197,7 +203,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 19] = [
+        const PRIMARY: [(&str, Language); 20] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -217,6 +223,7 @@ impl Language {
             ("cs", Language::Cs),
             ("vi", Language::Vi),
             ("el", Language::El),
+            ("sv", Language::Sv),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -277,6 +284,7 @@ impl Language {
             Self::Vi => "vi",
             Self::ZhHant => "zh-hant",
             Self::El => "el",
+            Self::Sv => "sv",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -305,6 +313,7 @@ impl Language {
             Self::Vi => Some(VIETNAMESE.get_or_init(|| Catalog::parse(catalog_file!("vi")))),
             Self::ZhHant => Some(TRADITIONAL.get_or_init(|| Catalog::parse(catalog_file!("zh-hant")))),
             Self::El => Some(GREEK.get_or_init(|| Catalog::parse(catalog_file!("el")))),
+            Self::Sv => Some(SWEDISH.get_or_init(|| Catalog::parse(catalog_file!("sv")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -494,6 +503,7 @@ mod tests {
             ("vi", catalog_file!("vi")),
             ("zh-hant", catalog_file!("zh-hant")),
             ("el", catalog_file!("el")),
+            ("sv", catalog_file!("sv")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1654,6 +1664,13 @@ mod tests {
             catalog_file!("el"),
             "ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΆΈΉΊΌΎΏΪΫαβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώϊϋΐΰ«»",
             &[("File", "Αρχείο"), ("Sequence", "Ακολουθία"), ("Playhead", "Κεφαλή αναπαραγωγής"), ("Cross Dissolve", "Διασταυρούμενη διάλυση")],
+        ),
+        (
+            Language::Sv,
+            "app.language.swedish",
+            catalog_file!("sv"),
+            "ÅÄÖåäö”",
+            &[("File", "Arkiv"), ("Sequence", "Sekvens"), ("Playhead", "Uppspelningshuvud"), ("Cross Dissolve", "Korsövertoning")],
         ),
     ];
 

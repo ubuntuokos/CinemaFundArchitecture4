@@ -46,6 +46,7 @@ LANGUAGES = {
     "vi": "Tiếng Việt",
     "zh-hant": "繁體中文",
     "el": "Ελληνικά",
+    "sv": "Svenska",
 }
 
 
@@ -142,7 +143,7 @@ BASE_CATALOG = {"en-au": "en-gb"}
 REGIONAL_FALLBACK = {"en-nz": "en-au", "en-ie": "en-gb"}
 
 # languages that write 4,00 instead of 4.00
-DECIMAL_COMMA = frozenset({"hu", "el", "vi", "cs", "nl", "tr", "pl", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
+DECIMAL_COMMA = frozenset({"hu", "sv", "el", "vi", "cs", "nl", "tr", "pl", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
 _DECIMAL = re.compile(r"-?\d+\.\d+")
 
 
