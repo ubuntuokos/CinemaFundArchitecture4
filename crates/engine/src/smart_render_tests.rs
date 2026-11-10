@@ -190,3 +190,44 @@ fn ffmpeg_decodes_the_sequence_export() {
         assert!(ht[40..45].iter().all(|h| *h == ht[40]), "bframes {bframes}: the gap is one picture");
     }
 }
+
+/// HEVC clips are cut by the source-scope commands (WP-07); the timeline executor copies H.264
+/// only, so on a sequence they are rendered, with the `source` cause.
+#[test]
+fn hevc_clips_on_a_sequence_are_rendered() {
+    use cfa4_hevc::encode::{Encoder, EncoderConfig, PacketFormat, YuvFrame};
+    let dir = tmp_dir("smart-render-hevc");
+    let mut cfg = EncoderConfig::new(64, 48, 25, 1);
+    cfg.keyint = 10;
+    cfg.format = PacketFormat::LengthPrefixed;
+    let mut enc = Encoder::new(cfg).unwrap();
+    let mut packets = Vec::new();
+    for i in 0..20usize {
+        let y: Vec<u8> = (0..64 * 48).map(|k| ((k + i * 7) % 200 + 30) as u8).collect();
+        let c = vec![128u8; 32 * 24];
+        packets.extend(enc.encode(&YuvFrame::U8 { y: &y, u: &c, v: &c, y_stride: 64, uv_stride: 32 }, i as i64).unwrap());
+    }
+    let entry = SampleEntry::hevc(cfa4_isobmff::HevcConfig::parse(&enc.hvcc()).unwrap(), 64, 48);
+    let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+    let t = mux.add_track(TrackConfig::new(entry, 25)).unwrap();
+    for p in &packets {
+        mux.write_sample(t, WriteSample { data: &p.data, duration: 1, composition_offset: 0, is_sync: p.keyframe }).unwrap();
+    }
+    let path = dir.join("h.mp4");
+    std::fs::write(&path, mux.finish().unwrap().into_inner()).unwrap();
+    let (mut s, items, seq) = session_with(&[path.as_path()]);
+    let mut p = (*s.project).clone();
+    let mut it = p.make_track_item(items[0], TrackKind::Video, f(0), TimeRange::new(f(0), f(20)), RATE).unwrap();
+    for e in &mut it.effects {
+        cfa4_project::resolve_auto_points(e, (64, 48), (64, 48));
+    }
+    let q = p.sequence_mut(seq).unwrap();
+    q.video_tracks[0].items = vec![it];
+    q.audio_tracks[0].items.clear();
+    s.project = Arc::new(p);
+    let out = dir.join("plan.mp4").to_string_lossy().into_owned();
+    let plan = s.execute("export.plan", json!({"scope": "timeline", "output": out})).unwrap();
+    let segments = plan["plan"]["plan"]["segments"].as_array().unwrap();
+    assert!(!segments.is_empty() && segments.iter().all(|s| s["mode"] == "render" && s["render_causes"] == json!(["source"])), "{plan}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

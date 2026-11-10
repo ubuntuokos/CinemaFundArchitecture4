@@ -155,3 +155,52 @@ fn start_re_encodes_the_boundaries_of_a_confirmed_frame_accurate_cut() {
     let sync: Vec<usize> = out.tracks[0].samples.iter().enumerate().filter(|(_, x)| x.is_sync).map(|(i, _)| i).collect();
     assert_eq!(sync, [0, 5, 15]);
 }
+
+/// 40 pictures of HEVC from the CFA4 encoder (64×48, 25 fps, an IDR every 10, P pictures).
+fn hevc_mp4() -> Vec<u8> {
+    use cfa4_hevc::encode::{Encoder, EncoderConfig, PacketFormat, RateControl, YuvFrame};
+    let mut cfg = EncoderConfig::new(64, 48, 25, 1);
+    cfg.keyint = 10;
+    cfg.rate = RateControl::Qp(30);
+    cfg.format = PacketFormat::LengthPrefixed;
+    cfg.slices = 1;
+    let mut enc = Encoder::new(cfg).unwrap();
+    let mut packets = Vec::new();
+    for i in 0..40usize {
+        let y: Vec<u8> = (0..64 * 48).map(|k| ((k + i * 7) % 251) as u8).collect();
+        let c: Vec<u8> = (0..32 * 24).map(|k| ((k * 3 + i) % 255) as u8).collect();
+        packets.extend(enc.encode(&YuvFrame::U8 { y: &y, u: &c, v: &c, y_stride: 64, uv_stride: 32 }, i as i64).unwrap());
+    }
+    packets.extend(enc.flush().unwrap());
+    let entry = SampleEntry::hevc(cfa4_isobmff::HevcConfig::parse(&enc.hvcc()).unwrap(), 64, 48);
+    let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+    let t = mux.add_track(TrackConfig::new(entry, 25)).unwrap();
+    for p in &packets {
+        mux.write_sample(t, WriteSample { data: &p.data, duration: 1, composition_offset: (p.pts - p.dts) as i32, is_sync: p.keyframe }).unwrap();
+    }
+    mux.finish().unwrap().into_inner()
+}
+
+/// WP-07: the same commands cut HEVC sources: a copy on IDR pictures, and a confirmed
+/// frame-accurate cut whose head is re-encoded with the CFA4 HEVC encoder.
+#[test]
+fn hevc_sources_are_analyzed_copied_and_re_encoded_at_the_boundaries() {
+    let (mut s, files) = session();
+    files.0.lock().unwrap().insert("hevc.mp4".into(), hevc_mp4());
+    let r = s.execute("export.analyze", json!({"path": "hevc.mp4"})).unwrap();
+    assert_eq!(r["codec"], "hevc");
+    assert_eq!(r["smartCut"]["allowed"], true, "{}", r["smartCut"]);
+    let points: Vec<u64> = r["accessPoints"].as_array().unwrap().iter().map(|p| p["presentation"].as_u64().unwrap()).collect();
+    assert_eq!(points, [0, 10, 20, 30]);
+    let r = s.execute("export.start", json!({"path": "hevc.mp4", "in": frame(10), "out": frame(30), "output": "copy.mp4"})).unwrap();
+    assert_eq!((r["verified"].as_bool(), r["report"]["samples"].as_u64()), (Some(true), Some(20)), "{r}");
+    let r = s.execute("export.plan", json!({"path": "hevc.mp4", "in": frame(5), "out": frame(30), "mode": "frame-accurate"})).unwrap();
+    assert_eq!(r["boundaryReencode"], json!({"ready": true, "problem": null}), "{r}");
+    let p = json!({"path": "hevc.mp4", "in": frame(5), "out": frame(30), "output": "cut.mp4", "mode": "frame-accurate", "confirm": true});
+    let r = s.execute("export.start", p).unwrap();
+    let counts = (r["report"]["samples"].as_u64(), r["report"]["copied"].as_u64(), r["report"]["reencoded"].as_u64());
+    assert_eq!(counts, (Some(25), Some(20), Some(5)), "{}", r["report"]);
+    let files = files.0.lock().unwrap();
+    let out = cfa4_isobmff::open(files["cut.mp4"].as_slice()).unwrap();
+    assert!(matches!(out.tracks[0].codec(), Some(cfa4_isobmff::CodecConfig::Hevc(_))));
+}

@@ -2,7 +2,8 @@
 //! `export.analyze`, `export.plan` and `export.start` commands with source scope (the timeline
 //! scope, Smart Render of a sequence, is [`crate::smart_render`]).
 //!
-//! - `export.analyze` opens an MP4 / MOV source, indexes its H.264 video track (WP-02) and reports
+//! - `export.analyze` opens an MP4 / MOV source, indexes its H.264 or HEVC video track (WP-02,
+//!   WP-07) and reports
 //!   the access points, GOPs, configuration changes and whether the registry allows a Smart Cut.
 //! - `export.plan` returns the plan for one source range (WP-03): copied segments, re-encoded
 //!   boundaries, and, in GOP-boundary mode, the nearest safe points when the range is not on them.
@@ -21,13 +22,14 @@
 use std::io::Cursor;
 
 use cfa4_export::boundary_reencode::{
-    BoundaryEncoding, check_mp4_boundary_reencode, execute_mp4_boundary_reencode, h264_stream_format, verify_mp4_boundary_reencode,
+    BoundaryEncoding, check_mp4_boundary_reencode, execute_mp4_boundary_reencode, h264_stream_format, hevc_stream_format, verify_mp4_boundary_reencode,
 };
 use cfa4_export::smart_cut::{Mp4CopySource, SmartCutError, execute_mp4_copy, verify_mp4_copy};
 use cfa4_isobmff::{ByteSource, CodecConfig, Mp4File, TrackKind};
 use cfa4_smart_edit::capabilities::{Codec, Container, Policy, Registry, StreamFormat};
 use cfa4_smart_edit::copy_planner::{CutMode, SmartCutPlan, SmartCutRequest, plan_smart_cut};
 use cfa4_smart_edit::h264_index::{NalFormat, index_h264};
+use cfa4_smart_edit::hevc_index::index_hevc;
 use cfa4_smart_edit::media_index::{MediaIndex, Packet, SourceFingerprint, StreamIndex};
 use cfa4_smart_edit::plan::CopyGuarantee;
 use cfa4_smart_edit::timestamp::{MediaTime, Rational};
@@ -89,7 +91,7 @@ fn container_of(path: &str, quicktime: bool) -> Container {
     if quicktime || path.to_ascii_lowercase().ends_with(".mov") { Container::Mov } else { Container::Mp4 }
 }
 
-/// Open `path`, find its first H.264 video track and index it.
+/// Open `path`, find its first video track (H.264 or HEVC) and index it.
 pub(crate) fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> {
     let fail = |e: String| EngineError::Other(format!("{path}: {e}"));
     let bytes: Box<dyn ByteSource> = match s.services.reader(path) {
@@ -99,17 +101,21 @@ pub(crate) fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> 
     let file = cfa4_isobmff::open(&*bytes).map_err(|e| fail(format!("not an MP4 / MOV file Smart Cut can read ({e})")))?;
     let track = file.tracks.iter().position(|t| t.kind == TrackKind::Video).ok_or_else(|| bad(cmd, format!("{path} has no video track")))?;
     let t = file.tracks.get(track).ok_or_else(|| bad(cmd, format!("{path} has no video track")))?;
-    let Some(CodecConfig::Avc(avc)) = t.codec() else {
-        return Err(bad(cmd, format!("{path}: Smart Cut copies H.264 video only in this release")));
+    let (format, ps, length_size, codec): (_, Vec<&[u8]>, _, _) = match t.codec() {
+        Some(CodecConfig::Avc(avc)) => (h264_stream_format(avc), avc.sps.iter().chain(&avc.pps).map(Vec::as_slice).collect(), avc.length_size, Codec::H264),
+        Some(CodecConfig::Hevc(hvcc)) => {
+            let ps = hvcc.arrays.iter().flat_map(|a| a.nalus.iter().map(Vec::as_slice)).collect();
+            (hevc_stream_format(hvcc), ps, hvcc.length_size, Codec::Hevc)
+        }
+        _ => return Err(bad(cmd, format!("{path}: Smart Cut copies H.264 and HEVC video only in this release"))),
     };
-    let format = h264_stream_format(avc);
-    let ps: Vec<&[u8]> = avc.sps.iter().chain(&avc.pps).map(Vec::as_slice).collect();
     let mut data = Vec::with_capacity(t.samples.len());
     for i in 0..t.samples.len() {
         data.push(file.read_sample(&*bytes, track, i).map_err(|e| fail(format!("sample {i}: {e}")))?);
     }
     let packets = t.samples.iter().zip(&data).map(|(x, d)| Packet { data: d, pts: Some(x.pts), dts: Some(x.dts), keyframe: x.is_sync });
-    let stream = index_h264(t.id, Rational::new(1, i64::from(t.timescale)), NalFormat::LengthPrefixed(avc.length_size), &ps, packets)
+    let (tb, nal) = (Rational::new(1, i64::from(t.timescale)), NalFormat::LengthPrefixed(length_size));
+    let stream = if codec == Codec::Hevc { index_hevc(t.id, tb, nal, &ps, packets) } else { index_h264(t.id, tb, nal, &ps, packets) }
         .map_err(|e| fail(format!("indexing failed: {e:?}")))?;
     let fingerprint = SourceFingerprint { size: bytes.len(), modified_ns: None, content_id: None };
     let container = container_of(path, file.is_quicktime);
@@ -133,7 +139,7 @@ fn analyze(s: &mut Session, p: &Value) -> Result<Value> {
         .map(|f| json!({"presentation": f.presentation_index, "time": ticks(f.pts, tb), "clean": f.random_access.is_clean(), "kind": f.random_access}))
         .collect();
     let registry = Registry::native();
-    let cut = registry.smart_cut(Codec::H264, src.container, src.container, POLICY);
+    let cut = registry.smart_cut(stream.codec, src.container, src.container, POLICY);
     let rate = src.rate();
     Ok(json!({
         "path": path,

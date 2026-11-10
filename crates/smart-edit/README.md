@@ -239,6 +239,10 @@ the planner's `SmartCutRequest::format`. The engine commands use it: `export.pla
 re-encoding plan, whether the executor can run it (`boundaryReencode: {ready, problem}`), and
 `export.start` with `"confirm": true` runs it, checks the output and only then writes the file
 (`"crf"` sets the quality of the re-encoded pictures, 16 by default).
+The source-scope commands (`export.analyze`, `export.plan`, `export.start` with a `path`) open
+HEVC sources too (WP-07): `hevc_stream_format(hvcc)` gives their format, and the copy and boundary
+re-encode executors run their plans. The timeline scope copies H.264 only; an HEVC clip on a
+sequence is rendered (`source` cause).
 
 ## Smart Render planner (WP-05)
 
