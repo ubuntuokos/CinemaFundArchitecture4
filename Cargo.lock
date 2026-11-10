@@ -1657,6 +1657,7 @@ version = "0.10.0"
 dependencies = [
  "cfa4-bitstream",
  "cfa4-h264enc",
+ "cfa4-hevc",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
  "cfa4-route",
