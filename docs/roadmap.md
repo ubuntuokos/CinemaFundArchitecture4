@@ -76,6 +76,7 @@ Status: ✅ done · 🟡 in progress · ⬜ not started. Estimates are remaining
 | M12–M16 | Multicam, web (WASM), platform, long tail | 🟡 | Multicam: audio sync (GCC-PHAT, sub-sample), Merge Clips, multi-camera source sequences, Multi-Camera view with live switching (1–9); L0–L4 crates compile to wasm32 | Web app shell (file access, WebCodecs, audio), scene detection, auto reframe, ~800 remaining commands and dialogs, performance hardening | 35–55 |
 | HW | Hardware acceleration (#30) | 🟡 | Blend modes and 34 effect ids on the GPU incl. Lumetri basic / creative / vignette (#32, GPU2–GPU7); GPU export rendering (#421); decode: VA-API H.264 / HEVC (#358), NVDEC H.264 / HEVC (#549); encode: NVENC H.264 and HEVC incl. Main 10 HDR (#328, #360) | Zero-copy, remaining GPU effects, VA-API VP9 / AV1 and encode | 100–170 |
 | L10N | Localization | 🟡 | Spanish, Japanese, Simplified Chinese whole interface; Portuguese (Brazil), Ukrainian menus | Hindi, Arabic (RTL), French, Indonesian, German, Korean, Vietnamese, Italian, Russian; native review | 150–230 |
+| CB | Codec backlog (low priority, last in codec work) | ⬜ | — | The remaining codecs from the owner's 2026-10-27 list that have no own decoder here yet and are not planned elsewhere (FFV1, Huffyuv, Ut Video, MagicYUV, HAP, WavPack, AVS, legacy and game codecs …), in four bands; an own pure-Rust decoder is the goal, the FFmpeg fallback does not count (owner, 2026-11-08); at least 2 per week from 2026-11-02 to 2027-08-15: [backlog](plans/CODEC-BACKLOG-2026-10-27.md), [plan](plans/CODEC-BACKLOG-PLAN-2026-10-27.md) | not estimated |
 
 ## Scheduled after the Qt 6 GUI is complete
 
@@ -104,6 +105,7 @@ the web app shell ([G20](gaps.md#g20-the-web-app-shell)).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-08 | minor | CB row: the low-priority codec backlog and its weekly plan ([plans](plans/CODEC-BACKLOG-2026-10-27.md)), moved here from CFA4-AI_modules |
 | 2026-10-27 | minor | CFA4 targets Ubuntu 26.04 only: macOS / Windows backends and items removed (B1, B5, B6, HW, focus items 1 and 6 re-estimated); alpha gate to be re-checked on Ubuntu 26.04 |
 | 2026-10-27 | minor | Scheduled CFA4-SCE-001 v1.5 and CFA4-FFMPEG-BACKEND-R1 to start after the Qt 6 GUI is complete (qt-parity.md all ✅) |
 | 2026-10-10 | minor | Alpha gate table added: six core workflows, all pass on macOS; stage stays alpha |
