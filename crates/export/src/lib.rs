@@ -21,6 +21,9 @@ use std::io::Write;
 mod aac_out;
 mod audio_out;
 pub mod boundary_reencode;
+mod boundary_reencode_hevc;
+#[cfg(test)]
+mod boundary_reencode_hevc_tests;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -2928,6 +2931,8 @@ mod dcp_tests;
 mod mpeg2_tests;
 #[cfg(test)]
 mod mxf_tests;
+#[cfg(test)]
+mod smart_cut_av1_tests;
 #[cfg(test)]
 mod smart_cut_hevc_tests;
 #[cfg(test)]

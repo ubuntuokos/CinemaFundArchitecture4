@@ -94,8 +94,10 @@ The index comes from the bitstream, not from the container's keyframe flag:
   reference slot. It needs a sequence header (from `av1C` or in-band). Hidden (forward) key frames
   and intra-only frames are intra but no cut points; a unit that only shows an existing frame
   decodes nothing new. Reference slots are not resolved. A changed sequence header is a
-  configuration change. The registry's AV1 `gop-index` row is supported; copying and re-encoding
-  AV1 are not yet.
+  configuration change. The registry's AV1 `gop-index` and MP4 / MOV `packet-copy` rows are
+  supported (OBU framing, `av1C` kept); re-encoding AV1 is not yet. The executor classifies the
+  copied temporal units again from the first one, so a copy from a key frame whose sequence
+  header is neither in `av1C` nor in-band is refused.
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 
@@ -189,6 +191,18 @@ Rendered segments (gaps, effects) and timeline plans are refused here (`render-s
 `timeline-plan`); they belong to the timeline Smart Render executor below. Writing and verifying decode the boundaries picture by picture (the
 encoder's VUI comes from the source SPS), so no boundary is held in memory whole.
 
+**HEVC (WP-07, `boundary_reencode_hevc`):** the same functions run HEVC plans with the CFA4 HEVC
+decoder and encoder (Main or Main 10, I and P pictures). The output `hvcC` holds the source VPS /
+SPS / PPS unchanged followed by the encoder's, under free ids. Every re-encoded segment starts with
+an IDR; a copy after one starts at a clean access point, and when that is a CRA or BLA picture the
+last re-encoded sample ends with an end-of-sequence NAL unit, so the copied picture starts a new
+coded video sequence. Refused before writing: profiles other than Main / Main 10, anything but
+4:2:0 at 8 or 10 bits, interlaced sources, other NAL length sizes, odd picture sizes, in-band
+parameter sets and SEI user data (the x265 encoder note is dropped; decoded picture hash, active
+parameter sets and decoding unit SEIs are regenerated or dropped). `hevc_stream_format(hvcc)` gives
+the registry's `StreamFormat`; the registry lists the CFA4 HEVC encoder (Main / Main 10, 4:2:0,
+8 / 10 bits) and HEVC boundary re-encode into MP4 / MOV as supported.
+
 ## Timeline Smart Render executor (WP-06)
 
 `cfa4_export::timeline_render` runs a `plan_smart_render` plan into one H.264 MP4 / MOV stream.
@@ -234,6 +248,10 @@ the planner's `SmartCutRequest::format`. The engine commands use it: `export.pla
 re-encoding plan, whether the executor can run it (`boundaryReencode: {ready, problem}`), and
 `export.start` with `"confirm": true` runs it, checks the output and only then writes the file
 (`"crf"` sets the quality of the re-encoded pictures, 16 by default).
+The source-scope commands (`export.analyze`, `export.plan`, `export.start` with a `path`) open
+HEVC sources too (WP-07): `hevc_stream_format(hvcc)` gives their format, and the copy and boundary
+re-encode executors run their plans. The timeline scope copies H.264 only; an HEVC clip on a
+sequence is rendered (`source` cause).
 
 ## Smart Render planner (WP-05)
 
@@ -283,6 +301,10 @@ stale indexes, malformed plans) and that a changed payload or a truncated file f
 FFmpeg (oracle only) decodes the copy to exactly the source pictures of the range (framemd5).
 HEVC (`smart_cut_hevc_tests`): GOPs of the CFA4 encoder copied unchanged with their `hvcC`, a stale
 IDR refused, and x265 closed and open GOPs with B pictures decoded by FFmpeg to the source pictures.
+HEVC boundary re-encode (`boundary_reencode_hevc_tests`): a head boundary of the CFA4 encoder's
+stream, refusals (stale index, in-band parameter sets, codec mismatch), a failing PSNR threshold,
+and x265 closed and open GOPs with B pictures cut frame-accurately: FFmpeg decodes every picture
+and the copied ones are the source pictures, also when the copy starts at a clean CRA picture.
 Smart Render planner: whole-GOP clips, boundaries with their reference pictures, joined splits, gaps
 and changed clips, codec configuration seams, other codecs and frame rates, refusals, registry
 blockers, JSON round trip, and random timelines (the segments cover the output, decoding starts at a

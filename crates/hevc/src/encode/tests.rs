@@ -267,3 +267,30 @@ fn hostile_input_is_an_error() {
     let f = YuvFrame::U8 { y: &p, u: &p, v: &p, y_stride: 16, uv_stride: 8 };
     assert_eq!(enc.encode(&f, 0).expect("a good frame after bad ones").len(), 1);
 }
+
+/// Parameter-set ids other than 0 are written everywhere they are referred to: two streams with
+/// different ids, one after the other, decode as one stream (ours and ffmpeg).
+#[test]
+fn parameter_set_ids_are_configurable() {
+    let mut cfg = EncoderConfig::new(64, 48, 25, 1);
+    cfg.rate = RateControl::Qp(26);
+    let (first, _) = encode_clip(cfg.clone(), 3);
+    cfg.vps_id = 3;
+    cfg.sps_id = 7;
+    cfg.pps_id = 42;
+    let (second, _) = encode_clip(cfg.clone(), 3);
+    let ps = Encoder::new(cfg.clone()).expect("encoder").parameter_sets();
+    assert_eq!(ps[0][2] >> 4, 3, "vps_video_parameter_set_id");
+    let pps = crate::params::Pps::parse(&cfa4_bitstream::unescape_rbsp(&ps[2][2..])).expect("PPS");
+    assert_eq!((pps.id, pps.sps_id), (42, 7));
+    let sps = crate::params::Sps::parse(&cfa4_bitstream::unescape_rbsp(&ps[1][2..])).expect("SPS");
+    assert_eq!((sps.id, sps.vps_id), (7, 3));
+    let both: Vec<Packet> = first.iter().cloned().chain(second.iter().cloned().map(|p| Packet { pts: p.pts + 3, ..p })).collect();
+    let pics = decode(&both);
+    assert_eq!(pics.len(), 6);
+    check_ffmpeg("psids", &stream(&both), &pics, 8);
+    for (vps_id, sps_id, pps_id) in [(16, 0, 0), (0, 16, 0), (0, 0, 64)] {
+        let bad = EncoderConfig { vps_id, sps_id, pps_id, ..cfg.clone() };
+        assert!(matches!(Encoder::new(bad), Err(EncodeError::InvalidConfig(_))));
+    }
+}

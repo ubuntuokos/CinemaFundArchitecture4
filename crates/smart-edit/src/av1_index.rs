@@ -169,18 +169,51 @@ fn analyse(data: &[u8], state: &mut State) -> TemporalUnit {
     tu
 }
 
+impl TemporalUnit {
+    /// Whether the unit is a clean access point, an intra unit that is no cut point, or neither.
+    fn random_access(&self) -> RandomAccessKind {
+        let first = self.headers.first().copied();
+        if first == Some(Header::Frame { frame_type: KEY_FRAME, shown: true }) && self.config.is_some() {
+            RandomAccessKind::KeyFrame
+        } else if self.headers.iter().any(|h| matches!(h, Header::Frame { frame_type: KEY_FRAME | INTRA_ONLY_FRAME, .. })) {
+            RandomAccessKind::IntraOnly
+        } else {
+            RandomAccessKind::None
+        }
+    }
+}
+
+/// Classifies AV1 temporal units one by one, in decode order, as [`index_av1`] does: a check that
+/// a copied run of packets still has the access points of the index (Smart Cut executor).
+pub struct Av1AccessPoints {
+    state: State,
+}
+
+impl Av1AccessPoints {
+    /// Start with the sequence header of the codec configuration (`configOBUs` of `av1C`), if any.
+    pub fn new(config_obus: &[u8]) -> Av1AccessPoints {
+        let mut state = State::default();
+        for obu in obus(config_obus) {
+            if obu.kind == OBU_SEQUENCE_HEADER {
+                state.record(obu.payload);
+            }
+        }
+        Av1AccessPoints { state }
+    }
+
+    /// The random-access kind of the next temporal unit (`KeyFrame`, `IntraOnly` or `None`).
+    pub fn next(&mut self, data: &[u8]) -> RandomAccessKind {
+        analyse(data, &mut self.state).random_access()
+    }
+}
+
 /// Index an AV1 stream from its temporal units in decode order. `config_obus` are the OBUs of the
 /// container's codec configuration (the `configOBUs` of `av1C`: a sequence header), if any.
 pub fn index_av1<'a>(stream_id: u32, timebase: Rational, config_obus: &[u8], packets: impl IntoIterator<Item = Packet<'a>>) -> Result<StreamIndex, IndexError> {
     if !timebase.is_valid() {
         return Err(IndexError::InvalidTimebase(timebase));
     }
-    let mut state = State::default();
-    for obu in obus(config_obus) {
-        if obu.kind == OBU_SEQUENCE_HEADER {
-            state.record(obu.payload);
-        }
-    }
+    let mut state = Av1AccessPoints::new(config_obus).state;
     let mut frames: Vec<FrameIndexEntry> = Vec::new();
     let mut config_id = 0u32;
     let mut config_changes = Vec::new();
@@ -201,8 +234,8 @@ pub fn index_av1<'a>(stream_id: u32, timebase: Rational, config_obus: &[u8], pac
             config = Some(active);
         }
         let first = tu.headers.first().copied();
-        let clean = first == Some(Header::Frame { frame_type: KEY_FRAME, shown: true }) && tu.config.is_some();
-        let intra = tu.headers.iter().any(|h| matches!(h, Header::Frame { frame_type: KEY_FRAME | INTRA_ONLY_FRAME, .. }));
+        let random_access = tu.random_access();
+        let clean = random_access == RandomAccessKind::KeyFrame;
         let decodes = tu.headers.iter().any(|h| matches!(h, Header::Frame { .. }));
         let picture_type = match first {
             None => PictureType::Unknown,
@@ -213,13 +246,6 @@ pub fn index_av1<'a>(stream_id: u32, timebase: Rational, config_obus: &[u8], pac
                 Some(Header::Frame { .. }) => PictureType::P,
                 _ => PictureType::Unknown,
             },
-        };
-        let random_access = if clean {
-            RandomAccessKind::KeyFrame
-        } else if intra {
-            RandomAccessKind::IntraOnly
-        } else {
-            RandomAccessKind::None
         };
         let dependency_status = match (first, clean, keyed) {
             (None, _, _) => DependencyStatus::Unknown,

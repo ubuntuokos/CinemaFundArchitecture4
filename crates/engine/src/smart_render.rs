@@ -258,6 +258,8 @@ fn edit_list(s: &Session, seq_id: ItemId, cmd: &str) -> Result<(EditDecisionList
             }
             _ => None,
         };
+        // the timeline executor copies H.264 only: a clip of another codec is rendered
+        let src = src.filter(|src| src.stream().is_some_and(|x| x.codec == Codec::H264));
         let source_in = src.and_then(|src| stream_time(src, top.source_time_at(a)));
         if src.is_none() || source_in.is_none() {
             causes.push(RenderCause::Source);
