@@ -13488,6 +13488,21 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
         win.close()
 
 
+def test_smart_cut_plan_text_names_the_audio():
+    """The Smart Cut plan names the audio tracks copied with the video and why another is not
+    (WP-09b)."""
+    from cfa4_qt.panels.smart_cut import plan_text
+
+    result = {
+        "summary": {"copiedFrames": 20, "reencodedFrames": 0},
+        "plan": {"executable": True, "blockers": []},
+        "audio": {"tracks": [{"trackId": 2, "codec": "aac"}, {"trackId": 3, "codec": "pcm"}], "dropped": [{"trackId": 4, "reason": "MP3 / MP2 audio is not copied yet"}]},
+    }
+    text, problem = plan_text(result)
+    assert problem is None
+    assert "AAC, PCM" in text and "4" in text and "MP3" in text
+
+
 def test_smart_export_plan_text():
     """The Smart Export preview names what is copied, re-encoded and rendered, and why a copy mode
     cannot run (WP-08)."""

@@ -19,6 +19,7 @@
 use std::io::Write;
 
 mod aac_out;
+pub mod audio_copy;
 mod audio_out;
 pub mod boundary_reencode;
 mod boundary_reencode_hevc;
@@ -42,6 +43,7 @@ mod raster;
 pub mod settings;
 pub mod smart_cut;
 pub mod still;
+pub mod timeline_audio;
 pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
@@ -1473,7 +1475,7 @@ impl AudioEncoder for FlacAudio {
     }
 }
 
-fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
+pub(crate) fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
     // AAC caps a frame at 6144 bits per channel (ISO/IEC 14496-3 §4.5.3.2): 6 bits per sample, so
     // 264.6 kbps for stereo at 22.05 kHz; a higher setting is capped instead of refused
     let max = (6 * sample_rate as u64 * channels.max(1) as u64).min(u32::MAX as u64) as u32;
@@ -2923,6 +2925,8 @@ mod settings_tests;
 #[cfg(test)]
 mod surround_tests;
 
+#[cfg(test)]
+mod audio_copy_tests;
 #[cfg(test)]
 mod boundary_reencode_tests;
 #[cfg(test)]

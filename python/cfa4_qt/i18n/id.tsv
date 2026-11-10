@@ -391,3 +391,6 @@
 	transitions	transisi
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} bingkai disalin, {reencoded} dienkode ulang di potongan, {rendered} dirender
 	{frames} frames are re-encoded or rendered. Continue?	{frames} bingkai dienkode ulang atau dirender. Lanjutkan?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Audio disalin: {tracks}
+	Audio track {track} is not copied: {why}	Trek audio {track} tidak disalin: {why}
