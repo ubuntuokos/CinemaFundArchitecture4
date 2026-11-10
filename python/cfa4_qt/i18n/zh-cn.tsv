@@ -358,3 +358,5 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{container} 中的 {codec}：{gops} 个 GOP，{points} 个干净剪切点
 	{copied} frames copied, {reencoded} frames re-encoded	已复制 {copied} 帧，重新编码 {reencoded} 帧
 	{frames} frames at the boundaries are re-encoded. Continue?	边界处的 {frames} 帧将重新编码。是否继续？
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	显示 GOP 边界

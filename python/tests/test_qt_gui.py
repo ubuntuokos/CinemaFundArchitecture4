@@ -13469,3 +13469,50 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
     finally:
         engine.stop()
         win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_shows_gop_boundaries(app, tmp_path: Path):
+    """Timeline Display Settings ▸ Show GOP Boundaries: each video clip's access points in sequence
+    time, fetched with export.gopMarks (WP-08)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the H.264 clip")
+    clip = tmp_path / "gop.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4"]
+    args += ["-c:v", "libx264", "-g", "25", "-keyint_min", "25", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make an H.264 clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("gop") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("gop"))
+        win.execute("file.newSequenceFromClip", {"items": [item["item"]]})
+        assert wait_until(app, lambda: win.sequence is not None and "gop" in str(win.sequence.get("name")), 30_000)
+        canvas = win.timeline.canvas
+        menu = canvas.display_menu()
+        action = next(a for a in menu.actions() if a.objectName() == "timeline.settings.showGopMarks")
+        assert not action.isChecked()
+        action.setChecked(True)
+        assert canvas.show_gop_marks
+        assert wait_until(app, lambda: bool(canvas.gop_marks), 30_000)
+        (marks,) = canvas.gop_marks.values()
+        tps = 254_016_000_000
+        assert [p["time"] for p in marks["points"]] == [n * tps for n in range(4)], marks
+        assert marks["in"] is True and marks["codec"] == "h264"
+        canvas.repaint()  # the overlay paints without errors
+    finally:
+        win._quit_confirmed = True
+        win.close()

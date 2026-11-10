@@ -358,3 +358,5 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} dans {container} : {gops} GOP, {points} points de coupe propres
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} images copiées, {reencoded} images réencodées
 	{frames} frames at the boundaries are re-encoded. Continue?	{frames} images aux limites seront réencodées. Continuer ?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Afficher les limites de GOP

@@ -358,3 +358,5 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{container}의 {codec}: GOP {gops}개, 깨끗한 자르기 지점 {points}개
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} 프레임 복사, {reencoded} 프레임 재인코딩
 	{frames} frames at the boundaries are re-encoded. Continue?	경계의 {frames} 프레임이 재인코딩됩니다. 계속할까요?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	GOP 경계 표시

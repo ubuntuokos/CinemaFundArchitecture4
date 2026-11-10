@@ -358,3 +358,5 @@
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} in {container}: {gops} GOPs, {points} saubere Schnittpunkte
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} Bilder kopiert, {reencoded} Bilder neu kodiert
 	{frames} frames at the boundaries are re-encoded. Continue?	{frames} Bilder an den Grenzen werden neu kodiert. Fortfahren?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	GOP-Grenzen anzeigen
