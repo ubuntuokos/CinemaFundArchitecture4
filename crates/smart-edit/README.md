@@ -85,7 +85,10 @@ The index comes from the bitstream, not from the container's keyframe flag:
   pictures stay within the GOP. The picture type is the first slice segment's `slice_type` (it
   needs the PPS for `num_extra_slice_header_bits`; without it the type is `Unknown`, the access
   points are still found). A picture coded with other VPS / SPS / PPS payloads is a configuration
-  change. The registry's HEVC `gop-index` row is supported; copying and re-encoding HEVC are not yet.
+  change. The registry's HEVC `gop-index` and MP4 / MOV `packet-copy` rows are supported;
+  re-encoding HEVC is not yet. A copy from an IDR stops before the RASL pictures of the next CRA
+  (they are marked as crossing the access point), so in an open-GOP stream the safe cut-out is
+  the end of the pictures before them.
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 
@@ -136,16 +139,18 @@ The planner reads nothing but its arguments and writes nothing. Its output is th
 The executor lives in the export crate (`cfa4_export::smart_cut`), because this crate only plans.
 `execute_mp4_copy(plan, stream_index, source, writer)` writes the copy segments of a lossless plan
 from an MP4 / MOV source into a new MP4 / MOV file. It copies the sample payloads unchanged and keeps
-the sample entry (`avcC`), the durations and the composition offsets. Decode time starts at 0, and
+the sample entry (`avcC` or `hvcC`), the durations and the composition offsets. Decode time starts at 0, and
 an edit list starts the presentation at the first copied picture. `verify_mp4_copy` reads the result
 back and compares every sample with its source sample (SCE-001 §18).
 
 The executor refuses, before writing anything:
 - a plan that re-encodes (`not-lossless`; the boundary re-encode executor below runs those);
-- an index that no longer matches the source track (`stale-index`);
+- an index that no longer matches the source track (`stale-index`; for HEVC also an IDR, CRA or
+  BLA picture where the index has none, or the other way round);
 - copy segments that do not form one run in decode order;
 - mixed sample entries;
-- any codec or container other than H.264 in MP4 / MOV.
+- a plan, index and sample entry of different codecs;
+- any codec or container other than H.264 or HEVC in MP4 / MOV.
 
 The caller writes to a temporary file and renames it into place, like every export.
 
@@ -269,6 +274,8 @@ Smart Cut executor (`cargo test -p cfa4-export smart_cut`): GOP-boundary cuts an
 and MOV, with and without B-frames, read back and re-indexed. The tests also check refusals (re-encode plans,
 stale indexes, malformed plans) and that a changed payload or a truncated file fails verification.
 FFmpeg (oracle only) decodes the copy to exactly the source pictures of the range (framemd5).
+HEVC (`smart_cut_hevc_tests`): GOPs of the CFA4 encoder copied unchanged with their `hvcC`, a stale
+IDR refused, and x265 closed and open GOPs with B pictures decoded by FFmpeg to the source pictures.
 Smart Render planner: whole-GOP clips, boundaries with their reference pictures, joined splits, gaps
 and changed clips, codec configuration seams, other codecs and frame rates, refusals, registry
 blockers, JSON round trip, and random timelines (the segments cover the output, decoding starts at a
