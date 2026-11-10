@@ -334,3 +334,91 @@
 	Set Work Area Bar In Point	Задати точку входу смуги робочої області
 	Set Work Area Bar Out Point	Задати точку виходу смуги робочої області
 	Delete Clips	Видалити кліпи
+
+# Smart Cut, Smart Export, media backends and restricted codecs (2026-11-10)
+	After installing, restart CFA4.	Після встановлення перезапустіть CFA4.
+	Analyzing the clip…	Аналіз кліпу…
+	At GOP boundaries (no re-encoding)	За межами GOP (без перекодування)
+	Available, switched off	Доступний, вимкнений
+	Bit-exact copy	Побітова копія
+	CFA4 engine	Рушій CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Власний рушій CFA4 відкриває всі файли, які може. Додаткові бекенди нижче підключаються в зазначеному порядку лише для файлів, яких рушій поки не відкриває. Вимкнення бекенду діє на файли, відкриті після цього.
+	Capabilities	Можливості
+	Choose the output file.	Виберіть вихідний файл.
+	Compatible copy	Сумісна копія
+	Copy command	Копіювати команду
+	Copy:	Копіювання:
+	Cut:	Нарізка:
+	Down	Вниз
+	Export mode	Режим експорту
+	Frame accurate (re-encode the boundaries)	З точністю до кадру (перекодувати межі)
+	Full Render	Повний рендеринг
+	H.264 software encoding (x264)	Програмне кодування H.264 (x264)
+	HEVC software encoding (x265)	Програмне кодування HEVC (x265)
+	In use	Використовується
+	Left out by the routing table	Виключений таблицею маршрутизації
+	Licence	Ліцензія
+	Media Backends	Медіабекенди
+	Media Backends…	Медіабекенди…
+	Not available	Недоступний
+	Not part of this build	Не входить до цієї збірки
+	Open a video clip in the Source monitor first.	Спершу відкрийте відеокліп у моніторі джерела.
+	Output:	Вивід:
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Власні декодери й кодери на Rust: завжди використовуються першими й слугують запасним варіантом, якщо додатковий бекенд дає збій
+	Planning…	Планування…
+	Recommended: Smart Render (asks before re-encoding)	Рекомендовано: Smart Render (питає перед перекодуванням)
+	Recommended: Stream Copy (nothing is re-encoded)	Рекомендовано: Stream Copy (нічого не перекодовується)
+	Rendered because of: {causes}	Рендеринг через: {causes}
+	Restricted Codecs…	Обмежені кодеки…
+	Restricted codecs	Обмежені кодеки
+	Set a fixed bitrate	Задати фіксований бітрейт
+	Settings not taken	Налаштування не застосовано
+	Show GOP Boundaries	Показати межі GOP
+	Smart Cut Source	Smart Cut джерела
+	Smart Cut Source…	Smart Cut джерела…
+	Smart Cut is not available for this clip: {why}	Smart Cut недоступний для цього кліпу: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut записано й перевірено: {path} (кадрів: {frames})
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export записано й перевірено: {path}
+	Smart Render	Smart Render
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Деякі кодеки є вільним ПЗ, але реалізують запатентовані формати. Як і Ubuntu, CFA4 не встановлює їх типово: базовий пакет працює без них, а встановлювати їх чи ні, вирішуєте ви. У деяких країнах їх використання може бути обмежене; перевірте, чи дозволене воно там, де ви перебуваєте.
+	Stream Copy – Bit-exact	Stream Copy – побітово
+	Stream Copy – Compatible	Stream Copy – сумісно
+	Stream copy is not possible: {frames} frames need re-encoding.	Копіювання потоку неможливе: потрібно перекодувати кадрів: {frames}.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Додатковий декодер для форматів, яких власний рушій поки не читає (10-бітні та 4:2:2 матеріали з камер, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Додатковий декодер із системного GStreamer (Ogg Theora, FLV, WMV та інші формати); LGPL, з репозиторіїв Ubuntu
+	The cut cannot run.	Нарізку неможливо виконати.
+	The engine did not answer: {message}	Рушій не відповів: {message}
+	The engine sent no analysis.	Рушій не надіслав аналізу.
+	The export cannot run.	Експорт неможливо виконати.
+	To install them: {command}	Щоб установити їх: {command}
+	Track Color	Колір доріжки
+	Up	Вгору
+	Use this backend	Використовувати цей бекенд
+	Wait for the export plan.	Дочекайтеся плану експорту.
+	Writing and verifying the cut…	Запис і перевірка нарізки…
+	Writing and verifying the export…	Запис і перевірка експорту…
+	colour conversion	перетворення кольору
+	compositing	композитинг
+	copied	скопійовано
+	effects	ефекти
+	frame rate	частота кадрів
+	installed	встановлено
+	more tabs	інші вкладки
+	not installed	не встановлено
+	off	вимк.
+	on	увімк.
+	proxies or nested sequences	проксі або вкладені секвенції
+	re-encoded at a cut	перекодовано на склейці
+	rendered	відрендерено
+	sources that cannot be copied	джерела, які неможливо скопіювати
+	speed changes	зміни швидкості
+	the project has not been saved yet	проєкт ще не збережено
+	titles or overlays	титри або накладання
+	transforms	трансформації
+	transitions	переходи
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} у {container}: GOP: {gops}, чистих точок різу: {points}
+	{copied} frames copied, {reencoded} frames re-encoded	Скопійовано кадрів: {copied}, перекодовано кадрів: {reencoded}
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Скопійовано кадрів: {copied}, перекодовано на склейках: {reencoded}, відрендерено: {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	Буде перекодовано або відрендерено кадрів: {frames}. Продовжити?
+	{frames} frames at the boundaries are re-encoded. Continue?	На межах буде перекодовано кадрів: {frames}. Продовжити?

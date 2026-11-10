@@ -334,3 +334,91 @@
 	Set Work Area Bar In Point	Задать точку входа полосы рабочей области
 	Set Work Area Bar Out Point	Задать точку выхода полосы рабочей области
 	Delete Clips	Удалить клипы
+
+# Smart Cut, Smart Export, media backends and restricted codecs (2026-11-10)
+	After installing, restart CFA4.	После установки перезапустите CFA4.
+	Analyzing the clip…	Анализ клипа…
+	At GOP boundaries (no re-encoding)	По границам GOP (без перекодирования)
+	Available, switched off	Доступен, отключён
+	Bit-exact copy	Побитовая копия
+	CFA4 engine	Движок CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Собственный движок CFA4 открывает все файлы, какие может. Дополнительные бэкенды ниже подключаются в указанном порядке только для файлов, которые движок пока не открывает. Отключение бэкенда действует на файлы, открытые после этого.
+	Capabilities	Возможности
+	Choose the output file.	Выберите выходной файл.
+	Compatible copy	Совместимая копия
+	Copy command	Копировать команду
+	Copy:	Копирование:
+	Cut:	Нарезка:
+	Down	Вниз
+	Export mode	Режим экспорта
+	Frame accurate (re-encode the boundaries)	С точностью до кадра (перекодировать границы)
+	Full Render	Полный рендеринг
+	H.264 software encoding (x264)	Программное кодирование H.264 (x264)
+	HEVC software encoding (x265)	Программное кодирование HEVC (x265)
+	In use	Используется
+	Left out by the routing table	Исключён таблицей маршрутизации
+	Licence	Лицензия
+	Media Backends	Медиабэкенды
+	Media Backends…	Медиабэкенды…
+	Not available	Недоступен
+	Not part of this build	Не входит в эту сборку
+	Open a video clip in the Source monitor first.	Сначала откройте видеоклип в мониторе источника.
+	Output:	Вывод:
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Собственные декодеры и кодеры на Rust: всегда используются первыми и служат запасным вариантом, если дополнительный бэкенд даёт сбой
+	Planning…	Планирование…
+	Recommended: Smart Render (asks before re-encoding)	Рекомендуется: Smart Render (спрашивает перед перекодированием)
+	Recommended: Stream Copy (nothing is re-encoded)	Рекомендуется: Stream Copy (ничего не перекодируется)
+	Rendered because of: {causes}	Рендеринг из-за: {causes}
+	Restricted Codecs…	Ограниченные кодеки…
+	Restricted codecs	Ограниченные кодеки
+	Set a fixed bitrate	Задать фиксированный битрейт
+	Settings not taken	Настройки не применены
+	Show GOP Boundaries	Показать границы GOP
+	Smart Cut Source	Smart Cut источника
+	Smart Cut Source…	Smart Cut источника…
+	Smart Cut is not available for this clip: {why}	Smart Cut недоступен для этого клипа: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut записан и проверен: {path} (кадров: {frames})
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export записан и проверен: {path}
+	Smart Render	Smart Render
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Некоторые кодеки являются свободным ПО, но реализуют запатентованные форматы. Как и Ubuntu, CFA4 не устанавливает их по умолчанию: базовый пакет работает без них, а устанавливать ли их, решаете вы. В некоторых странах их использование может быть ограничено; проверьте, разрешено ли оно там, где вы находитесь.
+	Stream Copy – Bit-exact	Stream Copy – побитово
+	Stream Copy – Compatible	Stream Copy – совместимо
+	Stream copy is not possible: {frames} frames need re-encoding.	Копирование потока невозможно: нужно перекодировать кадров: {frames}.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Дополнительный декодер для форматов, которые собственный движок пока не читает (10-битные и 4:2:2 материалы с камер, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Дополнительный декодер из системного GStreamer (Ogg Theora, FLV, WMV и другие форматы); LGPL, из репозиториев Ubuntu
+	The cut cannot run.	Нарезку нельзя выполнить.
+	The engine did not answer: {message}	Движок не ответил: {message}
+	The engine sent no analysis.	Движок не прислал анализ.
+	The export cannot run.	Экспорт нельзя выполнить.
+	To install them: {command}	Чтобы установить их: {command}
+	Track Color	Цвет дорожки
+	Up	Вверх
+	Use this backend	Использовать этот бэкенд
+	Wait for the export plan.	Дождитесь плана экспорта.
+	Writing and verifying the cut…	Запись и проверка нарезки…
+	Writing and verifying the export…	Запись и проверка экспорта…
+	colour conversion	преобразование цвета
+	compositing	композитинг
+	copied	скопировано
+	effects	эффекты
+	frame rate	частота кадров
+	installed	установлен
+	more tabs	другие вкладки
+	not installed	не установлен
+	off	выкл.
+	on	вкл.
+	proxies or nested sequences	прокси или вложенные секвенции
+	re-encoded at a cut	перекодировано на склейке
+	rendered	отрендерено
+	sources that cannot be copied	источники, которые нельзя скопировать
+	speed changes	изменения скорости
+	the project has not been saved yet	проект ещё не сохранён
+	titles or overlays	титры или наложения
+	transforms	трансформации
+	transitions	переходы
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} в {container}: GOP: {gops}, чистых точек реза: {points}
+	{copied} frames copied, {reencoded} frames re-encoded	Скопировано кадров: {copied}, перекодировано кадров: {reencoded}
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Скопировано кадров: {copied}, перекодировано на склейках: {reencoded}, отрендерено: {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	Будет перекодировано или отрендерено кадров: {frames}. Продолжить?
+	{frames} frames at the boundaries are re-encoded. Continue?	На границах будет перекодировано кадров: {frames}. Продолжить?
