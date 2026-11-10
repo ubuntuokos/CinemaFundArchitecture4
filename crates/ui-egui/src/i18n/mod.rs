@@ -18,9 +18,9 @@
 //! a font already installed on the system ([`system_japanese_font`]); with neither, switching to
 //! Japanese is refused with a message.
 //!
-//! Simplified Chinese uses the Chinese fallback `theme::install` always adds (extra-fonts Hans/Hant
-//! faces, otherwise one installed system face, see `cjk.rs`); without one, switching to Chinese is
-//! refused the same way ([`chinese_font_available`]).
+//! Simplified and Traditional Chinese use the Chinese fallback `theme::install` always adds
+//! (extra-fonts Hans/Hant faces, otherwise one installed system face, see `cjk.rs`); without one,
+//! switching to either is refused the same way ([`chinese_font_available`]).
 
 mod catalog;
 
@@ -70,6 +70,9 @@ pub enum Language {
     Cs,
     /// Vietnamese: the whole interface, Latin script with tone marks (bundled fonts).
     Vi,
+    /// Traditional Chinese, persisted as `zh-hant`; like Simplified Chinese it needs a Chinese face ([`chinese_font_available`]).
+    #[serde(rename = "zh-hant")]
+    ZhHant,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -96,11 +99,12 @@ static TURKISH: OnceLock<Catalog> = OnceLock::new();
 static DUTCH: OnceLock<Catalog> = OnceLock::new();
 static CZECH: OnceLock<Catalog> = OnceLock::new();
 static VIETNAMESE: OnceLock<Catalog> = OnceLock::new();
+static TRADITIONAL: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -119,6 +123,7 @@ impl Language {
         Self::Nl,
         Self::Cs,
         Self::Vi,
+        Self::ZhHant,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -143,6 +148,7 @@ impl Language {
             Self::Nl => "Nederlands",
             Self::Cs => "Čeština",
             Self::Vi => "Tiếng Việt",
+            Self::ZhHant => "繁體中文",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -168,6 +174,7 @@ impl Language {
             "nl" => Some(Self::Nl),
             "cs" => Some(Self::Cs),
             "vi" => Some(Self::Vi),
+            "zh-hant" => Some(Self::ZhHant),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -181,8 +188,8 @@ impl Language {
     /// the French one; any Indonesian (`id-ID`, `id_ID.UTF-8`, and the legacy `in-ID` that older Java
     /// and Android runtimes report) the Indonesian one; any Italian (`it-IT`, `it-CH`, `it_IT.UTF-8`…)
     /// the Italian one; any Hungarian (`hu-HU`, `hu_HU.UTF-8`) the Hungarian one. Chinese gets the Simplified catalog
-    /// only for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`); Traditional ones (`zh-TW`,
-    /// `zh-HK`, `zh-MO`, `zh-Hant…`) are skipped.
+    /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
+    /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
         const PRIMARY: [(&str, Language); 18] = [
             ("en", Language::En),
@@ -226,8 +233,14 @@ impl Language {
                     // the subtag after `zh` (a script or a region), if any; `.UTF-8` / `@x` end it
                     let rest = tag.get(primary.len()..).unwrap_or_default();
                     let sub = if rest.starts_with(['-', '_']) { parts.next().unwrap_or_default() } else { "" };
-                    let simplified = sub.is_empty() || ["cn", "sg", "hans"].iter().any(|s| sub.eq_ignore_ascii_case(s));
-                    return simplified.then_some(Language::ZhCn);
+                    let is = |codes: &[&str]| codes.iter().any(|c| sub.eq_ignore_ascii_case(c));
+                    return if sub.is_empty() || is(&["cn", "sg", "hans"]) {
+                        Some(Language::ZhCn)
+                    } else if is(&["tw", "hk", "mo", "hant"]) {
+                        Some(Language::ZhHant)
+                    } else {
+                        None
+                    };
                 }
                 PRIMARY.iter().find(|(code, _)| primary.eq_ignore_ascii_case(code)).map(|(_, l)| *l)
             })
@@ -255,6 +268,7 @@ impl Language {
             Self::Nl => "nl",
             Self::Cs => "cs",
             Self::Vi => "vi",
+            Self::ZhHant => "zh-hant",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -281,6 +295,7 @@ impl Language {
             Self::Nl => Some(DUTCH.get_or_init(|| Catalog::parse(catalog_file!("nl")))),
             Self::Cs => Some(CZECH.get_or_init(|| Catalog::parse(catalog_file!("cs")))),
             Self::Vi => Some(VIETNAMESE.get_or_init(|| Catalog::parse(catalog_file!("vi")))),
+            Self::ZhHant => Some(TRADITIONAL.get_or_init(|| Catalog::parse(catalog_file!("zh-hant")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -430,7 +445,7 @@ pub fn install_japanese_font(ctx: &egui::Context) -> bool {
     true
 }
 
-/// Whether the interface can show Simplified Chinese: `theme::install` always adds a Chinese
+/// Whether the interface can show Chinese (Simplified or Traditional): `theme::install` always adds a Chinese
 /// fallback face when there is one (extra-fonts Hans/Hant faces, otherwise an installed system
 /// face, see `cjk.rs`), so nothing needs installing here. False on systems without either.
 pub fn chinese_font_available() -> bool {
@@ -468,6 +483,7 @@ mod tests {
             ("nl", catalog_file!("nl")),
             ("cs", catalog_file!("cs")),
             ("vi", catalog_file!("vi")),
+            ("zh-hant", catalog_file!("zh-hant")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1146,10 +1162,10 @@ mod tests {
         for tag in ["zh", "zh-CN", "zh_CN.UTF-8", "zh-Hans", "zh-Hans-CN", "zh-SG", "ZH-cn", "zh.UTF-8"] {
             assert_eq!(l(&[tag]), Language::ZhCn, "{tag}");
         }
-        for tag in ["zh-TW", "zh_TW.UTF-8", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-TW"] {
-            assert_eq!(l(&[tag]), Language::En, "{tag}: Traditional Chinese has no catalog");
+        for tag in ["zh-TW", "zh_TW.UTF-8", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-TW", "ZH-hant"] {
+            assert_eq!(l(&[tag]), Language::ZhHant, "{tag}");
         }
-        assert_eq!(l(&["zh-TW", "ja-JP"]), Language::Ja);
+        assert_eq!(l(&["zh-Latn", "ja-JP"]), Language::Ja);
         for tag in ["de", "DE", "de-DE", "de-AT", "de-CH", "de-LI", "de-LU", "de_DE.UTF-8", "de_AT.UTF-8@euro", "de_CH"] {
             assert_eq!(l(&[tag]), Language::De, "{tag}");
         }
@@ -1614,6 +1630,14 @@ mod tests {
             "ĂÂĐÊÔƠƯăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ",
             &[("File", "Tệp"), ("Sequence", "Chuỗi"), ("Playhead", "Đầu phát"), ("Cross Dissolve", "Hòa tan chéo")],
         ),
+        (
+            Language::ZhHant,
+            "app.language.traditionalChinese",
+            catalog_file!("zh-hant"),
+            // Han characters come from a Chinese face (cjk.rs), not the bundled fonts
+            "",
+            &[("File", "檔案"), ("Sequence", "序列"), ("Playhead", "播放指示器"), ("Cross Dissolve", "交叉溶解")],
+        ),
     ];
 
     #[test]
@@ -1638,7 +1662,8 @@ mod tests {
 
     #[test]
     fn complete_languages_render_with_bundled_fonts() {
-        for &(language, _, text, alphabet, _) in COMPLETE {
+        // Traditional Chinese draws with the Chinese face theme::install adds (cjk.rs), like Simplified
+        for &(language, _, text, alphabet, _) in COMPLETE.iter().filter(|c| c.0 != Language::ZhHant) {
             let (entries, _) = catalog::parse_entries(text);
             // the alphabet, the name, and every letter, quotation mark, dash and ellipsis the entries
             // use (symbols such as ✔ come from the English sources)
@@ -1652,6 +1677,13 @@ mod tests {
         let ctx = egui::Context::default();
         let mut app = crate::Cfa4App::new(cfa4_engine::Session::default());
         for &(language, command, _, _, _) in COMPLETE {
+            if language == Language::ZhHant && !chinese_font_available() {
+                // without a Chinese face it is refused and the interface keeps its language
+                let before = app.ui.language;
+                assert!(crate::menus::invoke(&mut app, &ctx, command, serde_json::json!({})).is_err());
+                assert_eq!(app.ui.language, before);
+                continue;
+            }
             let result = crate::menus::invoke(&mut app, &ctx, command, serde_json::json!({})).unwrap();
             assert_eq!(result, serde_json::json!(language.code()));
             assert_eq!((app.ui.language, current()), (language, language));

@@ -44,6 +44,7 @@ LANGUAGES = {
     "nl": "Nederlands",
     "cs": "Čeština",
     "vi": "Tiếng Việt",
+    "zh-hant": "繁體中文",
 }
 
 
@@ -166,7 +167,9 @@ def system_language() -> str:
     if base == "pt":
         return "pt-br"
     if base == "zh":
-        return "zh-cn"
+        # Traditional script or a Traditional region (zh-TW, zh-HK, zh-MO, zh-Hant…); else Simplified
+        traditional = {"hant", "tw", "hk", "mo"}
+        return "zh-hant" if traditional & set(tag.split("-")[1:]) else "zh-cn"
     return base if base in LANGUAGES else "en"
 
 

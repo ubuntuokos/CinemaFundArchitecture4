@@ -46,6 +46,7 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("app.language.dutch", "Nederlands", ["Edit", "Language"], None),
     uic!("app.language.czech", "Čeština", ["Edit", "Language"], None),
     uic!("app.language.vietnamese", "Tiếng Việt", ["Edit", "Language"], None),
+    uic!("app.language.traditionalChinese", "繁體中文", ["Edit", "Language"], None),
     uic!("source.playback.toggle", "Source Play/Stop", [], None),
     uic!("source.playback.play", "Play Source", [], None),
     uic!("source.playback.stop", "Stop Source", [], None),
@@ -211,6 +212,7 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             | "app.language.dutch"
             | "app.language.czech"
             | "app.language.vietnamese"
+            | "app.language.traditionalChinese"
             | "app.language.british"
             | "app.language.australian"
     ) {
@@ -219,7 +221,7 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             return Err("no Japanese font is installed on this system (for example Noto Sans CJK JP); the interface stays in English".into());
         }
         // Chinese needs the Chinese fallback theme::install adds (extra-fonts or a system face)
-        if id == "app.language.chinese" && !crate::i18n::chinese_font_available() {
+        if matches!(id, "app.language.chinese" | "app.language.traditionalChinese") && !crate::i18n::chinese_font_available() {
             return Err("no Chinese font is installed on this system (for example Noto Sans CJK SC); the interface stays in English".into());
         }
         // Korean needs an installed Hangul font (none is bundled; see cjk.rs)
@@ -244,6 +246,7 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             "app.language.dutch" => crate::i18n::Language::Nl,
             "app.language.czech" => crate::i18n::Language::Cs,
             "app.language.vietnamese" => crate::i18n::Language::Vi,
+            "app.language.traditionalChinese" => crate::i18n::Language::ZhHant,
             "app.language.british" => crate::i18n::Language::EnGb,
             "app.language.australian" => crate::i18n::Language::EnAu,
             _ => crate::i18n::Language::En,
@@ -727,6 +730,7 @@ pub fn menu_items(app: &Cfa4App) -> Vec<MenuItem> {
             "app.language.dutch" => it.checked = Some(app.ui.language == crate::i18n::Language::Nl),
             "app.language.czech" => it.checked = Some(app.ui.language == crate::i18n::Language::Cs),
             "app.language.vietnamese" => it.checked = Some(app.ui.language == crate::i18n::Language::Vi),
+            "app.language.traditionalChinese" => it.checked = Some(app.ui.language == crate::i18n::Language::ZhHant),
             "app.language.british" => it.checked = Some(app.ui.language == crate::i18n::Language::EnGb),
             "app.language.australian" => it.checked = Some(app.ui.language == crate::i18n::Language::EnAu),
             _ => {}

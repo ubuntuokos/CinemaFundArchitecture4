@@ -26,8 +26,8 @@ control channel, the CLI and MCP stay English.
 
 Fonts come from an external font directory (`CFA4_FONTS_DIR`, all
 official releases) or an installed system face; without one, switching to Japanese or Chinese is
-refused with a message. Simplified Chinese is picked for `zh`, `zh-CN`, `zh-SG`, `zh-Hans`, not
-Traditional locales. Ukrainian uses the bundled Cyrillic interface fonts. Vertical text in titles
+refused with a message (Simplified and Traditional Chinese alike). Simplified Chinese is picked for
+`zh`, `zh-CN`, `zh-SG`, `zh-Hans`; Traditional Chinese for `zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant`. Ukrainian uses the bundled Cyrillic interface fonts. Vertical text in titles
 is supported. The interface (egui) shapes each font run with harfrust and has Arabic and Hebrew
 fallback fonts (`crates/ui-egui/src/rtl.rs`), but it has no bidi pass: only captions (timeline
 blocks, the Text panel list when not being edited) are laid out in reading order, and the interface
@@ -65,6 +65,7 @@ whole interface, one PR) at ~4–8 h per language for the catalog plus tests.
 | *Other shipped:* Dutch | nl | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings; 503 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin with é ë ï ö (bundled fonts, `complete_languages_render_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
 | *Other shipped:* Czech | cs | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings; 566 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin with č ř š ž ů (bundled fonts, `complete_languages_render_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
 | *Other shipped:* Vietnamese | vi | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings; 561 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin with tone marks ơ ư ạ ế (bundled fonts, `complete_languages_render_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
+| *Other shipped:* Traditional Chinese | zh-hant | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings; 520 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Han, needs a Chinese face like Simplified (`cjk.rs`; refused without one) | not recorded; welcome | **full** (catalog) | review |
 
 UI strings are catalog entries (the non-comment lines of `i18n/<code>.tsv`; English counts the
 source strings in the code), so the rows were measured at different times: at this change the
@@ -88,6 +89,7 @@ Every language needs native-speaker review (human).
 | 2026-11-10 | minor | Dutch (nl) added, complete: 4,072 entries (503 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
 | 2026-11-10 | minor | Czech (cs) added, complete: 4,072 entries (566 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
 | 2026-11-10 | minor | Vietnamese (vi) added, complete: 4,072 entries (561 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
+| 2026-11-10 | minor | Traditional Chinese (zh-hant) added, complete: 4,072 entries (520 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI; zh-TW, zh-HK, zh-MO and zh-Hant locales now pick it |
 | 2026-11-10 | minor | English (UK) and English (Australia) added (US English is the source, shown as English (US)); de, es, fr, it, ja, ko, zh-cn, pt-br and id completed (718 entries) |
 | 2026-11-10 | minor | Every catalog moved to the top-level `i18n/` (owner decision 2026-11-09), one per language for egui and the Qt GUI (the Qt-only strings in a "Qt GUI" section; where the two had translated the same string differently, the Qt GUI's wording was kept); Hungarian (hu) completed (1,572 new entries) and added to egui's Edit ▸ Language, Settings and System Language |
 | 2026-10-27 | minor | Ubuntu 26.04 only: the macOS app-menu entries (Settings, Hide CFA4, Hide Others) and macOS hints left the catalogs; Korean font list names Linux fonts |
