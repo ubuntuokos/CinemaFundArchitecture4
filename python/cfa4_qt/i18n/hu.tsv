@@ -2486,3 +2486,34 @@ export.summary	Low	alacsony
 	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec}, {container}: {gops} GOP, {points} tiszta vágási pont
 	{copied} frames copied, {reencoded} frames re-encoded	{copied} képkocka másolva, {reencoded} képkocka újrakódolva
 	{frames} frames at the boundaries are re-encoded. Continue?	A határokon {frames} képkocka újrakódolódik. Folytatod?
+# Export window Smart Export (WP-08)
+	Export mode	Exportálási mód
+	Full Render	Teljes renderelés
+	Planning…	Tervezés…
+	Recommended: Smart Render (asks before re-encoding)	Javasolt: Smart Render (újrakódolás előtt rákérdez)
+	Recommended: Stream Copy (nothing is re-encoded)	Javasolt: Stream Copy (semmi nem kódolódik újra)
+	Rendered because of: {causes}	Renderelés oka: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	A Smart Export kész és ellenőrizve: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – Bitazonos
+	Stream Copy – Compatible	Stream Copy – Kompatibilis
+	Stream copy is not possible: {frames} frames need re-encoding.	A stream copy nem lehetséges: {frames} képkockát újra kell kódolni.
+	The export cannot run.	Az exportálás nem futtatható.
+	Wait for the export plan.	Várd meg az exportálási tervet.
+	Writing and verifying the export…	Az exportálás írása és ellenőrzése…
+	colour conversion	színkonverzió
+	compositing	kompozitálás
+	copied	másolva
+	effects	effektusok
+	frame rate	képkockasebesség
+	proxies or nested sequences	proxyk vagy beágyazott szekvenciák
+	re-encoded at a cut	vágásnál újrakódolva
+	rendered	renderelve
+	sources that cannot be copied	nem másolható források
+	speed changes	sebességváltoztatás
+	titles or overlays	feliratok vagy rátétek
+	transforms	transzformációk
+	transitions	átmenetek
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} képkocka másolva, {reencoded} vágásnál újrakódolva, {rendered} renderelve
+	{frames} frames are re-encoded or rendered. Continue?	{frames} képkocka újrakódolódik vagy renderelődik. Folytatod?
