@@ -432,6 +432,9 @@ enum Framing {
     LengthPrefixed,
     /// The same elementary stream in every container (MPEG-2 video).
     Elementary,
+    /// AV1 temporal units of OBUs with size fields and no temporal delimiter, as in MP4, QuickTime
+    /// and Matroska (AV1 in ISOBMFF §2.4, AV1 in Matroska).
+    Obu,
 }
 
 fn framing(codec: Codec, container: Container) -> Option<Framing> {
@@ -442,7 +445,11 @@ fn framing(codec: Codec, container: Container) -> Option<Framing> {
             Container::Mp4 | Container::Mov | Container::Matroska | Container::WebM => Some(Framing::LengthPrefixed),
             Container::Mxf => None,
         },
-        Codec::Av1 | Codec::Aac | Codec::Pcm => None,
+        Codec::Av1 => match container {
+            Container::Mp4 | Container::Mov | Container::Matroska | Container::WebM => Some(Framing::Obu),
+            Container::MpegTs | Container::MpegPs | Container::Mxf => None,
+        },
+        Codec::Aac | Codec::Pcm => None,
     }
 }
 

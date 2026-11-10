@@ -29,7 +29,7 @@ use cfa4_smart_edit::capabilities::{Codec, Container, Registry};
 use cfa4_smart_edit::edit_decision::{EditClip, EditContent, EditDecisionList, EditItem, RenderCause};
 use cfa4_smart_edit::plan::{CopyGuarantee, PlanSegment, SegmentMode};
 use cfa4_smart_edit::smart_render::{SmartRenderPlan, SmartRenderRequest, plan_smart_render};
-use cfa4_smart_edit::timestamp::{MediaTime, Rational};
+use cfa4_smart_edit::timestamp::Rational;
 use cfa4_time::{FrameRate, Tick};
 use serde_json::{Value, json};
 
@@ -175,19 +175,6 @@ fn configs(src: &Source) -> Vec<String> {
     (0..=count).map(|i| format!("avcC:{hex}#{i}")).collect()
 }
 
-/// Where media time `t` of `src` lies on its stream's PTS timeline (ticks), when the media layer
-/// maps the two without guessing: through the edit list, or without one when the first picture
-/// is at zero.
-fn stream_time(src: &Source, t: Tick) -> Option<Tick> {
-    let track = src.file.tracks.get(src.track)?;
-    let first = track.samples.iter().map(|s| s.pts).min()?;
-    if track.edits.is_empty() && first.checked_add(track.edit_offset)? != 0 {
-        return None;
-    }
-    let offset = MediaTime::new(track.edit_offset, Rational::new(1, i64::from(track.timescale))).to_tick()?;
-    t.0.checked_sub(offset.0).map(Tick)
-}
-
 /// The edit decision list of the sequence's video, opening each copyable source once.
 fn edit_list(s: &Session, seq_id: ItemId, cmd: &str) -> Result<(EditDecisionList, BTreeMap<String, Source>)> {
     let project = &s.project;
@@ -258,7 +245,9 @@ fn edit_list(s: &Session, seq_id: ItemId, cmd: &str) -> Result<(EditDecisionList
             }
             _ => None,
         };
-        let source_in = src.and_then(|src| stream_time(src, top.source_time_at(a)));
+        // the timeline executor copies H.264 only: a clip of another codec is rendered
+        let src = src.filter(|src| src.stream().is_some_and(|x| x.codec == Codec::H264));
+        let source_in = src.and_then(|src| src.stream_time(top.source_time_at(a)));
         if src.is_none() || source_in.is_none() {
             causes.push(RenderCause::Source);
         }

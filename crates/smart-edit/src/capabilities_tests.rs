@@ -63,10 +63,10 @@ fn baseline_decode_and_demux() {
 
 #[test]
 fn smart_cut_is_allowed_only_where_it_is_implemented() {
-    // an unproven cut must never count as lossless: WP-04 copies H.264 and WP-07 HEVC into MP4 /
-    // MOV. Packet
-    // copy is keyed on the output container; the source side is the demux step (a framing change
-    // is the planner's to refuse, and the executor itself reads MP4 / MOV sources).
+    // an unproven cut must never count as lossless: WP-04 copies H.264 and WP-07 HEVC and AV1
+    // into MP4 / MOV. Packet copy is keyed on the output container; the source side is the demux
+    // step (a framing change is the planner's to refuse, and the executor itself reads MP4 / MOV
+    // sources).
     let r = Registry::native();
     let mp4 = |c: Container| matches!(c, Container::Mp4 | Container::Mov);
     for codec in Codec::VIDEO {
@@ -75,7 +75,7 @@ fn smart_cut_is_allowed_only_where_it_is_implemented() {
                 for policy in [STRICT, LAX] {
                     let d = r.smart_cut(codec, source, output, policy);
                     let demux = r.decide(Key::in_container(Operation::Demux, codec, source), policy).allowed;
-                    let expected = matches!(codec, Codec::H264 | Codec::Hevc) && demux && mp4(output);
+                    let expected = matches!(codec, Codec::H264 | Codec::Hevc | Codec::Av1) && demux && mp4(output);
                     assert_eq!(d.allowed, expected, "{codec:?} {source:?} → {output:?}");
                     assert_eq!(d.blockers().is_empty(), expected);
                 }
@@ -166,6 +166,9 @@ fn smart_render_picks_the_encoder_that_fits_the_stream() {
     ] {
         r.insert(Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() }).unwrap();
     }
+    // two hardware encoders and none of our own
+    r.insert(Entry { key: hevc, backend: Backend::Native, level: SupportLevel::Unsupported, evidence: "test".into(), limits: None, routes: Vec::new() })
+        .unwrap();
     let lim = |depth: u8, profile: &str| Some(EncoderLimits { profiles: vec![profile.into()], chroma: vec!["4:2:0".into()], bit_depths: vec![depth] });
     r.insert(Entry {
         key: hevc,
@@ -220,6 +223,10 @@ fn baseline_av1_has_no_encoder_and_mpeg2_demuxes_from_iso_and_matroska() {
 fn hardware_encoders_wait_for_a_probe() {
     let mut r = Registry::native();
     let hevc = Key::codec(Operation::Encode, Codec::Hevc);
+    // without our own HEVC encoder, only the hardware one is left
+    assert!(r.decide(hevc, STRICT).allowed);
+    r.insert(Entry { key: hevc, backend: Backend::Native, level: SupportLevel::Unsupported, evidence: "test".into(), limits: None, routes: Vec::new() })
+        .unwrap();
     let d = r.decide(hevc, STRICT);
     assert!(!d.allowed);
     assert_eq!(d.level, SupportLevel::NeedsProbe);
