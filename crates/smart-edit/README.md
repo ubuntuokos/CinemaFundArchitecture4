@@ -182,6 +182,18 @@ Rendered segments (gaps, effects) and timeline plans are refused here (`render-s
 `timeline-plan`); they belong to the timeline Smart Render executor below. Writing and verifying decode the boundaries picture by picture (the
 encoder's VUI comes from the source SPS), so no boundary is held in memory whole.
 
+**HEVC (WP-07, `boundary_reencode_hevc`):** the same functions run HEVC plans with the CFA4 HEVC
+decoder and encoder (Main or Main 10, I and P pictures). The output `hvcC` holds the source VPS /
+SPS / PPS unchanged followed by the encoder's, under free ids. Every re-encoded segment starts with
+an IDR; a copy after one starts at a clean access point, and when that is a CRA or BLA picture the
+last re-encoded sample ends with an end-of-sequence NAL unit, so the copied picture starts a new
+coded video sequence. Refused before writing: profiles other than Main / Main 10, anything but
+4:2:0 at 8 or 10 bits, interlaced sources, other NAL length sizes, odd picture sizes, in-band
+parameter sets and SEI user data (the x265 encoder note is dropped; decoded picture hash, active
+parameter sets and decoding unit SEIs are regenerated or dropped). `hevc_stream_format(hvcc)` gives
+the registry's `StreamFormat`; the registry lists the CFA4 HEVC encoder (Main / Main 10, 4:2:0,
+8 / 10 bits) and HEVC boundary re-encode into MP4 / MOV as supported.
+
 ## Timeline Smart Render executor (WP-06)
 
 `cfa4_export::timeline_render` runs a `plan_smart_render` plan into one H.264 MP4 / MOV stream.
@@ -276,6 +288,10 @@ stale indexes, malformed plans) and that a changed payload or a truncated file f
 FFmpeg (oracle only) decodes the copy to exactly the source pictures of the range (framemd5).
 HEVC (`smart_cut_hevc_tests`): GOPs of the CFA4 encoder copied unchanged with their `hvcC`, a stale
 IDR refused, and x265 closed and open GOPs with B pictures decoded by FFmpeg to the source pictures.
+HEVC boundary re-encode (`boundary_reencode_hevc_tests`): a head boundary of the CFA4 encoder's
+stream, refusals (stale index, in-band parameter sets, codec mismatch), a failing PSNR threshold,
+and x265 closed and open GOPs with B pictures cut frame-accurately: FFmpeg decodes every picture
+and the copied ones are the source pictures, also when the copy starts at a clean CRA picture.
 Smart Render planner: whole-GOP clips, boundaries with their reference pictures, joined splits, gaps
 and changed clips, codec configuration seams, other codecs and frame rates, refusals, registry
 blockers, JSON round trip, and random timelines (the segments cover the output, decoding starts at a

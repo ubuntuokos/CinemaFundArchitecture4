@@ -803,7 +803,6 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(c(GopIndex, Hevc), Native, Supported, "cfa4-smart-edit hevc_index; crates/smart-edit/tests/index_oracle.rs (IDR / CRA open GOP, ffprobe)"),
         row(c(GopIndex, Av1), Native, Unsupported, "not implemented yet (WP-07)"),
         // encode
-        row(c(Encode, Hevc), Native, Unsupported, "CFA4 has no software HEVC encoder"),
         row(c(Encode, Hevc), Platform, NeedsProbe, "hardware encoder registered by cfa4-platform (NVENC); export::available(Format::Hevc)"),
         row(c(Encode, Av1), Native, Unsupported, "CFA4 has no software AV1 encoder"),
         row(
@@ -835,12 +834,16 @@ pub(crate) fn native_entries() -> Vec<Entry> {
     let mut h264 = row(c(Encode, H264), Native, Supported, "cfa4-h264enc; crates/export/src/tests.rs, ffmpeg oracle");
     h264.limits = Some(EncoderLimits { profiles: vec!["baseline".into(), "main".into(), "high".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] });
     v.push(h264);
+    // Main and Main 10, 4:2:0, I and P pictures (cfa4_hevc::encode)
+    let mut hevc = row(c(Encode, Hevc), Native, Supported, "cfa4-hevc encoder; crates/hevc/src/encode/tests.rs (ffmpeg oracle)");
+    hevc.limits = Some(EncoderLimits { profiles: vec!["main".into(), "main10".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8, 10] });
+    v.push(hevc);
     // Main profile (4:2:0) and the 4:2:2 profile, 8 bits (cfa4_mpeg2v::encode, export `mpeg2_422`)
     let mut mpeg2 = row(c(Encode, Mpeg2Video), Native, Supported, "cfa4-mpeg2v encoder; crates/export/src/mpeg2_tests.rs, crates/mpeg2v/src/encode/tests.rs");
     mpeg2.limits = Some(EncoderLimits { profiles: vec!["main".into(), "422".into()], chroma: vec!["4:2:0".into(), "4:2:2".into()], bit_depths: vec![8] });
     v.push(mpeg2);
     // packet copy: H.264 and HEVC into MP4 / MOV (WP-04, WP-07 cfa4-export smart_cut); boundary
-    // re-encode: H.264 (WP-06 cfa4-export boundary_reencode)
+    // re-encode: H.264 (WP-06) and HEVC (WP-07) into MP4 / MOV (cfa4-export boundary_reencode)
     for codec in Codec::ALL {
         for container in Container::ALL {
             if codec == H264 && matches!(container, Mp4 | Mov) {
@@ -856,8 +859,16 @@ pub(crate) fn native_entries() -> Vec<Entry> {
                 let evidence =
                     "cfa4-export boundary_reencode (MP4 / MOV source, 8-bit 4:2:0 progressive); crates/export/src/boundary_reencode_tests.rs (ffmpeg framemd5)";
                 v.push(row(k(BoundaryReencode, codec, container), Native, Supported, evidence));
+            } else if codec == Hevc && matches!(container, Mp4 | Mov) {
+                let evidence = "cfa4-export boundary_reencode_hevc (MP4 / MOV source, Main / Main 10 4:2:0 progressive); crates/export/src/boundary_reencode_hevc_tests.rs (ffmpeg framemd5)";
+                v.push(row(k(BoundaryReencode, codec, container), Native, Supported, evidence));
             } else if codec.is_video() {
-                v.push(row(k(BoundaryReencode, codec, container), Native, Unsupported, "boundary re-encode is implemented only for H.264 into MP4 / MOV"));
+                v.push(row(
+                    k(BoundaryReencode, codec, container),
+                    Native,
+                    Unsupported,
+                    "boundary re-encode is implemented only for H.264 and HEVC into MP4 / MOV",
+                ));
             }
             if codec == H264 && matches!(container, Mp4 | Mov) {
                 let evidence = "cfa4-export timeline_render (copied runs from several sources, boundaries, rendered segments); crates/export/src/timeline_render_tests.rs, crates/engine/src/smart_render_tests.rs (ffmpeg framemd5)";

@@ -166,6 +166,9 @@ fn smart_render_picks_the_encoder_that_fits_the_stream() {
     ] {
         r.insert(Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() }).unwrap();
     }
+    // two hardware encoders and none of our own
+    r.insert(Entry { key: hevc, backend: Backend::Native, level: SupportLevel::Unsupported, evidence: "test".into(), limits: None, routes: Vec::new() })
+        .unwrap();
     let lim = |depth: u8, profile: &str| Some(EncoderLimits { profiles: vec![profile.into()], chroma: vec!["4:2:0".into()], bit_depths: vec![depth] });
     r.insert(Entry {
         key: hevc,
@@ -220,6 +223,10 @@ fn baseline_av1_has_no_encoder_and_mpeg2_demuxes_from_iso_and_matroska() {
 fn hardware_encoders_wait_for_a_probe() {
     let mut r = Registry::native();
     let hevc = Key::codec(Operation::Encode, Codec::Hevc);
+    // without our own HEVC encoder, only the hardware one is left
+    assert!(r.decide(hevc, STRICT).allowed);
+    r.insert(Entry { key: hevc, backend: Backend::Native, level: SupportLevel::Unsupported, evidence: "test".into(), limits: None, routes: Vec::new() })
+        .unwrap();
     let d = r.decide(hevc, STRICT);
     assert!(!d.allowed);
     assert_eq!(d.level, SupportLevel::NeedsProbe);

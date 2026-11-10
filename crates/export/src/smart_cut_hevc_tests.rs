@@ -17,7 +17,7 @@ use cfa4_smart_edit::timestamp::{MediaTime, Rational};
 use crate::smart_cut::{Mp4CopySource, SmartCutError, execute_mp4_copy, verify_mp4_copy};
 
 /// 40 pictures of HEVC from the CFA4 encoder (64×48, 25 fps, an IDR every 10, P pictures).
-fn cfa4_hevc_mp4() -> Vec<u8> {
+pub(crate) fn cfa4_hevc_mp4() -> Vec<u8> {
     use cfa4_hevc::encode::{Encoder, EncoderConfig, PacketFormat, YuvFrame};
     let mut cfg = EncoderConfig::new(64, 48, 25, 1);
     cfg.keyint = 10;
@@ -39,15 +39,16 @@ fn cfa4_hevc_mp4() -> Vec<u8> {
     mux.finish().unwrap().into_inner()
 }
 
-struct Source {
-    bytes: Vec<u8>,
-    file: Mp4File,
-    index: StreamIndex,
-    output: Container,
+pub(crate) struct Source {
+    pub(crate) bytes: Vec<u8>,
+    pub(crate) file: Mp4File,
+    pub(crate) index: StreamIndex,
+    pub(crate) output: Container,
+    pub(crate) mode: CutMode,
 }
 
 impl Source {
-    fn new(bytes: Vec<u8>) -> Source {
+    pub(crate) fn new(bytes: Vec<u8>) -> Source {
         let file = cfa4_isobmff::open(bytes.as_slice()).unwrap();
         let track = &file.tracks[0];
         let Some(CodecConfig::Hevc(hvcc)) = track.codec() else { panic!("not HEVC") };
@@ -55,21 +56,21 @@ impl Source {
         let data: Vec<Vec<u8>> = (0..track.samples.len()).map(|i| file.read_sample(bytes.as_slice(), 0, i).unwrap()).collect();
         let packets = track.samples.iter().zip(&data).map(|(s, d)| Packet { data: d, pts: Some(s.pts), dts: Some(s.dts), keyframe: s.is_sync });
         let index = index_hevc(track.id, Rational::new(1, i64::from(track.timescale)), NalFormat::LengthPrefixed(hvcc.length_size), &ps, packets).unwrap();
-        Source { bytes, file, index, output: Container::Mp4 }
+        Source { bytes, file, index, output: Container::Mp4, mode: CutMode::GopBoundary }
     }
 
-    fn source(&self) -> Mp4CopySource<'_, [u8]> {
+    pub(crate) fn source(&self) -> Mp4CopySource<'_, [u8]> {
         Mp4CopySource { file: &self.file, bytes: self.bytes.as_slice(), track: 0 }
     }
 
-    /// The GOP-boundary plan of `[from, to)` pictures after the first one.
-    fn plan(&self, from: i64, to: i64) -> ExportExecutionPlan {
+    /// The plan (in `self.mode`) of `[from, to)` pictures after the first one.
+    pub(crate) fn plan(&self, from: i64, to: i64) -> ExportExecutionPlan {
         let p = self.try_plan(from, to).unwrap();
         assert!(p.executable, "{:?}", p.blockers);
         p.plan
     }
 
-    fn try_plan(&self, from: i64, to: i64) -> Result<SmartCutPlan, PlanRefusal> {
+    pub(crate) fn try_plan(&self, from: i64, to: i64) -> Result<SmartCutPlan, PlanRefusal> {
         let t = &self.file.tracks[0];
         let pts0 = t.samples.iter().map(|s| s.pts).min().unwrap();
         let step = i64::from(t.samples[0].duration);
@@ -79,11 +80,14 @@ impl Source {
             stream_id: self.index.stream_id,
             in_point: tick(from),
             out_point: tick(to),
-            mode: CutMode::GopBoundary,
+            mode: self.mode,
             guarantee: CopyGuarantee::BitExact,
             source_container: Container::Mp4,
             output_container: self.output,
-            format: None,
+            format: match t.codec() {
+                Some(CodecConfig::Hevc(hvcc)) => crate::boundary_reencode::hevc_stream_format(hvcc),
+                _ => None,
+            },
         };
         let media =
             MediaIndex::new("src.mp4", SourceFingerprint { size: self.bytes.len() as u64, modified_ns: None, content_id: None }, vec![self.index.clone()]);
@@ -135,7 +139,7 @@ fn a_stale_hevc_index_is_refused() {
 }
 
 /// An x265 MP4 (`params` for `-x265-params`), 100 pictures at 25 fps with B pictures.
-fn x265_mp4(ffmpeg: &Path, dir: &Path, name: &str, params: &str) -> Vec<u8> {
+pub(crate) fn x265_mp4(ffmpeg: &Path, dir: &Path, name: &str, params: &str) -> Vec<u8> {
     let path = dir.join(name);
     let st = Command::new(ffmpeg)
         .args(["-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25", "-t", "4", "-c:v", "libx265", "-pix_fmt", "yuv420p", "-tag:v", "hvc1"])
@@ -148,13 +152,13 @@ fn x265_mp4(ffmpeg: &Path, dir: &Path, name: &str, params: &str) -> Vec<u8> {
     std::fs::read(&path).unwrap()
 }
 
-fn framemd5(ffmpeg: &Path, path: &Path) -> Vec<String> {
+pub(crate) fn framemd5(ffmpeg: &Path, path: &Path) -> Vec<String> {
     let o = Command::new(ffmpeg).args(["-v", "error", "-xerror", "-i"]).arg(path).args(["-map", "0:v", "-f", "framemd5", "-"]).output().unwrap();
     assert!(o.status.success() && o.stderr.is_empty(), "{}", String::from_utf8_lossy(&o.stderr));
     String::from_utf8_lossy(&o.stdout).lines().filter(|l| !l.starts_with('#')).map(|l| l.rsplit(',').next().unwrap().trim().to_string()).collect()
 }
 
-fn has_libx265(ffmpeg: &Path) -> bool {
+pub(crate) fn has_libx265(ffmpeg: &Path) -> bool {
     cfa4_testkit::ffmpeg_has_encoder(ffmpeg, "libx265")
 }
 
