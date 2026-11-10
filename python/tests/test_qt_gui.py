@@ -13233,8 +13233,8 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
             item = min(i for i in e if re.fullmatch(r"project\.(bin|item)\.\d+", i))
             reply = c.call("ui.click", {"id": item})
             assert reply["ok"], (mode, item, reply)
-            pm = win.project_panel
-            assert wait_until(app, lambda: bool(pm.main.selected_items()) or pm.main.selected_bin is not None, 10_000), (
+            main = win.project_panel.main
+            assert wait_until(app, lambda m=main: bool(m.selected_items()) or m.selected_bin is not None, 10_000), (
                 mode,
                 item,
                 e[item],
