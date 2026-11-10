@@ -12348,9 +12348,12 @@ def test_real_engine_timeline_split_marks_as_egui(app, tmp_path: Path):
         img = canvas.grab().toImage()
         dpr = img.devicePixelRatio()
         x, top = marks["timeline.split.videoIn"]
-        col = img.pixelColor(round(x * dpr), int((top + 4) * dpr))
         want = QtGui.QColor(SPLIT_COLOR)
-        assert abs(col.red() - want.red()) < 40 and abs(col.green() - want.green()) < 40, col.name()
+        # the 1.5 px antialiased stroke centred on x covers a different pixel column as x's fraction
+        # changes with the canvas width: take the closest of the columns around it
+        cols = [img.pixelColor(px, int((top + 4) * dpr)) for px in range(int((x - 1) * dpr), int((x + 1) * dpr) + 1)]
+        col = min(cols, key=lambda c: abs(c.red() - want.red()) + abs(c.green() - want.green()))
+        assert abs(col.red() - want.red()) < 40 and abs(col.green() - want.green()) < 40, (x, canvas.width(), [c.name() for c in cols])
     finally:
         server.close()
         win._quit_confirmed = True
@@ -13191,7 +13194,8 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
-    win.resize(1600, 1000)
+    # tall enough that the demo's four bin cards leave empty space under them in the Icon view
+    win.resize(1600, 1600)
     win.show()
     engine.start()
     server = ControlServer(win)
@@ -13212,7 +13216,11 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
             win.execute("project.view.set", {"view": mode})
             snap.clear()
 
-            def ready() -> bool:
+            def ready(mode: str = mode) -> bool:
+                # this view's rows, not the previous view's still on screen
+                main = win.project_panel.main
+                if main.mode != mode or not (main.icons if mode == "icon" else main.tree).isVisible():
+                    return False
                 snap.clear()
                 snap.update(els())
                 return "project.empty" in snap and any(re.fullmatch(r"project\.(bin|item)\.\d+", i) for i in snap)
@@ -13223,12 +13231,21 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
             rows = [v["rect"] for k, v in e.items() if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
             assert all(ry + rh <= y + 1 for _rx, ry, _rw, rh in rows), (mode, e["project.empty"], rows)
             item = min(i for i in e if re.fullmatch(r"project\.(bin|item)\.\d+", i))
-            assert c.call("ui.click", {"id": item})["ok"]
-            assert wait_until(app, lambda: bool(win.project_panel.main.selected_items()) or win.project_panel.main.selected_bin is not None, 10_000)
-            assert c.call("ui.click", {"id": "project.empty"})["ok"]
+            reply = c.call("ui.click", {"id": item})
+            assert reply["ok"], (mode, item, reply)
+            main = win.project_panel.main
+            assert wait_until(app, lambda m=main: bool(m.selected_items()) or m.selected_bin is not None, 10_000), (
+                mode,
+                item,
+                e[item],
+                {k: v["rect"] for k, v in els().items() if k.startswith(("project.bin", "project.item", "project.empty"))},
+            )
+            reply = c.call("ui.click", {"id": "project.empty"})
+            assert reply["ok"], (mode, reply, {k: v["rect"] for k, v in els().items()})
             assert wait_until(app, lambda: not win.project_panel.main.selected_items(), 10_000), (mode, win.project_panel.main.selected_items())
             invoked.clear()
-            assert c.call("ui.click", {"id": "project.empty", "count": 2})["ok"]
+            reply = c.call("ui.click", {"id": "project.empty", "count": 2})
+            assert reply["ok"], (mode, reply, {k: v["rect"] for k, v in els().items()})
             assert wait_until(app, lambda: "file.import" in invoked, 5_000), (mode, invoked)
     finally:
         server.close()

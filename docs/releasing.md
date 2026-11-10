@@ -63,6 +63,26 @@ deliberately, in every job at once.
 CFA4 ships no RPM. The packages install both programs, the desktop entry, the AppStream metainfo, the
 icons and the licence files.
 
+**Pinned nfpm (#220).** Only the nfpm in `packaging/linux/nfpm.lock` builds a `.deb`: its version,
+the Go module hash recorded by sum.golang.org, the Go toolchain and the SHA-256 of the binary.
+`scripts/release/install-nfpm.sh` builds exactly that binary from the module (reproducibly, so the
+SHA-256 matches on every host) into `~/.cache/cfa4/tools/nfpm-<version>`; it is run once by whoever
+provisions the packaging host, never by the packaging scripts. `packaging/linux/check-nfpm.sh`
+(called by `package.sh` and the prerequisite check, through `nfpm-package.sh`) takes `NFPM`, then
+`nfpm` on `PATH`, then that default location, checks the SHA-256 before running it and refuses any
+other binary, including upstream's own release download. Bump all four values in `nfpm.lock` together.
+
+**Package contents (#220).** `scripts/release/verify_cfa4_packages.py` lists the real `.deb`
+(`dpkg-deb --contents`) and the AppImage's squashfs (`unsquashfs`, at the offset after the runtime
+ELF, without running it) and requires in each the programs, the Qt GUI, the FFmpeg 9.0.2 libraries
+with their licences and every licence/attribution file of `scripts/ci/check-package-docs.sh`
+(including `THIRD-PARTY-LICENSES.txt` and the `cfa4.cdx.json` SBOM); the AppImage also needs its
+PySide6 / Qt licences. The self-hosted four-formats job applies it to the real packages. On every
+packaging pull request the hosted `package-contents` job of `cfa4-release-candidate.yml` builds the
+pinned nfpm, builds a real `.deb` from `nfpm.yaml` with the repository's real licence, desktop
+and Qt GUI files (`scripts/release/deb-contents-check.sh`; only the binaries, FFmpeg and the crate
+notices are stand-ins) and audits it, and runs the AppImage audit on a real squashfs image.
+
 The Linux tarball includes `install.sh`. Extract it, open a terminal in the extracted
 directory and run `./install.sh` to install both programs and their desktop integration
 under `~/.local` (no administrator permissions needed). The application-menu entry uses
