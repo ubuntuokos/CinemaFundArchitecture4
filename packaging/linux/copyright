@@ -5,7 +5,8 @@ Source: https://github.com/ubuntuokos/CinemaFundArchitecture4
 Comment: Third-party material and upstream attributions are listed in NOTICE and
  ATTRIBUTION.md in this directory. Every third-party Rust crate in the programs,
  with its licence and the licence files it ships, is in THIRD-PARTY-LICENSES.txt
- in this directory.
+ in this directory; cfa4.cdx.json is the CycloneDX SBOM of every crate compiled
+ into them.
 
 Files: *
 Copyright: CFA4 contributors

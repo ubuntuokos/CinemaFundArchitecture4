@@ -397,8 +397,8 @@ mod tests {
         // Before the epoch (a clock set wrong) clamps instead of panicking.
         assert_eq!(timestamp(UNIX_EPOCH - Duration::from_secs(5)), "1970-01-01T00:00:00.000Z");
         // A clock set absurdly far ahead (past chrono's own range) keeps its real year rather than
-        // collapsing to the epoch (reviewer FredApps). Windows' SystemTime can't hold such an
-        // instant, so it is built with a checked add and only asserted where it exists.
+        // collapsing to the epoch (reviewer FredApps). The instant is built with a checked add, so the
+        // test only asserts where `SystemTime` can hold it.
         if let Some(far) = UNIX_EPOCH.checked_add(Duration::from_secs(u64::MAX / 2)) {
             assert_eq!(timestamp(far), "292277026596-12-04T15:30:07.000Z");
         }

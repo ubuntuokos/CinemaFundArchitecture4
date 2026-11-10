@@ -45,7 +45,8 @@ jobs:
   four-formats:
     # This job never runs automatically, never uploads a public GitHub Release,
     # and never provisions tools or system packages. Configure a trusted local
-    # runner with all reviewed packaging prerequisites and APPIMAGETOOL path/hash.
+    # runner with all reviewed packaging prerequisites, the APPIMAGETOOL path/hash and the
+    # CFA4_PYSIDE6_WHEELS wheelhouse path (repository variables).
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_four_packages && github.repository == 'ubuntuokos/CinemaFundArchitecture4' }}
     needs: source-policy
     runs-on: [self-hosted, Linux, X64, cfa4-ubuntu-26-04]
@@ -57,12 +58,18 @@ jobs:
         env:
           APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
           CFA4_APPIMAGETOOL_SHA256: ${{ vars.CFA4_APPIMAGETOOL_SHA256 }}
+          # the AppImage's and the Flatpak's PySide6 / Qt 6 (qt-parity 1.10): a wheelhouse on the
+          # runner with the wheels pinned in requirements/linux-amd64.txt, never downloaded here
+          CFA4_PYSIDE6_WHEELS: ${{ vars.CFA4_PYSIDE6_WHEELS }}
         run: bash scripts/release/check-cfa4-package-prereqs.sh
       - name: Build four private test packages and SHA256SUMS
         env:
           CFA4_ALLOW_LOCAL_PACKAGING: '1'
           APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
           CFA4_APPIMAGETOOL_SHA256: ${{ vars.CFA4_APPIMAGETOOL_SHA256 }}
+          # the AppImage's and the Flatpak's PySide6 / Qt 6 (qt-parity 1.10): a wheelhouse on the
+          # runner with the wheels pinned in requirements/linux-amd64.txt, never downloaded here
+          CFA4_PYSIDE6_WHEELS: ${{ vars.CFA4_PYSIDE6_WHEELS }}
         run: bash scripts/release/build-cfa4-four-formats.sh
       - name: Stage package payloads and audit local runtime (no host-wide installation)
         run: |

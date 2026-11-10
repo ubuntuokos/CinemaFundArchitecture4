@@ -151,6 +151,35 @@ class InstallTests(unittest.TestCase):
         self.assertIn("python3-pyside6.qtwidgets", started.stderr)
         self.assertNotIn("main() must not run", started.stderr)
 
+    def test_qt_gui_prefers_the_bundled_pyside6(self):
+        """The AppImage and the Flatpak carry PySide6 in lib/cfa4/pyside6 (stage-pyside6.py): it
+        comes right after the GUI's package, before the host's; a damaged bundle says so instead of
+        naming apt packages (docs/qt-parity.md 1.10)."""
+        self.add_qt_gui(
+            "import json, sys\n"
+            "import PySide6\n"
+            "def main():\n"
+            "    print(json.dumps({'path': sys.path[:2], 'pyside6': PySide6.__file__}))\n"
+            "    return 0\n"
+        )
+        prefix = self.root / "bundle prefix"
+        self.assertEqual(self.install("--prefix", prefix).returncode, 0)
+        bundled = prefix / "lib/cfa4/pyside6/PySide6"
+        bundled.mkdir(parents=True)
+        (bundled / "__init__.py").write_text("")
+        for module in ("QtCore", "QtGui", "QtWidgets", "QtNetwork", "QtTest"):
+            (bundled / f"{module}.py").write_text("")
+        started = self.run_qt(prefix)
+        self.assertEqual(started.returncode, 0, started.stderr)
+        seen = json.loads(started.stdout)
+        self.assertEqual(seen["path"], [str(prefix / "lib/cfa4/python"), str(prefix / "lib/cfa4/pyside6")])
+        self.assertEqual(seen["pyside6"], str(bundled / "__init__.py"))
+        (bundled / "QtWidgets.py").unlink()
+        started = self.run_qt(prefix)
+        self.assertEqual(started.returncode, 1)
+        self.assertIn("bundled in", started.stderr)
+        self.assertNotIn("apt install", started.stderr)
+
     def test_qt_launcher_without_its_package_does_not_install(self):
         shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin/cfa4-qt")
         prefix = self.root / "destination"
@@ -218,11 +247,14 @@ class InstallTests(unittest.TestCase):
         # stand-in binaries have no crate sources to list, so ship a stand-in notice file
         notices = self.root / "THIRD-PARTY-LICENSES.txt"
         notices.write_text("CFA4 – third-party licence notices (fixture)\n")
+        sbom = self.root / "cfa4.cdx.json"
+        sbom.write_text('{"bomFormat": "CycloneDX", "specVersion": "1.6"}\n')
         result = subprocess.run(
             # shell-script stand-ins cannot link FFmpeg: the local-test tarball without it
             ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "tar", "--without-ffmpeg"],
             env={**os.environ, "CARGO_TARGET_DIR": str(target), "DIST": str(dist),
-                 "CFA4_ALLOW_LOCAL_PACKAGING": "1", "CFA4_THIRD_PARTY_LICENSES_FILE": str(notices)},
+                 "CFA4_ALLOW_LOCAL_PACKAGING": "1", "CFA4_THIRD_PARTY_LICENSES_FILE": str(notices),
+                 "CFA4_SBOM_FILE": str(sbom)},
             capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -242,6 +274,7 @@ class InstallTests(unittest.TestCase):
                 self.assertTrue(any(n.endswith("/" + path) for n in names), path)
             self.assertFalse([n for n in names if "__pycache__" in n])
             self.assertTrue(any(n.endswith("/share/doc/cfa4/THIRD-PARTY-LICENSES.txt") for n in names), names)
+            self.assertTrue(any(n.endswith("/share/doc/cfa4/cfa4.cdx.json") for n in names), names)
 
 
 if __name__ == "__main__":

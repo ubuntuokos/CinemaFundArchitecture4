@@ -248,7 +248,7 @@ fn length_prefixed_is_well_formed(mut data: &[u8], size: usize) -> bool {
     true
 }
 
-fn nal_units(data: &[u8], format: NalFormat) -> Box<dyn Iterator<Item = &[u8]> + '_> {
+pub(crate) fn nal_units(data: &[u8], format: NalFormat) -> Box<dyn Iterator<Item = &[u8]> + '_> {
     match format {
         NalFormat::AnnexB => Box::new(AnnexBNals { data, pos: None }),
         NalFormat::LengthPrefixed(n) => {

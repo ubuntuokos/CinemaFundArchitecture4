@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import QEvent, QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import QMenu, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
@@ -195,6 +195,18 @@ class ToolsPanel(QWidget):
         the key (the keys come from the engine's shortcut set: Keyboard Shortcuts edits them)."""
         return [(self.actions[t.id], f"tool.{t.id}", t.key) for g in GROUPS for t in g if t.available]
 
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        """egui's ``tools.<Tool>`` for the tools a group button hides: click aliases on that
+        button's rect (egui's tools.rs registers them so, not as separate focus targets)."""
+        out = []
+        for gi, b in enumerate(self.buttons):
+            if not b.isVisible():
+                continue
+            for t in GROUPS[gi]:
+                if t.id != self.group_tool[gi]:
+                    out.append((f"tools.{egui_tool(t.id)}", b.geometry(), t.label))
+        return out
 
     def select(self, tool: str) -> None:
         t = TOOLS.get(tool)
