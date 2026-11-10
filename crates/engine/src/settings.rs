@@ -1065,6 +1065,7 @@ static CATEGORIES: &[Category] = &[
                     ("cs", "Čeština"),
                     ("vi", "Tiếng Việt"),
                     ("zh-hant", "繁體中文"),
+                    ("el", "Ελληνικά"),
                 ]),
                 true,
             ),
