@@ -145,7 +145,20 @@ munkával ütközésnél a Qt6 megy előre.
 - **Wayland:** képernyőrögzítés csak az XDG-portálon át, felhasználói engedéllyel.
 - **Méret:** a libobs + kódolók növelik a csomagot; a böngészőforrás motorja az Ubuntu tárolójából jön (nem a CFA4 csomagjában; D3).
 - **Webes widgetek:** Chromiumra készülnek, a Qt WebEngine Chromium-alapú, így eltérés kevés várható (S9-ben a gyakori szolgáltatásokkal kipróbálva).
-- **Qt WebEngine mérete és sandboxa:** nagy függőség (az Ubuntu tárolójából jön, nem a CFA4 csomagjában); a Chromium-sandbox a `cfa4-studio-host` folyamatban is bekapcsolva marad.
+- **A Qt WebEngine biztonsága (a tulajdonossal egyeztetve, 2026-11-11):** belül Chromium (Blink,
+  V8), így a Chrome-ra írt támadó kód nagyrészt rajta is működik, és a Chrome biztonsági javításait
+  késve kapja (a Qt veszi át, utána az Ubuntu csomagolja). A kisebb felhasználói kör nem véd: a
+  böngésző azonosítója (user agent) minden oldalnak elárulja a Chromium verzióját. Ezért a védelem
+  nem a rejtettségen, hanem ezeken alapul (S9 elfogadási feltétele):
+  1. **Elszigetelés:** a Chromium-sandbox mindig bekapcsolva, a böngészőforrás a külön
+     `cfa4-studio-host` folyamatban fut (D2), a szerkesztőtől és a projekttől elválasztva.
+  2. **Frissítés:** a Qt WebEngine mindig az Ubuntu friss csomagjából jön, nem rögzített
+     verzióból (a D1 rögzítése csak a libobs-ra vonatkozik).
+  3. **Alapból kikapcsolva:** a böngészőforrás csak akkor él, ha a felhasználó bekapcsolja.
+  4. **Figyelmeztetés idegen oldalnál:** a CFA4 jelez, ha egy forrás külső weboldalt tölt be;
+     helyi oldalak (a C10 élő oldala, helyi fájlok) és az ismert streamer-szolgáltatások
+     figyelmeztetés nélkül futnak.
+  A méret: nagy függőség, az Ubuntu tárolójából jön, nem a CFA4 csomagjában.
 - **Licenc és szabadalom:** x264/x265 csak a restricted-extras csomagban; a libobs részeinek
   licencei a `NOTICE`-ba és az `ATTRIBUTION.md`-be kerülnek.
 - **A Qt6 munka:** az élő munkaterület a Qt6 felületre épül; ütközésnél a Qt6 megy előre.
