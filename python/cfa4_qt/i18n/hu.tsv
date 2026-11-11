@@ -1225,6 +1225,8 @@
 	Inverted	Invertálva
 	Position & Rotation	Pozíció és forgatás
 	Position, Scale & Rotation	Pozíció, méretezés és forgatás
+	Point tracker	Pontkövető
+	Correlation tracker	Korrelációs követő
 	Show graphs	Grafikonok megjelenítése
 	Stop tracking	Követés leállítása
 	Track selected mask backward	Kijelölt maszk követése visszafelé
@@ -2122,6 +2124,10 @@
 	5.1: the IAB rendered (not ST 429-19)	5.1: a renderelt IAB (nem ST 429-19)
 	5.1: the timeline mix (not ST 429-19)	5.1: az idővonal keverése (nem ST 429-19)
 	Main sound channels 1-6	Fő hang 1–6. csatorna
+	DCP language	DCP nyelve
+	None (RFC 5646 tag, e.g. en-US)	Nincs (RFC 5646 címke, pl. hu-HU)
+	ISDCF name	ISDCF-név
+	Name the DCP folder by the Digital Cinema Naming Convention	A DCP-mappa elnevezése a Digital Cinema Naming Convention szerint
 	Immersive audio	Immerzív hang
 	IAB source	IAB-forrás
 	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Az 5.1-es keverésből 7.1 DS ágy lesz (IAB Profile 1); a fő hangsáv 14. csatornája viszi az FSK szinkronjelet.
@@ -2522,3 +2528,6 @@ export.summary	Low	alacsony
 	transitions	átmenetek
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} képkocka másolva, {reencoded} vágásnál újrakódolva, {rendered} renderelve
 	{frames} frames are re-encoded or rendered. Continue?	{frames} képkocka újrakódolódik vagy renderelődik. Folytatod?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Hang másolva: {tracks}
+	Audio track {track} is not copied: {why}	A(z) {track}. hangsáv nem kerül át: {why}

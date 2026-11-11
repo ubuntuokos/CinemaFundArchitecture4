@@ -202,6 +202,9 @@ def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: P
         p = after["playback"]
         assert p["playing"] is False and p["shown"] >= during["shown"]
         assert p["dropRate"] == pytest.approx(p["dropped"] / (p["shown"] + p["dropped"]))
+        # drawing the picture while it played (qt-parity 5.5): raster on Qt's offscreen platform
+        assert p["present"]["path"] == "raster" and p["present"]["frames"] >= 1, p["present"]
+        assert 0 <= p["present"]["meanMs"] <= p["present"]["maxMs"], p["present"]
         assert "frames" in after or len(after) > 1, "the engine's own stats are kept"
         # a loop starting its range again is the same playback: the counts go on
         shown = mon.meter.counts()[0]
