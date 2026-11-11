@@ -28,7 +28,7 @@ use serde::{Deserialize, Serialize};
 use crate::smart_cut::{SmartCutError, io};
 
 /// 90 kHz: the clock of every MPEG-2 Systems timestamp.
-const CLOCK: i64 = 90_000;
+pub(crate) const CLOCK: i64 = 90_000;
 
 /// An opened MPEG program or transport stream and the video stream a plan cuts.
 pub struct MpegCopySource<'a, S: ByteSource + ?Sized> {
@@ -100,7 +100,7 @@ pub struct MpegCopyReport {
 }
 
 /// The output container of `format`.
-fn container_of_format(format: MuxFormat) -> Container {
+pub(crate) fn container_of_format(format: MuxFormat) -> Container {
     match format {
         MuxFormat::Ps => Container::MpegPs,
         MuxFormat::Ts | MuxFormat::M2ts => Container::MpegTs,
@@ -109,10 +109,10 @@ fn container_of_format(format: MuxFormat) -> Container {
 
 /// An audio stream to copy: its source stream, how the muxer writes it and its units in the cut,
 /// with each unit's time (90 kHz, source clock).
-struct AudioCopy {
-    stream: usize,
-    codec: MuxCodec,
-    units: Vec<(usize, i64)>,
+pub(crate) struct AudioCopy {
+    pub(crate) stream: usize,
+    pub(crate) codec: MuxCodec,
+    pub(crate) units: Vec<(usize, i64)>,
 }
 
 /// The source video units a lossless plan copies (decode order), checked against the index.
@@ -208,7 +208,7 @@ fn mux_codec(stream: &cfa4_mpegts::Stream, format: MuxFormat) -> Result<MuxCodec
 }
 
 /// The audio streams of the cut `[start, end)` (90 kHz, source clock).
-fn audio_copies<S: ByteSource + ?Sized>(
+pub(crate) fn audio_copies<S: ByteSource + ?Sized>(
     source: &MpegCopySource<'_, S>,
     format: MuxFormat,
     start: i64,
@@ -334,6 +334,20 @@ pub fn execute_mpeg_copy<W: Write, S: ByteSource + ?Sized>(
         report.samples += 1;
         report.payload_bytes = report.payload_bytes.saturating_add(data.len() as u64);
     }
+    report.audio = write_audio(&mut m, source, &audio, base)?;
+    let out = m.finish().map_err(mux_err)?;
+    Ok((out, report))
+}
+
+/// Write the audio units of `audio` as muxer streams 1, 2, … (stream 0 is the video), on the
+/// output clock that starts at `base` (90 kHz, source clock).
+pub(crate) fn write_audio<W: Write, S: ByteSource + ?Sized>(
+    m: &mut Muxer<W>,
+    source: &MpegCopySource<'_, S>,
+    audio: &[AudioCopy],
+    base: i64,
+) -> Result<Vec<MpegAudioReport>, SmartCutError> {
+    let mut reports = Vec::with_capacity(audio.len());
     for (k, a) in audio.iter().enumerate() {
         let s = source.file.streams.get(a.stream).ok_or(SmartCutError::NoTrack { track: a.stream })?;
         let mut bytes = 0u64;
@@ -342,7 +356,7 @@ pub fn execute_mpeg_copy<W: Write, S: ByteSource + ?Sized>(
             bytes = bytes.saturating_add(data.len() as u64);
             m.write(k + 1, &data, t - base, None, true).map_err(|e| SmartCutError::Io { detail: format!("audio stream {}: {e}", a.stream) })?;
         }
-        report.audio.push(MpegAudioReport {
+        reports.push(MpegAudioReport {
             stream: a.stream,
             codec: s.codec.name(),
             units: a.units.len() as u64,
@@ -350,13 +364,12 @@ pub fn execute_mpeg_copy<W: Write, S: ByteSource + ?Sized>(
             offset: a.units.first().map_or(0, |u| u.1 - base),
         });
     }
-    let out = m.finish().map_err(mux_err)?;
-    Ok((out, report))
+    Ok(reports)
 }
 
 /// The id the muxer gives output stream `k` of `codecs` (transport: PID 0x100 + k; program:
 /// stream id and sub-stream id by kind).
-fn output_id(format: MuxFormat, codecs: &[MuxCodec], k: usize) -> Option<StreamId> {
+pub(crate) fn output_id(format: MuxFormat, codecs: &[MuxCodec], k: usize) -> Option<StreamId> {
     if format != MuxFormat::Ps {
         return Some(StreamId::Pid(0x100 + k as u16));
     }
@@ -368,6 +381,47 @@ fn output_id(format: MuxFormat, codecs: &[MuxCodec], k: usize) -> Option<StreamI
         MuxCodec::Ac3 => StreamId::Ps { stream_id: 0xBD, sub_id: Some(0x80 + nth) },
         MuxCodec::LpcmDvd { .. } => StreamId::Ps { stream_id: 0xBD, sub_id: Some(0xA0 + nth) },
     })
+}
+
+/// Check the audio streams of `file` (an output of [`write_audio`]): the same frames, byte for
+/// byte, with the first one at its source offset against the first picture. `find` maps muxer
+/// stream `k` to its stream in `file`.
+pub(crate) fn verify_audio<S: ByteSource + ?Sized, O: ByteSource + ?Sized>(
+    file: &File,
+    output: &O,
+    source: &MpegCopySource<'_, S>,
+    audio: &[AudioCopy],
+    base: i64,
+    find: &dyn Fn(usize) -> Result<usize, SmartCutError>,
+) -> Result<Vec<MpegAudioReport>, SmartCutError> {
+    let fail = |detail: String| SmartCutError::Verification { detail };
+    let delay = Muxer::<Vec<u8>>::DELAY;
+    let mut reports = Vec::with_capacity(audio.len());
+    for (k, a) in audio.iter().enumerate() {
+        let oa = find(k + 1)?;
+        let out = &file.streams[oa];
+        let written: Vec<u8> = (0..out.units.len()).map(|i| file.read_unit(output, oa, i)).collect::<Result<Vec<_>, _>>().map_err(io)?.concat();
+        let mut copied = Vec::new();
+        for &(i, _) in &a.units {
+            copied.extend(source.file.read_unit(source.bytes, a.stream, i).map_err(io)?);
+        }
+        if written != copied {
+            return Err(fail(format!("audio stream {}: the written audio differs from the source", a.stream)));
+        }
+        // the first frame's time against the first picture, as in the source
+        let offset = a.units.first().map_or(0, |u| u.1 - base);
+        if out.units.first().and_then(|u| u.pts) != Some(offset + delay) {
+            return Err(fail(format!("audio stream {} is out of sync with the video", a.stream)));
+        }
+        reports.push(MpegAudioReport {
+            stream: a.stream,
+            codec: source.file.streams[a.stream].codec.name(),
+            units: a.units.len() as u64,
+            payload_bytes: written.len() as u64,
+            offset,
+        });
+    }
+    Ok(reports)
 }
 
 /// Read back a stream written by [`execute_mpeg_copy`] and check that it holds exactly the copied
@@ -417,29 +471,6 @@ pub fn verify_mpeg_copy<S: ByteSource + ?Sized, O: ByteSource + ?Sized>(
         report.samples += 1;
         report.payload_bytes = report.payload_bytes.saturating_add(got.len() as u64);
     }
-    for (k, a) in audio.iter().enumerate() {
-        let oa = find(k + 1)?;
-        let out = &file.streams[oa];
-        let written: Vec<u8> = (0..out.units.len()).map(|i| file.read_unit(output, oa, i)).collect::<Result<Vec<_>, _>>().map_err(io)?.concat();
-        let mut copied = Vec::new();
-        for &(i, _) in &a.units {
-            copied.extend(source.file.read_unit(source.bytes, a.stream, i).map_err(io)?);
-        }
-        if written != copied {
-            return Err(fail(format!("audio stream {}: the written audio differs from the source", a.stream)));
-        }
-        // the first frame's time against the first picture, as in the source
-        let offset = a.units.first().map_or(0, |u| u.1 - base);
-        if out.units.first().and_then(|u| u.pts) != Some(offset + delay) {
-            return Err(fail(format!("audio stream {} is out of sync with the video", a.stream)));
-        }
-        report.audio.push(MpegAudioReport {
-            stream: a.stream,
-            codec: source.file.streams[a.stream].codec.name(),
-            units: a.units.len() as u64,
-            payload_bytes: written.len() as u64,
-            offset,
-        });
-    }
+    report.audio = verify_audio(&file, output, source, &audio, base, &find)?;
     Ok(report)
 }
