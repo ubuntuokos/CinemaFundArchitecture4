@@ -47,6 +47,14 @@ def plan_text(result: dict[str, Any]) -> tuple[str, str | None]:
     summary = result.get("summary") or {}
     copied, reencoded = int(summary.get("copiedFrames") or 0), int(summary.get("reencodedFrames") or 0)
     text = fmt("{copied} frames copied, {reencoded} frames re-encoded", copied=copied, reencoded=reencoded)
+    # the audio tracks copied with the video, and those that are not (WP-09b)
+    audio = result.get("audio") or {}
+    tracks = [t for t in audio.get("tracks") or [] if isinstance(t, dict)]
+    if tracks:
+        text += "\n" + fmt("Audio copied: {tracks}", tracks=", ".join(str(t.get("codec") or "?").upper() for t in tracks))
+    for d in audio.get("dropped") or []:
+        if isinstance(d, dict):
+            text += "\n" + fmt("Audio track {track} is not copied: {why}", track=d.get("trackId", "?"), why=str(d.get("reason") or ""))
     plan = result.get("plan") or {}
     blockers = [str(b) for b in plan.get("blockers") or []]
     boundary = result.get("boundaryReencode") or {}

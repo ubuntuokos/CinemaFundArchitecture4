@@ -786,6 +786,7 @@ fn offline_file(s: &mut Session, p: &Value) -> Result<Value> {
                 channels: u64_p(p, "channels").unwrap_or(2).max(1) as u32,
                 codec: String::new(),
                 bits_per_sample: None,
+                speakers: Vec::new(),
             })
             .into_iter()
             .collect(),

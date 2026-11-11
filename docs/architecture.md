@@ -553,6 +553,17 @@ with different vertex counts hold). Feather, Opacity and Expansion are ordinary 
   transform moves the path, written as Mask Path keyframes while the background job runs (one undo
   step per run; `jobs.cancel` stops and keeps what was tracked). Frames are tracked at ≤ 960 px
   wide. On synthetic footage with known similarity motion the path stays within 0.3 px over 20 frames.
+- **Correlation tracker** (`render::cftrack`, `masks.track` with `"tracker": "correlation"`, stored
+  per mask as `Mask::tracker`, the wrench menu's Correlation tracker): an optional CFA4 mode for
+  objects the point tracker loses (little interior detail, deforming). A kernelized correlation
+  filter (KCF, Gaussian kernel) on HOG-like features (4 px cells, 9 orientations + intensity), a
+  Hann window multiplied by a spatial-reliability map from the mask's shape (after CSRT), a
+  DSST-style 1-D scale filter (16 scales, 2 % apart) for Position, Scale & Rotation, and a
+  peak-to-sidelobe confidence: below 6 the object counts as lost (occluded / gone) and the job
+  stops with what it tracked, below 10 the model is not updated. Position and scale only, no
+  rotation; the mask should outline the whole object. Own implementation from the papers (no
+  OpenCV code). On the synthetic disc (moving, turning 1.5°/frame, growing 1 %/frame) the centre
+  stays within 1.6 px over 16 frames and the scale within 5 %.
 
 ### 5.4 Colour management
 

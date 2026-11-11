@@ -391,3 +391,13 @@
 	transitions	전환
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} 프레임 복사, {reencoded} 컷에서 재인코딩, {rendered} 렌더링
 	{frames} frames are re-encoded or rendered. Continue?	{frames} 프레임을 재인코딩하거나 렌더링합니다. 계속할까요?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	복사된 오디오: {tracks}
+	Audio track {track} is not copied: {why}	오디오 트랙 {track}은(는) 복사되지 않습니다: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	포인트 트래커
+	Correlation tracker	상관 트래커
+	DCP language	DCP 언어
+	None (RFC 5646 tag, e.g. en-US)	없음(RFC 5646 태그, 예: ko-KR)
+	ISDCF name	ISDCF 이름
+	Name the DCP folder by the Digital Cinema Naming Convention	Digital Cinema Naming Convention에 따라 DCP 폴더 이름 지정
