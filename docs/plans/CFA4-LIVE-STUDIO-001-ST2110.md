@@ -142,7 +142,7 @@ kapukkal. A fő terv fázisaihoz kötve (VI. fejezet a fő tervben):
 | **T3** – Képbemenet (-20, -21 vevő) | A típusú vevő (GPM és BPM, 4:2:2 10 bit, 1080p50/59,94, 720p, 2160p ha a kártya bírja; V. fejezet), 2022-7 redundáns pár, ST 2110 forrás a jelenetben | T1, S2 (rögzítő bemenetek) | egy 1080p50 4:2:2 10 bites folyam (a 2,5 GbE-n ez fér el, V. fejezet) elejtett képkocka nélkül egy órán át a referenciagépen; csomagvesztésnél kerethiba nélkül (eldobott képkocka, számlálva) |
 | **T4** – Programkimenet (-20, -21 küldő) | W típusú küldő `SO_TXTIME` ütemezéssel, `TP=2110TPW`, saját -21 elemző, 2022-7 kimenet, SDP a menedzsment-API-n | T3, S4 (stúdió mód) | a saját elemző és egy külső vevő szerint W-megfelelő egy órán át; a program képe bitazonos a stúdióéval |
 | **T5** – Adatfolyamok (-40, -43, -41, -31) | ANC: CEA-608/708 (ST 334) és időkód a `cfa4-captions`-ből, CTM, később LLTM; TTML/IMSC1.2 (-43) a `cfa4-captions` TTML-íróból; -41 keretrendszer (a regisztrált típusok közül, amire igény van); -31 AM824 átlátszó továbbítás | T4 | az élő feliratok egy vevőben a képpel szinkronban; az AM824 tartalom bitazonosan átmegy |
-| **T6** – Tömörített kép (-22) | a D10 szerinti kodek(ek), CBR, 90 kHz, `b=AS`, N vagy W forgalom | T4, D10 | egy -22 folyam be és ki a referenciagépen, bitsebesség és késleltetés mérve |
+| **T6** – Tömörített kép (-22) | VC-2 (D10), CBR, 90 kHz, `b=AS`, N vagy W forgalom | T4, D10 | egy -22 folyam be és ki a referenciagépen, bitsebesség és késleltetés mérve |
 | **T7** – Kezelés és felület | NMOS IS-04/IS-05 (D11); Élő munkaterület: folyamok, SDP, PTP-állapot, hibaszámlálók (Qt6, a D7 szerint a Qt6 befejezése után) | T4, D7 | egy NMOS-vezérlő felderíti és bekapcsolja a CFA4 küldőit és vevőit |
 
 **Ütemezés:** a T0 és a T1 nem érinti a Qt6 fájljait és a libobs-ot, ezért az S0-hoz hasonlóan
@@ -177,7 +177,7 @@ előfeltételként megnevezett fázisai után.
 | D4+ | ST 2110 mint nyílt protokoll | **Eldöntve (2026-11-11):** az ST 2110 a D4 nyílt protokolljai közé tartozik, a terv része ezzel a kiegészítéssel |
 | D8 | Megvalósítás | **Javaslat:** saját Rust crate (`cfa4-st2110`) a nyilvános SMPTE/IETF-szövegekből; a GStreamer és más megvalósítás csak tesztbeli összevetés. Indok: a crate független a libobs-tól, így az S12+ Rust-csere után is marad |
 | D9 | PTP | **Javaslat:** a rendszer `linuxptp`-je (`ptp4l` ST 2059-2 profillal, `phc2sys`), a CFA4 csak olvas; saját PTP-szolga nincs. Más lehetőség: saját Rust PTP-szolga (sok munka, a hardveres időbélyeg kezelése miatt kockázatos) |
-| D10 | Tömörített kép (-22) kodekje | **Nyitott.** A VC-2 (SMPTE ST 2042) jogdíjmentes; a JPEG XS (RFC 9134) a legelterjedtebb a -22-ben, de szabadalmi licenc alá esik, ezért – mint a H.264/HEVC – legfeljebb a `cfa4-restricted-extras` csomagba kerülhet. **Javaslat:** először VC-2, a JPEG XS a szabadalmi helyzet tisztázása után, a tulajdonos döntésével |
+| D10 | Tömörített kép (-22) kodekje | **Eldöntve (2026-11-11): csak VC-2** (SMPTE ST 2042, jogdíjmentes; RTP: RFC 8450). **JPEG XS-t a CFA4 semmilyen csomagban nem szállít**, a `cfa4-restricted-extras`-ban sem: a JPEG XS szabadalmi poolja (Vectis IP; Fraunhofer IIS, intoPIX) a kodeket tartalmazó termék terjesztőjét terheli, és az extra csomagot is a CFA4 terjeszti. A VC-2 szabadalmi átnézése a kiadás előtt a `patent-review.md`-be kerül |
 | D11 | Menedzsment | **Javaslat:** először a CFA4 parancsai (SDP be/ki a vezérlőcsatornán és az MCP-n), a T7-ben az AMWA NMOS IS-04/IS-05 (nyílt specifikáció) |
 | D12 | Ütemezés | **Javaslat:** a T0–T1 a D7-től eltérve, Qt6 nélkül indulhat az S0 beolvasztása után; a T2-től a fő terv fázisai szerint |
 
@@ -190,7 +190,7 @@ előfeltételként megnevezett fázisai után.
 - **Két óra:** a libobs a saját órájához igazít; a PTP-hez kötött be- és kimenet közt a libobs
   képkocka-ütemét a PTP-hez kell zárni, különben a küldő `mediaclk:sender` módban marad. Ezt a T1–T4
   méri; ha a libobs nem zárható, ez az S12+ csere (saját kompozitálás) egyik oka.
-- **Szabadalom:** a -22 kodekjei (D10).
+- **Szabadalom:** a -22-ben elterjedt JPEG XS nincs a CFA4-ben (D10), ezért JPEG XS-t küldő vagy váró eszközzel a CFA4 tömörítve nem, csak tömörítetlenül (-20) kapcsolható össze.
 - **Szerzői jog:** a szabványszövegek nem kerülnek a tárolóba, a tesztekbe sem kerül belőlük szöveg;
   a példák (SDP) saját, a szabvány szerint felépített adatok.
 
