@@ -82,6 +82,8 @@ pub enum Language {
     SrLatn,
     /// Bulgarian, persisted as `bg`.
     Bg,
+    /// Georgian, persisted as `ka`; Georgian script needs an installed font ([`georgian_font_available`]).
+    Ka,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -113,11 +115,12 @@ static GREEK: OnceLock<Catalog> = OnceLock::new();
 static SWEDISH: OnceLock<Catalog> = OnceLock::new();
 static SERBIAN_LATIN: OnceLock<Catalog> = OnceLock::new();
 static BULGARIAN: OnceLock<Catalog> = OnceLock::new();
+static GEORGIAN: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 25] = [
+    pub const ALL: [Self; 26] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -141,6 +144,7 @@ impl Language {
         Self::Sv,
         Self::SrLatn,
         Self::Bg,
+        Self::Ka,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -170,6 +174,7 @@ impl Language {
             Self::Sv => "Svenska",
             Self::SrLatn => "Srpski (latinica)",
             Self::Bg => "Български",
+            Self::Ka => "ქართული",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -200,6 +205,7 @@ impl Language {
             "sv" => Some(Self::Sv),
             "sr-latn" => Some(Self::SrLatn),
             "bg" => Some(Self::Bg),
+            "ka" => Some(Self::Ka),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -216,7 +222,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 22] = [
+        const PRIMARY: [(&str, Language); 23] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -239,6 +245,7 @@ impl Language {
             ("sv", Language::Sv),
             ("sr", Language::SrLatn),
             ("bg", Language::Bg),
+            ("ka", Language::Ka),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -302,6 +309,7 @@ impl Language {
             Self::Sv => "sv",
             Self::SrLatn => "sr-latn",
             Self::Bg => "bg",
+            Self::Ka => "ka",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -333,6 +341,7 @@ impl Language {
             Self::Sv => Some(SWEDISH.get_or_init(|| Catalog::parse(catalog_file!("sv")))),
             Self::SrLatn => Some(SERBIAN_LATIN.get_or_init(|| Catalog::parse(catalog_file!("sr-latn")))),
             Self::Bg => Some(BULGARIAN.get_or_init(|| Catalog::parse(catalog_file!("bg")))),
+            Self::Ka => Some(GEORGIAN.get_or_init(|| Catalog::parse(catalog_file!("ka")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -496,6 +505,13 @@ pub fn korean_font_available() -> bool {
     crate::cjk::korean_available()
 }
 
+/// Whether the interface can show Georgian: `theme::install` adds an extra-fonts `Geor` face or an
+/// installed system face covering Mkhedruli (Noto Sans Georgian, DejaVu Sans, FreeSans…, see
+/// `cjk.rs`) when there is one; none is bundled. False on systems without one.
+pub fn georgian_font_available() -> bool {
+    crate::cjk::georgian_available()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -525,6 +541,7 @@ mod tests {
             ("sv", catalog_file!("sv")),
             ("sr-latn", catalog_file!("sr-latn")),
             ("bg", catalog_file!("bg")),
+            ("ka", catalog_file!("ka")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1710,6 +1727,13 @@ mod tests {
             "БГДЖЗЙЛПФЦЧШЩЪЬЮЯбгджзйлпфцчшщъьюя„“",
             &[("File", "Файл"), ("Sequence", "Последователност"), ("Playhead", "Глава за възпроизвеждане"), ("Cross Dissolve", "Кръстосано преливане")],
         ),
+        (
+            Language::Ka,
+            "app.language.georgian",
+            catalog_file!("ka"),
+            "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ„“",
+            &[("File", "ფაილი"), ("Sequence", "მიმდევრობა"), ("Playhead", "დაკვრის მაჩვენებელი"), ("Cross Dissolve", "ჯვარედინი გადადნობა")],
+        ),
     ];
 
     #[test]
@@ -1734,8 +1758,9 @@ mod tests {
 
     #[test]
     fn complete_languages_render_with_bundled_fonts() {
-        // Traditional Chinese draws with the Chinese face theme::install adds (cjk.rs), like Simplified
-        for &(language, _, text, alphabet, _) in COMPLETE.iter().filter(|c| c.0 != Language::ZhHant) {
+        // Traditional Chinese draws with the Chinese face theme::install adds (cjk.rs), like Simplified;
+        // Georgian with an extra-fonts or system Mkhedruli face (complete_georgian_renders_with_its_font)
+        for &(language, _, text, alphabet, _) in COMPLETE.iter().filter(|c| !matches!(c.0, Language::ZhHant | Language::Ka)) {
             let (entries, _) = catalog::parse_entries(text);
             // the alphabet, the name, and every letter, quotation mark, dash and ellipsis the entries
             // use (symbols such as ✔ come from the English sources)
@@ -1745,11 +1770,24 @@ mod tests {
     }
 
     #[test]
+    fn complete_georgian_renders_with_its_font() {
+        // Georgian has no bundled face: with one in extra-fonts or installed on the system,
+        // theme::install adds it after the UI fonts (cjk.rs) and every letter the catalog uses draws
+        let Some(&(language, _, text, alphabet, _)) = COMPLETE.iter().find(|c| c.0 == Language::Ka) else { panic!("Georgian is complete") };
+        if !georgian_font_available() {
+            return;
+        }
+        let (entries, _) = catalog::parse_entries(text);
+        let letters = entries.iter().flat_map(|(_, _, tr)| tr.chars()).filter(|ch| ch.is_alphabetic() || "„“–—…".contains(*ch));
+        assert_bundled_fonts_cover(alphabet.chars().chain(language.name().chars()).chain(letters));
+    }
+
+    #[test]
     fn complete_languages_switch_from_the_language_menu() {
         let ctx = egui::Context::default();
         let mut app = crate::Cfa4App::new(cfa4_engine::Session::default());
         for &(language, command, _, _, _) in COMPLETE {
-            if language == Language::ZhHant && !chinese_font_available() {
+            if (language == Language::ZhHant && !chinese_font_available()) || (language == Language::Ka && !georgian_font_available()) {
                 // without a Chinese face it is refused and the interface keeps its language
                 let before = app.ui.language;
                 assert!(crate::menus::invoke(&mut app, &ctx, command, serde_json::json!({})).is_err());

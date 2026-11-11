@@ -4022,6 +4022,7 @@ export.summary	Low	alacsony
 	The language changed but could not be saved: {e}	A nyelv megváltozott, de nem sikerült menteni: {e}
 	no Chinese font is installed on this system; the interface stays in English	ezen a rendszeren nincs kínai betűkészlet telepítve; a felület angol marad
 	no Korean font is installed on this system; the interface stays in English	ezen a rendszeren nincs koreai betűkészlet telepítve; a felület angol marad
+	no Georgian font is installed on this system; the interface stays in English	ezen a rendszeren nincs grúz betűkészlet telepítve; a felület angol marad
 	no Japanese font is installed on this system; the interface stays in English	ezen a rendszeren nincs japán betűkészlet telepítve; a felület angol marad
 	Main (8-bit)	Main (8 bites)
 	GoPro CineForm	GoPro CineForm
