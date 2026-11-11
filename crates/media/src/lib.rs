@@ -142,7 +142,7 @@ pub struct VideoStreamInfo {
 /// Most audio streams a source reports (the count comes from the file: never trusted).
 pub const MAX_AUDIO_STREAMS: usize = 64;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct AudioStreamInfo {
     pub sample_rate: u32,
     pub channels: u32,

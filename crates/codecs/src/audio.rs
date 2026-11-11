@@ -971,7 +971,13 @@ impl AudioFileSource {
                 kind: MediaKind::AudioOnly,
                 duration: Tick::from_units(frames as i64, rate as i64),
                 video: None,
-                audio_streams: vec![AudioStreamInfo { sample_rate: rate, channels: samples.len() as u32, codec: codec.into(), bits_per_sample: None }],
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: rate,
+                    channels: samples.len() as u32,
+                    codec: codec.into(),
+                    // `..Default` keeps this literal valid whatever fields later PRs add (#323 adds `speakers`).
+                    ..AudioStreamInfo::default()
+                }],
                 container: "DTS".into(),
                 start_timecode: None,
                 file_size: Some(bytes.len() as u64),
