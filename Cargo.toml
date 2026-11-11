@@ -45,6 +45,7 @@ cfa4-hevc = { path = "crates/hevc" }
 cfa4-heif = { path = "crates/heif" }
 cfa4-jxl = { path = "crates/jxl" }
 cfa4-vp8 = { path = "crates/vp8" }
+cfa4-adpcm = { path = "crates/adpcm" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
@@ -192,6 +193,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-vp8]
+opt-level = 3
+
+[profile.dev.package.cfa4-adpcm]
 opt-level = 3
 
 [profile.dev.package.cfa4-vp9]
