@@ -1,11 +1,16 @@
 //! Native Linux AMD64 libheif integration: HEIC/HEIF import, decode and file recognition.
-//! Run with libheif-examples, libheif-plugin-libde265 and libheif-plugin-x265 installed.
+//! Run with libheif-examples, libheif-plugin-libde265 and libheif-plugin-x265 installed; without
+//! `heif-enc` / `heif-dec` on `PATH` the tests are skipped (a failure with `CFA4_REQUIRE_ORACLES=1`).
 
 #![cfg(all(target_os = "linux", target_arch = "x86_64"))]
 
 use std::sync::Arc;
 
 use cfa4_media::{MediaKind, still::heif};
+
+fn libheif_tools(context: &str) -> bool {
+    cfa4_testkit::oracle::on_path_or_skip(context, &["heif-enc", "heif-dec"], "Ubuntu packages libheif-examples, libheif-plugin-x265, libheif-plugin-libde265")
+}
 
 fn make_png() -> Vec<u8> {
     let (w, h) = (64u32, 64u32);
@@ -22,6 +27,9 @@ fn make_png() -> Vec<u8> {
 
 #[test]
 fn heif_and_heic_import_round_trip_through_local_libheif() {
+    if !libheif_tools("heif_and_heic_import_round_trip_through_local_libheif") {
+        return;
+    }
     // The HEIF handler must run before generic ISO-BMFF video openers.
     fn rejecting_mp4_opener(_name: &str, _bytes: Arc<[u8]>) -> Option<cfa4_media::Result<cfa4_media::SharedSource>> {
         Some(Err(cfa4_media::MediaError::Unsupported("wrong MP4 opener".into())))
@@ -43,6 +51,9 @@ fn heif_and_heic_import_round_trip_through_local_libheif() {
 
 #[test]
 fn truncated_and_false_heif_files_fail_cleanly() {
+    if !libheif_tools("truncated_and_false_heif_files_fail_cleanly") {
+        return;
+    }
     let valid = heif::encode_png(&make_png()).expect("libheif encoder");
     let broken = &valid[..valid.len().min(64)];
     assert!(heif::decode("broken.heic", broken).is_err());

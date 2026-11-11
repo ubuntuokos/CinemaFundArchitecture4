@@ -4142,3 +4142,106 @@ export.summary	Low	düşük
 	Credits Page Picture	Jenerik sayfası resmi
 	Preview Credits	Jeneriği önizle
 	Credits Styles	Jenerik stilleri
+# Qt GUI: Tools menu (#868)
+	Video Tools	Video Araçları
+	Audio Tools	Ses Araçları
+	Publication Tools	Yayınlama Araçları
+	Smart Export…	Akıllı Dışa Aktarma…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Kuzeybatıdan
+	From North-East	Kuzeydoğudan
+	From South-East	Güneydoğudan
+	From South-West	Güneybatıdan
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	İyileştir
+	Skin Smoothing	Cilt Yumuşatma
+	Keep Texture	Dokuyu Koru
+	Skin Tone	Cilt Tonu
+	Smooth Entire Image	Tüm Görüntüyü Yumuşat
+	Low Light	Düşük Işık
+	Max Brightening	En Fazla Aydınlatma
+	Show Illumination	Aydınlatmayı Göster
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Yumuşatma Hazır Ayarları
+	Sine	Sinüs
+	Exponential	Üstel
+	Circular	Dairesel
+	Elastic	Elastik
+	Film Gate	Film Kapısı
+	Gate Weave	Kapı Salınımı
+	Weave Rotation	Salınım Dönüşü
+	Particles	Parçacıklar
+	Emitter Position	Yayıcı Konumu
+	Birth Rate	Doğum Hızı
+	Lifetime (seconds)	Ömür (saniye)
+	Velocity Random	Hız Rastgeleliği
+	Gravity	Yerçekimi
+	Particle Size	Parçacık Boyutu
+	Keyhole	Anahtar Deliği
+	Burn Away	Yanarak Kaybol
+	Burn Size	Yanma Boyutu
+	Ember Width	Kor Genişliği
+	Ember Color	Kor Rengi
+	Check Text Legibility	Metin Okunabilirliğini Denetle
+	Clear Legibility Markers	Okunabilirlik İşaretçilerini Temizle
+	Text legibility: no problems found	Metin okunabilirliği: sorun bulunamadı
+	Text legibility: {count} problems marked on the timeline (orange markers)	Metin okunabilirliği: zaman çizelgesinde {count} sorun işaretlendi (turuncu işaretçiler)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bit Azaltma
+	Bits per Channel	Kanal Başına Bit
+	Ordered Dither	Düzenli Titreklik
+	Dither Cell Size	Titreklik Hücre Boyutu
+	Block Glitch	Blok Bozulması
+	Blocks Moved	Taşınan Bloklar
+	Max Distance	En Fazla Mesafe
+	Snap to Grid	Izgaraya Yasla
+	Swap Blocks	Blokları Değiştir
+	Changes per Second	Saniyedeki Değişiklik
+	Databend	Veri Bozma
+	Breaks	Kırılmalar
+	Shift	Kaydırma
+	Color Damage	Renk Hasarı
+	VHS	VHS
+	Color Bleed	Renk Taşması
+	Wobble	Yalpalama
+	Snow	Kar
+	Tracking Bar	İzleme Çubuğu
+	Head Switching	Kafa Değişimi
+	Scan Line Jitter	Tarama Çizgisi Titremesi
+	Jitter	Titreme
+	Interval	Aralık
+	Infinite	Sonsuz
+	Periodic	Dönemsel
+	Tile Jitter	Döşeme Titremesi
+	Tiles	Döşemeler
+	Band Direction	Bant Yönü
+	Jitter Direction	Titreme Yönü
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Yarım Ton
+	Dither	Titreklik
+	Pattern	Desen
+	Cell Size	Hücre Boyutu
+	Cyan Angle	Camgöbeği Açısı
+	Magenta Angle	Macenta Açısı
+	Yellow Angle	Sarı Açısı
+	Black Angle	Siyah Açısı
+	Monochrome Angle	Tek Renk Açısı
+	Sharpness	Keskinlik
+	Ink Color	Mürekkep Rengi
+	Paper Color	Kâğıt Rengi
+	Color (CMYK)	Renkli (CMYK)
+	Dot	Nokta
+	Line	Çizgi
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Piksel Boyutu
+	Palette	Palet
+	Input Colors	Giriş Renkleri
+	Green Phosphor	Yeşil Fosfor
+	Amber Monitor	Kehribar Monitör
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

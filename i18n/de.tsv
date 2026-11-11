@@ -4148,3 +4148,106 @@
 	Credits Page Picture	Bild der Abspannseite
 	Preview Credits	Abspann-Vorschau
 	Credits Styles	Abspannstile
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videowerkzeuge
+	Audio Tools	Audiowerkzeuge
+	Publication Tools	Veröffentlichungswerkzeuge
+	Smart Export…	Smart Export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Von Nordwesten
+	From North-East	Von Nordosten
+	From South-East	Von Südosten
+	From South-West	Von Südwesten
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Verbessern
+	Skin Smoothing	Hautglättung
+	Keep Texture	Textur erhalten
+	Skin Tone	Hautton
+	Smooth Entire Image	Ganzes Bild glätten
+	Low Light	Wenig Licht
+	Max Brightening	Max. Aufhellung
+	Show Illumination	Beleuchtung anzeigen
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Easing-Vorgaben
+	Sine	Sinus
+	Exponential	Exponentiell
+	Circular	Kreisförmig
+	Elastic	Elastisch
+	Film Gate	Filmfenster
+	Gate Weave	Bildstandsschwankung
+	Weave Rotation	Schwankungsdrehung
+	Particles	Partikel
+	Emitter Position	Emitterposition
+	Birth Rate	Geburtenrate
+	Lifetime (seconds)	Lebensdauer (Sekunden)
+	Velocity Random	Zufällige Geschwindigkeit
+	Gravity	Schwerkraft
+	Particle Size	Partikelgröße
+	Keyhole	Schlüsselloch
+	Burn Away	Wegbrennen
+	Burn Size	Brandgröße
+	Ember Width	Glutbreite
+	Ember Color	Glutfarbe
+	Check Text Legibility	Textlesbarkeit prüfen
+	Clear Legibility Markers	Lesbarkeitsmarken löschen
+	Text legibility: no problems found	Textlesbarkeit: keine Probleme gefunden
+	Text legibility: {count} problems marked on the timeline (orange markers)	Textlesbarkeit: {count} Probleme in der Zeitleiste markiert (orange Marken)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bit-Crush
+	Bits per Channel	Bits pro Kanal
+	Ordered Dither	Geordnetes Dithering
+	Dither Cell Size	Dither-Zellengröße
+	Block Glitch	Block-Glitch
+	Blocks Moved	Verschobene Blöcke
+	Max Distance	Maximale Entfernung
+	Snap to Grid	Am Raster ausrichten
+	Swap Blocks	Blöcke tauschen
+	Changes per Second	Änderungen pro Sekunde
+	Databend	Databending
+	Breaks	Bruchstellen
+	Shift	Verschiebung
+	Color Damage	Farbschaden
+	VHS	VHS
+	Color Bleed	Farbbluten
+	Wobble	Wackeln
+	Snow	Schnee
+	Tracking Bar	Tracking-Streifen
+	Head Switching	Kopfumschaltung
+	Scan Line Jitter	Zeilen-Jitter
+	Jitter	Jitter
+	Interval	Intervall
+	Infinite	Unendlich
+	Periodic	Periodisch
+	Tile Jitter	Kachel-Jitter
+	Tiles	Kacheln
+	Band Direction	Streifenrichtung
+	Jitter Direction	Jitter-Richtung
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Rasterdruck
+	Dither	Dithering
+	Pattern	Muster
+	Cell Size	Zellengröße
+	Cyan Angle	Cyan-Winkel
+	Magenta Angle	Magenta-Winkel
+	Yellow Angle	Gelb-Winkel
+	Black Angle	Schwarz-Winkel
+	Monochrome Angle	Monochrom-Winkel
+	Sharpness	Schärfe
+	Ink Color	Tintenfarbe
+	Paper Color	Papierfarbe
+	Color (CMYK)	Farbe (CMYK)
+	Dot	Punkt
+	Line	Linie
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pixelgröße
+	Palette	Palette
+	Input Colors	Eingabefarben
+	Green Phosphor	Grüner Phosphor
+	Amber Monitor	Bernstein-Monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

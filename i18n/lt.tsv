@@ -4144,3 +4144,106 @@ export.summary	Low	žema
 	Credits Page Picture	Titrų puslapio paveikslėlis
 	Preview Credits	Titrų peržiūra
 	Credits Styles	Titrų stiliai
+# Qt GUI: Tools menu (#868)
+	Video Tools	Vaizdo įrankiai
+	Audio Tools	Garso įrankiai
+	Publication Tools	Publikavimo įrankiai
+	Smart Export…	Išmanusis eksportas…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Iš šiaurės vakarų
+	From North-East	Iš šiaurės rytų
+	From South-East	Iš pietryčių
+	From South-West	Iš pietvakarių
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Pagerinimas
+	Skin Smoothing	Odos glotninimas
+	Keep Texture	Išlaikyti tekstūrą
+	Skin Tone	Odos atspalvis
+	Smooth Entire Image	Glotninti visą vaizdą
+	Low Light	Silpnas apšvietimas
+	Max Brightening	Didžiausias pašviesinimas
+	Show Illumination	Rodyti apšvietimą
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Švelninimo ruošiniai
+	Sine	Sinusinis
+	Exponential	Eksponentinis
+	Circular	Apskritiminis
+	Elastic	Elastingas
+	Film Gate	Kino kadro langelis
+	Gate Weave	Langelio virpėjimas
+	Weave Rotation	Virpėjimo pasukimas
+	Particles	Dalelės
+	Emitter Position	Spinduolio padėtis
+	Birth Rate	Atsiradimo dažnis
+	Lifetime (seconds)	Gyvavimo trukmė (sekundės)
+	Velocity Random	Greičio atsitiktinumas
+	Gravity	Gravitacija
+	Particle Size	Dalelių dydis
+	Keyhole	Rakto skylutė
+	Burn Away	Išdeginimas
+	Burn Size	Išdeginimo dydis
+	Ember Width	Žarijų krašto plotis
+	Ember Color	Žarijų krašto spalva
+	Check Text Legibility	Tikrinti teksto įskaitomumą
+	Clear Legibility Markers	Išvalyti įskaitomumo žymes
+	Text legibility: no problems found	Teksto įskaitomumas: problemų nerasta
+	Text legibility: {count} problems marked on the timeline (orange markers)	Teksto įskaitomumas: laiko juostoje pažymėta problemų: {count} (oranžinės žymės)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitų mažinimas
+	Bits per Channel	Bitų kanalui
+	Ordered Dither	Tvarkingas taškavimas
+	Dither Cell Size	Taškavimo langelio dydis
+	Block Glitch	Blokų trikdis
+	Blocks Moved	Perkelti blokai
+	Max Distance	Didžiausias atstumas
+	Snap to Grid	Pritraukti prie tinklelio
+	Swap Blocks	Sukeisti blokus
+	Changes per Second	Pokyčių per sekundę
+	Databend	Duomenų gadinimas
+	Breaks	Lūžiai
+	Shift	Poslinkis
+	Color Damage	Spalvų pažeidimas
+	VHS	VHS
+	Color Bleed	Spalvų išsiliejimas
+	Wobble	Svyravimas
+	Snow	Sniegas
+	Tracking Bar	Sekimo juosta
+	Head Switching	Galvučių perjungimas
+	Scan Line Jitter	Eilučių drebėjimas
+	Jitter	Drebėjimas
+	Interval	Intervalas
+	Infinite	Begalinis
+	Periodic	Periodinis
+	Tile Jitter	Plytelių drebėjimas
+	Tiles	Plytelės
+	Band Direction	Juostų kryptis
+	Jitter Direction	Drebėjimo kryptis
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Pustonis
+	Dither	Taškavimas
+	Pattern	Raštas
+	Cell Size	Langelio dydis
+	Cyan Angle	Žydros kampas
+	Magenta Angle	Purpurinės kampas
+	Yellow Angle	Geltonos kampas
+	Black Angle	Juodos kampas
+	Monochrome Angle	Vienspalvis kampas
+	Sharpness	Ryškumas
+	Ink Color	Rašalo spalva
+	Paper Color	Popieriaus spalva
+	Color (CMYK)	Spalva (CMYK)
+	Dot	Taškas
+	Line	Linija
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pikselio dydis
+	Palette	Paletė
+	Input Colors	Įvesties spalvos
+	Green Phosphor	Žalias liuminoforas
+	Amber Monitor	Gintarinis monitorius
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
