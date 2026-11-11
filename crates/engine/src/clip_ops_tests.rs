@@ -1227,3 +1227,18 @@ fn set_param_rejects_colour_component_that_overflows_f32() {
     let bytes = cfa4_format::encode(&s.project, false);
     cfa4_format::decode(&bytes).unwrap();
 }
+
+/// #323: Modify ▸ Audio Channels gets the loudspeaker of each channel when the media knows its
+/// layout (an Auro-3D carrier's restored one), and none otherwise.
+#[test]
+fn audio_channels_dialog_names_the_loudspeakers() {
+    let mut s = demo();
+    let ocean = item_named(&s, "Ocean_Sunset.mp4");
+    s.execute("project.select", json!({"items": [ocean.0]})).unwrap();
+    let d = s.execute("dialog.defaults", json!({"command": "clip.audioChannels"})).unwrap();
+    assert_eq!(d["info"]["speakers"], json!([]), "{d}");
+    let a = std::sync::Arc::make_mut(&mut s.project).item_mut(ocean).unwrap().as_media_mut().unwrap().info.audio_streams.first_mut().unwrap();
+    a.speakers = vec!["L".into(), "R".into()];
+    let d = s.execute("dialog.defaults", json!({"command": "clip.audioChannels"})).unwrap();
+    assert_eq!(d["info"]["speakers"], json!(["L", "R"]), "{d}");
+}

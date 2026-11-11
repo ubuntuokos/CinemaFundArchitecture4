@@ -1,8 +1,13 @@
 //! Minimal WAV (RIFF/RF64 PCM 8/16/24/32-bit int, 32/64-bit float) source, with the Broadcast Wave
 //! start time: `bext` TimeReference (EBU Tech 3285), else iXML `BWF_TIME_REFERENCE_LOW/HIGH`. The
 //! full `riff` crate (all BWF metadata, AIFF) will replace this.
+//!
+//! Compressed WAV: G.711 μ-law / A-law, G.722, IMA ADPCM and Microsoft ADPCM decode through
+//! `cfa4-adpcm`, still read in place (block by block; G.722 from periodic decoder checkpoints).
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
+
+use cfa4_adpcm::{Codec, Decoder};
 
 use cfa4_frame::{AudioBuffer, VideoFrame};
 use cfa4_time::Tick;
@@ -23,6 +28,23 @@ const BLOCK_FRAMES: usize = 4096;
 /// Largest single read of the data chunk; a wider span (an extreme resampling ratio) reads the
 /// two frames each output frame needs instead.
 const MAX_SPAN_BYTES: u64 = 4 << 20;
+/// Bytes of the `fmt ` chunk read (a `WAVEFORMATEXTENSIBLE` is 40, Microsoft ADPCM's coefficient
+/// table makes it 50).
+const FMT_MAX: u64 = 1024;
+/// G.722 data bytes between two decoder checkpoints (2 s at 64 kbit/s).
+const G722_CHECKPOINT: u64 = 16_384;
+
+/// How the data chunk's samples are stored.
+enum Encoding {
+    /// Integer (`float` false) or IEEE float PCM of `bits` per sample.
+    Pcm { bits: u16, float: bool },
+    /// A codec decoded in `unit`-byte units of `unit_frames` frames each (G.711 frames, ADPCM
+    /// blocks), every unit on its own.
+    Units { codec: Codec, unit: u64, unit_frames: u64 },
+    /// G.722 (mono, two frames per byte): decoder states at every [`G722_CHECKPOINT`] bytes,
+    /// found as reads reach them.
+    G722 { checkpoints: Mutex<Vec<cfa4_adpcm::g722::Decoder>> },
+}
 
 /// A WAV file read in place: opening it reads its chunk headers (not its samples), and
 /// [`MediaSource::audio`] reads only the sample range it is asked for, so a 90-minute recording
@@ -31,11 +53,12 @@ pub struct WavSource {
     info: MediaInfo,
     reader: SharedReader,
     data_off: u64,
+    /// Bytes of the data chunk.
+    data_len: u64,
     /// Whole frames only.
     frames: u64,
     channels: usize,
-    bits: u16,
-    float: bool,
+    encoding: Encoding,
     rate: u32,
     time_reference: Option<u64>,
 }
@@ -82,15 +105,18 @@ impl WavSource {
             }
             match id {
                 b"fmt " if clen >= 16 => {
-                    let b = read_range(&*reader, body, clen.min(40) as usize).map_err(io)?;
+                    let b = read_range(&*reader, body, clen.min(FMT_MAX) as usize).map_err(io)?;
                     let mut tag = le16(&b, 0);
                     let ch = le16(&b, 2);
                     let rate = le32(&b, 4);
+                    let align = le16(&b, 12);
                     let bits = le16(&b, 14);
                     if tag == 0xFFFE && clen >= 40 {
                         tag = le16(&b, 24);
                     }
-                    fmt = Some((tag, ch, rate, bits));
+                    // cbSize bytes after the 18-byte WAVEFORMATEX
+                    let extra = b.get(18..).map(|x| x.get(..usize::from(le16(&b, 16))).unwrap_or(x).to_vec()).unwrap_or_default();
+                    fmt = Some((tag, ch, rate, bits, align, extra));
                 }
                 // ds64: riffSize u64, dataSize u64, sampleCount u64, ...
                 b"ds64" if clen >= 16 => {
@@ -112,32 +138,41 @@ impl WavSource {
             }
             pos = body + clen + (clen & 1);
         }
-        let (tag, ch, rate, bits) = fmt.ok_or_else(|| MediaError::Decode(format!("{name}: missing fmt chunk")))?;
+        let (tag, ch, rate, bits, align, extra) = fmt.ok_or_else(|| MediaError::Decode(format!("{name}: missing fmt chunk")))?;
         let (off, dlen) = data.ok_or_else(|| MediaError::Decode(format!("{name}: missing data chunk")))?;
-        let float = tag == 3;
-        if !(tag == 1 || float)
-            || ch == 0
-            || rate == 0
-            || u32::from(ch) > crate::MAX_AUDIO_CHANNELS
-            || rate > crate::MAX_AUDIO_SAMPLE_RATE
-            || !matches!(bits, 8 | 16 | 24 | 32 | 64)
-        {
-            return Err(MediaError::Unsupported(format!("{name}: WAV format tag {tag}, {bits} bits")));
+        if ch == 0 || rate == 0 || u32::from(ch) > crate::MAX_AUDIO_CHANNELS || rate > crate::MAX_AUDIO_SAMPLE_RATE {
+            return Err(MediaError::Unsupported(format!("{name}: WAV format tag {tag}, {ch} channels at {rate} Hz")));
         }
-        let frame_bytes = u64::from(ch) * u64::from(bits / 8);
-        let frames = dlen / frame_bytes;
+        let float = tag == 3;
+        let (encoding, frames, codec_label, bits_per_sample) = if (tag == 1 || float) && matches!(bits, 8 | 16 | 24 | 32 | 64) {
+            let frame_bytes = u64::from(ch) * u64::from(bits / 8);
+            let label = if float { "PCM float" } else { "PCM" };
+            (Encoding::Pcm { bits, float }, dlen / frame_bytes, label.to_string(), Some(u32::from(bits)))
+        } else if let Some(codec) = Codec::from_wave_format(tag, align, bits, &extra) {
+            let codec = codec.map_err(|e| MediaError::Unsupported(format!("{name}: {e}")))?;
+            // a decoder for this layout must exist (G.722 is mono only)
+            Decoder::new(codec.clone(), usize::from(ch)).map_err(|e| MediaError::Unsupported(format!("{name}: {e}")))?;
+            let c = usize::from(ch);
+            let frames = u64::try_from(codec.frames_in(usize::try_from(dlen).unwrap_or(usize::MAX), c)).unwrap_or(u64::MAX);
+            let label = codec.name().to_string();
+            let encoding = if codec.is_stateful() {
+                Encoding::G722 { checkpoints: Mutex::new(vec![cfa4_adpcm::g722::Decoder::new()]) }
+            } else {
+                let unit = codec.unit_bytes(c);
+                let unit_frames = codec.frames_in(unit, c);
+                Encoding::Units { codec, unit: unit as u64, unit_frames: unit_frames.max(1) as u64 }
+            };
+            (encoding, frames, label, None)
+        } else {
+            return Err(MediaError::Unsupported(format!("{name}: WAV format tag {tag}, {bits} bits")));
+        };
         let time_reference = bext_tr.or(ixml_tr);
         let mut info = MediaInfo {
             name: name.into(),
             kind: MediaKind::AudioOnly,
             duration: Tick::from_units(i64::try_from(frames).unwrap_or(i64::MAX), rate as i64),
             video: None,
-            audio_streams: vec![AudioStreamInfo {
-                sample_rate: rate,
-                channels: ch as u32,
-                codec: if float { "PCM float".into() } else { "PCM".into() },
-                bits_per_sample: Some(bits as u32),
-            }],
+            audio_streams: vec![AudioStreamInfo { sample_rate: rate, channels: ch as u32, codec: codec_label, bits_per_sample, speakers: Vec::new() }],
             container: if time_reference.is_some() { "Broadcast WAV".into() } else { "WAV".into() },
             start_timecode: None,
             file_size: Some(len),
@@ -149,7 +184,7 @@ impl WavSource {
             let d = rate as i128 * r.den as i128;
             info.start_timecode = (n + d / 2).checked_div(d).and_then(|t| i64::try_from(t).ok());
         }
-        Ok(Self { info, reader, data_off: off, frames, channels: ch as usize, bits, float, rate, time_reference })
+        Ok(Self { info, reader, data_off: off, data_len: dlen, frames, channels: ch as usize, encoding, rate, time_reference })
     }
 
     /// Broadcast Wave start time: samples since midnight.
@@ -157,35 +192,103 @@ impl WavSource {
         self.time_reference
     }
 
-    fn frame_bytes(&self) -> usize {
-        self.channels * (self.bits as usize / 8)
+    fn io(&self, e: std::io::Error) -> MediaError {
+        MediaError::Io(format!("{}: {e}", self.info.name))
     }
 
-    /// Read whole frames `first..=last` of the data chunk.
-    fn read_frames(&self, first: u64, last: u64) -> Result<Vec<u8>> {
-        let fb = self.frame_bytes() as u64;
-        let n = last.saturating_sub(first).saturating_add(1).saturating_mul(fb);
-        let off = self.data_off.saturating_add(first.saturating_mul(fb));
-        let mut buf = vec![0u8; usize::try_from(n).map_err(|_| MediaError::Decode(format!("{}: audio read too large", self.info.name)))?];
-        self.reader.read_at(off, &mut buf).map_err(|e| MediaError::Io(format!("{}: {e}", self.info.name)))?;
+    /// Bytes `from..to` of the data chunk (clipped to it).
+    fn read_data(&self, from: u64, to: u64) -> Result<Vec<u8>> {
+        let to = to.min(self.data_len);
+        let n = usize::try_from(to.saturating_sub(from)).map_err(|_| MediaError::Decode(format!("{}: audio read too large", self.info.name)))?;
+        let mut buf = vec![0u8; n];
+        self.reader.read_at(self.data_off.saturating_add(from), &mut buf).map_err(|e| self.io(e))?;
         Ok(buf)
     }
 
-    /// Sample `ch` of frame `frame` of `block`, a run of whole frames.
-    fn sample(&self, block: &[u8], frame: usize, ch: usize) -> f32 {
-        let bps = self.bits as usize / 8;
-        let o = (frame * self.channels + ch) * bps;
-        let Some(b) = block.get(o..o.saturating_add(bps)) else { return 0.0 };
-        match (self.bits, self.float, b) {
-            (8, _, &[a]) => (a as f32 - 128.0) / 128.0,
-            (16, _, &[a, b]) => i16::from_le_bytes([a, b]) as f32 / 32768.0,
-            (24, _, &[a, b, c]) => ((i32::from_le_bytes([0, a, b, c]) >> 8) as f32) / 8_388_608.0,
-            (32, false, &[a, b, c, d]) => i32::from_le_bytes([a, b, c, d]) as f32 / 2_147_483_648.0,
-            (32, true, &[a, b, c, d]) => f32::from_le_bytes([a, b, c, d]),
-            (64, true, b) => f64::from_le_bytes(b.try_into().unwrap_or([0; 8])) as f32,
-            _ => 0.0,
+    /// Decoded bytes per frame of a read, for the span limit.
+    fn span_frame_bytes(&self) -> u64 {
+        let bytes = match self.encoding {
+            Encoding::Pcm { bits, .. } => u64::from(bits / 8),
+            _ => 4,
+        };
+        bytes.saturating_mul(self.channels as u64)
+    }
+
+    /// Whole frames `first..=last`, interleaved, as f32.
+    fn read_frames(&self, first: u64, last: u64) -> Result<Vec<f32>> {
+        let ch = self.channels;
+        let count = last.saturating_sub(first).saturating_add(1);
+        match &self.encoding {
+            Encoding::Pcm { bits, float } => {
+                let fb = u64::from(bits / 8).saturating_mul(ch as u64);
+                let raw = self.read_data(first.saturating_mul(fb), first.saturating_add(count).saturating_mul(fb))?;
+                let bps = usize::from(bits / 8).max(1);
+                Ok(raw.chunks_exact(bps).map(|b| pcm_sample(*bits, *float, b)).collect())
+            }
+            Encoding::Units { codec, unit, unit_frames } => {
+                let (u0, u1) = (first / unit_frames, last / unit_frames);
+                let raw = self.read_data(u0.saturating_mul(*unit), u1.saturating_add(1).saturating_mul(*unit))?;
+                let mut dec = Decoder::new(codec.clone(), ch).map_err(|e| MediaError::Decode(format!("{}: {e}", self.info.name)))?;
+                let planes = dec.decode(&raw).map_err(|e| MediaError::Decode(format!("{}: {e}", self.info.name)))?;
+                Ok(interleave_range(&planes, first - u0 * unit_frames, count))
+            }
+            Encoding::G722 { checkpoints } => {
+                // two frames per byte: start at the checkpoint before the first frame's byte
+                let byte = first / 2;
+                let k = byte / G722_CHECKPOINT;
+                let mut state = self.g722_checkpoint(checkpoints, k)?;
+                let from = k * G722_CHECKPOINT;
+                let raw = self.read_data(from, last / 2 + 1)?;
+                let mut out = Vec::with_capacity(raw.len() * 2);
+                state.decode_into(&raw, &mut out);
+                let skip = usize::try_from(first - from * 2).unwrap_or(usize::MAX);
+                let n = usize::try_from(count).unwrap_or(usize::MAX);
+                Ok(out.iter().skip(skip).take(n).map(|&s| f32::from(s) / 32768.0).collect())
+            }
         }
     }
+
+    /// The G.722 decoder state at checkpoint `k` (byte `k · G722_CHECKPOINT`), decoding forward
+    /// from the last known one as far as needed.
+    fn g722_checkpoint(&self, checkpoints: &Mutex<Vec<cfa4_adpcm::g722::Decoder>>, k: u64) -> Result<cfa4_adpcm::g722::Decoder> {
+        let k = usize::try_from(k).map_err(|_| MediaError::Decode(format!("{}: G.722 position", self.info.name)))?;
+        let mut cps = checkpoints.lock().unwrap_or_else(PoisonError::into_inner);
+        while cps.len() <= k {
+            let i = cps.len() - 1;
+            let Some(mut d) = cps.last().cloned() else { break };
+            let from = i as u64 * G722_CHECKPOINT;
+            let raw = self.read_data(from, from + G722_CHECKPOINT)?;
+            let mut sink = Vec::with_capacity(raw.len() * 2);
+            d.decode_into(&raw, &mut sink);
+            cps.push(d);
+        }
+        cps.get(k).or(cps.last()).cloned().ok_or_else(|| MediaError::Decode(format!("{}: G.722 state", self.info.name)))
+    }
+}
+
+/// One PCM sample of `bits` (little-endian, 8-bit unsigned) as f32.
+fn pcm_sample(bits: u16, float: bool, b: &[u8]) -> f32 {
+    match (bits, float, b) {
+        (8, _, &[a]) => (a as f32 - 128.0) / 128.0,
+        (16, _, &[a, b]) => i16::from_le_bytes([a, b]) as f32 / 32768.0,
+        (24, _, &[a, b, c]) => ((i32::from_le_bytes([0, a, b, c]) >> 8) as f32) / 8_388_608.0,
+        (32, false, &[a, b, c, d]) => i32::from_le_bytes([a, b, c, d]) as f32 / 2_147_483_648.0,
+        (32, true, &[a, b, c, d]) => f32::from_le_bytes([a, b, c, d]),
+        (64, true, b) => f64::from_le_bytes(b.try_into().unwrap_or([0; 8])) as f32,
+        _ => 0.0,
+    }
+}
+
+/// Frames `skip..skip + count` of planar 16-bit `planes`, interleaved as f32 (fewer at the end).
+fn interleave_range(planes: &[Vec<i16>], skip: u64, count: u64) -> Vec<f32> {
+    let len = planes.iter().map(Vec::len).min().unwrap_or(0);
+    let from = usize::try_from(skip).unwrap_or(usize::MAX).min(len);
+    let to = usize::try_from(skip.saturating_add(count)).unwrap_or(usize::MAX).min(len);
+    let mut out = Vec::with_capacity((to - from) * planes.len());
+    for i in from..to {
+        out.extend(planes.iter().map(|p| p.get(i).map_or(0.0, |&s| f32::from(s) / 32768.0)));
+    }
+    out
 }
 
 impl MediaSource for WavSource {
@@ -218,7 +321,7 @@ impl MediaSource for WavSource {
                 break;
             }
             let last = (hi.floor() as u64).saturating_add(1).min(total - 1);
-            let span = last.saturating_sub(first).saturating_add(1).saturating_mul(self.frame_bytes() as u64);
+            let span = last.saturating_sub(first).saturating_add(1).saturating_mul(self.span_frame_bytes());
             let block = if span <= MAX_SPAN_BYTES { Some(self.read_frames(first, last)?) } else { None };
             for slot in i..end {
                 let src = src_of(slot);
@@ -236,9 +339,10 @@ impl MediaSource for WavSource {
                     None => (std::borrow::Cow::Owned(self.read_frames(i0, i1)?), i0),
                 };
                 let (k0, k1) = ((i0 - base) as usize, (i1 - base) as usize);
+                let at = |k: usize, c: usize| buf.get(k * self.channels + c).copied().unwrap_or(0.0);
                 for c in 0..self.channels {
-                    let a = self.sample(&buf, k0, c);
-                    let b = self.sample(&buf, k1, c);
+                    let a = at(k0, c);
+                    let b = at(k1, c);
                     if let Some(s) = out.channels.get_mut(c).and_then(|ch| ch.get_mut(slot)) {
                         *s = a + (b - a) * fr;
                     }
@@ -360,5 +464,62 @@ mod tests {
         let mut wav = write_wav16(&[0.0; 2], 1, 48_000);
         wav[24..28].copy_from_slice(&(crate::MAX_AUDIO_SAMPLE_RATE + 1).to_le_bytes());
         assert!(WavSource::parse("fast.wav", wav.into()).is_err());
+    }
+
+    /// A WAV of `data` with format `tag` (mono, `align`-byte blocks, 4 bits).
+    fn compressed_wav(tag: u16, rate: u32, align: u16, data: &[u8]) -> Vec<u8> {
+        let mut w = write_wav16(&[], 1, rate);
+        w[20..22].copy_from_slice(&tag.to_le_bytes());
+        w[32..34].copy_from_slice(&align.to_le_bytes());
+        w[34..36].copy_from_slice(&4u16.to_le_bytes());
+        w.truncate(40);
+        w.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        w.extend_from_slice(data);
+        let riff = (w.len() - 8) as u32;
+        w[4..8].copy_from_slice(&riff.to_le_bytes());
+        w
+    }
+
+    fn noise(n: usize) -> Vec<u8> {
+        let mut x = 0x2545_F491u32;
+        (0..n)
+            .map(|_| {
+                x ^= x << 13;
+                x ^= x >> 17;
+                x ^= x << 5;
+                (x >> 8) as u8
+            })
+            .collect()
+    }
+
+    /// G.722 read from the middle (from a decoder checkpoint) gives the samples a read from the
+    /// start does, across checkpoint boundaries and at the end of the data.
+    #[test]
+    fn g722_random_access_matches_sequential() {
+        let data = noise(3 * G722_CHECKPOINT as usize + 1000);
+        let src = WavSource::parse("g.wav", compressed_wav(0x028F, 16_000, 1, &data).into()).unwrap();
+        let total = data.len() * 2;
+        assert_eq!(src.info().audio().unwrap().codec, "G.722");
+        let whole = src.audio(0, total, 16_000).unwrap().channels.remove(0);
+        let fresh = || WavSource::parse("g.wav", compressed_wav(0x028F, 16_000, 1, &data).into()).unwrap();
+        for start in [total - 10, 2 * G722_CHECKPOINT as usize * 2 - 3, 12_345, 1] {
+            let part = fresh().audio(start as i64, 600, 16_000).unwrap().channels.remove(0);
+            let n = 600.min(total - start);
+            assert_eq!(&part[..n], &whole[start..start + n], "from {start}");
+            assert!(part[n..].iter().all(|&s| s == 0.0), "silence past the end");
+        }
+    }
+
+    /// Damaged ADPCM headers are refused at open; random blocks decode without failing.
+    #[test]
+    fn hostile_adpcm_headers_and_blocks() {
+        for (tag, align) in [(0x11u16, 0u16), (0x02, 0)] {
+            assert!(WavSource::parse("bad.wav", compressed_wav(tag, 8000, align, &[0; 64]).into()).is_err(), "tag {tag:#x} align {align}");
+        }
+        for (tag, align) in [(0x11u16, 36u16), (0x02, 70), (0x07, 1), (0x06, 1), (0x11, 3), (0x02, 6)] {
+            let src = WavSource::parse("n.wav", compressed_wav(tag, 8000, align, &noise(1001)).into()).unwrap();
+            let a = src.audio(-5, 3000, 11_025).unwrap();
+            assert!(a.channels[0].iter().all(|s| s.is_finite() && s.abs() <= 1.0), "tag {tag:#x}");
+        }
     }
 }

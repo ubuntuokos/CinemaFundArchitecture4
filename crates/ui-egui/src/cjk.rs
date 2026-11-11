@@ -17,6 +17,11 @@ pub(crate) fn extra_fonts() -> impl Iterator<Item = &'static cfa4_text::fonts::E
 const KOREAN_SAMPLE: &str = "한국어입력테스트";
 const KOREAN_PREFERRED: &[&str] = &["Noto Sans CJK KR", "Noto Sans KR", "Source Han Sans K", "NanumGothic"];
 
+// Georgian (Mkhedruli): the bundled UI fonts lack it too. An extra-fonts face tagged `Geor` wins,
+// otherwise an installed system face that covers the sample.
+const GEORGIAN_SAMPLE: &str = "ქართული ენა ჰჯჭწძ";
+const GEORGIAN_PREFERRED: &[&str] = &["Noto Sans Georgian", "DejaVu Sans", "FreeSans"];
+
 fn system_font() -> Option<Arc<FontData>> {
     static FONT: OnceLock<Option<Arc<FontData>>> = OnceLock::new();
     FONT.get_or_init(|| find_system_font(SAMPLE, PREFERRED)).clone()
@@ -25,6 +30,18 @@ fn system_font() -> Option<Arc<FontData>> {
 fn korean_font() -> Option<Arc<FontData>> {
     static FONT: OnceLock<Option<Arc<FontData>>> = OnceLock::new();
     FONT.get_or_init(|| find_system_font(KOREAN_SAMPLE, KOREAN_PREFERRED)).clone()
+}
+
+fn georgian_font() -> Option<Arc<FontData>> {
+    static FONT: OnceLock<Option<Arc<FontData>>> = OnceLock::new();
+    FONT.get_or_init(|| {
+        let extra = cfa4_text::fonts::CFA4_FONTS.iter().find(|f| f.scripts.contains(&"Geor") && f.style == "Regular");
+        match extra {
+            Some(f) => Some(Arc::new(FontData::from_static(f.bytes))),
+            None => find_system_font(GEORGIAN_SAMPLE, GEORGIAN_PREFERRED),
+        }
+    })
+    .clone()
 }
 
 /// A font collection's face index matters: CJK fonts commonly live in TTC files.
@@ -48,6 +65,12 @@ pub(crate) fn korean_available() -> bool {
     korean_font().is_some()
 }
 
+/// Whether [`install`] has a Georgian face to add (extra-fonts `Geor` or an installed system
+/// face; none is bundled). The Georgian interface needs one.
+pub(crate) fn georgian_available() -> bool {
+    georgian_font().is_some()
+}
+
 /// Whether [`install`] has a Chinese face to add: extra-fonts Hans/Hant faces, or an installed
 /// system face (scanned once per process). The Simplified Chinese interface needs one.
 pub(crate) fn available() -> bool {
@@ -63,6 +86,12 @@ pub(crate) fn install(fonts: &mut FontDefinitions) {
         fonts.font_data.insert("system-korean".into(), font);
         for stack in fonts.families.values_mut() {
             stack.push("system-korean".into());
+        }
+    }
+    if let Some(font) = georgian_font() {
+        fonts.font_data.insert("georgian".into(), font);
+        for stack in fonts.families.values_mut() {
+            stack.push("georgian".into());
         }
     }
 }

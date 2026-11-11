@@ -347,12 +347,20 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         let f = cfa4_export::IabFallback::from_name(v).ok_or_else(|| bad(cmd, "dcpIabFallback: 5.1 | mix | none"))?;
         settings.dcp_iab_fallback = f.id().to_string();
     }
+    if let Some(v) = str_p(p, "dcpLanguage") {
+        let probe = ExportSettings { dcp_language: v.to_string(), ..Default::default() };
+        let tag = cfa4_export::dcp_language(&probe).ok_or_else(|| bad(cmd, "dcpLanguage: an RFC 5646 tag such as en-US or hu-HU (empty = none)"))?;
+        settings.dcp_language = tag.to_string();
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
             0 => None,
             1..=31 => Some(v as u8),
             _ => return Err(bad(cmd, "mpeg2Quantizer: 1 to 31 (0: the bitrate)")),
         };
+    }
+    if let Some(v) = str_p(p, "fieldOrder") {
+        settings.field_order = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "fieldOrder: progressive | upperFirst | lowerFirst"))?;
     }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2BFrames", cmd)? {
         settings.mpeg2_b_frames = Some(u8::try_from(v).ok().filter(|b| *b <= 7).ok_or_else(|| bad(cmd, "mpeg2BFrames: 0 to 7"))?);
@@ -1033,7 +1041,13 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
     let hdr = q.settings.color.working.is_hdr() && !settings.sdr;
     let sizes: Vec<Value> =
         SampleFormat::ALL.iter().map(|&f| json!({"bits": f.bits(), "float": f.is_float(), "supported": settings.supports_sample_format(f)})).collect();
+    // DCP: an ISDCF (DCNC) name for the package folder, from the sequence name
+    let dcp_name = (settings.format == Format::Dcp).then(|| {
+        let title = project.item(seq).map(|i| i.name.clone()).unwrap_or_default();
+        cfa4_export::dcp_isdcf_name(&settings, &title, &cfa4_export::dcp_isdcf_date())
+    });
     Ok(json!({
+        "dcpName": dcp_name,
         "preset": preset.map(|x| x.name),
         "hdr": hdr,
         "videoFormat": settings.video_format().id(),
@@ -1067,6 +1081,7 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "dcpImmersive": pr.settings.dcp_immersive,
         "dcpIabSource": pr.settings.dcp_iab_source,
         "dcpIabFallback": pr.settings.dcp_iab_fallback,
+        "dcpLanguage": pr.settings.dcp_language,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();
