@@ -19,7 +19,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Codec | Premiere | Our decode | Our encode | Fidelity and tests | % | Est. |
 |---|---|---|---|---|---|---|
 | HEVC / H.265 | decode Main, Main 10, 4:2:2 10 (XAVC HS); encode 8/10-bit, HDR | own decoder Main / Main 10 / Main 12 / Main Still Picture, monochrome 4:0:0, 4:2:2 and 4:4:4 up to 12-bit, bit-exact on 60 fixtures, ~225 fps 1080p; RExt coding tools not yet (#167) | own encoder Main / Main 10 4:2:0 (I / P, CRF / CBR / VBR, HDR10 SEI, parallel slices; no B pictures, SAO, 2-pass, 4:2:2 yet, #171–#180), 1080p ~2.3 fps on 4 cores; hardware first where present (NVENC 8-bit and Main 10 HDR) | own encoder: round trips through our decoder, bit-exact agreement of our decoder and ffmpeg on its output, ffprobe HDR signalling; NVENC round trip 48.9 dB (8-bit), 71.1 dB (10-bit) | 70% | 25–50 h |
-| H.264 / AVC | decode all common profiles incl. High 10, 4:2:2 (XAVC S-I, AVC-Intra); encode 8/10-bit | own decoder, **4:2:0 / 4:2:2 / 4:4:4, 8 to 14 bits** (Baseline / Main / High / High 10 / High 4:2:2 / High 4:4:4 Predictive, CABAC / CAVLC; bit-exact with ffmpeg, incl. 16 4:2:2 / 4:4:4 fixtures); no interlaced field / MBAFF (#162), lossless (#163), monochrome (#279) | own encoder (High / Main / Baseline, B-frames, CBR / VBR / 2-pass); 8-bit 4:2:0 only; hardware NVENC | decode bit-exact on 37+ conformance streams, 500–600 fps 1080p; encode ffprobe-checked, byte-identical across machines | 65% | 20–35 h |
+| H.264 / AVC | decode all common profiles incl. High 10, 4:2:2 (XAVC S-I, AVC-Intra); encode 8/10-bit | own decoder, **4:2:0 / 4:2:2 / 4:4:4, 8 to 14 bits** (Baseline / Main / High / High 10 / High 4:2:2 / High 4:4:4 Predictive, CABAC / CAVLC; bit-exact with ffmpeg, incl. 16 4:2:2 / 4:4:4 fixtures); no interlaced field / MBAFF (#162), lossless (#163); monochrome 4:0:0 decodes (#279) | own encoder (High / Main / Baseline, B-frames, CBR / VBR / 2-pass); 8-bit 4:2:0 only; hardware NVENC | decode bit-exact on 37+ conformance streams, 500–600 fps 1080p; encode ffprobe-checked, byte-identical across machines | 65% | 20–35 h |
 | ProRes 422 family / 4444 / XQ | decode + encode all | own decode + encode, all six profiles, alpha | yes (export UI exposes 422 flavours; 4444 / XQ request #342) | ±1 LSB, 318 fps | 85% | 3–6 h |
 | ProRes RAW | decode | none (#345) | — | — | 0% | 30–50 h (spec availability uncertain) |
 | DNxHD / DNxHR | decode + encode, MXF / MOV | own decode (all SMPTE ST 2019-1 CIDs, 8/10/12-bit, 4:2:2 / 4:4:4, interlaced, alpha) and encode LB / SQ / HQ / HQX / 444 | yes, MOV + MXF | within IDCT precision of ffmpeg on 22 fixtures | 90% | 2–4 h |
@@ -77,6 +77,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Date | Change | Summary |
 |---|---|---|
 | 2026-11-10 | minor | MP2 (MPEG-1/2 Layer II) encoder in `cfa4-mpa` (#267) |
+| 2026-11-09 | minor | H.264 monochrome (4:0:0) decode, 8 and 10 bits (#279) |
 | 2026-11-09 | minor | G.711, G.722, IMA and Microsoft ADPCM decode (`cfa4-adpcm`, codec backlog CB-4.1, CB-4.2) |
 | 2026-11-08 | minor | Link to the low-priority codec backlog ([plans](plans/CODEC-BACKLOG-2026-10-27.md)) |
 | 2026-10-27 | minor | Ubuntu 26.04 only: VideoToolbox H.264 / HEVC and Windows AV1 hardware decoding left the Ours column |
