@@ -450,8 +450,12 @@ impl MxfSource {
                     }
                     (crate::j2k::components(&h, j2k_hints), h)
                 });
+            // DV: format, coded size, sampling, aspect and colour are in the first frame's header and VAUX packs
+            let dv = (t.codec == Codec::Dv).then(|| file.read_sample(&bytes, vi, 0).ok()).flatten().and_then(|s| crate::video::dv_stream_info(&s));
             let (w, h) = match (&mpeg, &j2k) {
                 (Some((info, _, _)), _) => (info.width, info.height),
+                // DVCPRO HD descriptors give the display size (1920x1080); frames are coded smaller
+                _ if dv.as_ref().is_some_and(|d| d.profile.is_supported()) => dv.as_ref().map_or((0, 0), |d| (d.profile.width, d.profile.height)),
                 (_, Some((_, hd))) => (hd.width(), if j2k_hints.separate_fields { hd.height().saturating_mul(2) } else { hd.height() }),
                 _ => (p.frame_width(), p.frame_height()),
             };
@@ -463,8 +467,6 @@ impl MxfSource {
             } else {
                 (1, 1)
             };
-            // DV: format, sampling, aspect and colour are in the first frame's header and VAUX packs
-            let dv = (t.codec == Codec::Dv).then(|| file.read_sample(&bytes, vi, 0).ok()).flatten().and_then(|s| crate::video::dv_stream_info(&s));
             let codec = match t.codec {
                 Codec::Dv if dv.is_some() => dv.as_ref().map(|d| d.codec.clone()).unwrap_or_default(),
                 Codec::Vc3 => file
