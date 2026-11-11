@@ -4,8 +4,8 @@
 //! HEVC (Annex B byte streams, our decoders), and uncompressed RGB / YUV ([`RawFormat`]). A frame
 //! slot with an empty chunk (a "drop frame") repeats the picture before it. MPEG-4 Part 2
 //! (DivX / Xvid) has no decoder yet: its streams are listed and report the codec. DV in type-2 AVI
-//! (`dvsd`, `dv25`, …) decodes with `cfa4-dv`; type-1 (`iavs`, video and audio in one stream) is
-//! not read yet.
+//! (`dvsd`, `dv25`, …) decodes with `cfa4-dv`, and so does type-1 DV (`iavs`: whole DIF frames,
+//! video and audio in one stream; the sound is read from the frames' audio DIF blocks).
 //!
 //! Audio: PCM (integer and float) straight from the chunks; MPEG audio (MP3, MP2) and AC-3 frames,
 //! which AVI chunks need not follow, are found again across chunk boundaries
@@ -37,6 +37,14 @@ enum VCodec {
     Dv,
     H264,
     Hevc,
+    /// Hap: the FourCC.
+    Hap([u8; 4]),
+    /// FFV1 with its configuration record (`BITMAPINFOHEADER` extra bytes).
+    Ffv1(Vec<u8>),
+    /// Huffyuv with its (reduced) `BITMAPINFOHEADER`.
+    Huffyuv(Vec<u8>),
+    /// Ut Video: the FourCC and the extradata.
+    UtVideo([u8; 4], Vec<u8>),
     Raw(RawFormat),
     /// No decoder: the codec's name.
     Unsupported(String),
@@ -59,9 +67,13 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"H264" | b"X264" | b"AVC1" | b"DAVC" | b"VSSH" => (VCodec::H264, "H.264".into()),
         b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
+        _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
+        b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
+        b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
             (VCodec::Unsupported("MPEG-4 Part 2 (DivX / Xvid)".into()), "MPEG-4 Part 2 (DivX / Xvid)".into())
         }
+        _ if crate::hap::is_hap(&b.compression) => (VCodec::Hap(b.compression), "Hap".into()),
         b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Dv, "DV".into()),
         _ => {
             let name = fourcc_text(b.compression);
@@ -86,6 +98,8 @@ enum ACodec {
         ts: cfa4_mpegts::Codec,
         layer: u8,
     },
+    /// G.711, G.722, IMA or Microsoft ADPCM: whole blocks per chunk.
+    Adpcm(cfa4_adpcm::Codec),
     Unsupported(String),
 }
 
@@ -101,6 +115,13 @@ fn audio_codec(w: &WaveFormat) -> (ACodec, String) {
         0x55 => (ACodec::Framed { ts: cfa4_mpegts::Codec::MpegAudio, layer: 3 }, "MP3".into()),
         0x50 => (ACodec::Framed { ts: cfa4_mpegts::Codec::MpegAudio, layer: 2 }, "MPEG Audio".into()),
         0x2000 => (ACodec::Framed { ts: cfa4_mpegts::Codec::Ac3, layer: 0 }, "AC-3".into()),
+        tag if let Some(c) = cfa4_adpcm::Codec::from_wave_format(tag, w.block_align, w.bits_per_sample, &w.extra) => match c {
+            Ok(c) => {
+                let name = c.name().to_string();
+                (ACodec::Adpcm(c), name)
+            }
+            Err(e) => (ACodec::Unsupported(e.to_string()), format!("audio format 0x{tag:04X}")),
+        },
         tag => {
             let name = format!("audio format 0x{tag:04X}");
             (ACodec::Unsupported(name.clone()), name)
@@ -147,6 +168,9 @@ pub struct AviSource {
     bottom_up: bool,
     video: GopCache,
     audios: Vec<AviAudio>,
+    /// Type-1 DV: the sound inside the `iavs` frames (audio stream 0; a type-1 file has no
+    /// separate audio stream).
+    dv_audio: Option<crate::dif::DvAudio>,
 }
 
 /// Whether an Annex B access unit holds an H.264 IDR or HEVC IRAP picture.
@@ -235,7 +259,13 @@ impl AviSource {
     pub fn open_reader(name: &str, reader: cfa4_media::SharedReader) -> crate::Result<Self> {
         let bytes = crate::Src(reader);
         let file = cfa4_avi::open(&bytes).map_err(|e| CodecError::Container(e.to_string()))?;
-        let vstream = file.streams.iter().position(|s| s.kind == StreamKind::Video && s.video.is_some() && !s.chunks.is_empty());
+        // type-1 DV ('iavs'): one interleaved stream of whole DIF frames, video and audio together
+        let is_iavs = |s: &cfa4_avi::Stream| s.kind == StreamKind::Other(*b"iavs") && !s.chunks.is_empty();
+        let vstream = file
+            .streams
+            .iter()
+            .position(|s| s.kind == StreamKind::Video && s.video.is_some() && !s.chunks.is_empty())
+            .or_else(|| file.streams.iter().position(is_iavs));
         let astreams: Vec<usize> = file
             .streams
             .iter()
@@ -251,7 +281,8 @@ impl AviSource {
         let (mut vcodec, mut vframes, mut vslots, mut rate, mut bottom_up, mut video) =
             (VCodec::Unsupported(String::new()), Vec::new(), 0i64, FrameRate::new(25, 1), false, None);
         if let Some(vs) = vstream.and_then(|i| file.streams.get(i)) {
-            let b = vs.video.clone().unwrap_or_default();
+            // a type-1 stream has a DVINFO 'strf', not a BITMAPINFOHEADER: the frames say the size
+            let b = if is_iavs(vs) { BitmapInfo { compression: *b"dvsd", ..BitmapInfo::default() } } else { vs.video.clone().unwrap_or_default() };
             let (codec, label) = video_codec(&b);
             rate = FrameRate::new(i64::from(vs.rate), i64::from(vs.scale));
             bottom_up = b.height > 0;
@@ -341,6 +372,9 @@ impl AviSource {
                 info.pixel_format = d.pixel_format;
                 info.par = d.par;
                 info.color = d.color;
+                if info.width == 0 || info.height == 0 {
+                    (info.width, info.height) = (d.profile.width, d.profile.height);
+                }
             }
             video = Some(info);
             vcodec = codec;
@@ -386,6 +420,17 @@ impl AviSource {
                         .collect();
                     (pieces, first, starts)
                 }
+                ACodec::Adpcm(c) => {
+                    let mut t = 0i64;
+                    let mut starts = Vec::with_capacity(st.chunks.len());
+                    for ch in &st.chunks {
+                        starts.push(t);
+                        t = t.saturating_add(i64::try_from(c.frames_in(ch.size as usize, channels as usize)).unwrap_or(i64::MAX));
+                    }
+                    let pieces: Vec<Piece> = st.chunks.iter().enumerate().map(|(k, c)| (k, 0, c.size as usize)).collect();
+                    let first = (0..pieces.len()).collect();
+                    (pieces, first, starts)
+                }
                 ACodec::Unsupported(_) => (Vec::new(), Vec::new(), Vec::new()),
             };
             // a stream that starts late (dwStart, in scale / rate units)
@@ -400,6 +445,21 @@ impl AviSource {
             });
             let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
             audios.push(AviAudio { stream: s, codec, pieces, first, starts, state });
+        }
+        // type-1 DV: the sound is in the DIF frames themselves
+        let mut dv_audio = None;
+        if audios.is_empty()
+            && let Some(vs) = vstream.and_then(|i| file.streams.get(i)).filter(|s| is_iavs(s))
+            && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
+            && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, c.size as usize)
+        {
+            dv_audio = crate::dif::DvAudio::scan(&first, vframes.len(), |i| {
+                let c = vframes.get(i).and_then(|f| vs.chunks.get(f.chunk))?;
+                (c.size as usize >= cfa4_dv::SOURCE_PACK_OFFSET + 5)
+                    .then(|| cfa4_media::reader::read_range(&*bytes.0, c.offset + cfa4_dv::SOURCE_PACK_OFFSET as u64, 5).ok())
+                    .flatten()
+            });
+            audio_streams.extend(dv_audio.iter().map(|a| a.info.clone()));
         }
         // the longer of the picture and the sound
         let vdur = if vslots > 0 { rate.tick_of(vslots) } else { Tick::ZERO };
@@ -426,7 +486,7 @@ impl AviSource {
         let mut vorder: Vec<usize> = (0..vframes.len()).collect();
         vorder.sort_by_key(|&i| vframes.get(i).map_or(0, |f| f.pts));
         let vorder_pts = vorder.iter().map(|&i| vframes.get(i).map_or(0, |f| f.pts)).collect();
-        Ok(Self { info, bytes, file, vstream, vcodec, vframes, vorder, vorder_pts, vslots, rate, bottom_up, video: GopCache::new(None), audios })
+        Ok(Self { info, bytes, file, vstream, vcodec, vframes, vorder, vorder_pts, vslots, rate, bottom_up, video: GopCache::new(None), audios, dv_audio })
     }
 
     fn read(&self, stream: usize, chunk: usize) -> crate::Result<Vec<u8>> {
@@ -455,6 +515,24 @@ impl AviSource {
         let decoded = match &a.codec {
             ACodec::Pcm(cfg) => decode_pcm(&data, cfg),
             ACodec::Unsupported(name) => return Err(CodecError::Unsupported(name.clone())),
+            ACodec::Adpcm(c) => {
+                if st.decoder.is_none() {
+                    st.decoder = Some(PacketDecoder::adpcm(c.clone(), ainfo.channels as usize)?);
+                }
+                let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
+                // G.722 carries its state across packets: prime it after a jump
+                if c.is_stateful() && st.last_decoded.is_none_or(|l| l + 1 != i) {
+                    d.reset();
+                    for j in i.saturating_sub(d.pre_roll_packets())..i {
+                        if let Ok(prev) = self.packet(a, j) {
+                            let _ = d.decode(&prev, 0);
+                        }
+                    }
+                }
+                let r = d.decode(&data, 0);
+                st.last_decoded = Some(i);
+                r.unwrap_or_default()
+            }
             ACodec::Framed { ts, layer } => {
                 if st.decoder.is_none() {
                     st.decoder = Some(match ts {
@@ -525,6 +603,10 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
             VCodec::H264 => Ok(Box::new(crate::video::H264Decoder::annexb())),
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
+            VCodec::Hap(fourcc) => make_video_decoder(&crate::hap::sample_entry(*fourcc, w, h)),
+            VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
+            VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
+            VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),
             VCodec::Unsupported(name) => Err(CodecError::Unsupported(format!("no decoder for {name} video"))),
         }
@@ -549,6 +631,10 @@ impl MediaSource for AviSource {
     }
 
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> Result<AudioBuffer, MediaError> {
+        if let (Some(dv), Some(vs), 0) = (&self.dv_audio, self.vstream, stream) {
+            cfa4_media::validate_audio_buffer_shape(dv.info.channels.max(1) as usize, frames)?;
+            return Ok(dv.read(start, frames, sample_rate, |i| self.vframes.get(i).and_then(|f| self.read(vs, f.chunk).ok())));
+        }
         let a = self.audios.get(stream).ok_or(MediaError::NoStream("audio"))?;
         let ainfo = self.info.audio_streams.get(stream).ok_or(MediaError::NoStream("audio"))?;
         if let ACodec::Unsupported(name) = &a.codec {

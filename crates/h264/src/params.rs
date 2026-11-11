@@ -523,10 +523,6 @@ impl Sps {
         if u64::from(self.width()).saturating_mul(u64::from(self.height())) > MAX_LUMA_SAMPLES {
             return unsupported("picture dimensions exceed the decoder memory limit");
         }
-        if self.chroma_format_idc == 0 {
-            // the decoding paths exist (chroma is skipped) but no 4:0:0 test stream is available yet (#279)
-            return unsupported("chroma_format_idc 0 (monochrome)");
-        }
         if self.separate_colour_plane {
             // #280
             return unsupported("separate_colour_plane_flag (4:4:4 coded as three monochrome pictures)");

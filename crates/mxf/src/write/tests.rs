@@ -746,3 +746,40 @@ fn aes3_words_and_timecode_stamps() {
     assert_eq!(timecode_stamp(1800, 30, true)[..5], [0x81, 0x42, 0x00, 0x01, 0x00]);
     assert_eq!(timecode_stamp(17_982, 30, true)[..5], [0x81, 0x40, 0x00, 0x10, 0x00]);
 }
+#[test]
+fn peek_reads_the_packages_of_op_atom_files_without_the_essence() {
+    let clip = PackageIds::from_seed("clip", "Clip");
+    let mut cfg = WriterConfig::new(Pattern::OpAtom, Rational::new(25, 1), PackageIds { file: Umid::from_seed(b"v1"), ..clip.clone() });
+    cfg.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..5 {
+        w.push_picture(&vc3_like(i), FrameInfo::intra()).unwrap();
+    }
+    let v = w.finish().unwrap().into_inner();
+    let a = write_opatom_pcm(
+        &OpAtomPcm {
+            sample_rate: 48_000,
+            bits: 16,
+            channels: 1,
+            edit_rate: Some(Rational::new(25, 1)),
+            ids: PackageIds { file: Umid::from_seed(b"a1"), ..clip.clone() },
+            timecode: None,
+        },
+        &[0; 9600],
+    )
+    .unwrap();
+    let pv = crate::peek(&v).unwrap();
+    let pa = crate::peek(&a).unwrap();
+    assert_eq!(pv.operational_pattern, OperationalPattern::Atom);
+    assert_eq!(pv.material_package, Some(clip.material.0));
+    assert_eq!(pa.material_package, pv.material_package);
+    assert_eq!(pv.file_packages, vec![Umid::from_seed(b"v1").0]);
+    assert_eq!(pa.file_packages, vec![Umid::from_seed(b"a1").0]);
+    // only the header is needed: the file cut right after the header metadata still peeks
+    let header_end = v.windows(4).position(|w| w == [0x00, 0x00, 0x02, 0x80]).unwrap();
+    assert_eq!(crate::peek(&v[..header_end].to_vec()).unwrap(), pv);
+    assert!(crate::peek(&b"not mxf".to_vec()).is_err());
+    for cut in (0..v.len().min(4000)).step_by(13) {
+        let _ = crate::peek(&v[..cut].to_vec());
+    }
+}

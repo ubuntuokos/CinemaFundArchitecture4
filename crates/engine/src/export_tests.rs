@@ -224,6 +224,14 @@ fn mpeg2_b_pictures_are_a_parameter() {
 }
 
 #[test]
+fn interlaced_mpeg2_is_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"mpeg2", "fieldOrder":"upperFirst"})).unwrap();
+    assert_eq!(r["settings"]["fieldOrder"], "upperFirst");
+    assert!(s.execute("export.resolve", json!({"format":"mpeg2", "fieldOrder":"sideways"})).is_err());
+}
+
+#[test]
 fn resolve_reports_hdr_encoder_audio_codec_and_sample_sizes() {
     let mut s = demo();
     let sizes = |r: &Value| -> Vec<bool> { r["sampleSizes"].as_array().unwrap().iter().map(|z| z["supported"].as_bool().unwrap()).collect() };
