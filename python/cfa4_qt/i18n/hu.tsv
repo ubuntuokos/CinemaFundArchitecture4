@@ -2157,6 +2157,9 @@
 	Off (target bitrate)	Ki (célbitráta)
 	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
 	Transport Stream (.ts, AAC audio)	Transzportfolyam (.ts, AAC hang)
+	Field order	Mezősorrend
+	Interlaced, upper field first	Váltottsoros, felső mező először
+	Interlaced, lower field first	Váltottsoros, alsó mező először
 	Estimated file size: {size}	Becsült fájlméret: {size}
 	File Name & Location	Fájlnév és hely
 	Quick Export	Gyors exportálás

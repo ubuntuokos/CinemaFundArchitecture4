@@ -376,6 +376,80 @@ fn extreme_content_stays_decodable() {
     }
 }
 
+/// Interlaced content: the two fields of frame `t` are sampled half a frame apart (the first
+/// field at `2t`, the second at `2t + 1` in [`textured`] time), so moving edges comb.
+fn interlaced(w: usize, h: usize, chroma: ChromaFormat, t: usize, order: FieldOrder, speed: usize) -> Clip {
+    let a = textured(w, h, chroma, 2 * t * speed, 4);
+    let b = textured(w, h, chroma, (2 * t + 1) * speed, 4);
+    let first_parity = if order == FieldOrder::TopFirst { 0 } else { 1 };
+    let weave = |pa: &[u8], pb: &[u8], stride: usize| -> Vec<u8> {
+        pa.chunks(stride).zip(pb.chunks(stride)).enumerate().flat_map(|(r, (ra, rb))| if r % 2 == first_parity { ra.to_vec() } else { rb.to_vec() }).collect()
+    };
+    // 4:2:0 chroma rows alternate parity like the luma rows
+    Clip { w, cw: a.cw, ch: a.ch, y: weave(&a.y, &b.y, w), cb: weave(&a.cb, &b.cb, a.cw), cr: weave(&a.cr, &b.cr, a.cw) }
+}
+
+fn encode_interlaced(cfg: Config, frames: usize, order: FieldOrder, speed: usize) -> (Vec<u8>, Vec<Clip>) {
+    let mut enc = Encoder::new(cfg.clone()).unwrap();
+    let mut es = Vec::new();
+    let mut clips = Vec::new();
+    for t in 0..frames {
+        let c = interlaced(cfg.width as usize, cfg.height as usize, cfg.chroma, t, order, speed);
+        es.extend(enc.encode(&input(&c)).unwrap().into_iter().flat_map(|p| p.data));
+        clips.push(c);
+    }
+    es.extend(enc.flush().unwrap().into_iter().flat_map(|p| p.data));
+    es.extend_from_slice(&enc.finish());
+    (es, clips)
+}
+
+/// Interlaced frame pictures, top or bottom field first, with and without B pictures.
+#[test]
+fn interlaced_frames_round_trip() {
+    for (order, chroma, b_frames) in
+        [(FieldOrder::TopFirst, ChromaFormat::Yuv420, 0), (FieldOrder::BottomFirst, ChromaFormat::Yuv420, 2), (FieldOrder::TopFirst, ChromaFormat::Yuv422, 2)]
+    {
+        let mut cfg = Config::new(176, 144, 25, 1);
+        cfg.chroma = chroma;
+        cfg.gop = 6;
+        cfg.b_frames = b_frames;
+        cfg.interlaced = Some(order);
+        cfg.rate = Rate::Quantizer(3);
+        let (es, clips) = encode_interlaced(cfg, 10, order, 1);
+        let pics = decode(&es);
+        assert_eq!(pics.len(), 10);
+        assert!(!pics[0].info.progressive_sequence);
+        for (i, (p, c)) in pics.iter().zip(&clips).enumerate() {
+            assert_eq!(p.field_order(), Some(order), "frame {i}");
+            assert!(!p.field_pictures && !p.repeat_first_field);
+            let (py, pc) = (psnr(&p.y, &c.y), psnr(&p.cb, &c.cb).min(psnr(&p.cr, &c.cr)));
+            assert!(py > 38.0 && pc > 38.0, "{order:?} {chroma:?} M={}: frame {i}: PSNR Y {py:.2} C {pc:.2}", b_frames + 1);
+        }
+    }
+}
+
+/// On combed moving content field prediction and field DCT pay: the interlaced tools code the
+/// same pictures in clearly fewer bits than progressive coding at the same quantiser.
+#[test]
+fn field_tools_pay_on_interlaced_motion() {
+    let order = FieldOrder::TopFirst;
+    let size = |interlaced: Option<FieldOrder>| {
+        let mut cfg = Config::new(176, 144, 25, 1);
+        cfg.gop = 12;
+        cfg.b_frames = 2;
+        cfg.interlaced = interlaced;
+        cfg.rate = Rate::Quantizer(4);
+        let (es, clips) = encode_interlaced(cfg, 12, order, 2);
+        let pics = decode(&es);
+        let worst = pics.iter().zip(&clips).map(|(p, c)| psnr(&p.y, &c.y)).fold(f64::MAX, f64::min);
+        (es.len(), worst)
+    };
+    let (progressive, pp) = size(None);
+    let (fields, pf) = size(Some(order));
+    assert!(fields * 100 < progressive * 95, "interlaced {fields} bytes vs progressive {progressive}");
+    assert!(pf > pp - 1.0, "PSNR interlaced {pf:.2} vs progressive {pp:.2}");
+}
+
 /// ffmpeg decodes our streams to the same pictures as our decoder (up to IDCT rounding).
 #[test]
 fn ffmpeg_decodes_our_streams() {
@@ -386,6 +460,9 @@ fn ffmpeg_decodes_our_streams() {
         ("enc_420_ibbp", ChromaFormat::Yuv420, Rate::Quantizer(4)),
         ("enc_420_ibbp_rate", ChromaFormat::Yuv420, Rate::Bitrate { bits_per_second: 800_000 }),
         ("enc_422_ibbp", ChromaFormat::Yuv422, Rate::Quantizer(3)),
+        ("enc_420_interlaced", ChromaFormat::Yuv420, Rate::Quantizer(4)),
+        ("enc_420_interlaced_ibbp_rate", ChromaFormat::Yuv420, Rate::Bitrate { bits_per_second: 800_000 }),
+        ("enc_422_interlaced_ibbp", ChromaFormat::Yuv422, Rate::Quantizer(3)),
     ] {
         let mut cfg = Config::new(160, 96, 25, 1);
         cfg.chroma = chroma;
@@ -396,7 +473,12 @@ fn ffmpeg_decodes_our_streams() {
             cfg.b_frames = 2;
             cfg.closed_gop = name.ends_with("rate");
         }
-        let (es, _, _) = encode(cfg, 14);
+        let es = if name.contains("interlaced") {
+            cfg.interlaced = Some(FieldOrder::BottomFirst);
+            encode_interlaced(cfg, 14, FieldOrder::BottomFirst, 1).0
+        } else {
+            encode(cfg, 14).0
+        };
         let ours = decode(&es);
         let Some(ff) = cfa4_testkit::ffmpeg_or_skip(name) else { return };
         let path = cfa4_testkit::fixtures_dir("mpeg2v").join(format!("{name}.m2v"));

@@ -21,7 +21,8 @@ pub enum Scaling {
     StretchToFill,
 }
 
-/// Field order of the encoded video. CFA4's encoders write progressive frames.
+/// Field order of the encoded video. Only MPEG-2 export codes interlaced frames; the other
+/// encoders write progressive ones.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FieldOrder {
