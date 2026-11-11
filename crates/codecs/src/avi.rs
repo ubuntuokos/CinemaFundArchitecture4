@@ -4,8 +4,8 @@
 //! HEVC (Annex B byte streams, our decoders), and uncompressed RGB / YUV ([`RawFormat`]). A frame
 //! slot with an empty chunk (a "drop frame") repeats the picture before it. MPEG-4 Part 2
 //! (DivX / Xvid) has no decoder yet: its streams are listed and report the codec. DV in type-2 AVI
-//! (`dvsd`, `dv25`, …) decodes with `cfa4-dv`; type-1 (`iavs`, video and audio in one stream) is
-//! not read yet.
+//! (`dvsd`, `dv25`, …) decodes with `cfa4-dv`, and so does the video of type-1 DV (`iavs`: whole
+//! DIF frames, video and audio in one stream); type-1 audio is not read yet.
 //!
 //! Audio: PCM (integer and float) straight from the chunks; MPEG audio (MP3, MP2) and AC-3 frames,
 //! which AVI chunks need not follow, are found again across chunk boundaries
@@ -256,7 +256,13 @@ impl AviSource {
     pub fn open_reader(name: &str, reader: cfa4_media::SharedReader) -> crate::Result<Self> {
         let bytes = crate::Src(reader);
         let file = cfa4_avi::open(&bytes).map_err(|e| CodecError::Container(e.to_string()))?;
-        let vstream = file.streams.iter().position(|s| s.kind == StreamKind::Video && s.video.is_some() && !s.chunks.is_empty());
+        // type-1 DV ('iavs'): one interleaved stream of whole DIF frames, video and audio together
+        let is_iavs = |s: &cfa4_avi::Stream| s.kind == StreamKind::Other(*b"iavs") && !s.chunks.is_empty();
+        let vstream = file
+            .streams
+            .iter()
+            .position(|s| s.kind == StreamKind::Video && s.video.is_some() && !s.chunks.is_empty())
+            .or_else(|| file.streams.iter().position(is_iavs));
         let astreams: Vec<usize> = file
             .streams
             .iter()
@@ -272,7 +278,8 @@ impl AviSource {
         let (mut vcodec, mut vframes, mut vslots, mut rate, mut bottom_up, mut video) =
             (VCodec::Unsupported(String::new()), Vec::new(), 0i64, FrameRate::new(25, 1), false, None);
         if let Some(vs) = vstream.and_then(|i| file.streams.get(i)) {
-            let b = vs.video.clone().unwrap_or_default();
+            // a type-1 stream has a DVINFO 'strf', not a BITMAPINFOHEADER: the frames say the size
+            let b = if is_iavs(vs) { BitmapInfo { compression: *b"dvsd", ..BitmapInfo::default() } } else { vs.video.clone().unwrap_or_default() };
             let (codec, label) = video_codec(&b);
             rate = FrameRate::new(i64::from(vs.rate), i64::from(vs.scale));
             bottom_up = b.height > 0;
@@ -362,6 +369,9 @@ impl AviSource {
                 info.pixel_format = d.pixel_format;
                 info.par = d.par;
                 info.color = d.color;
+                if info.width == 0 || info.height == 0 {
+                    (info.width, info.height) = (d.profile.width, d.profile.height);
+                }
             }
             video = Some(info);
             vcodec = codec;
