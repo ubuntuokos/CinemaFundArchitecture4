@@ -4257,3 +4257,106 @@
 	{n} more	{n} de plus
 	Block	Bloc
 	parallel	parallèle
+# Qt GUI: Tools menu (#868)
+	Video Tools	Outils vidéo
+	Audio Tools	Outils audio
+	Publication Tools	Outils de publication
+	Smart Export…	Smart Export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Depuis le nord-ouest
+	From North-East	Depuis le nord-est
+	From South-East	Depuis le sud-est
+	From South-West	Depuis le sud-ouest
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Améliorer
+	Skin Smoothing	Lissage de la peau
+	Keep Texture	Conserver la texture
+	Skin Tone	Teint de peau
+	Smooth Entire Image	Lisser toute l'image
+	Low Light	Faible luminosité
+	Max Brightening	Éclaircissement max.
+	Show Illumination	Afficher l'éclairage
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Préréglages d'accélération
+	Sine	Sinusoïdale
+	Exponential	Exponentielle
+	Circular	Circulaire
+	Elastic	Élastique
+	Film Gate	Couloir de film
+	Gate Weave	Instabilité du couloir
+	Weave Rotation	Rotation de l'instabilité
+	Particles	Particules
+	Emitter Position	Position de l'émetteur
+	Birth Rate	Taux de naissance
+	Lifetime (seconds)	Durée de vie (secondes)
+	Velocity Random	Vitesse aléatoire
+	Gravity	Gravité
+	Particle Size	Taille des particules
+	Keyhole	Trou de serrure
+	Burn Away	Brûlure
+	Burn Size	Taille de la brûlure
+	Ember Width	Largeur de la braise
+	Ember Color	Couleur de la braise
+	Check Text Legibility	Vérifier la lisibilité du texte
+	Clear Legibility Markers	Effacer les marqueurs de lisibilité
+	Text legibility: no problems found	Lisibilité du texte : aucun problème trouvé
+	Text legibility: {count} problems marked on the timeline (orange markers)	Lisibilité du texte : {count} problèmes marqués dans la timeline (marqueurs orange)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Réduction de bits
+	Bits per Channel	Bits par couche
+	Ordered Dither	Tramage ordonné
+	Dither Cell Size	Taille des cellules de tramage
+	Block Glitch	Glitch de blocs
+	Blocks Moved	Blocs déplacés
+	Max Distance	Distance maximale
+	Snap to Grid	Aligner sur la grille
+	Swap Blocks	Échanger les blocs
+	Changes per Second	Changements par seconde
+	Databend	Databending
+	Breaks	Cassures
+	Shift	Décalage
+	Color Damage	Dégâts de couleur
+	VHS	VHS
+	Color Bleed	Bavure des couleurs
+	Wobble	Oscillation
+	Snow	Neige
+	Tracking Bar	Barre de tracking
+	Head Switching	Commutation des têtes
+	Scan Line Jitter	Gigue des lignes
+	Jitter	Gigue
+	Interval	Intervalle
+	Infinite	Infini
+	Periodic	Périodique
+	Tile Jitter	Gigue des bandes
+	Tiles	Bandes
+	Band Direction	Orientation des bandes
+	Jitter Direction	Direction de la gigue
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Similigravure
+	Dither	Tramage
+	Pattern	Motif
+	Cell Size	Taille de cellule
+	Cyan Angle	Angle du cyan
+	Magenta Angle	Angle du magenta
+	Yellow Angle	Angle du jaune
+	Black Angle	Angle du noir
+	Monochrome Angle	Angle monochrome
+	Sharpness	Netteté
+	Ink Color	Couleur de l'encre
+	Paper Color	Couleur du papier
+	Color (CMYK)	Couleur (CMJN)
+	Dot	Point
+	Line	Ligne
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Taille des pixels
+	Palette	Palette
+	Input Colors	Couleurs d'origine
+	Green Phosphor	Phosphore vert
+	Amber Monitor	Moniteur ambre
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
