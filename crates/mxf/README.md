@@ -43,6 +43,14 @@ ancillary resources (fonts, images: id, MIME type, generic stream). `open` repor
 The `test-util` feature exposes `testing::build_timed_text` and the other synthetic file builders
 for tests in other crates.
 
+## Peeking at the header
+
+`peek(src)` reads only the header partition pack and header metadata: the operational pattern
+and the material and file package UMIDs. `cfa4-engine` uses it to find the OP-Atom files of one
+clip (ST 390: one essence track per file, a shared material package) in an Avid MediaFiles folder
+or on a P2 card (`CONTENTS/VIDEO` + `CONTENTS/AUDIO`), and `cfa4_codecs::MxfSource::open_group`
+opens them as one source.
+
 ## Reading a file
 
 ```rust

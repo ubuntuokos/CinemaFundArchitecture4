@@ -12,6 +12,8 @@
 //!   (IAB, ST 2098-2) track of a DCP or IMF package is decoded with `cfa4-iab` and rendered to
 //!   7.1 (L R C LFE Lrs Rrs Lss Rss).
 //! - Start timecode: the material package's timecode track.
+//! - OP-Atom clips over several files (Avid, P2): [`MxfSource::open_group`] opens the picture
+//!   file and the sound files of one clip as one source (the engine finds them by material package).
 
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -58,8 +60,12 @@ pub struct MxfSource {
     mpeg2_header: Vec<u8>,
     /// How the JPEG 2000 picture track's components are read.
     j2k_hints: crate::j2k::J2kHints,
-    /// Sound tracks combined into one stream: (track, first stored sample frame).
-    atracks: Vec<(usize, u64)>,
+    /// The other OP-Atom files of the clip (ST 390: one essence track per file, one material
+    /// package): sound tracks may live there. Member 0 is `bytes`/`file`, member `k` is
+    /// `companions[k - 1]`.
+    companions: Vec<(crate::Src, MxfFile)>,
+    /// Sound tracks combined into one stream: (member, track, first stored sample frame).
+    atracks: Vec<(usize, usize, u64)>,
     /// Presented sample frames.
     aframes: u64,
     /// An IAB track rendered to loudspeakers, when there is no PCM.
@@ -318,22 +324,54 @@ impl MxfSource {
 
     /// Open from a random-access reader: only the KLV headers, metadata and index are read now.
     pub fn open_reader(name: &str, reader: cfa4_media::SharedReader) -> crate::Result<Self> {
-        let bytes = crate::Src(reader);
-        let file = cfa4_mxf::open(&bytes).map_err(|e| match e {
-            cfa4_mxf::Error::Unsupported(s) => CodecError::Unsupported(format!("MXF: {s}")),
-            other => CodecError::Container(other.to_string()),
-        })?;
-        for w in &file.warnings {
-            log::warn!("{name}: {w}");
+        Self::open_group(name, vec![reader], 0)
+    }
+
+    /// Open the OP-Atom files of one clip (ST 390: each file holds one essence track; the files
+    /// share the material package) as one source: the picture from the file that has one, and the
+    /// PCM sound tracks of every file, in the order given, as one multichannel stream. Reader
+    /// `asked` is the file asked for: it must open; a companion that does not is skipped.
+    pub fn open_group(name: &str, readers: Vec<cfa4_media::SharedReader>, asked: usize) -> crate::Result<Self> {
+        let mut members: Vec<(crate::Src, MxfFile)> = Vec::new();
+        for (i, reader) in readers.into_iter().enumerate() {
+            let bytes = crate::Src(reader);
+            match cfa4_mxf::open(&bytes) {
+                Ok(f) => {
+                    for w in &f.warnings {
+                        log::warn!("{name}: {w}");
+                    }
+                    members.push((bytes, f));
+                }
+                Err(e) if i == asked => {
+                    return Err(match e {
+                        cfa4_mxf::Error::Unsupported(s) => CodecError::Unsupported(format!("MXF: {s}")),
+                        other => CodecError::Container(other.to_string()),
+                    });
+                }
+                Err(e) => log::warn!("{name}: companion OP-Atom file {i} skipped: {e}"),
+            }
         }
+        let primary = members.iter().position(|(_, f)| f.track_of_kind(TrackKind::Picture).is_some()).unwrap_or(0);
+        if primary >= members.len() {
+            return Err(CodecError::Container("MXF: no file to open".into()));
+        }
+        let (bytes, file) = members.remove(primary);
+        let companions = members;
         let vtrack = file.track_of_kind(TrackKind::Picture);
-        let atracks: Vec<usize> = file
-            .tracks
-            .iter()
+        let pcm_tracks = |f: &MxfFile| -> Vec<usize> {
+            f.tracks
+                .iter()
+                .enumerate()
+                .filter(|(_, t)| t.kind == TrackKind::Sound && !t.chunks.is_empty() && t.sound_format != cfa4_mxf::SoundFormat::Other)
+                .map(|(i, _)| i)
+                .collect()
+        };
+        let atracks: Vec<(usize, usize)> = std::iter::once(&file)
+            .chain(companions.iter().map(|c| &c.1))
             .enumerate()
-            .filter(|(_, t)| t.kind == TrackKind::Sound && !t.chunks.is_empty() && t.sound_format != cfa4_mxf::SoundFormat::Other)
-            .map(|(i, _)| i)
+            .flat_map(|(m, f)| pcm_tracks(f).into_iter().map(move |t| (m, t)))
             .collect();
+        let member_file = |m: usize| if m == 0 { Some(&file) } else { companions.get(m - 1).map(|c| &c.1) };
         // IAB, when there is no PCM: its first frame gives the rates
         let iab = if atracks.is_empty() {
             file.tracks.iter().enumerate().filter(|(_, t)| t.codec == Codec::Iab && !t.samples.is_empty()).find_map(|(i, t)| {
@@ -521,12 +559,13 @@ impl MxfSource {
         let mut audio = None;
         let mut combined = Vec::new();
         let mut aframes = u64::MAX;
-        if let Some(&a0) = atracks.first() {
-            let si0 = file.tracks[a0].sound.clone().unwrap_or_default();
+        if let Some(t0) = atracks.first().and_then(|&(m, t)| member_file(m)?.tracks.get(t)) {
+            let si0 = t0.sound.clone().unwrap_or_default();
+            let codec0 = t0.codec.name();
             let rate = si0.sample_rate;
             let mut channels: u32 = 0;
-            for &ai in &atracks {
-                let t = &file.tracks[ai];
+            for &(m, ai) in &atracks {
+                let Some(t) = member_file(m).and_then(|f| f.tracks.get(ai)) else { continue };
                 let Some(si) = t.sound.as_ref() else { continue };
                 if si.sample_rate != rate {
                     continue;
@@ -542,17 +581,11 @@ impl MxfSource {
                     return Err(CodecError::Unsupported(format!("MXF: combined audio exceeds {} channels", cfa4_media::MAX_AUDIO_CHANNELS)));
                 }
                 channels = next;
-                combined.push((ai, first));
+                combined.push((m, ai, first));
             }
             let sr = if rate.is_valid() { (rate.num as f64 / rate.den as f64).round() as u32 } else { 48_000 };
             if let Ok((sr, channels)) = cfa4_media::bounded_audio_dimensions(sr, channels) {
-                audio = Some(AudioStreamInfo {
-                    sample_rate: sr,
-                    channels,
-                    codec: file.tracks[a0].codec.name().into(),
-                    bits_per_sample: Some(si0.bits),
-                    speakers: Vec::new(),
-                });
+                audio = Some(AudioStreamInfo { sample_rate: sr, channels, codec: codec0.into(), bits_per_sample: Some(si0.bits), speakers: Vec::new() });
             }
         }
         if let Some(ia) = &iab {
@@ -580,9 +613,13 @@ impl MxfSource {
             duration,
             video,
             audio_streams: audio.into_iter().collect(),
-            container: format!("MXF {}", file.operational_pattern.name()),
+            container: if companions.is_empty() {
+                format!("MXF {}", file.operational_pattern.name())
+            } else {
+                format!("MXF {} ({} files)", file.operational_pattern.name(), companions.len() + 1)
+            },
             start_timecode: None,
-            file_size: Some(bytes.0.len()),
+            file_size: Some(companions.iter().fold(bytes.0.len(), |n, c| n.saturating_add(c.0.0.len()))),
         };
         info.start_timecode = file.timecode.as_ref().map(|tc| start_frames(tc, info.frame_rate()));
         Ok(Self {
@@ -598,6 +635,7 @@ impl MxfSource {
             mpeg2_header,
             j2k_hints,
             atracks: combined,
+            companions,
             aframes,
             iab,
             file,
@@ -717,15 +755,17 @@ impl MediaSource for MxfSource {
             }
         } else if b > a {
             let mut c0 = 0;
-            for &(ti, first) in &self.atracks {
-                let pcm = self.file.read_pcm(&self.bytes, ti, first + a as u64, (b - a) as usize).map_err(|e| MediaError::Decode(e.to_string()))?;
+            for &(m, ti, first) in &self.atracks {
+                let (bytes, file) =
+                    if m == 0 { (&self.bytes, &self.file) } else { self.companions.get(m - 1).map(|c| (&c.0, &c.1)).ok_or(MediaError::NoStream("audio"))? };
+                let pcm = file.read_pcm(bytes, ti, first + a as u64, (b - a) as usize).map_err(|e| MediaError::Decode(e.to_string()))?;
                 for (k, p) in pcm.into_iter().enumerate() {
                     if let Some(dst) = src.get_mut(c0 + k) {
                         let at = (a - s0) as usize;
                         dst[at..at + p.len()].copy_from_slice(&p);
                     }
                 }
-                c0 += self.file.tracks[ti].sound.as_ref().map_or(1, |s| s.channels.max(1) as usize);
+                c0 += file.tracks.get(ti).and_then(|t| t.sound.as_ref()).map_or(1, |s| s.channels.max(1) as usize);
             }
         }
         if exact {
@@ -799,5 +839,47 @@ mod tests {
         assert_eq!((s.transfer, s.primaries, s.matrix), (Some(Transfer::Pq), Some(Primaries::Bt2020), Some(Matrix::Bt2020Ncl)));
         let p = cfa4_mxf::PictureInfo { transfer_characteristic: label(1, 1, 0x7F), ..Default::default() };
         assert_eq!(descriptor_colorimetry(&p), crate::j2k::Signalled::default());
+    }
+
+    /// An Avid / P2 style clip: a picture file and two mono sound files sharing the material
+    /// package, opened as one source with the sound files' channels in the order given.
+    #[test]
+    fn op_atom_files_of_one_clip_open_as_one_source() {
+        use cfa4_mxf::{FrameInfo, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, Umid, WriterConfig, write_opatom_pcm};
+        let clip = PackageIds::from_seed("clip", "Clip");
+        let mut cfg = WriterConfig::new(Pattern::OpAtom, Rational::new(25, 1), PackageIds { file: Umid::from_seed(b"v1"), ..clip.clone() });
+        cfg.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+        let mut w = MxfWriter::new(std::io::Cursor::new(Vec::new()), cfg).unwrap();
+        for i in 0..10u8 {
+            let mut f = vec![0x00, 0x00, 0x02, 0x80, 0x01];
+            f.extend(std::iter::repeat_n(i, 600));
+            w.push_picture(&f, FrameInfo::intra()).unwrap();
+        }
+        let v: Arc<[u8]> = w.finish().unwrap().into_inner().into();
+        let pcm = |seed: &[u8], value: i32| -> Arc<[u8]> {
+            let ids = PackageIds { file: Umid::from_seed(seed), ..clip.clone() };
+            let opts = OpAtomPcm { sample_rate: 48_000, bits: 16, channels: 1, edit_rate: Some(Rational::new(25, 1)), ids, timecode: None };
+            write_opatom_pcm(&opts, &vec![value; 19_200]).unwrap().into()
+        };
+        let (a1, a2) = (pcm(b"a1", 8192), pcm(b"a2", -16384));
+        let reader = |b: &Arc<[u8]>| Arc::new(cfa4_media::reader::MemReader(b.clone())) as cfa4_media::SharedReader;
+        // asked for the second sound file; given in name order A01, A02, V01
+        let src = MxfSource::open_group("clipA02.mxf", vec![reader(&a1), reader(&a2), reader(&v)], 1).unwrap();
+        let info = src.info();
+        assert_eq!(info.kind, MediaKind::Movie);
+        assert_eq!(info.container, "MXF OP-Atom (3 files)");
+        assert_eq!(info.video.as_ref().map(|v| (v.width, v.height)), Some((64, 36)));
+        let a = info.audio().unwrap();
+        assert_eq!((a.sample_rate, a.channels), (48_000, 2));
+        assert_eq!(info.duration, FrameRate::FPS_25.tick_of(10));
+        let buf = src.audio(100, 4, 48_000).unwrap();
+        assert_eq!(buf.channels[0], vec![0.25; 4]);
+        assert_eq!(buf.channels[1], vec![-0.5; 4]);
+        // a damaged companion is skipped; a damaged asked-for file fails
+        let junk: Arc<[u8]> = Arc::from(vec![0u8; 100]);
+        let src = MxfSource::open_group("clipV01.mxf", vec![reader(&junk), reader(&v), reader(&a2)], 1).unwrap();
+        assert_eq!(src.info().audio().unwrap().channels, 1);
+        assert!(MxfSource::open_group("x.mxf", vec![reader(&junk), reader(&v)], 0).is_err());
+        assert!(MxfSource::open_group("x.mxf", Vec::new(), 0).is_err());
     }
 }

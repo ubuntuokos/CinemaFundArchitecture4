@@ -59,6 +59,8 @@ pub struct MediaPool {
     /// Media and proxy paths that came from a document, with that document's path (see
     /// [`Self::follow`]).
     stored: RwLock<HashMap<String, Option<PathBuf>>>,
+    /// OP-Atom files per folder, for opening multi-file clips as one source.
+    op_atom: crate::opatom::FolderCache,
 }
 
 impl Default for MediaPool {
@@ -72,6 +74,7 @@ impl Default for MediaPool {
             failures: Arc::default(),
             openers: RwLock::new(cfa4_codecs::openers()),
             stored: RwLock::default(),
+            op_atom: Default::default(),
         }
     }
 }
@@ -302,11 +305,42 @@ impl MediaPool {
     fn open_file_native(&self, path: &str, services: &dyn Services) -> Result<SharedSource, MediaError> {
         let io = |e: std::io::Error| if e.kind() == std::io::ErrorKind::NotFound { MediaError::Offline(e.to_string()) } else { MediaError::Io(e.to_string()) };
         if let Some(r) = services.reader(path) {
+            let r = r.map_err(io)?;
+            if let Some(src) = self.open_op_atom_clip(path, services) {
+                return src;
+            }
             let openers = self.openers.read().unwrap_or_else(|e| e.into_inner()).clone();
-            return cfa4_media::reader::open_reader(&file_name(path), r.map_err(io)?, &cfa4_codecs::reader_openers(), &openers);
+            return cfa4_media::reader::open_reader(&file_name(path), r, &cfa4_codecs::reader_openers(), &openers);
         }
         let bytes = services.read_file(path).map_err(io)?;
         self.open_bytes(&file_name(path), bytes.into())
+    }
+
+    /// The files of the OP-Atom clip `path` belongs to (itself included), when it is one of
+    /// several (Avid MediaFiles, P2 `CONTENTS/VIDEO` + `AUDIO`).
+    pub fn op_atom_clip_files(&self, path: &str, services: &dyn Services) -> Option<Vec<String>> {
+        self.op_atom.group(path, services).map(|(files, _)| files)
+    }
+
+    /// `path` with the other OP-Atom files of its clip as one source; `None` when it has none.
+    fn open_op_atom_clip(&self, path: &str, services: &dyn Services) -> Option<Result<SharedSource, MediaError>> {
+        let (files, asked) = self.op_atom.group(path, services)?;
+        let mut readers = Vec::new();
+        let mut asked_at = 0;
+        for (i, f) in files.iter().enumerate() {
+            match services.reader(f) {
+                Some(Ok(r)) => {
+                    if i == asked {
+                        asked_at = readers.len();
+                    }
+                    readers.push(r);
+                }
+                // the file asked for is opened alone (and its error reported) by the caller
+                _ if i == asked => return None,
+                _ => log::warn!("{path}: OP-Atom companion {f} cannot be read"),
+            }
+        }
+        Some(cfa4_codecs::MxfSource::open_group(&file_name(path), readers, asked_at).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))
     }
 
     /// Open a file to look at it (Media Browser properties and thumbnails), not to import it: a
