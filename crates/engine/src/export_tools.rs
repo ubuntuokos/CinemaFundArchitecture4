@@ -310,7 +310,7 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.audio.flac_level = v.min(8) as u8;
     }
     if let Some(v) = str_p(p, "mxfVideoCodec") {
-        settings.mxf_video_codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264"))?;
+        settings.mxf_video_codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264 | mpeg2"))?;
     }
     if let Some(v) = str_p(p, "mpeg2Container") {
         let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;

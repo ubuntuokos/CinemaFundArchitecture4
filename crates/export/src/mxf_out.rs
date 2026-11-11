@@ -7,7 +7,7 @@ use cfa4_mxf::{
 };
 use cfa4_time::FrameRate;
 
-use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, Format, H264Profile, Out, Result};
+use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, Format, H264Profile, MpegVideoInfo, Out, Result};
 
 /// Paths of the OP-Atom audio files for an export to `path` with `channels` channels.
 pub fn opatom_audio_paths(path: &str, channels: usize) -> Vec<String> {
@@ -28,9 +28,25 @@ fn io(e: std::io::Error) -> ExportError {
     ExportError::Io(e.to_string())
 }
 
-/// The picture essence description for an export (codec from the MXF video codec setting).
-fn picture(settings: &ExportSettings, w: u32, h: u32) -> PictureDesc {
+/// The picture essence description for an export (codec from the MXF video codec setting; MPEG-2
+/// from what its encoder reports).
+fn picture(settings: &ExportSettings, w: u32, h: u32, mpeg: Option<MpegVideoInfo>) -> Result<PictureDesc> {
     let coding = match settings.video_format() {
+        Format::Mpeg2 => {
+            let m = mpeg.ok_or_else(|| ExportError::Encode("internal: MPEG-2 encoder without stream parameters".into()))?;
+            if !matches!(m.profile_and_level, 0x44 | 0x46 | 0x82) {
+                return Err(ExportError::Unsupported(format!(
+                    "MPEG-2 in MXF is written for HD pictures (High and High-1440 levels); {w}x{h} is standard definition (D-10 / IMX)"
+                )));
+            }
+            PictureCoding::Mpeg2 {
+                profile_and_level: m.profile_and_level,
+                max_gop: u16::try_from(m.gop.max(1)).unwrap_or(u16::MAX),
+                b_pictures: u8::try_from(m.b_frames).unwrap_or(u8::MAX),
+                closed_gop: m.closed_gop,
+                bit_rate: u32::try_from(m.bit_rate).unwrap_or(u32::MAX),
+            }
+        }
         Format::ProRes => {
             use cfa4_prores::Profile;
             PictureCoding::ProRes {
@@ -65,7 +81,7 @@ fn picture(settings: &ExportSettings, w: u32, h: u32) -> PictureDesc {
         let g = gcd(a, b);
         d.aspect = Rational::new((a / g) as i32, (b / g) as i32);
     }
-    d
+    Ok(d)
 }
 
 fn gcd(a: u64, b: u64) -> u64 {
@@ -83,6 +99,8 @@ pub(crate) struct MxfSetup<'a> {
     pub audio: Option<(u32, usize)>,
     /// Start timecode in frames of `rate`, and drop-frame.
     pub timecode: (i64, bool),
+    /// MPEG-2 video: the encoder's stream parameters.
+    pub mpeg: Option<MpegVideoInfo>,
 }
 
 /// An MXF export in progress.
@@ -111,7 +129,7 @@ impl MxfMux {
         // integers only: `ExportSettings::validate` refuses float PCM in MXF
         let bits = u32::from(settings.audio.sample_format().bits());
         let mut cfg = WriterConfig::new(if atom { Pattern::OpAtom } else { Pattern::Op1a }, rate, ids.clone());
-        cfg.picture = Some(picture(settings, s.width, s.height));
+        cfg.picture = Some(picture(settings, s.width, s.height, s.mpeg)?);
         cfg.modified = Timestamp::from_unix((now / 1_000_000_000) as i64);
         cfg.timecode = Some(StartTimecode { frames: s.timecode.0, rate, drop_frame: s.timecode.1 && s.rate.supports_drop_frame() });
         if !atom && let Some((sr, ch)) = s.audio {
@@ -155,7 +173,10 @@ impl MxfMux {
 
     pub fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
         for p in packets {
-            let intra = !matches!(self.video.config().picture.as_ref().map(|p| p.coding), Some(PictureCoding::Avc { .. }));
+            let intra = !matches!(
+                self.video.config().picture.as_ref().map(|p| p.coding),
+                Some(PictureCoding::Avc { .. }) | Some(PictureCoding::Mpeg2 { max_gop: 2.., .. })
+            );
             let info = if intra {
                 FrameInfo::intra()
             } else {

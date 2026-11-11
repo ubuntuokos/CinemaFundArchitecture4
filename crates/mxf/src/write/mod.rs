@@ -21,8 +21,9 @@
 //! ```
 //!
 //! Essence mappings: VC-3 / DNxHD / DNxHR (ST 2019-4), Apple ProRes (RDD 44), AVC byte stream
-//! (ST 381-3; Annex B access units with in-band SPS / PPS) with long-GOP index entries (temporal
-//! offsets, key-frame offsets, prediction flags), JPEG 2000 (ST 422, RGBA descriptor with the
+//! (ST 381-3; Annex B access units with in-band SPS / PPS) and MPEG-2 video (ST 381-1, MPEG video
+//! descriptor) with long-GOP index entries (temporal offsets, key-frame offsets, prediction
+//! flags), JPEG 2000 (ST 422, RGBA descriptor with the
 //! JPEG 2000 picture sub-descriptor) and Broadcast Wave PCM (ST 382, 8–32 bit).
 //!
 //! [`Pattern::DCinema`] writes D-Cinema track files (ST 429-3): OP-Atom with one frame-wrapped
@@ -128,12 +129,19 @@ pub enum PictureCoding {
     /// 2K / 4K Digital Cinema profiles (ST 429-4 coding labels), anything else is written as an
     /// unconstrained Part 1 codestream.
     J2k { rsiz: u16 },
+    /// MPEG-2 video elementary stream (ST 381-1), one coded picture per edit unit in coded order,
+    /// with the MPEG video descriptor. Only the High and High-1440 levels, whose coding labels
+    /// RDD 9 Table 6 gives: `profile_and_level` 0x44 (MP@HL), 0x46 (MP@H-14), 0x82 (422P@HL).
+    /// `max_gop` 1 is intra-only; `b_pictures` the most B pictures between anchors; `bit_rate`
+    /// the stream's maximum in bit/s (0: unknown).
+    Mpeg2 { profile_and_level: u8, max_gop: u16, b_pictures: u8, closed_gop: bool, bit_rate: u32 },
 }
 
 impl PictureCoding {
     fn intra_only(&self) -> bool {
         match self {
             PictureCoding::Avc { intra, .. } => *intra,
+            PictureCoding::Mpeg2 { max_gop, .. } => *max_gop <= 1,
             _ => true,
         }
     }
@@ -174,6 +182,15 @@ impl PictureCoding {
                 };
                 [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, version, 0x04, 0x01, 0x02, 0x02, 0x03, 0x01, 0x01, last]
             }
+            PictureCoding::Mpeg2 { profile_and_level, max_gop, .. } => {
+                // RDD 9 Table 6: byte 14 the profile and level, byte 15 03h long GOP
+                let pl = match profile_and_level {
+                    0x82 => 0x04,
+                    0x46 => 0x05,
+                    _ => 0x03,
+                };
+                [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x03, 0x04, 0x01, 0x02, 0x02, 0x01, pl, if max_gop <= 1 { 0x02 } else { 0x03 }, 0x00]
+            }
         }
     }
     /// (essence container label, element type) for frame or clip wrapping.
@@ -185,6 +202,8 @@ impl PictureCoding {
             PictureCoding::Avc { .. } => (essence_container(0x0A, 0x10, 0x60, w), if clip { 0x16 } else { 0x15 }),
             // ST 422 Table 2 ("FU" frame wrapping / "Cn" clip wrapping) and Table 1
             PictureCoding::J2k { .. } => (essence_container(0x07, 0x0C, w, 0x00), if clip { 0x09 } else { 0x08 }),
+            // ST 381-1 Tables 5, 6 (MPEG ES, stream_id E0h bits 6..0) and Table 1 (05h / 06h)
+            PictureCoding::Mpeg2 { .. } => (essence_container(0x02, 0x04, 0x60, w), if clip { 0x06 } else { 0x05 }),
         }
     }
 }
@@ -268,6 +287,7 @@ impl PictureDesc {
                 (if matches!(cid, 1235 | 1241 | 1250 | 1256 | 1270 | 1271) { 10 } else { 8 }, if matches!(cid, 1256 | 1270) { (1, 1) } else { (2, 1) })
             }
             PictureCoding::J2k { .. } => (12, (1, 1)),
+            PictureCoding::Mpeg2 { profile_and_level, .. } => (8, if profile_and_level & 0x70 == 0 { (2, 1) } else { (2, 2) }),
         };
         PictureDesc {
             coding,
@@ -982,10 +1002,12 @@ impl<W: Write + Seek> MxfWriter<W> {
         let mut out = Vec::new();
         let iab_primer = if cfg.iab.is_some() { IAB_PRIMER } else { &[] };
         let mca_primer = if cfg.mca.is_empty() { &[] } else { MCA_PRIMER };
+        let mpeg_primer = if matches!(cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::Mpeg2 { .. })) { MPEG_PRIMER } else { &[] };
         let primer: Vec<Vec<u8>> = PRIMER
             .iter()
             .chain(iab_primer)
             .chain(mca_primer)
+            .chain(mpeg_primer)
             .map(|(t, ul)| {
                 let mut e = t.to_be_bytes().to_vec();
                 e.extend_from_slice(ul);
@@ -1089,7 +1111,14 @@ impl<W: Write + Seek> MxfWriter<W> {
                         self.rgba_descriptor(&mut out, uid, t, p, d);
                         continue;
                     }
-                    let mut s = Set::new(0x28, uid);
+                    let mpeg = match p.coding {
+                        PictureCoding::Mpeg2 { profile_and_level, max_gop, b_pictures, closed_gop, bit_rate } => {
+                            Some((profile_and_level, max_gop, b_pictures, closed_gop, bit_rate))
+                        }
+                        _ => None,
+                    };
+                    // the MPEG video descriptor extends the CDCI descriptor (ST 381-1 8.1)
+                    let mut s = Set::new(if mpeg.is_some() { 0x51 } else { 0x28 }, uid);
                     if multiple {
                         s.u32(0x3006, t.id);
                     }
@@ -1126,6 +1155,20 @@ impl<W: Write + Seek> MxfWriter<W> {
                         .u32(0x3304, black)
                         .u32(0x3305, white)
                         .u32(0x3306, range);
+                    if let Some((pl, max_gop, b, closed, bit_rate)) = mpeg {
+                        s.u8(TAG_MPEG, 1)
+                            .u8(TAG_MPEG + 1, 0)
+                            .u8(TAG_MPEG + 2, 1)
+                            .u8(TAG_MPEG + 3, u8::from(b == 0))
+                            .u8(TAG_MPEG + 4, u8::from(closed))
+                            .u8(TAG_MPEG + 5, 0)
+                            .u16(TAG_MPEG + 6, max_gop)
+                            .u16(TAG_MPEG + 7, u16::from(b))
+                            .u8(TAG_MPEG + 8, pl);
+                        if bit_rate > 0 {
+                            s.u32(TAG_MPEG + 9, bit_rate);
+                        }
+                    }
                     s.write(&mut out);
                 }
                 TrackKind::Iab => {
@@ -1328,7 +1371,8 @@ impl<W: Write + Seek> MxfWriter<W> {
             stored_of[d as usize] = s;
         }
         let intra = self.cfg.picture.as_ref().is_none_or(|p| p.coding.intra_only());
-        let avc = matches!(self.cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::Avc { .. }));
+        // AVC and MPEG-2 random access points carry their sequence header (flag bit 6, ST 381-1 A.2)
+        let avc = matches!(self.cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::Avc { .. } | PictureCoding::Mpeg2 { .. }));
         let mut rows: Vec<Vec<u8>> = Vec::with_capacity(n);
         let mut last_key = 0usize;
         for (s, e) in entries.iter().enumerate() {

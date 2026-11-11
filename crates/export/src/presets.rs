@@ -109,6 +109,14 @@ fn mxf(format: Format, codec: MxfVideoCodec, profile: &str) -> ExportSettings {
             s.adaptive_bitrate = Some(0.3);
             s.bitrate_mode = BitrateMode::Vbr1Pass;
         }
+        MxfVideoCodec::Mpeg2 => {
+            // XDCAM HD422 style: 4:2:2 Profile at 50 Mbit/s, a closed GOP of 12 with IBBP
+            s.mpeg2_422 = true;
+            s.bitrate_kbps = 50_000;
+            s.max_bitrate_kbps = Some(50_000);
+            s.keyframe_distance = Some(12);
+            s.mpeg2_b_frames = Some(2);
+        }
     }
     s
 }
@@ -208,6 +216,12 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
         p("MXF OP1a DNxHR HQ", bc, "MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode", mxf(Format::MxfOp1a, MxfVideoCodec::Dnxhr, "hq")),
         p("MXF OP1a ProRes 422 HQ", bc, "MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode", mxf(Format::MxfOp1a, MxfVideoCodec::ProRes, "hq")),
         p("MXF OP1a H.264", bc, "MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM", mxf(Format::MxfOp1a, MxfVideoCodec::H264, "")),
+        p(
+            "MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s",
+            bc,
+            "MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes",
+            mxf(Format::MxfOp1a, MxfVideoCodec::Mpeg2, ""),
+        ),
         p(
             "MXF OP-Atom DNxHR (Avid)",
             bc,

@@ -546,6 +546,7 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 let codec = match settings["mxfVideoCodec"].as_str().unwrap() {
                     "proRes" => "prores",
                     "h264" => "h264",
+                    "mpeg2" => "mpeg2video",
                     _ => "dnxhd",
                 };
                 assert_eq!(v["codec_name"], codec, "{name}");

@@ -550,6 +550,7 @@ impl Exporter {
                 rate: self.pipe.rate,
                 audio: self.audio.as_ref().map(|a| (a.sr, a.channels)),
                 timecode: (start, q.settings.drop_frame),
+                mpeg: self.venc.mpeg_video(),
             })?);
             return Ok(());
         }
