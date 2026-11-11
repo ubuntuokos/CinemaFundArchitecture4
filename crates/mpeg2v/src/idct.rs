@@ -59,10 +59,26 @@ pub(crate) fn idct(blk: &mut [i32; 64], dc_only: bool) {
             o[x] = my[1] * tmp[1][x] + my[3] * tmp[3][x] + my[5] * tmp[5][x] + my[7] * tmp[7][x];
         }
         for x in 0..8 {
-            blk[y * 8 + x] = ((dc + (e[x] + o[x]) + 0.5).floor() as i32).clamp(-256, 255);
-            blk[(7 - y) * 8 + x] = ((dc + (e[x] - o[x]) + 0.5).floor() as i32).clamp(-256, 255);
+            blk[y * 8 + x] = floor_i32(dc + (e[x] + o[x]) + 0.5).clamp(-256, 255);
+            blk[(7 - y) * 8 + x] = floor_i32(dc + (e[x] - o[x]) + 0.5).clamp(-256, 255);
         }
     }
+}
+
+/// `v.floor() as i32` without the libm call (exact for every `f32` in the `i32` range, which IDCT
+/// sums of 12-bit coefficients never leave).
+#[inline(always)]
+pub(crate) fn floor_i32(v: f32) -> i32 {
+    let t = v as i32;
+    t - i32::from((t as f32) > v)
+}
+
+/// `v.round() as i32` (half away from zero) without the libm call, exact like [`floor_i32`].
+#[inline(always)]
+pub(crate) fn round_i32(v: f32) -> i32 {
+    let t = v as i32;
+    let frac = v - t as f32;
+    t + i32::from(frac >= 0.5) - i32::from(frac <= -0.5)
 }
 
 #[cfg(test)]
@@ -126,6 +142,21 @@ mod tests {
 
     /// IEEE 1180-1990 §3: 10 000 blocks for each range and sign; peak error ≤ 1, per-pixel mean
     /// square error ≤ 0.06, overall ≤ 0.02, per-pixel mean error ≤ 0.015, overall ≤ 0.0015.
+    #[test]
+    fn fast_floor_and_round_match_std() {
+        let mut vals = vec![0.0f32, -0.0, 0.5, -0.5, 1.5, -1.5, 2.5, -2.5, 0.49999997, -0.49999997, 255.5, -256.5, 1e6 + 0.5];
+        let mut x = 1u32;
+        for _ in 0..200_000 {
+            x = x.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            vals.push((x as i32) as f32 / 65_536.0);
+            vals.push((x % 4096) as f32 * 0.25 - 512.0);
+        }
+        for v in vals {
+            assert_eq!(floor_i32(v), v.floor() as i32, "floor {v}");
+            assert_eq!(round_i32(v), v.round() as i32, "round {v}");
+        }
+    }
+
     #[test]
     fn ieee_1180_accuracy() {
         let blocks = if cfg!(debug_assertions) { 2_000 } else { 10_000 };

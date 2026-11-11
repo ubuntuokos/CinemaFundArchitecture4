@@ -25,6 +25,26 @@ pub fn sha256_hex(data: &[u8]) -> String {
     hex(&Sha256::digest(data))
 }
 
+/// SHA-256 (lowercase hex) of everything `reader` holds, read in 1 MiB steps. Stops with
+/// [`Error::Cancelled`] as soon as `cancel` is set.
+pub fn sha256_reader(reader: &dyn cfa4_media::ByteReader, cancel: &AtomicBool) -> Result<String, Error> {
+    let len = reader.len();
+    let mut h = Sha256::new();
+    let mut buf = vec![0u8; CHUNK];
+    let mut at: u64 = 0;
+    while at < len {
+        if cancel.load(Ordering::Relaxed) {
+            return Err(Error::Cancelled);
+        }
+        let n = usize::try_from((len - at).min(CHUNK as u64)).unwrap_or(CHUNK);
+        let chunk = buf.get_mut(..n).ok_or(Error::Io("read buffer".into()))?;
+        reader.read_at(at, chunk).map_err(|e| Error::Io(e.to_string()))?;
+        h.update(&*chunk);
+        at = at.saturating_add(n as u64);
+    }
+    Ok(hex(&h.finalize()))
+}
+
 /// A file's SHA-256 (lowercase hex) and size, read in 1 MiB steps. Stops with
 /// [`Error::Cancelled`] as soon as `cancel` is set.
 pub fn sha256_file(path: &Path, cancel: &AtomicBool) -> Result<(String, u64), Error> {
@@ -70,6 +90,9 @@ mod tests {
         let (h, n) = sha256_file(&path, &AtomicBool::new(false)).unwrap();
         assert_eq!((h, n), (sha256_hex(&data), data.len() as u64));
         assert!(matches!(sha256_file(&path, &AtomicBool::new(true)), Err(Error::Cancelled)));
+        let mem: std::sync::Arc<[u8]> = data.clone().into();
+        let reader = cfa4_media::reader::MemReader(mem);
+        assert_eq!(sha256_reader(&reader, &AtomicBool::new(false)).unwrap(), sha256_hex(&data));
         assert!(matches!(sha256_file(&dir.join("missing"), &AtomicBool::new(false)), Err(Error::Io(_))));
         std::fs::remove_dir_all(&dir).unwrap();
     }

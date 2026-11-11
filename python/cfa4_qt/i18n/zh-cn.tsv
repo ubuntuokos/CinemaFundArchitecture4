@@ -391,10 +391,7 @@
 	transitions	转场
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	已复制 {copied} 帧，在剪切处重新编码 {reencoded} 帧，渲染 {rendered} 帧
 	{frames} frames are re-encoded or rendered. Continue?	{frames} 帧将重新编码或渲染。是否继续？
-	Field order	场序
 	Progressive	逐行
-	Interlaced, upper field first	隔行，上场优先
-	Interlaced, lower field first	隔行，下场优先
 # Smart Cut audio (WP-09b)
 	Audio copied: {tracks}	已复制音频：{tracks}
 	Audio track {track} is not copied: {why}	音轨 {track} 未复制：{why}
