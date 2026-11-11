@@ -46,7 +46,7 @@ const MAX_XML_DEPTH: usize = 128;
 /// Count XML element nesting without constructing an XML tree. This deliberately only decides
 /// where markup ends (respecting quoted attributes, comments, CDATA and processing instructions);
 /// `roxmltree` remains responsible for XML syntax and matching tags.
-fn check_xml_depth(text: &str) -> Result<()> {
+pub(crate) fn check_xml_depth(text: &str) -> Result<()> {
     let bytes = text.as_bytes();
     let mut i = 0;
     let mut depth = 0usize;
