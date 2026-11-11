@@ -527,10 +527,14 @@ impl Exporter {
                     let header = crate::aac_out::AdtsHeader::from_asc(&cfg.asc)?;
                     Some(MpegAudio::Aac { header, sample_rate: a.sr, priming: enc.priming() })
                 }
+                (Some(a), None) if self.settings.audio_codec() == AudioCodec::Mp2 => Some(MpegAudio::mp2(a.sr, a.channels, self.settings.audio.bitrate_kbps)?),
                 (Some(a), None) => Some(MpegAudio::Lpcm { sample_rate: a.sr, channels: a.channels as u32 }),
             };
             let audio_bps = match (&self.audio, &self.aenc) {
                 (Some(_), Some(_)) => u64::from(self.settings.audio.bitrate_kbps) * 1000,
+                (Some(a), None) if self.settings.audio_codec() == AudioCodec::Mp2 => {
+                    u64::from(crate::settings::mp2_bitrate_kbps(a.sr, a.channels, self.settings.audio.bitrate_kbps)) * 1000
+                }
                 (Some(a), None) => u64::from(a.sr) * a.channels as u64 * 16,
                 _ => 0,
             };

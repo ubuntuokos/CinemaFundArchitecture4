@@ -1282,6 +1282,7 @@ dependencies = [
  "cfa4-j2k",
  "cfa4-matroska",
  "cfa4-media",
+ "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
  "cfa4-mxf",
