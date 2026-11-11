@@ -4219,3 +4219,16 @@ export.summary	Low	ниско
 	Lines one gap unit apart, moving with the page	Линии през една единица разстояние, движещи се със страницата
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ не се откроява от фона (контраст {ratio}:1; нужно е поне 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Зад текста има изображение или видео: проверете контраста на око
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Готов облик: стилове, фонове, преходи и тайминг. Ако е зададен файл със стил, той има предимство.
+	New Spreadsheet from Template…	Нова таблица от шаблон…
+	built in	вграден
+	mine	мой
+	this project	този проект
+	Template	Шаблон
+	Choose a template first.	Първо изберете шаблон.
+	Name of the template:	Име на шаблона:
+	Template saved: {name}	Шаблонът е запазен: {name}
+	Apply Credits Template…	Прилагане на шаблон за надписи…
+	Template:	Шаблон:
+	Credits Templates	Шаблони за надписи
+	CSV (*.csv)	CSV (*.csv)

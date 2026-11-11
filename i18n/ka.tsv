@@ -4219,3 +4219,16 @@ export.summary	Low	დაბალი
 	Lines one gap unit apart, moving with the page	ხაზები ერთი დაშორების ერთეულით, გვერდთან ერთად მოძრაობენ
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ფონზე არ გამოირჩევა (კონტრასტი {ratio}:1; საჭიროა მინიმუმ 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	ტექსტის უკან სურათი ან ვიდეოა: კონტრასტი თვალით შეამოწმეთ
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	მზა იერსახე: სტილები, ფონები, გადასვლები და დრო. მითითებულ სტილის ფაილს უპირატესობა აქვს.
+	New Spreadsheet from Template…	ახალი ცხრილი შაბლონიდან…
+	built in	ჩაშენებული
+	mine	ჩემი
+	this project	ეს პროექტი
+	Template	შაბლონი
+	Choose a template first.	ჯერ აირჩიეთ შაბლონი.
+	Name of the template:	შაბლონის სახელი:
+	Template saved: {name}	შაბლონი შენახულია: {name}
+	Apply Credits Template…	ტიტრების შაბლონის გამოყენება…
+	Template:	შაბლონი:
+	Credits Templates	ტიტრების შაბლონები
+	CSV (*.csv)	CSV (*.csv)

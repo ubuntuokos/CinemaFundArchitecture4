@@ -4219,3 +4219,16 @@ export.summary	Low	žema
 	Lines one gap unit apart, moving with the page	Linijos kas vieną tarpo vienetą, judančios kartu su puslapiu
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ neišsiskiria iš fono (kontrastas {ratio}:1; reikia bent 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Už teksto yra paveikslėlis ar vaizdo įrašas: kontrastą patikrinkite akimis
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Paruošta išvaizda: stiliai, fonai, perėjimai ir laikas. Nurodytas stiliaus failas turi pirmenybę.
+	New Spreadsheet from Template…	Nauja skaičiuoklė iš šablono…
+	built in	įtaisytas
+	mine	mano
+	this project	šis projektas
+	Template	Šablonas
+	Choose a template first.	Pirmiausia pasirinkite šabloną.
+	Name of the template:	Šablono pavadinimas:
+	Template saved: {name}	Šablonas įrašytas: {name}
+	Apply Credits Template…	Taikyti titrų šabloną…
+	Template:	Šablonas:
+	Credits Templates	Titrų šablonai
+	CSV (*.csv)	CSV (*.csv)

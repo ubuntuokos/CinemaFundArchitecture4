@@ -4218,3 +4218,16 @@ export.summary	Low	төмен
 	Lines one gap unit apart, moving with the page	Бір аралық бірлігімен сызықтар, бетпен бірге жылжиды
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» фоннан ерекшеленбейді (контраст {ratio}:1; кемінде 4,5:1 қажет)
 	A picture or video is behind the text: check the contrast by eye	Мәтіннің артында сурет не бейне бар: контрастты көзбен тексеріңіз
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Дайын көрініс: стильдер, фондар, ауысулар және уақыт. Стиль файлы берілсе, сол басым болады.
+	New Spreadsheet from Template…	Үлгіден жаңа кесте…
+	built in	кірістірілген
+	mine	менікі
+	this project	осы жоба
+	Template	Үлгі
+	Choose a template first.	Алдымен үлгіні таңдаңыз.
+	Name of the template:	Үлгі атауы:
+	Template saved: {name}	Үлгі сақталды: {name}
+	Apply Credits Template…	Титрлер үлгісін қолдану…
+	Template:	Үлгі:
+	Credits Templates	Титрлер үлгілері
+	CSV (*.csv)	CSV (*.csv)

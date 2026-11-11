@@ -4216,3 +4216,16 @@ export.summary	Low	laag
 	Lines one gap unit apart, moving with the page	Lijnen één afstandseenheid uit elkaar, die met de pagina meebewegen
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” steekt niet af tegen de achtergrond (contrast {ratio}:1; minstens 4,5:1 is nodig)
 	A picture or video is behind the text: check the contrast by eye	Achter de tekst staat een afbeelding of video: controleer het contrast op het oog
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Een kant-en-klare look: stijlen, achtergronden, overgangen en timing. Een opgegeven opmaakbestand gaat voor.
+	New Spreadsheet from Template…	Nieuwe spreadsheet uit sjabloon…
+	built in	ingebouwd
+	mine	eigen
+	this project	dit project
+	Template	Sjabloon
+	Choose a template first.	Kies eerst een sjabloon.
+	Name of the template:	Naam van het sjabloon:
+	Template saved: {name}	Sjabloon opgeslagen: {name}
+	Apply Credits Template…	Aftitelingssjabloon toepassen…
+	Template:	Sjabloon:
+	Credits Templates	Aftitelingssjablonen
+	CSV (*.csv)	CSV (*.csv)

@@ -4215,3 +4215,16 @@ export.summary	Low	低
 	Lines one gap unit apart, moving with the page	間隔一個間距單位的線，隨頁面移動
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	「{text}」與背景區分不明顯（對比 {ratio}:1；至少需要 4.5:1）
 	A picture or video is behind the text: check the contrast by eye	文字後方有圖片或影片：請目視檢查對比
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	現成外觀：樣式、背景、轉場與時間。若指定樣式檔，以樣式檔為準。
+	New Spreadsheet from Template…	從範本建立新試算表…
+	built in	內建
+	mine	我的
+	this project	此專案
+	Template	範本
+	Choose a template first.	請先選擇範本。
+	Name of the template:	範本名稱：
+	Template saved: {name}	已儲存範本：{name}
+	Apply Credits Template…	套用演職員表範本…
+	Template:	範本：
+	Credits Templates	演職員表範本
+	CSV (*.csv)	CSV (*.csv)

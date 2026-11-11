@@ -4201,3 +4201,16 @@
 	Lines one gap unit apart, moving with the page	Лінії через одиницю інтервалу, рухаються разом зі сторінкою
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» не виділяється на тлі (контраст {ratio}:1; потрібно щонайменше 4.5:1)
 	A picture or video is behind the text: check the contrast by eye	За текстом зображення або відео: перевірте контраст на око
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Готовий вигляд: стилі, тла, переходи та хронометраж. Файл оформлення, якщо вказано, має пріоритет.
+	New Spreadsheet from Template…	Нова таблиця з шаблону…
+	built in	вбудований
+	mine	мій
+	this project	цей проєкт
+	Template	Шаблон
+	Choose a template first.	Спершу виберіть шаблон.
+	Name of the template:	Назва шаблону:
+	Template saved: {name}	Шаблон збережено: {name}
+	Apply Credits Template…	Застосувати шаблон титрів…
+	Template:	Шаблон:
+	Credits Templates	Шаблони титрів
+	CSV (*.csv)	CSV (*.csv)

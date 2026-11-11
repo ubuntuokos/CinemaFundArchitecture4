@@ -4218,3 +4218,16 @@ export.summary	Low	lav
 	Lines one gap unit apart, moving with the page	Linjer med én afstandsenhed imellem, som følger siden
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” skiller sig ikke ud fra baggrunden (kontrast {ratio}:1; mindst 4,5:1 kræves)
 	A picture or video is behind the text: check the contrast by eye	Der er et billede eller en video bag teksten: kontrollér kontrasten med øjet
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Et færdigt udseende: stilarter, baggrunde, overgange og timing. En angivet stilfil har forrang.
+	New Spreadsheet from Template…	Nyt regneark fra skabelon…
+	built in	indbygget
+	mine	min
+	this project	dette projekt
+	Template	Skabelon
+	Choose a template first.	Vælg først en skabelon.
+	Name of the template:	Skabelonens navn:
+	Template saved: {name}	Skabelon gemt: {name}
+	Apply Credits Template…	Anvend rulletekstskabelon…
+	Template:	Skabelon:
+	Credits Templates	Rulletekstskabeloner
+	CSV (*.csv)	CSV (*.csv)

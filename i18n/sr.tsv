@@ -4216,3 +4216,16 @@ export.summary	Low	низак
 	Lines one gap unit apart, moving with the page	Линије размакнуте за једну јединицу размака, померају се са страницом
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” се не истиче од позадине (контраст {ratio}:1; потребно је најмање 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Иза текста је слика или видео: проверите контраст оком
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Готов изглед: стилови, позадине, прелази и тајминг. Задата датотека стила има предност.
+	New Spreadsheet from Template…	Нова табела из шаблона…
+	built in	уграђени
+	mine	мој
+	this project	овај пројекат
+	Template	Шаблон
+	Choose a template first.	Најпре изаберите шаблон.
+	Name of the template:	Име шаблона:
+	Template saved: {name}	Шаблон сачуван: {name}
+	Apply Credits Template…	Примени шаблон шпице…
+	Template:	Шаблон:
+	Credits Templates	Шаблони шпице
+	CSV (*.csv)	CSV (*.csv)
