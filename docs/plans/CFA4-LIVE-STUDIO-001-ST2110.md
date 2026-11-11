@@ -6,7 +6,7 @@
 **Kiegészíti:** [CFA4-LIVE-STUDIO-001](CFA4-LIVE-STUDIO-001.md) (v1.1), D4 (csak nyílt protokollok)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-11-én megerősítette, hogy az ST 2110 nyílt
 protokollként a D4 szerint bekerül az élő stúdió tervébe, fázisbeosztással (ez a dokumentum). A
-fázisok és a VI. fejezet D8–D12 döntései a tulajdonos jóváhagyására várnak.
+D8-at és a D10-et a tulajdonos 2026-11-11-én eldöntötte; a fázisok és a D9, D11, D12 a jóváhagyására várnak.
 **Források:** a tulajdonos által 2026-11-11-én átadott SMPTE ST 2110 szabványszövegek (17 dokumentum,
 II. fejezet). A szabványszövegek szerzői jog alatt állnak: **nem kerülnek a tárolóba**, csak a
 kiadásuk és a fejezetszámaik (`AGENTS.md` §2: a megvalósított kiadást a crate README-je rögzíti).
