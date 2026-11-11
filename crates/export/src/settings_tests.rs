@@ -2065,3 +2065,65 @@ fn hls_writes_a_dash_manifest_when_asked() {
     assert!(x.contains("initialization=\"Demo_audio_init.mp4\" media=\"Demo_audio_$Number%05d$.m4s\""), "{x}");
     assert!(x.contains("width=\"64\" height=\"36\" frameRate=\"24\"") && x.contains("codecs=\"mp4a.40.2\""), "{x}");
 }
+
+/// The segment durations (seconds) of each `SegmentTimeline` in an MPD, in document order.
+fn mpd_timelines(mpd: &str) -> Vec<Vec<f64>> {
+    let attr = |tag: &str, name: &str| -> Option<u64> {
+        let at = tag.find(&format!(" {name}=\""))? + name.len() + 3;
+        tag[at..].split('"').next()?.parse().ok()
+    };
+    let mut out = Vec::new();
+    for template in mpd.split("<SegmentTemplate").skip(1) {
+        let timescale = attr(template, "timescale").unwrap() as f64;
+        let mut durations = Vec::new();
+        for s in template.split("<S ").skip(1) {
+            let s = format!(" {}", s.split("/>").next().unwrap());
+            let d = attr(&s, "d").unwrap() as f64 / timescale;
+            durations.extend(std::iter::repeat_n(d, 1 + attr(&s, "r").unwrap_or(0) as usize));
+        }
+        out.push(durations);
+    }
+    out
+}
+
+/// The `#EXTINF` durations of a media playlist.
+fn extinf(playlist: &str) -> Vec<f64> {
+    playlist.lines().filter_map(|l| l.strip_prefix("#EXTINF:")).map(|l| l.trim_end_matches(',').parse().unwrap()).collect()
+}
+
+#[test]
+fn dash_manifest_matches_the_hls_playlists() {
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 13);
+    let dir = Scratch::new("hls-dash-match");
+    let path = dir.path("Demo.m3u8");
+    // a key frame every two seconds: segments are cut at 6 and 12 s
+    let s =
+        ExportSettings { format: Format::Hls, path: path.clone(), bitrate_kbps: 300, keyframe_distance: Some(48), dash_manifest: true, ..Default::default() };
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let files = hls_files(&path, 36);
+    let mpd = std::fs::read_to_string(dash_files(&path)).unwrap();
+    assert!(mpd.contains("mediaPresentationDuration=\"PT13S\""), "{mpd}");
+
+    // the same segments, of the same lengths, as the HLS media playlists (video first, then sound)
+    let timelines = mpd_timelines(&mpd);
+    let playlists = [extinf(&std::fs::read_to_string(&files.media).unwrap()), extinf(&std::fs::read_to_string(&files.audio_media).unwrap())];
+    assert_eq!(timelines.len(), 2, "{mpd}");
+    for (dash, hls) in timelines.iter().zip(&playlists) {
+        assert_eq!(dash.len(), hls.len(), "{mpd}");
+        for (d, h) in dash.iter().zip(hls) {
+            assert!((d - h).abs() < 1e-4, "{d} vs {h}\n{mpd}");
+        }
+    }
+    assert_eq!(timelines[0].len(), 3);
+    for n in 0..3 {
+        assert!(Path::new(&files.segment(n)).exists() && Path::new(&files.audio_segment(n)).exists());
+    }
+
+    // ffprobe opens the manifest: one H.264 and one AAC stream, about 13 seconds
+    let Some(v) = ffprobe_json(&["-show_streams", "-show_format"], &dash_files(&path)) else { return };
+    let codecs: Vec<&str> = v["streams"].as_array().unwrap().iter().map(|s| s["codec_name"].as_str().unwrap()).collect();
+    assert_eq!(codecs, ["h264", "aac"], "{v}");
+    assert_eq!(v["format"]["format_name"], "dash", "{v}");
+    let secs: f64 = v["format"]["duration"].as_str().unwrap().parse().unwrap();
+    assert!((secs - 13.0).abs() < 0.1, "{v}");
+}
