@@ -19,6 +19,7 @@
 use std::io::Write;
 
 mod aac_out;
+pub mod atomic;
 pub mod audio_copy;
 mod audio_out;
 pub mod boundary_reencode;
@@ -28,6 +29,7 @@ mod boundary_reencode_hevc_tests;
 pub mod boundary_reencode_mpeg;
 #[cfg(test)]
 mod boundary_reencode_mpeg_tests;
+pub mod copy;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
