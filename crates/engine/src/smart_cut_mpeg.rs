@@ -2,13 +2,19 @@
 //! `export.analyze`, `export.plan` and `export.start` with an `.mpg` / `.ts` / `.m2ts` source.
 //! [`crate::smart_cut`] hands a source here when it is an MPEG stream.
 //!
-//! The cut is lossless only (whole GOPs, copied into a new program or transport stream with the
-//! audio frames of the span at their source offset); MPEG-2 boundary re-encoding is not
-//! implemented, so a frame-accurate plan that needs it is shown with its blocker and refused.
+//! A GOP-boundary cut is lossless (whole GOPs, copied into a new program or transport stream with
+//! the audio frames of the span at their source offset). A frame-accurate cut copies the whole
+//! GOPs and re-encodes the boundary pictures with CFA4's MPEG-2 encoder (WP-09e): `export.plan`
+//! reports whether it can (`boundaryReencode`), and `export.start` runs it only with
+//! `"confirm": true`.
 //! Media time 0 of an MPEG source is its first presented picture, as the media layer decodes it,
 //! and `in` / `out` are media times with a file path too (MPEG timestamps start anywhere); the
 //! access points report both their stream `time` and their `mediaTime`.
 
+use cfa4_export::boundary_reencode::BoundaryEncoding;
+use cfa4_export::boundary_reencode_mpeg::{
+    check_mpeg_boundary_reencode, execute_mpeg_boundary_reencode, mpeg2_source_format, plan_mpeg_boundary_audio, verify_mpeg_boundary_reencode,
+};
 use cfa4_export::smart_cut::SmartCutError;
 use cfa4_export::smart_cut_mpeg::{MpegCopySource, container_of, execute_mpeg_copy, index_mpeg_video, plan_mpeg_audio, verify_mpeg_copy};
 use cfa4_mpegts::{ByteSource, Codec as TsCodec, File, Format, Kind, MuxFormat};
@@ -21,7 +27,7 @@ use serde_json::{Value, json};
 
 use crate::clip_ops::SourceView;
 use crate::commands::{bad, bool_p, str_p};
-use crate::smart_cut::{CutSource, POLICY, guarantee_p, mode_p, range_p, source_p, summary, ticks};
+use crate::smart_cut::{CutSource, POLICY, encoding_p, guarantee_p, mode_p, range_p, source_p, summary, ticks};
 use crate::{EngineError, Result, Session};
 
 const CLOCK: i64 = 90_000;
@@ -206,26 +212,32 @@ fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan, M
         guarantee: guarantee_p(p, cmd)?,
         source_container: src.container(),
         output_container: container_of_format(format),
-        format: None,
+        // the encoder's limits (profile, chroma) decide whether boundaries can be re-encoded
+        format: mpeg2_source_format(&src.file, &*src.bytes, src.video),
     };
     let plan = plan_smart_cut(&Registry::native(), &src.index, &request, POLICY).map_err(|e| bad(cmd, e.to_string()))?;
     Ok((src, plan, format))
 }
 
-/// Why an MPEG-2 plan cannot run here although the planner allows it (its boundaries).
-fn reencode_problem(plan: &SmartCutPlan) -> Option<String> {
-    plan.plan
-        .requires_confirmation()
-        .then(|| "MPEG-2 boundary re-encoding is not available yet: cut at GOP boundaries (\"mode\": \"gop-boundary\")".to_string())
+/// Why the boundary re-encoder refuses `plan` (before anything is decoded or written).
+fn reencode_problem(src: &Source, plan: &SmartCutPlan, format: MuxFormat, encoding: &BoundaryEncoding) -> Option<String> {
+    let stream = src.stream()?;
+    check_mpeg_boundary_reencode(&plan.plan, stream, &src.copy_source(false), format, encoding).err().map(|e| e.to_string())
 }
 
-/// The audio a copy takes along, for the plan preview (the keys of the MP4 path's `audio`).
-fn audio_json(src: &Source, plan: &SmartCutPlan, format: MuxFormat, audio: bool) -> Value {
-    if !plan.plan.is_lossless() || !plan.executable {
+/// The audio the cut takes along, for the plan preview (the keys of the MP4 path's `audio`).
+fn audio_json(src: &Source, plan: &SmartCutPlan, format: MuxFormat, audio: bool, encoding: &BoundaryEncoding) -> Value {
+    if !plan.executable {
         return json!({"tracks": [], "dropped": []});
     }
     let Some(stream) = src.stream() else { return json!({"tracks": [], "dropped": []}) };
-    match plan_mpeg_audio(&plan.plan, stream, &src.copy_source(audio), format) {
+    let source = src.copy_source(audio);
+    let planned = if plan.plan.is_lossless() {
+        plan_mpeg_audio(&plan.plan, stream, &source, format)
+    } else {
+        plan_mpeg_boundary_audio(&plan.plan, stream, &source, format, encoding)
+    };
+    match planned {
         Ok((tracks, dropped)) => json!({
             "tracks": tracks.iter().map(|t| json!({"trackId": t.stream, "codec": t.codec, "units": t.units})).collect::<Vec<_>>(),
             "dropped": dropped.iter().map(|d| json!({"trackId": d.stream, "reason": d.reason})).collect::<Vec<_>>(),
@@ -236,24 +248,34 @@ fn audio_json(src: &Source, plan: &SmartCutPlan, format: MuxFormat, audio: bool)
 
 pub(crate) fn plan(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.plan";
+    let encoding = encoding_p(p, cmd)?;
     let (src, plan, format) = plan_of(s, p, cmd)?;
-    let audio = audio_json(&src, &plan, format, bool_p(p, "audio").unwrap_or(true));
+    let audio = audio_json(&src, &plan, format, bool_p(p, "audio").unwrap_or(true), &encoding);
     let summary = summary(&plan);
-    match reencode_problem(&plan) {
-        None => Ok(json!({"plan": plan, "summary": summary, "audio": audio})),
-        Some(problem) => Ok(json!({"plan": plan, "summary": summary, "audio": audio, "boundaryReencode": {"ready": false, "problem": problem}})),
+    if !plan.plan.requires_confirmation() {
+        return Ok(json!({"plan": plan, "summary": summary, "audio": audio}));
     }
+    let problem = reencode_problem(&src, &plan, format, &encoding);
+    Ok(json!({"plan": plan, "summary": summary, "audio": audio, "boundaryReencode": {"ready": problem.is_none(), "problem": problem}}))
 }
 
 pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.start";
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
+    let encoding = encoding_p(p, cmd)?;
     let (src, plan, format) = plan_of(s, p, cmd)?;
     if output == src.path {
         return Err(bad(cmd, "the output must not be the source file"));
     }
-    if let Some(problem) = reencode_problem(&plan) {
-        return Err(bad(cmd, problem));
+    let reencodes = plan.plan.requires_confirmation();
+    if reencodes && !bool_p(p, "confirm").unwrap_or(false) {
+        return Err(bad(
+            cmd,
+            format!(
+                "the plan re-encodes {} frames at its boundaries; run it with \"confirm\": true, or use \"mode\": \"gop-boundary\" to copy without re-encoding",
+                plan.plan.reencoded_frames()
+            ),
+        ));
     }
     if !plan.executable {
         return Err(EngineError::Other(format!("Smart Cut cannot run: {}", plan.blockers.join("; "))));
@@ -261,17 +283,30 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let stream = src.stream().ok_or_else(|| EngineError::Other(format!("{}: no stream was indexed", src.path)))?;
     let source = src.copy_source(bool_p(p, "audio").unwrap_or(true));
     let other = |e: SmartCutError| EngineError::Other(e.to_string());
-    let (bytes, report) = execute_mpeg_copy(&plan.plan, stream, &source, format, Vec::new()).map_err(other)?;
-    let verified = verify_mpeg_copy(&plan.plan, stream, &source, format, &bytes).map_err(other)?;
-    if verified != report {
-        return Err(EngineError::Other("Smart Cut verification read back another file than was written".into()));
-    }
+    let read_back = || EngineError::Other("Smart Cut verification read back another file than was written".into());
+    let (bytes, audio, dropped, report) = if reencodes {
+        let (bytes, report) = execute_mpeg_boundary_reencode(&plan.plan, stream, &source, format, &encoding, Vec::new()).map_err(other)?;
+        let verified = verify_mpeg_boundary_reencode(&plan.plan, stream, &source, format, &encoding, &bytes).map_err(other)?;
+        if (verified.samples, verified.copied, verified.reencoded, &verified.audio) != (report.samples, report.copied, report.reencoded, &report.audio) {
+            return Err(read_back());
+        }
+        // the verified report carries the measured quality of the re-encoded pictures
+        let value = serde_json::to_value(&verified).map_err(|e| EngineError::Other(e.to_string()))?;
+        (bytes, verified.audio, verified.dropped, value)
+    } else {
+        let (bytes, report) = execute_mpeg_copy(&plan.plan, stream, &source, format, Vec::new()).map_err(other)?;
+        let verified = verify_mpeg_copy(&plan.plan, stream, &source, format, &bytes).map_err(other)?;
+        if verified != report {
+            return Err(read_back());
+        }
+        let value = serde_json::to_value(&report).map_err(|e| EngineError::Other(e.to_string()))?;
+        (bytes, report.audio, report.dropped, value)
+    };
     s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
     let audio = json!({
-        "tracks": report.audio.iter().map(|a| json!({"trackId": a.stream, "codec": a.codec, "units": a.units})).collect::<Vec<_>>(),
-        "dropped": report.dropped.iter().map(|d| json!({"trackId": d.stream, "reason": d.reason})).collect::<Vec<_>>(),
-        "verified": report.audio,
+        "tracks": audio.iter().map(|a| json!({"trackId": a.stream, "codec": a.codec, "units": a.units})).collect::<Vec<_>>(),
+        "dropped": dropped.iter().map(|d| json!({"trackId": d.stream, "reason": d.reason})).collect::<Vec<_>>(),
+        "verified": audio,
     });
-    let report = serde_json::to_value(&report).map_err(|e| EngineError::Other(e.to_string()))?;
     Ok(json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary(&plan), "audio": audio}))
 }
