@@ -86,6 +86,8 @@ pub enum Language {
     Ka,
     /// Danish, persisted as `da`.
     Da,
+    /// Finnish, persisted as `fi`.
+    Fi,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -119,11 +121,12 @@ static SERBIAN_LATIN: OnceLock<Catalog> = OnceLock::new();
 static BULGARIAN: OnceLock<Catalog> = OnceLock::new();
 static GEORGIAN: OnceLock<Catalog> = OnceLock::new();
 static DANISH: OnceLock<Catalog> = OnceLock::new();
+static FINNISH: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 27] = [
+    pub const ALL: [Self; 28] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -149,6 +152,7 @@ impl Language {
         Self::Bg,
         Self::Ka,
         Self::Da,
+        Self::Fi,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -180,6 +184,7 @@ impl Language {
             Self::Bg => "Български",
             Self::Ka => "ქართული",
             Self::Da => "Dansk",
+            Self::Fi => "Suomi",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -212,6 +217,7 @@ impl Language {
             "bg" => Some(Self::Bg),
             "ka" => Some(Self::Ka),
             "da" => Some(Self::Da),
+            "fi" => Some(Self::Fi),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -228,7 +234,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 24] = [
+        const PRIMARY: [(&str, Language); 25] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -253,6 +259,7 @@ impl Language {
             ("bg", Language::Bg),
             ("ka", Language::Ka),
             ("da", Language::Da),
+            ("fi", Language::Fi),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -318,6 +325,7 @@ impl Language {
             Self::Bg => "bg",
             Self::Ka => "ka",
             Self::Da => "da",
+            Self::Fi => "fi",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -351,6 +359,7 @@ impl Language {
             Self::Bg => Some(BULGARIAN.get_or_init(|| Catalog::parse(catalog_file!("bg")))),
             Self::Ka => Some(GEORGIAN.get_or_init(|| Catalog::parse(catalog_file!("ka")))),
             Self::Da => Some(DANISH.get_or_init(|| Catalog::parse(catalog_file!("da")))),
+            Self::Fi => Some(FINNISH.get_or_init(|| Catalog::parse(catalog_file!("fi")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -552,6 +561,7 @@ mod tests {
             ("bg", catalog_file!("bg")),
             ("ka", catalog_file!("ka")),
             ("da", catalog_file!("da")),
+            ("fi", catalog_file!("fi")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1750,6 +1760,13 @@ mod tests {
             catalog_file!("da"),
             "ÆØÅæøå»«",
             &[("File", "Fil"), ("Sequence", "Sekvens"), ("Playhead", "Afspilningshoved"), ("Cross Dissolve", "Krydsovertoning")],
+        ),
+        (
+            Language::Fi,
+            "app.language.finnish",
+            catalog_file!("fi"),
+            "ÄÖäö”",
+            &[("File", "Tiedosto"), ("Sequence", "Sekvenssi"), ("Playhead", "Toistopaikka"), ("Cross Dissolve", "Ristikuva")],
         ),
     ];
 

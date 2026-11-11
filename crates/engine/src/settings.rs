@@ -1071,6 +1071,7 @@ static CATEGORIES: &[Category] = &[
                     ("bg", "Български"),
                     ("ka", "ქართული"),
                     ("da", "Dansk"),
+                    ("fi", "Suomi"),
                 ]),
                 true,
             ),
