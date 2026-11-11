@@ -31,6 +31,7 @@ mod meta;
 mod peek;
 mod source;
 mod timed_text;
+pub mod regxml;
 pub mod uncompressed;
 pub mod write;
 
