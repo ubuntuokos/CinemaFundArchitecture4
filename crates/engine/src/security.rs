@@ -46,8 +46,7 @@ mod tests {
 
     #[test]
     fn security_status_names_the_project_directory() {
-        let mut s = Session::default();
-        s.path = Some("/work/film/film.fcproj".into());
+        let mut s = Session { path: Some("/work/film/film.fcproj".into()), ..Session::default() };
         let v = s.execute("security.status", json!({})).unwrap();
         let engine = v["processes"].as_array().unwrap().iter().find(|p| p["kind"] == "engine").unwrap();
         assert_eq!(engine["write"][0], "/work/film", "{engine}");
