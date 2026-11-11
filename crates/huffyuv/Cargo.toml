@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-huffyuv"
+description = "Clean-room pure-Rust Huffyuv (HFYU) decoder"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-avi = { workspace = true }
