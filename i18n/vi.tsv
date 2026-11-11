@@ -4217,3 +4217,32 @@ export.summary	Low	thấp
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Danh đề từ bảng tính
+	A .ods, .xlsx or CSV credits sheet	Bảng danh đề dạng .ods, .xlsx hoặc CSV
+	The spreadsheet's folder	Thư mục của bảng tính
+	Built-in styles	Kiểu dựng sẵn
+	Spreadsheet	Bảng tính
+	Sheet	Trang tính
+	Pictures	Hình ảnh
+	Styling	Kiểu dáng
+	Page	Trang
+	Warnings	Cảnh báo
+	Moment in the page	Thời điểm trong trang
+	Place at Playhead	Đặt tại đầu phát
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Bảng tính (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Kiểu danh đề (*.json)
+	Card	Thẻ
+	Credits Spreadsheet	Bảng tính danh đề
+	Reading…	Đang đọc…
+	(one table)	(một bảng)
+	Total: {time}	Tổng: {time}
+	Row {row}: {message}	Hàng {row}: {message}
+	Choose a credits spreadsheet.	Chọn một bảng tính danh đề.
+	No preview	Không có bản xem trước
+	Placing…	Đang đặt…
+	Placed {n} pages on the timeline.	Đã đặt {n} trang lên dòng thời gian.
+	Credits Page Picture	Hình trang danh đề
+	Preview Credits	Xem trước danh đề
+	Credits Styles	Kiểu danh đề

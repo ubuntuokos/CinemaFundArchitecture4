@@ -4226,3 +4226,32 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(テーブル1つ)
+	A .ods, .xlsx or CSV credits sheet	.ods、.xlsx、またはCSVのクレジットシート
+	Built-in styles	組み込みスタイル
+	Card	カード
+	Choose a credits spreadsheet.	クレジットのスプレッドシートを選択してください。
+	Credits Spreadsheet	クレジットスプレッドシート
+	Credits from a Spreadsheet	スプレッドシートからクレジットを作成
+	Credits styling (*.json)	クレジットスタイル (*.json)
+	Moment in the page	ページ内の時点
+	No preview	プレビューなし
+	Page	ページ
+	Pictures	画像
+	Place at Playhead	再生ヘッドの位置に配置
+	Placed {n} pages on the timeline.	{n}ページをタイムラインに配置しました。
+	Placing…	配置中…
+	Reading…	読み込み中…
+	Row {row}: {message}	{row}行目: {message}
+	Sheet	シート
+	Spreadsheet	スプレッドシート
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	スプレッドシート (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	スタイル
+	The spreadsheet's folder	スプレッドシートのフォルダー
+	Total: {time}	合計: {time}
+	Warnings	警告
+	Credits Page Picture	クレジットページの画像
+	Preview Credits	クレジットをプレビュー
+	Credits Styles	クレジットのスタイル

@@ -4224,3 +4224,32 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(una tabla)
+	A .ods, .xlsx or CSV credits sheet	Una hoja de créditos .ods, .xlsx o CSV
+	Built-in styles	Estilos integrados
+	Card	Tarjeta
+	Choose a credits spreadsheet.	Elija una hoja de cálculo de créditos.
+	Credits Spreadsheet	Hoja de cálculo de créditos
+	Credits from a Spreadsheet	Créditos desde una hoja de cálculo
+	Credits styling (*.json)	Estilo de créditos (*.json)
+	Moment in the page	Momento dentro de la página
+	No preview	Sin vista previa
+	Page	Página
+	Pictures	Imágenes
+	Place at Playhead	Colocar en el cabezal
+	Placed {n} pages on the timeline.	Se colocaron {n} páginas en la línea de tiempo.
+	Placing…	Colocando…
+	Reading…	Leyendo…
+	Row {row}: {message}	Fila {row}: {message}
+	Sheet	Hoja
+	Spreadsheet	Hoja de cálculo
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Hojas de cálculo (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Estilo
+	The spreadsheet's folder	La carpeta de la hoja de cálculo
+	Total: {time}	Total: {time}
+	Warnings	Advertencias
+	Credits Page Picture	Imagen de página de créditos
+	Preview Credits	Previsualizar créditos
+	Credits Styles	Estilos de créditos

@@ -4211,3 +4211,32 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(테이블 하나)
+	A .ods, .xlsx or CSV credits sheet	.ods, .xlsx 또는 CSV 크레딧 시트
+	Built-in styles	기본 제공 스타일
+	Card	카드
+	Choose a credits spreadsheet.	크레딧 스프레드시트를 선택하세요.
+	Credits Spreadsheet	크레딧 스프레드시트
+	Credits from a Spreadsheet	스프레드시트에서 크레딧 만들기
+	Credits styling (*.json)	크레딧 스타일 (*.json)
+	Moment in the page	페이지 내 시점
+	No preview	미리보기 없음
+	Page	페이지
+	Pictures	이미지
+	Place at Playhead	재생헤드 위치에 배치
+	Placed {n} pages on the timeline.	{n}개 페이지를 타임라인에 배치했습니다.
+	Placing…	배치 중…
+	Reading…	읽는 중…
+	Row {row}: {message}	{row}행: {message}
+	Sheet	시트
+	Spreadsheet	스프레드시트
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	스프레드시트 (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	스타일
+	The spreadsheet's folder	스프레드시트 폴더
+	Total: {time}	합계: {time}
+	Warnings	경고
+	Credits Page Picture	크레딧 페이지 이미지
+	Preview Credits	크레딧 미리 보기
+	Credits Styles	크레딧 스타일

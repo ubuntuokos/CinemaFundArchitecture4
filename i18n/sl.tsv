@@ -4220,3 +4220,32 @@ export.summary	Low	nizka
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Odjavna špica iz preglednice
+	A .ods, .xlsx or CSV credits sheet	Preglednica odjavne špice v obliki .ods, .xlsx ali CSV
+	The spreadsheet's folder	Mapa preglednice
+	Built-in styles	Vgrajeni slogi
+	Spreadsheet	Preglednica
+	Sheet	List
+	Pictures	Slike
+	Styling	Slog
+	Page	Stran
+	Warnings	Opozorila
+	Moment in the page	Trenutek na strani
+	Place at Playhead	Postavi na predvajalno glavo
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Preglednice (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Slog odjavne špice (*.json)
+	Card	Kartica
+	Credits Spreadsheet	Preglednica odjavne špice
+	Reading…	Branje…
+	(one table)	(ena tabela)
+	Total: {time}	Skupaj: {time}
+	Row {row}: {message}	Vrstica {row}: {message}
+	Choose a credits spreadsheet.	Izberite preglednico odjavne špice.
+	No preview	Ni predogleda
+	Placing…	Postavljanje…
+	Placed {n} pages on the timeline.	Na časovnico postavljenih strani: {n}.
+	Credits Page Picture	Slika strani odjavne špice
+	Preview Credits	Predogled odjavne špice
+	Credits Styles	Slogi odjavne špice

@@ -4225,3 +4225,32 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(satu tabel)
+	A .ods, .xlsx or CSV credits sheet	Lembar kredit .ods, .xlsx, atau CSV
+	Built-in styles	Gaya bawaan
+	Card	Kartu
+	Choose a credits spreadsheet.	Pilih spreadsheet kredit.
+	Credits Spreadsheet	Spreadsheet Kredit
+	Credits from a Spreadsheet	Kredit dari Spreadsheet
+	Credits styling (*.json)	Gaya kredit (*.json)
+	Moment in the page	Momen dalam halaman
+	No preview	Tanpa pratinjau
+	Page	Halaman
+	Pictures	Gambar
+	Place at Playhead	Tempatkan di Playhead
+	Placed {n} pages on the timeline.	{n} halaman ditempatkan di lini masa.
+	Placing…	Menempatkan…
+	Reading…	Membaca…
+	Row {row}: {message}	Baris {row}: {message}
+	Sheet	Lembar
+	Spreadsheet	Spreadsheet
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Spreadsheet (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Gaya
+	The spreadsheet's folder	Folder spreadsheet
+	Total: {time}	Total: {time}
+	Warnings	Peringatan
+	Credits Page Picture	Gambar Halaman Kredit
+	Preview Credits	Pratinjau Kredit
+	Credits Styles	Gaya Kredit

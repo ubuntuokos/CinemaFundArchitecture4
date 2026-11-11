@@ -4219,3 +4219,32 @@ export.summary	Low	matala
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Tekijätiedot laskentataulukosta
+	A .ods, .xlsx or CSV credits sheet	Tekijätietotaulukko (.ods, .xlsx tai CSV)
+	The spreadsheet's folder	Laskentataulukon kansio
+	Built-in styles	Sisäänrakennetut tyylit
+	Spreadsheet	Laskentataulukko
+	Sheet	Taulukko
+	Pictures	Kuvat
+	Styling	Tyyli
+	Page	Sivu
+	Warnings	Varoitukset
+	Moment in the page	Hetki sivulla
+	Place at Playhead	Sijoita toistopaikkaan
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Laskentataulukot (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Tekijätietojen tyyli (*.json)
+	Card	Kortti
+	Credits Spreadsheet	Tekijätietotaulukko
+	Reading…	Luetaan…
+	(one table)	(yksi taulukko)
+	Total: {time}	Yhteensä: {time}
+	Row {row}: {message}	Rivi {row}: {message}
+	Choose a credits spreadsheet.	Valitse tekijätietotaulukko.
+	No preview	Ei esikatselua
+	Placing…	Sijoitetaan…
+	Placed {n} pages on the timeline.	Aikajanalle sijoitettiin {n} sivua.
+	Credits Page Picture	Tekijätietosivun kuva
+	Preview Credits	Esikatsele tekijätiedot
+	Credits Styles	Tekijätietojen tyylit

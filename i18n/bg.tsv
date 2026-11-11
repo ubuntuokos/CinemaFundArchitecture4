@@ -4220,3 +4220,32 @@ export.summary	Low	ниско
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Надписи от таблица
+	A .ods, .xlsx or CSV credits sheet	Таблица с надписи във формат .ods, .xlsx или CSV
+	The spreadsheet's folder	Папката на таблицата
+	Built-in styles	Вградени стилове
+	Spreadsheet	Таблица
+	Sheet	Лист
+	Pictures	Изображения
+	Styling	Стил
+	Page	Страница
+	Warnings	Предупреждения
+	Moment in the page	Момент в страницата
+	Place at Playhead	Поставяне при главата за възпроизвеждане
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Таблици (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Стил на надписите (*.json)
+	Card	Карта
+	Credits Spreadsheet	Таблица с надписи
+	Reading…	Четене…
+	(one table)	(една таблица)
+	Total: {time}	Общо: {time}
+	Row {row}: {message}	Ред {row}: {message}
+	Choose a credits spreadsheet.	Изберете таблица с надписи.
+	No preview	Няма визуализация
+	Placing…	Поставяне…
+	Placed {n} pages on the timeline.	Поставени страници във времевата линия: {n}.
+	Credits Page Picture	Изображение на страница с надписи
+	Preview Credits	Визуализация на надписите
+	Credits Styles	Стилове на надписите

@@ -4215,3 +4215,32 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(单个表格)
+	A .ods, .xlsx or CSV credits sheet	.ods、.xlsx 或 CSV 演职员表表格
+	Built-in styles	内置样式
+	Card	卡片
+	Choose a credits spreadsheet.	请选择演职员表表格。
+	Credits Spreadsheet	演职员表表格
+	Credits from a Spreadsheet	从表格创建演职员表
+	Credits styling (*.json)	演职员表样式 (*.json)
+	Moment in the page	页面内的时刻
+	No preview	无预览
+	Page	页面
+	Pictures	图片
+	Place at Playhead	放置在播放头处
+	Placed {n} pages on the timeline.	已在时间线上放置 {n} 页。
+	Placing…	正在放置…
+	Reading…	正在读取…
+	Row {row}: {message}	第 {row} 行:{message}
+	Sheet	工作表
+	Spreadsheet	表格
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	表格 (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	样式
+	The spreadsheet's folder	表格所在的文件夹
+	Total: {time}	合计:{time}
+	Warnings	警告
+	Credits Page Picture	演职员表页面图片
+	Preview Credits	预览演职员表
+	Credits Styles	演职员表样式

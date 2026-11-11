@@ -4219,3 +4219,32 @@ export.summary	Low	lav
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Rulletekster fra et regneark
+	A .ods, .xlsx or CSV credits sheet	Et rulletekstark i .ods, .xlsx eller CSV
+	The spreadsheet's folder	Regnearkets mappe
+	Built-in styles	Indbyggede stilarter
+	Spreadsheet	Regneark
+	Sheet	Ark
+	Pictures	Billeder
+	Styling	Stil
+	Page	Side
+	Warnings	Advarsler
+	Moment in the page	Tidspunkt på siden
+	Place at Playhead	Placer ved afspilningshovedet
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Regneark (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Rulletekststil (*.json)
+	Card	Kort
+	Credits Spreadsheet	Rulletekstregneark
+	Reading…	Læser…
+	(one table)	(én tabel)
+	Total: {time}	I alt: {time}
+	Row {row}: {message}	Række {row}: {message}
+	Choose a credits spreadsheet.	Vælg et rulletekstregneark.
+	No preview	Ingen forhåndsvisning
+	Placing…	Placerer…
+	Placed {n} pages on the timeline.	{n} sider placeret på tidslinjen.
+	Credits Page Picture	Billede af rulletekstside
+	Preview Credits	Forhåndsvis rulletekster
+	Credits Styles	Rulletekststilarter

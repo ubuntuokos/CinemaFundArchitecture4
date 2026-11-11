@@ -4217,3 +4217,32 @@ export.summary	Low	laag
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Aftiteling uit een spreadsheet
+	A .ods, .xlsx or CSV credits sheet	Een aftitelingsblad in .ods, .xlsx of CSV
+	The spreadsheet's folder	De map van de spreadsheet
+	Built-in styles	Ingebouwde stijlen
+	Spreadsheet	Spreadsheet
+	Sheet	Blad
+	Pictures	Afbeeldingen
+	Styling	Opmaak
+	Page	Pagina
+	Warnings	Waarschuwingen
+	Moment in the page	Moment op de pagina
+	Place at Playhead	Plaatsen bij afspeelkop
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Aftitelingsopmaak (*.json)
+	Card	Kaart
+	Credits Spreadsheet	Aftitelingsspreadsheet
+	Reading…	Lezen…
+	(one table)	(één tabel)
+	Total: {time}	Totaal: {time}
+	Row {row}: {message}	Rij {row}: {message}
+	Choose a credits spreadsheet.	Kies een aftitelingsspreadsheet.
+	No preview	Geen voorbeeld
+	Placing…	Plaatsen…
+	Placed {n} pages on the timeline.	{n} pagina's op de tijdlijn geplaatst.
+	Credits Page Picture	Afbeelding van aftitelingspagina
+	Preview Credits	Voorbeeld van aftiteling
+	Credits Styles	Aftitelingsstijlen

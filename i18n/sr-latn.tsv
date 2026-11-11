@@ -4219,3 +4219,32 @@ export.summary	Low	nizak
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Špica iz tabele
+	A .ods, .xlsx or CSV credits sheet	Tabela špice u formatu .ods, .xlsx ili CSV
+	The spreadsheet's folder	Fascikla tabele
+	Built-in styles	Ugrađeni stilovi
+	Spreadsheet	Tabela
+	Sheet	List
+	Pictures	Slike
+	Styling	Stil
+	Page	Stranica
+	Warnings	Upozorenja
+	Moment in the page	Trenutak na stranici
+	Place at Playhead	Postavi na glavu za reprodukciju
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tabele (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Stil špice (*.json)
+	Card	Kartica
+	Credits Spreadsheet	Tabela špice
+	Reading…	Čitanje…
+	(one table)	(jedna tabela)
+	Total: {time}	Ukupno: {time}
+	Row {row}: {message}	Red {row}: {message}
+	Choose a credits spreadsheet.	Izaberite tabelu špice.
+	No preview	Nema pregleda
+	Placing…	Postavljanje…
+	Placed {n} pages on the timeline.	Na vremensku liniju postavljeno stranica: {n}.
+	Credits Page Picture	Slika stranice špice
+	Preview Credits	Pregled špice
+	Credits Styles	Stilovi špice

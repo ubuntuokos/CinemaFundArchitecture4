@@ -4220,3 +4220,32 @@ export.summary	Low	დაბალი
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	ტიტრები ცხრილიდან
+	A .ods, .xlsx or CSV credits sheet	ტიტრების ცხრილი .ods, .xlsx ან CSV ფორმატში
+	The spreadsheet's folder	ცხრილის საქაღალდე
+	Built-in styles	ჩაშენებული სტილები
+	Spreadsheet	ცხრილი
+	Sheet	ფურცელი
+	Pictures	სურათები
+	Styling	სტილი
+	Page	გვერდი
+	Warnings	გაფრთხილებები
+	Moment in the page	მომენტი გვერდზე
+	Place at Playhead	დაკვრის მაჩვენებელთან განთავსება
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	ცხრილები (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	ტიტრების სტილი (*.json)
+	Card	ბარათი
+	Credits Spreadsheet	ტიტრების ცხრილი
+	Reading…	იკითხება…
+	(one table)	(ერთი ცხრილი)
+	Total: {time}	სულ: {time}
+	Row {row}: {message}	მწკრივი {row}: {message}
+	Choose a credits spreadsheet.	აირჩიეთ ტიტრების ცხრილი.
+	No preview	წინასწარი ნახვა არ არის
+	Placing…	თავსდება…
+	Placed {n} pages on the timeline.	დროის ხაზზე განთავსდა გვერდები: {n}.
+	Credits Page Picture	ტიტრების გვერდის სურათი
+	Preview Credits	ტიტრების წინასწარი ნახვა
+	Credits Styles	ტიტრების სტილები

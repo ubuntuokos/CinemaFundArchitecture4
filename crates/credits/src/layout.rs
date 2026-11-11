@@ -78,6 +78,9 @@ pub struct Laid {
     pub warnings: Vec<Warning>,
 }
 
+/// The most a runtime may stretch a page's gaps.
+const MAX_GAP_SCALE: f64 = 20.0;
+
 /// Most text layers on one page.
 pub const MAX_LAYERS_PER_PAGE: usize = 5_000;
 
@@ -400,19 +403,14 @@ fn frames(rate: FrameRate, n: i64) -> Tick {
     Tick(rate.frame_duration().0.saturating_mul(n))
 }
 
-fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: usize) -> Result<PageOut, CreditsError> {
+/// Stack a page's blocks from the top; the gaps between blocks are multiplied by `gap_scale`.
+/// Returns the pieces, the content height and the total of those (elastic) gaps.
+fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, gap_scale: f64) -> Result<(Vec<Piece>, f64, f64), CreditsError> {
     let s = ctx.s;
-    let (w, h) = (f64::from(frame.width), f64::from(frame.height));
-    let ps = match styling.page_style(&page.style) {
-        Some(p) => p,
-        None => {
-            ctx.warn(page.row, format!("page style `{}` does not exist; `Scroll` is used", page.style));
-            crate::style::PageStyle::default()
-        }
-    };
     let unit = finite_or(styling.unit_px, 32.0).clamp(0.0, 10_000.0) * s;
     let mut pieces: Vec<Piece> = Vec::new();
     let mut y = 0.0f64;
+    let mut elastic = 0.0f64;
     let mut prev_margin = 0.0f64;
     let fallback = styling.content_style(&styling.default_content_style).unwrap_or_default();
     let mut missing: Vec<String> = Vec::new();
@@ -433,7 +431,9 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
                 Gap::Units(u) => finite_or(u, 0.0).max(0.0) * unit,
                 Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
             };
-            y += gap.max(margin).max(prev_margin);
+            let g = gap.max(margin).max(prev_margin);
+            elastic += g;
+            y += g * gap_scale;
         }
         prev_margin = margin;
         let spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
@@ -444,7 +444,20 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
             return Err(CreditsError::TooLarge(format!("page {} needs more than {MAX_LAYERS_PER_PAGE} text layers", index + 1)));
         }
     }
-    let content_h = y.max(0.0);
+    Ok((pieces, y.max(0.0), elastic))
+}
+
+fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: usize) -> Result<PageOut, CreditsError> {
+    let s = ctx.s;
+    let (w, h) = (f64::from(frame.width), f64::from(frame.height));
+    let ps = match styling.page_style(&page.style) {
+        Some(p) => p,
+        None => {
+            ctx.warn(page.row, format!("page style `{}` does not exist; `Scroll` is used", page.style));
+            crate::style::PageStyle::default()
+        }
+    };
+    let (mut pieces, mut content_h, elastic) = stack(ctx, styling, page, w, index, 1.0)?;
     let rate = frame.rate;
     let fd = rate.frame_duration();
     let runtime = match &page.runtime {
@@ -468,10 +481,38 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
     let (dy, duration) = match ps.behaviour {
         Behaviour::Scroll => {
             let speed = finite_or(ps.scroll_px_per_frame, 3.0).clamp(0.1, 10_000.0) * s;
-            let travel = h + content_h;
-            let n = (travel / speed).ceil().clamp(1.0, 86_400.0 * 240.0) as i64;
             meta.roll = Roll { mode: RollMode::Roll, start_off_screen: true, end_off_screen: true, ..Default::default() };
-            (0.0, runtime.unwrap_or_else(|| frames(rate, n)))
+            match runtime {
+                Some(rt) => {
+                    // keep the speed and fit the runtime by stretching or squeezing the gaps
+                    // between blocks; if the gaps cannot absorb it, the speed changes instead
+                    let n = rt.0 as f64 / fd.0.max(1) as f64;
+                    let want_content = speed * n - h;
+                    let rigid = content_h - elastic;
+                    let scale = (want_content - rigid) / elastic;
+                    if elastic > 0.0 && (0.0..=MAX_GAP_SCALE).contains(&scale) {
+                        let kept = ctx.warnings.len();
+                        let (p2, c2, _) = stack(ctx, styling, page, w, index, scale)?;
+                        ctx.warnings.truncate(kept);
+                        pieces = p2;
+                        content_h = c2;
+                    } else {
+                        let why = if elastic <= 0.0 {
+                            "the page has no gaps between blocks to stretch"
+                        } else if scale < 0.0 {
+                            "the credits are too long even without gaps"
+                        } else {
+                            "the gaps would have to grow more than 20-fold"
+                        };
+                        ctx.warn(page.row, format!("page {}: the runtime is reached by changing the scroll speed ({why})", index + 1));
+                    }
+                    (0.0, rt)
+                }
+                None => {
+                    let n = ((h + content_h) / speed).ceil().clamp(1.0, 86_400.0 * 240.0) as i64;
+                    (0.0, frames(rate, n))
+                }
+            }
         }
         Behaviour::Card => {
             if content_h > h {

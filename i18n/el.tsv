@@ -4219,3 +4219,32 @@ export.summary	Low	χαμηλή
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Τίτλοι συντελεστών από υπολογιστικό φύλλο
+	A .ods, .xlsx or CSV credits sheet	Φύλλο τίτλων συντελεστών .ods, .xlsx ή CSV
+	The spreadsheet's folder	Ο φάκελος του υπολογιστικού φύλλου
+	Built-in styles	Ενσωματωμένα στυλ
+	Spreadsheet	Υπολογιστικό φύλλο
+	Sheet	Φύλλο
+	Pictures	Εικόνες
+	Styling	Μορφοποίηση
+	Page	Σελίδα
+	Warnings	Προειδοποιήσεις
+	Moment in the page	Χρονική στιγμή στη σελίδα
+	Place at Playhead	Τοποθέτηση στην κεφαλή αναπαραγωγής
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Υπολογιστικά φύλλα (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Στυλ τίτλων συντελεστών (*.json)
+	Card	Κάρτα
+	Credits Spreadsheet	Υπολογιστικό φύλλο τίτλων συντελεστών
+	Reading…	Ανάγνωση…
+	(one table)	(ένας πίνακας)
+	Total: {time}	Σύνολο: {time}
+	Row {row}: {message}	Γραμμή {row}: {message}
+	Choose a credits spreadsheet.	Επιλέξτε ένα υπολογιστικό φύλλο τίτλων συντελεστών.
+	No preview	Χωρίς προεπισκόπηση
+	Placing…	Τοποθέτηση…
+	Placed {n} pages on the timeline.	Τοποθετήθηκαν {n} σελίδες στη χρονογραμμή.
+	Credits Page Picture	Εικόνα σελίδας τίτλων συντελεστών
+	Preview Credits	Προεπισκόπηση τίτλων συντελεστών
+	Credits Styles	Στυλ τίτλων συντελεστών

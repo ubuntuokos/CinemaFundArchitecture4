@@ -4223,3 +4223,32 @@ export.summary	Low	తక్కువ
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	స్ప్రెడ్‌షీట్ నుండి క్రెడిట్స్
+	A .ods, .xlsx or CSV credits sheet	.ods, .xlsx లేదా CSV క్రెడిట్స్ షీట్
+	The spreadsheet's folder	స్ప్రెడ్‌షీట్ ఫోల్డర్
+	Built-in styles	అంతర్నిర్మిత శైలులు
+	Spreadsheet	స్ప్రెడ్‌షీట్
+	Sheet	షీట్
+	Pictures	చిత్రాలు
+	Styling	శైలి
+	Page	పేజీ
+	Warnings	హెచ్చరికలు
+	Moment in the page	పేజీలో క్షణం
+	Place at Playhead	ప్లేహెడ్ వద్ద ఉంచు
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	స్ప్రెడ్‌షీట్‌లు (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	క్రెడిట్స్ శైలి (*.json)
+	Card	కార్డ్
+	Credits Spreadsheet	క్రెడిట్స్ స్ప్రెడ్‌షీట్
+	Reading…	చదువుతోంది…
+	(one table)	(ఒకే పట్టిక)
+	Total: {time}	మొత్తం: {time}
+	Row {row}: {message}	వరుస {row}: {message}
+	Choose a credits spreadsheet.	క్రెడిట్స్ స్ప్రెడ్‌షీట్‌ను ఎంచుకోండి.
+	No preview	ప్రివ్యూ లేదు
+	Placing…	ఉంచుతోంది…
+	Placed {n} pages on the timeline.	టైమ్‌లైన్‌లో {n} పేజీలు ఉంచబడ్డాయి.
+	Credits Page Picture	క్రెడిట్స్ పేజీ చిత్రం
+	Preview Credits	క్రెడిట్స్ ప్రివ్యూ
+	Credits Styles	క్రెడిట్స్ శైలులు

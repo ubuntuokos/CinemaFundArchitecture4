@@ -4219,3 +4219,32 @@ export.summary	Low	låg
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Eftertexter från ett kalkylark
+	A .ods, .xlsx or CSV credits sheet	Ett eftertextark i .ods, .xlsx eller CSV
+	The spreadsheet's folder	Kalkylarkets mapp
+	Built-in styles	Inbyggda stilar
+	Spreadsheet	Kalkylark
+	Sheet	Blad
+	Pictures	Bilder
+	Styling	Stil
+	Page	Sida
+	Warnings	Varningar
+	Moment in the page	Tidpunkt på sidan
+	Place at Playhead	Placera vid uppspelningshuvudet
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Kalkylark (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Eftertextstil (*.json)
+	Card	Kort
+	Credits Spreadsheet	Eftertextkalkylark
+	Reading…	Läser…
+	(one table)	(en tabell)
+	Total: {time}	Totalt: {time}
+	Row {row}: {message}	Rad {row}: {message}
+	Choose a credits spreadsheet.	Välj ett eftertextkalkylark.
+	No preview	Ingen förhandsvisning
+	Placing…	Placerar…
+	Placed {n} pages on the timeline.	{n} sidor placerades på tidslinjen.
+	Credits Page Picture	Bild av eftertextsida
+	Preview Credits	Förhandsvisa eftertexter
+	Credits Styles	Eftertextstilar
