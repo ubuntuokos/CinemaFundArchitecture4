@@ -108,30 +108,43 @@ fn selected_tracks_are_copied_in_the_requested_order() {
     }
 }
 
-/// `src` with track `t`'s `tkhd` matrix turned 90° (our writer's `tkhd` is version 0).
-fn rotated(src: &Path, to: &Path) {
+/// `src` with the video `tkhd` matrix turned 90° and the audio track disabled, in alternate
+/// group 1 at half volume (our writer's `tkhd` is version 0).
+fn reheadered(src: &Path, to: &Path) {
     let mut b = std::fs::read(src).unwrap();
-    let at = b.windows(4).position(|w| w == b"tkhd").unwrap();
-    assert_eq!(b[at + 4], 0, "tkhd version 0");
-    let m = at + 4 + 4 + 20 + 8 + 8;
+    let at: Vec<usize> = b.windows(4).enumerate().filter(|(_, w)| *w == b"tkhd").map(|(i, _)| i).collect();
+    assert_eq!(at.len(), 2);
+    assert!(at.iter().all(|&i| b[i + 4] == 0), "tkhd version 0");
+    let m = at[0] + 44;
     for (i, v) in [0i32, 0x1_0000, 0, -0x1_0000, 0, 0, 0, 0, 0x4000_0000].into_iter().enumerate() {
         b[m + 4 * i..m + 4 * i + 4].copy_from_slice(&v.to_be_bytes());
     }
+    let a = at[1];
+    b[a + 7] &= !1; // track_enabled
+    b[a + 38..a + 40].copy_from_slice(&1u16.to_be_bytes());
+    b[a + 40..a + 42].copy_from_slice(&0x80i16.to_be_bytes());
     std::fs::write(to, b).unwrap();
 }
 
 #[test]
-fn what_the_writer_cannot_carry_is_refused_not_dropped() {
-    let d = dir("refuse");
+fn the_track_header_is_kept_and_the_source_is_never_replaced() {
+    let d = dir("header");
     let src = source(&d, Multiplexer::Mp4);
-    let rot = d.join("rotated.mp4");
-    rotated(&src, &rot);
-    assert_ne!(open(&rot).tracks[0].matrix, open(&src).tracks[0].matrix);
-    let out = d.join("out.mp4");
-    let e = stream_copy_strict(&StrictCopyRequest::new(&rot, &out, CopyContainer::Mp4), &Progress::default()).unwrap_err();
-    assert_eq!(e.code, CopyErrorCode::ContainerUnsupported, "{e}");
-    assert!(e.message.contains("matrix"), "{e}");
-    assert!(!out.exists());
+    let re = d.join("reheadered.mp4");
+    reheadered(&src, &re);
+    let f = open(&re);
+    assert_ne!(f.tracks[0].matrix, open(&src).tracks[0].matrix);
+    assert_eq!((f.tracks[1].enabled, f.tracks[1].alternate_group, f.tracks[1].volume), (false, 1, 0x80));
+    for (container, ext) in [(CopyContainer::Mp4, "mp4"), (CopyContainer::Mov, "mov")] {
+        let out = d.join(format!("out.{ext}"));
+        let r = stream_copy_strict(&StrictCopyRequest::new(&re, &out, container), &Progress::default()).unwrap();
+        assert_eq!(r.validation.result, "PAYLOAD_BIT_EXACT: PASS");
+        let g = open(&out);
+        for t in 0..2 {
+            let (x, y) = (&f.tracks[t], &g.tracks[t]);
+            assert_eq!((x.matrix, x.enabled, x.alternate_group, x.volume), (y.matrix, y.enabled, y.alternate_group, y.volume), "{ext} track {t}");
+        }
+    }
 
     // the output never replaces the source, even when replacing is approved
     let mut req = StrictCopyRequest::new(&src, &src, CopyContainer::Mp4);

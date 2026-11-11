@@ -210,10 +210,21 @@ fn valid_file(path: &Path, file: &ModelFile) -> bool {
     }
     let Ok(mut input) = std::fs::File::open(path) else { return false };
     let mut hasher = sha2::Sha256::new();
-    if std::io::copy(&mut input, &mut hasher).is_err() {
-        return false;
+    let mut buf = vec![0u8; 1 << 16];
+    loop {
+        match std::io::Read::read(&mut input, &mut buf) {
+            Ok(0) => break,
+            Ok(n) => hasher.update(buf.get(..n).unwrap_or_default()),
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => return false,
+        }
     }
-    format!("{:x}", hasher.finalize()).eq_ignore_ascii_case(file.sha256)
+    hex(&hasher.finalize()).eq_ignore_ascii_case(file.sha256)
+}
+
+/// Lowercase hex of a digest (sha2 0.11 digests no longer implement `LowerHex`).
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// All files present and matching their pinned size and SHA-256.
@@ -289,7 +300,7 @@ pub fn download_files(dir: &Path, files: &[ModelFile], progress: DownloadProgres
         }
         out.flush()?;
         drop(out);
-        let sha: String = hasher.finalize().iter().map(|b| format!("{b:02x}")).collect();
+        let sha = hex(&hasher.finalize());
         if sha != f.sha256 || got != f.size {
             let _ = std::fs::remove_file(&part);
             return Err(SpeechError::Download(format!("{}: checksum mismatch (got {sha}, {got} bytes; expected {}, {} bytes)", f.name, f.sha256, f.size)));
