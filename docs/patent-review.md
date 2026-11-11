@@ -59,6 +59,7 @@ szabadalommal védett formátumot.
 | FFV1 (RFC 9043) | dekódolás | `crates/ffv1` | alap | függőben | | |
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
+| Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
 
 ## Hang
 
