@@ -4143,3 +4143,28 @@ export.summary	Low	lav
 	Credits Page Picture	Billede af rulletekstside
 	Preview Credits	Forhåndsvis rulletekster
 	Credits Styles	Rulletekststilarter
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Regneark og rulletekstfiler (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4-rulletekstfil (*.cfa4credits)
+	Save as Credits File…	Gem som rulletekstfil…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Regneark, ark, stil og tabel i én fil, der kan åbnes på enhver maskine
+	Saved: {path}	Gemt: {path}
+	Added	Tilføjet
+	Removed	Fjernet
+	Changed	Ændret
+	(empty row)	(tom række)
+	Refresh Credits from Spreadsheet	Opdater rulletekster fra regneark
+	Change	Ændring
+	Before → After	Før → Efter
+	Select None	Fravælg alle
+	Keep my edits on the pages (where their block is unchanged)	Behold mine redigeringer på siderne (hvor deres blok er uændret)
+	Locate Spreadsheet…	Find regneark…
+	Comparing…	Sammenligner…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} ændringer i {file}, siden rulleteksterne blev placeret. Fjern fluebenet ved det, du ikke ønsker.
+	The spreadsheet {file} has not changed since the credits were placed.	Regnearket {file} er ikke ændret, siden rulleteksterne blev placeret.
+	{n} layers were edited by hand on the pages.	{n} lag blev redigeret manuelt på siderne.
+	Accepting every change would replace these, because their block changed: {names}	Hvis du accepterer alle ændringer, erstattes disse, fordi deres blok er ændret: {names}
+	Refreshing…	Opdaterer…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Opdateret: {n} ændringer anvendt, {kept} manuelle redigeringer bevaret.
+	Refresh Credits from Spreadsheet…	Opdater rulletekster fra regneark…
+	Save Credits File…	Gem rulletekstfil…
+	Compare Credits with Spreadsheet	Sammenlign rulletekster med regneark

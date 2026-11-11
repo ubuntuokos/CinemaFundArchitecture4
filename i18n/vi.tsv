@@ -4141,3 +4141,28 @@ export.summary	Low	thấp
 	Credits Page Picture	Hình trang danh đề
 	Preview Credits	Xem trước danh đề
 	Credits Styles	Kiểu danh đề
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Bảng tính và tệp danh đề (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Tệp danh đề CFA4 (*.cfa4credits)
+	Save as Credits File…	Lưu thành tệp danh đề…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Bảng tính, trang tính, kiểu dáng và bảng trong một tệp, mở được trên mọi máy
+	Saved: {path}	Đã lưu: {path}
+	Added	Đã thêm
+	Removed	Đã xóa
+	Changed	Đã thay đổi
+	(empty row)	(hàng trống)
+	Refresh Credits from Spreadsheet	Làm mới danh đề từ bảng tính
+	Change	Thay đổi
+	Before → After	Trước → Sau
+	Select None	Bỏ chọn tất cả
+	Keep my edits on the pages (where their block is unchanged)	Giữ các chỉnh sửa của tôi trên trang (nơi khối của chúng không đổi)
+	Locate Spreadsheet…	Tìm bảng tính…
+	Comparing…	Đang so sánh…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{file} có {n} thay đổi kể từ khi đặt danh đề. Bỏ chọn những gì bạn không muốn.
+	The spreadsheet {file} has not changed since the credits were placed.	Bảng tính {file} không thay đổi kể từ khi đặt danh đề.
+	{n} layers were edited by hand on the pages.	{n} lớp đã được chỉnh sửa thủ công trên các trang.
+	Accepting every change would replace these, because their block changed: {names}	Chấp nhận mọi thay đổi sẽ thay thế các mục này vì khối của chúng đã đổi: {names}
+	Refreshing…	Đang làm mới…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Đã làm mới: áp dụng {n} thay đổi, giữ {kept} chỉnh sửa thủ công.
+	Refresh Credits from Spreadsheet…	Làm mới danh đề từ bảng tính…
+	Save Credits File…	Lưu tệp danh đề…
+	Compare Credits with Spreadsheet	So sánh danh đề với bảng tính

@@ -4171,3 +4171,6 @@
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} perubahan di {file} sejak kredit ditempatkan. Hapus centang pada yang tidak diinginkan.
 	{n} layers were edited by hand on the pages.	{n} layer diedit manual pada halaman.
 	Refresh Credits from Spreadsheet…	Segarkan kredit dari spreadsheet…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Spreadsheet dan file kredit (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Simpan File Kredit…
+	Compare Credits with Spreadsheet	Bandingkan Kredit dengan Spreadsheet

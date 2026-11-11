@@ -4157,3 +4157,6 @@
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	크레딧을 배치한 이후 {file}에 변경이 {n}건 있습니다. 원하지 않는 항목은 체크를 해제하세요.
 	{n} layers were edited by hand on the pages.	페이지에서 레이어 {n}개를 수동으로 편집했습니다.
 	Refresh Credits from Spreadsheet…	스프레드시트에서 크레딧 새로 고침…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	스프레드시트 및 크레딧 파일 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	크레딧 파일 저장…
+	Compare Credits with Spreadsheet	크레딧을 스프레드시트와 비교

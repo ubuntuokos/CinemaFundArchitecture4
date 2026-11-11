@@ -4140,3 +4140,28 @@ export.summary	Low	低
 	Credits Page Picture	演職員表頁面圖片
 	Preview Credits	預覽演職員表
 	Credits Styles	演職員表樣式
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	試算表與演職員表檔案 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 演職員表檔案 (*.cfa4credits)
+	Save as Credits File…	另存為演職員表檔案…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	試算表、工作表、樣式與表格存成單一檔案，可在任何電腦上開啟
+	Saved: {path}	已儲存：{path}
+	Added	已新增
+	Removed	已移除
+	Changed	已變更
+	(empty row)	（空白列）
+	Refresh Credits from Spreadsheet	從試算表重新整理演職員表
+	Change	變更
+	Before → After	變更前 → 變更後
+	Select None	全部不選
+	Keep my edits on the pages (where their block is unchanged)	保留我在頁面上的編輯（其區塊未變更處）
+	Locate Spreadsheet…	尋找試算表…
+	Comparing…	比較中…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	放置演職員表後，{file} 有 {n} 項變更。請取消勾選不需要的項目。
+	The spreadsheet {file} has not changed since the credits were placed.	放置演職員表後，試算表 {file} 沒有變更。
+	{n} layers were edited by hand on the pages.	頁面上有 {n} 個圖層經過手動編輯。
+	Accepting every change would replace these, because their block changed: {names}	接受所有變更將取代以下項目，因為其區塊已變更：{names}
+	Refreshing…	重新整理中…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	已重新整理：套用 {n} 項變更，保留 {kept} 項手動編輯。
+	Refresh Credits from Spreadsheet…	從試算表重新整理演職員表…
+	Save Credits File…	儲存演職員表檔案…
+	Compare Credits with Spreadsheet	將演職員表與試算表比較

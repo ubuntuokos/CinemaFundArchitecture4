@@ -4144,3 +4144,28 @@ export.summary	Low	žema
 	Credits Page Picture	Titrų puslapio paveikslėlis
 	Preview Credits	Titrų peržiūra
 	Credits Styles	Titrų stiliai
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Skaičiuoklės ir titrų failai (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 titrų failas (*.cfa4credits)
+	Save as Credits File…	Įrašyti kaip titrų failą…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Skaičiuoklė, lapas, stilius ir lentelė viename faile, kurį galima atverti bet kuriame kompiuteryje
+	Saved: {path}	Įrašyta: {path}
+	Added	Pridėta
+	Removed	Pašalinta
+	Changed	Pakeista
+	(empty row)	(tuščia eilutė)
+	Refresh Credits from Spreadsheet	Atnaujinti titrus iš skaičiuoklės
+	Change	Pakeitimas
+	Before → After	Prieš → Po
+	Select None	Nieko nežymėti
+	Keep my edits on the pages (where their block is unchanged)	Išlaikyti mano pakeitimus puslapiuose (kur jų blokas nepasikeitė)
+	Locate Spreadsheet…	Rasti skaičiuoklę…
+	Comparing…	Lyginama…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Pakeitimai faile {file} nuo titrų įdėjimo: {n}. Nuimkite žymę nuo to, ko nenorite.
+	The spreadsheet {file} has not changed since the credits were placed.	Skaičiuoklė {file} nepasikeitė nuo titrų įdėjimo.
+	{n} layers were edited by hand on the pages.	Rankiniu būdu keisti sluoksniai puslapiuose: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Priėmus visus pakeitimus, šie būtų pakeisti, nes pasikeitė jų blokas: {names}
+	Refreshing…	Atnaujinama…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Atnaujinta: pritaikyta pakeitimų: {n}, išlaikyta rankinių pakeitimų: {kept}.
+	Refresh Credits from Spreadsheet…	Atnaujinti titrus iš skaičiuoklės…
+	Save Credits File…	Įrašyti titrų failą…
+	Compare Credits with Spreadsheet	Palyginti titrus su skaičiuokle

@@ -4170,3 +4170,6 @@
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} Änderungen in {file} seit dem Platzieren des Abspanns. Deaktivieren Sie, was Sie nicht möchten.
 	{n} layers were edited by hand on the pages.	{n} Ebenen wurden auf den Seiten manuell bearbeitet.
 	Refresh Credits from Spreadsheet…	Abspann aus Tabelle aktualisieren…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tabellen und Abspanndateien (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Abspanndatei speichern…
+	Compare Credits with Spreadsheet	Abspann mit Tabelle vergleichen

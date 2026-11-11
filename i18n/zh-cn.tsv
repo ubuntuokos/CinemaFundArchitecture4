@@ -4161,3 +4161,6 @@
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	自放置演职员表以来,{file} 中有 {n} 项更改。请取消勾选不需要的项。
 	{n} layers were edited by hand on the pages.	页面上有 {n} 个图层被手动编辑过。
 	Refresh Credits from Spreadsheet…	从电子表格刷新演职员表…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	表格和演职员表文件 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	保存演职员表文件…
+	Compare Credits with Spreadsheet	将演职员表与表格比较

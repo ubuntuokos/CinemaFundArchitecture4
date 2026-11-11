@@ -4168,3 +4168,6 @@
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} modifications dans {file} depuis le placement du générique. Décochez ce que vous ne souhaitez pas.
 	{n} layers were edited by hand on the pages.	{n} calques ont été modifiés à la main sur les pages.
 	Refresh Credits from Spreadsheet…	Actualiser le générique depuis la feuille de calcul…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tableurs et fichiers de générique (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Enregistrer le fichier de générique…
+	Compare Credits with Spreadsheet	Comparer le générique au tableur

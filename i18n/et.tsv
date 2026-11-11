@@ -4143,3 +4143,28 @@ export.summary	Low	madal
 	Credits Page Picture	Tiitrilehe pilt
 	Preview Credits	Tiitrite eelvaade
 	Credits Styles	Tiitrite stiilid
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tabelid ja tiitrifailid (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 tiitrifail (*.cfa4credits)
+	Save as Credits File…	Salvesta tiitrifailina…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tabel, leht, stiil ja read ühes failis, mida saab avada igas arvutis
+	Saved: {path}	Salvestatud: {path}
+	Added	Lisatud
+	Removed	Eemaldatud
+	Changed	Muudetud
+	(empty row)	(tühi rida)
+	Refresh Credits from Spreadsheet	Värskenda tiitreid tabelist
+	Change	Muudatus
+	Before → After	Enne → Pärast
+	Select None	Tühista valik
+	Keep my edits on the pages (where their block is unchanged)	Säilita minu muudatused lehtedel (kus nende plokk pole muutunud)
+	Locate Spreadsheet…	Otsi tabel üles…
+	Comparing…	Võrdlemine…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Muudatusi failis {file} pärast tiitrite paigutamist: {n}. Eemalda linnuke sellelt, mida ei soovi.
+	The spreadsheet {file} has not changed since the credits were placed.	Tabel {file} pole pärast tiitrite paigutamist muutunud.
+	{n} layers were edited by hand on the pages.	Käsitsi muudetud kihte lehtedel: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Kõigi muudatuste vastuvõtmine asendaks need, sest nende plokk muutus: {names}
+	Refreshing…	Värskendamine…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Värskendatud: rakendatud muudatusi {n}, säilitatud käsitsi muudatusi {kept}.
+	Refresh Credits from Spreadsheet…	Värskenda tiitreid tabelist…
+	Save Credits File…	Salvesta tiitrifail…
+	Compare Credits with Spreadsheet	Võrdle tiitreid tabeliga

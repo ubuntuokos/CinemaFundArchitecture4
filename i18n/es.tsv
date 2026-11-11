@@ -4170,3 +4170,6 @@
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} cambios en {file} desde que se colocaron los créditos. Desmarque lo que no desee.
 	{n} layers were edited by hand on the pages.	{n} capas se editaron a mano en las páginas.
 	Refresh Credits from Spreadsheet…	Actualizar créditos desde la hoja de cálculo…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Hojas de cálculo y archivos de créditos (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Guardar archivo de créditos…
+	Compare Credits with Spreadsheet	Comparar créditos con la hoja de cálculo

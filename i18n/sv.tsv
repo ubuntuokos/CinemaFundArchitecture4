@@ -4143,3 +4143,28 @@ export.summary	Low	låg
 	Credits Page Picture	Bild av eftertextsida
 	Preview Credits	Förhandsvisa eftertexter
 	Credits Styles	Eftertextstilar
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Kalkylark och eftertextfiler (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4-eftertextfil (*.cfa4credits)
+	Save as Credits File…	Spara som eftertextfil…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Kalkylark, blad, stil och tabell i en fil som kan öppnas på vilken dator som helst
+	Saved: {path}	Sparad: {path}
+	Added	Tillagd
+	Removed	Borttagen
+	Changed	Ändrad
+	(empty row)	(tom rad)
+	Refresh Credits from Spreadsheet	Uppdatera eftertexter från kalkylark
+	Change	Ändring
+	Before → After	Före → Efter
+	Select None	Avmarkera alla
+	Keep my edits on the pages (where their block is unchanged)	Behåll mina ändringar på sidorna (där deras block är oförändrat)
+	Locate Spreadsheet…	Leta upp kalkylark…
+	Comparing…	Jämför…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} ändringar i {file} sedan eftertexterna placerades. Avmarkera det du inte vill ha.
+	The spreadsheet {file} has not changed since the credits were placed.	Kalkylarket {file} har inte ändrats sedan eftertexterna placerades.
+	{n} layers were edited by hand on the pages.	{n} lager redigerades för hand på sidorna.
+	Accepting every change would replace these, because their block changed: {names}	Om du godkänner alla ändringar ersätts dessa, eftersom deras block ändrats: {names}
+	Refreshing…	Uppdaterar…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Uppdaterat: {n} ändringar tillämpade, {kept} manuella ändringar behållna.
+	Refresh Credits from Spreadsheet…	Uppdatera eftertexter från kalkylark…
+	Save Credits File…	Spara eftertextfil…
+	Compare Credits with Spreadsheet	Jämför eftertexter med kalkylark

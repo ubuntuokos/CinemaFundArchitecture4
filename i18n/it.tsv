@@ -4163,3 +4163,6 @@
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} modifiche in {file} da quando sono stati posizionati i titoli di coda. Deseleziona quelle che non vuoi.
 	{n} layers were edited by hand on the pages.	{n} livelli sono stati modificati a mano sulle pagine.
 	Refresh Credits from Spreadsheet…	Aggiorna titoli di coda dal foglio di calcolo…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Fogli di calcolo e file dei titoli di coda (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Salva file dei titoli di coda…
+	Compare Credits with Spreadsheet	Confronta i titoli di coda con il foglio di calcolo

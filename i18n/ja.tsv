@@ -4172,3 +4172,6 @@
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	クレジットを配置してから{file}に{n}件の変更があります。不要なものはチェックを外してください。
 	{n} layers were edited by hand on the pages.	ページ上で{n}個のレイヤーが手動で編集されました。
 	Refresh Credits from Spreadsheet…	スプレッドシートからクレジットを更新…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	スプレッドシートとクレジットファイル (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	クレジットファイルを保存…
+	Compare Credits with Spreadsheet	クレジットをスプレッドシートと比較
