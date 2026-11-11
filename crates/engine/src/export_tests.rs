@@ -454,6 +454,16 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert_eq!((a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("48000"), Some(4)), "{name}");
                 continue;
             }
+            "mxf-op1a" if settings["mxfVideoCodec"] == "xdcamHd422" => {
+                // RDD 9: 4:2:2 MPEG-2, one mono AES3 track per channel
+                assert_eq!(fmt_name, "mxf", "{name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str(), v["width"].as_u64()), (Some("mpeg2video"), Some("yuv422p"), Some(w)), "{name}");
+                let audio: Vec<&serde_json::Value> = j["streams"].as_array().unwrap().iter().filter(|s| s["codec_type"] == "audio").collect();
+                assert_eq!(audio.len(), 4, "{name}");
+                assert!(audio.iter().all(|a| a["channels"].as_u64() == Some(1) && a["sample_rate"] == "48000"), "{name}");
+                continue;
+            }
             "mxf-opatom" => {
                 // Avid style: picture only in Demo.mxf, one mono PCM file per channel
                 assert_eq!(fmt_name, "mxf", "{name}");

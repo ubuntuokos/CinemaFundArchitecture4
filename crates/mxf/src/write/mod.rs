@@ -538,6 +538,13 @@ pub struct WriterConfig {
     pub iab: Option<IabDesc>,
     /// Sound tracks: multichannel audio labels (ST 377-4), the sound descriptor's sub-descriptors.
     pub mca: Vec<McaLabel>,
+    /// SMPTE RDD 9 (XDCAM HD422 style) OP1a: MPEG-2 long GOP pictures in content packages with an
+    /// SDTI-CP compatible system item (ST 385) and one frame-wrapped AES3 element per audio
+    /// channel (ST 382; 2, 4 or 8 elements), every element on a 512-byte KAG, a new body
+    /// partition at the first key frame after five seconds whose index table segment indexes the
+    /// previous partition. Needs [`PictureCoding::Mpeg2`] and at most one sound track (48 kHz,
+    /// 16 or 24 bit, 1-8 channels).
+    pub rdd9: bool,
 }
 
 /// One ST 377-4 multichannel audio label: a soundfield group (`channel` is `None`) or an audio
@@ -575,6 +582,7 @@ impl WriterConfig {
             channel_assignment: None,
             iab: None,
             mca: Vec::new(),
+            rdd9: false,
         }
     }
 }
@@ -625,6 +633,71 @@ enum TrackKind {
     Iab,
     /// The 8-channel AES3 sound element of a D-10 content package (ST 331 7.1).
     Aes3,
+    /// One channel of an RDD 9 sound track: a frame-wrapped AES3 element (ST 382).
+    Channel(usize),
+}
+
+/// The sound of an RDD 9 content package.
+#[derive(Clone, Copy, Debug)]
+struct Rdd9Layout {
+    /// Channels pushed and AES3 elements written (4 or 8; the extra ones are silent).
+    channels: usize,
+    elements: usize,
+    /// Bytes per sample (2 or 3).
+    bps: usize,
+}
+
+/// An RDD 9 body partition after the first: its offset, index byte count and essence offset
+/// (the pack is rewritten with the footer offset at the end).
+#[derive(Clone, Copy, Debug)]
+struct BodyPartition {
+    this: u64,
+    prev: u64,
+    index_bytes: u64,
+    body_offset: u64,
+}
+
+/// Edit units of an RDD 9 body partition before a new one starts at the next key frame
+/// (RDD 9 8.3.1 keeps a partition under ten seconds), in seconds.
+const RDD9_PARTITION_SECONDS: i64 = 5;
+
+/// The SDTI-CP content package rate byte (ST 326): the rate code (1: 24, 2: 25, 3: 30, 4: 48,
+/// 5: 50, 6: 60 Hz) shifted left, bit 0 the 1.001 divisor.
+fn cp_rate(r: Rational) -> u8 {
+    let (fps, ntsc) = match r.den {
+        1 => (r.num, false),
+        1001 => (r.num / 1000, true),
+        _ => return 0,
+    };
+    let code = match fps {
+        24 => 1,
+        25 => 2,
+        30 => 3,
+        48 => 4,
+        50 => 5,
+        60 => 6,
+        _ => 0,
+    };
+    (code << 1) | u8::from(ntsc)
+}
+
+/// The system item of an SDTI-CP compatible content package (ST 385 5.2, RDD 9 5.2): the 57-byte
+/// system metadata pack (`bitmap`, rate, continuity count `i`, the container label, the creation
+/// stamp when bit 5 is set, the time code as the user stamp) and an empty package metadata set,
+/// filled to `size` bytes.
+fn system_item(out: &mut Vec<u8>, bitmap: u8, rate: Rational, i: u64, label: &[u8; 16], stamp: &[u8; 17], size: usize) {
+    let start = out.len();
+    let mut pack = Vec::with_capacity(57);
+    pack.push(bitmap);
+    pack.push(cp_rate(rate));
+    pack.extend_from_slice(&[0, 0, 0]);
+    pack.extend_from_slice(&((i % 65_536) as u16).to_be_bytes());
+    pack.extend_from_slice(label);
+    pack.extend_from_slice(if bitmap & 0x20 != 0 { stamp } else { &[0; 17] });
+    pack.extend_from_slice(stamp);
+    klv(out, &SYSTEM_METADATA_PACK, &pack);
+    klv(out, &PACKAGE_METADATA_SET, &[]);
+    fill_to(out, start + size);
 }
 
 /// Item sizes of a D-10 content package (each a multiple of the 512-byte KAG).
@@ -742,6 +815,14 @@ pub struct MxfWriter<W: Write + Seek> {
     entries: Vec<Entry>,
     /// Type D-10: SDTI-CP compatible content packages.
     d10: Option<D10Layout>,
+    /// RDD 9: content packages with a system item and one AES3 element per channel.
+    rdd9: Option<Rdd9Layout>,
+    /// Essence container bytes written (the stream offset of the next edit unit).
+    stream: u64,
+    /// RDD 9: offsets of the body partitions after the first, and the first edit unit of the
+    /// current one.
+    partitions: Vec<BodyPartition>,
+    segment_start: usize,
     // OP1a
     pending: VecDeque<(Vec<u8>, FrameInfo)>,
     sound_buf: Vec<Vec<u8>>,
@@ -926,9 +1007,36 @@ impl<W: Write + Seek> MxfWriter<W> {
             }
             _ => None,
         };
+        let rdd9 = if cfg.rdd9 {
+            let invalid = |m: &str| io::Error::new(io::ErrorKind::InvalidInput, m.to_string());
+            if cfg.pattern != Pattern::Op1a || !matches!(cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::Mpeg2 { .. })) {
+                return Err(invalid("RDD 9 is MPEG-2 video in OP1a"));
+            }
+            if cfg.sound.len() > 1 || cfg.sound.iter().any(|s| s.sample_rate != 48_000 || s.channels > 8 || !matches!(s.bits, 16 | 24)) {
+                return Err(invalid("RDD 9 carries one sound track of 1-8 channels, 48 kHz, 16 or 24 bit"));
+            }
+            let channels = cfg.sound.first().map_or(0, |s| s.channels as usize);
+            Some(Rdd9Layout {
+                channels,
+                // XDCAM HD422 equipment takes four or eight channels; the extra ones are silent
+                elements: if channels <= 4 { 4 } else { 8 },
+                bps: cfg.sound.first().map_or(3, |s| s.bits as usize / 8),
+            })
+        } else {
+            None
+        };
         let mut tracks = Vec::new();
         let mut id = cfg.first_track_id.max(2);
-        if let Some(l) = &d10 {
+        if let Some(l) = &rdd9 {
+            // RDD 9 Tables 2-5: picture element number 0, one AES3 frame-wrapped element per channel
+            let Some(p) = &cfg.picture else { return Err(io::Error::new(io::ErrorKind::InvalidInput, "RDD 9 needs a picture")) };
+            tracks.push(TrackW { id, kind: TrackKind::Picture, element_key: element_key(0x15, 1, 0x05, 0), container: p.coding.container(false).0 });
+            id += 1;
+            for k in 0..l.elements {
+                tracks.push(TrackW { id, kind: TrackKind::Channel(k), element_key: element_key(0x16, l.elements as u8, 0x03, k as u8), container: EC_AES3 });
+                id += 1;
+            }
+        } else if let Some(l) = &d10 {
             // ST 386 Tables 2, 3: SDTI-CP compatible picture (05h) and sound (06h) items
             tracks.push(TrackW { id, kind: TrackKind::Picture, element_key: element_key(0x05, 1, 0x01, 1), container: l.label });
             tracks.push(TrackW { id: id + 1, kind: TrackKind::Aes3, element_key: element_key(0x06, 1, 0x10, 1), container: l.label });
@@ -943,7 +1051,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             id += 1;
         }
         let ns = cfg.sound.len() as u8;
-        for k in 0..if d10.is_some() { 0 } else { cfg.sound.len() } {
+        for k in 0..if d10.is_some() || rdd9.is_some() { 0 } else { cfg.sound.len() } {
             let container = essence_container(0x01, 0x06, if clip { 0x02 } else { 0x01 }, 0x00);
             tracks.push(TrackW { id, kind: TrackKind::Sound(k), element_key: element_key(0x16, ns, if clip { 0x02 } else { 0x01 }, k as u8 + 1), container });
             id += 1;
@@ -961,6 +1069,10 @@ impl<W: Write + Seek> MxfWriter<W> {
             essence_start: 0,
             entries: Vec::new(),
             d10,
+            rdd9,
+            stream: 0,
+            partitions: Vec::new(),
+            segment_start: 0,
             pending: VecDeque::new(),
             sound_buf: vec![Vec::new(); nsound],
             clip_len: 0,
@@ -970,8 +1082,8 @@ impl<W: Write + Seek> MxfWriter<W> {
         let meta = me.metadata(Durations { essence: -1 });
         me.header_region = meta.len() + HEADER_RESERVE;
         let pack = me.partition_pack(2, 1, 0, 0, 0, me.header_region as u64, 0, 0, 0);
-        if me.d10.is_some() {
-            // ST 386 6.1: the essence partition starts on the KAG
+        if me.kag() > 1 {
+            // ST 386 6.1, RDD 9 8.1: the essence partition starts on the KAG
             me.header_region = (pack.len() + me.header_region).next_multiple_of(D10_KAG) - pack.len();
         }
         let mut out = me.partition_pack(2, 1, 0, 0, 0, me.header_region as u64, 0, 0, 0);
@@ -980,7 +1092,7 @@ impl<W: Write + Seek> MxfWriter<W> {
         me.put(&out)?;
         me.body_partition = me.pos;
         let mut body = me.partition_pack(3, 4, me.pos, 0, 0, 0, 0, 0, BODY_SID);
-        if me.d10.is_some() {
+        if me.kag() > 1 {
             // the first content package starts on the KAG of its partition
             let n = body.len();
             fill(&mut body, kag_aligned(n) - n);
@@ -1028,6 +1140,11 @@ impl<W: Write + Seek> MxfWriter<W> {
         u
     }
 
+    /// The KLV alignment grid: 512 bytes for SDTI-CP style content packages, else none.
+    fn kag(&self) -> usize {
+        if self.d10.is_some() || self.rdd9.is_some() { D10_KAG } else { 1 }
+    }
+
     fn op_label(&self) -> [u8; 16] {
         match self.cfg.pattern {
             Pattern::Op1a => op1a(self.tracks.len() > 1),
@@ -1054,17 +1171,35 @@ impl<W: Write + Seek> MxfWriter<W> {
 
     #[allow(clippy::too_many_arguments)]
     fn partition_pack(&self, kind: u8, status: u8, this: u64, prev: u64, footer: u64, hbc: u64, ibc: u64, index_sid: u32, body_sid: u32) -> Vec<u8> {
+        self.partition_pack_at(kind, status, this, prev, footer, hbc, ibc, index_sid, body_sid, 0)
+    }
+
+    /// A partition pack whose essence starts at stream offset `body_offset`.
+    #[allow(clippy::too_many_arguments)]
+    fn partition_pack_at(
+        &self,
+        kind: u8,
+        status: u8,
+        this: u64,
+        prev: u64,
+        footer: u64,
+        hbc: u64,
+        ibc: u64,
+        index_sid: u32,
+        body_sid: u32,
+        body_offset: u64,
+    ) -> Vec<u8> {
         let mut v = Vec::with_capacity(160);
         v.extend_from_slice(&1u16.to_be_bytes());
         v.extend_from_slice(&3u16.to_be_bytes());
-        v.extend_from_slice(&(if self.d10.is_some() { D10_KAG as u32 } else { 1 }).to_be_bytes()); // KAG size
+        v.extend_from_slice(&(self.kag() as u32).to_be_bytes()); // KAG size
         v.extend_from_slice(&this.to_be_bytes());
         v.extend_from_slice(&prev.to_be_bytes());
         v.extend_from_slice(&footer.to_be_bytes());
         v.extend_from_slice(&hbc.to_be_bytes());
         v.extend_from_slice(&ibc.to_be_bytes());
         v.extend_from_slice(&index_sid.to_be_bytes());
-        v.extend_from_slice(&0u64.to_be_bytes()); // body offset
+        v.extend_from_slice(&body_offset.to_be_bytes());
         v.extend_from_slice(&body_sid.to_be_bytes());
         v.extend_from_slice(&self.op_label());
         let cs = self.containers();
@@ -1180,6 +1315,9 @@ impl<W: Write + Seek> MxfWriter<W> {
         if let Some(l) = self.d10 {
             return self.emit_d10(l, flush);
         }
+        if let Some(l) = self.rdd9 {
+            return self.emit_rdd9(l, flush);
+        }
         let has_pic = self.framed();
         loop {
             let i = self.entries.len() as u64;
@@ -1212,6 +1350,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             }
             let info = pic.map(|p| p.1).unwrap_or_else(FrameInfo::intra);
             self.entries.push(Entry { offset: self.pos - self.essence_start, slices, info });
+            self.stream += cp.len() as u64;
             self.put(&cp)?;
         }
     }
@@ -1236,18 +1375,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             // and sound items present
             let tc = self.cfg.timecode.unwrap_or(StartTimecode { frames: 0, rate: self.cfg.edit_rate, drop_frame: false });
             let stamp = timecode_stamp(tc.frames.saturating_add(i as i64), tc.rounded_base(), tc.drop_frame);
-            let mut pack = Vec::with_capacity(57);
-            pack.push(0x7C);
-            // content package rate (ST 326): 25 Hz is rate 2, 30000/1001 rate 3 with the 1.001 flag
-            pack.push(if l.geo.edit_rate.den == 1 { 2 << 1 } else { (3 << 1) | 1 });
-            pack.extend_from_slice(&[0, 0, 0]);
-            pack.extend_from_slice(&((i % 65_536) as u16).to_be_bytes());
-            pack.extend_from_slice(&l.label);
-            pack.extend_from_slice(&stamp);
-            pack.extend_from_slice(&stamp);
-            klv(&mut cp, &SYSTEM_METADATA_PACK, &pack);
-            klv(&mut cp, &PACKAGE_METADATA_SET, &[]);
-            fill_to(&mut cp, l.system);
+            system_item(&mut cp, 0x7C, l.geo.edit_rate, i, &l.label, &stamp, l.system);
             data.resize(l.geo.frame_bytes, 0);
             klv(&mut cp, &self.tracks[0].element_key, &data);
             fill_to(&mut cp, l.system + l.picture);
@@ -1260,9 +1388,125 @@ impl<W: Write + Seek> MxfWriter<W> {
             let aes = aes3_element(&chunk, l.channels, l.bits, n, l.sequence(i));
             klv(&mut cp, &self.tracks[1].element_key, &aes);
             fill_to(&mut cp, l.content_package());
-            self.entries.push(Entry { offset: self.pos - self.essence_start, slices: Vec::new(), info });
+            self.entries.push(Entry { offset: self.stream, slices: Vec::new(), info });
+            self.stream += cp.len() as u64;
             self.put(&cp)?;
         }
+    }
+
+    /// Write every complete RDD 9 content package: system item, picture, one AES3 element per
+    /// channel, each filled to the KAG; at a key frame five seconds into a body partition, a new
+    /// body partition with the index table segment of the previous one first.
+    fn emit_rdd9(&mut self, l: Rdd9Layout, flush: bool) -> io::Result<()> {
+        let ba = l.channels * l.bps;
+        let rate = self.cfg.edit_rate;
+        let interval = (RDD9_PARTITION_SECONDS * i64::from(rate.num) / i64::from(rate.den.max(1))).max(1) as usize;
+        loop {
+            let Some(key) = self.pending.front().map(|p| p.1.key) else { return Ok(()) };
+            let i = self.entries.len() as u64;
+            let n = self.unit_samples_48k(i);
+            if l.channels > 0 && self.sound_buf.first().map_or(0, Vec::len) < n * ba && !flush {
+                return Ok(());
+            }
+            if key && self.entries.len() - self.segment_start >= interval {
+                self.new_partition()?;
+            }
+            let Some((data, info)) = self.pending.pop_front() else { return Ok(()) };
+            let tc = self.cfg.timecode.unwrap_or(StartTimecode { frames: 0, rate, drop_frame: false });
+            let stamp = timecode_stamp(tc.frames.saturating_add(i as i64), tc.rounded_base(), tc.drop_frame);
+            let mut cp = Vec::new();
+            // RDD 9 5.2.2: picture and sound items, the user stamp, no creation stamp
+            system_item(&mut cp, 0x5C, rate, i, &EC_MULTIPLE, &stamp, D10_KAG);
+            klv(&mut cp, &self.tracks[0].element_key, &data);
+            let picture_end = kag_aligned(cp.len());
+            fill_to(&mut cp, picture_end);
+            let slice = cp.len() as u32;
+            let mut pcm = Vec::new();
+            if let Some(buf) = self.sound_buf.first_mut() {
+                let take = (n * ba).min(buf.len());
+                pcm = buf.drain(..take).collect();
+                pcm.resize(n * ba, 0);
+            }
+            let el = self.rdd9_element_size(l);
+            for k in 0..l.elements {
+                let mut ch = vec![0u8; n * l.bps];
+                if k < l.channels {
+                    for (s, out) in ch.chunks_exact_mut(l.bps).enumerate() {
+                        let at = s * ba + k * l.bps;
+                        if let Some(src) = pcm.get(at..at + l.bps) {
+                            out.copy_from_slice(src);
+                        }
+                    }
+                }
+                let at = cp.len();
+                klv(&mut cp, &self.tracks[1 + k].element_key, &ch);
+                fill_to(&mut cp, at + el);
+            }
+            self.entries.push(Entry { offset: self.stream, slices: vec![slice], info });
+            self.stream += cp.len() as u64;
+            self.put(&cp)?;
+        }
+    }
+
+    /// Bytes of each RDD 9 AES3 element item (the KLV of the largest content package's samples
+    /// and its fill to the KAG), so that every content package has the same sound slice.
+    fn rdd9_element_size(&self, l: Rdd9Layout) -> usize {
+        let r = self.cfg.edit_rate;
+        let max = (48_000u64 * r.den.max(1) as u64).div_ceil(r.num.max(1) as u64) as usize;
+        kag_aligned(20 + max * l.bps)
+    }
+
+    /// 48 kHz sample frames in edit unit `i`.
+    fn unit_samples_48k(&self, i: u64) -> usize {
+        let r = self.cfg.edit_rate;
+        let at = |n: u64| (n as u128 * 48_000 * r.den.max(1) as u128 / r.num.max(1) as u128) as usize;
+        at(i + 1) - at(i)
+    }
+
+    /// RDD 9 8.3.1: a body partition whose index table segment indexes the previous partition's
+    /// edit units, then the essence of this one.
+    fn new_partition(&mut self) -> io::Result<()> {
+        let mut index = Vec::new();
+        let uid_base = 5000 + 64 * self.partitions.len() as u32;
+        self.segment_index(&mut index, self.segment_start..self.entries.len(), uid_base);
+        let n = index.len();
+        fill(&mut index, kag_aligned(n) - n);
+        let bp = BodyPartition {
+            this: self.pos,
+            prev: self.partitions.last().map_or(self.body_partition, |b| b.this),
+            index_bytes: index.len() as u64,
+            body_offset: self.stream,
+        };
+        let mut out = self.body_pack(bp, 0);
+        let n = out.len();
+        fill(&mut out, kag_aligned(n) - n);
+        out.extend_from_slice(&index);
+        self.put(&out)?;
+        self.partitions.push(bp);
+        self.segment_start = self.entries.len();
+        Ok(())
+    }
+
+    /// The pack of an RDD 9 body partition after the first (`footer`: 0 while writing).
+    fn body_pack(&self, b: BodyPartition, footer: u64) -> Vec<u8> {
+        self.partition_pack_at(3, 4, b.this, b.prev, footer, 0, b.index_bytes, INDEX_SID, BODY_SID, b.body_offset)
+    }
+
+    /// The index table segments of the content packages `range` (RDD 9 8.3: one per body
+    /// partition), segment instance UIDs from `uid_base`.
+    fn segment_index(&self, out: &mut Vec<u8>, range: std::ops::Range<usize>, uid_base: u32) {
+        let rate = self.cfg.edit_rate;
+        let mut seg_uid = uid_base;
+        let mut segment = |out: &mut Vec<u8>, f: &mut dyn FnMut(&mut Set)| {
+            let mut s = Set { key: INDEX_KEY, v: Vec::new() };
+            s.p(0x3C0A, &self.uid(seg_uid));
+            seg_uid += 1;
+            s.rat(0x3F0B, rate);
+            f(&mut s);
+            s.u32(0x3F06, INDEX_SID).u32(0x3F07, BODY_SID);
+            s.write(out);
+        };
+        self.entry_segments(out, &self.entries, range, &mut segment);
     }
 
     /// Header metadata (primer pack and sets).
@@ -1354,7 +1598,7 @@ impl<W: Write + Seek> MxfWriter<W> {
                         vi += 1;
                         (DEF_PICTURE, format!("V{vi}"))
                     }
-                    TrackKind::Sound(_) | TrackKind::Aes3 => {
+                    TrackKind::Sound(_) | TrackKind::Aes3 | TrackKind::Channel(_) => {
                         ai += 1;
                         (DEF_SOUND, format!("A{ai}"))
                     }
@@ -1473,6 +1717,24 @@ impl<W: Write + Seek> MxfWriter<W> {
                         .u8(0x3D02, 1)
                         .u32(0x3D07, if l.channels > 4 { 8 } else { 4 })
                         .u32(0x3D01, l.bits);
+                    s.write(&mut out);
+                }
+                TrackKind::Channel(_) => {
+                    // RDD 9 Table 14 (bmx): an AES3 audio descriptor per mono channel track
+                    let Some(l) = &self.rdd9 else { continue };
+                    let mut s = Set::new(0x47, uid);
+                    s.u32(0x3006, t.id).rat(0x3001, cfg.edit_rate);
+                    if d.essence >= 0 {
+                        s.i64(0x3002, d.essence);
+                    }
+                    let bps = l.bps as u32;
+                    s.p(0x3004, &t.container)
+                        .rat(0x3D03, Rational::new(48_000, 1))
+                        .u8(0x3D02, 1)
+                        .u32(0x3D07, 1)
+                        .u32(0x3D01, bps * 8)
+                        .u16(0x3D0A, bps as u16)
+                        .u32(0x3D09, bps * 48_000);
                     s.write(&mut out);
                 }
                 TrackKind::Iab => {
@@ -1651,6 +1913,11 @@ impl<W: Write + Seek> MxfWriter<W> {
             });
             return out;
         }
+        // RDD 9: the footer indexes the last body partition
+        if self.rdd9.is_some() {
+            self.segment_index(&mut out, self.segment_start..self.entries.len(), 4000);
+            return out;
+        }
         // OP-Atom sound at one sample per edit unit: constant bytes per edit unit
         if self.cfg.pattern == Pattern::OpAtom && self.cfg.picture.is_none() {
             let sd = self.cfg.sound[0];
@@ -1671,14 +1938,21 @@ impl<W: Write + Seek> MxfWriter<W> {
                     Entry { offset: s * ba, slices: Vec::new(), info: FrameInfo::intra() }
                 })
                 .collect();
-            self.entry_segments(&mut out, &entries, &mut segment);
+            self.entry_segments(&mut out, &entries, 0..entries.len(), &mut segment);
             return out;
         }
-        self.entry_segments(&mut out, &self.entries, &mut segment);
+        self.entry_segments(&mut out, &self.entries, 0..self.entries.len(), &mut segment);
         out
     }
 
-    fn entry_segments(&self, out: &mut Vec<u8>, entries: &[Entry], segment: &mut dyn FnMut(&mut Vec<u8>, &mut dyn FnMut(&mut Set))) {
+    /// Index table segments of `entries[range]` (temporal offsets from all of `entries`).
+    fn entry_segments(
+        &self,
+        out: &mut Vec<u8>,
+        entries: &[Entry],
+        range: std::ops::Range<usize>,
+        segment: &mut dyn FnMut(&mut Vec<u8>, &mut dyn FnMut(&mut Set)),
+    ) {
         let n = entries.len();
         let nslices = entries.iter().map(|e| e.slices.len()).max().unwrap_or(0);
         // temporal offsets: display d is stored at d + TO[d]
@@ -1721,12 +1995,27 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
         // delta entries: element k of the content package is in slice k (picture in slice 0)
         let n_el = if self.cfg.pattern == Pattern::Op1a { self.tracks.len() } else { 1 };
-        let deltas: Vec<[u8; 6]> = (0..n_el).map(|k| [0, k.min(nslices) as u8, 0, 0, 0, 0]).collect();
+        let delta_entry = |pos: i8, slice: u8, delta: usize| {
+            let b = (delta as u32).to_be_bytes();
+            [pos as u8, slice, b[0], b[1], b[2], b[3]]
+        };
+        let deltas: Vec<[u8; 6]> = match self.rdd9 {
+            // RDD 9 8.3.2 (as bmx writes it): the system item and the picture (reordered) in
+            // slice 0, the AES3 elements in slice 1
+            Some(l) => {
+                let el = self.rdd9_element_size(l);
+                let mut v = vec![delta_entry(0, 0, 0), delta_entry(-1, 0, D10_KAG)];
+                v.extend((0..l.elements).map(|k| delta_entry(0, 1, k * el)));
+                v
+            }
+            None => (0..n_el).map(|k| delta_entry(0, k.min(nslices) as u8, 0)).collect(),
+        };
         let delta_items: Vec<&[u8]> = deltas.iter().map(|d| &d[..]).collect();
         let delta = batch(&delta_items, 6);
         let entry_size = 11 + 4 * nslices;
         let per_seg = (MAX_SEGMENT_BYTES / entry_size).max(1);
-        let mut start = 0usize;
+        let n = range.end.min(n);
+        let mut start = range.start.min(n);
         loop {
             let end = (start + per_seg).min(n);
             let items: Vec<&[u8]> = rows[start..end].iter().map(Vec::as_slice).collect();
@@ -1767,13 +2056,17 @@ impl<W: Write + Seek> MxfWriter<W> {
         let footer = self.pos;
         // D-Cinema: header metadata in the header partition only (ST 429-3 9.1)
         let footer_meta: &[u8] = if self.cfg.pattern == Pattern::DCinema { &[] } else { &meta };
-        let pack = self.partition_pack(4, 4, footer, self.body_partition, footer, footer_meta.len() as u64, index.len() as u64, INDEX_SID, 0);
+        let last_body = self.partitions.last().map_or(self.body_partition, |b| b.this);
+        let pack = self.partition_pack(4, 4, footer, last_body, footer, footer_meta.len() as u64, index.len() as u64, INDEX_SID, 0);
         let mut out = pack;
         out.extend_from_slice(footer_meta);
         out.extend_from_slice(&index);
         // random index pack: (BodySID, offset) per partition, then the pack's length
         let mut rip = Vec::new();
-        for (sid, off) in [(0u32, 0u64), (BODY_SID, self.body_partition), (0, footer)] {
+        let mut parts = vec![(0u32, 0u64), (BODY_SID, self.body_partition)];
+        parts.extend(self.partitions.iter().map(|b| (BODY_SID, b.this)));
+        parts.push((0, footer));
+        for (sid, off) in parts {
             rip.extend_from_slice(&sid.to_be_bytes());
             rip.extend_from_slice(&off.to_be_bytes());
         }
@@ -1797,6 +2090,11 @@ impl<W: Write + Seek> MxfWriter<W> {
         let body = self.partition_pack(3, 4, self.body_partition, 0, footer, 0, 0, 0, BODY_SID);
         self.w.seek(SeekFrom::Start(self.base + self.body_partition))?;
         self.w.write_all(&body)?;
+        for b in &self.partitions {
+            let pack = self.body_pack(*b, footer);
+            self.w.seek(SeekFrom::Start(self.base + b.this))?;
+            self.w.write_all(&pack)?;
+        }
         self.w.seek(SeekFrom::Start(self.base + end))?;
         self.w.flush()?;
         Ok(self.w)

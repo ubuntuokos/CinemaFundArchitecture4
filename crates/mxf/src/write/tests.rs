@@ -746,3 +746,166 @@ fn aes3_words_and_timecode_stamps() {
     assert_eq!(timecode_stamp(1800, 30, true)[..5], [0x81, 0x42, 0x00, 0x01, 0x00]);
     assert_eq!(timecode_stamp(17_982, 30, true)[..5], [0x81, 0x40, 0x00, 0x10, 0x00]);
 }
+
+/// RDD 9 configuration: 1920x1080 MPEG-2 4:2:2 long GOP at `rate` with `channels` 24-bit channels.
+fn rdd9_config(rate: Rational, channels: u32) -> WriterConfig {
+    let mut cfg = WriterConfig::new(Pattern::Op1a, rate, PackageIds::from_seed("rdd9", "RDD 9 Clip"));
+    let mut p =
+        PictureDesc::new(PictureCoding::Mpeg2 { profile_and_level: 0x82, max_gop: 6, b_pictures: 2, closed_gop: true, bit_rate: 50_000_000 }, 1920, 1080);
+    p.aspect = Rational::new(16, 9);
+    cfg.picture = Some(p);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels, bits: 24 }];
+    cfg.timecode = Some(StartTimecode { frames: 90_000, rate, drop_frame: false });
+    cfg.rdd9 = true;
+    cfg
+}
+
+/// Display order of stored picture `i` in closed six-picture GOPs I0 P3 B1 B2 P5 B4.
+fn rdd9_frame(i: usize) -> FrameInfo {
+    let gop = i / 6 * 6;
+    let (d, kind) = match i % 6 {
+        0 => (0, CodedKind::Intra),
+        1 => (3, CodedKind::Predicted),
+        2 => (1, CodedKind::Bidirectional),
+        3 => (2, CodedKind::Bidirectional),
+        4 => (5, CodedKind::Predicted),
+        _ => (4, CodedKind::Bidirectional),
+    };
+    FrameInfo { key: i.is_multiple_of(6), kind, display: Some((gop + d) as i64) }
+}
+
+#[test]
+fn rdd9_partitions_system_items_and_channel_elements() {
+    let rate = Rational::new(25, 1);
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), rdd9_config(rate, 4)).unwrap();
+    // 13 s: a new body partition at the first key frame five seconds into the previous one
+    let n = 13 * 25;
+    let total = n * 1920;
+    let mut a = 0;
+    for i in 0..n {
+        let k = 1500.min(total - a);
+        w.push_sound(0, &pcm24x4(a, k)).unwrap();
+        a += k;
+        w.push_picture(&d10_picture(i, 3000 + 7 * i), rdd9_frame(i)).unwrap();
+    }
+    w.push_sound(0, &pcm24x4(a, total - a)).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert!(m.partitions.iter().all(|p| p.kag_size == 512 && p.status == 4));
+    // header, body at 0 s, 5.04 s (unit 126) and 10.08 s (unit 252), footer
+    let kinds: Vec<PartitionKind> = m.partitions.iter().map(|p| p.kind).collect();
+    assert_eq!(kinds, vec![PartitionKind::Header, PartitionKind::Body, PartitionKind::Body, PartitionKind::Body, PartitionKind::Footer]);
+    let footer = m.partitions[4].offset;
+    for (k, p) in m.partitions.iter().enumerate() {
+        assert_eq!(p.offset % 512, 0, "partition {k}");
+        assert_eq!(p.footer_partition, footer, "partition {k}");
+        if k > 0 {
+            assert_eq!(p.previous_partition, m.partitions[k - 1].offset, "partition {k}");
+        }
+    }
+    assert_eq!((m.partitions[2].index_sid, m.partitions[3].index_sid), (INDEX_SID, INDEX_SID));
+    assert!(m.partitions[2].index_byte_count > 0 && m.partitions[2].index_byte_count % 512 == 0);
+    // one index table segment per body partition, in the partition after it (footer: the last)
+    let segs: Vec<(i64, i64)> = m.index_segments.iter().map(|s| (s.start_position, s.duration)).collect();
+    assert_eq!(segs, vec![(0, 126), (126, 126), (252, n as i64 - 252)]);
+    let el = 6_144u32; // 20 + 1920 * 3 bytes on the KAG
+    for s in &m.index_segments {
+        assert_eq!(s.slice_count, 1);
+        assert_eq!(s.delta_entries, vec![(0, 0, 0), (-1, 0, 512), (0, 1, 0), (0, 1, el), (0, 1, 2 * el), (0, 1, 3 * el)]);
+    }
+    let first = m.partitions[1].essence_start.unwrap() as usize;
+    assert_eq!(first % 512, 0);
+    let ec = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x03, 0x0D, 0x01, 0x03, 0x01, 0x02, 0x7F, 0x01, 0x00];
+    for i in [0, 1, 125, 126, 127, 300] {
+        let seg = m.index_segments.iter().find(|s| (s.start_position..s.start_position + s.duration).contains(&(i as i64))).unwrap();
+        let e = &seg.entries[i - seg.start_position as usize];
+        let body = m.partitions.iter().filter(|p| p.kind == PartitionKind::Body).rev().find(|p| p.body_offset <= e.stream_offset).unwrap();
+        let at = body.essence_start.unwrap() as usize + (e.stream_offset - body.body_offset) as usize;
+        assert_eq!(at % 512, 0, "content package {i}");
+        assert_eq!(f[at..at + 16], SYSTEM_METADATA_PACK);
+        let pack = &f[at + 20..at + 77];
+        assert_eq!(pack[..2], [0x5C, 0x04]);
+        assert_eq!(u16::from_be_bytes([pack[5], pack[6]]), i as u16);
+        assert_eq!(pack[7..23], ec);
+        assert!(pack[23..40].iter().all(|&b| b == 0), "no creation stamp");
+        assert_eq!(pack[40], 0x81);
+        assert_eq!(f[at + 512..at + 528], element_key(0x15, 1, 0x05, 0));
+        let snd = at + 512 + kag_aligned(20 + 4 + 3000 + 7 * i);
+        for c in 0..4 {
+            let k = snd + c * el as usize;
+            assert_eq!(f[k..k + 16], element_key(0x16, 4, 0x03, c as u8));
+            assert_eq!(f[k + 16..k + 20], [0x83, 0x00, 0x16, 0x80]);
+        }
+    }
+    let v = m.track_of_kind(TrackKind::Picture).unwrap();
+    let t = &m.tracks[v];
+    assert_eq!(t.codec, Codec::Mpeg2);
+    assert_eq!(t.duration, Some(n as i64));
+    assert!(t.temporal_offsets && t.indexed);
+    let pts: Vec<i64> = t.samples.iter().take(12).map(|s| s.pts).collect();
+    assert_eq!(pts, vec![0, 3, 1, 2, 5, 4, 6, 9, 7, 8, 11, 10]);
+    for i in [0, 125, 126, 251, 252, n - 1] {
+        assert_eq!(m.read_sample(&f, v, i).unwrap(), d10_picture(i, 3000 + 7 * i), "picture {i}");
+    }
+    // four mono AES3 tracks, channel c holding channel c of the pushed PCM
+    let sound: Vec<usize> = (0..m.tracks.len()).filter(|&k| m.tracks[k].sound.is_some()).collect();
+    assert_eq!(sound.len(), 4);
+    for (c, &k) in sound.iter().enumerate() {
+        assert_eq!(m.tracks[k].sound.as_ref().unwrap().channels, 1);
+        let pcm = m.read_pcm(&f, k, 0, total).unwrap();
+        for s in (0..total).step_by(97) {
+            let want = ((s * 4 + c) as i64 * 1000 % 6_000_000) as i32 - 3_000_000;
+            assert_eq!(pcm[0][s], want as f32 / 8_388_608.0, "sample {s} channel {c}");
+        }
+    }
+}
+
+#[test]
+fn rdd9_ntsc_sound_slices_and_silent_channels() {
+    // 59.94 Hz: 800 or 801 samples, every element padded to the 801-sample size; one pushed
+    // channel goes out as four elements, the others silent
+    let rate = Rational::new(60_000, 1001);
+    let mut cfg = rdd9_config(rate, 1);
+    cfg.picture =
+        Some(PictureDesc::new(PictureCoding::Mpeg2 { profile_and_level: 0x82, max_gop: 6, b_pictures: 2, closed_gop: true, bit_rate: 50_000_000 }, 1280, 720));
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    let n = 10;
+    let total = (n as u64 * 48_000 * 1001 / 60_000) as usize;
+    let pcm: Vec<u8> = (0..total).flat_map(|s| ((s as i32) * 256).to_le_bytes()[..3].to_vec()).collect();
+    w.push_sound(0, &pcm).unwrap();
+    for i in 0..n {
+        w.push_picture(&d10_picture(i, 500), rdd9_frame(i)).unwrap();
+    }
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    let el = (20 + 801 * 3usize).next_multiple_of(512) as u32;
+    assert_eq!(m.index_segments.len(), 1);
+    assert_eq!(m.index_segments[0].delta_entries[3], (0, 1, el));
+    let sound: Vec<usize> = (0..m.tracks.len()).filter(|&k| m.tracks[k].sound.is_some()).collect();
+    assert_eq!(sound.len(), 4);
+    let a = m.read_pcm(&f, sound[0], 0, total).unwrap();
+    let b = m.read_pcm(&f, sound[1], 0, total).unwrap();
+    for s in (0..total).step_by(31) {
+        assert_eq!(a[0][s], (s as i32 * 256) as f32 / 8_388_608.0, "sample {s}");
+        assert_eq!(b[0][s], 0.0);
+    }
+}
+
+#[test]
+fn rdd9_rejects_other_essence() {
+    let rate = Rational::new(25, 1);
+    let mut cfg = rdd9_config(rate, 2);
+    cfg.sound[0].sample_rate = 44_100;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+    let mut cfg = rdd9_config(rate, 9);
+    cfg.sound[0].channels = 9;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+    let mut cfg = rdd9_config(rate, 2);
+    cfg.picture = Some(PictureDesc::new(PictureCoding::ProRes { profile: 3 }, 64, 36));
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+    let mut cfg = rdd9_config(rate, 2);
+    cfg.pattern = Pattern::OpAtom;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+}

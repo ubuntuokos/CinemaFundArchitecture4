@@ -147,6 +147,11 @@ pub enum MxfVideoCodec {
     /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only.
     #[serde(rename = "d10", alias = "D10")]
     D10,
+    /// XDCAM HD422 (SMPTE RDD 9): MPEG-2 4:2:2P@HL long GOP at 1920 × 1080 or 1280 × 720 in
+    /// RDD 9's OP1a layout (system items, one AES3 element per channel, body partitions every
+    /// five seconds), up to eight 16- or 24-bit 48 kHz channels. Progressive pictures only.
+    #[serde(rename = "xdcamHd422", alias = "XdcamHd422")]
+    XdcamHd422,
 }
 
 impl MxfVideoCodec {
@@ -158,6 +163,7 @@ impl MxfVideoCodec {
             MxfVideoCodec::H264 => "H.264",
             MxfVideoCodec::Mpeg2 => "MPEG-2",
             MxfVideoCodec::D10 => "D-10 (IMX)",
+            MxfVideoCodec::XdcamHd422 => "XDCAM HD422 (RDD 9)",
         }
     }
     /// The export format whose encoder this codec uses.
@@ -166,7 +172,7 @@ impl MxfVideoCodec {
             MxfVideoCodec::Dnxhr => Format::DnxHr,
             MxfVideoCodec::ProRes => Format::ProRes,
             MxfVideoCodec::H264 => Format::H264,
-            MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 => Format::Mpeg2,
+            MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422 => Format::Mpeg2,
         }
     }
 }

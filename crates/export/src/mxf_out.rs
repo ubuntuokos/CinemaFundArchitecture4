@@ -47,6 +47,9 @@ fn picture(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate, mpeg: Opt
                     "MPEG-2 in MXF is written for HD pictures (High and High-1440 levels); {w}x{h} is standard definition (D-10 / IMX)"
                 )));
             }
+            if settings.mxf_video_codec == MxfVideoCodec::XdcamHd422 && (m.profile_and_level != 0x82 || !matches!((w, h), (1920, 1080) | (1280, 720))) {
+                return Err(ExportError::Unsupported(format!("XDCAM HD422 (RDD 9) pictures are 1920x1080 or 1280x720 in the 4:2:2 Profile; not {w}x{h}")));
+            }
             PictureCoding::Mpeg2 {
                 profile_and_level: m.profile_and_level,
                 max_gop: u16::try_from(m.gop.max(1)).unwrap_or(u16::MAX),
@@ -143,6 +146,7 @@ impl MxfMux {
         if !atom && let Some((sr, ch)) = s.audio {
             cfg.sound = vec![SoundDesc { sample_rate: sr, channels: ch as u32, bits }];
         }
+        cfg.rdd9 = settings.mxf_video_codec == MxfVideoCodec::XdcamHd422;
         let mut audio = Vec::new();
         if atom && let Some((sr, ch)) = s.audio {
             for (k, path) in opatom_audio_paths(&settings.path, ch).into_iter().enumerate() {

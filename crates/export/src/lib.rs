@@ -851,6 +851,16 @@ impl ExportSettings {
                 return Err(ExportError::Unsupported("D-10 (IMX) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
             }
         }
+        if self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::XdcamHd422 {
+            if self.format == Format::MxfOpAtom {
+                return Err(ExportError::Unsupported("XDCAM HD422 (RDD 9) is written as MXF OP1a".into()));
+            }
+            if self.has_audio()
+                && (self.audio.sample_rate.is_some_and(|r| r != 48_000) || !matches!(self.audio.bits, 16 | 24) || self.audio.float || self.audio.channels > 8)
+            {
+                return Err(ExportError::Unsupported("XDCAM HD422 (RDD 9) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
+            }
+        }
         if self.video_format() == Format::Mpeg2 {
             if self.mpeg2_quantizer.is_some_and(|q| !(1..=31).contains(&q)) {
                 return Err(ExportError::Unsupported("MPEG-2 quantiser must be between 1 and 31".into()));
@@ -1595,7 +1605,9 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
             Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
             None => cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(s.bitrate_kbps.max(100)) * 1000 },
         };
-        if s.mpeg2_422 {
+        // XDCAM HD422 is the 4:2:2 Profile whatever the chroma setting says
+        let yuv422 = s.mpeg2_422 || (s.format.is_mxf() && s.mxf_video_codec == MxfVideoCodec::XdcamHd422);
+        if yuv422 {
             cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
         }
         cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
@@ -1606,7 +1618,7 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         cfg.adaptive_quantization = true;
         let gop = (cfg.gop, cfg.b_frames, cfg.closed_gop);
         let enc = cfa4_mpeg2v::encode::Encoder::new(cfg).map_err(|e| ExportError::Unsupported(format!("MPEG-2: {e}")))?;
-        Ok(Box::new(Mpeg2Encoder { enc, gop, rate, w: w16, h: h16, yuv422: s.mpeg2_422, y: Vec::new(), u: Vec::new(), v: Vec::new() }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(Mpeg2Encoder { enc, gop, rate, w: w16, h: h16, yuv422, y: Vec::new(), u: Vec::new(), v: Vec::new() }) as Box<dyn VideoEncoder>)
     })())
 }
 

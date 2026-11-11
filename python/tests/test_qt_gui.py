@@ -7638,6 +7638,7 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     assert encoder_format("mxf-op1a", "proRes") == "prores" and encoder_format("hls", "") == "h264"
     assert encoder_format("mxf-op1a", "mpeg2") == "mpeg2"
     assert encoder_format("mxf-op1a", "d10") == "mpeg2"
+    assert encoder_format("mxf-op1a", "xdcamHd422") == "mpeg2"
     assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
     assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
     assert supports_alpha("gif", "", ""), "GIF keeps binary transparency, as the engine says (#3423)"
@@ -7711,6 +7712,11 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
         p = dlg.params()
         assert p["mxfVideoCodec"] == "d10" and "mpeg2BFrames" not in p
         assert resolved()["mxfVideoCodec"] == "d10"
+        # XDCAM HD422 / RDD 9 (#949): GOP and B pictures, the 4:2:2 chroma fixed
+        pick(c["mxfVideoCodec"], "xdcamHd422")
+        assert dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        assert dlg.params()["mxfVideoCodec"] == "xdcamHd422"
+        assert resolved()["mxfVideoCodec"] == "xdcamHd422"
         pick(c["mxfVideoCodec"], "proRes")
         assert not dlg.gop.isEnabled()
         # CineForm: encoding and quality; RGBA keeps alpha
