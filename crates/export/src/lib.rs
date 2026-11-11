@@ -25,6 +25,9 @@ pub mod boundary_reencode;
 mod boundary_reencode_hevc;
 #[cfg(test)]
 mod boundary_reencode_hevc_tests;
+pub mod boundary_reencode_mpeg;
+#[cfg(test)]
+mod boundary_reencode_mpeg_tests;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -2945,6 +2948,8 @@ mod mpeg2_tests;
 mod mxf_tests;
 #[cfg(test)]
 mod smart_cut_av1_tests;
+#[cfg(test)]
+mod smart_cut_edge_tests;
 #[cfg(test)]
 mod smart_cut_hevc_tests;
 #[cfg(test)]
