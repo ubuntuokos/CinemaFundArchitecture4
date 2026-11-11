@@ -54,8 +54,8 @@ TIMEBASES = [
     (30, 1), (48, 1), (50, 1), (60_000, 1001), (60, 1), (120_000, 1001), (120, 1),
 ]  # fmt: skip
 SAMPLE_RATES = [32_000, 44_100, 48_000, 88_200, 96_000]
-MIXES = [N_("Stereo"), N_("Mono"), "5.1", N_("Adaptive")]
-MIX_NAMES = {"Mono": "Mono", "Stereo": "Stereo", "Surround51": "5.1", "Adaptive": "Adaptive"}
+MIXES = [N_("Stereo"), N_("Mono"), "5.1", "7.1", "7.1.2", N_("Adaptive")]
+MIX_NAMES = {"Mono": "Mono", "Stereo": "Stereo", "Surround51": "5.1", "Surround71": "7.1", "Surround712": "7.1.2", "Adaptive": "Adaptive"}
 WORKING_SPACES = [("rec709", N_("Rec. 709")), ("rec2100-pq", N_("Rec. 2100 PQ")), ("rec2100-hlg", N_("Rec. 2100 HLG"))]
 WORKING_IDS = {"Rec709": "rec709", "Rec2100Pq": "rec2100-pq", "Rec2100Hlg": "rec2100-hlg"}
 
@@ -535,7 +535,7 @@ class SequenceSettingsDialog(QDialog):
         self.preview_w.setText(str(d.width))
         self.preview_h.setText(str(d.height))
         self.mix.setCurrentIndex(MIXES.index(d.mix) if d.mix in MIXES else 0)
-        self.channels.setItemText(0, {"Mono": "1", "5.1": "6", "Adaptive": "—"}.get(d.mix, "2"))
+        self.channels.setItemText(0, {"Mono": "1", "5.1": "6", "7.1": "8", "7.1.2": "10", "Adaptive": "—"}.get(d.mix, "2"))
         hz = list(SAMPLE_RATES)
         if d.sample_rate not in hz:
             hz.insert(0, d.sample_rate)

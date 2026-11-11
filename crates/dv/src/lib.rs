@@ -19,6 +19,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod audio;
 pub mod dif;
 mod idct;
 mod layout;
@@ -28,6 +29,7 @@ mod vlc;
 
 use std::ops::Range;
 
+pub use audio::{Audio, AudioFormat, SOURCE_PACK_OFFSET, audio_format, decode_audio, source_pack_samples};
 pub use dif::{Aspect, ChromaFormat, Format, Profile, System, probe};
 
 use dif::{BLOCK_SIZE, SEQUENCE_SIZE};
