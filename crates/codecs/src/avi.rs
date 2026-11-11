@@ -37,6 +37,14 @@ enum VCodec {
     Dv,
     H264,
     Hevc,
+    /// Hap: the FourCC.
+    Hap([u8; 4]),
+    /// FFV1 with its configuration record (`BITMAPINFOHEADER` extra bytes).
+    Ffv1(Vec<u8>),
+    /// Huffyuv with its (reduced) `BITMAPINFOHEADER`.
+    Huffyuv(Vec<u8>),
+    /// Ut Video: the FourCC and the extradata.
+    UtVideo([u8; 4], Vec<u8>),
     Raw(RawFormat),
     /// No decoder: the codec's name.
     Unsupported(String),
@@ -59,9 +67,13 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"H264" | b"X264" | b"AVC1" | b"DAVC" | b"VSSH" => (VCodec::H264, "H.264".into()),
         b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
+        _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
+        b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
+        b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
             (VCodec::Unsupported("MPEG-4 Part 2 (DivX / Xvid)".into()), "MPEG-4 Part 2 (DivX / Xvid)".into())
         }
+        _ if crate::hap::is_hap(&b.compression) => (VCodec::Hap(b.compression), "Hap".into()),
         b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Dv, "DV".into()),
         _ => {
             let name = fourcc_text(b.compression);
@@ -396,6 +408,7 @@ impl AviSource {
                 channels,
                 codec: label,
                 bits_per_sample: (w.bits_per_sample > 0).then_some(u32::from(w.bits_per_sample)),
+                speakers: Vec::new(),
             });
             let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
             audios.push(AviAudio { stream: s, codec, pieces, first, starts, state });
@@ -524,6 +537,10 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
             VCodec::H264 => Ok(Box::new(crate::video::H264Decoder::annexb())),
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
+            VCodec::Hap(fourcc) => make_video_decoder(&crate::hap::sample_entry(*fourcc, w, h)),
+            VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
+            VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
+            VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),
             VCodec::Unsupported(name) => Err(CodecError::Unsupported(format!("no decoder for {name} video"))),
         }

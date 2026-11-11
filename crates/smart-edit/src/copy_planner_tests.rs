@@ -316,7 +316,7 @@ fn missing_or_repeated_timestamps_are_refused() {
 
 #[test]
 fn the_built_in_registry_runs_only_what_is_implemented() {
-    // packet copy: H.264 into MP4 / MOV only (WP-04); boundary re-encode: not yet (WP-06)
+    // packet copy (WP-04) and boundary re-encode (WP-06): H.264 into MP4 / MOV only
     let ix = index(stream(closed_gops(3)));
     let p = plan_smart_cut(&Registry::native(), &ix, &request(7, 14, CutMode::GopBoundary), STRICT).unwrap();
     assert!(p.executable, "{:?}", p.blockers);
@@ -325,7 +325,12 @@ fn the_built_in_registry_runs_only_what_is_implemented() {
     assert!(!p.executable);
     assert!(p.blockers.iter().any(|b| b.contains("packet-copy")), "{:?}", p.blockers);
     let p = plan_smart_cut(&Registry::native(), &ix, &request(9, 21, CutMode::FrameAccurate), STRICT).unwrap();
-    assert!(!p.executable && p.plan.requires_confirmation());
+    assert!(p.executable && p.plan.requires_confirmation(), "{:?}", p.blockers);
+    let p =
+        plan_smart_cut(&Registry::native(), &ix, &SmartCutRequest { output_container: Container::Matroska, ..request(9, 21, CutMode::FrameAccurate) }, STRICT)
+            .unwrap();
+    assert!(!p.executable);
+    assert!(p.blockers.iter().any(|b| b.contains("boundary re-encode")), "{:?}", p.blockers);
 }
 
 #[test]

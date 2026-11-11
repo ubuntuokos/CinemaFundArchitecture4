@@ -26,6 +26,10 @@ pub struct SeqParams {
     pub amp: bool,
     pub sign_hiding: bool,
     pub cu_qp_delta: bool,
+    /// Parameter-set ids (VPS 0–15, SPS 0–15, PPS 0–63).
+    pub vps_id: u32,
+    pub sps_id: u32,
+    pub pps_id: u32,
 }
 
 /// A NAL unit (Annex B payload without start code) from its header fields and RBSP.
@@ -79,7 +83,7 @@ pub fn level_for(w: u32, h: u32, fps: f64) -> u8 {
 
 pub fn vps(p: &SeqParams) -> Vec<u8> {
     let mut w = BitWriter::new();
-    w.write_bits(0, 4); // vps_video_parameter_set_id
+    w.write_bits(p.vps_id, 4); // vps_video_parameter_set_id
     w.write_bit(true); // vps_base_layer_internal_flag
     w.write_bit(true); // vps_base_layer_available_flag
     w.write_bits(0, 6); // vps_max_layers_minus1
@@ -108,11 +112,11 @@ pub fn vps(p: &SeqParams) -> Vec<u8> {
 
 pub fn sps(p: &SeqParams) -> Vec<u8> {
     let mut w = BitWriter::new();
-    w.write_bits(0, 4); // sps_video_parameter_set_id
+    w.write_bits(p.vps_id, 4); // sps_video_parameter_set_id
     w.write_bits(0, 3); // sps_max_sub_layers_minus1
     w.write_bit(true); // sps_temporal_id_nesting_flag
     profile_tier_level(&mut w, p);
-    w.write_ue(0); // sps_seq_parameter_set_id
+    w.write_ue(p.sps_id); // sps_seq_parameter_set_id
     w.write_ue(1); // chroma_format_idc 4:2:0
     w.write_ue(p.coded_w);
     w.write_ue(p.coded_h);
@@ -189,8 +193,8 @@ fn vui(w: &mut BitWriter, p: &SeqParams) {
 
 pub fn pps(p: &SeqParams) -> Vec<u8> {
     let mut w = BitWriter::new();
-    w.write_ue(0); // pps_pic_parameter_set_id
-    w.write_ue(0); // pps_seq_parameter_set_id
+    w.write_ue(p.pps_id); // pps_pic_parameter_set_id
+    w.write_ue(p.sps_id); // pps_seq_parameter_set_id
     w.write_bit(false); // dependent_slice_segments_enabled_flag
     w.write_bit(false); // output_flag_present_flag
     w.write_bits(0, 3); // num_extra_slice_header_bits
@@ -245,7 +249,7 @@ pub fn slice_header(p: &SeqParams, s: &SliceParams) -> Vec<u8> {
     if s.idr {
         w.write_bit(false); // no_output_of_prior_pics_flag
     }
-    w.write_ue(0); // slice_pic_parameter_set_id
+    w.write_ue(p.pps_id); // slice_pic_parameter_set_id
     if s.address != 0 {
         // dependent slice segments are off, so no dependent_slice_segment_flag
         w.write_bits(s.address, s.address_bits);
