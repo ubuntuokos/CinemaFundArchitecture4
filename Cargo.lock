@@ -1814,6 +1814,9 @@ version = "0.10.0"
 dependencies = [
  "chrono",
  "png",
+ "serde",
+ "serde_json",
+ "sha2",
  "tempfile",
 ]
 

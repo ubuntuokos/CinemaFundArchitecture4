@@ -1,0 +1,54 @@
+name: CFA4 AV2 oracle (manual)
+
+# AV2 plan X/3: builds the pinned AVM v1.0.0 oracle and the av2-normative cross-check into
+# private prefixes, regenerates the hashed AV2 corpus and checks it against the committed
+# manifest (crates/testkit/data/av2-corpus.json). Expensive (two AVM builds), so it runs ONLY
+# on workflow_dispatch or on a `cfa4-full-validation` label event of a PR that touches the AV2
+# harness; never on ordinary commits and never on a schedule (AGENTS.md). Not a required check.
+
+on:
+  pull_request:
+    types: [labeled]
+    paths:
+      - "crates/testkit/**"
+      - "crates/av2/**"
+      - "scripts/dev/av2-*"
+      - ".github/workflows/cfa4-av2-oracle.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-av2-oracle-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  av2-oracle:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.label.name == 'cfa4-full-validation')
+    name: AV2 oracle harness (AVM v1.0.0 + av2-normative)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Ubuntu 26.04 host gate
+        run: bash scripts/ci/require-ubuntu-2604.sh
+      - name: Build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential cmake ninja-build nasm git ffmpeg
+      - name: Rust toolchain from rust-toolchain.toml
+        run: rustup show
+      - name: Build AVM v1.0.0 (oracle) into target/av2-oracle
+        run: python3 scripts/dev/av2-oracle.py build --ref v1.0.0
+      - name: Build AVM av2-normative (cross-check) into target/av2-oracle
+        run: python3 scripts/dev/av2-oracle.py build --ref av2-normative
+      - name: Generate the corpus and check bitstreams against the manifest
+        run: python3 scripts/dev/av2-oracle.py corpus
+      - name: Oracle tests (skips are failures)
+        env:
+          CFA4_REQUIRE_AV2_ORACLE: "1"
+        run: cargo test --locked -p cfa4-testkit --test av2_oracle -- --nocapture
