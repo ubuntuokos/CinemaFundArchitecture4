@@ -58,6 +58,8 @@ LANGUAGES = {
     "sl": "Slovenščina",
     "et": "Eesti",
     "sr": "Српски (ћирилица)",
+    # Qt GUI only: egui cannot shape Telugu (owner decision 2026-11-11)
+    "te": "తెలుగు",
 }
 
 
