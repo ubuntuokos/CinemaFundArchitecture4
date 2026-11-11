@@ -140,7 +140,7 @@ fn transport() -> Fixture {
 /// The program stream of the tests: video, LPCM and AC-3 audio.
 fn program() -> Fixture {
     let audio = [
-        (MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2 }, units(lpcm_unit, 160, START, 900)),
+        (MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2, bits: 16 }, units(lpcm_unit, 160, START, 900)),
         (MuxCodec::Ac3, units(ac3_frame, 50, START + 1000, 2880)),
     ];
     Fixture::new(source(MuxFormat::Ps, 40, &audio))
