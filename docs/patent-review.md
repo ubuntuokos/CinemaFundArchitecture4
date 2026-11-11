@@ -40,7 +40,7 @@ szabadalommal védett formátumot.
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
 | VC-1 / WMV | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
-| DV / DVCPRO 25 (IEC 61834-2, SMPTE 314M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
+| DV / DVCPRO 25 / 50, DVCPRO HD (IEC 61834-2, SMPTE 314M, SMPTE 370M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
 | AV1 | dekódolás | `crates/av1`; FFmpeg-háttér (dav1d) | alap | függőben | | |
 | AV1 | kódolás | tervezett (rav1e) | – | függőben | | |
 | VP8 | dekódolás | `crates/vp8`; FFmpeg-háttér (libvpx) | alap | függőben | | |
@@ -81,6 +81,7 @@ szabadalommal védett formátumot.
 | Vorbis | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | WMA | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | Speex | dekódolás; Ogg Speex (`.spx`) olvasása | `crates/speex` (a libspeex portja) | alap | függőben | | |
+| SMPTE LTC időkód (ST 12-1) és MIDI Timecode (MTC) | dekódolás, kódolás (hangjel, MIDI-üzenetek) | `crates/tcsync` | alap | függőben | | |
 | G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
 
 ## Konténerek

@@ -1284,6 +1284,7 @@ dependencies = [
  "cfa4-mpegts",
  "cfa4-mxf",
  "cfa4-project",
+ "cfa4-qc",
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
@@ -1720,6 +1721,7 @@ name = "cfa4-qc"
 version = "0.10.0"
 dependencies = [
  "cfa4-aac",
+ "cfa4-audio-dsp",
  "cfa4-codecs",
  "cfa4-color",
  "cfa4-frame",
@@ -1727,6 +1729,7 @@ dependencies = [
  "cfa4-isobmff",
  "cfa4-media",
  "cfa4-time",
+ "png",
  "serde",
  "serde_json",
  "sha2",
@@ -1815,6 +1818,13 @@ version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-tcsync"
+version = "0.10.0"
+dependencies = [
+ "cfa4-time",
 ]
 
 [[package]]

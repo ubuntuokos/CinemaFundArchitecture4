@@ -33,8 +33,15 @@ const TEXT: &[&str] = &["Video Transitions", "Text"];
 const TRANSFORMERS: &[&str] = &["Video Transitions", "Transformers"];
 const WIPE: &[&str] = &["Video Transitions", "Wipe"];
 
+/// CFA4's own transitions (not in Premiere's bin), shown in Premiere's folders beside its own.
+pub const CFA4_OWN_TRANSITIONS: &[&str] = &["keyhole", "burn_away"];
+
 /// Direction choices (index 3, "From West", moves left → right).
 pub const DIR_OPTS: &[&str] = &["From North", "From East", "From South", "From West"];
+/// [`DIR_OPTS`] plus the four diagonals (Slide only: B covers A, so every pixel stays covered;
+/// indices 0–3 are unchanged).
+pub const DIR8_OPTS: &[&str] =
+    &["From North", "From East", "From South", "From West", "From North-West", "From North-East", "From South-East", "From South-West"];
 pub const AA_OPTS: &[&str] = &["Off", "Low", "Medium", "High"];
 pub const AXIS_OPTS: &[&str] = &["Horizontal", "Vertical"];
 pub const CORNER_OPTS: &[&str] = &["Top Left", "Top Right", "Bottom Right", "Bottom Left"];
@@ -64,6 +71,9 @@ fn centre() -> ParamDef {
 }
 fn direction() -> ParamDef {
     ch("direction", "Direction", DIR_OPTS, 3)
+}
+fn direction8() -> ParamDef {
+    ch("direction", "Direction", DIR8_OPTS, 3)
 }
 fn motion_blur() -> ParamDef {
     num("motion_blur", "Motion Blur", 50.0, 100.0, "%")
@@ -178,6 +188,7 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
                 colour("edge_color", "Edge Color", [0.22, 0.14, 0.08, 1.0]),
                 num("edge_width", "Edge Width", 12.0, 200.0, "px"),
                 seed(),
+                feather(0.0),
             ],
         ),
         tr("kaleidoscope", "Kaleidoscope", GRUNGE, m, vec![range("segments", "Segments", 6.0, 2.0, 32.0, ""), num("zoom", "Zoom", 30.0, 100.0, "%")]),
@@ -190,6 +201,20 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
         ),
         tr("tv_power", "TV Power", GRUNGE, m, vec![colour("glow_color", "Glow Color", [0.85, 0.95, 1.0, 1.0]), num("line", "Line Thickness", 4.0, 50.0, "px")]),
         tr("vhs_damage", "VHS Damage", GRUNGE, m, vec![amount(60.0), seed()]),
+        // CFA4's own: the outgoing clip burns away in seeded noise, behind a glowing ember edge.
+        tr(
+            "burn_away",
+            "Burn Away",
+            GRUNGE,
+            m,
+            vec![
+                num("noise_size", "Burn Size", 160.0, 2000.0, "px"),
+                num("border_width", "Ember Width", 5.0, 200.0, "px"),
+                colour("border_color", "Ember Color", [1.0, 0.45, 0.08, 1.0]),
+                feather(2.0),
+                seed(),
+            ],
+        ),
         // ---- Immersive Video (flat equirectangular approximations; see the render crate) ----
         tr("vr_chroma_leaks", "VR Chroma Leaks", IMMERSIVE, m, vec![amount(70.0), seed()]),
         tr("vr_gradient_wipe", "VR Gradient Wipe", IMMERSIVE, m, vec![num("softness", "Softness", 20.0, 100.0, "%"), b("invert", "Invert Gradient", false)]),
@@ -245,12 +270,12 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
         ),
         tr("push", "Push", SLIDE, m, vec![direction(), motion_blur()]),
         tr("roll", "Roll", SLIDE, m, vec![direction(), motion_blur()]),
-        tr("slide", "Slide", SLIDE, m, vec![direction(), motion_blur()]),
+        tr("slide", "Slide", SLIDE, m, vec![direction8(), motion_blur()]),
         tr("split", "Split", SLIDE, m, vec![ch("orientation", "Orientation", AXIS_OPTS, 0), motion_blur()]),
         tr("stretch", "Stretch", SLIDE, m, vec![direction()]),
         tr("whip", "Whip", SLIDE, m, vec![direction(), num("blur", "Blur", 80.0, 100.0, "%")]),
         // ---- Smart Tools ----
-        tr("motion_camera", "Motion Camera", SMART, m, vec![range("zoom", "Zoom", 40.0, 0.0, 200.0, "%"), angle("rotation", "Rotation", 8.0), motion_blur()]),
+        tr("motion_camera", "Motion Camera", SMART, m, vec![range("zoom", "Zoom", 40.0, -90.0, 200.0, "%"), angle("rotation", "Rotation", 8.0), motion_blur()]),
         tr("motion_tween", "Motion Tween", SMART, m, vec![range("scale", "Scale Match", 15.0, 0.0, 100.0, "%")]),
         tr(
             "shape_dissolve",
@@ -310,6 +335,8 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
         // ---- Wipe ----
         tr("clock_wipe", "Clock Wipe", WIPE, m, with(vec![centre(), angle("start", "Start Angle", 0.0), feather(0.0)], border())),
         tr("linear_wipe", "Linear Wipe", WIPE, m, with(vec![angle("angle", "Wipe Angle", 90.0), feather(0.0)], border())),
+        // CFA4's own: an iris in the shape of a keyhole.
+        tr("keyhole", "Keyhole", WIPE, m, with(vec![centre(), feather(0.0)], border())),
         tr(
             "neon_wipe",
             "Neon Wipe",
@@ -412,7 +439,7 @@ mod tests {
     #[test]
     fn premiere_26_transition_tree() {
         let tree = video_transition_tree();
-        let counts: Vec<usize> = tree.iter().map(|(_, v)| v.len()).collect();
+        let counts: Vec<usize> = tree.iter().map(|(_, v)| v.iter().filter(|id| !CFA4_OWN_TRANSITIONS.contains(id)).count()).collect();
         assert_eq!(counts, vec![8, 11, 10, 8, 16, 8, 4, 2, 8, 9, 21], "{tree:?}");
         assert_eq!(counts[..10].iter().sum::<usize>(), 84);
         // every transition is in a known folder, ids and names are unique per kind
@@ -433,6 +460,12 @@ mod tests {
         assert_eq!(at("shape_dissolve"), &["Video Transitions", "Smart Tools"]);
         assert_eq!(at("iris_round"), LEGACY_VIDEO_TRANSITIONS);
         assert_eq!(at("venetian_blinds"), OBSOLETE_VIDEO_TRANSITIONS);
+        // CFA4's own transitions sit in Premiere's folders, so the Effects panel lists them
+        assert_eq!(at("keyhole"), &["Video Transitions", "Wipe"]);
+        assert_eq!(at("burn_away"), &["Video Transitions", "Grunge & Distort"]);
+        for id in CFA4_OWN_TRANSITIONS {
+            assert!(tree.iter().any(|(_, v)| v.contains(id)), "{id} is not in the transition tree");
+        }
     }
 
     #[test]

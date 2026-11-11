@@ -39,6 +39,7 @@ cfa4-ac3 = { path = "crates/ac3" }
 cfa4-dts = { path = "crates/dts" }
 cfa4-auro = { path = "crates/auro" }
 cfa4-truehd = { path = "crates/truehd" }
+cfa4-tcsync = { path = "crates/tcsync" }
 cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }
 cfa4-h264 = { path = "crates/h264" }
