@@ -80,7 +80,8 @@ kihasználható.
 | Stúdió (`cfa4-studio-host`, élő stúdió D2) | a jelenet forrásai | felvétel célja | a beállított kimenetek | nincs |
 | Böngészőforrás (a stúdión belül, Chromium-sandbox) | semmit | semmit | a betöltött oldal | nincs |
 | Letöltő (`cfa4-fetch`, új, D5) | semmit | csak a letöltés célját (modell- vagy gyorsítótár-könyvtár) | csak a kért cím | nincs |
-| Bővítmények, MI-modellek | a D7 szerint | | | |
+| Bővítmény-folyamat (D7) | a bővítmény saját fájljai és a kapott képkockák/hang | semmit (az eredmény osztott memórián megy vissza) | nincs | nincs |
+| Modell-átalakító (D7) | a forrásmodell | csak a kimeneti safetensors-fájlt | nincs | nincs |
 
 3. **A szabályok (never crash, D4):** ha egy védelem hiányzik, a hozzá tartozó kockázatos rész nem
    indul, és a Beállítások ▸ Biztonság megmondja, mi hiányzik; a CFA4 többi része fut. Ha egy
@@ -98,7 +99,7 @@ kihasználható.
 | **B4** – Médiaszolgáltató | FFmpeg és GStreamer külön folyamatba, osztott memóriás képkockákkal (D2) | a C dekóder összeomlása nem viszi a motort; a lassulás legfeljebb 5% (D2) |
 | **B5** – Projekt- és cserefájlok | méret- és mélységkorlátok, útvonal-ellenőrzés (`../`, szimbolikus link), a hivatkozások listája és figyelmeztetés idegen projektnél, jóváhagyott médiára szűkített hozzáférés (D6) | rosszindulatú mintakészlet tesztje zöld |
 | **B6** – Élő stúdió | a `cfa4-studio-host` profilja, AppArmor-profil a `.deb`-ben, a böngészőforrás négy védelme (LIVE-STUDIO S9), hálózati bemenetek a hoston | a négy védelem tesztje zöld |
-| **B7** – MI-modellek és bővítmények | csak biztonságos modellformátumok, bővítmények külön folyamatban (a D7 szerint) | — |
+| **B7** – MI-modellek és bővítmények | csak biztonságos modellformátumok, elszigetelt pickle-átalakító, bővítmények külön folyamatban (D7) | pickle-modellt a CFA4 nem nyit meg; egy összeomló bővítmény nem viszi a motort; a hangbővítmény valós időben szól |
 | **B8** – Csomagolás és ellátási lánc | `.deb` (AppArmor-profilok), AppImage és Flatpak viselkedése, SBOM, aláírt kiadás | a csomagteszt a profilokat ellenőrzi |
 | **B9** – Biztonsági tesztkészlet | rosszindulatú média- és projektminták (a `target/fixtures/`-ben generálva), „mit nem érhet el” tesztek minden folyamatra | a CI-ban fut |
 
@@ -117,7 +118,7 @@ oldal a Qt6 befejezése után. A B6 az élő stúdió S9-ével együtt.
 | D4 | Ha egy védelem hiányzik | **Eldöntve (2026-11-11): alapból szigorú.** A minimális követelmény az Ubuntu 26.04, amelyben a Landlock, a seccomp és az AppArmor gyárilag megvan, így a támogatott rendszeren a védelmek mindig működnek (B0-ban ellenőrizve). Ha egy hiányzik, a hozzá tartozó kockázatos rész (külső dekóder, böngészőforrás, hálózati bemenet) nem indul, és a CFA4 megmondja, mi hiányzik; a szerkesztő, a projekt és a saját Rust dekóderek működnek (never crash). A felhasználó kifejezett figyelmeztetés után a Beállításokban engedélyezheti a védelem nélküli futást, de **az így futó CFA4 nem támogatott**: a `security.status` és a hibajelentés ezt rögzíti, és az erre épülő hibajelentéseket nem kezeljük |
 | D5 | Hálózat | **Eldöntve (2026-11-11): csak ahol kell.** A motor csak a 127.0.0.1-et éri el (Qt GUI, MCP, élő oldal), kifelé nem nyithat kapcsolatot; a `cfa4-media-host` soha nem kap hálózatot; kifelé csak a `cfa4-studio-host` lép (a beállított streamelési célok és a hálózati bemenetek); a felhasználó által kért letöltések (MI-modellek, frissítésellenőrzés) egy külön, csak erre szolgáló kis folyamaton (`cfa4-fetch`) mennek, és mindig látszik, mit tölt le és honnan. Ahol a rendszermag Landlock-ABI-ja engedi, portszinten is kikényszerítve, egyébként seccomppal |
 | D6 | Idegen projekt megnyitása | **Eldöntve (2026-11-11): ellenőrzés és figyelmeztetés.** Minden projekt- és cserefájlra méret- és mélységkorlát (a túllépés hibaüzenet, nem összeomlás). Megnyitás előtt a CFA4 megmutatja, mely külső útvonalakra hivatkozik a projekt, és külön figyelmeztet a szokatlanokra (rejtett mappák, a projekten kívüli rendszerkönyvtárak, `..`-os vagy szimbolikus linken át kilépő útvonalak); a motor csak a jóváhagyott médiafájlokhoz kap Landlock-hozzáférést. Az ezen a gépen készült projekt, amelynek hivatkozásai a felhasználó saját mappáiba mutatnak, kérdés nélkül nyílik |
-| D7 | MI-modellek és bővítmények | modellek csak biztonságos formátumban (safetensors, ONNX, GGUF; pickle nincs); natív bővítmények külön folyamatban |
+| D7 | MI-modellek és bővítmények | **Eldöntve (2026-11-11).** **Modellek:** csak betöltéskor kódot nem futtató formátum (safetensors, ONNX, GGUF); a Python pickle-alapú `.pt`/`.bin`/`.ckpt` fájlokat a CFA4 nem nyitja meg. Ha egy modell csak így létezik, egy elszigetelt átalakító folyamat (Landlock + seccomp, hálózat nélkül) egyszer safetensorsra alakítja, és a felhasználó jóváhagyja az eredményt. **Natív bővítmények** (OFX, LV2/VST3 stb.): külön, lezárt folyamatban, nem a motorban; a hangbővítmények késleltetése mérve, a cél a valós idejű lejátszás megtartása |
 | D8 | Ütemezés | B0–B2 most, a többi a Qt6 után (VI.) |
 
 ## VIII. Kockázatok
