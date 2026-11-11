@@ -4248,3 +4248,28 @@ export.summary	Low	төмен
 	Credits Page Picture	Титрлер бетінің суреті
 	Preview Credits	Титрлерді алдын ала қарау
 	Credits Styles	Титрлер стильдері
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Кестелер мен титрлер файлдары (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 титрлер файлы (*.cfa4credits)
+	Save as Credits File…	Титрлер файлы ретінде сақтау…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Кесте, парақ, стиль және жолдар бір файлда, кез келген компьютерде ашылады
+	Saved: {path}	Сақталды: {path}
+	Added	Қосылды
+	Removed	Жойылды
+	Changed	Өзгерді
+	(empty row)	(бос жол)
+	Refresh Credits from Spreadsheet	Титрлерді кестеден жаңарту
+	Change	Өзгеріс
+	Before → After	Бұрын → Кейін
+	Select None	Ешқайсысын таңдамау
+	Keep my edits on the pages (where their block is unchanged)	Беттердегі өз өзгерістерімді сақтау (блогы өзгермеген жерде)
+	Locate Spreadsheet…	Кестені табу…
+	Comparing…	Салыстырылуда…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Титрлер орналастырылғаннан бері {file} ішіндегі өзгерістер: {n}. Қажет еместерінің белгісін алыңыз.
+	The spreadsheet {file} has not changed since the credits were placed.	{file} кестесі титрлер орналастырылғаннан бері өзгермеген.
+	{n} layers were edited by hand on the pages.	Беттерде қолмен өңделген қабаттар: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Барлық өзгерісті қабылдау мыналарды ауыстырады, себебі олардың блогы өзгерді: {names}
+	Refreshing…	Жаңартылуда…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Жаңартылды: қолданылған өзгерістер: {n}, сақталған қолмен өңдеулер: {kept}.
+	Refresh Credits from Spreadsheet…	Титрлерді кестеден жаңарту…
+	Save Credits File…	Титрлер файлын сақтау…
+	Compare Credits with Spreadsheet	Титрлерді кестемен салыстыру

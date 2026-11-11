@@ -4253,3 +4253,28 @@
 	Credits Page Picture	Bild der Abspannseite
 	Preview Credits	Abspann-Vorschau
 	Credits Styles	Abspannstile
+	(empty row)	(leere Zeile)
+	Accepting every change would replace these, because their block changed: {names}	Wenn alle Änderungen übernommen werden, werden diese ersetzt, da sich ihr Block geändert hat: {names}
+	Added	Hinzugefügt
+	Before → After	Vorher → Nachher
+	CFA4 credits file (*.cfa4credits)	CFA4-Abspanndatei (*.cfa4credits)
+	Change	Änderung
+	Changed	Geändert
+	Comparing…	Vergleichen…
+	Keep my edits on the pages (where their block is unchanged)	Meine Änderungen auf den Seiten beibehalten (wo ihr Block unverändert ist)
+	Locate Spreadsheet…	Tabelle suchen…
+	Refresh Credits from Spreadsheet	Abspann aus Tabelle aktualisieren
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Aktualisiert: {n} Änderungen angewendet, {kept} manuelle Änderungen beibehalten.
+	Refreshing…	Aktualisieren…
+	Removed	Entfernt
+	Save as Credits File…	Als Abspanndatei speichern…
+	Saved: {path}	Gespeichert: {path}
+	Select None	Auswahl aufheben
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tabelle, Blatt, Stil und Zeilen in einer Datei, auf jedem Rechner zu öffnen
+	The spreadsheet {file} has not changed since the credits were placed.	Die Tabelle {file} hat sich seit dem Platzieren des Abspanns nicht geändert.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} Änderungen in {file} seit dem Platzieren des Abspanns. Deaktivieren Sie, was Sie nicht möchten.
+	{n} layers were edited by hand on the pages.	{n} Ebenen wurden auf den Seiten manuell bearbeitet.
+	Refresh Credits from Spreadsheet…	Abspann aus Tabelle aktualisieren…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tabellen und Abspanndateien (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Abspanndatei speichern…
+	Compare Credits with Spreadsheet	Abspann mit Tabelle vergleichen

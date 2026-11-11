@@ -78,13 +78,54 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 `margin`. Page style fields: `behaviour` (`scroll`, `card`), `scrollPxPerFrame`, `cardFrames`,
 `fadeInFrames`, `fadeOutFrames`, `gapAfterFrames`.
 
+## Credits files and refreshing (linked credits)
+
+**Credits file (`.cfa4credits`).** *Save as Credits File…* in the Credits window (or
+`graphics.credits.save`) writes one versioned JSON file with the spreadsheet's path, file name
+and worksheet, the picture folder, the styling, and **the rows of the sheet embedded**: it opens
+on any machine, without the spreadsheet. Open it like a spreadsheet (the Credits window, or
+`path` of `graphics.credits.import` / `.preview`). Newer versions are refused; unknown fields
+are ignored.
+
+| Field | Meaning |
+|---|---|
+| `format`, `version` | `"cfa4.credits"`, `1` |
+| `source` | `path` (absolute), `name` (tried next to the project when the path is gone), `sheet` |
+| `pictureDir` | folder of `{{Pic …}}` pictures |
+| `styling` | the styling (see above) |
+| `table` | the accepted rows of the sheet |
+
+**Linked pages.** Every placed page keeps the credits document as accepted, its pictures' clips
+and a fingerprint of every layer it made (`GraphicMeta.credits` in the project file). When the
+spreadsheet changes, **Graphics and Titles ▸ Refresh Credits from Spreadsheet…** (with a credits
+page selected) lists what changed since, **row by row** – added, removed and changed rows,
+before and after – with a tick for each, and the layers you edited by hand. *Apply* replaces the
+pages in place with the ticked changes, as one undo step:
+
+- unticked changes are not applied, and are offered again next time;
+- your hand edits are kept where their block is unchanged (*Keep my edits…*); the window says
+  which edits would be replaced because their block changed;
+- if the spreadsheet moved, *Locate Spreadsheet…* gives its new place.
+
+Trailing empty rows are not changes; empty rows inside the sheet are (they are gaps).
+
+Hand edits are carried over as what you changed: a layer whose text or colour you edited keeps
+your text or colour, but moves to where the new layout puts it, unless you moved it yourself. A
+block that appears twice (e.g. the same heading on two pages) is two blocks: editing one does
+not change the other. Copied or pasted credits pages are credits of their own: refreshing the
+copy leaves the original alone. Import and refresh are each one undo step, and a refresh that
+fails leaves the old pages as they were.
+
 ## Commands
 
 | Command | Menu | Params |
 |---|---|---|
-| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods) or `csv` (text), `sheet`, `pictureDir`, `styling`, `time`, `track` → `{clips: [{clip, start, duration, pictures}], end, sheet, warnings}`; one undo step |
+| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits) or `csv` (text), `sheet`, `pictureDir`, `styling`, `time`, `track` → `{clips: [{clip, start, duration, pictures}], group, end, sheet, warnings}`; one undo step |
 | `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, sheets, sheet, warnings}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width` → `{width, height, page, pages, time, pngBase64}`: the page's text with the roll or fades applied, pictures outlined |
+| `graphics.credits.save` | Credits window: *Save as Credits File…* | `to` (.cfa4credits), and `clip` (placed credits; default the selection) or `from` {import parameters} → `{path, rows}` |
+| `graphics.credits.diff` | (query) | `clip`?, `source`? (the spreadsheet's new place) → `{group, clip (a page of the group), source, changes: [{id, kind: added/removed/changed, oldRows, newRows (1-based), before, after}], manual: [{key, page, layer, text, survivesAll}]}` |
+| `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step |
 | `graphics.credits.styles` | (query) | `styling` → style names, column names and a starter styling |
 
 Problems in the sheet (unknown styles, bad numbers, unsupported `{{…}}` tags) are warnings with

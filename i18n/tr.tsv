@@ -4247,3 +4247,28 @@ export.summary	Low	düşük
 	Credits Page Picture	Jenerik sayfası resmi
 	Preview Credits	Jeneriği önizle
 	Credits Styles	Jenerik stilleri
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tablolar ve jenerik dosyaları (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 jenerik dosyası (*.cfa4credits)
+	Save as Credits File…	Jenerik dosyası olarak kaydet…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tablo, sayfa, stil ve satırlar tek dosyada; her bilgisayarda açılabilir
+	Saved: {path}	Kaydedildi: {path}
+	Added	Eklendi
+	Removed	Kaldırıldı
+	Changed	Değişti
+	(empty row)	(boş satır)
+	Refresh Credits from Spreadsheet	Jeneriği tablodan yenile
+	Change	Değişiklik
+	Before → After	Önce → Sonra
+	Select None	Hiçbirini seçme
+	Keep my edits on the pages (where their block is unchanged)	Sayfalardaki düzenlemelerimi koru (bloğu değişmeyenlerde)
+	Locate Spreadsheet…	Tabloyu bul…
+	Comparing…	Karşılaştırılıyor…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Jenerik yerleştirildiğinden beri {file} içinde {n} değişiklik var. İstemediklerinizin işaretini kaldırın.
+	The spreadsheet {file} has not changed since the credits were placed.	{file} tablosu jenerik yerleştirildiğinden beri değişmedi.
+	{n} layers were edited by hand on the pages.	Sayfalarda {n} katman elle düzenlendi.
+	Accepting every change would replace these, because their block changed: {names}	Tüm değişiklikleri kabul etmek bunları değiştirir, çünkü blokları değişti: {names}
+	Refreshing…	Yenileniyor…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Yenilendi: {n} değişiklik uygulandı, {kept} elle düzenleme korundu.
+	Refresh Credits from Spreadsheet…	Jeneriği tablodan yenile…
+	Save Credits File…	Jenerik dosyasını kaydet…
+	Compare Credits with Spreadsheet	Jeneriği tabloyla karşılaştır

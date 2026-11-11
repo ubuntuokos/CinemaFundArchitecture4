@@ -4231,3 +4231,28 @@
 	Credits Page Picture	Зображення сторінки титрів
 	Preview Credits	Попередній перегляд титрів
 	Credits Styles	Стилі титрів
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Таблиці та файли титрів (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Файл титрів CFA4 (*.cfa4credits)
+	Save as Credits File…	Зберегти як файл титрів…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Таблиця, аркуш, оформлення та дані в одному файлі, щоб відкрити на будь-якому комп'ютері
+	Saved: {path}	Збережено: {path}
+	Added	Додано
+	Removed	Видалено
+	Changed	Змінено
+	(empty row)	(порожній рядок)
+	Refresh Credits from Spreadsheet	Оновити титри з таблиці
+	Change	Зміна
+	Before → After	До → Після
+	Select None	Зняти позначення
+	Keep my edits on the pages (where their block is unchanged)	Зберегти мої зміни на сторінках (де їхній блок не змінився)
+	Locate Spreadsheet…	Знайти таблицю…
+	Comparing…	Порівняння…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Змін у {file} від часу розміщення титрів: {n}. Зніміть позначку з непотрібних.
+	The spreadsheet {file} has not changed since the credits were placed.	Таблиця {file} не змінювалася від часу розміщення титрів.
+	{n} layers were edited by hand on the pages.	Шарів, змінених вручну на сторінках: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Прийняття всіх змін замінить їх, бо їхній блок змінився: {names}
+	Refreshing…	Оновлення…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Оновлено: застосовано змін — {n}, збережено ручних правок — {kept}.
+	Refresh Credits from Spreadsheet…	Оновити титри з таблиці…
+	Save Credits File…	Зберегти файл титрів…
+	Compare Credits with Spreadsheet	Порівняти титри з таблицею

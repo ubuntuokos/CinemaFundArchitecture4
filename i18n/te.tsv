@@ -4252,3 +4252,28 @@ export.summary	Low	తక్కువ
 	Credits Page Picture	క్రెడిట్స్ పేజీ చిత్రం
 	Preview Credits	క్రెడిట్స్ ప్రివ్యూ
 	Credits Styles	క్రెడిట్స్ శైలులు
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	స్ప్రెడ్‌షీట్‌లు మరియు క్రెడిట్స్ ఫైళ్లు (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 క్రెడిట్స్ ఫైల్ (*.cfa4credits)
+	Save as Credits File…	క్రెడిట్స్ ఫైల్‌గా సేవ్ చేయి…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	స్ప్రెడ్‌షీట్, వర్క్‌షీట్, శైలి మరియు పట్టిక ఒకే ఫైల్‌లో, ఏ కంప్యూటర్‌లోనైనా తెరవడానికి
+	Saved: {path}	సేవ్ చేయబడింది: {path}
+	Added	జోడించబడింది
+	Removed	తీసివేయబడింది
+	Changed	మార్చబడింది
+	(empty row)	(ఖాళీ వరుస)
+	Refresh Credits from Spreadsheet	స్ప్రెడ్‌షీట్ నుండి క్రెడిట్స్‌ను రిఫ్రెష్ చేయి
+	Change	మార్పు
+	Before → After	ముందు → తర్వాత
+	Select None	ఏదీ ఎంచుకోవద్దు
+	Keep my edits on the pages (where their block is unchanged)	పేజీలపై నా సవరణలను ఉంచు (వాటి బ్లాక్ మారని చోట)
+	Locate Spreadsheet…	స్ప్రెడ్‌షీట్‌ను గుర్తించు…
+	Comparing…	పోల్చుతోంది…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	క్రెడిట్స్ ఉంచినప్పటి నుండి {file}లో {n} మార్పులు. మీకు వద్దనివాటి ఎంపికను తీసివేయండి.
+	The spreadsheet {file} has not changed since the credits were placed.	క్రెడిట్స్ ఉంచినప్పటి నుండి స్ప్రెడ్‌షీట్ {file} మారలేదు.
+	{n} layers were edited by hand on the pages.	పేజీలపై {n} లేయర్‌లు చేతితో సవరించబడ్డాయి.
+	Accepting every change would replace these, because their block changed: {names}	అన్ని మార్పులను అంగీకరిస్తే వీటి బ్లాక్ మారినందున ఇవి భర్తీ అవుతాయి: {names}
+	Refreshing…	రిఫ్రెష్ చేస్తోంది…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	రిఫ్రెష్ అయింది: {n} మార్పులు వర్తింపజేయబడ్డాయి, {kept} చేతి సవరణలు ఉంచబడ్డాయి.
+	Refresh Credits from Spreadsheet…	స్ప్రెడ్‌షీట్ నుండి క్రెడిట్స్‌ను రిఫ్రెష్ చేయి…
+	Save Credits File…	క్రెడిట్స్ ఫైల్‌ను సేవ్ చేయి…
+	Compare Credits with Spreadsheet	క్రెడిట్స్‌ను స్ప్రెడ్‌షీట్‌తో పోల్చు

@@ -46,6 +46,7 @@ from .panels.about import AboutDialog
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
 from .panels.clip_dialogs import ClipDialog
 from .panels.credits import CreditsDialog
+from .panels.credits_refresh import CreditsRefreshDialog
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
@@ -291,6 +292,7 @@ class MainWindow(QMainWindow):
         # the header mode (egui's ``ui.mode``): Import shows the Home page over the panels
         self.mode = "Edit"
         self.credits_dialog: CreditsDialog | None = None
+        self.credits_refresh: CreditsRefreshDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -2090,6 +2092,10 @@ class MainWindow(QMainWindow):
             # from the menu or a key, the Credits window; an agent's parameters import directly
             self.open_credits()
             return True
+        if cid == "graphics.credits.refresh" and not params:
+            # the row-by-row review window; an agent's parameters refresh directly
+            self.open_credits_refresh()
+            return True
         if cid == "history.deleteRedoable" and not params:
             # the History panel menu or its key asks for OK first, as in Premiere (upstream #3075);
             # with parameters (an agent) the command runs as it is
@@ -3004,6 +3010,13 @@ class MainWindow(QMainWindow):
             self.credits_dialog = CreditsDialog(self.engine, self)
             self.credits_dialog.imported.connect(lambda _n: self.schedule_refresh())
         self.credits_dialog.open_with(path)
+
+    def open_credits_refresh(self, clip: int | None = None) -> None:
+        """Graphics and Titles ▸ Refresh Credits from Spreadsheet…: the changes, row by row."""
+        if self.credits_refresh is None:
+            self.credits_refresh = CreditsRefreshDialog(self.engine, self)
+            self.credits_refresh.refreshed.connect(lambda _r: self.schedule_refresh())
+        self.credits_refresh.open_for(clip)
 
     def _export_finished(self, path: str, ok: bool) -> None:
         text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)

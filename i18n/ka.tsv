@@ -4249,3 +4249,28 @@ export.summary	Low	დაბალი
 	Credits Page Picture	ტიტრების გვერდის სურათი
 	Preview Credits	ტიტრების წინასწარი ნახვა
 	Credits Styles	ტიტრების სტილები
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	ცხრილები და ტიტრების ფაილები (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 ტიტრების ფაილი (*.cfa4credits)
+	Save as Credits File…	ტიტრების ფაილად შენახვა…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	ცხრილი, ფურცელი, სტილი და მწკრივები ერთ ფაილში, რომელიც ნებისმიერ კომპიუტერზე იხსნება
+	Saved: {path}	შენახულია: {path}
+	Added	დამატებულია
+	Removed	წაშლილია
+	Changed	შეცვლილია
+	(empty row)	(ცარიელი მწკრივი)
+	Refresh Credits from Spreadsheet	ტიტრების განახლება ცხრილიდან
+	Change	ცვლილება
+	Before → After	მანამდე → შემდეგ
+	Select None	არცერთის არჩევა
+	Keep my edits on the pages (where their block is unchanged)	ჩემი ცვლილებების შენარჩუნება გვერდებზე (სადაც მათი ბლოკი არ შეცვლილა)
+	Locate Spreadsheet…	ცხრილის მოძებნა…
+	Comparing…	შედარება…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	ცვლილებები ფაილში {file} ტიტრების განთავსების შემდეგ: {n}. მოხსენით მონიშვნა იმას, რაც არ გსურთ.
+	The spreadsheet {file} has not changed since the credits were placed.	ცხრილი {file} ტიტრების განთავსების შემდეგ არ შეცვლილა.
+	{n} layers were edited by hand on the pages.	გვერდებზე ხელით შეცვლილი ფენები: {n}.
+	Accepting every change would replace these, because their block changed: {names}	ყველა ცვლილების მიღება ჩაანაცვლებს ამათ, რადგან მათი ბლოკი შეიცვალა: {names}
+	Refreshing…	ახლდება…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	განახლდა: გამოყენებული ცვლილებები: {n}, შენარჩუნებული ხელით ცვლილებები: {kept}.
+	Refresh Credits from Spreadsheet…	ტიტრების განახლება ცხრილიდან…
+	Save Credits File…	ტიტრების ფაილის შენახვა…
+	Compare Credits with Spreadsheet	ტიტრების შედარება ცხრილთან

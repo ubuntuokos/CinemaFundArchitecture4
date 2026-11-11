@@ -4244,3 +4244,28 @@
 	Credits Page Picture	演职员表页面图片
 	Preview Credits	预览演职员表
 	Credits Styles	演职员表样式
+	(empty row)	(空行)
+	Accepting every change would replace these, because their block changed: {names}	接受全部更改会替换以下内容,因为它们所在的区块已更改:{names}
+	Added	新增
+	Before → After	之前 → 之后
+	CFA4 credits file (*.cfa4credits)	CFA4 演职员表文件 (*.cfa4credits)
+	Change	更改
+	Changed	已修改
+	Comparing…	正在比较…
+	Keep my edits on the pages (where their block is unchanged)	保留我在页面上的编辑(其区块未更改的部分)
+	Locate Spreadsheet…	查找表格…
+	Refresh Credits from Spreadsheet	从表格刷新演职员表
+	Refreshed: {n} changes applied, {kept} hand edits kept.	已刷新:应用了 {n} 项更改,保留了 {kept} 处手动编辑。
+	Refreshing…	正在刷新…
+	Removed	已删除
+	Save as Credits File…	另存为演职员表文件…
+	Saved: {path}	已保存:{path}
+	Select None	取消选择
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	表格、工作表、样式和数据表合并在一个文件中,可在任何电脑上打开
+	The spreadsheet {file} has not changed since the credits were placed.	自放置演职员表以来,表格 {file} 没有更改。
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	自放置演职员表以来,{file} 中有 {n} 项更改。请取消勾选不需要的项。
+	{n} layers were edited by hand on the pages.	页面上有 {n} 个图层被手动编辑过。
+	Refresh Credits from Spreadsheet…	从电子表格刷新演职员表…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	表格和演职员表文件 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	保存演职员表文件…
+	Compare Credits with Spreadsheet	将演职员表与表格比较

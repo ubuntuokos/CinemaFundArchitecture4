@@ -1,6 +1,6 @@
 # CFA4 stáblista és feliratkészítő – módosított terv (javaslat)
 
-**Állapot:** JAVASLAT – a tulajdonos (`ubuntuokos`) jóváhagyására vár; 1–2. döntés meghozva (2026-10-25)  
+**Állapot:** JÓVÁHAGYVA (2026-10-25) – mind a négy döntés meghozva; C1 kész  
 **Dátum:** 2026-10-24  
 **Forrás:** az „FA3 Credits & Titles Composer – végleges materializációs és végrehajtási terv”,
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
@@ -63,18 +63,30 @@ Elkészült és a `main`-en van (#36), illetve a `cfa4/credits-2` ágon:
 Méret: **K** = kicsi (1–2 nap), **K+** = közepes, **N** = nagy.
 Minden fázis saját PR, saját tesztekkel és – ahol látható eredmény van – renderelt képkockával.
 
-### C1 – Kapcsolt stáblista és újratöltés (K+)
+### C1 – Kapcsolt stáblista, stáblista-fájl és frissítés (K+) – **KÉSZ (2026-10-25)**
 
-Az eredeti terv §3 („nincs csendes felülírás”) elve a táblázatra alkalmazva.
+Az eredeti terv §3 („nincs csendes felülírás”) elve a táblázatra alkalmazva, a tulajdonos 3.
+döntésével (külön stáblista-fájl kell) együtt.
 
-- A létrehozott oldalak megjegyzik a forrásukat: fájl, munkalap, stílus, tartalom-ujjlenyomat.
-- Új parancs: `graphics.credits.refresh`. Ha a táblázat változott, a program **eltérés-listát**
-  mutat (új, törölt, módosult sor), és soronként dönteni lehet: *elfogad*, *elvet*, *megtartja a
-  kézi módosítást*.
-- A kézzel átírt szövegréteg „kézi módosításként” jelölődik, és újratöltéskor nem íródik felül
-  rákérdezés nélkül.
-- **Kész, ha:** teszt igazolja, hogy a módosított táblázat csak a változott blokkokat érinti, a
-  kézi módosítás megmarad, és az egész egy visszavonási lépés.
+- **`.cfa4credits` stáblista-fájl:** verziózott JSON: forrás (útvonal, fájlnév, munkalap),
+  képmappa, stílus és **a táblázat sorai beágyazva**, így más gépen a táblázat nélkül is
+  megnyílik. Mentés: a Stáblista ablak *Mentés stáblista-fájlként…* gombja vagy
+  `graphics.credits.save`; megnyitás ugyanúgy, mint egy táblázaté.
+- **Kapcsolat:** minden elhelyezett oldal megjegyzi a stáblista-dokumentumot (a legutóbb
+  elfogadott sorokkal), a hozzá tartozó képklipeket és minden általa készített réteg
+  ujjlenyomatát.
+- **Eltérés soronként:** `graphics.credits.diff` – új, törölt és módosult sorok (előtte / utána),
+  és a kézzel módosított rétegek; jelzi, melyik kézi módosítás veszne el, ha minden változást
+  elfogadnál.
+- **Frissítés:** *Grafika és címek ▸ Stáblista frissítése a táblázatból…*
+  (`graphics.credits.refresh`): soronkénti pipa, *a saját módosításaim maradjanak meg*. A ki nem
+  pipált változás marad a régi, és a következő összevetésnél újra felkínálódik. Az oldalak a
+  helyükön cserélődnek, **egy visszavonási lépésben**. Ha a táblázat elköltözött, a *Táblázat
+  megkeresése…* gombbal megadható az új helye.
+- **Igazolva:** crate-tesztek (soronkénti diff, szelektív összefésülés, ellenséges táblák,
+  dokumentum be/ki, stabil rétegkulcsok), engine-tesztek (kézi módosítás megtartása, egy
+  visszavonás, táblázat nélküli megnyitás, elköltözött forrás), Qt-teszt valódi motorral
+  (mentés → elhelyezés → táblázat módosítása → frissítés részleges elfogadással).
 
 ### C2 – Ellenőrzések (K)
 
@@ -179,10 +191,11 @@ A tulajdonos döntése (2026-10-25): **az élő adás kell, de egyelőre terveze
 
 Az eredeti terv §23–24-e, a CFA4 csomagolására szabva.
 
-- A stáblista-modul nem hoz létre saját binárist, szolgáltatást, portot vagy MIME-típust,
-  ezért ütközést sem okozhat; ezt a csomag-ellenőrzés rögzíti.
-- Ha C7 után saját fájltípus lesz, CFA4-névtérben (`application/x-cfa4-credits`,
-  `io.github.ubuntuokos.cfa4`) – Cinecred fájltársítását nem veszi át.
+- A stáblista-modul nem hoz létre saját binárist, szolgáltatást vagy portot, ezért ütközést
+  sem okozhat; ezt a csomag-ellenőrzés rögzíti.
+- A `.cfa4credits` saját fájltípus CFA4-névtérben (`application/x-cfa4-credits`,
+  `io.github.ubuntuokos.cfa4`) – Cinecred fájltársítását nem veszi át; a MIME-bejegyzés a
+  csomagolásba kerül.
 - Ellenőrzés: Cinecred és CFA4 ugyanazon a gépen, egyszerre futtatva, külön beállításokkal;
   eltávolítás után a másik működik.
 
@@ -224,14 +237,12 @@ gépen (Kubuntu referenciagép) végigvitt munkamenet igazolja: táblázat → s
 | §14 önálló alkalmazás | halasztva | munkaterület a CFA4-en belül (C8); lásd 8. pont |
 | §17–19 OBS, élő adás, Show/Rundown | **tervezet: C10** | a tulajdonos döntése (2026-10-25): kell, de egyelőre tervezet; a műsorterv mélysége nyitott |
 | §21, §25, §32 HRB, Model Router, Canonical Gate, Evidence Registry, visszamenőleges audit | kihagyva | FA3-intézmények; a CFA4-ben a tesztek, ADR-ek és a kiadási kapuk (F9) felelnek meg nekik |
-| §2 teljes `.fa3credits` séma (személyek, cégek, jogi adatok, revíziók) | szűkítve | C1 kapcsolt forrás; a teljes produkciós adatmodell csak Story-híddal lenne értelmes |
+| §2 teljes `.fa3credits` séma (személyek, cégek, jogi adatok, revíziók) | szűkítve | a `.cfa4credits` (C1) a forrást, a stílust és a sorokat tárolja; a teljes produkciós adatmodell csak Story-híddal lenne értelmes |
 
 ## 8. Döntések a tulajdonosnak
 
 1. ~~Kell-e önálló stáblista-alkalmazás?~~ **Eldöntve (2026-10-25): csak Qt6**, a CFA4-en belül.
 2. ~~Kerüljön-e be az élő adás?~~ **Eldöntve (2026-10-25): igen, egyelőre tervezetként** (C10,
    `VISION.md` #60).
-3. **Külön `.cfa4credits` fájl** kell-e (például más gépre vinni), vagy elég, ha a stáblista a
-   projektfájlban él?
-4. **Elfogadod-e a C1 → C7 sorrendet**, vagy előrébb hozzunk valamit (például a Cinecred-importot
-   vagy a zenéhez igazítást)?
+3. ~~Külön `.cfa4credits` fájl?~~ **Eldöntve (2026-10-25): igen** – C1 része, kész.
+4. ~~A C1 → C7 sorrend?~~ **Eldöntve (2026-10-25): igen.**

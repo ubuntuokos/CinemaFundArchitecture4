@@ -4246,3 +4246,28 @@ export.summary	Low	laag
 	Credits Page Picture	Afbeelding van aftitelingspagina
 	Preview Credits	Voorbeeld van aftiteling
 	Credits Styles	Aftitelingsstijlen
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Spreadsheets en aftitelingsbestanden (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4-aftitelingsbestand (*.cfa4credits)
+	Save as Credits File…	Opslaan als aftitelingsbestand…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Spreadsheet, werkblad, opmaak en tabel in één bestand, te openen op elke computer
+	Saved: {path}	Opgeslagen: {path}
+	Added	Toegevoegd
+	Removed	Verwijderd
+	Changed	Gewijzigd
+	(empty row)	(lege rij)
+	Refresh Credits from Spreadsheet	Aftiteling vernieuwen uit spreadsheet
+	Change	Wijziging
+	Before → After	Voor → Na
+	Select None	Niets selecteren
+	Keep my edits on the pages (where their block is unchanged)	Mijn bewerkingen op de pagina's behouden (waar hun blok ongewijzigd is)
+	Locate Spreadsheet…	Spreadsheet zoeken…
+	Comparing…	Vergelijken…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} wijzigingen in {file} sinds de aftiteling is geplaatst. Vink uit wat u niet wilt.
+	The spreadsheet {file} has not changed since the credits were placed.	De spreadsheet {file} is niet gewijzigd sinds de aftiteling is geplaatst.
+	{n} layers were edited by hand on the pages.	{n} lagen zijn met de hand bewerkt op de pagina's.
+	Accepting every change would replace these, because their block changed: {names}	Alle wijzigingen accepteren vervangt deze, omdat hun blok is gewijzigd: {names}
+	Refreshing…	Vernieuwen…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Vernieuwd: {n} wijzigingen toegepast, {kept} handmatige bewerkingen behouden.
+	Refresh Credits from Spreadsheet…	Aftiteling vernieuwen uit spreadsheet…
+	Save Credits File…	Aftitelingsbestand opslaan…
+	Compare Credits with Spreadsheet	Aftiteling vergelijken met spreadsheet

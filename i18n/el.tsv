@@ -4248,3 +4248,28 @@ export.summary	Low	χαμηλή
 	Credits Page Picture	Εικόνα σελίδας τίτλων συντελεστών
 	Preview Credits	Προεπισκόπηση τίτλων συντελεστών
 	Credits Styles	Στυλ τίτλων συντελεστών
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Υπολογιστικά φύλλα και αρχεία τίτλων συντελεστών (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Αρχείο τίτλων συντελεστών CFA4 (*.cfa4credits)
+	Save as Credits File…	Αποθήκευση ως αρχείο τίτλων συντελεστών…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Υπολογιστικό φύλλο, φύλλο εργασίας, στυλ και πίνακας σε ένα αρχείο, για άνοιγμα σε οποιονδήποτε υπολογιστή
+	Saved: {path}	Αποθηκεύτηκε: {path}
+	Added	Προστέθηκε
+	Removed	Αφαιρέθηκε
+	Changed	Άλλαξε
+	(empty row)	(κενή γραμμή)
+	Refresh Credits from Spreadsheet	Ανανέωση τίτλων συντελεστών από το υπολογιστικό φύλλο
+	Change	Αλλαγή
+	Before → After	Πριν → Μετά
+	Select None	Καμία επιλογή
+	Keep my edits on the pages (where their block is unchanged)	Διατήρηση των αλλαγών μου στις σελίδες (όπου το μπλοκ τους δεν άλλαξε)
+	Locate Spreadsheet…	Εντοπισμός υπολογιστικού φύλλου…
+	Comparing…	Σύγκριση…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} αλλαγές στο {file} από την τοποθέτηση των τίτλων συντελεστών. Αποεπιλέξτε ό,τι δεν θέλετε.
+	The spreadsheet {file} has not changed since the credits were placed.	Το υπολογιστικό φύλλο {file} δεν έχει αλλάξει από την τοποθέτηση των τίτλων συντελεστών.
+	{n} layers were edited by hand on the pages.	{n} επίπεδα επεξεργάστηκαν χειροκίνητα στις σελίδες.
+	Accepting every change would replace these, because their block changed: {names}	Η αποδοχή όλων των αλλαγών θα αντικαταστήσει αυτά, επειδή το μπλοκ τους άλλαξε: {names}
+	Refreshing…	Ανανέωση…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Ανανεώθηκε: εφαρμόστηκαν {n} αλλαγές, διατηρήθηκαν {kept} χειροκίνητες επεξεργασίες.
+	Refresh Credits from Spreadsheet…	Ανανέωση τίτλων συντελεστών από το υπολογιστικό φύλλο…
+	Save Credits File…	Αποθήκευση αρχείου τίτλων συντελεστών…
+	Compare Credits with Spreadsheet	Σύγκριση τίτλων συντελεστών με το υπολογιστικό φύλλο

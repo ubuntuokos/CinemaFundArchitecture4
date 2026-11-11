@@ -4253,3 +4253,28 @@
 	Credits Page Picture	Imagen de página de créditos
 	Preview Credits	Previsualizar créditos
 	Credits Styles	Estilos de créditos
+	(empty row)	(fila vacía)
+	Accepting every change would replace these, because their block changed: {names}	Aceptar todos los cambios reemplazaría estos, porque su bloque ha cambiado: {names}
+	Added	Añadido
+	Before → After	Antes → Después
+	CFA4 credits file (*.cfa4credits)	Archivo de créditos CFA4 (*.cfa4credits)
+	Change	Cambio
+	Changed	Modificado
+	Comparing…	Comparando…
+	Keep my edits on the pages (where their block is unchanged)	Conservar mis ediciones en las páginas (donde su bloque no ha cambiado)
+	Locate Spreadsheet…	Localizar hoja de cálculo…
+	Refresh Credits from Spreadsheet	Actualizar créditos desde la hoja de cálculo
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Actualizado: {n} cambios aplicados, {kept} ediciones manuales conservadas.
+	Refreshing…	Actualizando…
+	Removed	Eliminado
+	Save as Credits File…	Guardar como archivo de créditos…
+	Saved: {path}	Guardado: {path}
+	Select None	Deseleccionar todo
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Hoja de cálculo, hoja, estilo y tabla en un solo archivo, para abrir en cualquier equipo
+	The spreadsheet {file} has not changed since the credits were placed.	La hoja de cálculo {file} no ha cambiado desde que se colocaron los créditos.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} cambios en {file} desde que se colocaron los créditos. Desmarque lo que no desee.
+	{n} layers were edited by hand on the pages.	{n} capas se editaron a mano en las páginas.
+	Refresh Credits from Spreadsheet…	Actualizar créditos desde la hoja de cálculo…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Hojas de cálculo y archivos de créditos (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Guardar archivo de créditos…
+	Compare Credits with Spreadsheet	Comparar créditos con la hoja de cálculo

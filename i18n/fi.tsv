@@ -4248,3 +4248,28 @@ export.summary	Low	matala
 	Credits Page Picture	Tekijätietosivun kuva
 	Preview Credits	Esikatsele tekijätiedot
 	Credits Styles	Tekijätietojen tyylit
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Laskentataulukot ja tekijätietotiedostot (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4-tekijätietotiedosto (*.cfa4credits)
+	Save as Credits File…	Tallenna tekijätietotiedostona…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Laskentataulukko, taulukko, tyyli ja rivit yhdessä tiedostossa, joka aukeaa millä tahansa koneella
+	Saved: {path}	Tallennettu: {path}
+	Added	Lisätty
+	Removed	Poistettu
+	Changed	Muutettu
+	(empty row)	(tyhjä rivi)
+	Refresh Credits from Spreadsheet	Päivitä tekijätiedot laskentataulukosta
+	Change	Muutos
+	Before → After	Ennen → Jälkeen
+	Select None	Poista valinnat
+	Keep my edits on the pages (where their block is unchanged)	Säilytä muokkaukseni sivuilla (kun niiden lohko ei ole muuttunut)
+	Locate Spreadsheet…	Etsi laskentataulukko…
+	Comparing…	Verrataan…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} muutosta tiedostossa {file} tekijätietojen sijoittamisen jälkeen. Poista valinta niistä, joita et halua.
+	The spreadsheet {file} has not changed since the credits were placed.	Laskentataulukko {file} ei ole muuttunut tekijätietojen sijoittamisen jälkeen.
+	{n} layers were edited by hand on the pages.	Sivuilla muokattiin käsin {n} tasoa.
+	Accepting every change would replace these, because their block changed: {names}	Kaikkien muutosten hyväksyminen korvaisi nämä, koska niiden lohko muuttui: {names}
+	Refreshing…	Päivitetään…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Päivitetty: {n} muutosta otettu käyttöön, {kept} käsin tehtyä muokkausta säilytetty.
+	Refresh Credits from Spreadsheet…	Päivitä tekijätiedot laskentataulukosta…
+	Save Credits File…	Tallenna tekijätietotiedosto…
+	Compare Credits with Spreadsheet	Vertaa tekijätietoja laskentataulukkoon

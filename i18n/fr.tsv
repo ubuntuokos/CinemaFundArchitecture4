@@ -4251,3 +4251,28 @@
 	Credits Page Picture	Image de page de générique
 	Preview Credits	Aperçu du générique
 	Credits Styles	Styles de générique
+	(empty row)	(ligne vide)
+	Accepting every change would replace these, because their block changed: {names}	Accepter toutes les modifications remplacerait ceux-ci, car leur bloc a changé : {names}
+	Added	Ajouté
+	Before → After	Avant → Après
+	CFA4 credits file (*.cfa4credits)	Fichier de générique CFA4 (*.cfa4credits)
+	Change	Modification
+	Changed	Modifié
+	Comparing…	Comparaison…
+	Keep my edits on the pages (where their block is unchanged)	Conserver mes modifications sur les pages (là où leur bloc est inchangé)
+	Locate Spreadsheet…	Localiser le tableur…
+	Refresh Credits from Spreadsheet	Actualiser le générique depuis le tableur
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Actualisé : {n} modifications appliquées, {kept} modifications manuelles conservées.
+	Refreshing…	Actualisation…
+	Removed	Supprimé
+	Save as Credits File…	Enregistrer comme fichier de générique…
+	Saved: {path}	Enregistré : {path}
+	Select None	Tout désélectionner
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tableur, feuille, style et tableau dans un seul fichier, à ouvrir sur n'importe quelle machine
+	The spreadsheet {file} has not changed since the credits were placed.	Le tableur {file} n'a pas changé depuis le placement du générique.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} modifications dans {file} depuis le placement du générique. Décochez ce que vous ne souhaitez pas.
+	{n} layers were edited by hand on the pages.	{n} calques ont été modifiés à la main sur les pages.
+	Refresh Credits from Spreadsheet…	Actualiser le générique depuis la feuille de calcul…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tableurs et fichiers de générique (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Enregistrer le fichier de générique…
+	Compare Credits with Spreadsheet	Comparer le générique au tableur

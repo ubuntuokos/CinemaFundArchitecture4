@@ -4246,3 +4246,28 @@ export.summary	Low	низак
 	Credits Page Picture	Слика странице шпице
 	Preview Credits	Преглед шпице
 	Credits Styles	Стилови шпице
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Табеле и датотеке шпице (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 датотека шпице (*.cfa4credits)
+	Save as Credits File…	Сачувај као датотеку шпице…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Табела, лист, стил и редови у једној датотеци која се отвара на било ком рачунару
+	Saved: {path}	Сачувано: {path}
+	Added	Додато
+	Removed	Уклоњено
+	Changed	Промењено
+	(empty row)	(празан ред)
+	Refresh Credits from Spreadsheet	Освежи шпицу из табеле
+	Change	Промена
+	Before → After	Пре → После
+	Select None	Поништи избор
+	Keep my edits on the pages (where their block is unchanged)	Задржи моје измене на страницама (где им се блок није променио)
+	Locate Spreadsheet…	Пронађи табелу…
+	Comparing…	Упоређивање…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Измене у {file} од постављања шпице: {n}. Поништите оно што не желите.
+	The spreadsheet {file} has not changed since the credits were placed.	Табела {file} се није променила од постављања шпице.
+	{n} layers were edited by hand on the pages.	Ручно измењени слојеви на страницама: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Прихватање свих измена заменило би ове јер им се блок променио: {names}
+	Refreshing…	Освежавање…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Освежено: примењене измене: {n}, задржане ручне измене: {kept}.
+	Refresh Credits from Spreadsheet…	Освежи шпицу из табеле…
+	Save Credits File…	Сачувај датотеку шпице…
+	Compare Credits with Spreadsheet	Упореди шпицу са табелом

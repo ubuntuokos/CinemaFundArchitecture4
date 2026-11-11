@@ -4248,3 +4248,28 @@ export.summary	Low	niska
 	Credits Page Picture	Slika stranice odjavne špice
 	Preview Credits	Pregled odjavne špice
 	Credits Styles	Stilovi odjavne špice
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tablice i datoteke odjavne špice (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 datoteka odjavne špice (*.cfa4credits)
+	Save as Credits File…	Spremi kao datoteku odjavne špice…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tablica, list, stil i reci u jednoj datoteci koja se otvara na bilo kojem računalu
+	Saved: {path}	Spremljeno: {path}
+	Added	Dodano
+	Removed	Uklonjeno
+	Changed	Promijenjeno
+	(empty row)	(prazan redak)
+	Refresh Credits from Spreadsheet	Osvježi odjavnu špicu iz tablice
+	Change	Promjena
+	Before → After	Prije → Poslije
+	Select None	Poništi odabir
+	Keep my edits on the pages (where their block is unchanged)	Zadrži moje izmjene na stranicama (gdje im se blok nije promijenio)
+	Locate Spreadsheet…	Pronađi tablicu…
+	Comparing…	Uspoređivanje…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Promjene u {file} od postavljanja odjavne špice: {n}. Odznačite ono što ne želite.
+	The spreadsheet {file} has not changed since the credits were placed.	Tablica {file} nije se promijenila od postavljanja odjavne špice.
+	{n} layers were edited by hand on the pages.	Ručno uređeni slojevi na stranicama: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Prihvaćanje svih promjena zamijenilo bi ove jer im se blok promijenio: {names}
+	Refreshing…	Osvježavanje…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Osvježeno: primijenjene promjene: {n}, zadržane ručne izmjene: {kept}.
+	Refresh Credits from Spreadsheet…	Osvježi odjavnu špicu iz tablice…
+	Save Credits File…	Spremi datoteku odjavne špice…
+	Compare Credits with Spreadsheet	Usporedi odjavnu špicu s tablicom
