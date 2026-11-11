@@ -64,7 +64,7 @@ fn baseline_decode_and_demux() {
 #[test]
 fn smart_cut_is_allowed_only_where_it_is_implemented() {
     // an unproven cut must never count as lossless: WP-04 copies H.264 and WP-07 HEVC and AV1
-    // into MP4 / MOV. Packet copy is keyed on the output container; the source side is the demux
+    // into MP4 / MOV, WP-09 MPEG-2 video into program / transport streams. Packet copy is keyed on the output container; the source side is the demux
     // step (a framing change is the planner's to refuse, and the executor itself reads MP4 / MOV
     // sources).
     let r = Registry::native();
@@ -75,16 +75,19 @@ fn smart_cut_is_allowed_only_where_it_is_implemented() {
                 for policy in [STRICT, LAX] {
                     let d = r.smart_cut(codec, source, output, policy);
                     let demux = r.decide(Key::in_container(Operation::Demux, codec, source), policy).allowed;
-                    let expected = matches!(codec, Codec::H264 | Codec::Hevc | Codec::Av1) && demux && mp4(output);
+                    let mpeg = matches!(output, Container::MpegPs | Container::MpegTs);
+                    let copy = (matches!(codec, Codec::H264 | Codec::Hevc | Codec::Av1) && mp4(output)) || (codec == Codec::Mpeg2Video && mpeg);
+                    let expected = copy && demux;
                     assert_eq!(d.allowed, expected, "{codec:?} {source:?} → {output:?}");
                     assert_eq!(d.blockers().is_empty(), expected);
                 }
             }
         }
     }
-    let d = r.smart_cut(Codec::Mpeg2Video, Container::MpegTs, Container::MpegTs, STRICT);
+    let d = r.smart_cut(Codec::Mpeg2Video, Container::MpegTs, Container::Matroska, STRICT);
     let blocked: Vec<Operation> = d.steps.iter().filter(|s| !s.allowed).map(|s| s.key.operation).collect();
-    assert_eq!(blocked, vec![Operation::PacketCopy]);
+    assert_eq!(blocked.first(), Some(&Operation::PacketCopy), "{blocked:?}");
+    assert!(!blocked.contains(&Operation::Demux) && !blocked.contains(&Operation::GopIndex), "{blocked:?}");
 }
 
 #[test]
