@@ -94,6 +94,8 @@ pub enum Language {
     Hr,
     /// Kazakh, persisted as `kk`.
     Kk,
+    /// Slovenian, persisted as `sl`.
+    Sl,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -131,11 +133,12 @@ static FINNISH: OnceLock<Catalog> = OnceLock::new();
 static LITHUANIAN: OnceLock<Catalog> = OnceLock::new();
 static CROATIAN: OnceLock<Catalog> = OnceLock::new();
 static KAZAKH: OnceLock<Catalog> = OnceLock::new();
+static SLOVENIAN: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 31] = [
+    pub const ALL: [Self; 32] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -165,6 +168,7 @@ impl Language {
         Self::Lt,
         Self::Hr,
         Self::Kk,
+        Self::Sl,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -200,6 +204,7 @@ impl Language {
             Self::Lt => "Lietuvių",
             Self::Hr => "Hrvatski",
             Self::Kk => "Қазақ тілі",
+            Self::Sl => "Slovenščina",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -236,6 +241,7 @@ impl Language {
             "lt" => Some(Self::Lt),
             "hr" => Some(Self::Hr),
             "kk" => Some(Self::Kk),
+            "sl" => Some(Self::Sl),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -252,7 +258,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 28] = [
+        const PRIMARY: [(&str, Language); 29] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -281,6 +287,7 @@ impl Language {
             ("lt", Language::Lt),
             ("hr", Language::Hr),
             ("kk", Language::Kk),
+            ("sl", Language::Sl),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -350,6 +357,7 @@ impl Language {
             Self::Lt => "lt",
             Self::Hr => "hr",
             Self::Kk => "kk",
+            Self::Sl => "sl",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -387,6 +395,7 @@ impl Language {
             Self::Lt => Some(LITHUANIAN.get_or_init(|| Catalog::parse(catalog_file!("lt")))),
             Self::Hr => Some(CROATIAN.get_or_init(|| Catalog::parse(catalog_file!("hr")))),
             Self::Kk => Some(KAZAKH.get_or_init(|| Catalog::parse(catalog_file!("kk")))),
+            Self::Sl => Some(SLOVENIAN.get_or_init(|| Catalog::parse(catalog_file!("sl")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -592,6 +601,7 @@ mod tests {
             ("lt", catalog_file!("lt")),
             ("hr", catalog_file!("hr")),
             ("kk", catalog_file!("kk")),
+            ("sl", catalog_file!("sl")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1818,6 +1828,13 @@ mod tests {
             catalog_file!("kk"),
             "ӘҒҚҢӨҰҮҺІәғқңөұүһі«»",
             &[("File", "Файл"), ("Sequence", "Тізбек"), ("Playhead", "Ойнату көрсеткіші"), ("Cross Dissolve", "Айқас ауысу")],
+        ),
+        (
+            Language::Sl,
+            "app.language.slovenian",
+            catalog_file!("sl"),
+            "ČŠŽčšž»«",
+            &[("File", "Datoteka"), ("Sequence", "Sekvenca"), ("Playhead", "Predvajalna glava"), ("Cross Dissolve", "Navzkrižno pretapljanje")],
         ),
     ];
 
