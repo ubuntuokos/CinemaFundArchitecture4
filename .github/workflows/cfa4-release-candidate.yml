@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout CFA4 repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Policy and format script syntax
         run: |
           bash scripts/ci/require-ubuntu-2604.sh
@@ -95,6 +97,8 @@ jobs:
     steps:
       - name: Checkout CFA4 repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Verify offline packaging prerequisites before any build
         env:
           APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
