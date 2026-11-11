@@ -457,9 +457,28 @@ class TrimMonitor(QWidget):
             return
         clip, edge, kind2 = target
         same = clip == ep.get("clip") and (edge == "out") == bool(ep.get("out")) and kind2 == kind
-        if len(eps) == 1 and not same:
+        if self._one_group(eps) and not same:
             self.command.emit("trim.selectEditPoint", {"clip": clip, "edge": edge, "kind": kind2})
         self.command.emit("trim.nudge", {"frames": int(frames)})
+
+    def _one_group(self, eps: list[dict[str, Any]]) -> bool:
+        """One edit point, or one linked group of them (upstream #3224: with Linked Selection on, an
+        edge brings its linked partners' same edge, kind too). A drag then re-targets it, and the
+        engine brings the partners of the new edge along."""
+        if len(eps) == 1:
+            return True
+        links: dict[Any, Any] = {}
+        for kind in ("video", "audio"):
+            for track in (self.sequence or {}).get(kind) or []:
+                for c in track.get("items") or []:
+                    if isinstance(c, dict):
+                        links[c.get("clip")] = c.get("link")
+        first = eps[0]
+        link = links.get(first.get("clip"))
+        return link is not None and all(
+            links.get(e.get("clip")) == link and bool(e.get("out")) == bool(first.get("out")) and e.get("kind") == first.get("kind")
+            for e in eps
+        )
 
     def route(self, command: str, trimming: bool) -> bool:
         """J/K/L/Space/Shift+K in trim mode (egui's ``route_transport``); False: not handled."""

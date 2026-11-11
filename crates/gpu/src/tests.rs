@@ -4,7 +4,7 @@ use cfa4_render::Blend;
 use cfa4_render::plan::execute_cpu;
 
 fn device() -> Option<(wgpu::Device, wgpu::Queue)> {
-    let instance = crate::adapter::native_instance();
+    let instance = wgpu::Instance::default();
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default())).ok()?;
     pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()
 }
@@ -110,7 +110,8 @@ fn gpu_matches_cpu_plan() {
     };
     let mut c = GpuCompositor::new(&dev, &q);
     let pixels =
-        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24);
+        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24)
+            .unwrap();
     let rgba = Arc::new(VideoFrame::rgba8(320, 180, pixels));
     let (w, h) = (320usize, 180usize);
     let plan = FramePlan::Layers {
@@ -451,7 +452,8 @@ fn gpu_draws_yuv_alpha_plane_like_the_cpu() {
     };
     let (w, h) = (320usize, 180usize);
     let pixels =
-        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24);
+        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24)
+            .unwrap();
     let background = Arc::new(VideoFrame::rgba8(320, 180, pixels));
     for bits in [8, 10, 12] {
         let mut c = GpuCompositor::new(&dev, &q);
@@ -542,8 +544,8 @@ fn hdr_input_gpu_matches_cpu() {
 
 /// Regression for #3418: several threads creating instances and devices, using them and dropping
 /// them at once deadlocked inside the NVIDIA driver (Vulkan loader critical section in
-/// `vkDestroyDevice` against other devices' `create_texture`/`submit`, plus WGL threads started by
-/// GL-enabled instances). Each thread makes its own instance and device, as concurrent windows and exports do.
+/// `vkDestroyDevice` against other devices' `create_texture`/`submit`).
+/// Each thread makes its own instance and device, as concurrent windows and exports do.
 #[test]
 fn many_threads_create_use_and_drop_devices_at_once() {
     use std::sync::mpsc;

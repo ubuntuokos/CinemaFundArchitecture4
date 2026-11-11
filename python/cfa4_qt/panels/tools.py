@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import QEvent, QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import QMenu, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
@@ -154,7 +154,7 @@ class ToolsPanel(QWidget):
         layout.setSpacing(2)
         for gi, group in enumerate(GROUPS):
             b = QToolButton(self)
-            b.setObjectName(f"tools.group.{gi}")
+            # named by the tool it shows, as egui's (``tools.<Tool>``; ``_refresh`` keeps it current)
             b.setCheckable(True)
             b.setAutoRaise(True)
             b.setIconSize(QSize(22, 22))
@@ -180,7 +180,7 @@ class ToolsPanel(QWidget):
     def _action(self, t: ToolDef, color: QColor) -> QAction:
         text = tr(t.label) + (f" ({t.key})" if t.key else "")
         a = QAction(tool_icon(t.id, color), text, self)
-        a.setObjectName(f"tools.{t.id}")
+        a.setObjectName(f"tools.select.{egui_tool(t.id)}")  # egui's flyout row
         a.setCheckable(True)
         if t.available:
             a.triggered.connect(lambda _c=False, i=t.id: self.select(i))
@@ -195,6 +195,18 @@ class ToolsPanel(QWidget):
         the key (the keys come from the engine's shortcut set: Keyboard Shortcuts edits them)."""
         return [(self.actions[t.id], f"tool.{t.id}", t.key) for g in GROUPS for t in g if t.available]
 
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        """egui's ``tools.<Tool>`` for the tools a group button hides: click aliases on that
+        button's rect (egui's tools.rs registers them so, not as separate focus targets)."""
+        out = []
+        for gi, b in enumerate(self.buttons):
+            if not b.isVisible():
+                continue
+            for t in GROUPS[gi]:
+                if t.id != self.group_tool[gi]:
+                    out.append((f"tools.{egui_tool(t.id)}", b.geometry(), t.label))
+        return out
 
     def select(self, tool: str) -> None:
         t = TOOLS.get(tool)
@@ -221,9 +233,16 @@ class ToolsPanel(QWidget):
             b.setIcon(tool_icon(t.id, color))
             b.setToolTip(tr(t.label) + (f" ({t.key})" if t.key else "") + ("" if len(GROUPS[gi]) == 1 else "  ▸"))
             b.setChecked(t.id == self.current)
+            b.setObjectName(f"tools.{egui_tool(t.id)}")
             b.setEnabled(any(x.available for x in GROUPS[gi]))
         for tid, a in self.actions.items():
             a.setChecked(tid == self.current)
+
+
+def egui_tool(tool: str) -> str:
+    """egui's ``Tool`` variant name for a tool id (``trackSelectForward`` → ``TrackSelectForward``),
+    as its automation ids spell it."""
+    return tool[:1].upper() + tool[1:]
 
 
 def tool_commands() -> list[tuple[str, str, list[str], str]]:

@@ -23,9 +23,7 @@ Expiration closes the connection without an unsolicited reply; reconnect before 
 (the CLI / MCP bridge does this automatically). Waiting for a UI reply has its separate 60-second
 limit. A partial request that times out is not dispatched.
 
-One JSON request per line → one JSON reply per line. The app opts out of macOS App Nap
-(`apps/cfa4/src/app_nap.rs`): a hidden window would otherwise drop the whole process to
-background priority, and on a busy machine it would stop answering.
+One JSON request per line → one JSON reply per line.
 
 **Only requests are read.** Every line must be a JSON object with a string `method` (`id` and `params`
 are optional; blank lines are skipped). Anything else gets one error reply
@@ -51,19 +49,19 @@ see `docs/qt-parity.md` 1.11 for the methods it has so far):
 | `engine.execute` / `ui.menu.invoke` | `{command, params}` | any engine or UI command id |
 | `engine.commands` / `ui.menu.list` | – | command registry / menu tree |
 | `ui.inspect` | – | UI state (tool, workspace, dock, timeline view, playback, fps…) |
-| `ui.elements` | `{prefix?}` | every on-screen interactive element: id, label, rect |
+| `ui.elements` | `{prefix?}` | every on-screen interactive element: id, label, rect. A dialog's standard buttons are `<dialog>.ok`, `.cancel`, `.close`, … (in the Qt GUI too, where an unnamed OK / Cancel of a named dialog takes that id) |
 | `ui.set` | `{tool, workspace, mode, theme, focused, playbackRes, timeline:{pps,scroll,fit}, program:{…}, source:{…}, clipDialog:{param: value}, menuDialog:{param: value}, panels:{scopes, timecode, reference, events, progress}, export:{…}, keyframeSelection:[…]}` | `keyframeSelection` replaces the Effect Controls keyframe selection (`[{clip, effect, param, mask?, time}]`, `time` in media ticks; read back as `ui.inspect` → `ui.keyframe_selection`; a click on a lane keyframe selects just that one); `program` / `source` merge fields into the monitor view state (`res`, `paused_res`, `high_quality`, `display`, `zoom`, `pan`, `show_rulers`, `show_guides`, `lock_guides`, `snap`, `guides`, `compare_ref`, …; see [monitors.md](monitors.md)); `clipDialog` sets fields of the open Edit / Clip / File dialog (Paste Attributes, Make Subclip, Frame Hold Options, …); `menuDialog` those of the M3.11 dialogs (Find, Create Search Bin, Project Settings, Scene Edit Detection, Simplify Sequence, Automate to Sequence…; see `panels::menu_dialogs`); `panels` merges into the panel settings (`ui.inspect` → `ui.panels`; see `panels::panel_state`): Lumetri Scopes `{shown: ["vectorscopeYuv"|"vectorscopeHls"|"histogram"|"parade"|"waveform"], waveformType, paradeType, colorSpace, brightness, scale, clamp, targets}`, Timecode `{rows: [{source, mode, display}], showName}`, Reference Monitor `{ganged, time, display: "composite"|"scopes", scopes}`, Events `{level, selected}`, Progress `{showFinished}` `export` deep-merges into Export mode state (`preset` — applied first —, `settings` (ExportSettings JSON), `fileName`, `location`, `range`, `customStart`, `customEnd`, `openSections`, `manager` (Preset Manager: `query`, `favoritesOnly`, `selected`, `saveName`), `quickOpen`, `quickPath`, `quickPreset`); `program` / `source` merge fields into the monitor view state (`res`, `paused_res`, `high_quality`, `display`, `zoom`, `pan`, `show_rulers`, `show_guides`, `lock_guides`, `snap`, `guides`, `compare_ref`, …; see [monitors.md](monitors.md)); `clipDialog` sets fields of the open Edit / Clip / File dialog (Paste Attributes, Make Subclip, Frame Hold Options, …); `menuDialog` those of the M3.11 dialogs (Find, Create Search Bin, Project Settings, Scene Edit Detection, Simplify Sequence, Automate to Sequence…; see `panels::menu_dialogs`); `projectPanel` merges into the Project panel's view state (`bin` shown in place, `tabs` (bins in a tab or window: `{bin, floating, view, iconSize, nav}`), `activeTab`, `selectedBin`, `rename: {item|bin, text}`, `dialog` (`{"metadataDisplay": {columns, filter}}`, `{"savePresetAs": {name}}`, `{"managePresets": {selected, name}}`, `{"freeformOptions": {options}}`, `{"saveArrangement": {name, bin}}`)); `mediaBrowser` into the Media Browser's (`expanded`, `pathEdit`, `editColumns`, `treeWidth`). View settings, columns and presets are engine commands (`project.view.set`, `project.columns.set`, `project.viewPreset.*`, `mediaBrowser.settings`) |
 | `ui.panel.show` / `ui.panel.close` | `{panel}` | |
-| `ui.click` / `ui.move` | `{id}` or `{x,y}`, `button`, `count`, `modifiers` | synthetic pointer input |
-| `ui.drag` | `{from, to, steps, modifiers}` | press–move–release |
+| `ui.click` / `ui.move` | `{id}` or `{x,y}`, `button`, `count`, `modifiers` | synthetic pointer input; a `count` that is absent or `null` (as the MCP bridge sends an omitted one) is one click |
+| `ui.drag` | `{from, to, steps, modifiers}` | press–move–release; `steps` absent or `null` uses the default; out-of-range counts are refused before any input |
 | `ui.scroll` | `{id|x,y, dx, dy, modifiers}` | wheel / trackpad |
-| `ui.key` / `ui.type` | `{key}` (`Cmd+K`, `Space`…; off macOS `Ctrl+K` is the same key) / `{text}` | keyboard |
+| `ui.key` / `ui.type` | `{key}` (`Cmd+K`, `Space`…; `Ctrl+K` is the same key) / `{text}` | keyboard |
 | `ui.timeline.hit` / `ui.timeline.locate` | `{x,y,modifiers?}` / `{clip, edge?}` | timeline hit-testing. `hit` reports a clip's `edge` (`In`/`Out`) within 7 px of it (a third of a narrow clip); just left of a cut that is the left clip's Out, from the cut rightwards the right clip's In. `kind` is the trim a press of the current tool with `modifiers` starts there (`trim`, `ripple`, `roll`, `rateStretch`, `remix`), `volume` on an audio clip's Volume line (Selection and Pen tools), or null |
 | `ui.playback` | `{action: play|stop|toggle, speed?}` | |
 | `ui.screenshot` | `{path?, panel?}` | PNG of the window or one panel; fails after 10 s when no frame is presented (window hidden, display asleep) |
 | `ui.resize`, `app.quit` | `{width,height}` / `{}` | resize or close the native window; `app.quit` quits without the save prompt (unsaved changes stay in the recovery journal), while the command `app.quit` asks first |
 | `ui.focus` | `{}` / `{id}` | empty parameters activate the native window; a widget ID requests egui focus without OS activation |
-| `perf.stats` | – | performance counters (also the command `perf.stats`, so `engine.execute` and MCP `command_run` reach it; headless sessions return the engine part). `decode`: GOP-cache requests / hits / `cacheHitRate`, decoder seeks, samples decoded and skipped while catching up, `draftFrames` (decoded in draft mode), `h264Threads` (frame-threading workers per H.264 decoder), `liveDecoders` (sources holding a decoder now), `cacheMB` / `cacheBudgetMB` (decoded frames all sources hold, and the shared budget), `planePoolMB` / `planesReused` (idle buffers of the frame pool, the planes of evicted frames and the compositor's float images, which a standalone export frees when it ends; and buffers taken from it instead of allocated), decoder ms (total and per sample), `framesDecoded`, `hardware` (Settings ▸ Playback ▸ Hardware decoding: `enabled`, pictures from hardware decoders `frames` vs `softwareFrames`, `sessions`, `declined` streams, mid-stream `fallbacks`); `playback`: playing, shown / dropped frames and `dropRate` of the current or last play, resolution, `draftDecode` (Settings ▸ Playback ▸ Draft decoding), `audio` (desktop: sound is mixed 200 ms ahead of the device; device `callbacks`, `underruns` and `missingFrames` played as silence because the mixer fell behind, `minLeadMs` the least sound left buffered); `frames`: frame-worker jobs, cancelled, `requestHitRate`, `decodeMs` / `renderMs` (mean, p50, p95 of the last 256 jobs), queue, render-cost estimate, cache use; `monitor`: the `frame` and `revision` of the picture the Program monitor shows against `playheadFrame` and `projectRevision` (how far a drag or a scrub is ahead of the picture); `ui`: fps and frame ms; `process`: CPU seconds; `route` (compute router, ADR 0004): `chains` (per routed task, e.g. `video.decode`, `video.encode.h264` and `video.encode.hevc`: the routes in the order they run, the chosen one first and the CPU path last, and every route passed over with its reason), `inventory` (the GPUs and NPUs found, `null` before the platform registered its backends), `coverage` (per family: implemented vendor-neutral and vendor-locked accelerators, planned ones, `vendor_neutral`); `media`, `jobs`. Counters are cumulative: diff two readings to measure an interval ([performance.md](performance.md)) |
+| `perf.stats` | – | performance counters (also the command `perf.stats`, so `engine.execute` and MCP `command_run` reach it; headless sessions return the engine part). `decode`: GOP-cache requests / hits / `cacheHitRate`, decoder seeks, samples decoded and skipped while catching up, `draftFrames` (decoded in draft mode), `h264Threads` (frame-threading workers per H.264 decoder), `liveDecoders` (sources holding a decoder now), `cacheMB` / `cacheBudgetMB` (decoded frames all sources hold, and the shared budget), `planePoolMB` / `planesReused` (idle buffers of the frame pool, the planes of evicted frames and the compositor's float images, which a standalone export frees when it ends; and buffers taken from it instead of allocated), decoder ms (total and per sample), `framesDecoded`, `hardware` (Settings ▸ Playback ▸ Hardware decoding: `enabled`, pictures from hardware decoders `frames` vs `softwareFrames`, `sessions`, `declined` streams, mid-stream `fallbacks`); `playback`: playing, shown / dropped frames and `dropRate` of the current or last play, resolution, `draftDecode` (Settings ▸ Playback ▸ Draft decoding), `present` (Qt GUI: how the picture is drawn, `path` `gl` or `raster`, and `frames`, `meanMs`, `maxMs` drawing it since playback started), `audio` (desktop: sound is mixed 200 ms ahead of the device; device `callbacks`, `underruns` and `missingFrames` played as silence because the mixer fell behind, `minLeadMs` the least sound left buffered); `frames`: frame-worker jobs, cancelled, `requestHitRate`, `decodeMs` / `renderMs` (mean, p50, p95 of the last 256 jobs), queue, render-cost estimate, cache use; `monitor`: the `frame` and `revision` of the picture the Program monitor shows against `playheadFrame` and `projectRevision` (how far a drag or a scrub is ahead of the picture); `ui`: fps and frame ms; `process`: CPU seconds; `route` (compute router, ADR 0004): `chains` (per routed task, e.g. `video.decode`, `video.encode.h264` and `video.encode.hevc`: the routes in the order they run, the chosen one first and the CPU path last, and every route passed over with its reason), `inventory` (the GPUs and NPUs found, `null` before the platform registered its backends), `coverage` (per family: implemented vendor-neutral and vendor-locked accelerators, planned ones, `vendor_neutral`); `media`, `jobs`. Counters are cumulative: diff two readings to measure an interval ([performance.md](performance.md)) |
 
 **Timeline thumbnails.** `ui.set {timeline: {thumbnails}}` sets the Timeline wrench menu's Show Video
 Thumbnails: `off`, `head`, `headAndTail` or `continuous`.
@@ -76,7 +74,7 @@ still apply. `engine.commands` and the menus always show the selection's enablem
 
 **Focus.** Driving the app never steals the user's keyboard. Started with `--control`, the app opens
 without activating itself. UI requests and screenshots that need a rendered frame bring the window
-forward without making it key (macOS `orderFrontRegardless`), so the user's typing keeps going to
+forward without giving it keyboard focus, so the user's typing keeps going to
 the app they are in. Only an explicit `ui.focus {}` activates CFA4. Injected keys work on
 focused widgets even when the native window is in the background.
 
@@ -86,6 +84,9 @@ unknown IDs, non-widget regions and hidden tool aliases. The reply acknowledges 
 focus. This is separate from `ui.focused`, which identifies the active panel. Tools, dock tabs,
 tab menus and divider handles expose widget IDs through `ui.elements`. Tab/Shift-Tab move widget
 focus; Space/Enter activate focused buttons and tabs, with visible focus outlines.
+Painted regions carry ids of their own (the Audio Meters' `audioMeters.loudness`,
+`audioMeters.channel.<name>` and `audioMeters.scale`, with what they show as the label); in the Qt GUI
+a widget lists them through `automation_parts()`, and `ui.click` / `ui.move` / `ui.drag` find them by id.
 
 For unattended validation, start with `--control <port> --control-input-only`. This opt-in mode
 accepts widget input through control requests and excludes native keyboard, pointer, file-drop
@@ -148,7 +149,12 @@ the new clips as `copied`, they are selected, and copies of linked clips are lin
 
 **Trim mode** (`crates/engine/src/trim.rs`): `trim.selectEditPoint` / `trim.selectNearest` enter trim
 mode (the Program monitor becomes the Trim Monitor, ids `trimMonitor.*`); `trim.monitor` returns what
-it shows. Dynamic trimming takes an explicit clock (seconds) so it is deterministic: `trim.shuttle
+it shows. With Linked Selection on, selecting an edge includes its unlocked linked partners, even
+on untargeted tracks; `add: true` (Shift-click) toggles the group. Regular/ripple trims select the
+corresponding In/Out edges. Rolls include only matching linked cuts at the same time, leaving split
+audio cuts separate. Each linked group moves once and shares its tightest trim limit; turning
+Linked Selection off allows individual edges to be selected and edited.
+Dynamic trimming takes an explicit clock (seconds) so it is deterministic: `trim.shuttle
 {direction, slow?, clock}` (J/L), `trim.tick {clock}`, `trim.shuttleStop {clock?}` (K, one undo step),
 `trim.cancelDynamic` (Esc), `trim.playAround {clock, loop?}` (Space / Shift+K).
 
@@ -184,8 +190,9 @@ sequence as tone-mapped SDR.
 command with exactly those modifiers), `shortcuts.beginEditing` / `endEditing` / `cancelEditing`
 (an editor dialog in another process: Cancel restores the set it opened with) and
 `shortcuts.registerExternal {commands: [{id, label, menu?, shortcut?}]}` (a frontend's own
-commands, such as the Qt GUI's tools and transport, so they can be listed and bound). Keys use `Cmd` (⌘ /
-Ctrl), `Ctrl` (macOS ⌃), `Alt`, `Shift`. The dialog (Edit ▸ Keyboard Shortcuts…, ⌥⌘K) uses ids
+commands, such as the Qt GUI's tools and transport, so they can be listed and bound). Keys use `Cmd` (Ctrl on
+Linux), `Ctrl` (the separate Control key of Premiere's Mac presets), `Alt`, `Shift`. The dialog
+(Edit ▸ Keyboard Shortcuts…, Ctrl+Alt+K) uses ids
 `shortcuts.*` (`shortcuts.key.K`, `shortcuts.cell.<command>`, `shortcuts.ok`, …).
 
 ## MCP
@@ -194,6 +201,7 @@ or `--bridge 127.0.0.1:9876` to drive the running app. Tools: `command_list`, `c
 `command_batch`, `doc_inspect`, `render_preview`, `project_inspect`, `sequence_inspect`, `media_import`,
 `render_frame`, `ui_inspect`, `ui_elements`, `ui_click`, `ui_drag`, `ui_key`, `ui_type`, `ui_screenshot`,
 `ui_control`; resources `cfa4://document` and `cfa4://commands`. `.mcp.json` registers both.
+The bridge drives the Qt 6 GUI (`cfa4-qt --control <port>`) the same way.
 Annotations, argument checking, errors and export progress / cancellation:
 [agents.md § Conventions](agents.md#conventions).
 

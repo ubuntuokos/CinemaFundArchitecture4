@@ -34,7 +34,6 @@ from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QStackedWidget,
-    QTabBar,
     QTableWidget,
     QTableWidgetItem,
     QTextBrowser,
@@ -45,6 +44,7 @@ from PySide6.QtWidgets import (
 
 from .. import theme
 from ..i18n import N_, fmt, tr
+from .tab_ids import IdTabBar
 
 TABS = (("Transcript", N_("Transcript")), ("Captions", N_("Captions")), ("Graphics", N_("Graphics")))
 ID_ROLE = Qt.ItemDataRole.UserRole
@@ -272,6 +272,8 @@ class TranscriptTab(QWidget):
 
 
 class CaptionsTab(QWidget):
+    # the caption the list last brought into view as the playhead reached it (upstream #3042)
+    _followed: Any = None
     COLUMNS = (N_("#"), N_("In"), N_("Out"), N_("Speaker"), N_("Text"))
 
     def __init__(self, panel: TextPanel) -> None:
@@ -479,6 +481,7 @@ class CaptionsTab(QWidget):
                     if c.get("id") in sel:
                         self.table.selectRow(r) if len(sel) == 1 else self._add_row(r)
                 self.table.blockSignals(False)
+                self._follow(rows, under)
             if not rows:
                 self.note.setText(
                     tr("No captions on this track. Press + to add one at the playhead.") if not q else tr("No matching captions.")
@@ -487,6 +490,19 @@ class CaptionsTab(QWidget):
             self._fill_style()
         finally:
             self._filling = False
+
+    def _follow(self, rows: list[tuple[int, dict[str, Any]]], under: dict[str, Any] | None) -> None:
+        """The list follows the playhead: each caption it reaches is brought to the middle once
+        (upstream #3042); never while a field is being edited (the caller fills only then)."""
+        cid = None if under is None else under.get("id")
+        if cid is None or cid == self._followed:
+            self._followed = cid
+            return
+        r = next((r for r, (_n, c) in enumerate(rows) if c.get("id") == cid), None)
+        item = self.table.item(r, 0) if r is not None else None
+        if item is not None:
+            self.table.scrollToItem(item, QAbstractItemView.ScrollHint.PositionAtCenter)
+            self._followed = cid
 
     def _add_row(self, r: int) -> None:
         for col in range(self.table.columnCount()):
@@ -701,7 +717,7 @@ class TextPanel(QWidget):
         self._busy = False
         self._again = False
         self._fonts_asked = False
-        self.tabs = QTabBar(self)
+        self.tabs = IdTabBar([f"text.tab.{key}" for key, _label in TABS], self)
         self.tabs.setObjectName("text.tabs")
         self.tabs.setDrawBase(False)
         self.tabs.setExpanding(False)

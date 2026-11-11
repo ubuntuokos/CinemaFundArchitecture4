@@ -116,7 +116,7 @@ below it saves ~9 % of the decoding work (the B-pyramid's non-reference half of 
 ## Tests
 
 `cargo test -p cfa4-h264` (fixtures are generated on first use into `target/fixtures/h264/`
-with ffmpeg + libx264; tests print a message and skip when `/opt/homebrew/bin/ffmpeg` is absent).
+with ffmpeg + libx264; tests print a message and skip when ffmpeg is not found).
 
 - Unit tests: CAVLC tables (prefix-freeness / Kraft sums, spec-style residual example), CABAC engine
   (context init formula, round trip against an encoder model), intra predictors with hand-computed
@@ -155,8 +155,7 @@ with ffmpeg + libx264; tests print a message and skip when `/opt/homebrew/bin/ff
 
 ### Fixture matrix (all bit-exact, single- and multi-threaded)
 
-libx264 fixtures unless noted; the VideoToolbox (hardware encoder) fixtures are skipped where that
-encoder is unavailable.
+libx264 fixtures.
 
 | fixture | source / size | configuration |
 |---|---|---|
@@ -201,10 +200,6 @@ encoder is unavailable.
 | lossless_444_intra, lossless_444_cavlc, lossless_444_b, lossless_420, lossless_420_intra_cavlc, lossless_422, lossless_444_10, lossless_420_10, lossless_mbaff | 352x288 | `-qp 0` (High 4:4:4 Predictive): intra-only, CAVLC, B-frames, 4:2:0 / 4:2:2 / 4:4:4, 10 bits, MBAFF |
 | lossless_420_clean, lossless_444_10_clean, lossless_420_10_clean | testsrc2 352x288 | noise-free `-qp 0` (no I_PCM): bases of the lossless bit-depth variants |
 | fake_interlaced | testsrc2+noise 352x288 | `fake-interlaced`: frame pictures with `frame_mbs_only_flag = 0` |
-| vt_baseline | testsrc2+noise 320x240 | Apple VideoToolbox, Baseline (macOS only) |
-| vt_main | mandelbrot+noise 640x360 | VideoToolbox, Main |
-| vt_high | testsrc2+noise 640x360 | VideoToolbox, High |
-| vt_high_1080p | testsrc2 1920x1080 | VideoToolbox, High 8 Mbit/s |
 
 `cargo test --release -p cfa4-h264 --test conformance coverage_report -- --ignored --nocapture`
 prints which coding tools each fixture exercises.

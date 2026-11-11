@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 でエラーが発生しました
 	CFA4 project links	CFA4 プロジェクトのリンク
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	「{name}」に未保存の変更がある状態で CFA4 が予期せず終了しました。{time} の未保存の変更を復元しますか？
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	「{name}」に未保存の変更がある状態で CFA4 が閉じられました。{time} の未保存の変更を復元しますか？
 	Cancel Selected	選択項目をキャンセル
 	Cannot check the output folder for files to replace: {error}	置き換えるファイルがあるか出力フォルダーを確認できません：{error}
 	Cannot create the output folder: {error}	出力フォルダーを作成できません：{error}
@@ -320,3 +318,86 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 圧縮
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Strikethrough	取り消し線
+	Caption Export Settings	キャプション書き出し設定
+	Export Captions	キャプションを書き出し
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} は既に存在するため、何も書き出しませんでした。置き換えるには、保存ダイアログでそのファイルを選んでください。
+	Delete Redoable Actions	やり直し可能な操作を削除
+	Clear History	ヒストリーを消去
+	Delete the dimmed actions after the current state? They cannot be redone.	現在の状態より後の淡色表示の操作を削除しますか？ やり直しできなくなります。
+	Work Area Bar	ワークエリアバー
+	Start: {tc}	開始: {tc}
+	End: {tc}	終了: {tc}
+	Duration: {tc}	デュレーション: {tc}
+	Panel menu	パネルメニュー
+	Move panel	パネルを移動
+	Transparency Grid	透明グリッド
+	Show Duplicate Frame Markers	重複フレームマーカーを表示
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	シーケンスのイン／アウトは 1 フレームだけです。シーケンス全体を書き出すには「シーケンス全体」を選んでください。
+	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
+	Set Work Area Bar Out Point	ワークエリアバーのアウトポイントを設定
+	Delete Clips	クリップを削除
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	クリップを解析中…
+	At GOP boundaries (no re-encoding)	GOP 境界で（再エンコードなし）
+	Bit-exact copy	ビット単位で同一のコピー
+	Choose the output file.	出力ファイルを選択してください。
+	Compatible copy	互換コピー
+	Copy:	コピー:
+	Cut:	カット:
+	Frame accurate (re-encode the boundaries)	フレーム単位（境界を再エンコード）
+	Open a video clip in the Source monitor first.	先にソースモニターでビデオクリップを開いてください。
+	Output:	出力:
+	Smart Cut Source	ソースのスマートカット
+	Smart Cut Source…	ソースのスマートカット…
+	Smart Cut is not available for this clip: {why}	このクリップではスマートカットを使用できません: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	スマートカットを書き出して検証しました: {path}（{frames} フレーム）
+	The cut cannot run.	カットを実行できません。
+	The engine sent no analysis.	エンジンから解析結果が届きませんでした。
+	Writing and verifying the cut…	カットを書き出して検証中…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{container} 内の {codec}: {gops} GOP、クリーンなカット点 {points} 個
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} フレームをコピー、{reencoded} フレームを再エンコード
+	{frames} frames at the boundaries are re-encoded. Continue?	境界の {frames} フレームを再エンコードします。続行しますか？
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	GOP 境界を表示
+# Export window Smart Export (WP-08)
+	Export mode	書き出しモード
+	Full Render	フルレンダリング
+	Planning…	計画中…
+	Recommended: Smart Render (asks before re-encoding)	推奨: スマートレンダー（再エンコード前に確認）
+	Recommended: Stream Copy (nothing is re-encoded)	推奨: ストリームコピー（再エンコードなし）
+	Rendered because of: {causes}	レンダリングの理由: {causes}
+	Smart Export	スマート書き出し
+	Smart Export written and verified: {path}	スマート書き出しを書き込み検証しました: {path}
+	Smart Render	スマートレンダー
+	Stream Copy – Bit-exact	ストリームコピー – ビット単位で同一
+	Stream Copy – Compatible	ストリームコピー – 互換
+	Stream copy is not possible: {frames} frames need re-encoding.	ストリームコピーはできません: {frames} フレームの再エンコードが必要です。
+	The export cannot run.	書き出しを実行できません。
+	Wait for the export plan.	書き出し計画を待ってください。
+	Writing and verifying the export…	書き出しを書き込み検証中…
+	colour conversion	カラー変換
+	compositing	合成
+	copied	コピー
+	effects	エフェクト
+	frame rate	フレームレート
+	proxies or nested sequences	プロキシまたはネストされたシーケンス
+	re-encoded at a cut	カット位置で再エンコード
+	rendered	レンダリング
+	sources that cannot be copied	コピーできないソース
+	speed changes	速度変更
+	titles or overlays	タイトルまたはオーバーレイ
+	transforms	トランスフォーム
+	transitions	トランジション
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} フレームをコピー、{reencoded} をカット位置で再エンコード、{rendered} をレンダリング
+	{frames} frames are re-encoded or rendered. Continue?	{frames} フレームを再エンコードまたはレンダリングします。続行しますか？
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	コピーされた音声: {tracks}
+	Audio track {track} is not copied: {why}	音声トラック {track} はコピーされません: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	ポイントトラッカー
+	Correlation tracker	相関トラッカー
+	DCP language	DCPの言語
+	None (RFC 5646 tag, e.g. en-US)	なし（RFC 5646 タグ、例: ja-JP）
+	ISDCF name	ISDCF 名
+	Name the DCP folder by the Digital Cinema Naming Convention	DCP フォルダーに Digital Cinema Naming Convention に従って名前を付ける

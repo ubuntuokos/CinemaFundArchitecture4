@@ -59,6 +59,9 @@ pub struct MkvSource {
     /// Video codec as an ISO-BMFF sample entry (for the decoder factories).
     ventry: Option<SampleEntry>,
     video: GopCache,
+    /// Look frames up by the start of their frame: the video track's timestamp unit is half a frame
+    /// or longer and its samples sit on the nominal frame grid ([`crate::gop::snap_coarse_units`]).
+    snap: bool,
     /// The alpha layer of a VP8 / VP9 track with `AlphaMode` 1 (WebM transparency, #402).
     alpha: Option<Arc<crate::webm_alpha::AlphaLayer>>,
     /// The playable audio tracks in file order: `info.audio_streams[k]` describes `audios[k]`.
@@ -166,6 +169,25 @@ fn codec_delay_ticks(t: &cfa4_matroska::Track) -> i64 {
     i64::try_from((t.codec_delay_ns as i128 + scale_ns / 2) / scale_ns).unwrap_or(i64::MAX)
 }
 
+/// The stream description of an audio track, `None` when its advertised sample rate or channel
+/// count is out of range (see [`cfa4_media::bounded_audio_dimensions`]).
+fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
+    let a = t.audio.clone().unwrap_or_default();
+    let mut rate = a.output_sampling_frequency.unwrap_or(a.sampling_frequency).round().max(1.0) as u32;
+    let mut channels = (a.channels as u32).max(1);
+    if let Some(h) = opus_head(&t.codec) {
+        rate = crate::audio::OPUS_RATE;
+        channels = h.channels as u32;
+    }
+    let (rate, channels) = cfa4_media::bounded_audio_dimensions(rate, channels).ok()?;
+    // an `A_MS/ACM` track may leave BitDepth out: its WAVEFORMATEX has the sample size
+    let bits = match &t.codec {
+        Codec::Pcm { bits, .. } => a.bit_depth.or(Some(u64::from(*bits))),
+        _ => a.bit_depth,
+    };
+    Some(AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32), speakers: Vec::new() })
+}
+
 /// The track timestamp that media time zero stands for (#715): the earliest start among the
 /// playable tracks. Block timestamps count from the start of the Segment, and a remux that keeps
 /// its source's timestamps (`ffmpeg -copyts`, a cut from a recording) starts its first picture
@@ -231,10 +253,11 @@ fn to_tick(t: &cfa4_matroska::Track, pts: i64) -> Tick {
 
 /// A time as the track timestamp to look a frame up by: rounded to the nearest tick, as muxers
 /// round frame times to `TimestampScale` (usually 1 ms). Flooring skipped every frame whose
-/// timestamp was rounded up (every third frame at 30 fps).
-fn from_tick(t: &cfa4_matroska::Track, time: Tick) -> i64 {
+/// timestamp was rounded up (every third frame at 30 fps). See [`crate::gop::lookup_time`] for
+/// `snap`, timestamp units as long as a frame.
+fn from_tick(t: &cfa4_matroska::Track, rate: FrameRate, time: Tick, snap: bool) -> i64 {
     let (n, d) = tb(t);
-    time.to_rational_round(n, d)
+    crate::gop::lookup_time(time, n, d, rate, snap)
 }
 
 /// VP9 configuration from the Matroska `CodecPrivate` feature list (ID / length / value triples:
@@ -284,6 +307,17 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         // MPEG-1/2 video: the factory finds `mp2v` (CodecPrivate holds the sequence header)
         Codec::Other(id) if id == "V_MPEG2" || id == "V_MPEG1" => {
             SampleEntry::video(FourCc(*b"mp2v"), CodecConfig::Unknown { fourcc: FourCc(*b"mp2v"), raw: private.to_vec() }, w, h)
+        }
+        // FFV1: ffmpeg writes a VfW BITMAPINFOHEADER whose extra bytes are the configuration record
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"FFV1") => {
+            crate::ffv1::sample_entry(bitmap_info_header.get(40..).unwrap_or_default(), w, h)
+        }
+        Codec::Other(id) if id == "V_FFV1" => crate::ffv1::sample_entry(private, w, h),
+        // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
+        // Ut Video: the extradata follows the VfW BITMAPINFOHEADER
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
+            crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
         }
         _ => return None,
     })
@@ -347,6 +381,10 @@ fn codec_label(c: &Codec) -> String {
         Codec::TrueHd => "Dolby TrueHD".into(),
         Codec::Other(id) if id == "V_MPEG2" => "MPEG-2 Video".into(),
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
+        Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"FFV1") => "FFV1".into(),
         other => other.name().to_string(),
     }
 }
@@ -366,7 +404,9 @@ impl MkvSource {
             .tracks
             .iter()
             .enumerate()
-            .filter(|(_, t)| t.kind == TrackKind::Audio && !t.samples.is_empty())
+            // A track whose advertised dimensions are refused is no stream at all, so `atracks[k]` and
+            // `info.audio_streams[k]` stay the same track.
+            .filter(|(_, t)| t.kind == TrackKind::Audio && !t.samples.is_empty() && audio_info(t).is_some())
             .map(|(i, _)| i)
             .take(cfa4_media::MAX_AUDIO_STREAMS)
             .collect();
@@ -434,25 +474,7 @@ impl MkvSource {
                 hdr: v.colour.as_ref().and_then(hdr_metadata),
             }
         });
-        let audio_streams: Vec<AudioStreamInfo> = atracks
-            .iter()
-            .filter_map(|&i| file.tracks.get(i))
-            .map(|t| {
-                let a = t.audio.clone().unwrap_or_default();
-                let mut rate = a.output_sampling_frequency.unwrap_or(a.sampling_frequency).round().max(1.0) as u32;
-                let mut channels = (a.channels as u32).max(1);
-                if let Some(h) = opus_head(&t.codec) {
-                    rate = crate::audio::OPUS_RATE;
-                    channels = h.channels as u32;
-                }
-                // an `A_MS/ACM` track may leave BitDepth out: its WAVEFORMATEX has the sample size
-                let bits = match &t.codec {
-                    Codec::Pcm { bits, .. } => a.bit_depth.or(Some(u64::from(*bits))),
-                    _ => a.bit_depth,
-                };
-                AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32) }
-            })
-            .collect();
+        let audio_streams: Vec<AudioStreamInfo> = atracks.iter().filter_map(|&i| file.tracks.get(i)).filter_map(audio_info).collect();
         let info = MediaInfo {
             name: name.to_string(),
             kind: if video.is_some() { MediaKind::Movie } else { MediaKind::AudioOnly },
@@ -490,7 +512,12 @@ impl MkvSource {
                 && t.samples.iter().any(|s| s.addition.is_some())
         });
         let alpha = alpha.map(|t| Arc::new(crate::webm_alpha::AlphaLayer::new(bytes.clone(), t.samples.iter().map(|s| (s.pts, s.addition)))));
-        Ok(Self { info, bytes, file, vtrack, ventry, video: GopCache::new(explicit_color).with_rotation(rotation), alpha, audios })
+        let snap = vtrack.zip(info.video.as_ref()).is_some_and(|(i, v)| {
+            let t = &file.tracks[i];
+            let (n, d) = tb(t);
+            crate::gop::snap_coarse_units(t.samples.iter().map(|s| s.pts), n, d, v.frame_rate)
+        });
+        Ok(Self { info, bytes, file, vtrack, ventry, video: GopCache::new(explicit_color).with_rotation(rotation), snap, alpha, audios })
     }
 
     fn read(&self, track: usize, i: usize) -> crate::Result<Vec<u8>> {
@@ -513,22 +540,22 @@ impl MkvSource {
     }
 
     fn audio_decoder(&self, c: &Codec, rate: u32) -> crate::Result<PacketDecoder> {
-        use symphonia::core::codecs::{CODEC_TYPE_FLAC, CODEC_TYPE_MP3, CODEC_TYPE_VORBIS};
+        use symphonia::core::codecs::audio::well_known::{CODEC_ID_FLAC, CODEC_ID_MP3, CODEC_ID_VORBIS};
         match c {
             Codec::Aac { asc } => PacketDecoder::aac(asc, rate),
             Codec::Opus { head } => PacketDecoder::opus(cfa4_opus::OpusHead::parse(head).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
-            Codec::Mp3 => PacketDecoder::new(CODEC_TYPE_MP3, rate, None),
+            Codec::Mp3 => PacketDecoder::new(CODEC_ID_MP3, rate, None),
             Codec::Mp2 => PacketDecoder::mpeg_audio(2, rate),
             Codec::Mp1 => PacketDecoder::mpeg_audio(1, rate),
             Codec::Ac3 | Codec::Eac3 => PacketDecoder::ac3(),
             Codec::Dts => Ok(PacketDecoder::dts()),
             Codec::TrueHd => Ok(PacketDecoder::truehd()),
             // symphonia wants the STREAMINFO block body: skip `fLaC` + the 4-byte block header.
-            Codec::Flac { private } => PacketDecoder::new(CODEC_TYPE_FLAC, rate, private.get(8..42).map(<[u8]>::to_vec)),
+            Codec::Flac { private } => PacketDecoder::new(CODEC_ID_FLAC, rate, private.get(8..42).map(<[u8]>::to_vec)),
             Codec::Vorbis { headers } if headers.len() == 3 => {
                 let mut extra = headers[0].clone();
                 extra.extend_from_slice(&headers[2]);
-                PacketDecoder::new(CODEC_TYPE_VORBIS, rate, Some(extra))
+                PacketDecoder::new(CODEC_ID_VORBIS, rate, Some(extra))
             }
             other => Err(CodecError::Unsupported(format!("{} audio", codec_label(other)))),
         }
@@ -648,8 +675,9 @@ impl MediaSource for MkvSource {
     fn video_frame(&self, req: FrameRequest) -> Result<Arc<VideoFrame>, MediaError> {
         let ti = self.vtrack.ok_or(MediaError::NoStream("video"))?;
         let t = req.time.max(Tick::ZERO);
-        let target = from_tick(&self.file.tracks[ti], t);
-        let late = cfa4_media::cancel::catch_up().map(|m| from_tick(&self.file.tracks[ti], t - m));
+        let rate = self.info.video.as_ref().map(|v| v.frame_rate).unwrap_or_default();
+        let target = from_tick(&self.file.tracks[ti], rate, t, self.snap);
+        let late = cfa4_media::cancel::catch_up().map(|m| from_tick(&self.file.tracks[ti], rate, t - m, self.snap));
         Ok(self.video.frame_late(&MkvVideo { src: self, track: ti }, target, late)?)
     }
 
@@ -663,15 +691,19 @@ impl MediaSource for MkvSource {
         let ainfo = self.info.audio_streams.get(stream).ok_or(MediaError::NoStream("audio"))?;
         let src_rate = ainfo.sample_rate;
         let ch = ainfo.channels.max(1) as usize;
+        let source_frames = cfa4_media::resample_source_frames(frames, src_rate, sample_rate)?;
+        let need = source_frames.checked_add(2).ok_or_else(|| MediaError::Decode("audio source window overflows".into()))?;
+        cfa4_media::validate_audio_buffer_shape(ch, need)?;
+        cfa4_media::validate_audio_buffer_shape(ch, frames)?;
         let ratio = src_rate as f64 / sample_rate as f64;
         let s0 = (start as f64 * ratio).floor() as i64;
-        let need = (frames as f64 * ratio).ceil() as i64 + 2;
-        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
+        let need_i64 = i64::try_from(need).unwrap_or(i64::MAX);
+        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need]; ch];
         let mut st = a.state.lock().unwrap_or_else(|e| e.into_inner());
         let mut i = a.starts.partition_point(|&x| x <= s0).saturating_sub(1);
         while i < n_packets {
             let Some(&pk_start) = a.starts.get(i) else { break };
-            if pk_start >= s0 + need {
+            if pk_start >= s0.saturating_add(need_i64) {
                 break;
             }
             let pk = self.audio_packet(a, ainfo, &mut st, i)?;

@@ -551,13 +551,13 @@ impl PreviewStore {
 /// Open a rendered preview file. Native builds read it in place (the container's index now,
 /// frames on demand): previews are full-resolution ProRes, gigabytes a minute, and reading each
 /// one whole filled memory during render and playback (#2185).
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 pub(crate) fn open_preview_file(_pool: &MediaPool, name: &str, path: &std::path::Path) -> Option<SharedSource> {
     let reader = cfa4_media::reader::FileReader::open(path).ok()?;
     cfa4_media::reader::open_reader_within(name, std::sync::Arc::new(reader), &cfa4_codecs::reader_openers(), &[], 0).ok()
 }
 
-#[cfg(not(any(unix, windows)))]
+#[cfg(not(unix))]
 pub(crate) fn open_preview_file(pool: &MediaPool, name: &str, path: &std::path::Path) -> Option<SharedSource> {
     let bytes = std::fs::read(path).ok()?;
     pool.open_bytes(name, bytes.into()).ok()
@@ -909,5 +909,7 @@ pub fn bar_json(s: &Session) -> Result<Value> {
             "budgetMs": (rate.frame_duration().seconds() * 1000.0 * cfa4_render::preview::REALTIME_BUDGET * 10.0).round() / 10.0,
             "hash": g.hash,
         })).collect::<Vec<_>>(),
+        // what the Timeline draws: green over rendered frames, each segment's colour elsewhere
+        "bar": s.previews.bar(&s.project, seq),
     }))
 }

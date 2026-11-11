@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 ha encontrado un error
 	CFA4 project links	Enlaces del proyecto CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 se cerró inesperadamente mientras «{name}» tenía cambios sin guardar. ¿Recuperar los cambios sin guardar de {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 se cerró mientras «{name}» tenía cambios sin guardar. ¿Recuperar los cambios sin guardar de {time}?
 	Cancel Selected	Cancelar selección
 	Cannot check the output folder for files to replace: {error}	No se puede comprobar si la carpeta de salida tiene archivos que reemplazar: {error}
 	Cannot create the output folder: {error}	No se puede crear la carpeta de salida: {error}
@@ -320,3 +318,86 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compresión {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Tachado
+	Caption Export Settings	Ajustes de exportación de subtítulos
+	Export Captions	Exportar subtítulos
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} ya existe, así que no se exportó nada. Para reemplazarlo, elígelo en el cuadro de diálogo de guardar.
+	Delete Redoable Actions	Eliminar acciones rehacibles
+	Clear History	Borrar historial
+	Delete the dimmed actions after the current state? They cannot be redone.	¿Eliminar las acciones atenuadas posteriores al estado actual? No se podrán rehacer.
+	Work Area Bar	Barra de área de trabajo
+	Start: {tc}	Inicio: {tc}
+	End: {tc}	Fin: {tc}
+	Duration: {tc}	Duración: {tc}
+	Panel menu	Menú del panel
+	Move panel	Mover panel
+	Transparency Grid	Cuadrícula de transparencia
+	Show Duplicate Frame Markers	Mostrar marcadores de fotogramas duplicados
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	La entrada/salida de la secuencia es de solo 1 fotograma. Elige Secuencia completa para exportar toda la secuencia.
+	Set Work Area Bar In Point	Definir punto de entrada de la barra de área de trabajo
+	Set Work Area Bar Out Point	Definir punto de salida de la barra de área de trabajo
+	Delete Clips	Eliminar clips
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Analizando el clip…
+	At GOP boundaries (no re-encoding)	En los límites de GOP (sin recodificar)
+	Bit-exact copy	Copia idéntica bit a bit
+	Choose the output file.	Elija el archivo de salida.
+	Compatible copy	Copia compatible
+	Copy:	Copia:
+	Cut:	Corte:
+	Frame accurate (re-encode the boundaries)	Preciso al fotograma (recodificar los límites)
+	Open a video clip in the Source monitor first.	Abra primero un clip de vídeo en el monitor de origen.
+	Output:	Salida:
+	Smart Cut Source	Smart Cut del origen
+	Smart Cut Source…	Smart Cut del origen…
+	Smart Cut is not available for this clip: {why}	Smart Cut no está disponible para este clip: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut escrito y verificado: {path} ({frames} fotogramas)
+	The cut cannot run.	El corte no se puede ejecutar.
+	The engine sent no analysis.	El motor no envió ningún análisis.
+	Writing and verifying the cut…	Escribiendo y verificando el corte…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} en {container}: {gops} GOP, {points} puntos de corte limpios
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} fotogramas copiados, {reencoded} fotogramas recodificados
+	{frames} frames at the boundaries are re-encoded. Continue?	Se recodifican {frames} fotogramas en los límites. ¿Continuar?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Mostrar límites de GOP
+# Export window Smart Export (WP-08)
+	Export mode	Modo de exportación
+	Full Render	Render completo
+	Planning…	Planificando…
+	Recommended: Smart Render (asks before re-encoding)	Recomendado: Smart Render (pregunta antes de recodificar)
+	Recommended: Stream Copy (nothing is re-encoded)	Recomendado: Stream Copy (no se recodifica nada)
+	Rendered because of: {causes}	Renderizado por: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export escrito y verificado: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – Idéntico bit a bit
+	Stream Copy – Compatible	Stream Copy – Compatible
+	Stream copy is not possible: {frames} frames need re-encoding.	No es posible la copia de flujo: hay que recodificar {frames} fotogramas.
+	The export cannot run.	La exportación no se puede ejecutar.
+	Wait for the export plan.	Espere al plan de exportación.
+	Writing and verifying the export…	Escribiendo y verificando la exportación…
+	colour conversion	conversión de color
+	compositing	composición
+	copied	copiado
+	effects	efectos
+	frame rate	velocidad de fotogramas
+	proxies or nested sequences	proxies o secuencias anidadas
+	re-encoded at a cut	recodificado en un corte
+	rendered	renderizado
+	sources that cannot be copied	orígenes que no se pueden copiar
+	speed changes	cambios de velocidad
+	titles or overlays	títulos o superposiciones
+	transforms	transformaciones
+	transitions	transiciones
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogramas copiados, {reencoded} recodificados en cortes, {rendered} renderizados
+	{frames} frames are re-encoded or rendered. Continue?	Se recodifican o renderizan {frames} fotogramas. ¿Continuar?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Audio copiado: {tracks}
+	Audio track {track} is not copied: {why}	La pista de audio {track} no se copia: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	Seguidor de puntos
+	Correlation tracker	Seguidor por correlación
+	DCP language	Idioma del DCP
+	None (RFC 5646 tag, e.g. en-US)	Ninguno (etiqueta RFC 5646, p. ej. es-ES)
+	ISDCF name	Nombre ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Nombrar la carpeta DCP según la Digital Cinema Naming Convention

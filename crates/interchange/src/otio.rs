@@ -8,10 +8,11 @@
 //! Times are written as frames at the sequence rate (`rate` is the exact rate as a float, e.g.
 //! 23.976023976023978) and read back exactly by snapping the rate to its rational form. Fields
 //! OTIO has no schema for (effects and their keyframes, labels, links, groups, clip gain, track
-//! state, sequence settings, media info, generators) round-trip through `metadata.cfa4`.
+//! state, sequence settings, media info, generators) round-trip through `metadata.cfa4`; files
+//! from before the rename keep them under the upstream key (`cfa4_project::legacy`), read the same.
 //! Nested sequences are `Stack` items inside tracks.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use cfa4_media::{Generator, MediaInfo};
 use cfa4_project::{
@@ -71,8 +72,51 @@ fn schema_name(v: &Value) -> &str {
     schema(v).split('.').next().unwrap_or("")
 }
 
+/// CFA4's own data in an object's `metadata`: the `cfa4` key, or the upstream application's key in
+/// files written before the rename (#41, OTIO-2.2). Exports write `cfa4` only.
 fn fc(v: &Value) -> Option<&Value> {
-    v.get("metadata").and_then(|m| m.get("cfa4"))
+    let m = v.get("metadata")?;
+    m.get("cfa4").or_else(|| m.get(cfa4_project::legacy::OTIO_METADATA_KEY))
+}
+
+/// Most bytes of other programs' `metadata` one import keeps to write back (all objects together,
+/// counted by [`json_size`]). Keeping it clones it out of the parsed document, so a file with huge
+/// foreign metadata, or a nested sequence holding it that is used many times, would otherwise grow
+/// memory far past the file's own size. Real metadata is a few KB per object; keys past the budget
+/// are dropped with a warning (#744, OTIO-2.1).
+const MAX_FOREIGN_METADATA_BYTES: usize = 16 * 1024 * 1024;
+
+/// Approximate serialized size of `v` in bytes, or `None` once it exceeds `limit`. Iterative, so a
+/// deeply nested value cannot overflow the stack, and it stops as soon as the limit is passed.
+fn json_size(v: &Value, limit: usize) -> Option<usize> {
+    let mut total: usize = 0;
+    let mut stack = vec![v];
+    while let Some(v) = stack.pop() {
+        let n = match v {
+            Value::Null | Value::Bool(_) | Value::Number(_) => 8,
+            Value::String(s) => s.len().saturating_add(2),
+            Value::Array(a) => {
+                stack.extend(a.iter());
+                a.len().saturating_add(2)
+            }
+            Value::Object(o) => {
+                stack.extend(o.values());
+                o.keys().fold(2usize, |acc, k| acc.saturating_add(k.len()).saturating_add(4))
+            }
+        };
+        total = total.saturating_add(n);
+        if total > limit {
+            return None;
+        }
+    }
+    Some(total)
+}
+
+/// A `metadata` object: the foreign keys read on import, plus CFA4's own under `cfa4`.
+fn metadata(own: Value, kept: &BTreeMap<String, Value>) -> Value {
+    let mut m: serde_json::Map<String, Value> = kept.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    m.insert("cfa4".into(), own);
+    Value::Object(m)
 }
 
 fn name_of(v: &Value) -> String {
@@ -140,7 +184,7 @@ pub(crate) fn export(p: &Project, seq_id: ItemId, opts: &ExportOptions, report: 
         "OTIO_SCHEMA": "Timeline.1",
         "name": name,
         "global_start_time": rt(rate.tick_of(seq.start_timecode), rate),
-        "metadata": {"cfa4": x.seq_meta(seq_id)},
+        "metadata": metadata(x.seq_meta(seq_id), &seq.interchange),
         "tracks": stack,
     });
     serde_json::to_string_pretty(&tl).map_err(|e| Error::Other(e.to_string()))
@@ -181,7 +225,8 @@ impl Exp<'_, '_> {
             "effects": [],
             "markers": markers,
             "enabled": true,
-            "metadata": if range.is_some() { json!({"cfa4": self.seq_meta(id)}) } else { json!({}) },
+            // a top-level sequence keeps its foreign metadata on the Timeline
+            "metadata": if range.is_some() { metadata(self.seq_meta(id), &seq.interchange) } else { json!({}) },
         })
     }
 
@@ -211,10 +256,10 @@ impl Exp<'_, '_> {
             "effects": [],
             "markers": [],
             "enabled": t.enabled,
-            "metadata": {"cfa4": {
+            "metadata": metadata(json!({
                 "locked": t.locked, "sync_lock": t.sync_lock, "muted": t.muted, "solo": t.solo,
                 "channels": t.channels, "volume_db": t.volume_db, "pan": t.pan, "effects": t.effects,
-            }},
+            }), &t.interchange),
         })
     }
 
@@ -300,6 +345,10 @@ impl Exp<'_, '_> {
             s["metadata"]["cfa4"]["clip"] = meta["cfa4"].clone();
             // Nested sequence markers stay on the Stack; clip instance markers live on the clip metadata.
             s["metadata"]["cfa4"]["clip"]["markers"] = json!(markers);
+            // the Stack's own foreign metadata belongs to the nested sequence; the instance's goes here
+            if !it.interchange.is_empty() {
+                s["metadata"]["cfa4"]["clip"]["interchange"] = json!(it.interchange);
+            }
             return s;
         }
         let _ = generator_of(self.p, base);
@@ -320,7 +369,7 @@ impl Exp<'_, '_> {
             "enabled": it.enabled,
             "media_references": {"DEFAULT_MEDIA": mref},
             "active_media_reference_key": "DEFAULT_MEDIA",
-            "metadata": meta,
+            "metadata": metadata(meta["cfa4"].clone(), &it.interchange),
         })
     }
 }
@@ -392,6 +441,8 @@ struct Imp<'a, 'r> {
     report: &'r mut Report,
     links: HashMap<u64, u64>,
     groups: HashMap<u64, u64>,
+    /// What is left of [`MAX_FOREIGN_METADATA_BYTES`] for this import.
+    foreign_budget: usize,
 }
 
 pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> Result<Imported> {
@@ -401,7 +452,8 @@ pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> R
     if timelines.is_empty() {
         return Err(Error::parse(Format::Otio, format!("no Timeline in a {} document", schema(&v))));
     }
-    let mut imp = Imp { b: Builder::new(&name_of(&v)), opts, report, links: HashMap::new(), groups: HashMap::new() };
+    let mut imp =
+        Imp { b: Builder::new(&name_of(&v)), opts, report, links: HashMap::new(), groups: HashMap::new(), foreign_budget: MAX_FOREIGN_METADATA_BYTES };
     if imp.b.p.name.is_empty() {
         imp.b.p.name = "Imported OTIO".into();
     }
@@ -433,6 +485,23 @@ fn first_rate(v: &Value) -> Option<FrameRate> {
 }
 
 impl Imp<'_, '_> {
+    /// The `metadata` keys other programs wrote (everything but CFA4's own, under `cfa4` or the upstream
+    /// key), kept to be written back, within this import's [`MAX_FOREIGN_METADATA_BYTES`].
+    fn foreign(&mut self, v: &Value) -> BTreeMap<String, Value> {
+        let Some(m) = v.get("metadata").and_then(Value::as_object) else { return BTreeMap::new() };
+        let mut kept = BTreeMap::new();
+        for (k, v) in m.iter().filter(|(k, _)| k.as_str() != "cfa4" && k.as_str() != cfa4_project::legacy::OTIO_METADATA_KEY) {
+            match json_size(v, self.foreign_budget.saturating_sub(k.len())) {
+                Some(n) => {
+                    self.foreign_budget = self.foreign_budget.saturating_sub(n.saturating_add(k.len()));
+                    kept.insert(k.clone(), v.clone());
+                }
+                None => self.report.warn(format!("OTIO metadata from other programs past {} MB was not kept", MAX_FOREIGN_METADATA_BYTES / (1024 * 1024))),
+            }
+        }
+        kept
+    }
+
     fn timeline(&mut self, tl: &Value) -> ItemId {
         let name = name_of(tl);
         let name = if name.is_empty() { self.opts.name.clone().unwrap_or_else(|| "Timeline".into()) } else { name };
@@ -448,6 +517,13 @@ impl Imp<'_, '_> {
         let meta = fc(tl).or_else(|| fc(stack));
         let rate = tl.get("global_start_time").and_then(read_rate).or_else(|| first_rate(stack)).unwrap_or_default();
         let id = self.sequence(stack, &name, meta, rate);
+        // the Timeline's foreign metadata, over the top-level Stack's
+        let kept = self.foreign(tl);
+        if !kept.is_empty()
+            && let Some(s) = self.b.p.sequence_mut(id)
+        {
+            s.interchange.extend(kept);
+        }
         if let Some(st) = tl.get("global_start_time").and_then(read_rt)
             && let Some(s) = self.b.p.sequence_mut(id)
         {
@@ -472,6 +548,7 @@ impl Imp<'_, '_> {
             seq.master_effects = effects_from(m.get("master_effects")).unwrap_or_default();
         }
         seq.markers = self.markers(stack);
+        seq.interchange = self.foreign(stack);
         for t in stack.get("children").and_then(Value::as_array).into_iter().flatten() {
             match schema_name(t) {
                 "Track" => {
@@ -495,6 +572,7 @@ impl Imp<'_, '_> {
             track.name = n;
         }
         track.enabled = t.get("enabled").and_then(Value::as_bool).unwrap_or(true);
+        track.interchange = self.foreign(t);
         if let Some(m) = fc(t) {
             let g = |k: &str| m.get(k).and_then(Value::as_bool);
             track.locked = g("locked").unwrap_or(false);
@@ -675,6 +753,7 @@ impl Imp<'_, '_> {
         }
         let meta = fc(c).cloned();
         self.apply_clip_meta(&mut ti, c, meta.as_ref());
+        ti.interchange = self.foreign(c);
         Some(ti)
     }
 
@@ -702,6 +781,9 @@ impl Imp<'_, '_> {
             ti.markers = self.markers(cm);
         }
         self.apply_clip_meta(&mut ti, c, clip_meta.as_ref());
+        if let Some(k) = clip_meta.as_ref().and_then(|m| m.get("interchange")).and_then(|k| serde_json::from_value(k.clone()).ok()) {
+            ti.interchange = k;
+        }
         Some(ti)
     }
 
@@ -821,7 +903,8 @@ impl Imp<'_, '_> {
     fn markers(&mut self, v: &Value) -> Vec<Marker> {
         let mut out = Vec::new();
         for m in v.get("markers").and_then(Value::as_array).into_iter().flatten() {
-            let (mut start, mut duration) = m.get("marked_range").and_then(read_tr).unwrap_or((Tick::ZERO, Tick::ZERO));
+            // `Marker.1` keeps the range under `range`; `Marker.2` renamed it to `marked_range`.
+            let (mut start, mut duration) = m.get("marked_range").or_else(|| m.get("range")).and_then(read_tr).unwrap_or((Tick::ZERO, Tick::ZERO));
             let meta = fc(m);
             if let Some(s) = meta.and_then(|x| x.get("start_ticks")).and_then(Value::as_i64)
                 && (Tick(s) - start).abs() < Tick(TICKS_PER_SECOND / 1000)

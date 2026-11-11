@@ -88,6 +88,13 @@ fn device_failed() -> bool {
     DEVICE_FAILED.load(std::sync::atomic::Ordering::SeqCst)
 }
 
+/// Whether an adapter is a software rasteriser: a CPU device, or one of those that report another
+/// device type but are named for it (SwiftShader, llvmpipe, softpipe), as the desktop app decides.
+pub fn is_software_rasterizer(name: &str, device_type: wgpu::DeviceType) -> bool {
+    let name = name.to_ascii_lowercase();
+    device_type == wgpu::DeviceType::Cpu || ["llvmpipe", "swiftshader", "softpipe"].iter().any(|s| name.contains(s))
+}
+
 pub struct ExportRenderer {
     _instance: wgpu::Instance,
     #[expect(dead_code, reason = "kept for future frame-accuracy flows (readback fences)")]
@@ -95,6 +102,7 @@ pub struct ExportRenderer {
     #[expect(dead_code, reason = "kept for future frame-accuracy flows (readback fences)")]
     queue: wgpu::Queue,
     compositor: GpuCompositor,
+    software: bool,
 }
 
 impl ExportRenderer {
@@ -102,8 +110,8 @@ impl ExportRenderer {
     /// wgpu backend.
     pub fn new() -> Option<Self> {
         // `None` is kept too: a machine without an adapter does not search again on every export
-        static SHARED: std::sync::OnceLock<Option<(wgpu::Instance, wgpu::Device, wgpu::Queue)>> = std::sync::OnceLock::new();
-        let (instance, device, queue) = SHARED
+        static SHARED: std::sync::OnceLock<Option<(wgpu::Instance, wgpu::Device, wgpu::Queue, bool)>> = std::sync::OnceLock::new();
+        let (instance, device, queue, software) = SHARED
             .get_or_init(|| {
                 // A build without a wgpu backend for this platform (`cargo build -p cfa4-cli`
                 // alone: this crate asks for none) has no GPU to offer, and `Instance::default()`
@@ -111,14 +119,16 @@ impl ExportRenderer {
                 if wgpu::Instance::enabled_backend_features().is_empty() {
                     return None;
                 }
-                let instance = crate::adapter::native_instance();
+                let instance = wgpu::Instance::default();
                 let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default())).ok()?;
+                let info = adapter.get_info();
+                let software = is_software_rasterizer(&info.name, info.device_type);
                 let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
                 // wgpu's default handler panics on a validation or out-of-memory error; log it and
                 // send the remaining frames to the CPU instead.
                 device.on_uncaptured_error(std::sync::Arc::new(|e: wgpu::Error| mark_device_failed(&format!("GPU error: {e}"))));
                 device.set_device_lost_callback(|reason, msg| mark_device_failed(&format!("GPU device lost ({reason:?}): {msg}")));
-                Some((instance, device, queue))
+                Some((instance, device, queue, software))
             })
             .as_ref()?
             .clone();
@@ -126,7 +136,13 @@ impl ExportRenderer {
             return None;
         }
         let compositor = GpuCompositor::new(&device, &queue);
-        Some(Self { _instance: instance, device, queue, compositor })
+        Some(Self { _instance: instance, device, queue, compositor, software })
+    }
+
+    /// Whether the device is a software rasteriser (lavapipe, llvmpipe): it composites on the
+    /// CPU, more slowly than the CPU renderer.
+    pub fn is_software(&self) -> bool {
+        self.software
     }
 
     /// One frame as `render_sequence` would return it (premultiplied linear-light RGBA at the
@@ -153,6 +169,36 @@ impl ExportRenderer {
             FramePlan::Composite { .. } => None,
         }
     }
+
+    /// One frame as the desktop monitors show it: composited on the GPU (transitions included)
+    /// into the sRGB display texture, over black, and read back as RGBA8 (`w`, `h`, pixels).
+    /// A plan that is already a CPU picture (HDR, wide gamut) comes back as that picture's bytes,
+    /// so the caller does not render it a second time. The last value is whether the GPU drew it
+    /// (false for such a picture). `None` when the GPU cannot draw this frame.
+    pub fn render_display_rgba8(
+        &mut self,
+        project: &Project,
+        seq: ItemId,
+        t: Tick,
+        opts: RenderOptions,
+        sources: &dyn SourceProvider,
+    ) -> Option<(usize, usize, Vec<u8>, bool)> {
+        if device_failed() {
+            return None;
+        }
+        let plan = plan_frame(project, seq, t, opts, sources);
+        if let FramePlan::Image(img) = &plan {
+            return Some((img.w, img.h, img.over_black_rgba8(), false));
+        }
+        let prep = prepare(&plan);
+        self.compositor.composite_prepared(&plan, Some(&prep));
+        let (w, h, px) = self.compositor.read_output()?;
+        if device_failed() {
+            return None;
+        }
+        timing::add_frame();
+        Some((w as usize, h as usize, px, true))
+    }
 }
 
 #[cfg(test)]
@@ -168,6 +214,16 @@ mod tests {
     use std::sync::Arc;
 
     const EPS: f32 = 1e-4;
+
+    #[test]
+    fn software_rasterizers_are_known_by_type_or_name() {
+        use wgpu::DeviceType as D;
+        assert!(is_software_rasterizer("llvmpipe (LLVM 20.1.2, 256 bits)", D::Cpu));
+        assert!(is_software_rasterizer("SwiftShader Device (Subzero)", D::Other));
+        assert!(is_software_rasterizer("softpipe", D::Other));
+        assert!(!is_software_rasterizer("AMD Radeon RX 7900 XTX (RADV NAVI31)", D::DiscreteGpu));
+        assert!(!is_software_rasterizer("Intel(R) Arc(tm) Graphics (MTL)", D::IntegratedGpu));
+    }
 
     /// A solid colour generator at 320×180 plus a tone generator (mirrors the export tests'
     /// fixture-free project helper).

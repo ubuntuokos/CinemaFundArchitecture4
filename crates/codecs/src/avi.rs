@@ -37,6 +37,14 @@ enum VCodec {
     Dv,
     H264,
     Hevc,
+    /// Hap: the FourCC.
+    Hap([u8; 4]),
+    /// FFV1 with its configuration record (`BITMAPINFOHEADER` extra bytes).
+    Ffv1(Vec<u8>),
+    /// Huffyuv with its (reduced) `BITMAPINFOHEADER`.
+    Huffyuv(Vec<u8>),
+    /// Ut Video: the FourCC and the extradata.
+    UtVideo([u8; 4], Vec<u8>),
     Raw(RawFormat),
     /// No decoder: the codec's name.
     Unsupported(String),
@@ -59,9 +67,13 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"H264" | b"X264" | b"AVC1" | b"DAVC" | b"VSSH" => (VCodec::H264, "H.264".into()),
         b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
+        _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
+        b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
+        b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
             (VCodec::Unsupported("MPEG-4 Part 2 (DivX / Xvid)".into()), "MPEG-4 Part 2 (DivX / Xvid)".into())
         }
+        _ if crate::hap::is_hap(&b.compression) => (VCodec::Hap(b.compression), "Hap".into()),
         b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Dv, "DV".into()),
         _ => {
             let name = fourcc_text(b.compression);
@@ -160,14 +172,22 @@ fn random_access(data: &[u8], hevc: bool) -> bool {
 
 /// The packets of a framed audio stream: every frame header found in the stream of chunks, and
 /// the samples each frame decodes to. Bytes that start no frame are skipped (resynchronisation).
+const MAX_FRAMED_AUDIO_SCAN_BYTES: u64 = 256 << 20;
+
 fn split_frames(file: &AviFile, bytes: &crate::Src, s: usize, ts: &cfa4_mpegts::Codec) -> (Vec<Piece>, Vec<usize>, Vec<u32>, Option<cfa4_mpegts::FrameInfo>) {
     let Some(st) = file.streams.get(s) else { return Default::default() };
+    // AVI indexes can reference the same physical chunk repeatedly. Keep header scanning bounded
+    // by both the source itself and a practical absolute limit before issuing those repeated reads.
+    let budget = bytes.0.len().saturating_mul(4).min(MAX_FRAMED_AUDIO_SCAN_BYTES);
     // chunk start positions in the concatenated stream
     let mut at = Vec::with_capacity(st.chunks.len());
     let mut total = 0usize;
     for c in &st.chunks {
         at.push(total);
         total = total.saturating_add(c.size as usize);
+        if total as u64 > budget {
+            return Default::default();
+        }
     }
     let locate = |pos: usize| -> Option<(usize, usize)> {
         let k = at.partition_point(|&a| a <= pos).checked_sub(1)?;
@@ -342,10 +362,12 @@ impl AviSource {
         let mut audio_streams = Vec::new();
         for &s in &astreams {
             let Some(st) = file.streams.get(s) else { continue };
-            let w = st.audio.clone().unwrap_or_default();
+            let mut w = st.audio.clone().unwrap_or_default();
+            let Ok((sample_rate, channels)) = cfa4_media::bounded_audio_dimensions(w.sample_rate, u32::from(w.channels)) else { continue };
+            w.sample_rate = sample_rate;
+            w.channels = u16::try_from(channels).unwrap_or(u16::MAX);
             let (codec, label) = audio_codec(&w);
-            let mut sample_rate = w.sample_rate.max(1);
-            let mut channels = u32::from(w.channels.max(1));
+            let (mut sample_rate, mut channels) = (sample_rate, channels);
             let (pieces, first, starts) = match &codec {
                 ACodec::Pcm(cfg) => {
                     let block = usize::from(w.block_align.max(1)).max((usize::from(cfg.bits).div_ceil(8)) * channels as usize);
@@ -386,6 +408,7 @@ impl AviSource {
                 channels,
                 codec: label,
                 bits_per_sample: (w.bits_per_sample > 0).then_some(u32::from(w.bits_per_sample)),
+                speakers: Vec::new(),
             });
             let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
             audios.push(AviAudio { stream: s, codec, pieces, first, starts, state });
@@ -514,6 +537,10 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
             VCodec::H264 => Ok(Box::new(crate::video::H264Decoder::annexb())),
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
+            VCodec::Hap(fourcc) => make_video_decoder(&crate::hap::sample_entry(*fourcc, w, h)),
+            VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
+            VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
+            VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),
             VCodec::Unsupported(name) => Err(CodecError::Unsupported(format!("no decoder for {name} video"))),
         }
@@ -544,14 +571,18 @@ impl MediaSource for AviSource {
             return Err(MediaError::Unsupported(format!("{name} audio")));
         }
         let ch = ainfo.channels.max(1) as usize;
-        let ratio = f64::from(ainfo.sample_rate) / f64::from(sample_rate.max(1));
+        let source_frames = cfa4_media::resample_source_frames(frames, ainfo.sample_rate, sample_rate)?;
+        let need = source_frames.checked_add(2).ok_or_else(|| MediaError::Decode("audio source window overflows".into()))?;
+        cfa4_media::validate_audio_buffer_shape(ch, need)?;
+        cfa4_media::validate_audio_buffer_shape(ch, frames)?;
+        let ratio = f64::from(ainfo.sample_rate) / f64::from(sample_rate);
         let s0 = (start as f64 * ratio).floor() as i64;
-        let need = (frames as f64 * ratio).ceil() as i64 + 2;
-        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
+        let need_i64 = i64::try_from(need).unwrap_or(i64::MAX);
+        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need]; ch];
         let mut st = a.state.lock().unwrap_or_else(|e| e.into_inner());
         let mut i = a.starts.partition_point(|&x| x <= s0).saturating_sub(1);
         while let Some(&pk_start) = a.starts.get(i) {
-            if pk_start >= s0 + need {
+            if pk_start >= s0.saturating_add(need_i64) {
                 break;
             }
             let pk = self.audio_packet(a, &mut st, ainfo, i)?;

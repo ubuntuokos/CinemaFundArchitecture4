@@ -16,8 +16,8 @@ import math
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtCore import QPoint, QRect, Qt
-from PySide6.QtWidgets import QApplication, QDockWidget, QMainWindow, QMenu, QTabBar, QWidget
+from PySide6.QtCore import QEvent, QObject, QPoint, QRect, Qt, QTimer
+from PySide6.QtWidgets import QApplication, QDockWidget, QMainWindow, QMenu, QTabBar, QToolButton, QWidget
 
 from .i18n import N_, tr
 
@@ -62,13 +62,13 @@ def panel_title(win: MainWindow, name: Any) -> str:
 
 def panel_id(title: str) -> str:
     """egui's panel id (``PanelKind`` name) of a Qt dock title."""
-    return title.replace(" ", "")
+    return "".join(w[:1].upper() + w[1:] for w in title.split())  # "Text to Speech" → TextToSpeech
 
 
 def focused_dock(win: MainWindow) -> str | None:
     """The dock title holding keyboard focus (``Program`` for the central monitor): the dock that
     contains the focused widget, as panels can sit inside another dock (Properties shows an
-    Essential Graphics editor) or be named otherwise than their dock (``panel.Inspector``)."""
+    Essential Graphics editor) or sit deeper than the dock's own widget."""
     w = QApplication.focusWidget()
     while w is not None:
         if isinstance(w, QDockWidget):
@@ -346,7 +346,7 @@ def panel_menu(win: MainWindow, title: str, parent: QWidget | None = None) -> QM
     """egui's panel menu on a panel's tab: Close Panel, Undock Panel, Restore Workspace."""
     menu = QMenu(parent or win)
     pid = panel_id(title)
-    menu.setObjectName(f"panel.menu.{pid}")
+    menu.setObjectName(f"panel.menu.{pid}.popup")  # the "≡" button on the tab is panel.menu.<Panel>
     for name, label, slot in (
         ("close", N_("Close Panel"), lambda: run(win, "window.closePanel", {"panel": pid})),
         ("undock", N_("Undock Panel"), lambda: run(win, "window.floatPanel", {"panel": pid})),
@@ -355,4 +355,180 @@ def panel_menu(win: MainWindow, title: str, parent: QWidget | None = None) -> QM
         a = menu.addAction(tr(label))
         a.setObjectName(f"panel.menu.{pid}.{name}")
         a.triggered.connect(lambda _c=False, s=slot: s())
+    if pid == "History":
+        # the History panel's own entries (upstream #3075); Delete Redoable Actions asks for OK
+        menu.addSeparator()
+        for name, label, cid in (("deleteRedoable", N_("Delete Redoable Actions"), "history.deleteRedoable"),
+                                 ("clear", N_("Clear History"), "history.clear")):
+            a = menu.addAction(tr(label))
+            a.setObjectName(f"panel.menu.History.{name}")
+            a.setEnabled(win.command_enabled(cid))
+            a.triggered.connect(lambda _c=False, c=cid: win.invoke(c))
     return menu
+
+
+def _tab_bars(win: MainWindow) -> list[QTabBar]:
+    """The tab bars of tabbed docks (QMainWindow makes them as its direct children)."""
+    return [b for b in win.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly) if b.isVisible()]
+
+
+def _title_of_tab(win: MainWindow, bar: QTabBar, i: int) -> str | None:
+    text = bar.tabText(i)
+    return next((title for title, dock in win.docks.items() if dock.windowTitle() == text), None)
+
+
+def tab_parts(win: MainWindow) -> list[tuple[str, QRect, str]]:
+    """egui's tab-strip ids as painted parts of the window: ``panel.tab.<Panel>`` (a click shows the
+    panel) and ``panel.drag.<Panel>`` (dragging moves it) on a tabbed panel's tab, a lone panel's
+    title bar or a compact panel's grip. Rectangles are in window coordinates."""
+    out: list[tuple[str, QRect, str]] = []
+    seen: set[str] = set()
+    for bar in _tab_bars(win):
+        for i in range(bar.count()):
+            title = _title_of_tab(win, bar, i)
+            if title is None:
+                continue
+            r = bar.tabRect(i).translated(bar.mapTo(win, QPoint(0, 0)))
+            seen.add(title)
+            out += [(f"panel.tab.{panel_id(title)}", r, tr(title)), (f"panel.drag.{panel_id(title)}", r, tr("Move panel"))]
+    for title, dock in win.docks.items():
+        if title in seen or dock.isFloating() or not dock.isVisible() or dock.visibleRegion().isEmpty():
+            continue
+        bar = dock.titleBarWidget()  # a compact panel's grip (a tabbed one's is empty: its tab names it)
+        if bar is not None:
+            r = QRect(bar.mapTo(win, QPoint(0, 0)), bar.size())
+        else:  # the title bar Qt draws: above the panel's contents
+            inner = dock.widget()
+            top = inner.mapTo(dock, QPoint(0, 0)).y() if inner is not None else 0
+            r = QRect(dock.mapTo(win, QPoint(0, 0)), dock.rect().size()).adjusted(0, 0, 0, top - dock.height())
+        if r.height() <= 0 or r.width() <= 0:
+            continue
+        out += [(f"panel.tab.{panel_id(title)}", r, tr(title)), (f"panel.drag.{panel_id(title)}", r, tr("Move panel"))]
+    return out
+
+
+def add_menu_buttons(win: MainWindow) -> None:
+    """egui's "≡" on the active tab of each tab group: a button opening the panel menu
+    (``panel.menu.<Panel>``); the other tabs have none. And egui's » on a group whose tabs
+    don't all fit (``panel.tabs.more.<path>``)."""
+    for bar in win.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly):
+        if not bar.property("cfa4MenuButtons"):
+            bar.setProperty("cfa4MenuButtons", True)
+            bar.currentChanged.connect(lambda _i, b=bar: _menu_buttons(win, b))
+            bar.installEventFilter(_more_watcher(win))
+        _menu_buttons(win, bar)
+    sync_tabs_more(win)
+
+
+class _MoreWatcher(QObject):
+    """Places the » buttons again when a tab bar changes size."""
+
+    def __init__(self, win: MainWindow) -> None:
+        super().__init__(win)
+        self.win = win
+
+    def eventFilter(self, obj: QObject, e: QEvent) -> bool:
+        if e.type() in (QEvent.Type.Resize, QEvent.Type.Show, QEvent.Type.Hide):
+            QTimer.singleShot(0, lambda: sync_tabs_more(self.win))
+        return False
+
+
+def _more_watcher(win: MainWindow) -> _MoreWatcher:
+    w = getattr(win, "_tabs_more_watcher", None)
+    if w is None:
+        w = _MoreWatcher(win)
+        win._tabs_more_watcher = w  # type: ignore[attr-defined]
+    return w
+
+
+def tabs_fit(bar: QTabBar) -> bool:
+    return sum(bar.tabSizeHint(i).width() for i in range(bar.count())) <= bar.width()
+
+
+def group_path(win: MainWindow, bar: QTabBar) -> str:
+    """egui's path of the tab group whose tab bar is ``bar`` (dock_gutters' guillotine cut)."""
+    from .dock_gutters import layout_leaves, leaf_paths
+
+    c = bar.geometry().center()
+    below = QPoint(c.x(), bar.geometry().bottom() + 4)
+    for leaf, path in leaf_paths(layout_leaves(win)):
+        if leaf.rect.contains(c) or leaf.rect.contains(below):
+            return path
+    return ""
+
+
+def sync_tabs_more(win: MainWindow) -> None:
+    """egui's » (dock.rs ``panel.tabs.more.<path>``): on each tab group whose tabs don't all fit,
+    a button at the strip's right end listing the group's panels (``panel.tabs.list.<Panel>``,
+    the shown one ticked); a pick shows that panel."""
+    for bar in win.findChildren(QTabBar, options=Qt.FindChildOption.FindDirectChildrenOnly):
+        more = getattr(bar, "_cfa4_more", None)
+        need = bar.isVisible() and bar.count() > 1 and not tabs_fit(bar)
+        if not need:
+            if more is not None:
+                more.hide()
+            continue
+        if more is None:
+            more = QToolButton(bar)
+            more.setText("»")
+            more.setAutoRaise(True)
+            more.setToolTip(tr("more tabs"))
+            more.setAccessibleName(tr("more tabs"))
+            more.clicked.connect(lambda _c=False, b=bar: _pop_tabs_list(win, b))
+            bar._cfa4_more = more  # type: ignore[attr-defined]
+        more.setObjectName(f"panel.tabs.more.{group_path(win, bar)}")
+        # left of Qt's scroll arrows (the bar's own tool buttons), at the strip's right end
+        arrows = [w for w in bar.findChildren(QToolButton, options=Qt.FindChildOption.FindDirectChildrenOnly) if w is not more and w.isVisible() and not w.objectName().startswith("panel.")]
+        right = min((w.x() for w in arrows), default=bar.width())
+        size = min(20, bar.height())
+        more.setGeometry(right - size, (bar.height() - size) // 2, size, size)
+        more.show()
+        more.raise_()
+
+
+def _pop_tabs_list(win: MainWindow, bar: QTabBar) -> None:
+    menu = QMenu(win)
+    menu.setObjectName("panel.tabs.list")
+    menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+    for i in range(bar.count()):
+        title = _title_of_tab(win, bar, i)
+        if title is None:
+            continue
+        a = menu.addAction(tr(title))
+        a.setObjectName(f"panel.tabs.list.{panel_id(title)}")
+        a.setCheckable(True)
+        a.setChecked(i == bar.currentIndex())
+        a.triggered.connect(lambda _c=False, b=bar, k=i: b.setCurrentIndex(k))
+    win.last_tabs_list = menu  # type: ignore[attr-defined]
+    more = getattr(bar, "_cfa4_more", None)
+    at = more.mapToGlobal(QPoint(0, more.height())) if more is not None else bar.mapToGlobal(QPoint(bar.width(), bar.height()))
+    menu.popup(at)
+
+
+def _menu_buttons(win: MainWindow, bar: QTabBar) -> None:
+    for i in range(bar.count()):
+        title = _title_of_tab(win, bar, i)
+        have = bar.tabButton(i, QTabBar.ButtonPosition.RightSide)
+        want = f"panel.menu.{panel_id(title)}" if title is not None and i == bar.currentIndex() else None
+        if have is not None and have.objectName() == want:
+            continue
+        if have is not None:
+            bar.setTabButton(i, QTabBar.ButtonPosition.RightSide, None)
+            have.deleteLater()
+        if want is None or title is None:
+            continue
+        b = QToolButton(bar)
+        b.setObjectName(want)
+        b.setText("≡")
+        b.setAutoRaise(True)
+        b.setFixedSize(16, 16)
+        b.setToolTip(tr("Panel menu"))
+        b.setAccessibleName(tr("Panel menu"))
+        b.clicked.connect(lambda _c=False, t=title, btn=b: _pop_panel_menu(win, t, btn))
+        bar.setTabButton(i, QTabBar.ButtonPosition.RightSide, b)
+
+
+def _pop_panel_menu(win: MainWindow, title: str, button: QToolButton) -> None:
+    menu = panel_menu(win, title, win)
+    win.last_panel_menu = menu
+    menu.popup(button.mapToGlobal(QPoint(0, button.height())))
