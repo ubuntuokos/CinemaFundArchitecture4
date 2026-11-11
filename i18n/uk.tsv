@@ -4194,6 +4194,7 @@
 	Crawl	Біжучий рядок
 	Picture: {file}	Зображення: {file}
 	Video: {file}	Відео: {file}
+	Looped video: {file}	Відео по колу: {file}
 	Into the next	У наступну
 	Safe areas and spines	Безпечні зони та осі
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безпечна зона дії (93 %), безпечна зона заголовків (90 %), центр і осі сторінки

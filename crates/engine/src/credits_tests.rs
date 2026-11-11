@@ -688,6 +688,58 @@ fn a_crawl_runs_left_and_its_pictures_go_with_it() {
 }
 
 #[test]
+fn a_looped_video_background_runs_until_its_page_ends() {
+    use crate::media_test_util::make_movie;
+    let mut s = demo("credits-loop");
+    let dir = tmp_dir("credits-loop");
+    // a 12-frame loop at 24 fps (half a second), behind a 4-second card and a 2-second card
+    make_movie(&dir.join("walk.mp4"), cfa4_media::DemoScene::Aurora, 320, 180, 12);
+    let styling = r##"{"pageStyles":[
+        {"name":"Loop","behaviour":"card","cardFrames":100,"transition":"dissolve","transitionFrames":6,
+         "background":{"kind":"video","file":"walk.mp4","loop":true}},
+        {"name":"Once","behaviour":"card","cardFrames":50,"background":{"kind":"video","file":"walk.mp4"}}
+    ]}"##;
+    let undo = s.history.undo.len();
+    std::fs::write(dir.join("loop.csv"), "Body,Page Style\nFIRST,Loop\n,\n,\nSECOND,Once\n").unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": dir.join("loop.csv"), "styling": styling})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    assert_eq!(s.history.undo.len(), undo + 1, "one undo step");
+    let pages = clips(&v);
+    let runs = |i: usize| -> Vec<ClipId> { v["clips"][i]["backgroundClips"].as_array().unwrap().iter().map(|c| ClipId(c.as_u64().unwrap())).collect() };
+    let (looped, once) = (runs(0), runs(1));
+    assert_eq!(v["clips"][0]["background"].as_u64(), Some(looped[0].0), "the first run is the page's background");
+    // the loop runs back to back below its page, on one track, and ends with the page
+    let page = item(&s, pages[0]);
+    let media = cfa4_time::TICKS_PER_SECOND / 2;
+    assert!(looped.len() >= 7, "{} runs", looped.len());
+    let mut at = page.start;
+    for c in &looped {
+        let it = item(&s, *c);
+        assert_eq!(track_of(&s, *c) + 1, track_of(&s, pages[0]), "below its page");
+        assert_eq!(it.start, at, "back to back");
+        assert!(it.duration.0 > 0 && it.duration.0 <= media, "no run is longer than the video");
+        at = Tick(it.start.0 + it.duration.0);
+    }
+    assert_eq!(at, Tick(page.start.0 + page.duration.0), "the loop ends with its page");
+    // without `loop` the video plays once and ends early
+    assert_eq!(once.len(), 1);
+    assert!(item(&s, once[0]).duration < item(&s, pages[1]).duration);
+    // the dissolve joins the last run of the loop to the next page's background
+    let from = |c: ClipId| {
+        let q = s.active_sequence().unwrap();
+        q.video_tracks.iter().flat_map(|t| t.transitions.iter()).filter(|x| x.from == Some(c)).map(|x| x.effect.effect.clone()).collect::<Vec<_>>()
+    };
+    assert_eq!(from(*looped.last().unwrap()), vec!["cross_dissolve"]);
+    assert!(looped[..looped.len() - 1].iter().all(|c| from(*c).is_empty()));
+    // a refresh replaces every run
+    let r = s.execute("graphics.credits.refresh", json!({"clip": pages[0].0})).unwrap();
+    for c in looped.iter().chain(&once) {
+        assert!(s.active_sequence().unwrap().find_item(*c).is_none(), "old runs are gone");
+    }
+    assert_eq!(r["clips"][0]["backgroundClips"].as_array().unwrap().len(), looped.len());
+}
+
+#[test]
 fn thumbnail_shows_the_background_and_guides() {
     let mut s = demo("credits-thumb-look");
     let styling = r##"{"pageStyles":[{"name":"Red","behaviour":"card","background":{"kind":"color","color":"#c00000"}}]}"##;

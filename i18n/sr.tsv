@@ -4209,6 +4209,7 @@ export.summary	Low	низак
 	Crawl	Покретни текст
 	Picture: {file}	Слика: {file}
 	Video: {file}	Видео: {file}
+	Looped video: {file}	Видео у петљи: {file}
 	Into the next	У следећу
 	Safe areas and spines	Безбедне области и осе
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безбедна област радње (93 %), натписа (90 %), центар и осе странице

@@ -4220,6 +4220,7 @@
 	Safe areas and spines	Zones de sécurité et axes
 	The text moves {speed} px per frame; a whole number does not shimmer	Le texte se déplace de {speed} px par image ; un nombre entier ne scintille pas
 	Video: {file}	Vidéo : {file}
+	Looped video: {file}	Vidéo en boucle : {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	« {text} » ne se détache pas de l'arrière-plan (contraste {ratio}:1 ; au moins 4.5:1 requis)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Un rendu prêt à l'emploi : styles, arrière-plans, transitions et minutage. Un fichier de style, s'il est indiqué, est prioritaire.
 	Apply Credits Template…	Appliquer un modèle de générique…

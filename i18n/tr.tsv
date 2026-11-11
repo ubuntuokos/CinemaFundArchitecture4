@@ -4210,6 +4210,7 @@ export.summary	Low	düşük
 	Crawl	Kayan yazı
 	Picture: {file}	Resim: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Döngülü video: {file}
 	Into the next	Sonrakine geçiş
 	Safe areas and spines	Güvenli alanlar ve eksenler
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Eylem güvenli (93 %), başlık güvenli (90 %), merkez ve sayfanın eksenleri

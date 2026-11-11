@@ -4211,6 +4211,7 @@ export.summary	Low	madal
 	Crawl	Jooksev tekst
 	Picture: {file}	Pilt: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Korduv video: {file}
 	Into the next	Järgmisse
 	Safe areas and spines	Ohutud alad ja teljed
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Tegevuse ohuala (93 %), tiitrite ohuala (90 %), kese ja lehe teljed

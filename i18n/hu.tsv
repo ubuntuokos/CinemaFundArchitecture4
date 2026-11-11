@@ -4208,6 +4208,7 @@ export.summary	Low	alacsony
 	Crawl	Futószöveg
 	Picture: {file}	Kép: {file}
 	Video: {file}	Videó: {file}
+	Looped video: {file}	Ismétlődő videó: {file}
 	Into the next	Átmenet a következőbe
 	Safe areas and spines	Biztonsági területek és gerincek
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Akcióbiztos (93 %), címbiztos (90 %) terület, a középvonalak és az oldal gerincei

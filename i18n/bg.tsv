@@ -4212,6 +4212,7 @@ export.summary	Low	ниско
 	Crawl	Бягащ текст
 	Picture: {file}	Изображение: {file}
 	Video: {file}	Видео: {file}
+	Looped video: {file}	Видео в цикъл: {file}
 	Into the next	Към следващата
 	Safe areas and spines	Безопасни зони и оси
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасна зона за действие (93 %), за надписи (90 %), центърът и осите на страницата

@@ -4212,6 +4212,7 @@ export.summary	Low	nizka
 	Crawl	Tekoči napis
 	Picture: {file}	Slika: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video v zanki: {file}
 	Into the next	V naslednjo
 	Safe areas and spines	Varna območja in osi
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Varno območje dogajanja (93 %), napisov (90 %), sredina in osi strani

@@ -4211,6 +4211,7 @@ export.summary	Low	niska
 	Crawl	Pomični tekst
 	Picture: {file}	Slika: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video u petlji: {file}
 	Into the next	U sljedeću
 	Safe areas and spines	Sigurna područja i osi
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Sigurno područje radnje (93 %), natpisa (90 %), središte i osi stranice

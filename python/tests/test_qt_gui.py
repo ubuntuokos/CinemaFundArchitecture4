@@ -13991,6 +13991,8 @@ def test_credits_page_look_texts(monkeypatch):
     assert background_text({"kind": "color", "opacity": 100}) == "Color"
     assert background_text({"kind": "gradient", "opacity": 80}) == "Gradient (80 %)"
     assert background_text({"kind": "image", "file": "/a/b/sky.png", "opacity": 12.5}) == "Picture: sky.png (12.5 %)"
+    assert background_text({"kind": "video", "file": "walk.mp4", "loop": True}) == "Looped video: walk.mp4"
+    assert background_text({"kind": "video", "file": "walk.mp4"}) == "Video: walk.mp4"
     assert transition_text(None) == "" and transition_text([]) == ""
     assert transition_text({"effect": "cross_dissolve", "duration": TICKS_PER_SECOND // 2}) == "Dissolve, 0:00.5"
     assert transition_text({"effect": "iris_round", "duration": TICKS_PER_SECOND}) == "iris round, 0:01.0"

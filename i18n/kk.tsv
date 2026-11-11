@@ -4211,6 +4211,7 @@ export.summary	Low	төмен
 	Crawl	Жүгіртпе жол
 	Picture: {file}	Сурет: {file}
 	Video: {file}	Бейне: {file}
+	Looped video: {file}	Циклды бейне: {file}
 	Into the next	Келесіге өту
 	Safe areas and spines	Қауіпсіз аймақтар мен осьтер
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Әрекет қауіпсіз аймағы (93 %), титр аймағы (90 %), орталық және бет осьтері

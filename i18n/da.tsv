@@ -4211,6 +4211,7 @@ export.summary	Low	lav
 	Crawl	Rulletekst på tværs
 	Picture: {file}	Billede: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video i løkke: {file}
 	Into the next	Ind i den næste
 	Safe areas and spines	Sikre områder og akser
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Handlingssikkert (93 %), titelsikkert (90 %), midten og sidens akser

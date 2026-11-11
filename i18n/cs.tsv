@@ -4209,6 +4209,7 @@ export.summary	Low	nízká
 	Crawl	Běžící text
 	Picture: {file}	Obrázek: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video ve smyčce: {file}
 	Into the next	Do další
 	Safe areas and spines	Bezpečné oblasti a osy
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Bezpečná oblast akce (93 %), titulků (90 %), střed a osy stránky

@@ -4209,6 +4209,7 @@ export.summary	Low	thấp
 	Crawl	Chữ chạy ngang
 	Picture: {file}	Hình: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video lặp lại: {file}
 	Into the next	Sang trang sau
 	Safe areas and spines	Vùng an toàn và trục
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Vùng an toàn hành động (93 %), vùng an toàn tiêu đề (90 %), tâm và các trục của trang

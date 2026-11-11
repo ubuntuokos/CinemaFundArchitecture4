@@ -4209,6 +4209,7 @@
 	Safe areas and spines	세이프 영역과 스파인
 	The text moves {speed} px per frame; a whole number does not shimmer	텍스트가 프레임당 {speed} px 이동합니다. 정수 값이면 깜빡이지 않습니다
 	Video: {file}	영상: {file}
+	Looped video: {file}	반복 영상: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”이(가) 배경과 구분되지 않습니다(대비 {ratio}:1, 최소 4.5:1 필요)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	완성된 룩: 스타일, 배경, 트랜지션, 타이밍. 스타일 파일을 지정하면 그것이 우선합니다.
 	Apply Credits Template…	크레딧 템플릿 적용…
