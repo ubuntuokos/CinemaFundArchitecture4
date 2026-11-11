@@ -1766,7 +1766,7 @@
 	Rating	Phân loại
 	Public service announcement	Thông báo dịch vụ công
 	Off (5.1 only)	Tắt (chỉ 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	Bed IAB 7.1 DS từ bản trộn 5.1
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Bed IAB từ bản trộn (7.1 DS, 9.1OH từ 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB từ tệp (IAB MXF, .iab hoặc Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab hoặc Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Không: chỉ đồng bộ FSK (SMPTE ST 429-19)
@@ -1775,7 +1775,7 @@
 	Main sound channels 1-6	Kênh âm thanh chính 1-6
 	Immersive audio	Âm thanh nhập vai
 	IAB source	Nguồn IAB
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Bản trộn 5.1 trở thành bed 7.1 DS (IAB Profile 1); kênh 14 của âm thanh chính mang tín hiệu đồng bộ FSK.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Bản trộn 7.1.2 trở thành bed 9.1OH, bản trộn 7.1 thành bed 7.1 DS, mọi bản trộn khác thành bed 7.1 DS từ bản 5.1 của nó (IAB Profile 1); kênh 14 của âm thanh chính mang tín hiệu đồng bộ FSK.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Chọn tệp rãnh IAB (IMF hoặc DCP), luồng IAB thô, hoặc Dolby Atmos TrueHD: luồng .thd hoặc tệp MKV, MP4 hay M2TS có rãnh Atmos.
 	Reading the IAB source…	Đang đọc nguồn IAB…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} khung hình, {fps} fps, {rate} Hz; tối đa {beds} kênh bed và {objects} đối tượng
@@ -4111,3 +4111,7 @@ export.summary	Low	thấp
 	Baseline	Đường cơ sở
 	Contains	Chứa
 	Navigation	Điều hướng
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Thứ tự trường
+	Interlaced, upper field first	Xen kẽ, trường trên trước
+	Interlaced, lower field first	Xen kẽ, trường dưới trước

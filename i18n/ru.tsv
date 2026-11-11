@@ -3782,7 +3782,7 @@
 	Go to caption	Перейти к субтитру
 	Go to graphic	Перейти к графике
 	Hear this voice	Прослушать этот голос
-	IAB 7.1 DS bed from the 5.1 mix	Bed IAB 7.1 DS из микса 5.1
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Bed IAB из микса (7.1 DS, 9.1OH из 7.1.2)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab или Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB из файла (IAB MXF, .iab или Dolby Atmos TrueHD)
 	IAB source	Источник IAB
@@ -3870,7 +3870,7 @@
 	Text colour	Цвет текста
 	Text to Speech: another sequence is open now; the narration was not placed	Синтез речи: открыта другая секвенция; озвучка не размещена
 	Text to Speech: {e}	Синтез речи: {e}
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Микс 5.1 превращается в bed 7.1 DS (IAB Profile 1); канал 14 основного звука несёт сигнал синхронизации FSK.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Микс 7.1.2 превращается в bed 9.1OH, микс 7.1 — в bed 7.1 DS, любой другой микс — в bed 7.1 DS из своей версии 5.1 (IAB Profile 1); канал 14 основного звука несёт сигнал синхронизации FSK.
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Движок CFA4 (cfa4-cli) не найден. Соберите его командой: cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Движок CFA4 неожиданно остановился и был перезапущен. Несохранённые изменения сохранены в журнале восстановления; он предложит их восстановить.
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Движок CFA4 неожиданно остановился. Несохранённые изменения сохранены в журнале восстановления; перезапустите CFA4, чтобы восстановить их.
@@ -4096,3 +4096,7 @@
 	None (RFC 5646 tag, e.g. en-US)	Нет (тег RFC 5646, например ru-RU)
 	ISDCF name	Имя ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Называть папку DCP по Digital Cinema Naming Convention
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Порядок полей
+	Interlaced, upper field first	Чересстрочная, сначала верхнее поле
+	Interlaced, lower field first	Чересстрочная, сначала нижнее поле

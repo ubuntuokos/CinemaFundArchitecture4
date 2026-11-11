@@ -1766,7 +1766,7 @@
 	Rating	分級
 	Public service announcement	公益廣告
 	Off (5.1 only)	關（僅 5.1）
-	IAB 7.1 DS bed from the 5.1 mix	由 5.1 混音產生的 IAB 7.1 DS 聲床
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	由混音產生的 IAB 聲床（7.1 DS；7.1.2 產生 9.1OH）
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	來自檔案的 IAB（IAB MXF、.iab 或 Dolby Atmos TrueHD）
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF、.iab 或 Dolby Atmos TrueHD（.thd、.mkv、.mp4、.m2ts）
 	None: FSK sync only (SMPTE ST 429-19)	無：僅 FSK 同步（SMPTE ST 429-19）
@@ -1775,7 +1775,7 @@
 	Main sound channels 1-6	主聲音聲道 1-6
 	Immersive audio	沉浸式音訊
 	IAB source	IAB 來源
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 混音將成為 7.1 DS 聲床（IAB 配置檔案 1）；主聲音的第 14 聲道承載 FSK 同步訊號。
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 混音將成為 9.1OH 聲床，7.1 混音成為 7.1 DS 聲床，其他混音由其 5.1 產生 7.1 DS 聲床（IAB 配置檔案 1）；主聲音的第 14 聲道承載 FSK 同步訊號。
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	請選擇 IAB 軌道檔案（IMF 或 DCP）、原始 IAB 流或 Dolby Atmos TrueHD：.thd 流，或帶 Atmos 軌道的 MKV、MP4 或 M2TS 檔案。
 	Reading the IAB source…	正在讀取 IAB 來源…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} 影格，{fps} fps，{rate} Hz；最多 {beds} 個聲床聲道和 {objects} 個物件
@@ -4110,3 +4110,7 @@ export.summary	Low	低
 	Baseline	基線
 	Contains	包含
 	Navigation	導覽
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	場序
+	Interlaced, upper field first	交錯，上場優先
+	Interlaced, lower field first	交錯，下場優先

@@ -1857,7 +1857,7 @@
 	Rating	რეიტინგი
 	Public service announcement	სოციალური რეკლამა
 	Off (5.1 only)	გამორთული (მხოლოდ 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS ბაზა 5.1 მიქსიდან
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB ბაზა მიქსიდან (7.1 DS, 7.1.2-დან 9.1OH)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB ფაილიდან (IAB MXF, .iab ან Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab ან Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	არცერთი: მხოლოდ FSK სინქრონიზაცია (SMPTE ST 429-19)
@@ -1866,7 +1866,7 @@
 	Main sound channels 1-6	ძირითადი ხმის არხები 1-6
 	Immersive audio	იმერსიული აუდიო
 	IAB source	IAB წყარო
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 მიქსი ხდება 7.1 DS ბაზა (IAB Profile 1); ძირითადი ხმის მე-14 არხი FSK სინქრონიზაციის სიგნალს ატარებს.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 მიქსი ხდება 9.1OH ბაზა, 7.1 მიქსი — 7.1 DS ბაზა, ყველა სხვა მიქსი — 7.1 DS ბაზა მისი 5.1 ვერსიიდან (IAB Profile 1); ძირითადი ხმის მე-14 არხი FSK სინქრონიზაციის სიგნალს ატარებს.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	აირჩიეთ IAB ტრეკის ფაილი (IMF ან DCP), დაუმუშავებელი IAB ნაკადი ან Dolby Atmos TrueHD: .thd ნაკადი ან MKV, MP4 ან M2TS ფაილი Atmos ტრეკით.
 	Reading the IAB source…	IAB წყაროს კითხვა…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} კადრი, {fps} კადრი/წმ, {rate} ჰც; მაქსიმუმ {beds} ბაზის არხი და {objects} ობიექტი
@@ -4114,3 +4114,7 @@ export.summary	Low	დაბალი
 	Width	სიგანე
 	Baseline	საბაზისო ხაზი
 	Accent Color	აქცენტის ფერი
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	ველების რიგი
+	Interlaced, upper field first	ჩართული, ჯერ ზედა ველი
+	Interlaced, lower field first	ჩართული, ჯერ ქვედა ველი

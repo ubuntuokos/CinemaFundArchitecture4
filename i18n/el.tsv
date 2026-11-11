@@ -1794,7 +1794,7 @@
 	Rating	Διαβάθμιση
 	Public service announcement	Ανακοίνωση δημόσιου συμφέροντος
 	Off (5.1 only)	Ανενεργό (μόνο 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS bed από τη μίξη 5.1
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB bed από τη μίξη (7.1 DS, 9.1OH από 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB από αρχείο (IAB MXF, .iab ή Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab ή Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Κανένα: μόνο συγχρονισμός FSK (SMPTE ST 429-19)
@@ -1803,7 +1803,7 @@
 	Main sound channels 1-6	Κύρια κανάλια ήχου 1-6
 	Immersive audio	Καθηλωτικός ήχος
 	IAB source	Πηγή IAB
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Η μίξη 5.1 γίνεται bed 7.1 DS (IAB Profile 1)· το κανάλι 14 του κύριου ήχου μεταφέρει το σήμα συγχρονισμού FSK.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Μια μίξη 7.1.2 γίνεται bed 9.1OH, μια μίξη 7.1 bed 7.1 DS και κάθε άλλη μίξη bed 7.1 DS από την εκδοχή 5.1 της (IAB Profile 1)· το κανάλι 14 του κύριου ήχου μεταφέρει το σήμα συγχρονισμού FSK.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Επιλέξτε αρχείο κομματιού IAB (IMF ή DCP), ακατέργαστη ροή IAB ή Dolby Atmos TrueHD: ροή .thd ή αρχείο MKV, MP4 ή M2TS με κομμάτι Atmos.
 	Reading the IAB source…	Ανάγνωση της πηγής IAB…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} καρέ, {fps} fps, {rate} Hz· έως {beds} κανάλια bed και {objects} αντικείμενα
@@ -4113,3 +4113,7 @@ export.summary	Low	χαμηλή
 	Stop	Διακοπή
 	Application	Εφαρμογή
 	Baseline	Γραμμή βάσης
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Σειρά πεδίων
+	Interlaced, upper field first	Πεπλεγμένο, πρώτα το άνω πεδίο
+	Interlaced, lower field first	Πεπλεγμένο, πρώτα το κάτω πεδίο

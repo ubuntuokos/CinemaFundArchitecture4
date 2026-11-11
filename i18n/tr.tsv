@@ -1803,7 +1803,7 @@
 	Rating	Derecelendirme
 	Public service announcement	Kamu spotu
 	Off (5.1 only)	Kapalı (yalnızca 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	5.1 miksten IAB 7.1 DS taban
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Miksten IAB taban (7.1 DS, 7.1.2'den 9.1OH)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	Dosyadan IAB (IAB MXF, .iab veya Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab veya Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Yok: yalnızca FSK eşitleme (SMPTE ST 429-19)
@@ -1812,7 +1812,7 @@
 	Main sound channels 1-6	Ana ses kanalları 1-6
 	Immersive audio	Sürükleyici ses
 	IAB source	IAB kaynağı
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 miks bir 7.1 DS tabana dönüşür (IAB Profile 1); ana sesin 14. kanalı FSK eşitleme sinyalini taşır.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 miks 9.1OH tabana, 7.1 miks 7.1 DS tabana, diğer her miks kendi 5.1 sürümünden 7.1 DS tabana dönüşür (IAB Profile 1); ana sesin 14. kanalı FSK eşitleme sinyalini taşır.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Bir IAB parça dosyası (IMF veya DCP), ham IAB akışı veya Dolby Atmos TrueHD seçin: .thd akışı ya da Atmos parçası içeren bir MKV, MP4 veya M2TS dosyası.
 	Reading the IAB source…	IAB kaynağı okunuyor…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} kare, {fps} fps, {rate} Hz; en fazla {beds} taban kanalı ve {objects} nesne
@@ -4112,3 +4112,7 @@ export.summary	Low	düşük
 	Contains	İçerir
 	Masks	Maskeler
 	Navigation	Gezinti
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Alan Sırası
+	Interlaced, upper field first	Geçmeli, önce üst alan
+	Interlaced, lower field first	Geçmeli, önce alt alan

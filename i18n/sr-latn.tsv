@@ -1820,7 +1820,7 @@
 	Rating	Ocena
 	Public service announcement	Javno saopštenje
 	Off (5.1 only)	Isključeno (samo 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS podloga iz 5.1 miksa
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB podloga iz miksa (7.1 DS, 9.1OH iz 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB iz datoteke (IAB MXF, .iab ili Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab ili Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Nijedan: samo FSK sinhronizacija (SMPTE ST 429-19)
@@ -1829,7 +1829,7 @@
 	Main sound channels 1-6	Glavni zvučni kanali 1-6
 	Immersive audio	Imerzivni zvuk
 	IAB source	IAB izvor
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 miks postaje 7.1 DS podloga (IAB Profile 1); kanal 14 glavnog zvuka nosi FSK signal za sinhronizaciju.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 miks postaje 9.1OH podloga, 7.1 miks 7.1 DS podloga, a svaki drugi miks 7.1 DS podloga iz svoje 5.1 verzije (IAB Profile 1); kanal 14 glavnog zvuka nosi FSK signal za sinhronizaciju.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Izaberite IAB datoteku trake (IMF ili DCP), sirovi IAB tok ili Dolby Atmos TrueHD: .thd tok ili MKV, MP4 ili M2TS datoteku sa Atmos trakom.
 	Reading the IAB source…	Čitanje IAB izvora…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} kadrova, {fps} fps, {rate} Hz; do {beds} kanala podloge i {objects} objekata
@@ -4113,3 +4113,7 @@ export.summary	Low	nizak
 	Masks	Maske
 	Navigation	Navigacija
 	Panel	Panel
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Redosled poluslika
+	Interlaced, upper field first	Prored, prvo gornja poluslika
+	Interlaced, lower field first	Prored, prvo donja poluslika

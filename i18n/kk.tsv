@@ -2022,7 +2022,7 @@
 	Rating	Рейтинг
 	Public service announcement	Әлеуметтік жарнама
 	Off (5.1 only)	Өшірулі (тек 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	5.1 микстен IAB 7.1 DS негізі
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Микстен IAB негізі (7.1 DS, 7.1.2-ден 9.1OH)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	Файлдан IAB (IAB MXF, .iab немесе Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab немесе Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Жоқ: тек FSK синхрондау (SMPTE ST 429-19)
@@ -2031,7 +2031,7 @@
 	Main sound channels 1-6	Негізгі дыбыс арналары 1–6
 	Immersive audio	Иммерсивті аудио
 	IAB source	IAB көзі
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 микс 7.1 DS негізіне айналады (IAB 1-профиль); негізгі дыбыстың 14-арнасы FSK синхрондау сигналын тасымалдайды.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 микс 9.1OH негізіне, 7.1 микс 7.1 DS негізіне, кез келген басқа микс өзінің 5.1 нұсқасынан 7.1 DS негізіне айналады (IAB 1-профиль); негізгі дыбыстың 14-арнасы FSK синхрондау сигналын тасымалдайды.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	IAB трек файлын (IMF немесе DCP), өңделмеген IAB ағынын немесе Dolby Atmos TrueHD таңдаңыз: .thd ағыны немесе Atmos трегі бар MKV, MP4 не M2TS файлы.
 	Reading the IAB source…	IAB көзі оқылуда…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	Кадрлар: {frames}, {fps} кадр/с, {rate} Гц; {beds} негіз арнасына және {objects} нысанға дейін
@@ -4113,3 +4113,7 @@ export.summary	Low	төмен
 	Square	Шаршы
 	Star	Жұлдыз
 	Width	Ені
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Өрістер реті
+	Interlaced, upper field first	Жоларалық, алдымен жоғарғы өріс
+	Interlaced, lower field first	Жоларалық, алдымен төменгі өріс

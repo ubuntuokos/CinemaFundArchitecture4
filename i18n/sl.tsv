@@ -2025,7 +2025,7 @@
 	Rating	Ocena
 	Public service announcement	Obvestilo javnega servisa
 	Off (5.1 only)	Izklopljeno (samo 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	Osnova IAB 7.1 DS iz mešanice 5.1
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Osnova IAB iz mešanice (7.1 DS, 9.1OH iz 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB iz datoteke (IAB MXF, .iab ali Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab ali Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Brez: samo sinhronizacija FSK (SMPTE ST 429-19)
@@ -2034,7 +2034,7 @@
 	Main sound channels 1-6	Glavni zvočni kanali 1–6
 	Immersive audio	Imerzivni zvok
 	IAB source	Vir IAB
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Mešanica 5.1 postane osnova 7.1 DS (IAB Profile 1); kanal 14 glavnega zvoka nosi sinhronizacijski signal FSK.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Mešanica 7.1.2 postane osnova 9.1OH, mešanica 7.1 osnova 7.1 DS, vsaka druga mešanica pa osnova 7.1 DS iz svoje različice 5.1 (IAB Profile 1); kanal 14 glavnega zvoka nosi sinhronizacijski signal FSK.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Izberite datoteko sledi IAB (IMF ali DCP), surov tok IAB ali Dolby Atmos TrueHD: tok .thd ali datoteko MKV, MP4 ali M2TS s sledjo Atmos.
 	Reading the IAB source…	Branje vira IAB …
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} sličic, {fps} sl/s, {rate} Hz; do {beds} osnovnih kanalov in {objects} objektov
@@ -4114,3 +4114,7 @@ export.summary	Low	nizka
 	Square	Kvadrat
 	Star	Zvezda
 	Width	Širina
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Vrstni red polsličic
+	Interlaced, upper field first	Prepleteno, najprej zgornja polsličica
+	Interlaced, lower field first	Prepleteno, najprej spodnja polsličica

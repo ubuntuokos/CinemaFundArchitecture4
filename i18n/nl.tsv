@@ -1798,7 +1798,7 @@
 	Rating	Classificatie
 	Public service announcement	Publieke mededeling
 	Off (5.1 only)	Uit (alleen 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS-bed uit de 5.1-mix
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB-bed uit de mix (7.1 DS, 9.1OH uit 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB uit een bestand (IAB MXF, .iab of Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab of Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Geen: alleen FSK-synchronisatie (SMPTE ST 429-19)
@@ -1807,7 +1807,7 @@
 	Main sound channels 1-6	Hoofdgeluidskanalen 1-6
 	Immersive audio	Immersieve audio
 	IAB source	IAB-bron
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	De 5.1-mix wordt een 7.1 DS-bed (IAB Profile 1); kanaal 14 van het hoofdgeluid draagt het FSK-synchronisatiesignaal.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Een 7.1.2-mix wordt een 9.1OH-bed, een 7.1-mix een 7.1 DS-bed en elke andere mix een 7.1 DS-bed uit de 5.1-versie (IAB Profile 1); kanaal 14 van het hoofdgeluid draagt het FSK-synchronisatiesignaal.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Kies een IAB-trackbestand (IMF of DCP), een onbewerkte IAB-stream of Dolby Atmos TrueHD: een .thd-stream of een MKV-, MP4- of M2TS-bestand met een Atmos-track.
 	Reading the IAB source…	De IAB-bron wordt gelezen…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} frames, {fps} fps, {rate} Hz; tot {beds} bedkanalen en {objects} objecten
@@ -4111,3 +4111,7 @@ export.summary	Low	laag
 	Baseline	Basislijn
 	Masks	Maskers
 	Panel	Paneel
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Veldvolgorde
+	Interlaced, upper field first	Interlaced, bovenste veld eerst
+	Interlaced, lower field first	Interlaced, onderste veld eerst

@@ -1756,7 +1756,7 @@
 	Rating	Klasyfikacja
 	Public service announcement	Ogłoszenie społeczne
 	Off (5.1 only)	Wył. (tylko 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	Warstwa bazowa IAB 7.1 DS z miksu 5.1
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Warstwa bazowa IAB z miksu (7.1 DS, 9.1OH z 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB z pliku (IAB MXF, .iab lub Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab lub Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Brak: tylko synchronizacja FSK (SMPTE ST 429-19)
@@ -1765,7 +1765,7 @@
 	Main sound channels 1-6	Główne kanały dźwięku 1-6
 	Immersive audio	Dźwięk immersyjny
 	IAB source	Źródło IAB
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Miks 5.1 staje się warstwą bazową 7.1 DS (IAB Profile 1); kanał 14 głównego dźwięku przenosi sygnał synchronizacji FSK.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Miks 7.1.2 staje się warstwą bazową 9.1OH, miks 7.1 warstwą bazową 7.1 DS, a każdy inny miks warstwą bazową 7.1 DS ze swojej wersji 5.1 (IAB Profile 1); kanał 14 głównego dźwięku przenosi sygnał synchronizacji FSK.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Wybierz plik ścieżki IAB (IMF lub DCP), surowy strumień IAB lub Dolby Atmos TrueHD: strumień .thd albo plik MKV, MP4 lub M2TS ze ścieżką Atmos.
 	Reading the IAB source…	Odczytywanie źródła IAB…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	klatki: {frames}, {fps} kl./s, {rate} Hz; do {beds} kanałów bazowych i {objects} obiektów
@@ -4111,3 +4111,7 @@ export.summary	Low	niska
 	Baseline	Linia bazowa
 	Contains	Zawiera
 	Navigation	Nawigacja
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Kolejność półobrazów
+	Interlaced, upper field first	Z przeplotem, najpierw górny półobraz
+	Interlaced, lower field first	Z przeplotem, najpierw dolny półobraz

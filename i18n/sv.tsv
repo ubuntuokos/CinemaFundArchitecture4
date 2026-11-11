@@ -1843,7 +1843,7 @@
 	Rating	Åldersgräns
 	Public service announcement	Samhällsinformation
 	Off (5.1 only)	Av (endast 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS-bädd från 5.1-mixen
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB-bädd från mixen (7.1 DS, 9.1OH från 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB från en fil (IAB MXF, .iab eller Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab eller Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Ingen: endast FSK-synk (SMPTE ST 429-19)
@@ -1852,7 +1852,7 @@
 	Main sound channels 1-6	Huvudljudkanaler 1–6
 	Immersive audio	Immersivt ljud
 	IAB source	IAB-källa
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1-mixen blir en 7.1 DS-bädd (IAB-profil 1); kanal 14 i huvudljudet bär FSK-synksignalen.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	En 7.1.2-mix blir en 9.1OH-bädd, en 7.1-mix en 7.1 DS-bädd och varje annan mix en 7.1 DS-bädd från dess 5.1 (IAB-profil 1); kanal 14 i huvudljudet bär FSK-synksignalen.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Välj en IAB-spårfil (IMF eller DCP), en rå IAB-ström eller Dolby Atmos TrueHD: en .thd-ström eller en MKV-, MP4- eller M2TS-fil med ett Atmos-spår.
 	Reading the IAB source…	Läser IAB-källan…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} bildrutor, {fps} fps, {rate} Hz; upp till {beds} bäddkanaler och {objects} objekt
@@ -4113,3 +4113,7 @@ export.summary	Low	låg
 	Stop	Stoppa
 	Contains	Innehåller
 	Navigation	Navigering
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Fältordning
+	Interlaced, upper field first	Sammanflätad, övre fältet först
+	Interlaced, lower field first	Sammanflätad, nedre fältet först

@@ -130,6 +130,191 @@ fn bad_input_is_an_error() {
     assert!(m.append_to_last(0, &[2]).is_ok());
 }
 
+/// An Annex B access unit: delimiter, then `slices` of NAL header `nal` and `size` bytes of
+/// emulation-free filler.
+fn annexb_unit(hevc: bool, nal: u8, size: usize, k: u8) -> Vec<u8> {
+    let mut v = if hevc { vec![0, 0, 0, 1, 0x46, 0x01, 0x50] } else { vec![0, 0, 0, 1, 0x09, 0xF0] };
+    v.extend_from_slice(&[0, 0, 1, nal]);
+    if hevc {
+        v.push(0x01);
+    }
+    v.extend((0..size).map(|i| 0x40 | ((i as u8) ^ k) & 0x3F));
+    v
+}
+
+/// I P B B … in decode order with B-frame timestamps (pts ≠ dts), and MPEG audio beside it.
+#[test]
+fn h264_and_hevc_access_units_go_out_unchanged() {
+    for hevc in [false, true] {
+        // H.264: IDR 0x65, reference P 0x41, non-reference B 0x01; HEVC: IDR_W_RADL 19, TRAIL_R 1, TRAIL_N 0
+        let (idr, p, b) = if hevc { (19 << 1, 1 << 1, 0) } else { (0x65, 0x41, 0x01) };
+        let codec = if hevc { MuxCodec::Hevc } else { MuxCodec::H264 };
+        // audio first: the PCR still goes on the video PID
+        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::MpegAudio, codec], 20_000_000).unwrap();
+        let mut units = Vec::new();
+        for k in 0..30u8 {
+            let (nal, pts) = match k % 3 {
+                0 => (if k % 15 == 0 { idr } else { p }, i64::from(k) + 2),
+                _ => (b, i64::from(k) - 1),
+            };
+            // unit 15 (an IDR) is over 64 KiB: PES_packet_length 0
+            let size = if k == 15 { 90_000 } else { 200 + 1500 * usize::from(k) };
+            let u = annexb_unit(hevc, nal, size, k);
+            m.write(1, &u, pts * FRAME, Some((i64::from(k) - 1) * FRAME), k % 15 == 0).unwrap();
+            units.push((u, pts * FRAME, (i64::from(k) - 1) * FRAME, k % 15 == 0, nal == b));
+        }
+        let audio: Vec<Vec<u8>> = (0..40u8).map(mp2_frame).collect();
+        for (k, f) in audio.iter().enumerate() {
+            m.write(0, f, k as i64 * 2160, None, true).unwrap();
+        }
+        let data = m.finish().unwrap();
+        let f = open(&data).unwrap();
+        assert!(f.warnings.is_empty(), "{:?}", f.warnings);
+        let want = if hevc { Codec::Hevc } else { Codec::H264 };
+        let v = f.find(Kind::Video, |c| *c == want).unwrap();
+        let a = f.find(Kind::Audio, |c| *c == Codec::MpegAudio).unwrap();
+        assert_eq!(f.streams[v].units.len(), units.len());
+        let d = Muxer::<Vec<u8>>::DELAY;
+        for (k, (u, pts, dts, key, disposable)) in units.iter().enumerate() {
+            let got = &f.streams[v].units[k];
+            assert_eq!((got.pts, got.dts.or(got.pts), got.key, got.disposable), (Some(pts + d), Some(dts + d), *key, *disposable), "unit {k}");
+            assert_eq!(&f.read_unit(&data, v, k).unwrap(), u, "unit {k} payload");
+        }
+        assert_eq!(f.streams[a].units.len(), audio.len());
+        for (k, want) in audio.iter().enumerate() {
+            assert_eq!(&f.read_unit(&data, a, k).unwrap(), want);
+        }
+        check_packets(&data, 0x101, units.iter().map(|u| (u.0.len(), u.3)).collect());
+    }
+}
+
+/// Transport-level checks of video PID `pid` whose units have (size, key): the PMT names it as
+/// PCR PID and the PCR on it never pauses over 50 ms (H.222.0: 100 ms; here a unit is 40 ms); each unit's first packet has the
+/// random_access_indicator exactly when it is a key unit, and the PAT and PMT right before it then;
+/// PES_packet_length is 0 exactly for units too long for it.
+fn check_packets(data: &[u8], pid: u16, units: Vec<(usize, bool)>) {
+    let packets: Vec<&[u8]> = data.chunks(188).collect();
+    let pid_of = |p: &[u8]| u16::from(p[1] & 0x1F) << 8 | u16::from(p[2]);
+    let pmt = packets.iter().find(|p| pid_of(p) == 0x1000).unwrap();
+    assert_eq!(u16::from(pmt[13] & 0x1F) << 8 | u16::from(pmt[14]), pid, "PCR_PID");
+    let mut starts = Vec::new();
+    let mut last_pcr: Option<i64> = None;
+    for (i, p) in packets.iter().enumerate() {
+        if pid_of(p) != pid {
+            continue;
+        }
+        let af = p[3] & 0x20 != 0 && p[4] > 0;
+        if af && p[5] & 0x10 != 0 {
+            let base = i64::from(p[6]) << 25 | i64::from(p[7]) << 17 | i64::from(p[8]) << 9 | i64::from(p[9]) << 1 | i64::from(p[10] >> 7);
+            let t = base * 300 + (i64::from(p[10] & 1) << 8 | i64::from(p[11]));
+            if let Some(l) = last_pcr {
+                assert!(t - l <= 50 * 27_000, "PCR gap {} ms", (t - l) / 27_000);
+            }
+            last_pcr = Some(t);
+        }
+        if p[1] & 0x40 != 0 {
+            let rai = af && p[5] & 0x40 != 0;
+            let pes = if p[3] & 0x20 != 0 { 5 + usize::from(p[4]) } else { 4 };
+            let len = u16::from(p[pes + 4]) << 8 | u16::from(p[pes + 5]);
+            starts.push((i, rai, len));
+        }
+    }
+    assert_eq!(starts.len(), units.len());
+    for (k, ((i, rai, len), (size, key))) in starts.into_iter().zip(units).enumerate() {
+        assert_eq!(rai, key, "unit {k}");
+        assert_eq!(len == 0, size > 0xFFF0, "unit {k}: {size} bytes, length field {len}");
+        if key {
+            assert_eq!((pid_of(packets[i - 2]), pid_of(packets[i - 1])), (0, 0x1000), "unit {k}: tables first");
+        }
+    }
+}
+
+#[test]
+fn audio_units_fit_a_pes_packet_in_transport_streams() {
+    for codec in [MuxCodec::AacAdts, MuxCodec::MpegAudio] {
+        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[codec], 1_000_000).unwrap();
+        assert!(m.write(0, &vec![0; 70_000], 0, None, true).is_err(), "{codec:?}");
+    }
+}
+
+#[test]
+fn h264_needs_annex_b_with_a_delimiter_and_a_transport_stream() {
+    assert!(Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::H264], 1_000_000).is_err());
+    assert!(Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::Hevc], 1_000_000).is_err());
+    let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::H264, MuxCodec::Hevc], 1_000_000).unwrap();
+    // length-prefixed (MP4) samples and units without a delimiter are refused, not converted
+    assert!(m.write(0, &[0, 0, 0, 5, 0x65, 1, 2, 3, 4], 0, None, true).is_err());
+    assert!(m.write(0, &[0, 0, 0, 1, 0x65, 1, 2, 3], 0, None, true).is_err());
+    assert!(m.write(1, &annexb_unit(false, 0x65, 10, 0), 0, None, true).is_err());
+    m.write(0, &annexb_unit(false, 0x65, 10, 0), 0, None, true).unwrap();
+    m.write(1, &annexb_unit(true, 19 << 1, 10, 0), 0, None, true).unwrap();
+}
+
+/// External oracle: H.264 / HEVC + MPEG audio transport streams made by ffmpeg, demuxed by us and
+/// muxed again, decode to the same frames (skipped without ffmpeg or its encoders).
+#[test]
+fn ffmpeg_decodes_a_remux_to_the_same_frames() {
+    let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("mpegts::mux_tests::ffmpeg_decodes_a_remux_to_the_same_frames") else { return };
+    let dir = std::env::temp_dir().join(format!("cfa4-mpegts-remux-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    for (enc, codec, want) in [("libx264", MuxCodec::H264, Codec::H264), ("libx265", MuxCodec::Hevc, Codec::Hevc)] {
+        if !cfa4_testkit::ffmpeg_has_encoder(&ffmpeg, enc) || !cfa4_testkit::ffmpeg_has_encoder(&ffmpeg, "mp2") {
+            eprintln!("skip {enc}: encoder missing");
+            continue;
+        }
+        let src = dir.join(format!("{enc}.ts"));
+        let aud = if enc == "libx264" { "h264_metadata=aud=insert" } else { "hevc_metadata=aud=insert" };
+        let ok = std::process::Command::new(&ffmpeg)
+            .args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=25:duration=2", "-f", "lavfi", "-i", "sine=frequency=440:duration=2"])
+            .args(["-c:v", enc, "-g", "12", "-bf", "2", "-bsf:v", aud, "-c:a", "mp2", "-b:a", "128k"])
+            .args(if enc == "libx265" { &["-x265-params", "log-level=error"][..] } else { &[] })
+            .arg(&src)
+            .status()
+            .unwrap();
+        assert!(ok.success());
+        let bytes = std::fs::read(&src).unwrap();
+        let f = open(&bytes).unwrap();
+        let v = f.find(Kind::Video, |c| *c == want).unwrap();
+        let a = f.find(Kind::Audio, |c| *c == Codec::MpegAudio).unwrap();
+        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[codec, MuxCodec::MpegAudio], 10_000_000).unwrap();
+        let base = f.streams.iter().flat_map(|s| s.units.iter().filter_map(|u| u.dts.or(u.pts))).min().unwrap();
+        // units without a timestamp (several audio frames in one PES packet) travel with the
+        // stamped unit before them, as one PES packet again
+        let mut groups: Vec<(i64, usize, i64, Option<i64>, bool, Vec<u8>)> = Vec::new();
+        for (out, &s) in [v, a].iter().enumerate() {
+            for (i, u) in f.streams[s].units.iter().enumerate() {
+                let data = f.read_unit(&bytes, s, i).unwrap();
+                match u.pts {
+                    Some(pts) => groups.push((u.dts.unwrap_or(pts), out, pts, u.dts, u.key, data)),
+                    None => groups.iter_mut().rev().find(|g| g.1 == out).unwrap().5.extend(data),
+                }
+            }
+        }
+        // both streams in decode order, interleaved
+        groups.sort_by_key(|g| (g.0, g.1));
+        for (_, out, pts, dts, key, data) in groups {
+            m.write(out, &data, pts - base, dts.map(|d| d - base), key).unwrap();
+        }
+        let remux = dir.join(format!("{enc}-remux.ts"));
+        std::fs::write(&remux, m.finish().unwrap()).unwrap();
+        let md5 = |p: &std::path::Path, map: &str| {
+            let o = std::process::Command::new(&ffmpeg).args(["-v", "error", "-i"]).arg(p).args(["-map", map, "-f", "framemd5", "-"]).output().unwrap();
+            assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+            // the hashes only: timestamps start elsewhere after the remux
+            String::from_utf8_lossy(&o.stdout)
+                .lines()
+                .filter(|l| !l.starts_with('#'))
+                .map(|l| l.rsplit(',').next().unwrap_or("").trim().to_string())
+                .collect::<Vec<_>>()
+        };
+        for map in ["0:v", "0:a"] {
+            let (x, y) = (md5(&src, map), md5(&remux, map));
+            assert!(!x.is_empty());
+            assert_eq!(x, y, "{enc} {map}");
+        }
+    }
+}
+
 /// AC-3 frame, 48 kHz 64 kb/s (256 bytes), stereo.
 fn ac3_frame(k: u8) -> Vec<u8> {
     let mut v = vec![0x0B, 0x77, 0, 0, 0x08, 0x40, 0x40];

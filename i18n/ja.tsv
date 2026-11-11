@@ -3798,7 +3798,7 @@
 	Go to caption	キャプションへ移動
 	Go to graphic	グラフィックへ移動
 	Hear this voice	この音声を聞く
-	IAB 7.1 DS bed from the 5.1 mix	5.1 ミックスから IAB 7.1 DS ベッド
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	ミックスから IAB ベッド（7.1 DS、7.1.2 からは 9.1OH）
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF、.iab、または Dolby Atmos TrueHD（.thd、.mkv、.mp4、.m2ts）
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	ファイルからの IAB（IAB MXF、.iab、または Dolby Atmos TrueHD）
 	IAB source	IAB ソース
@@ -3886,7 +3886,7 @@
 	Text colour	テキストの色
 	Text to Speech: another sequence is open now; the narration was not placed	音声読み上げ：別のシーケンスが開いているため、ナレーションは配置されませんでした
 	Text to Speech: {e}	音声読み上げ：{e}
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 ミックスは 7.1 DS ベッド（IAB プロファイル 1）になり、メインサウンドのチャンネル 14 に FSK 同期信号が入ります。
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 ミックスは 9.1OH ベッド、7.1 ミックスは 7.1 DS ベッド、その他のミックスは 5.1 から 7.1 DS ベッド（IAB プロファイル 1）になり、メインサウンドのチャンネル 14 に FSK 同期信号が入ります。
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	CFA4 エンジン（cfa4-cli）が見つかりません。次のコマンドでビルドしてください：cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4 エンジンが予期せず停止したため再起動しました。未保存の変更は復元ジャーナルに保持されており、復元が提案されます。
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4 エンジンが予期せず停止しました。未保存の変更は復元ジャーナルに保持されています。CFA4 を再起動すると復元できます。
@@ -4112,7 +4112,7 @@
 	English (UK)	English (UK)
 	English (Australia)	English (Australia)
 
-# Qt GUI strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+# Qt GUI strings from main, 2026-11-11 (Smart Cut audio, tracker, DCP naming and MPEG-2 field order)
 	Audio copied: {tracks}	コピーされた音声: {tracks}
 	Audio track {track} is not copied: {why}	音声トラック {track} はコピーされません: {why}
 	Point tracker	ポイントトラッカー
@@ -4121,3 +4121,6 @@
 	None (RFC 5646 tag, e.g. en-US)	なし（RFC 5646 タグ、例: ja-JP）
 	ISDCF name	ISDCF 名
 	Name the DCP folder by the Digital Cinema Naming Convention	DCP フォルダーに Digital Cinema Naming Convention に従って名前を付ける
+	Field order	フィールドオーダー
+	Interlaced, upper field first	インターレース（上位フィールド優先）
+	Interlaced, lower field first	インターレース（下位フィールド優先）

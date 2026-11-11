@@ -1896,7 +1896,7 @@
 	Rating	Aldersmærkning
 	Public service announcement	Offentlig servicemeddelelse
 	Off (5.1 only)	Fra (kun 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS-bed fra 5.1-mixet
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB-bed fra mixet (7.1 DS, 9.1OH fra 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB fra en fil (IAB MXF, .iab eller Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab eller Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Ingen: kun FSK-synkronisering (SMPTE ST 429-19)
@@ -1905,7 +1905,7 @@
 	Main sound channels 1-6	Hovedlydkanal 1-6
 	Immersive audio	Immersiv lyd
 	IAB source	IAB-kilde
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1-mixet bliver et 7.1 DS-bed (IAB Profile 1); kanal 14 i hovedlyden bærer FSK-synkroniseringssignalet.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Et 7.1.2-mix bliver et 9.1OH-bed, et 7.1-mix et 7.1 DS-bed og ethvert andet mix et 7.1 DS-bed fra dets 5.1 (IAB Profile 1); kanal 14 i hovedlyden bærer FSK-synkroniseringssignalet.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Vælg en IAB-sporfil (IMF eller DCP), en rå IAB-stream eller Dolby Atmos TrueHD: en .thd-stream eller en MKV-, MP4- eller M2TS-fil med et Atmos-spor.
 	Reading the IAB source…	Læser IAB-kilden…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} billeder, {fps} fps, {rate} Hz; op til {beds} bed-kanaler og {objects} objekter
@@ -4113,3 +4113,7 @@ export.summary	Low	lav
 	Width	Bredde
 	Stop	Stop
 	Accent Color	Accentfarve
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Feltrækkefølge
+	Interlaced, upper field first	Interlaced, øverste felt først
+	Interlaced, lower field first	Interlaced, nederste felt først

@@ -1832,7 +1832,7 @@
 	Rating	Рейтинг
 	Public service announcement	Обществено съобщение
 	Off (5.1 only)	Изключено (само 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS основа от 5.1 микса
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB основа от микса (7.1 DS, 9.1OH от 7.1.2)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB от файл (IAB MXF, .iab или Dolby Atmos TrueHD)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab или Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Без: само FSK синхронизация (SMPTE ST 429-19)
@@ -1841,7 +1841,7 @@
 	Main sound channels 1-6	Основни звукови канали 1-6
 	Immersive audio	Обемен звук
 	IAB source	IAB източник
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 миксът става 7.1 DS основа (IAB Profile 1); канал 14 на основния звук носи FSK сигнала за синхронизация.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 микс става 9.1OH основа, 7.1 микс – 7.1 DS основа, всеки друг микс – 7.1 DS основа от своя 5.1 (IAB Profile 1); канал 14 на основния звук носи FSK сигнала за синхронизация.
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Изберете IAB файл с писта (IMF или DCP), суров IAB поток или Dolby Atmos TrueHD: поток .thd или файл MKV, MP4 или M2TS с Atmos писта.
 	Reading the IAB source…	Четене на IAB източника…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} кадъра, {fps} fps, {rate} Hz; до {beds} канала за основа и {objects} обекта
@@ -4114,3 +4114,7 @@ export.summary	Low	ниско
 	Baseline	Базова линия
 	Contains	Съдържа
 	Navigation	Навигация
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	Ред на полукадрите
+	Interlaced, upper field first	Презредово, първо горният полукадър
+	Interlaced, lower field first	Презредово, първо долният полукадър
