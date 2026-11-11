@@ -401,3 +401,4 @@
 	None (RFC 5646 tag, e.g. en-US)	无（RFC 5646 标签，例如 zh-CN）
 	ISDCF name	ISDCF 名称
 	Name the DCP folder by the Digital Cinema Naming Convention	按 Digital Cinema Naming Convention 命名 DCP 文件夹
+	Height	高度

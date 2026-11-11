@@ -401,3 +401,4 @@
 	None (RFC 5646 tag, e.g. en-US)	없음(RFC 5646 태그, 예: ko-KR)
 	ISDCF name	ISDCF 이름
 	Name the DCP folder by the Digital Cinema Naming Convention	Digital Cinema Naming Convention에 따라 DCP 폴더 이름 지정
+	Height	높이
