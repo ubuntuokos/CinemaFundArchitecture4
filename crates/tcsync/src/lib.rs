@@ -6,11 +6,15 @@
 //! - [`ltc`]: SMPTE linear timecode (LTC): the 80-bit frame, a biphase-mark encoder producing
 //!   audio samples, and a decoder that reads frames back from audio in either direction and at
 //!   varying speed.
+//! - [`mtc`]: MIDI Timecode: quarter-frame and full-frame messages, a generator and a byte-stream
+//!   parser.
 //!
 //! Clean-room implementation from public descriptions of the LTC format (bit layout, biphase-mark
-//! coding, sync word); no code is taken from other LTC libraries. Every input is treated as hostile
-//! (`AGENTS.md` §0): no panics, bounded state, non-finite samples are read as silence.
+//! coding, sync word) and of MIDI Timecode in the MIDI 1.0 specification; no code is taken from
+//! other timecode libraries. Every input is treated as hostile (`AGENTS.md` §0): no panics,
+//! bounded state, non-finite samples are read as silence.
 
 #![forbid(unsafe_code)]
 
 pub mod ltc;
+pub mod mtc;
