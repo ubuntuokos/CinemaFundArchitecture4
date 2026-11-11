@@ -95,7 +95,7 @@ AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
 FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
-    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"))),
+    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"), ("d10", "D-10 (IMX)"))),
     ("proresProfile", N_("Profile"), "export.video.proresProfile", (
         ("proxy", "Apple ProRes 422 Proxy"), ("lt", "Apple ProRes 422 LT"), ("standard", "Apple ProRes 422"),
         ("hq", "Apple ProRes 422 HQ"), ("4444", "Apple ProRes 4444"), ("4444xq", "Apple ProRes 4444 XQ"))),
@@ -112,7 +112,7 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
                    "cineformQuality": "filmscan1", "exrCompression": "none"}
 MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
-MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2"}
+MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
                       "cineformQuality": "cineform", "exrCompression": "exr"}
@@ -967,9 +967,11 @@ class ExportDialog(QDialog):
         return rows
 
     def _sync_mpeg2_rows(self) -> None:
-        """MPEG-2 video settings: for MPEG-2 files and MPEG-2 in MXF (the container only for files)."""
+        """MPEG-2 video settings: for MPEG-2 files and MPEG-2 in MXF (the container only for files;
+        D-10 / IMX fixes its own GOP, B pictures and chroma)."""
         fmt = str(self.format.currentData() or "")
-        video = encoder_format(fmt, self._choice("mxfVideoCodec")) == "mpeg2"
+        mxf_codec = self._choice("mxfVideoCodec")
+        video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
         self.container.setEnabled(fmt == "mpeg2")
         for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(video)

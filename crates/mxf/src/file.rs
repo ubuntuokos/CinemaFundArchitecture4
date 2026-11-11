@@ -1011,7 +1011,9 @@ fn build_pictures(
     let n = samples.len();
     // Key frames and B pictures from the index.
     let flagged = entries.values().any(|e| e.random_access());
-    if !t.codec.intra_only() {
+    // type D-10 (ST 386 container, SMPTE 356 streams) is I-frame only
+    let d10 = t.essence_container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x01]));
+    if !t.codec.intra_only() && !d10 {
         if flagged {
             t.indexed = true;
             for (i, s) in samples.iter_mut().enumerate() {

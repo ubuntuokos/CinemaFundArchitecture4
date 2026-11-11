@@ -838,6 +838,19 @@ impl ExportSettings {
         if self.format == Format::Hevc && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("H.265 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
         }
+        if self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::D10 {
+            if self.format == Format::MxfOpAtom {
+                return Err(ExportError::Unsupported("D-10 (IMX) is written as MXF OP1a".into()));
+            }
+            if !matches!(self.bitrate_kbps, 30_000 | 40_000 | 50_000) {
+                return Err(ExportError::Unsupported("D-10 (IMX) runs at 30, 40 or 50 Mbit/s: set the bitrate to 30000, 40000 or 50000 kbps".into()));
+            }
+            if self.has_audio()
+                && (self.audio.sample_rate.is_some_and(|r| r != 48_000) || !matches!(self.audio.bits, 16 | 24) || self.audio.float || self.audio.channels > 8)
+            {
+                return Err(ExportError::Unsupported("D-10 (IMX) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
+            }
+        }
         if self.video_format() == Format::Mpeg2 {
             if self.mpeg2_quantizer.is_some_and(|q| !(1..=31).contains(&q)) {
                 return Err(ExportError::Unsupported("MPEG-2 quantiser must be between 1 and 31".into()));
@@ -1408,9 +1421,167 @@ fn mpeg2_aspect(w: u32, h: u32, par: Option<(u32, u32)>) -> cfa4_mpeg2v::encode:
         .map_or(AspectRatio::Square, |(_, a)| a)
 }
 
+/// A type D-10 (IMX) stream of an export: (Mbit/s, 625 or 525 lines) from the bitrate, the
+/// frame size and the frame rate.
+pub(crate) fn d10_params(s: &ExportSettings, w: u32, h: u32, rate: FrameRate) -> Result<(u8, u16)> {
+    let mbps = match s.bitrate_kbps {
+        30_000 => 30,
+        40_000 => 40,
+        50_000 => 50,
+        k => return Err(ExportError::Unsupported(format!("D-10 (IMX) runs at 30, 40 or 50 Mbit/s, not {k} kbit/s"))),
+    };
+    let lines = match (w, h, rate.num, rate.den) {
+        (720, 576, 25, 1) => 625,
+        (720, 486 | 480, 30000, 1001) => 525,
+        _ => {
+            return Err(ExportError::Unsupported(format!(
+                "D-10 (IMX) pictures are 720x576 at 25 fps or 720x486 / 720x480 at 29.97 fps, not {w}x{h} at {} fps",
+                rate.label()
+            )));
+        }
+    };
+    Ok((mbps, lines))
+}
+
+/// Type D-10 / IMX video (our MPEG-2 encoder): intra-only 4:2:2P@ML, ITU-R BT.601 4:2:2 in the
+/// 720 × 608 (720 × 512) frame whose first 32 (26) lines are the vertical interval, every
+/// picture at most the SMPTE 356 frame size (coded again with a coarser constant quantiser when
+/// the rate control overshoots; the MXF writer pads it to the fixed size).
+struct D10Encoder {
+    enc: cfa4_mpeg2v::encode::Encoder,
+    cfg: cfa4_mpeg2v::encode::Config,
+    frame_bytes: usize,
+    rate: FrameRate,
+    w: u16,
+    h: u16,
+    /// First stored line of the active picture.
+    top: usize,
+    y: Vec<u8>,
+    u: Vec<u8>,
+    v: Vec<u8>,
+}
+
+/// ITU-R BT.601 limited-range 8-bit 4:2:2 of straight RGBA8, written into the 720-sample stored
+/// planes from line `top` on.
+fn rgba_to_yuv422_601(rgba: &[u8], w: usize, h: usize, top: usize, y: &mut [u8], u: &mut [u8], v: &mut [u8]) {
+    let cw = w.div_ceil(2);
+    for row in 0..h {
+        let (Some(src), Some(yr), Some(ur), Some(vr)) = (
+            rgba.get(row * w * 4..(row + 1) * w * 4),
+            y.get_mut((top + row) * w..(top + row + 1) * w),
+            u.get_mut((top + row) * cw..(top + row + 1) * cw),
+            v.get_mut((top + row) * cw..(top + row + 1) * cw),
+        ) else {
+            return;
+        };
+        let mut us = vec![0f32; w];
+        let mut vs = vec![0f32; w];
+        for x in 0..w {
+            let (r, g, b) = (src[x * 4] as f32 / 255.0, src[x * 4 + 1] as f32 / 255.0, src[x * 4 + 2] as f32 / 255.0);
+            let yy = 0.299 * r + 0.587 * g + 0.114 * b;
+            yr[x] = (16.0 + 219.0 * yy).round().clamp(1.0, 254.0) as u8;
+            us[x] = (b - yy) / 1.772;
+            vs[x] = (r - yy) / 1.402;
+        }
+        for cx in 0..cw {
+            let (a, b2) = (cx * 2, (cx * 2 + 1).min(w - 1));
+            ur[cx] = (128.0 + 224.0 * (us[a] + us[b2]) * 0.5).round().clamp(1.0, 254.0) as u8;
+            vr[cx] = (128.0 + 224.0 * (vs[a] + vs[b2]) * 0.5).round().clamp(1.0, 254.0) as u8;
+        }
+    }
+}
+
+impl D10Encoder {
+    fn new(w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Result<Self> {
+        let (mbps, lines) = d10_params(s, w, h, rate)?;
+        let coding = cfa4_mxf::PictureCoding::D10 { mbps, lines };
+        let frame_bytes = coding.d10_frame_bytes().ok_or_else(|| ExportError::Unsupported("D-10: unsupported rate".into()))?;
+        let (stored, top) = match (lines, h) {
+            (625, _) => (608, 32),
+            (_, 480) => (512, 28),
+            _ => (512, 26),
+        };
+        let mut cfg = cfa4_mpeg2v::encode::Config::new(720, stored, rate.num as u32, rate.den as u32);
+        cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
+        cfg.gop = 1;
+        cfg.b_frames = 0;
+        cfg.intra_dc_precision = 10;
+        // aim below the frame size so the rate control rarely overshoots it
+        cfg.rate = cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(mbps) * 900_000 };
+        cfg.aspect = match mpeg2_aspect(w, h, s.pixel_aspect) {
+            cfa4_mpeg2v::encode::AspectRatio::Dar16x9 => cfa4_mpeg2v::encode::AspectRatio::Dar16x9,
+            _ => cfa4_mpeg2v::encode::AspectRatio::Dar4x3,
+        };
+        // ITU-R BT.470 B/G (625) or SMPTE 170M (525) primaries and matrix, BT.601 transfer
+        cfg.colour = Some(if lines == 625 { (5, 6, 5) } else { (6, 6, 6) });
+        cfg.adaptive_quantization = true;
+        let enc = cfa4_mpeg2v::encode::Encoder::new(cfg.clone()).map_err(|e| ExportError::Unsupported(format!("D-10: {e}")))?;
+        let n = 720 * stored as usize;
+        Ok(D10Encoder { enc, cfg, frame_bytes, rate, w: w as u16, h: h as u16, top, y: vec![16; n], u: vec![128; n / 2], v: vec![128; n / 2] })
+    }
+
+    /// The picture again, alone, at a constant quantiser (every D-10 picture is its own GOP).
+    fn recode(&self, q: u8) -> Result<Vec<u8>> {
+        let mut cfg = self.cfg.clone();
+        cfg.rate = cfa4_mpeg2v::encode::Rate::Quantizer(q);
+        let mut enc = cfa4_mpeg2v::encode::Encoder::new(cfg).map_err(|e| ExportError::Encode(format!("D-10: {e}")))?;
+        let input = cfa4_mpeg2v::encode::Input { y: &self.y, cb: &self.u, cr: &self.v, y_stride: 720, c_stride: 360 };
+        let mut data = Vec::new();
+        for p in enc.encode(&input).map_err(|e| ExportError::Encode(format!("D-10: {e}")))? {
+            data.extend_from_slice(&p.data);
+        }
+        for p in enc.flush().map_err(|e| ExportError::Encode(format!("D-10: {e}")))? {
+            data.extend_from_slice(&p.data);
+        }
+        Ok(data)
+    }
+
+    fn packet(&self, mut data: Vec<u8>) -> Result<EncodedPacket> {
+        // the rate control's quantiser is per picture; a picture over the frame size is coded
+        // again coarser until it fits
+        let mut q = 8;
+        while data.len() > self.frame_bytes {
+            if q > 31 {
+                return Err(ExportError::Encode(format!("D-10: a picture does not fit in {} bytes", self.frame_bytes)));
+            }
+            data = self.recode(q)?;
+            q += 4;
+        }
+        Ok(EncodedPacket { data, key: true, duration: self.rate.den as u32, composition_offset: 0 })
+    }
+}
+
+impl VideoEncoder for D10Encoder {
+    fn sample_entry(&self) -> SampleEntry {
+        // never written: D-10 goes to MXF only
+        let fourcc = cfa4_isobmff::FourCc(*b"mx5p");
+        SampleEntry::video(fourcc, cfa4_isobmff::CodecConfig::Unknown { fourcc, raw: Vec::new() }, self.w, self.h)
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+        let (w, h) = (f.width as usize, f.height as usize);
+        if (w, h) != (usize::from(self.w), usize::from(self.h)) {
+            return Err(ExportError::Encode(format!("D-10: a {w}x{h} frame in a {}x{} export", self.w, self.h)));
+        }
+        timed(Stage::Convert, || rgba_to_yuv422_601(f.rgba, w, h, self.top, &mut self.y, &mut self.u, &mut self.v));
+        let input = cfa4_mpeg2v::encode::Input { y: &self.y, cb: &self.u, cr: &self.v, y_stride: 720, c_stride: 360 };
+        let packets = self.enc.encode(&input).map_err(|e| ExportError::Encode(format!("D-10: {e}")))?;
+        packets.into_iter().map(|p| self.packet(p.data)).collect()
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        let packets = self.enc.flush().map_err(|e| ExportError::Encode(format!("D-10: {e}")))?;
+        packets.into_iter().map(|p| self.packet(p.data)).collect()
+    }
+}
+
 fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     if format != Format::Mpeg2 {
         return None;
+    }
+    if s.format.is_mxf() && s.mxf_video_codec == MxfVideoCodec::D10 {
+        return Some(D10Encoder::new(w, h, rate, s).map(|e| Box::new(e) as Box<dyn VideoEncoder>));
     }
     Some((|| {
         if !mpeg_out::mpeg2_rate(rate) {

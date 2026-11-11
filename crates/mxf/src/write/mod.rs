@@ -24,7 +24,9 @@
 //! (ST 381-3; Annex B access units with in-band SPS / PPS) and MPEG-2 video (ST 381-1, MPEG video
 //! descriptor) with long-GOP index entries (temporal offsets, key-frame offsets, prediction
 //! flags), JPEG 2000 (ST 422, RGBA descriptor with the
-//! JPEG 2000 picture sub-descriptor) and Broadcast Wave PCM (ST 382, 8–32 bit).
+//! JPEG 2000 picture sub-descriptor), type D-10 / IMX (ST 386: SDTI-CP compatible content
+//! packages of system item, fixed-size picture and 8-channel AES3 element on a 512-byte KAG,
+//! constant-size index) and Broadcast Wave PCM (ST 382, 8–32 bit).
 //!
 //! [`Pattern::DCinema`] writes D-Cinema track files (ST 429-3): OP-Atom with one frame-wrapped
 //! essence track, the file package as the primary package, the closed and complete header
@@ -135,9 +137,71 @@ pub enum PictureCoding {
     /// `max_gop` 1 is intra-only; `b_pictures` the most B pictures between anchors; `bit_rate`
     /// the stream's maximum in bit/s (0: unknown).
     Mpeg2 { profile_and_level: u8, max_gop: u16, b_pictures: u8, closed_gop: bool, bit_rate: u32 },
+    /// Type D-10 / IMX (ST 386, ST 356): intra-only MPEG-2 4:2:2P@ML at `mbps` 30, 40 or 50
+    /// Mbit/s with 720 × 608 (`lines` 625, 25 Hz) or 720 × 512 (525, 30000/1001 Hz) stored
+    /// lines, one SDTI-CP compatible content package per frame (ST 385 system item, the picture
+    /// padded to its fixed size, one 8-channel AES3 sound element of ST 331), KAG 512 and a
+    /// constant-size index. OP1a only; at most one sound track of 1-8 channels, 48 kHz, 16 or
+    /// 24 bit.
+    D10 { mbps: u8, lines: u16 },
+}
+
+/// The fixed geometry of a D-10 stream.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct D10Geometry {
+    /// ST 386 Table 1 byte 15 and the coding label's byte 16.
+    code: u8,
+    /// Picture element bytes (SMPTE 356 frame size: bit rate × frame period / 8).
+    frame_bytes: usize,
+    /// Stored lines per field, display offset and height per field, the video line map.
+    field_lines: u32,
+    display_offset: u32,
+    display_lines: u32,
+    line_map: (u32, u32),
+    edit_rate: Rational,
+}
+
+impl D10Geometry {
+    fn of(mbps: u8, lines: u16) -> Option<D10Geometry> {
+        let rate = match mbps {
+            50 => 0,
+            40 => 1,
+            30 => 2,
+            _ => return None,
+        };
+        match lines {
+            625 => Some(D10Geometry {
+                code: 1 + 2 * rate,
+                frame_bytes: [250_000, 200_000, 150_000][rate as usize],
+                field_lines: 304,
+                display_offset: 16,
+                display_lines: 288,
+                line_map: (7, 320),
+                edit_rate: Rational::new(25, 1),
+            }),
+            525 => Some(D10Geometry {
+                code: 2 + 2 * rate,
+                frame_bytes: [208_541, 166_833, 125_125][rate as usize],
+                field_lines: 256,
+                display_offset: 13,
+                display_lines: 243,
+                line_map: (7, 270),
+                edit_rate: Rational::new(30000, 1001),
+            }),
+            _ => None,
+        }
+    }
 }
 
 impl PictureCoding {
+    /// D-10 only: the fixed picture element size in bytes (coded pictures are padded to it and
+    /// must not exceed it), `None` for an unsupported rate or line standard.
+    pub fn d10_frame_bytes(&self) -> Option<usize> {
+        match *self {
+            PictureCoding::D10 { mbps, lines } => D10Geometry::of(mbps, lines).map(|g| g.frame_bytes),
+            _ => None,
+        }
+    }
     fn intra_only(&self) -> bool {
         match self {
             PictureCoding::Avc { intra, .. } => *intra,
@@ -191,6 +255,11 @@ impl PictureCoding {
                 };
                 [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x03, 0x04, 0x01, 0x02, 0x02, 0x01, pl, if max_gop <= 1 { 0x02 } else { 0x03 }, 0x00]
             }
+            PictureCoding::D10 { mbps, lines } => {
+                // RP 224: MPEG-2 422P@ML I-frame, the D-10 rate and line standard in byte 16
+                let code = D10Geometry::of(mbps, lines).map_or(0x01, |g| g.code);
+                [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x04, 0x01, 0x02, 0x02, 0x01, 0x02, 0x01, code]
+            }
         }
     }
     /// (essence container label, element type) for frame or clip wrapping.
@@ -204,6 +273,8 @@ impl PictureCoding {
             PictureCoding::J2k { .. } => (essence_container(0x07, 0x0C, w, 0x00), if clip { 0x09 } else { 0x08 }),
             // ST 381-1 Tables 5, 6 (MPEG ES, stream_id E0h bits 6..0) and Table 1 (05h / 06h)
             PictureCoding::Mpeg2 { .. } => (essence_container(0x02, 0x04, 0x60, w), if clip { 0x06 } else { 0x05 }),
+            // ST 386 Tables 1 and 2: the defined template, the 422P@ML picture element (01h)
+            PictureCoding::D10 { mbps, lines } => (essence_container(0x01, 0x01, D10Geometry::of(*mbps, *lines).map_or(0x01, |g| g.code), 0x01), 0x01),
         }
     }
 }
@@ -288,6 +359,7 @@ impl PictureDesc {
             }
             PictureCoding::J2k { .. } => (12, (1, 1)),
             PictureCoding::Mpeg2 { profile_and_level, .. } => (8, if profile_and_level & 0x70 == 0 { (2, 1) } else { (2, 2) }),
+            PictureCoding::D10 { .. } => (8, (2, 1)),
         };
         PictureDesc {
             coding,
@@ -551,6 +623,93 @@ enum TrackKind {
     Sound(usize),
     /// Immersive audio data (ST 429-18).
     Iab,
+    /// The 8-channel AES3 sound element of a D-10 content package (ST 331 7.1).
+    Aes3,
+}
+
+/// Item sizes of a D-10 content package (each a multiple of the 512-byte KAG).
+#[derive(Clone, Copy, Debug)]
+struct D10Layout {
+    geo: D10Geometry,
+    label: [u8; 16],
+    system: usize,
+    picture: usize,
+    sound: usize,
+    /// Channels of the sound track pushed (0: none, the element's channels are all invalid).
+    channels: usize,
+    bits: u32,
+}
+
+const D10_KAG: usize = 512;
+
+/// `raw` bytes plus the fill item that ends the item on the KAG (a fill item is at least 20
+/// bytes: key and a 4-byte length).
+fn kag_aligned(raw: usize) -> usize {
+    let a = raw.next_multiple_of(D10_KAG);
+    if a > raw && a - raw < 20 { a + D10_KAG } else { a }
+}
+
+impl D10Layout {
+    fn content_package(&self) -> usize {
+        self.system + self.picture + self.sound
+    }
+    /// 48 kHz sample frames in content package `i` (1920 at 25 Hz; 1601 or 1602 at 30000/1001).
+    fn samples(&self, i: u64) -> usize {
+        let r = self.geo.edit_rate;
+        let at = |n: u64| (n as u128 * 48_000 * r.den as u128 / r.num.max(1) as u128) as usize;
+        at(i + 1) - at(i)
+    }
+    /// The 5-sequence count of the AES3 element header (ST 331 7.1): 0 at 25 Hz; at 30000/1001
+    /// the 1602, 1601, 1602, 1601, 1602 sequence numbered 1 to 5. Package 0 holds 1601 samples
+    /// (number 2), so package `i` is number `(i + 1) mod 5 + 1`.
+    fn sequence(&self, i: u64) -> u8 {
+        if self.geo.edit_rate.den == 1 { 0 } else { ((i + 1) % 5 + 1) as u8 }
+    }
+}
+
+/// An 8-channel AES3 element (ST 331 7.1): header, sample count, channel valid flags, then for
+/// every sample one 32-bit word per channel 1-8 (channel number in bits 0-2, the 24-bit AES3
+/// audio word left-justified in bits 4-27, no V/U/C/P). `pcm` holds `channels` interleaved
+/// little-endian samples of `bits` (16 or 24).
+fn aes3_element(pcm: &[u8], channels: usize, bits: u32, samples: usize, sequence: u8) -> Vec<u8> {
+    let bps = (bits / 8) as usize;
+    let mut v = Vec::with_capacity(4 + samples * 32);
+    v.push(sequence & 0x07);
+    v.extend_from_slice(&(samples.min(0xFFFF) as u16).to_le_bytes());
+    v.push(((1u16 << channels.min(8)) - 1) as u8);
+    for s in 0..samples {
+        for c in 0..8usize {
+            let at = (s * channels + c) * bps;
+            let word = match (c < channels, pcm.get(at..at + bps)) {
+                (true, Some(&[a, b])) => u32::from_le_bytes([0, a, b, 0]),
+                (true, Some(&[a, b, d])) => u32::from_le_bytes([a, b, d, 0]),
+                _ => 0,
+            };
+            v.extend_from_slice(&((c as u32) | (word << 4)).to_le_bytes());
+        }
+    }
+    v
+}
+
+/// A 17-byte date/time stamp of the system metadata pack (ST 385 5.2.3.3): type 81h, the SMPTE
+/// ST 12-1 time code of `frames` (BCD frames, seconds, minutes, hours, LSB first; drop frame in
+/// bit 6 of the frames byte), the binary groups and the rest zero.
+fn timecode_stamp(frames: i64, base: u16, drop: bool) -> [u8; 17] {
+    let base = i64::from(base.max(1));
+    let mut f = frames.rem_euclid(24 * 3600 * base);
+    if drop && base == 30 {
+        // 2 frame numbers dropped every minute except every tenth (17 982 frames per 10 minutes)
+        let (d, m) = (f / 17_982, f % 17_982);
+        f += 18 * d + if m > 1 { 2 * ((m - 2) / 1798) } else { 0 };
+    }
+    let bcd = |x: i64| (((x / 10) << 4) | (x % 10)) as u8;
+    let mut t = [0u8; 17];
+    t[0] = 0x81;
+    t[1] = bcd(f % base) | if drop { 0x40 } else { 0 };
+    t[2] = bcd(f / base % 60);
+    t[3] = bcd(f / (base * 60) % 60);
+    t[4] = bcd(f / (base * 3600) % 24);
+    t
 }
 
 #[derive(Clone, Debug)]
@@ -581,6 +740,8 @@ pub struct MxfWriter<W: Write + Seek> {
     /// File offset (relative) of the first byte of the essence container.
     essence_start: u64,
     entries: Vec<Entry>,
+    /// Type D-10: SDTI-CP compatible content packages.
+    d10: Option<D10Layout>,
     // OP1a
     pending: VecDeque<(Vec<u8>, FrameInfo)>,
     sound_buf: Vec<Vec<u8>>,
@@ -615,6 +776,12 @@ fn fill(out: &mut Vec<u8>, total: usize) {
     out.extend_from_slice(&KLV_FILL);
     out.extend_from_slice(&ber4(total - 20));
     out.extend(std::iter::repeat_n(0u8, total - 20));
+}
+
+/// Fill `out` up to `len` bytes (nothing when it is already that long).
+fn fill_to(out: &mut Vec<u8>, len: usize) {
+    let n = len.saturating_sub(out.len());
+    fill(out, n);
 }
 
 fn batch(items: &[&[u8]], item_size: usize) -> Vec<u8> {
@@ -733,9 +900,40 @@ impl<W: Write + Seek> MxfWriter<W> {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "invalid PCM sound description"));
         }
         let clip = cfg.pattern == Pattern::OpAtom;
+        let d10 = match cfg.picture.as_ref().map(|p| p.coding) {
+            Some(coding @ PictureCoding::D10 { mbps, lines }) => {
+                let invalid = |m: &str| io::Error::new(io::ErrorKind::InvalidInput, m.to_string());
+                let geo = D10Geometry::of(mbps, lines).ok_or_else(|| invalid("D-10 is 30, 40 or 50 Mbit/s with 625 or 525 lines"))?;
+                if cfg.pattern != Pattern::Op1a {
+                    return Err(invalid("D-10 is written as OP1a"));
+                }
+                if cfg.edit_rate != geo.edit_rate {
+                    return Err(invalid("D-10 625 runs at 25 Hz, 525 at 30000/1001 Hz"));
+                }
+                if cfg.sound.len() > 1 || cfg.sound.iter().any(|s| s.sample_rate != 48_000 || s.channels > 8 || !matches!(s.bits, 16 | 24)) {
+                    return Err(invalid("D-10 carries one sound track of 1-8 channels, 48 kHz, 16 or 24 bit"));
+                }
+                let max_samples = if geo.edit_rate.den == 1 { 1920 } else { 1602 };
+                Some(D10Layout {
+                    geo,
+                    label: coding.container(false).0,
+                    system: kag_aligned(20 + 57 + 20),
+                    picture: kag_aligned(20 + geo.frame_bytes),
+                    sound: kag_aligned(20 + 4 + 32 * max_samples),
+                    channels: cfg.sound.first().map_or(0, |s| s.channels as usize),
+                    bits: cfg.sound.first().map_or(16, |s| s.bits),
+                })
+            }
+            _ => None,
+        };
         let mut tracks = Vec::new();
         let mut id = cfg.first_track_id.max(2);
-        if let Some(p) = &cfg.picture {
+        if let Some(l) = &d10 {
+            // ST 386 Tables 2, 3: SDTI-CP compatible picture (05h) and sound (06h) items
+            tracks.push(TrackW { id, kind: TrackKind::Picture, element_key: element_key(0x05, 1, 0x01, 1), container: l.label });
+            tracks.push(TrackW { id: id + 1, kind: TrackKind::Aes3, element_key: element_key(0x06, 1, 0x10, 1), container: l.label });
+            id += 2;
+        } else if let Some(p) = &cfg.picture {
             let (container, et) = p.coding.container(clip);
             tracks.push(TrackW { id, kind: TrackKind::Picture, element_key: element_key(0x15, 1, et, 1), container });
             id += 1;
@@ -745,7 +943,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             id += 1;
         }
         let ns = cfg.sound.len() as u8;
-        for k in 0..cfg.sound.len() {
+        for k in 0..if d10.is_some() { 0 } else { cfg.sound.len() } {
             let container = essence_container(0x01, 0x06, if clip { 0x02 } else { 0x01 }, 0x00);
             tracks.push(TrackW { id, kind: TrackKind::Sound(k), element_key: element_key(0x16, ns, if clip { 0x02 } else { 0x01 }, k as u8 + 1), container });
             id += 1;
@@ -762,6 +960,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             body_partition: 0,
             essence_start: 0,
             entries: Vec::new(),
+            d10,
             pending: VecDeque::new(),
             sound_buf: vec![Vec::new(); nsound],
             clip_len: 0,
@@ -771,12 +970,21 @@ impl<W: Write + Seek> MxfWriter<W> {
         let meta = me.metadata(Durations { essence: -1 });
         me.header_region = meta.len() + HEADER_RESERVE;
         let pack = me.partition_pack(2, 1, 0, 0, 0, me.header_region as u64, 0, 0, 0);
-        let mut out = pack;
+        if me.d10.is_some() {
+            // ST 386 6.1: the essence partition starts on the KAG
+            me.header_region = (pack.len() + me.header_region).next_multiple_of(D10_KAG) - pack.len();
+        }
+        let mut out = me.partition_pack(2, 1, 0, 0, 0, me.header_region as u64, 0, 0, 0);
         out.extend_from_slice(&meta);
-        fill(&mut out, HEADER_RESERVE);
+        fill(&mut out, me.header_region - meta.len());
         me.put(&out)?;
         me.body_partition = me.pos;
-        let body = me.partition_pack(3, 4, me.pos, 0, 0, 0, 0, 0, BODY_SID);
+        let mut body = me.partition_pack(3, 4, me.pos, 0, 0, 0, 0, 0, BODY_SID);
+        if me.d10.is_some() {
+            // the first content package starts on the KAG of its partition
+            let n = body.len();
+            fill(&mut body, kag_aligned(n) - n);
+        }
         me.put(&body)?;
         me.essence_start = me.pos;
         if clip {
@@ -837,7 +1045,8 @@ impl<W: Write + Seek> MxfWriter<W> {
         // D-Cinema track files list the multiple-mappings label too, as the reference
         // implementation's do (readers that take single-container OP-Atom as clip-wrapped
         // then read the frames, ffmpeg among them)
-        if self.tracks.len() > 1 || self.cfg.pattern == Pattern::DCinema {
+        // D-10 content packages are one essence container (ST 386 5.1)
+        if (self.tracks.len() > 1 || self.cfg.pattern == Pattern::DCinema) && self.d10.is_none() {
             v.push(EC_MULTIPLE);
         }
         v
@@ -848,7 +1057,7 @@ impl<W: Write + Seek> MxfWriter<W> {
         let mut v = Vec::with_capacity(160);
         v.extend_from_slice(&1u16.to_be_bytes());
         v.extend_from_slice(&3u16.to_be_bytes());
-        v.extend_from_slice(&1u32.to_be_bytes()); // KAG size
+        v.extend_from_slice(&(if self.d10.is_some() { D10_KAG as u32 } else { 1 }).to_be_bytes()); // KAG size
         v.extend_from_slice(&this.to_be_bytes());
         v.extend_from_slice(&prev.to_be_bytes());
         v.extend_from_slice(&footer.to_be_bytes());
@@ -895,6 +1104,14 @@ impl<W: Write + Seek> MxfWriter<W> {
     pub fn push_picture(&mut self, data: &[u8], info: FrameInfo) -> io::Result<()> {
         if self.cfg.picture.is_none() {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "this MXF file has no picture track"));
+        }
+        if let Some(l) = &self.d10
+            && data.len() > l.geo.frame_bytes
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("D-10 picture of {} bytes exceeds the {}-byte frame", data.len(), l.geo.frame_bytes),
+            ));
         }
         match self.cfg.pattern {
             Pattern::Op1a | Pattern::DCinema => {
@@ -960,6 +1177,9 @@ impl<W: Write + Seek> MxfWriter<W> {
     /// Write every complete OP1a content package (`flush`: pad the sound of the pending pictures
     /// with silence, or, without a picture track, write the remaining sound).
     fn emit(&mut self, flush: bool) -> io::Result<()> {
+        if let Some(l) = self.d10 {
+            return self.emit_d10(l, flush);
+        }
         let has_pic = self.framed();
         loop {
             let i = self.entries.len() as u64;
@@ -996,6 +1216,55 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
     }
 
+    /// Write every complete D-10 content package: system item (system metadata pack, empty
+    /// package metadata set), the picture padded to the fixed frame size, the AES3 element, each
+    /// item filled to the KAG (ST 386 5, 6.1).
+    fn emit_d10(&mut self, l: D10Layout, flush: bool) -> io::Result<()> {
+        let ba = self.cfg.sound.first().map_or(0, |s| s.block_align() as usize);
+        loop {
+            if self.pending.is_empty() {
+                return Ok(());
+            }
+            let i = self.entries.len() as u64;
+            let n = l.samples(i);
+            if l.channels > 0 && self.sound_buf.first().map_or(0, Vec::len) < n * ba && !flush {
+                return Ok(());
+            }
+            let Some((mut data, info)) = self.pending.pop_front() else { return Ok(()) };
+            let mut cp = Vec::with_capacity(l.content_package());
+            // system metadata pack (ST 385 5.2.3): UL, creation and user time stamps, picture
+            // and sound items present
+            let tc = self.cfg.timecode.unwrap_or(StartTimecode { frames: 0, rate: self.cfg.edit_rate, drop_frame: false });
+            let stamp = timecode_stamp(tc.frames.saturating_add(i as i64), tc.rounded_base(), tc.drop_frame);
+            let mut pack = Vec::with_capacity(57);
+            pack.push(0x7C);
+            // content package rate (ST 326): 25 Hz is rate 2, 30000/1001 rate 3 with the 1.001 flag
+            pack.push(if l.geo.edit_rate.den == 1 { 2 << 1 } else { (3 << 1) | 1 });
+            pack.extend_from_slice(&[0, 0, 0]);
+            pack.extend_from_slice(&((i % 65_536) as u16).to_be_bytes());
+            pack.extend_from_slice(&l.label);
+            pack.extend_from_slice(&stamp);
+            pack.extend_from_slice(&stamp);
+            klv(&mut cp, &SYSTEM_METADATA_PACK, &pack);
+            klv(&mut cp, &PACKAGE_METADATA_SET, &[]);
+            fill_to(&mut cp, l.system);
+            data.resize(l.geo.frame_bytes, 0);
+            klv(&mut cp, &self.tracks[0].element_key, &data);
+            fill_to(&mut cp, l.system + l.picture);
+            let mut chunk = Vec::new();
+            if let Some(buf) = self.sound_buf.first_mut() {
+                let take = (n * ba).min(buf.len());
+                chunk = buf.drain(..take).collect();
+                chunk.resize(n * ba, 0);
+            }
+            let aes = aes3_element(&chunk, l.channels, l.bits, n, l.sequence(i));
+            klv(&mut cp, &self.tracks[1].element_key, &aes);
+            fill_to(&mut cp, l.content_package());
+            self.entries.push(Entry { offset: self.pos - self.essence_start, slices: Vec::new(), info });
+            self.put(&cp)?;
+        }
+    }
+
     /// Header metadata (primer pack and sets).
     fn metadata(&self, d: Durations) -> Vec<u8> {
         let cfg = &self.cfg;
@@ -1003,11 +1272,13 @@ impl<W: Write + Seek> MxfWriter<W> {
         let iab_primer = if cfg.iab.is_some() { IAB_PRIMER } else { &[] };
         let mca_primer = if cfg.mca.is_empty() { &[] } else { MCA_PRIMER };
         let mpeg_primer = if matches!(cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::Mpeg2 { .. })) { MPEG_PRIMER } else { &[] };
+        let d10_primer = if self.d10.is_some() { D10_PRIMER } else { &[] };
         let primer: Vec<Vec<u8>> = PRIMER
             .iter()
             .chain(iab_primer)
             .chain(mca_primer)
             .chain(mpeg_primer)
+            .chain(d10_primer)
             .map(|(t, ul)| {
                 let mut e = t.to_be_bytes().to_vec();
                 e.extend_from_slice(ul);
@@ -1083,7 +1354,7 @@ impl<W: Write + Seek> MxfWriter<W> {
                         vi += 1;
                         (DEF_PICTURE, format!("V{vi}"))
                     }
-                    TrackKind::Sound(_) => {
+                    TrackKind::Sound(_) | TrackKind::Aes3 => {
                         ai += 1;
                         (DEF_SOUND, format!("A{ai}"))
                     }
@@ -1134,27 +1405,45 @@ impl<W: Write + Seek> MxfWriter<W> {
                     let depth = p.depth.clamp(8, 16);
                     let black = 16u32 << (depth - 8);
                     let white = 235u32 << (depth - 8);
-                    let range = (225u32 << (depth - 8)) + 1;
-                    s.p(0x3004, &t.container)
-                        .u8(0x320C, 0)
-                        .u32(0x3203, p.width)
-                        .u32(0x3202, p.height)
-                        .u32(0x3205, p.width)
-                        .u32(0x3204, p.height)
-                        .u32(0x3209, p.width)
-                        .u32(0x3208, p.height)
-                        .rat(0x320E, p.aspect)
-                        .p(0x320D, &batch(&[&0u32.to_be_bytes(), &0u32.to_be_bytes()], 4))
-                        .p(0x3201, &p.coding.coding_label())
-                        .p(0x3210, &tcl)
-                        .p(0x321A, &ce)
-                        .p(0x3219, &cp)
-                        .u32(0x3301, depth)
-                        .u32(0x3302, p.subsampling.0)
-                        .u32(0x3308, p.subsampling.1)
-                        .u32(0x3304, black)
-                        .u32(0x3305, white)
-                        .u32(0x3306, range);
+                    let mut range = (225u32 << (depth - 8)) + 1;
+                    s.p(0x3004, &t.container);
+                    if let Some(l) = &self.d10 {
+                        // ST 386 Annex A Table A.1: separate fields of 304 (256) stored lines, the
+                        // active picture below the vertical interval lines, ITU-R BT.601
+                        let g = l.geo;
+                        range = 225;
+                        s.u8(0x3215, 1)
+                            .u8(0x320C, 1)
+                            .u32(0x3203, 720)
+                            .u32(0x3202, g.field_lines)
+                            .u32(0x3205, 720)
+                            .u32(0x3204, g.field_lines)
+                            .u32(0x3209, 720)
+                            .u32(0x3208, g.display_lines)
+                            .u32(0x320B, g.display_offset)
+                            .rat(0x320E, p.aspect)
+                            .p(0x320D, &batch(&[&g.line_map.0.to_be_bytes(), &g.line_map.1.to_be_bytes()], 4))
+                            .p(0x3201, &p.coding.coding_label())
+                            .p(0x3210, &TC_470)
+                            .p(0x321A, &CE_601)
+                            .u8(0x3212, 1)
+                            .u8(0x3303, 4);
+                    } else {
+                        s.u8(0x320C, 0)
+                            .u32(0x3203, p.width)
+                            .u32(0x3202, p.height)
+                            .u32(0x3205, p.width)
+                            .u32(0x3204, p.height)
+                            .u32(0x3209, p.width)
+                            .u32(0x3208, p.height)
+                            .rat(0x320E, p.aspect)
+                            .p(0x320D, &batch(&[&0u32.to_be_bytes(), &0u32.to_be_bytes()], 4))
+                            .p(0x3201, &p.coding.coding_label())
+                            .p(0x3210, &tcl)
+                            .p(0x321A, &ce)
+                            .p(0x3219, &cp);
+                    }
+                    s.u32(0x3301, depth).u32(0x3302, p.subsampling.0).u32(0x3308, p.subsampling.1).u32(0x3304, black).u32(0x3305, white).u32(0x3306, range);
                     if let Some((pl, max_gop, b, closed, bit_rate)) = mpeg {
                         s.u8(TAG_MPEG, 1)
                             .u8(TAG_MPEG + 1, 0)
@@ -1169,6 +1458,21 @@ impl<W: Write + Seek> MxfWriter<W> {
                             s.u32(TAG_MPEG + 9, bit_rate);
                         }
                     }
+                    s.write(&mut out);
+                }
+                TrackKind::Aes3 => {
+                    // ST 386 Annex A Table A.2: generic sound descriptor, 4 or 8 channels
+                    let Some(l) = &self.d10 else { continue };
+                    let mut s = Set::new(0x42, uid);
+                    s.u32(0x3006, t.id).rat(0x3001, cfg.edit_rate);
+                    if d.essence >= 0 {
+                        s.i64(0x3002, d.essence);
+                    }
+                    s.p(0x3004, &t.container)
+                        .rat(0x3D03, Rational::new(48_000, 1))
+                        .u8(0x3D02, 1)
+                        .u32(0x3D07, if l.channels > 4 { 8 } else { 4 })
+                        .u32(0x3D01, l.bits);
                     s.write(&mut out);
                 }
                 TrackKind::Iab => {
@@ -1212,7 +1516,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             if d.essence >= 0 {
                 s.i64(0x3002, d.essence);
             }
-            s.p(0x3004, &EC_MULTIPLE).refs(0x3F01, &desc_uids);
+            s.p(0x3004, &self.d10.map_or(EC_MULTIPLE, |l| l.label)).refs(0x3F01, &desc_uids);
             s.write(&mut out);
         }
         out
@@ -1329,6 +1633,24 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.u32(0x3F06, INDEX_SID).u32(0x3F07, BODY_SID);
             s.write(out);
         };
+        // D-10: constant content packages, delta entries for the system, picture and sound items
+        // (ST 386 6.2, Table 5) and no index entries
+        if let Some(l) = self.d10 {
+            let units = self.essence_units();
+            let deltas: Vec<[u8; 6]> = [0, l.system, l.system + l.picture]
+                .iter()
+                .map(|&o| {
+                    let b = (o as u32).to_be_bytes();
+                    [0, 0, b[0], b[1], b[2], b[3]]
+                })
+                .collect();
+            let items: Vec<&[u8]> = deltas.iter().map(|d| &d[..]).collect();
+            let delta = batch(&items, 6);
+            segment(&mut out, &mut |s| {
+                s.i64(0x3F0C, 0).i64(0x3F0D, units).u32(0x3F05, l.content_package() as u32).u8(0x3F08, 0).u8(0x3F0E, 0).p(0x3F09, &delta);
+            });
+            return out;
+        }
         // OP-Atom sound at one sample per edit unit: constant bytes per edit unit
         if self.cfg.pattern == Pattern::OpAtom && self.cfg.picture.is_none() {
             let sd = self.cfg.sound[0];

@@ -18,10 +18,11 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 381-1 | 2005 | MPEG video mapping (MPEG-2 identified, MPEG video descriptor; decoded by `cfa4-mpeg2v` in `cfa4-codecs`); writer: ES container, element keys, MPEG video descriptor, index flags |
 | SMPTE ST 381-3 | 2013 | AVC byte-stream mapping and AVC sub-descriptor |
 | SMPTE ST 382 | 2007 | AES3 and Broadcast Wave audio mapping (wave / AES3 descriptors) |
-| SMPTE ST 331 | 2011 | element data of 8-channel AES3 sound (D-10) |
+| SMPTE ST 331 | 2011 | element data of 8-channel AES3 sound (D-10; reader and writer), ST 12-1 time code metadata of the system item |
+| SMPTE ST 385 | 2012 | SDTI-CP compatible system item (writer: system metadata pack, package metadata set) |
 | SMPTE ST 2067-201 | 2019 | IAB track files: IAB essence descriptor (set 0x7B), clip-wrapped container, element type 0x0D (labels from the SMPTE registers) |
 | SMPTE RDD 9 | 2013 | MPEG long GOP coding labels (Table 6: MP@HL, 422P@HL, MP@H-14) for the writer |
-| SMPTE ST 386 | 2004 | D-10 (IMX) mapping: container label, sound element type |
+| SMPTE ST 386 | 2004 | D-10 (IMX) mapping: container label, sound element type; writer: content packages on a 512-byte KAG, constant-size index with delta entries, Annex A descriptor values |
 | SMPTE ST 2019-4 | 2009 | VC-3 (DNxHD / DNxHR) mapping |
 | SMPTE RDD 44 | 2017 | Apple ProRes mapping |
 | SMPTE RP 224 / RP 210 | registers | labels: data definitions, picture coding, essence containers, operational patterns; property labels of the primer pack (writer) |
@@ -153,8 +154,15 @@ w.finish()?;
   IdenticalGOP, MaxGOP, BPictureCount, ProfileAndLevel and BitRate under dynamic tags, the RDD 9
   Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP; random access entries flagged
   with their sequence header, P and B entries with the naive prediction flags of ST 381-1 A.2;
-  no SDTI-CP system item or AES3 elements, so not a strict RDD 9 file), Broadcast Wave PCM
-  (ST 382: container `02 06 01/02`, element types 0x01 / 0x02).
+  no SDTI-CP system item or AES3 elements, so not a strict RDD 9 file), type D-10 / IMX
+  (`PictureCoding::D10`, ST 386: the defined-template container `01 01 rr 01` and the RP 224
+  422P@ML I-frame coding label for 30 / 40 / 50 Mbit/s at 625 / 525 lines; one SDTI-CP
+  compatible content package per frame: the ST 385 system item with the time code of the frame,
+  the picture element padded to the SMPTE 356 frame size, one 8-channel AES3 element of ST 331
+  (1920 samples, or 1601 / 1602 with the 5-sequence count), each item filled to the 512-byte KAG;
+  a constant-size index with three delta entries; CDCI descriptor with separate fields, the
+  vertical interval and BT.601 labels, generic sound descriptor of 4 or 8 channels), Broadcast
+  Wave PCM (ST 382: container `02 06 01/02`, element types 0x01 / 0x02).
 - `write_opatom_pcm(&OpAtomPcm, &[i32])` builds a complete in-memory OP-Atom PCM file (AAF media
   consolidation); `encode_pcm` interleaves planar f32 as little-endian PCM.
 
@@ -172,7 +180,9 @@ w.finish()?;
   uneven chunks (durations, codec label, aspect, PCM exact, index slices, closed partitions),
   29.97 sound per edit unit (1601/1602), a long-GOP AVC index (presentation order, key and B
   flags), OP-Atom picture (clip wrapping) and PCM files at both edit rates, multi-segment index
-  of 12 000 units, UMIDs; truncation and random mutation of written files never panic.
+  of 12 000 units, UMIDs; D-10 625 and 525 content packages (KAG alignment, system item bytes,
+  padded pictures, AES3 headers and the 5-sequence count, PCM exact) and their refused
+  configurations; truncation and random mutation of written files never panic.
 - `crates/export/src/mxf_tests.rs` (ffprobe / ffmpeg as external oracles): OP1a exports with
   DNxHR, ProRes and H.264 — ffprobe reports the OP1a label, codec, 24 frames, frame rate, duration
   and `01:00:00:00` timecode; ffmpeg decodes the MXF picture exactly as it decodes the same
