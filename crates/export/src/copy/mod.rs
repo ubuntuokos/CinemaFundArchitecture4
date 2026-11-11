@@ -10,8 +10,7 @@
 //!   source (`PAYLOAD_BIT_EXACT: PASS`).
 //!
 //! - What the MP4 writer cannot carry yet is refused, not dropped: several sample descriptions
-//!   per track, encrypted entries, a display matrix, disabled or alternate-group tracks, sample
-//!   groups / `sdtp`, uncompressed PCM tracks and sources that do not start at decode time 0.
+//!   per track, encrypted entries, sample groups / `sdtp`, uncompressed PCM tracks and sources that do not start at decode time 0.
 //!   The validator also compares the sample descriptions, edit lists and track headers.
 //!
 //! This phase copies whole tracks of an MP4 / QuickTime source into MP4 or QuickTime. Cutting at

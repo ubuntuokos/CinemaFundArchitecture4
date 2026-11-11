@@ -493,7 +493,7 @@ impl MkvSource {
             let secs = duration.seconds();
             let bitrate = (secs > 0.0).then(|| (t.samples.iter().map(|s| s.size as u64).sum::<u64>() as f64 * 8.0 / secs) as u64);
             let ((w, h), par) = if rotation % 2 == 1 { ((h, w), (v.pixel_aspect().1, v.pixel_aspect().0)) } else { ((w, h), v.pixel_aspect()) };
-            VideoStreamInfo {
+            let mut info = VideoStreamInfo {
                 width: w,
                 height: h,
                 frame_rate: rate,
@@ -504,7 +504,18 @@ impl MkvSource {
                 has_alpha: v.alpha_mode != 0,
                 bitrate,
                 hdr: v.colour.as_ref().and_then(hdr_metadata),
+            };
+            // LCEVC enhancement data as T.35 SEI in the first pictures
+            if let Some((base, framing)) = ventry.as_ref().and_then(|e| crate::lcevc::base_of(&e.codec))
+                && t.samples
+                    .iter()
+                    .take(crate::lcevc::SCAN_SAMPLES)
+                    .filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok())
+                    .any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, framing))
+            {
+                crate::lcevc::mark(name, &mut info.codec, "T.35 SEI");
             }
+            info
         });
         let audio_streams: Vec<AudioStreamInfo> = atracks.iter().filter_map(|&i| file.tracks.get(i)).filter_map(audio_info).collect();
         let info = MediaInfo {

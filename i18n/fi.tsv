@@ -1,0 +1,4118 @@
+# Finnish (fi) catalog for the whole CFA4 interface (Qt GUI and egui). Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Finnish video-editing vocabulary (aikajana, raita, leike, sekvenssi, kansio, toistopaikka,
+# merkki, siirtymä, avainkehys). No proprietary localisation resource, string table or product
+# UI was consulted or copied; add entries the same way. Commands are imperatives ("Tallenna
+# nimellä…"), labels use sentence case, quotation marks are ”…”, and product and format
+# names (CFA4, Lumetri, ProRes, AAF, EDL…) keep their spelling. Decimal comma (0,5). A
+# native-speaker review is welcome.
+#
+# Terms: clip = leike, track = raita, sequence = sekvenssi, timeline = aikajana, bin = kansio,
+# playhead = toistopaikka, marker = merkki, In/Out point = alku-/loppupiste, keyframe =
+# avainkehys, frame = kuva, caption = tekstitys, preset = esiasetus, template = malli, workspace =
+# työtila, gain = vahvistus, opacity = peittävyys, render = renderöinti, ripple = siirtävä,
+# dissolve = ristikuva, wipe = pyyhkäisy, voice-over = selostus, proxy = välityskopio, guide =
+# apuviiva, shortcut = pikanäppäin, (Legacy) = (vanha).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see fi.tsv.attribution.
+
+	'{name}' already exists. Replace it?	”{name}” on jo olemassa. Korvataanko se?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	Tietoja CFA4:stä
+	Add Audio Submix Track	Lisää äänen alamiksausraita
+	Add Caption at Playhead	Lisää tekstitys toistopaikkaan
+	Add Chapter Marker…	Lisää lukumerkki…
+	Add Edit	Lisää leikkaus
+	Add Edit to All Tracks	Lisää leikkaus kaikille raidoille
+	Add Flash Cue Marker…	Lisää Flash Cue -merkki…
+	Add Frame Hold	Lisää kuvan pysäytys
+	Add Marker	Lisää merkki
+	Add New Caption Track…	Lisää uusi tekstitysraita…
+	Add Range Marker	Lisää aluemerkki
+	Add Range Marker to In and Out	Lisää aluemerkki alku- ja loppupisteeseen
+	Add Tracks…	Lisää raitoja…
+	Full screen	Koko näyttö
+	Master volume: use the Audio Track Mixer	Pääänenvoimakkuus: käytä ääniraitamikseriä
+	Send to Queue	Lähetä jonoon
+	Add/Remove Keyframe	Lisää/poista avainkehys
+	Adjust	Säädä
+	Adjustment Layer	Säätötaso
+	Adjustment Layer…	Säätötaso…
+	Align to Video Frame	Tasaa videokehykseen
+	Align to Video Frame as Group	Tasaa videokehykseen ryhmänä
+	All Panels	Kaikki paneelit
+	All files	Kaikki tiedostot
+	Amplitude and Compression	Amplitudi ja kompressio
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Moottori ilman `serve`-komentoa on käännetty haarasta, jossa ei ole Qt-käyttöliittymää: vaihda Qt-käyttöliittymän haaraan ja käännä uudelleen tai anna --engine PATH.
+	Animation	Animaatio
+	Anti-flicker Filter	Välkynnänestosuodin
+	Apply Audio Transition	Käytä äänisiirtymää
+	Apply Default Transitions to Selection	Käytä oletussiirtymiä valintaan
+	Apply Video Transition	Käytä videosiirtymää
+	Assembly	Kokoonpano
+	Attach Proxies…	Liitä välityskopiot…
+	Audio	Ääni
+	Audio Channels…	Äänikanavat…
+	Audio Clip Mixer	Äänileikemikseri
+	Audio Effects	Äänitehosteet
+	Audio Gain…	Äänen vahvistus…
+	Audio In	Ääni sisään
+	Audio Meters	Äänimittarit
+	Audio Options	Ääniasetukset
+	Audio Out	Ääni ulos
+	Audio Track Mixer	Ääniraitamikseri
+	Audio Transitions	Äänisiirtymät
+	Audio Bitrate	Äänen bittinopeus
+	Audio Format	Äänimuoto
+	Auto Bezier	Automaattinen Bezier
+	Automate to Sequence…	Automatisoi sekvenssiin…
+	Avid Log Exchange…	Avid Log Exchange…
+	Bars and Tone…	Testikuva ja testiääni…
+	Bezier	Bezier
+	Bin	Kansio
+	Bin From Selection	Kansio valinnasta
+	Bitrate Encoding	Bittinopeuden koodaus
+	Black Video…	Musta video…
+	Blend Mode	Sekoitustila
+	Blur & Sharpen	Sumennus ja terävöinti
+	Bottom	Alhaalla
+	Breakout to Mono	Erota monoksi
+	Browse…	Selaa…
+	Burn in captions	Polta tekstitykset kuvaan
+	Bypass	Ohita
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	Peruuta valitut
+	Cancelled	Peruutettu
+	Cannot create the output folder: {error}	Tuloskansiota ei voi luoda: {error}
+	Cannot check the output folder for files to replace: {error}	Tuloskansiosta ei voi tarkistaa korvattavia tiedostoja: {error}
+	Captions	Tekstitykset
+	Captions and Graphics	Tekstitykset ja grafiikka
+	Captions…	Tekstitykset…
+	Caribbean	Karibia
+	Center Horizontally	Keskitä vaakasuunnassa
+	Center Vertically	Keskitä pystysuunnassa
+	Cerulean	Taivaansininen
+	Channel Volume	Kanavan äänenvoimakkuus
+	Checked:	Valittu:
+	Choose a file name and location.	Valitse tiedostonimi ja sijainti.
+	Choose folder	Valitse kansio
+	Media File	Mediatiedosto
+	Sequence name	Sekvenssin nimi
+	Clear Finished	Tyhjennä valmiit
+	Clear In	Tyhjennä alkupiste
+	Clear In and Out	Tyhjennä alku- ja loppupiste
+	Clear Markers	Tyhjennä merkit
+	Clear Out	Tyhjennä loppupiste
+	Clear Selected Marker	Tyhjennä valittu merkki
+	Clip	Leike
+	Close All Other Projects	Sulje kaikki muut projektit
+	Close All Projects	Sulje kaikki projektit
+	Close Gap	Sulje rako
+	Close Project	Sulje projekti
+	Color Correction	Värinkorjaus
+	Color Management…	Värinhallinta…
+	Color Matte…	Väritausta…
+	Consolidate Duplicates	Yhdistä kaksoiskappaleet
+	Constant quality (CRF)	Vakiolaatu (CRF)
+	Continuous Bezier	Jatkuva Bezier
+	Copy Paste Includes Sequence Markers	Kopioi ja liitä sisältää sekvenssimerkit
+	Create Captions from Transcript…	Luo tekstitykset litteroinnista…
+	Create Multi-Camera Source Sequence…	Luo monikameralähdesekvenssi…
+	Create Proxies…	Luo välityskopiot…
+	Crossfade	Ristihäivytys
+	Darker Color	Tummempi väri
+	Delay and Echo	Viive ja kaiku
+	Delete Keyframe	Poista avainkehys
+	Delete Render Files	Poista renderöintitiedostot
+	Delete Render Files In to Out	Poista renderöintitiedostot alku- ja loppupisteen väliltä
+	Delete Tracks…	Poista raitoja…
+	Delete Transcript	Poista litterointi
+	Demo Footage	Esittelymateriaali
+	Demo Project	Esittelyprojekti
+	Deselect All	Poista kaikki valinnat
+	Detach Proxies	Irrota välityskopiot
+	Dissolve	Ristikuva
+	Distribute Horizontally	Jaa vaakasuunnassa
+	Distribute Space Horizontally	Jaa välit vaakasuunnassa
+	Distribute Space Vertically	Jaa välit pystysuunnassa
+	Distribute Vertically	Jaa pystysuunnassa
+	Double-click a clip in the Project panel to open it here.	Avaa leike tähän kaksoisnapsauttamalla sitä Projekti-paneelissa.
+	Duration	Kesto
+	EDL…	EDL…
+	Ease In	Pehmeä alku
+	Ease Out	Pehmeä loppu
+	Edit Offline…	Muokkaa offline-tilassa…
+	Edit Subclip…	Muokkaa alileikettä…
+	Edit Workspaces…	Muokkaa työtiloja…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Muokataan Lumetri- ja maskityökaluissa (ei vielä Qt-käyttöliittymässä)
+	Editing	Editointi
+	Effect Controls	Tehostesäätimet
+	Enable	Ota käyttöön
+	Enable Remix	Ota remix käyttöön
+	Enabled	Käytössä
+	End	Loppu
+	Engine stopped	Moottori pysähtyi
+	Entire Sequence	Koko sekvenssi
+	Essential Graphics	Perusgrafiikka
+	Essential Sound	Perusääni
+	Events	Tapahtumat
+	Export As Motion Graphics Template…	Vie Motion Graphics -mallina…
+	Export Markers as CSV…	Vie merkit CSV-tiedostona…
+	Export Media	Vie media
+	Export Media…	Vie media…
+	Export Queue	Vientijono
+	Queue ({n})	Jono ({n})
+	Send exports here with Send to Queue, then start the queue.	Lähetä viennit tänne komennolla Lähetä jonoon ja käynnistä sitten jono.
+	Open a sequence to export	Avaa vietävä sekvenssi
+	The sequence has no caption track.	Sekvenssissä ei ole tekstitysraitaa.
+	Export Audio	Vie ääni
+	Export failed: {path}	Vienti epäonnistui: {path}
+	Export finished: {path}	Vienti valmis: {path}
+	Extract	Poimi
+	Extract Audio	Poimi ääni
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Epäonnistui
+	Field Options…	Kenttäasetukset…
+	File…	Tiedosto…
+	Fill frame	Täytä kuva
+	Filter and EQ	Suodin ja EQ
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Find…	Etsi…
+	Fit to frame	Sovita kuvaan
+	Forest	Metsä
+	Frame Blending	Kuvien sekoitus
+	Frame Hold Options…	Kuvan pysäytyksen asetukset…
+	Frame Sampling	Kuvanäytteistys
+	Frame Size	Kuvakoko
+	From Bin	Kansiosta
+	From Source Monitor	Lähdemonitorista
+	From Source Monitor, Match Frame	Lähdemonitorista, vastaava kuva
+	From file…	Tiedostosta…
+	From the preset	Esiasetuksesta
+	Adaptive ({bpp} bits per pixel)	Mukautuva ({bpp} bittiä/pikseli)
+	Set a fixed bitrate	Aseta kiinteä bittinopeus
+	Gain	Vahvistus
+	General…	Yleiset…
+	Generate	Luo
+	Generate Audio Waveform	Luo äänen aaltomuoto
+	Get Media File Properties for	Hae mediatiedoston ominaisuudet kohteelle
+	Go to End	Siirry loppuun
+	Go to Gap	Siirry rakoon
+	Go to In	Siirry alkupisteeseen
+	Go to Next Caption Segment	Siirry seuraavaan tekstityssegmenttiin
+	Go to Next Keyframe	Siirry seuraavaan avainkehykseen
+	Go to Next Marker	Siirry seuraavaan merkkiin
+	Go to Out	Siirry loppupisteeseen
+	Go to Previous Caption Segment	Siirry edelliseen tekstityssegmenttiin
+	Go to Previous Keyframe	Siirry edelliseen avainkehykseen
+	Go to Previous Marker	Siirry edelliseen merkkiin
+	Go to Split	Siirry jakokohtaan
+	Go to Start	Siirry alkuun
+	Graphics and Titles	Grafiikka ja otsikot
+	Grunge & Distort	Grunge ja vääristymä
+	Hard Mix	Kova sekoitus
+	Hide All Caption Tracks	Piilota kaikki tekstitysraidat
+	Hold	Pito
+	Image Control	Kuvan säätö
+	Image Sequence	Kuvasarja
+	Immersive Video	Immersiivinen video
+	Import Credits Spreadsheet…	Tuo lopputekstien laskentataulukko…
+	Import From	Tuo kohteesta
+	Import Image Sequence…	Tuo kuvasarja…
+	Import from Media Browser	Tuo mediaselaimesta
+	Ingest Settings…	Sisäänlukuasetukset…
+	Insert Frame Hold Segment	Lisää kuvan pysäytyksen segmentti
+	Inspector	Tarkastaja
+	Install Motion Graphics Template…	Asenna Motion Graphics -malli…
+	Interpret Footage…	Tulkitse materiaali…
+	Iris	Iiris
+	Keying	Avainnus
+	Label	Nimiö
+	Lavender	Laventeli
+	Legacy	Vanha
+	Level	Taso
+	Lift	Nosta
+	Lighter Color	Vaaleampi väri
+	Lights & Blurs	Valot ja sumennukset
+	Lights & Glows	Valot ja hehkut
+	Linear Burn	Lineaarinen poltto
+	Linear Dodge (Add)	Lineaarinen vaalennus (lisää)
+	Linear Light	Lineaarinen valo
+	Link Media…	Linkitä media…
+	Linked Selection	Linkitetty valinta
+	Lumetri Color	Lumetri-väri
+	Lumetri Scopes	Lumetri-mittarit
+	Make Offline…	Siirrä offline-tilaan…
+	Make Subclip…	Luo alileike…
+	Make Subsequence	Luo alisekvenssi
+	Mango	Mango
+	Mark Clip	Merkitse leike
+	Mark In	Merkitse alkupiste
+	Mark Out	Merkitse loppupiste
+	Mark Selection	Merkitse valinta
+	Mark Split	Merkitse jakokohta
+	Markers	Merkit
+	Match Frame	Vastaava kuva
+	Match sequence	Vastaa sekvenssiä
+	Media Browser	Mediaselain
+	Media offline	Media offline-tilassa
+	Media…	Media…
+	Merge Clips…	Yhdistä leikkeet…
+	Merged Clip	Yhdistetty leike
+	Metadata	Metatiedot
+	Modulation	Modulaatio
+	Motion	Liike
+	Motion Graphics Template…	Motion Graphics -malli…
+	Movie	Elokuva
+	Multi-Camera	Monikamera
+	Mute Track	Mykistä raita
+	Nest…	Sisäkkäistä…
+	New Bin	Uusi kansio
+	New Layer	Uusi taso
+	New Project Panel	Uusi Projekti-paneeli
+	New Sequence…	Uusi sekvenssi…
+	Next in Sequence	Seuraava sekvenssissä
+	Next in Track	Seuraava raidalla
+	No	Ei
+	No sequence	Ei sekvenssiä
+	Drop media here to create sequence.	Pudota media tähän luodaksesi sekvenssin.
+	Open Demo Project	Avaa esittelyprojekti
+	Double-click a sequence in the Project panel to open it here.	Avaa sekvenssi tähän kaksoisnapsauttamalla sitä Projekti-paneelissa.
+	Noise & Grain	Kohina ja rakeisuus
+	Noise Reduction	Kohinanvaimennus
+	Normalize Mix Track…	Normalisoi miksausraita…
+	Not Now	Ei nyt
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Ei vielä Qt-käyttöliittymässä (katso docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	Vanhentunut
+	Offline File…	Offline-tiedosto…
+	Open Project	Avaa projekti
+	Open Project…	Avaa projekti…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	Optinen virtaus
+	Opus	Opus
+	Output	Lähtö
+	Output file	Tulostiedosto
+	Overlay	Peitto
+	Overwrite	Korvaa
+	PCM (uncompressed)	PCM (pakkaamaton)
+	Panner	Panorointi
+	Paste Attributes…	Liitä määritteet…
+	Paste Insert	Liitä lisäten
+	Pin Light	Pistevalo
+	Play/Stop	Toista/pysäytä
+	Preset	Esiasetus
+	Previous in Sequence	Edellinen sekvenssissä
+	Previous in Track	Edellinen raidalla
+	Program	Ohjelma
+	Progress	Edistyminen
+	Project	Projekti
+	Project Manager…	Projektinhallinta…
+	Project Notes	Projektin muistiinpanot
+	Project Settings	Projektin asetukset
+	Project…	Projekti…
+	Proxy	Välityskopio
+	Quit	Lopeta
+	Range	Alue
+	Razor Tool	Partakoneterätyökalu
+	Reconnect Full Resolution Media…	Yhdistä uudelleen täyden resoluution media…
+	Recover	Palauta
+	Recover Unsaved Changes	Palauta tallentamattomat muutokset
+	Recover Unsaved Changes…	Palauta tallentamattomat muutokset…
+	Reference Monitor	Vertailumonitori
+	Remaining	Jäljellä
+	Remix	Remix
+	Remix Properties…	Remixin ominaisuudet…
+	Remove Attributes…	Poista määritteet…
+	Remove Filler Words	Poista täytesanat
+	Remove Pauses	Poista tauot
+	Remove Unused	Poista käyttämättömät
+	Rename…	Nimeä uudelleen…
+	Render Audio	Renderöi ääni
+	Render Effects In to Out	Renderöi tehosteet alku- ja loppupisteen väliltä
+	Render In to Out	Renderöi alku- ja loppupisteen väliltä
+	Render Selection	Renderöi valinta
+	Replace Fonts in Projects…	Korvaa fontit projekteissa…
+	Replace With Clip	Korvaa leikkeellä
+	Reset All Parameters	Palauta kaikki parametrit
+	Reset Duration	Palauta kesto
+	Reset Effect	Palauta tehoste
+	Reset Panel Layout	Palauta paneelien asettelu
+	Reset Parameter	Palauta parametri
+	Reset to Saved Layout	Palauta tallennettuun asetteluun
+	Restoration	Restaurointi
+	Restore Captions from Source Clip	Palauta tekstitykset lähdeleikkeestä
+	Retry	Yritä uudelleen
+	Reverb	Kaiunta
+	Reverse Match Frame	Käänteinen vastaava kuva
+	Revert Remix	Peru remix
+	Ripple Delete	Poista siirtäen
+	Ripple Delete Head Frame	Poista ensimmäinen kuva siirtäen
+	Ripple Sequence Markers	Siirrä sekvenssimerkkejä
+	Rose	Ruusu
+	Save All	Tallenna kaikki
+	Save Changes to this Workspace	Tallenna muutokset tähän työtilaan
+	Save as New Workspace	Tallenna uutena työtilana
+	Save as New Workspace…	Tallenna uutena työtilana…
+	Save as Template…	Tallenna mallina…
+	Save changes to '{name}' before closing?	Tallennetaanko kohteen ”{name}” muutokset ennen sulkemista?
+	Save changes to '{name}' before continuing?	Tallennetaanko kohteen ”{name}” muutokset ennen jatkamista?
+	Scale Width	Skaalaa leveys
+	Scale to Frame Size	Skaalaa kuvakokoon
+	Scene Edit Detection…	Kohtausleikkausten tunnistus…
+	Scratch Disks…	Työlevyt…
+	Screen	Rasteri
+	Search	Hae
+	Search Bin	Hakukansio
+	Select All Matching	Valitse kaikki vastaavat
+	Select Label Group	Valitse nimiöryhmä
+	Select Next Graphic	Valitse seuraava grafiikka
+	Select Next Layer	Valitse seuraava taso
+	Select Previous Graphic	Valitse edellinen grafiikka
+	Select Previous Layer	Valitse edellinen taso
+	Select a clip in the Timeline.	Valitse leike aikajanalta.
+	Selected	Valittu
+	Selection Follows Playhead	Valinta seuraa toistopaikkaa
+	Selection as CFA4 Project…	Valinta CFA4-projektina…
+	Selection…	Valinta…
+	Sequence	Sekvenssi
+	Sequence From Clip	Sekvenssi leikkeestä
+	Sequence In/Out	Sekvenssin alku/loppu
+	Sequence Settings…	Sekvenssin asetukset…
+	Sequence…	Sekvenssi…
+	Show Active Caption Tracks Only	Näytä vain aktiiviset tekstitysraidat
+	Show All Caption Tracks	Näytä kaikki tekstitysraidat
+	Show All Marker Colors	Näytä kaikki merkkivärit
+	Show Through Edits	Näytä läpileikkaukset
+	Simplify Sequence…	Yksinkertaista sekvenssi…
+	Slide	Liu'uta
+	Smart Tools	Älykkäät työkalut
+	Snap in Timeline	Kohdista aikajanalla
+	Solo Track	Sooloraita
+	Some panel labels change language after a restart.	Jotkin paneelien nimet vaihtavat kieltä uudelleenkäynnistyksen jälkeen.
+	Source	Lähde
+	Source In	Lähteen alkupiste
+	Source Settings…	Lähdeasetukset…
+	Source patch	Lähteen kohdistus
+	Special	Erikoiset
+	Speed	Nopeus
+	Speed/Duration…	Nopeus/kesto…
+	Start	Aloita
+	Start Queue	Käynnistä jono
+	Starting engine…	Käynnistetään moottoria…
+	Step Back 1 Frame	Yksi kuva taaksepäin
+	Step Forward 1 Frame	Yksi kuva eteenpäin
+	Stereo Imagery	Stereokuva
+	Still Image	Pysäytyskuva
+	Stop Queue	Pysäytä jono
+	Subclip	Alileike
+	Synchronize…	Synkronoi…
+	Synthetic	Synteettinen
+	Tan	Ruskeankeltainen
+	Target Bitrate	Tavoitebittinopeus
+	Teal	Sinivihreä
+	Text to Speech	Tekstistä puheeksi
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	CFA4-moottoria (cfa4-cli) ei löytynyt. Käännä se komennolla: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4-moottori pysähtyi odottamatta. Tallentamattomat muutokset on säilytetty palautuslokissa; käynnistä CFA4 uudelleen palauttaaksesi ne.
+	The engine stopped	Moottori pysähtyi
+	Time	Aika
+	Time Interpolation	Ajan interpolointi
+	Time Remapping	Ajan uudelleenmääritys
+	Time and Pitch	Aika ja sävelkorkeus
+	Timecode	Aikakoodi
+	Timecode…	Aikakoodi…
+	Timeline	Aikajana
+	Toggle Animation	Animaatio päälle/pois
+	Toggle Proxies	Välityskopiot päälle/pois
+	Toggle Sync Lock	Synkronointilukitus päälle/pois
+	Toggle Track Lock	Raitalukitus päälle/pois
+	Toggle Track Output	Raidan ulostulo päälle/pois
+	Toggle the effect on or off	Kytke tehoste päälle tai pois
+	Toggle track targeting	Raidan kohdistus päälle/pois
+	Top	Ylhäällä
+	Transcribe Sequence…	Litteroi sekvenssi…
+	Transcribe…	Litteroi…
+	Transcript	Litterointi
+	Transformers	Muuntimet
+	Transparent Video…	Läpinäkyvä video…
+	Trim Edit	Trimmausleikkaus
+	Type	Tyyppi
+	Uniform Scale	Tasainen skaalaus
+	Universal Counting Leader…	Yleinen lähtölaskenta…
+	Update Metadata…	Päivitä metatiedot…
+	Upgrade Caption to Graphic	Muunna tekstitys grafiikaksi
+	Upgrade to Source Graphic	Muunna lähdegrafiikaksi
+	Use hardware encoding when available	Käytä laitteistokoodausta, kun se on käytettävissä
+	Utility	Apuohjelmat
+	VBR, 1 pass	VBR, 1 kierros
+	VBR, 2 pass	VBR, 2 kierrosta
+	Vertical Text	Pystysuora teksti
+	Video Effects	Videotehosteet
+	Video In	Video sisään
+	Video Options	Videoasetukset
+	Video Out	Video ulos
+	Video Transitions	Videosiirtymät
+	Vivid Light	Kirkas valo
+	Volume	Äänenvoimakkuus
+	Wipe	Pyyhkäisy
+	Work Area	Työalue
+	Workspaces	Työtilat
+	Yes	Kyllä
+	Zoom to Sequence	Zoomaa sekvenssiin
+	an unknown time	tuntematon aika
+	automatic	automaattinen
+	frames	kuvaa
+	not available	ei käytettävissä
+	off	pois
+	optional	valinnainen
+	…	…
+	Rate Stretch Tool	Nopeuden venytystyökalu
+	Remix Tool	Remix-työkalu
+	Ripple Edit Tool	Siirtävä muokkaustyökalu
+	Rolling Edit Tool	Rullaava muokkaustyökalu
+	Slide Tool	Liukutyökalu
+	Slip Tool	Siirtotyökalu
+	Track Select Backward Tool	Raidan valinta taaksepäin -työkalu
+	Track Select Forward Tool	Raidan valinta eteenpäin -työkalu
+	Add Marker (M)	Lisää merkki (M)
+	Alpha	Alfa
+	Button Editor	Painikeeditori
+	Composite Video	Komposiittivideo
+	Display Mode	Näyttötila
+	Export Frame	Vie kuva
+	Extract (')	Poimi (')
+	Full	Täysi
+	Go to In (Shift+I)	Siirry alkupisteeseen (Shift+I)
+	Go to Out (Shift+O)	Siirry loppupisteeseen (Shift+O)
+	High Quality Playback	Laadukas toisto
+	Insert (,)	Lisää (,)
+	Lift (;)	Nosta (;)
+	Loop	Silmukka
+	Loop marked range	Toista merkittyä aluetta silmukassa
+	Magnification	Suurennus
+	Mark In (I)	Merkitse alkupiste (I)
+	Mark Out (O)	Merkitse loppupiste (O)
+	More transport controls	Lisää toisto-ohjaimia
+	Overwrite (.)	Korvaa (.)
+	Paused Resolution	Resoluutio taukotilassa
+	Play In to Out	Toista alusta loppuun
+	Play-Stop Toggle (Space)	Toisto/pysäytys (välilyönti)
+	Playback Resolution	Toiston resoluutio
+	RGBA Channels	RGBA-kanavat
+	Safe Margins	Turvamarginaalit
+	Select Playback Resolution	Valitse toiston resoluutio
+	Select Zoom Level	Valitse zoomaustaso
+	Show Transport Controls	Näytä toisto-ohjaimet
+	Shuttle Left	Shuttle vasemmalle
+	Shuttle Right	Shuttle oikealle
+	Shuttle Stop	Shuttle-pysäytys
+	Step Back 1 Frame (Left)	Yksi kuva taaksepäin (vasen)
+	Step Forward 1 Frame (Right)	Yksi kuva eteenpäin (oikea)
+	Darkest	Tummin
+	Next Appearance Mode	Seuraava ulkoasutila
+	(no sequence)	(ei sekvenssiä)
+	All markers are hidden by the colour filter.	Värisuodin piilottaa kaikki merkit.
+	Audio {n}:	Ääni {n}:
+	Audio:	Ääni:
+	Clip: {name}	Leike: {name}
+	Codec:	Koodekki:
+	Duration:	Kesto:
+	Marker	Merkki
+	No markers. Press M to add one.	Ei merkkejä. Lisää merkki painamalla M.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Tämän projektin muistiinpanot: tehtävät, ohjeet, kuvanumerot… Tallennetaan projektin mukana.
+	Playhead:	Toistopaikka:
+	Select a clip to view its metadata.	Valitse leike nähdäksesi sen metatiedot.
+	Settings:	Asetukset:
+	Show or hide {color} markers	Näytä tai piilota {color} merkit
+	Video {n}:	Video {n}:
+	Video:	Video:
+	{tc}  Chapter	{tc}  Luku
+	Media Type	Mediatyyppi
+	Frame Rate	Kuvanopeus
+	Media Start	Median alku
+	Media End	Median loppu
+	Media Duration	Median kesto
+	Video Info	Videon tiedot
+	Video Codec	Videokoodekki
+	Audio Info	Äänen tiedot
+	Audio Codec	Äänikoodekki
+	Scene	Kohtaus
+	Shot	Otos
+	Log Note	Lokimerkintä
+	Comment	Kommentti
+	Tape Name	Nauhan nimi
+	Client	Asiakas
+	Camera Angle	Kamerakulma
+	File Path	Tiedostopolku
+	 · {time} left	 · {time} jäljellä
+	Active Monitor	Aktiivinen monitori
+	Add a timecode row	Lisää aikakoodirivi
+	Audio Samples	Ääninäytteet
+	Current Time	Nykyinen aika
+	Failed: {e}	Epäonnistui: {e}
+	Feet + Frames 16mm	Jalat + kuvat 16 mm
+	Feet + Frames 35mm	Jalat + kuvat 35 mm
+	Frames	Kuvat
+	In/Out Duration	Alku–loppu-kesto
+	Media Time	Median aika
+	No background jobs.	Ei taustatöitä.
+	Remove Row	Poista rivi
+	Seconds	Sekunnit
+	Show finished jobs	Näytä valmiit työt
+	{mode} · no clip	{mode} · ei leikettä
+	{mode} · no sequence	{mode} · ei sekvenssiä
+	Render	Renderöi
+	Job	Työ
+	Audio Track Mixer menu	Ääniraitamikserin valikko
+	Automation mode	Automaatiotila
+	Enable track for recording	Ota raita käyttöön tallennusta varten
+	Fill the slots above first	Täytä ensin yllä olevat paikat
+	Go to In Point	Siirry alkupisteeseen
+	Go to Out Point	Siirry loppupisteeseen
+	Input channel mapping	Tulokanavien määritys
+	Meter Input(s) Only	Vain mittarin tulot
+	Mix	Miksaus
+	Mute Send	Mykistä lähetys
+	New Submix	Uusi alamiksaus
+	Pan / balance (drag; double-click: centre)	Panorointi / tasapaino (vedä; kaksoisnapsautus: keskitä)
+	Post-Fader	Häivyttimen jälkeen
+	Pre-Fader	Ennen häivytintä
+	Remove Send	Poista lähetys
+	Show/Hide Effects and Sends	Näytä/piilota tehosteet ja lähetykset
+	Show/Hide Tracks	Näytä/piilota raidat
+	Solo safe	Soolosuojattu
+	Track output assignment	Raidan ulostulon määritys
+	Voice-over recording is not in the Qt GUI yet	Selostuksen tallennus ei ole vielä Qt-käyttöliittymässä
+	Volume (drag; double-click: 0 dB)	Äänenvoimakkuus (vedä; kaksoisnapsautus: 0 dB)
+	pre 	ennen 
+	Off	Pois
+	Read	Luku
+	Latch	Salpa
+	Touch	Kosketus
+	Write	Kirjoitus
+	Stereo	Stereo
+	Swap	Vaihda
+	Write keyframes	Kirjoita avainkehykset
+	Match Playhead	Vastaa toistopaikkaa
+	Gang to Program	Kytke ohjelmaan
+	(no sequences)	(ei sekvenssejä)
+	8 Bit	8 bittiä
+	Bright	Kirkas
+	Clamp Signal	Rajoita signaali
+	Colour Space	Väriavaruus
+	Dimmed	Himmennetty
+	Float	Liukuluku
+	Four Scopes (RGB, 8 bit)	Neljä mittaria (RGB, 8 bittiä)
+	Four Scopes (YUV, float, no clamp)	Neljä mittaria (YUV, liukuluku, ei rajoitusta)
+	HDR	HDR
+	HLS Vectorscope + Histogram	HLS-vektoriskooppi + histogrammi
+	Histogram	Histogrammi
+	Luma	Luma
+	Parade	Paraati
+	Parade (RGB)	Paraati (RGB)
+	Parade ({kind})	Paraati ({kind})
+	Parade Type	Paraatin tyyppi
+	RGB-White	RGB-valkoinen
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Mittarin asetukset
+	Signal Scale	Signaalin asteikko
+	Vectorscope (YUV)	Vektoriskooppi (YUV)
+	Vectorscope + Waveform YC	Vektoriskooppi + aaltomuoto YC
+	Vectorscope HLS	Vektoriskooppi HLS
+	Vectorscope Targets	Vektoriskoopin kohteet
+	Vectorscope YUV	Vektoriskooppi YUV
+	Waveform	Aaltomuoto
+	Waveform (Luma)	Aaltomuoto (luma)
+	Waveform (RGB)	Aaltomuoto (RGB)
+	Waveform ({kind})	Aaltomuoto ({kind})
+	Waveform Type	Aaltomuodon tyyppi
+	YC	YC
+	YC no Chroma	YC ilman krominanssia
+	YUV	YUV
+	(no clip selected)	(ei valittua leikettä)
+	Add Lumetri Color to clip	Lisää leikkeeseen Lumetri-väri
+	Adjustments	Säädöt
+	Apply Match	Käytä vastaavuutta
+	Basic Correction	Perussäätö
+	Blacks	Mustat
+	Bleach Bypass	Bleach bypass
+	Color Match	Värien vastaavuus
+	Color Wheels & Match	Värikehät ja vastaavuus
+	Color/Black	Väri/musta
+	Color/Gray	Väri/harmaa
+	Comparison View	Vertailunäkymä
+	Cool Blue	Viileä sininen
+	Correction	Korjaus
+	Creative	Luova
+	Curves	Käyrät
+	Denoise	Kohinanpoisto
+	Exposure	Valotus
+	Face Detection (protect skin tones)	Kasvojentunnistus (suojaa ihonsävyt)
+	Faded Film	Haalistunut filmi
+	Faded Matte	Haalistunut matta
+	Feather	Pehmennys
+	Golden Hour	Kultainen tunti
+	HDR Range	HDR-alue
+	HDR Specular	HDR-heijastukset
+	HDR White	HDR-valkoinen
+	HSL Secondary	HSL-toissijainen
+	Highlights	Kohokohdat
+	Hue Range	Sävyalue
+	Hue Saturation Curves	Sävy-/kylläisyyskäyrät
+	Hue vs Hue	Sävy vs. sävy
+	Hue vs Luma	Sävy vs. luma
+	Hue vs Sat	Sävy vs. kylläisyys
+	Input LUT	Syöte-LUT
+	Key	Avain
+	LUT	LUT
+	Look	Ilme
+	Look LUT	Ilme-LUT
+	Luma Max	Luma enint.
+	Luma Min	Luma väh.
+	Luma vs Sat	Luma vs. kylläisyys
+	Master · {name}	Pää · {name}
+	Midpoint	Keskipiste
+	Midtones	Keskisävyt
+	Night	Yö
+	RGB Curves	RGB-käyrät
+	Reference	Viite
+	Refine	Tarkenna
+	Roundness	Pyöreys
+	Sat vs Sat	Kylläisyys vs. kylläisyys
+	Saturation Min	Kylläisyys väh.
+	Shadows	Varjot
+	Show Mask	Näytä maski
+	Soften	Pehmennä
+	Teal & Orange	Sinivihreä ja oranssi
+	Tint	Sävytys
+	Vibrance	Eloisuus
+	Vignette	Vinjetti
+	Warm Film	Lämmin filmi
+	White/Black	Valkoinen/musta
+	Whites	Valkoiset
+	(none)	(ei mitään)
+	Add to Favorites	Lisää suosikkeihin
+	All Supported Files	Kaikki tuetut tiedostot
+	Allow Duplicate Media During Project Import	Salli päällekkäinen media projektin tuonnissa
+	Audio Files	Äänitiedostot
+	Cannot open {dir}: {e}	Kohdetta {dir} ei voi avata: {e}
+	Clear Recent Directories	Tyhjennä viimeisimmät kansiot
+	Create Folder For Imported Projects	Luo kansio tuoduille projekteille
+	Date Modified	Muokkauspäivä
+	Edit Columns	Muokkaa sarakkeita
+	Edit Columns…	Muokkaa sarakkeita…
+	File Extension	Tiedostopääte
+	File Types Displayed	Näytettävät tiedostotyypit
+	Go Back	Takaisin
+	Go Forward	Eteenpäin
+	Hover Scrub	Selaus osoittamalla
+	Import	Tuo
+	Import as Image Sequence	Tuo kuvasarjana
+	Ingest	Sisäänluku
+	Local Drives	Paikalliset asemat
+	Network	Verkko
+	New Media Browser Panel	Uusi mediaselainpaneeli
+	Open In Source Monitor	Avaa lähdemonitorissa
+	Open Ingest Settings	Avaa sisäänlukuasetukset
+	Projects and Interchange	Projektit ja tiedonvaihto
+	Recent Directories	Viimeisimmät kansiot
+	Remove from Favorites	Poista suosikeista
+	Show in File Manager	Näytä tiedostonhallinnassa
+	Still Images	Pysäytyskuvat
+	Thumbnail View	Pienoiskuvanäkymä
+	Up One Level	Taso ylöspäin
+	Video Files	Videotiedostot
+	{sel} of {total} items selected	{sel}/{total} kohdetta valittu
+	{total} items	{total} kohdetta
+	#	#
+	Add caption at playhead	Lisää tekstitys toistopaikkaan
+	Add captions	Lisää tekstityksiä
+	Box	Laatikko
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Luo tekstitysraita tai tuo tekstitystiedosto.
+	Create captions	Luo tekstitykset
+	Create new caption track	Luo uusi tekstitysraita
+	Delete selected captions	Poista valitut tekstitykset
+	Export captions…	Vie tekstitykset…
+	Extract selected text	Poimi valittu teksti
+	Go to caption	Siirry tekstitykseen
+	Go to graphic	Siirry grafiikkaan
+	Import captions file…	Tuo tekstitystiedosto…
+	In	Alku
+	Lift selected text	Nosta valittu teksti
+	Merge selected captions	Yhdistä valitut tekstitykset
+	New {format} track	Uusi {format}-raita
+	No captions on this track. Press + to add one at the playhead.	Tällä raidalla ei ole tekstityksiä. Lisää tekstitys toistopaikkaan painamalla +.
+	No matching captions.	Ei vastaavia tekstityksiä.
+	No matching text.	Ei vastaavaa tekstiä.
+	No text graphics in this sequence. Add text with the Type tool.	Tässä sekvenssissä ei ole tekstigrafiikkaa. Lisää teksti Teksti-työkalulla.
+	Open a sequence to search its graphics	Avaa sekvenssi hakeaksesi sen grafiikasta
+	Open a sequence to see its transcript	Avaa sekvenssi nähdäksesi sen litteroinnin
+	Open a sequence to work with captions	Avaa sekvenssi työskennelläksesi tekstitysten kanssa
+	Out	Loppu
+	Position: bottom	Sijainti: alhaalla
+	Position: middle	Sijainti: keskellä
+	Position: top	Sijainti: ylhäällä
+	Remove filler words	Poista täytesanat
+	Speaker	Puhuja
+	Speech-to-text turns the dialogue into editable text.	Puheesta tekstiksi muuttaa dialogin muokattavaksi tekstiksi.
+	Split caption at playhead	Jaa tekstitys toistopaikassa
+	Subtitle	Tekstitys
+	Teletext	Teksti-TV
+	Text colour	Tekstin väri
+	This build has no speech-to-text; import a transcript with transcript.set.	Tässä versiossa ei ole puheesta tekstiksi -toimintoa; tuo litterointi komennolla transcript.set.
+	Track	Raita
+	Transcribe	Litteroi
+	Transcribe sequence	Litteroi sekvenssi
+	(Custom)	(Mukautettu)
+	(Default)	(Oletus)
+	Ambience	Taustaääni
+	Assign an audio type to the selection:	Määritä valinnalle äänityyppi:
+	Auto-Match	Automaattinen vastaavuus
+	Balanced Voice	Tasapainoinen ääni
+	Bright Air	Kirkas ilma
+	Bright Studio	Kirkas studio
+	Browse	Selaa
+	Clarity	Selkeys
+	Clean Up Noisy Dialogue	Siivoa kohinainen dialogi
+	Clear Audio Type	Tyhjennä äänityyppi
+	Clear Muddiness	Poista tukkoisuus
+	Clip Volume	Leikkeen äänenvoimakkuus
+	DeEss	Sibilanttien vaimennus
+	DeHum	Hurinanpoisto
+	Dialogue	Dialogi
+	Dry Up a Roomy Voice	Kuivaa kaikuva ääni
+	Duck Deep Under Dialogue	Vaimenna syvälle dialogin alle
+	Duck Under Dialogue	Vaimenna dialogin alle
+	Duck Under Voice and Effects	Vaimenna puheen ja tehosteiden alle
+	Duck against:	Vaimenna suhteessa:
+	Ducking	Vaimennus
+	Dynamics	Dynamiikka
+	EQ	EQ
+	Enhance Speech	Paranna puhetta
+	Fades	Häivytykset
+	Far Away	Kaukana
+	From the Left	Vasemmalta
+	From the Right	Oikealta
+	Generate Keyframes	Luo avainkehykset
+	High Tone	Korkea sävy
+	In a Room	Huoneessa
+	Interior Room Tone	Sisätilan huoneääni
+	Large Hall	Suuri sali
+	Loudness	Äänekkyys
+	Low Tone	Matala sävy
+	Matches each of the {n} clips on its own.	Sovittaa kunkin {n} leikkeestä erikseen.
+	Medium Room	Keskikokoinen huone
+	Multiple Clips Selected	Useita leikkeitä valittu
+	Music	Musiikki
+	Mute	Mykistä
+	Not matched yet	Ei vielä sovitettu
+	Open Air	Ulkoilma
+	Pan	Panorointi
+	Phone Call	Puhelu
+	Podcast Voice	Podcast-ääni
+	Presence Lift	Läsnäolon korostus
+	Preset name	Esiasetuksen nimi
+	Radio Announcer	Radiokuuluttaja
+	Radio Voice	Radioääni
+	Reduce By	Vähennä
+	Reduce Noise	Vähennä kohinaa
+	Reduce Reverb	Vähennä kaikua
+	Reduce Rumble	Vähennä jyrinää
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	Musiikin remix tavoitekestoon ei ole vielä käytettävissä. Trimmaa leike ja lisää ristihäivytys sen sijaan.
+	Repair	Korjaus
+	SFX	Äänitehosteet
+	Select audio clips to edit them here	Valitse äänileikkeet muokataksesi niitä tässä
+	Select audio clips, then click a preset to apply it.	Valitse äänileikkeet ja napsauta sitten esiasetusta käyttääksesi sitä.
+	Sensitivity	Herkkyys
+	Small Room	Pieni huone
+	Soften Harshness	Pehmennä kireyttä
+	Stereo Width	Stereoleveys
+	Stone Church	Kivikirkko
+	Telephone	Puhelin
+	The selected clips have different audio types. Assign one type to edit them together.	Valituilla leikkeillä on eri äänityypit. Määritä yksi tyyppi muokataksesi niitä yhdessä.
+	Untagged	Merkitsemätön
+	Voice in a Hall	Ääni salissa
+	Warm Room	Lämmin huone
+	Warm Voice	Lämmin ääni
+	Wide Outdoor	Laaja ulkotila
+	{name} (user)	{name} (käyttäjä)
+	Align Bottom	Tasaa alas
+	Align Center Horizontally	Keskitä vaakasuunnassa
+	Align Center Vertically	Keskitä pystysuunnassa
+	Align Left	Tasaa vasemmalle
+	Align Right	Tasaa oikealle
+	Align Top	Tasaa ylös
+	Align and Transform	Tasaus ja muunnos
+	Alignment	Tasaus
+	Anchor point	Ankkuripiste
+	Background	Tausta
+	Center	Keskellä
+	Center Align Text	Keskitä teksti
+	Crawl Left	Vieritä vasemmalle
+	Crawl Right	Vieritä oikealle
+	Create new graphic	Luo uusi grafiikka
+	End Off Screen	Päätä ruudun ulkopuolelle
+	Faux Bold	Keinolihavointi
+	Faux Italic	Keinokursivointi
+	Font Style	Fonttityyli
+	Inner	Sisäinen
+	Install Motion Graphics Template (.fcgt)	Asenna Motion Graphics -malli (.fcgt)
+	Install…	Asenna…
+	Intro Duration	Alun kesto
+	Kerning	Välistys
+	Left Align Text	Tasaa teksti vasemmalle
+	Ligatures	Ligatuurit
+	New Ellipse	Uusi ellipsi
+	New Rectangle	Uusi suorakulmio
+	New Text	Uusi teksti
+	New Text Layer	Uusi tekstitaso
+	No templates match.	Ei vastaavia malleja.
+	OpenType	OpenType
+	Outer	Ulkoinen
+	Outro Duration	Lopun kesto
+	Paragraph Text	Kappaleteksti
+	Pin To	Kiinnitä kohteeseen
+	Pinned Edges	Kiinnitetyt reunat
+	Point Text	Pisteteksti
+	Polygon Sides	Monikulmion sivut
+	Postroll	Jälkirulla
+	Preroll	Esirulla
+	Responsive Design - Position	Responsiivinen suunnittelu – sijainti
+	Responsive Design - Time	Responsiivinen suunnittelu – aika
+	Right Align Text	Tasaa teksti oikealle
+	Roll	Rulla
+	Search templates	Hae malleja
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Valitse grafiikkaleike tai käytä Teksti-työkalua (T) Ohjelma-monitorissa
+	Select a layer to edit its properties.	Valitse taso muokataksesi sen ominaisuuksia.
+	Shadow	Varjo
+	Start Off Screen	Aloita ruudun ulkopuolelta
+	Stroke 2	Ääriviiva 2
+	Template Properties	Mallin ominaisuudet
+	Template: {name}	Malli: {name}
+	Text Box Height	Tekstikehyksen korkeus
+	Text Box Width	Tekstikehyksen leveys
+	Text Layer Type	Tekstitason tyyppi
+	Text Properties	Tekstin ominaisuudet
+	Text Styling	Tekstin muotoilu
+	Toggle animation	Animaatio päälle/pois
+	Toggle visibility	Näkyvyys päälle/pois
+	Video Frame	Videokehys
+	{category} · My Template	{category} · Oma malli
+	{n} editable properties	{n} muokattavaa ominaisuutta
+	Add pause	Lisää tauko
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	Lisää tauko lisää merkinnän [pause 1s]. Muuta lukua pidemmäksi tai lyhyemmäksi tauoksi, esim. [pause 500ms] tai [pause 2s].
+	Add to timeline	Lisää aikajanalle
+	Basic voices (built in)	Perusäänet (sisäänrakennetut)
+	Download natural voices ({mb} MB)…	Lataa luonnolliset äänet ({mb} Mt)…
+	Download of the natural voices failed: {e}	Luonnollisten äänten lataus epäonnistui: {e}
+	Download the natural voices? {mb} MB, once.	Ladataanko luonnolliset äänet? {mb} Mt, kerran.
+	Downloading…	Ladataan…
+	Editing the selected narration	Muokataan valittua kertojaääntä
+	Extra high	Erittäin korkea
+	Extra low	Erittäin matala
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Lähteistä {source} ja github.com/cmusphinx/cmudict (ääntämykset). Lisenssi: {license}. Jokainen tiedosto tarkistetaan kiinnitettyä SHA-256-tiivistettä vasten.
+	Hear this voice	Kuuntele tätä ääntä
+	Narration added on {track}	Kertojaääni lisätty raidalle {track}
+	Narration updated	Kertojaääni päivitetty
+	Natural voices	Luonnolliset äänet
+	Natural voices installed	Luonnolliset äänet asennettu
+	Natural voices need a one-time download.	Luonnolliset äänet vaativat kertaluonteisen latauksen.
+	New narration	Uusi kertojaääni
+	Pace	Tahti
+	Synthesizing narration…	Syntetisoidaan kertojaääntä…
+	Synthesizing…	Syntetisoidaan…
+	Text to Speech: {e}	Tekstistä puheeksi: {e}
+	Type what you want the voice to say	Kirjoita, mitä äänen pitää sanoa
+	Vocal pitch	Äänenkorkeus
+	Voice	Ääni
+	an audio track	ääniraita
+	no audio output (check Settings ▸ Audio Hardware)	ei äänilähtöä (tarkista Asetukset ▸ Äänilaitteisto)
+	the job disappeared	työ katosi
+	{name} (download)	{name} (lataus)
+	5.1 panner (drag the puck; double-click: front centre)	5.1-panorointi (vedä kiekkoa; kaksoisnapsautus: etukeskus)
+	Add keyframe	Lisää avainkehys
+	Go to next keyframe	Siirry seuraavaan avainkehykseen
+	Go to previous keyframe	Siirry edelliseen avainkehykseen
+	Remove keyframe	Poista avainkehys
+	Select a clip to see its properties	Valitse leike nähdäksesi sen ominaisuudet
+	Speed {n}%	Nopeus {n} %
+	Turn on animation and add keyframe	Ota animaatio käyttöön ja lisää avainkehys
+	Apply to Selected Clips	Käytä valittuihin leikkeisiin
+	Export Preset…	Vie esiasetus…
+	Import Presets…	Tuo esiasetuksia…
+	Lumetri Presets	Lumetri-esiasetukset
+	Search effects	Hae tehosteita
+	Text to Speech: another sequence is open now; the narration was not placed	Tekstistä puheeksi: toinen sekvenssi on nyt auki; kertojaääntä ei sijoitettu
+	Effect presets	Tehosteiden esiasetukset
+	Automate to Sequence	Automatisoi sekvenssiin
+	Bin: {name}	Kansio: {name}
+	Clear (Delete)	Tyhjennä (Delete)
+	Convert to Master Clip	Muunna pääleikkeeksi
+	Date Created	Luontipäivä
+	Descending	Laskeva
+	Drag to reorder; tick the columns to show.	Järjestä vetämällä; valitse näytettävät sarakkeet.
+	Extra Large	Erittäin suuri
+	Freeform View Options…	Vapaan näkymän asetukset…
+	Icon	Kuvake
+	Icon View	Kuvakenäkymä
+	List	Luettelo
+	Manage Saved View Presets	Hallitse tallennettuja näkymän esiasetuksia
+	Medium (default)	Keskikokoinen (oletus)
+	Metadata Display	Metatietojen näyttö
+	Metadata Display…	Metatietojen näyttö…
+	New Bin From Selection	Uusi kansio valinnasta
+	New Item	Uusi kohde
+	New Project Shortcut	Uusi projektin pikakuvake
+	New Search Bin	Uusi hakukansio
+	New Sequence From Clip	Uusi sekvenssi leikkeestä
+	Open in New Tab	Avaa uudessa välilehdessä
+	Open in New Window	Avaa uudessa ikkunassa
+	Open in Place	Avaa paikallaan
+	Open in Source Monitor	Avaa lähdemonitorissa
+	Open in Timeline	Avaa aikajanalla
+	Preview Area	Esikatselualue
+	Project View Preset {n}	Projektinäkymän esiasetus {n}
+	Project: {name}	Projekti: {name}
+	Refresh Project	Päivitä projekti
+	Refresh Sort Order	Päivitä lajittelujärjestys
+	Restore View Preset	Palauta näkymän esiasetus
+	Reveal Project in Finder…	Näytä projekti Finderissa…
+	Reveal in Finder	Näytä Finderissa
+	Save As New View Preset	Tallenna uutena näkymän esiasetuksena
+	Save Current View Preset	Tallenna nykyinen näkymän esiasetus
+	Save Project	Tallenna projekti
+	Select an item to preview it	Valitse kohde esikatsellaksesi sitä
+	Set Poster Frame	Aseta julistekuva
+	Sort Icons	Lajittele kuvakkeet
+	Thumbnail controls for all pointing devices	Pienoiskuvien säätimet kaikille osoitinlaitteille
+	Thumbnails	Pienoiskuvat
+	Thumbnails show effects applied	Pienoiskuvat näyttävät käytetyt tehosteet
+	Up one level	Taso ylöspäin
+	User Order	Käyttäjän järjestys
+	Video Usage: {vu}  Audio Usage: {au}	Videon käyttö: {vu}  Äänen käyttö: {au}
+	{n} items	{n} kohdetta
+	Freeform View	Vapaa näkymä
+	Stack	Pinoa
+	Unstack	Pura pino
+	Clip Size	Leikkeen koko
+	Larger	Suurempi
+	Smaller	Pienempi
+	Align to Grid	Tasaa ruudukkoon
+	Reset to Grid	Palauta ruudukkoon
+	Save Arrangement…	Tallenna järjestely…
+	Save Arrangement	Tallenna järjestely
+	Restore Arrangement	Palauta järjestely
+	Delete Arrangement	Poista järjestely
+	Arrangement {n}	Järjestely {n}
+	Freeform View Options	Vapaan näkymän asetukset
+	Snap to grid	Kohdista ruudukkoon
+	Show clip names	Näytä leikkeiden nimet
+	Show clip durations	Näytä leikkeiden kestot
+	Grid spacing:	Ruudukon väli:
+	Default clip size:	Leikkeen oletuskoko:
+	{panel} — coming in a later milestone	{panel} — tulossa myöhemmässä virstanpylväässä
+	Edit Workspaces	Muokkaa työtiloja
+	Restore Original	Palauta alkuperäinen
+	Drag Video Only	Vedä vain video
+	Drag Audio Only	Vedä vain ääni
+	Drag Video and Audio	Vedä video ja ääni
+	Source clips	Lähdeleikkeet
+	(no audio)	(ei ääntä)
+	Generating waveform…	Luodaan aaltomuotoa…
+	Audio Waveform	Äänen aaltomuoto
+	Video and Audio Waveform Split	Video ja äänen aaltomuoto jaettuna
+	Anchor to In Point	Ankkuroi alkupisteeseen
+	Anchor to Out Point	Ankkuroi loppupisteeseen
+	Custom ({n} points)	Mukautettu ({n} pistettä)
+	Source · {name}	Lähde · {name}
+	Temporal Interpolation	Ajallinen interpolointi
+	Twirl open or shut	Avaa tai sulje
+	Without keyframes	Ilman avainkehyksiä
+	Add	Lisää
+	Create 4-point polygon mask	Luo 4-pisteinen monikulmiomaski
+	Create ellipse mask	Luo ellipsimaski
+	Delete Mask	Poista maski
+	Free draw bezier	Vapaa Bezier-piirto
+	Intersect	Leikkaus
+	Inverted	Käänteinen
+	Position & Rotation	Sijainti ja kierto
+	Position, Scale & Rotation	Sijainti, skaalaus ja kierto
+	Show graphs	Näytä kuvaajat
+	Stop tracking	Lopeta seuranta
+	Track selected mask backward	Seuraa valittua maskia taaksepäin
+	Track selected mask backward 1 frame	Seuraa valittua maskia 1 kuva taaksepäin
+	Track selected mask forward	Seuraa valittua maskia eteenpäin
+	Track selected mask forward 1 frame	Seuraa valittua maskia 1 kuva eteenpäin
+	Tracking method: {method}	Seurantamenetelmä: {method}
+	Value	Arvo
+	Velocity	Nopeus
+	Set Transition Duration	Aseta siirtymän kesto
+	Reverse	Käänteinen
+	Center at Cut	Keskitä leikkaukseen
+	Start at Cut	Aloita leikkauksesta
+	End at Cut	Päätä leikkaukseen
+	Custom Start	Mukautettu alku
+	Eyedropper (pick a color from the Program monitor)	Pipetti (valitse väri Ohjelma-monitorista)
+	Interpret Footage	Tulkitse materiaali
+	Color Management · {n} item	Värinhallinta · {n} kohde
+	Color Management · {n} items	Värinhallinta · {n} kohdetta
+	Media colour space (from file metadata): {detected}	Median väriavaruus (tiedoston metatiedoista): {detected}
+	Override media colour space:	Ohita median väriavaruus:
+	Decode Auro-3D height channels	Pura Auro-3D-korkeuskanavat
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Pois: tiedosto toistaa omat kanavansa kuten ilman Auro-3D-dekooderia.
+	Use file metadata	Käytä tiedoston metatietoja
+	Motion Graphics Templates	Motion Graphics -mallit
+	Clip Fx Editor	Leikkeen Fx-editori
+	Track Fx Editor	Raidan Fx-editori
+	Custom Setup	Mukautettu määritys
+	Master Gain	Päävahvistus
+	Band {n}	Kaista {n}
+	Solo	Soolo
+	Thr	Kynnys
+	Att	Nousu
+	Rel	Vapautus
+	Output Gain	Lähtövahvistus
+	Limiter	Rajoitin
+	Link Channels	Linkitä kanavat
+	Limiter Threshold	Rajoittimen kynnys
+	Limiter Release	Rajoittimen vapautus
+	Auto Gate	Automaattinen portti
+	Attack	Nousuaika
+	Release	Vapautus
+	Compressor	Kompressori
+	Auto Makeup	Automaattinen tasonnosto
+	Makeup	Tasonnosto
+	Expander	Ekspanderi
+	Soft Clip	Pehmeä leikkaus
+	out	ulos
+	in	sisään
+	Parametric Equalizer	Parametrinen taajuuskorjain
+	Graphic Equalizer (10 Bands)	Graafinen taajuuskorjain (10 kaistaa)
+	Graphic Equalizer (20 Bands)	Graafinen taajuuskorjain (20 kaistaa)
+	Graphic Equalizer (30 Bands)	Graafinen taajuuskorjain (30 kaistaa)
+	Multiband Compressor	Monikaistakompressori
+	CFA4 encountered an error	CFA4:ssä tapahtui virhe
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Jotain meni vikaan ikkunaa piirrettäessä. Projektisi on yhä auki; tallenna se varmuuden vuoksi.
+	Continue	Jatka
+	Details: {path}	Tiedot: {path}
+	Engine restarted	Moottori käynnistettiin uudelleen
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4-moottori pysähtyi odottamatta ja käynnistettiin uudelleen. Tallentamattomat muutokset on säilytetty palautuslokissa, joka tarjoutuu palauttamaan ne.
+	 ({ch} output channels)	 ({ch} lähtökanavaa)
+	Active	Aktiivinen
+	Add to favorites	Lisää suosikkeihin
+	Appearance Mode	Ulkoasutila
+	Appearance Settings…	Ulkoasuasetukset…
+	Auto-saves go to: {dir}	Automaattiset tallennukset tallennetaan kohteeseen: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	CFA4 jättää loput RAM-muistista vapaaksi muille sovelluksille.
+	Currently: {loc} — {files} file(s), {size}	Nyt: {loc} — {files} tiedosto(a), {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	Monitoreja ja pienoiskuvia varten pidetyt puretut kuvat: {used}/{budget}.
+	Default location	Oletussijainti
+	Delete this preset	Poista tämä esiasetus
+	Deleted preset “{active}”	Esiasetus ”{active}” poistettu
+	Deleted {n} file(s), {size}.	Poistettiin {n} tiedosto(a), {size}.
+	Export the labels to a preset file…	Vie nimiöt esiasetustiedostoon…
+	Exported to {path}	Viety kohteeseen {path}
+	Font family	Fonttiperhe
+	Import a preset file…	Tuo esiasetustiedosto…
+	Imported “{name}”	Tuotiin ”{name}”
+	Label Color Presets	Nimiövärien esiasetukset
+	Label Colors	Nimiövärit
+	Last auto-save {a}	Viimeisin automaattinen tallennus {a}
+	Last auto-save {a} · last recovery copy {j}	Viimeisin automaattinen tallennus {a} · viimeisin palautuskopio {j}
+	Last recovery copy {j}	Viimeisin palautuskopio {j}
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	Ohjelman vasen → laitteen lähtö {l}, oikea → laitteen lähtö {r}{dev}. Laitteen kanavien yli menevät lähdöt palaavat kanaviin 1 ja 2.
+	Recovery copy: {dir}	Palautuskopio: {dir}
+	Remove from favorites	Poista suosikeista
+	Reset…	Palauta…
+	Revert to the preset's colors and names	Palauta esiasetuksen värit ja nimet
+	Show the presets folder	Näytä esiasetuskansio
+	Sync with system	Synkronoi järjestelmän kanssa
+	System Default	Järjestelmän oletus
+	not available in this session	ei käytettävissä tässä istunnossa
+	{name} (Modified)	{name} (muokattu)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	Saavutettava värikontrasti
+	Add tracks automatically when editing source clips onto the Timeline	Lisää raitoja automaattisesti, kun lähdeleikkeitä editoidaan aikajanalle
+	All lines	Kaikki rivit
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	Salli valintatyökalun valita rullaava ja siirtävä trimmaus ilman muokkausnäppäintä
+	Allow current tool to change trim type of previously selected edit point	Salli nykyisen työkalun muuttaa aiemmin valitun leikkauskohdan trimmaustyyppiä
+	Allow duplicate media during project import	Salli päällekkäinen media projektin tuonnissa
+	Always import embedded CEA-708 closed captions with wide aspect.	Tuo upotetut CEA-708-tekstitykset aina laajalla kuvasuhteella.
+	Always override audio tags	Ohita aina äänitunnisteet
+	Analyze all imported media to search for visuals or audio	Analysoi kaikki tuotu media kuvien tai äänen hakemiseksi
+	Animate zoom, scrolling and menus	Animoi zoomaus, vieritys ja valikot
+	Appearance…	Ulkoasu…
+	At Startup	Käynnistettäessä
+	At playback end, return to beginning when restarting playback	Palaa alkuun, kun toisto käynnistetään uudelleen lopusta
+	Attempt to force hardware to document sample rate	Yritä pakottaa laitteisto asiakirjan näytetaajuuteen
+	Audio Hardware	Äänilaitteisto
+	Audio Hardware…	Äänilaitteisto…
+	Audio Time Units	Äänen aikayksiköt
+	Audio Transition Default Duration	Äänisiirtymän oletuskesto
+	Audio…	Ääni…
+	Auto (system)	Automaattinen (järjestelmä)
+	Auto Save	Automaattinen tallennus
+	Auto Save also saves the current project(s)	Automaattinen tallennus tallentaa myös nykyiset projektit
+	Auto Save…	Automaattinen tallennus…
+	Auto-tag audio types in the timeline	Merkitse äänityypit automaattisesti aikajanalla
+	Auto-transcribe all imported clips	Litteroi automaattisesti kaikki tuodut leikkeet
+	Auto-transcribe only clips in sequences	Litteroi automaattisesti vain sekvensseissä olevat leikkeet
+	Automatch Time	Automaattisen vastaavuuden aika
+	Automatically Hide Dependent Clips	Piilota riippuvat leikkeet automaattisesti
+	Automatically Save Every	Tallenna automaattisesti joka
+	Automatically delete cache files older than	Poista automaattisesti välimuistitiedostot, jotka ovat vanhempia kuin
+	Automatically delete oldest cache files when cache exceeds	Poista automaattisesti vanhimmat välimuistitiedostot, kun välimuisti ylittää
+	Automatically refresh growing files	Päivitä kasvavat tiedostot automaattisesti
+	Automatically resume playback for growing files in Source Monitor	Jatka kasvavien tiedostojen toistoa automaattisesti lähdemonitorissa
+	Automatically save projects	Tallenna projektit automaattisesti
+	Automatically transcribe clips	Litteroi leikkeet automaattisesti
+	Automation Keyframe Optimization	Automaation avainkehysten optimointi
+	Background fill	Taustan täyttö
+	Bevel join	Viistetty liitos
+	Bins	Kansiot
+	Butt cap	Tasainen pää
+	Cache analysis results for re-use	Tallenna analyysitulokset välimuistiin uudelleenkäyttöä varten
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	Muutokset kopioidaan taustalla hetki kunkin muokkauksen jälkeen. Jos CFA4 sulkeutuu odottamatta, niitä tarjotaan seuraavalla käynnistyskerralla.
+	Chinese	Kiina
+	Closed Captions	Suljetut tekstitykset
+	Color…	Väri…
+	Crash Recovery	Kaatumisesta palautuminen
+	Create folder for imported projects	Luo kansio tuoduille projekteille
+	Dark Theme	Tumma teema
+	Default Audio Tracks	Oletusääniraidat
+	Default Emoji font	Emojien oletusfontti
+	Default Input	Oletustulo
+	Default Media Scaling	Median oletusskaalaus
+	Default Output	Oletuslähtö
+	Default closed caption font	Suljettujen tekstitysten oletusfontti
+	Default language	Oletuskieli
+	Default paragraph direction	Kappaleen oletussuunta
+	Default subtitle and text font	Tekstitysten ja tekstin oletusfontti
+	Delete files older than	Poista tiedostot, jotka ovat vanhempia kuin
+	Delete oldest files when the cache exceeds	Poista vanhimmat tiedostot, kun välimuisti ylittää
+	Delete…	Poista…
+	Device Class	Laiteluokka
+	Disable video output when in the background	Poista videolähtö käytöstä taustalla
+	Display Color Management	Näytön värinhallinta
+	Display Color Settings	Näytön väriasetukset
+	Display out of sync indicators for unlinked clips	Näytä synkronoinnin poikkeamat linkittämättömille leikkeille
+	Do not delete cache files automatically	Älä poista välimuistitiedostoja automaattisesti
+	Don't label speakers	Älä merkitse puhujia
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	Luonnospurku pienemmällä toiston resoluutiolla (H.264: nopeampi, osa kuvista vähemmän suodatettuja)
+	Dutch	Hollanti
+	Dynamic Link	Dynamic Link
+	Enable Mercury Transmit	Ota Mercury Transmit käyttöön
+	Enable ProRes hardware accelerated encoding, if available	Ota laitteistokiihdytetty ProRes-koodaus käyttöön, jos käytettävissä
+	Enable clip and XMP metadata linking	Ota leikkeen ja XMP-metatietojen linkitys käyttöön
+	Enable developer mode	Ota kehittäjätila käyttöön
+	Enable hardware accelerated decoding (requires restart)	Ota laitteistokiihdytetty purku käyttöön (vaatii uudelleenkäynnistyksen)
+	Enable language auto-detection	Ota kielen automaattinen tunnistus käyttöön
+	Enable proxies	Ota välityskopiot käyttöön
+	English	Englanti
+	Extended Dynamic Range Monitoring	Laajennetun dynamiikka-alueen valvonta
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	Värinhallinnan parametrit löytyvät Lumetri-väri-paneelin Asetukset-välilehdeltä.
+	Frame Count	Kuvamäärä
+	Frame cache for monitors and thumbnails	Kuvavälimuisti monitoreille ja pienoiskuville
+	French	Ranska
+	Front + LFE	Etu + LFE
+	Front + Rear	Etu + taka
+	Front + Rear + LFE	Etu + taka + LFE
+	Front Only	Vain etu
+	Generate Timecode	Luo aikakoodi
+	Generate waveforms and conform audio using multithreading	Luo aaltomuodot ja sovita ääni monisäikeisesti
+	Generate waveforms automatically during import	Luo aaltomuodot automaattisesti tuonnin aikana
+	German	Saksa
+	Graphics…	Grafiikka…
+	Growing Files	Kasvavat tiedostot
+	HDR Graphics White (Nits)	HDR-grafiikan valkoinen (nitiä)
+	Hardware decoding	Laitteistopurku
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Laitteistopurku: Automaattinen käyttää järjestelmän videodekooderia (VA-API tai NVDEC H.264:lle ja HEVC:lle) sen tukemille virroille ja CFA4:n omaa dekooderia kaikelle muulle tai jos laitteisto epäonnistuu. Jo avattu media säilyttää dekooderinsa, kunnes se avataan uudelleen.
+	Highlight Color	Korostusväri
+	Hindi	Hindi
+	Hindi digits	Hindinumerot
+	I/O Buffer Size	I/O-puskurin koko
+	Import numbered stills as image sequences	Tuo numeroidut pysäytyskuvat kuvasarjoina
+	In the Media Cache	Mediavälimuistiin
+	In the project	Projektiin
+	Include captions on import	Sisällytä tekstitykset tuotaessa
+	Indeterminate Media Timebase	Määrittämätön median aikakanta
+	Italian	Italia
+	Japanese	Japani
+	Keep a recovery copy of unsaved changes	Säilytä palautuskopio tallentamattomista muutoksista
+	Korean	Korea
+	Label Defaults	Nimiöiden oletukset
+	Label speakers	Merkitse puhujat
+	Labels	Nimiöt
+	Labels…	Nimiöt…
+	Large Trim Offset	Suuri trimmaussiirto
+	Large Volume Adjustment	Suuri äänenvoimakkuuden säätö
+	Left channel to device output	Vasen kanava laitteen lähtöön
+	Left to right	Vasemmalta oikealle
+	Light Theme	Vaalea teema
+	Linear keyframe thinning	Lineaarinen avainkehysten harvennus
+	Local Projects	Paikalliset projektit
+	Maintain pitch while shuttling	Säilytä sävelkorkeus shuttle-toistossa
+	Match frame sets in point	Vastaava kuva asettaa alkupisteen
+	Maximum Project Versions	Projektiversioiden enimmäismäärä
+	Media	Media
+	Media Analysis	Media-analyysi
+	Media Analysis & Transcription	Media-analyysi ja litterointi
+	Media Analysis & Transcription…	Media-analyysi ja litterointi…
+	Media Cache	Mediavälimuisti
+	Media Cache Database	Mediavälimuistin tietokanta
+	Media Cache Files	Mediavälimuistin tiedostot
+	Media Cache Management	Mediavälimuistin hallinta
+	Media Cache…	Mediavälimuisti…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	Media-analyysit ja litteroinnit tallennetaan mediavälimuistikansioon. Uutta analyysia ei tarvita, jos media tuodaan toiseen projektiin tällä tietokoneella.
+	Memory	Muisti
+	Memory…	Muisti…
+	Minimum time	Vähimmäisaika
+	Minimum time interval thinning	Vähimmäisaikavälin harvennus
+	Missing font replacement	Puuttuvan fontin korvaus
+	Miter join	Terävä liitos
+	Miter limit	Terävän liitoksen raja
+	Mono Media	Monomedia
+	Monospace only	Vain tasalevyiset
+	Movie (audio and video)	Elokuva (ääni ja video)
+	Multichannel Mono Media	Monikanavainen monomedia
+	Mute input during timeline recording	Mykistä tulo aikajanalle tallennettaessa
+	Next to original media files	Alkuperäisten mediatiedostojen viereen
+	No Scroll	Ei vieritystä
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Laajennuksia ei ole asennettu. Muutokset tulevat voimaan, kun käynnistät CFA4:n seuraavan kerran.
+	Open Most Recent	Avaa viimeisin
+	Open in new window	Avaa uudessa ikkunassa
+	Open in place	Avaa paikallaan
+	Open new tab	Avaa uusi välilehti
+	Output Mapping	Lähtöjen määritys
+	Page Scroll	Sivuvieritys
+	Pause Media Encoder queue during playback	Keskeytä Media Encoder -jono toiston ajaksi
+	Per line	Riveittäin
+	Place files dropped onto the Timeline directly on the Timeline	Sijoita aikajanalle pudotetut tiedostot suoraan aikajanalle
+	Play after rendering previews	Toista esikatselujen renderöinnin jälkeen
+	Play audio while scrubbing in Source and Program Monitors	Toista ääni selattaessa lähde- ja ohjelmamonitoreissa
+	Playback	Toisto
+	Playback…	Toisto…
+	Playhead position determines trim monitor loop playback	Toistopaikan sijainti määrää trimmausmonitorin silmukkatoiston
+	Plugins	Laajennukset
+	Plugins…	Laajennukset…
+	Policy	Käytäntö
+	Portuguese	Portugali
+	Projecting cap	Ulkoneva pää
+	Projects	Projektit
+	RAM reserved for other applications	Muille sovelluksille varattu RAM
+	Refresh growing Files Every	Päivitä kasvavat tiedostot joka
+	Render Edit in Audition files to:	Renderöi Edit in Audition -tiedostot kohteeseen:
+	Render audio when rendering video	Renderöi ääni videota renderöitäessä
+	Restore open sequences when opening projects	Palauta avoimet sekvenssit projekteja avattaessa
+	Right channel to device output	Oikea kanava laitteen lähtöön
+	Right to left	Oikealta vasemmalle
+	Ripple trim adds edits to keep both sides of trim in sync	Siirtävä trimmaus lisää leikkauksia pitääkseen trimmauksen molemmat puolet synkronissa
+	Round cap	Pyöreä pää
+	Round join	Pyöreä liitos
+	Russian	Venäjä
+	Sample Rate	Näytetaajuus
+	Save .cfa and .pek media cache files next to original media files when possible	Tallenna .cfa- ja .pek-mediavälimuistitiedostot alkuperäisten mediatiedostojen viereen, kun mahdollista
+	Scale to frame size	Skaalaa kuvakokoon
+	Scratch disk location for Captured Audio	Tallennetun äänen työlevyn sijainti
+	Set focus on the Timeline when performing Insert/Overwrite edits	Kohdista aikajanalle lisäys- ja korvausleikkauksissa
+	Set to frame size	Aseta kuvakokoon
+	Shift clips that overlap trim point during ripple trimming	Siirrä trimmauskohdan kanssa limittyviä leikkeitä siirtävän trimmauksen aikana
+	Show "Project:" and "Bin:" in Project panel tab	Näytä ”Projekti:” ja ”Kansio:” Projekti-paneelin välilehdellä
+	Show Clip Mismatch Warning dialog	Näytä leikkeiden ristiriidan varoitus
+	Show Event Indicator	Näytä tapahtumailmaisin
+	Show Home	Näytä aloitusnäkymä
+	Show Mask Tracker Preview	Näytä maskin seurannan esikatselu
+	Show Open Dialog	Näytä Avaa-valintaikkuna
+	Show Project Load Error Dialog	Näytä projektin latausvirheen valintaikkuna
+	Show Rich Tool Tips	Näytä laajat työkaluvihjeet
+	Show Workspace Reset Warning dialog on double click	Näytä työtilan palautuksen varoitus kaksoisnapsautettaessa
+	Show system compatibility issues at startup	Näytä järjestelmän yhteensopivuusongelmat käynnistettäessä
+	Smart quotes	Typografiset lainausmerkit
+	Smooth Scroll	Pehmeä vieritys
+	Snap playhead in Timeline when Snap is enabled	Kohdista toistopaikka aikajanalla, kun kohdistus on käytössä
+	Spanish	Espanja
+	Speaker Labeling	Puhujien merkitseminen
+	Speech model	Puhemalli
+	Start at 0	Aloita nollasta
+	Start at 1	Aloita ykkösestä
+	Start with an Empty Project	Aloita tyhjällä projektilla
+	Step forward/back many	Monta eteen/taakse
+	Stereo Media	Stereomedia
+	Still	Pysäytyskuva
+	Still Image Default Duration	Pysäytyskuvan oletuskesto
+	Stroke line cap	Ääriviivan pää
+	Stroke line join	Ääriviivan liitos
+	Sum multichannel outputs to mono in Source Monitor	Summaa monikanavalähdöt monoksi lähdemonitorissa
+	System Language	Järjestelmän kieli
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	Mediavälimuisti sisältää tallentamattomien projektien renderöityjä esikatseluja ja muita tiedostoja, jotka CFA4 voi luoda uudelleen. Niiden poistaminen on aina turvallista; CFA4 luo ne tarvittaessa uudelleen.
+	Timecode Conversion	Aikakoodin muunnos
+	Timeline Mouse Scrolling	Aikajanan vieritys hiirellä
+	Timeline Playback Auto-Scrolling	Aikajanan automaattinen vieritys toiston aikana
+	Timeline…	Aikajana…
+	Transcription	Litterointi
+	Transcription preferences	Litteroinnin asetukset
+	Trim	Trimmaa
+	Trim…	Trimmaus…
+	UI Scale	Käyttöliittymän skaalaus
+	Update it at least every	Päivitä vähintään joka
+	Update timeline dynamically during ripple edits.	Päivitä aikajana dynaamisesti siirtävien muokkausten aikana.
+	Use File	Käytä tiedostoa
+	Use Media Source	Käytä medialähdettä
+	Validate Content Credentials on import	Vahvista sisällön tunnistetiedot tuotaessa
+	Video Transition Default Duration	Videosiirtymän oletuskesto
+	When Opening a Project	Projektia avattaessa
+	Whisper base (balanced)	Whisper base (tasapainoinen)
+	Whisper small (most accurate)	Whisper small (tarkin)
+	Whisper tiny (fastest)	Whisper tiny (nopein)
+	Write XMP ID to files on import	Kirjoita XMP-tunnus tiedostoihin tuotaessa
+	Write clip markers to XMP	Kirjoita leikemerkit XMP:hen
+	days	päivää
+	milliseconds	millisekuntia
+	minute(s)	minuutti(a)
+	second(s)	sekunti(a)
+	seconds	sekuntia
+	 seconds	 sekuntia
+	Channel {n}	Kanava {n}
+	Countdown Sound Cues	Lähtölaskennan äänimerkit
+	Discard take	Hylkää otto
+	Discard the active take	Hylkää aktiivinen otto
+	Input:	Tulo:
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	Toisto aloittaa esirullan ennen toistopaikkaa (tai alkupistettä); kun alku- ja loppupiste on merkitty, tallennus alkaa ja päättyy niissä.
+	Post-roll	Jälkirulla
+	Post-roll:	Jälkirulla:
+	Pre-roll:	Esirulla:
+	Qt Multimedia is not available	Qt Multimedia ei ole käytettävissä
+	Record (voice-over on the record-enabled track)	Tallenna (selostus tallennukseen valitulle raidalle)
+	Recording voice-over…	Tallennetaan selostusta…
+	Source:	Lähde:
+	Stop Voice-over Recording	Lopeta selostuksen tallennus
+	The audio input could not be started	Äänituloa ei voitu käynnistää
+	The audio input does not support a usable format	Äänitulo ei tue käyttökelpoista muotoa
+	The voice-over input buffer is full: the take ends here	Selostustulon puskuri on täynnä: otto päättyy tähän
+	There is no audio input device	Äänitulolaitetta ei ole
+	Voice-Over Record Settings	Selostuksen tallennusasetukset
+	Voice-Over Record Settings…	Selostuksen tallennusasetukset…
+	Voice-over input: {error}	Selostustulo: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Selostuksen tallennus (hiiren oikea: Selostuksen tallennusasetukset…)
+	Voice-over recorded: {p}	Selostus tallennettu: {p}
+	Voice-over recording stopped (nothing recorded)	Selostuksen tallennus pysäytetty (mitään ei tallennettu)
+	Voice-over take discarded	Selostuksen otto hylätty
+	 frames	 kuvaa
+	All Cameras	Kaikki kamerat
+	Auto-Adjust Multi-Camera Playback Quality	Säädä monikameratoiston laatua automaattisesti
+	Camera 1	Kamera 1
+	Camera Angle Metadata	Kamerakulman metatiedot
+	Camera Names	Kameroiden nimet
+	Camera {n} — {name}	Kamera {n} — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	Monikameranäkymässä näytettävät kamerat (poista valinta piilottaaksesi).
+	Clip Marker	Leikemerkki
+	Clip Name:	Leikkeen nimi:
+	Clip Names	Leikkeiden nimet
+	Create Multi-Camera Source Sequence	Luo monikameralähdesekvenssi
+	Edit Cameras	Muokkaa kameroita
+	Edit Cameras…	Muokkaa kameroita…
+	Enumerate Cameras	Numeroi kamerat
+	Ignore Hours	Ohita tunnit
+	In Points	Alkupisteet
+	Merge Clips	Yhdistä leikkeet
+	Merged clip created	Yhdistetty leike luotu
+	Move source clips to Processed Clips bin	Siirrä lähdeleikkeet Käsitellyt leikkeet -kansioon
+	Multi-Camera Audio Follows Video	Monikameran ääni seuraa videota
+	Multi-Camera Layout	Monikameran asettelu
+	Multi-Camera Record	Monikameratallennus
+	Multi-Camera Record On/Off (0)	Monikameratallennus päälle/pois (0)
+	Multi-Camera Record On/Off Toggle	Monikameratallennus päälle/pois -vaihto
+	Multi-Camera Record off	Monikameratallennus pois
+	Multi-Camera Record on	Monikameratallennus päällä
+	Multi-Camera Selection Top Down	Monikameravalinta ylhäältä alas
+	Multi-Camera View	Monikameranäkymä
+	Multi-camera source sequence with {n} camera(s)	Monikameralähdesekvenssi, jossa {n} kamera(a)
+	No multi-camera clip at the playhead	Toistopaikassa ei ole monikameraleikettä
+	Offset Audio by:	Siirrä ääntä:
+	Out Points	Loppupisteet
+	Page {page} of {pages}	Sivu {page}/{pages}
+	Record	Tallenna
+	Recorded {n} multi-camera cut(s)	Tallennettiin {n} monikameraleikkausta
+	Reference track:	Viiteraita:
+	Remove Audio from AV Clip	Poista ääni AV-leikkeestä
+	Sequence Name:	Sekvenssin nimi:
+	Show Multi-Camera Preview Monitor	Näytä monikameran esikatselumonitori
+	Switch Audio	Vaihda ääni
+	Synchronize Clips	Synkronoi leikkeet
+	Synchronize Point	Synkronointipiste
+	Synchronized {n} clip group(s)	Synkronoitiin {n} leikeryhmää
+	Transmit Multi-Camera View	Lähetä monikameranäkymä
+	first marker	ensimmäinen merkki
+	lowest (V1…)	alin (V1…)
+	no multi-camera clip at the playhead	toistopaikassa ei ole monikameraleikettä
+	{first} - Merged	{first} - yhdistetty
+	{first} Multicam	{first} monikamera
+	{n} clip(s) selected; the clip on the reference track stays put.	{n} leikettä valittu; viiteraidan leike pysyy paikallaan.
+	{n} clip(s): {names}	{n} leikettä: {names}
+	Current duration {seconds} s	Nykyinen kesto {seconds} s
+	Fewer · More	Vähemmän · Enemmän
+	Remix Properties	Remixin ominaisuudet
+	Remixed to {seconds} s	Remix kestoon {seconds} s
+	Segments:	Segmentit:
+	Target Duration:	Tavoitekesto:
+	Variations:	Muunnelmat:
+	the selected clip is not remixed	valittua leikettä ei ole remixattu
+	After installing, restart CFA4.	Käynnistä CFA4 uudelleen asennuksen jälkeen.
+	Available, switched off	Käytettävissä, pois päältä
+	Left out by the routing table	Reititystaulukon ulkopuolelle jätetty
+	CFA4 engine	CFA4-moottori
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	CFA4:n oma moottori avaa kaikki tiedostot, jotka se pystyy. Alla olevat täydentävät taustaosat ottavat tässä järjestyksessä hoitaakseen vain tiedostot, joita moottori ei vielä osaa avata. Taustaosan kytkeminen pois vaikuttaa sen jälkeen avattaviin tiedostoihin.
+	Capabilities	Ominaisuudet
+	Copy command	Kopioi komento
+	H.264 software encoding (x264)	H.264-ohjelmistokoodaus (x264)
+	HEVC software encoding (x265)	HEVC-ohjelmistokoodaus (x265)
+	In use	Käytössä
+	Licence	Lisenssi
+	Media Backends	Mediataustaosat
+	Media Backends…	Mediataustaosat…
+	Not available	Ei käytettävissä
+	Not part of this build	Ei mukana tässä versiossa
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Omat Rust-dekooderit ja -kooderit: käytetään aina ensin ja varajärjestelmänä, kun täydentävä taustaosa epäonnistuu
+	Restricted Codecs…	Rajoitetut koodekit…
+	Restricted codecs	Rajoitetut koodekit
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Jotkin koodekit ovat vapaita ohjelmistoja mutta toteuttavat patentoituja muotoja. Ubuntun tapaan CFA4 ei asenna niitä oletuksena: peruspaketti toimii ilman niitä, ja sinä päätät, asennatko ne. Niiden käyttö voi olla rajoitettua joissakin maissa; tarkista, että se on sallittua siellä, missä olet.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Täydentävä dekooderi muodoille, joita oma moottori ei vielä lue (10-bittinen ja 4:2:2-kameramedia, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Täydentävä dekooderi järjestelmän GStreameristä (Ogg Theora, FLV, WMV ja muut muodot); LGPL, Ubuntun ohjelmistolähteistä
+	The engine did not answer: {message}	Moottori ei vastannut: {message}
+	To install them: {command}	Asenna ne näin: {command}
+	Use this backend	Käytä tätä taustaosaa
+	installed	asennettu
+	not installed	ei asennettu
+	on	päällä
+	 (removed from {list})	 (poistettu kohteesta {list})
+	 and 	 ja 
+	Add another shortcut	Lisää toinen pikanäppäin
+	Application shortcuts work whatever panel has focus	Sovelluksen pikanäppäimet toimivat riippumatta siitä, missä paneelissa kohdistus on
+	Assign {key} to {command}	Määritä {key} komennolle {command}
+	Cleared {n} shortcut(s) of {command}	Tyhjennettiin {n} komennon {command} pikanäppäintä
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Napsauta komennon pikanäppäinsolua ja paina näppäimiä määrittääksesi sen; + lisää toisen pikanäppäimen.
+	Click a key on the keyboard to see its shortcuts	Napsauta näppäimistön näppäintä nähdäksesi sen pikanäppäimet
+	Click and press keys to assign	Napsauta ja paina näppäimiä määrittääksesi
+	Commands:	Komennot:
+	Conflict: {key} is assigned to {commands} ({ctx})	Ristiriita: {key} on määritetty komennoille {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Vienti: tiedostoa ei valittu (agentit: shortcuts.export {path})
+	Import: no file chosen (agents: shortcuts.import {path})	Tuonti: tiedostoa ei valittu (agentit: shortcuts.import {path})
+	Key:	Näppäin:
+	Keyboard: US	Näppäimistö: US
+	Loaded “{name}”	Ladattiin ”{name}”
+	Modifier held / selected	Muokkausnäppäin pidetty / valittu
+	Modifiers	Muokkausnäppäimet
+	My Shortcuts	Omat pikanäppäimet
+	No matching commands	Ei vastaavia komentoja
+	Nothing is assigned to this key	Tälle näppäimelle ei ole määritetty mitään
+	Panel shortcuts override application shortcuts while that panel has focus	Paneelin pikanäppäimet ohittavat sovelluksen pikanäppäimet, kun paneelissa on kohdistus
+	Save preset as:	Tallenna esiasetus nimellä:
+	Saved preset “{name}”	Esiasetus ”{name}” tallennettu
+	Search commands or keys	Hae komentoja tai näppäimiä
+	Selected: {command}	Valittu: {command}
+	Type a shortcut… (Esc cancels)	Kirjoita pikanäppäin… (Esc peruuttaa)
+	{active} (modified)	{active} (muokattu)
+	{key} can't be used as a shortcut	Näppäintä {key} ei voi käyttää pikanäppäimenä
+	{panel} Panel	{panel}-paneeli
+	Docking Action	Telakointitoiminto
+	Undock Panel	Irrota paneeli
+	Restore Workspace	Palauta työtila
+	Add Guide…	Lisää apuviiva…
+	Guide Templates	Apuviivamallit
+	Manage Guides	Hallitse apuviivoja
+	Manage Guides…	Hallitse apuviivoja…
+	No saved guide templates.	Ei tallennettuja apuviivamalleja.
+	Position:	Sijainti:
+	Reference  {tc}	Viite  {tc}
+	Reference: next frame	Viite: seuraava kuva
+	Reference: previous frame	Viite: edellinen kuva
+	Save Guides as Template	Tallenna apuviivat mallina
+	Save Guides as Template…	Tallenna apuviivat mallina…
+	Saved guide template “{name}”	Apuviivamalli ”{name}” tallennettu
+	Set	Aseta
+	Set Comparison Reference	Aseta vertailuviite
+	Set the reference to the playhead	Aseta viite toistopaikkaan
+	Snap in Program Monitor	Kohdista Ohjelma-monitorissa
+	The template needs a name.	Mallilla on oltava nimi.
+	There are no guides to save.	Tallennettavia apuviivoja ei ole.
+	Join Through Edits	Yhdistä läpileikkaukset
+	Replace With Clip From Source Monitor	Korvaa leikkeellä lähdemonitorista
+	Reveal Nested Sequence	Näytä sisäkkäinen sekvenssi
+	Reveal in Project	Näytä projektissa
+	Unlink	Pura linkitys
+	Apply Default Transitions	Käytä oletussiirtymiä
+	Ripple Trim In	Siirtävä trimmaus alku
+	Ripple Trim Out	Siirtävä trimmaus loppu
+	Roll Edit	Rullaava muokkaus
+	Trim In	Trimmaa alku
+	Trim Out	Trimmaa loppu
+	Expand All Tracks	Laajenna kaikki raidat
+	Minimize All Tracks	Pienennä kaikki raidat
+	Increase Video Tracks Height	Kasvata videoraitojen korkeutta
+	Decrease Video Tracks Height	Pienennä videoraitojen korkeutta
+	Increase Audio Tracks Height	Kasvata ääniraitojen korkeutta
+	Decrease Audio Tracks Height	Pienennä ääniraitojen korkeutta
+	Drag to change the track height	Muuta raidan korkeutta vetämällä
+	Head	Alku
+	Head and Tail	Alku ja loppu
+	Continuous	Jatkuva
+	Show Video Thumbnails	Näytä videon pienoiskuvat
+	Show Audio Waveform	Näytä äänen aaltomuoto
+	Timeline Display Settings	Aikajanan näyttöasetukset
+	Snap in Timeline (S)	Kohdista aikajanalla (S)
+	Caption track options	Tekstitysraidan asetukset
+	Insert and overwrite sequences as nests or individual clips	Lisää ja korvaa sekvenssit sisäkkäisinä tai yksittäisinä leikkeinä
+	Close Other Timeline Panels	Sulje muut aikajanapaneelit
+	Show Keyframes	Näytä avainkehykset
+	Clip Keyframes	Leikkeen avainkehykset
+	Track Keyframes	Raidan avainkehykset
+	Send {n} Level	Lähetyksen {n} taso
+	Delete Caption Track	Poista tekstitysraita
+	Delete Empty Caption Tracks	Poista tyhjät tekstitysraidat
+	Toggle Caption Track Lock	Tekstitysraidan lukitus päälle/pois
+	Toggle Caption Track Output	Tekstitysraidan ulostulo päälle/pois
+	Drag In point	Vedä alkupistettä
+	Drag Out point	Vedä loppupistettä
+	Move marked range	Siirrä merkittyä aluetta
+	Auto Tone Map Media (HDR and log into SDR)	Median automaattinen sävykartoitus (HDR ja log SDR:ksi)
+	CFA4 always composites in linear light	CFA4 yhdistää kuvat aina lineaarisessa valossa
+	Captured View:	Tallennettu näkymä:
+	Channel Format:	Kanavamuoto:
+	Composite in Linear Color	Yhdistä lineaarisessa värissä
+	Configure…	Määritä…
+	Custom ({ratio})	Mukautettu ({ratio})
+	Display Format:	Näyttömuoto:
+	Editing Mode:	Muokkaustila:
+	Fields:	Kentät:
+	Frame Size:	Kuvakoko:
+	Maximum Bit Depth	Suurin bittisyvyys
+	Maximum Render Quality	Paras renderöintilaatu
+	Milliseconds	Millisekunnit
+	Monoscopic	Monoskooppinen
+	New Sequence	Uusi sekvenssi
+	No Fields (Progressive Scan)	Ei kenttiä (progressiivinen)
+	Not supported in CFA4 yet	Ei vielä tuettu CFA4:ssä
+	Number of Channels:	Kanavien määrä:
+	Pixel Aspect Ratio:	Pikselien kuvasuhde:
+	Preview File Format:	Esikatselutiedoston muoto:
+	Projection:	Projektio:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Näytetaajuus:
+	Scale motion effects proportionally when changing frame size	Skaalaa liiketehosteet suhteessa, kun kuvakoko muuttuu
+	Sequence Settings	Sekvenssin asetukset
+	Square Pixels (1.0)	Neliöpikselit (1,0)
+	Timebase:	Aikakanta:
+	Tracks	Raidat
+	VR Properties	VR-ominaisuudet
+	Video Previews	Videoesikatselut
+	Wide gamut color (composite in BT.2020)	Laajan värialueen väri (yhdistä BT.2020:ssa)
+	Working Color Space:	Työväriavaruus:
+	horizontal	vaaka
+	no sequence is open	sekvenssiä ei ole auki
+	tracks	raitaa
+	vertical	pysty
+	{rate} fps Drop-Frame Timecode	{rate} fps drop-frame-aikakoodi
+	{rate} fps Non Drop-Frame Timecode	{rate} fps non-drop-frame-aikakoodi
+	{rate} fps Timecode	{rate} fps aikakoodi
+	{rate} frames/second	{rate} kuvaa/sekunti
+	Always Deinterlace	Poista lomitus aina
+	Audio Attributes	Äänen määritteet
+	Ch. {n}	Kan. {n}
+	Clip Channel Format:	Leikkeen kanavamuoto:
+	Clip Speed / Duration	Leikkeen nopeus/kesto
+	Clip {n}	Leike {n}
+	Contains:	Sisältää:
+	Edit Subclip	Muokkaa alileikettä
+	Field Options	Kenttäasetukset
+	Flicker Removal	Välkynnän poisto
+	Frame Hold Options	Kuvan pysäytyksen asetukset
+	Frame Rate:	Kuvanopeus:
+	Hold Filters	Pysäytä suotimet
+	Hold On	Pysäytä kohtaan
+	In Point	Alkupiste
+	Make Subclip	Luo alileike
+	Media Source Channels	Medialähteen kanavat
+	Media Start:	Median alku:
+	Modify Clip: Audio Channels	Muokkaa leikettä: äänikanavat
+	Modify Clip: Timecode	Muokkaa leikettä: aikakoodi
+	Nested Sequence Name	Sisäkkäisen sekvenssin nimi
+	New Offline File	Uusi offline-tiedosto
+	No effects	Ei tehosteita
+	Number of Audio Clips:	Äänileikkeiden määrä:
+	Out Point	Loppupiste
+	Paste Attributes	Liitä määritteet
+	Playhead	Toistopaikka
+	Processing Options	Käsittelyasetukset
+	Remove Attributes	Poista määritteet
+	Restrict Trims To Subclip Boundaries	Rajoita trimmaukset alileikkeen rajoihin
+	Reverse Field Dominance	Käänteinen kenttädominanssi
+	Reverse Speed	Käänteinen nopeus
+	Ripple Edit, Shifting Trailing Clips	Siirtävä muokkaus, siirtää seuraavia leikkeitä
+	Scale Attribute Times	Skaalaa määritteiden ajat
+	Sequence Time	Sekvenssin aika
+	Set Timecode:	Aseta aikakoodi:
+	Source Timecode	Lähteen aikakoodi
+	Source channels the selected audio clips play:	Lähdekanavat, joita valitut äänileikkeet toistavat:
+	Speed:	Nopeus:
+	Subclip: {name}	Alileike: {name}
+	Tape Name:	Nauhan nimi:
+	Timecode:	Aikakoodi:
+	Use the file's timecode	Käytä tiedoston aikakoodia
+	Video Attributes	Videon määritteet
+	no dialog	ei valintaikkunaa
+	Action Safe Area	Toiminnan turva-alue
+	Action and Title Safe Areas	Toiminnan ja otsikon turva-alueet
+	Action:	Toiminto:
+	Analyze	Analysoi
+	Any	Mikä tahansa
+	Apply Default Audio Transition	Käytä oletusäänisiirtymää
+	Apply Default Video Transition	Käytä oletusvideosiirtymää
+	Apply a cut at each detected cut point	Lisää leikkaus jokaiseen havaittuun leikkauskohtaan
+	At Unnumbered Markers	Numeroimattomissa merkeissä
+	Audio Only	Vain ääni
+	Audio Previews:	Äänen esikatselut:
+	Audio analysis:	Äänen analyysi:
+	Audio effects	Äänitehosteet
+	Audio on track {t}	Ääni raidalla {t}
+	Automate To Sequence	Automatisoi sekvenssiin
+	Average Data Rate	Keskimääräinen datanopeus
+	Capture	Kaappaus
+	Capture Format:	Kaappausmuoto:
+	Captured and Generated:	Kaapattu ja luotu:
+	Case Sensitive	Kirjainkoko merkitsee
+	Clip Names and Markers	Leikkeiden nimet ja merkit
+	Clip Overlap:	Leikkeiden limitys:
+	Clips	Leikkeet
+	Codec: {codec}	Koodekki: {codec}
+	Color Matte Color	Väritaustan väri
+	Colour	Väri
+	Comments:	Kommentit:
+	Copy and Create Proxies	Kopioi ja luo välityskopiot
+	Create Proxies	Luo välityskopiot
+	Create Search Bin	Luo hakukansio
+	Create a bin of subclips from each detected cut point	Luo kansio alileikkeistä jokaisesta havaitusta leikkauskohdasta
+	Create a clip marker at each detected cut point	Luo leikemerkki jokaiseen havaittuun leikkauskohtaan
+	Disabled clips	Käytöstä poistetut leikkeet
+	Edit Offline File	Muokkaa offline-tiedostoa
+	Empty tracks	Tyhjät raidat
+	Existing XMP files written by other applications are left unchanged.	Muiden sovellusten kirjoittamat XMP-tiedostot jätetään ennalleen.
+	File Size	Tiedoston koko
+	Find in:	Etsi kohteesta:
+	Find:	Etsi:
+	Flash Cue Marker	Flash Cue -merkki
+	Frames per Still:	Kuvia pysäytyskuvaa kohden:
+	Gaps	Raot
+	Ignore Audio	Ohita ääni
+	Ignore Options	Ohita asetukset
+	Ignore Video	Ohita video
+	Ingest Settings	Sisäänlukuasetukset
+	Insert Edit	Lisäävä leikkaus
+	Log Note:	Lokimerkintä:
+	Match {n} of {total}	Osuma {n}/{total}
+	Match:	Vastaavuus:
+	Media Name:	Median nimi:
+	Move clips to the lowest track possible	Siirrä leikkeet alimmalle mahdolliselle raidalle
+	New Color Matte	Uusi väritausta
+	Next to the media	Median viereen
+	Normalize Mix Track	Normalisoi miksausraita
+	Normalize Mix Track to:	Normalisoi miksausraita tasoon:
+	Ordering:	Järjestys:
+	Overwrite Edit	Korvaava leikkaus
+	Path: {path}	Polku: {path}
+	Project Auto Save:	Projektin automaattinen tallennus:
+	Recognize when different speakers are talking	Tunnista, kun eri puhujat puhuvat
+	Renderer:	Renderöijä:
+	Same as Project	Sama kuin projekti
+	Saved template {path}	Malli tallennettu {path}
+	Scene Edit Detection	Kohtausleikkausten tunnistus
+	Scene Edit Detection: analysing in the background (see Progress)	Kohtausleikkausten tunnistus: analysoidaan taustalla (katso Edistyminen)
+	Scene:	Kohtaus:
+	Search:	Haku:
+	Selection Order	Valintajärjestys
+	Sensitivity:	Herkkyys:
+	Sequentially	Peräkkäin
+	Shot/Take:	Otos/otto:
+	Simplify Sequence	Yksinkertaista sekvenssi
+	Sort Order	Lajittelujärjestys
+	Source Settings	Lähdeasetukset
+	Template Name:	Mallin nimi:
+	Text (graphics and captions)	Teksti (grafiikka ja tekstitykset)
+	Title Safe Area	Otsikon turva-alue
+	To {name}	Kohteeseen {name}
+	Total Duration	Kokonaiskesto
+	Transcode	Transkoodaa
+	Transcribe Sequence	Litteroi sekvenssi
+	Transitions	Siirtymät
+	Update Metadata	Päivitä metatiedot
+	Video Only	Vain video
+	Video Previews:	Videon esikatselut:
+	Video Rendering and Playback	Videon renderöinti ja toisto
+	Video and Audio	Video ja ääni
+	Video effects	Videotehosteet
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	Kirjoitetaanko valittujen leikkeiden ({n}) metatiedot XMP-tiedostoihin niiden median viereen?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} kanava(a)
+	Constant quantiser	Vakiokvantisointi
+	Container	Säiliö
+	 (unavailable)	 (ei käytettävissä)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Säiliöt
+	Decoders	Dekooderit
+	Dynamic Audio Waveforms	Dynaamiset äänen aaltomuodot
+	Export formats	Vientimuodot
+	Reveal Log Files…	Näytä lokitiedostot…
+	Session log: {path}	Istunnon loki: {path}
+	System Compatibility Report	Järjestelmän yhteensopivuusraportti
+	System Compatibility Report…	Järjestelmän yhteensopivuusraportti…
+	not available now	ei nyt käytettävissä
+	{name} Selection.fcproj	{name} Selection.fcproj
+	Auto tone map media (HDR and log into SDR)	Median automaattinen sävykartoitus (HDR ja log SDR:ksi)
+	Sequence Color Management	Sekvenssin värinhallinta
+	Working Color Space	Työväriavaruus
+	Align Timecode	Tasaa aikakoodi
+	All media is online.	Kaikki media on online-tilassa.
+	Calculate	Laske
+	Clip ID (fingerprint)	Leikkeen tunnus (sormenjälki)
+	Clip Name	Leikkeen nimi
+	Collect Files and Copy to New Location	Kerää tiedostot ja kopioi uuteen sijaintiin
+	Consolidate and Transcode	Yhdistä ja transkoodaa
+	Creating {n} proxy file(s)…	Luodaan {n} välityskopiotiedostoa…
+	Destination	Kohde
+	Destination Path	Kohdepolku
+	Disk space: original {original} · resulting {result} ({n} files)	Levytila: alkuperäinen {original} · tulos {result} ({n} tiedostoa)
+	Disk space: —	Levytila: —
+	Exact name matches only	Vain tarkat nimiosumat
+	Exclude Unused Clips	Jätä käyttämättömät leikkeet pois
+	File Name	Tiedoston nimi
+	Format and size	Muoto ja koko
+	Frame Size / Rate	Kuvakoko / -nopeus
+	Include Handles:	Sisällytä kahvat:
+	Include Preview Files	Sisällytä esikatselutiedostot
+	Include Proxies	Sisällytä välityskopiot
+	Link Media	Linkitä media
+	Linked {n} clip(s)	Linkitettiin {n} leikettä
+	Locate…	Paikanna…
+	Make Offline	Siirrä offline-tilaan
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	Siirrä {n} valittua leikettä offline-tilaan. Leikkeet näyttävät offline-kyltin, kunnes linkität ne uudelleen.
+	Match file properties:	Vastaavat tiedosto-ominaisuudet:
+	Media files are deleted	Mediatiedostot poistetaan
+	Media files remain on disk	Mediatiedostot jäävät levylle
+	Next to the original media, in a Proxies folder	Alkuperäisen median viereen, Proxies-kansioon
+	No candidates yet — Search a folder or Locate the file.	Ei vielä ehdokkaita — hae kansiosta tai paikanna tiedosto.
+	Nothing found with that name.	Tällä nimellä ei löytynyt mitään.
+	Offline	Offline
+	Offline All	Kaikki offline-tilaan
+	Project Manager	Projektinhallinta
+	Project Manager: writing {path}	Projektinhallinta: kirjoitetaan {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	Välityskopiot luodaan taustalla ja liitetään, kun ne ovat valmiita. Vienti käyttää aina täyden resoluution mediaa.
+	Relink others automatically	Linkitä muut uudelleen automaattisesti
+	Resulting Project	Tuloksena oleva projekti
+	Search in:	Hae kohteesta:
+	Sequences	Sekvenssit
+	select a clip in the Project panel	valitse leike Projekti-paneelissa
+	{name} (copy)	{name} (kopio)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} leikettä ei löydä mediaansa. Paikanna ne, hae kansiosta tai jätä ne offline-tilaan.
+	{n} clip(s) selected.	{n} leikettä valittu.
+	✔ matches	✔ vastaa
+	✔ same file	✔ sama tiedosto
+	✖ different file	✖ eri tiedosto
+	AAF Export Settings	AAF-viennin asetukset
+	Audio File Format:	Äänitiedoston muoto:
+	Bits per Sample:	Bittiä näytettä kohden:
+	Breakout to mono	Erota monoksi
+	Encapsulate	Kapseloi
+	Exported frame to {path}	Kuva viety kohteeseen {path}
+	Exported {path}	Viety: {path}
+	Frame time: {timecode}	Kuvan aika: {timecode}
+	Handle Frames:	Kahvan kuvat:
+	Import into project	Tuo projektiin
+	Keep existing file	Säilytä nykyinen tiedosto
+	Link to Media	Linkitä mediaan
+	Mixdown video	Videon alasmiksaus
+	OMF Export Settings	OMF-viennin asetukset
+	OMF Title:	OMF-otsikko:
+	Path:	Polku:
+	Render audio clip effects	Renderöi äänileikkeen tehosteet
+	Separate Audio	Erillinen ääni
+	Separate Files	Erilliset tiedostot
+	This file already exists: {path}	Tämä tiedosto on jo olemassa: {path}
+	Trim audio files	Trimmaa äänitiedostot
+	{bits} Bit	{bits} bittiä
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Merkkiraportti (CSV)
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Digitaalinen elokuva
+	DCP resolution	DCP-resoluutio
+	DCP container	DCP-säiliö
+	Content kind	Sisällön tyyppi
+	Output folder	Tuloskansio
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1.85:1)
+	Scope (2.39:1)	Scope (2.39:1)
+	Full container (1.90:1)	Koko säiliö (1.90:1)
+	Feature	Pitkä elokuva
+	Trailer	Traileri
+	Teaser	Teaseri
+	Short	Lyhytelokuva
+	Advertisement	Mainos
+	Test	Testi
+	Transitional	Siirtymäsisältö
+	Rating	Ikäraja
+	Public service announcement	Julkinen tiedote
+	Off (5.1 only)	Pois (vain 5.1)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB-pohja miksauksesta (7.1 DS, 7.1.2:sta 9.1OH)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB tiedostosta (IAB MXF, .iab tai Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab tai Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	Ei mitään: vain FSK-synkronointi (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: renderöity IAB (ei ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: aikajanan miksaus (ei ST 429-19)
+	Main sound channels 1-6	Pääääniraidan kanavat 1-6
+	Immersive audio	Immersiivinen ääni
+	IAB source	IAB-lähde
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2-miksauksesta tulee 9.1OH-pohja, 7.1-miksauksesta 7.1 DS -pohja ja muista miksauksista niiden 5.1-versiosta 7.1 DS -pohja (IAB Profile 1); pääänen kanava 14 kuljettaa FSK-synkronointisignaalin.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Valitse IAB-raitatiedosto (IMF tai DCP), raaka IAB-virta tai Dolby Atmos TrueHD: .thd-virta tai MKV-, MP4- tai M2TS-tiedosto, jossa on Atmos-raita.
+	Reading the IAB source…	Luetaan IAB-lähdettä…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} kuvaa, {fps} fps, {rate} Hz; enintään {beds} pohjakanavaa ja {objects} objektia
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; enintään {beds} pohjakanavaa ja {objects} objektia, muunnettu IAB-objekteiksi
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Osa kuvista koodataan uudelleen DCP:tä varten (DLC, 24 bittiä).
+	Beyond IAB Profile 1: {notes}	IAB Profile 1:n ulkopuolella: {notes}
+	Not a usable IAB source: {error}	Ei käyttökelpoinen IAB-lähde: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP -kansio: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP -kansio: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP -kansio: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP -kansio: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	B pictures	B-kuvat
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV-siirtovirta (.m2ts, AAC-ääni)
+	Chroma	Krominanssi
+	Elementary Stream (.m2v, no audio)	Alkeisvirta (.m2v, ei ääntä)
+	Key Frame Distance	Avainkehysten väli
+	None (I and P only)	Ei mitään (vain I ja P)
+	Off (target bitrate)	Pois (tavoitebittinopeus)
+	Program Stream (.mpg, LPCM audio)	Ohjelmavirta (.mpg, LPCM-ääni)
+	Transport Stream (.ts, AAC audio)	Siirtovirta (.ts, AAC-ääni)
+	Estimated file size: {size}	Arvioitu tiedostokoko: {size}
+	File Name & Location	Tiedostonimi ja sijainti
+	Quick Export	Pikavienti
+	Quick Export: open a sequence first	Pikavienti: avaa ensin sekvenssi
+	Quick Export: {path}	Pikavienti: {path}
+	Export presets	Viennin esiasetukset
+	Favorites only	Vain suosikit
+	More presets…	Lisää esiasetuksia…
+	Preset Manager	Esiasetusten hallinta
+	Save current settings as:	Tallenna nykyiset asetukset nimellä:
+	Search presets	Hae esiasetuksia
+	Show in the Preset menu	Näytä Esiasetus-valikossa
+	User	Käyttäjä
+	Add Beat Markers	Lisää tahtimerkit
+	Clear Beat Markers	Tyhjennä tahtimerkit
+	Clear Check Markers	Tyhjennä tarkistusmerkit
+	Auto Reframe Sequence…	Automaattinen sekvenssin rajaus…
+	Batch Variants from Spreadsheet…	Muunnelmaerät laskentataulukosta…
+	Check Before Export…	Tarkista ennen vientiä…
+	Social Deliverables…	Some-toimitukset…
+	Social Safe Zones	Somen turva-alueet
+	Text Animator	Tekstianimaattori
+	Counter	Laskuri
+	Typewriter	Kirjoituskone
+	Word by Word	Sana sanalta
+	Animator	Animaattori
+	Animator Duration	Animaattorin kesto
+	Animator Delay	Animaattorin viive
+	Spreadsheets	Laskentataulukot
+	{n} beat markers added ({bpm} BPM)	{n} tahtimerkkiä lisätty ({bpm} BPM)
+	Check Before Export: no problems found	Tarkista ennen vientiä: ongelmia ei löytynyt
+	Check Before Export: {n} problems marked on the timeline (red markers)	Tarkista ennen vientiä: {n} ongelmaa merkitty aikajanalle (punaiset merkit)
+	{n} exports queued (the Export window shows the queue)	{n} vientiä jonossa (Vienti-ikkuna näyttää jonon)
+	{n} variant sequences made, {q} exports queued	{n} muunnelmasekvenssiä luotu, {q} vientiä jonossa
+	no column for {names}	ei saraketta kohteille {names}
+	Film Scan 1	Filmiskannaus 1
+	Film Scan 2	Filmiskannaus 2
+	Film Scan 3	Filmiskannaus 3
+	Include Alpha Channel	Sisällytä alfakanava
+	Profile	Profiili
+	ZIP (1 scan line)	ZIP (1 skannausrivi)
+	ZIP (16 scan lines)	ZIP (16 skannausriviä)
+	Bottom Center	Alhaalla keskellä
+	Bottom Left	Alhaalla vasemmalla
+	Bottom Right	Alhaalla oikealla
+	Burn Captions Into Video	Polta tekstitykset videoon
+	Center Left	Keskellä vasemmalla
+	Center Right	Keskellä oikealla
+	Create Sidecar File	Luo sivutiedosto
+	Export Options	Vientiasetukset
+	File Format	Tiedostomuoto
+	Image Overlay	Kuvan päällys
+	Loudness Normalization	Äänekkyyden normalisointi
+	Luma Min / Max	Luma väh. / enint.
+	Name Overlay	Nimen päällys
+	PNG or JPEG file	PNG- tai JPEG-tiedosto
+	Prefix	Etuliite
+	Size / Opacity	Koko / peittävyys
+	SubRip Subtitle (.srt)	SubRip-tekstitys (.srt)
+	Target Loudness	Tavoiteäänekkyys
+	Timecode Overlay	Aikakoodin päällys
+	Top Center	Ylhäällä keskellä
+	Top Left	Ylhäällä vasemmalla
+	Top Right	Ylhäällä oikealla
+	True Peak Limit	Todellisen huipun raja
+	Video Limiter	Videorajoitin
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Creator	Tekijä
+	Multiplexer	Multiplekseri
+	Title	Otsikko
+	Audio only	Vain ääni
+	Scale To Fill	Skaalaa täyttämään
+	Scale To Fit	Skaalaa sopimaan
+	Stretch To Fill	Venytä täyttämään
+	Quick Export cancelled	Pikavienti peruutettu
+	0 fastest, 8 smallest	0 nopein, 8 pienin
+	32 bit float	32-bittinen liukuluku
+	Anamorphic 2:1 (2.0)	Anamorfinen 2:1 (2,0)
+	Aspect	Kuvasuhde
+	Channels	Kanavat
+	Composite on the GPU when available	Yhdistä GPU:lla, kun käytettävissä
+	Compression Level	Pakkaustaso
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0,9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1,0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1,5)
+	Field Order	Kenttäjärjestys
+	GPU Rendering	GPU-renderöinti
+	HD Anamorphic 1080 (1.333)	HD anamorfinen 1080 (1,333)
+	Lower First	Alempi ensin
+	Match Source	Vastaa lähdettä
+	Maximum Bitrate	Suurin bittinopeus
+	Quality (CRF)	Laatu (CRF)
+	Render at Maximum Depth	Renderöi suurimmalla syvyydellä
+	Sample Size	Näytekoko
+	Upper First	Ylempi ensin
+	Use Maximum Render Quality	Käytä parasta renderöintilaatua
+	Home	Aloitusnäkymä
+	Browse files…	Selaa tiedostoja…
+	Movies, audio and stills from disk	Elokuvat, ääni ja pysäytyskuvat levyltä
+	Demo footage	Esittelymateriaali
+	Six procedural 1080p clips with sound	Kuusi proseduraalista 1080p-leikettä äänellä
+	Demo project	Esittelyprojekti
+	A cut sequence with transitions, effects and music	Leikattu sekvenssi siirtymineen, tehosteineen ja musiikkeineen
+	Bars and Tone	Testikuva ja testiääni
+	SMPTE HD bars with 1 kHz reference tone	SMPTE HD -testikuva ja 1 kHz:n viiteääni
+	CFA4 on GitHub	CFA4 GitHubissa
+	Report a CFA4 issue…	Ilmoita CFA4-ongelmasta…
+	CFA4 project links	CFA4-projektin linkit
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	Lisää mediaa projektiin. Pudota tiedostot mihin tahansa ikkunassa tai valitse lähde alta.
+	Shuttle Slow Left	Hidas shuttle vasemmalle
+	Shuttle Slow Right	Hidas shuttle oikealle
+	Play Around	Toista ympäriltä
+	Out: {name}	Loppu: {name}
+	In: {name}	Alku: {name}
+	(gap)	(rako)
+	Outgoing clip (drag to trim the Out point)	Lähtevä leike (vedä trimmataksesi loppupistettä)
+	Incoming clip (drag to trim the In point)	Saapuva leike (vedä trimmataksesi alkupistettä)
+	Drag to roll the edit	Vedä rullataksesi leikkausta
+	Play Around Edit (Space loops, Shift+K once)	Toista leikkauksen ympäriltä (välilyönti silmukkana, Shift+K kerran)
+	Trim Backward Many	Trimmaa paljon taaksepäin
+	Trim Backward	Trimmaa taaksepäin
+	Apply Default Transitions to Selection (Shift+D)	Käytä oletussiirtymiä valintaan (Shift+D)
+	Trim Forward	Trimmaa eteenpäin
+	Trim Forward Many	Trimmaa paljon eteenpäin
+	Exit Trim Mode	Poistu trimmaustilasta
+	Up	Ylös
+	Down	Alas
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	Äänilähtö epäonnistui: toistetaan ilman ääntä (tarkista Asetukset ▸ Äänilaitteisto)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	Äänilähtö ei vastaa: toistetaan ilman ääntä (tarkista Asetukset ▸ Äänilaitteisto)
+	Settings not taken	Asetuksia ei otettu käyttöön
+	Encoder	Kooderi
+	Software, or hardware where available	Ohjelmisto tai laitteisto, jos käytettävissä
+	Main (8-bit; Main 10 for HDR sequences)	Main (8-bittinen; Main 10 HDR-sekvensseille)
+	Main 10 (10-bit, HDR)	Main 10 (10-bittinen, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8-bittinen; 10-bittinen HDR-sekvensseille)
+	Main (10-bit, HDR)	Main (10-bittinen, HDR)
+	FLAC stores whole-number samples only	FLAC tallentaa vain kokonaislukunäytteitä
+	MXF export writes integer PCM only	MXF-vienti kirjoittaa vain kokonaisluku-PCM:ää
+	Not supported by CFA4's encoders yet	CFA4:n kooderit eivät vielä tue tätä
+	Overwrite with Current View	Korvaa nykyisellä näkymällä
+	Saves the view, columns, sort, thumbnail and font size.	Tallentaa näkymän, sarakkeet, lajittelun sekä pienoiskuvan ja fontin koon.
+	Search fields	Hakukentät
+	{n}. (empty)	{n}. (tyhjä)
+	No video	Ei videota
+	No audio	Ei ääntä
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 HDR:lle
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 Profile
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main Profile 4:2:0
+	no B pictures	ei B-kuvia
+	1 B picture between anchors	1 B-kuva ankkurien välissä
+	AV1 Main (10-bit for HDR)	AV1 Main (10-bittinen HDR:lle)
+	10-bit RGB	10-bittinen RGB
+	12-bit X'Y'Z'	12-bittinen X'Y'Z'
+	16-bit half float	16-bittinen puolitarkkuus
+	linear	lineaarinen
+	uncompressed	pakkaamaton
+	Animated GIF	Animoitu GIF
+	Waveform Audio	Waveform-ääni
+	AAC Audio	AAC-ääni
+	Opus Audio	Opus-ääni
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	pirstotut MP4-segmentit
+	Program Stream	Ohjelmavirta
+	Transport Stream	Siirtovirta
+	BDAV Transport Stream	BDAV-siirtovirta
+	Elementary Stream	Alkeisvirta
+	Image sequence	Kuvasarja
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} fps
+	{profile} auto level	{profile} automaattinen taso
+	{n} pass	{n} kierros(ta)
+	CRF (constant quality) {crf}	CRF (vakiolaatu) {crf}
+	{v} Mbps	{v} Mbps
+	Target {v} Mbps	Tavoite {v} Mbps
+	Max {v} Mbps	Enint. {v} Mbps
+	average {v} Mbps	keskimäärin {v} Mbps
+	CBR {v} Mbps	CBR {v} Mbps
+	VBR Target {v} Mbps	VBR-tavoite {v} Mbps
+	keyframe every {n} frames	avainkehys {n} kuvan välein
+	constant quantiser {q}	vakiokvantisointi {q}
+	{n} B pictures between anchors	{n} B-kuvaa ankkurien välissä
+	quantizer {q}	kvantisointi {q}
+	quality {q}	laatu {q}
+	{word} compression	{word} pakkaus
+	{sampling} {bits}-bit	{sampling} {bits}-bittinen
+	FLAC (lossless) {bits}-bit	FLAC (häviötön) {bits}-bittinen
+	level {n}	taso {n}
+	Uncompressed {bits}-bit PCM	Pakkaamaton {bits}-bittinen PCM
+	Uncompressed {bits}-bit float PCM	Pakkaamaton {bits}-bittinen liukuluku-PCM
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} s
+	{n} ch {rate} Hz	{n} kan. {rate} Hz
+	All Events	Kaikki tapahtumat
+	Warnings and Errors	Varoitukset ja virheet
+	Errors Only	Vain virheet
+	No events.	Ei tapahtumia.
+	just now	juuri nyt
+	{n} s ago	{n} s sitten
+	{n} min ago	{n} min sitten
+	{n} h ago	{n} h sitten
+	Warning	Varoitus
+	Caption Export Settings	Tekstitysten vientiasetukset
+	Export Captions	Vie tekstitykset
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} on jo olemassa, joten mitään ei viety. Korvataksesi sen valitse se tallennusikkunassa.
+	Delete Redoable Actions	Poista uudelleen tehtävät toiminnot
+	Delete the dimmed actions after the current state? They cannot be redone.	Poistetaanko himmennetyt toiminnot nykyisen tilan jälkeen? Niitä ei voi tehdä uudelleen.
+	Work Area Bar	Työaluepalkki
+	Start: {tc}	Alku: {tc}
+	End: {tc}	Loppu: {tc}
+	Duration: {tc}	Kesto: {tc}
+	Show/Hide Tracks…	Näytä/piilota raitoja…
+	Move panel	Siirrä paneelia
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Valitse napsauttamalla tai napsauta tyhjää kohtaa ja vedä valitaksesi alueen. Käytä Shift-, Alt- ja Ctrl-näppäimiä muihin vaihtoehtoihin.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Napsauta valitaksesi kaikki oikealla olevat leikkeet kaikilla raidoilla. Shift-napsautus yhdelle raidalle.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Napsauta valitaksesi kaikki vasemmalla olevat leikkeet kaikilla raidoilla. Shift-napsautus yhdelle raidalle.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Vedä leikkauskohtaa siirtävää trimmausta varten; myöhemmät leikkeet siirtyvät, jotta rako pysyy suljettuna.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Vedä leikkauskohtaa rullataksesi sitä: yhden leikkeen loppu ja seuraavan alku liikkuvat yhdessä.
+	Drag an edge to change the clip's speed so it fills the new duration.	Vedä reunaa muuttaaksesi leikkeen nopeutta niin, että se täyttää uuden keston.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Vedä musiikkileikkeen reunaa remixataksesi sen uuteen kestoon musiikillisesti sopivissa tahdeissa.
+	Click to split a clip. Shift-click to split all tracks.	Jaa leike napsauttamalla. Shift-napsautus jakaa kaikki raidat.
+	Drag a clip to slip its source in/out without moving it.	Vedä leikettä siirtääksesi sen lähteen alku-/loppupistettä liikuttamatta leikettä.
+	Drag a clip to slide it between its neighbours.	Vedä leikettä liu'uttaaksesi sitä naapuriensa välissä.
+	Drag to scroll the timeline.	Vedä vierittääksesi aikajanaa.
+	Click to zoom in; Alt-click to zoom out.	Lähennä napsauttamalla; Alt-napsautus loitontaa.
+	Exporting	Viedään
+	Version {version}	Versio {version}
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Fontit: Inter, Noto Serif ja JetBrains Mono (SIL OFL 1.1).
+	CFA4 was closed while “{name}” had unsaved changes.	CFA4 suljettiin, kun kohteessa ”{name}” oli tallentamattomia muutoksia.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	CFA4 sulkeutui odottamatta, kun kohteessa ”{name}” oli tallentamattomia muutoksia.
+	Recover unsaved changes from {when}?	Palautetaanko tallentamattomat muutokset ajalta {when}?
+	The project had not been saved yet.	Projektia ei ollut vielä tallennettu.
+	{n} sessions have unsaved changes:	{n} istunnossa on tallentamattomia muutoksia:
+	Are you sure you want to discard your changes to '{file}'?	Haluatko varmasti hylätä kohteeseen ”{file}” tehdyt muutokset?
+	the project has not been saved yet	projektia ei ole vielä tallennettu
+	Export As Motion Graphics Template	Vie Motion Graphics -mallina
+	Category:	Luokka:
+	Editable properties:	Muokattavat ominaisuudet:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	Tallennettu CFA4-grafiikkamallina (.fcgt) mallikansioosi.
+	My Templates	Omat mallit
+	{n} Font	{n} fontti
+	{n} Size	{n} koko
+	{n} Color	{n} väri
+	{n} Position	{n} sijainti
+	Show {n}	Näytä {n}
+	Exported graphics template to {path}	Grafiikkamalli viety kohteeseen {path}
+	Replace Fonts in Projects	Korvaa fontit projekteissa
+	Fonts used in the project:	Projektissa käytetyt fontit:
+	{f} (missing)	{f} (puuttuu)
+	Replace:	Korvaa:
+	with:	fontilla:
+	Replaced {n} font uses	Korvattiin {n} fontin käyttöä
+	Track Color	Raidan väri
+	Unrendered: should play back in real time	Renderöimätön: pitäisi toistua reaaliajassa
+	Unrendered: render to play back in real time	Renderöimätön: renderöi toistaaksesi reaaliajassa
+	Rendered preview	Renderöity esikatselu
+	Show Duplicate Frame Markers	Näytä kaksoiskuvien merkit
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Sekvenssin alku/loppu on vain 1 kuva. Valitse Koko sekvenssi viedäksesi koko sekvenssin.
+	more tabs	lisää välilehtiä
+	Set Work Area Bar In Point	Aseta työaluepalkin alkupiste
+	Set Work Area Bar Out Point	Aseta työaluepalkin loppupiste
+	Delete Clips	Poista leikkeet
+	Destinations	Kohteet
+	Analyzing the clip…	Analysoidaan leikettä…
+	At GOP boundaries (no re-encoding)	GOP-rajoilla (ei uudelleenkoodausta)
+	Bit-exact copy	Bittitarkka kopio
+	Choose the output file.	Valitse tulostiedosto.
+	Compatible copy	Yhteensopiva kopio
+	Copy:	Kopio:
+	Cut:	Leikkaus:
+	Frame accurate (re-encode the boundaries)	Kuvatarkka (koodaa rajat uudelleen)
+	Open a video clip in the Source monitor first.	Avaa ensin videoleike lähdemonitorissa.
+	Output:	Lähtö:
+	Smart Cut Source	Smart Cut -lähde
+	Smart Cut Source…	Smart Cut -lähde…
+	Smart Cut is not available for this clip: {why}	Smart Cut ei ole käytettävissä tälle leikkeelle: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut kirjoitettu ja tarkistettu: {path} ({frames} kuvaa)
+	The cut cannot run.	Leikkausta ei voi suorittaa.
+	The engine sent no analysis.	Moottori ei lähettänyt analyysia.
+	Writing and verifying the cut…	Kirjoitetaan ja tarkistetaan leikkausta…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} säiliössä {container}: {gops} GOP:ia, {points} puhdasta leikkauskohtaa
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} kuvaa kopioitu, {reencoded} kuvaa koodattu uudelleen
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} kuvaa rajoilla koodataan uudelleen. Jatketaanko?
+	Show GOP Boundaries	Näytä GOP-rajat
+	Export mode	Vientitila
+	Full Render	Täysi renderöinti
+	Planning…	Suunnitellaan…
+	Recommended: Smart Render (asks before re-encoding)	Suositus: älykäs renderöinti (kysyy ennen uudelleenkoodausta)
+	Recommended: Stream Copy (nothing is re-encoded)	Suositus: virran kopiointi (mitään ei koodata uudelleen)
+	Rendered because of: {causes}	Renderöity syystä: {causes}
+	Smart Export	Älykäs vienti
+	Smart Export written and verified: {path}	Älykäs vienti kirjoitettu ja tarkistettu: {path}
+	Smart Render	Älykäs renderöinti
+	Stream Copy – Bit-exact	Virran kopiointi – bittitarkka
+	Stream Copy – Compatible	Virran kopiointi – yhteensopiva
+	Stream copy is not possible: {frames} frames need re-encoding.	Virran kopiointi ei ole mahdollista: {frames} kuvaa on koodattava uudelleen.
+	The export cannot run.	Vientiä ei voi suorittaa.
+	Wait for the export plan.	Odota vientisuunnitelmaa.
+	Writing and verifying the export…	Kirjoitetaan ja tarkistetaan vientiä…
+	colour conversion	värimuunnos
+	compositing	kuvien yhdistäminen
+	copied	kopioitu
+	effects	tehosteet
+	frame rate	kuvanopeus
+	proxies or nested sequences	välityskopiot tai sisäkkäiset sekvenssit
+	re-encoded at a cut	koodattu uudelleen leikkauskohdassa
+	rendered	renderöity
+	sources that cannot be copied	lähteet, joita ei voi kopioida
+	speed changes	nopeusmuutokset
+	titles or overlays	otsikot tai päällykset
+	transforms	muunnokset
+	transitions	siirtymät
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} kuvaa kopioitu, {reencoded} koodattu uudelleen leikkauksissa, {rendered} renderöity
+	{frames} frames are re-encoded or rendered. Continue?	{frames} kuvaa koodataan uudelleen tai renderöidään. Jatketaanko?
+	CFA4 Help…	CFA4-ohje…
+	Learning	Oppiminen
+	Refresh Changed Media	Päivitä muuttunut media
+	Open Recent	Avaa viimeisin
+	Report an Issue…	Ilmoita ongelmasta…
+	Review	Tarkastelu
+	{name} - Edited	{name} - muokattu
+	Audio Gain	Äänen vahvistus
+	Set Gain to:	Aseta vahvistukseksi:
+	Adjust Gain by:	Säädä vahvistusta:
+	Normalize Max Peak to:	Normalisoi suurin huippu tasoon:
+	Normalize All Peaks to:	Normalisoi kaikki huiput tasoon:
+	Peak Amplitude: {peak}	Huippuamplitudi: {peak}
+	Standard	Vakio
+	Add Tracks	Lisää raitoja
+	Placement	Sijoitus
+	Track type	Raidan tyyppi
+	Add video tracks	Lisää videoraitoja
+	Add audio tracks	Lisää ääniraitoja
+	Add audio submix tracks	Lisää äänen alamiksausraitoja
+	After {name}	Kohteen {name} jälkeen
+	Before First Track	Ennen ensimmäistä raitaa
+	Delete Tracks	Poista raitoja
+	Video Tracks	Videoraidat
+	Audio Tracks	Ääniraidat
+	Delete Video Tracks	Poista videoraitoja
+	Delete Audio Tracks	Poista ääniraitoja
+	All Empty Tracks	Kaikki tyhjät raidat
+	Caption Tracks	Tekstitysraidat
+	Delete Caption Tracks	Poista tekstitysraitoja
+	Report an issue	Ilmoita ongelmasta
+	Join us on Discord	Liity seuraamme Discordissa
+	Rendering:	Renderöinti:
+	UI:	Käyttöliittymä:
+	{fps} fps · {n} frames queued	{fps} fps · {n} kuvaa jonossa
+	Maximize Frame	Suurenna kehys
+	Restore Frame	Palauta kehys
+	Reveal Sequence in Project	Näytä sekvenssi projektissa
+	Video Thumbnails	Videon pienoiskuvat
+	Audio Waveforms	Äänen aaltomuodot
+	Untitled Workspace	Nimetön työtila
+	Show durations	Näytä kestot
+	Project Metadata	Projektin metatiedot
+	Add Property…	Lisää ominaisuus…
+	Column order	Sarakkeiden järjestys
+	Graphics text search arrives with M10.1–M10.2	Grafiikan tekstihaku tulee versiossa M10.1–M10.2
+	(no clips)	(ei leikkeitä)
+	Export Frame (Shift+E)	Vie kuva (Shift+E)
+	Export Frame: use Export mode (M6)	Vie kuva: käytä vientitilaa (M6)
+	Save changes to “{project_name}” before closing?	Tallennetaanko kohteen ”{project_name}” muutokset ennen sulkemista?
+	A file dialog is already open	Tiedostoikkuna on jo auki
+	Timeline: (no sequences)	Aikajana: (ei sekvenssejä)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Sijoita maskin pisteet napsauttamalla Ohjelma-monitorissa (vedä käyriä varten); sulje napsauttamalla ensimmäistä pistettä tai painamalla Enter
+	Comparison	Vertailu
+	Video and Waveform	Video ja aaltomuoto
+	Remove Media Cache Files	Poista mediavälimuistin tiedostot
+	Eyedropper: no picture to sample	Pipetti: ei kuvaa, josta ottaa näyte
+	Select a clip to grade	Valitse sävytettävä leike
+	   Opacity	   Peittävyys
+	   Size	   Koko
+	   Corner Radius	   Kulman säde
+	   Angle	   Kulma
+	   Distance	   Etäisyys
+	   Blur	   Sumennus
+	   Template: {name}	   Malli: {name}
+	CFA4 Graphics Template	CFA4-grafiikkamalli
+	  (none)	  (ei mitään)
+	Select items to clear	Valitse tyhjennettävät kohteet
+	Media missing	Media puuttuu
+	Unreadable	Lukukelvoton
+	✓ Enable	✓ Ota käyttöön
+	(RGB) Gamma	(RGB) Gamma
+	(RGB) Input Black Level	(RGB) Tulon mustan taso
+	(RGB) Input White Level	(RGB) Tulon valkoisen taso
+	(RGB) Output Black Level	(RGB) Lähdön mustan taso
+	(RGB) Output White Level	(RGB) Lähdön valkoisen taso
+	10 Bit Black Point	10-bittinen mustapiste
+	10 Bit White Point	10-bittinen valkopiste
+	105mm Prime	105 mm kiinteä objektiivi
+	29.97 fps Drop-Frame	29,97 fps drop-frame
+	29.97 fps Non Drop-Frame	29,97 fps non-drop-frame
+	35mm Prime	35 mm kiinteä objektiivi
+	3D Roll	3D-rullaus
+	3D Rotate	3D-kierto
+	3D Spin	3D-pyöritys
+	3D Spinback	3D-takaisinpyöritys
+	4-Color Gradient	Neliväriliukuväri
+	5.1 Media	5.1-media
+	5.1 Mixdown Type	5.1-alasmiksauksen tyyppi
+	50-300mm Zoom	50-300 mm zoom
+	59.94 fps Drop-Frame	59,94 fps drop-frame
+	59.94 fps Non Drop-Frame	59,94 fps non-drop-frame
+	ASC CDL	ASC CDL
+	Action-Safe Margin	Toiminnan turvamarginaali
+	1 file	1 tiedosto
+	{n} files	{n} tiedostoa
+	Additional Scale	Lisäskaalaus
+	Additive Dissolve	Lisäävä ristikuva
+	Additive Dissolve (Legacy)	Lisäävä ristikuva (vanha)
+	Aggressive	Aggressiivinen
+	Alpha Adjust	Alfan säätö
+	Alpha Blurriness	Alfan sumeus
+	Alpha Channel	Alfakanava
+	Alpha Glow	Alfan hehku
+	Ambience Intensity	Ympäristön voimakkuus
+	Ambience Light Color	Ympäristövalon väri
+	Amount of Noise	Kohinan määrä
+	Amount to Decolor	Värinpoiston määrä
+	Amount to Tint	Sävytyksen määrä
+	Amplifier	Vahvistin
+	Amplify	Vahvista
+	Amplitude	Amplitudi
+	Analog	Analoginen
+	Analog Delay	Analoginen viive
+	Anamorphic	Anamorfinen
+	Anchor	Ankkuri
+	Anti-aliasing Quality	Reunanpehmennyksen laatu
+	Antialiasing for Best Quality	Reunanpehmennys parhaaseen laatuun
+	Asymmetry	Epäsymmetria
+	Audio Duration	Äänen kesto
+	Audio In Point	Äänen alkupiste
+	Audio Out Point	Äänen loppupiste
+	Audio Usage	Äänen käyttö
+	Auto Align	Automaattinen tasaus
+	Auto Reframe	Automaattinen rajaus
+	Automatic Click Remover	Automaattinen napsahdusten poisto
+	Background Color	Taustaväri
+	Background Corner Radius	Taustan kulman säde
+	Background Opacity	Taustan peittävyys
+	Background Size	Taustan koko
+	Band 1	Kaista 1
+	Band 2	Kaista 2
+	Band 3	Kaista 3
+	Band 4	Kaista 4
+	Band 5	Kaista 5
+	Band Pass	Kaistanpäästö
+	Band Slide	Kaistaliuku
+	Band Stop	Kaistanesto
+	Bandpass	Kaistanpäästö
+	Barn Doors	Valoluukut
+	Basic 3D	Perus-3D
+	Bass	Basso
+	Behind	Takana
+	Bessel	Bessel
+	Bevel Alpha	Alfaviiste
+	Binauralizer - Ambisonics	Binauralisointi - Ambisonics
+	Black Input Level	Tulon mustan taso
+	Black and white	Mustavalkoinen
+	Black and white with crushed blacks and strong contrast	Mustavalkoinen murskatuilla mustilla ja voimakkaalla kontrastilla
+	Bleach-bypass style: desaturated with hard contrast	Bleach bypass -tyyli: haalistettu, kova kontrasti
+	Blend	Sekoitus
+	Blend With Original	Sekoita alkuperäiseen
+	Block Dissolve	Lohkoristikuva
+	Block Height	Lohkon korkeus
+	Block Motion	Lohkojen liike
+	Block Size	Lohkon koko
+	Block Width	Lohkon leveys
+	Blue Blurriness	Sinisen sumeus
+	Blue Curve	Sinisen käyrä
+	Blue Offset	Sinisen siirtymä
+	Blue Power	Sinisen voimakkuus
+	Blue Slope	Sinisen kulmakerroin
+	Blue-Blue	Sininen-sininen
+	Blue-Const	Sininen-vakio
+	Blue-Green	Sininen-vihreä
+	Blue-Red	Sininen-punainen
+	Blur Amount	Sumennuksen määrä
+	Blur Angle	Sumennuksen kulma
+	Blur Dimensions	Sumennuksen suunnat
+	Blur Dissolve	Sumennusristikuva
+	Blur Layer	Sumennustaso
+	Blur Length	Sumennuksen pituus
+	Blurriness	Sumeus
+	Bokeh Blur	Bokeh-sumennus
+	Boost	Korostus
+	Border	Reunus
+	Border Color	Reunuksen väri
+	Border Width	Reunuksen leveys
+	Borders	Reunukset
+	Bounce	Pomppu
+	Branching	Haarautuminen
+	Brightness & Contrast	Kirkkaus ja kontrasti
+	British Stack	Brittiläinen pino
+	Brush Hardness	Siveltimen kovuus
+	Brush Opacity	Siveltimen peittävyys
+	Brush Position	Siveltimen sijainti
+	Brush Size	Siveltimen koko
+	Brush Spacing (secs)	Siveltimen välistys (s)
+	Bubbles	Kuplat
+	Bulge	Pullistuma
+	Bulge Smoother	Pullistuman tasoitin
+	Bump Height	Kohokuvion korkeus
+	Burn Alpha	Polta alfa
+	Burn Chroma	Polta krominanssi
+	Burn Color	Polttoväri
+	Butterworth	Butterworth
+	Camera Blur	Kameran sumennus
+	Camera Shake	Kameran tärinä
+	Capitalisation	Isot alkukirjaimet
+	Cathedral	Katedraali
+	Cell Pattern	Solukuvio
+	Center Channel Pan	Keskikanavan panorointi
+	Center Gradient	Keskiliukuväri
+	Center Input	Keskitulo
+	Center Out	Keskeltä ulos
+	Center Point (Latitude)	Keskipiste (leveysaste)
+	Center Point (Longitude)	Keskipiste (pituusaste)
+	Center Split	Keskijako
+	Center of Sphere	Pallon keskipiste
+	Cents	Sentit
+	Change to Color	Vaihda väriksi
+	Channel Blur	Kanavan sumennus
+	Channel Mix	Kanavasekoitus
+	Channel Mixer	Kanavamikseri
+	Chaos	Kaaos
+	Chebyshev	Tšebyšev
+	Checker Wipe	Shakkiruutupyyhkäisy
+	Checkerboard	Shakkilauta
+	Choke	Kurkistus
+	Chorus	Chorus
+	Chorus/Flanger	Chorus/flanger
+	Chroma Leak	Krominanssivuoto
+	Chromatic Aberration (Blue)	Kromaattinen aberraatio (sininen)
+	Chromatic Aberration (Green)	Kromaattinen aberraatio (vihreä)
+	Chromatic Aberration (Red)	Kromaattinen aberraatio (punainen)
+	Cineon Converter	Cineon-muunnin
+	Clean Combo	Puhdas yhdistelmä
+	Clip Level	Leiketaso
+	Clipping	Leikkautuminen
+	Clock Wipe	Kellopyyhkäisy
+	Clock Wipe (Legacy)	Kellopyyhkäisy (vanha)
+	Clockwise	Myötäpäivään
+	Clone	Kloonaa
+	Color & Alpha	Väri ja alfa
+	Color 1	Väri 1
+	Color 2	Väri 2
+	Color 3	Väri 3
+	Color 4	Väri 4
+	Color Balance	Väritasapaino
+	Color Channel	Värikanava
+	Color Distortion	Värin vääristymä
+	Color Emboss	Värikohokuva
+	Color Key	Väriavain
+	Color Pass	Värin säilytys
+	Color Replace	Värin korvaus
+	Color To Leave	Säilytettävä väri
+	Color Tolerance	Värin toleranssi
+	Columns	Sarakkeet
+	Complexity	Monimutkaisuus
+	Composite In Back	Yhdistä taakse
+	Composite In Front	Yhdistä eteen
+	Composite Using	Yhdistämisen lähde
+	Composite on Original	Yhdistä alkuperäiseen
+	Compound Blur	Yhdistelmäsumennus
+	Compression Before Clipping	Kompressio ennen leikkautumista
+	Constant Gain	Vakiovahvistus
+	Constant Power	Vakioteho
+	Conversion Type	Muunnoksen tyyppi
+	Convolution Reverb	Konvoluutiokaiku
+	Cool, desaturated and punchy	Viileä, haalistettu ja iskevä
+	Core Width	Ytimen leveys
+	Corner Pin	Kulmakiinnitys
+	Count	Määrä
+	Counter-clockwise	Vastapäivään
+	Crop Less <-> Smooth More	Rajaa vähemmän <-> tasoita enemmän
+	Cross Displacement	Ristisiirtymä
+	Cross Dissolve	Ristikuva
+	Cross Dissolve (Legacy)	Ristikuva (vanha)
+	Cross Zoom	Ristizoomaus
+	Cross Zoom (Legacy)	Ristizoomaus (vanha)
+	Crossovers	Jakotaajuudet
+	Crystals	Kiteet
+	Cube Spin	Kuution pyöritys
+	Curl Radius	Kiepin säde
+	Cursor	Kohdistin
+	Curve	Käyrä
+	Custom Color	Mukautettu väri
+	Cutoff	Rajataajuus
+	Cyan-teal shadows and warm highlights with a little more contrast	Syaaninsiniset varjot ja lämpimät kohokohdat hieman suuremmalla kontrastilla
+	Cycle (in Revolutions)	Kierto (kierroksina)
+	Cycle Evolution	Syklinen kehitys
+	Damping	Vaimennus
+	Damping HF	Diskantin vaimennus
+	Damping LF	Basson vaimennus
+	Day for night: darker, cooler and less saturated	Päivästä yöksi: tummempi, viileämpi ja vähemmän kylläinen
+	DeEsser	Sibilanttien vaimennin
+	DeHummer	Hurinanpoistaja
+	DeNoise	Kohinanpoisto
+	DeReverb	Kaiunpoisto
+	Decay	Häivyntä
+	Decay Time (RT60)	Häivyntäaika (RT60)
+	Delay	Viive
+	Delay 1	Viive 1
+	Delay 2	Viive 2
+	Delay 3	Viive 3
+	Delay 4	Viive 4
+	Desaturate	Poista värikylläisyys
+	Detail Amplitude	Yksityiskohtien amplitudi
+	Detail Level	Yksityiskohtien taso
+	Detailed Analysis	Yksityiskohtainen analyysi
+	Diamond	Vinoneliö
+	Dip to Black	Häivytys mustaan
+	Dip to Black (Legacy)	Häivytys mustaan (vanha)
+	Dip to Color	Häivytys väriin
+	Dip to White	Häivytys valkoiseen
+	Dip to White (Legacy)	Häivytys valkoiseen (vanha)
+	Direction	Suunta
+	Directional	Suunnattu
+	Directional Blur	Suunnattu sumennus
+	Directional Blur (Legacy)	Suunnattu sumennus (vanha)
+	Disperse	Hajota
+	Displacement	Siirtymä
+	Dissolve Blocks	Liukenevat lohkot
+	Distance to Image	Etäisyys kuvaan
+	Distortion Complexity	Vääristymän monimutkaisuus
+	Distortion Rate	Vääristymän nopeus
+	Distortion Type	Vääristymän tyyppi
+	Drive	Ajo
+	Dry	Kuiva
+	Dry Out	Kuiva lähtö
+	Dynamics Processing	Dynamiikan käsittely
+	Early Reflections	Varhaiset heijastukset
+	Earthquake	Maanjäristys
+	Ease In and Out	Pehmeä alku ja loppu
+	Easing	Pehmennys
+	Echo	Kaiku
+	Echo Glow	Kaikuhehku
+	Echo Operator	Kaikuoperaattori
+	Echo Time (seconds)	Kaikuaika (sekuntia)
+	Echoes	Kaiut
+	Edge Color	Reunan väri
+	Edge Feather	Reunan pehmennys
+	Edge Glow	Reunan hehku
+	Edge Sharpness	Reunan terävyys
+	Edge Softness	Reunan pehmeys
+	Edge Thickness	Reunan paksuus
+	Edge Thin	Ohut reuna
+	Edge Threshold	Reunan kynnys
+	Edge Type	Reunan tyyppi
+	Elliptical	Elliptinen
+	Emboss	Kohokuva
+	Enable HSL Secondary	Ota HSL-toissijainen käyttöön
+	End Color	Loppuväri
+	End Point	Loppupiste
+	End of Ramp	Rampin loppu
+	Evolution	Kehitys
+	Evolution Options	Kehityksen asetukset
+	Exciter Amount	Herättimen määrä
+	Exciter Mode	Herättimen tila
+	Exponential Fade	Eksponentiaalinen häivytys
+	FFT Filter	FFT-suodin
+	Fade	Häivytys
+	Fade Out	Häivytys pois
+	Falloff	Vaimeneminen
+	Fast	Nopea
+	Faster Motion	Nopeampi liike
+	Feedback	Takaisinkytkentä
+	Feedback 1	Takaisinkytkentä 1
+	Feedback 2	Takaisinkytkentä 2
+	Feedback 3	Takaisinkytkentä 3
+	Feedback 4	Takaisinkytkentä 4
+	Female	Nainen
+	Fill Background	Täytä tausta
+	Fill Left with Right	Täytä vasen oikealla
+	Fill Point	Täyttöpiste
+	Fill Right with Left	Täytä oikea vasemmalla
+	Fill Selector	Täytön valitsin
+	Film Dissolve	Filmiristikuva
+	Film Dissolve (Legacy)	Filmiristikuva (vanha)
+	Film Roll	Filmirulla
+	Filter	Suodin
+	Filter Frequency	Suotimen taajuus
+	Filter Resonance	Suotimen resonanssi
+	Final Delay	Loppuviive
+	Find Edges	Etsi reunat
+	Flanger	Flanger
+	Flare	Linssiheijastus
+	Flare Brightness	Linssiheijastuksen kirkkaus
+	Flare Center	Linssiheijastuksen keskipiste
+	Flare Color	Linssiheijastuksen väri
+	Flash	Välähdys
+	Flicker	Välkyntä
+	Flickers	Välähdykset
+	Flip Motion	Kääntöliike
+	Flip Over	Käännä ympäri
+	Focus	Tarkennus
+	Focus Blur	Tarkennussumennus
+	Focus Point	Tarkennuspiste
+	Focus Shape	Tarkennuksen muoto
+	Focus Size	Tarkennuksen koko
+	Fold Motion	Taittoliike
+	Foldback	Foldback
+	Fractal Influence	Fraktaalin vaikutus
+	Fractal Type	Fraktaalin tyyppi
+	Frame	Kehys
+	Frame Color	Kehyksen väri
+	Frame Layout	Kehyksen asettelu
+	Frame Width	Kehyksen leveys
+	Framing	Kuvarajaus
+	From	Mistä
+	From East	Idästä
+	From North	Pohjoisesta
+	From South	Etelästä
+	From West	Lännestä
+	Fuzz	Fuzz
+	GB	GB
+	Gamma Correction	Gammakorjaus
+	Gamut Warning Color	Värialueen varoitusväri
+	Gap	Rako
+	Gap Color	Raon väri
+	Gaussian Blur (Legacy)	Gaussin sumennus (vanha)
+	Ghosts	Haamut
+	Glint	Välke
+	Glitch	Glitch
+	Glow	Hehku
+	Glow Brightness	Hehkun kirkkaus
+	Glow Color	Hehkun väri
+	Glow Only	Vain hehku
+	Glow Radius	Hehkun säde
+	Glow Saturation	Hehkun kylläisyys
+	Glow Width	Hehkun leveys
+	Gradient End	Liukuvärin loppu
+	Gradient Layer	Liukuväritaso
+	Gradient Placement	Liukuvärin sijoitus
+	Gradient Scatter	Liukuvärin hajonta
+	Gradient Shape	Liukuvärin muoto
+	Gradient Start	Liukuvärin alku
+	Gradient Wipe	Liukuväripyyhkäisy
+	Gradient Wipe (Legacy)	Liukuväripyyhkäisy (vanha)
+	Grain Size	Rakeen koko
+	Green Blurriness	Vihreän sumeus
+	Green Curve	Vihreän käyrä
+	Green Offset	Vihreän siirtymä
+	Green Power	Vihreän voimakkuus
+	Green Slope	Vihreän kulmakerroin
+	Green-Blue	Vihreä-sininen
+	Green-Const	Vihreä-vakio
+	Green-Green	Vihreä-vihreä
+	Green-Red	Vihreä-punainen
+	Grow	Kasvata
+	Grunge	Grunge
+	GuitarSuite	GuitarSuite
+	Hard	Kova
+	Hard Clip	Kova leikkaus
+	Hard Limiter	Kova rajoitin
+	Head Size	Pään koko
+	Heart	Sydän
+	Hide Back Face	Piilota takapinta
+	High Cutoff	Ylärajataajuus
+	High Frequency Cut	Korkeiden taajuuksien leikkaus
+	High Frequency Damping	Korkeiden taajuuksien vaimennus
+	High Pass	Ylipäästö
+	High Shelf	Ylähylly
+	High Shelf Gain	Ylähyllyn vahvistus
+	High contrast with held highlights and deep shadows	Suuri kontrasti säilytetyillä kohokohdilla ja syvillä varjoilla
+	Highlight	Kohokohta
+	Highlight Blue Balance	Kohokohtien sininen tasapaino
+	Highlight Brightness	Kohokohtien kirkkaus
+	Highlight Green Balance	Kohokohtien vihreä tasapaino
+	Highlight Red Balance	Kohokohtien punainen tasapaino
+	Highlight Rolloff	Kohokohtien pehmeä leikkaus
+	Highlight Threshold	Kohokohtien kynnys
+	Highlight Tint	Kohokohtien sävytys
+	Highlights Lightness	Kohokohtien vaaleus
+	Highpass	Ylipäästö
+	Horizontal 16:9	Vaaka 16:9
+	Horizontal Alignment	Vaakatasaus
+	Horizontal Blocks	Vaakalohkot
+	Horizontal Decentering	Vaakasuuntainen keskityksen poikkeama
+	Horizontal Displacement	Vaakasiirtymä
+	Horizontal Flip	Vaakapeilaus
+	Horizontal Margin	Vaakamarginaali
+	Horizontal and Vertical	Vaaka ja pysty
+	Hue Center	Sävyn keskipiste
+	Hue Tolerance	Sävyn toleranssi
+	Ignore Alpha	Ohita alfa
+	Impulse	Impulssi
+	Incoming	Saapuva
+	Initial Delay	Alkuviive
+	Inner Radius	Sisäsäde
+	Input Boost	Tulon korostus
+	Inset	Upotus
+	Inside Color	Sisäväri
+	Inter	Inter
+	Internal Black Point	Sisäinen mustapiste
+	Internal White Point	Sisäinen valkopiste
+	Inverse Falloff	Käänteinen vaimeneminen
+	Invert Alpha	Käännä alfa
+	Invert Blur	Käännä sumennus
+	Invert Fill	Käännä täyttö
+	Invert Gradient	Käännä liukuväri
+	Invert Left	Käännä vasen
+	Invert Right	Käännä oikea
+	Iris Box	Iiris: laatikko
+	Iris Cross	Iiris: risti
+	Iris Diamond	Iiris: vinoneliö
+	Iris Radius	Iiriksen säde
+	Iris Rotation	Iiriksen kierto
+	Iris Round	Iiris: pyöreä
+	Iris Shape	Iiriksen muoto
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	Kaleidoskooppi
+	Key Color	Avainväri
+	Layer Name	Tason nimi
+	Leave Color	Säilytä väri
+	Left - Left	Vasen - vasen
+	Left - Right	Vasen - oikea
+	Lens Blur	Objektiivisumennus
+	Lens Distortion	Objektiivin vääristymä
+	Lens Flare	Linssiheijastus
+	Lens Type	Objektiivin tyyppi
+	Level 1	Taso 1
+	Level 2	Taso 2
+	Level 3	Taso 3
+	Level 4	Taso 4
+	Levels	Tasot
+	Lifted blacks, softer contrast, muted colour	Nostetut mustat, pehmeämpi kontrasti, hillityt värit
+	Light 1	Valo 1
+	Light 2	Valo 2
+	Light 3	Valo 3
+	Light 4	Valo 4
+	Light 5	Valo 5
+	Light Angle	Valon kulma
+	Light Color	Valon väri
+	Light Leak	Valovuoto
+	Light Leaks	Valovuodot
+	Light Sweep	Valopyyhkäisy
+	Light Type	Valon tyyppi
+	Lighting Effects	Valotehosteet
+	Lightning	Salama
+	Line Thickness	Viivan paksuus
+	Linear Ramp	Lineaarinen ramppi
+	Linear Wipe	Lineaarinen pyyhkäisy
+	Linear Wipe (Legacy)	Lineaarinen pyyhkäisy (vanha)
+	Linear to Log	Lineaarisesta logaritmiseksi
+	Liquid Distortion	Nestemäinen vääristymä
+	Log to Linear	Logaritmisesta lineaariseksi
+	Log to Log	Logaritmisesta logaritmiseksi
+	Logo Cutout	Logon leikkaus
+	Long Shadow	Pitkä varjo
+	Look-Ahead Time	Ennakointiaika
+	Loudness Maximizer	Äänekkyyden maksimointi
+	Loudness Meter	Äänekkyysmittari
+	Louver	Säleikkö
+	Low Frequency Cut	Matalien taajuuksien leikkaus
+	Low Pass	Alipäästö
+	Low Shelf	Alahylly
+	Low Shelf Gain	Alahyllyn vahvistus
+	Lower Left	Alhaalla vasemmalla
+	Lower Right	Alhaalla oikealla
+	Lowpass	Alipäästö
+	Luma Curve	Luma-käyrä
+	Luma Fade	Luma-häivytys
+	Luma Key	Luma-avain
+	Luma Source	Luma-lähde
+	Luma and Chroma	Luma ja krominanssi
+	Luminance	Luminanssi
+	Luminance Threshold	Luminanssin kynnys
+	MB	Mt
+	Magnify	Suurenna
+	Magnify (Legacy)	Suurenna (vanha)
+	Major Radius	Pääsäde
+	Male	Mies
+	Map Black To	Kartoita musta kohteeseen
+	Map White To	Kartoita valkoinen kohteeseen
+	Maps full-range levels into 16–235 (video range) with a luma curve	Kartoittaa täyden alueen tasot alueelle 16–235 (videoalue) luma-käyrällä
+	Mask Only	Vain maski
+	Master Amplitude	Pääamplitudi
+	Mastering	Masterointi
+	Matte Alpha	Matan alfa
+	Matte Cleanup	Matan siivous
+	Matte Generation	Matan luonti
+	Matte Luma	Matan luma
+	Maximum Amplitude	Suurin amplitudi
+	Maximum Block Size	Suurin lohkokoko
+	Maximum Blur	Suurin sumennus
+	Maximum Reduction	Suurin vaimennus
+	Maximum Scale	Suurin skaalaus
+	Media Timecode	Median aikakoodi
+	Median	Mediaani
+	Metadata & Timecode Burn-in	Metatietojen ja aikakoodin poltto
+	Metrics Kerning	Metrinen välistys
+	Mid	Keski
+	Mid Point	Keskipiste
+	Midtone Blue Balance	Keskisävyjen sininen tasapaino
+	Midtone Green Balance	Keskisävyjen vihreä tasapaino
+	Midtone Red Balance	Keskisävyjen punainen tasapaino
+	Midtones Lightness	Keskisävyjen vaaleus
+	Minor Radius	Pieni säde
+	Mirror Alternate	Vuorotteleva peilaus
+	Mixed Crystals	Sekalaiset kiteet
+	Mode	Tila
+	Modern High Gain	Moderni suuri vahvistus
+	Modulation Rate	Modulaation nopeus
+	Monochrome toned cyan-blue	Syaaninsiniseksi sävytetty yksivärinen
+	Monochrome toned warm brown	Lämpimän ruskeaksi sävytetty yksivärinen
+	More colour in the less saturated areas	Enemmän väriä vähemmän kylläisillä alueilla
+	Morph Cut	Morph-leikkaus
+	Mosaic	Mosaiikki
+	Mosaic (Legacy)	Mosaiikki (vanha)
+	Motion Blur	Liikesumennus
+	Motion Camera	Liikkuva kamera
+	Motion Preset	Liikkeen esiasetus
+	Motion Tween	Liikkeen välikuvat
+	Multitap Delay	Monihaarainen viive
+	Narrow	Kapea
+	Neon Color	Neonväri
+	Neon Wipe	Neonpyyhkäisy
+	No Motion	Ei liikettä
+	Noise (Legacy)	Kohina (vanha)
+	Noise Level	Kohinataso
+	Noise Reduction/Restoration	Kohinanvaimennus/restaurointi
+	Noise Type	Kohinan tyyppi
+	Non-Additive Dissolve	Ei-lisäävä ristikuva
+	Notch 1	Lovi 1
+	Notch 2	Lovi 2
+	Notch 3	Lovi 3
+	Notch 4	Lovi 4
+	Notch 5	Lovi 5
+	Notch 6	Lovi 6
+	Notch Filter	Lovisuodin
+	Notch Width	Loven leveys
+	Number Of Echoes	Kaikujen määrä
+	Number of Harmonics	Harmonisten määrä
+	Octagon	Kahdeksankulmio
+	Offset (Turbulence)	Siirtymä (turbulenssi)
+	Offset From	Siirrä kohteesta
+	Offset To	Siirrä kohteeseen
+	Omni	Ympärisäteilevä
+	On	Päällä
+	On Original Image	Alkuperäisen kuvan päälle
+	On Transparent	Läpinäkyvälle
+	Opens up the shadows	Avaa varjoja
+	Order	Järjestys
+	Outgoing	Lähtevä
+	Outside Color	Ulkoväri
+	Overflow	Ylivuoto
+	Overshoot	Ylilyönti
+	Page Peel	Sivun irrotus
+	Page Turn	Sivun kääntö
+	Paint Bucket	Maaliämpäri
+	Paint On Black	Maalaa mustalle
+	Paint On Original Image	Maalaa alkuperäiselle kuvalle
+	Paint On Transparent	Maalaa läpinäkyvälle
+	Paint On White	Maalaa valkoiselle
+	Paint Style	Maalaustyyli
+	Paint Surface	Maalauspinta
+	Pan (Y Axis)	Panorointi (Y-akseli)
+	Panel Wipe	Paneelipyyhkäisy
+	Panner - Ambisonics	Panorointi - Ambisonics
+	Passband Ripple	Päästökaistan aaltoilu
+	Path Points	Polun pisteet
+	Peak Frequency	Huipputaajuus
+	Peak Gain	Huippuvahvistus
+	Pedestal	Jalusta
+	Pentagon	Viisikulmio
+	Percent Blur	Sumennusprosentti
+	Phase Difference	Vaihe-ero
+	Phaser	Phaser
+	Phosphor	Fosfori
+	Phosphor Color	Fosforin väri
+	Photocopy	Valokopio
+	Photocopy Color	Valokopion väri
+	Pillow	Tyyny
+	Pin All	Kiinnitä kaikki
+	Pin Horizontal	Kiinnitä vaakasuunnassa
+	Pin Vertical	Kiinnitä pystysuunnassa
+	Pinning	Kiinnitys
+	Pitch Shifter	Sävelkorkeuden siirto
+	Plate	Levy
+	Plateau Wipe	Tasannepyyhkäisy
+	Plateaus	Tasanteet
+	Plates	Levyt
+	Point 1	Piste 1
+	Point 1 Color	Pisteen 1 väri
+	Point 1 Latitude	Pisteen 1 leveysaste
+	Point 1 Longitude	Pisteen 1 pituusaste
+	Point 2	Piste 2
+	Point 2 Color	Pisteen 2 väri
+	Point 2 Latitude	Pisteen 2 leveysaste
+	Point 2 Longitude	Pisteen 2 pituusaste
+	Point 3	Piste 3
+	Point 3 Color	Pisteen 3 väri
+	Point 3 Latitude	Pisteen 3 leveysaste
+	Point 3 Longitude	Pisteen 3 pituusaste
+	Point 4	Piste 4
+	Point 5	Piste 5
+	Point 6	Piste 6
+	Point 7	Piste 7
+	Point 8	Piste 8
+	Pop Motion	Ponnahdusliike
+	Position Amount	Sijainnin määrä
+	Position, Scale, Rotation	Sijainti, skaalaus, kierto
+	Posterize	Posterisointi
+	Posterize Time	Ajan posterisointi
+	Pre-Delay	Esiviive
+	Preserve Luminosity	Säilytä luminanssi
+	Preserve Scale	Säilytä skaalaus
+	ProcAmp	ProcAmp
+	Pull Motion	Vetoliike
+	Pulls highlights and whites down	Laskee kohokohtia ja valkoisia
+	Push	Työntö
+	Push (Legacy)	Työntö (vanha)
+	Q	Q
+	RGB Split	RGB-jako
+	Radial Ramp	Säteittäinen ramppi
+	Radial Wipe	Säteittäinen pyyhkäisy
+	Radial Wipe (Legacy)	Säteittäinen pyyhkäisy (vanha)
+	Ramp	Ramppi
+	Ramp Shape	Rampin muoto
+	Random Seed	Satunnaissiemen
+	Ray	Säde
+	Ray Color	Säteen väri
+	Ray Length	Säteen pituus
+	Rays Only	Vain säteet
+	Red Blurriness	Punaisen sumeus
+	Red Curve	Punaisen käyrä
+	Red Offset	Punaisen siirtymä
+	Red Power	Punaisen voimakkuus
+	Red Slope	Punaisen kulmakerroin
+	Red-Blue	Punainen-sininen
+	Red-Const	Punainen-vakio
+	Red-Green	Punainen-vihreä
+	Red-Red	Punainen-punainen
+	Reduce Axis	Vähennä akselia
+	Reduce Interlace Flicker	Vähennä lomitusvälkyntää
+	Reflected	Heijastettu
+	Reflection Angle	Heijastuskulma
+	Reflection Center	Heijastuksen keskipiste
+	Refraction	Taittuminen
+	Reframe Offset	Rajauksen siirtymä
+	Reframe Zoom	Rajauksen zoomaus
+	Relaxed	Rento
+	Release Time	Vapautusaika
+	Remove Fringe	Poista reunaväri
+	Repeat Edge Pixels	Toista reunapikselit
+	Replace Color	Korvaa väri
+	Replicate	Monista
+	Result	Tulos
+	Retro	Retro
+	Reveal Original Image	Paljasta alkuperäinen kuva
+	Reverb Amount	Kaiun määrä
+	Right - Left	Oikea - vasen
+	Right - Right	Oikea - oikea
+	Roll (Z Axis)	Rullaus (Z-akseli)
+	Room Size	Huoneen koko
+	Rotation Amount	Kierron määrä
+	Roughen	Karhenna
+	Roughen Color	Karhennuksen väri
+	Roughen Edges	Karhenna reunat
+	Rounded Crop	Pyöristetty rajaus
+	Rows	Rivit
+	Rusty	Ruosteinen
+	Rusty Color	Ruosteen väri
+	Saturation at 50 %	Kylläisyys 50 %:ssa
+	Scale (Degrees)	Skaalaus (asteina)
+	Scale Amount	Skaalauksen määrä
+	Scale From	Skaalaa kohteesta
+	Scale Height	Skaalaa korkeus
+	Scale Match	Skaalauksen vastaavuus
+	Scale To	Skaalaa kohteeseen
+	Scan Lines	Juovat
+	Scientific Filter	Tieteellinen suodin
+	Semi-tones	Puolisävelaskeleet
+	Sequence Name	Sekvenssin nimi
+	Sequence Timecode	Sekvenssin aikakoodi
+	Setting	Asetus
+	Shadow Angle	Varjon kulma
+	Shadow Blue Balance	Varjojen sininen tasapaino
+	Shadow Blur	Varjon sumennus
+	Shadow Color	Varjon väri
+	Shadow Distance	Varjon etäisyys
+	Shadow Green Balance	Varjojen vihreä tasapaino
+	Shadow Only	Vain varjo
+	Shadow Opacity	Varjon peittävyys
+	Shadow Red Balance	Varjojen punainen tasapaino
+	Shadow Size	Varjon koko
+	Shadow Tint	Varjojen sävytys
+	Shadows Lightness	Varjojen vaaleus
+	Shake	Tärinä
+	Shape Dissolve	Muotoristikuva
+	Shape Flow	Muotovirtaus
+	Shape Size	Muodon koko
+	Shard Size	Sirpaleen koko
+	Sharp Colors	Terävät värit
+	Sharpen Amount	Terävöinnin määrä
+	Shift Center To	Siirrä keskipiste kohteeseen
+	Show Focus Area	Näytä tarkennusalue
+	Show Only Noise	Näytä vain kohina
+	Shrink	Kutista
+	Shutter Angle	Suljinkulma
+	Similarity	Samankaltaisuus
+	Simple Notch Filter	Yksinkertainen lovisuodin
+	Simple Parametric EQ	Yksinkertainen parametrinen EQ
+	Simple Text	Yksinkertainen teksti
+	Single-band Compressor	Yksikaistainen kompressori
+	Sinusoidal	Sinimuotoinen
+	Skew	Vinoutus
+	Skew Axis	Vinoutusakseli
+	Slats	Säleet
+	Slide (Legacy)	Liuku (vanha)
+	Slope	Kulmakerroin
+	Slow	Hidas
+	Slower Motion	Hitaampi liike
+	Smart Limit	Älykäs raja
+	Smooth Motion	Pehmeä liike
+	Soft Clamp	Pehmeä rajoitus
+	Soft Edges (Best Quality)	Pehmeät reunat (paras laatu)
+	Soft Wipe	Pehmeä pyyhkäisy
+	Solarize	Solarisointi
+	Solid Colors	Yhtenäiset värit
+	Source Point	Lähdepiste
+	Source Text	Lähdeteksti
+	Spacer	Välike
+	Speaker Angle	Kaiuttimen kulma
+	Special Effects	Erikoistehosteet
+	Spherize	Pallomaistus
+	Spiky	Piikikäs
+	Spill	Vuoto
+	Spill Suppression	Vuodon vaimennus
+	Spin	Pyöritys
+	Spin Direction	Pyörimissuunta
+	Spin Motion	Pyörimisliike
+	Split	Jako
+	Split (Legacy)	Jako (vanha)
+	Spotlight	Kohdevalo
+	Spread	Levitys
+	Spring Motion	Jousiliike
+	Square (Width Only)	Neliö (vain leveys)
+	Square 1:1	Neliö 1:1
+	Stabilization	Vakautus
+	Stabilize Only	Vain vakautus
+	Stabilize, Crop	Vakauta, rajaa
+	Stabilize, Crop, Auto-scale	Vakauta, rajaa, automaattinen skaalaus
+	Stabilize, Synthesize Edges	Vakauta, syntetisoi reunat
+	Stages	Vaiheet
+	Star Wipe	Tähtipyyhkäisy
+	Start Angle	Alkukulma
+	Start Color	Alkuväri
+	Start Point	Alkupiste
+	Start of Ramp	Rampin alku
+	Starting Intensity	Alkuvoimakkuus
+	Static Plates	Staattiset levyt
+	Stereo Expand	Stereolaajennus
+	Stereo Expander	Stereolaajennin
+	Stereo Phasing	Stereovaiheistus
+	Stereoscopic - Over/Under	Stereoskooppinen - ylä/ala
+	Stereoscopic - Side by Side	Stereoskooppinen - rinnakkain
+	Stopband Attenuation	Estokaistan vaimennus
+	Straight Color	Suora väri
+	Stretch	Venytä
+	Stretch Gradient to Fit	Venytä liukuväri sopimaan
+	Stretch Map to Fit	Venytä kartta sopimaan
+	Stretch Width or Height	Venytä leveyttä tai korkeutta
+	Stretch Wipe	Venytyspyyhkäisy
+	Stretch to Fit Frame	Venytä kuvaan sopivaksi
+	Stripe	Raita
+	Stripes	Raidat
+	Strobe Color	Stroboskoopin väri
+	Strobe Duration (secs)	Stroboskoopin kesto (s)
+	Strobe Light	Stroboskooppivalo
+	Strobe Period (secs)	Stroboskoopin jakso (s)
+	Stroke 2 Color	Ääriviivan 2 väri
+	Stroke 2 Type	Ääriviivan 2 tyyppi
+	Stroke 2 Width	Ääriviivan 2 leveys
+	Stroke Angle	Vedon kulma
+	Stroke Density	Vetojen tiheys
+	Stroke Length (secs)	Vedon pituus (s)
+	Stroke Only	Vain ääriviiva
+	Stroke Randomness	Vetojen satunnaisuus
+	Stroke Type	Vedon tyyppi
+	Stroke Width	Viivan leveys
+	Studio Reverb	Studiokaiku
+	Subclip End	Alileikkeen loppu
+	Subclip Start	Alileikkeen alku
+	Subspace Warp	Aliavaruuden vääristymä
+	Super Narrow	Erittäin kapea
+	Surface Gloss	Pinnan kiilto
+	Surface Material	Pinnan materiaali
+	Surround Reverb	Surround-kaiku
+	Swap Channels	Vaihda kanavat
+	Swivel	Kääntö
+	TV Power	TV:n käynnistys
+	Tape	Nauha
+	Tape/Tube	Nauha/putki
+	Target Aspect	Tavoitekuvasuhde
+	Target Color	Kohdeväri
+	Target Field of View	Tavoitenäkökenttä
+	Text Color	Tekstin väri
+	Thickness	Paksuus
+	Tile Gradient	Laatoitettu liukuväri
+	Tilt	Kallistus
+	Tilt (X Axis)	Kallistus (X-akseli)
+	Tint Color	Sävytysväri
+	To	Kohteeseen
+	Tone	Sävy
+	Track Matte Key	Raitamatta-avain
+	Transience	Transientit
+	Transition Completion	Siirtymän valmistuminen
+	Transition Softness	Siirtymän pehmeys
+	Trash	Roska
+	Travel Motion	Matkaliike
+	Treble	Diskantti
+	Tube	Putki
+	Tube-modeled Compressor	Putkimallinnettu kompressori
+	Tubular	Putkimainen
+	Turbulent	Turbulentti
+	Turbulent Displace	Turbulentti siirtymä
+	Turbulent Sharp	Turbulentti terävä
+	Turbulent Smooth	Turbulentti pehmeä
+	Turbulent Smoother	Turbulentti pehmeämpi
+	Tweed	Tweed
+	Twirl	Pyörre
+	Twirl (Legacy)	Pyörre (vanha)
+	Twirl Center	Pyörteen keskipiste
+	Twirl Radius	Pyörteen säde
+	Twist Smoother	Kierteen tasoitin
+	Ultra Key	Ultra Key
+	Uniform Spacing	Tasainen välistys
+	Upper Frequency	Ylätaajuus
+	Upper Left	Ylhäällä vasemmalla
+	Upper Right	Ylhäällä oikealla
+	Use Color Noise	Käytä värikohinaa
+	Use End Color	Käytä loppuväriä
+	Use Glow Color	Käytä hehkun väriä
+	Use Tint Color	Käytä sävytysväriä
+	VHS Damage	VHS-vaurio
+	VR Blur	VR-sumennus
+	VR Chroma Leaks	VR-krominanssivuodot
+	VR Chromatic Aberrations	VR-kromaattiset aberraatiot
+	VR Color Gradients	VR-liukuvärit
+	VR De-Noise	VR-kohinanpoisto
+	VR Digital Glitch	VR-digitaalinen glitch
+	VR Fractal Noise	VR-fraktaalikohina
+	VR Glow	VR-hehku
+	VR Gradient Wipe	VR-liukuväripyyhkäisy
+	VR Iris Wipe	VR-iirispyyhkäisy
+	VR Light Leaks	VR-valovuodot
+	VR Light Rays	VR-valonsäteet
+	VR Mobius Zoom	VR-Möbius-zoomaus
+	VR Plane to Sphere	VR-taso palloksi
+	VR Projection	VR-projektio
+	VR Random Blocks	VR-satunnaiset lohkot
+	VR Rotate Sphere	VR-pallon kierto
+	VR Sharpen	VR-terävöinti
+	VR Spherical Blur	VR-pallomainen sumennus
+	Venetian Blinds	Sälekaihtimet
+	Vertical 4:5	Pysty 4:5
+	Vertical 9:16	Pysty 9:16
+	Vertical Alignment	Pystytasaus
+	Vertical Blocks	Pystylohkot
+	Vertical Decentering	Pystysuuntainen keskityksen poikkeama
+	Vertical Displacement	Pystysiirtymä
+	Vertical Flip	Pystypeilaus
+	Vertical Margin	Pystymarginaali
+	Very Narrow	Hyvin kapea
+	Video 1	Video 1
+	Video 2	Video 2
+	Video 3	Video 3
+	Video 4	Video 4
+	Video 5	Video 5
+	Video 6	Video 6
+	Video 7	Video 7
+	Video 8	Video 8
+	Video Duration	Videon kesto
+	Video In Point	Videon alkupiste
+	Video Out Point	Videon loppupiste
+	Video Usage	Videon käyttö
+	Vocal Booth	Äänityskoppi
+	Vocal Enhancer	Puheen parantaja
+	Volumetric Rays	Tilavuussäteet
+	Warm print stock with gentle roll-off	Lämmin kopiofilmi pehmeällä sävyjen hiipumisella
+	Warm, soft late-afternoon light	Lämmin, pehmeä myöhäisiltapäivän valo
+	Warp Stabilizer	Vääristymän vakautin
+	Wave	Aalto
+	Wave Height	Aallon korkeus
+	Wave Speed	Aallon nopeus
+	Wave Warp	Aaltovääristymä
+	Wave Width	Aallon leveys
+	Wavelength	Aallonpituus
+	Wet	Märkä
+	Wet Out	Märkä lähtö
+	Whip	Piiska
+	Whip (Legacy)	Piiska (vanha)
+	White Input Level	Tulon valkoisen taso
+	White Is High	Valkoinen on korkea
+	Widener	Levennin
+	Wiggle	Heilunta
+	Wipe Angle	Pyyhkäisyn kulma
+	Wonder Glow	Ihmehehku
+	Wrap Back	Kierrä takaisin
+	Write-on	Kirjoitus esiin
+	X Rotation	X-kierto
+	Y Rotation	Y-kierto
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	Kellanvihreät kohokohdat ja siniseksi nostetut varjot ristikkäisistä kanavakäyristä
+	Z Position	Z-sijainti
+	Z Rotation	Z-kierto
+	Zoom Amount	Zoomauksen määrä
+	Zoom Blur	Zoomaussumennus
+	Zoom Strength	Zoomauksen voimakkuus
+	no GPU adapter: the CPU compositor is used	ei GPU-sovitinta: käytetään suoritinpohjaista kuvien yhdistäjää
+	CFA4 Project	CFA4-projekti
+	{name} (Simplified)	{name} (yksinkertaistettu)
+	Delete Search Bin	Poista hakukansio
+	No export preset named `{name}`	Vientiesiasetusta nimeltä `{name}` ei ole
+	Encoding {n}%	Koodataan {n} %
+	Uncompressed (PCM)	Pakkaamaton (PCM)
+	Match Source ({seq_sr} Hz)	Vastaa lähdettä ({seq_sr} Hz)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	Sekvenssi, {w}x{h}, {fps} fps, {rate} Hz
+	Exporting {path}	Viedään {path}
+	Added to the export queue	Lisätty vientijonoon
+	Import: no file chosen (agents: export.presets.import {path})	Tuonti: tiedostoa ei valittu (agentit: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	Vienti: tiedostoa ei valittu (agentit: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	Grafiikkaongelma: vaihdettiin ohjelmistopohjaiseen kuvien yhdistämiseen
+	GPU acceleration is unavailable; preview renders on the CPU	GPU-kiihdytys ei ole käytettävissä; esikatselu renderöidään suorittimella
+	CFA4 hit an error	CFA4:ssä tapahtui virhe
+	Opened {url}	Avattiin {url}
+	(empty)	(tyhjä)
+	AAC Audio 48 kHz 320 kbps	AAC-ääni 48 kHz 320 kbps
+	Opus Audio 48 kHz 160 kbps	Opus-ääni 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stereo 48 kHz, 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080, 8 Mbps, Opus 128 kbps stereo
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4-ääni (.m4a), stereo 48 kHz AAC-LC, 320 kbps
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16-bit
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, stereo 48 kHz 16-bit PCM
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24-bit
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, stereo 48 kHz 24-bit, häviötön
+	FLAC (lossless)	FLAC (häviötön)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	Animoitu GIF 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	Apple ProRes 4444 alfalla
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Application	Sovellus
+	Apply Guide Template	Käytä apuviivamallia
+	Auto Save Now	Tallenna automaattisesti nyt
+	Auto-Match Loudness	Äänekkyyden automaattinen vastaavuus
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	Avid-tyylinen OP-Atom: DNxHR HQ -kuvatiedosto ja yksi 24-bit 48 kHz PCM -tiedosto kanavaa kohden (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	BMP-sarja
+	Begin Text Editing for a Graphic Layer	Aloita grafiikkatason tekstin muokkaus
+	Begins With	Alkaa
+	Blur In	Sumennus sisään
+	Blur Out	Sumennus ulos
+	Brightens inside a feathered circular mask	Kirkastaa pehmennetyn pyöreän maskin sisällä
+	Broadcast	Lähetys
+	Cancel Dynamic Trim	Peruuta dynaaminen trimmaus
+	Cancel Queued Export	Peruuta jonossa oleva vienti
+	Center align text	Keskitä teksti
+	Change Mask	Vaihda maski
+	Clear All Events	Tyhjennä kaikki tapahtumat
+	Clear Edit Point Selection	Tyhjennä leikkauskohtien valinta
+	Clear Finished Exports	Tyhjennä valmiit viennit
+	Clear Poster Frame	Tyhjennä julistekuva
+	Close Bin	Sulje kansio
+	Close Sequence	Sulje sekvenssi
+	Contains	Sisältää
+	Cut to Camera 1	Leikkaa kameraan 1
+	Cut to Camera 2	Leikkaa kameraan 2
+	Cut to Camera 3	Leikkaa kameraan 3
+	Cut to Camera 4	Leikkaa kameraan 4
+	Cut to Camera 5	Leikkaa kameraan 5
+	Cut to Camera 6	Leikkaa kameraan 6
+	Cut to Camera 7	Leikkaa kameraan 7
+	Cut to Camera 8	Leikkaa kameraan 8
+	Cut to Camera 9	Leikkaa kameraan 9
+	Darkens outside a feathered oval mask	Tummentaa pehmennetyn soikean maskin ulkopuolella
+	Decrease Clip Volume	Pienennä leikkeen äänenvoimakkuutta
+	Decrease Clip Volume Many	Pienennä leikkeen äänenvoimakkuutta paljon
+	Decrease Font Size by Five Units	Pienennä fonttikokoa viidellä yksiköllä
+	Decrease Font Size by One Unit	Pienennä fonttikokoa yhdellä yksiköllä
+	Decrease Leading by Five Units	Pienennä riviväliä viidellä yksiköllä
+	Decrease Leading by One Unit	Pienennä riviväliä yhdellä yksiköllä
+	Delete Captions	Poista tekstitykset
+	Delete Graphic Layer	Poista grafiikkataso
+	Delete Guide Template	Poista apuviivamalli
+	Delete Media Cache Files	Poista mediavälimuistin tiedostot
+	Discard Unsaved Changes	Hylkää tallentamattomat muutokset
+	Does Not Contain	Ei sisällä
+	Download Speech Model	Lataa puhemalli
+	Dynamic Trim Stop	Dynaamisen trimmauksen pysäytys
+	Edit Caption Text	Muokkaa tekstityksen tekstiä
+	Ends With	Päättyy
+	Entire Source	Koko lähde
+	EssentialSound	EssentialSound
+	Extend Next Edit To Playhead	Jatka seuraavaa leikkausta toistopaikkaan
+	Extend Previous Edit To Playhead	Jatka edellistä leikkausta toistopaikkaan
+	Extend Selected Edit to Playhead	Jatka valittua leikkausta toistopaikkaan
+	Extend Selection Down	Laajenna valintaa alas
+	Extend Selection Left	Laajenna valintaa vasemmalle
+	Extend Selection Right	Laajenna valintaa oikealle
+	Extend Selection Up	Laajenna valintaa ylös
+	Fade In	Häivytys sisään
+	Gaussian Blur from 0 to 60 over the last second	Gaussin sumennus 0:sta 60:een viimeisen sekunnin aikana
+	Gaussian Blur from 60 to 0 over the first second	Gaussin sumennus 60:stä 0:aan ensimmäisen sekunnin aikana
+	Generate Ducking Keyframes	Luo vaimennuksen avainkehykset
+	Go to Next Edit Point	Siirry seuraavaan leikkauskohtaan
+	Go to Next Edit Point on Any Track	Siirry seuraavaan leikkauskohtaan millä tahansa raidalla
+	Go to Previous Edit Point	Siirry edelliseen leikkauskohtaan
+	Go to Previous Edit Point on Any Track	Siirry edelliseen leikkauskohtaan millä tahansa raidalla
+	Go to Selected Clip End	Siirry valitun leikkeen loppuun
+	Go to Selected Clip Start	Siirry valitun leikkeen alkuun
+	Go to Sequence End	Siirry sekvenssin loppuun
+	Go to Sequence Start	Siirry sekvenssin alkuun
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	H.264 1920×1080 videonjakosivustoille, VBR 1 kierros, 16 Mbps
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 kierros, tavoite 20 Mbps, AAC 320 kbps
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 kierrosta, 18 Mbps
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	H.264 3840×2160 videonjakosivustoille, VBR 1 kierros, 45 Mbps
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 kierros, tavoite 60 Mbps, AAC 320 kbps
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 kierrosta, 50 Mbps
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	H.264 9:16 pysty lyhyille somevideoille, skaalattu täyttämään, 12 Mbps
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	H.264 sekvenssin kuvakoossa ja -nopeudessa; 0,05 bittiä/pikseli
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	H.264 sekvenssin kuvakoossa ja -nopeudessa; 0,1 bittiä/pikseli
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	H.264 sekvenssin kuvakoossa ja -nopeudessa; bittinopeus mukautuu kuvakokoon (0,2 bittiä/pikseli)
+	High Quality 1080p HD	Korkea laatu 1080p HD
+	High Quality 2160p 4K	Korkea laatu 2160p 4K
+	Increase Clip Volume	Suurenna leikkeen äänenvoimakkuutta
+	Increase Clip Volume Many	Suurenna leikkeen äänenvoimakkuutta paljon
+	Increase Font Size by Five Units	Suurenna fonttikokoa viidellä yksiköllä
+	Increase Font Size by One Unit	Suurenna fonttikokoa yhdellä yksiköllä
+	Increase Leading by Five Units	Suurenna riviväliä viidellä yksiköllä
+	Increase Leading by One Unit	Suurenna riviväliä yhdellä yksiköllä
+	Large blocks resolving to the picture over the first second	Suuret lohkot, jotka muuttuvat kuvaksi ensimmäisen sekunnin aikana
+	Left align text	Tasaa teksti vasemmalle
+	Looping GIF, 640×360 at 15 fps	Silmukkana toistuva GIF, 640×360, 15 fps
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, alkuaikakoodi
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0,3 bittiä/pikseli), 24-bit 48 kHz PCM
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, alkuaikakoodi
+	Main	Pää
+	Mark In (Hover Scrub)	Merkitse alkupiste (selaus osoittamalla)
+	Mark Out (Hover Scrub)	Merkitse loppupiste (selaus osoittamalla)
+	Masks	Maskit
+	Match Source – Adaptive High Bitrate	Vastaa lähdettä – mukautuva suuri bittinopeus
+	Match Source – Adaptive Low Bitrate	Vastaa lähdettä – mukautuva pieni bittinopeus
+	Match Source – Adaptive Medium Bitrate	Vastaa lähdettä – mukautuva keskitason bittinopeus
+	Matches	Vastaa
+	Maximize or Restore Active Frame	Suurenna tai palauta aktiivinen kehys
+	Maximize or Restore Frame Under Cursor	Suurenna tai palauta kohdistimen alla oleva kehys
+	Media Browser Settings	Mediaselaimen asetukset
+	MediaBrowser	MediaBrowser
+	MediaCache	MediaCache
+	Merge Captions	Yhdistä tekstitykset
+	Mixer	Mikseri
+	Mosaic In	Mosaiikki sisään
+	Move All Audio Targets Down	Siirrä kaikki äänikohteet alas
+	Move All Audio Targets Up	Siirrä kaikki äänikohteet ylös
+	Move All Video Targets Down	Siirrä kaikki videokohteet alas
+	Move All Video Targets Up	Siirrä kaikki videokohteet ylös
+	Move Selection Down	Siirrä valintaa alas
+	Move Selection End	Siirrä valinta loppuun
+	Move Selection Home	Siirrä valinta alkuun
+	Move Selection Left	Siirrä valintaa vasemmalle
+	Move Selection Page Down	Siirrä valintaa sivu alas
+	Move Selection Page Up	Siirrä valintaa sivu ylös
+	Move Selection Right	Siirrä valintaa oikealle
+	Move Selection Up	Siirrä valintaa ylös
+	Multicam	Monikamera
+	Navigate to End of Segment	Siirry segmentin loppuun
+	Navigate to Next Line	Siirry seuraavalle riville
+	Navigate to Next Word	Siirry seuraavaan sanaan
+	Navigate to Previous Line	Siirry edelliselle riville
+	Navigate to Previous Word	Siirry edelliseen sanaan
+	Navigate to Start of Segment	Siirry segmentin alkuun
+	Navigation	Navigointi
+	Next Multi-Camera Page	Seuraava monikamerasivu
+	Nudge Clip Selection Down	Tönäise valittuja leikkeitä alas
+	Nudge Clip Selection Left Five Frames	Tönäise valittuja leikkeitä viisi kuvaa vasemmalle
+	Nudge Clip Selection Left One Frame	Tönäise valittuja leikkeitä yksi kuva vasemmalle
+	Nudge Clip Selection Right Five Frames	Tönäise valittuja leikkeitä viisi kuvaa oikealle
+	Nudge Clip Selection Right One Frame	Tönäise valittuja leikkeitä yksi kuva oikealle
+	Nudge Clip Selection Up	Tönäise valittuja leikkeitä ylös
+	Nudge Selected Object down by five	Tönäise valittua objektia viisi alas
+	Nudge Selected Object down by one	Tönäise valittua objektia yksi alas
+	Nudge Selected Object to left by five	Tönäise valittua objektia viisi vasemmalle
+	Nudge Selected Object to left by one	Tönäise valittua objektia yksi vasemmalle
+	Nudge Selected Object to right by five	Tönäise valittua objektia viisi oikealle
+	Nudge Selected Object to right by one	Tönäise valittua objektia yksi oikealle
+	Nudge Selected Object up by five	Tönäise valittua objektia viisi ylös
+	Nudge Selected Object up by one	Tönäise valittua objektia yksi ylös
+	Nudge Volume +1dB	Tönäise äänenvoimakkuutta +1dB
+	Nudge Volume +3dB	Tönäise äänenvoimakkuutta +3dB
+	Nudge Volume -1dB	Tönäise äänenvoimakkuutta -1dB
+	Nudge Volume -3dB	Tönäise äänenvoimakkuutta -3dB
+	Numbered BMP stills (24-bit)	Numeroidut BMP-pysäytyskuvat (24-bit)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	JPEG-sarja
+	Targa Sequence	Targa-sarja
+	DPX Sequence	DPX-sarja
+	Numbered JPEG stills (quality 90)	Numeroidut JPEG-pysäytyskuvat (laatu 90)
+	Numbered Targa stills (24-bit, uncompressed)	Numeroidut Targa-pysäytyskuvat (24-bit, pakkaamaton)
+	Numbered DPX stills (10-bit RGB)	Numeroidut DPX-pysäytyskuvat (10-bit RGB)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	OpenEXR-sarja
+	Numbered OpenEXR stills (half float, linear, uncompressed)	Numeroidut OpenEXR-pysäytyskuvat (puolitarkkuus, lineaarinen, pakkaamaton)
+	Numbered PNG stills at the sequence's frame size	Numeroidut PNG-pysäytyskuvat sekvenssin kuvakoossa
+	Numbered TIFF stills (RGB, 8-bit)	Numeroidut TIFF-pysäytyskuvat (RGB, 8-bit)
+	Opacity 0 → 100 % over the first second	Peittävyys 0 → 100 % ensimmäisen sekunnin aikana
+	Opacity 100 → 0 % over the last second	Peittävyys 100 → 0 % viimeisen sekunnin aikana
+	Open Bin	Avaa kansio
+	Open Search	Avaa haku
+	PNG	PNG
+	PNG Sequence	PNG-sarja
+	Panel	Paneeli
+	PiP 35% Upper Right	PiP 35% ylhäällä oikealla
+	Picture-in-picture: 35 % scale in the upper right	Kuva kuvassa: 35 %:n skaalaus ylhäällä oikealla
+	Play In to Out with Preroll/Postroll	Toista alusta loppuun esi- ja jälkirullalla
+	Play from Playhead to Out Point	Toista toistopaikasta loppupisteeseen
+	Previous Multi-Camera Page	Edellinen monikamerasivu
+	ProjectPanel	ProjectPanel
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) alfakanavalla, 24-bit 48 kHz PCM
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, 24-bit 48 kHz PCM
+	Quit CFA4	Lopeta CFA4
+	Right align text	Tasaa teksti oikealle
+	Ripple Trim Next Edit to Playhead	Siirtävä trimmaus seuraavasta leikkauksesta toistopaikkaan
+	Ripple Trim Previous Edit to Playhead	Siirtävä trimmaus edellisestä leikkauksesta toistopaikkaan
+	Select Camera 1	Valitse kamera 1
+	Select Camera 2	Valitse kamera 2
+	Select Camera 3	Valitse kamera 3
+	Select Camera 4	Valitse kamera 4
+	Select Camera 5	Valitse kamera 5
+	Select Camera 6	Valitse kamera 6
+	Select Camera 7	Valitse kamera 7
+	Select Camera 8	Valitse kamera 8
+	Select Camera 9	Valitse kamera 9
+	Select Clip at Playhead	Valitse leike toistopaikassa
+	Select Find Box	Valitse hakukenttä
+	Select Next Clip	Valitse seuraava leike
+	Select Next Panel	Valitse seuraava paneeli
+	Select Previous Clip	Valitse edellinen leike
+	Select Previous Panel	Valitse edellinen paneeli
+	Select to Next Line	Valitse seuraavalle riville
+	Select to Next Word	Valitse seuraavaan sanaan
+	Select to Previous Line	Valitse edelliselle riville
+	Select to Previous Word	Valitse edelliseen sanaan
+	Select to Segment End	Valitse segmentin loppuun
+	Select to Segment Start	Valitse segmentin alkuun
+	Set Creative Look	Aseta luova ilme
+	Set Input LUT	Aseta syöte-LUT
+	Set Project Panel View	Aseta Projekti-paneelin näkymä
+	Show Next Screen	Näytä seuraava näyttö
+	Show Previous Screen	Näytä edellinen näyttö
+	Show Program Transcript	Näytä ohjelman litterointi
+	Slide Clip Selection Left Five Frames	Liu'uta valittuja leikkeitä viisi kuvaa vasemmalle
+	Slide Clip Selection Left One Frame	Liu'uta valittuja leikkeitä yksi kuva vasemmalle
+	Slide Clip Selection Right Five Frames	Liu'uta valittuja leikkeitä viisi kuvaa oikealle
+	Slide Clip Selection Right One Frame	Liu'uta valittuja leikkeitä yksi kuva oikealle
+	Slip Clip Selection Left Five Frames	Siirrä valittujen leikkeiden sisältöä viisi kuvaa vasemmalle
+	Slip Clip Selection Left One Frame	Siirrä valittujen leikkeiden sisältöä yksi kuva vasemmalle
+	Slip Clip Selection Right Five Frames	Siirrä valittujen leikkeiden sisältöä viisi kuvaa oikealle
+	Slip Clip Selection Right One Frame	Siirrä valittujen leikkeiden sisältöä yksi kuva oikealle
+	Social Vertical 1080×1920	Some pysty 1080×1920
+	Soft Vignette	Pehmeä vinjetti
+	Source In/Out	Lähteen alku/loppu
+	Split Caption	Jaa tekstitys
+	Stack Clips	Pinoa leikkeet
+	Start Export Queue	Käynnistä vientijono
+	Start Voice-over Recording	Aloita selostuksen tallennus
+	Step Back Five Frames	Viisi kuvaa taaksepäin
+	Step Back One Frame	Yksi kuva taaksepäin
+	Step Forward Five Frames	Viisi kuvaa eteenpäin
+	Step Forward One Frame	Yksi kuva eteenpäin
+	Stop Export Queue	Pysäytä vientijono
+	Stop Multi-Camera Recording	Lopeta monikameratallennus
+	Sync Voice-over Capture	Synkronoi selostuksen tallennus
+	TIFF	TIFF
+	TIFF Sequence	TIFF-sarja
+	TextPanel	TextPanel
+	Thumbnail Size Next	Seuraava pienoiskuvakoko
+	Thumbnail Size Previous	Edellinen pienoiskuvakoko
+	Toggle All Audio Targets	Kaikki äänikohteet päälle/pois
+	Toggle All Source Audio	Kaikki lähdeääni päälle/pois
+	Toggle All Source Video	Kaikki lähdevideo päälle/pois
+	Toggle All Video Targets	Kaikki videokohteet päälle/pois
+	Toggle Audio During Scrubbing	Ääni selattaessa päälle/pois
+	Toggle Full Screen	Koko näyttö päälle/pois
+	Toggle Mute for All Targeted Audio Tracks	Mykistys päälle/pois kaikille kohdeääniraidoille
+	Toggle Solo for All Targeted Audio Tracks	Soolo päälle/pois kaikille kohdeääniraidoille
+	Toggle Source/Program Monitor Focus	Vaihda kohdistus lähde- ja ohjelmamonitorin välillä
+	Toggle Target Audio 1	Kohdeääni 1 päälle/pois
+	Toggle Target Audio 2	Kohdeääni 2 päälle/pois
+	Toggle Target Audio 3	Kohdeääni 3 päälle/pois
+	Toggle Target Audio 4	Kohdeääni 4 päälle/pois
+	Toggle Target Audio 5	Kohdeääni 5 päälle/pois
+	Toggle Target Audio 6	Kohdeääni 6 päälle/pois
+	Toggle Target Audio 7	Kohdeääni 7 päälle/pois
+	Toggle Target Audio 8	Kohdeääni 8 päälle/pois
+	Toggle Target Video 1	Kohdevideo 1 päälle/pois
+	Toggle Target Video 2	Kohdevideo 2 päälle/pois
+	Toggle Target Video 3	Kohdevideo 3 päälle/pois
+	Toggle Target Video 4	Kohdevideo 4 päälle/pois
+	Toggle Target Video 5	Kohdevideo 5 päälle/pois
+	Toggle Target Video 6	Kohdevideo 6 päälle/pois
+	Toggle Target Video 7	Kohdevideo 7 päälle/pois
+	Toggle Target Video 8	Kohdevideo 8 päälle/pois
+	Toggle Track Output for All Targeted Video Tracks	Raidan ulostulo päälle/pois kaikille kohdevideoraidoille
+	Toggle Trim Type	Vaihda trimmaustyyppiä
+	Toggle View	Vaihda näkymää
+	Track Selected Mask	Seuraa valittua maskia
+	Trim Next Edit to Playhead	Trimmaa seuraava leikkaus toistopaikkaan
+	Trim Previous Edit to Playhead	Trimmaa edellinen leikkaus toistopaikkaan
+	Trimming	Trimmaus
+	Unstack Clips	Pura leikkeiden pino
+	CRF (constant quality)	CRF (vakiolaatu)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	Selostuksen tallennus
+	Voiceover	Selostus
+	WAV, stereo 48 kHz 16-bit PCM	WAV, stereo 48 kHz 16-bit PCM
+	WAV, stereo 48 kHz 24-bit PCM	WAV, stereo 48 kHz 24-bit PCM
+	Warm Tint	Lämmin sävytys
+	Warm highlights, brown shadows	Lämpimät kohokohdat, ruskeat varjot
+	Waveform Audio 48 kHz 16-bit	Waveform-ääni 48 kHz 16-bit
+	Waveform Audio 48 kHz 24-bit	Waveform-ääni 48 kHz 24-bit
+	Web & Social	Verkko ja some
+	Write Automation	Kirjoita automaatio
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	Zoomaa ohjelmamonitori 100 %:iin
+	Zoom Program Monitor to Fit	Sovita ohjelmamonitori
+	Zoom Source Monitor to 100%	Zoomaa lähdemonitori 100 %:iin
+	Zoom Source Monitor to Fit	Sovita lähdemonitori
+	Cinematic	Elokuvallinen
+	Film Emulation	Filmin jäljitelmä
+	Technical	Tekninen
+	Teal Shadows, Warm Skin	Sinivihreät varjot, lämmin iho
+	Night Exterior	Yö ulkona
+	Golden Dusk	Kultainen hämärä
+	Steel Blue	Teräksensininen
+	Hard Sun	Kova aurinko
+	Faded Print	Haalistunut kopio
+	Silver Retention	Hopean säilytys
+	Cross Processed	Ristikehitetty
+	Warm Negative	Lämmin negatiivi
+	Neutral Mono	Neutraali mono
+	Hard Mono	Kova mono
+	Sepia Tone	Seepiasävy
+	Cold Mono	Kylmä mono
+	Lift Shadows	Nosta varjoja
+	Protect Highlights	Suojaa kohokohdat
+	Half Saturation	Puolet kylläisyydestä
+	Boost Vibrance	Lisää eloisuutta
+	Legal Range Squeeze	Purista sallitulle alueelle
+	A boxed label with a round pointer; move the label and the pointer follows.	Kehystetty nimiö pyöreällä osoittimella; siirrä nimiötä, niin osoitin seuraa.
+	A rounded tag that fits its text, with a status dot.	Pyöristetty tunniste, joka mukautuu tekstiinsä, tilapisteellä.
+	A title on a rounded card with a soft shadow.	Otsikko pyöristetyllä kortilla pehmeällä varjolla.
+	Bar Color	Palkin väri
+	Box Color	Laatikon väri
+	Box Opacity	Laatikon peittävyys
+	Callout – Pointer	Huomautus – osoitin
+	Callout – Tag	Huomautus – tunniste
+	Callouts	Huomautukset
+	Credits	Tekijätiedot
+	Dot Color	Pisteen väri
+	Heading	Otsikko
+	Large centred title, accent rule and subtitle.	Suuri keskitetty otsikko, korostusviiva ja alaotsikko.
+	Lower Third – Rule	Nimiplanssi – viiva
+	Lower Third – Slab	Nimiplanssi – laatta
+	Lower Thirds	Nimiplanssit
+	Name Color	Nimen väri
+	Name Size	Nimen koko
+	Name and role on a coloured slab that widens with the name.	Nimi ja rooli värillisellä laatalla, joka levenee nimen mukana.
+	Name over a thin rule that always matches the name's width.	Nimi ohuen viivan päällä, joka vastaa aina nimen leveyttä.
+	Pointer Color	Osoittimen väri
+	Role	Rooli
+	Rule Color	Viivan väri
+	Show Dot	Näytä piste
+	Show Role	Näytä rooli
+	Slab Color	Laatan väri
+	Tag Color	Tunnisteen väri
+	Title Color	Otsikon väri
+	Title Size	Otsikon koko
+	Title – Boxed	Otsikko – kehystetty
+	Title – Centered	Otsikko – keskitetty
+	Titles	Otsikot
+	End Credits	Lopputekstit
+	End Credits – Roll	Lopputekstit – rullaus
+	Ticker – Crawl	Uutisnauha – vieritys
+	Centred credits that roll up from below the frame and leave at the top.	Keskitetyt tekstit, jotka rullaavat ylös kuvan alapuolelta ja poistuvat ylhäältä.
+	A news-style line that crawls in from the right and leaves at the left.	Uutistyylinen rivi, joka vierii sisään oikealta ja poistuu vasemmalle.
+	The language changed but could not be saved: {e}	Kieli vaihdettiin, mutta sitä ei voitu tallentaa: {e}
+	no Chinese font is installed on this system; the interface stays in English	tähän järjestelmään ei ole asennettu kiinankielistä fonttia; käyttöliittymä pysyy englanninkielisenä
+	no Korean font is installed on this system; the interface stays in English	tähän järjestelmään ei ole asennettu koreankielistä fonttia; käyttöliittymä pysyy englanninkielisenä
+	no Georgian font is installed on this system; the interface stays in English	tähän järjestelmään ei ole asennettu georgiankielistä fonttia; käyttöliittymä pysyy englanninkielisenä
+	no Japanese font is installed on this system; the interface stays in English	tähän järjestelmään ei ole asennettu japaninkielistä fonttia; käyttöliittymä pysyy englanninkielisenä
+	Main (8-bit)	Main (8-bittinen)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12-bit
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12-bit alfalla
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10-bit
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, filmiskannaus 1, 24-bit 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit alfakanavalla, filmiskannaus 1, 24-bit 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, filmiskannaus 1, 24-bit 48 kHz PCM
+	Deselect All Project Items	Poista kaikkien projektikohteiden valinta
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	Valitse kaikki projektikohteet
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	Vedä: siirrä · Alt-napsautus: pehmeä/kulma · Ctrl-napsautus: poista
+	Drag inward to round the corners	Vedä sisäänpäin pyöristääksesi kulmat
+	Play Source	Toista lähde
+	Source Play/Stop	Lähteen toisto/pysäytys
+	Stop Source	Pysäytä lähde
+	Clear Transition	Tyhjennä siirtymä
+	Fill Type	Täytön tyyppi
+	Gradient Angle	Liukuvärin kulma
+	Edit Narration	Muokkaa kertojaääntä
+	Resize floating panel	Muuta kelluvan paneelin kokoa
+	Get Project Notes	Hae projektin muistiinpanot
+	Edit Project Notes	Muokkaa projektin muistiinpanoja
+	Use Effect Shutter Angle	Käytä tehosteen suljinkulmaa
+	Safe graphics mode: {mode}	Grafiikan vikasietotila: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Aiempi käynnistys epäonnistui oletusgrafiikalla. Grafiikkaohjaimen päivitys yleensä korjaa tämän.
+	Use Default Graphics	Käytä oletusgrafiikkaa
+	The default graphics are used from the next start.	Oletusgrafiikkaa käytetään seuraavasta käynnistyksestä alkaen.
+	DirectX 12 only	Vain DirectX 12
+	software rendering	ohjelmistorenderöinti
+	Opens in your web browser: {url}	Avautuu verkkoselaimessa: {url}
+	Saves this session's log and shows it in your file manager.	Tallentaa tämän istunnon lokin ja näyttää sen tiedostonhallinnassa.
+	Shows a report on this computer.	Näyttää raportin tästä tietokoneesta.
+	Shows the version, community links and credits in a CFA4 window.	Näyttää version, yhteisölinkit ja tekijät CFA4-ikkunassa.
+	Couldn't open your web browser	Verkkoselainta ei voitu avata
+	Open this address in your browser yourself:	Avaa tämä osoite itse selaimessasi:
+	Reset Interface Zoom	Palauta käyttöliittymän zoomaus
+	Stereoscopic 3D	Stereoskooppinen 3D
+	Swap Eyes	Vaihda silmät
+	Over/Under	Ylä/ala
+	Side by Side	Rinnakkain
+	Stereo to 2D	Stereosta 2D:ksi
+	Eye	Silmä
+	Stereo Parallax	Stereoparallaksi
+	Horizontal Shift	Vaakasiirto
+	Slit Scan	Rakoskannaus
+	Time Span (seconds)	Aikaväli (sekuntia)
+	Current Frame At	Nykyinen kuva kohdassa
+	Blend Slices	Sekoita viipaleet
+	Creative Looks	Luovat ilmeet
+	Film Grain	Filmirae
+	Animated	Animoitu
+	Color Grain	Värirae
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080, 8 Mbps, AAC 160 kbps, 6 sekunnin pirstotut MP4-segmentit
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2-ohjelmavirta
+	MPEG-2 Transport Stream HD 1080	MPEG-2-siirtovirta HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480, 29,97 fps, 16:9 anamorfinen, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-valmis virta; ei VIDEO_TS-authorointia)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576, 25 fps, 16:9 anamorfinen, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-valmis virta; ei VIDEO_TS-authorointia)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2-video (Main Profile 4:2:0, 0,4 bittiä/pikseli) sekvenssin kuvakoossa ja -nopeudessa, 16-bit 48 kHz LPCM, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2-video 1920×1080, keskimäärin 18 Mbps, AAC 192 kbps, .ts
+	Six-Point Pin	Kuuden pisteen kiinnitys
+	Upper Center	Ylhäällä keskellä
+	Lower Center	Alhaalla keskellä
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Käytä FFmpegiä tiedostoille, joita CFA4-moottori ei voi avata (FFmpeg 9.0.2 tai uudempi, GPL-3-käännös)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Käytä järjestelmän GStreameria tiedostoille, joita moottori tai FFmpeg ei voi avata
+	Analyze Source for Smart Cut	Analysoi lähde Smart Cutia varten
+	Plan Smart Cut	Suunnittele Smart Cut
+	Run Smart Cut	Suorita Smart Cut
+	No sequence open. Double-click a sequence in the Project panel.	Sekvenssiä ei ole auki. Kaksoisnapsauta sekvenssiä Projekti-paneelissa.
+	English (US)	Englanti (Yhdysvallat)
+	English (UK)	Englanti (Iso-Britannia)
+	English (Australia)	Englanti (Australia)
+export.summary	High	korkea
+export.summary	Medium	keskitaso
+export.summary	Low	matala
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Ääni kopioitu: {tracks}
+	Audio track {track} is not copied: {why}	Ääniraitaa {track} ei kopioida: {why}
+	Point tracker	Pisteseuranta
+	Correlation tracker	Korrelaatioseuranta
+	DCP language	DCP:n kieli
+	None (RFC 5646 tag, e.g. en-US)	Ei mitään (RFC 5646 -tunniste, esim. fi-FI)
+	ISDCF name	ISDCF-nimi
+	Name the DCP folder by the Digital Cinema Naming Convention	Nimeä DCP-kansio Digital Cinema Naming Conventionin mukaan
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/fi/ (common.tsv and the vector-editor catalog) at aa36bd8, 2026-11-10.
+# MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's
+# ATTRIBUTION.md (fi). These rows were written clean-room there; only rows whose English and
+# meaning match CFA4's were taken, and a few were reworded above for video editing.
+
+	Align to Selection	Tasaa valintaan
+	Anchor Point	Ankkuripiste
+	Arrange	Järjestä
+	Automatic	Automaattinen
+	Balance	Tasapaino
+	Blue	Sininen
+	Bring Forward	Tuo eteenpäin
+	Bring to Front	Tuo eteen
+	Brown	Ruskea
+	Clear	Tyhjennä
+	Close	Sulje
+	Color	Väri
+	Color Burn	Värisävyn tummennus
+	Color Dodge	Värisävyn vaalennus
+	Copy	Kopioi
+	Custom	Mukautettu
+	Cut	Leikkaa
+	Darken	Tummenna
+	Difference	Erotus
+	Discard	Hylkää
+	Distort	Vääristä
+	Distribute	Jaa tasaisesti
+	Divide	Jaa
+	Done	Valmis
+	Duplicate	Monista
+	Edit	Muokkaa
+	Edit Original	Muokkaa alkuperäistä
+	Effects	Tehosteet
+	Ellipse	Ellipsi
+	Encoding	Koodaus
+	Exclusion	Poissulkeminen
+	Export	Vie
+	File	Tiedosto
+	Find Next	Etsi seuraava
+	Fit	Sovita
+	Flatten	Litistä
+	Format	Muoto
+	Graphic	Grafiikka
+	Green	Vihreä
+	Group	Ryhmitä
+	Hard Light	Kova valo
+	Help	Ohje
+	History	Historia
+	Hue	Sävy
+	Import…	Tuo…
+	Info	Tiedot
+	Insert	Lisää
+	Language	Kieli
+	Left	Vasen
+	Libraries	Kirjastot
+	Lighten	Vaalenna
+	Linear	Lineaarinen
+	Link	Linkki
+	Luminosity	Luminanssi
+	Magenta	Magenta
+	Modify	Muokkaa
+	Multiply	Kerro
+	Name	Nimi
+	New	Uusi
+	Normal	Normaali
+	Opacity	Peittävyys
+	Panels	Paneelit
+	Paste	Liitä
+	Perspective	Perspektiivi
+	Polygon	Monikulmio
+	Position	Sijainti
+	Properties	Ominaisuudet
+	Purple	Violetti
+	Ready	Valmis
+	Rectangle	Suorakulmio
+	Redo	Tee uudelleen
+	Remove	Poista
+	Remove Effect	Poista tehoste
+	Revert	Palauta
+	Right	Oikea
+	Rotation	Kierto
+	Saturation	Kylläisyys
+	Save	Tallenna
+	Save As…	Tallenna nimellä…
+	Save a Copy…	Tallenna kopio…
+	Scale	Skaalaa
+	Select	Valitse
+	Select All	Valitse kaikki
+	Selection Tool	Valintatyökalu
+	Send Backward	Vie taaksepäin
+	Send to Back	Vie taakse
+	Soft Light	Pehmeä valo
+	Status	Tila
+	Stylize	Tyylittele
+	Subtract	Vähennä
+	Text	Teksti
+	Tools	Työkalut
+	Transform	Muunna
+	Undo	Kumoa
+	Ungroup	Pura ryhmitys
+	Untitled	Nimetön
+	Video	Video
+	View	Näytä
+	Violet	Violetti
+	Window	Ikkuna
+	Yellow	Keltainen
+	Ellipse Tool	Ellipsityökalu
+	Hand Tool	Käsityökalu
+	Pen Tool	Kynätyökalu
+	Rectangle Tool	Suorakulmiotyökalu
+	Type Tool	Tekstityökalu
+	Vertical Type Tool	Pystysuuntainen tekstityökalu
+	Zoom Tool	Zoomaustyökalu
+	Red	Punainen
+	Reset	Palauta
+	Settings	Asetukset
+	Appearance	Ulkoasu
+	Dark	Tumma
+	Light	Vaalea
+	Type:	Tyyppi:
+	Color Space	Väriavaruus
+	Description	Kuvaus
+	Cancel	Peruuta
+	Show All	Näytä kaikki
+	Mono	Mono
+	Auto	Automaattinen
+	Brightness	Kirkkaus
+	Presets	Esiasetukset
+	RGB	RGB
+	Amount	Määrä
+	Blur	Sumennus
+	Contrast	Kontrasti
+	Hue Shift	Sävynsiirto
+	Intensity	Voimakkuus
+	Monochrome	Yksivärinen
+	None	Ei mitään
+	Sharpen	Terävöitä
+	Temperature	Lämpötila
+	Favorites	Suosikit
+	List View	Luettelonäkymä
+	Refresh	Päivitä
+	Size	Koko
+	Align	Tasaa
+	Align center	Tasaa keskelle
+	Align left	Tasaa vasemmalle
+	Align right	Tasaa oikealle
+	Graphics	Grafiikka
+	Delete Preset	Poista esiasetus
+	Preset:	Esiasetus:
+	Save Preset	Tallenna esiasetus
+	All Caps	Versaalit
+	All Categories	Kaikki luokat
+	Angle	Kulma
+	Apply	Käytä
+	Baseline Shift	Perusviivan siirto
+	Corner Radius	Kulman säde
+	Delete Layer	Poista taso
+	Distance	Etäisyys
+	Fill	Täyttö
+	Font	Fontti
+	Font Size	Fonttikoko
+	Gradient	Liukuväri
+	Justify	Tasaa molemmat reunat
+	Layers	Tasot
+	Leading	Riviväli
+	Linear Gradient	Lineaarinen liukuväri
+	OK	OK
+	Orientation	Suunta
+	Path	Polku
+	Shape	Muoto
+	Small Caps	Kapiteelit
+	Solid	Yhtenäinen
+	Stroke	Viiva
+	Style	Tyyli
+	Tracking	Merkkiväli
+	Underline	Alleviivaus
+	Advanced	Lisäasetukset
+	Default	Oletus
+	Download	Lataa
+	High	Korkea
+	Low	Matala
+	Preview	Esikatselu
+	Open	Avaa
+	Crop	Rajaa
+	Delete	Poista
+	Find	Etsi
+	Freeform	Vapaamuotoinen
+	Large	Suuri
+	Name:	Nimi:
+	Rename	Nimeä uudelleen
+	Small	Pieni
+	Zoom	Zoomaa
+	Close All	Sulje kaikki
+	Description:	Kuvaus:
+	Save Preset…	Tallenna esiasetus…
+	Edit…	Muokkaa…
+	Ratio	Suhde
+	Threshold	Kynnys
+	Preferences	Asetukset
+	Adaptive	Mukautuva
+	Color Theme	Väriteema
+	Double-click	Kaksoisnapsauta
+	General	Yleiset
+	Horizontal	Vaakasuora
+	Interface Language	Käyttöliittymän kieli
+	Location	Sijainti
+	Shapes	Muodot
+	Show Tool Tips	Näytä työkaluvihjeet
+	Vertical	Pystysuora
+	● Recording	● Tallennetaan
+	Next page	Seuraava sivu
+	Offset:	Siirtymä:
+	Previous page	Edellinen sivu
+	Version	Versio
+	Command	Komento
+	Export…	Vie…
+	Keyboard Shortcuts	Pikanäppäimet
+	Keyboard Shortcuts…	Pikanäppäimet…
+	Shortcut	Pikanäppäin
+	Dock Panel	Telakoi paneeli
+	Close Panel	Sulje paneeli
+	Add Guide	Lisää apuviiva
+	Clear Guides	Tyhjennä apuviivat
+	Guides	Apuviivat
+	Lock Guides	Lukitse apuviivat
+	Orientation:	Suunta:
+	Show Guides	Näytä apuviivat
+	Show Rulers	Näytä viivaimet
+	Color Management	Värinhallinta
+	Height:	Korkeus:
+	Layout:	Asettelu:
+	Width:	Leveys:
+	End:	Loppu:
+	File Name:	Tiedostonimi:
+	Start:	Alku:
+	All	Kaikki
+	Color:	Väri:
+	Destination:	Kohde:
+	Keep:	Säilytä:
+	Language:	Kieli:
+	Method:	Menetelmä:
+	Placement:	Sijoittelu:
+	Save as Template	Tallenna mallina
+	Scratch Disks	Työlevyt
+	Simplify	Yksinkertaista
+	Folder	Kansio
+	Missing	Puuttuu
+	Options	Asetukset
+	Depth:	Syvyys:
+	Embed	Upota
+	Format:	Muoto:
+	Replace	Korvaa
+	Compression	Pakkaus
+	Medium	Keskitaso
+	Quality	Laatu
+	Image	Kuva
+	Images	Kuvat
+	Copyright	Tekijänoikeus
+	Scaling	Skaalaus
+	Summary	Yhteenveto
+	16 bit	16 bittiä
+	24 bit	24 bittiä
+	32 bit	32 bittiä
+	Progressive	Progressiivinen
+	Recent	Viimeisimmät
+	Restore	Palauta
+	Show:	Näytä:
+	Clear All	Tyhjennä kaikki
+	Error	Virhe
+	Strikethrough	Yliviivaus
+	Clear History	Tyhjennä historia
+	Panel menu	Paneelivalikko
+	About	Tietoja
+	Contributors	Tekijät
+	Models	Mallit
+	Show	Näytä
+	Sort	Lajittele
+	Reverse the order	Käänteinen järjestys
+	Grab bag	Sekalaiset
+	Table	Taulukko
+	No contributor data was built into this copy.	Tähän kopioon ei sisällytetty tekijätietoja.
+	No model credits were built into this copy.	Tähän kopioon ei sisällytetty mallien tekijätietoja.
+	Company	Yritys
+	Model	Malli
+	Commits	Commitit
+	% of all commits	% kaikista commiteista
+	Lines +/−	Rivit +/−
+	Username	Käyttäjätunnus
+	Display name	Näyttönimi
+	Real name	Oikea nimi
+	Name (A–Z)	Nimi (A–Ö)
+	Merged PRs	Yhdistetyt PR:t
+	Lines added	Lisätyt rivit
+	Lines deleted	Poistetut rivit
+	Line delta	Rivien muutos
+	Binary assets added	Lisätyt binääriresurssit
+	Binary assets removed	Poistetut binääriresurssit
+	First commit	Ensimmäinen commit
+	Last commit	Viimeisin commit
+	Transparency Grid	Läpinäkyvyysruudukko
+	Clear Recent Files	Tyhjennä viimeisimmät tiedostot
+	Zoom In	Lähennä
+	Zoom Out	Loitonna
+	Source code on GitHub	Lähdekoodi GitHubissa
+	Community	Yhteisö
+	New Workspace	Uusi työtila
+	Effect	Tehoste
+	Don't Save	Älä tallenna
+	Composite	Yhdistelmä
+	Basic	Perus
+	Black	Musta
+	Black & White	Mustavalkoinen
+	Blending Mode	Sekoitustila
+	Blocks	Lohkot
+	Brush Strokes	Sivellinviivat
+	Channel	Kanava
+	Circle	Ympyrä
+	Colorize	Väritä
+	Corner	Kulma
+	Crystallize	Kiteytä
+	Curvature	Kaarevuus
+	Depth	Syvyys
+	Dimensions	Mitat
+	Distortion	Vääristymä
+	Drop Shadow	Pudotusvarjo
+	Edge Width	Reunan leveys
+	Fill Color	Täyttöväri
+	Frequency	Taajuus
+	Gamma	Gamma
+	Gamut Warning	Väriavaruusvaroitus
+	Gaussian Blur	Gaussin sumennus
+	Glass	Lasi
+	Good	Hyvä
+	Grid	Ruudukko
+	Height	Korkeus
+	Hexagon	Kuusikulmio
+	Inside	Sisäpuoli
+	Interpolation	Interpolointi
+	Invert	Käänteinen
+	Left to Right	Vasemmalta oikealle
+	Length	Pituus
+	Light Intensity	Valon voimakkuus
+	Matte	Matta
+	Maximum	Suurin
+	Method	Menetelmä
+	Minimum	Pienin
+	Mirror	Peili
+	Move	Siirrä
+	Noise	Kohina
+	Offset	Siirtymä
+	Outside	Ulkopuoli
+	Points	Pisteet
+	Radial	Säteittäinen
+	Radial Blur	Säteittäinen sumennus
+	Radius	Säde
+	Random	Satunnainen
+	Rays	Säteet
+	Relief	Korkokuva
+	Segments	Segmentit
+	Slice	Siivu
+	Slices	Siivut
+	Smooth	Tasainen
+	Smoothness	Pehmeys
+	Soft	Pehmeä
+	Softness	Pehmeys
+	Square	Neliö
+	Star	Tähti
+	Strength	Voimakkuus
+	Stroke Color	Viivan väri
+	Stroke Length	Vedon pituus
+	Tolerance	Toleranssi
+	Transparency	Läpinäkyvyys
+	Triangle	Kolmio
+	Twist	Kierre
+	Unsharp Mask	Epäterävä maski
+	White	Valkoinen
+	Width	Leveys
+	Stop	Pysäytä
+	Baseline	Perusviiva
+	Accent Color	Korostusväri
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

@@ -34,6 +34,7 @@ cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
 cfa4-dv = { path = "crates/dv" }
+cfa4-lcevc = { path = "crates/lcevc" }
 cfa4-ac3 = { path = "crates/ac3" }
 cfa4-dts = { path = "crates/dts" }
 cfa4-auro = { path = "crates/auro" }
@@ -57,6 +58,7 @@ cfa4-cineform = { path = "crates/cineform" }
 cfa4-j2k = { path = "crates/j2k" }
 cfa4-iab = { path = "crates/iab" }
 cfa4-dcp = { path = "crates/dcp" }
+cfa4-dcp-validate = { path = "crates/dcp-validate" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-av1 = { path = "crates/av1" }

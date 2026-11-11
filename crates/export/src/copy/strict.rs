@@ -28,9 +28,6 @@ fn stamp(f: &File) -> Option<(u64, Option<SystemTime>)> {
     Some((m.len(), m.modified().ok()))
 }
 
-/// The `tkhd` identity matrix (16.16, 16.16, 2.30).
-const IDENTITY: [i32; 9] = [0x1_0000, 0, 0, 0, 0x1_0000, 0, 0, 0, 0x4000_0000];
-
 pub(super) fn kind_name(k: TrackKind) -> &'static str {
     match k {
         TrackKind::Video => "video",
@@ -114,17 +111,7 @@ fn check_track(f: &Mp4File, t: usize) -> Result<(), CopyError> {
     if tr.entries.first().is_some_and(|e| matches!(&e.format.0, b"encv" | b"enca" | b"enct" | b"encs")) {
         return Err(CopyError::new(Code::CodecUnsupported, format!("track {t} is encrypted; Strict Stream Copy cannot carry its protection scheme yet")));
     }
-    // the MP4 writer writes an identity matrix, an enabled track and no alternate group
-    if tr.matrix != IDENTITY {
-        return Err(CopyError::new(
-            Code::ContainerUnsupported,
-            format!("track {t} has a display matrix (rotation or mirroring) that the writer cannot carry yet"),
-        ));
-    }
-    if !tr.enabled || tr.alternate_group != 0 {
-        return Err(CopyError::new(Code::ContainerUnsupported, format!("track {t} is disabled or in an alternate group, which the writer cannot carry yet")));
-    }
-    // nor sample groups (`roll`, `sync`, `rap `) and sample dependency flags
+    // the MP4 writer writes no sample groups (`roll`, `sync`, `rap `) and sample dependency flags
     if !tr.sample_groups.is_empty() || !tr.sdtp.is_empty() {
         return Err(CopyError::new(
             Code::ContainerUnsupported,
@@ -231,6 +218,11 @@ pub fn stream_copy_strict(req: &StrictCopyRequest, progress: &Progress) -> Resul
         cfg.language = tr.language.clone();
         cfg.edits = tr.edits.clone();
         cfg.handler_name = Some(tr.handler_name.clone());
+        // the track header: a portrait recording stays rotated, alternatives stay grouped
+        cfg.matrix = Some(tr.matrix);
+        cfg.enabled = tr.enabled;
+        cfg.alternate_group = tr.alternate_group;
+        cfg.volume = Some(tr.volume);
         let k = w.add_track(cfg).map_err(|e| {
             CopyError::new(Code::ContainerUnsupported, format!("track {t} ({}) cannot be written to {:?}: {e}", codec_name(&f, t), req.container))
         })?;
