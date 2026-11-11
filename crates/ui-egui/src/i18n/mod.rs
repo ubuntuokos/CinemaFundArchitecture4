@@ -96,6 +96,8 @@ pub enum Language {
     Kk,
     /// Slovenian, persisted as `sl`.
     Sl,
+    /// Estonian, persisted as `et`.
+    Et,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -134,11 +136,12 @@ static LITHUANIAN: OnceLock<Catalog> = OnceLock::new();
 static CROATIAN: OnceLock<Catalog> = OnceLock::new();
 static KAZAKH: OnceLock<Catalog> = OnceLock::new();
 static SLOVENIAN: OnceLock<Catalog> = OnceLock::new();
+static ESTONIAN: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 32] = [
+    pub const ALL: [Self; 33] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -169,6 +172,7 @@ impl Language {
         Self::Hr,
         Self::Kk,
         Self::Sl,
+        Self::Et,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -205,6 +209,7 @@ impl Language {
             Self::Hr => "Hrvatski",
             Self::Kk => "Қазақ тілі",
             Self::Sl => "Slovenščina",
+            Self::Et => "Eesti",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -242,6 +247,7 @@ impl Language {
             "hr" => Some(Self::Hr),
             "kk" => Some(Self::Kk),
             "sl" => Some(Self::Sl),
+            "et" => Some(Self::Et),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -258,7 +264,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 29] = [
+        const PRIMARY: [(&str, Language); 30] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -288,6 +294,7 @@ impl Language {
             ("hr", Language::Hr),
             ("kk", Language::Kk),
             ("sl", Language::Sl),
+            ("et", Language::Et),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -358,6 +365,7 @@ impl Language {
             Self::Hr => "hr",
             Self::Kk => "kk",
             Self::Sl => "sl",
+            Self::Et => "et",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -396,6 +404,7 @@ impl Language {
             Self::Hr => Some(CROATIAN.get_or_init(|| Catalog::parse(catalog_file!("hr")))),
             Self::Kk => Some(KAZAKH.get_or_init(|| Catalog::parse(catalog_file!("kk")))),
             Self::Sl => Some(SLOVENIAN.get_or_init(|| Catalog::parse(catalog_file!("sl")))),
+            Self::Et => Some(ESTONIAN.get_or_init(|| Catalog::parse(catalog_file!("et")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -602,6 +611,7 @@ mod tests {
             ("hr", catalog_file!("hr")),
             ("kk", catalog_file!("kk")),
             ("sl", catalog_file!("sl")),
+            ("et", catalog_file!("et")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1835,6 +1845,13 @@ mod tests {
             catalog_file!("sl"),
             "ČŠŽčšž»«",
             &[("File", "Datoteka"), ("Sequence", "Sekvenca"), ("Playhead", "Predvajalna glava"), ("Cross Dissolve", "Navzkrižno pretapljanje")],
+        ),
+        (
+            Language::Et,
+            "app.language.estonian",
+            catalog_file!("et"),
+            "ÄÖÕÜŠŽäöõüšž„“",
+            &[("File", "Fail"), ("Sequence", "Jada"), ("Playhead", "Esitusnäidik"), ("Cross Dissolve", "Ristsulandus")],
         ),
     ];
 
