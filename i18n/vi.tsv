@@ -1,0 +1,4115 @@
+# Vietnamese (vi) catalog for the whole CFA4 interface (Qt GUI and egui). Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Vietnamese video-editing vocabulary (dòng thời gian, rãnh, clip, chuỗi, thư mục, đầu phát, điểm
+# đánh dấu, chuyển cảnh, khung hình chính). No proprietary localisation resource, string table or
+# product UI was consulted or copied; add entries the same way. Commands are plain verbs ("Lưu
+# thành…"), labels use sentence case, and product and format names (CFA4, Lumetri, ProRes, AAF,
+# EDL…) keep their spelling. Decimal comma (0,5). A native-speaker review is welcome.
+#
+# Terms: clip = clip, track = rãnh, sequence = chuỗi, timeline = dòng thời gian, bin = thư mục,
+# playhead = đầu phát, marker = điểm đánh dấu, In/Out point = điểm vào/ra, keyframe = khung hình
+# chính, caption = phụ đề, preset = cài đặt sẵn, workspace = không gian làm việc, gain = độ lợi,
+# opacity = độ mờ đục, render = kết xuất, ripple = dồn, dissolve = hòa tan, wipe = quét, proxy =
+# proxy, (Legacy) = (cũ).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see vi.tsv.attribution.
+
+	'{name}' already exists. Replace it?	'{name}' đã tồn tại. Thay thế?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	Giới thiệu CFA4
+	Add Audio Submix Track	Thêm rãnh trộn phụ âm thanh
+	Add Caption at Playhead	Thêm phụ đề tại đầu phát
+	Add Chapter Marker…	Thêm điểm đánh dấu chương…
+	Add Edit	Thêm điểm cắt
+	Add Edit to All Tracks	Thêm điểm cắt cho mọi rãnh
+	Add Flash Cue Marker…	Thêm điểm đánh dấu Flash Cue…
+	Add Frame Hold	Thêm giữ khung hình
+	Add Marker	Thêm điểm đánh dấu
+	Add New Caption Track…	Thêm rãnh phụ đề mới…
+	Add Range Marker	Thêm điểm đánh dấu khoảng
+	Add Range Marker to In and Out	Thêm điểm đánh dấu khoảng từ điểm vào đến điểm ra
+	Add Tracks…	Thêm rãnh…
+	Full screen	Toàn màn hình
+	Master volume: use the Audio Track Mixer	Âm lượng tổng: dùng Bộ trộn rãnh âm thanh
+	Send to Queue	Gửi vào hàng đợi
+	Add/Remove Keyframe	Thêm/Xóa khung hình chính
+	Adjustment Layer	Lớp điều chỉnh
+	Adjustment Layer…	Lớp điều chỉnh…
+	Align to Video Frame	Căn theo khung hình video
+	Align to Video Frame as Group	Căn theo khung hình video theo nhóm
+	All Panels	Mọi bảng
+	Amplitude and Compression	Biên độ và nén
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Engine không có `serve` được dựng từ một nhánh không có Qt GUI: hãy chuyển sang nhánh Qt GUI và dựng lại, hoặc truyền --engine PATH.
+	Anchor Point	Điểm neo
+	Anti-flicker Filter	Bộ lọc chống nhấp nháy
+	Apply Audio Transition	Áp dụng chuyển cảnh âm thanh
+	Apply Default Transitions to Selection	Áp dụng chuyển cảnh mặc định cho vùng chọn
+	Apply Video Transition	Áp dụng chuyển cảnh video
+	Assembly	Lắp ghép
+	Attach Proxies…	Gắn proxy…
+	Audio	Âm thanh
+	Audio Channels…	Kênh âm thanh…
+	Audio Clip Mixer	Bộ trộn clip âm thanh
+	Audio Effects	Hiệu ứng âm thanh
+	Audio Gain…	Độ lợi âm thanh…
+	Audio In	Điểm vào âm thanh
+	Audio Meters	Đồng hồ âm thanh
+	Audio Options	Tùy chọn âm thanh
+	Audio Out	Điểm ra âm thanh
+	Audio Track Mixer	Bộ trộn rãnh âm thanh
+	Audio Transitions	Chuyển cảnh âm thanh
+	Audio Bitrate	Tốc độ bit âm thanh
+	Audio Format	Định dạng âm thanh
+	Auto Bezier	Bezier tự động
+	Automate to Sequence…	Tự động đưa vào chuỗi…
+	Avid Log Exchange…	Avid Log Exchange…
+	Bars and Tone…	Thanh màu và âm chuẩn…
+	Bezier	Bezier
+	Bin	Thư mục
+	Bin From Selection	Thư mục từ vùng chọn
+	Bitrate Encoding	Mã hóa tốc độ bit
+	Black Video…	Video đen…
+	Blur & Sharpen	Làm mờ và làm nét
+	Breakout to Mono	Tách thành mono
+	Brown	Nâu
+	Burn in captions	Ghi cứng phụ đề
+	Bypass	Bỏ qua
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	Hủy mục đã chọn
+	Cancelled	Đã hủy
+	Cannot create the output folder: {error}	Không thể tạo thư mục đầu ra: {error}
+	Cannot check the output folder for files to replace: {error}	Không thể kiểm tra thư mục đầu ra để tìm tệp cần thay thế: {error}
+	Captions	Phụ đề
+	Captions and Graphics	Phụ đề và đồ họa
+	Captions…	Phụ đề…
+	Caribbean	Caribe
+	Center Horizontally	Căn giữa theo chiều ngang
+	Center Vertically	Căn giữa theo chiều dọc
+	Cerulean	Xanh da trời
+	Channel Volume	Âm lượng kênh
+	Checked:	Đã chọn:
+	Choose a file name and location.	Chọn tên tệp và vị trí.
+	Choose folder	Chọn thư mục
+	Media File	Tệp phương tiện
+	Sequence name	Tên chuỗi
+	Clear Finished	Xóa mục đã xong
+	Clear In	Xóa điểm vào
+	Clear In and Out	Xóa điểm vào và ra
+	Clear Markers	Xóa điểm đánh dấu
+	Clear Out	Xóa điểm ra
+	Clear Selected Marker	Xóa điểm đánh dấu đã chọn
+	Clip	Clip
+	Close All Other Projects	Đóng mọi dự án khác
+	Close All Projects	Đóng mọi dự án
+	Close Gap	Đóng khoảng trống
+	Close Project	Đóng dự án
+	Color Correction	Hiệu chỉnh màu
+	Color Management…	Quản lý màu…
+	Color Matte…	Nền màu…
+	Consolidate Duplicates	Gộp các bản trùng
+	Constant quality (CRF)	Chất lượng không đổi (CRF)
+	Continuous Bezier	Bezier liên tục
+	Copy Paste Includes Sequence Markers	Sao chép và dán kèm điểm đánh dấu của chuỗi
+	Create Captions from Transcript…	Tạo phụ đề từ bản ghi lời…
+	Create Multi-Camera Source Sequence…	Tạo chuỗi nguồn đa camera…
+	Create Proxies…	Tạo proxy…
+	Crossfade	Chuyển âm chéo
+	Darker Color	Màu tối hơn
+	Delay and Echo	Trễ và vọng
+	Delete Keyframe	Xóa khung hình chính
+	Delete Render Files	Xóa tệp kết xuất
+	Delete Render Files In to Out	Xóa tệp kết xuất từ điểm vào đến điểm ra
+	Delete Tracks…	Xóa rãnh…
+	Delete Transcript	Xóa bản ghi lời
+	Demo Footage	Cảnh quay mẫu
+	Demo Project	Dự án mẫu
+	Detach Proxies	Tách proxy
+	Dissolve	Hòa tan
+	Distribute Horizontally	Phân bố theo chiều ngang
+	Distribute Space Horizontally	Phân bố khoảng cách theo chiều ngang
+	Distribute Space Vertically	Phân bố khoảng cách theo chiều dọc
+	Distribute Vertically	Phân bố theo chiều dọc
+	Double-click a clip in the Project panel to open it here.	Nhấp đúp vào một clip trong bảng Dự án để mở nó ở đây.
+	EDL…	EDL…
+	Ease In	Chậm dần vào
+	Ease Out	Chậm dần ra
+	Edit Offline…	Sửa phương tiện ngoại tuyến…
+	Edit Subclip…	Sửa clip con…
+	Edit Workspaces…	Sửa không gian làm việc…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Được sửa trong công cụ Lumetri và mặt nạ (chưa có trong Qt GUI)
+	Effect Controls	Điều khiển hiệu ứng
+	Enable	Bật
+	Enable Remix	Bật Remix
+	Enabled	Đã bật
+	Encoding	Mã hóa
+	End	Kết thúc
+	Engine stopped	Engine đã dừng
+	Entire Sequence	Toàn bộ chuỗi
+	Essential Graphics	Đồ họa thiết yếu
+	Essential Sound	Âm thanh thiết yếu
+	Events	Sự kiện
+	Export As Motion Graphics Template…	Xuất thành mẫu đồ họa chuyển động…
+	Export Markers as CSV…	Xuất điểm đánh dấu thành CSV…
+	Export Media	Xuất phương tiện
+	Export Media…	Xuất phương tiện…
+	Export Queue	Hàng đợi xuất
+	Queue ({n})	Hàng đợi ({n})
+	Send exports here with Send to Queue, then start the queue.	Gửi các bản xuất vào đây bằng Gửi vào hàng đợi, rồi chạy hàng đợi.
+	Open a sequence to export	Mở một chuỗi để xuất
+	The sequence has no caption track.	Chuỗi không có rãnh phụ đề.
+	Export Audio	Xuất âm thanh
+	Export failed: {path}	Xuất thất bại: {path}
+	Export finished: {path}	Xuất xong: {path}
+	Extract Audio	Trích xuất âm thanh
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Thất bại
+	Field Options…	Tùy chọn trường…
+	File…	Tệp…
+	Fill frame	Lấp đầy khung hình
+	Filter and EQ	Bộ lọc và EQ
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Fit to frame	Vừa khung hình
+	Forest	Xanh rừng
+	Frame Blending	Hòa trộn khung hình
+	Frame Hold Options…	Tùy chọn giữ khung hình…
+	Frame Sampling	Lấy mẫu khung hình
+	Frame Size	Kích thước khung hình
+	From Bin	Từ thư mục
+	From Source Monitor	Từ màn hình Nguồn
+	From Source Monitor, Match Frame	Từ màn hình Nguồn, khớp khung hình
+	From file…	Từ tệp…
+	From the preset	Theo cài đặt sẵn
+	Adaptive ({bpp} bits per pixel)	Thích ứng ({bpp} bit mỗi điểm ảnh)
+	Set a fixed bitrate	Đặt tốc độ bit cố định
+	Gain	Độ lợi
+	Generate Audio Waveform	Tạo dạng sóng âm thanh
+	Get Media File Properties for	Lấy thuộc tính tệp phương tiện cho
+	Go to End	Đến cuối
+	Go to Gap	Đến khoảng trống
+	Go to In	Đến điểm vào
+	Go to Next Caption Segment	Đến đoạn phụ đề tiếp theo
+	Go to Next Keyframe	Đến khung hình chính tiếp theo
+	Go to Next Marker	Đến điểm đánh dấu tiếp theo
+	Go to Out	Đến điểm ra
+	Go to Previous Caption Segment	Đến đoạn phụ đề trước
+	Go to Previous Keyframe	Đến khung hình chính trước
+	Go to Previous Marker	Đến điểm đánh dấu trước
+	Go to Split	Đến điểm tách
+	Go to Start	Đến đầu
+	Graphics and Titles	Đồ họa và tiêu đề
+	Grunge & Distort	Cũ kỹ và méo
+	Hide All Caption Tracks	Ẩn mọi rãnh phụ đề
+	Hold	Giữ
+	Image Control	Điều khiển ảnh
+	Image Sequence	Chuỗi ảnh
+	Immersive Video	Video nhập vai
+	Import Credits Spreadsheet…	Nhập bảng tính danh đề…
+	Import From	Nhập từ
+	Import Image Sequence…	Nhập chuỗi ảnh…
+	Import from Media Browser	Nhập từ Trình duyệt phương tiện
+	Ingest Settings…	Cài đặt tiếp nhận…
+	Insert Frame Hold Segment	Chèn đoạn giữ khung hình
+	Inspector	Trình kiểm tra
+	Install Motion Graphics Template…	Cài đặt mẫu đồ họa chuyển động…
+	Interpret Footage…	Diễn giải cảnh quay…
+	Iris	Mống mắt
+	Keying	Tách nền
+	Lavender	Oải hương
+	Legacy	Cũ
+	Level	Mức
+	Lift	Nhấc ra
+	Lights & Blurs	Ánh sáng và làm mờ
+	Lights & Glows	Ánh sáng và phát sáng
+	Linear Dodge (Add)	Làm sáng tuyến tính (cộng)
+	Link Media…	Liên kết phương tiện…
+	Linked Selection	Chọn liên kết
+	Lumetri Color	Lumetri Color
+	Lumetri Scopes	Lumetri Scopes
+	Make Offline…	Chuyển sang ngoại tuyến…
+	Make Subclip…	Tạo clip con…
+	Make Subsequence	Tạo chuỗi con
+	Mango	Xoài
+	Mark Clip	Đánh dấu clip
+	Mark In	Đặt điểm vào
+	Mark Out	Đặt điểm ra
+	Mark Selection	Đánh dấu vùng chọn
+	Mark Split	Đánh dấu điểm tách
+	Markers	Điểm đánh dấu
+	Match Frame	Khớp khung hình
+	Match sequence	Khớp với chuỗi
+	Media Browser	Trình duyệt phương tiện
+	Media offline	Phương tiện ngoại tuyến
+	Media…	Phương tiện…
+	Merge Clips…	Hợp nhất clip…
+	Merged Clip	Clip hợp nhất
+	Modulation	Điều biến
+	Motion Graphics Template…	Mẫu đồ họa chuyển động…
+	Movie	Phim
+	Multi-Camera	Đa camera
+	Mute Track	Tắt tiếng rãnh
+	Nest…	Lồng…
+	New Bin	Thư mục mới
+	New Project Panel	Bảng Dự án mới
+	New Sequence…	Chuỗi mới…
+	Next in Sequence	Tiếp theo trong chuỗi
+	Next in Track	Tiếp theo trong rãnh
+	No sequence	Không có chuỗi
+	Drop media here to create sequence.	Thả phương tiện vào đây để tạo chuỗi.
+	Open Demo Project	Mở dự án mẫu
+	Double-click a sequence in the Project panel to open it here.	Nhấp đúp vào một chuỗi trong bảng Dự án để mở nó ở đây.
+	Noise & Grain	Nhiễu và hạt
+	Noise Reduction	Giảm nhiễu
+	Normalize Mix Track…	Chuẩn hóa rãnh trộn…
+	Not Now	Để sau
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Chưa có trong Qt GUI (xem docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	Lỗi thời
+	Offline File…	Tệp ngoại tuyến…
+	Opacity	Độ mờ đục
+	Open Project	Mở dự án
+	Open Project…	Mở dự án…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	Luồng quang học
+	Opus	Opus
+	Output file	Tệp đầu ra
+	Overwrite	Ghi đè
+	PCM (uncompressed)	PCM (không nén)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Lớp II)
+	Panner	Bộ chỉnh vị trí âm
+	Paste Attributes…	Dán thuộc tính…
+	Paste Insert	Dán chèn
+	Play/Stop	Phát/Dừng
+	Preset	Cài đặt sẵn
+	Previous in Sequence	Trước đó trong chuỗi
+	Previous in Track	Trước đó trong rãnh
+	Program	Chương trình
+	Progress	Tiến trình
+	Project	Dự án
+	Project Manager…	Trình quản lý dự án…
+	Project Notes	Ghi chú dự án
+	Project Settings	Cài đặt dự án
+	Project…	Dự án…
+	Proxy	Proxy
+	Quit	Thoát
+	Razor Tool	Công cụ dao cắt
+	Reconnect Full Resolution Media…	Kết nối lại phương tiện độ phân giải đầy đủ…
+	Recover Unsaved Changes	Khôi phục thay đổi chưa lưu
+	Recover Unsaved Changes…	Khôi phục thay đổi chưa lưu…
+	Reference Monitor	Màn hình tham chiếu
+	Remaining	Còn lại
+	Remix	Remix
+	Remix Properties…	Thuộc tính Remix…
+	Remove Attributes…	Gỡ thuộc tính…
+	Remove Effect	Gỡ hiệu ứng
+	Remove Filler Words	Bỏ từ đệm
+	Remove Pauses	Bỏ khoảng ngừng
+	Remove Unused	Gỡ mục không dùng
+	Render Audio	Kết xuất âm thanh
+	Render Effects In to Out	Kết xuất hiệu ứng từ điểm vào đến điểm ra
+	Render In to Out	Kết xuất từ điểm vào đến điểm ra
+	Render Selection	Kết xuất vùng chọn
+	Replace Fonts in Projects…	Thay phông chữ trong dự án…
+	Replace With Clip	Thay bằng clip
+	Reset All Parameters	Đặt lại mọi tham số
+	Reset Duration	Đặt lại thời lượng
+	Reset Effect	Đặt lại hiệu ứng
+	Reset Panel Layout	Đặt lại bố cục bảng
+	Reset Parameter	Đặt lại tham số
+	Reset to Saved Layout	Đặt lại về bố cục đã lưu
+	Restoration	Phục hồi
+	Restore Captions from Source Clip	Khôi phục phụ đề từ clip nguồn
+	Retry	Thử lại
+	Reverb	Vang
+	Reverse Match Frame	Khớp khung hình ngược
+	Revert Remix	Hoàn tác Remix
+	Ripple Delete	Xóa và dồn
+	Ripple Delete Head Frame	Xóa và dồn khung hình đầu
+	Ripple Sequence Markers	Dồn điểm đánh dấu của chuỗi
+	Rose	Hồng
+	Save All	Lưu tất cả
+	Save Changes to this Workspace	Lưu thay đổi vào không gian làm việc này
+	Save as New Workspace	Lưu thành không gian làm việc mới
+	Save as New Workspace…	Lưu thành không gian làm việc mới…
+	Save changes to '{name}' before closing?	Lưu thay đổi của '{name}' trước khi đóng?
+	Save changes to '{name}' before continuing?	Lưu thay đổi của '{name}' trước khi tiếp tục?
+	Scale Width	Tỷ lệ chiều rộng
+	Scale to Frame Size	Co giãn theo kích thước khung hình
+	Scene Edit Detection…	Phát hiện điểm cắt cảnh…
+	Search Bin	Thư mục tìm kiếm
+	Select All Matching	Chọn mọi mục khớp
+	Select Label Group	Chọn nhóm nhãn
+	Select Next Graphic	Chọn đồ họa tiếp theo
+	Select Next Layer	Chọn lớp tiếp theo
+	Select Previous Graphic	Chọn đồ họa trước
+	Select Previous Layer	Chọn lớp trước
+	Select a clip in the Timeline.	Chọn một clip trên dòng thời gian.
+	Selected	Đã chọn
+	Selection Follows Playhead	Vùng chọn theo đầu phát
+	Selection as CFA4 Project…	Vùng chọn thành dự án CFA4…
+	Selection…	Vùng chọn…
+	Sequence	Chuỗi
+	Sequence From Clip	Chuỗi từ clip
+	Sequence In/Out	Điểm vào/ra của chuỗi
+	Sequence Settings…	Cài đặt chuỗi…
+	Sequence…	Chuỗi…
+	Show Active Caption Tracks Only	Chỉ hiện rãnh phụ đề đang hoạt động
+	Show All Caption Tracks	Hiện mọi rãnh phụ đề
+	Show All Marker Colors	Hiện mọi màu điểm đánh dấu
+	Show Through Edits	Hiện điểm cắt liền mạch
+	Simplify Sequence…	Đơn giản hóa chuỗi…
+	Slide	Trượt
+	Smart Tools	Công cụ thông minh
+	Snap in Timeline	Bắt dính trên dòng thời gian
+	Solo Track	Độc tấu rãnh
+	Some panel labels change language after a restart.	Một số nhãn bảng chỉ đổi ngôn ngữ sau khi khởi động lại.
+	Source In	Điểm vào nguồn
+	Source Settings…	Cài đặt nguồn…
+	Source patch	Nối nguồn
+	Speed/Duration…	Tốc độ/Thời lượng…
+	Start	Bắt đầu
+	Start Queue	Chạy hàng đợi
+	Starting engine…	Đang khởi động engine…
+	Step Back 1 Frame	Lùi 1 khung hình
+	Step Forward 1 Frame	Tiến 1 khung hình
+	Stereo Imagery	Hình ảnh âm thanh nổi
+	Still Image	Ảnh tĩnh
+	Stop Queue	Dừng hàng đợi
+	Subclip	Clip con
+	Synchronize…	Đồng bộ…
+	Synthetic	Tổng hợp
+	Tan	Nâu nhạt
+	Target Bitrate	Tốc độ bit mục tiêu
+	Teal	Xanh mòng két
+	Text to Speech	Chuyển văn bản thành giọng nói
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Không tìm thấy engine CFA4 (cfa4-cli). Hãy dựng bằng: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Engine CFA4 dừng đột ngột. Các thay đổi chưa lưu được giữ trong nhật ký khôi phục; hãy khởi động lại CFA4 để khôi phục.
+	The engine stopped	Engine đã dừng
+	Time Interpolation	Nội suy thời gian
+	Time Remapping	Ánh xạ lại thời gian
+	Time and Pitch	Thời gian và cao độ
+	Timecode	Mã thời gian
+	Timecode…	Mã thời gian…
+	Toggle Animation	Bật/tắt hoạt ảnh
+	Toggle Proxies	Bật/tắt proxy
+	Toggle Sync Lock	Bật/tắt khóa đồng bộ
+	Toggle Track Lock	Bật/tắt khóa rãnh
+	Toggle Track Output	Bật/tắt đầu ra rãnh
+	Toggle the effect on or off	Bật hoặc tắt hiệu ứng
+	Toggle track targeting	Bật/tắt nhắm rãnh
+	Transcribe Sequence…	Chép lời chuỗi…
+	Transcribe…	Chép lời…
+	Transcript	Bản ghi lời
+	Transformers	Biến đổi
+	Transparent Video…	Video trong suốt…
+	Trim Edit	Cắt tỉa
+	Uniform Scale	Co giãn đồng đều
+	Universal Counting Leader…	Đoạn đếm ngược chuẩn…
+	Update Metadata…	Cập nhật siêu dữ liệu…
+	Upgrade Caption to Graphic	Nâng phụ đề thành đồ họa
+	Upgrade to Source Graphic	Nâng thành đồ họa nguồn
+	Use hardware encoding when available	Dùng mã hóa phần cứng khi có
+	Utility	Tiện ích
+	VBR, 1 pass	VBR, 1 lượt
+	VBR, 2 pass	VBR, 2 lượt
+	Vertical Text	Văn bản dọc
+	Video Effects	Hiệu ứng video
+	Video In	Điểm vào video
+	Video Options	Tùy chọn video
+	Video Out	Điểm ra video
+	Video Transitions	Chuyển cảnh video
+	Volume	Âm lượng
+	Wipe	Quét
+	Work Area	Vùng làm việc
+	Workspaces	Không gian làm việc
+	Zoom to Sequence	Thu phóng vừa chuỗi
+	an unknown time	một thời gian không xác định
+	automatic	tự động
+	frames	khung hình
+	not available	không có
+	off	tắt
+	optional	tùy chọn
+	…	…
+	Rate Stretch Tool	Công cụ co giãn tốc độ
+	Remix Tool	Công cụ Remix
+	Ripple Edit Tool	Công cụ sửa dồn
+	Rolling Edit Tool	Công cụ sửa lăn
+	Slide Tool	Công cụ trượt
+	Slip Tool	Công cụ trượt nội dung
+	Track Select Backward Tool	Công cụ chọn rãnh về trước
+	Track Select Forward Tool	Công cụ chọn rãnh về sau
+	Add Marker (M)	Thêm điểm đánh dấu (M)
+	Button Editor	Trình sửa nút
+	Composite Video	Video tổng hợp
+	Display Mode	Chế độ hiển thị
+	Export Frame	Xuất khung hình
+	Extract (')	Trích ra (')
+	Go to In (Shift+I)	Đến điểm vào (Shift+I)
+	Go to Out (Shift+O)	Đến điểm ra (Shift+O)
+	High Quality Playback	Phát chất lượng cao
+	Insert (,)	Chèn (,)
+	Lift (;)	Nhấc ra (;)
+	Loop	Lặp
+	Loop marked range	Lặp khoảng đã đánh dấu
+	Mark In (I)	Đặt điểm vào (I)
+	Mark Out (O)	Đặt điểm ra (O)
+	More transport controls	Thêm điều khiển phát
+	Overwrite (.)	Ghi đè (.)
+	Paused Resolution	Độ phân giải khi tạm dừng
+	Play In to Out	Phát từ điểm vào đến điểm ra
+	Play-Stop Toggle (Space)	Phát/Dừng (Space)
+	Playback Resolution	Độ phân giải phát
+	RGBA Channels	Kênh RGBA
+	Safe Margins	Lề an toàn
+	Select Playback Resolution	Chọn độ phân giải phát
+	Select Zoom Level	Chọn mức thu phóng
+	Show Transport Controls	Hiện điều khiển phát
+	Shuttle Left	Tua trái
+	Shuttle Right	Tua phải
+	Shuttle Stop	Dừng tua
+	Step Back 1 Frame (Left)	Lùi 1 khung hình (Left)
+	Step Forward 1 Frame (Right)	Tiến 1 khung hình (Right)
+	Appearance	Giao diện
+	Darkest	Tối nhất
+	(no sequence)	(không có chuỗi)
+	All markers are hidden by the colour filter.	Mọi điểm đánh dấu đều bị bộ lọc màu ẩn đi.
+	Audio {n}:	Âm thanh {n}:
+	Audio:	Âm thanh:
+	Clip: {name}	Clip: {name}
+	Codec:	Codec:
+	Duration:	Thời lượng:
+	Marker	Điểm đánh dấu
+	No markers. Press M to add one.	Không có điểm đánh dấu. Nhấn M để thêm.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Ghi chú cho dự án này: việc cần làm, hướng dẫn, số khung hình… Được lưu cùng dự án.
+	Playhead:	Đầu phát:
+	Select a clip to view its metadata.	Chọn một clip để xem siêu dữ liệu.
+	Settings:	Cài đặt:
+	Show or hide {color} markers	Hiện hoặc ẩn điểm đánh dấu {color}
+	Video {n}:	Video {n}:
+	Video:	Video:
+	{tc}  Chapter	{tc}  Chương
+	Media Type	Loại phương tiện
+	Frame Rate	Tốc độ khung hình
+	Media Start	Đầu phương tiện
+	Media End	Cuối phương tiện
+	Media Duration	Thời lượng phương tiện
+	Video Info	Thông tin video
+	Video Codec	Codec video
+	Audio Info	Thông tin âm thanh
+	Audio Codec	Codec âm thanh
+	Scene	Cảnh
+	Shot	Cú máy
+	Log Note	Ghi chú nhật ký
+	Tape Name	Tên băng
+	Client	Khách hàng
+	Camera Angle	Góc máy
+	File Path	Đường dẫn tệp
+	 · {time} left	 · còn {time}
+	Active Monitor	Màn hình đang hoạt động
+	Add a timecode row	Thêm một hàng mã thời gian
+	Audio Samples	Mẫu âm thanh
+	Current Time	Thời điểm hiện tại
+	Failed: {e}	Thất bại: {e}
+	Feet + Frames 16mm	Feet + khung hình 16mm
+	Feet + Frames 35mm	Feet + khung hình 35mm
+	Frames	Khung hình
+	In/Out Duration	Thời lượng vào/ra
+	Media Time	Thời gian phương tiện
+	No background jobs.	Không có tác vụ nền.
+	Remove Row	Xóa hàng
+	Seconds	Giây
+	Show finished jobs	Hiện tác vụ đã xong
+	{mode} · no clip	{mode} · không có clip
+	{mode} · no sequence	{mode} · không có chuỗi
+	Render	Kết xuất
+	Job	Tác vụ
+	Audio Track Mixer menu	Menu Bộ trộn rãnh âm thanh
+	Automation mode	Chế độ tự động hóa
+	Enable track for recording	Bật rãnh để ghi âm
+	Fill the slots above first	Hãy điền các ô phía trên trước
+	Go to In Point	Đến điểm vào
+	Go to Out Point	Đến điểm ra
+	Input channel mapping	Ánh xạ kênh đầu vào
+	Meter Input(s) Only	Chỉ đo đầu vào
+	Mix	Trộn
+	Mute Send	Tắt tiếng nhánh gửi
+	New Submix	Trộn phụ mới
+	Pan / balance (drag; double-click: centre)	Vị trí âm / cân bằng (kéo; nhấp đúp: giữa)
+	Post-Fader	Sau fader
+	Pre-Fader	Trước fader
+	Remove Send	Gỡ nhánh gửi
+	Show/Hide Effects and Sends	Hiện/Ẩn hiệu ứng và nhánh gửi
+	Show/Hide Tracks	Hiện/Ẩn rãnh
+	Solo safe	An toàn khi độc tấu
+	Track output assignment	Gán đầu ra rãnh
+	Voice-over recording is not in the Qt GUI yet	Ghi âm lời bình chưa có trong Qt GUI
+	Volume (drag; double-click: 0 dB)	Âm lượng (kéo; nhấp đúp: 0 dB)
+	pre 	trước 
+	Read	Đọc
+	Latch	Chốt
+	Touch	Chạm
+	Write	Ghi
+	Stereo	Stereo
+	Swap	Hoán đổi
+	Mono	Mono
+	Write keyframes	Ghi khung hình chính
+	Match Playhead	Theo đầu phát
+	Gang to Program	Liên kết với Chương trình
+	(no sequences)	(không có chuỗi)
+	8 Bit	8 bit
+	Bright	Sáng
+	Clamp Signal	Giới hạn tín hiệu
+	Colour Space	Không gian màu
+	Dimmed	Mờ
+	Float	Số thực
+	Four Scopes (RGB, 8 bit)	Bốn biểu đồ (RGB, 8 bit)
+	Four Scopes (YUV, float, no clamp)	Bốn biểu đồ (YUV, số thực, không giới hạn)
+	HDR	HDR
+	HLS Vectorscope + Histogram	Vectorscope HLS + biểu đồ tần suất
+	Histogram	Biểu đồ tần suất
+	Luma	Độ sáng
+	Parade	Parade
+	Parade (RGB)	Parade (RGB)
+	Parade ({kind})	Parade ({kind})
+	Parade Type	Kiểu Parade
+	Presets	Cài đặt sẵn
+	RGB-White	RGB-trắng
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Cài đặt biểu đồ
+	Signal Scale	Thang tín hiệu
+	Vectorscope (YUV)	Vectorscope (YUV)
+	Vectorscope + Waveform YC	Vectorscope + dạng sóng YC
+	Vectorscope HLS	Vectorscope HLS
+	Vectorscope Targets	Mục tiêu Vectorscope
+	Vectorscope YUV	Vectorscope YUV
+	Waveform	Dạng sóng
+	Waveform (Luma)	Dạng sóng (độ sáng)
+	Waveform (RGB)	Dạng sóng (RGB)
+	Waveform ({kind})	Dạng sóng ({kind})
+	Waveform Type	Kiểu dạng sóng
+	YC	YC
+	YC no Chroma	YC không sắc độ
+	YUV	YUV
+	(no clip selected)	(chưa chọn clip)
+	Add Lumetri Color to clip	Thêm Lumetri Color vào clip
+	Apply Match	Áp dụng khớp
+	Basic Correction	Hiệu chỉnh cơ bản
+	Bleach Bypass	Bỏ tẩy
+	Blur	Làm mờ
+	Color Match	Khớp màu
+	Color Wheels & Match	Bánh xe màu và khớp màu
+	Color/Black	Màu/Đen
+	Color/Gray	Màu/Xám
+	Comparison View	Chế độ so sánh
+	Cool Blue	Xanh lạnh
+	Creative	Sáng tạo
+	Denoise	Khử nhiễu
+	Face Detection (protect skin tones)	Nhận diện khuôn mặt (giữ màu da)
+	Faded Matte	Mờ phai
+	Golden Hour	Giờ vàng
+	HDR Range	Dải HDR
+	HDR Specular	Phản xạ HDR
+	HDR White	Trắng HDR
+	HSL Secondary	HSL thứ cấp
+	Hue Range	Dải sắc độ
+	Hue Saturation Curves	Đường cong sắc độ và độ bão hòa
+	Hue vs Hue	Sắc độ theo sắc độ
+	Hue vs Luma	Độ sáng theo sắc độ
+	Hue vs Sat	Bão hòa theo sắc độ
+	Input LUT	LUT đầu vào
+	Key	Tách nền
+	LUT	LUT
+	Look	Phong cách màu
+	Look LUT	LUT phong cách
+	Luma Max	Độ sáng tối đa
+	Luma Min	Độ sáng tối thiểu
+	Luma vs Sat	Bão hòa theo độ sáng
+	Master · {name}	Chính · {name}
+	Night	Đêm
+	RGB Curves	Đường cong RGB
+	Reference	Tham chiếu
+	Sat vs Sat	Bão hòa theo bão hòa
+	Saturation Min	Độ bão hòa tối thiểu
+	Teal & Orange	Xanh mòng két và cam
+	Vignette	Viền tối
+	Warm Film	Phim ấm
+	White/Black	Trắng/Đen
+	Add to Favorites	Thêm vào mục yêu thích
+	All Supported Files	Mọi tệp được hỗ trợ
+	Allow Duplicate Media During Project Import	Cho phép phương tiện trùng khi nhập dự án
+	Audio Files	Tệp âm thanh
+	Cannot open {dir}: {e}	Không thể mở {dir}: {e}
+	Clear Recent Directories	Xóa thư mục gần đây
+	Create Folder For Imported Projects	Tạo thư mục cho dự án đã nhập
+	Date Modified	Ngày sửa đổi
+	Edit Columns	Sửa cột
+	Edit Columns…	Sửa cột…
+	File Extension	Phần mở rộng tệp
+	File Types Displayed	Loại tệp được hiển thị
+	Go Back	Quay lại
+	Go Forward	Tiến tới
+	Hover Scrub	Rê để tua
+	Import as Image Sequence	Nhập thành chuỗi ảnh
+	Ingest	Tiếp nhận
+	Local Drives	Ổ đĩa cục bộ
+	Network	Mạng
+	New Media Browser Panel	Bảng Trình duyệt phương tiện mới
+	Open In Source Monitor	Mở trong màn hình Nguồn
+	Open Ingest Settings	Mở cài đặt tiếp nhận
+	Projects and Interchange	Dự án và trao đổi
+	Recent Directories	Thư mục gần đây
+	Remove from Favorites	Gỡ khỏi mục yêu thích
+	Show in File Manager	Hiện trong trình quản lý tệp
+	Still Images	Ảnh tĩnh
+	Thumbnail View	Chế độ ảnh thu nhỏ
+	Up One Level	Lên một cấp
+	Video Files	Tệp video
+	{sel} of {total} items selected	Đã chọn {sel} trong {total} mục
+	{total} items	{total} mục
+	#	#
+	Add caption at playhead	Thêm phụ đề tại đầu phát
+	Add captions	Thêm phụ đề
+	Box	Hộp
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Tạo rãnh phụ đề hoặc nhập tệp phụ đề.
+	Create captions	Tạo phụ đề
+	Create new caption track	Tạo rãnh phụ đề mới
+	Delete selected captions	Xóa phụ đề đã chọn
+	Export captions…	Xuất phụ đề…
+	Extract selected text	Trích ra văn bản đã chọn
+	Go to caption	Đến phụ đề
+	Go to graphic	Đến đồ họa
+	Import captions file…	Nhập tệp phụ đề…
+	In	Vào
+	Lift selected text	Nhấc ra văn bản đã chọn
+	Merge selected captions	Hợp nhất phụ đề đã chọn
+	New {format} track	Rãnh {format} mới
+	No captions on this track. Press + to add one at the playhead.	Rãnh này không có phụ đề. Nhấn + để thêm một phụ đề tại đầu phát.
+	No matching captions.	Không có phụ đề khớp.
+	No matching text.	Không có văn bản khớp.
+	No text graphics in this sequence. Add text with the Type tool.	Chuỗi này không có đồ họa văn bản. Hãy thêm văn bản bằng công cụ Văn bản.
+	Open a sequence to search its graphics	Mở một chuỗi để tìm trong đồ họa của nó
+	Open a sequence to see its transcript	Mở một chuỗi để xem bản ghi lời
+	Open a sequence to work with captions	Mở một chuỗi để làm việc với phụ đề
+	Out	Ra
+	Position: bottom	Vị trí: dưới
+	Position: middle	Vị trí: giữa
+	Position: top	Vị trí: trên
+	Remove filler words	Bỏ từ đệm
+	Speaker	Người nói
+	Speech-to-text turns the dialogue into editable text.	Chuyển giọng nói thành văn bản biến lời thoại thành văn bản có thể sửa.
+	Split caption at playhead	Tách phụ đề tại đầu phát
+	Teletext	Teletext
+	Text colour	Màu chữ
+	This build has no speech-to-text; import a transcript with transcript.set.	Bản dựng này không có chuyển giọng nói thành văn bản; hãy nhập bản ghi lời bằng transcript.set.
+	Track	Rãnh
+	Transcribe	Chép lời
+	Transcribe sequence	Chép lời chuỗi
+	(Default)	(Mặc định)
+	Ambience	Âm nền
+	Assign an audio type to the selection:	Gán loại âm thanh cho vùng chọn:
+	Auto-Match	Tự động khớp
+	Balanced Voice	Giọng cân bằng
+	Bright Air	Không khí sáng
+	Bright Studio	Phòng thu sáng
+	Clean Up Noisy Dialogue	Làm sạch lời thoại nhiễu
+	Clear Audio Type	Xóa loại âm thanh
+	Clear Muddiness	Bỏ âm đục
+	Clip Volume	Âm lượng clip
+	DeEss	Khử âm xì
+	DeHum	Khử ù
+	Delete Preset	Xóa cài đặt sẵn
+	Dialogue	Lời thoại
+	Dry Up a Roomy Voice	Làm khô giọng vang phòng
+	Duck Deep Under Dialogue	Hạ sâu dưới lời thoại
+	Duck Under Dialogue	Hạ dưới lời thoại
+	Duck Under Voice and Effects	Hạ dưới giọng nói và hiệu ứng
+	Duck against:	Hạ theo:
+	Ducking	Tự động hạ âm
+	EQ	EQ
+	Enhance Speech	Tăng cường giọng nói
+	Fades	Mờ dần
+	Far Away	Xa xăm
+	From the Left	Từ bên trái
+	From the Right	Từ bên phải
+	Generate Keyframes	Tạo khung hình chính
+	High Tone	Âm cao
+	In a Room	Trong phòng
+	Interior Room Tone	Âm nền trong nhà
+	Large Hall	Hội trường lớn
+	Loudness	Độ lớn
+	Low Tone	Âm trầm
+	Matches each of the {n} clips on its own.	Khớp riêng từng clip trong {n} clip.
+	Medium Room	Phòng vừa
+	Multiple Clips Selected	Đã chọn nhiều clip
+	Music	Nhạc
+	Mute	Tắt tiếng
+	Not matched yet	Chưa khớp
+	Open Air	Ngoài trời
+	Pan	Vị trí âm
+	Phone Call	Cuộc gọi điện thoại
+	Podcast Voice	Giọng podcast
+	Presence Lift	Nâng độ hiện diện
+	Preset name	Tên cài đặt sẵn
+	Preset:	Cài đặt sẵn:
+	Radio Announcer	Phát thanh viên
+	Radio Voice	Giọng radio
+	Reduce By	Giảm
+	Reduce Reverb	Giảm vang
+	Reduce Rumble	Giảm tiếng ầm
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	Chưa thể remix nhạc theo thời lượng mục tiêu. Hãy cắt tỉa clip và thêm chuyển âm chéo.
+	Repair	Sửa chữa
+	SFX	Hiệu ứng âm thanh
+	Save Preset	Lưu cài đặt sẵn
+	Select audio clips to edit them here	Chọn clip âm thanh để sửa chúng ở đây
+	Select audio clips, then click a preset to apply it.	Chọn clip âm thanh, rồi nhấp vào một cài đặt sẵn để áp dụng.
+	Small Room	Phòng nhỏ
+	Soften Harshness	Làm dịu âm gắt
+	Stereo Width	Độ rộng stereo
+	Stone Church	Nhà thờ đá
+	Telephone	Điện thoại
+	The selected clips have different audio types. Assign one type to edit them together.	Các clip đã chọn có loại âm thanh khác nhau. Hãy gán một loại để sửa chúng cùng lúc.
+	Untagged	Chưa gắn thẻ
+	Voice in a Hall	Giọng trong hội trường
+	Warm Room	Phòng ấm
+	Warm Voice	Giọng ấm
+	Wide Outdoor	Ngoài trời rộng
+	{name} (user)	{name} (người dùng)
+	Align Bottom	Căn dưới
+	Align Center Horizontally	Căn giữa theo chiều ngang
+	Align Center Vertically	Căn giữa theo chiều dọc
+	Align Top	Căn trên
+	Align and Transform	Căn chỉnh và biến đổi
+	Anchor point	Điểm neo
+	Center Align Text	Căn giữa văn bản
+	Corner Radius	Bán kính góc
+	Crawl Left	Chạy sang trái
+	Crawl Right	Chạy sang phải
+	Create new graphic	Tạo đồ họa mới
+	End Off Screen	Kết thúc ngoài màn hình
+	Faux Bold	Đậm giả
+	Faux Italic	Nghiêng giả
+	Font Style	Kiểu phông chữ
+	Inner	Bên trong
+	Install Motion Graphics Template (.fcgt)	Cài đặt mẫu đồ họa chuyển động (.fcgt)
+	Install…	Cài đặt…
+	Intro Duration	Thời lượng mở đầu
+	Left Align Text	Căn trái văn bản
+	Ligatures	Chữ ghép
+	New Ellipse	Hình elip mới
+	New Rectangle	Hình chữ nhật mới
+	New Text	Văn bản mới
+	New Text Layer	Lớp văn bản mới
+	No templates match.	Không có mẫu nào khớp.
+	Outer	Bên ngoài
+	Outro Duration	Thời lượng kết thúc
+	Paragraph Text	Văn bản đoạn
+	Pin To	Ghim vào
+	Pinned Edges	Cạnh được ghim
+	Point Text	Văn bản điểm
+	Polygon Sides	Số cạnh đa giác
+	Postroll	Phần sau
+	Preroll	Phần trước
+	Responsive Design - Position	Thiết kế đáp ứng - Vị trí
+	Responsive Design - Time	Thiết kế đáp ứng - Thời gian
+	Right Align Text	Căn phải văn bản
+	Roll	Cuộn
+	Search templates	Tìm mẫu
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Chọn một clip đồ họa, hoặc dùng công cụ Văn bản (T) trên màn hình Chương trình
+	Select a layer to edit its properties.	Chọn một lớp để sửa thuộc tính của nó.
+	Solid	Đặc
+	Start Off Screen	Bắt đầu ngoài màn hình
+	Stroke 2	Viền 2
+	Template Properties	Thuộc tính mẫu
+	Template: {name}	Mẫu: {name}
+	Text Box Height	Chiều cao hộp văn bản
+	Text Box Width	Chiều rộng hộp văn bản
+	Text Layer Type	Loại lớp văn bản
+	Text Properties	Thuộc tính văn bản
+	Text Styling	Định dạng văn bản
+	Toggle animation	Bật/tắt hoạt ảnh
+	Toggle visibility	Bật/tắt hiển thị
+	Video Frame	Khung hình video
+	{category} · My Template	{category} · Mẫu của tôi
+	{n} editable properties	{n} thuộc tính có thể sửa
+	Add pause	Thêm khoảng ngừng
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	Thêm khoảng ngừng sẽ chèn [pause 1s]. Đổi con số để có khoảng ngừng dài hoặc ngắn hơn, ví dụ [pause 500ms] hoặc [pause 2s].
+	Add to timeline	Thêm vào dòng thời gian
+	Basic voices (built in)	Giọng cơ bản (có sẵn)
+	Download natural voices ({mb} MB)…	Tải giọng tự nhiên ({mb} MB)…
+	Download of the natural voices failed: {e}	Tải giọng tự nhiên thất bại: {e}
+	Download the natural voices? {mb} MB, once.	Tải giọng tự nhiên? {mb} MB, một lần.
+	Downloading…	Đang tải xuống…
+	Editing the selected narration	Đang sửa lời dẫn đã chọn
+	Extra high	Rất cao
+	Extra low	Rất thấp
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Từ {source} và github.com/cmusphinx/cmudict (cách phát âm). Giấy phép: {license}. Mỗi tệp đều được kiểm tra theo một SHA-256 cố định.
+	Hear this voice	Nghe giọng này
+	Narration added on {track}	Đã thêm lời dẫn vào {track}
+	Narration updated	Đã cập nhật lời dẫn
+	Natural voices	Giọng tự nhiên
+	Natural voices installed	Đã cài giọng tự nhiên
+	Natural voices need a one-time download.	Giọng tự nhiên cần tải xuống một lần.
+	New narration	Lời dẫn mới
+	Pace	Nhịp độ
+	Synthesizing narration…	Đang tổng hợp lời dẫn…
+	Synthesizing…	Đang tổng hợp…
+	Text to Speech: {e}	Chuyển văn bản thành giọng nói: {e}
+	Type what you want the voice to say	Nhập nội dung bạn muốn giọng đọc nói
+	Vocal pitch	Cao độ giọng
+	an audio track	một rãnh âm thanh
+	no audio output (check Settings ▸ Audio Hardware)	không có đầu ra âm thanh (kiểm tra Cài đặt ▸ Phần cứng âm thanh)
+	the job disappeared	tác vụ đã biến mất
+	{name} (download)	{name} (tải xuống)
+	5.1 panner (drag the puck; double-click: front centre)	Bộ chỉnh vị trí âm 5.1 (kéo nút; nhấp đúp: giữa phía trước)
+	Add keyframe	Thêm khung hình chính
+	Go to next keyframe	Đến khung hình chính tiếp theo
+	Go to previous keyframe	Đến khung hình chính trước
+	Remove keyframe	Gỡ khung hình chính
+	Select a clip to see its properties	Chọn một clip để xem thuộc tính
+	Speed {n}%	Tốc độ {n}%
+	Turn on animation and add keyframe	Bật hoạt ảnh và thêm khung hình chính
+	Apply to Selected Clips	Áp dụng cho clip đã chọn
+	Export Preset…	Xuất cài đặt sẵn…
+	Import Presets…	Nhập cài đặt sẵn…
+	Lumetri Presets	Cài đặt sẵn Lumetri
+	Search effects	Tìm hiệu ứng
+	Text to Speech: another sequence is open now; the narration was not placed	Chuyển văn bản thành giọng nói: hiện đang mở một chuỗi khác; lời dẫn chưa được đặt vào
+	Effect presets	Cài đặt sẵn hiệu ứng
+	Automate to Sequence	Tự động đưa vào chuỗi
+	Bin: {name}	Thư mục: {name}
+	Clear (Delete)	Xóa (Delete)
+	Convert to Master Clip	Chuyển thành clip gốc
+	Date Created	Ngày tạo
+	Drag to reorder; tick the columns to show.	Kéo để sắp xếp lại; đánh dấu các cột cần hiện.
+	Extra Large	Rất lớn
+	Freeform	Tự do
+	Freeform View Options…	Tùy chọn chế độ xem tự do…
+	Icon View	Chế độ biểu tượng
+	Manage Saved View Presets	Quản lý cài đặt sẵn chế độ xem đã lưu
+	Medium (default)	Vừa (mặc định)
+	Metadata Display	Hiển thị siêu dữ liệu
+	Metadata Display…	Hiển thị siêu dữ liệu…
+	New Bin From Selection	Thư mục mới từ vùng chọn
+	New Item	Mục mới
+	New Project Shortcut	Lối tắt dự án mới
+	New Search Bin	Thư mục tìm kiếm mới
+	New Sequence From Clip	Chuỗi mới từ clip
+	Open in New Tab	Mở trong thẻ mới
+	Open in New Window	Mở trong cửa sổ mới
+	Open in Place	Mở tại chỗ
+	Open in Source Monitor	Mở trong màn hình Nguồn
+	Open in Timeline	Mở trên dòng thời gian
+	Preview Area	Vùng xem trước
+	Project View Preset {n}	Cài đặt sẵn chế độ xem dự án {n}
+	Project: {name}	Dự án: {name}
+	Refresh Project	Làm mới dự án
+	Refresh Sort Order	Làm mới thứ tự sắp xếp
+	Restore View Preset	Khôi phục cài đặt sẵn chế độ xem
+	Reveal Project in Finder…	Hiện dự án trong trình quản lý tệp…
+	Reveal in Finder	Hiện trong trình quản lý tệp
+	Save As New View Preset	Lưu thành cài đặt sẵn chế độ xem mới
+	Save Current View Preset	Lưu cài đặt sẵn chế độ xem hiện tại
+	Save Project	Lưu dự án
+	Select an item to preview it	Chọn một mục để xem trước
+	Set Poster Frame	Đặt khung hình đại diện
+	Sort Icons	Sắp xếp biểu tượng
+	Thumbnail controls for all pointing devices	Điều khiển ảnh thu nhỏ cho mọi thiết bị trỏ
+	Thumbnails show effects applied	Ảnh thu nhỏ hiện hiệu ứng đã áp dụng
+	Up one level	Lên một cấp
+	User Order	Thứ tự người dùng
+	Video Usage: {vu}  Audio Usage: {au}	Sử dụng video: {vu}  Sử dụng âm thanh: {au}
+	{n} items	{n} mục
+	Freeform View	Chế độ xem tự do
+	Stack	Xếp chồng
+	Unstack	Bỏ xếp chồng
+	Clip Size	Kích thước clip
+	Larger	Lớn hơn
+	Smaller	Nhỏ hơn
+	Align to Grid	Căn theo lưới
+	Reset to Grid	Đặt lại theo lưới
+	Save Arrangement…	Lưu bố trí…
+	Save Arrangement	Lưu bố trí
+	Restore Arrangement	Khôi phục bố trí
+	Delete Arrangement	Xóa bố trí
+	Arrangement {n}	Bố trí {n}
+	Freeform View Options	Tùy chọn chế độ xem tự do
+	Snap to grid	Bắt dính theo lưới
+	Show clip names	Hiện tên clip
+	Show clip durations	Hiện thời lượng clip
+	Grid spacing:	Khoảng cách lưới:
+	Default clip size:	Kích thước clip mặc định:
+	{panel} — coming in a later milestone	{panel} — sẽ có ở một mốc sau
+	Edit Workspaces	Sửa không gian làm việc
+	Restore Original	Khôi phục bản gốc
+	Drag Video Only	Chỉ kéo video
+	Drag Audio Only	Chỉ kéo âm thanh
+	Drag Video and Audio	Kéo video và âm thanh
+	Source clips	Clip nguồn
+	(no audio)	(không có âm thanh)
+	Generating waveform…	Đang tạo dạng sóng…
+	Audio Waveform	Dạng sóng âm thanh
+	Video and Audio Waveform Split	Chia video và dạng sóng âm thanh
+	Anchor to In Point	Neo vào điểm vào
+	Anchor to Out Point	Neo vào điểm ra
+	Custom ({n} points)	Tùy chỉnh ({n} điểm)
+	Save Preset…	Lưu cài đặt sẵn…
+	Source · {name}	Nguồn · {name}
+	Temporal Interpolation	Nội suy thời gian
+	Twirl open or shut	Mở rộng hoặc thu gọn
+	Without keyframes	Không có khung hình chính
+	Create 4-point polygon mask	Tạo mặt nạ đa giác 4 điểm
+	Create ellipse mask	Tạo mặt nạ elip
+	Delete Mask	Xóa mặt nạ
+	Free draw bezier	Vẽ tự do bezier
+	Inverted	Đảo ngược
+	Position & Rotation	Vị trí và xoay
+	Position, Scale & Rotation	Vị trí, tỷ lệ và xoay
+	Show graphs	Hiện đồ thị
+	Stop tracking	Dừng theo dõi
+	Track selected mask backward	Theo dõi mặt nạ đã chọn về trước
+	Track selected mask backward 1 frame	Theo dõi mặt nạ đã chọn lùi 1 khung hình
+	Track selected mask forward	Theo dõi mặt nạ đã chọn về sau
+	Track selected mask forward 1 frame	Theo dõi mặt nạ đã chọn tiến 1 khung hình
+	Tracking method: {method}	Phương pháp theo dõi: {method}
+	Velocity	Vận tốc
+	Set Transition Duration	Đặt thời lượng chuyển cảnh
+	Reverse	Đảo ngược
+	Center at Cut	Giữa tại điểm cắt
+	Start at Cut	Bắt đầu tại điểm cắt
+	End at Cut	Kết thúc tại điểm cắt
+	Custom Start	Bắt đầu tùy chỉnh
+	Eyedropper (pick a color from the Program monitor)	Ống hút màu (lấy màu từ màn hình Chương trình)
+	Interpret Footage	Diễn giải cảnh quay
+	Color Management · {n} item	Quản lý màu · {n} mục
+	Color Management · {n} items	Quản lý màu · {n} mục
+	Media colour space (from file metadata): {detected}	Không gian màu của phương tiện (từ siêu dữ liệu tệp): {detected}
+	Override media colour space:	Ghi đè không gian màu của phương tiện:
+	Decode Auro-3D height channels	Giải mã kênh độ cao Auro-3D
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Tắt: tệp phát các kênh của chính nó, như khi không có bộ giải mã Auro-3D.
+	Use file metadata	Dùng siêu dữ liệu tệp
+	Motion Graphics Templates	Mẫu đồ họa chuyển động
+	Clip Fx Editor	Trình sửa hiệu ứng clip
+	Track Fx Editor	Trình sửa hiệu ứng rãnh
+	Custom Setup	Thiết lập tùy chỉnh
+	Master Gain	Độ lợi tổng
+	Band {n}	Dải {n}
+	Solo	Độc tấu
+	Thr	Ngưỡng
+	Att	Tấn
+	Rel	Nhả
+	Output Gain	Độ lợi đầu ra
+	Limiter	Bộ giới hạn
+	Link Channels	Liên kết kênh
+	Limiter Threshold	Ngưỡng giới hạn
+	Limiter Release	Thời gian nhả giới hạn
+	Auto Gate	Cổng tự động
+	Attack	Thời gian tấn
+	Release	Thời gian nhả
+	Compressor	Bộ nén
+	Auto Makeup	Bù tự động
+	Makeup	Bù
+	Expander	Bộ giãn
+	Soft Clip	Cắt mềm
+	out	ra
+	in	vào
+	Parametric Equalizer	Bộ cân bằng tham số
+	Graphic Equalizer (10 Bands)	Bộ cân bằng đồ họa (10 dải)
+	Graphic Equalizer (20 Bands)	Bộ cân bằng đồ họa (20 dải)
+	Graphic Equalizer (30 Bands)	Bộ cân bằng đồ họa (30 dải)
+	Multiband Compressor	Bộ nén đa dải
+	CFA4 encountered an error	CFA4 gặp lỗi
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Đã xảy ra lỗi khi vẽ cửa sổ. Dự án của bạn vẫn đang mở; hãy lưu lại cho an toàn.
+	Details: {path}	Chi tiết: {path}
+	Engine restarted	Engine đã khởi động lại
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Engine CFA4 dừng đột ngột và đã được khởi động lại. Các thay đổi chưa lưu được giữ trong nhật ký khôi phục; nó sẽ đề nghị khôi phục chúng.
+	 ({ch} output channels)	 ({ch} kênh đầu ra)
+	Appearance Mode	Chế độ giao diện
+	Auto-saves go to: {dir}	Bản tự động lưu được đặt tại: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	CFA4 để phần RAM còn lại cho các ứng dụng khác.
+	Currently: {loc} — {files} file(s), {size}	Hiện tại: {loc} — {files} tệp, {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	Khung hình đã giải mã được giữ cho màn hình và ảnh thu nhỏ: {used} trên {budget}.
+	Default location	Vị trí mặc định
+	Delete this preset	Xóa cài đặt sẵn này
+	Deleted preset “{active}”	Đã xóa cài đặt sẵn “{active}”
+	Deleted {n} file(s), {size}.	Đã xóa {n} tệp, {size}.
+	Export the labels to a preset file…	Xuất nhãn ra tệp cài đặt sẵn…
+	Font family	Họ phông chữ
+	Import a preset file…	Nhập tệp cài đặt sẵn…
+	Imported “{name}”	Đã nhập “{name}”
+	Label Color Presets	Cài đặt sẵn màu nhãn
+	Label Colors	Màu nhãn
+	Last auto-save {a}	Lần tự động lưu gần nhất {a}
+	Last auto-save {a} · last recovery copy {j}	Lần tự động lưu gần nhất {a} · bản khôi phục gần nhất {j}
+	Last recovery copy {j}	Bản khôi phục gần nhất {j}
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	Kênh trái chương trình → đầu ra thiết bị {l}, kênh phải → đầu ra thiết bị {r}{dev}. Các đầu ra vượt quá số kênh của thiết bị sẽ quay về 1 và 2.
+	Recovery copy: {dir}	Bản khôi phục: {dir}
+	Revert to the preset's colors and names	Quay về màu và tên của cài đặt sẵn
+	Show the presets folder	Hiện thư mục cài đặt sẵn
+	System Default	Mặc định hệ thống
+	not available in this session	không có trong phiên này
+	{name} (Modified)	{name} (Đã sửa)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	Độ tương phản màu dễ tiếp cận
+	Add tracks automatically when editing source clips onto the Timeline	Tự động thêm rãnh khi đưa clip nguồn lên dòng thời gian
+	All lines	Mọi dòng
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	Cho phép công cụ Chọn chọn cắt tỉa lăn và dồn mà không cần phím bổ trợ
+	Allow current tool to change trim type of previously selected edit point	Cho phép công cụ hiện tại đổi kiểu cắt tỉa của điểm cắt đã chọn trước đó
+	Allow duplicate media during project import	Cho phép phương tiện trùng khi nhập dự án
+	Always import embedded CEA-708 closed captions with wide aspect.	Luôn nhập phụ đề CEA-708 nhúng với tỷ lệ khung rộng.
+	Always override audio tags	Luôn ghi đè thẻ âm thanh
+	Analyze all imported media to search for visuals or audio	Phân tích mọi phương tiện đã nhập để tìm theo hình ảnh hoặc âm thanh
+	Animate zoom, scrolling and menus	Tạo hiệu ứng động cho thu phóng, cuộn và menu
+	Appearance…	Giao diện…
+	At Startup	Khi khởi động
+	At playback end, return to beginning when restarting playback	Khi phát đến cuối, quay về đầu khi phát lại
+	Attempt to force hardware to document sample rate	Cố ép phần cứng theo tần số lấy mẫu của tài liệu
+	Audio Hardware	Phần cứng âm thanh
+	Audio Hardware…	Phần cứng âm thanh…
+	Audio Time Units	Đơn vị thời gian âm thanh
+	Audio Transition Default Duration	Thời lượng mặc định của chuyển cảnh âm thanh
+	Audio…	Âm thanh…
+	Auto (system)	Tự động (hệ thống)
+	Auto Save	Tự động lưu
+	Auto Save also saves the current project(s)	Tự động lưu cũng lưu (các) dự án hiện tại
+	Auto Save…	Tự động lưu…
+	Auto-tag audio types in the timeline	Tự động gắn thẻ loại âm thanh trên dòng thời gian
+	Auto-transcribe all imported clips	Tự động chép lời mọi clip đã nhập
+	Auto-transcribe only clips in sequences	Chỉ tự động chép lời clip trong chuỗi
+	Automatch Time	Thời gian tự động khớp
+	Automatically Hide Dependent Clips	Tự động ẩn clip phụ thuộc
+	Automatically Save Every	Tự động lưu mỗi
+	Automatically delete cache files older than	Tự động xóa tệp bộ nhớ đệm cũ hơn
+	Automatically delete oldest cache files when cache exceeds	Tự động xóa tệp bộ nhớ đệm cũ nhất khi bộ nhớ đệm vượt quá
+	Automatically refresh growing files	Tự động làm mới tệp đang tăng
+	Automatically resume playback for growing files in Source Monitor	Tự động tiếp tục phát tệp đang tăng trong màn hình Nguồn
+	Automatically save projects	Tự động lưu dự án
+	Automatically transcribe clips	Tự động chép lời clip
+	Automation Keyframe Optimization	Tối ưu hóa khung hình chính tự động hóa
+	Background fill	Tô nền
+	Bevel join	Nối vát
+	Bins	Thư mục
+	Butt cap	Đầu phẳng
+	Cache analysis results for re-use	Lưu kết quả phân tích vào bộ nhớ đệm để dùng lại
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	Các thay đổi được sao chép ngầm ngay sau mỗi lần sửa. Nếu CFA4 thoát đột ngột, chúng sẽ được đề nghị khôi phục ở lần khởi động sau.
+	Chinese	Tiếng Trung
+	Closed Captions	Phụ đề ẩn
+	Color Theme	Chủ đề màu
+	Crash Recovery	Khôi phục sau sự cố
+	Create folder for imported projects	Tạo thư mục cho dự án đã nhập
+	Default Audio Tracks	Rãnh âm thanh mặc định
+	Default Emoji font	Phông emoji mặc định
+	Default Input	Đầu vào mặc định
+	Default Media Scaling	Co giãn phương tiện mặc định
+	Default Output	Đầu ra mặc định
+	Default closed caption font	Phông phụ đề ẩn mặc định
+	Default language	Ngôn ngữ mặc định
+	Default paragraph direction	Hướng đoạn văn mặc định
+	Default subtitle and text font	Phông phụ đề và văn bản mặc định
+	Delete files older than	Xóa tệp cũ hơn
+	Delete oldest files when the cache exceeds	Xóa tệp cũ nhất khi bộ nhớ đệm vượt quá
+	Delete…	Xóa…
+	Device Class	Loại thiết bị
+	Disable video output when in the background	Tắt đầu ra video khi chạy nền
+	Display Color Management	Quản lý màu hiển thị
+	Display Color Settings	Cài đặt màu hiển thị
+	Display out of sync indicators for unlinked clips	Hiện chỉ báo lệch đồng bộ cho clip không liên kết
+	Do not delete cache files automatically	Không tự động xóa tệp bộ nhớ đệm
+	Don't label speakers	Không gắn nhãn người nói
+	Double-click	Nhấp đúp
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	Giải mã nháp ở độ phân giải phát thấp (H.264: nhanh hơn, một số khung hình ít được lọc hơn)
+	Dynamic Link	Dynamic Link
+	Enable Mercury Transmit	Bật Mercury Transmit
+	Enable ProRes hardware accelerated encoding, if available	Bật mã hóa ProRes tăng tốc phần cứng, nếu có
+	Enable clip and XMP metadata linking	Bật liên kết siêu dữ liệu clip và XMP
+	Enable developer mode	Bật chế độ nhà phát triển
+	Enable hardware accelerated decoding (requires restart)	Bật giải mã tăng tốc phần cứng (cần khởi động lại)
+	Enable language auto-detection	Bật tự động nhận diện ngôn ngữ
+	Enable proxies	Bật proxy
+	English	Tiếng Anh
+	Extended Dynamic Range Monitoring	Giám sát dải động mở rộng
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	Để chỉnh tham số quản lý màu, hãy vào thẻ Cài đặt trong bảng Lumetri Color.
+	Frame Count	Số khung hình
+	Frame cache for monitors and thumbnails	Bộ nhớ đệm khung hình cho màn hình và ảnh thu nhỏ
+	Front + LFE	Trước + LFE
+	Front + Rear	Trước + sau
+	Front + Rear + LFE	Trước + sau + LFE
+	Front Only	Chỉ phía trước
+	Generate Timecode	Tạo mã thời gian
+	Generate waveforms and conform audio using multithreading	Tạo dạng sóng và chuẩn hóa âm thanh bằng đa luồng
+	Generate waveforms automatically during import	Tự động tạo dạng sóng khi nhập
+	Graphics…	Đồ họa…
+	Growing Files	Tệp đang tăng
+	HDR Graphics White (Nits)	Trắng đồ họa HDR (nit)
+	Hardware decoding	Giải mã phần cứng
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Giải mã phần cứng: Tự động dùng bộ giải mã video của hệ thống (VA-API hoặc NVDEC cho H.264 và HEVC) với các luồng nó hỗ trợ, và bộ giải mã riêng của CFA4 cho mọi thứ khác hoặc khi phần cứng gặp lỗi. Phương tiện đã mở sẽ giữ bộ giải mã của nó cho đến khi được mở lại.
+	Highlight Color	Màu tô sáng
+	Hindi	Tiếng Hindi
+	Hindi digits	Chữ số Hindi
+	I/O Buffer Size	Kích thước bộ đệm I/O
+	Import numbered stills as image sequences	Nhập ảnh tĩnh được đánh số thành chuỗi ảnh
+	In the Media Cache	Trong bộ nhớ đệm phương tiện
+	In the project	Trong dự án
+	Include captions on import	Bao gồm phụ đề khi nhập
+	Indeterminate Media Timebase	Cơ sở thời gian phương tiện không xác định
+	Keep a recovery copy of unsaved changes	Giữ bản khôi phục cho thay đổi chưa lưu
+	Label Defaults	Nhãn mặc định
+	Label speakers	Gắn nhãn người nói
+	Labels…	Nhãn…
+	Large Trim Offset	Độ lệch cắt tỉa lớn
+	Large Volume Adjustment	Điều chỉnh âm lượng lớn
+	Left channel to device output	Kênh trái tới đầu ra thiết bị
+	Left to right	Trái sang phải
+	Linear keyframe thinning	Giảm khung hình chính tuyến tính
+	Local Projects	Dự án cục bộ
+	Maintain pitch while shuttling	Giữ cao độ khi tua
+	Match frame sets in point	Khớp khung hình đặt điểm vào
+	Maximum Project Versions	Số phiên bản dự án tối đa
+	Media	Phương tiện
+	Media Analysis	Phân tích phương tiện
+	Media Analysis & Transcription	Phân tích phương tiện và chép lời
+	Media Analysis & Transcription…	Phân tích phương tiện và chép lời…
+	Media Cache	Bộ nhớ đệm phương tiện
+	Media Cache Database	Cơ sở dữ liệu bộ nhớ đệm phương tiện
+	Media Cache Files	Tệp bộ nhớ đệm phương tiện
+	Media Cache Management	Quản lý bộ nhớ đệm phương tiện
+	Media Cache…	Bộ nhớ đệm phương tiện…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	Kết quả phân tích phương tiện và bản chép lời sẽ được lưu trong thư mục bộ nhớ đệm phương tiện. Không cần phân tích lại nếu phương tiện được nhập vào một dự án khác trên máy tính này.
+	Memory	Bộ nhớ
+	Memory…	Bộ nhớ…
+	Minimum time	Thời gian tối thiểu
+	Minimum time interval thinning	Giảm theo khoảng thời gian tối thiểu
+	Missing font replacement	Thay thế phông chữ bị thiếu
+	Miter join	Nối nhọn
+	Miter limit	Giới hạn nối nhọn
+	Mono Media	Phương tiện mono
+	Monospace only	Chỉ phông đơn cách
+	Movie (audio and video)	Phim (âm thanh và video)
+	Multichannel Mono Media	Phương tiện mono đa kênh
+	Mute input during timeline recording	Tắt tiếng đầu vào khi ghi trên dòng thời gian
+	Next to original media files	Cạnh tệp phương tiện gốc
+	No Scroll	Không cuộn
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Chưa cài plugin nào. Thay đổi sẽ có hiệu lực ở lần khởi động CFA4 tiếp theo.
+	Open Most Recent	Mở dự án gần nhất
+	Open in new window	Mở trong cửa sổ mới
+	Open in place	Mở tại chỗ
+	Open new tab	Mở thẻ mới
+	Output Mapping	Ánh xạ đầu ra
+	Page Scroll	Cuộn theo trang
+	Pause Media Encoder queue during playback	Tạm dừng hàng đợi Media Encoder khi phát
+	Per line	Theo dòng
+	Place files dropped onto the Timeline directly on the Timeline	Đặt tệp thả vào dòng thời gian trực tiếp lên dòng thời gian
+	Play after rendering previews	Phát sau khi kết xuất bản xem trước
+	Play audio while scrubbing in Source and Program Monitors	Phát âm thanh khi tua trong màn hình Nguồn và Chương trình
+	Playback	Phát lại
+	Playback…	Phát lại…
+	Playhead position determines trim monitor loop playback	Vị trí đầu phát quyết định cách phát lặp trên màn hình cắt tỉa
+	Plugins	Plugin
+	Plugins…	Plugin…
+	Policy	Chính sách
+	Projecting cap	Đầu vuông nhô
+	Projects	Dự án
+	RAM reserved for other applications	RAM dành cho ứng dụng khác
+	Refresh growing Files Every	Làm mới tệp đang tăng mỗi
+	Render Edit in Audition files to:	Kết xuất tệp Edit in Audition vào:
+	Render audio when rendering video	Kết xuất âm thanh khi kết xuất video
+	Restore open sequences when opening projects	Khôi phục chuỗi đang mở khi mở dự án
+	Right channel to device output	Kênh phải tới đầu ra thiết bị
+	Right to left	Phải sang trái
+	Ripple trim adds edits to keep both sides of trim in sync	Cắt tỉa dồn thêm điểm cắt để giữ hai phía cắt tỉa đồng bộ
+	Round cap	Đầu tròn
+	Round join	Nối tròn
+	Sample Rate	Tần số lấy mẫu
+	Save .cfa and .pek media cache files next to original media files when possible	Lưu tệp bộ nhớ đệm .cfa và .pek cạnh tệp phương tiện gốc khi có thể
+	Scale to frame size	Co giãn theo kích thước khung hình
+	Scratch disk location for Captured Audio	Vị trí đĩa tạm cho âm thanh ghi được
+	Set focus on the Timeline when performing Insert/Overwrite edits	Chuyển tiêu điểm vào dòng thời gian khi chèn/ghi đè
+	Set to frame size	Đặt theo kích thước khung hình
+	Shift clips that overlap trim point during ripple trimming	Dời các clip chồng lên điểm cắt tỉa khi cắt tỉa dồn
+	Show "Project:" and "Bin:" in Project panel tab	Hiện "Dự án:" và "Thư mục:" trên thẻ bảng Dự án
+	Show Clip Mismatch Warning dialog	Hiện hộp thoại cảnh báo clip không khớp
+	Show Event Indicator	Hiện chỉ báo sự kiện
+	Show Home	Hiện màn hình chính
+	Show Mask Tracker Preview	Hiện bản xem trước theo dõi mặt nạ
+	Show Open Dialog	Hiện hộp thoại Mở
+	Show Project Load Error Dialog	Hiện hộp thoại lỗi tải dự án
+	Show Rich Tool Tips	Hiện chú giải công cụ chi tiết
+	Show Workspace Reset Warning dialog on double click	Hiện hộp thoại cảnh báo đặt lại không gian làm việc khi nhấp đúp
+	Show system compatibility issues at startup	Hiện vấn đề tương thích hệ thống khi khởi động
+	Smooth Scroll	Cuộn mượt
+	Snap playhead in Timeline when Snap is enabled	Bắt dính đầu phát trên dòng thời gian khi bật bắt dính
+	Speaker Labeling	Gắn nhãn người nói
+	Speech model	Mô hình giọng nói
+	Start at 0	Bắt đầu từ 0
+	Start at 1	Bắt đầu từ 1
+	Start with an Empty Project	Bắt đầu với dự án trống
+	Step forward/back many	Tiến/lùi nhiều
+	Stereo Media	Phương tiện stereo
+	Still	Ảnh tĩnh
+	Still Image Default Duration	Thời lượng mặc định của ảnh tĩnh
+	Stroke line cap	Đầu nét
+	Stroke line join	Nối nét
+	Sum multichannel outputs to mono in Source Monitor	Gộp đầu ra đa kênh thành mono trong màn hình Nguồn
+	System Language	Ngôn ngữ hệ thống
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	Bộ nhớ đệm phương tiện chứa bản xem trước kết xuất của dự án chưa lưu và các tệp khác mà CFA4 có thể tạo lại. Xóa chúng luôn an toàn; CFA4 sẽ tạo lại khi cần.
+	Timecode Conversion	Chuyển đổi mã thời gian
+	Timeline Mouse Scrolling	Cuộn chuột trên dòng thời gian
+	Timeline Playback Auto-Scrolling	Tự động cuộn dòng thời gian khi phát
+	Timeline…	Dòng thời gian…
+	Transcription	Chép lời
+	Transcription preferences	Tùy chọn chép lời
+	Trim	Cắt tỉa
+	Trim…	Cắt tỉa…
+	UI Scale	Tỷ lệ giao diện
+	Update it at least every	Cập nhật ít nhất mỗi
+	Update timeline dynamically during ripple edits.	Cập nhật dòng thời gian liên tục khi sửa dồn.
+	Use File	Dùng tệp
+	Use Media Source	Dùng nguồn phương tiện
+	Validate Content Credentials on import	Xác thực Content Credentials khi nhập
+	Video Transition Default Duration	Thời lượng mặc định của chuyển cảnh video
+	When Opening a Project	Khi mở dự án
+	Whisper base (balanced)	Whisper base (cân bằng)
+	Whisper small (most accurate)	Whisper small (chính xác nhất)
+	Whisper tiny (fastest)	Whisper tiny (nhanh nhất)
+	Write XMP ID to files on import	Ghi XMP ID vào tệp khi nhập
+	Write clip markers to XMP	Ghi điểm đánh dấu clip vào XMP
+	days	ngày
+	milliseconds	mili giây
+	minute(s)	phút
+	second(s)	giây
+	seconds	giây
+	 seconds	 giây
+	Channel {n}	Kênh {n}
+	Countdown Sound Cues	Âm báo đếm ngược
+	Discard take	Bỏ bản ghi
+	Discard the active take	Bỏ bản ghi hiện tại
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	Phát lại bắt đầu từ phần trước đầu phát (hoặc điểm vào); khi đã đặt điểm vào/ra, việc ghi sẽ tự bắt đầu và kết thúc tại đó.
+	Post-roll	Phần sau
+	Post-roll:	Phần sau:
+	Pre-roll:	Phần trước:
+	Qt Multimedia is not available	Không có Qt Multimedia
+	Record (voice-over on the record-enabled track)	Ghi (lời bình trên rãnh đã bật ghi)
+	Recording voice-over…	Đang ghi lời bình…
+	Source:	Nguồn:
+	Stop Voice-over Recording	Dừng ghi lời bình
+	The audio input could not be started	Không thể khởi động đầu vào âm thanh
+	The audio input does not support a usable format	Đầu vào âm thanh không hỗ trợ định dạng dùng được
+	The voice-over input buffer is full: the take ends here	Bộ đệm đầu vào lời bình đã đầy: bản ghi kết thúc tại đây
+	There is no audio input device	Không có thiết bị đầu vào âm thanh
+	Voice-Over Record Settings	Cài đặt ghi lời bình
+	Voice-Over Record Settings…	Cài đặt ghi lời bình…
+	Voice-over input: {error}	Đầu vào lời bình: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Ghi lời bình (nhấp chuột phải: Cài đặt ghi lời bình…)
+	Voice-over recorded: {p}	Đã ghi lời bình: {p}
+	Voice-over recording stopped (nothing recorded)	Đã dừng ghi lời bình (không ghi được gì)
+	Voice-over take discarded	Đã bỏ bản ghi lời bình
+	 frames	 khung hình
+	All Cameras	Mọi camera
+	Auto-Adjust Multi-Camera Playback Quality	Tự động điều chỉnh chất lượng phát đa camera
+	Camera 1	Camera 1
+	Camera Angle Metadata	Siêu dữ liệu góc máy
+	Camera Names	Tên camera
+	Camera {n} — {name}	Camera {n} — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	Camera hiện trong chế độ xem đa camera (bỏ chọn để ẩn).
+	Clip Marker	Điểm đánh dấu clip
+	Clip Name:	Tên clip:
+	Clip Names	Tên clip
+	Create Multi-Camera Source Sequence	Tạo chuỗi nguồn đa camera
+	Edit Cameras	Sửa camera
+	Edit Cameras…	Sửa camera…
+	Enumerate Cameras	Đánh số camera
+	Ignore Hours	Bỏ qua giờ
+	In Points	Điểm vào
+	Merge Clips	Hợp nhất clip
+	Merged clip created	Đã tạo clip hợp nhất
+	Move source clips to Processed Clips bin	Chuyển clip nguồn vào thư mục Clip đã xử lý
+	Multi-Camera Audio Follows Video	Âm thanh đa camera theo video
+	Multi-Camera Layout	Bố cục đa camera
+	Multi-Camera Record	Ghi đa camera
+	Multi-Camera Record On/Off (0)	Bật/tắt ghi đa camera (0)
+	Multi-Camera Record On/Off Toggle	Bật/tắt ghi đa camera
+	Multi-Camera Record off	Ghi đa camera tắt
+	Multi-Camera Record on	Ghi đa camera bật
+	Multi-Camera Selection Top Down	Chọn đa camera từ trên xuống
+	Multi-Camera View	Chế độ xem đa camera
+	Multi-camera source sequence with {n} camera(s)	Chuỗi nguồn đa camera với {n} camera
+	No multi-camera clip at the playhead	Không có clip đa camera tại đầu phát
+	Offset Audio by:	Dời âm thanh:
+	Out Points	Điểm ra
+	Record	Ghi
+	Recorded {n} multi-camera cut(s)	Đã ghi {n} điểm cắt đa camera
+	Reference track:	Rãnh tham chiếu:
+	Remove Audio from AV Clip	Gỡ âm thanh khỏi clip AV
+	Sequence Name:	Tên chuỗi:
+	Show Multi-Camera Preview Monitor	Hiện màn hình xem trước đa camera
+	Switch Audio	Chuyển âm thanh
+	Synchronize Clips	Đồng bộ clip
+	Synchronize Point	Điểm đồng bộ
+	Synchronized {n} clip group(s)	Đã đồng bộ {n} nhóm clip
+	Transmit Multi-Camera View	Truyền chế độ xem đa camera
+	first marker	điểm đánh dấu đầu tiên
+	lowest (V1…)	thấp nhất (V1…)
+	no multi-camera clip at the playhead	không có clip đa camera tại đầu phát
+	{first} - Merged	{first} - Hợp nhất
+	{first} Multicam	{first} Đa camera
+	{n} clip(s) selected; the clip on the reference track stays put.	Đã chọn {n} clip; clip trên rãnh tham chiếu giữ nguyên vị trí.
+	{n} clip(s): {names}	{n} clip: {names}
+	Current duration {seconds} s	Thời lượng hiện tại {seconds} s
+	Fewer · More	Ít hơn · Nhiều hơn
+	Remix Properties	Thuộc tính Remix
+	Remixed to {seconds} s	Đã remix thành {seconds} s
+	Segments:	Đoạn:
+	Target Duration:	Thời lượng mục tiêu:
+	Variations:	Biến thể:
+	the selected clip is not remixed	clip đã chọn chưa được remix
+	After installing, restart CFA4.	Sau khi cài đặt, hãy khởi động lại CFA4.
+	Available, switched off	Có sẵn, đang tắt
+	Left out by the routing table	Bị bảng định tuyến loại ra
+	CFA4 engine	Engine CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Engine riêng của CFA4 mở mọi tệp nó có thể. Các backend bổ sung dưới đây chỉ tiếp quản, theo thứ tự này, những tệp mà engine chưa mở được. Tắt một backend chỉ ảnh hưởng đến các tệp được mở sau đó.
+	Capabilities	Khả năng
+	Copy command	Sao chép lệnh
+	H.264 software encoding (x264)	Mã hóa phần mềm H.264 (x264)
+	HEVC software encoding (x265)	Mã hóa phần mềm HEVC (x265)
+	In use	Đang dùng
+	Licence	Giấy phép
+	Media Backends	Backend phương tiện
+	Media Backends…	Backend phương tiện…
+	Not available	Không có
+	Not part of this build	Không có trong bản dựng này
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Bộ giải mã và mã hóa Rust riêng: luôn được dùng trước tiên, và là phương án dự phòng khi một backend bổ sung gặp lỗi
+	Restricted Codecs…	Codec bị hạn chế…
+	Restricted codecs	Codec bị hạn chế
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Một số codec là phần mềm tự do nhưng triển khai các định dạng có bằng sáng chế. Giống Ubuntu, CFA4 không cài chúng mặc định: gói cơ bản vẫn hoạt động mà không cần chúng, và bạn quyết định có cài hay không. Việc sử dụng chúng có thể bị hạn chế ở một số quốc gia; hãy kiểm tra xem nơi bạn ở có cho phép không.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Bộ giải mã bổ sung cho các định dạng mà engine riêng chưa đọc được (phương tiện camera 10 bit và 4:2:2, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Bộ giải mã bổ sung từ GStreamer của hệ thống (Ogg Theora, FLV, WMV và các định dạng khác); LGPL, từ kho của Ubuntu
+	The engine did not answer: {message}	Engine không phản hồi: {message}
+	To install them: {command}	Để cài đặt: {command}
+	Use this backend	Dùng backend này
+	installed	đã cài
+	not installed	chưa cài
+	on	bật
+	 (removed from {list})	 (đã gỡ khỏi {list})
+	 and 	 và 
+	Add another shortcut	Thêm phím tắt khác
+	Application shortcuts work whatever panel has focus	Phím tắt ứng dụng hoạt động bất kể bảng nào đang có tiêu điểm
+	Assign {key} to {command}	Gán {key} cho {command}
+	Cleared {n} shortcut(s) of {command}	Đã xóa {n} phím tắt của {command}
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Nhấp vào ô Phím tắt của một lệnh và nhấn phím để gán; + thêm một phím tắt khác.
+	Click a key on the keyboard to see its shortcuts	Nhấp vào một phím trên bàn phím để xem phím tắt của nó
+	Click and press keys to assign	Nhấp và nhấn phím để gán
+	Conflict: {key} is assigned to {commands} ({ctx})	Xung đột: {key} đã được gán cho {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Xuất: chưa chọn tệp (agent: shortcuts.export {path})
+	Import: no file chosen (agents: shortcuts.import {path})	Nhập: chưa chọn tệp (agent: shortcuts.import {path})
+	Key:	Phím:
+	Keyboard: US	Bàn phím: US
+	Loaded “{name}”	Đã tải “{name}”
+	Modifier held / selected	Phím bổ trợ đang giữ / đã chọn
+	Modifiers	Phím bổ trợ
+	My Shortcuts	Phím tắt của tôi
+	Nothing is assigned to this key	Phím này chưa được gán gì
+	Panel shortcuts override application shortcuts while that panel has focus	Phím tắt bảng ghi đè phím tắt ứng dụng khi bảng đó có tiêu điểm
+	Save preset as:	Lưu cài đặt sẵn thành:
+	Saved preset “{name}”	Đã lưu cài đặt sẵn “{name}”
+	Search commands or keys	Tìm lệnh hoặc phím
+	Selected: {command}	Đã chọn: {command}
+	Type a shortcut… (Esc cancels)	Nhập phím tắt… (Esc để hủy)
+	{active} (modified)	{active} (đã sửa)
+	{key} can't be used as a shortcut	Không thể dùng {key} làm phím tắt
+	{panel} Panel	Bảng {panel}
+	Docking Action	Thao tác neo
+	Undock Panel	Tách bảng
+	Restore Workspace	Khôi phục không gian làm việc
+	Add Guide…	Thêm đường căn…
+	Guide Templates	Mẫu đường căn
+	Manage Guides	Quản lý đường căn
+	Manage Guides…	Quản lý đường căn…
+	No saved guide templates.	Không có mẫu đường căn đã lưu.
+	Reference  {tc}	Tham chiếu  {tc}
+	Reference: next frame	Tham chiếu: khung hình tiếp theo
+	Reference: previous frame	Tham chiếu: khung hình trước
+	Save Guides as Template	Lưu đường căn thành mẫu
+	Save Guides as Template…	Lưu đường căn thành mẫu…
+	Saved guide template “{name}”	Đã lưu mẫu đường căn “{name}”
+	Set Comparison Reference	Đặt tham chiếu so sánh
+	Set the reference to the playhead	Đặt tham chiếu tại đầu phát
+	Snap in Program Monitor	Bắt dính trong màn hình Chương trình
+	The template needs a name.	Mẫu cần có tên.
+	There are no guides to save.	Không có đường căn nào để lưu.
+	Join Through Edits	Nối điểm cắt liền mạch
+	Replace With Clip From Source Monitor	Thay bằng clip từ màn hình Nguồn
+	Reveal Nested Sequence	Hiện chuỗi lồng
+	Reveal in Project	Hiện trong dự án
+	Unlink	Bỏ liên kết
+	Apply Default Transitions	Áp dụng chuyển cảnh mặc định
+	Ripple Trim In	Cắt tỉa dồn đầu vào
+	Ripple Trim Out	Cắt tỉa dồn đầu ra
+	Roll Edit	Sửa lăn
+	Trim In	Cắt tỉa đầu vào
+	Trim Out	Cắt tỉa đầu ra
+	Expand All Tracks	Mở rộng mọi rãnh
+	Minimize All Tracks	Thu nhỏ mọi rãnh
+	Increase Video Tracks Height	Tăng chiều cao rãnh video
+	Decrease Video Tracks Height	Giảm chiều cao rãnh video
+	Increase Audio Tracks Height	Tăng chiều cao rãnh âm thanh
+	Decrease Audio Tracks Height	Giảm chiều cao rãnh âm thanh
+	Drag to change the track height	Kéo để đổi chiều cao rãnh
+	Head	Đầu
+	Head and Tail	Đầu và cuối
+	Continuous	Liên tục
+	Show Video Thumbnails	Hiện ảnh thu nhỏ video
+	Show Audio Waveform	Hiện dạng sóng âm thanh
+	Timeline Display Settings	Cài đặt hiển thị dòng thời gian
+	Snap in Timeline (S)	Bắt dính trên dòng thời gian (S)
+	Caption track options	Tùy chọn rãnh phụ đề
+	Insert and overwrite sequences as nests or individual clips	Chèn và ghi đè chuỗi dưới dạng chuỗi lồng hoặc từng clip
+	Close Other Timeline Panels	Đóng các bảng dòng thời gian khác
+	Show Keyframes	Hiện khung hình chính
+	Clip Keyframes	Khung hình chính của clip
+	Track Keyframes	Khung hình chính của rãnh
+	Send {n} Level	Mức nhánh gửi {n}
+	Delete Caption Track	Xóa rãnh phụ đề
+	Delete Empty Caption Tracks	Xóa rãnh phụ đề trống
+	Toggle Caption Track Lock	Bật/tắt khóa rãnh phụ đề
+	Toggle Caption Track Output	Bật/tắt đầu ra rãnh phụ đề
+	Drag In point	Kéo điểm vào
+	Drag Out point	Kéo điểm ra
+	Move marked range	Di chuyển khoảng đã đánh dấu
+	Auto Tone Map Media (HDR and log into SDR)	Tự động ánh xạ tông màu phương tiện (HDR và log sang SDR)
+	CFA4 always composites in linear light	CFA4 luôn kết hợp hình ảnh trong ánh sáng tuyến tính
+	Captured View:	Góc nhìn ghi:
+	Channel Format:	Định dạng kênh:
+	Composite in Linear Color	Kết hợp trong màu tuyến tính
+	Configure…	Cấu hình…
+	Custom ({ratio})	Tùy chỉnh ({ratio})
+	Display Format:	Định dạng hiển thị:
+	Editing Mode:	Chế độ dựng:
+	Frame Size:	Kích thước khung hình:
+	Maximum Bit Depth	Độ sâu bit tối đa
+	Maximum Render Quality	Chất lượng kết xuất tối đa
+	Milliseconds	Mili giây
+	Monoscopic	Đơn thị
+	New Sequence	Chuỗi mới
+	No Fields (Progressive Scan)	Không có trường (quét liên tục)
+	Not supported in CFA4 yet	CFA4 chưa hỗ trợ
+	Number of Channels:	Số kênh:
+	Pixel Aspect Ratio:	Tỷ lệ điểm ảnh:
+	Preview File Format:	Định dạng tệp xem trước:
+	Projection:	Phép chiếu:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Tần số lấy mẫu:
+	Scale motion effects proportionally when changing frame size	Co giãn hiệu ứng chuyển động theo tỷ lệ khi đổi kích thước khung hình
+	Sequence Settings	Cài đặt chuỗi
+	Square Pixels (1.0)	Điểm ảnh vuông (1.0)
+	Timebase:	Cơ sở thời gian:
+	Tracks	Rãnh
+	VR Properties	Thuộc tính VR
+	Video Previews	Xem trước video
+	Wide gamut color (composite in BT.2020)	Màu gam rộng (kết hợp trong BT.2020)
+	Working Color Space:	Không gian màu làm việc:
+	horizontal	ngang
+	no sequence is open	không có chuỗi nào đang mở
+	tracks	rãnh
+	vertical	dọc
+	{rate} fps Drop-Frame Timecode	Mã thời gian drop-frame {rate} fps
+	{rate} fps Non Drop-Frame Timecode	Mã thời gian non drop-frame {rate} fps
+	{rate} fps Timecode	Mã thời gian {rate} fps
+	{rate} frames/second	{rate} khung hình/giây
+	Always Deinterlace	Luôn khử xen kẽ
+	Audio Attributes	Thuộc tính âm thanh
+	Ch. {n}	Kênh {n}
+	Clip Channel Format:	Định dạng kênh clip:
+	Clip Speed / Duration	Tốc độ / thời lượng clip
+	Clip {n}	Clip {n}
+	Contains:	Chứa:
+	Edit Subclip	Sửa clip con
+	End:	Kết thúc:
+	Field Options	Tùy chọn trường
+	File Name:	Tên tệp:
+	Flicker Removal	Khử nhấp nháy
+	Frame Hold Options	Tùy chọn giữ khung hình
+	Frame Rate:	Tốc độ khung hình:
+	Hold Filters	Giữ bộ lọc
+	Hold On	Giữ tại
+	In Point	Điểm vào
+	Make Subclip	Tạo clip con
+	Media Source Channels	Kênh nguồn phương tiện
+	Media Start:	Đầu phương tiện:
+	Modify Clip: Audio Channels	Sửa clip: Kênh âm thanh
+	Modify Clip: Timecode	Sửa clip: Mã thời gian
+	Nested Sequence Name	Tên chuỗi lồng
+	New Offline File	Tệp ngoại tuyến mới
+	No effects	Không có hiệu ứng
+	Number of Audio Clips:	Số clip âm thanh:
+	Out Point	Điểm ra
+	Paste Attributes	Dán thuộc tính
+	Playhead	Đầu phát
+	Processing Options	Tùy chọn xử lý
+	Remove Attributes	Gỡ thuộc tính
+	Restrict Trims To Subclip Boundaries	Giới hạn cắt tỉa trong biên clip con
+	Reverse Field Dominance	Đảo trường ưu tiên
+	Reverse Speed	Phát ngược
+	Ripple Edit, Shifting Trailing Clips	Sửa dồn, dời các clip phía sau
+	Scale Attribute Times	Co giãn thời gian thuộc tính
+	Sequence Time	Thời gian chuỗi
+	Set Timecode:	Đặt mã thời gian:
+	Source Timecode	Mã thời gian nguồn
+	Source channels the selected audio clips play:	Kênh nguồn mà clip âm thanh đã chọn phát:
+	Speed:	Tốc độ:
+	Start:	Bắt đầu:
+	Subclip: {name}	Clip con: {name}
+	Tape Name:	Tên băng:
+	Timecode:	Mã thời gian:
+	Use the file's timecode	Dùng mã thời gian của tệp
+	Video Attributes	Thuộc tính video
+	no dialog	không có hộp thoại
+	Action Safe Area	Vùng an toàn hành động
+	Action and Title Safe Areas	Vùng an toàn hành động và tiêu đề
+	Action:	Hành động:
+	Analyze	Phân tích
+	Apply Default Audio Transition	Áp dụng chuyển cảnh âm thanh mặc định
+	Apply Default Video Transition	Áp dụng chuyển cảnh video mặc định
+	Apply a cut at each detected cut point	Cắt tại mỗi điểm cắt phát hiện được
+	At Unnumbered Markers	Tại điểm đánh dấu không đánh số
+	Audio Only	Chỉ âm thanh
+	Audio Previews:	Xem trước âm thanh:
+	Audio analysis:	Phân tích âm thanh:
+	Audio effects	Hiệu ứng âm thanh
+	Audio on track {t}	Âm thanh trên rãnh {t}
+	Automate To Sequence	Tự động đưa vào chuỗi
+	Average Data Rate	Tốc độ dữ liệu trung bình
+	Capture	Ghi hình
+	Capture Format:	Định dạng ghi hình:
+	Captured and Generated:	Đã ghi và đã tạo:
+	Case Sensitive	Phân biệt chữ hoa thường
+	Clip Names and Markers	Tên clip và điểm đánh dấu
+	Clip Overlap:	Chồng lấn clip:
+	Clips	Clip
+	Codec: {codec}	Codec: {codec}
+	Color Matte Color	Màu nền màu
+	Comments:	Bình luận:
+	Copy and Create Proxies	Sao chép và tạo proxy
+	Create Proxies	Tạo proxy
+	Create Search Bin	Tạo thư mục tìm kiếm
+	Create a bin of subclips from each detected cut point	Tạo một thư mục clip con từ mỗi điểm cắt phát hiện được
+	Create a clip marker at each detected cut point	Tạo điểm đánh dấu clip tại mỗi điểm cắt phát hiện được
+	Disabled clips	Clip bị tắt
+	Edit Offline File	Sửa tệp ngoại tuyến
+	Empty tracks	Rãnh trống
+	Existing XMP files written by other applications are left unchanged.	Các tệp XMP hiện có do ứng dụng khác ghi sẽ được giữ nguyên.
+	File Size	Kích thước tệp
+	Find in:	Tìm trong:
+	Flash Cue Marker	Điểm đánh dấu Flash Cue
+	Frames per Still:	Số khung hình mỗi ảnh tĩnh:
+	Gaps	Khoảng trống
+	Ignore Audio	Bỏ qua âm thanh
+	Ignore Options	Tùy chọn bỏ qua
+	Ignore Video	Bỏ qua video
+	Ingest Settings	Cài đặt tiếp nhận
+	Insert Edit	Chèn
+	Log Note:	Ghi chú nhật ký:
+	Match {n} of {total}	Kết quả {n} trên {total}
+	Match:	Khớp:
+	Media Name:	Tên phương tiện:
+	Move clips to the lowest track possible	Chuyển clip xuống rãnh thấp nhất có thể
+	New Color Matte	Nền màu mới
+	Next to the media	Cạnh phương tiện
+	Normalize Mix Track	Chuẩn hóa rãnh trộn
+	Normalize Mix Track to:	Chuẩn hóa rãnh trộn về:
+	Ordering:	Thứ tự:
+	Overwrite Edit	Ghi đè
+	Path: {path}	Đường dẫn: {path}
+	Placement:	Vị trí đặt:
+	Project Auto Save:	Tự động lưu dự án:
+	Recognize when different speakers are talking	Nhận biết khi những người nói khác nhau đang nói
+	Renderer:	Trình kết xuất:
+	Same as Project	Giống dự án
+	Saved template {path}	Đã lưu mẫu {path}
+	Scene Edit Detection	Phát hiện điểm cắt cảnh
+	Scene Edit Detection: analysing in the background (see Progress)	Phát hiện điểm cắt cảnh: đang phân tích ngầm (xem Tiến trình)
+	Scene:	Cảnh:
+	Search:	Tìm:
+	Selection Order	Thứ tự chọn
+	Sensitivity:	Độ nhạy:
+	Sequentially	Tuần tự
+	Shot/Take:	Cú máy/Lần quay:
+	Simplify Sequence	Đơn giản hóa chuỗi
+	Sort Order	Thứ tự sắp xếp
+	Source Settings	Cài đặt nguồn
+	Template Name:	Tên mẫu:
+	Text (graphics and captions)	Văn bản (đồ họa và phụ đề)
+	Title Safe Area	Vùng an toàn tiêu đề
+	To {name}	Tới {name}
+	Total Duration	Tổng thời lượng
+	Transcode	Chuyển mã
+	Transcribe Sequence	Chép lời chuỗi
+	Transitions	Chuyển cảnh
+	Update Metadata	Cập nhật siêu dữ liệu
+	Video Only	Chỉ video
+	Video Previews:	Xem trước video:
+	Video Rendering and Playback	Kết xuất và phát video
+	Video and Audio	Video và âm thanh
+	Video effects	Hiệu ứng video
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	Ghi siêu dữ liệu của clip đã chọn ({n}) vào tệp XMP cạnh phương tiện của chúng?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} kênh
+	Constant quantiser	Lượng tử hóa không đổi
+	Container	Định dạng chứa
+	 (unavailable)	 (không có)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Định dạng chứa
+	Decoders	Bộ giải mã
+	Dynamic Audio Waveforms	Dạng sóng âm thanh động
+	Export formats	Định dạng xuất
+	Reveal Log Files…	Hiện tệp nhật ký…
+	Session log: {path}	Nhật ký phiên: {path}
+	System Compatibility Report	Báo cáo tương thích hệ thống
+	System Compatibility Report…	Báo cáo tương thích hệ thống…
+	not available now	hiện không có
+	{name} Selection.fcproj	{name} Vùng chọn.fcproj
+	Auto tone map media (HDR and log into SDR)	Tự động ánh xạ tông màu phương tiện (HDR và log sang SDR)
+	Sequence Color Management	Quản lý màu chuỗi
+	Working Color Space	Không gian màu làm việc
+	Align Timecode	Căn mã thời gian
+	All media is online.	Mọi phương tiện đều trực tuyến.
+	Clip ID (fingerprint)	ID clip (dấu vân tay)
+	Clip Name	Tên clip
+	Collect Files and Copy to New Location	Thu thập tệp và sao chép đến vị trí mới
+	Consolidate and Transcode	Gộp và chuyển mã
+	Creating {n} proxy file(s)…	Đang tạo {n} tệp proxy…
+	Destination Path	Đường dẫn đích
+	Disk space: original {original} · resulting {result} ({n} files)	Dung lượng đĩa: gốc {original} · kết quả {result} ({n} tệp)
+	Disk space: —	Dung lượng đĩa: —
+	Exact name matches only	Chỉ khớp chính xác tên
+	Exclude Unused Clips	Loại trừ clip không dùng
+	Format and size	Định dạng và kích thước
+	Frame Size / Rate	Kích thước / tốc độ khung hình
+	Include Handles:	Bao gồm phần thừa:
+	Include Preview Files	Bao gồm tệp xem trước
+	Include Proxies	Bao gồm proxy
+	Link Media	Liên kết phương tiện
+	Linked {n} clip(s)	Đã liên kết {n} clip
+	Locate…	Định vị…
+	Make Offline	Chuyển sang ngoại tuyến
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	Chuyển {n} clip đã chọn sang ngoại tuyến. Các clip sẽ hiện bảng ngoại tuyến cho đến khi bạn liên kết lại.
+	Match file properties:	Khớp thuộc tính tệp:
+	Media files are deleted	Tệp phương tiện bị xóa
+	Media files remain on disk	Tệp phương tiện vẫn còn trên đĩa
+	Next to the original media, in a Proxies folder	Cạnh phương tiện gốc, trong thư mục Proxies
+	No candidates yet — Search a folder or Locate the file.	Chưa có ứng viên — Tìm trong một thư mục hoặc định vị tệp.
+	Nothing found with that name.	Không tìm thấy gì với tên đó.
+	Offline	Ngoại tuyến
+	Offline All	Ngoại tuyến tất cả
+	Project Manager	Trình quản lý dự án
+	Project Manager: writing {path}	Trình quản lý dự án: đang ghi {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	Proxy được tạo ngầm và tự gắn khi xong. Khi xuất luôn dùng phương tiện độ phân giải đầy đủ.
+	Relink others automatically	Tự động liên kết lại các mục khác
+	Resulting Project	Dự án kết quả
+	Search in:	Tìm trong:
+	Sequences	Chuỗi
+	select a clip in the Project panel	chọn một clip trong bảng Dự án
+	{name} (copy)	{name} (bản sao)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} clip không tìm thấy phương tiện. Hãy định vị chúng, tìm trong một thư mục, hoặc để ngoại tuyến.
+	{n} clip(s) selected.	Đã chọn {n} clip.
+	✔ matches	✔ khớp
+	✔ same file	✔ cùng tệp
+	✖ different file	✖ tệp khác
+	AAF Export Settings	Cài đặt xuất AAF
+	Audio File Format:	Định dạng tệp âm thanh:
+	Bits per Sample:	Số bit mỗi mẫu:
+	Breakout to mono	Tách thành mono
+	Depth:	Độ sâu:
+	Encapsulate	Đóng gói
+	Exported frame to {path}	Đã xuất khung hình ra {path}
+	Frame time: {timecode}	Thời điểm khung hình: {timecode}
+	Handle Frames:	Khung hình thừa:
+	Import into project	Nhập vào dự án
+	Keep existing file	Giữ tệp hiện có
+	Link to Media	Liên kết tới phương tiện
+	Mixdown video	Video trộn xuống
+	OMF Export Settings	Cài đặt xuất OMF
+	OMF Title:	Tiêu đề OMF:
+	Render audio clip effects	Kết xuất hiệu ứng clip âm thanh
+	Separate Audio	Âm thanh riêng
+	Separate Files	Tệp riêng
+	This file already exists: {path}	Tệp này đã tồn tại: {path}
+	Trim audio files	Cắt tỉa tệp âm thanh
+	{bits} Bit	{bits} bit
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Báo cáo điểm đánh dấu (CSV)
+	DCP (Digital Cinema Package)	DCP (Gói điện ảnh kỹ thuật số)
+	Digital Cinema	Điện ảnh kỹ thuật số
+	DCP resolution	Độ phân giải DCP
+	DCP container	Khung chứa DCP
+	Content kind	Loại nội dung
+	Output folder	Thư mục đầu ra
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1.85:1)
+	Scope (2.39:1)	Scope (2.39:1)
+	Full container (1.90:1)	Toàn khung chứa (1.90:1)
+	Feature	Phim truyện
+	Trailer	Trailer
+	Teaser	Teaser
+	Short	Phim ngắn
+	Advertisement	Quảng cáo
+	Test	Thử nghiệm
+	Transitional	Chuyển tiếp
+	Rating	Phân loại
+	Public service announcement	Thông báo dịch vụ công
+	Off (5.1 only)	Tắt (chỉ 5.1)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Bed IAB từ bản trộn (7.1 DS, 9.1OH từ 7.1.2)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB từ tệp (IAB MXF, .iab hoặc Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab hoặc Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	Không: chỉ đồng bộ FSK (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: IAB đã kết xuất (không phải ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: bản trộn dòng thời gian (không phải ST 429-19)
+	Main sound channels 1-6	Kênh âm thanh chính 1-6
+	Immersive audio	Âm thanh nhập vai
+	IAB source	Nguồn IAB
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Bản trộn 7.1.2 trở thành bed 9.1OH, bản trộn 7.1 thành bed 7.1 DS, mọi bản trộn khác thành bed 7.1 DS từ bản 5.1 của nó (IAB Profile 1); kênh 14 của âm thanh chính mang tín hiệu đồng bộ FSK.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Chọn tệp rãnh IAB (IMF hoặc DCP), luồng IAB thô, hoặc Dolby Atmos TrueHD: luồng .thd hoặc tệp MKV, MP4 hay M2TS có rãnh Atmos.
+	Reading the IAB source…	Đang đọc nguồn IAB…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} khung hình, {fps} fps, {rate} Hz; tối đa {beds} kênh bed và {objects} đối tượng
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; tối đa {beds} kênh bed và {objects} đối tượng, được chuyển thành đối tượng IAB
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Một số khung hình được mã hóa lại cho DCP (DLC, 24 bit).
+	Beyond IAB Profile 1: {notes}	Vượt quá IAB Profile 1: {notes}
+	Not a usable IAB source: {error}	Không phải nguồn IAB dùng được: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	Thư mục SMPTE DCP: JPEG 2000 1998×1080 (1.85:1), PCM 5.1 24 bit 48 kHz
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	Thư mục SMPTE DCP: JPEG 2000 2048×858 (2.39:1), PCM 5.1 24 bit 48 kHz
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Thư mục SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bit 48 kHz
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Thư mục SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bit 48 kHz
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	B pictures	Ảnh B
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV Transport Stream (.m2ts, âm thanh AAC)
+	Chroma	Sắc độ
+	Elementary Stream (.m2v, no audio)	Elementary Stream (.m2v, không có âm thanh)
+	Key Frame Distance	Khoảng cách khung hình chính
+	None (I and P only)	Không (chỉ I và P)
+	Off (target bitrate)	Tắt (tốc độ bit mục tiêu)
+	Program Stream (.mpg, LPCM audio)	Program Stream (.mpg, âm thanh LPCM)
+	Transport Stream (.ts, AAC audio)	Transport Stream (.ts, âm thanh AAC)
+	Estimated file size: {size}	Kích thước tệp ước tính: {size}
+	File Name & Location	Tên tệp và vị trí
+	Quick Export	Xuất nhanh
+	Quick Export: open a sequence first	Xuất nhanh: hãy mở một chuỗi trước
+	Quick Export: {path}	Xuất nhanh: {path}
+	Export presets	Cài đặt sẵn xuất
+	Favorites only	Chỉ mục yêu thích
+	More presets…	Thêm cài đặt sẵn…
+	Preset Manager	Trình quản lý cài đặt sẵn
+	Save current settings as:	Lưu cài đặt hiện tại thành:
+	Search presets	Tìm cài đặt sẵn
+	Show in the Preset menu	Hiện trong menu Cài đặt sẵn
+	User	Người dùng
+	Add Beat Markers	Thêm điểm đánh dấu nhịp
+	Clear Beat Markers	Xóa điểm đánh dấu nhịp
+	Clear Check Markers	Xóa điểm đánh dấu kiểm tra
+	Auto Reframe Sequence…	Tự động đóng khung lại chuỗi…
+	Batch Variants from Spreadsheet…	Tạo hàng loạt biến thể từ bảng tính…
+	Check Before Export…	Kiểm tra trước khi xuất…
+	Social Deliverables…	Bản giao cho mạng xã hội…
+	Social Safe Zones	Vùng an toàn mạng xã hội
+	Text Animator	Hoạt ảnh văn bản
+	Counter	Bộ đếm
+	Word by Word	Từng từ một
+	Animator	Hoạt ảnh
+	Animator Duration	Thời lượng hoạt ảnh
+	Animator Delay	Độ trễ hoạt ảnh
+	Spreadsheets	Bảng tính
+	{n} beat markers added ({bpm} BPM)	Đã thêm {n} điểm đánh dấu nhịp ({bpm} BPM)
+	Check Before Export: no problems found	Kiểm tra trước khi xuất: không có vấn đề
+	Check Before Export: {n} problems marked on the timeline (red markers)	Kiểm tra trước khi xuất: đã đánh dấu {n} vấn đề trên dòng thời gian (điểm đánh dấu đỏ)
+	{n} exports queued (the Export window shows the queue)	Đã xếp {n} bản xuất vào hàng đợi (cửa sổ Xuất hiển thị hàng đợi)
+	{n} variant sequences made, {q} exports queued	Đã tạo {n} chuỗi biến thể, xếp {q} bản xuất vào hàng đợi
+	no column for {names}	không có cột cho {names}
+	Film Scan 1	Quét phim 1
+	Film Scan 2	Quét phim 2
+	Film Scan 3	Quét phim 3
+	Include Alpha Channel	Bao gồm kênh alpha
+	ZIP (1 scan line)	ZIP (1 dòng quét)
+	ZIP (16 scan lines)	ZIP (16 dòng quét)
+	Bottom Center	Giữa dưới
+	Burn Captions Into Video	Ghi cứng phụ đề vào video
+	Center Left	Giữa trái
+	Center Right	Giữa phải
+	Create Sidecar File	Tạo tệp đi kèm
+	Export Options	Tùy chọn xuất
+	File Format	Định dạng tệp
+	Image Overlay	Lớp phủ ảnh
+	Loudness Normalization	Chuẩn hóa độ lớn
+	Luma Min / Max	Độ sáng tối thiểu / tối đa
+	Name Overlay	Lớp phủ tên
+	PNG or JPEG file	Tệp PNG hoặc JPEG
+	Size / Opacity	Kích thước / độ mờ đục
+	SubRip Subtitle (.srt)	Phụ đề SubRip (.srt)
+	Target Loudness	Độ lớn mục tiêu
+	Timecode Overlay	Lớp phủ mã thời gian
+	Top Center	Giữa trên
+	True Peak Limit	Giới hạn đỉnh thực
+	Video Limiter	Bộ giới hạn video
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Creator	Người tạo
+	Multiplexer	Bộ ghép kênh
+	Audio only	Chỉ âm thanh
+	Scale To Fill	Co giãn để lấp đầy
+	Scale To Fit	Co giãn cho vừa
+	Stretch To Fill	Kéo giãn để lấp đầy
+	Quick Export cancelled	Đã hủy xuất nhanh
+	0 fastest, 8 smallest	0 nhanh nhất, 8 nhỏ nhất
+	24 bit	24 bit
+	32 bit	32 bit
+	32 bit float	32 bit số thực
+	Anamorphic 2:1 (2.0)	Anamorphic 2:1 (2.0)
+	Aspect	Tỷ lệ khung
+	Composite on the GPU when available	Kết hợp hình ảnh trên GPU khi có
+	Compression Level	Mức nén
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0.9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1.0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1.5)
+	Field Order	Thứ tự trường
+	GPU Rendering	Kết xuất GPU
+	HD Anamorphic 1080 (1.333)	HD Anamorphic 1080 (1.333)
+	Lower First	Trường dưới trước
+	Match Source	Khớp với nguồn
+	Maximum Bitrate	Tốc độ bit tối đa
+	Quality (CRF)	Chất lượng (CRF)
+	Render at Maximum Depth	Kết xuất ở độ sâu tối đa
+	Sample Size	Kích thước mẫu
+	Upper First	Trường trên trước
+	Use Maximum Render Quality	Dùng chất lượng kết xuất tối đa
+	Browse files…	Duyệt tệp…
+	Movies, audio and stills from disk	Phim, âm thanh và ảnh tĩnh từ đĩa
+	Demo footage	Cảnh quay mẫu
+	Six procedural 1080p clips with sound	Sáu clip 1080p tạo theo thủ tục, có âm thanh
+	Demo project	Dự án mẫu
+	A cut sequence with transitions, effects and music	Một chuỗi đã dựng với chuyển cảnh, hiệu ứng và nhạc
+	Bars and Tone	Thanh màu và âm chuẩn
+	SMPTE HD bars with 1 kHz reference tone	Thanh màu SMPTE HD với âm chuẩn 1 kHz
+	CFA4 on GitHub	CFA4 trên GitHub
+	Report a CFA4 issue…	Báo lỗi CFA4…
+	CFA4 project links	Liên kết dự án CFA4
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	Thêm phương tiện vào dự án. Thả tệp vào bất kỳ đâu trong cửa sổ, hoặc chọn một nguồn bên dưới.
+	Shuttle Slow Left	Tua chậm sang trái
+	Shuttle Slow Right	Tua chậm sang phải
+	Play Around	Phát quanh
+	Out: {name}	Ra: {name}
+	In: {name}	Vào: {name}
+	(gap)	(khoảng trống)
+	Outgoing clip (drag to trim the Out point)	Clip đi ra (kéo để cắt tỉa điểm ra)
+	Incoming clip (drag to trim the In point)	Clip đi vào (kéo để cắt tỉa điểm vào)
+	Drag to roll the edit	Kéo để lăn điểm cắt
+	Play Around Edit (Space loops, Shift+K once)	Phát quanh điểm cắt (Space để lặp, Shift+K một lần)
+	Trim Backward Many	Cắt tỉa lùi nhiều
+	Trim Backward	Cắt tỉa lùi
+	Apply Default Transitions to Selection (Shift+D)	Áp dụng chuyển cảnh mặc định cho vùng chọn (Shift+D)
+	Trim Forward	Cắt tỉa tiến
+	Trim Forward Many	Cắt tỉa tiến nhiều
+	Exit Trim Mode	Thoát chế độ cắt tỉa
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	Đầu ra âm thanh lỗi: đang phát không có tiếng (kiểm tra Cài đặt ▸ Phần cứng âm thanh)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	Đầu ra âm thanh không phản hồi: đang phát không có tiếng (kiểm tra Cài đặt ▸ Phần cứng âm thanh)
+	Settings not taken	Cài đặt không được áp dụng
+	Encoder	Bộ mã hóa
+	Software, or hardware where available	Phần mềm, hoặc phần cứng nếu có
+	Main (8-bit; Main 10 for HDR sequences)	Main (8 bit; Main 10 cho chuỗi HDR)
+	Main 10 (10-bit, HDR)	Main 10 (10 bit, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bit; 10 bit cho chuỗi HDR)
+	Main (10-bit, HDR)	Main (10 bit, HDR)
+	FLAC stores whole-number samples only	FLAC chỉ lưu mẫu số nguyên
+	MXF export writes integer PCM only	Xuất MXF chỉ ghi PCM số nguyên
+	Not supported by CFA4's encoders yet	Bộ mã hóa của CFA4 chưa hỗ trợ
+	Overwrite with Current View	Ghi đè bằng chế độ xem hiện tại
+	Saves the view, columns, sort, thumbnail and font size.	Lưu chế độ xem, cột, cách sắp xếp, ảnh thu nhỏ và cỡ chữ.
+	Search fields	Trường tìm kiếm
+	{n}. (empty)	{n}. (trống)
+	No video	Không có video
+	No audio	Không có âm thanh
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 cho HDR
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 Profile
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main Profile 4:2:0
+	no B pictures	không có ảnh B
+	1 B picture between anchors	1 ảnh B giữa các ảnh neo
+	AV1 Main (10-bit for HDR)	AV1 Main (10 bit cho HDR)
+	10-bit RGB	RGB 10 bit
+	12-bit X'Y'Z'	X'Y'Z' 12 bit
+	16-bit half float	số thực nửa 16 bit
+	linear	tuyến tính
+	uncompressed	không nén
+	Animated GIF	GIF động
+	Waveform Audio	Âm thanh Waveform
+	AAC Audio	Âm thanh AAC
+	Opus Audio	Âm thanh Opus
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	đoạn MP4 phân mảnh
+	Program Stream	Program Stream
+	Transport Stream	Transport Stream
+	BDAV Transport Stream	BDAV Transport Stream
+	Elementary Stream	Elementary Stream
+	Image sequence	Chuỗi ảnh
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} fps
+	{profile} auto level	{profile} mức tự động
+	{n} pass	{n} lượt
+	CRF (constant quality) {crf}	CRF (chất lượng không đổi) {crf}
+	{v} Mbps	{v} Mbps
+	Target {v} Mbps	Mục tiêu {v} Mbps
+	Max {v} Mbps	Tối đa {v} Mbps
+	average {v} Mbps	trung bình {v} Mbps
+	CBR {v} Mbps	CBR {v} Mbps
+	VBR Target {v} Mbps	VBR mục tiêu {v} Mbps
+	keyframe every {n} frames	khung hình chính mỗi {n} khung hình
+	constant quantiser {q}	lượng tử hóa không đổi {q}
+	{n} B pictures between anchors	{n} ảnh B giữa các ảnh neo
+	quantizer {q}	lượng tử hóa {q}
+	quality {q}	chất lượng {q}
+	{word} compression	nén {word}
+	{sampling} {bits}-bit	{sampling} {bits} bit
+	FLAC (lossless) {bits}-bit	FLAC (không mất dữ liệu) {bits} bit
+	level {n}	mức {n}
+	Uncompressed {bits}-bit PCM	PCM {bits} bit không nén
+	Uncompressed {bits}-bit float PCM	PCM số thực {bits} bit không nén
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} s
+	{n} ch {rate} Hz	{n} kênh {rate} Hz
+	All Events	Mọi sự kiện
+	Warnings and Errors	Cảnh báo và lỗi
+	Errors Only	Chỉ lỗi
+	No events.	Không có sự kiện.
+	{n} s ago	{n} s trước
+	Caption Export Settings	Cài đặt xuất phụ đề
+	Export Captions	Xuất phụ đề
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} đã tồn tại nên không có gì được xuất. Để thay thế, hãy chọn nó trong hộp thoại lưu.
+	Delete Redoable Actions	Xóa thao tác có thể làm lại
+	Delete the dimmed actions after the current state? They cannot be redone.	Xóa các thao tác bị làm mờ sau trạng thái hiện tại? Chúng sẽ không thể làm lại.
+	Work Area Bar	Thanh vùng làm việc
+	Start: {tc}	Bắt đầu: {tc}
+	End: {tc}	Kết thúc: {tc}
+	Duration: {tc}	Thời lượng: {tc}
+	Show/Hide Tracks…	Hiện/Ẩn rãnh…
+	Move panel	Di chuyển bảng
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Nhấp để chọn, hoặc nhấp vào chỗ trống rồi kéo để chọn bằng khung. Dùng Shift, Alt và Ctrl cho các tùy chọn khác.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Nhấp để chọn mọi clip bên phải trên mọi rãnh. Shift-nhấp cho một rãnh.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Nhấp để chọn mọi clip bên trái trên mọi rãnh. Shift-nhấp cho một rãnh.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Kéo điểm cắt để cắt tỉa dồn; các clip phía sau di chuyển để không để lại khoảng trống.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Kéo điểm cắt để lăn: điểm ra của một clip và điểm vào của clip kế tiếp di chuyển cùng nhau.
+	Drag an edge to change the clip's speed so it fills the new duration.	Kéo một cạnh để đổi tốc độ clip cho vừa thời lượng mới.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Kéo cạnh của một clip nhạc để remix theo thời lượng mới tại các nhịp phù hợp về âm nhạc.
+	Click to split a clip. Shift-click to split all tracks.	Nhấp để tách clip. Shift-nhấp để tách mọi rãnh.
+	Drag a clip to slip its source in/out without moving it.	Kéo một clip để trượt điểm vào/ra nguồn mà không di chuyển nó.
+	Drag a clip to slide it between its neighbours.	Kéo một clip để trượt nó giữa các clip lân cận.
+	Drag to scroll the timeline.	Kéo để cuộn dòng thời gian.
+	Click to zoom in; Alt-click to zoom out.	Nhấp để phóng to; Alt-nhấp để thu nhỏ.
+	Exporting	Đang xuất
+	Grab bag	Linh tinh
+	No contributor data was built into this copy.	Bản này không kèm dữ liệu người đóng góp.
+	No model credits were built into this copy.	Bản này không kèm thông tin ghi công mô hình.
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Phông chữ: Inter, Noto Serif và JetBrains Mono (SIL OFL 1.1).
+	CFA4 was closed while “{name}” had unsaved changes.	CFA4 đã đóng khi “{name}” còn thay đổi chưa lưu.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	CFA4 thoát đột ngột khi “{name}” còn thay đổi chưa lưu.
+	Recover unsaved changes from {when}?	Khôi phục thay đổi chưa lưu từ {when}?
+	The project had not been saved yet.	Dự án chưa từng được lưu.
+	{n} sessions have unsaved changes:	{n} phiên có thay đổi chưa lưu:
+	Are you sure you want to discard your changes to '{file}'?	Bạn có chắc muốn bỏ các thay đổi của '{file}'?
+	the project has not been saved yet	dự án chưa được lưu
+	Export As Motion Graphics Template	Xuất thành mẫu đồ họa chuyển động
+	Editable properties:	Thuộc tính có thể sửa:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	Đã lưu thành mẫu đồ họa CFA4 (.fcgt) trong thư mục mẫu của bạn.
+	My Templates	Mẫu của tôi
+	{n} Font	Phông {n}
+	{n} Size	Kích thước {n}
+	{n} Color	Màu {n}
+	{n} Position	Vị trí {n}
+	Show {n}	Hiện {n}
+	Exported graphics template to {path}	Đã xuất mẫu đồ họa ra {path}
+	Replace Fonts in Projects	Thay phông chữ trong dự án
+	Fonts used in the project:	Phông chữ dùng trong dự án:
+	{f} (missing)	{f} (bị thiếu)
+	with:	bằng:
+	Replaced {n} font uses	Đã thay {n} lần dùng phông
+	Track Color	Màu rãnh
+	Unrendered: should play back in real time	Chưa kết xuất: có thể phát thời gian thực
+	Unrendered: render to play back in real time	Chưa kết xuất: cần kết xuất để phát thời gian thực
+	Rendered preview	Bản xem trước đã kết xuất
+	Transparency Grid	Lưới trong suốt
+	Show Duplicate Frame Markers	Hiện điểm đánh dấu khung hình trùng
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Điểm vào/ra của chuỗi chỉ dài 1 khung hình. Chọn Toàn bộ chuỗi để xuất cả chuỗi.
+	more tabs	thêm thẻ
+	Set Work Area Bar In Point	Đặt điểm vào của thanh vùng làm việc
+	Set Work Area Bar Out Point	Đặt điểm ra của thanh vùng làm việc
+	Delete Clips	Xóa clip
+	Destinations	Đích
+	Analyzing the clip…	Đang phân tích clip…
+	At GOP boundaries (no re-encoding)	Tại biên GOP (không mã hóa lại)
+	Bit-exact copy	Bản sao chính xác từng bit
+	Choose the output file.	Chọn tệp đầu ra.
+	Compatible copy	Bản sao tương thích
+	Copy:	Sao chép:
+	Cut:	Cắt:
+	Frame accurate (re-encode the boundaries)	Chính xác khung hình (mã hóa lại phần biên)
+	Open a video clip in the Source monitor first.	Hãy mở một clip video trong màn hình Nguồn trước.
+	Smart Cut Source	Cắt thông minh nguồn
+	Smart Cut Source…	Cắt thông minh nguồn…
+	Smart Cut is not available for this clip: {why}	Không thể cắt thông minh clip này: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Đã ghi và xác minh bản cắt thông minh: {path} ({frames} khung hình)
+	The cut cannot run.	Không thể thực hiện cắt.
+	The engine sent no analysis.	Engine không gửi kết quả phân tích.
+	Writing and verifying the cut…	Đang ghi và xác minh bản cắt…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} trong {container}: {gops} GOP, {points} điểm cắt sạch
+	{copied} frames copied, {reencoded} frames re-encoded	Đã sao chép {copied} khung hình, mã hóa lại {reencoded} khung hình
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} khung hình ở phần biên sẽ được mã hóa lại. Tiếp tục?
+	Show GOP Boundaries	Hiện biên GOP
+	Export mode	Chế độ xuất
+	Full Render	Kết xuất toàn bộ
+	Planning…	Đang lập kế hoạch…
+	Recommended: Smart Render (asks before re-encoding)	Khuyến nghị: Kết xuất thông minh (hỏi trước khi mã hóa lại)
+	Recommended: Stream Copy (nothing is re-encoded)	Khuyến nghị: Sao chép luồng (không mã hóa lại gì)
+	Rendered because of: {causes}	Được kết xuất vì: {causes}
+	Smart Export	Xuất thông minh
+	Smart Export written and verified: {path}	Đã ghi và xác minh bản xuất thông minh: {path}
+	Smart Render	Kết xuất thông minh
+	Stream Copy – Bit-exact	Sao chép luồng – chính xác từng bit
+	Stream Copy – Compatible	Sao chép luồng – tương thích
+	Stream copy is not possible: {frames} frames need re-encoding.	Không thể sao chép luồng: {frames} khung hình cần mã hóa lại.
+	The export cannot run.	Không thể thực hiện xuất.
+	Wait for the export plan.	Hãy chờ kế hoạch xuất.
+	Writing and verifying the export…	Đang ghi và xác minh bản xuất…
+	colour conversion	chuyển đổi màu
+	compositing	kết hợp hình ảnh
+	copied	đã sao chép
+	effects	hiệu ứng
+	frame rate	tốc độ khung hình
+	proxies or nested sequences	proxy hoặc chuỗi lồng
+	re-encoded at a cut	mã hóa lại tại điểm cắt
+	rendered	đã kết xuất
+	sources that cannot be copied	nguồn không thể sao chép
+	speed changes	thay đổi tốc độ
+	titles or overlays	tiêu đề hoặc lớp phủ
+	transforms	biến đổi
+	transitions	chuyển cảnh
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Đã sao chép {copied} khung hình, mã hóa lại {reencoded} tại điểm cắt, kết xuất {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	{frames} khung hình sẽ được mã hóa lại hoặc kết xuất. Tiếp tục?
+	CFA4 Help…	Trợ giúp CFA4…
+	Learning	Học tập
+	Refresh Changed Media	Làm mới phương tiện đã thay đổi
+	{name} - Edited	{name} - Đã sửa
+	Audio Gain	Độ lợi âm thanh
+	Set Gain to:	Đặt độ lợi thành:
+	Adjust Gain by:	Điều chỉnh độ lợi thêm:
+	Normalize Max Peak to:	Chuẩn hóa đỉnh tối đa về:
+	Normalize All Peaks to:	Chuẩn hóa mọi đỉnh về:
+	Peak Amplitude: {peak}	Biên độ đỉnh: {peak}
+	Add Tracks	Thêm rãnh
+	Placement	Vị trí đặt
+	Track type	Loại rãnh
+	Add video tracks	Thêm rãnh video
+	Add audio tracks	Thêm rãnh âm thanh
+	Add audio submix tracks	Thêm rãnh trộn phụ âm thanh
+	After {name}	Sau {name}
+	Before First Track	Trước rãnh đầu tiên
+	Delete Tracks	Xóa rãnh
+	Video Tracks	Rãnh video
+	Audio Tracks	Rãnh âm thanh
+	Delete Video Tracks	Xóa rãnh video
+	Delete Audio Tracks	Xóa rãnh âm thanh
+	All Empty Tracks	Mọi rãnh trống
+	Caption Tracks	Rãnh phụ đề
+	Delete Caption Tracks	Xóa rãnh phụ đề
+	Report an issue	Báo lỗi
+	Rendering:	Kết xuất:
+	UI:	Giao diện:
+	{fps} fps · {n} frames queued	{fps} fps · {n} khung hình đang chờ
+	Maximize Frame	Phóng to khung
+	Restore Frame	Khôi phục khung
+	Reveal Sequence in Project	Hiện chuỗi trong dự án
+	Video Thumbnails	Ảnh thu nhỏ video
+	Audio Waveforms	Dạng sóng âm thanh
+	Untitled Workspace	Không gian làm việc chưa đặt tên
+	Show durations	Hiện thời lượng
+	Project Metadata	Siêu dữ liệu dự án
+	Add Property…	Thêm thuộc tính…
+	Column order	Thứ tự cột
+	Graphics text search arrives with M10.1–M10.2	Tìm văn bản trong đồ họa sẽ có từ M10.1–M10.2
+	(no clips)	(không có clip)
+	Export Frame (Shift+E)	Xuất khung hình (Shift+E)
+	Export Frame: use Export mode (M6)	Xuất khung hình: dùng chế độ Xuất (M6)
+	Save changes to “{project_name}” before closing?	Lưu thay đổi của “{project_name}” trước khi đóng?
+	A file dialog is already open	Một hộp thoại tệp đang mở
+	Timeline: (no sequences)	Dòng thời gian: (không có chuỗi)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Nhấp trong màn hình Chương trình để đặt điểm mặt nạ (kéo để tạo đường cong); nhấp vào điểm đầu tiên hoặc nhấn Enter để khép lại
+	Composite	Tổng hợp
+	Comparison	So sánh
+	Video and Waveform	Video và dạng sóng
+	Remove Media Cache Files	Gỡ tệp bộ nhớ đệm phương tiện
+	Eyedropper: no picture to sample	Ống hút màu: không có hình để lấy mẫu
+	Select a clip to grade	Chọn một clip để chỉnh màu
+	   Opacity	   Độ mờ đục
+	   Size	   Kích thước
+	   Corner Radius	   Bán kính góc
+	   Angle	   Góc
+	   Distance	   Khoảng cách
+	   Blur	   Làm mờ
+	   Template: {name}	   Mẫu: {name}
+	CFA4 Graphics Template	Mẫu đồ họa CFA4
+	  (none)	  (không có)
+	Select items to clear	Chọn mục cần xóa
+	Media missing	Thiếu phương tiện
+	Unreadable	Không đọc được
+	✓ Enable	✓ Bật
+	(RGB) Gamma	(RGB) Gamma
+	(RGB) Input Black Level	(RGB) Mức đen đầu vào
+	(RGB) Input White Level	(RGB) Mức trắng đầu vào
+	(RGB) Output Black Level	(RGB) Mức đen đầu ra
+	(RGB) Output White Level	(RGB) Mức trắng đầu ra
+	10 Bit Black Point	Điểm đen 10 bit
+	10 Bit White Point	Điểm trắng 10 bit
+	105mm Prime	Ống kính một tiêu cự 105mm
+	29.97 fps Drop-Frame	29,97 fps drop-frame
+	29.97 fps Non Drop-Frame	29,97 fps non drop-frame
+	35mm Prime	Ống kính một tiêu cự 35mm
+	3D Roll	Lăn 3D
+	3D Rotate	Xoay 3D
+	3D Spin	Quay 3D
+	3D Spinback	Quay ngược 3D
+	4-Color Gradient	Dải chuyển 4 màu
+	5.1 Media	Phương tiện 5.1
+	5.1 Mixdown Type	Kiểu trộn xuống 5.1
+	50-300mm Zoom	Ống kính zoom 50-300mm
+	59.94 fps Drop-Frame	59,94 fps drop-frame
+	59.94 fps Non Drop-Frame	59,94 fps non drop-frame
+	ASC CDL	ASC CDL
+	Action-Safe Margin	Lề an toàn hành động
+	Additional Scale	Tỷ lệ bổ sung
+	Additive Dissolve	Hòa tan cộng
+	Additive Dissolve (Legacy)	Hòa tan cộng (cũ)
+	Aggressive	Mạnh
+	Alpha Adjust	Điều chỉnh alpha
+	Alpha Blurriness	Độ mờ alpha
+	Alpha Channel	Kênh alpha
+	Alpha Glow	Phát sáng alpha
+	Ambience Intensity	Cường độ ánh sáng môi trường
+	Ambience Light Color	Màu ánh sáng môi trường
+	Amount of Noise	Lượng nhiễu
+	Amount to Decolor	Mức khử màu
+	Amount to Tint	Mức nhuộm màu
+	Amplifier	Bộ khuếch đại
+	Amplify	Khuếch đại
+	Amplitude	Biên độ
+	Analog	Tương tự
+	Analog Delay	Trễ tương tự
+	Anamorphic	Anamorphic
+	Anchor	Neo
+	Anti-aliasing Quality	Chất lượng khử răng cưa
+	Antialiasing for Best Quality	Khử răng cưa cho chất lượng tốt nhất
+	Asymmetry	Bất đối xứng
+	Audio Duration	Thời lượng âm thanh
+	Audio In Point	Điểm vào âm thanh
+	Audio Out Point	Điểm ra âm thanh
+	Audio Usage	Sử dụng âm thanh
+	Auto Align	Tự động căn chỉnh
+	Auto Reframe	Tự động đóng khung lại
+	Automatic Click Remover	Tự động khử tiếng tách
+	Background Corner Radius	Bán kính góc nền
+	Background Opacity	Độ mờ đục nền
+	Background Size	Kích thước nền
+	Band 1	Dải 1
+	Band 2	Dải 2
+	Band 3	Dải 3
+	Band 4	Dải 4
+	Band 5	Dải 5
+	Band Pass	Thông dải
+	Band Slide	Trượt dải
+	Band Stop	Chặn dải
+	Bandpass	Thông dải
+	Barn Doors	Cửa chuồng
+	Basic 3D	3D cơ bản
+	Bass	Âm trầm
+	Behind	Phía sau
+	Bessel	Bessel
+	Bevel Alpha	Vát alpha
+	Binauralizer - Ambisonics	Binauralizer - Ambisonics
+	Black Input Level	Mức đen đầu vào
+	Black and white with crushed blacks and strong contrast	Đen trắng với vùng đen sâu và tương phản mạnh
+	Bleach-bypass style: desaturated with hard contrast	Kiểu bỏ tẩy: giảm bão hòa với tương phản gắt
+	Blend	Hòa trộn
+	Blend With Original	Hòa trộn với bản gốc
+	Block Dissolve	Hòa tan khối
+	Block Height	Chiều cao khối
+	Block Motion	Chuyển động khối
+	Block Size	Kích thước khối
+	Block Width	Chiều rộng khối
+	Blue Blurriness	Độ mờ kênh xanh dương
+	Blue Curve	Đường cong xanh dương
+	Blue Offset	Độ lệch xanh dương
+	Blue Power	Lũy thừa xanh dương
+	Blue Slope	Độ dốc xanh dương
+	Blue-Blue	Xanh dương-Xanh dương
+	Blue-Const	Xanh dương-Hằng số
+	Blue-Green	Xanh dương-Xanh lục
+	Blue-Red	Xanh dương-Đỏ
+	Blur Amount	Mức làm mờ
+	Blur Dimensions	Chiều làm mờ
+	Blur Dissolve	Hòa tan mờ
+	Blur Layer	Lớp làm mờ
+	Blur Length	Độ dài làm mờ
+	Blurriness	Độ mờ
+	Bokeh Blur	Làm mờ bokeh
+	Boost	Tăng cường
+	Border Color	Màu viền
+	Border Width	Độ rộng viền
+	Bounce	Nảy
+	Branching	Phân nhánh
+	Brightness & Contrast	Độ sáng và tương phản
+	British Stack	Xếp chồng kiểu Anh
+	Brush Hardness	Độ cứng cọ
+	Brush Opacity	Độ mờ đục cọ
+	Brush Position	Vị trí cọ
+	Brush Spacing (secs)	Khoảng cách cọ (giây)
+	Bubbles	Bong bóng
+	Bulge Smoother	Làm mượt chỗ phình
+	Bump Height	Chiều cao gồ
+	Burn Alpha	Đốt alpha
+	Burn Chroma	Đốt sắc độ
+	Burn Color	Đốt màu
+	Butterworth	Butterworth
+	Camera Blur	Mờ camera
+	Camera Shake	Rung camera
+	Capitalisation	Viết hoa
+	Cathedral	Thánh đường
+	Cell Pattern	Mẫu ô
+	Center Channel Pan	Vị trí âm kênh giữa
+	Center Gradient	Dải chuyển giữa
+	Center Input	Đầu vào giữa
+	Center Out	Từ giữa ra
+	Center Point (Latitude)	Điểm giữa (vĩ độ)
+	Center Point (Longitude)	Điểm giữa (kinh độ)
+	Center Split	Tách giữa
+	Center of Sphere	Tâm hình cầu
+	Cents	Cent
+	Change to Color	Đổi sang màu
+	Channel Blur	Làm mờ kênh
+	Channel Mix	Trộn kênh
+	Chaos	Hỗn loạn
+	Chebyshev	Chebyshev
+	Checker Wipe	Quét ô cờ
+	Checkerboard	Bàn cờ
+	Choke	Thu hẹp
+	Chorus	Chorus
+	Chorus/Flanger	Chorus/Flanger
+	Chroma Leak	Rò sắc độ
+	Chromatic Aberration (Blue)	Quang sai màu (xanh dương)
+	Chromatic Aberration (Green)	Quang sai màu (xanh lục)
+	Chromatic Aberration (Red)	Quang sai màu (đỏ)
+	Cineon Converter	Bộ chuyển đổi Cineon
+	Clean Combo	Combo sạch
+	Clip Level	Mức cắt
+	Clipping	Cắt ngọn
+	Clock Wipe	Quét kim đồng hồ
+	Clock Wipe (Legacy)	Quét kim đồng hồ (cũ)
+	Clockwise	Theo chiều kim đồng hồ
+	Color & Alpha	Màu và alpha
+	Color 1	Màu 1
+	Color 2	Màu 2
+	Color 3	Màu 3
+	Color 4	Màu 4
+	Color Channel	Kênh màu
+	Color Distortion	Méo màu
+	Color Emboss	Chạm nổi màu
+	Color Key	Tách nền theo màu
+	Color Pass	Giữ màu
+	Color Replace	Thay màu
+	Color To Leave	Màu cần giữ
+	Color Tolerance	Dung sai màu
+	Complexity	Độ phức tạp
+	Composite In Back	Kết hợp phía sau
+	Composite In Front	Kết hợp phía trước
+	Composite Using	Kết hợp bằng
+	Composite on Original	Kết hợp lên bản gốc
+	Compound Blur	Làm mờ phức hợp
+	Compression Before Clipping	Nén trước khi cắt ngọn
+	Constant Gain	Độ lợi không đổi
+	Constant Power	Công suất không đổi
+	Conversion Type	Kiểu chuyển đổi
+	Convolution Reverb	Vang tích chập
+	Cool, desaturated and punchy	Lạnh, giảm bão hòa và mạnh mẽ
+	Core Width	Độ rộng lõi
+	Corner Pin	Ghim góc
+	Count	Số lượng
+	Counter-clockwise	Ngược chiều kim đồng hồ
+	Crop Less <-> Smooth More	Cắt ít hơn <-> Mượt hơn
+	Cross Displacement	Dịch chuyển chéo
+	Cross Dissolve	Hòa tan chéo
+	Cross Dissolve (Legacy)	Hòa tan chéo (cũ)
+	Cross Zoom	Thu phóng chéo
+	Cross Zoom (Legacy)	Thu phóng chéo (cũ)
+	Crossovers	Điểm phân tần
+	Crystals	Tinh thể
+	Cube Spin	Xoay khối lập phương
+	Curl Radius	Bán kính cuộn
+	Cursor	Con trỏ
+	Custom Color	Màu tùy chỉnh
+	Cutoff	Tần số cắt
+	Cyan-teal shadows and warm highlights with a little more contrast	Vùng tối xanh lơ-mòng két và vùng sáng ấm với tương phản cao hơn một chút
+	Cycle (in Revolutions)	Chu kỳ (theo vòng)
+	Cycle Evolution	Tiến hóa theo chu kỳ
+	Damping	Giảm chấn
+	Damping HF	Giảm chấn tần số cao
+	Damping LF	Giảm chấn tần số thấp
+	Day for night: darker, cooler and less saturated	Ngày thành đêm: tối hơn, lạnh hơn và ít bão hòa hơn
+	DeEsser	Khử âm xì
+	DeHummer	Khử ù
+	DeNoise	Khử nhiễu
+	DeReverb	Khử vang
+	Decay	Suy giảm
+	Decay Time (RT60)	Thời gian suy giảm (RT60)
+	Delay	Trễ
+	Delay 1	Trễ 1
+	Delay 2	Trễ 2
+	Delay 3	Trễ 3
+	Delay 4	Trễ 4
+	Detail Amplitude	Biên độ chi tiết
+	Detail Level	Mức chi tiết
+	Detailed Analysis	Phân tích chi tiết
+	Dip to Black	Chuyển qua đen
+	Dip to Black (Legacy)	Chuyển qua đen (cũ)
+	Dip to Color	Chuyển qua màu
+	Dip to White	Chuyển qua trắng
+	Dip to White (Legacy)	Chuyển qua trắng (cũ)
+	Directional	Có hướng
+	Directional Blur	Làm mờ có hướng
+	Directional Blur (Legacy)	Làm mờ có hướng (cũ)
+	Disperse	Phân tán
+	Displacement	Dịch chuyển
+	Dissolve Blocks	Hòa tan khối
+	Distance to Image	Khoảng cách tới ảnh
+	Distortion Complexity	Độ phức tạp méo
+	Distortion Rate	Tốc độ méo
+	Distortion Type	Kiểu méo
+	Drive	Mức kích
+	Dry	Khô
+	Dry Out	Đầu ra khô
+	Dynamics Processing	Xử lý động
+	Early Reflections	Phản xạ sớm
+	Earthquake	Động đất
+	Ease In and Out	Chậm dần vào và ra
+	Easing	Chuyển động mềm
+	Echo	Tiếng vọng
+	Echo Glow	Phát sáng vọng
+	Echo Operator	Toán tử vọng
+	Echo Time (seconds)	Thời gian vọng (giây)
+	Echoes	Số lần vọng
+	Edge Color	Màu cạnh
+	Edge Feather	Làm mềm cạnh
+	Edge Glow	Phát sáng cạnh
+	Edge Sharpness	Độ sắc cạnh
+	Edge Softness	Độ mềm cạnh
+	Edge Thin	Làm mỏng cạnh
+	Edge Threshold	Ngưỡng cạnh
+	Edge Type	Kiểu cạnh
+	Elliptical	Elip
+	Enable HSL Secondary	Bật HSL thứ cấp
+	End Color	Màu kết thúc
+	End Point	Điểm kết thúc
+	End of Ramp	Cuối dải chuyển
+	Evolution	Tiến hóa
+	Evolution Options	Tùy chọn tiến hóa
+	Exciter Amount	Mức kích thích
+	Exciter Mode	Chế độ kích thích
+	Exponential Fade	Mờ dần theo hàm mũ
+	FFT Filter	Bộ lọc FFT
+	Fade	Mờ dần
+	Fade Out	Mờ dần ra
+	Falloff	Độ suy giảm
+	Faster Motion	Chuyển động nhanh hơn
+	Feedback	Phản hồi
+	Feedback 1	Phản hồi 1
+	Feedback 2	Phản hồi 2
+	Feedback 3	Phản hồi 3
+	Feedback 4	Phản hồi 4
+	Female	Nữ
+	Fill Background	Tô nền
+	Fill Color	Màu tô
+	Fill Left with Right	Lấp trái bằng phải
+	Fill Point	Điểm tô
+	Fill Right with Left	Lấp phải bằng trái
+	Fill Selector	Bộ chọn tô
+	Film Dissolve	Hòa tan phim
+	Film Dissolve (Legacy)	Hòa tan phim (cũ)
+	Film Roll	Cuộn phim
+	Filter Frequency	Tần số bộ lọc
+	Filter Resonance	Cộng hưởng bộ lọc
+	Final Delay	Trễ cuối
+	Find Edges	Tìm cạnh
+	Flanger	Flanger
+	Flare	Lóe sáng
+	Flare Brightness	Độ sáng lóe
+	Flare Center	Tâm lóe
+	Flare Color	Màu lóe
+	Flicker	Nhấp nháy
+	Flickers	Nhấp nháy
+	Flip Motion	Chuyển động lật
+	Flip Over	Lật qua
+	Focus Blur	Mờ tiêu điểm
+	Focus Point	Điểm lấy nét
+	Focus Shape	Hình tiêu điểm
+	Focus Size	Kích thước tiêu điểm
+	Fold Motion	Chuyển động gập
+	Foldback	Gập ngược
+	Fractal Influence	Ảnh hưởng fractal
+	Fractal Type	Kiểu fractal
+	Frame	Khung hình
+	Frame Color	Màu khung
+	Frame Layout	Bố cục khung
+	Frame Width	Độ rộng khung
+	Framing	Đóng khung
+	From East	Từ phía đông
+	From North	Từ phía bắc
+	From South	Từ phía nam
+	From West	Từ phía tây
+	Fuzz	Rè
+	GB	GB
+	Gamut Warning Color	Màu cảnh báo gam màu
+	Gap	Khoảng trống
+	Gap Color	Màu khoảng trống
+	Gaussian Blur (Legacy)	Mờ Gaussian (cũ)
+	Ghosts	Bóng ma
+	Glint	Lấp lánh
+	Glitch	Lỗi nhiễu
+	Glow	Phát sáng
+	Glow Color	Màu phát sáng
+	Glow Only	Chỉ phát sáng
+	Glow Radius	Bán kính phát sáng
+	Glow Saturation	Độ bão hòa phát sáng
+	Glow Width	Độ rộng phát sáng
+	Gradient End	Cuối dải chuyển
+	Gradient Layer	Lớp dải chuyển
+	Gradient Placement	Vị trí dải chuyển
+	Gradient Scatter	Tán xạ dải chuyển
+	Gradient Shape	Hình dải chuyển
+	Gradient Start	Đầu dải chuyển
+	Gradient Wipe	Quét dải chuyển
+	Gradient Wipe (Legacy)	Quét dải chuyển (cũ)
+	Grain Size	Kích thước hạt
+	Green Blurriness	Độ mờ kênh xanh lục
+	Green Curve	Đường cong xanh lục
+	Green Offset	Độ lệch xanh lục
+	Green Power	Lũy thừa xanh lục
+	Green Slope	Độ dốc xanh lục
+	Green-Blue	Xanh lục-Xanh dương
+	Green-Const	Xanh lục-Hằng số
+	Green-Green	Xanh lục-Xanh lục
+	Green-Red	Xanh lục-Đỏ
+	Grow	Phát triển
+	Grunge	Cũ kỹ
+	GuitarSuite	GuitarSuite
+	Hard Clip	Cắt cứng
+	Hard Limiter	Bộ giới hạn cứng
+	Head Size	Kích thước đầu
+	Hide Back Face	Ẩn mặt sau
+	High Cutoff	Cắt cao
+	High Frequency Cut	Cắt tần số cao
+	High Frequency Damping	Giảm chấn tần số cao
+	High Shelf	Kệ cao
+	High Shelf Gain	Độ lợi kệ cao
+	High contrast with held highlights and deep shadows	Tương phản cao, giữ vùng sáng và vùng tối sâu
+	Highlight	Vùng sáng
+	Highlight Blue Balance	Cân bằng xanh dương vùng sáng
+	Highlight Brightness	Độ sáng vùng sáng
+	Highlight Green Balance	Cân bằng xanh lục vùng sáng
+	Highlight Red Balance	Cân bằng đỏ vùng sáng
+	Highlight Rolloff	Suy giảm vùng sáng
+	Highlight Threshold	Ngưỡng vùng sáng
+	Highlight Tint	Nhuộm vùng sáng
+	Highlights Lightness	Độ sáng của vùng sáng
+	Highpass	Thông cao
+	Horizontal 16:9	Ngang 16:9
+	Horizontal Alignment	Căn chỉnh ngang
+	Horizontal Blocks	Khối ngang
+	Horizontal Decentering	Lệch tâm ngang
+	Horizontal Displacement	Dịch chuyển ngang
+	Horizontal Flip	Lật ngang
+	Horizontal Margin	Lề ngang
+	Horizontal and Vertical	Ngang và dọc
+	Hue Center	Tâm sắc độ
+	Hue Tolerance	Dung sai sắc độ
+	Ignore Alpha	Bỏ qua alpha
+	Impulse	Xung
+	Incoming	Đi vào
+	Initial Delay	Trễ ban đầu
+	Inner Radius	Bán kính trong
+	Input Boost	Tăng cường đầu vào
+	Inset	Lồng vào
+	Inside Color	Màu bên trong
+	Inter	Inter
+	Internal Black Point	Điểm đen nội bộ
+	Internal White Point	Điểm trắng nội bộ
+	Inverse Falloff	Suy giảm nghịch
+	Invert Alpha	Đảo alpha
+	Invert Blur	Đảo làm mờ
+	Invert Fill	Đảo tô
+	Invert Gradient	Đảo dải chuyển
+	Invert Left	Đảo trái
+	Invert Right	Đảo phải
+	Iris Box	Mống mắt hình hộp
+	Iris Cross	Mống mắt chữ thập
+	Iris Diamond	Mống mắt hình thoi
+	Iris Radius	Bán kính mống mắt
+	Iris Rotation	Xoay mống mắt
+	Iris Round	Mống mắt tròn
+	Iris Shape	Hình mống mắt
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	Kính vạn hoa
+	Key Color	Màu tách nền
+	Layer Name	Tên lớp
+	Leave Color	Giữ màu
+	Left - Left	Trái - Trái
+	Left - Right	Trái - Phải
+	Lens Blur	Mờ ống kính
+	Lens Distortion	Méo ống kính
+	Lens Type	Loại ống kính
+	Levels	Mức
+	Lifted blacks, softer contrast, muted colour	Vùng đen được nâng, tương phản dịu hơn, màu trầm
+	Light 1	Đèn 1
+	Light 2	Đèn 2
+	Light 3	Đèn 3
+	Light 4	Đèn 4
+	Light 5	Đèn 5
+	Light Angle	Góc chiếu sáng
+	Light Color	Màu ánh sáng
+	Light Leak	Lọt sáng
+	Light Leaks	Lọt sáng
+	Light Sweep	Quét sáng
+	Lightning	Tia chớp
+	Line Thickness	Độ dày đường
+	Linear Ramp	Dải chuyển tuyến tính
+	Linear Wipe	Quét tuyến tính
+	Linear Wipe (Legacy)	Quét tuyến tính (cũ)
+	Linear to Log	Tuyến tính sang log
+	Liquid Distortion	Méo chất lỏng
+	Log to Linear	Log sang tuyến tính
+	Log to Log	Log sang log
+	Logo Cutout	Cắt hình logo
+	Long Shadow	Bóng dài
+	Look-Ahead Time	Thời gian nhìn trước
+	Loudness Maximizer	Tối đa hóa độ lớn
+	Loudness Meter	Đồng hồ độ lớn
+	Louver	Lá sách
+	Low Frequency Cut	Cắt tần số thấp
+	Low Pass	Thông thấp
+	Low Shelf	Kệ thấp
+	Low Shelf Gain	Độ lợi kệ thấp
+	Lower Left	Dưới trái
+	Lower Right	Dưới phải
+	Lowpass	Thông thấp
+	Luma Curve	Đường cong độ sáng
+	Luma Fade	Mờ theo độ sáng
+	Luma Key	Tách nền theo độ sáng
+	Luma Source	Nguồn độ sáng
+	Luma and Chroma	Độ sáng và sắc độ
+	Luminance Threshold	Ngưỡng độ chói
+	MB	MB
+	Magnify	Phóng đại
+	Magnify (Legacy)	Phóng đại (cũ)
+	Major Radius	Bán kính lớn
+	Male	Nam
+	Map Black To	Ánh xạ đen sang
+	Map White To	Ánh xạ trắng sang
+	Maps full-range levels into 16–235 (video range) with a luma curve	Ánh xạ mức toàn dải vào 16–235 (dải video) bằng đường cong độ sáng
+	Mask Only	Chỉ mặt nạ
+	Master Amplitude	Biên độ tổng
+	Mastering	Mastering
+	Matte Alpha	Alpha mặt nạ
+	Matte Cleanup	Làm sạch mặt nạ
+	Matte Generation	Tạo mặt nạ
+	Matte Luma	Độ sáng mặt nạ
+	Maximum Amplitude	Biên độ tối đa
+	Maximum Block Size	Kích thước khối tối đa
+	Maximum Blur	Làm mờ tối đa
+	Maximum Reduction	Mức giảm tối đa
+	Maximum Scale	Tỷ lệ tối đa
+	Media Timecode	Mã thời gian phương tiện
+	Metadata & Timecode Burn-in	Ghi cứng siêu dữ liệu và mã thời gian
+	Metrics Kerning	Khoảng cách chữ theo số liệu
+	Mid	Trung
+	Mid Point	Điểm giữa
+	Midtone Blue Balance	Cân bằng xanh dương vùng trung
+	Midtone Green Balance	Cân bằng xanh lục vùng trung
+	Midtone Red Balance	Cân bằng đỏ vùng trung
+	Midtones Lightness	Độ sáng vùng trung
+	Minor Radius	Bán kính nhỏ
+	Mirror Alternate	Phản chiếu xen kẽ
+	Mixed Crystals	Tinh thể hỗn hợp
+	Modern High Gain	Độ lợi cao hiện đại
+	Modulation Rate	Tốc độ điều biến
+	Monochrome toned cyan-blue	Đơn sắc ngả xanh lơ-xanh dương
+	Monochrome toned warm brown	Đơn sắc ngả nâu ấm
+	More colour in the less saturated areas	Thêm màu cho vùng ít bão hòa
+	Morph Cut	Cắt biến hình
+	Mosaic (Legacy)	Khảm (cũ)
+	Motion Blur	Mờ chuyển động
+	Motion Camera	Camera chuyển động
+	Motion Preset	Cài đặt sẵn chuyển động
+	Motion Tween	Nội suy chuyển động
+	Multitap Delay	Trễ nhiều nhịp
+	Narrow	Hẹp
+	Neon Color	Màu neon
+	Neon Wipe	Quét neon
+	No Motion	Không chuyển động
+	Noise (Legacy)	Nhiễu (cũ)
+	Noise Level	Mức nhiễu
+	Noise Reduction/Restoration	Giảm nhiễu/Phục hồi
+	Noise Type	Loại nhiễu
+	Non-Additive Dissolve	Hòa tan không cộng
+	Notch 1	Khía 1
+	Notch 2	Khía 2
+	Notch 3	Khía 3
+	Notch 4	Khía 4
+	Notch 5	Khía 5
+	Notch 6	Khía 6
+	Notch Filter	Bộ lọc khía
+	Notch Width	Độ rộng khía
+	Number Of Echoes	Số lần vọng
+	Number of Harmonics	Số hài âm
+	Offset (Turbulence)	Độ lệch (nhiễu loạn)
+	Offset From	Lệch từ
+	Offset To	Lệch đến
+	Omni	Đa hướng
+	On Original Image	Trên ảnh gốc
+	On Transparent	Trên nền trong suốt
+	Opens up the shadows	Mở vùng tối
+	Order	Thứ tự
+	Outgoing	Đi ra
+	Outside Color	Màu bên ngoài
+	Overflow	Tràn
+	Overshoot	Vượt quá
+	Page Peel	Bóc trang
+	Page Turn	Lật trang
+	Paint Bucket	Thùng sơn
+	Paint On Black	Vẽ trên nền đen
+	Paint On Original Image	Vẽ trên ảnh gốc
+	Paint On Transparent	Vẽ trên nền trong suốt
+	Paint On White	Vẽ trên nền trắng
+	Paint Style	Kiểu vẽ
+	Paint Surface	Bề mặt vẽ
+	Pan (Y Axis)	Lia (trục Y)
+	Panel Wipe	Quét tấm
+	Panner - Ambisonics	Bộ chỉnh vị trí âm - Ambisonics
+	Passband Ripple	Gợn dải thông
+	Path Points	Điểm đường dẫn
+	Peak Frequency	Tần số đỉnh
+	Peak Gain	Độ lợi đỉnh
+	Pedestal	Bệ
+	Percent Blur	Phần trăm làm mờ
+	Phase Difference	Độ lệch pha
+	Phaser	Phaser
+	Phosphor	Lân quang
+	Phosphor Color	Màu lân quang
+	Photocopy Color	Màu photocopy
+	Pillow	Gối
+	Pin All	Ghim tất cả
+	Pin Horizontal	Ghim ngang
+	Pin Vertical	Ghim dọc
+	Pinning	Ghim
+	Pitch Shifter	Bộ dịch cao độ
+	Plate	Tấm
+	Plateau Wipe	Quét bậc
+	Plateaus	Bậc
+	Plates	Tấm
+	Point 1	Điểm 1
+	Point 1 Color	Màu điểm 1
+	Point 1 Latitude	Vĩ độ điểm 1
+	Point 1 Longitude	Kinh độ điểm 1
+	Point 2	Điểm 2
+	Point 2 Color	Màu điểm 2
+	Point 2 Latitude	Vĩ độ điểm 2
+	Point 2 Longitude	Kinh độ điểm 2
+	Point 3	Điểm 3
+	Point 3 Color	Màu điểm 3
+	Point 3 Latitude	Vĩ độ điểm 3
+	Point 3 Longitude	Kinh độ điểm 3
+	Point 4	Điểm 4
+	Point 5	Điểm 5
+	Point 6	Điểm 6
+	Point 7	Điểm 7
+	Point 8	Điểm 8
+	Pop Motion	Chuyển động bật
+	Position Amount	Mức vị trí
+	Position, Scale, Rotation	Vị trí, tỷ lệ, xoay
+	Posterize Time	Giảm khung thời gian
+	Pre-Delay	Trễ trước
+	Preserve Scale	Giữ tỷ lệ
+	ProcAmp	ProcAmp
+	Pull Motion	Chuyển động kéo
+	Pulls highlights and whites down	Kéo vùng sáng và vùng trắng xuống
+	Push	Đẩy
+	Push (Legacy)	Đẩy (cũ)
+	Q	Q
+	RGB Split	Tách RGB
+	Radial Ramp	Dải chuyển xuyên tâm
+	Radial Wipe	Quét xuyên tâm
+	Radial Wipe (Legacy)	Quét xuyên tâm (cũ)
+	Ramp	Dải chuyển
+	Ramp Shape	Hình dải chuyển
+	Random Seed	Hạt giống ngẫu nhiên
+	Ray	Tia
+	Ray Color	Màu tia
+	Ray Length	Độ dài tia
+	Rays Only	Chỉ tia
+	Red Blurriness	Độ mờ kênh đỏ
+	Red Curve	Đường cong đỏ
+	Red Offset	Độ lệch đỏ
+	Red Power	Lũy thừa đỏ
+	Red Slope	Độ dốc đỏ
+	Red-Blue	Đỏ-Xanh dương
+	Red-Const	Đỏ-Hằng số
+	Red-Green	Đỏ-Xanh lục
+	Red-Red	Đỏ-Đỏ
+	Reduce Axis	Trục giảm
+	Reduce Interlace Flicker	Giảm nhấp nháy xen kẽ
+	Reflection Angle	Góc phản chiếu
+	Reflection Center	Tâm phản chiếu
+	Refraction	Khúc xạ
+	Reframe Offset	Độ lệch đóng khung lại
+	Reframe Zoom	Thu phóng đóng khung lại
+	Release Time	Thời gian nhả
+	Remove Fringe	Bỏ viền màu
+	Repeat Edge Pixels	Lặp điểm ảnh cạnh
+	Replace Color	Thay màu
+	Replicate	Nhân bản
+	Retro	Hoài cổ
+	Reveal Original Image	Hiện ảnh gốc
+	Reverb Amount	Mức vang
+	Right - Left	Phải - Trái
+	Right - Right	Phải - Phải
+	Roll (Z Axis)	Lăn (trục Z)
+	Room Size	Kích thước phòng
+	Rotation Amount	Mức xoay
+	Roughen	Làm thô
+	Roughen Color	Màu làm thô
+	Roughen Edges	Làm thô cạnh
+	Rounded Crop	Cắt bo tròn
+	Rusty	Gỉ sét
+	Rusty Color	Màu gỉ sét
+	Saturation at 50 %	Độ bão hòa 50 %
+	Scale (Degrees)	Tỷ lệ (độ)
+	Scale Amount	Mức tỷ lệ
+	Scale From	Tỷ lệ từ
+	Scale Height	Tỷ lệ chiều cao
+	Scale Match	Khớp tỷ lệ
+	Scale To	Tỷ lệ đến
+	Scan Lines	Dòng quét
+	Scientific Filter	Bộ lọc khoa học
+	Semi-tones	Nửa cung
+	Sequence Name	Tên chuỗi
+	Sequence Timecode	Mã thời gian chuỗi
+	Setting	Thiết lập
+	Shadow Angle	Góc bóng
+	Shadow Blue Balance	Cân bằng xanh dương vùng tối
+	Shadow Blur	Làm mờ bóng
+	Shadow Color	Màu bóng
+	Shadow Distance	Khoảng cách bóng
+	Shadow Green Balance	Cân bằng xanh lục vùng tối
+	Shadow Only	Chỉ bóng
+	Shadow Opacity	Độ mờ đục bóng
+	Shadow Red Balance	Cân bằng đỏ vùng tối
+	Shadow Size	Kích thước bóng
+	Shadow Tint	Nhuộm vùng tối
+	Shadows Lightness	Độ sáng vùng tối
+	Shake	Rung
+	Shape Dissolve	Hòa tan hình
+	Shape Flow	Dòng hình
+	Shape Size	Kích thước hình
+	Shard Size	Kích thước mảnh vỡ
+	Sharp Colors	Màu sắc nét
+	Sharpen Amount	Mức làm nét
+	Shift Center To	Dời tâm đến
+	Show Focus Area	Hiện vùng lấy nét
+	Show Only Noise	Chỉ hiện nhiễu
+	Shrink	Thu nhỏ
+	Shutter Angle	Góc màn trập
+	Similarity	Độ tương đồng
+	Simple Notch Filter	Bộ lọc khía đơn giản
+	Simple Parametric EQ	EQ tham số đơn giản
+	Simple Text	Văn bản đơn giản
+	Single-band Compressor	Bộ nén một dải
+	Sinusoidal	Hình sin
+	Skew Axis	Trục nghiêng
+	Slats	Nan
+	Slide (Legacy)	Trượt (cũ)
+	Slope	Độ dốc
+	Slow	Chậm
+	Slower Motion	Chuyển động chậm hơn
+	Smart Limit	Giới hạn thông minh
+	Smooth	Mượt
+	Smooth Motion	Chuyển động mượt
+	Soft Clamp	Kẹp mềm
+	Soft Edges (Best Quality)	Cạnh mềm (chất lượng tốt nhất)
+	Soft Wipe	Quét mềm
+	Solid Colors	Màu đặc
+	Source Point	Điểm nguồn
+	Source Text	Văn bản nguồn
+	Spacer	Khoảng đệm
+	Speaker Angle	Góc loa
+	Special Effects	Hiệu ứng đặc biệt
+	Spiky	Gai
+	Spill	Tràn màu
+	Spill Suppression	Khử tràn màu
+	Spin	Quay
+	Spin Direction	Hướng quay
+	Spin Motion	Chuyển động quay
+	Split (Legacy)	Tách (cũ)
+	Spotlight	Đèn rọi
+	Spread	Lan rộng
+	Spring Motion	Chuyển động lò xo
+	Square (Width Only)	Vuông (chỉ chiều rộng)
+	Square 1:1	Vuông 1:1
+	Stabilization	Ổn định hình
+	Stabilize Only	Chỉ ổn định
+	Stabilize, Crop	Ổn định, cắt
+	Stabilize, Crop, Auto-scale	Ổn định, cắt, tự động co giãn
+	Stabilize, Synthesize Edges	Ổn định, tổng hợp cạnh
+	Stages	Tầng
+	Star Wipe	Quét hình sao
+	Start Angle	Góc bắt đầu
+	Start Color	Màu bắt đầu
+	Start Point	Điểm bắt đầu
+	Start of Ramp	Đầu dải chuyển
+	Starting Intensity	Cường độ ban đầu
+	Static Plates	Tấm tĩnh
+	Stereo Expand	Mở rộng stereo
+	Stereo Expander	Bộ mở rộng stereo
+	Stereo Phasing	Lệch pha stereo
+	Stereoscopic - Over/Under	Lập thể - trên/dưới
+	Stereoscopic - Side by Side	Lập thể - cạnh nhau
+	Stopband Attenuation	Suy hao dải chặn
+	Straight Color	Màu thẳng
+	Stretch Gradient to Fit	Kéo giãn dải chuyển cho vừa
+	Stretch Map to Fit	Kéo giãn bản đồ cho vừa
+	Stretch Width or Height	Kéo giãn chiều rộng hoặc cao
+	Stretch Wipe	Quét kéo giãn
+	Stretch to Fit Frame	Kéo giãn vừa khung hình
+	Stripe	Sọc
+	Stripes	Sọc
+	Strobe Color	Màu chớp
+	Strobe Duration (secs)	Thời lượng chớp (giây)
+	Strobe Light	Đèn chớp
+	Strobe Period (secs)	Chu kỳ chớp (giây)
+	Stroke 2 Color	Màu viền 2
+	Stroke 2 Type	Kiểu viền 2
+	Stroke 2 Width	Độ rộng viền 2
+	Stroke Angle	Góc nét
+	Stroke Density	Mật độ nét
+	Stroke Length (secs)	Độ dài nét (giây)
+	Stroke Only	Chỉ viền
+	Stroke Randomness	Độ ngẫu nhiên nét
+	Stroke Type	Kiểu viền
+	Stroke Width	Độ rộng viền
+	Studio Reverb	Vang phòng thu
+	Subclip End	Cuối clip con
+	Subclip Start	Đầu clip con
+	Subspace Warp	Bẻ cong không gian con
+	Super Narrow	Siêu hẹp
+	Surface Gloss	Độ bóng bề mặt
+	Surface Material	Chất liệu bề mặt
+	Surround Reverb	Vang vòm
+	Swap Channels	Hoán đổi kênh
+	Swivel	Xoay quanh
+	TV Power	Bật TV
+	Tape	Băng từ
+	Tape/Tube	Băng từ/Đèn điện tử
+	Target Aspect	Tỷ lệ khung mục tiêu
+	Target Color	Màu mục tiêu
+	Target Field of View	Trường nhìn mục tiêu
+	Text Color	Màu chữ
+	Tile Gradient	Dải chuyển lát gạch
+	Tilt (X Axis)	Nghiêng (trục X)
+	Tone	Âm sắc
+	Track Matte Key	Tách nền bằng mặt nạ rãnh
+	Transience	Tính nhất thời
+	Transition Completion	Mức hoàn tất chuyển cảnh
+	Transition Softness	Độ mềm chuyển cảnh
+	Trash	Rác
+	Travel Motion	Chuyển động di chuyển
+	Treble	Âm bổng
+	Tube	Đèn điện tử
+	Tube-modeled Compressor	Bộ nén mô phỏng đèn điện tử
+	Tubular	Dạng ống
+	Turbulent	Nhiễu loạn
+	Turbulent Displace	Dịch chuyển nhiễu loạn
+	Turbulent Sharp	Nhiễu loạn sắc
+	Turbulent Smooth	Nhiễu loạn mượt
+	Turbulent Smoother	Nhiễu loạn mượt hơn
+	Tweed	Tweed
+	Twirl (Legacy)	Xoắn (cũ)
+	Twirl Center	Tâm xoắn
+	Twirl Radius	Bán kính xoắn
+	Twist Smoother	Làm mượt xoắn
+	Ultra Key	Ultra Key
+	Uniform Spacing	Khoảng cách đều
+	Upper Frequency	Tần số trên
+	Upper Left	Trên trái
+	Upper Right	Trên phải
+	Use Color Noise	Dùng nhiễu màu
+	Use End Color	Dùng màu kết thúc
+	Use Glow Color	Dùng màu phát sáng
+	Use Tint Color	Dùng màu nhuộm
+	VHS Damage	Hư hại VHS
+	VR Blur	Làm mờ VR
+	VR Chroma Leaks	Rò sắc độ VR
+	VR Chromatic Aberrations	Quang sai màu VR
+	VR Color Gradients	Dải chuyển màu VR
+	VR De-Noise	Khử nhiễu VR
+	VR Digital Glitch	Lỗi nhiễu kỹ thuật số VR
+	VR Fractal Noise	Nhiễu fractal VR
+	VR Glow	Phát sáng VR
+	VR Gradient Wipe	Quét dải chuyển VR
+	VR Iris Wipe	Quét mống mắt VR
+	VR Light Leaks	Lọt sáng VR
+	VR Light Rays	Tia sáng VR
+	VR Mobius Zoom	Thu phóng Mobius VR
+	VR Plane to Sphere	Mặt phẳng sang hình cầu VR
+	VR Projection	Phép chiếu VR
+	VR Random Blocks	Khối ngẫu nhiên VR
+	VR Rotate Sphere	Xoay hình cầu VR
+	VR Sharpen	Làm nét VR
+	VR Spherical Blur	Làm mờ hình cầu VR
+	Venetian Blinds	Rèm sáo
+	Vertical 4:5	Dọc 4:5
+	Vertical 9:16	Dọc 9:16
+	Vertical Blocks	Khối dọc
+	Vertical Decentering	Lệch tâm dọc
+	Vertical Displacement	Dịch chuyển dọc
+	Vertical Flip	Lật dọc
+	Vertical Margin	Lề dọc
+	Very Narrow	Rất hẹp
+	Video 1	Video 1
+	Video 2	Video 2
+	Video 3	Video 3
+	Video 4	Video 4
+	Video 5	Video 5
+	Video 6	Video 6
+	Video 7	Video 7
+	Video 8	Video 8
+	Video Duration	Thời lượng video
+	Video In Point	Điểm vào video
+	Video Out Point	Điểm ra video
+	Video Usage	Sử dụng video
+	Vocal Booth	Phòng thu giọng
+	Vocal Enhancer	Tăng cường giọng
+	Volumetric Rays	Tia thể tích
+	Warm print stock with gentle roll-off	Phim in ấm với suy giảm nhẹ nhàng
+	Warm, soft late-afternoon light	Ánh sáng chiều muộn ấm và dịu
+	Warp Stabilizer	Ổn định hình Warp
+	Wave Height	Chiều cao sóng
+	Wave Speed	Tốc độ sóng
+	Wave Warp	Uốn sóng
+	Wave Width	Độ rộng sóng
+	Wavelength	Bước sóng
+	Wet Out	Đầu ra ướt
+	Whip	Lia nhanh
+	Whip (Legacy)	Lia nhanh (cũ)
+	White Input Level	Mức trắng đầu vào
+	Widener	Bộ mở rộng
+	Wiggle	Lắc lư
+	Wipe Angle	Góc quét
+	Wonder Glow	Phát sáng kỳ ảo
+	Wrap Back	Quấn ngược
+	Write-on	Viết dần
+	X Rotation	Xoay X
+	Y Rotation	Xoay Y
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	Vùng sáng vàng-xanh lục và vùng tối nâng xanh dương từ đường cong kênh chéo
+	Z Position	Vị trí Z
+	Z Rotation	Xoay Z
+	Zoom Amount	Mức thu phóng
+	Zoom Blur	Làm mờ thu phóng
+	Zoom Strength	Cường độ thu phóng
+	no GPU adapter: the CPU compositor is used	không có bộ điều hợp GPU: đang dùng bộ kết hợp CPU
+	CFA4 Project	Dự án CFA4
+	{name} (Simplified)	{name} (Đã đơn giản hóa)
+	Delete Search Bin	Xóa thư mục tìm kiếm
+	No export preset named `{name}`	Không có cài đặt sẵn xuất nào tên `{name}`
+	Encoding {n}%	Đang mã hóa {n}%
+	Uncompressed (PCM)	Không nén (PCM)
+	Match Source ({seq_sr} Hz)	Khớp với nguồn ({seq_sr} Hz)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	Chuỗi, {w}x{h}, {fps} fps, {rate} Hz
+	Exporting {path}	Đang xuất {path}
+	Added to the export queue	Đã thêm vào hàng đợi xuất
+	Import: no file chosen (agents: export.presets.import {path})	Nhập: chưa chọn tệp (agent: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	Xuất: chưa chọn tệp (agent: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	Sự cố đồ họa: đã chuyển sang kết hợp hình ảnh bằng phần mềm
+	GPU acceleration is unavailable; preview renders on the CPU	Không có tăng tốc GPU; bản xem trước được kết xuất trên CPU
+	CFA4 hit an error	CFA4 gặp lỗi
+	Opened {url}	Đã mở {url}
+	(empty)	(trống)
+	AAC Audio 48 kHz 320 kbps	Âm thanh AAC 48 kHz 320 kbps
+	Opus Audio 48 kHz 160 kbps	Âm thanh Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stereo 48 kHz ở 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 ở 8 Mbps, Opus 128 kbps stereo
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Âm thanh MPEG-4 (.m4a), stereo 48 kHz AAC-LC ở 320 kbps
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bit
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, PCM stereo 48 kHz 16 bit
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 bit
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, stereo 48 kHz 24 bit, không mất dữ liệu
+	FLAC (lossless)	FLAC (không mất dữ liệu)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	GIF động 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	Apple ProRes 4444 có alpha
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Apply Guide Template	Áp dụng mẫu đường căn
+	Auto Save Now	Tự động lưu ngay
+	Auto-Match Loudness	Tự động khớp độ lớn
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	OP-Atom kiểu Avid: tệp hình DNxHR HQ cùng một tệp PCM 24 bit 48 kHz cho mỗi kênh (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	Chuỗi BMP
+	Begin Text Editing for a Graphic Layer	Bắt đầu sửa văn bản của lớp đồ họa
+	Begins With	Bắt đầu bằng
+	Blur In	Làm mờ vào
+	Blur Out	Làm mờ ra
+	Brightens inside a feathered circular mask	Làm sáng bên trong mặt nạ tròn có cạnh mềm
+	Broadcast	Phát sóng
+	Cancel Dynamic Trim	Hủy cắt tỉa động
+	Cancel Queued Export	Hủy bản xuất trong hàng đợi
+	Center align text	Căn giữa văn bản
+	Change Mask	Đổi mặt nạ
+	Clear All Events	Xóa mọi sự kiện
+	Clear Edit Point Selection	Bỏ chọn điểm cắt
+	Clear Finished Exports	Xóa bản xuất đã xong
+	Clear Poster Frame	Xóa khung hình đại diện
+	Close Bin	Đóng thư mục
+	Close Sequence	Đóng chuỗi
+	Cut to Camera 1	Cắt sang camera 1
+	Cut to Camera 2	Cắt sang camera 2
+	Cut to Camera 3	Cắt sang camera 3
+	Cut to Camera 4	Cắt sang camera 4
+	Cut to Camera 5	Cắt sang camera 5
+	Cut to Camera 6	Cắt sang camera 6
+	Cut to Camera 7	Cắt sang camera 7
+	Cut to Camera 8	Cắt sang camera 8
+	Cut to Camera 9	Cắt sang camera 9
+	Darkens outside a feathered oval mask	Làm tối bên ngoài mặt nạ bầu dục có cạnh mềm
+	Decrease Clip Volume	Giảm âm lượng clip
+	Decrease Clip Volume Many	Giảm nhiều âm lượng clip
+	Decrease Font Size by Five Units	Giảm cỡ chữ năm đơn vị
+	Decrease Font Size by One Unit	Giảm cỡ chữ một đơn vị
+	Decrease Leading by Five Units	Giảm khoảng cách dòng năm đơn vị
+	Decrease Leading by One Unit	Giảm khoảng cách dòng một đơn vị
+	Delete Captions	Xóa phụ đề
+	Delete Graphic Layer	Xóa lớp đồ họa
+	Delete Guide Template	Xóa mẫu đường căn
+	Delete Media Cache Files	Xóa tệp bộ nhớ đệm phương tiện
+	Discard Unsaved Changes	Bỏ thay đổi chưa lưu
+	Does Not Contain	Không chứa
+	Download Speech Model	Tải mô hình giọng nói
+	Dynamic Trim Stop	Dừng cắt tỉa động
+	Edit Caption Text	Sửa văn bản phụ đề
+	Ends With	Kết thúc bằng
+	Entire Source	Toàn bộ nguồn
+	EssentialSound	EssentialSound
+	Extend Next Edit To Playhead	Kéo dài điểm cắt sau đến đầu phát
+	Extend Previous Edit To Playhead	Kéo dài điểm cắt trước đến đầu phát
+	Extend Selected Edit to Playhead	Kéo dài điểm cắt đã chọn đến đầu phát
+	Extend Selection Down	Mở rộng vùng chọn xuống
+	Extend Selection Left	Mở rộng vùng chọn sang trái
+	Extend Selection Right	Mở rộng vùng chọn sang phải
+	Extend Selection Up	Mở rộng vùng chọn lên
+	Fade In	Hiện dần
+	Gaussian Blur from 0 to 60 over the last second	Làm mờ Gauss từ 0 đến 60 trong giây cuối
+	Gaussian Blur from 60 to 0 over the first second	Làm mờ Gauss từ 60 về 0 trong giây đầu
+	Generate Ducking Keyframes	Tạo khung hình chính hạ âm
+	Go to Next Edit Point	Đến điểm cắt tiếp theo
+	Go to Next Edit Point on Any Track	Đến điểm cắt tiếp theo trên bất kỳ rãnh nào
+	Go to Previous Edit Point	Đến điểm cắt trước
+	Go to Previous Edit Point on Any Track	Đến điểm cắt trước trên bất kỳ rãnh nào
+	Go to Selected Clip End	Đến cuối clip đã chọn
+	Go to Selected Clip Start	Đến đầu clip đã chọn
+	Go to Sequence End	Đến cuối chuỗi
+	Go to Sequence Start	Đến đầu chuỗi
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	H.264 1920×1080 cho trang chia sẻ video, VBR 1 lượt, 16 Mbps
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 lượt, mục tiêu 20 Mbps, AAC 320 kbps
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 lượt, 18 Mbps
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	H.264 3840×2160 cho trang chia sẻ video, VBR 1 lượt, 45 Mbps
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 lượt, mục tiêu 60 Mbps, AAC 320 kbps
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 lượt, 50 Mbps
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	H.264 9:16 dọc cho video ngắn trên mạng xã hội, co giãn để lấp đầy, 12 Mbps
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	H.264 theo kích thước và tốc độ khung hình của chuỗi; 0,05 bit mỗi điểm ảnh
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	H.264 theo kích thước và tốc độ khung hình của chuỗi; 0,1 bit mỗi điểm ảnh
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	H.264 theo kích thước và tốc độ khung hình của chuỗi; tốc độ bit thích ứng theo kích thước khung hình (0,2 bit mỗi điểm ảnh)
+	High Quality 1080p HD	Chất lượng cao 1080p HD
+	High Quality 2160p 4K	Chất lượng cao 2160p 4K
+	Increase Clip Volume	Tăng âm lượng clip
+	Increase Clip Volume Many	Tăng nhiều âm lượng clip
+	Increase Font Size by Five Units	Tăng cỡ chữ năm đơn vị
+	Increase Font Size by One Unit	Tăng cỡ chữ một đơn vị
+	Increase Leading by Five Units	Tăng khoảng cách dòng năm đơn vị
+	Increase Leading by One Unit	Tăng khoảng cách dòng một đơn vị
+	Large blocks resolving to the picture over the first second	Các khối lớn dần hiện ra thành hình trong giây đầu
+	Left align text	Căn trái văn bản
+	Looping GIF, 640×360 at 15 fps	GIF lặp, 640×360 ở 15 fps
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bit 4:2:2), PCM 24 bit 48 kHz, mã thời gian bắt đầu
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High GOP dài (0,3 bit mỗi điểm ảnh), PCM 24 bit 48 kHz
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bit 48 kHz, mã thời gian bắt đầu
+	Main	Chính
+	Mark In (Hover Scrub)	Đặt điểm vào (rê để tua)
+	Mark Out (Hover Scrub)	Đặt điểm ra (rê để tua)
+	Masks	Mặt nạ
+	Match Source – Adaptive High Bitrate	Khớp với nguồn – tốc độ bit cao thích ứng
+	Match Source – Adaptive Low Bitrate	Khớp với nguồn – tốc độ bit thấp thích ứng
+	Match Source – Adaptive Medium Bitrate	Khớp với nguồn – tốc độ bit trung bình thích ứng
+	Matches	Khớp
+	Maximize or Restore Active Frame	Phóng to hoặc khôi phục khung đang hoạt động
+	Maximize or Restore Frame Under Cursor	Phóng to hoặc khôi phục khung dưới con trỏ
+	Media Browser Settings	Cài đặt Trình duyệt phương tiện
+	MediaBrowser	MediaBrowser
+	MediaCache	MediaCache
+	Merge Captions	Hợp nhất phụ đề
+	Mixer	Bộ trộn
+	Mosaic In	Khảm vào
+	Move All Audio Targets Down	Dời mọi đích âm thanh xuống
+	Move All Audio Targets Up	Dời mọi đích âm thanh lên
+	Move All Video Targets Down	Dời mọi đích video xuống
+	Move All Video Targets Up	Dời mọi đích video lên
+	Move Selection Down	Dời vùng chọn xuống
+	Move Selection End	Dời vùng chọn về cuối
+	Move Selection Home	Dời vùng chọn về đầu
+	Move Selection Left	Dời vùng chọn sang trái
+	Move Selection Page Down	Dời vùng chọn xuống một trang
+	Move Selection Page Up	Dời vùng chọn lên một trang
+	Move Selection Right	Dời vùng chọn sang phải
+	Move Selection Up	Dời vùng chọn lên
+	Multicam	Đa camera
+	Navigate to End of Segment	Đến cuối đoạn
+	Navigate to Next Line	Đến dòng tiếp theo
+	Navigate to Next Word	Đến từ tiếp theo
+	Navigate to Previous Line	Đến dòng trước
+	Navigate to Previous Word	Đến từ trước
+	Navigate to Start of Segment	Đến đầu đoạn
+	Next Multi-Camera Page	Trang đa camera tiếp theo
+	Nudge Clip Selection Down	Đẩy nhẹ clip đã chọn xuống
+	Nudge Clip Selection Left Five Frames	Đẩy nhẹ clip đã chọn sang trái năm khung hình
+	Nudge Clip Selection Left One Frame	Đẩy nhẹ clip đã chọn sang trái một khung hình
+	Nudge Clip Selection Right Five Frames	Đẩy nhẹ clip đã chọn sang phải năm khung hình
+	Nudge Clip Selection Right One Frame	Đẩy nhẹ clip đã chọn sang phải một khung hình
+	Nudge Clip Selection Up	Đẩy nhẹ clip đã chọn lên
+	Nudge Selected Object down by five	Đẩy nhẹ đối tượng đã chọn xuống năm
+	Nudge Selected Object down by one	Đẩy nhẹ đối tượng đã chọn xuống một
+	Nudge Selected Object to left by five	Đẩy nhẹ đối tượng đã chọn sang trái năm
+	Nudge Selected Object to left by one	Đẩy nhẹ đối tượng đã chọn sang trái một
+	Nudge Selected Object to right by five	Đẩy nhẹ đối tượng đã chọn sang phải năm
+	Nudge Selected Object to right by one	Đẩy nhẹ đối tượng đã chọn sang phải một
+	Nudge Selected Object up by five	Đẩy nhẹ đối tượng đã chọn lên năm
+	Nudge Selected Object up by one	Đẩy nhẹ đối tượng đã chọn lên một
+	Nudge Volume +1dB	Chỉnh nhẹ âm lượng +1dB
+	Nudge Volume +3dB	Chỉnh nhẹ âm lượng +3dB
+	Nudge Volume -1dB	Chỉnh nhẹ âm lượng -1dB
+	Nudge Volume -3dB	Chỉnh nhẹ âm lượng -3dB
+	Numbered BMP stills (24-bit)	Ảnh tĩnh BMP đánh số (24 bit)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	Chuỗi JPEG
+	Targa Sequence	Chuỗi Targa
+	DPX Sequence	Chuỗi DPX
+	Numbered JPEG stills (quality 90)	Ảnh tĩnh JPEG đánh số (chất lượng 90)
+	Numbered Targa stills (24-bit, uncompressed)	Ảnh tĩnh Targa đánh số (24 bit, không nén)
+	Numbered DPX stills (10-bit RGB)	Ảnh tĩnh DPX đánh số (RGB 10 bit)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	Chuỗi OpenEXR
+	Numbered OpenEXR stills (half float, linear, uncompressed)	Ảnh tĩnh OpenEXR đánh số (số thực nửa, tuyến tính, không nén)
+	Numbered PNG stills at the sequence's frame size	Ảnh tĩnh PNG đánh số theo kích thước khung hình của chuỗi
+	Numbered TIFF stills (RGB, 8-bit)	Ảnh tĩnh TIFF đánh số (RGB, 8 bit)
+	Opacity 0 → 100 % over the first second	Độ mờ đục 0 → 100 % trong giây đầu
+	Opacity 100 → 0 % over the last second	Độ mờ đục 100 → 0 % trong giây cuối
+	Open Bin	Mở thư mục
+	Open Search	Mở tìm kiếm
+	PNG	PNG
+	PNG Sequence	Chuỗi PNG
+	Panel	Bảng
+	PiP 35% Upper Right	PiP 35% trên phải
+	Picture-in-picture: 35 % scale in the upper right	Hình trong hình: tỷ lệ 35 % ở góc trên phải
+	Play In to Out with Preroll/Postroll	Phát từ điểm vào đến điểm ra kèm phần trước/sau
+	Play from Playhead to Out Point	Phát từ đầu phát đến điểm ra
+	Previous Multi-Camera Page	Trang đa camera trước
+	ProjectPanel	ProjectPanel
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, PCM 24 bit 48 kHz
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, PCM 24 bit 48 kHz
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, PCM 24 bit 48 kHz
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), PCM 24 bit 48 kHz
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) có kênh alpha, PCM 24 bit 48 kHz
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), PCM 24 bit 48 kHz
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, PCM 24 bit 48 kHz
+	Quit CFA4	Thoát CFA4
+	Right align text	Căn phải văn bản
+	Ripple Trim Next Edit to Playhead	Cắt tỉa dồn điểm cắt sau đến đầu phát
+	Ripple Trim Previous Edit to Playhead	Cắt tỉa dồn điểm cắt trước đến đầu phát
+	Select Camera 1	Chọn camera 1
+	Select Camera 2	Chọn camera 2
+	Select Camera 3	Chọn camera 3
+	Select Camera 4	Chọn camera 4
+	Select Camera 5	Chọn camera 5
+	Select Camera 6	Chọn camera 6
+	Select Camera 7	Chọn camera 7
+	Select Camera 8	Chọn camera 8
+	Select Camera 9	Chọn camera 9
+	Select Clip at Playhead	Chọn clip tại đầu phát
+	Select Find Box	Chọn ô tìm kiếm
+	Select Next Clip	Chọn clip tiếp theo
+	Select Next Panel	Chọn bảng tiếp theo
+	Select Previous Clip	Chọn clip trước
+	Select Previous Panel	Chọn bảng trước
+	Select to Next Line	Chọn đến dòng tiếp theo
+	Select to Next Word	Chọn đến từ tiếp theo
+	Select to Previous Line	Chọn đến dòng trước
+	Select to Previous Word	Chọn đến từ trước
+	Select to Segment End	Chọn đến cuối đoạn
+	Select to Segment Start	Chọn đến đầu đoạn
+	Set Creative Look	Đặt phong cách màu sáng tạo
+	Set Input LUT	Đặt LUT đầu vào
+	Set Project Panel View	Đặt chế độ xem bảng Dự án
+	Show Next Screen	Hiện màn hình tiếp theo
+	Show Previous Screen	Hiện màn hình trước
+	Show Program Transcript	Hiện bản ghi lời của chương trình
+	Slide Clip Selection Left Five Frames	Trượt clip đã chọn sang trái năm khung hình
+	Slide Clip Selection Left One Frame	Trượt clip đã chọn sang trái một khung hình
+	Slide Clip Selection Right Five Frames	Trượt clip đã chọn sang phải năm khung hình
+	Slide Clip Selection Right One Frame	Trượt clip đã chọn sang phải một khung hình
+	Slip Clip Selection Left Five Frames	Trượt nội dung clip đã chọn sang trái năm khung hình
+	Slip Clip Selection Left One Frame	Trượt nội dung clip đã chọn sang trái một khung hình
+	Slip Clip Selection Right Five Frames	Trượt nội dung clip đã chọn sang phải năm khung hình
+	Slip Clip Selection Right One Frame	Trượt nội dung clip đã chọn sang phải một khung hình
+	Social Vertical 1080×1920	Mạng xã hội dọc 1080×1920
+	Soft Vignette	Viền tối mềm
+	Source In/Out	Điểm vào/ra của nguồn
+	Split Caption	Tách phụ đề
+	Stack Clips	Xếp chồng clip
+	Start Export Queue	Chạy hàng đợi xuất
+	Start Voice-over Recording	Bắt đầu ghi lời bình
+	Step Back Five Frames	Lùi năm khung hình
+	Step Back One Frame	Lùi một khung hình
+	Step Forward Five Frames	Tiến năm khung hình
+	Step Forward One Frame	Tiến một khung hình
+	Stop Export Queue	Dừng hàng đợi xuất
+	Stop Multi-Camera Recording	Dừng ghi đa camera
+	Sync Voice-over Capture	Đồng bộ ghi lời bình
+	TIFF	TIFF
+	TIFF Sequence	Chuỗi TIFF
+	TextPanel	TextPanel
+	Thumbnail Size Next	Kích thước ảnh thu nhỏ tiếp theo
+	Thumbnail Size Previous	Kích thước ảnh thu nhỏ trước
+	Toggle All Audio Targets	Bật/tắt mọi đích âm thanh
+	Toggle All Source Audio	Bật/tắt mọi âm thanh nguồn
+	Toggle All Source Video	Bật/tắt mọi video nguồn
+	Toggle All Video Targets	Bật/tắt mọi đích video
+	Toggle Audio During Scrubbing	Bật/tắt âm thanh khi tua
+	Toggle Full Screen	Bật/tắt toàn màn hình
+	Toggle Mute for All Targeted Audio Tracks	Bật/tắt tiếng mọi rãnh âm thanh được nhắm
+	Toggle Solo for All Targeted Audio Tracks	Bật/tắt độc tấu mọi rãnh âm thanh được nhắm
+	Toggle Source/Program Monitor Focus	Chuyển tiêu điểm giữa màn hình Nguồn/Chương trình
+	Toggle Target Audio 1	Bật/tắt đích âm thanh 1
+	Toggle Target Audio 2	Bật/tắt đích âm thanh 2
+	Toggle Target Audio 3	Bật/tắt đích âm thanh 3
+	Toggle Target Audio 4	Bật/tắt đích âm thanh 4
+	Toggle Target Audio 5	Bật/tắt đích âm thanh 5
+	Toggle Target Audio 6	Bật/tắt đích âm thanh 6
+	Toggle Target Audio 7	Bật/tắt đích âm thanh 7
+	Toggle Target Audio 8	Bật/tắt đích âm thanh 8
+	Toggle Target Video 1	Bật/tắt đích video 1
+	Toggle Target Video 2	Bật/tắt đích video 2
+	Toggle Target Video 3	Bật/tắt đích video 3
+	Toggle Target Video 4	Bật/tắt đích video 4
+	Toggle Target Video 5	Bật/tắt đích video 5
+	Toggle Target Video 6	Bật/tắt đích video 6
+	Toggle Target Video 7	Bật/tắt đích video 7
+	Toggle Target Video 8	Bật/tắt đích video 8
+	Toggle Track Output for All Targeted Video Tracks	Bật/tắt đầu ra của mọi rãnh video được nhắm
+	Toggle Trim Type	Đổi kiểu cắt tỉa
+	Toggle View	Đổi chế độ xem
+	Track Selected Mask	Theo dõi mặt nạ đã chọn
+	Trim Next Edit to Playhead	Cắt tỉa điểm cắt sau đến đầu phát
+	Trim Previous Edit to Playhead	Cắt tỉa điểm cắt trước đến đầu phát
+	Trimming	Cắt tỉa
+	Unstack Clips	Bỏ xếp chồng clip
+	CRF (constant quality)	CRF (chất lượng không đổi)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	Ghi lời bình
+	Voiceover	Lời bình
+	WAV, stereo 48 kHz 16-bit PCM	WAV, PCM stereo 48 kHz 16 bit
+	WAV, stereo 48 kHz 24-bit PCM	WAV, PCM stereo 48 kHz 24 bit
+	Warm Tint	Ngả ấm
+	Warm highlights, brown shadows	Vùng sáng ấm, vùng tối nâu
+	Waveform Audio 48 kHz 16-bit	Âm thanh Waveform 48 kHz 16 bit
+	Waveform Audio 48 kHz 24-bit	Âm thanh Waveform 48 kHz 24 bit
+	Web & Social	Web và mạng xã hội
+	Write Automation	Ghi tự động hóa
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	Thu phóng màn hình Chương trình về 100%
+	Zoom Program Monitor to Fit	Thu phóng màn hình Chương trình cho vừa
+	Zoom Source Monitor to 100%	Thu phóng màn hình Nguồn về 100%
+	Zoom Source Monitor to Fit	Thu phóng màn hình Nguồn cho vừa
+	Cinematic	Điện ảnh
+	Film Emulation	Mô phỏng phim
+	Technical	Kỹ thuật
+	Teal Shadows, Warm Skin	Vùng tối mòng két, da ấm
+	Night Exterior	Ngoại cảnh đêm
+	Golden Dusk	Hoàng hôn vàng
+	Steel Blue	Xanh thép
+	Hard Sun	Nắng gắt
+	Faded Print	Bản in phai
+	Silver Retention	Giữ bạc
+	Cross Processed	Xử lý chéo
+	Warm Negative	Âm bản ấm
+	Neutral Mono	Đơn sắc trung tính
+	Hard Mono	Đơn sắc gắt
+	Sepia Tone	Tông nâu đỏ
+	Cold Mono	Đơn sắc lạnh
+	Lift Shadows	Nâng vùng tối
+	Protect Highlights	Bảo vệ vùng sáng
+	Half Saturation	Nửa độ bão hòa
+	Boost Vibrance	Tăng độ rực màu
+	Legal Range Squeeze	Nén vào dải hợp chuẩn
+	A boxed label with a round pointer; move the label and the pointer follows.	Nhãn đóng khung với mũi chỉ tròn; di chuyển nhãn thì mũi chỉ đi theo.
+	A rounded tag that fits its text, with a status dot.	Thẻ bo tròn vừa với văn bản, có chấm trạng thái.
+	A title on a rounded card with a soft shadow.	Tiêu đề trên thẻ bo tròn với bóng mềm.
+	Accent Color	Màu nhấn
+	Bar Color	Màu thanh
+	Box Color	Màu hộp
+	Box Opacity	Độ mờ đục hộp
+	Callout – Pointer	Chú thích – Mũi chỉ
+	Callout – Tag	Chú thích – Thẻ
+	Callouts	Chú thích
+	Credits	Danh đề
+	Dot Color	Màu chấm
+	Heading	Đề mục
+	Large centred title, accent rule and subtitle.	Tiêu đề lớn ở giữa, đường kẻ nhấn và phụ đề.
+	Lower Third – Rule	Chạy chữ dưới – Đường kẻ
+	Lower Third – Slab	Chạy chữ dưới – Tấm nền
+	Lower Thirds	Chạy chữ dưới
+	Name Color	Màu tên
+	Name Size	Cỡ tên
+	Name and role on a coloured slab that widens with the name.	Tên và vai trò trên tấm nền màu giãn theo độ dài tên.
+	Name over a thin rule that always matches the name's width.	Tên phía trên một đường kẻ mảnh luôn khớp chiều rộng của tên.
+	Pointer Color	Màu mũi chỉ
+	Role	Vai trò
+	Rule Color	Màu đường kẻ
+	Show Dot	Hiện chấm
+	Show Role	Hiện vai trò
+	Slab Color	Màu tấm nền
+	Tag Color	Màu thẻ
+	Title Color	Màu tiêu đề
+	Title Size	Cỡ tiêu đề
+	Title – Boxed	Tiêu đề – Đóng khung
+	Title – Centered	Tiêu đề – Ở giữa
+	Titles	Tiêu đề
+	End Credits	Danh đề cuối phim
+	End Credits – Roll	Danh đề cuối phim – Cuộn
+	Ticker – Crawl	Dòng tin – Chạy ngang
+	Centred credits that roll up from below the frame and leave at the top.	Danh đề ở giữa cuộn lên từ dưới khung hình và rời đi ở phía trên.
+	A news-style line that crawls in from the right and leaves at the left.	Một dòng kiểu bản tin chạy vào từ bên phải và rời đi ở bên trái.
+	The language changed but could not be saved: {e}	Đã đổi ngôn ngữ nhưng không thể lưu: {e}
+	no Chinese font is installed on this system; the interface stays in English	hệ thống này chưa cài phông tiếng Trung; giao diện vẫn bằng tiếng Anh
+	no Korean font is installed on this system; the interface stays in English	hệ thống này chưa cài phông tiếng Hàn; giao diện vẫn bằng tiếng Anh
+	no Georgian font is installed on this system; the interface stays in English	hệ thống này chưa cài phông tiếng Gruzia; giao diện vẫn bằng tiếng Anh
+	no Japanese font is installed on this system; the interface stays in English	hệ thống này chưa cài phông tiếng Nhật; giao diện vẫn bằng tiếng Anh
+	Main (8-bit)	Main (8 bit)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 bit
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 bit có alpha
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bit
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 bit, Quét phim 1, PCM 24 bit 48 kHz
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 bit có kênh alpha, Quét phim 1, PCM 24 bit 48 kHz
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bit, Quét phim 1, PCM 24 bit 48 kHz
+	Deselect All Project Items	Bỏ chọn mọi mục dự án
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	Chọn mọi mục dự án
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	Kéo: di chuyển · Alt-nhấp: mượt/góc · Ctrl-nhấp: xóa
+	Drag inward to round the corners	Kéo vào trong để bo tròn góc
+	Play Source	Phát nguồn
+	Source Play/Stop	Phát/Dừng nguồn
+	Stop Source	Dừng nguồn
+	Clear Transition	Xóa chuyển cảnh
+	Fill Type	Kiểu tô
+	Gradient Angle	Góc dải chuyển
+	Edit Narration	Sửa lời dẫn
+	Resize floating panel	Đổi kích thước bảng nổi
+	Get Project Notes	Lấy ghi chú dự án
+	Edit Project Notes	Sửa ghi chú dự án
+	Use Effect Shutter Angle	Dùng góc màn trập của hiệu ứng
+	Safe graphics mode: {mode}	Chế độ đồ họa an toàn: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Một lần khởi động trước đã lỗi với đồ họa mặc định. Cập nhật trình điều khiển đồ họa thường khắc phục được.
+	Use Default Graphics	Dùng đồ họa mặc định
+	The default graphics are used from the next start.	Đồ họa mặc định sẽ được dùng từ lần khởi động sau.
+	DirectX 12 only	Chỉ DirectX 12
+	software rendering	kết xuất bằng phần mềm
+	Opens in your web browser: {url}	Mở trong trình duyệt web: {url}
+	Saves this session's log and shows it in your file manager.	Lưu nhật ký của phiên này và hiện nó trong trình quản lý tệp.
+	Shows a report on this computer.	Hiện báo cáo về máy tính này.
+	Shows the version, community links and credits in a CFA4 window.	Hiện phiên bản, liên kết cộng đồng và ghi công trong một cửa sổ CFA4.
+	Couldn't open your web browser	Không thể mở trình duyệt web
+	Open this address in your browser yourself:	Hãy tự mở địa chỉ này trong trình duyệt:
+	Reset Interface Zoom	Đặt lại thu phóng giao diện
+	Stereoscopic 3D	3D lập thể
+	Swap Eyes	Hoán đổi mắt
+	Over/Under	Trên/dưới
+	Side by Side	Cạnh nhau
+	Stereo to 2D	Lập thể sang 2D
+	Eye	Mắt
+	Stereo Parallax	Thị sai lập thể
+	Horizontal Shift	Dịch ngang
+	Slit Scan	Quét khe
+	Time Span (seconds)	Khoảng thời gian (giây)
+	Current Frame At	Khung hình hiện tại ở
+	Blend Slices	Hòa trộn lát cắt
+	Creative Looks	Phong cách màu sáng tạo
+	Film Grain	Hạt phim
+	Animated	Có hoạt ảnh
+	Color Grain	Hạt màu
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 ở 8 Mbps, AAC 160 kbps, đoạn MP4 phân mảnh 6 giây
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 Program Stream
+	MPEG-2 Transport Stream HD 1080	MPEG-2 Transport Stream HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 ở 29,97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, LPCM 16 bit 48 kHz, .mpg (luồng sẵn cho DVD; không tạo VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 ở 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, LPCM 16 bit 48 kHz, .mpg (luồng sẵn cho DVD; không tạo VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Video MPEG-2 (Main Profile 4:2:0, 0,4 bit mỗi điểm ảnh) theo kích thước và tốc độ khung hình của chuỗi, LPCM 16 bit 48 kHz, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Video MPEG-2 1920×1080, trung bình 18 Mbps, AAC 192 kbps, .ts
+	Six-Point Pin	Ghim sáu điểm
+	Upper Center	Giữa trên
+	Lower Center	Giữa dưới
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Dùng FFmpeg cho các tệp engine CFA4 không mở được (FFmpeg 9.0.2 trở lên, bản dựng GPL-3)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Dùng GStreamer của hệ thống cho các tệp mà cả engine lẫn FFmpeg đều không mở được
+	Analyze Source for Smart Cut	Phân tích nguồn để cắt thông minh
+	Plan Smart Cut	Lập kế hoạch cắt thông minh
+	Run Smart Cut	Thực hiện cắt thông minh
+	No sequence open. Double-click a sequence in the Project panel.	Chưa mở chuỗi nào. Hãy nhấp đúp vào một chuỗi trong bảng Dự án.
+	English (US)	Tiếng Anh (Mỹ)
+	English (UK)	Tiếng Anh (Anh)
+	English (Australia)	Tiếng Anh (Úc)
+export.summary	High	cao
+export.summary	Medium	trung bình
+export.summary	Low	thấp
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Đã sao chép âm thanh: {tracks}
+	Audio track {track} is not copied: {why}	Không sao chép rãnh âm thanh {track}: {why}
+	Point tracker	Bộ theo dõi điểm
+	Correlation tracker	Bộ theo dõi tương quan
+	DCP language	Ngôn ngữ DCP
+	None (RFC 5646 tag, e.g. en-US)	Không có (thẻ RFC 5646, ví dụ vi-VN)
+	ISDCF name	Tên ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Đặt tên thư mục DCP theo Digital Cinema Naming Convention
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/vi/common.tsv at aa36bd8, 2026-11-10. MIT OR Apache-2.0; the copyright
+# notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (vi). These rows were
+# written clean-room there; only rows whose English and meaning match CFA4's were taken, and a few
+# were reworded above for video editing.
+
+	Adjust	Điều chỉnh
+	Align to Selection	Căn theo vùng chọn
+	All files	Tất cả tệp
+	Animation	Hiệu ứng động
+	Arrange	Sắp xếp
+	Automatic	Tự động
+	Balance	Cân bằng
+	Blend Mode	Chế độ hòa trộn
+	Blue	Xanh dương
+	Bottom	Dưới cùng
+	Bring Forward	Đưa lên trước
+	Bring to Front	Đưa lên trên cùng
+	Browse…	Duyệt…
+	Clear	Xóa
+	Close	Đóng
+	Color	Màu
+	Color Burn	Đốt màu
+	Color Dodge	Tránh màu
+	Copy	Sao chép
+	Custom	Tùy chỉnh
+	Cut	Cắt
+	Darken	Làm tối
+	Deselect All	Bỏ chọn tất cả
+	Difference	Hiệu
+	Discard	Loại bỏ
+	Distort	Làm méo
+	Distribute	Phân bố
+	Divide	Chia
+	Done	Xong
+	Duplicate	Nhân bản
+	Duration	Thời lượng
+	Edit	Chỉnh sửa
+	Edit Original	Chỉnh sửa bản gốc
+	Editing	Chỉnh sửa
+	Effects	Hiệu ứng
+	Ellipse	Hình elip
+	Exclusion	Loại trừ
+	Export	Xuất
+	Extract	Trích xuất
+	File	Tệp
+	Find Next	Tìm tiếp
+	Find…	Tìm…
+	Fit	Vừa khớp
+	Flatten	Làm phẳng
+	Format	Định dạng
+	General…	Chung…
+	Generate	Tạo
+	Graphic	Đồ họa
+	Green	Xanh lá
+	Group	Nhóm
+	Hard Light	Ánh sáng mạnh
+	Hard Mix	Trộn cứng
+	Help	Trợ giúp
+	History	Lịch sử
+	Hue	Sắc độ
+	Import…	Nhập…
+	Info	Thông tin
+	Insert	Chèn
+	Label	Nhãn
+	Language	Ngôn ngữ
+	Left	Trái
+	Libraries	Thư viện
+	Lighten	Làm sáng
+	Lighter Color	Màu sáng hơn
+	Linear	Tuyến tính
+	Linear Burn	Đốt tuyến tính
+	Linear Light	Ánh sáng tuyến tính
+	Link	Liên kết
+	Luminosity	Độ chói
+	Magenta	Đỏ hồng
+	Metadata	Siêu dữ liệu
+	Modify	Sửa đổi
+	Motion	Chuyển động
+	Multiply	Nhân
+	Name	Tên
+	New	Mới
+	New Layer	Lớp mới
+	No	Không
+	Normal	Thường
+	Output	Đầu ra
+	Overlay	Phủ lên
+	Panels	Bảng
+	Paste	Dán
+	Perspective	Phối cảnh
+	Pin Light	Ánh sáng ghim
+	Polygon	Đa giác
+	Position	Vị trí
+	Properties	Thuộc tính
+	Purple	Tím
+	Range	Phạm vi
+	Ready	Sẵn sàng
+	Recover	Khôi phục
+	Rectangle	Hình chữ nhật
+	Redo	Làm lại
+	Remove	Gỡ bỏ
+	Rename…	Đổi tên…
+	Revert	Hoàn nguyên
+	Right	Phải
+	Rotation	Xoay
+	Saturation	Độ bão hòa
+	Save	Lưu
+	Save As…	Lưu thành…
+	Save a Copy…	Lưu bản sao…
+	Save as Template…	Lưu thành mẫu…
+	Scale	Tỷ lệ
+	Scratch Disks…	Đĩa tạm…
+	Screen	Màn hình
+	Search	Tìm
+	Select	Chọn
+	Select All	Chọn tất cả
+	Selection Tool	Công cụ Chọn
+	Send Backward	Đưa ra sau
+	Send to Back	Đưa xuống dưới cùng
+	Soft Light	Ánh sáng mềm
+	Source	Nguồn
+	Special	Đặc biệt
+	Speed	Tốc độ
+	Status	Trạng thái
+	Stylize	Tạo kiểu dáng
+	Subtract	Trừ
+	Text	Văn bản
+	Time	Thời gian
+	Timeline	Dòng thời gian
+	Tools	Công cụ
+	Top	Trên
+	Transform	Biến đổi
+	Type	Loại
+	Undo	Hoàn tác
+	Ungroup	Bỏ nhóm
+	Untitled	Chưa đặt tên
+	Video	Video
+	View	Xem
+	Violet	Tím
+	Vivid Light	Ánh sáng rực rỡ
+	Window	Cửa sổ
+	Yellow	Vàng
+	Yes	Có
+	Ellipse Tool	Công cụ Hình elip
+	Hand Tool	Công cụ Bàn tay
+	Pen Tool	Công cụ Bút
+	Rectangle Tool	Công cụ Hình chữ nhật
+	Type Tool	Công cụ Chữ
+	Vertical Type Tool	Công cụ Chữ dọc
+	Zoom Tool	Công cụ thu phóng
+	Alpha	Alpha
+	Full	Toàn phần
+	Magnification	Độ phóng đại
+	Red	Đỏ
+	Reset	Đặt lại
+	Settings	Cài đặt
+	Dark	Tối
+	Light	Sáng
+	Next Appearance Mode	Chế độ giao diện tiếp theo
+	Type:	Loại:
+	Color Space	Không gian màu
+	Description	Mô tả
+	Comment	Bình luận
+	Cancel	Hủy
+	Show All	Hiện tất cả
+	Off	Tắt
+	Auto	Tự động
+	Brightness	Độ sáng
+	RGB	RGB
+	Adjustments	Điều chỉnh
+	Amount	Mức độ
+	Blacks	Điểm đen
+	Contrast	Tương phản
+	Correction	Hiệu chỉnh
+	Curves	Đường cong
+	Exposure	Phơi sáng
+	Faded Film	Phim phai
+	Feather	Làm mềm cạnh
+	Highlights	Vùng sáng
+	Hue Shift	Dịch chuyển sắc độ
+	Intensity	Cường độ
+	Midpoint	Điểm giữa
+	Midtones	Tông trung gian
+	Monochrome	Đơn sắc
+	None	Không có
+	Refine	Tinh chỉnh
+	Roundness	Độ tròn
+	Shadows	Vùng tối
+	Sharpen	Làm sắc nét
+	Show Mask	Hiện mặt nạ
+	Soften	Làm mềm
+	Temperature	Nhiệt độ màu
+	Tint	Tông màu
+	Vibrance	Độ sống động
+	Whites	Điểm trắng
+	(none)	(không có)
+	Favorites	Yêu thích
+	Import	Nhập
+	List View	Chế độ danh sách
+	Refresh	Làm mới
+	Size	Kích thước
+	Align	Căn chỉnh
+	Align center	Căn giữa
+	Align left	Căn trái
+	Align right	Căn phải
+	Graphics	Đồ họa
+	Subtitle	Tiêu đề phụ
+	(Custom)	(Tự tạo)
+	Browse	Duyệt
+	Clarity	Độ rõ
+	Dynamics	Động lực
+	Reduce Noise	Giảm nhiễu
+	Sensitivity	Độ nhạy
+	Align Left	Căn trái
+	Align Right	Căn phải
+	Alignment	Căn chỉnh
+	All Caps	Viết hoa toàn bộ
+	All Categories	Tất cả danh mục
+	Angle	Góc
+	Apply	Áp dụng
+	Background	Nền
+	Baseline Shift	Dịch chuyển đường cơ sở
+	Center	Giữa
+	Delete Layer	Xóa lớp
+	Distance	Khoảng cách
+	Fill	Tô
+	Font	Phông chữ
+	Font Size	Cỡ chữ
+	Gradient	Chuyển sắc
+	Justify	Căn đều
+	Kerning	Điều chỉnh khoảng cách chữ
+	Layers	Các lớp
+	Leading	Giãn dòng
+	Linear Gradient	Chuyển sắc tuyến tính
+	OK	OK
+	OpenType	OpenType
+	Orientation	Hướng
+	Path	Đường dẫn
+	Shadow	Bóng
+	Shape	Hình dạng
+	Small Caps	Chữ hoa nhỏ
+	Stroke	Nét
+	Style	Kiểu
+	Tracking	Giãn chữ
+	Underline	Gạch chân
+	Advanced	Nâng cao
+	Default	Mặc định
+	Download	Tải xuống
+	High	Cao
+	Low	Thấp
+	Preview	Xem trước
+	Voice	Giọng nói
+	Open	Mở
+	Crop	Cắt xén
+	Delete	Xóa
+	Descending	Giảm dần
+	Find	Tìm
+	Icon	Biểu tượng
+	Large	Lớn
+	List	Danh sách
+	Name:	Tên:
+	Rename	Đổi tên
+	Small	Nhỏ
+	Thumbnails	Hình thu nhỏ
+	Zoom	Thu phóng
+	Close All	Đóng tất cả
+	Description:	Mô tả:
+	Add	Thêm
+	Intersect	Giao nhau
+	Value	Giá trị
+	Edit…	Chỉnh sửa…
+	Ratio	Tỷ lệ
+	Threshold	Ngưỡng
+	Continue	Tiếp tục
+	Active	Đang dùng
+	Add to favorites	Thêm vào mục yêu thích
+	Appearance Settings…	Cài đặt giao diện…
+	Exported to {path}	Đã xuất ra {path}
+	Preferences	Tùy chọn
+	Remove from favorites	Xóa khỏi mục yêu thích
+	Reset…	Đặt lại…
+	Sync with system	Đồng bộ với hệ thống
+	Adaptive	Thích ứng
+	Color…	Màu…
+	Dark Theme	Giao diện tối
+	Dutch	Tiếng Hà Lan
+	French	Tiếng Pháp
+	General	Chung
+	German	Tiếng Đức
+	Horizontal	Ngang
+	Interface Language	Ngôn ngữ giao diện
+	Italian	Tiếng Ý
+	Japanese	Tiếng Nhật
+	Korean	Tiếng Hàn
+	Labels	Nhãn
+	Light Theme	Giao diện sáng
+	Location	Vị trí
+	Portuguese	Tiếng Bồ Đào Nha
+	Russian	Tiếng Nga
+	Shapes	Hình dạng
+	Show Tool Tips	Hiện chú thích công cụ
+	Smart quotes	Dấu ngoặc kép thông minh
+	Spanish	Tiếng Tây Ban Nha
+	Vertical	Dọc
+	Input:	Đầu vào:
+	● Recording	● Đang ghi
+	Next page	Trang tiếp theo
+	Offset:	Độ lệch:
+	Page {page} of {pages}	Trang {page} trên {pages}
+	Previous page	Trang trước
+	Version	Phiên bản
+	Command	Lệnh
+	Commands:	Lệnh:
+	Export…	Xuất…
+	Keyboard Shortcuts	Phím tắt
+	Keyboard Shortcuts…	Phím tắt…
+	No matching commands	Không tìm thấy lệnh
+	Shortcut	Phím tắt
+	Dock Panel	Neo bảng
+	Close Panel	Đóng bảng
+	Add Guide	Thêm đường căn
+	Clear Guides	Xóa đường căn
+	Guides	Đường căn
+	Lock Guides	Khóa đường căn
+	Orientation:	Hướng:
+	Position:	Vị trí:
+	Set	Đặt
+	Show Guides	Hiện đường căn
+	Show Rulers	Hiện thước
+	Color Management	Quản lý màu
+	Fields:	Các trường:
+	Height:	Chiều cao:
+	Layout:	Bố cục:
+	Width:	Chiều rộng:
+	All	Tất cả
+	Any	Bất kỳ
+	Color:	Màu:
+	Colour	Màu
+	Destination:	Đích đến:
+	Find:	Tìm:
+	Keep:	Giữ:
+	Language:	Ngôn ngữ:
+	Method:	Phương pháp:
+	Save as Template	Lưu thành mẫu
+	Scratch Disks	Đĩa tạm
+	Simplify	Đơn giản hóa
+	Calculate	Tính toán
+	Destination	Đích
+	File Name	Tên tệp
+	Folder	Thư mục
+	Missing	Thiếu
+	Options	Tùy chọn
+	Embed	Nhúng
+	Exported {path}	Đã xuất {path}
+	Format:	Định dạng:
+	Path:	Đường dẫn:
+	Replace	Thay thế
+	Typewriter	Máy đánh chữ
+	Compression	Nén
+	Medium	Vừa
+	Profile	Hồ sơ
+	Quality	Chất lượng
+	Bottom Left	Dưới trái
+	Bottom Right	Dưới phải
+	Image	Hình ảnh
+	Images	Hình ảnh
+	Prefix	Tiền tố
+	Top Left	Trên trái
+	Top Right	Trên phải
+	Copyright	Bản quyền
+	Title	Tiêu đề
+	Scaling	Chia tỷ lệ
+	Summary	Tóm tắt
+	16 bit	16-bit
+	Channels	Kênh
+	Progressive	Lũy tiến
+	Home	Trang chủ
+	Recent	Gần đây
+	Up	Lên
+	Down	Xuống
+	Restore	Khôi phục
+	Show:	Hiện:
+	Clear All	Xóa tất cả
+	just now	vừa xong
+	{n} min ago	{n} phút trước
+	{n} h ago	{n} giờ trước
+	Warning	Cảnh báo
+	Error	Lỗi
+	Strikethrough	Gạch ngang
+	Clear History	Xóa lịch sử
+	Panel menu	Menu bảng
+	About	Giới thiệu
+	Contributors	Người đóng góp
+	Models	Mô hình
+	Show	Hiện
+	Sort	Sắp xếp
+	Reverse the order	Đảo ngược thứ tự
+	Table	Bảng
+	Company	Công ty
+	Model	Mô hình
+	Commits	Commit
+	% of all commits	% tổng số commit
+	Lines +/−	Dòng +/−
+	Version {version}	Phiên bản {version}
+	Username	Tên người dùng
+	Display name	Tên hiển thị
+	Real name	Tên thật
+	Name (A–Z)	Tên (A–Z)
+	Merged PRs	PR đã gộp
+	Lines added	Dòng thêm
+	Lines deleted	Dòng xóa
+	Line delta	Chênh lệch dòng
+	Binary assets added	Tài nguyên nhị phân đã thêm
+	Binary assets removed	Tài nguyên nhị phân đã xóa
+	First commit	Commit đầu tiên
+	Last commit	Commit cuối cùng
+	Category:	Danh mục:
+	Replace:	Thay thế:
+	Output:	Đầu ra:
+	Open Recent	Mở gần đây
+	Clear Recent Files	Xóa tệp gần đây
+	Report an Issue…	Báo cáo vấn đề…
+	Review	Duyệt
+	Zoom In	Phóng to
+	Zoom Out	Thu nhỏ
+	Standard	Tiêu chuẩn
+	Source code on GitHub	Mã nguồn trên GitHub
+	Community	Cộng đồng
+	Join us on Discord	Tham gia Discord
+	New Workspace	Không gian làm việc mới
+	Effect	Hiệu ứng
+	Don't Save	Không lưu
+	1 file	1 tệp
+	{n} files	{n} tệp
+	Background Color	Màu nền
+	Basic	Cơ bản
+	Black	Đen
+	Black & White	Đen & Trắng
+	Black and white	Đen trắng
+	Blending Mode	Chế độ hòa trộn
+	Blocks	Khối
+	Blur Angle	Góc làm mờ
+	Border	Viền
+	Borders	Đường viền
+	Brush Size	Cỡ cọ
+	Brush Strokes	Nét cọ
+	Bulge	Phồng
+	Channel	Kênh
+	Channel Mixer	Bộ trộn kênh
+	Circle	Hình tròn
+	Clone	Nhân bản
+	Color Balance	Cân bằng màu
+	Colorize	Tô màu
+	Columns	Cột
+	Corner	Góc
+	Crystallize	Kết tinh
+	Curvature	Độ cong
+	Curve	Đường cong
+	Depth	Độ sâu
+	Desaturate	Khử bão hòa
+	Diamond	Hình thoi
+	Dimensions	Kích thước
+	Direction	Hướng
+	Distortion	Biến dạng
+	Drop Shadow	Đổ bóng
+	Edge Thickness	Độ dày cạnh
+	Edge Width	Độ rộng cạnh
+	Emboss	Dập nổi
+	Fast	Nhanh
+	Filter	Bộ lọc
+	Flash	Đèn flash
+	Focus	Lấy nét
+	Frequency	Tần số
+	From	Từ
+	Gamma	Gamma
+	Gamma Correction	Hiệu chỉnh gamma
+	Gamut Warning	Cảnh báo ngoài dải màu
+	Gaussian Blur	Mờ Gaussian
+	Glass	Kính
+	Glow Brightness	Độ sáng của ánh sáng
+	Good	Tốt
+	Grid	Lưới
+	Hard	Cứng
+	Heart	Trái tim
+	Height	Chiều cao
+	Hexagon	Lục giác
+	High Pass	Lọc cao tần
+	Inside	Bên trong
+	Interpolation	Nội suy
+	Invert	Đảo màu
+	Left to Right	Trái sang phải
+	Length	Chiều dài
+	Lens Flare	Ánh sáng loé ống kính
+	Level 1	Cấp 1
+	Level 2	Cấp 2
+	Level 3	Cấp 3
+	Level 4	Cấp 4
+	Light Intensity	Cường độ ánh sáng
+	Light Type	Loại ánh sáng
+	Lighting Effects	Hiệu ứng ánh sáng
+	Luminance	Độ sáng
+	Matte	Nền mờ
+	Maximum	Tối đa
+	Median	Trung vị
+	Method	Phương pháp
+	Minimum	Tối thiểu
+	Mirror	Gương
+	Mode	Chế độ
+	Mosaic	Khảm
+	Move	Di chuyển
+	Noise	Nhiễu
+	Octagon	Bát giác
+	Offset	Độ lệch
+	On	Bật
+	Outside	Bên ngoài
+	Pentagon	Ngũ giác
+	Photocopy	Bản sao photocopy
+	Points	Điểm
+	Posterize	Poster hóa
+	Preserve Luminosity	Giữ độ sáng
+	Radial	Hướng tâm
+	Radial Blur	Mờ hướng tâm
+	Radius	Bán kính
+	Random	Ngẫu nhiên
+	Rays	Tia sáng
+	Reflected	Phản chiếu
+	Relaxed	Giãn rộng
+	Relief	Nổi
+	Result	Kết quả
+	Rows	Hàng
+	Segments	Đoạn
+	Skew	Nghiêng lệch
+	Slice	Lát cắt
+	Slices	Lát cắt
+	Smoothness	Độ mịn
+	Soft	Mềm
+	Softness	Độ mềm
+	Solarize	Solar hóa
+	Spherize	Cầu hoá
+	Split	Tách
+	Square	Hình vuông
+	Star	Ngôi sao
+	Strength	Cường độ
+	Stretch	Kéo giãn
+	Stroke Color	Màu nét
+	Stroke Length	Độ dài nét
+	Thickness	Độ dày
+	Tilt	Độ nghiêng
+	Tint Color	Màu nhuộm
+	To	Đến
+	Tolerance	Dung sai
+	Transparency	Độ trong suốt
+	Triangle	Tam giác
+	Twirl	Xoáy
+	Twist	Xoắn
+	Unsharp Mask	Tăng độ sắc nét
+	Vertical Alignment	Căn dọc
+	Wave	Sóng
+	Wet	Ướt
+	White	Trắng
+	White Is High	Trắng là cao
+	Width	Chiều rộng
+	Stop	Dừng
+	Application	Ứng dụng
+	Baseline	Đường cơ sở
+	Contains	Chứa
+	Navigation	Điều hướng
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
