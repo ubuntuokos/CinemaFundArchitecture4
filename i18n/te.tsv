@@ -4277,3 +4277,20 @@ export.summary	Low	తక్కువ
 	Refresh Credits from Spreadsheet…	స్ప్రెడ్‌షీట్ నుండి క్రెడిట్స్‌ను రిఫ్రెష్ చేయి…
 	Save Credits File…	క్రెడిట్స్ ఫైల్‌ను సేవ్ చేయి…
 	Compare Credits with Spreadsheet	క్రెడిట్స్‌ను స్ప్రెడ్‌షీట్‌తో పోల్చు
+	“{name}” appears twice in the same block	“{name}” ఒకే బ్లాక్‌లో రెండుసార్లు ఉంది
+	“{name}” is written as “{other}” in row {otherRow}	వరుస {otherRow}లో “{name}” “{other}”గా రాయబడింది
+	The font “{font}” is not installed; another font is used	ఫాంట్ “{font}” ఇన్‌స్టాల్ కాలేదు; మరో ఫాంట్ వాడబడుతుంది
+	The font “{font}” has no “{chars}”; another font draws them	ఫాంట్ “{font}”లో “{chars}” లేవు; వాటిని మరో ఫాంట్ గీస్తుంది
+	“{text}” is outside the title-safe area	“{text}” టైటిల్-సేఫ్ ప్రాంతం వెలుపల ఉంది
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” నలుపుపై చాలా చీకటిగా ఉంది (కాంట్రాస్ట్ {ratio}:1; కనీసం 4.5:1 అవసరం)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” ఎత్తు {px} px; 24 px లేదా అంతకంటే ఎక్కువ బాగా చదవబడుతుంది
+	The roll moves {speed} px per frame; a whole number does not shimmer	రోల్ ఒక్కో ఫ్రేమ్‌కు {speed} px కదులుతుంది; పూర్ణ సంఖ్య మిణుకుమనదు
+	A line crosses the frame in {seconds} s; at least 6 s reads well	ఒక వరుస ఫ్రేమ్‌ను {seconds} s లో దాటుతుంది; కనీసం 6 s బాగా చదవబడుతుంది
+	The card holds for only {seconds} s after its fades	ఫేడ్‌ల తర్వాత కార్డ్ కేవలం {seconds} s నిలుస్తుంది
+	This page starts {seconds} s before the previous one ends	ఈ పేజీ మునుపటిది ముగియడానికి {seconds} s ముందే మొదలవుతుంది
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” దాని పిక్సెల్‌లలో {percent} % వద్ద చూపబడుతుంది; మసకగా కనిపిస్తుంది
+	{more} more of the same	ఇలాంటివి మరో {more}
+	Page {page}: {message}	పేజీ {page}: {message}
+	Checks and warnings	తనిఖీలు మరియు హెచ్చరికలు
+	Checks: {errors} errors, {warnings} warnings	తనిఖీలు: {errors} లోపాలు, {warnings} హెచ్చరికలు
+	Check Credits	క్రెడిట్స్ తనిఖీ చేయి

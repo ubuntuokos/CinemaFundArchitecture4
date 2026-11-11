@@ -4271,3 +4271,20 @@
 	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Fogli di calcolo e file dei titoli di coda (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
 	Save Credits File…	Salva file dei titoli di coda…
 	Compare Credits with Spreadsheet	Confronta i titoli di coda con il foglio di calcolo
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Una riga attraversa l'inquadratura in {seconds} s; da 6 s in su si legge bene
+	Checks and warnings	Controlli e avvisi
+	Checks: {errors} errors, {warnings} warnings	Controlli: {errors} errori, {warnings} avvisi
+	Page {page}: {message}	Pagina {page}: {message}
+	The card holds for only {seconds} s after its fades	Il cartello resta fermo solo {seconds} s dopo le dissolvenze
+	The font “{font}” has no “{chars}”; another font draws them	Il font “{font}” non ha “{chars}”; li disegna un altro font
+	The font “{font}” is not installed; another font is used	Il font “{font}” non è installato; viene usato un altro font
+	This page starts {seconds} s before the previous one ends	Questa pagina inizia {seconds} s prima della fine della precedente
+	{more} more of the same	altri {more} uguali
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” è mostrato al {percent} % dei suoi pixel; apparirà sfocato
+	“{name}” appears twice in the same block	“{name}” compare due volte nello stesso blocco
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” è scritto “{other}” alla riga {otherRow}
+	“{text}” is outside the title-safe area	“{text}” è fuori dall'area sicura dei titoli
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” è troppo scuro sul nero (contrasto {ratio}:1; ne servono almeno 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” è alto {px} px; da 24 px in su si legge bene
+	The roll moves {speed} px per frame; a whole number does not shimmer	Lo scorrimento avanza di {speed} px per fotogramma; un numero intero non sfarfalla
+	Check Credits	Controlla titoli di coda

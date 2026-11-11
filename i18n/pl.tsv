@@ -4271,3 +4271,20 @@ export.summary	Low	niska
 	Refresh Credits from Spreadsheet…	Odśwież napisy końcowe z arkusza…
 	Save Credits File…	Zapisz plik napisów końcowych…
 	Compare Credits with Spreadsheet	Porównaj napisy końcowe z arkuszem
+	“{name}” appears twice in the same block	„{name}” występuje dwa razy w tym samym bloku
+	“{name}” is written as “{other}” in row {otherRow}	„{name}” zapisano w wierszu {otherRow} jako „{other}”
+	The font “{font}” is not installed; another font is used	Czcionka „{font}” nie jest zainstalowana; użyto innej
+	The font “{font}” has no “{chars}”; another font draws them	Czcionka „{font}” nie ma „{chars}”; rysuje je inna czcionka
+	“{text}” is outside the title-safe area	„{text}” wychodzi poza obszar bezpieczny dla napisów
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” jest za ciemny na czarnym tle (kontrast {ratio}:1; potrzeba co najmniej 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}” ma {px} px wysokości; od 24 px czyta się dobrze
+	The roll moves {speed} px per frame; a whole number does not shimmer	Przewijanie przesuwa się o {speed} px na klatkę; liczba całkowita nie migocze
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Wiersz przechodzi przez kadr w {seconds} s; co najmniej 6 s czyta się dobrze
+	The card holds for only {seconds} s after its fades	Plansza po przejściach trwa tylko {seconds} s
+	This page starts {seconds} s before the previous one ends	Ta strona zaczyna się {seconds} s przed końcem poprzedniej
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}” jest wyświetlany w {percent} % swoich pikseli; będzie wyglądał nieostro
+	{more} more of the same	{more} więcej takich samych
+	Page {page}: {message}	Strona {page}: {message}
+	Checks and warnings	Kontrole i ostrzeżenia
+	Checks: {errors} errors, {warnings} warnings	Kontrole: błędy {errors}, ostrzeżenia {warnings}
+	Check Credits	Sprawdź napisy końcowe

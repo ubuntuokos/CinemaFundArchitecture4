@@ -4273,3 +4273,20 @@ export.summary	Low	χαμηλή
 	Refresh Credits from Spreadsheet…	Ανανέωση τίτλων συντελεστών από το υπολογιστικό φύλλο…
 	Save Credits File…	Αποθήκευση αρχείου τίτλων συντελεστών…
 	Compare Credits with Spreadsheet	Σύγκριση τίτλων συντελεστών με το υπολογιστικό φύλλο
+	“{name}” appears twice in the same block	Το “{name}” εμφανίζεται δύο φορές στο ίδιο μπλοκ
+	“{name}” is written as “{other}” in row {otherRow}	Το “{name}” γράφεται “{other}” στη γραμμή {otherRow}
+	The font “{font}” is not installed; another font is used	Η γραμματοσειρά “{font}” δεν είναι εγκατεστημένη· χρησιμοποιείται άλλη
+	The font “{font}” has no “{chars}”; another font draws them	Η γραμματοσειρά “{font}” δεν έχει “{chars}”· τα σχεδιάζει άλλη
+	“{text}” is outside the title-safe area	Το “{text}” είναι εκτός της ασφαλούς περιοχής τίτλων
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	Το “{text}” είναι πολύ σκούρο σε μαύρο (αντίθεση {ratio}:1· χρειάζεται τουλάχιστον 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	Το “{text}” έχει ύψος {px} px· από 24 px και πάνω διαβάζεται καλά
+	The roll moves {speed} px per frame; a whole number does not shimmer	Η κύλιση κινείται {speed} px ανά καρέ· ένας ακέραιος δεν τρεμοπαίζει
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Μια γραμμή διασχίζει το κάδρο σε {seconds} s· τουλάχιστον 6 s διαβάζεται καλά
+	The card holds for only {seconds} s after its fades	Η κάρτα μένει μόνο {seconds} s μετά τα σβησίματα
+	This page starts {seconds} s before the previous one ends	Αυτή η σελίδα ξεκινά {seconds} s πριν τελειώσει η προηγούμενη
+	“{file}” is shown at {percent} % of its pixels; it will look soft	Το “{file}” εμφανίζεται στο {percent} % των pixel του· θα φαίνεται θολό
+	{more} more of the same	{more} ακόμη του ίδιου είδους
+	Page {page}: {message}	Σελίδα {page}: {message}
+	Checks and warnings	Έλεγχοι και προειδοποιήσεις
+	Checks: {errors} errors, {warnings} warnings	Έλεγχοι: {errors} σφάλματα, {warnings} προειδοποιήσεις
+	Check Credits	Έλεγχος τίτλων συντελεστών

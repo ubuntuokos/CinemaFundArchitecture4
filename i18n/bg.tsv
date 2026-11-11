@@ -4274,3 +4274,20 @@ export.summary	Low	ниско
 	Refresh Credits from Spreadsheet…	Обновяване на надписите от таблицата…
 	Save Credits File…	Запазване на файл с надписи…
 	Compare Credits with Spreadsheet	Сравняване на надписите с таблицата
+	“{name}” appears twice in the same block	„{name}“ се среща два пъти в един и същ блок
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ е изписано като „{other}“ на ред {otherRow}
+	The font “{font}” is not installed; another font is used	Шрифтът „{font}“ не е инсталиран; използва се друг шрифт
+	The font “{font}” has no “{chars}”; another font draws them	Шрифтът „{font}“ няма „{chars}“; изобразява ги друг шрифт
+	“{text}” is outside the title-safe area	„{text}“ е извън безопасната зона за надписи
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ е твърде тъмно на черно (контраст {ratio}:1; нужно е поне 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ е висок {px} px; от 24 px нагоре се чете добре
+	The roll moves {speed} px per frame; a whole number does not shimmer	Ролът се движи с {speed} px на кадър; при цяло число не трепти
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Ред пресича кадъра за {seconds} s; поне 6 s се чете добре
+	The card holds for only {seconds} s after its fades	Картата остава само {seconds} s след преливанията
+	This page starts {seconds} s before the previous one ends	Тази страница започва {seconds} s преди края на предишната
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ се показва при {percent} % от пикселите си; ще изглежда размито
+	{more} more of the same	Още {more} от същото
+	Page {page}: {message}	Страница {page}: {message}
+	Checks and warnings	Проверки и предупреждения
+	Checks: {errors} errors, {warnings} warnings	Проверки: грешки {errors}, предупреждения {warnings}
+	Check Credits	Проверка на надписите

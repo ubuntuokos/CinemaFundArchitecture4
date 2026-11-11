@@ -4279,3 +4279,20 @@
 	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Spreadsheet dan file kredit (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
 	Save Credits File…	Simpan File Kredit…
 	Compare Credits with Spreadsheet	Bandingkan Kredit dengan Spreadsheet
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Satu baris melintasi bingkai dalam {seconds} s; minimal 6 s nyaman dibaca
+	Checks and warnings	Pemeriksaan dan peringatan
+	Checks: {errors} errors, {warnings} warnings	Pemeriksaan: {errors} kesalahan, {warnings} peringatan
+	Page {page}: {message}	Halaman {page}: {message}
+	The card holds for only {seconds} s after its fades	Kartu hanya bertahan {seconds} s setelah fade-nya
+	The font “{font}” has no “{chars}”; another font draws them	Font “{font}” tidak memiliki “{chars}”; font lain yang menggambarnya
+	The font “{font}” is not installed; another font is used	Font “{font}” belum terpasang; font lain digunakan
+	This page starts {seconds} s before the previous one ends	Halaman ini mulai {seconds} s sebelum halaman sebelumnya berakhir
+	{more} more of the same	{more} lagi yang serupa
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” ditampilkan pada {percent} % pikselnya; akan tampak buram
+	“{name}” appears twice in the same block	“{name}” muncul dua kali dalam blok yang sama
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” ditulis “{other}” di baris {otherRow}
+	“{text}” is outside the title-safe area	“{text}” berada di luar area aman judul
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” terlalu gelap di atas hitam (kontras {ratio}:1; minimal 4,5:1 diperlukan)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” setinggi {px} px; 24 px atau lebih nyaman dibaca
+	The roll moves {speed} px per frame; a whole number does not shimmer	Gulungan bergerak {speed} px per bingkai; bilangan bulat tidak berkedip
+	Check Credits	Periksa Kredit

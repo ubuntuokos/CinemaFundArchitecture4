@@ -4271,3 +4271,20 @@ export.summary	Low	laag
 	Refresh Credits from Spreadsheet…	Aftiteling vernieuwen uit spreadsheet…
 	Save Credits File…	Aftitelingsbestand opslaan…
 	Compare Credits with Spreadsheet	Aftiteling vergelijken met spreadsheet
+	“{name}” appears twice in the same block	“{name}” komt twee keer voor in hetzelfde blok
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” is in rij {otherRow} geschreven als “{other}”
+	The font “{font}” is not installed; another font is used	Het lettertype “{font}” is niet geïnstalleerd; er wordt een ander lettertype gebruikt
+	The font “{font}” has no “{chars}”; another font draws them	Het lettertype “{font}” heeft geen “{chars}”; een ander lettertype tekent ze
+	“{text}” is outside the title-safe area	“{text}” valt buiten het titelveilige gebied
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” is te donker op zwart (contrast {ratio}:1; minstens 4,5:1 is nodig)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” is {px} px hoog; 24 px of meer leest goed
+	The roll moves {speed} px per frame; a whole number does not shimmer	De rol beweegt {speed} px per frame; een geheel getal flikkert niet
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Een regel doorkruist het beeld in {seconds} s; minstens 6 s leest goed
+	The card holds for only {seconds} s after its fades	De kaart blijft na de overgangen maar {seconds} s staan
+	This page starts {seconds} s before the previous one ends	Deze pagina begint {seconds} s voordat de vorige eindigt
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” wordt getoond op {percent} % van zijn pixels; het oogt zacht
+	{more} more of the same	Nog {more} van hetzelfde
+	Page {page}: {message}	Pagina {page}: {message}
+	Checks and warnings	Controles en waarschuwingen
+	Checks: {errors} errors, {warnings} warnings	Controles: {errors} fouten, {warnings} waarschuwingen
+	Check Credits	Aftiteling controleren

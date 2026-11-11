@@ -10,6 +10,7 @@ moment (``graphics.credits.thumbnail``), and places the credits at the playhead
 from __future__ import annotations
 
 import base64
+import re
 from pathlib import Path
 from typing import Any
 
@@ -26,9 +27,11 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QListWidgetItem,
     QPushButton,
     QSlider,
     QSplitter,
+    QStyle,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -36,7 +39,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..engine import EngineClient
-from ..i18n import N_, tr
+from ..i18n import N_, TR, tr
 from ..timecode import TICKS_PER_SECOND
 
 SHEET_FILTER = N_("Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)")
@@ -44,6 +47,54 @@ CREDITS_FILE_FILTER = N_("CFA4 credits file (*.cfa4credits)")
 STYLING_FILTER = N_("Credits styling (*.json)")
 BEHAVIOURS = {"scroll": N_("Roll"), "card": N_("Card")}
 PREVIEW_WIDTH = 480
+# The engine's checks (crates/credits/src/validate.rs), worded from their code and values.
+ISSUE_TEXT = {
+    "duplicate-name": N_("“{name}” appears twice in the same block"),
+    "name-spelling": N_("“{name}” is written as “{other}” in row {otherRow}"),
+    "missing-font": N_("The font “{font}” is not installed; another font is used"),
+    "missing-glyphs": N_("The font “{font}” has no “{chars}”; another font draws them"),
+    "outside-title-safe": N_("“{text}” is outside the title-safe area"),
+    "low-contrast": N_("“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)"),
+    "small-text": N_("“{text}” is {px} px high; 24 px or more reads well"),
+    "uneven-scroll": N_("The roll moves {speed} px per frame; a whole number does not shimmer"),
+    "fast-scroll": N_("A line crosses the frame in {seconds} s; at least 6 s reads well"),
+    "short-card": N_("The card holds for only {seconds} s after its fades"),
+    "overlap": N_("This page starts {seconds} s before the previous one ends"),
+    "upscaled-picture": N_("“{file}” is shown at {percent} % of its pixels; it will look soft"),
+    "more-issues": N_("{more} more of the same"),
+}
+
+
+# languages of the GUI that write decimals with a comma
+COMMA_DECIMAL = {"hu", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"}
+DECIMAL = re.compile(r"-?\d+\.\d+")
+
+
+def local_number(value: Any) -> str:
+    """A value as text; decimals with the GUI language's separator (7.47 → 7,47 in Hungarian)."""
+    text = str(value)
+    if TR.language in COMMA_DECIMAL and DECIMAL.fullmatch(text):
+        return text.replace(".", ",")
+    return text
+
+
+def issue_text(issue: dict[str, Any]) -> str:
+    """An engine check in the user's language: its template filled with its values, after its
+    place (row or page). Unknown codes fall back to the engine's English message."""
+    template = ISSUE_TEXT.get(str(issue.get("code")))
+    values = issue.get("values") if isinstance(issue.get("values"), dict) else {}
+    if template:
+        text = tr(template)
+        for k, v in values.items():
+            text = text.replace("{" + str(k) + "}", local_number(v))
+    else:
+        text = str(issue.get("message") or issue.get("code") or "")
+    row, page = issue.get("row"), issue.get("page")
+    if isinstance(row, int):
+        return tr("Row {row}: {message}").replace("{row}", str(row)).replace("{message}", text)
+    if isinstance(page, int):
+        return tr("Page {page}: {message}").replace("{page}", str(page + 1)).replace("{message}", text)
+    return text
 # typing in a path field waits this long before asking the engine again
 DEBOUNCE_MS = 400
 
@@ -134,14 +185,18 @@ class CreditsDialog(QDialog):
         self.total.setObjectName("credits.total")
         self.warnings = QListWidget(self)
         self.warnings.setObjectName("credits.warnings")
-        self.warnings.setMaximumHeight(110)
+        self.warnings.setMaximumHeight(140)
+        self.warnings.setWordWrap(True)
+        self.check_summary = QLabel(self)
+        self.check_summary.setObjectName("credits.checkSummary")
 
         left = QWidget(self)
         lv = QVBoxLayout(left)
         lv.setContentsMargins(0, 0, 0, 0)
         lv.addWidget(self.pages, 1)
         lv.addWidget(self.total)
-        lv.addWidget(QLabel(tr("Warnings"), self))
+        lv.addWidget(self.check_summary)
+        lv.addWidget(QLabel(tr("Checks and warnings"), self))
         lv.addWidget(self.warnings)
 
         # ----- page picture -----
@@ -315,10 +370,28 @@ class CreditsDialog(QDialog):
             self.pages.selectRow(min(max(selected, 0), len(pages) - 1))
         self.total.setText(tr("Total: {time}").replace("{time}", format_seconds((preview or {}).get("duration"))) if pages else "")
         self.warnings.clear()
+        style = self.style()
+        icons = {
+            "error": style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxCritical),
+            "warning": style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning),
+            "info": style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation),
+        }
+        for issue in (preview or {}).get("issues") or []:
+            if isinstance(issue, dict):
+                item = QListWidgetItem(icons.get(str(issue.get("severity")), icons["info"]), issue_text(issue))
+                item.setData(Qt.ItemDataRole.UserRole, issue.get("code"))
+                self.warnings.addItem(item)
         for w in (preview or {}).get("warnings") or []:
             row = w.get("row") if isinstance(w, dict) else None
             text = str(w.get("message") if isinstance(w, dict) else w)
-            self.warnings.addItem(tr("Row {row}: {message}").replace("{row}", str(row)).replace("{message}", text) if row else text)
+            item = QListWidgetItem(icons["warning"], tr("Row {row}: {message}").replace("{row}", str(row)).replace("{message}", text) if row else text)
+            self.warnings.addItem(item)
+        issues = [i for i in (preview or {}).get("issues") or [] if isinstance(i, dict)]
+        errors = sum(1 for i in issues if i.get("severity") == "error")
+        warns = sum(1 for i in issues if i.get("severity") == "warning") + len((preview or {}).get("warnings") or [])
+        self.check_summary.setText(
+            tr("Checks: {errors} errors, {warnings} warnings").replace("{errors}", str(errors)).replace("{warnings}", str(warns)) if pages else ""
+        )
         self.import_button.setEnabled(bool(pages))
         self.save_button.setEnabled(bool(pages))
         if error:

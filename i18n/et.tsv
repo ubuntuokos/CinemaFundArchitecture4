@@ -4273,3 +4273,20 @@ export.summary	Low	madal
 	Refresh Credits from Spreadsheet…	Värskenda tiitreid tabelist…
 	Save Credits File…	Salvesta tiitrifail…
 	Compare Credits with Spreadsheet	Võrdle tiitreid tabeliga
+	“{name}” appears twice in the same block	„{name}“ esineb samas plokis kaks korda
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ on real {otherRow} kirjutatud kujul „{other}“
+	The font “{font}” is not installed; another font is used	Fonti „{font}“ pole paigaldatud; kasutatakse teist fonti
+	The font “{font}” has no “{chars}”; another font draws them	Fondis „{font}“ pole märke „{chars}“; need joonistab teine font
+	“{text}” is outside the title-safe area	„{text}“ on väljaspool tiitrite ohutut ala
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ on mustal liiga tume (kontrast {ratio}:1; vaja on vähemalt 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ on {px} px kõrge; 24 px või rohkem on hästi loetav
+	The roll moves {speed} px per frame; a whole number does not shimmer	Kerimine liigub {speed} px kaadri kohta; täisarv ei virvenda
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Rida läbib kaadri {seconds} s-ga; vähemalt 6 s on hästi loetav
+	The card holds for only {seconds} s after its fades	Kaart püsib pärast üleminekuid vaid {seconds} s
+	This page starts {seconds} s before the previous one ends	See leht algab {seconds} s enne eelmise lõppu
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ kuvatakse {percent} % pikslitest; see paistab pehme
+	{more} more of the same	Veel {more} samasugust
+	Page {page}: {message}	Leht {page}: {message}
+	Checks and warnings	Kontrollid ja hoiatused
+	Checks: {errors} errors, {warnings} warnings	Kontrollid: vigu {errors}, hoiatusi {warnings}
+	Check Credits	Kontrolli tiitreid

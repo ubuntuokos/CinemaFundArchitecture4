@@ -4273,3 +4273,20 @@ export.summary	Low	matala
 	Refresh Credits from Spreadsheet…	Päivitä tekijätiedot laskentataulukosta…
 	Save Credits File…	Tallenna tekijätietotiedosto…
 	Compare Credits with Spreadsheet	Vertaa tekijätietoja laskentataulukkoon
+	“{name}” appears twice in the same block	”{name}” esiintyy samassa lohkossa kahdesti
+	“{name}” is written as “{other}” in row {otherRow}	”{name}” on kirjoitettu muodossa ”{other}” rivillä {otherRow}
+	The font “{font}” is not installed; another font is used	Fonttia ”{font}” ei ole asennettu; käytetään toista fonttia
+	The font “{font}” has no “{chars}”; another font draws them	Fontissa ”{font}” ei ole merkkejä ”{chars}”; ne piirtää toinen fontti
+	“{text}” is outside the title-safe area	”{text}” on tekstin turva-alueen ulkopuolella
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” on liian tumma mustalla (kontrasti {ratio}:1; vähintään 4,5:1 tarvitaan)
+	“{text}” is {px} px high; 24 px or more reads well	”{text}” on {px} px korkea; 24 px tai enemmän on helppolukuinen
+	The roll moves {speed} px per frame; a whole number does not shimmer	Rullaus liikkuu {speed} px kuvaa kohden; kokonaisluku ei värise
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Rivi ylittää kuvan {seconds} s:ssa; vähintään 6 s on helppolukuinen
+	The card holds for only {seconds} s after its fades	Kortti pysyy häivytysten jälkeen vain {seconds} s
+	This page starts {seconds} s before the previous one ends	Tämä sivu alkaa {seconds} s ennen edellisen loppua
+	“{file}” is shown at {percent} % of its pixels; it will look soft	”{file}” näytetään {percent} %:lla pikseleistään; se näyttää pehmeältä
+	{more} more of the same	{more} samanlaista lisää
+	Page {page}: {message}	Sivu {page}: {message}
+	Checks and warnings	Tarkistukset ja varoitukset
+	Checks: {errors} errors, {warnings} warnings	Tarkistukset: {errors} virhettä, {warnings} varoitusta
+	Check Credits	Tarkista tekijätiedot

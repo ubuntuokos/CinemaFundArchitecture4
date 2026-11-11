@@ -4269,3 +4269,20 @@
 	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	表格和演职员表文件 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
 	Save Credits File…	保存演职员表文件…
 	Compare Credits with Spreadsheet	将演职员表与表格比较
+	A line crosses the frame in {seconds} s; at least 6 s reads well	一行穿过画面需要 {seconds} 秒;至少 6 秒才便于阅读
+	Checks and warnings	检查与警告
+	Checks: {errors} errors, {warnings} warnings	检查:{errors} 个错误,{warnings} 个警告
+	Page {page}: {message}	第 {page} 页:{message}
+	The card holds for only {seconds} s after its fades	淡入淡出之后,卡片只停留 {seconds} 秒
+	The font “{font}” has no “{chars}”; another font draws them	字体“{font}”中没有“{chars}”;将由其他字体绘制
+	The font “{font}” is not installed; another font is used	字体“{font}”未安装;将使用其他字体
+	This page starts {seconds} s before the previous one ends	此页面比上一页结束早 {seconds} 秒开始
+	{more} more of the same	还有 {more} 个相同项
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}”以其像素的 {percent} % 显示;看起来会模糊
+	“{name}” appears twice in the same block	“{name}”在同一区块中出现两次
+	“{name}” is written as “{other}” in row {otherRow}	“{name}”在第 {otherRow} 行写作“{other}”
+	“{text}” is outside the title-safe area	“{text}”超出了标题安全区
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”在黑色背景上太暗(对比度 {ratio}:1;至少需要 4.5:1)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}”高 {px} px;24 px 或更高时便于阅读
+	The roll moves {speed} px per frame; a whole number does not shimmer	滚动每帧移动 {speed} px；整数不会闪烁
+	Check Credits	检查演职员表

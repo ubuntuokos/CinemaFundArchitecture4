@@ -4271,3 +4271,20 @@ export.summary	Low	thấp
 	Refresh Credits from Spreadsheet…	Làm mới danh đề từ bảng tính…
 	Save Credits File…	Lưu tệp danh đề…
 	Compare Credits with Spreadsheet	So sánh danh đề với bảng tính
+	“{name}” appears twice in the same block	“{name}” xuất hiện hai lần trong cùng một khối
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” được viết là “{other}” ở hàng {otherRow}
+	The font “{font}” is not installed; another font is used	Phông “{font}” chưa được cài; dùng phông khác thay thế
+	The font “{font}” has no “{chars}”; another font draws them	Phông “{font}” không có “{chars}”; phông khác sẽ vẽ chúng
+	“{text}” is outside the title-safe area	“{text}” nằm ngoài vùng an toàn cho tiêu đề
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” quá tối trên nền đen (độ tương phản {ratio}:1; cần ít nhất 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” cao {px} px; từ 24 px trở lên dễ đọc
+	The roll moves {speed} px per frame; a whole number does not shimmer	Cuộn di chuyển {speed} px mỗi khung hình; số nguyên sẽ không bị nhấp nháy
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Một dòng đi qua khung hình trong {seconds} giây; ít nhất 6 giây mới dễ đọc
+	The card holds for only {seconds} s after its fades	Thẻ chỉ dừng {seconds} giây sau các hiệu ứng mờ
+	This page starts {seconds} s before the previous one ends	Trang này bắt đầu {seconds} giây trước khi trang trước kết thúc
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” hiển thị ở {percent} % số điểm ảnh; sẽ trông bị mờ
+	{more} more of the same	Thêm {more} mục tương tự
+	Page {page}: {message}	Trang {page}: {message}
+	Checks and warnings	Kiểm tra và cảnh báo
+	Checks: {errors} errors, {warnings} warnings	Kiểm tra: {errors} lỗi, {warnings} cảnh báo
+	Check Credits	Kiểm tra danh đề

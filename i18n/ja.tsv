@@ -4280,3 +4280,20 @@
 	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	スプレッドシートとクレジットファイル (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
 	Save Credits File…	クレジットファイルを保存…
 	Compare Credits with Spreadsheet	クレジットをスプレッドシートと比較
+	A line crosses the frame in {seconds} s; at least 6 s reads well	1行がフレームを横切るのに{seconds}秒かかります。読みやすいのは6秒以上です
+	Checks and warnings	チェックと警告
+	Checks: {errors} errors, {warnings} warnings	チェック: エラー{errors}件、警告{warnings}件
+	Page {page}: {message}	ページ{page}: {message}
+	The card holds for only {seconds} s after its fades	フェード後、カードは{seconds}秒しか表示されません
+	The font “{font}” has no “{chars}”; another font draws them	フォント“{font}”に“{chars}”がありません。別のフォントで表示されます
+	The font “{font}” is not installed; another font is used	フォント“{font}”がインストールされていません。別のフォントが使われます
+	This page starts {seconds} s before the previous one ends	このページは前のページが終わる{seconds}秒前に始まります
+	{more} more of the same	同様のものがさらに{more}件
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}”はピクセルの{percent} %で表示されます。ぼやけて見えます
+	“{name}” appears twice in the same block	“{name}”が同じブロックに2回出てきます
+	“{name}” is written as “{other}” in row {otherRow}	“{name}”が{otherRow}行目では“{other}”と書かれています
+	“{text}” is outside the title-safe area	“{text}”がタイトルセーフエリアの外にあります
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”は黒地では暗すぎます(コントラスト{ratio}:1。4.5:1以上が必要です)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}”の高さは{px} pxです。24 px以上だと読みやすくなります
+	The roll moves {speed} px per frame; a whole number does not shimmer	ロールは 1 フレームあたり {speed} px 移動します。整数ならちらつきません
+	Check Credits	クレジットをチェック

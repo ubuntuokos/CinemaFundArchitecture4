@@ -4271,3 +4271,20 @@ export.summary	Low	низак
 	Refresh Credits from Spreadsheet…	Освежи шпицу из табеле…
 	Save Credits File…	Сачувај датотеку шпице…
 	Compare Credits with Spreadsheet	Упореди шпицу са табелом
+	“{name}” appears twice in the same block	„{name}” се појављује двапут у истом блоку
+	“{name}” is written as “{other}” in row {otherRow}	„{name}” је у реду {otherRow} написано као „{other}”
+	The font “{font}” is not installed; another font is used	Фонт „{font}” није инсталиран; користи се други фонт
+	The font “{font}” has no “{chars}”; another font draws them	Фонт „{font}” нема „{chars}”; исцртава их други фонт
+	“{text}” is outside the title-safe area	„{text}” је ван безбедне области за натписе
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” је претамно на црној (контраст {ratio}:1; потребно је најмање 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}” је висок {px} px; од 24 px навише добро се чита
+	The roll moves {speed} px per frame; a whole number does not shimmer	Померање је {speed} px по кадру; цео број не трепери
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Ред прелази кадар за {seconds} s; најмање 6 s добро се чита
+	The card holds for only {seconds} s after its fades	Картица остаје само {seconds} s после претапања
+	This page starts {seconds} s before the previous one ends	Ова страница почиње {seconds} s пре краја претходне
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}” се приказује на {percent} % својих пиксела; изгледаће мутно
+	{more} more of the same	Још {more} истих
+	Page {page}: {message}	Страница {page}: {message}
+	Checks and warnings	Провере и упозорења
+	Checks: {errors} errors, {warnings} warnings	Провере: грешке {errors}, упозорења {warnings}
+	Check Credits	Провери шпицу

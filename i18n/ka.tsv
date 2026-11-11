@@ -4274,3 +4274,20 @@ export.summary	Low	დაბალი
 	Refresh Credits from Spreadsheet…	ტიტრების განახლება ცხრილიდან…
 	Save Credits File…	ტიტრების ფაილის შენახვა…
 	Compare Credits with Spreadsheet	ტიტრების შედარება ცხრილთან
+	“{name}” appears twice in the same block	„{name}“ ერთსა და იმავე ბლოკში ორჯერ გვხვდება
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ მწკრივში {otherRow} დაწერილია როგორც „{other}“
+	The font “{font}” is not installed; another font is used	შრიფტი „{font}“ დაყენებული არ არის; გამოიყენება სხვა შრიფტი
+	The font “{font}” has no “{chars}”; another font draws them	შრიფტს „{font}“ არ აქვს „{chars}“; მათ სხვა შრიფტი ხატავს
+	“{text}” is outside the title-safe area	„{text}“ ტიტრების უსაფრთხო არეს გარეთაა
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ შავ ფონზე ზედმეტად მუქია (კონტრასტი {ratio}:1; საჭიროა მინიმუმ 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ {px} px სიმაღლისაა; 24 px ან მეტი კარგად იკითხება
+	The roll moves {speed} px per frame; a whole number does not shimmer	გადახვევა კადრზე {speed} px-ით მოძრაობს; მთელი რიცხვი არ ციმციმებს
+	A line crosses the frame in {seconds} s; at least 6 s reads well	მწკრივი კადრს {seconds} წმ-ში კვეთს; მინიმუმ 6 წმ კარგად იკითხება
+	The card holds for only {seconds} s after its fades	ბარათი გაქრობების შემდეგ მხოლოდ {seconds} წმ რჩება
+	This page starts {seconds} s before the previous one ends	ეს გვერდი წინას დასრულებამდე {seconds} წმ-ით ადრე იწყება
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ ნაჩვენებია მისი პიქსელების {percent} %-ით; ბუნდოვნად გამოჩნდება
+	{more} more of the same	კიდევ {more} იგივე
+	Page {page}: {message}	გვერდი {page}: {message}
+	Checks and warnings	შემოწმებები და გაფრთხილებები
+	Checks: {errors} errors, {warnings} warnings	შემოწმებები: შეცდომები {errors}, გაფრთხილებები {warnings}
+	Check Credits	ტიტრების შემოწმება

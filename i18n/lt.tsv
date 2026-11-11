@@ -4274,3 +4274,20 @@ export.summary	Low	žema
 	Refresh Credits from Spreadsheet…	Atnaujinti titrus iš skaičiuoklės…
 	Save Credits File…	Įrašyti titrų failą…
 	Compare Credits with Spreadsheet	Palyginti titrus su skaičiuokle
+	“{name}” appears twice in the same block	„{name}“ tame pačiame bloke yra du kartus
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ eilutėje {otherRow} parašyta kaip „{other}“
+	The font “{font}” is not installed; another font is used	Šriftas „{font}“ neįdiegtas; naudojamas kitas šriftas
+	The font “{font}” has no “{chars}”; another font draws them	Šrifte „{font}“ nėra „{chars}“; juos piešia kitas šriftas
+	“{text}” is outside the title-safe area	„{text}“ yra už saugios titrų srities
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ per tamsus ant juodo fono (kontrastas {ratio}:1; reikia bent 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ aukštis {px} px; nuo 24 px gerai skaitoma
+	The roll moves {speed} px per frame; a whole number does not shimmer	Slinkimas juda {speed} px per kadrą; sveikasis skaičius nemirga
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Eilutė kerta kadrą per {seconds} s; bent 6 s gerai skaitoma
+	The card holds for only {seconds} s after its fades	Kortelė po perėjimų rodoma tik {seconds} s
+	This page starts {seconds} s before the previous one ends	Šis puslapis prasideda {seconds} s prieš baigiantis ankstesniam
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ rodomas {percent} % jo pikselių; atrodys neryškiai
+	{more} more of the same	Dar {more} tokių pat
+	Page {page}: {message}	{page} puslapis: {message}
+	Checks and warnings	Patikros ir įspėjimai
+	Checks: {errors} errors, {warnings} warnings	Patikros: klaidų {errors}, įspėjimų {warnings}
+	Check Credits	Tikrinti titrus
