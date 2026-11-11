@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -216,6 +217,7 @@ class CreditsDialog(QDialog):
         tpl_row.addWidget(self.new_sheet_button)
         tpl_row.addWidget(self.save_template_button)
         self.templates: list[dict[str, Any]] = []
+        self.template_files: list[str] = []  # templates opened from a file, kept across reloads
 
         form = QFormLayout()
         form.addRow(tr("Spreadsheet"), path_row)
@@ -484,12 +486,43 @@ class CreditsDialog(QDialog):
                     self.template.addItem(f"{t.get('name')} ({kind})" if kind else str(t.get("name")), t.get("id"))
                     tip = "\n".join(x for x in (str(t.get("description") or ""), str(t.get("license") or "")) if x)
                     self.template.setItemData(self.template.count() - 1, tip, Qt.ItemDataRole.ToolTipRole)
+                for f in self.template_files:
+                    self.template.addItem(Path(f).stem, f)
+                    self.template.setItemData(self.template.count() - 1, f, Qt.ItemDataRole.ToolTipRole)
                 idx = self.template.findData(current) if current else 0
                 self.template.setCurrentIndex(max(0, idx))
             finally:
                 self._loading = False
 
         self.engine.execute("graphics.credits.templates", {}, on_reply=done, on_error=lambda _m: None)
+
+    def use_template_file(self, path: str) -> None:
+        """Choose a template file (a `.cfa4credtpl` from elsewhere) as this window's template; with
+        no spreadsheet yet, its sample opens as one so there is something to see."""
+        idx = self.template.findData(path)
+        if idx < 0:
+            self.template_files.append(path)
+            self.template.addItem(Path(path).stem, path)
+            self.template.setItemData(self.template.count() - 1, path, Qt.ItemDataRole.ToolTipRole)
+            idx = self.template.count() - 1
+        self._loading = True
+        try:
+            self.template.setCurrentIndex(idx)
+        finally:
+            self._loading = False
+        if not self.path.text().strip():
+            # beside the other temporary files: the template's own folder may be read only
+            folder = Path(tempfile.gettempdir()) / "cfa4-credits"
+            folder.mkdir(parents=True, exist_ok=True)
+            sample = folder / f"{Path(path).stem}.sample.csv"
+            self.engine.execute(
+                "graphics.credits.template.newSheet",
+                {"id": path, "to": str(sample)},
+                on_reply=lambda _r, _b: self.path.setText(str(sample)),
+                on_error=lambda m: self.status.setText(m),
+            )
+        else:
+            self.refresh()
 
     def _template_changed(self, _i: int) -> None:
         if not self._loading:
