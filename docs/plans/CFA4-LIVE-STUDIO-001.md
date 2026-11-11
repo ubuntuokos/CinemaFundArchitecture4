@@ -1,12 +1,13 @@
 # CFA4-LIVE-STUDIO-001 – Az OBS Studio képességei a CFA4-ben
 
-**Verzió:** 1.1
-**Dátum:** 2026-11-10 (1.0: 2026-11-09)
+**Verzió:** 1.2
+**Dátum:** 2026-11-11 (1.1: 2026-11-10, 1.0: 2026-11-09)
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-09-én lépésenként egyeztette és jóváhagyta; az **S0
 fázis indítását is jóváhagyta** (2026-11-09). Az S1-től a munka a Qt6 felület befejezése után indul (D7).
 Az 1.1-ben a D3 újra nyitott (a WPE WebKit nincs az Ubuntu 26.04-ben), és rögzítve, hogy a C10 a
-terv előfeltétele.
+terv előfeltétele. Az 1.2-ben a D4 kiegészítve: az SMPTE ST 2110 is nyílt protokoll
+([kiegészítés](CFA4-LIVE-STUDIO-001-ST2110.md), a tulajdonos 2026-11-11-i megerősítésével).
 **Kapcsolódik:** [`VISION.md`](../../VISION.md) 4. és 8. pont (élő adás), `docs/credits-plan.md`
 C10 (élő grafika, `crates/live`; a #803-ban, előfeltétel), [ADR 0001](../adr/0001-platform-ffi.md) (FFI),
 [ADR 0004](../adr/ADR-0004-compute-routing.md) (`cfa4-route`), [ADR 0005](../adr/ADR-0005-media-backends.md)
@@ -28,7 +29,8 @@ C10 (élő grafika, `crates/live`; a #803-ban, előfeltétel), [ADR 0001](../adr
 6. **A libobs külön folyamatban fut** (`cfa4-studio-host`, D2).
 7. **Böngészőforrás** az Ubuntu tárolójából; a WPE WebKit-es döntés újra nyitott, mert a WPE nincs az
    Ubuntu 26.04-ben (D3).
-8. **Csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); zárt SDK-t igénylő (pl. NDI) nincs (D4).
+8. **Csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP, 2026-11-11 óta SMPTE ST 2110 is); zárt SDK-t igénylő (pl. NDI) nincs (D4;
+   az ST 2110: [kiegészítés](CFA4-LIVE-STUDIO-001-ST2110.md)).
 9. **Önálló „Élő” munkaterület** a Qt6 felületen; a C10 Élő grafika ablaka beleolvad (D5).
 10. **Műsorterv (rundown)** a terv része, az S4a fázisban (D6).
 11. **Ütemezés:** az S0 most indulhat, az S1-től minden a Qt6 befejezése után (D7).
@@ -67,11 +69,11 @@ egy mozdulattal a vágóprogramba kerül.
 | # | Terület | Képességek |
 |---|---|---|
 | 1 | Jelenetek | jelenetek, források, csoportok, egymásba ágyazott jelenet, sorrend, zárolás, láthatóság, transzformáció (méret, forgatás, vágás, igazítás) |
-| 2 | Bemenetek | kamera (V4L2), képernyő és ablak (PipeWire, XDG-portál), hangbemenet és -kimenet rögzítése (PipeWire/Pulse), médiafájl és lejátszási lista, kép és képsorozat, szín, szöveg, böngészőforrás, CFA4-grafika és -stáblista (C10), CFA4-idővonal mint forrás, hálózati bemenet SRT-n, RIST-en, WHIP-en (csak nyílt protokollok, D4) |
+| 2 | Bemenetek | kamera (V4L2), képernyő és ablak (PipeWire, XDG-portál), hangbemenet és -kimenet rögzítése (PipeWire/Pulse), médiafájl és lejátszási lista, kép és képsorozat, szín, szöveg, böngészőforrás, CFA4-grafika és -stáblista (C10), CFA4-idővonal mint forrás, hálózati bemenet SRT-n, RIST-en, WHIP-en, SMPTE ST 2110-en (kép, hang, ANC, TTML; csak nyílt protokollok, D4) |
 | 3 | Videószűrők | chroma key, color key, luma key, színkorrekció, LUT, maszk/keverés, élesítés, vágás/párnázás, görgetés, képarány, késleltetés |
 | 4 | Hang | keverő sávonként, hangerő, némítás, monitorozás, sávkiosztás (6 sáv), szűrők: zajszűrő (RNNoise), zajkapu, kompresszor, limiter, expander, erősítés, EQ, beépített szűrőláncok, szinkroneltolás |
 | 5 | Stúdió mód | előnézet és program, átmenetek (vágás, áttűnés, csúsztatás, stinger, luma wipe, színen át), átmenet-felülírás jelenetenként, multiview, kivetítők (teljes képernyős monitorok), gyorsbillentyűk |
-| 6 | Kimenetek | felvétel (MKV, MP4, fragmentált MP4, MOV), streamelés (RTMP/RTMPS, SRT, RIST, WHIP/WebRTC), több cél egyszerre, replay buffer, virtuális kamera (v4l2loopback), felvétel szétválasztása, fejezetjelek |
+| 6 | Kimenetek | felvétel (MKV, MP4, fragmentált MP4, MOV), streamelés (RTMP/RTMPS, SRT, RIST, WHIP/WebRTC), SMPTE ST 2110 programkimenet PTP-hez igazítva, több cél egyszerre, replay buffer, virtuális kamera (v4l2loopback), felvétel szétválasztása, fejezetjelek |
 | 7 | Kódolók | gyártófüggetlen hardveres kódolás (VA-API: Intel/AMD; NVENC opcionálisan; Intel QSV) a `cfa4-route`-on át; szoftveres: AV1 (SVT-AV1/rav1e), H.264/HEVC csak a `cfa4-restricted-extras` csomaggal (szabadalmi modell) |
 | 8 | Vezérlés | minden művelet CFA4-parancs (ügynökök, MCP, vezérlőcsatorna); obs-websocket 5-kompatibilis kiszolgáló (Stream Deck, Touch Portal és társai), gyorsbillentyűk |
 | 9 | Átállás | OBS jelenetgyűjtemény- és profilimport (JSON), kimeneti beállítások és szűrők átvétele |
@@ -133,7 +135,7 @@ munkával ütközésnél a Qt6 megy előre.
 | D1 | A libobs forrása | **Eldöntve (2026-11-09): saját, rögzített verziójú fordítás (33.x) a CFA4 csomagban**, ellenőrzőösszeggel, mint az FFmpeg 9.0.2 |
 | D2 | Hol fut a libobs | **Eldöntve (2026-11-09): külön folyamatban** (`cfa4-studio-host`): a motor indítja, felügyeli, összeomlás után újraindítja; a szerkesztő és a projekt megmarad |
 | D3 | Böngészőforrás | **Újra nyitott (2026-11-10).** A 2026-11-09-i döntés (WPE WebKit az Ubuntu tárolójából) nem teljesíthető: az Ubuntu a 24.04-től kivette a `libwpe`-t és a `wpebackend-fdo`-t, a `wpewebkit` a szinkronizálási tiltólistán van, így a 26.04-ben nincs WPE. **Javaslat, a tulajdonos megerősítésére vár: Qt WebEngine** (`qt6-webengine`, a 26.04-ben 6.10.2; a PySide6-ban is benne van; nyílt, LGPL, az Ubuntu frissíti), a `cfa4-studio-host` folyamatban, képernyőn kívüli renderelés, saját Rust libobs-forrással, az S9-ben. Más lehetőség: WebKitGTK 6.0 (Ubuntu-tárolóban, de GTK-t hoz) vagy saját rögzített CEF (mint az OBS, de saját biztonsági frissítések). A `window.obsstudio` JS-felületet a forrás adja; a gyakori streameres widgetek az S9-ben kipróbálva |
-| D4 | Zárt protokollok | **Eldöntve (2026-11-09): csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); NDI és más zárt SDK-t igénylő protokoll nincs |
+| D4 | Zárt protokollok | **Eldöntve (2026-11-09): csak nyílt protokollok** (SRT, RIST, WHIP/WebRTC, RTMP); NDI és más zárt SDK-t igénylő protokoll nincs. **Kiegészítve (2026-11-11):** az SMPTE ST 2110 is a nyílt protokollok közé tartozik; fázisai (T0–T7) és döntései (D8–D12) a [kiegészítésben](CFA4-LIVE-STUDIO-001-ST2110.md) |
 | D5 | Az élő stúdió helye | **Eldöntve (2026-11-09): önálló „Élő” munkaterület** a szerkesztés, szín, hang mellett (középen előnézet és program, lent jelenetek, források, hangkeverő, oldalt átmenetek és vezérlés); a C10 Élő grafika ablaka ide kerül át; közös projekt |
 | D6 | Műsorterv (rundown) | **Eldöntve (2026-11-09): a terv része**, az S4a fázisban (az S4 stúdió mód után); a `VISION.md` 8. pontjának nyitott kérdését ezzel a tulajdonos lezárta |
 | D7 | Ütemezés | **Eldöntve (2026-11-09): az S0 most indulhat** (nem érinti a Qt6 fájljait), **az S1-től minden a Qt6 befejezése után** |
