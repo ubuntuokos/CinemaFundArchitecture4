@@ -4185,3 +4185,106 @@ export.summary	Low	matala
 	Checks and warnings	Tarkistukset ja varoitukset
 	Checks: {errors} errors, {warnings} warnings	Tarkistukset: {errors} virhettä, {warnings} varoitusta
 	Check Credits	Tarkista tekijätiedot
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videotyökalut
+	Audio Tools	Äänityökalut
+	Publication Tools	Julkaisutyökalut
+	Smart Export…	Älykäs vienti…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Luoteesta
+	From North-East	Koillisesta
+	From South-East	Kaakosta
+	From South-West	Lounaasta
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Paranna
+	Skin Smoothing	Ihon pehmennys
+	Keep Texture	Säilytä tekstuuri
+	Skin Tone	Ihon sävy
+	Smooth Entire Image	Pehmennä koko kuva
+	Low Light	Heikko valo
+	Max Brightening	Suurin kirkastus
+	Show Illumination	Näytä valaistus
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Pehmennysesiasetukset
+	Sine	Sini
+	Exponential	Eksponentiaalinen
+	Circular	Ympyrä
+	Elastic	Joustava
+	Film Gate	Filmiportti
+	Gate Weave	Portin huojunta
+	Weave Rotation	Huojunnan kierto
+	Particles	Partikkelit
+	Emitter Position	Lähteen sijainti
+	Birth Rate	Syntynopeus
+	Lifetime (seconds)	Elinaika (sekuntia)
+	Velocity Random	Nopeuden satunnaisuus
+	Gravity	Painovoima
+	Particle Size	Partikkelin koko
+	Keyhole	Avaimenreikä
+	Burn Away	Polta pois
+	Burn Size	Palon koko
+	Ember Width	Hiillosreunan leveys
+	Ember Color	Hiillosreunan väri
+	Check Text Legibility	Tarkista tekstin luettavuus
+	Clear Legibility Markers	Poista luettavuusmerkit
+	Text legibility: no problems found	Tekstin luettavuus: ongelmia ei löytynyt
+	Text legibility: {count} problems marked on the timeline (orange markers)	Tekstin luettavuus: {count} ongelmaa merkitty aikajanalle (oranssit merkit)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bittimäärän vähennys
+	Bits per Channel	Bittiä kanavaa kohden
+	Ordered Dither	Järjestetty rasterointi
+	Dither Cell Size	Rasteroinnin solukoko
+	Block Glitch	Lohkohäiriö
+	Blocks Moved	Siirretyt lohkot
+	Max Distance	Suurin etäisyys
+	Snap to Grid	Kohdista ruudukkoon
+	Swap Blocks	Vaihda lohkoja
+	Changes per Second	Muutoksia sekunnissa
+	Databend	Datan vääristys
+	Breaks	Katkokset
+	Shift	Siirto
+	Color Damage	Värivaurio
+	VHS	VHS
+	Color Bleed	Värivuoto
+	Wobble	Huojunta
+	Snow	Lumi
+	Tracking Bar	Seurantapalkki
+	Head Switching	Päänvaihto
+	Scan Line Jitter	Juovavärinä
+	Jitter	Värinä
+	Interval	Väli
+	Infinite	Ääretön
+	Periodic	Jaksollinen
+	Tile Jitter	Ruutuvärinä
+	Tiles	Ruudut
+	Band Direction	Kaistojen suunta
+	Jitter Direction	Värinän suunta
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Rasteri
+	Dither	Rasterointi
+	Pattern	Kuvio
+	Cell Size	Solukoko
+	Cyan Angle	Syaanin kulma
+	Magenta Angle	Magentan kulma
+	Yellow Angle	Keltaisen kulma
+	Black Angle	Mustan kulma
+	Monochrome Angle	Yksivärin kulma
+	Sharpness	Terävyys
+	Ink Color	Musteen väri
+	Paper Color	Paperin väri
+	Color (CMYK)	Väri (CMYK)
+	Dot	Piste
+	Line	Viiva
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pikselikoko
+	Palette	Paletti
+	Input Colors	Syötteen värit
+	Green Phosphor	Vihreä fosfori
+	Amber Monitor	Meripihkanäyttö
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
