@@ -136,6 +136,48 @@ fn program_stream_carries_mpeg2_video_and_lpcm() {
     assert_eq!(le, wav_pcm(&p, seq, &m));
 }
 
+/// The 24-bit mix as a WAV export gives it (little-endian interleaved samples).
+fn wav_pcm24(p: &Arc<Project>, seq: ItemId, m: &SourceMap) -> Vec<u8> {
+    let path = tmp("mix24.wav");
+    let mut s = ExportSettings { format: Format::Wav, ..settings(&path) };
+    s.audio.bits = 24;
+    export(p, seq, &s, m, &Progress::default()).unwrap();
+    let wav = std::fs::read(&path).unwrap();
+    let at = wav.windows(4).position(|w| w == b"data").unwrap();
+    wav[at + 8..].to_vec()
+}
+
+#[test]
+fn program_stream_carries_24_bit_lpcm() {
+    let (p, seq, m) = project();
+    let path = tmp("out24.mpg");
+    let mut s = settings(&path);
+    s.audio.bits = 24;
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let (_, _, f, data) = demux(&path);
+    let a = f.find(cfa4_mpegts::Kind::Audio, |c| *c == cfa4_mpegts::Codec::LpcmDvd).unwrap();
+    assert_eq!(f.streams[a].lpcm, Some(cfa4_mpegts::LpcmFormat { sample_rate: 48_000, channels: 2, bits: 24 }));
+    // groups of two stereo frames: four upper 16-bit halves, then the four low bytes
+    let lpcm: Vec<u8> = (0..f.streams[a].units.len()).flat_map(|k| f.read_unit(&data, a, k).unwrap()).collect();
+    assert_eq!(lpcm.len() % 12, 0);
+    let le: Vec<u8> = lpcm.chunks_exact(12).flat_map(|g| (0..4).flat_map(move |k| [g[8 + k], g[2 * k + 1], g[2 * k]])).collect();
+    assert_eq!(le, wav_pcm24(&p, seq, &m));
+    // a 20-bit sample size is not offered; 32-bit is refused
+    s.audio.bits = 32;
+    assert!(export(&p, seq, &s, &m, &Progress::default()).is_err());
+}
+
+#[test]
+fn pack_dvd_lpcm_groups_20_and_24_bit_samples() {
+    use crate::mpeg_out::pack_dvd_lpcm;
+    // two stereo frames
+    let frames = [0x12345, -0x54321, 0x7FFFF, -1];
+    assert_eq!(pack_dvd_lpcm(&frames, 2, 20), [0x12, 0x34, 0xAB, 0xCD, 0x7F, 0xFF, 0xFF, 0xFF, 0x5F, 0xFF]);
+    let frames = [0x123456, -0x654321, 0x7FFFFF, -1];
+    assert_eq!(pack_dvd_lpcm(&frames, 2, 24), [0x12, 0x34, 0x9A, 0xBC, 0x7F, 0xFF, 0xFF, 0xFF, 0x56, 0xDF, 0xFF, 0xFF]);
+    assert_eq!(pack_dvd_lpcm(&[1, -2], 2, 16), [0, 1, 0xFF, 0xFE]);
+}
+
 #[test]
 fn transport_streams_carry_mpeg2_video_and_aac() {
     let (p, seq, m) = project();
@@ -198,6 +240,60 @@ fn constant_quantiser_and_4_2_2() {
     assert!(psnr(&pics[0].y, &y) > 40.0 && psnr(&pics[0].cb, &u) > 40.0 && psnr(&pics[0].cr, &v) > 40.0);
 }
 
+/// CBR codes a constant bitrate with real vbv_delay values; VBR signals its maximum and
+/// variable bitrate.
+#[test]
+fn constant_and_variable_bitrate() {
+    let (p, seq, m) = project();
+    for (mode, signalled) in [(settings::BitrateMode::Cbr, 4_000_000), (settings::BitrateMode::Vbr1Pass, 5_000_000)] {
+        let path = tmp(&format!("{mode:?}.m2v"));
+        let s = ExportSettings { bitrate_mode: mode, max_bitrate_kbps: Some(5_000), ..settings(&path) };
+        let video = s.summary(320, 180, FrameRate::new(25, 1), 48_000, Tick(TICKS_PER_SECOND)).video;
+        assert!(video.contains(if mode == settings::BitrateMode::Cbr { "CBR 4" } else { "VBR Target 4" }), "{video}");
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let es = std::fs::read(&path).unwrap();
+        let pics = decode(&es);
+        assert_eq!(pics[0].info.bit_rate, signalled, "{mode:?}");
+        // vbv_delay: the 16 bits after temporal_reference and picture_coding_type
+        let delays: Vec<u16> =
+            es.windows(8).filter(|w| w[..4] == [0, 0, 1, 0]).map(|w| ((u16::from(w[5]) & 7) << 13) | (u16::from(w[6]) << 5) | (u16::from(w[7]) >> 3)).collect();
+        assert_eq!(delays.len(), 25);
+        if mode == settings::BitrateMode::Cbr {
+            assert!(delays.iter().all(|&d| d < 0xFFFF));
+            // a second of video at 4 Mbit/s, give or take the 1.8 Mbit buffer's fill
+            let bits = es.len() as f64 * 8.0;
+            assert!((bits - 4e6).abs() < 1.9e6, "{bits} bits");
+        } else {
+            assert!(delays.iter().all(|&d| d == 0xFFFF));
+        }
+    }
+}
+
+/// An interlaced field order codes interlaced frame pictures with that field first; ffprobe
+/// agrees.
+#[test]
+fn interlaced_field_order() {
+    let (p, seq, m) = project();
+    for (order, want) in [(FieldOrder::UpperFirst, cfa4_mpeg2v::FieldOrder::TopFirst), (FieldOrder::LowerFirst, cfa4_mpeg2v::FieldOrder::BottomFirst)] {
+        let path = tmp(&format!("{}.m2v", order.label().replace(' ', "")));
+        let s = ExportSettings { field_order: order, ..settings(&path) };
+        s.validate().unwrap();
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let pics = decode(&std::fs::read(&path).unwrap());
+        assert_eq!(pics.len(), 25);
+        assert!(!pics[0].info.progressive_sequence);
+        assert!(pics.iter().all(|p| p.field_order() == Some(want)), "{order:?}");
+        let Some(probe) = cfa4_testkit::ffprobe_or_skip("mpeg2 interlaced") else { return };
+        let o = Command::new(probe)
+            .args(["-v", "error", "-select_streams", "v", "-show_entries", "stream=field_order", "-of", "csv=p=0"])
+            .arg(&path)
+            .output()
+            .unwrap();
+        let fo = String::from_utf8_lossy(&o.stdout).trim().trim_end_matches(',').to_string();
+        assert_eq!(fo, if want == cfa4_mpeg2v::FieldOrder::TopFirst { "tt" } else { "bb" }, "{order:?}");
+    }
+}
+
 #[test]
 fn dvd_presets_signal_16_9_and_the_dvd_rate() {
     let (p, seq, m) = project();
@@ -228,7 +324,9 @@ fn mpeg2_settings() {
     assert_eq!(s.extension(), "mpg");
     s.validate().unwrap();
     s.audio.bits = 24;
-    assert!(s.validate().unwrap_err().to_string().contains("16-bit"));
+    s.validate().unwrap();
+    s.audio.bits = 32;
+    assert!(s.validate().unwrap_err().to_string().contains("16- or 24-bit"));
     s.audio.bits = 16;
     s.audio.sample_rate = Some(22_050);
     assert!(s.validate().is_err());
@@ -287,11 +385,21 @@ fn ffmpeg_oracle_reads_every_container() {
     };
     let (p, seq, m) = project();
     let pcm = wav_pcm(&p, seq, &m);
-    for (name, format, audio) in
-        [("o.mpg", "mpeg", Some("pcm_dvd")), ("o.ts", "mpegts", Some("aac")), ("o.m2ts", "mpegts", Some("aac")), ("o.m2v", "mpegvideo", None)]
-    {
+    let pcm24 = wav_pcm24(&p, seq, &m);
+    for (name, format, audio) in [
+        ("o.mpg", "mpeg", Some("pcm_dvd")),
+        ("o24.mpg", "mpeg", Some("pcm_dvd")),
+        ("o.ts", "mpegts", Some("aac")),
+        ("o.m2ts", "mpegts", Some("aac")),
+        ("o.m2v", "mpegvideo", None),
+    ] {
         let path = tmp(name);
-        export(&p, seq, &settings(&path), &m, &Progress::default()).unwrap();
+        let mut s = settings(&path);
+        let deep = name == "o24.mpg";
+        if deep {
+            s.audio.bits = 24;
+        }
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
         let j = ffprobe_json(&ffprobe, &path);
         assert_eq!(j["format"]["format_name"], format, "{name}");
         let streams = j["streams"].as_array().unwrap();
@@ -313,6 +421,7 @@ fn ffmpeg_oracle_reads_every_container() {
         let psnr = 10.0 * (255.0f64 * 255.0 / (se / ours.len() as f64).max(1e-12)).log10();
         assert!(worst <= 4 && psnr >= 58.0, "{name}: pictures differ by {worst}, {psnr:.1} dB");
         match audio {
+            Some("pcm_dvd") if deep => assert_eq!(ffmpeg_raw(&ffmpeg, &path, "0:a", &["-f", "s24le"]), pcm24, "{name}"),
             Some("pcm_dvd") => assert_eq!(ffmpeg_raw(&ffmpeg, &path, "0:a", &["-f", "s16le"]), pcm, "{name}"),
             Some(_) => {
                 let s16 = ffmpeg_raw(&ffmpeg, &path, "0:a", &["-f", "s16le", "-ac", "2"]);

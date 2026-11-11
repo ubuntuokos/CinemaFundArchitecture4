@@ -21,6 +21,11 @@ Copyright (c) 2026 ArtCraft Team and the FilmCraft contributors.
 Licensed under the MIT License or the Apache License, Version 2.0, at your option
 (LICENSE-MIT, LICENSE-APACHE).
 
+craft-i18n (the rows in the "Imported from craft-i18n" section of i18n/<code>.tsv catalogs)
+Copyright (c) 2026 ArtCraft Team and the craft-i18n contributors.
+Licensed under the MIT License or the Apache License, Version 2.0, at your option
+(LICENSE-MIT, LICENSE-APACHE).
+
 Code and assets inherited from the upstream work remain available under those original terms; their
 copyright notices and licence texts are kept in this repository and in every package. CFA4 as a
 whole, including all changes made after the relicensing, is distributed under GPL-3.0-or-later.
