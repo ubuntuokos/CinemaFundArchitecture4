@@ -80,6 +80,11 @@ def cli_smoke(exe: Path, version: str, env: dict[str, str]) -> dict:
 # The Smart Cut smoke cuts frames [10, 50) of a 4 s, 25 fps MPEG-2 stream with closed GOPs of 10.
 SMART_CUT_RANGE = (10, 50)
 SMART_CUT_FRAMES = SMART_CUT_RANGE[1] - SMART_CUT_RANGE[0]
+# The frame-accurate cut [5, 45): the pictures it can copy whole are copied, the boundary pictures
+# re-encoded with CFA4's MPEG-2 encoder.
+FRAME_ACCURATE_RANGE = (5, 45)
+FRAME_ACCURATE_FRAMES = FRAME_ACCURATE_RANGE[1] - FRAME_ACCURATE_RANGE[0]
+FRAME_ACCURATE_MIN_PSNR = 30.0
 
 
 def fixture_ffmpeg() -> str:
@@ -126,17 +131,25 @@ def run_results(output: str) -> list[dict]:
 
 
 def smart_cut_smoke(cli: Path, source: Path, work: Path, env: dict[str, str]) -> dict:
-    """The packaged CLI cuts `source` on GOP boundaries, verifies the copy and reads it back."""
+    """The packaged CLI cuts `source` on GOP boundaries and frame accurately (re-encoding the
+    boundary pictures with CFA4's MPEG-2 encoder), verifies both cuts and reads them back."""
     work.mkdir(parents=True, exist_ok=True)
     output = work / "smart-cut.ts"
+    accurate = work / "smart-cut-frame-accurate.ts"
     first, end = SMART_CUT_RANGE
     cut = {"path": str(source), "in": {"frame": first}, "out": {"frame": end},
            "mode": "gop-boundary", "output": str(output)}
+    fa_first, fa_end = FRAME_ACCURATE_RANGE
+    fa_cut = {"path": str(source), "in": {"frame": fa_first}, "out": {"frame": fa_end},
+              "mode": "frame-accurate", "output": str(accurate), "confirm": True}
     steps = [
         {"id": "export.analyze", "params": {"path": str(source)}},
         {"id": "export.plan", "params": cut},
         {"id": "export.start", "params": cut},
         {"id": "export.analyze", "params": {"path": str(output)}},
+        {"id": "export.plan", "params": fa_cut},
+        {"id": "export.start", "params": fa_cut},
+        {"id": "export.analyze", "params": {"path": str(accurate)}},
     ]
     script = work / "smart-cut.jsonl"
     script.write_text("".join(json.dumps(step) + "\n" for step in steps), encoding="utf-8")
@@ -144,7 +157,7 @@ def smart_cut_smoke(cli: Path, source: Path, work: Path, env: dict[str, str]) ->
                                  env=env, timeout=180))
     if len(results) != len(steps) or not all(r.get("ok") for r in results):
         raise AuditError(f"Smart Cut smoke failed: {results}")
-    analyzed, planned, done, back = (r.get("result") or {} for r in results)
+    analyzed, planned, done, back, fa_planned, fa_done, fa_back = (r.get("result") or {} for r in results)
     if analyzed.get("codec") != "mpeg2-video":
         raise AuditError(f"Smart Cut smoke: the fixture is not MPEG-2 video: {analyzed}")
     summary = planned.get("summary") or {}
@@ -160,13 +173,35 @@ def smart_cut_smoke(cli: Path, source: Path, work: Path, env: dict[str, str]) ->
         raise AuditError("Smart Cut smoke: the output file differs from the reported copy")
     if back.get("codec") != "mpeg2-video" or back.get("frames") != SMART_CUT_FRAMES:
         raise AuditError(f"Smart Cut smoke: the output reads back wrong: {back}")
+    frame_accurate = check_frame_accurate(accurate, fa_planned, fa_done, fa_back)
     return {
-        "scope": "SMART_CUT_MPEG2_GOP_COPY_IN_PACKAGED_CLI",
+        "scope": "SMART_CUT_MPEG2_GOP_COPY_AND_FRAME_ACCURATE_IN_PACKAGED_CLI",
         "copied_frames": SMART_CUT_FRAMES,
         "audio_tracks": len(tracks),
         "output_bytes": done.get("bytes"),
         "verified": True,
+        "frame_accurate": frame_accurate,
     }
+
+
+def check_frame_accurate(output: Path, planned: dict, done: dict, back: dict) -> dict:
+    """The frame-accurate cut: boundaries re-encoded, whole GOPs copied, verified and readable."""
+    ready = (planned.get("boundaryReencode") or {}).get("ready")
+    summary = planned.get("summary") or {}
+    if ready is not True or summary.get("lossless") is not False or not summary.get("reencodedFrames"):
+        raise AuditError(f"Smart Cut smoke: unexpected frame-accurate plan {planned}")
+    report = done.get("report") or {}
+    psnr = report.get("minPsnr")
+    if (done.get("verified") is not True or report.get("samples") != FRAME_ACCURATE_FRAMES
+            or not report.get("reencoded") or not report.get("copied")
+            or not isinstance(psnr, (int, float)) or psnr < FRAME_ACCURATE_MIN_PSNR):
+        raise AuditError(f"Smart Cut smoke: the frame-accurate cut was not verified: {done}")
+    if not output.is_file() or output.stat().st_size != done.get("bytes"):
+        raise AuditError("Smart Cut smoke: the frame-accurate output differs from the reported file")
+    if back.get("codec") != "mpeg2-video" or back.get("frames") != FRAME_ACCURATE_FRAMES:
+        raise AuditError(f"Smart Cut smoke: the frame-accurate output reads back wrong: {back}")
+    return {"frames": FRAME_ACCURATE_FRAMES, "copied": report["copied"],
+            "reencoded": report["reencoded"], "min_psnr": psnr}
 
 
 def assert_no_gopchop(root: Path, what: str) -> None:
