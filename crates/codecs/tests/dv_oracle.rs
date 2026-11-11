@@ -186,3 +186,51 @@ fn generate_fixtures() {
         cfa4_testkit::fixtures::generate_and_report(s.name, std::slice::from_ref(&out), || fixture(&ff, s.name, &args(s)));
     }
 }
+
+/// Raw DV with 16-bit audio: the source's audio (at the file's rate) equals ffmpeg's decode, and
+/// a request at another rate is resampled.
+#[test]
+fn raw_dv_audio_matches_ffmpeg() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    for (name, lavfi, pix, rate) in [("dv_ntsc_audio48k.dv", NTSC, "yuv411p", 48_000u32), ("dv_pal_audio32k.dv", PAL, "yuv420p", 32_000)] {
+        let r = rate.to_string();
+        let audio = format!("aevalsrc=0.5*sin(2*PI*440*t)|0.3*sin(2*PI*997*t):s={r}");
+        let args = [
+            "-f",
+            "lavfi",
+            "-i",
+            lavfi,
+            "-f",
+            "lavfi",
+            "-i",
+            &audio,
+            "-frames:v",
+            "10",
+            "-c:v",
+            "dvvideo",
+            "-pix_fmt",
+            pix,
+            "-c:a",
+            "pcm_s16le",
+            "-ar",
+            &r,
+            "-ac",
+            "2",
+            "-f",
+            "dv",
+        ];
+        let file = fixture(&ff, name, &args).unwrap_or_else(|| panic!("could not generate {name}"));
+        let src = cfa4_codecs::open_bytes(name, bytes(&file)).unwrap();
+        let a = src.info().audio_streams.first().cloned().unwrap_or_else(|| panic!("{name}: no audio stream"));
+        assert_eq!((a.sample_rate, a.channels, a.bits_per_sample), (rate, 2, Some(16)), "{name}");
+        let want = ffmpeg_audio_f32(&ff, &file, &[]);
+        let n = want.len() / 2;
+        let got = src.audio(0, n, rate).unwrap();
+        let worst = (0..n).flat_map(|k| (0..2).map(move |c| (k, c))).map(|(k, c)| (got.channels[c][k] - want[2 * k + c]).abs()).fold(0f32, f32::max);
+        assert!(worst < 1e-4, "{name}: worst difference {worst}");
+        // a window in the middle, resampled to 48 kHz, has the same tone power
+        let mid = src.audio(i64::from(rate) / 10, 4800, 48_000).unwrap();
+        let rms = (mid.channels[0].iter().map(|v| v * v).sum::<f32>() / 4800.0).sqrt();
+        assert!((rms - 0.5 / 2f32.sqrt()).abs() < 0.02, "{name}: rms {rms}");
+    }
+}
