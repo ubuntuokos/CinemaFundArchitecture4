@@ -47,8 +47,8 @@ pub use source::ByteSource;
 pub use timed_text::{AncillaryResource, MAX_RESOURCE_BYTES, Region, TimedText, is_timed_text, open_timed_text};
 pub use uncompressed::UncompressedLayout;
 pub use write::{
-    CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc, SoundDesc,
-    StartTimecode, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm,
+    CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, McaTitles, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc,
+    SoundDesc, StartTimecode, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm,
 };
 
 use std::fmt;

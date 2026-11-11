@@ -478,6 +478,7 @@ fn dcinema_sound_mca_labels() {
         channel,
         language: Some("en-US".into()),
         group,
+        titles: None,
     };
     cfg.mca = vec![label(2, "sg51", "5.1", None, None), label(1, "chL", "Left", Some(1), Some(group)), label(1, "chC", "Center", Some(3), Some(group))];
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
@@ -1095,6 +1096,8 @@ fn imf_picture_track_file() {
     // the primary package is the file package
     assert!(f.windows(32).any(|w| w == ids.file.0));
     assert!(f.windows(4).any(|w| w == [0x3B, 0x08, 0x00, 0x10]));
+    // ST 2067-21 7.1.2: mode P1 frame wrapping (ST 422 Table 2)
+    assert!(f.windows(16).any(|w| w == labels::essence_container(0x0D, 0x0C, 0x06, 0x00)));
     // ST 422 Table 3 IMF coding label: 2K lossy (byte 15 = 02), mainlevel 1 sublevel 1 (byte 16 = 03)
     let label = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x04, 0x01, 0x02, 0x02, 0x03, 0x01, 0x02, 0x03];
     assert!(f.windows(16).any(|w| w == label));
@@ -1157,8 +1160,11 @@ fn imf_sound_track_file() {
         channel,
         language: None,
         group: g,
+        titles: None,
     };
-    cfg.mca = vec![label("ST", None, None), label("chL", Some(1), Some(group)), label("chR", Some(2), Some(group))];
+    let mut st = label("ST", None, None);
+    st.titles = Some(McaTitles { title: "Main".into(), title_version: "1".into(), content_kind: "PRM".into(), element_kind: "FULL".into() });
+    cfg.mca = vec![st, label("chL", Some(1), Some(group)), label("chR", Some(2), Some(group))];
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
     let frames = 48_000 + 123;
     let mut pcm = Vec::new();
@@ -1191,6 +1197,14 @@ fn imf_sound_track_file() {
     let layout: Vec<(PartitionKind, u32, u32)> = m.partitions.iter().map(|p| (p.kind, p.body_sid, p.index_sid)).collect();
     assert_eq!(layout, vec![(PartitionKind::Header, 0, 0), (PartitionKind::Body, 1, 0), (PartitionKind::Body, 0, 2), (PartitionKind::Footer, 0, 0)]);
     assert!(f.windows(16).any(|w| w == labels::CA_IMF_MCA));
+    // the soundfield group's MCA title items (ST 2067-2 Table 7)
+    let utf16be = |t: &str| -> Vec<u8> { t.encode_utf16().flat_map(|u| u.to_be_bytes()).collect() };
+    for (k, t) in [(7u16, "Main"), (9, "PRM"), (10, "FULL")] {
+        let mut item = (labels::TAG_MCA + k).to_be_bytes().to_vec();
+        item.extend_from_slice(&(2 * t.len() as u16).to_be_bytes());
+        item.extend(utf16be(t));
+        assert!(f.windows(item.len()).any(|w| w == item), "MCA item {k}");
+    }
     // reference image edit rate 24/1, alignment level -20
     let mut rier = labels::TAG_REF_IMAGE_EDIT_RATE.to_be_bytes().to_vec();
     rier.extend_from_slice(&[0, 8, 0, 0, 0, 24, 0, 0, 0, 1]);
@@ -1198,6 +1212,22 @@ fn imf_sound_track_file() {
     let mut ral = (labels::TAG_REF_IMAGE_EDIT_RATE + 1).to_be_bytes().to_vec();
     ral.extend_from_slice(&[0, 1, (-20i8) as u8]);
     assert!(f.windows(ral.len()).any(|w| w == ral));
+}
+
+/// A real IMF track file (`CFA4_IMF_SAMPLE`, e.g. the track files of the Photon test IMP
+/// MERIDIAN_Netflix_Photon_161006) opens cleanly with the partition layout this writer uses:
+/// header, essence, index partition (BodySID 1, IndexSID 2), footer, all closed and complete.
+#[test]
+fn imf_sample_has_the_written_layout() {
+    let Ok(path) = std::env::var("CFA4_IMF_SAMPLE") else { return };
+    let f = std::fs::read(&path).unwrap();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, OperationalPattern::Generalized { item: 1, package: 1 });
+    let layout: Vec<(PartitionKind, u32, u32, u8)> = m.partitions.iter().map(|p| (p.kind, p.body_sid, p.index_sid, p.status)).collect();
+    use PartitionKind::*;
+    assert_eq!(layout[..3], [(Header, 0, 0, 4), (Body, 1, 0, 4), (Body, 0, 2, 4)]);
+    assert_eq!(layout.last(), Some(&(Footer, 0, 0, 4)));
 }
 
 #[test]

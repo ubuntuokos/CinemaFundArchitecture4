@@ -177,13 +177,14 @@ w.finish()?;
 - **IMF track files** (`Pattern::Imf`, ST 2067-5 / 2067-2 / 2067-21, #931): one essence track,
   OP1a with KAG 1, the preface's primary package, at least 8 KiB of fill after the header
   metadata, closed complete partitions and a RIP, no header metadata or index in the footer.
-  Pictures: JPEG 2000 frame-wrapped (the ST 422 Table 3 IMF coding label from Rsiz,
+  Pictures: JPEG 2000 frame-wrapped in mode P1 (the ST 422 Table 3 IMF coding label from Rsiz,
   `cfa4_j2k::ImfProfile`), a new essence partition every 60 s, each essence partition followed
   by an index partition holding its index segment; an RGBA descriptor (`PictureDesc::rgb`, narrow
   or `full_range` component refs) or a CDCI descriptor with the ST 2067-21 levels, and a JPEG 2000
   sub-descriptor taken from a codestream (`J2kSubDescriptor::from_codestream`: SIZ, COD, QCD,
   J2CLayout). Sound: 24-bit PCM at 48 or 96 kHz, clip-wrapped at the sample rate, the IMF MCA
-  channel assignment label with `WriterConfig::mca` labels, `reference_image_edit_rate` and
+  channel assignment label with `WriterConfig::mca` labels (the soundfield group with its MCA
+  title, title version, audio content and element kind, `McaTitles`), `reference_image_edit_rate` and
   `reference_audio_alignment_level`, a constant-rate index partition after the essence. The IMP
   package (CPL, PKL, ASSETMAP) and the export option are #1011.
 - **Index tables** (ST 377-1 §11): VBR entries per edit unit — stream offset (from the first
@@ -253,7 +254,9 @@ w.finish()?;
   (three essence partitions with their index partitions, partition links, 8 KiB fill, IMF coding
   label, sub-descriptor COD and layout), CDCI levels, IMF sound (clip wrapping, PCM exact, CBR
   index partition, MCA channel assignment, reference tags), refused IMF configurations and hostile
-  codestream headers; truncation and random mutation of written files never panic.
+  codestream headers; with `CFA4_IMF_SAMPLE` set to a real IMF image or audio track file (the
+  MERIDIAN test IMP of Netflix Photon, Apache-2.0) the file opens cleanly and has the same
+  partition layout; truncation and random mutation of written files never panic.
 - `crates/export/src/mxf_tests.rs` (ffprobe / ffmpeg as external oracles): OP1a exports with
   DNxHR, ProRes and H.264 — ffprobe reports the OP1a label, codec, 24 frames, frame rate, duration
   and `01:00:00:00` timecode; ffmpeg decodes the MXF picture exactly as it decodes the same

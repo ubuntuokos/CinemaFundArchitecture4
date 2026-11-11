@@ -202,7 +202,8 @@ pub const CA_IMF_MCA: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D
 
 /// Multichannel audio labelling (ST 377-4): the dynamic tags of the MCA label sub-descriptor
 /// items (label dictionary id, link id, tag symbol, tag name, channel id, spoken language) and of
-/// the audio channel label's soundfield group link id, consecutive from [`TAG_MCA`].
+/// the audio channel label's soundfield group link id, then MCA title, title version, audio
+/// content kind and audio element kind, consecutive from [`TAG_MCA`].
 pub const TAG_MCA: u16 = 0x8020;
 
 /// Dynamic tags of the MPEG video descriptor (ST 381-1 Table 7): SingleSequence, ConstantBframes,
@@ -247,6 +248,11 @@ pub const MCA_PRIMER: &[(u16, [u8; 16])] = &[
     (TAG_MCA + 4, ul(&[0x01, 0x01, 0x01, 0x0E, 0x01, 0x03, 0x04, 0x0A])),
     (TAG_MCA + 5, ul(&[0x01, 0x01, 0x01, 0x0D, 0x03, 0x01, 0x01, 0x02, 0x03, 0x15])),
     (TAG_MCA + 6, ul(&[0x01, 0x01, 0x01, 0x0E, 0x01, 0x03, 0x07, 0x01, 0x06])),
+    // MCA Title, MCA Title Version, MCA Audio Content Kind, MCA Audio Element Kind
+    (TAG_MCA + 7, ul(&[0x01, 0x01, 0x01, 0x0E, 0x01, 0x05, 0x10])),
+    (TAG_MCA + 8, ul(&[0x01, 0x01, 0x01, 0x0E, 0x01, 0x05, 0x11])),
+    (TAG_MCA + 9, ul(&[0x01, 0x01, 0x01, 0x0E, 0x03, 0x02, 0x01, 0x02, 0x20])),
+    (TAG_MCA + 10, ul(&[0x01, 0x01, 0x01, 0x0E, 0x03, 0x02, 0x01, 0x02, 0x21])),
 ];
 
 /// A property label: 06 0E 2B 34 followed by `rest`, zero padded.

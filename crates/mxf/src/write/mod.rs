@@ -670,6 +670,20 @@ pub struct McaLabel {
     pub language: Option<String>,
     /// The soundfield group's link id (audio channel labels in a group).
     pub group: Option<[u8; 16]>,
+    /// MCA title, title version, audio content kind and audio element kind (ST 377-4; a
+    /// soundfield group of an IMF audio track file has them all, ST 2067-2 Table 7).
+    pub titles: Option<McaTitles>,
+}
+
+/// The descriptive MCA items of a soundfield group (ST 377-4, ST 2067-2 5.3.6.5).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct McaTitles {
+    pub title: String,
+    pub title_version: String,
+    /// e.g. "PRM" (primary), see ST 377-41.
+    pub content_kind: String,
+    /// e.g. "FULL" (complete mix), see ST 377-41.
+    pub element_kind: String,
 }
 
 impl WriterConfig {
@@ -1064,6 +1078,12 @@ fn mca_label(out: &mut Vec<u8>, uid: [u8; 16], m: &McaLabel) {
     if let Some(g) = m.group {
         s.p(TAG_MCA + 6, &g);
     }
+    if let Some(t) = &m.titles {
+        s.p(TAG_MCA + 7, &utf16(&t.title))
+            .p(TAG_MCA + 8, &utf16(&t.title_version))
+            .p(TAG_MCA + 9, &utf16(&t.content_kind))
+            .p(TAG_MCA + 10, &utf16(&t.element_kind));
+    }
     s.write(out);
 }
 
@@ -1210,7 +1230,11 @@ impl<W: Write + Seek> MxfWriter<W> {
             tracks.push(TrackW { id: id + 1, kind: TrackKind::Aes3, element_key: element_key(0x06, 1, 0x10, 1), container: l.label });
             id += 2;
         } else if let Some(p) = &cfg.picture {
-            let (container, et) = p.coding.container(clip);
+            let (mut container, et) = p.coding.container(clip);
+            if cfg.pattern == Pattern::Imf && matches!(p.coding, PictureCoding::J2k { .. }) {
+                // ST 2067-21 7.1.2: progressive frames are wrapped in mode P1 (ST 422 Table 2)
+                container = essence_container(0x0D, 0x0C, 0x06, 0x00);
+            }
             tracks.push(TrackW { id, kind: TrackKind::Picture, element_key: element_key(0x15, 1, et, 1), container });
             id += 1;
         }
@@ -1975,7 +1999,7 @@ impl<W: Write + Seek> MxfWriter<W> {
                 TrackKind::Sound(i) => {
                     let sd = cfg.sound[i];
                     let mut s = Set::new(0x48, uid);
-                    if multiple || cfg.pattern == Pattern::DCinema {
+                    if multiple || matches!(cfg.pattern, Pattern::DCinema | Pattern::Imf) {
                         s.u32(0x3006, t.id);
                     }
                     s.rat(0x3001, cfg.edit_rate);
