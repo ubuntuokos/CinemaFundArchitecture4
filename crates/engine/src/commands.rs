@@ -1545,6 +1545,14 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // Broadcast MXF: closed captions in the ANC data become a caption track; the
+                // picture and sound still import as media below.
+                if let Some(r) = crate::captions::import_anc_captions(s, &path) {
+                    match r {
+                        Ok(r) => reports.push(r),
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                }
                 // Media files through the host's reader (no whole-file read) when it has one.
                 let streamed = cfa4_media::is_importable(std::path::Path::new(&path)) && s.services.reader(&path).is_some();
                 let read = if streamed { Ok(Vec::new()) } else { s.services.read_file(&path) };
