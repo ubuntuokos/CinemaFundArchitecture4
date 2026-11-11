@@ -13873,6 +13873,8 @@ def test_real_engine_credits_save_and_refresh(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
 def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     """qt-parity 5.5: ``CFA4_QT_MONITOR_GL=1`` asks for the OpenGL picture, but where no GL
     context can be made (Qt's ``offscreen`` platform here) the monitor keeps the raster view; either
