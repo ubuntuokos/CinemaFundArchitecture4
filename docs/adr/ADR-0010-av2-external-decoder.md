@@ -1,6 +1,6 @@
 # ADR 0010 – AV2 külső dekóder bekötése (A vonal)
 
-**Dátum:** 2026-11-11 · **Állapot:** javaslat, a tulajdonos (`ubuntuokos`) jóváhagyására vár ·
+**Dátum:** 2026-11-11 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos` jóváhagyta 2026-11-11) ·
 **Kapcsolódik:** [AV2 terv v1.2](../plans/AV2-CODEC-PLAN-2026-10-29.md) III. fejezet és X. fejezet 2. PR,
 [AV2-00 audit](../audit/AV2-00-AUDIT-2026-10-30.md),
 [ADR 0001](0001-platform-ffi.md) (FFI), [ADR 0004](ADR-0004-compute-routing.md) (`cfa4-route`),
@@ -32,7 +32,7 @@ egyenrangú választás. A terv III. fejezetének 2. lehetőségéhez (saját FF
 ADR 0001-módosítás**. A „soha nem crash-el” szabály (AGENTS.md 0.) változatlan: egy C-dekóder
 folyamaton belüli összeomlása a CFA4-et is leállítaná, és ez `catch_unwind`-dal nem fogható meg.
 
-## Döntés (javaslat)
+## Döntés
 
 1. **Az A vonal külső dekódere külön folyamatban fut** (terv III., 3. lehetőség). A CFA4 egy
    segédprogramot indít (munkanév: `cfa4-av2-decode`), amely a bitfolyamot stdin-en vagy
@@ -80,9 +80,11 @@ folyamaton belüli összeomlása a CFA4-et is leállítaná, és ez `catch_unwin
   (`crates/testkit`, terv X. 3. PR); a hibás bemenetek (csonka, sérült, túlméretes) tesztjei
   és a crash-elszigetelés tesztje (a segédprogram szándékos leállítása) kötelező.
 
-## Nyitott kérdések a tulajdonosnak
+## A tulajdonos döntései (2026-11-11)
 
-- Jóváhagyja-e a külön folyamatos utat A-vonalas kiindulásként (1–3. pont), és a folyamaton belüli
-  kötésre váltás 5. pont szerinti mérési feltételeit?
-- A segédprogram a `cfa4` csomag része legyen, vagy külön, opcionális csomag (pl. `cfa4-av2-dav2d`)?
-- A dav2d upstream felé jelezzük-e a 4:4:4 inter eltérést (AV2-00 audit 4. pont)?
+1. **Jóváhagyva:** a külön folyamatos út az A vonal kiindulása (1–3. pont), és a folyamaton belüli
+   kötésre váltás 5. pont szerinti mérési feltételei is.
+2. **Csomagolás:** a `cfa4-av2-decode` segédprogram és a vendorolt dav2d a `cfa4` csomag része,
+   nem külön csomag.
+3. **Upstream jelzés:** a dav2d 4:4:4 inter eltérését csak akkor jelezzük a dav2d upstream felé, ha
+   a bővített korpuszon végzett tesztek után ténylegesen beigazolódik (AV2-00 audit 4. pont).
