@@ -45,6 +45,8 @@ enum VCodec {
     Huffyuv(Vec<u8>),
     /// Ut Video: the FourCC and the extradata.
     UtVideo([u8; 4], Vec<u8>),
+    /// Matrox MPEG-2 I-frame (`MMES`, `M701`–`M705`): intra-only MPEG-2, every chunk a picture.
+    Mpeg2,
     Raw(RawFormat),
     /// No decoder: the codec's name.
     Unsupported(String),
@@ -74,6 +76,7 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
             (VCodec::Unsupported("MPEG-4 Part 2 (DivX / Xvid)".into()), "MPEG-4 Part 2 (DivX / Xvid)".into())
         }
         _ if crate::hap::is_hap(&b.compression) => (VCodec::Hap(b.compression), "Hap".into()),
+        b"MMES" | b"M701" | b"M702" | b"M703" | b"M704" | b"M705" => (VCodec::Mpeg2, "MPEG-2 (Matrox I-frame)".into()),
         b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Dv, "DV".into()),
         _ => {
             let name = fourcc_text(b.compression);
@@ -607,6 +610,11 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
             VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
+            VCodec::Mpeg2 => {
+                // primed with the first picture's sequence header, so any picture decodes on its own
+                let header = self.read(0).ok().and_then(|d| crate::video::mpeg2_sequence_header(&d)).unwrap_or_default();
+                Ok(Box::new(crate::video::Mpeg2Decoder::new(header)))
+            }
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),
             VCodec::Unsupported(name) => Err(CodecError::Unsupported(format!("no decoder for {name} video"))),
         }
