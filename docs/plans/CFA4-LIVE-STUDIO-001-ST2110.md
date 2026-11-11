@@ -1,12 +1,12 @@
 # CFA4-LIVE-STUDIO-001 kiegészítés – SMPTE ST 2110 az élő stúdióban
 
-**Verzió:** 0.1 (tervezet)
+**Verzió:** 1.0 (jóváhagyva)
 **Dátum:** 2026-11-11
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Kiegészíti:** [CFA4-LIVE-STUDIO-001](CFA4-LIVE-STUDIO-001.md) (v1.1), D4 (csak nyílt protokollok)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-11-én megerősítette, hogy az ST 2110 nyílt
 protokollként a D4 szerint bekerül az élő stúdió tervébe, fázisbeosztással (ez a dokumentum). A
-D8–D12 döntéseket a tulajdonos 2026-11-11-én eldöntötte; a fázisbeosztás e PR beolvasztásával jóváhagyott.
+D8–D12 döntéseket és a teljes kiegészítést (fázisok T0–T7) a tulajdonos 2026-11-11-én jóváhagyta.
 **Források:** a tulajdonos által 2026-11-11-én átadott SMPTE ST 2110 szabványszövegek (17 dokumentum,
 II. fejezet). A szabványszövegek szerzői jog alatt állnak: **nem kerülnek a tárolóba**, csak a
 kiadásuk és a fejezetszámaik (`AGENTS.md` §2: a megvalósított kiadást a crate README-je rögzíti).
