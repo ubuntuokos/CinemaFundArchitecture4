@@ -133,9 +133,9 @@ def test_real_engine_mcp_bridge_drives_the_qt_window(app, tmp_path: Path):
     (``file.exportMedia`` with ``wait``) runs as an app job until its file is written."""
     from cfa4_qt.control import ControlServer
     from cfa4_qt.main_window import MainWindow
-    from cfa4_qt.panels.tools import GROUPS
+    from cfa4_qt.panels.tools import egui_tool
 
-    razor_id = f"tools.group.{next(i for i, g in enumerate(GROUPS) if g[0].id == 'razor')}"
+    razor_id = f"tools.{egui_tool('razor')}"  # egui's automation id (crates/ui-egui/src/panels/tools.rs)
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
