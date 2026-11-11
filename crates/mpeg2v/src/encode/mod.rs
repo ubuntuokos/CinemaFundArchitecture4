@@ -103,6 +103,11 @@ pub struct Config {
     pub adaptive_quantization: bool,
     /// Analyse macroblock rows in parallel (with the `threads` feature).
     pub threads: bool,
+    /// The sequence extension's `low_delay` flag. `None` sets it exactly when there are no B
+    /// pictures; `Some(false)` keeps it clear without B pictures too, so the pictures can be
+    /// spliced into a stream that has them (a decoder then keeps its usual one-picture delay).
+    /// `Some(true)` with B pictures is refused.
+    pub low_delay: Option<bool>,
 }
 
 impl Config {
@@ -124,6 +129,7 @@ impl Config {
             colour: None,
             adaptive_quantization: false,
             threads: true,
+            low_delay: None,
         }
     }
 }
@@ -261,6 +267,9 @@ impl Encoder {
         }
         if cfg.gop == 0 {
             return Err(Error::Unsupported("a GOP of 0 pictures".into()));
+        }
+        if cfg.low_delay == Some(true) && cfg.b_frames > 0 {
+            return Err(Error::Unsupported("low delay with B pictures".into()));
         }
         if cfg.b_frames > 7 {
             return Err(Error::Unsupported(format!("{} B pictures between anchors (0..=7)", cfg.b_frames)));
@@ -536,7 +545,7 @@ impl Encoder {
         w.put(self.bit_rate_units >> 18, 12);
         w.put(1, 1); // marker_bit
         w.put(self.vbv_units >> 10, 8);
-        w.put((self.cfg.b_frames == 0) as u32, 1); // low_delay
+        w.put(self.cfg.low_delay.unwrap_or(self.cfg.b_frames == 0) as u32, 1); // low_delay
         w.put(0, 2); // frame_rate_extension_n
         w.put(0, 5); // frame_rate_extension_d
         if let Some((p, t, m)) = c.colour {
