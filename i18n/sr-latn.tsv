@@ -4185,3 +4185,25 @@ export.summary	Low	nizak
 	Checks and warnings	Provere i upozorenja
 	Checks: {errors} errors, {warnings} warnings	Provere: greške {errors}, upozorenja {warnings}
 	Check Credits	Proveri špicu
+	The whole music ({time})	Cela muzika ({time})
+	Until the sound ends ({time})	Do kraja zvuka ({time})
+	To the last bar line ({time})	Do poslednje taktne crte ({time})
+	Fit Credits to Music	Prilagodi špicu muzici
+	Fit Credits to Music…	Prilagodi špicu muzici…
+	Analyse Music for Credits	Analiziraj muziku za špicu
+	Length:	Trajanje:
+	Cards last whole beats (cuts on the beat)	Kartice traju cele dobe (rezovi na dobu)
+	Start the credits where the music starts	Počni špicu gde počinje muzika
+	Length of the credits	Trajanje špice
+	Remove Fitting	Ukloni prilagođavanje
+	Listening to the music…	Slušanje muzike…
+	Length: {time}	Trajanje: {time}
+	the sound ends at {time}	zvuk se završava u {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	špica bez prilagođavanja: {time}
+	Select a credits page on the timeline.	Izaberite stranicu špice na vremenskoj liniji.
+	Fitting…	Prilagođavanje…
+	The credits now last {time}.	Špica sada traje {time}.
+	Fitting removed.	Prilagođavanje uklonjeno.
+	Fit to This Length	Prilagodi ovom trajanju
+	No music to measure ({problem}); type the length.	Nema muzike za merenje ({problem}); unesite trajanje.

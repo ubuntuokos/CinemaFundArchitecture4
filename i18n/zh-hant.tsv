@@ -4182,3 +4182,25 @@ export.summary	Low	低
 	Checks and warnings	檢查與警告
 	Checks: {errors} errors, {warnings} warnings	檢查：{errors} 個錯誤、{warnings} 個警告
 	Check Credits	檢查演職員表
+	The whole music ({time})	整段音樂（{time}）
+	Until the sound ends ({time})	直到聲音結束（{time}）
+	To the last bar line ({time})	到最後一個小節線（{time}）
+	Fit Credits to Music	讓演職員表配合音樂
+	Fit Credits to Music…	讓演職員表配合音樂…
+	Analyse Music for Credits	為演職員表分析音樂
+	Length:	長度：
+	Cards last whole beats (cuts on the beat)	字卡持續完整拍數（在拍點上切換）
+	Start the credits where the music starts	演職員表從音樂開始處開始
+	Length of the credits	演職員表長度
+	Remove Fitting	移除配合
+	Listening to the music…	正在聆聽音樂…
+	Length: {time}	長度：{time}
+	the sound ends at {time}	聲音在 {time} 結束
+	tempo {bpm} BPM	速度 {bpm} BPM
+	the credits without fitting: {time}	未配合的演職員表：{time}
+	Select a credits page on the timeline.	請在時間軸上選取演職員表頁面。
+	Fitting…	配合中…
+	The credits now last {time}.	演職員表現在長 {time}。
+	Fitting removed.	已移除配合。
+	Fit to This Length	配合此長度
+	No music to measure ({problem}); type the length.	沒有可測量的音樂（{problem}）；請輸入長度。

@@ -4185,3 +4185,25 @@ export.summary	Low	låg
 	Checks and warnings	Kontroller och varningar
 	Checks: {errors} errors, {warnings} warnings	Kontroller: {errors} fel, {warnings} varningar
 	Check Credits	Kontrollera eftertexter
+	The whole music ({time})	Hela musiken ({time})
+	Until the sound ends ({time})	Tills ljudet tar slut ({time})
+	To the last bar line ({time})	Till sista taktstrecket ({time})
+	Fit Credits to Music	Anpassa eftertexter till musiken
+	Fit Credits to Music…	Anpassa eftertexter till musiken…
+	Analyse Music for Credits	Analysera musik för eftertexter
+	Length:	Längd:
+	Cards last whole beats (cuts on the beat)	Korten varar hela taktslag (klipp på slaget)
+	Start the credits where the music starts	Starta eftertexterna där musiken börjar
+	Length of the credits	Eftertexternas längd
+	Remove Fitting	Ta bort anpassning
+	Listening to the music…	Lyssnar på musiken…
+	Length: {time}	Längd: {time}
+	the sound ends at {time}	ljudet slutar vid {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	eftertexterna utan anpassning: {time}
+	Select a credits page on the timeline.	Markera en eftertextsida på tidslinjen.
+	Fitting…	Anpassar…
+	The credits now last {time}.	Eftertexterna varar nu {time}.
+	Fitting removed.	Anpassningen togs bort.
+	Fit to This Length	Anpassa till den här längden
+	No music to measure ({problem}); type the length.	Ingen musik att mäta ({problem}); skriv längden.

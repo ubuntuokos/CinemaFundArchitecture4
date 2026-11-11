@@ -4168,3 +4168,25 @@
 	Checks and warnings	Проверки и предупреждения
 	Checks: {errors} errors, {warnings} warnings	Проверки: ошибок — {errors}, предупреждений — {warnings}
 	Check Credits	Проверить титры
+	The whole music ({time})	Вся музыка ({time})
+	Until the sound ends ({time})	Пока не закончится звук ({time})
+	To the last bar line ({time})	До последней тактовой черты ({time})
+	Fit Credits to Music	Подогнать титры под музыку
+	Fit Credits to Music…	Подогнать титры под музыку…
+	Analyse Music for Credits	Анализировать музыку для титров
+	Length:	Длительность:
+	Cards last whole beats (cuts on the beat)	Карточки длятся целое число долей (смена на долю)
+	Start the credits where the music starts	Начать титры там, где начинается музыка
+	Length of the credits	Длительность титров
+	Remove Fitting	Снять подгонку
+	Listening to the music…	Прослушивание музыки…
+	Length: {time}	Длительность: {time}
+	the sound ends at {time}	звук заканчивается на {time}
+	tempo {bpm} BPM	темп {bpm} BPM
+	the credits without fitting: {time}	титры без подгонки: {time}
+	Select a credits page on the timeline.	Выберите страницу титров на таймлайне.
+	Fitting…	Подгонка…
+	The credits now last {time}.	Теперь титры длятся {time}.
+	Fitting removed.	Подгонка снята.
+	Fit to This Length	Подогнать под эту длительность
+	No music to measure ({problem}); type the length.	Нет музыки для измерения ({problem}); введите длительность.

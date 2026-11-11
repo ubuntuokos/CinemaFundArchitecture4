@@ -4186,3 +4186,25 @@ export.summary	Low	žema
 	Checks and warnings	Patikros ir įspėjimai
 	Checks: {errors} errors, {warnings} warnings	Patikros: klaidų {errors}, įspėjimų {warnings}
 	Check Credits	Tikrinti titrus
+	The whole music ({time})	Visa muzika ({time})
+	Until the sound ends ({time})	Kol baigiasi garsas ({time})
+	To the last bar line ({time})	Iki paskutinės takto linijos ({time})
+	Fit Credits to Music	Pritaikyti titrus prie muzikos
+	Fit Credits to Music…	Pritaikyti titrus prie muzikos…
+	Analyse Music for Credits	Analizuoti muziką titrams
+	Length:	Trukmė:
+	Cards last whole beats (cuts on the beat)	Kortelės trunka sveikus mušimus (kirpimai ties mušimu)
+	Start the credits where the music starts	Pradėti titrus ten, kur prasideda muzika
+	Length of the credits	Titrų trukmė
+	Remove Fitting	Pašalinti pritaikymą
+	Listening to the music…	Klausomasi muzikos…
+	Length: {time}	Trukmė: {time}
+	the sound ends at {time}	garsas baigiasi ties {time}
+	tempo {bpm} BPM	tempas {bpm} BPM
+	the credits without fitting: {time}	titrai be pritaikymo: {time}
+	Select a credits page on the timeline.	Pasirinkite titrų puslapį laiko juostoje.
+	Fitting…	Pritaikoma…
+	The credits now last {time}.	Titrai dabar trunka {time}.
+	Fitting removed.	Pritaikymas pašalintas.
+	Fit to This Length	Pritaikyti šiai trukmei
+	No music to measure ({problem}); type the length.	Nėra muzikos matuoti ({problem}); įveskite trukmę.

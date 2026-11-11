@@ -4186,3 +4186,25 @@ export.summary	Low	დაბალი
 	Checks and warnings	შემოწმებები და გაფრთხილებები
 	Checks: {errors} errors, {warnings} warnings	შემოწმებები: შეცდომები {errors}, გაფრთხილებები {warnings}
 	Check Credits	ტიტრების შემოწმება
+	The whole music ({time})	მთელი მუსიკა ({time})
+	Until the sound ends ({time})	ხმის დასრულებამდე ({time})
+	To the last bar line ({time})	ბოლო ტაქტის ხაზამდე ({time})
+	Fit Credits to Music	ტიტრების მორგება მუსიკაზე
+	Fit Credits to Music…	ტიტრების მორგება მუსიკაზე…
+	Analyse Music for Credits	მუსიკის ანალიზი ტიტრებისთვის
+	Length:	ხანგრძლივობა:
+	Cards last whole beats (cuts on the beat)	ბარათები მთელ დარტყმებს გრძელდება (ჭრა რიტმზე)
+	Start the credits where the music starts	ტიტრების დაწყება იქ, სადაც მუსიკა იწყება
+	Length of the credits	ტიტრების ხანგრძლივობა
+	Remove Fitting	მორგების მოხსნა
+	Listening to the music…	მუსიკის მოსმენა…
+	Length: {time}	ხანგრძლივობა: {time}
+	the sound ends at {time}	ხმა მთავრდება {time}-ზე
+	tempo {bpm} BPM	ტემპი {bpm} BPM
+	the credits without fitting: {time}	ტიტრები მორგების გარეშე: {time}
+	Select a credits page on the timeline.	აირჩიეთ ტიტრების გვერდი დროის ხაზზე.
+	Fitting…	ერგება…
+	The credits now last {time}.	ტიტრები ახლა {time} გრძელდება.
+	Fitting removed.	მორგება მოხსნილია.
+	Fit to This Length	ამ ხანგრძლივობაზე მორგება
+	No music to measure ({problem}); type the length.	გასაზომი მუსიკა არ არის ({problem}); შეიყვანეთ ხანგრძლივობა.

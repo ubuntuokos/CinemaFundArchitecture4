@@ -4185,3 +4185,25 @@ export.summary	Low	төмен
 	Checks and warnings	Тексерулер мен ескертулер
 	Checks: {errors} errors, {warnings} warnings	Тексерулер: қателер {errors}, ескертулер {warnings}
 	Check Credits	Титрлерді тексеру
+	The whole music ({time})	Бүкіл музыка ({time})
+	Until the sound ends ({time})	Дыбыс біткенше ({time})
+	To the last bar line ({time})	Соңғы такт сызығына дейін ({time})
+	Fit Credits to Music	Титрлерді музыкаға сәйкестендіру
+	Fit Credits to Music…	Титрлерді музыкаға сәйкестендіру…
+	Analyse Music for Credits	Титрлер үшін музыканы талдау
+	Length:	Ұзақтығы:
+	Cards last whole beats (cuts on the beat)	Карталар бүтін соққыға созылады (кесу ырғақпен)
+	Start the credits where the music starts	Титрлерді музыка басталған жерден бастау
+	Length of the credits	Титрлердің ұзақтығы
+	Remove Fitting	Сәйкестендіруді алып тастау
+	Listening to the music…	Музыка тыңдалуда…
+	Length: {time}	Ұзақтығы: {time}
+	the sound ends at {time}	дыбыс {time} кезінде бітеді
+	tempo {bpm} BPM	темп {bpm} BPM
+	the credits without fitting: {time}	сәйкестендірусіз титрлер: {time}
+	Select a credits page on the timeline.	Уақыт шкаласынан титрлер бетін таңдаңыз.
+	Fitting…	Сәйкестендірілуде…
+	The credits now last {time}.	Титрлер енді {time} созылады.
+	Fitting removed.	Сәйкестендіру алынып тасталды.
+	Fit to This Length	Осы ұзақтыққа сәйкестендіру
+	No music to measure ({problem}); type the length.	Өлшейтін музыка жоқ ({problem}); ұзақтығын енгізіңіз.

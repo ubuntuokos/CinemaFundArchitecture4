@@ -4186,3 +4186,25 @@ export.summary	Low	ниско
 	Checks and warnings	Проверки и предупреждения
 	Checks: {errors} errors, {warnings} warnings	Проверки: грешки {errors}, предупреждения {warnings}
 	Check Credits	Проверка на надписите
+	The whole music ({time})	Цялата музика ({time})
+	Until the sound ends ({time})	До края на звука ({time})
+	To the last bar line ({time})	До последната тактова черта ({time})
+	Fit Credits to Music	Напасване на надписите към музиката
+	Fit Credits to Music…	Напасване на надписите към музиката…
+	Analyse Music for Credits	Анализ на музиката за надписите
+	Length:	Дължина:
+	Cards last whole beats (cuts on the beat)	Картите траят цели удари (смяна в ритъм)
+	Start the credits where the music starts	Надписите да започват с музиката
+	Length of the credits	Дължина на надписите
+	Remove Fitting	Премахване на напасването
+	Listening to the music…	Слушане на музиката…
+	Length: {time}	Дължина: {time}
+	the sound ends at {time}	звукът свършва в {time}
+	tempo {bpm} BPM	темпо {bpm} BPM
+	the credits without fitting: {time}	надписите без напасване: {time}
+	Select a credits page on the timeline.	Изберете страница с надписи във времевата линия.
+	Fitting…	Напасване…
+	The credits now last {time}.	Надписите вече траят {time}.
+	Fitting removed.	Напасването е премахнато.
+	Fit to This Length	Напасване към тази дължина
+	No music to measure ({problem}); type the length.	Няма музика за измерване ({problem}); въведете дължината.
