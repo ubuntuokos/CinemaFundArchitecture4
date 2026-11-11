@@ -2374,12 +2374,35 @@ def test_export_sends_the_audio_bitrate(app):
 
 
 # egui's Export ids the Qt window has no widget for yet, and why
+# Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs), frozen
+# here so the Qt check keeps working once egui is removed (CFA4-QT6-FINISH-001 Q5); while the egui
+# source is there, the test checks this list still matches it.
+EGUI_EXPORT_IDS: frozenset[str] = frozenset({
+    "export.audio.bitrate", "export.audio.bits", "export.audio.channels", "export.audio.codec",
+    "export.audio.flacLevel", "export.audio.include", "export.audio.sampleRate", "export.button",
+    "export.captions.format", "export.captions.mode", "export.destination.mediaFile", "export.effects.imageOverlay",
+    "export.effects.imageOverlay.browse", "export.effects.imageOverlay.opacity", "export.effects.imageOverlay.path",
+    "export.effects.imageOverlay.position", "export.effects.imageOverlay.size", "export.effects.loudness",
+    "export.effects.loudness.target", "export.effects.loudness.truePeak", "export.effects.nameOverlay",
+    "export.effects.timecodeOverlay", "export.effects.videoLimiter", "export.effects.videoLimiter.max",
+    "export.effects.videoLimiter.min", "export.estimate", "export.fileName", "export.format", "export.gpuRendering",
+    "export.location", "export.location.browse", "export.multiplexer", "export.preset", "export.preset.more",
+    "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
+    "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
+    "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
+    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dnxProfile",
+    "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
+    "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
+    "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
+    "export.video.maxDepth", "export.video.maxQuality", "export.video.mxfCodec", "export.video.profile",
+    "export.video.proresProfile", "export.video.quality", "export.video.target", "export.video.width",
+})
 EXPORT_IDS_NOT_IN_QT: dict[str, str] = {}
 
 
 def test_export_widgets_carry_eguis_automation_ids(app):
-    """Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs) names
-    the same control in the Qt Export window, once, so an agent drives both frontends by the same
+    """Every widget id egui's Export mode registers (``EGUI_EXPORT_IDS``) names the same control in
+    the Qt Export window, once, so an agent drives both frontends by the same
     ids; the few Qt has no widget for are listed with the reason."""
     import re
 
@@ -2391,10 +2414,13 @@ def test_export_widgets_carry_eguis_automation_ids(app):
         def execute(self, command, params=None, on_reply=None, on_error=None):
             return 0
 
-    src = (Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs").read_text()
-    pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
-    egui = set(re.findall(pattern, src))
-    assert len(egui) > 60 and "export.video.bitrateMode" in egui, "the egui source still registers its ids this way"
+    egui = set(EGUI_EXPORT_IDS)
+    rs = Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs"
+    if rs.exists():  # egui is still in the tree: the frozen list is its current one
+        pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
+        source = set(re.findall(pattern, rs.read_text()))
+        assert len(source) > 60 and "export.video.bitrateMode" in source, "the egui source still registers its ids this way"
+        assert source == egui, ("update EGUI_EXPORT_IDS", sorted(source ^ egui))
     dlg = ExportDialog(Engine())  # type: ignore[arg-type]
     names = [w.objectName() for w in dlg.findChildren(QtWidgets.QWidget) if w.objectName().startswith("export.")]
     missing = sorted(i for i in egui - set(names) if i not in EXPORT_IDS_NOT_IN_QT)
@@ -2589,11 +2615,15 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.b_frames.setValue(0)
         assert dlg.params()["mpeg2BFrames"] == 0
         dlg.b_frames.setValue(2)
-        # progressive unless an interlaced field order is chosen
-        assert dlg.field_order.isEnabled() and dlg.field_order.currentData() == "progressive" and "fieldOrder" not in p
-        dlg.field_order.setCurrentIndex(dlg.field_order.findData("lowerFirst"))
-        assert dlg.params()["fieldOrder"] == "lowerFirst"
-        dlg.field_order.setCurrentIndex(dlg.field_order.findData("progressive"))
+        # progressive unless an interlaced field order is chosen: egui's one Field Order row
+        # (export.video.fieldOrder), its interlaced orders open for MPEG-2 only
+        fo = dlg.rows.field_order
+        assert dlg.findChild(QtWidgets.QComboBox, "export.fieldOrder") is None, "one Field Order control"
+        assert fo.currentData() == "progressive" and "fieldOrder" not in p.get("settings", {}) and "fieldOrder" not in p
+        assert all(fo.model().item(i).isEnabled() for i in range(fo.count()))
+        fo.setCurrentIndex(fo.findData("lowerFirst"))
+        assert dlg.params()["settings"]["fieldOrder"] == "lowerFirst"
+        fo.setCurrentIndex(fo.findData("progressive"))
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
@@ -11736,9 +11766,20 @@ def test_real_engine_control_channel_names_project_rows_as_egui(app, tmp_path: P
         item = min(i for i in els() if re.fullmatch(r"project\.item\.\d+", i))
         assert c.call("ui.click", {"id": item})["ok"]
         assert wait_until(app, lambda: win.project_panel.main.selected_items() == [int(item.rsplit(".", 1)[1])], 10_000), (item, win.project_panel.main.selected_items())
-        # the Icon view's cards carry the same ids
+        # the Icon view's cards carry the same ids: it shows the bins at the root as cards (the item
+        # opened in place inside a bin is not on them), so a bin's row id now names its card
+        rows = {b: e[b]["rect"] for b in bins}
         win.execute("project.view.set", {"view": "icon"})
-        assert wait_until(app, lambda: item in els() and "project.list.header.Name" not in els(), 10_000), sorted(els())
+
+        def cards() -> bool:
+            now = els()
+            return (
+                "project.tree" not in now
+                and "project.list.header.Name" not in now
+                and all(b in now and now[b]["rect"] != rows[b] and f"{b}.toggle" not in now for b in bins)
+            )
+
+        assert wait_until(app, cards, 10_000), (rows, {k: v["rect"] for k, v in els().items()})
     finally:
         server.close()
         win._quit_confirmed = True
@@ -13269,7 +13310,14 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
                     return False
                 snap.clear()
                 snap.update(els())
-                return "project.empty" in snap and any(re.fullmatch(r"project\.(bin|item)\.\d+", i) for i in snap)
+                # and only this view's rows: the other view's container gone from the snapshot, every
+                # row a list line (with the bin's arrow) or a card (no arrow)
+                other = "project.tree" if mode == "icon" else "project.icons"
+                rows = [k for k in snap if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
+                arrows = [k for k in rows if k.startswith("project.bin.") and f"{k}.toggle" in snap]
+                bins = [k for k in rows if k.startswith("project.bin.")]
+                shaped = arrows == bins if mode == "list" else not arrows
+                return other not in snap and "project.empty" in snap and bool(rows) and shaped
 
             assert wait_until(app, ready, 20_000), (mode, sorted(snap))
             e = dict(snap)

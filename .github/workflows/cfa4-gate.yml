@@ -1,0 +1,143 @@
+name: CFA4 gate (fast, non-compiling)
+
+# Quick quality and security checks on every PR. Nothing here compiles CFA4 code, so the
+# AGENTS.md rule holds: the only automatic compile step stays the `cargo-check` gate in
+# pr-check.yml; full tests stay behind the `cfa4-full-validation` label (ci-linux.yml).
+#
+# The last job, `cfa4-gate`, summarises the others. Add only that name to the required
+# status checks (repository ruleset), so renaming a job never breaks the rule.
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"   # nightly: new RustSec advisories arrive without code changes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_DENY_VERSION: "0.20.2"
+  CARGO_DENY_SHA256: "9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f"
+  RUFF_VERSION: "0.17.3"
+  ZIZMOR_VERSION: "1.32.0"
+  ACTIONLINT_PY_VERSION: "1.7.12.25"
+
+jobs:
+  rust-fmt:
+    name: Rust formatting (CFA4-owned crates)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup show active-toolchain || rustup toolchain install
+      - name: cargo fmt --check (same crate set as `cargo xtask fmt-check`, vendor snapshots excluded)
+        run: |
+          mapfile -t pkgs < <(cargo metadata --no-deps --locked --format-version 1 \
+            | jq -r '.packages[].name | select(. != "cfa4-docpath" and . != "cfa4-ui") | "--package=" + .')
+          cargo fmt --check "${pkgs[@]}"
+
+  rust-deps:
+    name: Rust dependencies (cargo-deny)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install cargo-deny (checksum-verified release binary, no compilation)
+        run: |
+          name="cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl"
+          curl -sSfLO "https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY_VERSION}/${name}.tar.gz"
+          echo "${CARGO_DENY_SHA256}  ${name}.tar.gz" | sha256sum -c -
+          tar xzf "${name}.tar.gz"
+          install -m 0755 "${name}/cargo-deny" "$HOME/.cargo/bin/cargo-deny"
+      - name: Licences, sources and bans (blocking)
+        run: cargo deny check licenses sources bans
+      - name: Security advisories (blocking; accepted risks are in deny.toml with a reason)
+        run: |
+          set -o pipefail
+          cargo deny check advisories 2>&1 | tee advisories.txt
+      - name: Advisory summary
+        if: always()
+        run: |
+          if [ -f advisories.txt ]; then
+            {
+              echo "### cargo-deny advisories"
+              echo '```'
+              grep -E '^(error|warning)\[|Advisory:' advisories.txt || echo "no advisories"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  python:
+    name: Python lint (Ruff)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - name: Install Ruff
+        run: python -m pip install "ruff==${RUFF_VERSION}"
+      - name: ruff check (blocking)
+        run: ruff check --output-format=github python
+      - name: ruff format --check (report-only until the 93 unformatted files are formatted)
+        continue-on-error: true
+        run: ruff format --check python
+
+  workflows:
+    name: Workflow security (actionlint, zizmor)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - name: Install linters
+        run: python -m pip install "zizmor==${ZIZMOR_VERSION}" "actionlint-py==${ACTIONLINT_PY_VERSION}"
+      - name: actionlint
+        run: actionlint
+      - name: zizmor
+        run: zizmor --offline --format=github .github/workflows
+
+  cfa4-gate:
+    name: cfa4-gate
+    if: always()
+    needs: [rust-fmt, rust-deps, python, workflows]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 2
+    steps:
+      - name: PASS / FAIL
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"' | tee -a "$GITHUB_STEP_SUMMARY"
+          if echo "$RESULTS" | jq -e 'to_entries | any(.value.result != "success")' >/dev/null; then
+            echo "::error::CFA4 gate: FAIL"
+            exit 1
+          fi
+          echo "CFA4 gate: PASS" | tee -a "$GITHUB_STEP_SUMMARY"

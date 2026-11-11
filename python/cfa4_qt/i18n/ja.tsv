@@ -391,10 +391,7 @@
 	transitions	トランジション
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} フレームをコピー、{reencoded} をカット位置で再エンコード、{rendered} をレンダリング
 	{frames} frames are re-encoded or rendered. Continue?	{frames} フレームを再エンコードまたはレンダリングします。続行しますか？
-	Field order	フィールドオーダー
 	Progressive	プログレッシブ
-	Interlaced, upper field first	インターレース（上位フィールド優先）
-	Interlaced, lower field first	インターレース（下位フィールド優先）
 # Smart Cut audio (WP-09b)
 	Audio copied: {tracks}	コピーされた音声: {tracks}
 	Audio track {track} is not copied: {why}	音声トラック {track} はコピーされません: {why}
