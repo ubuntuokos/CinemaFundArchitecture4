@@ -13903,6 +13903,8 @@ def test_credits_numbers_use_the_languages_decimal_separator(monkeypatch):
     assert local_number("7.47") == "7,47" and local_number("12") == "12" and local_number("v1.2.3") == "v1.2.3"
     monkeypatch.setattr(i18n.TR, "language", "en")
     assert local_number("7.47") == "7.47"
+
+
 def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     """qt-parity 5.5: ``CFA4_QT_MONITOR_GL=1`` asks for the OpenGL picture, but where no GL
     context can be made (Qt's ``offscreen`` platform here) the monitor keeps the raster view; either
