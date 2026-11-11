@@ -45,6 +45,25 @@ Not represented: speed changes and frame holds (exported at 100 % with a report 
 graphics and synthetic media (gaps), video effects other than transitions, clip
 markers (written to the master mob, so they come back as media markers), OMF video and markers.
 
+## Other programs' OTIO metadata
+
+OTIO keeps each program's own data under its own key in `metadata` (Resolve `Resolve_OTIO`,
+Kdenlive `kdenlive`, CFA4 `cfa4`). On import every key but `cfa4` is kept in the project, in the
+`interchange` field of the sequence, track and clip it was on, and on export it is written back
+unchanged next to `cfa4` (OTIO-2.1). Where it is kept:
+
+| OTIO object | Kept on | Written back on |
+|---|---|---|
+| `Timeline` | the sequence | the `Timeline` |
+| top-level `Stack` (the timeline's tracks) | the sequence; a `Timeline` key of the same name wins | the `Timeline` |
+| `Track` | the track | the `Track` |
+| `Clip` | the clip | the `Clip` |
+| `Stack` inside a track | the nested sequence | the `Stack` |
+| (the clip instance of a nested sequence) | the clip | the `Stack`, under `cfa4.clip.interchange` |
+
+Not kept yet: metadata on markers, transitions, effects and media references. CFA4's own work has
+no such keys, and an empty field is not written to the project file.
+
 ## Nested sequences
 
 For the formats Premiere Pro exports (FCP7 XML, OTIO, EDL, AAF, OMF) a nested sequence is written
@@ -144,15 +163,22 @@ them, with `manifest.json` (exact ticks, 1 µs tolerance for OTIO's floating-poi
 
 The other direction (OTIO-1.2): the library writes samples for every schema the reader handles
 (`Timeline.1`, `Stack.1`, `Track.1`, `Clip.1`/`Clip.2`, `Gap.1`, `Transition.1`,
-`Marker.1`/`Marker.2`, the external, missing and generator references, `LinearTimeWarp.1`,
-`FreezeFrame.1`, `Effect.1`, `SerializableCollection.1`), and `oracle_samples` imports them:
+`Marker.1`/`Marker.2`, the external, missing, generator and image-sequence references,
+`LinearTimeWarp.1`, `FreezeFrame.1`, `Effect.1`, `SerializableCollection.1`, a bare track as the
+whole document, a clip with several media references and an active key), and `oracle_samples`
+imports them:
 
 ```sh
 python -m cfa4_devtools.otio_samples target/fixtures/otio-samples
 CFA4_OTIO_SAMPLES_DIR=target/fixtures/otio-samples cargo test -p cfa4-interchange --test otio oracle_samples
 ```
 
-`samples.json` holds what OTIO sees in each file: tracks (video first, as CFA4 orders them),
-every clip's and nested stack's position and length, transition counts, marker positions, and
-the import warnings that are expected (an unknown generator, an effect CFA4 does not know, a file
-reference without a path). Any other warning, or a missing expected one, fails the test.
+`samples.json` holds what OTIO sees in each file: per timeline the frame rate and start timecode;
+tracks (video first, as CFA4 orders them); every clip's and nested stack's position and length;
+transition counts and positions; marker positions (clip markers in media time, from the start of
+the available range); per clip whether it is enabled, its speed, reverse and hold, and the media it
+points at (file path, generator, offline, or a nested sequence); and the import warnings that are
+expected (an unknown generator, an effect CFA4 does not know, a file reference without a path, a
+clip directly in a stack). Any other warning, or a missing expected one, fails the test. The rates
+are 23.976, 24, 25, 29.97, 30, 50, 59.94 and 60 fps. How an image sequence is kept is OTIO-2.3; its
+path is not compared yet. Relative media paths resolve under `/media`, the base the test passes.

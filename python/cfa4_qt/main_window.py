@@ -470,6 +470,8 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.files_dropped.connect(self.place_files)
         self.timeline.canvas.files_dropped_empty.connect(self.sequence_from_files)
         self.timeline.canvas.menu_host = self
+        self.timeline.canvas.gop_marks_wanted.connect(lambda: self.update_gop_marks(force=True))
+        self._gop_marks_revision: Any = None
         # voice-over recording: the audio track headers' microphones and the mixer's record button
         self.voiceover = VoiceOverRecorder(engine, self.monitor, self)
         self.voiceover_dialog: VoiceOverSettingsDialog | None = None
@@ -1959,6 +1961,7 @@ class MainWindow(QMainWindow):
         self.engine.execute("history.list", {}, on_reply=lambda r, _b: self.history.set_history(r))
         self.events.refresh()
         self.update_render_bar()
+        self.update_gop_marks()
         self.engine.execute("source.inspect", {}, on_reply=self._on_source, on_error=lambda _m: self._on_source(None, None))
 
     def _on_state(self, result: Any, _b: bytes | None) -> None:
@@ -2873,6 +2876,17 @@ class MainWindow(QMainWindow):
                 self.monitor.play()
 
         self.engine.execute("prefs.get", {"key": "timeline.playAfterRendering"}, on_reply=play, on_error=lambda _m: None)
+
+    def update_gop_marks(self, force: bool = False) -> None:
+        """The Timeline's Show GOP Boundaries marks (``export.gopMarks``), again when the project
+        changed: indexing reads the clips' files, so not on every refresh."""
+        canvas = self.timeline.canvas
+        if not canvas.show_gop_marks or not self.engine.running:
+            return
+        if not force and self._gop_marks_revision == self.revision:
+            return
+        self._gop_marks_revision = self.revision
+        self.engine.execute("export.gopMarks", {}, on_reply=lambda r, _b: canvas.set_gop_marks(r), on_error=lambda _m: canvas.set_gop_marks(None))
 
     def update_render_bar(self) -> None:
         """The Timeline's render bar (``sequence.renderBar``), again every 250 ms while a job runs,

@@ -34,6 +34,13 @@ class TicksTest(unittest.TestCase):
             samples.ticks_of(SimpleNamespace(value=1, rate=0))
 
 
+class FilePathTest(unittest.TestCase):
+    def test_paths_as_cfa4_opens_them(self):
+        self.assertEqual(samples.file_path("file:///footage/shot%20a.mov"), "/footage/shot a.mov")
+        self.assertEqual(samples.file_path("/abs/x.mov"), "/abs/x.mov")
+        self.assertEqual(samples.file_path("clips/b.mov"), f"{samples.BASE_DIR}/clips/b.mov")
+
+
 class LegacyMarkerTest(unittest.TestCase):
     def test_marker2_becomes_marker1_with_range(self):
         doc = {
@@ -79,6 +86,7 @@ class WriteTest(unittest.TestCase):
             "FreezeFrame.1",
             "Effect.1",
             "SerializableCollection.1",
+            "ImageSequenceReference.1",
         ):
             self.assertIn(f'"OTIO_SCHEMA": "{schema}"', text, schema)
 
@@ -100,6 +108,42 @@ class WriteTest(unittest.TestCase):
         inner = nested["tracks"][0]["items"][0]
         self.assertEqual((inner["name"], inner["markers"]), ("Inner", []))
         self.assertEqual(inner["start_ticks"], 5 * samples.TICKS_PER_SECOND // 25)
+
+    def test_start_timecode_and_media_time_markers(self):
+        import opentimelineio as otio
+
+        tl = samples.expect_timeline(otio, samples.start_timecode(otio, 30))
+        self.assertEqual((tl["rate"], tl["start_timecode"]), (30, 30 * 3600))
+        # the clip marker sits 10 frames into media whose available range starts at frame 1000
+        one = tl["tracks"][0]["items"][0]
+        self.assertEqual(one["markers"], [110 * samples.TICKS_PER_SECOND // 30])
+        # the dissolve is centred on the cut after "one" (10-frame gap + 50 frames), 6 + 6 frames long
+        self.assertEqual(
+            tl["tracks"][0]["transition_ranges"],
+            [[54 * samples.TICKS_PER_SECOND // 30, 12 * samples.TICKS_PER_SECOND // 30]],
+        )
+
+    def test_media_expectations(self):
+        import opentimelineio as otio
+
+        items = samples.expect_timeline(otio, samples.media_paths(otio))["tracks"][0]["items"]
+        media = {i["name"]: i["media"] for i in items}
+        self.assertEqual(media["multi"]["path"], "/full/multi.mov", "the active reference")
+        self.assertEqual(media["url"]["path"], "/footage/shot a.mov")
+        self.assertEqual(media["relative"]["path"], f"{samples.BASE_DIR}/clips/b.mov")
+        self.assertEqual(media["red"], {"ref": "generator", "generator": "ColorMatte", "offline": False})
+        refs = samples.expect_timeline(otio, samples.references(otio))["tracks"][0]["items"]
+        self.assertEqual({i["name"]: i["media"]["offline"] for i in refs}["missing"], True)
+        fx = {i["name"]: i for i in samples.expect_timeline(otio, samples.time_effects(otio))["tracks"][0]["items"]}
+        self.assertEqual((fx["fast"]["speed"], fx["reverse"]["reverse"], fx["hold"]["frame_hold"]), (2.0, True, True))
+        self.assertFalse(fx["disabled"]["enabled"])
+
+    def test_bare_track_is_one_sequence_named_after_it(self):
+        import opentimelineio as otio
+
+        (tl,) = samples.timelines_of(otio, samples.bare_track(otio))
+        want = samples.expect_timeline(otio, tl)
+        self.assertEqual((want["name"], want["rate"], want["start_timecode"]), ("Solo", 30, 0))
 
     def test_legacy_markers_read_back_at_the_same_time(self):
         import opentimelineio as otio

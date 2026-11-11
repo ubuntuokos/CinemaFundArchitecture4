@@ -263,7 +263,7 @@ A tulajdonos mind a hat pontot a javasolt alapértékkel fogadta el (a terv egé
 | --- | --- | --- |
 | A kódok egyre jobban eltérnek (átnevezés, craft-media, Qt6) | a port egyre drágább | képesség-alapú port, „már megvan” ellenőrzés, upstream teszt mint referencia |
 | Egy havi futás nem fér bele egy munkamenet keretébe | félbemaradt munka | a nyilvántartás „tervezett” állapota, átgörgetés a következő hónapra, kötegenként külön PR |
-| Túl sok nyitott PR | a gazda túlterhelődik, ütközések | a `coordination.md` 20 PR-os korlátja: felette csak a jelentés készül el, PR nem nyílik |
+| Túl sok nyitott PR | a gazda túlterhelődik, ütközések | a `coordination.md` 30 PR-os korlátja: felette csak a jelentés készül el, PR nem nyílik |
 | Márkanév kerül vissza | elbukik a `test_independence.py` | a port mindig a CFA4 nevekre fordít, a teszt a CI-ben fut |
 | Az upstream licencet vált | átvétel jogi akadálya | M1-ben a licencfájlok ellenőrzése; váltás esetén megállás és tulajdonosi döntés |
 | Egy upstream funkció ütközik a CFA4 iránnyal (pl. csak NVIDIA, nem Linux) | szabályszegés | F kategória vagy átdolgozás a gyártófüggetlenségi szabály szerint |

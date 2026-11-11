@@ -6,7 +6,8 @@ A CFA4-DEV-SPEC-KIT-001 1.2 terv SK-F2 fázisának terméke. **Inert forrás**: 
 | --- | --- |
 | `constitution.md` | Hivatkozó constitution (SK-01). Telepítéskor a `.specify/memory/constitution.md` helyére kerül, a `<SHA>` helyett a `main` aktuális rövid SHA-jával. Kézzel karbantartott; a `/speckit-constitution` tiltott. |
 | `templates/spec-template-cfa4.md` | A spec-sablon végére fűzött kötelező „CFA4-követelmény” blokk (SK-02, `append`). |
-| `commands/speckit.specify.md` | A `/speckit-specify` köré tett CFA4-előfeltételek és -lezárás (`wrap`). |
+| `commands/speckit.specify.md` | A `/speckit-specify` köré tett CFA4-előfeltételek és -lezárás (`wrap`); SK-F3 óta kötelező minimális olvasnivalóval. |
+| `workflows/cfa4-no-implement.yml` | Workflow-overlay (D9): a beépített `speckit` workflow-ból eltávolítja az `implement` lépést. |
 | `preset.yml` | A preset leírója (Spec Kit ≥ 1.2.5). |
 
 ## Telepítés eldobható worktree-ben vagy a pilotágon (SK-F2-ben mérve)
@@ -17,6 +18,8 @@ specify init --here --force --non-interactive --integration claude --script sh \
   --preset docs/development/spec-kit/cfa4-policy
 sed "s/<SHA>/$(git rev-parse --short HEAD)/" docs/development/spec-kit/cfa4-policy/constitution.md \
   > .specify/memory/constitution.md
+specify workflow overlay add docs/development/spec-kit/cfa4-policy/workflows/cfa4-no-implement.yml --priority 1
+specify workflow resolve speckit   # az implement lépés nem szerepelhet benne
 ```
 
 **A presetet ne a `specify preset add`/`update` paranccsal telepítsd.** A v1.2.5-ben ezek a skilleket az alapértelmezéssel írják újra, és a felülírt `speckit-specify` fejlécébe `disable-model-invocation: false` kerül. Ha mégis ezzel települt, futtasd újra a fenti `specify init`-et. Minden preset-művelet után ellenőrizd, hogy mind a 10 `.claude/skills/speckit-*/SKILL.md` fejlécében `disable-model-invocation: true` áll (AC-SK-16).

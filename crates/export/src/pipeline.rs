@@ -136,7 +136,7 @@ impl RendererPool {
 }
 
 /// The immutable part of an export: everything needed to produce one output frame.
-pub(crate) struct Pipeline {
+pub struct Pipeline {
     pub project: Arc<Project>,
     /// The registered frame renderers (GPU compositors) when the setting allows and factories
     /// provide them; pooled because `frame` runs on several export threads at once.

@@ -51,6 +51,7 @@ from .export_effects import METADATA_FORMATS, SECTION_KEYS, CaptionsSection, Eff
 from .export_preview import PreviewColumn
 from .export_rows import ExportRows
 from .preset_manager import PresetManager
+from .smart_export import SmartExportBox
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
 BITRATE_MODES = (("vbr1Pass", N_("VBR, 1 pass")), ("vbr2Pass", N_("VBR, 2 pass")), ("cbr", N_("CBR")), ("crf", N_("Constant quality (CRF)")))
@@ -649,6 +650,15 @@ class ExportDialog(QDialog):
         top.addLayout(left, 1)
         right = QVBoxLayout()
         right.addWidget(self.preview)
+        # the export mode and the render plan preview (WP-08, Smart Export)
+        self.smart = SmartExportBox(
+            engine,
+            lambda: (self.sequence or {}).get("id") if isinstance((self.sequence or {}).get("id"), int) else None,
+            lambda: str(self.params().get("path") or ""),
+            self._smart_said,
+            self,
+        )
+        right.addWidget(self.smart)
         right.addWidget(self.captions)
         right.addWidget(self.effects)
         right.addWidget(self.metadata)
@@ -743,6 +753,7 @@ class ExportDialog(QDialog):
         self.export_button.setEnabled(sequence is not None)
         self.queue_button.setEnabled(sequence is not None)
         self.sequence_updated(sequence)
+        self.smart.refresh()
         if sequence is not None:
             duration = int(sequence.get("duration") or 0) / 254_016_000_000
             self.end.setValue(duration)
@@ -1144,6 +1155,8 @@ class ExportDialog(QDialog):
     def _changed(self) -> None:
         if not self._loading:
             self._resolve_timer.start()
+            if hasattr(self, "smart"):
+                self.smart.refresh()
 
     def _touch(self, key: str) -> None:
         if not self._loading:
@@ -1322,7 +1335,18 @@ class ExportDialog(QDialog):
         self.summary.setStyleSheet("color: #d04040")
 
     # ----- queue -----
+    def _smart_said(self, message: str, error: bool) -> None:
+        if error:
+            self._summary_error(message)
+        else:
+            self.summary.setText(message)
+            self.summary.setStyleSheet("")
+
     def _enqueue(self, start: bool) -> None:
+        if self.smart.smart():
+            # Smart Export writes the file itself (no queue)
+            self.smart.start()
+            return
         params = self.params()
         if not params.get("path"):
             self._summary_error(tr("Choose a file name and location."))
