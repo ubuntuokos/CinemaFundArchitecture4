@@ -1,0 +1,27 @@
+[package]
+name = "cfa4-qc"
+description = "CFA4 media quality control (layer L3): versioned QC report schema, QC profiles with thresholds, file hashing, verdicts that never pass a skipped or missing mandatory check"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-codecs = { workspace = true }
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-isobmff = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-time = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+sha2 = "0.10"
+toml = "1"
+
+[dev-dependencies]
+cfa4-aac = { workspace = true }
+cfa4-h264enc = { workspace = true }
