@@ -4323,3 +4323,16 @@ export.summary	Low	matala
 	Lines one gap unit apart, moving with the page	Viivat yhden välyksen päässä toisistaan, liikkuvat sivun mukana
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” ei erotu taustasta (kontrasti {ratio}:1; vähintään 4,5:1 tarvitaan)
 	A picture or video is behind the text: check the contrast by eye	Tekstin takana on kuva tai video: tarkista kontrasti silmämääräisesti
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Valmis ulkoasu: tyylit, taustat, siirtymät ja ajoitus. Annettu tyylitiedosto menee edelle.
+	New Spreadsheet from Template…	Uusi laskentataulukko mallista…
+	built in	sisäänrakennettu
+	mine	oma
+	this project	tämä projekti
+	Template	Malli
+	Choose a template first.	Valitse ensin malli.
+	Name of the template:	Mallin nimi:
+	Template saved: {name}	Malli tallennettu: {name}
+	Apply Credits Template…	Käytä tekijätietomallia…
+	Template:	Malli:
+	Credits Templates	Tekijätietomallit
+	CSV (*.csv)	CSV (*.csv)

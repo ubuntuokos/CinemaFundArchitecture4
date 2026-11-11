@@ -4328,3 +4328,16 @@
 	The text moves {speed} px per frame; a whole number does not shimmer	El texto se mueve {speed} px por fotograma; un número entero no parpadea
 	Video: {file}	Vídeo: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» no destaca sobre el fondo (contraste {ratio}:1; se necesita al menos 4.5:1)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Un aspecto listo: estilos, fondos, transiciones y tiempos. Si se indica un archivo de estilos, prevalece.
+	Apply Credits Template…	Aplicar plantilla de créditos…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Elija primero una plantilla.
+	Name of the template:	Nombre de la plantilla:
+	New Spreadsheet from Template…	Nueva hoja de cálculo desde plantilla…
+	Template	Plantilla
+	Template saved: {name}	Plantilla guardada: {name}
+	Template:	Plantilla:
+	built in	integrado
+	mine	propio
+	this project	este proyecto
+	Credits Templates	Plantillas de créditos

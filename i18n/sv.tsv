@@ -4323,3 +4323,16 @@ export.summary	Low	låg
 	Lines one gap unit apart, moving with the page	Linjer en avståndsenhet isär som följer med sidan
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” syns inte mot bakgrunden (kontrast {ratio}:1; minst 4,5:1 behövs)
 	A picture or video is behind the text: check the contrast by eye	Bakom texten finns en bild eller video: kontrollera kontrasten med ögat
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Ett färdigt utseende: stilar, bakgrunder, övergångar och timing. En angiven stilfil har företräde.
+	New Spreadsheet from Template…	Nytt kalkylark från mall…
+	built in	inbyggd
+	mine	egen
+	this project	detta projekt
+	Template	Mall
+	Choose a template first.	Välj en mall först.
+	Name of the template:	Mallens namn:
+	Template saved: {name}	Mall sparad: {name}
+	Apply Credits Template…	Använd eftertextmall…
+	Template:	Mall:
+	Credits Templates	Eftertextmallar
+	CSV (*.csv)	CSV (*.csv)

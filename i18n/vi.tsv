@@ -4321,3 +4321,16 @@ export.summary	Low	thấp
 	Lines one gap unit apart, moving with the page	Các đường cách nhau một đơn vị khoảng cách, di chuyển cùng trang
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” không nổi bật trên nền (độ tương phản {ratio}:1; cần ít nhất 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Phía sau chữ có hình hoặc video: hãy kiểm tra độ tương phản bằng mắt
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Giao diện dựng sẵn: kiểu, nền, chuyển cảnh và thời gian. Nếu có tệp kiểu thì tệp đó được ưu tiên.
+	New Spreadsheet from Template…	Bảng tính mới từ mẫu…
+	built in	dựng sẵn
+	mine	của tôi
+	this project	dự án này
+	Template	Mẫu
+	Choose a template first.	Hãy chọn mẫu trước.
+	Name of the template:	Tên mẫu:
+	Template saved: {name}	Đã lưu mẫu: {name}
+	Apply Credits Template…	Áp dụng mẫu danh đề…
+	Template:	Mẫu:
+	Credits Templates	Mẫu danh đề
+	CSV (*.csv)	CSV (*.csv)

@@ -829,3 +829,91 @@ fn portraits_videos_and_card_entrances_with_the_real_engine() {
     let ParamValue::Vec2(face) = pos(&portrait).value else { panic!() };
     assert!((at.x - face.x).abs() < 1e-6 && face.y < at.y);
 }
+
+// ----- C6: templates -----
+
+#[test]
+fn templates_list_save_apply_and_delete() {
+    let mut s = demo("credits-templates");
+    let dir = tmp_dir("credits-templates");
+    // built-in ones are listed with their licence
+    let list = s.execute("graphics.credits.templates", json!({})).unwrap();
+    let ids: Vec<String> = list["templates"].as_array().unwrap().iter().map(|t| t["id"].as_str().unwrap().to_string()).collect();
+    assert!(ids.contains(&"cfa4-cards-and-roll".to_string()), "{ids:?}");
+    assert!(list["templates"].as_array().unwrap().iter().all(|t| t["category"] == "builtin" && t["license"] == "MIT OR Apache-2.0"));
+    // a new spreadsheet from a template, imported with it
+    let sheet = dir.join("new.csv");
+    s.execute("graphics.credits.template.newSheet", json!({"id": "cfa4-cards-and-roll", "to": sheet})).unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": sheet, "template": "Cards and Roll"})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    assert!(v["clips"][0]["background"].is_u64(), "the template's background came along: {v}");
+    let page = clips(&v)[0];
+
+    // save the placed credits as a project template and as a user template
+    s.execute("timeline.select", json!({"clips": [page.0]})).unwrap();
+    let undo = s.history.undo.len();
+    let r = s.execute("graphics.credits.template.save", json!({"name": "Fesztivál", "where": "project", "license": "CC-BY-4.0"})).unwrap();
+    assert_eq!(r["id"], "fesztivál");
+    assert_eq!(s.history.undo.len(), undo + 1);
+    let r = s.execute("graphics.credits.template.save", json!({"name": "Saját", "styling": {"defaultPageStyle": "Card"}})).unwrap();
+    assert!(std::path::Path::new(r["path"].as_str().unwrap()).is_file());
+    let list = s.execute("graphics.credits.templates", json!({})).unwrap();
+    let cats: Vec<(String, String)> =
+        list["templates"].as_array().unwrap().iter().map(|t| (t["id"].as_str().unwrap().to_string(), t["category"].as_str().unwrap().to_string())).collect();
+    assert!(cats.contains(&("fesztivál".into(), "project".into())) && cats.contains(&("saját".into(), "user".into())), "{cats:?}");
+    // the project template travels with the project
+    assert_eq!(s.project.credits_templates.len(), 1);
+
+    // apply another template to the placed credits: one undo step, same rows
+    let before = texts(&s, page);
+    let r = s.execute("graphics.credits.template.apply", json!({"id": "cfa4-classic-roll"})).unwrap();
+    let new_page = clips(&r)[0];
+    assert_eq!(texts(&s, new_page), before);
+    assert!(r["clips"][0]["background"].is_null(), "the classic roll has no background: {r}");
+    s.execute("edit.undo", json!({})).unwrap();
+    assert!(s.active_sequence().unwrap().find_item(page).is_some());
+
+    // built-in templates stay; user and project ones go
+    assert!(s.execute("graphics.credits.template.delete", json!({"id": "cfa4-classic-roll"})).is_err());
+    s.execute("graphics.credits.template.delete", json!({"id": "saját"})).unwrap();
+    s.execute("graphics.credits.template.delete", json!({"id": "fesztivál"})).unwrap();
+    assert!(s.project.credits_templates.is_empty());
+    assert!(s.execute("graphics.credits.template.get", json!({"id": "saját"})).is_err());
+    // a damaged template file is refused, not a crash
+    let bad = dir.join("bad.cfa4credtpl");
+    std::fs::write(&bad, b"{not json").unwrap();
+    assert!(s.execute("graphics.credits.template.get", json!({"id": bad})).is_err());
+}
+
+#[test]
+fn template_review_fixes_big_files_style_changes_and_background_paths() {
+    let mut s = demo("credits-templates-fixes");
+    let dir = tmp_dir("credits-templates-fixes");
+    // a huge file in the user's templates is skipped without being read
+    let lib = s.prefs_path.as_ref().unwrap().parent().unwrap().join("Credits Templates");
+    std::fs::create_dir_all(&lib).unwrap();
+    let f = std::fs::File::create(lib.join("huge.cfa4credtpl")).unwrap();
+    f.set_len(64 << 20).unwrap();
+    let list = s.execute("graphics.credits.templates", json!({})).unwrap();
+    assert!(list["templates"].as_array().unwrap().iter().all(|t| t["path"].is_null()), "{list}");
+
+    // a template that changes the blocks' default style keeps the hand edits
+    let sheet = dir.join("plain.csv");
+    std::fs::write(&sheet, "Body,Page Style\nAnna Kiss,Card\n").unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": sheet})).unwrap();
+    let page = clips(&v)[0];
+    hand_edit(&mut s, page, "Anna Kiss", "Kiss Anna");
+    s.execute("timeline.select", json!({"clips": [page.0]})).unwrap();
+    let styling = r#"{"defaultContentStyle":"Centered","pageStyles":[{"name":"Card","behaviour":"card","cardFrames":90}]}"#;
+    s.execute("graphics.credits.template.save", json!({"name": "Other", "styling": styling})).unwrap();
+    let r = s.execute("graphics.credits.template.apply", json!({"id": "other"})).unwrap();
+    assert_eq!(texts(&s, clips(&r)[0]), vec!["Kiss Anna".to_string()], "{r}");
+
+    // a background picture is named where it was found
+    image::RgbaImage::from_pixel(16, 9, image::Rgba([1, 2, 3, 255])).save(dir.join("sky.png")).unwrap();
+    let st = r#"{"pageStyles":[{"name":"Card","behaviour":"card","background":{"kind":"image","file":"sky.png"}}]}"#;
+    s.execute("graphics.credits.template.save", json!({"name": "Sky", "from": {"path": sheet, "styling": st}})).unwrap();
+    let t = s.execute("graphics.credits.template.get", json!({"id": "sky"})).unwrap();
+    let file = t["template"]["styling"]["pageStyles"][0]["background"]["file"].as_str().unwrap().to_string();
+    assert!(std::path::Path::new(&file).is_absolute() && file.ends_with("sky.png"), "{file}");
+}

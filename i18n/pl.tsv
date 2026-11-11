@@ -4321,3 +4321,16 @@ export.summary	Low	niska
 	Lines one gap unit apart, moving with the page	Linie co jedną jednostkę odstępu, przesuwają się razem ze stroną
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” nie wyróżnia się na tle (kontrast {ratio}:1; potrzeba co najmniej 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Za tekstem jest obraz lub wideo: sprawdź kontrast na oko
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Gotowy wygląd: style, tła, przejścia i czasy. Podany plik stylu ma pierwszeństwo.
+	New Spreadsheet from Template…	Nowy arkusz z szablonu…
+	built in	wbudowany
+	mine	mój
+	this project	ten projekt
+	Template	Szablon
+	Choose a template first.	Najpierw wybierz szablon.
+	Name of the template:	Nazwa szablonu:
+	Template saved: {name}	Zapisano szablon: {name}
+	Apply Credits Template…	Zastosuj szablon napisów końcowych…
+	Template:	Szablon:
+	Credits Templates	Szablony napisów końcowych
+	CSV (*.csv)	CSV (*.csv)

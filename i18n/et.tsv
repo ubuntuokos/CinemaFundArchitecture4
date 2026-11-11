@@ -4323,3 +4323,16 @@ export.summary	Low	madal
 	Lines one gap unit apart, moving with the page	Jooned ühe vaheühiku kaugusel, liiguvad koos lehega
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ei eristu taustast (kontrast {ratio}:1; vaja on vähemalt 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Teksti taga on pilt või video: kontrolli kontrasti silmaga
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Valmis välimus: stiilid, taustad, üleminekud ja ajastus. Antud stiilifail on ülimuslik.
+	New Spreadsheet from Template…	Uus tabel mallist…
+	built in	sisseehitatud
+	mine	minu oma
+	this project	see projekt
+	Template	Mall
+	Choose a template first.	Vali kõigepealt mall.
+	Name of the template:	Malli nimi:
+	Template saved: {name}	Mall salvestatud: {name}
+	Apply Credits Template…	Rakenda tiitrite mall…
+	Template:	Mall:
+	Credits Templates	Tiitrite mallid
+	CSV (*.csv)	CSV (*.csv)

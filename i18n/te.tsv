@@ -4327,3 +4327,16 @@ export.summary	Low	తక్కువ
 	Lines one gap unit apart, moving with the page	ఒక గ్యాప్ యూనిట్ దూరంలో గీతలు, పేజీతో కదులుతాయి
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” నేపథ్యం నుండి ప్రత్యేకంగా కనిపించదు (కాంట్రాస్ట్ {ratio}:1; కనీసం 4.5:1 అవసరం)
 	A picture or video is behind the text: check the contrast by eye	టెక్స్ట్ వెనుక చిత్రం లేదా వీడియో ఉంది: కాంట్రాస్ట్‌ను కంటితో తనిఖీ చేయండి
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	సిద్ధమైన రూపం: శైలులు, నేపథ్యాలు, పరివర్తనలు మరియు సమయం. శైలి ఫైల్ ఇస్తే అదే వర్తిస్తుంది.
+	New Spreadsheet from Template…	టెంప్లేట్ నుండి కొత్త స్ప్రెడ్‌షీట్…
+	built in	అంతర్నిర్మిత
+	mine	నాది
+	this project	ఈ ప్రాజెక్ట్
+	Template	టెంప్లేట్
+	Choose a template first.	ముందుగా టెంప్లేట్‌ను ఎంచుకోండి.
+	Name of the template:	టెంప్లేట్ పేరు:
+	Template saved: {name}	టెంప్లేట్ సేవ్ చేయబడింది: {name}
+	Apply Credits Template…	క్రెడిట్స్ టెంప్లేట్‌ను వర్తింపజేయి…
+	Template:	టెంప్లేట్:
+	Credits Templates	క్రెడిట్స్ టెంప్లేట్‌లు
+	CSV (*.csv)	CSV (*.csv)

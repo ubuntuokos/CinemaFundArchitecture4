@@ -4321,3 +4321,16 @@ export.summary	Low	nízká
 	Lines one gap unit apart, moving with the page	Čáry vzdálené o jednu jednotku mezery, pohybují se se stránkou
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ nevyniká na pozadí (kontrast {ratio}:1; je potřeba alespoň 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Za textem je obrázek nebo video: zkontrolujte kontrast okem
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Hotový vzhled: styly, pozadí, přechody a časování. Zadaný soubor stylu má přednost.
+	New Spreadsheet from Template…	Nová tabulka ze šablony…
+	built in	vestavěná
+	mine	moje
+	this project	tento projekt
+	Template	Šablona
+	Choose a template first.	Nejprve zvolte šablonu.
+	Name of the template:	Název šablony:
+	Template saved: {name}	Šablona uložena: {name}
+	Apply Credits Template…	Použít šablonu titulků tvůrců…
+	Template:	Šablona:
+	Credits Templates	Šablony titulků tvůrců
+	CSV (*.csv)	CSV (*.csv)

@@ -4323,3 +4323,16 @@ export.summary	Low	χαμηλή
 	Lines one gap unit apart, moving with the page	Γραμμές σε απόσταση μίας μονάδας κενού, που κινούνται με τη σελίδα
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	Το “{text}” δεν ξεχωρίζει από το φόντο (αντίθεση {ratio}:1· χρειάζεται τουλάχιστον 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Πίσω από το κείμενο υπάρχει εικόνα ή βίντεο: ελέγξτε την αντίθεση με το μάτι
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Έτοιμη εμφάνιση: στυλ, φόντα, μεταβάσεις και χρονισμός. Ένα αρχείο στυλ, αν δοθεί, υπερισχύει.
+	New Spreadsheet from Template…	Νέο υπολογιστικό φύλλο από πρότυπο…
+	built in	ενσωματωμένο
+	mine	δικό μου
+	this project	αυτό το έργο
+	Template	Πρότυπο
+	Choose a template first.	Επιλέξτε πρώτα ένα πρότυπο.
+	Name of the template:	Όνομα του προτύπου:
+	Template saved: {name}	Το πρότυπο αποθηκεύτηκε: {name}
+	Apply Credits Template…	Εφαρμογή προτύπου τίτλων συντελεστών…
+	Template:	Πρότυπο:
+	Credits Templates	Πρότυπα τίτλων συντελεστών
+	CSV (*.csv)	CSV (*.csv)

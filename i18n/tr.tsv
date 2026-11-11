@@ -4322,3 +4322,16 @@ export.summary	Low	düşük
 	Lines one gap unit apart, moving with the page	Bir boşluk birimi aralıklı, sayfayla birlikte hareket eden çizgiler
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” arka plandan ayrışmıyor (kontrast {ratio}:1; en az 4,5:1 gerekir)
 	A picture or video is behind the text: check the contrast by eye	Metnin arkasında resim veya video var: kontrastı gözle denetleyin
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Hazır bir görünüm: stiller, arka planlar, geçişler ve zamanlama. Verilen bir stil dosyası önceliklidir.
+	New Spreadsheet from Template…	Şablondan yeni tablo…
+	built in	yerleşik
+	mine	benim
+	this project	bu proje
+	Template	Şablon
+	Choose a template first.	Önce bir şablon seçin.
+	Name of the template:	Şablonun adı:
+	Template saved: {name}	Şablon kaydedildi: {name}
+	Apply Credits Template…	Jenerik şablonu uygula…
+	Template:	Şablon:
+	Credits Templates	Jenerik şablonları
+	CSV (*.csv)	CSV (*.csv)

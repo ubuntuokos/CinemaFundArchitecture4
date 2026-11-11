@@ -4330,3 +4330,16 @@
 	The text moves {speed} px per frame; a whole number does not shimmer	テキストは1フレームあたり{speed} px移動します。整数値だとちらつきません
 	Video: {file}	動画: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”が背景から目立ちません(コントラスト{ratio}:1。4.5:1以上が必要です)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	完成したデザイン: スタイル、背景、トランジション、タイミング。スタイルファイルを指定した場合はそちらが優先されます。
+	Apply Credits Template…	クレジットテンプレートを適用…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	先にテンプレートを選択してください。
+	Name of the template:	テンプレート名:
+	New Spreadsheet from Template…	テンプレートから新規スプレッドシート…
+	Template	テンプレート
+	Template saved: {name}	テンプレートを保存しました: {name}
+	Template:	テンプレート:
+	built in	組み込み
+	mine	マイ
+	this project	このプロジェクト
+	Credits Templates	クレジットテンプレート

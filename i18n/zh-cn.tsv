@@ -4319,3 +4319,16 @@
 	The text moves {speed} px per frame; a whole number does not shimmer	文字每帧移动 {speed} px;整数值不会闪烁
 	Video: {file}	视频:{file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”与背景区分不明显(对比度 {ratio}:1;至少需要 4.5:1)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	现成的外观:样式、背景、转场和时间设置。如果同时提供了样式文件,则以样式文件为准。
+	Apply Credits Template…	应用演职员表模板…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	请先选择模板。
+	Name of the template:	模板名称:
+	New Spreadsheet from Template…	从模板新建表格…
+	Template	模板
+	Template saved: {name}	模板已保存:{name}
+	Template:	模板:
+	built in	内置
+	mine	我的
+	this project	此项目
+	Credits Templates	演职员表模板

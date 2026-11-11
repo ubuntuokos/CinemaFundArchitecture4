@@ -4323,3 +4323,16 @@ export.summary	Low	niska
 	Lines one gap unit apart, moving with the page	Linije razmaknute za jednu jedinicu razmaka, pomiču se sa stranicom
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” se ne ističe od pozadine (kontrast {ratio}:1; potrebno je najmanje 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Iza teksta je slika ili video: provjerite kontrast okom
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Gotov izgled: stilovi, pozadine, prijelazi i tempiranje. Zadana datoteka stila ima prednost.
+	New Spreadsheet from Template…	Nova tablica iz predloška…
+	built in	ugrađeni
+	mine	moj
+	this project	ovaj projekt
+	Template	Predložak
+	Choose a template first.	Najprije odaberite predložak.
+	Name of the template:	Naziv predloška:
+	Template saved: {name}	Predložak spremljen: {name}
+	Apply Credits Template…	Primijeni predložak odjavne špice…
+	Template:	Predložak:
+	Credits Templates	Predlošci odjavne špice
+	CSV (*.csv)	CSV (*.csv)
