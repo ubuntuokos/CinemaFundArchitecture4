@@ -4097,3 +4097,106 @@
 	ISDCF name	Ім’я ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Називати теку DCP за Digital Cinema Naming Convention
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Відеоінструменти
+	Audio Tools	Аудіоінструменти
+	Publication Tools	Інструменти публікації
+	Smart Export…	Smart Export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	З північного заходу
+	From North-East	З північного сходу
+	From South-East	З південного сходу
+	From South-West	З південного заходу
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Покращення
+	Skin Smoothing	Згладжування шкіри
+	Keep Texture	Зберегти текстуру
+	Skin Tone	Тон шкіри
+	Smooth Entire Image	Згладжувати все зображення
+	Low Light	Слабке освітлення
+	Max Brightening	Максимальне освітлення
+	Show Illumination	Показати освітленість
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Пресети згладжування
+	Sine	Синусоїдальна
+	Exponential	Експоненційна
+	Circular	Колова
+	Elastic	Пружна
+	Film Gate	Кадрове вікно
+	Gate Weave	Коливання кадрового вікна
+	Weave Rotation	Поворот коливання
+	Particles	Частинки
+	Emitter Position	Положення випромінювача
+	Birth Rate	Частота появи
+	Lifetime (seconds)	Час життя (секунди)
+	Velocity Random	Випадковість швидкості
+	Gravity	Гравітація
+	Particle Size	Розмір частинок
+	Keyhole	Замкова шпарина
+	Burn Away	Пропалювання
+	Burn Size	Розмір пропалу
+	Ember Width	Ширина жевріючого краю
+	Ember Color	Колір жевріючого краю
+	Check Text Legibility	Перевірити читабельність тексту
+	Clear Legibility Markers	Видалити маркери читабельності
+	Text legibility: no problems found	Читабельність тексту: проблем не знайдено
+	Text legibility: {count} problems marked on the timeline (orange markers)	Читабельність тексту: проблем позначено на таймлайні: {count} (помаранчеві маркери)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Зниження розрядності
+	Bits per Channel	Біт на канал
+	Ordered Dither	Упорядкований дизеринг
+	Dither Cell Size	Розмір комірки дизерингу
+	Block Glitch	Блоковий глітч
+	Blocks Moved	Переміщені блоки
+	Max Distance	Максимальна відстань
+	Snap to Grid	Прив'язка до сітки
+	Swap Blocks	Обмін блоків
+	Changes per Second	Змін за секунду
+	Databend	Псування даних
+	Breaks	Розриви
+	Shift	Зсув
+	Color Damage	Пошкодження кольору
+	VHS	VHS
+	Color Bleed	Розтікання кольору
+	Wobble	Похитування
+	Snow	Сніг
+	Tracking Bar	Смуга трекінгу
+	Head Switching	Перемикання головок
+	Scan Line Jitter	Тремтіння рядків
+	Jitter	Тремтіння
+	Interval	Інтервал
+	Infinite	Нескінченно
+	Periodic	Періодично
+	Tile Jitter	Тремтіння плиток
+	Tiles	Плитки
+	Band Direction	Напрям смуг
+	Jitter Direction	Напрям тремтіння
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Півтон
+	Dither	Дизеринг
+	Pattern	Візерунок
+	Cell Size	Розмір комірки
+	Cyan Angle	Кут блакитного
+	Magenta Angle	Кут пурпурового
+	Yellow Angle	Кут жовтого
+	Black Angle	Кут чорного
+	Monochrome Angle	Кут монохрому
+	Sharpness	Різкість
+	Ink Color	Колір фарби
+	Paper Color	Колір паперу
+	Color (CMYK)	Колір (CMYK)
+	Dot	Крапка
+	Line	Лінія
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Розмір пікселя
+	Palette	Палітра
+	Input Colors	Вхідні кольори
+	Green Phosphor	Зелений люмінофор
+	Amber Monitor	Бурштиновий монітор
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
