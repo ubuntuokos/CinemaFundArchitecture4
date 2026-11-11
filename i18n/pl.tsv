@@ -4205,3 +4205,106 @@ export.summary	Low	niska
 	Fitting removed.	Usunięto dopasowanie.
 	Fit to This Length	Dopasuj do tej długości
 	No music to measure ({problem}); type the length.	Brak muzyki do zmierzenia ({problem}); wpisz długość.
+# Qt GUI: Tools menu (#868)
+	Video Tools	Narzędzia wideo
+	Audio Tools	Narzędzia audio
+	Publication Tools	Narzędzia publikacji
+	Smart Export…	Inteligentny eksport…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Z północnego zachodu
+	From North-East	Z północnego wschodu
+	From South-East	Z południowego wschodu
+	From South-West	Z południowego zachodu
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Ulepszanie
+	Skin Smoothing	Wygładzanie skóry
+	Keep Texture	Zachowaj teksturę
+	Skin Tone	Odcień skóry
+	Smooth Entire Image	Wygładź cały obraz
+	Low Light	Słabe światło
+	Max Brightening	Maksymalne rozjaśnienie
+	Show Illumination	Pokaż oświetlenie
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Ustawienia łagodzenia
+	Sine	Sinusoidalne
+	Exponential	Wykładnicze
+	Circular	Kołowe
+	Elastic	Sprężyste
+	Film Gate	Okienko filmowe
+	Gate Weave	Drganie okienka
+	Weave Rotation	Obrót drgania
+	Particles	Cząsteczki
+	Emitter Position	Położenie emitera
+	Birth Rate	Tempo powstawania
+	Lifetime (seconds)	Czas życia (sekundy)
+	Velocity Random	Losowość prędkości
+	Gravity	Grawitacja
+	Particle Size	Rozmiar cząsteczek
+	Keyhole	Dziurka od klucza
+	Burn Away	Wypalenie
+	Burn Size	Rozmiar wypalenia
+	Ember Width	Szerokość żaru
+	Ember Color	Kolor żaru
+	Check Text Legibility	Sprawdź czytelność tekstu
+	Clear Legibility Markers	Wyczyść znaczniki czytelności
+	Text legibility: no problems found	Czytelność tekstu: nie znaleziono problemów
+	Text legibility: {count} problems marked on the timeline (orange markers)	Czytelność tekstu: oznaczono problemy na osi czasu: {count} (pomarańczowe znaczniki)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Redukcja bitów
+	Bits per Channel	Bity na kanał
+	Ordered Dither	Uporządkowany dithering
+	Dither Cell Size	Rozmiar komórki ditheringu
+	Block Glitch	Zakłócenie blokowe
+	Blocks Moved	Przesunięte bloki
+	Max Distance	Maksymalna odległość
+	Snap to Grid	Przyciągaj do siatki
+	Swap Blocks	Zamieniaj bloki
+	Changes per Second	Zmiany na sekundę
+	Databend	Uszkodzenie danych
+	Breaks	Przerwania
+	Shift	Przesunięcie
+	Color Damage	Uszkodzenie kolorów
+	VHS	VHS
+	Color Bleed	Rozlewanie kolorów
+	Wobble	Chybotanie
+	Snow	Śnieg
+	Tracking Bar	Pasek trackingu
+	Head Switching	Przełączanie głowic
+	Scan Line Jitter	Drganie linii
+	Jitter	Drganie
+	Interval	Interwał
+	Infinite	Nieskończony
+	Periodic	Okresowy
+	Tile Jitter	Drganie kafelków
+	Tiles	Kafelki
+	Band Direction	Kierunek pasów
+	Jitter Direction	Kierunek drgań
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Półton
+	Dither	Dithering
+	Pattern	Wzór
+	Cell Size	Rozmiar komórki
+	Cyan Angle	Kąt cyjanu
+	Magenta Angle	Kąt magenty
+	Yellow Angle	Kąt żółtego
+	Black Angle	Kąt czarnego
+	Monochrome Angle	Kąt monochromatyczny
+	Sharpness	Ostrość
+	Ink Color	Kolor tuszu
+	Paper Color	Kolor papieru
+	Color (CMYK)	Kolor (CMYK)
+	Dot	Kropka
+	Line	Linia
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Rozmiar piksela
+	Palette	Paleta
+	Input Colors	Kolory wejściowe
+	Green Phosphor	Zielony luminofor
+	Amber Monitor	Bursztynowy monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

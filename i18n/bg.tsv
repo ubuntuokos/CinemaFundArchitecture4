@@ -4208,3 +4208,106 @@ export.summary	Low	ниско
 	Fitting removed.	Напасването е премахнато.
 	Fit to This Length	Напасване към тази дължина
 	No music to measure ({problem}); type the length.	Няма музика за измерване ({problem}); въведете дължината.
+# Qt GUI: Tools menu (#868)
+	Video Tools	Видеоинструменти
+	Audio Tools	Аудиоинструменти
+	Publication Tools	Инструменти за публикуване
+	Smart Export…	Интелигентно експортиране…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	От северозапад
+	From North-East	От североизток
+	From South-East	От югоизток
+	From South-West	От югозапад
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Подобряване
+	Skin Smoothing	Изглаждане на кожата
+	Keep Texture	Запазване на текстурата
+	Skin Tone	Цвят на кожата
+	Smooth Entire Image	Изглаждане на цялото изображение
+	Low Light	Слаба светлина
+	Max Brightening	Максимално изсветляване
+	Show Illumination	Показване на осветеността
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Готови плавни преходи
+	Sine	Синусоидално
+	Exponential	Експоненциално
+	Circular	Кръгово
+	Elastic	Еластично
+	Film Gate	Филмов прозорец
+	Gate Weave	Трептене на прозореца
+	Weave Rotation	Завъртане при трептенето
+	Particles	Частици
+	Emitter Position	Позиция на излъчвателя
+	Birth Rate	Честота на раждане
+	Lifetime (seconds)	Живот (секунди)
+	Velocity Random	Случайност на скоростта
+	Gravity	Гравитация
+	Particle Size	Размер на частиците
+	Keyhole	Ключалка
+	Burn Away	Изгаряне
+	Burn Size	Размер на изгарянето
+	Ember Width	Ширина на жаравата
+	Ember Color	Цвят на жаравата
+	Check Text Legibility	Проверка на четливостта на текста
+	Clear Legibility Markers	Изчистване на маркерите за четливост
+	Text legibility: no problems found	Четливост на текста: не са открити проблеми
+	Text legibility: {count} problems marked on the timeline (orange markers)	Четливост на текста: {count} проблема са маркирани на времевата линия (оранжеви маркери)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Намаляване на битовете
+	Bits per Channel	Битове на канал
+	Ordered Dither	Подредено разсейване
+	Dither Cell Size	Размер на клетката на разсейването
+	Block Glitch	Блоков глич
+	Blocks Moved	Преместени блокове
+	Max Distance	Максимално разстояние
+	Snap to Grid	Прилепване към мрежата
+	Swap Blocks	Размяна на блокове
+	Changes per Second	Промени в секунда
+	Databend	Повреда на данните
+	Breaks	Прекъсвания
+	Shift	Отместване
+	Color Damage	Повреда на цвета
+	VHS	VHS
+	Color Bleed	Преливане на цвета
+	Wobble	Люлеене
+	Snow	Сняг
+	Tracking Bar	Лента на трекинга
+	Head Switching	Превключване на главите
+	Scan Line Jitter	Трептене на редовете
+	Jitter	Трептене
+	Interval	Интервал
+	Infinite	Безкрайно
+	Periodic	Периодично
+	Tile Jitter	Трептене на плочките
+	Tiles	Плочки
+	Band Direction	Посока на лентите
+	Jitter Direction	Посока на трептенето
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Полутон
+	Dither	Разсейване
+	Pattern	Шарка
+	Cell Size	Размер на клетката
+	Cyan Angle	Ъгъл на синьозеленото
+	Magenta Angle	Ъгъл на пурпурното
+	Yellow Angle	Ъгъл на жълтото
+	Black Angle	Ъгъл на черното
+	Monochrome Angle	Монохромен ъгъл
+	Sharpness	Острота
+	Ink Color	Цвят на мастилото
+	Paper Color	Цвят на хартията
+	Color (CMYK)	Цвят (CMYK)
+	Dot	Точка
+	Line	Линия
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Размер на пиксела
+	Palette	Палитра
+	Input Colors	Входни цветове
+	Green Phosphor	Зелен фосфор
+	Amber Monitor	Кехлибарен монитор
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

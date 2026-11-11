@@ -4207,3 +4207,106 @@ export.summary	Low	lav
 	Fitting removed.	Tilpasning fjernet.
 	Fit to This Length	Tilpas til denne længde
 	No music to measure ({problem}); type the length.	Ingen musik at måle ({problem}); skriv længden.
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videoværktøjer
+	Audio Tools	Lydværktøjer
+	Publication Tools	Publiceringsværktøjer
+	Smart Export…	Smart eksport…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Fra nordvest
+	From North-East	Fra nordøst
+	From South-East	Fra sydøst
+	From South-West	Fra sydvest
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Forbedr
+	Skin Smoothing	Hududglatning
+	Keep Texture	Bevar tekstur
+	Skin Tone	Hudtone
+	Smooth Entire Image	Udglat hele billedet
+	Low Light	Svagt lys
+	Max Brightening	Maks. oplysning
+	Show Illumination	Vis belysning
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Blødhedsforudindstillinger
+	Sine	Sinus
+	Exponential	Eksponentiel
+	Circular	Cirkulær
+	Elastic	Elastisk
+	Film Gate	Filmvindue
+	Gate Weave	Vindueslingren
+	Weave Rotation	Lingrerotation
+	Particles	Partikler
+	Emitter Position	Emitterplacering
+	Birth Rate	Fødselsrate
+	Lifetime (seconds)	Levetid (sekunder)
+	Velocity Random	Tilfældig hastighed
+	Gravity	Tyngdekraft
+	Particle Size	Partikelstørrelse
+	Keyhole	Nøglehul
+	Burn Away	Brænd væk
+	Burn Size	Brændstørrelse
+	Ember Width	Gløders bredde
+	Ember Color	Gløders farve
+	Check Text Legibility	Kontrollér tekstens læsbarhed
+	Clear Legibility Markers	Ryd læsbarhedsmarkører
+	Text legibility: no problems found	Tekstens læsbarhed: ingen problemer fundet
+	Text legibility: {count} problems marked on the timeline (orange markers)	Tekstens læsbarhed: {count} problemer markeret på tidslinjen (orange markører)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitreduktion
+	Bits per Channel	Bit pr. kanal
+	Ordered Dither	Ordnet dithering
+	Dither Cell Size	Ditheringcellestørrelse
+	Block Glitch	Blokglitch
+	Blocks Moved	Flyttede blokke
+	Max Distance	Maks. afstand
+	Snap to Grid	Fastgør til gitter
+	Swap Blocks	Byt blokke
+	Changes per Second	Ændringer pr. sekund
+	Databend	Datakorruption
+	Breaks	Brud
+	Shift	Forskydning
+	Color Damage	Farveskade
+	VHS	VHS
+	Color Bleed	Farveudflydning
+	Wobble	Slingren
+	Snow	Sne
+	Tracking Bar	Sporingsbjælke
+	Head Switching	Hovedskift
+	Scan Line Jitter	Linjerystelse
+	Jitter	Rystelse
+	Interval	Interval
+	Infinite	Uendelig
+	Periodic	Periodisk
+	Tile Jitter	Fliserystelse
+	Tiles	Fliser
+	Band Direction	Båndretning
+	Jitter Direction	Rystelsesretning
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Halvtone
+	Dither	Dithering
+	Pattern	Mønster
+	Cell Size	Cellestørrelse
+	Cyan Angle	Cyan vinkel
+	Magenta Angle	Magenta vinkel
+	Yellow Angle	Gul vinkel
+	Black Angle	Sort vinkel
+	Monochrome Angle	Monokrom vinkel
+	Sharpness	Skarphed
+	Ink Color	Blækfarve
+	Paper Color	Papirfarve
+	Color (CMYK)	Farve (CMYK)
+	Dot	Prik
+	Line	Linje
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pixelstørrelse
+	Palette	Palet
+	Input Colors	Inputfarver
+	Green Phosphor	Grøn fosfor
+	Amber Monitor	Ravfarvet skærm
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

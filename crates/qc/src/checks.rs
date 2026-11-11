@@ -1,4 +1,5 @@
-//! Turn [`Facts`] into check results for the input (4.1) and integrity (4.2) checks.
+//! Turn [`Facts`] into check results: input (4.1), integrity (4.2), audio (4.3) and picture
+//! (4.4).
 //!
 //! Every check the profile lists gets a result. A check that cannot judge (no render plan, a
 //! container without sample-level analysis, no decoder) is NOT_RUN with the reason: never PASS on
@@ -9,13 +10,15 @@ use serde_json::json;
 use cfa4_color::Transfer;
 use cfa4_time::FrameRate;
 
+use crate::audio::{self, AudioFacts};
 use crate::expect::{Expectation, label_matches};
 use crate::inspect::{Facts, Findings, Found, StreamDecode};
+use crate::picture::{self, PictureFacts};
 use crate::profile::{CheckSpec, QcProfile};
 use crate::report::{CheckResult, Event, Position, Status};
 
-/// Checks that come in later stages (audio and picture analysis).
-const LATER: &str = "not implemented yet (QC stage D)";
+/// Why the reference comparison does not run yet: the preview references come from the engine.
+const NO_REFERENCES: &str = "no preview reference frames given (the engine supplies them with the export, QC stage E)";
 
 fn position(f: &Found, rate: Option<FrameRate>, frame_index: bool) -> Position {
     let tick = f.ms.map(|ms| cfa4_time::Tick::from_seconds_f64(ms / 1000.0).0);
@@ -28,7 +31,15 @@ fn position(f: &Found, rate: Option<FrameRate>, frame_index: bool) -> Position {
 }
 
 fn events(list: &Findings, rate: Option<FrameRate>, frame_index: bool, prefix: &str) -> (Vec<Event>, u64) {
-    let ev = list.kept.iter().map(|f| Event { at: position(f, rate, frame_index), end: None, message: format!("{prefix}{}", f.message) }).collect();
+    let ev = list
+        .kept
+        .iter()
+        .map(|f| Event {
+            at: position(f, rate, frame_index),
+            end: f.end_ms.map(|ms| position(&Found { index: 0, ms: Some(ms), end_ms: None, message: String::new() }, rate, false)),
+            message: format!("{prefix}{}", f.message),
+        })
+        .collect();
     (ev, list.total.saturating_sub(list.kept.len() as u64))
 }
 
@@ -439,8 +450,306 @@ fn integrity_streams(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     CheckResult::findings(id, spec, Status::Fail, ev)
 }
 
-/// Results for every input and integrity check the profile lists, plus a NOT_RUN result for the
-/// checks of later stages.
+/// Worst first: a failure outweighs a missing measurement, which outweighs a warning.
+fn rank(s: Status) -> u8 {
+    match s {
+        Status::Fail => 3,
+        Status::NotRun => 2,
+        Status::Warn => 1,
+        Status::Pass => 0,
+    }
+}
+
+impl Ctx<'_> {
+    /// The render plan rules out audio and the file has none.
+    fn no_audio_expected(&self) -> bool {
+        let none_planned = self.expect.audio_tracks == Some(0);
+        none_planned && self.facts.info.as_ref().is_some_and(|i| i.audio_streams.is_empty())
+    }
+
+    /// The render plan rules out video and the file has none.
+    fn no_video_expected(&self) -> bool {
+        self.expect.video == Some(false) && self.facts.info.as_ref().is_some_and(|i| i.video.is_none())
+    }
+
+    /// The audio analysis of every track, or why the audio checks cannot run.
+    fn audio(&self) -> Result<&[AudioFacts], String> {
+        if let Some(r) = self.no_decode() {
+            return Err(r);
+        }
+        let Some(d) = &self.facts.decode else { return Err("the full decode did not run".into()) };
+        if d.audio.is_empty() {
+            return Err("no audio track".into());
+        }
+        let unsupported: Vec<String> = d.audio.iter().filter_map(|s| s.unsupported.as_ref().map(|u| format!("track {}: {u}", s.track))).collect();
+        if !unsupported.is_empty() {
+            return Err(format!("no decoder: {}", unsupported.join("; ")));
+        }
+        if d.audio_facts.len() < d.audio.len() || d.audio_facts.iter().any(|a| a.frames == 0) {
+            return Err("an audio track decoded no samples".into());
+        }
+        Ok(&d.audio_facts)
+    }
+
+    /// The picture analysis, or why the picture checks cannot run.
+    fn picture(&self) -> Result<&PictureFacts, String> {
+        if let Some(r) = self.no_decode() {
+            return Err(r);
+        }
+        let Some(d) = &self.facts.decode else { return Err("the full decode did not run".into()) };
+        let Some(v) = &d.video else { return Err("no video stream".into()) };
+        if let Some(u) = &v.unsupported {
+            return Err(format!("no decoder: {u}"));
+        }
+        match &d.picture {
+            Some(p) if p.analysed > 0 => Ok(p),
+            _ => Err("no picture was decoded".into()),
+        }
+    }
+}
+
+/// An audio check measured per track: the worst track gives the result, every track is listed.
+fn per_track(c: &Ctx, id: &str, spec: &CheckSpec, measure: impl Fn(&AudioFacts) -> Result<(f64, Option<String>), String>) -> CheckResult {
+    if c.no_audio_expected() {
+        return CheckResult::not_applicable(id, spec, "the render plan has no audio and the file has none");
+    }
+    let tracks = match c.audio() {
+        Ok(t) => t,
+        Err(r) => return CheckResult::not_run(id, spec, &r),
+    };
+    let mut worst: Option<CheckResult> = None;
+    let mut listed = Vec::new();
+    for a in tracks {
+        let r = match measure(a) {
+            Ok((v, note)) => {
+                let mut r = CheckResult::measured(id, spec, v);
+                if let Some(n) = note {
+                    r.push_event(finding(format!("audio track {}: {n}", a.track)));
+                }
+                r
+            }
+            Err(why) => CheckResult::not_run(id, spec, &format!("audio track {}: {why}", a.track)),
+        };
+        listed.push(json!({"track": a.track, "value": r.value, "status": r.status, "reason": r.reason}));
+        if worst.as_ref().is_none_or(|w| rank(r.status) > rank(w.status)) {
+            worst = Some(r);
+        }
+    }
+    let mut r = worst.unwrap_or_else(|| CheckResult::not_run(id, spec, "no audio track"));
+    r.detail.insert("tracks".into(), json!(listed));
+    r
+}
+
+/// Lowest level reported for silence, in dB (the measurement itself is −∞).
+const FLOOR_DB: f64 = -150.0;
+
+fn audio_loudness(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+    per_track(c, id, spec, |a| {
+        if a.seconds() < audio::MIN_LOUDNESS_S {
+            return Err(format!("shorter than {} s: no loudness gating block", audio::MIN_LOUDNESS_S));
+        }
+        if a.integrated_lufs.is_finite() {
+            Ok((a.integrated_lufs, None))
+        } else if a.integrated_lufs == f64::NEG_INFINITY {
+            Ok((-70.0, Some("no signal above the −70 LUFS gate (reported as −70 LUFS)".into())))
+        } else {
+            Err(format!("loudness is not a number ({}): samples that are not finite", a.integrated_lufs))
+        }
+    })
+}
+
+fn audio_range(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+    per_track(c, id, spec, |a| {
+        if a.seconds() < audio::MIN_RANGE_S {
+            return Err(format!("shorter than {} s: no short-term loudness window", audio::MIN_RANGE_S));
+        }
+        Ok((a.loudness_range_lu, None))
+    })
+}
+
+fn audio_true_peak(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+    per_track(c, id, spec, |a| {
+        if a.true_peak_dbtp.is_finite() {
+            Ok((a.true_peak_dbtp.max(FLOOR_DB), None))
+        } else if a.true_peak_dbtp == f64::NEG_INFINITY {
+            Ok((FLOOR_DB, Some(format!("digital silence (reported as {FLOOR_DB} dBTP)"))))
+        } else {
+            // +∞ or NaN: corrupt (infinite or NaN) samples, never a passing value
+            Err(format!("true peak is not a finite number ({}): samples that are not finite", a.true_peak_dbtp))
+        }
+    })
+}
+
+fn audio_clipping(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+    if c.no_audio_expected() {
+        return CheckResult::not_applicable(id, spec, "the render plan has no audio and the file has none");
+    }
+    let tracks = match c.audio() {
+        Ok(t) => t,
+        Err(r) => return CheckResult::not_run(id, spec, &r),
+    };
+    let total = tracks.iter().fold(0u64, |a, t| a.saturating_add(t.clipped));
+    let mut r = CheckResult::measured(id, spec, total as f64);
+    for t in tracks {
+        let (ev, dropped) = events(&t.clip_runs, c.rate, false, &format!("audio track {}: ", t.track));
+        ev.into_iter().for_each(|e| r.push_event(e));
+        r.events_dropped = r.events_dropped.saturating_add(dropped);
+    }
+    let per: Vec<_> = tracks.iter().map(|t| json!({"track": t.track, "clipped": t.clipped, "samplePeakDbfs": finite(t.sample_peak_dbfs)})).collect();
+    r.detail.insert("tracks".into(), json!(per));
+    r.detail.insert("clipLevel".into(), json!(audio::CLIP_LEVEL));
+    r
+}
+
+/// A level for the report: JSON has no −∞.
+fn finite(db: f64) -> Option<f64> {
+    db.is_finite().then_some(db)
+}
+
+fn audio_silence(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+    if c.no_audio_expected() {
+        return CheckResult::not_applicable(id, spec, "the render plan has no audio and the file has none");
+    }
+    let tracks = match c.audio() {
+        Ok(t) => t,
+        Err(r) => return CheckResult::not_run(id, spec, &r),
+    };
+    let mut fail = Vec::new();
+    let mut warn = Vec::new();
+    let mut dropped = 0;
+    for t in tracks {
+        if t.sample_peak_dbfs.is_nan() || t.sample_peak_dbfs < audio::SILENCE_DBFS {
+            fail.push(finding(format!("audio track {} is silent (peak below {} dBFS)", t.track, audio::SILENCE_DBFS)));
+            continue;
+        }
+        let (ev, n) = events(&t.silence, c.rate, false, &format!("audio track {}: ", t.track));
+        warn.extend(ev);
+        dropped += n;
+    }
+    let status = if fail.is_empty() { Status::Warn } else { Status::Fail };
+    let mut r = judged(id, spec, status, fail.into_iter().chain(warn).collect(), dropped);
+    r.detail.insert("thresholdDbfs".into(), json!(audio::SILENCE_DBFS));
+    r.detail.insert("minimumSeconds".into(), json!(audio::SILENCE_MIN_S));
+    r
+}
+
+fn audio_layout(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+    if c.no_audio_expected() {
+        return CheckResult::not_applicable(id, spec, "the render plan has no audio and the file has none");
+    }
+    let tracks = match c.audio() {
+        Ok(t) => t,
+        Err(r) => return CheckResult::not_run(id, spec, &r),
+    };
+    let mut fail = Vec::new();
+    let mut warn = Vec::new();
+    for t in tracks {
+        if let Some(want) = c.expect.audio_channels.filter(|w| *w as usize != t.channels) {
+            fail.push(finding(format!("audio track {}: {} decoded channel(s) instead of {want}", t.track, t.channels)));
+        }
+        // a channel without signal next to one with signal: a routing or layout mistake
+        let loudest = t.channel_peak_dbfs.iter().copied().filter(|d| d.is_finite()).fold(f64::NEG_INFINITY, f64::max);
+        if loudest >= audio::SILENCE_DBFS {
+            for (ch, p) in t.channel_peak_dbfs.iter().enumerate().filter(|(_, p)| **p < audio::SILENCE_DBFS) {
+                let level = if p.is_finite() { format!("{p:.1} dBFS") } else { "digital silence".into() };
+                warn.push(finding(format!("audio track {}: channel {ch} is silent ({level}) while others carry signal", t.track)));
+            }
+        }
+    }
+    let status = if fail.is_empty() { Status::Warn } else { Status::Fail };
+    let mut r = CheckResult::findings(id, spec, status, fail.into_iter().chain(warn).collect());
+    if c.expect.audio_channels.is_none() && r.status == Status::Pass {
+        r = r.with_reason("channel count not compared: no render plan given; channel levels checked");
+    }
+    let per: Vec<_> = tracks
+        .iter()
+        .map(|t| {
+            json!({"track": t.track, "channels": t.channels, "sampleRate": t.sample_rate, "dualMono": t.identical_channels,
+                "channelPeakDbfs": t.channel_peak_dbfs.iter().map(|d| finite(*d)).collect::<Vec<_>>()})
+        })
+        .collect();
+    r.detail.insert("tracks".into(), json!(per));
+    r
+}
+
+fn picture_ready<'a>(c: &'a Ctx, id: &str, spec: &CheckSpec) -> Result<&'a PictureFacts, Box<CheckResult>> {
+    if c.no_video_expected() {
+        return Err(Box::new(CheckResult::not_applicable(id, spec, "the render plan has no video and the file has none")));
+    }
+    c.picture().map_err(|r| Box::new(CheckResult::not_run(id, spec, &r)))
+}
+
+fn video_black(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+    let p = match picture_ready(c, id, spec) {
+        Ok(p) => p,
+        Err(r) => return *r,
+    };
+    let mut r = if p.black_frames >= p.analysed {
+        CheckResult::findings(id, spec, Status::Fail, vec![finding(format!("every picture is black ({} of {})", p.black_frames, p.analysed))])
+    } else {
+        // black at the very start or end is a fade or a slate; inside the programme it is a defect
+        let inner: Vec<_> = p.black_runs.iter().filter(|b| b.first > 0 && b.first.saturating_add(b.frames) < p.analysed).copied().collect();
+        let (ev, dropped) = events(&picture::black_findings(&inner), c.rate, true, "");
+        let more = p.black_runs_total.saturating_sub(p.black_runs.len() as u64);
+        judged(id, spec, Status::Warn, ev, dropped.saturating_add(more))
+    };
+    let head = p.black_runs.first().filter(|b| b.first == 0).map_or(0, |b| b.frames);
+    let tail = p.black_runs.last().filter(|b| b.first > 0 && b.first.saturating_add(b.frames) >= p.analysed).map_or(0, |b| b.frames);
+    r.detail.insert("blackFrames".into(), json!(p.black_frames));
+    r.detail.insert("headBlackFrames".into(), json!(head));
+    r.detail.insert("tailBlackFrames".into(), json!(tail));
+    r.detail.insert("pixelThreshold".into(), json!(picture::BLACK_PIXEL));
+    r.detail.insert("pictureThreshold".into(), json!(picture::BLACK_PICTURE));
+    r
+}
+
+fn video_clip(c: &Ctx, id: &str, spec: &CheckSpec, white: bool) -> CheckResult {
+    let p = match picture_ready(c, id, spec) {
+        Ok(p) => p,
+        Err(r) => return *r,
+    };
+    if p.luma_samples == 0 {
+        return CheckResult::not_run(id, spec, "no luma samples");
+    }
+    let (n, worst) = if white { (p.above_white, p.worst_white) } else { (p.below_black, p.worst_black) };
+    let mut r = CheckResult::measured(id, spec, n as f64 * 100.0 / p.luma_samples as f64);
+    if let Some((frame, pct, ms)) = worst {
+        let at = position(&Found { index: frame, ms, end_ms: None, message: String::new() }, c.rate, true);
+        r.push_event(Event { at, end: None, message: format!("worst picture: {pct:.2} % of its pixels") });
+    }
+    let (_, (under, over)) = picture::limits(p.bits, p.full_range);
+    let limit = if white { format!("above {over:.1}") } else { format!("below {under:.1}") };
+    r.detail.insert("range".into(), json!(if p.full_range { "full" } else { "limited" }));
+    r.detail.insert("bits".into(), json!(p.bits));
+    r.detail.insert("limit".into(), json!(limit));
+    r.detail.insert("pictures".into(), json!(p.analysed));
+    r
+}
+
+fn video_contact_sheet(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+    let p = match picture_ready(c, id, spec) {
+        Ok(p) => p,
+        Err(r) => return *r,
+    };
+    let Some(s) = &p.sheet else { return CheckResult::not_run(id, spec, p.sheet_error.as_deref().unwrap_or("no contact sheet")) };
+    let mut r = CheckResult::findings(id, spec, Status::Fail, vec![]);
+    let frames: Vec<_> = s
+        .frames
+        .iter()
+        .map(|(f, ms)| {
+            let at = position(&Found { index: *f, ms: *ms, end_ms: None, message: String::new() }, c.rate, true);
+            json!({"frame": f, "timecode": at.timecode})
+        })
+        .collect();
+    r.detail.insert("frames".into(), json!(frames));
+    r.detail.insert("columns".into(), json!(s.columns));
+    r.detail.insert("width".into(), json!(s.width));
+    r.detail.insert("height".into(), json!(s.height));
+    r.detail.insert("sha256".into(), json!(crate::hash::sha256_hex(&s.png)));
+    r
+}
+
+/// A result for every check the profile lists.
 pub fn evaluate(profile: &QcProfile, facts: &Facts, expect: &Expectation) -> Vec<CheckResult> {
     let rate = facts.info.as_ref().and_then(|i| i.video.as_ref()).map(|v| v.frame_rate);
     let c = Ctx { facts, expect, rate };
@@ -459,7 +768,18 @@ pub fn evaluate(profile: &QcProfile, facts: &Facts, expect: &Expectation) -> Vec
             "integrity.frames" => integrity_frames(&c, id, spec),
             "integrity.avOffset" => integrity_av(&c, id, spec),
             "integrity.streams" => integrity_streams(&c, id, spec),
-            _ => CheckResult::not_run(id, spec, LATER),
+            "audio.silence" => audio_silence(&c, id, spec),
+            "audio.clipping" => audio_clipping(&c, id, spec),
+            "audio.truePeak" => audio_true_peak(&c, id, spec),
+            "audio.loudness" => audio_loudness(&c, id, spec),
+            "audio.loudnessRange" => audio_range(&c, id, spec),
+            "audio.layout" => audio_layout(&c, id, spec),
+            "video.contactSheet" => video_contact_sheet(&c, id, spec),
+            "video.black" => video_black(&c, id, spec),
+            "video.clipBlack" => video_clip(&c, id, spec, false),
+            "video.clipWhite" => video_clip(&c, id, spec, true),
+            "video.referenceSsim" => CheckResult::not_run(id, spec, NO_REFERENCES),
+            _ => CheckResult::not_run(id, spec, "unknown check"),
         })
         .collect()
 }
@@ -506,11 +826,45 @@ mod tests {
         assert_eq!(get("integrity.frames").status, Status::Fail);
     }
 
+    /// Review of #306: an infinite or NaN measurement (samples that are not finite) is never
+    /// turned into a passing value; only −∞ (digital silence) maps to the floor.
     #[test]
-    fn later_stage_checks_say_so() {
+    fn non_finite_audio_measurements_do_not_pass() {
+        let p = QcProfile::builtin("delivery-web").unwrap();
+        let mut a = crate::audio::AudioAnalyzer::new(0, 48_000, 0, None, 0.0);
+        a.push(&[vec![0.1; 48_000], vec![0.1; 48_000]]);
+        let tone = a.finish();
+        for (peak, lufs, want) in
+            [(f64::INFINITY, f64::INFINITY, Status::NotRun), (f64::NAN, f64::NAN, Status::NotRun), (f64::NEG_INFINITY, f64::NEG_INFINITY, Status::Pass)]
+        {
+            let mut f = facts(None);
+            let mut t = tone.clone();
+            t.true_peak_dbtp = peak;
+            t.integrated_lufs = lufs;
+            if let Some(d) = f.decode.as_mut() {
+                d.audio = vec![StreamDecode { track: 1, samples: 47, decoded: 47, ..StreamDecode::default() }];
+                d.audio_facts = vec![t];
+            }
+            let rs = evaluate(&p, &f, &Expectation::default());
+            let r = rs.iter().find(|r| r.id == "audio.truePeak").unwrap();
+            assert_eq!(r.status, want, "{peak}: {r:?}");
+            let l = rs.iter().find(|r| r.id == "audio.loudness").unwrap();
+            assert_ne!(l.status, Status::Pass, "{lufs}: {l:?}");
+        }
+    }
+
+    #[test]
+    fn audio_checks_need_decoded_audio() {
         let p = QcProfile::builtin("delivery-web").unwrap();
         let rs = evaluate(&p, &facts(None), &Expectation::default());
         let loud = rs.iter().find(|r| r.id == "audio.loudness").unwrap();
-        assert_eq!((loud.status, loud.reason.as_deref()), (Status::NotRun, Some(LATER)));
+        assert_eq!((loud.status, loud.reason.as_deref()), (Status::NotRun, Some("no audio track")));
+        // a video-only plan and a file without audio: the audio checks do not apply
+        let rs = evaluate(&p, &facts(None), &Expectation { audio_tracks: Some(0), ..Expectation::default() });
+        for id in ["audio.loudness", "audio.truePeak", "audio.clipping", "audio.layout"] {
+            let r = rs.iter().find(|r| r.id == id).unwrap();
+            assert_eq!(r.status, Status::Pass, "{id}");
+            assert!(r.reason.as_deref().unwrap().starts_with(crate::report::NOT_APPLICABLE), "{id}");
+        }
     }
 }
