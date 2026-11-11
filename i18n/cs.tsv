@@ -1,0 +1,4218 @@
+# Czech (cs) catalog for the whole CFA4 interface (Qt GUI and egui). Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Czech video-editing vocabulary (časová osa, stopa, klip, sekvence, přihrádka, přehrávací hlava,
+# značka, přechod, klíčový snímek). No proprietary localisation resource, string table or product
+# UI was consulted or copied; add entries the same way. Commands use the infinitive ("Uložit
+# jako…"), labels use sentence case, and product and format names (CFA4, Lumetri, ProRes, AAF,
+# EDL…) keep their spelling. Decimal comma (0,5). A native-speaker review is welcome.
+#
+# Terms: clip = klip, track = stopa, sequence = sekvence, timeline = časová osa, bin = přihrádka,
+# playhead = přehrávací hlava, marker = značka, In/Out point = vstupní/výstupní bod, keyframe =
+# klíčový snímek, caption = titulek, preset = přednastavení, workspace = pracovní prostor, gain =
+# zesílení, opacity = krytí, render = vykreslit, ripple = s posunem, dissolve = prolínačka, wipe =
+# stíračka, (Legacy) = (starší).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see cs.tsv.attribution.
+
+	'{name}' already exists. Replace it?	'{name}' již existuje. Nahradit?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	O aplikaci CFA4
+	Add Audio Submix Track	Přidat zvukovou stopu submixu
+	Add Caption at Playhead	Přidat titulek na přehrávací hlavě
+	Add Chapter Marker…	Přidat značku kapitoly…
+	Add Edit	Přidat střih
+	Add Edit to All Tracks	Přidat střih do všech stop
+	Add Flash Cue Marker…	Přidat značku Flash Cue…
+	Add Frame Hold	Přidat zmrazený snímek
+	Add Marker	Přidat značku
+	Add New Caption Track…	Přidat novou stopu titulků…
+	Add Range Marker	Přidat značku rozsahu
+	Add Range Marker to In and Out	Přidat značku rozsahu mezi vstupní a výstupní bod
+	Add Tracks…	Přidat stopy…
+	Full screen	Celá obrazovka
+	Master volume: use the Audio Track Mixer	Hlavní hlasitost: použijte mixér zvukových stop
+	Send to Queue	Odeslat do fronty
+	Add/Remove Keyframe	Přidat/odebrat klíčový snímek
+	Adjust	Upravit
+	Adjustment Layer	Vrstva úprav
+	Adjustment Layer…	Vrstva úprav…
+	Align to Video Frame	Zarovnat k obrazu videa
+	Align to Video Frame as Group	Zarovnat k obrazu videa jako skupinu
+	All Panels	Všechny panely
+	All files	Všechny soubory
+	Amplitude and Compression	Amplituda a komprese
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Engine bez `serve` byl sestaven z větve bez Qt GUI: přepněte na větev s Qt GUI a sestavte znovu, nebo zadejte --engine PATH.
+	Anchor Point	Kotevní bod
+	Animation	Animace
+	Anti-flicker Filter	Filtr proti blikání
+	Apply Audio Transition	Použít zvukový přechod
+	Apply Default Transitions to Selection	Použít výchozí přechody na výběr
+	Apply Video Transition	Použít obrazový přechod
+	Assembly	Sestavení
+	Attach Proxies…	Připojit proxy…
+	Audio	Zvuk
+	Audio Channels…	Zvukové kanály…
+	Audio Clip Mixer	Mixér zvukových klipů
+	Audio Effects	Zvukové efekty
+	Audio Gain…	Zesílení zvuku…
+	Audio In	Vstup zvuku
+	Audio Meters	Měřiče zvuku
+	Audio Options	Možnosti zvuku
+	Audio Out	Výstup zvuku
+	Audio Track Mixer	Mixér zvukových stop
+	Audio Transitions	Zvukové přechody
+	Audio Bitrate	Datový tok zvuku
+	Audio Format	Formát zvuku
+	Auto Bezier	Automatická Bézierova
+	Automate to Sequence…	Automatizovat do sekvence…
+	Avid Log Exchange…	Avid Log Exchange…
+	Bars and Tone…	Pruhy a tón…
+	Bezier	Bézierova
+	Bin	Přihrádka
+	Bin From Selection	Přihrádka z výběru
+	Bitrate Encoding	Kódování datového toku
+	Black Video…	Černé video…
+	Blur & Sharpen	Rozostření a zostření
+	Breakout to Mono	Rozdělit na mono
+	Burn in captions	Vypálit titulky
+	Bypass	Obejít
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	Zrušit vybrané
+	Cancelled	Zrušeno
+	Cannot create the output folder: {error}	Nelze vytvořit výstupní složku: {error}
+	Cannot check the output folder for files to replace: {error}	Nelze zkontrolovat výstupní složku kvůli souborům k nahrazení: {error}
+	Captions	Titulky
+	Captions and Graphics	Titulky a grafika
+	Captions…	Titulky…
+	Caribbean	Karibská
+	Center Horizontally	Vystředit vodorovně
+	Center Vertically	Vystředit svisle
+	Cerulean	Blankytná
+	Channel Volume	Hlasitost kanálu
+	Checked:	Zaškrtnuto:
+	Choose a file name and location.	Zvolte název a umístění souboru.
+	Choose folder	Zvolit složku
+	Media File	Mediální soubor
+	Sequence name	Název sekvence
+	Clear Finished	Vymazat dokončené
+	Clear In	Vymazat vstupní bod
+	Clear In and Out	Vymazat vstupní a výstupní bod
+	Clear Markers	Vymazat značky
+	Clear Out	Vymazat výstupní bod
+	Clear Selected Marker	Vymazat vybranou značku
+	Clip	Klip
+	Close All Other Projects	Zavřít všechny ostatní projekty
+	Close All Projects	Zavřít všechny projekty
+	Close Gap	Zavřít mezeru
+	Close Project	Zavřít projekt
+	Color Correction	Korekce barev
+	Color Management…	Správa barev…
+	Color Matte…	Barevná plocha…
+	Consolidate Duplicates	Sloučit duplikáty
+	Constant quality (CRF)	Konstantní kvalita (CRF)
+	Continuous Bezier	Plynulá Bézierova
+	Copy Paste Includes Sequence Markers	Kopírovat a vložit včetně značek sekvence
+	Create Captions from Transcript…	Vytvořit titulky z přepisu…
+	Create Multi-Camera Source Sequence…	Vytvořit zdrojovou vícekamerovou sekvenci…
+	Create Proxies…	Vytvořit proxy…
+	Crossfade	Prolnutí
+	Darker Color	Tmavší barva
+	Delay and Echo	Zpoždění a ozvěna
+	Delete Keyframe	Odstranit klíčový snímek
+	Delete Render Files	Odstranit soubory vykreslení
+	Delete Render Files In to Out	Odstranit soubory vykreslení od vstupního k výstupnímu bodu
+	Delete Tracks…	Odstranit stopy…
+	Delete Transcript	Odstranit přepis
+	Demo Footage	Ukázkový záznam
+	Demo Project	Ukázkový projekt
+	Detach Proxies	Odpojit proxy
+	Dissolve	Prolínačka
+	Distribute Horizontally	Rozmístit vodorovně
+	Distribute Space Horizontally	Rozmístit mezery vodorovně
+	Distribute Space Vertically	Rozmístit mezery svisle
+	Distribute Vertically	Rozmístit svisle
+	Double-click a clip in the Project panel to open it here.	Poklepáním na klip v panelu Projekt jej otevřete zde.
+	EDL…	EDL…
+	Ease In	Pozvolný náběh
+	Ease Out	Pozvolný doběh
+	Edit Offline…	Upravit offline…
+	Edit Subclip…	Upravit podklip…
+	Edit Workspaces…	Upravit pracovní prostory…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Upravuje se v nástrojích Lumetri a masek (zatím ne v Qt GUI)
+	Editing	Střih
+	Effect Controls	Ovládání efektů
+	Enable Remix	Zapnout remix
+	Enabled	Zapnuto
+	Encoding	Kódování
+	End	Konec
+	Engine stopped	Engine zastaven
+	Entire Sequence	Celá sekvence
+	Essential Graphics	Základní grafika
+	Essential Sound	Základní zvuk
+	Events	Události
+	Export As Motion Graphics Template…	Exportovat jako šablonu pohyblivé grafiky…
+	Export Markers as CSV…	Exportovat značky jako CSV…
+	Export Media	Exportovat média
+	Export Media…	Exportovat média…
+	Export Queue	Fronta exportu
+	Queue ({n})	Fronta ({n})
+	Send exports here with Send to Queue, then start the queue.	Exporty sem pošlete příkazem Odeslat do fronty a pak frontu spusťte.
+	Open a sequence to export	Otevřete sekvenci k exportu
+	The sequence has no caption track.	Sekvence nemá stopu titulků.
+	Export Audio	Exportovat zvuk
+	Export failed: {path}	Export selhal: {path}
+	Export finished: {path}	Export dokončen: {path}
+	Extract	Extrahovat
+	Extract Audio	Extrahovat zvuk
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Selhalo
+	Field Options…	Možnosti půlsnímků…
+	File…	Soubor…
+	Fill frame	Vyplnit snímek
+	Filter and EQ	Filtr a ekvalizér
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Find…	Najít…
+	Fit to frame	Přizpůsobit snímku
+	Forest	Lesní
+	Frame Blending	Prolínání snímků
+	Frame Hold Options…	Možnosti zmrazeného snímku…
+	Frame Sampling	Vzorkování snímků
+	Frame Size	Velikost snímku
+	From Bin	Z přihrádky
+	From Source Monitor	Ze zdrojového monitoru
+	From Source Monitor, Match Frame	Ze zdrojového monitoru, odpovídající snímek
+	From file…	Ze souboru…
+	From the preset	Z přednastavení
+	Adaptive ({bpp} bits per pixel)	Adaptivní ({bpp} bitů na pixel)
+	Set a fixed bitrate	Nastavit pevný datový tok
+	Gain	Zesílení
+	Generate Audio Waveform	Generovat zvukový průběh
+	Get Media File Properties for	Získat vlastnosti mediálního souboru pro
+	Go to End	Přejít na konec
+	Go to Gap	Přejít na mezeru
+	Go to In	Přejít na vstupní bod
+	Go to Next Caption Segment	Přejít na další segment titulků
+	Go to Next Keyframe	Přejít na další klíčový snímek
+	Go to Next Marker	Přejít na další značku
+	Go to Out	Přejít na výstupní bod
+	Go to Previous Caption Segment	Přejít na předchozí segment titulků
+	Go to Previous Keyframe	Přejít na předchozí klíčový snímek
+	Go to Previous Marker	Přejít na předchozí značku
+	Go to Split	Přejít na rozdělení
+	Go to Start	Přejít na začátek
+	Graphic	Grafický prvek
+	Graphics and Titles	Grafika a titulky
+	Grunge & Distort	Grunge a zkreslení
+	Hide All Caption Tracks	Skrýt všechny stopy titulků
+	Hold	Podržet
+	Image Control	Ovládání obrazu
+	Image Sequence	Sekvence obrázků
+	Immersive Video	Imerzivní video
+	Import Credits Spreadsheet…	Importovat tabulku titulků…
+	Import From	Importovat z
+	Import Image Sequence…	Importovat sekvenci obrázků…
+	Import from Media Browser	Importovat z prohlížeče médií
+	Ingest Settings…	Nastavení příjmu…
+	Insert	Vložit
+	Insert Frame Hold Segment	Vložit segment zmrazeného snímku
+	Inspector	Inspektor
+	Install Motion Graphics Template…	Nainstalovat šablonu pohyblivé grafiky…
+	Interpret Footage…	Interpretovat záznam…
+	Iris	Clona
+	Keying	Klíčování
+	Lavender	Levandulová
+	Legacy	Starší
+	Lift	Vyzvednout
+	Lights & Blurs	Světla a rozostření
+	Lights & Glows	Světla a záře
+	Linear Dodge (Add)	Lineárně zesvětlit (přidat)
+	Link	Propojit
+	Link Media…	Propojit média…
+	Linked Selection	Propojený výběr
+	Lumetri Color	Barvy Lumetri
+	Lumetri Scopes	Rozsahy Lumetri
+	Make Offline…	Převést na offline…
+	Make Subclip…	Vytvořit podklip…
+	Make Subsequence	Vytvořit podsekvenci
+	Mango	Mangová
+	Mark Clip	Označit klip
+	Mark In	Označit vstupní bod
+	Mark Out	Označit výstupní bod
+	Mark Selection	Označit výběr
+	Mark Split	Označit rozdělení
+	Markers	Značky
+	Match Frame	Odpovídající snímek
+	Match sequence	Podle sekvence
+	Media Browser	Prohlížeč médií
+	Media offline	Média offline
+	Media…	Média…
+	Merge Clips…	Sloučit klipy…
+	Merged Clip	Sloučený klip
+	Modulation	Modulace
+	Motion Graphics Template…	Šablona pohyblivé grafiky…
+	Movie	Film
+	Multi-Camera	Více kamer
+	Mute Track	Ztlumit stopu
+	Name	Název
+	Nest…	Vnořit…
+	New Bin	Nová přihrádka
+	New Project Panel	Nový panel projektu
+	New Sequence…	Nová sekvence…
+	Next in Sequence	Další v sekvenci
+	Next in Track	Další ve stopě
+	No sequence	Žádná sekvence
+	Drop media here to create sequence.	Přetažením médií sem vytvoříte sekvenci.
+	Open Demo Project	Otevřít ukázkový projekt
+	Double-click a sequence in the Project panel to open it here.	Poklepáním na sekvenci v panelu Projekt ji otevřete zde.
+	Noise & Grain	Šum a zrno
+	Noise Reduction	Potlačení šumu
+	Normalize Mix Track…	Normalizovat stopu mixu…
+	Not Now	Teď ne
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Zatím ne v Qt GUI (viz docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	Zastaralé
+	Offline File…	Offline soubor…
+	Open Project	Otevřít projekt
+	Open Project…	Otevřít projekt…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	Optický tok
+	Opus	Opus
+	Output file	Výstupní soubor
+	Overwrite	Přepsat
+	PCM (uncompressed)	PCM (nekomprimovaný)
+	Panner	Panoráma
+	Paste Attributes…	Vložit atributy…
+	Paste Insert	Vložit s posunem
+	Play/Stop	Přehrát/zastavit
+	Previous in Sequence	Předchozí v sekvenci
+	Previous in Track	Předchozí ve stopě
+	Program	Program
+	Progress	Průběh
+	Project	Projekt
+	Project Manager…	Správce projektu…
+	Project Notes	Poznámky k projektu
+	Project Settings	Nastavení projektu
+	Project…	Projekt…
+	Proxy	Proxy
+	Quit	Ukončit
+	Razor Tool	Nástroj Žiletka
+	Reconnect Full Resolution Media…	Znovu připojit média v plném rozlišení…
+	Recover Unsaved Changes	Obnovit neuložené změny
+	Recover Unsaved Changes…	Obnovit neuložené změny…
+	Reference Monitor	Referenční monitor
+	Remaining	Zbývá
+	Remix	Remix
+	Remix Properties…	Vlastnosti remixu…
+	Remove Attributes…	Odebrat atributy…
+	Remove Effect	Odebrat efekt
+	Remove Filler Words	Odebrat výplňová slova
+	Remove Pauses	Odebrat pauzy
+	Remove Unused	Odebrat nepoužité
+	Render Audio	Vykreslit zvuk
+	Render Effects In to Out	Vykreslit efekty od vstupního k výstupnímu bodu
+	Render In to Out	Vykreslit od vstupního k výstupnímu bodu
+	Render Selection	Vykreslit výběr
+	Replace Fonts in Projects…	Nahradit písma v projektech…
+	Replace With Clip	Nahradit klipem
+	Reset All Parameters	Obnovit všechny parametry
+	Reset Duration	Obnovit dobu trvání
+	Reset Effect	Obnovit efekt
+	Reset Panel Layout	Obnovit rozvržení panelů
+	Reset Parameter	Obnovit parametr
+	Reset to Saved Layout	Obnovit uložené rozvržení
+	Restoration	Restaurování
+	Restore Captions from Source Clip	Obnovit titulky ze zdrojového klipu
+	Retry	Zkusit znovu
+	Reverb	Dozvuk
+	Reverse Match Frame	Obrácený odpovídající snímek
+	Revert Remix	Vrátit remix
+	Ripple Delete	Odstranit s posunem
+	Ripple Delete Head Frame	Odstranit počáteční snímek s posunem
+	Ripple Sequence Markers	Posouvat značky sekvence
+	Rose	Růžová
+	Save All	Uložit vše
+	Save Changes to this Workspace	Uložit změny tohoto pracovního prostoru
+	Save as New Workspace	Uložit jako nový pracovní prostor
+	Save as New Workspace…	Uložit jako nový pracovní prostor…
+	Save changes to '{name}' before closing?	Uložit změny v '{name}' před zavřením?
+	Save changes to '{name}' before continuing?	Uložit změny v '{name}' před pokračováním?
+	Scale Width	Měřítko šířky
+	Scale to Frame Size	Změnit měřítko na velikost snímku
+	Scene Edit Detection…	Detekce střihů ve scéně…
+	Search Bin	Vyhledávací přihrádka
+	Select All Matching	Vybrat všechny odpovídající
+	Select Label Group	Vybrat skupinu štítku
+	Select Next Graphic	Vybrat další grafiku
+	Select Next Layer	Vybrat další vrstvu
+	Select Previous Graphic	Vybrat předchozí grafiku
+	Select Previous Layer	Vybrat předchozí vrstvu
+	Select a clip in the Timeline.	Vyberte klip na časové ose.
+	Selected	Vybráno
+	Selection Follows Playhead	Výběr sleduje přehrávací hlavu
+	Selection as CFA4 Project…	Výběr jako projekt CFA4…
+	Selection…	Výběr…
+	Sequence	Sekvence
+	Sequence From Clip	Sekvence z klipu
+	Sequence In/Out	Vstupní/výstupní bod sekvence
+	Sequence Settings…	Nastavení sekvence…
+	Sequence…	Sekvence…
+	Show Active Caption Tracks Only	Zobrazit jen aktivní stopy titulků
+	Show All Caption Tracks	Zobrazit všechny stopy titulků
+	Show All Marker Colors	Zobrazit všechny barvy značek
+	Show Through Edits	Zobrazit průchozí střihy
+	Simplify Sequence…	Zjednodušit sekvenci…
+	Slide	Posunutí
+	Smart Tools	Chytré nástroje
+	Snap in Timeline	Přichytávání na časové ose
+	Solo Track	Sólo stopa
+	Some panel labels change language after a restart.	Některé popisky panelů změní jazyk až po restartu.
+	Source In	Vstup zdroje
+	Source Settings…	Nastavení zdroje…
+	Source patch	Přiřazení zdroje
+	Speed/Duration…	Rychlost/doba trvání…
+	Start	Začátek
+	Start Queue	Spustit frontu
+	Starting engine…	Spouštění engine…
+	Step Back 1 Frame	O 1 snímek zpět
+	Step Forward 1 Frame	O 1 snímek vpřed
+	Stereo Imagery	Stereo obraz
+	Still Image	Statický obrázek
+	Stop Queue	Zastavit frontu
+	Subclip	Podklip
+	Synchronize…	Synchronizovat…
+	Synthetic	Syntetické
+	Tan	Pískově hnědá
+	Target Bitrate	Cílový datový tok
+	Teal	Modrozelená
+	Text to Speech	Převod textu na řeč
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Engine CFA4 (cfa4-cli) nebyl nalezen. Sestavte ho příkazem: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Engine CFA4 se neočekávaně zastavil. Neuložené změny jsou uchovány v deníku obnovy; restartujte CFA4 a obnovte je.
+	The engine stopped	Engine se zastavil
+	Time Interpolation	Časová interpolace
+	Time Remapping	Přemapování času
+	Time and Pitch	Čas a výška tónu
+	Timecode	Časový kód
+	Timecode…	Časový kód…
+	Toggle Animation	Zapnout/vypnout animaci
+	Toggle Proxies	Zapnout/vypnout proxy
+	Toggle Sync Lock	Zapnout/vypnout zámek synchronizace
+	Toggle Track Lock	Zapnout/vypnout zámek stopy
+	Toggle Track Output	Zapnout/vypnout výstup stopy
+	Toggle the effect on or off	Zapnout nebo vypnout efekt
+	Toggle track targeting	Zapnout/vypnout cílení stopy
+	Transcribe Sequence…	Přepsat sekvenci…
+	Transcribe…	Přepsat…
+	Transcript	Přepis
+	Transformers	Transformátory
+	Transparent Video…	Průhledné video…
+	Trim Edit	Ořezat střih
+	Uniform Scale	Rovnoměrné měřítko
+	Universal Counting Leader…	Univerzální odpočítávání…
+	Update Metadata…	Aktualizovat metadata…
+	Upgrade Caption to Graphic	Převést titulek na grafiku
+	Upgrade to Source Graphic	Převést na zdrojovou grafiku
+	Use hardware encoding when available	Použít hardwarové kódování, je-li k dispozici
+	Utility	Nástroje
+	VBR, 1 pass	VBR, 1 průchod
+	VBR, 2 pass	VBR, 2 průchody
+	Vertical Text	Svislý text
+	Video Effects	Obrazové efekty
+	Video In	Vstup videa
+	Video Options	Možnosti videa
+	Video Out	Výstup videa
+	Video Transitions	Obrazové přechody
+	Volume	Hlasitost
+	Wipe	Stíračka
+	Work Area	Pracovní oblast
+	Zoom to Sequence	Zvětšit na sekvenci
+	an unknown time	neznámý čas
+	automatic	automaticky
+	frames	snímky
+	not available	nedostupné
+	off	vypnuto
+	optional	volitelné
+	…	…
+	Rate Stretch Tool	Nástroj Roztažení rychlosti
+	Remix Tool	Nástroj Remix
+	Ripple Edit Tool	Nástroj Střih s posunem
+	Rolling Edit Tool	Nástroj Rolovací střih
+	Slide Tool	Nástroj Posunutí
+	Slip Tool	Nástroj Prokluz
+	Track Select Backward Tool	Nástroj Výběr stopy dozadu
+	Track Select Forward Tool	Nástroj Výběr stopy dopředu
+	Add Marker (M)	Přidat značku (M)
+	Button Editor	Editor tlačítek
+	Composite Video	Složené video
+	Display Mode	Režim zobrazení
+	Export Frame	Exportovat snímek
+	Extract (')	Extrahovat (')
+	Go to In (Shift+I)	Přejít na vstupní bod (Shift+I)
+	Go to Out (Shift+O)	Přejít na výstupní bod (Shift+O)
+	High Quality Playback	Přehrávání ve vysoké kvalitě
+	Insert (,)	Vložit (,)
+	Lift (;)	Vyzvednout (;)
+	Loop	Smyčka
+	Loop marked range	Opakovat označený rozsah
+	Mark In (I)	Označit vstupní bod (I)
+	Mark Out (O)	Označit výstupní bod (O)
+	More transport controls	Další ovládání přehrávání
+	Overwrite (.)	Přepsat (.)
+	Paused Resolution	Rozlišení při pozastavení
+	Play In to Out	Přehrát od vstupního k výstupnímu bodu
+	Play-Stop Toggle (Space)	Přehrát/zastavit (mezerník)
+	Playback Resolution	Rozlišení přehrávání
+	RGBA Channels	Kanály RGBA
+	Safe Margins	Bezpečné okraje
+	Select Playback Resolution	Vybrat rozlišení přehrávání
+	Select Zoom Level	Vybrat úroveň zvětšení
+	Show Transport Controls	Zobrazit ovládání přehrávání
+	Shuttle Left	Shuttle vlevo
+	Shuttle Right	Shuttle vpravo
+	Shuttle Stop	Zastavit shuttle
+	Step Back 1 Frame (Left)	O 1 snímek zpět (vlevo)
+	Step Forward 1 Frame (Right)	O 1 snímek vpřed (vpravo)
+	Darkest	Nejtmavší
+	(no sequence)	(žádná sekvence)
+	All markers are hidden by the colour filter.	Všechny značky jsou skryty barevným filtrem.
+	Audio {n}:	Zvuk {n}:
+	Audio:	Zvuk:
+	Clip: {name}	Klip: {name}
+	Codec:	Kodek:
+	Duration:	Doba trvání:
+	Marker	Značka
+	No markers. Press M to add one.	Žádné značky. Stisknutím M nějakou přidáte.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Poznámky k tomuto projektu: úkoly, pokyny, čísla snímků… Ukládají se s projektem.
+	Playhead:	Přehrávací hlava:
+	Select a clip to view its metadata.	Vyberte klip a zobrazte jeho metadata.
+	Settings:	Nastavení:
+	Show or hide {color} markers	Zobrazit nebo skrýt značky {color}
+	Video {n}:	Video {n}:
+	Video:	Video:
+	{tc}  Chapter	{tc}  Kapitola
+	Media Type	Typ média
+	Frame Rate	Snímková frekvence
+	Media Start	Začátek média
+	Media End	Konec média
+	Media Duration	Doba trvání média
+	Video Info	Informace o videu
+	Video Codec	Kodek videa
+	Audio Info	Informace o zvuku
+	Audio Codec	Kodek zvuku
+	Scene	Scéna
+	Shot	Záběr
+	Log Note	Poznámka záznamu
+	Tape Name	Název pásky
+	Client	Klient
+	Camera Angle	Úhel kamery
+	File Path	Cesta k souboru
+	 · {time} left	 · zbývá {time}
+	Active Monitor	Aktivní monitor
+	Add a timecode row	Přidat řádek časového kódu
+	Audio Samples	Zvukové vzorky
+	Current Time	Aktuální čas
+	Failed: {e}	Selhalo: {e}
+	Feet + Frames 16mm	Stopy + snímky 16 mm
+	Feet + Frames 35mm	Stopy + snímky 35 mm
+	Frames	Snímky
+	In/Out Duration	Doba mezi vstupním a výstupním bodem
+	Media Time	Čas média
+	No background jobs.	Žádné úlohy na pozadí.
+	Remove Row	Odebrat řádek
+	Seconds	Sekundy
+	Show finished jobs	Zobrazit dokončené úlohy
+	{mode} · no clip	{mode} · žádný klip
+	{mode} · no sequence	{mode} · žádná sekvence
+	Render	Vykreslit
+	Job	Úloha
+	Audio Track Mixer menu	Nabídka mixéru zvukových stop
+	Automation mode	Režim automatizace
+	Enable track for recording	Povolit stopu pro záznam
+	Fill the slots above first	Nejprve vyplňte pozice výše
+	Go to In Point	Přejít na vstupní bod
+	Go to Out Point	Přejít na výstupní bod
+	Input channel mapping	Mapování vstupních kanálů
+	Meter Input(s) Only	Měřit jen vstupy
+	Mix	Mix
+	Mute Send	Ztlumit send
+	New Submix	Nový submix
+	Pan / balance (drag; double-click: centre)	Panoráma / vyvážení (táhnout; poklepání: střed)
+	Post-Fader	Za faderem
+	Pre-Fader	Před faderem
+	Remove Send	Odebrat send
+	Show/Hide Effects and Sends	Zobrazit/skrýt efekty a sendy
+	Show/Hide Tracks	Zobrazit/skrýt stopy
+	Solo safe	Chráněno před sólem
+	Track output assignment	Přiřazení výstupu stopy
+	Voice-over recording is not in the Qt GUI yet	Nahrávání komentáře zatím v Qt GUI není
+	Volume (drag; double-click: 0 dB)	Hlasitost (táhnout; poklepání: 0 dB)
+	pre 	pre 
+	Read	Čtení
+	Latch	Přidržení
+	Touch	Dotyk
+	Write	Zápis
+	Stereo	Stereo
+	Swap	Prohodit
+	Mono	Mono
+	Write keyframes	Zapisovat klíčové snímky
+	Match Playhead	Sledovat přehrávací hlavu
+	Gang to Program	Svázat s programem
+	(no sequences)	(žádné sekvence)
+	8 Bit	8 bitů
+	Bright	Jasné
+	Clamp Signal	Omezit signál
+	Colour Space	Barevný prostor
+	Dimmed	Ztlumené
+	Float	Plovoucí čárka
+	Four Scopes (RGB, 8 bit)	Čtyři rozsahy (RGB, 8 bitů)
+	Four Scopes (YUV, float, no clamp)	Čtyři rozsahy (YUV, plovoucí čárka, bez omezení)
+	HDR	HDR
+	HLS Vectorscope + Histogram	Vektorskop HLS + histogram
+	Luma	Jas
+	Parade	Parade
+	Parade (RGB)	Parade (RGB)
+	Parade ({kind})	Parade ({kind})
+	Parade Type	Typ parade
+	RGB-White	RGB-bílá
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Nastavení rozsahů
+	Signal Scale	Měřítko signálu
+	Vectorscope (YUV)	Vektorskop (YUV)
+	Vectorscope + Waveform YC	Vektorskop + průběh YC
+	Vectorscope HLS	Vektorskop HLS
+	Vectorscope Targets	Cíle vektorskopu
+	Vectorscope YUV	Vektorskop YUV
+	Waveform	Průběh
+	Waveform (Luma)	Průběh (jas)
+	Waveform (RGB)	Průběh (RGB)
+	Waveform ({kind})	Průběh ({kind})
+	Waveform Type	Typ průběhu
+	YC	YC
+	YC no Chroma	YC bez chroma
+	YUV	YUV
+	(no clip selected)	(není vybrán žádný klip)
+	Add Lumetri Color to clip	Přidat Barvy Lumetri do klipu
+	Apply Match	Použít shodu
+	Basic Correction	Základní korekce
+	Bleach Bypass	Bleach bypass
+	Color Match	Shoda barev
+	Color Wheels & Match	Barevná kola a shoda
+	Color/Black	Barva/černá
+	Color/Gray	Barva/šedá
+	Comparison View	Srovnávací zobrazení
+	Cool Blue	Chladná modrá
+	Creative	Kreativní
+	Denoise	Odšumění
+	Face Detection (protect skin tones)	Detekce obličejů (chránit tóny pleti)
+	Faded Matte	Vybledlý mat
+	Feather	Měkký okraj
+	Golden Hour	Zlatá hodinka
+	HDR Range	Rozsah HDR
+	HDR Specular	Odlesky HDR
+	HDR White	Bílá HDR
+	HSL Secondary	Sekundární HSL
+	Hue Range	Rozsah odstínu
+	Hue Saturation Curves	Křivky odstínu a sytosti
+	Hue vs Hue	Odstín vs. odstín
+	Hue vs Luma	Odstín vs. jas
+	Hue vs Sat	Odstín vs. sytost
+	Input LUT	Vstupní LUT
+	Key	Klíč
+	LUT	LUT
+	Look	Vzhled
+	Look LUT	LUT vzhledu
+	Luma Max	Max. jas
+	Luma Min	Min. jas
+	Luma vs Sat	Jas vs. sytost
+	Master · {name}	Master · {name}
+	Night	Noc
+	RGB Curves	Křivky RGB
+	Reference	Reference
+	Sat vs Sat	Sytost vs. sytost
+	Saturation Min	Min. sytost
+	Teal & Orange	Modrozelená a oranžová
+	Vignette	Viněta
+	Warm Film	Teplý film
+	White/Black	Bílá/černá
+	Add to Favorites	Přidat do oblíbených
+	All Supported Files	Všechny podporované soubory
+	Allow Duplicate Media During Project Import	Povolit duplicitní média při importu projektu
+	Audio Files	Zvukové soubory
+	Cannot open {dir}: {e}	Nelze otevřít {dir}: {e}
+	Clear Recent Directories	Vymazat nedávné složky
+	Create Folder For Imported Projects	Vytvořit složku pro importované projekty
+	Date Modified	Datum změny
+	Edit Columns	Upravit sloupce
+	Edit Columns…	Upravit sloupce…
+	File Extension	Přípona souboru
+	File Types Displayed	Zobrazené typy souborů
+	Go Back	Zpět
+	Go Forward	Vpřed
+	Hover Scrub	Procházení najetím
+	Import as Image Sequence	Importovat jako sekvenci obrázků
+	Ingest	Příjem
+	Local Drives	Místní disky
+	Network	Síť
+	New Media Browser Panel	Nový panel prohlížeče médií
+	Open In Source Monitor	Otevřít ve zdrojovém monitoru
+	Open Ingest Settings	Otevřít nastavení příjmu
+	Projects and Interchange	Projekty a výměna
+	Recent Directories	Nedávné složky
+	Remove from Favorites	Odebrat z oblíbených
+	Show in File Manager	Zobrazit ve správci souborů
+	Still Images	Statické obrázky
+	Thumbnail View	Zobrazení miniatur
+	Up One Level	O úroveň výš
+	Video Files	Video soubory
+	{sel} of {total} items selected	Vybráno {sel} z {total} položek
+	{total} items	Položky: {total}
+	#	#
+	Add caption at playhead	Přidat titulek na přehrávací hlavě
+	Add captions	Přidat titulky
+	Box	Rámeček
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Vytvořte stopu titulků nebo importujte soubor titulků.
+	Create captions	Vytvořit titulky
+	Create new caption track	Vytvořit novou stopu titulků
+	Delete selected captions	Odstranit vybrané titulky
+	Export captions…	Exportovat titulky…
+	Extract selected text	Extrahovat vybraný text
+	Go to caption	Přejít na titulek
+	Go to graphic	Přejít na grafiku
+	Graphics	Grafické prvky
+	Import captions file…	Importovat soubor titulků…
+	In	Vstup
+	Lift selected text	Vyzvednout vybraný text
+	Merge selected captions	Sloučit vybrané titulky
+	New {format} track	Nová stopa {format}
+	No captions on this track. Press + to add one at the playhead.	V této stopě nejsou žádné titulky. Stisknutím + přidáte titulek na přehrávací hlavě.
+	No matching captions.	Žádné odpovídající titulky.
+	No matching text.	Žádný odpovídající text.
+	No text graphics in this sequence. Add text with the Type tool.	V této sekvenci není žádná textová grafika. Přidejte text nástrojem Text.
+	Open a sequence to search its graphics	Otevřete sekvenci a prohledejte její grafiku
+	Open a sequence to see its transcript	Otevřete sekvenci a zobrazte její přepis
+	Open a sequence to work with captions	Otevřete sekvenci a pracujte s titulky
+	Out	Výstup
+	Position: bottom	Pozice: dole
+	Position: middle	Pozice: uprostřed
+	Position: top	Pozice: nahoře
+	Remove filler words	Odebrat výplňová slova
+	Speaker	Mluvčí
+	Speech-to-text turns the dialogue into editable text.	Převod řeči na text změní dialog v upravitelný text.
+	Split caption at playhead	Rozdělit titulek na přehrávací hlavě
+	Teletext	Teletext
+	Text colour	Barva textu
+	This build has no speech-to-text; import a transcript with transcript.set.	Toto sestavení nemá převod řeči na text; importujte přepis pomocí transcript.set.
+	Track	Stopa
+	Transcribe	Přepsat
+	Transcribe sequence	Přepsat sekvenci
+	(Default)	(Výchozí)
+	Ambience	Atmosféra
+	Assign an audio type to the selection:	Přiřaďte výběru typ zvuku:
+	Auto-Match	Automatická shoda
+	Balanced Voice	Vyvážený hlas
+	Bright Air	Jasný vzduch
+	Bright Studio	Jasné studio
+	Clean Up Noisy Dialogue	Vyčistit zašuměný dialog
+	Clear Audio Type	Vymazat typ zvuku
+	Clear Muddiness	Odstranit zahuhlanost
+	Clip Volume	Hlasitost klipu
+	DeEss	Odsykání
+	DeHum	Odbručení
+	Delete Preset	Odstranit přednastavení
+	Dialogue	Dialog
+	Dry Up a Roomy Voice	Vysušit hlas s dozvukem místnosti
+	Duck Deep Under Dialogue	Hluboce ztlumit pod dialogem
+	Duck Under Dialogue	Ztlumit pod dialogem
+	Duck Under Voice and Effects	Ztlumit pod hlasem a efekty
+	Duck against:	Ztlumit vůči:
+	Ducking	Ztlumování
+	EQ	Ekvalizér
+	Enhance Speech	Vylepšit řeč
+	Fades	Roztmívání a stmívání
+	Far Away	V dálce
+	From the Left	Zleva
+	From the Right	Zprava
+	Generate Keyframes	Generovat klíčové snímky
+	High Tone	Vysoký tón
+	In a Room	V místnosti
+	Interior Room Tone	Ruch interiéru
+	Large Hall	Velký sál
+	Loudness	Hlasitost
+	Low Tone	Nízký tón
+	Matches each of the {n} clips on its own.	Sladí každý z {n} klipů zvlášť.
+	Medium Room	Střední místnost
+	Multiple Clips Selected	Vybráno více klipů
+	Music	Hudba
+	Mute	Ztlumit
+	Not matched yet	Zatím nesladěno
+	Open Air	Venku
+	Pan	Panoráma
+	Phone Call	Telefonní hovor
+	Podcast Voice	Hlas podcastu
+	Presence Lift	Zvýraznit prezenci
+	Preset name	Název přednastavení
+	Radio Announcer	Rozhlasový hlasatel
+	Radio Voice	Rozhlasový hlas
+	Reduce By	Snížit o
+	Reduce Reverb	Snížit dozvuk
+	Reduce Rumble	Snížit hučení
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	Remix hudby na cílovou délku zatím není k dispozici. Místo toho klip ořízněte a přidejte prolnutí.
+	Repair	Oprava
+	SFX	SFX
+	Save Preset	Uložit přednastavení
+	Select audio clips to edit them here	Vyberte zvukové klipy a upravte je zde
+	Select audio clips, then click a preset to apply it.	Vyberte zvukové klipy a pak klepnutím na přednastavení jej použijte.
+	Small Room	Malá místnost
+	Soften Harshness	Zjemnit ostrost
+	Stereo Width	Šířka sterea
+	Stone Church	Kamenný kostel
+	Telephone	Telefon
+	The selected clips have different audio types. Assign one type to edit them together.	Vybrané klipy mají různé typy zvuku. Přiřaďte jim jeden typ, abyste je mohli upravit společně.
+	Untagged	Bez typu
+	Voice in a Hall	Hlas v sále
+	Warm Room	Teplá místnost
+	Warm Voice	Teplý hlas
+	Wide Outdoor	Široký venkovní prostor
+	{name} (user)	{name} (uživatel)
+	Align Bottom	Zarovnat dolů
+	Align Center Horizontally	Zarovnat na střed vodorovně
+	Align Center Vertically	Zarovnat na střed svisle
+	Align Top	Zarovnat nahoru
+	Align and Transform	Zarovnat a transformovat
+	Anchor point	Kotevní bod
+	Center Align Text	Zarovnat text na střed
+	Corner Radius	Poloměr rohu
+	Crawl Left	Posun doleva
+	Crawl Right	Posun doprava
+	Create new graphic	Vytvořit novou grafiku
+	End Off Screen	Skončit mimo obrazovku
+	Faux Bold	Umělé tučné
+	Faux Italic	Umělá kurzíva
+	Font Style	Řez písma
+	Inner	Vnitřní
+	Install Motion Graphics Template (.fcgt)	Nainstalovat šablonu pohyblivé grafiky (.fcgt)
+	Install…	Nainstalovat…
+	Intro Duration	Délka úvodu
+	Left Align Text	Zarovnat text doleva
+	Ligatures	Ligatury
+	New Ellipse	Nová elipsa
+	New Rectangle	Nový obdélník
+	New Text	Nový text
+	New Text Layer	Nová textová vrstva
+	No templates match.	Žádné odpovídající šablony.
+	Outer	Vnější
+	Outro Duration	Délka závěru
+	Paragraph Text	Text odstavce
+	Pin To	Připnout k
+	Pinned Edges	Připnuté okraje
+	Point Text	Bodový text
+	Polygon Sides	Strany mnohoúhelníku
+	Postroll	Dojezd
+	Preroll	Předjezd
+	Responsive Design - Position	Responzivní design - pozice
+	Responsive Design - Time	Responzivní design - čas
+	Right Align Text	Zarovnat text doprava
+	Roll	Rolování
+	Search templates	Hledat šablony
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Vyberte grafický klip, nebo použijte nástroj Text (T) v monitoru Program
+	Select a layer to edit its properties.	Vyberte vrstvu a upravte její vlastnosti.
+	Shadow	Stín
+	Solid	Plná
+	Start Off Screen	Začít mimo obrazovku
+	Stroke 2	Tah 2
+	Template Properties	Vlastnosti šablony
+	Template: {name}	Šablona: {name}
+	Text Box Height	Výška textového pole
+	Text Box Width	Šířka textového pole
+	Text Layer Type	Typ textové vrstvy
+	Text Properties	Vlastnosti textu
+	Text Styling	Styl textu
+	Toggle animation	Zapnout/vypnout animaci
+	Toggle visibility	Zapnout/vypnout viditelnost
+	Video Frame	Snímek videa
+	{category} · My Template	{category} · Moje šablona
+	{n} editable properties	Upravitelné vlastnosti: {n}
+	Add pause	Přidat pauzu
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	Přidat pauzu vloží [pause 1s]. Pro delší či kratší pauzu změňte číslo, např. [pause 500ms] nebo [pause 2s].
+	Add to timeline	Přidat na časovou osu
+	Basic voices (built in)	Základní hlasy (vestavěné)
+	Download natural voices ({mb} MB)…	Stáhnout přirozené hlasy ({mb} MB)…
+	Download of the natural voices failed: {e}	Stažení přirozených hlasů selhalo: {e}
+	Download the natural voices? {mb} MB, once.	Stáhnout přirozené hlasy? {mb} MB, jednorázově.
+	Downloading…	Stahování…
+	Editing the selected narration	Úprava vybraného komentáře
+	Extra high	Velmi vysoká
+	Extra low	Velmi nízká
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Z {source} a github.com/cmusphinx/cmudict (výslovnost). Licence: {license}. Každý soubor se ověřuje proti pevně danému SHA-256.
+	Hear this voice	Poslechnout tento hlas
+	Narration added on {track}	Komentář přidán do {track}
+	Narration updated	Komentář aktualizován
+	Natural voices	Přirozené hlasy
+	Natural voices installed	Přirozené hlasy nainstalovány
+	Natural voices need a one-time download.	Přirozené hlasy vyžadují jednorázové stažení.
+	New narration	Nový komentář
+	Pace	Tempo
+	Synthesizing narration…	Syntéza komentáře…
+	Synthesizing…	Syntéza…
+	Text to Speech: {e}	Převod textu na řeč: {e}
+	Type what you want the voice to say	Napište, co má hlas říct
+	Vocal pitch	Výška hlasu
+	an audio track	zvuková stopa
+	no audio output (check Settings ▸ Audio Hardware)	žádný zvukový výstup (zkontrolujte Nastavení ▸ Zvukový hardware)
+	the job disappeared	úloha zmizela
+	{name} (download)	{name} (stáhnout)
+	5.1 panner (drag the puck; double-click: front centre)	Panoráma 5.1 (táhněte bod; poklepání: přední střed)
+	Add keyframe	Přidat klíčový snímek
+	Go to next keyframe	Přejít na další klíčový snímek
+	Go to previous keyframe	Přejít na předchozí klíčový snímek
+	Remove keyframe	Odebrat klíčový snímek
+	Select a clip to see its properties	Vyberte klip a zobrazte jeho vlastnosti
+	Speed {n}%	Rychlost {n} %
+	Turn on animation and add keyframe	Zapnout animaci a přidat klíčový snímek
+	Apply to Selected Clips	Použít na vybrané klipy
+	Export Preset…	Exportovat přednastavení…
+	Import Presets…	Importovat přednastavení…
+	Lumetri Presets	Přednastavení Lumetri
+	Search effects	Hledat efekty
+	Text to Speech: another sequence is open now; the narration was not placed	Převod textu na řeč: nyní je otevřena jiná sekvence; komentář nebyl umístěn
+	Effect presets	Přednastavení efektů
+	Automate to Sequence	Automatizovat do sekvence
+	Bin: {name}	Přihrádka: {name}
+	Clear (Delete)	Vymazat (Delete)
+	Convert to Master Clip	Převést na hlavní klip
+	Date Created	Datum vytvoření
+	Drag to reorder; tick the columns to show.	Přetažením změníte pořadí; zaškrtněte sloupce k zobrazení.
+	Extra Large	Velmi velké
+	Freeform	Volné uspořádání
+	Freeform View Options…	Možnosti volného zobrazení…
+	Icon View	Zobrazení ikon
+	Manage Saved View Presets	Spravovat uložená přednastavení zobrazení
+	Medium (default)	Střední (výchozí)
+	Metadata Display	Zobrazení metadat
+	Metadata Display…	Zobrazení metadat…
+	New Bin From Selection	Nová přihrádka z výběru
+	New Item	Nová položka
+	New Project Shortcut	Nový zástupce projektu
+	New Search Bin	Nová vyhledávací přihrádka
+	New Sequence From Clip	Nová sekvence z klipu
+	Open in New Tab	Otevřít na nové kartě
+	Open in New Window	Otevřít v novém okně
+	Open in Place	Otevřít na místě
+	Open in Source Monitor	Otevřít ve zdrojovém monitoru
+	Open in Timeline	Otevřít na časové ose
+	Preview Area	Oblast náhledu
+	Project View Preset {n}	Přednastavení zobrazení projektu {n}
+	Project: {name}	Projekt: {name}
+	Refresh Project	Obnovit projekt
+	Refresh Sort Order	Obnovit pořadí řazení
+	Restore View Preset	Obnovit přednastavení zobrazení
+	Reveal Project in Finder…	Zobrazit projekt ve správci souborů…
+	Reveal in Finder	Zobrazit ve správci souborů
+	Save As New View Preset	Uložit jako nové přednastavení zobrazení
+	Save Current View Preset	Uložit aktuální přednastavení zobrazení
+	Save Project	Uložit projekt
+	Select an item to preview it	Vyberte položku pro náhled
+	Set Poster Frame	Nastavit titulní snímek
+	Sort Icons	Seřadit ikony
+	Thumbnail controls for all pointing devices	Ovládání miniatur pro všechna polohovací zařízení
+	Thumbnails show effects applied	Miniatury zobrazují použité efekty
+	Up one level	O úroveň výš
+	User Order	Uživatelské pořadí
+	Video Usage: {vu}  Audio Usage: {au}	Použití videa: {vu}  Použití zvuku: {au}
+	Zoom	Zvětšení
+	{n} items	Položky: {n}
+	Freeform View	Volné zobrazení
+	Stack	Seskupit do balíčku
+	Unstack	Rozdělit balíček
+	Clip Size	Velikost klipu
+	Larger	Větší
+	Smaller	Menší
+	Align to Grid	Zarovnat k mřížce
+	Reset to Grid	Vrátit do mřížky
+	Save Arrangement…	Uložit uspořádání…
+	Save Arrangement	Uložit uspořádání
+	Restore Arrangement	Obnovit uspořádání
+	Delete Arrangement	Odstranit uspořádání
+	Arrangement {n}	Uspořádání {n}
+	Freeform View Options	Možnosti volného zobrazení
+	Snap to grid	Přichytit k mřížce
+	Show clip names	Zobrazit názvy klipů
+	Show clip durations	Zobrazit délky klipů
+	Grid spacing:	Rozestup mřížky:
+	Default clip size:	Výchozí velikost klipu:
+	{panel} — coming in a later milestone	{panel} — přijde v pozdější etapě
+	Edit Workspaces	Upravit pracovní prostory
+	Restore Original	Obnovit původní
+	Drag Video Only	Přetáhnout jen video
+	Drag Audio Only	Přetáhnout jen zvuk
+	Drag Video and Audio	Přetáhnout video i zvuk
+	Source clips	Zdrojové klipy
+	(no audio)	(bez zvuku)
+	Generating waveform…	Generování průběhu…
+	Audio Waveform	Zvukový průběh
+	Video and Audio Waveform Split	Video a zvukový průběh odděleně
+	Anchor to In Point	Ukotvit ke vstupnímu bodu
+	Anchor to Out Point	Ukotvit k výstupnímu bodu
+	Custom ({n} points)	Vlastní ({n} bodů)
+	Source · {name}	Zdroj · {name}
+	Temporal Interpolation	Časová interpolace
+	Twirl open or shut	Rozbalit nebo sbalit
+	Without keyframes	Bez klíčových snímků
+	Create 4-point polygon mask	Vytvořit čtyřbodovou mnohoúhelníkovou masku
+	Create ellipse mask	Vytvořit eliptickou masku
+	Delete Mask	Odstranit masku
+	Free draw bezier	Volně kreslená Bézierova křivka
+	Inverted	Invertováno
+	Position & Rotation	Pozice a otočení
+	Position, Scale & Rotation	Pozice, měřítko a otočení
+	Show graphs	Zobrazit grafy
+	Stop tracking	Zastavit sledování
+	Track selected mask backward	Sledovat vybranou masku dozadu
+	Track selected mask backward 1 frame	Sledovat vybranou masku o 1 snímek dozadu
+	Track selected mask forward	Sledovat vybranou masku dopředu
+	Track selected mask forward 1 frame	Sledovat vybranou masku o 1 snímek dopředu
+	Tracking method: {method}	Metoda sledování: {method}
+	Velocity	Rychlost změny
+	Set Transition Duration	Nastavit délku přechodu
+	Reverse	Obrátit
+	Center at Cut	Na střed střihu
+	Start at Cut	Začít na střihu
+	End at Cut	Skončit na střihu
+	Custom Start	Vlastní začátek
+	Eyedropper (pick a color from the Program monitor)	Kapátko (vyberte barvu z monitoru Program)
+	Interpret Footage	Interpretovat záznam
+	Color Management · {n} item	Správa barev · {n} položka
+	Color Management · {n} items	Správa barev · položky: {n}
+	Media colour space (from file metadata): {detected}	Barevný prostor média (z metadat souboru): {detected}
+	Override media colour space:	Přepsat barevný prostor média:
+	Decode Auro-3D height channels	Dekódovat výškové kanály Auro-3D
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Vypnuto: soubor přehrává vlastní kanály, jako bez dekodéru Auro-3D.
+	Use file metadata	Použít metadata souboru
+	Motion Graphics Templates	Šablony pohyblivé grafiky
+	Clip Fx Editor	Editor efektů klipu
+	Track Fx Editor	Editor efektů stopy
+	Custom Setup	Vlastní nastavení
+	Master Gain	Hlavní zesílení
+	Band {n}	Pásmo {n}
+	Solo	Sólo
+	Thr	Práh
+	Ratio	Poměr
+	Att	Náběh
+	Rel	Uvol.
+	Output Gain	Výstupní zesílení
+	Limiter	Limiter
+	Link Channels	Propojit kanály
+	Limiter Threshold	Práh limiteru
+	Limiter Release	Uvolnění limiteru
+	Auto Gate	Automatická brána
+	Attack	Náběh
+	Release	Uvolnění
+	Compressor	Kompresor
+	Auto Makeup	Automatické dorovnání
+	Makeup	Dorovnání
+	Expander	Expandér
+	Soft Clip	Měkké oříznutí
+	out	výstup
+	in	vstup
+	Parametric Equalizer	Parametrický ekvalizér
+	Graphic Equalizer (10 Bands)	Grafický ekvalizér (10 pásem)
+	Graphic Equalizer (20 Bands)	Grafický ekvalizér (20 pásem)
+	Graphic Equalizer (30 Bands)	Grafický ekvalizér (30 pásem)
+	Multiband Compressor	Vícepásmový kompresor
+	CFA4 encountered an error	CFA4 narazil na chybu
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Při vykreslování okna se něco pokazilo. Váš projekt je stále otevřený; pro jistotu ho uložte.
+	Details: {path}	Podrobnosti: {path}
+	Engine restarted	Engine restartován
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Engine CFA4 se neočekávaně zastavil a byl restartován. Neuložené změny jsou uchovány v deníku obnovy, který nabídne jejich obnovení.
+	 ({ch} output channels)	 (výstupní kanály: {ch})
+	Appearance Mode	Režim vzhledu
+	Auto-saves go to: {dir}	Automatická uložení jdou do: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	CFA4 ponechá zbytek RAM volný pro jiné aplikace.
+	Currently: {loc} — {files} file(s), {size}	Aktuálně: {loc} — soubory: {files}, {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	Dekódované snímky držené pro monitory a miniatury: {used} z {budget}.
+	Default location	Výchozí umístění
+	Delete this preset	Odstranit toto přednastavení
+	Deleted preset “{active}”	Přednastavení „{active}“ odstraněno
+	Deleted {n} file(s), {size}.	Odstraněno souborů: {n}, {size}.
+	Export the labels to a preset file…	Exportovat štítky do souboru přednastavení…
+	Font family	Rodina písma
+	Import a preset file…	Importovat soubor přednastavení…
+	Imported “{name}”	Importováno „{name}“
+	Label Color Presets	Přednastavení barev štítků
+	Label Colors	Barvy štítků
+	Last auto-save {a}	Poslední automatické uložení {a}
+	Last auto-save {a} · last recovery copy {j}	Poslední automatické uložení {a} · poslední kopie pro obnovu {j}
+	Last recovery copy {j}	Poslední kopie pro obnovu {j}
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	Program vlevo → výstup zařízení {l}, vpravo → výstup zařízení {r}{dev}. Výstupy nad počet kanálů zařízení se vrátí na 1 a 2.
+	Recovery copy: {dir}	Kopie pro obnovu: {dir}
+	Revert to the preset's colors and names	Vrátit barvy a názvy přednastavení
+	Show the presets folder	Zobrazit složku přednastavení
+	System Default	Výchozí nastavení systému
+	not available in this session	v této relaci nedostupné
+	{name} (Modified)	{name} (změněno)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	Přístupný barevný kontrast
+	Add tracks automatically when editing source clips onto the Timeline	Automaticky přidávat stopy při střihu zdrojových klipů na časovou osu
+	All lines	Všechny řádky
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	Povolit nástroji Výběr volit rolovací ořez a ořez s posunem bez modifikační klávesy
+	Allow current tool to change trim type of previously selected edit point	Povolit aktuálnímu nástroji změnit typ ořezu dříve vybraného bodu střihu
+	Allow duplicate media during project import	Povolit duplicitní média při importu projektu
+	Always import embedded CEA-708 closed captions with wide aspect.	Vložené skryté titulky CEA-708 vždy importovat se širokým poměrem stran.
+	Always override audio tags	Vždy přepsat zvukové značky
+	Analyze all imported media to search for visuals or audio	Analyzovat všechna importovaná média pro vyhledávání podle obrazu či zvuku
+	Animate zoom, scrolling and menus	Animovat zvětšování, posouvání a nabídky
+	Appearance…	Vzhled…
+	At Startup	Při spuštění
+	At playback end, return to beginning when restarting playback	Na konci přehrávání se při novém spuštění vrátit na začátek
+	Attempt to force hardware to document sample rate	Pokusit se vynutit vzorkovací frekvenci dokumentu na hardwaru
+	Audio Hardware	Zvukový hardware
+	Audio Hardware…	Zvukový hardware…
+	Audio Time Units	Časové jednotky zvuku
+	Audio Transition Default Duration	Výchozí délka zvukového přechodu
+	Audio…	Zvuk…
+	Auto (system)	Automaticky (systém)
+	Auto Save	Automatické ukládání
+	Auto Save also saves the current project(s)	Automatické ukládání ukládá i aktuální projekt(y)
+	Auto Save…	Automatické ukládání…
+	Auto-tag audio types in the timeline	Automaticky označovat typy zvuku na časové ose
+	Auto-transcribe all imported clips	Automaticky přepisovat všechny importované klipy
+	Auto-transcribe only clips in sequences	Automaticky přepisovat jen klipy v sekvencích
+	Automatch Time	Doba automatické shody
+	Automatically Hide Dependent Clips	Automaticky skrývat závislé klipy
+	Automatically Save Every	Automaticky ukládat každých
+	Automatically delete cache files older than	Automaticky odstraňovat soubory mezipaměti starší než
+	Automatically delete oldest cache files when cache exceeds	Automaticky odstraňovat nejstarší soubory mezipaměti, když mezipaměť přesáhne
+	Automatically refresh growing files	Automaticky obnovovat rostoucí soubory
+	Automatically resume playback for growing files in Source Monitor	Automaticky obnovit přehrávání rostoucích souborů ve zdrojovém monitoru
+	Automatically save projects	Automaticky ukládat projekty
+	Automatically transcribe clips	Automaticky přepisovat klipy
+	Automation Keyframe Optimization	Optimalizace klíčových snímků automatizace
+	Background fill	Výplň pozadí
+	Bevel join	Zkosený spoj
+	Bins	Přihrádky
+	Butt cap	Useknuté zakončení
+	Cache analysis results for re-use	Ukládat výsledky analýzy do mezipaměti k opětovnému použití
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	Změny se kopírují na pozadí chvíli po každé úpravě. Pokud se CFA4 neočekávaně ukončí, budou nabídnuty při příštím spuštění.
+	Chinese	Čínština
+	Closed Captions	Skryté titulky
+	Color Theme	Barevný motiv
+	Crash Recovery	Obnova po pádu
+	Create folder for imported projects	Vytvořit složku pro importované projekty
+	Default Audio Tracks	Výchozí zvukové stopy
+	Default Emoji font	Výchozí písmo emoji
+	Default Input	Výchozí vstup
+	Default Media Scaling	Výchozí škálování médií
+	Default Output	Výchozí výstup
+	Default closed caption font	Výchozí písmo skrytých titulků
+	Default language	Výchozí jazyk
+	Default paragraph direction	Výchozí směr odstavce
+	Default subtitle and text font	Výchozí písmo titulků a textu
+	Delete files older than	Odstranit soubory starší než
+	Delete oldest files when the cache exceeds	Odstranit nejstarší soubory, když mezipaměť přesáhne
+	Delete…	Odstranit…
+	Device Class	Třída zařízení
+	Disable video output when in the background	Vypnout výstup videa na pozadí
+	Display Color Management	Správa barev displeje
+	Display Color Settings	Nastavení barev displeje
+	Display out of sync indicators for unlinked clips	Zobrazit ukazatele nesynchronnosti u nepropojených klipů
+	Do not delete cache files automatically	Neodstraňovat soubory mezipaměti automaticky
+	Don't label speakers	Neoznačovat mluvčí
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	Koncepční dekódování při sníženém rozlišení přehrávání (H.264: rychlejší, některé snímky méně filtrované)
+	Dynamic Link	Dynamic Link
+	Enable Mercury Transmit	Zapnout Mercury Transmit
+	Enable ProRes hardware accelerated encoding, if available	Zapnout hardwarově akcelerované kódování ProRes, je-li k dispozici
+	Enable clip and XMP metadata linking	Zapnout propojení metadat klipu a XMP
+	Enable developer mode	Zapnout vývojářský režim
+	Enable hardware accelerated decoding (requires restart)	Zapnout hardwarově akcelerované dekódování (vyžaduje restart)
+	Enable language auto-detection	Zapnout automatické rozpoznání jazyka
+	Enable proxies	Zapnout proxy
+	English	Angličtina
+	Extended Dynamic Range Monitoring	Sledování s rozšířeným dynamickým rozsahem
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	Parametry správy barev najdete na kartě Nastavení v panelu Barvy Lumetri.
+	Frame Count	Počet snímků
+	Frame cache for monitors and thumbnails	Mezipaměť snímků pro monitory a miniatury
+	Front + LFE	Přední + LFE
+	Front + Rear	Přední + zadní
+	Front + Rear + LFE	Přední + zadní + LFE
+	Front Only	Jen přední
+	Generate Timecode	Generovat časový kód
+	Generate waveforms and conform audio using multithreading	Generovat průběhy a přizpůsobovat zvuk vícevláknově
+	Generate waveforms automatically during import	Generovat průběhy automaticky během importu
+	Graphics…	Grafika…
+	Growing Files	Rostoucí soubory
+	HDR Graphics White (Nits)	Bílá grafiky HDR (nity)
+	Hardware decoding	Hardwarové dekódování
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Hardwarové dekódování: Automaticky používá systémový video dekodér (VA-API nebo NVDEC pro H.264 a HEVC) pro podporované proudy a vlastní dekodér CFA4 pro vše ostatní nebo při selhání hardwaru. Již otevřená média si ponechají svůj dekodér, dokud nejsou znovu otevřena.
+	Highlight Color	Barva zvýraznění
+	Hindi	Hindština
+	Hindi digits	Hindské číslice
+	I/O Buffer Size	Velikost vyrovnávací paměti V/V
+	Import numbered stills as image sequences	Importovat číslované statické obrázky jako sekvence obrázků
+	In the Media Cache	V mezipaměti médií
+	In the project	V projektu
+	Include captions on import	Zahrnout titulky při importu
+	Indeterminate Media Timebase	Neurčená časová základna média
+	Keep a recovery copy of unsaved changes	Uchovávat kopii neuložených změn pro obnovu
+	Korean	Korejština
+	Label Defaults	Výchozí štítky
+	Label speakers	Označovat mluvčí
+	Labels…	Štítky…
+	Large Trim Offset	Velký posun ořezu
+	Large Volume Adjustment	Velká úprava hlasitosti
+	Left channel to device output	Levý kanál na výstup zařízení
+	Left to right	Zleva doprava
+	Linear keyframe thinning	Lineární prořeďování klíčových snímků
+	Local Projects	Místní projekty
+	Maintain pitch while shuttling	Zachovat výšku tónu při shuttle
+	Match frame sets in point	Odpovídající snímek nastaví vstupní bod
+	Maximum Project Versions	Maximální počet verzí projektu
+	Media	Média
+	Media Analysis	Analýza médií
+	Media Analysis & Transcription	Analýza médií a přepis
+	Media Analysis & Transcription…	Analýza médií a přepis…
+	Media Cache	Mezipaměť médií
+	Media Cache Database	Databáze mezipaměti médií
+	Media Cache Files	Soubory mezipaměti médií
+	Media Cache Management	Správa mezipaměti médií
+	Media Cache…	Mezipaměť médií…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	Analýza médií a přepisy se uloží do složky mezipaměti médií. Při importu médií do jiného projektu na tomto počítači nebude nutná nová analýza.
+	Memory	Paměť
+	Memory…	Paměť…
+	Minimum time	Minimální čas
+	Minimum time interval thinning	Prořeďování podle minimálního časového intervalu
+	Missing font replacement	Náhrada chybějícího písma
+	Miter join	Ostrý spoj
+	Miter limit	Limit ostrého spoje
+	Mono Media	Mono média
+	Monospace only	Jen neproporcionální
+	Movie (audio and video)	Film (zvuk a video)
+	Multichannel Mono Media	Vícekanálová mono média
+	Mute input during timeline recording	Ztlumit vstup během záznamu na časovou osu
+	Next to original media files	Vedle původních mediálních souborů
+	No Scroll	Bez posouvání
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Nejsou nainstalovány žádné zásuvné moduly. Změny se projeví při příštím spuštění CFA4.
+	Open Most Recent	Otevřít nejnovější
+	Open in new window	Otevřít v novém okně
+	Open in place	Otevřít na místě
+	Open new tab	Otevřít novou kartu
+	Output Mapping	Mapování výstupu
+	Page Scroll	Posouvání po stránkách
+	Pause Media Encoder queue during playback	Pozastavit frontu Media Encoder během přehrávání
+	Per line	Po řádcích
+	Place files dropped onto the Timeline directly on the Timeline	Soubory přetažené na časovou osu umístit přímo na časovou osu
+	Play after rendering previews	Přehrát po vykreslení náhledů
+	Play audio while scrubbing in Source and Program Monitors	Přehrávat zvuk při procházení ve zdrojovém a programovém monitoru
+	Playback	Přehrávání
+	Playback…	Přehrávání…
+	Playhead position determines trim monitor loop playback	Pozice přehrávací hlavy určuje smyčkové přehrávání v monitoru ořezu
+	Plugins	Zásuvné moduly
+	Plugins…	Zásuvné moduly…
+	Policy	Zásada
+	Projecting cap	Přesahující zakončení
+	Projects	Projekty
+	RAM reserved for other applications	RAM vyhrazená pro jiné aplikace
+	Refresh growing Files Every	Obnovovat rostoucí soubory každých
+	Render Edit in Audition files to:	Vykreslit soubory Upravit v Audition do:
+	Render audio when rendering video	Vykreslit zvuk při vykreslování videa
+	Restore open sequences when opening projects	Obnovit otevřené sekvence při otevírání projektů
+	Right channel to device output	Pravý kanál na výstup zařízení
+	Right to left	Zprava doleva
+	Ripple trim adds edits to keep both sides of trim in sync	Ořez s posunem přidává střihy, aby obě strany ořezu zůstaly synchronní
+	Round cap	Zaoblené zakončení
+	Round join	Zaoblený spoj
+	Sample Rate	Vzorkovací frekvence
+	Save .cfa and .pek media cache files next to original media files when possible	Ukládat soubory mezipaměti médií .cfa a .pek vedle původních mediálních souborů, je-li to možné
+	Scale to frame size	Změnit měřítko na velikost snímku
+	Scratch disk location for Captured Audio	Umístění odkládacího disku pro zachycený zvuk
+	Set focus on the Timeline when performing Insert/Overwrite edits	Přesunout fokus na časovou osu při vkládání/přepisování
+	Set to frame size	Nastavit na velikost snímku
+	Shift clips that overlap trim point during ripple trimming	Posunout klipy překrývající bod ořezu při ořezu s posunem
+	Show "Project:" and "Bin:" in Project panel tab	Zobrazit „Projekt:“ a „Přihrádka:“ na kartě panelu Projekt
+	Show Clip Mismatch Warning dialog	Zobrazit varování o neshodě klipu
+	Show Event Indicator	Zobrazit ukazatel událostí
+	Show Home	Zobrazit domovskou obrazovku
+	Show Mask Tracker Preview	Zobrazit náhled sledování masky
+	Show Open Dialog	Zobrazit dialog Otevřít
+	Show Project Load Error Dialog	Zobrazit dialog chyby načtení projektu
+	Show Rich Tool Tips	Zobrazovat rozšířené popisky
+	Show Workspace Reset Warning dialog on double click	Při poklepání zobrazit varování o obnovení pracovního prostoru
+	Show system compatibility issues at startup	Při spuštění zobrazit problémy s kompatibilitou systému
+	Smooth Scroll	Plynulé posouvání
+	Snap playhead in Timeline when Snap is enabled	Přichytávat přehrávací hlavu na časové ose při zapnutém přichytávání
+	Speaker Labeling	Označování mluvčích
+	Speech model	Model řeči
+	Start at 0	Začít od 0
+	Start at 1	Začít od 1
+	Start with an Empty Project	Začít s prázdným projektem
+	Step forward/back many	Mnoho kroků vpřed/zpět
+	Stereo Media	Stereo média
+	Still	Statický
+	Still Image Default Duration	Výchozí délka statického obrázku
+	Stroke line cap	Zakončení čáry tahu
+	Stroke line join	Spoj čáry tahu
+	Sum multichannel outputs to mono in Source Monitor	Sečíst vícekanálové výstupy do mono ve zdrojovém monitoru
+	System Language	Jazyk systému
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	Mezipaměť médií obsahuje náhledy vykreslení neuložených projektů a další soubory, které CFA4 dokáže znovu vytvořit. Jejich odstranění je vždy bezpečné; CFA4 je podle potřeby znovu sestaví.
+	Timecode Conversion	Převod časového kódu
+	Timeline Mouse Scrolling	Posouvání časové osy myší
+	Timeline Playback Auto-Scrolling	Automatické posouvání časové osy při přehrávání
+	Timeline…	Časová osa…
+	Transcription	Přepis
+	Transcription preferences	Předvolby přepisu
+	Trim	Ořez
+	Trim…	Ořez…
+	UI Scale	Měřítko rozhraní
+	Update it at least every	Aktualizovat alespoň každých
+	Update timeline dynamically during ripple edits.	Dynamicky aktualizovat časovou osu při střizích s posunem.
+	Use File	Použít soubor
+	Use Media Source	Použít zdroj média
+	Validate Content Credentials on import	Ověřovat Content Credentials při importu
+	Video Transition Default Duration	Výchozí délka obrazového přechodu
+	When Opening a Project	Při otevírání projektu
+	Whisper base (balanced)	Whisper base (vyvážený)
+	Whisper small (most accurate)	Whisper small (nejpřesnější)
+	Whisper tiny (fastest)	Whisper tiny (nejrychlejší)
+	Write XMP ID to files on import	Při importu zapisovat do souborů XMP ID
+	Write clip markers to XMP	Zapisovat značky klipu do XMP
+	days	dní
+	milliseconds	milisekund
+	minute(s)	min
+	second(s)	s
+	seconds	sekund
+	 seconds	 sekund
+	Channel {n}	Kanál {n}
+	Countdown Sound Cues	Zvukové signály odpočtu
+	Discard take	Zahodit záběr
+	Discard the active take	Zahodit aktivní záběr
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	Přehrávání začne předjezdem před přehrávací hlavou (nebo vstupním bodem); s označeným vstupem/výstupem se záznam zapne a vypne právě tam.
+	Post-roll	Dojezd
+	Post-roll:	Dojezd:
+	Pre-roll:	Předjezd:
+	Qt Multimedia is not available	Qt Multimedia není k dispozici
+	Record (voice-over on the record-enabled track)	Nahrát (komentář do stopy povolené pro záznam)
+	Recording voice-over…	Nahrávání komentáře…
+	Source:	Zdroj:
+	Stop Voice-over Recording	Zastavit nahrávání komentáře
+	The audio input could not be started	Zvukový vstup nelze spustit
+	The audio input does not support a usable format	Zvukový vstup nepodporuje použitelný formát
+	The voice-over input buffer is full: the take ends here	Vstupní vyrovnávací paměť komentáře je plná: záběr zde končí
+	There is no audio input device	Není k dispozici žádné vstupní zvukové zařízení
+	Voice-Over Record Settings	Nastavení nahrávání komentáře
+	Voice-Over Record Settings…	Nastavení nahrávání komentáře…
+	Voice-over input: {error}	Vstup komentáře: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Nahrát komentář (pravé tlačítko: Nastavení nahrávání komentáře…)
+	Voice-over recorded: {p}	Komentář nahrán: {p}
+	Voice-over recording stopped (nothing recorded)	Nahrávání komentáře zastaveno (nic nenahráno)
+	Voice-over take discarded	Záběr komentáře zahozen
+	 frames	 snímků
+	All Cameras	Všechny kamery
+	Auto-Adjust Multi-Camera Playback Quality	Automaticky upravit kvalitu vícekamerového přehrávání
+	Camera 1	Kamera 1
+	Camera Angle Metadata	Metadata úhlu kamery
+	Camera Names	Názvy kamer
+	Camera {n} — {name}	Kamera {n} — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	Kamery zobrazené ve vícekamerovém zobrazení (zrušením zaškrtnutí skryjete).
+	Clip Marker	Značka klipu
+	Clip Name:	Název klipu:
+	Clip Names	Názvy klipů
+	Create Multi-Camera Source Sequence	Vytvořit zdrojovou vícekamerovou sekvenci
+	Edit Cameras	Upravit kamery
+	Edit Cameras…	Upravit kamery…
+	Enumerate Cameras	Očíslovat kamery
+	Ignore Hours	Ignorovat hodiny
+	In Points	Vstupní body
+	Merge Clips	Sloučit klipy
+	Merged clip created	Sloučený klip vytvořen
+	Move source clips to Processed Clips bin	Přesunout zdrojové klipy do přihrádky Zpracované klipy
+	Multi-Camera Audio Follows Video	Vícekamerový zvuk sleduje video
+	Multi-Camera Layout	Vícekamerové rozvržení
+	Multi-Camera Record	Vícekamerový záznam
+	Multi-Camera Record On/Off (0)	Vícekamerový záznam zap/vyp (0)
+	Multi-Camera Record On/Off Toggle	Přepnout vícekamerový záznam zap/vyp
+	Multi-Camera Record off	Vícekamerový záznam vypnut
+	Multi-Camera Record on	Vícekamerový záznam zapnut
+	Multi-Camera Selection Top Down	Vícekamerový výběr shora dolů
+	Multi-Camera View	Vícekamerové zobrazení
+	Multi-camera source sequence with {n} camera(s)	Zdrojová vícekamerová sekvence (kamery: {n})
+	No multi-camera clip at the playhead	Na přehrávací hlavě není vícekamerový klip
+	Offset Audio by:	Posunout zvuk o:
+	Out Points	Výstupní body
+	Record	Nahrát
+	Recorded {n} multi-camera cut(s)	Nahrané vícekamerové střihy: {n}
+	Reference track:	Referenční stopa:
+	Remove Audio from AV Clip	Odebrat zvuk z klipu AV
+	Sequence Name:	Název sekvence:
+	Show Multi-Camera Preview Monitor	Zobrazit vícekamerový náhledový monitor
+	Switch Audio	Přepnout zvuk
+	Synchronize Clips	Synchronizovat klipy
+	Synchronize Point	Bod synchronizace
+	Synchronized {n} clip group(s)	Synchronizované skupiny klipů: {n}
+	Transmit Multi-Camera View	Přenášet vícekamerové zobrazení
+	first marker	první značka
+	lowest (V1…)	nejnižší (V1…)
+	no multi-camera clip at the playhead	na přehrávací hlavě není vícekamerový klip
+	{first} - Merged	{first} - sloučeno
+	{first} Multicam	{first} vícekamerový
+	{n} clip(s) selected; the clip on the reference track stays put.	Vybrané klipy: {n}; klip na referenční stopě zůstane na místě.
+	{n} clip(s): {names}	Klipy ({n}): {names}
+	Current duration {seconds} s	Aktuální délka {seconds} s
+	Fewer · More	Méně · více
+	Remix Properties	Vlastnosti remixu
+	Remixed to {seconds} s	Remixováno na {seconds} s
+	Segments:	Segmenty:
+	Target Duration:	Cílová délka:
+	Variations:	Varianty:
+	the selected clip is not remixed	vybraný klip není remixován
+	After installing, restart CFA4.	Po instalaci restartujte CFA4.
+	Available, switched off	K dispozici, vypnuto
+	Left out by the routing table	Vynecháno směrovací tabulkou
+	CFA4 engine	Engine CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Vlastní engine CFA4 otevře každý soubor, který dokáže. Doplňkové backendy níže přebírají v tomto pořadí jen soubory, které engine zatím otevřít neumí. Vypnutí backendu ovlivní soubory otevřené poté.
+	Capabilities	Schopnosti
+	Copy command	Kopírovat příkaz
+	H.264 software encoding (x264)	Softwarové kódování H.264 (x264)
+	HEVC software encoding (x265)	Softwarové kódování HEVC (x265)
+	In use	Používá se
+	Licence	Licence
+	Media Backends	Mediální backendy
+	Media Backends…	Mediální backendy…
+	Not part of this build	Není součástí tohoto sestavení
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Vlastní dekodéry a enkodéry v Rustu: vždy použity jako první a jako záloha, když doplňkový backend selže
+	Restricted Codecs…	Omezené kodeky…
+	Restricted codecs	Omezené kodeky
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Některé kodeky jsou svobodný software, ale implementují patentované formáty. Stejně jako Ubuntu je CFA4 ve výchozím stavu neinstaluje: základní balíček funguje bez nich a o jejich instalaci rozhodujete vy. V některých zemích může být jejich použití omezeno; ověřte si, že je u vás povoleno.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Doplňkový dekodér pro formáty, které vlastní engine zatím nečte (10bitová a 4:2:2 média z kamer, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Doplňkový dekodér ze systémového GStreameru (Ogg Theora, FLV, WMV a další formáty); LGPL, z repozitářů Ubuntu
+	The engine did not answer: {message}	Engine neodpověděl: {message}
+	To install them: {command}	Instalace: {command}
+	Use this backend	Použít tento backend
+	installed	nainstalováno
+	not installed	nenainstalováno
+	on	zapnuto
+	 (removed from {list})	 (odebráno z {list})
+	 and 	 a 
+	Add another shortcut	Přidat další zkratku
+	Application shortcuts work whatever panel has focus	Zkratky aplikace fungují bez ohledu na to, který panel má fokus
+	Assign {key} to {command}	Přiřadit {key} k {command}
+	Cleared {n} shortcut(s) of {command}	Vymazané zkratky příkazu {command}: {n}
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Klepněte do buňky Zkratka u příkazu a stiskněte klávesy pro přiřazení; + přidá další zkratku.
+	Click a key on the keyboard to see its shortcuts	Klepněte na klávesu na klávesnici a zobrazte její zkratky
+	Click and press keys to assign	Klepněte a stiskněte klávesy pro přiřazení
+	Conflict: {key} is assigned to {commands} ({ctx})	Konflikt: {key} je přiřazena k {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Export: nebyl vybrán soubor (agenti: shortcuts.export {path})
+	Import: no file chosen (agents: shortcuts.import {path})	Import: nebyl vybrán soubor (agenti: shortcuts.import {path})
+	Key:	Klávesa:
+	Keyboard: US	Klávesnice: US
+	Loaded “{name}”	Načteno „{name}“
+	Modifier held / selected	Modifikátor stisknut / vybrán
+	Modifiers	Modifikátory
+	My Shortcuts	Moje zkratky
+	Nothing is assigned to this key	K této klávese není nic přiřazeno
+	Panel shortcuts override application shortcuts while that panel has focus	Zkratky panelu mají přednost před zkratkami aplikace, dokud má panel fokus
+	Save preset as:	Uložit přednastavení jako:
+	Saved preset “{name}”	Přednastavení „{name}“ uloženo
+	Search commands or keys	Hledat příkazy nebo klávesy
+	Selected: {command}	Vybráno: {command}
+	Type a shortcut… (Esc cancels)	Zadejte zkratku… (Esc zruší)
+	{active} (modified)	{active} (změněno)
+	{key} can't be used as a shortcut	{key} nelze použít jako zkratku
+	{panel} Panel	Panel {panel}
+	Docking Action	Akce ukotvení
+	Undock Panel	Uvolnit panel
+	Restore Workspace	Obnovit pracovní prostor
+	Add Guide…	Přidat vodítko…
+	Guide Templates	Šablony vodítek
+	Manage Guides	Spravovat vodítka
+	Manage Guides…	Spravovat vodítka…
+	No saved guide templates.	Žádné uložené šablony vodítek.
+	Reference  {tc}	Reference  {tc}
+	Reference: next frame	Reference: další snímek
+	Reference: previous frame	Reference: předchozí snímek
+	Save Guides as Template	Uložit vodítka jako šablonu
+	Save Guides as Template…	Uložit vodítka jako šablonu…
+	Saved guide template “{name}”	Šablona vodítek „{name}“ uložena
+	Set Comparison Reference	Nastavit referenci pro porovnání
+	Set the reference to the playhead	Nastavit referenci na přehrávací hlavu
+	Snap in Program Monitor	Přichytávání v programovém monitoru
+	The template needs a name.	Šablona potřebuje název.
+	There are no guides to save.	Nejsou žádná vodítka k uložení.
+	Join Through Edits	Spojit průchozí střihy
+	Replace With Clip From Source Monitor	Nahradit klipem ze zdrojového monitoru
+	Reveal Nested Sequence	Zobrazit vnořenou sekvenci
+	Reveal in Project	Zobrazit v projektu
+	Unlink	Zrušit propojení
+	Apply Default Transitions	Použít výchozí přechody
+	Ripple Trim In	Ořez vstupu s posunem
+	Ripple Trim Out	Ořez výstupu s posunem
+	Roll Edit	Rolovací střih
+	Trim In	Ořezat vstup
+	Trim Out	Ořezat výstup
+	Expand All Tracks	Rozbalit všechny stopy
+	Minimize All Tracks	Minimalizovat všechny stopy
+	Increase Video Tracks Height	Zvětšit výšku obrazových stop
+	Decrease Video Tracks Height	Zmenšit výšku obrazových stop
+	Increase Audio Tracks Height	Zvětšit výšku zvukových stop
+	Decrease Audio Tracks Height	Zmenšit výšku zvukových stop
+	Drag to change the track height	Táhnutím změníte výšku stopy
+	Head	Začátek
+	Head and Tail	Začátek a konec
+	Continuous	Souvislé
+	Show Video Thumbnails	Zobrazit miniatury videa
+	Show Audio Waveform	Zobrazit zvukový průběh
+	Timeline Display Settings	Nastavení zobrazení časové osy
+	Snap in Timeline (S)	Přichytávání na časové ose (S)
+	Caption track options	Možnosti stopy titulků
+	Insert and overwrite sequences as nests or individual clips	Vkládat a přepisovat sekvence jako vnoření nebo jednotlivé klipy
+	Close Other Timeline Panels	Zavřít ostatní panely časové osy
+	Show Keyframes	Zobrazit klíčové snímky
+	Clip Keyframes	Klíčové snímky klipu
+	Track Keyframes	Klíčové snímky stopy
+	Send {n} Level	Úroveň sendu {n}
+	Delete Caption Track	Odstranit stopu titulků
+	Delete Empty Caption Tracks	Odstranit prázdné stopy titulků
+	Toggle Caption Track Lock	Zapnout/vypnout zámek stopy titulků
+	Toggle Caption Track Output	Zapnout/vypnout výstup stopy titulků
+	Drag In point	Táhnout vstupní bod
+	Drag Out point	Táhnout výstupní bod
+	Move marked range	Přesunout označený rozsah
+	Auto Tone Map Media (HDR and log into SDR)	Automatické tónové mapování médií (HDR a log do SDR)
+	CFA4 always composites in linear light	CFA4 vždy skládá v lineárním světle
+	Captured View:	Zachycený pohled:
+	Channel Format:	Formát kanálů:
+	Composite in Linear Color	Skládat v lineárních barvách
+	Configure…	Konfigurovat…
+	Custom ({ratio})	Vlastní ({ratio})
+	Display Format:	Formát zobrazení:
+	Editing Mode:	Režim střihu:
+	Frame Size:	Velikost snímku:
+	Maximum Bit Depth	Maximální bitová hloubka
+	Maximum Render Quality	Maximální kvalita vykreslení
+	Milliseconds	Milisekundy
+	Monoscopic	Monoskopické
+	New Sequence	Nová sekvence
+	No Fields (Progressive Scan)	Bez půlsnímků (progresivní)
+	Not supported in CFA4 yet	V CFA4 zatím nepodporováno
+	Number of Channels:	Počet kanálů:
+	Pixel Aspect Ratio:	Poměr stran pixelu:
+	Preview File Format:	Formát souboru náhledu:
+	Projection:	Projekce:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Vzorkovací frekvence:
+	Scale motion effects proportionally when changing frame size	Při změně velikosti snímku proporcionálně měnit měřítko pohybových efektů
+	Sequence Settings	Nastavení sekvence
+	Square Pixels (1.0)	Čtvercové pixely (1,0)
+	Timebase:	Časová základna:
+	Tracks	Stopy
+	VR Properties	Vlastnosti VR
+	Video Previews	Náhledy videa
+	Wide gamut color (composite in BT.2020)	Barvy se širokým gamutem (skládání v BT.2020)
+	Working Color Space:	Pracovní barevný prostor:
+	horizontal	vodorovně
+	no sequence is open	není otevřena žádná sekvence
+	tracks	stopy
+	vertical	svisle
+	{rate} fps Drop-Frame Timecode	{rate} fps časový kód drop-frame
+	{rate} fps Non Drop-Frame Timecode	{rate} fps časový kód non-drop-frame
+	{rate} fps Timecode	{rate} fps časový kód
+	{rate} frames/second	{rate} snímků/s
+	Always Deinterlace	Vždy odstranit prokládání
+	Audio Attributes	Atributy zvuku
+	Ch. {n}	Kan. {n}
+	Clip Channel Format:	Formát kanálů klipu:
+	Clip Speed / Duration	Rychlost / délka klipu
+	Clip {n}	Klip {n}
+	Contains:	Obsahuje:
+	Edit Subclip	Upravit podklip
+	End:	Konec:
+	Field Options	Možnosti půlsnímků
+	File Name:	Název souboru:
+	Flicker Removal	Odstranění blikání
+	Frame Hold Options	Možnosti zmrazeného snímku
+	Frame Rate:	Snímková frekvence:
+	Hold Filters	Podržet filtry
+	Hold On	Podržet na
+	In Point	Vstupní bod
+	Make Subclip	Vytvořit podklip
+	Media Source Channels	Kanály zdroje média
+	Media Start:	Začátek média:
+	Modify Clip: Audio Channels	Upravit klip: zvukové kanály
+	Modify Clip: Timecode	Upravit klip: časový kód
+	Nested Sequence Name	Název vnořené sekvence
+	New Offline File	Nový offline soubor
+	No effects	Žádné efekty
+	Number of Audio Clips:	Počet zvukových klipů:
+	Out Point	Výstupní bod
+	Paste Attributes	Vložit atributy
+	Playhead	Přehrávací hlava
+	Processing Options	Možnosti zpracování
+	Remove Attributes	Odebrat atributy
+	Restrict Trims To Subclip Boundaries	Omezit ořezy na hranice podklipu
+	Reverse Field Dominance	Obrátit dominanci půlsnímků
+	Reverse Speed	Obrácená rychlost
+	Ripple Edit, Shifting Trailing Clips	Střih s posunem, posunout následující klipy
+	Scale Attribute Times	Škálovat časy atributů
+	Sequence Time	Čas sekvence
+	Set Timecode:	Nastavit časový kód:
+	Source Timecode	Zdrojový časový kód
+	Source channels the selected audio clips play:	Zdrojové kanály, které vybrané zvukové klipy přehrávají:
+	Speed:	Rychlost:
+	Start:	Začátek:
+	Subclip: {name}	Podklip: {name}
+	Tape Name:	Název pásky:
+	Timecode:	Časový kód:
+	Use the file's timecode	Použít časový kód souboru
+	Video Attributes	Atributy videa
+	no dialog	bez dialogu
+	Action Safe Area	Bezpečná oblast akce
+	Action and Title Safe Areas	Bezpečné oblasti akce a titulků
+	Action:	Akce:
+	Analyze	Analyzovat
+	Apply Default Audio Transition	Použít výchozí zvukový přechod
+	Apply Default Video Transition	Použít výchozí obrazový přechod
+	Apply a cut at each detected cut point	Použít střih v každém rozpoznaném bodě střihu
+	At Unnumbered Markers	U nečíslovaných značek
+	Audio Only	Jen zvuk
+	Audio Previews:	Náhledy zvuku:
+	Audio analysis:	Analýza zvuku:
+	Audio effects	Zvukové efekty
+	Audio on track {t}	Zvuk ve stopě {t}
+	Automate To Sequence	Automatizovat do sekvence
+	Average Data Rate	Průměrný datový tok
+	Capture	Zachytávání
+	Capture Format:	Formát zachytávání:
+	Captured and Generated:	Zachycené a generované:
+	Case Sensitive	Rozlišovat velikost písmen
+	Clip Names and Markers	Názvy klipů a značky
+	Clip Overlap:	Překryv klipů:
+	Clips	Klipy
+	Codec: {codec}	Kodek: {codec}
+	Color Matte Color	Barva barevné plochy
+	Comments:	Komentáře:
+	Copy and Create Proxies	Kopírovat a vytvořit proxy
+	Create Proxies	Vytvořit proxy
+	Create Search Bin	Vytvořit vyhledávací přihrádku
+	Create a bin of subclips from each detected cut point	Vytvořit přihrádku podklipů z každého rozpoznaného bodu střihu
+	Create a clip marker at each detected cut point	Vytvořit značku klipu v každém rozpoznaném bodě střihu
+	Disabled clips	Vypnuté klipy
+	Edit Offline File	Upravit offline soubor
+	Empty tracks	Prázdné stopy
+	Existing XMP files written by other applications are left unchanged.	Existující soubory XMP zapsané jinými aplikacemi zůstanou beze změny.
+	File Size	Velikost souboru
+	Find in:	Hledat v:
+	Flash Cue Marker	Značka Flash Cue
+	Frames per Still:	Snímků na statický obrázek:
+	Gaps	Mezery
+	Ignore Audio	Ignorovat zvuk
+	Ignore Options	Ignorovat možnosti
+	Ignore Video	Ignorovat video
+	Ingest Settings	Nastavení příjmu
+	Insert Edit	Vkládací střih
+	Log Note:	Poznámka záznamu:
+	Match {n} of {total}	Shoda {n} z {total}
+	Match:	Shoda:
+	Media Name:	Název média:
+	Move clips to the lowest track possible	Přesunout klipy do nejnižší možné stopy
+	New Color Matte	Nová barevná plocha
+	Next to the media	Vedle médií
+	Normalize Mix Track	Normalizovat stopu mixu
+	Normalize Mix Track to:	Normalizovat stopu mixu na:
+	Ordering:	Řazení:
+	Overwrite Edit	Přepisovací střih
+	Path: {path}	Cesta: {path}
+	Placement:	Umístění:
+	Project Auto Save:	Automatické ukládání projektu:
+	Recognize when different speakers are talking	Rozpoznat, kdy mluví různí mluvčí
+	Renderer:	Vykreslovací modul:
+	Same as Project	Stejné jako projekt
+	Saved template {path}	Šablona {path} uložena
+	Scene Edit Detection	Detekce střihů ve scéně
+	Scene Edit Detection: analysing in the background (see Progress)	Detekce střihů ve scéně: analýza na pozadí (viz Průběh)
+	Scene:	Scéna:
+	Search:	Hledat:
+	Selection Order	Pořadí výběru
+	Sensitivity:	Citlivost:
+	Sequentially	Postupně
+	Shot/Take:	Záběr/pokus:
+	Simplify Sequence	Zjednodušit sekvenci
+	Sort Order	Pořadí řazení
+	Source Settings	Nastavení zdroje
+	Template Name:	Název šablony:
+	Text (graphics and captions)	Text (grafika a titulky)
+	Title Safe Area	Bezpečná oblast titulků
+	To {name}	Do {name}
+	Total Duration	Celková délka
+	Transcode	Překódovat
+	Transcribe Sequence	Přepsat sekvenci
+	Transitions	Přechody
+	Update Metadata	Aktualizovat metadata
+	Video Only	Jen video
+	Video Previews:	Náhledy videa:
+	Video Rendering and Playback	Vykreslování a přehrávání videa
+	Video and Audio	Video a zvuk
+	Video effects	Obrazové efekty
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	Zapsat metadata vybraných klipů ({n}) do souborů XMP vedle jejich médií?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · kanály: {n}
+	Constant quantiser	Konstantní kvantizér
+	Container	Kontejner
+	 (unavailable)	 (nedostupné)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Kontejnery
+	Decoders	Dekodéry
+	Dynamic Audio Waveforms	Dynamické zvukové průběhy
+	Export formats	Exportní formáty
+	Reveal Log Files…	Zobrazit soubory protokolu…
+	Session log: {path}	Protokol relace: {path}
+	System Compatibility Report	Zpráva o kompatibilitě systému
+	System Compatibility Report…	Zpráva o kompatibilitě systému…
+	not available now	nyní nedostupné
+	{name} Selection.fcproj	{name} výběr.fcproj
+	Auto tone map media (HDR and log into SDR)	Automatické tónové mapování médií (HDR a log do SDR)
+	Sequence Color Management	Správa barev sekvence
+	Working Color Space	Pracovní barevný prostor
+	Align Timecode	Zarovnat časový kód
+	All media is online.	Všechna média jsou online.
+	Calculate	Vypočítat
+	Clip ID (fingerprint)	ID klipu (otisk)
+	Clip Name	Název klipu
+	Collect Files and Copy to New Location	Shromáždit soubory a zkopírovat na nové místo
+	Consolidate and Transcode	Sloučit a překódovat
+	Creating {n} proxy file(s)…	Vytváření souborů proxy: {n}…
+	Destination Path	Cílová cesta
+	Disk space: original {original} · resulting {result} ({n} files)	Místo na disku: původní {original} · výsledné {result} (soubory: {n})
+	Disk space: —	Místo na disku: —
+	Exact name matches only	Jen přesná shoda názvu
+	Exclude Unused Clips	Vyloučit nepoužité klipy
+	Format and size	Formát a velikost
+	Frame Size / Rate	Velikost / frekvence snímků
+	Include Handles:	Zahrnout přesahy:
+	Include Preview Files	Zahrnout soubory náhledů
+	Include Proxies	Zahrnout proxy
+	Link Media	Propojit média
+	Linked {n} clip(s)	Propojené klipy: {n}
+	Locate…	Najít…
+	Make Offline	Převést na offline
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	Převést vybrané klipy ({n}) na offline. Klipy budou zobrazovat offline tabulku, dokud je znovu nepropojíte.
+	Match file properties:	Porovnat vlastnosti souboru:
+	Media files are deleted	Mediální soubory budou odstraněny
+	Media files remain on disk	Mediální soubory zůstanou na disku
+	Next to the original media, in a Proxies folder	Vedle původních médií, ve složce Proxies
+	No candidates yet — Search a folder or Locate the file.	Zatím žádní kandidáti — prohledejte složku nebo najděte soubor.
+	Nothing found with that name.	S tímto názvem nebylo nic nalezeno.
+	Offline	Offline
+	Offline All	Vše offline
+	Project Manager	Správce projektu
+	Project Manager: writing {path}	Správce projektu: zápis {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	Proxy se vytvářejí na pozadí a po dokončení se připojí. Export vždy používá média v plném rozlišení.
+	Relink others automatically	Ostatní propojit automaticky
+	Resulting Project	Výsledný projekt
+	Search in:	Hledat v:
+	Sequences	Sekvence
+	select a clip in the Project panel	vyberte klip v panelu Projekt
+	{name} (copy)	{name} (kopie)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	Klipy ({n}) nemohou najít svá média. Najděte je, prohledejte složku nebo je ponechte offline.
+	{n} clip(s) selected.	Vybrané klipy: {n}.
+	✔ matches	✔ shoduje se
+	✔ same file	✔ stejný soubor
+	✖ different file	✖ jiný soubor
+	AAF Export Settings	Nastavení exportu AAF
+	Audio File Format:	Formát zvukového souboru:
+	Bits per Sample:	Bitů na vzorek:
+	Breakout to mono	Rozdělit na mono
+	Depth:	Hloubka:
+	Encapsulate	Zapouzdřit
+	Exported frame to {path}	Snímek exportován do {path}
+	Frame time: {timecode}	Čas snímku: {timecode}
+	Handle Frames:	Snímky přesahu:
+	Import into project	Importovat do projektu
+	Keep existing file	Ponechat existující soubor
+	Link to Media	Propojit s médii
+	Mixdown video	Smíchat video
+	OMF Export Settings	Nastavení exportu OMF
+	OMF Title:	Název OMF:
+	Render audio clip effects	Vykreslit efekty zvukových klipů
+	Separate Audio	Oddělený zvuk
+	Separate Files	Samostatné soubory
+	This file already exists: {path}	Tento soubor již existuje: {path}
+	Trim audio files	Oříznout zvukové soubory
+	{bits} Bit	{bits} bitů
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Přehled značek (CSV)
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Digitální kino
+	DCP resolution	Rozlišení DCP
+	DCP container	Kontejner DCP
+	Content kind	Druh obsahu
+	Output folder	Výstupní složka
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1,85:1)
+	Scope (2.39:1)	Scope (2,39:1)
+	Full container (1.90:1)	Celý kontejner (1,90:1)
+	Feature	Celovečerní film
+	Trailer	Trailer
+	Teaser	Teaser
+	Short	Krátký film
+	Advertisement	Reklama
+	Test	Test
+	Transitional	Přechodový
+	Rating	Hodnocení
+	Public service announcement	Veřejné oznámení
+	Off (5.1 only)	Vypnuto (jen 5.1)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB bed z mixu (7.1 DS, 9.1OH ze 7.1.2)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB ze souboru (IAB MXF, .iab nebo Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab nebo Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	Žádný: jen synchronizace FSK (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: vykreslený IAB (ne ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: mix časové osy (ne ST 429-19)
+	Main sound channels 1-6	Hlavní zvukové kanály 1-6
+	Immersive audio	Imerzivní zvuk
+	IAB source	Zdroj IAB
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Mix 7.1.2 se stane 9.1OH bed, mix 7.1 7.1 DS bed a každý jiný mix 7.1 DS bed ze své verze 5.1 (IAB Profile 1); kanál 14 hlavního zvuku nese synchronizační signál FSK.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Zvolte soubor stopy IAB (IMF nebo DCP), surový proud IAB nebo Dolby Atmos TrueHD: proud .thd nebo soubor MKV, MP4 či M2TS se stopou Atmos.
+	Reading the IAB source…	Čtení zdroje IAB…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	Snímky: {frames}, {fps} fps, {rate} Hz; až {beds} kanálů bed a {objects} objektů
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; až {beds} kanálů bed a {objects} objektů, převedeno na objekty IAB
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Některé snímky se pro DCP překódují (DLC, 24 bitů).
+	Beyond IAB Profile 1: {notes}	Nad rámec IAB Profile 1: {notes}
+	Not a usable IAB source: {error}	Nepoužitelný zdroj IAB: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	Složka SMPTE DCP: JPEG 2000 1998×1080 (1,85:1), 5.1 24bitové 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	Složka SMPTE DCP: JPEG 2000 2048×858 (2,39:1), 5.1 24bitové 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Složka SMPTE DCP: JPEG 2000 3996×2160 (1,85:1), 5.1 24bitové 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Složka SMPTE DCP: JPEG 2000 4096×1716 (2,39:1), 5.1 24bitové 48 kHz PCM
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	B pictures	Snímky B
+	BDAV Transport Stream (.m2ts, AAC audio)	Transportní proud BDAV (.m2ts, zvuk AAC)
+	Chroma	Chroma
+	Elementary Stream (.m2v, no audio)	Elementární proud (.m2v, bez zvuku)
+	Key Frame Distance	Vzdálenost klíčových snímků
+	None (I and P only)	Žádné (jen I a P)
+	Off (target bitrate)	Vypnuto (cílový datový tok)
+	Program Stream (.mpg, LPCM audio)	Programový proud (.mpg, zvuk LPCM)
+	Transport Stream (.ts, AAC audio)	Transportní proud (.ts, zvuk AAC)
+	Estimated file size: {size}	Odhadovaná velikost souboru: {size}
+	File Name & Location	Název a umístění souboru
+	Quick Export	Rychlý export
+	Quick Export: open a sequence first	Rychlý export: nejprve otevřete sekvenci
+	Quick Export: {path}	Rychlý export: {path}
+	Export presets	Přednastavení exportu
+	Favorites only	Jen oblíbené
+	More presets…	Další přednastavení…
+	Save current settings as:	Uložit aktuální nastavení jako:
+	Search presets	Hledat přednastavení
+	Show in the Preset menu	Zobrazit v nabídce Přednastavení
+	Add Beat Markers	Přidat značky rytmu
+	Clear Beat Markers	Vymazat značky rytmu
+	Clear Check Markers	Vymazat kontrolní značky
+	Auto Reframe Sequence…	Automaticky přerámovat sekvenci…
+	Batch Variants from Spreadsheet…	Dávkové varianty z tabulky…
+	Check Before Export…	Kontrola před exportem…
+	Social Deliverables…	Výstupy pro sociální sítě…
+	Social Safe Zones	Bezpečné zóny sociálních sítí
+	Text Animator	Animátor textu
+	Counter	Počítadlo
+	Word by Word	Slovo po slově
+	Animator	Animátor
+	Animator Duration	Délka animátoru
+	Animator Delay	Zpoždění animátoru
+	Spreadsheets	Tabulky
+	{n} beat markers added ({bpm} BPM)	Přidané značky rytmu: {n} ({bpm} BPM)
+	Check Before Export: no problems found	Kontrola před exportem: nenalezeny žádné problémy
+	Check Before Export: {n} problems marked on the timeline (red markers)	Kontrola před exportem: na časové ose označeno problémů: {n} (červené značky)
+	{n} exports queued (the Export window shows the queue)	Exporty ve frontě: {n} (frontu zobrazuje okno Export)
+	{n} variant sequences made, {q} exports queued	Vytvořené sekvence variant: {n}, exporty ve frontě: {q}
+	no column for {names}	žádný sloupec pro {names}
+	Film Scan 1	Film Scan 1
+	Film Scan 2	Film Scan 2
+	Film Scan 3	Film Scan 3
+	Include Alpha Channel	Zahrnout alfa kanál
+	ZIP (1 scan line)	ZIP (1 řádek)
+	ZIP (16 scan lines)	ZIP (16 řádků)
+	Bottom Center	Dole uprostřed
+	Burn Captions Into Video	Vypálit titulky do videa
+	Center Left	Vlevo uprostřed
+	Center Right	Vpravo uprostřed
+	Create Sidecar File	Vytvořit doprovodný soubor
+	File Format	Formát souboru
+	Image Overlay	Překryv obrázkem
+	Loudness Normalization	Normalizace hlasitosti
+	Luma Min / Max	Min. / max. jas
+	Name Overlay	Překryv názvem
+	PNG or JPEG file	Soubor PNG nebo JPEG
+	Size / Opacity	Velikost / krytí
+	SubRip Subtitle (.srt)	Titulky SubRip (.srt)
+	Target Loudness	Cílová hlasitost
+	Timecode Overlay	Překryv časovým kódem
+	Top Center	Nahoře uprostřed
+	True Peak Limit	Limit skutečné špičky
+	Video Limiter	Omezovač videa
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Creator	Autor
+	Multiplexer	Multiplexor
+	Audio only	Jen zvuk
+	Scale To Fill	Měřítko pro vyplnění
+	Scale To Fit	Měřítko pro přizpůsobení
+	Stretch To Fill	Roztáhnout pro vyplnění
+	Quick Export cancelled	Rychlý export zrušen
+	0 fastest, 8 smallest	0 nejrychlejší, 8 nejmenší
+	32 bit float	32bitová plovoucí čárka
+	Anamorphic 2:1 (2.0)	Anamorfní 2:1 (2,0)
+	Aspect	Poměr stran
+	Composite on the GPU when available	Skládat na GPU, je-li k dispozici
+	Compression Level	Úroveň komprese
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0,9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1,0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1,5)
+	Field Order	Pořadí půlsnímků
+	GPU Rendering	Vykreslování na GPU
+	HD Anamorphic 1080 (1.333)	HD anamorfní 1080 (1,333)
+	Lower First	Nejprve spodní
+	Match Source	Podle zdroje
+	Maximum Bitrate	Maximální datový tok
+	Quality (CRF)	Kvalita (CRF)
+	Render at Maximum Depth	Vykreslit v maximální hloubce
+	Upper First	Nejprve horní
+	Use Maximum Render Quality	Použít maximální kvalitu vykreslení
+	Browse files…	Procházet soubory…
+	Movies, audio and stills from disk	Filmy, zvuk a statické obrázky z disku
+	Demo footage	Ukázkový záznam
+	Six procedural 1080p clips with sound	Šest procedurálních klipů 1080p se zvukem
+	Demo project	Ukázkový projekt
+	A cut sequence with transitions, effects and music	Sestříhaná sekvence s přechody, efekty a hudbou
+	Bars and Tone	Pruhy a tón
+	SMPTE HD bars with 1 kHz reference tone	Pruhy SMPTE HD s referenčním tónem 1 kHz
+	CFA4 on GitHub	CFA4 na GitHubu
+	Report a CFA4 issue…	Nahlásit problém CFA4…
+	CFA4 project links	Odkazy projektu CFA4
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	Přidejte do projektu média. Přetáhněte soubory kamkoli do okna, nebo zvolte zdroj níže.
+	Shuttle Slow Left	Pomalý shuttle vlevo
+	Shuttle Slow Right	Pomalý shuttle vpravo
+	Play Around	Přehrát okolí
+	Out: {name}	Výstup: {name}
+	In: {name}	Vstup: {name}
+	(gap)	(mezera)
+	Outgoing clip (drag to trim the Out point)	Odcházející klip (táhnutím ořízněte výstupní bod)
+	Incoming clip (drag to trim the In point)	Přicházející klip (táhnutím ořízněte vstupní bod)
+	Drag to roll the edit	Táhnutím posunete střih
+	Play Around Edit (Space loops, Shift+K once)	Přehrát okolí střihu (mezerník ve smyčce, Shift+K jednou)
+	Trim Backward Many	Ořezat mnohem zpět
+	Trim Backward	Ořezat zpět
+	Apply Default Transitions to Selection (Shift+D)	Použít výchozí přechody na výběr (Shift+D)
+	Trim Forward	Ořezat vpřed
+	Trim Forward Many	Ořezat mnohem vpřed
+	Exit Trim Mode	Ukončit režim ořezu
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	Zvukový výstup selhal: přehrává se bez zvuku (zkontrolujte Nastavení ▸ Zvukový hardware)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	Zvukový výstup nereaguje: přehrává se bez zvuku (zkontrolujte Nastavení ▸ Zvukový hardware)
+	Settings not taken	Nastavení nepřevzato
+	Encoder	Enkodér
+	Software, or hardware where available	Software, případně hardware, je-li k dispozici
+	Main (8-bit; Main 10 for HDR sequences)	Main (8 bitů; Main 10 pro sekvence HDR)
+	Main 10 (10-bit, HDR)	Main 10 (10 bitů, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bitů; 10 bitů pro sekvence HDR)
+	Main (10-bit, HDR)	Main (10 bitů, HDR)
+	FLAC stores whole-number samples only	FLAC ukládá jen celočíselné vzorky
+	MXF export writes integer PCM only	Export MXF zapisuje jen celočíselné PCM
+	Not supported by CFA4's encoders yet	Enkodéry CFA4 zatím nepodporují
+	Overwrite with Current View	Přepsat aktuálním zobrazením
+	Saves the view, columns, sort, thumbnail and font size.	Uloží zobrazení, sloupce, řazení, velikost miniatur a písma.
+	Search fields	Prohledávaná pole
+	{n}. (empty)	{n}. (prázdné)
+	No video	Bez videa
+	No audio	Bez zvuku
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 pro HDR
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 Profile
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main Profile 4:2:0
+	no B pictures	bez snímků B
+	1 B picture between anchors	1 snímek B mezi kotvami
+	AV1 Main (10-bit for HDR)	AV1 Main (10 bitů pro HDR)
+	10-bit RGB	10bitové RGB
+	12-bit X'Y'Z'	12bitové X'Y'Z'
+	16-bit half float	16bitová poloviční přesnost
+	linear	lineární
+	uncompressed	nekomprimované
+	Animated GIF	Animovaný GIF
+	Waveform Audio	Waveform Audio
+	AAC Audio	Zvuk AAC
+	Opus Audio	Zvuk Opus
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	fragmentované segmenty MP4
+	Program Stream	Programový proud
+	Transport Stream	Transportní proud
+	BDAV Transport Stream	Transportní proud BDAV
+	Elementary Stream	Elementární proud
+	Image sequence	Sekvence obrázků
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} fps
+	{profile} auto level	{profile} automatická úroveň
+	{n} pass	průchody: {n}
+	CRF (constant quality) {crf}	CRF (konstantní kvalita) {crf}
+	{v} Mbps	{v} Mb/s
+	Target {v} Mbps	Cíl {v} Mb/s
+	Max {v} Mbps	Max. {v} Mb/s
+	average {v} Mbps	průměrně {v} Mb/s
+	CBR {v} Mbps	CBR {v} Mb/s
+	VBR Target {v} Mbps	VBR cíl {v} Mb/s
+	keyframe every {n} frames	klíčový snímek každých {n} snímků
+	constant quantiser {q}	konstantní kvantizér {q}
+	{n} B pictures between anchors	snímky B mezi kotvami: {n}
+	quantizer {q}	kvantizér {q}
+	quality {q}	kvalita {q}
+	{word} compression	komprese {word}
+	{sampling} {bits}-bit	{sampling} {bits} bitů
+	FLAC (lossless) {bits}-bit	FLAC (bezeztrátový) {bits} bitů
+	level {n}	úroveň {n}
+	Uncompressed {bits}-bit PCM	Nekomprimované {bits}bitové PCM
+	Uncompressed {bits}-bit float PCM	Nekomprimované {bits}bitové PCM s plovoucí čárkou
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} s
+	{n} ch {rate} Hz	{n} kan. {rate} Hz
+	All Events	Všechny události
+	Warnings and Errors	Upozornění a chyby
+	Errors Only	Jen chyby
+	No events.	Žádné události.
+	{n} s ago	před {n} s
+	Caption Export Settings	Nastavení exportu titulků
+	Export Captions	Exportovat titulky
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} již existuje, proto nebylo nic exportováno. Chcete-li jej nahradit, vyberte jej v dialogu uložení.
+	Delete Redoable Actions	Odstranit akce k opakování
+	Delete the dimmed actions after the current state? They cannot be redone.	Odstranit ztlumené akce za aktuálním stavem? Nebude je možné opakovat.
+	Work Area Bar	Pruh pracovní oblasti
+	Start: {tc}	Začátek: {tc}
+	End: {tc}	Konec: {tc}
+	Duration: {tc}	Délka: {tc}
+	Show/Hide Tracks…	Zobrazit/skrýt stopy…
+	Move panel	Přesunout panel
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Klepnutím vyberte, nebo klepněte do prázdného místa a táhněte pro výběr obdélníkem. Další možnosti nabízí Shift, Alt a Ctrl.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Klepnutím vyberete všechny klipy vpravo ve všech stopách. Shift+klepnutí pro jednu stopu.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Klepnutím vyberete všechny klipy vlevo ve všech stopách. Shift+klepnutí pro jednu stopu.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Táhnutím bodu střihu ořežete s posunem; pozdější klipy se posunou, aby nevznikla mezera.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Táhnutím bodu střihu jej posunete: výstup jednoho klipu a vstup dalšího se pohybují společně.
+	Drag an edge to change the clip's speed so it fills the new duration.	Táhnutím okraje změníte rychlost klipu tak, aby vyplnil novou délku.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Táhnutím okraje hudebního klipu jej remixujete na novou délku v hudebně odpovídajících dobách.
+	Click to split a clip. Shift-click to split all tracks.	Klepnutím rozdělíte klip. Shift+klepnutí rozdělí všechny stopy.
+	Drag a clip to slip its source in/out without moving it.	Táhnutím klipu posunete jeho zdrojový vstup/výstup, aniž byste jej přesunuli.
+	Drag a clip to slide it between its neighbours.	Táhnutím klipu jej posunete mezi sousedy.
+	Drag to scroll the timeline.	Táhnutím posouváte časovou osu.
+	Click to zoom in; Alt-click to zoom out.	Klepnutím přiblížíte; Alt+klepnutím oddálíte.
+	Exporting	Exportování
+	Grab bag	Směs
+	No contributor data was built into this copy.	Do této kopie nebyla zabudována data o přispěvatelích.
+	No model credits were built into this copy.	Do této kopie nebyly zabudovány údaje o modelech.
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Písma: Inter, Noto Serif a JetBrains Mono (SIL OFL 1.1).
+	CFA4 was closed while “{name}” had unsaved changes.	CFA4 byl zavřen, zatímco „{name}“ obsahoval neuložené změny.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	CFA4 se neočekávaně ukončil, zatímco „{name}“ obsahoval neuložené změny.
+	Recover unsaved changes from {when}?	Obnovit neuložené změny z {when}?
+	The project had not been saved yet.	Projekt ještě nebyl uložen.
+	{n} sessions have unsaved changes:	Relace s neuloženými změnami: {n}
+	Are you sure you want to discard your changes to '{file}'?	Opravdu chcete zahodit změny v '{file}'?
+	the project has not been saved yet	projekt ještě nebyl uložen
+	Export As Motion Graphics Template	Exportovat jako šablonu pohyblivé grafiky
+	Editable properties:	Upravitelné vlastnosti:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	Uloženo jako grafická šablona CFA4 (.fcgt) ve složce šablon.
+	My Templates	Moje šablony
+	{n} Font	{n} písmo
+	{n} Size	{n} velikost
+	{n} Color	{n} barva
+	{n} Position	{n} pozice
+	Show {n}	Zobrazit {n}
+	Exported graphics template to {path}	Grafická šablona exportována do {path}
+	Replace Fonts in Projects	Nahradit písma v projektech
+	Fonts used in the project:	Písma použitá v projektu:
+	{f} (missing)	{f} (chybí)
+	with:	čím:
+	Replaced {n} font uses	Nahrazená použití písma: {n}
+	Track Color	Barva stopy
+	Unrendered: should play back in real time	Nevykresleno: mělo by se přehrát v reálném čase
+	Unrendered: render to play back in real time	Nevykresleno: pro přehrání v reálném čase vykreslete
+	Rendered preview	Vykreslený náhled
+	Transparency Grid	Mřížka průhlednosti
+	Show Duplicate Frame Markers	Zobrazit značky duplicitních snímků
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Vstup/výstup sekvence má jen 1 snímek. Pro export celé sekvence zvolte Celá sekvence.
+	more tabs	další karty
+	Set Work Area Bar In Point	Nastavit vstupní bod pruhu pracovní oblasti
+	Set Work Area Bar Out Point	Nastavit výstupní bod pruhu pracovní oblasti
+	Delete Clips	Odstranit klipy
+	Destinations	Cíle
+	Analyzing the clip…	Analýza klipu…
+	At GOP boundaries (no re-encoding)	Na hranicích GOP (bez překódování)
+	Bit-exact copy	Bitově přesná kopie
+	Choose the output file.	Zvolte výstupní soubor.
+	Compatible copy	Kompatibilní kopie
+	Copy:	Kopie:
+	Cut:	Střih:
+	Frame accurate (re-encode the boundaries)	Přesně na snímek (překódovat hranice)
+	Open a video clip in the Source monitor first.	Nejprve otevřete videoklip ve zdrojovém monitoru.
+	Smart Cut Source	Chytrý střih zdroje
+	Smart Cut Source…	Chytrý střih zdroje…
+	Smart Cut is not available for this clip: {why}	Chytrý střih není pro tento klip k dispozici: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Chytrý střih zapsán a ověřen: {path} (snímky: {frames})
+	The cut cannot run.	Střih nelze provést.
+	The engine sent no analysis.	Engine neposlal žádnou analýzu.
+	Writing and verifying the cut…	Zápis a ověření střihu…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} v {container}: GOP: {gops}, čisté body střihu: {points}
+	{copied} frames copied, {reencoded} frames re-encoded	Zkopírované snímky: {copied}, překódované snímky: {reencoded}
+	{frames} frames at the boundaries are re-encoded. Continue?	Snímky na hranicích ({frames}) budou překódovány. Pokračovat?
+	Show GOP Boundaries	Zobrazit hranice GOP
+	Export mode	Režim exportu
+	Full Render	Úplné vykreslení
+	Planning…	Plánování…
+	Recommended: Smart Render (asks before re-encoding)	Doporučeno: chytré vykreslení (před překódováním se zeptá)
+	Recommended: Stream Copy (nothing is re-encoded)	Doporučeno: kopie proudu (nic se nepřekóduje)
+	Rendered because of: {causes}	Vykresleno kvůli: {causes}
+	Smart Export	Chytrý export
+	Smart Export written and verified: {path}	Chytrý export zapsán a ověřen: {path}
+	Smart Render	Chytré vykreslení
+	Stream Copy – Bit-exact	Kopie proudu – bitově přesná
+	Stream Copy – Compatible	Kopie proudu – kompatibilní
+	Stream copy is not possible: {frames} frames need re-encoding.	Kopie proudu není možná: snímky k překódování: {frames}.
+	The export cannot run.	Export nelze provést.
+	Wait for the export plan.	Počkejte na plán exportu.
+	Writing and verifying the export…	Zápis a ověření exportu…
+	colour conversion	převod barev
+	compositing	skládání
+	copied	zkopírováno
+	effects	efekty
+	frame rate	snímková frekvence
+	proxies or nested sequences	proxy nebo vnořené sekvence
+	re-encoded at a cut	překódováno ve střihu
+	rendered	vykresleno
+	sources that cannot be copied	zdroje, které nelze zkopírovat
+	speed changes	změny rychlosti
+	titles or overlays	titulky nebo překryvy
+	transforms	transformace
+	transitions	přechody
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Zkopírováno snímků: {copied}, překódováno ve střizích: {reencoded}, vykresleno: {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	Snímky k překódování nebo vykreslení: {frames}. Pokračovat?
+	CFA4 Help…	Nápověda CFA4…
+	Learning	Výuka
+	Refresh Changed Media	Obnovit změněná média
+	{name} - Edited	{name} - upraveno
+	Audio Gain	Zesílení zvuku
+	Set Gain to:	Nastavit zesílení na:
+	Adjust Gain by:	Upravit zesílení o:
+	Normalize Max Peak to:	Normalizovat max. špičku na:
+	Normalize All Peaks to:	Normalizovat všechny špičky na:
+	Peak Amplitude: {peak}	Špičková amplituda: {peak}
+	Add Tracks	Přidat stopy
+	Placement	Umístění
+	Track type	Typ stopy
+	Add video tracks	Přidat obrazové stopy
+	Add audio tracks	Přidat zvukové stopy
+	Add audio submix tracks	Přidat zvukové stopy submixu
+	After {name}	Za {name}
+	Before First Track	Před první stopu
+	Delete Tracks	Odstranit stopy
+	Video Tracks	Obrazové stopy
+	Audio Tracks	Zvukové stopy
+	Delete Video Tracks	Odstranit obrazové stopy
+	Delete Audio Tracks	Odstranit zvukové stopy
+	All Empty Tracks	Všechny prázdné stopy
+	Caption Tracks	Stopy titulků
+	Delete Caption Tracks	Odstranit stopy titulků
+	Report an issue	Nahlásit problém
+	Rendering:	Vykreslování:
+	UI:	Rozhraní:
+	{fps} fps · {n} frames queued	{fps} fps · snímky ve frontě: {n}
+	Maximize Frame	Maximalizovat rámec
+	Restore Frame	Obnovit rámec
+	Reveal Sequence in Project	Zobrazit sekvenci v projektu
+	Video Thumbnails	Miniatury videa
+	Audio Waveforms	Zvukové průběhy
+	Untitled Workspace	Nepojmenovaný pracovní prostor
+	Show durations	Zobrazit délky
+	Project Metadata	Metadata projektu
+	Add Property…	Přidat vlastnost…
+	Column order	Pořadí sloupců
+	Graphics text search arrives with M10.1–M10.2	Vyhledávání v textu grafiky přijde s M10.1–M10.2
+	(no clips)	(žádné klipy)
+	Export Frame (Shift+E)	Exportovat snímek (Shift+E)
+	Export Frame: use Export mode (M6)	Export snímku: použijte režim exportu (M6)
+	Save changes to “{project_name}” before closing?	Uložit změny v „{project_name}“ před zavřením?
+	A file dialog is already open	Dialog souboru je již otevřený
+	Timeline: (no sequences)	Časová osa: (žádné sekvence)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Klepnutím v monitoru Program umístíte body masky (táhnutím křivky); klepněte na první bod nebo stiskněte Enter pro uzavření
+	Video and Waveform	Video a průběh
+	Remove Media Cache Files	Odebrat soubory mezipaměti médií
+	Eyedropper: no picture to sample	Kapátko: žádný obraz ke vzorkování
+	Select a clip to grade	Vyberte klip k barevné korekci
+	   Opacity	   Krytí
+	   Size	   Velikost
+	   Corner Radius	   Poloměr rohu
+	   Angle	   Úhel
+	   Distance	   Vzdálenost
+	   Blur	   Rozostření
+	   Template: {name}	   Šablona: {name}
+	CFA4 Graphics Template	Grafická šablona CFA4
+	  (none)	  (žádné)
+	Select items to clear	Vyberte položky k vymazání
+	Media missing	Chybí média
+	Unreadable	Nečitelné
+	✓ Enable	✓ Zapnout
+	(RGB) Gamma	(RGB) Gama
+	(RGB) Input Black Level	(RGB) Vstupní úroveň černé
+	(RGB) Input White Level	(RGB) Vstupní úroveň bílé
+	(RGB) Output Black Level	(RGB) Výstupní úroveň černé
+	(RGB) Output White Level	(RGB) Výstupní úroveň bílé
+	10 Bit Black Point	10bitový bod černé
+	10 Bit White Point	10bitový bod bílé
+	105mm Prime	105mm pevný
+	29.97 fps Drop-Frame	29,97 fps drop-frame
+	29.97 fps Non Drop-Frame	29,97 fps non-drop-frame
+	35mm Prime	35mm pevný
+	3D Roll	3D převalení
+	3D Rotate	3D otočení
+	3D Spin	3D rotace
+	3D Spinback	3D zpětná rotace
+	4-Color Gradient	Čtyřbarevný přechod
+	5.1 Media	Média 5.1
+	5.1 Mixdown Type	Typ smíchání 5.1
+	50-300mm Zoom	Zoom 50-300mm
+	59.94 fps Drop-Frame	59,94 fps drop-frame
+	59.94 fps Non Drop-Frame	59,94 fps non-drop-frame
+	ASC CDL	ASC CDL
+	Action-Safe Margin	Bezpečný okraj akce
+	Additional Scale	Dodatečné měřítko
+	Additive Dissolve	Aditivní prolínačka
+	Additive Dissolve (Legacy)	Aditivní prolínačka (starší)
+	Aggressive	Agresivní
+	Alpha Adjust	Úprava alfy
+	Alpha Blurriness	Rozostření alfy
+	Alpha Channel	Alfa kanál
+	Alpha Glow	Záře alfy
+	Ambience Intensity	Intenzita okolního světla
+	Ambience Light Color	Barva okolního světla
+	Amount of Noise	Míra šumu
+	Amount to Decolor	Míra odbarvení
+	Amount to Tint	Míra tónování
+	Amplifier	Zesilovač
+	Amplify	Zesílit
+	Amplitude	Amplituda
+	Analog	Analogový
+	Analog Delay	Analogové zpoždění
+	Anamorphic	Anamorfní
+	Anchor	Kotva
+	Anti-aliasing Quality	Kvalita vyhlazování
+	Antialiasing for Best Quality	Vyhlazování pro nejlepší kvalitu
+	Asymmetry	Asymetrie
+	Audio Duration	Délka zvuku
+	Audio In Point	Vstupní bod zvuku
+	Audio Out Point	Výstupní bod zvuku
+	Audio Usage	Použití zvuku
+	Auto Align	Automatické zarovnání
+	Auto Reframe	Automatické přerámování
+	Automatic Click Remover	Automatické odstranění lupanců
+	Background Corner Radius	Poloměr rohu pozadí
+	Background Opacity	Krytí pozadí
+	Background Size	Velikost pozadí
+	Band 1	Pásmo 1
+	Band 2	Pásmo 2
+	Band 3	Pásmo 3
+	Band 4	Pásmo 4
+	Band 5	Pásmo 5
+	Band Pass	Pásmová propust
+	Band Slide	Posun pásů
+	Band Stop	Pásmová zádrž
+	Bandpass	Pásmová propust
+	Barn Doors	Klapky
+	Basic 3D	Základní 3D
+	Bass	Basy
+	Behind	Za
+	Bessel	Bessel
+	Bevel Alpha	Zkosení alfy
+	Binauralizer - Ambisonics	Binauralizér - Ambisonics
+	Black Input Level	Vstupní úroveň černé
+	Black and white with crushed blacks and strong contrast	Černobílé se slitou černou a silným kontrastem
+	Bleach-bypass style: desaturated with hard contrast	Styl bleach bypass: odbarvené s tvrdým kontrastem
+	Blend	Prolnutí
+	Blend With Original	Prolnout s originálem
+	Block Dissolve	Bloková prolínačka
+	Block Height	Výška bloku
+	Block Motion	Pohyb bloků
+	Block Size	Velikost bloku
+	Block Width	Šířka bloku
+	Blue Blurriness	Rozostření modré
+	Blue Curve	Křivka modré
+	Blue Offset	Posun modré
+	Blue Power	Síla modré
+	Blue Slope	Sklon modré
+	Blue-Blue	Modrá-modrá
+	Blue-Const	Modrá-konst.
+	Blue-Green	Modrá-zelená
+	Blue-Red	Modrá-červená
+	Blur Amount	Míra rozostření
+	Blur Dimensions	Směr rozostření
+	Blur Dissolve	Rozostřená prolínačka
+	Blur Layer	Vrstva rozostření
+	Blur Length	Délka rozostření
+	Blurriness	Rozostření
+	Bokeh Blur	Rozostření bokeh
+	Boost	Zesílení
+	Border Color	Barva okraje
+	Border Width	Šířka okraje
+	Bounce	Odraz
+	Branching	Větvení
+	Brightness & Contrast	Jas a kontrast
+	British Stack	Britský stoh
+	Brush Hardness	Tvrdost štětce
+	Brush Opacity	Krytí štětce
+	Brush Position	Pozice štětce
+	Brush Spacing (secs)	Rozestup štětce (s)
+	Bubbles	Bubliny
+	Bulge Smoother	Hladší vyboulení
+	Bump Height	Výška hrbolů
+	Burn Alpha	Vypálit alfu
+	Burn Chroma	Vypálit chroma
+	Burn Color	Vypálit barvu
+	Butterworth	Butterworth
+	Camera Blur	Rozostření kamery
+	Camera Shake	Otřesy kamery
+	Capitalisation	Velká písmena
+	Cathedral	Katedrála
+	Cell Pattern	Buněčný vzor
+	Center Channel Pan	Panoráma středového kanálu
+	Center Gradient	Vystředit přechod
+	Center Input	Středový vstup
+	Center Out	Ze středu
+	Center Point (Latitude)	Středový bod (zeměpisná šířka)
+	Center Point (Longitude)	Středový bod (zeměpisná délka)
+	Center Split	Rozdělení ve středu
+	Center of Sphere	Střed koule
+	Cents	Centy
+	Change to Color	Změnit na barvu
+	Channel Blur	Rozostření kanálů
+	Channel Mix	Mix kanálů
+	Chaos	Chaos
+	Chebyshev	Čebyšev
+	Checker Wipe	Šachovnicová stíračka
+	Checkerboard	Šachovnice
+	Choke	Zúžení
+	Chorus	Chorus
+	Chorus/Flanger	Chorus/flanger
+	Chroma Leak	Únik chroma
+	Chromatic Aberration (Blue)	Chromatická aberace (modrá)
+	Chromatic Aberration (Green)	Chromatická aberace (zelená)
+	Chromatic Aberration (Red)	Chromatická aberace (červená)
+	Cineon Converter	Převodník Cineon
+	Clean Combo	Čisté kombo
+	Clip Level	Úroveň ořezu
+	Clipping	Ořezávání
+	Clock Wipe	Hodinová stíračka
+	Clock Wipe (Legacy)	Hodinová stíračka (starší)
+	Clockwise	Po směru hodin
+	Color & Alpha	Barva a alfa
+	Color 1	Barva 1
+	Color 2	Barva 2
+	Color 3	Barva 3
+	Color 4	Barva 4
+	Color Channel	Barevný kanál
+	Color Distortion	Zkreslení barev
+	Color Emboss	Barevný reliéf
+	Color Key	Barevný klíč
+	Color Pass	Propustit barvu
+	Color Replace	Nahrazení barvy
+	Color To Leave	Ponechaná barva
+	Color Tolerance	Tolerance barvy
+	Complexity	Složitost
+	Composite In Back	Skládat vzadu
+	Composite In Front	Skládat vpředu
+	Composite Using	Skládat pomocí
+	Composite on Original	Skládat na originál
+	Compound Blur	Složené rozostření
+	Compression Before Clipping	Komprese před ořezem
+	Constant Gain	Konstantní zesílení
+	Constant Power	Konstantní výkon
+	Conversion Type	Typ převodu
+	Convolution Reverb	Konvoluční dozvuk
+	Cool, desaturated and punchy	Chladné, odbarvené a výrazné
+	Core Width	Šířka jádra
+	Corner	Roh
+	Corner Pin	Rohové body
+	Count	Počet
+	Counter-clockwise	Proti směru hodin
+	Crop Less <-> Smooth More	Méně ořezat <-> více vyhladit
+	Cross Displacement	Křížové posunutí
+	Cross Dissolve	Křížová prolínačka
+	Cross Dissolve (Legacy)	Křížová prolínačka (starší)
+	Cross Zoom	Křížový zoom
+	Cross Zoom (Legacy)	Křížový zoom (starší)
+	Crossovers	Výhybky
+	Crystals	Krystaly
+	Cube Spin	Rotace krychle
+	Curl Radius	Poloměr zvlnění
+	Cursor	Kurzor
+	Custom Color	Vlastní barva
+	Cutoff	Mezní frekvence
+	Cyan-teal shadows and warm highlights with a little more contrast	Azurově modrozelené stíny a teplá světla s o něco vyšším kontrastem
+	Cycle (in Revolutions)	Cyklus (v otáčkách)
+	Cycle Evolution	Cyklický vývoj
+	Damping	Tlumení
+	Damping HF	Tlumení VF
+	Damping LF	Tlumení NF
+	Day for night: darker, cooler and less saturated	Den za noc: tmavší, chladnější a méně sytý
+	DeEsser	Odsykávač
+	DeHummer	Odbručovač
+	DeNoise	Odšumovač
+	DeReverb	Odstranění dozvuku
+	Decay	Doznívání
+	Decay Time (RT60)	Doba doznívání (RT60)
+	Delay	Zpoždění
+	Delay 1	Zpoždění 1
+	Delay 2	Zpoždění 2
+	Delay 3	Zpoždění 3
+	Delay 4	Zpoždění 4
+	Detail Amplitude	Amplituda detailů
+	Detail Level	Úroveň detailů
+	Detailed Analysis	Podrobná analýza
+	Dip to Black	Přechod přes černou
+	Dip to Black (Legacy)	Přechod přes černou (starší)
+	Dip to Color	Přechod přes barvu
+	Dip to White	Přechod přes bílou
+	Dip to White (Legacy)	Přechod přes bílou (starší)
+	Directional	Směrové
+	Directional Blur	Směrové rozostření
+	Directional Blur (Legacy)	Směrové rozostření (starší)
+	Disperse	Rozptýlit
+	Displacement	Posunutí
+	Dissolve Blocks	Prolínání bloků
+	Distance to Image	Vzdálenost od obrazu
+	Distortion Complexity	Složitost zkreslení
+	Distortion Rate	Rychlost zkreslení
+	Distortion Type	Typ zkreslení
+	Drive	Buzení
+	Dry	Suchý
+	Dry Out	Suchý výstup
+	Dynamics Processing	Zpracování dynamiky
+	Early Reflections	Rané odrazy
+	Earthquake	Zemětřesení
+	Ease In and Out	Pozvolný náběh a doběh
+	Easing	Zjemnění
+	Echo	Ozvěna
+	Echo Glow	Záře ozvěny
+	Echo Operator	Operátor ozvěny
+	Echo Time (seconds)	Čas ozvěny (sekundy)
+	Echoes	Ozvěny
+	Edge Color	Barva okraje
+	Edge Feather	Prolnutí okraje
+	Edge Glow	Záře okraje
+	Edge Sharpness	Ostrost okraje
+	Edge Softness	Měkkost okraje
+	Edge Thin	Ztenčení okraje
+	Edge Threshold	Práh okraje
+	Edge Type	Typ okraje
+	Elliptical	Eliptický
+	Enable HSL Secondary	Zapnout sekundární HSL
+	End Color	Koncová barva
+	End Point	Koncový bod
+	End of Ramp	Konec přechodu
+	Evolution	Vývoj
+	Evolution Options	Možnosti vývoje
+	Exciter Amount	Míra exciteru
+	Exciter Mode	Režim exciteru
+	Exponential Fade	Exponenciální přechod
+	FFT Filter	Filtr FFT
+	Fade	Přechod
+	Fade Out	Stmívání
+	Falloff	Útlum
+	Faster Motion	Rychlejší pohyb
+	Feedback	Zpětná vazba
+	Feedback 1	Zpětná vazba 1
+	Feedback 2	Zpětná vazba 2
+	Feedback 3	Zpětná vazba 3
+	Feedback 4	Zpětná vazba 4
+	Female	Ženský
+	Fill Background	Vyplnit pozadí
+	Fill Color	Barva výplně
+	Fill Left with Right	Vyplnit levý pravým
+	Fill Point	Bod výplně
+	Fill Right with Left	Vyplnit pravý levým
+	Fill Selector	Výběr výplně
+	Film Dissolve	Filmová prolínačka
+	Film Dissolve (Legacy)	Filmová prolínačka (starší)
+	Film Roll	Filmový pás
+	Filter Frequency	Frekvence filtru
+	Filter Resonance	Rezonance filtru
+	Final Delay	Konečné zpoždění
+	Find Edges	Najít okraje
+	Flanger	Flanger
+	Flare	Odlesk
+	Flare Brightness	Jas odlesku
+	Flare Center	Střed odlesku
+	Flare Color	Barva odlesku
+	Flicker	Blikání
+	Flickers	Záblesky
+	Flip Motion	Převrácení
+	Flip Over	Převrátit
+	Focus Blur	Rozostření zaostření
+	Focus Point	Bod zaostření
+	Focus Shape	Tvar zaostření
+	Focus Size	Velikost zaostření
+	Fold Motion	Skládání
+	Foldback	Přeložení
+	Fractal Influence	Vliv fraktálu
+	Fractal Type	Typ fraktálu
+	Frame	Snímek
+	Frame Color	Barva rámečku
+	Frame Layout	Rozvržení rámečku
+	Frame Width	Šířka rámečku
+	Framing	Rámování
+	From East	Z východu
+	From North	Ze severu
+	From South	Z jihu
+	From West	Ze západu
+	Fuzz	Fuzz
+	GB	GB
+	Gamut Warning Color	Barva upozornění na gamut
+	Gap	Mezera
+	Gap Color	Barva mezery
+	Gaussian Blur (Legacy)	Gaussovské rozostření (starší)
+	Ghosts	Duchové
+	Glint	Třpyt
+	Glitch	Glitch
+	Glow Color	Barva záře
+	Glow Only	Jen záře
+	Glow Radius	Poloměr záře
+	Glow Saturation	Sytost záře
+	Glow Width	Šířka záře
+	Gradient End	Konec přechodu
+	Gradient Layer	Vrstva přechodu
+	Gradient Placement	Umístění přechodu
+	Gradient Scatter	Rozptyl přechodu
+	Gradient Shape	Tvar přechodu
+	Gradient Start	Začátek přechodu
+	Gradient Wipe	Přechodová stíračka
+	Gradient Wipe (Legacy)	Přechodová stíračka (starší)
+	Grain Size	Velikost zrna
+	Green Blurriness	Rozostření zelené
+	Green Curve	Křivka zelené
+	Green Offset	Posun zelené
+	Green Power	Síla zelené
+	Green Slope	Sklon zelené
+	Green-Blue	Zelená-modrá
+	Green-Const	Zelená-konst.
+	Green-Green	Zelená-zelená
+	Green-Red	Zelená-červená
+	Grow	Růst
+	Grunge	Grunge
+	GuitarSuite	GuitarSuite
+	Hard	Tvrdý
+	Hard Clip	Tvrdý ořez
+	Hard Limiter	Tvrdý limiter
+	Head Size	Velikost hlavy
+	Hide Back Face	Skrýt zadní stranu
+	High Cutoff	Horní mezní frekvence
+	High Frequency Cut	Ořez vysokých frekvencí
+	High Frequency Damping	Tlumení vysokých frekvencí
+	High Shelf	Horní šelf
+	High Shelf Gain	Zesílení horního šelfu
+	High contrast with held highlights and deep shadows	Vysoký kontrast se zachovanými světly a hlubokými stíny
+	Highlight	Světla
+	Highlight Blue Balance	Vyvážení modré ve světlech
+	Highlight Brightness	Jas světel
+	Highlight Green Balance	Vyvážení zelené ve světlech
+	Highlight Red Balance	Vyvážení červené ve světlech
+	Highlight Rolloff	Pozvolné ořezání světel
+	Highlight Threshold	Práh světel
+	Highlight Tint	Tón světel
+	Highlights Lightness	Světlost světel
+	Highpass	Horní propust
+	Horizontal 16:9	Vodorovně 16:9
+	Horizontal Alignment	Vodorovné zarovnání
+	Horizontal Blocks	Vodorovné bloky
+	Horizontal Decentering	Vodorovné vychýlení
+	Horizontal Displacement	Vodorovné posunutí
+	Horizontal Flip	Vodorovné převrácení
+	Horizontal Margin	Vodorovný okraj
+	Horizontal and Vertical	Vodorovně a svisle
+	Hue Center	Střed odstínu
+	Hue Tolerance	Tolerance odstínu
+	Ignore Alpha	Ignorovat alfu
+	Impulse	Impulz
+	Incoming	Přicházející
+	Initial Delay	Počáteční zpoždění
+	Inner Radius	Vnitřní poloměr
+	Input Boost	Zesílení vstupu
+	Inset	Vsazení
+	Inside Color	Vnitřní barva
+	Inter	Inter
+	Internal Black Point	Vnitřní bod černé
+	Internal White Point	Vnitřní bod bílé
+	Inverse Falloff	Obrácený útlum
+	Invert Alpha	Invertovat alfu
+	Invert Blur	Invertovat rozostření
+	Invert Fill	Invertovat výplň
+	Invert Gradient	Invertovat přechod
+	Invert Left	Invertovat levý
+	Invert Right	Invertovat pravý
+	Iris Box	Clona čtverec
+	Iris Cross	Clona kříž
+	Iris Diamond	Clona kosočtverec
+	Iris Radius	Poloměr clony
+	Iris Rotation	Otočení clony
+	Iris Round	Clona kruh
+	Iris Shape	Tvar clony
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	Kaleidoskop
+	Key Color	Barva klíče
+	Layer Name	Název vrstvy
+	Leave Color	Ponechat barvu
+	Left - Left	Levý - levý
+	Left - Right	Levý - pravý
+	Lens Blur	Rozostření objektivu
+	Lens Distortion	Zkreslení objektivu
+	Lens Type	Typ objektivu
+	Lifted blacks, softer contrast, muted colour	Zvednutá černá, měkčí kontrast, tlumené barvy
+	Light 1	Světlo 1
+	Light 2	Světlo 2
+	Light 3	Světlo 3
+	Light 4	Světlo 4
+	Light 5	Světlo 5
+	Light Angle	Úhel světla
+	Light Color	Barva světla
+	Light Leak	Únik světla
+	Light Leaks	Úniky světla
+	Light Sweep	Světelný přejezd
+	Lightning	Blesk
+	Line Thickness	Tloušťka čáry
+	Linear Ramp	Lineární přechod
+	Linear Wipe	Lineární stíračka
+	Linear Wipe (Legacy)	Lineární stíračka (starší)
+	Linear to Log	Lineární na log
+	Liquid Distortion	Tekuté zkreslení
+	Log to Linear	Log na lineární
+	Log to Log	Log na log
+	Logo Cutout	Výřez loga
+	Long Shadow	Dlouhý stín
+	Look-Ahead Time	Doba předvídání
+	Loudness Maximizer	Maximalizátor hlasitosti
+	Loudness Meter	Měřič hlasitosti
+	Louver	Žaluzie
+	Low Frequency Cut	Ořez nízkých frekvencí
+	Low Pass	Dolní propust
+	Low Shelf	Dolní šelf
+	Low Shelf Gain	Zesílení dolního šelfu
+	Lower Left	Vlevo dole
+	Lower Right	Vpravo dole
+	Lowpass	Dolní propust
+	Luma Curve	Křivka jasu
+	Luma Fade	Přechod jasem
+	Luma Key	Jasový klíč
+	Luma Source	Zdroj jasu
+	Luma and Chroma	Jas a chroma
+	Luminance Threshold	Práh luminance
+	MB	MB
+	Magnify	Zvětšit
+	Magnify (Legacy)	Zvětšit (starší)
+	Major Radius	Hlavní poloměr
+	Male	Mužský
+	Map Black To	Mapovat černou na
+	Map White To	Mapovat bílou na
+	Maps full-range levels into 16–235 (video range) with a luma curve	Mapuje úrovně plného rozsahu do 16–235 (video rozsah) pomocí křivky jasu
+	Mask Only	Jen maska
+	Master Amplitude	Hlavní amplituda
+	Mastering	Mastering
+	Matte Alpha	Alfa podkladu
+	Matte Cleanup	Vyčištění podkladu
+	Matte Generation	Generování podkladu
+	Matte Luma	Jas podkladu
+	Maximum Amplitude	Maximální amplituda
+	Maximum Block Size	Maximální velikost bloku
+	Maximum Blur	Maximální rozostření
+	Maximum Reduction	Maximální snížení
+	Maximum Scale	Maximální měřítko
+	Media Timecode	Časový kód média
+	Metadata & Timecode Burn-in	Vypálení metadat a časového kódu
+	Metrics Kerning	Metrický kerning
+	Mid	Středy
+	Mid Point	Středový bod
+	Midtone Blue Balance	Vyvážení modré ve středních tónech
+	Midtone Green Balance	Vyvážení zelené ve středních tónech
+	Midtone Red Balance	Vyvážení červené ve středních tónech
+	Midtones Lightness	Světlost středních tónů
+	Minor Radius	Vedlejší poloměr
+	Mirror Alternate	Střídavé zrcadlení
+	Mixed Crystals	Smíšené krystaly
+	Modern High Gain	Moderní vysoké zesílení
+	Modulation Rate	Rychlost modulace
+	Monochrome toned cyan-blue	Jednobarevné tónované do azurově modré
+	Monochrome toned warm brown	Jednobarevné tónované do teplé hnědé
+	More colour in the less saturated areas	Více barvy v méně sytých oblastech
+	Morph Cut	Morfovací střih
+	Mosaic (Legacy)	Mozaika (starší)
+	Motion Blur	Rozmazání pohybem
+	Motion Camera	Pohyblivá kamera
+	Motion Preset	Přednastavení pohybu
+	Motion Tween	Pohybová mezisnímková animace
+	Multitap Delay	Vícenásobné zpoždění
+	Narrow	Úzký
+	Neon Color	Neonová barva
+	Neon Wipe	Neonová stíračka
+	No Motion	Bez pohybu
+	Noise (Legacy)	Šum (starší)
+	Noise Level	Úroveň šumu
+	Noise Reduction/Restoration	Potlačení šumu/restaurování
+	Noise Type	Typ šumu
+	Non-Additive Dissolve	Neaditivní prolínačka
+	Notch 1	Zářez 1
+	Notch 2	Zářez 2
+	Notch 3	Zářez 3
+	Notch 4	Zářez 4
+	Notch 5	Zářez 5
+	Notch 6	Zářez 6
+	Notch Filter	Zářezový filtr
+	Notch Width	Šířka zářezu
+	Number Of Echoes	Počet ozvěn
+	Number of Harmonics	Počet harmonických
+	Offset	Posun
+	Offset (Turbulence)	Posun (turbulence)
+	Offset From	Posun od
+	Offset To	Posun do
+	Omni	Všesměrový
+	On Original Image	Na původní obraz
+	On Transparent	Na průhledné
+	Opens up the shadows	Projasní stíny
+	Order	Pořadí
+	Outgoing	Odcházející
+	Outside Color	Vnější barva
+	Overflow	Přetečení
+	Overshoot	Překmit
+	Page Peel	Odlepení stránky
+	Page Turn	Otočení stránky
+	Paint Bucket	Plechovka barvy
+	Paint On Black	Malovat na černou
+	Paint On Original Image	Malovat na původní obraz
+	Paint On Transparent	Malovat na průhledné
+	Paint On White	Malovat na bílou
+	Paint Style	Styl malby
+	Paint Surface	Malířský povrch
+	Pan (Y Axis)	Panoráma (osa Y)
+	Panel Wipe	Panelová stíračka
+	Panner - Ambisonics	Panoráma - Ambisonics
+	Passband Ripple	Zvlnění propustného pásma
+	Path Points	Body cesty
+	Peak Frequency	Frekvence špičky
+	Peak Gain	Zesílení špičky
+	Pedestal	Podstavec
+	Percent Blur	Procento rozostření
+	Phase Difference	Fázový rozdíl
+	Phaser	Phaser
+	Phosphor	Fosfor
+	Phosphor Color	Barva fosforu
+	Photocopy Color	Barva fotokopie
+	Pillow	Polštář
+	Pin All	Připnout vše
+	Pin Horizontal	Připnout vodorovně
+	Pin Vertical	Připnout svisle
+	Pinning	Připnutí
+	Pitch Shifter	Posun výšky tónu
+	Plate	Deska
+	Plateau Wipe	Plošinová stíračka
+	Plateaus	Plošiny
+	Plates	Desky
+	Point 1	Bod 1
+	Point 1 Color	Barva bodu 1
+	Point 1 Latitude	Zeměpisná šířka bodu 1
+	Point 1 Longitude	Zeměpisná délka bodu 1
+	Point 2	Bod 2
+	Point 2 Color	Barva bodu 2
+	Point 2 Latitude	Zeměpisná šířka bodu 2
+	Point 2 Longitude	Zeměpisná délka bodu 2
+	Point 3	Bod 3
+	Point 3 Color	Barva bodu 3
+	Point 3 Latitude	Zeměpisná šířka bodu 3
+	Point 3 Longitude	Zeměpisná délka bodu 3
+	Point 4	Bod 4
+	Point 5	Bod 5
+	Point 6	Bod 6
+	Point 7	Bod 7
+	Point 8	Bod 8
+	Pop Motion	Vyskočení
+	Position Amount	Míra pozice
+	Position, Scale, Rotation	Pozice, měřítko, otočení
+	Posterize Time	Posterizace času
+	Pre-Delay	Předzpoždění
+	Preserve Scale	Zachovat měřítko
+	ProcAmp	ProcAmp
+	Pull Motion	Tah
+	Pulls highlights and whites down	Stáhne světla a bílé dolů
+	Push	Vytlačení
+	Push (Legacy)	Vytlačení (starší)
+	Q	Q
+	RGB Split	Rozdělení RGB
+	Radial Ramp	Kruhový přechod
+	Radial Wipe	Kruhová stíračka
+	Radial Wipe (Legacy)	Kruhová stíračka (starší)
+	Ramp	Přechod
+	Ramp Shape	Tvar přechodu
+	Random Seed	Náhodné semínko
+	Ray	Paprsek
+	Ray Color	Barva paprsku
+	Ray Length	Délka paprsku
+	Rays Only	Jen paprsky
+	Red Blurriness	Rozostření červené
+	Red Curve	Křivka červené
+	Red Offset	Posun červené
+	Red Power	Síla červené
+	Red Slope	Sklon červené
+	Red-Blue	Červená-modrá
+	Red-Const	Červená-konst.
+	Red-Green	Červená-zelená
+	Red-Red	Červená-červená
+	Reduce Axis	Zmenšit osu
+	Reduce Interlace Flicker	Snížit blikání prokládání
+	Reflection Angle	Úhel odrazu
+	Reflection Center	Střed odrazu
+	Refraction	Lom
+	Reframe Offset	Posun přerámování
+	Reframe Zoom	Zvětšení přerámování
+	Release Time	Doba uvolnění
+	Remove Fringe	Odstranit lem
+	Repeat Edge Pixels	Opakovat okrajové pixely
+	Replace Color	Nahradit barvu
+	Replicate	Replikovat
+	Retro	Retro
+	Reveal Original Image	Odhalit původní obraz
+	Reverb Amount	Míra dozvuku
+	Right - Left	Pravý - levý
+	Right - Right	Pravý - pravý
+	Roll (Z Axis)	Náklon (osa Z)
+	Room Size	Velikost místnosti
+	Rotation Amount	Míra otočení
+	Roughen	Zdrsnit
+	Roughen Color	Barva zdrsnění
+	Roughen Edges	Zdrsnit okraje
+	Rounded Crop	Zaoblený ořez
+	Rusty	Rezavý
+	Rusty Color	Rezavá barva
+	Saturation at 50 %	Sytost na 50 %
+	Scale (Degrees)	Měřítko (stupně)
+	Scale Amount	Míra měřítka
+	Scale From	Měřítko od
+	Scale Height	Měřítko výšky
+	Scale Match	Shoda měřítka
+	Scale To	Měřítko do
+	Scan Lines	Řádky
+	Scientific Filter	Vědecký filtr
+	Semi-tones	Půltóny
+	Sequence Name	Název sekvence
+	Sequence Timecode	Časový kód sekvence
+	Setting	Nastavení
+	Shadow Angle	Úhel stínu
+	Shadow Blue Balance	Vyvážení modré ve stínech
+	Shadow Blur	Rozostření stínu
+	Shadow Color	Barva stínu
+	Shadow Distance	Vzdálenost stínu
+	Shadow Green Balance	Vyvážení zelené ve stínech
+	Shadow Only	Jen stín
+	Shadow Opacity	Krytí stínu
+	Shadow Red Balance	Vyvážení červené ve stínech
+	Shadow Size	Velikost stínu
+	Shadow Tint	Tón stínů
+	Shadows Lightness	Světlost stínů
+	Shake	Třesení
+	Shape Dissolve	Tvarová prolínačka
+	Shape Flow	Tok tvaru
+	Shape Size	Velikost tvaru
+	Shard Size	Velikost střepů
+	Sharp Colors	Ostré barvy
+	Sharpen Amount	Míra zostření
+	Shift Center To	Posunout střed na
+	Show Focus Area	Zobrazit oblast zaostření
+	Show Only Noise	Zobrazit jen šum
+	Shrink	Zmenšit
+	Shutter Angle	Úhel závěrky
+	Similarity	Podobnost
+	Simple Notch Filter	Jednoduchý zářezový filtr
+	Simple Parametric EQ	Jednoduchý parametrický ekvalizér
+	Simple Text	Jednoduchý text
+	Single-band Compressor	Jednopásmový kompresor
+	Sinusoidal	Sinusový
+	Skew Axis	Osa zkosení
+	Slats	Lamely
+	Slide (Legacy)	Posunutí (starší)
+	Slope	Sklon
+	Slow	Pomalé
+	Slower Motion	Pomalejší pohyb
+	Smart Limit	Chytrý limit
+	Smooth	Hladké
+	Smooth Motion	Plynulý pohyb
+	Soft Clamp	Měkké omezení
+	Soft Edges (Best Quality)	Měkké okraje (nejlepší kvalita)
+	Soft Wipe	Měkká stíračka
+	Solid Colors	Plné barvy
+	Source Point	Zdrojový bod
+	Source Text	Zdrojový text
+	Spacer	Mezera
+	Speaker Angle	Úhel reproduktoru
+	Special Effects	Speciální efekty
+	Spiky	Ostnatý
+	Spill	Přesvit
+	Spill Suppression	Potlačení přesvitu
+	Spin	Rotace
+	Spin Direction	Směr rotace
+	Spin Motion	Rotační pohyb
+	Split (Legacy)	Rozdělit (starší)
+	Spotlight	Reflektor
+	Spread	Rozprostření
+	Spring Motion	Pružinový pohyb
+	Square (Width Only)	Čtverec (jen šířka)
+	Square 1:1	Čtverec 1:1
+	Stabilization	Stabilizace
+	Stabilize Only	Jen stabilizovat
+	Stabilize, Crop	Stabilizovat, oříznout
+	Stabilize, Crop, Auto-scale	Stabilizovat, oříznout, automatické měřítko
+	Stabilize, Synthesize Edges	Stabilizovat, syntetizovat okraje
+	Stages	Stupně
+	Star Wipe	Hvězdicová stíračka
+	Start Angle	Počáteční úhel
+	Start Color	Počáteční barva
+	Start Point	Počáteční bod
+	Start of Ramp	Začátek přechodu
+	Starting Intensity	Počáteční intenzita
+	Static Plates	Statické desky
+	Stereo Expand	Rozšíření sterea
+	Stereo Expander	Rozšiřovač sterea
+	Stereo Phasing	Stereo fázování
+	Stereoscopic - Over/Under	Stereoskopické - nad/pod
+	Stereoscopic - Side by Side	Stereoskopické - vedle sebe
+	Stopband Attenuation	Útlum v nepropustném pásmu
+	Straight Color	Přímá barva
+	Stretch Gradient to Fit	Roztáhnout přechod pro přizpůsobení
+	Stretch Map to Fit	Roztáhnout mapu pro přizpůsobení
+	Stretch Width or Height	Roztáhnout šířku nebo výšku
+	Stretch Wipe	Roztahovací stíračka
+	Stretch to Fit Frame	Roztáhnout na snímek
+	Stripe	Pruh
+	Stripes	Pruhy
+	Strobe Color	Barva stroboskopu
+	Strobe Duration (secs)	Délka stroboskopu (s)
+	Strobe Light	Stroboskop
+	Strobe Period (secs)	Perioda stroboskopu (s)
+	Stroke 2 Color	Barva tahu 2
+	Stroke 2 Type	Typ tahu 2
+	Stroke 2 Width	Šířka tahu 2
+	Stroke Angle	Úhel tahu
+	Stroke Density	Hustota tahů
+	Stroke Length (secs)	Délka tahu (s)
+	Stroke Only	Jen tah
+	Stroke Randomness	Náhodnost tahů
+	Stroke Type	Typ tahu
+	Stroke Width	Šířka tahu
+	Studio Reverb	Studiový dozvuk
+	Subclip End	Konec podklipu
+	Subclip Start	Začátek podklipu
+	Subspace Warp	Podprostorová deformace
+	Super Narrow	Extrémně úzký
+	Surface Gloss	Lesk povrchu
+	Surface Material	Materiál povrchu
+	Surround Reverb	Prostorový dozvuk
+	Swap Channels	Prohodit kanály
+	Swivel	Otočení
+	TV Power	Zapnutí TV
+	Tape	Páska
+	Tape/Tube	Páska/elektronka
+	Target Aspect	Cílový poměr stran
+	Target Color	Cílová barva
+	Target Field of View	Cílové zorné pole
+	Text Color	Barva textu
+	Tile Gradient	Dlaždicový přechod
+	Tilt (X Axis)	Náklon (osa X)
+	Tone	Tón
+	Track Matte Key	Klíč podkladu stopy
+	Transience	Přechodnost
+	Transition Completion	Dokončení přechodu
+	Transition Softness	Měkkost přechodu
+	Trash	Zničené
+	Travel Motion	Cestovní pohyb
+	Treble	Výšky
+	Tube	Elektronka
+	Tube-modeled Compressor	Kompresor s modelem elektronky
+	Tubular	Trubkovitý
+	Turbulent	Turbulentní
+	Turbulent Displace	Turbulentní posunutí
+	Turbulent Sharp	Turbulentní ostré
+	Turbulent Smooth	Turbulentní hladké
+	Turbulent Smoother	Turbulentní hladší
+	Tweed	Tvíd
+	Twirl (Legacy)	Zatočení (starší)
+	Twirl Center	Střed zatočení
+	Twirl Radius	Poloměr zatočení
+	Twist Smoother	Hladší zkroucení
+	Ultra Key	Ultra Key
+	Uniform Spacing	Rovnoměrné rozestupy
+	Upper Frequency	Horní frekvence
+	Upper Left	Vlevo nahoře
+	Upper Right	Vpravo nahoře
+	Use Color Noise	Použít barevný šum
+	Use End Color	Použít koncovou barvu
+	Use Glow Color	Použít barvu záře
+	Use Tint Color	Použít barvu nádechu
+	VHS Damage	Poškození VHS
+	VR Blur	VR rozostření
+	VR Chroma Leaks	VR úniky chroma
+	VR Chromatic Aberrations	VR chromatické aberace
+	VR Color Gradients	VR barevné přechody
+	VR De-Noise	VR odšumění
+	VR Digital Glitch	VR digitální glitch
+	VR Fractal Noise	VR fraktální šum
+	VR Glow	VR záře
+	VR Gradient Wipe	VR přechodová stíračka
+	VR Iris Wipe	VR clonová stíračka
+	VR Light Leaks	VR úniky světla
+	VR Light Rays	VR světelné paprsky
+	VR Mobius Zoom	VR Möbiův zoom
+	VR Plane to Sphere	VR rovina na kouli
+	VR Projection	VR projekce
+	VR Random Blocks	VR náhodné bloky
+	VR Rotate Sphere	VR otočení koule
+	VR Sharpen	VR zostření
+	VR Spherical Blur	VR sférické rozostření
+	Venetian Blinds	Benátské žaluzie
+	Vertical 4:5	Svisle 4:5
+	Vertical 9:16	Svisle 9:16
+	Vertical Blocks	Svislé bloky
+	Vertical Decentering	Svislé vychýlení
+	Vertical Displacement	Svislé posunutí
+	Vertical Flip	Svislé převrácení
+	Vertical Margin	Svislý okraj
+	Very Narrow	Velmi úzký
+	Video 1	Video 1
+	Video 2	Video 2
+	Video 3	Video 3
+	Video 4	Video 4
+	Video 5	Video 5
+	Video 6	Video 6
+	Video 7	Video 7
+	Video 8	Video 8
+	Video Duration	Délka videa
+	Video In Point	Vstupní bod videa
+	Video Out Point	Výstupní bod videa
+	Video Usage	Použití videa
+	Vocal Booth	Hlasová kabina
+	Vocal Enhancer	Vylepšení hlasu
+	Volumetric Rays	Objemové paprsky
+	Warm print stock with gentle roll-off	Teplý kopírovací materiál s jemným ořezáním
+	Warm, soft late-afternoon light	Teplé, měkké pozdně odpolední světlo
+	Warp Stabilizer	Stabilizátor deformace
+	Wave Height	Výška vlny
+	Wave Speed	Rychlost vlny
+	Wave Warp	Vlnová deformace
+	Wave Width	Šířka vlny
+	Wavelength	Vlnová délka
+	Wet	Mokrý
+	Wet Out	Mokrý výstup
+	Whip	Švih
+	Whip (Legacy)	Švih (starší)
+	White Input Level	Vstupní úroveň bílé
+	Widener	Rozšiřovač
+	Wiggle	Vrtění
+	Wipe Angle	Úhel stíračky
+	Wonder Glow	Zázračná záře
+	Wrap Back	Zpětné zabalení
+	Write-on	Postupné psaní
+	X Rotation	Otočení X
+	Y Rotation	Otočení Y
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	Žlutozelená světla a modře zvednuté stíny ze zkřížených křivek kanálů
+	Z Position	Pozice Z
+	Z Rotation	Otočení Z
+	Zoom Amount	Míra zvětšení
+	Zoom Blur	Rozostření zvětšením
+	Zoom Strength	Síla zvětšení
+	no GPU adapter: the CPU compositor is used	žádný adaptér GPU: použije se skládání na CPU
+	CFA4 Project	Projekt CFA4
+	{name} (Simplified)	{name} (zjednodušeno)
+	Delete Search Bin	Odstranit vyhledávací přihrádku
+	No export preset named `{name}`	Neexistuje přednastavení exportu s názvem `{name}`
+	Encoding {n}%	Kódování {n} %
+	Uncompressed (PCM)	Nekomprimovaný (PCM)
+	Match Source ({seq_sr} Hz)	Podle zdroje ({seq_sr} Hz)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	Sekvence, {w}x{h}, {fps} fps, {rate} Hz
+	Exporting {path}	Export {path}
+	Added to the export queue	Přidáno do fronty exportu
+	Import: no file chosen (agents: export.presets.import {path})	Import: nebyl vybrán soubor (agenti: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	Export: nebyl vybrán soubor (agenti: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	Problém s grafikou: přepnuto na softwarové skládání
+	GPU acceleration is unavailable; preview renders on the CPU	Akcelerace GPU není k dispozici; náhled se vykresluje na CPU
+	CFA4 hit an error	CFA4 narazil na chybu
+	Opened {url}	Otevřeno {url}
+	(empty)	(prázdné)
+	AAC Audio 48 kHz 320 kbps	Zvuk AAC 48 kHz 320 kb/s
+	Opus Audio 48 kHz 160 kbps	Zvuk Opus 48 kHz 160 kb/s
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stereo 48 kHz, 160 kb/s
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080, 8 Mb/s, Opus 128 kb/s stereo
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Zvuk MPEG-4 (.m4a), stereo 48 kHz AAC-LC, 320 kb/s
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bitů
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, stereo 48 kHz 16bitové PCM
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 bitů
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, stereo 48 kHz 24 bitů, bezeztrátový
+	FLAC (lossless)	FLAC (bezeztrátový)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	Animovaný GIF 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	Apple ProRes 4444 s alfou
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Apply Guide Template	Použít šablonu vodítek
+	Auto Save Now	Automaticky uložit nyní
+	Auto-Match Loudness	Automaticky sladit hlasitost
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	OP-Atom ve stylu Avid: obrazový soubor DNxHR HQ a jeden 24bitový 48 kHz soubor PCM na kanál (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	Sekvence BMP
+	Begin Text Editing for a Graphic Layer	Zahájit úpravu textu grafické vrstvy
+	Begins With	Začíná na
+	Blur In	Rozostřený nájezd
+	Blur Out	Rozostřený odjezd
+	Brightens inside a feathered circular mask	Zesvětlí vnitřek kruhové masky s měkkým okrajem
+	Broadcast	Vysílání
+	Cancel Dynamic Trim	Zrušit dynamický ořez
+	Cancel Queued Export	Zrušit export ve frontě
+	Center align text	Zarovnat text na střed
+	Change Mask	Změnit masku
+	Clear All Events	Vymazat všechny události
+	Clear Edit Point Selection	Vymazat výběr bodů střihu
+	Clear Finished Exports	Vymazat dokončené exporty
+	Clear Poster Frame	Vymazat titulní snímek
+	Close Bin	Zavřít přihrádku
+	Close Sequence	Zavřít sekvenci
+	Cut to Camera 1	Střih na kameru 1
+	Cut to Camera 2	Střih na kameru 2
+	Cut to Camera 3	Střih na kameru 3
+	Cut to Camera 4	Střih na kameru 4
+	Cut to Camera 5	Střih na kameru 5
+	Cut to Camera 6	Střih na kameru 6
+	Cut to Camera 7	Střih na kameru 7
+	Cut to Camera 8	Střih na kameru 8
+	Cut to Camera 9	Střih na kameru 9
+	Darkens outside a feathered oval mask	Ztmaví okolí oválné masky s měkkým okrajem
+	Decrease Clip Volume	Snížit hlasitost klipu
+	Decrease Clip Volume Many	Výrazně snížit hlasitost klipu
+	Decrease Font Size by Five Units	Zmenšit velikost písma o pět jednotek
+	Decrease Font Size by One Unit	Zmenšit velikost písma o jednu jednotku
+	Decrease Leading by Five Units	Zmenšit proklad o pět jednotek
+	Decrease Leading by One Unit	Zmenšit proklad o jednu jednotku
+	Delete Captions	Odstranit titulky
+	Delete Graphic Layer	Odstranit grafickou vrstvu
+	Delete Guide Template	Odstranit šablonu vodítek
+	Delete Media Cache Files	Odstranit soubory mezipaměti médií
+	Discard Unsaved Changes	Zahodit neuložené změny
+	Does Not Contain	Neobsahuje
+	Download Speech Model	Stáhnout model řeči
+	Dynamic Trim Stop	Zastavit dynamický ořez
+	Edit Caption Text	Upravit text titulku
+	Ends With	Končí na
+	Entire Source	Celý zdroj
+	EssentialSound	Základní zvuk
+	Extend Next Edit To Playhead	Prodloužit další střih k přehrávací hlavě
+	Extend Previous Edit To Playhead	Prodloužit předchozí střih k přehrávací hlavě
+	Extend Selected Edit to Playhead	Prodloužit vybraný střih k přehrávací hlavě
+	Extend Selection Down	Rozšířit výběr dolů
+	Extend Selection Left	Rozšířit výběr doleva
+	Extend Selection Right	Rozšířit výběr doprava
+	Extend Selection Up	Rozšířit výběr nahoru
+	Fade In	Roztmívání
+	Gaussian Blur from 0 to 60 over the last second	Gaussovské rozostření od 0 do 60 během poslední sekundy
+	Gaussian Blur from 60 to 0 over the first second	Gaussovské rozostření od 60 do 0 během první sekundy
+	Generate Ducking Keyframes	Generovat klíčové snímky ztlumení
+	Go to Next Edit Point	Přejít na další bod střihu
+	Go to Next Edit Point on Any Track	Přejít na další bod střihu v libovolné stopě
+	Go to Previous Edit Point	Přejít na předchozí bod střihu
+	Go to Previous Edit Point on Any Track	Přejít na předchozí bod střihu v libovolné stopě
+	Go to Selected Clip End	Přejít na konec vybraného klipu
+	Go to Selected Clip Start	Přejít na začátek vybraného klipu
+	Go to Sequence End	Přejít na konec sekvence
+	Go to Sequence Start	Přejít na začátek sekvence
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	H.264 1920×1080 pro weby se sdílením videa, VBR 1 průchod, 16 Mb/s
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 průchod, cíl 20 Mb/s, AAC 320 kb/s
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 průchody, 18 Mb/s
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	H.264 3840×2160 pro weby se sdílením videa, VBR 1 průchod, 45 Mb/s
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 průchod, cíl 60 Mb/s, AAC 320 kb/s
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 průchody, 50 Mb/s
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	H.264 9:16 na výšku pro krátká videa na sociální sítě, měřítko pro vyplnění, 12 Mb/s
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	H.264 ve velikosti a frekvenci snímků sekvence; 0,05 bitu na pixel
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	H.264 ve velikosti a frekvenci snímků sekvence; 0,1 bitu na pixel
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	H.264 ve velikosti a frekvenci snímků sekvence; datový tok se přizpůsobí velikosti snímku (0,2 bitu na pixel)
+	High Quality 1080p HD	Vysoká kvalita 1080p HD
+	High Quality 2160p 4K	Vysoká kvalita 2160p 4K
+	Increase Clip Volume	Zvýšit hlasitost klipu
+	Increase Clip Volume Many	Výrazně zvýšit hlasitost klipu
+	Increase Font Size by Five Units	Zvětšit velikost písma o pět jednotek
+	Increase Font Size by One Unit	Zvětšit velikost písma o jednu jednotku
+	Increase Leading by Five Units	Zvětšit proklad o pět jednotek
+	Increase Leading by One Unit	Zvětšit proklad o jednu jednotku
+	Large blocks resolving to the picture over the first second	Velké bloky přecházející v obraz během první sekundy
+	Left align text	Zarovnat text doleva
+	Looping GIF, 640×360 at 15 fps	Opakující se GIF, 640×360, 15 fps
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bitů 4:2:2), 24bitové 48 kHz PCM, počáteční časový kód
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High dlouhý GOP (0,3 bitu na pixel), 24bitové 48 kHz PCM
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24bitové 48 kHz PCM, počáteční časový kód
+	Main	Main
+	Mark In (Hover Scrub)	Označit vstupní bod (procházení najetím)
+	Mark Out (Hover Scrub)	Označit výstupní bod (procházení najetím)
+	Match Source – Adaptive High Bitrate	Podle zdroje – adaptivní vysoký datový tok
+	Match Source – Adaptive Low Bitrate	Podle zdroje – adaptivní nízký datový tok
+	Match Source – Adaptive Medium Bitrate	Podle zdroje – adaptivní střední datový tok
+	Matches	Odpovídá
+	Maximize or Restore Active Frame	Maximalizovat nebo obnovit aktivní rámec
+	Maximize or Restore Frame Under Cursor	Maximalizovat nebo obnovit rámec pod kurzorem
+	Media Browser Settings	Nastavení prohlížeče médií
+	MediaBrowser	Prohlížeč médií
+	MediaCache	Mezipaměť médií
+	Merge Captions	Sloučit titulky
+	Mixer	Mixér
+	Mosaic In	Mozaikový nájezd
+	Move All Audio Targets Down	Posunout všechny zvukové cíle dolů
+	Move All Audio Targets Up	Posunout všechny zvukové cíle nahoru
+	Move All Video Targets Down	Posunout všechny obrazové cíle dolů
+	Move All Video Targets Up	Posunout všechny obrazové cíle nahoru
+	Move Selection Down	Posunout výběr dolů
+	Move Selection End	Posunout výběr na konec
+	Move Selection Home	Posunout výběr na začátek
+	Move Selection Left	Posunout výběr doleva
+	Move Selection Page Down	Posunout výběr o stránku dolů
+	Move Selection Page Up	Posunout výběr o stránku nahoru
+	Move Selection Right	Posunout výběr doprava
+	Move Selection Up	Posunout výběr nahoru
+	Multicam	Více kamer
+	Navigate to End of Segment	Přejít na konec segmentu
+	Navigate to Next Line	Přejít na další řádek
+	Navigate to Next Word	Přejít na další slovo
+	Navigate to Previous Line	Přejít na předchozí řádek
+	Navigate to Previous Word	Přejít na předchozí slovo
+	Navigate to Start of Segment	Přejít na začátek segmentu
+	Next Multi-Camera Page	Další vícekamerová stránka
+	Nudge Clip Selection Down	Posunout výběr klipů dolů
+	Nudge Clip Selection Left Five Frames	Posunout výběr klipů o pět snímků doleva
+	Nudge Clip Selection Left One Frame	Posunout výběr klipů o jeden snímek doleva
+	Nudge Clip Selection Right Five Frames	Posunout výběr klipů o pět snímků doprava
+	Nudge Clip Selection Right One Frame	Posunout výběr klipů o jeden snímek doprava
+	Nudge Clip Selection Up	Posunout výběr klipů nahoru
+	Nudge Selected Object down by five	Posunout vybraný objekt o pět dolů
+	Nudge Selected Object down by one	Posunout vybraný objekt o jeden dolů
+	Nudge Selected Object to left by five	Posunout vybraný objekt o pět doleva
+	Nudge Selected Object to left by one	Posunout vybraný objekt o jeden doleva
+	Nudge Selected Object to right by five	Posunout vybraný objekt o pět doprava
+	Nudge Selected Object to right by one	Posunout vybraný objekt o jeden doprava
+	Nudge Selected Object up by five	Posunout vybraný objekt o pět nahoru
+	Nudge Selected Object up by one	Posunout vybraný objekt o jeden nahoru
+	Nudge Volume +1dB	Upravit hlasitost +1dB
+	Nudge Volume +3dB	Upravit hlasitost +3dB
+	Nudge Volume -1dB	Upravit hlasitost -1dB
+	Nudge Volume -3dB	Upravit hlasitost -3dB
+	Numbered BMP stills (24-bit)	Číslované statické obrázky BMP (24 bitů)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	Sekvence JPEG
+	Targa Sequence	Sekvence Targa
+	DPX Sequence	Sekvence DPX
+	Numbered JPEG stills (quality 90)	Číslované statické obrázky JPEG (kvalita 90)
+	Numbered Targa stills (24-bit, uncompressed)	Číslované statické obrázky Targa (24 bitů, nekomprimované)
+	Numbered DPX stills (10-bit RGB)	Číslované statické obrázky DPX (10bitové RGB)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	Sekvence OpenEXR
+	Numbered OpenEXR stills (half float, linear, uncompressed)	Číslované statické obrázky OpenEXR (poloviční přesnost, lineární, nekomprimované)
+	Numbered PNG stills at the sequence's frame size	Číslované statické obrázky PNG ve velikosti snímku sekvence
+	Numbered TIFF stills (RGB, 8-bit)	Číslované statické obrázky TIFF (RGB, 8 bitů)
+	Opacity 0 → 100 % over the first second	Krytí 0 → 100 % během první sekundy
+	Opacity 100 → 0 % over the last second	Krytí 100 → 0 % během poslední sekundy
+	Open Bin	Otevřít přihrádku
+	Open Search	Otevřít hledání
+	PNG	PNG
+	PNG Sequence	Sekvence PNG
+	PiP 35% Upper Right	Obraz v obraze 35% vpravo nahoře
+	Picture-in-picture: 35 % scale in the upper right	Obraz v obraze: měřítko 35 % vpravo nahoře
+	Play In to Out with Preroll/Postroll	Přehrát od vstupu k výstupu s předjezdem/dojezdem
+	Play from Playhead to Out Point	Přehrát od přehrávací hlavy k výstupnímu bodu
+	Previous Multi-Camera Page	Předchozí vícekamerová stránka
+	ProjectPanel	Panel projektu
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10 bitů 4:2:2), 24bitové 48 kHz PCM
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12 bitů 4:2:2), 24bitové 48 kHz PCM
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8 bitů 4:2:2), 24bitové 48 kHz PCM
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8 bitů 4:2:2), 24bitové 48 kHz PCM
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8 bitů 4:2:2), 24bitové 48 kHz PCM
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, 24bitové 48 kHz PCM
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, 24bitové 48 kHz PCM
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, 24bitové 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), 24bitové 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) s alfa kanálem, 24bitové 48 kHz PCM
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), 24bitové 48 kHz PCM
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, 24bitové 48 kHz PCM
+	Quit CFA4	Ukončit CFA4
+	Right align text	Zarovnat text doprava
+	Ripple Trim Next Edit to Playhead	Ořezat další střih s posunem k přehrávací hlavě
+	Ripple Trim Previous Edit to Playhead	Ořezat předchozí střih s posunem k přehrávací hlavě
+	Select Camera 1	Vybrat kameru 1
+	Select Camera 2	Vybrat kameru 2
+	Select Camera 3	Vybrat kameru 3
+	Select Camera 4	Vybrat kameru 4
+	Select Camera 5	Vybrat kameru 5
+	Select Camera 6	Vybrat kameru 6
+	Select Camera 7	Vybrat kameru 7
+	Select Camera 8	Vybrat kameru 8
+	Select Camera 9	Vybrat kameru 9
+	Select Clip at Playhead	Vybrat klip na přehrávací hlavě
+	Select Find Box	Vybrat pole hledání
+	Select Next Clip	Vybrat další klip
+	Select Next Panel	Vybrat další panel
+	Select Previous Clip	Vybrat předchozí klip
+	Select Previous Panel	Vybrat předchozí panel
+	Select to Next Line	Vybrat po další řádek
+	Select to Next Word	Vybrat po další slovo
+	Select to Previous Line	Vybrat po předchozí řádek
+	Select to Previous Word	Vybrat po předchozí slovo
+	Select to Segment End	Vybrat po konec segmentu
+	Select to Segment Start	Vybrat po začátek segmentu
+	Set Creative Look	Nastavit kreativní vzhled
+	Set Input LUT	Nastavit vstupní LUT
+	Set Project Panel View	Nastavit zobrazení panelu projektu
+	Show Next Screen	Zobrazit další obrazovku
+	Show Previous Screen	Zobrazit předchozí obrazovku
+	Show Program Transcript	Zobrazit přepis programu
+	Slide Clip Selection Left Five Frames	Posunout výběr klipů mezi sousedy o pět snímků doleva
+	Slide Clip Selection Left One Frame	Posunout výběr klipů mezi sousedy o jeden snímek doleva
+	Slide Clip Selection Right Five Frames	Posunout výběr klipů mezi sousedy o pět snímků doprava
+	Slide Clip Selection Right One Frame	Posunout výběr klipů mezi sousedy o jeden snímek doprava
+	Slip Clip Selection Left Five Frames	Prokluzovat výběr klipů o pět snímků doleva
+	Slip Clip Selection Left One Frame	Prokluzovat výběr klipů o jeden snímek doleva
+	Slip Clip Selection Right Five Frames	Prokluzovat výběr klipů o pět snímků doprava
+	Slip Clip Selection Right One Frame	Prokluzovat výběr klipů o jeden snímek doprava
+	Social Vertical 1080×1920	Sociální sítě na výšku 1080×1920
+	Soft Vignette	Měkká viněta
+	Source In/Out	Vstup/výstup zdroje
+	Split Caption	Rozdělit titulek
+	Stack Clips	Seskupit klipy do balíčku
+	Start Export Queue	Spustit frontu exportu
+	Start Voice-over Recording	Spustit nahrávání komentáře
+	Step Back Five Frames	O pět snímků zpět
+	Step Back One Frame	O jeden snímek zpět
+	Step Forward Five Frames	O pět snímků vpřed
+	Step Forward One Frame	O jeden snímek vpřed
+	Stop Export Queue	Zastavit frontu exportu
+	Stop Multi-Camera Recording	Zastavit vícekamerový záznam
+	Sync Voice-over Capture	Synchronizovat záznam komentáře
+	TIFF	TIFF
+	TIFF Sequence	Sekvence TIFF
+	TextPanel	Panel textu
+	Thumbnail Size Next	Další velikost miniatur
+	Thumbnail Size Previous	Předchozí velikost miniatur
+	Toggle All Audio Targets	Zapnout/vypnout všechny zvukové cíle
+	Toggle All Source Audio	Zapnout/vypnout veškerý zdrojový zvuk
+	Toggle All Source Video	Zapnout/vypnout veškeré zdrojové video
+	Toggle All Video Targets	Zapnout/vypnout všechny obrazové cíle
+	Toggle Audio During Scrubbing	Zapnout/vypnout zvuk při procházení
+	Toggle Full Screen	Zapnout/vypnout celou obrazovku
+	Toggle Mute for All Targeted Audio Tracks	Zapnout/vypnout ztlumení všech cílových zvukových stop
+	Toggle Solo for All Targeted Audio Tracks	Zapnout/vypnout sólo všech cílových zvukových stop
+	Toggle Source/Program Monitor Focus	Přepnout fokus zdrojového/programového monitoru
+	Toggle Target Audio 1	Zapnout/vypnout cílový zvuk 1
+	Toggle Target Audio 2	Zapnout/vypnout cílový zvuk 2
+	Toggle Target Audio 3	Zapnout/vypnout cílový zvuk 3
+	Toggle Target Audio 4	Zapnout/vypnout cílový zvuk 4
+	Toggle Target Audio 5	Zapnout/vypnout cílový zvuk 5
+	Toggle Target Audio 6	Zapnout/vypnout cílový zvuk 6
+	Toggle Target Audio 7	Zapnout/vypnout cílový zvuk 7
+	Toggle Target Audio 8	Zapnout/vypnout cílový zvuk 8
+	Toggle Target Video 1	Zapnout/vypnout cílové video 1
+	Toggle Target Video 2	Zapnout/vypnout cílové video 2
+	Toggle Target Video 3	Zapnout/vypnout cílové video 3
+	Toggle Target Video 4	Zapnout/vypnout cílové video 4
+	Toggle Target Video 5	Zapnout/vypnout cílové video 5
+	Toggle Target Video 6	Zapnout/vypnout cílové video 6
+	Toggle Target Video 7	Zapnout/vypnout cílové video 7
+	Toggle Target Video 8	Zapnout/vypnout cílové video 8
+	Toggle Track Output for All Targeted Video Tracks	Zapnout/vypnout výstup všech cílových obrazových stop
+	Toggle Trim Type	Přepnout typ ořezu
+	Toggle View	Přepnout zobrazení
+	Track Selected Mask	Sledovat vybranou masku
+	Trim Next Edit to Playhead	Ořezat další střih k přehrávací hlavě
+	Trim Previous Edit to Playhead	Ořezat předchozí střih k přehrávací hlavě
+	Trimming	Ořezávání
+	Unstack Clips	Rozdělit balíček klipů
+	CRF (constant quality)	CRF (konstantní kvalita)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	Nahrávání komentáře
+	Voiceover	Komentář
+	WAV, stereo 48 kHz 16-bit PCM	WAV, stereo 48 kHz 16bitové PCM
+	WAV, stereo 48 kHz 24-bit PCM	WAV, stereo 48 kHz 24bitové PCM
+	Warm Tint	Teplý nádech
+	Warm highlights, brown shadows	Teplá světla, hnědé stíny
+	Waveform Audio 48 kHz 16-bit	Waveform Audio 48 kHz 16 bitů
+	Waveform Audio 48 kHz 24-bit	Waveform Audio 48 kHz 24 bitů
+	Web & Social	Web a sociální sítě
+	Write Automation	Zápis automatizace
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	Zvětšit programový monitor na 100%
+	Zoom Program Monitor to Fit	Přizpůsobit programový monitor
+	Zoom Source Monitor to 100%	Zvětšit zdrojový monitor na 100%
+	Zoom Source Monitor to Fit	Přizpůsobit zdrojový monitor
+	Cinematic	Filmové
+	Film Emulation	Emulace filmu
+	Technical	Technické
+	Teal Shadows, Warm Skin	Modrozelené stíny, teplá pleť
+	Night Exterior	Noční exteriér
+	Golden Dusk	Zlatý soumrak
+	Steel Blue	Ocelově modrá
+	Hard Sun	Ostré slunce
+	Faded Print	Vybledlá kopie
+	Silver Retention	Zachování stříbra
+	Cross Processed	Křížově vyvolané
+	Warm Negative	Teplý negativ
+	Neutral Mono	Neutrální mono
+	Hard Mono	Tvrdé mono
+	Sepia Tone	Sépiový tón
+	Cold Mono	Chladné mono
+	Lift Shadows	Zvednout stíny
+	Protect Highlights	Chránit světla
+	Half Saturation	Poloviční sytost
+	Boost Vibrance	Zvýšit živost
+	Legal Range Squeeze	Stlačit do legálního rozsahu
+	A boxed label with a round pointer; move the label and the pointer follows.	Popisek v rámečku s kulatým ukazatelem; přesuňte popisek a ukazatel jej bude následovat.
+	A rounded tag that fits its text, with a status dot.	Zaoblený štítek přizpůsobený textu, se stavovou tečkou.
+	A title on a rounded card with a soft shadow.	Titulek na zaoblené kartě s měkkým stínem.
+	Accent Color	Barva zvýraznění
+	Bar Color	Barva pruhu
+	Box Color	Barva rámečku
+	Box Opacity	Krytí rámečku
+	Callout – Pointer	Popiska – ukazatel
+	Callout – Tag	Popiska – štítek
+	Callouts	Popisky
+	Credits	Titulky tvůrců
+	Dot Color	Barva tečky
+	Heading	Nadpis
+	Large centred title, accent rule and subtitle.	Velký vystředěný titulek, zvýrazňující linka a podtitul.
+	Lower Third – Rule	Spodní třetina – linka
+	Lower Third – Slab	Spodní třetina – deska
+	Lower Thirds	Spodní třetiny
+	Name Color	Barva jména
+	Name Size	Velikost jména
+	Name and role on a coloured slab that widens with the name.	Jméno a funkce na barevné desce, která se rozšiřuje se jménem.
+	Name over a thin rule that always matches the name's width.	Jméno nad tenkou linkou, která vždy odpovídá šířce jména.
+	Pointer Color	Barva ukazatele
+	Role	Funkce
+	Rule Color	Barva linky
+	Show Dot	Zobrazit tečku
+	Show Role	Zobrazit funkci
+	Slab Color	Barva desky
+	Tag Color	Barva štítku
+	Title Color	Barva titulku
+	Title Size	Velikost titulku
+	Title – Boxed	Titulek – v rámečku
+	Title – Centered	Titulek – na střed
+	Titles	Titulky
+	End Credits	Závěrečné titulky
+	End Credits – Roll	Závěrečné titulky – roletka
+	Ticker – Crawl	Běžící text – vodorovný
+	Centred credits that roll up from below the frame and leave at the top.	Vystředěné titulky, které vyjíždějí zpod snímku nahoru a odcházejí horem.
+	A news-style line that crawls in from the right and leaves at the left.	Řádek ve zpravodajském stylu, který přijíždí zprava a odchází vlevo.
+	The language changed but could not be saved: {e}	Jazyk byl změněn, ale nelze jej uložit: {e}
+	no Chinese font is installed on this system; the interface stays in English	v systému není nainstalováno čínské písmo; rozhraní zůstane v angličtině
+	no Korean font is installed on this system; the interface stays in English	v systému není nainstalováno korejské písmo; rozhraní zůstane v angličtině
+	no Georgian font is installed on this system; the interface stays in English	v systému není nainstalováno gruzínské písmo; rozhraní zůstane v angličtině
+	no Japanese font is installed on this system; the interface stays in English	v systému není nainstalováno japonské písmo; rozhraní zůstane v angličtině
+	Main (8-bit)	Main (8 bitů)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 bitů
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 bitů s alfou
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bitů
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 bitů, Film Scan 1, 24bitové 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 bitů s alfa kanálem, Film Scan 1, 24bitové 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bitů, Film Scan 1, 24bitové 48 kHz PCM
+	Deselect All Project Items	Zrušit výběr všech položek projektu
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	Vybrat všechny položky projektu
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	Tažení: přesun · Alt+klepnutí: hladký/rohový · Ctrl+klepnutí: odstranit
+	Drag inward to round the corners	Táhnutím dovnitř zaoblíte rohy
+	Play Source	Přehrát zdroj
+	Source Play/Stop	Přehrát/zastavit zdroj
+	Stop Source	Zastavit zdroj
+	Clear Transition	Vymazat přechod
+	Fill Type	Typ výplně
+	Gradient Angle	Úhel přechodu
+	Edit Narration	Upravit komentář
+	Resize floating panel	Změnit velikost plovoucího panelu
+	Get Project Notes	Získat poznámky k projektu
+	Edit Project Notes	Upravit poznámky k projektu
+	Use Effect Shutter Angle	Použít úhel závěrky efektu
+	Safe graphics mode: {mode}	Bezpečný grafický režim: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Předchozí spuštění s výchozí grafikou selhalo. Obvykle pomůže aktualizace grafického ovladače.
+	Use Default Graphics	Použít výchozí grafiku
+	The default graphics are used from the next start.	Výchozí grafika se použije od příštího spuštění.
+	DirectX 12 only	Jen DirectX 12
+	software rendering	softwarové vykreslování
+	Opens in your web browser: {url}	Otevře se ve webovém prohlížeči: {url}
+	Saves this session's log and shows it in your file manager.	Uloží protokol této relace a zobrazí jej ve správci souborů.
+	Shows a report on this computer.	Zobrazí zprávu o tomto počítači.
+	Shows the version, community links and credits in a CFA4 window.	Zobrazí verzi, odkazy na komunitu a poděkování v okně CFA4.
+	Couldn't open your web browser	Webový prohlížeč nelze otevřít
+	Open this address in your browser yourself:	Otevřete tuto adresu v prohlížeči sami:
+	Reset Interface Zoom	Obnovit zvětšení rozhraní
+	Stereoscopic 3D	Stereoskopické 3D
+	Swap Eyes	Prohodit oči
+	Over/Under	Nad/pod
+	Side by Side	Vedle sebe
+	Stereo to 2D	Stereo na 2D
+	Eye	Oko
+	Stereo Parallax	Stereo paralaxa
+	Horizontal Shift	Vodorovný posun
+	Slit Scan	Štěrbinové snímání
+	Time Span (seconds)	Časový rozsah (sekundy)
+	Current Frame At	Aktuální snímek na
+	Blend Slices	Prolnout řezy
+	Creative Looks	Kreativní vzhledy
+	Film Grain	Filmové zrno
+	Animated	Animované
+	Color Grain	Barevné zrno
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080, 8 Mb/s, AAC 160 kb/s, 6sekundové fragmentované segmenty MP4
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	Programový proud MPEG-2
+	MPEG-2 Transport Stream HD 1080	Transportní proud MPEG-2 HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480, 29,97 fps, 16:9 anamorfní, 6 Mb/s, GOP 18, 16bitové 48 kHz LPCM, .mpg (proud připravený pro DVD; bez authoringu VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576, 25 fps, 16:9 anamorfní, 6 Mb/s, GOP 15, 16bitové 48 kHz LPCM, .mpg (proud připravený pro DVD; bez authoringu VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Video MPEG-2 (Main Profile 4:2:0, 0,4 bitu na pixel) ve velikosti a frekvenci snímků sekvence, 16bitové 48 kHz LPCM, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Video MPEG-2 1920×1080, průměrně 18 Mb/s, AAC 192 kb/s, .ts
+	Six-Point Pin	Šestibodové připnutí
+	Upper Center	Nahoře uprostřed
+	Lower Center	Dole uprostřed
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Použít FFmpeg pro soubory, které engine CFA4 neotevře (FFmpeg 9.0.2 nebo novější, sestavení GPL-3)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Použít systémový GStreamer pro soubory, které neotevře engine ani FFmpeg
+	Analyze Source for Smart Cut	Analyzovat zdroj pro chytrý střih
+	Plan Smart Cut	Naplánovat chytrý střih
+	Run Smart Cut	Spustit chytrý střih
+	No sequence open. Double-click a sequence in the Project panel.	Není otevřena žádná sekvence. Poklepejte na sekvenci v panelu Projekt.
+	English (US)	English (US)
+	English (UK)	English (UK)
+	English (Australia)	English (Australia)
+export.summary	High	vysoká
+export.summary	Medium	střední
+export.summary	Low	nízká
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Zvuk zkopírován: {tracks}
+	Audio track {track} is not copied: {why}	Zvuková stopa {track} se nekopíruje: {why}
+	Point tracker	Sledování bodu
+	Correlation tracker	Korelační sledování
+	DCP language	Jazyk DCP
+	None (RFC 5646 tag, e.g. en-US)	Žádný (značka RFC 5646, např. cs-CZ)
+	ISDCF name	Název ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Pojmenovat složku DCP podle Digital Cinema Naming Convention
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/cs/common.tsv at aa36bd8, 2026-11-10. MIT OR Apache-2.0; the copyright
+# notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (cs). These rows were
+# written clean-room there; only rows whose English and meaning match CFA4's were taken, and a few
+# were reworded above for video editing.
+
+	Align to Selection	Zarovnat k výběru
+	Arrange	Uspořádat
+	Automatic	Automaticky
+	Balance	Vyvážení
+	Blend Mode	Režim prolnutí
+	Blue	Modrá
+	Bottom	Dole
+	Bring Forward	Přenést blíž
+	Bring to Front	Přenést do popředí
+	Brown	Hnědá
+	Browse…	Procházet…
+	Clear	Vymazat
+	Close	Zavřít
+	Color	Barva
+	Color Burn	Ztmavit barvy
+	Color Dodge	Zesvětlit barvy
+	Copy	Kopírovat
+	Custom	Vlastní
+	Cut	Vyjmout
+	Darken	Ztmavit
+	Deselect All	Zrušit celý výběr
+	Difference	Rozdíl
+	Discard	Zahodit
+	Distort	Zkreslení
+	Distribute	Rozmístit
+	Divide	Dělit
+	Done	Hotovo
+	Duplicate	Duplikovat
+	Duration	Doba trvání
+	Edit	Úpravy
+	Edit Original	Upravit originál
+	Effects	Efekty
+	Ellipse	Elipsa
+	Enable	Zapnout
+	Exclusion	Vyloučit
+	Export	Exportovat
+	File	Soubor
+	Find Next	Najít další
+	Fit	Přizpůsobit
+	Flatten	Sloučit
+	Format	Formát
+	General…	Obecné…
+	Generate	Generovat
+	Green	Zelená
+	Group	Seskupit
+	Hard Light	Tvrdé světlo
+	Hard Mix	Tvrdé míchání
+	Help	Nápověda
+	History	Historie
+	Hue	Odstín
+	Import…	Importovat…
+	Info	Informace
+	Label	Popisek
+	Language	Jazyk
+	Left	Vlevo
+	Level	Úroveň
+	Libraries	Knihovny
+	Lighten	Zesvětlit
+	Lighter Color	Světlejší barva
+	Linear	Lineární
+	Linear Burn	Lineárně ztmavit
+	Linear Light	Lineární světlo
+	Luminosity	Světlost
+	Magenta	Purpurová
+	Metadata	Metadata
+	Modify	Upravit
+	Motion	Pohyb
+	Multiply	Násobit
+	New	Nový
+	New Layer	Nová vrstva
+	No	Ne
+	Normal	Normální
+	Opacity	Krytí
+	Output	Výstup
+	Overlay	Překrýt
+	Panels	Panely
+	Paste	Vložit
+	Perspective	Perspektiva
+	Pin Light	Bodové světlo
+	Polygon	Mnohoúhelník
+	Position	Pozice
+	Preset	Přednastavení
+	Properties	Vlastnosti
+	Purple	Fialová
+	Range	Rozsah
+	Ready	Připraveno
+	Recover	Obnovit
+	Rectangle	Obdélník
+	Redo	Znovu
+	Remove	Odebrat
+	Rename…	Přejmenovat…
+	Revert	Vrátit k uložené verzi
+	Right	Vpravo
+	Rotation	Otočení
+	Saturation	Sytost
+	Save	Uložit
+	Save As…	Uložit jako…
+	Save a Copy…	Uložit kopii…
+	Save as Template…	Uložit jako šablonu…
+	Scale	Měřítko
+	Scratch Disks…	Odkládací disky…
+	Screen	Závoj
+	Search	Hledat
+	Select	Výběr
+	Select All	Vybrat vše
+	Selection Tool	Nástroj Výběr
+	Send Backward	Přesunout dál
+	Send to Back	Přesunout do pozadí
+	Soft Light	Měkké světlo
+	Source	Zdroj
+	Special	Speciální
+	Speed	Rychlost
+	Status	Stav
+	Stylize	Stylizace
+	Subtract	Odečíst
+	Text	Text
+	Time	Čas
+	Timeline	Časová osa
+	Tools	Nástroje
+	Top	Nahoře
+	Transform	Transformace
+	Type	Typ
+	Undo	Zpět
+	Ungroup	Oddělit
+	Untitled	Bez názvu
+	Video	Video
+	View	Zobrazení
+	Violet	Fialová
+	Vivid Light	Jasné světlo
+	Window	Okno
+	Workspaces	Pracovní prostory
+	Yellow	Žlutá
+	Yes	Ano
+	Ellipse Tool	Nástroj Elipsa
+	Hand Tool	Nástroj Ručička
+	Pen Tool	Nástroj Pero
+	Rectangle Tool	Nástroj Obdélník
+	Type Tool	Nástroj Text
+	Vertical Type Tool	Nástroj Svislý text
+	Zoom Tool	Nástroj Lupa
+	Alpha	Alfa
+	Full	Úplná
+	Magnification	Zvětšení
+	Red	Červená
+	Reset	Obnovit
+	Settings	Nastavení
+	Appearance	Vzhled
+	Dark	Tmavý
+	Light	Světlý
+	Next Appearance Mode	Další režim vzhledu
+	Type:	Typ:
+	Color Space	Barevný prostor
+	Description	Popis
+	Comment	Komentář
+	Cancel	Zrušit
+	Show All	Zobrazit vše
+	Off	Vypnuto
+	Auto	Automaticky
+	Brightness	Jas
+	Histogram	Histogram
+	Presets	Přednastavení
+	RGB	RGB
+	Adjustments	Korekce
+	Amount	Míra
+	Blacks	Černé
+	Blur	Rozostření
+	Contrast	Kontrast
+	Correction	Korekce
+	Curves	Křivky
+	Exposure	Expozice
+	Faded Film	Vybledlý film
+	Highlights	Světla
+	Hue Shift	Posun odstínu
+	Intensity	Intenzita
+	Midpoint	Střed
+	Midtones	Střední tóny
+	Monochrome	Jednobarevné
+	None	Žádné
+	Refine	Upřesnit
+	Roundness	Kulatost
+	Shadows	Stíny
+	Sharpen	Zostření
+	Show Mask	Zobrazit masku
+	Soften	Změkčení
+	Temperature	Teplota
+	Tint	Tón
+	Vibrance	Živost
+	Whites	Bílé
+	(none)	(žádné)
+	Favorites	Oblíbené
+	Import	Import
+	List View	Zobrazení seznamu
+	Refresh	Obnovit
+	Size	Velikost
+	Align	Zarovnat
+	Align center	Zarovnat na střed
+	Align left	Zarovnat doleva
+	Align right	Zarovnat doprava
+	Subtitle	Podtitul
+	(Custom)	(Vlastní)
+	Browse	Procházet
+	Clarity	Zřetelnost
+	Dynamics	Dynamika
+	Preset:	Přednastavení:
+	Reduce Noise	Redukovat šum
+	Sensitivity	Citlivost
+	Align Left	Zarovnat vlevo
+	Align Right	Zarovnat vpravo
+	Alignment	Zarovnání
+	All Caps	Verzálky
+	All Categories	Všechny kategorie
+	Angle	Úhel
+	Apply	Použít
+	Background	Pozadí
+	Baseline Shift	Posun účaří
+	Center	Střed
+	Delete Layer	Odstranit vrstvu
+	Distance	Vzdálenost
+	Fill	Výplň
+	Font	Písmo
+	Font Size	Velikost písma
+	Gradient	Přechod
+	Justify	Do bloku
+	Kerning	Kerning
+	Layers	Vrstvy
+	Leading	Proklad
+	Linear Gradient	Lineární přechod
+	OK	OK
+	OpenType	OpenType
+	Orientation	Orientace
+	Path	Cesta
+	Shape	Tvar
+	Small Caps	Kapitálky
+	Stroke	Tah
+	Style	Styl
+	Tracking	Prostrkání
+	Underline	Podtržené
+	Advanced	Pokročilé
+	Default	Výchozí
+	Download	Stáhnout
+	High	Vysoká
+	Low	Nízká
+	Preview	Náhled
+	Voice	Hlas
+	Open	Otevřít
+	Crop	Oříznout
+	Delete	Odstranit
+	Descending	Sestupně
+	Find	Najít
+	Icon	Ikona
+	Large	Velké
+	List	Seznam
+	Name:	Název:
+	Rename	Přejmenovat
+	Small	Malé
+	Thumbnails	Miniatury
+	Close All	Zavřít vše
+	Description:	Popis:
+	Save Preset…	Uložit přednastavení…
+	Add	Přidat
+	Intersect	Protnout
+	Value	Hodnota
+	Edit…	Upravit…
+	Threshold	Práh
+	Continue	Pokračovat
+	Active	Aktivní
+	Add to favorites	Přidat do oblíbených
+	Appearance Settings…	Nastavení vzhledu…
+	Exported to {path}	Exportováno do {path}
+	Preferences	Předvolby
+	Remove from favorites	Odebrat z oblíbených
+	Reset…	Obnovit…
+	Sync with system	Synchronizovat se systémem
+	Adaptive	Adaptivní
+	Color…	Barva…
+	Dark Theme	Tmavý motiv
+	Double-click	Dvojklik
+	Dutch	Nizozemština
+	French	Francouzština
+	General	Obecné
+	German	Němčina
+	Horizontal	Vodorovně
+	Interface Language	Jazyk rozhraní
+	Italian	Italština
+	Japanese	Japonština
+	Labels	Štítky
+	Light Theme	Světlý motiv
+	Location	Umístění
+	Portuguese	Portugalština
+	Russian	Ruština
+	Shapes	Tvary
+	Show Tool Tips	Zobrazovat popisky nástrojů
+	Smart quotes	Typografické uvozovky
+	Spanish	Španělština
+	Vertical	Svisle
+	Input:	Vstup:
+	● Recording	● Záznam
+	Next page	Další stránka
+	Offset:	Posun:
+	Page {page} of {pages}	Stránka {page} z {pages}
+	Previous page	Předchozí stránka
+	Not available	Není k dispozici
+	Version	Verze
+	Command	Příkaz
+	Commands:	Příkazy:
+	Export…	Exportovat…
+	Keyboard Shortcuts	Klávesové zkratky
+	Keyboard Shortcuts…	Klávesové zkratky…
+	No matching commands	Žádné odpovídající příkazy
+	Shortcut	Zkratka
+	Dock Panel	Ukotvit panel
+	Close Panel	Zavřít panel
+	Add Guide	Přidat vodítko
+	Clear Guides	Vymazat vodítka
+	Guides	Vodítka
+	Lock Guides	Zamknout vodítka
+	Orientation:	Orientace:
+	Position:	Umístění:
+	Set	Nastavit
+	Show Guides	Zobrazit vodítka
+	Show Rulers	Zobrazit pravítka
+	Color Management	Správa barev
+	Fields:	Pole:
+	Height:	Výška:
+	Layout:	Rozvržení:
+	Width:	Šířka:
+	All	Vše
+	Any	Libovolné
+	Color:	Barva:
+	Colour	Barva
+	Destination:	Cíl:
+	Find:	Najít:
+	Keep:	Ponechat:
+	Language:	Jazyk:
+	Method:	Metoda:
+	Save as Template	Uložit jako šablonu
+	Scratch Disks	Odkládací disky
+	Simplify	Zjednodušit
+	Destination	Cíl
+	File Name	Název souboru
+	Folder	Složka
+	Missing	Chybí
+	Options	Možnosti
+	Embed	Vložit
+	Exported {path}	Exportováno: {path}
+	Format:	Formát:
+	Path:	Cesta:
+	Replace	Nahradit
+	Preset Manager	Správce přednastavení
+	User	Uživatel
+	Typewriter	Psací stroj
+	Compression	Komprese
+	Medium	Střední
+	Profile	Profil
+	Quality	Kvalita
+	Bottom Left	Vlevo dole
+	Bottom Right	Vpravo dole
+	Export Options	Možnosti exportu
+	Image	Obraz
+	Images	Obrazy
+	Prefix	Předpona
+	Top Left	Vlevo nahoře
+	Top Right	Vpravo nahoře
+	Copyright	Autorská práva
+	Title	Název
+	Scaling	Měřítko
+	Summary	Souhrn
+	16 bit	16 bitů
+	24 bit	24 bitů
+	32 bit	32 bitů
+	Channels	Kanály
+	Progressive	Progresivní
+	Sample Size	Velikost vzorku
+	Home	Domů
+	Recent	Nedávné
+	Up	Nahoru
+	Down	Dolů
+	Restore	Obnovit
+	Show:	Zobrazit:
+	Clear All	Vymazat vše
+	just now	právě teď
+	{n} min ago	před {n} min
+	{n} h ago	před {n} h
+	Warning	Upozornění
+	Error	Chyba
+	Strikethrough	Přeškrtnuté
+	Clear History	Vymazat historii
+	Panel menu	Nabídka panelu
+	About	O aplikaci
+	Contributors	Přispěvatelé
+	Models	Modely
+	Show	Zobrazit
+	Sort	Seřadit
+	Reverse the order	Obrátit pořadí
+	Table	Tabulka
+	Company	Společnost
+	Model	Model
+	Commits	Commity
+	% of all commits	Podíl na commitech (%)
+	Lines +/−	Řádky +/−
+	Version {version}	Verze {version}
+	Username	Uživatelské jméno
+	Display name	Zobrazované jméno
+	Real name	Skutečné jméno
+	Name (A–Z)	Jméno (A–Z)
+	Merged PRs	Sloučené PR
+	Lines added	Přidané řádky
+	Lines deleted	Odstraněné řádky
+	Line delta	Rozdíl řádků
+	Binary assets added	Přidané binární soubory
+	Binary assets removed	Odebrané binární soubory
+	First commit	První commit
+	Last commit	Poslední commit
+	Category:	Kategorie:
+	Replace:	Nahradit:
+	Output:	Výstup:
+	Open Recent	Otevřít nedávné
+	Clear Recent Files	Vymazat nedávné soubory
+	Report an Issue…	Nahlásit problém…
+	Review	Revize
+	Zoom In	Přiblížit
+	Zoom Out	Oddálit
+	Standard	Standardní
+	Source code on GitHub	Zdrojový kód na GitHubu
+	Community	Komunita
+	Join us on Discord	Přidejte se k nám na Discordu
+	New Workspace	Nový pracovní prostor
+	Effect	Efekt
+	Don't Save	Neukládat
+	Composite	Kompozitní
+	Comparison	Porovnání
+	1 file	1 soubor
+	{n} files	Soubory: {n}
+	Background Color	Barva pozadí
+	Basic	Základní
+	Black	Černá
+	Black & White	Černobílá
+	Black and white	Černobílé
+	Blending Mode	Režim míchání
+	Blocks	Bloky
+	Blur Angle	Úhel rozostření
+	Border	Okraj
+	Borders	Ohraničení
+	Brush Size	Velikost štětce
+	Brush Strokes	Tahy štětcem
+	Bulge	Vyboulení
+	Channel	Kanál
+	Channel Mixer	Míchání kanálů
+	Circle	Kruh
+	Clone	Klonovat
+	Color Balance	Vyvážení barev
+	Colorize	Obarvit
+	Columns	Sloupce
+	Crystallize	Krystalizace
+	Curvature	Zakřivení
+	Curve	Křivka
+	Depth	Hloubka
+	Desaturate	Odbarvit
+	Diamond	Kosočtverec
+	Dimensions	Rozměry
+	Direction	Směr
+	Distortion	Deformace
+	Drop Shadow	Vržený stín
+	Edge Thickness	Tloušťka okrajů
+	Edge Width	Šířka okraje
+	Emboss	Reliéf
+	Fast	Rychlé
+	Filter	Filtr
+	Flash	Blesk
+	Focus	Zaostření
+	Frequency	Frekvence
+	From	Od
+	Gamma	Gama
+	Gamma Correction	Korekce gama
+	Gamut Warning	Upozornění na gamut
+	Gaussian Blur	Gaussovské rozostření
+	Glass	Sklo
+	Glow	Záře
+	Glow Brightness	Jas záře
+	Good	Dobrá
+	Grid	Mřížka
+	Heart	Srdce
+	Height	Výška
+	Hexagon	Šestiúhelník
+	High Pass	Horní propust
+	Inside	Uvnitř
+	Interpolation	Interpolace
+	Invert	Invertovat
+	Left to Right	Zleva doprava
+	Length	Délka
+	Lens Flare	Odlesk objektivu
+	Level 1	Úroveň 1
+	Level 2	Úroveň 2
+	Level 3	Úroveň 3
+	Level 4	Úroveň 4
+	Levels	Úrovně
+	Light Intensity	Intenzita světla
+	Light Type	Typ světla
+	Lighting Effects	Světelné efekty
+	Luminance	Luminance
+	Matte	Podklad
+	Maximum	Maximální
+	Median	Medián
+	Method	Metoda
+	Minimum	Minimální
+	Mirror	Zrcadlit
+	Mode	Režim
+	Mosaic	Mozaika
+	Move	Přesunout
+	Noise	Šum
+	Octagon	Osmiúhelník
+	On	Zapnuto
+	Outside	Vně
+	Pentagon	Pětiúhelník
+	Photocopy	Fotokopie
+	Points	Body
+	Posterize	Posterizace
+	Preserve Luminosity	Zachovat světlost
+	Radial	Kruhové
+	Radial Blur	Radiální rozostření
+	Radius	Poloměr
+	Random	Náhodný
+	Rays	Paprsky
+	Reflected	Zrcadlený
+	Relaxed	Volné
+	Relief	Reliéf
+	Result	Výsledek
+	Rows	Řádky
+	Segments	Segmenty
+	Skew	Zkosení
+	Slice	Řez
+	Slices	Řezy
+	Smoothness	Vyhlazení
+	Soft	Měkké
+	Softness	Měkkost
+	Solarize	Solarizace
+	Spherize	Sférická deformace
+	Split	Rozdělit
+	Square	Čtverec
+	Star	Hvězda
+	Strength	Síla
+	Stretch	Roztáhnout
+	Stroke Color	Barva tahu
+	Stroke Length	Délka tahu
+	Thickness	Tloušťka
+	Tilt	Náklon
+	Tint Color	Barva nádechu
+	To	Do
+	Tolerance	Tolerance
+	Transparency	Průhlednost
+	Triangle	Trojúhelník
+	Twirl	Zatočení
+	Twist	Zkroucení
+	Unsharp Mask	Maska rozostření
+	Vertical Alignment	Svislé zarovnání
+	Wave	Vlny
+	White	Bílá
+	White Is High	Bílá je vysoko
+	Width	Šířka
+	Stop	Zastavit
+	Application	Aplikace
+	Baseline	Účaří
+	Contains	Obsahuje
+	Masks	Masky
+	Navigation	Navigace
+	Panel	Panel
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Titulky tvůrců z tabulky
+	A .ods, .xlsx or CSV credits sheet	Tabulka titulků tvůrců ve formátu .ods, .xlsx nebo CSV
+	The spreadsheet's folder	Složka tabulky
+	Built-in styles	Vestavěné styly
+	Spreadsheet	Tabulka
+	Sheet	List
+	Pictures	Obrázky
+	Styling	Styl
+	Page	Stránka
+	Warnings	Upozornění
+	Moment in the page	Okamžik na stránce
+	Place at Playhead	Umístit na přehrávací hlavu
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tabulky (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Styl titulků tvůrců (*.json)
+	Card	Karta
+	Credits Spreadsheet	Tabulka titulků tvůrců
+	Reading…	Načítání…
+	(one table)	(jedna tabulka)
+	Total: {time}	Celkem: {time}
+	Row {row}: {message}	Řádek {row}: {message}
+	Choose a credits spreadsheet.	Zvolte tabulku titulků tvůrců.
+	No preview	Bez náhledu
+	Placing…	Umísťování…
+	Placed {n} pages on the timeline.	Na časovou osu umístěno stránek: {n}.
+	Credits Page Picture	Obrázek stránky titulků tvůrců
+	Preview Credits	Náhled titulků tvůrců
+	Credits Styles	Styly titulků tvůrců
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tabulky a soubory titulků tvůrců (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Soubor titulků tvůrců CFA4 (*.cfa4credits)
+	Save as Credits File…	Uložit jako soubor titulků tvůrců…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tabulka, list, styl a řádky v jednom souboru, který otevřete na libovolném počítači
+	Saved: {path}	Uloženo: {path}
+	Added	Přidáno
+	Removed	Odebráno
+	Changed	Změněno
+	(empty row)	(prázdný řádek)
+	Refresh Credits from Spreadsheet	Obnovit titulky tvůrců z tabulky
+	Change	Změna
+	Before → After	Před → Po
+	Select None	Nevybrat nic
+	Keep my edits on the pages (where their block is unchanged)	Zachovat mé úpravy na stránkách (kde se jejich blok nezměnil)
+	Locate Spreadsheet…	Vyhledat tabulku…
+	Comparing…	Porovnávání…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Změny v {file} od umístění titulků tvůrců: {n}. Odškrtněte, co nechcete.
+	The spreadsheet {file} has not changed since the credits were placed.	Tabulka {file} se od umístění titulků tvůrců nezměnila.
+	{n} layers were edited by hand on the pages.	Ručně upravené vrstvy na stránkách: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Přijetím všech změn by se nahradily tyto položky, protože se změnil jejich blok: {names}
+	Refreshing…	Obnovování…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Obnoveno: použité změny: {n}, zachované ruční úpravy: {kept}.
+	Refresh Credits from Spreadsheet…	Obnovit titulky tvůrců z tabulky…
+	Save Credits File…	Uložit soubor titulků tvůrců…
+	Compare Credits with Spreadsheet	Porovnat titulky tvůrců s tabulkou
+	“{name}” appears twice in the same block	„{name}“ je ve stejném bloku dvakrát
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ je v řádku {otherRow} zapsáno jako „{other}“
+	The font “{font}” is not installed; another font is used	Písmo „{font}“ není nainstalováno; použije se jiné
+	The font “{font}” has no “{chars}”; another font draws them	Písmo „{font}“ neobsahuje „{chars}“; vykreslí je jiné písmo
+	“{text}” is outside the title-safe area	„{text}“ je mimo oblast bezpečnou pro titulky
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ je na černé příliš tmavé (kontrast {ratio}:1; je potřeba alespoň 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ má výšku {px} px; od 24 px se dobře čte
+	The roll moves {speed} px per frame; a whole number does not shimmer	Posun je {speed} px na snímek; celé číslo nebliká
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Řádek přejde obraz za {seconds} s; alespoň 6 s se dobře čte
+	The card holds for only {seconds} s after its fades	Karta zůstane po prolnutích jen {seconds} s
+	This page starts {seconds} s before the previous one ends	Tato stránka začíná {seconds} s před koncem předchozí
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ se zobrazuje na {percent} % svých pixelů; bude vypadat neostře
+	{more} more of the same	Dalších {more} stejného druhu
+	Page {page}: {message}	Stránka {page}: {message}
+	Checks and warnings	Kontroly a upozornění
+	Checks: {errors} errors, {warnings} warnings	Kontroly: chyby {errors}, upozornění {warnings}
+	Check Credits	Zkontrolovat titulky tvůrců
+	The whole music ({time})	Celá hudba ({time})
+	Until the sound ends ({time})	Do konce zvuku ({time})
+	To the last bar line ({time})	Po poslední taktovou čáru ({time})
+	Fit Credits to Music	Přizpůsobit titulky tvůrců hudbě
+	Fit Credits to Music…	Přizpůsobit titulky tvůrců hudbě…
+	Analyse Music for Credits	Analyzovat hudbu pro titulky tvůrců
+	Length:	Délka:
+	Cards last whole beats (cuts on the beat)	Karty trvají celé doby (střih na dobu)
+	Start the credits where the music starts	Začít titulky tvůrců tam, kde začíná hudba
+	Length of the credits	Délka titulků tvůrců
+	Remove Fitting	Odebrat přizpůsobení
+	Listening to the music…	Poslouchání hudby…
+	Length: {time}	Délka: {time}
+	the sound ends at {time}	zvuk končí v {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	titulky tvůrců bez přizpůsobení: {time}
+	Select a credits page on the timeline.	Vyberte na časové ose stránku titulků tvůrců.
+	Fitting…	Přizpůsobování…
+	The credits now last {time}.	Titulky tvůrců nyní trvají {time}.
+	Fitting removed.	Přizpůsobení odebráno.
+	Fit to This Length	Přizpůsobit této délce
+	No music to measure ({problem}); type the length.	Není co měřit, chybí hudba ({problem}); zadejte délku.
+	The text moves {speed} px per frame; a whole number does not shimmer	Text se posouvá o {speed} px na snímek; celé číslo nebliká
+	Crawl	Běžící text
+	Picture: {file}	Obrázek: {file}
+	Video: {file}	Video: {file}
+	Into the next	Do další
+	Safe areas and spines	Bezpečné oblasti a osy
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Bezpečná oblast akce (93 %), titulků (90 %), střed a osy stránky
+	Baseline grid	Mřížka účaří
+	Lines one gap unit apart, moving with the page	Čáry vzdálené o jednu jednotku mezery, pohybují se se stránkou
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ nevyniká na pozadí (kontrast {ratio}:1; je potřeba alespoň 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Za textem je obrázek nebo video: zkontrolujte kontrast okem

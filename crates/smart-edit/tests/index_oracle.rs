@@ -243,28 +243,32 @@ fn av1_mp4(ff: &Path, name: &str, codec_args: &[&str]) -> Option<(PathBuf, Strea
     Some((file, ix))
 }
 
-/// ffprobe's shown frames: (pts, key frame), in presentation order.
-fn probe_keys(fp: &Path, file: &Path) -> Vec<(i64, bool)> {
+/// ffprobe's shown frames: (pts, key frame), in presentation order, and what ffprobe said on stderr
+/// (decode errors). Every row must parse: a frame without a timestamp fails here, it is not dropped.
+fn probe_keys(fp: &Path, file: &Path) -> (Vec<(i64, bool)>, String) {
     let o = Command::new(fp)
         .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "frame=pts,key_frame", "-of", "compact=p=0"])
         .arg(file)
         .output()
         .unwrap();
-    assert!(o.status.success());
+    let stderr = String::from_utf8_lossy(&o.stderr).into_owned();
+    assert!(o.status.success(), "ffprobe failed on {}: {stderr}", file.display());
     let mut rows: Vec<(i64, bool)> = String::from_utf8_lossy(&o.stdout)
         .lines()
-        .filter_map(|l| {
+        .filter(|l| !l.trim().is_empty())
+        .map(|l| {
             let field = |name: &str| l.split('|').find_map(|kv| kv.strip_prefix(name)?.strip_prefix('=')?.trim().parse::<i64>().ok());
-            Some((field("pts")?, field("key_frame")? == 1))
+            let (Some(pts), Some(key)) = (field("pts"), field("key_frame")) else { panic!("unexpected ffprobe row {l:?} for {}", file.display()) };
+            (pts, key == 1)
         })
         .collect();
     rows.sort();
-    rows
+    (rows, stderr)
 }
 
 fn check_av1(fp: &Path, file: &Path, ix: &StreamIndex) {
-    let shown = probe_keys(fp, file);
-    assert_eq!(ix.frames.len(), shown.len(), "one temporal unit per shown frame: {}", file.display());
+    let (shown, stderr) = probe_keys(fp, file);
+    assert_eq!(ix.frames.len(), shown.len(), "one temporal unit per shown frame: {} (ffprobe stderr: {stderr:?})", file.display());
     // positions in presentation order, so the two timelines need not share an origin
     let keys: Vec<usize> = shown.iter().enumerate().filter(|(_, (_, k))| *k).map(|(i, _)| i).collect();
     let ours: Vec<usize> = ix
@@ -304,8 +308,11 @@ fn av1_svt_reference() {
         cfa4_testkit::skip("index_oracle::av1_svt_reference", "ffmpeg has no libsvtav1");
         return;
     }
-    let args = ["-c:v", "libsvtav1", "-preset", "12", "-g", "25", "-svtav1-params", "scd=0:irefresh-type=2", "-pix_fmt", "yuv420p"];
-    let Some((file, ix)) = av1_mp4(&ff, "av1_svt.mp4", &args) else { panic!("ffmpeg could not make the fixture") };
+    // `lp=1`: one encoder thread. Multi-threaded SVT-AV1 (2.3.0 in CI) does not always write the same
+    // stream; one CI run got 100 temporal units of which libdav1d showed 99. ffprobe decodes with one
+    // thread already, so the encoder is the varying side; a single-threaded encode is reproducible.
+    let args = ["-c:v", "libsvtav1", "-preset", "12", "-g", "25", "-svtav1-params", "scd=0:irefresh-type=2:lp=1", "-pix_fmt", "yuv420p"];
+    let Some((file, ix)) = av1_mp4(&ff, "av1_svt_lp1.mp4", &args) else { panic!("ffmpeg could not make the fixture") };
     check_av1(&fp, &file, &ix);
     assert!(ix.clean_access_points().len() >= 4, "{:?}", ix.gops);
 }

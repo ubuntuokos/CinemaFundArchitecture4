@@ -1,5 +1,5 @@
 //! MPEG-2 output of the stepped exporter: the MPEG-2 video pictures in a program stream with
-//! 16-bit DVD LPCM, a transport stream (188-byte, or 192-byte BDAV `.m2ts`) with AAC in ADTS, or a
+//! 16- or 24-bit DVD LPCM, a transport stream (188-byte, or 192-byte BDAV `.m2ts`) with AAC in ADTS, or a
 //! bare elementary stream (`.m2v`, no audio), written with [`cfa4_mpegts::Muxer`].
 
 use std::io::Write;
@@ -103,8 +103,8 @@ enum Sink {
 
 /// The audio of an MPEG-2 export.
 pub(crate) enum MpegAudio {
-    /// 16-bit DVD LPCM (program streams).
-    Lpcm { sample_rate: u32, channels: u32 },
+    /// DVD LPCM (program streams) of 16 or 24 bits.
+    Lpcm { sample_rate: u32, channels: u32, bits: u32 },
     /// AAC access units with their ADTS header (transport streams); `priming` samples of encoder
     /// delay come before the first output sample.
     Aac { header: AdtsHeader, sample_rate: u32, priming: u32 },
@@ -120,6 +120,9 @@ pub(crate) struct MpegMux {
     samples: i64,
     /// Decode time of the first picture in frames: before 0 when B pictures delay the display.
     dts_base: i64,
+    /// 20- and 24-bit LPCM goes in groups of two sample frames: an odd frame waits here
+    /// (interleaved samples).
+    pending: Vec<i32>,
 }
 
 fn mux_err(e: cfa4_mpegts::MuxError) -> ExportError {
@@ -144,7 +147,9 @@ impl MpegMux {
             c => {
                 let mut streams = vec![MuxCodec::Mpeg2Video];
                 match &audio {
-                    Some(MpegAudio::Lpcm { sample_rate, channels }) => streams.push(MuxCodec::LpcmDvd { sample_rate: *sample_rate, channels: *channels }),
+                    Some(MpegAudio::Lpcm { sample_rate, channels, bits }) => {
+                        streams.push(MuxCodec::LpcmDvd { sample_rate: *sample_rate, channels: *channels, bits: *bits })
+                    }
                     Some(MpegAudio::Aac { .. }) => streams.push(MuxCodec::AacAdts),
                     None => {}
                 }
@@ -157,7 +162,7 @@ impl MpegMux {
             }
         };
         let audio = if container.has_audio() { audio } else { None };
-        Ok(MpegMux { sink, rate, audio, pictures: 0, samples: 0, dts_base: 0 })
+        Ok(MpegMux { sink, rate, audio, pictures: 0, samples: 0, dts_base: 0, pending: Vec::new() })
     }
 
     pub fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
@@ -183,22 +188,32 @@ impl MpegMux {
 
     /// Planar samples of an LPCM export.
     pub fn write_pcm(&mut self, planar: &[Vec<f32>]) -> Result<()> {
-        let (Some(MpegAudio::Lpcm { sample_rate, channels }), Sink::Mux(m)) = (&self.audio, &mut self.sink) else { return Ok(()) };
+        let (Some(MpegAudio::Lpcm { sample_rate, channels, bits }), Sink::Mux(m)) = (&self.audio, &mut self.sink) else { return Ok(()) };
         let n = planar.first().map_or(0, Vec::len);
         if n == 0 {
             return Ok(());
         }
-        let ch = *channels as usize;
-        let mut data = Vec::with_capacity(n * ch * 2);
+        let (ch, bits) = (*channels as usize, *bits);
+        // the samples quantised like a WAV export's, interleaved, after a frame held back last time
+        let format = if bits == 24 { crate::SampleFormat::Int24 } else { crate::SampleFormat::Int16 };
+        let held = self.pending.len() / ch.max(1);
+        let mut frames = std::mem::take(&mut self.pending);
+        frames.reserve(n * ch);
         for i in 0..n {
             for c in 0..ch {
                 let v = planar.get(c).and_then(|p| p.get(i)).copied().unwrap_or(0.0);
-                let s = if v.is_finite() { (v.clamp(-1.0, 1.0) * 32767.0).round() as i16 } else { 0 };
-                data.extend_from_slice(&s.to_be_bytes());
+                frames.push(format.quantise(v));
             }
         }
-        let pts = to_90k(self.samples, i64::from(*sample_rate), 1);
-        m.write(1, &data, pts, None, true).map_err(mux_err)?;
+        if bits != 16 && (frames.len() / ch.max(1)) % 2 == 1 {
+            self.pending = frames.split_off(frames.len() - ch);
+        }
+        let data = pack_dvd_lpcm(&frames, ch, bits);
+        // the packet starts with the held frame, which is one sample period earlier
+        let pts = to_90k(self.samples - held as i64, i64::from(*sample_rate), 1);
+        if !data.is_empty() {
+            m.write(1, &data, pts, None, true).map_err(mux_err)?;
+        }
         self.samples += n as i64;
         Ok(())
     }
@@ -226,6 +241,16 @@ impl MpegMux {
                 out
             }
             Sink::Mux(mut m) => {
+                // a 20- / 24-bit group still missing its second frame: completed with silence
+                if let Some(MpegAudio::Lpcm { sample_rate, channels, bits }) = &self.audio
+                    && !self.pending.is_empty()
+                {
+                    let ch = *channels as usize;
+                    let mut frames = self.pending.clone();
+                    frames.resize(2 * ch, 0);
+                    let pts = to_90k(self.samples - 1, i64::from(*sample_rate), 1);
+                    m.write(1, &pack_dvd_lpcm(&frames, ch, *bits), pts, None, true).map_err(mux_err)?;
+                }
                 // the last picture is still queued; were it not, the stream merely lacks its end code
                 if self.pictures > 0 {
                     m.append_to_last(0, &SEQUENCE_END).ok();
@@ -235,4 +260,33 @@ impl MpegMux {
         };
         out.finish(settings)
     }
+}
+
+/// Interleaved samples (`ch` channels, whole frames; 20 and 24 bits: an even number of them) as
+/// big-endian DVD LPCM: 16-bit samples one after the other; 20- and 24-bit ones in groups of two
+/// frames, the upper 16 bits of the group's samples first, then their low 4 bits (two to a byte)
+/// or low 8 bits.
+pub(crate) fn pack_dvd_lpcm(frames: &[i32], ch: usize, bits: u32) -> Vec<u8> {
+    let mut out = Vec::with_capacity(frames.len() * 3);
+    if bits == 16 || ch == 0 {
+        for &v in frames {
+            out.extend_from_slice(&(v as i16).to_be_bytes());
+        }
+        return out;
+    }
+    let low = bits - 16;
+    for group in frames.chunks_exact(2 * ch) {
+        for &v in group {
+            out.extend_from_slice(&((v >> low) as i16).to_be_bytes());
+        }
+        if low == 8 {
+            out.extend(group.iter().map(|&v| v as u8));
+        } else {
+            for pair in group.chunks(2) {
+                let nib = |k: usize| pair.get(k).map_or(0, |&v| (v & 0xF) as u8);
+                out.push(nib(0) << 4 | nib(1));
+            }
+        }
+    }
+    out
 }
