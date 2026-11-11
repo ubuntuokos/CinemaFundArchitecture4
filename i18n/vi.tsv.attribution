@@ -1,0 +1,8 @@
+asset:        vi.tsv
+title:        Vietnamese interface translation catalog
+author:       CFA4 contributors; the "Imported from craft-i18n" section: the craft-i18n contributors (see NOTICE)
+source:       original work; the imported section from github.com/ubuntuokos/CFA4_craft-i18n (fork of storytold's craft-i18n), locales/vi/
+license:      GPL-3.0-or-later; the imported section MIT OR Apache-2.0
+license-file: LICENSE; the imported section LICENSE-MIT and LICENSE-APACHE
+added:        2026-11-10 by ubuntuokos
+notes:        Clean-room Vietnamese translations of every CFA4 interface string (3511 entries). 561 rows whose English and meaning match CFA4's were imported once from craft-i18n (also written clean-room there) and are kept in their own section with that origin.

@@ -44,6 +44,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Native Linux dependencies and test oracles
         run: bash scripts/ci/install-ffmpeg-oracle-deps.sh
       - name: Cache FFmpeg 9.0.2

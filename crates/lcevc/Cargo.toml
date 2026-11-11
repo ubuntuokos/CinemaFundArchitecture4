@@ -1,0 +1,12 @@
+[package]
+name = "cfa4-lcevc"
+description = "MPEG-5 Part 2 LCEVC: detection of enhancement data (T.35 SEI in H.264 / HEVC, LCEVC tracks and streams); no decoding"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
