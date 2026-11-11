@@ -1374,7 +1374,7 @@ static CATEGORIES: &[Category] = &[
             b("playback.draftDecode", "Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)", true),
             f("playback.hardwareDecoding", "Hardware decoding", Kind::Choice(HW_DECODE), true),
             Row::Note(
-                "Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
+                "Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
             ),
         ],
     },
@@ -1576,10 +1576,25 @@ pub fn migrate(v: &mut Value) {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Whether this test thread may move the process-wide hardware decoding switch
+    /// ([`crate::autosave::Preferences::apply_hardware_decoding`]).
+    pub(crate) static HW_SWITCH_OWNER: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 impl crate::autosave::Preferences {
     /// Settings ▸ Playback ▸ Hardware decoding as the process-wide switch the hardware decoder
     /// factories consult (new decoders only).
     pub fn apply_hardware_decoding(&self) {
+        // The switch is process-wide and the unit tests run in parallel: in them only the thread
+        // that asked for it moves the switch, so a Session another test creates or changes cannot
+        // flip it under the one test that checks it.
+        #[cfg(test)]
+        if !HW_SWITCH_OWNER.with(std::cell::Cell::get) {
+            self.apply_media_backends();
+            return;
+        }
         cfa4_codecs::hw::set_hardware_decoding(self.playback.hardware_decoding != "off");
         self.apply_media_backends();
     }
@@ -1589,6 +1604,11 @@ impl crate::autosave::Preferences {
     pub fn apply_media_backends(&self) {
         cfa4_media::set_backend_enabled("ffmpeg", self.media_backends.ffmpeg);
         cfa4_media::set_backend_enabled("gstreamer", self.media_backends.gstreamer);
+        // the router orders the fallbacks this build registered (ADR 0005 step 2); our engine
+        // always opens a file first
+        let registered = cfa4_media::registered_fallbacks();
+        let backends: Vec<(&str, bool)> = registered.iter().map(|f| (f.id, cfa4_media::backend_enabled(f.id))).collect();
+        crate::media_route::apply(&backends);
     }
 
     /// Values of one category as a JSON object.
@@ -1682,10 +1702,16 @@ pub fn apply_media_scaling(ti: &mut cfa4_project::TrackItem, scaling: &str, fram
 
 // ------------------------------------------------------------------ media cache
 
-/// The media cache folder: the configured location, else `<data dir>/Media Cache`.
+/// The folder CFA4 makes inside a custom media cache location.
+pub const CUSTOM_CACHE_FOLDER: &str = "CFA4 Media Cache";
+
+/// The media cache folder: a folder of its own inside the configured location (as Premiere keeps
+/// its cache in a dedicated subfolder), else `<data dir>/Media Cache`. The cache policy and
+/// "Delete…" remove every file in this folder, so it must never be a folder the user chose: a
+/// location like the home folder or a footage folder would lose unrelated files (#2772).
 pub fn media_cache_dir(prefs: &MediaCachePrefs, data_dir: Option<&Path>) -> Option<PathBuf> {
     if !prefs.location.trim().is_empty() {
-        return Some(PathBuf::from(prefs.location.trim()));
+        return Some(PathBuf::from(prefs.location.trim()).join(CUSTOM_CACHE_FOLDER));
     }
     data_dir.map(|d| d.join("Media Cache"))
 }
@@ -1734,22 +1760,45 @@ fn remove_files(files: &[(PathBuf, u64, std::time::SystemTime)], keep: Option<&P
     n
 }
 
+/// Deepest folder level `prune_empty_dirs` descends to.
+const MAX_PRUNE_DEPTH: usize = 64;
+
+/// Remove empty folders under `dir`, except `keep` and its parents. A symlink or junction is never
+/// followed: `DirEntry::file_type` doesn't traverse it, where `Path::is_dir` would (#2772).
 fn prune_empty_dirs(dir: &Path, keep: Option<&Path>) {
+    prune_empty_dirs_at(dir, keep, 0);
+}
+
+fn prune_empty_dirs_at(dir: &Path, keep: Option<&Path>, depth: usize) {
+    if depth >= MAX_PRUNE_DEPTH {
+        return;
+    }
     let Ok(rd) = std::fs::read_dir(dir) else { return };
     for e in rd.flatten() {
+        if !e.file_type().is_ok_and(|t| t.is_dir()) {
+            continue;
+        }
         let p = e.path();
-        if p.is_dir() && keep.is_none_or(|k| !k.starts_with(&p)) {
-            prune_empty_dirs(&p, keep);
+        prune_empty_dirs_at(&p, keep, depth + 1);
+        if keep.is_none_or(|k| !k.starts_with(&p)) {
             let _ = std::fs::remove_dir(&p);
-        } else if p.is_dir() {
-            prune_empty_dirs(&p, keep);
         }
     }
 }
 
+/// Whether `dir` may be cleaned: a real folder, not a symlink or junction to one. The cache
+/// folder's name inside a custom location is known, so someone who can write to that location
+/// could put a link there to a folder of the user's, and cleaning would delete what's in it.
+fn cleanable(dir: &Path) -> bool {
+    std::fs::symlink_metadata(dir).is_ok_and(|m| m.file_type().is_dir())
+}
+
 /// Media Cache Management: apply the automatic deletion policy to `dir` at `now`, never touching
-/// `keep` (the open project's files). Returns (files, bytes) removed.
+/// `keep` (the open project's files). Returns (files, bytes) removed; nothing when `dir` is a link.
 pub fn enforce_policy(dir: &Path, prefs: &MediaCachePrefs, keep: Option<&Path>, now: std::time::SystemTime) -> (usize, u64) {
+    if !cleanable(dir) {
+        return (0, 0);
+    }
     let mut files = cache_files(dir);
     let removed = match prefs.management.as_str() {
         "olderThan" => {
@@ -1780,8 +1829,12 @@ pub fn enforce_policy(dir: &Path, prefs: &MediaCachePrefs, keep: Option<&Path>, 
     removed
 }
 
-/// Delete everything in the media cache except `keep` ("Delete…" ▸ unused files).
+/// Delete everything in the media cache except `keep` ("Delete…" ▸ unused files); nothing when
+/// `dir` is a link.
 pub fn clean(dir: &Path, keep: Option<&Path>) -> (usize, u64) {
+    if !cleanable(dir) {
+        return (0, 0);
+    }
     let files = cache_files(dir);
     let r = remove_files(&files, keep);
     prune_empty_dirs(dir, keep);

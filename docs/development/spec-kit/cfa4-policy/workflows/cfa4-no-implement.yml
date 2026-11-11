@@ -1,0 +1,10 @@
+# CFA4 workflow overlay (D9, CFA4-DEV-SPEC-KIT-001 SK-F3)
+# The bundled "Full SDD Cycle" (speckit) runs speckit.implement after tasks
+# without a gate. CFA4 implements only through its own agent path with owner
+# approval, so the implement step is removed from the composed workflow.
+id: "cfa4-no-implement"
+extends: "speckit"
+priority: 1
+enabled: true
+edits:
+  - remove: implement

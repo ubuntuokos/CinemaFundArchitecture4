@@ -470,6 +470,8 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.files_dropped.connect(self.place_files)
         self.timeline.canvas.files_dropped_empty.connect(self.sequence_from_files)
         self.timeline.canvas.menu_host = self
+        self.timeline.canvas.gop_marks_wanted.connect(lambda: self.update_gop_marks(force=True))
+        self._gop_marks_revision: Any = None
         # voice-over recording: the audio track headers' microphones and the mixer's record button
         self.voiceover = VoiceOverRecorder(engine, self.monitor, self)
         self.voiceover_dialog: VoiceOverSettingsDialog | None = None
@@ -1959,6 +1961,7 @@ class MainWindow(QMainWindow):
         self.engine.execute("history.list", {}, on_reply=lambda r, _b: self.history.set_history(r))
         self.events.refresh()
         self.update_render_bar()
+        self.update_gop_marks()
         self.engine.execute("source.inspect", {}, on_reply=self._on_source, on_error=lambda _m: self._on_source(None, None))
 
     def _on_state(self, result: Any, _b: bytes | None) -> None:
@@ -2057,8 +2060,28 @@ class MainWindow(QMainWindow):
         self.events.log(text, error=True, source=command)
         self.statusBar().showMessage(text, 6000)
 
+    def confirm_delete_redoable(self) -> bool:
+        """Delete Redoable Actions' question (Cancel by default); automation id
+        ``history.deleteRedoable``."""
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            tr("Delete Redoable Actions"),
+            tr("Delete the dimmed actions after the current state? They cannot be redone."),
+            QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
+            self,
+        )
+        box.setObjectName("history.deleteRedoable")
+        box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        return box.exec() == QMessageBox.StandardButton.Ok
+
     def ui_command(self, cid: str, params: dict[str, Any] | None = None) -> bool:
         """egui's UI commands (voice-over, multi-camera, docking, …): True when ``cid`` was one."""
+        if cid == "history.deleteRedoable" and not params:
+            # the History panel menu or its key asks for OK first, as in Premiere (upstream #3075);
+            # with parameters (an agent) the command runs as it is
+            if self.confirm_delete_redoable():
+                self.execute(cid, {})
+            return True
         if cid in dock_commands.COMMANDS:
             try:
                 dock_commands.run(self, cid, dict(params or {}))
@@ -2247,7 +2270,7 @@ class MainWindow(QMainWindow):
             return
         project_path = (self.project or {}).get("path")
         # a panel that already knows the file (an export dialog, a script) is not asked again
-        asked = {} if params.get("path") else path_params(cmd, self, project_path if isinstance(project_path, str) else None) or {}
+        asked = {} if params.get("path") else path_params(cmd, self, project_path if isinstance(project_path, str) else None, params) or {}
         if asked.get("__cancel__"):
             return
         self.engine.execute(
@@ -2749,8 +2772,9 @@ class MainWindow(QMainWindow):
         else:
             self._mixer_heard = None
         self.mixer.input_level = self.voiceover.take_level() if self.voiceover.recording else 0.0
-        self.mixer.set_levels(peaks, dt)
-        self.clip_mixer.set_levels(peaks, dt)
+        live = bool(mon.playing or self.voiceover.recording)
+        self.mixer.set_levels(peaks, dt, live)
+        self.clip_mixer.set_levels(peaks, dt, live)
 
     def _mixer_transport(self, key: str) -> None:
         mon = self.monitor
@@ -2852,6 +2876,17 @@ class MainWindow(QMainWindow):
                 self.monitor.play()
 
         self.engine.execute("prefs.get", {"key": "timeline.playAfterRendering"}, on_reply=play, on_error=lambda _m: None)
+
+    def update_gop_marks(self, force: bool = False) -> None:
+        """The Timeline's Show GOP Boundaries marks (``export.gopMarks``), again when the project
+        changed: indexing reads the clips' files, so not on every refresh."""
+        canvas = self.timeline.canvas
+        if not canvas.show_gop_marks or not self.engine.running:
+            return
+        if not force and self._gop_marks_revision == self.revision:
+            return
+        self._gop_marks_revision = self.revision
+        self.engine.execute("export.gopMarks", {}, on_reply=lambda r, _b: canvas.set_gop_marks(r), on_error=lambda _m: canvas.set_gop_marks(None))
 
     def update_render_bar(self) -> None:
         """The Timeline's render bar (``sequence.renderBar``), again every 250 ms while a job runs,

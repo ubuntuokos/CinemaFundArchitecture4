@@ -11,12 +11,23 @@
 //! [`ExportSettings`] carries every Export-mode setting (frame size, rate, bitrate encoding, audio
 //! format, multiplexer, captions, effects, metadata) as serde data; [`presets`] defines the
 //! built-in presets.
+//!
+//! [`smart_cut`] runs the lossless Smart Cut plans of `cfa4-smart-edit`: H.264 samples copied
+//! unchanged from an MP4 / MOV source into a new MP4 / MOV file, and verified by reading it back.
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 use std::io::Write;
 
 mod aac_out;
+pub mod audio_copy;
 mod audio_out;
+pub mod boundary_reencode;
+mod boundary_reencode_hevc;
+#[cfg(test)]
+mod boundary_reencode_hevc_tests;
+pub mod boundary_reencode_mpeg;
+#[cfg(test)]
+mod boundary_reencode_mpeg_tests;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -33,18 +44,24 @@ mod pipeline;
 pub mod presets;
 mod raster;
 pub mod settings;
+pub mod smart_cut;
+pub mod smart_cut_mpeg;
 pub mod still;
+pub mod timeline_audio;
+pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
-pub use dcp_out::{DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_rate, rgba_to_xyz12};
+pub use dcp_out::{
+    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
+};
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
 pub use pcm::{image_sequence_path, write_aiff, write_wav};
-pub use pipeline::limit_rgba8;
+pub use pipeline::{Pipeline, limit_rgba8};
 pub use presets::{ExportPreset, builtin_presets};
 pub use settings::*;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -391,6 +408,13 @@ pub struct ExportSettings {
     /// `progress.total`, `finished` and the final status; this call only adds to `done`.
     #[serde(default)]
     pub part_of_batch: bool,
+    /// Most CPU threads the export may use (0 = all of them, as before). Rendering, the software
+    /// encoders and the rest of the export's parallel work run on a pool of this size; a number
+    /// above what the machine has (or above the pool the export already runs in) changes nothing.
+    /// The output does not depend on it. Hardware encoders and the decoders' own threads are not
+    /// counted.
+    #[serde(default)]
+    pub max_threads: u32,
     /// ProRes flavour: `proxy`, `lt`, `standard`, `hq`, `4444` or `4444xq` (empty = HQ).
     #[serde(default)]
     pub prores_profile: String,
@@ -446,6 +470,10 @@ pub struct ExportSettings {
     /// silence there (`none`).
     #[serde(default)]
     pub dcp_iab_fallback: String,
+    /// DCP spoken language, an RFC 5646 tag such as `en-US` or `hu-HU` (empty = none): the MCA
+    /// labels' `RFC5646SpokenLanguage`, the CPL title's language and the DCNC language field.
+    #[serde(default)]
+    pub dcp_language: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -453,7 +481,8 @@ pub struct ExportSettings {
     pub sdr: bool,
     /// Keep the alpha channel in PNG, TIFF, Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ
     /// QuickTime movies (straight alpha, Premiere's "Include Alpha Channel"; OpenEXR stores it
-    /// premultiplied, as the format defines). Off, every frame is flattened over black (#160).
+    /// premultiplied, as the format defines). GIF keeps binary transparency: RGBA8 alpha below
+    /// 128 becomes transparent, otherwise opaque. Off, every frame is flattened over black (#160).
     /// Other formats ignore it.
     #[serde(default)]
     pub alpha: bool,
@@ -478,8 +507,7 @@ pub struct ExportSettings {
     /// 18 is visually near-lossless.
     #[serde(default = "default_crf")]
     pub crf: f32,
-    /// May H.264 be encoded by the system's hardware encoder (VideoToolbox on macOS, NVENC on
-    /// Windows)? Off unless asked for: hardware output depends on the machine, so it is not
+    /// May H.264 be encoded by the system's hardware encoder (NVENC)? Off unless asked for: hardware output depends on the machine, so it is not
     /// byte-reproducible like the built-in encoder's (`determinism_tests`).
     #[serde(default)]
     pub hardware_encoding: HardwareEncoding,
@@ -520,6 +548,7 @@ pub struct ExportSettings {
     pub sink: Option<OutputSink>,
     /// An already-created primary output file. Internal callers use this to retain an exclusive
     /// reservation made while choosing an output name, rather than reopening that path later.
+    /// MP4 video outputs require read and write access for fast-start finalization.
     #[serde(skip)]
     pub output_file: Option<Arc<std::fs::File>>,
 }
@@ -566,7 +595,13 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        let f = std::fs::File::create(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        let f = std::fs::OpenOptions::new()
+            .read(settings.format.is_mp4_with(settings.multiplexer))
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
         Ok(Out::File(std::io::BufWriter::new(f)))
     }
 
@@ -608,6 +643,20 @@ impl Write for Out {
         match self {
             Out::File(w) => w.flush(),
             Out::Mem(w) => w.flush(),
+        }
+    }
+}
+
+impl std::io::Read for Out {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Out::File(w) => {
+                // Fast-start muxing reads media back to shift it in place. Commit buffered
+                // writes before reading through the same file handle and cursor.
+                w.flush()?;
+                std::io::Read::read(w.get_mut(), buf)
+            }
+            Out::Mem(w) => std::io::Read::read(w, buf),
         }
     }
 }
@@ -683,6 +732,7 @@ impl Default for ExportSettings {
             bitrate_kbps: 20_000,
             burn_captions: false,
             part_of_batch: false,
+            max_threads: 0,
             prores_profile: String::new(),
             dnx_profile: String::new(),
             apv_profile: String::new(),
@@ -699,6 +749,7 @@ impl Default for ExportSettings {
             dcp_immersive: String::new(),
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
+            dcp_language: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -1435,7 +1486,7 @@ impl AudioEncoder for FlacAudio {
     }
 }
 
-fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
+pub(crate) fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
     // AAC caps a frame at 6144 bits per channel (ISO/IEC 14496-3 §4.5.3.2): 6 bits per sample, so
     // 264.6 kbps for stereo at 22.05 kHz; a higher setting is capped instead of refused
     let max = (6 * sample_rate as u64 * channels.max(1) as u64).min(u32::MAX as u64) as u32;
@@ -2628,12 +2679,11 @@ impl Write for SharedBuf {
 
 /// Encode straight sRGB RGBA8 pixels as a PNG file (thumbnails, previews).
 pub fn encode_png(rgba: Vec<u8>, w: u32, h: u32) -> Result<Vec<u8>> {
-    encode_still(Format::PngSequence, rgba, w, h, false)
+    encode_still(Format::PngSequence, rgba, w, h, true)
 }
 
-/// Encode one still of an image sequence (also Export Frame). PNG always carries the alpha
-/// channel it is given; `alpha` keeps it in TIFF, Targa and OpenEXR too, which are otherwise written
-/// as RGB.
+/// Encode one still of an image sequence (also Export Frame). `alpha` keeps the alpha channel in
+/// PNG, TIFF, Targa and OpenEXR, which are otherwise written as RGB.
 /// JPEG uses the default export quality ([`encode_still_with_quality`] picks another).
 pub fn encode_still(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool) -> Result<Vec<u8>> {
     encode_still_with_quality(format, rgba, w, h, alpha, ExportSettings::default().quality)
@@ -2663,8 +2713,12 @@ pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: b
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
         Format::DpxSequence => return raster::dpx(&rgba, w, h),
         Format::ExrSequence => return raster::exr(&rgba, w, h, alpha, exr),
-        Format::PngSequence => {
+        Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
+        }
+        Format::PngSequence => {
+            let rgb = raster::rgb(&rgba, w, h)?;
+            image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgb, w, h, image::ExtendedColorType::Rgb8).map_err(enc)?
         }
         Format::TiffSequence | Format::BmpSequence => {
             let img = image::RgbaImage::from_raw(w, h, rgba).ok_or_else(|| ExportError::Encode("frame size".into()))?;
@@ -2680,8 +2734,28 @@ pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: b
     Ok(out.into_inner())
 }
 
-/// Run an export (blocking; call from a worker thread).
+/// A pool of `max_threads` threads to run an export on, or `None` when it should run where it is:
+/// no cap (0), a cap that is not below the pool the caller is in already, or no threads to spare
+/// (the browser).
+fn capped_pool(max_threads: u32) -> Option<rayon::ThreadPool> {
+    let cap = max_threads as usize;
+    if cap == 0 || cap >= rayon::current_num_threads() || cfg!(target_arch = "wasm32") {
+        return None;
+    }
+    rayon::ThreadPoolBuilder::new().num_threads(cap).thread_name(|i| format!("cfa4-export-{i}")).build().ok()
+}
+
+/// Run an export (blocking; call from a worker thread). With `settings.max_threads` set it runs on
+/// a pool of that many threads, so its rendering and software encoding use at most that many cores.
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
+    match capped_pool(settings.max_threads) {
+        Some(pool) => pool.install(|| export_here(project, seq, settings, sources, progress)),
+        None => export_here(project, seq, settings, sources, progress),
+    }
+}
+
+/// [`export`] on the threads it is called from.
+fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
     settings.validate()?;
     if stepped(settings.format) {
         let mut ex = Exporter::new(project.clone(), seq, settings, progress)?;
@@ -2793,7 +2867,18 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
                 let end = (f + batch).min(f1);
                 if let Some(enc) = gif.as_mut() {
                     let frames: Vec<Vec<u8>> = (f..end).into_par_iter().map(|fi| pipe.frame(fi, sources).0).collect();
-                    for (fi, rgba) in (f..end).zip(frames) {
+                    for (fi, mut rgba) in (f..end).zip(frames) {
+                        // GIF89a has one transparent palette index, not partial alpha. Decide
+                        // coverage before quantization and keep the straight colour of visible pixels.
+                        if settings.keeps_alpha() {
+                            for px in rgba.as_chunks_mut::<4>().0 {
+                                if px[3] < 128 {
+                                    *px = [0; 4];
+                                } else {
+                                    px[3] = 255;
+                                }
+                            }
+                        }
                         let img = image::RgbaImage::from_raw(w, h, rgba).ok_or_else(|| ExportError::Encode("frame".into()))?;
                         let delay = image::Delay::from_numer_denom_ms(u32::from(gif_delay_cs(pipe.rate, fi - f0)) * 10, 1);
                         enc.encode_frame(image::Frame::from_parts(img, 0, 0, delay)).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -2852,11 +2937,27 @@ mod settings_tests;
 mod surround_tests;
 
 #[cfg(test)]
+mod audio_copy_tests;
+#[cfg(test)]
+mod boundary_reencode_tests;
+#[cfg(test)]
 mod dcp_tests;
 #[cfg(test)]
 mod mpeg2_tests;
 #[cfg(test)]
 mod mxf_tests;
+#[cfg(test)]
+mod smart_cut_av1_tests;
+#[cfg(test)]
+mod smart_cut_edge_tests;
+#[cfg(test)]
+mod smart_cut_hevc_tests;
+#[cfg(test)]
+mod smart_cut_mpeg_tests;
+#[cfg(test)]
+mod smart_cut_tests;
+#[cfg(test)]
+mod timeline_render_tests;
 
 #[cfg(test)]
 mod determinism_tests;

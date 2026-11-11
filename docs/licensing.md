@@ -12,11 +12,12 @@
 - **Nem vehető át:** GPL-2.0-only kód (pl. HandBrake), AGPL, nem szabad licencű vagy ismeretlen
   licencű kód, és bármely zárt program (Adobe Premiere, DaVinci Resolve) kódja vagy eszközei.
   Ezeknek a képességét saját kóddal vagy külső programként hívva kell megvalósítani.
-- **Fizetős rész:** a CFA4 alapprogram ingyenes és szabadon terjeszthető. Fizetős lehet a
-  hosszabb támogatás (LTS-ágak, frissítések), a kész csomagok és a szolgáltatások, a nem kód
-  jellegű tartalmak, valamint a **GPL-3.0-or-later licencű fizetős kiegészítők** (a tulajdonos
-  döntése, 2026-10-24): eladhatók, de a vevő a forrással együtt továbbadhatja őket. Zárt (nem GPL)
-  kódmodul – sem a CFA4 folyamatába betöltődő, sem külön folyamatként futó – nem készül.
+- **Nincs fizetős rész** (a tulajdonos döntése, 2026-11-08; felváltja a 2026-10-24-i „ingyenes
+  alap, fizetős kiegészítők” modellt): a CFA4 minden része ingyenes és szabadon terjeszthető.
+  Nincs fizetős kiegészítő, fizetős LTS-ág vagy csomag, licenckulcs, vízjel, próbaidő vagy
+  használati korlát, és a CFA4-nek nincs kereskedelmi része. A fejlesztés **önkéntes adománnyal**
+  támogatható; az adomány semmilyen funkciót nem nyit meg. Zárt (nem GPL) kódmodul – sem a CFA4
+  folyamatába betöltődő, sem külön folyamatként futó – nem készül. Részletek: 4. pont.
 - **Szabadalmilag korlátozott komponensek – Ubuntu-modell (tulajdonosi döntés, 2026-10-25):**
   az alapcsomag nélkülük épül és működik; a felhasználó kifejezett kérésére a
   `cfa4-restricted-extras` kiegészítő csomag telepíti őket (pl. x264, x265). Ez minden jövőbeli
@@ -24,8 +25,15 @@
 - A **CFA4 logó** (név, embléma, szóvédjegy, ikonok) István saját, védett jele, **nem** GPL alatti; a
   feltételek: [`assets/cfa4/LICENSE-logo.txt`](../assets/cfa4/LICENSE-logo.txt). A kód GPL marad.
 
-*Ez a dokumentum projektszabályzat, nem jogi tanácsadás. Kereskedelmi kiadás előtt érdemes
-jogásszal átnézetni.*
+- **Portolás vagy eredeti nyelv (tulajdonosi döntés, 2026-11-03):** az átvett kódot alapból
+  Rustra portoljuk. Ha a portolás aránytalanul sok időt venne igénybe, a kód maradhat az eredeti
+  nyelvén, **ha nem lassítja a CFA4-et**: ilyenkor a szerkesztő folyamatán kívül, felügyelt
+  workerként vagy külső programként fut, Rust-interfész mögött, és a lassulásmentességet a
+  referenciagépen mérjük. A licencszabályok (fejlécek, 5. pont regisztere) ugyanúgy érvényesek.
+  Részletek: [`AGENTS.md`](../AGENTS.md) CFA4-szakasz.
+
+*Ez a dokumentum projektszabályzat, nem jogi tanácsadás. Kiadás előtt érdemes jogásszal
+átnézetni.*
 
 ---
 
@@ -100,27 +108,25 @@ through files, pipes or command-line arguments are not part of CFA4's code and d
 licence. If such a program is bundled in a package, its own licence text and source offer must
 ship with it.
 
-## 4. Free core, paid extras
+## 4. Free of charge, supported by donations
 
-The CFA4 core is free software: anyone may download, use, change and redistribute it under the
-GPL. Revenue comes from things that are compatible with that:
+**Owner decision, 2026-11-08** (replaces the 2026-10-24 "free core, paid extras" model): CFA4 has
+no paid or commercial part. Everything the project makes is free software under
+`GPL-3.0-or-later` and free of charge:
 
-1. **Extended support:** long-term-support branches, backported fixes and updates for older
-   Ubuntu releases, direct help. The code of any released LTS build is still GPL and its source is
-   provided to its recipients.
-2. **Convenience:** signed, ready-made packages (deb, Snap, Flatpak) with automatic updates.
-3. **Paid extras are GPL too** (owner decision, 2026-10-24): extra features sold on top of the
-   free core are licensed `GPL-3.0-or-later`, like the core. They may be loaded into the CFA4
-   process or run separately; buyers receive the source and may redistribute it. Rules:
-   - every distributed binary comes with its corresponding source (GPL-3.0 §6): a source archive or
-     a link to the exact source version, built into the release chain before the release hold is
-     lifted;
-   - CFA4 works fully without them (no artificially crippled core).
-4. **Content and services:** templates, effect presets, AI models, sample media, cloud or hosted
-   processing. Non-code content can carry its own (also paid) licence.
+- no paid extras, editions or add-ons; no licence keys, trial periods, usage limits, resolution
+  caps or watermarks anywhere (core, CFA4 AI workers, packages);
+- no paid long-term-support branches, paid packages or paid services; LTS branches, packages and
+  updates, when they exist, are free for everyone;
+- non-code content made by the project (templates, presets, sample media) is openly licensed
+  like every other asset (`AGENTS.md` §1).
 
-**Not part of the model:** proprietary (non-GPL) code extras of any kind, whether loaded into the
-CFA4 process (dynamic libraries, Rust crates, Python modules) or shipped as separate programs.
+**Voluntary support:** anyone who wants to may support development with a donation. A donation
+never unlocks a feature, a build or priority support, and the program never nags for one. Where
+the donation link is published is listed in [`README.md`](../README.md#support-cfa4).
+
+**Still not part of CFA4:** proprietary (non-GPL) code of any kind, whether loaded into the CFA4
+process (dynamic libraries, Rust crates, Python modules) or shipped as separate programs.
 Third-party proprietary plug-ins are not loaded either (ADR 0003 §4).
 
 ## 5. Reused code register
@@ -141,6 +147,7 @@ that adds them names the source and revision.
 | `crates/truehd/src/` (except `cfa4.rs`, `anyhow.rs`) | `truehd` crate 0.7.2, <https://github.com/truehdd/truehdd>, crates.io release 0.7.2, `truehd/src/` | Rainbaby | Apache-2.0 (`crates/truehd/LICENSE`) |
 | `.claude/skills/cfa4-skill-review/SKILL.md` | NVIDIA SkillSpector, <https://github.com/NVIDIA/SkillSpector>, commit `54921c8c7c23008c8af2328d5ab492a904b6ece4`, `skills/skill-inspector/SKILL.md`; CFA4 Hungarian adaptation | NVIDIA CORPORATION & AFFILIATES (Copyright 2026) | Apache-2.0 upstream; CFA4 adaptation GPL-3.0-or-later (`LICENSE-APACHE`) |
 | `crates/aac/src/usac/`, `crates/aac/src/drc/`, `crates/aac/tools/usac_tables.py` | libxaac, <https://github.com/ittiam-systems/libxaac> (Android `platform/external/libxaac`), commit `2fbadd57bca46693b7a077bcf1513131106d960c`, `decoder/` (USAC) and `decoder/drc_src/` (MPEG-D DRC); fixed point converted to floating point, the arithmetic-coder tables generated from its sources | The Android Open Source Project; Ittiam Systems Pvt. Ltd | Apache-2.0 (`crates/aac/LICENSE.libxaac`, `crates/aac/NOTICE.libxaac`) |
+| `crates/metrics/src/ciede2000.rs`, `crates/metrics/src/ssim.rs` (formula structure, rewritten) | OxiMedia 0.2.1, <https://github.com/cool-japan/oximedia>, commit `5263510374761ec8ef02dace5d26d62fb20e405b`, `crates/oximedia-quality/src/ciede2000.rs`, `crates/oximedia-quality/src/ssim.rs`; rewritten without panics, separable SSIM filter, Lab conversion through `cfa4-color` | Copyright 2024-2026 COOLJAPAN OU (Team Kitasan) | Apache-2.0 (`crates/metrics/LICENSE-oximedia`); CFA4 changes GPL-3.0-or-later |
 
 ## 6. Dependency checks
 
@@ -178,8 +185,14 @@ Current classification:
 
 | Component | Package |
 |---|---|
-| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` |
+| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` (FFmpeg 9.0.2 `--restricted` build in `/opt/cfa4/ffmpeg-9.0.2-restricted`; `packaging/linux/package.sh --formats "deb restricted"`, ADR 0005 step 4) |
 | CFA4's own codecs (H.264, HEVC, AAC, AC-3 and the other decoders, the H.264 encoder) | base package (owner decision, 2026-10-25) |
 
 A new patent-encumbered component goes to `cfa4-restricted-extras` unless the owner decides
 otherwise; record each decision in the table above.
+
+**Patent review** (ADR 0003 §13, owner decision 2026-10-27): every format CFA4 handles – its own
+codecs and containers, the hardware paths, the FFmpeg and GStreamer backends and the components of
+`cfa4-restricted-extras` – is reviewed, and each result is recorded in
+[`patent-review.md`](patent-review.md) with its date, reviewer and source. A public release needs a
+recorded result for every format of the base package (release gate `patent_review_recorded`).

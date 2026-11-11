@@ -219,7 +219,7 @@ fn relinking_later_resolves_the_anchor_that_waited_for_the_real_size() {
 
 /// Linking the media an interchange document names opens each file through the host's reader, as
 /// a direct import does, instead of reading it whole into memory (#461: minutes for 4K files).
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 #[test]
 fn an_interchange_import_links_media_without_reading_the_files_whole() {
     /// The desktop filesystem, except that reading a media file whole fails.

@@ -142,12 +142,16 @@ pub struct VideoStreamInfo {
 /// Most audio streams a source reports (the count comes from the file: never trusted).
 pub const MAX_AUDIO_STREAMS: usize = 64;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct AudioStreamInfo {
     pub sample_rate: u32,
     pub channels: u32,
     pub codec: String,
     pub bits_per_sample: Option<u32>,
+    /// The loudspeaker of each channel in order (`"L"`, `"HL"`, …), when the source knows its
+    /// layout: an Auro-3D carrier's restored layout (#323). Empty when unknown.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub speakers: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -238,14 +242,17 @@ pub type SharedSource = Arc<dyn MediaSource>;
 /// File extensions we recognise at import (the media browser filters on these).
 pub const STILL_EXTENSIONS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng"];
-pub const AUDIO_EXTENSIONS: &[&str] = &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "flac", "ogg", "opus"];
+pub const AUDIO_EXTENSIONS: &[&str] = &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus"];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
     "dv", "dif",
 ];
 
 pub use backends::{BackendEntry, BackendReport, RestrictedItem, backend_enabled, backend_reports, register_backend, set_backend_enabled};
-pub use fallback::{Fallback, audio_extensions, importable_extensions, open_with_fallback, register_fallback, video_extensions};
+pub use fallback::{
+    Fallback, audio_extensions, fallback_order, fallbacks, importable_extensions, open_with_fallback, register_fallback, registered_fallbacks,
+    set_fallback_order, video_extensions,
+};
 
 /// Whether `path` has an extension we import: the built-in lists plus those of registered
 /// [`fallback`] backends.

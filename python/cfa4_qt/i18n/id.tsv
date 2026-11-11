@@ -318,8 +318,86 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	kompresi {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Coret
+	Caption Export Settings	Pengaturan Ekspor Teks
+	Export Captions	Ekspor Teks
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} sudah ada, jadi tidak ada yang diekspor. Untuk menggantinya, pilih file itu di dialog simpan.
+	Delete Redoable Actions	Hapus Tindakan yang Dapat Diulang
+	Clear History	Bersihkan Riwayat
+	Delete the dimmed actions after the current state? They cannot be redone.	Hapus tindakan redup setelah keadaan saat ini? Tindakan itu tidak dapat diulang lagi.
+	Work Area Bar	Bilah Area Kerja
+	Start: {tc}	Awal: {tc}
+	End: {tc}	Akhir: {tc}
+	Duration: {tc}	Durasi: {tc}
 	Panel menu	Menu panel
 	Move panel	Pindahkan panel
 	Transparency Grid	Kisi Transparansi
 	Show Duplicate Frame Markers	Tampilkan Penanda Frame Duplikat
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Masuk/keluar sekuens hanya 1 frame. Pilih Seluruh sekuens untuk mengekspor seluruh sekuens.
+	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
+	Set Work Area Bar Out Point	Atur Titik Keluar Bilah Area Kerja
+	Delete Clips	Hapus Klip
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Menganalisis klip…
+	At GOP boundaries (no re-encoding)	Di batas GOP (tanpa enkode ulang)
+	Bit-exact copy	Salinan identik per bit
+	Choose the output file.	Pilih berkas keluaran.
+	Compatible copy	Salinan kompatibel
+	Copy:	Salin:
+	Cut:	Potong:
+	Frame accurate (re-encode the boundaries)	Akurat per bingkai (enkode ulang batas)
+	Open a video clip in the Source monitor first.	Buka klip video di monitor sumber terlebih dahulu.
+	Output:	Keluaran:
+	Smart Cut Source	Smart Cut sumber
+	Smart Cut Source…	Smart Cut sumber…
+	Smart Cut is not available for this clip: {why}	Smart Cut tidak tersedia untuk klip ini: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut ditulis dan diverifikasi: {path} ({frames} bingkai)
+	The cut cannot run.	Pemotongan tidak dapat dijalankan.
+	The engine sent no analysis.	Mesin tidak mengirim analisis.
+	Writing and verifying the cut…	Menulis dan memverifikasi potongan…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} dalam {container}: {gops} GOP, {points} titik potong bersih
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} bingkai disalin, {reencoded} bingkai dienkode ulang
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} bingkai di batas akan dienkode ulang. Lanjutkan?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Tampilkan batas GOP
+# Export window Smart Export (WP-08)
+	Export mode	Mode ekspor
+	Full Render	Render penuh
+	Planning…	Merencanakan…
+	Recommended: Smart Render (asks before re-encoding)	Disarankan: Smart Render (bertanya sebelum enkode ulang)
+	Recommended: Stream Copy (nothing is re-encoded)	Disarankan: Stream Copy (tidak ada yang dienkode ulang)
+	Rendered because of: {causes}	Dirender karena: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export ditulis dan diverifikasi: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – identik per bit
+	Stream Copy – Compatible	Stream Copy – kompatibel
+	Stream copy is not possible: {frames} frames need re-encoding.	Stream copy tidak mungkin: {frames} bingkai perlu dienkode ulang.
+	The export cannot run.	Ekspor tidak dapat dijalankan.
+	Wait for the export plan.	Tunggu rencana ekspor.
+	Writing and verifying the export…	Menulis dan memverifikasi ekspor…
+	colour conversion	konversi warna
+	compositing	komposit
+	copied	disalin
+	effects	efek
+	frame rate	laju bingkai
+	proxies or nested sequences	proksi atau sekuens bersarang
+	re-encoded at a cut	dienkode ulang di potongan
+	rendered	dirender
+	sources that cannot be copied	sumber yang tidak dapat disalin
+	speed changes	perubahan kecepatan
+	titles or overlays	judul atau hamparan
+	transforms	transformasi
+	transitions	transisi
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} bingkai disalin, {reencoded} dienkode ulang di potongan, {rendered} dirender
+	{frames} frames are re-encoded or rendered. Continue?	{frames} bingkai dienkode ulang atau dirender. Lanjutkan?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Audio disalin: {tracks}
+	Audio track {track} is not copied: {why}	Trek audio {track} tidak disalin: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	Pelacak titik
+	Correlation tracker	Pelacak korelasi
+	DCP language	Bahasa DCP
+	None (RFC 5646 tag, e.g. en-US)	Tidak ada (tag RFC 5646, mis. id-ID)
+	ISDCF name	Nama ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Namai folder DCP menurut Digital Cinema Naming Convention

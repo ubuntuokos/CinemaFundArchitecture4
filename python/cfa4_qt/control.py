@@ -518,7 +518,14 @@ class ControlServer(QObject):
             "workspace": win.workspaces.current,
             "focused": win.active_monitor if win.active_monitor else None,
             "panels": {name: not dock.isHidden() for name, dock in win.docks.items()},
-            "timeline": {"pps": canvas.pps, "scroll": int(canvas.scroll_ticks)},
+            "timeline": {
+                "pps": canvas.pps,
+                "scroll": int(canvas.scroll_ticks),
+                # the divider and the two track areas' offsets (egui's split / v_scroll / a_scroll)
+                "split": canvas.split,
+                "vScroll": canvas.v_scroll,
+                "aScroll": canvas.a_scroll,
+            },
             "playback": {"program": monitor(win.monitor), "source": monitor(win.source_monitor)},
             "dialog": open_dialog,
             "keyboardFocus": self._keyboard_target().objectName(),
@@ -633,8 +640,11 @@ class ControlServer(QObject):
         button = BUTTONS.get(str(p.get("button") or "left"))
         if button is None:
             raise ControlError("button must be left, right or middle")
-        # null is the default, as egui reads it (the MCP bridge sends every optional field)
-        count = 1 if p.get("count") is None else p["count"]
+        # the MCP bridge sends null for an omitted count: the default, as an absent field (#2784)
+        count = p.get("count")
+        count = 1 if count is None else count
+        if isinstance(count, bool):
+            raise ControlError("count must be 1 or 2")
         if count == 2:
             # a real double click: press and release, then the double-click press and release
             # (item views emit doubleClicked only for the row the first press landed on)
@@ -649,7 +659,8 @@ class ControlServer(QObject):
         w, start = self._at(p.get("from"))
         target, end = self._at(p.get("to"))
         end = w.mapFromGlobal(target.mapToGlobal(end))
-        steps = 8 if p.get("steps") is None else p["steps"]
+        steps = p.get("steps")
+        steps = 8 if steps is None else steps  # null (the MCP bridge's omitted steps) is the default
         if not isinstance(steps, int) or isinstance(steps, bool) or not 1 <= steps <= MAX_DRAG_STEPS:
             raise ControlError(f"steps must be 1 to {MAX_DRAG_STEPS}")
         mods = modifiers_of(p.get("modifiers"))
@@ -819,6 +830,13 @@ class ControlServer(QObject):
             heights = {k: _number(tl, f"{k}TrackHeight", 1, 10_000) for k in ("video", "audio") if f"{k}TrackHeight" in tl}
             if heights:
                 canvas.set_track_heights(heights.get("video"), heights.get("audio"))
+            if "split" in tl:
+                canvas.set_split(_number(tl, "split", 0.1, 0.9))
+            if "vScroll" in tl or "aScroll" in tl:
+                canvas.set_offsets(
+                    int(_number(tl, "vScroll", 0, 1e9)) if "vScroll" in tl else canvas.v_scroll,
+                    int(_number(tl, "aScroll", 0, 1e9)) if "aScroll" in tl else canvas.a_scroll,
+                )
             thumbs = tl.get("thumbnails")
             if isinstance(thumbs, str):
                 # Show Video Thumbnails: off or a mode (head, headAndTail, continuous), egui's

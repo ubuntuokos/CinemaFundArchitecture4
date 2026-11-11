@@ -42,15 +42,18 @@ FFmpeg and every entry point returns `Error::Unavailable`.
 ```sh
 sudo apt install build-essential nasm pkg-config libva-dev libdrm-dev libdav1d-dev libvpx-dev \
   libopus-dev libwebp-dev libmp3lame-dev libvulkan-dev libffmpeg-nvenc-dev libvpl-dev
-scripts/dev/build-ffmpeg-9.0.2.sh                 # → /opt/cfa4/ffmpeg-9.0.2 (base)
+scripts/dev/build-ffmpeg-9.0.2.sh                 # → /opt/cfa4/ffmpeg-9.0.2 (base; on Ubuntu 24.04/26.04 it downloads the prebuilt one, scripts/dev/fetch-ffmpeg-9.0.2.sh)
 export PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-9.0.2/lib/pkgconfig
 cargo test -p cfa4-ffmpeg --features ffmpeg
 cargo build --release -p cfa4 -p cfa4-cli --features cfa4/ffmpeg,cfa4-cli/ffmpeg
 ```
 
 The apps link FFmpeg dynamically and look for it at run time in
-`/opt/cfa4/ffmpeg-9.0.2-restricted/lib` first and `/opt/cfa4/ffmpeg-9.0.2/lib` second
-(`apps/*/build.rs`, `CFA4_FFMPEG_PREFIX` moves both). The restricted build, the same FFmpeg with
+`/opt/cfa4/ffmpeg-9.0.2-restricted/lib` first, `/opt/cfa4/ffmpeg-9.0.2/lib` second and
+`$ORIGIN/../lib/cfa4/ffmpeg-9.0.2/lib` third, the copy the tarball, AppImage and Flatpak carry
+next to the binary (`apps/*/build.rs`, `CFA4_FFMPEG_PREFIX` moves the first two). The release
+packages ship this build (ADR 0005 step 4, `packaging/linux/stage-ffmpeg.sh`): the `.deb` installs
+it into `/opt/cfa4/ffmpeg-9.0.2`. The restricted build, the same FFmpeg with
 x264 and x265, is what the `cfa4-restricted-extras` package installs:
 
 ```sh

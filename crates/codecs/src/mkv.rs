@@ -185,7 +185,7 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         Codec::Pcm { bits, .. } => a.bit_depth.or(Some(u64::from(*bits))),
         _ => a.bit_depth,
     };
-    Some(AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32) })
+    Some(AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32), speakers: Vec::new() })
 }
 
 /// The track timestamp that media time zero stands for (#715): the earliest start among the
@@ -308,6 +308,17 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::Other(id) if id == "V_MPEG2" || id == "V_MPEG1" => {
             SampleEntry::video(FourCc(*b"mp2v"), CodecConfig::Unknown { fourcc: FourCc(*b"mp2v"), raw: private.to_vec() }, w, h)
         }
+        // FFV1: ffmpeg writes a VfW BITMAPINFOHEADER whose extra bytes are the configuration record
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"FFV1") => {
+            crate::ffv1::sample_entry(bitmap_info_header.get(40..).unwrap_or_default(), w, h)
+        }
+        Codec::Other(id) if id == "V_FFV1" => crate::ffv1::sample_entry(private, w, h),
+        // Huffyuv: the VfW BITMAPINFOHEADER sets the stream up (bit count, extradata)
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if fourcc.eq_ignore_ascii_case(b"HFYU") => crate::huffyuv::sample_entry(bitmap_info_header, w, h),
+        // Ut Video: the extradata follows the VfW BITMAPINFOHEADER
+        Codec::VfwFourcc { fourcc, bitmap_info_header } if crate::utvideo::is_utvideo(fourcc) => {
+            crate::utvideo::sample_entry(*fourcc, bitmap_info_header.get(40..).unwrap_or_default(), w, h)
+        }
         _ => return None,
     })
 }
@@ -370,6 +381,10 @@ fn codec_label(c: &Codec) -> String {
         Codec::TrueHd => "Dolby TrueHD".into(),
         Codec::Other(id) if id == "V_MPEG2" => "MPEG-2 Video".into(),
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
+        Codec::VfwFourcc { fourcc, .. } if crate::utvideo::is_utvideo(fourcc) => "Ut Video".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"HFYU") => "Huffyuv".into(),
+        Codec::Other(id) if id == "V_FFV1" => "FFV1".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"FFV1") => "FFV1".into(),
         other => other.name().to_string(),
     }
 }
@@ -525,22 +540,22 @@ impl MkvSource {
     }
 
     fn audio_decoder(&self, c: &Codec, rate: u32) -> crate::Result<PacketDecoder> {
-        use symphonia::core::codecs::{CODEC_TYPE_FLAC, CODEC_TYPE_MP3, CODEC_TYPE_VORBIS};
+        use symphonia::core::codecs::audio::well_known::{CODEC_ID_FLAC, CODEC_ID_MP3, CODEC_ID_VORBIS};
         match c {
             Codec::Aac { asc } => PacketDecoder::aac(asc, rate),
             Codec::Opus { head } => PacketDecoder::opus(cfa4_opus::OpusHead::parse(head).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
-            Codec::Mp3 => PacketDecoder::new(CODEC_TYPE_MP3, rate, None),
+            Codec::Mp3 => PacketDecoder::new(CODEC_ID_MP3, rate, None),
             Codec::Mp2 => PacketDecoder::mpeg_audio(2, rate),
             Codec::Mp1 => PacketDecoder::mpeg_audio(1, rate),
             Codec::Ac3 | Codec::Eac3 => PacketDecoder::ac3(),
             Codec::Dts => Ok(PacketDecoder::dts()),
             Codec::TrueHd => Ok(PacketDecoder::truehd()),
             // symphonia wants the STREAMINFO block body: skip `fLaC` + the 4-byte block header.
-            Codec::Flac { private } => PacketDecoder::new(CODEC_TYPE_FLAC, rate, private.get(8..42).map(<[u8]>::to_vec)),
+            Codec::Flac { private } => PacketDecoder::new(CODEC_ID_FLAC, rate, private.get(8..42).map(<[u8]>::to_vec)),
             Codec::Vorbis { headers } if headers.len() == 3 => {
                 let mut extra = headers[0].clone();
                 extra.extend_from_slice(&headers[2]);
-                PacketDecoder::new(CODEC_TYPE_VORBIS, rate, Some(extra))
+                PacketDecoder::new(CODEC_ID_VORBIS, rate, Some(extra))
             }
             other => Err(CodecError::Unsupported(format!("{} audio", codec_label(other)))),
         }

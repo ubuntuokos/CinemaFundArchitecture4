@@ -240,6 +240,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.bitrate_kbps = v;
         settings.adaptive_bitrate = None;
     }
+    if let Some(v) = crate::commands::checked_u32_p(p, "maxThreads", cmd)? {
+        settings.max_threads = v;
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "maxBitrateKbps", cmd)? {
         settings.max_bitrate_kbps = Some(v);
     }
@@ -343,6 +346,11 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = str_p(p, "dcpIabFallback") {
         let f = cfa4_export::IabFallback::from_name(v).ok_or_else(|| bad(cmd, "dcpIabFallback: 5.1 | mix | none"))?;
         settings.dcp_iab_fallback = f.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpLanguage") {
+        let probe = ExportSettings { dcp_language: v.to_string(), ..Default::default() };
+        let tag = cfa4_export::dcp_language(&probe).ok_or_else(|| bad(cmd, "dcpLanguage: an RFC 5646 tag such as en-US or hu-HU (empty = none)"))?;
+        settings.dcp_language = tag.to_string();
     }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
@@ -495,14 +503,12 @@ fn with_extension(path: &str, settings: &ExportSettings) -> String {
     }
 }
 
-/// `~/` expanded to the home directory (`USERPROFILE` on Windows). On Windows `/` becomes `\`:
-/// after a `\\?\` prefix (what `canonicalize` returns) `/` is not a separator.
+/// `~/` expanded to the home directory.
 pub fn expand_home(p: &str) -> String {
-    let p = match (p.strip_prefix("~/"), crate::media_browser::std_home_dir()) {
+    match (p.strip_prefix("~/"), crate::media_browser::std_home_dir()) {
         (Some(rest), Some(h)) => format!("{h}/{rest}"),
         _ => p.to_string(),
-    };
-    if cfg!(windows) { p.replace('/', "\\") } else { p }
+    }
 }
 
 /// `x` names a folder: it ends in a separator or already exists as one.
@@ -1032,7 +1038,13 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
     let hdr = q.settings.color.working.is_hdr() && !settings.sdr;
     let sizes: Vec<Value> =
         SampleFormat::ALL.iter().map(|&f| json!({"bits": f.bits(), "float": f.is_float(), "supported": settings.supports_sample_format(f)})).collect();
+    // DCP: an ISDCF (DCNC) name for the package folder, from the sequence name
+    let dcp_name = (settings.format == Format::Dcp).then(|| {
+        let title = project.item(seq).map(|i| i.name.clone()).unwrap_or_default();
+        cfa4_export::dcp_isdcf_name(&settings, &title, &cfa4_export::dcp_isdcf_date())
+    });
     Ok(json!({
+        "dcpName": dcp_name,
         "preset": preset.map(|x| x.name),
         "hdr": hdr,
         "videoFormat": settings.video_format().id(),
@@ -1066,6 +1078,7 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "dcpImmersive": pr.settings.dcp_immersive,
         "dcpIabSource": pr.settings.dcp_iab_source,
         "dcpIabFallback": pr.settings.dcp_iab_fallback,
+        "dcpLanguage": pr.settings.dcp_language,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();

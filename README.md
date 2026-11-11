@@ -41,10 +41,20 @@ its version; real editor operations require a future explicitly tested adapter.
 ## Licence
 
 CFA4 is free software under the **GNU General Public License, version 3 or later**
-(`GPL-3.0-or-later`, see [LICENSE](LICENSE)). The core application is free to use, change and
-redistribute. Paid offerings (extended support, ready-made packages, GPL-licensed paid extras,
-content and services) are described in [docs/licensing.md](docs/licensing.md), which is also the
-policy for reusing code from other projects.
+(`GPL-3.0-or-later`, see [LICENSE](LICENSE)). All of CFA4 is free of charge and free to use, change
+and redistribute: there is no paid edition, no paid extra, no licence key and no watermark.
+[docs/licensing.md](docs/licensing.md) is the licensing policy, including the rules for reusing
+code from other projects.
+
+## Support CFA4
+
+CFA4 has no commercial part. If you want to support its development, you can do so with a
+voluntary donation; it unlocks nothing, because nothing is locked.
+
+- GitHub Sponsors: <https://github.com/sponsors/ubuntuokos> (the **Sponsor** button on GitHub)
+- Ko-fi: <https://ko-fi.com/istvanhorvath>
+- Liberapay: <https://liberapay.com/CFA4Hugo>
+- PayPal: <https://paypal.me/hpitu>
 
 ## Upstream provenance
 
@@ -67,8 +77,10 @@ router. The system GStreamer from Ubuntu's repositories is the default; an isola
 runtime is used only when a feature needs a newer version. See
 [ADR 0005](docs/adr/ADR-0005-media-backends.md) and [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
 
-PySide6/Qt6 is an **optional** developer dependency under LGPLv3 (compatible with CFA4's GPL)
-with its own licensing obligations. The Qt shell does not bundle Qt for distribution.
+PySide6/Qt6 is the Qt GUI's dependency under LGPLv3 (compatible with CFA4's GPL) with its own
+licensing obligations. The .deb and the tarball use Ubuntu's `python3-pyside6.*`; the AppImage and
+the Flatpak carry the pinned PySide6 / Qt 6 libraries unmodified, with their licences and source
+offer (`packaging/linux/stage-pyside6.py`, owner decision 2026-11-09).
 
 ## Project documentation
 
@@ -78,6 +90,5 @@ with its own licensing obligations. The Qt shell does not bundle Qt for distribu
 - [Known inherited gaps](docs/gaps.md)
 - [Licenses and attribution](ATTRIBUTION.md)
 
-The legacy Windows/macOS/FreeBSD packaging/source components
-are not removed in this preparation step to avoid breaking existing crate dependencies;
-none are supported CFA4 release targets.
+The macOS and Windows source paths, backends and tests have been removed (2026-10-27); FreeBSD
+and WebAssembly leftovers remain for now. None of these is a supported CFA4 target.

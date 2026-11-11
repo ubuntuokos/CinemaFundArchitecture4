@@ -17,7 +17,8 @@
 # the extras switches every FFmpeg library at once.
 #
 # Environment: CFA4_FFMPEG_PREFIX (base prefix), CFA4_FFMPEG_JOBS (make -j), CFA4_FFMPEG_SOURCE
-# (`tarball`, the default, or `git` for the GitHub mirror when ffmpeg.org is not reachable).
+# (`tarball`, the default, or `git` for the GitHub mirror when ffmpeg.org is not reachable),
+# CFA4_FFMPEG_FROM_SOURCE=1 (compile even where scripts/dev/fetch-ffmpeg-9.0.2.sh has a prebuilt one).
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
@@ -46,6 +47,21 @@ base="${CFA4_FFMPEG_PREFIX:-/opt/cfa4/ffmpeg-${version}}"
 prefix="$base"
 (( restricted )) && prefix="${base}-restricted"
 jobs="${CFA4_FFMPEG_JOBS:-$(nproc)}"
+
+# The base build in its default prefix is published prebuilt (scripts/dev/fetch-ffmpeg-9.0.2.sh,
+# GitHub prerelease, SHA-256 pinned): install that instead of compiling, unless
+# CFA4_FFMPEG_FROM_SOURCE=1 (the prebuilt workflow itself) or the host has no prebuilt archive.
+if (( ! restricted )) && [[ "$prefix" == "/opt/cfa4/ffmpeg-${version}" && "${CFA4_FFMPEG_FROM_SOURCE:-0}" != 1 ]]; then
+  status=0
+  bash "$(dirname "${BASH_SOURCE[0]}")/fetch-ffmpeg-9.0.2.sh" || status=$?
+  if (( status == 0 )); then
+    exit 0
+  elif (( status != 3 )); then
+    echo "the prebuilt FFmpeg could not be installed; set CFA4_FFMPEG_FROM_SOURCE=1 to compile it" >&2
+    exit "$status"
+  fi
+  echo "no prebuilt FFmpeg ${version} for this host; building from source" >&2
+fi
 
 need=(nasm pkg-config)
 for tool in "${need[@]}" curl tar make cc; do
@@ -111,6 +127,30 @@ if [[ ! -w "$(dirname "$prefix")" && "$(id -u)" != 0 ]]; then
   sudo mkdir -p "$(dirname "$prefix")"
 fi
 "${install_cmd[@]}" >"${tmp}/install.log"
+
+# Licence and source information next to the libraries: packaging/linux/stage-ffmpeg.sh ships this
+# directory with every CFA4 package that contains this build (GPL-3: the corresponding source is
+# the unmodified upstream release named here, configured with the flags below).
+doc="${tmp}/doc"
+mkdir -p "$doc"
+cp "$src"/LICENSE.md "$src"/COPYING.* "$doc/"
+{
+  echo "FFmpeg ${version}, built for CFA4 by scripts/dev/build-ffmpeg-9.0.2.sh (ADR 0005)."
+  echo "Licence: GPL version 3 or later (--enable-gpl --enable-version3, never --enable-nonfree)."
+  case "${CFA4_FFMPEG_SOURCE:-tarball}" in
+    tarball) echo "Source: ${source_url} (SHA-256 ${sha256}), unmodified." ;;
+    git) echo "Source: ${git_url} tag ${git_tag}, commit ${git_commit}, unmodified." ;;
+  esac
+  echo "Build: $( (( restricted )) && echo 'restricted (x264, x265; cfa4-restricted-extras)' || echo 'base (no patent-restricted codecs)')"
+  echo "configure flags:"
+  printf '  %s\n' "${flags[@]}"
+} >"${doc}/BUILDINFO"
+docdir="${prefix}/share/doc/ffmpeg"
+if [[ "${install_cmd[0]}" == sudo ]]; then
+  sudo mkdir -p "$docdir" && sudo cp "$doc"/* "$docdir/"
+else
+  mkdir -p "$docdir" && cp "$doc"/* "$docdir/"
+fi
 
 ffmpeg="${prefix}/bin/ffmpeg"
 actual="$("$ffmpeg" -version | awk 'NR==1 {print $3}')"

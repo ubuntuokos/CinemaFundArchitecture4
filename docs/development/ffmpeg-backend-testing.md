@@ -23,7 +23,7 @@ kimenetében a `VAProfileH264…` és `VAProfileHEVC…` sorok jelzik, mit tud a
 ## 2. Az FFmpeg 9.0.2 lefordítása
 
 ```sh
-scripts/dev/build-ffmpeg-9.0.2.sh            # alap: /opt/cfa4/ffmpeg-9.0.2 (sudo-t kérhet)
+scripts/dev/build-ffmpeg-9.0.2.sh            # alap: /opt/cfa4/ffmpeg-9.0.2 (sudo-t kérhet; Ubuntu 24.04/26.04-en az előre megépítettet tölti le, scripts/dev/fetch-ffmpeg-9.0.2.sh)
 ```
 
 **Elvárt:** a végén `FFmpeg 9.0.2 installed in /opt/cfa4/ffmpeg-9.0.2 (GPL-3 or later, shared
@@ -39,7 +39,8 @@ cargo build --release -p cfa4 -p cfa4-cli --features cfa4/ffmpeg,cfa4-cli/ffmpeg
 readelf -d target/release/cfa4-cli | grep RUNPATH
 ```
 
-**Elvárt:** `RUNPATH … [/opt/cfa4/ffmpeg-9.0.2-restricted/lib:/opt/cfa4/ffmpeg-9.0.2/lib]`.
+**Elvárt:** `RUNPATH … [/opt/cfa4/ffmpeg-9.0.2-restricted/lib:/opt/cfa4/ffmpeg-9.0.2/lib:$ORIGIN/../lib/cfa4/ffmpeg-9.0.2/lib]`
+(a harmadik a hordozható csomagok – tarball, AppImage, Flatpak – saját másolata).
 
 ## 4. A hátterek állapota
 
@@ -49,7 +50,21 @@ target/release/cfa4-cli media-backends
 
 **Elvárt:** három háttér ebben a sorrendben: `builtin` (CFA4-motor), `ffmpeg`
 (`"available": true`, `"version": "n9.0.2"`, `"license": "GPL version 3 or later"`), `gstreamer`.
-A `restricted` listában `libx264` és `libx265` `"available": false`.
+A `restricted` listában `libx264` és `libx265` `"available": false`. Az útválasztó döntése a
+`route` mezőben: a `media.fallback` lánc `software` → `ffmpeg` → `gstreamer` (a saját motor mindig
+elöl), az `ffmpeg` `"tried": 1`, a `gstreamer` `"tried": 2` (vagy `null`, ha nincs a buildben).
+
+### 4a. A sorrend felcserélése a felhasználói táblával
+
+```sh
+mkdir -p ~/.config/cfa4
+printf '[compute.task."media.fallback"]\norder = ["software", "gstreamer", "ffmpeg"]\n' >> ~/.config/cfa4/routing.toml
+target/release/cfa4-cli media-backends
+```
+
+**Elvárt:** a `gstreamer` kerül a második helyre (`"tried": 1`), az `ffmpeg` a harmadikra. Ha a
+sorból kihagyod az `ffmpeg`-et, az állapota `"tried": null`, a Beállítások oldalon *Left out by the
+routing table*. A próba után töröld a sort a `routing.toml`-ból.
 
 ## 5. Dekódolás – a tesztkészlet
 

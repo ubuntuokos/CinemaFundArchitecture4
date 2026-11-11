@@ -30,8 +30,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
 5. **Közös fájlok** (kodek-regiszter, `crates/codecs`, `crates/export/src/lib.rs`, effektlisták,
    `i18n/*.tsv`, `docs/*-parity.md`, `Cargo.toml`, `Cargo.lock`): csak a saját sorodat add hozzá,
    ne rendezd át és ne formázd újra a fájlt.
-6. **Új téma indítása előtt** nézd meg a nyitott PR-okat. Ha 20-nál több van, új munkát csak
-   a tulajdonos kérésére kezdj.
+6. **Új téma indítása előtt** nézd meg a nyitott PR-okat. Ha 30-nál több van, új munkát csak
+   a tulajdonos kérésére kezdj. (Tulajdonosi döntés, 2026-11-07: a korábbi 20-as határ 30-ra nőtt.)
 7. Munka végén **hagyd tisztán**: ne maradjon PR nélküli ág, ideiglenes (`tmp/`, `ci-debug/`) ág.
 8. **Projekthatár** (tulajdonosi döntés, 2026-10-31). A saját projekteden (a tulajdonos által
    jóváhagyott terv, ADR vagy issue, amellyel a munkamenet indult) belül logikus sorrendben magad
@@ -50,10 +50,10 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
 2. **Aktív PR-hoz nem nyúl:** ha az utolsó commit 3 óránál frissebb, vagy a leírás szerint még
    folyik a munka, kihagyja.
 3. **Sorrendet javasol** a tulajdonosnak (`VISION.md` prioritása szerint: Qt6 először), és csak
-   a tulajdonos által ugyanabban a hívásban jóváhagyott PR-okat olvasztja be, **egyenként**.
-   Gyűjtő-PR-t nem nyit.
-4. Beolvasztás előtt: a PR ága friss a `main`-nel (`update-branch`), a teljes CI
-   (`cfa4-full-validation`) zöld **azon a fejen**.
+   a tulajdonos által ugyanabban a hívásban jóváhagyott PR-okat olvasztja be, **egyenként**,
+   vagy a tulajdonos kérésére **egy köteg-PR-ban** (§3a). Más gyűjtő-PR-t nem nyit.
+4. Beolvasztás előtt: a PR ága (köteg esetén a köteg-ág) friss a `main`-nel (`update-branch`),
+   a teljes CI (`cfa4-full-validation`) zöld **azon a fejen**.
    Ezt a kötelező `full-validation-gate` ellenőrzés technikailag is kikényszeríti (tulajdonosi
    döntés, 2026-10-31): csak akkor zöld, ha minden blokkoló teljes job azon a fejen ténylegesen
    lefutott és zöld. A Qt6 GUI-tesztek a GUI elkészültéig futnak, de nem blokkolnak.
@@ -66,6 +66,32 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    munkameneteknek a PR-jukban jelzi. A döntés ezután kötelező.
 9. A feladat végén rövid jelentést ad, és **megáll**. Ütemezett vagy ismétlődő ellenőrzést nem hoz létre.
 
+## 3a. Köteg-PR (tulajdonosi döntés, 2026-11-08)
+
+A `main` szabálysora szerint egy PR csak a `main`-nel naprakészen olvasztható be, így minden
+beolvasztás elavultatja a többi PR-t, és mindegyikre újra lefut a kb. 2 órás teljes validáció.
+A köteg-PR-ral több jóváhagyott PR-ra **egy** teljes validáció jut. A GitHub merge queue a
+személyes fiók alatti tárolóban nem érhető el, ezért a kötegelést a gazda végzi.
+
+1. **Indítás:** `/gazda köteg #12 #15 #18` – a tulajdonos által ebben a hívásban jóváhagyott
+   PR-ok, alapból 3–8 darab (a tulajdonos kisebbet is kérhet). Aktív PR (§3.2) nem kerül bele.
+2. **Összerakás:** `scripts/dev/gazda-koteg.sh #12 #15 #18`. A mostani `main`-ből nyit egy
+   `koteg/ÉÉÉÉHHNN-N` ágat, a PR-okat a megadott sorrendben, egyenként, merge committal rárakja,
+   az ütközőket kihagyja és kiírja, majd köteg-PR-t nyit a `main`-re a `cfa4-full-validation`
+   címkével. A köteg-ágra csak a gazda pushol; az eredeti PR-ok ágához nem nyúl.
+3. **Zöld `full-validation-gate` esetén** a gazda a köteg-PR-t **merge committal** olvasztja be
+   (squash és rebase tilos). Így az eredeti PR-ok fejei a `main`-be kerülnek, és a GitHub azokat
+   magától beolvasztottnak jelöli. Utána ellenőrzi, hogy minden bekerült PR „Merged”; ha egy PR-ra
+   közben új commit jött, az nyitva marad, ezt jelenti.
+4. **Ha a `main` közben elmozdult:** a köteg-ágat frissíti (`update-branch`), és a címke
+   levételével és újra feltételével újraindítja a teljes validációt.
+5. **Piros kapu esetén:** a hibás jobból és tesztből megkeresi az okozó PR-t, kiveszi, és új
+   köteget rak össze nélküle. Ha nem egyértelmű, a köteget kettébontja, és a két felét külön
+   köteg-PR-ban validálja. A kivett PR szerzőjének a PR-jában jelzi az okot.
+6. **Saját beolvasztási kivétellel dolgozó munkamenet** (pl. az upstream-sync): amíg nyitott
+   köteg-PR van, nem olvaszt be a `main`-be (az a köteg validációját érvénytelenítené); a PR-ját
+   a következő kötegbe kéri a leírásában, vagy a köteg beolvasztása után olvaszt be.
+
 ## 4. Ágak
 
 A GitHubon be van kapcsolva az „Automatically delete head branches”. 2026-10-27-én mégis
@@ -77,6 +103,7 @@ a következő beolvasztás után törlődik-e az ág.
 
 - `/gazda` – állapotfelmérés és beolvasztási javaslat, utána megáll.
 - `/gazda <utasítás>` – csak az adott utasítást hajtja végre (pl. `/gazda mergeld a #123-at`).
+- `/gazda köteg #12 #15 #18` – a felsorolt PR-ok egy köteg-PR-ban, egy teljes validációval (§3a).
 
 A szerep teljes leírása: [`.claude/skills/gazda/SKILL.md`](../.claude/skills/gazda/SKILL.md).
 A tulajdonos minden sikeres feladat után `/clear`-rel üríti a gazda munkamenetet.

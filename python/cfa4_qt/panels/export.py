@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtCore import QObject, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QFrame,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -36,8 +37,10 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -48,6 +51,7 @@ from .export_effects import METADATA_FORMATS, SECTION_KEYS, CaptionsSection, Eff
 from .export_preview import PreviewColumn
 from .export_rows import ExportRows
 from .preset_manager import PresetManager
+from .smart_export import SmartExportBox
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
 BITRATE_MODES = (("vbr1Pass", N_("VBR, 1 pass")), ("vbr2Pass", N_("VBR, 2 pass")), ("cbr", N_("CBR")), ("crf", N_("Constant quality (CRF)")))
@@ -85,6 +89,8 @@ DCP_IAB_FALLBACK = (
     ("5.1", N_("5.1: the IAB rendered (not ST 429-19)")),
     ("mix", N_("5.1: the timeline mix (not ST 429-19)")),
 )
+# DCP spoken language (RFC 5646, #309): common tags offered; any tag can be typed
+DCP_LANGUAGES = ("", "en-US", "en-GB", "hu-HU", "de-DE", "fr-FR", "es-ES", "it-IT", "ja-JP", "zh-CN")
 AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
@@ -126,8 +132,10 @@ def encoder_format(fmt: str, mxf_codec: str) -> str:
 
 
 def supports_alpha(fmt: str, prores_profile: str, cineform_profile: str) -> bool:
-    """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``)."""
-    if fmt in ("png", "tiff", "tga", "exr"):
+    """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``).
+
+    GIF keeps binary transparency (alpha below 128 transparent, the rest opaque)."""
+    if fmt in ("png", "tiff", "tga", "exr", "gif"):
         return True
     if fmt == "prores":
         return prores_profile in ("4444", "4444xq")
@@ -246,6 +254,30 @@ def deep_merge(dst: dict[str, Any], src: dict[str, Any]) -> dict[str, Any]:
     return dst
 
 
+QUEUE_COLUMN_W = 500
+QUEUE_ACTIONS_COL = 6
+
+
+class QueueTable(QTableWidget):
+    """The export queue; each row is egui's ``export.queue.item.<id>`` part (its status as the label)."""
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        out = []
+        offset = self.viewport().pos()
+        for row in range(self.rowCount()):
+            first = self.item(row, 0)
+            if first is None or self.isRowHidden(row):
+                continue
+            rect = QRect()
+            for col in range(self.columnCount()):
+                rect = rect.united(self.visualRect(self.model().index(row, col)))
+            rect = rect.intersected(self.viewport().rect())
+            if rect.isValid():
+                status = self.item(row, 3)
+                out.append((f"export.queue.item.{first.data(Qt.ItemDataRole.UserRole)}", rect.translated(offset), status.text() if status else ""))
+        return out
+
+
 class ExportDialog(QDialog):
     """Non-modal: the editor stays usable while the queue encodes."""
 
@@ -302,7 +334,15 @@ class ExportDialog(QDialog):
         self.dcp_kind.setObjectName("export.dcpContentKind")
         for key, label in DCP_KINDS:
             self.dcp_kind.addItem(tr(label), key)
-        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
+        # DCP only: spoken language (MCA labels, CPL title, DCNC name field)
+        self.dcp_language = QComboBox(self)
+        self.dcp_language.setObjectName("export.dcpLanguage")
+        self.dcp_language.setEditable(True)
+        self.dcp_language.addItems(DCP_LANGUAGES)
+        line = self.dcp_language.lineEdit()
+        if line is not None:
+            line.setPlaceholderText(tr("None (RFC 5646 tag, e.g. en-US)"))
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_language):
             w.setEnabled(False)
         # DCP only: immersive audio, an IAB track file beside the 16-channel main sound (#343)
         self.dcp_immersive = QComboBox(self)
@@ -334,9 +374,17 @@ class ExportDialog(QDialog):
         browse.setObjectName("export.location.browse")
         browse.setToolTip(tr("Choose folder"))
         browse.clicked.connect(self._browse)
+        # DCP only: name the package folder by the ISDCF Digital Cinema Naming Convention
+        self.dcp_isdcf = QPushButton(tr("ISDCF name"), self)
+        self.dcp_isdcf.setObjectName("export.dcpIsdcfName")
+        self.dcp_isdcf.setToolTip(tr("Name the DCP folder by the Digital Cinema Naming Convention"))
+        self.dcp_isdcf.clicked.connect(self._use_isdcf_name)
+        self.dcp_isdcf.setEnabled(False)
+        self._dcp_name = ""
         path_row = QHBoxLayout()
         path_row.addWidget(self.path.location, 1)
         path_row.addWidget(browse)
+        path_row.addWidget(self.dcp_isdcf)
 
         self.range = QComboBox(self)
         self.range.setObjectName("export.range")
@@ -482,6 +530,7 @@ class ExportDialog(QDialog):
         f.addRow(tr("DCP resolution"), self.dcp_resolution)
         f.addRow(tr("DCP container"), self.dcp_aspect)
         f.addRow(tr("Content kind"), self.dcp_kind)
+        f.addRow(tr("DCP language"), self.dcp_language)
         f.addRow(tr("Range"), range_row)
         f.addRow("", self.range_warning)
         video = Section("video", tr("Video"), self)
@@ -538,17 +587,24 @@ class ExportDialog(QDialog):
         buttons.addWidget(close)
 
         # ----- queue -----
-        self.table = QTableWidget(0, 6, self)
+        self.table = QueueTable(0, 7, self)
         self.table.setObjectName("export.queue")
         self.table.setHorizontalHeaderLabels(
-            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining")]
+            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining"), ""]
         )
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        queue_buttons = QHBoxLayout()
-        for name, text, slot in (
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        # what egui's narrow column shows first: the export, its status and progress, its buttons
+        header.moveSection(QUEUE_ACTIONS_COL, 5)
+        header.moveSection(2, 6)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(4, 64)
+        # two rows of four: the column is narrow (egui's is 300 px)
+        queue_buttons = QGridLayout()
+        for n_button, (name, text, slot) in enumerate((
             ("start", N_("Start Queue"), lambda: self._queue_command("export.queue.start", {})),
             ("stop", N_("Stop Queue"), lambda: self._queue_command("export.queue.stop", {})),
             ("cancel", N_("Cancel Selected"), lambda: self._selected_command("export.queue.cancel")),
@@ -558,15 +614,14 @@ class ExportDialog(QDialog):
             # egui's Up / Down: the order the queue encodes in (not past the export encoding now)
             ("up", N_("Up"), lambda: self._move_selected(-1)),
             ("down", N_("Down"), lambda: self._move_selected(1)),
-        ):
+        )):
             b = QPushButton(tr(text), self)
             b.setObjectName(f"export.queue.{name}")
             b.clicked.connect(slot)
-            queue_buttons.addWidget(b)
+            queue_buttons.addWidget(b, n_button // 4, n_button % 4)
             if name in ("up", "down"):
                 setattr(self, f"queue_{name}", b)
         self.table.itemSelectionChanged.connect(self._update_move_buttons)
-        queue_buttons.addStretch(1)
         # egui's "Queue (n)" heading, and its hint while the queue is empty
         self.queue_box = queue_box = QGroupBox(tr("Queue ({n})").format(n=0), self)
         queue_box.setObjectName("export.queueBox")
@@ -579,6 +634,31 @@ class ExportDialog(QDialog):
         qv.addWidget(self.table)
         qv.addLayout(queue_buttons)
 
+        # egui's left column: "Destinations" (Media File, the only one) over the queue
+        self.destinations = QLabel(tr("Destinations"), self)
+        self.destinations.setObjectName("export.destinations")
+        font = self.destinations.font()
+        font.setBold(True)
+        self.destinations.setFont(font)
+        self.media_file = QLabel(tr("Media File"), self)
+        self.media_file.setObjectName("export.destination.mediaFile")
+        self.media_file.setMinimumHeight(26)
+        self.media_file.setContentsMargins(10, 0, 10, 0)
+        # egui fills the row with the selected-row colour: Media File is always the chosen destination
+        self.media_file.setAutoFillBackground(True)
+        pal = self.media_file.palette()
+        pal.setColor(self.media_file.backgroundRole(), pal.color(pal.ColorRole.Highlight))
+        pal.setColor(self.media_file.foregroundRole(), pal.color(pal.ColorRole.HighlightedText))
+        self.media_file.setPalette(pal)
+        queue_column = QWidget(self)
+        queue_column.setObjectName("export.queueColumn")
+        qc = QVBoxLayout(queue_column)
+        qc.setContentsMargins(0, 0, 0, 0)
+        qc.addWidget(self.destinations)
+        qc.addWidget(self.media_file)
+        qc.addWidget(queue_box, 1)
+        self.queue_column = queue_column
+
         top = QHBoxLayout()
         left = QVBoxLayout()
         left.addWidget(out)
@@ -589,6 +669,15 @@ class ExportDialog(QDialog):
         top.addLayout(left, 1)
         right = QVBoxLayout()
         right.addWidget(self.preview)
+        # the export mode and the render plan preview (WP-08, Smart Export)
+        self.smart = SmartExportBox(
+            engine,
+            lambda: (self.sequence or {}).get("id") if isinstance((self.sequence or {}).get("id"), int) else None,
+            lambda: str(self.params().get("path") or ""),
+            self._smart_said,
+            self,
+        )
+        right.addWidget(self.smart)
         right.addWidget(self.captions)
         right.addWidget(self.effects)
         right.addWidget(self.metadata)
@@ -609,13 +698,24 @@ class ExportDialog(QDialog):
         self.no_sequence.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.no_sequence.setEnabled(False)
         self.no_sequence.hide()
+        settings_column = QWidget(self)
+        sc = QVBoxLayout(settings_column)
+        sc.setContentsMargins(0, 0, 0, 0)
+        sc.addWidget(scroll, 1)
+        sc.addWidget(self.no_sequence, 1)
+        sc.addWidget(self.summary)
+        sc.addLayout(buttons)
+        # egui's columns: the queue on the left (300 px there), the settings and preview beside it
+        self.splitter = splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        splitter.setObjectName("export.columns")
+        splitter.setChildrenCollapsible(False)
+        splitter.addWidget(queue_column)
+        splitter.addWidget(settings_column)
+        splitter.setStretchFactor(1, 1)
+        splitter.setSizes([QUEUE_COLUMN_W, 1080])
         layout = QVBoxLayout(self)
-        layout.addWidget(scroll, 3)
-        layout.addWidget(self.no_sequence, 3)
-        layout.addWidget(self.summary)
-        layout.addLayout(buttons)
-        layout.addWidget(queue_box, 1)
-        self.resize(1080, 860)
+        layout.addWidget(splitter)
+        self.resize(QUEUE_COLUMN_W + 1080, 860)
 
         # egui's collapsible settings sections (`ExportUi::open_sections`)
         self.sections: dict[str, Section] = {
@@ -643,6 +743,7 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.editingFinished.connect(self._probe_iab)
         self.dcp_iab_source.textChanged.connect(self._changed)
         self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
+        self.dcp_language.currentTextChanged.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha)):
@@ -672,6 +773,7 @@ class ExportDialog(QDialog):
         self.export_button.setEnabled(sequence is not None)
         self.queue_button.setEnabled(sequence is not None)
         self.sequence_updated(sequence)
+        self.smart.refresh()
         if sequence is not None:
             duration = int(sequence.get("duration") or 0) / 254_016_000_000
             self.end.setValue(duration)
@@ -814,6 +916,7 @@ class ExportDialog(QDialog):
         self.dcp_immersive.setCurrentIndex(max(0, self.dcp_immersive.findData(preset.get("dcpImmersive") or "off")))
         self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
         self.dcp_iab_fallback.setCurrentIndex(max(0, self.dcp_iab_fallback.findData(preset.get("dcpIabFallback") or "none")))
+        self.dcp_language.setCurrentText(str(preset.get("dcpLanguage") or ""))
         self.touched.clear()
         self.agent_settings = {}
         self._loading = False
@@ -840,8 +943,9 @@ class ExportDialog(QDialog):
         self.sections["multiplexer"].setVisible(self._muxed())
         self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         dcp = self._dcp()
-        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive):
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive, self.dcp_language):
             w.setEnabled(dcp)
+        self.dcp_isdcf.setEnabled(dcp and bool(self._dcp_name))
         self._immersive_changed()
         if dcp:
             # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
@@ -1073,6 +1177,8 @@ class ExportDialog(QDialog):
     def _changed(self) -> None:
         if not self._loading:
             self._resolve_timer.start()
+            if hasattr(self, "smart"):
+                self.smart.refresh()
 
     def _touch(self, key: str) -> None:
         if not self._loading:
@@ -1153,6 +1259,7 @@ class ExportDialog(QDialog):
                 p["dcpIabSource"] = os.path.expanduser(self.dcp_iab_source.text().strip())
             if mode != "off":
                 p["dcpIabFallback"] = self.dcp_iab_fallback.currentData()
+            p["dcpLanguage"] = self.dcp_language.currentText().strip()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         return p
@@ -1219,6 +1326,18 @@ class ExportDialog(QDialog):
         self.range_warning.setVisible(bool(r.get("warnings")))
         self.export_button.setEnabled(True)
         self.queue_button.setEnabled(True)
+        self._dcp_name = str(r.get("dcpName") or "")
+        self.dcp_isdcf.setEnabled(self._dcp() and bool(self._dcp_name))
+
+    def _use_isdcf_name(self) -> None:
+        """Rename the package folder (the last part of the output path) to the engine's ISDCF name."""
+        if not self._dcp_name:
+            return
+        # the package folder is the File Name row (a DCP has no extension); set it directly so a
+        # dot in the name is not taken for one
+        if not self.path.location.text().strip():
+            self.path.location.setText(str(default_output_dir(self.project_path)))
+        self.path.file_name.setText(self._dcp_name)
 
     def open_sections(self) -> list[str]:
         return [k for k in SECTION_KEYS if self.sections[k].is_open()]
@@ -1236,6 +1355,8 @@ class ExportDialog(QDialog):
         self._resolve()
 
     def _summary_error(self, message: str) -> None:
+        self._dcp_name = ""
+        self.dcp_isdcf.setEnabled(False)
         if self._agent_before is not None:
             self.agent_settings, self._agent_before = self._agent_before, None
             self._resolve_timer.start()
@@ -1251,7 +1372,18 @@ class ExportDialog(QDialog):
         self.summary.setStyleSheet("color: #d04040")
 
     # ----- queue -----
+    def _smart_said(self, message: str, error: bool) -> None:
+        if error:
+            self._summary_error(message)
+        else:
+            self.summary.setText(message)
+            self.summary.setStyleSheet("")
+
     def _enqueue(self, start: bool) -> None:
+        if self.smart.smart():
+            # Smart Export writes the file itself (no queue)
+            self.smart.start()
+            return
         params = self.params()
         if not params.get("path"):
             self._summary_error(tr("Choose a file name and location."))
@@ -1342,6 +1474,54 @@ class ExportDialog(QDialog):
         self.queue_up.setEnabled(row is not None and self._can_move(row, -1))
         self.queue_down.setEnabled(row is not None and self._can_move(row, 1))
 
+    def _row_actions(self, row: int, it: dict[str, Any], status: str) -> None:
+        """egui's buttons on each queued export: Up, Down, Cancel (ready or encoding) or Retry,
+        and Remove, ids ``export.queue.item.<id>.<key>``; rebuilt only when what they offer changes,
+        so a poll does not replace a button under the pointer."""
+        qid = it.get("id")
+        items = self._queue_items
+        wanted = (
+            qid,
+            row > 0 and status != "encoding",
+            row + 1 < len(items),
+            status in ("ready", "encoding"),
+            status != "encoding",
+        )
+        cell = self.table.cellWidget(row, QUEUE_ACTIONS_COL)
+        if cell is not None and getattr(cell, "cfa4_actions", None) == wanted:
+            return
+        _id, up, down, cancel, remove = wanted
+        cell = QWidget(self.table)
+        cell.cfa4_actions = wanted  # type: ignore[attr-defined]
+        h = QHBoxLayout(cell)
+        h.setContentsMargins(2, 0, 2, 0)
+        h.setSpacing(2)
+        specs = [
+            ("up", N_("Up"), up, "export.queue.move", {"id": qid, "by": -1}),
+            ("down", N_("Down"), down, "export.queue.move", {"id": qid, "by": 1}),
+            ("cancel", N_("Cancel"), True, "export.queue.cancel", {"id": qid})
+            if cancel
+            else ("retry", N_("Retry"), True, "export.queue.retry", {"id": qid, "start": True}),
+            ("remove", N_("Remove"), remove, "export.queue.remove", {"id": qid}),
+        ]
+        small = cell.font()
+        small.setPointSizeF(max(6.0, small.pointSizeF() - 1.5))
+        for key, text, enabled, command, params in specs:
+            b = QToolButton(cell)
+            b.setText(tr(text))
+            b.setFont(small)
+            b.setObjectName(f"export.queue.item.{qid}.{key}")
+            b.setEnabled(bool(enabled))
+            b.clicked.connect(lambda _c=False, c=command, p=params: self._item_command(c, p))
+            h.addWidget(b)
+        self.table.setCellWidget(row, QUEUE_ACTIONS_COL, cell)
+        self.table.resizeColumnToContents(QUEUE_ACTIONS_COL)
+
+    def _item_command(self, command: str, params: dict[str, Any]) -> None:
+        if command == "export.queue.move":
+            self._follow = params.get("id")  # the selection follows the moved export, as Up / Down's
+        self._queue_command(command, params)
+
     def refresh_queue(self) -> None:
         if self.engine.running:
             self.engine.execute("export.queue.list", {}, on_reply=self._on_queue, on_error=lambda _m: None)
@@ -1371,6 +1551,9 @@ class ExportDialog(QDialog):
                 cell.setText(text)
                 if col == 0:
                     cell.setData(Qt.ItemDataRole.UserRole, it.get("id"))
+                if col == 1:  # the file name, as egui's "sequence → file"; the whole path on hover
+                    cell.setText(Path(text).name if text else "")
+                    cell.setToolTip(text)
                 if col == 3:
                     cell.setToolTip(str(it.get("statusText") or ""))
             bar = self.table.cellWidget(row, 4)
@@ -1384,6 +1567,7 @@ class ExportDialog(QDialog):
                 bar.setValue(0)
             if status == "done":
                 bar.setValue(1000)
+            self._row_actions(row, it, status)
             key = it.get("id")
             if self._known_status.get(key) != status and status in FINISHED and key in self._known_status:
                 # it finished while we watched it
