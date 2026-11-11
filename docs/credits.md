@@ -54,6 +54,17 @@ with the roll, on a card it fades with the card; the page keeps a transparent pl
 (“Picture 1: logo.png”) so its height and roll include the picture. A missing picture is a
 warning and is left out.
 
+**Videos.** `{{Video intro.mp4}}` (`{{Videó …}}`, `{{Mozgókép …}}`, with an optional height like
+pictures) puts a video in the credits the same way: its own clip that moves with the roll or comes
+in with the card, playing from its start; a video shorter than its page ends early. Its size is
+read from the file (a file over 256 MiB is taken as 16:9).
+
+**Portraits.** A body cell with one picture tag and a name – `{{Pic anna.jpg}} Kiss Anna` – is a
+name with its portrait. A block with portraits is a grid of faces with the names under them
+(`portraitSide: left`: beside them), `columns` to a row, `portraitHeight` (default 220) high, the
+built-in `Portraits` content style showing four to a row. Cells without a picture are names only;
+a picture that cannot be read is a warning and the name stays.
+
 Example:
 [`crates/credits/examples/credits.csv`](../crates/credits/examples/credits.csv).
 
@@ -93,7 +104,14 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 `margin`, and for the horizontal orientation `headAlign` (`right` by default; `left` makes a
 column), `harmonizeHeads` (every head of the style on a page gets the widest one's width),
 `leader` (e.g. `" ."`: repeated from the head to the body, on the head's line, in its letter
-style) and `leaderGap` (space on either side of the dots, default 16). Page style fields: `behaviour` (`scroll`, `card`, `crawl`), `scrollPxPerFrame` (rolls
+style) and `leaderGap` (space on either side of the dots, default 16); for portraits
+`portraitHeight`, `portraitSide` (`above`, `left`) and `portraitGap`.
+
+**Card entrances.** A card page style can bring its content in: `entrance` (`slideLeft`,
+`slideRight`, `slideUp`, `slideDown`) moves it `entranceDistance` pixels (default 120) over
+`entranceFrames` (default 18, easing out) while it fades in, and `staggerFrames` brings each block
+in that many frames after the one before. Pictures and videos come in with their block. They are
+ordinary keyframes on the layers, editable afterwards. Page style fields: `behaviour` (`scroll`, `card`, `crawl`), `scrollPxPerFrame` (rolls
 and crawls), `cardFrames`, `fadeInFrames`, `fadeOutFrames`, `gapAfterFrames`, `crawlLine`,
 `crawlGap`, `background`, `transition`, `transitionFrames` (see below).
 
@@ -247,6 +265,5 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), videos in the credits (inside a page; a video *background*
-works), portraits beside names, hooked spines, body-width harmonisation, looping a short
-background video, transitions on pictures.
+Online sheets (download as `.xlsx`), hooked spines, body-width harmonisation, looping a short
+background or credits video.
