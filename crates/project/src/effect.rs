@@ -259,10 +259,13 @@ pub const STEREO_3D: &[&str] = &["Video Effects", "Stereoscopic 3D"];
 pub const CREATIVE_LOOKS: &[&str] = &["Video Effects", "Creative Looks"];
 /// CFA4's own folder (not in Premiere's bin): retouch and picture-enhancement effects.
 pub const ENHANCE: &[&str] = &["Video Effects", "Enhance"];
+/// CFA4's own folder (not in Premiere's bin): digital and analogue damage looks.
+pub const GLITCH: &[&str] = &["Video Effects", "Glitch"];
 /// CFA4's own Video Effects folders, which Premiere's catalogue does not have.
-pub const CFA4_FOLDERS: &[&str] = &["Stereoscopic 3D", "Creative Looks", "Enhance"];
-/// CFA4's own effects that sit in one of Premiere's folders.
-pub const CFA4_OWN: &[&str] = &["slit_scan", "six_point_pin", "film_gate", "particles"];
+pub const CFA4_FOLDERS: &[&str] = &["Stereoscopic 3D", "Creative Looks", "Enhance", "Glitch"];
+/// CFA4's own effects that sit in one of Premiere's folders or in the Glitch folder.
+pub const CFA4_OWN: &[&str] =
+    &["slit_scan", "six_point_pin", "film_gate", "particles", "bit_crush", "block_glitch", "databend", "vhs", "scan_line_jitter", "tile_jitter"];
 const VIDEO: &[&str] = &["Video Effects", "Video"];
 const A_AMP: &[&str] = &["Audio Effects", "Amplitude and Compression"];
 const A_DELAY: &[&str] = &["Audio Effects", "Delay and Echo"];

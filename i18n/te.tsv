@@ -4162,3 +4162,33 @@ export.summary	Low	తక్కువ
 	Clear Legibility Markers	చదవగలత మార్కర్లను తొలగించు
 	Text legibility: no problems found	వచనం చదవగలత: సమస్యలు ఏవీ కనబడలేదు
 	Text legibility: {count} problems marked on the timeline (orange markers)	వచనం చదవగలత: టైమ్‌లైన్‌లో {count} సమస్యలు గుర్తించబడ్డాయి (నారింజ మార్కర్లు)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	బిట్ క్రష్
+	Bits per Channel	ఛానెల్‌కు బిట్‌లు
+	Ordered Dither	క్రమబద్ధ డిథర్
+	Dither Cell Size	డిథర్ సెల్ పరిమాణం
+	Block Glitch	బ్లాక్ గ్లిచ్
+	Blocks Moved	కదిలిన బ్లాక్‌లు
+	Max Distance	గరిష్ఠ దూరం
+	Snap to Grid	గ్రిడ్‌కు అతికించు
+	Swap Blocks	బ్లాక్‌లను మార్చు
+	Changes per Second	సెకనుకు మార్పులు
+	Databend	డేటాబెండ్
+	Breaks	విరామాలు
+	Shift	జరుపు
+	Color Damage	రంగు దెబ్బతినడం
+	VHS	VHS
+	Color Bleed	రంగు కారడం
+	Wobble	ఊగిసలాట
+	Snow	మంచు
+	Tracking Bar	ట్రాకింగ్ పట్టీ
+	Head Switching	హెడ్ స్విచింగ్
+	Scan Line Jitter	స్కాన్ లైన్ కంపనం
+	Jitter	కంపనం
+	Interval	వ్యవధి
+	Infinite	అనంతం
+	Periodic	ఆవర్తన
+	Tile Jitter	టైల్ కంపనం
+	Tiles	టైల్‌లు
+	Band Direction	పట్టీల దిశ
+	Jitter Direction	కంపనం దిశ

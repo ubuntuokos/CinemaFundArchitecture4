@@ -4158,3 +4158,33 @@ export.summary	Low	lav
 	Clear Legibility Markers	Ryd læsbarhedsmarkører
 	Text legibility: no problems found	Tekstens læsbarhed: ingen problemer fundet
 	Text legibility: {count} problems marked on the timeline (orange markers)	Tekstens læsbarhed: {count} problemer markeret på tidslinjen (orange markører)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitreduktion
+	Bits per Channel	Bit pr. kanal
+	Ordered Dither	Ordnet dithering
+	Dither Cell Size	Ditheringcellestørrelse
+	Block Glitch	Blokglitch
+	Blocks Moved	Flyttede blokke
+	Max Distance	Maks. afstand
+	Snap to Grid	Fastgør til gitter
+	Swap Blocks	Byt blokke
+	Changes per Second	Ændringer pr. sekund
+	Databend	Datakorruption
+	Breaks	Brud
+	Shift	Forskydning
+	Color Damage	Farveskade
+	VHS	VHS
+	Color Bleed	Farveudflydning
+	Wobble	Slingren
+	Snow	Sne
+	Tracking Bar	Sporingsbjælke
+	Head Switching	Hovedskift
+	Scan Line Jitter	Linjerystelse
+	Jitter	Rystelse
+	Interval	Interval
+	Infinite	Uendelig
+	Periodic	Periodisk
+	Tile Jitter	Fliserystelse
+	Tiles	Fliser
+	Band Direction	Båndretning
+	Jitter Direction	Rystelsesretning

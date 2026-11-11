@@ -4158,3 +4158,33 @@ export.summary	Low	madal
 	Clear Legibility Markers	Eemalda loetavuse markerid
 	Text legibility: no problems found	Teksti loetavus: probleeme ei leitud
 	Text legibility: {count} problems marked on the timeline (orange markers)	Teksti loetavus: {count} probleemi on ajateljel märgitud (oranžid markerid)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitisügavuse vähendus
+	Bits per Channel	Bitti kanali kohta
+	Ordered Dither	Korrastatud ditherdus
+	Dither Cell Size	Ditherduse lahtri suurus
+	Block Glitch	Plokitõrge
+	Blocks Moved	Liigutatud plokid
+	Max Distance	Suurim kaugus
+	Snap to Grid	Tõmba ruudustikule
+	Swap Blocks	Vaheta plokid
+	Changes per Second	Muudatusi sekundis
+	Databend	Andmerikkumine
+	Breaks	Katkestused
+	Shift	Nihe
+	Color Damage	Värvikahjustus
+	VHS	VHS
+	Color Bleed	Värvide valgumine
+	Wobble	Võnkumine
+	Snow	Lumi
+	Tracking Bar	Jälgimisriba
+	Head Switching	Peade vahetus
+	Scan Line Jitter	Ridade värin
+	Jitter	Värin
+	Interval	Intervall
+	Infinite	Lõputu
+	Periodic	Perioodiline
+	Tile Jitter	Paanide värin
+	Tiles	Paanid
+	Band Direction	Ribade suund
+	Jitter Direction	Värina suund

@@ -4159,3 +4159,33 @@ export.summary	Low	žema
 	Clear Legibility Markers	Išvalyti įskaitomumo žymes
 	Text legibility: no problems found	Teksto įskaitomumas: problemų nerasta
 	Text legibility: {count} problems marked on the timeline (orange markers)	Teksto įskaitomumas: laiko juostoje pažymėta problemų: {count} (oranžinės žymės)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitų mažinimas
+	Bits per Channel	Bitų kanalui
+	Ordered Dither	Tvarkingas taškavimas
+	Dither Cell Size	Taškavimo langelio dydis
+	Block Glitch	Blokų trikdis
+	Blocks Moved	Perkelti blokai
+	Max Distance	Didžiausias atstumas
+	Snap to Grid	Pritraukti prie tinklelio
+	Swap Blocks	Sukeisti blokus
+	Changes per Second	Pokyčių per sekundę
+	Databend	Duomenų gadinimas
+	Breaks	Lūžiai
+	Shift	Poslinkis
+	Color Damage	Spalvų pažeidimas
+	VHS	VHS
+	Color Bleed	Spalvų išsiliejimas
+	Wobble	Svyravimas
+	Snow	Sniegas
+	Tracking Bar	Sekimo juosta
+	Head Switching	Galvučių perjungimas
+	Scan Line Jitter	Eilučių drebėjimas
+	Jitter	Drebėjimas
+	Interval	Intervalas
+	Infinite	Begalinis
+	Periodic	Periodinis
+	Tile Jitter	Plytelių drebėjimas
+	Tiles	Plytelės
+	Band Direction	Juostų kryptis
+	Jitter Direction	Drebėjimo kryptis

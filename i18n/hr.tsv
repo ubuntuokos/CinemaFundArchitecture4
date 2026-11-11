@@ -4158,3 +4158,33 @@ export.summary	Low	niska
 	Clear Legibility Markers	Ukloni oznake čitljivosti
 	Text legibility: no problems found	Čitljivost teksta: nisu pronađeni problemi
 	Text legibility: {count} problems marked on the timeline (orange markers)	Čitljivost teksta: {count} problema označeno na vremenskoj crti (narančaste oznake)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Smanjenje bitova
+	Bits per Channel	Bitova po kanalu
+	Ordered Dither	Uređeno raspršivanje
+	Dither Cell Size	Veličina ćelije raspršivanja
+	Block Glitch	Blokovska smetnja
+	Blocks Moved	Pomaknuti blokovi
+	Max Distance	Najveća udaljenost
+	Snap to Grid	Prianjanje uz mrežu
+	Swap Blocks	Zamjena blokova
+	Changes per Second	Promjena u sekundi
+	Databend	Oštećenje podataka
+	Breaks	Prekidi
+	Shift	Pomak
+	Color Damage	Oštećenje boje
+	VHS	VHS
+	Color Bleed	Razlijevanje boje
+	Wobble	Ljuljanje
+	Snow	Snijeg
+	Tracking Bar	Traka praćenja
+	Head Switching	Prebacivanje glava
+	Scan Line Jitter	Podrhtavanje redaka
+	Jitter	Podrhtavanje
+	Interval	Interval
+	Infinite	Beskonačno
+	Periodic	Periodično
+	Tile Jitter	Podrhtavanje pločica
+	Tiles	Pločice
+	Band Direction	Smjer traka
+	Jitter Direction	Smjer podrhtavanja

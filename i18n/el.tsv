@@ -4158,3 +4158,33 @@ export.summary	Low	χαμηλή
 	Clear Legibility Markers	Απαλοιφή δεικτών αναγνωσιμότητας
 	Text legibility: no problems found	Αναγνωσιμότητα κειμένου: δεν βρέθηκαν προβλήματα
 	Text legibility: {count} problems marked on the timeline (orange markers)	Αναγνωσιμότητα κειμένου: {count} προβλήματα σημειώθηκαν στη λωρίδα χρόνου (πορτοκαλί δείκτες)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Μείωση bit
+	Bits per Channel	Bit ανά κανάλι
+	Ordered Dither	Διατεταγμένη διάχυση
+	Dither Cell Size	Μέγεθος κελιού διάχυσης
+	Block Glitch	Glitch μπλοκ
+	Blocks Moved	Μετακινημένα μπλοκ
+	Max Distance	Μέγιστη απόσταση
+	Snap to Grid	Προσκόλληση στο πλέγμα
+	Swap Blocks	Εναλλαγή μπλοκ
+	Changes per Second	Αλλαγές ανά δευτερόλεπτο
+	Databend	Αλλοίωση δεδομένων
+	Breaks	Διακοπές
+	Shift	Μετατόπιση
+	Color Damage	Αλλοίωση χρώματος
+	VHS	VHS
+	Color Bleed	Διάχυση χρώματος
+	Wobble	Ταλάντευση
+	Snow	Χιόνι
+	Tracking Bar	Μπάρα tracking
+	Head Switching	Εναλλαγή κεφαλών
+	Scan Line Jitter	Τρεμόπαιγμα γραμμών
+	Jitter	Τρεμόπαιγμα
+	Interval	Διάστημα
+	Infinite	Άπειρο
+	Periodic	Περιοδικό
+	Tile Jitter	Τρεμόπαιγμα πλακιδίων
+	Tiles	Πλακίδια
+	Band Direction	Κατεύθυνση ζωνών
+	Jitter Direction	Κατεύθυνση τρεμοπαίγματος

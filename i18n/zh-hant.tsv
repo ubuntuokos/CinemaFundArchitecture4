@@ -4155,3 +4155,33 @@ export.summary	Low	低
 	Clear Legibility Markers	清除易讀性標記
 	Text legibility: no problems found	文字易讀性：未發現問題
 	Text legibility: {count} problems marked on the timeline (orange markers)	文字易讀性：已在時間軸上標記 {count} 個問題 (橘色標記)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	位元壓縮
+	Bits per Channel	每色版位元數
+	Ordered Dither	有序遞色
+	Dither Cell Size	遞色儲存格大小
+	Block Glitch	區塊故障
+	Blocks Moved	移動區塊數
+	Max Distance	最大距離
+	Snap to Grid	貼齊格點
+	Swap Blocks	交換區塊
+	Changes per Second	每秒變化次數
+	Databend	資料彎折
+	Breaks	斷裂
+	Shift	位移
+	Color Damage	色彩損壞
+	VHS	VHS
+	Color Bleed	色彩溢出
+	Wobble	晃動
+	Snow	雪花
+	Tracking Bar	追蹤條
+	Head Switching	磁頭切換
+	Scan Line Jitter	掃描線抖動
+	Jitter	抖動
+	Interval	間隔
+	Infinite	無限
+	Periodic	週期性
+	Tile Jitter	拼貼抖動
+	Tiles	拼貼
+	Band Direction	條帶方向
+	Jitter Direction	抖動方向

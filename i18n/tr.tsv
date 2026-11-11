@@ -4157,3 +4157,33 @@ export.summary	Low	düşük
 	Clear Legibility Markers	Okunabilirlik İşaretçilerini Temizle
 	Text legibility: no problems found	Metin okunabilirliği: sorun bulunamadı
 	Text legibility: {count} problems marked on the timeline (orange markers)	Metin okunabilirliği: zaman çizelgesinde {count} sorun işaretlendi (turuncu işaretçiler)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bit Azaltma
+	Bits per Channel	Kanal Başına Bit
+	Ordered Dither	Düzenli Titreklik
+	Dither Cell Size	Titreklik Hücre Boyutu
+	Block Glitch	Blok Bozulması
+	Blocks Moved	Taşınan Bloklar
+	Max Distance	En Fazla Mesafe
+	Snap to Grid	Izgaraya Yasla
+	Swap Blocks	Blokları Değiştir
+	Changes per Second	Saniyedeki Değişiklik
+	Databend	Veri Bozma
+	Breaks	Kırılmalar
+	Shift	Kaydırma
+	Color Damage	Renk Hasarı
+	VHS	VHS
+	Color Bleed	Renk Taşması
+	Wobble	Yalpalama
+	Snow	Kar
+	Tracking Bar	İzleme Çubuğu
+	Head Switching	Kafa Değişimi
+	Scan Line Jitter	Tarama Çizgisi Titremesi
+	Jitter	Titreme
+	Interval	Aralık
+	Infinite	Sonsuz
+	Periodic	Dönemsel
+	Tile Jitter	Döşeme Titremesi
+	Tiles	Döşemeler
+	Band Direction	Bant Yönü
+	Jitter Direction	Titreme Yönü

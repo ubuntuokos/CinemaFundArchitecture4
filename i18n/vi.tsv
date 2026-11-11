@@ -4156,3 +4156,33 @@ export.summary	Low	thấp
 	Clear Legibility Markers	Xóa điểm đánh dấu độ dễ đọc
 	Text legibility: no problems found	Độ dễ đọc của chữ: không có vấn đề
 	Text legibility: {count} problems marked on the timeline (orange markers)	Độ dễ đọc của chữ: {count} vấn đề được đánh dấu trên dòng thời gian (điểm đánh dấu màu cam)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Giảm bit
+	Bits per Channel	Số bit mỗi kênh
+	Ordered Dither	Dither có thứ tự
+	Dither Cell Size	Kích thước ô dither
+	Block Glitch	Nhiễu khối
+	Blocks Moved	Số khối di chuyển
+	Max Distance	Khoảng cách tối đa
+	Snap to Grid	Bám theo lưới
+	Swap Blocks	Hoán đổi khối
+	Changes per Second	Số lần thay đổi mỗi giây
+	Databend	Làm hỏng dữ liệu
+	Breaks	Điểm gãy
+	Shift	Dịch chuyển
+	Color Damage	Hỏng màu
+	VHS	VHS
+	Color Bleed	Lem màu
+	Wobble	Chao đảo
+	Snow	Tuyết
+	Tracking Bar	Thanh dò vệt
+	Head Switching	Chuyển đầu từ
+	Scan Line Jitter	Rung dòng quét
+	Jitter	Rung
+	Interval	Khoảng
+	Infinite	Vô hạn
+	Periodic	Định kỳ
+	Tile Jitter	Rung ô
+	Tiles	Ô
+	Band Direction	Hướng dải
+	Jitter Direction	Hướng rung

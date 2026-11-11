@@ -4156,3 +4156,33 @@ export.summary	Low	laag
 	Clear Legibility Markers	Leesbaarheidsmarkeringen wissen
 	Text legibility: no problems found	Leesbaarheid van tekst: geen problemen gevonden
 	Text legibility: {count} problems marked on the timeline (orange markers)	Leesbaarheid van tekst: {count} problemen gemarkeerd op de tijdlijn (oranje markeringen)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitreductie
+	Bits per Channel	Bits per kanaal
+	Ordered Dither	Geordende dithering
+	Dither Cell Size	Celgrootte van dithering
+	Block Glitch	Blokglitch
+	Blocks Moved	Verplaatste blokken
+	Max Distance	Maximale afstand
+	Snap to Grid	Uitlijnen op raster
+	Swap Blocks	Blokken verwisselen
+	Changes per Second	Wijzigingen per seconde
+	Databend	Datavervorming
+	Breaks	Breuken
+	Shift	Verschuiving
+	Color Damage	Kleurschade
+	VHS	VHS
+	Color Bleed	Kleurvervloeiing
+	Wobble	Schommeling
+	Snow	Sneeuw
+	Tracking Bar	Trackingbalk
+	Head Switching	Kopwisseling
+	Scan Line Jitter	Lijnjitter
+	Jitter	Jitter
+	Interval	Interval
+	Infinite	Oneindig
+	Periodic	Periodiek
+	Tile Jitter	Tegeljitter
+	Tiles	Tegels
+	Band Direction	Richting van banden
+	Jitter Direction	Richting van jitter

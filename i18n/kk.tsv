@@ -4158,3 +4158,33 @@ export.summary	Low	төмен
 	Clear Legibility Markers	Оқылу белгілерін тазалау
 	Text legibility: no problems found	Мәтіннің оқылуы: ақау табылмады
 	Text legibility: {count} problems marked on the timeline (orange markers)	Мәтіннің оқылуы: уақыт сызығында {count} ақау белгіленді (қызғылт сары белгілер)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Бит тереңдігін азайту
+	Bits per Channel	Арнаға бит
+	Ordered Dither	Реттелген дизеринг
+	Dither Cell Size	Дизеринг ұяшығының өлшемі
+	Block Glitch	Блоктық ақау
+	Blocks Moved	Жылжытылған блоктар
+	Max Distance	Ең үлкен қашықтық
+	Snap to Grid	Торға тарту
+	Swap Blocks	Блоктарды алмастыру
+	Changes per Second	Секундтағы өзгерістер
+	Databend	Деректерді бүлдіру
+	Breaks	Үзілістер
+	Shift	Ығысу
+	Color Damage	Түс бұзылуы
+	VHS	VHS
+	Color Bleed	Түстің жайылуы
+	Wobble	Шайқалу
+	Snow	Қар
+	Tracking Bar	Трекинг жолағы
+	Head Switching	Бастиектерді ауыстыру
+	Scan Line Jitter	Жолдардың дірілі
+	Jitter	Діріл
+	Interval	Аралық
+	Infinite	Шексіз
+	Periodic	Мерзімді
+	Tile Jitter	Плиткалардың дірілі
+	Tiles	Плиткалар
+	Band Direction	Жолақтар бағыты
+	Jitter Direction	Діріл бағыты

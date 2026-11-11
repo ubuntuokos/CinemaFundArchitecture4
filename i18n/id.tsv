@@ -4164,3 +4164,33 @@
 	Clear Legibility Markers	Hapus Penanda Keterbacaan
 	Text legibility: no problems found	Keterbacaan teks: tidak ada masalah
 	Text legibility: {count} problems marked on the timeline (orange markers)	Keterbacaan teks: {count} masalah ditandai di linimasa (penanda oranye)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Pengurangan Bit
+	Bits per Channel	Bit per Kanal
+	Ordered Dither	Dither Berurutan
+	Dither Cell Size	Ukuran Sel Dither
+	Block Glitch	Glitch Blok
+	Blocks Moved	Blok yang Dipindah
+	Max Distance	Jarak Maksimum
+	Snap to Grid	Tempel ke Kisi
+	Swap Blocks	Tukar Blok
+	Changes per Second	Perubahan per Detik
+	Databend	Databending
+	Breaks	Kerusakan
+	Shift	Pergeseran
+	Color Damage	Kerusakan Warna
+	VHS	VHS
+	Color Bleed	Luberan Warna
+	Wobble	Goyangan
+	Snow	Salju
+	Tracking Bar	Bilah Tracking
+	Head Switching	Peralihan Head
+	Scan Line Jitter	Getaran Garis
+	Jitter	Getaran
+	Interval	Interval
+	Infinite	Tak Terbatas
+	Periodic	Berkala
+	Tile Jitter	Getaran Petak
+	Tiles	Petak
+	Band Direction	Arah Pita
+	Jitter Direction	Arah Getaran

@@ -4159,3 +4159,33 @@ export.summary	Low	დაბალი
 	Clear Legibility Markers	წაკითხვადობის მარკერების წაშლა
 	Text legibility: no problems found	ტექსტის წაკითხვადობა: პრობლემები ვერ მოიძებნა
 	Text legibility: {count} problems marked on the timeline (orange markers)	ტექსტის წაკითხვადობა: {count} პრობლემა მონიშნულია დროის ხაზზე (ნარინჯისფერი მარკერები)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	ბიტების შემცირება
+	Bits per Channel	ბიტი არხზე
+	Ordered Dither	მოწესრიგებული დიზერინგი
+	Dither Cell Size	დიზერინგის უჯრის ზომა
+	Block Glitch	ბლოკური გლიჩი
+	Blocks Moved	გადაადგილებული ბლოკები
+	Max Distance	მაქსიმალური მანძილი
+	Snap to Grid	ბადეზე მიმაგრება
+	Swap Blocks	ბლოკების გაცვლა
+	Changes per Second	ცვლილებები წამში
+	Databend	მონაცემთა დაზიანება
+	Breaks	წყვეტები
+	Shift	წანაცვლება
+	Color Damage	ფერის დაზიანება
+	VHS	VHS
+	Color Bleed	ფერის გადმოღვრა
+	Wobble	რყევა
+	Snow	თოვლი
+	Tracking Bar	ტრეკინგის ზოლი
+	Head Switching	თავაკების გადართვა
+	Scan Line Jitter	სტრიქონების კანკალი
+	Jitter	კანკალი
+	Interval	ინტერვალი
+	Infinite	უსასრულო
+	Periodic	პერიოდული
+	Tile Jitter	ფილების კანკალი
+	Tiles	ფილები
+	Band Direction	ზოლების მიმართულება
+	Jitter Direction	კანკალის მიმართულება

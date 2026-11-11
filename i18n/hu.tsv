@@ -4155,3 +4155,33 @@ export.summary	Low	alacsony
 	Clear Legibility Markers	Olvashatósági jelölők törlése
 	Text legibility: no problems found	Szöveg olvashatósága: nincs probléma
 	Text legibility: {count} problems marked on the timeline (orange markers)	Szöveg olvashatósága: {count} probléma megjelölve az idővonalon (narancssárga jelölők)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitmélység-csökkentés
+	Bits per Channel	Bit csatornánként
+	Ordered Dither	Rendezett dither
+	Dither Cell Size	Ditherrács cellamérete
+	Block Glitch	Blokkos glitch
+	Blocks Moved	Mozgatott blokkok
+	Max Distance	Legnagyobb távolság
+	Snap to Grid	Rácsra illesztés
+	Swap Blocks	Blokkok cseréje
+	Changes per Second	Változás másodpercenként
+	Databend	Adatrongálás
+	Breaks	Törések
+	Shift	Eltolás
+	Color Damage	Színsérülés
+	VHS	VHS
+	Color Bleed	Színkifolyás
+	Wobble	Imbolygás
+	Snow	Hóesés
+	Tracking Bar	Követési sáv
+	Head Switching	Fejváltás
+	Scan Line Jitter	Sorremegés
+	Jitter	Remegés
+	Interval	Időköz
+	Infinite	Végtelen
+	Periodic	Időszakos
+	Tile Jitter	Csempe-remegés
+	Tiles	Csempék
+	Band Direction	Sávok iránya
+	Jitter Direction	Remegés iránya

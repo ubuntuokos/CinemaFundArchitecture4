@@ -4163,3 +4163,33 @@
 	Clear Legibility Markers	Borrar marcadores de legibilidad
 	Text legibility: no problems found	Legibilidad del texto: no se encontraron problemas
 	Text legibility: {count} problems marked on the timeline (orange markers)	Legibilidad del texto: {count} problemas marcados en la línea de tiempo (marcadores naranjas)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Reducción de bits
+	Bits per Channel	Bits por canal
+	Ordered Dither	Tramado ordenado
+	Dither Cell Size	Tamaño de celda del tramado
+	Block Glitch	Glitch de bloques
+	Blocks Moved	Bloques movidos
+	Max Distance	Distancia máxima
+	Snap to Grid	Ajustar a la cuadrícula
+	Swap Blocks	Intercambiar bloques
+	Changes per Second	Cambios por segundo
+	Databend	Databending
+	Breaks	Roturas
+	Shift	Desplazamiento
+	Color Damage	Daño de color
+	VHS	VHS
+	Color Bleed	Sangrado de color
+	Wobble	Bamboleo
+	Snow	Nieve
+	Tracking Bar	Barra de tracking
+	Head Switching	Cambio de cabezal
+	Scan Line Jitter	Vibración de líneas
+	Jitter	Vibración
+	Interval	Intervalo
+	Infinite	Infinito
+	Periodic	Periódico
+	Tile Jitter	Vibración de mosaicos
+	Tiles	Mosaicos
+	Band Direction	Dirección de las bandas
+	Jitter Direction	Dirección de la vibración

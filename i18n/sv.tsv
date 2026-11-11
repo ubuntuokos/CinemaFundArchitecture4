@@ -4158,3 +4158,33 @@ export.summary	Low	låg
 	Clear Legibility Markers	Rensa läsbarhetsmarkörer
 	Text legibility: no problems found	Textens läsbarhet: inga problem hittades
 	Text legibility: {count} problems marked on the timeline (orange markers)	Textens läsbarhet: {count} problem markerade på tidslinjen (orange markörer)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitreducering
+	Bits per Channel	Bitar per kanal
+	Ordered Dither	Ordnad dithering
+	Dither Cell Size	Cellstorlek för dithering
+	Block Glitch	Blockglitch
+	Blocks Moved	Flyttade block
+	Max Distance	Max. avstånd
+	Snap to Grid	Fäst mot rutnät
+	Swap Blocks	Byt block
+	Changes per Second	Ändringar per sekund
+	Databend	Datakorruption
+	Breaks	Brott
+	Shift	Förskjutning
+	Color Damage	Färgskada
+	VHS	VHS
+	Color Bleed	Färgutflytning
+	Wobble	Vingling
+	Snow	Snö
+	Tracking Bar	Spårningsfält
+	Head Switching	Huvudväxling
+	Scan Line Jitter	Linjeskakning
+	Jitter	Skakning
+	Interval	Intervall
+	Infinite	Oändlig
+	Periodic	Periodisk
+	Tile Jitter	Plattskakning
+	Tiles	Plattor
+	Band Direction	Bandriktning
+	Jitter Direction	Skakningsriktning
