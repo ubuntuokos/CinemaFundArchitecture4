@@ -78,6 +78,7 @@ szabadalommal védett formátumot.
 | FLAC | kódolás | `crates/flac` | alap | függőben | | |
 | Vorbis | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | WMA | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
+| G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
 
 ## Konténerek
 
