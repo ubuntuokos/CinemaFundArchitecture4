@@ -2374,12 +2374,35 @@ def test_export_sends_the_audio_bitrate(app):
 
 
 # egui's Export ids the Qt window has no widget for yet, and why
+# Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs), frozen
+# here so the Qt check keeps working once egui is removed (CFA4-QT6-FINISH-001 Q5); while the egui
+# source is there, the test checks this list still matches it.
+EGUI_EXPORT_IDS: frozenset[str] = frozenset({
+    "export.audio.bitrate", "export.audio.bits", "export.audio.channels", "export.audio.codec",
+    "export.audio.flacLevel", "export.audio.include", "export.audio.sampleRate", "export.button",
+    "export.captions.format", "export.captions.mode", "export.destination.mediaFile", "export.effects.imageOverlay",
+    "export.effects.imageOverlay.browse", "export.effects.imageOverlay.opacity", "export.effects.imageOverlay.path",
+    "export.effects.imageOverlay.position", "export.effects.imageOverlay.size", "export.effects.loudness",
+    "export.effects.loudness.target", "export.effects.loudness.truePeak", "export.effects.nameOverlay",
+    "export.effects.timecodeOverlay", "export.effects.videoLimiter", "export.effects.videoLimiter.max",
+    "export.effects.videoLimiter.min", "export.estimate", "export.fileName", "export.format", "export.gpuRendering",
+    "export.location", "export.location.browse", "export.multiplexer", "export.preset", "export.preset.more",
+    "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
+    "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
+    "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
+    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dnxProfile",
+    "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
+    "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
+    "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
+    "export.video.maxDepth", "export.video.maxQuality", "export.video.mxfCodec", "export.video.profile",
+    "export.video.proresProfile", "export.video.quality", "export.video.target", "export.video.width",
+})
 EXPORT_IDS_NOT_IN_QT: dict[str, str] = {}
 
 
 def test_export_widgets_carry_eguis_automation_ids(app):
-    """Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs) names
-    the same control in the Qt Export window, once, so an agent drives both frontends by the same
+    """Every widget id egui's Export mode registers (``EGUI_EXPORT_IDS``) names the same control in
+    the Qt Export window, once, so an agent drives both frontends by the same
     ids; the few Qt has no widget for are listed with the reason."""
     import re
 
@@ -2391,10 +2414,13 @@ def test_export_widgets_carry_eguis_automation_ids(app):
         def execute(self, command, params=None, on_reply=None, on_error=None):
             return 0
 
-    src = (Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs").read_text()
-    pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
-    egui = set(re.findall(pattern, src))
-    assert len(egui) > 60 and "export.video.bitrateMode" in egui, "the egui source still registers its ids this way"
+    egui = set(EGUI_EXPORT_IDS)
+    rs = Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs"
+    if rs.exists():  # egui is still in the tree: the frozen list is its current one
+        pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
+        source = set(re.findall(pattern, rs.read_text()))
+        assert len(source) > 60 and "export.video.bitrateMode" in source, "the egui source still registers its ids this way"
+        assert source == egui, ("update EGUI_EXPORT_IDS", sorted(source ^ egui))
     dlg = ExportDialog(Engine())  # type: ignore[arg-type]
     names = [w.objectName() for w in dlg.findChildren(QtWidgets.QWidget) if w.objectName().startswith("export.")]
     missing = sorted(i for i in egui - set(names) if i not in EXPORT_IDS_NOT_IN_QT)
