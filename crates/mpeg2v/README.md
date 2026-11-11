@@ -103,7 +103,11 @@ let end = enc.finish();                                  // sequence_end_code
   decision by SAD against the deviation from the mean; skipped macroblocks (in B pictures:
   the same directions and vectors as the macroblock before, §7.6.6.4) and "MC not coded"
   when no coefficient survives quantisation.
-- Forward DCT as the transpose of the decoder's IDCT basis; default matrices; non-linear
+- Scene cuts (`scene_cut`, on by default): a P picture whose motion search explains little of
+  it (inter SAD at least 0.8 of the deviation from the macroblock means, and 1.8 times the
+  previous P picture's ratio) is coded as an I picture that starts a new GOP; the GOP cadence
+  counts from it.
+- Forward DCT as the transpose of the decoder's IDCT basis (even/odd butterflies); default matrices; non-linear
   quantiser scale; intra levels rounded with offset 3/8, inter levels `floor(|F| / qs)` (the
   reconstruction lands mid-step). The intra VLC table (B.14 or B.15) of each picture is the one
   that would have coded the previous picture's intra blocks in fewer bits.
@@ -128,9 +132,8 @@ let end = enc.finish();                                  // sequence_end_code
   is sequential (rate control).
 
 Not yet, each tracked: field pictures, dual-prime and 16x8 prediction (#274), P-STD / T-STD
-buffer models in the multiplexer (#277), DVD-Video
-(#244) and Blu-ray (#245) authoring, speed and RD quantisation, scene cuts, custom matrices
-(#246).
+buffer models in the multiplexer (#277), DVD-Video (#244) and Blu-ray (#245) authoring, RD
+quantisation and macroblock decisions, custom matrices, `alternate_scan` and SIMD (#862).
 
 ### Interpretations
 
@@ -194,7 +197,11 @@ fell to 77–150 fps). These are lower bounds.
 Encoding (`perf_1080p_encode_fps_and_psnr`, FFmpeg's `testsrc2` at 1920×1080, 50 frames,
 GOP 15 I/P, 15 Mb/s; same machine class, unloaded container): **18-21 fps**, 15.10 Mb/s at
 **48.5 dB** luma PSNR; FFmpeg's `mpeg2video` with the same GOP, no B frames: 15.16 Mb/s at
-48.8 dB.
+48.8 dB. On a 4-vCPU Intel Xeon @ 2.10 GHz container (load ≈ 1.5) the same run went from
+34 fps to **42 fps** with #246 (iterator-based half-sample prediction, an even/odd forward DCT,
+libm-free rounding in both transforms, reciprocal inter quantisation, and the half-sample
+search reusing its SADs), same bits and PSNR; under callgrind on one thread the encode-and-check
+run fell from 46.7 to 34.5 billion instructions.
 
 ## Tests
 
