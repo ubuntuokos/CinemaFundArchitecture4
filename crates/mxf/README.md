@@ -30,6 +30,14 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 377-4 | (via asdcplib's dictionary and real DCP-o-matic files) | MCA labels (writer): soundfield group and audio channel label sub-descriptors on the sound descriptor |
 
+## Peeking at the header
+
+`peek(src)` reads only the header partition pack and header metadata: the operational pattern
+and the material and file package UMIDs. `cfa4-engine` uses it to find the OP-Atom files of one
+clip (ST 390: one essence track per file, a shared material package) in an Avid MediaFiles folder
+or on a P2 card (`CONTENTS/VIDEO` + `CONTENTS/AUDIO`), and `cfa4_codecs::MxfSource::open_group`
+opens them as one source.
+
 ## Reading a file
 
 ```rust

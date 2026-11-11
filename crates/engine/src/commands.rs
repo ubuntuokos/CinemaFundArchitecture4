@@ -1520,7 +1520,13 @@ fn build() -> Vec<CommandSpec> {
             // Settings ▸ Media ▸ Import image sequences on, a single numbered still is detected.
             let as_sequence = p.get("imageSequence").and_then(Value::as_bool).unwrap_or(false);
             let detect = !as_sequence && s.prefs.media.import_image_sequences && paths.len() == 1;
+            // OP-Atom files already imported with their clip (Avid / P2: picture and sound files
+            // of one clip are one item)
+            let mut clip_files: std::collections::HashSet<String> = std::collections::HashSet::new();
             for path in paths {
+                if clip_files.contains(&path) {
+                    continue;
+                }
                 if as_sequence || (detect && detect_image_sequence(s, &path)) {
                     match import_image_sequence(s, &path, bin) {
                         Ok((id, frames, missing)) => {
@@ -1536,7 +1542,10 @@ fn build() -> Vec<CommandSpec> {
                 let read = if streamed { Ok(Vec::new()) } else { s.services.read_file(&path) };
                 match read {
                     Ok(_) if streamed => match import_streamed(s, &path, bin) {
-                        Ok(id) => ids.push(id.0),
+                        Ok(id) => {
+                            ids.push(id.0);
+                            clip_files.extend(s.media.op_atom_clip_files(&path, &*s.services).unwrap_or_default());
+                        }
                         Err(e) => errors.push(format!("{path}: {e}")),
                     },
                     Ok(b) => {

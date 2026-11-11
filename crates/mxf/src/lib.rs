@@ -25,6 +25,7 @@ mod file;
 mod index;
 mod klv;
 mod meta;
+mod peek;
 mod source;
 pub mod write;
 
@@ -32,6 +33,7 @@ pub use essence::{Codec, PictureInfo, SoundFormat, SoundInfo, aes3_element_sampl
 pub use file::{Chunk, EssenceTrack, MxfFile, OperationalPattern, Partition, PartitionKind, Sample, Timecode, TrackKind, Wrapping, open};
 pub use index::{IndexEntry, IndexSegment};
 pub use klv::{Rational, Ul};
+pub use peek::{HeaderPeek, peek};
 pub use source::ByteSource;
 pub use write::{
     CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc, SoundDesc,
