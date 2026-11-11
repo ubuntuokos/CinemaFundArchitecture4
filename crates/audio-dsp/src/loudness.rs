@@ -73,6 +73,8 @@ pub fn default_channel_weights(channels: usize) -> Vec<f64> {
         5 => vec![1.0, 1.0, 1.0, 1.41, 1.41],
         6 => vec![1.0, 1.0, 1.0, 0.0, 1.41, 1.41],
         8 => vec![1.0, 1.0, 1.0, 0.0, 1.41, 1.41, 1.41, 1.41],
+        // 7.1.2: the top surrounds (elevation over 30°) weigh 1.0 (ITU-R BS.1770-4 Table 3)
+        10 => vec![1.0, 1.0, 1.0, 0.0, 1.41, 1.41, 1.41, 1.41, 1.0, 1.0],
         n => vec![1.0; n],
     }
 }

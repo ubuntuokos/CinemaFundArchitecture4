@@ -121,12 +121,15 @@ További, eddig hiányzó területek:
 - **Publikálás:** kész videó előkészítése és feltöltése videómegosztókra, platformonkénti előbeállításokkal.
 - **Szinkronizálás:** átirat → fordítás → helyi gépi hang vagy saját felvétel → időzítés az eredeti szájmozgáshoz és vágáshoz.
 - **3D animáció:** 3D-s jelenetek, címek és animáció (a pontos mélység külön döntés).
-- **Élő adás (tervezet):** a CFA4 grafikái (stáblista, alsó harmad, címek, szponzorkártya) élő
+- **Élő adás:** a CFA4 grafikái (stáblista, alsó harmad, címek, szponzorkártya) élő
   műsorban is használhatók: előnézet és program, előre felkészített elemek (cue-k) betöltése,
-  indítása (TAKE), léptetése (NEXT) és levétele (OUT), élő adatfrissítés. Az OBS külső
-  adáskezelőként kapcsolódik (Browser Source, obs-websocket), nem ő irányítja a CFA4-et.
-  Tulajdonosi döntés (2026-10-25): **kell**, de egyelőre **tervezet** – a megvalósítás
-  ütemezése és mélysége külön döntés.
+  indítása (TAKE), léptetése (NEXT) és levétele (OUT), élő adatfrissítés (C10). Amíg a CFA4 élő
+  stúdiója el nem készül, az OBS külső adáskezelőként kapcsolódhat (Browser Source,
+  obs-websocket), nem ő irányítja a CFA4-et.
+  Tulajdonosi döntés (2026-11-09): az **OBS Studio képességeit teljesen átveszi** a CFA4 egy
+  önálló „Élő” munkaterületen (jelenetek, források, stúdió mód, műsorterv, kimenetek, kódolók),
+  most a libobs-szal külön folyamatban, később részenként saját Rust kódra cserélve. Terv és
+  ütemezés: [`docs/plans/CFA4-LIVE-STUDIO-001.md`](docs/plans/CFA4-LIVE-STUDIO-001.md).
 
 ## 5. MI-funkciók (alapvetően helyi)
 
@@ -155,8 +158,8 @@ rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a f
 2. **Futás minden grafikus Ubuntu-változaton** (3. pont): Wayland és X11 teszt.
 3. A meglévő vágóképességek átemelése a Qt6-felületre, Premiere-paritás folytatása.
 4. Új területek fokozatosan: konvertálás → feliratozás → hangszerkesztés → szinkron → publikálás
-   → 2D animáció → 3D/VFX. Az élő adás tervezet (4. pont); a helyét ebben a sorban külön döntés
-   jelöli ki.
+   → 2D animáció → 3D/VFX. Az élő stúdió (4. pont) a `CFA4-LIVE-STUDIO-001` terv szerint: az S0
+   most, az S1-től a Qt6-felület befejezése után (tulajdonosi döntés, 2026-11-09).
 5. MI-funkciók mindegyik területhez, helyben.
 
 ## 7. Kapcsolódó dokumentumok
@@ -177,7 +180,5 @@ A dokumentumok és a hozzájuk tartozó kód a `main`-ben vannak (#35, 2026-10-2
 
 - A 3D animáció és VFX mélysége (egyszerű 3D címek vagy teljes 3D jelenetszerkesztés).
 - Mely videómegosztókra lehessen publikálni.
-- Az élő adás ütemezése és mélysége: csak OBS-kapcsolat, vagy saját élő grafikai futtató és
-  műsorterv (rundown) is; mikor kerüljön sorra a 6. pont sorrendjében.
 - Mennyi MI-modell kerüljön a csomagba, és melyik legyen külön letölthető (a felhasználó jóváhagyásával).
 - Az „alapvetően helyi” MI mellett megengedett-e kivételesen, kifejezett felhasználói engedéllyel felhős szolgáltatás.

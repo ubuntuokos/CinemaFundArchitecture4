@@ -30,6 +30,7 @@ Design principles:
  L1  frame · media · project · audio-dsp · text · route (cfa4-route) · metrics
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
+     documents: dcp
 ```
 
 Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates are named
@@ -45,6 +46,7 @@ and `cfa4-cli`.
 | `isobmff` | L0 | MP4/MOV demux and mux |
 | `matroska` | L0 | MKV/WebM demux |
 | `mxf` | L0 | MXF demux and mux (SMPTE ST 377-1): OP1a / OP-Atom, index tables, AVC / VC-3 / ProRes / MPEG-2 identification, PCM / AES3 sound, timecode; writer for OP1a / OP-Atom with VC-3, ProRes, AVC and PCM ([README](../crates/mxf/README.md)) |
+| `dcp` | L0 | Digital Cinema Package documents: SMPTE and Interop asset map, volume index, packing list and composition playlist read into a serde model, problems as positioned issues (DCP-02, [README](../crates/dcp/README.md)) |
 | `cfb` | L0 | Compound File Binary ([MS-CFB] structured storage) reader and writer, the container of AAF ([README](../crates/cfb/README.md)) |
 | `mpegts` | L0 | MPEG-2 Systems demux and mux (H.222.0): transport streams (188 / 192-byte BDAV / 204), program streams (MPEG-2 / MPEG-1, VOB, MOD), PSI, PES, PTS / PCR, access-unit index built on open ([README](../crates/mpegts/README.md)) |
 | `ogg` | L0 | Ogg demux (RFC 3533), Ogg Opus timing (RFC 7845 granules, pre-skip, end trimming), Vorbis headers |
@@ -68,9 +70,10 @@ and `cfa4-cli`.
 | `dts` | L0 | DTS core, DTS-HD MA / HRA decoder, FFmpeg-derived, LGPL-2.1-or-later ([README](../crates/dts/README.md)) |
 | `iab` | L0 | Immersive Audio Bitstream (SMPTE ST 2098-2, DCP / IMF object audio): parser, DLC lossless decoder and encoder, loudspeaker renderer, writer ([README](../crates/iab/README.md)) |
 | `mpa` | L0 | MPEG-1/2 Audio Layer I and II (MP1 / MP2) decoder ([README](../crates/mpa/README.md)) |
+| `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
-| `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV |
+| `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
 | `text` | L1 | text engine: font database (bundled OFL fonts + system fonts), shaping (harfrust), bidi, line breaking, paragraph layout, glyph/path rasteriser, strokes ([crates/text/README.md](../crates/text/README.md)) |
@@ -436,7 +439,8 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   `SequenceSettings::audio_master` (the Mix: Stereo, Mono, 5.1, Adaptive) existed already;
   `file.newSequence {mix, trackType}` and `sequence.settings {mix}` set them, `mixer.setStrip
   {channels}` / `mixer.addSubmix {channels}` per strip. The 5.1 panner is four lanes in
-  `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB): a
+  `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB,
+  `pan51.height` 0…100 %): a
   lane without keyframes stores the static value, so no new project fields were needed and the
   puck is automatable like any lane.
 - **Maths** (`audio_dsp::channels`). 5.1 order is L, R, C, LFE, Ls, Rs everywhere inside CFA4.
@@ -447,13 +451,27 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   Stereo sources sit at the puck ± 1 in x; 5.1 sources keep their layout moved by the puck's offset
   from front-centre (the default puck is the identity). LFE gets the source LFE (5.1) or the mean of
   the source channels (mono/stereo, default −∞) times the LFE level.
-- **Graph.** Buses are 2 or 6 channels wide (`render::mixer::width_of`); inserts are built for the
+- **Graph.** Buses are 2, 6, 8 or 10 channels wide (`render::mixer::width_of`); inserts are built for the
   strip's width; routes convert between widths (5.1 panner into 5.1 buses, BS.775 into stereo
   buses); meters have one value per channel. `mix_graph` returns the Mix's width;
   `audio::mix_sequence` always returns stereo, `mix_sequence_layout` any layout and mixdown. Clips
   on 5.1 tracks play the source's first six channels (or the six picked with Modify ▸ Audio
   Channels), mono/stereo sources upmixed; clip effects run on all six channels.
-- **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels; on a stereo
+- **7.1 and 7.1.2** (#374). Tracks, submixes and the Mix can also be 7.1 (8 ch: L R C LFE Lss Rss
+  Lrs Rrs, the SMPTE / DCP order) or 7.1.2 (10 ch: … Lts Rts). The surround panner
+  (`channels::pan_matrix`) puts a point source on the front, side and rear rows of a 7.1 bus
+  (`point_gains_71`, Σg² = 1); a 5.1 source's surrounds sit between the side and the rear speakers
+  (each split −3 dB); a 7.1.2 strip's heights pass through unpanned. On a 7.1.2 bus the lane
+  `pan51.height` (0…100 %, #406) lifts each floor source to Lts / Rts with constant power
+  (floor × cos(h·π/2), top × sin(h·π/2), left / right as on the floor); it is ignored on other
+  buses and recorded by a Write pass. Up- and downmixes go through 5.1 (`channels::matrix`): a 7.1 side and rear pair folds
+  into the 5.1 surround at −3 dB each, a 7.1.2 height folds into its side at −3 dB, the 5.1
+  surround splits −3 dB to side and rear. A 7.1 source plays as 7.1 on a 7.1 / 7.1.2 track (its
+  WAV-order back pair moved behind the sides). Exports stay mono / stereo / 5.1 except the DCP IAB
+  bed, which takes a 7.1 Mix as a 7.1 DS bed and a 7.1.2 Mix as a 9.1OH bed (the 5.1 fallback in
+  the main sound is the 5.1 fold).
+- **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels (a 7.1 / 7.1.2
+  Mix as its own channels on a device with as many, else as 5.1); on a stereo
   device it is folded with Preferences ▸ Audio ▸ 5.1 Mixdown Type (Front Only, Front + Rear
   Surround = BS.775, Front + LFE, Front + Rear Surround + LFE; `PreviewStore::mix_layout`).
 - **Export.** Audio Channels Mono / Stereo / 5.1: WAV writes `WAVE_FORMAT_EXTENSIBLE` with channel

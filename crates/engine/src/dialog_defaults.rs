@@ -242,6 +242,8 @@ fn format_name(f: AudioChannels) -> &'static str {
         AudioChannels::Mono => "mono",
         AudioChannels::Stereo => "stereo",
         AudioChannels::Surround51 => "5.1",
+        AudioChannels::Surround71 => "7.1",
+        AudioChannels::Surround712 => "7.1.2",
         AudioChannels::Adaptive => "adaptive",
     }
 }
