@@ -82,6 +82,7 @@ szabadalommal védett formátumot.
 | WMA | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | SMPTE LTC időkód (ST 12-1) és MIDI Timecode (MTC) | dekódolás, kódolás (hangjel, MIDI-üzenetek) | `crates/tcsync` | alap | függőben | | |
 | G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
+| AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 
 ## Konténerek
 

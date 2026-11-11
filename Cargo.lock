@@ -1118,6 +1118,7 @@ dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
  "cfa4-adpcm",
+ "cfa4-amr",
  "cfa4-apv",
  "cfa4-auro",
  "cfa4-av1",

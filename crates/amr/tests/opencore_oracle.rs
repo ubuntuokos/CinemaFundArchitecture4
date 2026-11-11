@@ -69,31 +69,91 @@ fn run(tool: &Path, args: &[&str], files: &[&Path]) -> bool {
     Command::new(tool).args(args).args(files).status().is_ok_and(|s| s.success())
 }
 
-/// Encodes the test signal with opencore (`mode`, `dtx`) into an AMR-NB storage file.
-fn encode_nb(tool: &Path, mode: &str, dtx: bool) -> Option<PathBuf> {
-    let dir = fixtures::fixtures_dir("amr");
-    let raw = dir.join("nb_source.s16");
-    if !raw.exists() {
-        write_raw(&raw, &signal(8000, 12));
-    }
-    let out = dir.join(format!("nb_{mode}_{}.amr", u8::from(dtx)));
-    fixtures::generate(&out, |tmp| run(tool, &["enc-nb", mode, if dtx { "1" } else { "0" }], &[&raw, tmp]))
+/// The two codecs under test.
+#[derive(Clone, Copy)]
+enum Codec {
+    Nb,
+    Wb,
 }
 
-/// opencore's decode of `amr`.
-fn decode_nb_oracle(tool: &Path, amr: &Path) -> Vec<i16> {
-    let out = amr.with_extension("amr.s16");
+impl Codec {
+    fn tag(self) -> &'static str {
+        match self {
+            Codec::Nb => "nb",
+            Codec::Wb => "wb",
+        }
+    }
+
+    fn rate(self) -> u32 {
+        match self {
+            Codec::Nb => 8000,
+            Codec::Wb => 16000,
+        }
+    }
+
+    fn ext(self) -> &'static str {
+        match self {
+            Codec::Nb => "amr",
+            Codec::Wb => "awb",
+        }
+    }
+
+    fn magic(self) -> &'static [u8] {
+        match self {
+            Codec::Nb => cfa4_amr::NB_MAGIC,
+            Codec::Wb => cfa4_amr::WB_MAGIC,
+        }
+    }
+
+    fn frame_size(self, toc: u8) -> usize {
+        match self {
+            Codec::Nb => cfa4_amr::nb::Decoder::frame_size(toc),
+            Codec::Wb => cfa4_amr::wb::Decoder::frame_size(toc),
+        }
+    }
+
+    fn samples(self) -> usize {
+        match self {
+            Codec::Nb => cfa4_amr::nb::FRAME_SAMPLES,
+            Codec::Wb => cfa4_amr::wb::FRAME_SAMPLES,
+        }
+    }
+
+    fn decode(self, data: &[u8]) -> Result<Vec<i16>, cfa4_amr::Error> {
+        match self {
+            Codec::Nb => cfa4_amr::decode_nb_file(data),
+            Codec::Wb => cfa4_amr::decode_wb_file(data),
+        }
+    }
+}
+
+/// Encodes the test signal with opencore / vo-amrwbenc (`mode`, `dtx`) into a storage file.
+fn encode(tool: &Path, c: Codec, mode: &str, dtx: bool) -> Option<PathBuf> {
+    let dir = fixtures::fixtures_dir("amr");
+    let raw = dir.join(format!("{}_source.s16", c.tag()));
+    if !raw.exists() {
+        write_raw(&raw, &signal(c.rate(), 12));
+    }
+    let out = dir.join(format!("{}_{mode}_{}.{}", c.tag(), u8::from(dtx), c.ext()));
+    let cmd = format!("enc-{}", c.tag());
+    fixtures::generate(&out, |tmp| run(tool, &[&cmd, mode, if dtx { "1" } else { "0" }], &[&raw, tmp]))
+}
+
+/// opencore's decode of `file`.
+fn decode_oracle(tool: &Path, c: Codec, file: &Path) -> Vec<i16> {
+    let out = file.with_extension(format!("{}.s16", c.ext()));
     let tmp = fixtures::temp_path(&out);
-    assert!(run(tool, &["dec-nb"], &[amr, &tmp]), "oracle decode of {}", amr.display());
+    let cmd = format!("dec-{}", c.tag());
+    assert!(run(tool, &[&cmd], &[file, &tmp]), "oracle decode of {}", file.display());
     let pcm = read_raw(&tmp);
     let _ = std::fs::remove_file(&tmp);
     pcm
 }
 
-fn compare(name: &str, ours: &[i16], theirs: &[i16]) {
+fn compare(name: &str, frame: usize, ours: &[i16], theirs: &[i16]) {
     assert_eq!(ours.len(), theirs.len(), "{name}: sample count");
     if let Some(i) = ours.iter().zip(theirs).position(|(a, b)| a != b) {
-        let f = i / 160;
+        let f = i / frame;
         panic!(
             "{name}: first mismatch at sample {i} (frame {f}): ours {:?} opencore {:?}",
             &ours[i..(i + 8).min(ours.len())],
@@ -102,33 +162,42 @@ fn compare(name: &str, ours: &[i16], theirs: &[i16]) {
     }
 }
 
-fn check_file(tool: &Path, name: &str, amr: &Path) {
-    let data = std::fs::read(amr).expect("read amr");
-    let ours = cfa4_amr::decode_nb_file(&data).expect("decode");
-    compare(name, &ours, &decode_nb_oracle(tool, amr));
+fn check_file(tool: &Path, c: Codec, name: &str, file: &Path) {
+    let data = std::fs::read(file).expect("read amr");
+    let ours = c.decode(&data).expect("decode");
+    compare(name, c.samples(), &ours, &decode_oracle(tool, c, file));
 }
 
-#[test]
-fn nb_every_mode_matches_opencore() {
+fn every_mode(c: Codec, modes: &[&str]) {
     let Some(tool) = tool() else { return };
-    for mode in ["0", "1", "2", "3", "4", "5", "6", "7", "cycle"] {
+    for &mode in modes {
         for dtx in [false, true] {
-            let name = format!("nb mode {mode} dtx {dtx}");
-            let Some(amr) = encode_nb(&tool, mode, dtx) else {
+            let name = format!("{} mode {mode} dtx {dtx}", c.tag());
+            let Some(file) = encode(&tool, c, mode, dtx) else {
                 oracle::skip("amr oracle", &format!("could not encode {name}"));
                 return;
             };
-            check_file(&tool, &name, &amr);
+            check_file(&tool, c, &name, &file);
         }
     }
 }
 
-/// Frames of `amr` (after the magic) as `(offset, size)`.
-fn frames(data: &[u8]) -> Vec<(usize, usize)> {
+#[test]
+fn nb_every_mode_matches_opencore() {
+    every_mode(Codec::Nb, &["0", "1", "2", "3", "4", "5", "6", "7", "cycle"]);
+}
+
+#[test]
+fn wb_every_mode_matches_opencore() {
+    every_mode(Codec::Wb, &["0", "1", "2", "3", "4", "5", "6", "7", "8", "cycle"]);
+}
+
+/// Frames of `data` (after the magic) as `(offset, size)`.
+fn frames(c: Codec, data: &[u8]) -> Vec<(usize, usize)> {
     let mut v = Vec::new();
-    let mut pos = cfa4_amr::NB_MAGIC.len();
+    let mut pos = c.magic().len();
     while let Some(&toc) = data.get(pos) {
-        let size = cfa4_amr::nb::Decoder::frame_size(toc);
+        let size = c.frame_size(toc);
         if pos + size > data.len() {
             break;
         }
@@ -138,18 +207,17 @@ fn frames(data: &[u8]) -> Vec<(usize, usize)> {
     v
 }
 
-/// Lost frames (`NO_DATA`), frame types the decoder skips, and corrupted payloads, in speech and
-/// in DTX: concealment, comfort noise and hostile bits must all match opencore.
-#[test]
-fn nb_lost_and_damaged_frames_match_opencore() {
+/// Lost frames (`NO_DATA`), other frame types, and corrupted payloads, in speech and in DTX:
+/// concealment, comfort noise and hostile bits must all match opencore.
+fn lost_and_damaged(c: Codec, cases: &[(&str, bool)]) {
     let Some(tool) = tool() else { return };
     let dir = fixtures::fixtures_dir("amr");
-    for (mode, dtx) in [("7", false), ("0", true), ("cycle", true), ("5", false)] {
-        let Some(amr) = encode_nb(&tool, mode, dtx) else { return };
-        let data = std::fs::read(&amr).expect("read");
-        let mut out = cfa4_amr::NB_MAGIC.to_vec();
+    for &(mode, dtx) in cases {
+        let Some(file) = encode(&tool, c, mode, dtx) else { return };
+        let data = std::fs::read(&file).expect("read");
+        let mut out = c.magic().to_vec();
         let mut seed: u32 = 99;
-        for (k, (pos, size)) in frames(&data).into_iter().enumerate() {
+        for (k, (pos, size)) in frames(c, &data).into_iter().enumerate() {
             seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
             let r = seed >> 24;
             let frame = &data[pos..pos + size];
@@ -157,8 +225,8 @@ fn nb_lost_and_damaged_frames_match_opencore() {
                 // Lose a frame, or a run of frames.
                 0 | 1 => out.push(0x7c),
                 2 if k % 3 == 0 => out.extend([0x7c; 8]),
-                // A frame type the decoder skips (9-14).
-                3 => out.push(((9 + (r >> 4) % 6) << 3) as u8 | 4),
+                // Another frame type without payload (9-14 for NB, 10-14 for WB).
+                3 => out.push(((10 + (r >> 4) % 5) << 3) as u8 | 4),
                 // Flip payload bits, keeping the frame type.
                 4 => {
                     let mut f = frame.to_vec();
@@ -171,22 +239,66 @@ fn nb_lost_and_damaged_frames_match_opencore() {
                 _ => out.extend_from_slice(frame),
             }
         }
-        let damaged = dir.join(format!("nb_damaged_{mode}_{}.amr", u8::from(dtx)));
+        let damaged = dir.join(format!("{}_damaged_{mode}_{}.{}", c.tag(), u8::from(dtx), c.ext()));
         std::fs::write(&damaged, &out).expect("write");
-        check_file(&tool, &format!("damaged nb mode {mode} dtx {dtx}"), &damaged);
+        check_file(&tool, c, &format!("damaged {} mode {mode} dtx {dtx}", c.tag()), &damaged);
     }
+}
+
+#[test]
+fn nb_lost_and_damaged_frames_match_opencore() {
+    lost_and_damaged(Codec::Nb, &[("7", false), ("0", true), ("cycle", true), ("5", false)]);
+}
+
+#[test]
+fn wb_lost_and_damaged_frames_match_opencore() {
+    lost_and_damaged(Codec::Wb, &[("8", false), ("0", true), ("cycle", true), ("2", false), ("1", true)]);
+}
+
+/// Encoder homing frames (every sample 0x0008) in the input make the encoder send decoder
+/// homing frames; the decoder must reset and output the homing pattern exactly as opencore.
+fn homing(c: Codec, modes: &[&str]) {
+    let Some(tool) = tool() else { return };
+    let dir = fixtures::fixtures_dir("amr");
+    let n = c.samples();
+    let mut pcm = signal(c.rate(), 6);
+    for f in [0usize, 1, 2, 10, 11, 40, 100, 101, 102, 103, 200] {
+        if let Some(fr) = pcm.get_mut(f * n..(f + 1) * n) {
+            fr.fill(8);
+        }
+    }
+    let raw = dir.join(format!("{}_homing.s16", c.tag()));
+    write_raw(&raw, &pcm);
+    for &mode in modes {
+        let out = dir.join(format!("{}_homing_{mode}.{}", c.tag(), c.ext()));
+        let cmd = format!("enc-{}", c.tag());
+        assert!(run(&tool, &[&cmd, mode, "0"], &[&raw, &out]), "oracle encode");
+        check_file(&tool, c, &format!("{} homing mode {mode}", c.tag()), &out);
+    }
+}
+
+#[test]
+fn nb_homing_frames_match_opencore() {
+    homing(Codec::Nb, &["0", "7", "cycle"]);
+}
+
+#[test]
+fn wb_homing_frames_match_opencore() {
+    homing(Codec::Wb, &["0", "1", "2", "8", "cycle"]);
 }
 
 /// Random bytes after the magic: never a panic.
 #[test]
-fn nb_random_input_never_panics() {
-    let mut seed: u32 = 7;
-    for len in [0usize, 1, 5, 13, 100, 1000, 5000] {
-        let mut data = cfa4_amr::NB_MAGIC.to_vec();
-        for _ in 0..len {
-            seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-            data.push((seed >> 24) as u8);
+fn random_input_never_panics() {
+    for c in [Codec::Nb, Codec::Wb] {
+        let mut seed: u32 = 7;
+        for len in [0usize, 1, 5, 13, 100, 1000, 5000, 20000] {
+            let mut data = c.magic().to_vec();
+            for _ in 0..len {
+                seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                data.push((seed >> 24) as u8);
+            }
+            let _ = c.decode(&data);
         }
-        let _ = cfa4_amr::decode_nb_file(&data);
     }
 }

@@ -61,3 +61,8 @@ The xHE-AAC (USAC) and MPEG-D DRC decoders in crates/aac (src/usac, src/drc) are
 libxaac: Copyright (C) 2018 The Android Open Source Project, originally developed and contributed by
 Ittiam Systems Pvt. Ltd, Bangalore. Licensed under the Apache License, Version 2.0. See
 crates/aac/LICENSE.libxaac and crates/aac/NOTICE.libxaac.
+
+The AMR-NB and AMR-WB decoders in crates/amr are ported from opencore-amr: Copyright (C) 1998-2009
+PacketVideo; portions (C) 2004 and 2007 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TTA,
+TTC), 3GPP TS 26.073 and 26.173. Licensed under the Apache License, Version 2.0. See
+crates/amr/LICENSE.opencore-amr and crates/amr/NOTICE.opencore-amr.
