@@ -150,9 +150,10 @@ pub enum Backend {
     Platform,
     /// The optional GStreamer backend (ADR 0002).
     Gstreamer,
-    /// The FFmpeg ≥ 9.0.2 backend of ADR 0005 (`cfa4-ffmpeg`, not written yet). Not registered:
-    /// Smart Cut / Smart Render runs on CFA4's own code, ffmpeg is its validation oracle (owner
-    /// decision 2026-10-27, smart-edit-baseline §3).
+    /// The FFmpeg ≥ 9.0.2 backend of ADR 0005 (`cfa4-ffmpeg`, optional `ffmpeg` feature: probing
+    /// and decoding only, no mux or encode). Not registered: Smart Cut / Smart Render runs on
+    /// CFA4's own code, ffmpeg is its validation oracle (owner decision 2026-10-27,
+    /// smart-edit-baseline §3).
     Ffmpeg,
 }
 
@@ -751,7 +752,9 @@ fn row(key: Key, backend: Backend, level: SupportLevel, evidence: &str) -> Entry
 }
 
 /// The built-in rows (baseline audit, 2026-10-27, `main` @ f49a5def; updated 2026-10-31 with the
-/// MPEG-2 encoder and the program / transport stream muxer that `main` has gained since).
+/// MPEG-2 encoder and the program / transport stream muxer that `main` has gained since, and
+/// 2026-11-10 with the software AV1 encoder and the transport stream mux rows of the SCE-001 P0
+/// audit).
 pub(crate) fn native_entries() -> Vec<Entry> {
     use Backend::{Native, Platform};
     use Codec::*;
@@ -804,13 +807,7 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(c(GopIndex, Av1), Native, Supported, "cfa4-smart-edit av1_index; crates/smart-edit/tests/index_oracle.rs (libaom alt-ref, SVT-AV1, ffprobe)"),
         // encode
         row(c(Encode, Hevc), Platform, NeedsProbe, "hardware encoder registered by cfa4-platform (NVENC); export::available(Format::Hevc)"),
-        row(c(Encode, Av1), Native, Unsupported, "CFA4 has no software AV1 encoder"),
-        row(
-            c(Encode, Av1),
-            Platform,
-            Unsupported,
-            "cfa4-platform registers no AV1 encoder; crates/export/src/settings_tests.rs asserts Format::Av1 is unavailable",
-        ),
+        row(c(Encode, Av1), Platform, Unsupported, "cfa4-platform registers no AV1 encoder (the built-in software encoder is the Native row)"),
         row(c(Encode, Aac), Native, Supported, "cfa4-aac encoder; crates/export/src/surround_tests.rs"),
         row(c(Encode, Pcm), Native, Supported, "crates/export/src/pcm.rs"),
         // mux
@@ -827,6 +824,9 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(k(Mux, Mpeg2Video, MpegPs), Native, Supported, "cfa4-mpegts muxer; crates/export/src/mpeg2_tests.rs (ffmpeg_oracle_reads_every_container)"),
         row(k(Mux, Mpeg2Video, MpegTs), Native, Supported, "cfa4-mpegts muxer; crates/export/src/mpeg2_tests.rs (ffmpeg_oracle_reads_every_container)"),
         row(k(Mux, Mpeg2Video, Mp4), Native, Unsupported, "cfa4-isobmff has no MPEG-2 video sample entry"),
+        row(k(Mux, H264, MpegTs), Native, Unsupported, "the cfa4-mpegts muxer writes MPEG-2 video, AAC (ADTS) and DVD LPCM only (SCE-001 P2a adds H.264)"),
+        row(k(Mux, Hevc, MpegTs), Native, Unsupported, "the cfa4-mpegts muxer writes MPEG-2 video, AAC (ADTS) and DVD LPCM only (SCE-001 P2a adds HEVC)"),
+        row(k(Mux, Aac, MpegTs), Native, Supported, "cfa4-mpegts muxer, ADTS frames; crates/export/src/mpeg2_tests.rs (ffmpeg_oracle_reads_every_container)"),
         row(k(Mux, Aac, Mp4), Native, Supported, "cfa4-isobmff; crates/isobmff/tests/oracle_mux.rs (remux_aac.m4a)"),
         row(k(Mux, Aac, Mov), Native, Supported, "cfa4-isobmff; crates/isobmff/tests/oracle_mux.rs"),
         row(k(Mux, Pcm, Mov), Native, Supported, "cfa4-isobmff; crates/isobmff/tests/oracle_mux.rs (pcm remuxes)"),
@@ -839,11 +839,16 @@ pub(crate) fn native_entries() -> Vec<Entry> {
     let mut hevc = row(c(Encode, Hevc), Native, Supported, "cfa4-hevc encoder; crates/hevc/src/encode/tests.rs (ffmpeg oracle)");
     hevc.limits = Some(EncoderLimits { profiles: vec!["main".into(), "main10".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8, 10] });
     v.push(hevc);
+    // Main profile, 8- and 10-bit 4:2:0 (cfa4_av1::encode, export Format::Av1; 10-bit for HDR)
+    let mut av1 = row(c(Encode, Av1), Native, Supported, "cfa4-av1 encoder; crates/av1/tests/oracle_encoder.rs (libdav1d), crates/export/src/tests.rs");
+    av1.limits = Some(EncoderLimits { profiles: vec!["main".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8, 10] });
+    v.push(av1);
     // Main profile (4:2:0) and the 4:2:2 profile, 8 bits (cfa4_mpeg2v::encode, export `mpeg2_422`)
     let mut mpeg2 = row(c(Encode, Mpeg2Video), Native, Supported, "cfa4-mpeg2v encoder; crates/export/src/mpeg2_tests.rs, crates/mpeg2v/src/encode/tests.rs");
     mpeg2.limits = Some(EncoderLimits { profiles: vec!["main".into(), "422".into()], chroma: vec!["4:2:0".into(), "4:2:2".into()], bit_depths: vec![8] });
     v.push(mpeg2);
-    // packet copy: H.264, HEVC and AV1 into MP4 / MOV (WP-04, WP-07 cfa4-export smart_cut);
+    // packet copy: H.264, HEVC and AV1 into MP4 / MOV (WP-04, WP-07 cfa4-export smart_cut), MPEG-2
+    // video into program / transport streams (WP-09 cfa4-export smart_cut_mpeg);
     // boundary re-encode: H.264 (WP-06) and HEVC (WP-07) into MP4 / MOV (cfa4-export boundary_reencode)
     for codec in Codec::ALL {
         for container in Container::ALL {
@@ -856,12 +861,15 @@ pub(crate) fn native_entries() -> Vec<Entry> {
             } else if codec == Av1 && matches!(container, Mp4 | Mov) {
                 let evidence = "cfa4-export smart_cut (MP4 / MOV source, av1C); crates/export/src/smart_cut_av1_tests.rs (payload check, ffmpeg framemd5)";
                 v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
+            } else if codec == Mpeg2Video && matches!(container, MpegPs | MpegTs) {
+                let evidence = "cfa4-export smart_cut_mpeg (program / transport stream source, with MPEG audio, AC-3, AAC, LPCM); crates/export/src/smart_cut_mpeg_tests.rs (payload check, ffmpeg framemd5)";
+                v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
             } else {
                 v.push(row(
                     k(PacketCopy, codec, container),
                     Native,
                     Unsupported,
-                    "packet-copy export is implemented only for H.264, HEVC and AV1 into MP4 / MOV",
+                    "packet-copy export is implemented only for H.264, HEVC and AV1 into MP4 / MOV and MPEG-2 video into program / transport streams",
                 ));
             }
             if codec == H264 && matches!(container, Mp4 | Mov) {

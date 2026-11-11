@@ -21,11 +21,12 @@
 
 use std::io::Cursor;
 
+use cfa4_export::audio_copy::{AudioPlan, CutInterval, mux_with_audio, plan_audio_copy, verify_audio_copy};
 use cfa4_export::boundary_reencode::{
     BoundaryEncoding, check_mp4_boundary_reencode, execute_mp4_boundary_reencode, h264_stream_format, hevc_stream_format, verify_mp4_boundary_reencode,
 };
 use cfa4_export::smart_cut::{Mp4CopySource, SmartCutError, av1_stream_format, execute_mp4_copy, verify_mp4_copy};
-use cfa4_isobmff::{ByteSource, CodecConfig, Mp4File, TrackKind};
+use cfa4_isobmff::{Brand, ByteSource, CodecConfig, Mp4File, TrackKind};
 use cfa4_project::{ItemKind, MediaRef};
 use cfa4_smart_edit::av1_index::index_av1;
 use cfa4_smart_edit::capabilities::{Container, Policy, Registry, StreamFormat};
@@ -306,6 +307,28 @@ fn copy_source(src: &Source) -> Mp4CopySource<'_, dyn ByteSource> {
     Mp4CopySource { file: &src.file, bytes: &*src.bytes, track: src.track }
 }
 
+/// The audio tracks a cut copies with its video (WP-09b): all of them, unless `"audio": false`.
+fn audio_of(src: &Source, plan: &SmartCutPlan, p: &Value) -> Option<(CutInterval, AudioPlan)> {
+    if !bool_p(p, "audio").unwrap_or(true) {
+        return None;
+    }
+    let track = src.file.tracks.get(src.track)?;
+    let first = plan.plan.segments.first()?;
+    let duration = u64::try_from(plan.plan.expected_duration.value).ok()?;
+    let interval = CutInterval::of_video(track, first.source_in.value, duration);
+    Some((interval, plan_audio_copy(&src.file, interval)))
+}
+
+fn audio_json(audio: &Option<(CutInterval, AudioPlan)>) -> Value {
+    match audio {
+        Some((_, a)) => json!({
+            "tracks": a.tracks.iter().map(|t| json!({"trackId": t.track_id, "codec": t.codec})).collect::<Vec<_>>(),
+            "dropped": a.dropped,
+        }),
+        None => json!({"tracks": [], "dropped": []}),
+    }
+}
+
 fn plan(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.plan";
     if timeline_scope(p, cmd)? {
@@ -314,13 +337,14 @@ fn plan(s: &mut Session, p: &Value) -> Result<Value> {
     let encoding = encoding_p(p, cmd)?;
     let (src, plan) = plan_of(s, p, cmd)?;
     let summary = summary(&plan);
+    let audio = audio_json(&audio_of(&src, &plan, p));
     if !plan.plan.requires_confirmation() {
-        return Ok(json!({"plan": plan, "summary": summary}));
+        return Ok(json!({"plan": plan, "summary": summary, "audio": audio}));
     }
     // the boundary re-encoder's refusals, before anything is decoded or written
     let stream = src.stream().ok_or_else(|| EngineError::Other(format!("{}: no stream was indexed", src.path)))?;
     let problem = check_mp4_boundary_reencode(&plan.plan, stream, &copy_source(&src), &encoding).err().map(|e| e.to_string());
-    Ok(json!({"plan": plan, "summary": summary, "boundaryReencode": {"ready": problem.is_none(), "problem": problem}}))
+    Ok(json!({"plan": plan, "summary": summary, "audio": audio, "boundaryReencode": {"ready": problem.is_none(), "problem": problem}}))
 }
 
 fn start(s: &mut Session, p: &Value) -> Result<Value> {
@@ -368,9 +392,23 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
         }
         (bytes, serde_json::to_value(&report).map_err(|e| EngineError::Other(e.to_string()))?)
     };
+    // the audio tracks, copied next to the verified video and verified in their turn
+    let audio = audio_of(&src, &plan, p);
+    let mut audio_reports = Vec::new();
+    let bytes = match &audio {
+        Some((interval, a)) if !a.tracks.is_empty() => {
+            let brand = if plan.plan.output_container == Container::Mov { Brand::Mov } else { Brand::Mp4 };
+            let with_audio = mux_with_audio(&bytes, &src.file, &*src.bytes, a, *interval, brand).map_err(other)?;
+            audio_reports = verify_audio_copy(&with_audio, &bytes, &src.file, &*src.bytes, a, *interval).map_err(other)?;
+            with_audio
+        }
+        _ => bytes,
+    };
     s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
     let summary = summary(&plan);
-    Ok(json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary}))
+    let mut audio = audio_json(&audio);
+    audio["verified"] = json!(audio_reports);
+    Ok(json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary, "audio": audio}))
 }
 
 fn spec(id: &'static str, label: &'static str, params: &'static str, run: Run, journal: bool) -> CommandSpec {
@@ -389,14 +427,14 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.plan",
             "Plan Smart Cut",
-            r#"{"path":str,"in":time,"out":time (exclusive)}|{"item":id,"in":media time?,"out":media time? (default: the marked range)},"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
+            r#"{"path":str,"in":time,"out":time (exclusive)}|{"item":id,"in":media time?,"out":media time? (default: the marked range)},"mode":"gop-boundary"|"frame-accurate"="gop-boundary","guarantee":"bit-exact"|"compatible"="bit-exact","output":str?,"scope":"source"|"timeline"="source","crf":number=16,"audio":bool=true}; timeline: {"scope":"timeline","sequence":id?,"output":str?,"guarantee":…,"crf":…} → {plan, summary, audio?:{tracks:[{trackId,codec}],dropped:[{trackId,reason}]}, boundaryReencode?:{ready,problem}, timelineRender?:{ready,problem}}"#,
             plan,
             false,
         ),
         spec(
             "export.start",
             "Run Smart Cut",
-            r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16}; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified}"#,
+            r#"{"path":str,"in":time,"out":time}|{"item":id,"in":media time?,"out":media time?},"output":str,"mode":…,"guarantee":…,"confirm":bool (required when the plan re-encodes),"crf":number=16,"audio":bool=true}; timeline: {"scope":"timeline","sequence":id?,"output":str,"confirm":bool,…} → {output, bytes, report, verified, audio?:{tracks,dropped,verified:[{trackId,codec,samples,payloadBytes,syncErrorNs}]}}"#,
             start,
             true,
         ),
