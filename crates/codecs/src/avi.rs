@@ -377,12 +377,18 @@ impl AviSource {
                     (info.width, info.height) = (d.profile.width, d.profile.height);
                 }
             }
-            // DV: the time code of the first frame's subcode
+            // DV: the time code of the first frame's subcode, counted at the rate of the frames'
+            // own system (525/60 or 625/50). The AVI header's rate/scale is the writer's choice
+            // and need not be an exact x/1001 (a copy by ffmpeg 9.0 counts the drop-frame label
+            // as non-drop through it), while the drop-frame flag only counts at x/1001.
             if codec == VCodec::Dv
                 && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
                 && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, (c.size as usize).min(crate::dif::MAX_FRAME_BYTES))
             {
-                dv_timecode = crate::dif::start_timecode(&first, info.frame_rate);
+                let tc_rate = crate::video::dv_stream_info(&first)
+                    .map(|d| d.profile.frame_rate())
+                    .map_or(info.frame_rate, |(n, d)| FrameRate::new(i64::from(n), i64::from(d)));
+                dv_timecode = crate::dif::start_timecode(&first, tc_rate);
             }
             video = Some(info);
             vcodec = codec;

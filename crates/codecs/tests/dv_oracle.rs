@@ -430,6 +430,14 @@ fn dv_start_timecode_from_subcode() {
         let avi_file = fixture(&ff, &avi_name, &["-i", file.to_str().unwrap(), "-c", "copy"]).unwrap_or_else(|| panic!("could not generate {avi_name}"));
         let avi = cfa4_codecs::open_bytes(&avi_name, bytes(&avi_file)).unwrap();
         assert_eq!(avi.info().start_timecode, Some(start), "{avi_name}");
+        // the AVI header's rate is the writer's choice (FFmpeg 9.0 does not keep 30000/1001 on a
+        // copy): the count follows the frames' own system, so 2997/100 counts the same
+        let mut odd = std::fs::read(&avi_file).unwrap();
+        let strh = odd.windows(12).position(|w| &w[..4] == b"strh" && &w[8..] == b"vids").unwrap_or_else(|| panic!("{avi_name}: no video strh"));
+        odd[strh + 28..strh + 32].copy_from_slice(&100u32.to_le_bytes()); // dwScale
+        odd[strh + 32..strh + 36].copy_from_slice(&2997u32.to_le_bytes()); // dwRate
+        let odd = cfa4_codecs::open_bytes(&avi_name, odd.into()).unwrap();
+        assert_eq!(odd.info().start_timecode, Some(start), "{avi_name}: rate 2997/100");
         // type 1: whole DIF frames in an `iavs` stream
         let ranges = cfa4_dv::frames(&raw).unwrap();
         let frames: Vec<&[u8]> = ranges.iter().map(|r| &raw[r.clone()]).collect();
