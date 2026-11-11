@@ -84,6 +84,8 @@ pub enum Language {
     Bg,
     /// Georgian, persisted as `ka`; Georgian script needs an installed font ([`georgian_font_available`]).
     Ka,
+    /// Danish, persisted as `da`.
+    Da,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -116,11 +118,12 @@ static SWEDISH: OnceLock<Catalog> = OnceLock::new();
 static SERBIAN_LATIN: OnceLock<Catalog> = OnceLock::new();
 static BULGARIAN: OnceLock<Catalog> = OnceLock::new();
 static GEORGIAN: OnceLock<Catalog> = OnceLock::new();
+static DANISH: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 26] = [
+    pub const ALL: [Self; 27] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -145,6 +148,7 @@ impl Language {
         Self::SrLatn,
         Self::Bg,
         Self::Ka,
+        Self::Da,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -175,6 +179,7 @@ impl Language {
             Self::SrLatn => "Srpski (latinica)",
             Self::Bg => "Български",
             Self::Ka => "ქართული",
+            Self::Da => "Dansk",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -206,6 +211,7 @@ impl Language {
             "sr-latn" => Some(Self::SrLatn),
             "bg" => Some(Self::Bg),
             "ka" => Some(Self::Ka),
+            "da" => Some(Self::Da),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -222,7 +228,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 23] = [
+        const PRIMARY: [(&str, Language); 24] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -246,6 +252,7 @@ impl Language {
             ("sr", Language::SrLatn),
             ("bg", Language::Bg),
             ("ka", Language::Ka),
+            ("da", Language::Da),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -310,6 +317,7 @@ impl Language {
             Self::SrLatn => "sr-latn",
             Self::Bg => "bg",
             Self::Ka => "ka",
+            Self::Da => "da",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -342,6 +350,7 @@ impl Language {
             Self::SrLatn => Some(SERBIAN_LATIN.get_or_init(|| Catalog::parse(catalog_file!("sr-latn")))),
             Self::Bg => Some(BULGARIAN.get_or_init(|| Catalog::parse(catalog_file!("bg")))),
             Self::Ka => Some(GEORGIAN.get_or_init(|| Catalog::parse(catalog_file!("ka")))),
+            Self::Da => Some(DANISH.get_or_init(|| Catalog::parse(catalog_file!("da")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -542,6 +551,7 @@ mod tests {
             ("sr-latn", catalog_file!("sr-latn")),
             ("bg", catalog_file!("bg")),
             ("ka", catalog_file!("ka")),
+            ("da", catalog_file!("da")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1733,6 +1743,13 @@ mod tests {
             catalog_file!("ka"),
             "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ„“",
             &[("File", "ფაილი"), ("Sequence", "მიმდევრობა"), ("Playhead", "დაკვრის მაჩვენებელი"), ("Cross Dissolve", "ჯვარედინი გადადნობა")],
+        ),
+        (
+            Language::Da,
+            "app.language.danish",
+            catalog_file!("da"),
+            "ÆØÅæøå»«",
+            &[("File", "Fil"), ("Sequence", "Sekvens"), ("Playhead", "Afspilningshoved"), ("Cross Dissolve", "Krydsovertoning")],
         ),
     ];
 
