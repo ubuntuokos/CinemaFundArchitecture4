@@ -4322,3 +4322,106 @@
 	picture styles (pictures keep their own size) are not carried over	стили изображений (изображения сохраняют свой размер) не переносятся
 	video (tape) styles are not carried over	стили видео (ленты) не переносятся
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	в проекте Cinecred {n} таблиц титров; используется “{name}” (выберите другую в поле Таблица)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Видеоинструменты
+	Audio Tools	Аудиоинструменты
+	Publication Tools	Инструменты публикации
+	Smart Export…	Smart Export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	С северо-запада
+	From North-East	С северо-востока
+	From South-East	С юго-востока
+	From South-West	С юго-запада
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Улучшение
+	Skin Smoothing	Сглаживание кожи
+	Keep Texture	Сохранить текстуру
+	Skin Tone	Тон кожи
+	Smooth Entire Image	Сглаживать всё изображение
+	Low Light	Слабое освещение
+	Max Brightening	Максимальное осветление
+	Show Illumination	Показать освещённость
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Пресеты сглаживания
+	Sine	Синусоидальная
+	Exponential	Экспоненциальная
+	Circular	Круговая
+	Elastic	Упругая
+	Film Gate	Кадровое окно
+	Gate Weave	Колебание кадрового окна
+	Weave Rotation	Поворот колебания
+	Particles	Частицы
+	Emitter Position	Положение излучателя
+	Birth Rate	Частота появления
+	Lifetime (seconds)	Время жизни (секунды)
+	Velocity Random	Случайность скорости
+	Gravity	Гравитация
+	Particle Size	Размер частиц
+	Keyhole	Замочная скважина
+	Burn Away	Прожигание
+	Burn Size	Размер прожога
+	Ember Width	Ширина тлеющей кромки
+	Ember Color	Цвет тлеющей кромки
+	Check Text Legibility	Проверить читаемость текста
+	Clear Legibility Markers	Удалить маркеры читаемости
+	Text legibility: no problems found	Читаемость текста: проблем не найдено
+	Text legibility: {count} problems marked on the timeline (orange markers)	Читаемость текста: проблем отмечено на таймлайне: {count} (оранжевые маркеры)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Снижение разрядности
+	Bits per Channel	Бит на канал
+	Ordered Dither	Упорядоченный дизеринг
+	Dither Cell Size	Размер ячейки дизеринга
+	Block Glitch	Блочный глитч
+	Blocks Moved	Перемещённые блоки
+	Max Distance	Максимальное расстояние
+	Snap to Grid	Привязка к сетке
+	Swap Blocks	Обмен блоков
+	Changes per Second	Изменений в секунду
+	Databend	Порча данных
+	Breaks	Разрывы
+	Shift	Смещение
+	Color Damage	Повреждение цвета
+	VHS	VHS
+	Color Bleed	Растекание цвета
+	Wobble	Покачивание
+	Snow	Снег
+	Tracking Bar	Полоса трекинга
+	Head Switching	Переключение головок
+	Scan Line Jitter	Дрожание строк
+	Jitter	Дрожание
+	Interval	Интервал
+	Infinite	Бесконечно
+	Periodic	Периодически
+	Tile Jitter	Дрожание плиток
+	Tiles	Плитки
+	Band Direction	Направление полос
+	Jitter Direction	Направление дрожания
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Полутон
+	Dither	Дизеринг
+	Pattern	Узор
+	Cell Size	Размер ячейки
+	Cyan Angle	Угол голубого
+	Magenta Angle	Угол пурпурного
+	Yellow Angle	Угол жёлтого
+	Black Angle	Угол чёрного
+	Monochrome Angle	Угол монохрома
+	Sharpness	Резкость
+	Ink Color	Цвет краски
+	Paper Color	Цвет бумаги
+	Color (CMYK)	Цвет (CMYK)
+	Dot	Точка
+	Line	Линия
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Размер пикселя
+	Palette	Палитра
+	Input Colors	Исходные цвета
+	Green Phosphor	Зелёный люминофор
+	Amber Monitor	Янтарный монитор
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

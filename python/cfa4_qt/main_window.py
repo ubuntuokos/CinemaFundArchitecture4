@@ -98,6 +98,7 @@ from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
 from .status_bar import JobStatus, tool_hint
 from .timecode import TICKS_PER_SECOND
+from .tools_menu import build_tools_menu
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
 
 # egui's EXPORT_SAVE_DIALOGS: exports that ask where to save (filter label, extension)
@@ -1053,10 +1054,17 @@ class MainWindow(QMainWindow):
         window_menu = QMenu(tr("Window"), self.menuBar())
         self._window_menu = window_menu
         window_menu.setObjectName("menu.Window")
+        # Tools (Video / Audio / Publication Tools), before Window; rebuilt with the menus
+        if getattr(self, "_tools_menu", None) is not None:
+            self._tools_menu.deleteLater()
+        tools_menu = self._tools_menu = QMenu(tr("Tools"), self.menuBar())
+        build_tools_menu(self, tools_menu)
         help_action = menus.get("menu.Help")
         if help_action is not None:
+            self.menuBar().insertMenu(help_action, tools_menu)
             self.menuBar().insertMenu(help_action, window_menu)
         else:
+            self.menuBar().addMenu(tools_menu)
             self.menuBar().addMenu(window_menu)
         window_shortcuts = build_window_menu(
             self, window_menu, self.docks, self.monitor, self.workspaces, self.restore_layout, self.reset_layout

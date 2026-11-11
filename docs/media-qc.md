@@ -8,15 +8,17 @@ settings, needs no cloud service, and runs on the CPU (a GPU path is optional). 
 use CFA4's own demuxers and decoders; an FFmpeg cross-check stays `NOT_RUN` until the
 `cfa4-ffmpeg` backend exists ([ADR 0005](adr/ADR-0005-media-backends.md)).
 
-Status: stages B–C (report schema, profiles, input and integrity checks, `cfa4-cli qc`). The
-audio and picture checks (stage D) report NOT_RUN for now; the engine commands and the Qt 6
-review window follow in stage E.
+Status: stages B–E1 (report schema, profiles, input, integrity, audio and picture checks,
+`cfa4-cli qc`, the engine's `qc.*` commands and the export queue's QC state).
+`video.referenceSsim` reports NOT_RUN until the engine supplies preview references; the Qt 6
+review window follows in stage E2.
 
 ## Command line
 
 ```sh
 cfa4-cli qc export.mp4 --expect plan.json --out export.mp4.cfa4qc.json
 cfa4-cli qc export.mp4 --profile my-profile.toml      # report JSON on stdout
+cfa4-cli qc export.mp4 --contact-sheet export.qc.png # also write the contact sheet
 cfa4-cli qc export.mp4 --no-decode                    # only what the file says about itself
 ```
 
@@ -31,6 +33,29 @@ missing reports NOT_RUN ("no render plan given"):
  "height": 1080, "videoCodec": "H.264", "audioTracks": 1, "audioChannels": 2,
  "sampleRate": 48000, "audioCodec": "AAC", "subtitleStreams": 0}
 ```
+
+## Engine commands
+
+The engine runs QC as a background job (followed in `jobs.list`, cancelled with `jobs.cancel`),
+so every frontend, the control channel and MCP use the same commands:
+
+| Command | Does |
+|---|---|
+| `qc.run` `{"path"?, "queueItem"?, "profile"?, "expect"?, "wait"?}` | checks a file, or a finished queued export; for a queue item the render plan (frames rendered, rate, size, audio) and the links (project, sequence, export job, preset, render outcome) come from the item; `expect` refines the plan |
+| `qc.report.get` `{"path"}` | the verified report of a file (or its report path): verdict, summary, contact sheet path, the review questions and the full report |
+| `qc.review.save` `{"path", "review"}` | stores the human review (answers, findings with severity, time code and note) in the report and recomputes the verdict |
+| `qc.profiles.list` | the built-in profiles and their checks |
+| `qc.index` | the reports recorded for the saved project |
+
+`export.queue.add` takes `"qc": "<profile>"` (or `true` for `delivery-web`): each output is
+checked when it finishes. `export.queue.list` shows each item's `qc` state (`notChecked`,
+`running`, `passed`, `warned`, `failed`, `incomplete`, with the report path) next to its render
+`status`: a render that finished is `done` even when QC fails it.
+
+Storage: the report is `<export>.cfa4qc.json` and the contact sheet `<export>.cfa4qc.png`,
+written atomically next to the export; a saved project also gets
+`<project>.cfa4qc/index.json` (one entry per export, the latest check wins). QC never writes
+the project file.
 
 ## What the input and integrity checks look at
 
@@ -57,6 +82,31 @@ decoder does not support) makes `integrity.decode` NOT_RUN, never PASS.
 | `integrity.avOffset` | end of the first audio track minus end of the video, ms (a different start is noted) |
 | `integrity.streams` | video present or not, audio track count and channels, subtitle streams; against the plan |
 
+## What the audio and picture checks look at
+
+They measure the samples the integrity decode returns, so the file is read once. Audio is cut to
+the track's edit list first (encoder priming and padding are not measured): what is measured is
+what plays. Each audio check is judged per track and reports the worst track; the detail lists
+every track.
+
+| Check | Measures |
+|---|---|
+| `audio.loudness` | integrated loudness, ITU-R BS.1770-4 / EBU R128 (`cfa4-audio-dsp`), LUFS. A track with nothing above the −70 LUFS gate reports −70. Shorter than 0.4 s: NOT_RUN |
+| `audio.loudnessRange` | loudness range, EBU Tech 3342, LU. Shorter than 3 s: NOT_RUN |
+| `audio.truePeak` | maximum true peak (4× oversampled, BS.1770), dBTP. Digital silence reports −150 |
+| `audio.clipping` | samples at or above 32767/32768 of full scale, over all channels and tracks; runs of 3+ clipped sample frames are events with their time |
+| `audio.silence` | stretches of 2 s or more below −60 dBFS (WARN, with start and end); a whole track below −60 dBFS (FAIL) |
+| `audio.layout` | decoded channel count against the plan (FAIL); a channel below −60 dBFS while another carries signal (WARN). Per-channel peaks and dual mono are in the detail |
+| `video.black` | black pictures: 98 % of the luma at most 10 % above black (as `ffmpeg blackdetect`). Runs inside the programme WARN with start and end; black at the very start or end (fades, slates) is counted in the detail only; an all-black file FAILs |
+| `video.clipBlack`, `video.clipWhite` | share of luma samples beyond the EBU R 103 limits, −1 % and 103 % (8-bit limited range: below 13.8, above 241.6; full range: the first and last code), %. The worst picture is an event |
+| `video.contactSheet` | 12 evenly spaced pictures in a 4-column PNG for the human review; the detail lists their frames and time codes and the PNG's SHA-256 (`--contact-sheet` writes it, and the path goes in the detail) |
+| `video.referenceSsim` | NOT_RUN: needs the preview reference frames the engine supplies (stage E) |
+
+When the render plan rules out audio (`"audioTracks": 0`) or video (`"video": false`) and the
+file agrees, those checks report PASS with the reason "not applicable: …" and no value. Without
+such a plan a missing stream is no evidence: the checks report NOT_RUN. Loudness and true peak
+agree with `ffmpeg -af ebur128=peak=true` to 0.1 LU / 0.1 dB on the test material.
+
 ## Checks
 
 Every check has a stable id (`crates/qc/src/catalog.rs`). A check either measures a **value**
@@ -82,6 +132,9 @@ A profile is a TOML file that lists the checks to run, whether each is `mandator
 - inside `accept` but outside `pass` → `WARN`;
 - outside `accept` (or outside `pass` when there is no `accept`) → `FAIL`;
 - no finite value → `NOT_RUN`.
+
+A value check reports `PASS` without a value only when it does not apply (reason starting with
+"not applicable: ", see above).
 
 `human_review = "mandatory"` makes the guided human review part of the verdict. There is no
 global threshold: loudness and picture bounds always come from the profile chosen for the
@@ -119,6 +172,7 @@ refused instead of trusted.
 
 ## Test material
 
-All QC test media is synthetic, generated by CFA4 code into `target/fixtures/` (never
-committed). Third-party test patterns (for example Cinematesttools) are not bundled: their
+All QC test media is synthetic, generated by CFA4 code (in memory, `crates/qc/tests/common`, or
+into `target/fixtures/`; never committed): tones of known level, silence, a muted channel,
+clipped audio, black pictures and luma above legal white. Third-party test patterns (for example Cinematesttools) are not bundled: their
 licences are inconsistent or non-commercial; see the plan, §2.

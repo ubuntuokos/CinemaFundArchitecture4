@@ -77,6 +77,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("audio-dsp", 1),
     ("text", 1),
     ("route", 1),
+    ("tcsync", 1),
     ("metrics", 1),
     ("live", 1),
     ("edit", 2),
