@@ -879,12 +879,15 @@ pub(crate) fn native_entries() -> Vec<Entry> {
             } else if codec == Hevc && matches!(container, Mp4 | Mov) {
                 let evidence = "cfa4-export boundary_reencode_hevc (MP4 / MOV source, Main / Main 10 4:2:0 progressive); crates/export/src/boundary_reencode_hevc_tests.rs (ffmpeg framemd5)";
                 v.push(row(k(BoundaryReencode, codec, container), Native, Supported, evidence));
+            } else if codec == Mpeg2Video && matches!(container, MpegPs | MpegTs) {
+                let evidence = "cfa4-export boundary_reencode_mpeg (program / transport stream source, Main / 4:2:2 8-bit progressive); crates/export/src/boundary_reencode_mpeg_tests.rs (PSNR, ffmpeg framemd5)";
+                v.push(row(k(BoundaryReencode, codec, container), Native, Supported, evidence));
             } else if codec.is_video() {
                 v.push(row(
                     k(BoundaryReencode, codec, container),
                     Native,
                     Unsupported,
-                    "boundary re-encode is implemented only for H.264 and HEVC into MP4 / MOV",
+                    "boundary re-encode is implemented only for H.264 and HEVC into MP4 / MOV and MPEG-2 video into program / transport streams",
                 ));
             }
             if codec == H264 && matches!(container, Mp4 | Mov) {
