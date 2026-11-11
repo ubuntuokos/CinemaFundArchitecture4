@@ -200,7 +200,7 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         Some(Ok(c)) => c.name().to_string(),
         _ => codec_label(&t.codec),
     };
-    Some(AudioStreamInfo { sample_rate: rate, channels, codec, bits_per_sample: bits.map(|b| b as u32) })
+    Some(AudioStreamInfo { sample_rate: rate, channels, codec, bits_per_sample: bits.map(|b| b as u32), speakers: Vec::new() })
 }
 
 /// The G.711 / G.722 / ADPCM codec of an `A_MS/ACM` track's `WAVEFORMATEX` (`CodecPrivate`);

@@ -628,7 +628,7 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         c => codec_label(c),
     };
     let (rate, ch) = cfa4_media::bounded_audio_dimensions(rate, ch).ok()?;
-    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits })
+    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits, speakers: Vec::new() })
 }
 
 /// QuickTime G.711 (`ulaw`, `alaw`) and IMA ADPCM (`ima4`) sample descriptions.

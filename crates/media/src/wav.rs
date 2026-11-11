@@ -172,7 +172,7 @@ impl WavSource {
             kind: MediaKind::AudioOnly,
             duration: Tick::from_units(i64::try_from(frames).unwrap_or(i64::MAX), rate as i64),
             video: None,
-            audio_streams: vec![AudioStreamInfo { sample_rate: rate, channels: ch as u32, codec: codec_label, bits_per_sample }],
+            audio_streams: vec![AudioStreamInfo { sample_rate: rate, channels: ch as u32, codec: codec_label, bits_per_sample, speakers: Vec::new() }],
             container: if time_reference.is_some() { "Broadcast WAV".into() } else { "WAV".into() },
             start_timecode: None,
             file_size: Some(len),
