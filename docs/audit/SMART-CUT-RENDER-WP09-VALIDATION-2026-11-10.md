@@ -117,3 +117,37 @@ A 4. fejezet hiányai közül a hang, az MPEG-2 csomagmásolás és a pótló te
 Regresszió továbbra sincs. A terv kötelező elemei közül egy hiányzik még: az **MPEG-2
 határ-újrakódolás** (képpontos vágás) → WP-09e. A 24. eset hardverfüggő, CI-ban nem mérhető;
 ez nem blokkoló, a szoftveres út teljesen tesztelt. WP-09e után következik a WP-10 (csomagolás).
+
+## 6. Frissítés (2026-11-11): WP-09e és WP-10
+
+Az MPEG-2 határ-újrakódolás elkészült: #911 (végrehajtó és ellenőrző) és a jelen PR (motor). A
+csomagolás-validáció (WP-10) is kész: #912,
+[`SMART-CUT-RENDER-WP10-PACKAGING-2026-11-11.md`](SMART-CUT-RENDER-WP10-PACKAGING-2026-11-11.md).
+
+### Codec-vizsgálatok (MPEG-2 oszlop)
+
+| Vizsgálat | MPEG-2 |
+|---|---|
+| Pontos vágás | ✅ képkocka-pontos vágás PS-ben és TS-ben. `export.plan`: `boundaryReencode.ready = true`. `export.start` csak `"confirm": true`-val fut (`a_frame_accurate_mpeg_cut_re_encodes_its_boundaries_once_confirmed`) |
+| Boundary re-encode | ✅ `boundary_reencode_mpeg_tests` |
+
+A `boundary_reencode_mpeg_tests` esetei:
+
+- fej/másolás/fej szakaszok;
+- vágás egy GOP-on belül;
+- nyitott GOP-ok;
+- elutasítás írás előtt: VFR a határon, ellentmondó képfrekvencia, MPEG-1, interlaced, 4:4:4;
+- az ellenőrző elkapja a megváltozott képet és a gyenge újrakódolást;
+- FFmpeg framemd5: a másolt képek azonosak.
+
+Az FFmpeg-összevetés hibát talált: az újrakódolt szakasz `low_delay` jelzője eltért a forrásétól, ezért a dekóder a vágásnál egy képet megismételt, egy másikat eldobott. Javítva: `cfa4-mpeg2v` `Config::low_delay`, az újrakódolt szakasz a forrás jelzőjét kapja.
+
+### Kapufeltétel
+
+A WP-09 kapufeltétele teljesül:
+
+- a terv kötelező MPEG-2 / H.264 elemei mind tesztelve vannak;
+- regresszió nincs;
+- a 24. eset (hardveres kódolók) CI-ban nem mérhető, és nem blokkoló.
+
+A WP-10 csomagpróbája egyelőre GOP-határon vág. A képkocka-pontos lépés a jelen PR beolvasztása után kerül bele.
