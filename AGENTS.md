@@ -14,42 +14,72 @@ attribution and original copyright/licence requirements remain in force.
   Windows, macOS, FreeBSD or WebAssembly build/release workflows.
   Historical source and cross-platform Cargo.lock entries can remain until
   an audited refactor; do not manually delete transitive lockfile dependencies.
-- CI: automatic PR/push checks must stay quick and non-compiling. Full Rust,
+- CI: automatic PR/push checks must stay quick. The only automatic compile step
+  is the required `cargo-check` gate (`.github/workflows/pr-check.yml`: type-check
+  of libraries and binaries, no tests; owner decision 2026-10-31). Full Rust,
   Python, Qt6, vendored-library and FFmpeg tests require an explicit GitHub
   Actions workflow_dispatch or PR `cfa4-full-validation` label event (remove
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
+- **Port or keep the original language** (owner decision, 2026-11-03): reusable code is ported to
+  Rust by default. When a port would take disproportionately long, the code may stay in its original
+  language (C++, Python, …) **if it does not slow CFA4 down**. In practice it then runs outside the
+  editor process, as a supervised worker or external program behind a Rust interface (for AI: the
+  ADR 0006 worker protocol), so a crash is an error and never a CFA4 crash; "does not slow down" is
+  measured on the reference machine (playback and render frame times unchanged while it runs). The
+  licence rules below still apply (headers kept, reused-code register row), and the in-process
+  rules (pure Rust, no `unsafe`, layering) are unchanged. Record the port-vs-keep reason in the plan
+  or ADR that brings the code in.
 - **Licence: GPL-3.0-or-later** (`LICENSE`; policy in [docs/licensing.md](docs/licensing.md)).
   This overrides every inherited "MIT OR Apache-2.0 only" / "no GPL/LGPL" rule below.
   - Code MAY be reused from GPL-3.0-compatible projects (GPL-2.0-or-later, GPL-3.0, LGPL,
-    MIT/BSD/Apache-2.0/MPL-2.0…), e.g. Kdenlive, OpenShot, Audacity, Krita, Subtitle Edit:
-    check every file header, keep the original copyright/licence headers and add a row to the
-    reused-code register (docs/licensing.md §5) in the same commit.
+    MIT/BSD/Apache-2.0/MPL-2.0…), e.g. Kdenlive, OpenShot, Audacity, Krita, Subtitle Edit, MLT,
+    Shotcut, LAME (docs/licensing.md §3): check every file header, keep the original copyright/licence
+    headers and add a row to the reused-code register (docs/licensing.md §5) in the same commit.
+    FFmpeg (LGPL-2.1-or-later, optional GPL-2.0-or-later parts) and x264/x265 (GPL-2.0-or-later)
+    still need a per-file header check before anything is reused.
   - NEVER reuse GPL-2.0-only (e.g. HandBrake), AGPL, unlicensed or proprietary code (Adobe,
     DaVinci Resolve). Reimplement the capability or call the program as an external process.
-  - Dependencies must pass `cargo deny check licenses` (`deny.toml`).
-  - Paid extras are GPL-3.0-or-later like the core (owner decision 2026-10-24); no proprietary
-    (non-GPL) code extras, in-process or separate, and no proprietary plug-ins (docs/licensing.md §4).
+  - Dependencies must use GPL-3.0-compatible licences and pass `cargo deny check licenses`
+    (`deny.toml`); GPL-2.0-only and AGPL dependencies are not allowed.
+  - **No paid or commercial part** (owner decision 2026-11-08, replaces the 2026-10-24 paid-extras
+    model): never add paid extras or editions, licence keys, trials, usage or resolution limits,
+    watermarks or paid support tiers, in the core, AI workers, packages or plans. CFA4 is supported
+    only by voluntary donations, which unlock nothing. No proprietary (non-GPL) code extras,
+    in-process or separate, and no proprietary plug-ins (docs/licensing.md §4).
   - Inherited upstream code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
   - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
 - Upstream brand names, marks and icons are removed from CFA4 and must not be reintroduced
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
   notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE` and the `ATTRIBUTION.md` author columns.
 - **Media backends** ([ADR 0005](docs/adr/ADR-0005-media-backends.md)): our own Rust engine is the base. Supplementary
-  backends (FFmpeg ≥ 9.0.2 via the planned `cfa4-ffmpeg` crate, GPL-3 build only, never
-  `--enable-nonfree`; the GStreamer that Ubuntu ships in its repositories as the default, plus an
+  backends (FFmpeg ≥ 9.0.2, linked and shipped only through the `cfa4-ffmpeg` crate (`crates/ffmpeg`, no `unsafe`),
+  GPL-3 build only, never `--enable-nonfree`, no copied FFmpeg source; the GStreamer that Ubuntu ships in its repositories as the default, plus an
   isolated CFA4-owned runtime (`cfa4-gstreamer-runtime`, `/opt/cfa4/gstreamer`, no patent-restricted
   elements) only when a feature needs a newer version, never replacing the system one; further engines later)
   are registered with the automatic task router (`cfa4-route`, ADR 0004) and picked by its table,
-  default order own paths → FFmpeg → GStreamer → own software codecs. Callers use only the engine's
+  default order own hardware paths → own software codecs → FFmpeg → GStreamer (`crates/route/routing.toml`). Callers use only the engine's
   interfaces through the router, never a backend directly; order changes need tests and measurement.
+  The pinned ffmpeg/ffprobe 9.0.2 CLI stays a separate external test oracle and fixture generator.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
-  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
+  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default in dev builds;
+  release packages build with it and depend on Ubuntu's GStreamer packages: Depends for the core
+  libraries, Recommends for the plugins; never bundled; ADR 0002 step 6), dynamically
   linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
   copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
   is always the fallback; GStreamer and FFmpeg (ADR 0005) are the exceptions to the inherited "pure
   Rust in the product" rule.
+- **Non-Rust components** (owner decision, 2026-11-07; [ADR 0001](docs/adr/0001-platform-ffi.md)
+  addendum of the same date). A component written in another language (C, C++ or other: codec
+  libraries, tools, runtimes) conflicts with CFA4's rules **only if it slows CFA4 down**
+  (playback, seek, UI responsiveness, export, start-up), as measured on the reference machine
+  ([`docs/development/reference-machine.md`](docs/development/reference-machine.md)). Step-by-step
+  implementation is allowed: large components may stay in their own language for now and are
+  rewritten in Rust over later releases. The other rules still apply to them unchanged: never crash
+  (§0), the licence rules above, the media-backend routing (`cfa4-route`), vendor neutrality, and the
+  `cfa4-restricted-extras` model for patent-encumbered components
+  ([docs/licensing.md](docs/licensing.md) §7).
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.
@@ -61,6 +91,8 @@ attribution and original copyright/licence requirements remain in force.
 # CFA4 — rules for agents and contributors
 
 > **CFA4: read [`VISION.md`](VISION.md) first.** It defines the project goal (Qt6 GUI on every graphical Ubuntu flavour, combined media tools, local AI) and the priority order. If a plan, PR or audit contradicts it, report the conflict to the owner instead of resolving it silently.
+
+> **Always read [`docs/development/reference-machine.md`](docs/development/reference-machine.md) too** (owner decision, 2026-11-02). It records the owner's reference machine (hardware, OS, GPUs) and how to measure on it (minimum-spec limits, CPU-only runs). Take machine data from there; never ask the owner for it again.
 
 These rules apply to every human and AI contributor. `CLAUDE.md` holds the working instructions; this
 file holds the rules that must never be broken. When the two disagree, this file wins.
@@ -80,9 +112,12 @@ panic path, and fix a crash before building on top of it.
    fallback that is truly correct (never one that silently corrupts a project). An unfinished feature
    returns an "unsupported" error. The only exception is a call that is provably infallible from local
    code alone (a literal that always parses): a single-item `#[allow(clippy::expect_used)]` with the reason.
-3. **No `unsafe`** (`unsafe_code = "forbid"` for the workspace). The single exception is
+3. **No `unsafe`** (`unsafe_code = "forbid"` for the workspace). The exceptions are
+   the bindings of non-Rust components allowed by the owner decision of 2026-11-07 (CFA4 section
+   above; [ADR 0001](docs/adr/0001-platform-ffi.md) addendum), which follow the same containment
+   rules as `crates/platform`, and
    `crates/platform`, which needs `unsafe` to call the operating system's media APIs (hardware
-   video decoding through VideoToolbox, Media Foundation / Direct3D 11, VA-API and NVDEC; hardware encoding) and does nothing else. It
+   video decoding through VA-API and NVDEC; NVENC hardware encoding) and does nothing else. It
    uses `unsafe_code = "deny"` with `#[allow(unsafe_code)]` only on its FFI modules, a
    `// SAFETY:` comment on every `unsafe` block, a safe `Result`-returning public API, and the
    pure-Rust decoder as the tested fallback ([ADR 0001](docs/adr/0001-platform-ffi.md)).
@@ -169,21 +204,12 @@ reproduce an image (for example, point lists traced from someone else's icon).
 - Never read, disassemble or copy anything inside Adobe application bundles; file names and listings only.
   Observe behaviour by using the app; never capture its Home screen, recent projects, account info or
   file browsers.
-- Code reuse follows [docs/licensing.md](docs/licensing.md) §3 (CFA4 is GPL-3.0-or-later): GPL-3.0-
-  compatible code (Kdenlive, OpenShot, Audacity, Krita, Subtitle Edit, MLT, Shotcut, LAME…) may be
-  reused with intact headers and a register entry; never GPL-2.0-only (HandBrake…), AGPL or
-  proprietary code. FFmpeg (LGPL-2.1-or-later, optional GPL-2.0-or-later parts) and x264/x265
-  (GPL-2.0-or-later) still need a per-file header check before anything is reused.
+- Code reuse and dependency licences: the **Licence** rule in the CFA4 section at the top.
 - Implement codecs and formats from public specifications (ITU-T/ISO/IEC standards, IETF RFCs, the VP9
   and AV1 bitstream specs, SMPTE documents, published container specs) by default. Porting an existing
   implementation is allowed only when its licence is permitted by docs/licensing.md §3 and the port is
   recorded in the reused-code register. Record the spec edition used in the crate README.
-- FFmpeg (≥ 9.0.2) may be linked and shipped only as a supplementary backend through the
-  `cfa4-ffmpeg` crate under [ADR 0005](docs/adr/ADR-0005-media-backends.md) (GPL-3 build, no `nonfree`, no copied FFmpeg
-  source). The pinned ffmpeg/ffprobe 9.0.2 CLI stays a separate external test oracle and fixture
-  generator.
-- Dependencies must use GPL-3.0-compatible licences, as listed in `deny.toml`
-  (`cargo deny check licenses`). GPL-2.0-only and AGPL dependencies are not allowed.
+- FFmpeg linking and the FFmpeg test oracle: the **Media backends** rule in the CFA4 section at the top.
 
 ## 3. Engineering rules
 
@@ -193,8 +219,8 @@ See [§0](#0-never-crash). It outranks every other engineering rule.
 
 ### 3.2 The rest
 
-See `CLAUDE.md`: pure Rust, dependency layering (`cargo xtask layers`), exact `Tick` time, everything is
-a command, everything is agent-drivable, and the quality gates (`cargo xtask ci`) before every commit.
+See `CLAUDE.md`: pure Rust, dependency layering (`cargo xtask layers`), exact `Tick` time, calendar time through `chrono`, everything is
+a command, everything is agent-drivable, and the quality gates before every commit.
 
 
 Shared real-file test corpora (Photoshop-authored PSDs, etc.) live outside this repository.

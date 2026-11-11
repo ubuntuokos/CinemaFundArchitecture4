@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from PySide6.QtCore import (
     QEvent,
@@ -40,6 +40,7 @@ from PySide6.QtGui import (
     QFont,
     QIcon,
     QImage,
+    QKeyEvent,
     QPainter,
     QPainterPath,
     QPen,
@@ -53,7 +54,6 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -76,9 +76,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import theme
 from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND
 from .media_browser import FILES_MIME, dropped_files
+from .monitor_view import SOURCE_MIME
 from .timeline import ITEM_MIME, LABEL_COLORS
 from .timeline_media import TimelineMedia
 
@@ -115,6 +117,12 @@ SORT_ICONS = (
     N_("Audio Info"),
     N_("Date Created"),
 )
+def egui_name(key: str) -> str:
+    """egui's automation-id spelling of a view mode or font size (its enum's name: ``icon`` →
+    ``Icon``, ``extraLarge`` → ``ExtraLarge``)."""
+    return key[:1].upper() + key[1:]
+
+
 FONT_SIZES = (("small", N_("Small"), 10.5), ("medium", N_("Medium (default)"), 12.0), ("large", N_("Large"), 14.0), ("extraLarge", N_("Extra Large"), 16.0))
 TOGGLES = (
     ("previewArea", N_("Preview Area"), ""),
@@ -160,6 +168,13 @@ def label_color(row: dict[str, Any]) -> QColor:
     return QColor(LABEL_COLORS.get(str(row.get("label") or "").lower(), "#8f6fd8"))
 
 
+def name_matches(name: str, needle: str) -> bool:
+    """The search finds a name holding every word typed, in any order (upstream #3327), as the
+    engine's ``project.panel`` does."""
+    name = name.lower()
+    return all(word in name for word in needle.lower().split())
+
+
 def fallback_rows(node: Any, depth: int = 0, expanded: set[int] | None = None, needle: str = "") -> list[dict[str, Any]]:
     """The List view's rows from ``project.inspect``'s bin tree (an engine without
     ``project.panel``): every bin open, as the panel showed before."""
@@ -168,7 +183,7 @@ def fallback_rows(node: Any, depth: int = 0, expanded: set[int] | None = None, n
         if not isinstance(child, dict):
             continue
         if "item" in child:
-            if needle and needle not in str(child.get("name") or "").lower():
+            if not name_matches(str(child.get("name") or ""), needle):
                 continue
             out.append(
                 {
@@ -323,11 +338,149 @@ class _Drops:
         return False
 
 
+class NewItemButton(QToolButton):
+    """The footer's New Item button. Project items dropped on it make a sequence that matches the
+    first clip (File ▸ New ▸ Sequence From Clip), as in Premiere; a Source Monitor drag, whose
+    In/Out range and video/audio choice only a timeline drop keeps, is not taken."""
+
+    dropped = Signal(list)  # the dragged item ids
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.drop_hover = False
+
+    @staticmethod
+    def dragged_items(m: QMimeData) -> list[int]:
+        if m.hasFormat(SOURCE_MIME) or not m.hasFormat(ITEM_MIME):
+            return []
+        return _ids(m, ITEM_MIME)
+
+    def _hover(self, on: bool) -> None:
+        if self.drop_hover != on:
+            self.drop_hover = on
+            self.update()
+
+    def dragEnterEvent(self, e: Any) -> None:
+        if self.dragged_items(e.mimeData()):
+            e.acceptProposedAction()
+            self._hover(True)
+        else:
+            e.ignore()
+
+    def dragMoveEvent(self, e: Any) -> None:
+        if self.dragged_items(e.mimeData()):
+            e.acceptProposedAction()
+        else:
+            e.ignore()
+
+    def dragLeaveEvent(self, e: Any) -> None:
+        self._hover(False)
+        super().dragLeaveEvent(e)
+
+    def dropEvent(self, e: Any) -> None:
+        self._hover(False)
+        items = self.dragged_items(e.mimeData())
+        if not items:
+            e.ignore()
+            return
+        e.acceptProposedAction()
+        self.dropped.emit(items)
+
+    def paintEvent(self, e: Any) -> None:
+        super().paintEvent(e)
+        if self.drop_hover:  # the drop target, outlined in the accent colour
+            p = QPainter(self)
+            p.setPen(QPen(QColor(theme.current().accent), 1.5))
+            p.drawRoundedRect(QRectF(self.rect()).adjusted(1, 1, -1, -1), 3, 3)
+            p.end()
+
+
+def project_row_parts(view: QAbstractItemView, prefix: str, rows: list[tuple[Any, Any, Any, int]]) -> list[tuple[str, QRectF, str]]:
+    """egui's ids for a Project view's rows in view: ``<prefix>.bin.<id>`` (with ``.toggle``, its
+    expand arrow, in the List view) and ``<prefix>.item.<id>``. ``rows``: (model item, bin id, item
+    id, depth) of each row."""
+    vp = view.viewport()
+    shown = vp.geometry()
+    out: list[tuple[str, QRectF, str]] = []
+    for it, bin_id, item_id, depth in rows:
+        r = view.visualItemRect(it).translated(vp.pos())
+        vis = r.intersected(shown)
+        if vis.isEmpty():
+            continue
+        name = it.text(0) if isinstance(it, QTreeWidgetItem) else it.text()
+        if bin_id is not None:
+            out.append((f"{prefix}.bin.{bin_id}", QRectF(vis), name))
+            if isinstance(view, QTreeWidget):
+                ind = view.indentation()
+                arrow = QRect(r.left() - ind, r.top(), ind, r.height()).intersected(shown)
+                if not arrow.isEmpty():
+                    out.append((f"{prefix}.bin.{bin_id}.toggle", QRectF(arrow), "Expand"))
+        elif item_id is not None:
+            out.append((f"{prefix}.item.{item_id}", QRectF(vis), name))
+    return out
+
+
+def empty_part(view: QAbstractItemView, prefix: str) -> list[tuple[str, QRectF, str]]:
+    """egui's ``<prefix>.empty``: the view's empty space under its rows or cards (a click
+    deselects, a double-click imports, a right-click opens the background menu)."""
+    vp = view.viewport()
+    shown = vp.geometry()
+    bottom = shown.top()
+    model = view.model()
+    stack = [view.rootIndex()]
+    while stack:  # every row in view (expanded children too)
+        parent = stack.pop()
+        for row in range(model.rowCount(parent) if model is not None else 0):
+            idx = model.index(row, 0, parent)
+            r = view.visualRect(idx)
+            if r.isValid() and not r.isEmpty():
+                bottom = max(bottom, r.translated(vp.pos()).bottom() + 1)
+            if isinstance(view, QTreeWidget) and view.isExpanded(idx):
+                stack.append(idx)
+    rest = QRect(shown.left(), bottom, shown.width(), shown.bottom() + 1 - bottom)
+    return [(f"{prefix}.empty", QRectF(rest), "Empty area")] if rest.height() > 0 else []
+
+
 class ProjectTree(QTreeWidget, _Drops):
     """The List view."""
 
     files_dropped = Signal(list)  # paths dragged from the Media Browser or a file manager
     moved = Signal(list, object)  # (item and bin ids, target bin or None for the shown bin)
+    empty_double_clicked = Signal()
+
+    def mouseDoubleClickEvent(self, e: Any) -> None:
+        if self.itemAt(e.position().toPoint()) is None:
+            self.empty_double_clicked.emit()  # egui's: a double-click on empty space imports
+            return
+        super().mouseDoubleClickEvent(e)
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """The rows in view (``project_row_parts``) and the column headers,
+        ``<prefix>.list.header.<column>`` (egui's names; the header shows them translated)."""
+        prefix = getattr(self, "part_prefix", "project")
+        rows: list[tuple[Any, Any, Any, int]] = []
+
+        def walk(it: QTreeWidgetItem, depth: int) -> None:
+            rows.append((it, it.data(0, BIN_ROLE), it.data(0, ITEM_ROLE), depth))
+            if it.isExpanded():
+                for i in range(it.childCount()):
+                    child = it.child(i)
+                    if child is not None:
+                        walk(child, depth + 1)
+
+        for i in range(self.topLevelItemCount()):
+            top = self.topLevelItem(i)
+            if top is not None:
+                walk(top, 0)
+        out = project_row_parts(self, prefix, rows) + empty_part(self, prefix)
+        head = self.header()
+        if not self.isHeaderHidden():
+            for i, key in enumerate(list(getattr(self, "column_keys", []))[: self.columnCount()]):
+                r = QRect(head.x() + head.sectionViewportPosition(i), head.y(), head.sectionSize(i), head.height()).intersected(head.geometry())
+                if not r.isEmpty():
+                    out.append((f"{prefix}.list.header.{key}", QRectF(r), key))
+        return out
 
     def mimeData(self, items: list[QTreeWidgetItem]) -> QMimeData:
         return drag_mime(
@@ -362,7 +515,24 @@ class IconList(QListWidget, _Drops):
 
     files_dropped = Signal(list)
     moved = Signal(list, object)
+    empty_double_clicked = Signal()
     hovered = Signal(object, object)  # item id (or None) and the media time (ticks: 64-bit) under the pointer
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``<prefix>.bin.<id>`` / ``<prefix>.item.<id>`` for the cards in view."""
+        rows = []
+        for i in range(self.count()):
+            it = self.item(i)
+            if it is not None and not it.isHidden():
+                rows.append((it, it.data(BIN_ROLE), it.data(ITEM_ROLE), 0))
+        prefix = getattr(self, "part_prefix", "project")
+        return project_row_parts(self, prefix, rows) + empty_part(self, prefix)
+
+    def mouseDoubleClickEvent(self, e: Any) -> None:
+        if self.itemAt(e.position().toPoint()) is None:
+            self.empty_double_clicked.emit()  # egui's: a double-click on empty space imports
+            return
+        super().mouseDoubleClickEvent(e)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -910,6 +1080,8 @@ class BinView(QWidget):
         self.own_mode = mode  # a tab's own view (None: the panel's View setting)
         self.own_size = icon_size
         self.data: dict[str, Any] = {}
+        self._held: Any = None  # project.panel data waiting for an in-place rename to finish
+        self._watched: list[QAbstractItemView] = []
         self.expanded: set[int] = set()
         self.selected_bin: int | None = None
         self.hover: tuple[Any, int] | None = None
@@ -969,6 +1141,7 @@ class BinView(QWidget):
 
         self.tree = ProjectTree(self)
         self.tree.setObjectName(f"{prefix}.list" if prefix != "project" else "project.tree")
+        self.tree.part_prefix = prefix  # egui's ids for its rows
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tree.setDragEnabled(True)
         self.tree.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
@@ -997,6 +1170,7 @@ class BinView(QWidget):
         self.tree.itemCollapsed.connect(lambda it: self._twirl(it, False))
 
         self.icons = IconList(self)
+        self.icons.part_prefix = prefix
         self.icons.setObjectName(f"{prefix}.icons")
         self.icons.setViewMode(QListWidget.ViewMode.IconMode)
         self.icons.setResizeMode(QListWidget.ResizeMode.Adjust)
@@ -1020,6 +1194,8 @@ class BinView(QWidget):
             v.moved.connect(self._moved)
         self.tree.itemDoubleClicked.connect(lambda it, _c: self._open(it.data(0, ITEM_ROLE), it.data(0, BIN_ROLE), it.data(0, ROW_ROLE)))
         self.icons.itemDoubleClicked.connect(lambda it: self._open(it.data(ITEM_ROLE), it.data(BIN_ROLE), it.data(ROW_ROLE)))
+        self.tree.empty_double_clicked.connect(lambda: self.panel.invoke.emit("file.import"))
+        self.icons.empty_double_clicked.connect(lambda: self.panel.invoke.emit("file.import"))
         self.tree.itemSelectionChanged.connect(self._selection_changed)
         self.icons.itemSelectionChanged.connect(self._selection_changed)
         self.tree.itemChanged.connect(lambda it, col: col == 0 and self._renamed(it.data(0, ITEM_ROLE), it.data(0, BIN_ROLE), it.text(0)))
@@ -1047,7 +1223,7 @@ class BinView(QWidget):
         self.view_buttons: dict[str, QToolButton] = {}
         for key, text, tip in (("list", "☰", N_("List View")), ("icon", "▦", N_("Icon View")), ("freeform", "⧉", N_("Freeform View"))):
             b = QToolButton(self)
-            b.setObjectName(f"{prefix}.view.{key}")
+            b.setObjectName(f"{prefix}.view.{egui_name(key)}")  # egui's ViewMode spelling
             b.setText(text)
             b.setToolTip(tr(tip))
             b.setCheckable(True)
@@ -1080,7 +1256,7 @@ class BinView(QWidget):
             ("new-item", "✚", N_("New Item")),
             ("project.delete", "🗑", N_("Clear (Delete)")),
         ):
-            b = QToolButton(self)
+            b = NewItemButton(self) if key == "new-item" else QToolButton(self)
             b.setObjectName(f"{prefix}.button.{key}")
             b.setText(text)
             b.setToolTip(tr(tip))
@@ -1090,6 +1266,8 @@ class BinView(QWidget):
                 menu = QMenu(b)
                 b.setMenu(menu)
                 menu.aboutToShow.connect(lambda m=menu: self._fill_new_item(m))
+                # a clip dropped here makes a sequence that matches it (upstream #2940)
+                b.dropped.connect(lambda items: self.panel.command.emit("file.newSequenceFromClip", {"items": items}))
             else:
                 b.clicked.connect(lambda _c=False, k=key: self._footer(k))
             foot.addWidget(b)
@@ -1185,6 +1363,12 @@ class BinView(QWidget):
         )
 
     def set_data(self, data: Any) -> None:
+        if self._renaming():
+            # rebuilding the rows would drop the rename being typed (New Bin's name, another
+            # panel's edit arriving meanwhile): the latest data waits until the editor closes
+            self._held = data
+            return
+        self._held = None
         self.data = data if isinstance(data, dict) else {}
         rows = [r for r in self.data.get("rows") or [] if isinstance(r, dict)]
         selection = {i for i in self.data.get("selection") or [] if isinstance(i, int)}
@@ -1203,6 +1387,20 @@ class BinView(QWidget):
         self._update_head(selection)
         if self.top is not None:
             self.panel._update_tab_names()
+
+    def _renaming(self) -> bool:
+        view = self.icons if self.mode == "icon" else self.tree if self.mode == "list" else None
+        if view is None or view.state() != QAbstractItemView.State.EditingState:
+            return False
+        if view not in self._watched:
+            self._watched.append(view)
+            view.itemDelegate().closeEditor.connect(lambda *_a: QTimer.singleShot(0, self, self._release_held))
+        return True
+
+    def _release_held(self) -> None:
+        held = getattr(self, "_held", None)
+        if held is not None and not self._renaming():
+            self.set_data(held)
 
     def _load_arrangements(self) -> None:
         engine = self.panel.engine
@@ -1263,6 +1461,7 @@ class BinView(QWidget):
             self._shown = shape
             tree.setColumnCount(len(names))
             tree.setHeaderLabels([tr(n) for n in names])
+            tree.column_keys = names
             header = tree.header()
             header.blockSignals(True)
             for i, c in enumerate(columns):
@@ -1430,6 +1629,37 @@ class BinView(QWidget):
                 return True
         return False
 
+    def rename_editor(self) -> tuple[QLineEdit, int | None, int | None] | None:
+        """The inline rename being typed here: its editor and the item or bin it renames."""
+        if self.mode == "freeform":
+            ed = self.canvas._editor
+            item = ed.property("item") if ed is not None else None
+            return (ed, item, None) if ed is not None and isinstance(item, int) else None
+        view = self.icons if self.mode == "icon" else self.tree
+        if view.state() != QAbstractItemView.State.EditingState:
+            return None
+        ed = next((e for e in view.viewport().findChildren(QLineEdit) if e.isVisible()), None)
+        if ed is None:
+            return None
+        if self.mode == "icon":
+            it = self.icons.currentItem()
+            ids = (it.data(ITEM_ROLE), it.data(BIN_ROLE)) if it is not None else (None, None)
+        else:
+            tit = self.tree.currentItem()
+            ids = (tit.data(0, ITEM_ROLE), tit.data(0, BIN_ROLE)) if tit is not None else (None, None)
+        item, bin_id = (i if isinstance(i, int) else None for i in ids)
+        return ed, item, None if item is not None else bin_id
+
+    def cancel_rename(self) -> None:
+        """Leave the inline rename without renaming (Escape)."""
+        if self.mode == "freeform":
+            self.canvas._end_edit(None)
+            return
+        found = self.rename_editor()
+        if found is not None:
+            for kind in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease):
+                QApplication.sendEvent(found[0], QKeyEvent(kind, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier))
+
     def _twirl(self, it: QTreeWidgetItem, opened: bool) -> None:
         if self._updating:
             return
@@ -1588,17 +1818,59 @@ def parents_all(tree: QTreeWidget) -> list[QTreeWidgetItem]:
 
 
 # ----------------------------------------------------------------------------------- dialogs
+# The Project panel's dialogs keep their drafts where the control channel reads and sets them
+# (egui's ``UiState::project_panel.dialog``): ``state()`` gives egui's fields, ``set_state`` takes
+# them and raises ValueError, changing nothing, on a field the dialog would not take.
+def _fields(fields: Any, known: tuple[str, ...], kind: str) -> dict[str, Any]:
+    if not isinstance(fields, dict):
+        raise TypeError(f"dialog.{kind} takes {{{', '.join(known)}}}")
+    bad = [k for k in fields if k not in known]
+    if bad:
+        raise ValueError(f"dialog.{kind}: unknown field {bad[0]!r} (known: {', '.join(known)})")
+    return fields
+
+
+def _text(fields: dict[str, Any], key: str, kind: str) -> str | None:
+    v = fields.get(key)
+    if key in fields and (not isinstance(v, str) or len(v) > 4096):
+        raise ValueError(f"dialog.{kind}.{key} takes a string")
+    return v if isinstance(v, str) else None
+
+
 class MetadataDisplayDialog(QDialog):
-    """Metadata Display…: the List view's columns, in order (egui's ``project_dialogs``)."""
+    """Metadata Display…: the List view's columns, in order, and the field filter (egui's
+    ``project_dialogs::metadata_display``)."""
+
+    KIND = "metadataDisplay"
 
     def __init__(self, available: list[str], shown: list[str], parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("project.metadataDisplay")
         self.setWindowTitle(tr("Metadata Display"))
+        self.available = [*shown, *(a for a in available if a not in shown)]
+        self.filter = QLineEdit(self)
+        self.filter.setObjectName("project.metadataDisplay.filter")
+        self.filter.setPlaceholderText(tr("Search fields"))
+        self.filter.textChanged.connect(self._filter)
         self.list = QListWidget(self)
         self.list.setObjectName("project.metadataDisplay.columns")
         self.list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
-        for name in [*shown, *(a for a in available if a not in shown)]:
+        self._fill(shown)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout = QVBoxLayout(self)
+        show = QHBoxLayout()
+        show.addWidget(QLabel(tr("Show:"), self))
+        show.addWidget(self.filter, 1)
+        layout.addLayout(show)
+        layout.addWidget(QLabel(tr("Drag to reorder; tick the columns to show."), self))
+        layout.addWidget(self.list, 1)
+        layout.addWidget(buttons)
+
+    def _fill(self, shown: list[str]) -> None:
+        self.list.clear()
+        for name in [*shown, *(a for a in self.available if a not in shown)]:
             it = QListWidgetItem(tr(name))
             it.setData(ITEM_ROLE, name)
             it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
@@ -1606,13 +1878,14 @@ class MetadataDisplayDialog(QDialog):
             if name == "Name":
                 it.setFlags(it.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
             self.list.addItem(it)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        layout = QVBoxLayout(self)
-        layout.addWidget(QLabel(tr("Drag to reorder; tick the columns to show."), self))
-        layout.addWidget(self.list, 1)
-        layout.addWidget(buttons)
+        self._filter(self.filter.text())
+
+    def _filter(self, text: str) -> None:
+        f = text.strip().lower()
+        for i in range(self.list.count()):
+            it = self.list.item(i)
+            name = str(it.data(ITEM_ROLE))
+            it.setHidden(bool(f) and f not in name.lower() and f not in it.text().lower())
 
     def columns(self) -> list[str]:
         out = []
@@ -1622,10 +1895,82 @@ class MetadataDisplayDialog(QDialog):
                 out.append(str(it.data(ITEM_ROLE)))
         return out
 
+    def state(self) -> dict[str, Any]:
+        return {"columns": self.columns(), "filter": self.filter.text()}
+
+    def set_state(self, fields: Any) -> None:
+        f = _fields(fields, ("columns", "filter"), self.KIND)
+        cols = f.get("columns")
+        if "columns" in f:
+            if not isinstance(cols, list) or not all(isinstance(c, str) for c in cols):
+                raise ValueError("dialog.metadataDisplay.columns takes a list of field names")
+            unknown = [c for c in cols if c not in self.available]
+            if unknown:
+                raise ValueError(f"dialog.metadataDisplay.columns: no field {unknown[0]!r}")
+        text = _text(f, "filter", self.KIND)
+        if text is not None:
+            self.filter.setText(text)
+        if isinstance(cols, list):
+            self._fill(list(dict.fromkeys(["Name", *cols] if "Name" not in cols else cols)))
+
+
+class NameDialog(QDialog):
+    """Save As New View Preset and Freeform ▸ Save Arrangement…: a name (and the bin the
+    arrangement belongs to)."""
+
+    def __init__(self, kind: str, title: str, name: str, note: str = "", bin_id: int | None = None, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.KIND = kind
+        self.bin = bin_id
+        self.setObjectName(f"project.{kind}")
+        self.setWindowTitle(title)
+        self.name = QLineEdit(name, self)
+        self.name.setObjectName(f"project.{kind}.name")
+        self.name.selectAll()
+        form = QFormLayout()
+        form.addRow(tr("Name:"), self.name)
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        ok = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
+        ok.setObjectName(f"project.{kind}.ok")
+        self.name.textChanged.connect(lambda t: ok.setEnabled(bool(t.strip())))
+        ok.setEnabled(bool(name.strip()))
+        layout = QVBoxLayout(self)
+        layout.addLayout(form)
+        if note:
+            hint = QLabel(note, self)
+            hint.setEnabled(False)
+            layout.addWidget(hint)
+        layout.addWidget(self.buttons)
+
+    def text(self) -> str:
+        return self.name.text().strip()
+
+    def state(self) -> dict[str, Any]:
+        out: dict[str, Any] = {"name": self.name.text()}
+        if self.KIND == "saveArrangement":
+            out["bin"] = self.bin
+        return out
+
+    def set_state(self, fields: Any) -> None:
+        f = _fields(fields, ("name", "bin") if self.KIND == "saveArrangement" else ("name",), self.KIND)
+        b = f.get("bin")
+        if b is not None and (isinstance(b, bool) or not isinstance(b, int) or b < 0):
+            raise ValueError("dialog.saveArrangement.bin takes a bin id or null")
+        name = _text(f, "name", self.KIND)
+        if name is not None:
+            self.name.setText(name)
+        if "bin" in f:
+            self.bin = b
+
 
 class FreeformOptionsDialog(QDialog):
     """Freeform View Options…: the grid, snapping, card names and durations and the default card
     size (``project.freeform.options``)."""
+
+    KIND = "freeformOptions"
+    RANGES: ClassVar[dict[str, tuple[int, int]]] = {"grid": (4, 200), "cardSize": (48, 480)}
 
     def __init__(self, opts: dict[str, Any], parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -1638,11 +1983,11 @@ class FreeformOptionsDialog(QDialog):
 
         self.grid = QSpinBox(self)
         self.grid.setObjectName("project.freeformOptions.grid")
-        self.grid.setRange(4, 200)
+        self.grid.setRange(*self.RANGES["grid"])
         self.grid.setValue(int(min(200, max(4, num("grid", 20)))))
         self.card = QSpinBox(self)
         self.card.setObjectName("project.freeformOptions.cardSize")
-        self.card.setRange(48, 480)
+        self.card.setRange(*self.RANGES["cardSize"])
         self.card.setValue(int(min(480, max(48, num("cardSize", 128)))))
         self.snap = QCheckBox(tr("Snap to grid"), self)
         self.snap.setObjectName("project.freeformOptions.snap")
@@ -1674,56 +2019,127 @@ class FreeformOptionsDialog(QDialog):
             "cardSize": self.card.value(),
         }
 
+    def state(self) -> dict[str, Any]:
+        return {"options": self.values()}
+
+    def set_state(self, fields: Any) -> None:
+        f = _fields(fields, ("options",), self.KIND)
+        if "options" not in f:
+            return
+        o = _fields(f["options"], ("grid", "snap", "showNames", "showDurations", "cardSize"), f"{self.KIND}.options")
+        for k, (lo, hi) in self.RANGES.items():
+            v = o.get(k)
+            if k in o and (isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or not lo <= v <= hi):
+                raise ValueError(f"dialog.freeformOptions.options.{k} takes a number from {lo} to {hi}")
+        for k in ("snap", "showNames", "showDurations"):
+            if k in o and not isinstance(o[k], bool):
+                raise ValueError(f"dialog.freeformOptions.options.{k} takes true or false")
+        for k, w in (("grid", self.grid), ("cardSize", self.card)):
+            if k in o:
+                w.setValue(round(o[k]))
+        for k, box in (("snap", self.snap), ("showNames", self.names), ("showDurations", self.durations)):
+            if k in o:
+                box.setChecked(o[k])
+
+
+PRESET_SLOTS = 10  # cfa4_engine::project_panel::PRESET_SLOTS
+
 
 class ManagePresetsDialog(QDialog):
-    """Manage Saved View Presets: rename or delete a slot."""
+    """Manage Saved View Presets as egui's: the ten slots (empty ones too), the selected slot's
+    name, Rename, Restore, Delete, Overwrite with Current View, Done."""
+
+    KIND = "managePresets"
 
     def __init__(self, panel: ProjectPanel, presets: list[dict[str, Any]]) -> None:
         super().__init__(panel)
         self.panel = panel
         self.setObjectName("project.managePresets")
         self.setWindowTitle(tr("Manage Saved View Presets"))
+        self.names: list[str | None] = [None] * PRESET_SLOTS
         self.list = QListWidget(self)
-        for p in presets:
-            if isinstance(p, dict) and p.get("name"):
-                it = QListWidgetItem(f"{p.get('slot')}. {p.get('name')}")
-                it.setData(ITEM_ROLE, p.get("slot"))
-                it.setData(ROW_ROLE, p.get("name"))
-                self.list.addItem(it)
+        self.list.setObjectName("project.managePresets.slots")
+        for i in range(PRESET_SLOTS):
+            self.list.addItem(QListWidgetItem())
         self.name = QLineEdit(self)
-        self.list.currentItemChanged.connect(lambda it, _o: it is not None and self.name.setText(str(it.data(ROW_ROLE) or "")))
-        rename = QPushButton(tr("Rename"), self)
-        rename.clicked.connect(self._rename)
-        delete = QPushButton(tr("Delete"), self)
-        delete.clicked.connect(self._delete)
-        close = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
-        close.rejected.connect(self.reject)
+        self.name.setObjectName("project.managePresets.name")
+        self.list.currentRowChanged.connect(self._selected)
+        self.buttons: dict[str, QPushButton] = {}
+        for key, label, run in (
+            ("rename", N_("Rename"), self._rename),
+            ("restore", N_("Restore"), lambda: self._run("project.viewPreset.restore", {})),
+            ("delete", N_("Delete"), lambda: self._run("project.viewPreset.delete", {})),
+            ("overwrite", N_("Overwrite with Current View"), self._overwrite),
+        ):
+            b = QPushButton(tr(label), self)
+            b.setObjectName(f"project.managePresets.{key}")
+            b.clicked.connect(run)
+            self.buttons[key] = b
+        done = QDialogButtonBox(self)
+        ok = done.addButton(tr("Done"), QDialogButtonBox.ButtonRole.AcceptRole)
+        ok.setObjectName("project.managePresets.done")
+        done.accepted.connect(self.accept)
         row = QHBoxLayout()
+        row.addWidget(QLabel(tr("Name:"), self))
         row.addWidget(self.name, 1)
-        row.addWidget(rename)
-        row.addWidget(delete)
+        row.addWidget(self.buttons["rename"])
+        actions = QHBoxLayout()
+        for key in ("restore", "delete", "overwrite"):
+            actions.addWidget(self.buttons[key])
         layout = QVBoxLayout(self)
         layout.addWidget(self.list, 1)
         layout.addLayout(row)
-        layout.addWidget(close)
+        layout.addLayout(actions)
+        layout.addWidget(done)
+        self.set_presets(presets)
+        self.list.setCurrentRow(0)
+        self._selected(0)
 
-    def _slot(self) -> int | None:
-        it = self.list.currentItem()
-        return it.data(ITEM_ROLE) if it is not None else None
+    def set_presets(self, presets: list[dict[str, Any]]) -> None:
+        """The slots as the engine has them; the name field follows the selected slot (egui
+        refreshes it after each action)."""
+        self.names = [None] * PRESET_SLOTS
+        for p in presets:
+            slot = p.get("slot") if isinstance(p, dict) else None
+            if isinstance(slot, int) and 1 <= slot <= PRESET_SLOTS and isinstance(p.get("name"), str) and p["name"]:
+                self.names[slot - 1] = p["name"]
+        for i, name in enumerate(self.names):
+            self.list.item(i).setText(f"{i + 1}. {name}" if name else fmt("{n}. (empty)", n=i + 1))
+        self._selected(self.list.currentRow())
+
+    def _selected(self, row: int) -> None:
+        filled = 0 <= row < PRESET_SLOTS and self.names[row] is not None
+        self.name.setText(self.names[row] or "" if 0 <= row < PRESET_SLOTS else "")
+        for w in (self.name, self.buttons["rename"], self.buttons["restore"], self.buttons["delete"]):
+            w.setEnabled(filled)
+
+    def _run(self, cid: str, params: dict[str, Any]) -> None:
+        row = self.list.currentRow()
+        if 0 <= row < PRESET_SLOTS:
+            self.panel.preset_cmd(cid, {"slot": row + 1, **params})
 
     def _rename(self) -> None:
-        slot, name = self._slot(), self.name.text().strip()
-        if isinstance(slot, int) and name:
-            self.panel.set_view_cmd("project.viewPreset.rename", {"slot": slot, "name": name})
-            it = self.list.currentItem()
-            it.setText(f"{slot}. {name}")
-            it.setData(ROW_ROLE, name)
+        name = self.name.text().strip()
+        if name:
+            self._run("project.viewPreset.rename", {"name": name})
 
-    def _delete(self) -> None:
-        slot = self._slot()
-        if isinstance(slot, int):
-            self.panel.set_view_cmd("project.viewPreset.delete", {"slot": slot})
-            self.list.takeItem(self.list.currentRow())
+    def _overwrite(self) -> None:
+        name = self.name.text().strip()
+        self._run("project.viewPreset.saveAs", {"name": name or None})
+
+    def state(self) -> dict[str, Any]:
+        return {"selected": max(0, self.list.currentRow()), "name": self.name.text()}
+
+    def set_state(self, fields: Any) -> None:
+        f = _fields(fields, ("selected", "name"), self.KIND)
+        sel = f.get("selected")
+        if "selected" in f and (isinstance(sel, bool) or not isinstance(sel, int) or not 0 <= sel < PRESET_SLOTS):
+            raise ValueError(f"dialog.managePresets.selected takes a slot from 0 to {PRESET_SLOTS - 1}")
+        name = _text(f, "name", self.KIND)
+        if isinstance(sel, int):
+            self.list.setCurrentRow(sel)
+        if name is not None:
+            self.name.setText(name)
 
 
 # ----------------------------------------------------------------------------------- the panel
@@ -1742,6 +2158,7 @@ class ProjectPanel(QWidget):
         self.project: dict[str, Any] | None = None
         self.view: dict[str, Any] = {}  # project.view.get
         self.presets: list[dict[str, Any]] = []
+        self.dialog: QDialog | None = None  # the open dialog (egui's ``project_panel.dialog``)
         self.media = TimelineMedia(self)
         self.media.attach(engine)
         self.media.updated.connect(self._media_updated)
@@ -1894,6 +2311,137 @@ class ProjectPanel(QWidget):
         self._update_tab_names()
         self.tabs.setCurrentIndex(i)
 
+    # ----- view state for the control channel (egui's ``ProjectPanelUi``) -----
+    def _opened(self) -> list[tuple[BinView, bool, QWidget | None]]:
+        """Bins opened in tabs, then in windows: (view, floating, window)."""
+        out: list[tuple[BinView, bool, QWidget | None]] = []
+        for i in range(1, self.stack.count()):
+            v = self.stack.widget(i)
+            if isinstance(v, BinView):
+                out.append((v, False, None))
+        for w in self.windows:
+            v = w.findChild(BinView)
+            if isinstance(v, BinView):
+                out.append((v, True, w))
+        return out
+
+    def ui_state(self) -> dict[str, Any]:
+        tabs = [{"bin": v.top, "floating": floating, "view": v.mode, "iconSize": v.icon_size, "nav": v.bin if v.bin != v.top else None}
+                for v, floating, _w in self._opened()]
+        i = self.tabs.currentIndex()
+        return {"bin": self.main.bin, "tabs": tabs, "activeTab": i - 1 if i > 0 else None, "selectedBin": self.shown().selected_bin,
+                "rename": self.rename_state(), "dialog": self.dialog_state()}
+
+    def rename_state(self) -> dict[str, Any] | None:
+        """egui's ``project_panel.rename``: the item or bin being renamed in place, the text typed
+        so far and the panel instance editing it."""
+        for v in self.views():
+            found = v.rename_editor()
+            if found is not None:
+                ed, item, bin_id = found
+                return {"item": item, "bin": bin_id, "text": ed.text(), "panel": v.prefix}
+        return None
+
+    def set_rename(self, value: Any) -> None:
+        """null leaves any inline rename unrenamed; ``{item | bin, text, panel}`` starts one there
+        (the shown view when ``panel`` is left out) and types ``text`` into it."""
+        def an_id(v: Any) -> bool:
+            return v is None or (isinstance(v, int) and not isinstance(v, bool) and v >= 0)
+
+        if value is None:
+            for v in self.views():
+                v.cancel_rename()
+            return
+        if not isinstance(value, dict):
+            raise TypeError("rename takes null or {item, bin, text, panel}")
+        bad = [k for k in value if k not in ("item", "bin", "text", "panel")]
+        if bad:
+            raise ValueError(f"rename: unknown field {bad[0]!r} (known: item, bin, text, panel)")
+        item, bin_id, text, prefix = value.get("item"), value.get("bin"), value.get("text"), value.get("panel")
+        if not an_id(item) or not an_id(bin_id) or (item is None) == (bin_id is None):
+            raise ValueError("rename takes an item id or a bin id")
+        if text is not None and (not isinstance(text, str) or len(text) > 4096):
+            raise ValueError("rename.text takes a string")
+        views = {v.prefix: v for v in self.views()}
+        if prefix is None:
+            current = self.rename_state()
+            prefix = current["panel"] if current is not None else self.shown().prefix
+        view = views.get(prefix) if isinstance(prefix, str) else None
+        if view is None:
+            raise ValueError(f"rename.panel: no panel {prefix!r} (open: {', '.join(views)})")
+        found = view.rename_editor()
+        if found is None or found[1:] != (item, bin_id):
+            if not view.rename(item, bin_id):
+                raise ValueError(f"rename: no {'item' if item is not None else 'bin'} {item if item is not None else bin_id} in {prefix}")
+            found = view.rename_editor()
+        if found is not None and text is not None:
+            found[0].setText(text)
+
+    def set_ui_state(self, patch: dict[str, Any]) -> None:
+        """Merge ``patch`` ({bin, tabs, activeTab, selectedBin, rename, dialog}) into the view
+        state: ``tabs`` opens and closes bin tabs and windows to match the list, ``rename`` and
+        ``dialog`` as egui's (``set_rename``, ``set_dialog_state``). ValueError names a bad field."""
+        def bin_id(v: Any) -> bool:
+            return v is None or (isinstance(v, int) and not isinstance(v, bool) and v >= 0)
+
+        known = ("bin", "tabs", "activeTab", "selectedBin", "rename", "dialog")
+        bad = [k for k in patch if k not in known]
+        if bad:
+            raise ValueError(f"unknown field {bad[0]!r} (known: {', '.join(known)})")
+        for k in ("bin", "selectedBin", "activeTab"):
+            if not bin_id(patch.get(k)):
+                raise ValueError(f"{k} takes an id or null")
+        tabs = patch.get("tabs")
+        wanted: list[dict[str, Any]] = []
+        if tabs is not None:
+            if not isinstance(tabs, list) or len(tabs) > 64:
+                raise ValueError("tabs takes a list of {bin, floating, view, iconSize, nav}")
+            for t in tabs:
+                if not isinstance(t, dict) or not isinstance(t.get("bin"), int) or isinstance(t.get("bin"), bool) or not bin_id(t.get("nav")):
+                    raise ValueError("each tab needs a bin id")
+                if t.get("view", "list") not in ("list", "icon", "freeform"):
+                    raise ValueError("a tab's view is list, icon or freeform")
+                size = t.get("iconSize", 110)
+                if isinstance(size, bool) or not isinstance(size, (int, float)):
+                    raise TypeError("a tab's iconSize is a number")
+                wanted.append({"bin": t["bin"], "floating": t.get("floating") is True, "view": t.get("view", "list"),
+                               "iconSize": int(min(MAX_ICON, max(MIN_ICON, size))), "nav": t.get("nav")})
+        if "bin" in patch:
+            self.main.navigate(patch["bin"])
+        if tabs is not None:
+            have = self._opened()
+            keep = 0  # the opened bins that already match the list's start stay
+            while keep < min(len(have), len(wanted)) and (have[keep][0].top, have[keep][1]) == (wanted[keep]["bin"], wanted[keep]["floating"]):
+                keep += 1
+            for v, floating, w in reversed(have[keep:]):
+                if floating and w is not None:
+                    self.windows.remove(w)
+                    w.close()
+                else:
+                    self.close_tab(self.stack.indexOf(v))
+            for t in wanted[keep:]:
+                self.open_bin(self.main, t["bin"], "newWindow" if t["floating"] else "newTab")
+            for (v, _f, _w), t in zip(self._opened(), wanted):
+                if (v.own_mode, v.own_size) != (t["view"], t["iconSize"]):
+                    v.own_mode, v.own_size = t["view"], t["iconSize"]
+                    v.refresh()
+                if t["nav"] is not None and v.bin != t["nav"]:
+                    v.navigate(t["nav"])
+        if "activeTab" in patch:
+            a = patch["activeTab"]
+            count = self.stack.count() - 1
+            if a is not None and a >= count:
+                raise ValueError(f"activeTab: there are {count} bin tabs")
+            self.tabs.setCurrentIndex(0 if a is None else a + 1)
+        if "selectedBin" in patch:
+            v = self.shown()
+            v.selected_bin = patch["selectedBin"]
+            v.refresh()
+        if "dialog" in patch:
+            self.set_dialog_state(patch["dialog"])
+        if "rename" in patch:
+            self.set_rename(patch["rename"])
+
     def close_tab(self, index: int) -> None:
         if index <= 0 or index >= self.stack.count():
             return
@@ -1971,8 +2519,7 @@ class ProjectPanel(QWidget):
         available = [a for a in self.view.get("available") or [] if isinstance(a, str)]
         shown = [c.get("name") for c in (self.view.get("view") or {}).get("columns") or [] if isinstance(c, dict) and isinstance(c.get("name"), str)]
         dlg = MetadataDisplayDialog(available or shown, shown, self)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
-            self.set_view_cmd("project.columns.set", {"columns": dlg.columns()})
+        self._open_dialog(dlg, lambda: self.set_view_cmd("project.columns.set", {"columns": dlg.columns()}))
 
     def reveal_project(self) -> None:
         path = (self.project or {}).get("path")
@@ -2109,15 +2656,20 @@ class ProjectPanel(QWidget):
         return m
 
     def save_arrangement(self, view: BinView) -> None:
-        name, ok = QInputDialog.getText(self, tr("Save Arrangement"), tr("Name:"), text=fmt("Arrangement {n}", n=len(view.arrangements) + 1))
-        if ok and name.strip():
-            self.command.emit("project.freeform.saveArrangement", {"name": name.strip(), "bin": view.data.get("bin")})
+        b = view.data.get("bin")
+        dlg = NameDialog("saveArrangement", tr("Save Arrangement"), fmt("Arrangement {n}", n=len(view.arrangements) + 1),
+                         bin_id=b if isinstance(b, int) else None, parent=self)
+
+        def ok() -> None:
+            if dlg.text():
+                self.command.emit("project.freeform.saveArrangement", {"name": dlg.text(), "bin": dlg.bin})
+
+        self._open_dialog(dlg, ok)
 
     def freeform_options(self) -> None:
         opts = self.view.get("freeform") if isinstance(self.view.get("freeform"), dict) else {}
         dlg = FreeformOptionsDialog(opts, self)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
-            self.set_view_cmd("project.freeform.options", dlg.values())
+        self._open_dialog(dlg, lambda: self.set_view_cmd("project.freeform.options", dlg.values()))
 
     def bin_menu(self, view: BinView, bin_id: int) -> QMenu:
         m = QMenu(self)
@@ -2187,7 +2739,7 @@ class ProjectPanel(QWidget):
         item("find", N_("Find…"), lambda: self.invoke.emit("edit.find"))
         m.addSeparator()
         for key, label in (("list", N_("List")), ("icon", N_("Icon")), ("freeform", N_("Freeform"))):
-            item(f"view.{key}", label, lambda _c=False, k=key: view.set_mode(k), True, view.mode == key)
+            item(f"view.{egui_name(key)}", label, lambda _c=False, k=key: view.set_mode(k), True, view.mode == key)
         m.addSeparator()
         for key, label, shortcut in TOGGLES:
             on = bool(self.view.get(key))
@@ -2198,7 +2750,7 @@ class ProjectPanel(QWidget):
         cur = (self.view.get("view") or {}).get("fontSize")
         for key, label, _pts in FONT_SIZES:
             a = fs.addAction(tr(label))
-            a.setObjectName(f"project.menu.fontSize.{key}")
+            a.setObjectName(f"project.menu.fontSize.{egui_name(key)}")
             a.setCheckable(True)
             a.setChecked(cur == key)
             a.triggered.connect(lambda _c=False, k=key: self.set_view({"fontSize": k}))
@@ -2236,15 +2788,80 @@ class ProjectPanel(QWidget):
 
         def got(r: Any, _b: Any) -> None:
             self.presets = [p for p in (r or {}).get("presets") or [] if isinstance(p, dict)] if isinstance(r, dict) else []
+            self._got_presets()
 
         engine.execute("project.viewPreset.list", {}, on_reply=got, on_error=lambda _m: None)
 
+    def _got_presets(self) -> None:
+        if isinstance(self.dialog, ManagePresetsDialog):
+            self.dialog.set_presets(self.presets)
+
+    def preset_cmd(self, cid: str, params: dict[str, Any]) -> None:
+        """A Manage Saved View Presets action, then the slots again (the engine answers in order)."""
+        self.set_view_cmd(cid, params)
+        self._load_presets()
+
     def save_preset_as(self) -> None:
         n = next((p.get("slot") for p in self.presets if isinstance(p, dict) and not p.get("name")), 1)
-        name, ok = QInputDialog.getText(self, tr("Save As New View Preset"), tr("Name:"), text=fmt("Project View Preset {n}", n=n))
-        if ok and name.strip():
-            self.set_view_cmd("project.viewPreset.saveAs", {"name": name.strip()})
+        dlg = NameDialog("savePresetAs", tr("Save As New View Preset"), fmt("Project View Preset {n}", n=n),
+                         tr("Saves the view, columns, sort, thumbnail and font size."), parent=self)
+
+        def ok() -> None:
+            if dlg.text():
+                self.set_view_cmd("project.viewPreset.saveAs", {"name": dlg.text()})
+
+        self._open_dialog(dlg, ok)
 
     def manage_presets(self) -> None:
-        ManagePresetsDialog(self, self.presets).exec()
+        self._open_dialog(ManagePresetsDialog(self, self.presets), lambda: None)
         self._load_presets()
+
+    # ----- the open dialog (egui's ``project_panel.dialog``) -----
+    def _open_dialog(self, dlg: QDialog, on_ok: Any) -> None:
+        """Show one of the panel's dialogs without blocking (the control channel reads and fills
+        it while it is open); OK runs ``on_ok``. Opening one closes the one open before."""
+        self.close_dialog()
+        self.dialog = dlg
+        dlg.accepted.connect(on_ok)
+        dlg.finished.connect(lambda _r, d=dlg: self._dialog_closed(d))
+        dlg.open()
+
+    def _dialog_closed(self, dlg: QDialog) -> None:
+        if self.dialog is dlg:
+            self.dialog = None
+        dlg.deleteLater()
+
+    def close_dialog(self) -> None:
+        dlg, self.dialog = self.dialog, None
+        if dlg is not None:
+            dlg.reject()
+
+    def dialog_state(self) -> dict[str, Any] | None:
+        dlg = self.dialog
+        return {dlg.KIND: dlg.state()} if dlg is not None else None  # type: ignore[attr-defined]
+
+    def set_dialog_state(self, value: Any) -> None:
+        """egui's ``ui.set {projectPanel: {dialog}}``: null closes the open dialog; ``{kind:
+        fields}`` opens that dialog (unless it is the one open) and fills it in."""
+        if value is None:
+            self.close_dialog()
+            return
+        openers = {
+            "metadataDisplay": self.metadata_display,
+            "savePresetAs": self.save_preset_as,
+            "managePresets": self.manage_presets,
+            "freeformOptions": self.freeform_options,
+            "saveArrangement": lambda: self.save_arrangement(self.shown()),
+        }
+        if not isinstance(value, dict) or len(value) != 1 or next(iter(value)) not in openers:
+            raise ValueError(f"dialog takes null or {{kind: fields}} with kind one of {', '.join(openers)}")
+        kind, fields = next(iter(value.items()))
+        opened = self.dialog is None or getattr(self.dialog, "KIND", None) != kind
+        if opened:
+            openers[kind]()
+        try:
+            self.dialog.set_state(fields)  # type: ignore[union-attr]
+        except (ValueError, TypeError):
+            if opened:
+                self.close_dialog()
+            raise

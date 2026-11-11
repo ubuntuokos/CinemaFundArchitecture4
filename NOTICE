@@ -9,7 +9,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 General Public License for more details.
 
-The licensing policy (what may be reused, how paid extras are licensed) is in
+The licensing policy (what may be reused; CFA4 has no paid part) is in
 docs/licensing.md.
 
 Upstream
@@ -51,3 +51,8 @@ Their licence texts ship with the packages as OFL-<family>.txt.
 Code reused from GPL-3.0-compatible projects (for example Kdenlive, OpenShot, Audacity, Krita,
 Subtitle Edit) is listed with its origin, copyright holders and licence in docs/licensing.md
 ("Reused code register") and keeps its original copyright headers.
+
+The xHE-AAC (USAC) and MPEG-D DRC decoders in crates/aac (src/usac, src/drc) are ported from
+libxaac: Copyright (C) 2018 The Android Open Source Project, originally developed and contributed by
+Ittiam Systems Pvt. Ltd, Bangalore. Licensed under the Apache License, Version 2.0. See
+crates/aac/LICENSE.libxaac and crates/aac/NOTICE.libxaac.

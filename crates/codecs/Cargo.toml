@@ -15,6 +15,7 @@ cfa4-color = { workspace = true }
 cfa4-frame = { workspace = true }
 cfa4-media = { workspace = true }
 cfa4-avi = { workspace = true }
+cfa4-adpcm = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-mxf = { workspace = true }
@@ -33,10 +34,15 @@ cfa4-vp8 = { workspace = true }
 cfa4-vp9 = { workspace = true }
 cfa4-prores = { workspace = true }
 cfa4-dnx = { workspace = true }
+cfa4-dv = { workspace = true }
 cfa4-j2k = { workspace = true }
 cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
+cfa4-hap = { workspace = true }
+cfa4-utvideo = { workspace = true }
+cfa4-huffyuv = { workspace = true }
+cfa4-ffv1 = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-opus = { workspace = true }
 rayon = { workspace = true }
@@ -46,9 +52,10 @@ log = { workspace = true }
 web-time = "1"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
 # Bootstrap audio decoding (MPL-2.0, used unmodified); replaced by own decoders over time.
-symphonia = { version = "0.5.5", default-features = false, features = ["aac", "mp1", "mp2", "mp3", "flac", "alac", "pcm", "wav", "aiff", "ogg", "vorbis", "isomp4"] }
+symphonia = { version = "0.6.1", default-features = false, features = ["aac", "mp1", "mp2", "mp3", "flac", "alac", "pcm", "wav", "aiff", "ogg", "vorbis", "isomp4"] }
 
 [dev-dependencies]
 cfa4-ac3 = { workspace = true, features = ["test-util"] }
+cfa4-auro = { workspace = true }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }

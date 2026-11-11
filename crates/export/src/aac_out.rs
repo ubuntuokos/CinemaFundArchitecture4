@@ -134,10 +134,16 @@ pub(crate) fn export(
     } else {
         let mut opts = WriterOptions::new(Brand::Mp4);
         opts.metadata = settings.metadata.udta();
+        let chapters = crate::export_chapters(project, seq, settings, range);
+        opts.chapters = chapters.clone();
         let mut mux = Mp4Writer::new(Out::create(settings)?, opts).map_err(|e| ExportError::Io(e.to_string()))?;
         let mut track = TrackConfig::new(entry, a.sr);
         track.media_start = Some(i64::from(enc.priming()));
         let track = mux.add_track(track).map_err(|e| ExportError::Io(e.to_string()))?;
+        // the chapter track Apple players (audiobooks) read, next to `chpl`
+        if !chapters.is_empty() {
+            mux.add_chapter_track(track, &chapters).map_err(|e| ExportError::Io(e.to_string()))?;
+        }
         Sink::Mp4 { mux, track, frame: enc.frame_size() }
     };
     while let Some(planar) = a.pull(a.out.saturating_add(chunk), sources) {

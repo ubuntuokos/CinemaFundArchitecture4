@@ -108,6 +108,30 @@ class BadgeDelegate(QStyledItemDelegate):
 class EffectTree(QTreeWidget):
     """The tree; a leaf row drags its effect (EFFECT_MIME)."""
 
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        """egui's row ids for the control channel: ``effects.folder.<key>`` (a folder; a sub-folder's
+        key is ``<top>/<folder>``) and ``effects.item.<id>`` (an effect or transition), for the rows in
+        view, in tree coordinates (a click lands on the row, a double click applies it)."""
+        out: list[tuple[str, QRect, str]] = []
+        view = self.viewport().rect()
+        offset = self.viewport().pos()
+        stack = [self.topLevelItem(i) for i in range(self.topLevelItemCount())]
+        while stack:
+            it = stack.pop(0)
+            if it is None or it.isHidden():
+                continue
+            kind = it.data(0, ROLE_KIND)
+            r = self.visualItemRect(it)
+            if r.isValid() and view.intersects(r):
+                key = str(it.data(0, ROLE_ID))
+                if kind == "folder":
+                    out.append((f"effects.folder.{key}", r.translated(offset), it.text(0)))
+                elif kind in ("effect", "transition"):
+                    out.append((f"effects.item.{key}", r.translated(offset), it.text(0)))
+            if it.isExpanded():
+                stack[0:0] = [it.child(i) for i in range(it.childCount())]
+        return out
+
     def startDrag(self, _actions: Any) -> None:
         it = self.currentItem()
         if it is None or it.data(0, ROLE_KIND) == "folder":
@@ -171,6 +195,9 @@ class EffectsPanel(QWidget):
         self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._menu)
         self.tree.itemDoubleClicked.connect(lambda it, _c: self._apply(it.data(0, ROLE_ID), it.data(0, ROLE_KIND)))
+        # egui's folder rows open and close on a single click (the arrow works as in any tree)
+        self.tree.setExpandsOnDoubleClick(False)
+        self.tree.itemClicked.connect(lambda it, _c: it.setExpanded(not it.isExpanded()) if it.data(0, ROLE_KIND) == "folder" else None)
         self.tree.itemExpanded.connect(lambda it: self._expanded(it, True))
         self.tree.itemCollapsed.connect(lambda it: self._expanded(it, False))
         self.grid = PresetGrid(self)

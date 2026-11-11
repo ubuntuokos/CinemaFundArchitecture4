@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 use crate::vlc::*;
 
 /// Big-endian bit writer.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(super) struct BitWriter {
     pub out: Vec<u8>,
     acc: u64,

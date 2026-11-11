@@ -10,8 +10,10 @@ blocks the Qt event loop, opens a socket or touches the network.
 from __future__ import annotations
 
 import json
+import mmap
 import os
 import shutil
+import stat
 import subprocess
 import threading
 from collections.abc import Callable
@@ -26,6 +28,64 @@ MAX_BINARY = 512 * 1024 * 1024
 
 Reply = Callable[[Any, bytes | None], None]
 Failure = Callable[[str], None]
+
+
+# frame.render {shm}: the files the engine writes frames into (apps/cfa4-cli/src/serve_shm.rs)
+SHM_PREFIX = "cfa4-frames-"
+SHM_KEEP = 4  # mapped ring files kept (a monitor that grows starts a new file)
+
+
+class FrameMaps:
+    """The engine's shared-memory frame rings, each mapped once (read-only) and removed from its
+    directory as soon as it is mapped. ``view`` gives a frame as a memoryview straight into the
+    mapping, so a monitor shows it without copying it (``docs/qt-parity.md`` 5.5). Anything
+    unexpected gives None, and the caller asks for frames through the pipe again."""
+
+    def __init__(self) -> None:
+        self.enabled = hasattr(mmap, "PROT_READ") and hasattr(os, "O_NOFOLLOW")
+        self._maps: dict[str, mmap.mmap] = {}
+
+    def view(self, info: Any) -> memoryview | None:
+        if not isinstance(info, dict):
+            return None
+        path, offset, size = info.get("path"), info.get("offset"), info.get("len")
+        if not isinstance(path, str) or not all(isinstance(v, int) and not isinstance(v, bool) for v in (offset, size)):
+            return None
+        if not os.path.isabs(path) or not os.path.basename(path).startswith(SHM_PREFIX):
+            return None
+        m = self._maps.get(path)
+        if m is None:
+            m = self._map(path)
+            if m is None:
+                return None
+            self._maps[path] = m
+            while len(self._maps) > SHM_KEEP:  # frames still shown keep their mapping alive
+                self._maps.pop(next(iter(self._maps)))
+        if offset < 0 or size <= 0 or offset + size > len(m):
+            return None
+        return memoryview(m)[offset : offset + size]
+
+    @staticmethod
+    def _map(path: str) -> mmap.mmap | None:
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+        except OSError:
+            return None
+        try:
+            st = os.fstat(fd)
+            # the engine's own private file (same user, a regular file), never something else
+            if not stat.S_ISREG(st.st_mode) or st.st_uid != os.getuid() or st.st_size <= 0:
+                return None
+            m = mmap.mmap(fd, st.st_size, flags=mmap.MAP_SHARED, prot=mmap.PROT_READ)
+        except (OSError, ValueError):
+            return None
+        finally:
+            os.close(fd)
+        try:  # mapped: nothing is left behind, whatever happens to either process
+            os.unlink(path)
+        except OSError:
+            pass
+        return m
 
 
 class EngineError(RuntimeError):
@@ -128,6 +188,7 @@ class EngineClient(QObject):
     event = Signal(object)  # engine notifications (projectChanged, toast, openSequence, ...)
     stopped = Signal(str)  # the process ended; reason
     failure = Signal(str)  # any request error, for the Events panel
+    job = Signal(object)  # job id; a reply named a background job (export, preview render): the status bar watches it
     _message = Signal(object, object)  # reader thread -> GUI thread (object: ids like the Mix strip are u64)
 
     def __init__(self, engine: Path, args: list[str] | None = None, parent: QObject | None = None) -> None:
@@ -140,6 +201,7 @@ class EngineClient(QObject):
         self._pending: dict[int, tuple[Reply | None, Failure | None]] = {}
         self._lock = threading.Lock()
         self._message.connect(self._dispatch)
+        self.frames = FrameMaps()  # frame.render {shm}
 
     # ----- lifecycle -----
     def start(self) -> None:
@@ -302,6 +364,9 @@ class EngineClient(QObject):
             return
         on_reply, on_error = handlers
         if message.get("ok"):
+            result = message.get("result")
+            if isinstance(result, dict) and isinstance(result.get("job"), int) and not isinstance(result.get("job"), bool):
+                self.job.emit(result["job"])
             if on_reply is not None:
                 on_reply(message.get("result"), binary)
         else:

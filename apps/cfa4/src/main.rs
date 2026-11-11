@@ -8,6 +8,7 @@
 //! (the demo project), Open Most Recent, or an empty project.
 //!
 //! `--control <port>` (or `CFA4_CONTROL_PORT`) starts a localhost JSON-lines control server;
+//! `CFA4_CONTROL_TOKEN` is required (see `docs/control-protocol.md`).
 //! see `cfa4_ui_egui::control` for the methods. A port that is not a number is an error from
 //! either source.
 //!
@@ -117,10 +118,11 @@ fn main() -> eframe::Result {
     // Panics anywhere go to <data dir>/Logs/crash-<day>.log with a backtrace; the UI pass and
     // frame workers catch them and keep running (see cfa4_ui_egui::crash).
     cfa4_ui_egui::crash::install(log_dir);
-    // OS hardware video decoders (VideoToolbox on macOS) in front of our own; Settings ▸ Playback ▸
+    // OS hardware video decoders (VA-API, NVDEC) in front of our own; Settings ▸ Playback ▸
     // Hardware decoding switches them off. Unsupported streams and failures use our decoders.
     log::info!("startup stage: registering hardware decoders");
     register_hardware_decoders();
+    register_ffmpeg();
     register_gstreamer();
     log::info!("startup stage: hardware decoders registered");
     // Which graphics backends and adapter the window starts with: `--graphics`, else the saved
@@ -137,8 +139,8 @@ fn main() -> eframe::Result {
     }
     let started = loop {
         let mut options = native_options(launch.control_port.is_some());
-        // Before eframe creates the wgpu instance (e.g. no OpenGL on Windows, see graphics.rs).
-        graphics::apply(&mut options, graphics.mode(), backend_override);
+        // Before eframe creates the wgpu instance (see graphics.rs).
+        graphics::apply(&mut options, graphics.mode());
         let app_created = Arc::new(AtomicBool::new(false));
         log::info!("startup stage: entering egui native event loop");
         let result = eframe::run_native("CFA4", options, app_creator(launch.clone(), graphics.clone(), Arc::clone(&app_created)));
@@ -161,6 +163,15 @@ fn main() -> eframe::Result {
     // The window could not be created (no usable GPU / graphics driver, no display): say so
     // instead of exiting silently, and keep the reason in the crash log.
     if let Err(e) = &started {
+        // `--control-input-only` without a control server: the session is unreachable by design,
+        // and an unattended launch cannot dismiss a dialog. Exit directly with the reason in the
+        // log (#3436); every other start failure keeps the window-failure dialog below.
+        if let eframe::Error::AppCreation(inner) = e
+            && inner.downcast_ref::<control_server::ControlServerRequired>().is_some()
+        {
+            log::error!("{inner}");
+            std::process::exit(1);
+        }
         let msg = format!("CFA4 could not start its window: {e}\n\nUpdating the graphics driver usually fixes this.");
         log::error!("{msg}");
         cfa4_ui_egui::crash::record(&msg);
@@ -197,6 +208,18 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
     Box::new(move |cc| {
         log::info!("startup stage: egui app creator entered");
         created.store(true, Ordering::Relaxed);
+        // Start the control server before anything touches recovery state: `file.recover`
+        // consumes its candidate, and an input-only session that must abort (no server) may not
+        // take that step first, or the recovered work is lost (#3436).
+        let control = control_port.map(|port| {
+            log::info!("startup stage: starting control server on 127.0.0.1:{port}");
+            let started = control_server::start(port, cc.egui_ctx.clone());
+            log::info!("startup stage: control server start returned");
+            started
+        });
+        if control_input_only && let Some((_, _, Some(why))) = &control {
+            return Err(Box::new(control_server::ControlServerRequired(why.reason())));
+        }
         // A fallback graphics mode says so in the window, with a button back to the default.
         let notice = graphics.degraded().then(|| {
             let start = graphics.clone();
@@ -341,11 +364,12 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
                 .pick_file()
                 .map(|p| p.to_string_lossy().to_string())
         }));
-        if let Some(port) = control_port {
-            log::info!("startup stage: starting control server on 127.0.0.1:{port}");
-            let rx = control_server::start(port, cc.egui_ctx.clone());
-            log::info!("startup stage: control server start returned");
+        if let Some((rx, ready, _disabled)) = control {
+            // Why a requested server is not serving is in cfa4.log (`DisabledWhy::reason`); the
+            // egui status bar notice of upstream #3535 is not ported (the egui UI is frozen).
             app = if control_input_only { app.with_control_input_only(rx) } else { app.with_control(rx) };
+            // From here the app drains the queue on its first pass: stop rejecting requests.
+            ready.store(true, Ordering::Relaxed);
         }
         Ok(Box::new(app))
     })
@@ -399,7 +423,20 @@ fn register_gpu_frame_renderer() {
 }
 /// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
 /// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
+/// Make FFmpeg the first fallback media backend (ADR 0005), before GStreamer, when this build has
+/// the `ffmpeg` feature and a GPL-3 FFmpeg 9.0.2 or later is linked; otherwise the built-in openers
+/// (and GStreamer) work as before. Its report is registered either way, for Settings ▸ Media
+/// Backends.
+fn register_ffmpeg() {
+    cfa4_ffmpeg::register_status();
+    match cfa4_ffmpeg::register() {
+        Ok(status) => log::info!("FFmpeg {} ({}) is a fallback media backend", status.version, status.license),
+        Err(e) => log::info!("FFmpeg fallback not used: {e}"),
+    }
+}
+
 fn register_gstreamer() {
+    cfa4_gstreamer::register_status();
     match cfa4_gstreamer::register() {
         Ok(status) => log::info!("GStreamer {} is the fallback media backend", status.version),
         Err(e) => log::info!("GStreamer fallback not used: {e}"),
@@ -509,9 +546,8 @@ mod tests {
     fn startup_registers_the_hardware_decoders_without_a_logger() {
         assert!(!log::log_enabled!(log::Level::Info));
         let hardware = super::register_hardware_decoders();
-        // always on macOS and Windows; on Linux when a VA-API driver or NVIDIA's driver (NVDEC) is there
-        let expected = cfg!(any(target_os = "macos", target_os = "windows"))
-            || (cfg!(target_os = "linux") && matches!(hardware, cfa4_platform::Availability::Available(_)));
+        // when a VA-API driver or NVIDIA's driver (NVDEC) is there
+        let expected = cfg!(target_os = "linux") && matches!(hardware, cfa4_platform::Availability::Available(_));
         assert_eq!(cfa4_platform::registered(), expected, "{hardware:?}");
     }
 

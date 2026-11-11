@@ -1,0 +1,13 @@
+[package]
+name = "cfa4-hap"
+description = "Clean-room pure-Rust Hap video decoder"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }

@@ -39,7 +39,7 @@ pub use essential::{AudioType, EssentialSound};
 pub use find::{FindOp, FindQuery, FindRow, SearchBin};
 pub use graphic_design::{CharStyle, GraphicMeta, LayerExtra, Pin, PinTarget, Roll, RollMode, SourceGraphic, StyleRun};
 pub use keyframe::{Interpolation, Keyframe, Param, ParamValue};
-pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod};
+pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod, Tracker};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
 pub use narration::{Narration, VocalPitch};
@@ -180,6 +180,11 @@ pub struct Interpretation {
     /// is edited into a sequence. None = one stereo clip of the first two channels.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio_channels: Option<AudioChannelMap>,
+    /// Interpret Footage ▸ Auro-3D off: an Auro-3D carrier plays its own channels (a 7.1 bed
+    /// with the side channel in its low bits), as without a decoder, instead of the restored
+    /// layout (#323).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub auro_as_carrier: bool,
 }
 
 /// Modify ▸ Audio Channels: the clip channel format and, per audio clip, the source channels it
@@ -192,13 +197,13 @@ pub struct AudioChannelMap {
 
 impl AudioChannelMap {
     /// The default mapping of a source with `channels` channels in `format`: mono = one clip per
-    /// channel, stereo = channel pairs, 5.1 / adaptive = one clip with every channel.
+    /// channel, stereo = channel pairs, 5.1 / 7.1 / 7.1.2 / adaptive = one clip with every channel.
     pub fn for_format(format: AudioChannels, channels: u16) -> Self {
         let n = channels.max(1);
         let clips = match format {
             AudioChannels::Mono => (0..n).map(|c| vec![c]).collect(),
             AudioChannels::Stereo => (0..n).step_by(2).map(|c| if c + 1 < n { vec![c, c + 1] } else { vec![c] }).collect(),
-            AudioChannels::Surround51 | AudioChannels::Adaptive => vec![(0..n).collect()],
+            AudioChannels::Surround51 | AudioChannels::Surround71 | AudioChannels::Surround712 | AudioChannels::Adaptive => vec![(0..n).collect()],
         };
         Self { format, clips }
     }
@@ -502,6 +507,29 @@ pub enum AudioChannels {
     Stereo,
     Surround51,
     Adaptive,
+    /// 7.1 DS: L, R, C, LFE, Lss, Rss, Lrs, Rrs (a Mix or submix; tracks of 7.1 sources).
+    Surround71,
+    /// 7.1.2 (9.1OH): 7.1 DS and the overhead Lts, Rts.
+    Surround712,
+}
+
+impl AudioChannels {
+    /// The channel count of a fixed format (5.1: 6, 7.1: 8, 7.1.2: 10, stereo: 2, mono: 1);
+    /// `None` for adaptive.
+    pub fn fixed_channels(self) -> Option<usize> {
+        match self {
+            AudioChannels::Mono => Some(1),
+            AudioChannels::Stereo => Some(2),
+            AudioChannels::Surround51 => Some(6),
+            AudioChannels::Surround71 => Some(8),
+            AudioChannels::Surround712 => Some(10),
+            AudioChannels::Adaptive => None,
+        }
+    }
+    /// Whether this is a surround format (5.1, 7.1 or 7.1.2), panned with the surround panner.
+    pub fn is_surround(self) -> bool {
+        matches!(self, AudioChannels::Surround51 | AudioChannels::Surround71 | AudioChannels::Surround712)
+    }
 }
 
 /// A clip instance on a track.
@@ -570,6 +598,10 @@ pub struct TrackItem {
     /// ([`GraphicMeta`]). Schema v12.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub graphic: Option<Box<GraphicMeta>>,
+    /// Metadata other programs stored on this object in an interchange file (the OTIO `metadata`
+    /// keys other than CFA4's own), written back unchanged on export. Empty for CFA4's own work.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub interchange: BTreeMap<String, serde_json::Value>,
 }
 
 /// Time interpolation for speed-changed clips (Clip ▸ Video Options ▸ Time Interpolation).
@@ -765,6 +797,10 @@ pub struct Track {
     /// Colour label tinting the track's header and lane background (`None` = no colour).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<Label>,
+    /// Metadata other programs stored on this object in an interchange file (the OTIO `metadata`
+    /// keys other than CFA4's own), written back unchanged on export. Empty for CFA4's own work.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub interchange: BTreeMap<String, serde_json::Value>,
 }
 
 impl Track {
@@ -786,6 +822,7 @@ impl Track {
             effects: Vec::new(),
             mixer: MixerStrip::default(),
             label: None,
+            interchange: BTreeMap::new(),
         }
     }
     pub fn end(&self) -> Tick {
@@ -1004,6 +1041,10 @@ pub struct Sequence {
     /// Split In/Out points (Markers ▸ Mark Split): per-channel overrides of `mark_in`/`mark_out`.
     #[serde(default, skip_serializing_if = "SplitMarks::is_empty")]
     pub split: SplitMarks,
+    /// Metadata other programs stored on this object in an interchange file (the OTIO `metadata`
+    /// keys other than CFA4's own), written back unchanged on export. Empty for CFA4's own work.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub interchange: BTreeMap<String, serde_json::Value>,
 }
 
 /// Split edit points: separate video and audio In/Out points (Markers ▸ Mark Split). `None` means
@@ -1326,6 +1367,9 @@ impl ProjectView {
 }
 
 /// A LUT imported into the project (`lut.import`). Lumetri refers to it as `lib:<id>`.
+/// Largest embedded LUT source accepted from a project or import (8 MiB).
+pub const MAX_LUT_TEXT_BYTES: usize = 8 << 20;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ProjectLut {
     pub id: String,
@@ -1346,6 +1390,11 @@ impl Default for Project {
 }
 
 impl Project {
+    /// The highest `next_id` a loaded project may carry. Ids are handed out one at a time, so no
+    /// amount of editing gets near it; a file past it is damaged, and refusing it keeps
+    /// `alloc_id` from overflowing.
+    pub const MAX_NEXT_ID: u64 = u64::MAX / 2;
+
     pub fn new(name: &str) -> Self {
         Self {
             name: name.into(),
@@ -1366,6 +1415,72 @@ impl Project {
         let id = self.next_id;
         self.next_id += 1;
         id
+    }
+
+    /// The largest id in use, of any kind. They all come from `next_id`, so a project read from a
+    /// file must have its `next_id` past this. Ids that are only referenced count too (a clip whose
+    /// item is gone): a new item taking that id would be picked up by the reference. The root bin
+    /// counts, so there is always one.
+    pub fn max_id(&self) -> u64 {
+        let mut max = 0;
+        let mut see = |id: u64| max = max.max(id);
+        let mut bins = vec![&self.root];
+        while let Some(bin) = bins.pop() {
+            see(bin.id.0);
+            for c in &bin.children {
+                match c {
+                    BinEntry::Item(i) => see(i.0),
+                    BinEntry::Bin(sub) => bins.push(sub),
+                }
+            }
+        }
+        self.search_bins.iter().for_each(|b| see(b.id.0));
+        // deleting an item leaves these entries behind: a new item taking that id would inherit them
+        self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).for_each(|i| see(i.0));
+        // `lut.import` names LUTs `lut<id>`
+        self.luts.iter().filter_map(|l| l.id.strip_prefix("lut")?.parse().ok()).for_each(&mut see);
+        fn mixer(m: &MixerStrip) -> impl Iterator<Item = u64> + '_ {
+            m.sends.iter().map(|s| s.target.0).chain(m.output.map(|t| t.0))
+        }
+        for (id, item) in &self.items {
+            see(id.0);
+            see(item.id.0);
+            match &item.kind {
+                ItemKind::Media(m) => m.markers.iter().for_each(|mk| see(mk.id.0)),
+                ItemKind::Subclip { parent, .. } => see(parent.0),
+                ItemKind::Sequence(s) => {
+                    s.markers.iter().for_each(|mk| see(mk.id.0));
+                    mixer(&s.master_mixer).for_each(&mut see);
+                    for t in s.all_tracks().chain(&s.submix_tracks) {
+                        see(t.id.0);
+                        mixer(&t.mixer).for_each(&mut see);
+                        for c in &t.items {
+                            see(c.id.0);
+                            see(c.item.0);
+                            c.link.into_iter().chain(c.group).for_each(&mut see);
+                            c.markers.iter().for_each(|mk| see(mk.id.0));
+                        }
+                        for tr in &t.transitions {
+                            see(tr.id.0);
+                            tr.from.into_iter().chain(tr.to).for_each(|c| see(c.0));
+                        }
+                    }
+                    for t in &s.caption_tracks {
+                        see(t.id.0);
+                        t.captions.iter().for_each(|c| see(c.id.0));
+                    }
+                    for cam in s.multicam.iter().flat_map(|m| &m.cameras) {
+                        cam.video_track.iter().chain(&cam.audio_tracks).for_each(|t| see(t.0));
+                        cam.source.iter().for_each(|i| see(i.0));
+                    }
+                    if let Some(m) = &s.merged {
+                        m.video.iter().chain(&m.audio).for_each(|i| see(i.0));
+                    }
+                }
+                _ => {}
+            }
+        }
+        max
     }
 
     /// Add an item to a bin (root when None / not found).
@@ -1512,6 +1627,7 @@ impl Project {
     /// Create an empty sequence with `v` video and `a` audio tracks.
     pub fn new_sequence(&mut self, name: &str, settings: SequenceSettings, v: usize, a: usize, bin: Option<BinId>) -> ItemId {
         let mut seq = Sequence {
+            interchange: Default::default(),
             settings,
             video_tracks: Vec::new(),
             audio_tracks: Vec::new(),
@@ -1609,6 +1725,7 @@ impl Project {
         let id = ClipId(self.alloc_id());
         let dur = seq_rate.snap_nearest(source.duration).max(seq_rate.frame_duration());
         Some(TrackItem {
+            interchange: Default::default(),
             id,
             item,
             name,
@@ -1811,6 +1928,30 @@ fn has_auto_point(e: &EffectInstance) -> bool {
 mod tests {
     use super::*;
     use cfa4_media::{DemoScene, MediaSource};
+
+    /// The interchange metadata kept from imported files is not written while empty, so projects
+    /// without any keep their exact file contents, and files without the field still load.
+    #[test]
+    fn empty_interchange_metadata_is_not_written() {
+        let (mut p, clip, seq) = demo_project();
+        let rate = p.sequence(seq).unwrap().settings.frame_rate;
+        let ti = p.make_track_item(clip, TrackKind::Video, Tick::ZERO, TimeRange::new(Tick::ZERO, rate.tick_of(10)), rate).unwrap();
+        p.sequence_mut(seq).unwrap().video_tracks[0].items.push(ti);
+        let text = serde_json::to_string(&p).unwrap();
+        assert!(!text.contains("\"interchange\""), "empty maps are skipped");
+        let back: Project = serde_json::from_str(&text).unwrap();
+        assert_eq!(serde_json::to_string(&back).unwrap(), text);
+        let s = p.sequence_mut(seq).unwrap();
+        s.interchange.insert("app".into(), serde_json::json!({"k": 1}));
+        s.video_tracks[0].interchange.insert("app".into(), serde_json::json!(true));
+        s.video_tracks[0].items[0].interchange.insert("app".into(), serde_json::json!([1, 2]));
+        let text = serde_json::to_string(&p).unwrap();
+        let back: Project = serde_json::from_str(&text).unwrap();
+        let s = back.sequence(seq).unwrap();
+        assert_eq!(s.interchange["app"]["k"], 1);
+        assert_eq!(s.video_tracks[0].interchange["app"], true);
+        assert_eq!(s.video_tracks[0].items[0].interchange["app"][1], 2);
+    }
 
     fn demo_project() -> (Project, ItemId, ItemId) {
         let mut p = Project::new("Test");

@@ -128,7 +128,8 @@ impl Session {
             }
             let Ok(file) = self.media.follow(path) else { continue };
             // Opened the way import opens it, so the info is what a new import would get.
-            match self.media.open_file(&file, &*self.services) {
+            // (an Auro-3D carrier played as its own channels stays one, #323)
+            match self.media.open_file(&file, &*self.services).map(|src| crate::media_pool::interpreted(m, src)) {
                 Ok(src) => {
                     let mut info = src.info().clone();
                     if info.kind == cfa4_media::MediaKind::Still
@@ -137,7 +138,7 @@ impl Session {
                         v.frame_rate = crate::settings::timebase_rate(&self.prefs.media.indeterminate_timebase);
                     }
                     let identity = crate::relink::identity_of(&*self.services, &file).ok();
-                    fresh.push((*id, path.clone(), info, identity, src));
+                    fresh.push((*id, path.clone(), info, identity, src, m.interpret.auro_as_carrier));
                 }
                 Err(_) => {
                     failed.insert(path.clone());
@@ -151,14 +152,14 @@ impl Session {
         }
         let p = Arc::make_mut(&mut self.project);
         let mut refreshed: Vec<ItemId> = Vec::new();
-        for (id, path, info, identity, src) in fresh {
+        for (id, path, info, identity, src, carrier) in fresh {
             if let Some(m) = p.item_mut(id).and_then(|i| i.as_media_mut()) {
                 m.info = info;
                 if identity.is_some() {
                     m.identity = identity;
                 }
             }
-            self.media.insert_file(id, &path, src);
+            self.media.insert_file_as(id, &path, src, carrier);
             refreshed.push(id);
         }
         self.bump_view();

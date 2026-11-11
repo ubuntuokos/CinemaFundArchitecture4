@@ -219,17 +219,20 @@ impl PreviewStore {
         self.bump();
     }
 
-    /// Move to `dir`, taking this store's preview files along (first save of a project).
+    /// Move to `dir`, taking this store's preview files along (first save of a project). The folder is
+    /// created only when there are files to take along: a render creates it when it needs it (#2343).
     pub fn move_to(&self, dir: PathBuf) {
         let old = self.dir();
         if old.as_deref() == Some(dir.as_path()) {
             return;
         }
+        let files = self.files.read().unwrap_or_else(|e| e.into_inner()).clone();
         if let Some(old) = &old
+            && !files.is_empty()
             && (old.starts_with(crate::temp_dir()) || self.temp_root().is_some_and(|r| old.starts_with(r)))
         {
             let _ = std::fs::create_dir_all(&dir);
-            for name in self.files.read().unwrap_or_else(|e| e.into_inner()).iter() {
+            for name in &files {
                 let (a, b) = (old.join(name), dir.join(name));
                 if !b.exists() && std::fs::rename(&a, &b).is_err() {
                     let _ = std::fs::copy(&a, &b).map(|_| std::fs::remove_file(&a));
@@ -407,7 +410,7 @@ impl PreviewStore {
         let Some(q) = project.sequence(seq) else { return AudioBuffer::silence(48_000, layout.channels(), frames) };
         let live = Some(&*self.live);
         let has_audio = self.files.read().unwrap_or_else(|e| e.into_inner()).iter().any(|n| n.ends_with(".wav"));
-        let surround = q.settings.audio_master == cfa4_project::AudioChannels::Surround51;
+        let surround = q.settings.audio_master.is_surround();
         let previews_ok = layout == Layout::Stereo && (!surround || mixdown == Mixdown::FrontRear);
         // held mixer controls are heard live (rendered previews don't know them)
         if !has_audio || self.live.is_active() || !previews_ok {
@@ -548,13 +551,13 @@ impl PreviewStore {
 /// Open a rendered preview file. Native builds read it in place (the container's index now,
 /// frames on demand): previews are full-resolution ProRes, gigabytes a minute, and reading each
 /// one whole filled memory during render and playback (#2185).
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 pub(crate) fn open_preview_file(_pool: &MediaPool, name: &str, path: &std::path::Path) -> Option<SharedSource> {
     let reader = cfa4_media::reader::FileReader::open(path).ok()?;
     cfa4_media::reader::open_reader_within(name, std::sync::Arc::new(reader), &cfa4_codecs::reader_openers(), &[], 0).ok()
 }
 
-#[cfg(not(any(unix, windows)))]
+#[cfg(not(unix))]
 pub(crate) fn open_preview_file(pool: &MediaPool, name: &str, path: &std::path::Path) -> Option<SharedSource> {
     let bytes = std::fs::read(path).ok()?;
     pool.open_bytes(name, bytes.into()).ok()
@@ -906,5 +909,7 @@ pub fn bar_json(s: &Session) -> Result<Value> {
             "budgetMs": (rate.frame_duration().seconds() * 1000.0 * cfa4_render::preview::REALTIME_BUDGET * 10.0).round() / 10.0,
             "hash": g.hash,
         })).collect::<Vec<_>>(),
+        // what the Timeline draws: green over rendered frames, each segment's colour elsewhere
+        "bar": s.previews.bar(&s.project, seq),
     }))
 }

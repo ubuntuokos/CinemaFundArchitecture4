@@ -15,7 +15,7 @@ from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QGuiApplication, QPalette
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QProxyStyle, QStyle
 
 from .i18n import N_
 
@@ -65,6 +65,7 @@ class Tokens:
     in_out_shade: str
     clip_selected_border: str
     clip_bar_bg: str  # a clip's bar in Effect Controls' lane (egui's)
+    caption_track_bg: str  # the Timeline's caption rows (egui's)
     plot_bg: str  # Fx Editor plots (egui's)
     plot_grid: str
     plot_axis: str
@@ -129,6 +130,7 @@ DARKEST = Tokens(
     in_out_shade="#3f3f3f",
     clip_selected_border="#ebebeb",
     clip_bar_bg="#3a3a46",
+    caption_track_bg="#23202a",
     plot_bg="#181818",
     plot_grid="#2c2c2c",
     plot_axis="#444444",
@@ -166,6 +168,7 @@ LIGHT = replace(
     DARKEST,
     kind="light",
     clip_bar_bg="#becbe0",
+    caption_track_bg="#ded7e9",
     plot_bg="#f5f5f5",
     plot_grid="#d2d2d2",
     plot_axis="#aaaaaa",
@@ -346,6 +349,20 @@ QCheckBox, QRadioButton, QLabel {{ color: {t.text}; }}
 """
 
 
+class MenuScrollStyle(QProxyStyle):
+    """Fusion, with menus taller than the screen scrolling (arrows at the top and bottom, the
+    wheel) instead of running off the bottom of the screen or splitting into columns: the
+    timeline's clip menu is the longest."""
+
+    def __init__(self) -> None:
+        super().__init__("Fusion")
+
+    def styleHint(self, hint: QStyle.StyleHint, option: Any = None, widget: Any = None, data: Any = None) -> int:
+        if hint == QStyle.StyleHint.SH_Menu_Scrollable:
+            return 1
+        return super().styleHint(hint, option, widget, data)
+
+
 def apply(t: Tokens, app: QApplication | None = None) -> None:
     """Make ``t`` the look of the whole application."""
     global _current
@@ -353,8 +370,9 @@ def apply(t: Tokens, app: QApplication | None = None) -> None:
     app = app or QApplication.instance()  # type: ignore[assignment]
     if not isinstance(app, QApplication):
         return
-    if app.style().name().lower() != "fusion":
-        app.setStyle("Fusion")
+    if not app.property("cfa4MenuScrollStyle"):  # app.style() is the style sheet's wrapper
+        app.setStyle(MenuScrollStyle())
+        app.setProperty("cfa4MenuScrollStyle", True)
     app.setPalette(palette(t))
     sheet = style_sheet(t)
     if app.styleSheet() != sheet:  # re-polishing every widget is the slow part

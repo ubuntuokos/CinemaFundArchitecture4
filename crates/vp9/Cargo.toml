@@ -19,3 +19,4 @@ thiserror = { workspace = true }
 rayon = { workspace = true, optional = true }
 
 [dev-dependencies]
+cfa4-testkit = { workspace = true }

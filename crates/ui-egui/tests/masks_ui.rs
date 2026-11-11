@@ -43,6 +43,14 @@ impl Driver {
             self.harness.step();
         }
     }
+    fn wait_until(&mut self, what: &str, mut done: impl FnMut(&mut Self) -> bool) {
+        let t0 = std::time::Instant::now();
+        while !done(self) {
+            assert!(t0.elapsed().as_secs() < 120, "timed out waiting for {what}");
+            self.frames(1);
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+    }
     fn call(&mut self, method: &str, params: Value) -> Value {
         let (req, reply) = ControlRequest::new(method, params.clone());
         self.tx.send(req).unwrap();
@@ -202,17 +210,10 @@ fn create_and_edit_masks_on_the_monitor() {
     d.rect("effectControls.opacity.mask0.track.fwd");
     d.rect("effectControls.opacity.mask0.trackMethod");
     d.ok("ui.click", json!({"id": "effectControls.opacity.mask0.track.fwdFrame"}));
-    let mut finished = false;
-    for _ in 0..400 {
-        d.frames(1);
+    d.wait_until("the tracking job to finish", |d| {
         let jobs = d.exec("jobs.list", json!({}));
-        if jobs.as_array().unwrap().iter().any(|j| j["label"].as_str().unwrap_or("").starts_with("Track") && j["finished"] == true) {
-            finished = true;
-            break;
-        }
-        std::thread::sleep(std::time::Duration::from_millis(10));
-    }
-    assert!(finished, "tracking job ran");
+        jobs.as_array().unwrap().iter().any(|j| j["label"].as_str().unwrap_or("").starts_with("Track") && j["finished"] == true)
+    });
     d.frames(3);
     let m = d.masks();
     let pen = m.iter().find(|x| x["effectId"] == "opacity").unwrap();

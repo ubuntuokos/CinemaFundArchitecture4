@@ -3,7 +3,7 @@
 //! QuickTime multiplexer. ffprobe / ffmpeg are used only as external test oracles.
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use cfa4_media::generators::GeneratorSource;
 use cfa4_media::{FrameRequest, Generator, MediaSource};
@@ -106,14 +106,33 @@ fn hls_writes_segments_and_playlists() {
     assert_eq!(r.frames, 13 * 24);
     let files = hls_files(&path, 36);
     let segs: Vec<String> = (0..3).map(|n| files.segment(n)).collect();
+    let asegs: Vec<String> = (0..3).map(|n| files.audio_segment(n)).collect();
     let mut want = vec![files.media.clone(), files.init.clone()];
     want.extend(segs.clone());
+    want.extend([files.audio_media.clone(), files.audio_init.clone()]);
+    want.extend(asegs.clone());
     assert_eq!(r.extra_files, want);
-    assert!(!Path::new(&files.segment(3)).exists());
+    assert!(!Path::new(&files.segment(3)).exists() && !Path::new(&files.audio_segment(3)).exists());
 
+    // the sound is an audio group the variant refers to (RFC 8216 §4.3.4.1, §4.3.4.2)
     let master = std::fs::read_to_string(&path).unwrap();
     assert!(master.starts_with("#EXTM3U\n#EXT-X-VERSION:7\n"), "{master}");
-    assert!(master.contains("CODECS=\"avc1.") && master.contains(",mp4a.40.2\",RESOLUTION=64x36,FRAME-RATE=24.000\nDemo_36p.m3u8\n"), "{master}");
+    assert!(
+        master.contains(
+            "\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",NAME=\"Audio\",DEFAULT=YES,AUTOSELECT=YES,CHANNELS=\"2\",URI=\"Demo_audio.m3u8\"\n#EXT-X-STREAM-INF:"
+        ),
+        "{master}"
+    );
+    assert!(
+        master.contains("CODECS=\"avc1.") && master.contains(",mp4a.40.2\",RESOLUTION=64x36,FRAME-RATE=24.000,AUDIO=\"audio\"\nDemo_36p.m3u8\n"),
+        "{master}"
+    );
+    let audio_media = std::fs::read_to_string(&files.audio_media).unwrap();
+    assert!(audio_media.contains("#EXT-X-MAP:URI=\"Demo_audio_init.mp4\"\n") && !audio_media.contains("EXT-X-MEDIA:"), "{audio_media}");
+    let adurations: Vec<f64> = audio_media.lines().filter_map(|l| l.strip_prefix("#EXTINF:")).map(|l| l.trim_end_matches(',').parse().unwrap()).collect();
+    assert_eq!(adurations.len(), 3, "{audio_media}");
+    assert!((adurations.iter().sum::<f64>() - 13.0).abs() < 0.1, "{audio_media}");
+    assert!(audio_media.contains("\nDemo_audio_00000.m4s\n") && audio_media.contains("\nDemo_audio_00002.m4s\n"));
     let media = std::fs::read_to_string(&files.media).unwrap();
     assert!(media.contains("#EXT-X-TARGETDURATION:6\n") && media.contains("#EXT-X-MAP:URI=\"Demo_36p_init.mp4\"\n"), "{media}");
     assert!(media.ends_with("#EXT-X-ENDLIST\n"), "{media}");
@@ -136,11 +155,21 @@ fn hls_writes_segments_and_playlists() {
     assert_eq!(firsts, [true, true, true], "every segment starts at a key frame");
     let f = cfa4_isobmff::open(whole.as_slice()).unwrap();
     assert!(f.fragmented);
-    assert_eq!(f.tracks.len(), 2);
+    assert_eq!(f.tracks.len(), 1, "one track per file (CMAF)");
     assert_eq!(f.tracks[0].samples.len(), 13 * 24);
     assert_eq!(f.tracks[0].samples[0].pts, 0, "the first picture at 0");
+    // the sound's init and segments are their own fragmented MP4
+    let mut whole = std::fs::read(&files.audio_init).unwrap();
+    for seg in &asegs {
+        let b = std::fs::read(seg).unwrap();
+        assert_eq!(&b[4..8], b"moof", "{seg}");
+        whole.extend(b);
+    }
+    let f = cfa4_isobmff::open(whole.as_slice()).unwrap();
+    assert_eq!(f.tracks.len(), 1);
+    assert_eq!(f.tracks[0].kind, cfa4_isobmff::TrackKind::Audio);
     // the sound covers the picture: 13 s plus the AAC priming, in 1024-sample units
-    let audio_end: i64 = f.tracks[1].samples.iter().map(|s| i64::from(s.duration)).sum();
+    let audio_end: i64 = f.tracks[0].samples.iter().map(|s| i64::from(s.duration)).sum();
     assert!((13 * 48_000 + 1024..13 * 48_000 + 3 * 1024).contains(&audio_end), "{audio_end}");
 
     if let Some(j) = ffprobe_json(&["-show_streams", "-show_format"], &path) {
@@ -168,6 +197,113 @@ fn hls_settings_round_trip_and_summary() {
     assert_eq!(sum.format, "HLS (HTTP Live Streaming) (fragmented MP4 segments)");
     assert!(sum.video.contains("Target 5.00 Mbps"), "{}", sum.video);
     assert!(sum.audio.starts_with("AAC, "), "{}", sum.audio);
+}
+
+/// Walk top-level boxes, including the extended-size `mdat`; never match codec payload bytes.
+fn top_level_boxes(bytes: &[u8]) -> Vec<([u8; 4], usize, usize)> {
+    let mut boxes = Vec::new();
+    let mut offset = 0;
+    while offset < bytes.len() {
+        let header = &bytes[offset..offset + 8];
+        let size = u32::from_be_bytes(header[..4].try_into().unwrap());
+        let (size, header_len) = match size {
+            0 => (bytes.len() - offset, 8),
+            1 => (usize::try_from(u64::from_be_bytes(bytes[offset + 8..offset + 16].try_into().unwrap())).unwrap(), 16),
+            n => (n as usize, 8),
+        };
+        assert!(size >= header_len && size <= bytes.len() - offset);
+        boxes.push((header[4..8].try_into().unwrap(), offset, offset + size));
+        offset += size;
+    }
+    boxes
+}
+
+/// #3459: MP4 uploads need `moov` before `mdat`, on disk and in browser downloads alike.
+#[test]
+fn mp4_faststart_preserves_video_and_audio_for_every_output() {
+    let (p, seq, m) = matte([1.0, 0.0, 0.0, 1.0], 64, 36, Some(-6.0));
+    let dir = Scratch::new("mp4-faststart");
+    for multiplexer in [Multiplexer::Mp4, Multiplexer::Mov] {
+        for mode in ["disk", "reserved", "memory"] {
+            let ext = if multiplexer == Multiplexer::Mp4 { "mp4" } else { "mov" };
+            let path = dir.path(&format!("{mode}.{ext}"));
+            let captured = Arc::new(Mutex::new(Vec::new()));
+            let mut settings = ExportSettings {
+                format: Format::H264,
+                multiplexer,
+                path: path.clone(),
+                range: Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(6))),
+                hardware_encoding: HardwareEncoding::Off,
+                gpu_rendering: GpuRendering::Off,
+                audio: AudioSettings { codec: AudioCodec::Aac, ..Default::default() },
+                ..Default::default()
+            };
+            if mode == "reserved" {
+                settings.output_file = Some(Arc::new(std::fs::OpenOptions::new().read(true).write(true).create_new(true).open(&path).unwrap()));
+            } else if mode == "memory" {
+                let captured = captured.clone();
+                settings.sink = Some(OutputSink(Arc::new(move |_, bytes| {
+                    *captured.lock().unwrap() = bytes;
+                    Ok(())
+                })));
+            }
+            let report = export(&p, seq, &settings, &m, &Progress::default()).unwrap();
+            let bytes = if mode == "memory" {
+                assert!(!Path::new(&path).exists(), "a download must not create a disk file");
+                std::mem::take(&mut *captured.lock().unwrap())
+            } else {
+                std::fs::read(&path).unwrap()
+            };
+            assert_eq!(report.frames, 6);
+            assert_eq!(report.bytes, bytes.len() as u64);
+            let boxes = top_level_boxes(&bytes);
+            assert_eq!(boxes[0].0, *b"ftyp");
+            let moov = boxes.iter().find(|b| b.0 == *b"moov").unwrap();
+            let mdat = boxes.iter().find(|b| b.0 == *b"mdat").unwrap();
+            assert_eq!(moov.1 < mdat.1, multiplexer == Multiplexer::Mp4, "{mode}.{ext}");
+            let file = cfa4_isobmff::open(bytes.as_slice()).unwrap();
+            assert_eq!(file.tracks.len(), 2);
+            let video = file.track_of_kind(cfa4_isobmff::TrackKind::Video).unwrap();
+            assert_eq!(file.tracks[video].samples.len(), 6);
+            for (track, t) in file.tracks.iter().enumerate() {
+                for (index, sample) in t.samples.iter().enumerate() {
+                    assert!(sample.offset >= mdat.1 as u64 + 8);
+                    assert!(sample.offset + u64::from(sample.size) <= mdat.2 as u64);
+                    assert_eq!(file.read_sample(bytes.as_slice(), track, index).unwrap().len(), sample.size as usize);
+                }
+            }
+            let src = cfa4_codecs::open_bytes(&path, bytes.into()).unwrap();
+            for frame in [0, 3, 5] {
+                let rgba = src.video_frame(FrameRequest::full(FrameRate::FPS_24.tick_of(frame))).unwrap().to_rgba8();
+                assert!(rgba[0] > 230 && rgba[1] < 30 && rgba[2] < 30, "{mode}.{ext}: frame {frame}");
+            }
+            let audio = src.audio(0, 12_000, 48_000).unwrap();
+            assert_eq!(audio.channels.len(), 2);
+            assert!(audio.channels.iter().all(|c| c.len() == 12_000 && c.iter().any(|v| v.abs() > 0.1)), "{mode}.{ext}: audible tone");
+            // A -6 dB sine has RMS near 0.35; allow for AAC loss and boundary transients.
+            let level = rms(&audio.channels);
+            assert!((0.2..0.5).contains(&level), "{mode}.{ext}: decoded tone RMS {level}");
+        }
+    }
+}
+
+#[test]
+fn mp4_faststart_reports_unreadable_reserved_output() {
+    let (p, seq, m) = matte([1.0, 0.0, 0.0, 1.0], 64, 36, None);
+    let dir = Scratch::new("mp4-faststart-write-only");
+    let path = dir.path("write-only.mp4");
+    let settings = ExportSettings {
+        format: Format::H264,
+        path: path.clone(),
+        include_audio: false,
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(1))),
+        output_file: Some(Arc::new(std::fs::OpenOptions::new().write(true).create_new(true).open(&path).unwrap())),
+        ..Default::default()
+    };
+    let progress = Progress::default();
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| export(&p, seq, &settings, &m, &progress)));
+    assert!(matches!(result.unwrap(), Err(ExportError::Io(_))));
+    assert!(!progress.finished.load(std::sync::atomic::Ordering::Relaxed));
 }
 
 #[test]
@@ -319,7 +455,8 @@ fn openexr_sequences_compress() {
     }
 }
 
-/// `alpha` keeps straight alpha in PNG and TIFF sequences; off (the default) flattens over black (#160).
+/// `alpha` keeps straight alpha in PNG and TIFF sequences; off (the default) flattens over black (#160)
+/// and writes RGB files without an alpha channel (#1863).
 #[test]
 fn image_sequences_keep_alpha_when_asked() {
     let (p, seq, m) = matte([0.0, 0.0, 1.0, 0.5], 64, 36, None);
@@ -329,16 +466,36 @@ fn image_sequences_keep_alpha_when_asked() {
             let mut s = ExportSettings { format: fmt, path: dir.path(&format!("a.{ext}")), alpha, ..Default::default() };
             s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(2)));
             export(&p, seq, &s, &m, &Progress::default()).unwrap();
-            let img = image::open(dir.0.join(format!("a000.{ext}"))).unwrap();
+            let file = dir.0.join(format!("a000.{ext}"));
+            if fmt == Format::PngSequence {
+                let colour_type = std::fs::read(&file).unwrap()[25];
+                assert_eq!(colour_type, if alpha { 6 } else { 2 }, "PNG colour type, alpha={alpha}");
+            }
+            let img = image::open(&file).unwrap();
             let px = img.to_rgba8().get_pixel(32, 18).0;
+            assert_eq!(img.color().has_alpha(), alpha, "{fmt:?} alpha channel written, alpha={alpha}");
             if alpha {
-                assert!(img.color().has_alpha(), "{fmt:?} must be written with an alpha channel");
                 assert!((100..=160).contains(&px[3]) && px[2] > 200 && px[0] < 15, "{fmt:?} straight alpha: {px:?}");
             } else {
                 assert!(px[3] == 255 && px[2] > 100 && px[2] < 240 && px[0] < 15, "{fmt:?} flattened over black: {px:?}");
             }
         }
     }
+    // the PNG size estimate counts the channels actually written, as TIFF's does
+    let rate = FrameRate::FPS_24;
+    let png = |alpha| ExportSettings { format: Format::PngSequence, alpha, ..Default::default() }.estimate_bytes(320, 180, rate, 48_000, rate.tick_of(1));
+    assert_eq!(png(false) * 4, png(true) * 3, "PNG estimate: {} RGB vs {} RGBA", png(false), png(true));
+}
+
+/// Thumbnails (`encode_png`) and an 8-bit PNG Export Frame keep the alpha they are given: only the
+/// sequence's `alpha` switch drops it (#1863).
+#[test]
+fn png_stills_keep_their_alpha_channel() {
+    let half = cfa4_render::Image::filled(4, 2, [0.0, 0.0, 0.5, 0.5]);
+    let thumb = encode_png(half.to_rgba8(), 4, 2).unwrap();
+    assert_eq!(thumb[25], 6, "encode_png colour type");
+    let frame = still::encode(&half, still::StillFormat::Png, 8).unwrap();
+    assert_eq!(frame[25], 6, "Export Frame PNG colour type");
 }
 
 #[test]
@@ -1591,4 +1748,299 @@ fn own_importer_reads_32_bit_flac_at_full_scale() {
             }
         }
     }
+}
+/// Four blue stripes with alpha 0, 127, 128 and 255. Reverse them on frame two, then
+/// clear the whole picture: a decoder must not retain opaque pixels from earlier frames.
+struct GifAlphaSource(cfa4_media::SharedSource);
+
+impl MediaSource for GifAlphaSource {
+    fn info(&self) -> &cfa4_media::MediaInfo {
+        self.0.info()
+    }
+
+    fn video_frame(&self, req: FrameRequest) -> cfa4_media::Result<Arc<cfa4_frame::VideoFrame>> {
+        let frame = FrameRate::FPS_24.frame_at(req.time);
+        let mut rgba = Vec::with_capacity(64 * 36 * 4);
+        for _ in 0..36 {
+            for x in 0..64 {
+                let stripe = if frame == 1 { 3 - x / 16 } else { x / 16 };
+                let alpha = if frame >= 2 { 0 } else { [0, 127, 128, 255][stripe] };
+                rgba.extend_from_slice(&[0, 0, 255, alpha]);
+            }
+        }
+        Ok(Arc::new(cfa4_frame::VideoFrame::rgba8(64, 36, rgba)))
+    }
+
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<cfa4_frame::AudioBuffer> {
+        self.0.audio(start, frames, sample_rate)
+    }
+}
+
+#[test]
+fn gif_alpha_threshold_and_disposal_roundtrip() {
+    use image::AnimationDecoder;
+    let (p, seq, mut sources) = matte([0.0, 0.0, 1.0, 1.0], 64, 36, None);
+    for source in sources.0.values_mut() {
+        *source = Arc::new(GifAlphaSource(source.clone()));
+    }
+    for alpha in [false, true] {
+        let dir = Scratch::new(&format!("gif-alpha-{alpha}"));
+        let settings = ExportSettings {
+            format: Format::Gif,
+            path: dir.path("alpha.gif"),
+            alpha,
+            range: Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(3))),
+            ..Default::default()
+        };
+        let result = export(&p, seq, &settings, &sources, &Progress::default()).unwrap();
+        assert_eq!(result.frames, 3);
+        let bytes = std::fs::read(&settings.path).unwrap();
+        let decoder = image::codecs::gif::GifDecoder::new(std::io::Cursor::new(bytes)).unwrap();
+        let frames = decoder.into_frames().collect_frames().unwrap();
+        assert_eq!(frames.len(), 3);
+        for (i, frame) in frames.iter().enumerate() {
+            assert_eq!(frame.buffer().dimensions(), (64, 36));
+            assert_eq!(frame.delay().numer_denom_ms(), (u32::from(gif_delay_cs(FrameRate::FPS_24, i as i64)) * 10, 1));
+            for stripe in 0..4 {
+                let source_alpha = if i == 2 { 0 } else { [0, 127, 128, 255][if i == 1 { 3 - stripe } else { stripe }] };
+                let px = frame.buffer().get_pixel(stripe as u32 * 16 + 8, 18).0;
+                let expected_alpha = if alpha && source_alpha < 128 { 0 } else { 255 };
+                assert_eq!(px[3], expected_alpha, "alpha={alpha}, frame={i}, stripe={stripe}: {px:?}");
+                if expected_alpha != 0 {
+                    assert!(px[0] < 15 && px[1] < 15, "blue: {px:?}");
+                    if source_alpha == 0 {
+                        assert!(px[2] < 15, "flattened transparent pixel: {px:?}");
+                    } else if alpha || source_alpha == 255 {
+                        assert!(px[2] > 240, "straight blue survives palette quantization: {px:?}");
+                    } else {
+                        assert!((100..240).contains(&px[2]), "partial alpha flattened over black: {px:?}");
+                    }
+                }
+            }
+        }
+        if let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("GIF transparency") {
+            let decoded = std::process::Command::new(ffmpeg)
+                .args(["-v", "error", "-i", &settings.path, "-frames:v", "3", "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "rgba", "-"])
+                .output()
+                .unwrap();
+            assert!(decoded.status.success(), "{}", String::from_utf8_lossy(&decoded.stderr));
+            assert_eq!(decoded.stdout.len(), 3 * 64 * 36 * 4);
+            for (actual, expected) in decoded.stdout.as_chunks::<{ 64 * 36 * 4 }>().0.iter().zip(&frames) {
+                for (actual, expected) in actual.as_chunks::<4>().0.iter().zip(expected.buffer().pixels()) {
+                    assert_eq!(actual[3], expected.0[3], "ffmpeg alpha, alpha={alpha}");
+                    if actual[3] == 255 {
+                        assert_eq!(*actual, expected.0, "ffmpeg opaque color, alpha={alpha}");
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// A full grayscale ramp, repeated four times, with one transparent pixel surrounded by
+/// opaque black / near-black pixels. Moving the hole also exercises animated frame disposal.
+struct GifPaletteSource(cfa4_media::SharedSource);
+
+impl MediaSource for GifPaletteSource {
+    fn info(&self) -> &cfa4_media::MediaInfo {
+        self.0.info()
+    }
+
+    fn video_frame(&self, req: FrameRequest) -> cfa4_media::Result<Arc<cfa4_frame::VideoFrame>> {
+        let second = FrameRate::FPS_24.frame_at(req.time) != 0;
+        let hole = if second { (17, 17) } else { (16, 16) };
+        let mut rgba = Vec::with_capacity(32 * 32 * 4);
+        for y in 0..32 {
+            for x in 0..32 {
+                let shade = ((y * 32 + x) % 256) as u8;
+                let shade = if second { 255 - shade } else { shade };
+                let px = if (x, y) == hole {
+                    [0, 0, 0, 0]
+                } else if (x, y) == (hole.0 - 1, hole.1) || (x, y) == (hole.0 + 1, hole.1) {
+                    [0, 0, 0, 255]
+                } else if (x, y) == (hole.0, hole.1 - 1) || (x, y) == (hole.0, hole.1 + 1) {
+                    [1, 2, 3, 255]
+                } else {
+                    [shade, shade, shade, 255]
+                };
+                rgba.extend_from_slice(&px);
+            }
+        }
+        Ok(Arc::new(cfa4_frame::VideoFrame::rgba8(32, 32, rgba)))
+    }
+
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<cfa4_frame::AudioBuffer> {
+        self.0.audio(start, frames, sample_rate)
+    }
+}
+
+#[test]
+fn gif_palette_quantization_preserves_isolated_transparency_and_dark_pixels() {
+    use image::AnimationDecoder;
+    let (p, seq, mut sources) = matte([0.0, 0.0, 0.0, 1.0], 32, 32, None);
+    for source in sources.0.values_mut() {
+        *source = Arc::new(GifPaletteSource(source.clone()));
+    }
+    let dir = Scratch::new("gif-palette-alpha");
+    let settings = ExportSettings {
+        format: Format::Gif,
+        path: dir.path("palette.gif"),
+        alpha: true,
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(2))),
+        ..Default::default()
+    };
+    // Count the actual rendered colors after binary-alpha conversion, not just source colors:
+    // exceeding GIF's 256-entry palette must survive the render pipeline on both frames.
+    let pipe = pipeline::Pipeline::new(p.clone(), seq, &settings, false).unwrap();
+    let expected: Vec<Vec<[u8; 4]>> = (0..2)
+        .map(|i| {
+            let rgba = pipe.frame(i, &sources).0;
+            let pixels: Vec<_> = rgba.as_chunks::<4>().0.iter().map(|&[r, g, b, a]| if a < 128 { [0; 4] } else { [r, g, b, 255] }).collect();
+            let colors: std::collections::HashSet<_> = pixels.iter().copied().collect();
+            assert!(colors.len() >= 257, "frame {i}: only {} post-conversion colors", colors.len());
+            assert_eq!(pixels.iter().filter(|p| p[3] == 0).count(), 1, "frame {i}: an isolated transparent pixel");
+            assert!(colors.contains(&[0, 0, 0, 255]), "frame {i}: opaque black");
+            assert!(colors.contains(&[1, 2, 3, 255]), "frame {i}: opaque near-black");
+            pixels
+        })
+        .collect();
+    assert_eq!(export(&p, seq, &settings, &sources, &Progress::default()).unwrap().frames, 2);
+    let bytes = std::fs::read(&settings.path).unwrap();
+    let frames = image::codecs::gif::GifDecoder::new(std::io::Cursor::new(bytes)).unwrap().into_frames().collect_frames().unwrap();
+    assert_eq!(frames.len(), 2);
+    for (i, (frame, expected)) in frames.iter().zip(&expected).enumerate() {
+        assert_eq!(frame.buffer().dimensions(), (32, 32));
+        for (at, (actual, expected)) in frame.buffer().pixels().zip(expected).enumerate() {
+            assert_eq!(actual[3], expected[3], "frame {i}, pixel {at}: alpha must be exact, including opaque dark pixels");
+            if expected[3] == 255 {
+                // Palette reduction is lossy. For this grayscale ramp, allow at most 16/255
+                // error per RGB channel (about 6% of the range), never any loss of opacity.
+                for channel in 0..3 {
+                    assert!(actual[channel].abs_diff(expected[channel]) <= 16, "frame {i}, pixel {at}: {:?} vs {expected:?}", actual.0);
+                }
+            }
+        }
+    }
+}
+
+/// `matte_secs` with markers on the sequence.
+fn with_markers(p: Arc<Project>, seq: ItemId, marks: &[(i64, &str, &str, cfa4_project::MarkerKind)]) -> Arc<Project> {
+    let mut p = Arc::try_unwrap(p).unwrap_or_else(|a| (*a).clone());
+    let q = p.sequence_mut(seq).unwrap();
+    for (i, (ms, name, comment, kind)) in marks.iter().enumerate() {
+        q.markers.push(cfa4_project::Marker {
+            id: cfa4_project::MarkerId(i as u64 + 1),
+            start: Tick(ms * (TICKS_PER_SECOND / 1000)),
+            duration: Tick::ZERO,
+            name: name.to_string(),
+            comment: comment.to_string(),
+            kind: *kind,
+            color: Label::Iris,
+        });
+    }
+    Arc::new(p)
+}
+
+#[test]
+fn chapter_markers_become_export_chapters() {
+    use cfa4_project::MarkerKind::{Chapter as C, Comment};
+    let (p, seq, _) = matte_secs([0.0, 0.0, 0.0, 1.0], 64, 36, None, 4);
+    let p = with_markers(
+        p,
+        seq,
+        &[
+            (3_000, "Third", "", C),
+            (500, "", "", Comment),
+            (1_500, "", "from comment", C),
+            (1_000, "First", "x", C),
+            (3_500, "", "", C),
+            (4_500, "Outside", "", C),
+        ],
+    );
+    let range = TimeRange::new(Tick(TICKS_PER_SECOND), Tick(3 * TICKS_PER_SECOND));
+    let got = export_chapters(&p, seq, &ExportSettings::default(), range);
+    let want = [(0, "First"), (5_000_000, "from comment"), (20_000_000, "Third"), (25_000_000, "Chapter 4")];
+    let got: Vec<(u64, &str)> = got.iter().map(|c| (c.start_100ns, c.title.as_str())).collect();
+    assert_eq!(got, want);
+    let off = ExportSettings { chapters: false, ..Default::default() };
+    assert!(export_chapters(&p, seq, &off, range).is_empty());
+}
+
+#[test]
+fn chapters_reach_mp4_m4a_and_hls_init() {
+    // `chpl` everywhere, plus the QuickTime chapter track in progressive MP4/MOV and M4A
+    use cfa4_project::MarkerKind::Chapter as C;
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 2);
+    let p = with_markers(p, seq, &[(0, "Intro", "", C), (1_000, "Ünnep", "", C)]);
+    let want = vec![cfa4_isobmff::Chapter { start_100ns: 0, title: "Intro".into() }, cfa4_isobmff::Chapter { start_100ns: 10_000_000, title: "Ünnep".into() }];
+    let dir = Scratch::new("chapters");
+    let range = Some(TimeRange::new(Tick::ZERO, Tick(2 * TICKS_PER_SECOND)));
+    let chapters_of = |path: &str| cfa4_isobmff::open(std::fs::read(path).unwrap()).unwrap().metadata.chapters;
+    // the QuickTime chapter track alone: `chpl` renamed away, so the demuxer reads the track
+    let track_chapters_of = |path: &str| {
+        let mut b = std::fs::read(path).unwrap();
+        let at = b.windows(4).position(|w| w == b"chpl").unwrap();
+        b[at..at + 4].copy_from_slice(b"skip");
+        let f = cfa4_isobmff::open(b).unwrap();
+        assert!(f.tracks.iter().any(|t| t.handler == cfa4_isobmff::FourCc(*b"text") && !t.enabled), "{path}: no disabled text track");
+        f.metadata.chapters
+    };
+
+    let mp4 = dir.path("c.mp4");
+    export(&p, seq, &ExportSettings { format: Format::H264, path: mp4.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
+        .unwrap();
+    assert_eq!(chapters_of(&mp4), want);
+    assert_eq!(track_chapters_of(&mp4), want);
+    if let Some(j) = ffprobe_json(&["-show_chapters"], &mp4) {
+        let titles: Vec<&str> = j["chapters"].as_array().unwrap().iter().map(|c| c["tags"]["title"].as_str().unwrap()).collect();
+        assert_eq!(titles, ["Intro", "Ünnep"]);
+    }
+    let off = dir.path("off.mp4");
+    export(
+        &p,
+        seq,
+        &ExportSettings { format: Format::H264, path: off.clone(), range, bitrate_kbps: 300, chapters: false, ..Default::default() },
+        &m,
+        &Progress::default(),
+    )
+    .unwrap();
+    assert!(chapters_of(&off).is_empty());
+    assert_eq!(cfa4_isobmff::open(std::fs::read(&off).unwrap()).unwrap().tracks.len(), 2, "no chapter track either");
+
+    let m4a = dir.path("c.m4a");
+    export(&p, seq, &ExportSettings { format: Format::Aac, path: m4a.clone(), range, ..Default::default() }, &m, &Progress::default()).unwrap();
+    assert_eq!(chapters_of(&m4a), want);
+    assert_eq!(track_chapters_of(&m4a), want);
+
+    let hls = dir.path("c.m3u8");
+    export(&p, seq, &ExportSettings { format: Format::Hls, path: hls.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
+        .unwrap();
+    assert_eq!(chapters_of(&hls_files(&hls, 36).init), want);
+}
+
+#[test]
+fn chapters_reach_webm() {
+    use cfa4_project::MarkerKind::Chapter as C;
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 2);
+    let p = with_markers(p, seq, &[(0, "Intro", "", C), (1_000, "Ünnep", "", C)]);
+    let dir = Scratch::new("webm-chapters");
+    let range = Some(TimeRange::new(Tick::ZERO, Tick(2 * TICKS_PER_SECOND)));
+    let path = dir.path("c.webm");
+    export(&p, seq, &ExportSettings { format: Format::WebM, path: path.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
+        .unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let f = cfa4_matroska::open(&bytes[..]).unwrap();
+    assert_eq!(f.chapters.len(), 1, "one edition");
+    let got: Vec<(u64, Option<u64>, Option<&str>)> = f.chapters[0].chapters.iter().map(|c| (c.start_ns, c.end_ns, c.title())).collect();
+    // each chapter ends where the next starts, the last with the export (2 s)
+    assert_eq!(got, [(0, Some(1_000_000_000), Some("Intro")), (1_000_000_000, Some(2_000_000_000), Some("Ünnep"))]);
+    if let Some(j) = ffprobe_json(&["-show_chapters"], &path) {
+        let titles: Vec<&str> = j["chapters"].as_array().unwrap().iter().map(|c| c["tags"]["title"].as_str().unwrap()).collect();
+        assert_eq!(titles, ["Intro", "Ünnep"]);
+    }
+    // switched off: no Chapters element
+    let off = dir.path("off.webm");
+    let s = ExportSettings { format: Format::WebM, path: off.clone(), range, bitrate_kbps: 300, chapters: false, ..Default::default() };
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert!(cfa4_matroska::open(&std::fs::read(&off).unwrap()[..]).unwrap().chapters.is_empty());
 }

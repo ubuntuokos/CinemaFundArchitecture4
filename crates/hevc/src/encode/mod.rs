@@ -119,6 +119,12 @@ pub struct EncoderConfig {
     /// Slices per picture, coded in parallel. 0 picks one per worker thread (at most 8, with at
     /// least 4 CTU rows each). The output depends on the slice count, never on the thread count.
     pub slices: u32,
+    /// Parameter-set ids written to the VPS (0–15), SPS (0–15) and PPS (0–63) and referred to by
+    /// the slices: a stream spliced into another (a Smart Cut boundary) uses ids the other
+    /// stream does not.
+    pub vps_id: u8,
+    pub sps_id: u8,
+    pub pps_id: u8,
 }
 
 impl EncoderConfig {
@@ -139,6 +145,9 @@ impl EncoderConfig {
             mastering_display: None,
             content_light: None,
             slices: 0,
+            vps_id: 0,
+            sps_id: 0,
+            pps_id: 0,
         }
     }
 }
@@ -228,6 +237,9 @@ impl Encoder {
         }
         if cfg.bit_depth != 8 && cfg.bit_depth != 10 {
             return Err(EncodeError::InvalidConfig(format!("bit depth {} (8 or 10)", cfg.bit_depth)));
+        }
+        if cfg.vps_id > 15 || cfg.sps_id > 15 || cfg.pps_id > 63 {
+            return Err(EncodeError::InvalidConfig(format!("parameter-set ids VPS {} SPS {} PPS {} (0–15, 0–15, 0–63)", cfg.vps_id, cfg.sps_id, cfg.pps_id)));
         }
         let core = if cfg.bit_depth == 8 { Core::E8(Box::new(State::new(&cfg)?)) } else { Core::E16(Box::new(State::new(&cfg)?)) };
         Ok(Encoder { cfg, core })
@@ -342,6 +354,9 @@ impl<S: Sample> State<S> {
             amp: false,
             sign_hiding: false,
             cu_qp_delta: false,
+            vps_id: u32::from(cfg.vps_id),
+            sps_id: u32::from(cfg.sps_id),
+            pps_id: u32::from(cfg.pps_id),
         };
         let vps = headers::vps(&seq);
         let sps_nal = headers::sps(&seq);

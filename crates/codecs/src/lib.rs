@@ -16,6 +16,7 @@
 //! - [`AviSource`]: AVI (OpenDML included): Motion JPEG, H.264, HEVC and uncompressed video; PCM,
 //!   MP3 / MP2 and AC-3 audio.
 //! - [`AudioFileSource`]: standalone compressed audio files (MP3, FLAC, AIFF, …).
+//! - [`DifSource`]: raw DV (`.dv`, `.dif`) files, decoded by `cfa4-dv`, frames read on demand.
 //! - [`Y4mSource`]: uncompressed YUV4MPEG2 (`.y4m`) video, frames read on demand.
 //! - [`openers`]: the openers to register with the engine's media pool.
 
@@ -24,7 +25,11 @@
 pub mod apv;
 pub mod audio;
 pub mod avi;
+pub mod dif;
+pub mod ffv1;
 pub mod gop;
+pub mod hap;
+pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
 pub mod j2k;
@@ -34,6 +39,7 @@ pub mod mpeg;
 pub mod mxf;
 pub mod ogg;
 mod stream_color;
+pub mod utvideo;
 pub mod video;
 mod webm_alpha;
 pub mod y4m;
@@ -43,7 +49,8 @@ use std::sync::{Arc, RwLock};
 pub use apv::ApvSource;
 pub use audio::AudioFileSource;
 pub use avi::AviSource;
-pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders};
+pub use dif::DifSource;
+pub use gop::{FRAME_BUDGET, GopStats, cached_bytes, gop_stats, live_decoders, release_idle};
 pub use mkv::MkvSource;
 pub use mp4::Mp4Source;
 pub use mpeg::MpegSource;
@@ -78,7 +85,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 11] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 17] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -90,6 +97,12 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 11] = [
     video::cineform_factory,
     video::mjpeg_factory,
     video::mpeg2_factory,
+    video::raw_factory,
+    video::dv_factory,
+    hap::hap_factory,
+    ffv1::ffv1_factory,
+    huffyuv::huffyuv_factory,
+    utvideo::utvideo_factory,
 ];
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {
@@ -133,9 +146,9 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
 }
 
 /// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
-/// MPEG-1/2 video elementary streams, APV raw bitstreams, YUV4MPEG2, standalone audio).
+/// MPEG-1/2 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, standalone audio).
 pub fn openers() -> Vec<cfa4_media::Opener> {
-    vec![mp4::opener, mkv::opener, mxf::opener, ogg::opener, mpeg::opener, apv::opener, avi::opener, y4m::opener, audio::opener]
+    vec![mp4::opener, mkv::opener, mxf::opener, ogg::opener, mpeg::opener, apv::opener, avi::opener, y4m::opener, dif::opener, audio::opener]
 }
 
 fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
@@ -150,6 +163,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             apv::reader_opener,
             y4m::reader_opener,
             avi::reader_opener,
+            dif::reader_opener,
         ])
     })
 }

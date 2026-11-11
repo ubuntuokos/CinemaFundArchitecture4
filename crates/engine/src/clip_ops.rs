@@ -463,7 +463,7 @@ impl SourceView {
         json!({
             "item": self.item.0, "media": self.media.0, "start": self.start.0, "end": self.end.0, "fps": self.rate.as_f64(),
             "playhead": playhead.0, "markIn": self.mark_in.map(|t| t.0), "markOut": self.mark_out.map(|t| t.0),
-            "markers": self.markers.iter().map(|m| json!({"id": m.id.0, "start": m.start.0, "name": m.name, "duration": m.duration.0})).collect::<Vec<_>>(),
+            "markers": self.markers.iter().map(|m| json!({"id": m.id.0, "start": m.start.0, "name": m.name, "duration": m.duration.0, "color": m.color.name()})).collect::<Vec<_>>(),
             "subclip": self.subclip.map(|(r, restrict)| json!({"start": r.start.0, "end": r.end().0, "restrictTrims": restrict})),
         })
     }
@@ -757,7 +757,12 @@ fn offline_file(s: &mut Session, p: &Value) -> Result<Value> {
         Some(tc) => Some(parse_timecode(tc, rate, false, 0).map_err(|e| bad("file.newOfflineFile", format!("timecode: {e:?}")))?),
         None => None,
     };
-    let file_name = str_p(p, "fileName").map(str::to_string).filter(|n| !n.is_empty()).unwrap_or_else(|| "Offline.mov".into());
+    // A name, never a path: the item's media path is what Make Offline ▸ delete would remove.
+    let file_name = str_p(p, "fileName")
+        .and_then(|n| n.rsplit(['/', '\\', ':']).next())
+        .filter(|n| !n.is_empty() && *n != "." && *n != "..")
+        .map(str::to_string)
+        .unwrap_or_else(|| "Offline.mov".into());
     let name = str_p(p, "name").map(str::to_string).filter(|n| !n.is_empty()).unwrap_or_else(|| file_name.clone());
     let info = cfa4_media::MediaInfo {
         name: file_name.clone(),
@@ -781,6 +786,7 @@ fn offline_file(s: &mut Session, p: &Value) -> Result<Value> {
                 channels: u64_p(p, "channels").unwrap_or(2).max(1) as u32,
                 codec: String::new(),
                 bits_per_sample: None,
+                speakers: Vec::new(),
             })
             .into_iter()
             .collect(),
@@ -930,8 +936,9 @@ fn consolidate_duplicates(s: &mut Session, _: &Value) -> Result<Value> {
     let mut groups: BTreeMap<String, Vec<ItemId>> = BTreeMap::new();
     for it in s.project.items.values() {
         if let ItemKind::Media(m) = &it.kind {
-            // same file (or generator), interpretation and streams
-            let shape = (m.info.video.is_some(), m.info.has_audio(), m.info.duration);
+            let generator_rate =
+                if matches!(&m.media, MediaRef::Generator(cfa4_media::Generator::CountingLeader)) { m.info.video.as_ref().map(|v| v.frame_rate) } else { None };
+            let shape = (m.info.video.is_some(), m.info.has_audio(), m.info.duration, generator_rate);
             let key = serde_json::to_string(&(&m.media, &m.interpret, m.offline, shape)).unwrap_or_default();
             groups.entry(key).or_default().push(it.id);
         }
@@ -1227,6 +1234,8 @@ fn parse_format(f: &str) -> Option<AudioChannels> {
         "mono" => Some(AudioChannels::Mono),
         "stereo" => Some(AudioChannels::Stereo),
         "5.1" | "surround51" | "surround" => Some(AudioChannels::Surround51),
+        "7.1" | "surround71" => Some(AudioChannels::Surround71),
+        "7.1.2" | "surround712" => Some(AudioChannels::Surround712),
         "adaptive" => Some(AudioChannels::Adaptive),
         _ => None,
     }
@@ -1235,7 +1244,15 @@ fn parse_format(f: &str) -> Option<AudioChannels> {
 fn audio_channels(s: &mut Session, p: &Value) -> Result<Value> {
     let items: Vec<ItemId> =
         items_p(s, p).into_iter().filter(|i| s.project.item(*i).and_then(|it| it.as_media()).is_some_and(|m| m.info.has_audio())).collect();
-    if items.is_empty() || p.get("channels").is_some() {
+    // `channels` is the only thing the timeline-clip branch below reads, so it alone decides
+    // which branch runs: no project item selected used to fall into it too (on the theory that
+    // there was nothing else to do), but a `channels`-less call with no item selected (e.g. a
+    // stray `format` with an empty project selection, #1845) then reset the selected clips'
+    // `source_channels` to `[]` via `unwrap_or_default()` instead of being rejected.
+    if items.is_empty() && p.get("channels").is_none() {
+        return Err(bad("clip.audioChannels", "select a clip with audio, or a project item to set its format"));
+    }
+    if p.get("channels").is_some() {
         // timeline audio clips: which source channels each plays
         let clips = match p.get("clips").and_then(Value::as_array) {
             Some(a) if a.iter().all(Value::is_u64) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).collect(),

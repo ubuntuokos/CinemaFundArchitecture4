@@ -401,6 +401,23 @@ fn draft_text(ui: &mut egui::Ui, reg: &mut Reg, id: &str, stored: &str, hint: &s
     (r.changed() && !v.trim().is_empty()).then_some(v)
 }
 
+/// Longest folder tail the link lays out or shows on hover.
+const MAX_LOCATION_DISPLAY_BYTES: usize = 4096;
+
+/// Keep the tail of a UTF-8 folder name without copying or splitting a codepoint. Project item
+/// names can enter the generated export path, so UI display work must not scale with an arbitrary
+/// imported name.
+fn location_tail(s: &str) -> (&str, bool) {
+    if s.len() <= MAX_LOCATION_DISPLAY_BYTES {
+        return (s, false);
+    }
+    let mut start = s.len() - MAX_LOCATION_DISPLAY_BYTES;
+    while !s.is_char_boundary(start) {
+        start += 1;
+    }
+    (&s[start..], true)
+}
+
 /// The output folder as a link (folder icon, accent colour, underlined); the caller opens the save
 /// dialog on a click. A path too long for the row loses its start, so the folder's name stays.
 fn location_link(ui: &mut egui::Ui, t: &Tokens, folder: &str) -> egui::Response {
@@ -408,18 +425,34 @@ fn location_link(ui: &mut egui::Ui, t: &Tokens, folder: &str) -> egui::Response 
     let col = if resp.hovered() { t.accent_hover } else { t.accent };
     crate::icons::paint(ui.painter(), Rect::from_center_size(pos2(r.min.x + 8.0, r.center().y), vec2(14.0, 14.0)), crate::icons::Icon::Folder, col);
     let room = (r.width() - 22.0).max(0.0);
+    let (folder, truncated) = location_tail(folder);
     let mut galley = ui.painter().layout_no_wrap(folder.to_string(), Tokens::ui(12.5), col);
-    for (i, _) in folder.char_indices().skip(1) {
-        if galley.size().x <= room {
-            break;
-        }
-        galley = ui.painter().layout_no_wrap(format!("…{}", folder.get(i..).unwrap_or("")), Tokens::ui(12.5), col);
+    if galley.size().x > room {
+        let starts: Vec<usize> = folder.char_indices().map(|(i, _)| i).collect();
+        let suffix = if starts.len() > 1 {
+            let mut lo = 1usize;
+            let mut hi = starts.len() - 1;
+            while lo < hi {
+                let mid = (lo + hi) / 2;
+                let candidate = format!("…{}", &folder[starts[mid]..]);
+                if ui.painter().layout_no_wrap(candidate, Tokens::ui(12.5), col).size().x <= room {
+                    hi = mid;
+                } else {
+                    lo = mid + 1;
+                }
+            }
+            format!("…{}", &folder[starts[lo]..])
+        } else {
+            "…".into()
+        };
+        galley = ui.painter().layout_no_wrap(suffix, Tokens::ui(12.5), col);
     }
     let at = pos2(r.min.x + 20.0, r.center().y - galley.size().y / 2.0);
     let underline = at.y + galley.size().y;
     ui.painter().hline(at.x..=at.x + galley.size().x, underline, egui::Stroke::new(1.0, col));
     ui.painter().galley(at, galley, col);
-    resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(folder)
+    let hover = if truncated { format!("…{folder}") } else { folder.to_string() };
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(hover)
 }
 
 const RATES: [(&str, FrameRate); 11] = [
@@ -664,7 +697,7 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
     });
     row(ui, t, tl!("Field Order"), |ui| {
         let o = [FieldOrder::Progressive, FieldOrder::UpperFirst, FieldOrder::LowerFirst];
-        let labels: Vec<(String, bool)> = o.iter().map(|f| (f.label().to_string(), *f == FieldOrder::Progressive)).collect();
+        let labels: Vec<(String, bool)> = o.iter().map(|f| (f.label().to_string(), *f == FieldOrder::Progressive || s.format == Format::Mpeg2)).collect();
         if let Some(i) = combo(ui, reg, "export.video.fieldOrder", s.field_order.label(), &labels, 160.0) {
             s.field_order = o[i];
         }
@@ -775,8 +808,8 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                     *k = v as u32;
                 }
             });
-            // The system's hardware encoder where there is one (VideoToolbox on macOS, NVENC on NVIDIA
-            // GPUs on Windows, VA-API on Linux); everything it does not take (two-pass, HDR, MXF) and
+            // The system's hardware encoder where there is one (NVENC on NVIDIA GPUs, VA-API);
+            // everything it does not take (two-pass, HDR, MXF) and
             // every machine without one keeps the built-in encoder.
             // H.265 and AV1 have only hardware encoders: choosing the format is the opt-in.
             if !hevc {
@@ -1397,7 +1430,9 @@ fn quick_file(app: &Cfa4App, path: &str, seq_name: &str, ext: &str) -> Option<St
         return None;
     }
     let file = match name {
-        None => format!("{seq_name}.{ext}"),
+        // Sequence names come from the project, not from this Quick Export interaction. Keep
+        // metadata in one filename component before joining it to the selected/default folder.
+        None => format!("{}.{}", cfa4_engine::export_tools::file_safe(seq_name), ext),
         Some(n) if cur.eq_ignore_ascii_case(ext) => n.to_string(),
         Some(n) if !cur.is_empty() && app.session.export_presets.all().iter().any(|x| x.settings.extension().eq_ignore_ascii_case(cur)) => {
             std::path::Path::new(n).with_extension(ext).to_string_lossy().to_string()
@@ -1519,4 +1554,19 @@ fn list_row(ui: &mut egui::Ui, t: &Tokens, selected: bool, text: &str, width: f3
     ui.painter().rect_filled(r, 3.0, bg);
     ui.painter().text(pos2(r.min.x + 6.0, r.center().y), Align2::LEFT_CENTER, text, Tokens::ui(12.5), if selected { Color32::WHITE } else { t.text });
     resp
+}
+
+#[cfg(test)]
+mod location_tests {
+    use super::*;
+
+    #[test]
+    fn location_tail_is_bounded_and_keeps_utf8_intact() {
+        let input = format!("/{}終", "é".repeat(MAX_LOCATION_DISPLAY_BYTES));
+        let (tail, truncated) = location_tail(&input);
+        assert!(truncated);
+        assert!(tail.len() <= MAX_LOCATION_DISPLAY_BYTES);
+        assert!(tail.ends_with('終'));
+        assert!(std::str::from_utf8(tail.as_bytes()).is_ok());
+    }
 }

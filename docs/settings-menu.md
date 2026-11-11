@@ -1,6 +1,6 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-10-26 · **Change:** new file (phase 1 of the Settings / Hardware menu plan)
+> **Last updated:** 2026-11-06 · **Change:** minor (Media & Playback ▸ Media Backends page, Edit ▸ Preferences ▸ Media Backends…, Help ▸ Restricted Codecs…, next to the phase 2 Decoding & Encoding page)
 
 The Settings window of the Qt 6 shell (`python/cfa4_devtools/qt_settings.py`, Edit ▸ Settings…,
 Ctrl+,). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the
@@ -22,6 +22,14 @@ providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
     `CFA4_DATA_DIR` / `XDG_DATA_HOME/cfa4`).
   - `cfa4-cli hardware` prints the accelerator inventory (`cfa4-route` sysfs probe), the backend
     chain per family from the routing table and the vendor coverage.
+  - `cfa4-cli codecs` prints what this machine decodes and encodes: CFA4's own codecs
+    ([codec-parity.md](codec-parity.md)), the hardware decoder `cfa4_platform::register` found
+    (NVDEC or VA-API, for H.264 and HEVC), the export format that encodes each codec (own
+    software encoder, or a registered hardware one where CFA4 has none) and the GStreamer backend's state.
+  - `cfa4-cli media-backends` prints the media backends in the order they are tried (the CFA4
+    engine, then FFmpeg and GStreamer, [ADR 0005](adr/ADR-0005-media-backends.md)), each with
+    whether it is compiled in, available and switched on, its version, licence and problem, and
+    the patent-restricted codecs of the Ubuntu model ([licensing.md](licensing.md) §7).
 - OK saves only the changed keys; Reset Page… resets one category after a confirmation and keeps
   unsaved edits of the other pages. Settings the engine stores but does not act on yet are shown
   greyed out with "no effect yet".
@@ -33,17 +41,38 @@ providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
 | General | General, Auto Save, Plugins |
 | Appearance | Appearance, Labels |
 | Editing | Color, Graphics, Timeline, Trim |
-| Media & Playback | Audio, Media, Media Cache, Playback |
+| Media & Playback | Audio, Media, **Decoding & Encoding** (Qt only), **Media Backends** (switches + live status and restricted codecs), Media Cache, Playback |
 | Hardware & Devices | **Accelerators (GPU / NPU)** (read-only, Qt only), Audio Hardware, Memory |
 | Local AI | Media Analysis & Transcription |
 
 Removed from the schema in phase 1 (keys still load from old files): `media.hardwareDecoding`
 (an unwired duplicate of `playback.hardwareDecoding`) and `media.proresHardwareEncoding`
-(macOS VideoToolbox only, not a Linux target).
+(a removed macOS-only option).
+
+## Menu access
+
+| Menu item | Opens |
+|---|---|
+| Edit ▸ Settings… (Ctrl+,) | the Settings window at its first page |
+| Edit ▸ Media Backends… | the Settings window at Media & Playback ▸ Media Backends |
+| Help ▸ Restricted Codecs… | the same page: which patent-restricted codecs are installed and the command that adds them (copied, never run) |
+
+## Decoding & Encoding (phase 2)
+
+The page holds the decoding settings that work today, moved here from Playback in the Qt window
+(same keys, `playback.hardwareDecoding` and `playback.draftDecode`), and a read-only "On this
+machine" table with the hardware decoder, the GStreamer backend and one row per codec. When no
+hardware decoder is found the page says which vendor driver to install; CFA4 never installs
+drivers itself. Reset Page is off on the Qt-only pages: their keys belong to engine categories
+(Playback) and reset with them.
+
+Planned for this page once the engine acts on them: decode / encode / proxy threads, a backend
+per codec where several exist (own software, VA-API, NVDEC, GStreamer), decoder and encoder GPU,
+maximum hardware resolution, and the default GPU rendering of exports.
 
 ## Later phases
 
-Decoding & Encoding page (codec settings from [codec-parity.md](codec-parity.md)), devices
+Devices
 (cameras, storage, monitors, drawing tablets), Local AI models, Publishing & providers, and the
 System (root) section with confirmation-gated helpers (GPU Unlock as an optional, separately
 installed component). Secret storage (tokens, passwords) is designed in a separate security
@@ -54,7 +83,12 @@ project; no token value is ever written to settings files, logs or projects.
 `settings.window`, `settings.categories`, `settings.page`, `settings.category.<page>`,
 `settings.<key>` (and `settings.<unitKey>` for a duration's unit), `settings.ok`,
 `settings.cancel`, `settings.reset`, `settings.accelerators.devices`,
-`settings.accelerators.plans`, `settings.accelerators.refresh`, `menu.edit.settings`.
+`settings.accelerators.plans`, `settings.accelerators.refresh`, `settings.codecs.table`,
+`settings.codecs.hardwareDecoder`, `settings.codecs.gstreamer`, `settings.codecs.refresh`,
+`settings.mediaBackends.status`, `settings.mediaBackends.list`, `settings.mediaBackends.refresh`,
+`settings.mediaBackends.restricted`, `settings.mediaBackends.restricted.list`,
+`settings.mediaBackends.restricted.install`, `settings.mediaBackends.restricted.copy`,
+`menu.edit.settings`, `menu.edit.mediaBackends`, `menu.help.restrictedCodecs`.
 
 ## Tests
 

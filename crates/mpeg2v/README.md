@@ -39,6 +39,9 @@ parameters, so a random-access point without its own sequence header still decod
 
 - Main Profile at Low/Main/High-1440/High Level, 4:2:2 Profile (IMX / D-10, XDCAM HD422),
   Simple Profile, MPEG-1 (including D pictures). 4:4:4 is refused (no profile in use for it).
+- Pictures above 2^25 luma samples (8192 x 4096; 8K UHD at 7680 x 4320 fits, and the largest MPEG-2 level,
+  High, is 1920 x 1152) are refused as `Unsupported`: the 14-bit header fields allow 16383 x 16383, which
+  would ask for gigabytes per frame from hostile input.
 - Frame pictures with frame and field motion compensation, dual prime, frame and field DCT;
   field pictures with field, 16x8 and dual-prime motion compensation, the second field of a
   P frame predicted from the first; open and closed GOPs; B pictures without a forward
@@ -75,7 +78,7 @@ let end = enc.finish();                                  // sequence_end_code
   and bitrate (Main, High-1440, High; 4:2:2 Main, High); beyond High Level the stream still
   decodes and is signalled as High Level. The eight MPEG-2 frame rates; any size up to
   16383×16383 (odd sizes are edge-padded to whole macroblocks and cropped by the decoder).
-- Progressive frame pictures: I and P pictures (`low_delay` set when there are no B
+- Frame pictures: I and P pictures (`low_delay` set when there are no B
   pictures), and 0-7 B pictures between anchors (`b_frames`). An anchor every `b_frames + 1`
   pictures within each GOP; the B pictures before an I picture belong to its GOP. Packets come
   in decode order with the display number (`index`) and a decode time (`dts`, one frame
@@ -85,6 +88,13 @@ let end = enc.finish();                                  // sequence_end_code
   open GOPs predict them from both sides. The sequence header (and a sequence display
   extension with the colour description) comes before every I picture. One slice per
   macroblock row.
+- Progressive (the default) or interlaced (`interlaced: Some(FieldOrder)`): interlaced
+  sequences set `top_field_first` as asked, use the alternate scan and choose per macroblock
+  between frame and field prediction (each field of the macroblock from the better reference
+  field, with its `motion_vertical_field_select`) and between frame and field DCT (whichever
+  transforms the luma error into the smaller coefficient magnitudes). Skipped and "MC not
+  coded" macroblocks stay frame-predicted. On combed moving content this saves about 10 % at
+  the same quantiser.
 - Motion search on luma at whole samples (left, temporal and zero predictors, then large and
   small diamonds), then half-sample refinement, ±32 samples (`f_code` 3); vectors whose
   luma or chroma prediction would leave the picture are never chosen. B pictures search both
@@ -93,7 +103,11 @@ let end = enc.finish();                                  // sequence_end_code
   decision by SAD against the deviation from the mean; skipped macroblocks (in B pictures:
   the same directions and vectors as the macroblock before, §7.6.6.4) and "MC not coded"
   when no coefficient survives quantisation.
-- Forward DCT as the transpose of the decoder's IDCT basis; default matrices; non-linear
+- Scene cuts (`scene_cut`, on by default): a P picture whose motion search explains little of
+  it (inter SAD at least 0.8 of the deviation from the macroblock means, and 1.8 times the
+  previous P picture's ratio) is coded as an I picture that starts a new GOP; the GOP cadence
+  counts from it.
+- Forward DCT as the transpose of the decoder's IDCT basis (even/odd butterflies); default matrices; non-linear
   quantiser scale; intra levels rounded with offset 3/8, inter levels `floor(|F| / qs)` (the
   reconstruction lands mid-step). The intra VLC table (B.14 or B.15) of each picture is the one
   that would have coded the previous picture's intra blocks in fewer bits.
@@ -102,15 +116,24 @@ let end = enc.finish();                                  // sequence_end_code
   (the first picture of each type is coded once as a trial to measure it), a gentle in-picture
   correction against an expected bit profile (each macroblock's coefficient magnitude), and
   optional TM5 adaptive quantisation (`adaptive_quantization`; looks better on flat areas,
-  measures about 2.5 dB lower PSNR). Signalled as variable bitrate (`vbv_delay` 0xFFFF).
+  measures about 2.5 dB lower PSNR).
+- Buffer model (Annex C): `Rate::Bitrate` is an average with no buffer model (`vbv_delay`
+  0xFFFF). `Rate::ConstrainedVbr` (average, maximum, buffer) and `Rate::Cbr` (bitrate,
+  buffer) keep every picture within the VBV: the picture target stays below the buffer's
+  occupancy (a tenth kept in reserve), and a picture that still comes out too large is coded
+  again with a coarser quantiser. CBR writes real `vbv_delay` values, starts with a full
+  buffer and appends zero bytes (stuffing before the next start code) where small pictures
+  would let the buffer overflow; the buffer it fills is capped so the delay fits 16 bits.
+  The sequence header signals the maximum (VBR) or constant rate and the buffer (0: the
+  level's). A level is chosen whose buffer holds the requested one.
 - The reconstruction of every picture is our own decoder's output for the coded bytes, so
   encoder and decoder never drift apart; a picture the decoder rejects is an error.
 - Macroblock rows are analysed (motion search, prediction, DCT) in parallel on rayon; coding
   is sequential (rate control).
 
-Not yet, each tracked: interlaced coding (#241), CBR with VBV compliance (#242), DVD-Video
-(#244) and Blu-ray (#245) authoring, speed and RD quantisation, scene cuts, custom matrices
-(#246).
+Not yet, each tracked: field pictures, dual-prime and 16x8 prediction (#274), P-STD / T-STD
+buffer models in the multiplexer (#277), DVD-Video (#244) and Blu-ray (#245) authoring, RD
+quantisation and macroblock decisions, custom matrices, `alternate_scan` and SIMD (#862).
 
 ### Interpretations
 
@@ -174,7 +197,11 @@ fell to 77–150 fps). These are lower bounds.
 Encoding (`perf_1080p_encode_fps_and_psnr`, FFmpeg's `testsrc2` at 1920×1080, 50 frames,
 GOP 15 I/P, 15 Mb/s; same machine class, unloaded container): **18-21 fps**, 15.10 Mb/s at
 **48.5 dB** luma PSNR; FFmpeg's `mpeg2video` with the same GOP, no B frames: 15.16 Mb/s at
-48.8 dB.
+48.8 dB. On a 4-vCPU Intel Xeon @ 2.10 GHz container (load ≈ 1.5) the same run went from
+34 fps to **42 fps** with #246 (iterator-based half-sample prediction, an even/odd forward DCT,
+libm-free rounding in both transforms, reciprocal inter quantisation, and the half-sample
+search reusing its SADs), same bits and PSNR; under callgrind on one thread the encode-and-check
+run fell from 46.7 to 34.5 billion instructions.
 
 ## Tests
 
