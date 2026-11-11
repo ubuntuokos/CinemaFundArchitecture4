@@ -209,3 +209,73 @@ def test_qt_gui_on_x11(tmp_path: Path) -> None:
 def test_qt_gui_on_wayland(tmp_path: Path) -> None:
     with _wayland() as env:
         _drive("wayland", env, tmp_path)
+
+
+_GL_SCRIPT = r"""
+import json, os, sys
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QImage, QLinearGradient, QPainter
+from PySide6.QtWidgets import QApplication
+
+app = QApplication(sys.argv)
+from cfa4_qt.panels import monitor
+from cfa4_qt.panels.monitor_view import MonitorView
+
+frame = QImage(960, 540, QImage.Format.Format_RGBA8888)
+p = QPainter(frame)
+g = QLinearGradient(0, 0, 960, 540)
+g.setColorAt(0, QColor("#202060"))
+g.setColorAt(1, QColor("#e0a040"))
+p.fillRect(frame.rect(), g)
+p.fillRect(400, 200, 160, 140, QColor("#30c030"))
+p.end()
+out = {"available": monitor.monitor_gl_available()}
+os.environ["CFA4_QT_MONITOR_GL"] = "0"
+out["off"] = type(monitor.new_frame_view("program")).__name__
+os.environ["CFA4_QT_MONITOR_GL"] = "1"
+grabs = []
+for view in (monitor.FrameView("program", MonitorView()), monitor.new_frame_view("program", MonitorView())):
+    view.mv.safe_margins = True
+    view.resize(640, 400)
+    view.show()
+    view.set_image(frame, full=(960, 540))
+    for _ in range(20):
+        app.processEvents()
+    img = (view.grabFramebuffer() if view.present_path == "gl" else view.grab().toImage()).convertToFormat(QImage.Format.Format_RGB32)
+    grabs.append((view.present_path, img, view.present.count))
+    view.close()
+(_r, a, _n), (path, b, frames) = grabs
+diff = sorted(
+    max(abs(ca.red() - cb.red()), abs(ca.green() - cb.green()), abs(ca.blue() - cb.blue()))
+    for x in range(0, min(a.width(), b.width()), 7)
+    for y in range(0, min(a.height(), b.height()), 7)
+    for ca, cb in [(a.pixelColor(x, y), b.pixelColor(x, y))]
+)
+out.update(on=path, frames=frames, size=[b.width(), b.height()], p99=diff[int(len(diff) * 0.99)], max=diff[-1])
+print("RESULT " + json.dumps(out))
+"""
+
+
+def test_monitor_draws_through_opengl_as_the_raster_view_on_x11(tmp_path: Path) -> None:
+    """qt-parity 5.5 step 1: with ``CFA4_QT_MONITOR_GL=1`` and a GL context (Mesa's llvmpipe on
+    Xvfb here), the monitor's picture is a QOpenGLWidget that uploads the frame as a texture and
+    draws the same picture and overlays as the raster view; without it, the raster view."""
+    with _x11() as env:
+        if not _plugin_loads("xcb", env):
+            _skip("PySide6's xcb platform plugin does not load (its X11 libraries are missing)")
+        run = subprocess.run(
+            [sys.executable, "-c", _GL_SCRIPT],
+            env={**env, "QT_QPA_PLATFORM": "xcb", "PYTHONPATH": str(ROOT / "python")},
+            capture_output=True, text=True, timeout=120, check=False,
+        )
+    line = next((x for x in run.stdout.splitlines() if x.startswith("RESULT ")), None)
+    assert run.returncode == 0 and line is not None, (run.returncode, run.stdout[-2000:], run.stderr[-4000:])
+    out = json.loads(line[len("RESULT "):])
+    assert out["off"] == "FrameView", out
+    if not out["available"]:
+        assert out["on"] == "raster", out  # no GL here: the raster fallback
+        pytest.skip("no OpenGL context on this X server (Mesa's GL driver is missing)")
+    assert out["on"] == "gl" and out["frames"] >= 1, out
+    assert out["size"] == [640, 400], out
+    # the same picture: scaling filters may differ by a step at edges
+    assert out["p99"] <= 12 and out["max"] <= 80, out

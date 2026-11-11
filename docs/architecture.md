@@ -25,11 +25,13 @@ Design principles:
  L6  apps/cfa4 · apps/cfa4-cli
  L5  ui-egui · automation · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional)
  L4  engine
- L3  render · gpu · export · smart-edit · golden (test-only)
+ L3  render · gpu · export · smart-edit · qc · golden (test-only)
+     DCP validation: dcp-validate
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
- L1  frame · media · project · audio-dsp · text · route (cfa4-route) · live
+ L1  frame · media · project · audio-dsp · text · route (cfa4-route) · metrics · live
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
-     codecs/containers: isobmff · matroska · mxf · cfb · mpegts · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
+     codecs/containers: isobmff · matroska · mxf · cfb · mpegts · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
+     documents: dcp
 ```
 
 Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates are named
@@ -45,6 +47,7 @@ and `cfa4-cli`.
 | `isobmff` | L0 | MP4/MOV demux and mux |
 | `matroska` | L0 | MKV/WebM demux |
 | `mxf` | L0 | MXF demux and mux (SMPTE ST 377-1): OP1a / OP-Atom, index tables, AVC / VC-3 / ProRes / MPEG-2 identification, PCM / AES3 sound, timecode; writer for OP1a / OP-Atom with VC-3, ProRes, AVC and PCM ([README](../crates/mxf/README.md)) |
+| `dcp` | L0 | Digital Cinema Package documents: SMPTE and Interop asset map, volume index, packing list and composition playlist read into a serde model, problems as positioned issues (DCP-02, [README](../crates/dcp/README.md)) |
 | `cfb` | L0 | Compound File Binary ([MS-CFB] structured storage) reader and writer, the container of AAF ([README](../crates/cfb/README.md)) |
 | `mpegts` | L0 | MPEG-2 Systems demux and mux (H.222.0): transport streams (188 / 192-byte BDAV / 204), program streams (MPEG-2 / MPEG-1, VOB, MOD), PSI, PES, PTS / PCR, access-unit index built on open ([README](../crates/mpegts/README.md)) |
 | `ogg` | L0 | Ogg demux (RFC 3533), Ogg Opus timing (RFC 7845 granules, pre-skip, end trimming), Vorbis headers |
@@ -53,24 +56,31 @@ and `cfa4-cli`.
 | `heif` | L0 | HEIF / HEIC still-image container reader: items, grids, transforms, alpha references ([README](../crates/heif/README.md)) |
 | `prores` | L0 | ProRes decoder and encoder |
 | `dnx` | L0 | DNxHD / DNxHR (SMPTE ST 2019-1 VC-3) decoder and DNxHR encoder |
+| `hap` | L0 | Hap video decoder: `Hap1`, `Hap5`, `HapY`, `HapM`, `HapA`; Snappy, chunks, DXT1 / DXT5 / RGTC1 / scaled YCoCg textures to RGBA ([README](../crates/hap/README.md)) |
+| `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
+| `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
+| `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
 | `apv` | L0 | Advanced Professional Video (IETF RFC 9924) decoder and encoder ([README](../crates/apv/README.md)) |
 | `jxl` | L0 | JPEG XL decoder (ISO/IEC 18181): safe port of jxl-oxide, VarDCT and Modular, all restoration filters, patches, splines, noise; first frame of a file to interleaved floats; animation, ICC colour and encoder: #138–#141 ([README](../crates/jxl/README.md)) |
 | `dng` | L0 | DNG / CinemaDNG camera RAW decoder: TIFF container, uncompressed and lossless JPEG raw data, DNG processing to linear Rec. 709 ([README](../crates/dng/README.md)) |
 | `av1` | L0 | AV1 decoder (Main profile; bit-exact with libdav1d; see its README for the stage table) |
 | `mpeg2v` | L0 | MPEG-2 video (Main / 4:2:2 profile; frame and field pictures, dual prime) and MPEG-1 video decoder ([README](../crates/mpeg2v/README.md)) |
 | `dv` | L0 | DV video decoder: DV25 / DVCAM 4:1:1 and 4:2:0, DVCPRO 25, 8-8 and 2-4-8 DCT; DVCPRO 50 / HD recognised only ([README](../crates/dv/README.md)) |
+| `lcevc` | L0 | MPEG-5 LCEVC: finds enhancement data (T.35 SEI in H.264 / HEVC, `lvc1` tracks, TS stream type 0x36); no decoding yet ([README](../crates/lcevc/README.md)) |
 | `aac` | L0 | AAC-LC decoder and encoder |
 | `ac3` | L0 | AC-3 (ATSC A/52) decoder ([README](../crates/ac3/README.md)) |
 | `dts` | L0 | DTS core, DTS-HD MA / HRA decoder, FFmpeg-derived, LGPL-2.1-or-later ([README](../crates/dts/README.md)) |
 | `iab` | L0 | Immersive Audio Bitstream (SMPTE ST 2098-2, DCP / IMF object audio): parser, DLC lossless decoder and encoder, loudspeaker renderer, writer ([README](../crates/iab/README.md)) |
 | `mpa` | L0 | MPEG-1/2 Audio Layer I and II (MP1 / MP2) decoder ([README](../crates/mpa/README.md)) |
+| `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
-| `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV |
+| `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
 | `text` | L1 | text engine: font database (bundled OFL fonts + system fonts), shaping (harfrust), bidi, line breaking, paragraph layout, glyph/path rasteriser, strokes ([crates/text/README.md](../crates/text/README.md)) |
 | `route` | L1 | `cfa4-route`: compute router: per-task choice of backend and device (GPU, NPU, CPU) from the routing table (`routing.toml`), the `/sys` device probe and the user's preferences, with reasons and fallback order; backend catalogue (implemented / planned, vendor-locked) and the vendor-neutrality coverage report; no `unsafe`, no workspace dependencies ([ADR 0004](adr/ADR-0004-compute-routing.md), [README](../crates/route/README.md)) |
+| `metrics` | L1 | image fidelity metrics for output comparison (docs/gaps.md G1): CIEDE2000 ΔE between sRGB images, SSIM of planes; depends on `color` only ([README](../crates/metrics/README.md)) |
 | `live` | L1 | `cfa4-live`: live graphics plumbing (credits plan C10): the live page server for OBS's Browser Source on **127.0.0.1 only** (the program picture as a transparent PNG, status, the cue's sound with byte ranges; other host names and methods refused), an obs-websocket 5 client over a minimal RFC 6455 WebSocket client; no rendering and no workspace dependencies ([README](../crates/live/README.md), [credits.md](credits.md)) |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
@@ -83,7 +93,9 @@ and `cfa4-cli`.
 | `gpu` | L3 | wgpu compositor (WGSL) |
 | `golden` | L3 | test-only: golden-image tests of the CPU renderer and GPU-vs-CPU parity; empty library, dev-dependencies only |
 | `scopes` | L3 | video scope maths: waveform, parade, histogram, YUV / HLS vectorscopes, numeric summaries ([crates/scopes/README.md](../crates/scopes/README.md)) |
+| `qc` | L3 | media quality control: QC profiles (`cfa4-qc-profile/1`, TOML) with mandatory/optional checks and PASS/WARN/FAIL bounds, the versioned QC report (`cfa4-qc-report/1`, JSON) with SHA-256 file identities, tool versions and human review, and a verdict that never passes a skipped or failed mandatory check ([media-qc.md](media-qc.md)) |
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
+| `dcp-validate` | L3 | DCP validation API (DCP-03): `DcpValidator` trait, seven result states and the package verdict, versioned profiles, `cfa4-dcp-report/1` JSON / Markdown report, safe package discovery, native backend ([README](../crates/dcp-validate/README.md)) |
 | `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
@@ -431,7 +443,8 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   `SequenceSettings::audio_master` (the Mix: Stereo, Mono, 5.1, Adaptive) existed already;
   `file.newSequence {mix, trackType}` and `sequence.settings {mix}` set them, `mixer.setStrip
   {channels}` / `mixer.addSubmix {channels}` per strip. The 5.1 panner is four lanes in
-  `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB): a
+  `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB,
+  `pan51.height` 0…100 %): a
   lane without keyframes stores the static value, so no new project fields were needed and the
   puck is automatable like any lane.
 - **Maths** (`audio_dsp::channels`). 5.1 order is L, R, C, LFE, Ls, Rs everywhere inside CFA4.
@@ -442,13 +455,27 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   Stereo sources sit at the puck ± 1 in x; 5.1 sources keep their layout moved by the puck's offset
   from front-centre (the default puck is the identity). LFE gets the source LFE (5.1) or the mean of
   the source channels (mono/stereo, default −∞) times the LFE level.
-- **Graph.** Buses are 2 or 6 channels wide (`render::mixer::width_of`); inserts are built for the
+- **Graph.** Buses are 2, 6, 8 or 10 channels wide (`render::mixer::width_of`); inserts are built for the
   strip's width; routes convert between widths (5.1 panner into 5.1 buses, BS.775 into stereo
   buses); meters have one value per channel. `mix_graph` returns the Mix's width;
   `audio::mix_sequence` always returns stereo, `mix_sequence_layout` any layout and mixdown. Clips
   on 5.1 tracks play the source's first six channels (or the six picked with Modify ▸ Audio
   Channels), mono/stereo sources upmixed; clip effects run on all six channels.
-- **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels; on a stereo
+- **7.1 and 7.1.2** (#374). Tracks, submixes and the Mix can also be 7.1 (8 ch: L R C LFE Lss Rss
+  Lrs Rrs, the SMPTE / DCP order) or 7.1.2 (10 ch: … Lts Rts). The surround panner
+  (`channels::pan_matrix`) puts a point source on the front, side and rear rows of a 7.1 bus
+  (`point_gains_71`, Σg² = 1); a 5.1 source's surrounds sit between the side and the rear speakers
+  (each split −3 dB); a 7.1.2 strip's heights pass through unpanned. On a 7.1.2 bus the lane
+  `pan51.height` (0…100 %, #406) lifts each floor source to Lts / Rts with constant power
+  (floor × cos(h·π/2), top × sin(h·π/2), left / right as on the floor); it is ignored on other
+  buses and recorded by a Write pass. Up- and downmixes go through 5.1 (`channels::matrix`): a 7.1 side and rear pair folds
+  into the 5.1 surround at −3 dB each, a 7.1.2 height folds into its side at −3 dB, the 5.1
+  surround splits −3 dB to side and rear. A 7.1 source plays as 7.1 on a 7.1 / 7.1.2 track (its
+  WAV-order back pair moved behind the sides). Exports stay mono / stereo / 5.1 except the DCP IAB
+  bed, which takes a 7.1 Mix as a 7.1 DS bed and a 7.1.2 Mix as a 9.1OH bed (the 5.1 fallback in
+  the main sound is the 5.1 fold).
+- **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels (a 7.1 / 7.1.2
+  Mix as its own channels on a device with as many, else as 5.1); on a stereo
   device it is folded with Preferences ▸ Audio ▸ 5.1 Mixdown Type (Front Only, Front + Rear
   Surround = BS.775, Front + LFE, Front + Rear Surround + LFE; `PreviewStore::mix_layout`).
 - **Export.** Audio Channels Mono / Stereo / 5.1: WAV writes `WAVE_FORMAT_EXTENSIBLE` with channel
@@ -542,6 +569,17 @@ with different vertex counts hold). Feather, Opacity and Expansion are ordinary 
   transform moves the path, written as Mask Path keyframes while the background job runs (one undo
   step per run; `jobs.cancel` stops and keeps what was tracked). Frames are tracked at ≤ 960 px
   wide. On synthetic footage with known similarity motion the path stays within 0.3 px over 20 frames.
+- **Correlation tracker** (`render::cftrack`, `masks.track` with `"tracker": "correlation"`, stored
+  per mask as `Mask::tracker`, the wrench menu's Correlation tracker): an optional CFA4 mode for
+  objects the point tracker loses (little interior detail, deforming). A kernelized correlation
+  filter (KCF, Gaussian kernel) on HOG-like features (4 px cells, 9 orientations + intensity), a
+  Hann window multiplied by a spatial-reliability map from the mask's shape (after CSRT), a
+  DSST-style 1-D scale filter (16 scales, 2 % apart) for Position, Scale & Rotation, and a
+  peak-to-sidelobe confidence: below 6 the object counts as lost (occluded / gone) and the job
+  stops with what it tracked, below 10 the model is not updated. Position and scale only, no
+  rotation; the mask should outline the whole object. Own implementation from the papers (no
+  OpenCV code). On the synthetic disc (moving, turning 1.5°/frame, growing 1 %/frame) the centre
+  stays within 1.6 px over 16 frames and the scale within 5 %.
 
 ### 5.4 Colour management
 
@@ -670,7 +708,7 @@ file.exportMedia {path, preset?, settings?, format?, range?, …}     export.qui
 | `aac` | `cfa4-aac` (AAC-LC, the audio settings' bitrate) | audio only: MPEG-4 audio `.m4a` (`isobmff`, priming in an edit list), or raw ADTS when the path ends in `.aac` |
 | `mxf-op1a` | DNxHR (default), ProRes or H.264 (Annex B, long GOP), `mxfVideoCodec`; PCM 16/24/32-bit integer | MXF OP1a (`cfa4-mxf` writer: frame-wrapped, index with temporal offsets, start timecode) |
 | `mxf-opatom` | as `mxf-op1a` | Avid-style MXF OP-Atom: clip-wrapped picture at `path`, one mono PCM file per channel (`<stem>_A1.mxf` …, `Report::extra_files`) |
-| `mpeg2` | `cfa4-mpeg2v` (Main Profile 4:2:0, I/P pictures, average bitrate, keyframe distance = GOP) + 16-bit DVD LPCM or `cfa4-aac` | `cfa4-mpegts` muxer, `mpeg2Container` or the path's extension: program stream `.mpg` (LPCM), transport stream `.ts` / BDAV `.m2ts` (AAC in ADTS), elementary stream `.m2v` (no audio) |
+| `mpeg2` | `cfa4-mpeg2v` (Main Profile 4:2:0, I/P pictures, average bitrate, keyframe distance = GOP) + 16- or 24-bit DVD LPCM or `cfa4-aac` | `cfa4-mpegts` muxer, `mpeg2Container` or the path's extension: program stream `.mpg` (LPCM), transport stream `.ts` / BDAV `.m2ts` (AAC in ADTS), elementary stream `.m2v` (no audio) |
 | `png`, `tiff`, `bmp`, `jpg` | `image` | numbered stills `<name>000.<ext>`, `<name>001.<ext>` … |
 | `tga`, `dpx`, `exr` | built in (`raster.rs`: uncompressed Targa 24/32-bit; DPX 10-bit RGB, SMPTE ST 268; OpenEXR half-float linear RGB(A), uncompressed scan lines) | numbered stills, as above |
 | `gif`, `wav`, `aiff` | built in / `image` | GIF / RIFF WAVE (`WAVE_FORMAT_EXTENSIBLE` for 5.1; `WAVE_FORMAT_IEEE_FLOAT` + `fact` for float) / AIFF (16-, 24- or 32-bit PCM; 32-bit float as AIFF-C `fl32`) |

@@ -97,14 +97,14 @@ A két rész egymástól független, így külön PR-ban mehetnek. Az 1. réssze
 
 **1. rész: fejezetek (kb. 3,5 nap)**
 
-- [ ] F1: `write_udta` hosszcsonkolás javítása, regressziós teszttel
-- [ ] F2: `Chapter` típus + `WriterOptions::chapters` + `chpl` írása, unit tesztek
-- [ ] F3: `chpl` olvasása a demuxban, roundtrip és fuzz
-- [ ] F4: ffprobe orákulum teszt az `oracle_mux.rs`-ben
-- [ ] F5: Chapter markerek → export (MP4, MOV, HLS init szegmens), alapból bekapcsolt kapcsoló, `Tick` átváltás
-- [ ] F6: QuickTime fejezetsáv (`text` + `tref/chap`) írása és olvasása, ffprobe orákulummal
-- [ ] F7: Matroska/WebM `Chapters` írása a `MkvWriter`-ben, roundtrip a meglévő demuxszal, WebM export
-- [ ] F8: README a `cfa4-isobmff`-ben és a `cfa4-matroska`-ban, `docs/gaps.md` frissítése
+- [x] F1: `write_udta` hosszcsonkolás javítása, regressziós teszttel
+- [x] F2: `Chapter` típus + `WriterOptions::chapters` + `chpl` írása, unit tesztek
+- [x] F3: `chpl` olvasása a demuxban, roundtrip és fuzz
+- [x] F4: ffprobe orákulum teszt az `oracle_mux.rs`-ben
+- [x] F5: Chapter markerek → export (MP4, MOV, HLS init szegmens), alapból bekapcsolt kapcsoló, `Tick` átváltás
+- [x] F6: QuickTime fejezetsáv (`text` + `tref/chap`) írása és olvasása, ffprobe orákulummal
+- [x] F7: Matroska/WebM `Chapters` írása a `MkvWriter`-ben, roundtrip a meglévő demuxszal, WebM export
+- [x] F8: README a `cfa4-isobmff`-ben és a `cfa4-matroska`-ban, `docs/gaps.md` frissítése
 
 **2. rész: DASH (kb. 2–3 nap)**
 

@@ -1,0 +1,4256 @@
+# Estonian (et) catalog for the whole CFA4 interface (Qt GUI and egui). Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Estonian video-editing vocabulary (ajaskaala, rada, klipp, jada, salv, esitusnäidik, marker,
+# üleminek, võtmekaader). No proprietary localisation resource, string table or product UI was
+# consulted or copied; add entries the same way. Commands are imperatives ("Salvesta kui…"),
+# labels use sentence case, quotation marks are „…“, the ellipsis follows the word without a
+# space, and product and format names (CFA4, Lumetri, ProRes, AAF, EDL…) keep their spelling.
+# Decimal comma (0,5). A native-speaker review is welcome.
+#
+# Terms: clip = klipp, track = rada, sequence = jada, timeline = ajaskaala, bin = salv,
+# playhead = esitusnäidik, marker = marker, label = silt, In/Out point = algus-/lõpp-punkt,
+# keyframe = võtmekaader, frame = kaader, caption = pealdis, preset = eelseade, template = mall,
+# workspace = tööruum, gain = võimendus, opacity = läbipaistmatus, render = renderdamine,
+# ripple = nihutusega, dissolve = sulandus, wipe = pühkimine, voice-over = pealelugemine,
+# proxy = asendusfail, guide = juhtjoon, shortcut = otsetee, media = meedia, (Legacy) = (pärand).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see et.tsv.attribution.
+
+	'{name}' already exists. Replace it?	„{name}“ on juba olemas. Kas asendada?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	CFA4 teave
+	Add Audio Submix Track	Lisa heli alammiksi rada
+	Add Caption at Playhead	Lisa pealdis esitusnäidiku kohale
+	Add Chapter Marker…	Lisa peatükimarker…
+	Add Edit	Lisa lõige
+	Add Edit to All Tracks	Lisa lõige kõigile radadele
+	Add Flash Cue Marker…	Lisa välgumärgi marker…
+	Add Frame Hold	Lisa kaadri peatamine
+	Add Marker	Lisa marker
+	Add New Caption Track…	Lisa uus pealdiserada…
+	Add Range Marker	Lisa vahemiku marker
+	Add Range Marker to In and Out	Lisa vahemiku marker algus- ja lõpp-punkti vahele
+	Add Tracks…	Lisa rajad…
+	Full screen	Täisekraan
+	Master volume: use the Audio Track Mixer	Põhihelitugevus: kasuta helirajamikserit
+	Send to Queue	Saada järjekorda
+	Add/Remove Keyframe	Lisa/eemalda võtmekaader
+	Adjustment Layer	Korrektsioonikiht
+	Adjustment Layer…	Korrektsioonikiht…
+	Align to Selection	Joonda valikuga
+	Align to Video Frame	Joonda videokaadriga
+	Align to Video Frame as Group	Joonda videokaadriga rühmana
+	All Panels	Kõik paneelid
+	Amplitude and Compression	Amplituud ja tihendus
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Ilma `serve`-ita mootor ehitati harust, milles pole Qt GUI-d: lülitu Qt GUI harule ja ehita uuesti või anna --engine PATH.
+	Anchor Point	Ankurpunkt
+	Anti-flicker Filter	Värelusvastane filter
+	Apply Audio Transition	Rakenda heliüleminek
+	Apply Default Transitions to Selection	Rakenda valikule vaikeüleminekud
+	Apply Video Transition	Rakenda videoüleminek
+	Assembly	Koostamine
+	Attach Proxies…	Lisa asendusfailid…
+	Audio	Heli
+	Audio Channels…	Helikanalid…
+	Audio Clip Mixer	Heliklipi mikser
+	Audio Effects	Heliefektid
+	Audio Gain…	Heli võimendus…
+	Audio In	Heli algus
+	Audio Meters	Helimõõturid
+	Audio Options	Heli valikud
+	Audio Out	Heli lõpp
+	Audio Track Mixer	Helirajamikser
+	Audio Transitions	Heliüleminekud
+	Audio Bitrate	Heli bitikiirus
+	Audio Format	Helivorming
+	Auto Bezier	Automaatne Bezier
+	Automate to Sequence…	Automatiseeri jadaks…
+	Avid Log Exchange…	Avid Log Exchange…
+	Balance	Tasakaal
+	Bars and Tone…	Värvitulbad ja toon…
+	Bezier	Bezier
+	Bin	Salv
+	Bin From Selection	Salv valikust
+	Bitrate Encoding	Bitikiiruse kodeerimine
+	Black Video…	Must video…
+	Blend Mode	Segamisrežiim
+	Blue	Sinine
+	Blur & Sharpen	Hägustamine ja teravdamine
+	Breakout to Mono	Jaota monoks
+	Bring to Front	Too kõige ette
+	Brown	Pruun
+	Burn in captions	Põleta pealdised sisse
+	Bypass	Möödaviik
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	Tühista valitud
+	Cancelled	Tühistatud
+	Cannot create the output folder: {error}	Väljundkausta ei saa luua: {error}
+	Cannot check the output folder for files to replace: {error}	Väljundkaustast ei saa asendatavaid faile kontrollida: {error}
+	Captions and Graphics	Pealdised ja graafika
+	Captions…	Pealdised…
+	Caribbean	Kariibi
+	Center Horizontally	Tsentreeri horisontaalselt
+	Center Vertically	Tsentreeri vertikaalselt
+	Cerulean	Taevasinine
+	Channel Volume	Kanali helitugevus
+	Checked:	Märgitud:
+	Choose a file name and location.	Vali failinimi ja asukoht.
+	Choose folder	Vali kaust
+	Media File	Meediafail
+	Sequence name	Jada nimi
+	Clear Finished	Tühjenda lõpetatud
+	Clear In	Tühjenda algus
+	Clear In and Out	Tühjenda algus ja lõpp
+	Clear Markers	Tühjenda markerid
+	Clear Out	Tühjenda lõpp
+	Clear Selected Marker	Tühjenda valitud marker
+	Clip	Klipp
+	Close All Other Projects	Sulge kõik teised projektid
+	Close All Projects	Sulge kõik projektid
+	Close Gap	Sulge vahe
+	Close Project	Sulge projekt
+	Color Burn	Värvi tumendamine
+	Color Correction	Värvikorrektsioon
+	Color Dodge	Värvi heledamaks muutmine
+	Color Management…	Värvihaldus…
+	Color Matte…	Värvimatt…
+	Consolidate Duplicates	Ühenda duplikaadid
+	Constant quality (CRF)	Püsiv kvaliteet (CRF)
+	Continuous Bezier	Pidev Bezier
+	Copy Paste Includes Sequence Markers	Kopeerimine ja kleepimine hõlmab jada markereid
+	Create Captions from Transcript…	Loo pealdised transkriptsioonist…
+	Create Multi-Camera Source Sequence…	Loo mitme kaameraga lähtejada…
+	Create Proxies…	Loo asendusfailid…
+	Crossfade	Ristsulandus
+	Darken	Tumenda
+	Darker Color	Tumedam värv
+	Delay and Echo	Viivitus ja kaja
+	Delete Keyframe	Kustuta võtmekaader
+	Delete Render Files	Kustuta renderdusfailid
+	Delete Render Files In to Out	Kustuta renderdusfailid alguse ja lõpu vahel
+	Delete Tracks…	Kustuta rajad…
+	Delete Transcript	Kustuta transkriptsioon
+	Demo Footage	Demomaterjal
+	Demo Project	Demoprojekt
+	Deselect All	Tühista kõigi valimine
+	Detach Proxies	Eemalda asendusfailid
+	Difference	Erinevus
+	Discard	Loobu
+	Dissolve	Sulandus
+	Distort	Moonuta
+	Distribute	Jaota
+	Distribute Horizontally	Jaota horisontaalselt
+	Distribute Space Horizontally	Jaota vahed horisontaalselt
+	Distribute Space Vertically	Jaota vahed vertikaalselt
+	Distribute Vertically	Jaota vertikaalselt
+	Divide	Jaga
+	Done	Tehtud
+	Double-click a clip in the Project panel to open it here.	Topeltklõpsa klippi paneelil Projekt, et see siin avada.
+	Duplicate	Klooni
+	Duration	Kestus
+	EDL…	EDL…
+	Ease In	Sujuv algus
+	Ease Out	Sujuv lõpp
+	Edit	Redigeeri
+	Edit Offline…	Redigeeri võrguühenduseta…
+	Edit Original	Redigeeri originaali
+	Edit Subclip…	Redigeeri alamklippi…
+	Edit Workspaces…	Redigeeri tööruume…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Redigeeritakse Lumetri ja maski tööriistades (Qt GUI-s veel mitte)
+	Effect Controls	Efektide juhtelemendid
+	Ellipse	Ellips
+	Enable	Luba
+	Enable Remix	Luba ümbermiks
+	Enabled	Lubatud
+	Encoding	Kodeerimine
+	End	Lõpp
+	Engine stopped	Mootor peatus
+	Entire Sequence	Kogu jada
+	Essential Graphics	Põhigraafika
+	Essential Sound	Põhiheli
+	Events	Sündmused
+	Exclusion	Välistamine
+	Export As Motion Graphics Template…	Ekspordi liikuva graafika mallina…
+	Export Markers as CSV…	Ekspordi markerid CSV-na…
+	Export Media	Ekspordi meedia
+	Export Media…	Ekspordi meedia…
+	Export Queue	Ekspordijärjekord
+	Queue ({n})	Järjekord ({n})
+	Send exports here with Send to Queue, then start the queue.	Saada ekspordid siia käsuga Saada järjekorda, seejärel käivita järjekord.
+	Open a sequence to export	Avage jada eksportimiseks
+	The sequence has no caption track.	Jadal pole pealdiserada.
+	Export Audio	Ekspordi heli
+	Export failed: {path}	Eksport nurjus: {path}
+	Export finished: {path}	Eksport lõpetatud: {path}
+	Extract	Eralda
+	Extract Audio	Eralda heli
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Nurjus
+	Field Options…	Poolkaadrite valikud…
+	File…	Fail…
+	Fill frame	Täida kaader
+	Filter and EQ	Filter ja ekvalaiser
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Find Next	Leia järgmine
+	Find…	Leia…
+	Fit	Mahuta
+	Fit to frame	Mahuta kaadrisse
+	Flatten	Lamenda
+	Forest	Mets
+	Frame Blending	Kaadrite segamine
+	Frame Hold Options…	Kaadri peatamise valikud…
+	Frame Sampling	Kaadrite valimine
+	Frame Size	Kaadri suurus
+	From Bin	Salvest
+	From Source Monitor	Lähtemonitorist
+	From Source Monitor, Match Frame	Lähtemonitorist, sobita kaader
+	From file…	Failist…
+	From the preset	Eelseadest
+	Adaptive ({bpp} bits per pixel)	Kohanduv ({bpp} bitti piksli kohta)
+	Set a fixed bitrate	Määra fikseeritud bitikiirus
+	Gain	Võimendus
+	General…	Üldine…
+	Generate	Genereeri
+	Generate Audio Waveform	Genereeri helilainekuju
+	Get Media File Properties for	Hangi meediafaili omadused:
+	Go to End	Mine lõppu
+	Go to Gap	Mine vahe juurde
+	Go to In	Mine alguspunkti
+	Go to Next Caption Segment	Mine järgmisele pealdise lõigule
+	Go to Next Keyframe	Mine järgmisele võtmekaadrile
+	Go to Next Marker	Mine järgmisele markerile
+	Go to Out	Mine lõpp-punkti
+	Go to Previous Caption Segment	Mine eelmisele pealdise lõigule
+	Go to Previous Keyframe	Mine eelmisele võtmekaadrile
+	Go to Previous Marker	Mine eelmisele markerile
+	Go to Split	Mine jaotuskohta
+	Go to Start	Mine algusse
+	Graphic	Graafika
+	Graphics and Titles	Graafika ja tiitrid
+	Green	Roheline
+	Grunge & Distort	Grunge ja moonutus
+	Hard Light	Kõva valgus
+	Hard Mix	Kõva segu
+	Hide All Caption Tracks	Peida kõik pealdiserajad
+	History	Ajalugu
+	Hold	Peata
+	Hue	Toon
+	Image Control	Pildi juhtimine
+	Image Sequence	Pildijada
+	Immersive Video	Kaasahaarav video
+	Import Credits Spreadsheet…	Impordi tiitrite tabel…
+	Import From	Impordi allikast
+	Import Image Sequence…	Impordi pildijada…
+	Import from Media Browser	Impordi meediabrauserist
+	Import…	Impordi…
+	Ingest Settings…	Sissevõtu sätted…
+	Insert	Sisesta
+	Insert Frame Hold Segment	Lisa kaadri peatamise lõik
+	Inspector	Inspektor
+	Install Motion Graphics Template…	Paigalda liikuva graafika mall…
+	Interpret Footage…	Tõlgenda materjali…
+	Iris	Iiris
+	Keying	Võtmestamine
+	Label	Silt
+	Lavender	Lavendel
+	Legacy	Pärand
+	Level	Tase
+	Libraries	Teegid
+	Lift	Tõsta
+	Lighten	Helenda
+	Lighter Color	Heledam värv
+	Lights & Blurs	Valgused ja hägud
+	Lights & Glows	Valgused ja kumad
+	Linear Burn	Lineaarne tumendamine
+	Linear Dodge (Add)	Lineaarne heledamaks (liitmine)
+	Linear Light	Lineaarne valgus
+	Link	Seo
+	Link Media…	Seo meedia…
+	Linked Selection	Lingitud valik
+	Lumetri Color	Lumetri Color
+	Lumetri Scopes	Lumetri mõõturid
+	Luminosity	Heledus
+	Magenta	Magenta
+	Make Offline…	Muuda võrguühenduseta…
+	Make Subclip…	Loo alamklipp…
+	Make Subsequence	Loo alamjada
+	Mango	Mango
+	Mark Clip	Märgi klipp
+	Mark In	Märgi algus
+	Mark Out	Märgi lõpp
+	Mark Selection	Märgi valik
+	Mark Split	Märgi jaotus
+	Markers	Markerid
+	Match Frame	Sobita kaader
+	Match sequence	Sobita jadaga
+	Media Browser	Meediabrauser
+	Media offline	Meedia pole saadaval
+	Media…	Meedia…
+	Merge Clips…	Ühenda klipid…
+	Merged Clip	Ühendatud klipp
+	Metadata	Metaandmed
+	Modify	Muuda
+	Modulation	Modulatsioon
+	Motion	Liikumine
+	Motion Graphics Template…	Liikuva graafika mall…
+	Movie	Film
+	Multi-Camera	Mitme kaameraga
+	Multiply	Korruta
+	Mute Track	Vaigista rada
+	Nest…	Pesasta…
+	New Bin	Uus salv
+	New Layer	Uus kiht
+	New Project Panel	Uus projektipaneel
+	New Sequence…	Uus jada…
+	Next in Sequence	Järgmine jadas
+	Next in Track	Järgmine rajal
+	No sequence	Jada pole
+	Drop media here to create sequence.	Jada loomiseks lohista meedia siia.
+	Open Demo Project	Ava demoprojekt
+	Double-click a sequence in the Project panel to open it here.	Topeltklõpsa jada paneelil Projekt, et see siin avada.
+	Noise & Grain	Müra ja teralisus
+	Noise Reduction	Mürasummutus
+	Normal	Tavaline
+	Normalize Mix Track…	Normaliseeri miksirada…
+	Not Now	Mitte praegu
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Qt GUI-s veel pole (vt docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	Aegunud
+	Offline File…	Võrguühenduseta fail…
+	Opacity	Läbipaistmatus
+	Open Project	Ava projekt
+	Open Project…	Ava projekt…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	Optiline voog
+	Opus	Opus
+	Output	Väljund
+	Output file	Väljundfail
+	Overlay	Ülekate
+	Overwrite	Kirjuta üle
+	PCM (uncompressed)	PCM (tihendamata)
+	Panels	Paneelid
+	Panner	Panoraamija
+	Paste Attributes…	Kleebi atribuudid…
+	Paste Insert	Kleebi lisades
+	Perspective	Perspektiiv
+	Pin Light	Täppvalgus
+	Play/Stop	Esita/peata
+	Polygon	Hulknurk
+	Preset	Eelseade
+	Previous in Sequence	Eelmine jadas
+	Previous in Track	Eelmine rajal
+	Program	Programm
+	Progress	Edenemine
+	Project	Projekt
+	Project Manager…	Projektihaldur…
+	Project Notes	Projekti märkmed
+	Project Settings	Projekti sätted
+	Project…	Projekt…
+	Properties	Omadused
+	Proxy	Asendusfail
+	Purple	Lilla
+	Quit	Välju
+	Range	Vahemik
+	Razor Tool	Lõiketööriist
+	Ready	Valmis
+	Reconnect Full Resolution Media…	Ühenda uuesti täislahutusega meedia…
+	Recover Unsaved Changes	Taasta salvestamata muudatused
+	Recover Unsaved Changes…	Taasta salvestamata muudatused…
+	Reference Monitor	Viitemonitor
+	Remaining	Jäänud
+	Remix	Ümbermiks
+	Remix Properties…	Ümbermiksi omadused…
+	Remove Attributes…	Eemalda atribuudid…
+	Remove Effect	Eemalda efekt
+	Remove Filler Words	Eemalda täitesõnad
+	Remove Pauses	Eemalda pausid
+	Remove Unused	Eemalda kasutamata
+	Render Audio	Renderda heli
+	Render Effects In to Out	Renderda efektid alguse ja lõpu vahel
+	Render In to Out	Renderda alguse ja lõpu vahel
+	Render Selection	Renderda valik
+	Replace Fonts in Projects…	Asenda fondid projektides…
+	Replace With Clip	Asenda klipiga
+	Reset All Parameters	Lähtesta kõik parameetrid
+	Reset Duration	Lähtesta kestus
+	Reset Effect	Lähtesta efekt
+	Reset Panel Layout	Lähtesta paneelide paigutus
+	Reset Parameter	Lähtesta parameeter
+	Reset to Saved Layout	Lähtesta salvestatud paigutusele
+	Restoration	Taastamine
+	Restore Captions from Source Clip	Taasta pealdised lähteklipist
+	Retry	Proovi uuesti
+	Reverb	Järelkõla
+	Reverse Match Frame	Vastupidine kaadri sobitamine
+	Revert	Ennista
+	Revert Remix	Ennista ümbermiks
+	Ripple Delete	Kustuta nihutusega
+	Ripple Delete Head Frame	Kustuta nihutusega esimene kaader
+	Ripple Sequence Markers	Nihuta jada markereid
+	Rose	Roos
+	Rotation	Pööre
+	Saturation	Küllastus
+	Save All	Salvesta kõik
+	Save As…	Salvesta kui…
+	Save Changes to this Workspace	Salvesta muudatused sellesse tööruumi
+	Save a Copy…	Salvesta koopia…
+	Save as New Workspace	Salvesta uue tööruumina
+	Save as New Workspace…	Salvesta uue tööruumina…
+	Save as Template…	Salvesta mallina…
+	Save changes to '{name}' before closing?	Kas salvestada „{name}“ muudatused enne sulgemist?
+	Save changes to '{name}' before continuing?	Kas salvestada „{name}“ muudatused enne jätkamist?
+	Scale	Skaala
+	Scale Width	Skaleeri laius
+	Scale to Frame Size	Skaleeri kaadri suurusele
+	Scene Edit Detection…	Stseenilõigete tuvastamine…
+	Scratch Disks…	Töökettad…
+	Screen	Ekraan
+	Search Bin	Otsingusalv
+	Select All Matching	Vali kõik sobivad
+	Select Label Group	Vali sildirühm
+	Select Next Graphic	Vali järgmine graafika
+	Select Next Layer	Vali järgmine kiht
+	Select Previous Graphic	Vali eelmine graafika
+	Select Previous Layer	Vali eelmine kiht
+	Select a clip in the Timeline.	Vali ajaskaalal klipp.
+	Selected	Valitud
+	Selection Follows Playhead	Valik järgib esitusnäidikut
+	Selection Tool	Valikutööriist
+	Selection as CFA4 Project…	Valik CFA4 projektina…
+	Selection…	Valik…
+	Send to Back	Vii kõige taha
+	Sequence	Jada
+	Sequence From Clip	Jada klipist
+	Sequence In/Out	Jada algus/lõpp
+	Sequence Settings…	Jada sätted…
+	Sequence…	Jada…
+	Show Active Caption Tracks Only	Näita ainult aktiivseid pealdiseradu
+	Show All Caption Tracks	Näita kõiki pealdiseradu
+	Show All Marker Colors	Näita kõiki markerivärve
+	Show Through Edits	Näita läbivaid lõikeid
+	Simplify Sequence…	Lihtsusta jada…
+	Slide	Libistamine
+	Smart Tools	Nutikad tööriistad
+	Snap in Timeline	Haaku ajaskaalal
+	Soft Light	Pehme valgus
+	Solo Track	Soolorada
+	Some panel labels change language after a restart.	Mõne paneeli sildid vahetavad keelt pärast taaskäivitust.
+	Source	Allikas
+	Source In	Lähte algus
+	Source Settings…	Lähte sätted…
+	Source patch	Lähte ühendamine
+	Special	Eriline
+	Speed/Duration…	Kiirus/kestus…
+	Start	Algus
+	Start Queue	Käivita järjekord
+	Starting engine…	Mootori käivitamine…
+	Status	Olek
+	Step Back 1 Frame	Samm 1 kaader tagasi
+	Step Forward 1 Frame	Samm 1 kaader edasi
+	Stereo Imagery	Stereopilt
+	Still Image	Liikumatu pilt
+	Stop Queue	Peata järjekord
+	Stylize	Stiliseeri
+	Subclip	Alamklipp
+	Subtract	Lahuta
+	Synchronize…	Sünkrooni…
+	Synthetic	Sünteetiline
+	Tan	Kollakaspruun
+	Target Bitrate	Sihtbitikiirus
+	Teal	Sinakasroheline
+	Text to Speech	Tekst kõneks
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	CFA4 mootorit (cfa4-cli) ei leitud. Ehita see käsuga: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4 mootor peatus ootamatult. Salvestamata muudatused on taastepäevikus; nende taastamiseks käivita CFA4 uuesti.
+	The engine stopped	Mootor peatus
+	Time	Aeg
+	Time Interpolation	Aja interpoleerimine
+	Time Remapping	Aja ümberkaardistamine
+	Time and Pitch	Aeg ja helikõrgus
+	Timecode	Ajakood
+	Timecode…	Ajakood…
+	Timeline	Ajaskaala
+	Toggle Animation	Lülita animatsioon
+	Toggle Proxies	Lülita asendusfailid
+	Toggle Sync Lock	Lülita sünkroonilukk
+	Toggle Track Lock	Lülita raja lukk
+	Toggle Track Output	Lülita raja väljund
+	Toggle the effect on or off	Lülita efekt sisse või välja
+	Toggle track targeting	Lülita raja sihtimine
+	Transcribe Sequence…	Transkribeeri jada…
+	Transcribe…	Transkribeeri…
+	Transcript	Transkriptsioon
+	Transformers	Teisendajad
+	Transparent Video…	Läbipaistev video…
+	Trim Edit	Kärpimislõige
+	Uniform Scale	Ühtlane skaala
+	Universal Counting Leader…	Universaalne loendusjuhis…
+	Untitled	Pealkirjata
+	Update Metadata…	Uuenda metaandmeid…
+	Upgrade Caption to Graphic	Muuda pealdis graafikaks
+	Upgrade to Source Graphic	Muuda lähtegraafikaks
+	Use hardware encoding when available	Kasuta võimaluse korral riistvaralist kodeerimist
+	Utility	Utiliit
+	VBR, 1 pass	VBR, 1 läbimine
+	VBR, 2 pass	VBR, 2 läbimist
+	Vertical Text	Vertikaalne tekst
+	Video	Video
+	Video Effects	Videoefektid
+	Video In	Video algus
+	Video Options	Video valikud
+	Video Out	Video lõpp
+	Video Transitions	Videoüleminekud
+	Violet	Violetne
+	Vivid Light	Elav valgus
+	Volume	Helitugevus
+	Wipe	Pühkimine
+	Work Area	Tööala
+	Workspaces	Tööruumid
+	Yellow	Kollane
+	Zoom to Sequence	Suumi jadale
+	an unknown time	tundmatu aeg
+	automatic	automaatne
+	frames	kaadrit
+	not available	pole saadaval
+	off	väljas
+	optional	valikuline
+	…	…
+	Ellipse Tool	Ellipsi tööriist
+	Hand Tool	Käe tööriist
+	Pen Tool	Sule tööriist
+	Rate Stretch Tool	Kiiruse venitamise tööriist
+	Rectangle Tool	Ristküliku tööriist
+	Remix Tool	Ümbermiksi tööriist
+	Ripple Edit Tool	Nihutusega redigeerimise tööriist
+	Rolling Edit Tool	Veereva redigeerimise tööriist
+	Slide Tool	Libistamistööriist
+	Slip Tool	Nihketööriist
+	Track Select Backward Tool	Raja tagasivaliku tööriist
+	Track Select Forward Tool	Raja edasivaliku tööriist
+	Type Tool	Teksti tööriist
+	Vertical Type Tool	Vertikaalse teksti tööriist
+	Zoom Tool	Suumitööriist
+	Add Marker (M)	Lisa marker (M)
+	Alpha	Alfa
+	Button Editor	Nuppude redaktor
+	Composite Video	Komposiitvideo
+	Display Mode	Kuvarežiim
+	Export Frame	Ekspordi kaader
+	Extract (')	Eralda (')
+	Full	Täis
+	Go to In (Shift+I)	Mine alguspunkti (Shift+I)
+	Go to Out (Shift+O)	Mine lõpp-punkti (Shift+O)
+	High Quality Playback	Kõrgkvaliteediga taasesitus
+	Insert (,)	Lisa (,)
+	Lift (;)	Tõsta (;)
+	Loop	Kordus
+	Loop marked range	Korda märgitud vahemikku
+	Magnification	Suurendus
+	Mark In (I)	Märgi algus (I)
+	Mark Out (O)	Märgi lõpp (O)
+	More transport controls	Rohkem esitusnuppe
+	Overwrite (.)	Kirjuta üle (.)
+	Paused Resolution	Pausi lahutus
+	Play In to Out	Esita algusest lõpuni
+	Play-Stop Toggle (Space)	Esita/peata (tühik)
+	Playback Resolution	Taasesituse lahutus
+	RGBA Channels	RGBA-kanalid
+	Red	Punane
+	Safe Margins	Turvaveerised
+	Select Playback Resolution	Vali taasesituse lahutus
+	Select Zoom Level	Vali suumitase
+	Settings	Sätted
+	Show Transport Controls	Näita esitusnuppe
+	Shuttle Left	Keri vasakule
+	Shuttle Right	Keri paremale
+	Shuttle Stop	Peata kerimine
+	Step Back 1 Frame (Left)	Samm 1 kaader tagasi (vasak nool)
+	Step Forward 1 Frame (Right)	Samm 1 kaader edasi (parem nool)
+	Appearance	Välimus
+	Darkest	Tumedaim
+	Next Appearance Mode	Järgmine välimusrežiim
+	(no sequence)	(jada pole)
+	All markers are hidden by the colour filter.	Kõik markerid on värvifiltriga peidetud.
+	Audio {n}:	Heli {n}:
+	Audio:	Heli:
+	Clip: {name}	Klipp: {name}
+	Codec:	Koodek:
+	Duration:	Kestus:
+	Marker	Marker
+	No markers. Press M to add one.	Markereid pole. Lisamiseks vajuta M.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Selle projekti märkmed: ülesanded, juhised, kaadrinumbrid… Salvestatakse koos projektiga.
+	Playhead:	Esitusnäidik:
+	Select a clip to view its metadata.	Vali klipp, et näha selle metaandmeid.
+	Settings:	Sätted:
+	Show or hide {color} markers	Näita või peida {color} markerid
+	Video {n}:	Video {n}:
+	Video:	Video:
+	{tc}  Chapter	{tc}  Peatükk
+	Media Type	Meedia tüüp
+	Frame Rate	Kaadrisagedus
+	Media Start	Meedia algus
+	Media End	Meedia lõpp
+	Media Duration	Meedia kestus
+	Video Info	Video teave
+	Video Codec	Videokoodek
+	Color Space	Värviruum
+	Audio Info	Heli teave
+	Audio Codec	Helikoodek
+	Description	Kirjeldus
+	Scene	Stseen
+	Shot	Võte
+	Log Note	Logimärkus
+	Tape Name	Lindi nimi
+	Client	Klient
+	Camera Angle	Kaameranurk
+	File Path	Faili tee
+	 · {time} left	 · jäänud {time}
+	Active Monitor	Aktiivne monitor
+	Add a timecode row	Lisa ajakoodi rida
+	Audio Samples	Heliproovid
+	Cancel	Tühista
+	Current Time	Praegune aeg
+	Failed: {e}	Nurjus: {e}
+	Feet + Frames 16mm	Jalad + kaadrid 16 mm
+	Feet + Frames 35mm	Jalad + kaadrid 35 mm
+	Frames	Kaadrid
+	In/Out Duration	Alguse/lõpu kestus
+	Media Time	Meedia aeg
+	No background jobs.	Taustatöid pole.
+	Remove Row	Eemalda rida
+	Seconds	Sekundid
+	Show finished jobs	Näita lõpetatud töid
+	{mode} · no clip	{mode} · klippi pole
+	{mode} · no sequence	{mode} · jada pole
+	Render	Renderda
+	Job	Töö
+	Audio Track Mixer menu	Helirajamikseri menüü
+	Automation mode	Automatiseerimisrežiim
+	Enable track for recording	Luba rada salvestamiseks
+	Fill the slots above first	Täida esmalt ülalolevad pesad
+	Go to In Point	Mine alguspunkti
+	Go to Out Point	Mine lõpp-punkti
+	Input channel mapping	Sisendkanalite vastendus
+	Meter Input(s) Only	Mõõda ainult sisendeid
+	Mix	Miks
+	Mute Send	Vaigista saatmine
+	New Submix	Uus alammiks
+	Pan / balance (drag; double-click: centre)	Panoraam/tasakaal (lohista; topeltklõps: keskele)
+	Post-Fader	Pärast liugurit
+	Pre-Fader	Enne liugurit
+	Remove Send	Eemalda saatmine
+	Show All	Näita kõiki
+	Show/Hide Effects and Sends	Näita/peida efektid ja saatmised
+	Show/Hide Tracks	Näita/peida rajad
+	Solo safe	Soolokaitse
+	Track output assignment	Raja väljundi määramine
+	Voice-over recording is not in the Qt GUI yet	Pealelugemise salvestamist Qt GUI-s veel pole
+	Volume (drag; double-click: 0 dB)	Helitugevus (lohista; topeltklõps: 0 dB)
+	pre 	eel 
+	Read	Lugemine
+	Latch	Lukustus
+	Touch	Puudutus
+	Write	Kirjutamine
+	Stereo	Stereo
+	Swap	Vaheta
+	Mono	Mono
+	Write keyframes	Kirjuta võtmekaadrid
+	Match Playhead	Sobita esitusnäidikuga
+	Gang to Program	Seo programmiga
+	(no sequences)	(jadasid pole)
+	8 Bit	8-bitine
+	Bright	Hele
+	Brightness	Heledus
+	Clamp Signal	Piira signaali
+	Colour Space	Värviruum
+	Dimmed	Hämardatud
+	Float	Ujukoma
+	Four Scopes (RGB, 8 bit)	Neli mõõturit (RGB, 8-bitine)
+	Four Scopes (YUV, float, no clamp)	Neli mõõturit (YUV, ujukoma, piiramata)
+	HDR	HDR
+	HLS Vectorscope + Histogram	HLS-vektorskoop + histogramm
+	Histogram	Histogramm
+	Luma	Luma
+	Parade	Paraad
+	Parade (RGB)	Paraad (RGB)
+	Parade ({kind})	Paraad ({kind})
+	Parade Type	Paraadi tüüp
+	Presets	Eelseaded
+	RGB	RGB
+	RGB-White	RGB-valge
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Mõõturi sätted
+	Signal Scale	Signaali skaala
+	Vectorscope (YUV)	Vektorskoop (YUV)
+	Vectorscope + Waveform YC	Vektorskoop + lainekuju YC
+	Vectorscope HLS	Vektorskoop HLS
+	Vectorscope Targets	Vektorskoobi sihtmärgid
+	Vectorscope YUV	Vektorskoop YUV
+	Waveform	Lainekuju
+	Waveform (Luma)	Lainekuju (luma)
+	Waveform (RGB)	Lainekuju (RGB)
+	Waveform ({kind})	Lainekuju ({kind})
+	Waveform Type	Lainekuju tüüp
+	YC	YC
+	YC no Chroma	YC ilma krominantsita
+	YUV	YUV
+	(no clip selected)	(klippi pole valitud)
+	Add Lumetri Color to clip	Lisa klipile Lumetri Color
+	Adjustments	Korrektsioonid
+	Amount	Hulk
+	Apply Match	Rakenda sobitus
+	Basic Correction	Põhikorrektsioon
+	Blacks	Mustad
+	Bleach Bypass	Pleegituse möödaviik
+	Blur	Hägu
+	Color Match	Värvide sobitamine
+	Color Wheels & Match	Värvirattad ja sobitamine
+	Color/Black	Värv/must
+	Color/Gray	Värv/hall
+	Comparison View	Võrdlusvaade
+	Contrast	Kontrast
+	Cool Blue	Jahe sinine
+	Correction	Korrektsioon
+	Creative	Loominguline
+	Curves	Kõverad
+	Denoise	Müra eemaldamine
+	Exposure	Säritus
+	Face Detection (protect skin tones)	Näotuvastus (kaitseb nahatoone)
+	Faded Film	Pleekinud film
+	Faded Matte	Pleekinud matt
+	Feather	Pehmendatud serv
+	Golden Hour	Kuldne tund
+	HDR Range	HDR-vahemik
+	HDR Specular	HDR-peegeldused
+	HDR White	HDR-valge
+	HSL Secondary	HSL-sekundaarne
+	Highlights	Heledad alad
+	Hue Range	Tooni vahemik
+	Hue Saturation Curves	Tooni ja küllastuse kõverad
+	Hue Shift	Tooni nihe
+	Hue vs Hue	Toon vs toon
+	Hue vs Luma	Toon vs luma
+	Hue vs Sat	Toon vs küllastus
+	Input LUT	Sisend-LUT
+	Intensity	Intensiivsus
+	Key	Võti
+	LUT	LUT
+	Look	Ilme
+	Look LUT	Ilme LUT
+	Luma Max	Luma maks.
+	Luma Min	Luma min.
+	Luma vs Sat	Luma vs küllastus
+	Master · {name}	Põhi · {name}
+	Midpoint	Keskpunkt
+	Midtones	Keskmised toonid
+	Monochrome	Ühevärviline
+	Night	Öö
+	RGB Curves	RGB-kõverad
+	Reference	Viide
+	Refine	Täpsusta
+	Roundness	Ümarus
+	Sat vs Sat	Küllastus vs küllastus
+	Saturation Min	Küllastuse min.
+	Shadows	Varjud
+	Sharpen	Teravda
+	Show Mask	Näita maski
+	Soften	Pehmenda
+	Teal & Orange	Sinakasroheline ja oranž
+	Temperature	Temperatuur
+	Tint	Toonimine
+	Vibrance	Erksus
+	Vignette	Vinjett
+	Warm Film	Soe film
+	White/Black	Valge/must
+	Whites	Valged
+	Add to Favorites	Lisa lemmikutesse
+	All Supported Files	Kõik toetatud failid
+	Allow Duplicate Media During Project Import	Luba projekti importimisel dubleeritud meedia
+	Audio Files	Helifailid
+	Cannot open {dir}: {e}	{dir} ei saa avada: {e}
+	Clear Recent Directories	Tühjenda hiljutised kaustad
+	Create Folder For Imported Projects	Loo imporditud projektidele kaust
+	Date Modified	Muutmise kuupäev
+	Edit Columns	Redigeeri veerge
+	Edit Columns…	Redigeeri veerge…
+	Favorites	Lemmikud
+	File Extension	Faililaiend
+	File Types Displayed	Kuvatavad failitüübid
+	Go Forward	Mine edasi
+	Hover Scrub	Hõljumisega kerimine
+	Import	Impordi
+	Import as Image Sequence	Impordi pildijadana
+	Ingest	Sissevõtt
+	List View	Loendivaade
+	Local Drives	Kohalikud kettad
+	Network	Võrk
+	New Media Browser Panel	Uus meediabrauseri paneel
+	Open In Source Monitor	Ava lähtemonitoris
+	Open Ingest Settings	Ava sissevõtu sätted
+	Projects and Interchange	Projektid ja vahetus
+	Recent Directories	Hiljutised kaustad
+	Remove from Favorites	Eemalda lemmikutest
+	Show in File Manager	Näita failihalduris
+	Still Images	Liikumatud pildid
+	Thumbnail View	Pisipiltide vaade
+	Up One Level	Taseme võrra üles
+	Video Files	Videofailid
+	{sel} of {total} items selected	Valitud {sel} üksust {total}-st
+	{total} items	{total} üksust
+	#	#
+	Add caption at playhead	Lisa pealdis esitusnäidiku kohale
+	Add captions	Lisa pealdised
+	Align center	Joonda keskele
+	Align left	Joonda vasakule
+	Align right	Joonda paremale
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Loo pealdiserada või impordi pealdisefail.
+	Create captions	Loo pealdised
+	Create new caption track	Loo uus pealdiserada
+	Delete selected captions	Kustuta valitud pealdised
+	Export captions…	Ekspordi pealdised…
+	Extract selected text	Eralda valitud tekst
+	Go to caption	Mine pealdise juurde
+	Go to graphic	Mine graafika juurde
+	Graphics	Graafika
+	Import captions file…	Impordi pealdisefail…
+	In	Algus
+	Lift selected text	Tõsta valitud tekst
+	Merge selected captions	Ühenda valitud pealdised
+	New {format} track	Uus {format}-rada
+	No captions on this track. Press + to add one at the playhead.	Sellel rajal pole pealdisi. Vajuta +, et lisada üks esitusnäidiku kohale.
+	No matching captions.	Sobivaid pealdisi pole.
+	No matching text.	Sobivat teksti pole.
+	No text graphics in this sequence. Add text with the Type tool.	Selles jadas pole tekstigraafikat. Lisa tekst teksti tööriistaga.
+	Open a sequence to search its graphics	Ava jada, et otsida selle graafikat
+	Open a sequence to see its transcript	Ava jada, et näha selle transkriptsiooni
+	Open a sequence to work with captions	Ava jada pealdistega töötamiseks
+	Out	Lõpp
+	Position: bottom	Asukoht: all
+	Position: middle	Asukoht: keskel
+	Position: top	Asukoht: üleval
+	Remove filler words	Eemalda täitesõnad
+	Speaker	Kõneleja
+	Speech-to-text turns the dialogue into editable text.	Kõne tekstiks muudab dialoogi redigeeritavaks tekstiks.
+	Split caption at playhead	Jaga pealdis esitusnäidiku kohalt
+	Subtitle	Subtiiter
+	Teletext	Teletekst
+	Text colour	Teksti värv
+	This build has no speech-to-text; import a transcript with transcript.set.	Selles versioonis pole kõnetuvastust; impordi transkriptsioon käsuga transcript.set.
+	Track	Rada
+	Transcribe	Transkribeeri
+	Transcribe sequence	Transkribeeri jada
+	(Default)	(Vaikimisi)
+	Ambience	Ümbrus
+	Assign an audio type to the selection:	Määra valikule helitüüp:
+	Auto-Match	Automaatne sobitamine
+	Balanced Voice	Tasakaalus hääl
+	Bright Air	Hele õhk
+	Bright Studio	Hele stuudio
+	Browse	Sirvi
+	Clarity	Selgus
+	Clean Up Noisy Dialogue	Puhasta mürarikas dialoog
+	Clear Audio Type	Tühjenda helitüüp
+	Clear Muddiness	Eemalda porisus
+	Clip Volume	Klipi helitugevus
+	DeEss	Sibilantide eemaldus
+	DeHum	Mürina eemaldus
+	Delete Preset	Kustuta eelseade
+	Dialogue	Dialoog
+	Dry Up a Roomy Voice	Kuivata kajav hääl
+	Duck Deep Under Dialogue	Summuta sügavalt dialoogi alla
+	Duck Under Dialogue	Summuta dialoogi alla
+	Duck Under Voice and Effects	Summuta hääle ja efektide alla
+	Duck against:	Summuta vastavalt:
+	Ducking	Summutamine
+	Dynamics	Dünaamika
+	EQ	Ekvalaiser
+	Enhance Speech	Paranda kõnet
+	Fades	Sujuvad üleminekud
+	Far Away	Kaugel
+	From the Left	Vasakult
+	From the Right	Paremalt
+	Generate Keyframes	Genereeri võtmekaadrid
+	High Tone	Kõrge toon
+	In a Room	Toas
+	Interior Room Tone	Siseruumi foon
+	Large Hall	Suur saal
+	Loudness	Valjus
+	Low Tone	Madal toon
+	Matches each of the {n} clips on its own.	Sobitab kõik {n} klippi eraldi.
+	Medium Room	Keskmine tuba
+	Multiple Clips Selected	Valitud on mitu klippi
+	Music	Muusika
+	Mute	Vaigista
+	Not matched yet	Veel sobitamata
+	Open Air	Lageda taeva all
+	Pan	Panoraam
+	Phone Call	Telefonikõne
+	Podcast Voice	Taskuhäälingu hääl
+	Presence Lift	Kohalolu tõstmine
+	Preset name	Eelseade nimi
+	Preset:	Eelseade:
+	Radio Announcer	Raadiodiktor
+	Radio Voice	Raadiohääl
+	Reduce By	Vähenda
+	Reduce Noise	Vähenda müra
+	Reduce Reverb	Vähenda järelkõla
+	Reduce Rumble	Vähenda mürinat
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	Muusika ümbermiksimine sihtkestusele pole veel saadaval. Kärbi klippi ja lisa selle asemel ristsulandus.
+	Repair	Parandus
+	SFX	Heliefektid (SFX)
+	Save Preset	Salvesta eelseade
+	Select audio clips to edit them here	Vali helikliipid, et neid siin redigeerida
+	Select audio clips, then click a preset to apply it.	Vali helikliipid ja klõpsa seejärel eelseadet selle rakendamiseks.
+	Sensitivity	Tundlikkus
+	Small Room	Väike tuba
+	Soften Harshness	Pehmenda karedust
+	Stereo Width	Stereo laius
+	Stone Church	Kivikirik
+	Telephone	Telefon
+	The selected clips have different audio types. Assign one type to edit them together.	Valitud klippidel on erinevad helitüübid. Määra neile üks tüüp, et neid koos redigeerida.
+	Untagged	Sildistamata
+	Voice in a Hall	Hääl saalis
+	Warm Room	Soe tuba
+	Warm Voice	Soe hääl
+	Wide Outdoor	Lai välisruum
+	{name} (user)	{name} (kasutaja)
+	Align Bottom	Joonda alla
+	Align Center Horizontally	Joonda horisontaalselt keskele
+	Align Center Vertically	Joonda vertikaalselt keskele
+	Align Top	Joonda üles
+	Align and Transform	Joondus ja teisendus
+	All Categories	Kõik kategooriad
+	Anchor point	Ankurpunkt
+	Angle	Nurk
+	Background	Taust
+	Baseline Shift	Alusjoone nihe
+	Center Align Text	Joonda tekst keskele
+	Corner Radius	Nurga raadius
+	Crawl Left	Kulg vasakule
+	Crawl Right	Kulg paremale
+	Create new graphic	Loo uus graafika
+	Delete Layer	Kustuta kiht
+	Distance	Kaugus
+	End Off Screen	Lõpp ekraanist väljas
+	Faux Bold	Näiline paks
+	Faux Italic	Näiline kaldkiri
+	Font Style	Fondi stiil
+	Gradient	Gradient
+	Inner	Sisemine
+	Install Motion Graphics Template (.fcgt)	Paigalda liikuva graafika mall (.fcgt)
+	Install…	Paigalda…
+	Intro Duration	Sissejuhatuse kestus
+	Kerning	Märgipaaride siire
+	Layers	Kihid
+	Leading	Reavahe
+	Left Align Text	Joonda tekst vasakule
+	Ligatures	Ligatuurid
+	Linear Gradient	Lineaarne gradient
+	New Ellipse	Uus ellips
+	New Rectangle	Uus ristkülik
+	New Text	Uus tekst
+	New Text Layer	Uus tekstikiht
+	No templates match.	Ükski mall ei sobi.
+	OpenType	OpenType
+	Outer	Väline
+	Outro Duration	Lõpetuse kestus
+	Paragraph Text	Lõigutekst
+	Path	Tee
+	Pin To	Kinnita
+	Pinned Edges	Kinnitatud servad
+	Point Text	Punkttekst
+	Polygon Sides	Hulknurga küljed
+	Postroll	Järelkerimine
+	Preroll	Eelkerimine
+	Responsive Design - Position	Kohanduv kujundus – asukoht
+	Responsive Design - Time	Kohanduv kujundus – aeg
+	Right Align Text	Joonda tekst paremale
+	Roll	Rull
+	Search templates	Otsi malle
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Vali graafikaklipp või kasuta programmimonitoril teksti tööriista (T)
+	Select a layer to edit its properties.	Vali kiht, et selle omadusi redigeerida.
+	Shape	Kujund
+	Solid	Ühtlane
+	Start Off Screen	Algus ekraanist väljas
+	Stroke	Kontuur
+	Stroke 2	Kontuur 2
+	Template Properties	Malli omadused
+	Template: {name}	Mall: {name}
+	Text Box Height	Tekstikasti kõrgus
+	Text Box Width	Tekstikasti laius
+	Text Layer Type	Tekstikihi tüüp
+	Text Properties	Teksti omadused
+	Text Styling	Teksti kujundus
+	Toggle animation	Lülita animatsioon
+	Toggle visibility	Lülita nähtavus
+	Tracking	Märgivahe
+	Video Frame	Videokaader
+	{category} · My Template	{category} · Minu mall
+	{n} editable properties	{n} redigeeritavat omadust
+	Add pause	Lisa paus
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	„Lisa paus“ lisab [pause 1s]. Pikema või lühema pausi jaoks muuda arvu, nt [pause 500ms] või [pause 2s].
+	Add to timeline	Lisa ajaskaalale
+	Basic voices (built in)	Põhihääled (sisseehitatud)
+	Download	Laadi alla
+	Download natural voices ({mb} MB)…	Laadi alla loomulikud hääled ({mb} MB)…
+	Download of the natural voices failed: {e}	Loomulike häälte allalaadimine nurjus: {e}
+	Download the natural voices? {mb} MB, once.	Kas laadida alla loomulikud hääled? {mb} MB, ühekordselt.
+	Downloading…	Allalaadimine…
+	Editing the selected narration	Valitud jutustuse redigeerimine
+	Extra high	Eriti kõrge
+	Extra low	Eriti madal
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Allikast {source} ja github.com/cmusphinx/cmudict (hääldused). Litsents: {license}. Iga faili kontrollitakse kinnitatud SHA-256 vastu.
+	Hear this voice	Kuula seda häält
+	High	Kõrge
+	Low	Madal
+	Narration added on {track}	Jutustus lisatud rajale {track}
+	Narration updated	Jutustus uuendatud
+	Natural voices	Loomulikud hääled
+	Natural voices installed	Loomulikud hääled on paigaldatud
+	Natural voices need a one-time download.	Loomulikud hääled vajavad ühekordset allalaadimist.
+	New narration	Uus jutustus
+	Pace	Tempo
+	Synthesizing narration…	Jutustuse sünteesimine…
+	Synthesizing…	Sünteesimine…
+	Text to Speech: {e}	Tekst kõneks: {e}
+	Type what you want the voice to say	Kirjuta, mida hääl peab ütlema
+	Vocal pitch	Hääle kõrgus
+	an audio track	helirada
+	no audio output (check Settings ▸ Audio Hardware)	heliväljund puudub (kontrolli Sätted ▸ Heliriistvara)
+	the job disappeared	töö kadus
+	{name} (download)	{name} (allalaadimine)
+	5.1 panner (drag the puck; double-click: front centre)	5.1 panoraamija (lohista nuppu; topeltklõps: eest keskelt)
+	Add keyframe	Lisa võtmekaader
+	Crop	Kärbe
+	Go to next keyframe	Mine järgmisele võtmekaadrile
+	Go to previous keyframe	Mine eelmisele võtmekaadrile
+	Remove keyframe	Eemalda võtmekaader
+	Select a clip to see its properties	Vali klipp, et näha selle omadusi
+	Speed {n}%	Kiirus {n}%
+	Turn on animation and add keyframe	Lülita animatsioon sisse ja lisa võtmekaader
+	Apply to Selected Clips	Rakenda valitud klippidele
+	Export Preset…	Ekspordi eelseade…
+	Import Presets…	Impordi eelseaded…
+	Lumetri Presets	Lumetri eelseaded
+	Search effects	Otsi efekte
+	Text to Speech: another sequence is open now; the narration was not placed	Tekst kõneks: nüüd on avatud teine jada; jutustust ei paigutatud
+	Effect presets	Efektide eelseaded
+	Automate to Sequence	Automatiseeri jadaks
+	Bin: {name}	Salv: {name}
+	Clear (Delete)	Tühjenda (Delete)
+	Convert to Master Clip	Teisenda põhiklipiks
+	Date Created	Loomise kuupäev
+	Drag to reorder; tick the columns to show.	Lohista järjestuse muutmiseks; märgi kuvatavad veerud.
+	Extra Large	Eriti suur
+	Find	Leia
+	Freeform	Vabavorm
+	Freeform View Options…	Vabavormi vaate valikud…
+	Icon	Ikoon
+	Icon View	Ikoonivaade
+	Large	Suur
+	Manage Saved View Presets	Halda salvestatud vaate eelseadeid
+	Medium (default)	Keskmine (vaikimisi)
+	Metadata Display	Metaandmete kuva
+	Metadata Display…	Metaandmete kuva…
+	New Bin From Selection	Uus salv valikust
+	New Item	Uus üksus
+	New Project Shortcut	Uus projekti otsetee
+	New Search Bin	Uus otsingusalv
+	New Sequence From Clip	Uus jada klipist
+	Open in New Tab	Ava uuel vahekaardil
+	Open in New Window	Ava uues aknas
+	Open in Place	Ava kohapeal
+	Open in Source Monitor	Ava lähtemonitoris
+	Open in Timeline	Ava ajaskaalal
+	Preview Area	Eelvaate ala
+	Project View Preset {n}	Projekti vaate eelseade {n}
+	Project: {name}	Projekt: {name}
+	Refresh Project	Värskenda projekti
+	Refresh Sort Order	Värskenda sortimisjärjestust
+	Restore View Preset	Taasta vaate eelseade
+	Reveal Project in Finder…	Näita projekti failihalduris…
+	Reveal in Finder	Näita failihalduris
+	Save As New View Preset	Salvesta uue vaate eelseadena
+	Save Current View Preset	Salvesta praegune vaate eelseade
+	Save Project	Salvesta projekt
+	Select an item to preview it	Vali üksus selle eelvaatamiseks
+	Set Poster Frame	Määra plakatikaader
+	Small	Väike
+	Sort Icons	Sordi ikoonid
+	Thumbnail controls for all pointing devices	Pisipildi juhtnupud kõigile osutusseadmetele
+	Thumbnails	Pisipildid
+	Thumbnails show effects applied	Pisipildid näitavad rakendatud efekte
+	User Order	Kasutaja järjestus
+	Video Usage: {vu}  Audio Usage: {au}	Video kasutus: {vu}  Heli kasutus: {au}
+	{n} items	{n} üksust
+	Freeform View	Vabavormi vaade
+	Stack	Virna
+	Unstack	Võta virnast
+	Clip Size	Klipi suurus
+	Larger	Suurem
+	Smaller	Väiksem
+	Align to Grid	Joonda ruudustikule
+	Reset to Grid	Lähtesta ruudustikule
+	Save Arrangement…	Salvesta paigutus…
+	Save Arrangement	Salvesta paigutus
+	Restore Arrangement	Taasta paigutus
+	Delete Arrangement	Kustuta paigutus
+	Arrangement {n}	Paigutus {n}
+	Freeform View Options	Vabavormi vaate valikud
+	Snap to grid	Haaku ruudustikule
+	Show clip names	Näita klippide nimesid
+	Show clip durations	Näita klippide kestusi
+	Grid spacing:	Ruudustiku vahe:
+	Default clip size:	Klipi vaikesuurus:
+	{panel} — coming in a later milestone	{panel} – tuleb hilisemas verstapostis
+	Edit Workspaces	Redigeeri tööruume
+	Restore Original	Taasta algne
+	Drag Video Only	Lohista ainult video
+	Drag Audio Only	Lohista ainult heli
+	Drag Video and Audio	Lohista video ja heli
+	Source clips	Lähteklipid
+	Close All	Sulge kõik
+	(no audio)	(heli pole)
+	Generating waveform…	Lainekuju genereerimine…
+	Audio Waveform	Heli lainekuju
+	Video and Audio Waveform Split	Video ja heli lainekuju eraldi
+	Anchor to In Point	Ankurda alguspunkti
+	Anchor to Out Point	Ankurda lõpp-punkti
+	Custom ({n} points)	Kohandatud ({n} punkti)
+	Save Preset…	Salvesta eelseade…
+	Source · {name}	Allikas · {name}
+	Temporal Interpolation	Ajaline interpoleerimine
+	Twirl open or shut	Ava või sulge
+	Without keyframes	Ilma võtmekaadriteta
+	Create 4-point polygon mask	Loo 4-punktiline hulknurkmask
+	Create ellipse mask	Loo ellipsmask
+	Delete Mask	Kustuta mask
+	Free draw bezier	Vabakäe Bezier
+	Intersect	Lõikumine
+	Inverted	Pööratud
+	Position & Rotation	Asukoht ja pööre
+	Position, Scale & Rotation	Asukoht, skaala ja pööre
+	Show graphs	Näita graafikuid
+	Stop tracking	Peata jälitamine
+	Track selected mask backward	Jälita valitud maski tagasi
+	Track selected mask backward 1 frame	Jälita valitud maski 1 kaader tagasi
+	Track selected mask forward	Jälita valitud maski edasi
+	Track selected mask forward 1 frame	Jälita valitud maski 1 kaader edasi
+	Tracking method: {method}	Jälitusmeetod: {method}
+	Velocity	Kiirus
+	Set Transition Duration	Määra ülemineku kestus
+	Reverse	Tagurpidi
+	Center at Cut	Keskel lõikel
+	Start at Cut	Algus lõikel
+	End at Cut	Lõpp lõikel
+	Custom Start	Kohandatud algus
+	Eyedropper (pick a color from the Program monitor)	Pipett (vali värv programmimonitorist)
+	Interpret Footage	Tõlgenda materjali
+	Color Management · {n} item	Värvihaldus · {n} üksus
+	Color Management · {n} items	Värvihaldus · {n} üksust
+	Media colour space (from file metadata): {detected}	Meedia värviruum (faili metaandmetest): {detected}
+	Override media colour space:	Alista meedia värviruum:
+	Decode Auro-3D height channels	Dekodeeri Auro-3D kõrguskanalid
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Väljas: fail esitab oma kanalid nagu ilma Auro-3D dekoodrita.
+	Use file metadata	Kasuta faili metaandmeid
+	Motion Graphics Templates	Liikuva graafika mallid
+	Clip Fx Editor	Klipi efektide redaktor
+	Track Fx Editor	Raja efektide redaktor
+	Custom Setup	Kohandatud seadistus
+	Edit…	Redigeeri…
+	Master Gain	Põhivõimendus
+	Band {n}	Riba {n}
+	Solo	Soolo
+	Thr	Lävi
+	Ratio	Suhe
+	Att	Rünn.
+	Rel	Vabast.
+	Output Gain	Väljundi võimendus
+	Limiter	Piiraja
+	Link Channels	Seo kanalid
+	Limiter Threshold	Piiraja lävi
+	Limiter Release	Piiraja vabastus
+	Auto Gate	Automaatne värav
+	Threshold	Lävend
+	Attack	Rünnak
+	Release	Vabastus
+	Compressor	Kompressor
+	Auto Makeup	Automaatne tasandus
+	Makeup	Tasandus
+	Expander	Laiendaja
+	Soft Clip	Pehme lõikamine
+	out	välja
+	in	sisse
+	Parametric Equalizer	Parameetriline ekvalaiser
+	Graphic Equalizer (10 Bands)	Graafiline ekvalaiser (10 riba)
+	Graphic Equalizer (20 Bands)	Graafiline ekvalaiser (20 riba)
+	Graphic Equalizer (30 Bands)	Graafiline ekvalaiser (30 riba)
+	Multiband Compressor	Mitmeribaline kompressor
+	CFA4 encountered an error	CFA4 tabas viga
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Akna joonistamisel läks midagi valesti. Sinu projekt on endiselt avatud; salvesta see igaks juhuks.
+	Continue	Jätka
+	Details: {path}	Üksikasjad: {path}
+	Engine restarted	Mootor taaskäivitati
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4 mootor peatus ootamatult ja taaskäivitati. Salvestamata muudatused on taastepäevikus, mis pakub nende taastamist.
+	 ({ch} output channels)	 ({ch} väljundkanalit)
+	Active	Aktiivne
+	Add to favorites	Lisa lemmikutesse
+	Appearance Mode	Välimusrežiim
+	Appearance Settings…	Välimuse sätted…
+	Auto-saves go to: {dir}	Automaatsalvestused lähevad kausta: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	CFA4 jätab ülejäänud RAM-i teistele rakendustele vabaks.
+	Currently: {loc} — {files} file(s), {size}	Praegu: {loc} – {files} faili, {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	Monitoride ja pisipiltide jaoks hoitud dekodeeritud kaadrid: {used} / {budget}.
+	Default location	Vaikeasukoht
+	Delete this preset	Kustuta see eelseade
+	Deleted preset “{active}”	Eelseade „{active}“ kustutatud
+	Deleted {n} file(s), {size}.	Kustutatud {n} faili, {size}.
+	Export the labels to a preset file…	Ekspordi sildid eelseadefaili…
+	Exported to {path}	Eksporditud: {path}
+	Font family	Fondiperekond
+	Import a preset file…	Impordi eelseadefail…
+	Imported “{name}”	Imporditud „{name}“
+	Label Color Presets	Sildivärvide eelseaded
+	Label Colors	Sildivärvid
+	Last auto-save {a}	Viimane automaatsalvestus {a}
+	Last auto-save {a} · last recovery copy {j}	Viimane automaatsalvestus {a} · viimane taastekoopia {j}
+	Last recovery copy {j}	Viimane taastekoopia {j}
+	Preferences	Eelistused
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	Programm vasak → seadme väljund {l}, parem → seadme väljund {r}{dev}. Seadme kanalitest kaugemad väljundid langevad tagasi 1 ja 2 peale.
+	Recovery copy: {dir}	Taastekoopia: {dir}
+	Remove from favorites	Eemalda lemmikutest
+	Revert to the preset's colors and names	Taasta eelseade värvid ja nimed
+	Show the presets folder	Näita eelseadete kausta
+	Sync with system	Sünkrooni süsteemiga
+	System Default	Süsteemi vaikesäte
+	not available in this session	pole selles seansis saadaval
+	{name} (Modified)	{name} (muudetud)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	Ligipääsetav värvikontrast
+	Adaptive	Kohanduv
+	Add tracks automatically when editing source clips onto the Timeline	Lisa rajad automaatselt, kui lähteklippe ajaskaalale redigeeritakse
+	All lines	Kõik read
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	Luba valikutööriistal valida veerev ja nihutusega kärpimine ilma muuteklahvita
+	Allow current tool to change trim type of previously selected edit point	Luba praegusel tööriistal muuta varem valitud lõikepunkti kärpimistüüpi
+	Allow duplicate media during project import	Luba projekti importimisel dubleeritud meedia
+	Always import embedded CEA-708 closed captions with wide aspect.	Impordi manustatud CEA-708 subtiitrid alati laia kuvasuhtega.
+	Always override audio tags	Alista alati helisildid
+	Analyze all imported media to search for visuals or audio	Analüüsi kogu imporditud meediat pildi või heli otsimiseks
+	Animate zoom, scrolling and menus	Animeeri suumimist, kerimist ja menüüsid
+	Appearance…	Välimus…
+	At Startup	Käivitamisel
+	At playback end, return to beginning when restarting playback	Taasesituse lõpus naase taasesituse uuesti alustamisel algusesse
+	Attempt to force hardware to document sample rate	Proovi sundida riistvara dokumendi diskreetimissagedusele
+	Audio Hardware	Heliriistvara
+	Audio Hardware…	Heliriistvara…
+	Audio Time Units	Heli ajaühikud
+	Audio Transition Default Duration	Heliülemineku vaikekestus
+	Audio…	Heli…
+	Auto (system)	Automaatne (süsteem)
+	Auto Save	Automaatsalvestus
+	Auto Save also saves the current project(s)	Automaatsalvestus salvestab ka praeguse(d) projekti(d)
+	Auto Save…	Automaatsalvestus…
+	Auto-tag audio types in the timeline	Sildista helitüübid ajaskaalal automaatselt
+	Auto-transcribe all imported clips	Transkribeeri automaatselt kõik imporditud klipid
+	Auto-transcribe only clips in sequences	Transkribeeri automaatselt ainult jadades olevad klipid
+	Automatch Time	Automaatse sobitamise aeg
+	Automatically Hide Dependent Clips	Peida sõltuvad klipid automaatselt
+	Automatically Save Every	Salvesta automaatselt iga
+	Automatically delete cache files older than	Kustuta automaatselt vahemälufailid, mis on vanemad kui
+	Automatically delete oldest cache files when cache exceeds	Kustuta automaatselt vanimad vahemälufailid, kui vahemälu ületab
+	Automatically refresh growing files	Värskenda kasvavaid faile automaatselt
+	Automatically resume playback for growing files in Source Monitor	Jätka lähtemonitoris kasvavate failide taasesitust automaatselt
+	Automatically save projects	Salvesta projektid automaatselt
+	Automatically transcribe clips	Transkribeeri klipid automaatselt
+	Automation Keyframe Optimization	Automatiseerimise võtmekaadrite optimeerimine
+	Background fill	Tausta täide
+	Bevel join	Faasitud ühendus
+	Bins	Salved
+	Butt cap	Lame ots
+	Cache analysis results for re-use	Puhverda analüüsi tulemused korduvkasutuseks
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	Muudatused kopeeritakse taustal hetk pärast iga muudatust. Kui CFA4 ootamatult sulgub, pakutakse neid järgmisel käivitamisel.
+	Chinese	Hiina keel
+	Closed Captions	Subtiitrid
+	Color Theme	Värviteema
+	Color…	Värv…
+	Crash Recovery	Krahhist taastamine
+	Create folder for imported projects	Loo imporditud projektidele kaust
+	Dark Theme	Tume teema
+	Default Audio Tracks	Vaikimisi helirajad
+	Default Emoji font	Emotikonide vaikefont
+	Default Input	Vaikesisend
+	Default Media Scaling	Meedia vaikeskaleerimine
+	Default Output	Vaikeväljund
+	Default closed caption font	Subtiitrite vaikefont
+	Default language	Vaikekeel
+	Default paragraph direction	Lõigu vaikesuund
+	Default subtitle and text font	Pealdiste ja teksti vaikefont
+	Delete files older than	Kustuta failid, mis on vanemad kui
+	Delete oldest files when the cache exceeds	Kustuta vanimad failid, kui vahemälu ületab
+	Delete…	Kustuta…
+	Device Class	Seadmeklass
+	Disable video output when in the background	Keela videoväljund taustal olles
+	Display Color Management	Kuvari värvihaldus
+	Display Color Settings	Kuvari värvisätted
+	Display out of sync indicators for unlinked clips	Kuva linkimata klippidel sünkroonist väljas olemise näidikud
+	Do not delete cache files automatically	Ära kustuta vahemälufaile automaatselt
+	Don't label speakers	Ära sildista kõnelejaid
+	Double-click	Topeltklõps
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	Mustanddekodeerimine vähendatud taasesituse lahutusega (H.264: kiirem, mõned kaadrid vähem filtreeritud)
+	Dutch	Hollandi keel
+	Dynamic Link	Dünaamiline link
+	Enable Mercury Transmit	Luba Mercury Transmit
+	Enable ProRes hardware accelerated encoding, if available	Luba võimaluse korral riistvarakiirendusega ProRes-kodeerimine
+	Enable clip and XMP metadata linking	Luba klipi ja XMP metaandmete sidumine
+	Enable developer mode	Luba arendajarežiim
+	Enable hardware accelerated decoding (requires restart)	Luba riistvarakiirendusega dekodeerimine (vajab taaskäivitust)
+	Enable language auto-detection	Luba keele automaatne tuvastamine
+	Enable proxies	Luba asendusfailid
+	English	Inglise keel
+	Extended Dynamic Range Monitoring	Laiendatud dünaamilise ulatuse jälgimine
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	Värvihalduse parameetrid leiad paneeli Lumetri Color vahekaardilt Sätted.
+	Frame Count	Kaadrite arv
+	Frame cache for monitors and thumbnails	Kaadrite vahemälu monitoride ja pisipiltide jaoks
+	French	Prantsuse keel
+	Front + LFE	Ees + LFE
+	Front + Rear	Ees + taga
+	Front + Rear + LFE	Ees + taga + LFE
+	Front Only	Ainult ees
+	Generate Timecode	Genereeri ajakood
+	Generate waveforms and conform audio using multithreading	Genereeri lainekujud ja kohanda heli mitmelõimeliselt
+	Generate waveforms automatically during import	Genereeri lainekujud importimisel automaatselt
+	German	Saksa keel
+	Graphics…	Graafika…
+	Growing Files	Kasvavad failid
+	HDR Graphics White (Nits)	HDR-graafika valge (niti)
+	Hardware decoding	Riistvaraline dekodeerimine
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Riistvaraline dekodeerimine: „Automaatne“ kasutab toetatud voogude jaoks süsteemi videodekoodrit (VA-API või NVDEC H.264 ja HEVC jaoks) ning kõige muu jaoks või riistvara rikke korral CFA4 enda dekoodrit. Juba avatud meedia säilitab oma dekoodri, kuni see uuesti avatakse.
+	Highlight Color	Esiletõstu värv
+	Hindi	Hindi keel
+	Hindi digits	Hindi numbrid
+	Horizontal	Horisontaalne
+	I/O Buffer Size	S/V puhvri suurus
+	Import numbered stills as image sequences	Impordi nummerdatud pildid pildijadadena
+	In the Media Cache	Meedia vahemälus
+	In the project	Projektis
+	Include captions on import	Kaasa pealdised importimisel
+	Indeterminate Media Timebase	Määramata meedia ajabaas
+	Interface Language	Liidese keel
+	Italian	Itaalia keel
+	Japanese	Jaapani keel
+	Keep a recovery copy of unsaved changes	Hoia salvestamata muudatustest taastekoopiat
+	Korean	Korea keel
+	Label Defaults	Siltide vaikesätted
+	Label speakers	Sildista kõnelejad
+	Labels…	Sildid…
+	Large Trim Offset	Suur kärpimise nihe
+	Large Volume Adjustment	Suur helitugevuse muutus
+	Left channel to device output	Vasak kanal seadme väljundisse
+	Left to right	Vasakult paremale
+	Light Theme	Hele teema
+	Linear keyframe thinning	Lineaarne võtmekaadrite hõrendamine
+	Local Projects	Kohalikud projektid
+	Maintain pitch while shuttling	Säilita kerimisel helikõrgus
+	Match frame sets in point	Kaadri sobitamine määrab alguspunkti
+	Maximum Project Versions	Projekti versioonide maksimumarv
+	Media	Meedia
+	Media Analysis	Meedia analüüs
+	Media Analysis & Transcription	Meedia analüüs ja transkriptsioon
+	Media Analysis & Transcription…	Meedia analüüs ja transkriptsioon…
+	Media Cache	Meedia vahemälu
+	Media Cache Database	Meedia vahemälu andmebaas
+	Media Cache Files	Meedia vahemälu failid
+	Media Cache Management	Meedia vahemälu haldus
+	Media Cache…	Meedia vahemälu…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	Meedia analüüsid ja transkriptsioonid puhverdatakse meedia vahemälu kausta. Kui meedia imporditakse selles arvutis teise projekti, pole uut analüüsi vaja.
+	Memory	Mälu
+	Memory…	Mälu…
+	Minimum time	Minimaalne aeg
+	Minimum time interval thinning	Minimaalse ajavahemiku hõrendamine
+	Missing font replacement	Puuduva fondi asendus
+	Miter join	Teravnurkne ühendus
+	Miter limit	Teravnurga piir
+	Mono Media	Monomeedia
+	Monospace only	Ainult püsisammuga
+	Movie (audio and video)	Film (heli ja video)
+	Multichannel Mono Media	Mitmekanaliline monomeedia
+	Mute input during timeline recording	Vaigista sisend ajaskaalal salvestamise ajal
+	Next to original media files	Algsete meediafailide kõrval
+	No Scroll	Kerimiseta
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Pluginaid pole paigaldatud. Muudatused jõustuvad CFA4 järgmisel käivitamisel.
+	Open Most Recent	Ava viimatine
+	Open in new window	Ava uues aknas
+	Open in place	Ava kohapeal
+	Open new tab	Ava uus vahekaart
+	Output Mapping	Väljundi vastendus
+	Page Scroll	Lehekaupa kerimine
+	Pause Media Encoder queue during playback	Peata Media Encoderi järjekord taasesituse ajaks
+	Per line	Rea kaupa
+	Place files dropped onto the Timeline directly on the Timeline	Paiguta ajaskaalale lohistatud failid otse ajaskaalale
+	Play after rendering previews	Esita pärast eelvaadete renderdamist
+	Play audio while scrubbing in Source and Program Monitors	Esita heli lähte- ja programmimonitoris kerimise ajal
+	Playback	Taasesitus
+	Playback…	Taasesitus…
+	Playhead position determines trim monitor loop playback	Esitusnäidiku asukoht määrab kärpimismonitori korduse
+	Plugins	Pluginad
+	Plugins…	Pluginad…
+	Policy	Reegel
+	Portuguese	Portugali keel
+	Projecting cap	Ulatuv ots
+	Projects	Projektid
+	RAM reserved for other applications	Teistele rakendustele reserveeritud RAM
+	Refresh growing Files Every	Värskenda kasvavaid faile iga
+	Render Edit in Audition files to:	Renderda „Redigeeri Auditionis“ failid asukohta:
+	Render audio when rendering video	Renderda video renderdamisel ka heli
+	Restore open sequences when opening projects	Taasta projektide avamisel avatud jadad
+	Right channel to device output	Parem kanal seadme väljundisse
+	Right to left	Paremalt vasakule
+	Ripple trim adds edits to keep both sides of trim in sync	Nihutusega kärpimine lisab lõikeid, et kärpe mõlemad pooled püsiksid sünkroonis
+	Round cap	Ümar ots
+	Round join	Ümar ühendus
+	Russian	Vene keel
+	Sample Rate	Diskreetimissagedus
+	Save .cfa and .pek media cache files next to original media files when possible	Salvesta .cfa ja .pek meedia vahemälu failid võimaluse korral algsete meediafailide kõrvale
+	Scale to frame size	Skaleeri kaadri suurusele
+	Scratch disk location for Captured Audio	Salvestatud heli tööketta asukoht
+	Set focus on the Timeline when performing Insert/Overwrite edits	Sea lisamise/ülekirjutamise korral fookus ajaskaalale
+	Set to frame size	Määra kaadri suuruseks
+	Shift clips that overlap trim point during ripple trimming	Nihuta nihutusega kärpimisel klippe, mis kattuvad kärpepunktiga
+	Show "Project:" and "Bin:" in Project panel tab	Näita projektipaneeli vahekaardil „Projekt:“ ja „Salv:“
+	Show Clip Mismatch Warning dialog	Näita klipi mittevastavuse hoiatust
+	Show Event Indicator	Näita sündmuste näidikut
+	Show Home	Näita avalehte
+	Show Mask Tracker Preview	Näita maskijälitaja eelvaadet
+	Show Open Dialog	Näita avamisdialoogi
+	Show Project Load Error Dialog	Näita projekti laadimise vea dialoogi
+	Show Rich Tool Tips	Näita rikkalikke kohtspikreid
+	Show Tool Tips	Näita kohtspikreid
+	Show Workspace Reset Warning dialog on double click	Näita topeltklõpsul tööruumi lähtestamise hoiatust
+	Show system compatibility issues at startup	Näita käivitamisel süsteemi ühilduvusprobleeme
+	Smart quotes	Nutikad jutumärgid
+	Smooth Scroll	Sujuv kerimine
+	Snap playhead in Timeline when Snap is enabled	Haaku esitusnäidik ajaskaalal, kui haakumine on lubatud
+	Spanish	Hispaania keel
+	Speaker Labeling	Kõnelejate sildistamine
+	Speech model	Kõnemudel
+	Start at 0	Alusta 0-st
+	Start at 1	Alusta 1-st
+	Start with an Empty Project	Alusta tühja projektiga
+	Step forward/back many	Samm edasi/tagasi mitu
+	Stereo Media	Stereomeedia
+	Still	Liikumatu pilt
+	Still Image Default Duration	Liikumatu pildi vaikekestus
+	Stroke line cap	Kontuuri joone ots
+	Stroke line join	Kontuuri joone ühendus
+	Sum multichannel outputs to mono in Source Monitor	Summeeri lähtemonitoris mitmekanalilised väljundid monoks
+	System Language	Süsteemi keel
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	Meedia vahemälu hoiab salvestamata projektide renderdatud eelvaateid ja muid faile, mida CFA4 saab uuesti luua. Nende kustutamine on alati ohutu; CFA4 loob need vajadusel uuesti.
+	Timecode Conversion	Ajakoodi teisendus
+	Timeline Mouse Scrolling	Ajaskaala hiirega kerimine
+	Timeline Playback Auto-Scrolling	Ajaskaala automaatne kerimine taasesitusel
+	Timeline…	Ajaskaala…
+	Transcription	Transkriptsioon
+	Transcription preferences	Transkriptsiooni eelistused
+	Trim	Kärbi
+	Trim…	Kärpimine…
+	UI Scale	Kasutajaliidese skaala
+	Update it at least every	Uuenda seda vähemalt iga
+	Update timeline dynamically during ripple edits.	Uuenda ajaskaalat nihutusega redigeerimise ajal dünaamiliselt.
+	Use File	Kasuta faili
+	Use Media Source	Kasuta meediaallikat
+	Validate Content Credentials on import	Kontrolli importimisel sisu autentimisandmeid
+	Vertical	Vertikaalne
+	Video Transition Default Duration	Videoülemineku vaikekestus
+	When Opening a Project	Projekti avamisel
+	Whisper base (balanced)	Whisper base (tasakaalus)
+	Whisper small (most accurate)	Whisper small (kõige täpsem)
+	Whisper tiny (fastest)	Whisper tiny (kõige kiirem)
+	Write XMP ID to files on import	Kirjuta importimisel failidesse XMP ID
+	Write clip markers to XMP	Kirjuta klipi markerid XMP-sse
+	days	päeva
+	milliseconds	millisekundit
+	minute(s)	minutit
+	second(s)	sekundit
+	seconds	sekundit
+	 seconds	 sekundit
+	Channel {n}	Kanal {n}
+	Countdown Sound Cues	Loenduse helimärgid
+	Discard take	Loobu võttest
+	Discard the active take	Loobu aktiivsest võttest
+	Input:	Sisend:
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	Taasesitus alustab eelkerimist enne esitusnäidikut (või alguspunkti); kui algus ja lõpp on märgitud, alustab ja lõpetab salvestamine seal.
+	Post-roll	Järelkerimine
+	Post-roll:	Järelkerimine:
+	Pre-roll:	Eelkerimine:
+	Qt Multimedia is not available	Qt Multimedia pole saadaval
+	Record (voice-over on the record-enabled track)	Lindista (pealelugemine salvestamiseks lubatud rajale)
+	Recording voice-over…	Pealelugemise salvestamine…
+	Source:	Allikas:
+	Stop Voice-over Recording	Peata pealelugemise salvestamine
+	The audio input could not be started	Helisisendit ei saanud käivitada
+	The audio input does not support a usable format	Helisisend ei toeta kasutatavat vormingut
+	The voice-over input buffer is full: the take ends here	Pealelugemise sisendpuhver on täis: võte lõpeb siin
+	There is no audio input device	Helisisendi seadet pole
+	Voice-Over Record Settings	Pealelugemise salvestamise sätted
+	Voice-Over Record Settings…	Pealelugemise salvestamise sätted…
+	Voice-over input: {error}	Pealelugemise sisend: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Pealelugemise salvestamine (paremklõps: pealelugemise salvestamise sätted…)
+	Voice-over recorded: {p}	Pealelugemine salvestatud: {p}
+	Voice-over recording stopped (nothing recorded)	Pealelugemise salvestamine peatati (midagi ei salvestatud)
+	Voice-over take discarded	Pealelugemise võttest loobuti
+	● Recording	● Lindistamine
+	 frames	 kaadrit
+	All Cameras	Kõik kaamerad
+	Auto-Adjust Multi-Camera Playback Quality	Kohanda mitme kaamera taasesituse kvaliteeti automaatselt
+	Camera 1	Kaamera 1
+	Camera Angle Metadata	Kaameranurga metaandmed
+	Camera Names	Kaamerate nimed
+	Camera {n} — {name}	Kaamera {n} – {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	Mitme kaamera vaates näidatud kaamerad (peitmiseks eemalda märge).
+	Clip Marker	Klipi marker
+	Clip Name:	Klipi nimi:
+	Clip Names	Klippide nimed
+	Create Multi-Camera Source Sequence	Loo mitme kaameraga lähtejada
+	Edit Cameras	Redigeeri kaameraid
+	Edit Cameras…	Redigeeri kaameraid…
+	Enumerate Cameras	Nummerda kaamerad
+	Ignore Hours	Eira tunde
+	In Points	Alguspunktid
+	Merge Clips	Ühenda klipid
+	Merged clip created	Ühendatud klipp loodud
+	Move source clips to Processed Clips bin	Teisalda lähteklipid salve Töödeldud klipid
+	Multi-Camera Audio Follows Video	Mitme kaamera heli järgib videot
+	Multi-Camera Layout	Mitme kaamera paigutus
+	Multi-Camera Record	Mitme kaamera salvestus
+	Multi-Camera Record On/Off (0)	Mitme kaamera salvestus sees/väljas (0)
+	Multi-Camera Record On/Off Toggle	Mitme kaamera salvestuse lüliti
+	Multi-Camera Record off	Mitme kaamera salvestus väljas
+	Multi-Camera Record on	Mitme kaamera salvestus sees
+	Multi-Camera Selection Top Down	Mitme kaamera valik ülalt alla
+	Multi-Camera View	Mitme kaamera vaade
+	Multi-camera source sequence with {n} camera(s)	Mitme kaameraga lähtejada, kaameraid: {n}
+	Next page	Järgmine leht
+	No multi-camera clip at the playhead	Esitusnäidiku kohal pole mitme kaamera klippi
+	Offset Audio by:	Nihuta heli:
+	Offset:	Nihe:
+	Out Points	Lõpp-punktid
+	Previous page	Eelmine leht
+	Record	Lindista
+	Recorded {n} multi-camera cut(s)	Salvestatud mitme kaamera lõikeid: {n}
+	Reference track:	Viiterada:
+	Remove Audio from AV Clip	Eemalda AV-klipist heli
+	Sequence Name:	Jada nimi:
+	Show Multi-Camera Preview Monitor	Näita mitme kaamera eelvaate monitori
+	Switch Audio	Vaheta heli
+	Synchronize Clips	Sünkrooni klipid
+	Synchronize Point	Sünkroonimispunkt
+	Synchronized {n} clip group(s)	Sünkroonitud klipirühmi: {n}
+	Transmit Multi-Camera View	Edasta mitme kaamera vaade
+	first marker	esimene marker
+	lowest (V1…)	madalaim (V1…)
+	no multi-camera clip at the playhead	esitusnäidiku kohal pole mitme kaamera klippi
+	{first} - Merged	{first} – ühendatud
+	{first} Multicam	{first} mitme kaameraga
+	{n} clip(s) selected; the clip on the reference track stays put.	Valitud klippe: {n}; viiteraja klipp jääb paigale.
+	{n} clip(s): {names}	Klippe {n}: {names}
+	Current duration {seconds} s	Praegune kestus {seconds} s
+	Fewer · More	Vähem · rohkem
+	Remix Properties	Ümbermiksi omadused
+	Remixed to {seconds} s	Ümbermiksitud {seconds} s-ni
+	Segments:	Lõigud:
+	Target Duration:	Sihtkestus:
+	Variations:	Variatsioonid:
+	the selected clip is not remixed	valitud klippi pole ümbermiksitud
+	After installing, restart CFA4.	Pärast paigaldamist taaskäivita CFA4.
+	Available, switched off	Saadaval, välja lülitatud
+	Left out by the routing table	Marsruutimistabelist välja jäetud
+	CFA4 engine	CFA4 mootor
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	CFA4 enda mootor avab iga faili, mida suudab. Allpool olevad lisataustaprogrammid võtavad selles järjekorras üle ainult failid, mida mootor veel avada ei suuda. Taustaprogrammi väljalülitamine mõjutab hiljem avatud faile.
+	Capabilities	Võimalused
+	Copy command	Kopeeri käsk
+	H.264 software encoding (x264)	H.264 tarkvaraline kodeerimine (x264)
+	HEVC software encoding (x265)	HEVC tarkvaraline kodeerimine (x265)
+	In use	Kasutusel
+	Licence	Litsents
+	Media Backends	Meedia taustaprogrammid
+	Media Backends…	Meedia taustaprogrammid…
+	Not available	Pole saadaval
+	Not part of this build	Pole selle versiooni osa
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Omad Rusti dekoodrid ja kodeerijad: kasutatakse alati esimesena ning varuna, kui lisataustaprogramm nurjub
+	Restricted Codecs…	Piiratud koodekid…
+	Restricted codecs	Piiratud koodekid
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Mõned koodekid on vaba tarkvara, kuid rakendavad patenteeritud vorminguid. Nagu Ubuntu, ei paigalda CFA4 neid vaikimisi: põhipakett töötab ilma nendeta ja paigaldamise üle otsustad sina. Nende kasutamine võib mõnes riigis olla piiratud; kontrolli, kas see on sinu asukohas lubatud.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Lisadekooder vormingutele, mida oma mootor veel ei loe (10-bitine ja 4:2:2 kaamerameedia, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Lisadekooder süsteemi GStreamerist (Ogg Theora, FLV, WMV ja muud vormingud); LGPL, Ubuntu hoidlatest
+	The engine did not answer: {message}	Mootor ei vastanud: {message}
+	To install them: {command}	Nende paigaldamiseks: {command}
+	Use this backend	Kasuta seda taustaprogrammi
+	installed	paigaldatud
+	not installed	pole paigaldatud
+	on	sees
+	 (removed from {list})	 (eemaldatud loendist {list})
+	 and 	 ja 
+	Add another shortcut	Lisa veel üks otsetee
+	Application shortcuts work whatever panel has focus	Rakenduse otseteed töötavad olenemata sellest, millisel paneelil on fookus
+	Assign {key} to {command}	Määra {key} käsule {command}
+	Cleared {n} shortcut(s) of {command}	Käsu {command} otseteid tühjendatud: {n}
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Klõpsa käsu lahtrit Otsetee ja vajuta määramiseks klahve; + lisab veel ühe otsetee.
+	Click a key on the keyboard to see its shortcuts	Klõpsa klaviatuuril klahvi, et näha selle otseteid
+	Click and press keys to assign	Klõpsa ja vajuta määramiseks klahve
+	Command	Käsk
+	Conflict: {key} is assigned to {commands} ({ctx})	Konflikt: {key} on määratud käskudele {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Eksport: faili pole valitud (agendid: shortcuts.export {path})
+	Export…	Ekspordi…
+	Import: no file chosen (agents: shortcuts.import {path})	Import: faili pole valitud (agendid: shortcuts.import {path})
+	Key:	Klahv:
+	Keyboard Shortcuts	Klaviatuuri otseteed
+	Keyboard Shortcuts…	Klaviatuuri otseteed…
+	Keyboard: US	Klaviatuur: USA
+	Loaded “{name}”	Laaditud „{name}“
+	Modifier held / selected	Muuteklahv all hoitud / valitud
+	Modifiers	Muuteklahvid
+	My Shortcuts	Minu otseteed
+	No matching commands	Sobivaid käske pole
+	Nothing is assigned to this key	Sellele klahvile pole midagi määratud
+	Panel shortcuts override application shortcuts while that panel has focus	Paneeli otseteed alistavad rakenduse otseteed, kui sellel paneelil on fookus
+	Save preset as:	Salvesta eelseade nimega:
+	Saved preset “{name}”	Eelseade „{name}“ salvestatud
+	Search commands or keys	Otsi käske või klahve
+	Selected: {command}	Valitud: {command}
+	Shortcut	Otsetee
+	Type a shortcut… (Esc cancels)	Sisesta otsetee… (Esc tühistab)
+	{active} (modified)	{active} (muudetud)
+	{key} can't be used as a shortcut	{key} ei saa otseteena kasutada
+	{panel} Panel	Paneel {panel}
+	Docking Action	Dokkimistoiming
+	Dock Panel	Dokki paneel
+	Undock Panel	Vabasta paneel dokist
+	Close Panel	Sulge paneel
+	Restore Workspace	Taasta tööruum
+	Add Guide	Lisa juhtjoon
+	Add Guide…	Lisa juhtjoon…
+	Clear Guides	Tühjenda juhtjooned
+	Guide Templates	Juhtjoonte mallid
+	Guides	Juhtjooned
+	Lock Guides	Lukusta juhtjooned
+	Manage Guides	Halda juhtjooni
+	Manage Guides…	Halda juhtjooni…
+	No saved guide templates.	Salvestatud juhtjoonte malle pole.
+	Orientation:	Suund:
+	Reference  {tc}	Viide  {tc}
+	Reference: next frame	Viide: järgmine kaader
+	Reference: previous frame	Viide: eelmine kaader
+	Save Guides as Template	Salvesta juhtjooned mallina
+	Save Guides as Template…	Salvesta juhtjooned mallina…
+	Saved guide template “{name}”	Juhtjoonte mall „{name}“ salvestatud
+	Set Comparison Reference	Määra võrdlusviide
+	Set the reference to the playhead	Määra viide esitusnäidiku kohale
+	Show Guides	Näita juhtjooni
+	Show Rulers	Näita joonlaudu
+	Snap in Program Monitor	Haaku programmimonitoris
+	The template needs a name.	Mall vajab nime.
+	There are no guides to save.	Salvestatavaid juhtjooni pole.
+	Join Through Edits	Ühenda läbivad lõiked
+	Replace With Clip From Source Monitor	Asenda lähtemonitori klipiga
+	Reveal Nested Sequence	Näita pesastatud jada
+	Reveal in Project	Näita projektis
+	Unlink	Tühista sidumine
+	Apply Default Transitions	Rakenda vaikeüleminekud
+	Ripple Trim In	Kärbi algust nihutusega
+	Ripple Trim Out	Kärbi lõppu nihutusega
+	Roll Edit	Veerev lõige
+	Trim In	Kärbi algust
+	Trim Out	Kärbi lõppu
+	Expand All Tracks	Laienda kõik rajad
+	Minimize All Tracks	Minimeeri kõik rajad
+	Increase Video Tracks Height	Suurenda videoradade kõrgust
+	Decrease Video Tracks Height	Vähenda videoradade kõrgust
+	Increase Audio Tracks Height	Suurenda heliradade kõrgust
+	Decrease Audio Tracks Height	Vähenda heliradade kõrgust
+	Drag to change the track height	Lohista raja kõrguse muutmiseks
+	Head	Pea
+	Head and Tail	Pea ja saba
+	Show Video Thumbnails	Näita video pisipilte
+	Show Audio Waveform	Näita heli lainekuju
+	Timeline Display Settings	Ajaskaala kuvasätted
+	Snap in Timeline (S)	Haaku ajaskaalal (S)
+	Caption track options	Pealdiseraja valikud
+	Insert and overwrite sequences as nests or individual clips	Lisa ja kirjuta jadad üle pesadena või üksikute klippidena
+	Close Other Timeline Panels	Sulge teised ajaskaala paneelid
+	Show Keyframes	Näita võtmekaadreid
+	Clip Keyframes	Klipi võtmekaadrid
+	Track Keyframes	Raja võtmekaadrid
+	Send {n} Level	Saatmise {n} tase
+	Delete Caption Track	Kustuta pealdiserada
+	Delete Empty Caption Tracks	Kustuta tühjad pealdiserajad
+	Toggle Caption Track Lock	Lülita pealdiseraja lukk
+	Toggle Caption Track Output	Lülita pealdiseraja väljund
+	Drag In point	Lohista alguspunkti
+	Drag Out point	Lohista lõpp-punkti
+	Move marked range	Teisalda märgitud vahemik
+	Auto Tone Map Media (HDR and log into SDR)	Meedia automaatne toonivastendus (HDR ja log SDR-iks)
+	CFA4 always composites in linear light	CFA4 komponeerib alati lineaarses valguses
+	Captured View:	Salvestatud vaade:
+	Channel Format:	Kanalivorming:
+	Color Management	Värvihaldus
+	Composite in Linear Color	Komponeeri lineaarses värvis
+	Configure…	Seadista…
+	Custom ({ratio})	Kohandatud ({ratio})
+	Display Format:	Kuvavorming:
+	Editing Mode:	Redigeerimisrežiim:
+	Fields:	Poolkaadrid:
+	Frame Size:	Kaadri suurus:
+	Layout:	Paigutus:
+	Maximum Bit Depth	Maksimaalne bitisügavus
+	Maximum Render Quality	Maksimaalne renderduskvaliteet
+	Milliseconds	Millisekundid
+	Monoscopic	Monoskoopiline
+	New Sequence	Uus jada
+	No Fields (Progressive Scan)	Poolkaadriteta (progressiivne)
+	Not supported in CFA4 yet	CFA4 ei toeta seda veel
+	Number of Channels:	Kanalite arv:
+	Pixel Aspect Ratio:	Piksli kuvasuhe:
+	Preview File Format:	Eelvaatefaili vorming:
+	Projection:	Projektsioon:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Diskreetimissagedus:
+	Scale motion effects proportionally when changing frame size	Skaleeri kaadri suuruse muutmisel liikumisefekte proportsionaalselt
+	Sequence Settings	Jada sätted
+	Square Pixels (1.0)	Ruutpikslid (1,0)
+	Timebase:	Ajabaas:
+	Tracks	Rajad
+	VR Properties	VR-omadused
+	Video Previews	Video eelvaated
+	Wide gamut color (composite in BT.2020)	Laia gamuti värv (komponeerimine BT.2020-s)
+	Working Color Space:	Tööruumi värviruum:
+	horizontal	horisontaalne
+	no sequence is open	ükski jada pole avatud
+	tracks	rajad
+	vertical	vertikaalne
+	{rate} fps Drop-Frame Timecode	{rate} kaadrit/s, kaadreid vahelejättev ajakood
+	{rate} fps Non Drop-Frame Timecode	{rate} kaadrit/s, kaadreid vahelejätmata ajakood
+	{rate} fps Timecode	{rate} kaadrit/s ajakood
+	{rate} frames/second	{rate} kaadrit sekundis
+	Always Deinterlace	Eemalda alati ridahüplemine
+	Audio Attributes	Heli atribuudid
+	Ch. {n}	K. {n}
+	Clip Channel Format:	Klipi kanalivorming:
+	Clip Speed / Duration	Klipi kiirus/kestus
+	Clip {n}	Klipp {n}
+	Contains:	Sisaldab:
+	Edit Subclip	Redigeeri alamklippi
+	End:	Lõpp:
+	Field Options	Poolkaadrite valikud
+	File Name:	Faili nimi:
+	Flicker Removal	Väreluse eemaldamine
+	Frame Hold Options	Kaadri peatamise valikud
+	Frame Rate:	Kaadrisagedus:
+	Hold Filters	Peata filtrid
+	Hold On	Peata kohal
+	In Point	Alguspunkt
+	Make Subclip	Loo alamklipp
+	Media Source Channels	Meediaallika kanalid
+	Media Start:	Meedia algus:
+	Modify Clip: Audio Channels	Muuda klippi: helikanalid
+	Modify Clip: Timecode	Muuda klippi: ajakood
+	Nested Sequence Name	Pesastatud jada nimi
+	New Offline File	Uus võrguühenduseta fail
+	No effects	Efekte pole
+	Number of Audio Clips:	Heliklippide arv:
+	Out Point	Lõpp-punkt
+	Paste Attributes	Kleebi atribuudid
+	Playhead	Esitusnäidik
+	Processing Options	Töötlemise valikud
+	Remove Attributes	Eemalda atribuudid
+	Restrict Trims To Subclip Boundaries	Piira kärpimine alamklipi piiridega
+	Reverse Field Dominance	Pööra poolkaadrite järjekord
+	Reverse Speed	Tagurpidi kiirus
+	Ripple Edit, Shifting Trailing Clips	Nihutusega redigeerimine, järgnevate klippide nihutamine
+	Scale Attribute Times	Skaleeri atribuutide aegu
+	Sequence Time	Jada aeg
+	Set Timecode:	Määra ajakood:
+	Source Timecode	Lähte ajakood
+	Source channels the selected audio clips play:	Lähtekanalid, mida valitud heliklipid esitavad:
+	Speed:	Kiirus:
+	Start:	Algus:
+	Subclip: {name}	Alamklipp: {name}
+	Tape Name:	Lindi nimi:
+	Timecode:	Ajakood:
+	Use the file's timecode	Kasuta faili ajakoodi
+	Video Attributes	Video atribuudid
+	no dialog	dialoogita
+	Action Safe Area	Tegevuse turvaala
+	Action and Title Safe Areas	Tegevuse ja tiitrite turvaalad
+	Action:	Tegevus:
+	Analyze	Analüüsi
+	Any	Mis tahes
+	Apply Default Audio Transition	Rakenda heli vaikeüleminek
+	Apply Default Video Transition	Rakenda video vaikeüleminek
+	Apply a cut at each detected cut point	Tee igas tuvastatud lõikepunktis lõige
+	At Unnumbered Markers	Nummerdamata markeritel
+	Audio Only	Ainult heli
+	Audio Previews:	Heli eelvaated:
+	Audio analysis:	Helianalüüs:
+	Audio effects	Heliefektid
+	Audio on track {t}	Heli rajal {t}
+	Automate To Sequence	Automatiseeri jadaks
+	Average Data Rate	Keskmine andmekiirus
+	Capture	Hõive
+	Capture Format:	Hõivevorming:
+	Captured and Generated:	Hõivatud ja genereeritud:
+	Case Sensitive	Tõstutundlik
+	Clip Names and Markers	Klippide nimed ja markerid
+	Clip Overlap:	Klippide kattumine:
+	Clips	Klipid
+	Codec: {codec}	Koodek: {codec}
+	Color Matte Color	Värvimati värv
+	Colour	Värv
+	Comments:	Kommentaarid:
+	Copy and Create Proxies	Kopeeri ja loo asendusfailid
+	Create Proxies	Loo asendusfailid
+	Create Search Bin	Loo otsingusalv
+	Create a bin of subclips from each detected cut point	Loo igast tuvastatud lõikepunktist alamklippide salv
+	Create a clip marker at each detected cut point	Loo igas tuvastatud lõikepunktis klipimarker
+	Destination:	Sihtkoht:
+	Disabled clips	Keelatud klipid
+	Edit Offline File	Redigeeri võrguühenduseta faili
+	Empty tracks	Tühjad rajad
+	Existing XMP files written by other applications are left unchanged.	Teiste rakenduste kirjutatud olemasolevad XMP-failid jäetakse muutmata.
+	File Size	Faili suurus
+	Find in:	Leia kohast:
+	Find:	Leia:
+	Flash Cue Marker	Välgumärgi marker
+	Frames per Still:	Kaadreid pildi kohta:
+	Gaps	Vahed
+	Ignore Audio	Eira heli
+	Ignore Options	Eira valikuid
+	Ignore Video	Eira videot
+	Ingest Settings	Sissevõtu sätted
+	Insert Edit	Lisav lõige
+	Keep:	Säilita:
+	Language:	Keel:
+	Log Note:	Logimärkus:
+	Match {n} of {total}	Vaste {n}/{total}
+	Match:	Vaste:
+	Media Name:	Meedia nimi:
+	Method:	Meetod:
+	Move clips to the lowest track possible	Teisalda klipid madalaimale võimalikule rajale
+	New Color Matte	Uus värvimatt
+	Next to the media	Meedia kõrval
+	Normalize Mix Track	Normaliseeri miksirada
+	Normalize Mix Track to:	Normaliseeri miksirada tasemele:
+	Ordering:	Järjestus:
+	Overwrite Edit	Ülekirjutav lõige
+	Path: {path}	Tee: {path}
+	Placement:	Asetus:
+	Project Auto Save:	Projekti automaatsalvestus:
+	Recognize when different speakers are talking	Tuvasta, millal räägivad erinevad kõnelejad
+	Renderer:	Renderdaja:
+	Same as Project	Sama mis projektil
+	Saved template {path}	Mall salvestatud: {path}
+	Scene Edit Detection	Stseenilõigete tuvastamine
+	Scene Edit Detection: analysing in the background (see Progress)	Stseenilõigete tuvastamine: analüüs taustal (vt Edenemine)
+	Scene:	Stseen:
+	Scratch Disks	Töökettad
+	Search:	Otsing:
+	Selection Order	Valimise järjekord
+	Sensitivity:	Tundlikkus:
+	Sequentially	Järjestikku
+	Shot/Take:	Võte/kordus:
+	Simplify	Lihtsusta
+	Simplify Sequence	Lihtsusta jada
+	Sort Order	Sortimisjärjestus
+	Source Settings	Lähte sätted
+	Template Name:	Malli nimi:
+	Text (graphics and captions)	Tekst (graafika ja pealdised)
+	Title Safe Area	Tiitrite turvaala
+	To {name}	Sihtkohta {name}
+	Total Duration	Kogukestus
+	Transcode	Transkodeeri
+	Transcribe Sequence	Transkribeeri jada
+	Transitions	Üleminekud
+	Update Metadata	Uuenda metaandmeid
+	Video Only	Ainult video
+	Video Previews:	Video eelvaated:
+	Video Rendering and Playback	Video renderdamine ja taasesitus
+	Video and Audio	Video ja heli
+	Video effects	Videoefektid
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	Kas kirjutada valitud klippide ({n}) metaandmed nende meedia kõrvale XMP-failidesse?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · kanaleid: {n}
+	Constant quantiser	Püsiv kvantija
+	Container	Konteiner
+	 (unavailable)	 (pole saadaval)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Konteinerid
+	Decoders	Dekoodrid
+	Dynamic Audio Waveforms	Dünaamilised heli lainekujud
+	Export formats	Ekspordivormingud
+	Reveal Log Files…	Näita logifaile…
+	Session log: {path}	Seansi logi: {path}
+	System Compatibility Report	Süsteemi ühilduvusaruanne
+	System Compatibility Report…	Süsteemi ühilduvusaruanne…
+	not available now	praegu pole saadaval
+	{name} Selection.fcproj	{name} valik.fcproj
+	Auto tone map media (HDR and log into SDR)	Meedia automaatne toonivastendus (HDR ja log SDR-iks)
+	Sequence Color Management	Jada värvihaldus
+	Working Color Space	Tööruumi värviruum
+	Align Timecode	Joonda ajakood
+	All media is online.	Kogu meedia on võrgus.
+	Calculate	Arvuta
+	Clip ID (fingerprint)	Klipi ID (sõrmejälg)
+	Clip Name	Klipi nimi
+	Collect Files and Copy to New Location	Kogu failid ja kopeeri uude asukohta
+	Consolidate and Transcode	Koonda ja transkodeeri
+	Creating {n} proxy file(s)…	{n} asendusfaili loomine…
+	Destination	Sihtkoht
+	Destination Path	Sihtkoha tee
+	Disk space: original {original} · resulting {result} ({n} files)	Kettaruum: algne {original} · tulemus {result} ({n} faili)
+	Disk space: —	Kettaruum: —
+	Exact name matches only	Ainult täpsed nimevasted
+	Exclude Unused Clips	Jäta kasutamata klipid välja
+	File Name	Failinimi
+	Folder	Kaust
+	Format and size	Vorming ja suurus
+	Frame Size / Rate	Kaadri suurus/sagedus
+	Include Handles:	Kaasa käepidemed:
+	Include Preview Files	Kaasa eelvaatefailid
+	Include Proxies	Kaasa asendusfailid
+	Link Media	Seo meedia
+	Linked {n} clip(s)	Seotud klippe: {n}
+	Locate…	Leia…
+	Make Offline	Muuda võrguühenduseta
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	Muuda {n} valitud klippi võrguühenduseta. Nende klippidel kuvatakse võrguühenduseta kaart, kuni need uuesti seotakse.
+	Match file properties:	Sobita faili omadused:
+	Media files are deleted	Meediafailid kustutatakse
+	Media files remain on disk	Meediafailid jäävad kettale
+	Missing	Puudub
+	Next to the original media, in a Proxies folder	Algse meedia kõrval, kaustas Proxies
+	No candidates yet — Search a folder or Locate the file.	Kandidaate veel pole – otsi kaustast või leia fail.
+	Nothing found with that name.	Selle nimega midagi ei leitud.
+	Offline	Võrguühenduseta
+	Offline All	Kõik võrguühenduseta
+	Project Manager	Projektihaldur
+	Project Manager: writing {path}	Projektihaldur: kirjutamine {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	Asendusfailid luuakse taustal ja lisatakse valmimisel. Eksport kasutab alati täislahutusega meediat.
+	Relink others automatically	Seo teised automaatselt uuesti
+	Resulting Project	Tulemusprojekt
+	Search in:	Otsi kohast:
+	Sequences	Jadad
+	select a clip in the Project panel	vali klipp paneelil Projekt
+	{name} (copy)	{name} (koopia)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} klippi ei leia oma meediat. Leia need, otsi kaustast või jäta need võrguühenduseta.
+	{n} clip(s) selected.	Valitud klippe: {n}.
+	✔ matches	✔ sobib
+	✔ same file	✔ sama fail
+	✖ different file	✖ erinev fail
+	AAF Export Settings	AAF-i ekspordisätted
+	Audio File Format:	Helifaili vorming:
+	Bits per Sample:	Bitti diskreedi kohta:
+	Breakout to mono	Jaota monoks
+	Depth:	Sügavus:
+	Embed	Manusta
+	Encapsulate	Kapselda
+	Exported frame to {path}	Kaader eksporditud: {path}
+	Frame time: {timecode}	Kaadri aeg: {timecode}
+	Handle Frames:	Käepideme kaadrid:
+	Import into project	Impordi projekti
+	Keep existing file	Säilita olemasolev fail
+	Link to Media	Seo meediaga
+	Mixdown video	Video mahamiks
+	OMF Export Settings	OMF-i ekspordisätted
+	OMF Title:	OMF-i pealkiri:
+	Path:	Tee:
+	Render audio clip effects	Renderda heliklippide efektid
+	Separate Audio	Eraldi heli
+	Separate Files	Eraldi failid
+	This file already exists: {path}	See fail on juba olemas: {path}
+	Trim audio files	Kärbi helifaile
+	{bits} Bit	{bits}-bitine
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Markerite aruanne (CSV)
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Digikino
+	DCP resolution	DCP lahutus
+	DCP container	DCP konteiner
+	Content kind	Sisu liik
+	Output folder	Väljundkaust
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1,85:1)
+	Scope (2.39:1)	Scope (2,39:1)
+	Full container (1.90:1)	Täiskonteiner (1,90:1)
+	Feature	Mängufilm
+	Trailer	Treiler
+	Teaser	Teaser
+	Short	Lühifilm
+	Advertisement	Reklaam
+	Test	Test
+	Transitional	Üleminekuline
+	Rating	Vanusepiirang
+	Public service announcement	Avalik teadaanne
+	Off (5.1 only)	Väljas (ainult 5.1)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB alus miksist (7.1 DS, 7.1.2-st 9.1OH)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB failist (IAB MXF, .iab või Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab või Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	Puudub: ainult FSK sünkroon (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: renderdatud IAB (mitte ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: ajaskaala miks (mitte ST 429-19)
+	Main sound channels 1-6	Põhiheli kanalid 1–6
+	Immersive audio	Ruumiline heli
+	IAB source	IAB-allikas
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 miksist saab 9.1OH alus, 7.1 miksist 7.1 DS alus ja igast muust miksist selle 5.1 versioonist 7.1 DS alus (IAB Profile 1); põhiheli kanal 14 kannab FSK sünkroonsignaali.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Vali IAB-rajafail (IMF või DCP), toores IAB-voog või Dolby Atmos TrueHD: .thd-voog või Atmos-rajaga MKV-, MP4- või M2TS-fail.
+	Reading the IAB source…	IAB-allika lugemine…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} kaadrit, {fps} kaadrit/s, {rate} Hz; kuni {beds} aluskanalit ja {objects} objekti
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; kuni {beds} aluskanalit ja {objects} objekti, muudetud IAB-objektideks
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Mõned kaadrid kodeeritakse DCP jaoks ümber (DLC, 24-bitine).
+	Beyond IAB Profile 1: {notes}	Üle IAB Profile 1: {notes}
+	Not a usable IAB source: {error}	Kasutuskõlbmatu IAB-allikas: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 1998×1080 (1,85:1), 5.1 24-bitine 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 2048×858 (2,39:1), 5.1 24-bitine 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 3996×2160 (1,85:1), 5.1 24-bitine 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 4096×1716 (2,39:1), 5.1 24-bitine 48 kHz PCM
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	B pictures	B-pildid
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transpordivoog (.m2ts, AAC-heli)
+	Chroma	Krominants
+	Elementary Stream (.m2v, no audio)	Elementaarvoog (.m2v, helita)
+	Key Frame Distance	Võtmekaadrite vahe
+	None (I and P only)	Puudub (ainult I ja P)
+	Off (target bitrate)	Väljas (sihtbitikiirus)
+	Program Stream (.mpg, LPCM audio)	Programmivoog (.mpg, LPCM-heli)
+	Transport Stream (.ts, AAC audio)	Transpordivoog (.ts, AAC-heli)
+	Estimated file size: {size}	Hinnanguline failisuurus: {size}
+	File Name & Location	Failinimi ja asukoht
+	Quick Export	Kiireksport
+	Quick Export: open a sequence first	Kiireksport: ava esmalt jada
+	Quick Export: {path}	Kiireksport: {path}
+	Export presets	Ekspordi eelseaded
+	Favorites only	Ainult lemmikud
+	More presets…	Rohkem eelseadeid…
+	Preset Manager	Eelseadete haldur
+	Save current settings as:	Salvesta praegused sätted nimega:
+	Search presets	Otsi eelseadeid
+	Show in the Preset menu	Näita eelseadete menüüs
+	User	Kasutaja
+	Add Beat Markers	Lisa löögimarkerid
+	Clear Beat Markers	Tühjenda löögimarkerid
+	Clear Check Markers	Tühjenda kontrollimarkerid
+	Auto Reframe Sequence…	Jada automaatne ümberkadreerimine…
+	Batch Variants from Spreadsheet…	Pakettvariandid tabelist…
+	Check Before Export…	Kontrolli enne eksportimist…
+	Social Deliverables…	Sotsiaalmeedia väljundid…
+	Social Safe Zones	Sotsiaalmeedia turvaalad
+	Text Animator	Tekstianimaator
+	Counter	Loendur
+	Typewriter	Kirjutusmasin
+	Word by Word	Sõnahaaval
+	Animator	Animaator
+	Animator Duration	Animaatori kestus
+	Animator Delay	Animaatori viivitus
+	Spreadsheets	Tabelid
+	{n} beat markers added ({bpm} BPM)	Lisatud {n} löögimarkerit ({bpm} BPM)
+	Check Before Export: no problems found	Kontrolli enne eksportimist: probleeme ei leitud
+	Check Before Export: {n} problems marked on the timeline (red markers)	Kontrolli enne eksportimist: ajaskaalal märgitud {n} probleemi (punased markerid)
+	{n} exports queued (the Export window shows the queue)	Järjekorda lisatud {n} eksporti (ekspordiaken näitab järjekorda)
+	{n} variant sequences made, {q} exports queued	Loodud {n} variantjada, järjekorras {q} eksporti
+	no column for {names}	veerg {names} jaoks puudub
+	Compression	Tihendus
+	Film Scan 1	Filmiskaneering 1
+	Film Scan 2	Filmiskaneering 2
+	Film Scan 3	Filmiskaneering 3
+	Include Alpha Channel	Kaasa alfakanal
+	Profile	Profiil
+	Quality	Kvaliteet
+	ZIP (1 scan line)	ZIP (1 skaneerimisrida)
+	ZIP (16 scan lines)	ZIP (16 skaneerimisrida)
+	Bottom Center	All keskel
+	Bottom Left	All vasakul
+	Bottom Right	All paremal
+	Burn Captions Into Video	Põleta pealdised videosse
+	Center Left	Keskel vasakul
+	Center Right	Keskel paremal
+	Create Sidecar File	Loo kõrvalfail
+	Export Options	Ekspordi valikud
+	File Format	Failivorming
+	Image	Pilt
+	Image Overlay	Pildi ülekate
+	Images	Pildid
+	Loudness Normalization	Valjuse normaliseerimine
+	Luma Min / Max	Luma min/maks
+	Name Overlay	Nime ülekate
+	PNG or JPEG file	PNG- või JPEG-fail
+	Prefix	Eesliide
+	Size / Opacity	Suurus/läbipaistmatus
+	SubRip Subtitle (.srt)	SubRip-subtiitrid (.srt)
+	Target Loudness	Sihtvaljus
+	Timecode Overlay	Ajakoodi ülekate
+	Top Center	Üleval keskel
+	Top Left	Üleval vasakul
+	Top Right	Üleval paremal
+	True Peak Limit	Tõelise tipu piir
+	Video Limiter	Video piiraja
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Creator	Looja
+	Multiplexer	Multiplekser
+	Audio only	Ainult heli
+	Scale To Fill	Skaleeri täitmiseks
+	Scale To Fit	Skaleeri mahutamiseks
+	Scaling	Skaleerimine
+	Stretch To Fill	Venita täitmiseks
+	Summary	Kokkuvõte
+	Quick Export cancelled	Kiireksport tühistati
+	0 fastest, 8 smallest	0 kiireim, 8 väikseim
+	16 bit	16-bitine
+	24 bit	24-bitine
+	32 bit	32-bitine
+	32 bit float	32-bitine ujukoma
+	Anamorphic 2:1 (2.0)	Anamorfne 2:1 (2,0)
+	Aspect	Kuvasuhe
+	Channels	Kanalid
+	Composite on the GPU when available	Komponeeri võimaluse korral GPU-l
+	Compression Level	Tihendustase
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0,9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1,0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1,5)
+	Field Order	Poolkaadrite järjekord
+	GPU Rendering	GPU-renderdamine
+	HD Anamorphic 1080 (1.333)	HD anamorfne 1080 (1,333)
+	Lower First	Alumine esimesena
+	Match Source	Sobita allikaga
+	Maximum Bitrate	Maksimaalne bitikiirus
+	Progressive	Progressiivne
+	Quality (CRF)	Kvaliteet (CRF)
+	Render at Maximum Depth	Renderda maksimaalse sügavusega
+	Sample Size	Diskreedi suurus
+	Upper First	Ülemine esimesena
+	Use Maximum Render Quality	Kasuta maksimaalset renderduskvaliteeti
+	Browse files…	Sirvi faile…
+	Movies, audio and stills from disk	Filmid, heli ja pildid kettalt
+	Demo footage	Demomaterjal
+	Six procedural 1080p clips with sound	Kuus protseduurselt loodud 1080p klippi heliga
+	Demo project	Demoprojekt
+	A cut sequence with transitions, effects and music	Monteeritud jada üleminekute, efektide ja muusikaga
+	Bars and Tone	Värvitulbad ja toon
+	SMPTE HD bars with 1 kHz reference tone	SMPTE HD tulbad 1 kHz viitetooniga
+	CFA4 on GitHub	CFA4 GitHubis
+	Report a CFA4 issue…	Teata CFA4 probleemist…
+	CFA4 project links	CFA4 projekti lingid
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	Lisa projekti meediat. Lohista failid ükskõik kuhu aknas või vali allpool allikas.
+	Shuttle Slow Left	Aeglane kerimine vasakule
+	Shuttle Slow Right	Aeglane kerimine paremale
+	Play Around	Esita ümbrust
+	Out: {name}	Lõpp: {name}
+	In: {name}	Algus: {name}
+	(gap)	(vahe)
+	Outgoing clip (drag to trim the Out point)	Väljuv klipp (lohista lõpp-punkti kärpimiseks)
+	Incoming clip (drag to trim the In point)	Sisenev klipp (lohista alguspunkti kärpimiseks)
+	Drag to roll the edit	Lohista lõike veeretamiseks
+	Play Around Edit (Space loops, Shift+K once)	Esita lõike ümbrust (tühik kordab, Shift+K üks kord)
+	Trim Backward Many	Kärbi palju tagasi
+	Trim Backward	Kärbi tagasi
+	Apply Default Transitions to Selection (Shift+D)	Rakenda valikule vaikeüleminekud (Shift+D)
+	Trim Forward	Kärbi edasi
+	Trim Forward Many	Kärbi palju edasi
+	Exit Trim Mode	Välju kärpimisrežiimist
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	Heliväljund nurjus: esitus ilma helita (kontrolli Sätted ▸ Heliriistvara)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	Heliväljund ei vasta: esitus ilma helita (kontrolli Sätted ▸ Heliriistvara)
+	Settings not taken	Sätteid ei rakendatud
+	Encoder	Kodeerija
+	Software, or hardware where available	Tarkvaraline või võimaluse korral riistvaraline
+	Main (8-bit; Main 10 for HDR sequences)	Main (8-bitine; HDR-jadadele Main 10)
+	Main 10 (10-bit, HDR)	Main 10 (10-bitine, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8-bitine; HDR-jadadele 10-bitine)
+	Main (10-bit, HDR)	Main (10-bitine, HDR)
+	FLAC stores whole-number samples only	FLAC salvestab ainult täisarvulisi diskreete
+	MXF export writes integer PCM only	MXF-eksport kirjutab ainult täisarvulist PCM-i
+	Not supported by CFA4's encoders yet	CFA4 kodeerijad seda veel ei toeta
+	Restore	Taasta
+	Overwrite with Current View	Kirjuta üle praeguse vaatega
+	Saves the view, columns, sort, thumbnail and font size.	Salvestab vaate, veerud, sortimise, pisipildi ja fondi suuruse.
+	Search fields	Otsinguväljad
+	Show:	Näita:
+	{n}. (empty)	{n}. (tühi)
+	No video	Videot pole
+	No audio	Heli pole
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 HDR jaoks
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 Profile
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main Profile 4:2:0
+	no B pictures	B-pilte pole
+	1 B picture between anchors	1 B-pilt ankrute vahel
+	AV1 Main (10-bit for HDR)	AV1 Main (HDR jaoks 10-bitine)
+	10-bit RGB	10-bitine RGB
+	12-bit X'Y'Z'	12-bitine X'Y'Z'
+	16-bit half float	16-bitine poolujukoma
+	linear	lineaarne
+	uncompressed	tihendamata
+	Animated GIF	Animeeritud GIF
+	Waveform Audio	Waveform-heli
+	AAC Audio	AAC-heli
+	Opus Audio	Opus-heli
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	fragmenditud MP4 lõigud
+	Program Stream	Programmivoog
+	Transport Stream	Transpordivoog
+	BDAV Transport Stream	BDAV transpordivoog
+	Elementary Stream	Elementaarvoog
+	Image sequence	Pildijada
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} kaadrit/s
+	{profile} auto level	{profile} automaatne tase
+	{n} pass	{n} läbimist
+	CRF (constant quality) {crf}	CRF (püsiv kvaliteet) {crf}
+	{v} Mbps	{v} Mbit/s
+	Target {v} Mbps	Siht {v} Mbit/s
+	Max {v} Mbps	Maks. {v} Mbit/s
+	average {v} Mbps	keskmiselt {v} Mbit/s
+	CBR {v} Mbps	CBR {v} Mbit/s
+	VBR Target {v} Mbps	VBR siht {v} Mbit/s
+	keyframe every {n} frames	võtmekaader iga {n} kaadri järel
+	constant quantiser {q}	püsiv kvantija {q}
+	{n} B pictures between anchors	{n} B-pilti ankrute vahel
+	quantizer {q}	kvantija {q}
+	quality {q}	kvaliteet {q}
+	{word} compression	{word} tihendus
+	{sampling} {bits}-bit	{sampling} {bits}-bitine
+	FLAC (lossless) {bits}-bit	FLAC (kadudeta) {bits}-bitine
+	level {n}	tase {n}
+	Uncompressed {bits}-bit PCM	Tihendamata {bits}-bitine PCM
+	Uncompressed {bits}-bit float PCM	Tihendamata {bits}-bitine ujukoma-PCM
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} s
+	{n} ch {rate} Hz	{n} kan. {rate} Hz
+	All Events	Kõik sündmused
+	Warnings and Errors	Hoiatused ja vead
+	Errors Only	Ainult vead
+	No events.	Sündmusi pole.
+	just now	just praegu
+	{n} s ago	{n} s tagasi
+	{n} min ago	{n} min tagasi
+	{n} h ago	{n} h tagasi
+	Warning	Hoiatus
+	Error	Viga
+	Caption Export Settings	Pealdiste ekspordisätted
+	Export Captions	Ekspordi pealdised
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} on juba olemas, seega midagi ei eksporditud. Asendamiseks vali see salvestusdialoogis.
+	Delete Redoable Actions	Kustuta uuestitehtavad toimingud
+	Clear History	Tühjenda ajalugu
+	Delete the dimmed actions after the current state? They cannot be redone.	Kas kustutada praegusele olekule järgnevad hämardatud toimingud? Neid ei saa uuesti teha.
+	Work Area Bar	Tööala riba
+	Start: {tc}	Algus: {tc}
+	End: {tc}	Lõpp: {tc}
+	Duration: {tc}	Kestus: {tc}
+	Show/Hide Tracks…	Näita/peida rajad…
+	Panel menu	Paneeli menüü
+	Move panel	Teisalda paneel
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Klõpsa valimiseks või klõpsa tühjas kohas ja lohista raamvalikuks. Muude valikute jaoks kasuta klahve Shift, Alt ja Ctrl.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Klõpsa, et valida kõigil radadel kõik paremal olevad klipid. Shift-klõps ühe raja jaoks.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Klõpsa, et valida kõigil radadel kõik vasakul olevad klipid. Shift-klõps ühe raja jaoks.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Lohista lõikepunkti nihutusega kärpimiseks; hilisemad klipid liiguvad, et vahe jääks suletuks.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Lohista lõikepunkti selle veeretamiseks: ühe klipi lõpp ja järgmise algus liiguvad koos.
+	Drag an edge to change the clip's speed so it fills the new duration.	Lohista serva, et muuta klipi kiirust nii, et see täidaks uue kestuse.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Lohista muusikaklipi serva, et see muusikaliselt sobivate löökide kohal uuele kestusele ümber miksida.
+	Click to split a clip. Shift-click to split all tracks.	Klõpsa klipi jagamiseks. Shift-klõps jagab kõik rajad.
+	Drag a clip to slip its source in/out without moving it.	Lohista klippi, et nihutada selle lähte algust/lõppu ilma klippi liigutamata.
+	Drag a clip to slide it between its neighbours.	Lohista klippi, et libistada seda naabrite vahel.
+	Drag to scroll the timeline.	Lohista ajaskaala kerimiseks.
+	Click to zoom in; Alt-click to zoom out.	Klõpsa suurendamiseks; Alt-klõps vähendamiseks.
+	Exporting	Eksportimine
+	Show	Näita
+	Grab bag	Mitmesugust
+	Version {version}	Versioon {version}
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Fondid: Inter, Noto Serif ja JetBrains Mono (SIL OFL 1.1).
+	CFA4 was closed while “{name}” had unsaved changes.	CFA4 suleti, kui „{name}“ sisaldas salvestamata muudatusi.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	CFA4 sulgus ootamatult, kui „{name}“ sisaldas salvestamata muudatusi.
+	Recover unsaved changes from {when}?	Kas taastada salvestamata muudatused ajast {when}?
+	The project had not been saved yet.	Projekti polnud veel salvestatud.
+	{n} sessions have unsaved changes:	Salvestamata muudatustega seansid ({n}):
+	Are you sure you want to discard your changes to '{file}'?	Kas soovid kindlasti loobuda faili „{file}“ muudatustest?
+	the project has not been saved yet	projekti pole veel salvestatud
+	Export As Motion Graphics Template	Ekspordi liikuva graafika mallina
+	Category:	Kategooria:
+	Editable properties:	Redigeeritavad omadused:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	Salvestatud CFA4 graafikamallina (.fcgt) sinu mallide kausta.
+	My Templates	Minu mallid
+	{n} Font	{n} – font
+	{n} Size	{n} – suurus
+	{n} Color	{n} – värv
+	{n} Position	{n} – asukoht
+	Show {n}	Näita: {n}
+	Exported graphics template to {path}	Graafikamall eksporditud: {path}
+	Replace Fonts in Projects	Asenda fondid projektides
+	Fonts used in the project:	Projektis kasutatud fondid:
+	{f} (missing)	{f} (puudub)
+	with:	millega:
+	Replaced {n} font uses	Asendatud {n} fondikasutust
+	Track Color	Raja värv
+	Unrendered: should play back in real time	Renderdamata: peaks esituma reaalajas
+	Unrendered: render to play back in real time	Renderdamata: reaalajas esitamiseks renderda
+	Rendered preview	Renderdatud eelvaade
+	Transparency Grid	Läbipaistvuse ruudustik
+	Show Duplicate Frame Markers	Näita topeltkaadrite markereid
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Jada algus/lõpp on ainult 1 kaader. Kogu jada eksportimiseks vali „Kogu jada“.
+	more tabs	rohkem vahekaarte
+	Set Work Area Bar In Point	Määra tööala riba alguspunkt
+	Set Work Area Bar Out Point	Määra tööala riba lõpp-punkt
+	Delete Clips	Kustuta klipid
+	Destinations	Sihtkohad
+	Analyzing the clip…	Klipi analüüsimine…
+	At GOP boundaries (no re-encoding)	GOP-piiridel (ümberkodeerimiseta)
+	Bit-exact copy	Bititäpne koopia
+	Choose the output file.	Vali väljundfail.
+	Compatible copy	Ühilduv koopia
+	Copy:	Kopeeri:
+	Cut:	Lõika:
+	Frame accurate (re-encode the boundaries)	Kaadritäpne (piirid kodeeritakse ümber)
+	Open a video clip in the Source monitor first.	Ava esmalt videoklipp lähtemonitoris.
+	Output:	Väljund:
+	Smart Cut Source	Nutikas allika lõikamine
+	Smart Cut Source…	Nutikas allika lõikamine…
+	Smart Cut is not available for this clip: {why}	Nutikas lõikamine pole selle klipi jaoks saadaval: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Nutikas lõige kirjutatud ja kontrollitud: {path} ({frames} kaadrit)
+	The cut cannot run.	Lõiget ei saa käivitada.
+	The engine sent no analysis.	Mootor ei saatnud analüüsi.
+	Writing and verifying the cut…	Lõike kirjutamine ja kontrollimine…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} konteineris {container}: {gops} GOP-i, {points} puhast lõikepunkti
+	{copied} frames copied, {reencoded} frames re-encoded	Kopeeritud {copied} kaadrit, ümber kodeeritud {reencoded} kaadrit
+	{frames} frames at the boundaries are re-encoded. Continue?	Piiridel kodeeritakse ümber {frames} kaadrit. Kas jätkata?
+	Show GOP Boundaries	Näita GOP-piire
+	Export mode	Ekspordirežiim
+	Full Render	Täisrenderdus
+	Planning…	Planeerimine…
+	Recommended: Smart Render (asks before re-encoding)	Soovitatav: nutikas renderdus (küsib enne ümberkodeerimist)
+	Recommended: Stream Copy (nothing is re-encoded)	Soovitatav: voo kopeerimine (midagi ei kodeerita ümber)
+	Rendered because of: {causes}	Renderdatud põhjusel: {causes}
+	Smart Export	Nutikas eksport
+	Smart Export written and verified: {path}	Nutikas eksport kirjutatud ja kontrollitud: {path}
+	Smart Render	Nutikas renderdus
+	Stream Copy – Bit-exact	Voo kopeerimine – bititäpne
+	Stream Copy – Compatible	Voo kopeerimine – ühilduv
+	Stream copy is not possible: {frames} frames need re-encoding.	Voo kopeerimine pole võimalik: {frames} kaadrit vajavad ümberkodeerimist.
+	The export cannot run.	Eksporti ei saa käivitada.
+	Wait for the export plan.	Oota ekspordiplaani.
+	Writing and verifying the export…	Ekspordi kirjutamine ja kontrollimine…
+	colour conversion	värviteisendus
+	compositing	komponeerimine
+	copied	kopeeritud
+	effects	efektid
+	frame rate	kaadrisagedus
+	proxies or nested sequences	asendusfailid või pesastatud jadad
+	re-encoded at a cut	lõikel ümber kodeeritud
+	rendered	renderdatud
+	sources that cannot be copied	allikad, mida ei saa kopeerida
+	speed changes	kiiruse muutused
+	titles or overlays	tiitrid või ülekatted
+	transforms	teisendused
+	transitions	üleminekud
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Kopeeritud {copied} kaadrit, lõigetel ümber kodeeritud {reencoded}, renderdatud {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	{frames} kaadrit kodeeritakse ümber või renderdatakse. Kas jätkata?
+	CFA4 Help…	CFA4 abi…
+	Learning	Õppimine
+	Refresh Changed Media	Värskenda muutunud meediat
+	Open Recent	Ava hiljutine
+	Clear Recent Files	Tühjenda hiljutised failid
+	Report an Issue…	Teata probleemist…
+	{name} - Edited	{name} – redigeeritud
+	Audio Gain	Heli võimendus
+	Set Gain to:	Määra võimenduseks:
+	Adjust Gain by:	Muuda võimendust:
+	Normalize Max Peak to:	Normaliseeri maksimaalne tipp tasemele:
+	Normalize All Peaks to:	Normaliseeri kõik tipud tasemele:
+	Peak Amplitude: {peak}	Tipu amplituud: {peak}
+	Add Tracks	Lisa rajad
+	Placement	Asetus
+	Track type	Raja tüüp
+	Add video tracks	Lisa videorajad
+	Add audio tracks	Lisa helirajad
+	Add audio submix tracks	Lisa heli alammiksi rajad
+	After {name}	Pärast rada {name}
+	Before First Track	Enne esimest rada
+	Delete Tracks	Kustuta rajad
+	Video Tracks	Videorajad
+	Audio Tracks	Helirajad
+	Delete Video Tracks	Kustuta videorajad
+	Delete Audio Tracks	Kustuta helirajad
+	All Empty Tracks	Kõik tühjad rajad
+	Caption Tracks	Pealdiserajad
+	Delete Caption Tracks	Kustuta pealdiserajad
+	Source code on GitHub	Lähtekood GitHubis
+	Report an issue	Teata probleemist
+	Community	Kogukond
+	Join us on Discord	Liitu meiega Discordis
+	Rendering:	Renderdamine:
+	UI:	Kasutajaliides:
+	{fps} fps · {n} frames queued	{fps} kaadrit/s · järjekorras {n} kaadrit
+	Maximize Frame	Maksimeeri raam
+	Restore Frame	Taasta raam
+	Reveal Sequence in Project	Näita jada projektis
+	Video Thumbnails	Video pisipildid
+	Audio Waveforms	Heli lainekujud
+	Untitled Workspace	Pealkirjata tööruum
+	New Workspace	Uus tööruum
+	Show durations	Näita kestusi
+	Project Metadata	Projekti metaandmed
+	Add Property…	Lisa omadus…
+	Column order	Veergude järjestus
+	Graphics text search arrives with M10.1–M10.2	Graafika tekstiotsing tuleb koos M10.1–M10.2-ga
+	Effect	Efekt
+	(no clips)	(klippe pole)
+	Export Frame (Shift+E)	Ekspordi kaader (Shift+E)
+	Export Frame: use Export mode (M6)	Ekspordi kaader: kasuta ekspordirežiimi (M6)
+	Save changes to “{project_name}” before closing?	Kas salvestada „{project_name}“ muudatused enne sulgemist?
+	A file dialog is already open	Failidialoog on juba avatud
+	Timeline: (no sequences)	Ajaskaala: (jadasid pole)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Klõpsa programmimonitoris maskipunktide paigutamiseks (lohista kõverate jaoks); sulgemiseks klõpsa esimest punkti või vajuta Enter
+	Composite	Komposiit
+	Video and Waveform	Video ja lainekuju
+	Remove Media Cache Files	Eemalda meedia vahemälu failid
+	Eyedropper: no picture to sample	Pipett: pole pilti, millest proovi võtta
+	Select a clip to grade	Vali klipp värvimiseks
+	   Opacity	   Läbipaistmatus
+	   Size	   Suurus
+	   Corner Radius	   Nurga raadius
+	   Angle	   Nurk
+	   Distance	   Kaugus
+	   Blur	   Hägu
+	   Template: {name}	   Mall: {name}
+	CFA4 Graphics Template	CFA4 graafikamall
+	  (none)	  (puudub)
+	Select items to clear	Vali tühjendatavad üksused
+	Media missing	Meedia puudub
+	Unreadable	Loetamatu
+	✓ Enable	✓ Luba
+	(RGB) Gamma	(RGB) Gamma
+	(RGB) Input Black Level	(RGB) Sisendi musta tase
+	(RGB) Input White Level	(RGB) Sisendi valge tase
+	(RGB) Output Black Level	(RGB) Väljundi musta tase
+	(RGB) Output White Level	(RGB) Väljundi valge tase
+	10 Bit Black Point	10-bitine mustpunkt
+	10 Bit White Point	10-bitine valgepunkt
+	105mm Prime	105 mm põhiobjektiiv
+	29.97 fps Drop-Frame	29,97 kaadrit/s, kaadreid vahelejättev
+	29.97 fps Non Drop-Frame	29,97 kaadrit/s, kaadreid vahelejätmata
+	35mm Prime	35 mm põhiobjektiiv
+	3D Roll	3D-veeremine
+	3D Rotate	3D-pööramine
+	3D Spin	3D-keerutus
+	3D Spinback	3D-tagasikeerutus
+	4-Color Gradient	4 värvi gradient
+	5.1 Media	5.1 meedia
+	5.1 Mixdown Type	5.1 mahamiksi tüüp
+	50-300mm Zoom	50–300 mm suum
+	59.94 fps Drop-Frame	59,94 kaadrit/s, kaadreid vahelejättev
+	59.94 fps Non Drop-Frame	59,94 kaadrit/s, kaadreid vahelejätmata
+	ASC CDL	ASC CDL
+	Action-Safe Margin	Tegevuse turvaveeris
+	1 file	1 fail
+	{n} files	{n} faili
+	Additional Scale	Lisaskaala
+	Additive Dissolve	Liitev sulandus
+	Additive Dissolve (Legacy)	Liitev sulandus (pärand)
+	Aggressive	Agressiivne
+	Alpha Adjust	Alfa korrigeerimine
+	Alpha Blurriness	Alfa hägusus
+	Alpha Channel	Alfakanal
+	Alpha Glow	Alfa kuma
+	Ambience Intensity	Ümbruse intensiivsus
+	Ambience Light Color	Ümbruse valguse värv
+	Amount of Noise	Müra hulk
+	Amount to Decolor	Värvituse hulk
+	Amount to Tint	Toonimise hulk
+	Amplifier	Võimendi
+	Amplify	Võimenda
+	Amplitude	Amplituud
+	Analog	Analoog
+	Analog Delay	Analoogviivitus
+	Anamorphic	Anamorfne
+	Anchor	Ankur
+	Anti-aliasing Quality	Sakitõrje kvaliteet
+	Antialiasing for Best Quality	Sakitõrje parima kvaliteedi jaoks
+	Asymmetry	Asümmeetria
+	Audio Duration	Heli kestus
+	Audio In Point	Heli alguspunkt
+	Audio Out Point	Heli lõpp-punkt
+	Audio Usage	Heli kasutus
+	Auto Align	Automaatne joondus
+	Auto Reframe	Automaatne ümberkadreerimine
+	Automatic Click Remover	Automaatne klõpsude eemaldaja
+	Background Color	Taustavärv
+	Background Corner Radius	Tausta nurga raadius
+	Background Opacity	Tausta läbipaistmatus
+	Background Size	Tausta suurus
+	Band 1	Riba 1
+	Band 2	Riba 2
+	Band 3	Riba 3
+	Band 4	Riba 4
+	Band 5	Riba 5
+	Band Pass	Ribapääs
+	Band Slide	Ribade libisemine
+	Band Stop	Ribatõke
+	Bandpass	Ribapääsfilter
+	Barn Doors	Varjeklapid
+	Basic	Põhiline
+	Basic 3D	Põhiline 3D
+	Bass	Bass
+	Behind	Taga
+	Bessel	Bessel
+	Bevel Alpha	Alfa faas
+	Binauralizer - Ambisonics	Binauraliseerija – ambisoonika
+	Black	Must
+	Black & White	Must ja valge
+	Black Input Level	Musta sisendtase
+	Black and white	Mustvalge
+	Black and white with crushed blacks and strong contrast	Mustvalge, purustatud mustade ja tugeva kontrastiga
+	Bleach-bypass style: desaturated with hard contrast	Pleegituse möödaviigu stiil: küllastamata ja kõva kontrastiga
+	Blend	Segu
+	Blend With Original	Sega originaaliga
+	Blending Mode	Segamisrežiim
+	Block Dissolve	Plokkidega sulandus
+	Block Height	Ploki kõrgus
+	Block Motion	Plokkide liikumine
+	Block Size	Ploki suurus
+	Block Width	Ploki laius
+	Blocks	Plokid
+	Blue Blurriness	Sinise hägusus
+	Blue Curve	Sinise kõver
+	Blue Offset	Sinise nihe
+	Blue Power	Sinise võimsus
+	Blue Slope	Sinise kalle
+	Blue-Blue	Sinine-sinine
+	Blue-Const	Sinine-konst.
+	Blue-Green	Sinine-roheline
+	Blue-Red	Sinine-punane
+	Blur Amount	Hägu hulk
+	Blur Angle	Hägu nurk
+	Blur Dimensions	Hägu mõõtmed
+	Blur Dissolve	Häguga sulandus
+	Blur Layer	Hägu kiht
+	Blur Length	Hägu pikkus
+	Blurriness	Hägusus
+	Bokeh Blur	Bokeh-hägu
+	Boost	Võimendus
+	Border	Ääris
+	Border Color	Äärise värv
+	Border Width	Äärise laius
+	Bounce	Põrge
+	Branching	Hargnemine
+	Brightness & Contrast	Heledus ja kontrast
+	British Stack	Briti virn
+	Brush Hardness	Pintsli kõvadus
+	Brush Opacity	Pintsli läbipaistmatus
+	Brush Position	Pintsli asukoht
+	Brush Size	Pintsli suurus
+	Brush Spacing (secs)	Pintsli vahe (s)
+	Brush Strokes	Pintslitõmbed
+	Bubbles	Mullid
+	Bulge	Kumerus
+	Bulge Smoother	Kumeruse siluja
+	Bump Height	Muhu kõrgus
+	Burn Alpha	Põleta alfa
+	Burn Chroma	Põleta krominants
+	Burn Color	Põleta värv
+	Butterworth	Butterworth
+	Camera Blur	Kaamera hägu
+	Camera Shake	Kaamera värin
+	Capitalisation	Suurtähestus
+	Cathedral	Katedraal
+	Cell Pattern	Rakumuster
+	Center Channel Pan	Keskkanali panoraam
+	Center Gradient	Keskgradient
+	Center Input	Keskne sisend
+	Center Out	Keskne väljund
+	Center Point (Latitude)	Keskpunkt (laiuskraad)
+	Center Point (Longitude)	Keskpunkt (pikkuskraad)
+	Center Split	Keskne jaotus
+	Center of Sphere	Sfääri keskpunkt
+	Cents	Sendid
+	Change to Color	Muuda värviks
+	Channel	Kanal
+	Channel Blur	Kanali hägu
+	Channel Mix	Kanalite segu
+	Channel Mixer	Kanalimikser
+	Chaos	Kaos
+	Chebyshev	Tšebõšev
+	Checker Wipe	Malelaua pühkimine
+	Checkerboard	Malelaud
+	Choke	Kägistus
+	Chorus	Koor
+	Chorus/Flanger	Koor/flanger
+	Chroma Leak	Krominantsi leke
+	Chromatic Aberration (Blue)	Kromaatiline aberratsioon (sinine)
+	Chromatic Aberration (Green)	Kromaatiline aberratsioon (roheline)
+	Chromatic Aberration (Red)	Kromaatiline aberratsioon (punane)
+	Cineon Converter	Cineoni teisendaja
+	Clean Combo	Puhas kombo
+	Clip Level	Lõikamise tase
+	Clipping	Lõikamine
+	Clock Wipe	Kellapühkimine
+	Clock Wipe (Legacy)	Kellapühkimine (pärand)
+	Clockwise	Päripäeva
+	Clone	Klooni
+	Color & Alpha	Värv ja alfa
+	Color 1	Värv 1
+	Color 2	Värv 2
+	Color 3	Värv 3
+	Color 4	Värv 4
+	Color Balance	Värvitasakaal
+	Color Channel	Värvikanal
+	Color Distortion	Värvimoonutus
+	Color Emboss	Värviline reljeef
+	Color Key	Värvivõti
+	Color Pass	Värvipääs
+	Color Replace	Värvi asendus
+	Color To Leave	Säilitatav värv
+	Color Tolerance	Värvitolerants
+	Colorize	Toonimine värviga
+	Complexity	Keerukus
+	Composite In Back	Komponeeri taha
+	Composite In Front	Komponeeri ette
+	Composite Using	Komponeeri kasutades
+	Composite on Original	Komponeeri originaalile
+	Compound Blur	Liithägu
+	Compression Before Clipping	Tihendus enne lõikamist
+	Constant Gain	Püsiv võimendus
+	Constant Power	Püsiv võimsus
+	Conversion Type	Teisenduse tüüp
+	Convolution Reverb	Konvolutsiooniline järelkõla
+	Cool, desaturated and punchy	Jahe, küllastamata ja jõuline
+	Core Width	Südamiku laius
+	Corner	Nurgapunkt
+	Corner Pin	Nurkade kinnitus
+	Count	Arv
+	Counter-clockwise	Vastupäeva
+	Crop Less <-> Smooth More	Vähem kärpimist <-> rohkem silumist
+	Cross Displacement	Risti nihe
+	Cross Dissolve	Ristsulandus
+	Cross Dissolve (Legacy)	Ristsulandus (pärand)
+	Cross Zoom	Ristsuum
+	Cross Zoom (Legacy)	Ristsuum (pärand)
+	Crossovers	Jaotussagedused
+	Crystallize	Kristalliseeri
+	Crystals	Kristallid
+	Cube Spin	Kuubi pööre
+	Curl Radius	Rulli raadius
+	Cursor	Kursor
+	Curvature	Kõverus
+	Curve	Kõver
+	Custom Color	Kohandatud värv
+	Cutoff	Lõikesagedus
+	Cyan-teal shadows and warm highlights with a little more contrast	Tsüaan-sinakasrohelised varjud ja soojad heledad alad veidi suurema kontrastiga
+	Cycle (in Revolutions)	Tsükkel (pööretes)
+	Cycle Evolution	Tsükliline areng
+	Damping	Summutus
+	Damping HF	Kõrgete summutus
+	Damping LF	Madalate summutus
+	Day for night: darker, cooler and less saturated	Päev ööks: tumedam, jahedam ja vähem küllastatud
+	DeEsser	Sibilantide eemaldaja
+	DeHummer	Mürina eemaldaja
+	DeNoise	Müra eemaldaja
+	DeReverb	Järelkõla eemaldaja
+	Decay	Kustumine
+	Decay Time (RT60)	Kustumisaeg (RT60)
+	Delay	Viivitus
+	Delay 1	Viivitus 1
+	Delay 2	Viivitus 2
+	Delay 3	Viivitus 3
+	Delay 4	Viivitus 4
+	Depth	Sügavus
+	Desaturate	Eemalda küllastus
+	Detail Amplitude	Detailide amplituud
+	Detail Level	Detailide tase
+	Detailed Analysis	Üksikasjalik analüüs
+	Dimensions	Mõõtmed
+	Dip to Black	Hääbu mustaks
+	Dip to Black (Legacy)	Hääbu mustaks (pärand)
+	Dip to Color	Hääbu värviks
+	Dip to White	Hääbu valgeks
+	Dip to White (Legacy)	Hääbu valgeks (pärand)
+	Direction	Suund
+	Directional	Suunatud
+	Directional Blur	Suunatud hägu
+	Directional Blur (Legacy)	Suunatud hägu (pärand)
+	Disperse	Haju
+	Displacement	Nihe
+	Dissolve Blocks	Sulanduse plokid
+	Distance to Image	Kaugus pildini
+	Distortion	Moonutus
+	Distortion Complexity	Moonutuse keerukus
+	Distortion Rate	Moonutuse kiirus
+	Distortion Type	Moonutuse tüüp
+	Drive	Ülejuhtimine
+	Drop Shadow	Langev vari
+	Dry	Kuiv
+	Dry Out	Kuiv väljund
+	Dynamics Processing	Dünaamika töötlemine
+	Early Reflections	Varased peegeldused
+	Earthquake	Maavärin
+	Ease In and Out	Sujuv algus ja lõpp
+	Easing	Sujuv kiirendus
+	Echo	Kaja
+	Echo Glow	Kaja kuma
+	Echo Operator	Kaja operaator
+	Echo Time (seconds)	Kaja aeg (sekundites)
+	Echoes	Kajad
+	Edge Color	Serva värv
+	Edge Feather	Serva pehmendus
+	Edge Glow	Serva kuma
+	Edge Sharpness	Serva teravus
+	Edge Softness	Serva pehmus
+	Edge Thickness	Serva paksus
+	Edge Thin	Serva õhendus
+	Edge Threshold	Serva lävi
+	Edge Type	Serva tüüp
+	Edge Width	Serva laius
+	Elliptical	Elliptiline
+	Emboss	Pressreljeef
+	Enable HSL Secondary	Luba HSL-sekundaarne
+	End Color	Lõppvärv
+	End Point	Lõpu punkt
+	End of Ramp	Värviülemineku lõpp
+	Evolution	Areng
+	Evolution Options	Arengu valikud
+	Exciter Amount	Ergutaja hulk
+	Exciter Mode	Ergutaja režiim
+	Exponential Fade	Eksponentsiaalne hääbumine
+	FFT Filter	FFT-filter
+	Fade	Hääbumine
+	Fade Out	Välja hääbumine
+	Falloff	Kahanemine
+	Fast	Kiire
+	Faster Motion	Kiirem liikumine
+	Feedback	Tagasiside
+	Feedback 1	Tagasiside 1
+	Feedback 2	Tagasiside 2
+	Feedback 3	Tagasiside 3
+	Feedback 4	Tagasiside 4
+	Female	Naine
+	Fill Background	Täida taust
+	Fill Color	Täitevärv
+	Fill Left with Right	Täida vasak parempoolsega
+	Fill Point	Täitepunkt
+	Fill Right with Left	Täida parem vasakpoolsega
+	Fill Selector	Täite valija
+	Film Dissolve	Filmisulandus
+	Film Dissolve (Legacy)	Filmisulandus (pärand)
+	Film Roll	Filmirull
+	Filter	Filter
+	Filter Frequency	Filtri sagedus
+	Filter Resonance	Filtri resonants
+	Final Delay	Lõppviivitus
+	Find Edges	Leia servad
+	Flanger	Flanger
+	Flare	Läige
+	Flare Brightness	Läike heledus
+	Flare Center	Läike keskpunkt
+	Flare Color	Läike värv
+	Flash	Välgatus
+	Flicker	Virvendus
+	Flickers	Virvendused
+	Flip Motion	Pöördliikumine
+	Flip Over	Ümberpööre
+	Focus	Fookus
+	Focus Blur	Fookuse hägu
+	Focus Point	Fookuspunkt
+	Focus Shape	Fookuse kuju
+	Focus Size	Fookuse suurus
+	Fold Motion	Voltimisliikumine
+	Foldback	Tagasivoltimine
+	Fractal Influence	Fraktali mõju
+	Fractal Type	Fraktali tüüp
+	Frame	Raam
+	Frame Color	Raami värv
+	Frame Layout	Raami paigutus
+	Frame Width	Raami laius
+	Framing	Kadreerimine
+	Frequency	Sagedus
+	From	Alates
+	From East	Idast
+	From North	Põhjast
+	From South	Lõunast
+	From West	Läänest
+	Fuzz	Udusus
+	GB	GB
+	Gamma	Gamma
+	Gamma Correction	Gammakorrektsioon
+	Gamut Warning	Gamuti hoiatus
+	Gamut Warning Color	Gamuti hoiatuse värv
+	Gap	Vahe
+	Gap Color	Vahe värv
+	Gaussian Blur	Gaussi hägu
+	Gaussian Blur (Legacy)	Gaussi hägu (pärand)
+	Ghosts	Kummitused
+	Glass	Klaas
+	Glint	Sädelus
+	Glitch	Tõrge
+	Glow Brightness	Kuma heledus
+	Glow Color	Kuma värv
+	Glow Only	Ainult kuma
+	Glow Radius	Kuma raadius
+	Glow Saturation	Kuma küllastus
+	Glow Width	Kuma laius
+	Good	Hea
+	Gradient End	Gradiendi lõpp
+	Gradient Layer	Gradiendi kiht
+	Gradient Placement	Gradiendi paigutus
+	Gradient Scatter	Gradiendi hajutus
+	Gradient Shape	Gradiendi kuju
+	Gradient Start	Gradiendi algus
+	Gradient Wipe	Gradiendiga pühkimine
+	Gradient Wipe (Legacy)	Gradiendiga pühkimine (pärand)
+	Grain Size	Tera suurus
+	Green Blurriness	Rohelise hägusus
+	Green Curve	Rohelise kõver
+	Green Offset	Rohelise nihe
+	Green Power	Rohelise võimsus
+	Green Slope	Rohelise kalle
+	Green-Blue	Roheline-sinine
+	Green-Const	Roheline-konst.
+	Green-Green	Roheline-roheline
+	Green-Red	Roheline-punane
+	Grid	Ruudustik
+	Grow	Kasva
+	Grunge	Mustus
+	GuitarSuite	GuitarSuite
+	Hard	Kõva
+	Hard Clip	Kõva lõikamine
+	Hard Limiter	Kõva piiraja
+	Head Size	Pea suurus
+	Height	Kõrgus
+	Hexagon	Kuusnurk
+	Hide Back Face	Peida tagakülg
+	High Cutoff	Kõrge lõikesagedus
+	High Frequency Cut	Kõrgete sageduste lõikamine
+	High Frequency Damping	Kõrgete sageduste summutus
+	High Pass	Kõrgpääs
+	High Shelf	Kõrge riiul
+	High Shelf Gain	Kõrge riiuli võimendus
+	High contrast with held highlights and deep shadows	Kõrge kontrast säilitatud heledate alade ja sügavate varjudega
+	Highlight Blue Balance	Heledate alade sinise tasakaal
+	Highlight Brightness	Heledate alade heledus
+	Highlight Green Balance	Heledate alade rohelise tasakaal
+	Highlight Red Balance	Heledate alade punase tasakaal
+	Highlight Rolloff	Heledate alade sujuv langus
+	Highlight Threshold	Heledate alade lävi
+	Highlight Tint	Heledate alade toonimine
+	Highlights Lightness	Heledate toonide heledus
+	Highpass	Kõrgpääsfilter
+	Horizontal 16:9	Horisontaalne 16:9
+	Horizontal Alignment	Horisontaalne joondus
+	Horizontal Blocks	Horisontaalsed plokid
+	Horizontal Decentering	Horisontaalne tsentrinihe
+	Horizontal Displacement	Horisontaalne nihe
+	Horizontal Flip	Horisontaalne peegeldus
+	Horizontal Margin	Horisontaalne veeris
+	Horizontal and Vertical	Horisontaalne ja vertikaalne
+	Hue Center	Tooni keskpunkt
+	Hue Tolerance	Tooni tolerants
+	Ignore Alpha	Eira alfat
+	Impulse	Impulss
+	Incoming	Sisenev
+	Initial Delay	Algviivitus
+	Inner Radius	Siseraadius
+	Input Boost	Sisendi võimendus
+	Inset	Sisestus
+	Inside	Sees
+	Inside Color	Sisevärv
+	Inter	Inter
+	Internal Black Point	Sisemine mustpunkt
+	Internal White Point	Sisemine valgepunkt
+	Interpolation	Interpoleerimine
+	Inverse Falloff	Pöördkahanemine
+	Invert	Pööra ümber
+	Invert Alpha	Pööra alfa ümber
+	Invert Blur	Pööra hägu ümber
+	Invert Fill	Pööra täide ümber
+	Invert Gradient	Pööra gradient ümber
+	Invert Left	Pööra vasak ümber
+	Invert Right	Pööra parem ümber
+	Iris Box	Iiris – kast
+	Iris Cross	Iiris – rist
+	Iris Diamond	Iiris – romb
+	Iris Radius	Iirise raadius
+	Iris Rotation	Iirise pööre
+	Iris Round	Iiris – ring
+	Iris Shape	Iirise kuju
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	Kaleidoskoop
+	Key Color	Võtmevärv
+	Layer Name	Kihi nimi
+	Leave Color	Jäta värv alles
+	Left - Left	Vasak – vasak
+	Left - Right	Vasak – parem
+	Left to Right	Vasakult paremale
+	Length	Pikkus
+	Lens Blur	Objektiivi hägu
+	Lens Distortion	Objektiivi moonutus
+	Lens Flare	Objektiivi läige
+	Lens Type	Objektiivi tüüp
+	Level 1	Tase 1
+	Level 2	Tase 2
+	Level 3	Tase 3
+	Level 4	Tase 4
+	Levels	Tasemed
+	Lifted blacks, softer contrast, muted colour	Tõstetud mustad, pehmem kontrast, summutatud värvid
+	Light 1	Valgus 1
+	Light 2	Valgus 2
+	Light 3	Valgus 3
+	Light 4	Valgus 4
+	Light 5	Valgus 5
+	Light Angle	Valguse nurk
+	Light Color	Valguse värv
+	Light Intensity	Valguse intensiivsus
+	Light Leak	Valguse leke
+	Light Leaks	Valguse lekked
+	Light Sweep	Valguse pühkimine
+	Light Type	Valguse tüüp
+	Lighting Effects	Valgusefektid
+	Lightning	Välk
+	Line Thickness	Joone paksus
+	Linear Ramp	Lineaarne värviüleminek
+	Linear Wipe	Lineaarne pühkimine
+	Linear Wipe (Legacy)	Lineaarne pühkimine (pärand)
+	Linear to Log	Lineaarsest logaritmiliseks
+	Liquid Distortion	Vedel moonutus
+	Log to Linear	Logaritmilisest lineaarseks
+	Log to Log	Logaritmilisest logaritmiliseks
+	Logo Cutout	Logo väljalõige
+	Long Shadow	Pikk vari
+	Look-Ahead Time	Ettevaate aeg
+	Loudness Maximizer	Valjuse maksimeerija
+	Loudness Meter	Valjusemõõtur
+	Louver	Žalusii
+	Low Frequency Cut	Madalate sageduste lõikamine
+	Low Pass	Madalpääs
+	Low Shelf	Madal riiul
+	Low Shelf Gain	Madala riiuli võimendus
+	Lower Left	All vasakul
+	Lower Right	All paremal
+	Lowpass	Madalpääsfilter
+	Luma Curve	Luma kõver
+	Luma Fade	Luma hääbumine
+	Luma Key	Luma võti
+	Luma Source	Luma allikas
+	Luma and Chroma	Luma ja krominants
+	Luminance	Luminants
+	Luminance Threshold	Luminantsi lävi
+	MB	MB
+	Magnify	Luup
+	Magnify (Legacy)	Luup (pärand)
+	Major Radius	Suur raadius
+	Male	Mees
+	Map Black To	Vastenda must väärtusele
+	Map White To	Vastenda valge väärtusele
+	Maps full-range levels into 16–235 (video range) with a luma curve	Vastendab täisulatuse tasemed luma kõveraga vahemikku 16–235 (videovahemik)
+	Mask Only	Ainult mask
+	Master Amplitude	Põhiamplituud
+	Mastering	Masterdamine
+	Matte	Matt
+	Matte Alpha	Mati alfa
+	Matte Cleanup	Mati puhastus
+	Matte Generation	Mati genereerimine
+	Matte Luma	Mati luma
+	Maximum	Maksimum
+	Maximum Amplitude	Maksimaalne amplituud
+	Maximum Block Size	Maksimaalne ploki suurus
+	Maximum Blur	Maksimaalne hägu
+	Maximum Reduction	Maksimaalne vähendus
+	Maximum Scale	Maksimaalne skaala
+	Media Timecode	Meedia ajakood
+	Median	Mediaan
+	Metadata & Timecode Burn-in	Metaandmete ja ajakoodi sissepõletus
+	Method	Meetod
+	Metrics Kerning	Mõõdikupõhine märgipaaride siire
+	Mid	Kesk
+	Mid Point	Keskmine punkt
+	Midtone Blue Balance	Keskmiste toonide sinise tasakaal
+	Midtone Green Balance	Keskmiste toonide rohelise tasakaal
+	Midtone Red Balance	Keskmiste toonide punase tasakaal
+	Midtones Lightness	Keskmiste toonide heledus
+	Minimum	Miinimum
+	Minor Radius	Väike raadius
+	Mirror	Peegel
+	Mirror Alternate	Vahelduv peegeldus
+	Mixed Crystals	Segakristallid
+	Mode	Režiim
+	Modern High Gain	Kaasaegne kõrge võimendus
+	Modulation Rate	Modulatsiooni kiirus
+	Monochrome toned cyan-blue	Tsüaansiniseks toonitud ühevärviline
+	Monochrome toned warm brown	Soojaks pruuniks toonitud ühevärviline
+	More colour in the less saturated areas	Rohkem värvi vähem küllastatud aladel
+	Morph Cut	Morflõige
+	Mosaic	Mosaiik
+	Mosaic (Legacy)	Mosaiik (pärand)
+	Motion Blur	Liikumishägu
+	Motion Camera	Liikumiskaamera
+	Motion Preset	Liikumise eelseade
+	Motion Tween	Liikumise vahekaadrid
+	Move	Teisalda
+	Multitap Delay	Mitme väljavõttega viivitus
+	Neon Color	Neoonvärv
+	Neon Wipe	Neoonpühkimine
+	No Motion	Liikumiseta
+	Noise	Müra
+	Noise (Legacy)	Müra (pärand)
+	Noise Level	Müratase
+	Noise Reduction/Restoration	Mürasummutus/taastamine
+	Noise Type	Müra tüüp
+	Non-Additive Dissolve	Mittelisav sulandus
+	Notch 1	Sälk 1
+	Notch 2	Sälk 2
+	Notch 3	Sälk 3
+	Notch 4	Sälk 4
+	Notch 5	Sälk 5
+	Notch 6	Sälk 6
+	Notch Filter	Sälkfilter
+	Notch Width	Sälgu laius
+	Number Of Echoes	Kajade arv
+	Number of Harmonics	Harmoonikute arv
+	Octagon	Kaheksanurk
+	Offset	Nihe
+	Offset (Turbulence)	Nihe (turbulents)
+	Offset From	Nihe alates
+	Offset To	Nihe kuni
+	Omni	Kõikesuunaline
+	On Original Image	Originaalpildil
+	On Transparent	Läbipaistval
+	Opens up the shadows	Avab varjud
+	Order	Järjestus
+	Outgoing	Väljuv
+	Outside	Väljas pool
+	Outside Color	Välisvärv
+	Overflow	Ülevool
+	Overshoot	Üleviskumine
+	Page Peel	Lehe koorumine
+	Page Turn	Lehe pööramine
+	Paint Bucket	Värvipang
+	Paint On Black	Värvi mustale
+	Paint On Original Image	Värvi originaalpildile
+	Paint On Transparent	Värvi läbipaistvale
+	Paint On White	Värvi valgele
+	Paint Style	Värvimisstiil
+	Paint Surface	Värvimispind
+	Pan (Y Axis)	Panoraam (Y-telg)
+	Panel Wipe	Paneelpühkimine
+	Panner - Ambisonics	Panoraamija – ambisoonika
+	Passband Ripple	Pääsuriba lainelisus
+	Path Points	Tee punktid
+	Peak Frequency	Tipusagedus
+	Peak Gain	Tipuvõimendus
+	Pedestal	Alus
+	Pentagon	Viisnurk
+	Percent Blur	Hägu protsent
+	Phase Difference	Faasierinevus
+	Phaser	Faaser
+	Phosphor	Fosfor
+	Phosphor Color	Fosfori värv
+	Photocopy	Fotokoopia
+	Photocopy Color	Fotokoopia värv
+	Pillow	Padi
+	Pin All	Kinnita kõik
+	Pin Horizontal	Kinnita horisontaalselt
+	Pin Vertical	Kinnita vertikaalselt
+	Pinning	Kinnitamine
+	Pitch Shifter	Helikõrguse nihutaja
+	Plate	Plaat
+	Plateau Wipe	Platoopühkimine
+	Plateaus	Platood
+	Plates	Plaadid
+	Point 1	Punkt 1
+	Point 1 Color	Punkti 1 värv
+	Point 1 Latitude	Punkti 1 laiuskraad
+	Point 1 Longitude	Punkti 1 pikkuskraad
+	Point 2	Punkt 2
+	Point 2 Color	Punkti 2 värv
+	Point 2 Latitude	Punkti 2 laiuskraad
+	Point 2 Longitude	Punkti 2 pikkuskraad
+	Point 3	Punkt 3
+	Point 3 Color	Punkti 3 värv
+	Point 3 Latitude	Punkti 3 laiuskraad
+	Point 3 Longitude	Punkti 3 pikkuskraad
+	Point 4	Punkt 4
+	Point 5	Punkt 5
+	Point 6	Punkt 6
+	Point 7	Punkt 7
+	Point 8	Punkt 8
+	Pop Motion	Hüppeliikumine
+	Position Amount	Asukoha hulk
+	Position, Scale, Rotation	Asukoht, skaala, pööre
+	Posterize	Posteriseeri
+	Posterize Time	Posteriseeri aeg
+	Pre-Delay	Eelviivitus
+	Preserve Luminosity	Säilita heledus
+	Preserve Scale	Säilita skaala
+	ProcAmp	ProcAmp
+	Pull Motion	Tõmbeliikumine
+	Pulls highlights and whites down	Tõmbab heledad alad ja valged alla
+	Push	Lükka
+	Push (Legacy)	Lükka (pärand)
+	Q	Q
+	RGB Split	RGB-jaotus
+	Radial	Radiaalne
+	Radial Blur	Radiaalne hägu
+	Radial Ramp	Radiaalne värviüleminek
+	Radial Wipe	Radiaalne pühkimine
+	Radial Wipe (Legacy)	Radiaalne pühkimine (pärand)
+	Radius	Raadius
+	Ramp	Värviüleminek
+	Ramp Shape	Värviülemineku kuju
+	Random	Juhuslik
+	Random Seed	Juhuslik seeme
+	Ray	Kiir
+	Ray Color	Kiire värv
+	Ray Length	Kiire pikkus
+	Rays	Kiired
+	Rays Only	Ainult kiired
+	Red Blurriness	Punase hägusus
+	Red Curve	Punase kõver
+	Red Offset	Punase nihe
+	Red Power	Punase võimsus
+	Red Slope	Punase kalle
+	Red-Blue	Punane-sinine
+	Red-Const	Punane-konst.
+	Red-Green	Punane-roheline
+	Red-Red	Punane-punane
+	Reduce Axis	Vähenda telge
+	Reduce Interlace Flicker	Vähenda ridahüplemise virvendust
+	Reflected	Peegeldatud
+	Reflection Angle	Peegelduse nurk
+	Reflection Center	Peegelduse keskpunkt
+	Refraction	Murdumine
+	Reframe Offset	Ümberkadreerimise nihe
+	Reframe Zoom	Ümberkadreerimise suum
+	Relaxed	Lõdvestunud
+	Release Time	Vabastusaeg
+	Relief	Reljeef
+	Remove Fringe	Eemalda ääris
+	Repeat Edge Pixels	Korda servapiksleid
+	Replace Color	Asenda värv
+	Replicate	Paljunda
+	Retro	Retro
+	Reveal Original Image	Paljasta originaalpilt
+	Reverb Amount	Järelkõla hulk
+	Right - Left	Parem – vasak
+	Right - Right	Parem – parem
+	Roll (Z Axis)	Veeremine (Z-telg)
+	Room Size	Ruumi suurus
+	Rotation Amount	Pöörde hulk
+	Roughen	Karesta
+	Roughen Color	Karestuse värv
+	Roughen Edges	Karesta servad
+	Rounded Crop	Ümardatud kärbe
+	Rows	Read
+	Rusty	Roostene
+	Rusty Color	Roostevärv
+	Saturation at 50 %	Küllastus 50 % juures
+	Scale (Degrees)	Skaala (kraadides)
+	Scale Amount	Skaala hulk
+	Scale From	Skaala alates
+	Scale Height	Skaala kõrgus
+	Scale Match	Skaala sobitus
+	Scale To	Skaala kuni
+	Scan Lines	Skaneerimisread
+	Scientific Filter	Teaduslik filter
+	Segments	Lõigud
+	Semi-tones	Pooltoonid
+	Sequence Name	Jada nimi
+	Sequence Timecode	Jada ajakood
+	Setting	Säte
+	Shadow Angle	Varju nurk
+	Shadow Blue Balance	Varjude sinise tasakaal
+	Shadow Blur	Varju hägu
+	Shadow Color	Varju värv
+	Shadow Distance	Varju kaugus
+	Shadow Green Balance	Varjude rohelise tasakaal
+	Shadow Only	Ainult vari
+	Shadow Opacity	Varju läbipaistmatus
+	Shadow Red Balance	Varjude punase tasakaal
+	Shadow Size	Varju suurus
+	Shadow Tint	Varjude toonimine
+	Shadows Lightness	Varjude heledus
+	Shake	Raputus
+	Shape Dissolve	Kujuga sulandus
+	Shape Flow	Kuju voog
+	Shape Size	Kuju suurus
+	Shard Size	Killu suurus
+	Sharp Colors	Teravad värvid
+	Sharpen Amount	Teravduse hulk
+	Shift Center To	Nihuta keskpunkt asukohta
+	Show Focus Area	Näita fookusala
+	Show Only Noise	Näita ainult müra
+	Shrink	Kahanda
+	Shutter Angle	Katiku nurk
+	Similarity	Sarnasus
+	Simple Notch Filter	Lihtne sälkfilter
+	Simple Parametric EQ	Lihtne parameetriline ekvalaiser
+	Simple Text	Lihtne tekst
+	Single-band Compressor	Üheribaline kompressor
+	Sinusoidal	Siinuseline
+	Skew	Kalluta
+	Skew Axis	Kalde telg
+	Slats	Liistud
+	Slice	Viil
+	Slices	Viilud
+	Slide (Legacy)	Libistamine (pärand)
+	Slope	Kalle
+	Slow	Aeglane
+	Slower Motion	Aeglasem liikumine
+	Smart Limit	Nutikas piiramine
+	Smooth	Sujuv
+	Smooth Motion	Sujuv liikumine
+	Smoothness	Sujuvus
+	Soft	Pehme
+	Soft Clamp	Pehme piiramine
+	Soft Edges (Best Quality)	Pehmed servad (parim kvaliteet)
+	Soft Wipe	Pehme pühkimine
+	Softness	Pehmus
+	Solarize	Solariseeri
+	Solid Colors	Ühtlased värvid
+	Source Point	Lähtepunkt
+	Source Text	Lähtetekst
+	Spacer	Vahetükk
+	Speaker Angle	Kõlari nurk
+	Special Effects	Eriefektid
+	Spherize	Sfääriks
+	Spiky	Okkaline
+	Spill	Ülevalgumine
+	Spill Suppression	Ülevalgumise summutus
+	Spin	Keerutus
+	Spin Direction	Pöörlemissuund
+	Spin Motion	Pöörlemisliikumine
+	Split	Jaga
+	Split (Legacy)	Jaotus (pärand)
+	Spotlight	Prožektor
+	Spread	Laotus
+	Spring Motion	Vedruliikumine
+	Square	Ruut
+	Square (Width Only)	Ruut (ainult laius)
+	Square 1:1	Ruut 1:1
+	Stabilization	Stabiliseerimine
+	Stabilize Only	Ainult stabiliseeri
+	Stabilize, Crop	Stabiliseeri, kärbi
+	Stabilize, Crop, Auto-scale	Stabiliseeri, kärbi, automaatne skaala
+	Stabilize, Synthesize Edges	Stabiliseeri, sünteesi servad
+	Stages	Astmed
+	Star Wipe	Tähtpühkimine
+	Start Angle	Algnurk
+	Start Color	Algvärv
+	Start Point	Alguse punkt
+	Start of Ramp	Värviülemineku algus
+	Starting Intensity	Algintensiivsus
+	Static Plates	Staatilised plaadid
+	Stereo Expand	Stereo laiendus
+	Stereo Expander	Stereolaiendaja
+	Stereo Phasing	Stereofaasimine
+	Stereoscopic - Over/Under	Stereoskoopiline – üleval/all
+	Stereoscopic - Side by Side	Stereoskoopiline – kõrvuti
+	Stopband Attenuation	Tõkkeriba sumbuvus
+	Straight Color	Otsene värv
+	Strength	Tugevus
+	Stretch	Venita
+	Stretch Gradient to Fit	Venita gradient mahutamiseks
+	Stretch Map to Fit	Venita kaart mahutamiseks
+	Stretch Width or Height	Venita laiust või kõrgust
+	Stretch Wipe	Venituspühkimine
+	Stretch to Fit Frame	Venita kaadrisse mahutamiseks
+	Stripe	Triip
+	Stripes	Triibud
+	Strobe Color	Stroboskoobi värv
+	Strobe Duration (secs)	Stroboskoobi kestus (s)
+	Strobe Light	Stroboskoopvalgus
+	Strobe Period (secs)	Stroboskoobi periood (s)
+	Stroke 2 Color	Kontuuri 2 värv
+	Stroke 2 Type	Kontuuri 2 tüüp
+	Stroke 2 Width	Kontuuri 2 laius
+	Stroke Angle	Kontuuri nurk
+	Stroke Color	Kontuuri värv
+	Stroke Density	Kontuuri tihedus
+	Stroke Length	Kontuuri pikkus
+	Stroke Length (secs)	Kontuuri pikkus (s)
+	Stroke Only	Ainult kontuur
+	Stroke Randomness	Kontuuri juhuslikkus
+	Stroke Type	Kontuuri tüüp
+	Stroke Width	Kontuuri laius
+	Studio Reverb	Stuudio järelkõla
+	Subclip End	Alamklipi lõpp
+	Subclip Start	Alamklipi algus
+	Subspace Warp	Alamruumi kõverdus
+	Super Narrow	Eriti kitsas
+	Surface Gloss	Pinna läige
+	Surface Material	Pinna materjal
+	Surround Reverb	Ruumiline järelkõla
+	Swap Channels	Vaheta kanalid
+	Swivel	Pöörlemine
+	TV Power	Teleri võimsus
+	Tape	Lint
+	Tape/Tube	Lint/lamp
+	Target Aspect	Sihtkuvasuhe
+	Target Color	Sihtvärv
+	Target Field of View	Siht-vaateväli
+	Text Color	Teksti värv
+	Tile Gradient	Paani gradient
+	Tilt	Kallutus
+	Tilt (X Axis)	Kallutus (X-telg)
+	Tint Color	Toonimise värv
+	To	Kuni
+	Tolerance	Tolerants
+	Tone	Helitoon
+	Track Matte Key	Raja mati võti
+	Transience	Siirdelisus
+	Transition Completion	Ülemineku lõpetatus
+	Transition Softness	Ülemineku pehmus
+	Trash	Prügi
+	Travel Motion	Rännuliikumine
+	Treble	Kõrged
+	Tube	Lamp
+	Tube-modeled Compressor	Lambimudeliga kompressor
+	Tubular	Toruline
+	Turbulent	Turbulentne
+	Turbulent Displace	Turbulentne nihe
+	Turbulent Sharp	Turbulentne terav
+	Turbulent Smooth	Turbulentne sujuv
+	Turbulent Smoother	Turbulentne sujuvam
+	Tweed	Tweed
+	Twirl	Keeris
+	Twirl (Legacy)	Keeris (pärand)
+	Twirl Center	Keerise keskpunkt
+	Twirl Radius	Keerise raadius
+	Twist	Väänamine
+	Twist Smoother	Väänamise siluja
+	Ultra Key	Ultra võti
+	Uniform Spacing	Ühtlane vahe
+	Unsharp Mask	Ebaterav mask
+	Upper Frequency	Ülemine sagedus
+	Upper Left	Ülal vasakul
+	Upper Right	Ülal paremal
+	Use Color Noise	Kasuta värvimüra
+	Use End Color	Kasuta lõppvärvi
+	Use Glow Color	Kasuta kuma värvi
+	Use Tint Color	Kasuta toonimise värvi
+	VHS Damage	VHS-kahjustus
+	VR Blur	VR-hägu
+	VR Chroma Leaks	VR-krominantsilekked
+	VR Chromatic Aberrations	VR-kromaatilised aberratsioonid
+	VR Color Gradients	VR-värvigradiendid
+	VR De-Noise	VR-müraeemaldus
+	VR Digital Glitch	VR-digitõrge
+	VR Fractal Noise	VR-fraktaalmüra
+	VR Glow	VR-kuma
+	VR Gradient Wipe	VR-gradiendiga pühkimine
+	VR Iris Wipe	VR-iirisega pühkimine
+	VR Light Leaks	VR-valguselekked
+	VR Light Rays	VR-valguskiired
+	VR Mobius Zoom	VR-Möbiuse suum
+	VR Plane to Sphere	VR-tasand sfääriks
+	VR Projection	VR-projektsioon
+	VR Random Blocks	VR-juhuslikud plokid
+	VR Rotate Sphere	VR-sfääri pööramine
+	VR Sharpen	VR-teravdus
+	VR Spherical Blur	VR-sfääriline hägu
+	Venetian Blinds	Ribakardinad
+	Vertical 4:5	Vertikaalne 4:5
+	Vertical 9:16	Vertikaalne 9:16
+	Vertical Alignment	Vertikaalne joondus
+	Vertical Blocks	Vertikaalsed plokid
+	Vertical Decentering	Vertikaalne tsentrinihe
+	Vertical Displacement	Vertikaalne nihe
+	Vertical Flip	Vertikaalne peegeldus
+	Vertical Margin	Vertikaalne veeris
+	Very Narrow	Väga kitsas
+	Video 1	Video 1
+	Video 2	Video 2
+	Video 3	Video 3
+	Video 4	Video 4
+	Video 5	Video 5
+	Video 6	Video 6
+	Video 7	Video 7
+	Video 8	Video 8
+	Video Duration	Video kestus
+	Video In Point	Video alguspunkt
+	Video Out Point	Video lõpp-punkt
+	Video Usage	Video kasutus
+	Vocal Booth	Häälekabiin
+	Vocal Enhancer	Hääle parendaja
+	Volumetric Rays	Ruumilised kiired
+	Warm print stock with gentle roll-off	Soe koopiafilm õrna langusega
+	Warm, soft late-afternoon light	Soe pehme hilise pärastlõuna valgus
+	Warp Stabilizer	Kõverdusstabilisaator
+	Wave	Laine
+	Wave Height	Laine kõrgus
+	Wave Speed	Laine kiirus
+	Wave Warp	Lainekõverdus
+	Wave Width	Laine laius
+	Wavelength	Lainepikkus
+	Wet	Märg
+	Wet Out	Märg väljund
+	Whip	Piits
+	Whip (Legacy)	Piits (pärand)
+	White	Valge
+	White Input Level	Valge sisendtase
+	White Is High	Valge on kõrge
+	Widener	Laiusetõstja
+	Width	Laius
+	Wiggle	Võnkumine
+	Wipe Angle	Pühkimise nurk
+	Wonder Glow	Imekuma
+	Wrap Back	Tagasimähkimine
+	Write-on	Kirjutatav tekst
+	X Rotation	X-pööre
+	Y Rotation	Y-pööre
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	Kollakasrohelised heledad alad ja siniseks tõstetud varjud ristatud kanalikõveratest
+	Z Position	Z-asukoht
+	Z Rotation	Z-pööre
+	Zoom Amount	Suumi hulk
+	Zoom Blur	Suumihägu
+	Zoom Strength	Suumi tugevus
+	no GPU adapter: the CPU compositor is used	GPU-adapterit pole: kasutatakse CPU komponeerijat
+	CFA4 Project	CFA4 projekt
+	{name} (Simplified)	{name} (lihtsustatud)
+	Delete Search Bin	Kustuta otsingusalv
+	No export preset named `{name}`	Ekspordi eelseadet nimega `{name}` pole
+	Encoding {n}%	Kodeerimine {n}%
+	Stop	Peata
+	Uncompressed (PCM)	Tihendamata (PCM)
+	Match Source ({seq_sr} Hz)	Sobita allikaga ({seq_sr} Hz)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	Jada, {w}x{h}, {fps} kaadrit/s, {rate} Hz
+	Exporting {path}	Eksportimine {path}
+	Added to the export queue	Lisatud ekspordijärjekorda
+	Import: no file chosen (agents: export.presets.import {path})	Import: faili pole valitud (agendid: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	Eksport: faili pole valitud (agendid: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	Graafikaprobleem: lülitati tarkvaralisele komponeerimisele
+	GPU acceleration is unavailable; preview renders on the CPU	GPU-kiirendus pole saadaval; eelvaade renderdatakse CPU-l
+	CFA4 hit an error	CFA4 tabas vea
+	Opened {url}	Avatud: {url}
+	(empty)	(tühi)
+	AAC Audio 48 kHz 320 kbps	AAC-heli 48 kHz 320 kbit/s
+	Opus Audio 48 kHz 160 kbps	Opus-heli 48 kHz 160 kbit/s
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stereo 48 kHz 160 kbit/s
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 8 Mbit/s, Opus 128 kbit/s stereo
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4 heli (.m4a), stereo 48 kHz AAC-LC 320 kbit/s
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16-bitine
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, stereo 48 kHz 16-bitine PCM
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24-bitine
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, stereo 48 kHz 24-bitine, kadudeta
+	FLAC (lossless)	FLAC (kadudeta)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	Animeeritud GIF 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	Apple ProRes 4444 alfaga
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Application	Rakendus
+	Apply Guide Template	Rakenda juhtjoonte mall
+	Auto Save Now	Salvesta automaatselt kohe
+	Auto-Match Loudness	Valjuse automaatne sobitamine
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	Avid-stiilis OP-Atom: DNxHR HQ pildifail ja kanali kohta üks 24-bitine 48 kHz PCM-fail (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	BMP-jada
+	Baseline	Alusjoon
+	Begin Text Editing for a Graphic Layer	Alusta graafikakihi teksti redigeerimist
+	Begins With	Algab tekstiga
+	Blur In	Hägustuv algus
+	Blur Out	Hägustuv lõpp
+	Brightens inside a feathered circular mask	Helendab pehmendatud ringikujulise maski sisemust
+	Broadcast	Ringhääling
+	Cancel Dynamic Trim	Tühista dünaamiline kärpimine
+	Cancel Queued Export	Tühista järjekorras eksport
+	Center align text	Joonda tekst keskele
+	Change Mask	Muuda maski
+	Clear All Events	Tühjenda kõik sündmused
+	Clear Edit Point Selection	Tühjenda lõikepunktide valik
+	Clear Finished Exports	Tühjenda lõpetatud ekspordid
+	Clear Poster Frame	Tühjenda plakatikaader
+	Close Bin	Sulge salv
+	Close Sequence	Sulge jada
+	Cut to Camera 1	Lõika kaamerale 1
+	Cut to Camera 2	Lõika kaamerale 2
+	Cut to Camera 3	Lõika kaamerale 3
+	Cut to Camera 4	Lõika kaamerale 4
+	Cut to Camera 5	Lõika kaamerale 5
+	Cut to Camera 6	Lõika kaamerale 6
+	Cut to Camera 7	Lõika kaamerale 7
+	Cut to Camera 8	Lõika kaamerale 8
+	Cut to Camera 9	Lõika kaamerale 9
+	Darkens outside a feathered oval mask	Tumendab pehmendatud ovaalse maski välisosa
+	Decrease Clip Volume	Vähenda klipi helitugevust
+	Decrease Clip Volume Many	Vähenda klipi helitugevust palju
+	Decrease Font Size by Five Units	Vähenda fondi suurust viie ühiku võrra
+	Decrease Font Size by One Unit	Vähenda fondi suurust ühe ühiku võrra
+	Decrease Leading by Five Units	Vähenda reavahet viie ühiku võrra
+	Decrease Leading by One Unit	Vähenda reavahet ühe ühiku võrra
+	Delete Captions	Kustuta pealdised
+	Delete Graphic Layer	Kustuta graafikakiht
+	Delete Guide Template	Kustuta juhtjoonte mall
+	Delete Media Cache Files	Kustuta meedia vahemälu failid
+	Discard Unsaved Changes	Loobu salvestamata muudatustest
+	Does Not Contain	Ei sisalda
+	Download Speech Model	Laadi kõnemudel alla
+	Dynamic Trim Stop	Dünaamilise kärpimise peatamine
+	Edit Caption Text	Redigeeri pealdise teksti
+	Ends With	Lõpeb tekstiga
+	Entire Source	Kogu allikas
+	EssentialSound	EssentialSound
+	Extend Next Edit To Playhead	Pikenda järgmine lõige esitusnäidikuni
+	Extend Previous Edit To Playhead	Pikenda eelmine lõige esitusnäidikuni
+	Extend Selected Edit to Playhead	Pikenda valitud lõige esitusnäidikuni
+	Extend Selection Down	Laienda valikut alla
+	Extend Selection Left	Laienda valikut vasakule
+	Extend Selection Right	Laienda valikut paremale
+	Extend Selection Up	Laienda valikut üles
+	Fade In	Sisse hääbumine
+	Gaussian Blur from 0 to 60 over the last second	Gaussi hägu 0-st 60-ni viimase sekundi jooksul
+	Gaussian Blur from 60 to 0 over the first second	Gaussi hägu 60-st 0-ni esimese sekundi jooksul
+	Generate Ducking Keyframes	Genereeri summutamise võtmekaadrid
+	Go to Next Edit Point	Mine järgmisse lõikepunkti
+	Go to Next Edit Point on Any Track	Mine järgmisse lõikepunkti mis tahes rajal
+	Go to Previous Edit Point	Mine eelmisse lõikepunkti
+	Go to Previous Edit Point on Any Track	Mine eelmisse lõikepunkti mis tahes rajal
+	Go to Selected Clip End	Mine valitud klipi lõppu
+	Go to Selected Clip Start	Mine valitud klipi algusse
+	Go to Sequence End	Mine jada lõppu
+	Go to Sequence Start	Mine jada algusse
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	H.264 1920×1080 videojagamissaitidele, VBR 1 läbimine, 16 Mbit/s
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 läbimine, siht 20 Mbit/s, AAC 320 kbit/s
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 läbimist, 18 Mbit/s
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	H.264 3840×2160 videojagamissaitidele, VBR 1 läbimine, 45 Mbit/s
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 läbimine, siht 60 Mbit/s, AAC 320 kbit/s
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 läbimist, 50 Mbit/s
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	H.264 9:16 portree lühivideote jaoks sotsiaalmeedias, skaleeritud täitmiseks, 12 Mbit/s
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	H.264 jada kaadri suuruse ja sagedusega; 0,05 bitti piksli kohta
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	H.264 jada kaadri suuruse ja sagedusega; 0,1 bitti piksli kohta
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	H.264 jada kaadri suuruse ja sagedusega; bitikiirus kohandub kaadri suurusega (0,2 bitti piksli kohta)
+	High Quality 1080p HD	Kõrge kvaliteet 1080p HD
+	High Quality 2160p 4K	Kõrge kvaliteet 2160p 4K
+	Increase Clip Volume	Suurenda klipi helitugevust
+	Increase Clip Volume Many	Suurenda klipi helitugevust palju
+	Increase Font Size by Five Units	Suurenda fondi suurust viie ühiku võrra
+	Increase Font Size by One Unit	Suurenda fondi suurust ühe ühiku võrra
+	Increase Leading by Five Units	Suurenda reavahet viie ühiku võrra
+	Increase Leading by One Unit	Suurenda reavahet ühe ühiku võrra
+	Large blocks resolving to the picture over the first second	Suured plokid, mis esimese sekundi jooksul pildiks selginevad
+	Left align text	Joonda tekst vasakule
+	Looping GIF, 640×360 at 15 fps	Korduv GIF, 640×360 15 kaadrit/s
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bitine 4:2:2), 24-bitine 48 kHz PCM, algusajakood
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High pikk GOP (0,3 bitti piksli kohta), 24-bitine 48 kHz PCM
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bitine 48 kHz PCM, algusajakood
+	Main	Peamine
+	Mark In (Hover Scrub)	Märgi algus (hõljumisega kerimine)
+	Mark Out (Hover Scrub)	Märgi lõpp (hõljumisega kerimine)
+	Masks	Maskid
+	Match Source – Adaptive High Bitrate	Sobita allikaga – kohanduv kõrge bitikiirus
+	Match Source – Adaptive Low Bitrate	Sobita allikaga – kohanduv madal bitikiirus
+	Match Source – Adaptive Medium Bitrate	Sobita allikaga – kohanduv keskmine bitikiirus
+	Matches	Sobib
+	Maximize or Restore Active Frame	Maksimeeri või taasta aktiivne raam
+	Maximize or Restore Frame Under Cursor	Maksimeeri või taasta kursori all olev raam
+	Media Browser Settings	Meediabrauseri sätted
+	MediaBrowser	MediaBrowser
+	MediaCache	MediaCache
+	Merge Captions	Ühenda pealdised
+	Mixer	Mikser
+	Mosaic In	Mosaiigiga algus
+	Move All Audio Targets Down	Teisalda kõik helisihtmärgid alla
+	Move All Audio Targets Up	Teisalda kõik helisihtmärgid üles
+	Move All Video Targets Down	Teisalda kõik videosihtmärgid alla
+	Move All Video Targets Up	Teisalda kõik videosihtmärgid üles
+	Move Selection Down	Teisalda valik alla
+	Move Selection End	Teisalda valik lõppu
+	Move Selection Home	Teisalda valik algusse
+	Move Selection Left	Teisalda valik vasakule
+	Move Selection Page Down	Teisalda valik lehe võrra alla
+	Move Selection Page Up	Teisalda valik lehe võrra üles
+	Move Selection Right	Teisalda valik paremale
+	Move Selection Up	Teisalda valik üles
+	Multicam	Mitmekaamera
+	Navigate to End of Segment	Liigu lõigu lõppu
+	Navigate to Next Line	Liigu järgmisele reale
+	Navigate to Next Word	Liigu järgmisele sõnale
+	Navigate to Previous Line	Liigu eelmisele reale
+	Navigate to Previous Word	Liigu eelmisele sõnale
+	Navigate to Start of Segment	Liigu lõigu algusse
+	Next Multi-Camera Page	Järgmine mitme kaamera leht
+	Nudge Clip Selection Down	Nihuta klipivalikut alla
+	Nudge Clip Selection Left Five Frames	Nihuta klipivalikut viis kaadrit vasakule
+	Nudge Clip Selection Left One Frame	Nihuta klipivalikut üks kaader vasakule
+	Nudge Clip Selection Right Five Frames	Nihuta klipivalikut viis kaadrit paremale
+	Nudge Clip Selection Right One Frame	Nihuta klipivalikut üks kaader paremale
+	Nudge Clip Selection Up	Nihuta klipivalikut üles
+	Nudge Selected Object down by five	Nihuta valitud objekti viie võrra alla
+	Nudge Selected Object down by one	Nihuta valitud objekti ühe võrra alla
+	Nudge Selected Object to left by five	Nihuta valitud objekti viie võrra vasakule
+	Nudge Selected Object to left by one	Nihuta valitud objekti ühe võrra vasakule
+	Nudge Selected Object to right by five	Nihuta valitud objekti viie võrra paremale
+	Nudge Selected Object to right by one	Nihuta valitud objekti ühe võrra paremale
+	Nudge Selected Object up by five	Nihuta valitud objekti viie võrra üles
+	Nudge Selected Object up by one	Nihuta valitud objekti ühe võrra üles
+	Nudge Volume +1dB	Muuda helitugevust +1 dB
+	Nudge Volume +3dB	Muuda helitugevust +3 dB
+	Nudge Volume -1dB	Muuda helitugevust −1 dB
+	Nudge Volume -3dB	Muuda helitugevust −3 dB
+	Numbered BMP stills (24-bit)	Nummerdatud BMP-pildid (24-bitine)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	JPEG-jada
+	Targa Sequence	Targa-jada
+	DPX Sequence	DPX-jada
+	Numbered JPEG stills (quality 90)	Nummerdatud JPEG-pildid (kvaliteet 90)
+	Numbered Targa stills (24-bit, uncompressed)	Nummerdatud Targa-pildid (24-bitine, tihendamata)
+	Numbered DPX stills (10-bit RGB)	Nummerdatud DPX-pildid (10-bitine RGB)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	OpenEXR-jada
+	Numbered OpenEXR stills (half float, linear, uncompressed)	Nummerdatud OpenEXR-pildid (poolujukoma, lineaarne, tihendamata)
+	Numbered PNG stills at the sequence's frame size	Nummerdatud PNG-pildid jada kaadri suuruses
+	Numbered TIFF stills (RGB, 8-bit)	Nummerdatud TIFF-pildid (RGB, 8-bitine)
+	Opacity 0 → 100 % over the first second	Läbipaistmatus 0 → 100 % esimese sekundi jooksul
+	Opacity 100 → 0 % over the last second	Läbipaistmatus 100 → 0 % viimase sekundi jooksul
+	Open Bin	Ava salv
+	Open Search	Ava otsing
+	PNG	PNG
+	PNG Sequence	PNG-jada
+	Panel	Paneel
+	PiP 35% Upper Right	PiP 35% üleval paremal
+	Picture-in-picture: 35 % scale in the upper right	Pilt pildis: 35 % skaala üleval paremal
+	Play In to Out with Preroll/Postroll	Esita algusest lõpuni eel- ja järelkerimisega
+	Play from Playhead to Out Point	Esita esitusnäidikust lõpp-punktini
+	Previous Multi-Camera Page	Eelmine mitme kaamera leht
+	ProjectPanel	ProjectPanel
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10-bitine 4:2:2), 24-bitine 48 kHz PCM
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12-bitine 4:2:2), 24-bitine 48 kHz PCM
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8-bitine 4:2:2), 24-bitine 48 kHz PCM
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8-bitine 4:2:2), 24-bitine 48 kHz PCM
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8-bitine 4:2:2), 24-bitine 48 kHz PCM
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, 24-bitine 48 kHz PCM
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, 24-bitine 48 kHz PCM
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, 24-bitine 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), 24-bitine 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) alfakanaliga, 24-bitine 48 kHz PCM
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), 24-bitine 48 kHz PCM
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, 24-bitine 48 kHz PCM
+	Quit CFA4	Välju CFA4-st
+	Right align text	Joonda tekst paremale
+	Ripple Trim Next Edit to Playhead	Kärbi järgmine lõige nihutusega esitusnäidikuni
+	Ripple Trim Previous Edit to Playhead	Kärbi eelmine lõige nihutusega esitusnäidikuni
+	Select Camera 1	Vali kaamera 1
+	Select Camera 2	Vali kaamera 2
+	Select Camera 3	Vali kaamera 3
+	Select Camera 4	Vali kaamera 4
+	Select Camera 5	Vali kaamera 5
+	Select Camera 6	Vali kaamera 6
+	Select Camera 7	Vali kaamera 7
+	Select Camera 8	Vali kaamera 8
+	Select Camera 9	Vali kaamera 9
+	Select Clip at Playhead	Vali esitusnäidiku kohal olev klipp
+	Select Find Box	Vali otsingukast
+	Select Next Clip	Vali järgmine klipp
+	Select Next Panel	Vali järgmine paneel
+	Select Previous Clip	Vali eelmine klipp
+	Select Previous Panel	Vali eelmine paneel
+	Select to Next Line	Vali järgmise reani
+	Select to Next Word	Vali järgmise sõnani
+	Select to Previous Line	Vali eelmise reani
+	Select to Previous Word	Vali eelmise sõnani
+	Select to Segment End	Vali lõigu lõpuni
+	Select to Segment Start	Vali lõigu alguseni
+	Set Creative Look	Määra loominguline ilme
+	Set Input LUT	Määra sisend-LUT
+	Set Project Panel View	Määra projektipaneeli vaade
+	Show Next Screen	Näita järgmist ekraani
+	Show Previous Screen	Näita eelmist ekraani
+	Show Program Transcript	Näita programmi transkriptsiooni
+	Slide Clip Selection Left Five Frames	Libista klipivalikut viis kaadrit vasakule
+	Slide Clip Selection Left One Frame	Libista klipivalikut üks kaader vasakule
+	Slide Clip Selection Right Five Frames	Libista klipivalikut viis kaadrit paremale
+	Slide Clip Selection Right One Frame	Libista klipivalikut üks kaader paremale
+	Slip Clip Selection Left Five Frames	Nihka klipivaliku sisu viis kaadrit vasakule
+	Slip Clip Selection Left One Frame	Nihka klipivaliku sisu üks kaader vasakule
+	Slip Clip Selection Right Five Frames	Nihka klipivaliku sisu viis kaadrit paremale
+	Slip Clip Selection Right One Frame	Nihka klipivaliku sisu üks kaader paremale
+	Social Vertical 1080×1920	Sotsiaalmeedia vertikaalne 1080×1920
+	Soft Vignette	Pehme vinjett
+	Source In/Out	Lähte algus/lõpp
+	Split Caption	Jaga pealdis
+	Stack Clips	Virna klipid
+	Start Export Queue	Käivita ekspordijärjekord
+	Start Voice-over Recording	Alusta pealelugemise salvestamist
+	Step Back Five Frames	Samm viis kaadrit tagasi
+	Step Back One Frame	Samm üks kaader tagasi
+	Step Forward Five Frames	Samm viis kaadrit edasi
+	Step Forward One Frame	Samm üks kaader edasi
+	Stop Export Queue	Peata ekspordijärjekord
+	Stop Multi-Camera Recording	Peata mitme kaamera salvestus
+	Sync Voice-over Capture	Sünkrooni pealelugemise hõive
+	TIFF	TIFF
+	TIFF Sequence	TIFF-jada
+	TextPanel	TextPanel
+	Thumbnail Size Next	Järgmine pisipildi suurus
+	Thumbnail Size Previous	Eelmine pisipildi suurus
+	Toggle All Audio Targets	Lülita kõik helisihtmärgid
+	Toggle All Source Audio	Lülita kogu lähteheli
+	Toggle All Source Video	Lülita kogu lähtevideo
+	Toggle All Video Targets	Lülita kõik videosihtmärgid
+	Toggle Audio During Scrubbing	Lülita heli kerimise ajal
+	Toggle Full Screen	Lülita täisekraan
+	Toggle Mute for All Targeted Audio Tracks	Lülita vaigistus kõigil sihitud helirajal
+	Toggle Solo for All Targeted Audio Tracks	Lülita soolo kõigil sihitud helirajal
+	Toggle Source/Program Monitor Focus	Lülita lähte-/programmimonitori fookus
+	Toggle Target Audio 1	Lülita sihtheli 1
+	Toggle Target Audio 2	Lülita sihtheli 2
+	Toggle Target Audio 3	Lülita sihtheli 3
+	Toggle Target Audio 4	Lülita sihtheli 4
+	Toggle Target Audio 5	Lülita sihtheli 5
+	Toggle Target Audio 6	Lülita sihtheli 6
+	Toggle Target Audio 7	Lülita sihtheli 7
+	Toggle Target Audio 8	Lülita sihtheli 8
+	Toggle Target Video 1	Lülita sihtvideo 1
+	Toggle Target Video 2	Lülita sihtvideo 2
+	Toggle Target Video 3	Lülita sihtvideo 3
+	Toggle Target Video 4	Lülita sihtvideo 4
+	Toggle Target Video 5	Lülita sihtvideo 5
+	Toggle Target Video 6	Lülita sihtvideo 6
+	Toggle Target Video 7	Lülita sihtvideo 7
+	Toggle Target Video 8	Lülita sihtvideo 8
+	Toggle Track Output for All Targeted Video Tracks	Lülita raja väljund kõigil sihitud videoradadel
+	Toggle Trim Type	Lülita kärpimistüüp
+	Toggle View	Lülita vaade
+	Track Selected Mask	Jälita valitud maski
+	Trim Next Edit to Playhead	Kärbi järgmine lõige esitusnäidikuni
+	Trim Previous Edit to Playhead	Kärbi eelmine lõige esitusnäidikuni
+	Trimming	Kärpimine
+	Unstack Clips	Võta klipid virnast
+	CRF (constant quality)	CRF (püsiv kvaliteet)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	Pealelugemise salvestus
+	Voiceover	Pealelugemine
+	WAV, stereo 48 kHz 16-bit PCM	WAV, stereo 48 kHz 16-bitine PCM
+	WAV, stereo 48 kHz 24-bit PCM	WAV, stereo 48 kHz 24-bitine PCM
+	Warm Tint	Soe toonimine
+	Warm highlights, brown shadows	Soojad heledad alad, pruunid varjud
+	Waveform Audio 48 kHz 16-bit	Waveform-heli 48 kHz 16-bitine
+	Waveform Audio 48 kHz 24-bit	Waveform-heli 48 kHz 24-bitine
+	Web & Social	Veeb ja sotsiaalmeedia
+	Write Automation	Kirjuta automatiseerimine
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	Suumi programmimonitor 100%-le
+	Zoom Program Monitor to Fit	Mahuta programmimonitor aknasse
+	Zoom Source Monitor to 100%	Suumi lähtemonitor 100%-le
+	Zoom Source Monitor to Fit	Mahuta lähtemonitor aknasse
+	Cinematic	Kinematograafiline
+	Film Emulation	Filmi jäljendus
+	Technical	Tehniline
+	Teal Shadows, Warm Skin	Sinakasrohelised varjud, soe nahk
+	Night Exterior	Öine välisvõte
+	Golden Dusk	Kuldne hämarik
+	Steel Blue	Terassinine
+	Hard Sun	Kõva päike
+	Faded Print	Pleekinud koopia
+	Silver Retention	Hõbeda säilitamine
+	Cross Processed	Ristilmutus
+	Warm Negative	Soe negatiiv
+	Neutral Mono	Neutraalne ühevärviline
+	Hard Mono	Kõva ühevärviline
+	Sepia Tone	Seepiatoon
+	Cold Mono	Külm ühevärviline
+	Lift Shadows	Tõsta varje
+	Protect Highlights	Kaitse heledaid alasid
+	Half Saturation	Pool küllastust
+	Boost Vibrance	Võimenda erksust
+	Legal Range Squeeze	Lubatud vahemikku surumine
+	A boxed label with a round pointer; move the label and the pointer follows.	Kastis silt ümara osutiga; liiguta silti ja osuti järgneb.
+	A rounded tag that fits its text, with a status dot.	Ümardatud silt, mis sobitub tekstiga, olekutäpiga.
+	A title on a rounded card with a soft shadow.	Pealkiri ümardatud kaardil pehme varjuga.
+	Accent Color	Rõhuvärv
+	Bar Color	Riba värv
+	Box Color	Kasti värv
+	Box Opacity	Kasti läbipaistmatus
+	Callout – Pointer	Väljavõte – osuti
+	Callout – Tag	Väljavõte – silt
+	Callouts	Väljavõtted
+	Credits	Tiitrid
+	Dot Color	Täpi värv
+	Heading	Päis
+	Large centred title, accent rule and subtitle.	Suur keskele joondatud pealkiri, rõhujoon ja alapealkiri.
+	Lower Third – Rule	Alumine kolmandik – joon
+	Lower Third – Slab	Alumine kolmandik – plaat
+	Lower Thirds	Alumised kolmandikud
+	Name Color	Nime värv
+	Name Size	Nime suurus
+	Name and role on a coloured slab that widens with the name.	Nimi ja roll värvilisel plaadil, mis laieneb koos nimega.
+	Name over a thin rule that always matches the name's width.	Nimi õhukese joone kohal, mis on alati nime laiune.
+	Pointer Color	Osuti värv
+	Role	Roll
+	Rule Color	Joone värv
+	Show Dot	Näita täppi
+	Show Role	Näita rolli
+	Slab Color	Plaadi värv
+	Tag Color	Sildi värv
+	Title Color	Pealkirja värv
+	Title Size	Pealkirja suurus
+	Title – Boxed	Pealkiri – kastis
+	Title – Centered	Pealkiri – keskel
+	Titles	Pealkirjad
+	End Credits	Lõputiitrid
+	End Credits – Roll	Lõputiitrid – rull
+	Ticker – Crawl	Uudisteriba – kulg
+	Centred credits that roll up from below the frame and leave at the top.	Keskele joondatud tiitrid, mis kerivad kaadri alt üles ja lahkuvad ülevalt.
+	A news-style line that crawls in from the right and leaves at the left.	Uudisstiilis rida, mis kulgeb sisse paremalt ja lahkub vasakult.
+	The language changed but could not be saved: {e}	Keel muutus, kuid seda ei saanud salvestada: {e}
+	no Chinese font is installed on this system; the interface stays in English	selles süsteemis pole hiina fonti paigaldatud; liides jääb inglise keelde
+	no Korean font is installed on this system; the interface stays in English	selles süsteemis pole korea fonti paigaldatud; liides jääb inglise keelde
+	no Georgian font is installed on this system; the interface stays in English	selles süsteemis pole gruusia fonti paigaldatud; liides jääb inglise keelde
+	no Japanese font is installed on this system; the interface stays in English	selles süsteemis pole jaapani fonti paigaldatud; liides jääb inglise keelde
+	Main (8-bit)	Main (8-bitine)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12-bitine
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12-bitine alfaga
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10-bitine
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12-bitine, Film Scan 1, 24-bitine 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bitine alfakanaliga, Film Scan 1, 24-bitine 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10-bitine, Film Scan 1, 24-bitine 48 kHz PCM
+	Deselect All Project Items	Tühista kõigi projektiüksuste valimine
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	Vali kõik projektiüksused
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	Lohista: teisalda · Alt-klõps: sujuv/nurk · Ctrl-klõps: kustuta
+	Drag inward to round the corners	Lohista sissepoole nurkade ümardamiseks
+	Play Source	Esita allikas
+	Source Play/Stop	Allika esitamine/peatamine
+	Stop Source	Peata allikas
+	Clear Transition	Tühjenda üleminek
+	Fill Type	Täite tüüp
+	Gradient Angle	Gradiendi nurk
+	Edit Narration	Redigeeri jutustust
+	Resize floating panel	Muuda ujuva paneeli suurust
+	Get Project Notes	Hangi projekti märkmed
+	Edit Project Notes	Redigeeri projekti märkmeid
+	Use Effect Shutter Angle	Kasuta efekti katiku nurka
+	Safe graphics mode: {mode}	Ohutu graafikarežiim: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Varasem käivitus vaikegraafikaga nurjus. Graafikadraiveri uuendamine parandab selle tavaliselt.
+	Use Default Graphics	Kasuta vaikegraafikat
+	The default graphics are used from the next start.	Vaikegraafikat kasutatakse järgmisest käivitusest.
+	DirectX 12 only	Ainult DirectX 12
+	software rendering	tarkvaraline renderdamine
+	Opens in your web browser: {url}	Avaneb sinu veebibrauseris: {url}
+	Saves this session's log and shows it in your file manager.	Salvestab selle seansi logi ja näitab seda failihalduris.
+	Shows a report on this computer.	Näitab aruannet selle arvuti kohta.
+	Shows the version, community links and credits in a CFA4 window.	Näitab CFA4 aknas versiooni, kogukonna linke ja tänuavaldusi.
+	Couldn't open your web browser	Veebibrauserit ei saanud avada
+	Open this address in your browser yourself:	Ava see aadress ise oma brauseris:
+	Reset Interface Zoom	Lähtesta liidese suum
+	Stereoscopic 3D	Stereoskoopiline 3D
+	Swap Eyes	Vaheta silmad
+	Over/Under	Üleval/all
+	Side by Side	Kõrvuti
+	Stereo to 2D	Stereo 2D-ks
+	Eye	Silm
+	Stereo Parallax	Stereoparallaks
+	Horizontal Shift	Horisontaalne nihutus
+	Slit Scan	Piluskaneerimine
+	Time Span (seconds)	Ajavahemik (sekundites)
+	Current Frame At	Praegune kaader kohal
+	Blend Slices	Sega viilud
+	Creative Looks	Loomingulised ilmed
+	Film Grain	Filmitera
+	Animated	Animeeritud
+	Color Grain	Värviline tera
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 8 Mbit/s, AAC 160 kbit/s, 6-sekundilised fragmenditud MP4 lõigud
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 programmivoog
+	MPEG-2 Transport Stream HD 1080	MPEG-2 transpordivoog HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 29,97 kaadrit/s, 16:9 anamorfne, 6 Mbit/s, GOP 18, 16-bitine 48 kHz LPCM, .mpg (DVD-valmis voog; VIDEO_TS-i koostamiseta)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 25 kaadrit/s, 16:9 anamorfne, 6 Mbit/s, GOP 15, 16-bitine 48 kHz LPCM, .mpg (DVD-valmis voog; VIDEO_TS-i koostamiseta)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2 video (Main Profile 4:2:0, 0,4 bitti piksli kohta) jada kaadri suuruse ja sagedusega, 16-bitine 48 kHz LPCM, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 video 1920×1080, keskmiselt 18 Mbit/s, AAC 192 kbit/s, .ts
+	Six-Point Pin	Kuuepunktiline kinnitus
+	Upper Center	Keskel ülal
+	Lower Center	Keskel all
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Kasuta FFmpegi failide jaoks, mida CFA4 mootor avada ei suuda (FFmpeg 9.0.2 või uuem, GPL-3 versioon)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Kasuta süsteemi GStreamerit failide jaoks, mida ei mootor ega FFmpeg avada ei suuda
+	Analyze Source for Smart Cut	Analüüsi allikat nutika lõikamise jaoks
+	Plan Smart Cut	Planeeri nutikas lõikamine
+	Run Smart Cut	Käivita nutikas lõikamine
+	No sequence open. Double-click a sequence in the Project panel.	Ükski jada pole avatud. Topeltklõpsa jada paneelil Projekt.
+	English (US)	Inglise keel (USA)
+	English (UK)	Inglise keel (Ühendkuningriik)
+	English (Australia)	Inglise keel (Austraalia)
+export.summary	High	kõrge
+export.summary	Medium	keskmine
+export.summary	Low	madal
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Heli kopeeritud: {tracks}
+	Audio track {track} is not copied: {why}	Helirada {track} ei kopeerita: {why}
+	Point tracker	Punktijälgija
+	Correlation tracker	Korrelatsioonijälgija
+	DCP language	DCP keel
+	None (RFC 5646 tag, e.g. en-US)	Puudub (RFC 5646 silt, nt et-EE)
+	ISDCF name	ISDCF-nimi
+	Name the DCP folder by the Digital Cinema Naming Convention	Nimeta DCP kaust Digital Cinema Naming Conventioni järgi
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/et/ (common.tsv and the word-processor catalog) at aa36bd8, 2026-11-10.
+# MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's
+# ATTRIBUTION.md (et). These rows were written clean-room there; only rows whose English and
+# meaning match CFA4's were taken, and a few were reworded above for video editing.
+
+	Adjust	Kohanda
+	All files	Kõik failid
+	Animation	Animatsioon
+	Arrange	Paiguta
+	Automatic	Automaatne
+	Bottom	All
+	Bring Forward	Too ettepoole
+	Browse…	Sirvi…
+	Captions	Pealdised
+	Clear	Tühjenda
+	Close	Sulge
+	Color	Värv
+	Copy	Kopeeri
+	Custom	Kohandatud
+	Cut	Lõika
+	Editing	Redigeerimine
+	Effects	Efektid
+	Export	Ekspordi
+	File	Fail
+	Format	Vorming
+	Group	Rühmita
+	Help	Abi
+	Info	Teave
+	Language	Keel
+	Left	Vasak
+	Linear	Lineaarne
+	Name	Nimi
+	New	Uus
+	No	Ei
+	Paste	Kleebi
+	Position	Asukoht
+	Recover	Taasta
+	Rectangle	Ristkülik
+	Redo	Tee uuesti
+	Remove	Eemalda
+	Rename…	Nimeta ümber…
+	Right	Parem
+	Save	Salvesta
+	Search	Otsi
+	Select	Vali
+	Select All	Vali kõik
+	Send Backward	Saada tahapoole
+	Speed	Kiirus
+	Text	Tekst
+	Tools	Tööriistad
+	Top	Ülal
+	Transform	Teisenda
+	Type	Tüüp
+	Undo	Võta tagasi
+	Ungroup	Tühista rühmitus
+	View	Vaade
+	Window	Aken
+	Yes	Jah
+	Reset	Lähtesta
+	Dark	Tume
+	Light	Hele
+	Type:	Tüüp:
+	Comment	Kommentaar
+	Off	Väljas
+	Auto	Automaatne
+	None	Puudub
+	(none)	(puudub)
+	Go Back	Mine tagasi
+	Refresh	Värskenda
+	Size	Suurus
+	Align	Joonda
+	Box	Kast
+	(Custom)	(Kohandatud)
+	Align Left	Joonda vasakule
+	Align Right	Joonda paremale
+	Alignment	Joondus
+	All Caps	Suurtähed
+	Apply	Rakenda
+	Center	Keskele
+	Fill	Täide
+	Font	Font
+	Font Size	Fondi suurus
+	Justify	Rööpjoonda
+	OK	OK
+	Orientation	Suund
+	Shadow	Vari
+	Small Caps	Kapiteelkiri
+	Style	Stiil
+	Underline	Allajoon
+	Advanced	Täpsem
+	Default	Vaikimisi
+	Preview	Eelvaade
+	Voice	Hääl
+	Open	Ava
+	Delete	Kustuta
+	Descending	Kahanevalt
+	List	Loend
+	Name:	Nimi:
+	Rename	Nimeta ümber
+	Up one level	Taseme võrra üles
+	Zoom	Suum
+	Description:	Kirjeldus:
+	Add	Lisa
+	Value	Väärtus
+	Reset…	Lähtesta…
+	General	Üldine
+	Labels	Sildid
+	Location	Asukoht
+	Shapes	Kujundid
+	Page {page} of {pages}	Leht {page} / {pages}
+	Version	Versioon
+	Commands:	Käsud:
+	Position:	Asukoht:
+	Set	Määra
+	Continuous	Pidev
+	Height:	Kõrgus:
+	Width:	Laius:
+	All	Kõik
+	Color:	Värv:
+	Save as Template	Salvesta mallina
+	Options	Valikud
+	Exported {path}	Eksporditud: {path}
+	Format:	Vorming:
+	Replace	Asenda
+	Medium	Keskmine
+	Copyright	Autoriõigus
+	Title	Pealkiri
+	Home	Avaleht
+	Recent	Hiljutised
+	Up	Üles
+	Down	Alla
+	Clear All	Tühjenda kõik
+	Strikethrough	Läbikriipsutus
+	About	Teave
+	Contributors	Panustajad
+	Models	Mudelid
+	Sort	Sordi
+	Reverse the order	Pööra järjestus ümber
+	Table	Tabel
+	No contributor data was built into this copy.	Selles versioonis pole kaasautorite andmeid.
+	No model credits were built into this copy.	Selles versioonis pole mudelite autoriteavet.
+	Company	Ettevõte
+	Model	Mudel
+	Commits	Commitid
+	% of all commits	% kõigist commitidest
+	Lines +/−	Read +/−
+	Username	Kasutajanimi
+	Display name	Kuvatav nimi
+	Real name	Pärisnimi
+	Name (A–Z)	Nimi (A–Z)
+	Merged PRs	Ühendatud PR-id
+	Lines added	Lisatud read
+	Lines deleted	Kustutatud read
+	Line delta	Ridade muutus
+	Binary assets added	Lisatud binaarvarad
+	Binary assets removed	Eemaldatud binaarvarad
+	First commit	Esimene commit
+	Last commit	Viimane commit
+	Replace:	Asenda:
+	Review	Läbivaatus
+	Zoom In	Suurenda
+	Zoom Out	Vähenda
+	Standard	Standard
+	Don't Save	Ära salvesta
+	Comparison	Võrdlus
+	Borders	Äärised
+	Circle	Ring
+	Columns	Veerud
+	Diamond	Romb
+	Glow	Kuma
+	Heart	Süda
+	Highlight	Esiletõst
+	Narrow	Kitsas
+	On	Sees
+	Points	Punktid
+	Result	Tulemus
+	Star	Täht
+	Thickness	Paksus
+	Transparency	Läbipaistvus
+	Triangle	Kolmnurk
+	Contains	Sisaldab
+	Navigation	Navigeerimine
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Tiitrid tabelist
+	A .ods, .xlsx or CSV credits sheet	Tiitrite tabel vormingus .ods, .xlsx või CSV
+	The spreadsheet's folder	Tabeli kaust
+	Built-in styles	Sisseehitatud stiilid
+	Spreadsheet	Tabel
+	Sheet	Leht
+	Pictures	Pildid
+	Styling	Stiil
+	Page	Leht
+	Warnings	Hoiatused
+	Moment in the page	Hetk lehel
+	Place at Playhead	Paiguta esitusnäidiku kohale
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tabelid (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Tiitrite stiil (*.json)
+	Card	Kaart
+	Credits Spreadsheet	Tiitrite tabel
+	Reading…	Lugemine…
+	(one table)	(üks tabel)
+	Total: {time}	Kokku: {time}
+	Row {row}: {message}	Rida {row}: {message}
+	Choose a credits spreadsheet.	Vali tiitrite tabel.
+	No preview	Eelvaade puudub
+	Placing…	Paigutamine…
+	Placed {n} pages on the timeline.	Ajaskaalale paigutati lehti: {n}.
+	Credits Page Picture	Tiitrilehe pilt
+	Preview Credits	Tiitrite eelvaade
+	Credits Styles	Tiitrite stiilid
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tabelid ja tiitrifailid (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 tiitrifail (*.cfa4credits)
+	Save as Credits File…	Salvesta tiitrifailina…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tabel, leht, stiil ja read ühes failis, mida saab avada igas arvutis
+	Saved: {path}	Salvestatud: {path}
+	Added	Lisatud
+	Removed	Eemaldatud
+	Changed	Muudetud
+	(empty row)	(tühi rida)
+	Refresh Credits from Spreadsheet	Värskenda tiitreid tabelist
+	Change	Muudatus
+	Before → After	Enne → Pärast
+	Select None	Tühista valik
+	Keep my edits on the pages (where their block is unchanged)	Säilita minu muudatused lehtedel (kus nende plokk pole muutunud)
+	Locate Spreadsheet…	Otsi tabel üles…
+	Comparing…	Võrdlemine…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Muudatusi failis {file} pärast tiitrite paigutamist: {n}. Eemalda linnuke sellelt, mida ei soovi.
+	The spreadsheet {file} has not changed since the credits were placed.	Tabel {file} pole pärast tiitrite paigutamist muutunud.
+	{n} layers were edited by hand on the pages.	Käsitsi muudetud kihte lehtedel: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Kõigi muudatuste vastuvõtmine asendaks need, sest nende plokk muutus: {names}
+	Refreshing…	Värskendamine…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Värskendatud: rakendatud muudatusi {n}, säilitatud käsitsi muudatusi {kept}.
+	Refresh Credits from Spreadsheet…	Värskenda tiitreid tabelist…
+	Save Credits File…	Salvesta tiitrifail…
+	Compare Credits with Spreadsheet	Võrdle tiitreid tabeliga
+	“{name}” appears twice in the same block	„{name}“ esineb samas plokis kaks korda
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ on real {otherRow} kirjutatud kujul „{other}“
+	The font “{font}” is not installed; another font is used	Fonti „{font}“ pole paigaldatud; kasutatakse teist fonti
+	The font “{font}” has no “{chars}”; another font draws them	Fondis „{font}“ pole märke „{chars}“; need joonistab teine font
+	“{text}” is outside the title-safe area	„{text}“ on väljaspool tiitrite ohutut ala
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ on mustal liiga tume (kontrast {ratio}:1; vaja on vähemalt 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ on {px} px kõrge; 24 px või rohkem on hästi loetav
+	The roll moves {speed} px per frame; a whole number does not shimmer	Kerimine liigub {speed} px kaadri kohta; täisarv ei virvenda
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Rida läbib kaadri {seconds} s-ga; vähemalt 6 s on hästi loetav
+	The card holds for only {seconds} s after its fades	Kaart püsib pärast üleminekuid vaid {seconds} s
+	This page starts {seconds} s before the previous one ends	See leht algab {seconds} s enne eelmise lõppu
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ kuvatakse {percent} % pikslitest; see paistab pehme
+	{more} more of the same	Veel {more} samasugust
+	Page {page}: {message}	Leht {page}: {message}
+	Checks and warnings	Kontrollid ja hoiatused
+	Checks: {errors} errors, {warnings} warnings	Kontrollid: vigu {errors}, hoiatusi {warnings}
+	Check Credits	Kontrolli tiitreid
+	The whole music ({time})	Kogu muusika ({time})
+	Until the sound ends ({time})	Kuni heli lõpuni ({time})
+	To the last bar line ({time})	Viimase taktijooneni ({time})
+	Fit Credits to Music	Sobita tiitrid muusikaga
+	Fit Credits to Music…	Sobita tiitrid muusikaga…
+	Analyse Music for Credits	Analüüsi muusikat tiitrite jaoks
+	Length:	Pikkus:
+	Cards last whole beats (cuts on the beat)	Kaardid kestavad täislööke (lõiked löögil)
+	Start the credits where the music starts	Alusta tiitreid sealt, kus algab muusika
+	Length of the credits	Tiitrite pikkus
+	Remove Fitting	Eemalda sobitus
+	Listening to the music…	Muusika kuulamine…
+	Length: {time}	Pikkus: {time}
+	the sound ends at {time}	heli lõpeb ajal {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	tiitrid ilma sobituseta: {time}
+	Select a credits page on the timeline.	Vali ajaskaalal tiitrileht.
+	Fitting…	Sobitamine…
+	The credits now last {time}.	Tiitrid kestavad nüüd {time}.
+	Fitting removed.	Sobitus eemaldatud.
+	Fit to This Length	Sobita selle pikkusega
+	No music to measure ({problem}); type the length.	Pole muusikat, mida mõõta ({problem}); sisesta pikkus.
+	The text moves {speed} px per frame; a whole number does not shimmer	Tekst liigub {speed} px kaadri kohta; täisarv ei virvenda
+	Crawl	Jooksev tekst
+	Picture: {file}	Pilt: {file}
+	Video: {file}	Video: {file}
+	Into the next	Järgmisse
+	Safe areas and spines	Ohutud alad ja teljed
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Tegevuse ohuala (93 %), tiitrite ohuala (90 %), kese ja lehe teljed
+	Baseline grid	Põhijoonte ruudustik
+	Lines one gap unit apart, moving with the page	Jooned ühe vaheühiku kaugusel, liiguvad koos lehega
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ei eristu taustast (kontrast {ratio}:1; vaja on vähemalt 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Teksti taga on pilt või video: kontrolli kontrasti silmaga
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Valmis välimus: stiilid, taustad, üleminekud ja ajastus. Antud stiilifail on ülimuslik.
+	New Spreadsheet from Template…	Uus tabel mallist…
+	built in	sisseehitatud
+	mine	minu oma
+	this project	see projekt
+	Template	Mall
+	Choose a template first.	Vali kõigepealt mall.
+	Name of the template:	Malli nimi:
+	Template saved: {name}	Mall salvestatud: {name}
+	Apply Credits Template…	Rakenda tiitrite mall…
+	Template:	Mall:
+	Credits Templates	Tiitrite mallid
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tabelid, tiitrifailid ja Cinecredi projektid (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecredi projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Ava Cinecredi projekti kaust (Styling.toml ja selle tiitrite tabel)
+	(empty block)	(tühi plokk)
+	Apply Template…	Rakenda mall…
+	Change them in the spreadsheet; the credits follow when you save it.	Muuda neid tabelis; tiitrid järgnevad, kui selle salvestad.
+	Compact View	Kompaktne vaade
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Võrdle ajaskaalal valitud tiitreid nende tabeliga rida-realt
+	Fit the selected credits to the music under them	Sobita valitud tiitrid nende all oleva muusikaga
+	Fit to Music…	Sobita muusikaga…
+	Full View	Täisvaade
+	Give the selected credits on the timeline another template	Anna ajaskaalal valitud tiitritele teine mall
+	Names	Nimed
+	No pages	Lehti pole
+	Refresh Placed Credits…	Värskenda paigutatud tiitreid…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Näita kõike: plokid, omadused, lehed ajas, kontrollid ja tiitrite tööriistad
+	Spine	Telg
+	Tails	Lõpp
+	The blocks of the chosen page; choose one to see it in the preview	Valitud lehe plokid; vali üks, et seda eelvaates näha
+	The pages along time; click one to choose it	Lehed ajas; klõpsa ühel, et see valida
+	{n} more	Veel {n}
+	Block	Plokk
+	parallel	paralleelne

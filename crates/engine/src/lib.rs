@@ -41,6 +41,7 @@ pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+mod opatom;
 pub mod panels;
 pub mod paste_media;
 pub mod perf;
@@ -61,6 +62,7 @@ pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
 pub mod smart_cut;
+mod smart_cut_mpeg;
 mod smart_render;
 pub mod social;
 pub mod source_monitor;
@@ -1393,6 +1395,8 @@ mod nest_fidelity_tests;
 #[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
+mod opatom_tests;
+#[cfg(test)]
 mod panels_tests;
 #[cfg(test)]
 mod par_tests;
@@ -1432,6 +1436,8 @@ mod sequence_tools_tests;
 mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod smart_cut_mpeg_tests;
 #[cfg(test)]
 mod smart_cut_tests;
 #[cfg(test)]

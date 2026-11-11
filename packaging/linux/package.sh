@@ -122,7 +122,7 @@ install -Dm755 "$BIN/cfa4-cli" "$STAGE/usr/bin/cfa4-cli"
 strip "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
 # The Qt 6 GUI (ADR F8 phase 7): its Python package and the cfa4-qt launcher. In the .deb and the
 # tarball PySide6 comes from Ubuntu's archive (python3-pyside6.*, LGPL-3.0); the AppImage (below) and
-# the Flatpak (flatpak-bundle.sh) carry their own (stage-pyside6.py). The shared egui
+# the Flatpak (flatpak-bundle.sh) carry their own (stage-pyside6.py). The top-level i18n/
 # catalogs (with their attribution sidecars) go with it, so an installed GUI translates as a
 # checkout does.
 install -Dm755 "$HERE/cfa4-qt" "$STAGE/usr/bin/cfa4-qt"
@@ -130,8 +130,8 @@ QT_PY="$STAGE/usr/lib/cfa4/python"
 mkdir -p "$QT_PY"
 cp -R "$ROOT/python/cfa4_qt" "$QT_PY/"
 find "$QT_PY" -name __pycache__ -type d -prune -exec rm -rf {} +
-mkdir -p "$QT_PY/cfa4_qt/i18n/shared"
-cp "$ROOT"/crates/ui-egui/src/i18n/*.tsv "$ROOT"/crates/ui-egui/src/i18n/*.tsv.attribution "$QT_PY/cfa4_qt/i18n/shared/"
+mkdir -p "$QT_PY/cfa4_qt/i18n"
+cp "$ROOT"/i18n/*.tsv "$ROOT"/i18n/*.tsv.attribution "$QT_PY/cfa4_qt/i18n/"
 # the About window's credits, as egui bakes them in (crates/ui-egui/build.rs)
 mkdir -p "$QT_PY/cfa4_qt/credits"
 cp "$ROOT/contributors/contributors.json" "$ROOT/contributors/people.toml" "$QT_PY/cfa4_qt/credits/"
@@ -288,8 +288,8 @@ assert ff and ff[0].get("available") and "9.0.2" in str(ff[0]["version"]), ff
 ' "$backends" || { echo "error: the staged cfa4-cli does not report FFmpeg 9.0.2 as available" >&2; exit 1; }
 fi
 # -P: the staged package, never a checkout's python/ that the caller's directory would put first
-PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIRS[1].name == "shared"' \
-  || { echo "error: the staged Qt GUI does not find its shared catalogs" >&2; exit 1; }
+PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIR == i.PACKAGED_CATALOGS and (i.CATALOG_DIR / "hu.tsv").is_file()' \
+  || { echo "error: the staged Qt GUI does not find its catalogs" >&2; exit 1; }
 PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.credits as c; assert c.CREDITS_DIR.name == "credits" and c.load().contributors' \
   || { echo "error: the staged Qt GUI does not find its credits" >&2; exit 1; }
 echo "==> done"
