@@ -288,6 +288,12 @@ def test_system_language(monkeypatch):
     assert system_language() == "hu"
     monkeypatch.setenv("LANG", "pt_PT.UTF-8")
     assert system_language() == "pt-br"
+    for lang, code in (("zh_TW.UTF-8", "zh-hant"), ("zh_HK", "zh-hant"), ("zh_CN.UTF-8", "zh-cn"), ("zh", "zh-cn")):
+        monkeypatch.setenv("LANG", lang)
+        assert system_language() == code, lang
+    for lang, code in (("sr_RS.UTF-8", "sr"), ("sr", "sr"), ("sr_RS@latin", "sr-latn"), ("sr-Latn-RS", "sr-latn"), ("te_IN.UTF-8", "te")):
+        monkeypatch.setenv("LANG", lang)
+        assert system_language() == code, lang
     monkeypatch.setenv("CFA4_LANG", "zz")
     assert system_language() == "en"
 

@@ -36,9 +36,83 @@ pub struct DifSource {
     frames: usize,
     frame_bytes: usize,
     rate: FrameRate,
-    /// First sample of each frame's audio (one more entry than frames: the end), when the file
-    /// has audio.
-    audio_starts: Option<Vec<i64>>,
+    audio: Option<DvAudio>,
+}
+
+/// The sound carried in the DIF frames of a stream (a raw `.dv` file, or a type-1 DV AVI): its
+/// format from the first frame and where each frame's samples start.
+pub(crate) struct DvAudio {
+    pub info: AudioStreamInfo,
+    /// First sample of each frame's audio (one more entry than frames: the end).
+    starts: Vec<i64>,
+}
+
+impl DvAudio {
+    /// `first` is the first whole frame; `pack(i)` reads the 5-byte AAUX source pack of frame `i`
+    /// (at [`cfa4_dv::SOURCE_PACK_OFFSET`]). `None` when the frames carry no audio.
+    pub fn scan(first: &[u8], frames: usize, mut pack: impl FnMut(usize) -> Option<Vec<u8>>) -> Option<Self> {
+        let a = cfa4_dv::audio_format(first)?;
+        let mut starts = Vec::with_capacity(frames + 1);
+        let mut t = 0i64;
+        for i in 0..frames {
+            starts.push(t);
+            // a frame without a readable pack keeps the nominal count
+            let n = pack(i).and_then(|p| cfa4_dv::source_pack_samples(&p)).unwrap_or(a.samples);
+            t += n as i64;
+        }
+        starts.push(t);
+        let info = AudioStreamInfo {
+            sample_rate: a.sample_rate,
+            channels: a.channels as u32,
+            codec: format!("DV audio ({}-bit PCM)", a.bits),
+            bits_per_sample: Some(u32::from(a.bits)),
+            speakers: Vec::new(),
+        };
+        Some(Self { info, starts })
+    }
+
+    /// `frames` samples at `sample_rate` from sample `start` (at the output rate); `frame(i)` reads
+    /// DIF frame `i`. Linear resampling from the stream's rate.
+    pub fn read(&self, start: i64, frames: usize, sample_rate: u32, frame: impl Fn(usize) -> Option<Vec<u8>>) -> AudioBuffer {
+        let ainfo = &self.info;
+        let starts = &self.starts;
+        let count = starts.len().saturating_sub(1);
+        let ch = ainfo.channels.max(1) as usize;
+        // source samples covering the request, then linear resampling to `sample_rate`
+        let ratio = f64::from(ainfo.sample_rate) / f64::from(sample_rate.max(1));
+        let s0 = (start as f64 * ratio).floor() as i64;
+        let need = (frames as f64 * ratio).ceil() as i64 + 2;
+        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
+        let mut i = starts.partition_point(|&x| x <= s0).saturating_sub(1);
+        while i < count && starts.get(i).is_some_and(|&t| t < s0 + need) {
+            let t0 = starts.get(i).copied().unwrap_or(0);
+            if let Some(a) = frame(i).and_then(|d| cfa4_dv::decode_audio(&d)) {
+                for (c, dst) in src.iter_mut().enumerate() {
+                    let Some(chan) = a.channels.get(c) else { continue };
+                    for (k, &v) in chan.iter().enumerate() {
+                        if let Some(d) = usize::try_from(t0 + k as i64 - s0).ok().and_then(|p| dst.get_mut(p)) {
+                            *d = f32::from(v) / 32768.0;
+                        }
+                    }
+                }
+            }
+            i += 1;
+        }
+        let frac = s0 as f64 - start as f64 * ratio;
+        let mut out = AudioBuffer::silence(sample_rate, ch, frames);
+        for (c, o) in out.channels.iter_mut().enumerate() {
+            let Some(s) = src.get(c) else { continue };
+            for (k, d) in o.iter_mut().enumerate() {
+                let pos = k as f64 * ratio - frac;
+                let i0 = pos.floor().max(0.0) as usize;
+                let f = (pos - i0 as f64) as f32;
+                let a = s.get(i0).copied().unwrap_or(0.0);
+                let b = s.get(i0 + 1).copied().unwrap_or(a);
+                *d = a + (b - a) * f;
+            }
+        }
+        out
+    }
 }
 
 impl DifSource {
@@ -66,31 +140,11 @@ impl DifSource {
         let bitrate = (frame_bytes as u64 * 8).checked_mul(rate.num as u64).map(|b| b / rate.den as u64);
         // audio: the first frame's format, every frame's sample count
         let first = cfa4_media::reader::read_range(&*reader, 0, frame_bytes).map_err(|e| CodecError::Container(format!("{name}: {e}")))?;
-        let audio = cfa4_dv::audio_format(&first);
-        let audio_starts = audio.map(|_| {
-            let mut starts = Vec::with_capacity(frames + 1);
-            let mut t = 0i64;
-            for i in 0..frames {
-                starts.push(t);
-                let at = i as u64 * frame_bytes as u64 + cfa4_dv::SOURCE_PACK_OFFSET as u64;
-                let n = cfa4_media::reader::read_range(&*reader, at, 5).ok().and_then(|p| cfa4_dv::source_pack_samples(&p));
-                // a frame without a readable pack keeps the nominal count
-                let n = n.unwrap_or_else(|| audio.map_or(0, |a| a.samples));
-                t += n as i64;
-            }
-            starts.push(t);
-            starts
+        let audio = DvAudio::scan(&first, frames, |i| {
+            let at = i as u64 * frame_bytes as u64 + cfa4_dv::SOURCE_PACK_OFFSET as u64;
+            cfa4_media::reader::read_range(&*reader, at, 5).ok()
         });
-        let audio_streams = audio
-            .map(|a| AudioStreamInfo {
-                sample_rate: a.sample_rate,
-                channels: a.channels as u32,
-                codec: format!("DV audio ({}-bit PCM)", a.bits),
-                bits_per_sample: Some(u32::from(a.bits)),
-                speakers: Vec::new(),
-            })
-            .into_iter()
-            .collect();
+        let audio_streams = audio.iter().map(|a| a.info.clone()).collect();
         let info = MediaInfo {
             name: name.to_string(),
             kind: MediaKind::Movie,
@@ -112,7 +166,7 @@ impl DifSource {
             start_timecode: None,
             file_size: Some(len),
         };
-        Ok(Self { info, reader, frames, frame_bytes, rate, audio_starts })
+        Ok(Self { info, reader, frames, frame_bytes, rate, audio })
     }
 
     fn frame(&self, idx: usize) -> crate::Result<VideoFrame> {
@@ -144,46 +198,11 @@ impl MediaSource for DifSource {
     }
 
     fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> Result<AudioBuffer, MediaError> {
-        let (Some(starts), Some(ainfo)) = (self.audio_starts.as_ref(), self.info.audio_streams.first()) else {
-            return Err(MediaError::NoStream("audio"));
-        };
-        let ch = ainfo.channels.max(1) as usize;
-        // source samples covering the request, then linear resampling to `sample_rate`
-        let ratio = f64::from(ainfo.sample_rate) / f64::from(sample_rate.max(1));
-        let s0 = (start as f64 * ratio).floor() as i64;
-        let need = (frames as f64 * ratio).ceil() as i64 + 2;
-        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
-        let mut i = starts.partition_point(|&x| x <= s0).saturating_sub(1);
-        while i < self.frames && starts.get(i).is_some_and(|&t| t < s0 + need) {
-            let t0 = starts.get(i).copied().unwrap_or(0);
-            let at = i as u64 * self.frame_bytes as u64;
-            let decoded = cfa4_media::reader::read_range(&*self.reader, at, self.frame_bytes).ok().and_then(|d| cfa4_dv::decode_audio(&d));
-            if let Some(a) = decoded {
-                for (c, dst) in src.iter_mut().enumerate() {
-                    let Some(chan) = a.channels.get(c) else { continue };
-                    for (k, &v) in chan.iter().enumerate() {
-                        if let Some(d) = usize::try_from(t0 + k as i64 - s0).ok().and_then(|p| dst.get_mut(p)) {
-                            *d = f32::from(v) / 32768.0;
-                        }
-                    }
-                }
-            }
-            i += 1;
-        }
-        let frac = s0 as f64 - start as f64 * ratio;
-        let mut out = AudioBuffer::silence(sample_rate, ch, frames);
-        for (c, o) in out.channels.iter_mut().enumerate() {
-            let Some(s) = src.get(c) else { continue };
-            for (k, d) in o.iter_mut().enumerate() {
-                let pos = k as f64 * ratio - frac;
-                let i0 = pos.floor().max(0.0) as usize;
-                let f = (pos - i0 as f64) as f32;
-                let a = s.get(i0).copied().unwrap_or(0.0);
-                let b = s.get(i0 + 1).copied().unwrap_or(a);
-                *d = a + (b - a) * f;
-            }
-        }
-        Ok(out)
+        let a = self.audio.as_ref().ok_or(MediaError::NoStream("audio"))?;
+        cfa4_media::validate_audio_buffer_shape(a.info.channels.max(1) as usize, frames)?;
+        Ok(a.read(start, frames, sample_rate, |i| {
+            (i < self.frames).then(|| cfa4_media::reader::read_range(&*self.reader, i as u64 * self.frame_bytes as u64, self.frame_bytes).ok()).flatten()
+        }))
     }
 }
 

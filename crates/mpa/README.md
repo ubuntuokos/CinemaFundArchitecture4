@@ -30,6 +30,11 @@ let mut dec = cfa4_mpa::Decoder::new();
 let h = cfa4_mpa::parse_header(frame)?;   // layer, rate, mode, frame size
 let out = dec.decode(frame)?;                  // h.samples() per channel (384 or 1152)
 dec.reset();                                    // before decoding from another position
+
+use cfa4_mpa::encode::{Config, Encoder};
+let mut enc = Encoder::new(Config::new(48_000, 2, 192))?; // rate, channels, kbit/s
+let frames = enc.encode(&[&left, &right])?;     // whole 1152-sample frames, header first
+let tail = enc.flush();                         // the rest and the filter delay, padded
 ```
 
 ## Decoder
@@ -45,6 +50,37 @@ dec.reset();                                    // before decoding from another 
 - Output: planar f32 at full scale ±1.
 - Errors (forbidden allocation, reserved header fields, data running past the frame) return
   `Err`; garbage never panics (unit fuzz test and damaged-frame oracle test).
+
+## Encoder (Layer II)
+
+`src/encode.rs`, written from ISO/IEC 11172-3 (§2.4 syntax and semantics, the Annex B tables
+above) and 13818-3; the encoding annexes are informative and their text was not used:
+
+- Every sampling frequency (32 / 44.1 / 48 kHz, 16 / 22.05 / 24 kHz) and every bit rate the
+  standards allow for the channel count (11172-3: mono 32-192 kbit/s, two channels 64-384
+  kbit/s except 80); mono, stereo and dual channel; optional CRC; padding keeps the average bit
+  rate exact at 44.1 / 22.05 kHz. Joint (intensity) stereo is not written yet (#878).
+- Analysis filter bank: the mirror of the synthesis filter with the window `C[i] = D[i] / 32`;
+  with our synthesis it reconstructs the input 481 samples later (`encode::DELAY`) at over
+  80 dB SNR.
+- Scalefactors per third of a frame, merged (scalefactor selection information) when they lie
+  within two steps.
+- Psychoacoustics: subband energies, a Bark-domain spreading function (25 dB/Bark down,
+  10 dB/Bark up, every masker treated as tonal: 14.5 + z dB) and the threshold of hearing give
+  a signal-to-mask ratio per subband; the greedy allocation always raises the subband with the
+  lowest mask-to-noise ratio that still fits the frame.
+- Quantization is the exact inverse of the decoder's requantization; grouped codewords for
+  3, 5 and 9 steps.
+
+Tests (`src/encode/tests.rs`, `tests/encode_oracle.rs`): the filter bank round trip; tones
+through our decoder at 33-52 dB SNR; every rate / bit rate makes frames of the right length and
+exact average bit rate; extreme input (full-scale squares, NaN, ±∞) still makes valid frames;
+FFmpeg decodes our streams (mono, stereo, dual channel, MPEG-2 rates, 8-384 kbit/s) with
+`-err_detect crccheck+explode` and agrees with our decoder to 83.5-85 dB. Against FFmpeg's
+`mp2` encoder on two tones per channel (both decoded by FFmpeg): 44.9 vs 27.7 dB at 48 kHz
+stereo 192 kbit/s, 35.2 vs 18.6 dB at 128 kbit/s, 53.8 vs 33.1 dB at 44.1 kHz 256 kbit/s, 45.5 vs
+28.3 dB at mono 96 kbit/s. Tone SNR is not a listening test: FFmpeg's model spends bits where
+ours does not, and neither is checked by ear here.
 
 ## Accuracy (vs FFmpeg as an external oracle)
 

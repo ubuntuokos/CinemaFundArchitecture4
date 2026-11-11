@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-captions"
-description = "CFA4 captions: SRT, WebVTT, SCC, MCC, EBU STL and TTML/IMSC1/DFXP import/export, caption layout and burn-in rasterisation"
+description = "CFA4 captions: SRT, WebVTT, SCC, MCC, EBU STL and TTML/IMSC1/DFXP import/export, D-Cinema (ST 428-7) subtitle import, caption layout and burn-in rasterisation"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
