@@ -77,7 +77,7 @@ pub enum Language {
     El,
     /// Swedish: the whole interface, Latin script (bundled fonts).
     Sv,
-    /// Serbian in Latin script, persisted as `sr-latn`; every Serbian locale (`sr-Latn`, `sr_RS@latin`, `sr-RS`) gets it until a Cyrillic catalog exists.
+    /// Serbian in Latin script, persisted as `sr-latn`: the Serbian locales that name the Latin script (`sr-Latn`, `sr_RS@latin`).
     #[serde(rename = "sr-latn")]
     SrLatn,
     /// Bulgarian, persisted as `bg`.
@@ -98,6 +98,8 @@ pub enum Language {
     Sl,
     /// Estonian, persisted as `et`.
     Et,
+    /// Serbian in Cyrillic script, persisted as `sr`: `sr`, `sr-RS`, `sr-Cyrl` and other Serbian locales without a Latin script tag.
+    Sr,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -137,11 +139,12 @@ static CROATIAN: OnceLock<Catalog> = OnceLock::new();
 static KAZAKH: OnceLock<Catalog> = OnceLock::new();
 static SLOVENIAN: OnceLock<Catalog> = OnceLock::new();
 static ESTONIAN: OnceLock<Catalog> = OnceLock::new();
+static SERBIAN_CYRILLIC: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 33] = [
+    pub const ALL: [Self; 34] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -173,6 +176,7 @@ impl Language {
         Self::Kk,
         Self::Sl,
         Self::Et,
+        Self::Sr,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -210,6 +214,7 @@ impl Language {
             Self::Kk => "Қазақ тілі",
             Self::Sl => "Slovenščina",
             Self::Et => "Eesti",
+            Self::Sr => "Српски (ћирилица)",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -248,6 +253,7 @@ impl Language {
             "kk" => Some(Self::Kk),
             "sl" => Some(Self::Sl),
             "et" => Some(Self::Et),
+            "sr" => Some(Self::Sr),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -263,8 +269,10 @@ impl Language {
     /// the Italian one; any Hungarian (`hu-HU`, `hu_HU.UTF-8`) the Hungarian one. Chinese gets the Simplified catalog
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
+    /// Serbian gets the Latin catalog when the tag names the Latin script (`sr-Latn…`, `sr_RS@latin`)
+    /// and the Cyrillic one otherwise.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 30] = [
+        const PRIMARY: [(&str, Language); 29] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -285,7 +293,6 @@ impl Language {
             ("vi", Language::Vi),
             ("el", Language::El),
             ("sv", Language::Sv),
-            ("sr", Language::SrLatn),
             ("bg", Language::Bg),
             ("ka", Language::Ka),
             ("da", Language::Da),
@@ -313,6 +320,13 @@ impl Language {
                     } else {
                         Language::En
                     });
+                }
+                if primary.eq_ignore_ascii_case("sr") {
+                    // Latin script when the tag says so (`sr-Latn…`, `sr_RS@latin`); Cyrillic, the
+                    // default script of Serbian, otherwise (`sr`, `sr-RS`, `sr-Cyrl`, `sr_RS.UTF-8`)
+                    let rest = tag.get(primary.len()..).unwrap_or_default().to_ascii_lowercase();
+                    let latin = rest.split(['-', '_', '.', '@']).any(|p| p == "latn" || p == "latin");
+                    return Some(if latin { Language::SrLatn } else { Language::Sr });
                 }
                 if primary.eq_ignore_ascii_case("zh") {
                     // the subtag after `zh` (a script or a region), if any; `.UTF-8` / `@x` end it
@@ -366,6 +380,7 @@ impl Language {
             Self::Kk => "kk",
             Self::Sl => "sl",
             Self::Et => "et",
+            Self::Sr => "sr",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -405,6 +420,7 @@ impl Language {
             Self::Kk => Some(KAZAKH.get_or_init(|| Catalog::parse(catalog_file!("kk")))),
             Self::Sl => Some(SLOVENIAN.get_or_init(|| Catalog::parse(catalog_file!("sl")))),
             Self::Et => Some(ESTONIAN.get_or_init(|| Catalog::parse(catalog_file!("et")))),
+            Self::Sr => Some(SERBIAN_CYRILLIC.get_or_init(|| Catalog::parse(catalog_file!("sr")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -612,6 +628,7 @@ mod tests {
             ("kk", catalog_file!("kk")),
             ("sl", catalog_file!("sl")),
             ("et", catalog_file!("et")),
+            ("sr", catalog_file!("sr")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1293,8 +1310,11 @@ mod tests {
         for tag in ["zh-TW", "zh_TW.UTF-8", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-TW", "ZH-hant"] {
             assert_eq!(l(&[tag]), Language::ZhHant, "{tag}");
         }
-        for tag in ["sr", "sr-Latn", "sr-Latn-RS", "sr_RS@latin", "sr-RS", "sr_RS.UTF-8", "SR-latn"] {
+        for tag in ["sr-Latn", "sr-Latn-RS", "sr_RS@latin", "SR-latn", "sr_RS.UTF-8@latin"] {
             assert_eq!(l(&[tag]), Language::SrLatn, "{tag}");
+        }
+        for tag in ["sr", "sr-RS", "sr_RS.UTF-8", "sr-Cyrl", "sr-Cyrl-RS", "SR", "sr_ME"] {
+            assert_eq!(l(&[tag]), Language::Sr, "{tag}");
         }
         assert_eq!(l(&["zh-Latn", "ja-JP"]), Language::Ja);
         for tag in ["de", "DE", "de-DE", "de-AT", "de-CH", "de-LI", "de-LU", "de_DE.UTF-8", "de_AT.UTF-8@euro", "de_CH"] {
@@ -1852,6 +1872,13 @@ mod tests {
             catalog_file!("et"),
             "ÄÖÕÜŠŽäöõüšž„“",
             &[("File", "Fail"), ("Sequence", "Jada"), ("Playhead", "Esitusnäidik"), ("Cross Dissolve", "Ristsulandus")],
+        ),
+        (
+            Language::Sr,
+            "app.language.serbianCyrillic",
+            catalog_file!("sr"),
+            "ЂЈЉЊЋЏђјљњћџ„“",
+            &[("File", "Датотека"), ("Sequence", "Секвенца"), ("Playhead", "Глава за репродукцију"), ("Cross Dissolve", "Унакрсно претапање")],
         ),
     ];
 

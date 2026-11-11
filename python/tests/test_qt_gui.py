@@ -291,6 +291,9 @@ def test_system_language(monkeypatch):
     for lang, code in (("zh_TW.UTF-8", "zh-hant"), ("zh_HK", "zh-hant"), ("zh_CN.UTF-8", "zh-cn"), ("zh", "zh-cn")):
         monkeypatch.setenv("LANG", lang)
         assert system_language() == code, lang
+    for lang, code in (("sr_RS.UTF-8", "sr"), ("sr", "sr"), ("sr_RS@latin", "sr-latn"), ("sr-Latn-RS", "sr-latn")):
+        monkeypatch.setenv("LANG", lang)
+        assert system_language() == code, lang
     monkeypatch.setenv("CFA4_LANG", "zz")
     assert system_language() == "en"
 

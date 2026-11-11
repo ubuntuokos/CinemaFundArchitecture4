@@ -57,6 +57,7 @@ LANGUAGES = {
     "kk": "Қазақ тілі",
     "sl": "Slovenščina",
     "et": "Eesti",
+    "sr": "Српски (ћирилица)",
 }
 
 
@@ -153,7 +154,7 @@ BASE_CATALOG = {"en-au": "en-gb"}
 REGIONAL_FALLBACK = {"en-nz": "en-au", "en-ie": "en-gb"}
 
 # languages that write 4,00 instead of 4.00
-DECIMAL_COMMA = frozenset({"hu", "et", "sl", "kk", "hr", "lt", "fi", "da", "ka", "bg", "sr-latn", "sv", "el", "vi", "cs", "nl", "tr", "pl", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
+DECIMAL_COMMA = frozenset({"hu", "sr", "et", "sl", "kk", "hr", "lt", "fi", "da", "ka", "bg", "sr-latn", "sv", "el", "vi", "cs", "nl", "tr", "pl", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
 _DECIMAL = re.compile(r"-?\d+\.\d+")
 
 
@@ -179,8 +180,10 @@ def system_language() -> str:
     if base == "pt":
         return "pt-br"
     if base == "sr":
-        # Serbian (sr-Latn, sr_RS@latin, sr-RS…): the Latin-script catalog
-        return "sr-latn"
+        # Serbian: the Latin-script catalog when the locale names it (sr-Latn, sr_RS@latin), else
+        # Cyrillic, the default script (sr, sr-RS, sr-Cyrl…)
+        latin = "latn" in tag.split("-")[1:] or "@latin" in wanted.lower()
+        return "sr-latn" if latin else "sr"
     if base == "zh":
         # Traditional script or a Traditional region (zh-TW, zh-HK, zh-MO, zh-Hant…); else Simplified
         traditional = {"hant", "tw", "hk", "mo"}

@@ -1077,6 +1077,7 @@ static CATEGORIES: &[Category] = &[
                     ("kk", "Қазақ тілі"),
                     ("sl", "Slovenščina"),
                     ("et", "Eesti"),
+                    ("sr", "Српски (ћирилица)"),
                 ]),
                 true,
             ),

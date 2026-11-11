@@ -59,6 +59,7 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("app.language.kazakh", "Қазақ тілі", ["Edit", "Language"], None),
     uic!("app.language.slovenian", "Slovenščina", ["Edit", "Language"], None),
     uic!("app.language.estonian", "Eesti", ["Edit", "Language"], None),
+    uic!("app.language.serbianCyrillic", "Српски (ћирилица)", ["Edit", "Language"], None),
     uic!("source.playback.toggle", "Source Play/Stop", [], None),
     uic!("source.playback.play", "Play Source", [], None),
     uic!("source.playback.stop", "Stop Source", [], None),
@@ -237,6 +238,7 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             | "app.language.kazakh"
             | "app.language.slovenian"
             | "app.language.estonian"
+            | "app.language.serbianCyrillic"
             | "app.language.british"
             | "app.language.australian"
     ) {
@@ -287,6 +289,7 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             "app.language.kazakh" => crate::i18n::Language::Kk,
             "app.language.slovenian" => crate::i18n::Language::Sl,
             "app.language.estonian" => crate::i18n::Language::Et,
+            "app.language.serbianCyrillic" => crate::i18n::Language::Sr,
             "app.language.british" => crate::i18n::Language::EnGb,
             "app.language.australian" => crate::i18n::Language::EnAu,
             _ => crate::i18n::Language::En,
@@ -783,6 +786,7 @@ pub fn menu_items(app: &Cfa4App) -> Vec<MenuItem> {
             "app.language.kazakh" => it.checked = Some(app.ui.language == crate::i18n::Language::Kk),
             "app.language.slovenian" => it.checked = Some(app.ui.language == crate::i18n::Language::Sl),
             "app.language.estonian" => it.checked = Some(app.ui.language == crate::i18n::Language::Et),
+            "app.language.serbianCyrillic" => it.checked = Some(app.ui.language == crate::i18n::Language::Sr),
             "app.language.british" => it.checked = Some(app.ui.language == crate::i18n::Language::EnGb),
             "app.language.australian" => it.checked = Some(app.ui.language == crate::i18n::Language::EnAu),
             _ => {}
