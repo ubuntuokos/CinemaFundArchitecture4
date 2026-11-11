@@ -4114,3 +4114,106 @@ export.summary	Low	nizak
 	Navigation	Navigacija
 	Panel	Panel
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Video alati
+	Audio Tools	Audio alati
+	Publication Tools	Alati za objavljivanje
+	Smart Export…	Pametni izvoz…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Sa severozapada
+	From North-East	Sa severoistoka
+	From South-East	Sa jugoistoka
+	From South-West	Sa jugozapada
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Poboljšanje
+	Skin Smoothing	Izglađivanje kože
+	Keep Texture	Zadrži teksturu
+	Skin Tone	Ton kože
+	Smooth Entire Image	Izgladi celu sliku
+	Low Light	Slabo svetlo
+	Max Brightening	Najveće posvetljavanje
+	Show Illumination	Prikaži osvetljenje
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Predlošci ublažavanja
+	Sine	Sinusno
+	Exponential	Eksponencijalno
+	Circular	Kružno
+	Elastic	Elastično
+	Film Gate	Filmski prozor
+	Gate Weave	Podrhtavanje prozora
+	Weave Rotation	Rotacija podrhtavanja
+	Particles	Čestice
+	Emitter Position	Položaj emitera
+	Birth Rate	Stopa nastanka
+	Lifetime (seconds)	Trajanje (sekunde)
+	Velocity Random	Nasumičnost brzine
+	Gravity	Gravitacija
+	Particle Size	Veličina čestica
+	Keyhole	Ključaonica
+	Burn Away	Izgorevanje
+	Burn Size	Veličina izgorevanja
+	Ember Width	Širina žara
+	Ember Color	Boja žara
+	Check Text Legibility	Proveri čitljivost teksta
+	Clear Legibility Markers	Ukloni oznake čitljivosti
+	Text legibility: no problems found	Čitljivost teksta: nisu pronađeni problemi
+	Text legibility: {count} problems marked on the timeline (orange markers)	Čitljivost teksta: problema označeno na vremenskoj liniji: {count} (narandžaste oznake)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Smanjenje bitova
+	Bits per Channel	Bitova po kanalu
+	Ordered Dither	Uređeno raspršivanje
+	Dither Cell Size	Veličina ćelije raspršivanja
+	Block Glitch	Blokovska smetnja
+	Blocks Moved	Pomereni blokovi
+	Max Distance	Najveća udaljenost
+	Snap to Grid	Prilepi uz mrežu
+	Swap Blocks	Zamena blokova
+	Changes per Second	Promena u sekundi
+	Databend	Oštećenje podataka
+	Breaks	Prekidi
+	Shift	Pomak
+	Color Damage	Oštećenje boje
+	VHS	VHS
+	Color Bleed	Razlivanje boje
+	Wobble	Ljuljanje
+	Snow	Sneg
+	Tracking Bar	Traka praćenja
+	Head Switching	Prebacivanje glava
+	Scan Line Jitter	Podrhtavanje redova
+	Jitter	Podrhtavanje
+	Interval	Interval
+	Infinite	Beskonačno
+	Periodic	Periodično
+	Tile Jitter	Podrhtavanje pločica
+	Tiles	Pločice
+	Band Direction	Smer traka
+	Jitter Direction	Smer podrhtavanja
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Poluton
+	Dither	Raspršivanje
+	Pattern	Uzorak
+	Cell Size	Veličina ćelije
+	Cyan Angle	Ugao cijan
+	Magenta Angle	Ugao magenta
+	Yellow Angle	Ugao žute
+	Black Angle	Ugao crne
+	Monochrome Angle	Ugao jednobojnog
+	Sharpness	Oštrina
+	Ink Color	Boja mastila
+	Paper Color	Boja papira
+	Color (CMYK)	Boja (CMYK)
+	Dot	Tačka
+	Line	Linija
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Veličina piksela
+	Palette	Paleta
+	Input Colors	Ulazne boje
+	Green Phosphor	Zeleni fosfor
+	Amber Monitor	Ćilibarski monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

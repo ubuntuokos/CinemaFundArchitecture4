@@ -4115,3 +4115,106 @@ export.summary	Low	დაბალი
 	Baseline	საბაზისო ხაზი
 	Accent Color	აქცენტის ფერი
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	ვიდეო ხელსაწყოები
+	Audio Tools	აუდიო ხელსაწყოები
+	Publication Tools	გამოქვეყნების ხელსაწყოები
+	Smart Export…	ჭკვიანი ექსპორტი…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	ჩრდილო-დასავლეთიდან
+	From North-East	ჩრდილო-აღმოსავლეთიდან
+	From South-East	სამხრეთ-აღმოსავლეთიდან
+	From South-West	სამხრეთ-დასავლეთიდან
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	გაუმჯობესება
+	Skin Smoothing	კანის გასწორება
+	Keep Texture	ტექსტურის შენარჩუნება
+	Skin Tone	კანის ტონი
+	Smooth Entire Image	მთელი გამოსახულების გასწორება
+	Low Light	სუსტი განათება
+	Max Brightening	მაქსიმალური გაღიავება
+	Show Illumination	განათების ჩვენება
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	შენელების წინასწარი პარამეტრები
+	Sine	სინუსოიდური
+	Exponential	ექსპონენციური
+	Circular	წრიული
+	Elastic	ელასტიური
+	Film Gate	კინოკადრის ჩარჩო
+	Gate Weave	ჩარჩოს რხევა
+	Weave Rotation	რხევის ბრუნვა
+	Particles	ნაწილაკები
+	Emitter Position	გამომსხივებლის პოზიცია
+	Birth Rate	წარმოქმნის სიხშირე
+	Lifetime (seconds)	სიცოცხლის ხანგრძლივობა (წამი)
+	Velocity Random	სიჩქარის შემთხვევითობა
+	Gravity	გრავიტაცია
+	Particle Size	ნაწილაკის ზომა
+	Keyhole	საკეტის ჭუჭრუტანა
+	Burn Away	ამოწვა
+	Burn Size	წვის ზომა
+	Ember Width	ნაღვერდლის სიგანე
+	Ember Color	ნაღვერდლის ფერი
+	Check Text Legibility	ტექსტის წაკითხვადობის შემოწმება
+	Clear Legibility Markers	წაკითხვადობის მარკერების წაშლა
+	Text legibility: no problems found	ტექსტის წაკითხვადობა: პრობლემები ვერ მოიძებნა
+	Text legibility: {count} problems marked on the timeline (orange markers)	ტექსტის წაკითხვადობა: {count} პრობლემა მონიშნულია დროის ხაზზე (ნარინჯისფერი მარკერები)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	ბიტების შემცირება
+	Bits per Channel	ბიტი არხზე
+	Ordered Dither	მოწესრიგებული დიზერინგი
+	Dither Cell Size	დიზერინგის უჯრის ზომა
+	Block Glitch	ბლოკური გლიჩი
+	Blocks Moved	გადაადგილებული ბლოკები
+	Max Distance	მაქსიმალური მანძილი
+	Snap to Grid	ბადეზე მიმაგრება
+	Swap Blocks	ბლოკების გაცვლა
+	Changes per Second	ცვლილებები წამში
+	Databend	მონაცემთა დაზიანება
+	Breaks	წყვეტები
+	Shift	წანაცვლება
+	Color Damage	ფერის დაზიანება
+	VHS	VHS
+	Color Bleed	ფერის გადმოღვრა
+	Wobble	რყევა
+	Snow	თოვლი
+	Tracking Bar	ტრეკინგის ზოლი
+	Head Switching	თავაკების გადართვა
+	Scan Line Jitter	სტრიქონების კანკალი
+	Jitter	კანკალი
+	Interval	ინტერვალი
+	Infinite	უსასრულო
+	Periodic	პერიოდული
+	Tile Jitter	ფილების კანკალი
+	Tiles	ფილები
+	Band Direction	ზოლების მიმართულება
+	Jitter Direction	კანკალის მიმართულება
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	ნახევარტონი
+	Dither	დიზერინგი
+	Pattern	ნიმუში
+	Cell Size	უჯრის ზომა
+	Cyan Angle	ცისფერის კუთხე
+	Magenta Angle	მეწამულის კუთხე
+	Yellow Angle	ყვითლის კუთხე
+	Black Angle	შავის კუთხე
+	Monochrome Angle	ერთფეროვანი კუთხე
+	Sharpness	სიმკვეთრე
+	Ink Color	მელნის ფერი
+	Paper Color	ქაღალდის ფერი
+	Color (CMYK)	ფერადი (CMYK)
+	Dot	წერტილი
+	Line	ხაზი
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	პიქსელის ზომა
+	Palette	პალიტრა
+	Input Colors	შემავალი ფერები
+	Green Phosphor	მწვანე ფოსფორი
+	Amber Monitor	ქარვისფერი მონიტორი
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

@@ -1,11 +1,14 @@
-//! DV video decoder: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s) and DVCPRO 25 (SMPTE 314M).
+//! DV video decoder: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s), DVCPRO 25 and 50 (SMPTE
+//! 314M) and DVCPRO HD (SMPTE 370M).
 //!
 //! - 525/60 4:1:1 (720x480) and 625/50 4:2:0 (720x576) DV, DVCPRO 25 4:1:1 at both line
 //!   counts; 8-8 and 2-4-8 (interlaced) DCT; 4:3 and 16:9.
+//! - DVCPRO 50: 4:2:2 at 720x480 / 720x576. DVCPRO HD: 4:2:2 1080i (1280x1080 at 59.94 Hz,
+//!   1440x1080 at 50 Hz) and 720p (960x720 at 59.94 / 50 frames/s); the coded size is anamorphic
+//!   (16:9 display through [`Profile::sample_aspect`]).
 //! - Input: one DIF frame (from a raw `.dv` / `.dif` file, an AVI, MOV or MXF sample). Output:
 //!   planar 8-bit Y, Cb, Cr at the coded size (no setup / range change; DV is bottom field
 //!   first).
-//! - DVCPRO 50 and DVCPRO HD are recognised by [`probe`] but not decoded yet.
 //!
 //! ```no_run
 //! # let data: Vec<u8> = vec![];
@@ -23,6 +26,7 @@ pub mod audio;
 pub mod dif;
 mod idct;
 mod layout;
+mod pro;
 mod quant;
 mod segment;
 pub mod subcode;
@@ -43,7 +47,7 @@ pub enum Error {
     NotDv,
     #[error("truncated DV frame: {got} of {need} bytes")]
     Truncated { need: usize, got: usize },
-    #[error("unsupported DV format: {0:?} (decoding of DVCPRO 50 and DVCPRO HD is not implemented yet)")]
+    #[error("unsupported DV format: {0:?}")]
     Unsupported(Format),
 }
 
@@ -123,7 +127,7 @@ impl Default for Decoder {
 }
 
 /// Mid-grey for concealed macroblocks.
-const CONCEAL: u8 = 128;
+pub(crate) const CONCEAL: u8 = 128;
 
 impl Decoder {
     pub fn new() -> Self {
@@ -150,7 +154,10 @@ impl Decoder {
         if frame.len() < need {
             return Err(Error::Truncated { need, got: frame.len() });
         }
-        let pic = decode_frame(frame, profile, self.threads);
+        let pic = match profile.format {
+            Format::Dv25 | Format::Dvcpro25 => decode_frame(frame, profile, self.threads),
+            Format::Dvcpro50 | Format::DvcproHd => pro::decode_frame(frame, profile, self.threads),
+        };
         self.errors = self.errors.saturating_add(u64::from(pic.errors));
         Ok(pic)
     }
@@ -171,7 +178,7 @@ fn decode_segment(frame: &[u8], profile: &Profile, seq: usize, k: usize) -> (Vec
     // one audio block per group of three segments
     let first = seq * SEQUENCE_SIZE + (6 + (k / 3) * 16 + 1 + (k % 3) * 5) * BLOCK_SIZE;
     let data = frame.get(first..first + 5 * BLOCK_SIZE).unwrap_or(&[]);
-    let seg = segment::decode(data, seq, table);
+    let seg = segment::decode(data, seq, table, segment::AREAS_SD);
     let mut concealed = 0;
     let mut out = Vec::with_capacity(5);
     for (m, mb) in seg.mbs.iter().enumerate() {
@@ -181,7 +188,7 @@ fn decode_segment(frame: &[u8], profile: &Profile, seq: usize, k: usize) -> (Vec
             [[CONCEAL; 64]; 6]
         } else {
             std::array::from_fn(|b| {
-                let blk = &mb.blocks[b];
+                let Some(blk) = mb.blocks.get(b) else { return [CONCEAL; 64] };
                 let c = quant::dequantise(blk.dc, &blk.amps, blk.mode248, blk.class, mb.qno);
                 if blk.mode248 { idct::idct_248(&c) } else { idct::idct_88(&c) }
             })

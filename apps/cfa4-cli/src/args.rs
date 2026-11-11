@@ -25,6 +25,7 @@ const VALUED: &[&str] = &[
     "--gpu-rendering",
     "--profile",
     "--expect",
+    "--contact-sheet",
 ];
 
 #[derive(Debug, Default)]
