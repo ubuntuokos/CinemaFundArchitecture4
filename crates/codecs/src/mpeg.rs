@@ -432,7 +432,18 @@ impl MpegSource {
                 height = frame.height;
                 par = frame.par;
                 color = frame.color;
-                codec = if v.kind == VKind::H264 { "H.264".into() } else { "HEVC".into() };
+                let mut label: String = if v.kind == VKind::H264 { "H.264".into() } else { "HEVC".into() };
+                // LCEVC: its own elementary stream (stream_type 0x36), or T.35 SEI in the base's first pictures
+                let base = if v.kind == VKind::H264 { cfa4_lcevc::BaseCodec::H264 } else { cfa4_lcevc::BaseCodec::Hevc };
+                if self.file.as_ref().is_some_and(|f| f.streams.iter().any(|s| s.stream_type == cfa4_lcevc::TS_STREAM_TYPE)) {
+                    crate::lcevc::mark(&self.info.name, &mut label, "stream_type 0x36 stream");
+                } else if (0..v.units.len().min(crate::lcevc::SCAN_SAMPLES))
+                    .filter_map(|i| self.read_unit(v, i).ok())
+                    .any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, cfa4_lcevc::Framing::AnnexB))
+                {
+                    crate::lcevc::mark(&self.info.name, &mut label, "T.35 SEI");
+                }
+                codec = label;
                 rate = None;
                 pixel_format = match &frame.data {
                     cfa4_frame::PixelData::Yuv8 { chroma, .. } => format!("YUV {} 8-bit", chroma_name(*chroma)),
@@ -497,8 +508,13 @@ impl MpegSource {
             return None;
         }
         self.unsupported_audio = Some(why);
-        self.info.audio_streams =
-            vec![AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: format!("{codec_name} (unsupported)"), bits_per_sample: None }];
+        self.info.audio_streams = vec![AudioStreamInfo {
+            sample_rate: 48_000,
+            channels: 2,
+            codec: format!("{codec_name} (unsupported)"),
+            bits_per_sample: None,
+            speakers: Vec::new(),
+        }];
         None
     }
 
@@ -639,7 +655,13 @@ impl MpegSource {
                 self.info.kind = MediaKind::AudioOnly;
             }
         }
-        self.info.audio_streams.push(AudioStreamInfo { sample_rate: rate.max(1), channels: channels.max(1) as u32, codec: codec_name, bits_per_sample: bits });
+        self.info.audio_streams.push(AudioStreamInfo {
+            sample_rate: rate.max(1),
+            channels: channels.max(1) as u32,
+            codec: codec_name,
+            bits_per_sample: bits,
+            speakers: Vec::new(),
+        });
         Some(AudioTrack {
             stream: ai,
             codec,

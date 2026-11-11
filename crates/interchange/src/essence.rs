@@ -210,11 +210,7 @@ fn collect_needs(
                         if end <= start {
                             continue;
                         }
-                        let channels = match t.channels {
-                            cfa4_project::AudioChannels::Mono => 1,
-                            cfa4_project::AudioChannels::Surround51 => 6,
-                            _ => 2,
-                        };
+                        let channels = t.channels.fixed_channels().map_or(2, |n| n as u32);
                         let key = EssenceKey::Clip(c.id);
                         by_item.insert(
                             key,

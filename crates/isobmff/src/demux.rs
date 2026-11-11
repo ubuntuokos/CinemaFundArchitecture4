@@ -739,8 +739,19 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
     if stsc[0].0 == 0 || stsc.windows(2).any(|w| w[1].0 <= w[0].0) {
         return invalid("stsc first_chunk values are not increasing from 1");
     }
+    // Tables that count single sample frames (QuickTime PCM, and `ulaw` / `alaw` / `ima4` with a
+    // sample size of 1) are grouped into one sample per chunk: (bytes, frames) of the smallest unit
+    // when the sound description gives no packet sizes.
     let pcm = match t.entries.first().map(|e| &e.codec) {
-        Some(CodecConfig::Pcm(p)) if const_size != 0 => Some(*p),
+        Some(CodecConfig::Pcm(p)) if const_size != 0 => Some((u64::from(p.bytes_per_frame()), 1)),
+        Some(CodecConfig::Unknown { fourcc, .. }) if const_size == 1 => {
+            let ch = t.audio().map_or(1, |a| u64::from(a.channels.max(1)));
+            match &fourcc.0 {
+                b"ulaw" | b"alaw" => Some((ch, 1)),
+                b"ima4" => Some((34 * ch, 64)),
+                _ => None,
+            }
+        }
         _ => None,
     };
     let mut stts_c = SttsCursor { runs: &stts, run: 0, used: 0 };
@@ -749,7 +760,7 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
     let mut sidx = 0usize;
     let mut dts = 0i64;
     let mut stsc_i = 0usize;
-    if let Some(p) = pcm {
+    if let Some((unit_bytes, unit_frames)) = pcm {
         t.pcm_chunked = true;
         let a = t.audio().cloned().unwrap_or_default();
         let frame_bytes = |frames: u64| -> u64 {
@@ -758,7 +769,7 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
             } else if const_size > 1 {
                 frames * const_size as u64
             } else {
-                frames * p.bytes_per_frame() as u64
+                frames / unit_frames * unit_bytes
             }
         };
         if chunks.len() > MAX_SAMPLES {

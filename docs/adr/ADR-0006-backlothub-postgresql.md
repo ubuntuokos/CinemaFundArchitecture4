@@ -62,6 +62,28 @@ bővítménnyel), modulonként saját sémával és adatbázis-szereppel. Másod
 BacklotHub saját sémája (`backlot`) és a fenti döntések változatlanok; a kliensmeghajtó és a
 telepítési mód a BacklotHub G2 kapuján közösen dől el, egy meghajtóval.
 
+## Kiegészítés, 2026-11-11: telepítési mód és kliensmeghajtó (BacklotHub G2)
+
+A tulajdonos 2026-11-11-én jóváhagyta a BacklotHub 1. és 2. lépcsőjének G2-jét (BacklotHub #48, #49, #52).
+Ez lezárja a fenti 2. és 6. pontot:
+
+1. **Telepítési mód (#48).** Az Ubuntu `postgresql` rendszercsomagja, **külön CFA4-klaszterrel**
+   (`pg_createcluster <ubuntu-főverzió> cfa4`); a rendszer alapklaszterét a CFA4 nem használja. M1-ben
+   csak Unix-socket, TCP-port nincs (`listen_addresses = ''`); hitelesítés `peer`, jelszó nincs tárolva.
+   Egy `cfa4` adatbázis, benne modulonként saját séma és szerep (`backlot`, `cfa4_audit`, a TASKSTORE
+   sémái). A közös auditnapló ([ADR 0008](ADR-0008-cfa4-audit.md)) a `backlot` sémával egy adatbázisban
+   van, hogy az üzleti változás és az auditesemény egy tranzakcióban íródjon. Ha a `postgresql` hiányzik,
+   angol hibakód (`DB_SERVER_MISSING`) és olvasható üzenet, összeomlás nincs.
+2. **Kliensmeghajtó (#49).**
+   - **Python:** psycopg 3 (`psycopg`, LGPL-3.0-or-later). A BacklotHub-szolgáltatás és a Python
+     közös könyvtárak (`cfa4_audit`, `cfa4_files`) ezt használják.
+   - **Rust:** egy meghajtó minden Rust-komponensnek, a `tokio-postgres` és az `sqlx` közül. A választás
+     az első Rust-író megvalósítási kapuján dől el (TASKSTORE PG-fázis vagy Event Fabric EF-R1, amelyik
+     előbb jön), és utána mindenkire érvényes. A BacklotHub Rust-oldala (`cfa4-audit` crate) addig
+     adatbázis nélkül készül.
+3. **Adatbázis-réteg és migráció a BacklotHubban (#52):** SQLAlchemy 2 (Core és ORM) és Alembic (mindkettő
+   MIT), egy migrációs lánccal a `backlot` sémára. A többi modul sémáját a saját migrációja kezeli.
+
 ## Licenc
 
 - A PostgreSQL licence (PostgreSQL License, BSD/MIT-típusú) GPL-3.0-kompatibilis.
