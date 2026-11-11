@@ -356,3 +356,56 @@ fn raw_dv_audio_matches_ffmpeg() {
         assert!((rms - 0.5 / 2f32.sqrt()).abs() < 0.02, "{name}: rms {rms}");
     }
 }
+
+/// Type-1 DV AVI: the sound inside the `iavs` frames is audio stream 0 and equals the raw DV
+/// file's (which matches ffmpeg, `raw_dv_audio_matches_ffmpeg`); a type-1 file whose frames carry
+/// no audio has no audio stream.
+#[test]
+fn type1_dv_avi_audio_matches_raw_dv() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let audio = "aevalsrc=0.5*sin(2*PI*440*t)|0.3*sin(2*PI*997*t):s=48000";
+    let args = [
+        "-f",
+        "lavfi",
+        "-i",
+        NTSC,
+        "-f",
+        "lavfi",
+        "-i",
+        audio,
+        "-frames:v",
+        "10",
+        "-c:v",
+        "dvvideo",
+        "-pix_fmt",
+        "yuv411p",
+        "-c:a",
+        "pcm_s16le",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+        "-f",
+        "dv",
+    ];
+    let file = fixture(&ff, "dv_ntsc_audio48k.dv", &args).unwrap_or_else(|| panic!("could not generate dv_ntsc_audio48k.dv"));
+    let raw = std::fs::read(&file).unwrap();
+    let ranges = cfa4_dv::frames(&raw).unwrap();
+    let frames: Vec<&[u8]> = ranges.iter().map(|r| &raw[r.clone()]).collect();
+    let avi = cfa4_codecs::open_bytes("type1_audio.avi", type1_avi(&frames, (30000, 1001)).into()).unwrap();
+    let dv = cfa4_codecs::open_bytes("dv_ntsc_audio48k.dv", raw.clone().into()).unwrap();
+    let (a, b) = (avi.info().audio_streams.clone(), dv.info().audio_streams.clone());
+    assert_eq!(a.len(), 1, "type-1 AVI: one audio stream");
+    assert_eq!((a[0].sample_rate, a[0].channels, &a[0].codec, a[0].bits_per_sample), (b[0].sample_rate, b[0].channels, &b[0].codec, b[0].bits_per_sample));
+    // the whole sound, and a window in the middle resampled to 44.1 kHz
+    let n = 10 * 1601;
+    assert_eq!(avi.audio(0, n, 48_000).unwrap().channels, dv.audio(0, n, 48_000).unwrap().channels);
+    assert_eq!(avi.audio(5000, 2000, 44_100).unwrap().channels, dv.audio(5000, 2000, 44_100).unwrap().channels);
+    // frames without audio blocks' content: no audio stream
+    let silent = std::fs::read(make(&ff, &SPECS[0])).unwrap();
+    let ranges = cfa4_dv::frames(&silent).unwrap();
+    let frames: Vec<&[u8]> = ranges.iter().map(|r| &silent[r.clone()]).collect();
+    let avi = cfa4_codecs::open_bytes("type1.avi", type1_avi(&frames, (30000, 1001)).into()).unwrap();
+    let dv = cfa4_codecs::open_bytes(SPECS[0].name, silent.clone().into()).unwrap();
+    assert_eq!(avi.info().audio_streams.len(), dv.info().audio_streams.len());
+}
