@@ -1,10 +1,11 @@
 //! Clean-room MXF demuxer, written from the SMPTE specifications (editions in the README):
 //! ST 377-1 (file format: KLV, partitions, primer pack, header metadata, index tables, random
 //! index pack), ST 378 (OP1a), ST 390 (OP-Atom), ST 379-1/2 (generic container), ST 381-1 (MPEG
-//! video mapping), ST 381-3 (AVC mapping), ST 382 (AES3 / Broadcast Wave audio mapping), ST 331
-//! (AES3 element data, D-10 sound), ST 2019-4 (VC-3 mapping), RDD 44 (ProRes mapping) and ST
-//! 2067-201 (IAB immersive audio track files), ST 429-5 (timed text track files, also used by ST
-//! 2067-2 IMF) and ST 410 (generic stream partitions).
+//! video mapping), ST 381-3 (AVC mapping), ST 384 (uncompressed pictures, [`uncompressed`]),
+//! ST 382 (AES3 / Broadcast Wave audio mapping), ST 331 (AES3 element data, D-10 sound), ST 2019-4
+//! (VC-3 mapping), RDD 44 (ProRes mapping) and ST 2067-201 (IAB immersive audio track files), ST
+//! 429-5 (timed text track files, also used by ST 2067-2 IMF) and ST 410 (generic stream
+//! partitions).
 //!
 //! [`open`] walks the file's KLV packets (keys and lengths only; essence payloads are never read
 //! while opening), parses the partition packs, the primer pack and header metadata of the most
@@ -14,8 +15,9 @@
 //! presentation position from the index temporal offsets, random-access flag) and PCM chunk
 //! tables for sound, plus the start timecode of the material package.
 //!
-//! [`MxfWriter`] ([`write`]) writes OP1a and OP-Atom files (VC-3, ProRes, AVC byte stream, PCM)
-//! with index tables and start timecode, streaming to any `Write + Seek` sink.
+//! [`MxfWriter`] ([`write`]) writes OP1a and OP-Atom files (VC-3, ProRes, AVC byte stream,
+//! uncompressed Y'CbCr, PCM) with index tables and start timecode, streaming to any
+//! `Write + Seek` sink.
 //!
 //! Layer L0: no dependencies beyond `std`, no `unsafe`, builds for `wasm32-unknown-unknown`.
 
@@ -29,6 +31,7 @@ mod meta;
 mod peek;
 mod source;
 mod timed_text;
+pub mod uncompressed;
 pub mod write;
 
 #[cfg(any(test, feature = "test-util"))]
@@ -42,6 +45,7 @@ pub use klv::{Rational, Ul};
 pub use peek::{HeaderPeek, peek};
 pub use source::ByteSource;
 pub use timed_text::{AncillaryResource, MAX_RESOURCE_BYTES, Region, TimedText, is_timed_text, open_timed_text};
+pub use uncompressed::UncompressedLayout;
 pub use write::{
     CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc, SoundDesc,
     StartTimecode, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm,
