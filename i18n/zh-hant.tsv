@@ -4251,3 +4251,88 @@ export.summary	Low	低
 	{n} more	另有 {n} 項
 	Block	區塊
 	parallel	並列
+	In the page (OBS takes it from the Browser Source)	在頁面中（OBS 從瀏覽器來源取得）
+	Separate (a media source in OBS)	分開（OBS 中的媒體來源）
+	No sound	無聲音
+	credits	演職員表
+	graphic	圖形
+	{n} pages	{n} 頁
+	Live Graphics	即時圖形
+	Prepared cues; double-click one to put it in preview	已備妥的項目；按兩下即可放入預覽
+	Add Credits…	加入演職員表…
+	A credits spreadsheet, credits file or Cinecred project as a cue	以演職員表試算表、演職員表檔案或 Cinecred 專案作為項目
+	Add Selected Graphic	加入所選圖形
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	以時間軸上所選的圖形片段（標題、下三分之一字幕）作為項目
+	Cues	項目
+	TAKE	上播
+	The preview cue goes on air from its first page	預覽項目從第一頁開始上播
+	PREVIOUS	上一頁
+	The page before (on the first page: from its start)	上一頁（在第一頁時：從其開頭）
+	NEXT	下一頁
+	The next page; after the last one, the preview cue	下一頁；最後一頁之後為預覽項目
+	HOLD	暫停
+	Stop the program where it is	讓節目停在目前位置
+	CONTINUE	繼續
+	Go on from where it stopped	從停止處繼續
+	UPDATE	更新
+	Read the spreadsheet (or the clip) again; on air it changes at once	重新讀取試算表（或片段）；上播中會立即變更
+	OUT	下播
+	Take everything off air	全部下播
+	Start Live Page	啟動即時頁面
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	在本機為 OBS 的瀏覽器來源提供節目（僅限 127.0.0.1）
+	not running	未執行
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ 工具 ▸ WebSocket 伺服器設定
+	Connect to OBS	連線至 OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	連線至本機的 OBS，並將其「CFA4 Live」瀏覽器來源指向即時頁面
+	Port	連接埠
+	Password	密碼
+	Live page	即時頁面
+	Sound	聲音
+	OBS	OBS
+	Nothing in preview	預覽中沒有內容
+	page {page} of {pages}	第 {page} 頁，共 {pages} 頁
+	held	已暫停
+	ended	已結束
+	Off air	未上播
+	Stop Live Page	停止即時頁面
+	Connected to OBS {version}; source “{source}”	已連線至 OBS {version}；來源「{source}」
+	Point OBS Again	重新指向 OBS
+	Select a graphic clip on the timeline first.	請先在時間軸上選取圖形片段。
+	Connecting to OBS…	正在連線至 OBS…
+	Live Graphics…	即時圖形…
+	PREVIEW	預覽
+	PROGRAM	節目
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	圖片或影片標記須單獨位於內文儲存格（或搭配一個名字作為肖像）；其他標記已移除
+	the page gap is not a duration; the page style's is used	頁間距不是時長；改用頁面樣式的值
+	the page runtime is not a positive duration; the page style's is used	頁面時長不是正值；改用頁面樣式的值
+	background “{file}” was not found; it is left out	找不到背景「{file}」；已略過
+	card page {page} is taller than the frame; use a roll page	字卡頁 {page} 高於畫面；請改用捲動頁
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	字母樣式「{style}」的顏色「{colour}」不是 #rrggbb；已略過
+	colour “{colour}” is not #rrggbb; black is used	顏色「{colour}」不是 #rrggbb；改用黑色
+	colour “{colour}” is not #rrggbb; white is used	顏色「{colour}」不是 #rrggbb；改用白色
+	content style “{style}” does not exist; “{used}” is used	內容樣式「{style}」不存在；改用「{used}」
+	letter style “{style}” does not exist; the text keeps the block's style	字母樣式「{style}」不存在；文字保留區塊樣式
+	page gap “{value}” is not a duration	頁間距「{value}」不是時長
+	page runtime “{value}” is not a duration	頁面時長「{value}」不是時長
+	page style “{style}” does not exist; a roll page is used	頁面樣式「{style}」不存在；改用捲動頁
+	page {page}: the background names no file; it is left out	第 {page} 頁：背景未指定檔案；已略過
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	第 {page} 頁：以改變捲動速度達成時長（此頁的區塊間沒有可延展的間距）
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	第 {page} 頁：以改變捲動速度達成時長（即使沒有間距，演職員表仍太長）
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 頁：以改變捲動速度達成時長（間距必須放大超過 20 倍）
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 頁：轉場需要頁面相接（頁間距 0）；已略過
+	page {page}: there is no transition “{name}”; the pages cut	第 {page} 頁：沒有「{name}」轉場；頁面直接切換
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支援軸線位置「{value}」（支援像素位移，可選加「parallel」）
+	vertical gap “{value}” is not a number	垂直間距「{value}」不是數字
+	picture “{file}” was not found or cannot be read; it is left out	找不到或無法讀取圖片「{file}」；已略過
+	video “{file}” was not found or cannot be read; it is left out	找不到或無法讀取影片「{file}」；已略過
+	there is no roll page without its own runtime to stretch; the length cannot change	沒有可延展且未自訂時長的捲動頁；長度無法變更
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	僅字卡與間距就有 {seconds} 秒；要求的長度較短，因此捲動頁保留原本長度
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	字母樣式「{style}」：只使用第一個上色圖層（無外框、陰影或條紋）
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	不會沿用整份演職員表的時長；請改用「讓演職員表配合音樂」（或指定長度）
+	page style “{style}”: fade curves become linear fades	頁面樣式「{style}」：淡化曲線改為線性淡化
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	內容樣式「{style}」在 Cinecred 中沒有開頭；試算表中寫的開頭仍會顯示
+	content style “{style}”: sorting the names is not carried over	內容樣式「{style}」：不會沿用姓名排序
+	transition curves are not carried over	不會沿用轉場曲線
+	picture styles (pictures keep their own size) are not carried over	不會沿用圖片樣式（圖片保留原始大小）
+	video (tape) styles are not carried over	不會沿用影片（磁帶）樣式
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 專案含有 {n} 份演職員表試算表；使用「{name}」（可在「試算表」欄位選擇其他）

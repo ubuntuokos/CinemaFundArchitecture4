@@ -4258,3 +4258,88 @@ export.summary	Low	తక్కువ
 	{n} more	మరో {n}
 	Block	బ్లాక్
 	parallel	సమాంతరం
+	In the page (OBS takes it from the Browser Source)	పేజీలో (OBS దాన్ని బ్రౌజర్ సోర్స్ నుండి తీసుకుంటుంది)
+	Separate (a media source in OBS)	వేరుగా (OBSలో మీడియా సోర్స్)
+	No sound	శబ్దం లేదు
+	credits	క్రెడిట్స్
+	graphic	గ్రాఫిక్
+	{n} pages	{n} పేజీలు
+	Live Graphics	లైవ్ గ్రాఫిక్స్
+	Prepared cues; double-click one to put it in preview	సిద్ధం చేసిన క్యూలు; ప్రివ్యూలో పెట్టడానికి ఒకదానిపై డబుల్-క్లిక్ చేయండి
+	Add Credits…	క్రెడిట్స్ జోడించు…
+	A credits spreadsheet, credits file or Cinecred project as a cue	క్రెడిట్స్ స్ప్రెడ్‌షీట్, క్రెడిట్స్ ఫైల్ లేదా Cinecred ప్రాజెక్ట్ క్యూగా
+	Add Selected Graphic	ఎంచుకున్న గ్రాఫిక్‌ను జోడించు
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	టైమ్‌లైన్‌లో ఎంచుకున్న గ్రాఫిక్ క్లిప్ (టైటిల్, లోయర్ థర్డ్) క్యూగా
+	Cues	క్యూలు
+	TAKE	ప్రసారం
+	The preview cue goes on air from its first page	ప్రివ్యూ క్యూ దాని మొదటి పేజీ నుండి ప్రసారమవుతుంది
+	PREVIOUS	మునుపటి
+	The page before (on the first page: from its start)	ముందరి పేజీ (మొదటి పేజీలో: దాని ప్రారంభం నుండి)
+	NEXT	తదుపరి
+	The next page; after the last one, the preview cue	తదుపరి పేజీ; చివరిది తర్వాత ప్రివ్యూ క్యూ
+	HOLD	ఆపు
+	Stop the program where it is	ప్రోగ్రామ్‌ను ఉన్నచోటే ఆపు
+	CONTINUE	కొనసాగించు
+	Go on from where it stopped	ఆగిన చోటు నుండి కొనసాగించు
+	UPDATE	నవీకరించు
+	Read the spreadsheet (or the clip) again; on air it changes at once	స్ప్రెడ్‌షీట్‌ను (లేదా క్లిప్‌ను) మళ్లీ చదువు; ప్రసారంలో వెంటనే మారుతుంది
+	OUT	తీసివేయి
+	Take everything off air	ప్రసారం నుండి అన్నింటినీ తీసివేయి
+	Start Live Page	లైవ్ పేజీని ప్రారంభించు
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	OBS బ్రౌజర్ సోర్స్ కోసం ఈ కంప్యూటర్‌లో ప్రోగ్రామ్‌ను అందించు (127.0.0.1 మాత్రమే)
+	not running	నడవడం లేదు
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	OBSకి కనెక్ట్ చేయి
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	ఈ కంప్యూటర్‌లోని OBSకి కనెక్ట్ చేసి, దాని “CFA4 Live” బ్రౌజర్ సోర్స్‌ను లైవ్ పేజీ వైపు చూపించు
+	Port	పోర్ట్
+	Password	పాస్‌వర్డ్
+	Live page	లైవ్ పేజీ
+	Sound	శబ్దం
+	OBS	OBS
+	Nothing in preview	ప్రివ్యూలో ఏమీ లేదు
+	page {page} of {pages}	{pages}లో పేజీ {page}
+	held	ఆపబడింది
+	ended	ముగిసింది
+	Off air	ప్రసారంలో లేదు
+	Stop Live Page	లైవ్ పేజీని ఆపు
+	Connected to OBS {version}; source “{source}”	OBS {version}కి కనెక్ట్ అయింది; సోర్స్ “{source}”
+	Point OBS Again	OBSని మళ్లీ సూచించు
+	Select a graphic clip on the timeline first.	ముందుగా టైమ్‌లైన్‌లో గ్రాఫిక్ క్లిప్‌ను ఎంచుకోండి.
+	Connecting to OBS…	OBSకి కనెక్ట్ అవుతోంది…
+	Live Graphics…	లైవ్ గ్రాఫిక్స్…
+	PREVIEW	ప్రివ్యూ
+	PROGRAM	ప్రోగ్రామ్
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	చిత్రం లేదా వీడియో ట్యాగ్ బాడీ సెల్‌లో ఒంటరిగా ఉంటుంది (లేదా ఒక పేరుతో, పోర్ట్రెయిట్‌గా); ఇతర ట్యాగ్‌లు తీసివేయబడ్డాయి
+	the page gap is not a duration; the page style's is used	పేజీ ఖాళీ వ్యవధి కాదు; పేజీ శైలిలోనిది వాడబడుతుంది
+	the page runtime is not a positive duration; the page style's is used	పేజీ నిడివి ధనాత్మక వ్యవధి కాదు; పేజీ శైలిలోనిది వాడబడుతుంది
+	background “{file}” was not found; it is left out	నేపథ్యం “{file}” కనబడలేదు; వదిలివేయబడింది
+	card page {page} is taller than the frame; use a roll page	కార్డ్ పేజీ {page} ఫ్రేమ్ కంటే ఎత్తుగా ఉంది; రోల్ పేజీని వాడండి
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	అక్షర శైలి “{style}” యొక్క రంగు “{colour}” #rrggbb కాదు; వదిలివేయబడింది
+	colour “{colour}” is not #rrggbb; black is used	రంగు “{colour}” #rrggbb కాదు; నలుపు వాడబడుతుంది
+	colour “{colour}” is not #rrggbb; white is used	రంగు “{colour}” #rrggbb కాదు; తెలుపు వాడబడుతుంది
+	content style “{style}” does not exist; “{used}” is used	కంటెంట్ శైలి “{style}” లేదు; “{used}” వాడబడుతుంది
+	letter style “{style}” does not exist; the text keeps the block's style	అక్షర శైలి “{style}” లేదు; టెక్స్ట్ బ్లాక్ శైలినే ఉంచుకుంటుంది
+	page gap “{value}” is not a duration	పేజీ ఖాళీ “{value}” వ్యవధి కాదు
+	page runtime “{value}” is not a duration	పేజీ నిడివి “{value}” వ్యవధి కాదు
+	page style “{style}” does not exist; a roll page is used	పేజీ శైలి “{style}” లేదు; రోల్ పేజీ వాడబడుతుంది
+	page {page}: the background names no file; it is left out	పేజీ {page}: నేపథ్యం ఏ ఫైల్‌నూ పేర్కొనలేదు; వదిలివేయబడింది
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	పేజీ {page}: రోల్ వేగాన్ని మార్చడం ద్వారా నిడివి చేరుకుంటుంది (పేజీలో బ్లాక్‌ల మధ్య సాగదీయడానికి ఖాళీలు లేవు)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	పేజీ {page}: రోల్ వేగాన్ని మార్చడం ద్వారా నిడివి చేరుకుంటుంది (ఖాళీలు లేకున్నా క్రెడిట్స్ చాలా పొడవుగా ఉన్నాయి)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	పేజీ {page}: రోల్ వేగాన్ని మార్చడం ద్వారా నిడివి చేరుకుంటుంది (ఖాళీలు 20 రెట్లకు మించి పెరగాల్సి వస్తుంది)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	పేజీ {page}: పరివర్తనకు పేజీలు తాకాలి (పేజీ ఖాళీ 0); వదిలివేయబడింది
+	page {page}: there is no transition “{name}”; the pages cut	పేజీ {page}: “{name}” అనే పరివర్తన లేదు; పేజీలు కట్‌తో మారుతాయి
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	అక్ష స్థానం “{value}”కి మద్దతు లేదు (పిక్సెల్ ఆఫ్‌సెట్‌కు, ఐచ్ఛికంగా “parallel”తో, మద్దతు ఉంది)
+	vertical gap “{value}” is not a number	నిలువు ఖాళీ “{value}” సంఖ్య కాదు
+	picture “{file}” was not found or cannot be read; it is left out	చిత్రం “{file}” కనబడలేదు లేదా చదవలేము; వదిలివేయబడింది
+	video “{file}” was not found or cannot be read; it is left out	వీడియో “{file}” కనబడలేదు లేదా చదవలేము; వదిలివేయబడింది
+	there is no roll page without its own runtime to stretch; the length cannot change	సాగదీయడానికి సొంత నిడివి లేని రోల్ పేజీ లేదు; నిడివి మారదు
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	కార్డ్‌లు మరియు ఖాళీలు మాత్రమే {seconds} s; అడిగిన నిడివి తక్కువ కాబట్టి రోల్ పేజీలు సహజ నిడివిని ఉంచుకుంటాయి
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	అక్షర శైలి “{style}”: మొదటి రంగు లేయర్ మాత్రమే వాడబడుతుంది (అవుట్‌లైన్‌లు, నీడలు లేదా చారలు లేవు)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	మొత్తం క్రెడిట్స్ నిడివి బదిలీ కాదు; బదులుగా క్రెడిట్స్‌ను సంగీతానికి సరిపోల్చు (లేదా ఒక నిడివి) వాడండి
+	page style “{style}”: fade curves become linear fades	పేజీ శైలి “{style}”: ఫేడ్ వక్రాలు రేఖీయ ఫేడ్‌లుగా మారతాయి
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	కంటెంట్ శైలి “{style}”కి Cinecredలో మొదలు లేదు; షీట్‌లో రాసిన మొదలులు ఇంకా చూపబడతాయి
+	content style “{style}”: sorting the names is not carried over	కంటెంట్ శైలి “{style}”: పేర్ల క్రమం బదిలీ కాదు
+	transition curves are not carried over	పరివర్తన వక్రాలు బదిలీ కావు
+	picture styles (pictures keep their own size) are not carried over	చిత్ర శైలులు (చిత్రాలు తమ పరిమాణాన్ని ఉంచుకుంటాయి) బదిలీ కావు
+	video (tape) styles are not carried over	వీడియో (టేప్) శైలులు బదిలీ కావు
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred ప్రాజెక్ట్‌లో {n} క్రెడిట్స్ స్ప్రెడ్‌షీట్‌లు ఉన్నాయి; “{name}” వాడబడుతుంది (స్ప్రెడ్‌షీట్ ఫీల్డ్‌లో మరొకటి ఎంచుకోండి)

@@ -4254,3 +4254,88 @@ export.summary	Low	matala
 	{n} more	{n} lisää
 	Block	Lohko
 	parallel	rinnakkain
+	In the page (OBS takes it from the Browser Source)	Sivulla (OBS ottaa sen selainlähteestä)
+	Separate (a media source in OBS)	Erikseen (medialähde OBS:ssä)
+	No sound	Ei ääntä
+	credits	tekijätiedot
+	graphic	grafiikka
+	{n} pages	{n} sivua
+	Live Graphics	Suora grafiikka
+	Prepared cues; double-click one to put it in preview	Valmistellut vihjeet; kaksoisnapsauta yhtä viedäksesi sen esikatseluun
+	Add Credits…	Lisää tekijätiedot…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Tekijätietotaulukko, tekijätietotiedosto tai Cinecred-projekti vihjeenä
+	Add Selected Graphic	Lisää valittu grafiikka
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Aikajanalta valittu grafiikkaleike (otsikko, alakolmannes) vihjeenä
+	Cues	Vihjeet
+	TAKE	LÄHETYKSEEN
+	The preview cue goes on air from its first page	Esikatselun vihje menee lähetykseen ensimmäiseltä sivultaan
+	PREVIOUS	EDELLINEN
+	The page before (on the first page: from its start)	Edellinen sivu (ensimmäisellä sivulla: sen alusta)
+	NEXT	SEURAAVA
+	The next page; after the last one, the preview cue	Seuraava sivu; viimeisen jälkeen esikatselun vihje
+	HOLD	PYSÄYTÄ
+	Stop the program where it is	Pysäytä ohjelma siihen, missä se on
+	CONTINUE	JATKA
+	Go on from where it stopped	Jatka siitä, mihin se pysähtyi
+	UPDATE	PÄIVITÄ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Lue laskentataulukko (tai leike) uudelleen; lähetyksessä se vaihtuu heti
+	OUT	POIS
+	Take everything off air	Poista kaikki lähetyksestä
+	Start Live Page	Käynnistä suora sivu
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Tarjoa ohjelma tällä tietokoneella OBS:n selainlähteelle (vain 127.0.0.1)
+	not running	ei käynnissä
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Työkalut ▸ WebSocket-palvelimen asetukset
+	Connect to OBS	Yhdistä OBS:ään
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Yhdistä tämän tietokoneen OBS:ään ja osoita sen selainlähde ”CFA4 Live” suoralle sivulle
+	Port	Portti
+	Password	Salasana
+	Live page	Suora sivu
+	Sound	Ääni
+	OBS	OBS
+	Nothing in preview	Esikatselussa ei ole mitään
+	page {page} of {pages}	sivu {page}/{pages}
+	held	pysäytetty
+	ended	päättynyt
+	Off air	Ei lähetyksessä
+	Stop Live Page	Pysäytä suora sivu
+	Connected to OBS {version}; source “{source}”	Yhdistetty OBS {version}; lähde ”{source}”
+	Point OBS Again	Osoita OBS uudelleen
+	Select a graphic clip on the timeline first.	Valitse ensin grafiikkaleike aikajanalta.
+	Connecting to OBS…	Yhdistetään OBS:ään…
+	Live Graphics…	Suora grafiikka…
+	PREVIEW	ESIKATSELU
+	PROGRAM	OHJELMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	kuva- tai videotunniste on yksin leipätekstisolussa (tai yhden nimen kanssa muotokuvana); muut tunnisteet poistettiin
+	the page gap is not a duration; the page style's is used	sivuväli ei ole kesto; sivutyylin arvoa käytetään
+	the page runtime is not a positive duration; the page style's is used	sivun kesto ei ole positiivinen; sivutyylin arvoa käytetään
+	background “{file}” was not found; it is left out	taustaa ”{file}” ei löytynyt; se jätetään pois
+	card page {page} is taller than the frame; use a roll page	korttisivu {page} on kuvaa korkeampi; käytä rullaavaa sivua
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	kirjaintyylin ”{style}” väri ”{colour}” ei ole #rrggbb; se jätetään pois
+	colour “{colour}” is not #rrggbb; black is used	väri ”{colour}” ei ole #rrggbb; käytetään mustaa
+	colour “{colour}” is not #rrggbb; white is used	väri ”{colour}” ei ole #rrggbb; käytetään valkoista
+	content style “{style}” does not exist; “{used}” is used	sisältötyyliä ”{style}” ei ole; käytetään tyyliä ”{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	kirjaintyyliä ”{style}” ei ole; teksti säilyttää lohkon tyylin
+	page gap “{value}” is not a duration	sivuväli ”{value}” ei ole kesto
+	page runtime “{value}” is not a duration	sivun kesto ”{value}” ei ole kesto
+	page style “{style}” does not exist; a roll page is used	sivutyyliä ”{style}” ei ole; käytetään rullaavaa sivua
+	page {page}: the background names no file; it is left out	sivu {page}: tausta ei nimeä tiedostoa; se jätetään pois
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (sivulla ei ole lohkojen välejä venytettäväksi)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (tekijätiedot ovat liian pitkät ilman välejäkin)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (välien pitäisi kasvaa yli 20-kertaisiksi)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sivu {page}: siirtymä vaatii sivujen koskettavan toisiaan (sivuväli 0); se jätetään pois
+	page {page}: there is no transition “{name}”; the pages cut	sivu {page}: siirtymää ”{name}” ei ole; sivut leikataan
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	akselin sijaintia ”{value}” ei tueta (pikselisiirtymää tuetaan, valinnaisesti ”parallel”)
+	vertical gap “{value}” is not a number	pystyväli ”{value}” ei ole luku
+	picture “{file}” was not found or cannot be read; it is left out	kuvaa ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
+	video “{file}” was not found or cannot be read; it is left out	videota ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
+	there is no roll page without its own runtime to stretch; the length cannot change	ei ole rullaavaa sivua ilman omaa kestoa venytettäväksi; pituutta ei voi muuttaa
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	kortit ja välit yksinään ovat {seconds} s; pyydetty pituus on lyhyempi, joten rullaavat sivut säilyttävät luonnollisen pituutensa
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	kirjaintyyli ”{style}”: vain ensimmäistä värillistä tasoa käytetään (ei ääriviivoja, varjoja eikä raitoja)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	koko tekijätietojen kestoa ei siirretä; käytä sen sijaan toimintoa Sovita tekijätiedot musiikkiin (tai pituutta)
+	page style “{style}”: fade curves become linear fades	sivutyyli ”{style}”: häivytyskäyrät muuttuvat lineaarisiksi
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	sisältötyylillä ”{style}” ei ole alkua Cinecredissä; taulukkoon kirjoitetut alut näytetään silti
+	content style “{style}”: sorting the names is not carried over	sisältötyyli ”{style}”: nimien lajittelua ei siirretä
+	transition curves are not carried over	siirtymäkäyriä ei siirretä
+	picture styles (pictures keep their own size) are not carried over	kuvatyylejä (kuvat säilyttävät oman kokonsa) ei siirretä
+	video (tape) styles are not carried over	video- (nauha-) tyylejä ei siirretä
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektissa on {n} tekijätietotaulukkoa; käytetään taulukkoa ”{name}” (valitse toinen Laskentataulukko-kentässä)

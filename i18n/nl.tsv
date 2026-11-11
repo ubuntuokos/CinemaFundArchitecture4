@@ -4252,3 +4252,88 @@ export.summary	Low	laag
 	{n} more	Nog {n}
 	Block	Blok
 	parallel	parallel
+	In the page (OBS takes it from the Browser Source)	In de pagina (OBS haalt het uit de browserbron)
+	Separate (a media source in OBS)	Apart (een mediabron in OBS)
+	No sound	Geen geluid
+	credits	aftiteling
+	graphic	afbeelding
+	{n} pages	{n} pagina's
+	Live Graphics	Live-graphics
+	Prepared cues; double-click one to put it in preview	Voorbereide cues; dubbelklik op een cue om die in het voorbeeld te zetten
+	Add Credits…	Aftiteling toevoegen…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Een aftitelingsspreadsheet, aftitelingsbestand of Cinecred-project als cue
+	Add Selected Graphic	Geselecteerde afbeelding toevoegen
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	De afbeeldingsclip die op de tijdlijn is geselecteerd (een titel, een onderbalk) als cue
+	Cues	Cues
+	TAKE	TAKE
+	The preview cue goes on air from its first page	De voorbeeld-cue gaat vanaf de eerste pagina in de uitzending
+	PREVIOUS	VORIGE
+	The page before (on the first page: from its start)	De vorige pagina (op de eerste pagina: vanaf het begin)
+	NEXT	VOLGENDE
+	The next page; after the last one, the preview cue	De volgende pagina; na de laatste de voorbeeld-cue
+	HOLD	VASTHOUDEN
+	Stop the program where it is	Het programma stoppen waar het is
+	CONTINUE	DOORGAAN
+	Go on from where it stopped	Doorgaan vanaf waar het stopte
+	UPDATE	BIJWERKEN
+	Read the spreadsheet (or the clip) again; on air it changes at once	De spreadsheet (of de clip) opnieuw lezen; in de uitzending verandert het meteen
+	OUT	UIT
+	Take everything off air	Alles uit de uitzending halen
+	Start Live Page	Livepagina starten
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Het programma op deze computer aanbieden aan de browserbron van OBS (alleen 127.0.0.1)
+	not running	niet actief
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Extra ▸ WebSocket-serverinstellingen
+	Connect to OBS	Verbinden met OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Verbinden met OBS op deze computer en de browserbron “CFA4 Live” naar de livepagina laten wijzen
+	Port	Poort
+	Password	Wachtwoord
+	Live page	Livepagina
+	Sound	Geluid
+	OBS	OBS
+	Nothing in preview	Niets in voorbeeld
+	page {page} of {pages}	pagina {page} van {pages}
+	held	vastgehouden
+	ended	afgelopen
+	Off air	Niet in de uitzending
+	Stop Live Page	Livepagina stoppen
+	Connected to OBS {version}; source “{source}”	Verbonden met OBS {version}; bron “{source}”
+	Point OBS Again	OBS opnieuw instellen
+	Select a graphic clip on the timeline first.	Selecteer eerst een afbeeldingsclip op de tijdlijn.
+	Connecting to OBS…	Verbinden met OBS…
+	Live Graphics…	Live-graphics…
+	PREVIEW	VOORBEELD
+	PROGRAM	PROGRAMMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	een afbeeldings- of videotag staat alleen in een bodycel (of met één naam, als portret); de andere tags zijn verwijderd
+	the page gap is not a duration; the page style's is used	de paginatussenruimte is geen duur; die van de paginastijl wordt gebruikt
+	the page runtime is not a positive duration; the page style's is used	de looptijd van de pagina is geen positieve duur; die van de paginastijl wordt gebruikt
+	background “{file}” was not found; it is left out	achtergrond “{file}” is niet gevonden; die wordt weggelaten
+	card page {page} is taller than the frame; use a roll page	kaartpagina {page} is hoger dan het beeld; gebruik een rolpagina
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	kleur “{colour}” van letterstijl “{style}” is geen #rrggbb; die wordt weggelaten
+	colour “{colour}” is not #rrggbb; black is used	kleur “{colour}” is geen #rrggbb; zwart wordt gebruikt
+	colour “{colour}” is not #rrggbb; white is used	kleur “{colour}” is geen #rrggbb; wit wordt gebruikt
+	content style “{style}” does not exist; “{used}” is used	inhoudsstijl “{style}” bestaat niet; “{used}” wordt gebruikt
+	letter style “{style}” does not exist; the text keeps the block's style	letterstijl “{style}” bestaat niet; de tekst houdt de stijl van het blok
+	page gap “{value}” is not a duration	paginatussenruimte “{value}” is geen duur
+	page runtime “{value}” is not a duration	paginalooptijd “{value}” is geen duur
+	page style “{style}” does not exist; a roll page is used	paginastijl “{style}” bestaat niet; er wordt een rolpagina gebruikt
+	page {page}: the background names no file; it is left out	pagina {page}: de achtergrond noemt geen bestand; die wordt weggelaten
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	pagina {page}: de looptijd wordt bereikt door de rolsnelheid te wijzigen (de pagina heeft geen ruimtes tussen blokken om op te rekken)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	pagina {page}: de looptijd wordt bereikt door de rolsnelheid te wijzigen (de aftiteling is zelfs zonder ruimtes te lang)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	pagina {page}: de looptijd wordt bereikt door de rolsnelheid te wijzigen (de ruimtes zouden meer dan 20 keer zo groot moeten worden)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	pagina {page}: de overgang vereist dat de pagina's aansluiten (paginatussenruimte 0); die wordt weggelaten
+	page {page}: there is no transition “{name}”; the pages cut	pagina {page}: er is geen overgang “{name}”; de pagina's wisselen met een harde las
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	aspositie “{value}” wordt niet ondersteund (een verschuiving in pixels, eventueel met “parallel”, wel)
+	vertical gap “{value}” is not a number	verticale ruimte “{value}” is geen getal
+	picture “{file}” was not found or cannot be read; it is left out	afbeelding “{file}” is niet gevonden of kan niet worden gelezen; die wordt weggelaten
+	video “{file}” was not found or cannot be read; it is left out	video “{file}” is niet gevonden of kan niet worden gelezen; die wordt weggelaten
+	there is no roll page without its own runtime to stretch; the length cannot change	er is geen rolpagina zonder eigen looptijd om op te rekken; de lengte kan niet veranderen
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	de kaarten en ruimtes alleen al zijn {seconds} s; de gevraagde lengte is korter, dus de rolpagina's houden hun natuurlijke lengte
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	letterstijl “{style}”: alleen de eerste gekleurde laag wordt gebruikt (geen contouren, schaduwen of strepen)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	de looptijd van de hele aftiteling wordt niet overgenomen; gebruik in plaats daarvan Aftiteling aan muziek aanpassen (of een lengte)
+	page style “{style}”: fade curves become linear fades	paginastijl “{style}”: vervagingscurven worden lineair
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	inhoudsstijl “{style}” heeft in Cinecred geen begin; begins die in het blad staan, worden toch getoond
+	content style “{style}”: sorting the names is not carried over	inhoudsstijl “{style}”: het sorteren van de namen wordt niet overgenomen
+	transition curves are not carried over	overgangscurven worden niet overgenomen
+	picture styles (pictures keep their own size) are not carried over	afbeeldingsstijlen (afbeeldingen houden hun eigen formaat) worden niet overgenomen
+	video (tape) styles are not carried over	video- (band)stijlen worden niet overgenomen
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	het Cinecred-project heeft {n} aftitelingsspreadsheets; “{name}” wordt gebruikt (kies een andere in het veld Spreadsheet)

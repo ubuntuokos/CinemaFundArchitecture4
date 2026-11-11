@@ -4254,3 +4254,88 @@ export.summary	Low	låg
 	{n} more	{n} till
 	Block	Block
 	parallel	parallell
+	In the page (OBS takes it from the Browser Source)	På sidan (OBS hämtar det från webbläsarkällan)
+	Separate (a media source in OBS)	Separat (en mediekälla i OBS)
+	No sound	Inget ljud
+	credits	eftertexter
+	graphic	grafik
+	{n} pages	{n} sidor
+	Live Graphics	Livegrafik
+	Prepared cues; double-click one to put it in preview	Förberedda cues; dubbelklicka på en för att lägga den i förhandsvisningen
+	Add Credits…	Lägg till eftertexter…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Ett eftertextkalkylark, en eftertextfil eller ett Cinecred-projekt som cue
+	Add Selected Graphic	Lägg till markerad grafik
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Grafikklippet som är markerat på tidslinjen (en titel, en namnskylt) som cue
+	Cues	Cues
+	TAKE	SÄND
+	The preview cue goes on air from its first page	Förhandsvisningens cue sänds från sin första sida
+	PREVIOUS	FÖREGÅENDE
+	The page before (on the first page: from its start)	Sidan innan (på första sidan: från dess början)
+	NEXT	NÄSTA
+	The next page; after the last one, the preview cue	Nästa sida; efter den sista förhandsvisningens cue
+	HOLD	STOPPA
+	Stop the program where it is	Stoppa programmet där det är
+	CONTINUE	FORTSÄTT
+	Go on from where it stopped	Fortsätt där det stannade
+	UPDATE	UPPDATERA
+	Read the spreadsheet (or the clip) again; on air it changes at once	Läs kalkylarket (eller klippet) igen; i sändning ändras det direkt
+	OUT	AV
+	Take everything off air	Ta bort allt från sändningen
+	Start Live Page	Starta livesidan
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Leverera programmet på den här datorn till OBS webbläsarkälla (endast 127.0.0.1)
+	not running	körs inte
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Verktyg ▸ WebSocket-serverinställningar
+	Connect to OBS	Anslut till OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Anslut till OBS på den här datorn och peka dess webbläsarkälla ”CFA4 Live” mot livesidan
+	Port	Port
+	Password	Lösenord
+	Live page	Livesida
+	Sound	Ljud
+	OBS	OBS
+	Nothing in preview	Inget i förhandsvisningen
+	page {page} of {pages}	sida {page} av {pages}
+	held	stoppad
+	ended	slut
+	Off air	Ej i sändning
+	Stop Live Page	Stoppa livesidan
+	Connected to OBS {version}; source “{source}”	Ansluten till OBS {version}; källa ”{source}”
+	Point OBS Again	Peka OBS igen
+	Select a graphic clip on the timeline first.	Markera först ett grafikklipp på tidslinjen.
+	Connecting to OBS…	Ansluter till OBS…
+	Live Graphics…	Livegrafik…
+	PREVIEW	FÖRHANDSVISNING
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	en bild- eller videotagg står ensam i en brödtextcell (eller med ett namn, som porträtt); de andra taggarna togs bort
+	the page gap is not a duration; the page style's is used	sidavståndet är ingen varaktighet; sidstilens används
+	the page runtime is not a positive duration; the page style's is used	sidans speltid är ingen positiv varaktighet; sidstilens används
+	background “{file}” was not found; it is left out	bakgrunden ”{file}” hittades inte; den utelämnas
+	card page {page} is taller than the frame; use a roll page	kortsidan {page} är högre än bilden; använd en rullsida
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	färgen ”{colour}” i bokstavsstilen ”{style}” är inte #rrggbb; den utelämnas
+	colour “{colour}” is not #rrggbb; black is used	färgen ”{colour}” är inte #rrggbb; svart används
+	colour “{colour}” is not #rrggbb; white is used	färgen ”{colour}” är inte #rrggbb; vitt används
+	content style “{style}” does not exist; “{used}” is used	innehållsstilen ”{style}” finns inte; ”{used}” används
+	letter style “{style}” does not exist; the text keeps the block's style	bokstavsstilen ”{style}” finns inte; texten behåller blockets stil
+	page gap “{value}” is not a duration	sidavståndet ”{value}” är ingen varaktighet
+	page runtime “{value}” is not a duration	sidans speltid ”{value}” är ingen varaktighet
+	page style “{style}” does not exist; a roll page is used	sidstilen ”{style}” finns inte; en rullsida används
+	page {page}: the background names no file; it is left out	sida {page}: bakgrunden anger ingen fil; den utelämnas
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	sida {page}: speltiden nås genom att ändra rullhastigheten (sidan har inga avstånd mellan block att sträcka)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	sida {page}: speltiden nås genom att ändra rullhastigheten (eftertexterna är för långa även utan avstånd)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sida {page}: speltiden nås genom att ändra rullhastigheten (avstånden skulle behöva växa mer än 20 gånger)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sida {page}: övergången kräver att sidorna möts (sidavstånd 0); den utelämnas
+	page {page}: there is no transition “{name}”; the pages cut	sida {page}: det finns ingen övergång ”{name}”; sidorna klipps
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	axelpositionen ”{value}” stöds inte (en pixelförskjutning, eventuellt med ”parallel”, gör det)
+	vertical gap “{value}” is not a number	det lodräta avståndet ”{value}” är inget tal
+	picture “{file}” was not found or cannot be read; it is left out	bilden ”{file}” hittades inte eller kan inte läsas; den utelämnas
+	video “{file}” was not found or cannot be read; it is left out	videon ”{file}” hittades inte eller kan inte läsas; den utelämnas
+	there is no roll page without its own runtime to stretch; the length cannot change	det finns ingen rullsida utan egen speltid att sträcka; längden kan inte ändras
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	korten och avstånden ensamma är {seconds} s; den önskade längden är kortare, så rullsidorna behåller sin naturliga längd
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	bokstavsstilen ”{style}”: bara det första färgade lagret används (inga konturer, skuggor eller ränder)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	speltiden för hela eftertexterna förs inte över; använd Anpassa eftertexter till musiken (eller en längd) i stället
+	page style “{style}”: fade curves become linear fades	sidstilen ”{style}”: tonkurvor blir linjära toningar
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	innehållsstilen ”{style}” har ingen början i Cinecred; början som skrivits i arket visas ändå
+	content style “{style}”: sorting the names is not carried over	innehållsstilen ”{style}”: sorteringen av namnen förs inte över
+	transition curves are not carried over	övergångskurvor förs inte över
+	picture styles (pictures keep their own size) are not carried over	bildstilar (bilderna behåller sin egen storlek) förs inte över
+	video (tape) styles are not carried over	video- (band)stilar förs inte över
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektet har {n} eftertextkalkylark; ”{name}” används (välj ett annat i fältet Kalkylark)

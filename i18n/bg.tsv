@@ -4255,3 +4255,88 @@ export.summary	Low	ниско
 	{n} more	Още {n}
 	Block	Блок
 	parallel	паралелно
+	In the page (OBS takes it from the Browser Source)	В страницата (OBS го взема от източника „Браузър“)
+	Separate (a media source in OBS)	Отделно (медиен източник в OBS)
+	No sound	Без звук
+	credits	надписи
+	graphic	графика
+	{n} pages	Страници: {n}
+	Live Graphics	Графика на живо
+	Prepared cues; double-click one to put it in preview	Подготвени елементи; щракнете двукратно върху един, за да отиде във визуализацията
+	Add Credits…	Добавяне на надписи…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Таблица с надписи, файл с надписи или проект на Cinecred като елемент
+	Add Selected Graphic	Добавяне на избраната графика
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Избраният във времевата линия графичен клип (заглавие, надпис в долната трета) като елемент
+	Cues	Елементи
+	TAKE	ЕФИР
+	The preview cue goes on air from its first page	Елементът от визуализацията излиза в ефир от първата си страница
+	PREVIOUS	ПРЕДИШНА
+	The page before (on the first page: from its start)	Предишната страница (на първата страница: от началото ѝ)
+	NEXT	СЛЕДВАЩА
+	The next page; after the last one, the preview cue	Следващата страница; след последната – елементът от визуализацията
+	HOLD	ЗАДРЪЖ
+	Stop the program where it is	Спиране на програмата там, където е
+	CONTINUE	ПРОДЪЛЖИ
+	Go on from where it stopped	Продължаване оттам, където е спряло
+	UPDATE	ОБНОВИ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Повторно четене на таблицата (или клипа); в ефир се сменя веднага
+	OUT	ИЗВЪН ЕФИР
+	Take everything off air	Сваляне на всичко от ефир
+	Start Live Page	Стартиране на страницата на живо
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Предаване на програмата на този компютър за източника „Браузър“ на OBS (само 127.0.0.1)
+	not running	не работи
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	Свързване с OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Свързване с OBS на този компютър и насочване на източника му „CFA4 Live“ към страницата на живо
+	Port	Порт
+	Password	Парола
+	Live page	Страница на живо
+	Sound	Звук
+	OBS	OBS
+	Nothing in preview	Нищо във визуализацията
+	page {page} of {pages}	страница {page} от {pages}
+	held	задържано
+	ended	приключи
+	Off air	Извън ефир
+	Stop Live Page	Спиране на страницата на живо
+	Connected to OBS {version}; source “{source}”	Свързано с OBS {version}; източник „{source}“
+	Point OBS Again	Повторно насочване на OBS
+	Select a graphic clip on the timeline first.	Първо изберете графичен клип във времевата линия.
+	Connecting to OBS…	Свързване с OBS…
+	Live Graphics…	Графика на живо…
+	PREVIEW	ВИЗУАЛИЗАЦИЯ
+	PROGRAM	ПРОГРАМА
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	таг за изображение или видео стои сам в клетка от тялото (или с едно име, като портрет); другите тагове са премахнати
+	the page gap is not a duration; the page style's is used	разстоянието между страниците не е продължителност; използва се това от стила на страницата
+	the page runtime is not a positive duration; the page style's is used	продължителността на страницата не е положителна; използва се тази от стила на страницата
+	background “{file}” was not found; it is left out	фонът „{file}“ не е намерен; пропуска се
+	card page {page} is taller than the frame; use a roll page	страницата-карта {page} е по-висока от кадъра; използвайте рол страница
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	цветът „{colour}“ на стила на буквите „{style}“ не е #rrggbb; пропуска се
+	colour “{colour}” is not #rrggbb; black is used	цветът „{colour}“ не е #rrggbb; използва се черно
+	colour “{colour}” is not #rrggbb; white is used	цветът „{colour}“ не е #rrggbb; използва се бяло
+	content style “{style}” does not exist; “{used}” is used	стилът на съдържанието „{style}“ не съществува; използва се „{used}“
+	letter style “{style}” does not exist; the text keeps the block's style	стилът на буквите „{style}“ не съществува; текстът запазва стила на блока
+	page gap “{value}” is not a duration	разстоянието между страниците „{value}“ не е продължителност
+	page runtime “{value}” is not a duration	продължителността на страницата „{value}“ не е продължителност
+	page style “{style}” does not exist; a roll page is used	стилът на страницата „{style}“ не съществува; използва се рол страница
+	page {page}: the background names no file; it is left out	страница {page}: фонът не посочва файл; пропуска се
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	страница {page}: продължителността се постига чрез промяна на скоростта на рола (страницата няма разстояния между блоковете за разтягане)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	страница {page}: продължителността се постига чрез промяна на скоростта на рола (надписите са твърде дълги дори без разстояния)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: продължителността се постига чрез промяна на скоростта на рола (разстоянията би трябвало да нараснат над 20 пъти)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: преходът изисква страниците да се допират (разстояние 0); пропуска се
+	page {page}: there is no transition “{name}”; the pages cut	страница {page}: няма преход „{name}“; страниците се сменят с рязане
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	позицията на оста „{value}“ не се поддържа (поддържа се отместване в пиксели, по избор с „parallel“)
+	vertical gap “{value}” is not a number	вертикалното разстояние „{value}“ не е число
+	picture “{file}” was not found or cannot be read; it is left out	изображението „{file}“ не е намерено или не може да се прочете; пропуска се
+	video “{file}” was not found or cannot be read; it is left out	видеото „{file}“ не е намерено или не може да се прочете; пропуска се
+	there is no roll page without its own runtime to stretch; the length cannot change	няма рол страница без собствена продължителност, която да се разтегне; дължината не може да се промени
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	само картите и разстоянията са {seconds} s; исканата дължина е по-къса, затова рол страниците запазват естествената си дължина
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	стил на буквите „{style}“: използва се само първият цветен слой (без контури, сенки и ивици)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	продължителността на целите надписи не се пренася; използвайте вместо това „Напасване на надписите към музиката“ (или дължина)
+	page style “{style}”: fade curves become linear fades	стил на страницата „{style}“: кривите на затихване стават линейни
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	стилът на съдържанието „{style}“ няма начало в Cinecred; началата, написани в таблицата, пак се показват
+	content style “{style}”: sorting the names is not carried over	стил на съдържанието „{style}“: подреждането на имената не се пренася
+	transition curves are not carried over	кривите на преходите не се пренасят
+	picture styles (pictures keep their own size) are not carried over	стиловете на изображенията (изображенията запазват размера си) не се пренасят
+	video (tape) styles are not carried over	стиловете на видео (лента) не се пренасят
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	проектът на Cinecred има таблици с надписи: {n}; използва се „{name}“ (изберете друга в полето „Таблица“)
