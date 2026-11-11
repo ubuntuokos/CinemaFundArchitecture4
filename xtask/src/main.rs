@@ -96,6 +96,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("qc", 3),
     ("playback", 3),
     ("export", 3),
+    ("dcp-validate", 3),
     ("smart-edit", 3),
     ("format", 3),
     ("engine", 4),
