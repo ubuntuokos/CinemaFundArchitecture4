@@ -95,6 +95,19 @@ pub fn skip(context: &str, reason: &str) {
     eprintln!("SKIPPED ({context}): {reason}");
 }
 
+/// Whether every tool in `names` is on `PATH` (only `PATH`: where product code that spawns the
+/// tool by name will look). Otherwise [`skip`]s with `hint` (e.g. the packages to install) and
+/// returns `false`; with `CFA4_REQUIRE_ORACLES=1` it panics.
+pub fn on_path_or_skip(context: &str, names: &[&str], hint: &str) -> bool {
+    let path = std::env::var_os("PATH");
+    let missing: Vec<&str> = names.iter().copied().filter(|n| !matches!(find_tool_in(n, None, path.as_deref(), &[]), Ok(Some(_)))).collect();
+    if missing.is_empty() {
+        return true;
+    }
+    skip(context, &format!("{missing:?} not on PATH ({hint})"));
+    false
+}
+
 fn tool_or_skip(name: &str, found: Option<PathBuf>, context: &str) -> Option<PathBuf> {
     if found.is_none() {
         skip(context, &format!("{name} not found (set {} or put {name} on PATH)", env_var(name)));

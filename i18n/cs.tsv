@@ -4229,3 +4229,106 @@ export.summary	Low	nízká
 	Template:	Šablona:
 	Credits Templates	Šablony titulků tvůrců
 	CSV (*.csv)	CSV (*.csv)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Video nástroje
+	Audio Tools	Zvukové nástroje
+	Publication Tools	Nástroje pro publikování
+	Smart Export…	Chytrý export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Ze severozápadu
+	From North-East	Ze severovýchodu
+	From South-East	Z jihovýchodu
+	From South-West	Z jihozápadu
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Vylepšení
+	Skin Smoothing	Vyhlazení pleti
+	Keep Texture	Zachovat texturu
+	Skin Tone	Odstín pleti
+	Smooth Entire Image	Vyhladit celý obraz
+	Low Light	Slabé světlo
+	Max Brightening	Maximální zesvětlení
+	Show Illumination	Zobrazit osvětlení
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Předvolby náběhu
+	Sine	Sinusový
+	Exponential	Exponenciální
+	Circular	Kruhový
+	Elastic	Elastický
+	Film Gate	Filmové okénko
+	Gate Weave	Kmitání okénka
+	Weave Rotation	Rotace kmitání
+	Particles	Částice
+	Emitter Position	Poloha emitoru
+	Birth Rate	Rychlost vzniku
+	Lifetime (seconds)	Životnost (sekundy)
+	Velocity Random	Náhodnost rychlosti
+	Gravity	Gravitace
+	Particle Size	Velikost částic
+	Keyhole	Klíčová dírka
+	Burn Away	Propálení
+	Burn Size	Velikost propálení
+	Ember Width	Šířka žhavého okraje
+	Ember Color	Barva žhavého okraje
+	Check Text Legibility	Zkontrolovat čitelnost textu
+	Clear Legibility Markers	Vymazat značky čitelnosti
+	Text legibility: no problems found	Čitelnost textu: nenalezeny žádné problémy
+	Text legibility: {count} problems marked on the timeline (orange markers)	Čitelnost textu: {count} problémů označeno na časové ose (oranžové značky)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Snížení bitové hloubky
+	Bits per Channel	Bitů na kanál
+	Ordered Dither	Uspořádaný rozptyl
+	Dither Cell Size	Velikost buňky rozptylu
+	Block Glitch	Blokový glitch
+	Blocks Moved	Přesunuté bloky
+	Max Distance	Maximální vzdálenost
+	Snap to Grid	Přichytit k mřížce
+	Swap Blocks	Prohodit bloky
+	Changes per Second	Změny za sekundu
+	Databend	Poškození dat
+	Breaks	Zlomy
+	Shift	Posun
+	Color Damage	Poškození barev
+	VHS	VHS
+	Color Bleed	Přetékání barev
+	Wobble	Kolísání
+	Snow	Sníh
+	Tracking Bar	Pruh stopování
+	Head Switching	Přepínání hlav
+	Scan Line Jitter	Chvění řádků
+	Jitter	Chvění
+	Interval	Interval
+	Infinite	Nekonečně
+	Periodic	Periodicky
+	Tile Jitter	Chvění dlaždic
+	Tiles	Dlaždice
+	Band Direction	Směr pruhů
+	Jitter Direction	Směr chvění
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Polotón
+	Dither	Rozptyl
+	Pattern	Vzor
+	Cell Size	Velikost buňky
+	Cyan Angle	Úhel azurové
+	Magenta Angle	Úhel purpurové
+	Yellow Angle	Úhel žluté
+	Black Angle	Úhel černé
+	Monochrome Angle	Úhel monochromu
+	Sharpness	Ostrost
+	Ink Color	Barva inkoustu
+	Paper Color	Barva papíru
+	Color (CMYK)	Barva (CMYK)
+	Dot	Bod
+	Line	Čára
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Velikost pixelu
+	Palette	Paleta
+	Input Colors	Vstupní barvy
+	Green Phosphor	Zelený luminofor
+	Amber Monitor	Jantarový monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

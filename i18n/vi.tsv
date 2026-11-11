@@ -4229,3 +4229,106 @@ export.summary	Low	thấp
 	Template:	Mẫu:
 	Credits Templates	Mẫu danh đề
 	CSV (*.csv)	CSV (*.csv)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Công cụ video
+	Audio Tools	Công cụ âm thanh
+	Publication Tools	Công cụ xuất bản
+	Smart Export…	Xuất thông minh…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Từ phía tây bắc
+	From North-East	Từ phía đông bắc
+	From South-East	Từ phía đông nam
+	From South-West	Từ phía tây nam
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Cải thiện
+	Skin Smoothing	Làm mịn da
+	Keep Texture	Giữ kết cấu
+	Skin Tone	Tông da
+	Smooth Entire Image	Làm mịn toàn bộ ảnh
+	Low Light	Thiếu sáng
+	Max Brightening	Làm sáng tối đa
+	Show Illumination	Hiện độ chiếu sáng
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Thiết lập sẵn chuyển động mượt
+	Sine	Hình sin
+	Exponential	Hàm mũ
+	Circular	Hình tròn
+	Elastic	Đàn hồi
+	Film Gate	Khung phim
+	Gate Weave	Rung khung
+	Weave Rotation	Xoay khi rung
+	Particles	Hạt
+	Emitter Position	Vị trí nguồn phát
+	Birth Rate	Tốc độ sinh
+	Lifetime (seconds)	Thời gian tồn tại (giây)
+	Velocity Random	Vận tốc ngẫu nhiên
+	Gravity	Trọng lực
+	Particle Size	Kích thước hạt
+	Keyhole	Lỗ khóa
+	Burn Away	Cháy biến mất
+	Burn Size	Kích thước vùng cháy
+	Ember Width	Độ rộng viền than hồng
+	Ember Color	Màu viền than hồng
+	Check Text Legibility	Kiểm tra độ dễ đọc của chữ
+	Clear Legibility Markers	Xóa điểm đánh dấu độ dễ đọc
+	Text legibility: no problems found	Độ dễ đọc của chữ: không có vấn đề
+	Text legibility: {count} problems marked on the timeline (orange markers)	Độ dễ đọc của chữ: {count} vấn đề được đánh dấu trên dòng thời gian (điểm đánh dấu màu cam)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Giảm bit
+	Bits per Channel	Số bit mỗi kênh
+	Ordered Dither	Dither có thứ tự
+	Dither Cell Size	Kích thước ô dither
+	Block Glitch	Nhiễu khối
+	Blocks Moved	Số khối di chuyển
+	Max Distance	Khoảng cách tối đa
+	Snap to Grid	Bám theo lưới
+	Swap Blocks	Hoán đổi khối
+	Changes per Second	Số lần thay đổi mỗi giây
+	Databend	Làm hỏng dữ liệu
+	Breaks	Điểm gãy
+	Shift	Dịch chuyển
+	Color Damage	Hỏng màu
+	VHS	VHS
+	Color Bleed	Lem màu
+	Wobble	Chao đảo
+	Snow	Tuyết
+	Tracking Bar	Thanh dò vệt
+	Head Switching	Chuyển đầu từ
+	Scan Line Jitter	Rung dòng quét
+	Jitter	Rung
+	Interval	Khoảng
+	Infinite	Vô hạn
+	Periodic	Định kỳ
+	Tile Jitter	Rung ô
+	Tiles	Ô
+	Band Direction	Hướng dải
+	Jitter Direction	Hướng rung
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Bán sắc
+	Dither	Dither
+	Pattern	Mẫu
+	Cell Size	Kích thước ô
+	Cyan Angle	Góc lục lam
+	Magenta Angle	Góc đỏ tươi
+	Yellow Angle	Góc vàng
+	Black Angle	Góc đen
+	Monochrome Angle	Góc đơn sắc
+	Sharpness	Độ sắc nét
+	Ink Color	Màu mực
+	Paper Color	Màu giấy
+	Color (CMYK)	Màu (CMYK)
+	Dot	Chấm
+	Line	Đường
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Kích thước điểm ảnh
+	Palette	Bảng màu
+	Input Colors	Màu đầu vào
+	Green Phosphor	Lân quang xanh lục
+	Amber Monitor	Màn hình hổ phách
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

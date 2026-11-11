@@ -106,6 +106,28 @@ pub enum FxOp {
         dy: f32,
         steps: u32,
     },
+    /// Skin Smoothing ([`skin_mask`], [`skin_retouch`]): a guided filter (luma guide) over
+    /// repeat-edge box-Gaussians of the given radii, inside the skin mask, with Keep Texture's
+    /// share of the removed detail added back. `show` draws the mask instead.
+    SkinSmoothing {
+        rx: Vec<u32>,
+        ry: Vec<u32>,
+        eps: f32,
+        amount: f32,
+        keep: f32,
+        mask: SkinMask,
+        show: bool,
+    },
+    /// Low Light ([`low_light_gain`]): the illumination (brightest channel) smoothed by a
+    /// self-guided filter over repeat-edge box-Gaussians of the given radii, then one gain per
+    /// pixel, `illumination ^ -k` capped at `max_gain`. `show` draws the illumination instead.
+    LowLight {
+        rx: Vec<u32>,
+        ry: Vec<u32>,
+        k: f32,
+        max_gain: f32,
+        show: bool,
+    },
     /// Unsharp mask over a repeat-edge Gaussian of the given box radii (per axis).
     Unsharp {
         rx: Vec<u32>,
@@ -154,6 +176,29 @@ pub enum FxOp {
     /// Film Grain: smooth value noise ([`grain_noise`]) on display-encoded colour, weighted by a
     /// shadows / midtones / highlights response. `inv_cell` is 1 / the grain cell in working
     /// pixels; `seed` already folds in the frame when the grain is animated.
+    /// Halftone: `screens` hold (cos, sin) of the C, M, Y, K screen angles (monochrome uses the
+    /// last one); `inv_cell` is 1 / the cell in working pixels, `soft` the half width of the spot
+    /// edge in cell units ([`halftone_ink`]); colours are display-encoded.
+    Halftone {
+        mono: bool,
+        lines: bool,
+        inv_cell: f32,
+        soft: f32,
+        screens: [[f32; 2]; 4],
+        ink: [f32; 3],
+        paper: [f32; 3],
+        blend: f32,
+    },
+    /// Ordered dither ([`dither_px`]): `pattern` 0–2 Bayer 2^(n+1), 3 noise; `block` px per dither
+    /// pixel; `palette` 0 quantizes each channel to `levels`, else [`DITHER_PALETTES`] entry.
+    Dither {
+        pattern: u32,
+        block: u32,
+        threshold: f32,
+        palette: u32,
+        levels: f32,
+        blend: f32,
+    },
     FilmGrain {
         amount: f32,
         inv_cell: f32,
@@ -270,6 +315,10 @@ pub const GPU_EFFECTS: &[&str] = &[
     "stereo_parallax",
     "six_point_pin",
     "film_grain",
+    "low_light",
+    "skin_smoothing",
+    "halftone",
+    "dither",
     "mirror",
     "offset",
     "asc_cdl",
@@ -322,6 +371,105 @@ pub fn grain_noise(x: usize, y: usize, inv_cell: f32, seed: u32, layer: u32) -> 
     let top = a + (b - a) * sx;
     let bot = c + (d - c) * sx;
     top + (bot - top) * sy
+}
+
+/// Ink coverage (0–1) of a halftone screen at pixel centre (`px`, `py`) for tone `v` (0 = no
+/// ink, 1 = solid): the pixel rotated by (`cs`, `sn`) into cells of 1 / `inv_cell` pixels and
+/// thresholded against a spot function in [−1, 1] whose area above `1 − 2v` is about `v` — the
+/// cosine dot (dots that merge into a checkerboard at 50 % and into holes beyond) or a triangle
+/// across the cell for lines — with a linear edge `soft` (spot units) wide on each side.
+/// `fx.wgsl` (`halftone_ink`) mirrors this.
+pub fn halftone_ink(px: f32, py: f32, cs: f32, sn: f32, inv_cell: f32, soft: f32, lines: bool, v: f32) -> f32 {
+    if v.is_nan() || v <= 0.0 {
+        return 0.0;
+    }
+    if v >= 1.0 {
+        return 1.0;
+    }
+    let u = (px * cs + py * sn) * inv_cell;
+    let w = (py * cs - px * sn) * inv_cell;
+    let fu = u - u.floor() - 0.5;
+    let fw = w - w.floor() - 0.5;
+    let tau = std::f32::consts::TAU;
+    let spot = if lines { 1.0 - 4.0 * fw.abs() } else { -((tau * fu).cos() + (tau * fw).cos()) * 0.5 };
+    // the threshold reaches past the spot's range so 0 and 1 are exactly no ink and solid ink
+    let th = (1.0 - 2.0 * v) * (1.0 + soft);
+    ((spot - th) / (2.0 * soft) + 0.5).clamp(0.0, 1.0)
+}
+
+/// The fixed palettes of Dither (`cfa4_project::effect::DITHER_PALETTES` after "Input Colors"),
+/// 0xRRGGBB in display encoding. `fx.wgsl` (`DITHER_COLORS` / `dither_palette`) holds the same
+/// table.
+pub const DITHER_PALETTES: &[&[u32]] = &[
+    // Black & White
+    &[0x000000, 0xFFFFFF],
+    // Green Phosphor
+    &[0x000000, 0x33FF33],
+    // Amber Monitor
+    &[0x000000, 0xFFB000],
+    // Game Boy
+    &[0x0F380F, 0x306230, 0x8BAC0F, 0x9BBC0F],
+    // CGA (palette 1, high intensity)
+    &[0x000000, 0x55FFFF, 0xFF55FF, 0xFFFFFF],
+    // EGA
+    &[
+        0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xAA5500, 0xAAAAAA, 0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55,
+        0xFFFFFF,
+    ],
+    // ZX Spectrum
+    &[0x000000, 0x0000D7, 0xD70000, 0xD700D7, 0x00D700, 0x00D7D7, 0xD7D700, 0xD7D7D7, 0x0000FF, 0xFF0000, 0xFF00FF, 0x00FF00, 0x00FFFF, 0xFFFF00, 0xFFFFFF],
+    // PICO-8
+    &[
+        0x000000, 0x1D2B53, 0x7E2553, 0x008751, 0xAB5236, 0x5F574F, 0xC2C3C7, 0xFFF1E8, 0xFF004D, 0xFFA300, 0xFFEC27, 0x00E436, 0x29ADFF, 0x83769C, 0xFF77A8,
+        0xFFCCAA,
+    ],
+];
+
+fn rgb_of(c: u32) -> [f32; 3] {
+    [((c >> 16) & 0xFF) as f32 / 255.0, ((c >> 8) & 0xFF) as f32 / 255.0, (c & 0xFF) as f32 / 255.0]
+}
+
+/// The dither threshold in (−0.5, 0.5) of dither cell (`cx`, `cy`): a Bayer matrix of side
+/// 2^(`pattern` + 1), or hashed noise for pattern 3.
+pub fn dither_threshold(cx: u32, cy: u32, pattern: u32) -> f32 {
+    if pattern >= 3 {
+        return (pcg3d(cx, cy, 0x6469_7468) >> 8) as f32 / 16_777_216.0 - 0.5;
+    }
+    let n = pattern + 1;
+    let mut v = 0u32;
+    // the lowest coordinate bit picks the most significant digit: neighbouring thresholds lie
+    // far apart (dispersed dots)
+    for i in 0..n {
+        let (xb, yb) = ((cx >> i) & 1, (cy >> i) & 1);
+        v = (v << 2) | (((xb ^ yb) << 1) | yb);
+    }
+    (v as f32 + 0.5) / (1u32 << (2 * n)) as f32 - 0.5
+}
+
+/// One dithered, display-encoded colour `e` with threshold offset `d` (already pattern +
+/// threshold): per-channel quantization to `levels`, or the nearest entry of palette `palette`
+/// (two-colour palettes split on luma). `fx.wgsl` (`dither_px`) mirrors this.
+pub fn dither_px(e: [f32; 3], d: f32, palette: u32, levels: f32) -> [f32; 3] {
+    let Some(pal) = palette.checked_sub(1).and_then(|i| DITHER_PALETTES.get(i as usize)) else {
+        let n = levels - 1.0;
+        return e.map(|v| ((v * n + d + 0.5).floor().clamp(0.0, n)) / n);
+    };
+    if pal.len() == 2 {
+        let l = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+        let i = usize::from(l + d > 0.5);
+        return pal.get(i).map_or(e, |c| rgb_of(*c));
+    }
+    // spread the threshold over the palette's mean step
+    let spread = 1.0 / (pal.len() as f32).cbrt();
+    let t = e.map(|v| v + d * spread);
+    let mut best = (f32::MAX, e);
+    for c in pal.iter().map(|c| rgb_of(*c)) {
+        let dd = (t[0] - c[0]) * (t[0] - c[0]) + (t[1] - c[1]) * (t[1] - c[1]) + (t[2] - c[2]) * (t[2] - c[2]);
+        if dd < best.0 {
+            best = (dd, c);
+        }
+    }
+    best.1
 }
 
 /// The source pixel of output pixel (`x`, `y`) when the two views of a `w`×`h` stereo frame swap
@@ -456,6 +604,114 @@ pub fn six_point_source(edges: &[f32; 12], inv: &[f32; 9], qx: f32, qy: f32) -> 
     let (r, _, _) = residual(u, v);
     let inside = (-1e-3..=1.0 + 1e-3).contains(&u) && (-1e-3..=1.0 + 1e-3).contains(&v);
     (inside && r.0 * r.0 + r.1 * r.1 <= 0.01).then_some((u, v))
+}
+
+/// Skin Smoothing's mask: the skin tone's Rec. 601 chroma, how far from it still counts as skin
+/// (`tol`), the falloff after that (`soft`), or every pixel (`whole`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SkinMask {
+    pub cb: f32,
+    pub cr: f32,
+    pub tol: f32,
+    pub soft: f32,
+    pub whole: bool,
+}
+
+/// Rec. 601 luma of a straight sRGB colour: Skin Smoothing's guide.
+#[inline]
+pub fn skin_guide(c: [f32; 3]) -> f32 {
+    0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+}
+
+/// Rec. 601 chroma (Cb, Cr) of a straight sRGB colour. Skin sits in a small, well-known patch of
+/// this plane whatever the exposure, so the mask is a distance here and ignores brightness.
+#[inline]
+pub fn skin_chroma(c: [f32; 3]) -> (f32, f32) {
+    let y = skin_guide(c);
+    (0.564 * (c[2] - y), 0.713 * (c[0] - y))
+}
+
+/// How much of a straight sRGB colour is skin, 0..1. `fx.wgsl` (`skin_mask`) mirrors this.
+#[inline]
+pub fn skin_mask(c: [f32; 3], m: &SkinMask) -> f32 {
+    if m.whole {
+        return 1.0;
+    }
+    let (cb, cr) = skin_chroma(c);
+    let d = ((cb - m.cb) * (cb - m.cb) + (cr - m.cr) * (cr - m.cr)).sqrt();
+    let t = ((d - m.tol) / m.soft.max(1e-4)).clamp(0.0, 1.0);
+    1.0 - t * t * (3.0 - 2.0 * t)
+}
+
+/// The guided filter's per-pixel model from the box means: `ma = [mean g, mean g², …]` packs the
+/// guide's mean and mean square and the input's red and green means, `mb` the input's blue mean
+/// and the guide × input means. Returns `(a, b)` per channel, `smoothed = a · g + b`. `fx.wgsl`
+/// (`OP_SKIN_COEF_A` / `_B`) mirrors this.
+#[inline]
+pub fn skin_coeffs(ma: [f32; 4], mb: [f32; 4], eps: f32) -> ([f32; 3], [f32; 3]) {
+    let var = (ma[1] - ma[0] * ma[0]).max(0.0);
+    let mp = [ma[2], ma[3], mb[0]];
+    let mut a = [0.0; 3];
+    let mut b = [0.0; 3];
+    for k in 0..3 {
+        a[k] = (mb[k + 1] - ma[0] * mp[k]) / (var + eps);
+        b[k] = mp[k] - a[k] * ma[0];
+    }
+    (a, b)
+}
+
+/// Skin Smoothing's output for straight sRGB `c` (mask `m`) given the guided filter's averaged
+/// coefficients: the smoothed colour plus Keep Texture's share of the detail it removed, mixed in
+/// by Amount × mask. `fx.wgsl` (`OP_SKIN_APPLY`) mirrors this.
+#[inline]
+pub fn skin_retouch(c: [f32; 3], m: f32, a: [f32; 3], b: [f32; 3], amount: f32, keep: f32) -> [f32; 3] {
+    let k = amount * m;
+    let g = skin_guide(c);
+    let mut out = [0.0; 3];
+    for ch in 0..3 {
+        let smoothed = a[ch] * g + b[ch];
+        let retouched = smoothed + (c[ch] - smoothed) * keep;
+        out[ch] = c[ch] + (retouched - c[ch]) * k;
+    }
+    out
+}
+
+/// Whether Skin Smoothing (not showing its mask) changes anything: some smoothing radius, some
+/// Amount, and less than all of the texture kept.
+pub fn skin_smoothing_runs(rx: &[u32], ry: &[u32], amount: f32, keep: f32) -> bool {
+    (rx.iter().chain(ry).any(|r| *r > 0)) && amount > 0.0 && keep < 1.0
+}
+
+/// Variance (display 0..1, squared) below which Low Light's illumination counts as flat and is
+/// smoothed by the guided filter; above it an edge (a lamp against a wall) is kept.
+pub const LOW_LIGHT_EPS: f32 = 0.01;
+
+/// The illumination estimate of a straight sRGB colour for Low Light: its brightest channel.
+#[inline]
+pub fn low_light_peak(c: [f32; 3]) -> f32 {
+    c[0].max(c[1]).max(c[2]).clamp(0.0, 1.0)
+}
+
+/// Low Light's per-pixel model of the self-guided filter from the box means of the peak `m` and
+/// its square `m2`: `(a, b)` with `smoothed = a · peak + b`. `fx.wgsl` (`OP_LOW_LIGHT_COEF`)
+/// mirrors this.
+#[inline]
+pub fn low_light_coeffs(m: f32, m2: f32) -> (f32, f32) {
+    let var = (m2 - m * m).max(0.0);
+    let a = var / (var + LOW_LIGHT_EPS);
+    (a, m - a * m)
+}
+
+/// Low Light's output for straight sRGB `c` under the smoothed illumination `t`. `fx.wgsl`
+/// (`OP_LOW_LIGHT_APPLY`) mirrors this.
+#[inline]
+pub fn low_light_gain(c: [f32; 3], t: f32, k: f32, max_gain: f32, show: bool) -> [f32; 3] {
+    let t = t.clamp(1e-3, 1.0);
+    if show {
+        return [t, t, t];
+    }
+    let g = t.powf(-k).min(max_gain);
+    [(c[0] * g).min(1.0), (c[1] * g).min(1.0), (c[2] * g).min(1.0)]
 }
 
 /// `Image::transformed` without the mip path: the destination rectangle it writes and the inverse.
@@ -637,6 +893,36 @@ impl FxOp {
             "horizontal_flip" => FxOp::HFlip,
             "vertical_flip" => FxOp::VFlip,
             "stereo_swap_eyes" => FxOp::SwapEyes { sbs: choice(e, "frame_layout") == 1 },
+            "skin_smoothing" => {
+                let r = (f(e, "radius", cx) * cx.px_scale).clamp(0.0, 500.0);
+                let (rx, ry) = if r < 0.5 { (Vec::new(), Vec::new()) } else { gaussian_boxes(w, h, r, r) };
+                // Smoothness is the luma standard deviation (display 0..1) still counted as flat
+                // skin: 2 % at 0 (only sensor noise), 20 % at 100 (everything but a hard edge)
+                let sd = 0.02 + 0.18 * (f(e, "smoothness", cx) / 100.0).clamp(0.0, 1.0);
+                let tone = color(e, "skin_tone", cx);
+                let (cb, cr) = skin_chroma(enc(dec([tone[0], tone[1], tone[2]])));
+                let tol = (f(e, "tolerance", cx) / 100.0).clamp(0.0, 1.0) * 0.3;
+                FxOp::SkinSmoothing {
+                    rx,
+                    ry,
+                    eps: sd * sd,
+                    amount: (f(e, "amount", cx) / 100.0).clamp(0.0, 1.0),
+                    keep: (f(e, "texture", cx) / 100.0).clamp(0.0, 1.0),
+                    mask: SkinMask { cb, cr, tol, soft: (f(e, "softness", cx) / 100.0).clamp(0.0, 1.0) * 0.3, whole: b(e, "whole_image") },
+                    show: b(e, "show_mask"),
+                }
+            }
+            "low_light" => {
+                let r = (f(e, "radius", cx) * cx.px_scale).clamp(0.0, 500.0);
+                let (rx, ry) = if r < 0.5 { (Vec::new(), Vec::new()) } else { gaussian_boxes(w, h, r, r) };
+                FxOp::LowLight {
+                    rx,
+                    ry,
+                    k: (f(e, "amount", cx) / 100.0).clamp(0.0, 1.0) * 0.85,
+                    max_gain: (f(e, "max_gain", cx) / 100.0).clamp(1.0, 20.0),
+                    show: b(e, "show_illumination"),
+                }
+            }
             "stereo_to_2d" => FxOp::StereoTo2d { sbs: choice(e, "frame_layout") == 1, right: choice(e, "eye") == 1 },
             "stereo_parallax" => {
                 let sbs = choice(e, "frame_layout") == 1;
@@ -665,6 +951,43 @@ impl FxOp {
                 let inv = h_inverse(&square_to_quad([ul, ur, lr, ll])).map_or([0.0; 9], |m| m.map(|v| v as f32));
                 FxOp::SixPointPin { edges, inv, identity }
             }
+            "halftone" => {
+                let cell = (f(e, "cell_size", cx).clamp(2.0, 128.0) * cx.px_scale).max(1.0);
+                let sharp = (f(e, "sharpness", cx) / 100.0).clamp(0.0, 1.0);
+                let sc = |k: &str| {
+                    let a = f(e, k, cx) as f64;
+                    let a = if a.is_finite() { a.to_radians() } else { 0.0 };
+                    [a.cos() as f32, a.sin() as f32]
+                };
+                let mono = choice(e, "mode") == 1;
+                let (ink, paper) = (color(e, "ink", cx), color(e, "paper", cx));
+                FxOp::Halftone {
+                    mono,
+                    lines: choice(e, "pattern") == 1,
+                    inv_cell: 1.0 / cell,
+                    // plus about a pixel of edge (the spot changes by up to ~π per cell / px), so
+                    // the dots stay antialiased
+                    soft: (1.0 - sharp) * 0.5 + 3.0 / cell,
+                    screens: if mono {
+                        let m = sc("mono_angle");
+                        [m; 4]
+                    } else {
+                        [sc("cyan_angle"), sc("magenta_angle"), sc("yellow_angle"), sc("black_angle")]
+                    },
+                    ink: [ink[0], ink[1], ink[2]],
+                    paper: [paper[0], paper[1], paper[2]],
+                    blend: (f(e, "blend", cx) / 100.0).clamp(0.0, 1.0),
+                }
+            }
+            "dither" => FxOp::Dither {
+                pattern: choice(e, "pattern").min(3),
+                // (`as` saturates: NaN → 0, then at least 1)
+                block: ((f(e, "pixel_size", cx).clamp(1.0, 16.0) * cx.px_scale).round() as u32).max(1),
+                threshold: (f(e, "threshold", cx) / 100.0).clamp(-0.5, 0.5),
+                palette: choice(e, "palette").min(DITHER_PALETTES.len() as u32),
+                levels: f(e, "levels", cx).round().clamp(2.0, 16.0),
+                blend: (f(e, "blend", cx) / 100.0).clamp(0.0, 1.0),
+            },
             "film_grain" => {
                 let pct = |k: &str| (f(e, k, cx) / 100.0).clamp(0.0, 2.0);
                 // a grain cell under a quarter pixel only aliases; 0 / NaN sizes land here too
@@ -881,6 +1204,8 @@ impl FxOp {
             FxOp::Gaussian { .. } => true,
             FxOp::DirectionalBlur { dx, dy, .. } => fin(&[*dx, *dy]),
             FxOp::Unsharp { amount, threshold, .. } => fin(&[*amount, *threshold]),
+            FxOp::LowLight { k, max_gain, .. } => fin(&[*k, *max_gain]),
+            FxOp::SkinSmoothing { eps, amount, keep, mask, .. } => fin(&[*eps, *amount, *keep, mask.cb, mask.cr, mask.tol, mask.soft]),
             FxOp::Crop { x0, x1, y0, y1, feather } => fin(&[*x0, *x1, *y0, *y1, *feather]),
             FxOp::Resample(r) => {
                 r.rect[0] != u32::MAX
@@ -894,6 +1219,10 @@ impl FxOp {
             FxOp::ColorReplace { sim, target, replace, replace_hsl, .. } => sim.is_finite() && fin(target) && fin(replace) && fin(replace_hsl),
             FxOp::AlphaAdjust { opacity, .. } => opacity.is_finite(),
             FxOp::Vignette { amount, midpoint, roundness, feather, target } => fin(&[*amount, *midpoint, *roundness, *feather]) && fin(target),
+            FxOp::Halftone { inv_cell, soft, screens, ink, paper, blend, .. } => {
+                fin(&[*inv_cell, *soft, *blend]) && screens.iter().all(|s| fin(s)) && fin(ink) && fin(paper)
+            }
+            FxOp::Dither { threshold, levels, blend, .. } => fin(&[*threshold, *levels, *blend]),
             FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, .. } => {
                 fin(&[*amount, *inv_cell, *shadows, *midtones, *highlights, *color])
             }
@@ -1057,6 +1386,78 @@ impl FxOp {
             FxOp::Gaussian { rx, ry, repeat } => crate::effects::box_blur(img, rx, ry, *repeat),
             FxOp::DirectionalBlur { dx, dy, steps } => crate::effects::directional_taps(img, *dx, *dy, *steps as usize),
             FxOp::Unsharp { rx, ry, amount, threshold } => crate::effects::unsharp_boxes(img, rx, ry, *amount, *threshold),
+            FxOp::SkinSmoothing { rx, ry, eps, amount, keep, mask, show } => {
+                let (amount, keep, eps, mask) = (*amount, *keep, *eps, *mask);
+                let straight = |p: &[f32]| enc(Image::unpremul([p[0], p[1], p[2], p[3]]));
+                if *show {
+                    img.px.par_chunks_mut(4).for_each(|p| {
+                        let m = skin_mask(straight(p), &mask);
+                        let l = dec([m, m, m]);
+                        for ch in 0..3 {
+                            p[ch] = l[ch] * p[3];
+                        }
+                    });
+                    return;
+                }
+                if !skin_smoothing_runs(rx, ry, amount, keep) {
+                    return;
+                }
+                // the guide's and the input's statistics in two planes, box-blurred; then the
+                // model's coefficients in two more, box-blurred
+                let (mut sa, mut sb) = (img.clone(), img.clone());
+                sa.px.par_chunks_mut(4).zip(sb.px.par_chunks_mut(4)).for_each(|(a, b)| {
+                    let c = straight(a);
+                    let g = skin_guide(c);
+                    a.copy_from_slice(&[g, g * g, c[0], c[1]]);
+                    b.copy_from_slice(&[c[2], g * c[0], g * c[1], g * c[2]]);
+                });
+                crate::effects::box_blur(&mut sa, rx, ry, true);
+                crate::effects::box_blur(&mut sb, rx, ry, true);
+                sa.px.par_chunks_mut(4).zip(sb.px.par_chunks_mut(4)).for_each(|(a, b)| {
+                    let (ca, cb) = skin_coeffs([a[0], a[1], a[2], a[3]], [b[0], b[1], b[2], b[3]], eps);
+                    a.copy_from_slice(&[ca[0], ca[1], ca[2], 0.0]);
+                    b.copy_from_slice(&[cb[0], cb[1], cb[2], 0.0]);
+                });
+                crate::effects::box_blur(&mut sa, rx, ry, true);
+                crate::effects::box_blur(&mut sb, rx, ry, true);
+                img.px.par_chunks_mut(4).zip(sa.px.par_chunks(4).zip(sb.px.par_chunks(4))).for_each(|(p, (a, b))| {
+                    let c = straight(p);
+                    let m = skin_mask(c, &mask);
+                    if amount * m <= 0.0 {
+                        return;
+                    }
+                    let l = dec(skin_retouch(c, m, [a[0], a[1], a[2]], [b[0], b[1], b[2]], amount, keep));
+                    for ch in 0..3 {
+                        p[ch] = l[ch] * p[3];
+                    }
+                });
+            }
+            FxOp::LowLight { rx, ry, k, max_gain, show } => {
+                if *k <= 0.0 && !*show {
+                    return;
+                }
+                // the peak and its square, box-blurred; then the model's (a, b), box-blurred
+                let mut stats = img.clone();
+                stats.px.par_chunks_mut(4).for_each(|p| {
+                    let t = low_light_peak(enc(Image::unpremul([p[0], p[1], p[2], p[3]])));
+                    p.copy_from_slice(&[t, t * t, 0.0, 0.0]);
+                });
+                crate::effects::box_blur(&mut stats, rx, ry, true);
+                stats.px.par_chunks_mut(4).for_each(|p| {
+                    let (a, b) = low_light_coeffs(p[0], p[1]);
+                    p.copy_from_slice(&[a, b, 0.0, 0.0]);
+                });
+                crate::effects::box_blur(&mut stats, rx, ry, true);
+                let (k, max_gain, show) = (*k, *max_gain, *show);
+                img.px.par_chunks_mut(4).zip(stats.px.par_chunks(4)).for_each(|(p, ab)| {
+                    let c = enc(Image::unpremul([p[0], p[1], p[2], p[3]]));
+                    let t = ab[0] * low_light_peak(c) + ab[1];
+                    let l = dec(low_light_gain(c, t, k, max_gain, show));
+                    for ch in 0..3 {
+                        p[ch] = l[ch] * p[3];
+                    }
+                });
+            }
             FxOp::Crop { x0, x1, y0, y1, feather } => crate::effects::crop_px(img, *x0, *x1, *y0, *y1, *feather),
             FxOp::Resample(r) => {
                 let out = match (&r.inv, r.rect[0]) {
@@ -1216,6 +1617,68 @@ impl FxOp {
                         let g = cfa4_color::srgb_to_linear(a);
                         p.copy_from_slice(&[g, g, g, 1.0]);
                     } else {
+                        p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
+                    }
+                });
+            }
+            FxOp::Halftone { mono, lines, inv_cell, soft, screens, ink, paper, blend } => {
+                let (mono, lines, inv, soft, sc, ink, paper, blend) = (*mono, *lines, *inv_cell, *soft, *screens, *ink, *paper, *blend);
+                if ![inv, soft, blend].iter().all(|v| v.is_finite()) || soft <= 0.0 {
+                    return;
+                }
+                img.map_rgb(|c, x, y| {
+                    let e = enc(c);
+                    let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
+                    let cov = |s: [f32; 2], v: f32| halftone_ink(px, py, s[0], s[1], inv, soft, lines, v);
+                    let out = if mono {
+                        let k = cov(sc[3], 1.0 - (0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2]));
+                        [paper[0] + (ink[0] - paper[0]) * k, paper[1] + (ink[1] - paper[1]) * k, paper[2] + (ink[2] - paper[2]) * k]
+                    } else {
+                        // CMYK with full under-colour removal: neutral tones print with black only
+                        let e = e.map(|v| v.clamp(0.0, 1.0));
+                        let k = 1.0 - e[0].max(e[1]).max(e[2]);
+                        let ch = |v: f32| if k < 1.0 { (1.0 - v - k) / (1.0 - k) } else { 0.0 };
+                        let kk = cov(sc[3], k);
+                        let ik = 1.0 - kk;
+                        [(1.0 - cov(sc[0], ch(e[0]))) * ik, (1.0 - cov(sc[1], ch(e[1]))) * ik, (1.0 - cov(sc[2], ch(e[2]))) * ik]
+                    };
+                    dec([out[0] + (e[0] - out[0]) * blend, out[1] + (e[1] - out[1]) * blend, out[2] + (e[2] - out[2]) * blend])
+                });
+            }
+            FxOp::Dither { pattern, block, threshold, palette, levels, blend } => {
+                let (pattern, block, t, palette, levels, blend) = (*pattern, (*block).max(1) as usize, *threshold, *palette, *levels, *blend);
+                if ![t, levels, blend].iter().all(|v| v.is_finite()) || levels < 2.0 {
+                    return;
+                }
+                let src = img.clone();
+                let (w, h) = (img.w, img.h);
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let Some(p) = row.get_mut(x * 4..x * 4 + 4) else { continue };
+                        // every pixel of a dither block takes the block's centre pixel
+                        let (bx, by) = (x / block, y / block);
+                        let sx = (bx * block + block / 2).min(w - 1);
+                        let sy = (by * block + block / 2).min(h - 1);
+                        let s = (sy * w + sx) * 4;
+                        let Some(q) = src.px.get(s..s + 4) else { continue };
+                        // the dithered block sample, mixed with this pixel's own original
+                        let (ab, ao) = (q[3], p[3]);
+                        let dithered = (ab > 1e-6).then(|| {
+                            let e = enc([q[0] / ab, q[1] / ab, q[2] / ab]);
+                            dither_px(e, dither_threshold(bx as u32, by as u32, pattern) + t, palette, levels)
+                        });
+                        let original = (ao > 1e-6).then(|| enc([p[0] / ao, p[1] / ao, p[2] / ao]));
+                        let c = match (dithered, original) {
+                            (Some(o), Some(e)) => [o[0] + (e[0] - o[0]) * blend, o[1] + (e[1] - o[1]) * blend, o[2] + (e[2] - o[2]) * blend],
+                            (Some(c), None) | (None, Some(c)) => c,
+                            (None, None) => [0.0; 3],
+                        };
+                        let a = ab + (ao - ab) * blend;
+                        if a <= 1e-6 {
+                            p.copy_from_slice(&[0.0; 4]);
+                            continue;
+                        }
+                        let c = dec(c);
                         p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
                     }
                 });
