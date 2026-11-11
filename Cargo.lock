@@ -1809,6 +1809,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-tcsync"
+version = "0.10.0"
+dependencies = [
+ "cfa4-time",
+]
+
+[[package]]
 name = "cfa4-testkit"
 version = "0.10.0"
 dependencies = [
