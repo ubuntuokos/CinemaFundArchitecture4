@@ -19,7 +19,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::Range;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use harfrust::{Direction, Feature, Tag, UnicodeBuffer};
+use harfrust::{Buffer, Direction, Feature, ShaperFont, Tag};
 use unicode_bidi::{BidiInfo, Level};
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -329,11 +329,11 @@ fn uses_vertical_form(c: char) -> bool {
 
 fn shape_item(text: &str, chars: &[(usize, char, char)], rtl: bool, face: FaceId, size: f32, style: &TextStyle, vertical: bool) -> Vec<ShapedGlyph> {
     let f = fonts::face(face);
-    let (Some(font), Some(data)) = (f.font(), f.shaper_data()) else { return Vec::new() };
-    let shaper = data.shaper(&font).build();
-    let mut buf = UnicodeBuffer::new();
+    let Some(font) = f.shaper_font() else { return Vec::new() };
+    let shaper = ShaperFont::new(font);
+    let mut buf = Buffer::new();
     for &(b, _, sc) in chars {
-        buf.add(if sc == '\t' { ' ' } else { sc }, b as u32);
+        buf.push(u32::from(if sc == '\t' { ' ' } else { sc }), b as u32);
     }
     buf.set_direction(if rtl { Direction::RightToLeft } else { Direction::LeftToRight });
     buf.guess_segment_properties();
@@ -349,7 +349,11 @@ fn shape_item(text: &str, chars: &[(usize, char, char)], rtl: bool, face: FaceId
         feats.push(Feature::new(Tag::new(b"liga"), 0, ..));
         feats.push(Feature::new(Tag::new(b"clig"), 0, ..));
     }
-    let out = shaper.shape(buf, harfrust::ShapeOptions::new().features(&feats));
+    // A malformed font is an error in harfrust (HarfBuzz falls back): lay out nothing, never panic.
+    if harfrust::shape(&shaper, &mut buf, harfrust::ShapeOptions::new().features(&feats)).is_err() {
+        return Vec::new();
+    }
+    let out = buf;
     let k = size / f.units_per_em();
     let _ = text;
     out.glyph_infos()

@@ -1,0 +1,4257 @@
+# Georgian (ka) catalog for the whole CFA4 interface (Qt GUI and egui). Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Georgian video-editing vocabulary (დროის ხაზი, ტრეკი, კლიპი, მიმდევრობა, საქაღალდე, დაკვრის
+# მაჩვენებელი, მარკერი, გადასვლა, საკვანძო კადრი). No proprietary localisation resource, string
+# table or product UI was consulted or copied; add entries the same way. Commands are verbal nouns
+# ("შენახვა როგორც…"), quotation marks are „…“, and product and format names (CFA4, Lumetri,
+# ProRes, AAF, EDL…) keep their spelling. Decimal comma (0,5). Georgian script needs an installed
+# font (Noto Sans Georgian, DejaVu Sans or FreeSans); without one the interface stays in English.
+# A native-speaker review is welcome.
+#
+# Terms: clip = კლიპი, track = ტრეკი, sequence = მიმდევრობა, timeline = დროის ხაზი, bin =
+# საქაღალდე, playhead = დაკვრის მაჩვენებელი, In/Out point = საწყისი/საბოლოო წერტილი, keyframe =
+# საკვანძო კადრი, frame = კადრი, caption = სუბტიტრი, preset = პრესეტი, template = შაბლონი,
+# gain = გაძლიერება, opacity = გაუმჭვირვალობა, render = რენდერი, ripple = წანაცვლებით,
+# dissolve = გადადნობა, wipe = გადაწმენდა, voice-over = გახმოვანება, proxy = პროქსი, guide =
+# დამხმარე ხაზი, shortcut = მალსახმობი, (Legacy) = (მოძველებული).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see ka.tsv.attribution.
+
+	'{name}' already exists. Replace it?	„{name}“ უკვე არსებობს. ჩანაცვლდეს?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	CFA4-ის შესახებ
+	Add Audio Submix Track	აუდიო სუბმიქსის ტრეკის დამატება
+	Add Caption at Playhead	სუბტიტრის დამატება დაკვრის მაჩვენებელთან
+	Add Chapter Marker…	თავის მარკერის დამატება…
+	Add Edit	ჭრილის დამატება
+	Add Edit to All Tracks	ჭრილის დამატება ყველა ტრეკზე
+	Add Flash Cue Marker…	Flash Cue მარკერის დამატება…
+	Add Frame Hold	კადრის შეკავების დამატება
+	Add Marker	მარკერის დამატება
+	Add New Caption Track…	სუბტიტრების ახალი ტრეკის დამატება…
+	Add Range Marker	დიაპაზონის მარკერის დამატება
+	Add Range Marker to In and Out	დიაპაზონის მარკერის დამატება საწყისიდან საბოლოომდე
+	Add Tracks…	ტრეკების დამატება…
+	Full screen	სრული ეკრანი
+	Master volume: use the Audio Track Mixer	საერთო ხმა: გამოიყენეთ აუდიო ტრეკების მიქსერი
+	Send to Queue	რიგში გაგზავნა
+	Add/Remove Keyframe	საკვანძო კადრის დამატება/მოცილება
+	Adjust	კორექცია
+	Adjustment Layer	მაკორექტირებელი შრე
+	Adjustment Layer…	მაკორექტირებელი შრე…
+	Align to Video Frame	ვიდეოკადრზე სწორება
+	Align to Video Frame as Group	ვიდეოკადრზე სწორება ჯგუფად
+	All Panels	ყველა პანელი
+	All files	ყველა ფაილი
+	Amplitude and Compression	ამპლიტუდა და შეკუმშვა
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	`serve`-ის გარეშე ძრავა აწყობილია Qt GUI-ს არმქონე შტოდან: გადადით Qt GUI-ს შტოზე და ააწყვეთ ხელახლა, ან მიუთითეთ --engine PATH.
+	Animation	ანიმაცია
+	Anti-flicker Filter	ციმციმის საწინააღმდეგო ფილტრი
+	Apply Audio Transition	აუდიო გადასვლის გამოყენება
+	Apply Default Transitions to Selection	ნაგულისხმევი გადასვლების გამოყენება მონიშნულზე
+	Apply Video Transition	ვიდეო გადასვლის გამოყენება
+	Assembly	აწყობა
+	Attach Proxies…	პროქსების მიბმა…
+	Audio	აუდიო
+	Audio Channels…	აუდიო არხები…
+	Audio Clip Mixer	აუდიო კლიპების მიქსერი
+	Audio Effects	აუდიო ეფექტები
+	Audio Gain…	აუდიოს გაძლიერება…
+	Audio In	აუდიო შესასვლელი
+	Audio Meters	აუდიო ინდიკატორები
+	Audio Options	აუდიოს პარამეტრები
+	Audio Out	აუდიო გამოსასვლელი
+	Audio Track Mixer	აუდიო ტრეკების მიქსერი
+	Audio Transitions	აუდიო გადასვლები
+	Audio Bitrate	აუდიოს ბიტრეიტი
+	Audio Format	აუდიოს ფორმატი
+	Auto Bezier	ავტომატური ბეზიე
+	Automate to Sequence…	ავტომატურად მიმდევრობაში…
+	Avid Log Exchange…	Avid Log Exchange…
+	Bars and Tone…	ზოლები და ტონი…
+	Bezier	ბეზიე
+	Bin	საქაღალდე
+	Bin From Selection	საქაღალდე მონიშნულიდან
+	Bitrate Encoding	ბიტრეიტის კოდირება
+	Black Video…	შავი ვიდეო…
+	Blend Mode	შერევის რეჟიმი
+	Blur & Sharpen	გაბუნდოვნება და გამკვეთრება
+	Breakout to Mono	მონოდ დაყოფა
+	Browse…	დათვალიერება…
+	Burn in captions	სუბტიტრების ჩაწვა გამოსახულებაში
+	Bypass	გვერდის ავლა
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	მონიშნულის გაუქმება
+	Cancelled	გაუქმებულია
+	Cannot create the output folder: {error}	გამოსატანი საქაღალდის შექმნა ვერ მოხერხდა: {error}
+	Cannot check the output folder for files to replace: {error}	გამოსატანი საქაღალდის შემოწმება ჩასანაცვლებელ ფაილებზე ვერ მოხერხდა: {error}
+	Captions	სუბტიტრები
+	Captions and Graphics	სუბტიტრები და გრაფიკა
+	Captions…	სუბტიტრები…
+	Caribbean	კარიბული
+	Center Horizontally	ჰორიზონტალურად ცენტრში
+	Center Vertically	ვერტიკალურად ცენტრში
+	Cerulean	ცისფერი
+	Channel Volume	არხის ხმა
+	Checked:	მონიშნული:
+	Choose a file name and location.	აირჩიეთ ფაილის სახელი და მდებარეობა.
+	Choose folder	საქაღალდის არჩევა
+	Media File	მედიაფაილი
+	Sequence name	მიმდევრობის სახელი
+	Clear Finished	დასრულებულების გასუფთავება
+	Clear In	საწყისი წერტილის გასუფთავება
+	Clear In and Out	საწყისი და საბოლოო წერტილების გასუფთავება
+	Clear Markers	მარკერების გასუფთავება
+	Clear Out	საბოლოო წერტილის გასუფთავება
+	Clear Selected Marker	მონიშნული მარკერის გასუფთავება
+	Clip	კლიპი
+	Close All Other Projects	ყველა სხვა პროექტის დახურვა
+	Close All Projects	ყველა პროექტის დახურვა
+	Close Gap	ხარვეზის დახურვა
+	Close Project	პროექტის დახურვა
+	Color Correction	ფერის კორექცია
+	Color Management…	ფერების მართვა…
+	Color Matte…	ფერადი ფონი…
+	Consolidate Duplicates	დუბლიკატების გაერთიანება
+	Constant quality (CRF)	მუდმივი ხარისხი (CRF)
+	Continuous Bezier	უწყვეტი ბეზიე
+	Copy Paste Includes Sequence Markers	კოპირება-ჩასმა მოიცავს მიმდევრობის მარკერებს
+	Create Captions from Transcript…	სუბტიტრების შექმნა ტრანსკრიპტიდან…
+	Create Multi-Camera Source Sequence…	მრავალკამერიანი წყარო მიმდევრობის შექმნა…
+	Create Proxies…	პროქსების შექმნა…
+	Crossfade	ჯვარედინი მილევა
+	Darker Color	უფრო მუქი ფერი
+	Delay and Echo	დაყოვნება და ექო
+	Delete Keyframe	საკვანძო კადრის წაშლა
+	Delete Render Files	რენდერის ფაილების წაშლა
+	Delete Render Files In to Out	რენდერის ფაილების წაშლა საწყისიდან საბოლოომდე
+	Delete Tracks…	ტრეკების წაშლა…
+	Delete Transcript	ტრანსკრიპტის წაშლა
+	Demo Footage	სადემონსტრაციო კადრები
+	Demo Project	სადემონსტრაციო პროექტი
+	Deselect All	მონიშვნის მოხსნა
+	Detach Proxies	პროქსების მოხსნა
+	Discard	გაუქმება
+	Dissolve	გადადნობა
+	Distribute Horizontally	ჰორიზონტალურად განაწილება
+	Distribute Space Horizontally	სივრცის ჰორიზონტალურად განაწილება
+	Distribute Space Vertically	სივრცის ვერტიკალურად განაწილება
+	Distribute Vertically	ვერტიკალურად განაწილება
+	Double-click a clip in the Project panel to open it here.	ორჯერ დააწკაპუნეთ კლიპზე პანელში „პროექტი“, რომ აქ გახსნათ.
+	Duration	ხანგრძლივობა
+	EDL…	EDL…
+	Ease In	შენელებით შესვლა
+	Ease Out	შენელებით გასვლა
+	Edit Offline…	ოფლაინ რედაქტირება…
+	Edit Subclip…	ქვეკლიპის რედაქტირება…
+	Edit Workspaces…	სამუშაო სივრცეების რედაქტირება…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	რედაქტირდება Lumetri-სა და ნიღბის ხელსაწყოებით (ჯერ არ არის Qt GUI-ში)
+	Editing	რედაქტირება
+	Effect Controls	ეფექტების მართვა
+	Enable	ჩართვა
+	Enable Remix	რემიქსის ჩართვა
+	Enabled	ჩართულია
+	End	დასასრული
+	Engine stopped	ძრავა გაჩერდა
+	Entire Sequence	მთელი მიმდევრობა
+	Essential Graphics	ძირითადი გრაფიკა
+	Essential Sound	ძირითადი ხმა
+	Events	მოვლენები
+	Export	ექსპორტი
+	Export As Motion Graphics Template…	ექსპორტი მოძრავი გრაფიკის შაბლონად…
+	Export Markers as CSV…	მარკერების ექსპორტი CSV-ად…
+	Export Media	მედიის ექსპორტი
+	Export Media…	მედიის ექსპორტი…
+	Export Queue	ექსპორტის რიგი
+	Queue ({n})	რიგი ({n})
+	Send exports here with Send to Queue, then start the queue.	გაგზავნეთ ექსპორტები აქ ბრძანებით „რიგში გაგზავნა“, შემდეგ გაუშვით რიგი.
+	Open a sequence to export	გახსენით მიმდევრობა ექსპორტისთვის
+	The sequence has no caption track.	მიმდევრობას არ აქვს სუბტიტრების ტრეკი.
+	Export Audio	აუდიოს ექსპორტი
+	Export failed: {path}	ექსპორტი ვერ მოხერხდა: {path}
+	Export finished: {path}	ექსპორტი დასრულდა: {path}
+	Extract	ამოღება
+	Extract Audio	აუდიოს ამოღება
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	ვერ მოხერხდა
+	Field Options…	ნახევარკადრების პარამეტრები…
+	File…	ფაილი…
+	Fill frame	კადრის შევსება
+	Filter and EQ	ფილტრი და ეკვალაიზერი
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Find…	ძებნა…
+	Fit	ჩატევა
+	Fit to frame	კადრში ჩატევა
+	Forest	ტყის მწვანე
+	Frame Blending	კადრების შერევა
+	Frame Hold Options…	კადრის შეკავების პარამეტრები…
+	Frame Sampling	კადრების შერჩევა
+	Frame Size	კადრის ზომა
+	From Bin	საქაღალდიდან
+	From Source Monitor	წყაროს მონიტორიდან
+	From Source Monitor, Match Frame	წყაროს მონიტორიდან, შესაბამისი კადრი
+	From file…	ფაილიდან…
+	From the preset	პრესეტიდან
+	Adaptive ({bpp} bits per pixel)	ადაპტური ({bpp} ბიტი პიქსელზე)
+	Set a fixed bitrate	ფიქსირებული ბიტრეიტის დაყენება
+	Gain	გაძლიერება
+	General…	ზოგადი…
+	Generate	გენერირება
+	Generate Audio Waveform	აუდიოს ტალღური ფორმის გენერირება
+	Get Media File Properties for	მედიაფაილის თვისებები:
+	Go to End	დასასრულზე გადასვლა
+	Go to Gap	ხარვეზზე გადასვლა
+	Go to In	საწყის წერტილზე გადასვლა
+	Go to Next Caption Segment	სუბტიტრების შემდეგ სეგმენტზე გადასვლა
+	Go to Next Keyframe	შემდეგ საკვანძო კადრზე გადასვლა
+	Go to Next Marker	შემდეგ მარკერზე გადასვლა
+	Go to Out	საბოლოო წერტილზე გადასვლა
+	Go to Previous Caption Segment	სუბტიტრების წინა სეგმენტზე გადასვლა
+	Go to Previous Keyframe	წინა საკვანძო კადრზე გადასვლა
+	Go to Previous Marker	წინა მარკერზე გადასვლა
+	Go to Split	გაყოფაზე გადასვლა
+	Go to Start	დასაწყისზე გადასვლა
+	Graphics and Titles	გრაფიკა და სათაურები
+	Grunge & Distort	გრანჯი და დეფორმაცია
+	Hide All Caption Tracks	სუბტიტრების ყველა ტრეკის დამალვა
+	Hold	შეკავება
+	Image Control	გამოსახულების მართვა
+	Image Sequence	გამოსახულებების მიმდევრობა
+	Immersive Video	იმერსიული ვიდეო
+	Import Credits Spreadsheet…	ტიტრების ცხრილის იმპორტი…
+	Import From	იმპორტი წყაროდან
+	Import Image Sequence…	გამოსახულებების მიმდევრობის იმპორტი…
+	Import from Media Browser	იმპორტი მედიის ბრაუზერიდან
+	Ingest Settings…	შეტანის პარამეტრები…
+	Insert Frame Hold Segment	შეკავებული კადრის სეგმენტის ჩასმა
+	Inspector	ინსპექტორი
+	Install Motion Graphics Template…	მოძრავი გრაფიკის შაბლონის ინსტალაცია…
+	Interpret Footage…	კადრების ინტერპრეტაცია…
+	Iris	დიაფრაგმა
+	Keying	კეიინგი
+	Label	იარლიყი
+	Lavender	ლავანდისფერი
+	Legacy	მოძველებული
+	Level	დონე
+	Lift	აწევა
+	Lighter Color	უფრო ღია ფერი
+	Lights & Blurs	სინათლე და გაბუნდოვნება
+	Lights & Glows	სინათლე და ნათება
+	Linear Burn	წრფივი ჩამუქება
+	Linear Dodge (Add)	წრფივი გაღიავება (დამატება)
+	Linear Light	წრფივი სინათლე
+	Link Media…	მედიის დაკავშირება…
+	Linked Selection	დაკავშირებული მონიშვნა
+	Lumetri Color	Lumetri Color
+	Lumetri Scopes	Lumetri Scopes
+	Luminosity	სიკაშკაშე
+	Make Offline…	ოფლაინად გადაქცევა…
+	Make Subclip…	ქვეკლიპის შექმნა…
+	Make Subsequence	ქვემიმდევრობის შექმნა
+	Mango	მანგო
+	Mark Clip	კლიპის მონიშვნა
+	Mark In	საწყისი წერტილის მონიშვნა
+	Mark Out	საბოლოო წერტილის მონიშვნა
+	Mark Selection	მონიშნულის მარკირება
+	Mark Split	გაყოფის მონიშვნა
+	Markers	მარკერები
+	Match Frame	შესაბამისი კადრი
+	Match sequence	მიმდევრობის მიხედვით
+	Media Browser	მედიის ბრაუზერი
+	Media offline	მედია ოფლაინშია
+	Media…	მედია…
+	Merge Clips…	კლიპების გაერთიანება…
+	Merged Clip	გაერთიანებული კლიპი
+	Metadata	მეტამონაცემები
+	Modulation	მოდულაცია
+	Motion	მოძრაობა
+	Motion Graphics Template…	მოძრავი გრაფიკის შაბლონი…
+	Movie	ფილმი
+	Multi-Camera	მრავალკამერიანი
+	Mute Track	ტრეკის დადუმება
+	Nest…	ჩადგმა…
+	New Bin	ახალი საქაღალდე
+	New Layer	ახალი შრე
+	New Project Panel	ახალი პანელი „პროექტი“
+	New Sequence…	ახალი მიმდევრობა…
+	Next in Sequence	შემდეგი მიმდევრობაში
+	Next in Track	შემდეგი ტრეკზე
+	No	არა
+	No sequence	მიმდევრობა არ არის
+	Drop media here to create sequence.	ჩააგდეთ მედია აქ მიმდევრობის შესაქმნელად.
+	Open Demo Project	სადემონსტრაციო პროექტის გახსნა
+	Double-click a sequence in the Project panel to open it here.	ორჯერ დააწკაპუნეთ მიმდევრობაზე პანელში „პროექტი“, რომ აქ გახსნათ.
+	Noise & Grain	ხმაური და მარცვალი
+	Noise Reduction	ხმაურის შემცირება
+	Normalize Mix Track…	მიქსის ტრეკის ნორმალიზება…
+	Not Now	ახლა არა
+	Not yet in the Qt GUI (see docs/qt-parity.md)	ჯერ არ არის Qt GUI-ში (იხ. docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	მოძველებული
+	Offline File…	ოფლაინ ფაილი…
+	Open Project	პროექტის გახსნა
+	Open Project…	პროექტის გახსნა…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	ოპტიკური ნაკადი
+	Opus	Opus
+	Output file	გამოსატანი ფაილი
+	Overwrite	გადაწერა
+	PCM (uncompressed)	PCM (შეკუმშვის გარეშე)
+	Panner	პანორამირება
+	Paste Attributes…	ატრიბუტების ჩასმა…
+	Paste Insert	ჩასმა ჩართვით
+	Pin Light	წერტილოვანი სინათლე
+	Play/Stop	დაკვრა/შეჩერება
+	Preset	პრესეტი
+	Previous in Sequence	წინა მიმდევრობაში
+	Previous in Track	წინა ტრეკზე
+	Program	პროგრამა
+	Progress	პროგრესი
+	Project	პროექტი
+	Project Manager…	პროექტის მენეჯერი…
+	Project Notes	პროექტის ჩანაწერები
+	Project Settings	პროექტის პარამეტრები
+	Project…	პროექტი…
+	Proxy	პროქსი
+	Quit	გასვლა
+	Range	დიაპაზონი
+	Razor Tool	სამართებლის ხელსაწყო
+	Reconnect Full Resolution Media…	სრული გარჩევადობის მედიის ხელახლა დაკავშირება…
+	Recover	აღდგენა
+	Recover Unsaved Changes	შეუნახავი ცვლილებების აღდგენა
+	Recover Unsaved Changes…	შეუნახავი ცვლილებების აღდგენა…
+	Reference Monitor	საცნობარო მონიტორი
+	Remaining	დარჩენილი
+	Remix	რემიქსი
+	Remix Properties…	რემიქსის თვისებები…
+	Remove Attributes…	ატრიბუტების მოცილება…
+	Remove Filler Words	პარაზიტული სიტყვების მოცილება
+	Remove Pauses	პაუზების მოცილება
+	Remove Unused	გამოუყენებლის მოცილება
+	Rename…	სახელის შეცვლა…
+	Render Audio	აუდიოს რენდერი
+	Render Effects In to Out	ეფექტების რენდერი საწყისიდან საბოლოომდე
+	Render In to Out	რენდერი საწყისიდან საბოლოომდე
+	Render Selection	მონიშნულის რენდერი
+	Replace Fonts in Projects…	შრიფტების ჩანაცვლება პროექტებში…
+	Replace With Clip	კლიპით ჩანაცვლება
+	Reset All Parameters	ყველა პარამეტრის ჩამოყრა
+	Reset Duration	ხანგრძლივობის ჩამოყრა
+	Reset Effect	ეფექტის ჩამოყრა
+	Reset Panel Layout	პანელების განლაგების ჩამოყრა
+	Reset Parameter	პარამეტრის ჩამოყრა
+	Reset to Saved Layout	შენახულ განლაგებაზე დაბრუნება
+	Restoration	რესტავრაცია
+	Restore Captions from Source Clip	სუბტიტრების აღდგენა წყარო კლიპიდან
+	Retry	ხელახლა ცდა
+	Reverb	რევერბერაცია
+	Reverse Match Frame	შებრუნებული შესაბამისი კადრი
+	Revert Remix	რემიქსის გაუქმება
+	Ripple Delete	წაშლა წანაცვლებით
+	Ripple Delete Head Frame	საწყისი კადრის წაშლა წანაცვლებით
+	Ripple Sequence Markers	მიმდევრობის მარკერების წანაცვლება
+	Rose	ვარდისფერი
+	Rotation	ბრუნვა
+	Save All	ყველას შენახვა
+	Save Changes to this Workspace	ცვლილებების შენახვა ამ სამუშაო სივრცეში
+	Save as New Workspace	შენახვა ახალ სამუშაო სივრცედ
+	Save as New Workspace…	შენახვა ახალ სამუშაო სივრცედ…
+	Save changes to '{name}' before closing?	შეინახოს ცვლილებები „{name}“-ში დახურვამდე?
+	Save changes to '{name}' before continuing?	შეინახოს ცვლილებები „{name}“-ში გაგრძელებამდე?
+	Scale Width	სიგანის მასშტაბირება
+	Scale to Frame Size	კადრის ზომამდე მასშტაბირება
+	Scene Edit Detection…	სცენების ჭრილების აღმოჩენა…
+	Scratch Disks…	სამუშაო დისკები…
+	Search	ძებნა
+	Search Bin	საძიებო საქაღალდე
+	Select All Matching	ყველა შესაბამისის მონიშვნა
+	Select Label Group	იარლიყის ჯგუფის მონიშვნა
+	Select Next Graphic	შემდეგი გრაფიკის მონიშვნა
+	Select Next Layer	შემდეგი შრის მონიშვნა
+	Select Previous Graphic	წინა გრაფიკის მონიშვნა
+	Select Previous Layer	წინა შრის მონიშვნა
+	Select a clip in the Timeline.	მონიშნეთ კლიპი დროის ხაზზე.
+	Selected	მონიშნული
+	Selection Follows Playhead	მონიშვნა მიჰყვება დაკვრის მაჩვენებელს
+	Selection as CFA4 Project…	მონიშნული, როგორც CFA4 პროექტი…
+	Selection…	მონიშნული…
+	Sequence	მიმდევრობა
+	Sequence From Clip	მიმდევრობა კლიპიდან
+	Sequence In/Out	მიმდევრობის საწყისი/საბოლოო
+	Sequence Settings…	მიმდევრობის პარამეტრები…
+	Sequence…	მიმდევრობა…
+	Show Active Caption Tracks Only	მხოლოდ სუბტიტრების აქტიური ტრეკების ჩვენება
+	Show All Caption Tracks	სუბტიტრების ყველა ტრეკის ჩვენება
+	Show All Marker Colors	მარკერების ყველა ფერის ჩვენება
+	Show Through Edits	გამჭოლი ჭრილების ჩვენება
+	Simplify Sequence…	მიმდევრობის გამარტივება…
+	Slide	სრიალი
+	Smart Tools	ჭკვიანი ხელსაწყოები
+	Snap in Timeline	მიკვრა დროის ხაზზე
+	Solo Track	სოლო ტრეკი
+	Some panel labels change language after a restart.	პანელების ზოგიერთი წარწერა ენას გადატვირთვის შემდეგ იცვლის.
+	Source	წყარო
+	Source In	წყაროს საწყისი წერტილი
+	Source Settings…	წყაროს პარამეტრები…
+	Source patch	წყაროს მიერთება
+	Special	სპეციალური
+	Speed	სიჩქარე
+	Speed/Duration…	სიჩქარე/ხანგრძლივობა…
+	Start	დასაწყისი
+	Start Queue	რიგის გაშვება
+	Starting engine…	ძრავის გაშვება…
+	Step Back 1 Frame	1 კადრით უკან
+	Step Forward 1 Frame	1 კადრით წინ
+	Stereo Imagery	სტერეო გამოსახულება
+	Still Image	უძრავი გამოსახულება
+	Stop Queue	რიგის შეჩერება
+	Subclip	ქვეკლიპი
+	Synchronize…	სინქრონიზაცია…
+	Synthetic	სინთეზური
+	Tan	ღია ყავისფერი
+	Target Bitrate	სამიზნე ბიტრეიტი
+	Teal	ზღვისფერი
+	Text to Speech	ტექსტიდან მეტყველებაში
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	CFA4-ის ძრავა (cfa4-cli) ვერ მოიძებნა. ააწყვეთ ბრძანებით: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4-ის ძრავა მოულოდნელად გაჩერდა. შეუნახავი ცვლილებები ინახება აღდგენის ჟურნალში; გადატვირთეთ CFA4 მათ აღსადგენად.
+	The engine stopped	ძრავა გაჩერდა
+	Time	დრო
+	Time Interpolation	დროის ინტერპოლაცია
+	Time Remapping	დროის გადანაწილება
+	Time and Pitch	დრო და ტონის სიმაღლე
+	Timecode	დროის კოდი
+	Timecode…	დროის კოდი…
+	Timeline	დროის ხაზი
+	Toggle Animation	ანიმაციის გადართვა
+	Toggle Proxies	პროქსების გადართვა
+	Toggle Sync Lock	სინქრონიზაციის ჩაკეტვის გადართვა
+	Toggle Track Lock	ტრეკის ჩაკეტვის გადართვა
+	Toggle Track Output	ტრეკის გამოსასვლელის გადართვა
+	Toggle the effect on or off	ეფექტის ჩართვა ან გამორთვა
+	Toggle track targeting	სამიზნე ტრეკის გადართვა
+	Transcribe Sequence…	მიმდევრობის ტრანსკრიბირება…
+	Transcribe…	ტრანსკრიბირება…
+	Transcript	ტრანსკრიპტი
+	Transformers	გარდამქმნელები
+	Transparent Video…	გამჭვირვალე ვიდეო…
+	Trim Edit	ჭრილის წაკვეთა
+	Type	ტიპი
+	Uniform Scale	ერთგვაროვანი მასშტაბი
+	Universal Counting Leader…	უნივერსალური უკუთვლა…
+	Update Metadata…	მეტამონაცემების განახლება…
+	Upgrade Caption to Graphic	სუბტიტრის გრაფიკად გადაქცევა
+	Upgrade to Source Graphic	წყარო გრაფიკად გადაქცევა
+	Use hardware encoding when available	აპარატული კოდირება, როცა ხელმისაწვდომია
+	Utility	დამხმარე
+	VBR, 1 pass	VBR, 1 გავლა
+	VBR, 2 pass	VBR, 2 გავლა
+	Vertical Text	ვერტიკალური ტექსტი
+	Video Effects	ვიდეო ეფექტები
+	Video In	ვიდეო შესასვლელი
+	Video Options	ვიდეოს პარამეტრები
+	Video Out	ვიდეო გამოსასვლელი
+	Video Transitions	ვიდეო გადასვლები
+	Vivid Light	მკვეთრი სინათლე
+	Volume	ხმა
+	Wipe	გადაწმენდა
+	Work Area	სამუშაო არე
+	Workspaces	სამუშაო სივრცეები
+	Yes	კი
+	Zoom to Sequence	მასშტაბი მიმდევრობამდე
+	an unknown time	უცნობი დრო
+	automatic	ავტომატური
+	frames	კადრი
+	not available	მიუწვდომელია
+	off	გამორთული
+	optional	არასავალდებულო
+	…	…
+	Rate Stretch Tool	სიჩქარის გაჭიმვის ხელსაწყო
+	Remix Tool	რემიქსის ხელსაწყო
+	Ripple Edit Tool	წანაცვლებითი რედაქტირების ხელსაწყო
+	Rolling Edit Tool	მოძრავი ჭრილის ხელსაწყო
+	Slide Tool	სრიალის ხელსაწყო
+	Slip Tool	გასრიალების ხელსაწყო
+	Track Select Backward Tool	ტრეკის უკან მონიშვნის ხელსაწყო
+	Track Select Forward Tool	ტრეკის წინ მონიშვნის ხელსაწყო
+	Add Marker (M)	მარკერის დამატება (M)
+	Alpha	ალფა
+	Button Editor	ღილაკების რედაქტორი
+	Composite Video	კომპოზიტური ვიდეო
+	Display Mode	ჩვენების რეჟიმი
+	Export Frame	კადრის ექსპორტი
+	Extract (')	ამოღება (')
+	Full	სრული
+	Go to In (Shift+I)	საწყის წერტილზე გადასვლა (Shift+I)
+	Go to Out (Shift+O)	საბოლოო წერტილზე გადასვლა (Shift+O)
+	High Quality Playback	მაღალი ხარისხის დაკვრა
+	Insert (,)	ჩასმა (,)
+	Lift (;)	აწევა (;)
+	Loop	ციკლი
+	Loop marked range	მონიშნული დიაპაზონის ციკლი
+	Magnification	გადიდება
+	Mark In (I)	საწყისი წერტილის მონიშვნა (I)
+	Mark Out (O)	საბოლოო წერტილის მონიშვნა (O)
+	More transport controls	დაკვრის მეტი მართვა
+	Overwrite (.)	გადაწერა (.)
+	Paused Resolution	გარჩევადობა პაუზისას
+	Play In to Out	დაკვრა საწყისიდან საბოლოომდე
+	Play-Stop Toggle (Space)	დაკვრა/შეჩერება (Space)
+	Playback Resolution	დაკვრის გარჩევადობა
+	RGBA Channels	RGBA არხები
+	Reset	საწყის მდგომარეობაზე დაბრუნება
+	Safe Margins	უსაფრთხო ველები
+	Select Playback Resolution	დაკვრის გარჩევადობის არჩევა
+	Select Zoom Level	მასშტაბის დონის არჩევა
+	Show Transport Controls	დაკვრის მართვის ჩვენება
+	Shuttle Left	გადახვევა მარცხნივ
+	Shuttle Right	გადახვევა მარჯვნივ
+	Shuttle Stop	გადახვევის შეჩერება
+	Step Back 1 Frame (Left)	1 კადრით უკან (მარცხენა ისარი)
+	Step Forward 1 Frame (Right)	1 კადრით წინ (მარჯვენა ისარი)
+	Darkest	ყველაზე მუქი
+	Next Appearance Mode	იერსახის შემდეგი რეჟიმი
+	(no sequence)	(მიმდევრობა არ არის)
+	All markers are hidden by the colour filter.	ყველა მარკერი დამალულია ფერის ფილტრით.
+	Audio {n}:	აუდიო {n}:
+	Audio:	აუდიო:
+	Clip: {name}	კლიპი: {name}
+	Codec:	კოდეკი:
+	Duration:	ხანგრძლივობა:
+	Marker	მარკერი
+	No markers. Press M to add one.	მარკერები არ არის. დააჭირეთ M-ს დასამატებლად.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	ამ პროექტის ჩანაწერები: დავალებები, ინსტრუქციები, კადრების ნომრები… ინახება პროექტთან ერთად.
+	Playhead:	დაკვრის მაჩვენებელი:
+	Select a clip to view its metadata.	მონიშნეთ კლიპი მისი მეტამონაცემების სანახავად.
+	Settings:	პარამეტრები:
+	Show or hide {color} markers	{color} მარკერების ჩვენება ან დამალვა
+	Video {n}:	ვიდეო {n}:
+	Video:	ვიდეო:
+	{tc}  Chapter	{tc}  თავი
+	Media Type	მედიის ტიპი
+	Frame Rate	კადრების სიხშირე
+	Media Start	მედიის დასაწყისი
+	Media End	მედიის დასასრული
+	Media Duration	მედიის ხანგრძლივობა
+	Video Info	ვიდეოს ინფორმაცია
+	Video Codec	ვიდეო კოდეკი
+	Audio Info	აუდიოს ინფორმაცია
+	Audio Codec	აუდიო კოდეკი
+	Scene	სცენა
+	Shot	კადრი
+	Log Note	ჟურნალის ჩანაწერი
+	Comment	კომენტარი
+	Tape Name	ფირის სახელი
+	Client	კლიენტი
+	Camera Angle	კამერის კუთხე
+	File Path	ფაილის გზა
+	 · {time} left	 · დარჩა {time}
+	Active Monitor	აქტიური მონიტორი
+	Add a timecode row	დროის კოდის სტრიქონის დამატება
+	Audio Samples	აუდიო სემპლები
+	Current Time	მიმდინარე დრო
+	Failed: {e}	ვერ მოხერხდა: {e}
+	Feet + Frames 16mm	ფუტი + კადრი 16 მმ
+	Feet + Frames 35mm	ფუტი + კადრი 35 მმ
+	Frames	კადრები
+	In/Out Duration	საწყისი/საბოლოო ხანგრძლივობა
+	Media Time	მედიის დრო
+	No background jobs.	ფონური დავალებები არ არის.
+	Remove Row	სტრიქონის მოცილება
+	Seconds	წამები
+	Show finished jobs	დასრულებული დავალებების ჩვენება
+	{mode} · no clip	{mode} · კლიპი არ არის
+	{mode} · no sequence	{mode} · მიმდევრობა არ არის
+	Render	რენდერი
+	Job	დავალება
+	Audio Track Mixer menu	აუდიო ტრეკების მიქსერის მენიუ
+	Automation mode	ავტომატიზაციის რეჟიმი
+	Enable track for recording	ტრეკის ჩართვა ჩასაწერად
+	Fill the slots above first	ჯერ შეავსეთ ზემოთ მოცემული სლოტები
+	Go to In Point	საწყის წერტილზე გადასვლა
+	Go to Out Point	საბოლოო წერტილზე გადასვლა
+	Input channel mapping	შემავალი არხების შესაბამისობა
+	Meter Input(s) Only	ინდიკატორი მხოლოდ შესასვლელებზე
+	Mix	მიქსი
+	Mute Send	გაგზავნის დადუმება
+	New Submix	ახალი სუბმიქსი
+	Pan / balance (drag; double-click: centre)	პანორამა / ბალანსი (გადაათრიეთ; ორმაგი დაწკაპუნება: ცენტრი)
+	Post-Fader	ფეიდერის შემდეგ
+	Pre-Fader	ფეიდერამდე
+	Remove Send	გაგზავნის მოცილება
+	Show/Hide Effects and Sends	ეფექტებისა და გაგზავნების ჩვენება/დამალვა
+	Show/Hide Tracks	ტრეკების ჩვენება/დამალვა
+	Solo safe	სოლოსგან დაცული
+	Track output assignment	ტრეკის გამოსასვლელის მინიჭება
+	Voice-over recording is not in the Qt GUI yet	გახმოვანების ჩაწერა ჯერ არ არის Qt GUI-ში
+	Volume (drag; double-click: 0 dB)	ხმა (გადაათრიეთ; ორმაგი დაწკაპუნება: 0 dB)
+	pre 	წინ 
+	Read	კითხვა
+	Latch	დაკავება
+	Touch	შეხება
+	Write	ჩაწერა
+	Stereo	სტერეო
+	Swap	გაცვლა
+	Write keyframes	საკვანძო კადრების ჩაწერა
+	Match Playhead	დაკვრის მაჩვენებლის მიხედვით
+	Gang to Program	პროგრამასთან დაკავშირება
+	(no sequences)	(მიმდევრობები არ არის)
+	8 Bit	8 ბიტი
+	Bright	კაშკაშა
+	Clamp Signal	სიგნალის შეზღუდვა
+	Colour Space	ფერთა სივრცე
+	Dimmed	ჩამქრალი
+	Float	მცურავი წერტილი
+	Four Scopes (RGB, 8 bit)	ოთხი სკოპი (RGB, 8 ბიტი)
+	Four Scopes (YUV, float, no clamp)	ოთხი სკოპი (YUV, მცურავი წერტილი, შეზღუდვის გარეშე)
+	HDR	HDR
+	HLS Vectorscope + Histogram	HLS ვექტორსკოპი + ჰისტოგრამა
+	Histogram	ჰისტოგრამა
+	Luma	სიკაშკაშე (luma)
+	Parade	პარადი
+	Parade (RGB)	პარადი (RGB)
+	Parade ({kind})	პარადი ({kind})
+	Parade Type	პარადის ტიპი
+	RGB-White	RGB-თეთრი
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	სკოპის პარამეტრები
+	Signal Scale	სიგნალის სკალა
+	Vectorscope (YUV)	ვექტორსკოპი (YUV)
+	Vectorscope + Waveform YC	ვექტორსკოპი + ტალღური ფორმა YC
+	Vectorscope HLS	ვექტორსკოპი HLS
+	Vectorscope Targets	ვექტორსკოპის სამიზნეები
+	Vectorscope YUV	ვექტორსკოპი YUV
+	Waveform	ტალღური ფორმა
+	Waveform (Luma)	ტალღური ფორმა (სიკაშკაშე)
+	Waveform (RGB)	ტალღური ფორმა (RGB)
+	Waveform ({kind})	ტალღური ფორმა ({kind})
+	Waveform Type	ტალღური ფორმის ტიპი
+	YC	YC
+	YC no Chroma	YC ქრომის გარეშე
+	YUV	YUV
+	(no clip selected)	(კლიპი არ არის მონიშნული)
+	Add Lumetri Color to clip	Lumetri Color-ის დამატება კლიპზე
+	Adjustments	კორექციები
+	Apply Match	შესაბამისობის გამოყენება
+	Basic Correction	საბაზო კორექცია
+	Blacks	შავები
+	Bleach Bypass	Bleach Bypass
+	Color Match	ფერების შესაბამისობა
+	Color Wheels & Match	ფერის ბორბლები და შესაბამისობა
+	Color/Black	ფერი/შავი
+	Color/Gray	ფერი/ნაცრისფერი
+	Comparison View	შედარების ხედი
+	Cool Blue	ცივი ლურჯი
+	Correction	კორექცია
+	Creative	შემოქმედებითი
+	Curves	მრუდები
+	Denoise	ხმაურის მოცილება
+	Exposure	ექსპოზიცია
+	Face Detection (protect skin tones)	სახის ამოცნობა (კანის ტონების დაცვა)
+	Faded Film	გაცრეცილი ფირი
+	Faded Matte	გაცრეცილი მატი
+	Feather	კიდის დარბილება
+	Golden Hour	ოქროს საათი
+	HDR Range	HDR დიაპაზონი
+	HDR Specular	HDR ანარეკლები
+	HDR White	HDR თეთრი
+	HSL Secondary	HSL მეორადი
+	Highlights	ნათელი ტონები
+	Hue Range	ფერის ტონის დიაპაზონი
+	Hue Saturation Curves	ტონისა და გაჯერების მრუდები
+	Hue vs Hue	ტონი ტონის მიმართ
+	Hue vs Luma	ტონი სიკაშკაშის მიმართ
+	Hue vs Sat	ტონი გაჯერების მიმართ
+	Input LUT	შემავალი LUT
+	Key	გასაღები
+	LUT	LUT
+	Look	იერი
+	Look LUT	იერის LUT
+	Luma Max	სიკაშკაშის მაქს.
+	Luma Min	სიკაშკაშის მინ.
+	Luma vs Sat	სიკაშკაშე გაჯერების მიმართ
+	Master · {name}	მთავარი · {name}
+	Midpoint	შუა წერტილი
+	Midtones	შუა ტონები
+	Night	ღამე
+	RGB Curves	RGB მრუდები
+	Reference	საცნობარო
+	Refine	დაზუსტება
+	Roundness	სიმრგვალე
+	Sat vs Sat	გაჯერება გაჯერების მიმართ
+	Saturation Min	გაჯერების მინ.
+	Shadows	ჩრდილები
+	Show Mask	ნიღბის ჩვენება
+	Soften	დარბილება
+	Teal & Orange	ზღვისფერი და ნარინჯისფერი
+	Vibrance	სიცოცხლისუნარიანობა
+	Vignette	ვინიეტი
+	Warm Film	თბილი ფირი
+	White/Black	თეთრი/შავი
+	Whites	თეთრები
+	(none)	(არცერთი)
+	Add to Favorites	რჩეულებში დამატება
+	All Supported Files	ყველა მხარდაჭერილი ფაილი
+	Allow Duplicate Media During Project Import	დუბლირებული მედიის დაშვება პროექტის იმპორტისას
+	Audio Files	აუდიო ფაილები
+	Cannot open {dir}: {e}	{dir}-ის გახსნა ვერ მოხერხდა: {e}
+	Clear Recent Directories	ბოლო საქაღალდეების გასუფთავება
+	Create Folder For Imported Projects	საქაღალდის შექმნა იმპორტირებული პროექტებისთვის
+	Date Modified	შეცვლის თარიღი
+	Edit Columns	სვეტების რედაქტირება
+	Edit Columns…	სვეტების რედაქტირება…
+	File Extension	ფაილის გაფართოება
+	File Types Displayed	ნაჩვენები ფაილის ტიპები
+	Go Back	უკან
+	Go Forward	წინ
+	Hover Scrub	გადახვევა მიტანისას
+	Import	იმპორტი
+	Import as Image Sequence	იმპორტი გამოსახულებების მიმდევრობად
+	Ingest	შეტანა
+	Local Drives	ლოკალური დისკები
+	Network	ქსელი
+	New Media Browser Panel	ახალი პანელი „მედიის ბრაუზერი“
+	Open In Source Monitor	წყაროს მონიტორში გახსნა
+	Open Ingest Settings	შეტანის პარამეტრების გახსნა
+	Projects and Interchange	პროექტები და გაცვლა
+	Recent Directories	ბოლო საქაღალდეები
+	Remove from Favorites	რჩეულებიდან მოცილება
+	Show in File Manager	ფაილების მენეჯერში ჩვენება
+	Still Images	უძრავი გამოსახულებები
+	Up One Level	ერთი დონით ზემოთ
+	Video Files	ვიდეო ფაილები
+	{sel} of {total} items selected	მონიშნულია {sel} / {total} ელემენტი
+	{total} items	{total} ელემენტი
+	#	№
+	Add caption at playhead	სუბტიტრის დამატება დაკვრის მაჩვენებელთან
+	Add captions	სუბტიტრების დამატება
+	Box	ჩარჩო
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	შექმენით სუბტიტრების ტრეკი ან მოახდინეთ სუბტიტრების ფაილის იმპორტი.
+	Create captions	სუბტიტრების შექმნა
+	Create new caption track	სუბტიტრების ახალი ტრეკის შექმნა
+	Delete selected captions	მონიშნული სუბტიტრების წაშლა
+	Export captions…	სუბტიტრების ექსპორტი…
+	Extract selected text	მონიშნული ტექსტის ამოღება
+	Go to caption	სუბტიტრზე გადასვლა
+	Go to graphic	გრაფიკაზე გადასვლა
+	Import captions file…	სუბტიტრების ფაილის იმპორტი…
+	In	საწყისი
+	Lift selected text	მონიშნული ტექსტის აწევა
+	Merge selected captions	მონიშნული სუბტიტრების გაერთიანება
+	New {format} track	ახალი {format} ტრეკი
+	No captions on this track. Press + to add one at the playhead.	ამ ტრეკზე სუბტიტრები არ არის. დააჭირეთ +-ს დაკვრის მაჩვენებელთან დასამატებლად.
+	No matching captions.	შესაბამისი სუბტიტრები არ არის.
+	No matching text.	შესაბამისი ტექსტი არ არის.
+	No text graphics in this sequence. Add text with the Type tool.	ამ მიმდევრობაში ტექსტური გრაფიკა არ არის. დაამატეთ ტექსტი ტექსტის ხელსაწყოთი.
+	Open a sequence to search its graphics	გახსენით მიმდევრობა მის გრაფიკაში საძიებლად
+	Open a sequence to see its transcript	გახსენით მიმდევრობა მისი ტრანსკრიპტის სანახავად
+	Open a sequence to work with captions	გახსენით მიმდევრობა სუბტიტრებთან სამუშაოდ
+	Out	საბოლოო
+	Position: bottom	პოზიცია: ქვემოთ
+	Position: middle	პოზიცია: შუაში
+	Position: top	პოზიცია: ზემოთ
+	Remove filler words	პარაზიტული სიტყვების მოცილება
+	Speaker	მოსაუბრე
+	Speech-to-text turns the dialogue into editable text.	მეტყველების ტექსტად გარდაქმნა დიალოგს რედაქტირებად ტექსტად აქცევს.
+	Split caption at playhead	სუბტიტრის გაყოფა დაკვრის მაჩვენებელთან
+	Subtitle	ქვესათაური
+	Teletext	ტელეტექსტი
+	Text colour	ტექსტის ფერი
+	This build has no speech-to-text; import a transcript with transcript.set.	ამ ანაწყობს არ აქვს მეტყველების ტექსტად გარდაქმნა; ტრანსკრიპტის იმპორტისთვის გამოიყენეთ transcript.set.
+	Track	ტრეკი
+	Transcribe	ტრანსკრიბირება
+	Transcribe sequence	მიმდევრობის ტრანსკრიბირება
+	(Custom)	(მორგებული)
+	(Default)	(ნაგულისხმევი)
+	Ambience	გარემო
+	Assign an audio type to the selection:	მონიშნულს მიანიჭეთ აუდიოს ტიპი:
+	Auto-Match	ავტომატური შესაბამისობა
+	Balanced Voice	დაბალანსებული ხმა
+	Bright Air	ნათელი ჰაერი
+	Bright Studio	ნათელი სტუდია
+	Browse	დათვალიერება
+	Clarity	სიცხადე
+	Clean Up Noisy Dialogue	ხმაურიანი დიალოგის გაწმენდა
+	Clear Audio Type	აუდიოს ტიპის გასუფთავება
+	Clear Muddiness	სიმღვრივის მოცილება
+	Clip Volume	კლიპის ხმა
+	DeEss	სისინის მოცილება
+	DeHum	გუგუნის მოცილება
+	Dialogue	დიალოგი
+	Dry Up a Roomy Voice	ოთახის ექოს მქონე ხმის გაშრობა
+	Duck Deep Under Dialogue	ღრმად ჩახშობა დიალოგის ქვეშ
+	Duck Under Dialogue	ჩახშობა დიალოგის ქვეშ
+	Duck Under Voice and Effects	ჩახშობა ხმისა და ეფექტების ქვეშ
+	Duck against:	ჩახშობა მიმართ:
+	Ducking	ჩახშობა
+	Dynamics	დინამიკა
+	EQ	ეკვალაიზერი
+	Enhance Speech	მეტყველების გაუმჯობესება
+	Fades	მილევები
+	Far Away	შორს
+	From the Left	მარცხნიდან
+	From the Right	მარჯვნიდან
+	Generate Keyframes	საკვანძო კადრების გენერირება
+	High Tone	მაღალი ტონი
+	In a Room	ოთახში
+	Interior Room Tone	შიდა ოთახის ფონი
+	Large Hall	დიდი დარბაზი
+	Loudness	აღქმადი ხმამაღლობა
+	Low Tone	დაბალი ტონი
+	Matches each of the {n} clips on its own.	{n} კლიპიდან თითოეულს ცალ-ცალკე უთანხმებს.
+	Medium Room	საშუალო ოთახი
+	Multiple Clips Selected	მონიშნულია რამდენიმე კლიპი
+	Music	მუსიკა
+	Mute	დადუმება
+	Not matched yet	ჯერ არ არის შეთანხმებული
+	Open Air	ღია ცის ქვეშ
+	Pan	პანორამა
+	Phone Call	სატელეფონო ზარი
+	Podcast Voice	პოდკასტის ხმა
+	Presence Lift	ყოფნის გაძლიერება
+	Preset name	პრესეტის სახელი
+	Radio Announcer	რადიოწამყვანი
+	Radio Voice	რადიოხმა
+	Reduce By	შემცირება
+	Reduce Noise	ხმაურის შემცირება
+	Reduce Reverb	რევერბერაციის შემცირება
+	Reduce Rumble	გუგუნის შემცირება
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	მუსიკის რემიქსი სამიზნე ხანგრძლივობამდე ჯერ მიუწვდომელია. ამის ნაცვლად წაკვეთეთ კლიპი და დაამატეთ ჯვარედინი მილევა.
+	Repair	შეკეთება
+	SFX	ხმოვანი ეფექტები
+	Select audio clips to edit them here	მონიშნეთ აუდიო კლიპები აქ რედაქტირებისთვის
+	Select audio clips, then click a preset to apply it.	მონიშნეთ აუდიო კლიპები, შემდეგ დააწკაპუნეთ პრესეტზე მის გამოსაყენებლად.
+	Sensitivity	მგრძნობელობა
+	Small Room	პატარა ოთახი
+	Soften Harshness	სიმკვახის დარბილება
+	Stereo Width	სტერეოს სიგანე
+	Stone Church	ქვის ეკლესია
+	Telephone	ტელეფონი
+	The selected clips have different audio types. Assign one type to edit them together.	მონიშნულ კლიპებს აუდიოს სხვადასხვა ტიპი აქვთ. მიანიჭეთ ერთი ტიპი ერთად რედაქტირებისთვის.
+	Untagged	იარლიყის გარეშე
+	Voice in a Hall	ხმა დარბაზში
+	Warm Room	თბილი ოთახი
+	Warm Voice	თბილი ხმა
+	Wide Outdoor	ფართო ღია სივრცე
+	{name} (user)	{name} (მომხმარებლის)
+	Align Bottom	ქვემოთ სწორება
+	Align Center Horizontally	ჰორიზონტალურად ცენტრში სწორება
+	Align Center Vertically	ვერტიკალურად ცენტრში სწორება
+	Align Left	მარცხნივ სწორება
+	Align Right	მარჯვნივ სწორება
+	Align Top	ზემოთ სწორება
+	Align and Transform	სწორება და გარდაქმნა
+	Alignment	სწორება
+	Anchor point	საყრდენი წერტილი
+	Background	ფონი
+	Center Align Text	ტექსტის ცენტრში სწორება
+	Crawl Left	ცოცვა მარცხნივ
+	Crawl Right	ცოცვა მარჯვნივ
+	Create new graphic	ახალი გრაფიკის შექმნა
+	End Off Screen	დასასრული ეკრანს მიღმა
+	Faux Bold	ხელოვნური მუქი
+	Faux Italic	ხელოვნური დახრილი
+	Font Style	შრიფტის სტილი
+	Inner	შიდა
+	Install Motion Graphics Template (.fcgt)	მოძრავი გრაფიკის შაბლონის ინსტალაცია (.fcgt)
+	Install…	ინსტალაცია…
+	Intro Duration	შესავლის ხანგრძლივობა
+	Kerning	კერნინგი
+	Left Align Text	ტექსტის მარცხნივ სწორება
+	Ligatures	ლიგატურები
+	New Ellipse	ახალი ელიფსი
+	New Rectangle	ახალი მართკუთხედი
+	New Text	ახალი ტექსტი
+	New Text Layer	ახალი ტექსტური შრე
+	No templates match.	შესაბამისი შაბლონები არ არის.
+	OpenType	OpenType
+	Outer	გარე
+	Outro Duration	დასკვნის ხანგრძლივობა
+	Paragraph Text	აბზაცის ტექსტი
+	Pin To	მიმაგრება
+	Pinned Edges	მიმაგრებული კიდეები
+	Point Text	წერტილოვანი ტექსტი
+	Polygon Sides	მრავალკუთხედის გვერდები
+	Postroll	შემდგომი გადახვევა
+	Preroll	წინასწარი გადახვევა
+	Responsive Design - Position	ადაპტური დიზაინი - პოზიცია
+	Responsive Design - Time	ადაპტური დიზაინი - დრო
+	Right Align Text	ტექსტის მარჯვნივ სწორება
+	Roll	გორება
+	Search templates	შაბლონების ძებნა
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	მონიშნეთ გრაფიკული კლიპი ან გამოიყენეთ ტექსტის ხელსაწყო (T) პროგრამის მონიტორზე
+	Select a layer to edit its properties.	მონიშნეთ შრე მისი თვისებების რედაქტირებისთვის.
+	Shadow	ჩრდილი
+	Start Off Screen	დასაწყისი ეკრანს მიღმა
+	Stroke 2	კონტური 2
+	Template Properties	შაბლონის თვისებები
+	Template: {name}	შაბლონი: {name}
+	Text Box Height	ტექსტური ველის სიმაღლე
+	Text Box Width	ტექსტური ველის სიგანე
+	Text Layer Type	ტექსტური შრის ტიპი
+	Text Properties	ტექსტის თვისებები
+	Text Styling	ტექსტის სტილი
+	Toggle animation	ანიმაციის გადართვა
+	Toggle visibility	ხილვადობის გადართვა
+	Video Frame	ვიდეოკადრი
+	{category} · My Template	{category} · ჩემი შაბლონი
+	{n} editable properties	{n} რედაქტირებადი თვისება
+	Add pause	პაუზის დამატება
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	„პაუზის დამატება“ ჩასვამს [pause 1s]-ს. შეცვალეთ რიცხვი უფრო გრძელი ან მოკლე პაუზისთვის, მაგ. [pause 500ms] ან [pause 2s].
+	Add to timeline	დროის ხაზზე დამატება
+	Basic voices (built in)	საბაზო ხმები (ჩაშენებული)
+	Download natural voices ({mb} MB)…	ბუნებრივი ხმების ჩამოტვირთვა ({mb} MB)…
+	Download of the natural voices failed: {e}	ბუნებრივი ხმების ჩამოტვირთვა ვერ მოხერხდა: {e}
+	Download the natural voices? {mb} MB, once.	ჩამოიტვირთოს ბუნებრივი ხმები? {mb} MB, ერთჯერადად.
+	Downloading…	ჩამოტვირთვა…
+	Editing the selected narration	მონიშნული თხრობის რედაქტირება
+	Extra high	ძალიან მაღალი
+	Extra low	ძალიან დაბალი
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	{source}-დან და github.com/cmusphinx/cmudict-დან (წარმოთქმა). ლიცენზია: {license}. თითოეული ფაილი მოწმდება ფიქსირებულ SHA-256-თან.
+	Hear this voice	ამ ხმის მოსმენა
+	Narration added on {track}	თხრობა დაემატა {track}-ზე
+	Narration updated	თხრობა განახლდა
+	Natural voices	ბუნებრივი ხმები
+	Natural voices installed	ბუნებრივი ხმები დაინსტალირდა
+	Natural voices need a one-time download.	ბუნებრივ ხმებს ერთჯერადი ჩამოტვირთვა სჭირდება.
+	New narration	ახალი თხრობა
+	Pace	ტემპი
+	Synthesizing narration…	თხრობის სინთეზი…
+	Synthesizing…	სინთეზი…
+	Text to Speech: {e}	ტექსტიდან მეტყველებაში: {e}
+	Type what you want the voice to say	აკრიფეთ, რა უნდა თქვას ხმამ
+	Vocal pitch	ხმის სიმაღლე
+	Voice	ხმა
+	an audio track	აუდიო ტრეკი
+	no audio output (check Settings ▸ Audio Hardware)	აუდიო გამოსასვლელი არ არის (შეამოწმეთ პარამეტრები ▸ აუდიო აპარატურა)
+	the job disappeared	დავალება გაქრა
+	{name} (download)	{name} (ჩამოტვირთვა)
+	5.1 panner (drag the puck; double-click: front centre)	5.1 პანორამირება (გადაათრიეთ წერტილი; ორმაგი დაწკაპუნება: წინა ცენტრი)
+	Add keyframe	საკვანძო კადრის დამატება
+	Go to next keyframe	შემდეგ საკვანძო კადრზე გადასვლა
+	Go to previous keyframe	წინა საკვანძო კადრზე გადასვლა
+	Remove keyframe	საკვანძო კადრის მოცილება
+	Select a clip to see its properties	მონიშნეთ კლიპი მისი თვისებების სანახავად
+	Speed {n}%	სიჩქარე {n}%
+	Turn on animation and add keyframe	ანიმაციის ჩართვა და საკვანძო კადრის დამატება
+	Apply to Selected Clips	მონიშნულ კლიპებზე გამოყენება
+	Export Preset…	პრესეტის ექსპორტი…
+	Import Presets…	პრესეტების იმპორტი…
+	Lumetri Presets	Lumetri-ს პრესეტები
+	Search effects	ეფექტების ძებნა
+	Text to Speech: another sequence is open now; the narration was not placed	ტექსტიდან მეტყველებაში: ახლა სხვა მიმდევრობაა გახსნილი; თხრობა არ განთავსდა
+	Effect presets	ეფექტების პრესეტები
+	Automate to Sequence	ავტომატურად მიმდევრობაში
+	Bin: {name}	საქაღალდე: {name}
+	Clear (Delete)	გასუფთავება (წაშლა)
+	Convert to Master Clip	მთავარ კლიპად გადაქცევა
+	Date Created	შექმნის თარიღი
+	Descending	კლებადობით
+	Drag to reorder; tick the columns to show.	გადაათრიეთ რიგის შესაცვლელად; მონიშნეთ საჩვენებელი სვეტები.
+	Extra Large	ძალიან დიდი
+	Freeform View Options…	თავისუფალი ხედის პარამეტრები…
+	Icon	ხატულა
+	Icon View	ხატულების ხედი
+	List	სია
+	Manage Saved View Presets	შენახული ხედის პრესეტების მართვა
+	Medium (default)	საშუალო (ნაგულისხმევი)
+	Metadata Display	მეტამონაცემების ჩვენება
+	Metadata Display…	მეტამონაცემების ჩვენება…
+	New Bin From Selection	ახალი საქაღალდე მონიშნულიდან
+	New Item	ახალი ელემენტი
+	New Project Shortcut	პროექტის ახალი მალსახმობი
+	New Search Bin	ახალი საძიებო საქაღალდე
+	New Sequence From Clip	ახალი მიმდევრობა კლიპიდან
+	Open in New Tab	ახალ ჩანართში გახსნა
+	Open in New Window	ახალ ფანჯარაში გახსნა
+	Open in Place	ადგილზე გახსნა
+	Open in Source Monitor	წყაროს მონიტორში გახსნა
+	Open in Timeline	დროის ხაზზე გახსნა
+	Preview Area	წინასწარი ნახვის არე
+	Project View Preset {n}	პროექტის ხედის პრესეტი {n}
+	Project: {name}	პროექტი: {name}
+	Refresh Project	პროექტის განახლება
+	Refresh Sort Order	სორტირების რიგის განახლება
+	Restore View Preset	ხედის პრესეტის აღდგენა
+	Reveal Project in Finder…	პროექტის ჩვენება ფაილების მენეჯერში…
+	Reveal in Finder	ფაილების მენეჯერში ჩვენება
+	Save As New View Preset	შენახვა ხედის ახალ პრესეტად
+	Save Current View Preset	ხედის მიმდინარე პრესეტის შენახვა
+	Save Project	პროექტის შენახვა
+	Select an item to preview it	მონიშნეთ ელემენტი წინასწარი ნახვისთვის
+	Set Poster Frame	ყდის კადრის დაყენება
+	Sort Icons	ხატულების სორტირება
+	Thumbnail controls for all pointing devices	ესკიზების მართვა ყველა მიმთითებელი მოწყობილობისთვის
+	Thumbnails	ესკიზები
+	Thumbnails show effects applied	ესკიზები აჩვენებს გამოყენებულ ეფექტებს
+	Up one level	ერთი დონით ზემოთ
+	User Order	მომხმარებლის რიგი
+	Video Usage: {vu}  Audio Usage: {au}	ვიდეოს გამოყენება: {vu}  აუდიოს გამოყენება: {au}
+	{n} items	{n} ელემენტი
+	Freeform View	თავისუფალი ხედი
+	Stack	დასტად დალაგება
+	Unstack	დასტის დაშლა
+	Clip Size	კლიპის ზომა
+	Larger	უფრო დიდი
+	Smaller	უფრო პატარა
+	Align to Grid	ბადეზე სწორება
+	Reset to Grid	ბადეზე დაბრუნება
+	Save Arrangement…	განლაგების შენახვა…
+	Save Arrangement	განლაგების შენახვა
+	Restore Arrangement	განლაგების აღდგენა
+	Delete Arrangement	განლაგების წაშლა
+	Arrangement {n}	განლაგება {n}
+	Freeform View Options	თავისუფალი ხედის პარამეტრები
+	Snap to grid	ბადეზე მიკვრა
+	Show clip names	კლიპების სახელების ჩვენება
+	Show clip durations	კლიპების ხანგრძლივობის ჩვენება
+	Grid spacing:	ბადის ბიჯი:
+	Default clip size:	კლიპის ნაგულისხმევი ზომა:
+	{panel} — coming in a later milestone	{panel} — მოგვიანებით ეტაპზე
+	Edit Workspaces	სამუშაო სივრცეების რედაქტირება
+	Restore Original	ორიგინალის აღდგენა
+	Drag Video Only	მხოლოდ ვიდეოს გადათრევა
+	Drag Audio Only	მხოლოდ აუდიოს გადათრევა
+	Drag Video and Audio	ვიდეოსა და აუდიოს გადათრევა
+	Source clips	წყარო კლიპები
+	(no audio)	(აუდიო არ არის)
+	Generating waveform…	ტალღური ფორმის გენერირება…
+	Audio Waveform	აუდიოს ტალღური ფორმა
+	Video and Audio Waveform Split	ვიდეო და აუდიოს ტალღური ფორმა ცალ-ცალკე
+	Anchor to In Point	საწყის წერტილზე მიმაგრება
+	Anchor to Out Point	საბოლოო წერტილზე მიმაგრება
+	Custom ({n} points)	მორგებული ({n} წერტილი)
+	Source · {name}	წყარო · {name}
+	Temporal Interpolation	დროითი ინტერპოლაცია
+	Twirl open or shut	გაშლა ან აკეცვა
+	Without keyframes	საკვანძო კადრების გარეშე
+	Create 4-point polygon mask	4-წერტილიანი მრავალკუთხა ნიღბის შექმნა
+	Create ellipse mask	ელიფსური ნიღბის შექმნა
+	Delete Mask	ნიღბის წაშლა
+	Free draw bezier	ბეზიეს თავისუფალი ხაზვა
+	Inverted	ინვერსიული
+	Position & Rotation	პოზიცია და შემობრუნება
+	Position, Scale & Rotation	პოზიცია, მასშტაბი და შემობრუნება
+	Show graphs	გრაფიკების ჩვენება
+	Stop tracking	თვალყურის დევნების შეწყვეტა
+	Track selected mask backward	მონიშნული ნიღბის თვალყურის დევნება უკან
+	Track selected mask backward 1 frame	მონიშნული ნიღბის თვალყურის დევნება 1 კადრით უკან
+	Track selected mask forward	მონიშნული ნიღბის თვალყურის დევნება წინ
+	Track selected mask forward 1 frame	მონიშნული ნიღბის თვალყურის დევნება 1 კადრით წინ
+	Tracking method: {method}	თვალყურის დევნების მეთოდი: {method}
+	Value	მნიშვნელობა
+	Velocity	ცვლილების სიჩქარე
+	Set Transition Duration	გადასვლის ხანგრძლივობის დაყენება
+	Reverse	შებრუნებით
+	Center at Cut	ცენტრი ჭრილზე
+	Start at Cut	დასაწყისი ჭრილზე
+	End at Cut	დასასრული ჭრილზე
+	Custom Start	მორგებული დასაწყისი
+	Eyedropper (pick a color from the Program monitor)	პიპეტი (აიღეთ ფერი პროგრამის მონიტორიდან)
+	Interpret Footage	კადრების ინტერპრეტაცია
+	Color Management · {n} item	ფერების მართვა · {n} ელემენტი
+	Color Management · {n} items	ფერების მართვა · {n} ელემენტი
+	Media colour space (from file metadata): {detected}	მედიის ფერთა სივრცე (ფაილის მეტამონაცემებიდან): {detected}
+	Override media colour space:	მედიის ფერთა სივრცის ჩანაცვლება:
+	Decode Auro-3D height channels	Auro-3D სიმაღლის არხების დეკოდირება
+	Off: the file plays its own channels, as without an Auro-3D decoder.	გამორთული: ფაილი თავის არხებს უკრავს, როგორც Auro-3D დეკოდერის გარეშე.
+	Use file metadata	ფაილის მეტამონაცემების გამოყენება
+	Motion Graphics Templates	მოძრავი გრაფიკის შაბლონები
+	Clip Fx Editor	კლიპის ეფექტების რედაქტორი
+	Track Fx Editor	ტრეკის ეფექტების რედაქტორი
+	Custom Setup	მორგებული დაყენება
+	Master Gain	მთავარი გაძლიერება
+	Band {n}	ზოლი {n}
+	Solo	სოლო
+	Thr	ზღვ.
+	Ratio	თანაფარდობა
+	Att	შეტ.
+	Rel	გაშვ.
+	Output Gain	გამომავალი გაძლიერება
+	Limiter	შემზღუდველი
+	Link Channels	არხების დაკავშირება
+	Limiter Threshold	შემზღუდველის ზღვარი
+	Limiter Release	შემზღუდველის გაშვება
+	Auto Gate	ავტომატური გეიტი
+	Attack	შეტევა
+	Release	გაშვება
+	Compressor	კომპრესორი
+	Auto Makeup	ავტომატური კომპენსაცია
+	Makeup	კომპენსაცია
+	Expander	ექსპანდერი
+	Soft Clip	რბილი შეზღუდვა
+	out	გამ.
+	in	შეს.
+	Parametric Equalizer	პარამეტრული ეკვალაიზერი
+	Graphic Equalizer (10 Bands)	გრაფიკული ეკვალაიზერი (10 ზოლი)
+	Graphic Equalizer (20 Bands)	გრაფიკული ეკვალაიზერი (20 ზოლი)
+	Graphic Equalizer (30 Bands)	გრაფიკული ეკვალაიზერი (30 ზოლი)
+	Multiband Compressor	მრავალზოლიანი კომპრესორი
+	CFA4 encountered an error	CFA4-ს შეცდომა მოუვიდა
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	ფანჯრის დახატვისას რაღაც შეცდომა მოხდა. თქვენი პროექტი ისევ გახსნილია; ყოველი შემთხვევისთვის შეინახეთ.
+	Continue	გაგრძელება
+	Details: {path}	დეტალები: {path}
+	Engine restarted	ძრავა გადაიტვირთა
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4-ის ძრავა მოულოდნელად გაჩერდა და გადაიტვირთა. შეუნახავი ცვლილებები ინახება აღდგენის ჟურნალში, რომელიც მათ აღდგენას გთავაზობთ.
+	 ({ch} output channels)	 ({ch} გამომავალი არხი)
+	Active	აქტიური
+	Add to favorites	რჩეულებში დამატება
+	Appearance Mode	იერსახის რეჟიმი
+	Appearance Settings…	იერსახის პარამეტრები…
+	Auto-saves go to: {dir}	ავტომატური შენახვები ინახება: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	CFA4 დანარჩენ RAM-ს სხვა აპლიკაციებისთვის ტოვებს.
+	Currently: {loc} — {files} file(s), {size}	ამჟამად: {loc} — ფაილი: {files}, {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	მონიტორებისა და ესკიზებისთვის შენახული დეკოდირებული კადრები: {used} / {budget}.
+	Default location	ნაგულისხმევი მდებარეობა
+	Delete this preset	ამ პრესეტის წაშლა
+	Deleted preset “{active}”	პრესეტი „{active}“ წაიშალა
+	Deleted {n} file(s), {size}.	წაიშალა ფაილი: {n}, {size}.
+	Export the labels to a preset file…	იარლიყების ექსპორტი პრესეტის ფაილში…
+	Exported to {path}	ექსპორტირებულია: {path}
+	Font family	შრიფტის ოჯახი
+	Import a preset file…	პრესეტის ფაილის იმპორტი…
+	Imported “{name}”	იმპორტირებულია „{name}“
+	Label Color Presets	იარლიყების ფერების პრესეტები
+	Label Colors	იარლიყების ფერები
+	Last auto-save {a}	ბოლო ავტომატური შენახვა {a}
+	Last auto-save {a} · last recovery copy {j}	ბოლო ავტომატური შენახვა {a} · ბოლო აღდგენის ასლი {j}
+	Last recovery copy {j}	ბოლო აღდგენის ასლი {j}
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	პროგრამის მარცხენა → მოწყობილობის გამოსასვლელი {l}, მარჯვენა → მოწყობილობის გამოსასვლელი {r}{dev}. მოწყობილობის არხებს მიღმა გამოსასვლელები 1-სა და 2-ზე ბრუნდება.
+	Recovery copy: {dir}	აღდგენის ასლი: {dir}
+	Remove from favorites	რჩეულებიდან მოცილება
+	Reset…	ჩამოყრა…
+	Revert to the preset's colors and names	პრესეტის ფერებსა და სახელებზე დაბრუნება
+	Show the presets folder	პრესეტების საქაღალდის ჩვენება
+	Sync with system	სისტემასთან სინქრონიზაცია
+	System Default	სისტემის ნაგულისხმევი
+	not available in this session	ამ სესიაში მიუწვდომელია
+	{name} (Modified)	{name} (შეცვლილი)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	ხელმისაწვდომი ფერის კონტრასტი
+	Add tracks automatically when editing source clips onto the Timeline	ტრეკების ავტომატური დამატება წყარო კლიპების დროის ხაზზე განთავსებისას
+	All lines	ყველა სტრიქონი
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	მონიშვნის ხელსაწყოს შეუძლია მოძრავი და წანაცვლებითი წაკვეთის არჩევა მოდიფიკატორის გარეშე
+	Allow current tool to change trim type of previously selected edit point	მიმდინარე ხელსაწყოს შეუძლია წინა მონიშნული ჭრილის წერტილის წაკვეთის ტიპის შეცვლა
+	Allow duplicate media during project import	დუბლირებული მედიის დაშვება პროექტის იმპორტისას
+	Always import embedded CEA-708 closed captions with wide aspect.	ჩაშენებული CEA-708 დახურული სუბტიტრების იმპორტი ყოველთვის ფართო ფორმატით.
+	Always override audio tags	აუდიოს იარლიყების ყოველთვის ჩანაცვლება
+	Analyze all imported media to search for visuals or audio	ყველა იმპორტირებული მედიის ანალიზი გამოსახულებით ან ხმით საძიებლად
+	Animate zoom, scrolling and menus	მასშტაბის, გადახვევისა და მენიუების ანიმაცია
+	Appearance…	იერსახე…
+	At Startup	გაშვებისას
+	At playback end, return to beginning when restarting playback	დაკვრის ბოლოს თავიდან დაწყება ხელახლა დაკვრისას
+	Attempt to force hardware to document sample rate	აპარატურის დოკუმენტის დისკრეტიზაციის სიხშირეზე იძულების მცდელობა
+	Audio Hardware	აუდიო აპარატურა
+	Audio Hardware…	აუდიო აპარატურა…
+	Audio Time Units	აუდიოს დროის ერთეულები
+	Audio Transition Default Duration	აუდიო გადასვლის ნაგულისხმევი ხანგრძლივობა
+	Audio…	აუდიო…
+	Auto (system)	ავტომატური (სისტემური)
+	Auto Save	ავტომატური შენახვა
+	Auto Save also saves the current project(s)	ავტომატური შენახვა მიმდინარე პროექტებსაც ინახავს
+	Auto Save…	ავტომატური შენახვა…
+	Auto-tag audio types in the timeline	აუდიოს ტიპების ავტომატური მონიშვნა დროის ხაზზე
+	Auto-transcribe all imported clips	ყველა იმპორტირებული კლიპის ავტომატური ტრანსკრიბირება
+	Auto-transcribe only clips in sequences	მხოლოდ მიმდევრობებში არსებული კლიპების ავტომატური ტრანსკრიბირება
+	Automatch Time	ავტომატური შესაბამისობის დრო
+	Automatically Hide Dependent Clips	დამოკიდებული კლიპების ავტომატური დამალვა
+	Automatically Save Every	ავტომატური შენახვა ყოველ
+	Automatically delete cache files older than	ქეშის ფაილების ავტომატური წაშლა, რომლებიც უფრო ძველია, ვიდრე
+	Automatically delete oldest cache files when cache exceeds	ქეშის უძველესი ფაილების ავტომატური წაშლა, როცა ქეში აღემატება
+	Automatically refresh growing files	მზარდი ფაილების ავტომატური განახლება
+	Automatically resume playback for growing files in Source Monitor	მზარდი ფაილების დაკვრის ავტომატური გაგრძელება წყაროს მონიტორში
+	Automatically save projects	პროექტების ავტომატური შენახვა
+	Automatically transcribe clips	კლიპების ავტომატური ტრანსკრიბირება
+	Automation Keyframe Optimization	ავტომატიზაციის საკვანძო კადრების ოპტიმიზაცია
+	Background fill	ფონის შევსება
+	Bevel join	დახრილი შეერთება
+	Bins	საქაღალდეები
+	Butt cap	ბრტყელი დაბოლოება
+	Cache analysis results for re-use	ანალიზის შედეგების ქეშირება ხელახლა გამოსაყენებლად
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	ცვლილებები ფონურად კოპირდება ყოველი რედაქტირებიდან მალევე. თუ CFA4 მოულოდნელად დაიხურება, ისინი შემოთავაზებული იქნება შემდეგი გაშვებისას.
+	Chinese	ჩინური
+	Closed Captions	დახურული სუბტიტრები
+	Color…	ფერი…
+	Crash Recovery	ავარიის შემდეგ აღდგენა
+	Create folder for imported projects	საქაღალდის შექმნა იმპორტირებული პროექტებისთვის
+	Dark Theme	მუქი თემა
+	Default Audio Tracks	ნაგულისხმევი აუდიო ტრეკები
+	Default Emoji font	ემოჯის ნაგულისხმევი შრიფტი
+	Default Input	ნაგულისხმევი შესასვლელი
+	Default Media Scaling	მედიის ნაგულისხმევი მასშტაბირება
+	Default Output	ნაგულისხმევი გამოსასვლელი
+	Default closed caption font	დახურული სუბტიტრების ნაგულისხმევი შრიფტი
+	Default language	ნაგულისხმევი ენა
+	Default paragraph direction	აბზაცის ნაგულისხმევი მიმართულება
+	Default subtitle and text font	სუბტიტრებისა და ტექსტის ნაგულისხმევი შრიფტი
+	Delete files older than	ფაილების წაშლა, რომლებიც უფრო ძველია, ვიდრე
+	Delete oldest files when the cache exceeds	უძველესი ფაილების წაშლა, როცა ქეში აღემატება
+	Delete…	წაშლა…
+	Device Class	მოწყობილობის კლასი
+	Disable video output when in the background	ვიდეო გამოსასვლელის გამორთვა ფონურ რეჟიმში
+	Display Color Management	დისპლეის ფერების მართვა
+	Display Color Settings	დისპლეის ფერის პარამეტრები
+	Display out of sync indicators for unlinked clips	არასინქრონულობის ინდიკატორების ჩვენება დაუკავშირებელი კლიპებისთვის
+	Do not delete cache files automatically	ქეშის ფაილები ავტომატურად არ წაიშალოს
+	Don't label speakers	მოსაუბრეების მონიშვნის გარეშე
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	სწრაფი დეკოდირება შემცირებული გარჩევადობით (H.264: უფრო სწრაფი, ზოგი კადრი ნაკლებად ფილტრირებული)
+	Dynamic Link	დინამიური კავშირი
+	Enable Mercury Transmit	Mercury Transmit-ის ჩართვა
+	Enable ProRes hardware accelerated encoding, if available	ProRes-ის აპარატულად აჩქარებული კოდირების ჩართვა, თუ ხელმისაწვდომია
+	Enable clip and XMP metadata linking	კლიპისა და XMP მეტამონაცემების დაკავშირების ჩართვა
+	Enable developer mode	დეველოპერის რეჟიმის ჩართვა
+	Enable hardware accelerated decoding (requires restart)	აპარატულად აჩქარებული დეკოდირების ჩართვა (საჭიროებს გადატვირთვას)
+	Enable language auto-detection	ენის ავტომატური ამოცნობის ჩართვა
+	Enable proxies	პროქსების ჩართვა
+	English	ინგლისური
+	Extended Dynamic Range Monitoring	გაფართოებული დინამიური დიაპაზონის მონიტორინგი
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	ფერების მართვის პარამეტრებისთვის გადადით Lumetri Color-ის პანელის „პარამეტრების“ ჩანართზე.
+	Frame Count	კადრების რაოდენობა
+	Frame cache for monitors and thumbnails	კადრების ქეში მონიტორებისა და ესკიზებისთვის
+	Front + LFE	წინა + LFE
+	Front + Rear	წინა + უკანა
+	Front + Rear + LFE	წინა + უკანა + LFE
+	Front Only	მხოლოდ წინა
+	Generate Timecode	დროის კოდის გენერირება
+	Generate waveforms and conform audio using multithreading	ტალღური ფორმების გენერირება და აუდიოს მორგება მრავალნაკადიანად
+	Generate waveforms automatically during import	ტალღური ფორმების ავტომატური გენერირება იმპორტისას
+	Graphics…	გრაფიკა…
+	Growing Files	მზარდი ფაილები
+	HDR Graphics White (Nits)	HDR გრაფიკის თეთრი (ნიტი)
+	Hardware decoding	აპარატული დეკოდირება
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	აპარატული დეკოდირება: „ავტომატური“ იყენებს სისტემის ვიდეო დეკოდერს (VA-API ან NVDEC H.264-ისა და HEVC-ისთვის) მის მიერ მხარდაჭერილი ნაკადებისთვის, და CFA4-ის საკუთარ დეკოდერს დანარჩენისთვის ან აპარატურის მარცხისას. უკვე გახსნილი მედია თავის დეკოდერს ინარჩუნებს ხელახლა გახსნამდე.
+	Highlight Color	გამოყოფის ფერი
+	Hindi digits	ჰინდი ციფრები
+	I/O Buffer Size	შეტანა-გამოტანის ბუფერის ზომა
+	Import numbered stills as image sequences	დანომრილი უძრავი გამოსახულებების იმპორტი მიმდევრობებად
+	In the Media Cache	მედიის ქეშში
+	In the project	პროექტში
+	Include captions on import	სუბტიტრების ჩართვა იმპორტისას
+	Indeterminate Media Timebase	მედიის განუსაზღვრელი დროის ბაზა
+	Keep a recovery copy of unsaved changes	შეუნახავი ცვლილებების აღდგენის ასლის შენახვა
+	Korean	კორეული
+	Label Defaults	იარლიყების ნაგულისხმევები
+	Label speakers	მოსაუბრეების მონიშვნა
+	Labels	იარლიყები
+	Labels…	იარლიყები…
+	Large Trim Offset	წაკვეთის დიდი წანაცვლება
+	Large Volume Adjustment	ხმის დიდი ცვლილება
+	Left channel to device output	მარცხენა არხი მოწყობილობის გამოსასვლელზე
+	Left to right	მარცხნიდან მარჯვნივ
+	Light Theme	ღია თემა
+	Linear keyframe thinning	საკვანძო კადრების წრფივი შემცირება
+	Local Projects	ლოკალური პროექტები
+	Maintain pitch while shuttling	ტონის სიმაღლის შენარჩუნება გადახვევისას
+	Match frame sets in point	შესაბამისი კადრი აყენებს საწყის წერტილს
+	Maximum Project Versions	პროექტის ვერსიების მაქსიმალური რაოდენობა
+	Media Analysis	მედიის ანალიზი
+	Media Analysis & Transcription	მედიის ანალიზი და ტრანსკრიბირება
+	Media Analysis & Transcription…	მედიის ანალიზი და ტრანსკრიბირება…
+	Media Cache	მედიის ქეში
+	Media Cache Database	მედიის ქეშის მონაცემთა ბაზა
+	Media Cache Files	მედიის ქეშის ფაილები
+	Media Cache Management	მედიის ქეშის მართვა
+	Media Cache…	მედიის ქეში…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	მედიის ანალიზი და ტრანსკრიპციები ქეშირდება მედიის ქეშის საქაღალდეში. ხელახალი ანალიზი საჭირო აღარ იქნება, თუ მედიას ამ კომპიუტერზე სხვა პროექტში შემოიტანთ.
+	Memory	მეხსიერება
+	Memory…	მეხსიერება…
+	Minimum time	მინიმალური დრო
+	Minimum time interval thinning	შემცირება მინიმალური დროის ინტერვალით
+	Missing font replacement	დაკარგული შრიფტის ჩანაცვლება
+	Miter join	წვეტიანი შეერთება
+	Miter limit	წვეტის ზღვარი
+	Mono Media	მონო მედია
+	Monospace only	მხოლოდ თანაბარსიგანიანი
+	Movie (audio and video)	ფილმი (აუდიო და ვიდეო)
+	Multichannel Mono Media	მრავალარხიანი მონო მედია
+	Mute input during timeline recording	შესასვლელის დადუმება დროის ხაზზე ჩაწერისას
+	Next to original media files	ორიგინალი მედიაფაილების გვერდით
+	No Scroll	გადახვევის გარეშე
+	No plugins are installed. Changes will take effect the next time you start CFA4.	პლაგინები არ არის დაინსტალირებული. ცვლილებები ძალაში შევა CFA4-ის შემდეგი გაშვებისას.
+	Open Most Recent	უახლესის გახსნა
+	Open in new window	ახალ ფანჯარაში გახსნა
+	Open in place	ადგილზე გახსნა
+	Open new tab	ახალი ჩანართის გახსნა
+	Output Mapping	გამოსასვლელების შესაბამისობა
+	Page Scroll	გვერდებად გადახვევა
+	Pause Media Encoder queue during playback	Media Encoder-ის რიგის შეჩერება დაკვრისას
+	Per line	სტრიქონზე
+	Place files dropped onto the Timeline directly on the Timeline	დროის ხაზზე ჩაგდებული ფაილების პირდაპირ დროის ხაზზე განთავსება
+	Play after rendering previews	დაკვრა წინასწარი ნახვის რენდერის შემდეგ
+	Play audio while scrubbing in Source and Program Monitors	ხმის დაკვრა წყაროსა და პროგრამის მონიტორებში ხელით გადახვევისას
+	Playback	დაკვრა
+	Playback…	დაკვრა…
+	Playhead position determines trim monitor loop playback	დაკვრის მაჩვენებლის პოზიცია განსაზღვრავს წაკვეთის მონიტორის ციკლურ დაკვრას
+	Plugins	პლაგინები
+	Plugins…	პლაგინები…
+	Policy	წესი
+	Projecting cap	გამოწეული დაბოლოება
+	Projects	პროექტები
+	RAM reserved for other applications	სხვა აპლიკაციებისთვის დაჯავშნილი RAM
+	Refresh growing Files Every	მზარდი ფაილების განახლება ყოველ
+	Render Edit in Audition files to:	Audition-ში რედაქტირების ფაილების რენდერი:
+	Render audio when rendering video	აუდიოს რენდერი ვიდეოს რენდერისას
+	Restore open sequences when opening projects	გახსნილი მიმდევრობების აღდგენა პროექტების გახსნისას
+	Right channel to device output	მარჯვენა არხი მოწყობილობის გამოსასვლელზე
+	Right to left	მარჯვნიდან მარცხნივ
+	Ripple trim adds edits to keep both sides of trim in sync	წანაცვლებითი წაკვეთა ამატებს ჭრილებს წაკვეთის ორივე მხარის სინქრონიზაციისთვის
+	Round cap	მომრგვალებული დაბოლოება
+	Round join	მომრგვალებული შეერთება
+	Russian	რუსული
+	Sample Rate	დისკრეტიზაციის სიხშირე
+	Save .cfa and .pek media cache files next to original media files when possible	.cfa და .pek მედიის ქეშის ფაილების შენახვა ორიგინალი მედიაფაილების გვერდით, როცა შესაძლებელია
+	Scale to frame size	კადრის ზომამდე მასშტაბირება
+	Scratch disk location for Captured Audio	სამუშაო დისკის მდებარეობა ჩაწერილი აუდიოსთვის
+	Set focus on the Timeline when performing Insert/Overwrite edits	დროის ხაზზე ფოკუსი ჩასმა/გადაწერისას
+	Set to frame size	კადრის ზომაზე დაყენება
+	Shift clips that overlap trim point during ripple trimming	წაკვეთის წერტილთან გადაფარული კლიპების წანაცვლება წანაცვლებითი წაკვეთისას
+	Show "Project:" and "Bin:" in Project panel tab	„პროექტი:“ და „საქაღალდე:“-ს ჩვენება პანელ „პროექტის“ ჩანართში
+	Show Clip Mismatch Warning dialog	კლიპის შეუსაბამობის გაფრთხილების ჩვენება
+	Show Event Indicator	მოვლენების ინდიკატორის ჩვენება
+	Show Home	საწყისი ეკრანის ჩვენება
+	Show Mask Tracker Preview	ნიღბის თვალყურის დევნების წინასწარი ნახვის ჩვენება
+	Show Open Dialog	გახსნის დიალოგის ჩვენება
+	Show Project Load Error Dialog	პროექტის ჩატვირთვის შეცდომის დიალოგის ჩვენება
+	Show Rich Tool Tips	გაფართოებული მინიშნებების ჩვენება
+	Show Workspace Reset Warning dialog on double click	სამუშაო სივრცის ჩამოყრის გაფრთხილების ჩვენება ორმაგ დაწკაპუნებაზე
+	Show system compatibility issues at startup	სისტემის თავსებადობის პრობლემების ჩვენება გაშვებისას
+	Smart quotes	ჭკვიანი ბრჭყალები
+	Smooth Scroll	გლუვი გადახვევა
+	Snap playhead in Timeline when Snap is enabled	დაკვრის მაჩვენებლის მიკვრა დროის ხაზზე, როცა მიკვრა ჩართულია
+	Speaker Labeling	მოსაუბრეების მონიშვნა
+	Speech model	მეტყველების მოდელი
+	Start at 0	დაწყება 0-დან
+	Start at 1	დაწყება 1-დან
+	Start with an Empty Project	ცარიელი პროექტით დაწყება
+	Step forward/back many	ბევრი ნაბიჯით წინ/უკან
+	Stereo Media	სტერეო მედია
+	Still	უძრავი გამოსახულება
+	Still Image Default Duration	უძრავი გამოსახულების ნაგულისხმევი ხანგრძლივობა
+	Stroke line cap	კონტურის ხაზის დაბოლოება
+	Stroke line join	კონტურის ხაზის შეერთება
+	Sum multichannel outputs to mono in Source Monitor	მრავალარხიანი გამოსასვლელების მონოდ შეჯამება წყაროს მონიტორში
+	System Language	სისტემის ენა
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	მედიის ქეში შეიცავს შეუნახავი პროექტების რენდერის წინასწარ ნახვებს და სხვა ფაილებს, რომელთა ხელახლა შექმნაც CFA4-ს შეუძლია. მათი წაშლა ყოველთვის უსაფრთხოა; CFA4 მათ საჭიროებისამებრ ხელახლა ქმნის.
+	Timecode Conversion	დროის კოდის გარდაქმნა
+	Timeline Mouse Scrolling	დროის ხაზის მაუსით გადახვევა
+	Timeline Playback Auto-Scrolling	დროის ხაზის ავტომატური გადახვევა დაკვრისას
+	Timeline…	დროის ხაზი…
+	Transcription	ტრანსკრიბირება
+	Transcription preferences	ტრანსკრიბირების პარამეტრები
+	Trim	შეკვეცა
+	Trim…	წაკვეთა…
+	UI Scale	ინტერფეისის მასშტაბი
+	Update it at least every	განახლება სულ მცირე ყოველ
+	Update timeline dynamically during ripple edits.	დროის ხაზის დინამიური განახლება წანაცვლებითი რედაქტირებისას.
+	Use File	ფაილის მიხედვით
+	Use Media Source	მედიის წყაროს მიხედვით
+	Validate Content Credentials on import	Content Credentials-ის შემოწმება იმპორტისას
+	Video Transition Default Duration	ვიდეო გადასვლის ნაგულისხმევი ხანგრძლივობა
+	When Opening a Project	პროექტის გახსნისას
+	Whisper base (balanced)	Whisper base (დაბალანსებული)
+	Whisper small (most accurate)	Whisper small (ყველაზე ზუსტი)
+	Whisper tiny (fastest)	Whisper tiny (ყველაზე სწრაფი)
+	Write XMP ID to files on import	XMP ID-ის ჩაწერა ფაილებში იმპორტისას
+	Write clip markers to XMP	კლიპის მარკერების ჩაწერა XMP-ში
+	days	დღე
+	milliseconds	მილიწამი
+	minute(s)	წუთი
+	second(s)	წამი
+	seconds	წამი
+	 seconds	 წამი
+	Channel {n}	არხი {n}
+	Countdown Sound Cues	უკუთვლის ხმოვანი სიგნალები
+	Discard take	დუბლის უგულებელყოფა
+	Discard the active take	აქტიური დუბლის უგულებელყოფა
+	Input:	შესასვლელი:
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	დაკვრა იწყება წინასწარი გადახვევით დაკვრის მაჩვენებლამდე (ან საწყის წერტილამდე); მონიშნული საწყისი/საბოლოოს შემთხვევაში ჩაწერა იქ ირთვება და ითიშება.
+	Post-roll	შემდგომი გადახვევა
+	Post-roll:	შემდგომი გადახვევა:
+	Pre-roll:	წინასწარი გადახვევა:
+	Qt Multimedia is not available	Qt Multimedia მიუწვდომელია
+	Record (voice-over on the record-enabled track)	ჩაწერა (გახმოვანება ჩაწერისთვის ჩართულ ტრეკზე)
+	Recording voice-over…	გახმოვანების ჩაწერა…
+	Source:	წყარო:
+	Stop Voice-over Recording	გახმოვანების ჩაწერის შეწყვეტა
+	The audio input could not be started	აუდიო შესასვლელის გაშვება ვერ მოხერხდა
+	The audio input does not support a usable format	აუდიო შესასვლელს არ აქვს გამოსაყენებელი ფორმატის მხარდაჭერა
+	The voice-over input buffer is full: the take ends here	გახმოვანების შესასვლელის ბუფერი სავსეა: დუბლი აქ მთავრდება
+	There is no audio input device	აუდიო შესასვლელი მოწყობილობა არ არის
+	Voice-Over Record Settings	გახმოვანების ჩაწერის პარამეტრები
+	Voice-Over Record Settings…	გახმოვანების ჩაწერის პარამეტრები…
+	Voice-over input: {error}	გახმოვანების შესასვლელი: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	გახმოვანების ჩაწერა (მარჯვენა დაწკაპუნება: გახმოვანების ჩაწერის პარამეტრები…)
+	Voice-over recorded: {p}	გახმოვანება ჩაიწერა: {p}
+	Voice-over recording stopped (nothing recorded)	გახმოვანების ჩაწერა შეწყდა (არაფერი ჩაწერილა)
+	Voice-over take discarded	გახმოვანების დუბლი უგულებელყოფილია
+	 frames	 კადრი
+	All Cameras	ყველა კამერა
+	Auto-Adjust Multi-Camera Playback Quality	მრავალკამერიანი დაკვრის ხარისხის ავტომატური მორგება
+	Camera 1	კამერა 1
+	Camera Angle Metadata	კამერის კუთხის მეტამონაცემები
+	Camera Names	კამერების სახელები
+	Camera {n} — {name}	კამერა {n} — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	მრავალკამერიან ხედში ნაჩვენები კამერები (მოხსენით მონიშვნა დასამალად).
+	Clip Marker	კლიპის მარკერი
+	Clip Name:	კლიპის სახელი:
+	Clip Names	კლიპების სახელები
+	Create Multi-Camera Source Sequence	მრავალკამერიანი წყარო მიმდევრობის შექმნა
+	Edit Cameras	კამერების რედაქტირება
+	Edit Cameras…	კამერების რედაქტირება…
+	Enumerate Cameras	კამერების დანომრვა
+	Ignore Hours	საათების იგნორირება
+	In Points	საწყისი წერტილები
+	Merge Clips	კლიპების გაერთიანება
+	Merged clip created	გაერთიანებული კლიპი შეიქმნა
+	Move source clips to Processed Clips bin	წყარო კლიპების გადატანა საქაღალდეში „დამუშავებული კლიპები“
+	Multi-Camera Audio Follows Video	მრავალკამერიანი აუდიო მიჰყვება ვიდეოს
+	Multi-Camera Layout	მრავალკამერიანი განლაგება
+	Multi-Camera Record	მრავალკამერიანი ჩაწერა
+	Multi-Camera Record On/Off (0)	მრავალკამერიანი ჩაწერა ჩართ./გამორთ. (0)
+	Multi-Camera Record On/Off Toggle	მრავალკამერიანი ჩაწერის გადართვა
+	Multi-Camera Record off	მრავალკამერიანი ჩაწერა გამორთულია
+	Multi-Camera Record on	მრავალკამერიანი ჩაწერა ჩართულია
+	Multi-Camera Selection Top Down	მრავალკამერიანი მონიშვნა ზემოდან ქვემოთ
+	Multi-Camera View	მრავალკამერიანი ხედი
+	Multi-camera source sequence with {n} camera(s)	მრავალკამერიანი წყარო მიმდევრობა, კამერა: {n}
+	No multi-camera clip at the playhead	დაკვრის მაჩვენებელთან მრავალკამერიანი კლიპი არ არის
+	Offset Audio by:	აუდიოს წანაცვლება:
+	Out Points	საბოლოო წერტილები
+	Page {page} of {pages}	გვერდი {page} / {pages}
+	Record	ჩაწერა
+	Recorded {n} multi-camera cut(s)	ჩაწერილია მრავალკამერიანი ჭრილი: {n}
+	Reference track:	საცნობარო ტრეკი:
+	Remove Audio from AV Clip	აუდიოს მოცილება AV კლიპიდან
+	Sequence Name:	მიმდევრობის სახელი:
+	Show Multi-Camera Preview Monitor	მრავალკამერიანი წინასწარი ნახვის მონიტორის ჩვენება
+	Switch Audio	აუდიოს გადართვა
+	Synchronize Clips	კლიპების სინქრონიზაცია
+	Synchronize Point	სინქრონიზაციის წერტილი
+	Synchronized {n} clip group(s)	სინქრონიზებულია კლიპების ჯგუფი: {n}
+	Transmit Multi-Camera View	მრავალკამერიანი ხედის გადაცემა
+	first marker	პირველი მარკერი
+	lowest (V1…)	ყველაზე დაბალი (V1…)
+	no multi-camera clip at the playhead	დაკვრის მაჩვენებელთან მრავალკამერიანი კლიპი არ არის
+	{first} - Merged	{first} - გაერთიანებული
+	{first} Multicam	{first} მრავალკამერიანი
+	{n} clip(s) selected; the clip on the reference track stays put.	მონიშნულია კლიპი: {n}; საცნობარო ტრეკის კლიპი ადგილზე რჩება.
+	{n} clip(s): {names}	კლიპი ({n}): {names}
+	Current duration {seconds} s	მიმდინარე ხანგრძლივობა {seconds} წმ
+	Fewer · More	ნაკლები · მეტი
+	Remix Properties	რემიქსის თვისებები
+	Remixed to {seconds} s	რემიქსი {seconds} წმ-მდე
+	Segments:	სეგმენტები:
+	Target Duration:	სამიზნე ხანგრძლივობა:
+	Variations:	ვარიაციები:
+	the selected clip is not remixed	მონიშნული კლიპი არ არის რემიქსირებული
+	After installing, restart CFA4.	ინსტალაციის შემდეგ გადატვირთეთ CFA4.
+	Available, switched off	ხელმისაწვდომია, გამორთულია
+	Left out by the routing table	გამოტოვებულია მარშრუტიზაციის ცხრილით
+	CFA4 engine	CFA4-ის ძრავა
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	CFA4-ის საკუთარი ძრავა ხსნის ყველა ფაილს, რისი გახსნაც შეუძლია. ქვემოთ მოცემული დამატებითი მოდულები, ამ რიგით, მხოლოდ იმ ფაილებს იღებენ, რომლებსაც ძრავა ჯერ ვერ ხსნის. მოდულის გამორთვა გავლენას ახდენს შემდეგ გახსნილ ფაილებზე.
+	Capabilities	შესაძლებლობები
+	Copy command	ბრძანების კოპირება
+	H.264 software encoding (x264)	H.264 პროგრამული კოდირება (x264)
+	HEVC software encoding (x265)	HEVC პროგრამული კოდირება (x265)
+	In use	გამოიყენება
+	Licence	ლიცენზია
+	Media Backends	მედიის მოდულები
+	Media Backends…	მედიის მოდულები…
+	Not available	მიუწვდომელია
+	Not part of this build	არ არის ამ ანაწყობის ნაწილი
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	საკუთარი Rust დეკოდერები და ენკოდერები: ყოველთვის პირველი გამოიყენება და სარეზერვოა, როცა დამატებითი მოდული ვერ ართმევს თავს
+	Restricted Codecs…	შეზღუდული კოდეკები…
+	Restricted codecs	შეზღუდული კოდეკები
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	ზოგი კოდეკი თავისუფალი პროგრამაა, მაგრამ დაპატენტებულ ფორმატებს ახორციელებს. Ubuntu-ს მსგავსად, CFA4 მათ ნაგულისხმევად არ აინსტალირებს: საბაზო პაკეტი მათ გარეშე მუშაობს და თქვენ წყვეტთ, დააინსტალიროთ თუ არა. ზოგ ქვეყანაში მათი გამოყენება შეიძლება შეზღუდული იყოს; შეამოწმეთ, ნებადართულია თუ არა იქ, სადაც ხართ.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	დამატებითი დეკოდერი ფორმატებისთვის, რომლებსაც საკუთარი ძრავა ჯერ ვერ კითხულობს (10-ბიტიანი და 4:2:2 კამერის მედია, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	დამატებითი დეკოდერი სისტემის GStreamer-იდან (Ogg Theora, FLV, WMV და სხვა ფორმატები); LGPL, Ubuntu-ს რეპოზიტორიებიდან
+	The engine did not answer: {message}	ძრავამ არ უპასუხა: {message}
+	To install them: {command}	მათი ინსტალაციისთვის: {command}
+	Use this backend	ამ მოდულის გამოყენება
+	installed	დაინსტალირებულია
+	not installed	არ არის დაინსტალირებული
+	on	ჩართული
+	 (removed from {list})	 (მოცილებულია {list}-დან)
+	 and 	 და 
+	Add another shortcut	კიდევ ერთი მალსახმობის დამატება
+	Application shortcuts work whatever panel has focus	აპლიკაციის მალსახმობები მუშაობს, რომელ პანელზეც არ უნდა იყოს ფოკუსი
+	Assign {key} to {command}	{key}-ის მინიჭება {command}-ზე
+	Cleared {n} shortcut(s) of {command}	{command}-ის მალსახმობები გასუფთავდა: {n}
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	დააწკაპუნეთ ბრძანების „მალსახმობის“ უჯრაზე და დააჭირეთ კლავიშებს მისანიჭებლად; + ამატებს კიდევ ერთ მალსახმობს.
+	Click a key on the keyboard to see its shortcuts	დააწკაპუნეთ კლავიატურის კლავიშზე მისი მალსახმობების სანახავად
+	Click and press keys to assign	დააწკაპუნეთ და დააჭირეთ კლავიშებს მისანიჭებლად
+	Commands:	ბრძანებები:
+	Conflict: {key} is assigned to {commands} ({ctx})	კონფლიქტი: {key} მინიჭებულია {commands}-ზე ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	ექსპორტი: ფაილი არ არის არჩეული (აგენტები: shortcuts.export {path})
+	Import: no file chosen (agents: shortcuts.import {path})	იმპორტი: ფაილი არ არის არჩეული (აგენტები: shortcuts.import {path})
+	Key:	კლავიში:
+	Keyboard: US	კლავიატურა: US
+	Loaded “{name}”	ჩაიტვირთა „{name}“
+	Modifier held / selected	დაჭერილი / მონიშნული მოდიფიკატორი
+	Modifiers	მოდიფიკატორები
+	My Shortcuts	ჩემი მალსახმობები
+	No matching commands	შესაბამისი ბრძანებები არ არის
+	Nothing is assigned to this key	ამ კლავიშს არაფერი აქვს მინიჭებული
+	Panel shortcuts override application shortcuts while that panel has focus	პანელის მალსახმობებს უპირატესობა აქვთ აპლიკაციის მალსახმობებზე, სანამ პანელზე ფოკუსია
+	Save preset as:	პრესეტის შენახვა როგორც:
+	Saved preset “{name}”	პრესეტი „{name}“ შენახულია
+	Search commands or keys	ბრძანებების ან კლავიშების ძებნა
+	Selected: {command}	მონიშნული: {command}
+	Type a shortcut… (Esc cancels)	აკრიფეთ მალსახმობი… (Esc აუქმებს)
+	{active} (modified)	{active} (შეცვლილი)
+	{key} can't be used as a shortcut	{key} არ შეიძლება გამოყენებულ იქნას მალსახმობად
+	{panel} Panel	პანელი „{panel}“
+	Docking Action	მიმაგრების მოქმედება
+	Undock Panel	პანელის მოხსნა
+	Restore Workspace	სამუშაო სივრცის აღდგენა
+	Add Guide…	დამხმარე ხაზის დამატება…
+	Guide Templates	დამხმარე ხაზების შაბლონები
+	Manage Guides	დამხმარე ხაზების მართვა
+	Manage Guides…	დამხმარე ხაზების მართვა…
+	No saved guide templates.	დამხმარე ხაზების შენახული შაბლონები არ არის.
+	Position:	პოზიცია:
+	Reference  {tc}	საცნობარო  {tc}
+	Reference: next frame	საცნობარო: შემდეგი კადრი
+	Reference: previous frame	საცნობარო: წინა კადრი
+	Save Guides as Template	დამხმარე ხაზების შაბლონად შენახვა
+	Save Guides as Template…	დამხმარე ხაზების შაბლონად შენახვა…
+	Saved guide template “{name}”	დამხმარე ხაზების შაბლონი „{name}“ შენახულია
+	Set	დაყენება
+	Set Comparison Reference	შედარების საცნობაროს დაყენება
+	Set the reference to the playhead	საცნობაროს დაყენება დაკვრის მაჩვენებელზე
+	Snap in Program Monitor	მიკვრა პროგრამის მონიტორში
+	The template needs a name.	შაბლონს სახელი სჭირდება.
+	There are no guides to save.	შესანახი დამხმარე ხაზები არ არის.
+	Join Through Edits	გამჭოლი ჭრილების შეერთება
+	Replace With Clip From Source Monitor	ჩანაცვლება წყაროს მონიტორის კლიპით
+	Reveal Nested Sequence	ჩადგმული მიმდევრობის ჩვენება
+	Reveal in Project	პროექტში ჩვენება
+	Unlink	კავშირის გაწყვეტა
+	Apply Default Transitions	ნაგულისხმევი გადასვლების გამოყენება
+	Ripple Trim In	საწყისის წაკვეთა წანაცვლებით
+	Ripple Trim Out	საბოლოოს წაკვეთა წანაცვლებით
+	Roll Edit	მოძრავი ჭრილი
+	Trim In	საწყისის წაკვეთა
+	Trim Out	საბოლოოს წაკვეთა
+	Expand All Tracks	ყველა ტრეკის გაშლა
+	Minimize All Tracks	ყველა ტრეკის ჩაკეცვა
+	Increase Video Tracks Height	ვიდეო ტრეკების სიმაღლის გაზრდა
+	Decrease Video Tracks Height	ვიდეო ტრეკების სიმაღლის შემცირება
+	Increase Audio Tracks Height	აუდიო ტრეკების სიმაღლის გაზრდა
+	Decrease Audio Tracks Height	აუდიო ტრეკების სიმაღლის შემცირება
+	Drag to change the track height	გადაათრიეთ ტრეკის სიმაღლის შესაცვლელად
+	Head	დასაწყისი
+	Head and Tail	დასაწყისი და დასასრული
+	Continuous	უწყვეტი
+	Show Video Thumbnails	ვიდეო ესკიზების ჩვენება
+	Show Audio Waveform	აუდიოს ტალღური ფორმის ჩვენება
+	Timeline Display Settings	დროის ხაზის ჩვენების პარამეტრები
+	Snap in Timeline (S)	მიკვრა დროის ხაზზე (S)
+	Caption track options	სუბტიტრების ტრეკის პარამეტრები
+	Insert and overwrite sequences as nests or individual clips	მიმდევრობების ჩასმა და გადაწერა ჩადგმულად ან ცალკეული კლიპებით
+	Close Other Timeline Panels	დროის ხაზის სხვა პანელების დახურვა
+	Show Keyframes	საკვანძო კადრების ჩვენება
+	Clip Keyframes	კლიპის საკვანძო კადრები
+	Track Keyframes	ტრეკის საკვანძო კადრები
+	Send {n} Level	გაგზავნის {n} დონე
+	Delete Caption Track	სუბტიტრების ტრეკის წაშლა
+	Delete Empty Caption Tracks	სუბტიტრების ცარიელი ტრეკების წაშლა
+	Toggle Caption Track Lock	სუბტიტრების ტრეკის ჩაკეტვის გადართვა
+	Toggle Caption Track Output	სუბტიტრების ტრეკის გამოსასვლელის გადართვა
+	Drag In point	საწყისი წერტილის გადათრევა
+	Drag Out point	საბოლოო წერტილის გადათრევა
+	Move marked range	მონიშნული დიაპაზონის გადატანა
+	Auto Tone Map Media (HDR and log into SDR)	მედიის ავტომატური ტონური მეპინგი (HDR და log SDR-ში)
+	CFA4 always composites in linear light	CFA4 ყოველთვის კომპოზიტირებს წრფივ სინათლეში
+	Captured View:	ჩაწერილი ხედი:
+	Channel Format:	არხების ფორმატი:
+	Composite in Linear Color	კომპოზიტირება წრფივ ფერში
+	Configure…	კონფიგურაცია…
+	Custom ({ratio})	მორგებული ({ratio})
+	Display Format:	ჩვენების ფორმატი:
+	Editing Mode:	რედაქტირების რეჟიმი:
+	Fields:	ნახევარკადრები:
+	Frame Size:	კადრის ზომა:
+	Maximum Bit Depth	მაქსიმალური ბიტური სიღრმე
+	Maximum Render Quality	რენდერის მაქსიმალური ხარისხი
+	Milliseconds	მილიწამები
+	Monoscopic	მონოსკოპიური
+	New Sequence	ახალი მიმდევრობა
+	No Fields (Progressive Scan)	ნახევარკადრების გარეშე (პროგრესული გაშლა)
+	Not supported in CFA4 yet	CFA4-ში ჯერ არ არის მხარდაჭერილი
+	Number of Channels:	არხების რაოდენობა:
+	Pixel Aspect Ratio:	პიქსელის პროპორცია:
+	Preview File Format:	წინასწარი ნახვის ფაილის ფორმატი:
+	Projection:	პროექცია:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	დისკრეტიზაციის სიხშირე:
+	Scale motion effects proportionally when changing frame size	მოძრაობის ეფექტების პროპორციული მასშტაბირება კადრის ზომის შეცვლისას
+	Sequence Settings	მიმდევრობის პარამეტრები
+	Square Pixels (1.0)	კვადრატული პიქსელები (1,0)
+	Timebase:	დროის ბაზა:
+	Tracks	ტრეკები
+	VR Properties	VR თვისებები
+	Video Previews	ვიდეოს წინასწარი ნახვები
+	Wide gamut color (composite in BT.2020)	ფართო ფერთა გამა (კომპოზიტირება BT.2020-ში)
+	Working Color Space:	სამუშაო ფერთა სივრცე:
+	horizontal	ჰორიზონტალური
+	no sequence is open	მიმდევრობა არ არის გახსნილი
+	tracks	ტრეკი
+	vertical	ვერტიკალური
+	{rate} fps Drop-Frame Timecode	{rate} fps დროის კოდი კადრების გამოტოვებით
+	{rate} fps Non Drop-Frame Timecode	{rate} fps დროის კოდი კადრების გამოტოვების გარეშე
+	{rate} fps Timecode	{rate} fps დროის კოდი
+	{rate} frames/second	{rate} კადრი/წამში
+	Always Deinterlace	ყოველთვის დეინტერლეისინგი
+	Audio Attributes	აუდიოს ატრიბუტები
+	Ch. {n}	არხ. {n}
+	Clip Channel Format:	კლიპის არხების ფორმატი:
+	Clip Speed / Duration	კლიპის სიჩქარე / ხანგრძლივობა
+	Clip {n}	კლიპი {n}
+	Contains:	შეიცავს:
+	Edit Subclip	ქვეკლიპის რედაქტირება
+	Field Options	ველის პარამეტრები
+	Flicker Removal	ციმციმის მოცილება
+	Frame Hold Options	კადრის შეჩერების პარამეტრები
+	Frame Rate:	კადრების სიხშირე:
+	Hold Filters	ფილტრების შეჩერება
+	Hold On	შეჩერება:
+	In Point	საწყისი წერტილი
+	Make Subclip	ქვეკლიპის შექმნა
+	Media Source Channels	მედიაწყაროს არხები
+	Media Start:	მედიის დასაწყისი:
+	Modify Clip: Audio Channels	კლიპის შეცვლა: აუდიოარხები
+	Modify Clip: Timecode	კლიპის შეცვლა: ტაიმკოდი
+	Nested Sequence Name	ჩადგმული მიმდევრობის სახელი
+	New Offline File	ახალი ოფლაინ ფაილი
+	No effects	ეფექტების გარეშე
+	Number of Audio Clips:	აუდიოკლიპების რაოდენობა:
+	Out Point	საბოლოო წერტილი
+	Paste Attributes	ატრიბუტების ჩასმა
+	Playhead	დაკვრის მაჩვენებელი
+	Processing Options	დამუშავების პარამეტრები
+	Remove Attributes	ატრიბუტების მოცილება
+	Restrict Trims To Subclip Boundaries	შეკვეცის შეზღუდვა ქვეკლიპის საზღვრებით
+	Reverse Field Dominance	ველების რიგის შებრუნება
+	Reverse Speed	უკუსვლით დაკვრა
+	Ripple Edit, Shifting Trailing Clips	წანაცვლებითი რედაქტირება, შემდგომი კლიპების გადაწევით
+	Scale Attribute Times	ატრიბუტების დროის მასშტაბირება
+	Sequence Time	მიმდევრობის დრო
+	Set Timecode:	ტაიმკოდის დაყენება:
+	Source Timecode	წყაროს ტაიმკოდი
+	Source channels the selected audio clips play:	წყაროს არხები, რომლებსაც მონიშნული აუდიოკლიპები უკრავს:
+	Speed:	სიჩქარე:
+	Subclip: {name}	ქვეკლიპი: {name}
+	Tape Name:	ფირის სახელი:
+	Timecode:	ტაიმკოდი:
+	Use the file's timecode	ფაილის ტაიმკოდის გამოყენება
+	Video Attributes	ვიდეოს ატრიბუტები
+	no dialog	დიალოგის გარეშე
+	Action Safe Area	მოქმედების უსაფრთხო არე
+	Action and Title Safe Areas	მოქმედებისა და სათაურის უსაფრთხო არეები
+	Action:	მოქმედება:
+	Analyze	ანალიზი
+	Any	ნებისმიერი
+	Apply Default Audio Transition	ნაგულისხმევი აუდიოგადასვლის გამოყენება
+	Apply Default Video Transition	ნაგულისხმევი ვიდეოგადასვლის გამოყენება
+	Apply a cut at each detected cut point	ჭრის დამატება ყოველ აღმოჩენილ ჭრის წერტილზე
+	At Unnumbered Markers	დაუნომრავ მარკერებზე
+	Audio Only	მხოლოდ აუდიო
+	Audio Previews:	აუდიოს წინასწარი ნახვა:
+	Audio analysis:	აუდიოს ანალიზი:
+	Audio effects	აუდიოეფექტები
+	Audio on track {t}	აუდიო ტრეკზე {t}
+	Automate To Sequence	მიმდევრობაში ავტომატური განთავსება
+	Average Data Rate	მონაცემთა საშუალო სიჩქარე
+	Capture	ჩაწერა
+	Capture Format:	ჩაწერის ფორმატი:
+	Captured and Generated:	ჩაწერილი და გენერირებული:
+	Case Sensitive	რეგისტრის გათვალისწინებით
+	Clip Names and Markers	კლიპების სახელები და მარკერები
+	Clip Overlap:	კლიპების გადაფარვა:
+	Clips	კლიპები
+	Codec: {codec}	კოდეკი: {codec}
+	Color Matte Color	ფერადი ფონის ფერი
+	Colour	ფერი
+	Comments:	კომენტარები:
+	Copy and Create Proxies	კოპირება და პროქსების შექმნა
+	Create Proxies	პროქსების შექმნა
+	Create Search Bin	საძიებო საქაღალდის შექმნა
+	Create a bin of subclips from each detected cut point	ქვეკლიპების საქაღალდის შექმნა ყოველი აღმოჩენილი ჭრის წერტილიდან
+	Create a clip marker at each detected cut point	კლიპის მარკერის შექმნა ყოველ აღმოჩენილ ჭრის წერტილზე
+	Disabled clips	გამორთული კლიპები
+	Edit Offline File	ოფლაინ ფაილის რედაქტირება
+	Empty tracks	ცარიელი ტრეკები
+	Existing XMP files written by other applications are left unchanged.	სხვა აპლიკაციების მიერ ჩაწერილი არსებული XMP ფაილები უცვლელი რჩება.
+	File Size	ფაილის ზომა
+	Find in:	ძებნა სად:
+	Find:	ძებნა:
+	Flash Cue Marker	Flash Cue მარკერი
+	Frames per Still:	კადრები თითო სურათზე:
+	Gaps	ხარვეზები
+	Ignore Audio	აუდიოს იგნორირება
+	Ignore Options	პარამეტრების იგნორირება
+	Ignore Video	ვიდეოს იგნორირება
+	Ingest Settings	მიღების პარამეტრები
+	Insert Edit	ჩასმითი რედაქტირება
+	Log Note:	ჟურნალის შენიშვნა:
+	Match {n} of {total}	დამთხვევა {n} / {total}
+	Match:	დამთხვევა:
+	Media Name:	მედიის სახელი:
+	Move clips to the lowest track possible	კლიპების გადატანა შესაძლო ყველაზე დაბალ ტრეკზე
+	New Color Matte	ახალი ფერადი ფონი
+	Next to the media	მედიის გვერდით
+	Normalize Mix Track	შერევის ტრეკის ნორმალიზება
+	Normalize Mix Track to:	შერევის ტრეკის ნორმალიზება დონემდე:
+	Ordering:	დალაგება:
+	Overwrite Edit	გადაწერითი რედაქტირება
+	Path: {path}	გზა: {path}
+	Project Auto Save:	პროექტის ავტოშენახვა:
+	Recognize when different speakers are talking	სხვადასხვა მოსაუბრის ამოცნობა
+	Renderer:	რენდერერი:
+	Same as Project	პროექტის მსგავსად
+	Saved template {path}	შაბლონი შენახულია: {path}
+	Scene Edit Detection	სცენების ჭრის აღმოჩენა
+	Scene Edit Detection: analysing in the background (see Progress)	სცენების ჭრის აღმოჩენა: ანალიზი მიმდინარეობს ფონურ რეჟიმში (იხ. პროგრესი)
+	Scene:	სცენა:
+	Search:	ძებნა:
+	Selection Order	მონიშვნის რიგი
+	Sensitivity:	მგრძნობელობა:
+	Sequentially	თანმიმდევრულად
+	Shot/Take:	კადრი/დუბლი:
+	Simplify Sequence	მიმდევრობის გამარტივება
+	Sort Order	დალაგების რიგი
+	Source Settings	წყაროს პარამეტრები
+	Template Name:	შაბლონის სახელი:
+	Text (graphics and captions)	ტექსტი (გრაფიკა და სუბტიტრები)
+	Title Safe Area	სათაურის უსაფრთხო არე
+	To {name}	{name}-მდე
+	Total Duration	საერთო ხანგრძლივობა
+	Transcode	ტრანსკოდირება
+	Transcribe Sequence	მიმდევრობის ტრანსკრიფცია
+	Transitions	გადასვლები
+	Update Metadata	მეტამონაცემების განახლება
+	Video Only	მხოლოდ ვიდეო
+	Video Previews:	ვიდეოს წინასწარი ნახვა:
+	Video Rendering and Playback	ვიდეოს რენდერი და დაკვრა
+	Video and Audio	ვიდეო და აუდიო
+	Video effects	ვიდეოეფექტები
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	ჩაიწეროს მონიშნული კლიპ(ებ)ის ({n}) მეტამონაცემები XMP ფაილებში მათი მედიის გვერდით?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} ჰც · {n} არხი
+	Constant quantiser	მუდმივი კვანტიზატორი
+	Container	კონტეინერი
+	 (unavailable)	 (მიუწვდომელია)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	კონტეინერები
+	Decoders	დეკოდერები
+	Dynamic Audio Waveforms	დინამიკური აუდიოტალღის ფორმები
+	Export formats	ექსპორტის ფორმატები
+	Reveal Log Files…	ჟურნალის ფაილების ჩვენება…
+	Session log: {path}	სესიის ჟურნალი: {path}
+	System Compatibility Report	სისტემის თავსებადობის ანგარიში
+	System Compatibility Report…	სისტემის თავსებადობის ანგარიში…
+	not available now	ახლა მიუწვდომელია
+	{name} Selection.fcproj	{name} Selection.fcproj
+	Auto tone map media (HDR and log into SDR)	მედიის ავტომატური ტონური ასახვა (HDR და log SDR-ში)
+	Sequence Color Management	მიმდევრობის ფერთა მართვა
+	Working Color Space	სამუშაო ფერთა სივრცე
+	Align Timecode	ტაიმკოდის სწორება
+	All media is online.	მთელი მედია ონლაინაა.
+	Calculate	გამოთვლა
+	Clip ID (fingerprint)	კლიპის ID (ანაბეჭდი)
+	Clip Name	კლიპის სახელი
+	Collect Files and Copy to New Location	ფაილების შეგროვება და ახალ ადგილას კოპირება
+	Consolidate and Transcode	კონსოლიდაცია და ტრანსკოდირება
+	Creating {n} proxy file(s)…	იქმნება {n} პროქსი ფაილი…
+	Destination	დანიშნულება
+	Destination Path	დანიშნულების გზა
+	Disk space: original {original} · resulting {result} ({n} files)	დისკის სივრცე: საწყისი {original} · მიღებული {result} ({n} ფაილი)
+	Disk space: —	დისკის სივრცე: —
+	Exact name matches only	მხოლოდ ზუსტი სახელის დამთხვევა
+	Exclude Unused Clips	გამოუყენებელი კლიპების გამორიცხვა
+	File Name	ფაილის სახელი
+	Format and size	ფორმატი და ზომა
+	Frame Size / Rate	კადრის ზომა / სიხშირე
+	Include Handles:	სახელურების ჩართვა:
+	Include Preview Files	წინასწარი ნახვის ფაილების ჩართვა
+	Include Proxies	პროქსების ჩართვა
+	Link Media	მედიის დაკავშირება
+	Linked {n} clip(s)	დაკავშირებულია {n} კლიპი
+	Locate…	მოძებნა…
+	Make Offline	ოფლაინად გადაყვანა
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	{n} მონიშნული კლიპის ოფლაინად გადაყვანა. მათი კლიპები ოფლაინ ფირფიტას აჩვენებს, სანამ ხელახლა არ დააკავშირებთ.
+	Match file properties:	ფაილის თვისებების დამთხვევა:
+	Media files are deleted	მედიაფაილები წაიშლება
+	Media files remain on disk	მედიაფაილები დისკზე რჩება
+	Next to the original media, in a Proxies folder	საწყისი მედიის გვერდით, Proxies საქაღალდეში
+	No candidates yet — Search a folder or Locate the file.	კანდიდატები ჯერ არ არის — მოძებნეთ საქაღალდეში ან მიუთითეთ ფაილი.
+	Nothing found with that name.	ამ სახელით ვერაფერი მოიძებნა.
+	Offline	ოფლაინ
+	Offline All	ყველას ოფლაინად გადაყვანა
+	Project Manager	პროექტის მენეჯერი
+	Project Manager: writing {path}	პროექტის მენეჯერი: იწერება {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	პროქსები ფონურ რეჟიმში იქმნება და დასრულებისას მიემაგრება. ექსპორტი ყოველთვის სრული გარჩევადობის მედიას იყენებს.
+	Relink others automatically	სხვების ავტომატური ხელახალი დაკავშირება
+	Resulting Project	მიღებული პროექტი
+	Search in:	ძებნა სად:
+	Sequences	მიმდევრობები
+	select a clip in the Project panel	მონიშნეთ კლიპი პროექტის პანელში
+	{name} (copy)	{name} (ასლი)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} კლიპი ვერ პოულობს თავის მედიას. მიუთითეთ ისინი, მოძებნეთ საქაღალდეში ან დატოვეთ ოფლაინ.
+	{n} clip(s) selected.	მონიშნულია {n} კლიპი.
+	✔ matches	✔ ემთხვევა
+	✔ same file	✔ იგივე ფაილი
+	✖ different file	✖ სხვა ფაილი
+	AAF Export Settings	AAF ექსპორტის პარამეტრები
+	Audio File Format:	აუდიოფაილის ფორმატი:
+	Bits per Sample:	ბიტი თითო ნიმუშზე:
+	Breakout to mono	მონოდ დაშლა
+	Encapsulate	ჩაშენება
+	Exported frame to {path}	კადრი ექსპორტირებულია: {path}
+	Frame time: {timecode}	კადრის დრო: {timecode}
+	Handle Frames:	სახელურის კადრები:
+	Import into project	პროექტში იმპორტი
+	Keep existing file	არსებული ფაილის შენარჩუნება
+	Link to Media	მედიასთან დაკავშირება
+	Mixdown video	ვიდეოს შერევა
+	OMF Export Settings	OMF ექსპორტის პარამეტრები
+	OMF Title:	OMF სათაური:
+	Path:	გზა:
+	Render audio clip effects	აუდიოკლიპის ეფექტების რენდერი
+	Separate Audio	ცალკე აუდიო
+	Separate Files	ცალკე ფაილები
+	This file already exists: {path}	ეს ფაილი უკვე არსებობს: {path}
+	Trim audio files	აუდიოფაილების შეკვეცა
+	{bits} Bit	{bits} ბიტი
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	მარკერების ანგარიში (CSV)
+	DCP (Digital Cinema Package)	DCP (ციფრული კინოს პაკეტი)
+	Digital Cinema	ციფრული კინო
+	DCP resolution	DCP გარჩევადობა
+	DCP container	DCP კონტეინერი
+	Content kind	შინაარსის ტიპი
+	Output folder	გამოსატანი საქაღალდე
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1.85:1)
+	Scope (2.39:1)	Scope (2.39:1)
+	Full container (1.90:1)	სრული კონტეინერი (1.90:1)
+	Feature	სრულმეტრაჟიანი ფილმი
+	Trailer	ტრეილერი
+	Teaser	ტიზერი
+	Short	მოკლემეტრაჟიანი
+	Advertisement	რეკლამა
+	Test	ტესტი
+	Transitional	გარდამავალი
+	Rating	რეიტინგი
+	Public service announcement	სოციალური რეკლამა
+	Off (5.1 only)	გამორთული (მხოლოდ 5.1)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB ბაზა მიქსიდან (7.1 DS, 7.1.2-დან 9.1OH)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB ფაილიდან (IAB MXF, .iab ან Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab ან Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	არცერთი: მხოლოდ FSK სინქრონიზაცია (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: დარენდერებული IAB (არა ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: დროის ხაზის მიქსი (არა ST 429-19)
+	Main sound channels 1-6	ძირითადი ხმის არხები 1-6
+	Immersive audio	იმერსიული აუდიო
+	IAB source	IAB წყარო
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 მიქსი ხდება 9.1OH ბაზა, 7.1 მიქსი — 7.1 DS ბაზა, ყველა სხვა მიქსი — 7.1 DS ბაზა მისი 5.1 ვერსიიდან (IAB Profile 1); ძირითადი ხმის მე-14 არხი FSK სინქრონიზაციის სიგნალს ატარებს.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	აირჩიეთ IAB ტრეკის ფაილი (IMF ან DCP), დაუმუშავებელი IAB ნაკადი ან Dolby Atmos TrueHD: .thd ნაკადი ან MKV, MP4 ან M2TS ფაილი Atmos ტრეკით.
+	Reading the IAB source…	IAB წყაროს კითხვა…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} კადრი, {fps} კადრი/წმ, {rate} ჰც; მაქსიმუმ {beds} ბაზის არხი და {objects} ობიექტი
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} წმ, {rate} ჰც; მაქსიმუმ {beds} ბაზის არხი და {objects} ობიექტი, გარდაქმნილი IAB ობიექტებად
+	Some frames are re-coded for the DCP (DLC, 24 bit).	ზოგიერთი კადრი DCP-სთვის ხელახლა კოდირდება (DLC, 24 ბიტი).
+	Beyond IAB Profile 1: {notes}	IAB Profile 1-ს მიღმა: {notes}
+	Not a usable IAB source: {error}	გამოუსადეგარი IAB წყარო: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP საქაღალდე: JPEG 2000 1998×1080 (1.85:1), 5.1 24-ბიტიანი 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP საქაღალდე: JPEG 2000 2048×858 (2.39:1), 5.1 24-ბიტიანი 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP საქაღალდე: JPEG 2000 3996×2160 (1.85:1), 5.1 24-ბიტიანი 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP საქაღალდე: JPEG 2000 4096×1716 (2.39:1), 5.1 24-ბიტიანი 48 kHz PCM
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	B pictures	B-კადრები
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV სატრანსპორტო ნაკადი (.m2ts, AAC აუდიო)
+	Chroma	ქრომა
+	Elementary Stream (.m2v, no audio)	ელემენტარული ნაკადი (.m2v, აუდიოს გარეშე)
+	Key Frame Distance	საკვანძო კადრებს შორის მანძილი
+	None (I and P only)	არცერთი (მხოლოდ I და P)
+	Off (target bitrate)	გამორთული (სამიზნე ბიტრეიტი)
+	Program Stream (.mpg, LPCM audio)	პროგრამული ნაკადი (.mpg, LPCM აუდიო)
+	Transport Stream (.ts, AAC audio)	სატრანსპორტო ნაკადი (.ts, AAC აუდიო)
+	Estimated file size: {size}	ფაილის სავარაუდო ზომა: {size}
+	File Name & Location	ფაილის სახელი და მდებარეობა
+	Quick Export	სწრაფი ექსპორტი
+	Quick Export: open a sequence first	სწრაფი ექსპორტი: ჯერ გახსენით მიმდევრობა
+	Quick Export: {path}	სწრაფი ექსპორტი: {path}
+	Export presets	ექსპორტის პრესეტები
+	Favorites only	მხოლოდ რჩეულები
+	More presets…	მეტი პრესეტი…
+	Preset Manager	პრესეტების მენეჯერი
+	Save current settings as:	მიმდინარე პარამეტრების შენახვა როგორც:
+	Search presets	პრესეტების ძებნა
+	Show in the Preset menu	ჩვენება პრესეტების მენიუში
+	User	მომხმარებლის
+	Add Beat Markers	რიტმის მარკერების დამატება
+	Clear Beat Markers	რიტმის მარკერების გასუფთავება
+	Clear Check Markers	შემოწმების მარკერების გასუფთავება
+	Auto Reframe Sequence…	მიმდევრობის ავტომატური ჩარჩოს მორგება…
+	Batch Variants from Spreadsheet…	ვარიანტების პაკეტი ცხრილიდან…
+	Check Before Export…	შემოწმება ექსპორტამდე…
+	Social Deliverables…	სოციალური ქსელების მასალები…
+	Social Safe Zones	სოციალური ქსელების უსაფრთხო ზონები
+	Text Animator	ტექსტის ანიმატორი
+	Counter	მთვლელი
+	Typewriter	საბეჭდი მანქანა
+	Word by Word	სიტყვა-სიტყვით
+	Animator	ანიმატორი
+	Animator Duration	ანიმატორის ხანგრძლივობა
+	Animator Delay	ანიმატორის დაყოვნება
+	Spreadsheets	ცხრილები
+	{n} beat markers added ({bpm} BPM)	დაემატა {n} რიტმის მარკერი ({bpm} BPM)
+	Check Before Export: no problems found	შემოწმება ექსპორტამდე: პრობლემები ვერ მოიძებნა
+	Check Before Export: {n} problems marked on the timeline (red markers)	შემოწმება ექსპორტამდე: დროის ხაზზე მონიშნულია {n} პრობლემა (წითელი მარკერები)
+	{n} exports queued (the Export window shows the queue)	რიგში დგას {n} ექსპორტი (ექსპორტის ფანჯარა რიგს აჩვენებს)
+	{n} variant sequences made, {q} exports queued	შეიქმნა {n} ვარიანტული მიმდევრობა, რიგში დგას {q} ექსპორტი
+	no column for {names}	სვეტი არ არის: {names}
+	Film Scan 1	ფირის სკანი 1
+	Film Scan 2	ფირის სკანი 2
+	Film Scan 3	ფირის სკანი 3
+	Include Alpha Channel	ალფა არხის ჩართვა
+	Profile	პროფილი
+	ZIP (1 scan line)	ZIP (1 სკანირების ხაზი)
+	ZIP (16 scan lines)	ZIP (16 სკანირების ხაზი)
+	Bottom Center	ქვედა ცენტრი
+	Burn Captions Into Video	სუბტიტრების ვიდეოში ჩაწვა
+	Center Left	ცენტრი მარცხნივ
+	Center Right	ცენტრი მარჯვნივ
+	Create Sidecar File	თანმხლები ფაილის შექმნა
+	Export Options	ექსპორტის პარამეტრები
+	File Format	ფაილის ფორმატი
+	Image Overlay	გამოსახულების გადაფარვა
+	Loudness Normalization	ხმამაღლობის ნორმალიზება
+	Luma Min / Max	სიკაშკაშის მინ. / მაქს.
+	Name Overlay	სახელის გადაფარვა
+	PNG or JPEG file	PNG ან JPEG ფაილი
+	Prefix	პრეფიქსი
+	Size / Opacity	ზომა / გაუმჭვირვალობა
+	SubRip Subtitle (.srt)	SubRip სუბტიტრები (.srt)
+	Target Loudness	სამიზნე ხმამაღლობა
+	Timecode Overlay	ტაიმკოდის გადაფარვა
+	Top Center	ზედა ცენტრი
+	True Peak Limit	ნამდვილი პიკის ზღვარი
+	Video Limiter	ვიდეოს შემზღუდველი
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Creator	ავტორი
+	Multiplexer	მულტიპლექსორი
+	Title	სათაური
+	Audio only	მხოლოდ აუდიო
+	Scale To Fill	მასშტაბირება შევსებით
+	Scale To Fit	მასშტაბირება ჩატევით
+	Stretch To Fill	გაწელვა შევსებით
+	Quick Export cancelled	სწრაფი ექსპორტი გაუქმდა
+	0 fastest, 8 smallest	0 ყველაზე სწრაფი, 8 ყველაზე პატარა
+	32 bit float	32-ბიტიანი მცურავი წერტილი
+	Anamorphic 2:1 (2.0)	ანამორფული 2:1 (2.0)
+	Aspect	პროპორცია
+	Channels	არხები
+	Composite on the GPU when available	კომპოზიცია GPU-ზე, როცა ხელმისაწვდომია
+	Compression Level	შეკუმშვის დონე
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0.9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1.0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1.5)
+	Field Order	ველების რიგი
+	GPU Rendering	GPU რენდერი
+	HD Anamorphic 1080 (1.333)	HD ანამორფული 1080 (1.333)
+	Lower First	ჯერ ქვედა
+	Match Source	წყაროს მსგავსად
+	Maximum Bitrate	მაქსიმალური ბიტრეიტი
+	Quality (CRF)	ხარისხი (CRF)
+	Render at Maximum Depth	რენდერი მაქსიმალური სიღრმით
+	Sample Size	ნიმუშის ზომა
+	Upper First	ჯერ ზედა
+	Use Maximum Render Quality	რენდერის მაქსიმალური ხარისხის გამოყენება
+	Browse files…	ფაილების დათვალიერება…
+	Movies, audio and stills from disk	ფილმები, აუდიო და სურათები დისკიდან
+	Demo footage	სადემონსტრაციო მასალა
+	Six procedural 1080p clips with sound	ექვსი პროცედურული 1080p კლიპი ხმით
+	Demo project	სადემონსტრაციო პროექტი
+	A cut sequence with transitions, effects and music	დამონტაჟებული მიმდევრობა გადასვლებით, ეფექტებითა და მუსიკით
+	Bars and Tone	ზოლები და ტონი
+	SMPTE HD bars with 1 kHz reference tone	SMPTE HD ზოლები 1 kHz საკონტროლო ტონით
+	CFA4 on GitHub	CFA4 GitHub-ზე
+	Report a CFA4 issue…	CFA4-ის პრობლემის შეტყობინება…
+	CFA4 project links	CFA4 პროექტის ბმულები
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	დაამატეთ მედია პროექტში. ჩააგდეთ ფაილები ფანჯრის ნებისმიერ ადგილას ან აირჩიეთ წყარო ქვემოთ.
+	Shuttle Slow Left	ნელი შატლი მარცხნივ
+	Shuttle Slow Right	ნელი შატლი მარჯვნივ
+	Play Around	დაკვრა გარშემო
+	Out: {name}	გასვლა: {name}
+	In: {name}	შესვლა: {name}
+	(gap)	(ხარვეზი)
+	Outgoing clip (drag to trim the Out point)	გამავალი კლიპი (გადაათრიეთ საბოლოო წერტილის შესაკვეცად)
+	Incoming clip (drag to trim the In point)	შემომავალი კლიპი (გადაათრიეთ საწყისი წერტილის შესაკვეცად)
+	Drag to roll the edit	გადაათრიეთ ჭრის გადასაგორებლად
+	Play Around Edit (Space loops, Shift+K once)	დაკვრა ჭრის გარშემო (Space — ციკლურად, Shift+K — ერთხელ)
+	Trim Backward Many	ბევრით უკან შეკვეცა
+	Trim Backward	უკან შეკვეცა
+	Apply Default Transitions to Selection (Shift+D)	ნაგულისხმევი გადასვლების გამოყენება მონიშნულზე (Shift+D)
+	Trim Forward	წინ შეკვეცა
+	Trim Forward Many	ბევრით წინ შეკვეცა
+	Exit Trim Mode	შეკვეცის რეჟიმიდან გასვლა
+	Up	ზემოთ
+	Down	ქვემოთ
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	აუდიოგამოსავალი ვერ ჩაირთო: იკვრება ხმის გარეშე (შეამოწმეთ პარამეტრები ▸ აუდიომოწყობილობა)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	აუდიოგამოსავალი არ პასუხობს: იკვრება ხმის გარეშე (შეამოწმეთ პარამეტრები ▸ აუდიომოწყობილობა)
+	Settings not taken	პარამეტრები არ იქნა მიღებული
+	Encoder	ენკოდერი
+	Software, or hardware where available	პროგრამული, ან აპარატურული, სადაც ხელმისაწვდომია
+	Main (8-bit; Main 10 for HDR sequences)	Main (8-ბიტიანი; Main 10 HDR მიმდევრობებისთვის)
+	Main 10 (10-bit, HDR)	Main 10 (10-ბიტიანი, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8-ბიტიანი; 10-ბიტიანი HDR მიმდევრობებისთვის)
+	Main (10-bit, HDR)	Main (10-ბიტიანი, HDR)
+	FLAC stores whole-number samples only	FLAC მხოლოდ მთელრიცხვა ნიმუშებს ინახავს
+	MXF export writes integer PCM only	MXF ექსპორტი მხოლოდ მთელრიცხვა PCM-ს წერს
+	Not supported by CFA4's encoders yet	CFA4-ის ენკოდერები ჯერ არ უჭერს მხარს
+	Overwrite with Current View	გადაწერა მიმდინარე ხედით
+	Saves the view, columns, sort, thumbnail and font size.	ინახავს ხედს, სვეტებს, დალაგებას, მინიატურისა და შრიფტის ზომას.
+	Search fields	საძიებო ველები
+	{n}. (empty)	{n}. (ცარიელი)
+	No video	ვიდეოს გარეშე
+	No audio	აუდიოს გარეშე
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 HDR-ისთვის
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 Profile
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main Profile 4:2:0
+	no B pictures	B-კადრების გარეშე
+	1 B picture between anchors	1 B-კადრი საყრდენ კადრებს შორის
+	AV1 Main (10-bit for HDR)	AV1 Main (10-ბიტიანი HDR-ისთვის)
+	10-bit RGB	10-ბიტიანი RGB
+	12-bit X'Y'Z'	12-ბიტიანი X'Y'Z'
+	16-bit half float	16-ბიტიანი ნახევარ-სიზუსტის მცურავი
+	linear	წრფივი
+	uncompressed	შეუკუმშავი
+	Animated GIF	ანიმირებული GIF
+	Waveform Audio	Waveform აუდიო
+	AAC Audio	AAC აუდიო
+	Opus Audio	Opus აუდიო
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	ფრაგმენტირებული MP4 სეგმენტები
+	Program Stream	პროგრამული ნაკადი
+	Transport Stream	სატრანსპორტო ნაკადი
+	BDAV Transport Stream	BDAV სატრანსპორტო ნაკადი
+	Elementary Stream	ელემენტარული ნაკადი
+	Image sequence	გამოსახულებების მიმდევრობა
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} კადრი/წმ
+	{profile} auto level	{profile} ავტომატური დონე
+	{n} pass	{n} გავლა
+	CRF (constant quality) {crf}	CRF (მუდმივი ხარისხი) {crf}
+	{v} Mbps	{v} მბიტ/წმ
+	Target {v} Mbps	სამიზნე {v} მბიტ/წმ
+	Max {v} Mbps	მაქს. {v} მბიტ/წმ
+	average {v} Mbps	საშუალოდ {v} მბიტ/წმ
+	CBR {v} Mbps	CBR {v} მბიტ/წმ
+	VBR Target {v} Mbps	VBR სამიზნე {v} მბიტ/წმ
+	keyframe every {n} frames	საკვანძო კადრი ყოველ {n} კადრში
+	constant quantiser {q}	მუდმივი კვანტიზატორი {q}
+	{n} B pictures between anchors	{n} B-კადრი საყრდენ კადრებს შორის
+	quantizer {q}	კვანტიზატორი {q}
+	quality {q}	ხარისხი {q}
+	{word} compression	{word} შეკუმშვა
+	{sampling} {bits}-bit	{sampling} {bits}-ბიტიანი
+	FLAC (lossless) {bits}-bit	FLAC (უდანაკარგო) {bits}-ბიტიანი
+	level {n}	დონე {n}
+	Uncompressed {bits}-bit PCM	შეუკუმშავი {bits}-ბიტიანი PCM
+	Uncompressed {bits}-bit float PCM	შეუკუმშავი {bits}-ბიტიანი მცურავი PCM
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} წმ
+	{n} ch {rate} Hz	{n} არხი {rate} ჰც
+	All Events	ყველა მოვლენა
+	Warnings and Errors	გაფრთხილებები და შეცდომები
+	Errors Only	მხოლოდ შეცდომები
+	No events.	მოვლენები არ არის.
+	just now	ახლახან
+	{n} s ago	{n} წმ-ის წინ
+	{n} min ago	{n} წთ-ის წინ
+	{n} h ago	{n} სთ-ის წინ
+	Warning	გაფრთხილება
+	Caption Export Settings	სუბტიტრების ექსპორტის პარამეტრები
+	Export Captions	სუბტიტრების ექსპორტი
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} უკვე არსებობს, ამიტომ არაფერი ექსპორტირდა. ჩასანაცვლებლად აირჩიეთ ის შენახვის დიალოგში.
+	Delete Redoable Actions	დაბრუნებადი მოქმედებების წაშლა
+	Delete the dimmed actions after the current state? They cannot be redone.	წაიშალოს მიმდინარე მდგომარეობის შემდგომი ჩამქრალი მოქმედებები? მათი დაბრუნება ვეღარ მოხერხდება.
+	Work Area Bar	სამუშაო არის ზოლი
+	Start: {tc}	დასაწყისი: {tc}
+	End: {tc}	დასასრული: {tc}
+	Duration: {tc}	ხანგრძლივობა: {tc}
+	Show/Hide Tracks…	ტრეკების ჩვენება/დამალვა…
+	Move panel	პანელის გადატანა
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	დააწკაპუნეთ მოსანიშნად, ან დააწკაპუნეთ ცარიელ ადგილას და გადაათრიეთ ჩარჩოთი მოსანიშნად. სხვა ვარიანტებისთვის გამოიყენეთ Shift, Alt და Ctrl.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	დააწკაპუნეთ ყველა ტრეკზე მარჯვნივ მდებარე ყველა კლიპის მოსანიშნად. Shift+დაწკაპუნება — ერთი ტრეკისთვის.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	დააწკაპუნეთ ყველა ტრეკზე მარცხნივ მდებარე ყველა კლიპის მოსანიშნად. Shift+დაწკაპუნება — ერთი ტრეკისთვის.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	გადაათრიეთ ჭრის წერტილი წანაცვლებით შესაკვეცად; შემდგომი კლიპები გადაიწევს, რომ ხარვეზი არ დარჩეს.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	გადაათრიეთ ჭრის წერტილი გადასაგორებლად: ერთი კლიპის ბოლო და მომდევნოს დასაწყისი ერთად გადაადგილდება.
+	Drag an edge to change the clip's speed so it fills the new duration.	გადაათრიეთ კიდე კლიპის სიჩქარის შესაცვლელად, რომ ახალი ხანგრძლივობა შეავსოს.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	გადაათრიეთ მუსიკალური კლიპის კიდე, რომ ახალ ხანგრძლივობაზე რემიქსი გაკეთდეს მუსიკალურად შესაბამის რიტმებზე.
+	Click to split a clip. Shift-click to split all tracks.	დააწკაპუნეთ კლიპის გასაყოფად. Shift+დაწკაპუნება — ყველა ტრეკის გაყოფა.
+	Drag a clip to slip its source in/out without moving it.	გადაათრიეთ კლიპი მისი წყაროს საწყისი/საბოლოო წერტილის გადასაწევად კლიპის გადაადგილების გარეშე.
+	Drag a clip to slide it between its neighbours.	გადაათრიეთ კლიპი მეზობლებს შორის გადასასრიალებლად.
+	Drag to scroll the timeline.	გადაათრიეთ დროის ხაზის გადასახვევად.
+	Click to zoom in; Alt-click to zoom out.	დააწკაპუნეთ გასადიდებლად; Alt+დაწკაპუნება — დასაპატარავებლად.
+	Exporting	ექსპორტი მიმდინარეობს
+	Version {version}	ვერსია {version}
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. შრიფტები: Inter, Noto Serif და JetBrains Mono (SIL OFL 1.1).
+	CFA4 was closed while “{name}” had unsaved changes.	CFA4 დაიხურა, როცა „{name}“ შეუნახავ ცვლილებებს შეიცავდა.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	CFA4 მოულოდნელად დაიხურა, როცა „{name}“ შეუნახავ ცვლილებებს შეიცავდა.
+	Recover unsaved changes from {when}?	აღდგეს შეუნახავი ცვლილებები ({when})?
+	The project had not been saved yet.	პროექტი ჯერ არ იყო შენახული.
+	{n} sessions have unsaved changes:	{n} სესიას აქვს შეუნახავი ცვლილებები:
+	Are you sure you want to discard your changes to '{file}'?	ნამდვილად გსურთ '{file}'-ის ცვლილებების გაუქმება?
+	the project has not been saved yet	პროექტი ჯერ არ არის შენახული
+	Export As Motion Graphics Template	ექსპორტი Motion Graphics შაბლონად
+	Category:	კატეგორია:
+	Editable properties:	რედაქტირებადი თვისებები:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	შენახულია CFA4-ის გრაფიკულ შაბლონად (.fcgt) თქვენს შაბლონების საქაღალდეში.
+	My Templates	ჩემი შაბლონები
+	{n} Font	{n} შრიფტი
+	{n} Size	{n} ზომა
+	{n} Color	{n} ფერი
+	{n} Position	{n} პოზიცია
+	Show {n}	{n}-ის ჩვენება
+	Exported graphics template to {path}	გრაფიკული შაბლონი ექსპორტირებულია: {path}
+	Replace Fonts in Projects	შრიფტების ჩანაცვლება პროექტებში
+	Fonts used in the project:	პროექტში გამოყენებული შრიფტები:
+	{f} (missing)	{f} (აკლია)
+	Replace:	ჩანაცვლება:
+	with:	ით:
+	Replaced {n} font uses	ჩანაცვლდა შრიფტის {n} გამოყენება
+	Track Color	ტრეკის ფერი
+	Unrendered: should play back in real time	დაურენდერებელი: რეალურ დროში უნდა დაიკრას
+	Unrendered: render to play back in real time	დაურენდერებელი: რეალურ დროში დასაკრავად საჭიროა რენდერი
+	Rendered preview	დარენდერებული წინასწარი ხედი
+	Show Duplicate Frame Markers	დუბლირებული კადრების მარკერების ჩვენება
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	მიმდევრობის საწყისი/საბოლოო მონაკვეთი მხოლოდ 1 კადრია. მთელი მიმდევრობის ექსპორტისთვის აირჩიეთ „მთელი მიმდევრობა“.
+	more tabs	მეტი ჩანართი
+	Set Work Area Bar In Point	სამუშაო არის ზოლის საწყისი წერტილის დაყენება
+	Set Work Area Bar Out Point	სამუშაო არის ზოლის საბოლოო წერტილის დაყენება
+	Delete Clips	კლიპების წაშლა
+	Destinations	დანიშნულებები
+	Analyzing the clip…	კლიპის ანალიზი…
+	At GOP boundaries (no re-encoding)	GOP საზღვრებზე (ხელახალი კოდირების გარეშე)
+	Bit-exact copy	ბიტ-ბიტ ზუსტი ასლი
+	Choose the output file.	აირჩიეთ გამოსატანი ფაილი.
+	Compatible copy	თავსებადი ასლი
+	Copy:	ასლი:
+	Cut:	ჭრა:
+	Frame accurate (re-encode the boundaries)	კადრის სიზუსტით (საზღვრების ხელახალი კოდირება)
+	Open a video clip in the Source monitor first.	ჯერ გახსენით ვიდეოკლიპი წყაროს მონიტორში.
+	Smart Cut Source	ჭკვიანი ჭრის წყარო
+	Smart Cut Source…	ჭკვიანი ჭრის წყარო…
+	Smart Cut is not available for this clip: {why}	ჭკვიანი ჭრა ამ კლიპისთვის მიუწვდომელია: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	ჭკვიანი ჭრა ჩაწერილი და შემოწმებულია: {path} ({frames} კადრი)
+	The cut cannot run.	ჭრა ვერ შესრულდება.
+	The engine sent no analysis.	ძრავამ ანალიზი არ გამოგზავნა.
+	Writing and verifying the cut…	ჭრის ჩაწერა და შემოწმება…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} {container}-ში: {gops} GOP, {points} სუფთა ჭრის წერტილი
+	{copied} frames copied, {reencoded} frames re-encoded	დაკოპირდა {copied} კადრი, ხელახლა დაკოდირდა {reencoded} კადრი
+	{frames} frames at the boundaries are re-encoded. Continue?	საზღვრებზე {frames} კადრი ხელახლა დაკოდირდება. გავაგრძელოთ?
+	Show GOP Boundaries	GOP საზღვრების ჩვენება
+	Export mode	ექსპორტის რეჟიმი
+	Full Render	სრული რენდერი
+	Planning…	დაგეგმვა…
+	Recommended: Smart Render (asks before re-encoding)	რეკომენდებულია: ჭკვიანი რენდერი (ხელახალ კოდირებამდე გკითხავთ)
+	Recommended: Stream Copy (nothing is re-encoded)	რეკომენდებულია: ნაკადის კოპირება (არაფერი კოდირდება ხელახლა)
+	Rendered because of: {causes}	დარენდერდა შემდეგი მიზეზით: {causes}
+	Smart Export	ჭკვიანი ექსპორტი
+	Smart Export written and verified: {path}	ჭკვიანი ექსპორტი ჩაწერილი და შემოწმებულია: {path}
+	Smart Render	ჭკვიანი რენდერი
+	Stream Copy – Bit-exact	ნაკადის კოპირება – ბიტ-ბიტ ზუსტი
+	Stream Copy – Compatible	ნაკადის კოპირება – თავსებადი
+	Stream copy is not possible: {frames} frames need re-encoding.	ნაკადის კოპირება შეუძლებელია: {frames} კადრს ხელახალი კოდირება სჭირდება.
+	The export cannot run.	ექსპორტი ვერ შესრულდება.
+	Wait for the export plan.	დაელოდეთ ექსპორტის გეგმას.
+	Writing and verifying the export…	ექსპორტის ჩაწერა და შემოწმება…
+	colour conversion	ფერის გარდაქმნა
+	compositing	კომპოზიცია
+	copied	დაკოპირდა
+	effects	ეფექტები
+	frame rate	კადრების სიხშირე
+	proxies or nested sequences	პროქსები ან ჩადგმული მიმდევრობები
+	re-encoded at a cut	ხელახლა დაკოდირდა ჭრაზე
+	rendered	დარენდერდა
+	sources that cannot be copied	წყაროები, რომელთა კოპირება შეუძლებელია
+	speed changes	სიჩქარის ცვლილებები
+	titles or overlays	სათაურები ან გადაფარვები
+	transforms	ტრანსფორმაციები
+	transitions	გადასვლები
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	დაკოპირდა {copied} კადრი, ჭრებზე ხელახლა დაკოდირდა {reencoded}, დარენდერდა {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	{frames} კადრი ხელახლა დაკოდირდება ან დარენდერდება. გავაგრძელოთ?
+	CFA4 Help…	CFA4-ის დახმარება…
+	Learning	სწავლა
+	Refresh Changed Media	შეცვლილი მედიის განახლება
+	Open Recent	ბოლოს გახსნილი
+	Report an Issue…	პრობლემის შეტყობინება…
+	Review	მიმოხილვა
+	{name} - Edited	{name} - შეცვლილი
+	Audio Gain	აუდიოს გაძლიერება
+	Set Gain to:	გაძლიერების დაყენება:
+	Adjust Gain by:	გაძლიერების შეცვლა:
+	Normalize Max Peak to:	მაქსიმალური პიკის ნორმალიზება დონემდე:
+	Normalize All Peaks to:	ყველა პიკის ნორმალიზება დონემდე:
+	Peak Amplitude: {peak}	პიკური ამპლიტუდა: {peak}
+	Add Tracks	ტრეკების დამატება
+	Placement	განთავსება
+	Track type	ტრეკის ტიპი
+	Add video tracks	ვიდეოტრეკების დამატება
+	Add audio tracks	აუდიოტრეკების დამატება
+	Add audio submix tracks	აუდიო ქვემიქსის ტრეკების დამატება
+	After {name}	{name}-ის შემდეგ
+	Before First Track	პირველი ტრეკის წინ
+	Delete Tracks	ტრეკების წაშლა
+	Video Tracks	ვიდეოტრეკები
+	Audio Tracks	აუდიოტრეკები
+	Delete Video Tracks	ვიდეოტრეკების წაშლა
+	Delete Audio Tracks	აუდიოტრეკების წაშლა
+	All Empty Tracks	ყველა ცარიელი ტრეკი
+	Caption Tracks	სუბტიტრების ტრეკები
+	Delete Caption Tracks	სუბტიტრების ტრეკების წაშლა
+	Report an issue	პრობლემის შეტყობინება
+	Join us on Discord	შემოგვიერთდით Discord-ზე
+	Rendering:	რენდერი:
+	UI:	ინტერფეისი:
+	{fps} fps · {n} frames queued	{fps} კადრი/წმ · რიგში {n} კადრი
+	Maximize Frame	კადრის გაშლა
+	Restore Frame	კადრის აღდგენა
+	Reveal Sequence in Project	მიმდევრობის ჩვენება პროექტში
+	Video Thumbnails	ვიდეოს მინიატურები
+	Audio Waveforms	აუდიოტალღის ფორმები
+	Untitled Workspace	უსათაურო სამუშაო სივრცე
+	Show durations	ხანგრძლივობების ჩვენება
+	Project Metadata	პროექტის მეტამონაცემები
+	Add Property…	თვისების დამატება…
+	Column order	სვეტების რიგი
+	Graphics text search arrives with M10.1–M10.2	გრაფიკის ტექსტში ძებნა M10.1–M10.2-ით მოვა
+	(no clips)	(კლიპები არ არის)
+	Export Frame (Shift+E)	კადრის ექსპორტი (Shift+E)
+	Export Frame: use Export mode (M6)	კადრის ექსპორტი: გამოიყენეთ ექსპორტის რეჟიმი (M6)
+	Save changes to “{project_name}” before closing?	შევინახოთ „{project_name}“-ის ცვლილებები დახურვამდე?
+	Don't Save	შენახვის გარეშე
+	A file dialog is already open	ფაილის დიალოგი უკვე ღიაა
+	Timeline: (no sequences)	დროის ხაზი: (მიმდევრობები არ არის)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	დააწკაპუნეთ პროგრამის მონიტორში ნიღბის წერტილების დასასმელად (გადაათრიეთ მრუდებისთვის); დასახურად დააწკაპუნეთ პირველ წერტილზე ან დააჭირეთ Enter-ს
+	Comparison	შედარება
+	Video and Waveform	ვიდეო და ტალღის ფორმა
+	Remove Media Cache Files	მედიაქეშის ფაილების მოცილება
+	Eyedropper: no picture to sample	პიპეტი: ასაღები სურათი არ არის
+	Select a clip to grade	აირჩიეთ კლიპი ფერის კორექციისთვის
+	   Opacity	   გაუმჭვირვალობა
+	   Size	   ზომა
+	   Corner Radius	   კუთხის რადიუსი
+	   Angle	   კუთხე
+	   Distance	   მანძილი
+	   Blur	   გაბუნდოვნება
+	   Template: {name}	   შაბლონი: {name}
+	CFA4 Graphics Template	CFA4 გრაფიკული შაბლონი
+	  (none)	  (არცერთი)
+	Select items to clear	აირჩიეთ გასასუფთავებელი ელემენტები
+	Media missing	მედია აკლია
+	Unreadable	წაუკითხავი
+	✓ Enable	✓ ჩართვა
+	(RGB) Gamma	(RGB) გამა
+	(RGB) Input Black Level	(RGB) შემავალი შავის დონე
+	(RGB) Input White Level	(RGB) შემავალი თეთრის დონე
+	(RGB) Output Black Level	(RGB) გამავალი შავის დონე
+	(RGB) Output White Level	(RGB) გამავალი თეთრის დონე
+	10 Bit Black Point	10-ბიტიანი შავის წერტილი
+	10 Bit White Point	10-ბიტიანი თეთრის წერტილი
+	105mm Prime	105 მმ ფიქსირებული ობიექტივი
+	29.97 fps Drop-Frame	29.97 კადრი/წმ Drop-Frame
+	29.97 fps Non Drop-Frame	29.97 კადრი/წმ Non Drop-Frame
+	35mm Prime	35 მმ ფიქსირებული ობიექტივი
+	3D Roll	3D გორება
+	3D Rotate	3D ბრუნვა
+	3D Spin	3D ტრიალი
+	3D Spinback	3D უკუტრიალი
+	4-Color Gradient	4-ფერიანი გრადიენტი
+	5.1 Media	5.1 მედია
+	5.1 Mixdown Type	5.1 დაყვანის ტიპი
+	50-300mm Zoom	50-300 მმ ზუმი
+	59.94 fps Drop-Frame	59.94 კადრი/წმ Drop-Frame
+	59.94 fps Non Drop-Frame	59.94 კადრი/წმ Non Drop-Frame
+	ASC CDL	ASC CDL
+	Action-Safe Margin	მოქმედების უსაფრთხო ზღვარი
+	1 file	1 ფაილი
+	{n} files	{n} ფაილი
+	Additional Scale	დამატებითი მასშტაბი
+	Additive Dissolve	დამატებითი გადადნობა
+	Additive Dissolve (Legacy)	დამატებითი გადადნობა (მოძველებული)
+	Aggressive	აგრესიული
+	Alpha Adjust	ალფას კორექცია
+	Alpha Blurriness	ალფას გაბუნდოვნება
+	Alpha Channel	ალფა არხი
+	Alpha Glow	ალფას ნათება
+	Ambience Intensity	გარემოს ინტენსივობა
+	Ambience Light Color	გარემოს სინათლის ფერი
+	Amount of Noise	ხმაურის რაოდენობა
+	Amount to Decolor	გაუფერულების რაოდენობა
+	Amount to Tint	ტონირების რაოდენობა
+	Amplifier	გამაძლიერებელი
+	Amplify	გაძლიერება
+	Amplitude	ამპლიტუდა
+	Analog	ანალოგური
+	Analog Delay	ანალოგური დაყოვნება
+	Anamorphic	ანამორფული
+	Anchor	საყრდენი
+	Anti-aliasing Quality	გლუვი კიდეების ხარისხი
+	Antialiasing for Best Quality	გლუვი კიდეები საუკეთესო ხარისხისთვის
+	Asymmetry	ასიმეტრია
+	Audio Duration	აუდიოს ხანგრძლივობა
+	Audio In Point	აუდიოს საწყისი წერტილი
+	Audio Out Point	აუდიოს საბოლოო წერტილი
+	Audio Usage	აუდიოს გამოყენება
+	Auto Align	ავტომატური სწორება
+	Auto Reframe	ავტომატური ჩარჩოს მორგება
+	Automatic Click Remover	ავტომატური დაწკაპუნების მომცილებელი
+	Background Color	ფონის ფერი
+	Background Corner Radius	ფონის კუთხის რადიუსი
+	Background Opacity	ფონის გაუმჭვირვალობა
+	Background Size	ფონის ზომა
+	Band 1	ზოლი 1
+	Band 2	ზოლი 2
+	Band 3	ზოლი 3
+	Band 4	ზოლი 4
+	Band 5	ზოლი 5
+	Band Pass	ზოლის გამტარი
+	Band Slide	ზოლების სრიალი
+	Band Stop	ზოლის ჩამხშობი
+	Bandpass	ზოლოვანი ფილტრი
+	Barn Doors	ფარდები
+	Basic 3D	საბაზისო 3D
+	Bass	ბასი
+	Behind	უკან
+	Bessel	ბესელი
+	Bevel Alpha	ალფას ფასკა
+	Binauralizer - Ambisonics	ბინაურალიზატორი - Ambisonics
+	Black Input Level	შავის შემავალი დონე
+	Black and white	შავ-თეთრი
+	Black and white with crushed blacks and strong contrast	შავ-თეთრი ჩაწოლილი შავებით და მკვეთრი კონტრასტით
+	Bleach-bypass style: desaturated with hard contrast	გათეთრების გამოტოვების სტილი: გაუფერულებული, მკაცრი კონტრასტით
+	Blend	შერევა
+	Blend With Original	შერევა ორიგინალთან
+	Block Dissolve	ბლოკური გადადნობა
+	Block Height	ბლოკის სიმაღლე
+	Block Motion	ბლოკის მოძრაობა
+	Block Size	ბლოკის ზომა
+	Block Width	ბლოკის სიგანე
+	Blue Blurriness	ლურჯის გაბუნდოვნება
+	Blue Curve	ლურჯის მრუდი
+	Blue Offset	ლურჯის წანაცვლება
+	Blue Power	ლურჯის ხარისხი
+	Blue Slope	ლურჯის დახრა
+	Blue-Blue	ლურჯი-ლურჯი
+	Blue-Const	ლურჯი-მუდმივა
+	Blue-Green	ლურჯი-მწვანე
+	Blue-Red	ლურჯი-წითელი
+	Blur Amount	გაბუნდოვნების რაოდენობა
+	Blur Angle	გაბუნდოვნების კუთხე
+	Blur Dimensions	გაბუნდოვნების მიმართულებები
+	Blur Dissolve	გაბუნდოვნებით გადადნობა
+	Blur Layer	გაბუნდოვნების შრე
+	Blur Length	გაბუნდოვნების სიგრძე
+	Blurriness	გაბუნდოვნება
+	Bokeh Blur	ბოკე გაბუნდოვნება
+	Boost	გაძლიერება
+	Border	ჩარჩო
+	Border Color	ჩარჩოს ფერი
+	Border Width	ჩარჩოს სიგანე
+	Borders	ჩარჩოები
+	Bounce	ახტომა
+	Branching	განშტოება
+	Brightness & Contrast	სიკაშკაშე და კონტრასტი
+	British Stack	ბრიტანული დასტა
+	Brush Hardness	ფუნჯის სიმკვრივე
+	Brush Opacity	ფუნჯის გაუმჭვირვალობა
+	Brush Position	ფუნჯის პოზიცია
+	Brush Spacing (secs)	ფუნჯის ინტერვალი (წმ)
+	Bubbles	ბუშტები
+	Bulge	გამობერვა
+	Bulge Smoother	გამობერვის დამარბილებელი
+	Bump Height	რელიეფის სიმაღლე
+	Burn Alpha	ალფას ჩაწვა
+	Burn Chroma	ქრომას ჩაწვა
+	Burn Color	ჩაწვის ფერი
+	Butterworth	ბატერვორთი
+	Camera Blur	კამერის გაბუნდოვნება
+	Camera Shake	კამერის რყევა
+	Capitalisation	მთავრული ასოები
+	Cathedral	ტაძარი
+	Cell Pattern	უჯრედების ნიმუში
+	Center Channel Pan	ცენტრალური არხის პანორამა
+	Center Gradient	ცენტრის გრადიენტი
+	Center Input	ცენტრის შესასვლელი
+	Center Out	ცენტრიდან გარეთ
+	Center Point (Latitude)	ცენტრალური წერტილი (განედი)
+	Center Point (Longitude)	ცენტრალური წერტილი (გრძედი)
+	Center Split	ცენტრიდან გაყოფა
+	Center of Sphere	სფეროს ცენტრი
+	Cents	ცენტები
+	Change to Color	ფერის შეცვლა
+	Channel Blur	არხის გაბუნდოვნება
+	Channel Mix	არხების შერევა
+	Channel Mixer	არხების მიქსერი
+	Chaos	ქაოსი
+	Chebyshev	ჩებიშევი
+	Checker Wipe	ჭადრაკული გადაწმენდა
+	Checkerboard	ჭადრაკის დაფა
+	Choke	შევიწროება
+	Chorus	ქორუსი
+	Chorus/Flanger	ქორუსი/ფლენჯერი
+	Chroma Leak	ქრომას გაჟონვა
+	Chromatic Aberration (Blue)	ქრომატული აბერაცია (ლურჯი)
+	Chromatic Aberration (Green)	ქრომატული აბერაცია (მწვანე)
+	Chromatic Aberration (Red)	ქრომატული აბერაცია (წითელი)
+	Cineon Converter	Cineon გარდამქმნელი
+	Clean Combo	სუფთა კომბო
+	Clip Level	კლიპის დონე
+	Clipping	ჩაჭრა
+	Clock Wipe	საათისებრი გადაწმენდა
+	Clock Wipe (Legacy)	საათისებრი გადაწმენდა (მოძველებული)
+	Clone	კლონირება
+	Color & Alpha	ფერი და ალფა
+	Color 1	ფერი 1
+	Color 2	ფერი 2
+	Color 3	ფერი 3
+	Color 4	ფერი 4
+	Color Balance	ფერთა ბალანსი
+	Color Channel	ფერის არხი
+	Color Distortion	ფერის დამახინჯება
+	Color Emboss	ფერადი რელიეფი
+	Color Key	ფერის გასაღები
+	Color Pass	ფერის შენარჩუნება
+	Color Replace	ფერის ჩანაცვლება
+	Color To Leave	დასატოვებელი ფერი
+	Color Tolerance	ფერის დაშვება
+	Columns	სვეტები
+	Complexity	სირთულე
+	Composite In Back	კომპოზიცია უკან
+	Composite In Front	კომპოზიცია წინ
+	Composite Using	კომპოზიციის წყარო
+	Composite on Original	კომპოზიცია ორიგინალზე
+	Compound Blur	შედგენილი გაბუნდოვნება
+	Compression Before Clipping	შეკუმშვა ჩაჭრამდე
+	Constant Gain	მუდმივი გაძლიერება
+	Constant Power	მუდმივი სიმძლავრე
+	Conversion Type	გარდაქმნის ტიპი
+	Convolution Reverb	კონვოლუციური რევერბი
+	Cool, desaturated and punchy	გრილი, გაუფერულებული და მკვეთრი
+	Core Width	ბირთვის სიგანე
+	Corner Pin	კუთხეების მიმაგრება
+	Count	რაოდენობა
+	Counter-clockwise	საათის ისრის საწინააღმდეგოდ
+	Crop Less <-> Smooth More	ნაკლები ჩამოჭრა <-> მეტი სიგლუვე
+	Cross Displacement	ჯვარედინი წანაცვლება
+	Cross Dissolve	ჯვარედინი გადადნობა
+	Cross Dissolve (Legacy)	ჯვარედინი გადადნობა (მოძველებული)
+	Cross Zoom	ჯვარედინი ზუმი
+	Cross Zoom (Legacy)	ჯვარედინი ზუმი (მოძველებული)
+	Crossovers	გამყოფი სიხშირეები
+	Crystals	კრისტალები
+	Cube Spin	კუბის ბრუნვა
+	Curl Radius	დახვევის რადიუსი
+	Cursor	კურსორი
+	Curvature	სიმრუდე
+	Curve	მრუდი
+	Custom Color	მორგებული ფერი
+	Cutoff	ჩაჭრის სიხშირე
+	Cyan-teal shadows and warm highlights with a little more contrast	ცისფერ-ზურმუხტისფერი ჩრდილები და თბილი ნათელი ტონები ოდნავ მეტი კონტრასტით
+	Cycle (in Revolutions)	ციკლი (ბრუნებში)
+	Cycle Evolution	ციკლური ევოლუცია
+	Damping	ჩაქრობა
+	Damping HF	მაღალი სიხშირეების ჩაქრობა
+	Damping LF	დაბალი სიხშირეების ჩაქრობა
+	Day for night: darker, cooler and less saturated	დღე ღამის ნაცვლად: უფრო მუქი, გრილი და ნაკლებად გაჯერებული
+	DeEsser	დე-ესერი
+	DeHummer	ზუზუნის მომცილებელი
+	DeNoise	ხმაურის შემცირება
+	DeReverb	რევერბის შემცირება
+	Decay	მილევა
+	Decay Time (RT60)	მილევის დრო (RT60)
+	Delay	დაყოვნება
+	Delay 1	დაყოვნება 1
+	Delay 2	დაყოვნება 2
+	Delay 3	დაყოვნება 3
+	Delay 4	დაყოვნება 4
+	Desaturate	გაუფერულება
+	Detail Amplitude	დეტალების ამპლიტუდა
+	Detail Level	დეტალების დონე
+	Detailed Analysis	დეტალური ანალიზი
+	Diamond	რომბი
+	Dip to Black	შავში ჩაქრობა
+	Dip to Black (Legacy)	შავში ჩაქრობა (მოძველებული)
+	Dip to Color	ფერში ჩაქრობა
+	Dip to White	თეთრში ჩაქრობა
+	Dip to White (Legacy)	თეთრში ჩაქრობა (მოძველებული)
+	Direction	მიმართულება
+	Directional	მიმართული
+	Directional Blur	მიმართული გაბუნდოვნება
+	Directional Blur (Legacy)	მიმართული გაბუნდოვნება (მოძველებული)
+	Disperse	გაფანტვა
+	Displacement	წანაცვლება
+	Dissolve Blocks	ბლოკებად გადადნობა
+	Distance to Image	მანძილი გამოსახულებამდე
+	Distortion Complexity	დამახინჯების სირთულე
+	Distortion Rate	დამახინჯების სიჩქარე
+	Distortion Type	დამახინჯების ტიპი
+	Drive	დრაივი
+	Dry	მშრალი
+	Dry Out	მშრალი გამოსავალი
+	Dynamics Processing	დინამიკის დამუშავება
+	Early Reflections	ადრეული არეკვლები
+	Earthquake	მიწისძვრა
+	Ease In and Out	შენელებით შესვლა და გასვლა
+	Easing	შენელება
+	Echo	ექო
+	Echo Glow	ექოს ნათება
+	Echo Operator	ექოს ოპერატორი
+	Echo Time (seconds)	ექოს დრო (წამი)
+	Echoes	ექოები
+	Edge Color	კიდის ფერი
+	Edge Feather	კიდის დარბილება
+	Edge Glow	კიდის ნათება
+	Edge Sharpness	კიდის სიმკვეთრე
+	Edge Softness	კიდის სირბილე
+	Edge Thin	კიდის გათხელება
+	Edge Threshold	კიდის ზღვარი
+	Edge Type	კიდის ტიპი
+	Elliptical	ელიფსური
+	Emboss	რელიეფი
+	Enable HSL Secondary	HSL მეორადი კორექციის ჩართვა
+	End Color	საბოლოო ფერი
+	End Point	საბოლოო წერტილი
+	End of Ramp	გრადიენტის ბოლო
+	Evolution	ევოლუცია
+	Evolution Options	ევოლუციის პარამეტრები
+	Exciter Amount	ექსაიტერის რაოდენობა
+	Exciter Mode	ექსაიტერის რეჟიმი
+	Exponential Fade	ექსპონენციური ჩაქრობა
+	FFT Filter	FFT ფილტრი
+	Fade	ჩაქრობა
+	Fade Out	ჩაქრობით გასვლა
+	Falloff	შესუსტება
+	Fast	სწრაფი
+	Faster Motion	უფრო სწრაფი მოძრაობა
+	Feedback	უკუკავშირი
+	Feedback 1	უკუკავშირი 1
+	Feedback 2	უკუკავშირი 2
+	Feedback 3	უკუკავშირი 3
+	Feedback 4	უკუკავშირი 4
+	Female	ქალი
+	Fill Background	ფონის შევსება
+	Fill Left with Right	მარცხენას შევსება მარჯვენათი
+	Fill Point	შევსების წერტილი
+	Fill Right with Left	მარჯვენას შევსება მარცხენათი
+	Fill Selector	შევსების ამრჩევი
+	Film Dissolve	კინოგადადნობა
+	Film Dissolve (Legacy)	კინოგადადნობა (მოძველებული)
+	Film Roll	ფირის გადახვევა
+	Filter Frequency	ფილტრის სიხშირე
+	Filter Resonance	ფილტრის რეზონანსი
+	Final Delay	საბოლოო დაყოვნება
+	Find Edges	კიდეების პოვნა
+	Flanger	ფლენჯერი
+	Flare	ანათება
+	Flare Brightness	ანათების სიკაშკაშე
+	Flare Center	ანათების ცენტრი
+	Flare Color	ანათების ფერი
+	Flash	ელვარება
+	Flicker	ციმციმი
+	Flickers	ციმციმები
+	Flip Motion	გადაბრუნების მოძრაობა
+	Flip Over	გადაბრუნება
+	Focus	ფოკუსი
+	Focus Blur	ფოკუსის გაბუნდოვნება
+	Focus Point	ფოკუსის წერტილი
+	Focus Shape	ფოკუსის ფორმა
+	Focus Size	ფოკუსის ზომა
+	Fold Motion	დაკეცვის მოძრაობა
+	Foldback	უკუმონიტორი
+	Fractal Influence	ფრაქტალის გავლენა
+	Fractal Type	ფრაქტალის ტიპი
+	Frame	კადრი
+	Frame Color	კადრის ფერი
+	Frame Layout	კადრის განლაგება
+	Frame Width	კადრის სიგანე
+	Framing	კადრირება
+	From	საიდან
+	From East	აღმოსავლეთიდან
+	From North	ჩრდილოეთიდან
+	From South	სამხრეთიდან
+	From West	დასავლეთიდან
+	Fuzz	ფაზი
+	GB	GB
+	Gamma Correction	გამა-კორექცია
+	Gamut Warning Color	გამის გაფრთხილების ფერი
+	Gap	ხარვეზი
+	Gap Color	ხარვეზის ფერი
+	Gaussian Blur (Legacy)	გაუსის გაბუნდოვნება (მოძველებული)
+	Ghosts	მოჩვენებები
+	Glint	ბრწყინვა
+	Glitch	გლიჩი
+	Glow	ნათება
+	Glow Color	ნათების ფერი
+	Glow Only	მხოლოდ ნათება
+	Glow Radius	ნათების რადიუსი
+	Glow Saturation	ნათების გაჯერება
+	Glow Width	ნათების სიგანე
+	Gradient End	გრადიენტის ბოლო
+	Gradient Layer	გრადიენტის შრე
+	Gradient Placement	გრადიენტის განთავსება
+	Gradient Scatter	გრადიენტის გაფანტვა
+	Gradient Shape	გრადიენტის ფორმა
+	Gradient Start	გრადიენტის დასაწყისი
+	Gradient Wipe	გრადიენტული გადაწმენდა
+	Gradient Wipe (Legacy)	გრადიენტული გადაწმენდა (მოძველებული)
+	Grain Size	მარცვლის ზომა
+	Green Blurriness	მწვანის გაბუნდოვნება
+	Green Curve	მწვანის მრუდი
+	Green Offset	მწვანის წანაცვლება
+	Green Power	მწვანის ხარისხი
+	Green Slope	მწვანის დახრა
+	Green-Blue	მწვანე-ლურჯი
+	Green-Const	მწვანე-მუდმივა
+	Green-Green	მწვანე-მწვანე
+	Green-Red	მწვანე-წითელი
+	Grow	ზრდა
+	Grunge	გრანჯი
+	GuitarSuite	GuitarSuite
+	Hard Clip	მკაცრი ჩაჭრა
+	Hard Limiter	მკაცრი შემზღუდველი
+	Head Size	თავის ზომა
+	Heart	გული
+	Hide Back Face	უკანა მხარის დამალვა
+	High Cutoff	ზედა ჩაჭრის სიხშირე
+	High Frequency Cut	მაღალი სიხშირეების ჩაჭრა
+	High Frequency Damping	მაღალი სიხშირეების ჩაქრობა
+	High Pass	მაღალსიხშირული ფილტრი
+	High Shelf	მაღალი თარო
+	High Shelf Gain	მაღალი თაროს გაძლიერება
+	High contrast with held highlights and deep shadows	მაღალი კონტრასტი შენარჩუნებული ნათელი ტონებით და ღრმა ჩრდილებით
+	Highlight	ნათელი ტონები
+	Highlight Blue Balance	ნათელი ტონების ლურჯის ბალანსი
+	Highlight Brightness	ნათელი ტონების სიკაშკაშე
+	Highlight Green Balance	ნათელი ტონების მწვანის ბალანსი
+	Highlight Red Balance	ნათელი ტონების წითლის ბალანსი
+	Highlight Rolloff	ნათელი ტონების რბილი ჩაჭრა
+	Highlight Threshold	ნათელი ტონების ზღვარი
+	Highlight Tint	ნათელი ტონების ტონირება
+	Highlights Lightness	ნათელი ტონების სინათლე
+	Highpass	მაღალსიხშირული
+	Horizontal 16:9	ჰორიზონტალური 16:9
+	Horizontal Alignment	ჰორიზონტალური სწორება
+	Horizontal Blocks	ჰორიზონტალური ბლოკები
+	Horizontal Decentering	ჰორიზონტალური დეცენტრირება
+	Horizontal Displacement	ჰორიზონტალური წანაცვლება
+	Horizontal Flip	ჰორიზონტალური ასახვა
+	Horizontal Margin	ჰორიზონტალური ზღვარი
+	Horizontal and Vertical	ჰორიზონტალური და ვერტიკალური
+	Hue Center	ტონის ცენტრი
+	Hue Tolerance	ტონის დაშვება
+	Ignore Alpha	ალფას იგნორირება
+	Impulse	იმპულსი
+	Incoming	შემომავალი
+	Initial Delay	საწყისი დაყოვნება
+	Inner Radius	შიდა რადიუსი
+	Input Boost	შესასვლელის გაძლიერება
+	Inset	ჩასმა
+	Inside Color	შიდა ფერი
+	Inter	Inter
+	Internal Black Point	შიდა შავის წერტილი
+	Internal White Point	შიდა თეთრის წერტილი
+	Inverse Falloff	შებრუნებული შესუსტება
+	Invert Alpha	ალფას ინვერსია
+	Invert Blur	გაბუნდოვნების ინვერსია
+	Invert Fill	შევსების ინვერსია
+	Invert Gradient	გრადიენტის ინვერსია
+	Invert Left	მარცხენას ინვერსია
+	Invert Right	მარჯვენას ინვერსია
+	Iris Box	ირისი: ოთხკუთხედი
+	Iris Cross	ირისი: ჯვარი
+	Iris Diamond	ირისი: რომბი
+	Iris Radius	ირისის რადიუსი
+	Iris Rotation	ირისის ბრუნვა
+	Iris Round	ირისი: წრე
+	Iris Shape	ირისის ფორმა
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	კალეიდოსკოპი
+	Key Color	გასაღების ფერი
+	Layer Name	შრის სახელი
+	Leave Color	ფერის დატოვება
+	Left - Left	მარცხენა - მარცხენა
+	Left - Right	მარცხენა - მარჯვენა
+	Length	სიგრძე
+	Lens Blur	ობიექტივის გაბუნდოვნება
+	Lens Distortion	ობიექტივის დამახინჯება
+	Lens Flare	ობიექტივის ანათება
+	Lens Type	ობიექტივის ტიპი
+	Level 1	დონე 1
+	Level 2	დონე 2
+	Level 3	დონე 3
+	Level 4	დონე 4
+	Lifted blacks, softer contrast, muted colour	აწეული შავები, რბილი კონტრასტი, ჩამქრალი ფერი
+	Light 1	სინათლე 1
+	Light 2	სინათლე 2
+	Light 3	სინათლე 3
+	Light 4	სინათლე 4
+	Light 5	სინათლე 5
+	Light Angle	სინათლის კუთხე
+	Light Color	სინათლის ფერი
+	Light Leak	სინათლის გაჟონვა
+	Light Leaks	სინათლის გაჟონვები
+	Light Sweep	სინათლის გადავლა
+	Light Type	სინათლის ტიპი
+	Lighting Effects	განათების ეფექტები
+	Lightning	ელვა
+	Line Thickness	ხაზის სისქე
+	Linear Ramp	წრფივი გრადიენტი
+	Linear Wipe	წრფივი გადაწმენდა
+	Linear Wipe (Legacy)	წრფივი გადაწმენდა (მოძველებული)
+	Linear to Log	წრფივიდან ლოგარითმულში
+	Liquid Distortion	თხევადი დამახინჯება
+	Log to Linear	ლოგარითმულიდან წრფივში
+	Log to Log	ლოგარითმულიდან ლოგარითმულში
+	Logo Cutout	ლოგოს ამოჭრა
+	Long Shadow	გრძელი ჩრდილი
+	Look-Ahead Time	წინსწრების დრო
+	Loudness Maximizer	ხმამაღლობის მაქსიმიზატორი
+	Loudness Meter	ხმამაღლობის მზომი
+	Louver	ჟალუზი
+	Low Frequency Cut	დაბალი სიხშირეების ჩაჭრა
+	Low Pass	დაბალსიხშირული ფილტრი
+	Low Shelf	დაბალი თარო
+	Low Shelf Gain	დაბალი თაროს გაძლიერება
+	Lower Left	ქვედა მარცხენა
+	Lower Right	ქვედა მარჯვენა
+	Lowpass	დაბალსიხშირული
+	Luma Curve	სიკაშკაშის მრუდი
+	Luma Fade	სიკაშკაშით ჩაქრობა
+	Luma Key	სიკაშკაშის გასაღები
+	Luma Source	სიკაშკაშის წყარო
+	Luma and Chroma	სიკაშკაშე და ქრომა
+	Luminance	ნათება
+	Luminance Threshold	ნათების ზღვარი
+	MB	MB
+	Magnify	გადიდება
+	Magnify (Legacy)	გადიდება (მოძველებული)
+	Major Radius	დიდი რადიუსი
+	Male	კაცი
+	Map Black To	შავის ასახვა
+	Map White To	თეთრის ასახვა
+	Maps full-range levels into 16–235 (video range) with a luma curve	სრული დიაპაზონის დონეებს ასახავს 16–235-ში (ვიდეოდიაპაზონი) სიკაშკაშის მრუდით
+	Mask Only	მხოლოდ ნიღაბი
+	Master Amplitude	ძირითადი ამპლიტუდა
+	Mastering	მასტერინგი
+	Matte	ნიღაბი
+	Matte Alpha	ნიღბის ალფა
+	Matte Cleanup	ნიღბის გასუფთავება
+	Matte Generation	ნიღბის გენერაცია
+	Matte Luma	ნიღბის სიკაშკაშე
+	Maximum Amplitude	მაქსიმალური ამპლიტუდა
+	Maximum Block Size	ბლოკის მაქსიმალური ზომა
+	Maximum Blur	მაქსიმალური გაბუნდოვნება
+	Maximum Reduction	მაქსიმალური შემცირება
+	Maximum Scale	მაქსიმალური მასშტაბი
+	Media Timecode	მედიის ტაიმკოდი
+	Median	მედიანა
+	Metadata & Timecode Burn-in	მეტამონაცემებისა და ტაიმკოდის ჩაწვა
+	Metrics Kerning	მეტრიკული კერნინგი
+	Mid	საშუალო
+	Mid Point	შუა წერტილი
+	Midtone Blue Balance	შუა ტონების ლურჯის ბალანსი
+	Midtone Green Balance	შუა ტონების მწვანის ბალანსი
+	Midtone Red Balance	შუა ტონების წითლის ბალანსი
+	Midtones Lightness	შუა ტონების სინათლე
+	Minor Radius	მცირე რადიუსი
+	Mirror	სარკე
+	Mirror Alternate	მონაცვლე ასახვა
+	Mixed Crystals	შერეული კრისტალები
+	Modern High Gain	თანამედროვე მაღალი გაძლიერება
+	Modulation Rate	მოდულაციის სიხშირე
+	Monochrome toned cyan-blue	ცისფერ-ლურჯად ტონირებული მონოქრომი
+	Monochrome toned warm brown	თბილ ყავისფრად ტონირებული მონოქრომი
+	More colour in the less saturated areas	მეტი ფერი ნაკლებად გაჯერებულ არეებში
+	Morph Cut	მორფული ჭრა
+	Mosaic	მოზაიკა
+	Mosaic (Legacy)	მოზაიკა (მოძველებული)
+	Motion Blur	მოძრაობის გაბუნდოვნება
+	Motion Camera	მოძრავი კამერა
+	Motion Preset	მოძრაობის პრესეტი
+	Motion Tween	მოძრაობის ინტერპოლაცია
+	Multitap Delay	მრავალგანშტოებიანი დაყოვნება
+	Narrow	ვიწრო
+	Neon Color	ნეონის ფერი
+	Neon Wipe	ნეონის გადაწმენდა
+	No Motion	მოძრაობის გარეშე
+	Noise (Legacy)	ხმაური (მოძველებული)
+	Noise Level	ხმაურის დონე
+	Noise Reduction/Restoration	ხმაურის შემცირება/აღდგენა
+	Noise Type	ხმაურის ტიპი
+	Non-Additive Dissolve	არაადიტიური გადადნობა
+	Notch 1	ჩაღრმავება 1
+	Notch 2	ჩაღრმავება 2
+	Notch 3	ჩაღრმავება 3
+	Notch 4	ჩაღრმავება 4
+	Notch 5	ჩაღრმავება 5
+	Notch 6	ჩაღრმავება 6
+	Notch Filter	ჩამღრმავებელი ფილტრი
+	Notch Width	ჩაღრმავების სიგანე
+	Number Of Echoes	ექოების რაოდენობა
+	Number of Harmonics	ჰარმონიკების რაოდენობა
+	Octagon	რვაკუთხედი
+	Offset (Turbulence)	წანაცვლება (ტურბულენტობა)
+	Offset From	წანაცვლება საიდან
+	Offset To	წანაცვლება სადამდე
+	Omni	ყოვლისმიმართული
+	On Original Image	ორიგინალ გამოსახულებაზე
+	On Transparent	გამჭვირვალეზე
+	Opens up the shadows	ჩრდილებს ხსნის
+	Order	რიგი
+	Outgoing	გამავალი
+	Outside Color	გარე ფერი
+	Overflow	გადავსება
+	Overshoot	გადახრა
+	Page Peel	გვერდის აშრევება
+	Page Turn	გვერდის გადაფურცვლა
+	Paint Bucket	საღებავის ვედრო
+	Paint On Black	ხატვა შავზე
+	Paint On Original Image	ხატვა ორიგინალ გამოსახულებაზე
+	Paint On Transparent	ხატვა გამჭვირვალეზე
+	Paint On White	ხატვა თეთრზე
+	Paint Style	ხატვის სტილი
+	Paint Surface	ხატვის ზედაპირი
+	Pan (Y Axis)	პანორამა (Y ღერძი)
+	Panel Wipe	პანელური გადაწმენდა
+	Panner - Ambisonics	პანორამირება - Ambisonics
+	Passband Ripple	გამტარი ზოლის ტალღოვნება
+	Path Points	ტრაექტორიის წერტილები
+	Peak Frequency	პიკის სიხშირე
+	Peak Gain	პიკის გაძლიერება
+	Pedestal	პედესტალი
+	Pentagon	ხუთკუთხედი
+	Percent Blur	გაბუნდოვნების პროცენტი
+	Phase Difference	ფაზური სხვაობა
+	Phaser	ფეიზერი
+	Phosphor	ფოსფორი
+	Phosphor Color	ფოსფორის ფერი
+	Photocopy Color	ფოტოასლის ფერი
+	Pillow	ბალიში
+	Pin All	ყველას მიმაგრება
+	Pin Horizontal	ჰორიზონტალური მიმაგრება
+	Pin Vertical	ვერტიკალური მიმაგრება
+	Pinning	მიმაგრება
+	Pitch Shifter	ტონის გადამწევი
+	Plate	ფირფიტა
+	Plateau Wipe	პლატოს გადაწმენდა
+	Plateaus	პლატოები
+	Point 1	წერტილი 1
+	Point 1 Color	წერტილი 1-ის ფერი
+	Point 1 Latitude	წერტილი 1-ის განედი
+	Point 1 Longitude	წერტილი 1-ის გრძედი
+	Point 2	წერტილი 2
+	Point 2 Color	წერტილი 2-ის ფერი
+	Point 2 Latitude	წერტილი 2-ის განედი
+	Point 2 Longitude	წერტილი 2-ის გრძედი
+	Point 3	წერტილი 3
+	Point 3 Color	წერტილი 3-ის ფერი
+	Point 3 Latitude	წერტილი 3-ის განედი
+	Point 3 Longitude	წერტილი 3-ის გრძედი
+	Point 4	წერტილი 4
+	Point 5	წერტილი 5
+	Point 6	წერტილი 6
+	Point 7	წერტილი 7
+	Point 8	წერტილი 8
+	Points	წერტილები
+	Pop Motion	ამოხტომის მოძრაობა
+	Position Amount	პოზიციის რაოდენობა
+	Position, Scale, Rotation	პოზიცია, მასშტაბი, ბრუნვა
+	Posterize	პოსტერიზაცია
+	Posterize Time	დროის პოსტერიზაცია
+	Pre-Delay	წინასწარი დაყოვნება
+	Preserve Luminosity	სიკაშკაშის შენარჩუნება
+	Preserve Scale	მასშტაბის შენარჩუნება
+	ProcAmp	ProcAmp
+	Pull Motion	გამოწევის მოძრაობა
+	Pulls highlights and whites down	ნათელ ტონებსა და თეთრებს ამცირებს
+	Push	გაძევება
+	Push (Legacy)	გაძევება (მოძველებული)
+	Q	Q
+	RGB Split	RGB გაყოფა
+	Radial Ramp	რადიალური გრადიენტი
+	Radial Wipe	რადიალური გადაწმენდა
+	Radial Wipe (Legacy)	რადიალური გადაწმენდა (მოძველებული)
+	Ramp	გრადიენტი
+	Ramp Shape	გრადიენტის ფორმა
+	Random Seed	შემთხვევითი თესლი
+	Ray	სხივი
+	Ray Color	სხივის ფერი
+	Ray Length	სხივის სიგრძე
+	Rays Only	მხოლოდ სხივები
+	Red Blurriness	წითლის გაბუნდოვნება
+	Red Curve	წითლის მრუდი
+	Red Offset	წითლის წანაცვლება
+	Red Power	წითლის ხარისხი
+	Red Slope	წითლის დახრა
+	Red-Blue	წითელი-ლურჯი
+	Red-Const	წითელი-მუდმივა
+	Red-Green	წითელი-მწვანე
+	Red-Red	წითელი-წითელი
+	Reduce Axis	ღერძის შემცირება
+	Reduce Interlace Flicker	ნახევარკადრული ციმციმის შემცირება
+	Reflected	არეკლილი
+	Reflection Angle	არეკვლის კუთხე
+	Reflection Center	არეკვლის ცენტრი
+	Refraction	გარდატეხა
+	Reframe Offset	ჩარჩოს მორგების წანაცვლება
+	Reframe Zoom	ჩარჩოს მორგების ზუმი
+	Relaxed	მშვიდი
+	Release Time	გაშვების დრო
+	Remove Fringe	კიდის ფერადი არშიის მოცილება
+	Repeat Edge Pixels	კიდის პიქსელების გამეორება
+	Replace Color	ფერის ჩანაცვლება
+	Replicate	გამრავლება
+	Result	შედეგი
+	Retro	რეტრო
+	Reveal Original Image	ორიგინალი გამოსახულების გამოჩენა
+	Reverb Amount	რევერბის რაოდენობა
+	Right - Left	მარჯვენა - მარცხენა
+	Right - Right	მარჯვენა - მარჯვენა
+	Roll (Z Axis)	გორება (Z ღერძი)
+	Room Size	ოთახის ზომა
+	Rotation Amount	ბრუნვის რაოდენობა
+	Roughen	დაუხეშება
+	Roughen Color	დაუხეშების ფერი
+	Roughen Edges	კიდეების დაუხეშება
+	Rounded Crop	მომრგვალებული ჩამოჭრა
+	Rows	რიგები
+	Rusty	ჟანგიანი
+	Rusty Color	ჟანგის ფერი
+	Saturation at 50 %	გაჯერება 50 %-ზე
+	Scale (Degrees)	მასშტაბი (გრადუსი)
+	Scale Amount	მასშტაბის რაოდენობა
+	Scale From	მასშტაბი საიდან
+	Scale Height	სიმაღლის მასშტაბირება
+	Scale Match	მასშტაბის დამთხვევა
+	Scale To	მასშტაბი სადამდე
+	Scan Lines	სკანირების ხაზები
+	Scientific Filter	სამეცნიერო ფილტრი
+	Semi-tones	ნახევარტონები
+	Sequence Name	მიმდევრობის სახელი
+	Sequence Timecode	მიმდევრობის ტაიმკოდი
+	Setting	პარამეტრი
+	Shadow Angle	ჩრდილის კუთხე
+	Shadow Blue Balance	ჩრდილების ლურჯის ბალანსი
+	Shadow Blur	ჩრდილის გაბუნდოვნება
+	Shadow Color	ჩრდილის ფერი
+	Shadow Distance	ჩრდილის მანძილი
+	Shadow Green Balance	ჩრდილების მწვანის ბალანსი
+	Shadow Only	მხოლოდ ჩრდილი
+	Shadow Opacity	ჩრდილის გაუმჭვირვალობა
+	Shadow Red Balance	ჩრდილების წითლის ბალანსი
+	Shadow Size	ჩრდილის ზომა
+	Shadow Tint	ჩრდილების ტონირება
+	Shadows Lightness	ჩრდილების სინათლე
+	Shake	რყევა
+	Shape Dissolve	ფიგურული გადადნობა
+	Shape Flow	ფიგურული ნაკადი
+	Shape Size	ფიგურის ზომა
+	Shard Size	ნამსხვრევის ზომა
+	Sharp Colors	მკვეთრი ფერები
+	Sharpen Amount	გამკვეთრების რაოდენობა
+	Shift Center To	ცენტრის გადატანა
+	Show Focus Area	ფოკუსის არის ჩვენება
+	Show Only Noise	მხოლოდ ხმაურის ჩვენება
+	Shrink	შეკუმშვა
+	Shutter Angle	ობტურატორის კუთხე
+	Similarity	მსგავსება
+	Simple Notch Filter	მარტივი ჩამღრმავებელი ფილტრი
+	Simple Parametric EQ	მარტივი პარამეტრული ეკვალაიზერი
+	Simple Text	მარტივი ტექსტი
+	Single-band Compressor	ერთზოლიანი კომპრესორი
+	Sinusoidal	სინუსოიდური
+	Skew Axis	დახრის ღერძი
+	Slats	ლამელები
+	Slide (Legacy)	სრიალი (მოძველებული)
+	Slope	დახრა
+	Slow	ნელი
+	Slower Motion	უფრო ნელი მოძრაობა
+	Smart Limit	ჭკვიანი ზღვარი
+	Smooth Motion	გლუვი მოძრაობა
+	Soft Clamp	რბილი შეზღუდვა
+	Soft Edges (Best Quality)	რბილი კიდეები (საუკეთესო ხარისხი)
+	Soft Wipe	რბილი გადაწმენდა
+	Solarize	სოლარიზაცია
+	Solid Colors	ერთფეროვანი ფერები
+	Source Point	წყაროს წერტილი
+	Source Text	წყაროს ტექსტი
+	Spacer	შუალედი
+	Speaker Angle	დინამიკის კუთხე
+	Special Effects	სპეციალური ეფექტები
+	Spherize	სფეროიზაცია
+	Spiky	წვეტიანი
+	Spill	გადაღვრა
+	Spill Suppression	გადაღვრის ჩახშობა
+	Spin Direction	ბრუნვის მიმართულება
+	Spin Motion	ბრუნვის მოძრაობა
+	Split	გაყოფა
+	Split (Legacy)	გაყოფა (მოძველებული)
+	Spotlight	პროჟექტორი
+	Spread	გაშლა
+	Spring Motion	ზამბარის მოძრაობა
+	Square (Width Only)	კვადრატი (მხოლოდ სიგანე)
+	Square 1:1	კვადრატი 1:1
+	Stabilization	სტაბილიზაცია
+	Stabilize Only	მხოლოდ სტაბილიზაცია
+	Stabilize, Crop	სტაბილიზაცია, ჩამოჭრა
+	Stabilize, Crop, Auto-scale	სტაბილიზაცია, ჩამოჭრა, ავტომასშტაბი
+	Stabilize, Synthesize Edges	სტაბილიზაცია, კიდეების სინთეზი
+	Stages	საფეხურები
+	Star Wipe	ვარსკვლავისებრი გადაწმენდა
+	Start Angle	საწყისი კუთხე
+	Start Color	საწყისი ფერი
+	Start Point	საწყისი წერტილი
+	Start of Ramp	გრადიენტის დასაწყისი
+	Starting Intensity	საწყისი ინტენსივობა
+	Static Plates	სტატიკური ფირფიტები
+	Stereo Expand	სტერეოს გაფართოება
+	Stereo Expander	სტერეოს გამაფართოებელი
+	Stereo Phasing	სტერეოფაზირება
+	Stereoscopic - Over/Under	სტერეოსკოპიული - ზემოთ/ქვემოთ
+	Stereoscopic - Side by Side	სტერეოსკოპიული - გვერდიგვერდ
+	Stopband Attenuation	ჩამხშობი ზოლის მილევა
+	Straight Color	სუფთა ფერი
+	Stretch	გაწელვა
+	Stretch Gradient to Fit	გრადიენტის გაწელვა ჩასატევად
+	Stretch Map to Fit	რუკის გაწელვა ჩასატევად
+	Stretch Width or Height	სიგანის ან სიმაღლის გაწელვა
+	Stretch Wipe	გაწელვით გადაწმენდა
+	Stretch to Fit Frame	გაწელვა კადრზე ჩასატევად
+	Stripe	ზოლი
+	Stripes	ზოლები
+	Strobe Color	სტრობის ფერი
+	Strobe Duration (secs)	სტრობის ხანგრძლივობა (წმ)
+	Strobe Light	სტრობოსკოპი
+	Strobe Period (secs)	სტრობის პერიოდი (წმ)
+	Stroke 2 Color	კონტური 2-ის ფერი
+	Stroke 2 Type	კონტური 2-ის ტიპი
+	Stroke 2 Width	კონტური 2-ის სიგანე
+	Stroke Angle	შტრიხის კუთხე
+	Stroke Density	შტრიხის სიმჭიდროვე
+	Stroke Length (secs)	შტრიხის სიგრძე (წმ)
+	Stroke Only	მხოლოდ კონტური
+	Stroke Randomness	შტრიხის შემთხვევითობა
+	Stroke Type	შტრიხის ტიპი
+	Studio Reverb	სტუდიური რევერბი
+	Subclip End	ქვეკლიპის დასასრული
+	Subclip Start	ქვეკლიპის დასაწყისი
+	Subspace Warp	ქვესივრცული დეფორმაცია
+	Super Narrow	ზედმეტად ვიწრო
+	Surface Gloss	ზედაპირის ბზინვარება
+	Surface Material	ზედაპირის მასალა
+	Surround Reverb	სივრცითი რევერბი
+	Swap Channels	არხების გაცვლა
+	Swivel	შემობრუნება
+	TV Power	ტელევიზორის ჩართვა
+	Tape	ფირი
+	Tape/Tube	ფირი/ლამპა
+	Target Aspect	სამიზნე პროპორცია
+	Target Color	სამიზნე ფერი
+	Target Field of View	სამიზნე ხედვის არე
+	Text Color	ტექსტის ფერი
+	Tile Gradient	გრადიენტის მოზაიკა
+	Tilt	დახრა
+	Tilt (X Axis)	დახრა (X ღერძი)
+	Tint Color	ტონირების ფერი
+	To	სადამდე
+	Tone	ტონი
+	Track Matte Key	ტრეკის ნიღბის გასაღები
+	Transience	ტრანზიენტობა
+	Transition Completion	გადასვლის დასრულება
+	Transition Softness	გადასვლის სირბილე
+	Trash	ნაგავი
+	Travel Motion	გადაადგილების მოძრაობა
+	Treble	მაღალი სიხშირეები
+	Tube	ლამპა
+	Tube-modeled Compressor	ლამპის მოდელირებული კომპრესორი
+	Tubular	მილისებრი
+	Turbulent	ტურბულენტური
+	Turbulent Displace	ტურბულენტური წანაცვლება
+	Turbulent Sharp	ტურბულენტური მკვეთრი
+	Turbulent Smooth	ტურბულენტური გლუვი
+	Turbulent Smoother	ტურბულენტური უფრო გლუვი
+	Tweed	ტვიდი
+	Twirl (Legacy)	გრიგალი (მოძველებული)
+	Twirl Center	გრიგალის ცენტრი
+	Twirl Radius	გრიგალის რადიუსი
+	Twist Smoother	გრეხვის დამარბილებელი
+	Ultra Key	Ultra Key
+	Uniform Spacing	თანაბარი ინტერვალი
+	Upper Frequency	ზედა სიხშირე
+	Upper Left	ზედა მარცხენა
+	Upper Right	ზედა მარჯვენა
+	Use Color Noise	ფერადი ხმაურის გამოყენება
+	Use End Color	საბოლოო ფერის გამოყენება
+	Use Glow Color	ნათების ფერის გამოყენება
+	Use Tint Color	ტონირების ფერის გამოყენება
+	VHS Damage	VHS დაზიანება
+	VR Blur	VR გაბუნდოვნება
+	VR Chroma Leaks	VR ქრომას გაჟონვები
+	VR Chromatic Aberrations	VR ქრომატული აბერაციები
+	VR Color Gradients	VR ფერადი გრადიენტები
+	VR De-Noise	VR ხმაურის შემცირება
+	VR Digital Glitch	VR ციფრული გლიჩი
+	VR Fractal Noise	VR ფრაქტალური ხმაური
+	VR Glow	VR ნათება
+	VR Gradient Wipe	VR გრადიენტული გადაწმენდა
+	VR Iris Wipe	VR ირისული გადაწმენდა
+	VR Light Leaks	VR სინათლის გაჟონვები
+	VR Light Rays	VR სინათლის სხივები
+	VR Mobius Zoom	VR მებიუსის ზუმი
+	VR Plane to Sphere	VR სიბრტყიდან სფეროში
+	VR Projection	VR პროექცია
+	VR Random Blocks	VR შემთხვევითი ბლოკები
+	VR Rotate Sphere	VR სფეროს ბრუნვა
+	VR Sharpen	VR გამკვეთრება
+	VR Spherical Blur	VR სფერული გაბუნდოვნება
+	Venetian Blinds	ვენეციური ჟალუზები
+	Vertical 4:5	ვერტიკალური 4:5
+	Vertical 9:16	ვერტიკალური 9:16
+	Vertical Alignment	ვერტიკალური სწორება
+	Vertical Blocks	ვერტიკალური ბლოკები
+	Vertical Decentering	ვერტიკალური დეცენტრირება
+	Vertical Displacement	ვერტიკალური წანაცვლება
+	Vertical Flip	ვერტიკალური ასახვა
+	Vertical Margin	ვერტიკალური ზღვარი
+	Very Narrow	ძალიან ვიწრო
+	Video 1	ვიდეო 1
+	Video 2	ვიდეო 2
+	Video 3	ვიდეო 3
+	Video 4	ვიდეო 4
+	Video 5	ვიდეო 5
+	Video 6	ვიდეო 6
+	Video 7	ვიდეო 7
+	Video 8	ვიდეო 8
+	Video Duration	ვიდეოს ხანგრძლივობა
+	Video In Point	ვიდეოს საწყისი წერტილი
+	Video Out Point	ვიდეოს საბოლოო წერტილი
+	Video Usage	ვიდეოს გამოყენება
+	Vocal Booth	ვოკალური კაბინა
+	Vocal Enhancer	ვოკალის გამაუმჯობესებელი
+	Volumetric Rays	მოცულობითი სხივები
+	Warm print stock with gentle roll-off	თბილი ფირი რბილი გადასვლით ნათელ ტონებში
+	Warm, soft late-afternoon light	თბილი, რბილი გვიანი ნაშუადღევის სინათლე
+	Warp Stabilizer	დეფორმაციის სტაბილიზატორი
+	Wave	ტალღა
+	Wave Height	ტალღის სიმაღლე
+	Wave Speed	ტალღის სიჩქარე
+	Wave Warp	ტალღური დეფორმაცია
+	Wave Width	ტალღის სიგანე
+	Wavelength	ტალღის სიგრძე
+	Wet	სველი
+	Wet Out	სველი გამოსავალი
+	Whip	მათრახი
+	Whip (Legacy)	მათრახი (მოძველებული)
+	White Input Level	თეთრის შემავალი დონე
+	White Is High	თეთრი მაღალია
+	Widener	გამაფართოებელი
+	Wiggle	რხევა
+	Wipe Angle	გადაწმენდის კუთხე
+	Wonder Glow	საოცარი ნათება
+	Wrap Back	უკან შემოხვევა
+	Write-on	თანდათანობითი დაწერა
+	X Rotation	X ბრუნვა
+	Y Rotation	Y ბრუნვა
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	ყვითელ-მწვანე ნათელი ტონები და ლურჯად აწეული ჩრდილები ჯვარედინი არხის მრუდებიდან
+	Z Position	Z პოზიცია
+	Z Rotation	Z ბრუნვა
+	Zoom Amount	ზუმის რაოდენობა
+	Zoom Blur	ზუმის გაბუნდოვნება
+	Zoom Strength	ზუმის სიძლიერე
+	no GPU adapter: the CPU compositor is used	GPU ადაპტერი არ არის: გამოიყენება CPU კომპოზიტორი
+	CFA4 Project	CFA4 პროექტი
+	{name} (Simplified)	{name} (გამარტივებული)
+	Delete Search Bin	საძიებო საქაღალდის წაშლა
+	No export preset named `{name}`	ექსპორტის პრესეტი სახელით `{name}` არ არსებობს
+	Encoding {n}%	კოდირება {n}%
+	Stop	შეჩერება
+	Uncompressed (PCM)	შეუკუმშავი (PCM)
+	Match Source ({seq_sr} Hz)	წყაროს მსგავსად ({seq_sr} ჰც)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	მიმდევრობა, {w}x{h}, {fps} კადრი/წმ, {rate} ჰც
+	Exporting {path}	ექსპორტი: {path}
+	Added to the export queue	დაემატა ექსპორტის რიგს
+	Import: no file chosen (agents: export.presets.import {path})	იმპორტი: ფაილი არ არის არჩეული (აგენტები: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	ექსპორტი: ფაილი არ არის არჩეული (აგენტები: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	გრაფიკის პრობლემა: გადაირთო პროგრამულ კომპოზიციაზე
+	GPU acceleration is unavailable; preview renders on the CPU	GPU აჩქარება მიუწვდომელია; წინასწარი ხედი CPU-ზე რენდერდება
+	CFA4 hit an error	CFA4-ს შეცდომა მოუვიდა
+	Opened {url}	გაიხსნა {url}
+	(empty)	(ცარიელი)
+	AAC Audio 48 kHz 320 kbps	AAC აუდიო 48 kHz 320 kbps
+	Opus Audio 48 kHz 160 kbps	Opus აუდიო 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), სტერეო 48 kHz, 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080, 8 Mbps, Opus 128 kbps სტერეო
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4 აუდიო (.m4a), სტერეო 48 kHz AAC-LC, 320 kbps
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16-ბიტიანი
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, სტერეო 48 kHz 16-ბიტიანი PCM
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24-ბიტიანი
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, სტერეო 48 kHz 24-ბიტიანი, უდანაკარგო
+	FLAC (lossless)	FLAC (უდანაკარგო)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	ანიმირებული GIF 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	Apple ProRes 4444 ალფათი
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Application	აპლიკაცია
+	Apply Guide Template	დამხმარე ხაზების შაბლონის გამოყენება
+	Auto Save Now	ახლავე ავტოშენახვა
+	Auto-Match Loudness	ხმამაღლობის ავტომატური შესაბამისობა
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	Avid-ის სტილის OP-Atom: DNxHR HQ გამოსახულების ფაილი და თითო არხზე ერთი 24-ბიტიანი 48 kHz PCM ფაილი (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	BMP მიმდევრობა
+	Begin Text Editing for a Graphic Layer	გრაფიკული შრის ტექსტის რედაქტირების დაწყება
+	Begins With	იწყება
+	Blur In	გაბუნდოვნებით შესვლა
+	Blur Out	გაბუნდოვნებით გასვლა
+	Brightens inside a feathered circular mask	ანათებს დარბილებული წრიული ნიღბის შიგნით
+	Broadcast	სამაუწყებლო
+	Cancel Dynamic Trim	დინამიკური შეკვეცის გაუქმება
+	Cancel Queued Export	რიგში მდგომი ექსპორტის გაუქმება
+	Center align text	ტექსტის ცენტრში სწორება
+	Change Mask	ნიღბის შეცვლა
+	Clear All Events	ყველა მოვლენის გასუფთავება
+	Clear Edit Point Selection	ჭრის წერტილების მონიშვნის მოხსნა
+	Clear Finished Exports	დასრულებული ექსპორტების გასუფთავება
+	Clear Poster Frame	პოსტერის კადრის გასუფთავება
+	Close Bin	საქაღალდის დახურვა
+	Close Sequence	მიმდევრობის დახურვა
+	Contains	შეიცავს
+	Cut to Camera 1	ჭრა კამერა 1-ზე
+	Cut to Camera 2	ჭრა კამერა 2-ზე
+	Cut to Camera 3	ჭრა კამერა 3-ზე
+	Cut to Camera 4	ჭრა კამერა 4-ზე
+	Cut to Camera 5	ჭრა კამერა 5-ზე
+	Cut to Camera 6	ჭრა კამერა 6-ზე
+	Cut to Camera 7	ჭრა კამერა 7-ზე
+	Cut to Camera 8	ჭრა კამერა 8-ზე
+	Cut to Camera 9	ჭრა კამერა 9-ზე
+	Darkens outside a feathered oval mask	აბნელებს დარბილებული ოვალური ნიღბის გარეთ
+	Decrease Clip Volume	კლიპის ხმის შემცირება
+	Decrease Clip Volume Many	კლიპის ხმის ბევრით შემცირება
+	Decrease Font Size by Five Units	შრიფტის ზომის შემცირება ხუთი ერთეულით
+	Decrease Font Size by One Unit	შრიფტის ზომის შემცირება ერთი ერთეულით
+	Decrease Leading by Five Units	სტრიქონთაშორისის შემცირება ხუთი ერთეულით
+	Decrease Leading by One Unit	სტრიქონთაშორისის შემცირება ერთი ერთეულით
+	Delete Captions	სუბტიტრების წაშლა
+	Delete Graphic Layer	გრაფიკული შრის წაშლა
+	Delete Guide Template	დამხმარე ხაზების შაბლონის წაშლა
+	Delete Media Cache Files	მედიაქეშის ფაილების წაშლა
+	Discard Unsaved Changes	შეუნახავი ცვლილებების გაუქმება
+	Does Not Contain	არ შეიცავს
+	Download Speech Model	მეტყველების მოდელის ჩამოტვირთვა
+	Dynamic Trim Stop	დინამიკური შეკვეცის შეჩერება
+	Edit Caption Text	სუბტიტრის ტექსტის რედაქტირება
+	Ends With	მთავრდება
+	Entire Source	მთელი წყარო
+	EssentialSound	EssentialSound
+	Extend Next Edit To Playhead	შემდეგი ჭრის გაგრძელება დაკვრის მაჩვენებლამდე
+	Extend Previous Edit To Playhead	წინა ჭრის გაგრძელება დაკვრის მაჩვენებლამდე
+	Extend Selected Edit to Playhead	მონიშნული ჭრის გაგრძელება დაკვრის მაჩვენებლამდე
+	Extend Selection Down	მონიშვნის გაფართოება ქვემოთ
+	Extend Selection Left	მონიშვნის გაფართოება მარცხნივ
+	Extend Selection Right	მონიშვნის გაფართოება მარჯვნივ
+	Extend Selection Up	მონიშვნის გაფართოება ზემოთ
+	Fade In	გამოჩენა
+	Gaussian Blur from 0 to 60 over the last second	გაუსის გაბუნდოვნება 0-დან 60-მდე ბოლო წამის განმავლობაში
+	Gaussian Blur from 60 to 0 over the first second	გაუსის გაბუნდოვნება 60-დან 0-მდე პირველი წამის განმავლობაში
+	Generate Ducking Keyframes	ხმის დაწევის საკვანძო კადრების გენერირება
+	Go to Next Edit Point	შემდეგ ჭრის წერტილზე გადასვლა
+	Go to Next Edit Point on Any Track	შემდეგ ჭრის წერტილზე გადასვლა ნებისმიერ ტრეკზე
+	Go to Previous Edit Point	წინა ჭრის წერტილზე გადასვლა
+	Go to Previous Edit Point on Any Track	წინა ჭრის წერტილზე გადასვლა ნებისმიერ ტრეკზე
+	Go to Selected Clip End	მონიშნული კლიპის ბოლოში გადასვლა
+	Go to Selected Clip Start	მონიშნული კლიპის დასაწყისში გადასვლა
+	Go to Sequence End	მიმდევრობის ბოლოში გადასვლა
+	Go to Sequence Start	მიმდევრობის დასაწყისში გადასვლა
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	H.264 1920×1080 ვიდეოპლატფორმებისთვის, VBR 1 გავლა, 16 Mbps
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 გავლა, სამიზნე 20 Mbps, AAC 320 kbps
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 გავლა, 18 Mbps
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	H.264 3840×2160 ვიდეოპლატფორმებისთვის, VBR 1 გავლა, 45 Mbps
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 გავლა, სამიზნე 60 Mbps, AAC 320 kbps
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 გავლა, 50 Mbps
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	H.264 9:16 ვერტიკალური მოკლე სოციალური ვიდეოსთვის, შევსებით მასშტაბირებული, 12 Mbps
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	H.264 მიმდევრობის კადრის ზომითა და სიხშირით; 0.05 ბიტი პიქსელზე
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	H.264 მიმდევრობის კადრის ზომითა და სიხშირით; 0.1 ბიტი პიქსელზე
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	H.264 მიმდევრობის კადრის ზომითა და სიხშირით; ბიტრეიტი კადრის ზომას ერგება (0.2 ბიტი პიქსელზე)
+	High Quality 1080p HD	მაღალი ხარისხი 1080p HD
+	High Quality 2160p 4K	მაღალი ხარისხი 2160p 4K
+	Increase Clip Volume	კლიპის ხმის გაზრდა
+	Increase Clip Volume Many	კლიპის ხმის ბევრით გაზრდა
+	Increase Font Size by Five Units	შრიფტის ზომის გაზრდა ხუთი ერთეულით
+	Increase Font Size by One Unit	შრიფტის ზომის გაზრდა ერთი ერთეულით
+	Increase Leading by Five Units	სტრიქონთაშორისის გაზრდა ხუთი ერთეულით
+	Increase Leading by One Unit	სტრიქონთაშორისის გაზრდა ერთი ერთეულით
+	Large blocks resolving to the picture over the first second	დიდი ბლოკები, რომლებიც პირველი წამის განმავლობაში სურათად იქცევა
+	Left align text	ტექსტის მარცხნივ სწორება
+	Looping GIF, 640×360 at 15 fps	ციკლური GIF, 640×360, 15 კადრი/წმ
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-ბიტიანი 4:2:2), 24-ბიტიანი 48 kHz PCM, საწყისი ტაიმკოდი
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0.3 ბიტი პიქსელზე), 24-ბიტიანი 48 kHz PCM
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-ბიტიანი 48 kHz PCM, საწყისი ტაიმკოდი
+	Main	ძირითადი
+	Mark In (Hover Scrub)	საწყისი წერტილის დასმა (გადატარებით)
+	Mark Out (Hover Scrub)	საბოლოო წერტილის დასმა (გადატარებით)
+	Masks	ნიღბები
+	Match Source – Adaptive High Bitrate	წყაროს მსგავსად – ადაპტიური მაღალი ბიტრეიტი
+	Match Source – Adaptive Low Bitrate	წყაროს მსგავსად – ადაპტიური დაბალი ბიტრეიტი
+	Match Source – Adaptive Medium Bitrate	წყაროს მსგავსად – ადაპტიური საშუალო ბიტრეიტი
+	Matches	ემთხვევა
+	Maximize or Restore Active Frame	აქტიური კადრის გაშლა ან აღდგენა
+	Maximize or Restore Frame Under Cursor	კურსორის ქვეშ მყოფი კადრის გაშლა ან აღდგენა
+	Media Browser Settings	მედიაბრაუზერის პარამეტრები
+	MediaBrowser	MediaBrowser
+	MediaCache	MediaCache
+	Merge Captions	სუბტიტრების გაერთიანება
+	Mixer	მიქსერი
+	Mosaic In	მოზაიკით შესვლა
+	Move All Audio Targets Down	ყველა აუდიოსამიზნის ქვემოთ გადატანა
+	Move All Audio Targets Up	ყველა აუდიოსამიზნის ზემოთ გადატანა
+	Move All Video Targets Down	ყველა ვიდეოსამიზნის ქვემოთ გადატანა
+	Move All Video Targets Up	ყველა ვიდეოსამიზნის ზემოთ გადატანა
+	Move Selection Down	მონიშვნის ქვემოთ გადატანა
+	Move Selection End	მონიშვნის ბოლოში გადატანა
+	Move Selection Home	მონიშვნის დასაწყისში გადატანა
+	Move Selection Left	მონიშვნის მარცხნივ გადატანა
+	Move Selection Page Down	მონიშვნის გვერდით ქვემოთ გადატანა
+	Move Selection Page Up	მონიშვნის გვერდით ზემოთ გადატანა
+	Move Selection Right	მონიშვნის მარჯვნივ გადატანა
+	Move Selection Up	მონიშვნის ზემოთ გადატანა
+	Multicam	მრავალკამერიანი
+	Navigate to End of Segment	სეგმენტის ბოლოში გადასვლა
+	Navigate to Next Line	შემდეგ სტრიქონზე გადასვლა
+	Navigate to Next Word	შემდეგ სიტყვაზე გადასვლა
+	Navigate to Previous Line	წინა სტრიქონზე გადასვლა
+	Navigate to Previous Word	წინა სიტყვაზე გადასვლა
+	Navigate to Start of Segment	სეგმენტის დასაწყისში გადასვლა
+	Navigation	ნავიგაცია
+	Next Multi-Camera Page	მრავალკამერიანი რეჟიმის შემდეგი გვერდი
+	Nudge Clip Selection Down	მონიშნული კლიპების ქვემოთ წაწევა
+	Nudge Clip Selection Left Five Frames	მონიშნული კლიპების მარცხნივ წაწევა ხუთი კადრით
+	Nudge Clip Selection Left One Frame	მონიშნული კლიპების მარცხნივ წაწევა ერთი კადრით
+	Nudge Clip Selection Right Five Frames	მონიშნული კლიპების მარჯვნივ წაწევა ხუთი კადრით
+	Nudge Clip Selection Right One Frame	მონიშნული კლიპების მარჯვნივ წაწევა ერთი კადრით
+	Nudge Clip Selection Up	მონიშნული კლიპების ზემოთ წაწევა
+	Nudge Selected Object down by five	მონიშნული ობიექტის ქვემოთ წაწევა ხუთით
+	Nudge Selected Object down by one	მონიშნული ობიექტის ქვემოთ წაწევა ერთით
+	Nudge Selected Object to left by five	მონიშნული ობიექტის მარცხნივ წაწევა ხუთით
+	Nudge Selected Object to left by one	მონიშნული ობიექტის მარცხნივ წაწევა ერთით
+	Nudge Selected Object to right by five	მონიშნული ობიექტის მარჯვნივ წაწევა ხუთით
+	Nudge Selected Object to right by one	მონიშნული ობიექტის მარჯვნივ წაწევა ერთით
+	Nudge Selected Object up by five	მონიშნული ობიექტის ზემოთ წაწევა ხუთით
+	Nudge Selected Object up by one	მონიშნული ობიექტის ზემოთ წაწევა ერთით
+	Nudge Volume +1dB	ხმის წაწევა +1dB
+	Nudge Volume +3dB	ხმის წაწევა +3dB
+	Nudge Volume -1dB	ხმის წაწევა -1dB
+	Nudge Volume -3dB	ხმის წაწევა -3dB
+	Numbered BMP stills (24-bit)	დანომრილი BMP სურათები (24-ბიტიანი)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	JPEG მიმდევრობა
+	Targa Sequence	Targa მიმდევრობა
+	DPX Sequence	DPX მიმდევრობა
+	Numbered JPEG stills (quality 90)	დანომრილი JPEG სურათები (ხარისხი 90)
+	Numbered Targa stills (24-bit, uncompressed)	დანომრილი Targa სურათები (24-ბიტიანი, შეუკუმშავი)
+	Numbered DPX stills (10-bit RGB)	დანომრილი DPX სურათები (10-ბიტიანი RGB)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	OpenEXR მიმდევრობა
+	Numbered OpenEXR stills (half float, linear, uncompressed)	დანომრილი OpenEXR სურათები (ნახევარ-სიზუსტის მცურავი, წრფივი, შეუკუმშავი)
+	Numbered PNG stills at the sequence's frame size	დანომრილი PNG სურათები მიმდევრობის კადრის ზომით
+	Numbered TIFF stills (RGB, 8-bit)	დანომრილი TIFF სურათები (RGB, 8-ბიტიანი)
+	Opacity 0 → 100 % over the first second	გაუმჭვირვალობა 0 → 100 % პირველი წამის განმავლობაში
+	Opacity 100 → 0 % over the last second	გაუმჭვირვალობა 100 → 0 % ბოლო წამის განმავლობაში
+	Open Bin	საქაღალდის გახსნა
+	Open Search	ძებნის გახსნა
+	PNG	PNG
+	PNG Sequence	PNG მიმდევრობა
+	Panel	პანელი
+	PiP 35% Upper Right	PiP 35% ზედა მარჯვენა
+	Picture-in-picture: 35 % scale in the upper right	სურათი სურათში: 35 % მასშტაბი ზედა მარჯვენა კუთხეში
+	Play In to Out with Preroll/Postroll	დაკვრა საწყისიდან საბოლოომდე წინა/შემდგომი მარაგით
+	Play from Playhead to Out Point	დაკვრა დაკვრის მაჩვენებლიდან საბოლოო წერტილამდე
+	Previous Multi-Camera Page	მრავალკამერიანი რეჟიმის წინა გვერდი
+	ProjectPanel	ProjectPanel
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10-ბიტიანი 4:2:2), 24-ბიტიანი 48 kHz PCM
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12-ბიტიანი 4:2:2), 24-ბიტიანი 48 kHz PCM
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8-ბიტიანი 4:2:2), 24-ბიტიანი 48 kHz PCM
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8-ბიტიანი 4:2:2), 24-ბიტიანი 48 kHz PCM
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8-ბიტიანი 4:2:2), 24-ბიტიანი 48 kHz PCM
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, 24-ბიტიანი 48 kHz PCM
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, 24-ბიტიანი 48 kHz PCM
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, 24-ბიტიანი 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), 24-ბიტიანი 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) ალფა არხით, 24-ბიტიანი 48 kHz PCM
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), 24-ბიტიანი 48 kHz PCM
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, 24-ბიტიანი 48 kHz PCM
+	Quit CFA4	CFA4-დან გასვლა
+	Right align text	ტექსტის მარჯვნივ სწორება
+	Ripple Trim Next Edit to Playhead	შემდეგი ჭრის წანაცვლებით შეკვეცა დაკვრის მაჩვენებლამდე
+	Ripple Trim Previous Edit to Playhead	წინა ჭრის წანაცვლებით შეკვეცა დაკვრის მაჩვენებლამდე
+	Select Camera 1	კამერა 1-ის არჩევა
+	Select Camera 2	კამერა 2-ის არჩევა
+	Select Camera 3	კამერა 3-ის არჩევა
+	Select Camera 4	კამერა 4-ის არჩევა
+	Select Camera 5	კამერა 5-ის არჩევა
+	Select Camera 6	კამერა 6-ის არჩევა
+	Select Camera 7	კამერა 7-ის არჩევა
+	Select Camera 8	კამერა 8-ის არჩევა
+	Select Camera 9	კამერა 9-ის არჩევა
+	Select Clip at Playhead	კლიპის მონიშვნა დაკვრის მაჩვენებელთან
+	Select Find Box	ძებნის ველის არჩევა
+	Select Next Clip	შემდეგი კლიპის მონიშვნა
+	Select Next Panel	შემდეგი პანელის არჩევა
+	Select Previous Clip	წინა კლიპის მონიშვნა
+	Select Previous Panel	წინა პანელის არჩევა
+	Select to Next Line	მონიშვნა შემდეგ სტრიქონამდე
+	Select to Next Word	მონიშვნა შემდეგ სიტყვამდე
+	Select to Previous Line	მონიშვნა წინა სტრიქონამდე
+	Select to Previous Word	მონიშვნა წინა სიტყვამდე
+	Select to Segment End	მონიშვნა სეგმენტის ბოლომდე
+	Select to Segment Start	მონიშვნა სეგმენტის დასაწყისამდე
+	Set Creative Look	შემოქმედებითი იერსახის დაყენება
+	Set Input LUT	შემავალი LUT-ის დაყენება
+	Set Project Panel View	პროექტის პანელის ხედის დაყენება
+	Show Next Screen	შემდეგი ეკრანის ჩვენება
+	Show Previous Screen	წინა ეკრანის ჩვენება
+	Show Program Transcript	პროგრამის ტრანსკრიპტის ჩვენება
+	Slide Clip Selection Left Five Frames	მონიშნული კლიპების მარცხნივ გასრიალება ხუთი კადრით
+	Slide Clip Selection Left One Frame	მონიშნული კლიპების მარცხნივ გასრიალება ერთი კადრით
+	Slide Clip Selection Right Five Frames	მონიშნული კლიპების მარჯვნივ გასრიალება ხუთი კადრით
+	Slide Clip Selection Right One Frame	მონიშნული კლიპების მარჯვნივ გასრიალება ერთი კადრით
+	Slip Clip Selection Left Five Frames	მონიშნული კლიპების შიგთავსის მარცხნივ წაწევა ხუთი კადრით
+	Slip Clip Selection Left One Frame	მონიშნული კლიპების შიგთავსის მარცხნივ წაწევა ერთი კადრით
+	Slip Clip Selection Right Five Frames	მონიშნული კლიპების შიგთავსის მარჯვნივ წაწევა ხუთი კადრით
+	Slip Clip Selection Right One Frame	მონიშნული კლიპების შიგთავსის მარჯვნივ წაწევა ერთი კადრით
+	Social Vertical 1080×1920	სოციალური ვერტიკალური 1080×1920
+	Soft Vignette	რბილი ვინიეტი
+	Source In/Out	წყაროს საწყისი/საბოლოო
+	Split Caption	სუბტიტრის გაყოფა
+	Stack Clips	კლიპების დაწყობა
+	Start Export Queue	ექსპორტის რიგის დაწყება
+	Start Voice-over Recording	გახმოვანების ჩაწერის დაწყება
+	Step Back Five Frames	ხუთი კადრით უკან
+	Step Back One Frame	ერთი კადრით უკან
+	Step Forward Five Frames	ხუთი კადრით წინ
+	Step Forward One Frame	ერთი კადრით წინ
+	Stop Export Queue	ექსპორტის რიგის შეჩერება
+	Stop Multi-Camera Recording	მრავალკამერიანი ჩაწერის შეჩერება
+	Sync Voice-over Capture	გახმოვანების ჩაწერის სინქრონიზაცია
+	TIFF	TIFF
+	TIFF Sequence	TIFF მიმდევრობა
+	TextPanel	TextPanel
+	Thumbnail Size Next	შემდეგი მინიატურის ზომა
+	Thumbnail Size Previous	წინა მინიატურის ზომა
+	Toggle All Audio Targets	ყველა აუდიოსამიზნის გადართვა
+	Toggle All Source Audio	წყაროს მთელი აუდიოს გადართვა
+	Toggle All Source Video	წყაროს მთელი ვიდეოს გადართვა
+	Toggle All Video Targets	ყველა ვიდეოსამიზნის გადართვა
+	Toggle Audio During Scrubbing	აუდიოს გადართვა გადატარებისას
+	Toggle Full Screen	სრული ეკრანის გადართვა
+	Toggle Mute for All Targeted Audio Tracks	დადუმების გადართვა ყველა სამიზნე აუდიოტრეკისთვის
+	Toggle Solo for All Targeted Audio Tracks	სოლოს გადართვა ყველა სამიზნე აუდიოტრეკისთვის
+	Toggle Source/Program Monitor Focus	წყაროს/პროგრამის მონიტორის ფოკუსის გადართვა
+	Toggle Target Audio 1	სამიზნე აუდიო 1-ის გადართვა
+	Toggle Target Audio 2	სამიზნე აუდიო 2-ის გადართვა
+	Toggle Target Audio 3	სამიზნე აუდიო 3-ის გადართვა
+	Toggle Target Audio 4	სამიზნე აუდიო 4-ის გადართვა
+	Toggle Target Audio 5	სამიზნე აუდიო 5-ის გადართვა
+	Toggle Target Audio 6	სამიზნე აუდიო 6-ის გადართვა
+	Toggle Target Audio 7	სამიზნე აუდიო 7-ის გადართვა
+	Toggle Target Audio 8	სამიზნე აუდიო 8-ის გადართვა
+	Toggle Target Video 1	სამიზნე ვიდეო 1-ის გადართვა
+	Toggle Target Video 2	სამიზნე ვიდეო 2-ის გადართვა
+	Toggle Target Video 3	სამიზნე ვიდეო 3-ის გადართვა
+	Toggle Target Video 4	სამიზნე ვიდეო 4-ის გადართვა
+	Toggle Target Video 5	სამიზნე ვიდეო 5-ის გადართვა
+	Toggle Target Video 6	სამიზნე ვიდეო 6-ის გადართვა
+	Toggle Target Video 7	სამიზნე ვიდეო 7-ის გადართვა
+	Toggle Target Video 8	სამიზნე ვიდეო 8-ის გადართვა
+	Toggle Track Output for All Targeted Video Tracks	ტრეკის გამოსავლის გადართვა ყველა სამიზნე ვიდეოტრეკისთვის
+	Toggle Trim Type	შეკვეცის ტიპის გადართვა
+	Toggle View	ხედის გადართვა
+	Track Selected Mask	მონიშნული ნიღბის თვალყურის დევნება
+	Trim Next Edit to Playhead	შემდეგი ჭრის შეკვეცა დაკვრის მაჩვენებლამდე
+	Trim Previous Edit to Playhead	წინა ჭრის შეკვეცა დაკვრის მაჩვენებლამდე
+	Trimming	შეკვეცა
+	Unstack Clips	კლიპების დაშლა დასტიდან
+	CRF (constant quality)	CRF (მუდმივი ხარისხი)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	გახმოვანების ჩაწერა
+	Voiceover	გახმოვანება
+	WAV, stereo 48 kHz 16-bit PCM	WAV, სტერეო 48 kHz 16-ბიტიანი PCM
+	WAV, stereo 48 kHz 24-bit PCM	WAV, სტერეო 48 kHz 24-ბიტიანი PCM
+	Warm Tint	თბილი ტონირება
+	Warm highlights, brown shadows	თბილი ნათელი ტონები, ყავისფერი ჩრდილები
+	Waveform Audio 48 kHz 16-bit	Waveform აუდიო 48 kHz 16-ბიტიანი
+	Waveform Audio 48 kHz 24-bit	Waveform აუდიო 48 kHz 24-ბიტიანი
+	Web & Social	ვები და სოციალური ქსელები
+	Write Automation	ავტომატიზაციის ჩაწერა
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	პროგრამის მონიტორის მასშტაბი 100%
+	Zoom Program Monitor to Fit	პროგრამის მონიტორის ჩატევა
+	Zoom Source Monitor to 100%	წყაროს მონიტორის მასშტაბი 100%
+	Zoom Source Monitor to Fit	წყაროს მონიტორის ჩატევა
+	Cinematic	კინემატოგრაფიული
+	Film Emulation	ფირის იმიტაცია
+	Technical	ტექნიკური
+	Teal Shadows, Warm Skin	ზურმუხტისფერი ჩრდილები, თბილი კანი
+	Night Exterior	ღამის ექსტერიერი
+	Golden Dusk	ოქროსფერი ბინდი
+	Steel Blue	ფოლადისფერი ლურჯი
+	Hard Sun	მკაცრი მზე
+	Faded Print	გაცრეცილი ასლი
+	Silver Retention	ვერცხლის შენარჩუნება
+	Cross Processed	ჯვარედინი დამუშავება
+	Warm Negative	თბილი ნეგატივი
+	Neutral Mono	ნეიტრალური მონო
+	Hard Mono	მკაცრი მონო
+	Sepia Tone	სეპიის ტონი
+	Cold Mono	ცივი მონო
+	Lift Shadows	ჩრდილების აწევა
+	Protect Highlights	ნათელი ტონების დაცვა
+	Half Saturation	ნახევარი გაჯერება
+	Boost Vibrance	სიცოცხლისუნარიანობის გაძლიერება
+	Legal Range Squeeze	ლეგალურ დიაპაზონში შეკუმშვა
+	A boxed label with a round pointer; move the label and the pointer follows.	ჩარჩოიანი წარწერა მრგვალი მაჩვენებლით; გადაადგილეთ წარწერა და მაჩვენებელი მას გაჰყვება.
+	A rounded tag that fits its text, with a status dot.	მომრგვალებული იარლიყი, რომელიც ტექსტს ერგება, სტატუსის წერტილით.
+	A title on a rounded card with a soft shadow.	სათაური მომრგვალებულ ბარათზე რბილი ჩრდილით.
+	Bar Color	ზოლის ფერი
+	Box Color	ჩარჩოს ფერი
+	Box Opacity	ჩარჩოს გაუმჭვირვალობა
+	Callout – Pointer	გამოძახება – მაჩვენებელი
+	Callout – Tag	გამოძახება – იარლიყი
+	Callouts	გამოძახებები
+	Credits	ტიტრები
+	Dot Color	წერტილის ფერი
+	Heading	სათაური
+	Large centred title, accent rule and subtitle.	დიდი ცენტრირებული სათაური, აქცენტის ხაზი და ქვესათაური.
+	Lower Third – Rule	ქვედა მესამედი – ხაზი
+	Lower Third – Slab	ქვედა მესამედი – ფილა
+	Lower Thirds	ქვედა მესამედები
+	Name Color	სახელის ფერი
+	Name Size	სახელის ზომა
+	Name and role on a coloured slab that widens with the name.	სახელი და როლი ფერად ფილაზე, რომელიც სახელთან ერთად ფართოვდება.
+	Name over a thin rule that always matches the name's width.	სახელი წვრილ ხაზზე, რომელიც ყოველთვის სახელის სიგანეს ემთხვევა.
+	Pointer Color	მაჩვენებლის ფერი
+	Role	როლი
+	Rule Color	ხაზის ფერი
+	Show Dot	წერტილის ჩვენება
+	Show Role	როლის ჩვენება
+	Slab Color	ფილის ფერი
+	Tag Color	იარლიყის ფერი
+	Title Color	სათაურის ფერი
+	Title Size	სათაურის ზომა
+	Title – Boxed	სათაური – ჩარჩოში
+	Title – Centered	სათაური – ცენტრირებული
+	Titles	სათაურები
+	End Credits	დასკვნითი ტიტრები
+	End Credits – Roll	დასკვნითი ტიტრები – გადახვევა
+	Ticker – Crawl	მცოცავი სტრიქონი
+	Centred credits that roll up from below the frame and leave at the top.	ცენტრირებული ტიტრები, რომლებიც კადრის ქვემოდან ადის და ზემოთ ქრება.
+	A news-style line that crawls in from the right and leaves at the left.	ახალი ამბების სტილის სტრიქონი, რომელიც მარჯვნიდან შემოცოცავს და მარცხნივ ქრება.
+	The language changed but could not be saved: {e}	ენა შეიცვალა, მაგრამ ვერ შეინახა: {e}
+	no Chinese font is installed on this system; the interface stays in English	ამ სისტემაში ჩინური შრიფტი არ არის დაყენებული; ინტერფეისი ინგლისურად რჩება
+	no Korean font is installed on this system; the interface stays in English	ამ სისტემაში კორეული შრიფტი არ არის დაყენებული; ინტერფეისი ინგლისურად რჩება
+	no Georgian font is installed on this system; the interface stays in English	ამ სისტემაში ქართული შრიფტი არ არის დაყენებული; ინტერფეისი ინგლისურად რჩება
+	no Japanese font is installed on this system; the interface stays in English	ამ სისტემაში იაპონური შრიფტი არ არის დაყენებული; ინტერფეისი ინგლისურად რჩება
+	Main (8-bit)	Main (8-ბიტიანი)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12-ბიტიანი
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12-ბიტიანი ალფათი
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10-ბიტიანი
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12-ბიტიანი, ფირის სკანი 1, 24-ბიტიანი 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-ბიტიანი ალფა არხით, ფირის სკანი 1, 24-ბიტიანი 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10-ბიტიანი, ფირის სკანი 1, 24-ბიტიანი 48 kHz PCM
+	Deselect All Project Items	პროექტის ყველა ელემენტის მონიშვნის მოხსნა
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	პროექტის ყველა ელემენტის მონიშვნა
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	გადათრევა: გადაადგილება · Alt+დაწკაპუნება: გლუვი/კუთხოვანი · Ctrl+დაწკაპუნება: წაშლა
+	Drag inward to round the corners	გადაათრიეთ შიგნით კუთხეების მოსამრგვალებლად
+	Play Source	წყაროს დაკვრა
+	Source Play/Stop	წყაროს დაკვრა/შეჩერება
+	Stop Source	წყაროს შეჩერება
+	Clear Transition	გადასვლის გასუფთავება
+	Fill Type	შევსების ტიპი
+	Gradient Angle	გრადიენტის კუთხე
+	Edit Narration	თხრობის რედაქტირება
+	Resize floating panel	მცურავი პანელის ზომის შეცვლა
+	Get Project Notes	პროექტის შენიშვნების მიღება
+	Edit Project Notes	პროექტის შენიშვნების რედაქტირება
+	Use Effect Shutter Angle	ეფექტის ობტურატორის კუთხის გამოყენება
+	Safe graphics mode: {mode}	გრაფიკის უსაფრთხო რეჟიმი: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	წინა გაშვება ნაგულისხმევი გრაფიკით ვერ მოხერხდა. ამას ჩვეულებრივ გრაფიკის დრაივერის განახლება აგვარებს.
+	Use Default Graphics	ნაგულისხმევი გრაფიკის გამოყენება
+	The default graphics are used from the next start.	ნაგულისხმევი გრაფიკა შემდეგი გაშვებიდან გამოიყენება.
+	DirectX 12 only	მხოლოდ DirectX 12
+	software rendering	პროგრამული რენდერი
+	Opens in your web browser: {url}	იხსნება ვებბრაუზერში: {url}
+	Saves this session's log and shows it in your file manager.	ინახავს ამ სესიის ჟურნალს და აჩვენებს ფაილების მენეჯერში.
+	Shows a report on this computer.	აჩვენებს ანგარიშს ამ კომპიუტერის შესახებ.
+	Shows the version, community links and credits in a CFA4 window.	აჩვენებს ვერსიას, საზოგადოების ბმულებსა და ავტორებს CFA4-ის ფანჯარაში.
+	Couldn't open your web browser	ვებბრაუზერის გახსნა ვერ მოხერხდა
+	Open this address in your browser yourself:	გახსენით ეს მისამართი ბრაუზერში თავად:
+	Reset Interface Zoom	ინტერფეისის მასშტაბის აღდგენა
+	Stereoscopic 3D	სტერეოსკოპიული 3D
+	Swap Eyes	თვალების გაცვლა
+	Over/Under	ზემოთ/ქვემოთ
+	Side by Side	გვერდიგვერდ
+	Stereo to 2D	სტერეოდან 2D-ში
+	Eye	თვალი
+	Stereo Parallax	სტერეოპარალაქსი
+	Horizontal Shift	ჰორიზონტალური წანაცვლება
+	Slit Scan	ჭრილით სკანირება
+	Time Span (seconds)	დროის მონაკვეთი (წამი)
+	Current Frame At	მიმდინარე კადრის მდებარეობა
+	Blend Slices	ნაჭრების შერევა
+	Creative Looks	შემოქმედებითი იერსახეები
+	Film Grain	ფირის მარცვლოვნება
+	Animated	ანიმირებული
+	Color Grain	ფერადი მარცვლოვნება
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080, 8 Mbps, AAC 160 kbps, 6-წამიანი ფრაგმენტირებული MP4 სეგმენტები
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 პროგრამული ნაკადი
+	MPEG-2 Transport Stream HD 1080	MPEG-2 სატრანსპორტო ნაკადი HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480, 29.97 კადრი/წმ, 16:9 ანამორფული, 6 Mbps, GOP 18, 16-ბიტიანი 48 kHz LPCM, .mpg (DVD-სთვის მზა ნაკადი; VIDEO_TS ავტორინგის გარეშე)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576, 25 კადრი/წმ, 16:9 ანამორფული, 6 Mbps, GOP 15, 16-ბიტიანი 48 kHz LPCM, .mpg (DVD-სთვის მზა ნაკადი; VIDEO_TS ავტორინგის გარეშე)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2 ვიდეო (Main Profile 4:2:0, 0.4 ბიტი პიქსელზე) მიმდევრობის კადრის ზომითა და სიხშირით, 16-ბიტიანი 48 kHz LPCM, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 ვიდეო 1920×1080, საშუალოდ 18 Mbps, AAC 192 kbps, .ts
+	Six-Point Pin	ექვსწერტილიანი მიმაგრება
+	Upper Center	ზედა ცენტრი
+	Lower Center	ქვედა ცენტრი
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg-ის გამოყენება ფაილებისთვის, რომლებსაც CFA4-ის ძრავა ვერ ხსნის (FFmpeg 9.0.2 ან უფრო ახალი, GPL-3 აწყობა)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	სისტემის GStreamer-ის გამოყენება ფაილებისთვის, რომლებსაც ვერც ძრავა და ვერც FFmpeg ვერ ხსნის
+	Analyze Source for Smart Cut	წყაროს ანალიზი ჭკვიანი ჭრისთვის
+	Plan Smart Cut	ჭკვიანი ჭრის დაგეგმვა
+	Run Smart Cut	ჭკვიანი ჭრის გაშვება
+	No sequence open. Double-click a sequence in the Project panel.	მიმდევრობა არ არის გახსნილი. ორჯერ დააწკაპუნეთ მიმდევრობაზე პროექტის პანელში.
+	English (US)	ინგლისური (აშშ)
+	English (UK)	ინგლისური (გაერთიანებული სამეფო)
+	English (Australia)	ინგლისური (ავსტრალია)
+export.summary	High	მაღალი
+export.summary	Medium	საშუალო
+export.summary	Low	დაბალი
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	აუდიო დაკოპირდა: {tracks}
+	Audio track {track} is not copied: {why}	აუდიოტრეკი {track} არ კოპირდება: {why}
+	Point tracker	წერტილის ტრეკერი
+	Correlation tracker	კორელაციის ტრეკერი
+	DCP language	DCP-ის ენა
+	None (RFC 5646 tag, e.g. en-US)	არცერთი (RFC 5646 ტეგი, მაგ. ka-GE)
+	ISDCF name	ISDCF სახელი
+	Name the DCP folder by the Digital Cinema Naming Convention	DCP საქაღალდის დასახელება Digital Cinema Naming Convention-ის მიხედვით
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/ka/ (its vector-editor catalog) at aa36bd8, 2026-11-10. MIT OR Apache-2.0;
+# the copyright notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (ka).
+# These rows were written clean-room there; only rows whose English and meaning match CFA4's were
+# taken, and a few were reworded above for video editing.
+
+	Align to Selection	მონიშნულზე სწორება
+	Anchor Point	საყრდენი წერტილი
+	Arrange	დალაგება
+	Automatic	ავტომატური
+	Balance	ბალანსი
+	Blue	ლურჯი
+	Bottom	ქვემოთ
+	Bring Forward	წინ გადმოტანა
+	Bring to Front	წინა პლანზე გადმოტანა
+	Brown	ყავისფერი
+	Clear	გასუფთავება
+	Close	დახურვა
+	Color	ფერი
+	Color Burn	ფერით ჩამუქება
+	Color Dodge	ფერით გაღიავება
+	Copy	კოპირება
+	Custom	მორგებული
+	Cut	ამოჭრა
+	Darken	ჩამუქება
+	Difference	სხვაობა
+	Distort	დეფორმაცია
+	Distribute	განაწილება
+	Divide	დაყოფა
+	Done	მზადაა
+	Duplicate	დუბლირება
+	Edit	რედაქტირება
+	Edit Original	ორიგინალის რედაქტირება
+	Effects	ეფექტები
+	Ellipse	ელიფსი
+	Encoding	კოდირება
+	Exclusion	გამორიცხვა
+	File	ფაილი
+	Find Next	შემდეგის ძებნა
+	Flatten	გაბრტყელება
+	Format	ფორმატი
+	Graphic	გრაფიკა
+	Green	მწვანე
+	Group	დაჯგუფება
+	Hard Light	მკვეთრი სინათლე
+	Hard Mix	მკაცრი შერევა
+	Help	დახმარება
+	History	ისტორია
+	Hue	ფერის ტონი
+	Import…	იმპორტი…
+	Info	ინფორმაცია
+	Insert	ჩასმა
+	Language	ენა
+	Left	მარცხნივ
+	Libraries	ბიბლიოთეკები
+	Lighten	გაღიავება
+	Linear	წრფივი
+	Link	ბმული
+	Magenta	მეწამული
+	Modify	შეცვლა
+	Multiply	გამრავლება
+	Name	სახელი
+	New	ახალი
+	Normal	ჩვეულებრივი
+	Opacity	გაუმჭვირვალობა
+	Output	გამოტანა
+	Overlay	გადაფარვა
+	Panels	პანელები
+	Paste	ჩასმა
+	Perspective	პერსპექტივა
+	Polygon	მრავალკუთხედი
+	Position	პოზიცია
+	Properties	თვისებები
+	Purple	იისფერი
+	Ready	მზადაა
+	Rectangle	მართკუთხედი
+	Redo	ხელახლა შესრულება
+	Remove	მოცილება
+	Remove Effect	ეფექტის წაშლა
+	Revert	წინა ვერსიაზე დაბრუნება
+	Right	მარჯვნივ
+	Saturation	გაჯერება
+	Save	შენახვა
+	Save As…	შენახვა როგორც…
+	Save a Copy…	ასლის შენახვა…
+	Save as Template…	შაბლონად შენახვა…
+	Scale	მასშტაბი
+	Screen	ეკრანი
+	Select	მონიშვნა
+	Select All	ყველაფრის მონიშვნა
+	Selection Tool	მონიშვნის ხელსაწყო
+	Send Backward	უკან გადატანა
+	Send to Back	უკანა პლანზე გადატანა
+	Soft Light	რბილი სინათლე
+	Status	სტატუსი
+	Stylize	სტილიზაცია
+	Subtract	გამოკლება
+	Text	ტექსტი
+	Tools	ხელსაწყოები
+	Top	ზემოთ
+	Transform	გარდაქმნა
+	Undo	დაბრუნება
+	Ungroup	დაჯგუფების მოხსნა
+	Untitled	უსათაურო
+	Video	ვიდეო
+	View	ხედი
+	Violet	იისფერი
+	Window	ფანჯარა
+	Yellow	ყვითელი
+	Ellipse Tool	ელიფსის ხელსაწყო
+	Hand Tool	ხელის ხელსაწყო
+	Pen Tool	კალმის ხელსაწყო
+	Rectangle Tool	მართკუთხედის ხელსაწყო
+	Type Tool	ტექსტის ხელსაწყო
+	Vertical Type Tool	ვერტიკალური ტექსტის ხელსაწყო
+	Zoom Tool	მასშტაბის ხელსაწყო
+	Red	წითელი
+	Settings	პარამეტრები
+	Appearance	იერსახე
+	Dark	ბნელი
+	Light	ღია
+	Type:	ტიპი:
+	Color Space	ფერთა სივრცე
+	Description	აღწერა
+	Cancel	გაუქმება
+	Show All	ყველას ჩვენება
+	Off	გამორთული
+	Mono	მონო
+	Auto	ავტომატური
+	Brightness	სიკაშკაშე
+	Presets	პრესეტები
+	RGB	RGB
+	Amount	რაოდენობა
+	Blur	გაბუნდოვნება
+	Contrast	კონტრასტი
+	Hue Shift	ფერის ტონის წანაცვლება
+	Intensity	ინტენსივობა
+	Monochrome	მონოქრომული
+	None	არცერთი
+	Sharpen	გამკვეთრება
+	Temperature	ტემპერატურა
+	Tint	ტონირება
+	Favorites	რჩეულები
+	List View	სიის ხედი
+	Refresh	განახლება
+	Size	ზომა
+	Thumbnail View	ესკიზების ხედი
+	Align	სწორება
+	Align center	ცენტრში სწორება
+	Align left	მარცხნივ სწორება
+	Align right	მარჯვნივ სწორება
+	Graphics	გრაფიკა
+	Delete Preset	პრესეტის წაშლა
+	Preset:	პრესეტი:
+	Save Preset	პრესეტის შენახვა
+	All Caps	მთავრული
+	All Categories	ყველა კატეგორია
+	Angle	კუთხე
+	Apply	გამოყენება
+	Baseline Shift	საბაზისო ხაზის წანაცვლება
+	Center	ცენტრში
+	Corner Radius	კუთხის რადიუსი
+	Delete Layer	შრის წაშლა
+	Distance	მანძილი
+	Fill	შევსება
+	Font	შრიფტი
+	Font Size	შრიფტის ზომა
+	Gradient	გრადიენტი
+	Justify	ორმხრივი სწორება
+	Layers	შრეები
+	Leading	სტრიქონთა დაშორება
+	Linear Gradient	წრფივი გრადიენტი
+	OK	OK
+	Orientation	ორიენტაცია
+	Path	ტრაექტორია
+	Shape	ფიგურა
+	Small Caps	პატარა მთავრული
+	Solid	მთლიანი
+	Stroke	კონტური
+	Style	სტილი
+	Tracking	ტრეკინგი
+	Underline	ხაზგასმული
+	Advanced	დამატებითი
+	Default	ნაგულისხმევი
+	Download	ჩამოტვირთვა
+	High	მაღალი
+	Low	დაბალი
+	Preview	წინასწარი ნახვა
+	Open	გახსნა
+	Crop	ჩამოჭრა
+	Delete	წაშლა
+	Find	ძებნა
+	Freeform	თავისუფალი ფორმა
+	Large	დიდი
+	Name:	სახელი:
+	Rename	სახელის შეცვლა
+	Small	პატარა
+	Zoom	მასშტაბი
+	Close All	ყველას დახურვა
+	Description:	აღწერა:
+	Save Preset…	პრესეტის შენახვა…
+	Add	დამატება
+	Intersect	გადაკვეთა
+	Edit…	რედაქტირება…
+	Threshold	ზღვარი
+	Preferences	პარამეტრები
+	Adaptive	ადაპტური
+	Color Theme	ფერთა თემა
+	Double-click	ორმაგი დაწკაპუნება
+	Dutch	ნიდერლანდური
+	French	ფრანგული
+	General	ზოგადი
+	German	გერმანული
+	Hindi	ჰინდი
+	Horizontal	ჰორიზონტალური
+	Interface Language	ინტერფეისის ენა
+	Italian	იტალიური
+	Japanese	იაპონური
+	Location	მდებარეობა
+	Media	მედია
+	Portuguese	პორტუგალიური
+	Shapes	ფიგურები
+	Show Tool Tips	მინიშნებების ჩვენება
+	Spanish	ესპანური
+	Vertical	ვერტიკალური
+	● Recording	● ჩაწერა
+	Next page	შემდეგი გვერდი
+	Offset:	წანაცვლება:
+	Previous page	წინა გვერდი
+	Version	ვერსია
+	Command	ბრძანება
+	Export…	ექსპორტი…
+	Keyboard Shortcuts	კლავიატურის მალსახმობები
+	Keyboard Shortcuts…	კლავიატურის მალსახმობები…
+	Shortcut	მალსახმობი
+	Dock Panel	პანელის მიმაგრება
+	Close Panel	პანელის დახურვა
+	Add Guide	დამხმარე ხაზის დამატება
+	Clear Guides	დამხმარე ხაზების გასუფთავება
+	Guides	დამხმარე ხაზები
+	Lock Guides	დამხმარე ხაზების ჩაკეტვა
+	Orientation:	ორიენტაცია:
+	Show Guides	დამხმარე ხაზების ჩვენება
+	Show Rulers	სახაზავების ჩვენება
+	Color Management	ფერების მართვა
+	Height:	სიმაღლე:
+	Layout:	განლაგება:
+	Width:	სიგანე:
+	End:	დასასრული:
+	File Name:	ფაილის სახელი:
+	Start:	დასაწყისი:
+	All	ყველა
+	Color:	ფერი:
+	Destination:	დანიშნულება:
+	Keep:	შენარჩუნება:
+	Language:	ენა:
+	Method:	მეთოდი:
+	Placement:	განთავსება:
+	Save as Template	შაბლონად შენახვა
+	Scratch Disks	სამუშაო დისკები
+	Simplify	გამარტივება
+	Folder	საქაღალდე
+	Missing	აკლია
+	Options	პარამეტრები
+	Depth:	სიღრმე:
+	Embed	ჩაშენება
+	Exported {path}	ექსპორტირებულია: {path}
+	Format:	ფორმატი:
+	Replace	ჩანაცვლება
+	Compression	შეკუმშვა
+	Medium	საშუალო
+	Quality	ხარისხი
+	Bottom Left	ქვედა მარცხენა
+	Bottom Right	ქვედა მარჯვენა
+	Image	გამოსახულება
+	Images	გამოსახულებები
+	Top Left	ზედა მარცხენა
+	Top Right	ზედა მარჯვენა
+	Copyright	საავტორო უფლება
+	Scaling	მასშტაბირება
+	Summary	შეჯამება
+	16 bit	16 ბიტი
+	24 bit	24 ბიტი
+	32 bit	32 ბიტი
+	Progressive	პროგრესული
+	Home	საწყისი ეკრანი
+	Recent	ბოლოდროინდელი
+	Restore	აღდგენა
+	Show:	ჩვენება:
+	Clear All	ყველას გასუფთავება
+	Error	შეცდომა
+	Strikethrough	გადახაზული
+	Clear History	ისტორიის გასუფთავება
+	Panel menu	პანელის მენიუ
+	About	პროგრამის შესახებ
+	Contributors	მონაწილეები
+	Models	მოდელები
+	Show	ჩვენება
+	Sort	სორტირება
+	Reverse the order	რიგის შებრუნება
+	Grab bag	სხვადასხვა
+	Table	ცხრილი
+	No contributor data was built into this copy.	ამ ასლში მონაწილეების მონაცემები არ არის ჩაშენებული.
+	No model credits were built into this copy.	ამ ასლში მოდელების მონაცემები არ არის ჩაშენებული.
+	Company	კომპანია
+	Model	მოდელი
+	Commits	კომიტები
+	% of all commits	ყველა კომიტის %
+	Lines +/−	სტრიქონები +/−
+	Username	მომხმარებლის სახელი
+	Display name	საჩვენებელი სახელი
+	Real name	ნამდვილი სახელი
+	Name (A–Z)	სახელი (ა–ჰ)
+	Merged PRs	გაერთიანებული PR-ები
+	Lines added	დამატებული სტრიქონები
+	Lines deleted	წაშლილი სტრიქონები
+	Line delta	სტრიქონების სხვაობა
+	Binary assets added	დამატებული ბინარული ფაილები
+	Binary assets removed	წაშლილი ბინარული ფაილები
+	First commit	პირველი კომიტი
+	Last commit	ბოლო კომიტი
+	Transparency Grid	გამჭვირვალობის ბადე
+	Output:	გამომავალი:
+	Clear Recent Files	ბოლოს გახსნილი ფაილების სიის გასუფთავება
+	Zoom In	გადიდება
+	Zoom Out	დაპატარავება
+	Standard	სტანდარტული
+	Source code on GitHub	საწყისი კოდი GitHub-ზე
+	Community	საზოგადოება
+	New Workspace	ახალი სამუშაო სივრცე
+	Effect	ეფექტი
+	Composite	კომპოზიტი
+	Basic	საბაზო
+	Black	შავი
+	Black & White	შავ-თეთრი
+	Blending Mode	შერევის რეჟიმი
+	Blocks	ბლოკები
+	Brush Size	ფუნჯის ზომა
+	Brush Strokes	ფუნჯის შტრიხები
+	Channel	არხი
+	Circle	წრე
+	Clockwise	საათის ისრის მიმართულებით
+	Colorize	გაფერადება
+	Corner	კუთხე
+	Crystallize	კრისტალიზაცია
+	Depth	სიღრმე
+	Dimensions	ზომები
+	Distortion	დეფორმაცია
+	Drop Shadow	ჩრდილი
+	Edge Thickness	კიდის სისქე
+	Edge Width	კიდის სიგანე
+	Fill Color	შევსების ფერი
+	Filter	ფილტრი
+	Frequency	სიხშირე
+	Gamma	გამა
+	Gamut Warning	ფერთა გამიდან გასვლის გაფრთხილება
+	Gaussian Blur	გაუსის გაბუნდოვნება
+	Glass	მინა
+	Glow Brightness	ნათების სიკაშკაშე
+	Good	კარგი
+	Grid	ბადე
+	Hard	მკაცრი
+	Height	სიმაღლე
+	Hexagon	ექვსკუთხედი
+	Inside	შიგნით
+	Interpolation	ინტერპოლაცია
+	Invert	ინვერსია
+	Left to Right	მარცხნიდან მარჯვნივ
+	Levels	დონეები
+	Light Intensity	სინათლის ინტენსივობა
+	Maximum	მაქსიმალური
+	Method	მეთოდი
+	Minimum	მინიმალური
+	Mode	რეჟიმი
+	Move	გადატანა
+	Noise	ხმაური
+	Offset	წანაცვლება
+	On	ჩართული
+	Outside	გარეთ
+	Photocopy	ფოტოასლი
+	Plates	ფირფიტები
+	Radial	რადიალური
+	Radial Blur	რადიალური გაბუნდოვნება
+	Radius	რადიუსი
+	Random	შემთხვევითი
+	Rays	სხივები
+	Relief	რელიეფი
+	Segments	სეგმენტები
+	Skew	დახრა
+	Slice	ნაჭერი
+	Slices	ნაჭრები
+	Smooth	გლუვი
+	Smoothness	სიგლუვე
+	Soft	რბილი
+	Softness	სირბილე
+	Spin	ბრუნვა
+	Square	კვადრატი
+	Star	ვარსკვლავი
+	Strength	სიძლიერე
+	Stroke Color	კონტურის ფერი
+	Stroke Length	შტრიხის სიგრძე
+	Stroke Width	კონტურის სისქე
+	Thickness	სისქე
+	Tolerance	დაშვება
+	Transparency	გამჭვირვალობა
+	Triangle	სამკუთხედი
+	Twirl	დახვევა
+	Twist	გრეხა
+	Unsharp Mask	არამკვეთრი ნიღაბი
+	White	თეთრი
+	Width	სიგანე
+	Baseline	საბაზისო ხაზი
+	Accent Color	აქცენტის ფერი
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	ტიტრები ცხრილიდან
+	A .ods, .xlsx or CSV credits sheet	ტიტრების ცხრილი .ods, .xlsx ან CSV ფორმატში
+	The spreadsheet's folder	ცხრილის საქაღალდე
+	Built-in styles	ჩაშენებული სტილები
+	Spreadsheet	ცხრილი
+	Sheet	ფურცელი
+	Pictures	სურათები
+	Styling	სტილი
+	Page	გვერდი
+	Warnings	გაფრთხილებები
+	Moment in the page	მომენტი გვერდზე
+	Place at Playhead	დაკვრის მაჩვენებელთან განთავსება
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	ცხრილები (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	ტიტრების სტილი (*.json)
+	Card	ბარათი
+	Credits Spreadsheet	ტიტრების ცხრილი
+	Reading…	იკითხება…
+	(one table)	(ერთი ცხრილი)
+	Total: {time}	სულ: {time}
+	Row {row}: {message}	მწკრივი {row}: {message}
+	Choose a credits spreadsheet.	აირჩიეთ ტიტრების ცხრილი.
+	No preview	წინასწარი ნახვა არ არის
+	Placing…	თავსდება…
+	Placed {n} pages on the timeline.	დროის ხაზზე განთავსდა გვერდები: {n}.
+	Credits Page Picture	ტიტრების გვერდის სურათი
+	Preview Credits	ტიტრების წინასწარი ნახვა
+	Credits Styles	ტიტრების სტილები
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	ცხრილები და ტიტრების ფაილები (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 ტიტრების ფაილი (*.cfa4credits)
+	Save as Credits File…	ტიტრების ფაილად შენახვა…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	ცხრილი, ფურცელი, სტილი და მწკრივები ერთ ფაილში, რომელიც ნებისმიერ კომპიუტერზე იხსნება
+	Saved: {path}	შენახულია: {path}
+	Added	დამატებულია
+	Removed	წაშლილია
+	Changed	შეცვლილია
+	(empty row)	(ცარიელი მწკრივი)
+	Refresh Credits from Spreadsheet	ტიტრების განახლება ცხრილიდან
+	Change	ცვლილება
+	Before → After	მანამდე → შემდეგ
+	Select None	არცერთის არჩევა
+	Keep my edits on the pages (where their block is unchanged)	ჩემი ცვლილებების შენარჩუნება გვერდებზე (სადაც მათი ბლოკი არ შეცვლილა)
+	Locate Spreadsheet…	ცხრილის მოძებნა…
+	Comparing…	შედარება…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	ცვლილებები ფაილში {file} ტიტრების განთავსების შემდეგ: {n}. მოხსენით მონიშვნა იმას, რაც არ გსურთ.
+	The spreadsheet {file} has not changed since the credits were placed.	ცხრილი {file} ტიტრების განთავსების შემდეგ არ შეცვლილა.
+	{n} layers were edited by hand on the pages.	გვერდებზე ხელით შეცვლილი ფენები: {n}.
+	Accepting every change would replace these, because their block changed: {names}	ყველა ცვლილების მიღება ჩაანაცვლებს ამათ, რადგან მათი ბლოკი შეიცვალა: {names}
+	Refreshing…	ახლდება…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	განახლდა: გამოყენებული ცვლილებები: {n}, შენარჩუნებული ხელით ცვლილებები: {kept}.
+	Refresh Credits from Spreadsheet…	ტიტრების განახლება ცხრილიდან…
+	Save Credits File…	ტიტრების ფაილის შენახვა…
+	Compare Credits with Spreadsheet	ტიტრების შედარება ცხრილთან
+	“{name}” appears twice in the same block	„{name}“ ერთსა და იმავე ბლოკში ორჯერ გვხვდება
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ მწკრივში {otherRow} დაწერილია როგორც „{other}“
+	The font “{font}” is not installed; another font is used	შრიფტი „{font}“ დაყენებული არ არის; გამოიყენება სხვა შრიფტი
+	The font “{font}” has no “{chars}”; another font draws them	შრიფტს „{font}“ არ აქვს „{chars}“; მათ სხვა შრიფტი ხატავს
+	“{text}” is outside the title-safe area	„{text}“ ტიტრების უსაფრთხო არეს გარეთაა
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ შავ ფონზე ზედმეტად მუქია (კონტრასტი {ratio}:1; საჭიროა მინიმუმ 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ {px} px სიმაღლისაა; 24 px ან მეტი კარგად იკითხება
+	The roll moves {speed} px per frame; a whole number does not shimmer	გადახვევა კადრზე {speed} px-ით მოძრაობს; მთელი რიცხვი არ ციმციმებს
+	A line crosses the frame in {seconds} s; at least 6 s reads well	მწკრივი კადრს {seconds} წმ-ში კვეთს; მინიმუმ 6 წმ კარგად იკითხება
+	The card holds for only {seconds} s after its fades	ბარათი გაქრობების შემდეგ მხოლოდ {seconds} წმ რჩება
+	This page starts {seconds} s before the previous one ends	ეს გვერდი წინას დასრულებამდე {seconds} წმ-ით ადრე იწყება
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ ნაჩვენებია მისი პიქსელების {percent} %-ით; ბუნდოვნად გამოჩნდება
+	{more} more of the same	კიდევ {more} იგივე
+	Page {page}: {message}	გვერდი {page}: {message}
+	Checks and warnings	შემოწმებები და გაფრთხილებები
+	Checks: {errors} errors, {warnings} warnings	შემოწმებები: შეცდომები {errors}, გაფრთხილებები {warnings}
+	Check Credits	ტიტრების შემოწმება
+	The whole music ({time})	მთელი მუსიკა ({time})
+	Until the sound ends ({time})	ხმის დასრულებამდე ({time})
+	To the last bar line ({time})	ბოლო ტაქტის ხაზამდე ({time})
+	Fit Credits to Music	ტიტრების მორგება მუსიკაზე
+	Fit Credits to Music…	ტიტრების მორგება მუსიკაზე…
+	Analyse Music for Credits	მუსიკის ანალიზი ტიტრებისთვის
+	Length:	ხანგრძლივობა:
+	Cards last whole beats (cuts on the beat)	ბარათები მთელ დარტყმებს გრძელდება (ჭრა რიტმზე)
+	Start the credits where the music starts	ტიტრების დაწყება იქ, სადაც მუსიკა იწყება
+	Length of the credits	ტიტრების ხანგრძლივობა
+	Remove Fitting	მორგების მოხსნა
+	Listening to the music…	მუსიკის მოსმენა…
+	Length: {time}	ხანგრძლივობა: {time}
+	the sound ends at {time}	ხმა მთავრდება {time}-ზე
+	tempo {bpm} BPM	ტემპი {bpm} BPM
+	the credits without fitting: {time}	ტიტრები მორგების გარეშე: {time}
+	Select a credits page on the timeline.	აირჩიეთ ტიტრების გვერდი დროის ხაზზე.
+	Fitting…	ერგება…
+	The credits now last {time}.	ტიტრები ახლა {time} გრძელდება.
+	Fitting removed.	მორგება მოხსნილია.
+	Fit to This Length	ამ ხანგრძლივობაზე მორგება
+	No music to measure ({problem}); type the length.	გასაზომი მუსიკა არ არის ({problem}); შეიყვანეთ ხანგრძლივობა.
+	The text moves {speed} px per frame; a whole number does not shimmer	ტექსტი კადრზე {speed} px-ით მოძრაობს; მთელი რიცხვი არ ციმციმებს
+	Crawl	მცოცავი ტექსტი
+	Picture: {file}	სურათი: {file}
+	Video: {file}	ვიდეო: {file}
+	Into the next	შემდეგში გადასვლა
+	Safe areas and spines	უსაფრთხო არეები და ღერძები
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	მოქმედების უსაფრთხო არე (93 %), ტიტრების (90 %), ცენტრი და გვერდის ღერძები
+	Baseline grid	საბაზისო ხაზების ბადე
+	Lines one gap unit apart, moving with the page	ხაზები ერთი დაშორების ერთეულით, გვერდთან ერთად მოძრაობენ
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ფონზე არ გამოირჩევა (კონტრასტი {ratio}:1; საჭიროა მინიმუმ 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	ტექსტის უკან სურათი ან ვიდეოა: კონტრასტი თვალით შეამოწმეთ
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	მზა იერსახე: სტილები, ფონები, გადასვლები და დრო. მითითებულ სტილის ფაილს უპირატესობა აქვს.
+	New Spreadsheet from Template…	ახალი ცხრილი შაბლონიდან…
+	built in	ჩაშენებული
+	mine	ჩემი
+	this project	ეს პროექტი
+	Template	შაბლონი
+	Choose a template first.	ჯერ აირჩიეთ შაბლონი.
+	Name of the template:	შაბლონის სახელი:
+	Template saved: {name}	შაბლონი შენახულია: {name}
+	Apply Credits Template…	ტიტრების შაბლონის გამოყენება…
+	Template:	შაბლონი:
+	Credits Templates	ტიტრების შაბლონები
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	ცხრილები, ტიტრების ფაილები და Cinecred-ის პროექტები (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-ის პროექტი…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred-ის პროექტის საქაღალდის გახსნა (Styling.toml და მისი ტიტრების ცხრილი)
+	(empty block)	(ცარიელი ბლოკი)
+	Apply Template…	შაბლონის გამოყენება…
+	Change them in the spreadsheet; the credits follow when you save it.	შეცვალეთ ისინი ცხრილში; ტიტრები მიჰყვება, როცა მას შეინახავთ.
+	Compact View	კომპაქტური ხედი
+	Compare the selected credits on the timeline with their spreadsheet, row by row	შეადარეთ დროის ხაზზე არჩეული ტიტრები მათ ცხრილს მწკრივ-მწკრივ
+	Fit the selected credits to the music under them	არჩეული ტიტრების მორგება მათ ქვეშ არსებულ მუსიკაზე
+	Fit to Music…	მუსიკაზე მორგება…
+	Full View	სრული ხედი
+	Give the selected credits on the timeline another template	დროის ხაზზე არჩეული ტიტრებისთვის სხვა შაბლონის მიცემა
+	Names	სახელები
+	No pages	გვერდები არ არის
+	Refresh Placed Credits…	განთავსებული ტიტრების განახლება…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	ყველაფრის ჩვენება: ბლოკები, თვისებები, გვერდები დროში, შემოწმებები და ტიტრების ხელსაწყოები
+	Spine	ღერძი
+	Tails	დასასრული
+	The blocks of the chosen page; choose one to see it in the preview	არჩეული გვერდის ბლოკები; აირჩიეთ ერთი, რომ წინასწარ ნახვაში დაინახოთ
+	The pages along time; click one to choose it	გვერდები დროში; დააწკაპუნეთ ერთზე მის ასარჩევად
+	{n} more	კიდევ {n}
+	Block	ბლოკი
+	parallel	პარალელური
