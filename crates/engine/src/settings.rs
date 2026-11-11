@@ -1068,6 +1068,7 @@ static CATEGORIES: &[Category] = &[
                     ("el", "Ελληνικά"),
                     ("sv", "Svenska"),
                     ("sr-latn", "Srpski (latinica)"),
+                    ("bg", "Български"),
                 ]),
                 true,
             ),

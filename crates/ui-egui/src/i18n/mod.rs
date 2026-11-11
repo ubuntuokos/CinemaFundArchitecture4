@@ -80,6 +80,8 @@ pub enum Language {
     /// Serbian in Latin script, persisted as `sr-latn`; every Serbian locale (`sr-Latn`, `sr_RS@latin`, `sr-RS`) gets it until a Cyrillic catalog exists.
     #[serde(rename = "sr-latn")]
     SrLatn,
+    /// Bulgarian, persisted as `bg`.
+    Bg,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -110,11 +112,12 @@ static TRADITIONAL: OnceLock<Catalog> = OnceLock::new();
 static GREEK: OnceLock<Catalog> = OnceLock::new();
 static SWEDISH: OnceLock<Catalog> = OnceLock::new();
 static SERBIAN_LATIN: OnceLock<Catalog> = OnceLock::new();
+static BULGARIAN: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 24] = [
+    pub const ALL: [Self; 25] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -137,6 +140,7 @@ impl Language {
         Self::El,
         Self::Sv,
         Self::SrLatn,
+        Self::Bg,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -165,6 +169,7 @@ impl Language {
             Self::El => "Ελληνικά",
             Self::Sv => "Svenska",
             Self::SrLatn => "Srpski (latinica)",
+            Self::Bg => "Български",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -194,6 +199,7 @@ impl Language {
             "el" => Some(Self::El),
             "sv" => Some(Self::Sv),
             "sr-latn" => Some(Self::SrLatn),
+            "bg" => Some(Self::Bg),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -210,7 +216,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 21] = [
+        const PRIMARY: [(&str, Language); 22] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -232,6 +238,7 @@ impl Language {
             ("el", Language::El),
             ("sv", Language::Sv),
             ("sr", Language::SrLatn),
+            ("bg", Language::Bg),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -294,6 +301,7 @@ impl Language {
             Self::El => "el",
             Self::Sv => "sv",
             Self::SrLatn => "sr-latn",
+            Self::Bg => "bg",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -324,6 +332,7 @@ impl Language {
             Self::El => Some(GREEK.get_or_init(|| Catalog::parse(catalog_file!("el")))),
             Self::Sv => Some(SWEDISH.get_or_init(|| Catalog::parse(catalog_file!("sv")))),
             Self::SrLatn => Some(SERBIAN_LATIN.get_or_init(|| Catalog::parse(catalog_file!("sr-latn")))),
+            Self::Bg => Some(BULGARIAN.get_or_init(|| Catalog::parse(catalog_file!("bg")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -515,6 +524,7 @@ mod tests {
             ("el", catalog_file!("el")),
             ("sv", catalog_file!("sv")),
             ("sr-latn", catalog_file!("sr-latn")),
+            ("bg", catalog_file!("bg")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1692,6 +1702,13 @@ mod tests {
             catalog_file!("sr-latn"),
             "ČĆĐŠŽčćđšž„“",
             &[("File", "Datoteka"), ("Sequence", "Sekvenca"), ("Playhead", "Glava za reprodukciju"), ("Cross Dissolve", "Unakrsno pretapanje")],
+        ),
+        (
+            Language::Bg,
+            "app.language.bulgarian",
+            catalog_file!("bg"),
+            "БГДЖЗЙЛПФЦЧШЩЪЬЮЯбгджзйлпфцчшщъьюя„“",
+            &[("File", "Файл"), ("Sequence", "Последователност"), ("Playhead", "Глава за възпроизвеждане"), ("Cross Dissolve", "Кръстосано преливане")],
         ),
     ];
 
