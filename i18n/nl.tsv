@@ -4112,3 +4112,8 @@ export.summary	Low	laag
 	Masks	Maskers
 	Panel	Paneel
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videogereedschappen
+	Audio Tools	Audiogereedschappen
+	Publication Tools	Publicatiegereedschappen
+	Smart Export…	Slim exporteren…

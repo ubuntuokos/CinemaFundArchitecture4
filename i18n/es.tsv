@@ -4119,3 +4119,8 @@
 	None (RFC 5646 tag, e.g. en-US)	Ninguno (etiqueta RFC 5646, p. ej. es-ES)
 	ISDCF name	Nombre ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Nombrar la carpeta DCP según la Digital Cinema Naming Convention
+# Qt GUI: Tools menu (#868)
+	Video Tools	Herramientas de vídeo
+	Audio Tools	Herramientas de audio
+	Publication Tools	Herramientas de publicación
+	Smart Export…	Smart Export…

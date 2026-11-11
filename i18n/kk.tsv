@@ -4114,3 +4114,8 @@ export.summary	Low	төмен
 	Star	Жұлдыз
 	Width	Ені
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Бейне құралдары
+	Audio Tools	Аудио құралдары
+	Publication Tools	Жариялау құралдары
+	Smart Export…	Ақылды экспорт…

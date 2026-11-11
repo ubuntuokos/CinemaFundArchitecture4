@@ -4097,3 +4097,8 @@
 	ISDCF name	Ім’я ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Називати теку DCP за Digital Cinema Naming Convention
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Відеоінструменти
+	Audio Tools	Аудіоінструменти
+	Publication Tools	Інструменти публікації
+	Smart Export…	Smart Export…

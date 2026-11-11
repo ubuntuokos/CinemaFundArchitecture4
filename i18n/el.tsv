@@ -4114,3 +4114,8 @@ export.summary	Low	χαμηλή
 	Application	Εφαρμογή
 	Baseline	Γραμμή βάσης
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Εργαλεία βίντεο
+	Audio Tools	Εργαλεία ήχου
+	Publication Tools	Εργαλεία δημοσίευσης
+	Smart Export…	Έξυπνη εξαγωγή…

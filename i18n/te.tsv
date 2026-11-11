@@ -4118,3 +4118,8 @@ export.summary	Low	తక్కువ
 	Width	వెడల్పు
 	Application	అప్లికేషన్
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	వీడియో సాధనాలు
+	Audio Tools	ఆడియో సాధనాలు
+	Publication Tools	ప్రచురణ సాధనాలు
+	Smart Export…	స్మార్ట్ ఎగుమతి…

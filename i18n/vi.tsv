@@ -4112,3 +4112,8 @@ export.summary	Low	thấp
 	Contains	Chứa
 	Navigation	Điều hướng
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Công cụ video
+	Audio Tools	Công cụ âm thanh
+	Publication Tools	Công cụ xuất bản
+	Smart Export…	Xuất thông minh…

@@ -4111,3 +4111,8 @@ export.summary	Low	alacsony
 # Smart Cut audio (WP-09b)
 	Audio copied: {tracks}	Hang másolva: {tracks}
 	Audio track {track} is not copied: {why}	A(z) {track}. hangsáv nem kerül át: {why}
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videoeszközök
+	Audio Tools	Hangeszközök
+	Publication Tools	Publikációs eszközök
+	Smart Export…	Smart Export…

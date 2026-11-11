@@ -4112,3 +4112,8 @@ export.summary	Low	niska
 	Contains	Zawiera
 	Navigation	Nawigacja
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Narzędzia wideo
+	Audio Tools	Narzędzia audio
+	Publication Tools	Narzędzia publikacji
+	Smart Export…	Inteligentny eksport…

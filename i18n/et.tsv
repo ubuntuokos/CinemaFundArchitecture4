@@ -4114,3 +4114,8 @@ export.summary	Low	madal
 	Contains	Sisaldab
 	Navigation	Navigeerimine
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videotööriistad
+	Audio Tools	Helitööriistad
+	Publication Tools	Avaldamistööriistad
+	Smart Export…	Nutikas eksport…

@@ -4112,3 +4112,8 @@ export.summary	Low	nízká
 	Navigation	Navigace
 	Panel	Panel
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Video nástroje
+	Audio Tools	Zvukové nástroje
+	Publication Tools	Nástroje pro publikování
+	Smart Export…	Chytrý export…

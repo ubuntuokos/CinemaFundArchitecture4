@@ -4115,3 +4115,8 @@ export.summary	Low	დაბალი
 	Baseline	საბაზისო ხაზი
 	Accent Color	აქცენტის ფერი
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	ვიდეო ხელსაწყოები
+	Audio Tools	აუდიო ხელსაწყოები
+	Publication Tools	გამოქვეყნების ხელსაწყოები
+	Smart Export…	ჭკვიანი ექსპორტი…
