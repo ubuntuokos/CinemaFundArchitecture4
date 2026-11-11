@@ -154,12 +154,17 @@ előfeltételként megnevezett fázisai után.
 - **Sávszélesség:** 1080p59,94 4:2:2 10 bit ≈ 2,49 Gbit/s hasznos adat (1920 × 1080 × 20 bit ×
   59,94), ehhez **10 GbE** kell; 2160p59,94 ≈ 9,95 Gbit/s, ehhez **25 GbE**. 1 GbE-n csak a hang, az
   adat és a tömörített kép (-22) próbálható, a tömörítetlen kép legfeljebb kis felbontásban.
-- **Hálózati kártya:** PTP hardveres időbélyeggel (`ethtool -T`), multicast-szűréssel. A
-  referenciagép kártyája nincs a [`reference-machine.md`](../development/reference-machine.md)-ben:
-  a T1-et indító munkamenet a gépről olvassa ki (`ip link`, `ethtool -i`, `ethtool -T`, `lspci`), és
-  rögzíti a fájlban (a tulajdonostól nem kérdezzük, AGENTS.md szabály). Ha nincs 10 GbE-s, PTP-képes
-  kártya, a T3–T4 képes mérései addig a hurokinterfészen és 1 GbE-n, kis felbontással futnak, és ezt a
-  PR jelzi.
+- **Hálózati kártya:** a tulajdonos 2026-11-11-én jelezte, hogy **a referenciagépben nincs 10 GbE-s,
+  PTP-képes kártya** (rögzítve a [`reference-machine.md`](../development/reference-machine.md)-ben). Ezért:
+  - a T0 (csomagolás, SDP), a T1 (idő; `ptp4l` szoftveres időbélyeggel, `-S`, vagy PTP nélkül
+    `localmac` + `mediaclk:sender`), a T2 (AES67 hang, 1 ms-os csomagokkal pár Mbit/s), a T5 (adat)
+    és a T6 (tömörített kép) a meglévő hálózaton és a hurokinterfészen végigvihető és mérhető;
+  - a T3–T4 tömörítetlen képe a hurokinterfészen teljes felbontásban is tesztelhető (helyesség,
+    -21 elemző), de **valódi hálózaton csak kis felbontással** (1 GbE-n pl. 1080p25 8 bit ≈ 0,83 Gbit/s
+    vagy 720p25); a kész mérés (1080p59,94 egy órán át, külső vevővel) egy későbbi kártyára vár,
+    és ezt a PR-ek jelzik;
+  - egy ilyen kártya (PTP hardveres időbélyeggel, `ethtool -T`) és egy PTP-nagymester beszerzése a
+    tulajdonos döntése, nem feltétele a T0–T2 indulásának.
 - **NUMA:** a kártya NUMA-csomópontjához rögzített szálak (a referenciagép két csomópontos; a mérési
   jegyzőkönyv rögzíti a magokat, `docs/performance.md`).
 
@@ -178,8 +183,9 @@ előfeltételként megnevezett fázisai után.
 
 - **Szoftveres időzítés:** egy általános Linux-rendszermag mellett a W típus tűrése is szoros lehet
   nagy felbontásnál; ezért az elemző az első naptól mér, és az AF_XDP csak mérés után jön.
-- **Hardverfüggés:** a teljes érték 10/25 GbE-s, PTP-képes kártyát és PTP-nagymestert kíván; e nélkül
-  a T3–T4 csak részben mérhető (V. fejezet).
+- **Hardverfüggés:** a teljes érték 10/25 GbE-s, PTP-képes kártyát és PTP-nagymestert kíván; ilyen
+  most nincs a referenciagépben, ezért a T3–T4 valódi hálózaton egyelőre csak kis felbontással mérhető
+  (V. fejezet).
 - **Két óra:** a libobs a saját órájához igazít; a PTP-hez kötött be- és kimenet közt a libobs
   képkocka-ütemét a PTP-hez kell zárni, különben a küldő `mediaclk:sender` módban marad. Ezt a T1–T4
   méri; ha a libobs nem zárható, ez az S12+ csere (saját kompozitálás) egyik oka.
