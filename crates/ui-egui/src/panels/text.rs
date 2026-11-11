@@ -640,7 +640,7 @@ fn style_strip(app: &mut Cfa4App, ui: &mut egui::Ui, r: Rect, track_idx: usize, 
             if !cfa4_text::fonts::system_scanned() {
                 cfa4_text::fonts::scan_system();
             }
-            // names starting with '.' are macOS-private system faces (UI/fallback fonts, some without a space glyph)
+            // names starting with '.' are private system faces (some without a space glyph)
             for (f, _) in cfa4_text::families().into_iter().filter(|(f, _)| !f.starts_with('.')) {
                 let resp = ui.selectable_label(f.eq_ignore_ascii_case(&st.font), &f);
                 // An edge row may be only partly visible; automation must click its visible portion.

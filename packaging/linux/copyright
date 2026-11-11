@@ -3,8 +3,10 @@ Upstream-Name: CFA4 (CinemaFundArchitecture4)
 Upstream-Contact: https://github.com/ubuntuokos/CinemaFundArchitecture4
 Source: https://github.com/ubuntuokos/CinemaFundArchitecture4
 Comment: Third-party material and upstream attributions are listed in NOTICE and
- ATTRIBUTION.md in this directory. Licences of the Rust dependencies are
- recorded in the project's dependency audit (docs/audit/F1-01-SBOM-*.md).
+ ATTRIBUTION.md in this directory. Every third-party Rust crate in the programs,
+ with its licence and the licence files it ships, is in THIRD-PARTY-LICENSES.txt
+ in this directory; cfa4.cdx.json is the CycloneDX SBOM of every crate compiled
+ into them.
 
 Files: *
 Copyright: CFA4 contributors

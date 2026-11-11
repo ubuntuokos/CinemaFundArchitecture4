@@ -21,7 +21,7 @@ pub fn ffmpeg_libaom() -> Option<PathBuf> {
     ffmpeg_with(&[("-encoders", "libaom-av1"), ("-decoders", "libdav1d")])
 }
 
-/// Builds such as the Windows "essentials" ones lack these libraries; skip rather than fail.
+/// Some ffmpeg builds lack these libraries; skip rather than fail.
 fn ffmpeg_with(needs: &[(&str, &str)]) -> Option<PathBuf> {
     let ff = cfa4_testkit::ffmpeg_or_skip("av1 oracle")?;
     for &(list, lib) in needs {

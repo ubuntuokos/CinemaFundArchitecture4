@@ -1,4 +1,4 @@
-//! Test fixture generation (ffmpeg + libx265 / VideoToolbox as external oracle and encoder) and
+//! Test fixture generation (ffmpeg + libx265 as external oracle and encoder) and
 //! comparison helpers.
 #![allow(dead_code)]
 
@@ -110,9 +110,6 @@ pub const FIXTURES: &[Fixture] = &[
     // performance reference streams (tests/perf.rs)
     fx!("bench_1080p", "testsrc2", 1920, 1080, 60, "noise=alls=3:allf=t", 8, ["-preset", "medium", "-crf", "24", "-x265-params", "log-level=error"]),
     fx!("bench_4k", "testsrc2", 3840, 2160, 20, "noise=alls=3:allf=t", 10, ["-preset", "fast", "-crf", "26", "-x265-params", "log-level=error"]),
-    // Apple VideoToolbox (hardware encoder, macOS only)
-    fx!("vt_main", "testsrc2", 640, 360, 20, NOISE, 8, ["-c:v", "hevc_videotoolbox", "-b:v", "2M"]),
-    fx!("vt_main10", "mandelbrot", 640, 360, 20, NOISE, 10, ["-c:v", "hevc_videotoolbox", "-profile:v", "main10", "-b:v", "2M"]),
 ];
 
 pub fn fixture(name: &str) -> &'static Fixture {
@@ -183,7 +180,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
         c.args(f.args);
         c.args(["-f", "hevc"]).arg(&tmp);
         if !run(&mut c) {
-            // Platform encoders (VideoToolbox) are optional; libx265 fixtures must generate.
+            // Fixtures that name their own encoder are optional; libx265 fixtures must generate.
             assert!(f.args.contains(&"-c:v"), "fixture generation failed for {}", f.name);
             let _ = std::fs::remove_file(&tmp);
             eprintln!("SKIPPED ({}): encoder unavailable", f.name);

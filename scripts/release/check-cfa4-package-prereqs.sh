@@ -75,7 +75,12 @@ if has restricted; then
   check_ffmpeg_build "$ffmpeg_build-restricted" " --restricted"
 fi
 if has deb || has restricted; then
-  check_command nfpm
+  # Only the pinned nfpm (packaging/linux/nfpm.lock): hash first, then version.
+  if nfpm_path="$(bash "$ROOT/packaging/linux/check-nfpm.sh")"; then
+    echo "OK: pinned nfpm $nfpm_path"
+  else
+    fail "the pinned nfpm (packaging/linux/nfpm.lock; build it with scripts/release/install-nfpm.sh)"
+  fi
   check_command dpkg-deb
 fi
 if has flatpak; then
@@ -94,6 +99,8 @@ if has flatpak; then
   fi
 fi
 if has appimage; then
+  # verify_cfa4_packages.py lists the AppImage's squashfs without running it
+  check_command unsquashfs
   tool="${APPIMAGETOOL:-$(command -v appimagetool || true)}"
   if [[ -z "$tool" || ! -f "$tool" || ! -x "$tool" ]]; then
     fail "reviewed appimagetool not executable (set APPIMAGETOOL)"
@@ -108,6 +115,29 @@ if has appimage; then
     else
       fail "appimagetool SHA-256 mismatch; refusing unverified tool"
     fi
+  fi
+fi
+
+if has appimage || has flatpak; then
+  # The AppImage and the Flatpak carry the Qt GUI's PySide6 / Qt 6 (packaging/linux/stage-pyside6.py)
+  # from a local wheelhouse of the wheels pinned in requirements/linux-amd64.txt; their hashes are
+  # checked when they are staged.
+  wheels="${CFA4_PYSIDE6_WHEELS:-}"
+  if [[ -z "$wheels" || ! -d "$wheels" ]]; then
+    fail "CFA4_PYSIDE6_WHEELS must name a local wheelhouse with the pinned PySide6 6.12 wheels"
+  else
+    for wheel in pyside6_essentials pyside6_addons shiboken6; do
+      if compgen -G "$wheels/$wheel-6.12.0-*manylinux*x86_64.whl" >/dev/null; then
+        echo "OK: $wheel wheel"
+      else
+        fail "$wheel-6.12.0 manylinux x86_64 wheel missing from $wheels"
+      fi
+    done
+  fi
+  if [[ -s /usr/share/common-licenses/LGPL-3 && -s /usr/share/common-licenses/LGPL-2.1 ]]; then
+    echo "OK: LGPL licence texts"
+  else
+    fail "/usr/share/common-licenses/LGPL-3 and LGPL-2.1 (base-files) are needed for the bundled Qt"
   fi
 fi
 

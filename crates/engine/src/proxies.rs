@@ -186,7 +186,7 @@ impl ReservedOutput {
 impl Drop for ReservedOutput {
     fn drop(&mut self) {
         if !self.keep {
-            // Release our handle before removal, which is required on Windows.
+            // Release our handle before removal so the file can be deleted.
             self.file.take();
             let _ = std::fs::remove_file(&self.path);
         }

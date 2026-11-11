@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Assert the licence/attribution files every CFA4 Linux package must ship (issue #6, F1-01).
-#   check-package-docs.sh <doc-dir>   check an already staged usr/share/doc/cfa4
-#   check-package-docs.sh             stage copy_docs + copyright into a temp dir and check it,
-#                                     and check that the AppImage path keeps usr/share/doc
+#   check-package-docs.sh <doc-dir>   check an already staged usr/share/doc/cfa4, including
+#                                     THIRD-PARTY-LICENSES.txt and the cfa4.cdx.json SBOM (#220)
+#   check-package-docs.sh             stage copy_docs + copyright into a temp dir and check it
+#                                     (without the third-party notices, which need the crate
+#                                     sources), and check that the AppImage path keeps usr/share/doc
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 required=(LICENSE NOTICE ATTRIBUTION.md LICENSE-MIT LICENSE-APACHE LICENSE-logo.txt copyright)
@@ -16,10 +18,18 @@ check_dir() {
   return "$missing"
 }
 
-if [ $# -ge 1 ]; then check_dir "$1"; exit; fi
+if [ $# -ge 1 ]; then
+  required+=(THIRD-PARTY-LICENSES.txt cfa4.cdx.json)
+  check_dir "$1" || exit 1
+  if ! python3 -c 'import json, sys; d = json.load(open(sys.argv[1])); sys.exit(d.get("bomFormat") != "CycloneDX")' \
+      "$1/cfa4.cdx.json"; then
+    echo "error: $1/cfa4.cdx.json is not a CycloneDX SBOM" >&2; exit 1
+  fi
+  exit
+fi
 
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-DIST="$tmp/dist" CARGO_TARGET_DIR="$tmp/target" bash -c '
+DIST="$tmp/dist" CARGO_TARGET_DIR="$tmp/target" CFA4_SKIP_THIRD_PARTY_LICENSES=1 bash -c '
   set -euo pipefail
   . "$1/packaging/env.sh"
   mkdir -p "$2"; copy_docs "$2"
