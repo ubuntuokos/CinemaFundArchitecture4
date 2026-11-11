@@ -20,6 +20,11 @@ const RATE: FrameRate = FrameRate { num: 25, den: 1 };
 /// 40 pictures of H.264 (64×48, 25 fps, an IDR every 10, `bframes` B-frames) with pictures that
 /// depend on `seed`.
 fn source_mp4(seed: usize, bframes: u8) -> Vec<u8> {
+    source_mp4_in(seed, bframes, 25)
+}
+
+/// [`source_mp4`] in `timescale` ticks per second (a multiple of 25).
+fn source_mp4_in(seed: usize, bframes: u8, timescale: u32) -> Vec<u8> {
     use cfa4_h264enc::{Encoder, EncoderConfig, PacketFormat, RateControl, YuvFrame};
     let (w, h) = (64usize, 48usize);
     let mut cfg = EncoderConfig::new(w as u32, h as u32, 25, 1);
@@ -39,11 +44,13 @@ fn source_mp4(seed: usize, bframes: u8) -> Vec<u8> {
     packets.extend(enc.flush());
     let entry = SampleEntry::avc(AvcConfig::parse(&enc.avcc()).unwrap(), w as u16, h as u16);
     let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
-    let mut track = TrackConfig::new(entry, 25);
-    track.media_start = (bframes > 0).then_some(1);
+    let step = timescale / 25;
+    let mut track = TrackConfig::new(entry, timescale);
+    track.media_start = (bframes > 0).then_some(i64::from(step));
     let t = mux.add_track(track).unwrap();
     for p in &packets {
-        mux.write_sample(t, WriteSample { data: &p.data, duration: 1, composition_offset: (p.pts - p.dts) as i32, is_sync: p.keyframe }).unwrap();
+        let offset = (p.pts - p.dts) as i32 * step as i32;
+        mux.write_sample(t, WriteSample { data: &p.data, duration: step, composition_offset: offset, is_sync: p.keyframe }).unwrap();
     }
     mux.finish().unwrap().into_inner()
 }
@@ -316,4 +323,62 @@ fn the_sequence_audio_is_mixed_encoded_and_presented_with_the_video() {
     let file = cfa4_isobmff::open(std::fs::read(out("mute.mp4")).unwrap().as_slice()).unwrap();
     assert_eq!(file.tracks.len(), 1);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// WP-09d, case 9: clips whose sources count time in other timescales (25 and 12 800 ticks per
+/// second) at the same frame rate are still copied, into one verified stream.
+#[test]
+fn clips_in_other_timescales_at_one_frame_rate_are_copied() {
+    let dir = tmp_dir("smart-render-timescales");
+    let (a, b) = (dir.join("a.mp4"), dir.join("b.mp4"));
+    std::fs::write(&a, source_mp4_in(0, 2, 25)).unwrap();
+    std::fs::write(&b, source_mp4_in(1, 2, 12_800)).unwrap();
+    let (mut s, items, seq) = session_with(&[a.as_path(), b.as_path()]);
+    let mut p = (*s.project).clone();
+    let mut v1 = Vec::new();
+    for (i, at, from, len) in [(0usize, 0i64, 0i64, 40i64), (1, 40, 10, 20)] {
+        let mut it = p.make_track_item(items[i], TrackKind::Video, f(at), TimeRange::new(f(from), f(len)), RATE).unwrap();
+        for e in &mut it.effects {
+            cfa4_project::resolve_auto_points(e, (64, 48), (64, 48));
+        }
+        v1.push(it);
+    }
+    let q = p.sequence_mut(seq).unwrap();
+    q.video_tracks[0].items = v1;
+    q.audio_tracks[0].items.clear();
+    s.project = Arc::new(p);
+    let out = dir.join("mixed.mp4").to_string_lossy().into_owned();
+    let plan = s.execute("export.plan", json!({"scope": "timeline", "output": out})).unwrap();
+    assert_eq!(plan["summary"]["lossless"], true, "{plan}");
+    assert_eq!(plan["summary"]["copiedFrames"], 60, "{plan}");
+    let r = s.execute("export.start", json!({"scope": "timeline", "output": out})).unwrap();
+    assert_eq!((r["report"]["copied"].as_u64(), r["report"]["rendered"].as_u64()), (Some(60), Some(0)), "{r}");
+    let written = std::fs::read(&out).unwrap();
+    let file = cfa4_isobmff::open(written.as_slice()).unwrap();
+    assert_eq!(file.tracks[0].samples.len(), 60);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// WP-09d, case 19: an export runs on the project as it is when it starts. A plan made before an
+/// edit is never reused: the edit shows in the next plan and run, and an edit that needs
+/// rendering asks for the confirmation again.
+#[test]
+fn an_edit_after_the_plan_is_what_the_export_writes() {
+    let mut fx = fixture("smart-render-edited", 0, &[(0, 0, 0, 40), (1, 40, 10, 20)]);
+    let plan = fx.plan();
+    assert_eq!(plan["summary"]["requiresConfirmation"], false, "{plan}");
+    // the second clip's opacity changes after the plan was shown
+    let mut p = (*fx.s.project).clone();
+    let q = p.sequence_mut(fx.seq).unwrap();
+    let op = q.video_tracks[0].items[1].effects.iter_mut().find(|e| e.effect == "opacity").unwrap();
+    op.params.get_mut("opacity").unwrap().value = ParamValue::Float(50.0);
+    fx.s.project = Arc::new(p);
+    let e = fx.start("edited.mp4", false).unwrap_err();
+    assert!(e.to_string().contains("confirm"), "{e}");
+    assert!(!Path::new(&fx.out("edited.mp4")).exists(), "nothing is written from the stale plan");
+    let r = fx.start("edited.mp4", true).unwrap();
+    assert_eq!((r["report"]["copied"].as_u64(), r["report"]["rendered"].as_u64()), (Some(40), Some(20)), "{r}");
+    // the export does not change the project it read
+    let after = fx.s.project.sequence(fx.seq).unwrap().video_tracks[0].items.len();
+    assert_eq!(after, 2);
 }
