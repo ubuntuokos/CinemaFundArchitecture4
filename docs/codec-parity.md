@@ -59,6 +59,8 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Opus | — (not a Premiere import format) | own decoder, RFC 8251 range-exact | own CELT encoder (#99): fullband 20 ms, CBR, mono / stereo (intensity + dual stereo), Opus Audio (Ogg) and WebM export; **no** VBR (#207), psychoacoustic tuning (#208), SILK / hybrid (#209), other frame sizes or rates (#210), surround (#211), Opus in MP4 / Matroska outside WebM (#212) | conformance vectors; encoder: libopus decodes every stream (78–82 dB agreement with our decoder, matching final range), source SNR within 1–1.6 dB of libopus CBR at the same rate | ahead | 30–60 h (encoder follow-ups) |
 | FLAC, ALAC, Vorbis | partial | decode (symphonia); FLAC in MP4 silent (#603) | none | — | 70% | 3–6 h |
 | WMA | decode on Windows | none | none | — | 0% | 10–20 h |
+| G.711 μ-law / A-law, G.722 | not checked | own decoders (`cfa4-adpcm`, CB-4.1): G.711 in WAV, AVI, MOV (`ulaw`, `alaw`), Matroska (`A_MS/ACM`); G.722 at 64 kbit/s (ITU-T G.722 11/88) in WAV, AVI, Matroska | none | bit-exact vs ffmpeg in every container, also after a seek; G.722 also on random codewords | 90% | — |
+| IMA ADPCM, Microsoft ADPCM | not checked | own decoders (`cfa4-adpcm`, CB-4.2): IMA in WAV / AVI / Matroska blocks and QuickTime `ima4`, Microsoft ADPCM with custom coefficient sets; WAV read in place block by block | none | bit-exact vs ffmpeg in every container, also after a seek, and on random blocks | 90% | — |
 
 ## Summary
 
@@ -74,6 +76,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-09 | minor | G.711, G.722, IMA and Microsoft ADPCM decode (`cfa4-adpcm`, codec backlog CB-4.1, CB-4.2) |
 | 2026-11-08 | minor | Link to the low-priority codec backlog ([plans](plans/CODEC-BACKLOG-2026-10-27.md)) |
 | 2026-10-27 | minor | Ubuntu 26.04 only: VideoToolbox H.264 / HEVC and Windows AV1 hardware decoding left the Ours column |
 | 2026-10-26 | minor | JPEG 2000 in MXF import, DCP picture tracks included (#77) |
