@@ -2017,3 +2017,30 @@ fn chapters_reach_mp4_m4a_and_hls_init() {
         .unwrap();
     assert_eq!(chapters_of(&hls_files(&hls, 36).init), want);
 }
+
+#[test]
+fn chapters_reach_webm() {
+    use cfa4_project::MarkerKind::Chapter as C;
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 2);
+    let p = with_markers(p, seq, &[(0, "Intro", "", C), (1_000, "Ünnep", "", C)]);
+    let dir = Scratch::new("webm-chapters");
+    let range = Some(TimeRange::new(Tick::ZERO, Tick(2 * TICKS_PER_SECOND)));
+    let path = dir.path("c.webm");
+    export(&p, seq, &ExportSettings { format: Format::WebM, path: path.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
+        .unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let f = cfa4_matroska::open(&bytes[..]).unwrap();
+    assert_eq!(f.chapters.len(), 1, "one edition");
+    let got: Vec<(u64, Option<u64>, Option<&str>)> = f.chapters[0].chapters.iter().map(|c| (c.start_ns, c.end_ns, c.title())).collect();
+    // each chapter ends where the next starts, the last with the export (2 s)
+    assert_eq!(got, [(0, Some(1_000_000_000), Some("Intro")), (1_000_000_000, Some(2_000_000_000), Some("Ünnep"))]);
+    if let Some(j) = ffprobe_json(&["-show_chapters"], &path) {
+        let titles: Vec<&str> = j["chapters"].as_array().unwrap().iter().map(|c| c["tags"]["title"].as_str().unwrap()).collect();
+        assert_eq!(titles, ["Intro", "Ünnep"]);
+    }
+    // switched off: no Chapters element
+    let off = dir.path("off.webm");
+    let s = ExportSettings { format: Format::WebM, path: off.clone(), range, bitrate_kbps: 300, chapters: false, ..Default::default() };
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert!(cfa4_matroska::open(&std::fs::read(&off).unwrap()[..]).unwrap().chapters.is_empty());
+}

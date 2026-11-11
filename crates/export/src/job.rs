@@ -197,7 +197,7 @@ pub struct Exporter {
     dcp: Option<DcpMux>,
     seq: ItemId,
     project: Arc<Project>,
-    /// Chapters of MP4, MOV and HLS output ([`export_chapters`]).
+    /// Chapters of MP4, MOV, HLS and WebM output ([`export_chapters`]).
     chapters: Vec<cfa4_isobmff::Chapter>,
     vt: usize,
     at: Option<usize>,
@@ -495,6 +495,8 @@ impl Exporter {
                 height: self.pipe.h,
                 rate: self.pipe.rate,
                 audio: self.audio.as_ref().map(|a| (a.sr, a.channels)),
+                chapters: self.chapters.clone(),
+                frames: self.f1 - self.f0,
             })?);
             return Ok(());
         }
