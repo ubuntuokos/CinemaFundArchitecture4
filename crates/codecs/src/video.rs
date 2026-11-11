@@ -955,8 +955,8 @@ pub fn dnx_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
     matches!(e.codec, CodecConfig::Dnx { .. }).then(|| Ok(Box::new(DnxDecoder) as Box<dyn VideoDecoder>))
 }
 
-/// Our DV decoder (`cfa4-dv`: DV25 / DVCAM, DVCPRO 25; every frame is intra, video segments
-/// decode in parallel).
+/// Our DV decoder (`cfa4-dv`: DV25 / DVCAM, DVCPRO 25 / 50, DVCPRO HD; every frame is intra,
+/// video segments decode in parallel).
 pub struct DvDecoder {
     dec: cfa4_dv::Decoder,
 }
@@ -974,6 +974,12 @@ pub fn dv_color(system: cfa4_dv::System) -> cfa4_color::ColorInfo {
         cfa4_dv::System::Lines625 => cfa4_color::Primaries::Bt601_625,
     };
     cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt601, primaries, ..cfa4_color::ColorInfo::REC709 }
+}
+
+/// Colour of a DV profile: BT.709 for DVCPRO HD (SMPTE 370M), [`dv_color`] for standard
+/// definition.
+pub fn dv_profile_color(p: &cfa4_dv::Profile) -> cfa4_color::ColorInfo {
+    if p.format == cfa4_dv::Format::DvcproHd { cfa4_color::ColorInfo::REC709 } else { dv_color(p.system) }
 }
 
 /// What a container's stream info shows for DV, read from its first frame: the format name, the
@@ -1000,7 +1006,7 @@ pub fn dv_stream_info(first_frame: &[u8]) -> Option<DvStreamInfo> {
         cfa4_dv::ChromaFormat::Yuv411 | cfa4_dv::ChromaFormat::Yuv422 => "YUV 4:2:2 8-bit",
     }
     .to_string();
-    Some(DvStreamInfo { par: profile.sample_aspect(), color: dv_color(profile.system), codec, pixel_format, profile })
+    Some(DvStreamInfo { par: profile.sample_aspect(), color: dv_profile_color(&profile), codec, pixel_format, profile })
 }
 
 /// Convert a decoded DV picture to a [`VideoFrame`]. CFA4 has no 4:1:1 frame type (owner
@@ -1008,7 +1014,7 @@ pub fn dv_stream_info(first_frame: &[u8]) -> Option<DvStreamInfo> {
 pub fn dv_to_video_frame(p: cfa4_dv::Picture) -> VideoFrame {
     use std::sync::Arc;
     let par = p.profile.sample_aspect();
-    let color = dv_color(p.profile.system);
+    let color = dv_profile_color(&p.profile);
     let (chroma, cb, cr) = match p.chroma_422() {
         Some((cb, cr)) => (cfa4_frame::Chroma::C422, cb, cr),
         None => {

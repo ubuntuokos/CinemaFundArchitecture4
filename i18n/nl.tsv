@@ -4118,3 +4118,106 @@ export.summary	Low	laag
 	Masks	Maskers
 	Panel	Paneel
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videogereedschappen
+	Audio Tools	Audiogereedschappen
+	Publication Tools	Publicatiegereedschappen
+	Smart Export…	Slim exporteren…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Vanuit het noordwesten
+	From North-East	Vanuit het noordoosten
+	From South-East	Vanuit het zuidoosten
+	From South-West	Vanuit het zuidwesten
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Verbeteren
+	Skin Smoothing	Huid verzachten
+	Keep Texture	Textuur behouden
+	Skin Tone	Huidtint
+	Smooth Entire Image	Hele beeld verzachten
+	Low Light	Weinig licht
+	Max Brightening	Maximale verheldering
+	Show Illumination	Belichting tonen
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Easing-voorinstellingen
+	Sine	Sinus
+	Exponential	Exponentieel
+	Circular	Cirkelvormig
+	Elastic	Elastisch
+	Film Gate	Filmvenster
+	Gate Weave	Venstertrilling
+	Weave Rotation	Trillingsrotatie
+	Particles	Deeltjes
+	Emitter Position	Positie van bron
+	Birth Rate	Ontstaanssnelheid
+	Lifetime (seconds)	Levensduur (seconden)
+	Velocity Random	Willekeurige snelheid
+	Gravity	Zwaartekracht
+	Particle Size	Deeltjesgrootte
+	Keyhole	Sleutelgat
+	Burn Away	Wegbranden
+	Burn Size	Brandgrootte
+	Ember Width	Breedte van gloeirand
+	Ember Color	Kleur van gloeirand
+	Check Text Legibility	Leesbaarheid van tekst controleren
+	Clear Legibility Markers	Leesbaarheidsmarkeringen wissen
+	Text legibility: no problems found	Leesbaarheid van tekst: geen problemen gevonden
+	Text legibility: {count} problems marked on the timeline (orange markers)	Leesbaarheid van tekst: {count} problemen gemarkeerd op de tijdlijn (oranje markeringen)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitreductie
+	Bits per Channel	Bits per kanaal
+	Ordered Dither	Geordende dithering
+	Dither Cell Size	Celgrootte van dithering
+	Block Glitch	Blokglitch
+	Blocks Moved	Verplaatste blokken
+	Max Distance	Maximale afstand
+	Snap to Grid	Uitlijnen op raster
+	Swap Blocks	Blokken verwisselen
+	Changes per Second	Wijzigingen per seconde
+	Databend	Datavervorming
+	Breaks	Breuken
+	Shift	Verschuiving
+	Color Damage	Kleurschade
+	VHS	VHS
+	Color Bleed	Kleurvervloeiing
+	Wobble	Schommeling
+	Snow	Sneeuw
+	Tracking Bar	Trackingbalk
+	Head Switching	Kopwisseling
+	Scan Line Jitter	Lijnjitter
+	Jitter	Jitter
+	Interval	Interval
+	Infinite	Oneindig
+	Periodic	Periodiek
+	Tile Jitter	Tegeljitter
+	Tiles	Tegels
+	Band Direction	Richting van banden
+	Jitter Direction	Richting van jitter
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Halftoon
+	Dither	Dithering
+	Pattern	Patroon
+	Cell Size	Celgrootte
+	Cyan Angle	Hoek cyaan
+	Magenta Angle	Hoek magenta
+	Yellow Angle	Hoek geel
+	Black Angle	Hoek zwart
+	Monochrome Angle	Hoek monochroom
+	Sharpness	Scherpte
+	Ink Color	Inktkleur
+	Paper Color	Papierkleur
+	Color (CMYK)	Kleur (CMYK)
+	Dot	Punt
+	Line	Lijn
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pixelgrootte
+	Palette	Palet
+	Input Colors	Invoerkleuren
+	Green Phosphor	Groene fosfor
+	Amber Monitor	Amberkleurige monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

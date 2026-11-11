@@ -4124,3 +4124,106 @@ export.summary	Low	తక్కువ
 	Width	వెడల్పు
 	Application	అప్లికేషన్
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	వీడియో సాధనాలు
+	Audio Tools	ఆడియో సాధనాలు
+	Publication Tools	ప్రచురణ సాధనాలు
+	Smart Export…	స్మార్ట్ ఎగుమతి…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	వాయవ్యం నుండి
+	From North-East	ఈశాన్యం నుండి
+	From South-East	ఆగ్నేయం నుండి
+	From South-West	నైరుతి నుండి
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	మెరుగుపరచు
+	Skin Smoothing	చర్మం మృదువుగా చేయడం
+	Keep Texture	ఆకృతిని ఉంచు
+	Skin Tone	చర్మపు రంగు
+	Smooth Entire Image	మొత్తం చిత్రాన్ని మృదువుగా చేయి
+	Low Light	తక్కువ వెలుతురు
+	Max Brightening	గరిష్ఠ ప్రకాశవంతం
+	Show Illumination	ప్రకాశాన్ని చూపు
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	ఈజింగ్ ప్రీసెట్‌లు
+	Sine	సైన్
+	Exponential	ఎక్స్‌పోనెన్షియల్
+	Circular	వృత్తాకార
+	Elastic	ఎలాస్టిక్
+	Film Gate	ఫిల్మ్ గేట్
+	Gate Weave	గేట్ వీవ్
+	Weave Rotation	వీవ్ భ్రమణం
+	Particles	కణాలు
+	Emitter Position	ఉద్గారిణి స్థానం
+	Birth Rate	జనన రేటు
+	Lifetime (seconds)	జీవితకాలం (సెకన్లు)
+	Velocity Random	వేగం యాదృచ్ఛికత
+	Gravity	గురుత్వాకర్షణ
+	Particle Size	కణ పరిమాణం
+	Keyhole	తాళం రంధ్రం
+	Burn Away	కాలిపోవడం
+	Burn Size	కాలే పరిమాణం
+	Ember Width	నిప్పు అంచు వెడల్పు
+	Ember Color	నిప్పు అంచు రంగు
+	Check Text Legibility	వచనం చదవగలతను తనిఖీ చేయి
+	Clear Legibility Markers	చదవగలత మార్కర్లను తొలగించు
+	Text legibility: no problems found	వచనం చదవగలత: సమస్యలు ఏవీ కనబడలేదు
+	Text legibility: {count} problems marked on the timeline (orange markers)	వచనం చదవగలత: టైమ్‌లైన్‌లో {count} సమస్యలు గుర్తించబడ్డాయి (నారింజ మార్కర్లు)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	బిట్ క్రష్
+	Bits per Channel	ఛానెల్‌కు బిట్‌లు
+	Ordered Dither	క్రమబద్ధ డిథర్
+	Dither Cell Size	డిథర్ సెల్ పరిమాణం
+	Block Glitch	బ్లాక్ గ్లిచ్
+	Blocks Moved	కదిలిన బ్లాక్‌లు
+	Max Distance	గరిష్ఠ దూరం
+	Snap to Grid	గ్రిడ్‌కు అతికించు
+	Swap Blocks	బ్లాక్‌లను మార్చు
+	Changes per Second	సెకనుకు మార్పులు
+	Databend	డేటాబెండ్
+	Breaks	విరామాలు
+	Shift	జరుపు
+	Color Damage	రంగు దెబ్బతినడం
+	VHS	VHS
+	Color Bleed	రంగు కారడం
+	Wobble	ఊగిసలాట
+	Snow	మంచు
+	Tracking Bar	ట్రాకింగ్ పట్టీ
+	Head Switching	హెడ్ స్విచింగ్
+	Scan Line Jitter	స్కాన్ లైన్ కంపనం
+	Jitter	కంపనం
+	Interval	వ్యవధి
+	Infinite	అనంతం
+	Periodic	ఆవర్తన
+	Tile Jitter	టైల్ కంపనం
+	Tiles	టైల్‌లు
+	Band Direction	పట్టీల దిశ
+	Jitter Direction	కంపనం దిశ
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	హాఫ్‌టోన్
+	Dither	డిథర్
+	Pattern	నమూనా
+	Cell Size	సెల్ పరిమాణం
+	Cyan Angle	సయాన్ కోణం
+	Magenta Angle	మెజెంటా కోణం
+	Yellow Angle	పసుపు కోణం
+	Black Angle	నలుపు కోణం
+	Monochrome Angle	ఏకవర్ణ కోణం
+	Sharpness	పదును
+	Ink Color	సిరా రంగు
+	Paper Color	కాగితం రంగు
+	Color (CMYK)	రంగు (CMYK)
+	Dot	చుక్క
+	Line	గీత
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	పిక్సెల్ పరిమాణం
+	Palette	పాలెట్
+	Input Colors	ఇన్‌పుట్ రంగులు
+	Green Phosphor	ఆకుపచ్చ ఫాస్ఫర్
+	Amber Monitor	కాషాయ మానిటర్
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

@@ -4127,3 +4127,106 @@
 	None (RFC 5646 tag, e.g. en-US)	なし（RFC 5646 タグ、例: ja-JP）
 	ISDCF name	ISDCF 名
 	Name the DCP folder by the Digital Cinema Naming Convention	DCP フォルダーに Digital Cinema Naming Convention に従って名前を付ける
+# Qt GUI: Tools menu (#868)
+	Video Tools	ビデオツール
+	Audio Tools	オーディオツール
+	Publication Tools	公開ツール
+	Smart Export…	スマート書き出し…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	左上から
+	From North-East	右上から
+	From South-East	右下から
+	From South-West	左下から
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	補正
+	Skin Smoothing	肌のなめらか補正
+	Keep Texture	質感を保持
+	Skin Tone	肌の色
+	Smooth Entire Image	画像全体をなめらかに
+	Low Light	暗所補正
+	Max Brightening	最大明るさ補正
+	Show Illumination	照明を表示
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	イージングプリセット
+	Sine	サイン
+	Exponential	指数
+	Circular	円形
+	Elastic	エラスティック
+	Film Gate	フィルムゲート
+	Gate Weave	ゲートウィーブ
+	Weave Rotation	ウィーブの回転
+	Particles	パーティクル
+	Emitter Position	エミッターの位置
+	Birth Rate	生成率
+	Lifetime (seconds)	寿命 (秒)
+	Velocity Random	速度のランダム
+	Gravity	重力
+	Particle Size	パーティクルのサイズ
+	Keyhole	鍵穴
+	Burn Away	焼け落ち
+	Burn Size	焼けのサイズ
+	Ember Width	残り火の幅
+	Ember Color	残り火の色
+	Check Text Legibility	テキストの読みやすさをチェック
+	Clear Legibility Markers	読みやすさマーカーを消去
+	Text legibility: no problems found	テキストの読みやすさ: 問題は見つかりませんでした
+	Text legibility: {count} problems marked on the timeline (orange markers)	テキストの読みやすさ: {count} 件の問題をタイムラインにマークしました（オレンジのマーカー）
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	ビットクラッシュ
+	Bits per Channel	チャンネルあたりのビット数
+	Ordered Dither	組織的ディザ
+	Dither Cell Size	ディザのセルサイズ
+	Block Glitch	ブロックグリッチ
+	Blocks Moved	移動するブロック数
+	Max Distance	最大距離
+	Snap to Grid	グリッドにスナップ
+	Swap Blocks	ブロックを入れ替え
+	Changes per Second	1 秒あたりの変化数
+	Databend	データベンド
+	Breaks	破損箇所
+	Shift	ずれ
+	Color Damage	カラーの破損
+	VHS	VHS
+	Color Bleed	色にじみ
+	Wobble	揺れ
+	Snow	スノーノイズ
+	Tracking Bar	トラッキングバー
+	Head Switching	ヘッド切り替え
+	Scan Line Jitter	走査線のジッター
+	Jitter	ジッター
+	Interval	間隔
+	Infinite	無限
+	Periodic	周期的
+	Tile Jitter	タイルのジッター
+	Tiles	タイル数
+	Band Direction	帯の方向
+	Jitter Direction	ジッターの方向
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	ハーフトーン
+	Dither	ディザ
+	Pattern	パターン
+	Cell Size	セルサイズ
+	Cyan Angle	シアンの角度
+	Magenta Angle	マゼンタの角度
+	Yellow Angle	イエローの角度
+	Black Angle	ブラックの角度
+	Monochrome Angle	モノクロの角度
+	Sharpness	シャープネス
+	Ink Color	インクの色
+	Paper Color	用紙の色
+	Color (CMYK)	カラー (CMYK)
+	Dot	ドット
+	Line	ライン
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	ピクセルサイズ
+	Palette	パレット
+	Input Colors	入力の色
+	Green Phosphor	グリーン蛍光体
+	Amber Monitor	アンバーモニター
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

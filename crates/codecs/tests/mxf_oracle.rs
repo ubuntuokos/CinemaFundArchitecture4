@@ -502,6 +502,80 @@ fn d10_aes3_elements_sample_exact() {
     check_video(&ff, &f, "yuv422p", (2, 1), 1, MPEG2_TOL, 4);
 }
 
+/// Uncompressed pictures (ST 384), our writer packing ffmpeg's `testsrc2` frames: our decode and
+/// ffmpeg's decode of our file both give back the source planes exactly (ffmpeg reads the layout
+/// labels and the v210 word order as we do).
+#[test]
+fn uncompressed_layouts_bit_exact() {
+    use cfa4_mxf::{FrameInfo, MxfWriter, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, UncompressedLayout, WriterConfig};
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let (w, h, n) = (96usize, 64usize, 5usize);
+    let cases = [
+        (UncompressedLayout::Uyvy8, "yuv422p", (2, 1), 1, "uyvy"),
+        (UncompressedLayout::Yuy2x8, "yuv422p", (2, 1), 1, "yuy2"),
+        (UncompressedLayout::V210, "yuv422p10le", (2, 1), 2, "v210"),
+        (UncompressedLayout::CbYCr444x8, "yuv444p", (1, 1), 1, "444"),
+        (UncompressedLayout::Planar420x8, "yuv420p", (2, 2), 1, "420"),
+    ];
+    // ffmpeg reads these layouts (it has no pixel format for the others)
+    let ffmpeg_reads = |l| matches!(l, UncompressedLayout::Uyvy8 | UncompressedLayout::Yuy2x8 | UncompressedLayout::V210);
+    for (layout, pix_fmt, chroma, bps, tag) in cases {
+        let src = ffmpeg_out(
+            &ff,
+            &["-f", "lavfi", "-i", &format!("testsrc2=size={w}x{h}:rate=25"), "-frames:v", &n.to_string(), "-f", "rawvideo", "-pix_fmt", pix_fmt, "-"],
+        );
+        let (cw, ch) = (w / chroma.0, h / chroma.1);
+        let fsize = (w * h + 2 * cw * ch) * bps;
+        assert_eq!(src.len(), n * fsize);
+        let frames: Vec<Vec<Vec<u16>>> = (0..n).map(|i| raw_planes(&src[i * fsize..(i + 1) * fsize], w, h, cw, ch, bps)).collect();
+        for pattern in [Pattern::Op1a, Pattern::OpAtom] {
+            let mut cfg = WriterConfig::new(pattern, Rational::new(25, 1), PackageIds::from_seed(tag, "Uncompressed"));
+            cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, w as u32, h as u32));
+            let mut wr = MxfWriter::new(std::io::Cursor::new(Vec::new()), cfg).unwrap();
+            for p in &frames {
+                wr.push_picture(&layout.pack(w as u32, h as u32, [&p[0], &p[1], &p[2]]), FrameInfo::intra()).unwrap();
+            }
+            let bytes = wr.finish().unwrap().into_inner();
+            let file = dir().join(format!("mxf_raw_{tag}_{pattern:?}.mxf"));
+            std::fs::create_dir_all(dir()).unwrap();
+            std::fs::write(&file, &bytes).unwrap();
+            let ours = open(&file);
+            let v = ours.info().video.clone().unwrap();
+            assert_eq!((v.width, v.height), (w as u32, h as u32));
+            assert!(v.codec.starts_with("Uncompressed"), "{}", v.codec);
+            for (i, want) in frames.iter().enumerate() {
+                let f = ours.video_frame(FrameRequest::full(v.frame_rate.tick_of(i as i64))).unwrap();
+                assert_eq!(max_diff(&planes(&f), want), 0, "{tag} {pattern:?}: our frame {i}");
+            }
+            // truncated and mutated copies never panic
+            let mut rng = Rng(0x5EED);
+            for k in 1..=8 {
+                let mut g = bytes[..bytes.len() * k / 9].to_vec();
+                for _ in 0..k * 4 {
+                    let at = rng.below(g.len() as u64) as usize;
+                    g[at] = rng.below(256) as u8;
+                }
+                if let Ok(s) = MxfSource::open("hostile.mxf", g.into())
+                    && let Some(v) = s.info().video.clone()
+                {
+                    for i in 0..n as i64 {
+                        let _ = s.video_frame(FrameRequest::full(v.frame_rate.tick_of(i)));
+                    }
+                }
+            }
+            if !ffmpeg_reads(layout) {
+                continue;
+            }
+            let theirs = ffmpeg_frames(&ff, &file, pix_fmt);
+            assert_eq!(theirs.len(), n * fsize, "{tag} {pattern:?}: ffmpeg frame count");
+            for (i, want) in frames.iter().enumerate() {
+                let got = raw_planes(&theirs[i * fsize..(i + 1) * fsize], w, h, cw, ch, bps);
+                assert_eq!(max_diff(&got, want), 0, "{tag} {pattern:?}: ffmpeg's frame {i}");
+            }
+        }
+    }
+}
+
 #[test]
 fn truncated_and_corrupt_files_never_panic() {
     let ff = cfa4_testkit::require_ffmpeg!();

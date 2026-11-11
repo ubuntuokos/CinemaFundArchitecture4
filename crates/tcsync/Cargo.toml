@@ -1,0 +1,13 @@
+[package]
+name = "cfa4-tcsync"
+description = "External timecode sync for CFA4: SMPTE LTC encode/decode, MIDI Timecode messages, chase logic (pure, no I/O)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-time = { workspace = true }

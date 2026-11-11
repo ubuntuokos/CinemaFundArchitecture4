@@ -4120,3 +4120,106 @@ export.summary	Low	madal
 	Contains	Sisaldab
 	Navigation	Navigeerimine
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videotööriistad
+	Audio Tools	Helitööriistad
+	Publication Tools	Avaldamistööriistad
+	Smart Export…	Nutikas eksport…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Loodest
+	From North-East	Kirdest
+	From South-East	Kagust
+	From South-West	Edelast
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Täiustamine
+	Skin Smoothing	Naha silumine
+	Keep Texture	Säilita tekstuur
+	Skin Tone	Nahatoon
+	Smooth Entire Image	Silu kogu pilti
+	Low Light	Vähene valgus
+	Max Brightening	Suurim heledamaks muutmine
+	Show Illumination	Näita valgustust
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Sujuvuse eelseaded
+	Sine	Siinus
+	Exponential	Eksponentsiaalne
+	Circular	Ringjas
+	Elastic	Elastne
+	Film Gate	Filmiaken
+	Gate Weave	Akna võbelus
+	Weave Rotation	Võbeluse pööre
+	Particles	Osakesed
+	Emitter Position	Kiirguri asukoht
+	Birth Rate	Tekkesagedus
+	Lifetime (seconds)	Eluiga (sekundites)
+	Velocity Random	Kiiruse juhuslikkus
+	Gravity	Gravitatsioon
+	Particle Size	Osakeste suurus
+	Keyhole	Võtmeauk
+	Burn Away	Põletus
+	Burn Size	Põletuse suurus
+	Ember Width	Hõõguva serva laius
+	Ember Color	Hõõguva serva värv
+	Check Text Legibility	Kontrolli teksti loetavust
+	Clear Legibility Markers	Eemalda loetavuse markerid
+	Text legibility: no problems found	Teksti loetavus: probleeme ei leitud
+	Text legibility: {count} problems marked on the timeline (orange markers)	Teksti loetavus: {count} probleemi on ajateljel märgitud (oranžid markerid)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitisügavuse vähendus
+	Bits per Channel	Bitti kanali kohta
+	Ordered Dither	Korrastatud ditherdus
+	Dither Cell Size	Ditherduse lahtri suurus
+	Block Glitch	Plokitõrge
+	Blocks Moved	Liigutatud plokid
+	Max Distance	Suurim kaugus
+	Snap to Grid	Tõmba ruudustikule
+	Swap Blocks	Vaheta plokid
+	Changes per Second	Muudatusi sekundis
+	Databend	Andmerikkumine
+	Breaks	Katkestused
+	Shift	Nihe
+	Color Damage	Värvikahjustus
+	VHS	VHS
+	Color Bleed	Värvide valgumine
+	Wobble	Võnkumine
+	Snow	Lumi
+	Tracking Bar	Jälgimisriba
+	Head Switching	Peade vahetus
+	Scan Line Jitter	Ridade värin
+	Jitter	Värin
+	Interval	Intervall
+	Infinite	Lõputu
+	Periodic	Perioodiline
+	Tile Jitter	Paanide värin
+	Tiles	Paanid
+	Band Direction	Ribade suund
+	Jitter Direction	Värina suund
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Pooltoon
+	Dither	Ditherdus
+	Pattern	Muster
+	Cell Size	Lahtri suurus
+	Cyan Angle	Tsüaani nurk
+	Magenta Angle	Magenta nurk
+	Yellow Angle	Kollase nurk
+	Black Angle	Musta nurk
+	Monochrome Angle	Ühevärvi nurk
+	Sharpness	Teravus
+	Ink Color	Tindi värv
+	Paper Color	Paberi värv
+	Color (CMYK)	Värv (CMYK)
+	Dot	Punkt
+	Line	Joon
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Piksli suurus
+	Palette	Palett
+	Input Colors	Sisendvärvid
+	Green Phosphor	Roheline luminofoor
+	Amber Monitor	Merevaigukarva monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
