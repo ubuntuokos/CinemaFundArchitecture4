@@ -22,6 +22,11 @@ attribution and original copyright/licence requirements remain in force.
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
+- **BacklotHub business logic in Python** (owner decision, 2026-11-02, BacklotHub #21): in the
+  BacklotHub (CFA4-BACKLOTHUB-001) and its shared libraries (`cfa4_audit`, ADR 0008; the `cfa4_files`
+  catalogue, ADR 0009), a component is written in Python when its reliable operation is more reasonably
+  guaranteed there. It runs outside the editor process (BacklotHub service), never in the media path,
+  and the "Non-Rust components" rule below applies to it unchanged.
 - **Port or keep the original language** (owner decision, 2026-11-03): reusable code is ported to
   Rust by default. When a port would take disproportionately long, the code may stay in its original
   language (C++, Python, …) **if it does not slow CFA4 down**. In practice it then runs outside the
