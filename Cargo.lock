@@ -1139,6 +1139,7 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-speex",
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-truehd",
@@ -1806,6 +1807,14 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "ureq",
+]
+
+[[package]]
+name = "cfa4-speex"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

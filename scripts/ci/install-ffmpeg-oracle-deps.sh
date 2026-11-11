@@ -35,3 +35,6 @@ sudo apt-get install -y --no-install-recommends \
 # JPEG 2000 / HTJ2K oracles (the tests skip without them)
 sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
   || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
+# Speex reference encoder / decoder (speexenc, speexdec 1.2.1) for the Speex oracle tests (they skip without them)
+sudo apt-get install -y --no-install-recommends speex \
+  || echo "::warning::speex tools unavailable: Speex oracle tests skip"
