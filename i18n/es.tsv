@@ -3139,6 +3139,8 @@
 	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipo D-10 (IMX 50): MPEG-2 4:2:2P@ML solo intra a 50 Mbit/s, 720x486 a 29,97 fps (4:3), cuatro canales de audio de 24 bits a 48 kHz
 	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipo D-10 (IMX 50): MPEG-2 4:2:2P@ML solo intra a 50 Mbit/s, 720x576 a 25 fps (4:3), cuatro canales de audio de 24 bits a 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM de 24 bits y 48 kHz, código de tiempo inicial
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a con la disposición SMPTE RDD 9: MPEG-2 4:2:2 Profile GOP largo (12 imágenes, IBBP) a 50 Mbit/s, 1920x1080 o 1280x720 progresivo, cuatro canales de 24 bits a 48 kHz como elementos AES3 por canal
 	Main	Main
 	Mark In (Hover Scrub)	Marcar entrada (arrastre al pasar el ratón)
 	Mark Out (Hover Scrub)	Marcar salida (arrastre al pasar el ratón)

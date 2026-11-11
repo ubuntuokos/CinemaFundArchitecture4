@@ -3595,6 +3595,8 @@
 	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 tipas (IMX 50): tik intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29,97 kadr./s (4:3), keturi 24 bitų 48 kHz garso kanalai
 	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 tipas (IMX 50): tik intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 kadr./s (4:3), keturi 24 bitų 48 kHz garso kanalai
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 bitų 48 kHz PCM, pradžios laiko kodas
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a pagal SMPTE RDD 9 išdėstymą: MPEG-2 4:2:2 Profile ilgas GOP (12 kadrų, IBBP), 50 Mbit/s, 1920x1080 arba 1280x720 progresyvinis, keturi 24 bitų 48 kHz kanalai kaip atskiri AES3 elementai kiekvienam kanalui
 	Main	Pagrindinis
 	Mark In (Hover Scrub)	Pažymėti pradžią (peržiūra užvedus)
 	Mark Out (Hover Scrub)	Pažymėti pabaigą (peržiūra užvedus)
