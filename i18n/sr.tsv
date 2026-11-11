@@ -4232,3 +4232,23 @@ export.summary	Low	низак
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Табеле, датотеке шпице и Cinecred пројекти (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred пројекат…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Отвори фасциклу Cinecred пројекта (Styling.toml и његова табела шпице)
+	(empty block)	(празан блок)
+	Apply Template…	Примени шаблон…
+	Change them in the spreadsheet; the credits follow when you save it.	Промените их у табели; шпица прати када је сачувате.
+	Compact View	Сажети приказ
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Упореди изабрану шпицу на временској линији са њеном табелом, ред по ред
+	Fit the selected credits to the music under them	Прилагоди изабрану шпицу музици испод ње
+	Fit to Music…	Прилагоди музици…
+	Full View	Пун приказ
+	Give the selected credits on the timeline another template	Додели изабраној шпици на временској линији други шаблон
+	Names	Имена
+	No pages	Нема страница
+	Refresh Placed Credits…	Освежи постављену шпицу…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Прикажи све: блокове, својства, странице кроз време, провере и алате шпице
+	Spine	Оса
+	Tails	Крај
+	The blocks of the chosen page; choose one to see it in the preview	Блокови изабране странице; изаберите један да га видите у прегледу
+	The pages along time; click one to choose it	Странице кроз време; кликните једну да је изаберете
+	{n} more	Још {n}
+	Block	Блок
+	parallel	паралелно

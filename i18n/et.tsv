@@ -4234,3 +4234,23 @@ export.summary	Low	madal
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tabelid, tiitrifailid ja Cinecredi projektid (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecredi projekt…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Ava Cinecredi projekti kaust (Styling.toml ja selle tiitrite tabel)
+	(empty block)	(tühi plokk)
+	Apply Template…	Rakenda mall…
+	Change them in the spreadsheet; the credits follow when you save it.	Muuda neid tabelis; tiitrid järgnevad, kui selle salvestad.
+	Compact View	Kompaktne vaade
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Võrdle ajaskaalal valitud tiitreid nende tabeliga rida-realt
+	Fit the selected credits to the music under them	Sobita valitud tiitrid nende all oleva muusikaga
+	Fit to Music…	Sobita muusikaga…
+	Full View	Täisvaade
+	Give the selected credits on the timeline another template	Anna ajaskaalal valitud tiitritele teine mall
+	Names	Nimed
+	No pages	Lehti pole
+	Refresh Placed Credits…	Värskenda paigutatud tiitreid…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Näita kõike: plokid, omadused, lehed ajas, kontrollid ja tiitrite tööriistad
+	Spine	Telg
+	Tails	Lõpp
+	The blocks of the chosen page; choose one to see it in the preview	Valitud lehe plokid; vali üks, et seda eelvaates näha
+	The pages along time; click one to choose it	Lehed ajas; klõpsa ühel, et see valida
+	{n} more	Veel {n}
+	Block	Plokk
+	parallel	paralleelne

@@ -4217,3 +4217,23 @@
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Таблицы, файлы титров и проекты Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Проект Cinecred…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Открыть папку проекта Cinecred (Styling.toml и её таблица титров)
+	(empty block)	(пустой блок)
+	Apply Template…	Применить шаблон…
+	Change them in the spreadsheet; the credits follow when you save it.	Измените их в таблице; титры обновятся при её сохранении.
+	Compact View	Компактный вид
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Сравнить выбранные титры на таймлайне с их таблицей по строкам
+	Fit the selected credits to the music under them	Подогнать выбранные титры под музыку, звучащую под ними
+	Fit to Music…	Подогнать под музыку…
+	Full View	Полный вид
+	Give the selected credits on the timeline another template	Применить к выбранным титрам на таймлайне другой шаблон
+	Names	Имена
+	No pages	Нет страниц
+	Refresh Placed Credits…	Обновить размещённые титры…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Показать всё: блоки, свойства, страницы по времени, проверки и инструменты титров
+	Spine	Ось
+	Tails	Роли
+	The blocks of the chosen page; choose one to see it in the preview	Блоки выбранной страницы; выберите блок, чтобы увидеть его в предпросмотре
+	The pages along time; click one to choose it	Страницы по времени; щёлкните страницу, чтобы выбрать её
+	{n} more	Ещё {n}
+	Block	Блок
+	parallel	параллельно

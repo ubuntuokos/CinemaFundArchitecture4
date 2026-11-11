@@ -4235,3 +4235,23 @@ export.summary	Low	ниско
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Таблици, файлове с надписи и проекти на Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Проект на Cinecred…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Отваряне на папка на проект на Cinecred (Styling.toml и таблицата с надписи)
+	(empty block)	(празен блок)
+	Apply Template…	Прилагане на шаблон…
+	Change them in the spreadsheet; the credits follow when you save it.	Променете ги в таблицата; надписите се обновяват, когато я запазите.
+	Compact View	Компактен изглед
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Сравняване на избраните надписи във времевата линия с таблицата им, ред по ред
+	Fit the selected credits to the music under them	Напасване на избраните надписи към музиката под тях
+	Fit to Music…	Напасване към музиката…
+	Full View	Пълен изглед
+	Give the selected credits on the timeline another template	Друг шаблон за избраните надписи във времевата линия
+	Names	Имена
+	No pages	Няма страници
+	Refresh Placed Credits…	Обновяване на поставените надписи…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Показване на всичко: блокове, свойства, страниците във времето, проверки и инструментите за надписи
+	Spine	Ос
+	Tails	Край
+	The blocks of the chosen page; choose one to see it in the preview	Блоковете на избраната страница; изберете един, за да го видите във визуализацията
+	The pages along time; click one to choose it	Страниците във времето; щракнете върху една, за да я изберете
+	{n} more	Още {n}
+	Block	Блок
+	parallel	паралелно

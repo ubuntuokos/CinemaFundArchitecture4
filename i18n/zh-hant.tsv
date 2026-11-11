@@ -4231,3 +4231,23 @@ export.summary	Low	低
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	試算表、演職員表檔案與 Cinecred 專案 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred 專案…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	開啟 Cinecred 專案資料夾（Styling.toml 及其演職員表試算表）
+	(empty block)	（空白區塊）
+	Apply Template…	套用範本…
+	Change them in the spreadsheet; the credits follow when you save it.	請在試算表中修改；儲存後演職員表會隨之更新。
+	Compact View	精簡檢視
+	Compare the selected credits on the timeline with their spreadsheet, row by row	逐列比較時間軸上所選的演職員表與其試算表
+	Fit the selected credits to the music under them	讓所選的演職員表配合其下方的音樂
+	Fit to Music…	配合音樂…
+	Full View	完整檢視
+	Give the selected credits on the timeline another template	為時間軸上所選的演職員表套用其他範本
+	Names	姓名
+	No pages	沒有頁面
+	Refresh Placed Credits…	重新整理已放置的演職員表…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	顯示全部：區塊、屬性、時間上的頁面、檢查與演職員表工具
+	Spine	軸線
+	Tails	尾段
+	The blocks of the chosen page; choose one to see it in the preview	所選頁面的區塊；選擇一個即可在預覽中查看
+	The pages along time; click one to choose it	時間上的頁面；按一下即可選擇
+	{n} more	另有 {n} 項
+	Block	區塊
+	parallel	並列

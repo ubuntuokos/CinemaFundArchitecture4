@@ -4234,3 +4234,23 @@ export.summary	Low	χαμηλή
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Υπολογιστικά φύλλα, αρχεία τίτλων συντελεστών και έργα Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Έργο Cinecred…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Άνοιγμα φακέλου έργου Cinecred (Styling.toml και το υπολογιστικό φύλλο τίτλων του)
+	(empty block)	(κενό μπλοκ)
+	Apply Template…	Εφαρμογή προτύπου…
+	Change them in the spreadsheet; the credits follow when you save it.	Αλλάξτε τα στο υπολογιστικό φύλλο· οι τίτλοι συντελεστών ακολουθούν όταν το αποθηκεύσετε.
+	Compact View	Συμπαγής προβολή
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Σύγκριση των επιλεγμένων τίτλων συντελεστών στη χρονογραμμή με το υπολογιστικό φύλλο τους, γραμμή προς γραμμή
+	Fit the selected credits to the music under them	Προσαρμογή των επιλεγμένων τίτλων συντελεστών στη μουσική κάτω από αυτούς
+	Fit to Music…	Προσαρμογή στη μουσική…
+	Full View	Πλήρης προβολή
+	Give the selected credits on the timeline another template	Εφαρμογή άλλου προτύπου στους επιλεγμένους τίτλους συντελεστών της χρονογραμμής
+	Names	Ονόματα
+	No pages	Καμία σελίδα
+	Refresh Placed Credits…	Ανανέωση τοποθετημένων τίτλων συντελεστών…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Εμφάνιση όλων: μπλοκ, ιδιότητες, οι σελίδες στον χρόνο, έλεγχοι και τα εργαλεία τίτλων συντελεστών
+	Spine	Άξονας
+	Tails	Τέλος
+	The blocks of the chosen page; choose one to see it in the preview	Τα μπλοκ της επιλεγμένης σελίδας· επιλέξτε ένα για να το δείτε στην προεπισκόπηση
+	The pages along time; click one to choose it	Οι σελίδες στον χρόνο· κάντε κλικ σε μία για να την επιλέξετε
+	{n} more	{n} ακόμη
+	Block	Μπλοκ
+	parallel	παράλληλα

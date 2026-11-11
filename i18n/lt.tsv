@@ -4235,3 +4235,23 @@ export.summary	Low	žema
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Skaičiuoklės, titrų failai ir Cinecred projektai (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred projektas…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Atverti Cinecred projekto aplanką (Styling.toml ir jo titrų skaičiuoklę)
+	(empty block)	(tuščias blokas)
+	Apply Template…	Taikyti šabloną…
+	Change them in the spreadsheet; the credits follow when you save it.	Pakeiskite juos skaičiuoklėje; titrai atsinaujins, kai ją įrašysite.
+	Compact View	Kompaktiškas rodinys
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Palyginti pasirinktus titrus laiko juostoje su jų skaičiuokle eilutė po eilutės
+	Fit the selected credits to the music under them	Pritaikyti pasirinktus titrus prie po jais esančios muzikos
+	Fit to Music…	Pritaikyti prie muzikos…
+	Full View	Visas rodinys
+	Give the selected credits on the timeline another template	Suteikti pasirinktiems titrams laiko juostoje kitą šabloną
+	Names	Vardai
+	No pages	Puslapių nėra
+	Refresh Placed Credits…	Atnaujinti įdėtus titrus…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Rodyti viską: blokus, savybes, puslapius laike, patikras ir titrų įrankius
+	Spine	Ašis
+	Tails	Pabaiga
+	The blocks of the chosen page; choose one to see it in the preview	Pasirinkto puslapio blokai; pasirinkite vieną, kad pamatytumėte peržiūroje
+	The pages along time; click one to choose it	Puslapiai laike; spustelėkite vieną, kad jį pasirinktumėte
+	{n} more	Dar {n}
+	Block	Blokas
+	parallel	lygiagrečiai

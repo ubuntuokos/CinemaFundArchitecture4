@@ -4234,3 +4234,23 @@ export.summary	Low	låg
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Kalkylark, eftertextfiler och Cinecred-projekt (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred-projekt…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Öppna en Cinecred-projektmapp (Styling.toml och dess eftertextkalkylark)
+	(empty block)	(tomt block)
+	Apply Template…	Använd mall…
+	Change them in the spreadsheet; the credits follow when you save it.	Ändra dem i kalkylarket; eftertexterna följer med när du sparar det.
+	Compact View	Kompakt vy
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Jämför de markerade eftertexterna på tidslinjen med deras kalkylark, rad för rad
+	Fit the selected credits to the music under them	Anpassa de markerade eftertexterna till musiken under dem
+	Fit to Music…	Anpassa till musik…
+	Full View	Fullständig vy
+	Give the selected credits on the timeline another template	Ge de markerade eftertexterna på tidslinjen en annan mall
+	Names	Namn
+	No pages	Inga sidor
+	Refresh Placed Credits…	Uppdatera placerade eftertexter…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Visa allt: block, egenskaper, sidorna över tid, kontroller och eftertextverktygen
+	Spine	Axel
+	Tails	Slut
+	The blocks of the chosen page; choose one to see it in the preview	Blocken på den valda sidan; välj ett för att se det i förhandsvisningen
+	The pages along time; click one to choose it	Sidorna över tid; klicka på en för att välja den
+	{n} more	{n} till
+	Block	Block
+	parallel	parallell

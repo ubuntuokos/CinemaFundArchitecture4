@@ -4234,3 +4234,23 @@ export.summary	Low	matala
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Laskentataulukot, tekijätietotiedostot ja Cinecred-projektit (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred-projekti…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Avaa Cinecred-projektikansio (Styling.toml ja sen tekijätietotaulukko)
+	(empty block)	(tyhjä lohko)
+	Apply Template…	Käytä mallia…
+	Change them in the spreadsheet; the credits follow when you save it.	Muuta ne laskentataulukossa; tekijätiedot seuraavat, kun tallennat sen.
+	Compact View	Tiivis näkymä
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Vertaa aikajanalla valittuja tekijätietoja niiden laskentataulukkoon rivi riviltä
+	Fit the selected credits to the music under them	Sovita valitut tekijätiedot niiden alla olevaan musiikkiin
+	Fit to Music…	Sovita musiikkiin…
+	Full View	Täysi näkymä
+	Give the selected credits on the timeline another template	Anna aikajanalla valituille tekijätiedoille toinen malli
+	Names	Nimet
+	No pages	Ei sivuja
+	Refresh Placed Credits…	Päivitä sijoitetut tekijätiedot…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Näytä kaikki: lohkot, ominaisuudet, sivut ajassa, tarkistukset ja tekijätietotyökalut
+	Spine	Akseli
+	Tails	Loppu
+	The blocks of the chosen page; choose one to see it in the preview	Valitun sivun lohkot; valitse yksi nähdäksesi sen esikatselussa
+	The pages along time; click one to choose it	Sivut ajassa; valitse sivu napsauttamalla
+	{n} more	{n} lisää
+	Block	Lohko
+	parallel	rinnakkain

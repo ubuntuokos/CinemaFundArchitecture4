@@ -4238,3 +4238,23 @@ export.summary	Low	తక్కువ
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	స్ప్రెడ్‌షీట్‌లు, క్రెడిట్స్ ఫైళ్లు మరియు Cinecred ప్రాజెక్ట్‌లు (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred ప్రాజెక్ట్…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred ప్రాజెక్ట్ ఫోల్డర్‌ను తెరువు (Styling.toml మరియు దాని క్రెడిట్స్ స్ప్రెడ్‌షీట్)
+	(empty block)	(ఖాళీ బ్లాక్)
+	Apply Template…	టెంప్లేట్‌ను వర్తింపజేయి…
+	Change them in the spreadsheet; the credits follow when you save it.	వాటిని స్ప్రెడ్‌షీట్‌లో మార్చండి; మీరు సేవ్ చేసినప్పుడు క్రెడిట్స్ అనుసరిస్తాయి.
+	Compact View	కాంపాక్ట్ వీక్షణ
+	Compare the selected credits on the timeline with their spreadsheet, row by row	టైమ్‌లైన్‌లో ఎంచుకున్న క్రెడిట్స్‌ను వాటి స్ప్రెడ్‌షీట్‌తో వరుసవారీగా పోల్చు
+	Fit the selected credits to the music under them	ఎంచుకున్న క్రెడిట్స్‌ను వాటి కింద ఉన్న సంగీతానికి సరిపోల్చు
+	Fit to Music…	సంగీతానికి సరిపోల్చు…
+	Full View	పూర్తి వీక్షణ
+	Give the selected credits on the timeline another template	టైమ్‌లైన్‌లో ఎంచుకున్న క్రెడిట్స్‌కు మరో టెంప్లేట్ ఇవ్వు
+	Names	పేర్లు
+	No pages	పేజీలు లేవు
+	Refresh Placed Credits…	ఉంచిన క్రెడిట్స్‌ను రిఫ్రెష్ చేయి…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	అన్నీ చూపించు: బ్లాక్‌లు, లక్షణాలు, కాలక్రమంలో పేజీలు, తనిఖీలు మరియు క్రెడిట్స్ సాధనాలు
+	Spine	అక్షం
+	Tails	ముగింపు
+	The blocks of the chosen page; choose one to see it in the preview	ఎంచుకున్న పేజీ బ్లాక్‌లు; ప్రివ్యూలో చూడటానికి ఒకదాన్ని ఎంచుకోండి
+	The pages along time; click one to choose it	కాలక్రమంలో పేజీలు; ఎంచుకోవడానికి ఒకదానిపై క్లిక్ చేయండి
+	{n} more	మరో {n}
+	Block	బ్లాక్
+	parallel	సమాంతరం
