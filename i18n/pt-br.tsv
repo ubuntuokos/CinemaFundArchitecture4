@@ -4124,3 +4124,106 @@
 	None (RFC 5646 tag, e.g. en-US)	Nenhum (tag RFC 5646, ex.: pt-BR)
 	ISDCF name	Nome ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Nomear a pasta do DCP pela Digital Cinema Naming Convention
+# Qt GUI: Tools menu (#868)
+	Video Tools	Ferramentas de vídeo
+	Audio Tools	Ferramentas de áudio
+	Publication Tools	Ferramentas de publicação
+	Smart Export…	Smart Export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Do noroeste
+	From North-East	Do nordeste
+	From South-East	Do sudeste
+	From South-West	Do sudoeste
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Aprimorar
+	Skin Smoothing	Suavização de pele
+	Keep Texture	Manter textura
+	Skin Tone	Tom de pele
+	Smooth Entire Image	Suavizar toda a imagem
+	Low Light	Pouca luz
+	Max Brightening	Clareamento máx.
+	Show Illumination	Mostrar iluminação
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Predefinições de suavização
+	Sine	Senoidal
+	Exponential	Exponencial
+	Circular	Circular
+	Elastic	Elástica
+	Film Gate	Janela do filme
+	Gate Weave	Oscilação da janela
+	Weave Rotation	Rotação da oscilação
+	Particles	Partículas
+	Emitter Position	Posição do emissor
+	Birth Rate	Taxa de nascimento
+	Lifetime (seconds)	Tempo de vida (segundos)
+	Velocity Random	Velocidade aleatória
+	Gravity	Gravidade
+	Particle Size	Tamanho da partícula
+	Keyhole	Buraco de fechadura
+	Burn Away	Queimar
+	Burn Size	Tamanho da queima
+	Ember Width	Largura da brasa
+	Ember Color	Cor da brasa
+	Check Text Legibility	Verificar legibilidade do texto
+	Clear Legibility Markers	Limpar marcadores de legibilidade
+	Text legibility: no problems found	Legibilidade do texto: nenhum problema encontrado
+	Text legibility: {count} problems marked on the timeline (orange markers)	Legibilidade do texto: {count} problemas marcados na linha do tempo (marcadores laranja)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Redução de bits
+	Bits per Channel	Bits por canal
+	Ordered Dither	Pontilhamento ordenado
+	Dither Cell Size	Tamanho da célula do pontilhamento
+	Block Glitch	Glitch de blocos
+	Blocks Moved	Blocos movidos
+	Max Distance	Distância máxima
+	Snap to Grid	Ajustar à grade
+	Swap Blocks	Trocar blocos
+	Changes per Second	Mudanças por segundo
+	Databend	Databending
+	Breaks	Quebras
+	Shift	Deslocamento
+	Color Damage	Dano de cor
+	VHS	VHS
+	Color Bleed	Vazamento de cor
+	Wobble	Oscilação
+	Snow	Chuvisco
+	Tracking Bar	Barra de tracking
+	Head Switching	Troca de cabeçote
+	Scan Line Jitter	Tremor de linhas
+	Jitter	Tremor
+	Interval	Intervalo
+	Infinite	Infinito
+	Periodic	Periódico
+	Tile Jitter	Tremor de faixas
+	Tiles	Faixas
+	Band Direction	Direção das faixas
+	Jitter Direction	Direção do tremor
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Meio-tom
+	Dither	Pontilhado
+	Pattern	Padrão
+	Cell Size	Tamanho da célula
+	Cyan Angle	Ângulo do ciano
+	Magenta Angle	Ângulo do magenta
+	Yellow Angle	Ângulo do amarelo
+	Black Angle	Ângulo do preto
+	Monochrome Angle	Ângulo monocromático
+	Sharpness	Nitidez
+	Ink Color	Cor da tinta
+	Paper Color	Cor do papel
+	Color (CMYK)	Cor (CMYK)
+	Dot	Ponto
+	Line	Linha
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Tamanho do pixel
+	Palette	Paleta
+	Input Colors	Cores de entrada
+	Green Phosphor	Fósforo verde
+	Amber Monitor	Monitor âmbar
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

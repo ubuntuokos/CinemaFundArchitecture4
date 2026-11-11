@@ -4641,6 +4641,70 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         win.close()
 
 
+def test_tools_menu_groups_video_audio_and_publication_tools(app, fake_engine: Path, tmp_path: Path):
+    """Owner request (2026-11-10): a Tools menu before Window with Video Tools (Smart Cut moved
+    here from the Source monitor's wrench menu, Smart Export, GOP boundaries), Audio Tools and
+    Publication Tools; rebuilt (not duplicated) when the language changes."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: "file.save" in win.registry.actions)
+
+        def tools_menu():
+            menus = [a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.Tools"]
+            assert len(menus) == 1, menus
+            return menus[0]
+
+        top = [a.menu().objectName() for a in win.menuBar().actions() if a.menu()]
+        assert top.index("menu.Tools") == top.index("menu.Window") - 1, top
+        tools = tools_menu()
+        assert tools.title() == "Tools"
+        subs = [a.menu() for a in tools.actions() if a.menu()]
+        assert [m.objectName() for m in subs] == ["menu.Tools.Video", "menu.Tools.Audio", "menu.Tools.Publication"]
+        assert [m.title() for m in subs] == ["Video Tools", "Audio Tools", "Publication Tools"]
+        video, audio, publication = subs
+        video.aboutToShow.emit()
+        ids = {a.objectName(): a for a in video.actions() if not a.isSeparator()}
+        assert list(ids) == ["tools.video.smartCut", "tools.video.smartExport", "tools.video.showGopMarks"]
+        assert not ids["tools.video.smartCut"].isEnabled()  # no clip in the Source monitor
+        ids["tools.video.smartCut"].trigger()  # says what to do instead of failing
+        # the GOP boundary marks follow the timeline's own toggle both ways
+        gop = ids["tools.video.showGopMarks"]
+        assert not gop.isChecked()
+        gop.setChecked(True)
+        assert win.timeline.canvas.show_gop_marks
+        win.timeline.canvas.set_show_gop_marks(False)
+        video.aboutToShow.emit()
+        assert not gop.isChecked()
+        # Audio Tools shows the audio panels
+        names = [a.objectName() for a in audio.actions() if not a.isSeparator()]
+        assert "tools.audio.essentialSound" in names and "tools.audio.trackMixer" in names, names
+        win.docks["Essential Sound"].hide()
+        next(a for a in audio.actions() if a.objectName() == "tools.audio.essentialSound").trigger()
+        assert wait_until(app, lambda: not win.docks["Essential Sound"].isHidden(), 2_000)
+        # Publication Tools starts with Export Media and Quick Export
+        names = [a.objectName() for a in publication.actions() if not a.isSeparator()]
+        assert names[:2] == ["tools.publication.exportMedia", "tools.publication.quickExport"], names
+        # a rebuild translates the menu and leaves exactly one
+        win.set_language("hu")
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+        tools = tools_menu()
+        assert tools.title() == "Eszközök"
+        assert [a.menu().title() for a in tools.actions() if a.menu()] == ["Videoeszközök", "Hangeszközök", "Publikációs eszközök"]
+        win.set_language("en")
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+        assert tools_menu().title() == "Tools"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, tmp_path: Path):
     """egui's docking commands on the Qt docks: window.closePanel / floatPanel / dockPanel (beside
     or in a tab with an anchor, at an edge, beside the central Program monitor) and
@@ -13576,9 +13640,12 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
         src.seek(74 * ft)
         win.run_command(win.registry.commands["markers.markOut"])
         assert wait_until(app, lambda: (win.source_state or {}).get("markOut") == 74 * ft, 10_000), win.source_state
-        # the wrench menu offers the action
+        # Tools ▸ Video Tools offers the action (no longer the Source monitor's wrench menu)
         src._fill_wrench_menu()
-        action = next(a for a in src.wrench.menu().actions() if a.objectName() == "source.settings.smartCut")
+        assert not any(a.objectName() == "source.settings.smartCut" for a in src.wrench.menu().actions())
+        video = win.menuBar().findChild(QtWidgets.QMenu, "menu.Tools.Video")
+        video.aboutToShow.emit()
+        action = next(a for a in video.actions() if a.objectName() == "tools.video.smartCut")
         assert action.isEnabled()
         d = src.open_smart_cut()
         assert d is not None

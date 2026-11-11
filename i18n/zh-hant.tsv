@@ -4113,3 +4113,106 @@ export.summary	Low	低
 	Contains	包含
 	Navigation	導覽
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	視訊工具
+	Audio Tools	音訊工具
+	Publication Tools	發佈工具
+	Smart Export…	智慧匯出…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	從西北
+	From North-East	從東北
+	From South-East	從東南
+	From South-West	從西南
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	增強
+	Skin Smoothing	皮膚平滑
+	Keep Texture	保留紋理
+	Skin Tone	膚色
+	Smooth Entire Image	平滑整張影像
+	Low Light	低光源
+	Max Brightening	最大提亮
+	Show Illumination	顯示照明
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	緩動預設
+	Sine	正弦
+	Exponential	指數
+	Circular	圓形
+	Elastic	彈性
+	Film Gate	片門
+	Gate Weave	片門晃動
+	Weave Rotation	晃動旋轉
+	Particles	粒子
+	Emitter Position	發射器位置
+	Birth Rate	生成速率
+	Lifetime (seconds)	存留時間 (秒)
+	Velocity Random	隨機速度
+	Gravity	重力
+	Particle Size	粒子大小
+	Keyhole	鑰匙孔
+	Burn Away	燒除
+	Burn Size	燃燒大小
+	Ember Width	餘燼寬度
+	Ember Color	餘燼色彩
+	Check Text Legibility	檢查文字易讀性
+	Clear Legibility Markers	清除易讀性標記
+	Text legibility: no problems found	文字易讀性：未發現問題
+	Text legibility: {count} problems marked on the timeline (orange markers)	文字易讀性：已在時間軸上標記 {count} 個問題 (橘色標記)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	位元壓縮
+	Bits per Channel	每色版位元數
+	Ordered Dither	有序遞色
+	Dither Cell Size	遞色儲存格大小
+	Block Glitch	區塊故障
+	Blocks Moved	移動區塊數
+	Max Distance	最大距離
+	Snap to Grid	貼齊格點
+	Swap Blocks	交換區塊
+	Changes per Second	每秒變化次數
+	Databend	資料彎折
+	Breaks	斷裂
+	Shift	位移
+	Color Damage	色彩損壞
+	VHS	VHS
+	Color Bleed	色彩溢出
+	Wobble	晃動
+	Snow	雪花
+	Tracking Bar	追蹤條
+	Head Switching	磁頭切換
+	Scan Line Jitter	掃描線抖動
+	Jitter	抖動
+	Interval	間隔
+	Infinite	無限
+	Periodic	週期性
+	Tile Jitter	拼貼抖動
+	Tiles	拼貼
+	Band Direction	條帶方向
+	Jitter Direction	抖動方向
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	半色調
+	Dither	遞色
+	Pattern	圖樣
+	Cell Size	儲存格大小
+	Cyan Angle	青色角度
+	Magenta Angle	洋紅色角度
+	Yellow Angle	黃色角度
+	Black Angle	黑色角度
+	Monochrome Angle	單色角度
+	Sharpness	銳利度
+	Ink Color	油墨色彩
+	Paper Color	紙張色彩
+	Color (CMYK)	彩色 (CMYK)
+	Dot	網點
+	Line	線條
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	像素大小
+	Palette	調色盤
+	Input Colors	輸入色彩
+	Green Phosphor	綠色磷光
+	Amber Monitor	琥珀色螢幕
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

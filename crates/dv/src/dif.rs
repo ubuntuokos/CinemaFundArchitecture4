@@ -47,9 +47,11 @@ pub enum Format {
     Dv25,
     /// DVCPRO 25 (SMPTE 314M): 4:1:1 at both line counts.
     Dvcpro25,
-    /// DVCPRO 50 (SMPTE 314M), 4:2:2, two channels. Not decoded yet.
+    /// DVCPRO 50 (SMPTE 314M), 4:2:2, two channels.
     Dvcpro50,
-    /// DVCPRO HD / DV100 (SMPTE 370M). Not decoded yet.
+    /// DVCPRO HD / DV100 (SMPTE 370M), 4:2:2: 1080i in four channels (1280x1080 at 60 Hz,
+    /// 1440x1080 at 50 Hz), 720p in two (960x720). Signal type 0x15 is recognised but not
+    /// decoded.
     DvcproHd,
 }
 
@@ -93,7 +95,7 @@ pub struct Profile {
     pub height: u32,
     /// DIF sequences per channel.
     pub sequences: usize,
-    /// Channels (1 for 25 Mbit/s, 2 for DVCPRO 50).
+    /// Channels (1 for 25 Mbit/s, 2 for DVCPRO 50 and 720p, 4 for 1080i).
     pub channels: usize,
     pub aspect: Aspect,
     /// Application ID of the track (APT, header byte 4): 0 = IEC 61834, 1 = SMPTE 314M.
@@ -108,12 +110,25 @@ impl Profile {
         self.sequences * self.channels * SEQUENCE_SIZE
     }
 
-    /// Frame rate as (numerator, denominator).
+    /// Frame rate as (numerator, denominator). A 720p DVCPRO HD frame is one progressive
+    /// picture, so 720p runs at 59.94 or 50 frames/s.
     pub fn frame_rate(&self) -> (u32, u32) {
-        match self.system {
-            System::Lines525 => (30000, 1001),
-            System::Lines625 => (25, 1),
+        match (self.system, self.is_720p()) {
+            (System::Lines525, false) => (30000, 1001),
+            (System::Lines625, false) => (25, 1),
+            (System::Lines525, true) => (60000, 1001),
+            (System::Lines625, true) => (50, 1),
         }
+    }
+
+    /// DVCPRO HD 720p (progressive).
+    pub fn is_720p(&self) -> bool {
+        self.format == Format::DvcproHd && self.height == 720
+    }
+
+    /// DVCPRO HD 1080i.
+    pub fn is_1080i(&self) -> bool {
+        self.format == Format::DvcproHd && self.height == 1080
     }
 
     /// Sample (pixel) aspect ratio of the coded picture for the signalled display aspect.
@@ -129,12 +144,18 @@ impl Profile {
 
     /// True for the formats this crate decodes.
     pub fn is_supported(&self) -> bool {
-        matches!(self.format, Format::Dv25 | Format::Dvcpro25)
+        self.width != 0 && self.frame_size() != 0
     }
 
-    /// DV is coded interlaced, bottom field first, for every 25 Mbit/s format.
+    /// Standard-definition DV is coded interlaced, bottom field first; DVCPRO HD 1080i is top
+    /// field first.
     pub fn top_field_first(&self) -> bool {
-        false
+        self.is_1080i()
+    }
+
+    /// DVCPRO HD 720p is progressive; everything else is interlaced.
+    pub fn progressive(&self) -> bool {
+        self.is_720p()
     }
 }
 
@@ -181,6 +202,8 @@ pub fn probe(frame: &[u8]) -> Option<Profile> {
     let sequences = if dsf == 0 { 10 } else { 12 };
     let stype = vaux_pack(frame, 0x60).map_or(0, |p| p[3] & 0x1f);
     let aspect = match vaux_pack(frame, 0x61).map(|p| p[2] & 7) {
+        // DVCPRO HD is always 16:9
+        _ if matches!(stype, 0x14 | 0x15 | 0x18) => Aspect::Ratio16x9,
         Some(2) | Some(7) => Aspect::Ratio16x9,
         _ => Aspect::Ratio4x3,
     };
@@ -191,7 +214,9 @@ pub fn probe(frame: &[u8]) -> Option<Profile> {
             (format, chroma, 720, if dsf == 0 { 480 } else { 576 }, 1)
         }
         4 => (Format::Dvcpro50, ChromaFormat::Yuv422, 720, if dsf == 0 { 480 } else { 576 }, 2),
-        0x14 | 0x15 | 0x18 => (Format::DvcproHd, ChromaFormat::Yuv422, 0, 0, 0),
+        0x14 => (Format::DvcproHd, ChromaFormat::Yuv422, if dsf == 0 { 1280 } else { 1440 }, 1080, 4),
+        0x18 => (Format::DvcproHd, ChromaFormat::Yuv422, 960, 720, 2),
+        0x15 => (Format::DvcproHd, ChromaFormat::Yuv422, 0, 0, 0),
         _ => return None,
     };
     Some(Profile { format, system, chroma, width, height, sequences, channels, aspect, apt, stype })
@@ -239,7 +264,17 @@ mod tests {
         assert_eq!((p.format, p.chroma), (Format::Dvcpro25, ChromaFormat::Yuv411));
         assert_eq!(p.sample_aspect(), (16, 15));
         let p = probe(&head(0, 1, 4, 0)).unwrap();
-        assert_eq!((p.format, p.frame_size(), p.is_supported()), (Format::Dvcpro50, 240_000, false));
+        assert_eq!((p.format, p.frame_size(), p.is_supported()), (Format::Dvcpro50, 240_000, true));
+        let p = probe(&head(1, 1, 0x14, 0)).unwrap();
+        assert_eq!((p.format, p.width, p.height, p.frame_size(), p.sample_aspect()), (Format::DvcproHd, 1440, 1080, 576_000, (4, 3)));
+        assert!(p.top_field_first() && !p.progressive());
+        let p = probe(&head(0, 1, 0x14, 0)).unwrap();
+        assert_eq!((p.width, p.frame_size(), p.sample_aspect(), p.frame_rate()), (1280, 480_000, (3, 2), (30000, 1001)));
+        let p = probe(&head(1, 1, 0x18, 0)).unwrap();
+        assert_eq!((p.width, p.height, p.frame_size(), p.frame_rate()), (960, 720, 288_000, (50, 1)));
+        assert!(p.progressive());
+        let p = probe(&head(0, 1, 0x15, 0)).unwrap();
+        assert!(!p.is_supported());
         assert!(probe(&[0u8; 10]).is_none());
         assert!(probe(&vec![0u8; 6 * 80]).is_none());
     }

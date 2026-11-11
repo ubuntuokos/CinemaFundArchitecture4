@@ -135,6 +135,8 @@ pub enum PictureCoding {
     /// `max_gop` 1 is intra-only; `b_pictures` the most B pictures between anchors; `bit_rate`
     /// the stream's maximum in bit/s (0: unknown).
     Mpeg2 { profile_and_level: u8, max_gop: u16, b_pictures: u8, closed_gop: bool, bit_rate: u32 },
+    /// Uncompressed Y'CbCr pictures (ST 384) in one of the labelled layouts of ST 377-1 G.2.25.
+    Uncompressed { layout: crate::UncompressedLayout },
 }
 
 impl PictureCoding {
@@ -191,6 +193,7 @@ impl PictureCoding {
                 };
                 [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x03, 0x04, 0x01, 0x02, 0x02, 0x01, pl, if max_gop <= 1 { 0x02 } else { 0x03 }, 0x00]
             }
+            PictureCoding::Uncompressed { layout } => layout.label(),
         }
     }
     /// (essence container label, element type) for frame or clip wrapping.
@@ -204,6 +207,8 @@ impl PictureCoding {
             PictureCoding::J2k { .. } => (essence_container(0x07, 0x0C, w, 0x00), if clip { 0x09 } else { 0x08 }),
             // ST 381-1 Tables 5, 6 (MPEG ES, stream_id E0h bits 6..0) and Table 1 (05h / 06h)
             PictureCoding::Mpeg2 { .. } => (essence_container(0x02, 0x04, 0x60, w), if clip { 0x06 } else { 0x05 }),
+            // ST 384 Tables 5-7: lines and rate from the descriptor (7Fh); element types 02h / 03h
+            PictureCoding::Uncompressed { .. } => (essence_container(0x01, 0x05, 0x7F, w), if clip { 0x03 } else { 0x02 }),
         }
     }
 }
@@ -288,6 +293,7 @@ impl PictureDesc {
             }
             PictureCoding::J2k { .. } => (12, (1, 1)),
             PictureCoding::Mpeg2 { profile_and_level, .. } => (8, if profile_and_level & 0x70 == 0 { (2, 1) } else { (2, 2) }),
+            PictureCoding::Uncompressed { layout } => (layout.depth(), layout.subsampling()),
         };
         PictureDesc {
             coding,
