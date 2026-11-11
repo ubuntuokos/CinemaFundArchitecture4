@@ -8,7 +8,7 @@
 
 use cfa4_geom::Vec2;
 use cfa4_project::graphic::{new_shape_layer, new_text_layer};
-use cfa4_project::graphic_design::{GraphicMeta, Roll, RollMode};
+use cfa4_project::graphic_design::{CharStyle, GraphicMeta, Roll, RollMode};
 use cfa4_project::gtemplate::ensure_uids;
 use cfa4_project::{EffectInstance, Interpolation, Keyframe, Param, ParamValue};
 use cfa4_time::{FrameRate, Tick};
@@ -147,6 +147,9 @@ struct Ctx<'a> {
     /// For each page, for each block: how many identical blocks come before it in the credits
     /// (repeated blocks get keys of their own).
     occurrences: Vec<Vec<usize>>,
+    /// Inline letter styles by lower-case name (Hungarian built-in names too), scaled.
+    inline: Vec<(String, CharStyle)>,
+    unknown_inline: Vec<String>,
 }
 
 impl Ctx<'_> {
@@ -167,7 +170,20 @@ impl Ctx<'_> {
     ) -> Result<(EffectInstance, [f64; 4]), CreditsError> {
         let s = self.s;
         let size = finite_or(ls.size, 40.0).clamp(1.0, 2_000.0) * s;
-        let mut e = new_text_layer(text, Vec2::new(0.0, 0.0), size);
+        let st = crate::markup::styled(text, |n| {
+            let n = n.trim().to_lowercase();
+            self.inline.iter().find(|(k, _)| *k == n).map(|(_, c)| c.clone())
+        });
+        for u in st.unknown {
+            if !self.unknown_inline.contains(&u) {
+                self.warn(row, format!("letter style `{u}` does not exist; the text keeps the block's style"));
+                self.unknown_inline.push(u);
+            }
+        }
+        let mut e = new_text_layer(&st.text, Vec2::new(0.0, 0.0), size);
+        if !st.runs.is_empty() {
+            e.layer.get_or_insert_with(Default::default).runs = st.runs;
+        }
         set(&mut e, "name", ParamValue::Text(name.into()));
         set(&mut e, "font", ParamValue::Text(ls.font.clone()));
         set(&mut e, "font_style", ParamValue::Text(ls.font_style.clone()));
@@ -339,8 +355,12 @@ fn lay_pictures(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, anchor_x: f64, alig
     out
 }
 
-/// Lay out one block with its top at `top`. Returns its pieces and height.
-fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64) -> Result<(Vec<Piece>, f64), CreditsError> {
+/// The longest leader text on a line.
+const MAX_LEADER: usize = 2_000;
+
+/// Lay out one block with its top at `top`. `head_w`: the width the head column has (heads of a
+/// harmonised style); `None` = the head's own.
+fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64, head_w: Option<f64>) -> Result<(Vec<Piece>, f64), CreditsError> {
     let s = ctx.s;
     let mut pieces = Vec::new();
     let head_gap = finite_or(cs.head_gap, 0.0).max(0.0) * s;
@@ -375,16 +395,29 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
             let first_baseline = if b.pictures.is_empty() { body.first().map(|p| p.top - p.b[1]) } else { bottom(&body).map(|bt| (top + bt) / 2.0) };
             let at_baseline = |bb: [f64; 4], baseline: Option<f64>| baseline.map(|bl| bl + bb[1]).unwrap_or(top);
             if let Some(h) = &b.head {
-                let (e, bb) = ctx.text(b.row, "Head", h, &cs.head, Align::Right, None)?;
-                pieces.push(Piece {
-                    row: 0,
-                    key: String::new(),
-                    layer: e,
-                    b: bb,
-                    x: spine_x - head_gap / 2.0,
-                    top: at_baseline(bb, first_baseline),
-                    pic: None,
-                });
+                let (e, bb) = ctx.text(b.row, "Head", h, &cs.head, cs.head_align, None)?;
+                let own = (bb[2] - bb[0]).max(0.0);
+                let col = head_w.unwrap_or(own).max(own);
+                // the column ends at the gap before the body
+                let col_right = spine_x - head_gap / 2.0;
+                let x = origin_in_box(col_right - col, col, cs.head_align);
+                let head_top = at_baseline(bb, first_baseline);
+                let head_right = x + bb[2];
+                pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top: head_top, pic: None });
+                // dots from the head to the body, on the head's first baseline
+                let unit = cs.leader.as_str();
+                if !unit.trim().is_empty() {
+                    let lg = finite_or(cs.leader_gap, 0.0).clamp(0.0, 10_000.0) * s;
+                    let (x0, x1) = (head_right + lg, spine_x + head_gap / 2.0 - lg);
+                    let (_, ub) = ctx.text(b.row, "Leader", &unit.repeat(10), &cs.head, Align::Left, None)?;
+                    let uw = (ub[2] - ub[0]) / 10.0;
+                    if uw > 0.0 && x1 > x0 + uw {
+                        let n = (((x1 - x0) / uw).floor() as usize).min(MAX_LEADER);
+                        let (le, lb) = ctx.text(b.row, "Leader", &unit.repeat(n), &cs.head, Align::Right, None)?;
+                        let baseline = head_top - bb[1];
+                        pieces.push(Piece { row: 0, key: String::new(), layer: le, b: lb, x: x1, top: baseline + lb[1], pic: None });
+                    }
+                }
             }
             let right = body.iter().map(Piece::right).reduce(f64::max).unwrap_or(spine_x + head_gap / 2.0);
             let single_column = cs.layout == BodyLayout::Grid && body.len() == 1 && b.pictures.is_empty();
@@ -463,6 +496,9 @@ pub fn block_key(b: &Block) -> u64 {
     for p in &b.pictures {
         parts.push(format!("{}@{:?}", p.file, p.height).into_bytes());
     }
+    if b.parallel {
+        parts.push(b"parallel".to_vec());
+    }
     let refs: Vec<&[u8]> = parts.iter().map(Vec::as_slice).collect();
     crate::doc::fnv1a(&refs)
 }
@@ -504,6 +540,23 @@ fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, ga
     let mut prev_margin = 0.0f64;
     let fallback = styling.content_style(&styling.default_content_style).unwrap_or_default();
     let mut missing: Vec<String> = Vec::new();
+    // parallel columns: where the current set of columns starts, how far down the finished
+    // columns reach, and whether the block is in a column after the first
+    let (mut group_top, mut group_bottom, mut in_parallel) = (0.0f64, 0.0f64, false);
+    // the widest head of each harmonised style on the page
+    let mut head_widths: Vec<(String, f64)> = Vec::new();
+    for b in &page.blocks {
+        let (Some(h), Some(cs)) = (&b.head, styling.content_style(&b.style)) else { continue };
+        if !(cs.harmonize_heads && cs.orientation == Orientation::Horizontal) {
+            continue;
+        }
+        let (_, bb) = ctx.text(b.row, "Head", h, &cs.head, Align::Left, None)?;
+        let w = (bb[2] - bb[0]).max(0.0);
+        match head_widths.iter_mut().find(|(n, _)| *n == cs.name) {
+            Some((_, m)) => *m = m.max(w),
+            None => head_widths.push((cs.name.clone(), w)),
+        }
+    }
     for (k, b) in page.blocks.iter().enumerate() {
         let cs = match styling.content_style(&b.style) {
             Some(c) => c,
@@ -516,18 +569,39 @@ fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, ga
             }
         };
         let margin = finite_or(cs.margin, 0.0).max(0.0) * s;
-        if k > 0 {
-            let gap = match b.gap_before {
-                Gap::Units(u) => finite_or(u, 0.0).max(0.0) * unit,
-                Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
-            };
-            let g = gap.max(margin).max(prev_margin);
-            elastic += g;
-            y += g * gap_scale;
+        let spine_changed = k > 0 && page.blocks.get(k - 1).is_some_and(|p| p.spine.to_bits() != b.spine.to_bits());
+        if b.parallel && k > 0 {
+            // a parallel column starts beside the previous one, at the same top
+            group_bottom = group_bottom.max(y);
+            y = group_top;
+            in_parallel = true;
+        } else {
+            if spine_changed {
+                // the columns end: continue below the longest
+                y = y.max(group_bottom);
+                in_parallel = false;
+            }
+            if k > 0 {
+                let gap = match b.gap_before {
+                    Gap::Units(u) => finite_or(u, 0.0).max(0.0) * unit,
+                    Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
+                };
+                let g = gap.max(margin).max(prev_margin);
+                // only the first column's gaps decide the page's length
+                if !in_parallel {
+                    elastic += g;
+                }
+                y += g * gap_scale;
+            }
+            if spine_changed || k == 0 {
+                group_top = y;
+                group_bottom = y;
+            }
         }
         prev_margin = margin;
         let spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
-        let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y)?;
+        let head_w = head_widths.iter().find(|(n, _)| *n == cs.name).map(|(_, w)| *w);
+        let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y, head_w)?;
         let nth = ctx.occurrences.get(index).and_then(|v| v.get(k)).copied().unwrap_or(0);
         key_pieces(b, nth, &mut ps_);
         y += bh;
@@ -536,7 +610,7 @@ fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, ga
             return Err(CreditsError::TooLarge(format!("page {} needs more than {MAX_LAYERS_PER_PAGE} text layers", index + 1)));
         }
     }
-    Ok((pieces, y.max(0.0), elastic))
+    Ok((pieces, y.max(group_bottom).max(0.0), elastic))
 }
 
 /// Lay a crawl page's blocks side by side on one line centred at `line_y` (frame pixels), from
@@ -559,7 +633,7 @@ fn line(ctx: &mut Ctx, styling: &Styling, page: &Page, index: usize, line_y: f64
                 fallback.clone()
             }
         };
-        let (mut ps_, bh) = lay_block(ctx, b, &cs, 0.0, 0.0)?;
+        let (mut ps_, bh) = lay_block(ctx, b, &cs, 0.0, 0.0, None)?;
         if ps_.is_empty() {
             continue;
         }
@@ -749,6 +823,7 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
     ensure_uids(&mut layers);
     let keys = layers.iter().zip(keys).map(|(e, k)| (cfa4_project::gtemplate::layer_uid(e), k)).collect();
     let name = page.blocks.iter().find_map(|b| b.head.clone().or_else(|| b.body.first().cloned())).unwrap_or_default();
+    let name = crate::markup::plain(&name);
     let name = name.lines().next().unwrap_or("").chars().take(40).collect::<String>();
     let name = if name.trim().is_empty() { format!("Credits {}", index + 1) } else { format!("Credits {}: {}", index + 1, name.trim()) };
     let mut spines: Vec<f64> = Vec::new();
@@ -822,7 +897,27 @@ pub fn layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &dyn 
         warnings: credits.warnings.clone(),
         bad_colors: vec![],
         occurrences: occurrences(credits),
+        inline: Vec::new(),
+        unknown_inline: vec![],
     };
+    let s = ctx.s;
+    let mut inline: Vec<(String, CharStyle)> = Vec::new();
+    for st in &styling.inline_styles {
+        let (c, bad) = st.char_style(s);
+        if let Some(b) = bad {
+            ctx.warn(0, format!("colour `{b}` of letter style `{}` is not #rrggbb; it is left out", st.name));
+        }
+        inline.push((st.name.trim().to_lowercase(), c));
+    }
+    for (st, hu) in crate::markup::builtin_inline_styles() {
+        let (c, _) = st.char_style(s);
+        for k in [st.name.to_lowercase(), hu.to_string()] {
+            if !inline.iter().any(|(n, _)| *n == k) {
+                inline.push((k, c.clone()));
+            }
+        }
+    }
+    ctx.inline = inline;
     let n = credits.pages.len();
     let mut pages: Vec<PageOut> = Vec::with_capacity(n);
     for (i, p) in credits.pages.iter().enumerate() {

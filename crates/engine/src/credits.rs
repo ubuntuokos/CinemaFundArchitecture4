@@ -1362,14 +1362,27 @@ fn fit_cmd(s: &mut Session, p: &Value) -> Result<Value> {
 fn styles(_: &mut Session, p: &Value) -> Result<Value> {
     let styling = styling_p("graphics.credits.styles", p)?;
     let (pages, contents) = styling.names();
+    let mut inline: Vec<String> = styling.inline_styles.iter().map(|x| x.name.clone()).collect();
+    for (b, _) in cfa4_credits::markup::builtin_inline_styles() {
+        if !inline.iter().any(|n| n.eq_ignore_ascii_case(&b.name)) {
+            inline.push(b.name);
+        }
+    }
     let starter = Styling {
         page_styles: cfa4_credits::style::builtin_page_styles(),
         content_styles: cfa4_credits::style::builtin_content_styles(),
+        inline_styles: vec![cfa4_credits::markup::InlineStyle {
+            name: "Gold".into(),
+            font_style: Some("SemiBold".into()),
+            color: Some("#d4af37".into()),
+            ..Default::default()
+        }],
         ..Styling::default()
     };
     Ok(json!({
         "pageStyles": pages,
         "contentStyles": contents,
+        "inlineStyles": inline,
         "starter": serde_json::to_value(&starter).unwrap_or(Value::Null),
         "columns": ["Head", "Body", "Tail", "Vertical Gap", "Content Style", "Spine Position", "Page Style", "Page Runtime", "Page Gap"],
     }))

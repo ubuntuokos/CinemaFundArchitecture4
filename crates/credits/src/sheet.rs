@@ -130,6 +130,9 @@ pub struct Block {
     pub pictures: Vec<Picture>,
     /// 1-based spreadsheet row of each body cell (rows of heads or tails alone are skipped).
     pub body_rows: Vec<usize>,
+    /// Starts a parallel column: the block stands beside the column before it, from the same
+    /// top (`Spine Position` `-400 parallel` / `párhuzamos`).
+    pub parallel: bool,
     /// 1-based row of the block's first cell.
     pub row: usize,
 }
@@ -200,8 +203,9 @@ pub struct Credits {
 pub const MAX_PAGES: usize = 1_000;
 pub const MAX_BLOCKS: usize = 50_000;
 
-/// Replace inline markup: `{{Blank}}` becomes an empty line; other `{{…}}` tags (letter styles,
-/// videos, and pictures not standing alone in a body cell) are removed. Returns the text and whether anything was removed.
+/// Replace inline markup: `{{Blank}}` becomes an empty line; letter-style tags (`{{Style …}}`,
+/// see [`crate::markup`]) stay; other `{{…}}` tags (videos, and pictures not standing alone in a
+/// body cell) are removed. Returns the text and whether anything was removed.
 pub fn clean_markup(cell: &str) -> (String, bool) {
     let mut out = String::with_capacity(cell.len());
     let mut rest = cell;
@@ -215,7 +219,10 @@ pub fn clean_markup(cell: &str) -> (String, bool) {
             break;
         };
         let tag = after.get(..j).unwrap_or("").trim();
-        if !tag.eq_ignore_ascii_case("blank") {
+        if crate::markup::style_tag(tag).is_some() {
+            // letter styles stay for the layout
+            out.push_str(rest.get(i..i + 2 + j + 2).unwrap_or(""));
+        } else if !tag.eq_ignore_ascii_case("blank") {
             dropped = true;
         }
         rest = after.get(j + 2..).unwrap_or("");
@@ -237,11 +244,16 @@ fn parse_gap(s: &str) -> Option<Gap> {
     Some(if px { Gap::Px(v) } else { Gap::Units(v) })
 }
 
-fn parse_spine(s: &str) -> Option<f64> {
+/// A spine position: a pixel offset, optionally `parallel` (`párhuzamos`) to the column before.
+fn parse_spine(s: &str) -> Option<(f64, bool)> {
     let t = s.trim().to_lowercase().replace(',', ".");
+    let (t, parallel) = match t.strip_suffix("parallel").or_else(|| t.strip_suffix("párhuzamos")) {
+        Some(rest) => (rest.trim().to_string(), true),
+        None => (t.clone(), false),
+    };
     let n = t.strip_suffix("px").unwrap_or(&t).trim();
     let v: f64 = n.parse().ok()?;
-    (v.is_finite() && v.abs() <= 100_000.0).then_some(v)
+    (v.is_finite() && v.abs() <= 100_000.0).then_some((v, parallel))
 }
 
 /// Interpret a table (rows of cells) as credits.
@@ -259,6 +271,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
     let mut page = Page { style: default_page.to_string(), runtime: None, gap_after: None, blocks: vec![], row: header + 2 };
     let mut style = default_content.to_string();
     let mut spine = 0.0;
+    let mut parallel_next = false;
     let mut pending_units = 0.0f64;
     let mut explicit_gap: Option<Gap> = None;
     let mut open = false; // the last block still takes body cells
@@ -279,11 +292,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
             let (t, dropped) = clean_markup(raw);
             if dropped && !warned_markup {
                 warned_markup = true;
-                warn(
-                    &mut out,
-                    rowno,
-                    "letter styles and videos in `{{…}}` are not supported yet, and a picture needs a body cell of its own; the tags were removed".into(),
-                );
+                warn(&mut out, rowno, "videos in `{{…}}` are not supported yet, and a picture needs a body cell of its own; the tags were removed".into());
             }
             t
         };
@@ -326,8 +335,11 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         }
         if !spine_s.trim().is_empty() {
             match parse_spine(&spine_s) {
-                Some(v) => spine = v,
-                None => warn(&mut out, rowno, format!("spine position `{}` is not supported (a pixel offset is)", spine_s.trim())),
+                Some((v, par)) => {
+                    spine = v;
+                    parallel_next = par;
+                }
+                None => warn(&mut out, rowno, format!("spine position `{}` is not supported (a pixel offset, optionally `parallel`, is)", spine_s.trim())),
             }
             open = false;
         }
@@ -368,6 +380,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
                 body_rows: if has_body { vec![rowno] } else { vec![] },
                 tails: vec![],
                 pictures: pics,
+                parallel: std::mem::take(&mut parallel_next),
                 row: rowno,
             });
             pending_units = 0.0;

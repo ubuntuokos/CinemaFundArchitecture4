@@ -244,6 +244,16 @@ pub struct ContentStyle {
     pub flow_separator: String,
     /// Minimum space above and below the block.
     pub margin: f64,
+    /// Horizontal orientation: how heads stand in their column (`right`: against the body).
+    pub head_align: Align,
+    /// Horizontal orientation: every head of this style on a page gets the widest one's width,
+    /// so with `headAlign: left` the heads form one even column.
+    pub harmonize_heads: bool,
+    /// Horizontal orientation: a leader (e.g. `.` or ` .`) repeated from the end of the head to
+    /// the body; empty = none.
+    pub leader: String,
+    /// Space between the leader and the text on either side.
+    pub leader_gap: f64,
 }
 
 impl Default for ContentStyle {
@@ -264,6 +274,10 @@ impl Default for ContentStyle {
             wrap_width: 1200.0,
             flow_separator: "  •  ".into(),
             margin: 0.0,
+            head_align: Align::Right,
+            harmonize_heads: false,
+            leader: String::new(),
+            leader_gap: 16.0,
         }
     }
 }
@@ -280,11 +294,21 @@ pub struct Styling {
     pub default_content_style: String,
     pub page_styles: Vec<PageStyle>,
     pub content_styles: Vec<ContentStyle>,
+    /// Letter styles for parts of a cell (`{{Style Name}}`), see [`crate::markup`].
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub inline_styles: Vec<crate::markup::InlineStyle>,
 }
 
 impl Default for Styling {
     fn default() -> Self {
-        Styling { unit_px: 32.0, default_page_style: "Scroll".into(), default_content_style: "Gutter".into(), page_styles: vec![], content_styles: vec![] }
+        Styling {
+            unit_px: 32.0,
+            default_page_style: "Scroll".into(),
+            default_content_style: "Gutter".into(),
+            page_styles: vec![],
+            content_styles: vec![],
+            inline_styles: vec![],
+        }
     }
 }
 
@@ -330,6 +354,18 @@ pub fn builtin_content_styles() -> Vec<ContentStyle> {
             ..base.clone()
         },
         ContentStyle { name: "Centered".into(), ..base.clone() },
+        // Roles in an even left column, dots to the names.
+        ContentStyle {
+            name: "Leaders".into(),
+            orientation: Orientation::Horizontal,
+            head: LetterStyle { size: 34.0, color: "#c8c8c8".into(), ..Default::default() },
+            head_gap: 120.0,
+            tail_gap: 40.0,
+            head_align: Align::Left,
+            harmonize_heads: true,
+            leader: " .".into(),
+            ..base.clone()
+        },
         ContentStyle {
             name: "Heading".into(),
             body: LetterStyle { tracking: 120.0, all_caps: true, ..LetterStyle::with(64.0, "Bold") },
@@ -362,6 +398,17 @@ impl Styling {
     pub fn page_style(&self, name: &str) -> Option<PageStyle> {
         let n = norm(name);
         self.page_styles.iter().find(|p| norm(&p.name) == n).cloned().or_else(|| builtin_page_styles().into_iter().find(|p| norm(&p.name) == n))
+    }
+
+    /// The inline style called `name` (case-insensitive; built-ins also by their Hungarian name):
+    /// the styling's own first, then a built-in.
+    pub fn inline_style(&self, name: &str) -> Option<crate::markup::InlineStyle> {
+        let n = norm(name);
+        self.inline_styles
+            .iter()
+            .find(|c| norm(&c.name) == n)
+            .cloned()
+            .or_else(|| crate::markup::builtin_inline_styles().into_iter().find(|(c, hu)| norm(&c.name) == n || *hu == n).map(|(c, _)| c))
     }
 
     /// The content style called `name` (case-insensitive): the styling's own first, then a built-in.
