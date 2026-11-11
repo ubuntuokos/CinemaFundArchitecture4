@@ -29,6 +29,15 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+      # skrifa and harfrust (crates/text) share read-fonts types (FontRef): they only build when
+      # both sit on the same read-fonts minor, so they must move together (#792). Listed before
+      # cargo-patch because Dependabot puts an update into the first group it matches.
+      cargo-fonts:
+        applies-to: version-updates
+        patterns:
+          - "skrifa"
+          - "harfrust"
+          - "read-fonts"
       cargo-patch:
         applies-to: version-updates
         patterns:
@@ -43,6 +52,11 @@ updates:
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "eframe"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # zbus is used only by the frozen egui app (apps/cfa4/src/appearance.rs, portal colour
+      # scheme) and must stay on the major version rfd/accesskit pull in; zbus 6 breaks that
+      # code and would add a second zbus (#588). Leaves with the egui frontend.
+      - dependency-name: "zbus"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"
 

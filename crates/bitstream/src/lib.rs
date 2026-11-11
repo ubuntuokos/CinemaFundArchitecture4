@@ -7,7 +7,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
-use std::fmt;
+use std::{cell::Cell, fmt};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BitError {
@@ -15,6 +15,8 @@ pub enum BitError {
     Eof,
     /// An Exp-Golomb code longer than 32 leading zeros.
     InvalidExpGolomb,
+    /// An AVCC/HVCC NAL length prefix is not one of the supported widths.
+    InvalidNalLengthSize,
 }
 
 impl fmt::Display for BitError {
@@ -22,6 +24,7 @@ impl fmt::Display for BitError {
         match self {
             BitError::Eof => f.write_str("unexpected end of bitstream"),
             BitError::InvalidExpGolomb => f.write_str("invalid Exp-Golomb code"),
+            BitError::InvalidNalLengthSize => f.write_str("NAL length prefix must be 1 to 4 bytes"),
         }
     }
 }
@@ -35,11 +38,13 @@ pub struct BitReader<'a> {
     data: &'a [u8],
     /// Position in bits.
     pos: usize,
+    /// Cached position of the RBSP stop bit, computed only by [`Self::more_rbsp_data`].
+    rbsp_stop: Cell<Option<Option<usize>>>,
 }
 
 impl<'a> BitReader<'a> {
     pub fn new(data: &'a [u8]) -> Self {
-        Self { data, pos: 0 }
+        Self { data, pos: 0, rbsp_stop: Cell::new(None) }
     }
     pub fn data(&self) -> &'a [u8] {
         self.data
@@ -157,14 +162,13 @@ impl<'a> BitReader<'a> {
         if self.pos >= total {
             return false;
         }
-        // find last set bit (the rbsp_stop_one_bit)
-        let mut last = None;
-        for (i, &b) in self.data.iter().enumerate().rev() {
-            if b != 0 {
-                last = Some(i * 8 + 7 - b.trailing_zeros() as usize);
-                break;
-            }
-        }
+        let last = self.rbsp_stop.get().unwrap_or_else(|| {
+            // The trailing stop bit is immutable for this reader.  Caching it avoids searching a
+            // long zero suffix after every macroblock.
+            let stop = self.data.iter().rposition(|&b| b != 0).map(|i| i * 8 + 7 - self.data[i].trailing_zeros() as usize);
+            self.rbsp_stop.set(Some(stop));
+            stop
+        });
         match last {
             Some(stop) => self.pos < stop,
             None => false,
@@ -314,8 +318,11 @@ pub fn annexb_nals(data: &[u8]) -> Vec<&[u8]> {
     out
 }
 
-/// Split a length-prefixed sample (AVCC/HVCC, `length_size` 1/2/4 bytes) into NAL units.
+/// Split a length-prefixed sample (AVCC/HVCC, `length_size` 1 to 4 bytes) into NAL units.
 pub fn length_prefixed_nals(data: &[u8], length_size: usize) -> Result<Vec<&[u8]>> {
+    if !matches!(length_size, 1..=4) {
+        return Err(BitError::InvalidNalLengthSize);
+    }
     let mut out = Vec::new();
     let mut i = 0;
     while i < data.len() {
@@ -440,10 +447,21 @@ mod tests {
     }
 
     #[test]
+    fn length_prefixed_nals_rejects_invalid_prefix_sizes() {
+        for size in [0, 5, usize::MAX] {
+            assert!(length_prefixed_nals(&[0], size).is_err(), "size {size}");
+        }
+        // `(lengthSizeMinusOne & 3) + 1` can be 3; such samples still split
+        assert_eq!(length_prefixed_nals(&[0, 0, 1, 0x65], 3).unwrap(), vec![&[0x65][..]]);
+    }
+
+    #[test]
     fn more_rbsp() {
         let d = [0b1100_0000];
         let mut r = BitReader::new(&d);
+        assert_eq!(r.rbsp_stop.get(), None);
         assert!(r.more_rbsp_data());
+        assert_eq!(r.rbsp_stop.get(), Some(Some(1)));
         r.read_bit().unwrap();
         assert!(!r.more_rbsp_data());
     }

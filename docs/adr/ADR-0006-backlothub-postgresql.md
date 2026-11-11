@@ -53,6 +53,15 @@ tesztelést hoz.
    `sqlx`, illetve `psycopg`) a lépcső G2 kapuján dől el. Feltétel: GPL-3.0-or-later-kompatibilis
    licenc.
 
+## Kiegészítés, 2026-11-07: a klasztert más modulok is használják
+
+A tulajdonos 2026-11-07-én jóváhagyta a [CFA4-TASKSTORE-PG-001](../plans/CFA4-TASKSTORE-PG-001.md)
+tervet. Eszerint ugyanezt a CFA4 PostgreSQL-klasztert használja a közös feladatsor és ütemezés
+(`tasks` séma), az AI-réteg (`ai` és `cache` séma) és a Media Intelligence (`mi` séma, pgvector
+bővítménnyel), modulonként saját sémával és adatbázis-szereppel. Második adatbázismotor nincs. A
+BacklotHub saját sémája (`backlot`) és a fenti döntések változatlanok; a kliensmeghajtó és a
+telepítési mód a BacklotHub G2 kapuján közösen dől el, egy meghajtóval.
+
 ## Licenc
 
 - A PostgreSQL licence (PostgreSQL License, BSD/MIT-típusú) GPL-3.0-kompatibilis.

@@ -739,8 +739,19 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
     if stsc[0].0 == 0 || stsc.windows(2).any(|w| w[1].0 <= w[0].0) {
         return invalid("stsc first_chunk values are not increasing from 1");
     }
+    // Tables that count single sample frames (QuickTime PCM, and `ulaw` / `alaw` / `ima4` with a
+    // sample size of 1) are grouped into one sample per chunk: (bytes, frames) of the smallest unit
+    // when the sound description gives no packet sizes.
     let pcm = match t.entries.first().map(|e| &e.codec) {
-        Some(CodecConfig::Pcm(p)) if const_size != 0 => Some(*p),
+        Some(CodecConfig::Pcm(p)) if const_size != 0 => Some((u64::from(p.bytes_per_frame()), 1)),
+        Some(CodecConfig::Unknown { fourcc, .. }) if const_size == 1 => {
+            let ch = t.audio().map_or(1, |a| u64::from(a.channels.max(1)));
+            match &fourcc.0 {
+                b"ulaw" | b"alaw" => Some((ch, 1)),
+                b"ima4" => Some((34 * ch, 64)),
+                _ => None,
+            }
+        }
         _ => None,
     };
     let mut stts_c = SttsCursor { runs: &stts, run: 0, used: 0 };
@@ -749,7 +760,7 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
     let mut sidx = 0usize;
     let mut dts = 0i64;
     let mut stsc_i = 0usize;
-    if let Some(p) = pcm {
+    if let Some((unit_bytes, unit_frames)) = pcm {
         t.pcm_chunked = true;
         let a = t.audio().cloned().unwrap_or_default();
         let frame_bytes = |frames: u64| -> u64 {
@@ -758,7 +769,7 @@ fn parse_stbl(stbl: &[u8], t: &mut Track, is_qt: bool, file_len: u64) -> Result<
             } else if const_size > 1 {
                 frames * const_size as u64
             } else {
-                frames * p.bytes_per_frame() as u64
+                frames / unit_frames * unit_bytes
             }
         };
         if chunks.len() > MAX_SAMPLES {
@@ -932,7 +943,7 @@ fn parse_udta(p: &[u8], md: &mut Metadata) {
         } else if b.kind.0[0] == 0xA9 && b.payload.len() >= 4 {
             let n = u16::from_be_bytes([b.payload[0], b.payload[1]]) as usize;
             if let Some(s) = b.payload.get(4..4 + n) {
-                md.entries.push((b.kind.to_string_lossy(), String::from_utf8_lossy(s).into_owned()));
+                push_metadata(md, &b.kind.to_string_lossy(), s);
             }
         }
     }
@@ -979,16 +990,38 @@ fn parse_meta(p: &[u8], md: &mut Metadata) {
     let Some(ilst) = find(body, b"ilst") else { return };
     for item in boxes(ilst).map_while(|b| b.ok()) {
         let idx = item.kind.as_u32() as usize;
-        let key = if !keys.is_empty() && idx >= 1 && idx <= keys.len() { keys[idx - 1].clone() } else { item.kind.to_string_lossy() };
+        let key = if !keys.is_empty() && idx >= 1 && idx <= keys.len() {
+            std::borrow::Cow::Borrowed(keys[idx - 1].as_str())
+        } else {
+            std::borrow::Cow::Owned(item.kind.to_string_lossy())
+        };
         if let Some(d) = find(item.payload, b"data")
             && d.len() >= 8
         {
             let ty = u32::from_be_bytes([d[0], d[1], d[2], d[3]]) & 0xFF_FFFF;
             if ty == 1 || ty == 0 {
-                md.entries.push((key, String::from_utf8_lossy(&d[8..]).into_owned()));
+                push_metadata(md, &key, &d[8..]);
             }
         }
     }
+}
+
+/// Metadata is untrusted presentation data. Bound its cumulative expanded representation before
+/// cloning repeated numeric keys or converting values into owned strings.
+const MAX_METADATA_BYTES: usize = 1 << 20;
+const MAX_METADATA_ENTRIES: usize = 4_096;
+
+fn push_metadata(md: &mut Metadata, key: &str, value: &[u8]) {
+    if md.entries.len() >= MAX_METADATA_ENTRIES {
+        return;
+    }
+    let used = md.entries.iter().map(|(k, v)| k.len().saturating_add(v.len())).sum::<usize>();
+    // Invalid UTF-8 can expand to one three-byte replacement character per input byte.
+    let worst = key.len().saturating_add(value.len().saturating_mul(3));
+    if used.saturating_add(worst) > MAX_METADATA_BYTES {
+        return;
+    }
+    md.entries.push((key.to_owned(), String::from_utf8_lossy(value).into_owned()));
 }
 
 #[cfg(test)]
@@ -1011,6 +1044,17 @@ mod tests {
         assert_eq!(c.take(3), 10 + 5 + 5);
         assert_eq!(c.next_value(), 5);
         assert_eq!(c.next_value(), 0);
+    }
+
+    #[test]
+    fn metadata_expansion_is_bounded_before_strings_are_retained() {
+        let mut md = Metadata::default();
+        push_metadata(&mut md, "k", &vec![b'x'; MAX_METADATA_BYTES]);
+        assert!(md.entries.is_empty());
+        for _ in 0..MAX_METADATA_ENTRIES + 10 {
+            push_metadata(&mut md, "key", b"value");
+        }
+        assert_eq!(md.entries.len(), MAX_METADATA_ENTRIES);
     }
 
     #[test]

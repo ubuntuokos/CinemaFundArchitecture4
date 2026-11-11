@@ -109,6 +109,9 @@ pub(crate) struct Splitter {
     open_field: Option<u8>,
     // audio state
     next_frame: Option<u64>,
+    /// While hunting for sync: where the next candidate header starts. Kept apart from
+    /// `next_frame`, which means "a frame is expected here" and lets a header skip confirmation.
+    resume: Option<u64>,
 }
 
 /// AC-3 frame sizes in 16-bit words for 48 / 44.1 / 32 kHz (A/52 Table 5.18), by
@@ -401,6 +404,7 @@ impl Splitter {
             pending: None,
             open_field: None,
             next_frame: None,
+            resume: None,
         }
     }
 
@@ -678,7 +682,7 @@ impl Splitter {
         }
         self.window(start, data);
         loop {
-            let at = match self.next_frame {
+            let at = match self.next_frame.or(self.resume) {
                 Some(n) if n >= self.buf_start => n,
                 _ => self.buf_start,
             };
@@ -715,6 +719,7 @@ impl Splitter {
                         self.open = Some(o);
                     }
                     self.next_frame = Some(at + len as u64);
+                    self.resume = None;
                     if at + len as u64 >= self.buf_start + self.buf.len() as u64 {
                         self.buf.clear();
                         self.buf_start = at + len as u64;
@@ -742,11 +747,16 @@ impl Splitter {
                     match next {
                         Some(d) => {
                             self.skipped += d as u64;
-                            self.trim(self.buf.len() - (i + 1 + d));
+                            // Keep a cursor into the current window rather than draining its
+                            // prefix for every false sync candidate. The cursor is not a
+                            // frame boundary: the candidate there still needs confirming.
+                            self.resume = Some(at + 1 + d as u64);
                         }
                         None => {
                             self.skipped += (self.buf.len() - i - 1) as u64;
-                            self.trim(0);
+                            // A split header can begin in the final few bytes; compact once.
+                            self.resume = None;
+                            self.trim(7);
                             return;
                         }
                     }

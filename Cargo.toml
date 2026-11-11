@@ -4,7 +4,13 @@ members = ["crates/*", "apps/*", "xtask"]
 default-members = ["crates/*", "apps/*", "xtask"]
 # Cargo does not expand globs here: each vendored crate is named, so `--workspace` does not
 # build their tests (their dev-dependencies stay out of Cargo.lock; scripts/dev/test-vendored-ui.sh).
-exclude = ["vendor/cfa4-libs/docpath", "vendor/cfa4-libs/ui"]
+exclude = [
+    "vendor/cfa4-libs/docpath",
+    "vendor/cfa4-libs/ui",
+    "vendor/ffmpeg-bindings/rsmedia",
+    "vendor/ffmpeg-bindings/rsmpeg",
+    "vendor/ffmpeg-bindings/rusty_ffmpeg",
+]
 
 [workspace.package]
 version = "0.10.0"
@@ -40,12 +46,18 @@ cfa4-hevc = { path = "crates/hevc" }
 cfa4-heif = { path = "crates/heif" }
 cfa4-jxl = { path = "crates/jxl" }
 cfa4-vp8 = { path = "crates/vp8" }
+cfa4-adpcm = { path = "crates/adpcm" }
+cfa4-hap = { path = "crates/hap" }
+cfa4-utvideo = { path = "crates/utvideo" }
+cfa4-huffyuv = { path = "crates/huffyuv" }
+cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
 cfa4-dnx = { path = "crates/dnx" }
 cfa4-cineform = { path = "crates/cineform" }
 cfa4-j2k = { path = "crates/j2k" }
 cfa4-iab = { path = "crates/iab" }
+cfa4-dcp = { path = "crates/dcp" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-av1 = { path = "crates/av1" }
@@ -69,6 +81,7 @@ cfa4-tts-text = { path = "crates/tts-text" }
 cfa4-render = { path = "crates/render" }
 cfa4-gpu = { path = "crates/gpu" }
 cfa4-scopes = { path = "crates/scopes" }
+cfa4-qc = { path = "crates/qc" }
 cfa4-export = { path = "crates/export" }
 cfa4-smart-edit = { path = "crates/smart-edit" }
 cfa4-format = { path = "crates/format" }
@@ -78,12 +91,20 @@ cfa4-automation = { path = "crates/automation" }
 cfa4-platform = { path = "crates/platform" }
 cfa4-testkit = { path = "crates/testkit" }
 cfa4-gstreamer = { path = "crates/gstreamer" }
+cfa4-ffmpeg = { path = "crates/ffmpeg" }
+# FFmpeg bindings of cfa4-ffmpeg (ADR 0005), vendored snapshots (vendor/ffmpeg-bindings/*/SOURCE_MANIFEST.json)
+rsmedia = { version = "0.7.1", path = "vendor/ffmpeg-bindings/rsmedia", default-features = false, features = ["ndarray", "ffmpeg9", "link_system_ffmpeg"] }
+rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-features = false, features = ["ffmpeg9", "link_system_ffmpeg"] }
+rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
+cfa4-metrics = { path = "crates/metrics" }
 
 # foundation
 thiserror = "2"
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 log = "0.4"
+# All date/time conversion goes through chrono (no hand-rolled calendar code beyond the 400-year range extension; AGENTS.md).
+chrono = { version = "0.4.45", default-features = false, features = ["std"] }
 rayon = "1"
 proptest = "1"
 roxmltree = "0.21"
@@ -106,6 +127,18 @@ todo = "warn"
 too_many_arguments = "allow"
 needless_range_loop = "allow"
 type_complexity = "allow"
+
+[profile.dev.package.cfa4-hap]
+opt-level = 3
+
+[profile.dev.package.cfa4-ffv1]
+opt-level = 3
+
+[profile.dev.package.cfa4-huffyuv]
+opt-level = 3
+
+[profile.dev.package.cfa4-utvideo]
+opt-level = 3
 
 [profile.dev.package."*"]
 opt-level = 2
@@ -161,6 +194,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-vp8]
+opt-level = 3
+
+[profile.dev.package.cfa4-adpcm]
 opt-level = 3
 
 [profile.dev.package.cfa4-vp9]

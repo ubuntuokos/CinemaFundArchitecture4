@@ -7,7 +7,7 @@ bits are consistent. A breadth-first walk over bit strings then recovers each co
 
 Usage: python3 derive.py <1..11 | 0 for scalefactors>   (writes cbN.json)
        python3 gen.py                                  (writes huffman_tables.rs)
-Needs only the Python standard library and ffmpeg at /opt/homebrew/bin.
+Needs only the Python standard library and ffmpeg at /usr/bin.
 """
 import subprocess, struct, math, sys, os, tempfile
 
@@ -44,7 +44,7 @@ def silent():
 
 def run(frames):
     fd,path=tempfile.mkstemp(suffix='.aac'); os.write(fd,b''.join(frames)); os.close(fd)
-    p=subprocess.run(['/opt/homebrew/bin/ffmpeg','-v','error','-f','aac','-i',path,'-f','f32le','-'],capture_output=True)
+    p=subprocess.run(['/usr/bin/ffmpeg','-v','error','-f','aac','-i',path,'-f','f32le','-'],capture_output=True)
     os.unlink(path)
     n=len(p.stdout)//4
     return list(struct.unpack('<%df'%n,p.stdout)), p.stderr.decode()

@@ -11,15 +11,22 @@
 //! When every fallback fails, the built-in result is returned unchanged, so registering a fallback
 //! never makes a file that opened before fail. Fallbacks are registered once at startup by the
 //! application (layer L5/L6); nothing is registered by default.
+//!
+//! Their order comes from the compute router (ADR 0004 / ADR 0005): [`set_fallback_order`] takes
+//! the supplementary backends of the router's `codec_decode` chain, after CFA4's own engine, and
+//! a backend the chain leaves out (a user `routing.toml` without it) is not tried. Until an order
+//! is set, the registration order applies.
 
 use std::path::Path;
 use std::sync::RwLock;
 
-use crate::{AUDIO_EXTENSIONS, MediaError, Result, STILL_EXTENSIONS, SharedSource, VIDEO_EXTENSIONS};
+use crate::{AUDIO_EXTENSIONS, FrameRequest, MediaError, Result, STILL_EXTENSIONS, SharedSource, VIDEO_EXTENSIONS};
 
 /// A fallback media backend.
 #[derive(Clone, Copy, Debug)]
 pub struct Fallback {
+    /// The backend's id in the routing table and in Settings ▸ Media Backends (`"gstreamer"`).
+    pub id: &'static str,
     /// Short name for logs and diagnostics (`"GStreamer"`).
     pub name: &'static str,
     /// Extra video file extensions (lower case, no dot) this backend makes importable.
@@ -35,23 +42,55 @@ fn registry() -> &'static RwLock<Vec<Fallback>> {
     &R
 }
 
-/// Registers `f` after the fallbacks registered before it. Registering the same name twice keeps
+/// Registers `f` after the fallbacks registered before it. Registering the same id twice keeps
 /// the first registration.
 pub fn register_fallback(f: Fallback) {
     let mut r = registry().write().unwrap_or_else(|e| e.into_inner());
-    if !r.iter().any(|x| x.name == f.name) {
+    if !r.iter().any(|x| x.id == f.id) {
         r.push(f);
+        drop(r);
+        // the router ordered the fallbacks it knew: a new one would be left out until it is asked
+        // again (the next Preferences apply), so the registration order applies until then
+        set_fallback_order(None);
     }
 }
 
-/// The registered fallbacks, in the order they are tried.
-pub fn fallbacks() -> Vec<Fallback> {
+fn order() -> &'static RwLock<Option<Vec<String>>> {
+    static O: RwLock<Option<Vec<String>>> = RwLock::new(None);
+    &O
+}
+
+/// The order the router chose for the fallbacks, by id: only these are tried, in this order.
+/// `None` goes back to the registration order (tests, and before the router has run).
+pub fn set_fallback_order(ids: Option<Vec<String>>) {
+    *order().write().unwrap_or_else(|e| e.into_inner()) = ids;
+}
+
+/// The order set by [`set_fallback_order`], if any.
+pub fn fallback_order() -> Option<Vec<String>> {
+    order().read().unwrap_or_else(|e| e.into_inner()).clone()
+}
+
+/// Every registered fallback, in registration order (for extensions and diagnostics).
+pub fn registered_fallbacks() -> Vec<Fallback> {
     registry().read().unwrap_or_else(|e| e.into_inner()).clone()
+}
+
+/// The fallbacks that are tried, in the order they are tried: the router's order when one is set
+/// (backends it leaves out are skipped), else the registration order.
+pub fn fallbacks() -> Vec<Fallback> {
+    let all = registered_fallbacks();
+    match fallback_order() {
+        None => all,
+        Some(ids) => ids.iter().filter_map(|id| all.iter().find(|f| f.id == id).copied()).collect(),
+    }
 }
 
 fn merged(base: &'static [&'static str], extra: impl Fn(&Fallback) -> &'static [&'static str]) -> Vec<&'static str> {
     let mut v: Vec<&'static str> = base.to_vec();
-    for f in fallbacks() {
+    // a file stays importable while its backend is registered, whatever the order: when the
+    // router leaves the backend out, the import reports why instead of hiding the file
+    for f in registered_fallbacks() {
         for e in extra(&f) {
             if !v.contains(e) {
                 v.push(e);
@@ -95,7 +134,25 @@ pub fn open_with_fallback(path: &Path, native: Result<SharedSource>) -> Result<S
     }
     match native {
         Ok(src) => {
-            if src.info().has_video() || !video_extensions().contains(&extension(path).as_str()) {
+            if src.info().has_video() {
+                // The built-in openers can read a container whose video codec they have no decoder
+                // for (MPEG-4 Part 2 in AVI): the first frame tells, and then a fallback that
+                // decodes it takes the file. A damaged file (a decode error) stays with them.
+                if let Err(MediaError::Unsupported(why)) = src.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)) {
+                    for f in &fallbacks {
+                        match (f.open)(path) {
+                            Ok(alt) if alt.info().has_video() => {
+                                log::info!("{}: opened by {} (the built-in decoders: {why})", path.display(), f.name);
+                                return Ok(alt);
+                            }
+                            Ok(_) => {}
+                            Err(e) => log::debug!("{}: {} fallback declined: {e}", path.display(), f.name),
+                        }
+                    }
+                }
+                return Ok(src);
+            }
+            if !video_extensions().contains(&extension(path).as_str()) {
                 return Ok(src);
             }
             for f in &fallbacks {
@@ -152,7 +209,7 @@ mod tests {
                 bitrate: None,
                 hdr: None,
             }),
-            audio_streams: vec![AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: "test".into(), bits_per_sample: None }],
+            audio_streams: vec![AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: "test".into(), bits_per_sample: None, speakers: Vec::new() }],
             container: "test".into(),
             start_timecode: None,
             file_size: None,
@@ -168,8 +225,14 @@ mod tests {
         if path.to_string_lossy().contains("ok") { Ok(src(true)) } else { Err(MediaError::Unsupported("test fallback".into())) }
     }
 
-    fn register() {
-        register_fallback(Fallback { name: "test", video_extensions: &["zzv"], audio_extensions: &["zza"], open: test_open });
+    /// The registry and the order are process-wide: tests that register or open hold this lock,
+    /// so one test's order does not change another's result.
+    fn register() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let guard = LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        register_fallback(Fallback { id: "test", name: "test", video_extensions: &["zzv"], audio_extensions: &["zza"], open: test_open });
+        set_fallback_order(None);
+        guard
     }
 
     fn file(name: &str) -> std::path::PathBuf {
@@ -182,8 +245,9 @@ mod tests {
 
     #[test]
     fn extensions_include_registered_ones_once() {
-        register();
-        register();
+        let _g = register();
+        drop(_g);
+        let _g = register();
         assert_eq!(video_extensions().iter().filter(|e| **e == "zzv").count(), 1);
         assert!(audio_extensions().contains(&"zza"));
         assert!(importable_extensions().contains(&"zzv") && importable_extensions().contains(&"png"));
@@ -193,7 +257,7 @@ mod tests {
 
     #[test]
     fn unsupported_files_go_to_the_fallback() {
-        register();
+        let _g = register();
         let p = file("ok.zzv");
         let opened = open_with_fallback(&p, Err(MediaError::Unsupported("native".into()))).unwrap();
         assert!(opened.info().has_video());
@@ -201,7 +265,7 @@ mod tests {
 
     #[test]
     fn native_error_is_kept_when_the_fallback_declines() {
-        register();
+        let _g = register();
         let p = file("nope.zzv");
         let err = open_with_fallback(&p, Err(MediaError::Unsupported("native".into()))).err().unwrap();
         assert!(err.to_string().contains("native"), "{err}");
@@ -209,7 +273,7 @@ mod tests {
 
     #[test]
     fn io_and_offline_errors_are_not_retried() {
-        register();
+        let _g = register();
         let p = file("ok.mkv");
         assert!(matches!(open_with_fallback(&p, Err(MediaError::Io("disk".into()))), Err(MediaError::Io(_))));
         assert!(matches!(open_with_fallback(&p, Err(MediaError::Offline("gone".into()))), Err(MediaError::Offline(_))));
@@ -217,7 +281,7 @@ mod tests {
 
     #[test]
     fn audio_only_result_of_a_video_file_is_upgraded() {
-        register();
+        let _g = register();
         let p = file("ok.mkv");
         let opened = open_with_fallback(&p, Ok(src(false))).unwrap();
         assert!(opened.info().has_video());
@@ -228,16 +292,64 @@ mod tests {
 
     #[test]
     fn audio_only_result_is_kept_when_the_fallback_finds_no_video() {
-        register();
+        let _g = register();
         let p = file("nope.mkv");
         let opened = open_with_fallback(&p, Ok(src(false))).unwrap();
         assert!(!opened.info().has_video());
         assert!(opened.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)).is_err());
     }
 
+    /// Built-in openers that read the container but have no decoder for its video codec.
+    struct NoVideoDecoder(MediaInfo);
+
+    impl crate::MediaSource for NoVideoDecoder {
+        fn info(&self) -> &MediaInfo {
+            &self.0
+        }
+        fn video_frame(&self, _req: FrameRequest) -> Result<Arc<crate::VideoFrame>> {
+            Err(MediaError::Unsupported("no decoder for MPEG-4 Part 2 (DivX / Xvid) video".into()))
+        }
+        fn audio(&self, _start: i64, _frames: usize, _sample_rate: u32) -> Result<crate::AudioBuffer> {
+            Err(MediaError::NoStream("audio"))
+        }
+    }
+
+    #[test]
+    fn a_video_codec_without_a_built_in_decoder_goes_to_the_fallback() {
+        let _g = register();
+        let p = file("ok.avi");
+        let native: SharedSource = Arc::new(NoVideoDecoder(info(true)));
+        let opened = open_with_fallback(&p, Ok(native)).unwrap();
+        // the fallback's source (OfflineSource) draws frames; the native one could not
+        assert!(opened.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)).is_ok());
+        // when no fallback decodes it either, the built-in source and its message stay
+        let q = file("nope.avi");
+        let kept = open_with_fallback(&q, Ok(Arc::new(NoVideoDecoder(info(true))) as SharedSource)).unwrap();
+        assert!(matches!(kept.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)), Err(MediaError::Unsupported(_))));
+        // a decodable built-in source is never replaced
+        let fine = open_with_fallback(&p, Ok(src(true))).unwrap();
+        assert!(fine.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)).is_ok());
+    }
+
+    #[test]
+    fn the_router_order_selects_and_orders_the_fallbacks() {
+        let _g = register();
+        let p = file("ok.zzv");
+        // an order without the backend: it is not tried, the built-in result stays
+        set_fallback_order(Some(vec!["ffmpeg".into()]));
+        assert!(fallbacks().iter().all(|f| f.id != "test"));
+        assert!(open_with_fallback(&p, Err(MediaError::Unsupported("native".into()))).is_err());
+        // an order with it: tried again
+        set_fallback_order(Some(vec!["gstreamer".into(), "test".into()]));
+        assert_eq!(fallbacks().iter().map(|f| f.id).collect::<Vec<_>>(), vec!["test"]);
+        assert!(open_with_fallback(&p, Err(MediaError::Unsupported("native".into()))).is_ok());
+        set_fallback_order(None);
+        assert!(registered_fallbacks().iter().any(|f| f.id == "test"));
+    }
+
     #[test]
     fn missing_paths_are_not_given_to_fallbacks() {
-        register();
+        let _g = register();
         let missing = Path::new("/nonexistent/cfa4/ok.zzv");
         assert!(matches!(open_with_fallback(missing, Err(MediaError::Unsupported("native".into()))), Err(MediaError::Unsupported(_))));
     }
