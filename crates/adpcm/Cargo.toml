@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-adpcm"
+description = "Clean-room pure-Rust G.711 (mu-law, A-law), G.722, IMA ADPCM and Microsoft ADPCM decoders"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

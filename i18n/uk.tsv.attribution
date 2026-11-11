@@ -1,0 +1,8 @@
+asset:        uk.tsv
+title:        Ukrainian interface translation catalog
+author:       Upstream contributors (the core-menu section); CFA4 contributors (the rest of the interface, PR #827 and the top-level catalog)
+source:       original work
+license:      MIT OR Apache-2.0 (the core-menu section); GPL-3.0-or-later (the rest)
+license-file: LICENSE-MIT and LICENSE-APACHE; LICENSE for the rest
+added:        2026-10-09 by dmatviichuk
+notes:        Original English-to-Ukrainian menu translations migrated to the TSV catalog format. 2026-11-11: completed to the whole interface (4,081 entries), clean-room, below a divider after the original section.

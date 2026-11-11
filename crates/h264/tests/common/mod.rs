@@ -27,6 +27,9 @@ pub struct Fixture {
 }
 
 const NOISE: &str = "noise=alls=12:allf=t+u";
+/// [`NOISE`] for 4:0:0: the noise filter has no gray formats, so its output is converted back.
+const NOISE_GRAY: &str = "noise=alls=12:allf=t+u,format=gray";
+const NOISE_GRAY10: &str = "noise=alls=12:allf=t+u,format=gray10le";
 
 pub const FIXTURES: &[Fixture] = &[
     // interlaced coding (#162): libx264 `interlaced=1` codes MBAFF frames, `fake-interlaced=1`
@@ -515,6 +518,107 @@ pub const FIXTURES: &[Fixture] = &[
         filter: "",
         args: &["-profile:v", "high10", "-crf", "20"],
     },
+    // monochrome (4:0:0, chroma_format_idc 0; #279): libx264 codes `gray` input as 4:0:0
+    Fixture {
+        name: "mono_intra",
+        pix_fmt: "gray",
+        source: "smptehdbars",
+        width: 320,
+        height: 240,
+        frames: 5,
+        filter: NOISE_GRAY,
+        args: &["-profile:v", "high", "-crf", "12", "-x264-params", "keyint=1"],
+    },
+    Fixture {
+        name: "mono_cavlc",
+        pix_fmt: "gray",
+        source: "mandelbrot",
+        width: 176,
+        height: 144,
+        frames: 10,
+        filter: NOISE_GRAY,
+        args: &["-profile:v", "high", "-crf", "18", "-x264-params", "cabac=0"],
+    },
+    Fixture {
+        name: "mono_cabac_b",
+        pix_fmt: "gray",
+        source: "testsrc2",
+        width: 352,
+        height: 288,
+        frames: 25,
+        filter: NOISE_GRAY,
+        args: &["-profile:v", "high", "-crf", "22", "-x264-params", "bframes=3:b-pyramid=normal:weightb=1:weightp=2"],
+    },
+    Fixture {
+        name: "mono_qp_low",
+        pix_fmt: "gray",
+        source: "mandelbrot",
+        width: 176,
+        height: 144,
+        frames: 8,
+        filter: NOISE_GRAY,
+        args: &["-profile:v", "high", "-qp", "1"],
+    },
+    Fixture {
+        name: "mono_qp_high",
+        pix_fmt: "gray",
+        source: "testsrc2",
+        width: 176,
+        height: 144,
+        frames: 8,
+        filter: NOISE_GRAY,
+        args: &["-profile:v", "high", "-qp", "51"],
+    },
+    Fixture {
+        name: "mono_10",
+        pix_fmt: "gray10le",
+        source: "testsrc2",
+        width: 352,
+        height: 288,
+        frames: 20,
+        filter: NOISE_GRAY10,
+        args: &["-profile:v", "high10", "-crf", "20", "-x264-params", "bframes=2:weightp=2"],
+    },
+    Fixture {
+        name: "mono_10_cavlc",
+        pix_fmt: "gray10le",
+        source: "mandelbrot",
+        width: 176,
+        height: 144,
+        frames: 10,
+        filter: NOISE_GRAY10,
+        args: &["-profile:v", "high10", "-crf", "16", "-x264-params", "cabac=0:keyint=4"],
+    },
+    Fixture {
+        name: "mono_crop",
+        pix_fmt: "gray",
+        source: "testsrc2",
+        width: 350,
+        height: 286,
+        frames: 6,
+        filter: NOISE_GRAY,
+        args: &["-profile:v", "high", "-crf", "20"],
+    },
+    Fixture {
+        name: "mono_mbaff",
+        pix_fmt: "gray",
+        source: "testsrc2",
+        width: 352,
+        height: 288,
+        frames: 10,
+        filter: NOISE_GRAY,
+        args: &["-profile:v", "high", "-x264-params", "interlaced=1:bframes=2"],
+    },
+    Fixture {
+        name: "mono_lossless",
+        pix_fmt: "gray",
+        source: "mandelbrot",
+        width: 176,
+        height: 144,
+        frames: 6,
+        filter: NOISE_GRAY,
+        args: &["-profile:v", "high444", "-qp", "0"],
+    },
     // High 4:2:2 and High 4:4:4 Predictive (#161; lossless 4:4:4 is #163)
     Fixture {
         name: "high422_intra",
@@ -874,7 +978,13 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
         let tmp = cfa4_testkit::temp_path(&yuv);
         let mut c = Command::new(&ff);
         c.args(["-hide_banner", "-loglevel", "error", "-y", "-i"]).arg(&h264);
-        c.args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", f.pix_fmt]).arg(&tmp);
+        c.args(["-fps_mode", "passthrough", "-f", "rawvideo"]);
+        // ffmpeg decodes 4:0:0 as 4:2:0 with neutral chroma, like the decoder: kept as it is (a
+        // conversion could also change the range)
+        if !f.pix_fmt.starts_with("gray") {
+            c.args(["-pix_fmt", f.pix_fmt]);
+        }
+        c.arg(&tmp);
         assert!(run(&mut c), "reference decode failed for {}", f.name);
         std::fs::rename(&tmp, &yuv).unwrap();
     }

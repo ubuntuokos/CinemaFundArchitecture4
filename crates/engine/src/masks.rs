@@ -10,7 +10,7 @@
 //! key folds a continuous drag into one step).
 
 use cfa4_geom::{Affine, Vec2};
-use cfa4_project::{ClipId, EffectInstance, Mask, MaskMode, MaskPath, MaskVertex, ParamValue, TrackKind, TrackMethod};
+use cfa4_project::{ClipId, EffectInstance, Mask, MaskMode, MaskPath, MaskVertex, ParamValue, TrackKind, TrackMethod, Tracker};
 use cfa4_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -45,7 +45,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "masks.set",
             "Change Mask",
-            r#"{"clip":id?,"effect":index|id?,"mask":n?,"name":str?,"inverted":bool?,"mode":"none|add|subtract|intersect|lighten|darken|difference"?,"trackMethod":"position|positionRotation|positionScaleRotation"?,"feather":px?,"opacity":pct?,"expansion":px?,"path":path?,"time":ticks?,"merge":key?}"#,
+            r#"{"clip":id?,"effect":index|id?,"mask":n?,"name":str?,"inverted":bool?,"mode":"none|add|subtract|intersect|lighten|darken|difference"?,"trackMethod":"position|positionRotation|positionScaleRotation"?,"tracker":"points|correlation"?,"feather":px?,"opacity":pct?,"expansion":px?,"path":path?,"time":ticks?,"merge":key?}"#,
             set,
         ),
         spec(
@@ -60,7 +60,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "masks.track",
             "Track Selected Mask",
-            r#"{"clip":id?,"effect":index|id?,"mask":n?,"direction":"forward"|"backward"?,"frames":n?,"method":"position|positionRotation|positionScaleRotation"?,"wait":bool?}"#,
+            r#"{"clip":id?,"effect":index|id?,"mask":n?,"direction":"forward"|"backward"?,"frames":n?,"method":"position|positionRotation|positionScaleRotation"?,"tracker":"points|correlation"?,"wait":bool?}"#,
             track,
         ),
         spec("masks.toggleVertexSmooth", "Convert Mask Vertex", r#"{"clip":id?,"effect":index|id?,"mask":n?,"vertex":n}"#, toggle_smooth),
@@ -287,6 +287,10 @@ fn set(s: &mut Session, p: &Value) -> Result<Value> {
         Some(m) => Some(TrackMethod::from_name(m).ok_or_else(|| bad("masks.set", format!("unknown tracking method `{m}`")))?),
         None => None,
     };
+    let tracker = match str_p(p, "tracker") {
+        Some(t) => Some(Tracker::from_name(t).ok_or_else(|| bad("masks.set", format!("unknown tracker `{t}`: points or correlation")))?),
+        None => None,
+    };
     let name = str_p(p, "name").map(str::to_string);
     let inverted = bool_p(p, "inverted");
     let nums: Vec<(&str, f64)> = ["feather", "opacity", "expansion"].into_iter().filter_map(|k| f64_p(p, k).map(|v| (k, v))).collect();
@@ -302,6 +306,9 @@ fn set(s: &mut Session, p: &Value) -> Result<Value> {
         }
         if let Some(me) = method {
             m.track_method = me;
+        }
+        if let Some(t) = tracker {
+            m.tracker = t;
         }
         for (k, v) in nums {
             let v = match k {
@@ -567,6 +574,7 @@ fn list(s: &mut Session, p: &Value) -> Result<Value> {
                         "mode": m.mode.label(),
                         "inverted": m.inverted,
                         "trackMethod": m.track_method.label(),
+                        "tracker": m.tracker.label(),
                         "feather": m.feather.f64_at(mt),
                         "opacity": m.opacity.f64_at(mt),
                         "expansion": m.expansion.f64_at(mt),
@@ -626,6 +634,10 @@ fn track(s: &mut Session, p: &Value) -> Result<Value> {
         Some(m) => TrackMethod::from_name(m).ok_or_else(|| bad("masks.track", format!("unknown method `{m}`")))?,
         None => mask.track_method,
     };
+    let tracker = match str_p(p, "tracker") {
+        Some(t) => Tracker::from_name(t).ok_or_else(|| bad("masks.track", format!("unknown tracker `{t}`: points or correlation")))?,
+        None => mask.tracker,
+    };
     let backward = match str_p(p, "direction").unwrap_or("forward") {
         "forward" => false,
         "backward" => true,
@@ -650,7 +662,12 @@ fn track(s: &mut Session, p: &Value) -> Result<Value> {
     let size = cfa4_render::source_size(&s.project, it.item).ok_or_else(|| bad("masks.track", "the clip has no picture"))?;
     let scale = (TRACK_MAX_WIDTH / size.0.max(1) as f64).min(1.0) as f32;
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
-    let label = format!("Track {} ({})", mask.name, if backward { "backward" } else { "forward" });
+    let label = format!(
+        "Track {} ({}{})",
+        mask.name,
+        if backward { "backward" } else { "forward" },
+        if tracker == Tracker::Correlation { ", correlation" } else { "" }
+    );
     let job = crate::Job { id, label: label.clone(), progress: Default::default(), result: Default::default() };
     job.progress.total.store(steps as u64, std::sync::atomic::Ordering::Relaxed);
     let keys: Arc<Mutex<Vec<(Tick, MaskPath)>>> = Arc::default();
@@ -671,6 +688,21 @@ fn track(s: &mut Session, p: &Value) -> Result<Value> {
             None => err = Some("can't decode the clip".into()),
             Some((mut prev, mut k_prev)) => {
                 lock(&out).push((mt0, path.clone()));
+                // The correlation tracker keeps a model across frames; it estimates position and,
+                // for Position, Scale & Rotation, scale (never rotation).
+                let mut corr = if tracker == Tracker::Correlation {
+                    let region: Vec<Vec2> = path.flatten(0.5).into_iter().map(|q| q * k_prev).collect();
+                    match cfa4_render::cftrack::CorrTracker::new(prev.base(), &region, method == TrackMethod::PositionScaleRotation) {
+                        Some(c) => Some(c),
+                        None => {
+                            err = Some("can't track: the mask is empty or outside the picture".into());
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+                let steps = if err.is_some() { 0 } else { steps };
                 for step in 1..=steps {
                     if prog.cancel.load(Ordering::Relaxed) {
                         err = Some("stopped".into());
@@ -681,18 +713,27 @@ fn track(s: &mut Session, p: &Value) -> Result<Value> {
                         err = Some(format!("can't decode frame {step}"));
                         break;
                     };
-                    let region: Vec<Vec2> = path.flatten(0.5).into_iter().map(|q| q * k_prev).collect();
-                    let Some(st) = cfa4_render::track::track_step(&prev, &next, &region, method) else {
-                        err = Some(format!("lost track after {} frame(s): not enough detail inside the mask", step - 1));
-                        break;
+                    let (transform, status) = if let Some(c) = corr.as_mut() {
+                        let Some(st) = c.update(next.base()) else {
+                            err = Some(format!("lost track after {} frame(s): the object is hidden or left the picture", step - 1));
+                            break;
+                        };
+                        (st.transform, format!("Frame {step} of {steps} · confidence {:.0}", st.confidence))
+                    } else {
+                        let region: Vec<Vec2> = path.flatten(0.5).into_iter().map(|q| q * k_prev).collect();
+                        let Some(st) = cfa4_render::track::track_step(&prev, &next, &region, method) else {
+                            err = Some(format!("lost track after {} frame(s): not enough detail inside the mask", step - 1));
+                            break;
+                        };
+                        (st.transform, format!("Frame {step} of {steps} · {} features", st.inliers))
                     };
                     // frame pixels → clip pixels
-                    let m = Affine::scale(1.0 / k, 1.0 / k).then_apply(&st.transform).then_apply(&Affine::scale(k_prev, k_prev));
+                    let m = Affine::scale(1.0 / k, 1.0 / k).then_apply(&transform).then_apply(&Affine::scale(k_prev, k_prev));
                     path = path.transformed(&m);
                     lock(&out).push((t, path.clone()));
                     done += 1;
                     prog.done.store(done, Ordering::Relaxed);
-                    *lock(&prog.status) = format!("Frame {step} of {steps} · {} features", st.inliers);
+                    *lock(&prog.status) = status;
                     prev = next;
                     k_prev = k;
                 }

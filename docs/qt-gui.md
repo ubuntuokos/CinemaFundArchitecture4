@@ -40,6 +40,12 @@ it checked and why. `--smoke [--screenshot out.png]`
 starts, waits for the engine, and quits (CI). `--no-autosave` turns off the auto-save and
 crash-recovery journal, `--data-dir` moves it.
 
+**OpenGL monitors (trial).** `CFA4_QT_MONITOR_GL=1 cfa4-qt` draws the Program and Source monitors' picture
+through OpenGL (a QOpenGLWidget: the frame goes up as a texture straight from the engine's shared memory
+and is scaled on the GPU). Where no GL context can be made the monitors stay on Qt's raster drawing. Compare
+both with `perf.stats` (`playback.present`: `path`, `meanMs`, `maxMs`) while playing 1080p and 4K on the
+reference machine; it becomes the default only after that measurement (qt-parity 5.5).
+
 **Agents.** `cfa4-qt --control 9876` serves egui's control channel ([control-protocol.md](control-protocol.md)),
 and `cfa4-cli mcp --bridge 127.0.0.1:9876` (the `cfa4` server in `.mcp.json`) drives the Qt window over
 MCP as it drives egui's: commands, the document, the `ui_*` tools, `ui_screenshot`, `render_preview`
@@ -160,7 +166,7 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 | `python/cfa4_qt/status_bar.py`, `hot_number.py`, `calc.py`, `timecode.py`, `dialogs.py` | shared widgets and helpers |
 | `python/cfa4_qt/credits.py`, `export_summary.py` | About credits, export summary lines |
 | `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Preferences, …) |
-| `python/cfa4_qt/i18n.py`, `i18n/*.tsv` | translations (shared catalogs + full Hungarian + the Qt-only strings in nine more languages) |
+| `python/cfa4_qt/i18n.py`, top-level `i18n/*.tsv` | translations: one catalog per language shared with egui (full Hungarian; the Qt-only strings in a "Qt GUI" section of the other ten) |
 | `python/tests/test_qt_gui.py` | framing, registry, i18n, window against a fake and the real engine |
 | `python/tests/test_qt_translations.py` | every finished language covers the Qt strings, placeholders kept |
 
