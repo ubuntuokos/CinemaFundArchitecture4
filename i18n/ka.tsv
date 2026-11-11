@@ -3690,6 +3690,17 @@ export.summary	High	მაღალი
 export.summary	Medium	საშუალო
 export.summary	Low	დაბალი
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	აუდიო დაკოპირდა: {tracks}
+	Audio track {track} is not copied: {why}	აუდიოტრეკი {track} არ კოპირდება: {why}
+	Point tracker	წერტილის ტრეკერი
+	Correlation tracker	კორელაციის ტრეკერი
+	DCP language	DCP-ის ენა
+	None (RFC 5646 tag, e.g. en-US)	არცერთი (RFC 5646 ტეგი, მაგ. ka-GE)
+	ISDCF name	ISDCF სახელი
+	Name the DCP folder by the Digital Cinema Naming Convention	DCP საქაღალდის დასახელება Digital Cinema Naming Convention-ის მიხედვით
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/ka/ (its vector-editor catalog) at aa36bd8, 2026-11-10. MIT OR Apache-2.0;
 # the copyright notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (ka).

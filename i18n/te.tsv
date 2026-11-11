@@ -3903,6 +3903,17 @@ export.summary	High	ఎక్కువ
 export.summary	Medium	మధ్యస్థం
 export.summary	Low	తక్కువ
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	ఆడియో కాపీ చేయబడింది: {tracks}
+	Audio track {track} is not copied: {why}	ఆడియో ట్రాక్ {track} కాపీ చేయబడదు: {why}
+	Point tracker	పాయింట్ ట్రాకర్
+	Correlation tracker	సహసంబంధ ట్రాకర్
+	DCP language	DCP భాష
+	None (RFC 5646 tag, e.g. en-US)	ఏదీ కాదు (RFC 5646 ట్యాగ్, ఉదా. te-IN)
+	ISDCF name	ISDCF పేరు
+	Name the DCP folder by the Digital Cinema Naming Convention	Digital Cinema Naming Convention ప్రకారం DCP ఫోల్డర్‌కు పేరు పెట్టు
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/te/ (common.tsv and the PDF-editor catalog) at aa36bd8, 2026-11-11.
 # MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's

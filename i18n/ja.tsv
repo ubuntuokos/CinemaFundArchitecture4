@@ -4111,3 +4111,13 @@
 	English (US)	English (US)
 	English (UK)	English (UK)
 	English (Australia)	English (Australia)
+
+# Qt GUI strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	コピーされた音声: {tracks}
+	Audio track {track} is not copied: {why}	音声トラック {track} はコピーされません: {why}
+	Point tracker	ポイントトラッカー
+	Correlation tracker	相関トラッカー
+	DCP language	DCPの言語
+	None (RFC 5646 tag, e.g. en-US)	なし（RFC 5646 タグ、例: ja-JP）
+	ISDCF name	ISDCF 名
+	Name the DCP folder by the Digital Cinema Naming Convention	DCP フォルダーに Digital Cinema Naming Convention に従って名前を付ける

@@ -3745,6 +3745,17 @@ export.summary	High	høj
 export.summary	Medium	middel
 export.summary	Low	lav
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Lyd kopieret: {tracks}
+	Audio track {track} is not copied: {why}	Lydspor {track} kopieres ikke: {why}
+	Point tracker	Punktsporing
+	Correlation tracker	Korrelationssporing
+	DCP language	DCP-sprog
+	None (RFC 5646 tag, e.g. en-US)	Intet (RFC 5646-tag, f.eks. da-DK)
+	ISDCF name	ISDCF-navn
+	Name the DCP folder by the Digital Cinema Naming Convention	Navngiv DCP-mappen efter Digital Cinema Naming Convention
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/da/ (common.tsv and the vector-editor catalog) at aa36bd8, 2026-11-10.
 # MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's

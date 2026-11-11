@@ -1,0 +1,13 @@
+# The nfpm that builds CFA4's .deb packages, pinned (#220, F1-01). Sourced by
+# packaging/linux/check-nfpm.sh (which refuses any other binary) and scripts/release/install-nfpm.sh
+# (which builds exactly this one). Plain KEY=VALUE lines only.
+#
+# The binary is built from the Go module, not downloaded: the module's h1: hash is the one
+# sum.golang.org records for the tag, and with the pinned Go toolchain and install-nfpm.sh's flags
+# (-trimpath, CGO_ENABLED=0, GOAMD64=v1, empty build id) the build is reproducible, so its SHA-256
+# is fixed too. Bumping nfpm: change all four values together and re-run install-nfpm.sh twice on
+# two machines to confirm the new SHA-256 before committing it.
+CFA4_NFPM_VERSION=v2.48.0
+CFA4_NFPM_MODULE_SUM=h1:Yvd07lX8YqDD+rtTwVqyeQiDX+7cnun/jFbZD501uB8=
+CFA4_NFPM_GO_TOOLCHAIN=go1.26.11
+CFA4_NFPM_SHA256=3cb78d30e2161f377d373c7bc0fb30b87d823c073c8cdb9eb06250a29ffbe364

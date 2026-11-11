@@ -4107,3 +4107,13 @@
 	English (US)	English (US)
 	English (UK)	English (UK)
 	English (Australia)	English (Australia)
+
+# Qt GUI strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Audio copié : {tracks}
+	Audio track {track} is not copied: {why}	La piste audio {track} n’est pas copiée : {why}
+	Point tracker	Suivi de point
+	Correlation tracker	Suivi par corrélation
+	DCP language	Langue du DCP
+	None (RFC 5646 tag, e.g. en-US)	Aucune (balise RFC 5646, p. ex. fr-FR)
+	ISDCF name	Nom ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Nommer le dossier DCP selon la Digital Cinema Naming Convention

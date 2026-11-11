@@ -3573,6 +3573,17 @@ export.summary	High	υψηλή
 export.summary	Medium	μέτρια
 export.summary	Low	χαμηλή
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Ο ήχος αντιγράφηκε: {tracks}
+	Audio track {track} is not copied: {why}	Το κανάλι ήχου {track} δεν αντιγράφεται: {why}
+	Point tracker	Παρακολούθηση σημείου
+	Correlation tracker	Παρακολούθηση συσχέτισης
+	DCP language	Γλώσσα DCP
+	None (RFC 5646 tag, e.g. en-US)	Καμία (ετικέτα RFC 5646, π.χ. el-GR)
+	ISDCF name	Όνομα ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Ονομασία του φακέλου DCP κατά το Digital Cinema Naming Convention
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/el/common.tsv at aa36bd8, 2026-11-10. MIT OR Apache-2.0; the copyright
 # notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (el). These rows were

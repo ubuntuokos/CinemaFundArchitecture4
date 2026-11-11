@@ -4096,3 +4096,13 @@
 	English (US)	English (US)
 	English (UK)	English (UK)
 	English (Australia)	English (Australia)
+
+# Qt GUI strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	복사된 오디오: {tracks}
+	Audio track {track} is not copied: {why}	오디오 트랙 {track}은(는) 복사되지 않습니다: {why}
+	Point tracker	포인트 트래커
+	Correlation tracker	상관 트래커
+	DCP language	DCP 언어
+	None (RFC 5646 tag, e.g. en-US)	없음(RFC 5646 태그, 예: ko-KR)
+	ISDCF name	ISDCF 이름
+	Name the DCP folder by the Digital Cinema Naming Convention	Digital Cinema Naming Convention에 따라 DCP 폴더 이름 지정

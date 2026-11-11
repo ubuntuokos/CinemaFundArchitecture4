@@ -3573,6 +3573,17 @@ export.summary	High	高
 export.summary	Medium	中
 export.summary	Low	低
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	已複製音訊：{tracks}
+	Audio track {track} is not copied: {why}	音訊軌道 {track} 未複製：{why}
+	Point tracker	點追蹤器
+	Correlation tracker	相關性追蹤器
+	DCP language	DCP 語言
+	None (RFC 5646 tag, e.g. en-US)	無（RFC 5646 標記，例如 zh-TW）
+	ISDCF name	ISDCF 名稱
+	Name the DCP folder by the Digital Cinema Naming Convention	依 Digital Cinema Naming Convention 命名 DCP 資料夾
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/zh-hant/common.tsv at aa36bd8, 2026-11-10. MIT OR Apache-2.0; the copyright
 # notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (zh-hant). These rows were

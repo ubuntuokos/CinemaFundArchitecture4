@@ -3533,6 +3533,17 @@ export.summary	High	cao
 export.summary	Medium	trung bình
 export.summary	Low	thấp
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Đã sao chép âm thanh: {tracks}
+	Audio track {track} is not copied: {why}	Không sao chép rãnh âm thanh {track}: {why}
+	Point tracker	Bộ theo dõi điểm
+	Correlation tracker	Bộ theo dõi tương quan
+	DCP language	Ngôn ngữ DCP
+	None (RFC 5646 tag, e.g. en-US)	Không có (thẻ RFC 5646, ví dụ vi-VN)
+	ISDCF name	Tên ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Đặt tên thư mục DCP theo Digital Cinema Naming Convention
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/vi/common.tsv at aa36bd8, 2026-11-10. MIT OR Apache-2.0; the copyright
 # notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (vi). These rows were

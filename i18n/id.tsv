@@ -4110,3 +4110,13 @@
 	English (US)	English (US)
 	English (UK)	English (UK)
 	English (Australia)	English (Australia)
+
+# Qt GUI strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Audio disalin: {tracks}
+	Audio track {track} is not copied: {why}	Trek audio {track} tidak disalin: {why}
+	Point tracker	Pelacak titik
+	Correlation tracker	Pelacak korelasi
+	DCP language	Bahasa DCP
+	None (RFC 5646 tag, e.g. en-US)	Tidak ada (tag RFC 5646, mis. id-ID)
+	ISDCF name	Nama ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Namai folder DCP menurut Digital Cinema Naming Convention

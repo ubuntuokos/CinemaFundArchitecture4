@@ -105,7 +105,7 @@ impl Gray {
     }
 }
 
-fn point_in(poly: &[Vec2], x: f64, y: f64) -> bool {
+pub(crate) fn point_in(poly: &[Vec2], x: f64, y: f64) -> bool {
     let n = poly.len();
     let mut w = 0;
     for i in 0..n {
@@ -117,7 +117,7 @@ fn point_in(poly: &[Vec2], x: f64, y: f64) -> bool {
     w != 0
 }
 
-fn dist_to_poly(poly: &[Vec2], p: Vec2) -> f64 {
+pub(crate) fn dist_to_poly(poly: &[Vec2], p: Vec2) -> f64 {
     let n = poly.len();
     (0..n)
         .map(|i| {

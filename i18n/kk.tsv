@@ -3952,6 +3952,17 @@ export.summary	High	жоғары
 export.summary	Medium	орташа
 export.summary	Low	төмен
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Дыбыс көшірілді: {tracks}
+	Audio track {track} is not copied: {why}	{track} аудио жолы көшірілмейді: {why}
+	Point tracker	Нүкте трекері
+	Correlation tracker	Корреляциялық трекер
+	DCP language	DCP тілі
+	None (RFC 5646 tag, e.g. en-US)	Жоқ (RFC 5646 тегі, мыс. kk-KZ)
+	ISDCF name	ISDCF атауы
+	Name the DCP folder by the Digital Cinema Naming Convention	DCP қалтасын Digital Cinema Naming Convention бойынша атау
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/kk/ (common.tsv and the PDF-editor catalog) at aa36bd8, 2026-11-10.
 # MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's

@@ -3595,6 +3595,17 @@ export.summary	High	yüksek
 export.summary	Medium	orta
 export.summary	Low	düşük
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Ses kopyalandı: {tracks}
+	Audio track {track} is not copied: {why}	{track} ses parçası kopyalanmıyor: {why}
+	Point tracker	Nokta izleyici
+	Correlation tracker	Korelasyon izleyici
+	DCP language	DCP dili
+	None (RFC 5646 tag, e.g. en-US)	Yok (RFC 5646 etiketi, örn. tr-TR)
+	ISDCF name	ISDCF adı
+	Name the DCP folder by the Digital Cinema Naming Convention	DCP klasörünü Digital Cinema Naming Convention'a göre adlandır
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/tr/common.tsv at aa36bd8, 2026-11-10. MIT OR Apache-2.0; the copyright
 # notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (tr). These rows were

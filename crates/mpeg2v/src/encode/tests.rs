@@ -420,3 +420,18 @@ fn ffmpeg_decodes_our_streams() {
         assert!(worst <= 2, "{name}: ffmpeg differs by up to {worst}");
     }
 }
+
+/// The low-delay flag can be kept clear without B pictures (to splice into a stream that has
+/// them), and is refused with B pictures.
+#[test]
+fn the_low_delay_flag_follows_the_configuration() {
+    let mut cfg = Config::new(176, 144, 25, 1);
+    cfg.low_delay = Some(false);
+    let (es, _, _) = encode(cfg.clone(), 4);
+    let pics = decode(&es);
+    assert_eq!(pics.len(), 4);
+    assert!(!pics[0].info.low_delay);
+    cfg.low_delay = Some(true);
+    cfg.b_frames = 2;
+    assert!(Encoder::new(cfg).is_err());
+}

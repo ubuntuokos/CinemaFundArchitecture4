@@ -3919,6 +3919,17 @@ export.summary	High	kõrge
 export.summary	Medium	keskmine
 export.summary	Low	madal
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Heli kopeeritud: {tracks}
+	Audio track {track} is not copied: {why}	Helirada {track} ei kopeerita: {why}
+	Point tracker	Punktijälgija
+	Correlation tracker	Korrelatsioonijälgija
+	DCP language	DCP keel
+	None (RFC 5646 tag, e.g. en-US)	Puudub (RFC 5646 silt, nt et-EE)
+	ISDCF name	ISDCF-nimi
+	Name the DCP folder by the Digital Cinema Naming Convention	Nimeta DCP kaust Digital Cinema Naming Conventioni järgi
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/et/ (common.tsv and the word-processor catalog) at aa36bd8, 2026-11-10.
 # MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's

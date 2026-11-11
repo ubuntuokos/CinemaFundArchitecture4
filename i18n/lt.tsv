@@ -3939,6 +3939,17 @@ export.summary	High	aukšta
 export.summary	Medium	vidutinė
 export.summary	Low	žema
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Garsas nukopijuotas: {tracks}
+	Audio track {track} is not copied: {why}	Garso takelis {track} nekopijuojamas: {why}
+	Point tracker	Taško sekiklis
+	Correlation tracker	Koreliacinis sekiklis
+	DCP language	DCP kalba
+	None (RFC 5646 tag, e.g. en-US)	Nėra (RFC 5646 žymė, pvz., lt-LT)
+	ISDCF name	ISDCF pavadinimas
+	Name the DCP folder by the Digital Cinema Naming Convention	Pavadinti DCP aplanką pagal Digital Cinema Naming Convention
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/lt/ (common.tsv and the PDF-editor catalog) at aa36bd8, 2026-11-10.
 # MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's

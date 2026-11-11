@@ -3947,6 +3947,17 @@ export.summary	High	visoka
 export.summary	Medium	srednja
 export.summary	Low	niska
 
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Zvuk kopiran: {tracks}
+	Audio track {track} is not copied: {why}	Audiozapis {track} ne kopira se: {why}
+	Point tracker	Praćenje točke
+	Correlation tracker	Korelacijsko praćenje
+	DCP language	Jezik DCP-a
+	None (RFC 5646 tag, e.g. en-US)	Nijedan (RFC 5646 oznaka, npr. hr-HR)
+	ISDCF name	ISDCF naziv
+	Name the DCP folder by the Digital Cinema Naming Convention	Imenuj DCP mapu prema Digital Cinema Naming Convention
+
 # Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
 # craft-i18n), locales/hr/ (common.tsv and the word-processor catalog) at aa36bd8, 2026-11-10.
 # MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's
