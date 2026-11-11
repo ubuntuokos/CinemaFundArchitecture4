@@ -392,10 +392,7 @@
 	transitions	transições
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} quadros copiados, {reencoded} recodificados em cortes, {rendered} renderizados
 	{frames} frames are re-encoded or rendered. Continue?	{frames} quadros serão recodificados ou renderizados. Continuar?
-	Field order	Ordem dos campos
 	Progressive	Progressivo
-	Interlaced, upper field first	Entrelaçado, campo superior primeiro
-	Interlaced, lower field first	Entrelaçado, campo inferior primeiro
 # Smart Cut audio (WP-09b)
 	Audio copied: {tracks}	Áudio copiado: {tracks}
 	Audio track {track} is not copied: {why}	A faixa de áudio {track} não é copiada: {why}
