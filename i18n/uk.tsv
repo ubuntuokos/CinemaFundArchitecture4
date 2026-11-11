@@ -4190,3 +4190,14 @@
 	Fitting removed.	Підгонку знято.
 	Fit to This Length	Підігнати під цю тривалість
 	No music to measure ({problem}); type the length.	Немає музики для вимірювання ({problem}); введіть тривалість.
+	The text moves {speed} px per frame; a whole number does not shimmer	Текст зсувається на {speed} px за кадр; ціле число не мерехтить
+	Crawl	Біжучий рядок
+	Picture: {file}	Зображення: {file}
+	Video: {file}	Відео: {file}
+	Into the next	У наступну
+	Safe areas and spines	Безпечні зони та осі
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безпечна зона дії (93 %), безпечна зона заголовків (90 %), центр і осі сторінки
+	Baseline grid	Сітка базових ліній
+	Lines one gap unit apart, moving with the page	Лінії через одиницю інтервалу, рухаються разом зі сторінкою
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» не виділяється на тлі (контраст {ratio}:1; потрібно щонайменше 4.5:1)
+	A picture or video is behind the text: check the contrast by eye	За текстом зображення або відео: перевірте контраст на око

@@ -4208,3 +4208,14 @@ export.summary	Low	žema
 	Fitting removed.	Pritaikymas pašalintas.
 	Fit to This Length	Pritaikyti šiai trukmei
 	No music to measure ({problem}); type the length.	Nėra muzikos matuoti ({problem}); įveskite trukmę.
+	The text moves {speed} px per frame; a whole number does not shimmer	Tekstas juda {speed} px per kadrą; sveikasis skaičius nemirga
+	Crawl	Bėganti eilutė
+	Picture: {file}	Paveikslėlis: {file}
+	Video: {file}	Vaizdo įrašas: {file}
+	Into the next	Į kitą
+	Safe areas and spines	Saugios sritys ir ašys
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Veiksmo saugi sritis (93 %), titrų (90 %), centras ir puslapio ašys
+	Baseline grid	Pagrindinių linijų tinklelis
+	Lines one gap unit apart, moving with the page	Linijos kas vieną tarpo vienetą, judančios kartu su puslapiu
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ neišsiskiria iš fono (kontrastas {ratio}:1; reikia bent 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Už teksto yra paveikslėlis ar vaizdo įrašas: kontrastą patikrinkite akimis

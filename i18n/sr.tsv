@@ -4205,3 +4205,14 @@ export.summary	Low	низак
 	Fitting removed.	Прилагођавање уклоњено.
 	Fit to This Length	Прилагоди овом трајању
 	No music to measure ({problem}); type the length.	Нема музике за мерење ({problem}); унесите трајање.
+	The text moves {speed} px per frame; a whole number does not shimmer	Текст се помера {speed} px по кадру; цео број не трепери
+	Crawl	Покретни текст
+	Picture: {file}	Слика: {file}
+	Video: {file}	Видео: {file}
+	Into the next	У следећу
+	Safe areas and spines	Безбедне области и осе
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безбедна област радње (93 %), натписа (90 %), центар и осе странице
+	Baseline grid	Мрежа основних линија
+	Lines one gap unit apart, moving with the page	Линије размакнуте за једну јединицу размака, померају се са страницом
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” се не истиче од позадине (контраст {ratio}:1; потребно је најмање 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Иза текста је слика или видео: проверите контраст оком

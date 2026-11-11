@@ -4207,3 +4207,14 @@ export.summary	Low	matala
 	Fitting removed.	Sovitus poistettu.
 	Fit to This Length	Sovita tähän pituuteen
 	No music to measure ({problem}); type the length.	Ei musiikkia mitattavaksi ({problem}); kirjoita pituus.
+	The text moves {speed} px per frame; a whole number does not shimmer	Teksti liikkuu {speed} px kuvaa kohden; kokonaisluku ei värise
+	Crawl	Vaakavieritys
+	Picture: {file}	Kuva: {file}
+	Video: {file}	Video: {file}
+	Into the next	Seuraavaan
+	Safe areas and spines	Turva-alueet ja akselit
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Toiminnan turva-alue (93 %), tekstin turva-alue (90 %), keskikohta ja sivun akselit
+	Baseline grid	Peruslinjaruudukko
+	Lines one gap unit apart, moving with the page	Viivat yhden välyksen päässä toisistaan, liikkuvat sivun mukana
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” ei erotu taustasta (kontrasti {ratio}:1; vähintään 4,5:1 tarvitaan)
+	A picture or video is behind the text: check the contrast by eye	Tekstin takana on kuva tai video: tarkista kontrasti silmämääräisesti

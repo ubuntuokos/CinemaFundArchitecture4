@@ -4207,3 +4207,14 @@ export.summary	Low	төмен
 	Fitting removed.	Сәйкестендіру алынып тасталды.
 	Fit to This Length	Осы ұзақтыққа сәйкестендіру
 	No music to measure ({problem}); type the length.	Өлшейтін музыка жоқ ({problem}); ұзақтығын енгізіңіз.
+	The text moves {speed} px per frame; a whole number does not shimmer	Мәтін кадр сайын {speed} px жылжиды; бүтін сан жыпылықтамайды
+	Crawl	Жүгіртпе жол
+	Picture: {file}	Сурет: {file}
+	Video: {file}	Бейне: {file}
+	Into the next	Келесіге өту
+	Safe areas and spines	Қауіпсіз аймақтар мен осьтер
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Әрекет қауіпсіз аймағы (93 %), титр аймағы (90 %), орталық және бет осьтері
+	Baseline grid	Негізгі сызық торы
+	Lines one gap unit apart, moving with the page	Бір аралық бірлігімен сызықтар, бетпен бірге жылжиды
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» фоннан ерекшеленбейді (контраст {ratio}:1; кемінде 4,5:1 қажет)
+	A picture or video is behind the text: check the contrast by eye	Мәтіннің артында сурет не бейне бар: контрастты көзбен тексеріңіз

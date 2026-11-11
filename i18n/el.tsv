@@ -4207,3 +4207,14 @@ export.summary	Low	χαμηλή
 	Fitting removed.	Η προσαρμογή αφαιρέθηκε.
 	Fit to This Length	Προσαρμογή σε αυτή τη διάρκεια
 	No music to measure ({problem}); type the length.	Δεν υπάρχει μουσική για μέτρηση ({problem})· πληκτρολογήστε τη διάρκεια.
+	The text moves {speed} px per frame; a whole number does not shimmer	Το κείμενο κινείται {speed} px ανά καρέ· ένας ακέραιος δεν τρεμοπαίζει
+	Crawl	Κυλιόμενο κείμενο
+	Picture: {file}	Εικόνα: {file}
+	Video: {file}	Βίντεο: {file}
+	Into the next	Προς την επόμενη
+	Safe areas and spines	Ασφαλείς περιοχές και άξονες
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Ασφαλής περιοχή δράσης (93 %), τίτλων (90 %), το κέντρο και οι άξονες της σελίδας
+	Baseline grid	Πλέγμα γραμμών βάσης
+	Lines one gap unit apart, moving with the page	Γραμμές σε απόσταση μίας μονάδας κενού, που κινούνται με τη σελίδα
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	Το “{text}” δεν ξεχωρίζει από το φόντο (αντίθεση {ratio}:1· χρειάζεται τουλάχιστον 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Πίσω από το κείμενο υπάρχει εικόνα ή βίντεο: ελέγξτε την αντίθεση με το μάτι

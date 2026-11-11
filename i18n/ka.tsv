@@ -4208,3 +4208,14 @@ export.summary	Low	დაბალი
 	Fitting removed.	მორგება მოხსნილია.
 	Fit to This Length	ამ ხანგრძლივობაზე მორგება
 	No music to measure ({problem}); type the length.	გასაზომი მუსიკა არ არის ({problem}); შეიყვანეთ ხანგრძლივობა.
+	The text moves {speed} px per frame; a whole number does not shimmer	ტექსტი კადრზე {speed} px-ით მოძრაობს; მთელი რიცხვი არ ციმციმებს
+	Crawl	მცოცავი ტექსტი
+	Picture: {file}	სურათი: {file}
+	Video: {file}	ვიდეო: {file}
+	Into the next	შემდეგში გადასვლა
+	Safe areas and spines	უსაფრთხო არეები და ღერძები
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	მოქმედების უსაფრთხო არე (93 %), ტიტრების (90 %), ცენტრი და გვერდის ღერძები
+	Baseline grid	საბაზისო ხაზების ბადე
+	Lines one gap unit apart, moving with the page	ხაზები ერთი დაშორების ერთეულით, გვერდთან ერთად მოძრაობენ
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ფონზე არ გამოირჩევა (კონტრასტი {ratio}:1; საჭიროა მინიმუმ 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	ტექსტის უკან სურათი ან ვიდეოა: კონტრასტი თვალით შეამოწმეთ

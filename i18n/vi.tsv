@@ -4205,3 +4205,14 @@ export.summary	Low	thấp
 	Fitting removed.	Đã bỏ khớp.
 	Fit to This Length	Khớp với thời lượng này
 	No music to measure ({problem}); type the length.	Không có nhạc để đo ({problem}); hãy nhập thời lượng.
+	The text moves {speed} px per frame; a whole number does not shimmer	Chữ di chuyển {speed} px mỗi khung hình; số nguyên sẽ không bị nhấp nháy
+	Crawl	Chữ chạy ngang
+	Picture: {file}	Hình: {file}
+	Video: {file}	Video: {file}
+	Into the next	Sang trang sau
+	Safe areas and spines	Vùng an toàn và trục
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Vùng an toàn hành động (93 %), vùng an toàn tiêu đề (90 %), tâm và các trục của trang
+	Baseline grid	Lưới đường cơ sở
+	Lines one gap unit apart, moving with the page	Các đường cách nhau một đơn vị khoảng cách, di chuyển cùng trang
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” không nổi bật trên nền (độ tương phản {ratio}:1; cần ít nhất 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Phía sau chữ có hình hoặc video: hãy kiểm tra độ tương phản bằng mắt

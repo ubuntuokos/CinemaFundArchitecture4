@@ -4207,3 +4207,14 @@ export.summary	Low	låg
 	Fitting removed.	Anpassningen togs bort.
 	Fit to This Length	Anpassa till den här längden
 	No music to measure ({problem}); type the length.	Ingen musik att mäta ({problem}); skriv längden.
+	The text moves {speed} px per frame; a whole number does not shimmer	Texten flyttar {speed} px per bildruta; ett heltal flimrar inte
+	Crawl	Rullande textrad
+	Picture: {file}	Bild: {file}
+	Video: {file}	Video: {file}
+	Into the next	In i nästa
+	Safe areas and spines	Säkra områden och axlar
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Handlingssäkert (93 %), textsäkert (90 %), mitten och sidans axlar
+	Baseline grid	Baslinjerutnät
+	Lines one gap unit apart, moving with the page	Linjer en avståndsenhet isär som följer med sidan
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” syns inte mot bakgrunden (kontrast {ratio}:1; minst 4,5:1 behövs)
+	A picture or video is behind the text: check the contrast by eye	Bakom texten finns en bild eller video: kontrollera kontrasten med ögat

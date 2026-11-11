@@ -4207,3 +4207,14 @@ export.summary	Low	lav
 	Fitting removed.	Tilpasning fjernet.
 	Fit to This Length	Tilpas til denne længde
 	No music to measure ({problem}); type the length.	Ingen musik at måle ({problem}); skriv længden.
+	The text moves {speed} px per frame; a whole number does not shimmer	Teksten flytter {speed} px pr. billede; et helt tal flimrer ikke
+	Crawl	Rulletekst på tværs
+	Picture: {file}	Billede: {file}
+	Video: {file}	Video: {file}
+	Into the next	Ind i den næste
+	Safe areas and spines	Sikre områder og akser
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Handlingssikkert (93 %), titelsikkert (90 %), midten og sidens akser
+	Baseline grid	Grundlinjegitter
+	Lines one gap unit apart, moving with the page	Linjer med én afstandsenhed imellem, som følger siden
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” skiller sig ikke ud fra baggrunden (kontrast {ratio}:1; mindst 4,5:1 kræves)
+	A picture or video is behind the text: check the contrast by eye	Der er et billede eller en video bag teksten: kontrollér kontrasten med øjet

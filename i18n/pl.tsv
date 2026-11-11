@@ -4205,3 +4205,14 @@ export.summary	Low	niska
 	Fitting removed.	Usunięto dopasowanie.
 	Fit to This Length	Dopasuj do tej długości
 	No music to measure ({problem}); type the length.	Brak muzyki do zmierzenia ({problem}); wpisz długość.
+	The text moves {speed} px per frame; a whole number does not shimmer	Tekst przesuwa się o {speed} px na klatkę; liczba całkowita nie migocze
+	Crawl	Pasek przewijany
+	Picture: {file}	Obraz: {file}
+	Video: {file}	Wideo: {file}
+	Into the next	Do następnej
+	Safe areas and spines	Obszary bezpieczne i osie
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Obszar bezpieczny akcji (93 %), napisów (90 %), środek i osie strony
+	Baseline grid	Siatka linii bazowych
+	Lines one gap unit apart, moving with the page	Linie co jedną jednostkę odstępu, przesuwają się razem ze stroną
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” nie wyróżnia się na tle (kontrast {ratio}:1; potrzeba co najmniej 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Za tekstem jest obraz lub wideo: sprawdź kontrast na oko

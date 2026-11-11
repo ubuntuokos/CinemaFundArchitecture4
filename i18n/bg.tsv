@@ -4208,3 +4208,14 @@ export.summary	Low	ниско
 	Fitting removed.	Напасването е премахнато.
 	Fit to This Length	Напасване към тази дължина
 	No music to measure ({problem}); type the length.	Няма музика за измерване ({problem}); въведете дължината.
+	The text moves {speed} px per frame; a whole number does not shimmer	Текстът се движи с {speed} px на кадър; при цяло число не трепти
+	Crawl	Бягащ текст
+	Picture: {file}	Изображение: {file}
+	Video: {file}	Видео: {file}
+	Into the next	Към следващата
+	Safe areas and spines	Безопасни зони и оси
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасна зона за действие (93 %), за надписи (90 %), центърът и осите на страницата
+	Baseline grid	Мрежа на базовите линии
+	Lines one gap unit apart, moving with the page	Линии през една единица разстояние, движещи се със страницата
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ не се откроява от фона (контраст {ratio}:1; нужно е поне 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Зад текста има изображение или видео: проверете контраста на око

@@ -4211,3 +4211,14 @@ export.summary	Low	తక్కువ
 	Fitting removed.	సరిపోల్చడం తీసివేయబడింది.
 	Fit to This Length	ఈ నిడివికి సరిపోల్చు
 	No music to measure ({problem}); type the length.	కొలవడానికి సంగీతం లేదు ({problem}); నిడివిని టైప్ చేయండి.
+	The text moves {speed} px per frame; a whole number does not shimmer	టెక్స్ట్ ఒక్కో ఫ్రేమ్‌కు {speed} px కదులుతుంది; పూర్ణ సంఖ్య మిణుకుమనదు
+	Crawl	క్రాల్
+	Picture: {file}	చిత్రం: {file}
+	Video: {file}	వీడియో: {file}
+	Into the next	తదుపరిలోకి
+	Safe areas and spines	సురక్షిత ప్రాంతాలు మరియు అక్షాలు
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	యాక్షన్ సేఫ్ (93 %), టైటిల్ సేఫ్ (90 %), మధ్య భాగం మరియు పేజీ అక్షాలు
+	Baseline grid	బేస్‌లైన్ గ్రిడ్
+	Lines one gap unit apart, moving with the page	ఒక గ్యాప్ యూనిట్ దూరంలో గీతలు, పేజీతో కదులుతాయి
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” నేపథ్యం నుండి ప్రత్యేకంగా కనిపించదు (కాంట్రాస్ట్ {ratio}:1; కనీసం 4.5:1 అవసరం)
+	A picture or video is behind the text: check the contrast by eye	టెక్స్ట్ వెనుక చిత్రం లేదా వీడియో ఉంది: కాంట్రాస్ట్‌ను కంటితో తనిఖీ చేయండి
