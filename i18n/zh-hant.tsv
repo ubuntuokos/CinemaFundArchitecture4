@@ -4185,3 +4185,32 @@ export.summary	Low	低
 	Tiles	拼貼
 	Band Direction	條帶方向
 	Jitter Direction	抖動方向
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	半色調
+	Dither	遞色
+	Pattern	圖樣
+	Cell Size	儲存格大小
+	Cyan Angle	青色角度
+	Magenta Angle	洋紅色角度
+	Yellow Angle	黃色角度
+	Black Angle	黑色角度
+	Monochrome Angle	單色角度
+	Sharpness	銳利度
+	Ink Color	油墨色彩
+	Paper Color	紙張色彩
+	Color (CMYK)	彩色 (CMYK)
+	Dot	網點
+	Line	線條
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	像素大小
+	Palette	調色盤
+	Input Colors	輸入色彩
+	Green Phosphor	綠色磷光
+	Amber Monitor	琥珀色螢幕
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

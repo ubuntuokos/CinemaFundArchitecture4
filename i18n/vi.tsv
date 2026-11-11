@@ -4186,3 +4186,32 @@ export.summary	Low	thấp
 	Tiles	Ô
 	Band Direction	Hướng dải
 	Jitter Direction	Hướng rung
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Bán sắc
+	Dither	Dither
+	Pattern	Mẫu
+	Cell Size	Kích thước ô
+	Cyan Angle	Góc lục lam
+	Magenta Angle	Góc đỏ tươi
+	Yellow Angle	Góc vàng
+	Black Angle	Góc đen
+	Monochrome Angle	Góc đơn sắc
+	Sharpness	Độ sắc nét
+	Ink Color	Màu mực
+	Paper Color	Màu giấy
+	Color (CMYK)	Màu (CMYK)
+	Dot	Chấm
+	Line	Đường
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Kích thước điểm ảnh
+	Palette	Bảng màu
+	Input Colors	Màu đầu vào
+	Green Phosphor	Lân quang xanh lục
+	Amber Monitor	Màn hình hổ phách
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

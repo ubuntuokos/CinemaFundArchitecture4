@@ -66,6 +66,8 @@ const OP_SKIN_COEF_A: u32 = 42;
 const OP_SKIN_COEF_B: u32 = 43;
 const OP_SKIN_APPLY: u32 = 44;
 const OP_SKIN_MASK: u32 = 45;
+const OP_HALFTONE: u32 = 46;
+const OP_DITHER: u32 = 47;
 
 /// Working textures an op with explicit routing ([`Step::slots`]) may use: its input and four more.
 const SLOTS: usize = 5;
@@ -264,6 +266,29 @@ fn steps(op: &FxOp) -> Vec<Step> {
                 let p: Vec<f32> = edges.iter().chain(inv).copied().collect();
                 out.push(step(OP_SIX_POINT_PIN, [0; 4], &p));
             }
+        }
+        FxOp::Halftone { mono, lines, inv_cell, soft, screens: sc, ink, paper, blend } => out.push(step(
+            OP_HALFTONE,
+            [*mono as u32, *lines as u32, 0, 0],
+            &[
+                *inv_cell, *soft, *blend, 0.0, sc[0][0], sc[0][1], sc[1][0], sc[1][1], sc[2][0], sc[2][1], sc[3][0], sc[3][1], ink[0], ink[1], ink[2], 0.0,
+                paper[0], paper[1], paper[2],
+            ],
+        )),
+        FxOp::Dither { pattern, block, threshold, palette, levels, blend } => {
+            // the palette as (offset, length) into `fx.wgsl`'s DITHER_COLORS (length 0: Input Colors)
+            let (mut off, mut len) = (0u32, 0u32);
+            if let Some(i) = palette.checked_sub(1) {
+                for (k, p) in cfa4_render::gpufx::DITHER_PALETTES.iter().enumerate() {
+                    if k as u32 == i {
+                        len = p.len() as u32;
+                        break;
+                    }
+                    off += p.len() as u32;
+                }
+            }
+            let spread = if len > 0 { 1.0 / (len as f32).cbrt() } else { 0.0 };
+            out.push(step(OP_DITHER, [*pattern, (*block).max(1), off, len], &[*threshold, *levels, *blend, spread]));
         }
         FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
             if *amount > 0.0 {

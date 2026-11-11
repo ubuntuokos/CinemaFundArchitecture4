@@ -4188,3 +4188,32 @@ export.summary	Low	madal
 	Tiles	Paanid
 	Band Direction	Ribade suund
 	Jitter Direction	Värina suund
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Pooltoon
+	Dither	Ditherdus
+	Pattern	Muster
+	Cell Size	Lahtri suurus
+	Cyan Angle	Tsüaani nurk
+	Magenta Angle	Magenta nurk
+	Yellow Angle	Kollase nurk
+	Black Angle	Musta nurk
+	Monochrome Angle	Ühevärvi nurk
+	Sharpness	Teravus
+	Ink Color	Tindi värv
+	Paper Color	Paberi värv
+	Color (CMYK)	Värv (CMYK)
+	Dot	Punkt
+	Line	Joon
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Piksli suurus
+	Palette	Palett
+	Input Colors	Sisendvärvid
+	Green Phosphor	Roheline luminofoor
+	Amber Monitor	Merevaigukarva monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

@@ -4188,3 +4188,32 @@ export.summary	Low	төмен
 	Tiles	Плиткалар
 	Band Direction	Жолақтар бағыты
 	Jitter Direction	Діріл бағыты
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Жартылай тон
+	Dither	Дизеринг
+	Pattern	Өрнек
+	Cell Size	Ұяшық өлшемі
+	Cyan Angle	Көгілдір бұрышы
+	Magenta Angle	Қызыл күрең бұрышы
+	Yellow Angle	Сары бұрышы
+	Black Angle	Қара бұрышы
+	Monochrome Angle	Бір түсті бұрыш
+	Sharpness	Айқындық
+	Ink Color	Сия түсі
+	Paper Color	Қағаз түсі
+	Color (CMYK)	Түсті (CMYK)
+	Dot	Нүкте
+	Line	Сызық
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Пиксель өлшемі
+	Palette	Палитра
+	Input Colors	Кіріс түстері
+	Green Phosphor	Жасыл люминофор
+	Amber Monitor	Қоңыр сары монитор
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

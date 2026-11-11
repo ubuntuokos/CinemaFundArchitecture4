@@ -4188,3 +4188,32 @@ export.summary	Low	niska
 	Tiles	Pločice
 	Band Direction	Smjer traka
 	Jitter Direction	Smjer podrhtavanja
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Poluton
+	Dither	Raspršivanje
+	Pattern	Uzorak
+	Cell Size	Veličina ćelije
+	Cyan Angle	Kut cijan
+	Magenta Angle	Kut magenta
+	Yellow Angle	Kut žute
+	Black Angle	Kut crne
+	Monochrome Angle	Kut jednobojnog
+	Sharpness	Oštrina
+	Ink Color	Boja tinte
+	Paper Color	Boja papira
+	Color (CMYK)	Boja (CMYK)
+	Dot	Točka
+	Line	Linija
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Veličina piksela
+	Palette	Paleta
+	Input Colors	Ulazne boje
+	Green Phosphor	Zeleni fosfor
+	Amber Monitor	Jantarni monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

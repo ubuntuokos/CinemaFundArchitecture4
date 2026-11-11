@@ -4188,3 +4188,32 @@ export.summary	Low	χαμηλή
 	Tiles	Πλακίδια
 	Band Direction	Κατεύθυνση ζωνών
 	Jitter Direction	Κατεύθυνση τρεμοπαίγματος
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Ημιτόνιο
+	Dither	Διάχυση
+	Pattern	Μοτίβο
+	Cell Size	Μέγεθος κελιού
+	Cyan Angle	Γωνία κυανού
+	Magenta Angle	Γωνία ματζέντα
+	Yellow Angle	Γωνία κίτρινου
+	Black Angle	Γωνία μαύρου
+	Monochrome Angle	Μονοχρωματική γωνία
+	Sharpness	Οξύτητα
+	Ink Color	Χρώμα μελανιού
+	Paper Color	Χρώμα χαρτιού
+	Color (CMYK)	Χρώμα (CMYK)
+	Dot	Κουκκίδα
+	Line	Γραμμή
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Μέγεθος εικονοστοιχείου
+	Palette	Παλέτα
+	Input Colors	Χρώματα εισόδου
+	Green Phosphor	Πράσινος φωσφόρος
+	Amber Monitor	Κεχριμπαρένια οθόνη
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

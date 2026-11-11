@@ -4188,3 +4188,32 @@ export.summary	Low	matala
 	Tiles	Ruudut
 	Band Direction	Kaistojen suunta
 	Jitter Direction	Värinän suunta
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Rasteri
+	Dither	Rasterointi
+	Pattern	Kuvio
+	Cell Size	Solukoko
+	Cyan Angle	Syaanin kulma
+	Magenta Angle	Magentan kulma
+	Yellow Angle	Keltaisen kulma
+	Black Angle	Mustan kulma
+	Monochrome Angle	Yksivärin kulma
+	Sharpness	Terävyys
+	Ink Color	Musteen väri
+	Paper Color	Paperin väri
+	Color (CMYK)	Väri (CMYK)
+	Dot	Piste
+	Line	Viiva
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pikselikoko
+	Palette	Paletti
+	Input Colors	Syötteen värit
+	Green Phosphor	Vihreä fosfori
+	Amber Monitor	Meripihkanäyttö
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

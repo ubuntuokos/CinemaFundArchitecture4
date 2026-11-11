@@ -209,3 +209,8 @@
 # Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
 	Color Damage	Colour Damage
 	Color Bleed	Colour Bleed
+# Creative Looks: Halftone and Dither (#354)
+	Ink Color	Ink Colour
+	Paper Color	Paper Colour
+	Color (CMYK)	Colour (CMYK)
+	Input Colors	Input Colours
