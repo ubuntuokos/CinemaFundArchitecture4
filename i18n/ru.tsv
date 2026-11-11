@@ -4097,3 +4097,32 @@
 	ISDCF name	Имя ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Называть папку DCP по Digital Cinema Naming Convention
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Титры из таблицы
+	A .ods, .xlsx or CSV credits sheet	Лист титров в .ods, .xlsx или CSV
+	The spreadsheet's folder	Папка таблицы
+	Built-in styles	Встроенные стили
+	Spreadsheet	Таблица
+	Sheet	Лист
+	Pictures	Изображения
+	Styling	Оформление
+	Page	Страница
+	Warnings	Предупреждения
+	Moment in the page	Момент на странице
+	Place at Playhead	Разместить на текущей позиции
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Таблицы (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Оформление титров (*.json)
+	Card	Карточка
+	Credits Spreadsheet	Таблица титров
+	Reading…	Чтение…
+	(one table)	(одна таблица)
+	Total: {time}	Итого: {time}
+	Row {row}: {message}	Строка {row}: {message}
+	Choose a credits spreadsheet.	Выберите таблицу титров.
+	No preview	Нет предпросмотра
+	Placing…	Размещение…
+	Placed {n} pages on the timeline.	Размещено страниц на таймлайне: {n}.
+	Credits Page Picture	Изображение страницы титров
+	Preview Credits	Предпросмотр титров
+	Credits Styles	Стили титров
