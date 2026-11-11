@@ -1,4 +1,4 @@
-use super::tests::{adts_frame, mpeg2_frame};
+use super::tests::{adts_frame, mp2_frame, mpeg2_frame};
 use super::*;
 
 /// 25 fps pictures (I then P), 90 kHz apart.
@@ -128,4 +128,54 @@ fn bad_input_is_an_error() {
     m.write(0, &[1], 100, None, true).unwrap();
     assert!(m.write(0, &[1], 50, None, true).is_err());
     assert!(m.append_to_last(0, &[2]).is_ok());
+}
+
+/// AC-3 frame, 48 kHz 64 kb/s (256 bytes), stereo.
+fn ac3_frame(k: u8) -> Vec<u8> {
+    let mut v = vec![0x0B, 0x77, 0, 0, 0x08, 0x40, 0x40];
+    v.extend((7..256).map(|i| (i as u8) ^ k));
+    v
+}
+
+#[test]
+fn mpeg_audio_and_ac3_round_trip_in_transport_and_program_streams() {
+    // Smart Cut copies the audio of MPEG-2 sources (WP-09c): MP2 every 24 ms, AC-3 every 32 ms
+    let pics = video(10);
+    for format in [MuxFormat::Ts, MuxFormat::Ps] {
+        let mut m = Muxer::new(Vec::new(), format, &[MuxCodec::Mpeg2Video, MuxCodec::MpegAudio, MuxCodec::Ac3, MuxCodec::MpegAudio], 20_000_000).unwrap();
+        let (mut mp2, mut ac3, mut mp2b) = (Vec::new(), Vec::new(), Vec::new());
+        for (k, p) in pics.iter().enumerate() {
+            m.write(0, p, k as i64 * FRAME, None, k % 5 == 0).unwrap();
+        }
+        for k in 0..15 {
+            let f = mp2_frame(k as u8);
+            m.write(1, &f, k * 2160, None, true).unwrap();
+            mp2.push(f);
+            let f = mp2_frame(100 + k as u8);
+            m.write(3, &f, k * 2160, None, true).unwrap();
+            mp2b.push(f);
+        }
+        for k in 0..11 {
+            let f = ac3_frame(k as u8);
+            m.write(2, &f, k * 2880, None, true).unwrap();
+            ac3.push(f);
+        }
+        let data = m.finish().unwrap();
+        let f = open(&data).unwrap();
+        assert!(f.warnings.is_empty(), "{format:?}: {:?}", f.warnings);
+        let audio: Vec<usize> = (0..f.streams.len()).filter(|&s| f.streams[s].kind() == Kind::Audio).collect();
+        assert_eq!(audio.len(), 3, "{format:?}: {:?}", f.streams.iter().map(|s| &s.codec).collect::<Vec<_>>());
+        let read = |s: usize| (0..f.streams[s].units.len()).map(|k| f.read_unit(&data, s, k).unwrap()).collect::<Vec<_>>();
+        let mpa: Vec<usize> = audio.iter().copied().filter(|&s| f.streams[s].codec == Codec::MpegAudio).collect();
+        let a3 = f.find(Kind::Audio, |c| *c == Codec::Ac3).unwrap();
+        assert_eq!(mpa.len(), 2, "{format:?}");
+        let mut got = [read(mpa[0]), read(mpa[1])];
+        got.sort();
+        let mut want = [mp2.clone(), mp2b.clone()];
+        want.sort();
+        assert_eq!(got, want, "{format:?}");
+        assert_eq!(read(a3), ac3, "{format:?}");
+        let pts: Vec<i64> = f.streams[a3].units.iter().filter_map(|u| u.pts).collect();
+        assert_eq!(pts[..3], [0, 2880, 5760].map(|t| Muxer::<Vec<u8>>::DELAY + t), "{format:?}");
+    }
 }
