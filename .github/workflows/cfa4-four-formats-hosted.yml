@@ -28,6 +28,8 @@ on:
       - '.github/workflows/cfa4-four-formats-hosted.yml'
       - 'scripts/dev/fetch-ffmpeg-9.0.2.sh'
       - 'scripts/release/install-nfpm.sh'
+      # the staged runtime audit, with the Smart Cut smoke of every package (WP-10)
+      - 'scripts/release/f5_staged_runtime.py'
       - 'packaging/linux/nfpm.lock'
 
 permissions:
@@ -57,6 +59,8 @@ jobs:
     steps:
       - name: Checkout CFA4 repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Assert Ubuntu 26.04 AMD64
         run: bash scripts/ci/require-ubuntu-2604.sh
       - name: Install build tools from the Ubuntu archive

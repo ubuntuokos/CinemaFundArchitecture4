@@ -2,7 +2,7 @@
 
 **Dátum:** 2026-10-27  
 **Státusz:** végleges, a tulajdonos által jóváhagyva (2026-10-27); implementáció a Qt port elkészülte után  
-**Kapcsolódó tervek:** [GOP-alapú Smart Cut](GOP-SMART-CUT-2026-10-27.md), [Smart Render](SMART-RENDER-2026-10-27.md), `CFA4-SMART-CUT-RENDER-R1.md` (ág: `feature/native-smart-cut-render`)
+**Kapcsolódó tervek:** [GOP-alapú Smart Cut](GOP-SMART-CUT-2026-10-27.md), [Smart Render](SMART-RENDER-2026-10-27.md), [CFA4-SMART-CUT-RENDER-R1](CFA4-SMART-CUT-RENDER-R1.md) · **P0 audit:** [SCE-001-P0-AUDIT-2026-11-08](../audit/SCE-001-P0-AUDIT-2026-11-08.md)
 
 > Ez a fájl a jóváhagyott terv repóba emelt példánya. A *[vX.Y]* jelölések a terv változásait követik.
 
@@ -10,7 +10,7 @@ Ez a v1.1 Stream Copy terv és az MPEG-TS muxer terv összevont változata. A TS
 
 A v1.5 a tulajdonos 2026-10-27-i döntéseit vezeti át (lásd a Döntési naplót); az érintett részeket \[v1.5\] jelöli.
 
-**Dokumentumazonosító:** CFA4-SCE-001 · **Verzió:** 1.5 (végleges) · **Repository:** https://github.com/ubuntuokos/CinemaFundArchitecture4 · **Célplatform:** Ubuntu 26.04 LTS, amd64 · **Technológiai alapok:** Rust/Cargo, Qt6 (e terv hatókörében az FFmpeg 9.0.2 csak CI-teszt-orákulum) · **Implementáció:** Stream Copy és TS még nem; Smart Cut/Render WP-00–WP-02 folyamatban, nem a main-ben.
+**Dokumentumazonosító:** CFA4-SCE-001 · **Verzió:** 1.5 (végleges) · **Repository:** https://github.com/ubuntuokos/CinemaFundArchitecture4 · **Célplatform:** Ubuntu 26.04 LTS, amd64 · **Technológiai alapok:** Rust/Cargo, Qt6 (e terv hatókörében az FFmpeg 9.0.2 csak CI-teszt-orákulum) · **Implementáció:** *\[P0, 2026-11-08\]* a P0 audit kész; a `main`-ben van a WP-00–WP-03 (registry, index, `ExportExecutionPlan`, Smart Cut planner); Stream Copy végrehajtó és TS-bővítés még nincs. A P1–P7 a Qt6 kapu után.
 
 ## Döntési napló (v1.5)
 
@@ -336,7 +336,7 @@ A CFA4 exportútja tudjon szabványos MPEG-2 Transport Stream fájlokat készít
 
 - Célplatform: amd64, Ubuntu 26.04 és variánsai.
 - Működési környezet: CFA4, Rust/Cargo. Az FFmpeg 9.0.2 és az ffprobe csak a CI-ben fut, külső orákulumként.
-- A muxolásért a natív `cfa4-mpegts` muxer felel: L0 réteg, csak `cfa4-bitstream` függőség, `unsafe` nélkül, „never crash” szabályok szerint. Kiindulópontja a `crates/mpegts/src/tests.rs` tesztmuxere (PAT, PMT CRC-vel, PES, 188/192 bájtos csomagok).
+- A muxolásért a natív `cfa4-mpegts` muxer felel: L0 réteg, csak `cfa4-bitstream` függőség, `unsafe` nélkül, „never crash” szabályok szerint. Kiindulópontja a `crates/mpegts/src/tests.rs` tesztmuxere (PAT, PMT CRC-vel, PES, 188/192 bájtos csomagok). *\[P0\]* Azóta a `main`-ben termelő muxer van (`cfa4_mpegts::Muxer`, `crates/mpegts/src/mux.rs`: TS, M2TS, PS; MPEG-2 videó, AAC ADTS, DVD LPCM), az MPEG-2 export használja. A kiindulópont ez, nem a tesztmuxer.
 - A felület a Qt6-os CFA4 exportfolyamába illeszkedik.
 - A kimenet önálló `.ts` fájl legyen. Az M2TS kimenet külön választható mód; nem változtathatja meg észrevétlenül a normál TS kimenetet.
 - A terv nem tartalmaz HLS/DASH szegmentálást, élő közvetítést, DVB/ATSC adáslánc teljes megfelelőségi tanúsítását vagy saját kodekimplementációt.
@@ -378,6 +378,7 @@ A CFA4 profilbeállításai nevezzék meg a felhasználási célt, de minden té
 - Az új muxer a meglévő `cfa4-export` útba illeszkedik a `cfa4-isobmff` és `cfa4-matroska` író mintájára; párhuzamos exportút nem készül.
 - Rögzíteni kell a CI FFmpeg 9.0.2 orákulum muxer- és ffprobe-képességeit, amelyekkel a tesztek összevetik a kimenetet.
 - Kimenet: rövid integrációs jegyzet és a módosítandó modulok pontos listája.
+- *\[P0\]* Elkészült: [SCE-001-P0-AUDIT-2026-11-08](../audit/SCE-001-P0-AUDIT-2026-11-08.md), 4. fejezet.
 
 #### 2. Muxolási specifikáció és profilmodell
 
@@ -400,12 +401,12 @@ A CFA4 profilbeállításai nevezzék meg a felhasználási célt, de minden té
 - A stream-copy út csak kompatibilis, már kódolt csomagokat fogadjon; a szükséges átalakítást a Bitstream Adapter végzi, csak Compatible módban (12.4).
 - Ha egy stream nem muxolható közvetlenül, a CFA4 adjon egyértelmű okot és javaslatot: másik profil, engedélyezett újrakódolás vagy stream eltávolítása.
 - Ne legyen csendes kodekcsere, hangtörlés vagy kényszerített újrakódolás.
-- Támogatandó és tesztelendő első körös stream-típusok: H.264, HEVC, MPEG-2 Video, AAC és MPEG audio. MPEG-2 Video és MPEG audio csak Stream Copyval, mert a CFA4-nek nincs ilyen kódolója; HEVC rendereléssel csak hardveres kódoló esetén.
+- Támogatandó és tesztelendő első körös stream-típusok: H.264, HEVC, MPEG-2 Video, AAC és MPEG audio. MPEG-2 Video és MPEG audio csak Stream Copyval, mert a CFA4-nek nincs ilyen kódolója; HEVC rendereléssel csak hardveres kódoló esetén. *\[P0\]* Azóta van saját MPEG-2 videókódoló és szoftveres HEVC-kódoló (I/P, Main/Main 10) az exportban; az MPEG audiónak továbbra sincs kódolója. A Döntési napló 7. pontja (R1-ben határ-újrakódolás csak H.264) ettől változatlan.
 - További kodekek csak külön kompatibilitási mátrix és mintafájlteszt után kerüljenek a felületre.
 
 #### 4. Natív TS muxer
 
-- A `cfa4-mpegts` crate-ben készüljön termelő `TsWriter`, amely:
+- *\[P0\]* A termelő muxer már létezik (`cfa4_mpegts::Muxer`); a feladat ennek bővítése, nem új `TsWriter`. A hiánylista: P0 audit 4.2. A bővített muxer:
   - PAT-ot, PMT-t (programonként) és SDT-t ír a profil periódusai szerint, CRC-32-vel;
   - hozzárendeli a validált audio-, video- és adatstreameket PID-ekhez és stream\_type-okhoz;
   - PES-csomagokat képez PTS/DTS-sel, és 188 bájtos TS-csomagokra bontja adaptation-field kitöltéssel;
@@ -497,6 +498,8 @@ A 22. fejezetben ez a P2a fázis.
 ### 12.8 Projektadat (ellenőrizve)
 
 A `main` 24f061a commitján: nincs FFmpeg-híd és `libavformat` kötés; az FFmpeg 9.0.2 csak teszt-orákulum (`AGENTS.md`, `CLAUDE.md`). A `cfa4-mpegts` demuxer kész, a muxer csak tesztsegédként létezik. Az export ma közvetlenül a végleges útvonalra ír (`crates/export/src/lib.rs`, `File::create`), ezért az ideiglenes fájl + átnevezés új, közös segédet igényel.
+
+*\[P0, `main` @ `abcf3d9`\]* A termelő TS/M2TS/PS muxer már létezik (`crates/mpegts/src/mux.rs`, az MPEG-2 export használja). Van `cfa4-ffmpeg` (ADR 0005), de csak dekódol és vizsgál; muxer vagy kódoló nincs benne. Az export továbbra is közvetlenül a célra ír. Részletek: [SCE-001-P0-AUDIT-2026-11-08](../audit/SCE-001-P0-AUDIT-2026-11-08.md).
 
 ## 13. GOP Smart Cut *\[v1.4: a repo terve beépítve\]*
 
@@ -716,7 +719,7 @@ Minden hibakódhoz részletes technikai és felhasználói magyarázat tartozzon
 
 ## 22. Fejlesztési sorrend *\[v1.4: összevonva a GOP Smart Cut, Smart Render és R1 tervvel\]*
 
-A fázisok sorrendje változatlan; a GOP Smart Cut (13.4), a Smart Render (15.4) és az R1 terv munkacsomagjai (WP-00–WP-10) a megfelelő fázisba kerültek. A WP-00–WP-02 már folyamatban van a `feature/native-smart-cut-render*` ágakon (`crates/smart-edit`: capability registry, H.264/MPEG-2 médiaindex), még nincs a `main`-ben.
+A fázisok sorrendje változatlan; a GOP Smart Cut (13.4), a Smart Render (15.4) és az R1 terv munkacsomagjai (WP-00–WP-10) a megfelelő fázisba kerültek. A WP-00–WP-02 már folyamatban van a `feature/native-smart-cut-render*` ágakon (`crates/smart-edit`: capability registry, H.264/MPEG-2 médiaindex), még nincs a `main`-ben. *\[P0, 2026-11-08\]* A WP-00–WP-03 azóta a `main`-ben van (a WP-03 a közös `ExportExecutionPlan`-t és a Smart Cut plannert hozta, a P4 tervezőrészét). A P1-ből a registry elavult sorainak javítása van hátra; a kapu után a következő fázis a P2.
 
 | Fázis | Tartalom | Stream Copy / TS | GOP Smart Cut | Smart Render | R1 WP | Függ |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -818,10 +821,10 @@ A TS terv fő ütközése (FFmpeg/`libavformat` vs. a projekt "csak teszt-oráku
 | # | Téma | Állapot | Hol van rögzítve |
 | --- | --- | --- | --- |
 | 1 | FFmpeg/`libavformat` muxer vs. projekt szabályok | Eldöntve 2026-10-27: natív Rust TS muxer a `cfa4-mpegts`-ben, FFmpeg csak CI-orákulum | 12. fejezet |
-| 2 | "Nem készül saját csomagolómotor" | Törölve; a muxer a `crates/mpegts/src/tests.rs` tesztmuxeréből indul | 12.2, 12.6/4 |
+| 2 | "Nem készül saját csomagolómotor" | Törölve; a muxer a `crates/mpegts/src/tests.rs` tesztmuxeréből indul. *\[P0\]* Azóta termelő muxer van; a P2a ezt bővíti | 12.2, 12.6/4 |
 | 3 | Automatikus muxeroldali bitstream filter | Megszűnt: minden átalakítás a Bitstream Adapterben, a muxer payload-átlátszatlan; TS cél hosszmezős H.264/HEVC-ből csak Compatible | 2.2, 11, 12.3, 12.4 |
 | 4 | Utóellenőrzés ffprobe-bal | Termékben a saját demuxer ellenőriz, az ffprobe csak CI-ben | 12.6/7, 12.6/9 |
-| 5 | MPEG-2 Video és MPEG audio első körben | Csak Stream Copyval (nincs ilyen kódoló); HEVC renderelés csak hardveren | 12.6/3 |
+| 5 | MPEG-2 Video és MPEG audio első körben | Csak Stream Copyval (nincs ilyen kódoló); HEVC renderelés csak hardveren. *\[P0\]* Elavult: van saját MPEG-2 és szoftveres HEVC kódoló; MPEG audio kódoló nincs | 12.6/3 |
 | 6 | Teljes fájl dekódolási próba | Mintavételes; nem támogatott profilnál "nem futott" állapot | 12.6/7 |
 | 7 | Ideiglenes fájl és átnevezés | Nyitott: közös streamelő atomic commit segéd kell minden exportformátumhoz | 12.6/6, 20. fejezet |
 | 8 | Stream Copy bitstream filterei (`h264_mp4toannexb` stb.) FFmpegből vagy natívan | Nyitott, de a TS döntéssel összhangban a natív Rust adapter a kézenfekvő; a filternevek referencia-azonosítók | 2.2, 11 |

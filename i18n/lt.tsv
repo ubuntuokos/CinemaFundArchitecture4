@@ -1,0 +1,4146 @@
+# Lithuanian (lt) catalog for the whole CFA4 interface (Qt GUI and egui). Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Lithuanian video-editing vocabulary (laiko juosta, takelis, klipas, seka, aplankas, atkūrimo
+# žymeklis, žymė, perėjimas, pagrindinis kadras). No proprietary localisation resource, string
+# table or product UI was consulted or copied; add entries the same way. Commands are infinitives
+# ("Įrašyti kaip…"), labels use sentence case, quotation marks are „…“, and product and format
+# names (CFA4, Lumetri, ProRes, AAF, EDL…) keep their spelling. Decimal comma (0,5). A
+# native-speaker review is welcome.
+#
+# Terms: clip = klipas, track = takelis, sequence = seka, timeline = laiko juosta, bin = aplankas,
+# playhead = atkūrimo žymeklis, marker = žymė, In/Out point = pradžios/pabaigos taškas, keyframe =
+# pagrindinis kadras, caption = subtitrai, preset = išankstinė nuostata, template = šablonas,
+# workspace = darbo sritis, gain = stiprinimas, opacity = nepermatomumas, render = atvaizdavimas,
+# ripple = su poslinkiu, dissolve = išnykimas, wipe = nušluostymas, voice-over = užkadrinis balsas,
+# proxy = tarpinė kopija, guide = kreipiamoji linija, shortcut = spartusis klavišas,
+# (Legacy) = (senasis).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see lt.tsv.attribution.
+
+	'{name}' already exists. Replace it?	„{name}“ jau yra. Pakeisti?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	Apie CFA4
+	Add Audio Submix Track	Pridėti garso submiksavimo takelį
+	Add Caption at Playhead	Pridėti subtitrą ties atkūrimo žymekliu
+	Add Chapter Marker…	Pridėti skyriaus žymę…
+	Add Edit	Pridėti kirpimą
+	Add Edit to All Tracks	Pridėti kirpimą visuose takeliuose
+	Add Flash Cue Marker…	Pridėti „Flash Cue“ žymę…
+	Add Frame Hold	Pridėti kadro sustabdymą
+	Add Marker	Pridėti žymę
+	Add New Caption Track…	Pridėti naują subtitrų takelį…
+	Add Range Marker	Pridėti intervalo žymę
+	Add Range Marker to In and Out	Pridėti intervalo žymę nuo pradžios iki pabaigos taško
+	Add Tracks…	Pridėti takelių…
+	Full screen	Visas ekranas
+	Master volume: use the Audio Track Mixer	Bendras garsumas: naudokite garso takelių maišiklį
+	Send to Queue	Siųsti į eilę
+	Add/Remove Keyframe	Pridėti / pašalinti pagrindinį kadrą
+	Adjust	Koreguoti
+	Adjustment Layer	Koregavimo sluoksnis
+	Adjustment Layer…	Koregavimo sluoksnis…
+	Align to Selection	Lygiuoti pagal pasirinkimą
+	Align to Video Frame	Lygiuoti pagal vaizdo kadrą
+	Align to Video Frame as Group	Lygiuoti pagal vaizdo kadrą kaip grupę
+	All Panels	Visi skydeliai
+	All files	Visi failai
+	Amplitude and Compression	Amplitudė ir glaudinimas
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Variklis be `serve` buvo sukompiliuotas iš šakos be Qt sąsajos: perjunkite į Qt sąsajos šaką ir kompiliuokite iš naujo arba nurodykite --engine PATH.
+	Anchor Point	Inkaro taškas
+	Animation	Animacija
+	Anti-flicker Filter	Mirgėjimą slopinantis filtras
+	Apply Audio Transition	Taikyti garso perėjimą
+	Apply Default Transitions to Selection	Taikyti numatytuosius perėjimus pažymėtiems
+	Apply Video Transition	Taikyti vaizdo perėjimą
+	Arrange	Išdėstyti
+	Assembly	Surinkimas
+	Attach Proxies…	Prijungti tarpines kopijas…
+	Audio	Garsas
+	Audio Channels…	Garso kanalai…
+	Audio Clip Mixer	Garso klipų maišiklis
+	Audio Effects	Garso efektai
+	Audio Gain…	Garso stiprinimas…
+	Audio In	Garso įvestis
+	Audio Meters	Garso matuokliai
+	Audio Options	Garso parinktys
+	Audio Out	Garso išvestis
+	Audio Track Mixer	Garso takelių maišiklis
+	Audio Transitions	Garso perėjimai
+	Audio Bitrate	Garso sparta
+	Audio Format	Garso formatas
+	Auto Bezier	Automatinė Bezier kreivė
+	Automate to Sequence…	Automatizuoti į seką…
+	Automatic	Automatinis
+	Avid Log Exchange…	Avid Log Exchange…
+	Balance	Balansas
+	Bars and Tone…	Spalvų juostos ir tonas…
+	Bezier	Bezier kreivė
+	Bin	Aplankas
+	Bin From Selection	Aplankas iš pažymėtų
+	Bitrate Encoding	Spartos kodavimas
+	Black Video…	Juodas vaizdas…
+	Blend Mode	Maišymo režimas
+	Blur & Sharpen	Suliejimas ir ryškinimas
+	Breakout to Mono	Išskaidyti į mono
+	Bring Forward	Perkelti pirmyn
+	Bring to Front	Perkelti į priekį
+	Brown	Ruda
+	Browse…	Naršyti…
+	Burn in captions	Įrašyti subtitrus į vaizdą
+	Bypass	Apeiti
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	Atšaukti pažymėtus
+	Cancelled	Atšaukta
+	Cannot create the output folder: {error}	Nepavyksta sukurti išvesties aplanko: {error}
+	Cannot check the output folder for files to replace: {error}	Nepavyksta patikrinti išvesties aplanko, ar yra keistinų failų: {error}
+	Captions	Subtitrai
+	Captions and Graphics	Subtitrai ir grafika
+	Captions…	Subtitrai…
+	Caribbean	Karibai
+	Center Horizontally	Centruoti horizontaliai
+	Center Vertically	Centruoti vertikaliai
+	Cerulean	Žydra
+	Channel Volume	Kanalo garsumas
+	Checked:	Pažymėta:
+	Choose a file name and location.	Pasirinkite failo pavadinimą ir vietą.
+	Choose folder	Pasirinkti aplanką
+	Media File	Medijos failas
+	Sequence name	Sekos pavadinimas
+	Clear Finished	Išvalyti baigtus
+	Clear In	Išvalyti pradžios tašką
+	Clear In and Out	Išvalyti pradžios ir pabaigos taškus
+	Clear Markers	Išvalyti žymes
+	Clear Out	Išvalyti pabaigos tašką
+	Clear Selected Marker	Išvalyti pažymėtą žymę
+	Clip	Klipas
+	Close	Uždaryti
+	Close All Other Projects	Uždaryti visus kitus projektus
+	Close All Projects	Uždaryti visus projektus
+	Close Gap	Panaikinti tarpą
+	Close Project	Uždaryti projektą
+	Color Burn	Spalvų degimas
+	Color Correction	Spalvų korekcija
+	Color Dodge	Spalvų šviesinimas
+	Color Management…	Spalvų valdymas…
+	Color Matte…	Spalvotas fonas…
+	Consolidate Duplicates	Sujungti dublikatus
+	Constant quality (CRF)	Pastovi kokybė (CRF)
+	Continuous Bezier	Ištisinė Bezier kreivė
+	Copy Paste Includes Sequence Markers	Kopijuojant ir įklijuojant įtraukiamos sekos žymės
+	Create Captions from Transcript…	Kurti subtitrus iš transkripcijos…
+	Create Multi-Camera Source Sequence…	Kurti kelių kamerų šaltinio seką…
+	Create Proxies…	Kurti tarpines kopijas…
+	Crossfade	Kryžminis perėjimas
+	Darken	Patamsinti
+	Darker Color	Tamsesnė spalva
+	Delay and Echo	Delsa ir aidas
+	Delete Keyframe	Šalinti pagrindinį kadrą
+	Delete Render Files	Šalinti atvaizdavimo failus
+	Delete Render Files In to Out	Šalinti atvaizdavimo failus nuo pradžios iki pabaigos taško
+	Delete Tracks…	Šalinti takelius…
+	Delete Transcript	Šalinti transkripciją
+	Demo Footage	Demonstracinė medžiaga
+	Demo Project	Demonstracinis projektas
+	Deselect All	Atžymėti viską
+	Detach Proxies	Atjungti tarpines kopijas
+	Difference	Skirtumas
+	Dissolve	Išnykimas
+	Distort	Iškraipyti
+	Distribute Horizontally	Paskirstyti horizontaliai
+	Distribute Space Horizontally	Paskirstyti tarpus horizontaliai
+	Distribute Space Vertically	Paskirstyti tarpus vertikaliai
+	Distribute Vertically	Paskirstyti vertikaliai
+	Divide	Dalyba
+	Double-click a clip in the Project panel to open it here.	Dukart spustelėkite klipą skydelyje „Projektas“, kad jis atsivertų čia.
+	Duration	Trukmė
+	EDL…	EDL…
+	Ease In	Švelni pradžia
+	Ease Out	Švelni pabaiga
+	Edit Offline…	Redaguoti neprisijungus…
+	Edit Original	Redaguoti originalą
+	Edit Subclip…	Redaguoti poklipį…
+	Edit Workspaces…	Redaguoti darbo sritis…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Redaguojama „Lumetri“ ir kaukių įrankiais (Qt sąsajoje dar nėra)
+	Editing	Redagavimas
+	Effect Controls	Efektų valdikliai
+	Effects	Efektai
+	Ellipse	Elipsė
+	Enable	Įjungti
+	Enable Remix	Įjungti remiksą
+	Enabled	Įjungta
+	Encoding	Kodavimas
+	End	Pabaiga
+	Engine stopped	Variklis sustojo
+	Entire Sequence	Visa seka
+	Essential Graphics	Pagrindinė grafika
+	Essential Sound	Pagrindinis garsas
+	Events	Įvykiai
+	Exclusion	Išskyrimas
+	Export As Motion Graphics Template…	Eksportuoti kaip „Motion Graphics“ šabloną…
+	Export Markers as CSV…	Eksportuoti žymes kaip CSV…
+	Export Media	Eksportuoti mediją
+	Export Media…	Eksportuoti mediją…
+	Export Queue	Eksporto eilė
+	Queue ({n})	Eilė ({n})
+	Send exports here with Send to Queue, then start the queue.	Siųskite eksportus čia komanda „Siųsti į eilę“, tada paleiskite eilę.
+	Open a sequence to export	Atverkite seką, kad galėtumėte eksportuoti
+	The sequence has no caption track.	Sekoje nėra subtitrų takelio.
+	Export Audio	Eksportuoti garsą
+	Export failed: {path}	Eksportuoti nepavyko: {path}
+	Export finished: {path}	Eksportas baigtas: {path}
+	Extract	Ištraukti
+	Extract Audio	Ištraukti garsą
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Nepavyko
+	Field Options…	Laukų parinktys…
+	File…	Failas…
+	Fill frame	Užpildyti kadrą
+	Filter and EQ	Filtras ir EQ
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Find Next	Rasti kitą
+	Find…	Rasti…
+	Fit to frame	Talpinti į kadrą
+	Forest	Miškas
+	Frame Blending	Kadrų maišymas
+	Frame Hold Options…	Kadro sustabdymo parinktys…
+	Frame Sampling	Kadrų atranka
+	Frame Size	Kadro dydis
+	From Bin	Iš aplanko
+	From Source Monitor	Iš šaltinio monitoriaus
+	From Source Monitor, Match Frame	Iš šaltinio monitoriaus, atitinkamas kadras
+	From file…	Iš failo…
+	From the preset	Iš išankstinės nuostatos
+	Adaptive ({bpp} bits per pixel)	Prisitaikanti ({bpp} bitų pikseliui)
+	Set a fixed bitrate	Nustatyti fiksuotą spartą
+	Gain	Stiprinimas
+	General…	Bendra…
+	Generate	Generuoti
+	Generate Audio Waveform	Generuoti garso bangos formą
+	Get Media File Properties for	Gauti medijos failo ypatybes:
+	Go to End	Eiti į pabaigą
+	Go to Gap	Eiti į tarpą
+	Go to In	Eiti į pradžios tašką
+	Go to Next Caption Segment	Eiti į kitą subtitrų segmentą
+	Go to Next Keyframe	Eiti į kitą pagrindinį kadrą
+	Go to Next Marker	Eiti į kitą žymę
+	Go to Out	Eiti į pabaigos tašką
+	Go to Previous Caption Segment	Eiti į ankstesnį subtitrų segmentą
+	Go to Previous Keyframe	Eiti į ankstesnį pagrindinį kadrą
+	Go to Previous Marker	Eiti į ankstesnę žymę
+	Go to Split	Eiti į padalijimo vietą
+	Go to Start	Eiti į pradžią
+	Graphics and Titles	Grafika ir titrai
+	Group	Grupuoti
+	Grunge & Distort	Grunge ir iškraipymai
+	Hard Light	Kieta šviesa
+	Hard Mix	Kietas maišymas
+	Hide All Caption Tracks	Slėpti visus subtitrų takelius
+	History	Istorija
+	Hold	Sulaikyti
+	Hue	Atspalvis
+	Image Control	Vaizdo valdymas
+	Image Sequence	Vaizdų seka
+	Immersive Video	Įtraukiantis vaizdas
+	Import Credits Spreadsheet…	Importuoti titrų skaičiuoklę…
+	Import From	Importuoti iš
+	Import Image Sequence…	Importuoti vaizdų seką…
+	Import from Media Browser	Importuoti iš medijos naršyklės
+	Import…	Importuoti…
+	Info	Informacija
+	Ingest Settings…	Įkėlimo nuostatos…
+	Insert Frame Hold Segment	Įterpti kadro sustabdymo segmentą
+	Inspector	Inspektorius
+	Install Motion Graphics Template…	Įdiegti „Motion Graphics“ šabloną…
+	Interpret Footage…	Interpretuoti medžiagą…
+	Iris	Diafragma
+	Keying	Raktinimas
+	Label	Etiketė
+	Lavender	Levanda
+	Legacy	Senasis
+	Level	Lygis
+	Libraries	Bibliotekos
+	Lift	Pakelti
+	Lighten	Pašviesinti
+	Lighter Color	Šviesesnė spalva
+	Lights & Blurs	Šviesos ir suliejimai
+	Lights & Glows	Šviesos ir švytėjimai
+	Linear	Linijinis
+	Linear Burn	Tiesinis patamsinimas
+	Linear Dodge (Add)	Tiesinis pašviesinimas (pridėti)
+	Linear Light	Tiesinė šviesa
+	Link Media…	Susieti mediją…
+	Linked Selection	Susietas žymėjimas
+	Lumetri Color	„Lumetri“ spalva
+	Lumetri Scopes	„Lumetri“ matuokliai
+	Luminosity	Šviesis
+	Magenta	Purpurinė
+	Make Offline…	Padaryti neprisijungusiu…
+	Make Subclip…	Kurti poklipį…
+	Make Subsequence	Kurti posekį
+	Mango	Mangas
+	Mark Clip	Žymėti klipą
+	Mark In	Žymėti pradžios tašką
+	Mark Out	Žymėti pabaigos tašką
+	Mark Selection	Žymėti pažymėtą sritį
+	Mark Split	Žymėti padalijimą
+	Markers	Žymės
+	Match Frame	Atitinkamas kadras
+	Match sequence	Atitikti seką
+	Media Browser	Medijos naršyklė
+	Media offline	Medija neprisijungusi
+	Media…	Medija…
+	Merge Clips…	Sujungti klipus…
+	Merged Clip	Sujungtas klipas
+	Metadata	Metaduomenys
+	Modify	Keisti
+	Modulation	Moduliacija
+	Motion	Judesys
+	Motion Graphics Template…	„Motion Graphics“ šablonas…
+	Movie	Filmas
+	Multi-Camera	Kelios kameros
+	Multiply	Dauginti
+	Mute Track	Nutildyti takelį
+	Nest…	Įdėti…
+	New	Naujas
+	New Bin	Naujas aplankas
+	New Layer	Naujas sluoksnis
+	New Project Panel	Naujas projekto skydelis
+	New Sequence…	Nauja seka…
+	Next in Sequence	Kitas sekoje
+	Next in Track	Kitas takelyje
+	No	Ne
+	No sequence	Nėra sekos
+	Drop media here to create sequence.	Nutempkite mediją čia, kad sukurtumėte seką.
+	Open Demo Project	Atidaryti demonstracinį projektą
+	Double-click a sequence in the Project panel to open it here.	Dukart spustelėkite seką skydelyje „Projektas“, kad ją čia atidarytumėte.
+	Noise & Grain	Triukšmas ir grūdėtumas
+	Noise Reduction	Triukšmo mažinimas
+	Normal	Įprastas
+	Normalize Mix Track…	Normalizuoti miksavimo takelį…
+	Not Now	Ne dabar
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Qt GUI dar nėra (žr. docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	Pasenę
+	Offline File…	Neprisijungęs failas…
+	Open Project	Atidaryti projektą
+	Open Project…	Atidaryti projektą…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	Optinis srautas
+	Opus	Opus
+	Output file	Išvesties failas
+	Overlay	Perdanga
+	Overwrite	Perrašyti
+	PCM (uncompressed)	PCM (nesuspaustas)
+	Panner	Panoramavimas
+	Paste	Įklijuoti
+	Paste Attributes…	Įklijuoti atributus…
+	Paste Insert	Įklijuoti įterpiant
+	Perspective	Perspektyva
+	Pin Light	Taškinė šviesa
+	Play/Stop	Leisti / stabdyti
+	Preset	Išankstinė nuostata
+	Previous in Sequence	Ankstesnis sekoje
+	Previous in Track	Ankstesnis takelyje
+	Program	Programa
+	Progress	Eiga
+	Project	Projektas
+	Project Manager…	Projektų tvarkytuvė…
+	Project Notes	Projekto pastabos
+	Project Settings	Projekto nustatymai
+	Project…	Projektas…
+	Properties	Ypatybės
+	Proxy	Tarpinė kopija
+	Quit	Išeiti
+	Range	Diapazonas
+	Razor Tool	Pjovimo įrankis
+	Reconnect Full Resolution Media…	Iš naujo susieti visos raiškos mediją…
+	Recover	Atkurti
+	Recover Unsaved Changes	Atkurti neįrašytus pakeitimus
+	Recover Unsaved Changes…	Atkurti neįrašytus pakeitimus…
+	Reference Monitor	Etaloninis monitorius
+	Remaining	Liko
+	Remix	Perkomponuoti
+	Remix Properties…	Perkomponavimo ypatybės…
+	Remove	Šalinti
+	Remove Attributes…	Šalinti atributus…
+	Remove Effect	Šalinti efektą
+	Remove Filler Words	Šalinti pertarus
+	Remove Pauses	Šalinti pauzes
+	Remove Unused	Šalinti nenaudojamus
+	Rename…	Pervardyti…
+	Render Audio	Atvaizduoti garsą
+	Render Effects In to Out	Atvaizduoti efektus nuo pradžios iki pabaigos taško
+	Render In to Out	Atvaizduoti nuo pradžios iki pabaigos taško
+	Render Selection	Atvaizduoti pasirinkimą
+	Replace Fonts in Projects…	Pakeisti šriftus projektuose…
+	Replace With Clip	Pakeisti klipu
+	Reset All Parameters	Atstatyti visus parametrus
+	Reset Duration	Atstatyti trukmę
+	Reset Effect	Atstatyti efektą
+	Reset Panel Layout	Atstatyti skydelių išdėstymą
+	Reset Parameter	Atstatyti parametrą
+	Reset to Saved Layout	Atstatyti į įrašytą išdėstymą
+	Restoration	Restauravimas
+	Restore Captions from Source Clip	Atkurti subtitrus iš šaltinio klipo
+	Retry	Bandyti dar kartą
+	Reverb	Aidėjimas
+	Reverse Match Frame	Atvirkštinis kadro atitikimas
+	Revert Remix	Atšaukti perkomponavimą
+	Ripple Delete	Šalinti su poslinkiu
+	Ripple Delete Head Frame	Šalinti pirmąjį kadrą su poslinkiu
+	Ripple Sequence Markers	Sekos žymės su poslinkiu
+	Rose	Rožinė
+	Saturation	Sodrumas
+	Save All	Įrašyti viską
+	Save As…	Įrašyti kaip…
+	Save Changes to this Workspace	Įrašyti šios darbo srities pakeitimus
+	Save a Copy…	Įrašyti kopiją…
+	Save as New Workspace	Įrašyti kaip naują darbo sritį
+	Save as New Workspace…	Įrašyti kaip naują darbo sritį…
+	Save as Template…	Įrašyti kaip šabloną…
+	Save changes to '{name}' before closing?	Įrašyti „{name}“ pakeitimus prieš uždarant?
+	Save changes to '{name}' before continuing?	Įrašyti „{name}“ pakeitimus prieš tęsiant?
+	Scale	Mastelis
+	Scale Width	Mastelis pagal plotį
+	Scale to Frame Size	Mastelis pagal kadro dydį
+	Scene Edit Detection…	Scenų karpymų aptikimas…
+	Scratch Disks…	Darbiniai diskai…
+	Screen	Ekranas
+	Search Bin	Ieškoti aplanke
+	Select	Pasirinkti
+	Select All Matching	Pasirinkti visus atitinkančius
+	Select Label Group	Pasirinkti etikečių grupę
+	Select Next Graphic	Pasirinkti kitą grafiką
+	Select Next Layer	Pasirinkti kitą sluoksnį
+	Select Previous Graphic	Pasirinkti ankstesnę grafiką
+	Select Previous Layer	Pasirinkti ankstesnį sluoksnį
+	Select a clip in the Timeline.	Pasirinkite klipą laiko juostoje.
+	Selected	Pasirinkta
+	Selection Follows Playhead	Pasirinkimas seka atkūrimo žymeklį
+	Selection Tool	Pasirinkimo įrankis
+	Selection as CFA4 Project…	Pasirinkimą kaip CFA4 projektą…
+	Selection…	Pasirinkimas…
+	Send Backward	Perkelti atgal
+	Send to Back	Perkelti į galą
+	Sequence	Seka
+	Sequence From Clip	Seka iš klipo
+	Sequence In/Out	Sekos pradžia / pabaiga
+	Sequence Settings…	Sekos nustatymai…
+	Sequence…	Seka…
+	Show Active Caption Tracks Only	Rodyti tik aktyvius subtitrų takelius
+	Show All Caption Tracks	Rodyti visus subtitrų takelius
+	Show All Marker Colors	Rodyti visų spalvų žymes
+	Show Through Edits	Rodyti tolydžius karpymus
+	Simplify Sequence…	Supaprastinti seką…
+	Slide	Slinkimas
+	Smart Tools	Išmanieji įrankiai
+	Snap in Timeline	Pritraukti laiko juostoje
+	Soft Light	Švelni šviesa
+	Solo Track	Solo takelis
+	Some panel labels change language after a restart.	Kai kurių skydelių etiketės pakeis kalbą tik paleidus iš naujo.
+	Source	Šaltinis
+	Source In	Šaltinio pradžia
+	Source Settings…	Šaltinio nustatymai…
+	Source patch	Šaltinio jungtis
+	Special	Specialieji
+	Speed	Greitis
+	Speed/Duration…	Greitis / trukmė…
+	Start	Pradžia
+	Start Queue	Paleisti eilę
+	Starting engine…	Paleidžiamas variklis…
+	Step Back 1 Frame	Vienu kadru atgal
+	Step Forward 1 Frame	Vienu kadru pirmyn
+	Stereo Imagery	Stereo vaizdas
+	Still Image	Nejudantis vaizdas
+	Stop Queue	Stabdyti eilę
+	Stylize	Stilizuoti
+	Subclip	Poklipis
+	Subtract	Atimti
+	Synchronize…	Sinchronizuoti…
+	Synthetic	Sintetiniai
+	Tan	Gelsvai ruda
+	Target Bitrate	Tikslinė bitų sparta
+	Teal	Žalsvai mėlyna
+	Text to Speech	Tekstas į kalbą
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	CFA4 variklis (cfa4-cli) nerastas. Sukurkite jį: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4 variklis netikėtai sustojo. Neįrašyti pakeitimai saugomi atkūrimo žurnale; paleiskite CFA4 iš naujo, kad juos atkurtumėte.
+	The engine stopped	Variklis sustojo
+	Time	Laikas
+	Time Interpolation	Laiko interpoliacija
+	Time Remapping	Laiko perskirstymas
+	Time and Pitch	Laikas ir aukštis
+	Timecode	Laiko kodas
+	Timecode…	Laiko kodas…
+	Timeline	Laiko juosta
+	Toggle Animation	Perjungti animaciją
+	Toggle Proxies	Perjungti tarpines kopijas
+	Toggle Sync Lock	Perjungti sinchronizavimo užraktą
+	Toggle Track Lock	Perjungti takelio užraktą
+	Toggle Track Output	Perjungti takelio išvestį
+	Toggle the effect on or off	Įjungti arba išjungti efektą
+	Toggle track targeting	Perjungti takelio taikymą
+	Transcribe Sequence…	Transkribuoti seką…
+	Transcribe…	Transkribuoti…
+	Transcript	Transkripcija
+	Transform	Transformuoti
+	Transformers	Transformatoriai
+	Transparent Video…	Permatomas vaizdo įrašas…
+	Trim Edit	Kirpimo redagavimas
+	Ungroup	Išgrupuoti
+	Uniform Scale	Vienodas mastelis
+	Universal Counting Leader…	Universalus atgalinis skaičiavimas…
+	Untitled	Be pavadinimo
+	Update Metadata…	Atnaujinti metaduomenis…
+	Upgrade Caption to Graphic	Paversti subtitrus grafika
+	Upgrade to Source Graphic	Paversti šaltinio grafika
+	Use hardware encoding when available	Naudoti aparatinį kodavimą, kai jis prieinamas
+	Utility	Paslaugų
+	VBR, 1 pass	VBR, 1 praėjimas
+	VBR, 2 pass	VBR, 2 praėjimai
+	Vertical Text	Vertikalus tekstas
+	Video	Vaizdas
+	Video Effects	Vaizdo efektai
+	Video In	Vaizdo pradžia
+	Video Options	Vaizdo parinktys
+	Video Out	Vaizdo pabaiga
+	Video Transitions	Vaizdo perėjimai
+	Violet	Violetinė
+	Vivid Light	Ryški šviesa
+	Volume	Garsumas
+	Window	Langas
+	Wipe	Nušluostymas
+	Work Area	Darbo sritis
+	Workspaces	Darbo sritys
+	Yes	Taip
+	Zoom to Sequence	Mastelis pagal seką
+	an unknown time	nežinomas laikas
+	automatic	automatiškai
+	frames	kadrai
+	not available	neprieinama
+	off	išjungta
+	optional	neprivaloma
+	…	…
+	Ellipse Tool	Elipsės įrankis
+	Hand Tool	Rankos įrankis
+	Pen Tool	Plunksnos įrankis
+	Rate Stretch Tool	Spartos tempimo įrankis
+	Rectangle Tool	Stačiakampio įrankis
+	Remix Tool	Perkomponavimo įrankis
+	Ripple Edit Tool	Redagavimo su poslinkiu įrankis
+	Rolling Edit Tool	Slenkančio redagavimo įrankis
+	Slide Tool	Slinkimo įrankis
+	Slip Tool	Praslydimo įrankis
+	Track Select Backward Tool	Takelių pasirinkimo atgal įrankis
+	Track Select Forward Tool	Takelių pasirinkimo pirmyn įrankis
+	Type Tool	Teksto įrankis
+	Vertical Type Tool	Vertikalaus teksto įrankis
+	Zoom Tool	Mastelio įrankis
+	Add Marker (M)	Pridėti žymę (M)
+	Alpha	Alfa
+	Button Editor	Mygtukų rengyklė
+	Composite Video	Sudėtinis vaizdo signalas
+	Display Mode	Rodymo režimas
+	Export Frame	Eksportuoti kadrą
+	Extract (')	Ištraukti (')
+	Full	Visa
+	Go to In (Shift+I)	Eiti į pradžios tašką (Shift+I)
+	Go to Out (Shift+O)	Eiti į pabaigos tašką (Shift+O)
+	High Quality Playback	Aukštos kokybės atkūrimas
+	Insert (,)	Įterpti (,)
+	Lift (;)	Pakelti (;)
+	Loop	Kartoti
+	Loop marked range	Kartoti pažymėtą diapazoną
+	Magnification	Didinimas
+	Mark In (I)	Pažymėti pradžios tašką (I)
+	Mark Out (O)	Pažymėti pabaigos tašką (O)
+	More transport controls	Daugiau atkūrimo valdiklių
+	Overwrite (.)	Perrašyti (.)
+	Paused Resolution	Raiška pristabdžius
+	Play In to Out	Leisti nuo pradžios iki pabaigos taško
+	Play-Stop Toggle (Space)	Leisti / stabdyti (tarpas)
+	Playback Resolution	Atkūrimo raiška
+	RGBA Channels	RGBA kanalai
+	Reset	Atstatyti
+	Safe Margins	Saugios paraštės
+	Select Playback Resolution	Pasirinkti atkūrimo raišką
+	Select Zoom Level	Pasirinkti mastelio lygį
+	Settings	Nustatymai
+	Show Transport Controls	Rodyti atkūrimo valdiklius
+	Shuttle Left	Prasukti kairėn
+	Shuttle Right	Prasukti dešinėn
+	Shuttle Stop	Sustabdyti prasukimą
+	Step Back 1 Frame (Left)	Vienu kadru atgal (kairėn)
+	Step Forward 1 Frame (Right)	Vienu kadru pirmyn (dešinėn)
+	Darkest	Tamsiausia
+	Next Appearance Mode	Kitas išvaizdos režimas
+	(no sequence)	(nėra sekos)
+	All markers are hidden by the colour filter.	Visos žymės paslėptos spalvų filtru.
+	Audio {n}:	Garsas {n}:
+	Audio:	Garsas:
+	Clip: {name}	Klipas: {name}
+	Codec:	Kodekas:
+	Duration:	Trukmė:
+	Marker	Žymė
+	No markers. Press M to add one.	Žymių nėra. Paspauskite M, kad pridėtumėte.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Šio projekto pastabos: darbai, nurodymai, kadrų numeriai… Įrašoma kartu su projektu.
+	Playhead:	Atkūrimo žymeklis:
+	Select a clip to view its metadata.	Pasirinkite klipą, kad pamatytumėte jo metaduomenis.
+	Settings:	Nustatymai:
+	Show or hide {color} markers	Rodyti arba slėpti {color} žymes
+	Type:	Tipas:
+	Video {n}:	Vaizdas {n}:
+	Video:	Vaizdas:
+	{tc}  Chapter	{tc}  Skyrius
+	Media Type	Medijos tipas
+	Frame Rate	Kadrų dažnis
+	Media Start	Medijos pradžia
+	Media End	Medijos pabaiga
+	Media Duration	Medijos trukmė
+	Video Info	Vaizdo informacija
+	Video Codec	Vaizdo kodekas
+	Color Space	Spalvų erdvė
+	Audio Info	Garso informacija
+	Audio Codec	Garso kodekas
+	Scene	Scena
+	Shot	Planas
+	Log Note	Žurnalo pastaba
+	Comment	Komentaras
+	Tape Name	Juostos pavadinimas
+	Client	Klientas
+	Camera Angle	Kameros kampas
+	File Path	Failo kelias
+	 · {time} left	 · liko {time}
+	Active Monitor	Aktyvus monitorius
+	Add a timecode row	Pridėti laiko kodo eilutę
+	Audio Samples	Garso pavyzdžiai
+	Current Time	Dabartinis laikas
+	Failed: {e}	Nepavyko: {e}
+	Feet + Frames 16mm	Pėdos + kadrai 16 mm
+	Feet + Frames 35mm	Pėdos + kadrai 35 mm
+	Frames	Kadrai
+	In/Out Duration	Pradžios / pabaigos trukmė
+	Media Time	Medijos laikas
+	No background jobs.	Foninių užduočių nėra.
+	Remove Row	Šalinti eilutę
+	Seconds	Sekundės
+	Show finished jobs	Rodyti baigtas užduotis
+	{mode} · no clip	{mode} · nėra klipo
+	{mode} · no sequence	{mode} · nėra sekos
+	Render	Atvaizdavimas
+	Job	Užduotis
+	Audio Track Mixer menu	Garso takelių maišytuvo meniu
+	Automation mode	Automatizavimo režimas
+	Enable track for recording	Įjungti takelį įrašymui
+	Fill the slots above first	Pirmiausia užpildykite aukščiau esančias vietas
+	Go to In Point	Eiti į pradžios tašką
+	Go to Out Point	Eiti į pabaigos tašką
+	Input channel mapping	Įvesties kanalų susiejimas
+	Meter Input(s) Only	Matuoti tik įvestį (-is)
+	Mix	Miksas
+	Mute Send	Nutildyti siuntimą
+	New Submix	Naujas submiksas
+	Pan / balance (drag; double-click: centre)	Panoramavimas / balansas (vilkite; dukart spustelėkite: centras)
+	Post-Fader	Po slankiklio
+	Pre-Fader	Prieš slankiklį
+	Remove Send	Šalinti siuntimą
+	Show All	Rodyti viską
+	Show/Hide Effects and Sends	Rodyti / slėpti efektus ir siuntimus
+	Show/Hide Tracks	Rodyti / slėpti takelius
+	Solo safe	Apsaugotas nuo solo
+	Track output assignment	Takelio išvesties priskyrimas
+	Voice-over recording is not in the Qt GUI yet	Užkadrinio balso įrašymo Qt GUI dar nėra
+	Volume (drag; double-click: 0 dB)	Garsumas (vilkite; dukart spustelėkite: 0 dB)
+	pre 	prieš 
+	Read	Skaityti
+	Latch	Fiksuoti
+	Touch	Liesti
+	Write	Rašyti
+	Stereo	Stereo
+	Swap	Sukeisti
+	Mono	Mono
+	Write keyframes	Rašyti pagrindinius kadrus
+	Match Playhead	Atitikti atkūrimo žymeklį
+	Gang to Program	Susieti su programa
+	(no sequences)	(nėra sekų)
+	8 Bit	8 bitų
+	Bright	Šviesus
+	Brightness	Šviesumas
+	Clamp Signal	Apriboti signalą
+	Colour Space	Spalvų erdvė
+	Dimmed	Pritemdytas
+	Float	Slankusis kablelis
+	Four Scopes (RGB, 8 bit)	Keturios skalės (RGB, 8 bitų)
+	Four Scopes (YUV, float, no clamp)	Keturios skalės (YUV, slankusis kablelis, be apribojimo)
+	HDR	HDR
+	HLS Vectorscope + Histogram	HLS vektorskopas + histograma
+	Histogram	Histograma
+	Luma	Skaistis
+	Parade	Parada
+	Parade (RGB)	Parada (RGB)
+	Parade ({kind})	Parada ({kind})
+	Parade Type	Parados tipas
+	Presets	Išankstinės nuostatos
+	RGB	RGB
+	RGB-White	RGB-balta
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Skalių nustatymai
+	Signal Scale	Signalo skalė
+	Vectorscope (YUV)	Vektorskopas (YUV)
+	Vectorscope + Waveform YC	Vektorskopas + bangos forma YC
+	Vectorscope HLS	Vektorskopas HLS
+	Vectorscope Targets	Vektorskopo taikiniai
+	Vectorscope YUV	Vektorskopas YUV
+	Waveform	Bangos forma
+	Waveform (Luma)	Bangos forma (skaistis)
+	Waveform (RGB)	Bangos forma (RGB)
+	Waveform ({kind})	Bangos forma ({kind})
+	Waveform Type	Bangos formos tipas
+	YC	YC
+	YC no Chroma	YC be chromos
+	YUV	YUV
+	(no clip selected)	(nepasirinktas klipas)
+	Add Lumetri Color to clip	Pridėti „Lumetri Color“ prie klipo
+	Adjustments	Koregavimai
+	Amount	Kiekis
+	Apply Match	Taikyti atitikimą
+	Basic Correction	Pagrindinė korekcija
+	Blacks	Juodos
+	Bleach Bypass	Balinimo apėjimas
+	Blur	Suliejimas
+	Color Match	Spalvų atitikimas
+	Color Wheels & Match	Spalvų ratai ir atitikimas
+	Color/Black	Spalva / juoda
+	Color/Gray	Spalva / pilka
+	Comparison View	Palyginimo rodinys
+	Contrast	Kontrastas
+	Cool Blue	Vėsi mėlyna
+	Correction	Korekcija
+	Creative	Kūrybinis
+	Curves	Kreivės
+	Denoise	Triukšmo šalinimas
+	Exposure	Ekspozicija
+	Face Detection (protect skin tones)	Veidų aptikimas (apsaugoti odos atspalvius)
+	Faded Film	Išblukusi juosta
+	Faded Matte	Išblukęs matinis
+	Feather	Plunksnavimas
+	Golden Hour	Auksinė valanda
+	HDR Range	HDR diapazonas
+	HDR Specular	HDR atspindžiai
+	HDR White	HDR balta
+	HSL Secondary	HSL antrinė
+	Highlights	Šviesiosios sritys
+	Hue Range	Atspalvių diapazonas
+	Hue Saturation Curves	Atspalvio ir sodrumo kreivės
+	Hue Shift	Atspalvio poslinkis
+	Hue vs Hue	Atspalvis pagal atspalvį
+	Hue vs Luma	Skaistis pagal atspalvį
+	Hue vs Sat	Sodrumas pagal atspalvį
+	Input LUT	Įvesties LUT
+	Intensity	Intensyvumas
+	Key	Raktas
+	LUT	LUT
+	Look	Išvaizda
+	Look LUT	Išvaizdos LUT
+	Luma Max	Didžiausias skaistis
+	Luma Min	Mažiausias skaistis
+	Luma vs Sat	Sodrumas pagal skaistį
+	Master · {name}	Pagrindinis · {name}
+	Midpoint	Vidurio taškas
+	Midtones	Vidutiniai tonai
+	Monochrome	Vienspalvis
+	Night	Naktis
+	RGB Curves	RGB kreivės
+	Reference	Etalonas
+	Refine	Patikslinti
+	Roundness	Apvalumas
+	Sat vs Sat	Sodrumas pagal sodrumą
+	Saturation Min	Mažiausias sodrumas
+	Shadows	Šešėliai
+	Sharpen	Ryškinti
+	Show Mask	Rodyti kaukę
+	Soften	Sušvelninti
+	Teal & Orange	Žalsvai mėlyna ir oranžinė
+	Temperature	Temperatūra
+	Tint	Atspalvinimas
+	Vibrance	Gyvumas
+	Vignette	Vinjetė
+	Warm Film	Šilta juosta
+	White/Black	Balta / juoda
+	Whites	Baltos
+	(none)	(nėra)
+	Add to Favorites	Įtraukti į mėgstamus
+	All Supported Files	Visi palaikomi failai
+	Allow Duplicate Media During Project Import	Leisti pasikartojančią mediją importuojant projektą
+	Audio Files	Garso failai
+	Cannot open {dir}: {e}	Nepavyksta atidaryti {dir}: {e}
+	Clear Recent Directories	Išvalyti naujausius katalogus
+	Create Folder For Imported Projects	Kurti aplanką importuotiems projektams
+	Date Modified	Keitimo data
+	Edit Columns	Redaguoti stulpelius
+	Edit Columns…	Redaguoti stulpelius…
+	Favorites	Mėgstami
+	File Extension	Failo plėtinys
+	File Types Displayed	Rodomi failų tipai
+	Go Back	Atgal
+	Go Forward	Pirmyn
+	Hover Scrub	Peržiūra užvedus
+	Import	Importuoti
+	Import as Image Sequence	Importuoti kaip vaizdų seką
+	Ingest	Perėmimas
+	List View	Sąrašo rodinys
+	Local Drives	Vietiniai diskai
+	Network	Tinklas
+	New Media Browser Panel	Naujas medijos naršyklės skydelis
+	Open In Source Monitor	Atidaryti šaltinio monitoriuje
+	Open Ingest Settings	Atidaryti perėmimo nustatymus
+	Projects and Interchange	Projektai ir mainai
+	Recent Directories	Naujausi katalogai
+	Remove from Favorites	Šalinti iš mėgstamų
+	Show in File Manager	Rodyti failų tvarkytuvėje
+	Still Images	Nejudantys vaizdai
+	Thumbnail View	Miniatiūrų rodinys
+	Up One Level	Vienu lygiu aukštyn
+	Video Files	Vaizdo failai
+	{sel} of {total} items selected	Pasirinkta elementų: {sel} iš {total}
+	{total} items	Elementų: {total}
+	#	#
+	Add caption at playhead	Pridėti subtitrą ties atkūrimo žymekliu
+	Add captions	Pridėti subtitrus
+	Align center	Lygiuoti centre
+	Box	Langelis
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Sukurkite subtitrų takelį arba importuokite subtitrų failą.
+	Create captions	Kurti subtitrus
+	Create new caption track	Kurti naują subtitrų takelį
+	Delete selected captions	Šalinti pasirinktus subtitrus
+	Export captions…	Eksportuoti subtitrus…
+	Extract selected text	Ištraukti pasirinktą tekstą
+	Go to caption	Eiti į subtitrą
+	Go to graphic	Eiti į grafiką
+	Graphics	Grafika
+	Import captions file…	Importuoti subtitrų failą…
+	In	Pradžia
+	Lift selected text	Pakelti pasirinktą tekstą
+	Merge selected captions	Sujungti pasirinktus subtitrus
+	New {format} track	Naujas {format} takelis
+	No captions on this track. Press + to add one at the playhead.	Šiame takelyje subtitrų nėra. Paspauskite +, kad pridėtumėte ties atkūrimo žymekliu.
+	No matching captions.	Atitinkančių subtitrų nėra.
+	No matching text.	Atitinkančio teksto nėra.
+	No text graphics in this sequence. Add text with the Type tool.	Šioje sekoje teksto grafikos nėra. Pridėkite tekstą įrankiu „Tekstas“.
+	Open a sequence to search its graphics	Atidarykite seką, kad ieškotumėte jos grafikoje
+	Open a sequence to see its transcript	Atidarykite seką, kad pamatytumėte jos transkripciją
+	Open a sequence to work with captions	Atidarykite seką, kad dirbtumėte su subtitrais
+	Out	Pabaiga
+	Position: bottom	Padėtis: apačioje
+	Position: middle	Padėtis: viduryje
+	Position: top	Padėtis: viršuje
+	Remove filler words	Šalinti pertarus
+	Speaker	Kalbėtojas
+	Speech-to-text turns the dialogue into editable text.	Kalbos atpažinimas paverčia dialogą redaguojamu tekstu.
+	Split caption at playhead	Padalyti subtitrą ties atkūrimo žymekliu
+	Subtitle	Subtitrai
+	Teletext	Teletekstas
+	Text colour	Teksto spalva
+	This build has no speech-to-text; import a transcript with transcript.set.	Šioje versijoje kalbos atpažinimo nėra; importuokite transkripciją su transcript.set.
+	Track	Takelis
+	Transcribe	Transkribuoti
+	Transcribe sequence	Transkribuoti seką
+	(Custom)	(pasirinktinė)
+	(Default)	(numatytoji)
+	Ambience	Aplinka
+	Assign an audio type to the selection:	Priskirti pasirinkimui garso tipą:
+	Auto-Match	Automatinis atitikimas
+	Balanced Voice	Subalansuotas balsas
+	Bright Air	Šviesus oras
+	Bright Studio	Šviesi studija
+	Browse	Naršyti
+	Clarity	Aiškumas
+	Clean Up Noisy Dialogue	Išvalyti triukšmingą dialogą
+	Clear Audio Type	Išvalyti garso tipą
+	Clear Muddiness	Pašalinti duslumą
+	Clip Volume	Klipo garsumas
+	DeEss	Šnypščiųjų mažinimas
+	DeHum	Ūžimo šalinimas
+	Delete Preset	Šalinti išankstinę nuostatą
+	Dialogue	Dialogas
+	Dry Up a Roomy Voice	Sausinti erdvų balsą
+	Duck Deep Under Dialogue	Giliai prislopinti po dialogu
+	Duck Under Dialogue	Prislopinti po dialogu
+	Duck Under Voice and Effects	Prislopinti po balsu ir efektais
+	Duck against:	Slopinti pagal:
+	Ducking	Slopinimas
+	Dynamics	Dinamika
+	EQ	EQ
+	Enhance Speech	Pagerinti kalbą
+	Fades	Perėjimai
+	Far Away	Toli
+	From the Left	Iš kairės
+	From the Right	Iš dešinės
+	Generate Keyframes	Generuoti pagrindinius kadrus
+	High Tone	Aukštas tonas
+	In a Room	Kambaryje
+	Interior Room Tone	Vidaus patalpos fonas
+	Large Hall	Didelė salė
+	Loudness	Garsumas
+	Low Tone	Žemas tonas
+	Matches each of the {n} clips on its own.	Kiekvieną iš {n} klipų atitinka atskirai.
+	Medium Room	Vidutinis kambarys
+	Multiple Clips Selected	Pasirinkti keli klipai
+	Music	Muzika
+	Mute	Nutildyti
+	Not matched yet	Dar neatitikta
+	Open Air	Atviras oras
+	Pan	Panoramavimas
+	Phone Call	Telefono skambutis
+	Podcast Voice	Podkasto balsas
+	Presence Lift	Buvimo pakėlimas
+	Preset name	Išankstinės nuostatos pavadinimas
+	Preset:	Išankstinė nuostata:
+	Radio Announcer	Radijo diktorius
+	Radio Voice	Radijo balsas
+	Reduce By	Sumažinti
+	Reduce Noise	Mažinti triukšmą
+	Reduce Reverb	Mažinti aidėjimą
+	Reduce Rumble	Mažinti dundesį
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	Muzikos perkomponavimas iki tikslinės trukmės dar neprieinamas. Vietoj to apkirpkite klipą ir pridėkite perdangos perėjimą.
+	Repair	Taisymas
+	SFX	Garso efektai
+	Save Preset	Įrašyti išankstinę nuostatą
+	Select audio clips to edit them here	Pasirinkite garso klipus, kad juos čia redaguotumėte
+	Select audio clips, then click a preset to apply it.	Pasirinkite garso klipus, tada spustelėkite išankstinę nuostatą, kad ją pritaikytumėte.
+	Sensitivity	Jautrumas
+	Small Room	Mažas kambarys
+	Soften Harshness	Sušvelninti šiurkštumą
+	Stereo Width	Stereo plotis
+	Stone Church	Akmeninė bažnyčia
+	Telephone	Telefonas
+	The selected clips have different audio types. Assign one type to edit them together.	Pasirinkti klipai turi skirtingus garso tipus. Priskirkite vieną tipą, kad juos redaguotumėte kartu.
+	Untagged	Nepažymėti
+	Voice in a Hall	Balsas salėje
+	Warm Room	Šiltas kambarys
+	Warm Voice	Šiltas balsas
+	Wide Outdoor	Platus lauke
+	{name} (user)	{name} (naudotojo)
+	Align Bottom	Lygiuoti apačioje
+	Align Center Horizontally	Lygiuoti centre horizontaliai
+	Align Center Vertically	Lygiuoti centre vertikaliai
+	Align Left	Lygiuoti kairėje
+	Align Right	Lygiuoti dešinėje
+	Align Top	Lygiuoti viršuje
+	Align and Transform	Lygiavimas ir transformavimas
+	Alignment	Lygiavimas
+	All Caps	Visos didžiosios
+	All Categories	Visos kategorijos
+	Anchor point	Inkaro taškas
+	Background	Fonas
+	Baseline Shift	Bazinės linijos poslinkis
+	Center Align Text	Lygiuoti tekstą centre
+	Corner Radius	Kampo spindulys
+	Crawl Left	Slinkti kairėn
+	Crawl Right	Slinkti dešinėn
+	Create new graphic	Kurti naują grafiką
+	Delete Layer	Šalinti sluoksnį
+	End Off Screen	Baigti už ekrano
+	Faux Bold	Netikras paryškinimas
+	Faux Italic	Netikras kursyvas
+	Fill	Užpildas
+	Font Size	Šrifto dydis
+	Font Style	Šrifto stilius
+	Gradient	Gradientas
+	Inner	Vidinis
+	Install Motion Graphics Template (.fcgt)	Įdiegti judesio grafikos šabloną (.fcgt)
+	Install…	Įdiegti…
+	Intro Duration	Įžangos trukmė
+	Kerning	Kerningas
+	Leading	Eilučių tarpas
+	Left Align Text	Lygiuoti tekstą kairėje
+	Ligatures	Ligatūros
+	Linear Gradient	Linijinis gradientas
+	New Ellipse	Nauja elipsė
+	New Rectangle	Naujas stačiakampis
+	New Text	Naujas tekstas
+	New Text Layer	Naujas teksto sluoksnis
+	No templates match.	Atitinkančių šablonų nėra.
+	OpenType	OpenType
+	Orientation	Orientacija
+	Outer	Išorinis
+	Outro Duration	Pabaigos trukmė
+	Paragraph Text	Pastraipos tekstas
+	Pin To	Prisegti prie
+	Pinned Edges	Prisegti kraštai
+	Point Text	Taško tekstas
+	Polygon Sides	Daugiakampio kraštinės
+	Postroll	Po įrašo
+	Preroll	Prieš įrašą
+	Responsive Design - Position	Prisitaikantis dizainas – padėtis
+	Responsive Design - Time	Prisitaikantis dizainas – laikas
+	Right Align Text	Lygiuoti tekstą dešinėje
+	Roll	Titrų slinkimas
+	Search templates	Ieškoti šablonų
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Pasirinkite grafikos klipą arba naudokite įrankį „Tekstas“ (T) programos monitoriuje
+	Select a layer to edit its properties.	Pasirinkite sluoksnį, kad redaguotumėte jo ypatybes.
+	Shadow	Šešėlis
+	Shape	Forma
+	Small Caps	Mažosios didžiosios
+	Start Off Screen	Pradėti už ekrano
+	Stroke	Kontūras
+	Stroke 2	Kontūras 2
+	Template Properties	Šablono ypatybės
+	Template: {name}	Šablonas: {name}
+	Text Box Height	Teksto lauko aukštis
+	Text Box Width	Teksto lauko plotis
+	Text Layer Type	Teksto sluoksnio tipas
+	Text Properties	Teksto ypatybės
+	Text Styling	Teksto stilius
+	Toggle animation	Perjungti animaciją
+	Toggle visibility	Perjungti matomumą
+	Tracking	Tarpai tarp raidžių
+	Video Frame	Vaizdo kadras
+	{category} · My Template	{category} · Mano šablonas
+	{n} editable properties	Redaguojamų ypatybių: {n}
+	Add pause	Pridėti pauzę
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	„Pridėti pauzę“ įterpia [pause 1s]. Pakeiskite skaičių, kad pauzė būtų ilgesnė ar trumpesnė, pvz., [pause 500ms] arba [pause 2s].
+	Add to timeline	Pridėti į laiko juostą
+	Basic voices (built in)	Pagrindiniai balsai (integruoti)
+	Download natural voices ({mb} MB)…	Atsisiųsti natūralius balsus ({mb} MB)…
+	Download of the natural voices failed: {e}	Nepavyko atsisiųsti natūralių balsų: {e}
+	Download the natural voices? {mb} MB, once.	Atsisiųsti natūralius balsus? {mb} MB, vieną kartą.
+	Downloading…	Atsisiunčiama…
+	Editing the selected narration	Redaguojamas pasirinktas įgarsinimas
+	Extra high	Labai aukštas
+	Extra low	Labai žemas
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Iš {source} ir github.com/cmusphinx/cmudict (tarimai). Licencija: {license}. Kiekvienas failas tikrinamas pagal užfiksuotą SHA-256.
+	Hear this voice	Išklausyti šį balsą
+	Narration added on {track}	Įgarsinimas pridėtas takelyje {track}
+	Narration updated	Įgarsinimas atnaujintas
+	Natural voices	Natūralūs balsai
+	Natural voices installed	Natūralūs balsai įdiegti
+	Natural voices need a one-time download.	Natūralius balsus reikia vieną kartą atsisiųsti.
+	New narration	Naujas įgarsinimas
+	Pace	Tempas
+	Synthesizing narration…	Sintezuojamas įgarsinimas…
+	Synthesizing…	Sintezuojama…
+	Text to Speech: {e}	Tekstas į kalbą: {e}
+	Type what you want the voice to say	Įveskite, ką turi pasakyti balsas
+	Vocal pitch	Balso aukštis
+	Voice	Balsas
+	an audio track	garso takelis
+	no audio output (check Settings ▸ Audio Hardware)	nėra garso išvesties (patikrinkite Nustatymai ▸ Garso aparatinė įranga)
+	the job disappeared	užduotis dingo
+	{name} (download)	{name} (atsisiųsti)
+	Open	Atidaryti
+	5.1 panner (drag the puck; double-click: front centre)	5.1 panoramavimas (vilkite žymeklį; dukart spustelėkite: priekis centre)
+	Add keyframe	Pridėti pagrindinį kadrą
+	Crop	Apkirpti
+	Go to next keyframe	Eiti į kitą pagrindinį kadrą
+	Go to previous keyframe	Eiti į ankstesnį pagrindinį kadrą
+	Remove keyframe	Šalinti pagrindinį kadrą
+	Select a clip to see its properties	Pasirinkite klipą, kad pamatytumėte jo ypatybes
+	Speed {n}%	Greitis {n} %
+	Turn on animation and add keyframe	Įjungti animaciją ir pridėti pagrindinį kadrą
+	Apply to Selected Clips	Taikyti pasirinktiems klipams
+	Export Preset…	Eksportuoti išankstinę nuostatą…
+	Import Presets…	Importuoti išankstines nuostatas…
+	Lumetri Presets	„Lumetri“ išankstinės nuostatos
+	Search effects	Ieškoti efektų
+	Text to Speech: another sequence is open now; the narration was not placed	Tekstas į kalbą: dabar atidaryta kita seka; įgarsinimas nepadėtas
+	Effect presets	Efektų išankstinės nuostatos
+	Automate to Sequence	Automatizuoti į seką
+	Bin: {name}	Aplankas: {name}
+	Clear (Delete)	Išvalyti (Delete)
+	Convert to Master Clip	Paversti pagrindiniu klipu
+	Date Created	Sukūrimo data
+	Delete	Šalinti
+	Descending	Mažėjančiai
+	Drag to reorder; tick the columns to show.	Vilkite, kad pakeistumėte tvarką; pažymėkite rodytinus stulpelius.
+	Extra Large	Labai didelis
+	Find	Rasti
+	Freeform	Laisvas
+	Freeform View Options…	Laisvo rodinio parinktys…
+	Icon	Piktograma
+	Icon View	Piktogramų rodinys
+	Large	Didelis
+	List	Sąrašas
+	Manage Saved View Presets	Tvarkyti įrašytas rodinio nuostatas
+	Medium (default)	Vidutinis (numatytasis)
+	Metadata Display	Metaduomenų rodymas
+	Metadata Display…	Metaduomenų rodymas…
+	New Bin From Selection	Naujas aplankas iš pasirinkimo
+	New Item	Naujas elementas
+	New Project Shortcut	Naujo projekto nuoroda
+	New Search Bin	Naujas paieškos aplankas
+	New Sequence From Clip	Nauja seka iš klipo
+	Open in New Tab	Atidaryti naujoje kortelėje
+	Open in New Window	Atidaryti naujame lange
+	Open in Place	Atidaryti vietoje
+	Open in Source Monitor	Atidaryti šaltinio monitoriuje
+	Open in Timeline	Atidaryti laiko juostoje
+	Preview Area	Peržiūros sritis
+	Project View Preset {n}	Projekto rodinio nuostata {n}
+	Project: {name}	Projektas: {name}
+	Refresh Project	Atnaujinti projektą
+	Refresh Sort Order	Atnaujinti rikiavimo tvarką
+	Restore View Preset	Atkurti rodinio nuostatą
+	Reveal Project in Finder…	Rodyti projektą failų tvarkytuvėje…
+	Reveal in Finder	Rodyti failų tvarkytuvėje
+	Save As New View Preset	Įrašyti kaip naują rodinio nuostatą
+	Save Current View Preset	Įrašyti dabartinę rodinio nuostatą
+	Save Project	Įrašyti projektą
+	Select an item to preview it	Pasirinkite elementą, kad jį peržiūrėtumėte
+	Set Poster Frame	Nustatyti plakato kadrą
+	Small	Mažas
+	Sort Icons	Rikiuoti piktogramas
+	Thumbnail controls for all pointing devices	Miniatiūrų valdikliai visiems žymiklio įrenginiams
+	Thumbnails	Miniatiūros
+	Thumbnails show effects applied	Miniatiūrose rodomi pritaikyti efektai
+	Up one level	Vienu lygiu aukštyn
+	User Order	Naudotojo tvarka
+	Video Usage: {vu}  Audio Usage: {au}	Vaizdo naudojimas: {vu}  Garso naudojimas: {au}
+	{n} items	Elementų: {n}
+	Freeform View	Laisvas rodinys
+	Stack	Sudėti į krūvą
+	Unstack	Išskleisti krūvą
+	Clip Size	Klipo dydis
+	Larger	Didesnis
+	Smaller	Mažesnis
+	Align to Grid	Lygiuoti pagal tinklelį
+	Reset to Grid	Atstatyti pagal tinklelį
+	Save Arrangement…	Įrašyti išdėstymą…
+	Save Arrangement	Įrašyti išdėstymą
+	Restore Arrangement	Atkurti išdėstymą
+	Delete Arrangement	Šalinti išdėstymą
+	Arrangement {n}	Išdėstymas {n}
+	Freeform View Options	Laisvo rodinio parinktys
+	Snap to grid	Pritraukti prie tinklelio
+	Show clip names	Rodyti klipų pavadinimus
+	Show clip durations	Rodyti klipų trukmes
+	Grid spacing:	Tinklelio tarpai:
+	Default clip size:	Numatytasis klipo dydis:
+	{panel} — coming in a later milestone	{panel} – bus vėlesniame etape
+	Edit Workspaces	Redaguoti darbo sritis
+	Restore Original	Atkurti pradinį
+	Drag Video Only	Vilkti tik vaizdą
+	Drag Audio Only	Vilkti tik garsą
+	Drag Video and Audio	Vilkti vaizdą ir garsą
+	Source clips	Šaltinio klipai
+	Close All	Uždaryti viską
+	(no audio)	(nėra garso)
+	Generating waveform…	Generuojama bangos forma…
+	Audio Waveform	Garso bangos forma
+	Video and Audio Waveform Split	Atskirta vaizdo ir garso bangos forma
+	Anchor to In Point	Pririšti prie pradžios taško
+	Anchor to Out Point	Pririšti prie pabaigos taško
+	Custom ({n} points)	Pasirinktinė ({n} taškai)
+	Save Preset…	Įrašyti išankstinę nuostatą…
+	Source · {name}	Šaltinis · {name}
+	Temporal Interpolation	Laiko interpoliacija
+	Twirl open or shut	Išskleisti arba suskleisti
+	Without keyframes	Be pagrindinių kadrų
+	Create 4-point polygon mask	Kurti 4 taškų daugiakampio kaukę
+	Create ellipse mask	Kurti elipsės kaukę
+	Delete Mask	Šalinti kaukę
+	Free draw bezier	Laisvas Bezjė piešimas
+	Intersect	Sankirta
+	Inverted	Invertuota
+	Position & Rotation	Padėtis ir pasukimas
+	Position, Scale & Rotation	Padėtis, mastelis ir pasukimas
+	Show graphs	Rodyti grafikus
+	Stop tracking	Stabdyti sekimą
+	Track selected mask backward	Sekti pasirinktą kaukę atgal
+	Track selected mask backward 1 frame	Sekti pasirinktą kaukę 1 kadru atgal
+	Track selected mask forward	Sekti pasirinktą kaukę pirmyn
+	Track selected mask forward 1 frame	Sekti pasirinktą kaukę 1 kadru pirmyn
+	Tracking method: {method}	Sekimo metodas: {method}
+	Value	Reikšmė
+	Velocity	Greitis
+	Set Transition Duration	Nustatyti perėjimo trukmę
+	Reverse	Atvirkščiai
+	Center at Cut	Centruoti ties karpymu
+	Start at Cut	Pradėti ties karpymu
+	End at Cut	Baigti ties karpymu
+	Custom Start	Pasirinktinė pradžia
+	Eyedropper (pick a color from the Program monitor)	Pipetė (pasirinkite spalvą programos monitoriuje)
+	Interpret Footage	Interpretuoti medžiagą
+	Color Management · {n} item	Spalvų valdymas · {n} elementas
+	Color Management · {n} items	Spalvų valdymas · {n} elementai
+	Media colour space (from file metadata): {detected}	Medijos spalvų erdvė (iš failo metaduomenų): {detected}
+	Override media colour space:	Nepaisyti medijos spalvų erdvės:
+	Decode Auro-3D height channels	Dekoduoti Auro-3D aukščio kanalus
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Išjungta: failas leidžia savo kanalus, kaip be Auro-3D dekoderio.
+	Use file metadata	Naudoti failo metaduomenis
+	Motion Graphics Templates	Judesio grafikos šablonai
+	Clip Fx Editor	Klipo efektų rengyklė
+	Track Fx Editor	Takelio efektų rengyklė
+	Custom Setup	Pasirinktinė sąranka
+	Master Gain	Pagrindinis stiprinimas
+	Band {n}	Juosta {n}
+	Solo	Solo
+	Thr	Slenk.
+	Ratio	Santykis
+	Att	Ataka
+	Rel	Atleid.
+	Output Gain	Išvesties stiprinimas
+	Limiter	Ribotuvas
+	Link Channels	Susieti kanalus
+	Limiter Threshold	Ribotuvo slenkstis
+	Limiter Release	Ribotuvo atleidimas
+	Auto Gate	Automatiniai vartai
+	Threshold	Slenkstis
+	Attack	Ataka
+	Release	Atleidimas
+	Compressor	Kompresorius
+	Auto Makeup	Automatinis kompensavimas
+	Makeup	Kompensavimas
+	Expander	Plėtiklis
+	Soft Clip	Švelnus apkirpimas
+	out	išv.
+	in	įv.
+	Parametric Equalizer	Parametrinis ekvalaizeris
+	Graphic Equalizer (10 Bands)	Grafinis ekvalaizeris (10 juostų)
+	Graphic Equalizer (20 Bands)	Grafinis ekvalaizeris (20 juostų)
+	Graphic Equalizer (30 Bands)	Grafinis ekvalaizeris (30 juostų)
+	Multiband Compressor	Daugiajuostis kompresorius
+	CFA4 encountered an error	CFA4 susidūrė su klaida
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Piešiant langą kažkas nepavyko. Jūsų projektas vis dar atidarytas; dėl saugumo jį įrašykite.
+	Continue	Tęsti
+	Details: {path}	Išsami informacija: {path}
+	Engine restarted	Variklis paleistas iš naujo
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4 variklis netikėtai sustojo ir buvo paleistas iš naujo. Neįrašyti pakeitimai saugomi atkūrimo žurnale; jis pasiūlys juos atkurti.
+	 ({ch} output channels)	 ({ch} išvesties kanalai)
+	Active	Aktyvus
+	Add to favorites	Įtraukti į mėgstamus
+	Appearance Mode	Išvaizdos režimas
+	Appearance Settings…	Išvaizdos nustatymai…
+	Auto-saves go to: {dir}	Automatiniai įrašai saugomi: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	CFA4 palieka likusią RAM laisvą kitoms programoms.
+	Currently: {loc} — {files} file(s), {size}	Dabar: {loc} – failų: {files}, {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	Dekoduoti kadrai, laikomi monitoriams ir miniatiūroms: {used} iš {budget}.
+	Default location	Numatytoji vieta
+	Delete this preset	Šalinti šią išankstinę nuostatą
+	Deleted preset “{active}”	Pašalinta išankstinė nuostata „{active}“
+	Deleted {n} file(s), {size}.	Pašalinta failų: {n}, {size}.
+	Export the labels to a preset file…	Eksportuoti etiketes į išankstinės nuostatos failą…
+	Exported to {path}	Eksportuota į {path}
+	Font family	Šriftų šeima
+	Import a preset file…	Importuoti išankstinės nuostatos failą…
+	Imported “{name}”	Importuota „{name}“
+	Label Color Presets	Etikečių spalvų išankstinės nuostatos
+	Label Colors	Etikečių spalvos
+	Last auto-save {a}	Paskutinis automatinis įrašas {a}
+	Last auto-save {a} · last recovery copy {j}	Paskutinis automatinis įrašas {a} · paskutinė atkūrimo kopija {j}
+	Last recovery copy {j}	Paskutinė atkūrimo kopija {j}
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	Programos kairysis kanalas → įrenginio išvestis {l}, dešinysis → įrenginio išvestis {r}{dev}. Išvestys už įrenginio kanalų ribų grįžta į 1 ir 2.
+	Recovery copy: {dir}	Atkūrimo kopija: {dir}
+	Remove from favorites	Šalinti iš mėgstamų
+	Reset…	Atstatyti…
+	Revert to the preset's colors and names	Grąžinti išankstinės nuostatos spalvas ir pavadinimus
+	Show the presets folder	Rodyti išankstinių nuostatų aplanką
+	Sync with system	Sinchronizuoti su sistema
+	System Default	Sistemos numatytoji
+	not available in this session	neprieinama šiame seanse
+	{name} (Modified)	{name} (pakeista)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	Prieinamas spalvų kontrastas
+	Adaptive	Prisitaikantis
+	Add tracks automatically when editing source clips onto the Timeline	Automatiškai pridėti takelius, kai šaltinio klipai dedami į laiko juostą
+	All lines	Visos eilutės
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	Leisti pasirinkimo įrankiui parinkti slenkantį ir poslinkio kirpimą be modifikavimo klavišo
+	Allow current tool to change trim type of previously selected edit point	Leisti dabartiniam įrankiui keisti anksčiau pasirinkto karpymo taško kirpimo tipą
+	Allow duplicate media during project import	Leisti pasikartojančią mediją importuojant projektą
+	Always import embedded CEA-708 closed captions with wide aspect.	Visada importuoti įterptus CEA-708 subtitrus plačiu formatu.
+	Always override audio tags	Visada nepaisyti garso žymų
+	Analyze all imported media to search for visuals or audio	Analizuoti visą importuotą mediją ieškant vaizdų ar garso
+	Animate zoom, scrolling and menus	Animuoti mastelį, slinkimą ir meniu
+	Appearance…	Išvaizda…
+	At Startup	Paleidžiant
+	At playback end, return to beginning when restarting playback	Pasibaigus atkūrimui, vėl paleidžiant grįžti į pradžią
+	Attempt to force hardware to document sample rate	Bandyti priversti aparatinę įrangą naudoti dokumento ėmimo dažnį
+	Audio Hardware	Garso aparatinė įranga
+	Audio Hardware…	Garso aparatinė įranga…
+	Audio Time Units	Garso laiko vienetai
+	Audio Transition Default Duration	Numatytoji garso perėjimo trukmė
+	Audio…	Garsas…
+	Auto (system)	Automatiškai (sistema)
+	Auto Save	Automatinis įrašymas
+	Auto Save also saves the current project(s)	Automatinis įrašymas įrašo ir dabartinį (-ius) projektą (-us)
+	Auto Save…	Automatinis įrašymas…
+	Auto-tag audio types in the timeline	Automatiškai žymėti garso tipus laiko juostoje
+	Auto-transcribe all imported clips	Automatiškai transkribuoti visus importuotus klipus
+	Auto-transcribe only clips in sequences	Automatiškai transkribuoti tik sekose esančius klipus
+	Automatch Time	Automatinio atitikimo laikas
+	Automatically Hide Dependent Clips	Automatiškai slėpti priklausomus klipus
+	Automatically Save Every	Automatiškai įrašyti kas
+	Automatically delete cache files older than	Automatiškai šalinti podėlio failus, senesnius nei
+	Automatically delete oldest cache files when cache exceeds	Automatiškai šalinti seniausius podėlio failus, kai podėlis viršija
+	Automatically refresh growing files	Automatiškai atnaujinti augančius failus
+	Automatically resume playback for growing files in Source Monitor	Automatiškai tęsti augančių failų atkūrimą šaltinio monitoriuje
+	Automatically save projects	Automatiškai įrašyti projektus
+	Automatically transcribe clips	Automatiškai transkribuoti klipus
+	Automation Keyframe Optimization	Automatizavimo pagrindinių kadrų optimizavimas
+	Background fill	Fono užpildas
+	Bevel join	Nusklembta jungtis
+	Bins	Aplankai
+	Butt cap	Plokščias galas
+	Cache analysis results for re-use	Talpinti analizės rezultatus podėlyje pakartotiniam naudojimui
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	Pakeitimai kopijuojami fone praėjus akimirkai po kiekvieno redagavimo. Jei CFA4 netikėtai užsidaro, juos pasiūloma atkurti kitą kartą paleidus.
+	Chinese	Kinų
+	Closed Captions	Subtitrai
+	Color Theme	Spalvų tema
+	Color…	Spalva…
+	Crash Recovery	Atkūrimas po strigties
+	Create folder for imported projects	Kurti aplanką importuotiems projektams
+	Dark Theme	Tamsi tema
+	Default Audio Tracks	Numatytieji garso takeliai
+	Default Emoji font	Numatytasis jaustukų šriftas
+	Default Input	Numatytoji įvestis
+	Default Media Scaling	Numatytasis medijos mastelis
+	Default Output	Numatytoji išvestis
+	Default closed caption font	Numatytasis subtitrų šriftas
+	Default language	Numatytoji kalba
+	Default paragraph direction	Numatytoji pastraipos kryptis
+	Default subtitle and text font	Numatytasis subtitrų ir teksto šriftas
+	Delete files older than	Šalinti failus, senesnius nei
+	Delete oldest files when the cache exceeds	Šalinti seniausius failus, kai podėlis viršija
+	Delete…	Šalinti…
+	Device Class	Įrenginio klasė
+	Disable video output when in the background	Išjungti vaizdo išvestį, kai programa fone
+	Display Color Management	Ekrano spalvų valdymas
+	Display Color Settings	Ekrano spalvų nustatymai
+	Display out of sync indicators for unlinked clips	Rodyti nesinchronizuotų nesusietų klipų indikatorius
+	Do not delete cache files automatically	Automatiškai nešalinti podėlio failų
+	Don't label speakers	Nežymėti kalbėtojų
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	Juodraštinis dekodavimas sumažinta atkūrimo raiška (H.264: greičiau, kai kurie kadrai mažiau filtruoti)
+	Dutch	Olandų
+	Dynamic Link	Dinaminis susiejimas
+	Enable Mercury Transmit	Įjungti „Mercury Transmit“
+	Enable ProRes hardware accelerated encoding, if available	Įjungti aparatiškai spartinamą ProRes kodavimą, jei prieinamas
+	Enable clip and XMP metadata linking	Įjungti klipo ir XMP metaduomenų susiejimą
+	Enable developer mode	Įjungti kūrėjo režimą
+	Enable hardware accelerated decoding (requires restart)	Įjungti aparatiškai spartinamą dekodavimą (reikia paleisti iš naujo)
+	Enable language auto-detection	Įjungti automatinį kalbos aptikimą
+	Enable proxies	Įjungti tarpines kopijas
+	Extended Dynamic Range Monitoring	Išplėstinio dinaminio diapazono stebėsena
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	Spalvų valdymo parametrai yra „Lumetri Color“ skydelio kortelėje „Nustatymai“.
+	Frame Count	Kadrų skaičius
+	Frame cache for monitors and thumbnails	Kadrų podėlis monitoriams ir miniatiūroms
+	French	Prancūzų
+	Front + LFE	Priekis + LFE
+	Front + Rear	Priekis + galas
+	Front + Rear + LFE	Priekis + galas + LFE
+	Front Only	Tik priekis
+	Generate Timecode	Generuoti laiko kodą
+	Generate waveforms and conform audio using multithreading	Generuoti bangos formas ir suderinti garsą naudojant kelias gijas
+	Generate waveforms automatically during import	Automatiškai generuoti bangos formas importuojant
+	German	Vokiečių
+	Graphics…	Grafika…
+	Growing Files	Augantys failai
+	HDR Graphics White (Nits)	HDR grafikos baltoji (nitai)
+	Hardware decoding	Aparatinis dekodavimas
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Aparatinis dekodavimas: „Automatiškai“ naudoja sistemos vaizdo dekoderį (VA-API arba NVDEC, skirtą H.264 ir HEVC) palaikomiems srautams, o visam kitam arba aparatinei įrangai sutrikus – paties CFA4 dekoderį. Jau atidaryta medija naudoja savo dekoderį, kol bus atidaryta iš naujo.
+	Highlight Color	Paryškinimo spalva
+	Hindi	Hindi
+	Hindi digits	Hindi skaitmenys
+	I/O Buffer Size	Įvesties / išvesties buferio dydis
+	Import numbered stills as image sequences	Importuoti sunumeruotus nejudančius vaizdus kaip vaizdų sekas
+	In the Media Cache	Medijos podėlyje
+	In the project	Projekte
+	Include captions on import	Importuojant įtraukti subtitrus
+	Indeterminate Media Timebase	Neapibrėžta medijos laiko bazė
+	Interface Language	Sąsajos kalba
+	Italian	Italų
+	Japanese	Japonų
+	Keep a recovery copy of unsaved changes	Saugoti neįrašytų pakeitimų atkūrimo kopiją
+	Korean	Korėjiečių
+	Label Defaults	Numatytosios etiketės
+	Label speakers	Žymėti kalbėtojus
+	Labels	Etiketės
+	Labels…	Etiketės…
+	Large Trim Offset	Didelis kirpimo poslinkis
+	Large Volume Adjustment	Didelis garsumo koregavimas
+	Left channel to device output	Kairysis kanalas į įrenginio išvestį
+	Left to right	Iš kairės į dešinę
+	Light Theme	Šviesi tema
+	Linear keyframe thinning	Linijinis pagrindinių kadrų retinimas
+	Local Projects	Vietiniai projektai
+	Maintain pitch while shuttling	Išlaikyti aukštį prasukant
+	Match frame sets in point	Kadro atitikimas nustato pradžios tašką
+	Maximum Project Versions	Didžiausias projekto versijų skaičius
+	Media	Medija
+	Media Analysis	Medijos analizė
+	Media Analysis & Transcription	Medijos analizė ir transkripcija
+	Media Analysis & Transcription…	Medijos analizė ir transkripcija…
+	Media Cache	Medijos podėlis
+	Media Cache Database	Medijos podėlio duomenų bazė
+	Media Cache Files	Medijos podėlio failai
+	Media Cache Management	Medijos podėlio valdymas
+	Media Cache…	Medijos podėlis…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	Medijos analizė ir transkripcijos bus talpinamos medijos podėlio aplanke. Pakartotinės analizės nereikės, jei medija bus importuota į kitą projektą šiame kompiuteryje.
+	Memory	Atmintis
+	Memory…	Atmintis…
+	Minimum time	Mažiausias laikas
+	Minimum time interval thinning	Mažiausio laiko intervalo retinimas
+	Missing font replacement	Trūkstamo šrifto pakaitalas
+	Miter join	Smailioji jungtis
+	Miter limit	Smailumo riba
+	Mono Media	Mono medija
+	Monospace only	Tik lygiaplotis
+	Movie (audio and video)	Filmas (garsas ir vaizdas)
+	Multichannel Mono Media	Daugiakanalė mono medija
+	Mute input during timeline recording	Nutildyti įvestį įrašant laiko juostoje
+	Next to original media files	Šalia originalių medijos failų
+	No Scroll	Be slinkimo
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Įskiepių neįdiegta. Pakeitimai įsigalios kitą kartą paleidus CFA4.
+	Open Most Recent	Atidaryti naujausią
+	Open in new window	Atidaryti naujame lange
+	Open in place	Atidaryti vietoje
+	Open new tab	Atidaryti naują kortelę
+	Output Mapping	Išvesčių susiejimas
+	Page Scroll	Puslapinis slinkimas
+	Pause Media Encoder queue during playback	Pristabdyti „Media Encoder“ eilę atkuriant
+	Per line	Kiekvienai eilutei
+	Place files dropped onto the Timeline directly on the Timeline	Į laiko juostą numestus failus dėti tiesiai į laiko juostą
+	Play after rendering previews	Leisti atvaizdavus peržiūras
+	Play audio while scrubbing in Source and Program Monitors	Leisti garsą peržiūrint šaltinio ir programos monitoriuose
+	Playback	Atkūrimas
+	Playback…	Atkūrimas…
+	Playhead position determines trim monitor loop playback	Atkūrimo žymeklio padėtis lemia kirpimo monitoriaus kartojimą
+	Plugins	Įskiepiai
+	Plugins…	Įskiepiai…
+	Policy	Politika
+	Portuguese	Portugalų
+	Projecting cap	Išsikišęs galas
+	Projects	Projektai
+	RAM reserved for other applications	RAM, rezervuota kitoms programoms
+	Refresh growing Files Every	Atnaujinti augančius failus kas
+	Render Edit in Audition files to:	Atvaizduoti „Edit in Audition“ failus į:
+	Render audio when rendering video	Atvaizduoti garsą atvaizduojant vaizdą
+	Restore open sequences when opening projects	Atidarant projektus atkurti atidarytas sekas
+	Right channel to device output	Dešinysis kanalas į įrenginio išvestį
+	Right to left	Iš dešinės į kairę
+	Ripple trim adds edits to keep both sides of trim in sync	Kirpimas su poslinkiu prideda karpymus, kad abi kirpimo pusės liktų sinchronizuotos
+	Round cap	Apvalus galas
+	Round join	Apvali jungtis
+	Russian	Rusų
+	Sample Rate	Ėmimo dažnis
+	Save .cfa and .pek media cache files next to original media files when possible	Kai įmanoma, įrašyti .cfa ir .pek medijos podėlio failus šalia originalių medijos failų
+	Scale to frame size	Mastelis pagal kadro dydį
+	Scratch disk location for Captured Audio	Įrašyto garso darbinio disko vieta
+	Set focus on the Timeline when performing Insert/Overwrite edits	Atliekant įterpimo / perrašymo redagavimus perkelti fokusą į laiko juostą
+	Set to frame size	Nustatyti pagal kadro dydį
+	Shapes	Figūros
+	Shift clips that overlap trim point during ripple trimming	Kirpimo su poslinkiu metu pastumti klipus, persidengiančius su kirpimo tašku
+	Show "Project:" and "Bin:" in Project panel tab	Rodyti „Projektas:“ ir „Aplankas:“ projekto skydelio kortelėje
+	Show Clip Mismatch Warning dialog	Rodyti klipo neatitikimo įspėjimo dialogą
+	Show Event Indicator	Rodyti įvykių indikatorių
+	Show Home	Rodyti pradžios ekraną
+	Show Mask Tracker Preview	Rodyti kaukės sekimo peržiūrą
+	Show Open Dialog	Rodyti atidarymo dialogą
+	Show Project Load Error Dialog	Rodyti projekto įkėlimo klaidos dialogą
+	Show Rich Tool Tips	Rodyti išsamius patarimus
+	Show Tool Tips	Rodyti patarimus
+	Show Workspace Reset Warning dialog on double click	Dukart spustelėjus rodyti darbo srities atstatymo įspėjimo dialogą
+	Show system compatibility issues at startup	Paleidžiant rodyti sistemos suderinamumo problemas
+	Smart quotes	Išmaniosios kabutės
+	Smooth Scroll	Tolygus slinkimas
+	Snap playhead in Timeline when Snap is enabled	Pritraukti atkūrimo žymeklį laiko juostoje, kai įjungtas pritraukimas
+	Spanish	Ispanų
+	Speaker Labeling	Kalbėtojų žymėjimas
+	Speech model	Kalbos modelis
+	Start at 0	Pradėti nuo 0
+	Start at 1	Pradėti nuo 1
+	Start with an Empty Project	Pradėti nuo tuščio projekto
+	Step forward/back many	Daug žingsnių pirmyn / atgal
+	Stereo Media	Stereo medija
+	Still	Nejudantis
+	Still Image Default Duration	Numatytoji nejudančio vaizdo trukmė
+	Stroke line cap	Kontūro linijos galas
+	Stroke line join	Kontūro linijos jungtis
+	Sum multichannel outputs to mono in Source Monitor	Šaltinio monitoriuje sumuoti daugiakanales išvestis į mono
+	System Language	Sistemos kalba
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	Medijos podėlyje laikomos neįrašytų projektų atvaizdavimo peržiūros ir kiti failai, kuriuos CFA4 gali atkurti. Juos šalinti visada saugu; CFA4 prireikus juos sukurs iš naujo.
+	Timecode Conversion	Laiko kodo konvertavimas
+	Timeline Mouse Scrolling	Laiko juostos slinkimas pele
+	Timeline Playback Auto-Scrolling	Laiko juostos automatinis slinkimas atkuriant
+	Timeline…	Laiko juosta…
+	Transcription	Transkripcija
+	Transcription preferences	Transkripcijos nuostatos
+	Trim	Kirpimas
+	Trim…	Kirpimas…
+	UI Scale	Sąsajos mastelis
+	Update it at least every	Atnaujinti bent kas
+	Update timeline dynamically during ripple edits.	Dinamiškai atnaujinti laiko juostą redaguojant su poslinkiu.
+	Use File	Naudoti failą
+	Use Media Source	Naudoti medijos šaltinį
+	Validate Content Credentials on import	Importuojant tikrinti „Content Credentials“
+	Video Transition Default Duration	Numatytoji vaizdo perėjimo trukmė
+	When Opening a Project	Atidarant projektą
+	Whisper base (balanced)	Whisper base (subalansuotas)
+	Whisper small (most accurate)	Whisper small (tiksliausias)
+	Whisper tiny (fastest)	Whisper tiny (greičiausias)
+	Write XMP ID to files on import	Importuojant rašyti XMP ID į failus
+	Write clip markers to XMP	Rašyti klipų žymes į XMP
+	days	dienų
+	milliseconds	milisekundės
+	minute(s)	min.
+	second(s)	sek.
+	seconds	sekundės
+	 seconds	 sekundės
+	Channel {n}	Kanalas {n}
+	Countdown Sound Cues	Atgalinio skaičiavimo garso signalai
+	Discard take	Atmesti įrašą
+	Discard the active take	Atmesti aktyvų įrašą
+	Input:	Įvestis:
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	Atkūrimas pradedamas nuo išankstinio įrašo prieš atkūrimo žymeklį (arba pradžios tašką); pažymėjus pradžią / pabaigą, įrašymas ten įsijungia ir išsijungia.
+	Post-roll	Po įrašo
+	Post-roll:	Po įrašo:
+	Pre-roll:	Prieš įrašą:
+	Qt Multimedia is not available	„Qt Multimedia“ neprieinama
+	Record (voice-over on the record-enabled track)	Įrašyti (užkadrinis balsas į įrašymui įjungtą takelį)
+	Recording voice-over…	Įrašomas užkadrinis balsas…
+	Source:	Šaltinis:
+	Stop Voice-over Recording	Stabdyti užkadrinio balso įrašymą
+	The audio input could not be started	Nepavyko paleisti garso įvesties
+	The audio input does not support a usable format	Garso įvestis nepalaiko tinkamo formato
+	The voice-over input buffer is full: the take ends here	Užkadrinio balso įvesties buferis pilnas: įrašas čia baigiasi
+	There is no audio input device	Nėra garso įvesties įrenginio
+	Voice-Over Record Settings	Užkadrinio balso įrašymo nustatymai
+	Voice-Over Record Settings…	Užkadrinio balso įrašymo nustatymai…
+	Voice-over input: {error}	Užkadrinio balso įvestis: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Užkadrinio balso įrašymas (dešinysis spustelėjimas: užkadrinio balso įrašymo nustatymai…)
+	Voice-over recorded: {p}	Užkadrinis balsas įrašytas: {p}
+	Voice-over recording stopped (nothing recorded)	Užkadrinio balso įrašymas sustabdytas (nieko neįrašyta)
+	Voice-over take discarded	Užkadrinio balso įrašas atmestas
+	● Recording	● Įrašoma
+	 frames	 kadrai
+	All Cameras	Visos kameros
+	Auto-Adjust Multi-Camera Playback Quality	Automatiškai derinti kelių kamerų atkūrimo kokybę
+	Camera 1	Kamera 1
+	Camera Angle Metadata	Kameros kampo metaduomenys
+	Camera Names	Kamerų pavadinimai
+	Camera {n} — {name}	Kamera {n} – {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	Kameros, rodomos kelių kamerų rodinyje (nuimkite žymėjimą, kad paslėptumėte).
+	Clip Marker	Klipo žymė
+	Clip Name:	Klipo pavadinimas:
+	Clip Names	Klipų pavadinimai
+	Create Multi-Camera Source Sequence	Kurti kelių kamerų šaltinio seką
+	Edit Cameras	Redaguoti kameras
+	Edit Cameras…	Redaguoti kameras…
+	Enumerate Cameras	Numeruoti kameras
+	Ignore Hours	Nepaisyti valandų
+	In Points	Pradžios taškai
+	Merge Clips	Sujungti klipus
+	Merged clip created	Sujungtas klipas sukurtas
+	Move source clips to Processed Clips bin	Perkelti šaltinio klipus į apdorotų klipų aplanką
+	Multi-Camera Audio Follows Video	Kelių kamerų garsas seka vaizdą
+	Multi-Camera Layout	Kelių kamerų išdėstymas
+	Multi-Camera Record	Kelių kamerų įrašymas
+	Multi-Camera Record On/Off (0)	Kelių kamerų įrašymas įj. / išj. (0)
+	Multi-Camera Record On/Off Toggle	Perjungti kelių kamerų įrašymą
+	Multi-Camera Record off	Kelių kamerų įrašymas išjungtas
+	Multi-Camera Record on	Kelių kamerų įrašymas įjungtas
+	Multi-Camera Selection Top Down	Kelių kamerų pasirinkimas iš viršaus žemyn
+	Multi-Camera View	Kelių kamerų rodinys
+	Multi-camera source sequence with {n} camera(s)	Kelių kamerų šaltinio seka, kamerų: {n}
+	No multi-camera clip at the playhead	Ties atkūrimo žymekliu nėra kelių kamerų klipo
+	Offset Audio by:	Garso poslinkis:
+	Offset:	Poslinkis:
+	Out Points	Pabaigos taškai
+	Page {page} of {pages}	Puslapis {page} iš {pages}
+	Record	Įrašyti
+	Recorded {n} multi-camera cut(s)	Įrašyta kelių kamerų karpymų: {n}
+	Reference track:	Etaloninis takelis:
+	Remove Audio from AV Clip	Šalinti garsą iš AV klipo
+	Sequence Name:	Sekos pavadinimas:
+	Show Multi-Camera Preview Monitor	Rodyti kelių kamerų peržiūros monitorių
+	Switch Audio	Perjungti garsą
+	Synchronize Clips	Sinchronizuoti klipus
+	Synchronize Point	Sinchronizavimo taškas
+	Synchronized {n} clip group(s)	Sinchronizuota klipų grupių: {n}
+	Transmit Multi-Camera View	Perduoti kelių kamerų rodinį
+	first marker	pirmoji žymė
+	lowest (V1…)	žemiausias (V1…)
+	no multi-camera clip at the playhead	ties atkūrimo žymekliu nėra kelių kamerų klipo
+	{first} - Merged	{first} – sujungtas
+	{first} Multicam	{first} kelios kameros
+	{n} clip(s) selected; the clip on the reference track stays put.	Pasirinkta klipų: {n}; klipas etaloniniame takelyje lieka vietoje.
+	{n} clip(s): {names}	Klipų: {n}: {names}
+	Current duration {seconds} s	Dabartinė trukmė {seconds} s
+	Fewer · More	Mažiau · Daugiau
+	Remix Properties	Perkomponavimo ypatybės
+	Remixed to {seconds} s	Perkomponuota iki {seconds} s
+	Segments:	Segmentai:
+	Target Duration:	Tikslinė trukmė:
+	Variations:	Variantai:
+	the selected clip is not remixed	pasirinktas klipas neperkomponuotas
+	After installing, restart CFA4.	Įdiegę paleiskite CFA4 iš naujo.
+	Available, switched off	Prieinama, išjungta
+	Left out by the routing table	Praleista maršrutizavimo lentelėje
+	CFA4 engine	CFA4 variklis
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Paties CFA4 variklis atidaro kiekvieną failą, kurį gali. Toliau išvardytos papildomos posistemės šia tvarka perima tik tuos failus, kurių variklis dar negali atidaryti. Posistemės išjungimas paveikia vėliau atidaromus failus.
+	Capabilities	Galimybės
+	Copy command	Kopijuoti komandą
+	H.264 software encoding (x264)	H.264 programinis kodavimas (x264)
+	HEVC software encoding (x265)	HEVC programinis kodavimas (x265)
+	In use	Naudojama
+	Licence	Licencija
+	Media Backends	Medijos posistemės
+	Media Backends…	Medijos posistemės…
+	Not available	Neprieinama
+	Not part of this build	Neįeina į šią versiją
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Nuosavi Rust dekoderiai ir koduotuvai: visada naudojami pirmiausia ir yra atsarginis variantas, kai papildoma posistemė sutrinka
+	Restricted Codecs…	Riboto naudojimo kodekai…
+	Restricted codecs	Riboto naudojimo kodekai
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Kai kurie kodekai yra laisvoji programinė įranga, bet įgyvendina patentuotus formatus. Kaip ir Ubuntu, CFA4 jų pagal numatymą neįdiegia: bazinis paketas veikia be jų, o jūs sprendžiate, ar juos įdiegti. Kai kuriose šalyse jų naudojimas gali būti ribojamas; patikrinkite, ar jis leidžiamas ten, kur esate.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Papildomas dekoderis formatams, kurių nuosavas variklis dar neskaito (10 bitų ir 4:2:2 kamerų medija, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Papildomas dekoderis iš sistemos GStreamer (Ogg Theora, FLV, WMV ir kiti formatai); LGPL, iš Ubuntu saugyklų
+	The engine did not answer: {message}	Variklis neatsakė: {message}
+	To install them: {command}	Norėdami juos įdiegti: {command}
+	Use this backend	Naudoti šią posistemę
+	installed	įdiegta
+	not installed	neįdiegta
+	on	įjungta
+	 (removed from {list})	 (pašalinta iš {list})
+	 and 	 ir 
+	Add another shortcut	Pridėti kitą spartųjį klavišą
+	Application shortcuts work whatever panel has focus	Programos spartieji klavišai veikia, kad ir kuris skydelis būtų aktyvus
+	Assign {key} to {command}	Priskirti {key} komandai {command}
+	Cleared {n} shortcut(s) of {command}	Išvalyta komandos {command} sparčiųjų klavišų: {n}
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Spustelėkite komandos langelį „Spartusis klavišas“ ir paspauskite klavišus, kad jį priskirtumėte; + prideda kitą spartųjį klavišą.
+	Click a key on the keyboard to see its shortcuts	Spustelėkite klaviatūros klavišą, kad pamatytumėte jo sparčiuosius klavišus
+	Click and press keys to assign	Spustelėkite ir paspauskite klavišus, kad priskirtumėte
+	Commands:	Komandos:
+	Conflict: {key} is assigned to {commands} ({ctx})	Konfliktas: {key} priskirtas {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Eksportas: failas nepasirinktas (agentams: shortcuts.export {path})
+	Import: no file chosen (agents: shortcuts.import {path})	Importas: failas nepasirinktas (agentams: shortcuts.import {path})
+	Key:	Klavišas:
+	Keyboard Shortcuts	Spartieji klavišai
+	Keyboard Shortcuts…	Spartieji klavišai…
+	Keyboard: US	Klaviatūra: US
+	Loaded “{name}”	Įkelta „{name}“
+	Modifier held / selected	Modifikavimo klavišas laikomas / pasirinktas
+	Modifiers	Modifikavimo klavišai
+	My Shortcuts	Mano spartieji klavišai
+	No matching commands	Atitinkančių komandų nėra
+	Nothing is assigned to this key	Šiam klavišui nieko nepriskirta
+	Panel shortcuts override application shortcuts while that panel has focus	Skydelio spartieji klavišai nusveria programos sparčiuosius klavišus, kai tas skydelis aktyvus
+	Save preset as:	Įrašyti išankstinę nuostatą kaip:
+	Saved preset “{name}”	Įrašyta išankstinė nuostata „{name}“
+	Search commands or keys	Ieškoti komandų ar klavišų
+	Selected: {command}	Pasirinkta: {command}
+	Shortcut	Spartusis klavišas
+	Type a shortcut… (Esc cancels)	Įveskite spartųjį klavišą… (Esc atšaukia)
+	{active} (modified)	{active} (pakeista)
+	{key} can't be used as a shortcut	{key} negali būti naudojamas kaip spartusis klavišas
+	{panel} Panel	Skydelis „{panel}“
+	Docking Action	Prijungimo veiksmas
+	Dock Panel	Prijungti skydelį
+	Undock Panel	Atjungti skydelį
+	Close Panel	Uždaryti skydelį
+	Restore Workspace	Atkurti darbo sritį
+	Add Guide	Pridėti kreipiamąją liniją
+	Add Guide…	Pridėti kreipiamąją liniją…
+	Clear Guides	Išvalyti kreipiamąsias linijas
+	Guide Templates	Kreipiamųjų linijų šablonai
+	Guides	Kreipiamosios linijos
+	Lock Guides	Užrakinti kreipiamąsias linijas
+	Manage Guides	Tvarkyti kreipiamąsias linijas
+	Manage Guides…	Tvarkyti kreipiamąsias linijas…
+	No saved guide templates.	Įrašytų kreipiamųjų linijų šablonų nėra.
+	Position:	Padėtis:
+	Reference  {tc}	Etalonas  {tc}
+	Reference: next frame	Etalonas: kitas kadras
+	Reference: previous frame	Etalonas: ankstesnis kadras
+	Save Guides as Template	Įrašyti kreipiamąsias linijas kaip šabloną
+	Save Guides as Template…	Įrašyti kreipiamąsias linijas kaip šabloną…
+	Saved guide template “{name}”	Įrašytas kreipiamųjų linijų šablonas „{name}“
+	Set	Nustatyti
+	Set Comparison Reference	Nustatyti palyginimo etaloną
+	Set the reference to the playhead	Nustatyti etaloną ties atkūrimo žymekliu
+	Show Guides	Rodyti kreipiamąsias linijas
+	Show Rulers	Rodyti liniuotes
+	Snap in Program Monitor	Pritraukti programos monitoriuje
+	The template needs a name.	Šablonui reikia pavadinimo.
+	There are no guides to save.	Nėra kreipiamųjų linijų, kurias būtų galima įrašyti.
+	Join Through Edits	Sujungti tolydžius karpymus
+	Replace With Clip From Source Monitor	Pakeisti klipu iš šaltinio monitoriaus
+	Reveal Nested Sequence	Parodyti įdėtąją seką
+	Reveal in Project	Parodyti projekte
+	Unlink	Atsieti
+	Apply Default Transitions	Taikyti numatytuosius perėjimus
+	Ripple Trim In	Kirpti pradžią su poslinkiu
+	Ripple Trim Out	Kirpti pabaigą su poslinkiu
+	Roll Edit	Slenkantis redagavimas
+	Trim In	Kirpti pradžią
+	Trim Out	Kirpti pabaigą
+	Expand All Tracks	Išskleisti visus takelius
+	Minimize All Tracks	Sumažinti visus takelius
+	Increase Video Tracks Height	Padidinti vaizdo takelių aukštį
+	Decrease Video Tracks Height	Sumažinti vaizdo takelių aukštį
+	Increase Audio Tracks Height	Padidinti garso takelių aukštį
+	Decrease Audio Tracks Height	Sumažinti garso takelių aukštį
+	Drag to change the track height	Vilkite, kad pakeistumėte takelio aukštį
+	Head	Pradžia
+	Head and Tail	Pradžia ir pabaiga
+	Continuous	Ištisinis
+	Show Video Thumbnails	Rodyti vaizdo miniatiūras
+	Show Audio Waveform	Rodyti garso bangos formą
+	Timeline Display Settings	Laiko juostos rodymo nustatymai
+	Snap in Timeline (S)	Pritraukti laiko juostoje (S)
+	Caption track options	Subtitrų takelio parinktys
+	Insert and overwrite sequences as nests or individual clips	Įterpti ir perrašyti sekas kaip įdėtąsias ar atskirus klipus
+	Close Other Timeline Panels	Uždaryti kitus laiko juostos skydelius
+	Show Keyframes	Rodyti pagrindinius kadrus
+	Clip Keyframes	Klipo pagrindiniai kadrai
+	Track Keyframes	Takelio pagrindiniai kadrai
+	Send {n} Level	Siuntimo {n} lygis
+	Delete Caption Track	Šalinti subtitrų takelį
+	Delete Empty Caption Tracks	Šalinti tuščius subtitrų takelius
+	Toggle Caption Track Lock	Perjungti subtitrų takelio užraktą
+	Toggle Caption Track Output	Perjungti subtitrų takelio išvestį
+	Drag In point	Vilkti pradžios tašką
+	Drag Out point	Vilkti pabaigos tašką
+	Move marked range	Perkelti pažymėtą diapazoną
+	Auto Tone Map Media (HDR and log into SDR)	Automatiškai tonų atvaizduoti mediją (HDR ir log į SDR)
+	CFA4 always composites in linear light	CFA4 visada komponuoja linijinėje šviesoje
+	Captured View:	Įrašytas rodinys:
+	Channel Format:	Kanalų formatas:
+	Color Management	Spalvų valdymas
+	Composite in Linear Color	Komponuoti linijinėmis spalvomis
+	Configure…	Konfigūruoti…
+	Custom ({ratio})	Pasirinktinis ({ratio})
+	Display Format:	Rodymo formatas:
+	Editing Mode:	Redagavimo režimas:
+	Fields:	Laukai:
+	Frame Size:	Kadro dydis:
+	Layout:	Išdėstymas:
+	Maximum Bit Depth	Didžiausias bitų gylis
+	Maximum Render Quality	Didžiausia atvaizdavimo kokybė
+	Milliseconds	Milisekundės
+	Monoscopic	Monoskopinis
+	New Sequence	Nauja seka
+	No Fields (Progressive Scan)	Be laukų (progresyvinis skleidimas)
+	Not supported in CFA4 yet	CFA4 to dar nepalaiko
+	Number of Channels:	Kanalų skaičius:
+	Pixel Aspect Ratio:	Pikselių kraštinių santykis:
+	Preview File Format:	Peržiūros failo formatas:
+	Projection:	Projekcija:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Ėmimo dažnis:
+	Scale motion effects proportionally when changing frame size	Keičiant kadro dydį proporcingai keisti judesio efektų mastelį
+	Sequence Settings	Sekos nustatymai
+	Square Pixels (1.0)	Kvadratiniai pikseliai (1,0)
+	Timebase:	Laiko bazė:
+	Tracks	Takeliai
+	VR Properties	VR ypatybės
+	Video Previews	Vaizdo peržiūros
+	Wide gamut color (composite in BT.2020)	Plačios gamos spalvos (komponuoti BT.2020)
+	Working Color Space:	Darbinė spalvų erdvė:
+	horizontal	horizontali
+	no sequence is open	neatidaryta jokia seka
+	tracks	takeliai
+	vertical	vertikali
+	{rate} fps Drop-Frame Timecode	{rate} kadr./s laiko kodas su kadrų praleidimu
+	{rate} fps Non Drop-Frame Timecode	{rate} kadr./s laiko kodas be kadrų praleidimo
+	{rate} fps Timecode	{rate} kadr./s laiko kodas
+	{rate} frames/second	{rate} kadr./s
+	Always Deinterlace	Visada šalinti eilučių persipynimą
+	Audio Attributes	Garso atributai
+	Ch. {n}	Kan. {n}
+	Clip Channel Format:	Klipo kanalų formatas:
+	Clip Speed / Duration	Klipo greitis / trukmė
+	Clip {n}	Klipas {n}
+	Contains:	Turi:
+	Edit Subclip	Redaguoti poklipį
+	End:	Pabaiga:
+	Field Options	Laukų parinktys
+	File Name:	Failo pavadinimas:
+	Flicker Removal	Mirgėjimo šalinimas
+	Frame Hold Options	Kadro sulaikymo parinktys
+	Frame Rate:	Kadrų dažnis:
+	Hold Filters	Sulaikyti filtrus
+	Hold On	Sulaikyti ties
+	In Point	Pradžios taškas
+	Make Subclip	Sukurti poklipį
+	Media Source Channels	Medijos šaltinio kanalai
+	Media Start:	Medijos pradžia:
+	Modify Clip: Audio Channels	Keisti klipą: garso kanalai
+	Modify Clip: Timecode	Keisti klipą: laiko kodas
+	Nested Sequence Name	Įdėtosios sekos pavadinimas
+	New Offline File	Naujas neprisijungęs failas
+	No effects	Efektų nėra
+	Number of Audio Clips:	Garso klipų skaičius:
+	Out Point	Pabaigos taškas
+	Paste Attributes	Įklijuoti atributus
+	Playhead	Atkūrimo žymeklis
+	Processing Options	Apdorojimo parinktys
+	Remove Attributes	Šalinti atributus
+	Restrict Trims To Subclip Boundaries	Riboti kirpimus poklipio ribomis
+	Reverse Field Dominance	Atvirkštinis laukų dominavimas
+	Reverse Speed	Atvirkštinis greitis
+	Ripple Edit, Shifting Trailing Clips	Redagavimas su poslinkiu, pastumiant tolesnius klipus
+	Scale Attribute Times	Keisti atributų laikų mastelį
+	Sequence Time	Sekos laikas
+	Set Timecode:	Nustatyti laiko kodą:
+	Source Timecode	Šaltinio laiko kodas
+	Source channels the selected audio clips play:	Šaltinio kanalai, kuriuos leidžia pasirinkti garso klipai:
+	Speed:	Greitis:
+	Start:	Pradžia:
+	Subclip: {name}	Poklipis: {name}
+	Tape Name:	Juostos pavadinimas:
+	Timecode:	Laiko kodas:
+	Use the file's timecode	Naudoti failo laiko kodą
+	Video Attributes	Vaizdo atributai
+	no dialog	nėra dialogo
+	Action Safe Area	Veiksmo saugi sritis
+	Action and Title Safe Areas	Veiksmo ir titrų saugios sritys
+	Action:	Veiksmas:
+	Analyze	Analizuoti
+	Any	Bet kuris
+	Apply Default Audio Transition	Taikyti numatytąjį garso perėjimą
+	Apply Default Video Transition	Taikyti numatytąjį vaizdo perėjimą
+	Apply a cut at each detected cut point	Karpyti ties kiekvienu aptiktu karpymo tašku
+	At Unnumbered Markers	Ties nenumeruotomis žymėmis
+	Audio Only	Tik garsas
+	Audio Previews:	Garso peržiūros:
+	Audio analysis:	Garso analizė:
+	Audio effects	Garso efektai
+	Audio on track {t}	Garsas takelyje {t}
+	Automate To Sequence	Automatizuoti į seką
+	Average Data Rate	Vidutinė duomenų sparta
+	Capture	Įrašymas
+	Capture Format:	Įrašymo formatas:
+	Captured and Generated:	Įrašyti ir sugeneruoti:
+	Case Sensitive	Skirti didžiąsias ir mažąsias raides
+	Clip Names and Markers	Klipų pavadinimai ir žymės
+	Clip Overlap:	Klipų persidengimas:
+	Clips	Klipai
+	Codec: {codec}	Kodekas: {codec}
+	Color Matte Color	Spalvoto fono spalva
+	Colour	Spalva
+	Comments:	Komentarai:
+	Copy and Create Proxies	Kopijuoti ir kurti tarpines kopijas
+	Create Proxies	Kurti tarpines kopijas
+	Create Search Bin	Kurti paieškos aplanką
+	Create a bin of subclips from each detected cut point	Kurti poklipių aplanką iš kiekvieno aptikto karpymo taško
+	Create a clip marker at each detected cut point	Kurti klipo žymę ties kiekvienu aptiktu karpymo tašku
+	Destination:	Paskirties vieta:
+	Disabled clips	Išjungti klipai
+	Edit Offline File	Redaguoti neprisijungusį failą
+	Empty tracks	Tušti takeliai
+	Existing XMP files written by other applications are left unchanged.	Esami kitų programų parašyti XMP failai paliekami nepakeisti.
+	File Size	Failo dydis
+	Find in:	Ieškoti:
+	Find:	Rasti:
+	Flash Cue Marker	Blyksnio signalo žymė
+	Frames per Still:	Kadrų nejudančiam vaizdui:
+	Gaps	Tarpai
+	Ignore Audio	Nepaisyti garso
+	Ignore Options	Nepaisymo parinktys
+	Ignore Video	Nepaisyti vaizdo
+	Ingest Settings	Perėmimo nustatymai
+	Insert Edit	Įterpimo redagavimas
+	Keep:	Palikti:
+	Language:	Kalba:
+	Log Note:	Žurnalo pastaba:
+	Match {n} of {total}	Atitikmuo {n} iš {total}
+	Match:	Atitikmuo:
+	Media Name:	Medijos pavadinimas:
+	Method:	Metodas:
+	Move clips to the lowest track possible	Perkelti klipus į žemiausią įmanomą takelį
+	New Color Matte	Naujas spalvotas fonas
+	Next to the media	Šalia medijos
+	Normalize Mix Track	Normalizuoti miksavimo takelį
+	Normalize Mix Track to:	Normalizuoti miksavimo takelį iki:
+	Ordering:	Tvarka:
+	Overwrite Edit	Perrašymo redagavimas
+	Path: {path}	Kelias: {path}
+	Placement:	Vieta:
+	Project Auto Save:	Projekto automatinis įrašymas:
+	Recognize when different speakers are talking	Atpažinti, kai kalba skirtingi kalbėtojai
+	Renderer:	Atvaizdavimo variklis:
+	Same as Project	Kaip projekte
+	Save as Template	Įrašyti kaip šabloną
+	Saved template {path}	Įrašytas šablonas {path}
+	Scene Edit Detection	Scenų karpymų aptikimas
+	Scene Edit Detection: analysing in the background (see Progress)	Scenų karpymų aptikimas: analizuojama fone (žr. „Eiga“)
+	Scene:	Scena:
+	Scratch Disks	Darbiniai diskai
+	Search:	Ieškoti:
+	Selection Order	Pasirinkimo tvarka
+	Sensitivity:	Jautrumas:
+	Sequentially	Nuosekliai
+	Shot/Take:	Planas / dublis:
+	Simplify	Supaprastinti
+	Simplify Sequence	Supaprastinti seką
+	Sort Order	Rikiavimo tvarka
+	Source Settings	Šaltinio nustatymai
+	Template Name:	Šablono pavadinimas:
+	Text (graphics and captions)	Tekstas (grafika ir subtitrai)
+	Title Safe Area	Titrų saugi sritis
+	To {name}	Į {name}
+	Total Duration	Bendra trukmė
+	Transcode	Perkoduoti
+	Transcribe Sequence	Transkribuoti seką
+	Transitions	Perėjimai
+	Update Metadata	Atnaujinti metaduomenis
+	Video Only	Tik vaizdas
+	Video Previews:	Vaizdo peržiūros:
+	Video Rendering and Playback	Vaizdo atvaizdavimas ir atkūrimas
+	Video and Audio	Vaizdas ir garsas
+	Video effects	Vaizdo efektai
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	Įrašyti pasirinkto (-ų) klipo (-ų) ({n}) metaduomenis į XMP failus šalia jų medijos?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · kanalų: {n}
+	Constant quantiser	Pastovus kvantuotojas
+	Container	Konteineris
+	 (unavailable)	 (neprieinama)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Konteineriai
+	Decoders	Dekoderiai
+	Dynamic Audio Waveforms	Dinaminės garso bangos formos
+	Export formats	Eksporto formatai
+	Reveal Log Files…	Rodyti žurnalo failus…
+	Session log: {path}	Seanso žurnalas: {path}
+	System Compatibility Report	Sistemos suderinamumo ataskaita
+	System Compatibility Report…	Sistemos suderinamumo ataskaita…
+	not available now	dabar neprieinama
+	{name} Selection.fcproj	{name} Selection.fcproj
+	Auto tone map media (HDR and log into SDR)	Automatiškai tonų atvaizduoti mediją (HDR ir log į SDR)
+	Sequence Color Management	Sekos spalvų valdymas
+	Working Color Space	Darbinė spalvų erdvė
+	Align Timecode	Lygiuoti laiko kodą
+	All media is online.	Visa medija prisijungusi.
+	Calculate	Apskaičiuoti
+	Clip ID (fingerprint)	Klipo ID (piršto atspaudas)
+	Clip Name	Klipo pavadinimas
+	Collect Files and Copy to New Location	Surinkti failus ir kopijuoti į naują vietą
+	Consolidate and Transcode	Konsoliduoti ir perkoduoti
+	Creating {n} proxy file(s)…	Kuriama tarpinių kopijų failų: {n}…
+	Destination	Paskirties vieta
+	Destination Path	Paskirties kelias
+	Disk space: original {original} · resulting {result} ({n} files)	Vieta diske: originalas {original} · rezultatas {result} (failų: {n})
+	Disk space: —	Vieta diske: —
+	Exact name matches only	Tik tikslūs pavadinimų atitikmenys
+	Exclude Unused Clips	Neįtraukti nenaudojamų klipų
+	File Name	Failo pavadinimas
+	Format and size	Formatas ir dydis
+	Frame Size / Rate	Kadro dydis / dažnis
+	Include Handles:	Įtraukti rankenas:
+	Include Preview Files	Įtraukti peržiūros failus
+	Include Proxies	Įtraukti tarpines kopijas
+	Link Media	Susieti mediją
+	Linked {n} clip(s)	Susieta klipų: {n}
+	Locate…	Rasti…
+	Make Offline	Padaryti neprisijungusiu
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	Padaryti pasirinktus klipus ({n}) neprisijungusiais. Jų klipuose rodomas neprisijungimo ženklas, kol vėl juos susiesite.
+	Match file properties:	Atitikti failo ypatybes:
+	Media files are deleted	Medijos failai pašalinami
+	Media files remain on disk	Medijos failai lieka diske
+	Missing	Trūksta
+	Next to the original media, in a Proxies folder	Šalia originalios medijos, aplanke „Proxies“
+	No candidates yet — Search a folder or Locate the file.	Kandidatų dar nėra – ieškokite aplanke arba raskite failą.
+	Nothing found with that name.	Tokiu pavadinimu nieko nerasta.
+	Offline	Neprisijungęs
+	Offline All	Visus padaryti neprisijungusiais
+	Project Manager	Projektų tvarkytuvė
+	Project Manager: writing {path}	Projektų tvarkytuvė: rašoma {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	Tarpinės kopijos kuriamos fone ir prijungiamos baigus. Eksportuojant visada naudojama visos raiškos medija.
+	Relink others automatically	Kitus susieti automatiškai
+	Resulting Project	Gautas projektas
+	Search in:	Ieškoti:
+	Sequences	Sekos
+	select a clip in the Project panel	pasirinkite klipą projekto skydelyje
+	{name} (copy)	{name} (kopija)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	Klipų, nerandančių savo medijos: {n}. Raskite juos, ieškokite aplanke arba palikite neprisijungusius.
+	{n} clip(s) selected.	Pasirinkta klipų: {n}.
+	✔ matches	✔ atitinka
+	✔ same file	✔ tas pats failas
+	✖ different file	✖ kitas failas
+	AAF Export Settings	AAF eksporto nustatymai
+	Audio File Format:	Garso failo formatas:
+	Bits per Sample:	Bitų skaičius imčiai:
+	Breakout to mono	Išskaidyti į mono
+	Depth:	Gylis:
+	Embed	Įterpti
+	Encapsulate	Įpakuoti
+	Exported frame to {path}	Kadras eksportuotas į {path}
+	Exported {path}	Eksportuota {path}
+	Frame time: {timecode}	Kadro laikas: {timecode}
+	Handle Frames:	Rankenų kadrai:
+	Import into project	Importuoti į projektą
+	Keep existing file	Palikti esamą failą
+	Link to Media	Susieti su medija
+	Mixdown video	Sumaišyti vaizdą
+	OMF Export Settings	OMF eksporto nustatymai
+	OMF Title:	OMF pavadinimas:
+	Path:	Kelias:
+	Render audio clip effects	Atvaizduoti garso klipų efektus
+	Separate Audio	Atskirti garsą
+	Separate Files	Atskiri failai
+	This file already exists: {path}	Šis failas jau yra: {path}
+	Trim audio files	Apkirpti garso failus
+	{bits} Bit	{bits} bitų
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Žymių ataskaita (CSV)
+	DCP (Digital Cinema Package)	DCP (skaitmeninio kino paketas)
+	Digital Cinema	Skaitmeninis kinas
+	DCP resolution	DCP raiška
+	DCP container	DCP konteineris
+	Content kind	Turinio rūšis
+	Output folder	Išvesties aplankas
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1,85:1)
+	Scope (2.39:1)	Scope (2,39:1)
+	Full container (1.90:1)	Visas konteineris (1,90:1)
+	Feature	Vaidybinis filmas
+	Trailer	Anonsas
+	Teaser	Trumpas anonsas
+	Short	Trumpas
+	Advertisement	Reklama
+	Test	Bandymas
+	Transitional	Pereinamasis
+	Rating	Reitingas
+	Public service announcement	Socialinė reklama
+	Off (5.1 only)	Išjungta (tik 5.1)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB pagrindas iš miksavimo (7.1 DS, 9.1OH iš 7.1.2)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB iš failo (IAB MXF, .iab arba Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab arba Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	Nėra: tik FSK sinchronizacija (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: atvaizduotas IAB (ne ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: laiko juostos miksavimas (ne ST 429-19)
+	Main sound channels 1-6	Pagrindinio garso kanalai 1–6
+	Immersive audio	Erdvinis garsas
+	IAB source	IAB šaltinis
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 miksavimas tampa 9.1OH pagrindu, 7.1 miksavimas – 7.1 DS pagrindu, o bet koks kitas miksavimas – 7.1 DS pagrindu iš savo 5.1 versijos (IAB 1 profilis); pagrindinio garso 14 kanalas perduoda FSK sinchronizacijos signalą.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Pasirinkite IAB takelio failą (IMF arba DCP), neapdorotą IAB srautą arba Dolby Atmos TrueHD: .thd srautą arba MKV, MP4 ar M2TS failą su Atmos takeliu.
+	Reading the IAB source…	Skaitomas IAB šaltinis…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	Kadrų: {frames}, {fps} kadr./s, {rate} Hz; iki {beds} pagrindo kanalų ir {objects} objektų
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; iki {beds} pagrindo kanalų ir {objects} objektų, paverstų IAB objektais
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Kai kurie kadrai DCP perkoduojami (DLC, 24 bitų).
+	Beyond IAB Profile 1: {notes}	Už IAB 1 profilio ribų: {notes}
+	Not a usable IAB source: {error}	Netinkamas IAB šaltinis: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP aplankas: JPEG 2000 1998×1080 (1,85:1), 5.1 24 bitų 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP aplankas: JPEG 2000 2048×858 (2,39:1), 5.1 24 bitų 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP aplankas: JPEG 2000 3996×2160 (1,85:1), 5.1 24 bitų 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP aplankas: JPEG 2000 4096×1716 (2,39:1), 5.1 24 bitų 48 kHz PCM
+	4:2:0 (Main Profile)	4:2:0 (Main profilis)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profilis)
+	B pictures	B kadrai
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transporto srautas (.m2ts, AAC garsas)
+	Chroma	Chroma
+	Elementary Stream (.m2v, no audio)	Elementarusis srautas (.m2v, be garso)
+	Key Frame Distance	Atstumas tarp pagrindinių kadrų
+	None (I and P only)	Nėra (tik I ir P)
+	Off (target bitrate)	Išjungta (tikslinė bitų sparta)
+	Program Stream (.mpg, LPCM audio)	Programos srautas (.mpg, LPCM garsas)
+	Transport Stream (.ts, AAC audio)	Transporto srautas (.ts, AAC garsas)
+	Estimated file size: {size}	Numatomas failo dydis: {size}
+	File Name & Location	Failo pavadinimas ir vieta
+	Quick Export	Greitasis eksportas
+	Quick Export: open a sequence first	Greitasis eksportas: pirmiausia atidarykite seką
+	Quick Export: {path}	Greitasis eksportas: {path}
+	Export presets	Eksporto išankstinės nuostatos
+	Favorites only	Tik mėgstami
+	More presets…	Daugiau išankstinių nuostatų…
+	Preset Manager	Išankstinių nuostatų tvarkytuvė
+	Save current settings as:	Įrašyti dabartinius nustatymus kaip:
+	Search presets	Ieškoti išankstinių nuostatų
+	Show in the Preset menu	Rodyti išankstinių nuostatų meniu
+	User	Naudotojo
+	Add Beat Markers	Pridėti ritmo žymes
+	Clear Beat Markers	Išvalyti ritmo žymes
+	Clear Check Markers	Išvalyti tikrinimo žymes
+	Auto Reframe Sequence…	Automatinis sekos perkadravimas…
+	Batch Variants from Spreadsheet…	Variantų paketas iš skaičiuoklės…
+	Check Before Export…	Patikrinti prieš eksportą…
+	Social Deliverables…	Socialinių tinklų pristatymai…
+	Social Safe Zones	Socialinių tinklų saugios zonos
+	Text Animator	Teksto animatorius
+	Counter	Skaitiklis
+	Typewriter	Rašomoji mašinėlė
+	Word by Word	Žodis po žodžio
+	Animator	Animatorius
+	Animator Duration	Animatoriaus trukmė
+	Animator Delay	Animatoriaus delsa
+	Spreadsheets	Skaičiuoklės
+	{n} beat markers added ({bpm} BPM)	Pridėta ritmo žymių: {n} ({bpm} BPM)
+	Check Before Export: no problems found	Patikrinimas prieš eksportą: problemų nerasta
+	Check Before Export: {n} problems marked on the timeline (red markers)	Patikrinimas prieš eksportą: laiko juostoje pažymėta problemų: {n} (raudonos žymės)
+	{n} exports queued (the Export window shows the queue)	Į eilę įtraukta eksportų: {n} (eksporto langas rodo eilę)
+	{n} variant sequences made, {q} exports queued	Sukurta variantų sekų: {n}, į eilę įtraukta eksportų: {q}
+	no column for {names}	nėra stulpelio {names}
+	Film Scan 1	Juostos skenavimas 1
+	Film Scan 2	Juostos skenavimas 2
+	Film Scan 3	Juostos skenavimas 3
+	Include Alpha Channel	Įtraukti alfa kanalą
+	Profile	Profilis
+	ZIP (1 scan line)	ZIP (1 skenavimo eilutė)
+	ZIP (16 scan lines)	ZIP (16 skenavimo eilučių)
+	Bottom Center	Apačioje centre
+	Bottom Left	Apačioje kairėje
+	Bottom Right	Apačioje dešinėje
+	Burn Captions Into Video	Įrašyti subtitrus į vaizdą
+	Center Left	Centre kairėje
+	Center Right	Centre dešinėje
+	Create Sidecar File	Kurti papildomą failą
+	Export Options	Eksporto parinktys
+	File Format	Failo formatas
+	Image	Vaizdas
+	Image Overlay	Vaizdo perdanga
+	Images	Vaizdai
+	Loudness Normalization	Garsumo normalizavimas
+	Luma Min / Max	Mažiausias / didžiausias skaistis
+	Name Overlay	Pavadinimo perdanga
+	PNG or JPEG file	PNG arba JPEG failas
+	Prefix	Priešdėlis
+	Size / Opacity	Dydis / nepermatomumas
+	SubRip Subtitle (.srt)	SubRip subtitrai (.srt)
+	Target Loudness	Tikslinis garsumas
+	Timecode Overlay	Laiko kodo perdanga
+	Top Center	Viršuje centre
+	Top Left	Viršuje kairėje
+	Top Right	Viršuje dešinėje
+	True Peak Limit	Tikrosios smailės riba
+	Video Limiter	Vaizdo ribotuvas
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Copyright	Autorių teisės
+	Creator	Kūrėjas
+	Multiplexer	Multipleksorius
+	Title	Pavadinimas
+	Audio only	Tik garsas
+	Scale To Fill	Užpildyti keičiant mastelį
+	Scale To Fit	Sutalpinti keičiant mastelį
+	Scaling	Mastelio keitimas
+	Stretch To Fill	Užpildyti ištempiant
+	Quick Export cancelled	Greitasis eksportas atšauktas
+	0 fastest, 8 smallest	0 greičiausias, 8 mažiausias
+	16 bit	16 bitų
+	24 bit	24 bitų
+	32 bit	32 bitų
+	32 bit float	32 bitų slankusis kablelis
+	Anamorphic 2:1 (2.0)	Anamorfinis 2:1 (2,0)
+	Aspect	Kraštinių santykis
+	Channels	Kanalai
+	Composite on the GPU when available	Kai įmanoma, komponuoti GPU
+	Compression Level	Glaudinimo lygis
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0,9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1,0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1,5)
+	Field Order	Laukų tvarka
+	GPU Rendering	GPU atvaizdavimas
+	HD Anamorphic 1080 (1.333)	HD anamorfinis 1080 (1,333)
+	Lower First	Pirmiausia apatinis
+	Match Source	Atitikti šaltinį
+	Maximum Bitrate	Didžiausia bitų sparta
+	Progressive	Progresyvinis
+	Quality (CRF)	Kokybė (CRF)
+	Render at Maximum Depth	Atvaizduoti didžiausiu gyliu
+	Sample Size	Imties dydis
+	Upper First	Pirmiausia viršutinis
+	Use Maximum Render Quality	Naudoti didžiausią atvaizdavimo kokybę
+	Browse files…	Naršyti failus…
+	Movies, audio and stills from disk	Filmai, garsas ir nejudantys vaizdai iš disko
+	Demo footage	Demonstracinė medžiaga
+	Six procedural 1080p clips with sound	Šeši procedūriniai 1080p klipai su garsu
+	Demo project	Demonstracinis projektas
+	A cut sequence with transitions, effects and music	Sumontuota seka su perėjimais, efektais ir muzika
+	Bars and Tone	Juostos ir tonas
+	SMPTE HD bars with 1 kHz reference tone	SMPTE HD juostos su 1 kHz etaloniniu tonu
+	CFA4 on GitHub	CFA4 „GitHub“ svetainėje
+	Report a CFA4 issue…	Pranešti apie CFA4 problemą…
+	CFA4 project links	CFA4 projekto nuorodos
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	Pridėkite mediją į projektą. Numeskite failus bet kur lange arba pasirinkite šaltinį žemiau.
+	Shuttle Slow Left	Lėtai prasukti kairėn
+	Shuttle Slow Right	Lėtai prasukti dešinėn
+	Play Around	Leisti aplink
+	Out: {name}	Pabaiga: {name}
+	In: {name}	Pradžia: {name}
+	(gap)	(tarpas)
+	Outgoing clip (drag to trim the Out point)	Išeinantis klipas (vilkite, kad apkirptumėte pabaigos tašką)
+	Incoming clip (drag to trim the In point)	Įeinantis klipas (vilkite, kad apkirptumėte pradžios tašką)
+	Drag to roll the edit	Vilkite, kad paslinktumėte karpymą
+	Play Around Edit (Space loops, Shift+K once)	Leisti aplink karpymą (tarpas kartoja, Shift+K vieną kartą)
+	Trim Backward Many	Daug kirpti atgal
+	Trim Backward	Kirpti atgal
+	Apply Default Transitions to Selection (Shift+D)	Taikyti numatytuosius perėjimus pasirinkimui (Shift+D)
+	Trim Forward	Kirpti pirmyn
+	Trim Forward Many	Daug kirpti pirmyn
+	Exit Trim Mode	Išeiti iš kirpimo režimo
+	Up	Aukštyn
+	Down	Žemyn
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	Garso išvestis sutriko: leidžiama be garso (patikrinkite Nustatymai ▸ Garso aparatinė įranga)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	Garso išvestis neatsako: leidžiama be garso (patikrinkite Nustatymai ▸ Garso aparatinė įranga)
+	Settings not taken	Nustatymai nepritaikyti
+	Encoder	Koduotuvas
+	Software, or hardware where available	Programinis arba, kai prieinamas, aparatinis
+	Main (8-bit; Main 10 for HDR sequences)	Main (8 bitų; Main 10 HDR sekoms)
+	Main 10 (10-bit, HDR)	Main 10 (10 bitų, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bitų; 10 bitų HDR sekoms)
+	Main (10-bit, HDR)	Main (10 bitų, HDR)
+	FLAC stores whole-number samples only	FLAC saugo tik sveikųjų skaičių imtis
+	MXF export writes integer PCM only	MXF eksportas rašo tik sveikųjų skaičių PCM
+	Not supported by CFA4's encoders yet	CFA4 koduotuvai to dar nepalaiko
+	Overwrite with Current View	Perrašyti dabartiniu rodiniu
+	Saves the view, columns, sort, thumbnail and font size.	Įrašo rodinį, stulpelius, rikiavimą, miniatiūrų ir šrifto dydį.
+	Search fields	Paieškos laukai
+	{n}. (empty)	{n}. (tuščia)
+	No video	Nėra vaizdo
+	No audio	Nėra garso
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 HDR
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 profilis
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main profilis 4:2:0
+	no B pictures	be B kadrų
+	1 B picture between anchors	1 B kadras tarp atraminių
+	AV1 Main (10-bit for HDR)	AV1 Main (10 bitų HDR)
+	10-bit RGB	10 bitų RGB
+	12-bit X'Y'Z'	12 bitų X'Y'Z'
+	16-bit half float	16 bitų pusinis slankusis kablelis
+	linear	linijinis
+	uncompressed	nesuspaustas
+	Animated GIF	Animuotas GIF
+	Waveform Audio	Waveform garsas
+	AAC Audio	AAC garsas
+	Opus Audio	Opus garsas
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	fragmentuoti MP4 segmentai
+	Program Stream	Programos srautas
+	Transport Stream	Transporto srautas
+	BDAV Transport Stream	BDAV transporto srautas
+	Elementary Stream	Elementarusis srautas
+	Image sequence	Vaizdų seka
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} kadr./s
+	{profile} auto level	{profile} automatinis lygis
+	{n} pass	{n} praėjimai
+	CRF (constant quality) {crf}	CRF (pastovi kokybė) {crf}
+	{v} Mbps	{v} Mb/s
+	Target {v} Mbps	Tikslinė {v} Mb/s
+	Max {v} Mbps	Daugiausia {v} Mb/s
+	average {v} Mbps	vidutiniškai {v} Mb/s
+	CBR {v} Mbps	CBR {v} Mb/s
+	VBR Target {v} Mbps	VBR tikslinė {v} Mb/s
+	keyframe every {n} frames	pagrindinis kadras kas {n} kadrų
+	constant quantiser {q}	pastovus kvantuotojas {q}
+	{n} B pictures between anchors	B kadrų tarp atraminių: {n}
+	quantizer {q}	kvantuotojas {q}
+	quality {q}	kokybė {q}
+	{word} compression	{word} glaudinimas
+	{sampling} {bits}-bit	{sampling} {bits} bitų
+	FLAC (lossless) {bits}-bit	FLAC (be nuostolių) {bits} bitų
+	level {n}	lygis {n}
+	Uncompressed {bits}-bit PCM	Nesuspaustas {bits} bitų PCM
+	Uncompressed {bits}-bit float PCM	Nesuspaustas {bits} bitų slankiojo kablelio PCM
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} s
+	{n} ch {rate} Hz	{n} kan. {rate} Hz
+	All Events	Visi įvykiai
+	Warnings and Errors	Įspėjimai ir klaidos
+	Errors Only	Tik klaidos
+	No events.	Įvykių nėra.
+	just now	ką tik
+	{n} s ago	prieš {n} s
+	{n} min ago	prieš {n} min.
+	{n} h ago	prieš {n} val.
+	Warning	Įspėjimas
+	Caption Export Settings	Subtitrų eksporto nustatymai
+	Export Captions	Eksportuoti subtitrus
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} jau yra, todėl niekas neeksportuota. Norėdami jį pakeisti, pasirinkite jį įrašymo dialoge.
+	Delete Redoable Actions	Šalinti pakartojamus veiksmus
+	Clear History	Išvalyti istoriją
+	Delete the dimmed actions after the current state? They cannot be redone.	Šalinti pritemdytus veiksmus po dabartinės būsenos? Jų nebus galima pakartoti.
+	Work Area Bar	Darbo srities juosta
+	Start: {tc}	Pradžia: {tc}
+	End: {tc}	Pabaiga: {tc}
+	Duration: {tc}	Trukmė: {tc}
+	Show/Hide Tracks…	Rodyti / slėpti takelius…
+	Panel menu	Skydelio meniu
+	Move panel	Perkelti skydelį
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Spustelėkite, kad pasirinktumėte, arba spustelėkite tuščioje vietoje ir vilkite, kad pažymėtumėte rėmeliu. Kitoms parinktims naudokite Shift, Alt ir Ctrl.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Spustelėkite, kad pasirinktumėte visus klipus dešinėje visuose takeliuose. Shift+spustelėjimas – vienam takeliui.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Spustelėkite, kad pasirinktumėte visus klipus kairėje visuose takeliuose. Shift+spustelėjimas – vienam takeliui.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Vilkite karpymo tašką, kad kirptumėte su poslinkiu; vėlesni klipai pasislenka, kad neliktų tarpo.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Vilkite karpymo tašką, kad jį paslinktumėte: vieno klipo pabaiga ir kito pradžia juda kartu.
+	Drag an edge to change the clip's speed so it fills the new duration.	Vilkite kraštą, kad pakeistumėte klipo greitį ir jis užpildytų naują trukmę.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Vilkite muzikos klipo kraštą, kad perkomponuotumėte jį iki naujos trukmės muzikiškai tinkančiais taktais.
+	Click to split a clip. Shift-click to split all tracks.	Spustelėkite, kad padalytumėte klipą. Shift+spustelėjimas padalija visus takelius.
+	Drag a clip to slip its source in/out without moving it.	Vilkite klipą, kad praslinktumėte jo šaltinio pradžią / pabaigą jo nepajudindami.
+	Drag a clip to slide it between its neighbours.	Vilkite klipą, kad paslinktumėte jį tarp kaimynų.
+	Drag to scroll the timeline.	Vilkite, kad slinktumėte laiko juostą.
+	Click to zoom in; Alt-click to zoom out.	Spustelėkite, kad priartintumėte; Alt+spustelėjimas – kad nutolintumėte.
+	Exporting	Eksportuojama
+	Version {version}	Versija {version}
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Šriftai: Inter, Noto Serif ir JetBrains Mono (SIL OFL 1.1).
+	CFA4 was closed while “{name}” had unsaved changes.	CFA4 buvo uždaryta, kai „{name}“ turėjo neįrašytų pakeitimų.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	CFA4 netikėtai užsidarė, kai „{name}“ turėjo neįrašytų pakeitimų.
+	Recover unsaved changes from {when}?	Atkurti neįrašytus pakeitimus iš {when}?
+	The project had not been saved yet.	Projektas dar nebuvo įrašytas.
+	{n} sessions have unsaved changes:	Seansai su neįrašytais pakeitimais ({n}):
+	Are you sure you want to discard your changes to '{file}'?	Ar tikrai norite atmesti „{file}“ pakeitimus?
+	the project has not been saved yet	projektas dar neįrašytas
+	Export As Motion Graphics Template	Eksportuoti kaip judesio grafikos šabloną
+	Category:	Kategorija:
+	Editable properties:	Redaguojamos ypatybės:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	Įrašyta kaip CFA4 grafikos šablonas (.fcgt) jūsų šablonų aplanke.
+	My Templates	Mano šablonai
+	{n} Font	{n} šriftas
+	{n} Size	{n} dydis
+	{n} Color	{n} spalva
+	{n} Position	{n} padėtis
+	Show {n}	Rodyti {n}
+	Exported graphics template to {path}	Grafikos šablonas eksportuotas į {path}
+	Replace Fonts in Projects	Pakeisti šriftus projektuose
+	Fonts used in the project:	Projekte naudojami šriftai:
+	{f} (missing)	{f} (trūksta)
+	Replace:	Pakeisti:
+	with:	į:
+	Replaced {n} font uses	Pakeista šrifto naudojimų: {n}
+	Track Color	Takelio spalva
+	Unrendered: should play back in real time	Neatvaizduota: turėtų būti atkuriama realiuoju laiku
+	Unrendered: render to play back in real time	Neatvaizduota: atvaizduokite, kad būtų atkuriama realiuoju laiku
+	Rendered preview	Atvaizduota peržiūra
+	Transparency Grid	Permatomumo tinklelis
+	Show Duplicate Frame Markers	Rodyti pasikartojančių kadrų žymes
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Sekos pradžia / pabaiga yra tik 1 kadras. Pasirinkite „Visa seka“, kad eksportuotumėte visą seką.
+	more tabs	daugiau kortelių
+	Set Work Area Bar In Point	Nustatyti darbo srities juostos pradžios tašką
+	Set Work Area Bar Out Point	Nustatyti darbo srities juostos pabaigos tašką
+	Delete Clips	Šalinti klipus
+	Destinations	Paskirties vietos
+	Analyzing the clip…	Analizuojamas klipas…
+	At GOP boundaries (no re-encoding)	Ties GOP ribomis (be perkodavimo)
+	Bit-exact copy	Tiksli bitų kopija
+	Choose the output file.	Pasirinkite išvesties failą.
+	Compatible copy	Suderinama kopija
+	Copy:	Kopijuoti:
+	Cut:	Karpyti:
+	Frame accurate (re-encode the boundaries)	Kadro tikslumu (ribos perkoduojamos)
+	Open a video clip in the Source monitor first.	Pirmiausia atidarykite vaizdo klipą šaltinio monitoriuje.
+	Output:	Išvestis:
+	Smart Cut Source	Išmaniai karpyti šaltinį
+	Smart Cut Source…	Išmaniai karpyti šaltinį…
+	Smart Cut is not available for this clip: {why}	Išmanusis karpymas šiam klipui neprieinamas: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Išmanusis karpymas įrašytas ir patikrintas: {path} (kadrų: {frames})
+	The cut cannot run.	Karpymo negalima vykdyti.
+	The engine sent no analysis.	Variklis neatsiuntė analizės.
+	Writing and verifying the cut…	Įrašomas ir tikrinamas karpymas…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} konteineryje {container}: GOP: {gops}, švarių karpymo taškų: {points}
+	{copied} frames copied, {reencoded} frames re-encoded	Nukopijuota kadrų: {copied}, perkoduota kadrų: {reencoded}
+	{frames} frames at the boundaries are re-encoded. Continue?	Ribose perkoduojama kadrų: {frames}. Tęsti?
+	Show GOP Boundaries	Rodyti GOP ribas
+	Export mode	Eksporto režimas
+	Full Render	Visas atvaizdavimas
+	Planning…	Planuojama…
+	Recommended: Smart Render (asks before re-encoding)	Rekomenduojama: išmanusis atvaizdavimas (klausia prieš perkoduojant)
+	Recommended: Stream Copy (nothing is re-encoded)	Rekomenduojama: srauto kopijavimas (niekas neperkoduojama)
+	Rendered because of: {causes}	Atvaizduota dėl: {causes}
+	Smart Export	Išmanusis eksportas
+	Smart Export written and verified: {path}	Išmanusis eksportas įrašytas ir patikrintas: {path}
+	Smart Render	Išmanusis atvaizdavimas
+	Stream Copy – Bit-exact	Srauto kopijavimas – tiksli bitų kopija
+	Stream Copy – Compatible	Srauto kopijavimas – suderinamas
+	Stream copy is not possible: {frames} frames need re-encoding.	Srauto kopijavimas negalimas: kadrų, kuriuos reikia perkoduoti: {frames}.
+	The export cannot run.	Eksporto negalima vykdyti.
+	Wait for the export plan.	Palaukite eksporto plano.
+	Writing and verifying the export…	Įrašomas ir tikrinamas eksportas…
+	colour conversion	spalvų konvertavimas
+	compositing	komponavimas
+	copied	nukopijuota
+	effects	efektai
+	frame rate	kadrų dažnis
+	proxies or nested sequences	tarpinės kopijos arba įdėtosios sekos
+	re-encoded at a cut	perkoduota ties karpymu
+	rendered	atvaizduota
+	sources that cannot be copied	šaltiniai, kurių negalima kopijuoti
+	speed changes	greičio pakeitimai
+	titles or overlays	titrai arba perdangos
+	transforms	transformacijos
+	transitions	perėjimai
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Nukopijuota kadrų: {copied}, perkoduota ties karpymais: {reencoded}, atvaizduota: {rendered}
+	{frames} frames are re-encoded or rendered. Continue?	Perkoduojama arba atvaizduojama kadrų: {frames}. Tęsti?
+	CFA4 Help…	CFA4 žinynas…
+	Learning	Mokymasis
+	Refresh Changed Media	Atnaujinti pakeistą mediją
+	Open Recent	Atidaryti naujausius
+	Report an Issue…	Pranešti apie problemą…
+	Review	Peržiūra
+	Zoom In	Priartinti
+	Zoom Out	Nutolinti
+	{name} - Edited	{name} – redaguota
+	Audio Gain	Garso stiprinimas
+	Set Gain to:	Nustatyti stiprinimą:
+	Adjust Gain by:	Koreguoti stiprinimą:
+	Normalize Max Peak to:	Normalizuoti didžiausią smailę iki:
+	Normalize All Peaks to:	Normalizuoti visas smailes iki:
+	Peak Amplitude: {peak}	Smailės amplitudė: {peak}
+	Standard	Standartinis
+	Add Tracks	Pridėti takelius
+	Placement	Vieta
+	Track type	Takelio tipas
+	Add video tracks	Pridėti vaizdo takelius
+	Add audio tracks	Pridėti garso takelius
+	Add audio submix tracks	Pridėti garso submiksavimo takelius
+	After {name}	Po {name}
+	Before First Track	Prieš pirmąjį takelį
+	Delete Tracks	Šalinti takelius
+	Video Tracks	Vaizdo takeliai
+	Audio Tracks	Garso takeliai
+	Delete Video Tracks	Šalinti vaizdo takelius
+	Delete Audio Tracks	Šalinti garso takelius
+	All Empty Tracks	Visi tušti takeliai
+	Caption Tracks	Subtitrų takeliai
+	Delete Caption Tracks	Šalinti subtitrų takelius
+	Source code on GitHub	Šaltinio kodas „GitHub“ svetainėje
+	Report an issue	Pranešti apie problemą
+	Community	Bendruomenė
+	Join us on Discord	Prisijunkite prie mūsų „Discord“
+	Rendering:	Atvaizdavimas:
+	UI:	Sąsaja:
+	{fps} fps · {n} frames queued	{fps} kadr./s · eilėje kadrų: {n}
+	Maximize Frame	Išdidinti kadrą
+	Restore Frame	Atkurti kadrą
+	Reveal Sequence in Project	Parodyti seką projekte
+	Video Thumbnails	Vaizdo miniatiūros
+	Audio Waveforms	Garso bangos formos
+	Untitled Workspace	Bevardė darbo sritis
+	New Workspace	Nauja darbo sritis
+	Show durations	Rodyti trukmes
+	Project Metadata	Projekto metaduomenys
+	Add Property…	Pridėti ypatybę…
+	Column order	Stulpelių tvarka
+	Graphics text search arrives with M10.1–M10.2	Grafikos teksto paieška atsiras su M10.1–M10.2
+	Effect	Efektas
+	(no clips)	(nėra klipų)
+	Export Frame (Shift+E)	Eksportuoti kadrą (Shift+E)
+	Export Frame: use Export mode (M6)	Eksportuoti kadrą: naudokite eksporto režimą (M6)
+	Save changes to “{project_name}” before closing?	Įrašyti „{project_name}“ pakeitimus prieš uždarant?
+	Don't Save	Neįrašyti
+	A file dialog is already open	Failo dialogas jau atidarytas
+	Timeline: (no sequences)	Laiko juosta: (nėra sekų)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Spustelėkite programos monitoriuje, kad padėtumėte kaukės taškus (vilkite kreivėms); spustelėkite pirmąjį tašką arba paspauskite Enter, kad uždarytumėte
+	Composite	Sudėtinis
+	Comparison	Palyginimas
+	Video and Waveform	Vaizdas ir bangos forma
+	Remove Media Cache Files	Šalinti medijos podėlio failus
+	Eyedropper: no picture to sample	Pipetė: nėra vaizdo, iš kurio imti spalvą
+	Select a clip to grade	Pasirinkite klipą spalvų korekcijai
+	   Opacity	   Nepermatomumas
+	   Size	   Dydis
+	   Corner Radius	   Kampo spindulys
+	   Angle	   Kampas
+	   Distance	   Atstumas
+	   Blur	   Suliejimas
+	   Template: {name}	   Šablonas: {name}
+	CFA4 Graphics Template	CFA4 grafikos šablonas
+	  (none)	  (nėra)
+	Select items to clear	Pasirinkite elementus, kuriuos išvalyti
+	Media missing	Trūksta medijos
+	Unreadable	Neperskaitoma
+	✓ Enable	✓ Įjungti
+	(RGB) Gamma	(RGB) gama
+	(RGB) Input Black Level	(RGB) įvesties juodos lygis
+	(RGB) Input White Level	(RGB) įvesties baltos lygis
+	(RGB) Output Black Level	(RGB) išvesties juodos lygis
+	(RGB) Output White Level	(RGB) išvesties baltos lygis
+	10 Bit Black Point	10 bitų juodos taškas
+	10 Bit White Point	10 bitų baltos taškas
+	105mm Prime	105 mm fiksuotas objektyvas
+	29.97 fps Drop-Frame	29,97 kadr./s su kadrų praleidimu
+	29.97 fps Non Drop-Frame	29,97 kadr./s be kadrų praleidimo
+	35mm Prime	35 mm fiksuotas objektyvas
+	3D Roll	3D vartymas
+	3D Rotate	3D pasukimas
+	3D Spin	3D sukimas
+	3D Spinback	3D sukimas atgal
+	4-Color Gradient	4 spalvų gradientas
+	5.1 Media	5.1 medija
+	5.1 Mixdown Type	5.1 sumaišymo tipas
+	50-300mm Zoom	50–300 mm vaizdo keitiklis
+	59.94 fps Drop-Frame	59,94 kadr./s su kadrų praleidimu
+	59.94 fps Non Drop-Frame	59,94 kadr./s be kadrų praleidimo
+	ASC CDL	ASC CDL
+	Action-Safe Margin	Veiksmo saugi paraštė
+	1 file	1 failas
+	{n} files	Failų: {n}
+	Additional Scale	Papildomas mastelis
+	Additive Dissolve	Adityvinis išnykimas
+	Additive Dissolve (Legacy)	Adityvinis išnykimas (senasis)
+	Aggressive	Agresyvus
+	Alpha Adjust	Alfa koregavimas
+	Alpha Blurriness	Alfa suliejimas
+	Alpha Channel	Alfa kanalas
+	Alpha Glow	Alfa švytėjimas
+	Ambience Intensity	Aplinkos intensyvumas
+	Ambience Light Color	Aplinkos šviesos spalva
+	Amount of Noise	Triukšmo kiekis
+	Amount to Decolor	Spalvų šalinimo kiekis
+	Amount to Tint	Atspalvinimo kiekis
+	Amplifier	Stiprintuvas
+	Amplify	Stiprinti
+	Amplitude	Amplitudė
+	Analog	Analoginis
+	Analog Delay	Analoginė delsa
+	Anamorphic	Anamorfinis
+	Anchor	Inkaras
+	Anti-aliasing Quality	Glotninimo kokybė
+	Antialiasing for Best Quality	Glotninimas geriausiai kokybei
+	Asymmetry	Asimetrija
+	Audio Duration	Garso trukmė
+	Audio In Point	Garso pradžios taškas
+	Audio Out Point	Garso pabaigos taškas
+	Audio Usage	Garso naudojimas
+	Auto Align	Automatinis lygiavimas
+	Auto Reframe	Automatinis perkadravimas
+	Automatic Click Remover	Automatinis spragsėjimų šalintuvas
+	Background Color	Fono spalva
+	Background Corner Radius	Fono kampo spindulys
+	Background Opacity	Fono nepermatomumas
+	Background Size	Fono dydis
+	Band 1	1 juosta
+	Band 2	2 juosta
+	Band 3	3 juosta
+	Band 4	4 juosta
+	Band 5	5 juosta
+	Band Pass	Juostinis praleidimas
+	Band Slide	Juostų slinkimas
+	Band Stop	Juostinis slopinimas
+	Bandpass	Juostinis filtras
+	Barn Doors	Užuolaidos
+	Basic	Pagrindinis
+	Basic 3D	Pagrindinis 3D
+	Bass	Žemieji dažniai
+	Behind	Už
+	Bessel	Beselio
+	Bevel Alpha	Alfa nusklembimas
+	Binauralizer - Ambisonics	Binauralizatorius – Ambisonics
+	Black & White	Nespalvotas
+	Black Input Level	Juodos įvesties lygis
+	Black and white	Nespalvotas
+	Black and white with crushed blacks and strong contrast	Nespalvotas su suspaustomis juodomis ir stipriu kontrastu
+	Bleach-bypass style: desaturated with hard contrast	Balinimo apėjimo stilius: išblukintas su kietu kontrastu
+	Blend	Maišymas
+	Blend With Original	Sulieti su originalu
+	Blending Mode	Maišymo režimas
+	Block Dissolve	Blokinis išnykimas
+	Block Height	Bloko aukštis
+	Block Motion	Blokų judėjimas
+	Block Size	Bloko dydis
+	Block Width	Bloko plotis
+	Blocks	Blokai
+	Blue Blurriness	Mėlynos suliejimas
+	Blue Curve	Mėlynos kreivė
+	Blue Offset	Mėlynos poslinkis
+	Blue Power	Mėlynos laipsnis
+	Blue Slope	Mėlynos nuolydis
+	Blue-Blue	Mėlyna–mėlyna
+	Blue-Const	Mėlyna–konst.
+	Blue-Green	Mėlyna–žalia
+	Blue-Red	Mėlyna–raudona
+	Blur Amount	Suliejimo kiekis
+	Blur Angle	Suliejimo kampas
+	Blur Dimensions	Suliejimo kryptys
+	Blur Dissolve	Išnykimas su suliejimu
+	Blur Layer	Suliejimo sluoksnis
+	Blur Length	Suliejimo ilgis
+	Blurriness	Suliejimas
+	Bokeh Blur	Bokeh suliejimas
+	Boost	Pakėlimas
+	Border	Kraštinė
+	Border Color	Kraštinės spalva
+	Border Width	Kraštinės plotis
+	Borders	Kraštinės
+	Bounce	Atšokimas
+	Branching	Šakojimasis
+	Brightness & Contrast	Šviesumas ir kontrastas
+	British Stack	Britiška krūva
+	Brush Hardness	Teptuko kietumas
+	Brush Opacity	Teptuko nepermatomumas
+	Brush Position	Teptuko padėtis
+	Brush Size	Teptuko dydis
+	Brush Spacing (secs)	Teptuko tarpai (sek.)
+	Brush Strokes	Teptuko potėpiai
+	Bubbles	Burbulai
+	Bulge	Išsipūtimas
+	Bulge Smoother	Išsipūtimo glodintuvas
+	Bump Height	Iškilimo aukštis
+	Burn Alpha	Įrašyti alfa
+	Burn Chroma	Įrašyti chromą
+	Burn Color	Įrašyti spalvą
+	Butterworth	Batervorto
+	Camera Blur	Kameros suliejimas
+	Camera Shake	Kameros drebėjimas
+	Capitalisation	Didžiosios raidės
+	Cathedral	Katedra
+	Cell Pattern	Langelių raštas
+	Center Channel Pan	Centrinio kanalo panoramavimas
+	Center Gradient	Centrinis gradientas
+	Center Input	Centrinė įvestis
+	Center Out	Iš centro
+	Center Point (Latitude)	Centro taškas (platuma)
+	Center Point (Longitude)	Centro taškas (ilguma)
+	Center Split	Centrinis padalijimas
+	Center of Sphere	Sferos centras
+	Cents	Centai
+	Change to Color	Pakeisti į spalvą
+	Channel	Kanalas
+	Channel Blur	Kanalo suliejimas
+	Channel Mix	Kanalų maišymas
+	Channel Mixer	Kanalų maišytuvas
+	Chaos	Chaosas
+	Chebyshev	Čebyševo
+	Checker Wipe	Šachmatų nušluostymas
+	Checkerboard	Šachmatų lenta
+	Choke	Sutraukimas
+	Chorus	Choras
+	Chorus/Flanger	Choras / flanžeris
+	Chroma Leak	Chromos nutekėjimas
+	Chromatic Aberration (Blue)	Chromatinė aberacija (mėlyna)
+	Chromatic Aberration (Green)	Chromatinė aberacija (žalia)
+	Chromatic Aberration (Red)	Chromatinė aberacija (raudona)
+	Cineon Converter	Cineon konverteris
+	Clean Combo	Švarus derinys
+	Clip Level	Apkirpimo lygis
+	Clipping	Apkirpimas
+	Clock Wipe	Laikrodžio nušluostymas
+	Clock Wipe (Legacy)	Laikrodžio nušluostymas (senasis)
+	Clockwise	Pagal laikrodžio rodyklę
+	Clone	Klonuoti
+	Color & Alpha	Spalva ir alfa
+	Color 1	1 spalva
+	Color 2	2 spalva
+	Color 3	3 spalva
+	Color 4	4 spalva
+	Color Balance	Spalvų balansas
+	Color Channel	Spalvų kanalas
+	Color Distortion	Spalvų iškraipymas
+	Color Emboss	Spalvotas reljefas
+	Color Key	Spalvos raktas
+	Color Pass	Spalvos išlaikymas
+	Color Replace	Spalvos pakeitimas
+	Color To Leave	Paliktina spalva
+	Color Tolerance	Spalvos tolerancija
+	Colorize	Nuspalvinti
+	Columns	Stulpeliai
+	Complexity	Sudėtingumas
+	Composite In Back	Komponuoti už
+	Composite In Front	Komponuoti priekyje
+	Composite Using	Komponuoti naudojant
+	Composite on Original	Komponuoti ant originalo
+	Compound Blur	Sudėtinis suliejimas
+	Compression Before Clipping	Glaudinimas prieš apkirpimą
+	Constant Gain	Pastovus stiprinimas
+	Constant Power	Pastovi galia
+	Conversion Type	Konvertavimo tipas
+	Convolution Reverb	Konvoliucinis aidėjimas
+	Cool, desaturated and punchy	Vėsus, išblukintas ir ryškus
+	Core Width	Šerdies plotis
+	Corner	Kampas
+	Corner Pin	Kampų prisegimas
+	Count	Skaičius
+	Counter-clockwise	Prieš laikrodžio rodyklę
+	Crop Less <-> Smooth More	Mažiau apkirpti <-> daugiau glotninti
+	Cross Displacement	Kryžminis poslinkis
+	Cross Dissolve	Kryžminis išnykimas
+	Cross Dissolve (Legacy)	Kryžminis išnykimas (senasis)
+	Cross Zoom	Kryžminis priartinimas
+	Cross Zoom (Legacy)	Kryžminis priartinimas (senasis)
+	Crossovers	Skirstytuvai
+	Crystallize	Kristalizuoti
+	Crystals	Kristalai
+	Cube Spin	Kubo sukimas
+	Curl Radius	Užlenkimo spindulys
+	Cursor	Žymeklis
+	Curvature	Kreivumas
+	Curve	Kreivė
+	Custom Color	Pasirinktinė spalva
+	Cutoff	Ribinis dažnis
+	Cyan-teal shadows and warm highlights with a little more contrast	Žydros-žalsvos šešėliai ir šiltos šviesiosios sritys su šiek tiek didesniu kontrastu
+	Cycle (in Revolutions)	Ciklas (apsisukimais)
+	Cycle Evolution	Ciklinė evoliucija
+	Damping	Slopinimas
+	Damping HF	AD slopinimas
+	Damping LF	ŽD slopinimas
+	Day for night: darker, cooler and less saturated	Diena kaip naktis: tamsesnis, vėsesnis ir mažiau sodrus
+	DeEsser	Šnypščiųjų slopintuvas
+	DeHummer	Ūžimo slopintuvas
+	DeNoise	Triukšmo šalinimas
+	DeReverb	Aidėjimo šalinimas
+	Decay	Slopimas
+	Decay Time (RT60)	Slopimo laikas (RT60)
+	Delay	Delsa
+	Delay 1	1 delsa
+	Delay 2	2 delsa
+	Delay 3	3 delsa
+	Delay 4	4 delsa
+	Depth	Gylis
+	Desaturate	Išblukinti
+	Detail Amplitude	Detalių amplitudė
+	Detail Level	Detalių lygis
+	Detailed Analysis	Išsami analizė
+	Dimensions	Matmenys
+	Dip to Black	Užtemdymas į juodą
+	Dip to Black (Legacy)	Užtemdymas į juodą (senasis)
+	Dip to Color	Užtemdymas į spalvą
+	Dip to White	Užtemdymas į baltą
+	Dip to White (Legacy)	Užtemdymas į baltą (senasis)
+	Direction	Kryptis
+	Directional	Kryptinis
+	Directional Blur	Kryptinis suliejimas
+	Directional Blur (Legacy)	Kryptinis suliejimas (senasis)
+	Disperse	Išsklaidyti
+	Displacement	Poslinkis
+	Dissolve Blocks	Liukenantys blokai
+	Distance to Image	Atstumas iki vaizdo
+	Distortion	Iškraipymas
+	Distortion Complexity	Iškraipymo sudėtingumas
+	Distortion Rate	Iškraipymo sparta
+	Distortion Type	Iškraipymo tipas
+	Drive	Perkrova
+	Drop Shadow	Krentantis šešėlis
+	Dry	Sausas
+	Dry Out	Sauso išvestis
+	Dynamics Processing	Dinamikos apdorojimas
+	Early Reflections	Ankstyvieji atspindžiai
+	Earthquake	Žemės drebėjimas
+	Ease In and Out	Švelni pradžia ir pabaiga
+	Easing	Švelninimas
+	Echo	Aidas
+	Echo Glow	Aido švytėjimas
+	Echo Operator	Aido operatorius
+	Echo Time (seconds)	Aido laikas (sekundėmis)
+	Echoes	Aidai
+	Edge Color	Krašto spalva
+	Edge Feather	Krašto plunksnavimas
+	Edge Glow	Krašto švytėjimas
+	Edge Sharpness	Krašto ryškumas
+	Edge Softness	Krašto švelnumas
+	Edge Thickness	Krašto storis
+	Edge Thin	Krašto plonumas
+	Edge Threshold	Krašto slenkstis
+	Edge Type	Krašto tipas
+	Edge Width	Krašto plotis
+	Elliptical	Elipsinis
+	Emboss	Reljefas
+	Enable HSL Secondary	Įjungti HSL antrinę
+	End Color	Pabaigos spalva
+	End Point	Pabaigos taškas
+	End of Ramp	Perėjimo pabaiga
+	Evolution	Evoliucija
+	Evolution Options	Evoliucijos parinktys
+	Exciter Amount	Žadintuvo kiekis
+	Exciter Mode	Žadintuvo režimas
+	Exponential Fade	Eksponentinis išnykimas
+	FFT Filter	FFT filtras
+	Fade	Išnykimas
+	Fade Out	Išnykimas pabaigoje
+	Falloff	Silpnėjimas
+	Fast	Greitas
+	Faster Motion	Greitesnis judesys
+	Feedback	Grįžtamasis ryšys
+	Feedback 1	1 grįžtamasis ryšys
+	Feedback 2	2 grįžtamasis ryšys
+	Feedback 3	3 grįžtamasis ryšys
+	Feedback 4	4 grįžtamasis ryšys
+	Female	Moteriškas
+	Fill Background	Užpildyti foną
+	Fill Color	Užpildo spalva
+	Fill Left with Right	Užpildyti kairę dešine
+	Fill Point	Užpildymo taškas
+	Fill Right with Left	Užpildyti dešinę kaire
+	Fill Selector	Užpildymo parinkiklis
+	Film Dissolve	Juostos išnykimas
+	Film Dissolve (Legacy)	Juostos išnykimas (senasis)
+	Film Roll	Juostos vyniojimas
+	Filter	Filtras
+	Filter Frequency	Filtro dažnis
+	Filter Resonance	Filtro rezonansas
+	Final Delay	Galutinė delsa
+	Find Edges	Rasti kraštus
+	Flanger	Flanžeris
+	Flare	Blyksnis
+	Flare Brightness	Blyksnio šviesumas
+	Flare Center	Blyksnio centras
+	Flare Color	Blyksnio spalva
+	Flash	Blyksnis
+	Flicker	Mirgėjimas
+	Flickers	Mirgėjimai
+	Flip Motion	Apvertimo judesys
+	Flip Over	Apversti
+	Focus	Fokusas
+	Focus Blur	Fokuso suliejimas
+	Focus Point	Fokuso taškas
+	Focus Shape	Fokuso forma
+	Focus Size	Fokuso dydis
+	Fold Motion	Sulenkimo judesys
+	Foldback	Atgalinis lenkimas
+	Fractal Influence	Fraktalo įtaka
+	Fractal Type	Fraktalo tipas
+	Frame	Kadras
+	Frame Color	Rėmelio spalva
+	Frame Layout	Rėmelio išdėstymas
+	Frame Width	Rėmelio plotis
+	Framing	Kadravimas
+	Frequency	Dažnis
+	From	Nuo
+	From East	Iš rytų
+	From North	Iš šiaurės
+	From South	Iš pietų
+	From West	Iš vakarų
+	Fuzz	Pūkuotumas
+	GB	GB
+	Gamma	Gama
+	Gamma Correction	Gamos korekcija
+	Gamut Warning	Gamos įspėjimas
+	Gamut Warning Color	Gamos įspėjimo spalva
+	Gap	Tarpas
+	Gap Color	Tarpo spalva
+	Gaussian Blur	Gauso suliejimas
+	Gaussian Blur (Legacy)	Gauso suliejimas (senasis)
+	Ghosts	Vaiduokliai
+	Glass	Stiklas
+	Glint	Blizgesys
+	Glitch	Trikdis
+	Glow	Švytėjimas
+	Glow Brightness	Švytėjimo šviesumas
+	Glow Color	Švytėjimo spalva
+	Glow Only	Tik švytėjimas
+	Glow Radius	Švytėjimo spindulys
+	Glow Saturation	Švytėjimo sodrumas
+	Glow Width	Švytėjimo plotis
+	Good	Gera
+	Gradient End	Gradiento pabaiga
+	Gradient Layer	Gradiento sluoksnis
+	Gradient Placement	Gradiento išdėstymas
+	Gradient Scatter	Gradiento sklaida
+	Gradient Shape	Gradiento forma
+	Gradient Start	Gradiento pradžia
+	Gradient Wipe	Gradiento nušluostymas
+	Gradient Wipe (Legacy)	Gradiento nušluostymas (senasis)
+	Grain Size	Grūdelių dydis
+	Green Blurriness	Žalios suliejimas
+	Green Curve	Žalios kreivė
+	Green Offset	Žalios poslinkis
+	Green Power	Žalios laipsnis
+	Green Slope	Žalios nuolydis
+	Green-Blue	Žalia–mėlyna
+	Green-Const	Žalia–konst.
+	Green-Green	Žalia–žalia
+	Green-Red	Žalia–raudona
+	Grid	Tinklelis
+	Grow	Augti
+	Grunge	Grunge
+	GuitarSuite	GuitarSuite
+	Hard	Kietas
+	Hard Clip	Kietas apkirpimas
+	Hard Limiter	Kietas ribotuvas
+	Head Size	Galvos dydis
+	Heart	Širdis
+	Hexagon	Šešiakampis
+	Hide Back Face	Slėpti nugarinę pusę
+	High Cutoff	Aukštasis ribinis dažnis
+	High Frequency Cut	Aukštųjų dažnių pjūvis
+	High Frequency Damping	Aukštųjų dažnių slopinimas
+	High Pass	Aukštųjų dažnių filtras
+	High Shelf	Aukštųjų lentyna
+	High Shelf Gain	Aukštųjų lentynos stiprinimas
+	High contrast with held highlights and deep shadows	Didelis kontrastas su išlaikytomis šviesiosiomis sritimis ir giliais šešėliais
+	Highlight	Šviesioji sritis
+	Highlight Blue Balance	Šviesiųjų sričių mėlynos balansas
+	Highlight Brightness	Šviesiųjų sričių šviesumas
+	Highlight Green Balance	Šviesiųjų sričių žalios balansas
+	Highlight Red Balance	Šviesiųjų sričių raudonos balansas
+	Highlight Rolloff	Šviesiųjų sričių nuslopimas
+	Highlight Threshold	Šviesiųjų sričių slenkstis
+	Highlight Tint	Šviesiųjų sričių atspalvis
+	Highlights Lightness	Šviesiųjų sričių šviesumas
+	Highpass	Aukštųjų dažnių filtras
+	Horizontal 16:9	Horizontalus 16:9
+	Horizontal Alignment	Horizontalus lygiavimas
+	Horizontal Blocks	Horizontalūs blokai
+	Horizontal Decentering	Horizontalus decentravimas
+	Horizontal Displacement	Horizontalus poslinkis
+	Horizontal Flip	Horizontalus apvertimas
+	Horizontal Margin	Horizontali paraštė
+	Horizontal and Vertical	Horizontaliai ir vertikaliai
+	Hue Center	Atspalvio centras
+	Hue Tolerance	Atspalvio tolerancija
+	Ignore Alpha	Nepaisyti alfa
+	Impulse	Impulsas
+	Incoming	Įeinantis
+	Initial Delay	Pradinė delsa
+	Inner Radius	Vidinis spindulys
+	Input Boost	Įvesties pakėlimas
+	Inset	Įdėklas
+	Inside	Viduje
+	Inside Color	Vidinė spalva
+	Inter	Inter
+	Internal Black Point	Vidinis juodos taškas
+	Internal White Point	Vidinis baltos taškas
+	Interpolation	Interpoliacija
+	Inverse Falloff	Atvirkštinis silpnėjimas
+	Invert Alpha	Invertuoti alfa
+	Invert Blur	Invertuoti suliejimą
+	Invert Fill	Invertuoti užpildą
+	Invert Gradient	Invertuoti gradientą
+	Invert Left	Invertuoti kairę
+	Invert Right	Invertuoti dešinę
+	Iris Box	Stačiakampė diafragma
+	Iris Cross	Kryžiaus diafragma
+	Iris Diamond	Rombo diafragma
+	Iris Radius	Diafragmos spindulys
+	Iris Rotation	Diafragmos pasukimas
+	Iris Round	Apvali diafragma
+	Iris Shape	Diafragmos forma
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	Kaleidoskopas
+	Key Color	Rakto spalva
+	Layer Name	Sluoksnio pavadinimas
+	Leave Color	Palikti spalvą
+	Left - Left	Kairė – kairė
+	Left - Right	Kairė – dešinė
+	Left to Right	Iš kairės į dešinę
+	Length	Ilgis
+	Lens Blur	Objektyvo suliejimas
+	Lens Distortion	Objektyvo iškraipymas
+	Lens Flare	Objektyvo blyksnis
+	Lens Type	Objektyvo tipas
+	Level 1	1 lygis
+	Level 2	2 lygis
+	Level 3	3 lygis
+	Level 4	4 lygis
+	Levels	Lygiai
+	Lifted blacks, softer contrast, muted colour	Pakeltos juodos, švelnesnis kontrastas, prislopintos spalvos
+	Light 1	1 šviesa
+	Light 2	2 šviesa
+	Light 3	3 šviesa
+	Light 4	4 šviesa
+	Light 5	5 šviesa
+	Light Angle	Šviesos kampas
+	Light Color	Šviesos spalva
+	Light Intensity	Šviesos intensyvumas
+	Light Leak	Šviesos nutekėjimas
+	Light Leaks	Šviesos nutekėjimai
+	Light Sweep	Šviesos perbraukimas
+	Light Type	Šviesos tipas
+	Lighting Effects	Apšvietimo efektai
+	Lightning	Žaibas
+	Line Thickness	Linijos storis
+	Linear Ramp	Linijinis perėjimas
+	Linear Wipe	Linijinis nušluostymas
+	Linear Wipe (Legacy)	Linijinis nušluostymas (senasis)
+	Linear to Log	Iš linijinio į log
+	Liquid Distortion	Skysčio iškraipymas
+	Log to Linear	Iš log į linijinį
+	Log to Log	Iš log į log
+	Logo Cutout	Logotipo iškirpimas
+	Long Shadow	Ilgas šešėlis
+	Look-Ahead Time	Išankstinio žvilgsnio laikas
+	Loudness Maximizer	Garsumo maksimizatorius
+	Loudness Meter	Garsumo matuoklis
+	Louver	Žaliuzės
+	Low Frequency Cut	Žemųjų dažnių pjūvis
+	Low Pass	Žemųjų dažnių filtras
+	Low Shelf	Žemųjų lentyna
+	Low Shelf Gain	Žemųjų lentynos stiprinimas
+	Lower Left	Apačioje kairėje
+	Lower Right	Apačioje dešinėje
+	Lowpass	Žemųjų dažnių filtras
+	Luma Curve	Skaisčio kreivė
+	Luma Fade	Skaisčio išnykimas
+	Luma Key	Skaisčio raktas
+	Luma Source	Skaisčio šaltinis
+	Luma and Chroma	Skaistis ir chroma
+	Luminance	Skaistis
+	Luminance Threshold	Skaisčio slenkstis
+	MB	MB
+	Magnify	Didinti
+	Magnify (Legacy)	Didinti (senasis)
+	Major Radius	Didysis spindulys
+	Male	Vyriškas
+	Map Black To	Juodą susieti su
+	Map White To	Baltą susieti su
+	Maps full-range levels into 16–235 (video range) with a luma curve	Perkelia viso diapazono lygius į 16–235 (vaizdo diapazoną) skaisčio kreive
+	Mask Only	Tik kaukė
+	Master Amplitude	Pagrindinė amplitudė
+	Mastering	Masteringas
+	Matte	Matinis
+	Matte Alpha	Matinio alfa
+	Matte Cleanup	Matinio valymas
+	Matte Generation	Matinio generavimas
+	Matte Luma	Matinio skaistis
+	Maximum Amplitude	Didžiausia amplitudė
+	Maximum Block Size	Didžiausias bloko dydis
+	Maximum Blur	Didžiausias suliejimas
+	Maximum Reduction	Didžiausias sumažinimas
+	Maximum Scale	Didžiausias mastelis
+	Media Timecode	Medijos laiko kodas
+	Median	Mediana
+	Metadata & Timecode Burn-in	Metaduomenų ir laiko kodo įrašymas į vaizdą
+	Method	Metodas
+	Metrics Kerning	Metrinis kerningas
+	Mid	Vidurys
+	Mid Point	Vidurio taškas
+	Midtone Blue Balance	Vidutinių tonų mėlynos balansas
+	Midtone Green Balance	Vidutinių tonų žalios balansas
+	Midtone Red Balance	Vidutinių tonų raudonos balansas
+	Midtones Lightness	Vidutinių tonų šviesumas
+	Minor Radius	Mažasis spindulys
+	Mirror	Veidrodis
+	Mirror Alternate	Kaitaliojamas veidrodis
+	Mixed Crystals	Mišrūs kristalai
+	Mode	Režimas
+	Modern High Gain	Šiuolaikinis didelis stiprinimas
+	Modulation Rate	Moduliacijos sparta
+	Monochrome toned cyan-blue	Vienspalvis, žydrai mėlynai tonuotas
+	Monochrome toned warm brown	Vienspalvis, šiltai rudai tonuotas
+	More colour in the less saturated areas	Daugiau spalvų mažiau sodriose srityse
+	Morph Cut	Morfinis karpymas
+	Mosaic	Mozaika
+	Mosaic (Legacy)	Mozaika (senasis)
+	Motion Blur	Judesio suliejimas
+	Motion Camera	Judesio kamera
+	Motion Preset	Judesio nuostata
+	Motion Tween	Judesio tarpinis kadravimas
+	Multitap Delay	Daugiaatšakė delsa
+	Narrow	Siauras
+	Neon Color	Neono spalva
+	Neon Wipe	Neoninis nušluostymas
+	No Motion	Be judesio
+	Noise	Triukšmas
+	Noise (Legacy)	Triukšmas (senasis)
+	Noise Level	Triukšmo lygis
+	Noise Reduction/Restoration	Triukšmo mažinimas / restauravimas
+	Noise Type	Triukšmo tipas
+	Non-Additive Dissolve	Neadityvinis išnykimas
+	Notch 1	1 įpjova
+	Notch 2	2 įpjova
+	Notch 3	3 įpjova
+	Notch 4	4 įpjova
+	Notch 5	5 įpjova
+	Notch 6	6 įpjova
+	Notch Filter	Įpjovos filtras
+	Notch Width	Įpjovos plotis
+	Number Of Echoes	Aidų skaičius
+	Number of Harmonics	Harmonikų skaičius
+	Octagon	Aštuonkampis
+	Offset	Poslinkis
+	Offset (Turbulence)	Poslinkis (turbulencija)
+	Offset From	Poslinkis nuo
+	Offset To	Poslinkis iki
+	Omni	Visakryptis
+	On Original Image	Ant originalaus vaizdo
+	On Transparent	Ant permatomo
+	Opens up the shadows	Atveria šešėlius
+	Order	Tvarka
+	Outgoing	Išeinantis
+	Outside	Išorėje
+	Outside Color	Išorinė spalva
+	Overflow	Perpildymas
+	Overshoot	Perlėkis
+	Page Peel	Puslapio nulupimas
+	Page Turn	Puslapio vertimas
+	Paint Bucket	Dažų kibiras
+	Paint On Black	Piešti ant juodo
+	Paint On Original Image	Piešti ant originalaus vaizdo
+	Paint On Transparent	Piešti ant permatomo
+	Paint On White	Piešti ant balto
+	Paint Style	Piešimo stilius
+	Paint Surface	Piešimo paviršius
+	Pan (Y Axis)	Panoramavimas (Y ašis)
+	Panel Wipe	Skydelių nušluostymas
+	Panner - Ambisonics	Panoramavimas – Ambisonics
+	Passband Ripple	Pralaidumo juostos pulsacija
+	Path Points	Kelio taškai
+	Peak Frequency	Smailės dažnis
+	Peak Gain	Smailės stiprinimas
+	Pedestal	Pjedestalas
+	Pentagon	Penkiakampis
+	Percent Blur	Suliejimo procentas
+	Phase Difference	Fazių skirtumas
+	Phaser	Fazeris
+	Phosphor	Fosforas
+	Phosphor Color	Fosforo spalva
+	Photocopy	Fotokopija
+	Photocopy Color	Fotokopijos spalva
+	Pillow	Pagalvė
+	Pin All	Prisegti viską
+	Pin Horizontal	Prisegti horizontaliai
+	Pin Vertical	Prisegti vertikaliai
+	Pinning	Prisegimas
+	Pitch Shifter	Aukščio keitiklis
+	Plate	Plokštė
+	Plateau Wipe	Plokščiakalnių nušluostymas
+	Plateaus	Plokščiakalniai
+	Plates	Plokštės
+	Point 1	1 taškas
+	Point 1 Color	1 taško spalva
+	Point 1 Latitude	1 taško platuma
+	Point 1 Longitude	1 taško ilguma
+	Point 2	2 taškas
+	Point 2 Color	2 taško spalva
+	Point 2 Latitude	2 taško platuma
+	Point 2 Longitude	2 taško ilguma
+	Point 3	3 taškas
+	Point 3 Color	3 taško spalva
+	Point 3 Latitude	3 taško platuma
+	Point 3 Longitude	3 taško ilguma
+	Point 4	4 taškas
+	Point 5	5 taškas
+	Point 6	6 taškas
+	Point 7	7 taškas
+	Point 8	8 taškas
+	Points	Taškai
+	Pop Motion	Iššokantis judesys
+	Position Amount	Padėties kiekis
+	Position, Scale, Rotation	Padėtis, mastelis, pasukimas
+	Posterize	Posterizuoti
+	Posterize Time	Posterizuoti laiką
+	Pre-Delay	Išankstinė delsa
+	Preserve Luminosity	Išlaikyti šviesį
+	Preserve Scale	Išlaikyti mastelį
+	ProcAmp	ProcAmp
+	Pull Motion	Traukiantis judesys
+	Pulls highlights and whites down	Nuleidžia šviesiąsias sritis ir baltas
+	Push	Stūmimas
+	Push (Legacy)	Stūmimas (senasis)
+	Q	Q
+	RGB Split	RGB atskyrimas
+	Radial	Radialinis
+	Radial Blur	Radialinis suliejimas
+	Radial Ramp	Radialinis perėjimas
+	Radial Wipe	Radialinis nušluostymas
+	Radial Wipe (Legacy)	Radialinis nušluostymas (senasis)
+	Radius	Spindulys
+	Ramp	Perėjimas
+	Ramp Shape	Perėjimo forma
+	Random	Atsitiktinis
+	Random Seed	Atsitiktinė sėkla
+	Ray	Spindulys
+	Ray Color	Spindulio spalva
+	Ray Length	Spindulio ilgis
+	Rays	Spinduliai
+	Rays Only	Tik spinduliai
+	Red Blurriness	Raudonos suliejimas
+	Red Curve	Raudonos kreivė
+	Red Offset	Raudonos poslinkis
+	Red Power	Raudonos laipsnis
+	Red Slope	Raudonos nuolydis
+	Red-Blue	Raudona–mėlyna
+	Red-Const	Raudona–konst.
+	Red-Green	Raudona–žalia
+	Red-Red	Raudona–raudona
+	Reduce Axis	Mažinti ašį
+	Reduce Interlace Flicker	Mažinti eilučių persipynimo mirgėjimą
+	Reflected	Atspindėtas
+	Reflection Angle	Atspindžio kampas
+	Reflection Center	Atspindžio centras
+	Refraction	Lūžis
+	Reframe Offset	Perkadravimo poslinkis
+	Reframe Zoom	Perkadravimo priartinimas
+	Relaxed	Atsipalaidavęs
+	Release Time	Atleidimo laikas
+	Relief	Reljefas
+	Remove Fringe	Šalinti kraštų spalvas
+	Repeat Edge Pixels	Kartoti kraštų pikselius
+	Replace Color	Pakeisti spalvą
+	Replicate	Dauginti
+	Result	Rezultatas
+	Retro	Retro
+	Reveal Original Image	Atskleisti originalų vaizdą
+	Reverb Amount	Aidėjimo kiekis
+	Right - Left	Dešinė – kairė
+	Right - Right	Dešinė – dešinė
+	Roll (Z Axis)	Vartymas (Z ašis)
+	Room Size	Patalpos dydis
+	Rotation Amount	Pasukimo kiekis
+	Roughen	Šiurkštinti
+	Roughen Color	Šiurkštinimo spalva
+	Roughen Edges	Šiurkštinti kraštus
+	Rounded Crop	Suapvalintas apkirpimas
+	Rows	Eilutės
+	Rusty	Surūdijęs
+	Rusty Color	Rūdžių spalva
+	Saturation at 50 %	Sodrumas ties 50 %
+	Scale (Degrees)	Mastelis (laipsniais)
+	Scale Amount	Mastelio kiekis
+	Scale From	Mastelis nuo
+	Scale Height	Mastelio aukštis
+	Scale Match	Mastelio atitikimas
+	Scale To	Mastelis iki
+	Scan Lines	Skenavimo eilutės
+	Scientific Filter	Mokslinis filtras
+	Segments	Segmentai
+	Semi-tones	Pustoniai
+	Sequence Name	Sekos pavadinimas
+	Sequence Timecode	Sekos laiko kodas
+	Setting	Nustatymas
+	Shadow Angle	Šešėlio kampas
+	Shadow Blue Balance	Šešėlių mėlynos balansas
+	Shadow Blur	Šešėlio suliejimas
+	Shadow Color	Šešėlio spalva
+	Shadow Distance	Šešėlio atstumas
+	Shadow Green Balance	Šešėlių žalios balansas
+	Shadow Only	Tik šešėlis
+	Shadow Opacity	Šešėlio nepermatomumas
+	Shadow Red Balance	Šešėlių raudonos balansas
+	Shadow Size	Šešėlio dydis
+	Shadow Tint	Šešėlių atspalvis
+	Shadows Lightness	Šešėlių šviesumas
+	Shake	Drebėjimas
+	Shape Dissolve	Formos išnykimas
+	Shape Flow	Formos tekmė
+	Shape Size	Formos dydis
+	Shard Size	Šukės dydis
+	Sharp Colors	Ryškios spalvos
+	Sharpen Amount	Ryškinimo kiekis
+	Shift Center To	Perkelti centrą į
+	Show Focus Area	Rodyti fokuso sritį
+	Show Only Noise	Rodyti tik triukšmą
+	Shrink	Sutraukti
+	Shutter Angle	Užrakto kampas
+	Similarity	Panašumas
+	Simple Notch Filter	Paprastas įpjovos filtras
+	Simple Parametric EQ	Paprastas parametrinis EQ
+	Simple Text	Paprastas tekstas
+	Single-band Compressor	Vienos juostos kompresorius
+	Sinusoidal	Sinusinis
+	Skew	Iškreipti
+	Skew Axis	Iškreipimo ašis
+	Slats	Lentjuostės
+	Slice	Pjūvis
+	Slices	Pjūviai
+	Slide (Legacy)	Slinkimas (senasis)
+	Slope	Nuolydis
+	Slow	Lėtas
+	Slower Motion	Lėtesnis judesys
+	Smart Limit	Išmanioji riba
+	Smooth	Glotnus
+	Smooth Motion	Tolygus judesys
+	Smoothness	Glotnumas
+	Soft	Švelnus
+	Soft Clamp	Švelnus apribojimas
+	Soft Edges (Best Quality)	Švelnūs kraštai (geriausia kokybė)
+	Soft Wipe	Švelnus nušluostymas
+	Softness	Švelnumas
+	Solarize	Soliarizuoti
+	Solid Colors	Vientisos spalvos
+	Source Point	Šaltinio taškas
+	Source Text	Šaltinio tekstas
+	Spacer	Tarpiklis
+	Speaker Angle	Garsiakalbio kampas
+	Special Effects	Specialieji efektai
+	Spherize	Sferizuoti
+	Spiky	Dygus
+	Spill	Išsiliejimas
+	Spill Suppression	Išsiliejimo slopinimas
+	Spin	Sukimas
+	Spin Direction	Sukimosi kryptis
+	Spin Motion	Sukimosi judesys
+	Split	Padalijimas
+	Split (Legacy)	Padalijimas (senasis)
+	Spotlight	Prožektorius
+	Spread	Sklaida
+	Spring Motion	Spyruoklinis judesys
+	Square (Width Only)	Kvadratas (tik plotis)
+	Square 1:1	Kvadratas 1:1
+	Stabilization	Stabilizavimas
+	Stabilize Only	Tik stabilizuoti
+	Stabilize, Crop	Stabilizuoti, apkirpti
+	Stabilize, Crop, Auto-scale	Stabilizuoti, apkirpti, automatinis mastelis
+	Stabilize, Synthesize Edges	Stabilizuoti, sintezuoti kraštus
+	Stages	Pakopos
+	Star Wipe	Žvaigždės nušluostymas
+	Start Angle	Pradžios kampas
+	Start Color	Pradžios spalva
+	Start Point	Pradžios taškas
+	Start of Ramp	Perėjimo pradžia
+	Starting Intensity	Pradinis intensyvumas
+	Static Plates	Statinės plokštės
+	Stereo Expand	Stereo išplėtimas
+	Stereo Expander	Stereo plėtiklis
+	Stereo Phasing	Stereo fazavimas
+	Stereoscopic - Over/Under	Stereoskopinis – viršus / apačia
+	Stereoscopic - Side by Side	Stereoskopinis – greta
+	Stopband Attenuation	Slopinimo juostos silpninimas
+	Straight Color	Tiesi spalva
+	Strength	Stiprumas
+	Stretch	Ištempti
+	Stretch Gradient to Fit	Ištempti gradientą, kad tilptų
+	Stretch Map to Fit	Ištempti žemėlapį, kad tilptų
+	Stretch Width or Height	Ištempti plotį arba aukštį
+	Stretch Wipe	Tempimo nušluostymas
+	Stretch to Fit Frame	Ištempti, kad užpildytų kadrą
+	Stripe	Juosta
+	Stripes	Juostos
+	Strobe Color	Stroboskopo spalva
+	Strobe Duration (secs)	Stroboskopo trukmė (sek.)
+	Strobe Light	Stroboskopinė šviesa
+	Strobe Period (secs)	Stroboskopo periodas (sek.)
+	Stroke 2 Color	2 kontūro spalva
+	Stroke 2 Type	2 kontūro tipas
+	Stroke 2 Width	2 kontūro plotis
+	Stroke Angle	Potėpio kampas
+	Stroke Color	Kontūro spalva
+	Stroke Density	Potėpių tankis
+	Stroke Length	Kontūro ilgis
+	Stroke Length (secs)	Potėpio ilgis (sek.)
+	Stroke Only	Tik kontūras
+	Stroke Randomness	Potėpių atsitiktinumas
+	Stroke Type	Kontūro tipas
+	Stroke Width	Kontūro plotis
+	Studio Reverb	Studijos aidėjimas
+	Subclip End	Poklipio pabaiga
+	Subclip Start	Poklipio pradžia
+	Subspace Warp	Poerdvio deformacija
+	Super Narrow	Itin siauras
+	Surface Gloss	Paviršiaus blizgesys
+	Surface Material	Paviršiaus medžiaga
+	Surround Reverb	Erdvinis aidėjimas
+	Swap Channels	Sukeisti kanalus
+	Swivel	Pasisukimas
+	TV Power	Televizoriaus įjungimas
+	Tape	Juosta
+	Tape/Tube	Juosta / lempa
+	Target Aspect	Tikslinis kraštinių santykis
+	Target Color	Tikslinė spalva
+	Target Field of View	Tikslinis matymo laukas
+	Text Color	Teksto spalva
+	Thickness	Storis
+	Tile Gradient	Plytelių gradientas
+	Tilt	Pakreipimas
+	Tilt (X Axis)	Pakreipimas (X ašis)
+	Tint Color	Atspalvio spalva
+	To	Iki
+	Tolerance	Tolerancija
+	Tone	Tonas
+	Track Matte Key	Takelio matinio raktas
+	Transience	Pereinamumas
+	Transition Completion	Perėjimo užbaigtumas
+	Transition Softness	Perėjimo švelnumas
+	Transparency	Permatomumas
+	Trash	Šiukšlės
+	Travel Motion	Kelionės judesys
+	Treble	Aukštieji dažniai
+	Triangle	Trikampis
+	Tube	Lempa
+	Tube-modeled Compressor	Lempos modelio kompresorius
+	Tubular	Vamzdinis
+	Turbulent	Turbulentinis
+	Turbulent Displace	Turbulentinis poslinkis
+	Turbulent Sharp	Turbulentinis aštrus
+	Turbulent Smooth	Turbulentinis glotnus
+	Turbulent Smoother	Turbulentinis glotnesnis
+	Tweed	Tvidas
+	Twirl	Sūkurys
+	Twirl (Legacy)	Sūkurys (senasis)
+	Twirl Center	Sūkurio centras
+	Twirl Radius	Sūkurio spindulys
+	Twist	Susukimas
+	Twist Smoother	Susukimo glodintuvas
+	Ultra Key	Ultra Key
+	Uniform Spacing	Vienodi tarpai
+	Unsharp Mask	Neryškumo kaukė
+	Upper Frequency	Viršutinis dažnis
+	Upper Left	Viršuje kairėje
+	Upper Right	Viršuje dešinėje
+	Use Color Noise	Naudoti spalvotą triukšmą
+	Use End Color	Naudoti pabaigos spalvą
+	Use Glow Color	Naudoti švytėjimo spalvą
+	Use Tint Color	Naudoti atspalvio spalvą
+	VHS Damage	VHS pažeidimai
+	VR Blur	VR suliejimas
+	VR Chroma Leaks	VR chromos nutekėjimai
+	VR Chromatic Aberrations	VR chromatinės aberacijos
+	VR Color Gradients	VR spalvų gradientai
+	VR De-Noise	VR triukšmo šalinimas
+	VR Digital Glitch	VR skaitmeninis trikdis
+	VR Fractal Noise	VR fraktalinis triukšmas
+	VR Glow	VR švytėjimas
+	VR Gradient Wipe	VR gradiento nušluostymas
+	VR Iris Wipe	VR diafragmos nušluostymas
+	VR Light Leaks	VR šviesos nutekėjimai
+	VR Light Rays	VR šviesos spinduliai
+	VR Mobius Zoom	VR Mėbiuso priartinimas
+	VR Plane to Sphere	VR plokštuma į sferą
+	VR Projection	VR projekcija
+	VR Random Blocks	VR atsitiktiniai blokai
+	VR Rotate Sphere	VR sferos pasukimas
+	VR Sharpen	VR ryškinimas
+	VR Spherical Blur	VR sferinis suliejimas
+	Venetian Blinds	Venecijietiškos žaliuzės
+	Vertical 4:5	Vertikalus 4:5
+	Vertical 9:16	Vertikalus 9:16
+	Vertical Alignment	Vertikalus lygiavimas
+	Vertical Blocks	Vertikalūs blokai
+	Vertical Decentering	Vertikalus decentravimas
+	Vertical Displacement	Vertikalus poslinkis
+	Vertical Flip	Vertikalus apvertimas
+	Vertical Margin	Vertikali paraštė
+	Very Narrow	Labai siauras
+	Video 1	Vaizdas 1
+	Video 2	Vaizdas 2
+	Video 3	Vaizdas 3
+	Video 4	Vaizdas 4
+	Video 5	Vaizdas 5
+	Video 6	Vaizdas 6
+	Video 7	Vaizdas 7
+	Video 8	Vaizdas 8
+	Video Duration	Vaizdo trukmė
+	Video In Point	Vaizdo pradžios taškas
+	Video Out Point	Vaizdo pabaigos taškas
+	Video Usage	Vaizdo naudojimas
+	Vocal Booth	Įgarsinimo kabina
+	Vocal Enhancer	Balso gerintuvas
+	Volumetric Rays	Tūriniai spinduliai
+	Warm print stock with gentle roll-off	Šilta kopijavimo juosta su švelniu nuslopimu
+	Warm, soft late-afternoon light	Šilta, švelni vėlyvos popietės šviesa
+	Warp Stabilizer	Deformacijos stabilizatorius
+	Wave	Banga
+	Wave Height	Bangos aukštis
+	Wave Speed	Bangos greitis
+	Wave Warp	Bangų deformacija
+	Wave Width	Bangos plotis
+	Wavelength	Bangos ilgis
+	Wet	Šlapias
+	Wet Out	Šlapio išvestis
+	Whip	Mostas
+	Whip (Legacy)	Mostas (senasis)
+	White	Balta
+	White Input Level	Baltos įvesties lygis
+	White Is High	Balta yra aukšta
+	Widener	Platintuvas
+	Wiggle	Kraipymas
+	Wipe Angle	Nušluostymo kampas
+	Wonder Glow	Stebuklingas švytėjimas
+	Wrap Back	Apvyniojimas atgal
+	Write-on	Įrašymas
+	X Rotation	X pasukimas
+	Y Rotation	Y pasukimas
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	Gelsvai žalios šviesiosios sritys ir pamėlynuoti šešėliai iš sukryžiuotų kanalų kreivių
+	Z Position	Z padėtis
+	Z Rotation	Z pasukimas
+	Zoom Amount	Priartinimo kiekis
+	Zoom Blur	Priartinimo suliejimas
+	Zoom Strength	Priartinimo stiprumas
+	no GPU adapter: the CPU compositor is used	nėra GPU adapterio: naudojamas CPU komponavimas
+	CFA4 Project	CFA4 projektas
+	{name} (Simplified)	{name} (supaprastinta)
+	Delete Search Bin	Šalinti paieškos aplanką
+	No export preset named `{name}`	Eksporto išankstinės nuostatos pavadinimu „{name}“ nėra
+	Encoding {n}%	Koduojama {n} %
+	Stop	Stabdyti
+	Uncompressed (PCM)	Nesuspaustas (PCM)
+	Match Source ({seq_sr} Hz)	Atitikti šaltinį ({seq_sr} Hz)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	Seka, {w}x{h}, {fps} kadr./s, {rate} Hz
+	Exporting {path}	Eksportuojama {path}
+	Added to the export queue	Įtraukta į eksporto eilę
+	Import: no file chosen (agents: export.presets.import {path})	Importas: failas nepasirinktas (agentams: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	Eksportas: failas nepasirinktas (agentams: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	Grafikos problema: perjungta į programinį komponavimą
+	GPU acceleration is unavailable; preview renders on the CPU	GPU spartinimas neprieinamas; peržiūra atvaizduojama CPU
+	CFA4 hit an error	CFA4 susidūrė su klaida
+	Opened {url}	Atidaryta {url}
+	(empty)	(tuščia)
+	AAC Audio 48 kHz 320 kbps	AAC garsas 48 kHz 320 kb/s
+	Opus Audio 48 kHz 160 kbps	Opus garsas 48 kHz 160 kb/s
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stereo 48 kHz, 160 kb/s
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080, 8 Mb/s, Opus 128 kb/s stereo
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4 garsas (.m4a), stereo 48 kHz AAC-LC, 320 kb/s
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bitų
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, stereo 48 kHz 16 bitų PCM
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 bitų
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, stereo 48 kHz 24 bitų, be nuostolių
+	FLAC (lossless)	FLAC (be nuostolių)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	Animuotas GIF 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	Apple ProRes 4444 su alfa
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Application	Programa
+	Apply Guide Template	Taikyti kreipiamųjų linijų šabloną
+	Auto Save Now	Automatiškai įrašyti dabar
+	Auto-Match Loudness	Automatinis garsumo atitikimas
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	Avid stiliaus OP-Atom: DNxHR HQ vaizdo failas ir po vieną 24 bitų 48 kHz PCM failą kiekvienam kanalui (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	BMP seka
+	Baseline	Bazinė linija
+	Begin Text Editing for a Graphic Layer	Pradėti grafikos sluoksnio teksto redagavimą
+	Begins With	Prasideda
+	Blur In	Suliejimas pradžioje
+	Blur Out	Suliejimas pabaigoje
+	Brightens inside a feathered circular mask	Pašviesina plunksnuotos apskritos kaukės viduje
+	Broadcast	Transliavimas
+	Cancel Dynamic Trim	Atšaukti dinaminį kirpimą
+	Cancel Queued Export	Atšaukti eilėje esantį eksportą
+	Center align text	Lygiuoti tekstą centre
+	Change Mask	Keisti kaukę
+	Clear All Events	Išvalyti visus įvykius
+	Clear Edit Point Selection	Išvalyti karpymo taškų pasirinkimą
+	Clear Finished Exports	Išvalyti baigtus eksportus
+	Clear Poster Frame	Išvalyti plakato kadrą
+	Close Bin	Uždaryti aplanką
+	Close Sequence	Uždaryti seką
+	Contains	Turi
+	Cut to Camera 1	Karpyti į 1 kamerą
+	Cut to Camera 2	Karpyti į 2 kamerą
+	Cut to Camera 3	Karpyti į 3 kamerą
+	Cut to Camera 4	Karpyti į 4 kamerą
+	Cut to Camera 5	Karpyti į 5 kamerą
+	Cut to Camera 6	Karpyti į 6 kamerą
+	Cut to Camera 7	Karpyti į 7 kamerą
+	Cut to Camera 8	Karpyti į 8 kamerą
+	Cut to Camera 9	Karpyti į 9 kamerą
+	Darkens outside a feathered oval mask	Patamsina už plunksnuotos ovalios kaukės ribų
+	Decrease Clip Volume	Sumažinti klipo garsumą
+	Decrease Clip Volume Many	Daug sumažinti klipo garsumą
+	Decrease Font Size by Five Units	Sumažinti šrifto dydį penkiais vienetais
+	Decrease Font Size by One Unit	Sumažinti šrifto dydį vienu vienetu
+	Decrease Leading by Five Units	Sumažinti eilučių tarpą penkiais vienetais
+	Decrease Leading by One Unit	Sumažinti eilučių tarpą vienu vienetu
+	Delete Captions	Šalinti subtitrus
+	Delete Graphic Layer	Šalinti grafikos sluoksnį
+	Delete Guide Template	Šalinti kreipiamųjų linijų šabloną
+	Delete Media Cache Files	Šalinti medijos podėlio failus
+	Discard Unsaved Changes	Atmesti neįrašytus pakeitimus
+	Does Not Contain	Neturi
+	Download Speech Model	Atsisiųsti kalbos modelį
+	Dynamic Trim Stop	Sustabdyti dinaminį kirpimą
+	Edit Caption Text	Redaguoti subtitro tekstą
+	Ends With	Baigiasi
+	Entire Source	Visas šaltinis
+	EssentialSound	EssentialSound
+	Extend Next Edit To Playhead	Pratęsti kitą karpymą iki atkūrimo žymeklio
+	Extend Previous Edit To Playhead	Pratęsti ankstesnį karpymą iki atkūrimo žymeklio
+	Extend Selected Edit to Playhead	Pratęsti pasirinktą karpymą iki atkūrimo žymeklio
+	Extend Selection Down	Išplėsti pasirinkimą žemyn
+	Extend Selection Left	Išplėsti pasirinkimą kairėn
+	Extend Selection Right	Išplėsti pasirinkimą dešinėn
+	Extend Selection Up	Išplėsti pasirinkimą aukštyn
+	Fade In	Atsiradimas
+	Gaussian Blur from 0 to 60 over the last second	Gauso suliejimas nuo 0 iki 60 per paskutinę sekundę
+	Gaussian Blur from 60 to 0 over the first second	Gauso suliejimas nuo 60 iki 0 per pirmąją sekundę
+	Generate Ducking Keyframes	Generuoti slopinimo pagrindinius kadrus
+	Go to Next Edit Point	Eiti į kitą karpymo tašką
+	Go to Next Edit Point on Any Track	Eiti į kitą karpymo tašką bet kuriame takelyje
+	Go to Previous Edit Point	Eiti į ankstesnį karpymo tašką
+	Go to Previous Edit Point on Any Track	Eiti į ankstesnį karpymo tašką bet kuriame takelyje
+	Go to Selected Clip End	Eiti į pasirinkto klipo pabaigą
+	Go to Selected Clip Start	Eiti į pasirinkto klipo pradžią
+	Go to Sequence End	Eiti į sekos pabaigą
+	Go to Sequence Start	Eiti į sekos pradžią
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	H.264 1920×1080 vaizdo dalijimosi svetainėms, VBR 1 praėjimas, 16 Mb/s
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 praėjimas, tikslinė 20 Mb/s, AAC 320 kb/s
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 praėjimai, 18 Mb/s
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	H.264 3840×2160 vaizdo dalijimosi svetainėms, VBR 1 praėjimas, 45 Mb/s
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 praėjimas, tikslinė 60 Mb/s, AAC 320 kb/s
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 praėjimai, 50 Mb/s
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	H.264 9:16 vertikalus trumpiems socialinių tinklų vaizdo įrašams, mastelis užpildant, 12 Mb/s
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	H.264 sekos kadro dydžiu ir dažniu; 0,05 bito pikseliui
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	H.264 sekos kadro dydžiu ir dažniu; 0,1 bito pikseliui
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	H.264 sekos kadro dydžiu ir dažniu; bitų sparta prisitaiko prie kadro dydžio (0,2 bito pikseliui)
+	High Quality 1080p HD	Aukštos kokybės 1080p HD
+	High Quality 2160p 4K	Aukštos kokybės 2160p 4K
+	Increase Clip Volume	Padidinti klipo garsumą
+	Increase Clip Volume Many	Daug padidinti klipo garsumą
+	Increase Font Size by Five Units	Padidinti šrifto dydį penkiais vienetais
+	Increase Font Size by One Unit	Padidinti šrifto dydį vienu vienetu
+	Increase Leading by Five Units	Padidinti eilučių tarpą penkiais vienetais
+	Increase Leading by One Unit	Padidinti eilučių tarpą vienu vienetu
+	Large blocks resolving to the picture over the first second	Dideli blokai, per pirmąją sekundę virstantys vaizdu
+	Left align text	Lygiuoti tekstą kairėje
+	Looping GIF, 640×360 at 15 fps	Kartojamas GIF, 640×360, 15 kadr./s
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bitų 4:2:2), 24 bitų 48 kHz PCM, pradžios laiko kodas
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High ilgas GOP (0,3 bito pikseliui), 24 bitų 48 kHz PCM
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 bitų 48 kHz PCM, pradžios laiko kodas
+	Main	Pagrindinis
+	Mark In (Hover Scrub)	Pažymėti pradžią (peržiūra užvedus)
+	Mark Out (Hover Scrub)	Pažymėti pabaigą (peržiūra užvedus)
+	Masks	Kaukės
+	Match Source – Adaptive High Bitrate	Atitikti šaltinį – prisitaikanti didelė bitų sparta
+	Match Source – Adaptive Low Bitrate	Atitikti šaltinį – prisitaikanti maža bitų sparta
+	Match Source – Adaptive Medium Bitrate	Atitikti šaltinį – prisitaikanti vidutinė bitų sparta
+	Matches	Atitinka
+	Maximize or Restore Active Frame	Išdidinti arba atkurti aktyvų rėmelį
+	Maximize or Restore Frame Under Cursor	Išdidinti arba atkurti rėmelį po žymekliu
+	Media Browser Settings	Medijos naršyklės nustatymai
+	MediaBrowser	MediaBrowser
+	MediaCache	MediaCache
+	Merge Captions	Sujungti subtitrus
+	Mixer	Maišytuvas
+	Mosaic In	Mozaika pradžioje
+	Move All Audio Targets Down	Perkelti visus garso taikinius žemyn
+	Move All Audio Targets Up	Perkelti visus garso taikinius aukštyn
+	Move All Video Targets Down	Perkelti visus vaizdo taikinius žemyn
+	Move All Video Targets Up	Perkelti visus vaizdo taikinius aukštyn
+	Move Selection Down	Perkelti pasirinkimą žemyn
+	Move Selection End	Perkelti pasirinkimą į pabaigą
+	Move Selection Home	Perkelti pasirinkimą į pradžią
+	Move Selection Left	Perkelti pasirinkimą kairėn
+	Move Selection Page Down	Perkelti pasirinkimą puslapiu žemyn
+	Move Selection Page Up	Perkelti pasirinkimą puslapiu aukštyn
+	Move Selection Right	Perkelti pasirinkimą dešinėn
+	Move Selection Up	Perkelti pasirinkimą aukštyn
+	Multicam	Kelios kameros
+	Navigate to End of Segment	Pereiti į segmento pabaigą
+	Navigate to Next Line	Pereiti į kitą eilutę
+	Navigate to Next Word	Pereiti į kitą žodį
+	Navigate to Previous Line	Pereiti į ankstesnę eilutę
+	Navigate to Previous Word	Pereiti į ankstesnį žodį
+	Navigate to Start of Segment	Pereiti į segmento pradžią
+	Navigation	Naršymas
+	Next Multi-Camera Page	Kitas kelių kamerų puslapis
+	Nudge Clip Selection Down	Pastumti pasirinktus klipus žemyn
+	Nudge Clip Selection Left Five Frames	Pastumti pasirinktus klipus kairėn penkiais kadrais
+	Nudge Clip Selection Left One Frame	Pastumti pasirinktus klipus kairėn vienu kadru
+	Nudge Clip Selection Right Five Frames	Pastumti pasirinktus klipus dešinėn penkiais kadrais
+	Nudge Clip Selection Right One Frame	Pastumti pasirinktus klipus dešinėn vienu kadru
+	Nudge Clip Selection Up	Pastumti pasirinktus klipus aukštyn
+	Nudge Selected Object down by five	Pastumti pasirinktą objektą žemyn per penkis
+	Nudge Selected Object down by one	Pastumti pasirinktą objektą žemyn per vieną
+	Nudge Selected Object to left by five	Pastumti pasirinktą objektą kairėn per penkis
+	Nudge Selected Object to left by one	Pastumti pasirinktą objektą kairėn per vieną
+	Nudge Selected Object to right by five	Pastumti pasirinktą objektą dešinėn per penkis
+	Nudge Selected Object to right by one	Pastumti pasirinktą objektą dešinėn per vieną
+	Nudge Selected Object up by five	Pastumti pasirinktą objektą aukštyn per penkis
+	Nudge Selected Object up by one	Pastumti pasirinktą objektą aukštyn per vieną
+	Nudge Volume +1dB	Garsumas +1 dB
+	Nudge Volume +3dB	Garsumas +3 dB
+	Nudge Volume -1dB	Garsumas -1 dB
+	Nudge Volume -3dB	Garsumas -3 dB
+	Numbered BMP stills (24-bit)	Sunumeruoti BMP nejudantys vaizdai (24 bitų)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	JPEG seka
+	Targa Sequence	Targa seka
+	DPX Sequence	DPX seka
+	Numbered JPEG stills (quality 90)	Sunumeruoti JPEG nejudantys vaizdai (kokybė 90)
+	Numbered Targa stills (24-bit, uncompressed)	Sunumeruoti Targa nejudantys vaizdai (24 bitų, nesuspausti)
+	Numbered DPX stills (10-bit RGB)	Sunumeruoti DPX nejudantys vaizdai (10 bitų RGB)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	OpenEXR seka
+	Numbered OpenEXR stills (half float, linear, uncompressed)	Sunumeruoti OpenEXR nejudantys vaizdai (pusinis slankusis kablelis, linijiniai, nesuspausti)
+	Numbered PNG stills at the sequence's frame size	Sunumeruoti PNG nejudantys vaizdai sekos kadro dydžiu
+	Numbered TIFF stills (RGB, 8-bit)	Sunumeruoti TIFF nejudantys vaizdai (RGB, 8 bitų)
+	Opacity 0 → 100 % over the first second	Nepermatomumas 0 → 100 % per pirmąją sekundę
+	Opacity 100 → 0 % over the last second	Nepermatomumas 100 → 0 % per paskutinę sekundę
+	Open Bin	Atidaryti aplanką
+	Open Search	Atidaryti paiešką
+	PNG	PNG
+	PNG Sequence	PNG seka
+	Panel	Skydelis
+	PiP 35% Upper Right	PiP 35 % viršuje dešinėje
+	Picture-in-picture: 35 % scale in the upper right	Vaizdas vaizde: 35 % mastelis viršuje dešinėje
+	Play In to Out with Preroll/Postroll	Leisti nuo pradžios iki pabaigos su įrašu prieš / po
+	Play from Playhead to Out Point	Leisti nuo atkūrimo žymeklio iki pabaigos taško
+	Previous Multi-Camera Page	Ankstesnis kelių kamerų puslapis
+	ProjectPanel	ProjectPanel
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10 bitų 4:2:2), 24 bitų 48 kHz PCM
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12 bitų 4:2:2), 24 bitų 48 kHz PCM
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8 bitų 4:2:2), 24 bitų 48 kHz PCM
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8 bitų 4:2:2), 24 bitų 48 kHz PCM
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8 bitų 4:2:2), 24 bitų 48 kHz PCM
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, 24 bitų 48 kHz PCM
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, 24 bitų 48 kHz PCM
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, 24 bitų 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), 24 bitų 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) su alfa kanalu, 24 bitų 48 kHz PCM
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), 24 bitų 48 kHz PCM
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, 24 bitų 48 kHz PCM
+	Quit CFA4	Išeiti iš CFA4
+	Right align text	Lygiuoti tekstą dešinėje
+	Ripple Trim Next Edit to Playhead	Kirpti kitą karpymą iki atkūrimo žymeklio su poslinkiu
+	Ripple Trim Previous Edit to Playhead	Kirpti ankstesnį karpymą iki atkūrimo žymeklio su poslinkiu
+	Select Camera 1	Pasirinkti 1 kamerą
+	Select Camera 2	Pasirinkti 2 kamerą
+	Select Camera 3	Pasirinkti 3 kamerą
+	Select Camera 4	Pasirinkti 4 kamerą
+	Select Camera 5	Pasirinkti 5 kamerą
+	Select Camera 6	Pasirinkti 6 kamerą
+	Select Camera 7	Pasirinkti 7 kamerą
+	Select Camera 8	Pasirinkti 8 kamerą
+	Select Camera 9	Pasirinkti 9 kamerą
+	Select Clip at Playhead	Pasirinkti klipą ties atkūrimo žymekliu
+	Select Find Box	Pasirinkti paieškos lauką
+	Select Next Clip	Pasirinkti kitą klipą
+	Select Next Panel	Pasirinkti kitą skydelį
+	Select Previous Clip	Pasirinkti ankstesnį klipą
+	Select Previous Panel	Pasirinkti ankstesnį skydelį
+	Select to Next Line	Pažymėti iki kitos eilutės
+	Select to Next Word	Pažymėti iki kito žodžio
+	Select to Previous Line	Pažymėti iki ankstesnės eilutės
+	Select to Previous Word	Pažymėti iki ankstesnio žodžio
+	Select to Segment End	Pažymėti iki segmento pabaigos
+	Select to Segment Start	Pažymėti iki segmento pradžios
+	Set Creative Look	Nustatyti kūrybinę išvaizdą
+	Set Input LUT	Nustatyti įvesties LUT
+	Set Project Panel View	Nustatyti projekto skydelio rodinį
+	Show Next Screen	Rodyti kitą ekraną
+	Show Previous Screen	Rodyti ankstesnį ekraną
+	Show Program Transcript	Rodyti programos transkripciją
+	Slide Clip Selection Left Five Frames	Paslinkti pasirinktus klipus kairėn penkiais kadrais
+	Slide Clip Selection Left One Frame	Paslinkti pasirinktus klipus kairėn vienu kadru
+	Slide Clip Selection Right Five Frames	Paslinkti pasirinktus klipus dešinėn penkiais kadrais
+	Slide Clip Selection Right One Frame	Paslinkti pasirinktus klipus dešinėn vienu kadru
+	Slip Clip Selection Left Five Frames	Praslinkti pasirinktų klipų turinį kairėn penkiais kadrais
+	Slip Clip Selection Left One Frame	Praslinkti pasirinktų klipų turinį kairėn vienu kadru
+	Slip Clip Selection Right Five Frames	Praslinkti pasirinktų klipų turinį dešinėn penkiais kadrais
+	Slip Clip Selection Right One Frame	Praslinkti pasirinktų klipų turinį dešinėn vienu kadru
+	Social Vertical 1080×1920	Socialinis vertikalus 1080×1920
+	Soft Vignette	Švelni vinjetė
+	Source In/Out	Šaltinio pradžia / pabaiga
+	Split Caption	Padalyti subtitrą
+	Stack Clips	Sudėti klipus į krūvą
+	Start Export Queue	Paleisti eksporto eilę
+	Start Voice-over Recording	Pradėti užkadrinio balso įrašymą
+	Step Back Five Frames	Penkiais kadrais atgal
+	Step Back One Frame	Vienu kadru atgal
+	Step Forward Five Frames	Penkiais kadrais pirmyn
+	Step Forward One Frame	Vienu kadru pirmyn
+	Stop Export Queue	Stabdyti eksporto eilę
+	Stop Multi-Camera Recording	Stabdyti kelių kamerų įrašymą
+	Sync Voice-over Capture	Sinchronizuoti užkadrinio balso įrašymą
+	TIFF	TIFF
+	TIFF Sequence	TIFF seka
+	TextPanel	TextPanel
+	Thumbnail Size Next	Kitas miniatiūrų dydis
+	Thumbnail Size Previous	Ankstesnis miniatiūrų dydis
+	Toggle All Audio Targets	Perjungti visus garso taikinius
+	Toggle All Source Audio	Perjungti visą šaltinio garsą
+	Toggle All Source Video	Perjungti visą šaltinio vaizdą
+	Toggle All Video Targets	Perjungti visus vaizdo taikinius
+	Toggle Audio During Scrubbing	Perjungti garsą peržiūrint
+	Toggle Full Screen	Perjungti viso ekrano režimą
+	Toggle Mute for All Targeted Audio Tracks	Perjungti nutildymą visiems taikomiems garso takeliams
+	Toggle Solo for All Targeted Audio Tracks	Perjungti solo visiems taikomiems garso takeliams
+	Toggle Source/Program Monitor Focus	Perjungti šaltinio / programos monitoriaus fokusą
+	Toggle Target Audio 1	Perjungti 1 garso taikinį
+	Toggle Target Audio 2	Perjungti 2 garso taikinį
+	Toggle Target Audio 3	Perjungti 3 garso taikinį
+	Toggle Target Audio 4	Perjungti 4 garso taikinį
+	Toggle Target Audio 5	Perjungti 5 garso taikinį
+	Toggle Target Audio 6	Perjungti 6 garso taikinį
+	Toggle Target Audio 7	Perjungti 7 garso taikinį
+	Toggle Target Audio 8	Perjungti 8 garso taikinį
+	Toggle Target Video 1	Perjungti 1 vaizdo taikinį
+	Toggle Target Video 2	Perjungti 2 vaizdo taikinį
+	Toggle Target Video 3	Perjungti 3 vaizdo taikinį
+	Toggle Target Video 4	Perjungti 4 vaizdo taikinį
+	Toggle Target Video 5	Perjungti 5 vaizdo taikinį
+	Toggle Target Video 6	Perjungti 6 vaizdo taikinį
+	Toggle Target Video 7	Perjungti 7 vaizdo taikinį
+	Toggle Target Video 8	Perjungti 8 vaizdo taikinį
+	Toggle Track Output for All Targeted Video Tracks	Perjungti takelio išvestį visiems taikomiems vaizdo takeliams
+	Toggle Trim Type	Perjungti kirpimo tipą
+	Toggle View	Perjungti rodinį
+	Track Selected Mask	Sekti pasirinktą kaukę
+	Trim Next Edit to Playhead	Kirpti kitą karpymą iki atkūrimo žymeklio
+	Trim Previous Edit to Playhead	Kirpti ankstesnį karpymą iki atkūrimo žymeklio
+	Trimming	Kirpimas
+	Unstack Clips	Išskleisti klipų krūvą
+	CRF (constant quality)	CRF (pastovi kokybė)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	Užkadrinio balso įrašymas
+	Voiceover	Užkadrinis balsas
+	WAV, stereo 48 kHz 16-bit PCM	WAV, stereo 48 kHz 16 bitų PCM
+	WAV, stereo 48 kHz 24-bit PCM	WAV, stereo 48 kHz 24 bitų PCM
+	Warm Tint	Šiltas atspalvis
+	Warm highlights, brown shadows	Šiltos šviesiosios sritys, rudi šešėliai
+	Waveform Audio 48 kHz 16-bit	Waveform garsas 48 kHz 16 bitų
+	Waveform Audio 48 kHz 24-bit	Waveform garsas 48 kHz 24 bitų
+	Web & Social	Internetas ir socialiniai tinklai
+	Write Automation	Rašyti automatizavimą
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	Programos monitoriaus mastelis 100 %
+	Zoom Program Monitor to Fit	Programos monitoriaus mastelis pagal langą
+	Zoom Source Monitor to 100%	Šaltinio monitoriaus mastelis 100 %
+	Zoom Source Monitor to Fit	Šaltinio monitoriaus mastelis pagal langą
+	Cinematic	Kinematografinis
+	Film Emulation	Kino juostos imitacija
+	Technical	Techninis
+	Teal Shadows, Warm Skin	Žalsvai mėlyni šešėliai, šilta oda
+	Night Exterior	Naktis lauke
+	Golden Dusk	Auksinė sutema
+	Steel Blue	Plieno mėlyna
+	Hard Sun	Kieta saulė
+	Faded Print	Išblukusi kopija
+	Silver Retention	Sidabro išlaikymas
+	Cross Processed	Kryžminis apdorojimas
+	Warm Negative	Šiltas negatyvas
+	Neutral Mono	Neutralus vienspalvis
+	Hard Mono	Kietas vienspalvis
+	Sepia Tone	Sepijos tonas
+	Cold Mono	Šaltas vienspalvis
+	Lift Shadows	Pakelti šešėlius
+	Protect Highlights	Apsaugoti šviesiąsias sritis
+	Half Saturation	Pusė sodrumo
+	Boost Vibrance	Padidinti gyvumą
+	Legal Range Squeeze	Suspausti į leistiną diapazoną
+	A boxed label with a round pointer; move the label and the pointer follows.	Etiketė rėmelyje su apvalia rodykle; perkelkite etiketę ir rodyklė seks.
+	A rounded tag that fits its text, with a status dot.	Suapvalinta žyma, prisitaikanti prie teksto, su būsenos tašku.
+	A title on a rounded card with a soft shadow.	Pavadinimas ant suapvalintos kortelės su švelniu šešėliu.
+	Accent Color	Akcento spalva
+	Bar Color	Juostos spalva
+	Box Color	Langelio spalva
+	Box Opacity	Langelio nepermatomumas
+	Callout – Pointer	Išnaša – rodyklė
+	Callout – Tag	Išnaša – žyma
+	Callouts	Išnašos
+	Credits	Titrai
+	Dot Color	Taško spalva
+	Heading	Antraštė
+	Large centred title, accent rule and subtitle.	Didelis centruotas pavadinimas, akcentinė linija ir paantraštė.
+	Lower Third – Rule	Apatinis trečdalis – linija
+	Lower Third – Slab	Apatinis trečdalis – plokštė
+	Lower Thirds	Apatiniai trečdaliai
+	Name Color	Vardo spalva
+	Name Size	Vardo dydis
+	Name and role on a coloured slab that widens with the name.	Vardas ir pareigos ant spalvotos plokštės, kuri platėja pagal vardą.
+	Name over a thin rule that always matches the name's width.	Vardas virš plonos linijos, kurios plotis visada atitinka vardo plotį.
+	Pointer Color	Rodyklės spalva
+	Role	Pareigos
+	Rule Color	Linijos spalva
+	Show Dot	Rodyti tašką
+	Show Role	Rodyti pareigas
+	Slab Color	Plokštės spalva
+	Tag Color	Žymos spalva
+	Title Color	Pavadinimo spalva
+	Title Size	Pavadinimo dydis
+	Title – Boxed	Pavadinimas – rėmelyje
+	Title – Centered	Pavadinimas – centre
+	Titles	Pavadinimai
+	End Credits	Baigiamieji titrai
+	End Credits – Roll	Baigiamieji titrai – slinkimas
+	Ticker – Crawl	Bėganti eilutė – slinkimas
+	Centred credits that roll up from below the frame and leave at the top.	Centruoti titrai, kylantys iš apačios už kadro ir išeinantys viršuje.
+	A news-style line that crawls in from the right and leaves at the left.	Žinių stiliaus eilutė, įslenkanti iš dešinės ir išeinanti kairėje.
+	The language changed but could not be saved: {e}	Kalba pakeista, bet jos nepavyko įrašyti: {e}
+	no Chinese font is installed on this system; the interface stays in English	šioje sistemoje neįdiegtas kiniškas šriftas; sąsaja lieka anglų kalba
+	no Korean font is installed on this system; the interface stays in English	šioje sistemoje neįdiegtas korėjietiškas šriftas; sąsaja lieka anglų kalba
+	no Georgian font is installed on this system; the interface stays in English	šioje sistemoje neįdiegtas gruziniškas šriftas; sąsaja lieka anglų kalba
+	no Japanese font is installed on this system; the interface stays in English	šioje sistemoje neįdiegtas japoniškas šriftas; sąsaja lieka anglų kalba
+	Main (8-bit)	Main (8 bitų)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 bitų
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 bitų su alfa
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bitų
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 bitų, Film Scan 1, 24 bitų 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 bitų su alfa kanalu, Film Scan 1, 24 bitų 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bitų, Film Scan 1, 24 bitų 48 kHz PCM
+	Deselect All Project Items	Atšaukti visų projekto elementų pasirinkimą
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	Pasirinkti visus projekto elementus
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	Vilkite: perkelti · Alt+spustelėjimas: glotnus / kampinis · Ctrl+spustelėjimas: šalinti
+	Drag inward to round the corners	Vilkite į vidų, kad suapvalintumėte kampus
+	Play Source	Leisti šaltinį
+	Source Play/Stop	Šaltinio leidimas / stabdymas
+	Stop Source	Stabdyti šaltinį
+	Clear Transition	Išvalyti perėjimą
+	Fill Type	Užpildo tipas
+	Gradient Angle	Gradiento kampas
+	Edit Narration	Redaguoti įgarsinimą
+	Resize floating panel	Keisti slankiojo skydelio dydį
+	Get Project Notes	Gauti projekto pastabas
+	Edit Project Notes	Redaguoti projekto pastabas
+	Use Effect Shutter Angle	Naudoti efekto užrakto kampą
+	Safe graphics mode: {mode}	Saugus grafikos režimas: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Ankstesnis paleidimas su numatytąja grafika nepavyko. Paprastai tai išsprendžia grafikos tvarkyklės atnaujinimas.
+	Use Default Graphics	Naudoti numatytąją grafiką
+	The default graphics are used from the next start.	Numatytoji grafika bus naudojama nuo kito paleidimo.
+	DirectX 12 only	Tik DirectX 12
+	software rendering	programinis atvaizdavimas
+	Opens in your web browser: {url}	Atidaroma jūsų naršyklėje: {url}
+	Saves this session's log and shows it in your file manager.	Įrašo šio seanso žurnalą ir parodo jį failų tvarkytuvėje.
+	Shows a report on this computer.	Rodo ataskaitą apie šį kompiuterį.
+	Shows the version, community links and credits in a CFA4 window.	Rodo versiją, bendruomenės nuorodas ir padėkas CFA4 lange.
+	Couldn't open your web browser	Nepavyko atidaryti jūsų naršyklės
+	Open this address in your browser yourself:	Atidarykite šį adresą naršyklėje patys:
+	Reset Interface Zoom	Atstatyti sąsajos mastelį
+	Stereoscopic 3D	Stereoskopinis 3D
+	Swap Eyes	Sukeisti akis
+	Over/Under	Viršus / apačia
+	Side by Side	Greta
+	Stereo to 2D	Stereo į 2D
+	Eye	Akis
+	Stereo Parallax	Stereo paralaksas
+	Horizontal Shift	Horizontalus poslinkis
+	Slit Scan	Plyšinis skenavimas
+	Time Span (seconds)	Laiko intervalas (sekundėmis)
+	Current Frame At	Dabartinis kadras ties
+	Blend Slices	Sulieti pjūvius
+	Creative Looks	Kūrybinės išvaizdos
+	Film Grain	Juostos grūdėtumas
+	Animated	Animuotas
+	Color Grain	Spalvotas grūdėtumas
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080, 8 Mb/s, AAC 160 kb/s, 6 sekundžių fragmentuoti MP4 segmentai
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 programos srautas
+	MPEG-2 Transport Stream HD 1080	MPEG-2 transporto srautas HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480, 29,97 kadr./s, 16:9 anamorfinis, 6 Mb/s, GOP 18, 16 bitų 48 kHz LPCM, .mpg (DVD paruoštas srautas; be VIDEO_TS kūrimo)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576, 25 kadr./s, 16:9 anamorfinis, 6 Mb/s, GOP 15, 16 bitų 48 kHz LPCM, .mpg (DVD paruoštas srautas; be VIDEO_TS kūrimo)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2 vaizdas (Main profilis 4:2:0, 0,4 bito pikseliui) sekos kadro dydžiu ir dažniu, 16 bitų 48 kHz LPCM, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 vaizdas 1920×1080, vidutiniškai 18 Mb/s, AAC 192 kb/s, .ts
+	Six-Point Pin	Šešių taškų prisegimas
+	Upper Center	Viršuje centre
+	Lower Center	Apačioje centre
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Naudoti FFmpeg failams, kurių CFA4 variklis negali atidaryti (FFmpeg 9.0.2 ar naujesnis, GPL-3 versija)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Naudoti sistemos GStreamer failams, kurių negali atidaryti nei variklis, nei FFmpeg
+	Analyze Source for Smart Cut	Analizuoti šaltinį išmaniajam karpymui
+	Plan Smart Cut	Planuoti išmanųjį karpymą
+	Run Smart Cut	Vykdyti išmanųjį karpymą
+	No sequence open. Double-click a sequence in the Project panel.	Neatidaryta jokia seka. Dukart spustelėkite seką projekto skydelyje.
+	English (US)	Anglų (JAV)
+	English (UK)	Anglų (JK)
+	English (Australia)	Anglų (Australija)
+export.summary	High	aukšta
+export.summary	Medium	vidutinė
+export.summary	Low	žema
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Garsas nukopijuotas: {tracks}
+	Audio track {track} is not copied: {why}	Garso takelis {track} nekopijuojamas: {why}
+	Point tracker	Taško sekiklis
+	Correlation tracker	Koreliacinis sekiklis
+	DCP language	DCP kalba
+	None (RFC 5646 tag, e.g. en-US)	Nėra (RFC 5646 žymė, pvz., lt-LT)
+	ISDCF name	ISDCF pavadinimas
+	Name the DCP folder by the Digital Cinema Naming Convention	Pavadinti DCP aplanką pagal Digital Cinema Naming Convention
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/lt/ (common.tsv and the PDF-editor catalog) at aa36bd8, 2026-11-10.
+# MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's
+# ATTRIBUTION.md (lt). These rows were written clean-room there; only rows whose English and
+# meaning match CFA4's were taken, and a few were reworded above for video editing.
+
+	Blue	Mėlyna
+	Bottom	Apačia
+	Clear	Išvalyti
+	Color	Spalva
+	Copy	Kopijuoti
+	Custom	Pasirinktinis
+	Cut	Iškirpti
+	Discard	Atmesti
+	Distribute	Paskirstyti
+	Done	Atlikta
+	Duplicate	Dubliuoti
+	Edit	Redaguoti
+	Export	Eksportuoti
+	File	Failas
+	Fit	Pritaikyti
+	Flatten	Suplokštinti
+	Format	Formatas
+	Graphic	Grafika
+	Green	Žalia
+	Help	Žinynas
+	Insert	Įterpti
+	Language	Kalba
+	Left	Kairė
+	Link	Saitas
+	Name	Pavadinimas
+	Opacity	Nepermatomumas
+	Output	Išvestis
+	Panels	Skydeliai
+	Polygon	Daugiakampis
+	Position	Padėtis
+	Purple	Violetinė
+	Ready	Parengta
+	Rectangle	Stačiakampis
+	Redo	Pakartoti
+	Revert	Grąžinti įrašytą versiją
+	Right	Dešinė
+	Rotation	Pasukimas
+	Save	Įrašyti
+	Search	Ieškoti
+	Select All	Pažymėti viską
+	Status	Būsena
+	Text	Tekstas
+	Tools	Įrankiai
+	Top	Viršus
+	Type	Tipas
+	Undo	Anuliuoti
+	View	Rodinys
+	Yellow	Geltona
+	Red	Raudona
+	Appearance	Išvaizda
+	Dark	Tamsi
+	Light	Šviesi
+	Description	Aprašas
+	Cancel	Atšaukti
+	Off	Išjungta
+	Auto	Automatiškai
+	None	Nėra
+	Refresh	Atnaujinti
+	Size	Dydis
+	Align	Lygiuoti
+	Align left	Lygiuoti kairėje
+	Align right	Lygiuoti dešinėje
+	Angle	Kampas
+	Apply	Taikyti
+	Center	Centruoti
+	Distance	Atstumas
+	Font	Šriftas
+	Justify	Abipusė lygiuotė
+	Layers	Sluoksniai
+	OK	Gerai
+	Path	Kelias
+	Solid	Vientisas
+	Style	Stilius
+	Underline	Pabraukti
+	Advanced	Išplėstiniai
+	Default	Numatytasis
+	Download	Atsisiųsti
+	High	Didelis
+	Low	Mažas
+	Preview	Peržiūra
+	Name:	Pavadinimas:
+	Rename	Pervadinti
+	Zoom	Mastelis
+	Description:	Aprašas:
+	Add	Pridėti
+	Edit…	Redaguoti…
+	Preferences	Nuostatos
+	Double-click	Dukart spustelėti
+	English	Anglų
+	General	Bendrieji
+	Horizontal	Horizontaliai
+	Location	Vieta
+	Vertical	Vertikaliai
+	Next page	Kitas puslapis
+	Previous page	Ankstesnis puslapis
+	Version	Versija
+	Command	Komanda
+	Export…	Eksportuoti…
+	Orientation:	Padėtis:
+	Height:	Aukštis:
+	Width:	Plotis:
+	All	Visi
+	Color:	Spalva:
+	Folder	Aplankas
+	Options	Parinktys
+	Format:	Formatas:
+	Replace	Pakeisti
+	Compression	Glaudinimas
+	Medium	Vidutinė
+	Quality	Kokybė
+	Summary	Suvestinė
+	Home	Pradžia
+	Recent	Paskiausiai naudoti
+	Restore	Atkurti
+	Show:	Rodyti:
+	Clear All	Išvalyti viską
+	Error	Klaida
+	Strikethrough	Perbraukti
+	About	Apie programą
+	Contributors	Bendraautoriai
+	Models	Modeliai
+	Show	Rodyti
+	Sort	Rūšiuoti
+	Reverse the order	Apversti tvarką
+	Grab bag	Vardų rinkinys
+	Table	Lentelė
+	No contributor data was built into this copy.	Šioje programos kopijoje nėra duomenų apie bendraautorius.
+	No model credits were built into this copy.	Šioje programos kopijoje nėra naudotų modelių sąrašo.
+	Company	Įmonė
+	Model	Modelis
+	Commits	Pakeitimų įrašai
+	% of all commits	Visų pakeitimų įrašų dalis (%)
+	Lines +/−	Eilutės +/−
+	Username	Naudotojo vardas
+	Display name	Rodomas vardas
+	Real name	Tikras vardas
+	Name (A–Z)	Vardas (A–Z)
+	Merged PRs	Sujungtos pakeitimų užklausos
+	Lines added	Pridėtos eilutės
+	Lines deleted	Pašalintos eilutės
+	Line delta	Eilučių pokytis
+	Binary assets added	Pridėti dvejetainiai ištekliai
+	Binary assets removed	Pašalinti dvejetainiai ištekliai
+	First commit	Pirmas pakeitimų įrašas
+	Last commit	Paskutinis pakeitimų įrašas
+	Clear Recent Files	Išvalyti paskiausiai naudotų failų sąrašą
+	Black	Juoda
+	Circle	Apskritimas
+	Diamond	Rombas
+	Height	Aukštis
+	Invert	Invertuoti
+	Maximum	Didžiausia reikšmė
+	Minimum	Mažiausia reikšmė
+	Move	Perkelti
+	On	Įjungta
+	Square	Kvadratas
+	Star	Žvaigždė
+	Width	Plotis
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Titrai iš skaičiuoklės
+	A .ods, .xlsx or CSV credits sheet	Titrų lentelė .ods, .xlsx arba CSV formatu
+	The spreadsheet's folder	Skaičiuoklės aplankas
+	Built-in styles	Įtaisyti stiliai
+	Spreadsheet	Skaičiuoklė
+	Sheet	Lapas
+	Pictures	Paveikslėliai
+	Styling	Stilius
+	Page	Puslapis
+	Warnings	Įspėjimai
+	Moment in the page	Momentas puslapyje
+	Place at Playhead	Įdėti ties atkūrimo žymekliu
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Skaičiuoklės (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Titrų stilius (*.json)
+	Card	Kortelė
+	Credits Spreadsheet	Titrų skaičiuoklė
+	Reading…	Skaitoma…
+	(one table)	(viena lentelė)
+	Total: {time}	Iš viso: {time}
+	Row {row}: {message}	{row} eilutė: {message}
+	Choose a credits spreadsheet.	Pasirinkite titrų skaičiuoklę.
+	No preview	Peržiūros nėra
+	Placing…	Dedama…
+	Placed {n} pages on the timeline.	Į laiko juostą įdėta puslapių: {n}.
+	Credits Page Picture	Titrų puslapio paveikslėlis
+	Preview Credits	Titrų peržiūra
+	Credits Styles	Titrų stiliai

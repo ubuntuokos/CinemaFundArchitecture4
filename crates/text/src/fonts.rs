@@ -170,7 +170,7 @@ pub struct Face {
     pub id: FaceId,
     pub info: FaceInfo,
     bytes: OnceLock<Option<FaceBytes>>,
-    shaper: OnceLock<harfrust::ShaperData>,
+    shaper: OnceLock<Option<harfrust::Font>>,
 }
 
 #[derive(Clone)]
@@ -222,9 +222,19 @@ impl Face {
     pub fn font(&self) -> Option<FontRef<'_>> {
         FontRef::from_index(self.bytes()?, self.info.index).ok()
     }
-    pub(crate) fn shaper_data(&self) -> Option<&harfrust::ShaperData> {
-        let f = self.font()?;
-        Some(self.shaper.get_or_init(|| harfrust::ShaperData::new(&f)))
+    /// The face prepared for shaping (None if the file is missing or unreadable). It shares the
+    /// bytes with [`Face::font`]; harfrust caches its layout tables inside it.
+    pub(crate) fn shaper_font(&self) -> Option<&harfrust::Font> {
+        self.shaper
+            .get_or_init(|| {
+                self.bytes()?;
+                let blob: harfrust::font::Blob = match self.bytes.get()?.as_ref()? {
+                    FaceBytes::Static(b) => (*b).into(),
+                    FaceBytes::Shared(b) => harfrust::font::Blob::from(b.clone() as Arc<dyn AsRef<[u8]> + Send + Sync>),
+                };
+                harfrust::Font::new(blob, self.info.index)
+            })
+            .as_ref()
     }
     pub fn units_per_em(&self) -> f32 {
         self.font().map(|f| f.metrics(Size::unscaled(), LocationRef::default()).units_per_em as f32).filter(|u| *u > 0.0).unwrap_or(1000.0)

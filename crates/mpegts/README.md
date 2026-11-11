@@ -85,9 +85,10 @@ let file = m.finish()?;
   (MPEG-2 video) and 0x0F (AAC ADTS).
 - **Program streams**: MPEG-2 pack headers (SCR, program_mux_rate) before every PES packet, packs
   of 2048 bytes at most, the system header (rate bound, P-STD buffer bounds) in the first pack,
-  the program end code last. Video on stream id 0xE0; 16-bit DVD LPCM in private stream 1
-  (sub-stream 0xA0, the 6-byte LPCM header: rate 48 / 96 / 44.1 / 32 kHz, 1-8 channels), each
-  packet whole sample frames.
+  the program end code last. Video on stream id 0xE0; 16-, 20- or 24-bit DVD LPCM in private
+  stream 1 (sub-stream 0xA0, the 6-byte LPCM header: word length, rate 48 / 96 / 44.1 / 32 kHz,
+  1-8 channels), each packet whole sample frames (20 / 24 bits: whole groups of two frames, the
+  upper 16 bits of the group's samples, then their low bits).
 
 ## Tests
 

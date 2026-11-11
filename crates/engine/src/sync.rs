@@ -266,7 +266,7 @@ mod chunk_tests {
     use cfa4_media::{AudioStreamInfo, MAX_AUDIO_BUFFER_BYTES};
 
     fn stream(sample_rate: u32, channels: u32) -> AudioStreamInfo {
-        AudioStreamInfo { sample_rate, channels, codec: String::new(), bits_per_sample: None }
+        AudioStreamInfo { sample_rate, channels, codec: String::new(), bits_per_sample: None, speakers: Vec::new() }
     }
 
     /// The decoder's buffer for one chunk never exceeds the audio buffer limit, from stereo to the

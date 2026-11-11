@@ -1,8 +1,8 @@
 {
   "audit": "AV2-00",
-  "generated_utc": "2026-10-30T16:00:26Z",
+  "generated_utc": "2026-11-05T06:21:38Z",
   "host": {
-    "os": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+    "os": "Linux-6.18.44-fc-v236-x86_64-with-glibc2.39",
     "machine": "x86_64",
     "cpu_count": 4
   },
@@ -24,8 +24,10 @@
       "build": "cargo build --release -p rav2d-cli (rustc 1.97.1)"
     },
     "dav2d": {
-      "status": "BLOCKED",
-      "reason": "code.videolan.org and download mirrors refused by the session network policy"
+      "binary": "$DAV2D",
+      "version": "0.0.1-554-g326a357e",
+      "commit": "326a357ee072d65ccfee4a48c01dc0f0556fd0ed",
+      "build": "meson setup build --buildtype=release && ninja -C build"
     }
   },
   "vectors": [
@@ -41,14 +43,14 @@
         "--qp=150",
         "--lag-in-frames=0"
       ],
-      "encode_seconds": 58.721,
+      "encode_seconds": 50.86,
       "bitstream_sha256": "dd7cc3e529f29917ccdb306a96e5deec9094b68d1a56581427f8c96938f8020c",
       "bitstream_bytes": 10479,
       "reference": {
         "decoder": "avmdec",
         "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-default.avmdec.y4m $WORK/vectors/420-8bit-default.obu",
         "exit_code": 0,
-        "seconds": 0.096
+        "seconds": 0.473
       },
       "reference_geometry": {
         "width": 352,
@@ -113,7 +115,7 @@
           "decoder": "rav2d",
           "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-default.rav2d.y4m $WORK/vectors/420-8bit-default.obu",
           "exit_code": 0,
-          "seconds": 0.114,
+          "seconds": 0.538,
           "status": "PASS",
           "geometry_match": true,
           "candidate_geometry": {
@@ -127,8 +129,21 @@
           "mismatched_frames": []
         },
         "dav2d": {
-          "status": "SKIPPED",
-          "reason": "binary not given"
+          "decoder": "dav2d",
+          "command": "$DAV2D -i $WORK/vectors/420-8bit-default.obu -o $WORK/decoded/420-8bit-default.dav2d.y4m",
+          "exit_code": 0,
+          "seconds": 0.02,
+          "status": "PASS",
+          "geometry_match": true,
+          "candidate_geometry": {
+            "width": 352,
+            "height": 288,
+            "chroma": "420",
+            "bytes_per_sample": 1
+          },
+          "reference_frames": 10,
+          "candidate_frames": 10,
+          "mismatched_frames": []
         }
       },
       "status": "OK"
@@ -147,14 +162,14 @@
         "--input-bit-depth=10",
         "--bit-depth=10"
       ],
-      "encode_seconds": 115.417,
+      "encode_seconds": 95.262,
       "bitstream_sha256": "695f06cdb2d3751a014292896a49d231f653b120990ad6dd2856461c9c9ece58",
       "bitstream_bytes": 29618,
       "reference": {
         "decoder": "avmdec",
         "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-10bit-default.avmdec.y4m $WORK/vectors/420-10bit-default.obu",
         "exit_code": 0,
-        "seconds": 0.121
+        "seconds": 0.089
       },
       "reference_geometry": {
         "width": 352,
@@ -219,7 +234,7 @@
           "decoder": "rav2d",
           "command": "$RAV2D -t 1 -o $WORK/decoded/420-10bit-default.rav2d.y4m $WORK/vectors/420-10bit-default.obu",
           "exit_code": 0,
-          "seconds": 0.154,
+          "seconds": 0.11,
           "status": "PASS",
           "geometry_match": true,
           "candidate_geometry": {
@@ -233,8 +248,21 @@
           "mismatched_frames": []
         },
         "dav2d": {
-          "status": "SKIPPED",
-          "reason": "binary not given"
+          "decoder": "dav2d",
+          "command": "$DAV2D -i $WORK/vectors/420-10bit-default.obu -o $WORK/decoded/420-10bit-default.dav2d.y4m",
+          "exit_code": 0,
+          "seconds": 0.028,
+          "status": "PASS",
+          "geometry_match": true,
+          "candidate_geometry": {
+            "width": 352,
+            "height": 288,
+            "chroma": "420",
+            "bytes_per_sample": 2
+          },
+          "reference_frames": 10,
+          "candidate_frames": 10,
+          "mismatched_frames": []
         }
       },
       "status": "OK"
@@ -252,14 +280,14 @@
         "--lag-in-frames=0",
         "--kf-max-dist=0"
       ],
-      "encode_seconds": 84.041,
+      "encode_seconds": 69.251,
       "bitstream_sha256": "f7a0105e496902bf2f6a6ed553c77dea9062ddc1b94e8483ddbbf645cb673d76",
       "bitstream_bytes": 13566,
       "reference": {
         "decoder": "avmdec",
         "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-intra-only.avmdec.y4m $WORK/vectors/420-8bit-intra-only.obu",
         "exit_code": 0,
-        "seconds": 0.081
+        "seconds": 0.069
       },
       "reference_geometry": {
         "width": 352,
@@ -324,13 +352,26 @@
           "decoder": "rav2d",
           "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-intra-only.rav2d.y4m $WORK/vectors/420-8bit-intra-only.obu",
           "exit_code": 1,
-          "seconds": 0.012,
+          "seconds": 0.008,
           "status": "FAIL",
           "stderr_tail": "rav2d: raw OBU stream (13566 bytes)\nrav2d: error: invalid or corrupt bitstream data\n"
         },
         "dav2d": {
-          "status": "SKIPPED",
-          "reason": "binary not given"
+          "decoder": "dav2d",
+          "command": "$DAV2D -i $WORK/vectors/420-8bit-intra-only.obu -o $WORK/decoded/420-8bit-intra-only.dav2d.y4m",
+          "exit_code": 0,
+          "seconds": 0.021,
+          "status": "PASS",
+          "geometry_match": true,
+          "candidate_geometry": {
+            "width": 352,
+            "height": 288,
+            "chroma": "420",
+            "bytes_per_sample": 1
+          },
+          "reference_frames": 10,
+          "candidate_frames": 10,
+          "mismatched_frames": []
         }
       },
       "status": "OK"
@@ -348,14 +389,14 @@
         "--lag-in-frames=0",
         "--denoise-noise-level=50"
       ],
-      "encode_seconds": 75.62,
+      "encode_seconds": 62.173,
       "bitstream_sha256": "cf7dc5953f6170b6cd600f26b1aefda2f56b9f9939ac9db0f1b9c909b6a9d08b",
       "bitstream_bytes": 17901,
       "reference": {
         "decoder": "avmdec",
         "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-film-grain.avmdec.y4m $WORK/vectors/420-8bit-film-grain.obu",
         "exit_code": 0,
-        "seconds": 0.104
+        "seconds": 0.095
       },
       "reference_geometry": {
         "width": 352,
@@ -420,7 +461,7 @@
           "decoder": "rav2d",
           "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-film-grain.rav2d.y4m $WORK/vectors/420-8bit-film-grain.obu",
           "exit_code": 0,
-          "seconds": 0.1,
+          "seconds": 0.072,
           "status": "PASS",
           "geometry_match": true,
           "candidate_geometry": {
@@ -434,8 +475,21 @@
           "mismatched_frames": []
         },
         "dav2d": {
-          "status": "SKIPPED",
-          "reason": "binary not given"
+          "decoder": "dav2d",
+          "command": "$DAV2D -i $WORK/vectors/420-8bit-film-grain.obu -o $WORK/decoded/420-8bit-film-grain.dav2d.y4m",
+          "exit_code": 0,
+          "seconds": 0.024,
+          "status": "PASS",
+          "geometry_match": true,
+          "candidate_geometry": {
+            "width": 352,
+            "height": 288,
+            "chroma": "420",
+            "bytes_per_sample": 1
+          },
+          "reference_frames": 10,
+          "candidate_frames": 10,
+          "mismatched_frames": []
         }
       },
       "status": "OK"
@@ -454,14 +508,14 @@
         "--tile-columns=1",
         "--tile-rows=1"
       ],
-      "encode_seconds": 249.885,
+      "encode_seconds": 218.452,
       "bitstream_sha256": "ed2af229c815390bc4feb5b5b542f340a169996024dcf46372f7ac011e1dd755",
       "bitstream_bytes": 41476,
       "reference": {
         "decoder": "avmdec",
         "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-tiles-2x2.avmdec.y4m $WORK/vectors/420-8bit-tiles-2x2.obu",
         "exit_code": 0,
-        "seconds": 0.279
+        "seconds": 0.22
       },
       "reference_geometry": {
         "width": 1920,
@@ -491,13 +545,26 @@
           "decoder": "rav2d",
           "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-tiles-2x2.rav2d.y4m $WORK/vectors/420-8bit-tiles-2x2.obu",
           "exit_code": 1,
-          "seconds": 0.488,
+          "seconds": 0.343,
           "status": "FAIL",
           "stderr_tail": "rav2d: raw OBU stream (41476 bytes)\nrav2d: error: invalid or corrupt bitstream data\n"
         },
         "dav2d": {
-          "status": "SKIPPED",
-          "reason": "binary not given"
+          "decoder": "dav2d",
+          "command": "$DAV2D -i $WORK/vectors/420-8bit-tiles-2x2.obu -o $WORK/decoded/420-8bit-tiles-2x2.dav2d.y4m",
+          "exit_code": 0,
+          "seconds": 0.038,
+          "status": "PASS",
+          "geometry_match": true,
+          "candidate_geometry": {
+            "width": 1920,
+            "height": 1080,
+            "chroma": "420",
+            "bytes_per_sample": 1
+          },
+          "reference_frames": 3,
+          "candidate_frames": 3,
+          "mismatched_frames": []
         }
       },
       "status": "OK"
@@ -514,14 +581,14 @@
         "--qp=150",
         "--lag-in-frames=0"
       ],
-      "encode_seconds": 1.185,
+      "encode_seconds": 0.908,
       "bitstream_sha256": "e51584f1448890bda922342cda526f94aad040c8ebc63fb6f70bc60ff607f6db",
       "bitstream_bytes": 950,
       "reference": {
         "decoder": "avmdec",
         "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-odd-size.avmdec.y4m $WORK/vectors/420-8bit-odd-size.obu",
         "exit_code": 0,
-        "seconds": 0.049
+        "seconds": 0.047
       },
       "reference_geometry": {
         "width": 66,
@@ -566,7 +633,7 @@
           "decoder": "rav2d",
           "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-odd-size.rav2d.y4m $WORK/vectors/420-8bit-odd-size.obu",
           "exit_code": 0,
-          "seconds": 0.019,
+          "seconds": 0.023,
           "status": "FAIL",
           "geometry_match": true,
           "candidate_geometry": {
@@ -587,8 +654,21 @@
           ]
         },
         "dav2d": {
-          "status": "SKIPPED",
-          "reason": "binary not given"
+          "decoder": "dav2d",
+          "command": "$DAV2D -i $WORK/vectors/420-8bit-odd-size.obu -o $WORK/decoded/420-8bit-odd-size.dav2d.y4m",
+          "exit_code": 0,
+          "seconds": 0.009,
+          "status": "PASS",
+          "geometry_match": true,
+          "candidate_geometry": {
+            "width": 66,
+            "height": 50,
+            "chroma": "420",
+            "bytes_per_sample": 1
+          },
+          "reference_frames": 6,
+          "candidate_frames": 6,
+          "mismatched_frames": []
         }
       },
       "status": "OK"
@@ -606,14 +686,14 @@
         "--lag-in-frames=0",
         "--profile=4"
       ],
-      "encode_seconds": 60.909,
+      "encode_seconds": 51.899,
       "bitstream_sha256": "337aaf90ae317373dd19d81bc26895ed5acfcc24fdfb766edfde6ca0391f02e4",
       "bitstream_bytes": 18890,
       "reference": {
         "decoder": "avmdec",
         "command": "$AVM_BUILD/avmdec -o $WORK/decoded/444-8bit.avmdec.y4m $WORK/vectors/444-8bit.obu",
         "exit_code": 0,
-        "seconds": 0.098
+        "seconds": 0.083
       },
       "reference_geometry": {
         "width": 352,
@@ -658,13 +738,17 @@
           "decoder": "rav2d",
           "command": "$RAV2D -t 1 -o $WORK/decoded/444-8bit.rav2d.y4m $WORK/vectors/444-8bit.obu",
           "exit_code": 1,
-          "seconds": 0.003,
+          "seconds": 0.004,
           "status": "FAIL",
           "stderr_tail": "rav2d: raw OBU stream (18890 bytes)\nrav2d: error: invalid or corrupt bitstream data\n"
         },
         "dav2d": {
-          "status": "SKIPPED",
-          "reason": "binary not given"
+          "decoder": "dav2d",
+          "command": "$DAV2D -i $WORK/vectors/444-8bit.obu -o $WORK/decoded/444-8bit.dav2d.y4m",
+          "exit_code": -11,
+          "seconds": 0.022,
+          "status": "FAIL",
+          "stderr_tail": "dav2d 0.0.1-554-g326a357e - by VideoLAN\n"
         }
       },
       "status": "OK"
@@ -682,14 +766,14 @@
         "--lag-in-frames=0",
         "--monochrome"
       ],
-      "encode_seconds": 22.397,
+      "encode_seconds": 18.008,
       "bitstream_sha256": "7f1e888da116b8de835ee2b3cc9e48621e5a0024f0b8061d3844027818679714",
       "bitstream_bytes": 5025,
       "reference": {
         "decoder": "avmdec",
         "command": "$AVM_BUILD/avmdec -o $WORK/decoded/400-8bit.avmdec.y4m $WORK/vectors/400-8bit.obu",
         "exit_code": 0,
-        "seconds": 0.076
+        "seconds": 0.06
       },
       "reference_geometry": {
         "width": 352,
@@ -722,13 +806,26 @@
           "decoder": "rav2d",
           "command": "$RAV2D -t 1 -o $WORK/decoded/400-8bit.rav2d.y4m $WORK/vectors/400-8bit.obu",
           "exit_code": 1,
-          "seconds": 0.009,
+          "seconds": 0.005,
           "status": "FAIL",
           "stderr_tail": "rav2d: raw OBU stream (5025 bytes)\nrav2d: error: invalid or corrupt bitstream data\n"
         },
         "dav2d": {
-          "status": "SKIPPED",
-          "reason": "binary not given"
+          "decoder": "dav2d",
+          "command": "$DAV2D -i $WORK/vectors/400-8bit.obu -o $WORK/decoded/400-8bit.dav2d.y4m",
+          "exit_code": 0,
+          "seconds": 0.01,
+          "status": "PASS",
+          "geometry_match": true,
+          "candidate_geometry": {
+            "width": 352,
+            "height": 288,
+            "chroma": "400",
+            "bytes_per_sample": 1
+          },
+          "reference_frames": 6,
+          "candidate_frames": 6,
+          "mismatched_frames": []
         }
       },
       "status": "OK"

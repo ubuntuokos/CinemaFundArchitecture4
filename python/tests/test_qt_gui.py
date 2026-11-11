@@ -288,6 +288,12 @@ def test_system_language(monkeypatch):
     assert system_language() == "hu"
     monkeypatch.setenv("LANG", "pt_PT.UTF-8")
     assert system_language() == "pt-br"
+    for lang, code in (("zh_TW.UTF-8", "zh-hant"), ("zh_HK", "zh-hant"), ("zh_CN.UTF-8", "zh-cn"), ("zh", "zh-cn")):
+        monkeypatch.setenv("LANG", lang)
+        assert system_language() == code, lang
+    for lang, code in (("sr_RS.UTF-8", "sr"), ("sr", "sr"), ("sr_RS@latin", "sr-latn"), ("sr-Latn-RS", "sr-latn"), ("te_IN.UTF-8", "te")):
+        monkeypatch.setenv("LANG", lang)
+        assert system_language() == code, lang
     monkeypatch.setenv("CFA4_LANG", "zz")
     assert system_language() == "en"
 
@@ -2374,12 +2380,35 @@ def test_export_sends_the_audio_bitrate(app):
 
 
 # egui's Export ids the Qt window has no widget for yet, and why
+# Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs), frozen
+# here so the Qt check keeps working once egui is removed (CFA4-QT6-FINISH-001 Q5); while the egui
+# source is there, the test checks this list still matches it.
+EGUI_EXPORT_IDS: frozenset[str] = frozenset({
+    "export.audio.bitrate", "export.audio.bits", "export.audio.channels", "export.audio.codec",
+    "export.audio.flacLevel", "export.audio.include", "export.audio.sampleRate", "export.button",
+    "export.captions.format", "export.captions.mode", "export.destination.mediaFile", "export.effects.imageOverlay",
+    "export.effects.imageOverlay.browse", "export.effects.imageOverlay.opacity", "export.effects.imageOverlay.path",
+    "export.effects.imageOverlay.position", "export.effects.imageOverlay.size", "export.effects.loudness",
+    "export.effects.loudness.target", "export.effects.loudness.truePeak", "export.effects.nameOverlay",
+    "export.effects.timecodeOverlay", "export.effects.videoLimiter", "export.effects.videoLimiter.max",
+    "export.effects.videoLimiter.min", "export.estimate", "export.fileName", "export.format", "export.gpuRendering",
+    "export.location", "export.location.browse", "export.multiplexer", "export.preset", "export.preset.more",
+    "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
+    "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
+    "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
+    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dnxProfile",
+    "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
+    "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
+    "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
+    "export.video.maxDepth", "export.video.maxQuality", "export.video.mxfCodec", "export.video.profile",
+    "export.video.proresProfile", "export.video.quality", "export.video.target", "export.video.width",
+})
 EXPORT_IDS_NOT_IN_QT: dict[str, str] = {}
 
 
 def test_export_widgets_carry_eguis_automation_ids(app):
-    """Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs) names
-    the same control in the Qt Export window, once, so an agent drives both frontends by the same
+    """Every widget id egui's Export mode registers (``EGUI_EXPORT_IDS``) names the same control in
+    the Qt Export window, once, so an agent drives both frontends by the same
     ids; the few Qt has no widget for are listed with the reason."""
     import re
 
@@ -2391,10 +2420,13 @@ def test_export_widgets_carry_eguis_automation_ids(app):
         def execute(self, command, params=None, on_reply=None, on_error=None):
             return 0
 
-    src = (Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs").read_text()
-    pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
-    egui = set(re.findall(pattern, src))
-    assert len(egui) > 60 and "export.video.bitrateMode" in egui, "the egui source still registers its ids this way"
+    egui = set(EGUI_EXPORT_IDS)
+    rs = Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs"
+    if rs.exists():  # egui is still in the tree: the frozen list is its current one
+        pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
+        source = set(re.findall(pattern, rs.read_text()))
+        assert len(source) > 60 and "export.video.bitrateMode" in source, "the egui source still registers its ids this way"
+        assert source == egui, ("update EGUI_EXPORT_IDS", sorted(source ^ egui))
     dlg = ExportDialog(Engine())  # type: ignore[arg-type]
     names = [w.objectName() for w in dlg.findChildren(QtWidgets.QWidget) if w.objectName().startswith("export.")]
     missing = sorted(i for i in egui - set(names) if i not in EXPORT_IDS_NOT_IN_QT)
@@ -2589,6 +2621,15 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.b_frames.setValue(0)
         assert dlg.params()["mpeg2BFrames"] == 0
         dlg.b_frames.setValue(2)
+        # progressive unless an interlaced field order is chosen: egui's one Field Order row
+        # (export.video.fieldOrder), its interlaced orders open for MPEG-2 only
+        fo = dlg.rows.field_order
+        assert dlg.findChild(QtWidgets.QComboBox, "export.fieldOrder") is None, "one Field Order control"
+        assert fo.currentData() == "progressive" and "fieldOrder" not in p.get("settings", {}) and "fieldOrder" not in p
+        assert all(fo.model().item(i).isEnabled() for i in range(fo.count()))
+        fo.setCurrentIndex(fo.findData("lowerFirst"))
+        assert dlg.params()["settings"]["fieldOrder"] == "lowerFirst"
+        fo.setCurrentIndex(fo.findData("progressive"))
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
@@ -2645,9 +2686,21 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         assert not dlg.width_spin.isEnabled() and not dlg.bitrate.isEnabled() and dlg.audio.isEnabled()
         assert Path(dlg.path.text()).suffix == "", dlg.path.text()
         dlg.dcp_kind.setCurrentIndex(dlg.dcp_kind.findData("trailer"))
+        dlg.dcp_language.setCurrentText("hu-HU")
         p = dlg.params()
-        assert (p["dcpResolution"], p["dcpAspect"], p["dcpContentKind"]) == ("2k", "scope", "trailer")
+        assert (p["dcpResolution"], p["dcpAspect"], p["dcpContentKind"], p["dcpLanguage"]) == ("2k", "scope", "trailer", "hu-HU")
         assert "width" not in p and "bitrateKbps" not in p
+        # the ISDCF name from the engine renames the package folder (#309)
+        assert wait_until(app, lambda: dlg.dcp_isdcf.isEnabled() and "_TLR-1_S_HU-XX_51_2K_" in dlg._dcp_name, 10_000), dlg._dcp_name
+        parent = Path(dlg.path.text()).parent
+        dlg.dcp_isdcf.click()
+        assert Path(dlg.path.text()) == parent / dlg._dcp_name
+        assert dlg._dcp_name.endswith("_SMPTE_OV")
+        # a malformed language tag is the engine's error, shown in the summary
+        dlg.dcp_language.setCurrentText("Hungarian")
+        assert wait_until(app, lambda: "RFC 5646" in dlg.summary.text(), 10_000), dlg.summary.text()
+        assert not dlg.dcp_isdcf.isEnabled()
+        dlg.dcp_language.setCurrentText("hu-HU")
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
         dlg.start.setValue(0.0)
@@ -2666,6 +2719,9 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         cpl = next(out.glob("cpl_*.xml")).read_text()
         assert "<ContentKind>trailer</ContentKind>" in cpl
         assert "<ScreenAspectRatio>2048 858</ScreenAspectRatio>" in cpl
+        # RDD 52: constraints profile, FFOC/LFOC markers, 5.1 MCA labels in the chosen language
+        assert "SMPTE-RDD-52:2020-Bv2.1" in cpl and "<Label>FFOC</Label>" in cpl
+        assert cpl.count("<r1:RFC5646SpokenLanguage>hu-HU</r1:RFC5646SpokenLanguage>") == 7
         # another format brings the size fields back
         dlg.format.setCurrentIndex(dlg.format.findData("h264"))
         assert dlg.width_spin.isEnabled() and not dlg.dcp_resolution.isEnabled()
@@ -2699,10 +2755,11 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         assert dlg.params()["dcpImmersive"] == "off" and "dcpIabFallback" not in dlg.params()
         assert not dlg.dcp_iab_source.isEnabled() and not dlg.dcp_iab_fallback.isEnabled()
 
-        # a 7.1 DS bed from the 5.1 mix
+        # a bed from the mix: 7.1 DS, or 9.1OH from a 7.1.2 Mix (#374)
         dlg.dcp_immersive.setCurrentIndex(dlg.dcp_immersive.findData("bed"))
         assert dlg.dcp_iab_fallback.isEnabled() and not dlg.dcp_iab_source.isEnabled()
-        assert "7.1 DS" in dlg.dcp_iab_info.text()
+        assert "7.1 DS" in dlg.dcp_iab_info.text() and "9.1OH" in dlg.dcp_iab_info.text()
+        assert "9.1OH" in dlg.dcp_immersive.itemText(dlg.dcp_immersive.findData("bed"))
         p = dlg.params()
         # ST 429-19:2023: no fallback unless asked (#348); here the 5.1 mix is asked for
         assert (p["dcpImmersive"], p["dcpIabFallback"]) == ("bed", "none") and "dcpIabSource" not in p
@@ -3240,6 +3297,10 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
         method = next(a for a in tracking.method_menu.actions() if a.text() == "Position")
         method.trigger()
         assert wait_until(app, lambda: mask()["trackMethod"] == "Position", 10_000)
+        tracking = ec.rows[(opa, "mask0.path")].editor
+        corr = next(a for a in tracking.method_menu.actions() if a.text() == "Correlation tracker")
+        corr.trigger()
+        assert wait_until(app, lambda: mask()["tracker"] == "Correlation", 10_000)
         mh = ec.masks[(cid, opa, 0)][0]
         mh.twirl.click()
         assert not ec.rows[(opa, "mask0.feather")].isVisibleTo(ec)
@@ -6136,6 +6197,14 @@ def test_clip_dialogs_as_egui(app):
     assert d.params["clips"] == [[0, 2], [1]]
     child(d, "ok", QtWidgets.QPushButton).click()
     assert sent[-1] == ("clip.audioChannels", {"format": "mono", "clips": [[0, 2], [1]]})
+    # an Auro-3D source names its restored loudspeakers under the channel numbers (#323)
+    speakers = ["L", "R", "C", "LFE", "Ls", "Rs", "HL", "HR", "HLs", "HRs"]
+    d = ClipDialog(None, {"command": "clip.audioChannels", "params": {"format": "adaptive", "clips": [list(range(10))]}, "info": {"channels": 10, "items": True, "speakers": speakers}}, run)
+    assert [child(d, f"ch.{c}", QtWidgets.QLabel).text().split("\n")[-1] for c in range(10)] == speakers
+    # no layout (or a damaged one): the numbers alone
+    for info in ({"channels": 2, "items": True}, {"channels": 2, "items": True, "speakers": [5, None]}, {"channels": 2, "items": True, "speakers": "L R"}):
+        d = ClipDialog(None, {"command": "clip.audioChannels", "params": {"format": "stereo", "clips": [[0, 1]]}, "info": info}, run)
+        assert child(d, "ch.1", QtWidgets.QLabel).text() == "Ch. 2"
     # Frame Hold: the timecode field only for Source Timecode / Sequence Time; Hold On off greys the rest
     d = ClipDialog(None, {"command": "clip.frameHoldOptions", "params": {"enabled": True, "holdOn": "in", "timecode": "00:00:01:00", "holdFilters": False}}, run)
     d.show()
@@ -9273,6 +9342,19 @@ def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
         win.docks["Audio Track Mixer"].raise_()
         assert wait_until(app, lambda: [s.ref for s in mixer.strips if s.isVisible()] == ["A1", "A2", "A3", "Mix"], 10_000)
         a1 = mixer.strips[0]
+        # meter bars per channel format, 7.1 and 7.1.2 included (#374)
+        saved = a1.data
+        for fmt, n in (("Stereo", 2), ("5.1", 6), ("7.1", 8), ("7.1.2", 10), ("Adaptive", 2)):
+            a1.data = {**saved, "channels": fmt}
+            assert a1.channels() == n, fmt
+        a1.data = saved
+        # a strip feeding a 7.1.2 bus has a Height control (#406); others do not
+        a1.data = {**saved, "pans51": True, "panHeight": True, "pan51": {"x": 0, "y": 100, "center": 100, "lfeDb": -96, "height": 40}}
+        regions = a1.layout_regions()
+        assert "pan51.height" in regions and regions["pan51.height"].bottom() <= regions["mode"].top(), regions
+        a1.data = {**saved, "pans51": True}
+        assert "pan51.height" not in a1.layout_regions()
+        a1.data = saved
 
         def strip(ref: str) -> dict:
             return next(s for s in mixer.strips_data if s.get("ref") == ref)
@@ -11751,9 +11833,20 @@ def test_real_engine_control_channel_names_project_rows_as_egui(app, tmp_path: P
         item = min(i for i in els() if re.fullmatch(r"project\.item\.\d+", i))
         assert c.call("ui.click", {"id": item})["ok"]
         assert wait_until(app, lambda: win.project_panel.main.selected_items() == [int(item.rsplit(".", 1)[1])], 10_000), (item, win.project_panel.main.selected_items())
-        # the Icon view's cards carry the same ids
+        # the Icon view's cards carry the same ids: it shows the bins at the root as cards (the item
+        # opened in place inside a bin is not on them), so a bin's row id now names its card
+        rows = {b: e[b]["rect"] for b in bins}
         win.execute("project.view.set", {"view": "icon"})
-        assert wait_until(app, lambda: item in els() and "project.list.header.Name" not in els(), 10_000), sorted(els())
+
+        def cards() -> bool:
+            now = els()
+            return (
+                "project.tree" not in now
+                and "project.list.header.Name" not in now
+                and all(b in now and now[b]["rect"] != rows[b] and f"{b}.toggle" not in now for b in bins)
+            )
+
+        assert wait_until(app, cards, 10_000), (rows, {k: v["rect"] for k, v in els().items()})
     finally:
         server.close()
         win._quit_confirmed = True
@@ -13284,7 +13377,14 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
                     return False
                 snap.clear()
                 snap.update(els())
-                return "project.empty" in snap and any(re.fullmatch(r"project\.(bin|item)\.\d+", i) for i in snap)
+                # and only this view's rows: the other view's container gone from the snapshot, every
+                # row a list line (with the bin's arrow) or a card (no arrow)
+                other = "project.tree" if mode == "icon" else "project.icons"
+                rows = [k for k in snap if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
+                arrows = [k for k in rows if k.startswith("project.bin.") and f"{k}.toggle" in snap]
+                bins = [k for k in rows if k.startswith("project.bin.")]
+                shaped = arrows == bins if mode == "list" else not arrows
+                return other not in snap and "project.empty" in snap and bool(rows) and shaped
 
             assert wait_until(app, ready, 20_000), (mode, sorted(snap))
             e = dict(snap)
@@ -13549,6 +13649,35 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
         win.close()
 
 
+def test_smart_cut_plan_text_names_the_audio():
+    """The Smart Cut plan names the audio tracks copied with the video and why another is not
+    (WP-09b)."""
+    from cfa4_qt.panels.smart_cut import plan_text
+
+    result = {
+        "summary": {"copiedFrames": 20, "reencodedFrames": 0},
+        "plan": {"executable": True, "blockers": []},
+        "audio": {"tracks": [{"trackId": 2, "codec": "aac"}, {"trackId": 3, "codec": "pcm"}], "dropped": [{"trackId": 4, "reason": "MP3 / MP2 audio is not copied yet"}]},
+    }
+    text, problem = plan_text(result)
+    assert problem is None
+    assert "AAC, PCM" in text and "4" in text and "MP3" in text
+
+
+def test_smart_cut_default_output_keeps_mpeg_streams():
+    """An MPEG program or transport stream is cut into one of the same kind (WP-09c)."""
+    from cfa4_qt.panels.smart_cut import default_output
+
+    assert default_output("/a/clip.mp4") == "/a/clip_cut.mp4"
+    assert default_output("/a/clip.MOV") == "/a/clip_cut.mov"
+    assert default_output("/a/clip.ts") == "/a/clip_cut.ts"
+    assert default_output("/a/clip.m2ts") == "/a/clip_cut.m2ts"
+    assert default_output("/a/clip.mpg") == "/a/clip_cut.mpg"
+    assert default_output("/a/VTS_01_1.VOB") == "/a/VTS_01_1_cut.mpg"
+    assert default_output("/a/clip.mkv") == "/a/clip_cut.mp4"
+    assert default_output("/a/clip") == "/a/clip_cut.mp4"
+
+
 def test_smart_export_plan_text():
     """The Smart Export preview names what is copied, re-encoded and rendered, and why a copy mode
     cannot run (WP-08)."""
@@ -13744,3 +13873,26 @@ def test_real_engine_credits_save_and_refresh(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
+    """qt-parity 5.5: ``CFA4_QT_MONITOR_GL=1`` asks for the OpenGL picture, but where no GL
+    context can be made (Qt's ``offscreen`` platform here) the monitor keeps the raster view; either
+    way it measures how long drawing the picture takes (``perf.stats`` ``playback.present``)."""
+    from cfa4_qt.panels import monitor
+
+    monkeypatch.setenv("CFA4_QT_MONITOR_GL", "1")
+    assert monitor.monitor_gl_wanted()
+    assert not monitor.monitor_gl_available()
+    view = monitor.new_frame_view("program")
+    assert type(view) is monitor.FrameView and view.present_path == "raster"
+    frame = QtGui.QImage(320, 180, QtGui.QImage.Format.Format_RGBA8888)
+    frame.fill(QtGui.QColor("#4060a0"))
+    view.resize(320, 200)
+    view.set_image(frame, full=(320, 180))
+    view.grab()
+    stats = view.present.as_dict(view.present_path)
+    assert stats["path"] == "raster" and stats["frames"] >= 1 and stats["meanMs"] >= 0 and stats["maxMs"] >= stats["meanMs"]
+    view.present.reset()
+    assert view.present.as_dict("raster") == {"path": "raster", "frames": 0, "meanMs": 0.0, "maxMs": 0.0}
+    monkeypatch.setenv("CFA4_QT_MONITOR_GL", "0")
+    assert not monitor.monitor_gl_wanted()
+    view.deleteLater()
