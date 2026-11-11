@@ -31,7 +31,7 @@ from collections.abc import Callable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QObject, QPoint, QPointF, Qt
+from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QObject, QPoint, QPointF, QRect, Qt
 from PySide6.QtGui import QKeyEvent, QKeySequence, QWheelEvent
 from PySide6.QtNetwork import QHostAddress, QTcpServer, QTcpSocket
 from PySide6.QtTest import QTest
@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
     QAbstractButton,
     QApplication,
     QComboBox,
+    QDialogButtonBox,
     QDockWidget,
     QDoubleSpinBox,
     QLabel,
@@ -50,11 +51,25 @@ from PySide6.QtWidgets import (
 
 from .panels.clip_dialogs import ClipDialog
 from .panels.export_effects import SECTION_KEYS
-from .panels.monitor_view import MonitorView
+from .panels.monitor_view import RESOLUTIONS, MonitorView
 from .panels.preset_manager import PresetManager
 from .panels.quick_export import quick_presets
-from .panels.timeline import HEADER_W, RULER_H
+from .panels.template_dialogs import ExportTemplateDialog, ReplaceFontsDialog
+from .panels.timeline import HEADER_W, RULER_H, THUMBNAIL_MODES
 from .panels.tools import TOOLS
+
+# egui's ThemeKind::from_name → the appearance.colorTheme preference it sets
+THEME_NAMES = {"dark": "darkest", "darkest": "darkest", "medium": "dark", "grey": "dark", "gray": "dark", "light": "light"}
+
+
+def tool_by_name(name: Any) -> str | None:
+    """egui's ``Tool::from_name``: the tool's id or label, any case, without spaces, ``_``, ``-``
+    or the word "tool" (``razor``, ``Razor Tool``, ``track_select_forward``)."""
+    if not isinstance(name, str):
+        return None
+    fold = lambda s: s.lower().replace(" ", "").replace("_", "").replace("-", "").replace("tool", "")
+    key = fold(name)
+    return next((t.id for t in TOOLS.values() if fold(t.id) == key or fold(t.label) == key), None)
 
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -78,6 +93,21 @@ MODIFIERS = {
 
 EDGE_NAMES = {"in": "In", "out": "Out"}  # egui's Edge names
 
+
+
+def _panel_key(name: Any) -> str | None:
+    """egui's panel-name folding: lower case without spaces, ``_`` and ``-``."""
+    if not isinstance(name, str):
+        return None
+    return name.lower().replace(" ", "").replace("_", "").replace("-", "")
+
+
+def panel_dock(docks: dict[str, QDockWidget], name: Any) -> QDockWidget | None:
+    """The dock for an egui panel name: ``EffectControls``, ``Effect Controls``, ``effect_controls``…"""
+    key = _panel_key(name)
+    if key is None:
+        return None
+    return docks.get(name) or next((d for title, d in docks.items() if _panel_key(title) == key), None)
 
 class ControlError(Exception):
     pass
@@ -392,12 +422,16 @@ class ControlServer(QObject):
             self.set(p)
             reply(True, self.inspect())
         elif method in ("ui.panel.show", "ui.panel.close"):
-            dock = self._dock(p.get("panel"))
-            if method == "ui.panel.show":
+            if _panel_key(p.get("panel")) == "program":
+                # the Program monitor is the window's centre in Qt: always shown, never closed
+                if method == "ui.panel.close":
+                    raise ControlError("the Program monitor is the window's centre and stays open")
+            elif method == "ui.panel.show":
+                dock = self._dock(p.get("panel"))
                 dock.show()
                 dock.raise_()
             else:
-                dock.close()
+                self._dock(p.get("panel")).close()
             reply(True, {})
         elif method == "ui.timeline.hit":
             reply(True, self.timeline_hit(p))
@@ -484,7 +518,14 @@ class ControlServer(QObject):
             "workspace": win.workspaces.current,
             "focused": win.active_monitor if win.active_monitor else None,
             "panels": {name: not dock.isHidden() for name, dock in win.docks.items()},
-            "timeline": {"pps": canvas.pps, "scroll": int(canvas.scroll_ticks)},
+            "timeline": {
+                "pps": canvas.pps,
+                "scroll": int(canvas.scroll_ticks),
+                # the divider and the two track areas' offsets (egui's split / v_scroll / a_scroll)
+                "split": canvas.split,
+                "vScroll": canvas.v_scroll,
+                "aScroll": canvas.a_scroll,
+            },
             "playback": {"program": monitor(win.monitor), "source": monitor(win.source_monitor)},
             "dialog": open_dialog,
             "keyboardFocus": self._keyboard_target().objectName(),
@@ -507,18 +548,43 @@ class ControlServer(QObject):
             return False
 
         tops = [w for w in QApplication.topLevelWidgets() if w is not win and w.isVisible() and owned(w)]
+        for top in tops:
+            name_standard_buttons(top)
         return [win, *tops]
 
     def elements(self, prefix: str) -> list[dict[str, Any]]:
         origin = self.window.mapToGlobal(QPoint(0, 0))
         out: list[dict[str, Any]] = []
+        parts = self._parts()
+        part_ids = {pid for _w, pid, _r, _label in parts}
         for top in self._windows():
             for w in [top, *top.findChildren(QWidget)]:
                 name = w.objectName()
                 if not name or not name.startswith(prefix) or name.startswith("qt_") or not w.isVisible() or w.visibleRegion().isEmpty():
                     continue
+                if name in part_ids:  # the part's id names it (menu.File: the button, not the popup)
+                    continue
                 at = w.mapToGlobal(QPoint(0, 0)) - origin
                 out.append({"id": name, "label": label_of(w), "rect": [at.x(), at.y(), w.width(), w.height()], "enabled": w.isEnabled()})
+        for w, pid, r, label in parts:
+            if pid.startswith(prefix):
+                at = w.mapToGlobal(r.topLeft()) - origin
+                out.append({"id": pid, "label": label, "rect": [at.x(), at.y(), r.width(), r.height()], "enabled": w.isEnabled()})
+        return out
+
+    def _parts(self) -> list[tuple[QWidget, str, QRect, str]]:
+        """The painted parts of visible widgets that have ``automation_parts()`` (egui registers
+        such regions with their own ids: the Audio Meters' readout, bars and scale, …)."""
+        out: list[tuple[QWidget, str, QRect, str]] = []
+        for top in self._windows():
+            for w in [top, *top.findChildren(QWidget)]:
+                parts = getattr(w, "automation_parts", None)
+                if not callable(parts) or not w.isVisible() or w.visibleRegion().isEmpty():
+                    continue
+                for pid, rect, label in parts():
+                    r = rect.toAlignedRect() if hasattr(rect, "toAlignedRect") else QRect(rect)
+                    if r.isValid():
+                        out.append((w, str(pid), r, str(label)))
         return out
 
     def _widget(self, wid: Any) -> QWidget:
@@ -531,7 +597,9 @@ class ControlServer(QObject):
         raise ControlError(f"no visible element {wid}")
 
     def _dock(self, name: Any) -> QDockWidget:
-        dock = self.window.docks.get(name) if isinstance(name, str) else None
+        """The panel named as egui's ``PanelKind::from_name`` takes it: its id (``EffectControls``)
+        or its title (``Effect Controls``), ignoring case, spaces, ``_`` and ``-``."""
+        dock = panel_dock(self.window.docks, name)
         if dock is None:
             raise ControlError(f"unknown panel {name!r}")
         return dock
@@ -543,7 +611,15 @@ class ControlServer(QObject):
         if not isinstance(p, dict):
             raise ControlError("a point is {id} or {x, y}")
         if "id" in p:
-            w = self._widget(p.get("id"))
+            pid = p.get("id")
+            # a painted part (egui's region ids) first: the menu bar's menu.File is the button, not
+            # its open popup; the child under the part's centre takes the input
+            part = next(((pw, r) for pw, i, r, _label in self._parts() if i == pid), None) if isinstance(pid, str) else None
+            if part is not None:
+                pw, at = part[0], part[1].center()
+                child = pw.childAt(at)
+                return (child, child.mapFrom(pw, at)) if child is not None else (pw, at)
+            w = self._widget(pid)
             return w, w.rect().center()
         x, y = _number(p, "x", -1e5, 1e5), _number(p, "y", -1e5, 1e5)
         win = self.window
@@ -564,8 +640,15 @@ class ControlServer(QObject):
         button = BUTTONS.get(str(p.get("button") or "left"))
         if button is None:
             raise ControlError("button must be left, right or middle")
-        count = p.get("count", 1)
+        # the MCP bridge sends null for an omitted count: the default, as an absent field (#2784)
+        count = p.get("count")
+        count = 1 if count is None else count
+        if isinstance(count, bool):
+            raise ControlError("count must be 1 or 2")
         if count == 2:
+            # a real double click: press and release, then the double-click press and release
+            # (item views emit doubleClicked only for the row the first press landed on)
+            QTest.mouseClick(w, button, mods, at)
             QTest.mouseDClick(w, button, mods, at)
         elif count == 1:
             QTest.mouseClick(w, button, mods, at)
@@ -576,7 +659,8 @@ class ControlServer(QObject):
         w, start = self._at(p.get("from"))
         target, end = self._at(p.get("to"))
         end = w.mapFromGlobal(target.mapToGlobal(end))
-        steps = p.get("steps", 8)
+        steps = p.get("steps")
+        steps = 8 if steps is None else steps  # null (the MCP bridge's omitted steps) is the default
         if not isinstance(steps, int) or isinstance(steps, bool) or not 1 <= steps <= MAX_DRAG_STEPS:
             raise ControlError(f"steps must be 1 to {MAX_DRAG_STEPS}")
         mods = modifiers_of(p.get("modifiers"))
@@ -641,9 +725,30 @@ class ControlServer(QObject):
         win = self.window
         tool = p.get("tool")
         if tool is not None:
-            if not isinstance(tool, str) or tool not in TOOLS or not TOOLS[tool].available:
+            found = tool_by_name(tool)
+            if found is None or not TOOLS[found].available:
                 raise ControlError(f"unknown tool {tool!r}")
-            win.tools.select(tool)
+            win.tools.select(found)
+        theme_name = p.get("theme")
+        if theme_name is not None:
+            pref = THEME_NAMES.get(theme_name.lower()) if isinstance(theme_name, str) else None
+            if pref is None:
+                raise ControlError("unknown theme (dark, medium, light)")
+            win.set_theme(pref)
+        res = p.get("playbackRes")
+        if res is not None:
+            # egui's: the Program monitor's Playback Resolution by its name or label; anything else keeps it
+            found_res = next((k for k, label, _s in RESOLUTIONS if isinstance(res, str) and res.lower() in (k, label.lower())), None)
+            if found_res is not None:
+                win.monitor.set_view(res=found_res)
+        search = p.get("effectsSearch")
+        if search is not None:
+            if not isinstance(search, str):
+                raise ControlError("effectsSearch takes the search text")
+            win.effects.search.setText(search)
+        safe = p.get("safeMargins")
+        if isinstance(safe, bool):
+            win.monitor.set_view(safe_margins=safe)
         mode = p.get("mode")
         if mode is not None:
             if not isinstance(mode, str):
@@ -678,9 +783,24 @@ class ControlServer(QObject):
                 raise ControlError(f"{key} takes {{param: value}}")
             for name, value in fields.items():
                 set_dialog_field(dialog, str(name), value)
+        if "settings" in p:
+            # the open Preferences dialog: page and draft values, egui's
+            dialog = getattr(win, "settings_dialog", None)
+            try:
+                shown = dialog is not None and dialog.isVisible() and dialog.ready
+            except RuntimeError:  # closed and deleted
+                shown = False
+            if not shown:
+                raise ControlError("the Settings dialog is not open")
+            try:
+                dialog.patch(p["settings"])
+            except (ValueError, TypeError) as e:
+                raise ControlError(str(e)) from None
+        if "gfxTemplates" in p:
+            self.set_gfx_templates(p["gfxTemplates"])
         if "panels" in p:
             self.set_panels(p["panels"])
-        for key, panel in (("projectPanel", win.project_panel), ("mediaBrowser", win.media_browser)):
+        for key, panel in (("projectPanel", win.project_panel), ("mediaBrowser", win.media_browser), ("tts", win.tts)):
             if key not in p:
                 continue
             if not isinstance(p[key], dict):
@@ -691,6 +811,11 @@ class ControlServer(QObject):
                 raise ControlError(f"{key}: {e}") from None
         if "keyframeSelection" in p:
             win.effect_controls.set_keyframe_selection(keyframe_refs(p["keyframeSelection"]))
+        if "gfxEdit" in p:  # after `tool`: the Type tool's text editing state (egui's byte offsets) or null
+            try:
+                win.monitor.overlay.graphics.set_edit_state(p["gfxEdit"])
+            except TypeError as e:
+                raise ControlError(str(e)) from None
         if "export" in p:
             self.set_export(p["export"])
         tl = p.get("timeline")
@@ -702,6 +827,26 @@ class ControlServer(QObject):
                 canvas.scroll_ticks = int(_number(tl, "scroll", 0, 2**62))
             if tl.get("fit") is True:
                 canvas.zoom_to_fit()
+            heights = {k: _number(tl, f"{k}TrackHeight", 1, 10_000) for k in ("video", "audio") if f"{k}TrackHeight" in tl}
+            if heights:
+                canvas.set_track_heights(heights.get("video"), heights.get("audio"))
+            if "split" in tl:
+                canvas.set_split(_number(tl, "split", 0.1, 0.9))
+            if "vScroll" in tl or "aScroll" in tl:
+                canvas.set_offsets(
+                    int(_number(tl, "vScroll", 0, 1e9)) if "vScroll" in tl else canvas.v_scroll,
+                    int(_number(tl, "aScroll", 0, 1e9)) if "aScroll" in tl else canvas.a_scroll,
+                )
+            thumbs = tl.get("thumbnails")
+            if isinstance(thumbs, str):
+                # Show Video Thumbnails: off or a mode (head, headAndTail, continuous), egui's
+                mode = next((m for m, _l in THUMBNAIL_MODES if m.lower() == thumbs.lower()), None)
+                if thumbs.lower() == "off":
+                    canvas._set_display(show_thumbnails=False)
+                elif mode is None:
+                    raise ControlError(f"unknown thumbnail mode {thumbs!r} (off, head, headAndTail, continuous)")
+                else:
+                    canvas._set_display(show_thumbnails=True, thumbnail_mode=mode)
             canvas.update()
 
     # ----- panel state (the serde parts of egui's ``UiState``) -----
@@ -714,9 +859,56 @@ class ControlServer(QObject):
             "panels": self.panels_state(),
             "projectPanel": win.project_panel.ui_state(),
             "mediaBrowser": win.media_browser.ui_state(),
+            "tts": win.tts.ui_state(),
+            "gfxTemplates": self.gfx_templates_state(),
             "keyframeSelection": keys,
+            "gfxEdit": win.monitor.overlay.graphics.edit_state(),
             "export": self.export_state(),
         }
+
+    def _template_dialog(self, cls: type) -> Any:
+        dialog = self.window.template_dialog
+        try:
+            return dialog if isinstance(dialog, cls) and dialog.isVisible() else None
+        except RuntimeError:  # closed and deleted
+            return None
+
+    def gfx_templates_state(self) -> dict[str, Any]:
+        """egui's ``GfxTemplatesState``: Essential Graphics ▸ Browse and the template / font
+        dialogs (null while closed)."""
+        export = self._template_dialog(ExportTemplateDialog)
+        replace = self._template_dialog(ReplaceFontsDialog)
+        return {**self.window.essential_graphics.ui_state(), "export": export.draft() if export else None,
+                "replace": replace.draft() if replace else None}
+
+    def set_gfx_templates(self, patch: Any) -> None:
+        """egui's ``ui.set {gfxTemplates}``: merged in; ``export`` / ``replace`` merge into the open
+        dialog's draft and null closes it (File ▸ Export ▸ Motion Graphics Template… and
+        Replace Fonts open them)."""
+        if not isinstance(patch, dict):
+            raise ControlError("gfxTemplates takes {tab, query, category, selected, export, replace}")
+        dialogs = {"export": self._template_dialog(ExportTemplateDialog), "replace": self._template_dialog(ReplaceFontsDialog)}
+        for key, dialog in dialogs.items():
+            v = patch.get(key)
+            if key in patch and v is not None:
+                if not isinstance(v, dict):
+                    raise ControlError(f"gfxTemplates.{key} takes {{field: value}} or null")
+                if dialog is None:
+                    raise ControlError(f"gfxTemplates.{key}: the dialog is not open")
+        panel = {k: v for k, v in patch.items() if k not in dialogs}
+        try:  # check every part before changing any
+            self.window.essential_graphics.check_ui_state(panel)
+            for key, dialog in dialogs.items():
+                if isinstance(patch.get(key), dict):
+                    dialog.check_draft(patch[key])
+        except (ValueError, TypeError) as e:
+            raise ControlError(f"gfxTemplates: {e}") from None
+        self.window.essential_graphics.set_ui_state(panel)
+        for key, dialog in dialogs.items():
+            if key in patch and patch[key] is None and dialog is not None:
+                dialog.reject()
+            elif isinstance(patch.get(key), dict):
+                dialog.set_draft(patch[key])
 
     def panels_state(self) -> dict[str, Any]:
         win = self.window
@@ -1037,7 +1229,7 @@ class ControlServer(QObject):
 
     def screenshot(self, p: dict[str, Any]) -> dict[str, Any]:
         panel = p.get("panel")
-        target: QWidget = self._dock(panel) if panel is not None else self.window
+        target: QWidget = self.window if panel is None else self.window.monitor if _panel_key(panel) == "program" else self._dock(panel)
         image = target.grab()
         path = p.get("path")
         if path is not None:
@@ -1053,4 +1245,25 @@ class ControlServer(QObject):
         return {"png": base64.b64encode(bytes(data.data())).decode(), "width": image.width(), "height": image.height()}
 
 
-__all__ = ["MAX_CONNECTIONS", "MAX_LINE", "ControlError", "ControlServer", "modifiers_of"]
+def name_standard_buttons(dialog: QWidget) -> None:
+    """egui's ids for a dialog's standard buttons: an unnamed OK / Cancel / Close / … of a named
+    dialog's button box becomes ``<dialog>.ok`` / ``.cancel`` / ``.close`` (egui's
+    ``mediaBrowser.columns.ok``, ``savePreset.cancel``), so an agent clicks it by id. A name the
+    dialog gave its button stays."""
+    prefix = dialog.objectName()
+    if not prefix:
+        return
+    for box in dialog.findChildren(QDialogButtonBox):
+        if box.window() is not dialog:
+            continue
+        for button in box.buttons():
+            if button.objectName():
+                continue
+            role = box.standardButton(button)
+            if role == QDialogButtonBox.StandardButton.NoButton:
+                continue
+            key = role.name  # Ok, Cancel, RestoreDefaults, …
+            button.setObjectName(f"{prefix}.{key[0].lower()}{key[1:]}")
+
+
+__all__ = ["MAX_CONNECTIONS", "MAX_LINE", "ControlError", "ControlServer", "modifiers_of", "name_standard_buttons"]

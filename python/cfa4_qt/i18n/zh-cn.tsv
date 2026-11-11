@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 遇到错误
 	CFA4 project links	CFA4 项目链接
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 意外退出，当时“{name}”有未保存的更改。是否恢复 {time} 的未保存更改？
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 关闭时“{name}”有未保存的更改。是否恢复 {time} 的未保存更改？
 	Cancel Selected	取消所选项
 	Cannot check the output folder for files to replace: {error}	无法检查输出文件夹中要替换的文件：{error}
 	Cannot create the output folder: {error}	无法创建输出文件夹：{error}
@@ -114,7 +112,7 @@
 	Go to caption	转到字幕
 	Go to graphic	转到图形
 	Hear this voice	试听此语音
-	IAB 7.1 DS bed from the 5.1 mix	由 5.1 混音生成的 IAB 7.1 DS 声床
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	由混音生成的 IAB 声床（7.1 DS；7.1.2 生成 9.1OH）
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF、.iab 或 Dolby Atmos TrueHD（.thd、.mkv、.mp4、.m2ts）
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	来自文件的 IAB（IAB MXF、.iab 或 Dolby Atmos TrueHD）
 	IAB source	IAB 源
@@ -215,7 +213,7 @@
 	Text colour	文本颜色
 	Text to Speech: another sequence is open now; the narration was not placed	文本转语音：当前已打开另一个序列，未放置旁白
 	Text to Speech: {e}	文本转语音：{e}
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 混音将成为 7.1 DS 声床（IAB 配置文件 1）；主声音的第 14 声道承载 FSK 同步信号。
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 混音将成为 9.1OH 声床，7.1 混音成为 7.1 DS 声床，其他混音由其 5.1 生成 7.1 DS 声床（IAB 配置文件 1）；主声音的第 14 声道承载 FSK 同步信号。
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	找不到 CFA4 引擎（cfa4-cli）。请用以下命令构建：cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4 引擎意外停止并已重新启动。未保存的更改保存在恢复日志中，可以恢复。
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4 引擎意外停止。未保存的更改保存在恢复日志中；请重新启动 CFA4 以恢复。
@@ -320,5 +318,91 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 压缩
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Strikethrough	删除线
+	Caption Export Settings	字幕导出设置
+	Export Captions	导出字幕
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} 已存在，因此未导出任何内容。要替换它，请在保存对话框中选择该文件。
+	Delete Redoable Actions	删除可重做的操作
+	Clear History	清除历史记录
+	Delete the dimmed actions after the current state? They cannot be redone.	删除当前状态之后显示为灰色的操作吗？这些操作将无法重做。
+	Work Area Bar	工作区栏
+	Start: {tc}	开始：{tc}
+	End: {tc}	结束：{tc}
+	Duration: {tc}	持续时间：{tc}
+	Panel menu	面板菜单
+	Move panel	移动面板
+	Transparency Grid	透明网格
 	Show Duplicate Frame Markers	显示重复帧标记
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	序列入点/出点只有 1 帧。要导出整个序列，请选择“整个序列”。
+	Set Work Area Bar In Point	设置工作区栏入点
+	Set Work Area Bar Out Point	设置工作区栏出点
+	Delete Clips	删除剪辑
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	正在分析剪辑…
+	At GOP boundaries (no re-encoding)	在 GOP 边界（不重新编码）
+	Bit-exact copy	逐位相同的副本
+	Choose the output file.	请选择输出文件。
+	Compatible copy	兼容副本
+	Copy:	复制：
+	Cut:	剪切：
+	Frame accurate (re-encode the boundaries)	精确到帧（重新编码边界）
+	Open a video clip in the Source monitor first.	请先在源监视器中打开视频剪辑。
+	Output:	输出：
+	Smart Cut Source	智能剪切源
+	Smart Cut Source…	智能剪切源…
+	Smart Cut is not available for this clip: {why}	此剪辑无法使用智能剪切：{why}
+	Smart Cut written and verified: {path} ({frames} frames)	智能剪切已写入并校验：{path}（{frames} 帧）
+	The cut cannot run.	无法执行剪切。
+	The engine sent no analysis.	引擎未发送分析结果。
+	Writing and verifying the cut…	正在写入并校验剪切…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{container} 中的 {codec}：{gops} 个 GOP，{points} 个干净剪切点
+	{copied} frames copied, {reencoded} frames re-encoded	已复制 {copied} 帧，重新编码 {reencoded} 帧
+	{frames} frames at the boundaries are re-encoded. Continue?	边界处的 {frames} 帧将重新编码。是否继续？
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	显示 GOP 边界
+# Export window Smart Export (WP-08)
+	Export mode	导出模式
+	Full Render	完全渲染
+	Planning…	正在规划…
+	Recommended: Smart Render (asks before re-encoding)	推荐：智能渲染（重新编码前询问）
+	Recommended: Stream Copy (nothing is re-encoded)	推荐：流复制（不重新编码）
+	Rendered because of: {causes}	渲染原因：{causes}
+	Smart Export	智能导出
+	Smart Export written and verified: {path}	智能导出已写入并校验：{path}
+	Smart Render	智能渲染
+	Stream Copy – Bit-exact	流复制 – 逐位相同
+	Stream Copy – Compatible	流复制 – 兼容
+	Stream copy is not possible: {frames} frames need re-encoding.	无法流复制：{frames} 帧需要重新编码。
+	The export cannot run.	无法执行导出。
+	Wait for the export plan.	请等待导出计划。
+	Writing and verifying the export…	正在写入并校验导出…
+	colour conversion	颜色转换
+	compositing	合成
+	copied	已复制
+	effects	效果
+	frame rate	帧速率
+	proxies or nested sequences	代理或嵌套序列
+	re-encoded at a cut	在剪切处重新编码
+	rendered	已渲染
+	sources that cannot be copied	无法复制的源
+	speed changes	速度变化
+	titles or overlays	标题或叠加
+	transforms	变换
+	transitions	转场
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	已复制 {copied} 帧，在剪切处重新编码 {reencoded} 帧，渲染 {rendered} 帧
+	{frames} frames are re-encoded or rendered. Continue?	{frames} 帧将重新编码或渲染。是否继续？
+	Field order	场序
+	Progressive	逐行
+	Interlaced, upper field first	隔行，上场优先
+	Interlaced, lower field first	隔行，下场优先
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	已复制音频：{tracks}
+	Audio track {track} is not copied: {why}	音轨 {track} 未复制：{why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	点跟踪器
+	Correlation tracker	相关跟踪器
+	DCP language	DCP 语言
+	None (RFC 5646 tag, e.g. en-US)	无（RFC 5646 标签，例如 zh-CN）
+	ISDCF name	ISDCF 名称
+	Name the DCP folder by the Digital Cinema Naming Convention	按 Digital Cinema Naming Convention 命名 DCP 文件夹
+	Height	高度

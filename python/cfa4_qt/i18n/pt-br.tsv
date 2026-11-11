@@ -37,8 +37,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	O CFA4 encontrou um erro
 	CFA4 project links	Links do projeto CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 fechou inesperadamente enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 foi fechado enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
 	Cancel Selected	Cancelar selecionados
 	Cannot check the output folder for files to replace: {error}	Não é possível verificar a pasta de saída em busca de arquivos a substituir: {error}
 	Cannot create the output folder: {error}	Não é possível criar a pasta de saída: {error}
@@ -115,7 +113,7 @@
 	Go to caption	Ir para a legenda
 	Go to graphic	Ir para o gráfico
 	Hear this voice	Ouvir esta voz
-	IAB 7.1 DS bed from the 5.1 mix	Base IAB 7.1 DS a partir da mixagem 5.1
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Base IAB a partir da mixagem (7.1 DS; 9.1OH a partir de 7.1.2)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab ou Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB de um arquivo (IAB MXF, .iab ou Dolby Atmos TrueHD)
 	IAB source	Origem IAB
@@ -216,7 +214,7 @@
 	Text colour	Cor do texto
 	Text to Speech: another sequence is open now; the narration was not placed	Texto para fala: outra sequência está aberta agora; a narração não foi colocada
 	Text to Speech: {e}	Texto para fala: {e}
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	A mixagem 5.1 vira uma base 7.1 DS (perfil IAB 1); o canal 14 do som principal leva o sinal de sincronismo FSK.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Uma mixagem 7.1.2 vira uma base 9.1OH, uma mixagem 7.1 uma base 7.1 DS e qualquer outra mixagem uma base 7.1 DS a partir do seu 5.1 (perfil IAB 1); o canal 14 do som principal leva o sinal de sincronismo FSK.
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	O mecanismo do CFA4 (cfa4-cli) não foi encontrado. Compile-o com: cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	O mecanismo do CFA4 parou inesperadamente e foi reiniciado. As alterações não salvas ficam no diário de recuperação, que oferece recuperá-las.
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	O mecanismo do CFA4 parou inesperadamente. As alterações não salvas ficam no diário de recuperação; reinicie o CFA4 para recuperá-las.
@@ -321,5 +319,91 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compactação {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Tachado
+	Caption Export Settings	Configurações de exportação de legendas
+	Export Captions	Exportar legendas
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} já existe, então nada foi exportado. Para substituí-lo, escolha-o na janela de salvar.
+	Delete Redoable Actions	Excluir ações refazíveis
+	Clear History	Limpar histórico
+	Delete the dimmed actions after the current state? They cannot be redone.	Excluir as ações esmaecidas após o estado atual? Elas não poderão ser refeitas.
+	Work Area Bar	Barra da área de trabalho
+	Start: {tc}	Início: {tc}
+	End: {tc}	Fim: {tc}
+	Duration: {tc}	Duração: {tc}
+	Panel menu	Menu do painel
+	Move panel	Mover painel
+	Transparency Grid	Grade de transparência
 	Show Duplicate Frame Markers	Mostrar marcadores de quadros duplicados
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A entrada/saída da sequência tem só 1 quadro. Escolha Sequência inteira para exportar a sequência toda.
+	Set Work Area Bar In Point	Definir ponto de entrada da barra da área de trabalho
+	Set Work Area Bar Out Point	Definir ponto de saída da barra da área de trabalho
+	Delete Clips	Excluir clipes
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Analisando o clipe…
+	At GOP boundaries (no re-encoding)	Nos limites de GOP (sem recodificar)
+	Bit-exact copy	Cópia idêntica bit a bit
+	Choose the output file.	Escolha o arquivo de saída.
+	Compatible copy	Cópia compatível
+	Copy:	Cópia:
+	Cut:	Corte:
+	Frame accurate (re-encode the boundaries)	Preciso ao quadro (recodificar os limites)
+	Open a video clip in the Source monitor first.	Abra primeiro um clipe de vídeo no monitor de origem.
+	Output:	Saída:
+	Smart Cut Source	Smart Cut da origem
+	Smart Cut Source…	Smart Cut da origem…
+	Smart Cut is not available for this clip: {why}	O Smart Cut não está disponível para este clipe: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut gravado e verificado: {path} ({frames} quadros)
+	The cut cannot run.	O corte não pode ser executado.
+	The engine sent no analysis.	O mecanismo não enviou nenhuma análise.
+	Writing and verifying the cut…	Gravando e verificando o corte…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} em {container}: {gops} GOPs, {points} pontos de corte limpos
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} quadros copiados, {reencoded} quadros recodificados
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} quadros nos limites serão recodificados. Continuar?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Mostrar limites de GOP
+# Export window Smart Export (WP-08)
+	Export mode	Modo de exportação
+	Full Render	Renderização completa
+	Planning…	Planejando…
+	Recommended: Smart Render (asks before re-encoding)	Recomendado: Smart Render (pergunta antes de recodificar)
+	Recommended: Stream Copy (nothing is re-encoded)	Recomendado: Stream Copy (nada é recodificado)
+	Rendered because of: {causes}	Renderizado por causa de: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export gravado e verificado: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – idêntico bit a bit
+	Stream Copy – Compatible	Stream Copy – compatível
+	Stream copy is not possible: {frames} frames need re-encoding.	A cópia de fluxo não é possível: {frames} quadros precisam ser recodificados.
+	The export cannot run.	A exportação não pode ser executada.
+	Wait for the export plan.	Aguarde o plano de exportação.
+	Writing and verifying the export…	Gravando e verificando a exportação…
+	colour conversion	conversão de cor
+	compositing	composição
+	copied	copiado
+	effects	efeitos
+	frame rate	taxa de quadros
+	proxies or nested sequences	proxies ou sequências aninhadas
+	re-encoded at a cut	recodificado em um corte
+	rendered	renderizado
+	sources that cannot be copied	origens que não podem ser copiadas
+	speed changes	mudanças de velocidade
+	titles or overlays	títulos ou sobreposições
+	transforms	transformações
+	transitions	transições
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} quadros copiados, {reencoded} recodificados em cortes, {rendered} renderizados
+	{frames} frames are re-encoded or rendered. Continue?	{frames} quadros serão recodificados ou renderizados. Continuar?
+	Field order	Ordem dos campos
+	Progressive	Progressivo
+	Interlaced, upper field first	Entrelaçado, campo superior primeiro
+	Interlaced, lower field first	Entrelaçado, campo inferior primeiro
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Áudio copiado: {tracks}
+	Audio track {track} is not copied: {why}	A faixa de áudio {track} não é copiada: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	Rastreador de pontos
+	Correlation tracker	Rastreador por correlação
+	DCP language	Idioma do DCP
+	None (RFC 5646 tag, e.g. en-US)	Nenhum (tag RFC 5646, ex.: pt-BR)
+	ISDCF name	Nome ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Nomear a pasta do DCP pela Digital Cinema Naming Convention
+	Height	Altura

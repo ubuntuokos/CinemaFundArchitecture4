@@ -334,3 +334,44 @@ fn rejects_bad_config() {
     let y = vec![0u8; 10];
     assert!(enc.try_encode(&YuvFrame { y: &y, u: &y, v: &y, y_stride: 64, uv_stride: 32 }, 0).is_err());
 }
+
+/// Two streams with distinct parameter-set ids and IDR ids, back to back, form one valid stream:
+/// the second one's SPS/PPS (ids 1/2) live beside the first one's (0/0), as in a Smart Render
+/// splice, and both decode bit-exactly to their reconstructions.
+#[test]
+fn spliced_streams_with_distinct_parameter_set_ids() {
+    if ffmpeg().is_none() {
+        eprintln!("ffmpeg not found; skipping");
+        return;
+    }
+    let (w, h, n) = (176, 144, 6);
+    let frames: Vec<Yuv> = (0..2 * n).map(|t| synth(w, h, t)).collect();
+    let mut first = cfg(w, h, Profile::High, Preset::Balanced, 2, RateControl::Qp(28), 1);
+    first.keyint = 3;
+    let mut second = first.clone();
+    second.sps_id = 1;
+    second.pps_id = 2;
+    second.first_idr_pic_id = 1;
+    let a = encode(first, &frames[..n]);
+    let b = encode(second.clone(), &frames[n..]);
+    // The ids are where they were asked for.
+    let enc = Encoder::new(second).unwrap();
+    let (sps, pps) = enc.sps_pps();
+    let ue = |bits: &[u8], skip: usize| {
+        let mut zeros = 0;
+        while bits[skip + zeros] == 0 {
+            zeros += 1;
+        }
+        let tail = bits[skip + zeros + 1..=skip + 2 * zeros].iter().fold(0u32, |v, b| v * 2 + u32::from(*b));
+        (1u32 << zeros) - 1 + tail
+    };
+    let bits = |nal: &[u8]| nal.iter().skip(1).flat_map(|b| (0..8).rev().map(move |i| (b >> i) & 1)).collect::<Vec<u8>>();
+    let start = |nal: &[u8]| nal.windows(4).position(|w| w == [0, 0, 0, 1]).map_or(nal, |p| &nal[p + 4..]).to_vec();
+    assert_eq!(ue(&bits(&start(&sps)), 24), 1, "seq_parameter_set_id");
+    assert_eq!(ue(&bits(&start(&pps)), 0), 2, "pic_parameter_set_id");
+    let mut spliced = Run { stream: a.stream.clone(), packets: a.packets.clone(), recon: a.recon.clone() };
+    spliced.stream.extend_from_slice(&b.stream);
+    spliced.recon.extend(b.recon.iter().cloned());
+    verify("spliced_ids", &spliced, w, h, 2 * n);
+    assert!(Encoder::new(EncoderConfig { sps_id: 32, ..EncoderConfig::new(16, 16, 25, 1) }).is_err());
+}

@@ -1,6 +1,6 @@
 # CFA4-EVENT-FABRIC-001 1.0 – CFA4-illesztési melléklet
 
-**Dátum:** 2026-11-02 · **Állapot:** nyitott kérdések, tulajdonosi döntésre várnak · **Terv:**
+**Dátum:** 2026-11-02 · **Állapot:** minden kérdés eldöntve (tulajdonos: Q1–Q4 és Q9–Q12 2026-11-06, Q5–Q8 2026-11-08) · **Terv:**
 [`CFA4-EVENT-FABRIC-001-1.0.md`](CFA4-EVENT-FABRIC-001-1.0.md)
 
 Ez a melléklet **nem módosítja** a jóváhagyott tervet. Azt rögzíti, hol tér el a terv a `main`-ben ma
@@ -32,19 +32,19 @@ a terv új verziót kap (1.1).
 | E18 | Protobuf-payload kódolása (5.1, 6.1, EF-007) | a `payload` típusa `Object`, a példa `application/json` | Nincs meghatározva, hogy Protobuf-eseménynél a payload bináris, base64 vagy JSON-leképezés; az SDK-k eltérhetnek, a közös JSON-tesztvektorok ezt nem fogják meg | A kanonikus kódolás és a `content_type`-leképezés rögzítése; SDK-k közötti Protobuf-tesztvektorok (Q11) |
 | E19 | `trace_id` formátuma (5.1–5.2, 16.2) | String; példa: `trace-example-001` | Az OpenTelemetry/W3C Trace Context 32 kisbetűs hexa karaktert vár, az érvénytelent eldobja, így a nyomkövetés csendben megszakad | Formátum rögzítése és ellenőrzése (W3C trace-id), a példa cseréje érvényes értékre a végrehajtási tervben (Q12) |
 
-## 2. Nyitott kérdések
+## 2. Kérdések és döntések
 
-| # | Kérdés | Javaslat |
-|---|---|---|
-| Q1 | Mely CFA4-elemek lépnek a HRB, Execution Fabric, Agent Coordination, Security Governance és Evidence Registry helyére (E1–E6)? | A Model Routernek van megfelelője (`cfa4-ai-registry`); a többinél, köztük az erőforrás-hatóságnál (E1), előbb terv kell, vagy egy meglévő elem (pl. `cfa4-ai-jobs`) általánosítása |
-| Q2 | Lehet-e részkiadás (E7), amelyre fogyasztó építhet? | Igen: EF-R1 = F1–F5 + Rust és Python SDK |
-| Q3 | Kell-e most a C++ és a TypeScript SDK (E8)? | Csak ha lesz fogyasztója |
-| Q4 | Egygépes módban is a teljes NATS + JetStream + Valkey fusson-e, és hogyan települjön (E9)? | Igen, felhasználói systemd-szolgáltatásként; előbb mérés a minimális kliensgépen |
-| Q5 | Kötelező legyen-e a `producer` mező hitelesített identitáshoz kötése (E13)? | Igen; a Gateway a kapcsolat identitásából tölti ki, eltérésnél elutasít |
-| Q6 | Hogyan fusson a replay az idempotencia mellett (E14)? | Külön replay-Consumer-identitás vagy külön idempotencia-névtér |
-| Q7 | Bekerüljön-e a mutációs fuzz-teszt a 20. pontba és a 25. kapuba (E11)? | Igen (`AGENTS.md` §0.8) |
-| Q8 | Melyik az eseménytípus kanonikus alakja (E15)? | `event_type` verzió nélkül; `.vN` csak a `schema_id`-ban |
-| Q9 | Kötelező-e az outbox (vagy egyenértékű) a kritikus események kibocsátóinál (E16)? | Igen, összeomlási-ablak teszttel |
-| Q10 | Hogyan biztosítjuk egy entitás eseményeinek sorrendjét (E17)? | Entitásonkénti sorszám, elavult frissítés elvetése; teszt átrendezett kézbesítéssel |
-| Q11 | Mi a Protobuf-payload kanonikus kódolása (E18)? | Rögzített kódolás és `content_type`-leképezés, közös Protobuf-tesztvektorok |
-| Q12 | Kötelező-e a W3C-formátumú `trace_id` (E19)? | Igen, a Gateway ellenőrzi |
+| # | Kérdés | Javaslat | Döntés |
+|---|---|---|---|
+| Q1 | Mely CFA4-elemek lépnek a HRB, Execution Fabric, Agent Coordination, Security Governance és Evidence Registry helyére (E1–E6)? | A Model Routernek van megfelelője (`cfa4-ai-registry`); a többinél, köztük az erőforrás-hatóságnál (E1), előbb terv kell, vagy egy meglévő elem (pl. `cfa4-ai-jobs`) általánosítása | Elfogadva (tulajdonos, 2026-11-06): Model Router → `cfa4-ai-registry`, Evidence Registry → a CFA4 naplója; az erőforrás-hatósághoz, a Security Governance-hez és az Execution Fabrichoz előbb terv kell |
+| Q2 | Lehet-e részkiadás (E7), amelyre fogyasztó építhet? | Igen: EF-R1 = F1–F5 + Rust és Python SDK | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
+| Q3 | Kell-e most a C++ és a TypeScript SDK (E8)? | Csak ha lesz fogyasztója | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
+| Q4 | Egygépes módban is a teljes NATS + JetStream + Valkey fusson-e, és hogyan települjön (E9)? | Igen, felhasználói systemd-szolgáltatásként; előbb mérés a minimális kliensgépen | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
+| Q5 | Kötelező legyen-e a `producer` mező hitelesített identitáshoz kötése (E13)? | Igen; a Gateway a kapcsolat identitásából tölti ki, eltérésnél elutasít | Elfogadva a javaslat szerint (tulajdonos, 2026-11-08) |
+| Q6 | Hogyan fusson a replay az idempotencia mellett (E14)? | Külön replay-Consumer-identitás vagy külön idempotencia-névtér | Elfogadva a javaslat szerint (tulajdonos, 2026-11-08) |
+| Q7 | Bekerüljön-e a mutációs fuzz-teszt a 20. pontba és a 25. kapuba (E11)? | Igen (`AGENTS.md` §0.8) | Elfogadva a javaslat szerint (tulajdonos, 2026-11-08) |
+| Q8 | Melyik az eseménytípus kanonikus alakja (E15)? | `event_type` verzió nélkül; `.vN` csak a `schema_id`-ban | Elfogadva a javaslat szerint (tulajdonos, 2026-11-08) |
+| Q9 | Kötelező-e az outbox (vagy egyenértékű) a kritikus események kibocsátóinál (E16)? | Igen, összeomlási-ablak teszttel | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
+| Q10 | Hogyan biztosítjuk egy entitás eseményeinek sorrendjét (E17)? | Entitásonkénti sorszám, elavult frissítés elvetése; teszt átrendezett kézbesítéssel | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
+| Q11 | Mi a Protobuf-payload kanonikus kódolása (E18)? | Rögzített kódolás és `content_type`-leképezés, közös Protobuf-tesztvektorok | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
+| Q12 | Kötelező-e a W3C-formátumú `trace_id` (E19)? | Igen, a Gateway ellenőrzi | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |

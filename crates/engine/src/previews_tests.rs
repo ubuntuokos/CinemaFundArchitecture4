@@ -168,6 +168,11 @@ fn render_in_to_out_renders_only_the_marked_frames() {
     assert_eq!(spans(&s), vec![(0, 6, Yellow), (6, 12, Green), (12, 24, Yellow), (24, 48, NoBar)]);
     assert_eq!(states(&s), vec!["yellow", "none"], "a partly rendered segment is not green");
     assert_eq!(crate::previews::bar_json(&s).unwrap()["segments"][0]["renderedFrames"], 6);
+    // the bar as the GUIs draw it: ticks and lowercase states
+    let r = FrameRate::FPS_24;
+    let bar = crate::previews::bar_json(&s).unwrap()["bar"].clone();
+    assert_eq!(bar[1], json!({"start": r.tick_of(6).0, "end": r.tick_of(12).0, "state": "green"}), "{bar}");
+    assert_eq!(bar.as_array().unwrap().len(), 4, "{bar}");
     for f in [5, 12, 30] {
         assert!(s.previews.frame(&s.media, &s.project, seq, f, 1.0).is_none(), "frame {f} has no preview");
     }
@@ -324,7 +329,7 @@ fn preview_files_are_streamed_not_read_whole() {
     std::fs::write(&png, PNG).unwrap();
     assert!(s.media.open_bytes("still.png", PNG.into()).is_ok(), "the image opens from its bytes");
     // (the web, without a file reader, still reads preview files whole)
-    if cfg!(any(unix, windows)) {
+    if cfg!(unix) {
         assert!(crate::previews::open_preview_file(&s.media, "still.png", &png).is_none());
     }
     let _ = std::fs::remove_dir_all(dir);

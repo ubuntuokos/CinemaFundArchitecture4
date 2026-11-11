@@ -373,6 +373,35 @@ impl TrackMethod {
     }
 }
 
+/// Which tracker `masks.track` uses (CFA4 extra; Premiere has only the point tracker).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Tracker {
+    /// Corners inside the mask, Lucas–Kanade + RANSAC: exact on textured, rigid content; follows
+    /// rotation.
+    #[default]
+    Points,
+    /// Correlation filter on the object's appearance (KCF/CSRT-style): follows plain or deforming
+    /// objects and reports occlusion; position and scale only.
+    Correlation,
+}
+
+impl Tracker {
+    pub const ALL: [Tracker; 2] = [Tracker::Points, Tracker::Correlation];
+    pub fn label(self) -> &'static str {
+        match self {
+            Tracker::Points => "Points",
+            Tracker::Correlation => "Correlation",
+        }
+    }
+    pub fn from_name(s: &str) -> Option<Self> {
+        match s.to_ascii_lowercase().as_str() {
+            "points" | "point" => Some(Tracker::Points),
+            "correlation" | "object" => Some(Tracker::Correlation),
+            _ => None,
+        }
+    }
+}
+
 /// A mask on an effect instance.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Mask {
@@ -391,6 +420,8 @@ pub struct Mask {
     pub mode: MaskMode,
     #[serde(default)]
     pub track_method: TrackMethod,
+    #[serde(default)]
+    pub tracker: Tracker,
 }
 
 /// Mask parameter ids (keyframe commands address them with `"mask": n`).
@@ -407,6 +438,7 @@ impl Mask {
             inverted: false,
             mode: MaskMode::Add,
             track_method: TrackMethod::default(),
+            tracker: Tracker::default(),
         }
     }
     pub fn param(&self, id: &str) -> Option<&Param> {

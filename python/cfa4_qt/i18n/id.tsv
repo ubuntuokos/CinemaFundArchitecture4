@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 mengalami galat
 	CFA4 project links	Tautan proyek CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 berhenti tiba-tiba saat '{name}' memiliki perubahan yang belum disimpan. Pulihkan perubahan yang belum disimpan dari {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 ditutup saat '{name}' memiliki perubahan yang belum disimpan. Pulihkan perubahan yang belum disimpan dari {time}?
 	Cancel Selected	Batalkan yang dipilih
 	Cannot check the output folder for files to replace: {error}	Tidak dapat memeriksa folder keluaran untuk berkas yang akan diganti: {error}
 	Cannot create the output folder: {error}	Tidak dapat membuat folder keluaran: {error}
@@ -114,7 +112,7 @@
 	Go to caption	Ke teks
 	Go to graphic	Ke grafik
 	Hear this voice	Dengarkan suara ini
-	IAB 7.1 DS bed from the 5.1 mix	Dasar IAB 7.1 DS dari campuran 5.1
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Dasar IAB dari campuran (7.1 DS; 9.1OH dari 7.1.2)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab, atau Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB dari berkas (IAB MXF, .iab, atau Dolby Atmos TrueHD)
 	IAB source	Sumber IAB
@@ -215,7 +213,7 @@
 	Text colour	Warna teks
 	Text to Speech: another sequence is open now; the narration was not placed	Teks ke ucapan: sekuens lain sedang terbuka; narasi tidak ditempatkan
 	Text to Speech: {e}	Teks ke ucapan: {e}
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Campuran 5.1 menjadi dasar 7.1 DS (Profil IAB 1); kanal 14 suara utama membawa sinyal sinkronisasi FSK.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Campuran 7.1.2 menjadi dasar 9.1OH, campuran 7.1 menjadi dasar 7.1 DS, campuran lain menjadi dasar 7.1 DS dari versi 5.1-nya (Profil IAB 1); kanal 14 suara utama membawa sinyal sinkronisasi FSK.
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Mesin CFA4 (cfa4-cli) tidak ditemukan. Buat dengan: cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Mesin CFA4 berhenti tiba-tiba dan dimulai ulang. Perubahan yang belum disimpan tersimpan di jurnal pemulihan, yang menawarkan untuk memulihkannya.
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Mesin CFA4 berhenti tiba-tiba. Perubahan yang belum disimpan tersimpan di jurnal pemulihan; mulai ulang CFA4 untuk memulihkannya.
@@ -320,5 +318,91 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	kompresi {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Strikethrough	Coret
+	Caption Export Settings	Pengaturan Ekspor Teks
+	Export Captions	Ekspor Teks
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} sudah ada, jadi tidak ada yang diekspor. Untuk menggantinya, pilih file itu di dialog simpan.
+	Delete Redoable Actions	Hapus Tindakan yang Dapat Diulang
+	Clear History	Bersihkan Riwayat
+	Delete the dimmed actions after the current state? They cannot be redone.	Hapus tindakan redup setelah keadaan saat ini? Tindakan itu tidak dapat diulang lagi.
+	Work Area Bar	Bilah Area Kerja
+	Start: {tc}	Awal: {tc}
+	End: {tc}	Akhir: {tc}
+	Duration: {tc}	Durasi: {tc}
+	Panel menu	Menu panel
+	Move panel	Pindahkan panel
+	Transparency Grid	Kisi Transparansi
 	Show Duplicate Frame Markers	Tampilkan Penanda Frame Duplikat
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Masuk/keluar sekuens hanya 1 frame. Pilih Seluruh sekuens untuk mengekspor seluruh sekuens.
+	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
+	Set Work Area Bar Out Point	Atur Titik Keluar Bilah Area Kerja
+	Delete Clips	Hapus Klip
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Menganalisis klip…
+	At GOP boundaries (no re-encoding)	Di batas GOP (tanpa enkode ulang)
+	Bit-exact copy	Salinan identik per bit
+	Choose the output file.	Pilih berkas keluaran.
+	Compatible copy	Salinan kompatibel
+	Copy:	Salin:
+	Cut:	Potong:
+	Frame accurate (re-encode the boundaries)	Akurat per bingkai (enkode ulang batas)
+	Open a video clip in the Source monitor first.	Buka klip video di monitor sumber terlebih dahulu.
+	Output:	Keluaran:
+	Smart Cut Source	Smart Cut sumber
+	Smart Cut Source…	Smart Cut sumber…
+	Smart Cut is not available for this clip: {why}	Smart Cut tidak tersedia untuk klip ini: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut ditulis dan diverifikasi: {path} ({frames} bingkai)
+	The cut cannot run.	Pemotongan tidak dapat dijalankan.
+	The engine sent no analysis.	Mesin tidak mengirim analisis.
+	Writing and verifying the cut…	Menulis dan memverifikasi potongan…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} dalam {container}: {gops} GOP, {points} titik potong bersih
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} bingkai disalin, {reencoded} bingkai dienkode ulang
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} bingkai di batas akan dienkode ulang. Lanjutkan?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Tampilkan batas GOP
+# Export window Smart Export (WP-08)
+	Export mode	Mode ekspor
+	Full Render	Render penuh
+	Planning…	Merencanakan…
+	Recommended: Smart Render (asks before re-encoding)	Disarankan: Smart Render (bertanya sebelum enkode ulang)
+	Recommended: Stream Copy (nothing is re-encoded)	Disarankan: Stream Copy (tidak ada yang dienkode ulang)
+	Rendered because of: {causes}	Dirender karena: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export ditulis dan diverifikasi: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – identik per bit
+	Stream Copy – Compatible	Stream Copy – kompatibel
+	Stream copy is not possible: {frames} frames need re-encoding.	Stream copy tidak mungkin: {frames} bingkai perlu dienkode ulang.
+	The export cannot run.	Ekspor tidak dapat dijalankan.
+	Wait for the export plan.	Tunggu rencana ekspor.
+	Writing and verifying the export…	Menulis dan memverifikasi ekspor…
+	colour conversion	konversi warna
+	compositing	komposit
+	copied	disalin
+	effects	efek
+	frame rate	laju bingkai
+	proxies or nested sequences	proksi atau sekuens bersarang
+	re-encoded at a cut	dienkode ulang di potongan
+	rendered	dirender
+	sources that cannot be copied	sumber yang tidak dapat disalin
+	speed changes	perubahan kecepatan
+	titles or overlays	judul atau hamparan
+	transforms	transformasi
+	transitions	transisi
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} bingkai disalin, {reencoded} dienkode ulang di potongan, {rendered} dirender
+	{frames} frames are re-encoded or rendered. Continue?	{frames} bingkai dienkode ulang atau dirender. Lanjutkan?
+	Field order	Urutan field
+	Progressive	Progresif
+	Interlaced, upper field first	Interlaced, field atas dahulu
+	Interlaced, lower field first	Interlaced, field bawah dahulu
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Audio disalin: {tracks}
+	Audio track {track} is not copied: {why}	Trek audio {track} tidak disalin: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	Pelacak titik
+	Correlation tracker	Pelacak korelasi
+	DCP language	Bahasa DCP
+	None (RFC 5646 tag, e.g. en-US)	Tidak ada (tag RFC 5646, mis. id-ID)
+	ISDCF name	Nama ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Namai folder DCP menurut Digital Cinema Naming Convention
+	Height	Ketinggian

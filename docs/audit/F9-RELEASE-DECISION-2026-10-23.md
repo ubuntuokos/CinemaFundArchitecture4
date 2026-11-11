@@ -1,5 +1,7 @@
 # CFA4 F9 – Evidence-based release decision, 2026-10-23
 
+> Újraellenőrzés: [F9-RELEASE-STATUS-2026-11-08.md](F9-RELEASE-STATUS-2026-11-08.md) (a kapuk állapota a `main` `a697fd70`-n; az ítélet továbbra is HOLD).
+
 **VERDICT: HOLD**. No CFA4 package publication, GitHub release, auto-merge,
 APT repository or update rollout is authorized.
 

@@ -1,7 +1,7 @@
 # cfa4-hevc
 
 Clean-room, pure-Rust (no `unsafe`) H.265 / HEVC decoder and encoder ([`encode`](#encoder)), implemented from the public ITU-T
-Rec. H.265 (ISO/IEC 23008-2) specification. It is an L0 crate: it depends only on
+Rec. H.265 (08/2021, ISO/IEC 23008-2) specification. It is an L0 crate: it depends only on
 `cfa4-bitstream`, `thiserror`, and optionally `rayon` (default feature `threads`), and builds
 for `wasm32-unknown-unknown`.
 
@@ -11,7 +11,7 @@ the luma / chroma interpolation filter taps and the 32x32 DCT matrix) were extra
 specification text by [`tools/extract_tables.py`](tools/extract_tables.py) (it only reads the text
 of the ITU-T PDF, see the script header); the output is `src/spec_tables.rs`. Scan orders are
 derived by the algorithms of 6.5.3-6.5.5. No code was taken or ported from FFmpeg, libde265, x265 or
-the HM reference software; ffmpeg / libx265 / VideoToolbox are only used as external test oracles
+the HM reference software; ffmpeg / libx265 are only used as external test oracles
 and fixture generators.
 
 ## Status
@@ -70,6 +70,11 @@ row on exactly the reference rows it reads. Samples are stored as `u8` for 8-bit
 the memory traffic in prediction reads, in-loop filters and output) and as `u16` above 8 bits: the
 slice decoder and the filters are generic over the sample type (`picture::Sample`), monomorphised
 once per type.
+
+Unavailable references keep distinct frame IDs and POCs while sharing one immutable gray backing
+for the active picture format. This backing is created only when a reference is missing, replaced
+on geometry or plane-depth changes, and released on flush. Jobs still reading an older format keep
+its rows alive. Each backing retains the full coded picture dimensions.
 
 Draft mode (`Decoder::set_draft(true)`; CFA4 enables it with Settings ▸ Playback ▸ Draft
 decoding while the Program monitor plays at 1/2 or 1/4): sub-layer non-reference pictures
@@ -169,7 +174,6 @@ libx265 unless noted (x265 enables WPP by default, so most streams carry entry p
 | odd_1918x1078 | 1918x1078 | conformance-window cropping |
 | hd_1080p | 1920x1080 | preset fast |
 | uhd_4k_main10 | 3840x2160 | Main 10 ultrafast |
-| vt_main / vt_main10 | 640x360 | Apple VideoToolbox (hevc_videotoolbox), macOS only |
 | synthetic (7 streams) | 96x64 | tiles, PCM, slices, dependent segments, LTR, list modification |
 
 `cargo test -p cfa4-hevc --test conformance coverage_report -- --ignored --nocapture` prints the
@@ -187,7 +191,7 @@ average 50-100), so these are lower bounds:
 | 2160p Main 10, x265 fast CRF 26, 20 frames | ~20 fps | ~95 fps |
 
 No intrinsics: the hot loops are written to auto-vectorise. M4.8
-profiling (`cargo xtask bench`, macOS `sample`) found the inverse transform at over half of the
+profiling (`cargo xtask bench` and a sampling profiler) found the inverse transform at over half of the
 decoder's CPU time: it evaluated the full matrix product with strided table reads. It now sums
 contiguous basis rows scaled by the non-zero coefficients only, with the block size a compile-time
 constant so the loops vectorise (exact integer sums, so bit-exact; `transform::tests` checks it

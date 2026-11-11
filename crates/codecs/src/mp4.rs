@@ -625,7 +625,7 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         c => codec_label(c),
     };
     let (rate, ch) = cfa4_media::bounded_audio_dimensions(rate, ch).ok()?;
-    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits })
+    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits, speakers: Vec::new() })
 }
 
 fn codec_label(c: &CodecConfig) -> String {
@@ -645,6 +645,9 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Hevc(_) => "HEVC".into(),
         CodecConfig::Vp9(c) => format!("VP9 (Profile {})", c.profile),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"vp08" => "VP8".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"raw " => "Uncompressed RGB".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"2vuy" => "Uncompressed YUV 4:2:2".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"v210" => "Uncompressed YUV 4:2:2 10-bit".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
         CodecConfig::Av1(c) => format!("AV1 ({} Profile)", ["Main", "High", "Professional"].get(c.seq_profile as usize).unwrap_or(&"Main")),
         CodecConfig::Apv(a) => match cfa4_apv::Profile::from_idc(a.profile_idc) {
