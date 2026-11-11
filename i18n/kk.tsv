@@ -4114,3 +4114,32 @@ export.summary	Low	төмен
 	Star	Жұлдыз
 	Width	Ені
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Кестеден титрлер
+	A .ods, .xlsx or CSV credits sheet	.ods, .xlsx немесе CSV титрлер кестесі
+	The spreadsheet's folder	Кесте бумасы
+	Built-in styles	Кірістірілген стильдер
+	Spreadsheet	Кесте
+	Sheet	Парақ
+	Pictures	Суреттер
+	Styling	Стиль
+	Page	Бет
+	Warnings	Ескертулер
+	Moment in the page	Беттегі сәт
+	Place at Playhead	Ойнату көрсеткішіне орналастыру
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Кестелер (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Титрлер стилі (*.json)
+	Card	Карта
+	Credits Spreadsheet	Титрлер кестесі
+	Reading…	Оқылуда…
+	(one table)	(бір кесте)
+	Total: {time}	Барлығы: {time}
+	Row {row}: {message}	{row}-жол: {message}
+	Choose a credits spreadsheet.	Титрлер кестесін таңдаңыз.
+	No preview	Алдын ала қарау жоқ
+	Placing…	Орналастырылуда…
+	Placed {n} pages on the timeline.	Уақыт шкаласына {n} бет орналастырылды.
+	Credits Page Picture	Титрлер бетінің суреті
+	Preview Credits	Титрлерді алдын ала қарау
+	Credits Styles	Титрлер стильдері

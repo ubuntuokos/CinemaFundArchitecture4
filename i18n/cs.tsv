@@ -4112,3 +4112,32 @@ export.summary	Low	nízká
 	Navigation	Navigace
 	Panel	Panel
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Titulky tvůrců z tabulky
+	A .ods, .xlsx or CSV credits sheet	Tabulka titulků tvůrců ve formátu .ods, .xlsx nebo CSV
+	The spreadsheet's folder	Složka tabulky
+	Built-in styles	Vestavěné styly
+	Spreadsheet	Tabulka
+	Sheet	List
+	Pictures	Obrázky
+	Styling	Styl
+	Page	Stránka
+	Warnings	Upozornění
+	Moment in the page	Okamžik na stránce
+	Place at Playhead	Umístit na přehrávací hlavu
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tabulky (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Styl titulků tvůrců (*.json)
+	Card	Karta
+	Credits Spreadsheet	Tabulka titulků tvůrců
+	Reading…	Načítání…
+	(one table)	(jedna tabulka)
+	Total: {time}	Celkem: {time}
+	Row {row}: {message}	Řádek {row}: {message}
+	Choose a credits spreadsheet.	Zvolte tabulku titulků tvůrců.
+	No preview	Bez náhledu
+	Placing…	Umísťování…
+	Placed {n} pages on the timeline.	Na časovou osu umístěno stránek: {n}.
+	Credits Page Picture	Obrázek stránky titulků tvůrců
+	Preview Credits	Náhled titulků tvůrců
+	Credits Styles	Styly titulků tvůrců

@@ -4114,3 +4114,32 @@ export.summary	Low	niska
 	Triangle	Trokut
 	Stop	Zaustavi
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Odjavna špica iz tablice
+	A .ods, .xlsx or CSV credits sheet	Tablica odjavne špice u formatu .ods, .xlsx ili CSV
+	The spreadsheet's folder	Mapa tablice
+	Built-in styles	Ugrađeni stilovi
+	Spreadsheet	Tablica
+	Sheet	List
+	Pictures	Slike
+	Styling	Stil
+	Page	Stranica
+	Warnings	Upozorenja
+	Moment in the page	Trenutak na stranici
+	Place at Playhead	Postavi na glavu za reprodukciju
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tablice (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Stil odjavne špice (*.json)
+	Card	Kartica
+	Credits Spreadsheet	Tablica odjavne špice
+	Reading…	Čitanje…
+	(one table)	(jedna tablica)
+	Total: {time}	Ukupno: {time}
+	Row {row}: {message}	Redak {row}: {message}
+	Choose a credits spreadsheet.	Odaberite tablicu odjavne špice.
+	No preview	Nema pregleda
+	Placing…	Postavljanje…
+	Placed {n} pages on the timeline.	Na vremensku crtu postavljeno stranica: {n}.
+	Credits Page Picture	Slika stranice odjavne špice
+	Preview Credits	Pregled odjavne špice
+	Credits Styles	Stilovi odjavne špice

@@ -4112,3 +4112,32 @@ export.summary	Low	низак
 	Navigation	Навигација
 	Panel	Панел
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Шпица из табеле
+	A .ods, .xlsx or CSV credits sheet	Табела шпице у формату .ods, .xlsx или CSV
+	The spreadsheet's folder	Фасцикла табеле
+	Built-in styles	Уграђени стилови
+	Spreadsheet	Табела
+	Sheet	Лист
+	Pictures	Слике
+	Styling	Стил
+	Page	Страница
+	Warnings	Упозорења
+	Moment in the page	Тренутак на страници
+	Place at Playhead	Постави на главу за репродукцију
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Табеле (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Стил шпице (*.json)
+	Card	Картица
+	Credits Spreadsheet	Табела шпице
+	Reading…	Читање…
+	(one table)	(једна табела)
+	Total: {time}	Укупно: {time}
+	Row {row}: {message}	Ред {row}: {message}
+	Choose a credits spreadsheet.	Изаберите табелу шпице.
+	No preview	Нема прегледа
+	Placing…	Постављање…
+	Placed {n} pages on the timeline.	На временску линију постављено страница: {n}.
+	Credits Page Picture	Слика странице шпице
+	Preview Credits	Преглед шпице
+	Credits Styles	Стилови шпице

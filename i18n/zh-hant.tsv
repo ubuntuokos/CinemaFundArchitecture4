@@ -4111,3 +4111,32 @@ export.summary	Low	低
 	Contains	包含
 	Navigation	導覽
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	從試算表建立演職員表
+	A .ods, .xlsx or CSV credits sheet	.ods、.xlsx 或 CSV 演職員表試算表
+	The spreadsheet's folder	試算表所在的資料夾
+	Built-in styles	內建樣式
+	Spreadsheet	試算表
+	Sheet	工作表
+	Pictures	圖片
+	Styling	樣式
+	Page	頁面
+	Warnings	警告
+	Moment in the page	頁面中的時間點
+	Place at Playhead	放在播放指示器處
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	試算表 (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	演職員表樣式 (*.json)
+	Card	字卡
+	Credits Spreadsheet	演職員表試算表
+	Reading…	讀取中…
+	(one table)	(單一表格)
+	Total: {time}	總計：{time}
+	Row {row}: {message}	第 {row} 列：{message}
+	Choose a credits spreadsheet.	請選擇演職員表試算表。
+	No preview	無預覽
+	Placing…	放置中…
+	Placed {n} pages on the timeline.	已在時間軸上放置 {n} 頁。
+	Credits Page Picture	演職員表頁面圖片
+	Preview Credits	預覽演職員表
+	Credits Styles	演職員表樣式

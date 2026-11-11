@@ -4112,3 +4112,32 @@ export.summary	Low	niska
 	Contains	Zawiera
 	Navigation	Nawigacja
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Napisy końcowe z arkusza
+	A .ods, .xlsx or CSV credits sheet	Arkusz napisów końcowych .ods, .xlsx lub CSV
+	The spreadsheet's folder	Folder arkusza
+	Built-in styles	Wbudowane style
+	Spreadsheet	Arkusz kalkulacyjny
+	Sheet	Arkusz
+	Pictures	Obrazy
+	Styling	Styl
+	Page	Strona
+	Warnings	Ostrzeżenia
+	Moment in the page	Moment na stronie
+	Place at Playhead	Umieść przy głowicy odtwarzania
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Arkusze kalkulacyjne (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Styl napisów końcowych (*.json)
+	Card	Plansza
+	Credits Spreadsheet	Arkusz napisów końcowych
+	Reading…	Wczytywanie…
+	(one table)	(jedna tabela)
+	Total: {time}	Razem: {time}
+	Row {row}: {message}	Wiersz {row}: {message}
+	Choose a credits spreadsheet.	Wybierz arkusz napisów końcowych.
+	No preview	Brak podglądu
+	Placing…	Umieszczanie…
+	Placed {n} pages on the timeline.	Umieszczono strony na osi czasu: {n}.
+	Credits Page Picture	Obraz strony napisów końcowych
+	Preview Credits	Podgląd napisów końcowych
+	Credits Styles	Style napisów końcowych

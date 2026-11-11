@@ -4113,3 +4113,32 @@ export.summary	Low	düşük
 	Masks	Maskeler
 	Navigation	Gezinti
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Tablodan jenerik
+	A .ods, .xlsx or CSV credits sheet	.ods, .xlsx veya CSV jenerik tablosu
+	The spreadsheet's folder	Tablonun klasörü
+	Built-in styles	Yerleşik stiller
+	Spreadsheet	Tablo
+	Sheet	Sayfa
+	Pictures	Resimler
+	Styling	Stil
+	Page	Sayfa
+	Warnings	Uyarılar
+	Moment in the page	Sayfadaki an
+	Place at Playhead	Oynatma kafasına yerleştir
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tablolar (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Jenerik stili (*.json)
+	Card	Kart
+	Credits Spreadsheet	Jenerik tablosu
+	Reading…	Okunuyor…
+	(one table)	(tek tablo)
+	Total: {time}	Toplam: {time}
+	Row {row}: {message}	Satır {row}: {message}
+	Choose a credits spreadsheet.	Bir jenerik tablosu seçin.
+	No preview	Önizleme yok
+	Placing…	Yerleştiriliyor…
+	Placed {n} pages on the timeline.	Zaman çizelgesine {n} sayfa yerleştirildi.
+	Credits Page Picture	Jenerik sayfası resmi
+	Preview Credits	Jeneriği önizle
+	Credits Styles	Jenerik stilleri
