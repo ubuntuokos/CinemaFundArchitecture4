@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-30 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-11-08 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -23,8 +23,10 @@ logóit vagy ikonjait.
 **Licenc:** a CFA4 egésze **GPL-3.0-or-later** (`LICENSE`, `NOTICE`). Így a lehető legkevesebbet
 kell újraírni: GPL-kompatibilis kód és könyvtár felhasználható. Ami nem használható fel, azt más
 módon kell megvalósítani. Az örökölt upstream kód eredeti MIT/Apache-megjegyzései (`NOTICE`) megmaradnak.
-**Üzleti modell:** a kész CFA4 ingyenes és szabadon terjeszthető; csak a pluszfunkciók és a
-hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](docs/licensing.md).
+**Nincs fizetős rész** (tulajdonosi döntés, 2026-11-08): a CFA4 minden része ingyenes és szabadon
+terjeszthető; nincs fizetős kiegészítő, licenckulcs, vízjel, használati korlát vagy fizetős
+támogatási idő. A CFA4 **önkéntes adománnyal** támogatható. A licencszabályok:
+[`docs/licensing.md`](docs/licensing.md).
 
 ## 2. Alapelvek (nem változnak külön döntés nélkül)
 

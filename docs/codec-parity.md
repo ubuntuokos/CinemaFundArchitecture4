@@ -64,6 +64,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 - **Behind, by user impact:** 10-bit / 4:2:2 H.264 and HEVC in software ([G3](gaps.md#g3-10-bit-and-422-camera-media-needs-hardware)),
   E-AC-3 decode tools, camera RAW, AV1 encoding speed, HEVC B pictures and 4:2:2 encoding, MPEG-2 encoding for broadcast,
   JPEG 2000 MXF export (the JPEG 2000 encoder exists; DCP export is done, #115), DV, WMV.
+- **Low-priority backlog** (the owner's 2026-10-27 list minus what is done or planned; own decoders, after everything above): [CODEC-BACKLOG-2026-10-27.md](plans/CODEC-BACKLOG-2026-10-27.md).
 - **Codec dimension: ~60%, 150–250 h** ([target-app-parity.md](target-app-parity.md#by-dimension)).
 
 ## Revision history
@@ -71,6 +72,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Date | Change | Summary |
 |---|---|---|
 | 2026-11-10 | minor | WavPack decode (`cfa4-wavpack`, codec backlog CB-5.1) |
+| 2026-11-08 | minor | Link to the low-priority codec backlog ([plans](plans/CODEC-BACKLOG-2026-10-27.md)) |
 | 2026-10-27 | minor | Ubuntu 26.04 only: VideoToolbox H.264 / HEVC and Windows AV1 hardware decoding left the Ours column |
 | 2026-10-26 | minor | JPEG 2000 in MXF import, DCP picture tracks included (#77) |
 | 2026-10-26 | minor | Dolby TrueHD / MLP decode (`cfa4-truehd`) |
