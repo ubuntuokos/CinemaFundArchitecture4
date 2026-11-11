@@ -1968,6 +1968,7 @@ fn chapter_markers_become_export_chapters() {
 
 #[test]
 fn chapters_reach_mp4_m4a_and_hls_init() {
+    // `chpl` everywhere, plus the QuickTime chapter track in progressive MP4/MOV and M4A
     use cfa4_project::MarkerKind::Chapter as C;
     let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 2);
     let p = with_markers(p, seq, &[(0, "Intro", "", C), (1_000, "Ünnep", "", C)]);
@@ -1975,11 +1976,21 @@ fn chapters_reach_mp4_m4a_and_hls_init() {
     let dir = Scratch::new("chapters");
     let range = Some(TimeRange::new(Tick::ZERO, Tick(2 * TICKS_PER_SECOND)));
     let chapters_of = |path: &str| cfa4_isobmff::open(std::fs::read(path).unwrap()).unwrap().metadata.chapters;
+    // the QuickTime chapter track alone: `chpl` renamed away, so the demuxer reads the track
+    let track_chapters_of = |path: &str| {
+        let mut b = std::fs::read(path).unwrap();
+        let at = b.windows(4).position(|w| w == b"chpl").unwrap();
+        b[at..at + 4].copy_from_slice(b"skip");
+        let f = cfa4_isobmff::open(b).unwrap();
+        assert!(f.tracks.iter().any(|t| t.handler == cfa4_isobmff::FourCc(*b"text") && !t.enabled), "{path}: no disabled text track");
+        f.metadata.chapters
+    };
 
     let mp4 = dir.path("c.mp4");
     export(&p, seq, &ExportSettings { format: Format::H264, path: mp4.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
         .unwrap();
     assert_eq!(chapters_of(&mp4), want);
+    assert_eq!(track_chapters_of(&mp4), want);
     if let Some(j) = ffprobe_json(&["-show_chapters"], &mp4) {
         let titles: Vec<&str> = j["chapters"].as_array().unwrap().iter().map(|c| c["tags"]["title"].as_str().unwrap()).collect();
         assert_eq!(titles, ["Intro", "Ünnep"]);
@@ -1994,10 +2005,12 @@ fn chapters_reach_mp4_m4a_and_hls_init() {
     )
     .unwrap();
     assert!(chapters_of(&off).is_empty());
+    assert_eq!(cfa4_isobmff::open(std::fs::read(&off).unwrap()).unwrap().tracks.len(), 2, "no chapter track either");
 
     let m4a = dir.path("c.m4a");
     export(&p, seq, &ExportSettings { format: Format::Aac, path: m4a.clone(), range, ..Default::default() }, &m, &Progress::default()).unwrap();
     assert_eq!(chapters_of(&m4a), want);
+    assert_eq!(track_chapters_of(&m4a), want);
 
     let hls = dir.path("c.m3u8");
     export(&p, seq, &ExportSettings { format: Format::Hls, path: hls.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
