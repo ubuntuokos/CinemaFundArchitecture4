@@ -27,7 +27,7 @@ candle-nn = { version = "0.9", default-features = false, optional = true }
 rayon = { workspace = true }
 ureq = { version = "3", default-features = false, features = ["rustls-no-provider", "platform-verifier"], optional = true }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
-sha2 = "0.10"
+sha2 = "0.11"
 
 [[example]]
 name = "transcribe"
