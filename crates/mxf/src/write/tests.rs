@@ -909,6 +909,68 @@ fn rdd9_rejects_other_essence() {
     cfg.pattern = Pattern::OpAtom;
     assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
 }
+/// Three uncompressed pictures of `layout` (32×4), each a different flat colour.
+fn build_uncompressed(pattern: Pattern, layout: crate::UncompressedLayout) -> (Vec<u8>, Vec<Vec<u8>>) {
+    let mut cfg = WriterConfig::new(pattern, Rational::new(25, 1), PackageIds::from_seed("raw", "Raw Clip"));
+    cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, 48, 4));
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    let mut pictures = Vec::new();
+    for i in 0..3u16 {
+        let (sx, sy) = layout.subsampling();
+        let n = (48 / sx * 4 / sy) as usize;
+        let p = layout.pack(48, 4, [&[16 + i; 192], &vec![100 + i; n], &vec![200 - i; n]]);
+        w.push_picture(&p, FrameInfo::intra()).unwrap();
+        pictures.push(p);
+    }
+    (w.finish().unwrap().into_inner(), pictures)
+}
+
+#[test]
+fn uncompressed_pictures_round_trip() {
+    use crate::uncompressed::{Layout, decode};
+    for pattern in [Pattern::Op1a, Pattern::OpAtom] {
+        for layout in [crate::UncompressedLayout::V210, crate::UncompressedLayout::Uyvy8, crate::UncompressedLayout::Planar420x8] {
+            let (bytes, pictures) = build_uncompressed(pattern, layout);
+            let f = open(&bytes[..]).unwrap();
+            let t = f.tracks.iter().position(|t| t.kind == TrackKind::Picture).unwrap();
+            let track = &f.tracks[t];
+            assert_eq!(track.codec, Codec::Uncompressed, "{pattern:?} {layout:?}");
+            assert_eq!(track.samples.len(), 3);
+            assert_eq!(track.wrapping, if pattern == Pattern::OpAtom { Wrapping::Clip } else { Wrapping::Frame });
+            let pi = track.picture.as_ref().unwrap();
+            let l = Layout::of(pi).unwrap();
+            assert_eq!(l, Layout::YCbCr(layout));
+            for (i, want) in pictures.iter().enumerate() {
+                let s = f.read_sample(&bytes[..], t, i).unwrap();
+                assert_eq!(&s, want);
+                let pic = decode(&l, pi, &s).unwrap();
+                assert_eq!(pic.planes[0][0], 16 + i as u16);
+                assert_eq!(pic.planes[2][0], 200 - i as u16);
+            }
+        }
+    }
+}
+
+#[test]
+fn clip_wrapped_uncompressed_without_an_index_splits_by_picture_size() {
+    let (mut bytes, pictures) = build_uncompressed(Pattern::OpAtom, crate::UncompressedLayout::Uyvy8);
+    // turn every index table segment into fill
+    let index_key = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x10, 0x01, 0x00];
+    let mut hits = 0;
+    for at in 0..bytes.len().saturating_sub(16) {
+        if bytes[at..at + 16] == index_key {
+            bytes[at..at + 16].copy_from_slice(&KLV_FILL);
+            hits += 1;
+        }
+    }
+    assert!(hits > 0);
+    let f = open(&bytes[..]).unwrap();
+    let track = &f.tracks[0];
+    assert_eq!(track.samples.len(), 3);
+    assert_eq!(track.wrapping, Wrapping::Clip);
+    assert_eq!(f.read_sample(&bytes[..], 0, 2).unwrap(), pictures[2]);
+}
+
 #[test]
 fn peek_reads_the_packages_of_op_atom_files_without_the_essence() {
     let clip = PackageIds::from_seed("clip", "Clip");

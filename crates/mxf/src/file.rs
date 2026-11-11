@@ -529,6 +529,7 @@ fn descriptor_kind(s: &Set) -> Option<TrackKind> {
 
 fn picture_info(d: &Set) -> PictureInfo {
     let u = |t| d.u(t).unwrap_or(0) as u32;
+    let i = |t| d.i(t).unwrap_or(0).clamp(i32::MIN as i64, i32::MAX as i64) as i32;
     PictureInfo {
         stored_width: u(tag::STORED_WIDTH),
         stored_height: u(tag::STORED_HEIGHT),
@@ -547,6 +548,17 @@ fn picture_info(d: &Set) -> PictureInfo {
         transfer_characteristic: d.ul(tag::TRANSFER_CHARACTERISTIC),
         coding_equations: d.ul(tag::CODING_EQUATIONS),
         color_primaries: d.ul(tag::COLOR_PRIMARIES),
+        reversed_byte_order: d.u(tag::REVERSED_BYTE_ORDER).is_some_and(|v| v != 0),
+        padding_bits: d.u(tag::PADDING_BITS).unwrap_or(0).clamp(0, 64) as u32,
+        image_start_offset: u(tag::IMAGE_START_OFFSET),
+        image_end_offset: u(tag::IMAGE_END_OFFSET),
+        sampled_x_offset: i(tag::SAMPLED_X_OFFSET),
+        sampled_y_offset: i(tag::SAMPLED_Y_OFFSET),
+        display_x_offset: i(tag::DISPLAY_X_OFFSET),
+        display_y_offset: i(tag::DISPLAY_Y_OFFSET),
+        pixel_layout: d.get(tag::PIXEL_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
+        component_min_ref: d.u(tag::COMPONENT_MIN_REF).map(|v| v as u32),
+        component_max_ref: d.u(tag::COMPONENT_MAX_REF).map(|v| v as u32),
     }
 }
 
@@ -857,8 +869,9 @@ fn build_track(
             if r.sub_descriptors.iter().any(|s| s.kind() == Some(st::AVC_SUBDESCRIPTOR)) && !matches!(codec, Codec::Avc { .. }) {
                 codec = Codec::Avc { intra: false };
             }
-            // A wrong or missing label: trust the essence bytes.
-            if let Some(first) = elements.first() {
+            // A wrong or missing label: trust the essence bytes (uncompressed samples are not
+            // coded, so any pattern can start them).
+            if let Some(first) = elements.first().filter(|_| codec != Codec::Uncompressed) {
                 let head = read_upto(src, first.value_offset, 64)?;
                 if let Some(sniffed) = sniff_picture(&head) {
                     let agree = std::mem::discriminant(&sniffed) == std::mem::discriminant(&codec);
@@ -868,8 +881,24 @@ fn build_track(
                 }
             }
             t.codec = codec;
+            let line_wrapped = container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x05]) && c.0[15] == 0x03)
+                || elements.first().is_some_and(|e| e.key.0[12] == 0x15 && e.key.0[14] == 0x04);
+            if codec == Codec::Uncompressed && line_wrapped {
+                warnings.push("line-wrapped uncompressed pictures are not supported".into());
+                t.codec = Codec::Unknown;
+                t.picture = Some(pi);
+                return Ok(t);
+            }
+            let unit = (codec == Codec::Uncompressed).then(|| crate::uncompressed::Layout::of(&pi).ok().map(|l| l.edit_unit_bytes(&pi))).flatten();
             t.picture = Some(pi);
             build_pictures(src, &mut t, elements, index, warnings)?;
+            // a clip-wrapped element without an index: every edit unit has the same size
+            if let (Some(unit), [e]) = (unit.filter(|&u| u > 0 && u <= u64::from(u32::MAX)), elements)
+                && t.samples.len() < 2
+                && e.size / unit > 1
+            {
+                split_constant(&mut t, e, unit);
+            }
         }
         TrackKind::Data if desc.is_some_and(|d| is_dcp_iab_descriptor(d)) || elements.first().is_some_and(|e| crate::klv::is_dcp_iab_element(&e.key)) => {
             // a D-Cinema immersive audio track file: read as the IAB sound track of IMF
@@ -955,6 +984,14 @@ fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl 
     let [0x01, a, b, c, d] = head[..] else { return false };
     let pre = u64::from(u32::from_be_bytes([a, b, c, d]));
     pre < first.size && read_upto(src, first.value_offset + 5 + pre, 1).is_ok_and(|t| t == [0x02])
+}
+
+/// Splits a clip-wrapped element into edit units of `unit` bytes.
+fn split_constant(t: &mut EssenceTrack, e: &Element, unit: u64) {
+    let n = e.size / unit;
+    t.wrapping = Wrapping::Clip;
+    t.samples = (0..n).map(|i| Sample { offset: e.value_offset + i * unit, size: unit as u32, pts: i as i64, key: true, b_picture: false }).collect();
+    t.display_order = (0..t.samples.len()).collect();
 }
 
 /// Splits a clip-wrapped IAB element without an index into its IABitstream frames (each a

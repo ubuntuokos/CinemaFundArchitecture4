@@ -4122,3 +4122,106 @@ export.summary	Low	төмен
 	Star	Жұлдыз
 	Width	Ені
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Бейне құралдары
+	Audio Tools	Аудио құралдары
+	Publication Tools	Жариялау құралдары
+	Smart Export…	Ақылды экспорт…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Солтүстік-батыстан
+	From North-East	Солтүстік-шығыстан
+	From South-East	Оңтүстік-шығыстан
+	From South-West	Оңтүстік-батыстан
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Жақсарту
+	Skin Smoothing	Теріні тегістеу
+	Keep Texture	Текстураны сақтау
+	Skin Tone	Тері реңі
+	Smooth Entire Image	Бүкіл кескінді тегістеу
+	Low Light	Әлсіз жарық
+	Max Brightening	Ең көп ағарту
+	Show Illumination	Жарықтануды көрсету
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Бәсеңдету дайындамалары
+	Sine	Синусоидалық
+	Exponential	Экспоненциалдық
+	Circular	Шеңберлік
+	Elastic	Серпімді
+	Film Gate	Пленка терезесі
+	Gate Weave	Терезенің тербелуі
+	Weave Rotation	Тербеліс бұрылысы
+	Particles	Бөлшектер
+	Emitter Position	Шығарғыштың орны
+	Birth Rate	Пайда болу жиілігі
+	Lifetime (seconds)	Өмір ұзақтығы (секунд)
+	Velocity Random	Жылдамдықтың кездейсоқтығы
+	Gravity	Гравитация
+	Particle Size	Бөлшек өлшемі
+	Keyhole	Кілт тесігі
+	Burn Away	Күйіп кету
+	Burn Size	Күю өлшемі
+	Ember Width	Шоқ жиегінің ені
+	Ember Color	Шоқ жиегінің түсі
+	Check Text Legibility	Мәтіннің оқылуын тексеру
+	Clear Legibility Markers	Оқылу белгілерін тазалау
+	Text legibility: no problems found	Мәтіннің оқылуы: ақау табылмады
+	Text legibility: {count} problems marked on the timeline (orange markers)	Мәтіннің оқылуы: уақыт сызығында {count} ақау белгіленді (қызғылт сары белгілер)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Бит тереңдігін азайту
+	Bits per Channel	Арнаға бит
+	Ordered Dither	Реттелген дизеринг
+	Dither Cell Size	Дизеринг ұяшығының өлшемі
+	Block Glitch	Блоктық ақау
+	Blocks Moved	Жылжытылған блоктар
+	Max Distance	Ең үлкен қашықтық
+	Snap to Grid	Торға тарту
+	Swap Blocks	Блоктарды алмастыру
+	Changes per Second	Секундтағы өзгерістер
+	Databend	Деректерді бүлдіру
+	Breaks	Үзілістер
+	Shift	Ығысу
+	Color Damage	Түс бұзылуы
+	VHS	VHS
+	Color Bleed	Түстің жайылуы
+	Wobble	Шайқалу
+	Snow	Қар
+	Tracking Bar	Трекинг жолағы
+	Head Switching	Бастиектерді ауыстыру
+	Scan Line Jitter	Жолдардың дірілі
+	Jitter	Діріл
+	Interval	Аралық
+	Infinite	Шексіз
+	Periodic	Мерзімді
+	Tile Jitter	Плиткалардың дірілі
+	Tiles	Плиткалар
+	Band Direction	Жолақтар бағыты
+	Jitter Direction	Діріл бағыты
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Жартылай тон
+	Dither	Дизеринг
+	Pattern	Өрнек
+	Cell Size	Ұяшық өлшемі
+	Cyan Angle	Көгілдір бұрышы
+	Magenta Angle	Қызыл күрең бұрышы
+	Yellow Angle	Сары бұрышы
+	Black Angle	Қара бұрышы
+	Monochrome Angle	Бір түсті бұрыш
+	Sharpness	Айқындық
+	Ink Color	Сия түсі
+	Paper Color	Қағаз түсі
+	Color (CMYK)	Түсті (CMYK)
+	Dot	Нүкте
+	Line	Сызық
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Пиксель өлшемі
+	Palette	Палитра
+	Input Colors	Кіріс түстері
+	Green Phosphor	Жасыл люминофор
+	Amber Monitor	Қоңыр сары монитор
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
