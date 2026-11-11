@@ -76,6 +76,7 @@ szabadalommal védett formátumot.
 | Vorbis | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | WMA | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | WavPack (veszteségmentes és hibrid) | dekódolás; `.wv` és Matroska `A_WAVPACK4` olvasása | `crates/wavpack` (a WavPack-könyvtár portja); `crates/matroska`; FFmpeg-háttér | alap | függőben | | |
+| Monkey's Audio (APE, veszteségmentes) | dekódolás; `.ape` fájlok olvasása | `crates/ape` (a Monkey's Audio SDK portja); FFmpeg-háttér | alap | függőben | | |
 
 ## Konténerek
 

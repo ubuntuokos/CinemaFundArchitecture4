@@ -64,6 +64,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("aac", 0),
     ("flac", 0),
     ("wavpack", 0),
+    ("ape", 0),
     ("opus", 0),
     ("frame", 1),
     ("media", 1),

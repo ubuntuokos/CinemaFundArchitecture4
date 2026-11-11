@@ -944,6 +944,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-ape"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-apv"
 version = "0.10.0"
 dependencies = [
@@ -1073,6 +1081,7 @@ version = "0.10.0"
 dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
+ "cfa4-ape",
  "cfa4-apv",
  "cfa4-auro",
  "cfa4-av1",

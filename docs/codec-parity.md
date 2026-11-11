@@ -56,6 +56,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | FLAC, ALAC, Vorbis | partial | decode (symphonia); FLAC in MP4 silent (#603) | none | — | 70% | 3–6 h |
 | WMA | decode on Windows | none | none | — | 0% | 10–20 h |
 | WavPack | not checked | own decoder (`cfa4-wavpack`, CB-5.1): lossless and hybrid (lossy, no `.wvc`), 8–32-bit integer and 32-bit float, 1–8+ channels, `.wv` and Matroska; **no** DSD, pre-4.0 files or correction files | none | bit-exact vs ffmpeg and the reference `wvunpack` (35 files: every compression mode, extra modes, hybrid with noise shaping), in `.wv` and Matroska also after a seek | — | — |
+| Monkey's Audio (APE) | not checked | own decoder (`cfa4-ape`, CB-5.2): format version 3.99 and later (every encoder since 2004), compression levels fast to insane, 8/16/24/32-bit integer and 32-bit float, 1–32 channels, `.ape` files; **no** files older than 3.99 | none | bit-exact vs the reference `mac -d` (30 files: every level and sample format, mono to 8 channels, multi-frame) and vs ffmpeg; through the media source also after a seek | — | — |
 
 ## Summary
 
@@ -72,6 +73,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Date | Change | Summary |
 |---|---|---|
 | 2026-11-10 | minor | WavPack decode (`cfa4-wavpack`, codec backlog CB-5.1) |
+| 2026-11-11 | minor | Monkey's Audio decode (`cfa4-ape`, codec backlog CB-5.2) |
 | 2026-11-08 | minor | Link to the low-priority codec backlog ([plans](plans/CODEC-BACKLOG-2026-10-27.md)) |
 | 2026-10-27 | minor | Ubuntu 26.04 only: VideoToolbox H.264 / HEVC and Windows AV1 hardware decoding left the Ours column |
 | 2026-10-26 | minor | JPEG 2000 in MXF import, DCP picture tracks included (#77) |

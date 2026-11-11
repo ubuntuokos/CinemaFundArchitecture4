@@ -26,6 +26,7 @@ cfa4-dts = { workspace = true }
 cfa4-truehd = { workspace = true }
 cfa4-mpa = { workspace = true }
 cfa4-wavpack = { workspace = true }
+cfa4-ape = { workspace = true }
 cfa4-ogg = { workspace = true }
 cfa4-bitstream = { workspace = true }
 cfa4-h264 = { workspace = true }
