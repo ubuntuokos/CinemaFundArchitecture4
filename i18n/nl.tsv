@@ -4215,3 +4215,51 @@ export.summary	Low	laag
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Bevinding toevoegen
+	Add as Finding	Als bevinding toevoegen
+	Are colour and contrast acceptable?	Zijn kleur en contrast aanvaardbaar?
+	Automatic Checks	Automatische controles
+	Bounds	Grenzen
+	Check	Controle
+	Check Now	Nu controleren
+	Check quality after export	Kwaliteit controleren na export
+	Checking…	Controleren…
+	Contact Sheet	Contactblad
+	Critical	Kritiek
+	Fail	Afgekeurd
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Bevinding {row}: de tijdcode is geen tijd in dit bestand (HH:MM:SS:FF).
+	Findings	Bevindingen
+	Human Review	Menselijke beoordeling
+	Incomplete	Onvolledig
+	Is there a visible picture defect?	Is er een zichtbaar beelddefect?
+	Is there audible distortion?	Is er hoorbare vervorming?
+	Is there unwanted noise?	Is er ongewenste ruis?
+	Major	Ernstig
+	Message	Bericht
+	Minor	Gering
+	No contact sheet	Geen contactblad
+	Not answered	Niet beantwoord
+	Not checked	Niet gecontroleerd
+	Not run	Niet uitgevoerd
+	Note	Opmerking
+	Pass	Goedgekeurd
+	Passed	Goedgekeurd
+	Passed with warnings	Goedgekeurd met waarschuwingen
+	Profile: {id} v{version}	Profiel: {id} v{version}
+	Quality Check	Kwaliteitscontrole
+	Quality Check…	Kwaliteitscontrole…
+	Remove Finding	Bevinding verwijderen
+	Report: {path}	Rapport: {path}
+	Review complete	Beoordeling voltooid
+	Reviewer	Beoordelaar
+	Run the media quality check on the finished file (docs/media-qc.md)	De mediakwaliteitscontrole uitvoeren op het voltooide bestand (docs/media-qc.md)
+	Save Review	Beoordeling opslaan
+	Select a finished export in the queue	Selecteer een voltooide export in de wachtrij
+	Severity	Ernst
+	The engine is not running.	De engine draait niet.
+	Time code	Tijdcode
+	Unsure	Onzeker
+	accept	aanvaardbaar
+	the engine did not start the check	de engine heeft de controle niet gestart
+	the engine sent no report	de engine heeft geen rapport gestuurd

@@ -194,3 +194,16 @@ Target Bitrate and Maximum Bitrate are in Mbps as in egui and show the preset's 
 adaptive (Match Source) preset shows "Adaptive (n bits per pixel)" with Set, which sends a fixed
 `bitrateKbps`. Key Frame Distance (H.264 / H.265 / AV1) is off or a distance in frames
 (`settings.keyframeDistance`); MPEG-2 keeps its own GOP length field (`export.mpeg2Gop`).
+
+**Quality check** ([media-qc.md](media-qc.md)). "Check quality after export" sends
+`"qc": "delivery-web"` with the export; the queue's Quality column shows each item's QC state
+(from `export.queue.list`), apart from its render status. Quality Check… (or a double-click on a
+finished item) opens the Quality Check window: it runs `qc.run` when the item was not checked
+(followed in `jobs.list`), then shows the engine's verified report (`qc.report.get`): verdict,
+reasons, every check with status, value and bounds, the time-coded events, and the contact
+sheet. Human Review asks the engine's guided questions and takes findings (description,
+severity, time code, note); an automatic event can be copied into a finding with its time code.
+Save Review stores the review in the report (`qc.review.save`), and the engine recomputes the
+verdict. The window measures nothing itself and never changes the project. Playing the export at
+a flagged time code needs a preview that does not import the file into the project; it is not
+there yet. `test_real_engine_quality_check_through_the_export_window` covers the round trip.

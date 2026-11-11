@@ -4215,3 +4215,51 @@ export.summary	Low	низак
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Додај налаз
+	Add as Finding	Додај као налаз
+	Are colour and contrast acceptable?	Да ли су боја и контраст прихватљиви?
+	Automatic Checks	Аутоматске провере
+	Bounds	Границе
+	Check	Провера
+	Check Now	Провери сада
+	Check quality after export	Провери квалитет после извоза
+	Checking…	Провера…
+	Contact Sheet	Контактни лист
+	Critical	Критично
+	Fail	Није прошло
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Налаз {row}: временски код није време у овој датотеци (HH:MM:SS:FF).
+	Findings	Налази
+	Human Review	Људски преглед
+	Incomplete	Непотпуно
+	Is there a visible picture defect?	Да ли постоји видљив недостатак слике?
+	Is there audible distortion?	Да ли се чује изобличење?
+	Is there unwanted noise?	Да ли постоји нежељени шум?
+	Major	Озбиљно
+	Message	Порука
+	Minor	Мање
+	No contact sheet	Нема контактног листа
+	Not answered	Без одговора
+	Not checked	Није проверено
+	Not run	Није покренуто
+	Note	Напомена
+	Pass	Прошло
+	Passed	Прошло
+	Passed with warnings	Прошло са упозорењима
+	Profile: {id} v{version}	Профил: {id} v{version}
+	Quality Check	Провера квалитета
+	Quality Check…	Провера квалитета…
+	Remove Finding	Уклони налаз
+	Report: {path}	Извештај: {path}
+	Review complete	Преглед је завршен
+	Reviewer	Прегледач
+	Run the media quality check on the finished file (docs/media-qc.md)	Покрени проверу квалитета медија на готовој датотеци (docs/media-qc.md)
+	Save Review	Сачувај преглед
+	Select a finished export in the queue	Изаберите завршени извоз у реду
+	Severity	Озбиљност
+	The engine is not running.	Машина није покренута.
+	Time code	Временски код
+	Unsure	Несигурно
+	accept	прихватљиво
+	the engine did not start the check	машина није покренула проверу
+	the engine sent no report	машина није послала извештај

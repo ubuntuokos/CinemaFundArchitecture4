@@ -4216,3 +4216,51 @@ export.summary	Low	düşük
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Bulgu ekle
+	Add as Finding	Bulgu olarak ekle
+	Are colour and contrast acceptable?	Renk ve kontrast kabul edilebilir mi?
+	Automatic Checks	Otomatik denetimler
+	Bounds	Sınırlar
+	Check	Denetim
+	Check Now	Şimdi denetle
+	Check quality after export	Dışa aktarmadan sonra kaliteyi denetle
+	Checking…	Denetleniyor…
+	Contact Sheet	Temas sayfası
+	Critical	Kritik
+	Fail	Kaldı
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Bulgu {row}: zaman kodu bu dosyada bir zaman değil (HH:MM:SS:FF).
+	Findings	Bulgular
+	Human Review	İnsan incelemesi
+	Incomplete	Eksik
+	Is there a visible picture defect?	Görüntüde görünür bir kusur var mı?
+	Is there audible distortion?	Duyulabilir bozulma var mı?
+	Is there unwanted noise?	İstenmeyen gürültü var mı?
+	Major	Büyük
+	Message	İleti
+	Minor	Küçük
+	No contact sheet	Temas sayfası yok
+	Not answered	Yanıtlanmadı
+	Not checked	Denetlenmedi
+	Not run	Çalıştırılmadı
+	Note	Not
+	Pass	Geçti
+	Passed	Geçti
+	Passed with warnings	Uyarılarla geçti
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Kalite denetimi
+	Quality Check…	Kalite denetimi…
+	Remove Finding	Bulguyu kaldır
+	Report: {path}	Rapor: {path}
+	Review complete	İnceleme tamamlandı
+	Reviewer	İnceleyen
+	Run the media quality check on the finished file (docs/media-qc.md)	Bitmiş dosyada medya kalite denetimini çalıştır (docs/media-qc.md)
+	Save Review	İncelemeyi kaydet
+	Select a finished export in the queue	Kuyrukta bitmiş bir dışa aktarma seçin
+	Severity	Önem
+	The engine is not running.	Motor çalışmıyor.
+	Time code	Zaman kodu
+	Unsure	Emin değilim
+	accept	kabul
+	the engine did not start the check	motor denetimi başlatmadı
+	the engine sent no report	motor rapor göndermedi

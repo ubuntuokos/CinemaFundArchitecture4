@@ -4215,3 +4215,51 @@ export.summary	Low	niska
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Dodaj ustalenie
+	Add as Finding	Dodaj jako ustalenie
+	Are colour and contrast acceptable?	Czy kolory i kontrast są do przyjęcia?
+	Automatic Checks	Kontrole automatyczne
+	Bounds	Granice
+	Check	Kontrola
+	Check Now	Sprawdź teraz
+	Check quality after export	Sprawdź jakość po eksporcie
+	Checking…	Sprawdzanie…
+	Contact Sheet	Arkusz stykowy
+	Critical	Krytyczne
+	Fail	Niezaliczone
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Ustalenie {row}: kod czasowy nie jest czasem w tym pliku (HH:MM:SS:FF).
+	Findings	Ustalenia
+	Human Review	Ocena przez człowieka
+	Incomplete	Niekompletne
+	Is there a visible picture defect?	Czy w obrazie jest widoczna wada?
+	Is there audible distortion?	Czy słychać zniekształcenia?
+	Is there unwanted noise?	Czy występuje niepożądany szum?
+	Major	Poważne
+	Message	Komunikat
+	Minor	Drobne
+	No contact sheet	Brak arkusza stykowego
+	Not answered	Bez odpowiedzi
+	Not checked	Nie sprawdzono
+	Not run	Nie uruchomiono
+	Note	Uwaga
+	Pass	Zaliczone
+	Passed	Zaliczono
+	Passed with warnings	Zaliczono z ostrzeżeniami
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Kontrola jakości
+	Quality Check…	Kontrola jakości…
+	Remove Finding	Usuń ustalenie
+	Report: {path}	Raport: {path}
+	Review complete	Ocena zakończona
+	Reviewer	Oceniający
+	Run the media quality check on the finished file (docs/media-qc.md)	Uruchom kontrolę jakości multimediów na gotowym pliku (docs/media-qc.md)
+	Save Review	Zapisz ocenę
+	Select a finished export in the queue	Wybierz zakończony eksport w kolejce
+	Severity	Waga
+	The engine is not running.	Silnik nie działa.
+	Time code	Kod czasowy
+	Unsure	Niepewne
+	accept	dopuszczalne
+	the engine did not start the check	silnik nie rozpoczął kontroli
+	the engine sent no report	silnik nie przesłał raportu

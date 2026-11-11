@@ -4217,3 +4217,51 @@ export.summary	Low	madal
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Lisa leid
+	Add as Finding	Lisa leiuna
+	Are colour and contrast acceptable?	Kas värv ja kontrast on vastuvõetavad?
+	Automatic Checks	Automaatsed kontrollid
+	Bounds	Piirid
+	Check	Kontroll
+	Check Now	Kontrolli kohe
+	Check quality after export	Kontrolli kvaliteeti pärast eksporti
+	Checking…	Kontrollimine…
+	Contact Sheet	Kontaktleht
+	Critical	Kriitiline
+	Fail	Läbikukkunud
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Leid {row}: ajakood ei ole selle faili aeg (HH:MM:SS:FF).
+	Findings	Leiud
+	Human Review	Inimese ülevaatus
+	Incomplete	Puudulik
+	Is there a visible picture defect?	Kas pildil on nähtav viga?
+	Is there audible distortion?	Kas on kuulda moonutust?
+	Is there unwanted noise?	Kas on soovimatut müra?
+	Major	Oluline
+	Message	Teade
+	Minor	Väike
+	No contact sheet	Kontaktleht puudub
+	Not answered	Vastamata
+	Not checked	Kontrollimata
+	Not run	Ei käivitatud
+	Note	Märkus
+	Pass	Läbitud
+	Passed	Läbitud
+	Passed with warnings	Läbitud hoiatustega
+	Profile: {id} v{version}	Profiil: {id} v{version}
+	Quality Check	Kvaliteedikontroll
+	Quality Check…	Kvaliteedikontroll…
+	Remove Finding	Eemalda leid
+	Report: {path}	Aruanne: {path}
+	Review complete	Ülevaatus lõpetatud
+	Reviewer	Ülevaataja
+	Run the media quality check on the finished file (docs/media-qc.md)	Käivita valmis failil meedia kvaliteedikontroll (docs/media-qc.md)
+	Save Review	Salvesta ülevaatus
+	Select a finished export in the queue	Vali järjekorrast lõpetatud eksport
+	Severity	Raskusaste
+	The engine is not running.	Mootor ei tööta.
+	Time code	Ajakood
+	Unsure	Ebakindel
+	accept	lubatud
+	the engine did not start the check	mootor ei käivitanud kontrolli
+	the engine sent no report	mootor ei saatnud aruannet

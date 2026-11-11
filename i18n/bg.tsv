@@ -4218,3 +4218,51 @@ export.summary	Low	ниско
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Добавяне на забележка
+	Add as Finding	Добавяне като забележка
+	Are colour and contrast acceptable?	Приемливи ли са цветът и контрастът?
+	Automatic Checks	Автоматични проверки
+	Bounds	Граници
+	Check	Проверка
+	Check Now	Провери сега
+	Check quality after export	Проверка на качеството след експорт
+	Checking…	Проверка…
+	Contact Sheet	Контактен лист
+	Critical	Критична
+	Fail	Неуспех
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Забележка {row}: времевият код не е момент в този файл (HH:MM:SS:FF).
+	Findings	Забележки
+	Human Review	Проверка от човек
+	Incomplete	Непълна
+	Is there a visible picture defect?	Има ли видим дефект в картината?
+	Is there audible distortion?	Има ли чуваемо изкривяване?
+	Is there unwanted noise?	Има ли нежелан шум?
+	Major	Сериозна
+	Message	Съобщение
+	Minor	Незначителна
+	No contact sheet	Няма контактен лист
+	Not answered	Без отговор
+	Not checked	Не е проверено
+	Not run	Не е изпълнена
+	Note	Бележка
+	Pass	Успех
+	Passed	Успешно
+	Passed with warnings	Успешно с предупреждения
+	Profile: {id} v{version}	Профил: {id} v{version}
+	Quality Check	Проверка на качеството
+	Quality Check…	Проверка на качеството…
+	Remove Finding	Премахване на забележка
+	Report: {path}	Отчет: {path}
+	Review complete	Прегледът е завършен
+	Reviewer	Проверяващ
+	Run the media quality check on the finished file (docs/media-qc.md)	Проверка на качеството на медията в готовия файл (docs/media-qc.md)
+	Save Review	Запазване на прегледа
+	Select a finished export in the queue	Изберете завършен експорт в опашката
+	Severity	Сериозност
+	The engine is not running.	Двигателят не работи.
+	Time code	Времеви код
+	Unsure	Не съм сигурен
+	accept	допустимо
+	the engine did not start the check	двигателят не стартира проверката
+	the engine sent no report	двигателят не изпрати отчет

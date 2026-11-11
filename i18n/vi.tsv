@@ -4215,3 +4215,51 @@ export.summary	Low	thấp
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Thêm phát hiện
+	Add as Finding	Thêm làm phát hiện
+	Are colour and contrast acceptable?	Màu sắc và độ tương phản có chấp nhận được không?
+	Automatic Checks	Kiểm tra tự động
+	Bounds	Giới hạn
+	Check	Kiểm tra
+	Check Now	Kiểm tra ngay
+	Check quality after export	Kiểm tra chất lượng sau khi xuất
+	Checking…	Đang kiểm tra…
+	Contact Sheet	Bảng hình thu nhỏ
+	Critical	Nghiêm trọng
+	Fail	Không đạt
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Phát hiện {row}: mã thời gian không phải là thời điểm trong tệp này (HH:MM:SS:FF).
+	Findings	Phát hiện
+	Human Review	Đánh giá thủ công
+	Incomplete	Chưa hoàn tất
+	Is there a visible picture defect?	Có lỗi hình ảnh nhìn thấy được không?
+	Is there audible distortion?	Có méo tiếng nghe thấy được không?
+	Is there unwanted noise?	Có nhiễu không mong muốn không?
+	Major	Lớn
+	Message	Thông báo
+	Minor	Nhỏ
+	No contact sheet	Không có bảng hình thu nhỏ
+	Not answered	Chưa trả lời
+	Not checked	Chưa kiểm tra
+	Not run	Chưa chạy
+	Note	Ghi chú
+	Pass	Đạt
+	Passed	Đạt
+	Passed with warnings	Đạt kèm cảnh báo
+	Profile: {id} v{version}	Hồ sơ: {id} v{version}
+	Quality Check	Kiểm tra chất lượng
+	Quality Check…	Kiểm tra chất lượng…
+	Remove Finding	Xóa phát hiện
+	Report: {path}	Báo cáo: {path}
+	Review complete	Đã đánh giá xong
+	Reviewer	Người đánh giá
+	Run the media quality check on the finished file (docs/media-qc.md)	Chạy kiểm tra chất lượng media trên tệp đã hoàn tất (docs/media-qc.md)
+	Save Review	Lưu đánh giá
+	Select a finished export in the queue	Chọn một bản xuất đã hoàn tất trong hàng đợi
+	Severity	Mức độ
+	The engine is not running.	Engine không chạy.
+	Time code	Mã thời gian
+	Unsure	Không chắc
+	accept	chấp nhận
+	the engine did not start the check	engine không bắt đầu kiểm tra
+	the engine sent no report	engine không gửi báo cáo

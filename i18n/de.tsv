@@ -4222,3 +4222,51 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Befund hinzufügen
+	Add as Finding	Als Befund übernehmen
+	Are colour and contrast acceptable?	Sind Farbe und Kontrast annehmbar?
+	Automatic Checks	Automatische Prüfungen
+	Bounds	Grenzen
+	Check	Prüfung
+	Check Now	Jetzt prüfen
+	Check quality after export	Qualität nach dem Export prüfen
+	Checking…	Wird geprüft…
+	Contact Sheet	Kontaktabzug
+	Critical	Kritisch
+	Fail	Fehler
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Befund {row}: Der Timecode ist keine Zeit in dieser Datei (HH:MM:SS:FF).
+	Findings	Befunde
+	Human Review	Menschliche Prüfung
+	Incomplete	Unvollständig
+	Is there a visible picture defect?	Gibt es einen sichtbaren Bildfehler?
+	Is there audible distortion?	Gibt es hörbare Verzerrungen?
+	Is there unwanted noise?	Gibt es unerwünschtes Rauschen?
+	Major	Schwer
+	Message	Meldung
+	Minor	Gering
+	No contact sheet	Kein Kontaktabzug
+	Not answered	Nicht beantwortet
+	Not checked	Nicht geprüft
+	Not run	Nicht ausgeführt
+	Note	Notiz
+	Pass	Bestanden
+	Passed	Bestanden
+	Passed with warnings	Bestanden mit Warnungen
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Qualitätsprüfung
+	Quality Check…	Qualitätsprüfung…
+	Remove Finding	Befund entfernen
+	Report: {path}	Bericht: {path}
+	Review complete	Prüfung abgeschlossen
+	Reviewer	Prüfer
+	Run the media quality check on the finished file (docs/media-qc.md)	Medienqualitätsprüfung der fertigen Datei ausführen (docs/media-qc.md)
+	Save Review	Prüfung speichern
+	Select a finished export in the queue	Wählen Sie einen fertigen Export in der Warteschlange
+	Severity	Schweregrad
+	The engine is not running.	Die Engine läuft nicht.
+	Time code	Timecode
+	Unsure	Unsicher
+	accept	annehmbar
+	the engine did not start the check	die Engine hat die Prüfung nicht gestartet
+	the engine sent no report	die Engine hat keinen Bericht gesendet

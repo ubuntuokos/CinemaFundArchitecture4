@@ -4224,3 +4224,51 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	所見を追加
+	Add as Finding	所見として追加
+	Are colour and contrast acceptable?	色とコントラストは許容範囲ですか?
+	Automatic Checks	自動チェック
+	Bounds	範囲
+	Check	チェック
+	Check Now	今すぐチェック
+	Check quality after export	書き出し後に品質をチェック
+	Checking…	チェック中…
+	Contact Sheet	コンタクトシート
+	Critical	重大
+	Fail	不合格
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	所見 {row}: タイムコードがこのファイル内の時刻ではありません (HH:MM:SS:FF)。
+	Findings	所見
+	Human Review	目視レビュー
+	Incomplete	不完全
+	Is there a visible picture defect?	目に見える映像の欠陥がありますか?
+	Is there audible distortion?	聞き取れる歪みがありますか?
+	Is there unwanted noise?	不要なノイズがありますか?
+	Major	重要
+	Message	メッセージ
+	Minor	軽微
+	No contact sheet	コンタクトシートなし
+	Not answered	未回答
+	Not checked	未チェック
+	Not run	未実行
+	Note	メモ
+	Pass	合格
+	Passed	合格
+	Passed with warnings	警告付きで合格
+	Profile: {id} v{version}	プロファイル: {id} v{version}
+	Quality Check	品質チェック
+	Quality Check…	品質チェック…
+	Remove Finding	所見を削除
+	Report: {path}	レポート: {path}
+	Review complete	レビュー完了
+	Reviewer	レビュー担当者
+	Run the media quality check on the finished file (docs/media-qc.md)	完成したファイルのメディア品質チェックを実行 (docs/media-qc.md)
+	Save Review	レビューを保存
+	Select a finished export in the queue	キュー内の完了した書き出しを選択してください
+	Severity	重大度
+	The engine is not running.	エンジンが動作していません。
+	Time code	タイムコード
+	Unsure	不明
+	accept	許容
+	the engine did not start the check	エンジンがチェックを開始しませんでした
+	the engine sent no report	エンジンがレポートを送信しませんでした

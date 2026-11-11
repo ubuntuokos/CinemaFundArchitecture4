@@ -4223,3 +4223,51 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Tambah Temuan
+	Add as Finding	Tambahkan sebagai Temuan
+	Are colour and contrast acceptable?	Apakah warna dan kontras dapat diterima?
+	Automatic Checks	Pemeriksaan Otomatis
+	Bounds	Batas
+	Check	Pemeriksaan
+	Check Now	Periksa Sekarang
+	Check quality after export	Periksa kualitas setelah ekspor
+	Checking…	Memeriksa…
+	Contact Sheet	Lembar Kontak
+	Critical	Kritis
+	Fail	Gagal
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Temuan {row}: kode waktu bukan waktu yang ada di file ini (HH:MM:SS:FF).
+	Findings	Temuan
+	Human Review	Tinjauan Manusia
+	Incomplete	Tidak lengkap
+	Is there a visible picture defect?	Apakah ada cacat gambar yang terlihat?
+	Is there audible distortion?	Apakah ada distorsi yang terdengar?
+	Is there unwanted noise?	Apakah ada derau yang tidak diinginkan?
+	Major	Berat
+	Message	Pesan
+	Minor	Ringan
+	No contact sheet	Tidak ada lembar kontak
+	Not answered	Belum dijawab
+	Not checked	Belum diperiksa
+	Not run	Tidak dijalankan
+	Note	Catatan
+	Pass	Lulus
+	Passed	Lulus
+	Passed with warnings	Lulus dengan peringatan
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Pemeriksaan Kualitas
+	Quality Check…	Pemeriksaan Kualitas…
+	Remove Finding	Hapus Temuan
+	Report: {path}	Laporan: {path}
+	Review complete	Tinjauan selesai
+	Reviewer	Peninjau
+	Run the media quality check on the finished file (docs/media-qc.md)	Jalankan pemeriksaan kualitas media pada file yang selesai (docs/media-qc.md)
+	Save Review	Simpan Tinjauan
+	Select a finished export in the queue	Pilih ekspor yang selesai di antrean
+	Severity	Tingkat keparahan
+	The engine is not running.	Mesin tidak berjalan.
+	Time code	Kode waktu
+	Unsure	Tidak yakin
+	accept	dapat diterima
+	the engine did not start the check	mesin tidak memulai pemeriksaan
+	the engine sent no report	mesin tidak mengirim laporan

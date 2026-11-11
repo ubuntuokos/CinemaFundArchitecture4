@@ -4217,3 +4217,51 @@ export.summary	Low	lav
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Tilføj fund
+	Add as Finding	Tilføj som fund
+	Are colour and contrast acceptable?	Er farve og kontrast acceptable?
+	Automatic Checks	Automatiske kontroller
+	Bounds	Grænser
+	Check	Kontrol
+	Check Now	Kontrollér nu
+	Check quality after export	Kontrollér kvaliteten efter eksport
+	Checking…	Kontrollerer…
+	Contact Sheet	Kontaktark
+	Critical	Kritisk
+	Fail	Ikke bestået
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Fund {row}: tidskoden er ikke et tidspunkt i denne fil (HH:MM:SS:FF).
+	Findings	Fund
+	Human Review	Menneskelig gennemgang
+	Incomplete	Ufuldstændig
+	Is there a visible picture defect?	Er der en synlig billedfejl?
+	Is there audible distortion?	Er der hørbar forvrængning?
+	Is there unwanted noise?	Er der uønsket støj?
+	Major	Alvorlig
+	Message	Meddelelse
+	Minor	Mindre
+	No contact sheet	Intet kontaktark
+	Not answered	Ikke besvaret
+	Not checked	Ikke kontrolleret
+	Not run	Ikke kørt
+	Note	Note
+	Pass	Bestået
+	Passed	Bestået
+	Passed with warnings	Bestået med advarsler
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Kvalitetskontrol
+	Quality Check…	Kvalitetskontrol…
+	Remove Finding	Fjern fund
+	Report: {path}	Rapport: {path}
+	Review complete	Gennemgang færdig
+	Reviewer	Kontrollant
+	Run the media quality check on the finished file (docs/media-qc.md)	Kør mediekvalitetskontrollen på den færdige fil (docs/media-qc.md)
+	Save Review	Gem gennemgang
+	Select a finished export in the queue	Vælg en færdig eksport i køen
+	Severity	Alvorlighed
+	The engine is not running.	Motoren kører ikke.
+	Time code	Tidskode
+	Unsure	Usikker
+	accept	acceptabelt
+	the engine did not start the check	motoren startede ikke kontrollen
+	the engine sent no report	motoren sendte ingen rapport

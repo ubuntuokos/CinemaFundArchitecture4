@@ -4218,3 +4218,51 @@ export.summary	Low	დაბალი
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	მიგნების დამატება
+	Add as Finding	მიგნებად დამატება
+	Are colour and contrast acceptable?	მისაღებია ფერი და კონტრასტი?
+	Automatic Checks	ავტომატური შემოწმებები
+	Bounds	საზღვრები
+	Check	შემოწმება
+	Check Now	ახლავე შემოწმება
+	Check quality after export	ხარისხის შემოწმება ექსპორტის შემდეგ
+	Checking…	მოწმდება…
+	Contact Sheet	საკონტაქტო ფურცელი
+	Critical	კრიტიკული
+	Fail	ჩავარდა
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	მიგნება {row}: დროის კოდი ამ ფაილის დრო არ არის (HH:MM:SS:FF).
+	Findings	მიგნებები
+	Human Review	ადამიანის მიერ შემოწმება
+	Incomplete	არასრული
+	Is there a visible picture defect?	არის ხილული გამოსახულების დეფექტი?
+	Is there audible distortion?	ისმის დამახინჯება?
+	Is there unwanted noise?	არის არასასურველი ხმაური?
+	Major	სერიოზული
+	Message	შეტყობინება
+	Minor	მცირე
+	No contact sheet	საკონტაქტო ფურცელი არ არის
+	Not answered	პასუხი არ არის
+	Not checked	არ შემოწმებულა
+	Not run	არ გაშვებულა
+	Note	შენიშვნა
+	Pass	გავიდა
+	Passed	გავიდა
+	Passed with warnings	გავიდა გაფრთხილებებით
+	Profile: {id} v{version}	პროფილი: {id} v{version}
+	Quality Check	ხარისხის შემოწმება
+	Quality Check…	ხარისხის შემოწმება…
+	Remove Finding	მიგნების წაშლა
+	Report: {path}	ანგარიში: {path}
+	Review complete	შემოწმება დასრულდა
+	Reviewer	შემმოწმებელი
+	Run the media quality check on the finished file (docs/media-qc.md)	მედიის ხარისხის შემოწმება დასრულებულ ფაილზე (docs/media-qc.md)
+	Save Review	შემოწმების შენახვა
+	Select a finished export in the queue	აირჩიეთ დასრულებული ექსპორტი რიგში
+	Severity	სიმძიმე
+	The engine is not running.	ძრავა არ მუშაობს.
+	Time code	დროის კოდი
+	Unsure	დარწმუნებული არ ვარ
+	accept	მისაღები
+	the engine did not start the check	ძრავამ შემოწმება არ დაიწყო
+	the engine sent no report	ძრავამ ანგარიში არ გამოგზავნა
