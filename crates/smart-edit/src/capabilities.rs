@@ -843,7 +843,8 @@ pub(crate) fn native_entries() -> Vec<Entry> {
     let mut mpeg2 = row(c(Encode, Mpeg2Video), Native, Supported, "cfa4-mpeg2v encoder; crates/export/src/mpeg2_tests.rs, crates/mpeg2v/src/encode/tests.rs");
     mpeg2.limits = Some(EncoderLimits { profiles: vec!["main".into(), "422".into()], chroma: vec!["4:2:0".into(), "4:2:2".into()], bit_depths: vec![8] });
     v.push(mpeg2);
-    // packet copy: H.264, HEVC and AV1 into MP4 / MOV (WP-04, WP-07 cfa4-export smart_cut);
+    // packet copy: H.264, HEVC and AV1 into MP4 / MOV (WP-04, WP-07 cfa4-export smart_cut), MPEG-2
+    // video into program / transport streams (WP-09 cfa4-export smart_cut_mpeg);
     // boundary re-encode: H.264 (WP-06) and HEVC (WP-07) into MP4 / MOV (cfa4-export boundary_reencode)
     for codec in Codec::ALL {
         for container in Container::ALL {
@@ -856,12 +857,15 @@ pub(crate) fn native_entries() -> Vec<Entry> {
             } else if codec == Av1 && matches!(container, Mp4 | Mov) {
                 let evidence = "cfa4-export smart_cut (MP4 / MOV source, av1C); crates/export/src/smart_cut_av1_tests.rs (payload check, ffmpeg framemd5)";
                 v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
+            } else if codec == Mpeg2Video && matches!(container, MpegPs | MpegTs) {
+                let evidence = "cfa4-export smart_cut_mpeg (program / transport stream source, with MPEG audio, AC-3, AAC, LPCM); crates/export/src/smart_cut_mpeg_tests.rs (payload check, ffmpeg framemd5)";
+                v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
             } else {
                 v.push(row(
                     k(PacketCopy, codec, container),
                     Native,
                     Unsupported,
-                    "packet-copy export is implemented only for H.264, HEVC and AV1 into MP4 / MOV",
+                    "packet-copy export is implemented only for H.264, HEVC and AV1 into MP4 / MOV and MPEG-2 video into program / transport streams",
                 ));
             }
             if codec == H264 && matches!(container, Mp4 | Mov) {
