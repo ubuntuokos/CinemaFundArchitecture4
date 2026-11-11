@@ -4288,3 +4288,25 @@ export.summary	Low	thấp
 	Checks and warnings	Kiểm tra và cảnh báo
 	Checks: {errors} errors, {warnings} warnings	Kiểm tra: {errors} lỗi, {warnings} cảnh báo
 	Check Credits	Kiểm tra danh đề
+	The whole music ({time})	Toàn bộ bản nhạc ({time})
+	Until the sound ends ({time})	Đến khi âm thanh kết thúc ({time})
+	To the last bar line ({time})	Đến vạch nhịp cuối ({time})
+	Fit Credits to Music	Khớp danh đề với nhạc
+	Fit Credits to Music…	Khớp danh đề với nhạc…
+	Analyse Music for Credits	Phân tích nhạc cho danh đề
+	Length:	Thời lượng:
+	Cards last whole beats (cuts on the beat)	Thẻ kéo dài trọn nhịp (cắt đúng nhịp)
+	Start the credits where the music starts	Bắt đầu danh đề khi nhạc bắt đầu
+	Length of the credits	Thời lượng danh đề
+	Remove Fitting	Bỏ khớp
+	Listening to the music…	Đang nghe nhạc…
+	Length: {time}	Thời lượng: {time}
+	the sound ends at {time}	âm thanh kết thúc tại {time}
+	tempo {bpm} BPM	nhịp độ {bpm} BPM
+	the credits without fitting: {time}	danh đề chưa khớp: {time}
+	Select a credits page on the timeline.	Chọn một trang danh đề trên dòng thời gian.
+	Fitting…	Đang khớp…
+	The credits now last {time}.	Danh đề giờ kéo dài {time}.
+	Fitting removed.	Đã bỏ khớp.
+	Fit to This Length	Khớp với thời lượng này
+	No music to measure ({problem}); type the length.	Không có nhạc để đo ({problem}); hãy nhập thời lượng.

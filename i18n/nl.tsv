@@ -4288,3 +4288,25 @@ export.summary	Low	laag
 	Checks and warnings	Controles en waarschuwingen
 	Checks: {errors} errors, {warnings} warnings	Controles: {errors} fouten, {warnings} waarschuwingen
 	Check Credits	Aftiteling controleren
+	The whole music ({time})	De hele muziek ({time})
+	Until the sound ends ({time})	Tot het geluid eindigt ({time})
+	To the last bar line ({time})	Tot de laatste maatstreep ({time})
+	Fit Credits to Music	Aftiteling aan muziek aanpassen
+	Fit Credits to Music…	Aftiteling aan muziek aanpassen…
+	Analyse Music for Credits	Muziek analyseren voor aftiteling
+	Length:	Lengte:
+	Cards last whole beats (cuts on the beat)	Kaarten duren hele tellen (overgangen op de tel)
+	Start the credits where the music starts	De aftiteling laten beginnen waar de muziek begint
+	Length of the credits	Lengte van de aftiteling
+	Remove Fitting	Aanpassing verwijderen
+	Listening to the music…	Muziek beluisteren…
+	Length: {time}	Lengte: {time}
+	the sound ends at {time}	het geluid eindigt op {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	de aftiteling zonder aanpassing: {time}
+	Select a credits page on the timeline.	Selecteer een aftitelingspagina op de tijdlijn.
+	Fitting…	Aanpassen…
+	The credits now last {time}.	De aftiteling duurt nu {time}.
+	Fitting removed.	Aanpassing verwijderd.
+	Fit to This Length	Aan deze lengte aanpassen
+	No music to measure ({problem}); type the length.	Geen muziek om te meten ({problem}); typ de lengte.

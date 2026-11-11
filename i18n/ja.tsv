@@ -4297,3 +4297,25 @@
 	“{text}” is {px} px high; 24 px or more reads well	“{text}”の高さは{px} pxです。24 px以上だと読みやすくなります
 	The roll moves {speed} px per frame; a whole number does not shimmer	ロールは 1 フレームあたり {speed} px 移動します。整数ならちらつきません
 	Check Credits	クレジットをチェック
+	Cards last whole beats (cuts on the beat)	カードは拍の整数倍の長さにする(拍に合わせてカット)
+	Fit Credits to Music	クレジットを音楽に合わせる
+	Fit to This Length	この長さに合わせる
+	Fitting removed.	長さの調整を解除しました。
+	Fitting…	調整中…
+	Length of the credits	クレジットの長さ
+	Length:	長さ:
+	Length: {time}	長さ: {time}
+	Listening to the music…	音楽を解析中…
+	No music to measure ({problem}); type the length.	計測できる音楽がありません({problem})。長さを入力してください。
+	Remove Fitting	長さの調整を解除
+	Select a credits page on the timeline.	タイムラインでクレジットのページを選択してください。
+	Start the credits where the music starts	音楽が始まる位置からクレジットを開始
+	The credits now last {time}.	クレジットの長さは{time}になりました。
+	The whole music ({time})	音楽全体({time})
+	To the last bar line ({time})	最後の小節線まで({time})
+	Until the sound ends ({time})	音が終わるまで({time})
+	tempo {bpm} BPM	テンポ {bpm} BPM
+	the credits without fitting: {time}	調整なしのクレジット: {time}
+	the sound ends at {time}	音は{time}に終わります
+	Fit Credits to Music…	クレジットを音楽に合わせる…
+	Analyse Music for Credits	クレジット用に音楽を解析

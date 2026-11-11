@@ -4286,3 +4286,25 @@
 	“{text}” is {px} px high; 24 px or more reads well	“{text}”高 {px} px;24 px 或更高时便于阅读
 	The roll moves {speed} px per frame; a whole number does not shimmer	滚动每帧移动 {speed} px；整数不会闪烁
 	Check Credits	检查演职员表
+	Cards last whole beats (cuts on the beat)	卡片持续整数拍(在节拍上切换)
+	Fit Credits to Music	使演职员表适配音乐
+	Fit to This Length	适配此时长
+	Fitting removed.	已取消适配。
+	Fitting…	正在适配…
+	Length of the credits	演职员表时长
+	Length:	时长:
+	Length: {time}	时长:{time}
+	Listening to the music…	正在分析音乐…
+	No music to measure ({problem}); type the length.	没有可测量的音乐({problem});请输入时长。
+	Remove Fitting	取消适配
+	Select a credits page on the timeline.	请在时间线上选择一个演职员表页面。
+	Start the credits where the music starts	演职员表从音乐开始处开始
+	The credits now last {time}.	演职员表现在时长为 {time}。
+	The whole music ({time})	整段音乐({time})
+	To the last bar line ({time})	到最后一条小节线({time})
+	Until the sound ends ({time})	直到声音结束({time})
+	tempo {bpm} BPM	速度 {bpm} BPM
+	the credits without fitting: {time}	未适配的演职员表:{time}
+	the sound ends at {time}	声音在 {time} 结束
+	Fit Credits to Music…	使演职员表适配音乐…
+	Analyse Music for Credits	为演职员表分析音乐

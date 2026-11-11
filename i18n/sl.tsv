@@ -4291,3 +4291,25 @@ export.summary	Low	nizka
 	Checks and warnings	Preverjanja in opozorila
 	Checks: {errors} errors, {warnings} warnings	Preverjanja: napake {errors}, opozorila {warnings}
 	Check Credits	Preveri odjavno špico
+	The whole music ({time})	Vsa glasba ({time})
+	Until the sound ends ({time})	Do konca zvoka ({time})
+	To the last bar line ({time})	Do zadnje taktnice ({time})
+	Fit Credits to Music	Prilagodi odjavno špico glasbi
+	Fit Credits to Music…	Prilagodi odjavno špico glasbi…
+	Analyse Music for Credits	Analiziraj glasbo za odjavno špico
+	Length:	Dolžina:
+	Cards last whole beats (cuts on the beat)	Kartice trajajo cele dobe (rezi na dobo)
+	Start the credits where the music starts	Začni odjavno špico tam, kjer se začne glasba
+	Length of the credits	Dolžina odjavne špice
+	Remove Fitting	Odstrani prilagoditev
+	Listening to the music…	Poslušanje glasbe…
+	Length: {time}	Dolžina: {time}
+	the sound ends at {time}	zvok se konča pri {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	odjavna špica brez prilagoditve: {time}
+	Select a credits page on the timeline.	Izberite stran odjavne špice na časovnici.
+	Fitting…	Prilagajanje…
+	The credits now last {time}.	Odjavna špica zdaj traja {time}.
+	Fitting removed.	Prilagoditev odstranjena.
+	Fit to This Length	Prilagodi tej dolžini
+	No music to measure ({problem}); type the length.	Ni glasbe za merjenje ({problem}); vnesite dolžino.

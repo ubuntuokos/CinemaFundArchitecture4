@@ -4290,3 +4290,25 @@ export.summary	Low	χαμηλή
 	Checks and warnings	Έλεγχοι και προειδοποιήσεις
 	Checks: {errors} errors, {warnings} warnings	Έλεγχοι: {errors} σφάλματα, {warnings} προειδοποιήσεις
 	Check Credits	Έλεγχος τίτλων συντελεστών
+	The whole music ({time})	Όλη η μουσική ({time})
+	Until the sound ends ({time})	Μέχρι να τελειώσει ο ήχος ({time})
+	To the last bar line ({time})	Μέχρι την τελευταία διαστολή ({time})
+	Fit Credits to Music	Προσαρμογή τίτλων συντελεστών στη μουσική
+	Fit Credits to Music…	Προσαρμογή τίτλων συντελεστών στη μουσική…
+	Analyse Music for Credits	Ανάλυση μουσικής για τους τίτλους συντελεστών
+	Length:	Διάρκεια:
+	Cards last whole beats (cuts on the beat)	Οι κάρτες διαρκούν ολόκληρους χτύπους (κοψίματα στον χτύπο)
+	Start the credits where the music starts	Έναρξη τίτλων συντελεστών εκεί που αρχίζει η μουσική
+	Length of the credits	Διάρκεια τίτλων συντελεστών
+	Remove Fitting	Αφαίρεση προσαρμογής
+	Listening to the music…	Ακρόαση της μουσικής…
+	Length: {time}	Διάρκεια: {time}
+	the sound ends at {time}	ο ήχος τελειώνει στο {time}
+	tempo {bpm} BPM	ρυθμός {bpm} BPM
+	the credits without fitting: {time}	οι τίτλοι συντελεστών χωρίς προσαρμογή: {time}
+	Select a credits page on the timeline.	Επιλέξτε μια σελίδα τίτλων συντελεστών στη χρονογραμμή.
+	Fitting…	Προσαρμογή…
+	The credits now last {time}.	Οι τίτλοι συντελεστών διαρκούν τώρα {time}.
+	Fitting removed.	Η προσαρμογή αφαιρέθηκε.
+	Fit to This Length	Προσαρμογή σε αυτή τη διάρκεια
+	No music to measure ({problem}); type the length.	Δεν υπάρχει μουσική για μέτρηση ({problem})· πληκτρολογήστε τη διάρκεια.

@@ -4290,3 +4290,25 @@ export.summary	Low	matala
 	Checks and warnings	Tarkistukset ja varoitukset
 	Checks: {errors} errors, {warnings} warnings	Tarkistukset: {errors} virhettä, {warnings} varoitusta
 	Check Credits	Tarkista tekijätiedot
+	The whole music ({time})	Koko musiikki ({time})
+	Until the sound ends ({time})	Kunnes ääni loppuu ({time})
+	To the last bar line ({time})	Viimeiseen tahtiviivaan ({time})
+	Fit Credits to Music	Sovita tekijätiedot musiikkiin
+	Fit Credits to Music…	Sovita tekijätiedot musiikkiin…
+	Analyse Music for Credits	Analysoi musiikki tekijätietoja varten
+	Length:	Pituus:
+	Cards last whole beats (cuts on the beat)	Kortit kestävät kokonaisia iskuja (leikkaukset iskulla)
+	Start the credits where the music starts	Aloita tekijätiedot kohdasta, jossa musiikki alkaa
+	Length of the credits	Tekijätietojen pituus
+	Remove Fitting	Poista sovitus
+	Listening to the music…	Kuunnellaan musiikkia…
+	Length: {time}	Pituus: {time}
+	the sound ends at {time}	ääni loppuu kohdassa {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	tekijätiedot ilman sovitusta: {time}
+	Select a credits page on the timeline.	Valitse tekijätietosivu aikajanalta.
+	Fitting…	Sovitetaan…
+	The credits now last {time}.	Tekijätiedot kestävät nyt {time}.
+	Fitting removed.	Sovitus poistettu.
+	Fit to This Length	Sovita tähän pituuteen
+	No music to measure ({problem}); type the length.	Ei musiikkia mitattavaksi ({problem}); kirjoita pituus.

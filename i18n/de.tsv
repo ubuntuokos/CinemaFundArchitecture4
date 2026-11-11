@@ -4295,3 +4295,25 @@
 	“{text}” is {px} px high; 24 px or more reads well	„{text}“ ist {px} px hoch; ab 24 px ist es gut lesbar
 	The roll moves {speed} px per frame; a whole number does not shimmer	Der Rolltitel bewegt sich {speed} px pro Bild; eine ganze Zahl flimmert nicht
 	Check Credits	Abspann prüfen
+	Cards last whole beats (cuts on the beat)	Karten dauern ganze Schläge (Schnitt auf den Schlag)
+	Fit Credits to Music	Abspann an die Musik anpassen
+	Fit to This Length	Auf diese Länge anpassen
+	Fitting removed.	Anpassung entfernt.
+	Fitting…	Anpassen…
+	Length of the credits	Länge des Abspanns
+	Length:	Länge:
+	Length: {time}	Länge: {time}
+	Listening to the music…	Musik wird analysiert…
+	No music to measure ({problem}); type the length.	Keine Musik zum Messen ({problem}); geben Sie die Länge ein.
+	Remove Fitting	Anpassung entfernen
+	Select a credits page on the timeline.	Wählen Sie eine Abspannseite auf der Zeitleiste aus.
+	Start the credits where the music starts	Abspann dort beginnen, wo die Musik beginnt
+	The credits now last {time}.	Der Abspann dauert jetzt {time}.
+	The whole music ({time})	Die gesamte Musik ({time})
+	To the last bar line ({time})	Bis zum letzten Taktstrich ({time})
+	Until the sound ends ({time})	Bis der Ton endet ({time})
+	tempo {bpm} BPM	Tempo {bpm} BPM
+	the credits without fitting: {time}	der Abspann ohne Anpassung: {time}
+	the sound ends at {time}	der Ton endet bei {time}
+	Fit Credits to Music…	Abspann an Musik anpassen…
+	Analyse Music for Credits	Musik für den Abspann analysieren

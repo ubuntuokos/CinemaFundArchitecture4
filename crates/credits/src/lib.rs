@@ -11,6 +11,7 @@
 //! - [`style`]: [`Styling`] (page, content and letter styles, JSON) with built-in styles.
 //! - [`doc`]: the `.cfa4credits` document (source, styling, accepted table); [`diff`]: what
 //!   changed in the sheet since, row by row, and the table after accepting some changes.
+//! - [`fit`]: fit credits to a length (their music), cards on the beat, length suggestions.
 //! - [`validate`]: checks a viewer or broadcaster would notice (names, fonts, safe area,
 //!   contrast, scroll speed, card length, pictures), with stable codes.
 //! - [`layout`]: [`Credits`] → one graphic clip per page ([`layout::PageOut`]): text layers, Roll
@@ -23,6 +24,7 @@
 
 pub mod diff;
 pub mod doc;
+pub mod fit;
 pub mod layout;
 pub mod office;
 pub mod sheet;
@@ -102,3 +104,6 @@ mod diff_tests;
 
 #[cfg(test)]
 mod validate_tests;
+
+#[cfg(test)]
+mod fit_tests;

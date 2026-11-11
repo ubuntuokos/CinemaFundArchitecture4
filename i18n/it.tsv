@@ -4288,3 +4288,25 @@
 	“{text}” is {px} px high; 24 px or more reads well	“{text}” è alto {px} px; da 24 px in su si legge bene
 	The roll moves {speed} px per frame; a whole number does not shimmer	Lo scorrimento avanza di {speed} px per fotogramma; un numero intero non sfarfalla
 	Check Credits	Controlla titoli di coda
+	Cards last whole beats (cuts on the beat)	I cartelli durano battute intere (stacchi a tempo)
+	Fit Credits to Music	Adatta titoli di coda alla musica
+	Fit to This Length	Adatta a questa durata
+	Fitting removed.	Adattamento rimosso.
+	Fitting…	Adattamento in corso…
+	Length of the credits	Durata dei titoli di coda
+	Length:	Durata:
+	Length: {time}	Durata: {time}
+	Listening to the music…	Ascolto della musica…
+	No music to measure ({problem}); type the length.	Nessuna musica da misurare ({problem}); inserisci la durata.
+	Remove Fitting	Rimuovi adattamento
+	Select a credits page on the timeline.	Seleziona una pagina dei titoli di coda sulla sequenza.
+	Start the credits where the music starts	Fai iniziare i titoli di coda dove inizia la musica
+	The credits now last {time}.	I titoli di coda ora durano {time}.
+	The whole music ({time})	Tutta la musica ({time})
+	To the last bar line ({time})	Fino all'ultima stanghetta ({time})
+	Until the sound ends ({time})	Fino alla fine del suono ({time})
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	i titoli di coda senza adattamento: {time}
+	the sound ends at {time}	il suono termina a {time}
+	Fit Credits to Music…	Adatta titoli di coda alla musica…
+	Analyse Music for Credits	Analizza la musica per i titoli di coda

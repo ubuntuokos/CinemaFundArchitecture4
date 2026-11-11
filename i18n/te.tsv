@@ -4294,3 +4294,25 @@ export.summary	Low	తక్కువ
 	Checks and warnings	తనిఖీలు మరియు హెచ్చరికలు
 	Checks: {errors} errors, {warnings} warnings	తనిఖీలు: {errors} లోపాలు, {warnings} హెచ్చరికలు
 	Check Credits	క్రెడిట్స్ తనిఖీ చేయి
+	The whole music ({time})	మొత్తం సంగీతం ({time})
+	Until the sound ends ({time})	శబ్దం ముగిసే వరకు ({time})
+	To the last bar line ({time})	చివరి బార్ లైన్ వరకు ({time})
+	Fit Credits to Music	క్రెడిట్స్‌ను సంగీతానికి సరిపోల్చు
+	Fit Credits to Music…	క్రెడిట్స్‌ను సంగీతానికి సరిపోల్చు…
+	Analyse Music for Credits	క్రెడిట్స్ కోసం సంగీతాన్ని విశ్లేషించు
+	Length:	నిడివి:
+	Cards last whole beats (cuts on the beat)	కార్డ్‌లు పూర్తి బీట్‌లు ఉంటాయి (బీట్‌పై కట్‌లు)
+	Start the credits where the music starts	సంగీతం మొదలయ్యే చోట క్రెడిట్స్ ప్రారంభించు
+	Length of the credits	క్రెడిట్స్ నిడివి
+	Remove Fitting	సరిపోల్చడాన్ని తీసివేయి
+	Listening to the music…	సంగీతాన్ని వింటోంది…
+	Length: {time}	నిడివి: {time}
+	the sound ends at {time}	శబ్దం {time} వద్ద ముగుస్తుంది
+	tempo {bpm} BPM	టెంపో {bpm} BPM
+	the credits without fitting: {time}	సరిపోల్చకుండా క్రెడిట్స్: {time}
+	Select a credits page on the timeline.	టైమ్‌లైన్‌లో క్రెడిట్స్ పేజీని ఎంచుకోండి.
+	Fitting…	సరిపోల్చుతోంది…
+	The credits now last {time}.	క్రెడిట్స్ ఇప్పుడు {time} ఉంటాయి.
+	Fitting removed.	సరిపోల్చడం తీసివేయబడింది.
+	Fit to This Length	ఈ నిడివికి సరిపోల్చు
+	No music to measure ({problem}); type the length.	కొలవడానికి సంగీతం లేదు ({problem}); నిడివిని టైప్ చేయండి.

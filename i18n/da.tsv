@@ -4290,3 +4290,25 @@ export.summary	Low	lav
 	Checks and warnings	Kontroller og advarsler
 	Checks: {errors} errors, {warnings} warnings	Kontroller: {errors} fejl, {warnings} advarsler
 	Check Credits	Kontrollér rulletekster
+	The whole music ({time})	Hele musikken ({time})
+	Until the sound ends ({time})	Indtil lyden slutter ({time})
+	To the last bar line ({time})	Til sidste taktstreg ({time})
+	Fit Credits to Music	Tilpas rulletekster til musikken
+	Fit Credits to Music…	Tilpas rulletekster til musikken…
+	Analyse Music for Credits	Analysér musik til rulletekster
+	Length:	Længde:
+	Cards last whole beats (cuts on the beat)	Kort varer hele slag (klip på slaget)
+	Start the credits where the music starts	Start rulleteksterne, hvor musikken starter
+	Length of the credits	Rulleteksternes længde
+	Remove Fitting	Fjern tilpasning
+	Listening to the music…	Lytter til musikken…
+	Length: {time}	Længde: {time}
+	the sound ends at {time}	lyden slutter ved {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	rulletekster uden tilpasning: {time}
+	Select a credits page on the timeline.	Vælg en rulletekstside på tidslinjen.
+	Fitting…	Tilpasser…
+	The credits now last {time}.	Rulleteksterne varer nu {time}.
+	Fitting removed.	Tilpasning fjernet.
+	Fit to This Length	Tilpas til denne længde
+	No music to measure ({problem}); type the length.	Ingen musik at måle ({problem}); skriv længden.

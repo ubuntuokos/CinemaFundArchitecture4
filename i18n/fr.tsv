@@ -4293,3 +4293,25 @@
 	“{text}” is {px} px high; 24 px or more reads well	« {text} » fait {px} px de haut ; à partir de 24 px, la lecture est confortable
 	The roll moves {speed} px per frame; a whole number does not shimmer	Le défilement avance de {speed} px par image ; un nombre entier ne scintille pas
 	Check Credits	Vérifier le générique
+	Cards last whole beats (cuts on the beat)	Les cartes durent des temps entiers (coupes sur le temps)
+	Fit Credits to Music	Ajuster le générique à la musique
+	Fit to This Length	Ajuster à cette durée
+	Fitting removed.	Ajustement supprimé.
+	Fitting…	Ajustement…
+	Length of the credits	Durée du générique
+	Length:	Durée :
+	Length: {time}	Durée : {time}
+	Listening to the music…	Analyse de la musique…
+	No music to measure ({problem}); type the length.	Aucune musique à mesurer ({problem}) ; saisissez la durée.
+	Remove Fitting	Supprimer l'ajustement
+	Select a credits page on the timeline.	Sélectionnez une page de générique sur la timeline.
+	Start the credits where the music starts	Démarrer le générique là où la musique commence
+	The credits now last {time}.	Le générique dure maintenant {time}.
+	The whole music ({time})	Toute la musique ({time})
+	To the last bar line ({time})	Jusqu'à la dernière barre de mesure ({time})
+	Until the sound ends ({time})	Jusqu'à la fin du son ({time})
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	le générique sans ajustement : {time}
+	the sound ends at {time}	le son se termine à {time}
+	Fit Credits to Music…	Ajuster le générique à la musique…
+	Analyse Music for Credits	Analyser la musique pour le générique

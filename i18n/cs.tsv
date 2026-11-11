@@ -4288,3 +4288,25 @@ export.summary	Low	nízká
 	Checks and warnings	Kontroly a upozornění
 	Checks: {errors} errors, {warnings} warnings	Kontroly: chyby {errors}, upozornění {warnings}
 	Check Credits	Zkontrolovat titulky tvůrců
+	The whole music ({time})	Celá hudba ({time})
+	Until the sound ends ({time})	Do konce zvuku ({time})
+	To the last bar line ({time})	Po poslední taktovou čáru ({time})
+	Fit Credits to Music	Přizpůsobit titulky tvůrců hudbě
+	Fit Credits to Music…	Přizpůsobit titulky tvůrců hudbě…
+	Analyse Music for Credits	Analyzovat hudbu pro titulky tvůrců
+	Length:	Délka:
+	Cards last whole beats (cuts on the beat)	Karty trvají celé doby (střih na dobu)
+	Start the credits where the music starts	Začít titulky tvůrců tam, kde začíná hudba
+	Length of the credits	Délka titulků tvůrců
+	Remove Fitting	Odebrat přizpůsobení
+	Listening to the music…	Poslouchání hudby…
+	Length: {time}	Délka: {time}
+	the sound ends at {time}	zvuk končí v {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	titulky tvůrců bez přizpůsobení: {time}
+	Select a credits page on the timeline.	Vyberte na časové ose stránku titulků tvůrců.
+	Fitting…	Přizpůsobování…
+	The credits now last {time}.	Titulky tvůrců nyní trvají {time}.
+	Fitting removed.	Přizpůsobení odebráno.
+	Fit to This Length	Přizpůsobit této délce
+	No music to measure ({problem}); type the length.	Není co měřit, chybí hudba ({problem}); zadejte délku.

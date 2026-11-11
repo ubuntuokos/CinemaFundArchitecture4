@@ -4290,3 +4290,25 @@ export.summary	Low	madal
 	Checks and warnings	Kontrollid ja hoiatused
 	Checks: {errors} errors, {warnings} warnings	Kontrollid: vigu {errors}, hoiatusi {warnings}
 	Check Credits	Kontrolli tiitreid
+	The whole music ({time})	Kogu muusika ({time})
+	Until the sound ends ({time})	Kuni heli lõpuni ({time})
+	To the last bar line ({time})	Viimase taktijooneni ({time})
+	Fit Credits to Music	Sobita tiitrid muusikaga
+	Fit Credits to Music…	Sobita tiitrid muusikaga…
+	Analyse Music for Credits	Analüüsi muusikat tiitrite jaoks
+	Length:	Pikkus:
+	Cards last whole beats (cuts on the beat)	Kaardid kestavad täislööke (lõiked löögil)
+	Start the credits where the music starts	Alusta tiitreid sealt, kus algab muusika
+	Length of the credits	Tiitrite pikkus
+	Remove Fitting	Eemalda sobitus
+	Listening to the music…	Muusika kuulamine…
+	Length: {time}	Pikkus: {time}
+	the sound ends at {time}	heli lõpeb ajal {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	tiitrid ilma sobituseta: {time}
+	Select a credits page on the timeline.	Vali ajaskaalal tiitrileht.
+	Fitting…	Sobitamine…
+	The credits now last {time}.	Tiitrid kestavad nüüd {time}.
+	Fitting removed.	Sobitus eemaldatud.
+	Fit to This Length	Sobita selle pikkusega
+	No music to measure ({problem}); type the length.	Pole muusikat, mida mõõta ({problem}); sisesta pikkus.

@@ -4273,3 +4273,25 @@
 	Checks and warnings	Перевірки та попередження
 	Checks: {errors} errors, {warnings} warnings	Перевірки: помилок — {errors}, попереджень — {warnings}
 	Check Credits	Перевірити титри
+	The whole music ({time})	Уся музика ({time})
+	Until the sound ends ({time})	Доки не закінчиться звук ({time})
+	To the last bar line ({time})	До останньої тактової риски ({time})
+	Fit Credits to Music	Підігнати титри під музику
+	Fit Credits to Music…	Підігнати титри під музику…
+	Analyse Music for Credits	Аналізувати музику для титрів
+	Length:	Тривалість:
+	Cards last whole beats (cuts on the beat)	Картки тривають ціле число долей (зміна на долі)
+	Start the credits where the music starts	Почати титри там, де починається музика
+	Length of the credits	Тривалість титрів
+	Remove Fitting	Зняти підгонку
+	Listening to the music…	Прослуховування музики…
+	Length: {time}	Тривалість: {time}
+	the sound ends at {time}	звук закінчується на {time}
+	tempo {bpm} BPM	темп {bpm} BPM
+	the credits without fitting: {time}	титри без підгонки: {time}
+	Select a credits page on the timeline.	Виберіть сторінку титрів на таймлайні.
+	Fitting…	Підгонка…
+	The credits now last {time}.	Тепер титри тривають {time}.
+	Fitting removed.	Підгонку знято.
+	Fit to This Length	Підігнати під цю тривалість
+	No music to measure ({problem}); type the length.	Немає музики для вимірювання ({problem}); введіть тривалість.

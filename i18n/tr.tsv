@@ -4289,3 +4289,25 @@ export.summary	Low	düşük
 	Checks and warnings	Denetimler ve uyarılar
 	Checks: {errors} errors, {warnings} warnings	Denetimler: {errors} hata, {warnings} uyarı
 	Check Credits	Jeneriği denetle
+	The whole music ({time})	Müziğin tamamı ({time})
+	Until the sound ends ({time})	Ses bitene kadar ({time})
+	To the last bar line ({time})	Son ölçü çizgisine kadar ({time})
+	Fit Credits to Music	Jeneriği müziğe uydur
+	Fit Credits to Music…	Jeneriği müziğe uydur…
+	Analyse Music for Credits	Jenerik için müziği çözümle
+	Length:	Uzunluk:
+	Cards last whole beats (cuts on the beat)	Kartlar tam vuruş sürer (kesmeler vuruşta)
+	Start the credits where the music starts	Jeneriği müziğin başladığı yerde başlat
+	Length of the credits	Jeneriğin uzunluğu
+	Remove Fitting	Uydurmayı kaldır
+	Listening to the music…	Müzik dinleniyor…
+	Length: {time}	Uzunluk: {time}
+	the sound ends at {time}	ses {time} anında bitiyor
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	uydurmasız jenerik: {time}
+	Select a credits page on the timeline.	Zaman çizelgesinde bir jenerik sayfası seçin.
+	Fitting…	Uyduruluyor…
+	The credits now last {time}.	Jenerik artık {time} sürüyor.
+	Fitting removed.	Uydurma kaldırıldı.
+	Fit to This Length	Bu uzunluğa uydur
+	No music to measure ({problem}); type the length.	Ölçülecek müzik yok ({problem}); uzunluğu yazın.

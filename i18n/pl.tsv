@@ -4288,3 +4288,25 @@ export.summary	Low	niska
 	Checks and warnings	Kontrole i ostrzeżenia
 	Checks: {errors} errors, {warnings} warnings	Kontrole: błędy {errors}, ostrzeżenia {warnings}
 	Check Credits	Sprawdź napisy końcowe
+	The whole music ({time})	Cała muzyka ({time})
+	Until the sound ends ({time})	Do końca dźwięku ({time})
+	To the last bar line ({time})	Do ostatniej kreski taktowej ({time})
+	Fit Credits to Music	Dopasuj napisy końcowe do muzyki
+	Fit Credits to Music…	Dopasuj napisy końcowe do muzyki…
+	Analyse Music for Credits	Analizuj muzykę dla napisów końcowych
+	Length:	Długość:
+	Cards last whole beats (cuts on the beat)	Plansze trwają pełne uderzenia (cięcia w rytm)
+	Start the credits where the music starts	Zacznij napisy końcowe tam, gdzie zaczyna się muzyka
+	Length of the credits	Długość napisów końcowych
+	Remove Fitting	Usuń dopasowanie
+	Listening to the music…	Słuchanie muzyki…
+	Length: {time}	Długość: {time}
+	the sound ends at {time}	dźwięk kończy się w {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	napisy końcowe bez dopasowania: {time}
+	Select a credits page on the timeline.	Zaznacz stronę napisów końcowych na osi czasu.
+	Fitting…	Dopasowywanie…
+	The credits now last {time}.	Napisy końcowe trwają teraz {time}.
+	Fitting removed.	Usunięto dopasowanie.
+	Fit to This Length	Dopasuj do tej długości
+	No music to measure ({problem}); type the length.	Brak muzyki do zmierzenia ({problem}); wpisz długość.
