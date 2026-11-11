@@ -105,11 +105,11 @@ kihasználható.
 B0, B1 és B2 nem érinti a Qt6 felület fájljait, így most indulhatnak; a Beállítások ▸ Biztonság
 oldal a Qt6 befejezése után. A B6 az élő stúdió S9-ével együtt.
 
-## VII. Döntések (egyeztetendők)
+## VII. Döntések (lépésenként egyeztetve)
 
 | # | Kérdés | Javaslat |
 |---|---|---|
-| D1 | Hatókör | futásidejű réteg **és** fuzzing (a hibák megtalálása és a kár korlátozása együtt) |
+| D1 | Hatókör | **Eldöntve (2026-11-11): futásidejű réteg és fuzzing együtt.** A fuzzing a hibákat keresi meg, mielőtt a támadók tennék; a futásidejű réteg a javítatlanok kárát korlátozza |
 | D2 | Az FFmpeg és a GStreamer helye | külön `cfa4-media-host` folyamat (B4); határ: a lejátszás és az export legfeljebb 5%-kal lassulhat, különben a motorban marad, Landlockkal és seccomppal |
 | D3 | Eszközök | Landlock + seccomp a saját Rust kódban (minden csomagformátumban működik) + AppArmor-profil csak ahol kell (Chromium-sandbox); a bubblewrap nem kötelező |
 | D4 | Ha a rendszer nem támogat egy védelmet | fut tovább, de jelzi (never crash); kérésre „szigorú mód”, amely ilyenkor nem indítja a kockázatos részt |
