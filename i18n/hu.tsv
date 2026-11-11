@@ -4333,3 +4333,6 @@ export.summary	Low	alacsony
 	Template:	Sablon:
 	Credits Templates	Stáblista-sablonok
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Táblázatok, stáblista-fájlok és Cinecred-projektek (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred-projektmappa megnyitása (Styling.toml és a stáblista-táblázat)

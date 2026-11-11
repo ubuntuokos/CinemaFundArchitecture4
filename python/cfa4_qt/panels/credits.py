@@ -44,7 +44,7 @@ from ..engine import EngineClient
 from ..i18n import N_, TR, tr
 from ..timecode import TICKS_PER_SECOND
 
-SHEET_FILTER = N_("Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)")
+SHEET_FILTER = N_("Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)")
 CREDITS_FILE_FILTER = N_("CFA4 credits file (*.cfa4credits)")
 STYLING_FILTER = N_("Credits styling (*.json)")
 BEHAVIOURS = {"scroll": N_("Roll"), "card": N_("Card"), "crawl": N_("Crawl")}
@@ -163,9 +163,14 @@ class CreditsDialog(QDialog):
         browse = QPushButton(tr("Browse…"), self)
         browse.setObjectName("credits.browse")
         browse.clicked.connect(self._browse)
+        cinecred = QPushButton(tr("Cinecred Project…"), self)
+        cinecred.setObjectName("credits.cinecred")
+        cinecred.setToolTip(tr("Open a Cinecred project folder (Styling.toml and its credits spreadsheet)"))
+        cinecred.clicked.connect(self._browse_cinecred)
         path_row = QHBoxLayout()
         path_row.addWidget(self.path, 1)
         path_row.addWidget(browse)
+        path_row.addWidget(cinecred)
 
         self.sheet = QComboBox(self)
         self.sheet.setObjectName("credits.sheet")
@@ -419,6 +424,11 @@ class CreditsDialog(QDialog):
 
     def _browse(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, tr("Credits Spreadsheet"), self._start_dir(), tr(SHEET_FILTER))
+        if path:
+            self.path.setText(path)
+
+    def _browse_cinecred(self) -> None:
+        path = QFileDialog.getExistingDirectory(self, tr("Cinecred Project…"), self._start_dir())
         if path:
             self.path.setText(path)
 

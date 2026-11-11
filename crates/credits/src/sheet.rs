@@ -58,7 +58,8 @@ impl Column {
             "pagestyle" | "page" | "oldal" | "oldalstílus" => Column::Page,
             "pageruntime" | "runtime" | "játékidő" | "oldalhossz" => Column::Runtime,
             "pagegap" | "oldalköz" => Column::PageGap,
-            _ => return None,
+            // Cinecred's names in its other languages
+            _ => return crate::cinecred::column(cell),
         })
     }
 }
@@ -166,8 +167,8 @@ pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
         let tag = after.get(..j).unwrap_or("").trim();
         let (word, arg) = tag.split_once(char::is_whitespace).unwrap_or((tag, ""));
         let lower = word.to_lowercase();
-        let video = VIDEO_TAGS.contains(&lower.as_str());
-        if (video || PIC_TAGS.contains(&lower.as_str())) && !arg.trim().is_empty() && pics.len() < 64 {
+        let video = VIDEO_TAGS.contains(&lower.as_str()) || crate::cinecred::is_video_word(&lower);
+        if (video || PIC_TAGS.contains(&lower.as_str()) || crate::cinecred::is_pic_word(&lower)) && !arg.trim().is_empty() && pics.len() < 64 {
             let arg = arg.trim();
             let (file, height) = match arg.rsplit_once(char::is_whitespace) {
                 Some((f, h)) => {
@@ -230,7 +231,7 @@ pub fn clean_markup(cell: &str) -> (String, bool) {
         if crate::markup::style_tag(tag).is_some() {
             // letter styles stay for the layout
             out.push_str(rest.get(i..i + 2 + j + 2).unwrap_or(""));
-        } else if !tag.eq_ignore_ascii_case("blank") {
+        } else if !crate::cinecred::is_blank_word(tag) {
             dropped = true;
         }
         rest = after.get(j + 2..).unwrap_or("");
@@ -255,9 +256,11 @@ fn parse_gap(s: &str) -> Option<Gap> {
 /// A spine position: a pixel offset, optionally `parallel` (`párhuzamos`) to the column before.
 fn parse_spine(s: &str) -> Option<(f64, bool)> {
     let t = s.trim().to_lowercase().replace(',', ".");
-    let (t, parallel) = match t.strip_suffix("parallel").or_else(|| t.strip_suffix("párhuzamos")) {
-        Some(rest) => (rest.trim().to_string(), true),
-        None => (t.clone(), false),
+    let last = t.split_whitespace().last().unwrap_or("").to_string();
+    let (t, parallel) = if last == "parallel" || last == "párhuzamos" || crate::cinecred::is_parallel_word(&last) {
+        (t.get(..t.len() - last.len()).unwrap_or("").trim().to_string(), true)
+    } else {
+        (t.clone(), false)
     };
     let n = t.strip_suffix("px").unwrap_or(&t).trim();
     let v: f64 = n.parse().ok()?;
@@ -313,7 +316,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         let (head, body, tail) = (cell(Column::Head), cell(Column::Body), cell(Column::Tail));
         let (gap, cstyle, spine_s) = (cell(Column::Gap), cell(Column::Style), cell(Column::Spine));
         let (pstyle, runtime, pgap) = (cell(Column::Page), cell(Column::Runtime), cell(Column::PageGap));
-        let body_blank = raw_body.trim().eq_ignore_ascii_case("{{blank}}");
+        let body_blank = raw_body.trim().strip_prefix("{{").and_then(|x| x.strip_suffix("}}")).is_some_and(crate::cinecred::is_blank_word);
 
         // a new page
         if !pstyle.trim().is_empty() {

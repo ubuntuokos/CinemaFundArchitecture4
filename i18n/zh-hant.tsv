@@ -4333,3 +4333,6 @@ export.summary	Low	低
 	Template:	範本：
 	Credits Templates	演職員表範本
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	試算表、演職員表檔案與 Cinecred 專案 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred 專案…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	開啟 Cinecred 專案資料夾（Styling.toml 及其演職員表試算表）

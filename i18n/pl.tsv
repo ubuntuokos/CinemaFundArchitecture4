@@ -4334,3 +4334,6 @@ export.summary	Low	niska
 	Template:	Szablon:
 	Credits Templates	Szablony napisów końcowych
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Arkusze, pliki napisów końcowych i projekty Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Projekt Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Otwórz folder projektu Cinecred (Styling.toml i jego arkusz napisów końcowych)

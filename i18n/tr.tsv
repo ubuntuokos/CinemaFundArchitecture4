@@ -4335,3 +4335,6 @@ export.summary	Low	düşük
 	Template:	Şablon:
 	Credits Templates	Jenerik şablonları
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tablolar, jenerik dosyaları ve Cinecred projeleri (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred projesi…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Bir Cinecred proje klasörü aç (Styling.toml ve jenerik tablosu)

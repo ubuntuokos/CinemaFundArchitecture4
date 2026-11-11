@@ -9,7 +9,8 @@
 The owner asked to build [Cinecred](https://github.com/LoadingByte/cinecred) into CFA4. Three
 facts rule out taking the program itself:
 
-1. **Licence.** Cinecred is GPL-3.0-or-later; CFA4 is MIT OR Apache-2.0. `AGENTS.md` §2 forbids
+1. **Licence.** Cinecred is GPL-3.0-or-later; CFA4 was MIT OR Apache-2.0 then (GPL-3.0-or-later
+   since 2026-10, which allows reading Cinecred's source for its file format: see C7). `AGENTS.md` §2 forbids
    copying GPL code, and `VISION.md` §4 says CFA4 takes over other programs' *capabilities*, not
    their code, names or trademarks.
 2. **Language.** Cinecred is Kotlin on the JVM; CFA4's product code is pure Rust with a Qt6
@@ -56,6 +57,7 @@ The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 | Fit to music (C3): music length, sound end, last bar (Remix beat analysis), typed length; cards on the beat; align to the music; rolls stretch their gaps, cards keep theirs; stored in the document, kept by refresh; Qt6 Fit window | done (2026-10-26) |
 | Backgrounds, transitions, crawls, guides (C4): per page style a colour, gradient, picture or video background (fill / fit, opacity, blur) as its own clip below the page; a library transition on the cut into the next page (replacing the cards' fade there); a one-line crawl page type (Crawl Left); safe areas, spines and baseline grid in the page picture; contrast measured against the background | done (2026-10-26) |
 | Templates (C6): `.cfa4credtpl` (styling, sample sheet, fitting; versioned, with id, source and licence); built in (original, MIT OR Apache-2.0), user and project templates; apply to placed credits in one undo step | done (2026-10-27) |
+| Cinecred projects (C7): a project folder (`Styling.toml` + credits sheet) opens as credits; its styles carried over as far as CFA4's go, the rest listed; Cinecred's column and tag names in its languages. CFA4 is GPL-3.0-or-later since 2026-10, so Cinecred's published source was consulted for the format (no code copied; `docs/licensing.md` §5) | done (2026-10-27) |
 | Qt6 Credits window (sheet, worksheet, pictures, styling, pages, warnings, page picture, place at playhead) on the Qt6 GUI's engine server | done (2026-10-25); **the owner decided the UI is Qt6 only**: no more egui work, no standalone app |
 
 ## Consequences

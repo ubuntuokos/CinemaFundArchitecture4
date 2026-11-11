@@ -4336,3 +4336,6 @@ export.summary	Low	lav
 	Template:	Skabelon:
 	Credits Templates	Rulletekstskabeloner
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Regneark, rulletekstfiler og Cinecred-projekter (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Åbn en Cinecred-projektmappe (Styling.toml og dets rulletekstregneark)

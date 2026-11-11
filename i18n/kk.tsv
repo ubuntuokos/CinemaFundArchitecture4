@@ -4336,3 +4336,6 @@ export.summary	Low	төмен
 	Template:	Үлгі:
 	Credits Templates	Титрлер үлгілері
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Кестелер, титрлер файлдары және Cinecred жобалары (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred жобасы…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred жобасының бумасын ашу (Styling.toml және оның титрлер кестесі)

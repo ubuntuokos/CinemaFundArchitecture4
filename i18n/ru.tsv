@@ -4319,3 +4319,6 @@
 	Template:	Шаблон:
 	Credits Templates	Шаблоны титров
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Таблицы, файлы титров и проекты Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Проект Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Открыть папку проекта Cinecred (Styling.toml и её таблица титров)
