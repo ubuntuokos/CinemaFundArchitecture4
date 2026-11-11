@@ -79,11 +79,37 @@ fn fc(v: &Value) -> Option<&Value> {
     m.get("cfa4").or_else(|| m.get(cfa4_project::legacy::OTIO_METADATA_KEY))
 }
 
-/// The `metadata` keys other programs wrote (everything but CFA4's own, under `cfa4` or the upstream
-/// key), kept to be written back.
-fn foreign(v: &Value) -> BTreeMap<String, Value> {
-    let Some(m) = v.get("metadata").and_then(Value::as_object) else { return BTreeMap::new() };
-    m.iter().filter(|(k, _)| k.as_str() != "cfa4" && k.as_str() != cfa4_project::legacy::OTIO_METADATA_KEY).map(|(k, v)| (k.clone(), v.clone())).collect()
+/// Most bytes of other programs' `metadata` one import keeps to write back (all objects together,
+/// counted by [`json_size`]). Keeping it clones it out of the parsed document, so a file with huge
+/// foreign metadata, or a nested sequence holding it that is used many times, would otherwise grow
+/// memory far past the file's own size. Real metadata is a few KB per object; keys past the budget
+/// are dropped with a warning (#744, OTIO-2.1).
+const MAX_FOREIGN_METADATA_BYTES: usize = 16 * 1024 * 1024;
+
+/// Approximate serialized size of `v` in bytes, or `None` once it exceeds `limit`. Iterative, so a
+/// deeply nested value cannot overflow the stack, and it stops as soon as the limit is passed.
+fn json_size(v: &Value, limit: usize) -> Option<usize> {
+    let mut total: usize = 0;
+    let mut stack = vec![v];
+    while let Some(v) = stack.pop() {
+        let n = match v {
+            Value::Null | Value::Bool(_) | Value::Number(_) => 8,
+            Value::String(s) => s.len().saturating_add(2),
+            Value::Array(a) => {
+                stack.extend(a.iter());
+                a.len().saturating_add(2)
+            }
+            Value::Object(o) => {
+                stack.extend(o.values());
+                o.keys().fold(2usize, |acc, k| acc.saturating_add(k.len()).saturating_add(4))
+            }
+        };
+        total = total.saturating_add(n);
+        if total > limit {
+            return None;
+        }
+    }
+    Some(total)
 }
 
 /// A `metadata` object: the foreign keys read on import, plus CFA4's own under `cfa4`.
@@ -415,6 +441,8 @@ struct Imp<'a, 'r> {
     report: &'r mut Report,
     links: HashMap<u64, u64>,
     groups: HashMap<u64, u64>,
+    /// What is left of [`MAX_FOREIGN_METADATA_BYTES`] for this import.
+    foreign_budget: usize,
 }
 
 pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> Result<Imported> {
@@ -424,7 +452,8 @@ pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> R
     if timelines.is_empty() {
         return Err(Error::parse(Format::Otio, format!("no Timeline in a {} document", schema(&v))));
     }
-    let mut imp = Imp { b: Builder::new(&name_of(&v)), opts, report, links: HashMap::new(), groups: HashMap::new() };
+    let mut imp =
+        Imp { b: Builder::new(&name_of(&v)), opts, report, links: HashMap::new(), groups: HashMap::new(), foreign_budget: MAX_FOREIGN_METADATA_BYTES };
     if imp.b.p.name.is_empty() {
         imp.b.p.name = "Imported OTIO".into();
     }
@@ -456,6 +485,23 @@ fn first_rate(v: &Value) -> Option<FrameRate> {
 }
 
 impl Imp<'_, '_> {
+    /// The `metadata` keys other programs wrote (everything but CFA4's own, under `cfa4` or the upstream
+    /// key), kept to be written back, within this import's [`MAX_FOREIGN_METADATA_BYTES`].
+    fn foreign(&mut self, v: &Value) -> BTreeMap<String, Value> {
+        let Some(m) = v.get("metadata").and_then(Value::as_object) else { return BTreeMap::new() };
+        let mut kept = BTreeMap::new();
+        for (k, v) in m.iter().filter(|(k, _)| k.as_str() != "cfa4" && k.as_str() != cfa4_project::legacy::OTIO_METADATA_KEY) {
+            match json_size(v, self.foreign_budget.saturating_sub(k.len())) {
+                Some(n) => {
+                    self.foreign_budget = self.foreign_budget.saturating_sub(n.saturating_add(k.len()));
+                    kept.insert(k.clone(), v.clone());
+                }
+                None => self.report.warn(format!("OTIO metadata from other programs past {} MB was not kept", MAX_FOREIGN_METADATA_BYTES / (1024 * 1024))),
+            }
+        }
+        kept
+    }
+
     fn timeline(&mut self, tl: &Value) -> ItemId {
         let name = name_of(tl);
         let name = if name.is_empty() { self.opts.name.clone().unwrap_or_else(|| "Timeline".into()) } else { name };
@@ -472,7 +518,7 @@ impl Imp<'_, '_> {
         let rate = tl.get("global_start_time").and_then(read_rate).or_else(|| first_rate(stack)).unwrap_or_default();
         let id = self.sequence(stack, &name, meta, rate);
         // the Timeline's foreign metadata, over the top-level Stack's
-        let kept = foreign(tl);
+        let kept = self.foreign(tl);
         if !kept.is_empty()
             && let Some(s) = self.b.p.sequence_mut(id)
         {
@@ -502,7 +548,7 @@ impl Imp<'_, '_> {
             seq.master_effects = effects_from(m.get("master_effects")).unwrap_or_default();
         }
         seq.markers = self.markers(stack);
-        seq.interchange = foreign(stack);
+        seq.interchange = self.foreign(stack);
         for t in stack.get("children").and_then(Value::as_array).into_iter().flatten() {
             match schema_name(t) {
                 "Track" => {
@@ -526,7 +572,7 @@ impl Imp<'_, '_> {
             track.name = n;
         }
         track.enabled = t.get("enabled").and_then(Value::as_bool).unwrap_or(true);
-        track.interchange = foreign(t);
+        track.interchange = self.foreign(t);
         if let Some(m) = fc(t) {
             let g = |k: &str| m.get(k).and_then(Value::as_bool);
             track.locked = g("locked").unwrap_or(false);
@@ -707,7 +753,7 @@ impl Imp<'_, '_> {
         }
         let meta = fc(c).cloned();
         self.apply_clip_meta(&mut ti, c, meta.as_ref());
-        ti.interchange = foreign(c);
+        ti.interchange = self.foreign(c);
         Some(ti)
     }
 

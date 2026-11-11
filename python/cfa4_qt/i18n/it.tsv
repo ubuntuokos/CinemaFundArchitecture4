@@ -337,4 +337,69 @@
 	Set Work Area Bar In Point	Imposta punto di attacco della barra dell’area di lavoro
 	Set Work Area Bar Out Point	Imposta punto di stacco della barra dell’area di lavoro
 	Delete Clips	Elimina clip
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Analisi della clip…
+	At GOP boundaries (no re-encoding)	Ai confini dei GOP (senza ricodifica)
+	Bit-exact copy	Copia identica bit per bit
+	Choose the output file.	Scegli il file di output.
+	Compatible copy	Copia compatibile
+	Copy:	Copia:
+	Cut:	Taglio:
+	Frame accurate (re-encode the boundaries)	Preciso al fotogramma (ricodifica i confini)
+	Open a video clip in the Source monitor first.	Apri prima una clip video nel monitor sorgente.
+	Output:	Output:
+	Smart Cut Source	Smart Cut della sorgente
+	Smart Cut Source…	Smart Cut della sorgente…
+	Smart Cut is not available for this clip: {why}	Smart Cut non è disponibile per questa clip: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut scritto e verificato: {path} ({frames} fotogrammi)
+	The cut cannot run.	Il taglio non può essere eseguito.
+	The engine sent no analysis.	Il motore non ha inviato alcuna analisi.
+	Writing and verifying the cut…	Scrittura e verifica del taglio…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} in {container}: {gops} GOP, {points} punti di taglio puliti
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} fotogrammi copiati, {reencoded} fotogrammi ricodificati
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} fotogrammi ai confini vengono ricodificati. Continuare?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	Mostra i confini dei GOP
+# Export window Smart Export (WP-08)
+	Export mode	Modalità di esportazione
+	Full Render	Rendering completo
+	Planning…	Pianificazione…
+	Recommended: Smart Render (asks before re-encoding)	Consigliato: Smart Render (chiede prima di ricodificare)
+	Recommended: Stream Copy (nothing is re-encoded)	Consigliato: Stream Copy (nulla viene ricodificato)
+	Rendered because of: {causes}	Renderizzato per: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export scritto e verificato: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – identico bit per bit
+	Stream Copy – Compatible	Stream Copy – compatibile
+	Stream copy is not possible: {frames} frames need re-encoding.	La copia del flusso non è possibile: {frames} fotogrammi vanno ricodificati.
+	The export cannot run.	L’esportazione non può essere eseguita.
+	Wait for the export plan.	Attendi il piano di esportazione.
+	Writing and verifying the export…	Scrittura e verifica dell’esportazione…
+	colour conversion	conversione colore
+	compositing	compositing
+	copied	copiato
+	effects	effetti
+	frame rate	frequenza fotogrammi
+	proxies or nested sequences	proxy o sequenze nidificate
+	re-encoded at a cut	ricodificato a un taglio
+	rendered	renderizzato
+	sources that cannot be copied	sorgenti non copiabili
+	speed changes	cambi di velocità
+	titles or overlays	titoli o sovrapposizioni
+	transforms	trasformazioni
+	transitions	transizioni
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogrammi copiati, {reencoded} ricodificati ai tagli, {rendered} renderizzati
+	{frames} frames are re-encoded or rendered. Continue?	{frames} fotogrammi vengono ricodificati o renderizzati. Continuare?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Audio copiato: {tracks}
+	Audio track {track} is not copied: {why}	La traccia audio {track} non viene copiata: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	Tracker di punti
+	Correlation tracker	Tracker a correlazione
+	DCP language	Lingua del DCP
+	None (RFC 5646 tag, e.g. en-US)	Nessuna (tag RFC 5646, ad es. it-IT)
+	ISDCF name	Nome ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Denomina la cartella DCP secondo la Digital Cinema Naming Convention
+# MPEG-2 export audio (#268)
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)

@@ -43,8 +43,11 @@ attribution and original copyright/licence requirements remain in force.
     DaVinci Resolve). Reimplement the capability or call the program as an external process.
   - Dependencies must use GPL-3.0-compatible licences and pass `cargo deny check licenses`
     (`deny.toml`); GPL-2.0-only and AGPL dependencies are not allowed.
-  - Paid extras are GPL-3.0-or-later like the core (owner decision 2026-10-24); no proprietary
-    (non-GPL) code extras, in-process or separate, and no proprietary plug-ins (docs/licensing.md §4).
+  - **No paid or commercial part** (owner decision 2026-11-08, replaces the 2026-10-24 paid-extras
+    model): never add paid extras or editions, licence keys, trials, usage or resolution limits,
+    watermarks or paid support tiers, in the core, AI workers, packages or plans. CFA4 is supported
+    only by voluntary donations, which unlock nothing. No proprietary (non-GPL) code extras,
+    in-process or separate, and no proprietary plug-ins (docs/licensing.md §4).
   - Inherited upstream code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
   - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
 - Upstream brand names, marks and icons are removed from CFA4 and must not be reintroduced

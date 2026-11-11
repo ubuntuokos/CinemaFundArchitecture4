@@ -39,6 +39,8 @@ cfa4-ogg = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-vp9 = { workspace = true }
 cfa4-h264enc = { workspace = true }
+cfa4-h264 = { workspace = true }
+cfa4-bitstream = { workspace = true }
 cfa4-hevc = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-smart-edit = { workspace = true }
