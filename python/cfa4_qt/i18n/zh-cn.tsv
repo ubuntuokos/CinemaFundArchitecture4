@@ -112,7 +112,7 @@
 	Go to caption	转到字幕
 	Go to graphic	转到图形
 	Hear this voice	试听此语音
-	IAB 7.1 DS bed from the 5.1 mix	由 5.1 混音生成的 IAB 7.1 DS 声床
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	由混音生成的 IAB 声床（7.1 DS；7.1.2 生成 9.1OH）
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF、.iab 或 Dolby Atmos TrueHD（.thd、.mkv、.mp4、.m2ts）
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	来自文件的 IAB（IAB MXF、.iab 或 Dolby Atmos TrueHD）
 	IAB source	IAB 源
@@ -213,7 +213,7 @@
 	Text colour	文本颜色
 	Text to Speech: another sequence is open now; the narration was not placed	文本转语音：当前已打开另一个序列，未放置旁白
 	Text to Speech: {e}	文本转语音：{e}
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 混音将成为 7.1 DS 声床（IAB 配置文件 1）；主声音的第 14 声道承载 FSK 同步信号。
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 混音将成为 9.1OH 声床，7.1 混音成为 7.1 DS 声床，其他混音由其 5.1 生成 7.1 DS 声床（IAB 配置文件 1）；主声音的第 14 声道承载 FSK 同步信号。
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	找不到 CFA4 引擎（cfa4-cli）。请用以下命令构建：cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4 引擎意外停止并已重新启动。未保存的更改保存在恢复日志中，可以恢复。
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4 引擎意外停止。未保存的更改保存在恢复日志中；请重新启动 CFA4 以恢复。
@@ -391,6 +391,10 @@
 	transitions	转场
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	已复制 {copied} 帧，在剪切处重新编码 {reencoded} 帧，渲染 {rendered} 帧
 	{frames} frames are re-encoded or rendered. Continue?	{frames} 帧将重新编码或渲染。是否继续？
+	Field order	场序
+	Progressive	逐行
+	Interlaced, upper field first	隔行，上场优先
+	Interlaced, lower field first	隔行，下场优先
 # Smart Cut audio (WP-09b)
 	Audio copied: {tracks}	已复制音频：{tracks}
 	Audio track {track} is not copied: {why}	音轨 {track} 未复制：{why}
@@ -401,3 +405,4 @@
 	None (RFC 5646 tag, e.g. en-US)	无（RFC 5646 标签，例如 zh-CN）
 	ISDCF name	ISDCF 名称
 	Name the DCP folder by the Digital Cinema Naming Convention	按 Digital Cinema Naming Convention 命名 DCP 文件夹
+	Height	高度
