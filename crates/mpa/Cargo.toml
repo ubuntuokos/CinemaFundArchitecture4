@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-mpa"
-description = "Clean-room MPEG-1/2 Audio Layer I and Layer II (MP1 / MP2) decoder"
+description = "Clean-room MPEG-1/2 Audio Layer I and Layer II (MP1 / MP2) decoder and Layer II encoder"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

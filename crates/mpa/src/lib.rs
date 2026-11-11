@@ -8,6 +8,7 @@
 //!   allow (mono above 192 kbit/s, which is ffmpeg's default for mono, and stereo below 64 kbit/s)
 //!   decode with the allocation table their bit rate per channel selects (see [`Header`]).
 //! - Output: planar f32 at full scale ±1, 384 (Layer I) or 1152 (Layer II) samples per channel.
+//! - [`encode`]: a Layer II encoder (MP2) for mono, stereo and dual channel.
 //!
 //! Not decoded: Layer III (use an MP3 decoder; [`parse_header`] still reads its headers), the free
 //! format (bit rate index 0, whose frame length is only known from the next sync word) and the
@@ -15,6 +16,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod encode;
 mod tables;
 
 use cfa4_bitstream::BitReader;

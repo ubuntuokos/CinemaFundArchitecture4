@@ -40,7 +40,7 @@ fn source(format: MuxFormat, closed: bool, pts: impl Fn(i64) -> i64) -> Vec<u8> 
         packets.extend(enc.encode(&Input { y: &y, cb: &c, cr: &c, y_stride: w, c_stride: w / 2 }).unwrap());
     }
     packets.extend(enc.flush().unwrap());
-    let audio = if format == MuxFormat::Ps { MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2 } } else { MuxCodec::MpegAudio };
+    let audio = if format == MuxFormat::Ps { MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2, bits: 16 } } else { MuxCodec::MpegAudio };
     let mut m = Muxer::new(Vec::new(), format, &[MuxCodec::Mpeg2Video, audio], 20_000_000).unwrap();
     // DTS: the decode position, one frame behind (B pictures reorder by one anchor)
     for p in &packets {

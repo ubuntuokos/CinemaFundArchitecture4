@@ -4,8 +4,8 @@
 //! HEVC (Annex B byte streams, our decoders), and uncompressed RGB / YUV ([`RawFormat`]). A frame
 //! slot with an empty chunk (a "drop frame") repeats the picture before it. MPEG-4 Part 2
 //! (DivX / Xvid) has no decoder yet: its streams are listed and report the codec. DV in type-2 AVI
-//! (`dvsd`, `dv25`, …) decodes with `cfa4-dv`, and so does the video of type-1 DV (`iavs`: whole
-//! DIF frames, video and audio in one stream); type-1 audio is not read yet.
+//! (`dvsd`, `dv25`, …) decodes with `cfa4-dv`, and so does type-1 DV (`iavs`: whole DIF frames,
+//! video and audio in one stream; the sound is read from the frames' audio DIF blocks).
 //!
 //! Audio: PCM (integer and float) straight from the chunks; MPEG audio (MP3, MP2) and AC-3 frames,
 //! which AVI chunks need not follow, are found again across chunk boundaries
@@ -168,6 +168,9 @@ pub struct AviSource {
     bottom_up: bool,
     video: GopCache,
     audios: Vec<AviAudio>,
+    /// Type-1 DV: the sound inside the `iavs` frames (audio stream 0; a type-1 file has no
+    /// separate audio stream).
+    dv_audio: Option<crate::dif::DvAudio>,
 }
 
 /// Whether an Annex B access unit holds an H.264 IDR or HEVC IRAP picture.
@@ -443,6 +446,21 @@ impl AviSource {
             let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
             audios.push(AviAudio { stream: s, codec, pieces, first, starts, state });
         }
+        // type-1 DV: the sound is in the DIF frames themselves
+        let mut dv_audio = None;
+        if audios.is_empty()
+            && let Some(vs) = vstream.and_then(|i| file.streams.get(i)).filter(|s| is_iavs(s))
+            && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
+            && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, c.size as usize)
+        {
+            dv_audio = crate::dif::DvAudio::scan(&first, vframes.len(), |i| {
+                let c = vframes.get(i).and_then(|f| vs.chunks.get(f.chunk))?;
+                (c.size as usize >= cfa4_dv::SOURCE_PACK_OFFSET + 5)
+                    .then(|| cfa4_media::reader::read_range(&*bytes.0, c.offset + cfa4_dv::SOURCE_PACK_OFFSET as u64, 5).ok())
+                    .flatten()
+            });
+            audio_streams.extend(dv_audio.iter().map(|a| a.info.clone()));
+        }
         // the longer of the picture and the sound
         let vdur = if vslots > 0 { rate.tick_of(vslots) } else { Tick::ZERO };
         let adur = audios
@@ -468,7 +486,7 @@ impl AviSource {
         let mut vorder: Vec<usize> = (0..vframes.len()).collect();
         vorder.sort_by_key(|&i| vframes.get(i).map_or(0, |f| f.pts));
         let vorder_pts = vorder.iter().map(|&i| vframes.get(i).map_or(0, |f| f.pts)).collect();
-        Ok(Self { info, bytes, file, vstream, vcodec, vframes, vorder, vorder_pts, vslots, rate, bottom_up, video: GopCache::new(None), audios })
+        Ok(Self { info, bytes, file, vstream, vcodec, vframes, vorder, vorder_pts, vslots, rate, bottom_up, video: GopCache::new(None), audios, dv_audio })
     }
 
     fn read(&self, stream: usize, chunk: usize) -> crate::Result<Vec<u8>> {
@@ -613,6 +631,10 @@ impl MediaSource for AviSource {
     }
 
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> Result<AudioBuffer, MediaError> {
+        if let (Some(dv), Some(vs), 0) = (&self.dv_audio, self.vstream, stream) {
+            cfa4_media::validate_audio_buffer_shape(dv.info.channels.max(1) as usize, frames)?;
+            return Ok(dv.read(start, frames, sample_rate, |i| self.vframes.get(i).and_then(|f| self.read(vs, f.chunk).ok())));
+        }
         let a = self.audios.get(stream).ok_or(MediaError::NoStream("audio"))?;
         let ainfo = self.info.audio_streams.get(stream).ok_or(MediaError::NoStream("audio"))?;
         if let ACodec::Unsupported(name) = &a.codec {
