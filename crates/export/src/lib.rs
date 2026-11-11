@@ -829,8 +829,11 @@ impl ExportSettings {
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        if self.field_order != FieldOrder::Progressive && self.has_video() {
-            return Err(ExportError::Unsupported(format!("{} field order: CFA4's encoders write progressive frames", self.field_order.label())));
+        if self.field_order != FieldOrder::Progressive && self.has_video() && self.format != Format::Mpeg2 {
+            return Err(ExportError::Unsupported(format!(
+                "{} field order: only MPEG-2 export codes interlaced video; the other encoders write progressive frames",
+                self.field_order.label()
+            )));
         }
         if self.effects.image_overlay.enabled && self.effects.image_overlay.path.trim().is_empty() {
             return Err(ExportError::Unsupported("image overlay: no image file chosen".into()));
@@ -1392,13 +1395,29 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         let mut cfg = cfa4_mpeg2v::encode::Config::new(w, h, rate.num as u32, rate.den as u32);
         cfg.rate = match s.mpeg2_quantizer {
             Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
-            None => cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(s.bitrate_kbps.max(100)) * 1000 },
+            None => {
+                let kbps = s.bitrate_kbps.max(100);
+                let bps = u64::from(kbps) * 1000;
+                match s.bitrate_mode {
+                    // the level's VBV buffer, constant bitrate with stuffing
+                    BitrateMode::Cbr => cfa4_mpeg2v::encode::Rate::Cbr { bits_per_second: bps, buffer_bits: 0 },
+                    _ => {
+                        let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).map_or(bps * 3 / 2, |m| u64::from(m) * 1000);
+                        cfa4_mpeg2v::encode::Rate::ConstrainedVbr { bits_per_second: bps, max_bits_per_second: max, buffer_bits: 0 }
+                    }
+                }
+            }
         };
         if s.mpeg2_422 {
             cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
         }
         cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
         cfg.b_frames = u32::from(s.mpeg2_b_frames.unwrap_or(2).min(7));
+        cfg.interlaced = match s.field_order {
+            FieldOrder::Progressive => None,
+            FieldOrder::UpperFirst => Some(cfa4_mpeg2v::FieldOrder::TopFirst),
+            FieldOrder::LowerFirst => Some(cfa4_mpeg2v::FieldOrder::BottomFirst),
+        };
         cfg.aspect = mpeg2_aspect(w, h, s.pixel_aspect);
         // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
         cfg.colour = Some((1, 1, 1));

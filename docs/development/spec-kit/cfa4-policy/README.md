@@ -1,6 +1,6 @@
 # cfa4-policy – Spec Kit preset (forrás)
 
-A CFA4-DEV-SPEC-KIT-001 1.2 terv SK-F2 fázisának terméke. **Inert forrás**: itt semmi nem töltődik be munkamenetbe, és ez nem a `.specify/` könyvtár (D7: Spec Kit-fájl a `main`-en csak az SK-F7-ben).
+A CFA4-DEV-SPEC-KIT-001 1.2 terv SK-F2–SK-F4 fázisának terméke. **Inert forrás**: itt semmi nem töltődik be munkamenetbe, és ez nem a `.specify/` könyvtár (D7: Spec Kit-fájl a `main`-en csak az SK-F7-ben).
 
 | Fájl | Szerep |
 | --- | --- |
@@ -8,7 +8,9 @@ A CFA4-DEV-SPEC-KIT-001 1.2 terv SK-F2 fázisának terméke. **Inert forrás**: 
 | `templates/spec-template-cfa4.md` | A spec-sablon végére fűzött kötelező „CFA4-követelmény” blokk (SK-02, `append`). |
 | `commands/speckit.specify.md` | A `/speckit-specify` köré tett CFA4-előfeltételek és -lezárás (`wrap`); SK-F3 óta kötelező minimális olvasnivalóval. |
 | `workflows/cfa4-no-implement.yml` | Workflow-overlay (D9): a beépített `speckit` workflow-ból eltávolítja az `implement` lépést. |
-| `preset.yml` | A preset leírója (Spec Kit ≥ 1.2.5). |
+| `commands/speckit.{implement,taskstoissues,constitution}.md` | Blokkoló csonkok (SK-07, SK-F4): meghívva egy mondattal leállnak, semmit nem módosítanak. |
+| `check-cfa4-policy.sh` | Csak olvasó ellenőrző (SK-F4): minden tiltott állapotot kimutat, hiba esetén 1-es kóddal lép ki. |
+| `preset.yml` | A preset leírója (Spec Kit ≥ 1.2.5; verzió 1.1.0). |
 
 ## Telepítés eldobható worktree-ben vagy a pilotágon (SK-F2-ben mérve)
 
@@ -20,7 +22,10 @@ sed "s/<SHA>/$(git rev-parse --short HEAD)/" docs/development/spec-kit/cfa4-poli
   > .specify/memory/constitution.md
 specify workflow overlay add docs/development/spec-kit/cfa4-policy/workflows/cfa4-no-implement.yml --priority 1
 specify workflow resolve speckit   # az implement lépés nem szerepelhet benne
+CFA4_EXPECTED_HEAD=$(git rev-parse HEAD) bash docs/development/spec-kit/cfa4-policy/check-cfa4-policy.sh
 ```
+
+Az ellenőrzőt minden Spec Kit-művelet után futtatni kell; ha nem `cfa4-policy: OK`, a munka leáll.
 
 **A presetet ne a `specify preset add`/`update` paranccsal telepítsd.** A v1.2.5-ben ezek a skilleket az alapértelmezéssel írják újra, és a felülírt `speckit-specify` fejlécébe `disable-model-invocation: false` kerül. Ha mégis ezzel települt, futtasd újra a fenti `specify init`-et. Minden preset-művelet után ellenőrizd, hogy mind a 10 `.claude/skills/speckit-*/SKILL.md` fejlécében `disable-model-invocation: true` áll (AC-SK-16).
 
