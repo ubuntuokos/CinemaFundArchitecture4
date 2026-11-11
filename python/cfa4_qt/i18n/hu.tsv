@@ -1225,6 +1225,8 @@
 	Inverted	Invertálva
 	Position & Rotation	Pozíció és forgatás
 	Position, Scale & Rotation	Pozíció, méretezés és forgatás
+	Point tracker	Pontkövető
+	Correlation tracker	Korrelációs követő
 	Show graphs	Grafikonok megjelenítése
 	Stop tracking	Követés leállítása
 	Track selected mask backward	Kijelölt maszk követése visszafelé
@@ -2122,6 +2124,10 @@
 	5.1: the IAB rendered (not ST 429-19)	5.1: a renderelt IAB (nem ST 429-19)
 	5.1: the timeline mix (not ST 429-19)	5.1: az idővonal keverése (nem ST 429-19)
 	Main sound channels 1-6	Fő hang 1–6. csatorna
+	DCP language	DCP nyelve
+	None (RFC 5646 tag, e.g. en-US)	Nincs (RFC 5646 címke, pl. hu-HU)
+	ISDCF name	ISDCF-név
+	Name the DCP folder by the Digital Cinema Naming Convention	A DCP-mappa elnevezése a Digital Cinema Naming Convention szerint
 	Immersive audio	Immerzív hang
 	IAB source	IAB-forrás
 	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Az 5.1-es keverésből 7.1 DS ágy lesz (IAB Profile 1); a fő hangsáv 14. csatornája viszi az FSK szinkronjelet.
@@ -2465,3 +2471,60 @@ export.summary	Low	alacsony
 	Set Work Area Bar Out Point	A munkaterület-sáv végpontjának beállítása
 	Delete Clips	Klipek törlése
 	Destinations	Célhelyek
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	A klip elemzése…
+	At GOP boundaries (no re-encoding)	GOP-határokon (újrakódolás nélkül)
+	Bit-exact copy	Bitazonos másolat
+	Choose the output file.	Válaszd ki a kimeneti fájlt.
+	Compatible copy	Kompatibilis másolat
+	Copy:	Másolás:
+	Cut:	Vágás:
+	Frame accurate (re-encode the boundaries)	Képkockapontos (a határok újrakódolásával)
+	Open a video clip in the Source monitor first.	Előbb nyiss meg egy videoklipet a Forrásmonitorban.
+	Output:	Kimenet:
+	Smart Cut Source	Forrás vágása (Smart Cut)
+	Smart Cut Source…	Forrás vágása (Smart Cut)…
+	Smart Cut is not available for this clip: {why}	Ehhez a klipehez nem érhető el a Smart Cut: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	A Smart Cut kész és ellenőrizve: {path} ({frames} képkocka)
+	The cut cannot run.	A vágás nem futtatható.
+	The engine sent no analysis.	A motor nem küldött elemzést.
+	Writing and verifying the cut…	A vágás írása és ellenőrzése…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec}, {container}: {gops} GOP, {points} tiszta vágási pont
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} képkocka másolva, {reencoded} képkocka újrakódolva
+	{frames} frames at the boundaries are re-encoded. Continue?	A határokon {frames} képkocka újrakódolódik. Folytatod?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	GOP-határok megjelenítése
+# Export window Smart Export (WP-08)
+	Export mode	Exportálási mód
+	Full Render	Teljes renderelés
+	Planning…	Tervezés…
+	Recommended: Smart Render (asks before re-encoding)	Javasolt: Smart Render (újrakódolás előtt rákérdez)
+	Recommended: Stream Copy (nothing is re-encoded)	Javasolt: Stream Copy (semmi nem kódolódik újra)
+	Rendered because of: {causes}	Renderelés oka: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	A Smart Export kész és ellenőrizve: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – Bitazonos
+	Stream Copy – Compatible	Stream Copy – Kompatibilis
+	Stream copy is not possible: {frames} frames need re-encoding.	A stream copy nem lehetséges: {frames} képkockát újra kell kódolni.
+	The export cannot run.	Az exportálás nem futtatható.
+	Wait for the export plan.	Várd meg az exportálási tervet.
+	Writing and verifying the export…	Az exportálás írása és ellenőrzése…
+	colour conversion	színkonverzió
+	compositing	kompozitálás
+	copied	másolva
+	effects	effektusok
+	frame rate	képkockasebesség
+	proxies or nested sequences	proxyk vagy beágyazott szekvenciák
+	re-encoded at a cut	vágásnál újrakódolva
+	rendered	renderelve
+	sources that cannot be copied	nem másolható források
+	speed changes	sebességváltoztatás
+	titles or overlays	feliratok vagy rátétek
+	transforms	transzformációk
+	transitions	átmenetek
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} képkocka másolva, {reencoded} vágásnál újrakódolva, {rendered} renderelve
+	{frames} frames are re-encoded or rendered. Continue?	{frames} képkocka újrakódolódik vagy renderelődik. Folytatod?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Hang másolva: {tracks}
+	Audio track {track} is not copied: {why}	A(z) {track}. hangsáv nem kerül át: {why}

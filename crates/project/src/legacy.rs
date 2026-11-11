@@ -20,6 +20,8 @@ pub const EFFECT_PRESETS_FORMAT: &str = "filmcraft.effect-presets";
 pub const EXPORT_PRESETS_FORMAT: &str = "filmcraft.export-presets";
 /// Upstream tag of a keyboard-shortcut preset; CFA4 writes `cfa4-keyboard-shortcuts`.
 pub const KEYBOARD_SHORTCUTS_FORMAT: &str = "filmcraft-keyboard-shortcuts";
+/// Upstream key of the application's own data in OpenTimelineIO `metadata`; CFA4 writes `cfa4`.
+pub const OTIO_METADATA_KEY: &str = "filmcraft";
 
 /// Every `(cfa4 tag, upstream tag)` pair readers accept.
 const SYNONYMS: [(&str, &str); 5] = [

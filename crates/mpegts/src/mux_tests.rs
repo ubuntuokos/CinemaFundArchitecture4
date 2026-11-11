@@ -150,7 +150,7 @@ fn h264_and_hevc_access_units_go_out_unchanged() {
         let (idr, p, b) = if hevc { (19 << 1, 1 << 1, 0) } else { (0x65, 0x41, 0x01) };
         let codec = if hevc { MuxCodec::Hevc } else { MuxCodec::H264 };
         // audio first: the PCR still goes on the video PID
-        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::MpegAudio { lsf: false }, codec], 20_000_000).unwrap();
+        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::MpegAudio, codec], 20_000_000).unwrap();
         let mut units = Vec::new();
         for k in 0..30u8 {
             let (nal, pts) = match k % 3 {
@@ -230,26 +230,17 @@ fn check_packets(data: &[u8], pid: u16, units: Vec<(usize, bool)>) {
 }
 
 #[test]
-fn mpeg_audio_stream_type_follows_the_frame_version_and_units_fit_a_pes_packet() {
-    let mut lsf_frame = mp2_frame(0);
-    lsf_frame[1] = 0xF4; // MPEG-2 layer II
-    for (lsf, frame, ok) in [(false, mp2_frame(0), true), (true, mp2_frame(0), false), (true, lsf_frame.clone(), true), (false, lsf_frame, false)] {
-        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::MpegAudio { lsf }], 1_000_000).unwrap();
-        assert_eq!(m.write(0, &frame, 0, None, true).is_ok(), ok, "lsf {lsf}");
-        if ok {
-            let data = m.finish().unwrap();
-            let pmt = data.chunks(188).find(|p| p[1] & 0x1F == 0x10 && p[2] == 0).unwrap();
-            assert_eq!(pmt[17], if lsf { 0x04 } else { 0x03 });
-        }
+fn audio_units_fit_a_pes_packet_in_transport_streams() {
+    for codec in [MuxCodec::AacAdts, MuxCodec::MpegAudio] {
+        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[codec], 1_000_000).unwrap();
+        assert!(m.write(0, &vec![0; 70_000], 0, None, true).is_err(), "{codec:?}");
     }
-    let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::AacAdts], 1_000_000).unwrap();
-    assert!(m.write(0, &vec![0; 70_000], 0, None, true).is_err());
 }
 
 #[test]
 fn h264_needs_annex_b_with_a_delimiter_and_a_transport_stream() {
     assert!(Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::H264], 1_000_000).is_err());
-    assert!(Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::MpegAudio { lsf: false }], 1_000_000).is_err());
+    assert!(Muxer::new(Vec::new(), MuxFormat::Ps, &[MuxCodec::Hevc], 1_000_000).is_err());
     let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[MuxCodec::H264, MuxCodec::Hevc], 1_000_000).unwrap();
     // length-prefixed (MP4) samples and units without a delimiter are refused, not converted
     assert!(m.write(0, &[0, 0, 0, 5, 0x65, 1, 2, 3, 4], 0, None, true).is_err());
@@ -285,7 +276,7 @@ fn ffmpeg_decodes_a_remux_to_the_same_frames() {
         let f = open(&bytes).unwrap();
         let v = f.find(Kind::Video, |c| *c == want).unwrap();
         let a = f.find(Kind::Audio, |c| *c == Codec::MpegAudio).unwrap();
-        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[codec, MuxCodec::MpegAudio { lsf: false }], 10_000_000).unwrap();
+        let mut m = Muxer::new(Vec::new(), MuxFormat::Ts, &[codec, MuxCodec::MpegAudio], 10_000_000).unwrap();
         let base = f.streams.iter().flat_map(|s| s.units.iter().filter_map(|u| u.dts.or(u.pts))).min().unwrap();
         // units without a timestamp (several audio frames in one PES packet) travel with the
         // stamped unit before them, as one PES packet again
@@ -321,5 +312,55 @@ fn ffmpeg_decodes_a_remux_to_the_same_frames() {
             assert!(!x.is_empty());
             assert_eq!(x, y, "{enc} {map}");
         }
+    }
+}
+
+/// AC-3 frame, 48 kHz 64 kb/s (256 bytes), stereo.
+fn ac3_frame(k: u8) -> Vec<u8> {
+    let mut v = vec![0x0B, 0x77, 0, 0, 0x08, 0x40, 0x40];
+    v.extend((7..256).map(|i| (i as u8) ^ k));
+    v
+}
+
+#[test]
+fn mpeg_audio_and_ac3_round_trip_in_transport_and_program_streams() {
+    // Smart Cut copies the audio of MPEG-2 sources (WP-09c): MP2 every 24 ms, AC-3 every 32 ms
+    let pics = video(10);
+    for format in [MuxFormat::Ts, MuxFormat::Ps] {
+        let mut m = Muxer::new(Vec::new(), format, &[MuxCodec::Mpeg2Video, MuxCodec::MpegAudio, MuxCodec::Ac3, MuxCodec::MpegAudio], 20_000_000).unwrap();
+        let (mut mp2, mut ac3, mut mp2b) = (Vec::new(), Vec::new(), Vec::new());
+        for (k, p) in pics.iter().enumerate() {
+            m.write(0, p, k as i64 * FRAME, None, k % 5 == 0).unwrap();
+        }
+        for k in 0..15 {
+            let f = mp2_frame(k as u8);
+            m.write(1, &f, k * 2160, None, true).unwrap();
+            mp2.push(f);
+            let f = mp2_frame(100 + k as u8);
+            m.write(3, &f, k * 2160, None, true).unwrap();
+            mp2b.push(f);
+        }
+        for k in 0..11 {
+            let f = ac3_frame(k as u8);
+            m.write(2, &f, k * 2880, None, true).unwrap();
+            ac3.push(f);
+        }
+        let data = m.finish().unwrap();
+        let f = open(&data).unwrap();
+        assert!(f.warnings.is_empty(), "{format:?}: {:?}", f.warnings);
+        let audio: Vec<usize> = (0..f.streams.len()).filter(|&s| f.streams[s].kind() == Kind::Audio).collect();
+        assert_eq!(audio.len(), 3, "{format:?}: {:?}", f.streams.iter().map(|s| &s.codec).collect::<Vec<_>>());
+        let read = |s: usize| (0..f.streams[s].units.len()).map(|k| f.read_unit(&data, s, k).unwrap()).collect::<Vec<_>>();
+        let mpa: Vec<usize> = audio.iter().copied().filter(|&s| f.streams[s].codec == Codec::MpegAudio).collect();
+        let a3 = f.find(Kind::Audio, |c| *c == Codec::Ac3).unwrap();
+        assert_eq!(mpa.len(), 2, "{format:?}");
+        let mut got = [read(mpa[0]), read(mpa[1])];
+        got.sort();
+        let mut want = [mp2.clone(), mp2b.clone()];
+        want.sort();
+        assert_eq!(got, want, "{format:?}");
+        assert_eq!(read(a3), ac3, "{format:?}");
+        let pts: Vec<i64> = f.streams[a3].units.iter().filter_map(|u| u.pts).collect();
+        assert_eq!(pts[..3], [0, 2880, 5760].map(|t| Muxer::<Vec<u8>>::DELAY + t), "{format:?}");
     }
 }

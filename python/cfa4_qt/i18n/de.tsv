@@ -337,3 +337,67 @@
 	Set Work Area Bar In Point	In-Point der Arbeitsbereichsleiste setzen
 	Set Work Area Bar Out Point	Out-Point der Arbeitsbereichsleiste setzen
 	Delete Clips	Clips löschen
+# Source monitor Smart Cut (WP-08)
+	Analyzing the clip…	Clip wird analysiert…
+	At GOP boundaries (no re-encoding)	An GOP-Grenzen (ohne Neukodierung)
+	Bit-exact copy	Bitgenaue Kopie
+	Choose the output file.	Wählen Sie die Ausgabedatei.
+	Compatible copy	Kompatible Kopie
+	Copy:	Kopie:
+	Cut:	Schnitt:
+	Frame accurate (re-encode the boundaries)	Bildgenau (Grenzen neu kodieren)
+	Open a video clip in the Source monitor first.	Öffnen Sie zuerst einen Videoclip im Quellmonitor.
+	Output:	Ausgabe:
+	Smart Cut Source	Smart Cut der Quelle
+	Smart Cut Source…	Smart Cut der Quelle…
+	Smart Cut is not available for this clip: {why}	Smart Cut ist für diesen Clip nicht verfügbar: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Smart Cut geschrieben und geprüft: {path} ({frames} Bilder)
+	The cut cannot run.	Der Schnitt kann nicht ausgeführt werden.
+	The engine sent no analysis.	Die Engine hat keine Analyse gesendet.
+	Writing and verifying the cut…	Schnitt wird geschrieben und geprüft…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} in {container}: {gops} GOPs, {points} saubere Schnittpunkte
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} Bilder kopiert, {reencoded} Bilder neu kodiert
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} Bilder an den Grenzen werden neu kodiert. Fortfahren?
+# Timeline GOP overlay (WP-08)
+	Show GOP Boundaries	GOP-Grenzen anzeigen
+# Export window Smart Export (WP-08)
+	Export mode	Exportmodus
+	Full Render	Vollständiges Rendern
+	Planning…	Planung…
+	Recommended: Smart Render (asks before re-encoding)	Empfohlen: Smart Render (fragt vor dem Neukodieren)
+	Recommended: Stream Copy (nothing is re-encoded)	Empfohlen: Stream Copy (nichts wird neu kodiert)
+	Rendered because of: {causes}	Gerendert wegen: {causes}
+	Smart Export	Smart Export
+	Smart Export written and verified: {path}	Smart Export geschrieben und geprüft: {path}
+	Smart Render	Smart Render
+	Stream Copy – Bit-exact	Stream Copy – bitgenau
+	Stream Copy – Compatible	Stream Copy – kompatibel
+	Stream copy is not possible: {frames} frames need re-encoding.	Stream Copy ist nicht möglich: {frames} Bilder müssen neu kodiert werden.
+	The export cannot run.	Der Export kann nicht ausgeführt werden.
+	Wait for the export plan.	Warten Sie auf den Exportplan.
+	Writing and verifying the export…	Export wird geschrieben und geprüft…
+	colour conversion	Farbumwandlung
+	compositing	Compositing
+	copied	kopiert
+	effects	Effekte
+	frame rate	Bildrate
+	proxies or nested sequences	Proxys oder verschachtelte Sequenzen
+	re-encoded at a cut	an einem Schnitt neu kodiert
+	rendered	gerendert
+	sources that cannot be copied	nicht kopierbare Quellen
+	speed changes	Geschwindigkeitsänderungen
+	titles or overlays	Titel oder Overlays
+	transforms	Transformationen
+	transitions	Übergänge
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} Bilder kopiert, {reencoded} an Schnitten neu kodiert, {rendered} gerendert
+	{frames} frames are re-encoded or rendered. Continue?	{frames} Bilder werden neu kodiert oder gerendert. Fortfahren?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Audio kopiert: {tracks}
+	Audio track {track} is not copied: {why}	Tonspur {track} wird nicht kopiert: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	Punkt-Tracker
+	Correlation tracker	Korrelations-Tracker
+	DCP language	DCP-Sprache
+	None (RFC 5646 tag, e.g. en-US)	Keine (RFC-5646-Tag, z. B. de-DE)
+	ISDCF name	ISDCF-Name
+	Name the DCP folder by the Digital Cinema Naming Convention	DCP-Ordner nach der Digital Cinema Naming Convention benennen
