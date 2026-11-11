@@ -1,0 +1,4123 @@
+# Telugu (te) catalog for the whole CFA4 interface. Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Shown in the Qt GUI only (owner decision 2026-11-11): egui cannot shape Telugu (no complex-script
+# shaping of conjuncts and vowel signs in the interface), so it is not offered there.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Telugu software and video-editing vocabulary, with the usual English loanwords in Telugu script
+# (టైమ్‌లైన్, ట్రాక్, క్లిప్, సీక్వెన్స్, బిన్, ప్లేహెడ్, మార్కర్, కీఫ్రేమ్). No proprietary
+# localisation resource, string table or product UI was consulted or copied; add entries the same
+# way. Commands are short imperatives ("సేవ్ చేయి", "తెరువు"), messages address the user politely
+# ("…ఎంచుకోండి"), the ellipsis follows the word without a space, and product and format names
+# (CFA4, Lumetri, ProRes, AAF, EDL…) keep their Latin spelling. Decimal point (0.5). A
+# native-speaker review is welcome.
+#
+# Terms: clip = క్లిప్, track = ట్రాక్, sequence = సీక్వెన్స్, timeline = టైమ్‌లైన్, bin = బిన్,
+# playhead = ప్లేహెడ్, marker = మార్కర్, label = లేబుల్, In/Out point = ఇన్/అవుట్ పాయింట్,
+# keyframe = కీఫ్రేమ్, frame = ఫ్రేమ్, caption = క్యాప్షన్, preset = ప్రీసెట్, template = టెంప్లేట్,
+# workspace = వర్క్‌స్పేస్, gain = గెయిన్, opacity = అపారదర్శకత, render = రెండర్, ripple = రిపుల్,
+# dissolve = డిసాల్వ్, wipe = వైప్, voice-over = వాయిస్-ఓవర్, proxy = ప్రాక్సీ, guide = గైడ్,
+# shortcut = షార్ట్‌కట్, media = మీడియా, export = ఎగుమతి, import = దిగుమతి, (Legacy) = (పాతది).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see te.tsv.attribution.
+
+	'{name}' already exists. Replace it?	'{name}' ఇప్పటికే ఉంది. దాన్ని భర్తీ చేయాలా?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	CFA4 గురించి
+	Add Audio Submix Track	ఆడియో సబ్‌మిక్స్ ట్రాక్ జోడించు
+	Add Caption at Playhead	ప్లేహెడ్ వద్ద క్యాప్షన్ జోడించు
+	Add Chapter Marker…	చాప్టర్ మార్కర్ జోడించు…
+	Add Edit	ఎడిట్ జోడించు
+	Add Edit to All Tracks	అన్ని ట్రాక్‌లకు ఎడిట్ జోడించు
+	Add Flash Cue Marker…	ఫ్లాష్ క్యూ మార్కర్ జోడించు…
+	Add Frame Hold	ఫ్రేమ్ హోల్డ్ జోడించు
+	Add Marker	మార్కర్ జోడించు
+	Add New Caption Track…	కొత్త క్యాప్షన్ ట్రాక్ జోడించు…
+	Add Range Marker	రేంజ్ మార్కర్ జోడించు
+	Add Range Marker to In and Out	ఇన్ నుండి అవుట్ వరకు రేంజ్ మార్కర్ జోడించు
+	Add Tracks…	ట్రాక్‌లు జోడించు…
+	Full screen	పూర్తి స్క్రీన్
+	Master volume: use the Audio Track Mixer	మాస్టర్ వాల్యూమ్: ఆడియో ట్రాక్ మిక్సర్‌ను ఉపయోగించండి
+	Send to Queue	క్యూకి పంపు
+	Add/Remove Keyframe	కీఫ్రేమ్ జోడించు/తీసివేయి
+	Adjust	సర్దుబాటు
+	Adjustment Layer	అడ్జస్ట్‌మెంట్ లేయర్
+	Adjustment Layer…	అడ్జస్ట్‌మెంట్ లేయర్…
+	Align to Selection	ఎంపికకు సమలేఖనం చేయి
+	Align to Video Frame	వీడియో ఫ్రేమ్‌కు సమలేఖనం చేయి
+	Align to Video Frame as Group	గ్రూప్‌గా వీడియో ఫ్రేమ్‌కు సమలేఖనం చేయి
+	All Panels	అన్ని ప్యానెల్‌లు
+	All files	అన్ని ఫైల్‌లు
+	Amplitude and Compression	యాంప్లిట్యూడ్ మరియు కంప్రెషన్
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	`serve` లేని ఇంజిన్ Qt GUI లేని బ్రాంచ్ నుండి బిల్డ్ చేయబడింది: Qt GUI బ్రాంచ్‌కు మారి మళ్లీ బిల్డ్ చేయండి, లేదా --engine PATH ఇవ్వండి.
+	Anchor Point	యాంకర్ పాయింట్
+	Animation	యానిమేషన్
+	Anti-flicker Filter	ఫ్లికర్ నిరోధక ఫిల్టర్
+	Apply Audio Transition	ఆడియో ట్రాన్సిషన్ వర్తింపజేయి
+	Apply Default Transitions to Selection	ఎంపికకు డిఫాల్ట్ ట్రాన్సిషన్‌లు వర్తింపజేయి
+	Apply Video Transition	వీడియో ట్రాన్సిషన్ వర్తింపజేయి
+	Arrange	అమర్చు
+	Assembly	అసెంబ్లీ
+	Attach Proxies…	ప్రాక్సీలను జతచేయి…
+	Audio	ఆడియో
+	Audio Channels…	ఆడియో ఛానెల్‌లు…
+	Audio Clip Mixer	ఆడియో క్లిప్ మిక్సర్
+	Audio Effects	ఆడియో ఎఫెక్ట్‌లు
+	Audio Gain…	ఆడియో గెయిన్…
+	Audio In	ఆడియో ఇన్
+	Audio Meters	ఆడియో మీటర్లు
+	Audio Options	ఆడియో ఎంపికలు
+	Audio Out	ఆడియో అవుట్
+	Audio Track Mixer	ఆడియో ట్రాక్ మిక్సర్
+	Audio Transitions	ఆడియో ట్రాన్సిషన్‌లు
+	Audio Bitrate	ఆడియో బిట్‌రేట్
+	Audio Format	ఆడియో ఫార్మాట్
+	Auto Bezier	ఆటో బెజియర్
+	Automate to Sequence…	సీక్వెన్స్‌కు ఆటోమేట్ చేయి…
+	Automatic	స్వయంచాలకం
+	Avid Log Exchange…	Avid Log Exchange…
+	Balance	బ్యాలెన్స్
+	Bars and Tone…	బార్స్ అండ్ టోన్…
+	Bezier	బెజియర్
+	Bin	బిన్
+	Bin From Selection	ఎంపిక నుండి బిన్
+	Bitrate Encoding	బిట్‌రేట్ ఎన్‌కోడింగ్
+	Black Video…	నలుపు వీడియో…
+	Blend Mode	బ్లెండ్ మోడ్
+	Blur & Sharpen	బ్లర్ & షార్పెన్
+	Breakout to Mono	మోనోగా విడదీయి
+	Bring Forward	ముందుకు తీసుకురా
+	Bring to Front	అన్నింటికంటే ముందుకు తీసుకురా
+	Brown	గోధుమ
+	Burn in captions	క్యాప్షన్‌లను వీడియోలో ముద్రించు
+	Bypass	బైపాస్
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	ఎంచుకున్నవాటిని రద్దు చేయి
+	Cannot create the output folder: {error}	అవుట్‌పుట్ ఫోల్డర్‌ను సృష్టించలేకపోయింది: {error}
+	Cannot check the output folder for files to replace: {error}	భర్తీ చేయాల్సిన ఫైల్‌ల కోసం అవుట్‌పుట్ ఫోల్డర్‌ను తనిఖీ చేయలేకపోయింది: {error}
+	Captions	క్యాప్షన్‌లు
+	Captions and Graphics	క్యాప్షన్‌లు మరియు గ్రాఫిక్స్
+	Captions…	క్యాప్షన్‌లు…
+	Caribbean	కరేబియన్
+	Center Horizontally	అడ్డంగా మధ్యలో ఉంచు
+	Center Vertically	నిలువుగా మధ్యలో ఉంచు
+	Cerulean	సెరూలియన్
+	Channel Volume	ఛానెల్ వాల్యూమ్
+	Checked:	తనిఖీ చేసినవి:
+	Choose a file name and location.	ఫైల్ పేరు మరియు స్థానాన్ని ఎంచుకోండి.
+	Choose folder	ఫోల్డర్ ఎంచుకో
+	Media File	మీడియా ఫైల్
+	Sequence name	సీక్వెన్స్ పేరు
+	Clear	తొలగించు
+	Clear Finished	పూర్తయినవాటిని తొలగించు
+	Clear In	ఇన్ తొలగించు
+	Clear In and Out	ఇన్ మరియు అవుట్ తొలగించు
+	Clear Markers	మార్కర్లను తొలగించు
+	Clear Out	అవుట్ తొలగించు
+	Clear Selected Marker	ఎంచుకున్న మార్కర్‌ను తొలగించు
+	Clip	క్లిప్
+	Close All Other Projects	మిగతా అన్ని ప్రాజెక్ట్‌లను మూసివేయి
+	Close All Projects	అన్ని ప్రాజెక్ట్‌లను మూసివేయి
+	Close Gap	ఖాళీని మూసివేయి
+	Close Project	ప్రాజెక్ట్‌ను మూసివేయి
+	Color	రంగు
+	Color Burn	కలర్ బర్న్
+	Color Correction	రంగు సవరణ
+	Color Dodge	కలర్ డాడ్జ్
+	Color Management…	రంగు నిర్వహణ…
+	Color Matte…	కలర్ మ్యాట్…
+	Consolidate Duplicates	నకిలీలను ఏకీకరించు
+	Constant quality (CRF)	స్థిర నాణ్యత (CRF)
+	Continuous Bezier	నిరంతర బెజియర్
+	Copy Paste Includes Sequence Markers	కాపీ పేస్ట్‌లో సీక్వెన్స్ మార్కర్లు కూడా ఉంటాయి
+	Create Captions from Transcript…	ట్రాన్స్‌క్రిప్ట్ నుండి క్యాప్షన్‌లు సృష్టించు…
+	Create Multi-Camera Source Sequence…	మల్టీ-కెమెరా సోర్స్ సీక్వెన్స్ సృష్టించు…
+	Create Proxies…	ప్రాక్సీలు సృష్టించు…
+	Crossfade	క్రాస్‌ఫేడ్
+	Darken	ముదురు చేయి
+	Darker Color	ముదురు రంగు
+	Delay and Echo	డిలే మరియు ఎకో
+	Delete Keyframe	కీఫ్రేమ్ తొలగించు
+	Delete Render Files	రెండర్ ఫైల్‌లను తొలగించు
+	Delete Render Files In to Out	ఇన్ నుండి అవుట్ వరకు రెండర్ ఫైల్‌లను తొలగించు
+	Delete Tracks…	ట్రాక్‌లను తొలగించు…
+	Delete Transcript	ట్రాన్స్‌క్రిప్ట్ తొలగించు
+	Demo Footage	డెమో ఫుటేజ్
+	Demo Project	డెమో ప్రాజెక్ట్
+	Deselect All	అన్నింటి ఎంపిక తీసివేయి
+	Detach Proxies	ప్రాక్సీలను వేరుచేయి
+	Difference	తేడా
+	Dissolve	డిసాల్వ్
+	Distort	వక్రీకరించు
+	Distribute Horizontally	అడ్డంగా పంపిణీ చేయి
+	Distribute Space Horizontally	అడ్డంగా అంతరాన్ని పంపిణీ చేయి
+	Distribute Space Vertically	నిలువుగా అంతరాన్ని పంపిణీ చేయి
+	Distribute Vertically	నిలువుగా పంపిణీ చేయి
+	Divide	భాగించు
+	Double-click a clip in the Project panel to open it here.	ఇక్కడ తెరవడానికి ప్రాజెక్ట్ ప్యానెల్‌లోని క్లిప్‌పై రెండుసార్లు క్లిక్ చేయండి.
+	Duplicate	నకలు చేయి
+	Duration	వ్యవధి
+	EDL…	EDL…
+	Ease In	ఈజ్ ఇన్
+	Ease Out	ఈజ్ అవుట్
+	Edit Offline…	ఆఫ్‌లైన్‌లో సవరించు…
+	Edit Original	అసలును సవరించు
+	Edit Subclip…	సబ్‌క్లిప్‌ను సవరించు…
+	Edit Workspaces…	వర్క్‌స్పేస్‌లను సవరించు…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Lumetri మరియు మాస్క్ సాధనాల్లో సవరించబడుతుంది (Qt GUIలో ఇంకా లేదు)
+	Effect Controls	ఎఫెక్ట్ కంట్రోల్స్
+	Effects	ఎఫెక్ట్‌లు
+	Ellipse	దీర్ఘవృత్తం
+	Enable	ప్రారంభించు
+	Enable Remix	రీమిక్స్ ప్రారంభించు
+	Enabled	ప్రారంభించబడింది
+	Encoding	ఎన్‌కోడింగ్
+	End	ముగింపు
+	Engine stopped	ఇంజిన్ ఆగిపోయింది
+	Entire Sequence	మొత్తం సీక్వెన్స్
+	Essential Graphics	ఎసెన్షియల్ గ్రాఫిక్స్
+	Essential Sound	ఎసెన్షియల్ సౌండ్
+	Events	ఈవెంట్‌లు
+	Exclusion	మినహాయింపు
+	Export As Motion Graphics Template…	మోషన్ గ్రాఫిక్స్ టెంప్లేట్‌గా ఎగుమతి చేయి…
+	Export Markers as CSV…	మార్కర్లను CSVగా ఎగుమతి చేయి…
+	Export Media	మీడియా ఎగుమతి
+	Export Media…	మీడియా ఎగుమతి చేయి…
+	Export Queue	ఎగుమతి క్యూ
+	Queue ({n})	క్యూ ({n})
+	Send exports here with Send to Queue, then start the queue.	క్యూకి పంపు ద్వారా ఎగుమతులను ఇక్కడికి పంపి, ఆపై క్యూను ప్రారంభించండి.
+	Open a sequence to export	ఎగుమతి చేయడానికి సీక్వెన్స్‌ను తెరవండి
+	The sequence has no caption track.	సీక్వెన్స్‌లో క్యాప్షన్ ట్రాక్ లేదు.
+	Export Audio	ఆడియో ఎగుమతి
+	Export failed: {path}	ఎగుమతి విఫలమైంది: {path}
+	Export finished: {path}	ఎగుమతి పూర్తయింది: {path}
+	Extract Audio	ఆడియోను వేరు తీయి
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Field Options…	ఫీల్డ్ ఎంపికలు…
+	File…	ఫైల్…
+	Fill frame	ఫ్రేమ్‌ను నింపు
+	Filter and EQ	ఫిల్టర్ మరియు EQ
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Find Next	తదుపరిది కనుగొను
+	Fit to frame	ఫ్రేమ్‌కు సరిపోయేలా
+	Forest	అడవి పచ్చ
+	Frame Blending	ఫ్రేమ్ బ్లెండింగ్
+	Frame Hold Options…	ఫ్రేమ్ హోల్డ్ ఎంపికలు…
+	Frame Sampling	ఫ్రేమ్ నమూనా
+	Frame Size	ఫ్రేమ్ పరిమాణం
+	From Bin	బిన్ నుండి
+	From Source Monitor	సోర్స్ మానిటర్ నుండి
+	From Source Monitor, Match Frame	సోర్స్ మానిటర్ నుండి, మ్యాచ్ ఫ్రేమ్
+	From file…	ఫైల్ నుండి…
+	From the preset	ప్రీసెట్ నుండి
+	Adaptive ({bpp} bits per pixel)	అనుకూలనీయ (పిక్సెల్‌కు {bpp} బిట్‌లు)
+	Set a fixed bitrate	స్థిర బిట్‌రేట్ సెట్ చేయి
+	Gain	గెయిన్
+	General…	సాధారణం…
+	Generate	రూపొందించు
+	Generate Audio Waveform	ఆడియో వేవ్‌ఫార్మ్ రూపొందించు
+	Get Media File Properties for	దీని కోసం మీడియా ఫైల్ లక్షణాలు పొందు
+	Go to End	ముగింపుకు వెళ్లు
+	Go to Gap	ఖాళీకి వెళ్లు
+	Go to In	ఇన్‌కు వెళ్లు
+	Go to Next Caption Segment	తదుపరి క్యాప్షన్ విభాగానికి వెళ్లు
+	Go to Next Keyframe	తదుపరి కీఫ్రేమ్‌కు వెళ్లు
+	Go to Next Marker	తదుపరి మార్కర్‌కు వెళ్లు
+	Go to Out	అవుట్‌కు వెళ్లు
+	Go to Previous Caption Segment	మునుపటి క్యాప్షన్ విభాగానికి వెళ్లు
+	Go to Previous Keyframe	మునుపటి కీఫ్రేమ్‌కు వెళ్లు
+	Go to Previous Marker	మునుపటి మార్కర్‌కు వెళ్లు
+	Go to Split	విభజనకు వెళ్లు
+	Go to Start	ప్రారంభానికి వెళ్లు
+	Graphics and Titles	గ్రాఫిక్స్ మరియు టైటిల్స్
+	Group	గ్రూప్ చేయి
+	Grunge & Distort	గ్రంజ్ & వక్రీకరణ
+	Hard Light	హార్డ్ లైట్
+	Hard Mix	హార్డ్ మిక్స్
+	Hide All Caption Tracks	అన్ని క్యాప్షన్ ట్రాక్‌లను దాచు
+	History	చరిత్ర
+	Hold	హోల్డ్
+	Hue	హ్యూ
+	Image Control	చిత్ర నియంత్రణ
+	Image Sequence	ఇమేజ్ సీక్వెన్స్
+	Immersive Video	ఇమర్సివ్ వీడియో
+	Import Credits Spreadsheet…	క్రెడిట్స్ స్ప్రెడ్‌షీట్ దిగుమతి చేయి…
+	Import From	దీని నుండి దిగుమతి
+	Import Image Sequence…	ఇమేజ్ సీక్వెన్స్ దిగుమతి చేయి…
+	Import from Media Browser	మీడియా బ్రౌజర్ నుండి దిగుమతి చేయి
+	Import…	దిగుమతి చేయి…
+	Info	సమాచారం
+	Ingest Settings…	ఇంజెస్ట్ సెట్టింగ్‌లు…
+	Insert Frame Hold Segment	ఫ్రేమ్ హోల్డ్ విభాగాన్ని చొప్పించు
+	Install Motion Graphics Template…	మోషన్ గ్రాఫిక్స్ టెంప్లేట్ ఇన్‌స్టాల్ చేయి…
+	Interpret Footage…	ఫుటేజ్‌ను అన్వయించు…
+	Iris	ఐరిస్
+	Keying	కీయింగ్
+	Lavender	లావెండర్
+	Legacy	పాతది
+	Level	స్థాయి
+	Libraries	లైబ్రరీలు
+	Lift	లిఫ్ట్
+	Lighten	లేత చేయి
+	Lighter Color	లేత రంగు
+	Lights & Blurs	లైట్స్ & బ్లర్స్
+	Lights & Glows	లైట్స్ & గ్లోస్
+	Linear	లీనియర్
+	Linear Burn	లీనియర్ బర్న్
+	Linear Dodge (Add)	లీనియర్ డాడ్జ్ (కూడిక)
+	Linear Light	లీనియర్ లైట్
+	Link Media…	మీడియాను లింక్ చేయి…
+	Linked Selection	లింక్ చేసిన ఎంపిక
+	Lumetri Color	Lumetri Color
+	Lumetri Scopes	Lumetri Scopes
+	Luminosity	కాంతి
+	Magenta	మెజెంటా
+	Make Offline…	ఆఫ్‌లైన్ చేయి…
+	Make Subclip…	సబ్‌క్లిప్ చేయి…
+	Make Subsequence	సబ్‌సీక్వెన్స్ చేయి
+	Mango	మామిడి
+	Mark Clip	క్లిప్‌ను గుర్తించు
+	Mark In	ఇన్ గుర్తించు
+	Mark Out	అవుట్ గుర్తించు
+	Mark Selection	ఎంపికను గుర్తించు
+	Mark Split	విభజనను గుర్తించు
+	Markers	మార్కర్లు
+	Match Frame	మ్యాచ్ ఫ్రేమ్
+	Match sequence	సీక్వెన్స్‌కు సరిపోల్చు
+	Media Browser	మీడియా బ్రౌజర్
+	Media offline	మీడియా ఆఫ్‌లైన్‌లో ఉంది
+	Media…	మీడియా…
+	Merge Clips…	క్లిప్‌లను విలీనం చేయి…
+	Merged Clip	విలీనం చేసిన క్లిప్
+	Modify	మార్చు
+	Modulation	మాడ్యులేషన్
+	Motion	మోషన్
+	Motion Graphics Template…	మోషన్ గ్రాఫిక్స్ టెంప్లేట్…
+	Movie	చలనచిత్రం
+	Multi-Camera	మల్టీ-కెమెరా
+	Multiply	గుణించు
+	Mute Track	ట్రాక్‌ను మ్యూట్ చేయి
+	Nest…	నెస్ట్ చేయి…
+	New	కొత్తది
+	New Bin	కొత్త బిన్
+	New Layer	కొత్త లేయర్
+	New Project Panel	కొత్త ప్రాజెక్ట్ ప్యానెల్
+	New Sequence…	కొత్త సీక్వెన్స్…
+	Next in Sequence	సీక్వెన్స్‌లో తదుపరిది
+	Next in Track	ట్రాక్‌లో తదుపరిది
+	No sequence	సీక్వెన్స్ లేదు
+	Drop media here to create sequence.	సీక్వెన్స్ సృష్టించడానికి మీడియాను ఇక్కడ వదలండి.
+	Open Demo Project	డెమో ప్రాజెక్ట్‌ను తెరువు
+	Double-click a sequence in the Project panel to open it here.	ఇక్కడ తెరవడానికి ప్రాజెక్ట్ ప్యానెల్‌లోని సీక్వెన్స్‌పై రెండుసార్లు క్లిక్ చేయండి.
+	Noise & Grain	నాయిస్ & గ్రెయిన్
+	Noise Reduction	నాయిస్ తగ్గింపు
+	Normal	సాధారణం
+	Normalize Mix Track…	మిక్స్ ట్రాక్‌ను నార్మలైజ్ చేయి…
+	Not Now	ఇప్పుడు కాదు
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Qt GUIలో ఇంకా లేదు (docs/qt-parity.md చూడండి)
+	OMF…	OMF…
+	Obsolete	వాడుకలో లేనిది
+	Offline File…	ఆఫ్‌లైన్ ఫైల్…
+	Open Project	ప్రాజెక్ట్ తెరువు
+	Open Project…	ప్రాజెక్ట్ తెరువు…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	ఆప్టికల్ ఫ్లో
+	Opus	Opus
+	Output file	అవుట్‌పుట్ ఫైల్
+	Overlay	ఓవర్‌లే
+	Overwrite	ఓవర్‌రైట్
+	PCM (uncompressed)	PCM (కుదించని)
+	Panner	ప్యానర్
+	Paste	అతికించు
+	Paste Attributes…	లక్షణాలను అతికించు…
+	Paste Insert	చొప్పిస్తూ అతికించు
+	Perspective	దృక్కోణం
+	Pin Light	పిన్ లైట్
+	Play/Stop	ప్లే/ఆపు
+	Preset	ప్రీసెట్
+	Previous in Sequence	సీక్వెన్స్‌లో మునుపటిది
+	Previous in Track	ట్రాక్‌లో మునుపటిది
+	Program	ప్రోగ్రామ్
+	Progress	పురోగతి
+	Project	ప్రాజెక్ట్
+	Project Manager…	ప్రాజెక్ట్ మేనేజర్…
+	Project Notes	ప్రాజెక్ట్ గమనికలు
+	Project Settings	ప్రాజెక్ట్ సెట్టింగ్‌లు
+	Project…	ప్రాజెక్ట్…
+	Properties	లక్షణాలు
+	Proxy	ప్రాక్సీ
+	Quit	నిష్క్రమించు
+	Range	పరిధి
+	Razor Tool	రేజర్ సాధనం
+	Reconnect Full Resolution Media…	పూర్తి రిజల్యూషన్ మీడియాను మళ్లీ కనెక్ట్ చేయి…
+	Recover Unsaved Changes	సేవ్ చేయని మార్పులను పునరుద్ధరించు
+	Recover Unsaved Changes…	సేవ్ చేయని మార్పులను పునరుద్ధరించు…
+	Reference Monitor	రిఫరెన్స్ మానిటర్
+	Remaining	మిగిలినది
+	Remix	రీమిక్స్
+	Remix Properties…	రీమిక్స్ లక్షణాలు…
+	Remove Attributes…	లక్షణాలను తీసివేయి…
+	Remove Effect	ఎఫెక్ట్‌ను తీసివేయి
+	Remove Filler Words	పూరక పదాలను తీసివేయి
+	Remove Pauses	విరామాలను తీసివేయి
+	Remove Unused	ఉపయోగించనివాటిని తీసివేయి
+	Rename…	పేరు మార్చు…
+	Render Audio	ఆడియోను రెండర్ చేయి
+	Render Effects In to Out	ఇన్ నుండి అవుట్ వరకు ఎఫెక్ట్‌లను రెండర్ చేయి
+	Render In to Out	ఇన్ నుండి అవుట్ వరకు రెండర్ చేయి
+	Render Selection	ఎంపికను రెండర్ చేయి
+	Replace Fonts in Projects…	ప్రాజెక్ట్‌లలో ఫాంట్‌లను భర్తీ చేయి…
+	Replace With Clip	క్లిప్‌తో భర్తీ చేయి
+	Reset All Parameters	అన్ని పారామీటర్‌లను రీసెట్ చేయి
+	Reset Duration	వ్యవధిని రీసెట్ చేయి
+	Reset Effect	ఎఫెక్ట్‌ను రీసెట్ చేయి
+	Reset Panel Layout	ప్యానెల్ లేఅవుట్‌ను రీసెట్ చేయి
+	Reset Parameter	పారామీటర్‌ను రీసెట్ చేయి
+	Reset to Saved Layout	సేవ్ చేసిన లేఅవుట్‌కు రీసెట్ చేయి
+	Restoration	పునరుద్ధరణ
+	Restore Captions from Source Clip	సోర్స్ క్లిప్ నుండి క్యాప్షన్‌లను పునరుద్ధరించు
+	Retry	మళ్లీ ప్రయత్నించు
+	Reverb	రివర్బ్
+	Reverse Match Frame	రివర్స్ మ్యాచ్ ఫ్రేమ్
+	Revert Remix	రీమిక్స్‌ను వెనక్కి తీసుకో
+	Ripple Delete	రిపుల్ డిలీట్
+	Ripple Delete Head Frame	హెడ్ ఫ్రేమ్‌ను రిపుల్ డిలీట్ చేయి
+	Ripple Sequence Markers	సీక్వెన్స్ మార్కర్లను రిపుల్ చేయి
+	Rose	గులాబీ
+	Saturation	సంతృప్తత
+	Save All	అన్నీ సేవ్ చేయి
+	Save As…	ఇలా సేవ్ చేయి…
+	Save Changes to this Workspace	ఈ వర్క్‌స్పేస్‌కు మార్పులను సేవ్ చేయి
+	Save a Copy…	కాపీని సేవ్ చేయి…
+	Save as New Workspace	కొత్త వర్క్‌స్పేస్‌గా సేవ్ చేయి
+	Save as New Workspace…	కొత్త వర్క్‌స్పేస్‌గా సేవ్ చేయి…
+	Save as Template…	టెంప్లేట్‌గా సేవ్ చేయి…
+	Save changes to '{name}' before closing?	మూసివేసే ముందు '{name}'కు మార్పులను సేవ్ చేయాలా?
+	Save changes to '{name}' before continuing?	కొనసాగే ముందు '{name}'కు మార్పులను సేవ్ చేయాలా?
+	Scale	స్కేల్
+	Scale Width	స్కేల్ వెడల్పు
+	Scale to Frame Size	ఫ్రేమ్ పరిమాణానికి స్కేల్ చేయి
+	Scene Edit Detection…	సీన్ ఎడిట్ గుర్తింపు…
+	Scratch Disks…	స్క్రాచ్ డిస్క్‌లు…
+	Screen	స్క్రీన్
+	Search Bin	బిన్‌లో వెతుకు
+	Select	ఎంచుకో
+	Select All Matching	సరిపోలే అన్నింటినీ ఎంచుకో
+	Select Label Group	లేబుల్ గ్రూప్‌ను ఎంచుకో
+	Select Next Graphic	తదుపరి గ్రాఫిక్‌ను ఎంచుకో
+	Select Next Layer	తదుపరి లేయర్‌ను ఎంచుకో
+	Select Previous Graphic	మునుపటి గ్రాఫిక్‌ను ఎంచుకో
+	Select Previous Layer	మునుపటి లేయర్‌ను ఎంచుకో
+	Select a clip in the Timeline.	టైమ్‌లైన్‌లో క్లిప్‌ను ఎంచుకోండి.
+	Selected	ఎంచుకోబడింది
+	Selection Follows Playhead	ఎంపిక ప్లేహెడ్‌ను అనుసరిస్తుంది
+	Selection Tool	ఎంపిక సాధనం
+	Selection as CFA4 Project…	ఎంపికను CFA4 ప్రాజెక్ట్‌గా…
+	Selection…	ఎంపిక…
+	Send Backward	వెనక్కి పంపు
+	Send to Back	అన్నింటికంటే వెనక్కి పంపు
+	Sequence	సీక్వెన్స్
+	Sequence From Clip	క్లిప్ నుండి సీక్వెన్స్
+	Sequence In/Out	సీక్వెన్స్ ఇన్/అవుట్
+	Sequence Settings…	సీక్వెన్స్ సెట్టింగ్‌లు…
+	Sequence…	సీక్వెన్స్…
+	Show Active Caption Tracks Only	సక్రియ క్యాప్షన్ ట్రాక్‌లను మాత్రమే చూపు
+	Show All Caption Tracks	అన్ని క్యాప్షన్ ట్రాక్‌లను చూపు
+	Show All Marker Colors	అన్ని మార్కర్ రంగులను చూపు
+	Show Through Edits	త్రూ ఎడిట్‌లను చూపు
+	Simplify Sequence…	సీక్వెన్స్‌ను సరళీకరించు…
+	Slide	స్లైడ్
+	Smart Tools	స్మార్ట్ సాధనాలు
+	Snap in Timeline	టైమ్‌లైన్‌లో స్నాప్
+	Soft Light	సాఫ్ట్ లైట్
+	Solo Track	ట్రాక్‌ను సోలో చేయి
+	Some panel labels change language after a restart.	కొన్ని ప్యానెల్ లేబుల్‌ల భాష పునఃప్రారంభం తర్వాత మారుతుంది.
+	Source	సోర్స్
+	Source In	సోర్స్ ఇన్
+	Source Settings…	సోర్స్ సెట్టింగ్‌లు…
+	Source patch	సోర్స్ ప్యాచ్
+	Speed	వేగం
+	Speed/Duration…	వేగం/వ్యవధి…
+	Start Queue	క్యూను ప్రారంభించు
+	Starting engine…	ఇంజిన్ ప్రారంభమవుతోంది…
+	Step Back 1 Frame	1 ఫ్రేమ్ వెనక్కి
+	Step Forward 1 Frame	1 ఫ్రేమ్ ముందుకు
+	Stereo Imagery	స్టీరియో ఇమేజరీ
+	Still Image	స్థిర చిత్రం
+	Stop Queue	క్యూను ఆపు
+	Stylize	శైలీకరించు
+	Subclip	సబ్‌క్లిప్
+	Subtract	తీసివేయి
+	Synchronize…	సమకాలీకరించు…
+	Synthetic	సింథటిక్
+	Tan	లేత గోధుమ
+	Target Bitrate	లక్ష్య బిట్‌రేట్
+	Teal	టీల్
+	Text to Speech	టెక్స్ట్ నుండి ప్రసంగం
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	CFA4 ఇంజిన్ (cfa4-cli) కనుగొనబడలేదు. దీనితో బిల్డ్ చేయండి: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4 ఇంజిన్ అనుకోకుండా ఆగిపోయింది. సేవ్ చేయని మార్పులు రికవరీ జర్నల్‌లో ఉంచబడ్డాయి; వాటిని పునరుద్ధరించడానికి CFA4ను పునఃప్రారంభించండి.
+	The engine stopped	ఇంజిన్ ఆగిపోయింది
+	Time Interpolation	సమయ ఇంటర్‌పోలేషన్
+	Time Remapping	టైమ్ రీమ్యాపింగ్
+	Time and Pitch	సమయం మరియు పిచ్
+	Timecode	టైమ్‌కోడ్
+	Timecode…	టైమ్‌కోడ్…
+	Timeline	టైమ్‌లైన్
+	Toggle Animation	యానిమేషన్ టోగుల్ చేయి
+	Toggle Proxies	ప్రాక్సీలను టోగుల్ చేయి
+	Toggle Sync Lock	సింక్ లాక్ టోగుల్ చేయి
+	Toggle Track Lock	ట్రాక్ లాక్ టోగుల్ చేయి
+	Toggle Track Output	ట్రాక్ అవుట్‌పుట్ టోగుల్ చేయి
+	Toggle the effect on or off	ఎఫెక్ట్‌ను ఆన్ లేదా ఆఫ్ చేయి
+	Toggle track targeting	ట్రాక్ టార్గెటింగ్ టోగుల్ చేయి
+	Transcribe Sequence…	సీక్వెన్స్‌ను ట్రాన్స్‌క్రైబ్ చేయి…
+	Transcribe…	ట్రాన్స్‌క్రైబ్ చేయి…
+	Transcript	ట్రాన్స్‌క్రిప్ట్
+	Transform	ట్రాన్స్‌ఫార్మ్
+	Transformers	ట్రాన్స్‌ఫార్మర్స్
+	Transparent Video…	పారదర్శక వీడియో…
+	Trim Edit	ట్రిమ్ ఎడిట్
+	Ungroup	గ్రూప్ రద్దు చేయి
+	Uniform Scale	ఏకరీతి స్కేల్
+	Universal Counting Leader…	యూనివర్సల్ కౌంటింగ్ లీడర్…
+	Untitled	పేరులేనిది
+	Update Metadata…	మెటాడేటాను నవీకరించు…
+	Upgrade Caption to Graphic	క్యాప్షన్‌ను గ్రాఫిక్‌గా అప్‌గ్రేడ్ చేయి
+	Upgrade to Source Graphic	సోర్స్ గ్రాఫిక్‌గా అప్‌గ్రేడ్ చేయి
+	Use hardware encoding when available	అందుబాటులో ఉన్నప్పుడు హార్డ్‌వేర్ ఎన్‌కోడింగ్ ఉపయోగించు
+	Utility	యుటిలిటీ
+	VBR, 1 pass	VBR, 1 పాస్
+	VBR, 2 pass	VBR, 2 పాస్‌లు
+	Vertical Text	నిలువు టెక్స్ట్
+	Video	వీడియో
+	Video Effects	వీడియో ఎఫెక్ట్‌లు
+	Video In	వీడియో ఇన్
+	Video Options	వీడియో ఎంపికలు
+	Video Out	వీడియో అవుట్
+	Video Transitions	వీడియో ట్రాన్సిషన్‌లు
+	Violet	వయొలెట్
+	Vivid Light	వివిడ్ లైట్
+	Volume	వాల్యూమ్
+	Window	విండో
+	Wipe	వైప్
+	Work Area	వర్క్ ఏరియా
+	Workspaces	వర్క్‌స్పేస్‌లు
+	Zoom to Sequence	సీక్వెన్స్‌కు జూమ్ చేయి
+	an unknown time	తెలియని సమయం
+	automatic	స్వయంచాలకం
+	frames	ఫ్రేమ్‌లు
+	not available	అందుబాటులో లేదు
+	off	ఆఫ్
+	optional	ఐచ్ఛికం
+	…	…
+	Ellipse Tool	దీర్ఘవృత్త సాధనం
+	Hand Tool	హ్యాండ్ సాధనం
+	Pen Tool	పెన్ సాధనం
+	Rate Stretch Tool	రేట్ స్ట్రెచ్ సాధనం
+	Rectangle Tool	దీర్ఘచతురస్ర సాధనం
+	Remix Tool	రీమిక్స్ సాధనం
+	Ripple Edit Tool	రిపుల్ ఎడిట్ సాధనం
+	Rolling Edit Tool	రోలింగ్ ఎడిట్ సాధనం
+	Slide Tool	స్లైడ్ సాధనం
+	Slip Tool	స్లిప్ సాధనం
+	Track Select Backward Tool	ట్రాక్ వెనక్కి ఎంపిక సాధనం
+	Track Select Forward Tool	ట్రాక్ ముందుకు ఎంపిక సాధనం
+	Type Tool	టైప్ సాధనం
+	Vertical Type Tool	నిలువు టైప్ సాధనం
+	Zoom Tool	జూమ్ సాధనం
+	Add Marker (M)	మార్కర్ జోడించు (M)
+	Alpha	ఆల్ఫా
+	Button Editor	బటన్ ఎడిటర్
+	Composite Video	కాంపోజిట్ వీడియో
+	Display Mode	ప్రదర్శన మోడ్
+	Export Frame	ఫ్రేమ్ ఎగుమతి చేయి
+	Extract (')	వేరు తీయి (')
+	Full	పూర్తి
+	Go to In (Shift+I)	ఇన్‌కు వెళ్లు (Shift+I)
+	Go to Out (Shift+O)	అవుట్‌కు వెళ్లు (Shift+O)
+	High Quality Playback	అధిక నాణ్యత ప్లేబ్యాక్
+	Insert (,)	చొప్పించు (,)
+	Lift (;)	లిఫ్ట్ (;)
+	Loop	లూప్
+	Loop marked range	గుర్తించిన పరిధిని లూప్ చేయి
+	Mark In (I)	ఇన్ గుర్తించు (I)
+	Mark Out (O)	అవుట్ గుర్తించు (O)
+	More transport controls	మరిన్ని ట్రాన్స్‌పోర్ట్ నియంత్రణలు
+	Overwrite (.)	ఓవర్‌రైట్ (.)
+	Paused Resolution	పాజ్ చేసినప్పుడు రిజల్యూషన్
+	Play In to Out	ఇన్ నుండి అవుట్ వరకు ప్లే చేయి
+	Play-Stop Toggle (Space)	ప్లే-ఆపు టోగుల్ (Space)
+	Playback Resolution	ప్లేబ్యాక్ రిజల్యూషన్
+	RGBA Channels	RGBA ఛానెల్‌లు
+	Reset	రీసెట్ చేయి
+	Safe Margins	సురక్షిత అంచులు
+	Select Playback Resolution	ప్లేబ్యాక్ రిజల్యూషన్ ఎంచుకో
+	Select Zoom Level	జూమ్ స్థాయి ఎంచుకో
+	Show Transport Controls	ట్రాన్స్‌పోర్ట్ నియంత్రణలను చూపు
+	Shuttle Left	ఎడమకు షటిల్
+	Shuttle Right	కుడికి షటిల్
+	Shuttle Stop	షటిల్ ఆపు
+	Step Back 1 Frame (Left)	1 ఫ్రేమ్ వెనక్కి (Left)
+	Step Forward 1 Frame (Right)	1 ఫ్రేమ్ ముందుకు (Right)
+	Darkest	అత్యంత ముదురు
+	Next Appearance Mode	తదుపరి రూప మోడ్
+	(no sequence)	(సీక్వెన్స్ లేదు)
+	All markers are hidden by the colour filter.	రంగు ఫిల్టర్ కారణంగా అన్ని మార్కర్లు దాచబడ్డాయి.
+	Audio {n}:	ఆడియో {n}:
+	Audio:	ఆడియో:
+	Clip: {name}	క్లిప్: {name}
+	Codec:	కోడెక్:
+	Duration:	వ్యవధి:
+	Marker	మార్కర్
+	No markers. Press M to add one.	మార్కర్లు లేవు. ఒకటి జోడించడానికి M నొక్కండి.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	ఈ ప్రాజెక్ట్ కోసం గమనికలు: చేయాల్సినవి, సూచనలు, ఫ్రేమ్ సంఖ్యలు… ప్రాజెక్ట్‌తో పాటు సేవ్ చేయబడతాయి.
+	Playhead:	ప్లేహెడ్:
+	Select a clip to view its metadata.	దాని మెటాడేటాను చూడటానికి క్లిప్‌ను ఎంచుకోండి.
+	Settings:	సెట్టింగ్‌లు:
+	Show or hide {color} markers	{color} మార్కర్లను చూపు లేదా దాచు
+	Type:	రకం:
+	Video {n}:	వీడియో {n}:
+	Video:	వీడియో:
+	{tc}  Chapter	{tc}  చాప్టర్
+	Media Type	మీడియా రకం
+	Frame Rate	ఫ్రేమ్ రేట్
+	Media Start	మీడియా ప్రారంభం
+	Media End	మీడియా ముగింపు
+	Media Duration	మీడియా వ్యవధి
+	Video Info	వీడియో సమాచారం
+	Video Codec	వీడియో కోడెక్
+	Color Space	కలర్ స్పేస్
+	Audio Info	ఆడియో సమాచారం
+	Audio Codec	ఆడియో కోడెక్
+	Scene	దృశ్యం
+	Shot	షాట్
+	Log Note	లాగ్ గమనిక
+	Comment	వ్యాఖ్య
+	Tape Name	టేప్ పేరు
+	Client	క్లయింట్
+	Camera Angle	కెమెరా కోణం
+	File Path	ఫైల్ మార్గం
+	 · {time} left	 · {time} మిగిలి ఉంది
+	Active Monitor	సక్రియ మానిటర్
+	Add a timecode row	టైమ్‌కోడ్ వరుస జోడించు
+	Audio Samples	ఆడియో నమూనాలు
+	Current Time	ప్రస్తుత సమయం
+	Failed: {e}	విఫలమైంది: {e}
+	Feet + Frames 16mm	అడుగులు + ఫ్రేమ్‌లు 16mm
+	Feet + Frames 35mm	అడుగులు + ఫ్రేమ్‌లు 35mm
+	Frames	ఫ్రేమ్‌లు
+	In/Out Duration	ఇన్/అవుట్ వ్యవధి
+	Media Time	మీడియా సమయం
+	No background jobs.	నేపథ్య పనులు లేవు.
+	Remove Row	వరుసను తీసివేయి
+	Seconds	సెకన్లు
+	Show finished jobs	పూర్తయిన పనులను చూపు
+	{mode} · no clip	{mode} · క్లిప్ లేదు
+	{mode} · no sequence	{mode} · సీక్వెన్స్ లేదు
+	Render	రెండర్
+	Job	పని
+	Audio Track Mixer menu	ఆడియో ట్రాక్ మిక్సర్ మెను
+	Automation mode	ఆటోమేషన్ మోడ్
+	Enable track for recording	రికార్డింగ్ కోసం ట్రాక్‌ను ప్రారంభించు
+	Fill the slots above first	ముందుగా పైన ఉన్న స్లాట్‌లను నింపండి
+	Go to In Point	ఇన్ పాయింట్‌కు వెళ్లు
+	Go to Out Point	అవుట్ పాయింట్‌కు వెళ్లు
+	Input channel mapping	ఇన్‌పుట్ ఛానెల్ మ్యాపింగ్
+	Meter Input(s) Only	ఇన్‌పుట్(లు) మాత్రమే మీటర్ చేయి
+	Mix	మిక్స్
+	Mute Send	సెండ్‌ను మ్యూట్ చేయి
+	New Submix	కొత్త సబ్‌మిక్స్
+	Pan / balance (drag; double-click: centre)	ప్యాన్ / బ్యాలెన్స్ (లాగండి; రెండుసార్లు క్లిక్: మధ్య)
+	Post-Fader	ఫేడర్ తర్వాత
+	Pre-Fader	ఫేడర్ ముందు
+	Remove Send	సెండ్‌ను తీసివేయి
+	Show All	అన్నీ చూపు
+	Show/Hide Effects and Sends	ఎఫెక్ట్‌లు మరియు సెండ్‌లను చూపు/దాచు
+	Show/Hide Tracks	ట్రాక్‌లను చూపు/దాచు
+	Solo safe	సోలో సురక్షితం
+	Track output assignment	ట్రాక్ అవుట్‌పుట్ కేటాయింపు
+	Voice-over recording is not in the Qt GUI yet	వాయిస్-ఓవర్ రికార్డింగ్ Qt GUIలో ఇంకా లేదు
+	Volume (drag; double-click: 0 dB)	వాల్యూమ్ (లాగండి; రెండుసార్లు క్లిక్: 0 dB)
+	pre 	ప్రీ 
+	Read	రీడ్
+	Latch	లాచ్
+	Touch	టచ్
+	Write	రైట్
+	Stereo	స్టీరియో
+	Swap	మార్చుకో
+	Mono	మోనో
+	Write keyframes	కీఫ్రేమ్‌లను రాయి
+	Match Playhead	ప్లేహెడ్‌కు సరిపోల్చు
+	Gang to Program	ప్రోగ్రామ్‌తో జతచేయి
+	(no sequences)	(సీక్వెన్స్‌లు లేవు)
+	8 Bit	8 బిట్
+	Bright	ప్రకాశవంతం
+	Brightness	ప్రకాశం
+	Clamp Signal	సిగ్నల్‌ను పరిమితం చేయి
+	Colour Space	కలర్ స్పేస్
+	Dimmed	మసకబారిన
+	Float	ఫ్లోట్
+	Four Scopes (RGB, 8 bit)	నాలుగు స్కోప్‌లు (RGB, 8 బిట్)
+	Four Scopes (YUV, float, no clamp)	నాలుగు స్కోప్‌లు (YUV, ఫ్లోట్, పరిమితి లేకుండా)
+	HDR	HDR
+	HLS Vectorscope + Histogram	HLS వెక్టర్‌స్కోప్ + హిస్టోగ్రామ్
+	Histogram	హిస్టోగ్రామ్
+	Luma	లూమా
+	Parade	పెరేడ్
+	Parade (RGB)	పెరేడ్ (RGB)
+	Parade ({kind})	పెరేడ్ ({kind})
+	Parade Type	పెరేడ్ రకం
+	Presets	ప్రీసెట్‌లు
+	RGB	RGB
+	RGB-White	RGB-తెలుపు
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	స్కోప్ సెట్టింగ్‌లు
+	Signal Scale	సిగ్నల్ స్కేల్
+	Vectorscope (YUV)	వెక్టర్‌స్కోప్ (YUV)
+	Vectorscope + Waveform YC	వెక్టర్‌స్కోప్ + వేవ్‌ఫార్మ్ YC
+	Vectorscope HLS	వెక్టర్‌స్కోప్ HLS
+	Vectorscope Targets	వెక్టర్‌స్కోప్ లక్ష్యాలు
+	Vectorscope YUV	వెక్టర్‌స్కోప్ YUV
+	Waveform	వేవ్‌ఫార్మ్
+	Waveform (Luma)	వేవ్‌ఫార్మ్ (లూమా)
+	Waveform (RGB)	వేవ్‌ఫార్మ్ (RGB)
+	Waveform ({kind})	వేవ్‌ఫార్మ్ ({kind})
+	Waveform Type	వేవ్‌ఫార్మ్ రకం
+	YC	YC
+	YC no Chroma	క్రోమా లేకుండా YC
+	YUV	YUV
+	(no clip selected)	(క్లిప్ ఎంచుకోబడలేదు)
+	Add Lumetri Color to clip	క్లిప్‌కు Lumetri Color జోడించు
+	Adjustments	సర్దుబాట్లు
+	Amount	మొత్తం
+	Apply Match	మ్యాచ్ వర్తింపజేయి
+	Basic Correction	ప్రాథమిక సవరణ
+	Blacks	నలుపులు
+	Bleach Bypass	బ్లీచ్ బైపాస్
+	Blur	బ్లర్
+	Color Match	రంగు సరిపోలిక
+	Color Wheels & Match	కలర్ వీల్స్ & మ్యాచ్
+	Color/Black	రంగు/నలుపు
+	Color/Gray	రంగు/బూడిద
+	Comparison View	పోలిక వీక్షణ
+	Contrast	కాంట్రాస్ట్
+	Cool Blue	చల్లని నీలం
+	Correction	సవరణ
+	Creative	సృజనాత్మకం
+	Curves	కర్వ్‌లు
+	Denoise	నాయిస్ తొలగించు
+	Exposure	ఎక్స్‌పోజర్
+	Face Detection (protect skin tones)	ముఖ గుర్తింపు (చర్మపు రంగులను రక్షించు)
+	Faded Film	వెలిసిన ఫిల్మ్
+	Faded Matte	వెలిసిన మ్యాట్
+	Feather	ఫెదర్
+	Golden Hour	గోల్డెన్ అవర్
+	HDR Range	HDR పరిధి
+	HDR Specular	HDR స్పెక్యులర్
+	HDR White	HDR తెలుపు
+	HSL Secondary	HSL సెకండరీ
+	Highlights	హైలైట్స్
+	Hue Range	హ్యూ పరిధి
+	Hue Saturation Curves	హ్యూ సంతృప్తత కర్వ్‌లు
+	Hue Shift	హ్యూ మార్పు
+	Hue vs Hue	హ్యూ vs హ్యూ
+	Hue vs Luma	హ్యూ vs లూమా
+	Hue vs Sat	హ్యూ vs సంతృప్తత
+	Input LUT	ఇన్‌పుట్ LUT
+	Intensity	తీవ్రత
+	Key	కీ
+	LUT	LUT
+	Look	లుక్
+	Look LUT	లుక్ LUT
+	Luma Max	లూమా గరిష్ఠం
+	Luma Min	లూమా కనిష్ఠం
+	Luma vs Sat	లూమా vs సంతృప్తత
+	Master · {name}	మాస్టర్ · {name}
+	Midtones	మిడ్‌టోన్స్
+	Monochrome	ఏకవర్ణం
+	Night	రాత్రి
+	RGB Curves	RGB కర్వ్‌లు
+	Reference	రిఫరెన్స్
+	Refine	మెరుగుపరచు
+	Roundness	గుండ్రతనం
+	Sat vs Sat	సంతృప్తత vs సంతృప్తత
+	Saturation Min	సంతృప్తత కనిష్ఠం
+	Shadows	నీడలు
+	Sharpen	షార్పెన్
+	Show Mask	మాస్క్ చూపు
+	Soften	మృదువుగా చేయి
+	Teal & Orange	టీల్ & ఆరెంజ్
+	Temperature	ఉష్ణోగ్రత
+	Tint	టింట్
+	Vibrance	వైబ్రెన్స్
+	Vignette	విగ్నెట్
+	Warm Film	వెచ్చని ఫిల్మ్
+	White/Black	తెలుపు/నలుపు
+	Whites	తెలుపులు
+	Add to Favorites	ఇష్టమైనవాటికి జోడించు
+	All Supported Files	మద్దతు ఉన్న అన్ని ఫైల్‌లు
+	Allow Duplicate Media During Project Import	ప్రాజెక్ట్ దిగుమతి సమయంలో నకిలీ మీడియాను అనుమతించు
+	Audio Files	ఆడియో ఫైల్‌లు
+	Cannot open {dir}: {e}	{dir}ను తెరవలేకపోయింది: {e}
+	Clear Recent Directories	ఇటీవలి డైరెక్టరీలను తొలగించు
+	Create Folder For Imported Projects	దిగుమతి చేసిన ప్రాజెక్ట్‌ల కోసం ఫోల్డర్ సృష్టించు
+	Date Modified	సవరించిన తేదీ
+	Edit Columns	కాలమ్‌లను సవరించు
+	Edit Columns…	కాలమ్‌లను సవరించు…
+	Favorites	ఇష్టమైనవి
+	File Extension	ఫైల్ పొడిగింపు
+	File Types Displayed	ప్రదర్శించే ఫైల్ రకాలు
+	Go Back	వెనక్కి వెళ్లు
+	Go Forward	ముందుకు వెళ్లు
+	Hover Scrub	హోవర్ స్క్రబ్
+	Import	దిగుమతి చేయి
+	Import as Image Sequence	ఇమేజ్ సీక్వెన్స్‌గా దిగుమతి చేయి
+	Ingest	ఇంజెస్ట్
+	List View	జాబితా వీక్షణ
+	Local Drives	స్థానిక డ్రైవ్‌లు
+	Network	నెట్‌వర్క్
+	New Media Browser Panel	కొత్త మీడియా బ్రౌజర్ ప్యానెల్
+	Open In Source Monitor	సోర్స్ మానిటర్‌లో తెరువు
+	Open Ingest Settings	ఇంజెస్ట్ సెట్టింగ్‌లను తెరువు
+	Projects and Interchange	ప్రాజెక్ట్‌లు మరియు ఇంటర్‌చేంజ్
+	Recent Directories	ఇటీవలి డైరెక్టరీలు
+	Refresh	రిఫ్రెష్ చేయి
+	Remove from Favorites	ఇష్టమైనవాటి నుండి తీసివేయి
+	Show in File Manager	ఫైల్ మేనేజర్‌లో చూపు
+	Still Images	స్థిర చిత్రాలు
+	Thumbnail View	థంబ్‌నెయిల్ వీక్షణ
+	Up One Level	ఒక స్థాయి పైకి
+	Video Files	వీడియో ఫైల్‌లు
+	{sel} of {total} items selected	{total} అంశాలలో {sel} ఎంచుకోబడ్డాయి
+	{total} items	{total} అంశాలు
+	#	#
+	Add caption at playhead	ప్లేహెడ్ వద్ద క్యాప్షన్ జోడించు
+	Add captions	క్యాప్షన్‌లు జోడించు
+	Align	సమలేఖనం
+	Align center	మధ్యకు సమలేఖనం
+	Align left	ఎడమకు సమలేఖనం
+	Align right	కుడికి సమలేఖనం
+	Box	పెట్టె
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	క్యాప్షన్ ట్రాక్‌ను సృష్టించండి లేదా క్యాప్షన్ ఫైల్‌ను దిగుమతి చేయండి.
+	Create captions	క్యాప్షన్‌లు సృష్టించు
+	Create new caption track	కొత్త క్యాప్షన్ ట్రాక్ సృష్టించు
+	Delete selected captions	ఎంచుకున్న క్యాప్షన్‌లను తొలగించు
+	Export captions…	క్యాప్షన్‌లను ఎగుమతి చేయి…
+	Extract selected text	ఎంచుకున్న టెక్స్ట్‌ను వేరు తీయి
+	Go to caption	క్యాప్షన్‌కు వెళ్లు
+	Go to graphic	గ్రాఫిక్‌కు వెళ్లు
+	Graphics	గ్రాఫిక్స్
+	Import captions file…	క్యాప్షన్ ఫైల్‌ను దిగుమతి చేయి…
+	In	ఇన్
+	Lift selected text	ఎంచుకున్న టెక్స్ట్‌ను లిఫ్ట్ చేయి
+	Merge selected captions	ఎంచుకున్న క్యాప్షన్‌లను విలీనం చేయి
+	New {format} track	కొత్త {format} ట్రాక్
+	No captions on this track. Press + to add one at the playhead.	ఈ ట్రాక్‌లో క్యాప్షన్‌లు లేవు. ప్లేహెడ్ వద్ద ఒకటి జోడించడానికి + నొక్కండి.
+	No matching captions.	సరిపోలే క్యాప్షన్‌లు లేవు.
+	No matching text.	సరిపోలే టెక్స్ట్ లేదు.
+	No text graphics in this sequence. Add text with the Type tool.	ఈ సీక్వెన్స్‌లో టెక్స్ట్ గ్రాఫిక్స్ లేవు. టైప్ సాధనంతో టెక్స్ట్ జోడించండి.
+	Open a sequence to search its graphics	దాని గ్రాఫిక్స్‌లో వెతకడానికి సీక్వెన్స్‌ను తెరవండి
+	Open a sequence to see its transcript	దాని ట్రాన్స్‌క్రిప్ట్ చూడటానికి సీక్వెన్స్‌ను తెరవండి
+	Open a sequence to work with captions	క్యాప్షన్‌లతో పనిచేయడానికి సీక్వెన్స్‌ను తెరవండి
+	Out	అవుట్
+	Position: bottom	స్థానం: కింద
+	Position: middle	స్థానం: మధ్య
+	Position: top	స్థానం: పైన
+	Remove filler words	పూరక పదాలను తీసివేయి
+	Speaker	మాట్లాడేవారు
+	Speech-to-text turns the dialogue into editable text.	స్పీచ్-టు-టెక్స్ట్ సంభాషణను సవరించదగిన టెక్స్ట్‌గా మారుస్తుంది.
+	Split caption at playhead	ప్లేహెడ్ వద్ద క్యాప్షన్‌ను విభజించు
+	Subtitle	ఉపశీర్షిక
+	Teletext	టెలిటెక్స్ట్
+	Text colour	టెక్స్ట్ రంగు
+	This build has no speech-to-text; import a transcript with transcript.set.	ఈ బిల్డ్‌లో స్పీచ్-టు-టెక్స్ట్ లేదు; transcript.setతో ట్రాన్స్‌క్రిప్ట్‌ను దిగుమతి చేయండి.
+	Track	ట్రాక్
+	Transcribe	ట్రాన్స్‌క్రైబ్ చేయి
+	Transcribe sequence	సీక్వెన్స్‌ను ట్రాన్స్‌క్రైబ్ చేయి
+	(Custom)	(అనుకూల)
+	(Default)	(డిఫాల్ట్)
+	Ambience	పరిసర ధ్వని
+	Assign an audio type to the selection:	ఎంపికకు ఆడియో రకాన్ని కేటాయించండి:
+	Auto-Match	ఆటో-మ్యాచ్
+	Balanced Voice	సమతుల్య స్వరం
+	Bright Air	ప్రకాశవంతమైన గాలి
+	Bright Studio	ప్రకాశవంతమైన స్టూడియో
+	Browse	బ్రౌజ్ చేయి
+	Clarity	స్పష్టత
+	Clean Up Noisy Dialogue	శబ్దంతో కూడిన సంభాషణను శుభ్రపరచు
+	Clear Audio Type	ఆడియో రకాన్ని తొలగించు
+	Clear Muddiness	మందకొడితనాన్ని తొలగించు
+	Clip Volume	క్లిప్ వాల్యూమ్
+	DeEss	DeEss
+	DeHum	DeHum
+	Delete Preset	ప్రీసెట్‌ను తొలగించు
+	Dialogue	సంభాషణ
+	Dry Up a Roomy Voice	ప్రతిధ్వనించే గదిలోని స్వరాన్ని పొడిగా చేయి
+	Duck Deep Under Dialogue	సంభాషణ కింద బాగా తగ్గించు
+	Duck Under Dialogue	సంభాషణ కింద తగ్గించు
+	Duck Under Voice and Effects	స్వరం మరియు ఎఫెక్ట్‌ల కింద తగ్గించు
+	Duck against:	దీనికి వ్యతిరేకంగా తగ్గించు:
+	Ducking	డకింగ్
+	Dynamics	డైనమిక్స్
+	EQ	EQ
+	Enhance Speech	ప్రసంగాన్ని మెరుగుపరచు
+	Fades	ఫేడ్‌లు
+	Far Away	దూరంగా
+	From the Left	ఎడమ నుండి
+	From the Right	కుడి నుండి
+	Generate Keyframes	కీఫ్రేమ్‌లను రూపొందించు
+	High Tone	అధిక టోన్
+	In a Room	గదిలో
+	Interior Room Tone	లోపలి గది టోన్
+	Large Hall	పెద్ద హాల్
+	Loudness	లౌడ్‌నెస్
+	Low Tone	తక్కువ టోన్
+	Matches each of the {n} clips on its own.	{n} క్లిప్‌లలో ప్రతిదాన్ని విడిగా సరిపోలుస్తుంది.
+	Medium Room	మధ్యస్థ గది
+	Multiple Clips Selected	అనేక క్లిప్‌లు ఎంచుకోబడ్డాయి
+	Music	సంగీతం
+	Mute	మ్యూట్
+	Not matched yet	ఇంకా సరిపోల్చలేదు
+	Open Air	బహిరంగ ప్రదేశం
+	Pan	ప్యాన్
+	Phone Call	ఫోన్ కాల్
+	Podcast Voice	పాడ్‌కాస్ట్ స్వరం
+	Presence Lift	ప్రెజెన్స్ పెంపు
+	Preset name	ప్రీసెట్ పేరు
+	Preset:	ప్రీసెట్:
+	Radio Announcer	రేడియో అనౌన్సర్
+	Radio Voice	రేడియో స్వరం
+	Reduce By	దీనితో తగ్గించు
+	Reduce Noise	నాయిస్ తగ్గించు
+	Reduce Reverb	రివర్బ్ తగ్గించు
+	Reduce Rumble	రంబుల్ తగ్గించు
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	లక్ష్య వ్యవధికి సంగీతాన్ని రీమిక్స్ చేయడం ఇంకా అందుబాటులో లేదు. బదులుగా క్లిప్‌ను ట్రిమ్ చేసి క్రాస్‌ఫేడ్ జోడించండి.
+	Repair	మరమ్మతు
+	SFX	SFX
+	Save Preset	ప్రీసెట్‌ను సేవ్ చేయి
+	Select audio clips to edit them here	ఇక్కడ సవరించడానికి ఆడియో క్లిప్‌లను ఎంచుకోండి
+	Select audio clips, then click a preset to apply it.	ఆడియో క్లిప్‌లను ఎంచుకుని, వర్తింపజేయడానికి ప్రీసెట్‌పై క్లిక్ చేయండి.
+	Small Room	చిన్న గది
+	Soften Harshness	కర్కశత్వాన్ని మృదువుగా చేయి
+	Stereo Width	స్టీరియో వెడల్పు
+	Stone Church	రాతి చర్చి
+	Telephone	టెలిఫోన్
+	The selected clips have different audio types. Assign one type to edit them together.	ఎంచుకున్న క్లిప్‌లకు వేర్వేరు ఆడియో రకాలు ఉన్నాయి. వాటిని కలిపి సవరించడానికి ఒకే రకాన్ని కేటాయించండి.
+	Untagged	ట్యాగ్ లేనిది
+	Voice in a Hall	హాల్‌లో స్వరం
+	Warm Room	వెచ్చని గది
+	Warm Voice	వెచ్చని స్వరం
+	Wide Outdoor	విశాలమైన బహిరంగం
+	{name} (user)	{name} (వినియోగదారు)
+	Align Bottom	కిందకు సమలేఖనం
+	Align Center Horizontally	అడ్డంగా మధ్యకు సమలేఖనం
+	Align Center Vertically	నిలువుగా మధ్యకు సమలేఖనం
+	Align Left	ఎడమకు సమలేఖనం
+	Align Right	కుడికి సమలేఖనం
+	Align Top	పైకి సమలేఖనం
+	Align and Transform	సమలేఖనం మరియు ట్రాన్స్‌ఫార్మ్
+	Alignment	సమలేఖనం
+	All Caps	అన్నీ పెద్ద అక్షరాలు
+	All Categories	అన్ని వర్గాలు
+	Anchor point	యాంకర్ పాయింట్
+	Baseline Shift	బేస్‌లైన్ షిఫ్ట్
+	Center Align Text	టెక్స్ట్‌ను మధ్యకు సమలేఖనం చేయి
+	Corner Radius	మూల వ్యాసార్థం
+	Crawl Left	ఎడమకు క్రాల్
+	Crawl Right	కుడికి క్రాల్
+	Create new graphic	కొత్త గ్రాఫిక్ సృష్టించు
+	Delete Layer	లేయర్‌ను తొలగించు
+	End Off Screen	స్క్రీన్ బయట ముగించు
+	Faux Bold	కృత్రిమ బోల్డ్
+	Faux Italic	కృత్రిమ ఇటాలిక్
+	Fill	నింపు
+	Font	ఫాంట్
+	Font Size	ఫాంట్ పరిమాణం
+	Font Style	ఫాంట్ శైలి
+	Gradient	గ్రేడియెంట్
+	Inner	లోపలి
+	Install Motion Graphics Template (.fcgt)	మోషన్ గ్రాఫిక్స్ టెంప్లేట్ ఇన్‌స్టాల్ చేయి (.fcgt)
+	Install…	ఇన్‌స్టాల్ చేయి…
+	Intro Duration	ప్రారంభ వ్యవధి
+	Kerning	కెర్నింగ్
+	Leading	లీడింగ్
+	Left Align Text	టెక్స్ట్‌ను ఎడమకు సమలేఖనం చేయి
+	Ligatures	లిగేచర్‌లు
+	Linear Gradient	లీనియర్ గ్రేడియెంట్
+	New Ellipse	కొత్త దీర్ఘవృత్తం
+	New Rectangle	కొత్త దీర్ఘచతురస్రం
+	New Text	కొత్త టెక్స్ట్
+	New Text Layer	కొత్త టెక్స్ట్ లేయర్
+	No templates match.	సరిపోలే టెంప్లేట్‌లు లేవు.
+	OpenType	OpenType
+	Orientation	ఓరియంటేషన్
+	Outer	బయటి
+	Outro Duration	ముగింపు వ్యవధి
+	Paragraph Text	పేరా టెక్స్ట్
+	Path	మార్గం
+	Pin To	దీనికి పిన్ చేయి
+	Pinned Edges	పిన్ చేసిన అంచులు
+	Point Text	పాయింట్ టెక్స్ట్
+	Polygon Sides	బహుభుజి భుజాలు
+	Postroll	పోస్ట్‌రోల్
+	Preroll	ప్రీరోల్
+	Responsive Design - Position	రెస్పాన్సివ్ డిజైన్ - స్థానం
+	Responsive Design - Time	రెస్పాన్సివ్ డిజైన్ - సమయం
+	Right Align Text	టెక్స్ట్‌ను కుడికి సమలేఖనం చేయి
+	Roll	రోల్
+	Search templates	టెంప్లేట్‌లలో వెతుకు
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	గ్రాఫిక్ క్లిప్‌ను ఎంచుకోండి, లేదా ప్రోగ్రామ్ మానిటర్‌పై టైప్ సాధనాన్ని (T) ఉపయోగించండి
+	Select a layer to edit its properties.	దాని లక్షణాలను సవరించడానికి లేయర్‌ను ఎంచుకోండి.
+	Shadow	నీడ
+	Shape	ఆకారం
+	Small Caps	చిన్న పెద్ద అక్షరాలు
+	Start Off Screen	స్క్రీన్ బయట ప్రారంభించు
+	Stroke	స్ట్రోక్
+	Stroke 2	స్ట్రోక్ 2
+	Template Properties	టెంప్లేట్ లక్షణాలు
+	Template: {name}	టెంప్లేట్: {name}
+	Text Box Height	టెక్స్ట్ బాక్స్ ఎత్తు
+	Text Box Width	టెక్స్ట్ బాక్స్ వెడల్పు
+	Text Layer Type	టెక్స్ట్ లేయర్ రకం
+	Text Properties	టెక్స్ట్ లక్షణాలు
+	Text Styling	టెక్స్ట్ శైలి
+	Toggle animation	యానిమేషన్ టోగుల్ చేయి
+	Toggle visibility	దృశ్యమానతను టోగుల్ చేయి
+	Tracking	ట్రాకింగ్
+	Video Frame	వీడియో ఫ్రేమ్
+	{category} · My Template	{category} · నా టెంప్లేట్
+	{n} editable properties	{n} సవరించదగిన లక్షణాలు
+	Add pause	విరామం జోడించు
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	విరామం జోడించు [pause 1s]ను చొప్పిస్తుంది. పొడవైన లేదా చిన్న విరామం కోసం సంఖ్యను మార్చండి, ఉదా. [pause 500ms] లేదా [pause 2s].
+	Add to timeline	టైమ్‌లైన్‌కు జోడించు
+	Basic voices (built in)	ప్రాథమిక స్వరాలు (అంతర్నిర్మితం)
+	Download natural voices ({mb} MB)…	సహజ స్వరాలను డౌన్‌లోడ్ చేయి ({mb} MB)…
+	Download of the natural voices failed: {e}	సహజ స్వరాల డౌన్‌లోడ్ విఫలమైంది: {e}
+	Download the natural voices? {mb} MB, once.	సహజ స్వరాలను డౌన్‌లోడ్ చేయాలా? {mb} MB, ఒక్కసారి మాత్రమే.
+	Downloading…	డౌన్‌లోడ్ అవుతోంది…
+	Editing the selected narration	ఎంచుకున్న వ్యాఖ్యానాన్ని సవరిస్తోంది
+	Extra high	చాలా ఎక్కువ
+	Extra low	చాలా తక్కువ
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	{source} మరియు github.com/cmusphinx/cmudict (ఉచ్చారణలు) నుండి. లైసెన్స్: {license}. ప్రతి ఫైల్ స్థిరపరచిన SHA-256తో తనిఖీ చేయబడుతుంది.
+	Hear this voice	ఈ స్వరాన్ని వినండి
+	Narration added on {track}	{track}లో వ్యాఖ్యానం జోడించబడింది
+	Narration updated	వ్యాఖ్యానం నవీకరించబడింది
+	Natural voices	సహజ స్వరాలు
+	Natural voices installed	సహజ స్వరాలు ఇన్‌స్టాల్ చేయబడ్డాయి
+	Natural voices need a one-time download.	సహజ స్వరాలకు ఒక్కసారి డౌన్‌లోడ్ అవసరం.
+	New narration	కొత్త వ్యాఖ్యానం
+	Pace	గమనం
+	Synthesizing narration…	వ్యాఖ్యానాన్ని సంశ్లేషణ చేస్తోంది…
+	Synthesizing…	సంశ్లేషణ చేస్తోంది…
+	Text to Speech: {e}	టెక్స్ట్ నుండి ప్రసంగం: {e}
+	Type what you want the voice to say	స్వరం ఏమి చెప్పాలో టైప్ చేయండి
+	Vocal pitch	స్వర పిచ్
+	Voice	స్వరం
+	an audio track	ఒక ఆడియో ట్రాక్
+	no audio output (check Settings ▸ Audio Hardware)	ఆడియో అవుట్‌పుట్ లేదు (సెట్టింగ్‌లు ▸ ఆడియో హార్డ్‌వేర్ తనిఖీ చేయండి)
+	the job disappeared	పని కనిపించకుండా పోయింది
+	{name} (download)	{name} (డౌన్‌లోడ్)
+	5.1 panner (drag the puck; double-click: front centre)	5.1 ప్యానర్ (పక్‌ను లాగండి; రెండుసార్లు క్లిక్: ముందు మధ్య)
+	Add keyframe	కీఫ్రేమ్ జోడించు
+	Crop	క్రాప్
+	Go to next keyframe	తదుపరి కీఫ్రేమ్‌కు వెళ్లు
+	Go to previous keyframe	మునుపటి కీఫ్రేమ్‌కు వెళ్లు
+	Remove keyframe	కీఫ్రేమ్‌ను తీసివేయి
+	Select a clip to see its properties	దాని లక్షణాలను చూడటానికి క్లిప్‌ను ఎంచుకోండి
+	Speed {n}%	వేగం {n}%
+	Turn on animation and add keyframe	యానిమేషన్ ఆన్ చేసి కీఫ్రేమ్ జోడించు
+	Apply to Selected Clips	ఎంచుకున్న క్లిప్‌లకు వర్తింపజేయి
+	Export Preset…	ప్రీసెట్‌ను ఎగుమతి చేయి…
+	Import Presets…	ప్రీసెట్‌లను దిగుమతి చేయి…
+	Lumetri Presets	Lumetri ప్రీసెట్‌లు
+	Search effects	ఎఫెక్ట్‌లలో వెతుకు
+	Text to Speech: another sequence is open now; the narration was not placed	టెక్స్ట్ నుండి ప్రసంగం: ఇప్పుడు వేరే సీక్వెన్స్ తెరిచి ఉంది; వ్యాఖ్యానం ఉంచబడలేదు
+	Effect presets	ఎఫెక్ట్ ప్రీసెట్‌లు
+	Automate to Sequence	సీక్వెన్స్‌కు ఆటోమేట్ చేయి
+	Bin: {name}	బిన్: {name}
+	Clear (Delete)	తొలగించు (Delete)
+	Convert to Master Clip	మాస్టర్ క్లిప్‌గా మార్చు
+	Date Created	సృష్టించిన తేదీ
+	Descending	అవరోహణ
+	Drag to reorder; tick the columns to show.	క్రమం మార్చడానికి లాగండి; చూపాల్సిన కాలమ్‌లను టిక్ చేయండి.
+	Extra Large	చాలా పెద్దది
+	Find	కనుగొను
+	Freeform	స్వేచ్ఛా అమరిక
+	Freeform View Options…	స్వేచ్ఛా వీక్షణ ఎంపికలు…
+	Icon View	ఐకాన్ వీక్షణ
+	Large	పెద్దది
+	List	జాబితా
+	Manage Saved View Presets	సేవ్ చేసిన వీక్షణ ప్రీసెట్‌లను నిర్వహించు
+	Medium (default)	మధ్యస్థం (డిఫాల్ట్)
+	Metadata Display	మెటాడేటా ప్రదర్శన
+	Metadata Display…	మెటాడేటా ప్రదర్శన…
+	New Bin From Selection	ఎంపిక నుండి కొత్త బిన్
+	New Item	కొత్త అంశం
+	New Project Shortcut	కొత్త ప్రాజెక్ట్ షార్ట్‌కట్
+	New Search Bin	కొత్త సెర్చ్ బిన్
+	New Sequence From Clip	క్లిప్ నుండి కొత్త సీక్వెన్స్
+	Open in New Tab	కొత్త ట్యాబ్‌లో తెరువు
+	Open in New Window	కొత్త విండోలో తెరువు
+	Open in Place	అదే స్థానంలో తెరువు
+	Open in Source Monitor	సోర్స్ మానిటర్‌లో తెరువు
+	Open in Timeline	టైమ్‌లైన్‌లో తెరువు
+	Preview Area	ప్రివ్యూ ప్రాంతం
+	Project View Preset {n}	ప్రాజెక్ట్ వీక్షణ ప్రీసెట్ {n}
+	Project: {name}	ప్రాజెక్ట్: {name}
+	Refresh Project	ప్రాజెక్ట్‌ను రిఫ్రెష్ చేయి
+	Refresh Sort Order	క్రమాన్ని రిఫ్రెష్ చేయి
+	Restore View Preset	వీక్షణ ప్రీసెట్‌ను పునరుద్ధరించు
+	Reveal Project in Finder…	ఫైల్ మేనేజర్‌లో ప్రాజెక్ట్‌ను చూపు…
+	Reveal in Finder	ఫైల్ మేనేజర్‌లో చూపు
+	Save As New View Preset	కొత్త వీక్షణ ప్రీసెట్‌గా సేవ్ చేయి
+	Save Current View Preset	ప్రస్తుత వీక్షణ ప్రీసెట్‌ను సేవ్ చేయి
+	Save Project	ప్రాజెక్ట్‌ను సేవ్ చేయి
+	Select an item to preview it	ప్రివ్యూ చూడటానికి అంశాన్ని ఎంచుకోండి
+	Set Poster Frame	పోస్టర్ ఫ్రేమ్‌ను సెట్ చేయి
+	Small	చిన్నది
+	Sort Icons	ఐకాన్‌లను క్రమబద్ధీకరించు
+	Thumbnail controls for all pointing devices	అన్ని పాయింటింగ్ పరికరాలకు థంబ్‌నెయిల్ నియంత్రణలు
+	Thumbnails show effects applied	థంబ్‌నెయిల్‌లు వర్తింపజేసిన ఎఫెక్ట్‌లను చూపుతాయి
+	Up one level	ఒక స్థాయి పైకి
+	User Order	వినియోగదారు క్రమం
+	Video Usage: {vu}  Audio Usage: {au}	వీడియో వినియోగం: {vu}  ఆడియో వినియోగం: {au}
+	{n} items	{n} అంశాలు
+	Freeform View	స్వేచ్ఛా వీక్షణ
+	Stack	పేర్చు
+	Unstack	పేర్పు తీసివేయి
+	Clip Size	క్లిప్ పరిమాణం
+	Larger	పెద్దగా
+	Smaller	చిన్నగా
+	Align to Grid	గ్రిడ్‌కు సమలేఖనం చేయి
+	Reset to Grid	గ్రిడ్‌కు రీసెట్ చేయి
+	Save Arrangement…	అమరికను సేవ్ చేయి…
+	Save Arrangement	అమరికను సేవ్ చేయి
+	Restore Arrangement	అమరికను పునరుద్ధరించు
+	Delete Arrangement	అమరికను తొలగించు
+	Arrangement {n}	అమరిక {n}
+	Freeform View Options	స్వేచ్ఛా వీక్షణ ఎంపికలు
+	Snap to grid	గ్రిడ్‌కు స్నాప్ చేయి
+	Show clip names	క్లిప్ పేర్లను చూపు
+	Show clip durations	క్లిప్ వ్యవధులను చూపు
+	Grid spacing:	గ్రిడ్ అంతరం:
+	Default clip size:	డిఫాల్ట్ క్లిప్ పరిమాణం:
+	{panel} — coming in a later milestone	{panel} — తర్వాతి మైలురాయిలో వస్తుంది
+	Edit Workspaces	వర్క్‌స్పేస్‌లను సవరించు
+	Restore Original	అసలుదాన్ని పునరుద్ధరించు
+	Drag Video Only	వీడియోను మాత్రమే లాగు
+	Drag Audio Only	ఆడియోను మాత్రమే లాగు
+	Drag Video and Audio	వీడియో మరియు ఆడియోను లాగు
+	Source clips	సోర్స్ క్లిప్‌లు
+	Close All	అన్నీ మూసివేయి
+	(no audio)	(ఆడియో లేదు)
+	Generating waveform…	వేవ్‌ఫార్మ్ రూపొందిస్తోంది…
+	Audio Waveform	ఆడియో వేవ్‌ఫార్మ్
+	Video and Audio Waveform Split	వీడియో మరియు ఆడియో వేవ్‌ఫార్మ్ విభజన
+	Anchor to In Point	ఇన్ పాయింట్‌కు యాంకర్ చేయి
+	Anchor to Out Point	అవుట్ పాయింట్‌కు యాంకర్ చేయి
+	Custom ({n} points)	అనుకూల ({n} పాయింట్లు)
+	Save Preset…	ప్రీసెట్‌ను సేవ్ చేయి…
+	Source · {name}	సోర్స్ · {name}
+	Temporal Interpolation	తాత్కాలిక ఇంటర్‌పోలేషన్
+	Twirl open or shut	తెరువు లేదా మూసివేయి
+	Without keyframes	కీఫ్రేమ్‌లు లేకుండా
+	Create 4-point polygon mask	4-పాయింట్ బహుభుజి మాస్క్ సృష్టించు
+	Create ellipse mask	దీర్ఘవృత్త మాస్క్ సృష్టించు
+	Delete Mask	మాస్క్‌ను తొలగించు
+	Free draw bezier	స్వేచ్ఛగా బెజియర్ గీయి
+	Intersect	ఖండన
+	Inverted	విలోమం
+	Position & Rotation	స్థానం & భ్రమణం
+	Position, Scale & Rotation	స్థానం, స్కేల్ & భ్రమణం
+	Show graphs	గ్రాఫ్‌లను చూపు
+	Stop tracking	ట్రాకింగ్ ఆపు
+	Track selected mask backward	ఎంచుకున్న మాస్క్‌ను వెనక్కి ట్రాక్ చేయి
+	Track selected mask backward 1 frame	ఎంచుకున్న మాస్క్‌ను 1 ఫ్రేమ్ వెనక్కి ట్రాక్ చేయి
+	Track selected mask forward	ఎంచుకున్న మాస్క్‌ను ముందుకు ట్రాక్ చేయి
+	Track selected mask forward 1 frame	ఎంచుకున్న మాస్క్‌ను 1 ఫ్రేమ్ ముందుకు ట్రాక్ చేయి
+	Tracking method: {method}	ట్రాకింగ్ పద్ధతి: {method}
+	Value	విలువ
+	Velocity	వేగం (వెలాసిటీ)
+	Set Transition Duration	ట్రాన్సిషన్ వ్యవధిని సెట్ చేయి
+	Reverse	తిరగవేయి
+	Center at Cut	కట్ వద్ద మధ్యలో
+	Start at Cut	కట్ వద్ద ప్రారంభం
+	End at Cut	కట్ వద్ద ముగింపు
+	Custom Start	అనుకూల ప్రారంభం
+	Eyedropper (pick a color from the Program monitor)	ఐడ్రాపర్ (ప్రోగ్రామ్ మానిటర్ నుండి రంగును ఎంచుకోండి)
+	Interpret Footage	ఫుటేజ్‌ను అన్వయించు
+	Color Management · {n} item	రంగు నిర్వహణ · {n} అంశం
+	Color Management · {n} items	రంగు నిర్వహణ · {n} అంశాలు
+	Media colour space (from file metadata): {detected}	మీడియా కలర్ స్పేస్ (ఫైల్ మెటాడేటా నుండి): {detected}
+	Override media colour space:	మీడియా కలర్ స్పేస్‌ను భర్తీ చేయి:
+	Decode Auro-3D height channels	Auro-3D ఎత్తు ఛానెల్‌లను డీకోడ్ చేయి
+	Off: the file plays its own channels, as without an Auro-3D decoder.	ఆఫ్: Auro-3D డీకోడర్ లేనట్లుగానే, ఫైల్ దాని స్వంత ఛానెల్‌లను ప్లే చేస్తుంది.
+	Use file metadata	ఫైల్ మెటాడేటాను ఉపయోగించు
+	Motion Graphics Templates	మోషన్ గ్రాఫిక్స్ టెంప్లేట్‌లు
+	Clip Fx Editor	క్లిప్ Fx ఎడిటర్
+	Track Fx Editor	ట్రాక్ Fx ఎడిటర్
+	Custom Setup	అనుకూల సెటప్
+	Master Gain	మాస్టర్ గెయిన్
+	Band {n}	బ్యాండ్ {n}
+	Solo	సోలో
+	Thr	థ్రె
+	Ratio	నిష్పత్తి
+	Att	అటా
+	Rel	రిలీ
+	Output Gain	అవుట్‌పుట్ గెయిన్
+	Limiter	లిమిటర్
+	Link Channels	ఛానెల్‌లను లింక్ చేయి
+	Limiter Threshold	లిమిటర్ థ్రెషోల్డ్
+	Limiter Release	లిమిటర్ రిలీజ్
+	Auto Gate	ఆటో గేట్
+	Threshold	థ్రెషోల్డ్
+	Attack	అటాక్
+	Release	రిలీజ్
+	Compressor	కంప్రెసర్
+	Auto Makeup	ఆటో మేకప్
+	Makeup	మేకప్
+	Expander	ఎక్స్‌పాండర్
+	Soft Clip	సాఫ్ట్ క్లిప్
+	out	అవుట్
+	in	ఇన్
+	Parametric Equalizer	పారామెట్రిక్ ఈక్వలైజర్
+	Graphic Equalizer (10 Bands)	గ్రాఫిక్ ఈక్వలైజర్ (10 బ్యాండ్‌లు)
+	Graphic Equalizer (20 Bands)	గ్రాఫిక్ ఈక్వలైజర్ (20 బ్యాండ్‌లు)
+	Graphic Equalizer (30 Bands)	గ్రాఫిక్ ఈక్వలైజర్ (30 బ్యాండ్‌లు)
+	Multiband Compressor	మల్టీబ్యాండ్ కంప్రెసర్
+	CFA4 encountered an error	CFA4లో లోపం ఏర్పడింది
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	విండోను గీస్తున్నప్పుడు ఏదో తప్పు జరిగింది. మీ ప్రాజెక్ట్ ఇంకా తెరిచి ఉంది; సురక్షితంగా ఉండటానికి దాన్ని సేవ్ చేయండి.
+	Details: {path}	వివరాలు: {path}
+	Engine restarted	ఇంజిన్ పునఃప్రారంభించబడింది
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4 ఇంజిన్ అనుకోకుండా ఆగిపోయి పునఃప్రారంభించబడింది. సేవ్ చేయని మార్పులు రికవరీ జర్నల్‌లో ఉంచబడ్డాయి; అది వాటిని పునరుద్ధరించడానికి అందిస్తుంది.
+	 ({ch} output channels)	 ({ch} అవుట్‌పుట్ ఛానెల్‌లు)
+	Add to favorites	ఇష్టమైనవాటికి జోడించు
+	Appearance Mode	రూప మోడ్
+	Appearance Settings…	రూప సెట్టింగ్‌లు…
+	Auto-saves go to: {dir}	ఆటో-సేవ్‌లు ఇక్కడికి వెళ్తాయి: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	CFA4 మిగిలిన RAMను ఇతర అప్లికేషన్‌ల కోసం ఖాళీగా ఉంచుతుంది.
+	Currently: {loc} — {files} file(s), {size}	ప్రస్తుతం: {loc} — {files} ఫైల్(లు), {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	మానిటర్లు మరియు థంబ్‌నెయిల్‌ల కోసం ఉంచిన డీకోడ్ చేసిన ఫ్రేమ్‌లు: {budget}లో {used}.
+	Default location	డిఫాల్ట్ స్థానం
+	Delete this preset	ఈ ప్రీసెట్‌ను తొలగించు
+	Deleted preset “{active}”	“{active}” ప్రీసెట్ తొలగించబడింది
+	Deleted {n} file(s), {size}.	{n} ఫైల్(లు) తొలగించబడ్డాయి, {size}.
+	Export the labels to a preset file…	లేబుల్‌లను ప్రీసెట్ ఫైల్‌కు ఎగుమతి చేయి…
+	Font family	ఫాంట్ కుటుంబం
+	Import a preset file…	ప్రీసెట్ ఫైల్‌ను దిగుమతి చేయి…
+	Imported “{name}”	“{name}” దిగుమతి చేయబడింది
+	Label Color Presets	లేబుల్ రంగు ప్రీసెట్‌లు
+	Label Colors	లేబుల్ రంగులు
+	Last auto-save {a}	చివరి ఆటో-సేవ్ {a}
+	Last auto-save {a} · last recovery copy {j}	చివరి ఆటో-సేవ్ {a} · చివరి రికవరీ కాపీ {j}
+	Last recovery copy {j}	చివరి రికవరీ కాపీ {j}
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	ప్రోగ్రామ్ ఎడమ → పరికర అవుట్‌పుట్ {l}, కుడి → పరికర అవుట్‌పుట్ {r}{dev}. పరికర ఛానెల్‌లకు మించిన అవుట్‌పుట్‌లు 1 మరియు 2కి మళ్లుతాయి.
+	Recovery copy: {dir}	రికవరీ కాపీ: {dir}
+	Remove from favorites	ఇష్టమైనవాటి నుండి తీసివేయి
+	Reset…	రీసెట్ చేయి…
+	Revert to the preset's colors and names	ప్రీసెట్ రంగులు మరియు పేర్లకు తిరిగి వెళ్లు
+	Show the presets folder	ప్రీసెట్‌ల ఫోల్డర్‌ను చూపు
+	Sync with system	సిస్టమ్‌తో సమకాలీకరించు
+	System Default	సిస్టమ్ డిఫాల్ట్
+	not available in this session	ఈ సెషన్‌లో అందుబాటులో లేదు
+	{name} (Modified)	{name} (మార్చబడింది)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	సులభంగా చదవగలిగే రంగు కాంట్రాస్ట్
+	Adaptive	అనుకూలనీయ
+	Add tracks automatically when editing source clips onto the Timeline	సోర్స్ క్లిప్‌లను టైమ్‌లైన్‌లో సవరించేటప్పుడు ట్రాక్‌లను స్వయంచాలకంగా జోడించు
+	All lines	అన్ని పంక్తులు
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	మాడిఫైయర్ కీ లేకుండా ఎంపిక సాధనం రోల్ మరియు రిపుల్ ట్రిమ్‌లను ఎంచుకోవడానికి అనుమతించు
+	Allow current tool to change trim type of previously selected edit point	ముందు ఎంచుకున్న ఎడిట్ పాయింట్ ట్రిమ్ రకాన్ని ప్రస్తుత సాధనం మార్చడానికి అనుమతించు
+	Allow duplicate media during project import	ప్రాజెక్ట్ దిగుమతి సమయంలో నకిలీ మీడియాను అనుమతించు
+	Always import embedded CEA-708 closed captions with wide aspect.	పొందుపరిచిన CEA-708 క్లోజ్డ్ క్యాప్షన్‌లను ఎల్లప్పుడూ వెడల్పు నిష్పత్తితో దిగుమతి చేయి.
+	Always override audio tags	ఆడియో ట్యాగ్‌లను ఎల్లప్పుడూ భర్తీ చేయి
+	Analyze all imported media to search for visuals or audio	దృశ్యాలు లేదా ఆడియో కోసం వెతకడానికి దిగుమతి చేసిన మొత్తం మీడియాను విశ్లేషించు
+	Animate zoom, scrolling and menus	జూమ్, స్క్రోలింగ్ మరియు మెనూలను యానిమేట్ చేయి
+	Appearance…	రూపం…
+	At Startup	ప్రారంభంలో
+	At playback end, return to beginning when restarting playback	ప్లేబ్యాక్ ముగింపులో, ప్లేబ్యాక్ మళ్లీ ప్రారంభించినప్పుడు మొదటికి తిరిగి వెళ్లు
+	Attempt to force hardware to document sample rate	డాక్యుమెంట్ నమూనా రేటును హార్డ్‌వేర్‌పై బలవంతంగా అమలు చేయడానికి ప్రయత్నించు
+	Audio Hardware	ఆడియో హార్డ్‌వేర్
+	Audio Hardware…	ఆడియో హార్డ్‌వేర్…
+	Audio Time Units	ఆడియో సమయ యూనిట్‌లు
+	Audio Transition Default Duration	ఆడియో ట్రాన్సిషన్ డిఫాల్ట్ వ్యవధి
+	Audio…	ఆడియో…
+	Auto (system)	స్వయంచాలకం (సిస్టమ్)
+	Auto Save	ఆటో సేవ్
+	Auto Save also saves the current project(s)	ఆటో సేవ్ ప్రస్తుత ప్రాజెక్ట్(ల)ను కూడా సేవ్ చేస్తుంది
+	Auto Save…	ఆటో సేవ్…
+	Auto-tag audio types in the timeline	టైమ్‌లైన్‌లో ఆడియో రకాలను స్వయంచాలకంగా ట్యాగ్ చేయి
+	Auto-transcribe all imported clips	దిగుమతి చేసిన అన్ని క్లిప్‌లను స్వయంచాలకంగా ట్రాన్స్‌క్రైబ్ చేయి
+	Auto-transcribe only clips in sequences	సీక్వెన్స్‌లలోని క్లిప్‌లను మాత్రమే స్వయంచాలకంగా ట్రాన్స్‌క్రైబ్ చేయి
+	Automatch Time	ఆటోమ్యాచ్ సమయం
+	Automatically Hide Dependent Clips	ఆధారిత క్లిప్‌లను స్వయంచాలకంగా దాచు
+	Automatically Save Every	ప్రతి ఇంత సమయానికి స్వయంచాలకంగా సేవ్ చేయి
+	Automatically delete cache files older than	దీనికంటే పాత కాష్ ఫైల్‌లను స్వయంచాలకంగా తొలగించు
+	Automatically delete oldest cache files when cache exceeds	కాష్ దీనిని మించినప్పుడు పాత కాష్ ఫైల్‌లను స్వయంచాలకంగా తొలగించు
+	Automatically refresh growing files	పెరుగుతున్న ఫైల్‌లను స్వయంచాలకంగా రిఫ్రెష్ చేయి
+	Automatically resume playback for growing files in Source Monitor	సోర్స్ మానిటర్‌లో పెరుగుతున్న ఫైల్‌ల ప్లేబ్యాక్‌ను స్వయంచాలకంగా కొనసాగించు
+	Automatically save projects	ప్రాజెక్ట్‌లను స్వయంచాలకంగా సేవ్ చేయి
+	Automatically transcribe clips	క్లిప్‌లను స్వయంచాలకంగా ట్రాన్స్‌క్రైబ్ చేయి
+	Automation Keyframe Optimization	ఆటోమేషన్ కీఫ్రేమ్ ఆప్టిమైజేషన్
+	Background fill	నేపథ్య రంగు
+	Bevel join	బెవెల్ జాయిన్
+	Bins	బిన్‌లు
+	Butt cap	బట్ క్యాప్
+	Cache analysis results for re-use	విశ్లేషణ ఫలితాలను మళ్లీ ఉపయోగించడానికి కాష్ చేయి
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	ప్రతి సవరణ తర్వాత కొద్ది క్షణంలో మార్పులు నేపథ్యంలో కాపీ చేయబడతాయి. CFA4 అనుకోకుండా మూసుకుపోతే, తదుపరిసారి ప్రారంభించినప్పుడు అవి అందించబడతాయి.
+	Chinese	చైనీస్
+	Closed Captions	క్లోజ్డ్ క్యాప్షన్‌లు
+	Color Theme	కలర్ థీమ్
+	Color…	రంగు…
+	Crash Recovery	క్రాష్ రికవరీ
+	Create folder for imported projects	దిగుమతి చేసిన ప్రాజెక్ట్‌ల కోసం ఫోల్డర్ సృష్టించు
+	Dark Theme	డార్క్ థీమ్
+	Default Audio Tracks	డిఫాల్ట్ ఆడియో ట్రాక్‌లు
+	Default Emoji font	డిఫాల్ట్ ఎమోజి ఫాంట్
+	Default Input	డిఫాల్ట్ ఇన్‌పుట్
+	Default Media Scaling	డిఫాల్ట్ మీడియా స్కేలింగ్
+	Default Output	డిఫాల్ట్ అవుట్‌పుట్
+	Default closed caption font	డిఫాల్ట్ క్లోజ్డ్ క్యాప్షన్ ఫాంట్
+	Default language	డిఫాల్ట్ భాష
+	Default paragraph direction	డిఫాల్ట్ పేరా దిశ
+	Default subtitle and text font	డిఫాల్ట్ ఉపశీర్షిక మరియు టెక్స్ట్ ఫాంట్
+	Delete files older than	దీనికంటే పాత ఫైల్‌లను తొలగించు
+	Delete oldest files when the cache exceeds	కాష్ దీనిని మించినప్పుడు పాత ఫైల్‌లను తొలగించు
+	Delete…	తొలగించు…
+	Device Class	పరికర తరగతి
+	Disable video output when in the background	నేపథ్యంలో ఉన్నప్పుడు వీడియో అవుట్‌పుట్‌ను నిలిపివేయి
+	Display Color Management	డిస్‌ప్లే రంగు నిర్వహణ
+	Display Color Settings	డిస్‌ప్లే రంగు సెట్టింగ్‌లు
+	Display out of sync indicators for unlinked clips	లింక్ తీసిన క్లిప్‌లకు సమకాలీకరణ తప్పిన సూచికలను చూపు
+	Do not delete cache files automatically	కాష్ ఫైల్‌లను స్వయంచాలకంగా తొలగించవద్దు
+	Don't label speakers	మాట్లాడేవారికి లేబుల్ వేయవద్దు
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	తగ్గిన ప్లేబ్యాక్ రిజల్యూషన్‌లో డ్రాఫ్ట్ డీకోడింగ్ (H.264: వేగంగా, కొన్ని ఫ్రేమ్‌లు తక్కువ ఫిల్టర్ చేయబడతాయి)
+	Dutch	డచ్
+	Dynamic Link	డైనమిక్ లింక్
+	Enable Mercury Transmit	Mercury Transmit ప్రారంభించు
+	Enable ProRes hardware accelerated encoding, if available	అందుబాటులో ఉంటే ProRes హార్డ్‌వేర్ వేగవంతమైన ఎన్‌కోడింగ్‌ను ప్రారంభించు
+	Enable clip and XMP metadata linking	క్లిప్ మరియు XMP మెటాడేటా లింకింగ్‌ను ప్రారంభించు
+	Enable developer mode	డెవలపర్ మోడ్‌ను ప్రారంభించు
+	Enable hardware accelerated decoding (requires restart)	హార్డ్‌వేర్ వేగవంతమైన డీకోడింగ్‌ను ప్రారంభించు (పునఃప్రారంభం అవసరం)
+	Enable language auto-detection	భాష స్వయంచాలక గుర్తింపును ప్రారంభించు
+	Enable proxies	ప్రాక్సీలను ప్రారంభించు
+	English	ఇంగ్లీష్
+	Extended Dynamic Range Monitoring	విస్తరించిన డైనమిక్ రేంజ్ పర్యవేక్షణ
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	రంగు నిర్వహణ పారామీటర్‌ల కోసం, Lumetri Color ప్యానెల్‌లోని సెట్టింగ్‌ల ట్యాబ్‌కు వెళ్లండి.
+	Frame Count	ఫ్రేమ్ గణన
+	Frame cache for monitors and thumbnails	మానిటర్లు మరియు థంబ్‌నెయిల్‌ల కోసం ఫ్రేమ్ కాష్
+	French	ఫ్రెంచ్
+	Front + LFE	ముందు + LFE
+	Front + Rear	ముందు + వెనుక
+	Front + Rear + LFE	ముందు + వెనుక + LFE
+	Front Only	ముందు మాత్రమే
+	Generate Timecode	టైమ్‌కోడ్ రూపొందించు
+	Generate waveforms and conform audio using multithreading	మల్టీథ్రెడింగ్ ఉపయోగించి వేవ్‌ఫార్మ్‌లను రూపొందించి ఆడియోను కన్ఫార్మ్ చేయి
+	Generate waveforms automatically during import	దిగుమతి సమయంలో వేవ్‌ఫార్మ్‌లను స్వయంచాలకంగా రూపొందించు
+	German	జర్మన్
+	Graphics…	గ్రాఫిక్స్…
+	Growing Files	పెరుగుతున్న ఫైల్‌లు
+	HDR Graphics White (Nits)	HDR గ్రాఫిక్స్ తెలుపు (నిట్స్)
+	Hardware decoding	హార్డ్‌వేర్ డీకోడింగ్
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	హార్డ్‌వేర్ డీకోడింగ్: స్వయంచాలకం మద్దతు ఉన్న స్ట్రీమ్‌లకు సిస్టమ్ వీడియో డీకోడర్‌ను (H.264 మరియు HEVC కోసం VA-API లేదా NVDEC) ఉపయోగిస్తుంది, మిగతా అన్నింటికీ లేదా హార్డ్‌వేర్ విఫలమైతే CFA4 స్వంత డీకోడర్‌ను ఉపయోగిస్తుంది. ఇప్పటికే తెరిచి ఉన్న మీడియా మళ్లీ తెరిచే వరకు తన డీకోడర్‌ను ఉంచుకుంటుంది.
+	Highlight Color	హైలైట్ రంగు
+	Hindi	హిందీ
+	Hindi digits	హిందీ అంకెలు
+	I/O Buffer Size	I/O బఫర్ పరిమాణం
+	Import numbered stills as image sequences	సంఖ్యలు గల స్థిర చిత్రాలను ఇమేజ్ సీక్వెన్స్‌లుగా దిగుమతి చేయి
+	In the Media Cache	మీడియా కాష్‌లో
+	In the project	ప్రాజెక్ట్‌లో
+	Include captions on import	దిగుమతి చేసేటప్పుడు క్యాప్షన్‌లను చేర్చు
+	Indeterminate Media Timebase	నిర్ధారించలేని మీడియా టైమ్‌బేస్
+	Interface Language	ఇంటర్‌ఫేస్ భాష
+	Italian	ఇటాలియన్
+	Japanese	జపనీస్
+	Keep a recovery copy of unsaved changes	సేవ్ చేయని మార్పుల రికవరీ కాపీని ఉంచు
+	Korean	కొరియన్
+	Label Defaults	లేబుల్ డిఫాల్ట్‌లు
+	Label speakers	మాట్లాడేవారికి లేబుల్ వేయి
+	Labels…	లేబుల్‌లు…
+	Large Trim Offset	పెద్ద ట్రిమ్ ఆఫ్‌సెట్
+	Large Volume Adjustment	పెద్ద వాల్యూమ్ సర్దుబాటు
+	Left channel to device output	ఎడమ ఛానెల్ పరికర అవుట్‌పుట్‌కు
+	Left to right	ఎడమ నుండి కుడికి
+	Light Theme	లైట్ థీమ్
+	Linear keyframe thinning	లీనియర్ కీఫ్రేమ్ తగ్గింపు
+	Local Projects	స్థానిక ప్రాజెక్ట్‌లు
+	Maintain pitch while shuttling	షటిల్ చేసేటప్పుడు పిచ్‌ను నిలుపు
+	Match frame sets in point	మ్యాచ్ ఫ్రేమ్ ఇన్ పాయింట్‌ను సెట్ చేస్తుంది
+	Maximum Project Versions	గరిష్ఠ ప్రాజెక్ట్ వెర్షన్‌లు
+	Media	మీడియా
+	Media Analysis	మీడియా విశ్లేషణ
+	Media Analysis & Transcription	మీడియా విశ్లేషణ & ట్రాన్స్‌క్రిప్షన్
+	Media Analysis & Transcription…	మీడియా విశ్లేషణ & ట్రాన్స్‌క్రిప్షన్…
+	Media Cache	మీడియా కాష్
+	Media Cache Database	మీడియా కాష్ డేటాబేస్
+	Media Cache Files	మీడియా కాష్ ఫైల్‌లు
+	Media Cache Management	మీడియా కాష్ నిర్వహణ
+	Media Cache…	మీడియా కాష్…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	మీడియా విశ్లేషణ మరియు ట్రాన్స్‌క్రిప్షన్‌లు మీడియా కాష్ ఫోల్డర్‌లో కాష్ చేయబడతాయి. ఈ కంప్యూటర్‌లో మీడియాను మరో ప్రాజెక్ట్‌లోకి దిగుమతి చేసినా మళ్లీ విశ్లేషించాల్సిన అవసరం ఉండదు.
+	Memory	మెమరీ
+	Memory…	మెమరీ…
+	Minimum time	కనిష్ఠ సమయం
+	Minimum time interval thinning	కనిష్ఠ సమయ వ్యవధి తగ్గింపు
+	Missing font replacement	లేని ఫాంట్ భర్తీ
+	Miter join	మైటర్ జాయిన్
+	Miter limit	మైటర్ పరిమితి
+	Mono Media	మోనో మీడియా
+	Monospace only	మోనోస్పేస్ మాత్రమే
+	Movie (audio and video)	చలనచిత్రం (ఆడియో మరియు వీడియో)
+	Multichannel Mono Media	మల్టీఛానెల్ మోనో మీడియా
+	Mute input during timeline recording	టైమ్‌లైన్ రికార్డింగ్ సమయంలో ఇన్‌పుట్‌ను మ్యూట్ చేయి
+	Next to original media files	అసలు మీడియా ఫైల్‌ల పక్కన
+	No Scroll	స్క్రోల్ లేదు
+	No plugins are installed. Changes will take effect the next time you start CFA4.	ప్లగిన్‌లు ఇన్‌స్టాల్ చేయబడలేదు. మీరు తదుపరిసారి CFA4ను ప్రారంభించినప్పుడు మార్పులు అమలులోకి వస్తాయి.
+	Open Most Recent	అత్యంత ఇటీవలిదాన్ని తెరువు
+	Open in new window	కొత్త విండోలో తెరువు
+	Open in place	అదే స్థానంలో తెరువు
+	Open new tab	కొత్త ట్యాబ్ తెరువు
+	Output Mapping	అవుట్‌పుట్ మ్యాపింగ్
+	Page Scroll	పేజీ స్క్రోల్
+	Pause Media Encoder queue during playback	ప్లేబ్యాక్ సమయంలో Media Encoder క్యూను పాజ్ చేయి
+	Per line	ప్రతి పంక్తికి
+	Place files dropped onto the Timeline directly on the Timeline	టైమ్‌లైన్‌పై వదిలిన ఫైల్‌లను నేరుగా టైమ్‌లైన్‌లో ఉంచు
+	Play after rendering previews	ప్రివ్యూలను రెండర్ చేసిన తర్వాత ప్లే చేయి
+	Play audio while scrubbing in Source and Program Monitors	సోర్స్ మరియు ప్రోగ్రామ్ మానిటర్లలో స్క్రబ్ చేసేటప్పుడు ఆడియో ప్లే చేయి
+	Playback	ప్లేబ్యాక్
+	Playback…	ప్లేబ్యాక్…
+	Playhead position determines trim monitor loop playback	ట్రిమ్ మానిటర్ లూప్ ప్లేబ్యాక్‌ను ప్లేహెడ్ స్థానం నిర్ణయిస్తుంది
+	Plugins	ప్లగిన్‌లు
+	Plugins…	ప్లగిన్‌లు…
+	Policy	విధానం
+	Portuguese	పోర్చుగీస్
+	Projecting cap	ప్రొజెక్టింగ్ క్యాప్
+	Projects	ప్రాజెక్ట్‌లు
+	RAM reserved for other applications	ఇతర అప్లికేషన్‌ల కోసం కేటాయించిన RAM
+	Refresh growing Files Every	పెరుగుతున్న ఫైల్‌లను ప్రతి ఇంత సమయానికి రిఫ్రెష్ చేయి
+	Render Edit in Audition files to:	Edit in Audition ఫైల్‌లను ఇక్కడికి రెండర్ చేయి:
+	Render audio when rendering video	వీడియోను రెండర్ చేసేటప్పుడు ఆడియోను రెండర్ చేయి
+	Restore open sequences when opening projects	ప్రాజెక్ట్‌లను తెరిచేటప్పుడు తెరిచిన సీక్వెన్స్‌లను పునరుద్ధరించు
+	Right channel to device output	కుడి ఛానెల్ పరికర అవుట్‌పుట్‌కు
+	Right to left	కుడి నుండి ఎడమకు
+	Ripple trim adds edits to keep both sides of trim in sync	రిపుల్ ట్రిమ్ ట్రిమ్ రెండు వైపులా సమకాలీకరణలో ఉంచడానికి ఎడిట్‌లను జోడిస్తుంది
+	Round cap	గుండ్రని క్యాప్
+	Round join	గుండ్రని జాయిన్
+	Russian	రష్యన్
+	Sample Rate	నమూనా రేటు
+	Save .cfa and .pek media cache files next to original media files when possible	సాధ్యమైనప్పుడు .cfa మరియు .pek మీడియా కాష్ ఫైల్‌లను అసలు మీడియా ఫైల్‌ల పక్కన సేవ్ చేయి
+	Scale to frame size	ఫ్రేమ్ పరిమాణానికి స్కేల్ చేయి
+	Scratch disk location for Captured Audio	క్యాప్చర్ చేసిన ఆడియో కోసం స్క్రాచ్ డిస్క్ స్థానం
+	Set focus on the Timeline when performing Insert/Overwrite edits	ఇన్సర్ట్/ఓవర్‌రైట్ ఎడిట్‌లు చేసేటప్పుడు టైమ్‌లైన్‌పై ఫోకస్ ఉంచు
+	Set to frame size	ఫ్రేమ్ పరిమాణానికి సెట్ చేయి
+	Shapes	ఆకారాలు
+	Shift clips that overlap trim point during ripple trimming	రిపుల్ ట్రిమ్మింగ్ సమయంలో ట్రిమ్ పాయింట్‌ను అతివ్యాప్తి చేసే క్లిప్‌లను జరుపు
+	Show "Project:" and "Bin:" in Project panel tab	ప్రాజెక్ట్ ప్యానెల్ ట్యాబ్‌లో "ప్రాజెక్ట్:" మరియు "బిన్:" చూపు
+	Show Clip Mismatch Warning dialog	క్లిప్ అసమతుల్యత హెచ్చరిక డైలాగ్‌ను చూపు
+	Show Event Indicator	ఈవెంట్ సూచికను చూపు
+	Show Home	హోమ్ చూపు
+	Show Mask Tracker Preview	మాస్క్ ట్రాకర్ ప్రివ్యూను చూపు
+	Show Open Dialog	తెరువు డైలాగ్‌ను చూపు
+	Show Project Load Error Dialog	ప్రాజెక్ట్ లోడ్ లోపం డైలాగ్‌ను చూపు
+	Show Rich Tool Tips	వివరణాత్మక టూల్ టిప్‌లను చూపు
+	Show Tool Tips	టూల్ టిప్‌లను చూపు
+	Show Workspace Reset Warning dialog on double click	రెండుసార్లు క్లిక్ చేసినప్పుడు వర్క్‌స్పేస్ రీసెట్ హెచ్చరిక డైలాగ్‌ను చూపు
+	Show system compatibility issues at startup	ప్రారంభంలో సిస్టమ్ అనుకూలత సమస్యలను చూపు
+	Smart quotes	స్మార్ట్ కోట్‌లు
+	Smooth Scroll	మృదువైన స్క్రోల్
+	Snap playhead in Timeline when Snap is enabled	స్నాప్ ప్రారంభించినప్పుడు టైమ్‌లైన్‌లో ప్లేహెడ్‌ను స్నాప్ చేయి
+	Spanish	స్పానిష్
+	Speaker Labeling	మాట్లాడేవారి లేబులింగ్
+	Speech model	ప్రసంగ మోడల్
+	Start at 0	0 వద్ద ప్రారంభించు
+	Start at 1	1 వద్ద ప్రారంభించు
+	Start with an Empty Project	ఖాళీ ప్రాజెక్ట్‌తో ప్రారంభించు
+	Step forward/back many	అనేక అడుగులు ముందుకు/వెనక్కి
+	Stereo Media	స్టీరియో మీడియా
+	Still	స్థిరం
+	Still Image Default Duration	స్థిర చిత్రం డిఫాల్ట్ వ్యవధి
+	Stroke line cap	స్ట్రోక్ లైన్ క్యాప్
+	Stroke line join	స్ట్రోక్ లైన్ జాయిన్
+	Sum multichannel outputs to mono in Source Monitor	సోర్స్ మానిటర్‌లో మల్టీఛానెల్ అవుట్‌పుట్‌లను మోనోగా కలుపు
+	System Language	సిస్టమ్ భాష
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	మీడియా కాష్‌లో సేవ్ చేయని ప్రాజెక్ట్‌ల రెండర్ ప్రివ్యూలు మరియు CFA4 మళ్లీ సృష్టించగల ఇతర ఫైల్‌లు ఉంటాయి. వాటిని తొలగించడం ఎల్లప్పుడూ సురక్షితం; అవసరమైనప్పుడు CFA4 వాటిని మళ్లీ నిర్మిస్తుంది.
+	Timecode Conversion	టైమ్‌కోడ్ మార్పిడి
+	Timeline Mouse Scrolling	టైమ్‌లైన్ మౌస్ స్క్రోలింగ్
+	Timeline Playback Auto-Scrolling	టైమ్‌లైన్ ప్లేబ్యాక్ ఆటో-స్క్రోలింగ్
+	Timeline…	టైమ్‌లైన్…
+	Transcription	ట్రాన్స్‌క్రిప్షన్
+	Transcription preferences	ట్రాన్స్‌క్రిప్షన్ ప్రాధాన్యతలు
+	Trim	ట్రిమ్
+	Trim…	ట్రిమ్…
+	UI Scale	UI స్కేల్
+	Update it at least every	కనీసం ప్రతి ఇంత సమయానికి నవీకరించు
+	Update timeline dynamically during ripple edits.	రిపుల్ ఎడిట్‌ల సమయంలో టైమ్‌లైన్‌ను డైనమిక్‌గా నవీకరించు.
+	Use File	ఫైల్‌ను ఉపయోగించు
+	Use Media Source	మీడియా సోర్స్‌ను ఉపయోగించు
+	Validate Content Credentials on import	దిగుమతి సమయంలో Content Credentialsను ధృవీకరించు
+	Video Transition Default Duration	వీడియో ట్రాన్సిషన్ డిఫాల్ట్ వ్యవధి
+	When Opening a Project	ప్రాజెక్ట్‌ను తెరిచేటప్పుడు
+	Whisper base (balanced)	Whisper base (సమతుల్యం)
+	Whisper small (most accurate)	Whisper small (అత్యంత ఖచ్చితం)
+	Whisper tiny (fastest)	Whisper tiny (అత్యంత వేగం)
+	Write XMP ID to files on import	దిగుమతి సమయంలో ఫైల్‌లకు XMP ID రాయి
+	Write clip markers to XMP	క్లిప్ మార్కర్లను XMPకి రాయి
+	days	రోజులు
+	milliseconds	మిల్లీసెకన్లు
+	minute(s)	నిమిషం(లు)
+	second(s)	సెకను(లు)
+	seconds	సెకన్లు
+	 seconds	 సెకన్లు
+	Channel {n}	ఛానెల్ {n}
+	Countdown Sound Cues	కౌంట్‌డౌన్ సౌండ్ సూచనలు
+	Discard take	టేక్‌ను విస్మరించు
+	Discard the active take	సక్రియ టేక్‌ను విస్మరించు
+	Input:	ఇన్‌పుట్:
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	ప్లేబ్యాక్ ప్లేహెడ్ (లేదా ఇన్ పాయింట్) ముందు ప్రీ-రోల్‌తో ప్రారంభమవుతుంది; ఇన్/అవుట్ గుర్తించి ఉంటే, రికార్డింగ్ అక్కడ పంచ్ ఇన్ మరియు అవుట్ అవుతుంది.
+	Post-roll	పోస్ట్-రోల్
+	Post-roll:	పోస్ట్-రోల్:
+	Pre-roll:	ప్రీ-రోల్:
+	Qt Multimedia is not available	Qt Multimedia అందుబాటులో లేదు
+	Record (voice-over on the record-enabled track)	రికార్డ్ (రికార్డ్-ప్రారంభించిన ట్రాక్‌పై వాయిస్-ఓవర్)
+	Recording voice-over…	వాయిస్-ఓవర్ రికార్డ్ అవుతోంది…
+	Source:	సోర్స్:
+	Stop Voice-over Recording	వాయిస్-ఓవర్ రికార్డింగ్ ఆపు
+	The audio input could not be started	ఆడియో ఇన్‌పుట్‌ను ప్రారంభించలేకపోయింది
+	The audio input does not support a usable format	ఆడియో ఇన్‌పుట్ ఉపయోగించదగిన ఫార్మాట్‌కు మద్దతు ఇవ్వదు
+	The voice-over input buffer is full: the take ends here	వాయిస్-ఓవర్ ఇన్‌పుట్ బఫర్ నిండిపోయింది: టేక్ ఇక్కడ ముగుస్తుంది
+	There is no audio input device	ఆడియో ఇన్‌పుట్ పరికరం లేదు
+	Voice-Over Record Settings	వాయిస్-ఓవర్ రికార్డ్ సెట్టింగ్‌లు
+	Voice-Over Record Settings…	వాయిస్-ఓవర్ రికార్డ్ సెట్టింగ్‌లు…
+	Voice-over input: {error}	వాయిస్-ఓవర్ ఇన్‌పుట్: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	వాయిస్-ఓవర్ రికార్డ్ (కుడి-క్లిక్: వాయిస్-ఓవర్ రికార్డ్ సెట్టింగ్‌లు…)
+	Voice-over recorded: {p}	వాయిస్-ఓవర్ రికార్డ్ చేయబడింది: {p}
+	Voice-over recording stopped (nothing recorded)	వాయిస్-ఓవర్ రికార్డింగ్ ఆగిపోయింది (ఏమీ రికార్డ్ కాలేదు)
+	Voice-over take discarded	వాయిస్-ఓవర్ టేక్ విస్మరించబడింది
+	● Recording	● రికార్డ్ అవుతోంది
+	 frames	 ఫ్రేమ్‌లు
+	All Cameras	అన్ని కెమెరాలు
+	Auto-Adjust Multi-Camera Playback Quality	మల్టీ-కెమెరా ప్లేబ్యాక్ నాణ్యతను స్వయంచాలకంగా సర్దుబాటు చేయి
+	Camera 1	కెమెరా 1
+	Camera Angle Metadata	కెమెరా కోణం మెటాడేటా
+	Camera Names	కెమెరా పేర్లు
+	Camera {n} — {name}	కెమెరా {n} — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	మల్టీ-కెమెరా వీక్షణలో చూపే కెమెరాలు (దాచడానికి టిక్ తీసివేయండి).
+	Clip Marker	క్లిప్ మార్కర్
+	Clip Name:	క్లిప్ పేరు:
+	Clip Names	క్లిప్ పేర్లు
+	Create Multi-Camera Source Sequence	మల్టీ-కెమెరా సోర్స్ సీక్వెన్స్ సృష్టించు
+	Edit Cameras	కెమెరాలను సవరించు
+	Edit Cameras…	కెమెరాలను సవరించు…
+	Enumerate Cameras	కెమెరాలను లెక్కించు
+	Ignore Hours	గంటలను విస్మరించు
+	In Points	ఇన్ పాయింట్లు
+	Merge Clips	క్లిప్‌లను విలీనం చేయి
+	Merged clip created	విలీనం చేసిన క్లిప్ సృష్టించబడింది
+	Move source clips to Processed Clips bin	సోర్స్ క్లిప్‌లను ప్రాసెస్ చేసిన క్లిప్‌ల బిన్‌కు తరలించు
+	Multi-Camera Audio Follows Video	మల్టీ-కెమెరా ఆడియో వీడియోను అనుసరిస్తుంది
+	Multi-Camera Layout	మల్టీ-కెమెరా లేఅవుట్
+	Multi-Camera Record	మల్టీ-కెమెరా రికార్డ్
+	Multi-Camera Record On/Off (0)	మల్టీ-కెమెరా రికార్డ్ ఆన్/ఆఫ్ (0)
+	Multi-Camera Record On/Off Toggle	మల్టీ-కెమెరా రికార్డ్ ఆన్/ఆఫ్ టోగుల్
+	Multi-Camera Record off	మల్టీ-కెమెరా రికార్డ్ ఆఫ్
+	Multi-Camera Record on	మల్టీ-కెమెరా రికార్డ్ ఆన్
+	Multi-Camera Selection Top Down	మల్టీ-కెమెరా ఎంపిక పై నుండి కిందకు
+	Multi-Camera View	మల్టీ-కెమెరా వీక్షణ
+	Multi-camera source sequence with {n} camera(s)	{n} కెమెరా(ల)తో మల్టీ-కెమెరా సోర్స్ సీక్వెన్స్
+	No multi-camera clip at the playhead	ప్లేహెడ్ వద్ద మల్టీ-కెమెరా క్లిప్ లేదు
+	Offset Audio by:	ఆడియోను దీనితో ఆఫ్‌సెట్ చేయి:
+	Offset:	ఆఫ్‌సెట్:
+	Out Points	అవుట్ పాయింట్లు
+	Page {page} of {pages}	{pages}లో {page}వ పేజీ
+	Record	రికార్డ్
+	Recorded {n} multi-camera cut(s)	{n} మల్టీ-కెమెరా కట్(లు) రికార్డ్ చేయబడ్డాయి
+	Reference track:	రిఫరెన్స్ ట్రాక్:
+	Remove Audio from AV Clip	AV క్లిప్ నుండి ఆడియోను తీసివేయి
+	Sequence Name:	సీక్వెన్స్ పేరు:
+	Show Multi-Camera Preview Monitor	మల్టీ-కెమెరా ప్రివ్యూ మానిటర్‌ను చూపు
+	Switch Audio	ఆడియోను మార్చు
+	Synchronize Clips	క్లిప్‌లను సమకాలీకరించు
+	Synchronize Point	సమకాలీకరణ పాయింట్
+	Synchronized {n} clip group(s)	{n} క్లిప్ గ్రూప్(లు) సమకాలీకరించబడ్డాయి
+	Transmit Multi-Camera View	మల్టీ-కెమెరా వీక్షణను ప్రసారం చేయి
+	first marker	మొదటి మార్కర్
+	lowest (V1…)	అత్యల్పం (V1…)
+	no multi-camera clip at the playhead	ప్లేహెడ్ వద్ద మల్టీ-కెమెరా క్లిప్ లేదు
+	{first} - Merged	{first} - విలీనం
+	{first} Multicam	{first} మల్టీక్యామ్
+	{n} clip(s) selected; the clip on the reference track stays put.	{n} క్లిప్(లు) ఎంచుకోబడ్డాయి; రిఫరెన్స్ ట్రాక్‌పై ఉన్న క్లిప్ కదలదు.
+	{n} clip(s): {names}	{n} క్లిప్(లు): {names}
+	Current duration {seconds} s	ప్రస్తుత వ్యవధి {seconds} సె
+	Fewer · More	తక్కువ · ఎక్కువ
+	Remix Properties	రీమిక్స్ లక్షణాలు
+	Remixed to {seconds} s	{seconds} సెకు రీమిక్స్ చేయబడింది
+	Segments:	విభాగాలు:
+	Target Duration:	లక్ష్య వ్యవధి:
+	Variations:	వైవిధ్యాలు:
+	the selected clip is not remixed	ఎంచుకున్న క్లిప్ రీమిక్స్ చేయబడలేదు
+	After installing, restart CFA4.	ఇన్‌స్టాల్ చేసిన తర్వాత, CFA4ను పునఃప్రారంభించండి.
+	Available, switched off	అందుబాటులో ఉంది, ఆఫ్ చేయబడింది
+	Left out by the routing table	రూటింగ్ పట్టిక ద్వారా వదిలివేయబడింది
+	CFA4 engine	CFA4 ఇంజిన్
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	CFA4 స్వంత ఇంజిన్ తాను తెరవగల ప్రతి ఫైల్‌ను తెరుస్తుంది. కింది అనుబంధ బ్యాకెండ్‌లు, ఈ క్రమంలో, ఇంజిన్ ఇంకా తెరవలేని ఫైల్‌లకు మాత్రమే బాధ్యత తీసుకుంటాయి. బ్యాకెండ్‌ను ఆఫ్ చేయడం ఆ తర్వాత తెరిచే ఫైల్‌లపై ప్రభావం చూపుతుంది.
+	Capabilities	సామర్థ్యాలు
+	Copy command	ఆదేశాన్ని కాపీ చేయి
+	H.264 software encoding (x264)	H.264 సాఫ్ట్‌వేర్ ఎన్‌కోడింగ్ (x264)
+	HEVC software encoding (x265)	HEVC సాఫ్ట్‌వేర్ ఎన్‌కోడింగ్ (x265)
+	In use	వాడుకలో ఉంది
+	Licence	లైసెన్స్
+	Media Backends	మీడియా బ్యాకెండ్‌లు
+	Media Backends…	మీడియా బ్యాకెండ్‌లు…
+	Not available	అందుబాటులో లేదు
+	Not part of this build	ఈ బిల్డ్‌లో భాగం కాదు
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	స్వంత Rust డీకోడర్‌లు మరియు ఎన్‌కోడర్‌లు: ఎల్లప్పుడూ ముందుగా ఉపయోగించబడతాయి, అనుబంధ బ్యాకెండ్ విఫలమైనప్పుడు ప్రత్యామ్నాయంగా కూడా
+	Restricted Codecs…	పరిమిత కోడెక్‌లు…
+	Restricted codecs	పరిమిత కోడెక్‌లు
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	కొన్ని కోడెక్‌లు ఉచిత సాఫ్ట్‌వేర్ అయినప్పటికీ పేటెంట్ ఉన్న ఫార్మాట్‌లను అమలు చేస్తాయి. Ubuntu లాగానే, CFA4 వాటిని డిఫాల్ట్‌గా ఇన్‌స్టాల్ చేయదు: ప్రాథమిక ప్యాకేజీ అవి లేకుండానే పనిచేస్తుంది, వాటిని ఇన్‌స్టాల్ చేయాలా వద్దా అని మీరే నిర్ణయిస్తారు. కొన్ని దేశాల్లో వాటి వినియోగం పరిమితం కావచ్చు; మీ ప్రాంతంలో అనుమతి ఉందో లేదో తనిఖీ చేయండి.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	స్వంత ఇంజిన్ ఇంకా చదవని ఫార్మాట్‌ల కోసం అనుబంధ డీకోడర్ (10-బిట్ మరియు 4:2:2 కెమెరా మీడియా, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	సిస్టమ్ GStreamer నుండి అనుబంధ డీకోడర్ (Ogg Theora, FLV, WMV మరియు ఇతర ఫార్మాట్‌లు); LGPL, Ubuntu రిపోజిటరీల నుండి
+	The engine did not answer: {message}	ఇంజిన్ స్పందించలేదు: {message}
+	To install them: {command}	వాటిని ఇన్‌స్టాల్ చేయడానికి: {command}
+	Use this backend	ఈ బ్యాకెండ్‌ను ఉపయోగించు
+	installed	ఇన్‌స్టాల్ చేయబడింది
+	not installed	ఇన్‌స్టాల్ చేయబడలేదు
+	on	ఆన్
+	 (removed from {list})	 ({list} నుండి తీసివేయబడింది)
+	 and 	 మరియు 
+	Add another shortcut	మరో షార్ట్‌కట్ జోడించు
+	Application shortcuts work whatever panel has focus	ఏ ప్యానెల్‌పై ఫోకస్ ఉన్నా అప్లికేషన్ షార్ట్‌కట్‌లు పనిచేస్తాయి
+	Assign {key} to {command}	{key}ను {command}కు కేటాయించు
+	Cleared {n} shortcut(s) of {command}	{command} యొక్క {n} షార్ట్‌కట్(లు) తొలగించబడ్డాయి
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	కేటాయించడానికి ఆదేశం యొక్క షార్ట్‌కట్ సెల్‌పై క్లిక్ చేసి కీలను నొక్కండి; + మరో షార్ట్‌కట్‌ను జోడిస్తుంది.
+	Click a key on the keyboard to see its shortcuts	దాని షార్ట్‌కట్‌లను చూడటానికి కీబోర్డ్‌పై కీని క్లిక్ చేయండి
+	Click and press keys to assign	కేటాయించడానికి క్లిక్ చేసి కీలను నొక్కండి
+	Commands:	ఆదేశాలు:
+	Conflict: {key} is assigned to {commands} ({ctx})	వైరుధ్యం: {key} {commands}కు కేటాయించబడింది ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	ఎగుమతి: ఫైల్ ఎంచుకోబడలేదు (ఏజెంట్‌లు: shortcuts.export {path})
+	Import: no file chosen (agents: shortcuts.import {path})	దిగుమతి: ఫైల్ ఎంచుకోబడలేదు (ఏజెంట్‌లు: shortcuts.import {path})
+	Key:	కీ:
+	Keyboard Shortcuts	కీబోర్డ్ షార్ట్‌కట్‌లు
+	Keyboard Shortcuts…	కీబోర్డ్ షార్ట్‌కట్‌లు…
+	Keyboard: US	కీబోర్డ్: US
+	Loaded “{name}”	“{name}” లోడ్ చేయబడింది
+	Modifier held / selected	మాడిఫైయర్ నొక్కి ఉంచబడింది / ఎంచుకోబడింది
+	Modifiers	మాడిఫైయర్‌లు
+	My Shortcuts	నా షార్ట్‌కట్‌లు
+	No matching commands	సరిపోలే ఆదేశాలు లేవు
+	Nothing is assigned to this key	ఈ కీకి ఏదీ కేటాయించబడలేదు
+	Panel shortcuts override application shortcuts while that panel has focus	ప్యానెల్‌పై ఫోకస్ ఉన్నప్పుడు ప్యానెల్ షార్ట్‌కట్‌లు అప్లికేషన్ షార్ట్‌కట్‌లను భర్తీ చేస్తాయి
+	Save preset as:	ప్రీసెట్‌ను ఇలా సేవ్ చేయి:
+	Saved preset “{name}”	“{name}” ప్రీసెట్ సేవ్ చేయబడింది
+	Search commands or keys	ఆదేశాలు లేదా కీలలో వెతుకు
+	Selected: {command}	ఎంచుకోబడింది: {command}
+	Shortcut	షార్ట్‌కట్
+	Type a shortcut… (Esc cancels)	షార్ట్‌కట్‌ను టైప్ చేయండి… (Esc రద్దు చేస్తుంది)
+	{active} (modified)	{active} (మార్చబడింది)
+	{key} can't be used as a shortcut	{key}ను షార్ట్‌కట్‌గా ఉపయోగించలేము
+	{panel} Panel	{panel} ప్యానెల్
+	Docking Action	డాకింగ్ చర్య
+	Dock Panel	ప్యానెల్‌ను డాక్ చేయి
+	Undock Panel	ప్యానెల్‌ను అన్‌డాక్ చేయి
+	Close Panel	ప్యానెల్‌ను మూసివేయి
+	Restore Workspace	వర్క్‌స్పేస్‌ను పునరుద్ధరించు
+	Add Guide	గైడ్ జోడించు
+	Add Guide…	గైడ్ జోడించు…
+	Clear Guides	గైడ్‌లను తొలగించు
+	Guide Templates	గైడ్ టెంప్లేట్‌లు
+	Guides	గైడ్‌లు
+	Lock Guides	గైడ్‌లను లాక్ చేయి
+	Manage Guides	గైడ్‌లను నిర్వహించు
+	Manage Guides…	గైడ్‌లను నిర్వహించు…
+	No saved guide templates.	సేవ్ చేసిన గైడ్ టెంప్లేట్‌లు లేవు.
+	Orientation:	ఓరియంటేషన్:
+	Position:	స్థానం:
+	Reference  {tc}	రిఫరెన్స్  {tc}
+	Reference: next frame	రిఫరెన్స్: తదుపరి ఫ్రేమ్
+	Reference: previous frame	రిఫరెన్స్: మునుపటి ఫ్రేమ్
+	Save Guides as Template	గైడ్‌లను టెంప్లేట్‌గా సేవ్ చేయి
+	Save Guides as Template…	గైడ్‌లను టెంప్లేట్‌గా సేవ్ చేయి…
+	Saved guide template “{name}”	“{name}” గైడ్ టెంప్లేట్ సేవ్ చేయబడింది
+	Set	సెట్ చేయి
+	Set Comparison Reference	పోలిక రిఫరెన్స్‌ను సెట్ చేయి
+	Set the reference to the playhead	రిఫరెన్స్‌ను ప్లేహెడ్‌కు సెట్ చేయి
+	Show Guides	గైడ్‌లను చూపు
+	Show Rulers	రూలర్‌లను చూపు
+	Snap in Program Monitor	ప్రోగ్రామ్ మానిటర్‌లో స్నాప్
+	The template needs a name.	టెంప్లేట్‌కు పేరు అవసరం.
+	There are no guides to save.	సేవ్ చేయడానికి గైడ్‌లు లేవు.
+	Join Through Edits	త్రూ ఎడిట్‌లను కలుపు
+	Replace With Clip From Source Monitor	సోర్స్ మానిటర్ నుండి క్లిప్‌తో భర్తీ చేయి
+	Reveal Nested Sequence	నెస్టెడ్ సీక్వెన్స్‌ను చూపు
+	Reveal in Project	ప్రాజెక్ట్‌లో చూపు
+	Unlink	లింక్ తీసివేయి
+	Apply Default Transitions	డిఫాల్ట్ ట్రాన్సిషన్‌లను వర్తింపజేయి
+	Ripple Trim In	ఇన్ రిపుల్ ట్రిమ్
+	Ripple Trim Out	అవుట్ రిపుల్ ట్రిమ్
+	Roll Edit	రోల్ ఎడిట్
+	Trim In	ఇన్ ట్రిమ్
+	Trim Out	అవుట్ ట్రిమ్
+	Expand All Tracks	అన్ని ట్రాక్‌లను విస్తరించు
+	Minimize All Tracks	అన్ని ట్రాక్‌లను కుదించు
+	Increase Video Tracks Height	వీడియో ట్రాక్‌ల ఎత్తు పెంచు
+	Decrease Video Tracks Height	వీడియో ట్రాక్‌ల ఎత్తు తగ్గించు
+	Increase Audio Tracks Height	ఆడియో ట్రాక్‌ల ఎత్తు పెంచు
+	Decrease Audio Tracks Height	ఆడియో ట్రాక్‌ల ఎత్తు తగ్గించు
+	Drag to change the track height	ట్రాక్ ఎత్తు మార్చడానికి లాగండి
+	Head	మొదలు
+	Head and Tail	మొదలు మరియు చివర
+	Continuous	నిరంతరం
+	Show Video Thumbnails	వీడియో థంబ్‌నెయిల్‌లను చూపు
+	Show Audio Waveform	ఆడియో వేవ్‌ఫార్మ్‌ను చూపు
+	Timeline Display Settings	టైమ్‌లైన్ ప్రదర్శన సెట్టింగ్‌లు
+	Snap in Timeline (S)	టైమ్‌లైన్‌లో స్నాప్ (S)
+	Caption track options	క్యాప్షన్ ట్రాక్ ఎంపికలు
+	Insert and overwrite sequences as nests or individual clips	సీక్వెన్స్‌లను నెస్ట్‌లుగా లేదా విడి క్లిప్‌లుగా చొప్పించు మరియు ఓవర్‌రైట్ చేయి
+	Close Other Timeline Panels	ఇతర టైమ్‌లైన్ ప్యానెల్‌లను మూసివేయి
+	Show Keyframes	కీఫ్రేమ్‌లను చూపు
+	Clip Keyframes	క్లిప్ కీఫ్రేమ్‌లు
+	Track Keyframes	ట్రాక్ కీఫ్రేమ్‌లు
+	Send {n} Level	సెండ్ {n} స్థాయి
+	Delete Caption Track	క్యాప్షన్ ట్రాక్‌ను తొలగించు
+	Delete Empty Caption Tracks	ఖాళీ క్యాప్షన్ ట్రాక్‌లను తొలగించు
+	Toggle Caption Track Lock	క్యాప్షన్ ట్రాక్ లాక్ టోగుల్ చేయి
+	Toggle Caption Track Output	క్యాప్షన్ ట్రాక్ అవుట్‌పుట్ టోగుల్ చేయి
+	Drag In point	ఇన్ పాయింట్‌ను లాగు
+	Drag Out point	అవుట్ పాయింట్‌ను లాగు
+	Move marked range	గుర్తించిన పరిధిని తరలించు
+	Auto Tone Map Media (HDR and log into SDR)	మీడియాను స్వయంచాలకంగా టోన్ మ్యాప్ చేయి (HDR మరియు లాగ్‌ను SDRకి)
+	CFA4 always composites in linear light	CFA4 ఎల్లప్పుడూ లీనియర్ లైట్‌లో కాంపోజిట్ చేస్తుంది
+	Captured View:	క్యాప్చర్ చేసిన వీక్షణ:
+	Channel Format:	ఛానెల్ ఫార్మాట్:
+	Color Management	రంగు నిర్వహణ
+	Composite in Linear Color	లీనియర్ కలర్‌లో కాంపోజిట్ చేయి
+	Configure…	కాన్ఫిగర్ చేయి…
+	Custom ({ratio})	అనుకూల ({ratio})
+	Display Format:	ప్రదర్శన ఫార్మాట్:
+	Editing Mode:	ఎడిటింగ్ మోడ్:
+	Fields:	ఫీల్డ్‌లు:
+	Frame Size:	ఫ్రేమ్ పరిమాణం:
+	Layout:	లేఅవుట్:
+	Maximum Bit Depth	గరిష్ఠ బిట్ డెప్త్
+	Maximum Render Quality	గరిష్ఠ రెండర్ నాణ్యత
+	Milliseconds	మిల్లీసెకన్లు
+	Monoscopic	మోనోస్కోపిక్
+	New Sequence	కొత్త సీక్వెన్స్
+	No Fields (Progressive Scan)	ఫీల్డ్‌లు లేవు (ప్రోగ్రెసివ్ స్కాన్)
+	Not supported in CFA4 yet	CFA4లో ఇంకా మద్దతు లేదు
+	Number of Channels:	ఛానెల్‌ల సంఖ్య:
+	Pixel Aspect Ratio:	పిక్సెల్ ఆస్పెక్ట్ నిష్పత్తి:
+	Preview File Format:	ప్రివ్యూ ఫైల్ ఫార్మాట్:
+	Projection:	ప్రొజెక్షన్:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	నమూనా రేటు:
+	Scale motion effects proportionally when changing frame size	ఫ్రేమ్ పరిమాణం మార్చేటప్పుడు మోషన్ ఎఫెక్ట్‌లను అనుపాతంగా స్కేల్ చేయి
+	Sequence Settings	సీక్వెన్స్ సెట్టింగ్‌లు
+	Square Pixels (1.0)	చతురస్ర పిక్సెల్‌లు (1.0)
+	Timebase:	టైమ్‌బేస్:
+	Tracks	ట్రాక్‌లు
+	VR Properties	VR లక్షణాలు
+	Video Previews	వీడియో ప్రివ్యూలు
+	Wide gamut color (composite in BT.2020)	విస్తృత గామట్ రంగు (BT.2020లో కాంపోజిట్)
+	Working Color Space:	వర్కింగ్ కలర్ స్పేస్:
+	horizontal	అడ్డం
+	no sequence is open	సీక్వెన్స్ ఏదీ తెరవబడలేదు
+	tracks	ట్రాక్‌లు
+	vertical	నిలువు
+	{rate} fps Drop-Frame Timecode	{rate} fps డ్రాప్-ఫ్రేమ్ టైమ్‌కోడ్
+	{rate} fps Non Drop-Frame Timecode	{rate} fps నాన్ డ్రాప్-ఫ్రేమ్ టైమ్‌కోడ్
+	{rate} fps Timecode	{rate} fps టైమ్‌కోడ్
+	{rate} frames/second	{rate} ఫ్రేమ్‌లు/సెకను
+	Always Deinterlace	ఎల్లప్పుడూ డీఇంటర్‌లేస్ చేయి
+	Audio Attributes	ఆడియో లక్షణాలు
+	Ch. {n}	ఛా. {n}
+	Clip Channel Format:	క్లిప్ ఛానెల్ ఫార్మాట్:
+	Clip Speed / Duration	క్లిప్ వేగం / వ్యవధి
+	Clip {n}	క్లిప్ {n}
+	Contains:	కలిగి ఉంది:
+	Edit Subclip	సబ్‌క్లిప్‌ను సవరించు
+	End:	ముగింపు:
+	Field Options	ఫీల్డ్ ఎంపికలు
+	File Name:	ఫైల్ పేరు:
+	Flicker Removal	ఫ్లికర్ తొలగింపు
+	Frame Hold Options	ఫ్రేమ్ హోల్డ్ ఎంపికలు
+	Frame Rate:	ఫ్రేమ్ రేట్:
+	Hold Filters	ఫిల్టర్‌లను హోల్డ్ చేయి
+	Hold On	దీనిపై హోల్డ్
+	In Point	ఇన్ పాయింట్
+	Make Subclip	సబ్‌క్లిప్ చేయి
+	Media Source Channels	మీడియా సోర్స్ ఛానెల్‌లు
+	Media Start:	మీడియా ప్రారంభం:
+	Modify Clip: Audio Channels	క్లిప్ మార్చు: ఆడియో ఛానెల్‌లు
+	Modify Clip: Timecode	క్లిప్ మార్చు: టైమ్‌కోడ్
+	Nested Sequence Name	నెస్టెడ్ సీక్వెన్స్ పేరు
+	New Offline File	కొత్త ఆఫ్‌లైన్ ఫైల్
+	No effects	ఎఫెక్ట్‌లు లేవు
+	Number of Audio Clips:	ఆడియో క్లిప్‌ల సంఖ్య:
+	Out Point	అవుట్ పాయింట్
+	Paste Attributes	లక్షణాలను అతికించు
+	Playhead	ప్లేహెడ్
+	Processing Options	ప్రాసెసింగ్ ఎంపికలు
+	Remove Attributes	లక్షణాలను తీసివేయి
+	Restrict Trims To Subclip Boundaries	ట్రిమ్‌లను సబ్‌క్లిప్ సరిహద్దులకు పరిమితం చేయి
+	Reverse Field Dominance	ఫీల్డ్ ఆధిపత్యాన్ని తిప్పు
+	Reverse Speed	వెనుకకు వేగం
+	Ripple Edit, Shifting Trailing Clips	రిపుల్ ఎడిట్, తదుపరి క్లిప్‌లను జరుపుతూ
+	Scale Attribute Times	లక్షణ సమయాలను స్కేల్ చేయి
+	Sequence Time	సీక్వెన్స్ సమయం
+	Set Timecode:	టైమ్‌కోడ్ సెట్ చేయి:
+	Source Timecode	సోర్స్ టైమ్‌కోడ్
+	Source channels the selected audio clips play:	ఎంచుకున్న ఆడియో క్లిప్‌లు ప్లే చేసే సోర్స్ ఛానెల్‌లు:
+	Speed:	వేగం:
+	Start:	ప్రారంభం:
+	Subclip: {name}	సబ్‌క్లిప్: {name}
+	Tape Name:	టేప్ పేరు:
+	Timecode:	టైమ్‌కోడ్:
+	Use the file's timecode	ఫైల్ టైమ్‌కోడ్‌ను ఉపయోగించు
+	Video Attributes	వీడియో లక్షణాలు
+	no dialog	డైలాగ్ లేదు
+	Action Safe Area	యాక్షన్ సురక్షిత ప్రాంతం
+	Action and Title Safe Areas	యాక్షన్ మరియు టైటిల్ సురక్షిత ప్రాంతాలు
+	Action:	చర్య:
+	Analyze	విశ్లేషించు
+	Apply Default Audio Transition	డిఫాల్ట్ ఆడియో ట్రాన్సిషన్ వర్తింపజేయి
+	Apply Default Video Transition	డిఫాల్ట్ వీడియో ట్రాన్సిషన్ వర్తింపజేయి
+	Apply a cut at each detected cut point	గుర్తించిన ప్రతి కట్ పాయింట్ వద్ద కట్ వర్తింపజేయి
+	At Unnumbered Markers	సంఖ్య లేని మార్కర్ల వద్ద
+	Audio Only	ఆడియో మాత్రమే
+	Audio Previews:	ఆడియో ప్రివ్యూలు:
+	Audio analysis:	ఆడియో విశ్లేషణ:
+	Audio effects	ఆడియో ఎఫెక్ట్‌లు
+	Audio on track {t}	ట్రాక్ {t}లో ఆడియో
+	Automate To Sequence	సీక్వెన్స్‌కు ఆటోమేట్ చేయి
+	Average Data Rate	సగటు డేటా రేటు
+	Capture	క్యాప్చర్
+	Capture Format:	క్యాప్చర్ ఫార్మాట్:
+	Captured and Generated:	క్యాప్చర్ చేసినవి మరియు రూపొందించినవి:
+	Case Sensitive	కేస్ సెన్సిటివ్
+	Clip Names and Markers	క్లిప్ పేర్లు మరియు మార్కర్లు
+	Clip Overlap:	క్లిప్ అతివ్యాప్తి:
+	Clips	క్లిప్‌లు
+	Codec: {codec}	కోడెక్: {codec}
+	Color Matte Color	కలర్ మ్యాట్ రంగు
+	Comments:	వ్యాఖ్యలు:
+	Copy and Create Proxies	కాపీ చేసి ప్రాక్సీలు సృష్టించు
+	Create Proxies	ప్రాక్సీలు సృష్టించు
+	Create Search Bin	సెర్చ్ బిన్ సృష్టించు
+	Create a bin of subclips from each detected cut point	గుర్తించిన ప్రతి కట్ పాయింట్ నుండి సబ్‌క్లిప్‌ల బిన్ సృష్టించు
+	Create a clip marker at each detected cut point	గుర్తించిన ప్రతి కట్ పాయింట్ వద్ద క్లిప్ మార్కర్ సృష్టించు
+	Destination:	గమ్యం:
+	Disabled clips	నిలిపివేసిన క్లిప్‌లు
+	Edit Offline File	ఆఫ్‌లైన్ ఫైల్‌ను సవరించు
+	Empty tracks	ఖాళీ ట్రాక్‌లు
+	Existing XMP files written by other applications are left unchanged.	ఇతర అప్లికేషన్‌లు రాసిన ప్రస్తుత XMP ఫైల్‌లు మారకుండా ఉంటాయి.
+	File Size	ఫైల్ పరిమాణం
+	Find in:	ఇందులో వెతుకు:
+	Find:	కనుగొను:
+	Flash Cue Marker	ఫ్లాష్ క్యూ మార్కర్
+	Frames per Still:	స్థిర చిత్రానికి ఫ్రేమ్‌లు:
+	Gaps	ఖాళీలు
+	Ignore Audio	ఆడియోను విస్మరించు
+	Ignore Options	విస్మరించే ఎంపికలు
+	Ignore Video	వీడియోను విస్మరించు
+	Ingest Settings	ఇంజెస్ట్ సెట్టింగ్‌లు
+	Insert Edit	ఇన్సర్ట్ ఎడిట్
+	Keep:	ఉంచు:
+	Language:	భాష:
+	Log Note:	లాగ్ గమనిక:
+	Match {n} of {total}	{total}లో {n}వ సరిపోలిక
+	Match:	సరిపోలిక:
+	Media Name:	మీడియా పేరు:
+	Method:	పద్ధతి:
+	Move clips to the lowest track possible	క్లిప్‌లను సాధ్యమైనంత దిగువ ట్రాక్‌కు తరలించు
+	New Color Matte	కొత్త కలర్ మ్యాట్
+	Next to the media	మీడియా పక్కన
+	Normalize Mix Track	మిక్స్ ట్రాక్‌ను నార్మలైజ్ చేయి
+	Normalize Mix Track to:	మిక్స్ ట్రాక్‌ను దీనికి నార్మలైజ్ చేయి:
+	Ordering:	క్రమం:
+	Overwrite Edit	ఓవర్‌రైట్ ఎడిట్
+	Path: {path}	మార్గం: {path}
+	Placement:	ఉంచే విధానం:
+	Project Auto Save:	ప్రాజెక్ట్ ఆటో సేవ్:
+	Recognize when different speakers are talking	వేర్వేరు వ్యక్తులు మాట్లాడుతున్నప్పుడు గుర్తించు
+	Renderer:	రెండరర్:
+	Same as Project	ప్రాజెక్ట్ లాగానే
+	Save as Template	టెంప్లేట్‌గా సేవ్ చేయి
+	Saved template {path}	టెంప్లేట్ సేవ్ చేయబడింది {path}
+	Scene Edit Detection	సీన్ ఎడిట్ గుర్తింపు
+	Scene Edit Detection: analysing in the background (see Progress)	సీన్ ఎడిట్ గుర్తింపు: నేపథ్యంలో విశ్లేషిస్తోంది (పురోగతి చూడండి)
+	Scene:	దృశ్యం:
+	Scratch Disks	స్క్రాచ్ డిస్క్‌లు
+	Search:	వెతుకు:
+	Selection Order	ఎంపిక క్రమం
+	Sensitivity:	సున్నితత్వం:
+	Sequentially	వరుసగా
+	Shot/Take:	షాట్/టేక్:
+	Simplify	సరళీకరించు
+	Simplify Sequence	సీక్వెన్స్‌ను సరళీకరించు
+	Sort Order	క్రమబద్ధీకరణ క్రమం
+	Source Settings	సోర్స్ సెట్టింగ్‌లు
+	Template Name:	టెంప్లేట్ పేరు:
+	Text (graphics and captions)	టెక్స్ట్ (గ్రాఫిక్స్ మరియు క్యాప్షన్‌లు)
+	Title Safe Area	టైటిల్ సురక్షిత ప్రాంతం
+	To {name}	{name}కు
+	Total Duration	మొత్తం వ్యవధి
+	Transcode	ట్రాన్స్‌కోడ్ చేయి
+	Transcribe Sequence	సీక్వెన్స్‌ను ట్రాన్స్‌క్రైబ్ చేయి
+	Transitions	ట్రాన్సిషన్‌లు
+	Update Metadata	మెటాడేటాను నవీకరించు
+	Video Only	వీడియో మాత్రమే
+	Video Previews:	వీడియో ప్రివ్యూలు:
+	Video Rendering and Playback	వీడియో రెండరింగ్ మరియు ప్లేబ్యాక్
+	Video and Audio	వీడియో మరియు ఆడియో
+	Video effects	వీడియో ఎఫెక్ట్‌లు
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	ఎంచుకున్న క్లిప్(ల) ({n}) మెటాడేటాను వాటి మీడియా పక్కన XMP ఫైల్‌లకు రాయాలా?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} ఛానెల్(లు)
+	Constant quantiser	స్థిర క్వాంటైజర్
+	Container	కంటైనర్
+	 (unavailable)	 (అందుబాటులో లేదు)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	కంటైనర్‌లు
+	Decoders	డీకోడర్‌లు
+	Dynamic Audio Waveforms	డైనమిక్ ఆడియో వేవ్‌ఫార్మ్‌లు
+	Export formats	ఎగుమతి ఫార్మాట్‌లు
+	Reveal Log Files…	లాగ్ ఫైల్‌లను చూపు…
+	Session log: {path}	సెషన్ లాగ్: {path}
+	System Compatibility Report	సిస్టమ్ అనుకూలత నివేదిక
+	System Compatibility Report…	సిస్టమ్ అనుకూలత నివేదిక…
+	not available now	ఇప్పుడు అందుబాటులో లేదు
+	{name} Selection.fcproj	{name} ఎంపిక.fcproj
+	Auto tone map media (HDR and log into SDR)	మీడియాను స్వయంచాలకంగా టోన్ మ్యాప్ చేయి (HDR మరియు లాగ్‌ను SDRకి)
+	Sequence Color Management	సీక్వెన్స్ రంగు నిర్వహణ
+	Working Color Space	వర్కింగ్ కలర్ స్పేస్
+	Align Timecode	టైమ్‌కోడ్‌ను సమలేఖనం చేయి
+	All media is online.	మొత్తం మీడియా ఆన్‌లైన్‌లో ఉంది.
+	Calculate	లెక్కించు
+	Clip ID (fingerprint)	క్లిప్ ID (వేలిముద్ర)
+	Clip Name	క్లిప్ పేరు
+	Collect Files and Copy to New Location	ఫైల్‌లను సేకరించి కొత్త స్థానానికి కాపీ చేయి
+	Consolidate and Transcode	ఏకీకరించి ట్రాన్స్‌కోడ్ చేయి
+	Creating {n} proxy file(s)…	{n} ప్రాక్సీ ఫైల్(లు) సృష్టిస్తోంది…
+	Destination	గమ్యం
+	Destination Path	గమ్యం మార్గం
+	Disk space: original {original} · resulting {result} ({n} files)	డిస్క్ స్థలం: అసలు {original} · ఫలితం {result} ({n} ఫైల్‌లు)
+	Disk space: —	డిస్క్ స్థలం: —
+	Exact name matches only	ఖచ్చితమైన పేరు సరిపోలికలు మాత్రమే
+	Exclude Unused Clips	ఉపయోగించని క్లిప్‌లను మినహాయించు
+	Folder	ఫోల్డర్
+	Format and size	ఫార్మాట్ మరియు పరిమాణం
+	Frame Size / Rate	ఫ్రేమ్ పరిమాణం / రేట్
+	Include Handles:	హ్యాండిల్‌లను చేర్చు:
+	Include Preview Files	ప్రివ్యూ ఫైల్‌లను చేర్చు
+	Include Proxies	ప్రాక్సీలను చేర్చు
+	Link Media	మీడియాను లింక్ చేయి
+	Linked {n} clip(s)	{n} క్లిప్(లు) లింక్ చేయబడ్డాయి
+	Locate…	గుర్తించు…
+	Make Offline	ఆఫ్‌లైన్ చేయి
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	ఎంచుకున్న {n} క్లిప్(ల)ను ఆఫ్‌లైన్ చేయి. మీరు వాటిని మళ్లీ లింక్ చేసే వరకు వాటి క్లిప్‌లు ఆఫ్‌లైన్ స్లేట్‌ను చూపుతాయి.
+	Match file properties:	ఫైల్ లక్షణాలను సరిపోల్చు:
+	Media files are deleted	మీడియా ఫైల్‌లు తొలగించబడతాయి
+	Media files remain on disk	మీడియా ఫైల్‌లు డిస్క్‌లో ఉంటాయి
+	Missing	లేదు
+	Next to the original media, in a Proxies folder	అసలు మీడియా పక్కన, Proxies ఫోల్డర్‌లో
+	No candidates yet — Search a folder or Locate the file.	ఇంకా అభ్యర్థులు లేరు — ఫోల్డర్‌లో వెతకండి లేదా ఫైల్‌ను గుర్తించండి.
+	Nothing found with that name.	ఆ పేరుతో ఏమీ కనుగొనబడలేదు.
+	Offline	ఆఫ్‌లైన్
+	Offline All	అన్నీ ఆఫ్‌లైన్
+	Project Manager	ప్రాజెక్ట్ మేనేజర్
+	Project Manager: writing {path}	ప్రాజెక్ట్ మేనేజర్: {path} రాస్తోంది
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	ప్రాక్సీలు నేపథ్యంలో తయారవుతాయి, పూర్తయినప్పుడు జతచేయబడతాయి. ఎగుమతి ఎల్లప్పుడూ పూర్తి రిజల్యూషన్ మీడియాను ఉపయోగిస్తుంది.
+	Relink others automatically	మిగతావాటిని స్వయంచాలకంగా మళ్లీ లింక్ చేయి
+	Resulting Project	ఫలిత ప్రాజెక్ట్
+	Search in:	ఇందులో వెతుకు:
+	Sequences	సీక్వెన్స్‌లు
+	select a clip in the Project panel	ప్రాజెక్ట్ ప్యానెల్‌లో క్లిప్‌ను ఎంచుకోండి
+	{name} (copy)	{name} (కాపీ)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} క్లిప్(లు) తమ మీడియాను కనుగొనలేకపోయాయి. వాటిని గుర్తించండి, ఫోల్డర్‌లో వెతకండి, లేదా ఆఫ్‌లైన్‌లో వదిలేయండి.
+	{n} clip(s) selected.	{n} క్లిప్(లు) ఎంచుకోబడ్డాయి.
+	✔ matches	✔ సరిపోతుంది
+	✔ same file	✔ అదే ఫైల్
+	✖ different file	✖ వేరే ఫైల్
+	AAF Export Settings	AAF ఎగుమతి సెట్టింగ్‌లు
+	Audio File Format:	ఆడియో ఫైల్ ఫార్మాట్:
+	Bits per Sample:	నమూనాకు బిట్‌లు:
+	Breakout to mono	మోనోగా విడదీయి
+	Depth:	డెప్త్:
+	Embed	పొందుపరచు
+	Encapsulate	ఎన్‌క్యాప్సులేట్ చేయి
+	Exported frame to {path}	ఫ్రేమ్ {path}కు ఎగుమతి చేయబడింది
+	Exported {path}	{path} ఎగుమతి చేయబడింది
+	Frame time: {timecode}	ఫ్రేమ్ సమయం: {timecode}
+	Handle Frames:	హ్యాండిల్ ఫ్రేమ్‌లు:
+	Import into project	ప్రాజెక్ట్‌లోకి దిగుమతి చేయి
+	Keep existing file	ప్రస్తుత ఫైల్‌ను ఉంచు
+	Link to Media	మీడియాకు లింక్ చేయి
+	Mixdown video	వీడియోను మిక్స్‌డౌన్ చేయి
+	OMF Export Settings	OMF ఎగుమతి సెట్టింగ్‌లు
+	OMF Title:	OMF శీర్షిక:
+	Path:	మార్గం:
+	Render audio clip effects	ఆడియో క్లిప్ ఎఫెక్ట్‌లను రెండర్ చేయి
+	Separate Audio	ఆడియోను వేరుచేయి
+	Separate Files	వేర్వేరు ఫైల్‌లు
+	This file already exists: {path}	ఈ ఫైల్ ఇప్పటికే ఉంది: {path}
+	Trim audio files	ఆడియో ఫైల్‌లను ట్రిమ్ చేయి
+	{bits} Bit	{bits} బిట్
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	మార్కర్ నివేదిక (CSV)
+	DCP (Digital Cinema Package)	DCP (డిజిటల్ సినిమా ప్యాకేజ్)
+	Digital Cinema	డిజిటల్ సినిమా
+	DCP resolution	DCP రిజల్యూషన్
+	DCP container	DCP కంటైనర్
+	Content kind	కంటెంట్ రకం
+	Output folder	అవుట్‌పుట్ ఫోల్డర్
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1.85:1)
+	Scope (2.39:1)	Scope (2.39:1)
+	Full container (1.90:1)	పూర్తి కంటైనర్ (1.90:1)
+	Feature	ఫీచర్ ఫిల్మ్
+	Trailer	ట్రైలర్
+	Teaser	టీజర్
+	Short	లఘు చిత్రం
+	Advertisement	ప్రకటన
+	Test	పరీక్ష
+	Transitional	పరివర్తన
+	Rating	రేటింగ్
+	Public service announcement	ప్రజా సేవా ప్రకటన
+	Off (5.1 only)	ఆఫ్ (5.1 మాత్రమే)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	మిక్స్ నుండి IAB బెడ్ (7.1 DS, 7.1.2 నుండి 9.1OH)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	ఫైల్ నుండి IAB (IAB MXF, .iab, లేదా Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab, లేదా Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	ఏదీ కాదు: FSK సింక్ మాత్రమే (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: రెండర్ చేసిన IAB (ST 429-19 కాదు)
+	5.1: the timeline mix (not ST 429-19)	5.1: టైమ్‌లైన్ మిక్స్ (ST 429-19 కాదు)
+	Main sound channels 1-6	ప్రధాన సౌండ్ ఛానెల్‌లు 1-6
+	Immersive audio	ఇమర్సివ్ ఆడియో
+	IAB source	IAB సోర్స్
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 మిక్స్ 9.1OH బెడ్‌గా, 7.1 మిక్స్ 7.1 DS బెడ్‌గా, మిగతా ఏ మిక్స్ అయినా దాని 5.1 నుండి 7.1 DS బెడ్‌గా మారుతుంది (IAB Profile 1); ప్రధాన సౌండ్ యొక్క ఛానెల్ 14 FSK సింక్ సిగ్నల్‌ను తీసుకువెళ్తుంది.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	IAB ట్రాక్ ఫైల్ (IMF లేదా DCP), ముడి IAB స్ట్రీమ్, లేదా Dolby Atmos TrueHD ఎంచుకోండి: .thd స్ట్రీమ్ లేదా Atmos ట్రాక్ ఉన్న MKV, MP4 లేదా M2TS ఫైల్.
+	Reading the IAB source…	IAB సోర్స్‌ను చదువుతోంది…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} ఫ్రేమ్‌లు, {fps} fps, {rate} Hz; గరిష్ఠంగా {beds} బెడ్ ఛానెల్‌లు మరియు {objects} ఆబ్జెక్ట్‌లు
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} సె, {rate} Hz; గరిష్ఠంగా {beds} బెడ్ ఛానెల్‌లు మరియు {objects} ఆబ్జెక్ట్‌లు, IAB ఆబ్జెక్ట్‌లుగా మార్చబడ్డాయి
+	Some frames are re-coded for the DCP (DLC, 24 bit).	కొన్ని ఫ్రేమ్‌లు DCP కోసం మళ్లీ కోడ్ చేయబడతాయి (DLC, 24 బిట్).
+	Beyond IAB Profile 1: {notes}	IAB Profile 1కి మించి: {notes}
+	Not a usable IAB source: {error}	ఉపయోగించదగిన IAB సోర్స్ కాదు: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 1998×1080 (1.85:1), 5.1 24-బిట్ 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 2048×858 (2.39:1), 5.1 24-బిట్ 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 3996×2160 (1.85:1), 5.1 24-బిట్ 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 4096×1716 (2.39:1), 5.1 24-బిట్ 48 kHz PCM
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	B pictures	B చిత్రాలు
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV ట్రాన్స్‌పోర్ట్ స్ట్రీమ్ (.m2ts, AAC ఆడియో)
+	Chroma	క్రోమా
+	Elementary Stream (.m2v, no audio)	ఎలిమెంటరీ స్ట్రీమ్ (.m2v, ఆడియో లేదు)
+	Key Frame Distance	కీ ఫ్రేమ్ దూరం
+	None (I and P only)	ఏదీ కాదు (I మరియు P మాత్రమే)
+	Off (target bitrate)	ఆఫ్ (లక్ష్య బిట్‌రేట్)
+	Program Stream (.mpg, LPCM audio)	ప్రోగ్రామ్ స్ట్రీమ్ (.mpg, LPCM ఆడియో)
+	Transport Stream (.ts, AAC audio)	ట్రాన్స్‌పోర్ట్ స్ట్రీమ్ (.ts, AAC ఆడియో)
+	Estimated file size: {size}	అంచనా ఫైల్ పరిమాణం: {size}
+	File Name & Location	ఫైల్ పేరు & స్థానం
+	Quick Export	త్వరిత ఎగుమతి
+	Quick Export: open a sequence first	త్వరిత ఎగుమతి: ముందుగా సీక్వెన్స్‌ను తెరవండి
+	Quick Export: {path}	త్వరిత ఎగుమతి: {path}
+	Export presets	ఎగుమతి ప్రీసెట్‌లు
+	Favorites only	ఇష్టమైనవి మాత్రమే
+	More presets…	మరిన్ని ప్రీసెట్‌లు…
+	Preset Manager	ప్రీసెట్ మేనేజర్
+	Save current settings as:	ప్రస్తుత సెట్టింగ్‌లను ఇలా సేవ్ చేయి:
+	Search presets	ప్రీసెట్‌లలో వెతుకు
+	Show in the Preset menu	ప్రీసెట్ మెనూలో చూపు
+	User	వినియోగదారు
+	Add Beat Markers	బీట్ మార్కర్లను జోడించు
+	Clear Beat Markers	బీట్ మార్కర్లను తొలగించు
+	Clear Check Markers	తనిఖీ మార్కర్లను తొలగించు
+	Auto Reframe Sequence…	సీక్వెన్స్‌ను ఆటో రీఫ్రేమ్ చేయి…
+	Batch Variants from Spreadsheet…	స్ప్రెడ్‌షీట్ నుండి బ్యాచ్ వైవిధ్యాలు…
+	Check Before Export…	ఎగుమతికి ముందు తనిఖీ…
+	Social Deliverables…	సోషల్ డెలివరబుల్స్…
+	Social Safe Zones	సోషల్ సురక్షిత జోన్‌లు
+	Text Animator	టెక్స్ట్ యానిమేటర్
+	Counter	కౌంటర్
+	Word by Word	పదం పదంగా
+	Animator	యానిమేటర్
+	Animator Duration	యానిమేటర్ వ్యవధి
+	Animator Delay	యానిమేటర్ ఆలస్యం
+	Spreadsheets	స్ప్రెడ్‌షీట్‌లు
+	{n} beat markers added ({bpm} BPM)	{n} బీట్ మార్కర్లు జోడించబడ్డాయి ({bpm} BPM)
+	Check Before Export: no problems found	ఎగుమతికి ముందు తనిఖీ: సమస్యలు ఏవీ కనుగొనబడలేదు
+	Check Before Export: {n} problems marked on the timeline (red markers)	ఎగుమతికి ముందు తనిఖీ: టైమ్‌లైన్‌లో {n} సమస్యలు గుర్తించబడ్డాయి (ఎరుపు మార్కర్లు)
+	{n} exports queued (the Export window shows the queue)	{n} ఎగుమతులు క్యూలో ఉంచబడ్డాయి (ఎగుమతి విండో క్యూను చూపుతుంది)
+	{n} variant sequences made, {q} exports queued	{n} వైవిధ్య సీక్వెన్స్‌లు తయారయ్యాయి, {q} ఎగుమతులు క్యూలో ఉంచబడ్డాయి
+	no column for {names}	{names} కోసం కాలమ్ లేదు
+	Film Scan 1	ఫిల్మ్ స్కాన్ 1
+	Film Scan 2	ఫిల్మ్ స్కాన్ 2
+	Film Scan 3	ఫిల్మ్ స్కాన్ 3
+	Include Alpha Channel	ఆల్ఫా ఛానెల్‌ను చేర్చు
+	Profile	ప్రొఫైల్
+	ZIP (1 scan line)	ZIP (1 స్కాన్ లైన్)
+	ZIP (16 scan lines)	ZIP (16 స్కాన్ లైన్‌లు)
+	Bottom Center	కింద మధ్య
+	Bottom Left	కింద ఎడమ
+	Bottom Right	కింద కుడి
+	Burn Captions Into Video	క్యాప్షన్‌లను వీడియోలో ముద్రించు
+	Center Left	మధ్య ఎడమ
+	Center Right	మధ్య కుడి
+	Create Sidecar File	సైడ్‌కార్ ఫైల్ సృష్టించు
+	Export Options	ఎగుమతి ఎంపికలు
+	File Format	ఫైల్ ఫార్మాట్
+	Image Overlay	చిత్ర ఓవర్‌లే
+	Loudness Normalization	లౌడ్‌నెస్ నార్మలైజేషన్
+	Luma Min / Max	లూమా కనిష్ఠం / గరిష్ఠం
+	Name Overlay	పేరు ఓవర్‌లే
+	PNG or JPEG file	PNG లేదా JPEG ఫైల్
+	Size / Opacity	పరిమాణం / అపారదర్శకత
+	SubRip Subtitle (.srt)	SubRip ఉపశీర్షిక (.srt)
+	Target Loudness	లక్ష్య లౌడ్‌నెస్
+	Timecode Overlay	టైమ్‌కోడ్ ఓవర్‌లే
+	Top Center	పైన మధ్య
+	Top Left	పైన ఎడమ
+	Top Right	పైన కుడి
+	True Peak Limit	ట్రూ పీక్ పరిమితి
+	Video Limiter	వీడియో లిమిటర్
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Copyright	కాపీరైట్
+	Creator	సృష్టికర్త
+	Multiplexer	మల్టీప్లెక్సర్
+	Audio only	ఆడియో మాత్రమే
+	Scale To Fill	నింపేలా స్కేల్ చేయి
+	Scale To Fit	సరిపోయేలా స్కేల్ చేయి
+	Scaling	స్కేలింగ్
+	Stretch To Fill	నింపేలా సాగదీయి
+	Quick Export cancelled	త్వరిత ఎగుమతి రద్దు చేయబడింది
+	0 fastest, 8 smallest	0 అత్యంత వేగం, 8 అత్యంత చిన్నది
+	16 bit	16 బిట్
+	24 bit	24 బిట్
+	32 bit	32 బిట్
+	32 bit float	32 బిట్ ఫ్లోట్
+	Anamorphic 2:1 (2.0)	అనమార్ఫిక్ 2:1 (2.0)
+	Aspect	ఆస్పెక్ట్
+	Channels	ఛానెల్‌లు
+	Composite on the GPU when available	అందుబాటులో ఉన్నప్పుడు GPUపై కాంపోజిట్ చేయి
+	Compression Level	కంప్రెషన్ స్థాయి
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0.9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1.0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1.5)
+	Field Order	ఫీల్డ్ క్రమం
+	GPU Rendering	GPU రెండరింగ్
+	HD Anamorphic 1080 (1.333)	HD అనమార్ఫిక్ 1080 (1.333)
+	Lower First	దిగువది ముందు
+	Match Source	సోర్స్‌కు సరిపోల్చు
+	Maximum Bitrate	గరిష్ఠ బిట్‌రేట్
+	Progressive	ప్రోగ్రెసివ్
+	Quality (CRF)	నాణ్యత (CRF)
+	Render at Maximum Depth	గరిష్ఠ డెప్త్‌లో రెండర్ చేయి
+	Sample Size	నమూనా పరిమాణం
+	Upper First	ఎగువది ముందు
+	Use Maximum Render Quality	గరిష్ఠ రెండర్ నాణ్యతను ఉపయోగించు
+	Browse files…	ఫైల్‌లను బ్రౌజ్ చేయి…
+	Movies, audio and stills from disk	డిస్క్ నుండి చలనచిత్రాలు, ఆడియో మరియు స్థిర చిత్రాలు
+	Demo footage	డెమో ఫుటేజ్
+	Six procedural 1080p clips with sound	ధ్వనితో కూడిన ఆరు ప్రొసీజరల్ 1080p క్లిప్‌లు
+	Demo project	డెమో ప్రాజెక్ట్
+	A cut sequence with transitions, effects and music	ట్రాన్సిషన్‌లు, ఎఫెక్ట్‌లు మరియు సంగీతంతో కట్ చేసిన సీక్వెన్స్
+	Bars and Tone	బార్స్ అండ్ టోన్
+	SMPTE HD bars with 1 kHz reference tone	1 kHz రిఫరెన్స్ టోన్‌తో SMPTE HD బార్స్
+	CFA4 on GitHub	GitHubలో CFA4
+	Report a CFA4 issue…	CFA4 సమస్యను నివేదించు…
+	CFA4 project links	CFA4 ప్రాజెక్ట్ లింక్‌లు
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	మీ ప్రాజెక్ట్‌కు మీడియాను జోడించండి. విండోలో ఎక్కడైనా ఫైల్‌లను వదలండి, లేదా కింద సోర్స్‌ను ఎంచుకోండి.
+	Shuttle Slow Left	నెమ్మదిగా ఎడమకు షటిల్
+	Shuttle Slow Right	నెమ్మదిగా కుడికి షటిల్
+	Play Around	చుట్టూ ప్లే చేయి
+	Out: {name}	అవుట్: {name}
+	In: {name}	ఇన్: {name}
+	(gap)	(ఖాళీ)
+	Outgoing clip (drag to trim the Out point)	బయటకు వెళ్లే క్లిప్ (అవుట్ పాయింట్‌ను ట్రిమ్ చేయడానికి లాగండి)
+	Incoming clip (drag to trim the In point)	లోపలికి వచ్చే క్లిప్ (ఇన్ పాయింట్‌ను ట్రిమ్ చేయడానికి లాగండి)
+	Drag to roll the edit	ఎడిట్‌ను రోల్ చేయడానికి లాగండి
+	Play Around Edit (Space loops, Shift+K once)	ఎడిట్ చుట్టూ ప్లే చేయి (Space లూప్ చేస్తుంది, Shift+K ఒకసారి)
+	Trim Backward Many	చాలా వెనక్కి ట్రిమ్ చేయి
+	Trim Backward	వెనక్కి ట్రిమ్ చేయి
+	Apply Default Transitions to Selection (Shift+D)	ఎంపికకు డిఫాల్ట్ ట్రాన్సిషన్‌లు వర్తింపజేయి (Shift+D)
+	Trim Forward	ముందుకు ట్రిమ్ చేయి
+	Trim Forward Many	చాలా ముందుకు ట్రిమ్ చేయి
+	Exit Trim Mode	ట్రిమ్ మోడ్ నుండి నిష్క్రమించు
+	Down	కిందకు
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	ఆడియో అవుట్‌పుట్ విఫలమైంది: ధ్వని లేకుండా ప్లే అవుతోంది (సెట్టింగ్‌లు ▸ ఆడియో హార్డ్‌వేర్ తనిఖీ చేయండి)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	ఆడియో అవుట్‌పుట్ స్పందించడం లేదు: ధ్వని లేకుండా ప్లే అవుతోంది (సెట్టింగ్‌లు ▸ ఆడియో హార్డ్‌వేర్ తనిఖీ చేయండి)
+	Settings not taken	సెట్టింగ్‌లు స్వీకరించబడలేదు
+	Encoder	ఎన్‌కోడర్
+	Software, or hardware where available	సాఫ్ట్‌వేర్, లేదా అందుబాటులో ఉన్నచోట హార్డ్‌వేర్
+	Main (8-bit; Main 10 for HDR sequences)	Main (8-బిట్; HDR సీక్వెన్స్‌లకు Main 10)
+	Main 10 (10-bit, HDR)	Main 10 (10-బిట్, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8-బిట్; HDR సీక్వెన్స్‌లకు 10-బిట్)
+	Main (10-bit, HDR)	Main (10-బిట్, HDR)
+	FLAC stores whole-number samples only	FLAC పూర్ణాంక నమూనాలను మాత్రమే నిల్వ చేస్తుంది
+	MXF export writes integer PCM only	MXF ఎగుమతి పూర్ణాంక PCMను మాత్రమే రాస్తుంది
+	Not supported by CFA4's encoders yet	CFA4 ఎన్‌కోడర్‌లు ఇంకా దీనికి మద్దతు ఇవ్వవు
+	Overwrite with Current View	ప్రస్తుత వీక్షణతో ఓవర్‌రైట్ చేయి
+	Saves the view, columns, sort, thumbnail and font size.	వీక్షణ, కాలమ్‌లు, క్రమం, థంబ్‌నెయిల్ మరియు ఫాంట్ పరిమాణాన్ని సేవ్ చేస్తుంది.
+	Search fields	శోధన ఫీల్డ్‌లు
+	{n}. (empty)	{n}. (ఖాళీ)
+	No video	వీడియో లేదు
+	No audio	ఆడియో లేదు
+	HEVC Main / Main 10 for HDR	HDR కోసం HEVC Main / Main 10
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 Profile
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main Profile 4:2:0
+	no B pictures	B చిత్రాలు లేవు
+	1 B picture between anchors	యాంకర్‌ల మధ్య 1 B చిత్రం
+	AV1 Main (10-bit for HDR)	AV1 Main (HDR కోసం 10-బిట్)
+	10-bit RGB	10-బిట్ RGB
+	12-bit X'Y'Z'	12-బిట్ X'Y'Z'
+	16-bit half float	16-బిట్ హాఫ్ ఫ్లోట్
+	linear	లీనియర్
+	uncompressed	కుదించని
+	Animated GIF	యానిమేటెడ్ GIF
+	Waveform Audio	వేవ్‌ఫార్మ్ ఆడియో
+	AAC Audio	AAC ఆడియో
+	Opus Audio	Opus ఆడియో
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	విభజించిన MP4 విభాగాలు
+	Program Stream	ప్రోగ్రామ్ స్ట్రీమ్
+	Transport Stream	ట్రాన్స్‌పోర్ట్ స్ట్రీమ్
+	BDAV Transport Stream	BDAV ట్రాన్స్‌పోర్ట్ స్ట్రీమ్
+	Elementary Stream	ఎలిమెంటరీ స్ట్రీమ్
+	Image sequence	ఇమేజ్ సీక్వెన్స్
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} fps
+	{profile} auto level	{profile} ఆటో స్థాయి
+	{n} pass	{n} పాస్
+	CRF (constant quality) {crf}	CRF (స్థిర నాణ్యత) {crf}
+	{v} Mbps	{v} Mbps
+	Target {v} Mbps	లక్ష్యం {v} Mbps
+	Max {v} Mbps	గరిష్ఠం {v} Mbps
+	average {v} Mbps	సగటు {v} Mbps
+	CBR {v} Mbps	CBR {v} Mbps
+	VBR Target {v} Mbps	VBR లక్ష్యం {v} Mbps
+	keyframe every {n} frames	ప్రతి {n} ఫ్రేమ్‌లకు కీఫ్రేమ్
+	constant quantiser {q}	స్థిర క్వాంటైజర్ {q}
+	{n} B pictures between anchors	యాంకర్‌ల మధ్య {n} B చిత్రాలు
+	quantizer {q}	క్వాంటైజర్ {q}
+	quality {q}	నాణ్యత {q}
+	{word} compression	{word} కంప్రెషన్
+	{sampling} {bits}-bit	{sampling} {bits}-బిట్
+	FLAC (lossless) {bits}-bit	FLAC (నష్టరహితం) {bits}-బిట్
+	level {n}	స్థాయి {n}
+	Uncompressed {bits}-bit PCM	కుదించని {bits}-బిట్ PCM
+	Uncompressed {bits}-bit float PCM	కుదించని {bits}-బిట్ ఫ్లోట్ PCM
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} సె
+	{n} ch {rate} Hz	{n} ఛా {rate} Hz
+	All Events	అన్ని ఈవెంట్‌లు
+	Warnings and Errors	హెచ్చరికలు మరియు లోపాలు
+	Errors Only	లోపాలు మాత్రమే
+	Clear All	అన్నీ తొలగించు
+	No events.	ఈవెంట్‌లు లేవు.
+	{n} s ago	{n} సె క్రితం
+	Warning	హెచ్చరిక
+	Error	లోపం
+	Caption Export Settings	క్యాప్షన్ ఎగుమతి సెట్టింగ్‌లు
+	Export Captions	క్యాప్షన్‌లను ఎగుమతి చేయి
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} ఇప్పటికే ఉంది, కాబట్టి ఏదీ ఎగుమతి చేయబడలేదు. దాన్ని భర్తీ చేయడానికి, సేవ్ డైలాగ్‌లో దాన్ని ఎంచుకోండి.
+	Delete Redoable Actions	మళ్లీ చేయగల చర్యలను తొలగించు
+	Clear History	చరిత్రను తొలగించు
+	Delete the dimmed actions after the current state? They cannot be redone.	ప్రస్తుత స్థితి తర్వాత మసకబారిన చర్యలను తొలగించాలా? వాటిని మళ్లీ చేయలేరు.
+	Work Area Bar	వర్క్ ఏరియా బార్
+	Start: {tc}	ప్రారంభం: {tc}
+	End: {tc}	ముగింపు: {tc}
+	Duration: {tc}	వ్యవధి: {tc}
+	Show/Hide Tracks…	ట్రాక్‌లను చూపు/దాచు…
+	Panel menu	ప్యానెల్ మెనూ
+	Move panel	ప్యానెల్‌ను తరలించు
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	ఎంచుకోవడానికి క్లిక్ చేయండి, లేదా ఖాళీ స్థలంలో క్లిక్ చేసి మార్కీ ఎంపిక కోసం లాగండి. ఇతర ఎంపికల కోసం Shift, Alt మరియు Ctrl ఉపయోగించండి.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	అన్ని ట్రాక్‌లలో కుడివైపు ఉన్న అన్ని క్లిప్‌లను ఎంచుకోవడానికి క్లిక్ చేయండి. ఒకే ట్రాక్ కోసం Shift-క్లిక్.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	అన్ని ట్రాక్‌లలో ఎడమవైపు ఉన్న అన్ని క్లిప్‌లను ఎంచుకోవడానికి క్లిక్ చేయండి. ఒకే ట్రాక్ కోసం Shift-క్లిక్.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	రిపుల్ ట్రిమ్ కోసం ఎడిట్ పాయింట్‌ను లాగండి; ఖాళీ మూసి ఉండేలా తర్వాతి క్లిప్‌లు కదులుతాయి.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	రోల్ చేయడానికి ఎడిట్ పాయింట్‌ను లాగండి: ఒక క్లిప్ అవుట్ మరియు తర్వాతి క్లిప్ ఇన్ కలిసి కదులుతాయి.
+	Drag an edge to change the clip's speed so it fills the new duration.	కొత్త వ్యవధిని నింపేలా క్లిప్ వేగాన్ని మార్చడానికి అంచును లాగండి.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	సంగీతపరంగా సరిపోయే బీట్‌ల వద్ద కొత్త వ్యవధికి రీమిక్స్ చేయడానికి సంగీత క్లిప్ అంచును లాగండి.
+	Click to split a clip. Shift-click to split all tracks.	క్లిప్‌ను విభజించడానికి క్లిక్ చేయండి. అన్ని ట్రాక్‌లను విభజించడానికి Shift-క్లిక్.
+	Drag a clip to slip its source in/out without moving it.	క్లిప్‌ను కదిలించకుండా దాని సోర్స్ ఇన్/అవుట్‌ను స్లిప్ చేయడానికి దాన్ని లాగండి.
+	Drag a clip to slide it between its neighbours.	క్లిప్‌ను దాని పొరుగు క్లిప్‌ల మధ్య స్లైడ్ చేయడానికి లాగండి.
+	Drag to scroll the timeline.	టైమ్‌లైన్‌ను స్క్రోల్ చేయడానికి లాగండి.
+	Click to zoom in; Alt-click to zoom out.	జూమ్ ఇన్ చేయడానికి క్లిక్ చేయండి; జూమ్ అవుట్ కోసం Alt-క్లిక్.
+	Exporting	ఎగుమతి అవుతోంది
+	Version {version}	వెర్షన్ {version}
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. ఫాంట్‌లు: Inter, Noto Serif మరియు JetBrains Mono (SIL OFL 1.1).
+	CFA4 was closed while “{name}” had unsaved changes.	“{name}”లో సేవ్ చేయని మార్పులు ఉన్నప్పుడు CFA4 మూసివేయబడింది.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	“{name}”లో సేవ్ చేయని మార్పులు ఉన్నప్పుడు CFA4 అనుకోకుండా మూసుకుపోయింది.
+	Recover unsaved changes from {when}?	{when} నాటి సేవ్ చేయని మార్పులను పునరుద్ధరించాలా?
+	The project had not been saved yet.	ప్రాజెక్ట్ ఇంకా సేవ్ చేయబడలేదు.
+	{n} sessions have unsaved changes:	{n} సెషన్‌లలో సేవ్ చేయని మార్పులు ఉన్నాయి:
+	Are you sure you want to discard your changes to '{file}'?	'{file}'కు మీరు చేసిన మార్పులను విస్మరించాలని ఖచ్చితంగా అనుకుంటున్నారా?
+	the project has not been saved yet	ప్రాజెక్ట్ ఇంకా సేవ్ చేయబడలేదు
+	Export As Motion Graphics Template	మోషన్ గ్రాఫిక్స్ టెంప్లేట్‌గా ఎగుమతి చేయి
+	Editable properties:	సవరించదగిన లక్షణాలు:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	మీ టెంప్లేట్‌ల ఫోల్డర్‌లో CFA4 గ్రాఫిక్స్ టెంప్లేట్‌గా (.fcgt) సేవ్ చేయబడింది.
+	My Templates	నా టెంప్లేట్‌లు
+	{n} Font	{n} ఫాంట్
+	{n} Size	{n} పరిమాణం
+	{n} Color	{n} రంగు
+	{n} Position	{n} స్థానం
+	Show {n}	{n} చూపు
+	Exported graphics template to {path}	గ్రాఫిక్స్ టెంప్లేట్ {path}కు ఎగుమతి చేయబడింది
+	Replace Fonts in Projects	ప్రాజెక్ట్‌లలో ఫాంట్‌లను భర్తీ చేయి
+	Fonts used in the project:	ప్రాజెక్ట్‌లో ఉపయోగించిన ఫాంట్‌లు:
+	{f} (missing)	{f} (లేదు)
+	Replace:	భర్తీ చేయి:
+	with:	దీనితో:
+	Replaced {n} font uses	{n} ఫాంట్ వినియోగాలు భర్తీ చేయబడ్డాయి
+	Track Color	ట్రాక్ రంగు
+	Unrendered: should play back in real time	రెండర్ చేయలేదు: రియల్ టైమ్‌లో ప్లే అవ్వాలి
+	Unrendered: render to play back in real time	రెండర్ చేయలేదు: రియల్ టైమ్‌లో ప్లే చేయడానికి రెండర్ చేయండి
+	Rendered preview	రెండర్ చేసిన ప్రివ్యూ
+	Transparency Grid	పారదర్శకత గ్రిడ్
+	Show Duplicate Frame Markers	నకిలీ ఫ్రేమ్ మార్కర్లను చూపు
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	సీక్వెన్స్ ఇన్/అవుట్ కేవలం 1 ఫ్రేమ్. మొత్తం సీక్వెన్స్‌ను ఎగుమతి చేయడానికి మొత్తం సీక్వెన్స్ ఎంచుకోండి.
+	more tabs	మరిన్ని ట్యాబ్‌లు
+	Set Work Area Bar In Point	వర్క్ ఏరియా బార్ ఇన్ పాయింట్‌ను సెట్ చేయి
+	Set Work Area Bar Out Point	వర్క్ ఏరియా బార్ అవుట్ పాయింట్‌ను సెట్ చేయి
+	Delete Clips	క్లిప్‌లను తొలగించు
+	Destinations	గమ్యాలు
+	Analyzing the clip…	క్లిప్‌ను విశ్లేషిస్తోంది…
+	At GOP boundaries (no re-encoding)	GOP సరిహద్దుల వద్ద (మళ్లీ ఎన్‌కోడింగ్ లేకుండా)
+	Bit-exact copy	బిట్-ఖచ్చిత కాపీ
+	Choose the output file.	అవుట్‌పుట్ ఫైల్‌ను ఎంచుకోండి.
+	Compatible copy	అనుకూల కాపీ
+	Copy:	కాపీ:
+	Cut:	కట్:
+	Frame accurate (re-encode the boundaries)	ఫ్రేమ్ ఖచ్చితం (సరిహద్దులను మళ్లీ ఎన్‌కోడ్ చేయి)
+	Open a video clip in the Source monitor first.	ముందుగా సోర్స్ మానిటర్‌లో వీడియో క్లిప్‌ను తెరవండి.
+	Output:	అవుట్‌పుట్:
+	Smart Cut Source	స్మార్ట్ కట్ సోర్స్
+	Smart Cut Source…	స్మార్ట్ కట్ సోర్స్…
+	Smart Cut is not available for this clip: {why}	ఈ క్లిప్‌కు స్మార్ట్ కట్ అందుబాటులో లేదు: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	స్మార్ట్ కట్ రాయబడి ధృవీకరించబడింది: {path} ({frames} ఫ్రేమ్‌లు)
+	The cut cannot run.	కట్ అమలు కాదు.
+	The engine sent no analysis.	ఇంజిన్ విశ్లేషణను పంపలేదు.
+	Writing and verifying the cut…	కట్‌ను రాసి ధృవీకరిస్తోంది…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{container}లో {codec}: {gops} GOPలు, {points} శుభ్రమైన కట్ పాయింట్లు
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} ఫ్రేమ్‌లు కాపీ చేయబడ్డాయి, {reencoded} ఫ్రేమ్‌లు మళ్లీ ఎన్‌కోడ్ చేయబడ్డాయి
+	{frames} frames at the boundaries are re-encoded. Continue?	సరిహద్దుల వద్ద {frames} ఫ్రేమ్‌లు మళ్లీ ఎన్‌కోడ్ చేయబడతాయి. కొనసాగించాలా?
+	Show GOP Boundaries	GOP సరిహద్దులను చూపు
+	Export mode	ఎగుమతి మోడ్
+	Full Render	పూర్తి రెండర్
+	Planning…	ప్రణాళిక వేస్తోంది…
+	Recommended: Smart Render (asks before re-encoding)	సిఫార్సు: స్మార్ట్ రెండర్ (మళ్లీ ఎన్‌కోడ్ చేసే ముందు అడుగుతుంది)
+	Recommended: Stream Copy (nothing is re-encoded)	సిఫార్సు: స్ట్రీమ్ కాపీ (ఏదీ మళ్లీ ఎన్‌కోడ్ చేయబడదు)
+	Rendered because of: {causes}	దీని కారణంగా రెండర్ చేయబడింది: {causes}
+	Smart Export	స్మార్ట్ ఎగుమతి
+	Smart Export written and verified: {path}	స్మార్ట్ ఎగుమతి రాయబడి ధృవీకరించబడింది: {path}
+	Smart Render	స్మార్ట్ రెండర్
+	Stream Copy – Bit-exact	స్ట్రీమ్ కాపీ – బిట్-ఖచ్చితం
+	Stream Copy – Compatible	స్ట్రీమ్ కాపీ – అనుకూలం
+	Stream copy is not possible: {frames} frames need re-encoding.	స్ట్రీమ్ కాపీ సాధ్యం కాదు: {frames} ఫ్రేమ్‌లను మళ్లీ ఎన్‌కోడ్ చేయాలి.
+	The export cannot run.	ఎగుమతి అమలు కాదు.
+	Wait for the export plan.	ఎగుమతి ప్రణాళిక కోసం వేచి ఉండండి.
+	Writing and verifying the export…	ఎగుమతిని రాసి ధృవీకరిస్తోంది…
+	colour conversion	రంగు మార్పిడి
+	compositing	కాంపోజిటింగ్
+	copied	కాపీ చేయబడింది
+	effects	ఎఫెక్ట్‌లు
+	frame rate	ఫ్రేమ్ రేట్
+	proxies or nested sequences	ప్రాక్సీలు లేదా నెస్టెడ్ సీక్వెన్స్‌లు
+	re-encoded at a cut	కట్ వద్ద మళ్లీ ఎన్‌కోడ్ చేయబడింది
+	rendered	రెండర్ చేయబడింది
+	sources that cannot be copied	కాపీ చేయలేని సోర్స్‌లు
+	speed changes	వేగ మార్పులు
+	titles or overlays	టైటిల్స్ లేదా ఓవర్‌లేలు
+	transforms	ట్రాన్స్‌ఫార్మ్‌లు
+	transitions	ట్రాన్సిషన్‌లు
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} ఫ్రేమ్‌లు కాపీ చేయబడ్డాయి, కట్‌ల వద్ద {reencoded} మళ్లీ ఎన్‌కోడ్ చేయబడ్డాయి, {rendered} రెండర్ చేయబడ్డాయి
+	{frames} frames are re-encoded or rendered. Continue?	{frames} ఫ్రేమ్‌లు మళ్లీ ఎన్‌కోడ్ లేదా రెండర్ చేయబడతాయి. కొనసాగించాలా?
+	CFA4 Help…	CFA4 సహాయం…
+	Learning	నేర్చుకోవడం
+	Refresh Changed Media	మారిన మీడియాను రిఫ్రెష్ చేయి
+	Clear Recent Files	ఇటీవలి ఫైల్‌లను తొలగించు
+	Report an Issue…	సమస్యను నివేదించు…
+	Zoom In	జూమ్ ఇన్
+	Zoom Out	జూమ్ అవుట్
+	{name} - Edited	{name} - సవరించబడింది
+	Audio Gain	ఆడియో గెయిన్
+	Set Gain to:	గెయిన్‌ను దీనికి సెట్ చేయి:
+	Adjust Gain by:	గెయిన్‌ను దీనితో సర్దుబాటు చేయి:
+	Normalize Max Peak to:	గరిష్ఠ పీక్‌ను దీనికి నార్మలైజ్ చేయి:
+	Normalize All Peaks to:	అన్ని పీక్‌లను దీనికి నార్మలైజ్ చేయి:
+	Peak Amplitude: {peak}	పీక్ యాంప్లిట్యూడ్: {peak}
+	Add Tracks	ట్రాక్‌లు జోడించు
+	Placement	స్థానం
+	Track type	ట్రాక్ రకం
+	Add video tracks	వీడియో ట్రాక్‌లు జోడించు
+	Add audio tracks	ఆడియో ట్రాక్‌లు జోడించు
+	Add audio submix tracks	ఆడియో సబ్‌మిక్స్ ట్రాక్‌లు జోడించు
+	After {name}	{name} తర్వాత
+	Before First Track	మొదటి ట్రాక్ ముందు
+	Delete Tracks	ట్రాక్‌లను తొలగించు
+	Video Tracks	వీడియో ట్రాక్‌లు
+	Audio Tracks	ఆడియో ట్రాక్‌లు
+	Delete Video Tracks	వీడియో ట్రాక్‌లను తొలగించు
+	Delete Audio Tracks	ఆడియో ట్రాక్‌లను తొలగించు
+	All Empty Tracks	అన్ని ఖాళీ ట్రాక్‌లు
+	Caption Tracks	క్యాప్షన్ ట్రాక్‌లు
+	Delete Caption Tracks	క్యాప్షన్ ట్రాక్‌లను తొలగించు
+	Source code on GitHub	GitHubలో సోర్స్ కోడ్
+	Report an issue	సమస్యను నివేదించు
+	Community	సంఘం
+	Join us on Discord	Discordలో మాతో చేరండి
+	Rendering:	రెండరింగ్:
+	UI:	UI:
+	{fps} fps · {n} frames queued	{fps} fps · {n} ఫ్రేమ్‌లు క్యూలో ఉన్నాయి
+	Maximize Frame	ఫ్రేమ్‌ను గరిష్ఠీకరించు
+	Restore Frame	ఫ్రేమ్‌ను పునరుద్ధరించు
+	Reveal Sequence in Project	ప్రాజెక్ట్‌లో సీక్వెన్స్‌ను చూపు
+	Video Thumbnails	వీడియో థంబ్‌నెయిల్‌లు
+	Audio Waveforms	ఆడియో వేవ్‌ఫార్మ్‌లు
+	Untitled Workspace	పేరులేని వర్క్‌స్పేస్
+	New Workspace	కొత్త వర్క్‌స్పేస్
+	Show durations	వ్యవధులను చూపు
+	Project Metadata	ప్రాజెక్ట్ మెటాడేటా
+	Add Property…	లక్షణాన్ని జోడించు…
+	Column order	కాలమ్ క్రమం
+	Graphics text search arrives with M10.1–M10.2	గ్రాఫిక్స్ టెక్స్ట్ శోధన M10.1–M10.2తో వస్తుంది
+	Effect	ఎఫెక్ట్
+	(no clips)	(క్లిప్‌లు లేవు)
+	Export Frame (Shift+E)	ఫ్రేమ్ ఎగుమతి చేయి (Shift+E)
+	Export Frame: use Export mode (M6)	ఫ్రేమ్ ఎగుమతి: ఎగుమతి మోడ్‌ను ఉపయోగించండి (M6)
+	Save changes to “{project_name}” before closing?	మూసివేసే ముందు “{project_name}”కు మార్పులను సేవ్ చేయాలా?
+	Don't Save	సేవ్ చేయవద్దు
+	A file dialog is already open	ఫైల్ డైలాగ్ ఇప్పటికే తెరిచి ఉంది
+	Timeline: (no sequences)	టైమ్‌లైన్: (సీక్వెన్స్‌లు లేవు)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	మాస్క్ పాయింట్లను ఉంచడానికి ప్రోగ్రామ్ మానిటర్‌లో క్లిక్ చేయండి (వక్రరేఖల కోసం లాగండి); మూసివేయడానికి మొదటి పాయింట్‌పై క్లిక్ చేయండి లేదా Enter నొక్కండి
+	Composite	కాంపోజిట్
+	Comparison	పోలిక
+	Video and Waveform	వీడియో మరియు వేవ్‌ఫార్మ్
+	Remove Media Cache Files	మీడియా కాష్ ఫైల్‌లను తీసివేయి
+	Eyedropper: no picture to sample	ఐడ్రాపర్: నమూనా తీసుకోవడానికి చిత్రం లేదు
+	Select a clip to grade	గ్రేడ్ చేయడానికి క్లిప్‌ను ఎంచుకోండి
+	   Opacity	   అపారదర్శకత
+	   Size	   పరిమాణం
+	   Corner Radius	   మూల వ్యాసార్థం
+	   Angle	   కోణం
+	   Distance	   దూరం
+	   Blur	   బ్లర్
+	   Template: {name}	   టెంప్లేట్: {name}
+	CFA4 Graphics Template	CFA4 గ్రాఫిక్స్ టెంప్లేట్
+	  (none)	  (ఏదీ లేదు)
+	Select items to clear	తొలగించాల్సిన అంశాలను ఎంచుకోండి
+	Media missing	మీడియా లేదు
+	Unreadable	చదవలేనిది
+	✓ Enable	✓ ప్రారంభించు
+	(RGB) Gamma	(RGB) గామా
+	(RGB) Input Black Level	(RGB) ఇన్‌పుట్ నలుపు స్థాయి
+	(RGB) Input White Level	(RGB) ఇన్‌పుట్ తెలుపు స్థాయి
+	(RGB) Output Black Level	(RGB) అవుట్‌పుట్ నలుపు స్థాయి
+	(RGB) Output White Level	(RGB) అవుట్‌పుట్ తెలుపు స్థాయి
+	10 Bit Black Point	10 బిట్ నలుపు పాయింట్
+	10 Bit White Point	10 బిట్ తెలుపు పాయింట్
+	105mm Prime	105mm ప్రైమ్
+	29.97 fps Drop-Frame	29.97 fps డ్రాప్-ఫ్రేమ్
+	29.97 fps Non Drop-Frame	29.97 fps నాన్ డ్రాప్-ఫ్రేమ్
+	35mm Prime	35mm ప్రైమ్
+	3D Roll	3D రోల్
+	3D Rotate	3D భ్రమణం
+	3D Spin	3D స్పిన్
+	3D Spinback	3D స్పిన్‌బ్యాక్
+	4-Color Gradient	4-రంగుల గ్రేడియెంట్
+	5.1 Media	5.1 మీడియా
+	5.1 Mixdown Type	5.1 మిక్స్‌డౌన్ రకం
+	50-300mm Zoom	50-300mm జూమ్
+	59.94 fps Drop-Frame	59.94 fps డ్రాప్-ఫ్రేమ్
+	59.94 fps Non Drop-Frame	59.94 fps నాన్ డ్రాప్-ఫ్రేమ్
+	ASC CDL	ASC CDL
+	Action-Safe Margin	యాక్షన్-సురక్షిత అంచు
+	Additional Scale	అదనపు స్కేల్
+	Additive Dissolve	సంకలన డిసాల్వ్
+	Additive Dissolve (Legacy)	సంకలన డిసాల్వ్ (పాతది)
+	Aggressive	తీవ్రమైన
+	Alpha Adjust	ఆల్ఫా సర్దుబాటు
+	Alpha Blurriness	ఆల్ఫా బ్లర్
+	Alpha Channel	ఆల్ఫా ఛానెల్
+	Alpha Glow	ఆల్ఫా గ్లో
+	Ambience Intensity	పరిసర తీవ్రత
+	Ambience Light Color	పరిసర కాంతి రంగు
+	Amount of Noise	నాయిస్ మొత్తం
+	Amount to Decolor	రంగు తీసివేయాల్సిన మొత్తం
+	Amount to Tint	టింట్ మొత్తం
+	Amplifier	యాంప్లిఫైయర్
+	Amplify	విస్తరించు
+	Amplitude	యాంప్లిట్యూడ్
+	Analog	అనలాగ్
+	Analog Delay	అనలాగ్ డిలే
+	Anamorphic	అనమార్ఫిక్
+	Anchor	యాంకర్
+	Anti-aliasing Quality	యాంటీ-ఏలియాసింగ్ నాణ్యత
+	Antialiasing for Best Quality	ఉత్తమ నాణ్యత కోసం యాంటీఏలియాసింగ్
+	Asymmetry	అసమరూపత
+	Audio Duration	ఆడియో వ్యవధి
+	Audio In Point	ఆడియో ఇన్ పాయింట్
+	Audio Out Point	ఆడియో అవుట్ పాయింట్
+	Audio Usage	ఆడియో వినియోగం
+	Auto Align	ఆటో సమలేఖనం
+	Auto Reframe	ఆటో రీఫ్రేమ్
+	Automatic Click Remover	స్వయంచాలక క్లిక్ తొలగింపు
+	Background Color	నేపథ్య రంగు
+	Background Corner Radius	నేపథ్య మూల వ్యాసార్థం
+	Background Opacity	నేపథ్య అపారదర్శకత
+	Background Size	నేపథ్య పరిమాణం
+	Band 1	బ్యాండ్ 1
+	Band 2	బ్యాండ్ 2
+	Band 3	బ్యాండ్ 3
+	Band 4	బ్యాండ్ 4
+	Band 5	బ్యాండ్ 5
+	Band Pass	బ్యాండ్ పాస్
+	Band Slide	బ్యాండ్ స్లైడ్
+	Band Stop	బ్యాండ్ స్టాప్
+	Bandpass	బ్యాండ్‌పాస్
+	Barn Doors	బార్న్ డోర్స్
+	Basic	ప్రాథమికం
+	Basic 3D	ప్రాథమిక 3D
+	Bass	బాస్
+	Behind	వెనుక
+	Bessel	బెస్సెల్
+	Bevel Alpha	బెవెల్ ఆల్ఫా
+	Binauralizer - Ambisonics	బైనారలైజర్ - ఆంబిసోనిక్స్
+	Black & White	నలుపు & తెలుపు
+	Black Input Level	నలుపు ఇన్‌పుట్ స్థాయి
+	Black and white with crushed blacks and strong contrast	గాఢ నలుపులు మరియు బలమైన కాంట్రాస్ట్‌తో నలుపు-తెలుపు
+	Bleach-bypass style: desaturated with hard contrast	బ్లీచ్-బైపాస్ శైలి: రంగు తగ్గించి కఠిన కాంట్రాస్ట్‌తో
+	Blend	బ్లెండ్
+	Blend With Original	అసలుదానితో బ్లెండ్ చేయి
+	Blending Mode	బ్లెండింగ్ మోడ్
+	Block Dissolve	బ్లాక్ డిసాల్వ్
+	Block Height	బ్లాక్ ఎత్తు
+	Block Motion	బ్లాక్ కదలిక
+	Block Size	బ్లాక్ పరిమాణం
+	Block Width	బ్లాక్ వెడల్పు
+	Blocks	బ్లాక్‌లు
+	Blue Blurriness	నీలం బ్లర్
+	Blue Curve	నీలం వక్రరేఖ
+	Blue Offset	నీలం ఆఫ్‌సెట్
+	Blue Power	నీలం పవర్
+	Blue Slope	నీలం స్లోప్
+	Blue-Blue	నీలం-నీలం
+	Blue-Const	నీలం-స్థిరాంకం
+	Blue-Green	నీలం-ఆకుపచ్చ
+	Blue-Red	నీలం-ఎరుపు
+	Blur Amount	బ్లర్ మొత్తం
+	Blur Angle	బ్లర్ కోణం
+	Blur Dimensions	బ్లర్ కొలతలు
+	Blur Dissolve	బ్లర్ డిసాల్వ్
+	Blur Layer	బ్లర్ లేయర్
+	Blur Length	బ్లర్ పొడవు
+	Blurriness	అస్పష్టత
+	Bokeh Blur	బొకే బ్లర్
+	Boost	బూస్ట్
+	Border	అంచు
+	Border Color	అంచు రంగు
+	Border Width	అంచు వెడల్పు
+	Borders	అంచులు
+	Bounce	బౌన్స్
+	Branching	శాఖలు
+	Brightness & Contrast	ప్రకాశం & కాంట్రాస్ట్
+	British Stack	బ్రిటిష్ స్టాక్
+	Brush Hardness	బ్రష్ కాఠిన్యం
+	Brush Opacity	బ్రష్ అపారదర్శకత
+	Brush Position	బ్రష్ స్థానం
+	Brush Size	బ్రష్ పరిమాణం
+	Brush Spacing (secs)	బ్రష్ అంతరం (సెకన్లు)
+	Brush Strokes	బ్రష్ స్ట్రోక్‌లు
+	Bubbles	బుడగలు
+	Bulge	ఉబ్బు
+	Bulge Smoother	ఉబ్బు మృదుకారి
+	Bump Height	బంప్ ఎత్తు
+	Burn Alpha	బర్న్ ఆల్ఫా
+	Burn Chroma	బర్న్ క్రోమా
+	Burn Color	బర్న్ రంగు
+	Butterworth	బటర్‌వర్త్
+	Camera Blur	కెమెరా బ్లర్
+	Camera Shake	కెమెరా కంపనం
+	Capitalisation	పెద్ద అక్షరాల వినియోగం
+	Cathedral	కేథడ్రల్
+	Cell Pattern	సెల్ నమూనా
+	Center Channel Pan	మధ్య ఛానెల్ ప్యాన్
+	Center Gradient	మధ్య గ్రేడియెంట్
+	Center Input	మధ్య ఇన్‌పుట్
+	Center Out	మధ్య అవుట్
+	Center Point (Latitude)	మధ్య బిందువు (అక్షాంశం)
+	Center Point (Longitude)	మధ్య బిందువు (రేఖాంశం)
+	Center Split	మధ్య విభజన
+	Center of Sphere	గోళం యొక్క కేంద్రం
+	Cents	సెంట్స్
+	Change to Color	రంగుకు మార్చు
+	Channel	ఛానెల్
+	Channel Blur	ఛానెల్ బ్లర్
+	Channel Mix	ఛానెల్ మిక్స్
+	Channel Mixer	ఛానెల్ మిక్సర్
+	Chaos	అస్తవ్యస్తత
+	Chebyshev	చెబిషెవ్
+	Checker Wipe	చెకర్ వైప్
+	Checkerboard	చెకర్‌బోర్డ్
+	Choke	చోక్
+	Chorus	కోరస్
+	Chorus/Flanger	కోరస్/ఫ్లేంజర్
+	Chroma Leak	క్రోమా లీక్
+	Chromatic Aberration (Blue)	వర్ణ విపథనం (నీలం)
+	Chromatic Aberration (Green)	వర్ణ విపథనం (ఆకుపచ్చ)
+	Chromatic Aberration (Red)	వర్ణ విపథనం (ఎరుపు)
+	Cineon Converter	Cineon కన్వర్టర్
+	Clean Combo	క్లీన్ కాంబో
+	Clip Level	క్లిప్ స్థాయి
+	Clipping	క్లిప్పింగ్
+	Clock Wipe	క్లాక్ వైప్
+	Clock Wipe (Legacy)	క్లాక్ వైప్ (పాతది)
+	Clockwise	సవ్యదిశ
+	Clone	క్లోన్
+	Color & Alpha	రంగు & ఆల్ఫా
+	Color 1	రంగు 1
+	Color 2	రంగు 2
+	Color 3	రంగు 3
+	Color 4	రంగు 4
+	Color Balance	రంగు సమతుల్యత
+	Color Channel	రంగు ఛానెల్
+	Color Distortion	రంగు వక్రీకరణ
+	Color Emboss	రంగు ఎంబాస్
+	Color Key	కలర్ కీ
+	Color Pass	కలర్ పాస్
+	Color Replace	రంగు భర్తీ
+	Color To Leave	ఉంచాల్సిన రంగు
+	Color Tolerance	రంగు సహనం
+	Colorize	రంగు వేయి
+	Columns	కాలమ్‌లు
+	Complexity	సంక్లిష్టత
+	Composite In Back	వెనుక కాంపోజిట్ చేయి
+	Composite In Front	ముందు కాంపోజిట్ చేయి
+	Composite Using	దీనితో కాంపోజిట్ చేయి
+	Composite on Original	అసలుదానిపై కాంపోజిట్ చేయి
+	Compound Blur	కాంపౌండ్ బ్లర్
+	Compression Before Clipping	క్లిప్పింగ్‌కు ముందు కంప్రెషన్
+	Constant Gain	స్థిర గెయిన్
+	Constant Power	స్థిర పవర్
+	Conversion Type	మార్పిడి రకం
+	Convolution Reverb	కన్వల్యూషన్ రివర్బ్
+	Cool, desaturated and punchy	చల్లని, తక్కువ రంగుతో, ప్రభావవంతంగా
+	Core Width	కోర్ వెడల్పు
+	Corner	మూల
+	Corner Pin	కార్నర్ పిన్
+	Count	గణన
+	Counter-clockwise	అపసవ్యదిశ
+	Crop Less <-> Smooth More	తక్కువ క్రాప్ <-> ఎక్కువ మృదుత్వం
+	Cross Displacement	క్రాస్ డిస్‌ప్లేస్‌మెంట్
+	Cross Dissolve	క్రాస్ డిసాల్వ్
+	Cross Dissolve (Legacy)	క్రాస్ డిసాల్వ్ (పాతది)
+	Cross Zoom	క్రాస్ జూమ్
+	Cross Zoom (Legacy)	క్రాస్ జూమ్ (పాతది)
+	Crossovers	క్రాస్‌ఓవర్‌లు
+	Crystallize	స్ఫటికీకరించు
+	Crystals	స్ఫటికాలు
+	Cube Spin	క్యూబ్ స్పిన్
+	Curl Radius	కర్ల్ వ్యాసార్థం
+	Cursor	కర్సర్
+	Curvature	వక్రత
+	Curve	వక్రరేఖ
+	Custom Color	అనుకూల రంగు
+	Cutoff	కటాఫ్
+	Cyan-teal shadows and warm highlights with a little more contrast	సియాన్-టీల్ నీడలు మరియు వెచ్చని హైలైట్‌లు, కొంచెం ఎక్కువ కాంట్రాస్ట్‌తో
+	Cycle (in Revolutions)	చక్రం (పరిభ్రమణాలలో)
+	Cycle Evolution	చక్ర పరిణామం
+	Damping	డంపింగ్
+	Damping HF	డంపింగ్ HF
+	Damping LF	డంపింగ్ LF
+	Day for night: darker, cooler and less saturated	పగలును రాత్రిగా: మరింత చీకటి, చల్లని మరియు తక్కువ రంగుతో
+	DeEsser	DeEsser
+	DeHummer	DeHummer
+	DeNoise	DeNoise
+	DeReverb	DeReverb
+	Decay	క్షయం
+	Decay Time (RT60)	క్షయ సమయం (RT60)
+	Delay	ఆలస్యం
+	Delay 1	ఆలస్యం 1
+	Delay 2	ఆలస్యం 2
+	Delay 3	ఆలస్యం 3
+	Delay 4	ఆలస్యం 4
+	Depth	లోతు
+	Desaturate	రంగు తగ్గించు
+	Detail Amplitude	వివరాల యాంప్లిట్యూడ్
+	Detail Level	వివరాల స్థాయి
+	Detailed Analysis	వివరణాత్మక విశ్లేషణ
+	Dimensions	కొలతలు
+	Dip to Black	నలుపులోకి మసకబారు
+	Dip to Black (Legacy)	నలుపులోకి మసకబారు (పాతది)
+	Dip to Color	రంగులోకి మసకబారు
+	Dip to White	తెలుపులోకి మసకబారు
+	Dip to White (Legacy)	తెలుపులోకి మసకబారు (పాతది)
+	Direction	దిశ
+	Directional	దిశాత్మక
+	Directional Blur	దిశాత్మక బ్లర్
+	Directional Blur (Legacy)	దిశాత్మక బ్లర్ (పాతది)
+	Disperse	చెదరగొట్టు
+	Displacement	స్థానభ్రంశం
+	Dissolve Blocks	బ్లాక్‌లను డిసాల్వ్ చేయి
+	Distance to Image	చిత్రానికి దూరం
+	Distortion	వక్రీకరణ
+	Distortion Complexity	వక్రీకరణ సంక్లిష్టత
+	Distortion Rate	వక్రీకరణ రేటు
+	Distortion Type	వక్రీకరణ రకం
+	Drive	డ్రైవ్
+	Drop Shadow	డ్రాప్ షాడో
+	Dry	పొడి
+	Dry Out	పొడి అవుట్
+	Dynamics Processing	డైనమిక్స్ ప్రాసెసింగ్
+	Early Reflections	ప్రారంభ ప్రతిబింబాలు
+	Earthquake	భూకంపం
+	Ease In and Out	ఈజ్ ఇన్ మరియు అవుట్
+	Easing	ఈజింగ్
+	Echo	ప్రతిధ్వని
+	Echo Glow	ఎకో గ్లో
+	Echo Operator	ఎకో ఆపరేటర్
+	Echo Time (seconds)	ఎకో సమయం (సెకన్లు)
+	Echoes	ప్రతిధ్వనులు
+	Edge Color	అంచు రంగు
+	Edge Feather	అంచు ఫెదర్
+	Edge Glow	అంచు గ్లో
+	Edge Sharpness	అంచు పదును
+	Edge Softness	అంచు మృదుత్వం
+	Edge Thickness	అంచు మందం
+	Edge Thin	అంచు సన్నం
+	Edge Threshold	అంచు థ్రెషోల్డ్
+	Edge Type	అంచు రకం
+	Edge Width	అంచు వెడల్పు
+	Elliptical	దీర్ఘవృత్తాకార
+	Emboss	ఎంబాస్
+	Enable HSL Secondary	HSL సెకండరీని ప్రారంభించు
+	End Color	ముగింపు రంగు
+	End Point	ముగింపు బిందువు
+	End of Ramp	ర్యాంప్ ముగింపు
+	Evolution	పరిణామం
+	Evolution Options	పరిణామ ఎంపికలు
+	Exciter Amount	ఎక్సైటర్ మొత్తం
+	Exciter Mode	ఎక్సైటర్ మోడ్
+	Exponential Fade	ఘాతాంక ఫేడ్
+	FFT Filter	FFT ఫిల్టర్
+	Fade	ఫేడ్
+	Fade Out	ఫేడ్ అవుట్
+	Falloff	క్షీణత
+	Fast	వేగంగా
+	Faster Motion	వేగవంతమైన కదలిక
+	Feedback	ఫీడ్‌బ్యాక్
+	Feedback 1	ఫీడ్‌బ్యాక్ 1
+	Feedback 2	ఫీడ్‌బ్యాక్ 2
+	Feedback 3	ఫీడ్‌బ్యాక్ 3
+	Feedback 4	ఫీడ్‌బ్యాక్ 4
+	Female	స్త్రీ
+	Fill Background	నేపథ్యాన్ని నింపు
+	Fill Color	నింపు రంగు
+	Fill Left with Right	ఎడమను కుడితో నింపు
+	Fill Point	నింపు బిందువు
+	Fill Right with Left	కుడిని ఎడమతో నింపు
+	Fill Selector	నింపు ఎంపిక
+	Film Dissolve	ఫిల్మ్ డిసాల్వ్
+	Film Dissolve (Legacy)	ఫిల్మ్ డిసాల్వ్ (పాతది)
+	Film Roll	ఫిల్మ్ రోల్
+	Filter	ఫిల్టర్
+	Filter Frequency	ఫిల్టర్ ఫ్రీక్వెన్సీ
+	Filter Resonance	ఫిల్టర్ రెసొనెన్స్
+	Final Delay	చివరి ఆలస్యం
+	Find Edges	అంచులను కనుగొను
+	Flanger	ఫ్లేంజర్
+	Flare	ఫ్లేర్
+	Flare Brightness	ఫ్లేర్ ప్రకాశం
+	Flare Center	ఫ్లేర్ కేంద్రం
+	Flare Color	ఫ్లేర్ రంగు
+	Flash	ఫ్లాష్
+	Flicker	మిణుకు
+	Flickers	మిణుకులు
+	Flip Motion	ఫ్లిప్ కదలిక
+	Flip Over	తిప్పివేయి
+	Focus	ఫోకస్
+	Focus Blur	ఫోకస్ బ్లర్
+	Focus Point	ఫోకస్ బిందువు
+	Focus Shape	ఫోకస్ ఆకారం
+	Focus Size	ఫోకస్ పరిమాణం
+	Fold Motion	మడత కదలిక
+	Foldback	ఫోల్డ్‌బ్యాక్
+	Fractal Influence	ఫ్రాక్టల్ ప్రభావం
+	Fractal Type	ఫ్రాక్టల్ రకం
+	Frame	ఫ్రేమ్
+	Frame Color	ఫ్రేమ్ రంగు
+	Frame Layout	ఫ్రేమ్ లేఅవుట్
+	Frame Width	ఫ్రేమ్ వెడల్పు
+	Framing	ఫ్రేమింగ్
+	Frequency	ఫ్రీక్వెన్సీ
+	From	నుండి
+	From East	తూర్పు నుండి
+	From North	ఉత్తరం నుండి
+	From South	దక్షిణం నుండి
+	From West	పడమర నుండి
+	Fuzz	ఫజ్
+	GB	GB
+	Gamma	గామా
+	Gamma Correction	గామా సవరణ
+	Gamut Warning	గామట్ హెచ్చరిక
+	Gamut Warning Color	గామట్ హెచ్చరిక రంగు
+	Gap	ఖాళీ
+	Gap Color	ఖాళీ రంగు
+	Gaussian Blur	గాసియన్ బ్లర్
+	Gaussian Blur (Legacy)	గాసియన్ బ్లర్ (పాతది)
+	Ghosts	దెయ్యాలు
+	Glass	గాజు
+	Glint	తళుకు
+	Glitch	గ్లిచ్
+	Glow	గ్లో
+	Glow Brightness	గ్లో ప్రకాశం
+	Glow Color	గ్లో రంగు
+	Glow Only	గ్లో మాత్రమే
+	Glow Radius	గ్లో వ్యాసార్థం
+	Glow Saturation	గ్లో సంతృప్తత
+	Glow Width	గ్లో వెడల్పు
+	Good	మంచి
+	Gradient End	గ్రేడియెంట్ ముగింపు
+	Gradient Layer	గ్రేడియెంట్ లేయర్
+	Gradient Placement	గ్రేడియెంట్ స్థానం
+	Gradient Scatter	గ్రేడియెంట్ చెదురు
+	Gradient Shape	గ్రేడియెంట్ ఆకారం
+	Gradient Start	గ్రేడియెంట్ ప్రారంభం
+	Gradient Wipe	గ్రేడియెంట్ వైప్
+	Gradient Wipe (Legacy)	గ్రేడియెంట్ వైప్ (పాతది)
+	Grain Size	గ్రెయిన్ పరిమాణం
+	Green Blurriness	ఆకుపచ్చ బ్లర్
+	Green Curve	ఆకుపచ్చ వక్రరేఖ
+	Green Offset	ఆకుపచ్చ ఆఫ్‌సెట్
+	Green Power	ఆకుపచ్చ పవర్
+	Green Slope	ఆకుపచ్చ స్లోప్
+	Green-Blue	ఆకుపచ్చ-నీలం
+	Green-Const	ఆకుపచ్చ-స్థిరాంకం
+	Green-Green	ఆకుపచ్చ-ఆకుపచ్చ
+	Green-Red	ఆకుపచ్చ-ఎరుపు
+	Grid	గ్రిడ్
+	Grow	పెరుగు
+	Grunge	గ్రంజ్
+	GuitarSuite	GuitarSuite
+	Hard	కఠినం
+	Hard Clip	హార్డ్ క్లిప్
+	Hard Limiter	హార్డ్ లిమిటర్
+	Head Size	తల పరిమాణం
+	Heart	హృదయం
+	Hexagon	షడ్భుజి
+	Hide Back Face	వెనుక ముఖాన్ని దాచు
+	High Cutoff	అధిక కటాఫ్
+	High Frequency Cut	అధిక ఫ్రీక్వెన్సీ కట్
+	High Frequency Damping	అధిక ఫ్రీక్వెన్సీ డంపింగ్
+	High Pass	హై పాస్
+	High Shelf	హై షెల్ఫ్
+	High Shelf Gain	హై షెల్ఫ్ గెయిన్
+	High contrast with held highlights and deep shadows	నిలిపిన హైలైట్‌లు మరియు లోతైన నీడలతో అధిక కాంట్రాస్ట్
+	Highlight Blue Balance	హైలైట్ నీలం సమతుల్యత
+	Highlight Brightness	హైలైట్ ప్రకాశం
+	Highlight Green Balance	హైలైట్ ఆకుపచ్చ సమతుల్యత
+	Highlight Red Balance	హైలైట్ ఎరుపు సమతుల్యత
+	Highlight Rolloff	హైలైట్ రోల్‌ఆఫ్
+	Highlight Threshold	హైలైట్ థ్రెషోల్డ్
+	Highlight Tint	హైలైట్ టింట్
+	Highlights Lightness	హైలైట్స్ కాంతి
+	Highpass	హైపాస్
+	Horizontal 16:9	అడ్డం 16:9
+	Horizontal Alignment	అడ్డ సమలేఖనం
+	Horizontal Blocks	అడ్డ బ్లాక్‌లు
+	Horizontal Decentering	అడ్డ వికేంద్రీకరణ
+	Horizontal Displacement	అడ్డ స్థానభ్రంశం
+	Horizontal Flip	అడ్డంగా తిప్పు
+	Horizontal Margin	అడ్డ అంచు
+	Horizontal and Vertical	అడ్డం మరియు నిలువు
+	Hue Center	హ్యూ కేంద్రం
+	Hue Tolerance	హ్యూ సహనం
+	Ignore Alpha	ఆల్ఫాను విస్మరించు
+	Impulse	ఇంపల్స్
+	Incoming	లోపలికి వచ్చేది
+	Initial Delay	ప్రారంభ ఆలస్యం
+	Inner Radius	లోపలి వ్యాసార్థం
+	Input Boost	ఇన్‌పుట్ బూస్ట్
+	Inside	లోపల
+	Inside Color	లోపలి రంగు
+	Inter	Inter
+	Internal Black Point	అంతర్గత నలుపు బిందువు
+	Internal White Point	అంతర్గత తెలుపు బిందువు
+	Interpolation	ఇంటర్‌పోలేషన్
+	Inverse Falloff	విలోమ క్షీణత
+	Invert Alpha	ఆల్ఫాను విలోమం చేయి
+	Invert Blur	బ్లర్‌ను విలోమం చేయి
+	Invert Fill	నింపును విలోమం చేయి
+	Invert Gradient	గ్రేడియెంట్‌ను విలోమం చేయి
+	Invert Left	ఎడమను విలోమం చేయి
+	Invert Right	కుడిని విలోమం చేయి
+	Iris Box	ఐరిస్ బాక్స్
+	Iris Cross	ఐరిస్ క్రాస్
+	Iris Diamond	ఐరిస్ డైమండ్
+	Iris Radius	ఐరిస్ వ్యాసార్థం
+	Iris Rotation	ఐరిస్ భ్రమణం
+	Iris Round	ఐరిస్ రౌండ్
+	Iris Shape	ఐరిస్ ఆకారం
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	కెలిడోస్కోప్
+	Key Color	కీ రంగు
+	Layer Name	లేయర్ పేరు
+	Leave Color	రంగును ఉంచు
+	Left - Left	ఎడమ - ఎడమ
+	Left - Right	ఎడమ - కుడి
+	Left to Right	ఎడమ నుండి కుడికి
+	Length	పొడవు
+	Lens Blur	లెన్స్ బ్లర్
+	Lens Distortion	లెన్స్ వక్రీకరణ
+	Lens Flare	లెన్స్ ఫ్లేర్
+	Lens Type	లెన్స్ రకం
+	Level 1	స్థాయి 1
+	Level 2	స్థాయి 2
+	Level 3	స్థాయి 3
+	Level 4	స్థాయి 4
+	Levels	స్థాయిలు
+	Lifted blacks, softer contrast, muted colour	ఎత్తిన నలుపులు, మృదువైన కాంట్రాస్ట్, మందమైన రంగు
+	Light 1	కాంతి 1
+	Light 2	కాంతి 2
+	Light 3	కాంతి 3
+	Light 4	కాంతి 4
+	Light 5	కాంతి 5
+	Light Angle	కాంతి కోణం
+	Light Color	కాంతి రంగు
+	Light Intensity	కాంతి తీవ్రత
+	Light Leak	లైట్ లీక్
+	Light Leaks	లైట్ లీక్స్
+	Light Sweep	లైట్ స్వీప్
+	Light Type	కాంతి రకం
+	Lighting Effects	లైటింగ్ ఎఫెక్ట్‌లు
+	Lightning	మెరుపు
+	Line Thickness	రేఖ మందం
+	Linear Ramp	లీనియర్ ర్యాంప్
+	Linear Wipe	లీనియర్ వైప్
+	Linear Wipe (Legacy)	లీనియర్ వైప్ (పాతది)
+	Linear to Log	లీనియర్ నుండి లాగ్
+	Liquid Distortion	ద్రవ వక్రీకరణ
+	Log to Linear	లాగ్ నుండి లీనియర్
+	Log to Log	లాగ్ నుండి లాగ్
+	Logo Cutout	లోగో కటౌట్
+	Long Shadow	పొడవైన నీడ
+	Look-Ahead Time	లుక్-అహెడ్ సమయం
+	Loudness Maximizer	లౌడ్‌నెస్ మ్యాక్సిమైజర్
+	Loudness Meter	లౌడ్‌నెస్ మీటర్
+	Louver	లూవర్
+	Low Frequency Cut	తక్కువ ఫ్రీక్వెన్సీ కట్
+	Low Pass	లో పాస్
+	Low Shelf	లో షెల్ఫ్
+	Low Shelf Gain	లో షెల్ఫ్ గెయిన్
+	Lower Left	కింద ఎడమ
+	Lower Right	కింద కుడి
+	Lowpass	లోపాస్
+	Luma Curve	లూమా వక్రరేఖ
+	Luma Fade	లూమా ఫేడ్
+	Luma Key	లూమా కీ
+	Luma Source	లూమా సోర్స్
+	Luma and Chroma	లూమా మరియు క్రోమా
+	Luminance	ల్యూమినెన్స్
+	Luminance Threshold	ల్యూమినెన్స్ థ్రెషోల్డ్
+	MB	MB
+	Magnify	పెద్దది చేయి
+	Magnify (Legacy)	పెద్దది చేయి (పాతది)
+	Major Radius	ప్రధాన వ్యాసార్థం
+	Male	పురుషుడు
+	Map Black To	నలుపును దీనికి మ్యాప్ చేయి
+	Map White To	తెలుపును దీనికి మ్యాప్ చేయి
+	Maps full-range levels into 16–235 (video range) with a luma curve	లూమా వక్రరేఖతో పూర్తి-పరిధి స్థాయిలను 16–235కి (వీడియో పరిధి) మ్యాప్ చేస్తుంది
+	Mask Only	మాస్క్ మాత్రమే
+	Master Amplitude	మాస్టర్ యాంప్లిట్యూడ్
+	Mastering	మాస్టరింగ్
+	Matte	మ్యాట్
+	Matte Alpha	మ్యాట్ ఆల్ఫా
+	Matte Cleanup	మ్యాట్ శుభ్రపరచడం
+	Matte Generation	మ్యాట్ ఉత్పత్తి
+	Matte Luma	మ్యాట్ లూమా
+	Maximum Amplitude	గరిష్ఠ యాంప్లిట్యూడ్
+	Maximum Block Size	గరిష్ఠ బ్లాక్ పరిమాణం
+	Maximum Blur	గరిష్ఠ బ్లర్
+	Maximum Reduction	గరిష్ఠ తగ్గింపు
+	Maximum Scale	గరిష్ఠ స్కేల్
+	Media Timecode	మీడియా టైమ్‌కోడ్
+	Median	మధ్యగతం
+	Metadata & Timecode Burn-in	మెటాడేటా & టైమ్‌కోడ్ ముద్రణ
+	Method	పద్ధతి
+	Metrics Kerning	మెట్రిక్స్ కెర్నింగ్
+	Mid	మధ్య
+	Mid Point	మధ్య బిందువు
+	Midtone Blue Balance	మిడ్‌టోన్ నీలం సమతుల్యత
+	Midtone Green Balance	మిడ్‌టోన్ ఆకుపచ్చ సమతుల్యత
+	Midtone Red Balance	మిడ్‌టోన్ ఎరుపు సమతుల్యత
+	Midtones Lightness	మిడ్‌టోన్స్ కాంతి
+	Minor Radius	చిన్న వ్యాసార్థం
+	Mirror	అద్దం
+	Mirror Alternate	ప్రత్యామ్నాయ అద్దం
+	Mixed Crystals	మిశ్రమ స్ఫటికాలు
+	Mode	మోడ్
+	Modern High Gain	ఆధునిక హై గెయిన్
+	Modulation Rate	మాడ్యులేషన్ రేటు
+	Monochrome toned cyan-blue	సియాన్-నీలం ఛాయలో ఏకవర్ణం
+	Monochrome toned warm brown	వెచ్చని గోధుమ ఛాయలో ఏకవర్ణం
+	More colour in the less saturated areas	తక్కువ సంతృప్త ప్రాంతాలలో ఎక్కువ రంగు
+	Morph Cut	మార్ఫ్ కట్
+	Mosaic	మొజాయిక్
+	Mosaic (Legacy)	మొజాయిక్ (పాతది)
+	Motion Blur	మోషన్ బ్లర్
+	Motion Camera	మోషన్ కెమెరా
+	Motion Preset	మోషన్ ప్రీసెట్
+	Motion Tween	మోషన్ ట్వీన్
+	Move	తరలించు
+	Multitap Delay	మల్టీట్యాప్ డిలే
+	Narrow	ఇరుకైన
+	Neon Color	నియాన్ రంగు
+	Neon Wipe	నియాన్ వైప్
+	No Motion	కదలిక లేదు
+	Noise	నాయిస్
+	Noise (Legacy)	నాయిస్ (పాతది)
+	Noise Level	నాయిస్ స్థాయి
+	Noise Reduction/Restoration	నాయిస్ తగ్గింపు/పునరుద్ధరణ
+	Noise Type	నాయిస్ రకం
+	Non-Additive Dissolve	సంకలనేతర డిసాల్వ్
+	Notch 1	నాచ్ 1
+	Notch 2	నాచ్ 2
+	Notch 3	నాచ్ 3
+	Notch 4	నాచ్ 4
+	Notch 5	నాచ్ 5
+	Notch 6	నాచ్ 6
+	Notch Filter	నాచ్ ఫిల్టర్
+	Notch Width	నాచ్ వెడల్పు
+	Number Of Echoes	ప్రతిధ్వనుల సంఖ్య
+	Number of Harmonics	హార్మోనిక్‌ల సంఖ్య
+	Octagon	అష్టభుజి
+	Offset	ఆఫ్‌సెట్
+	Offset (Turbulence)	ఆఫ్‌సెట్ (టర్బులెన్స్)
+	Offset From	దీని నుండి ఆఫ్‌సెట్
+	Offset To	దీనికి ఆఫ్‌సెట్
+	Omni	ఓమ్ని
+	On	ఆన్
+	On Original Image	అసలు చిత్రంపై
+	On Transparent	పారదర్శకంపై
+	Opens up the shadows	నీడలను తెరుస్తుంది
+	Order	క్రమం
+	Outgoing	బయటకు వెళ్లేది
+	Outside	బయట
+	Outside Color	బయటి రంగు
+	Overflow	ఓవర్‌ఫ్లో
+	Overshoot	ఓవర్‌షూట్
+	Page Peel	పేజీ పీల్
+	Page Turn	పేజీ తిప్పు
+	Paint Bucket	పెయింట్ బకెట్
+	Paint On Black	నలుపుపై పెయింట్
+	Paint On Original Image	అసలు చిత్రంపై పెయింట్
+	Paint On Transparent	పారదర్శకంపై పెయింట్
+	Paint On White	తెలుపుపై పెయింట్
+	Paint Style	పెయింట్ శైలి
+	Paint Surface	పెయింట్ ఉపరితలం
+	Pan (Y Axis)	ప్యాన్ (Y అక్షం)
+	Panel Wipe	ప్యానెల్ వైప్
+	Panner - Ambisonics	ప్యానర్ - ఆంబిసోనిక్స్
+	Passband Ripple	పాస్‌బ్యాండ్ రిపుల్
+	Path Points	మార్గ బిందువులు
+	Peak Frequency	పీక్ ఫ్రీక్వెన్సీ
+	Peak Gain	పీక్ గెయిన్
+	Pedestal	పెడెస్టల్
+	Pentagon	పంచభుజి
+	Percent Blur	బ్లర్ శాతం
+	Phase Difference	దశ వ్యత్యాసం
+	Phaser	ఫేజర్
+	Phosphor	ఫాస్ఫర్
+	Phosphor Color	ఫాస్ఫర్ రంగు
+	Photocopy	ఫోటోకాపీ
+	Photocopy Color	ఫోటోకాపీ రంగు
+	Pillow	దిండు
+	Pin All	అన్నీ పిన్ చేయి
+	Pin Horizontal	అడ్డంగా పిన్ చేయి
+	Pin Vertical	నిలువుగా పిన్ చేయి
+	Pinning	పిన్నింగ్
+	Pitch Shifter	పిచ్ షిఫ్టర్
+	Plate	ప్లేట్
+	Plateau Wipe	పీఠభూమి వైప్
+	Plateaus	పీఠభూములు
+	Plates	ప్లేట్‌లు
+	Point 1	బిందువు 1
+	Point 1 Color	బిందువు 1 రంగు
+	Point 1 Latitude	బిందువు 1 అక్షాంశం
+	Point 1 Longitude	బిందువు 1 రేఖాంశం
+	Point 2	బిందువు 2
+	Point 2 Color	బిందువు 2 రంగు
+	Point 2 Latitude	బిందువు 2 అక్షాంశం
+	Point 2 Longitude	బిందువు 2 రేఖాంశం
+	Point 3	బిందువు 3
+	Point 3 Color	బిందువు 3 రంగు
+	Point 3 Latitude	బిందువు 3 అక్షాంశం
+	Point 3 Longitude	బిందువు 3 రేఖాంశం
+	Point 4	బిందువు 4
+	Point 5	బిందువు 5
+	Point 6	బిందువు 6
+	Point 7	బిందువు 7
+	Point 8	బిందువు 8
+	Points	బిందువులు
+	Pop Motion	పాప్ కదలిక
+	Position Amount	స్థాన మొత్తం
+	Position, Scale, Rotation	స్థానం, స్కేల్, భ్రమణం
+	Posterize	పోస్టరైజ్
+	Posterize Time	పోస్టరైజ్ సమయం
+	Pre-Delay	ప్రీ-డిలే
+	Preserve Luminosity	ప్రకాశాన్ని నిలుపు
+	Preserve Scale	స్కేల్‌ను నిలుపు
+	ProcAmp	ProcAmp
+	Pull Motion	లాగు కదలిక
+	Pulls highlights and whites down	హైలైట్‌లు మరియు తెలుపులను కిందకు లాగుతుంది
+	Push	పుష్
+	Push (Legacy)	పుష్ (పాతది)
+	Q	Q
+	RGB Split	RGB విభజన
+	Radial	రేడియల్
+	Radial Blur	రేడియల్ బ్లర్
+	Radial Ramp	రేడియల్ ర్యాంప్
+	Radial Wipe	రేడియల్ వైప్
+	Radial Wipe (Legacy)	రేడియల్ వైప్ (పాతది)
+	Radius	వ్యాసార్థం
+	Ramp	ర్యాంప్
+	Ramp Shape	ర్యాంప్ ఆకారం
+	Random	యాదృచ్ఛికం
+	Random Seed	యాదృచ్ఛిక సీడ్
+	Ray	కిరణం
+	Ray Color	కిరణ రంగు
+	Ray Length	కిరణ పొడవు
+	Rays	కిరణాలు
+	Rays Only	కిరణాలు మాత్రమే
+	Red Blurriness	ఎరుపు బ్లర్
+	Red Curve	ఎరుపు వక్రరేఖ
+	Red Offset	ఎరుపు ఆఫ్‌సెట్
+	Red Power	ఎరుపు పవర్
+	Red Slope	ఎరుపు స్లోప్
+	Red-Blue	ఎరుపు-నీలం
+	Red-Const	ఎరుపు-స్థిరాంకం
+	Red-Green	ఎరుపు-ఆకుపచ్చ
+	Red-Red	ఎరుపు-ఎరుపు
+	Reduce Axis	అక్షాన్ని తగ్గించు
+	Reduce Interlace Flicker	ఇంటర్‌లేస్ మిణుకును తగ్గించు
+	Reflected	ప్రతిబింబిత
+	Reflection Angle	ప్రతిబింబ కోణం
+	Reflection Center	ప్రతిబింబ కేంద్రం
+	Refraction	వక్రీభవనం
+	Reframe Offset	రీఫ్రేమ్ ఆఫ్‌సెట్
+	Reframe Zoom	రీఫ్రేమ్ జూమ్
+	Relaxed	విశ్రాంత
+	Release Time	రిలీజ్ సమయం
+	Relief	ఉబ్బెత్తు
+	Remove Fringe	అంచు రంగును తొలగించు
+	Repeat Edge Pixels	అంచు పిక్సెల్‌లను పునరావృతం చేయి
+	Replace Color	రంగును భర్తీ చేయి
+	Replicate	ప్రతిరూపించు
+	Result	ఫలితం
+	Retro	రెట్రో
+	Reveal Original Image	అసలు చిత్రాన్ని చూపు
+	Reverb Amount	రివర్బ్ మొత్తం
+	Right - Left	కుడి - ఎడమ
+	Right - Right	కుడి - కుడి
+	Roll (Z Axis)	రోల్ (Z అక్షం)
+	Room Size	గది పరిమాణం
+	Rotation Amount	భ్రమణ మొత్తం
+	Roughen	గరుకు చేయి
+	Roughen Color	గరుకు రంగు
+	Roughen Edges	అంచులను గరుకు చేయి
+	Rounded Crop	గుండ్రని క్రాప్
+	Rusty	తుప్పు
+	Rusty Color	తుప్పు రంగు
+	Saturation at 50 %	50 % వద్ద సంతృప్తత
+	Scale (Degrees)	స్కేల్ (డిగ్రీలు)
+	Scale Amount	స్కేల్ మొత్తం
+	Scale From	దీని నుండి స్కేల్
+	Scale Height	స్కేల్ ఎత్తు
+	Scale Match	స్కేల్ సరిపోలిక
+	Scale To	దీనికి స్కేల్
+	Scan Lines	స్కాన్ లైన్‌లు
+	Scientific Filter	శాస్త్రీయ ఫిల్టర్
+	Segments	విభాగాలు
+	Semi-tones	సెమీ-టోన్‌లు
+	Sequence Name	సీక్వెన్స్ పేరు
+	Sequence Timecode	సీక్వెన్స్ టైమ్‌కోడ్
+	Setting	సెట్టింగ్
+	Shadow Angle	నీడ కోణం
+	Shadow Blue Balance	నీడ నీలం సమతుల్యత
+	Shadow Blur	నీడ బ్లర్
+	Shadow Color	నీడ రంగు
+	Shadow Distance	నీడ దూరం
+	Shadow Green Balance	నీడ ఆకుపచ్చ సమతుల్యత
+	Shadow Only	నీడ మాత్రమే
+	Shadow Opacity	నీడ అపారదర్శకత
+	Shadow Red Balance	నీడ ఎరుపు సమతుల్యత
+	Shadow Size	నీడ పరిమాణం
+	Shadow Tint	నీడ టింట్
+	Shadows Lightness	నీడల కాంతి
+	Shake	కంపనం
+	Shape Dissolve	ఆకార డిసాల్వ్
+	Shape Flow	ఆకార ప్రవాహం
+	Shape Size	ఆకార పరిమాణం
+	Shard Size	ముక్క పరిమాణం
+	Sharp Colors	పదునైన రంగులు
+	Sharpen Amount	షార్పెన్ మొత్తం
+	Shift Center To	కేంద్రాన్ని దీనికి జరుపు
+	Show Focus Area	ఫోకస్ ప్రాంతాన్ని చూపు
+	Show Only Noise	నాయిస్‌ను మాత్రమే చూపు
+	Shrink	కుదించు
+	Shutter Angle	షట్టర్ కోణం
+	Similarity	సారూప్యత
+	Simple Notch Filter	సాధారణ నాచ్ ఫిల్టర్
+	Simple Parametric EQ	సాధారణ పారామెట్రిక్ EQ
+	Simple Text	సాధారణ టెక్స్ట్
+	Single-band Compressor	సింగిల్-బ్యాండ్ కంప్రెసర్
+	Sinusoidal	సైనుసాయిడల్
+	Skew	వక్రం
+	Skew Axis	వక్ర అక్షం
+	Slats	పలకలు
+	Slice	ముక్క
+	Slices	ముక్కలు
+	Slide (Legacy)	స్లైడ్ (పాతది)
+	Slope	వాలు
+	Slow	నెమ్మది
+	Slower Motion	నెమ్మదైన కదలిక
+	Smart Limit	స్మార్ట్ పరిమితి
+	Smooth	మృదువైన
+	Smooth Motion	మృదువైన కదలిక
+	Smoothness	మృదుత్వం
+	Soft	మెత్తని
+	Soft Clamp	సాఫ్ట్ క్లాంప్
+	Soft Edges (Best Quality)	మృదువైన అంచులు (ఉత్తమ నాణ్యత)
+	Soft Wipe	సాఫ్ట్ వైప్
+	Softness	మెత్తదనం
+	Solarize	సోలరైజ్
+	Solid Colors	ఘన రంగులు
+	Source Point	సోర్స్ బిందువు
+	Source Text	సోర్స్ టెక్స్ట్
+	Spacer	స్పేసర్
+	Speaker Angle	స్పీకర్ కోణం
+	Special Effects	ప్రత్యేక ఎఫెక్ట్‌లు
+	Spherize	గోళాకారం చేయి
+	Spiky	ముళ్లతో
+	Spill	స్పిల్
+	Spill Suppression	స్పిల్ అణచివేత
+	Spin	స్పిన్
+	Spin Direction	స్పిన్ దిశ
+	Spin Motion	స్పిన్ కదలిక
+	Split (Legacy)	విభజన (పాతది)
+	Spotlight	స్పాట్‌లైట్
+	Spread	వ్యాప్తి
+	Spring Motion	స్ప్రింగ్ కదలిక
+	Square (Width Only)	చతురస్రం (వెడల్పు మాత్రమే)
+	Square 1:1	చతురస్రం 1:1
+	Stabilization	స్థిరీకరణ
+	Stabilize Only	స్థిరీకరించు మాత్రమే
+	Stabilize, Crop	స్థిరీకరించు, క్రాప్
+	Stabilize, Crop, Auto-scale	స్థిరీకరించు, క్రాప్, ఆటో-స్కేల్
+	Stabilize, Synthesize Edges	స్థిరీకరించు, అంచులను సంశ్లేషించు
+	Stages	దశలు
+	Star Wipe	స్టార్ వైప్
+	Start Angle	ప్రారంభ కోణం
+	Start Color	ప్రారంభ రంగు
+	Start Point	ప్రారంభ బిందువు
+	Start of Ramp	ర్యాంప్ ప్రారంభం
+	Starting Intensity	ప్రారంభ తీవ్రత
+	Static Plates	స్థిర ప్లేట్‌లు
+	Stereo Expand	స్టీరియో విస్తరణ
+	Stereo Expander	స్టీరియో ఎక్స్‌పాండర్
+	Stereo Phasing	స్టీరియో ఫేజింగ్
+	Stereoscopic - Over/Under	స్టీరియోస్కోపిక్ - పైన/కింద
+	Stereoscopic - Side by Side	స్టీరియోస్కోపిక్ - పక్కపక్కన
+	Stopband Attenuation	స్టాప్‌బ్యాండ్ క్షీణత
+	Straight Color	నేరు రంగు
+	Strength	బలం
+	Stretch	సాగదీయి
+	Stretch Gradient to Fit	సరిపోయేలా గ్రేడియెంట్‌ను సాగదీయి
+	Stretch Map to Fit	సరిపోయేలా మ్యాప్‌ను సాగదీయి
+	Stretch Width or Height	వెడల్పు లేదా ఎత్తును సాగదీయి
+	Stretch Wipe	స్ట్రెచ్ వైప్
+	Stretch to Fit Frame	ఫ్రేమ్‌కు సరిపోయేలా సాగదీయి
+	Stripe	చార
+	Stripes	చారలు
+	Strobe Color	స్ట్రోబ్ రంగు
+	Strobe Duration (secs)	స్ట్రోబ్ వ్యవధి (సెకన్లు)
+	Strobe Light	స్ట్రోబ్ లైట్
+	Strobe Period (secs)	స్ట్రోబ్ కాలం (సెకన్లు)
+	Stroke 2 Color	స్ట్రోక్ 2 రంగు
+	Stroke 2 Type	స్ట్రోక్ 2 రకం
+	Stroke 2 Width	స్ట్రోక్ 2 వెడల్పు
+	Stroke Angle	స్ట్రోక్ కోణం
+	Stroke Color	స్ట్రోక్ రంగు
+	Stroke Density	స్ట్రోక్ సాంద్రత
+	Stroke Length	స్ట్రోక్ పొడవు
+	Stroke Length (secs)	స్ట్రోక్ పొడవు (సెకన్లు)
+	Stroke Only	స్ట్రోక్ మాత్రమే
+	Stroke Randomness	స్ట్రోక్ యాదృచ్ఛికత
+	Stroke Type	స్ట్రోక్ రకం
+	Stroke Width	స్ట్రోక్ వెడల్పు
+	Studio Reverb	స్టూడియో రివర్బ్
+	Subclip End	సబ్‌క్లిప్ ముగింపు
+	Subclip Start	సబ్‌క్లిప్ ప్రారంభం
+	Subspace Warp	సబ్‌స్పేస్ వార్ప్
+	Super Narrow	అతి ఇరుకైన
+	Surface Gloss	ఉపరితల మెరుపు
+	Surface Material	ఉపరితల పదార్థం
+	Surround Reverb	సరౌండ్ రివర్బ్
+	Swap Channels	ఛానెల్‌లను మార్చు
+	Swivel	తిరుగు
+	TV Power	TV పవర్
+	Tape	టేప్
+	Tape/Tube	టేప్/ట్యూబ్
+	Target Aspect	లక్ష్య నిష్పత్తి
+	Target Color	లక్ష్య రంగు
+	Target Field of View	లక్ష్య దృష్టి క్షేత్రం
+	Text Color	టెక్స్ట్ రంగు
+	Tile Gradient	టైల్ గ్రేడియెంట్
+	Tilt	వంపు
+	Tilt (X Axis)	వంపు (X అక్షం)
+	Tint Color	టింట్ రంగు
+	To	దీనికి
+	Tolerance	సహనం
+	Tone	టోన్
+	Track Matte Key	ట్రాక్ మ్యాట్ కీ
+	Transience	క్షణికత
+	Transition Completion	ట్రాన్సిషన్ పూర్తి
+	Transition Softness	ట్రాన్సిషన్ మృదుత్వం
+	Transparency	పారదర్శకత
+	Trash	చెత్త
+	Travel Motion	ప్రయాణ కదలిక
+	Treble	ట్రెబుల్
+	Triangle	త్రిభుజం
+	Tube	ట్యూబ్
+	Tube-modeled Compressor	ట్యూబ్-నమూనా కంప్రెసర్
+	Tubular	గొట్టపు
+	Turbulent	అల్లకల్లోల
+	Turbulent Displace	అల్లకల్లోల స్థానభ్రంశం
+	Turbulent Sharp	అల్లకల్లోల పదును
+	Turbulent Smooth	అల్లకల్లోల మృదువు
+	Turbulent Smoother	అల్లకల్లోల మరింత మృదువు
+	Tweed	ట్వీడ్
+	Twirl	సుడి
+	Twirl (Legacy)	సుడి (పాతది)
+	Twirl Center	సుడి కేంద్రం
+	Twirl Radius	సుడి వ్యాసార్థం
+	Twist	మెలిక
+	Twist Smoother	మెలిక మృదుకారి
+	Ultra Key	అల్ట్రా కీ
+	Uniform Spacing	ఏకరీతి అంతరం
+	Unsharp Mask	అన్‌షార్ప్ మాస్క్
+	Upper Frequency	ఎగువ ఫ్రీక్వెన్సీ
+	Upper Left	పైన ఎడమ
+	Upper Right	పైన కుడి
+	Use Color Noise	కలర్ నాయిస్ ఉపయోగించు
+	Use End Color	ముగింపు రంగును ఉపయోగించు
+	Use Glow Color	గ్లో రంగును ఉపయోగించు
+	Use Tint Color	టింట్ రంగును ఉపయోగించు
+	VHS Damage	VHS నష్టం
+	VR Blur	VR బ్లర్
+	VR Chroma Leaks	VR క్రోమా లీక్స్
+	VR Chromatic Aberrations	VR వర్ణ విపథనాలు
+	VR Color Gradients	VR రంగు గ్రేడియెంట్‌లు
+	VR De-Noise	VR నాయిస్ తొలగింపు
+	VR Digital Glitch	VR డిజిటల్ గ్లిచ్
+	VR Fractal Noise	VR ఫ్రాక్టల్ నాయిస్
+	VR Glow	VR గ్లో
+	VR Gradient Wipe	VR గ్రేడియెంట్ వైప్
+	VR Iris Wipe	VR ఐరిస్ వైప్
+	VR Light Leaks	VR లైట్ లీక్స్
+	VR Light Rays	VR కాంతి కిరణాలు
+	VR Mobius Zoom	VR మోబియస్ జూమ్
+	VR Plane to Sphere	VR సమతలం నుండి గోళం
+	VR Projection	VR ప్రొజెక్షన్
+	VR Random Blocks	VR యాదృచ్ఛిక బ్లాక్‌లు
+	VR Rotate Sphere	VR గోళాన్ని తిప్పు
+	VR Sharpen	VR షార్పెన్
+	VR Spherical Blur	VR గోళాకార బ్లర్
+	Venetian Blinds	వెనీషియన్ బ్లైండ్స్
+	Vertical 4:5	నిలువు 4:5
+	Vertical 9:16	నిలువు 9:16
+	Vertical Alignment	నిలువు సమలేఖనం
+	Vertical Blocks	నిలువు బ్లాక్‌లు
+	Vertical Decentering	నిలువు వికేంద్రీకరణ
+	Vertical Displacement	నిలువు స్థానభ్రంశం
+	Vertical Flip	నిలువుగా తిప్పు
+	Vertical Margin	నిలువు అంచు
+	Very Narrow	చాలా ఇరుకైన
+	Video 1	వీడియో 1
+	Video 2	వీడియో 2
+	Video 3	వీడియో 3
+	Video 4	వీడియో 4
+	Video 5	వీడియో 5
+	Video 6	వీడియో 6
+	Video 7	వీడియో 7
+	Video 8	వీడియో 8
+	Video Duration	వీడియో వ్యవధి
+	Video In Point	వీడియో ఇన్ పాయింట్
+	Video Out Point	వీడియో అవుట్ పాయింట్
+	Video Usage	వీడియో వినియోగం
+	Vocal Booth	వోకల్ బూత్
+	Vocal Enhancer	స్వర మెరుగుదల
+	Volumetric Rays	ఘనపరిమాణ కిరణాలు
+	Warm print stock with gentle roll-off	మృదువైన రోల్-ఆఫ్‌తో వెచ్చని ప్రింట్ స్టాక్
+	Warm, soft late-afternoon light	వెచ్చని, మృదువైన మధ్యాహ్నం తర్వాతి కాంతి
+	Warp Stabilizer	వార్ప్ స్టెబిలైజర్
+	Wave	అల
+	Wave Height	అల ఎత్తు
+	Wave Speed	అల వేగం
+	Wave Warp	వేవ్ వార్ప్
+	Wave Width	అల వెడల్పు
+	Wavelength	తరంగదైర్ఘ్యం
+	Wet	తడి
+	Wet Out	తడి అవుట్
+	Whip	విప్
+	Whip (Legacy)	విప్ (పాతది)
+	White	తెలుపు
+	White Input Level	తెలుపు ఇన్‌పుట్ స్థాయి
+	White Is High	తెలుపు ఎక్కువ
+	Widener	వైడెనర్
+	Wiggle	వణుకు
+	Wipe Angle	వైప్ కోణం
+	Wonder Glow	వండర్ గ్లో
+	Wrap Back	వెనక్కి చుట్టు
+	Write-on	రాసే ఎఫెక్ట్
+	X Rotation	X భ్రమణం
+	Y Rotation	Y భ్రమణం
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	క్రాస్ చేసిన ఛానెల్ వక్రరేఖల నుండి పసుపు-ఆకుపచ్చ హైలైట్‌లు మరియు నీలంగా ఎత్తిన నీడలు
+	Z Position	Z స్థానం
+	Z Rotation	Z భ్రమణం
+	Zoom Amount	జూమ్ మొత్తం
+	Zoom Blur	జూమ్ బ్లర్
+	Zoom Strength	జూమ్ బలం
+	no GPU adapter: the CPU compositor is used	GPU అడాప్టర్ లేదు: CPU కాంపోజిటర్ ఉపయోగించబడుతోంది
+	CFA4 Project	CFA4 ప్రాజెక్ట్
+	{name} (Simplified)	{name} (సరళీకృతం)
+	Delete Search Bin	సెర్చ్ బిన్‌ను తొలగించు
+	No export preset named `{name}`	`{name}` అనే ఎగుమతి ప్రీసెట్ లేదు
+	Encoding {n}%	ఎన్‌కోడింగ్ {n}%
+	Stop	ఆపు
+	Uncompressed (PCM)	కుదించని (PCM)
+	Match Source ({seq_sr} Hz)	సోర్స్‌కు సరిపోల్చు ({seq_sr} Hz)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	సీక్వెన్స్, {w}x{h}, {fps} fps, {rate} Hz
+	Exporting {path}	{path} ఎగుమతి అవుతోంది
+	Added to the export queue	ఎగుమతి క్యూకి జోడించబడింది
+	Import: no file chosen (agents: export.presets.import {path})	దిగుమతి: ఫైల్ ఎంచుకోబడలేదు (ఏజెంట్‌లు: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	ఎగుమతి: ఫైల్ ఎంచుకోబడలేదు (ఏజెంట్‌లు: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	గ్రాఫిక్స్ సమస్య: సాఫ్ట్‌వేర్ కాంపోజిటింగ్‌కు మారింది
+	GPU acceleration is unavailable; preview renders on the CPU	GPU వేగవంతం అందుబాటులో లేదు; ప్రివ్యూ CPUపై రెండర్ అవుతుంది
+	CFA4 hit an error	CFA4లో లోపం ఏర్పడింది
+	Opened {url}	{url} తెరవబడింది
+	(empty)	(ఖాళీ)
+	AAC Audio 48 kHz 320 kbps	AAC ఆడియో 48 kHz 320 kbps
+	Opus Audio 48 kHz 160 kbps	Opus ఆడియో 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), స్టీరియో 48 kHz, 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080, 8 Mbps, Opus 128 kbps స్టీరియో
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4 ఆడియో (.m4a), స్టీరియో 48 kHz AAC-LC, 320 kbps
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16-బిట్
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, స్టీరియో 48 kHz 16-బిట్ PCM
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24-బిట్
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, స్టీరియో 48 kHz 24-బిట్, నష్టరహితం
+	FLAC (lossless)	FLAC (నష్టరహితం)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	యానిమేటెడ్ GIF 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	ఆల్ఫాతో Apple ProRes 4444
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Apply Guide Template	గైడ్ టెంప్లేట్‌ను వర్తింపజేయి
+	Auto Save Now	ఇప్పుడే ఆటో సేవ్ చేయి
+	Auto-Match Loudness	లౌడ్‌నెస్‌ను స్వయంచాలకంగా సరిపోల్చు
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	Avid-శైలి OP-Atom: DNxHR HQ చిత్ర ఫైల్ మరియు ఛానెల్‌కు ఒక 24-బిట్ 48 kHz PCM ఫైల్ (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	BMP సీక్వెన్స్
+	Baseline	బేస్‌లైన్
+	Begin Text Editing for a Graphic Layer	గ్రాఫిక్ లేయర్ కోసం టెక్స్ట్ సవరణ ప్రారంభించు
+	Begins With	దీనితో ప్రారంభమవుతుంది
+	Blur In	బ్లర్ ఇన్
+	Blur Out	బ్లర్ అవుట్
+	Brightens inside a feathered circular mask	ఫెదర్ చేసిన వృత్తాకార మాస్క్ లోపల ప్రకాశవంతం చేస్తుంది
+	Broadcast	ప్రసారం
+	Cancel Dynamic Trim	డైనమిక్ ట్రిమ్‌ను రద్దు చేయి
+	Cancel Queued Export	క్యూలోని ఎగుమతిని రద్దు చేయి
+	Center align text	టెక్స్ట్‌ను మధ్యకు సమలేఖనం చేయి
+	Change Mask	మాస్క్‌ను మార్చు
+	Clear All Events	అన్ని ఈవెంట్‌లను తొలగించు
+	Clear Edit Point Selection	ఎడిట్ పాయింట్ ఎంపికను తొలగించు
+	Clear Finished Exports	పూర్తయిన ఎగుమతులను తొలగించు
+	Clear Poster Frame	పోస్టర్ ఫ్రేమ్‌ను తొలగించు
+	Close Bin	బిన్‌ను మూసివేయి
+	Close Sequence	సీక్వెన్స్‌ను మూసివేయి
+	Contains	కలిగి ఉంది
+	Cut to Camera 1	కెమెరా 1కి కట్ చేయి
+	Cut to Camera 2	కెమెరా 2కి కట్ చేయి
+	Cut to Camera 3	కెమెరా 3కి కట్ చేయి
+	Cut to Camera 4	కెమెరా 4కి కట్ చేయి
+	Cut to Camera 5	కెమెరా 5కి కట్ చేయి
+	Cut to Camera 6	కెమెరా 6కి కట్ చేయి
+	Cut to Camera 7	కెమెరా 7కి కట్ చేయి
+	Cut to Camera 8	కెమెరా 8కి కట్ చేయి
+	Cut to Camera 9	కెమెరా 9కి కట్ చేయి
+	Darkens outside a feathered oval mask	ఫెదర్ చేసిన అండాకార మాస్క్ బయట ముదురు చేస్తుంది
+	Decrease Clip Volume	క్లిప్ వాల్యూమ్ తగ్గించు
+	Decrease Clip Volume Many	క్లిప్ వాల్యూమ్ బాగా తగ్గించు
+	Decrease Font Size by Five Units	ఫాంట్ పరిమాణాన్ని ఐదు యూనిట్లు తగ్గించు
+	Decrease Font Size by One Unit	ఫాంట్ పరిమాణాన్ని ఒక యూనిట్ తగ్గించు
+	Decrease Leading by Five Units	లీడింగ్‌ను ఐదు యూనిట్లు తగ్గించు
+	Decrease Leading by One Unit	లీడింగ్‌ను ఒక యూనిట్ తగ్గించు
+	Delete Captions	క్యాప్షన్‌లను తొలగించు
+	Delete Graphic Layer	గ్రాఫిక్ లేయర్‌ను తొలగించు
+	Delete Guide Template	గైడ్ టెంప్లేట్‌ను తొలగించు
+	Delete Media Cache Files	మీడియా కాష్ ఫైల్‌లను తొలగించు
+	Discard Unsaved Changes	సేవ్ చేయని మార్పులను విస్మరించు
+	Does Not Contain	కలిగి లేదు
+	Download Speech Model	ప్రసంగ మోడల్‌ను డౌన్‌లోడ్ చేయి
+	Dynamic Trim Stop	డైనమిక్ ట్రిమ్ ఆపు
+	Edit Caption Text	క్యాప్షన్ టెక్స్ట్‌ను సవరించు
+	Ends With	దీనితో ముగుస్తుంది
+	Entire Source	మొత్తం సోర్స్
+	EssentialSound	EssentialSound
+	Extend Next Edit To Playhead	తదుపరి ఎడిట్‌ను ప్లేహెడ్ వరకు పొడిగించు
+	Extend Previous Edit To Playhead	మునుపటి ఎడిట్‌ను ప్లేహెడ్ వరకు పొడిగించు
+	Extend Selected Edit to Playhead	ఎంచుకున్న ఎడిట్‌ను ప్లేహెడ్ వరకు పొడిగించు
+	Extend Selection Down	ఎంపికను కిందకు పొడిగించు
+	Extend Selection Left	ఎంపికను ఎడమకు పొడిగించు
+	Extend Selection Right	ఎంపికను కుడికి పొడిగించు
+	Extend Selection Up	ఎంపికను పైకి పొడిగించు
+	Fade In	ఫేడ్ ఇన్
+	Gaussian Blur from 0 to 60 over the last second	చివరి సెకనులో 0 నుండి 60 వరకు గాసియన్ బ్లర్
+	Gaussian Blur from 60 to 0 over the first second	మొదటి సెకనులో 60 నుండి 0 వరకు గాసియన్ బ్లర్
+	Generate Ducking Keyframes	డకింగ్ కీఫ్రేమ్‌లను రూపొందించు
+	Go to Next Edit Point	తదుపరి ఎడిట్ పాయింట్‌కు వెళ్లు
+	Go to Next Edit Point on Any Track	ఏ ట్రాక్‌లోనైనా తదుపరి ఎడిట్ పాయింట్‌కు వెళ్లు
+	Go to Previous Edit Point	మునుపటి ఎడిట్ పాయింట్‌కు వెళ్లు
+	Go to Previous Edit Point on Any Track	ఏ ట్రాక్‌లోనైనా మునుపటి ఎడిట్ పాయింట్‌కు వెళ్లు
+	Go to Selected Clip End	ఎంచుకున్న క్లిప్ ముగింపుకు వెళ్లు
+	Go to Selected Clip Start	ఎంచుకున్న క్లిప్ ప్రారంభానికి వెళ్లు
+	Go to Sequence End	సీక్వెన్స్ ముగింపుకు వెళ్లు
+	Go to Sequence Start	సీక్వెన్స్ ప్రారంభానికి వెళ్లు
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	వీడియో షేరింగ్ సైట్‌ల కోసం H.264 1920×1080, VBR 1 పాస్, 16 Mbps
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 పాస్, లక్ష్యం 20 Mbps, AAC 320 kbps
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 పాస్‌లు, 18 Mbps
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	వీడియో షేరింగ్ సైట్‌ల కోసం H.264 3840×2160, VBR 1 పాస్, 45 Mbps
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 పాస్, లక్ష్యం 60 Mbps, AAC 320 kbps
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 పాస్‌లు, 50 Mbps
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	చిన్న సోషల్ వీడియోల కోసం H.264 9:16 నిలువు, నింపేలా స్కేల్ చేయబడింది, 12 Mbps
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	సీక్వెన్స్ ఫ్రేమ్ పరిమాణం మరియు రేట్‌లో H.264; పిక్సెల్‌కు 0.05 బిట్‌లు
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	సీక్వెన్స్ ఫ్రేమ్ పరిమాణం మరియు రేట్‌లో H.264; పిక్సెల్‌కు 0.1 బిట్‌లు
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	సీక్వెన్స్ ఫ్రేమ్ పరిమాణం మరియు రేట్‌లో H.264; బిట్‌రేట్ ఫ్రేమ్ పరిమాణానికి అనుగుణంగా మారుతుంది (పిక్సెల్‌కు 0.2 బిట్‌లు)
+	High Quality 1080p HD	అధిక నాణ్యత 1080p HD
+	High Quality 2160p 4K	అధిక నాణ్యత 2160p 4K
+	Increase Clip Volume	క్లిప్ వాల్యూమ్ పెంచు
+	Increase Clip Volume Many	క్లిప్ వాల్యూమ్ బాగా పెంచు
+	Increase Font Size by Five Units	ఫాంట్ పరిమాణాన్ని ఐదు యూనిట్లు పెంచు
+	Increase Font Size by One Unit	ఫాంట్ పరిమాణాన్ని ఒక యూనిట్ పెంచు
+	Increase Leading by Five Units	లీడింగ్‌ను ఐదు యూనిట్లు పెంచు
+	Increase Leading by One Unit	లీడింగ్‌ను ఒక యూనిట్ పెంచు
+	Large blocks resolving to the picture over the first second	మొదటి సెకనులో చిత్రంగా మారే పెద్ద బ్లాక్‌లు
+	Left align text	టెక్స్ట్‌ను ఎడమకు సమలేఖనం చేయి
+	Looping GIF, 640×360 at 15 fps	లూప్ అయ్యే GIF, 640×360, 15 fps
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (పిక్సెల్‌కు 0.3 బిట్‌లు), 24-బిట్ 48 kHz PCM
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	Main	ప్రధాన
+	Mark In (Hover Scrub)	ఇన్ గుర్తించు (హోవర్ స్క్రబ్)
+	Mark Out (Hover Scrub)	అవుట్ గుర్తించు (హోవర్ స్క్రబ్)
+	Masks	మాస్క్‌లు
+	Match Source – Adaptive High Bitrate	సోర్స్‌కు సరిపోల్చు – అనుకూలనీయ అధిక బిట్‌రేట్
+	Match Source – Adaptive Low Bitrate	సోర్స్‌కు సరిపోల్చు – అనుకూలనీయ తక్కువ బిట్‌రేట్
+	Match Source – Adaptive Medium Bitrate	సోర్స్‌కు సరిపోల్చు – అనుకూలనీయ మధ్యస్థ బిట్‌రేట్
+	Matches	సరిపోలికలు
+	Maximize or Restore Active Frame	సక్రియ ఫ్రేమ్‌ను గరిష్ఠీకరించు లేదా పునరుద్ధరించు
+	Maximize or Restore Frame Under Cursor	కర్సర్ కింద ఉన్న ఫ్రేమ్‌ను గరిష్ఠీకరించు లేదా పునరుద్ధరించు
+	Media Browser Settings	మీడియా బ్రౌజర్ సెట్టింగ్‌లు
+	MediaBrowser	MediaBrowser
+	MediaCache	MediaCache
+	Merge Captions	క్యాప్షన్‌లను విలీనం చేయి
+	Mixer	మిక్సర్
+	Mosaic In	మొజాయిక్ ఇన్
+	Move All Audio Targets Down	అన్ని ఆడియో లక్ష్యాలను కిందకు తరలించు
+	Move All Audio Targets Up	అన్ని ఆడియో లక్ష్యాలను పైకి తరలించు
+	Move All Video Targets Down	అన్ని వీడియో లక్ష్యాలను కిందకు తరలించు
+	Move All Video Targets Up	అన్ని వీడియో లక్ష్యాలను పైకి తరలించు
+	Move Selection Down	ఎంపికను కిందకు తరలించు
+	Move Selection End	ఎంపికను చివరికి తరలించు
+	Move Selection Home	ఎంపికను మొదటికి తరలించు
+	Move Selection Left	ఎంపికను ఎడమకు తరలించు
+	Move Selection Page Down	ఎంపికను ఒక పేజీ కిందకు తరలించు
+	Move Selection Page Up	ఎంపికను ఒక పేజీ పైకి తరలించు
+	Move Selection Right	ఎంపికను కుడికి తరలించు
+	Move Selection Up	ఎంపికను పైకి తరలించు
+	Multicam	మల్టీక్యామ్
+	Navigate to End of Segment	విభాగం ముగింపుకు వెళ్లు
+	Navigate to Next Line	తదుపరి పంక్తికి వెళ్లు
+	Navigate to Next Word	తదుపరి పదానికి వెళ్లు
+	Navigate to Previous Line	మునుపటి పంక్తికి వెళ్లు
+	Navigate to Previous Word	మునుపటి పదానికి వెళ్లు
+	Navigate to Start of Segment	విభాగం ప్రారంభానికి వెళ్లు
+	Navigation	నావిగేషన్
+	Next Multi-Camera Page	తదుపరి మల్టీ-కెమెరా పేజీ
+	Nudge Clip Selection Down	క్లిప్ ఎంపికను కిందకు జరుపు
+	Nudge Clip Selection Left Five Frames	క్లిప్ ఎంపికను ఐదు ఫ్రేమ్‌లు ఎడమకు జరుపు
+	Nudge Clip Selection Left One Frame	క్లిప్ ఎంపికను ఒక ఫ్రేమ్ ఎడమకు జరుపు
+	Nudge Clip Selection Right Five Frames	క్లిప్ ఎంపికను ఐదు ఫ్రేమ్‌లు కుడికి జరుపు
+	Nudge Clip Selection Right One Frame	క్లిప్ ఎంపికను ఒక ఫ్రేమ్ కుడికి జరుపు
+	Nudge Clip Selection Up	క్లిప్ ఎంపికను పైకి జరుపు
+	Nudge Selected Object down by five	ఎంచుకున్న ఆబ్జెక్ట్‌ను ఐదు కిందకు జరుపు
+	Nudge Selected Object down by one	ఎంచుకున్న ఆబ్జెక్ట్‌ను ఒకటి కిందకు జరుపు
+	Nudge Selected Object to left by five	ఎంచుకున్న ఆబ్జెక్ట్‌ను ఐదు ఎడమకు జరుపు
+	Nudge Selected Object to left by one	ఎంచుకున్న ఆబ్జెక్ట్‌ను ఒకటి ఎడమకు జరుపు
+	Nudge Selected Object to right by five	ఎంచుకున్న ఆబ్జెక్ట్‌ను ఐదు కుడికి జరుపు
+	Nudge Selected Object to right by one	ఎంచుకున్న ఆబ్జెక్ట్‌ను ఒకటి కుడికి జరుపు
+	Nudge Selected Object up by five	ఎంచుకున్న ఆబ్జెక్ట్‌ను ఐదు పైకి జరుపు
+	Nudge Selected Object up by one	ఎంచుకున్న ఆబ్జెక్ట్‌ను ఒకటి పైకి జరుపు
+	Nudge Volume +1dB	వాల్యూమ్ +1dB
+	Nudge Volume +3dB	వాల్యూమ్ +3dB
+	Nudge Volume -1dB	వాల్యూమ్ -1dB
+	Nudge Volume -3dB	వాల్యూమ్ -3dB
+	Numbered BMP stills (24-bit)	సంఖ్యలు గల BMP స్థిర చిత్రాలు (24-బిట్)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	JPEG సీక్వెన్స్
+	Targa Sequence	Targa సీక్వెన్స్
+	DPX Sequence	DPX సీక్వెన్స్
+	Numbered JPEG stills (quality 90)	సంఖ్యలు గల JPEG స్థిర చిత్రాలు (నాణ్యత 90)
+	Numbered Targa stills (24-bit, uncompressed)	సంఖ్యలు గల Targa స్థిర చిత్రాలు (24-బిట్, కుదించని)
+	Numbered DPX stills (10-bit RGB)	సంఖ్యలు గల DPX స్థిర చిత్రాలు (10-బిట్ RGB)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	OpenEXR సీక్వెన్స్
+	Numbered OpenEXR stills (half float, linear, uncompressed)	సంఖ్యలు గల OpenEXR స్థిర చిత్రాలు (హాఫ్ ఫ్లోట్, లీనియర్, కుదించని)
+	Numbered PNG stills at the sequence's frame size	సీక్వెన్స్ ఫ్రేమ్ పరిమాణంలో సంఖ్యలు గల PNG స్థిర చిత్రాలు
+	Numbered TIFF stills (RGB, 8-bit)	సంఖ్యలు గల TIFF స్థిర చిత్రాలు (RGB, 8-బిట్)
+	Opacity 0 → 100 % over the first second	మొదటి సెకనులో అపారదర్శకత 0 → 100 %
+	Opacity 100 → 0 % over the last second	చివరి సెకనులో అపారదర్శకత 100 → 0 %
+	Open Bin	బిన్‌ను తెరువు
+	Open Search	శోధనను తెరువు
+	PNG	PNG
+	PNG Sequence	PNG సీక్వెన్స్
+	Panel	ప్యానెల్
+	PiP 35% Upper Right	PiP 35% పైన కుడి
+	Picture-in-picture: 35 % scale in the upper right	చిత్రంలో చిత్రం: పైన కుడివైపు 35 % స్కేల్
+	Play In to Out with Preroll/Postroll	ప్రీరోల్/పోస్ట్‌రోల్‌తో ఇన్ నుండి అవుట్ వరకు ప్లే చేయి
+	Play from Playhead to Out Point	ప్లేహెడ్ నుండి అవుట్ పాయింట్ వరకు ప్లే చేయి
+	Previous Multi-Camera Page	మునుపటి మల్టీ-కెమెరా పేజీ
+	ProjectPanel	ProjectPanel
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, 24-బిట్ 48 kHz PCM
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, 24-బిట్ 48 kHz PCM
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, 24-బిట్ 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), 24-బిట్ 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ఆల్ఫా ఛానెల్‌తో ProRes 4444 (4:4:4), 24-బిట్ 48 kHz PCM
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), 24-బిట్ 48 kHz PCM
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, 24-బిట్ 48 kHz PCM
+	Quit CFA4	CFA4 నుండి నిష్క్రమించు
+	Right align text	టెక్స్ట్‌ను కుడికి సమలేఖనం చేయి
+	Ripple Trim Next Edit to Playhead	తదుపరి ఎడిట్‌ను ప్లేహెడ్ వరకు రిపుల్ ట్రిమ్ చేయి
+	Ripple Trim Previous Edit to Playhead	మునుపటి ఎడిట్‌ను ప్లేహెడ్ వరకు రిపుల్ ట్రిమ్ చేయి
+	Select Camera 1	కెమెరా 1ని ఎంచుకో
+	Select Camera 2	కెమెరా 2ని ఎంచుకో
+	Select Camera 3	కెమెరా 3ని ఎంచుకో
+	Select Camera 4	కెమెరా 4ని ఎంచుకో
+	Select Camera 5	కెమెరా 5ని ఎంచుకో
+	Select Camera 6	కెమెరా 6ని ఎంచుకో
+	Select Camera 7	కెమెరా 7ని ఎంచుకో
+	Select Camera 8	కెమెరా 8ని ఎంచుకో
+	Select Camera 9	కెమెరా 9ని ఎంచుకో
+	Select Clip at Playhead	ప్లేహెడ్ వద్ద క్లిప్‌ను ఎంచుకో
+	Select Find Box	శోధన పెట్టెను ఎంచుకో
+	Select Next Clip	తదుపరి క్లిప్‌ను ఎంచుకో
+	Select Next Panel	తదుపరి ప్యానెల్‌ను ఎంచుకో
+	Select Previous Clip	మునుపటి క్లిప్‌ను ఎంచుకో
+	Select Previous Panel	మునుపటి ప్యానెల్‌ను ఎంచుకో
+	Select to Next Line	తదుపరి పంక్తి వరకు ఎంచుకో
+	Select to Next Word	తదుపరి పదం వరకు ఎంచుకో
+	Select to Previous Line	మునుపటి పంక్తి వరకు ఎంచుకో
+	Select to Previous Word	మునుపటి పదం వరకు ఎంచుకో
+	Select to Segment End	విభాగం ముగింపు వరకు ఎంచుకో
+	Select to Segment Start	విభాగం ప్రారంభం వరకు ఎంచుకో
+	Set Creative Look	క్రియేటివ్ లుక్‌ను సెట్ చేయి
+	Set Input LUT	ఇన్‌పుట్ LUTను సెట్ చేయి
+	Set Project Panel View	ప్రాజెక్ట్ ప్యానెల్ వీక్షణను సెట్ చేయి
+	Show Next Screen	తదుపరి స్క్రీన్‌ను చూపు
+	Show Previous Screen	మునుపటి స్క్రీన్‌ను చూపు
+	Show Program Transcript	ప్రోగ్రామ్ ట్రాన్స్‌క్రిప్ట్‌ను చూపు
+	Slide Clip Selection Left Five Frames	క్లిప్ ఎంపికను ఐదు ఫ్రేమ్‌లు ఎడమకు స్లైడ్ చేయి
+	Slide Clip Selection Left One Frame	క్లిప్ ఎంపికను ఒక ఫ్రేమ్ ఎడమకు స్లైడ్ చేయి
+	Slide Clip Selection Right Five Frames	క్లిప్ ఎంపికను ఐదు ఫ్రేమ్‌లు కుడికి స్లైడ్ చేయి
+	Slide Clip Selection Right One Frame	క్లిప్ ఎంపికను ఒక ఫ్రేమ్ కుడికి స్లైడ్ చేయి
+	Slip Clip Selection Left Five Frames	క్లిప్ ఎంపికను ఐదు ఫ్రేమ్‌లు ఎడమకు స్లిప్ చేయి
+	Slip Clip Selection Left One Frame	క్లిప్ ఎంపికను ఒక ఫ్రేమ్ ఎడమకు స్లిప్ చేయి
+	Slip Clip Selection Right Five Frames	క్లిప్ ఎంపికను ఐదు ఫ్రేమ్‌లు కుడికి స్లిప్ చేయి
+	Slip Clip Selection Right One Frame	క్లిప్ ఎంపికను ఒక ఫ్రేమ్ కుడికి స్లిప్ చేయి
+	Social Vertical 1080×1920	సోషల్ నిలువు 1080×1920
+	Soft Vignette	మృదువైన విగ్నెట్
+	Source In/Out	సోర్స్ ఇన్/అవుట్
+	Split Caption	క్యాప్షన్‌ను విభజించు
+	Stack Clips	క్లిప్‌లను పేర్చు
+	Start Export Queue	ఎగుమతి క్యూను ప్రారంభించు
+	Start Voice-over Recording	వాయిస్-ఓవర్ రికార్డింగ్ ప్రారంభించు
+	Step Back Five Frames	ఐదు ఫ్రేమ్‌లు వెనక్కి
+	Step Back One Frame	ఒక ఫ్రేమ్ వెనక్కి
+	Step Forward Five Frames	ఐదు ఫ్రేమ్‌లు ముందుకు
+	Step Forward One Frame	ఒక ఫ్రేమ్ ముందుకు
+	Stop Export Queue	ఎగుమతి క్యూను ఆపు
+	Stop Multi-Camera Recording	మల్టీ-కెమెరా రికార్డింగ్ ఆపు
+	Sync Voice-over Capture	వాయిస్-ఓవర్ క్యాప్చర్‌ను సమకాలీకరించు
+	TIFF	TIFF
+	TIFF Sequence	TIFF సీక్వెన్స్
+	TextPanel	TextPanel
+	Thumbnail Size Next	తదుపరి థంబ్‌నెయిల్ పరిమాణం
+	Thumbnail Size Previous	మునుపటి థంబ్‌నెయిల్ పరిమాణం
+	Toggle All Audio Targets	అన్ని ఆడియో లక్ష్యాలను టోగుల్ చేయి
+	Toggle All Source Audio	అన్ని సోర్స్ ఆడియోను టోగుల్ చేయి
+	Toggle All Source Video	అన్ని సోర్స్ వీడియోను టోగుల్ చేయి
+	Toggle All Video Targets	అన్ని వీడియో లక్ష్యాలను టోగుల్ చేయి
+	Toggle Audio During Scrubbing	స్క్రబ్బింగ్ సమయంలో ఆడియోను టోగుల్ చేయి
+	Toggle Full Screen	పూర్తి స్క్రీన్ టోగుల్ చేయి
+	Toggle Mute for All Targeted Audio Tracks	లక్ష్యంగా ఉన్న అన్ని ఆడియో ట్రాక్‌లకు మ్యూట్ టోగుల్ చేయి
+	Toggle Solo for All Targeted Audio Tracks	లక్ష్యంగా ఉన్న అన్ని ఆడియో ట్రాక్‌లకు సోలో టోగుల్ చేయి
+	Toggle Source/Program Monitor Focus	సోర్స్/ప్రోగ్రామ్ మానిటర్ ఫోకస్ టోగుల్ చేయి
+	Toggle Target Audio 1	లక్ష్య ఆడియో 1 టోగుల్ చేయి
+	Toggle Target Audio 2	లక్ష్య ఆడియో 2 టోగుల్ చేయి
+	Toggle Target Audio 3	లక్ష్య ఆడియో 3 టోగుల్ చేయి
+	Toggle Target Audio 4	లక్ష్య ఆడియో 4 టోగుల్ చేయి
+	Toggle Target Audio 5	లక్ష్య ఆడియో 5 టోగుల్ చేయి
+	Toggle Target Audio 6	లక్ష్య ఆడియో 6 టోగుల్ చేయి
+	Toggle Target Audio 7	లక్ష్య ఆడియో 7 టోగుల్ చేయి
+	Toggle Target Audio 8	లక్ష్య ఆడియో 8 టోగుల్ చేయి
+	Toggle Target Video 1	లక్ష్య వీడియో 1 టోగుల్ చేయి
+	Toggle Target Video 2	లక్ష్య వీడియో 2 టోగుల్ చేయి
+	Toggle Target Video 3	లక్ష్య వీడియో 3 టోగుల్ చేయి
+	Toggle Target Video 4	లక్ష్య వీడియో 4 టోగుల్ చేయి
+	Toggle Target Video 5	లక్ష్య వీడియో 5 టోగుల్ చేయి
+	Toggle Target Video 6	లక్ష్య వీడియో 6 టోగుల్ చేయి
+	Toggle Target Video 7	లక్ష్య వీడియో 7 టోగుల్ చేయి
+	Toggle Target Video 8	లక్ష్య వీడియో 8 టోగుల్ చేయి
+	Toggle Track Output for All Targeted Video Tracks	లక్ష్యంగా ఉన్న అన్ని వీడియో ట్రాక్‌లకు ట్రాక్ అవుట్‌పుట్ టోగుల్ చేయి
+	Toggle Trim Type	ట్రిమ్ రకాన్ని టోగుల్ చేయి
+	Toggle View	వీక్షణను టోగుల్ చేయి
+	Track Selected Mask	ఎంచుకున్న మాస్క్‌ను ట్రాక్ చేయి
+	Trim Next Edit to Playhead	తదుపరి ఎడిట్‌ను ప్లేహెడ్ వరకు ట్రిమ్ చేయి
+	Trim Previous Edit to Playhead	మునుపటి ఎడిట్‌ను ప్లేహెడ్ వరకు ట్రిమ్ చేయి
+	Trimming	ట్రిమ్మింగ్
+	Unstack Clips	క్లిప్‌ల పేర్పు తీసివేయి
+	CRF (constant quality)	CRF (స్థిర నాణ్యత)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	వాయిస్-ఓవర్ రికార్డ్
+	Voiceover	వాయిస్‌ఓవర్
+	WAV, stereo 48 kHz 16-bit PCM	WAV, స్టీరియో 48 kHz 16-బిట్ PCM
+	WAV, stereo 48 kHz 24-bit PCM	WAV, స్టీరియో 48 kHz 24-బిట్ PCM
+	Warm Tint	వెచ్చని టింట్
+	Warm highlights, brown shadows	వెచ్చని హైలైట్‌లు, గోధుమ నీడలు
+	Waveform Audio 48 kHz 16-bit	వేవ్‌ఫార్మ్ ఆడియో 48 kHz 16-బిట్
+	Waveform Audio 48 kHz 24-bit	వేవ్‌ఫార్మ్ ఆడియో 48 kHz 24-బిట్
+	Web & Social	వెబ్ & సోషల్
+	Write Automation	ఆటోమేషన్ రాయి
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	ప్రోగ్రామ్ మానిటర్‌ను 100%కి జూమ్ చేయి
+	Zoom Program Monitor to Fit	ప్రోగ్రామ్ మానిటర్‌ను సరిపోయేలా జూమ్ చేయి
+	Zoom Source Monitor to 100%	సోర్స్ మానిటర్‌ను 100%కి జూమ్ చేయి
+	Zoom Source Monitor to Fit	సోర్స్ మానిటర్‌ను సరిపోయేలా జూమ్ చేయి
+	Cinematic	సినిమాటిక్
+	Film Emulation	ఫిల్మ్ అనుకరణ
+	Technical	సాంకేతిక
+	Teal Shadows, Warm Skin	టీల్ నీడలు, వెచ్చని చర్మం
+	Night Exterior	రాత్రి బహిరంగం
+	Golden Dusk	బంగారు సంధ్య
+	Steel Blue	స్టీల్ నీలం
+	Hard Sun	తీవ్ర సూర్యుడు
+	Faded Print	వెలిసిన ప్రింట్
+	Silver Retention	సిల్వర్ రిటెన్షన్
+	Cross Processed	క్రాస్ ప్రాసెస్డ్
+	Warm Negative	వెచ్చని నెగటివ్
+	Neutral Mono	తటస్థ ఏకవర్ణం
+	Hard Mono	కఠిన ఏకవర్ణం
+	Sepia Tone	సెపియా టోన్
+	Cold Mono	చల్లని ఏకవర్ణం
+	Lift Shadows	నీడలను ఎత్తు
+	Protect Highlights	హైలైట్‌లను రక్షించు
+	Half Saturation	సగం సంతృప్తత
+	Boost Vibrance	వైబ్రెన్స్ పెంచు
+	Legal Range Squeeze	చట్టబద్ధ పరిధిలోకి కుదించు
+	A boxed label with a round pointer; move the label and the pointer follows.	గుండ్రని సూచికతో పెట్టె లేబుల్; లేబుల్‌ను కదిలిస్తే సూచిక అనుసరిస్తుంది.
+	A rounded tag that fits its text, with a status dot.	తన టెక్స్ట్‌కు సరిపోయే గుండ్రని ట్యాగ్, స్థితి చుక్కతో.
+	A title on a rounded card with a soft shadow.	మృదువైన నీడతో గుండ్రని కార్డుపై శీర్షిక.
+	Accent Color	యాసెంట్ రంగు
+	Bar Color	బార్ రంగు
+	Box Color	పెట్టె రంగు
+	Box Opacity	పెట్టె అపారదర్శకత
+	Callout – Pointer	కాల్‌అవుట్ – సూచిక
+	Callout – Tag	కాల్‌అవుట్ – ట్యాగ్
+	Callouts	కాల్‌అవుట్‌లు
+	Credits	క్రెడిట్స్
+	Dot Color	చుక్క రంగు
+	Heading	శీర్షిక
+	Large centred title, accent rule and subtitle.	పెద్ద మధ్య శీర్షిక, యాసెంట్ రేఖ మరియు ఉపశీర్షిక.
+	Lower Third – Rule	లోయర్ థర్డ్ – రేఖ
+	Lower Third – Slab	లోయర్ థర్డ్ – పలక
+	Lower Thirds	లోయర్ థర్డ్‌లు
+	Name Color	పేరు రంగు
+	Name Size	పేరు పరిమాణం
+	Name and role on a coloured slab that widens with the name.	పేరుతో పాటు వెడల్పయ్యే రంగు పలకపై పేరు మరియు పాత్ర.
+	Name over a thin rule that always matches the name's width.	పేరు వెడల్పుకు ఎల్లప్పుడూ సరిపోయే సన్నని రేఖపై పేరు.
+	Pointer Color	సూచిక రంగు
+	Role	పాత్ర
+	Rule Color	రేఖ రంగు
+	Show Dot	చుక్కను చూపు
+	Show Role	పాత్రను చూపు
+	Slab Color	పలక రంగు
+	Tag Color	ట్యాగ్ రంగు
+	Title Color	శీర్షిక రంగు
+	Title Size	శీర్షిక పరిమాణం
+	Title – Boxed	శీర్షిక – పెట్టెలో
+	Title – Centered	శీర్షిక – మధ్యలో
+	Titles	టైటిల్స్
+	End Credits	ముగింపు క్రెడిట్స్
+	End Credits – Roll	ముగింపు క్రెడిట్స్ – రోల్
+	Ticker – Crawl	టిక్కర్ – క్రాల్
+	Centred credits that roll up from below the frame and leave at the top.	ఫ్రేమ్ కింద నుండి పైకి చుట్టుకుంటూ వచ్చి పైభాగంలో వెళ్లిపోయే మధ్య క్రెడిట్స్.
+	A news-style line that crawls in from the right and leaves at the left.	కుడి నుండి లోపలికి పాకి ఎడమవైపు వెళ్లిపోయే వార్తా శైలి పంక్తి.
+	The language changed but could not be saved: {e}	భాష మార్చబడింది కానీ సేవ్ చేయలేకపోయింది: {e}
+	no Chinese font is installed on this system; the interface stays in English	ఈ సిస్టమ్‌లో చైనీస్ ఫాంట్ ఇన్‌స్టాల్ చేయబడలేదు; ఇంటర్‌ఫేస్ ఇంగ్లీష్‌లోనే ఉంటుంది
+	no Korean font is installed on this system; the interface stays in English	ఈ సిస్టమ్‌లో కొరియన్ ఫాంట్ ఇన్‌స్టాల్ చేయబడలేదు; ఇంటర్‌ఫేస్ ఇంగ్లీష్‌లోనే ఉంటుంది
+	no Georgian font is installed on this system; the interface stays in English	ఈ సిస్టమ్‌లో జార్జియన్ ఫాంట్ ఇన్‌స్టాల్ చేయబడలేదు; ఇంటర్‌ఫేస్ ఇంగ్లీష్‌లోనే ఉంటుంది
+	no Japanese font is installed on this system; the interface stays in English	ఈ సిస్టమ్‌లో జపనీస్ ఫాంట్ ఇన్‌స్టాల్ చేయబడలేదు; ఇంటర్‌ఫేస్ ఇంగ్లీష్‌లోనే ఉంటుంది
+	Main (8-bit)	Main (8-బిట్)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12-బిట్
+	GoPro CineForm RGB 12-bit with Alpha	ఆల్ఫాతో GoPro CineForm RGB 12-బిట్
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10-బిట్
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12-బిట్, ఫిల్మ్ స్కాన్ 1, 24-బిట్ 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, ఆల్ఫా ఛానెల్‌తో GoPro CineForm RGBA 4:4:4:4 12-బిట్, ఫిల్మ్ స్కాన్ 1, 24-బిట్ 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10-బిట్, ఫిల్మ్ స్కాన్ 1, 24-బిట్ 48 kHz PCM
+	Deselect All Project Items	అన్ని ప్రాజెక్ట్ అంశాల ఎంపిక తీసివేయి
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	అన్ని ప్రాజెక్ట్ అంశాలను ఎంచుకో
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	లాగు: తరలించు · Alt-క్లిక్: మృదువు/మూల · Ctrl-క్లిక్: తొలగించు
+	Drag inward to round the corners	మూలలను గుండ్రంగా చేయడానికి లోపలికి లాగండి
+	Play Source	సోర్స్‌ను ప్లే చేయి
+	Source Play/Stop	సోర్స్ ప్లే/ఆపు
+	Stop Source	సోర్స్‌ను ఆపు
+	Clear Transition	ట్రాన్సిషన్‌ను తొలగించు
+	Fill Type	నింపు రకం
+	Gradient Angle	గ్రేడియెంట్ కోణం
+	Edit Narration	వ్యాఖ్యానాన్ని సవరించు
+	Resize floating panel	తేలియాడే ప్యానెల్ పరిమాణం మార్చు
+	Get Project Notes	ప్రాజెక్ట్ గమనికలను పొందు
+	Edit Project Notes	ప్రాజెక్ట్ గమనికలను సవరించు
+	Use Effect Shutter Angle	ఎఫెక్ట్ షట్టర్ కోణాన్ని ఉపయోగించు
+	Safe graphics mode: {mode}	సురక్షిత గ్రాఫిక్స్ మోడ్: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	డిఫాల్ట్ గ్రాఫిక్స్‌తో మునుపటి ప్రారంభం విఫలమైంది. గ్రాఫిక్స్ డ్రైవర్‌ను నవీకరించడం సాధారణంగా దీన్ని సరిచేస్తుంది.
+	Use Default Graphics	డిఫాల్ట్ గ్రాఫిక్స్‌ను ఉపయోగించు
+	The default graphics are used from the next start.	తదుపరి ప్రారంభం నుండి డిఫాల్ట్ గ్రాఫిక్స్ ఉపయోగించబడతాయి.
+	DirectX 12 only	DirectX 12 మాత్రమే
+	software rendering	సాఫ్ట్‌వేర్ రెండరింగ్
+	Opens in your web browser: {url}	మీ వెబ్ బ్రౌజర్‌లో తెరుచుకుంటుంది: {url}
+	Saves this session's log and shows it in your file manager.	ఈ సెషన్ లాగ్‌ను సేవ్ చేసి మీ ఫైల్ మేనేజర్‌లో చూపుతుంది.
+	Shows a report on this computer.	ఈ కంప్యూటర్ గురించి నివేదికను చూపుతుంది.
+	Shows the version, community links and credits in a CFA4 window.	CFA4 విండోలో వెర్షన్, సంఘ లింక్‌లు మరియు క్రెడిట్స్‌ను చూపుతుంది.
+	Couldn't open your web browser	మీ వెబ్ బ్రౌజర్‌ను తెరవలేకపోయింది
+	Open this address in your browser yourself:	ఈ చిరునామాను మీ బ్రౌజర్‌లో మీరే తెరవండి:
+	Reset Interface Zoom	ఇంటర్‌ఫేస్ జూమ్‌ను రీసెట్ చేయి
+	Stereoscopic 3D	స్టీరియోస్కోపిక్ 3D
+	Swap Eyes	కళ్లను మార్చు
+	Over/Under	పైన/కింద
+	Side by Side	పక్కపక్కన
+	Stereo to 2D	స్టీరియో నుండి 2D
+	Eye	కన్ను
+	Stereo Parallax	స్టీరియో పారలాక్స్
+	Horizontal Shift	అడ్డ జరుపు
+	Slit Scan	స్లిట్ స్కాన్
+	Time Span (seconds)	సమయ వ్యవధి (సెకన్లు)
+	Current Frame At	ప్రస్తుత ఫ్రేమ్ ఇక్కడ
+	Blend Slices	ముక్కలను బ్లెండ్ చేయి
+	Creative Looks	క్రియేటివ్ లుక్స్
+	Film Grain	ఫిల్మ్ గ్రెయిన్
+	Animated	యానిమేటెడ్
+	Color Grain	కలర్ గ్రెయిన్
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080, 8 Mbps, AAC 160 kbps, 6-సెకన్ల విభజించిన MP4 విభాగాలు
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 ప్రోగ్రామ్ స్ట్రీమ్
+	MPEG-2 Transport Stream HD 1080	MPEG-2 ట్రాన్స్‌పోర్ట్ స్ట్రీమ్ HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480, 29.97 fps, 16:9 అనమార్ఫిక్, 6 Mbps, GOP 18, 16-బిట్ 48 kHz LPCM, .mpg (DVDకి సిద్ధమైన స్ట్రీమ్; VIDEO_TS ఆథరింగ్ లేదు)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576, 25 fps, 16:9 అనమార్ఫిక్, 6 Mbps, GOP 15, 16-బిట్ 48 kHz LPCM, .mpg (DVDకి సిద్ధమైన స్ట్రీమ్; VIDEO_TS ఆథరింగ్ లేదు)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	సీక్వెన్స్ ఫ్రేమ్ పరిమాణం మరియు రేట్‌లో MPEG-2 వీడియో (Main Profile 4:2:0, పిక్సెల్‌కు 0.4 బిట్‌లు), 16-బిట్ 48 kHz LPCM, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 వీడియో 1920×1080, సగటు 18 Mbps, AAC 192 kbps, .ts
+	Six-Point Pin	ఆరు-బిందువుల పిన్
+	Upper Center	పైన మధ్య
+	Lower Center	కింద మధ్య
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	CFA4 ఇంజిన్ తెరవలేని ఫైల్‌ల కోసం FFmpeg ఉపయోగించు (FFmpeg 9.0.2 లేదా తర్వాతి, GPL-3 బిల్డ్)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	ఇంజిన్ లేదా FFmpeg తెరవలేని ఫైల్‌ల కోసం సిస్టమ్ GStreamer ఉపయోగించు
+	Analyze Source for Smart Cut	స్మార్ట్ కట్ కోసం సోర్స్‌ను విశ్లేషించు
+	Plan Smart Cut	స్మార్ట్ కట్ ప్రణాళిక
+	Run Smart Cut	స్మార్ట్ కట్ అమలు చేయి
+	No sequence open. Double-click a sequence in the Project panel.	సీక్వెన్స్ ఏదీ తెరవబడలేదు. ప్రాజెక్ట్ ప్యానెల్‌లోని సీక్వెన్స్‌పై రెండుసార్లు క్లిక్ చేయండి.
+	English (US)	ఇంగ్లీష్ (US)
+	English (UK)	ఇంగ్లీష్ (UK)
+	English (Australia)	ఇంగ్లీష్ (ఆస్ట్రేలియా)
+export.summary	High	ఎక్కువ
+export.summary	Medium	మధ్యస్థం
+export.summary	Low	తక్కువ
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	ఆడియో కాపీ చేయబడింది: {tracks}
+	Audio track {track} is not copied: {why}	ఆడియో ట్రాక్ {track} కాపీ చేయబడదు: {why}
+	Point tracker	పాయింట్ ట్రాకర్
+	Correlation tracker	సహసంబంధ ట్రాకర్
+	DCP language	DCP భాష
+	None (RFC 5646 tag, e.g. en-US)	ఏదీ కాదు (RFC 5646 ట్యాగ్, ఉదా. te-IN)
+	ISDCF name	ISDCF పేరు
+	Name the DCP folder by the Digital Cinema Naming Convention	Digital Cinema Naming Convention ప్రకారం DCP ఫోల్డర్‌కు పేరు పెట్టు
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/te/ (common.tsv and the PDF-editor catalog) at aa36bd8, 2026-11-11.
+# MIT OR Apache-2.0; the copyright notice is in NOTICE, the translators in that repository's
+# ATTRIBUTION.md (te). These rows were written clean-room there; only rows whose English and
+# meaning match CFA4's were taken, and a few were reworded above for video editing.
+
+	Blue	నీలం
+	Bottom	కింద
+	Browse…	బ్రౌజ్ చేయి…
+	Cancelled	రద్దు చేయబడింది
+	Close	మూసివేయి
+	Copy	కాపీ చేయి
+	Custom	అనుకూల
+	Cut	కత్తిరించు
+	Discard	విస్మరించు
+	Distribute	సమాన అంతరం
+	Done	పూర్తయింది
+	Edit	సవరణ
+	Editing	సవరించడం
+	Export	ఎగుమతి చేయి
+	Extract	వేరు తీయి
+	Failed	విఫలమైంది
+	File	ఫైల్
+	Find…	కనుగొను…
+	Fit	సరిపోయేలా
+	Flatten	ఫ్లాటెన్ చేయి
+	Format	ఫార్మాట్
+	Graphic	గ్రాఫిక్
+	Green	ఆకుపచ్చ
+	Help	సహాయం
+	Insert	చొప్పించు
+	Inspector	పరిశీలకుడు
+	Label	లేబుల్
+	Language	భాష
+	Left	ఎడమ
+	Link	లింక్
+	Metadata	మెటాడేటా
+	Name	పేరు
+	No	కాదు
+	Opacity	అపారదర్శకత
+	Output	అవుట్‌పుట్
+	Panels	ప్యానెల్‌లు
+	Polygon	పాలీగాన్
+	Position	స్థానం
+	Purple	ఊదా
+	Ready	సిద్ధం
+	Recover	పునరుద్ధరించు
+	Rectangle	దీర్ఘచతురస్రం
+	Redo	మళ్లీ చేయి
+	Remove	తీసివేయి
+	Revert	సేవ్ చేసిన స్థితికి మార్చు
+	Right	కుడి
+	Rotation	భ్రమణం
+	Save	సేవ్ చేయి
+	Search	శోధన
+	Select All	అన్నీ ఎంచుకో
+	Special	ప్రత్యేకం
+	Start	ప్రారంభం
+	Status	స్థితి
+	Text	టెక్స్ట్
+	Time	సమయం
+	Tools	సాధనాలు
+	Top	పైన
+	Type	రకం
+	Undo	రద్దు చేయి
+	View	వీక్షణ
+	Yellow	పసుపు
+	Yes	అవును
+	Magnification	జూమ్ స్థాయి
+	Red	ఎరుపు
+	Settings	సెట్టింగ్‌లు
+	Appearance	రూపం
+	Dark	డార్క్
+	Light	లైట్
+	Description	వివరణ
+	Cancel	రద్దు చేయి
+	Off	ఆఫ్
+	Auto	ఆటో
+	Midpoint	మధ్య బిందువు
+	None	ఏదీ లేదు
+	(none)	(ఏదీ లేదు)
+	Size	పరిమాణం
+	Sensitivity	సున్నితత్వం
+	Angle	కోణం
+	Apply	వర్తింపజేయి
+	Background	నేపథ్యం
+	Center	మధ్య
+	Distance	దూరం
+	Justify	రెండు వైపులా అమర్చు
+	Layers	లేయర్‌లు
+	OK	సరే
+	Solid	సాలిడ్
+	Style	శైలి
+	Underline	అండర్‌లైన్
+	Advanced	అధునాతనం
+	Default	డిఫాల్ట్
+	Download	డౌన్‌లోడ్ చేయి
+	High	ఎక్కువ
+	Low	తక్కువ
+	Preview	ప్రివ్యూ
+	Open	తెరువు
+	Delete	తొలగించు
+	Icon	చిహ్నం
+	Name:	పేరు:
+	Rename	పేరు మార్చు
+	Thumbnails	థంబ్‌నెయిల్‌లు
+	Zoom	జూమ్
+	Description:	వివరణ:
+	Add	జోడించు
+	Edit…	సవరించు…
+	Continue	కొనసాగించు
+	Active	సక్రియం
+	Exported to {path}	{path}కు ఎగుమతి చేయబడింది
+	Preferences	ప్రాధాన్యతలు
+	Double-click	డబుల్-క్లిక్
+	General	సాధారణం
+	Horizontal	అడ్డంగా
+	Labels	లేబుల్‌లు
+	Location	స్థానం
+	Vertical	నిలువుగా
+	Next page	తదుపరి పేజీ
+	Previous page	మునుపటి పేజీ
+	Version	వెర్షన్
+	Command	కమాండ్
+	Export…	ఎగుమతి చేయి…
+	Height:	ఎత్తు:
+	Width:	వెడల్పు:
+	All	అన్నీ
+	Any	ఏదైనా
+	Color:	రంగు:
+	Colour	రంగు
+	File Name	ఫైల్ పేరు
+	Options	ఎంపికలు
+	Format:	ఫార్మాట్:
+	Replace	భర్తీ చేయి
+	Typewriter	టైప్‌రైటర్
+	Compression	కుదింపు
+	Medium	మధ్యస్థం
+	Quality	నాణ్యత
+	Image	చిత్రం
+	Images	చిత్రాలు
+	Prefix	ప్రిఫిక్స్
+	Title	శీర్షిక
+	Summary	సారాంశం
+	Home	హోమ్
+	Recent	ఇటీవలి
+	Up	పైకి
+	Restore	పునరుద్ధరించు
+	Show:	చూపించు:
+	just now	ఇప్పుడే
+	{n} min ago	{n} నిమి. క్రితం
+	{n} h ago	{n} గం. క్రితం
+	Strikethrough	కొట్టివేత
+	About	పరిచయం
+	Contributors	సహకారులు
+	Models	మోడల్‌లు
+	Show	చూపించు
+	Sort	క్రమపరిచే విధానం
+	Reverse the order	వ్యతిరేక క్రమానికి మార్చు
+	Grab bag	జాబితా
+	Table	పట్టిక
+	No contributor data was built into this copy.	ఈ కాపీలో సహకారుల డేటా ఏదీ చేర్చబడలేదు.
+	No model credits were built into this copy.	ఈ కాపీలో మోడల్‌ల సహకార వివరాలు ఏవీ చేర్చబడలేదు.
+	Company	సంస్థ
+	Model	మోడల్
+	Commits	కమిట్‌లు
+	% of all commits	మొత్తం కమిట్‌లలో %
+	Lines +/−	పంక్తులు +/−
+	Username	వినియోగదారు పేరు
+	Display name	ప్రదర్శించే పేరు
+	Real name	అసలు పేరు
+	Name (A–Z)	పేరు (A–Z)
+	Merged PRs	విలీనం చేసిన PRలు
+	Lines added	జోడించిన పంక్తులు
+	Lines deleted	తొలగించిన పంక్తులు
+	Line delta	పంక్తుల నికర మార్పు
+	Binary assets added	జోడించిన బైనరీ ఫైల్‌లు
+	Binary assets removed	తీసివేసిన బైనరీ ఫైల్‌లు
+	First commit	మొదటి కమిట్
+	Last commit	చివరి కమిట్
+	Category:	వర్గం:
+	Open Recent	ఇటీవలివి తెరువు
+	Review	సమీక్ష
+	Standard	ప్రామాణికం
+	1 file	1 ఫైల్
+	{n} files	{n} ఫైల్‌లు
+	Black	నలుపు
+	Black and white	నలుపు తెలుపు
+	Circle	వృత్తం
+	Diamond	వజ్రాకారం
+	Height	ఎత్తు
+	Highlight	హైలైట్
+	Inset	ఇన్‌సెట్
+	Invert	విలోమం
+	Maximum	గరిష్ఠం
+	Minimum	కనిష్ఠం
+	Rows	వరుసలు
+	Split	విభజించు
+	Square	చతురస్రం
+	Star	నక్షత్రం
+	Thickness	మందం
+	Width	వెడల్పు
+	Application	అప్లికేషన్
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+	Field order	ఫీల్డ్ క్రమం
+	Interlaced, upper field first	ఇంటర్‌లేస్డ్, పై ఫీల్డ్ ముందు
+	Interlaced, lower field first	ఇంటర్‌లేస్డ్, కింది ఫీల్డ్ ముందు
