@@ -12,7 +12,7 @@ use cfa4_smart_edit::plan::CopyGuarantee;
 use cfa4_smart_edit::timestamp::{MediaTime, Rational};
 
 use crate::smart_cut::SmartCutError;
-use crate::smart_cut_mpeg::{MpegCopySource, container_of, execute_mpeg_copy, index_mpeg_video, verify_mpeg_copy};
+use crate::smart_cut_mpeg::{MpegCopySource, container_of, execute_mpeg_copy, index_mpeg_video, plan_mpeg_audio, verify_mpeg_copy};
 
 const STRICT: Policy = Policy { allow_experimental: false };
 /// One picture at 25 fps, 90 kHz.
@@ -103,7 +103,7 @@ impl Fixture {
         Fixture { bytes, file, video, index }
     }
     fn source(&self) -> MpegCopySource<'_, Vec<u8>> {
-        MpegCopySource { file: &self.file, bytes: &self.bytes, video: self.video }
+        MpegCopySource { file: &self.file, bytes: &self.bytes, video: self.video, audio: true }
     }
     /// Plan pictures `[from, to)` (display order) into the source's own container.
     fn plan(&self, from: i64, to: i64, mode: CutMode) -> SmartCutPlan {
@@ -176,6 +176,26 @@ fn a_gop_boundary_cut_copies_the_pictures_and_the_audio_of_the_span() {
         assert_eq!(container_of(&copy), container_of(&f.file));
         assert_eq!(copy.streams.iter().filter(|s| s.kind() == Kind::Audio).count(), 2);
     }
+}
+
+#[test]
+fn the_preview_names_the_copied_audio_and_video_only_copies_leave_it_out() {
+    let f = program();
+    let p = f.plan(10, 30, CutMode::GopBoundary);
+    let (tracks, dropped) = plan_mpeg_audio(&p.plan, &f.index, &f.source(), MuxFormat::Ps).unwrap();
+    let (_, report) = execute_mpeg_copy(&p.plan, &f.index, &f.source(), MuxFormat::Ps, Vec::new()).unwrap();
+    assert!(dropped.is_empty());
+    assert_eq!(
+        tracks.iter().map(|t| (t.stream, t.codec.clone(), t.units)).collect::<Vec<_>>(),
+        report.audio.iter().map(|a| (a.stream, a.codec.clone(), a.units)).collect::<Vec<_>>()
+    );
+    let video_only = MpegCopySource { audio: false, ..f.source() };
+    assert_eq!(plan_mpeg_audio(&p.plan, &f.index, &video_only, MuxFormat::Ps).unwrap(), (Vec::new(), Vec::new()));
+    let (out, report) = execute_mpeg_copy(&p.plan, &f.index, &video_only, MuxFormat::Ps, Vec::new()).unwrap();
+    assert!(report.audio.is_empty() && report.samples == 20);
+    assert_eq!(verify_mpeg_copy(&p.plan, &f.index, &video_only, MuxFormat::Ps, &out).unwrap(), report);
+    let copy = cfa4_mpegts::open(&out).unwrap();
+    assert_eq!(copy.streams.iter().filter(|s| s.kind() == Kind::Audio).count(), 0);
 }
 
 #[test]
