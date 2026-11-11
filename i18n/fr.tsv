@@ -3636,6 +3636,11 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bits 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bits 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Dossier IMF SMPTE : JPEG 2000 1920×1080, PCM 5.1 24 bits 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Dossier IMF SMPTE : JPEG 2000 3840×2160, PCM 5.1 24 bits 48 kHz
 	Show Duplicate Frame Markers	Afficher les repères d’images en double
 	More transport controls	Autres commandes de transport
 	A file dialog is already open	Une fenêtre de sélection de fichier est déjà ouverte

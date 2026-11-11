@@ -269,7 +269,7 @@ distributions are not targets.
 
 - **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
   field pictures / dual prime (#274), P-STD / T-STD buffer models in the multiplexer (#277), field-aware scaling and field-rate rendering for interlaced export (#275), MP2 audio (#267), JPEG 2000 MXF
-  (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; SMPTE DCP export is done, #115),
+  (the `cfa4-j2k` encoder with the DCI 2K / 4K and IMF profiles exists, #81, #931; SMPTE DCP export is done, #115; IMF App 2E package export, #1011),
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding other than MPEG-2, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding

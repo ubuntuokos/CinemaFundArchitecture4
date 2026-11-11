@@ -1791,6 +1791,11 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 資料夾：JPEG 2000 3996×2160（1.85:1），5.1 24 位 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 資料夾：JPEG 2000 4096×1716（2.39:1），5.1 24 位 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E（可互通母版包）
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF 資料夾：JPEG 2000 1920×1080，5.1 24 位 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF 資料夾：JPEG 2000 3840×2160，5.1 24 位 48 kHz PCM
 	4:2:0 (Main Profile)	4:2:0（Main 配置檔案）
 	4:2:2 (4:2:2 Profile)	4:2:2（4:2:2 配置檔案）
 	B pictures	B 影格

@@ -30,7 +30,9 @@ const MAX_DEPTH: usize = 4;
 #[derive(Clone, Copy)]
 enum Kind {
     /// Unsigned or signed integer.
-    Int { signed: bool },
+    Int {
+        signed: bool,
+    },
     Rational,
     /// A UL (AUID record, weak reference to a definition, extendible enumeration).
     Ul,

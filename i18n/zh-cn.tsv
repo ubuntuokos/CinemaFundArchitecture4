@@ -3645,6 +3645,11 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 3996×2160（1.85:1），5.1 24 位 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 4096×1716（2.39:1），5.1 24 位 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E（可互操作母版包）
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF 文件夹：JPEG 2000 1920×1080，5.1 24 位 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF 文件夹：JPEG 2000 3840×2160，5.1 24 位 48 kHz PCM
 	Show Duplicate Frame Markers	显示重复帧标记
 	Work Area Bar	工作区栏
 	Set Work Area Bar In Point	设置工作区栏入点

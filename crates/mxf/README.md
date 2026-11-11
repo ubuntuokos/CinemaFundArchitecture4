@@ -186,7 +186,15 @@ w.finish()?;
   channel assignment label with `WriterConfig::mca` labels (the soundfield group with its MCA
   title, title version, audio content and element kind, `McaTitles`), `reference_image_edit_rate` and
   `reference_audio_alignment_level`, a constant-rate index partition after the essence. The IMP
-  package (CPL, PKL, ASSETMAP) and the export option are #1011.
+  package (CPL, PKL, ASSETMAP) is written by the IMF export (`crates/export/src/imf_out.rs`, #1011).
+- **RegXML essence descriptors** (`regxml::essence_descriptor`, ST 2001-1, #1011): the top-level
+  file package's descriptor and its sub-descriptors (JPEG 2000, MCA labels) as the RegXML
+  fragment a ST 2067-3 composition playlist carries in its `EssenceDescriptorList`, read from the
+  header partition: groups, elements and types in the `r0` / `r1` / `r2` register namespaces,
+  integers in decimal, enumerations by name, rationals as `n/d`, labels as `urn:smpte:ul:` and
+  UUIDs as `urn:uuid:`, arrays and strong references nested in place. Checked item by item against
+  the descriptors of the MERIDIAN test IMP (Netflix Photon, Apache-2.0); element names follow the
+  SMPTE metadata registers as regxmllib's test dictionaries (BSD-2-Clause) list them.
 - **Index tables** (ST 377-1 §11): VBR entries per edit unit — stream offset (from the first
   essence byte; clip-wrapped: from the element value), key-frame offset, flags (`0x80` random
   access, `0xC0` AVC IDR with its parameter sets, `0x22` P, `0x33` B) and temporal offsets from the

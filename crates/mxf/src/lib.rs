@@ -29,9 +29,9 @@ mod index;
 mod klv;
 mod meta;
 mod peek;
+pub mod regxml;
 mod source;
 mod timed_text;
-pub mod regxml;
 pub mod uncompressed;
 pub mod write;
 
