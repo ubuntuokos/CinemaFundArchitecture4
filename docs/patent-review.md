@@ -43,6 +43,7 @@ szabadalommal védett formátumot.
 | DV / DVCPRO 25 / 50, DVCPRO HD (IEC 61834-2, SMPTE 314M, SMPTE 370M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
 | AV1 | dekódolás | `crates/av1`; FFmpeg-háttér (dav1d) | alap | függőben | | |
 | AV1 | kódolás | tervezett (rav1e) | – | függőben | | |
+| AV2 | bitfolyam-elemzés (OBU, sequence header; dekódolás még nincs) | `crates/av2` | alap | függőben | | |
 | VP8 | dekódolás | `crates/vp8`; FFmpeg-háttér (libvpx) | alap | függőben | | |
 | VP8 | kódolás | FFmpeg-háttér (libvpx) | alap | függőben | | |
 | VP9 | dekódolás | `crates/vp9`; FFmpeg-háttér (libvpx) | alap | függőben | | |
