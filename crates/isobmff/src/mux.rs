@@ -67,11 +67,28 @@ pub struct TrackConfig {
     pub handler_name: Option<String>,
     /// `tkhd` display matrix (rotation of portrait footage…); the identity when `None`.
     pub matrix: Option<[i32; 9]>,
+    /// `tkhd` enabled flag (true by default).
+    pub enabled: bool,
+    /// `tkhd` alternate group: tracks of one non-zero group are alternatives (0 by default).
+    pub alternate_group: u16,
+    /// `tkhd` volume (8.8 fixed point); `None` writes 1.0 for audio and 0 otherwise.
+    pub volume: Option<i16>,
 }
 
 impl TrackConfig {
     pub fn new(entry: SampleEntry, timescale: u32) -> Self {
-        TrackConfig { entry, timescale, language: "und".into(), edits: Vec::new(), media_start: None, handler_name: None, matrix: None }
+        TrackConfig {
+            entry,
+            timescale,
+            language: "und".into(),
+            edits: Vec::new(),
+            media_start: None,
+            handler_name: None,
+            matrix: None,
+            enabled: true,
+            alternate_group: 0,
+            volume: None,
+        }
     }
 }
 
@@ -251,7 +268,8 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
     let dur = presentation_duration(t, movie_ts);
     let v1 = dur > u32::MAX as u64;
     // a chapter track is in the movie but disabled, so players don't show it as subtitles
-    let m = b.start_full(b"tkhd", v1 as u8, if t.chapter_source.is_some() { 2 } else { 3 });
+    let enabled = t.cfg.enabled && t.chapter_source.is_none();
+    let m = b.start_full(b"tkhd", v1 as u8, if enabled { 3 } else { 2 });
     if v1 {
         b.u64(0);
         b.u64(0);
@@ -267,8 +285,8 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
     }
     b.zeros(8);
     b.i16(0);
-    b.u16(0);
-    b.i16(if t.handler == Handler::Audio { 0x100 } else { 0 });
+    b.u16(t.cfg.alternate_group);
+    b.i16(t.cfg.volume.unwrap_or(if t.handler == Handler::Audio { 0x100 } else { 0 }));
     b.u16(0);
     for v in t.cfg.matrix.unwrap_or(MATRIX) {
         b.i32(v);
@@ -1187,6 +1205,30 @@ mod tests {
         assert_eq!(pack_language("und"), 0x55C4);
         assert_eq!(pack_language("eng"), 0x15C7);
         assert_eq!(pack_language("EN"), 0x55C4);
+    }
+
+    /// The `tkhd` fields a stream copy keeps besides the matrix: enabled flag, alternate group
+    /// and volume; the defaults stay enabled, 0 and 1.0 for audio.
+    #[test]
+    fn track_header_fields_round_trip() {
+        let pcm = PcmConfig { bits: 16, float: false, big_endian: false, signed: true, channels: 2, sample_rate: 48000.0 };
+        for fast in [false, true] {
+            let mut w = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mov)).unwrap();
+            let v = w.add_track(TrackConfig::new(avc_entry(), 12800)).unwrap();
+            let a = w.add_track(TrackConfig::new(SampleEntry::pcm(pcm), 48000)).unwrap();
+            let mut cfg = TrackConfig::new(SampleEntry::pcm(pcm), 48000);
+            (cfg.enabled, cfg.alternate_group, cfg.volume) = (false, 1, Some(0x80));
+            let b = w.add_track(cfg).unwrap();
+            for i in 0..3u8 {
+                w.write_sample(v, WriteSample { data: &[i; 10], duration: 512, composition_offset: 0, is_sync: true }).unwrap();
+                w.write_sample(a, WriteSample { data: &[i; 40], duration: 0, composition_offset: 0, is_sync: true }).unwrap();
+                w.write_sample(b, WriteSample { data: &[i; 40], duration: 0, composition_offset: 0, is_sync: true }).unwrap();
+            }
+            let out = if fast { w.finish_faststart() } else { w.finish() }.unwrap().into_inner();
+            let f = crate::open(out.as_slice()).unwrap();
+            let got: Vec<_> = f.tracks.iter().map(|t| (t.enabled, t.alternate_group, t.volume)).collect();
+            assert_eq!(got, [(true, 0, 0), (true, 0, 0x100), (false, 1, 0x80)]);
+        }
     }
 
     #[test]
