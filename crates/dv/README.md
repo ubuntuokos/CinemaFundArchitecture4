@@ -8,8 +8,8 @@ The crate decodes DIF frames (step DV-1 of the DV/DVCPRO plan). `cfa4-codecs` im
 (DV-2) from raw `.dv` / `.dif` files (`DifSource`), type-2 AVI, MOV / MP4 and MXF; 4:1:1 enters
 the engine as 4:2:2, and the stream info's aspect, sampling and colour come from the first
 frame (`cfa4_codecs::video::dv_stream_info`). DVCPRO 50 and DVCPRO HD are DV-3 (`pro.rs`). DV-4
-adds the audio (`decode_audio`, raw `.dv` files play it) and type-1 AVI video; type-1 AVI audio is
-still to do.
+adds the audio (`decode_audio`): raw `.dv` files and type-1 AVI files (`iavs`, video and the
+sound inside its DIF frames) play it.
 
 ## Sources and licence
 
