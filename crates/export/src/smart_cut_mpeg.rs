@@ -36,6 +36,8 @@ pub struct MpegCopySource<'a, S: ByteSource + ?Sized> {
     pub bytes: &'a S,
     /// Index into [`File::streams`]; the plan's `stream_id` is this index.
     pub video: usize,
+    /// Copy the audio streams with the video (false: the video alone).
+    pub audio: bool,
 }
 
 /// The container of an MPEG file, as the capability registry names it.
@@ -212,6 +214,9 @@ fn audio_copies<S: ByteSource + ?Sized>(
     start: i64,
     end: i64,
 ) -> Result<(Vec<AudioCopy>, Vec<MpegAudioDrop>), SmartCutError> {
+    if !source.audio {
+        return Ok((Vec::new(), Vec::new()));
+    }
     let (mut copies, mut dropped) = (Vec::new(), Vec::new());
     for (k, stream) in source.file.streams.iter().enumerate() {
         if stream.kind() != Kind::Audio {
@@ -263,6 +268,33 @@ fn video_span(plan: &ExportExecutionPlan, stream: &cfa4_mpegts::Stream, first: u
         return Err(SmartCutError::StaleIndex { detail: "the plan's duration is not on the 90 kHz clock".into() });
     }
     Ok((base, plan.expected_duration.value))
+}
+
+/// An audio stream a copy takes along.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MpegAudioTrack {
+    /// Index into the source's [`File::streams`].
+    pub stream: usize,
+    pub codec: String,
+    pub units: u64,
+}
+
+/// The audio streams [`execute_mpeg_copy`] would copy with `plan`, and those it leaves out, without
+/// writing anything (for the plan preview).
+pub fn plan_mpeg_audio<S: ByteSource + ?Sized>(
+    plan: &ExportExecutionPlan,
+    index: &StreamIndex,
+    source: &MpegCopySource<'_, S>,
+    format: MuxFormat,
+) -> Result<(Vec<MpegAudioTrack>, Vec<MpegAudioDrop>), SmartCutError> {
+    let (first, last) = video_range(plan, index, source, format)?;
+    let stream = source.file.streams.get(source.video).ok_or(SmartCutError::NoTrack { track: source.video })?;
+    let (base, duration) = video_span(plan, stream, first, last)?;
+    let (audio, dropped) = audio_copies(source, format, base, base + duration)?;
+    let tracks =
+        audio.iter().map(|a| MpegAudioTrack { stream: a.stream, codec: source.file.streams[a.stream].codec.name(), units: a.units.len() as u64 }).collect();
+    Ok((tracks, dropped))
 }
 
 /// Write the copy segments of a lossless MPEG-2 `plan` from `source` into `out` as a new
