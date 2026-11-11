@@ -8,6 +8,8 @@
 //!   varying speed.
 //! - [`mtc`]: MIDI Timecode: quarter-frame and full-frame messages, a generator and a byte-stream
 //!   parser.
+//! - [`chase`]: the state machine that makes the player follow an external clock (locate, lock,
+//!   drift re-seek, freewheel, scrub).
 //!
 //! Clean-room implementation from public descriptions of the LTC format (bit layout, biphase-mark
 //! coding, sync word) and of MIDI Timecode in the MIDI 1.0 specification; no code is taken from
@@ -16,5 +18,6 @@
 
 #![forbid(unsafe_code)]
 
+pub mod chase;
 pub mod ltc;
 pub mod mtc;
