@@ -87,6 +87,7 @@ impl DifSource {
                 channels: a.channels as u32,
                 codec: format!("DV audio ({}-bit PCM)", a.bits),
                 bits_per_sample: Some(u32::from(a.bits)),
+                speakers: Vec::new(),
             })
             .into_iter()
             .collect();
