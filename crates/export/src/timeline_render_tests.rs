@@ -273,3 +273,16 @@ fn ffmpeg_decodes_the_timeline() {
         assert!(ht[40..45].iter().all(|h| *h == ht[40]), "bframes {bframes}: the gap is one picture");
     }
 }
+
+#[test]
+fn copied_timestamps_are_rescaled_only_when_exact() {
+    use crate::timeline_render::rescale;
+    // WP-09d: a 12 800 Hz run in a 25 Hz output, and back
+    assert_eq!(rescale(1024, 12_800, 25), Some(2));
+    assert_eq!(rescale(2, 25, 12_800), Some(1024));
+    assert_eq!(rescale(7, 90_000, 90_000), Some(7));
+    // a 1001-tick NTSC offset has no whole 25 Hz value: refused, never rounded
+    assert_eq!(rescale(1001, 30_000, 25), None);
+    assert_eq!(rescale(1, 0, 25), None);
+    assert_eq!(rescale(i64::MAX, 1, u32::MAX), None);
+}

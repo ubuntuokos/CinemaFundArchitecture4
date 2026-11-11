@@ -2671,9 +2671,21 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         assert not dlg.width_spin.isEnabled() and not dlg.bitrate.isEnabled() and dlg.audio.isEnabled()
         assert Path(dlg.path.text()).suffix == "", dlg.path.text()
         dlg.dcp_kind.setCurrentIndex(dlg.dcp_kind.findData("trailer"))
+        dlg.dcp_language.setCurrentText("hu-HU")
         p = dlg.params()
-        assert (p["dcpResolution"], p["dcpAspect"], p["dcpContentKind"]) == ("2k", "scope", "trailer")
+        assert (p["dcpResolution"], p["dcpAspect"], p["dcpContentKind"], p["dcpLanguage"]) == ("2k", "scope", "trailer", "hu-HU")
         assert "width" not in p and "bitrateKbps" not in p
+        # the ISDCF name from the engine renames the package folder (#309)
+        assert wait_until(app, lambda: dlg.dcp_isdcf.isEnabled() and "_TLR-1_S_HU-XX_51_2K_" in dlg._dcp_name, 10_000), dlg._dcp_name
+        parent = Path(dlg.path.text()).parent
+        dlg.dcp_isdcf.click()
+        assert Path(dlg.path.text()) == parent / dlg._dcp_name
+        assert dlg._dcp_name.endswith("_SMPTE_OV")
+        # a malformed language tag is the engine's error, shown in the summary
+        dlg.dcp_language.setCurrentText("Hungarian")
+        assert wait_until(app, lambda: "RFC 5646" in dlg.summary.text(), 10_000), dlg.summary.text()
+        assert not dlg.dcp_isdcf.isEnabled()
+        dlg.dcp_language.setCurrentText("hu-HU")
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
         dlg.start.setValue(0.0)
@@ -2692,6 +2704,9 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         cpl = next(out.glob("cpl_*.xml")).read_text()
         assert "<ContentKind>trailer</ContentKind>" in cpl
         assert "<ScreenAspectRatio>2048 858</ScreenAspectRatio>" in cpl
+        # RDD 52: constraints profile, FFOC/LFOC markers, 5.1 MCA labels in the chosen language
+        assert "SMPTE-RDD-52:2020-Bv2.1" in cpl and "<Label>FFOC</Label>" in cpl
+        assert cpl.count("<r1:RFC5646SpokenLanguage>hu-HU</r1:RFC5646SpokenLanguage>") == 7
         # another format brings the size fields back
         dlg.format.setCurrentIndex(dlg.format.findData("h264"))
         assert dlg.width_spin.isEnabled() and not dlg.dcp_resolution.isEnabled()
@@ -3266,6 +3281,10 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
         method = next(a for a in tracking.method_menu.actions() if a.text() == "Position")
         method.trigger()
         assert wait_until(app, lambda: mask()["trackMethod"] == "Position", 10_000)
+        tracking = ec.rows[(opa, "mask0.path")].editor
+        corr = next(a for a in tracking.method_menu.actions() if a.text() == "Correlation tracker")
+        corr.trigger()
+        assert wait_until(app, lambda: mask()["tracker"] == "Correlation", 10_000)
         mh = ec.masks[(cid, opa, 0)][0]
         mh.twirl.click()
         assert not ec.rows[(opa, "mask0.feather")].isVisibleTo(ec)
@@ -6101,6 +6120,14 @@ def test_clip_dialogs_as_egui(app):
     assert d.params["clips"] == [[0, 2], [1]]
     child(d, "ok", QtWidgets.QPushButton).click()
     assert sent[-1] == ("clip.audioChannels", {"format": "mono", "clips": [[0, 2], [1]]})
+    # an Auro-3D source names its restored loudspeakers under the channel numbers (#323)
+    speakers = ["L", "R", "C", "LFE", "Ls", "Rs", "HL", "HR", "HLs", "HRs"]
+    d = ClipDialog(None, {"command": "clip.audioChannels", "params": {"format": "adaptive", "clips": [list(range(10))]}, "info": {"channels": 10, "items": True, "speakers": speakers}}, run)
+    assert [child(d, f"ch.{c}", QtWidgets.QLabel).text().split("\n")[-1] for c in range(10)] == speakers
+    # no layout (or a damaged one): the numbers alone
+    for info in ({"channels": 2, "items": True}, {"channels": 2, "items": True, "speakers": [5, None]}, {"channels": 2, "items": True, "speakers": "L R"}):
+        d = ClipDialog(None, {"command": "clip.audioChannels", "params": {"format": "stereo", "clips": [[0, 1]]}, "info": info}, run)
+        assert child(d, "ch.1", QtWidgets.QLabel).text() == "Ch. 2"
     # Frame Hold: the timecode field only for Source Timecode / Sequence Time; Hold On off greys the rest
     d = ClipDialog(None, {"command": "clip.frameHoldOptions", "params": {"enabled": True, "holdOn": "in", "timecode": "00:00:01:00", "holdFilters": False}}, run)
     d.show()
@@ -13512,6 +13539,35 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
     finally:
         engine.stop()
         win.close()
+
+
+def test_smart_cut_plan_text_names_the_audio():
+    """The Smart Cut plan names the audio tracks copied with the video and why another is not
+    (WP-09b)."""
+    from cfa4_qt.panels.smart_cut import plan_text
+
+    result = {
+        "summary": {"copiedFrames": 20, "reencodedFrames": 0},
+        "plan": {"executable": True, "blockers": []},
+        "audio": {"tracks": [{"trackId": 2, "codec": "aac"}, {"trackId": 3, "codec": "pcm"}], "dropped": [{"trackId": 4, "reason": "MP3 / MP2 audio is not copied yet"}]},
+    }
+    text, problem = plan_text(result)
+    assert problem is None
+    assert "AAC, PCM" in text and "4" in text and "MP3" in text
+
+
+def test_smart_cut_default_output_keeps_mpeg_streams():
+    """An MPEG program or transport stream is cut into one of the same kind (WP-09c)."""
+    from cfa4_qt.panels.smart_cut import default_output
+
+    assert default_output("/a/clip.mp4") == "/a/clip_cut.mp4"
+    assert default_output("/a/clip.MOV") == "/a/clip_cut.mov"
+    assert default_output("/a/clip.ts") == "/a/clip_cut.ts"
+    assert default_output("/a/clip.m2ts") == "/a/clip_cut.m2ts"
+    assert default_output("/a/clip.mpg") == "/a/clip_cut.mpg"
+    assert default_output("/a/VTS_01_1.VOB") == "/a/VTS_01_1_cut.mpg"
+    assert default_output("/a/clip.mkv") == "/a/clip_cut.mp4"
+    assert default_output("/a/clip") == "/a/clip_cut.mp4"
 
 
 def test_smart_export_plan_text():

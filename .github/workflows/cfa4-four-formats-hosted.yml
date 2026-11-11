@@ -28,6 +28,8 @@ on:
       - '.github/workflows/cfa4-four-formats-hosted.yml'
       - 'scripts/dev/fetch-ffmpeg-9.0.2.sh'
       - 'scripts/release/install-nfpm.sh'
+      # the staged runtime audit, with the Smart Cut smoke of every package (WP-10)
+      - 'scripts/release/f5_staged_runtime.py'
       - 'packaging/linux/nfpm.lock'
 
 permissions:

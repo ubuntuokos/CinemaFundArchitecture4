@@ -19,6 +19,7 @@
 use std::io::Write;
 
 mod aac_out;
+pub mod audio_copy;
 mod audio_out;
 pub mod boundary_reencode;
 mod boundary_reencode_hevc;
@@ -41,13 +42,17 @@ pub mod presets;
 mod raster;
 pub mod settings;
 pub mod smart_cut;
+pub mod smart_cut_mpeg;
 pub mod still;
+pub mod timeline_audio;
 pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
-pub use dcp_out::{DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_rate, rgba_to_xyz12};
+pub use dcp_out::{
+    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
+};
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
@@ -462,6 +467,10 @@ pub struct ExportSettings {
     /// silence there (`none`).
     #[serde(default)]
     pub dcp_iab_fallback: String,
+    /// DCP spoken language, an RFC 5646 tag such as `en-US` or `hu-HU` (empty = none): the MCA
+    /// labels' `RFC5646SpokenLanguage`, the CPL title's language and the DCNC language field.
+    #[serde(default)]
+    pub dcp_language: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -737,6 +746,7 @@ impl Default for ExportSettings {
             dcp_immersive: String::new(),
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
+            dcp_language: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -1473,7 +1483,7 @@ impl AudioEncoder for FlacAudio {
     }
 }
 
-fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
+pub(crate) fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
     // AAC caps a frame at 6144 bits per channel (ISO/IEC 14496-3 §4.5.3.2): 6 bits per sample, so
     // 264.6 kbps for stereo at 22.05 kHz; a higher setting is capped instead of refused
     let max = (6 * sample_rate as u64 * channels.max(1) as u64).min(u32::MAX as u64) as u32;
@@ -2924,6 +2934,8 @@ mod settings_tests;
 mod surround_tests;
 
 #[cfg(test)]
+mod audio_copy_tests;
+#[cfg(test)]
 mod boundary_reencode_tests;
 #[cfg(test)]
 mod dcp_tests;
@@ -2934,7 +2946,11 @@ mod mxf_tests;
 #[cfg(test)]
 mod smart_cut_av1_tests;
 #[cfg(test)]
+mod smart_cut_edge_tests;
+#[cfg(test)]
 mod smart_cut_hevc_tests;
+#[cfg(test)]
+mod smart_cut_mpeg_tests;
 #[cfg(test)]
 mod smart_cut_tests;
 #[cfg(test)]
