@@ -630,6 +630,79 @@ fn ffmpeg_decodes_our_streams() {
     }
 }
 
+#[test]
+fn reciprocal_division_is_exact_for_every_quantiser_scale() {
+    for qs in 1..=112 {
+        let m = recip(qs);
+        for a in 0..=0x1_0000u32 {
+            assert_eq!(div_recip(a, m), (a.min(0xFFFF) as i32 / qs).min(2047), "{a} / {qs}");
+        }
+    }
+    assert_eq!(div_recip(u32::MAX, recip(1)), 2047);
+}
+
+/// A hard cut to unrelated content: the anchor after it becomes an I picture that starts a new
+/// GOP (the B pictures before it predict from it alone in a closed GOP), unless detection is off.
+#[test]
+fn scene_cut_starts_a_new_gop() {
+    let cut = 12usize;
+    let run = |scene_cut: bool| {
+        let mut cfg = Config::new(176, 144, 25, 1);
+        cfg.gop = 15;
+        cfg.b_frames = 2;
+        cfg.rate = Rate::Quantizer(4);
+        cfg.scene_cut = scene_cut;
+        let mut enc = Encoder::new(cfg.clone()).unwrap();
+        let mut packets = Vec::new();
+        let mut clips = Vec::new();
+        for t in 0..24 {
+            let mut c = if t < cut { clip(176, 144, cfg.chroma, t) } else { textured(176, 144, cfg.chroma, t, 40) };
+            if t >= cut {
+                // the other scene: strong texture, mirrored, inverted luma, swapped chroma
+                for row in c.y.chunks_mut(c.w) {
+                    row.reverse();
+                    row.iter_mut().for_each(|v| *v = 255 - *v);
+                }
+                std::mem::swap(&mut c.cb, &mut c.cr);
+            }
+            packets.extend(enc.encode(&input(&c)).unwrap());
+            clips.push(c);
+        }
+        packets.extend(enc.flush().unwrap());
+        let mut es: Vec<u8> = packets.iter().flat_map(|p| p.data.iter().copied()).collect();
+        es.extend_from_slice(&enc.finish());
+        let pics = decode(&es);
+        assert_eq!(pics.len(), 24);
+        for (i, (p, c)) in pics.iter().zip(&clips).enumerate() {
+            let py = psnr(&p.y, &c.y);
+            assert!(py > 35.0, "frame {i}: PSNR Y {py:.2}");
+        }
+        let types: Vec<PictureType> = pics.iter().map(|p| p.picture_type).collect();
+        let keyframes: Vec<u64> = packets.iter().filter(|p| p.keyframe).map(|p| p.index).collect();
+        (types, keyframes)
+    };
+    let (types, keyframes) = run(true);
+    assert_eq!(types[cut], PictureType::I);
+    assert_eq!(keyframes, vec![0, cut as u64]);
+    // the GOP cadence restarts at the cut: anchors every third picture from it
+    assert_eq!(types[cut + 3], PictureType::P);
+    assert_eq!(types[cut + 1], PictureType::B);
+    let (types, keyframes) = run(false);
+    assert_eq!(types[cut], PictureType::P);
+    assert_eq!(keyframes, vec![0, 15]);
+}
+
+/// Pictures that differ only by motion never count as cuts.
+#[test]
+fn moving_content_is_not_a_scene_cut() {
+    let mut cfg = Config::new(176, 144, 25, 1);
+    cfg.gop = 30;
+    cfg.rate = Rate::Quantizer(4);
+    let (_, packets, _) = encode(cfg, 20);
+    let keyframes: Vec<u64> = packets.iter().filter(|p| p.keyframe).map(|p| p.index).collect();
+    assert_eq!(keyframes, vec![0]);
+}
+
 /// The low-delay flag can be kept clear without B pictures (to splice into a stream that has
 /// them), and is refused with B pictures.
 #[test]
