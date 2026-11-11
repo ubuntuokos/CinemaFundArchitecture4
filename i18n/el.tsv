@@ -1,0 +1,4236 @@
+# Greek (el) catalog for the whole CFA4 interface (Qt GUI and egui). Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Greek video-editing vocabulary (χρονογραμμή, κομμάτι, κλιπ, ακολουθία, κάδος, κεφαλή
+# αναπαραγωγής, δείκτης, μετάβαση, καρέ-κλειδί). No proprietary localisation resource, string table
+# or product UI was consulted or copied; add entries the same way. Commands are nouns of action
+# ("Αποθήκευση ως…"), labels use sentence case, quotation marks are «», and product and format
+# names (CFA4, Lumetri, ProRes, AAF, EDL…) keep their spelling. Decimal comma (0,5). A
+# native-speaker review is welcome.
+#
+# Terms: clip = κλιπ, track = κομμάτι, sequence = ακολουθία, timeline = χρονογραμμή, bin = κάδος,
+# playhead = κεφαλή αναπαραγωγής, marker = δείκτης, In/Out point = σημείο εισόδου/εξόδου, keyframe
+# = καρέ-κλειδί, frame = καρέ, caption = υπότιτλος, preset = προρύθμιση, workspace = χώρος
+# εργασίας, gain = απολαβή, opacity = αδιαφάνεια, render = απόδοση, ripple = με μετατόπιση,
+# dissolve = διάλυση, wipe = σάρωση, transcript = απομαγνητοφώνηση, voice-over = αφήγηση, media =
+# πολυμέσα, proxy = proxy, (Legacy) = (Παλαιό).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see el.tsv.attribution.
+
+	'{name}' already exists. Replace it?	Το '{name}' υπάρχει ήδη. Να αντικατασταθεί;
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	Σχετικά με το CFA4
+	Add Audio Submix Track	Προσθήκη κομματιού υπομίξης ήχου
+	Add Caption at Playhead	Προσθήκη υπότιτλου στην κεφαλή αναπαραγωγής
+	Add Chapter Marker…	Προσθήκη δείκτη κεφαλαίου…
+	Add Edit	Προσθήκη τομής
+	Add Edit to All Tracks	Προσθήκη τομής σε όλα τα κομμάτια
+	Add Flash Cue Marker…	Προσθήκη δείκτη Flash Cue…
+	Add Frame Hold	Προσθήκη παγώματος καρέ
+	Add Marker	Προσθήκη δείκτη
+	Add New Caption Track…	Προσθήκη νέου κομματιού υποτίτλων…
+	Add Range Marker	Προσθήκη δείκτη εύρους
+	Add Range Marker to In and Out	Προσθήκη δείκτη εύρους από την είσοδο ως την έξοδο
+	Add Tracks…	Προσθήκη κομματιών…
+	Full screen	Πλήρης οθόνη
+	Master volume: use the Audio Track Mixer	Κύρια ένταση: χρησιμοποιήστε τον μείκτη κομματιών ήχου
+	Send to Queue	Αποστολή στην ουρά
+	Add/Remove Keyframe	Προσθήκη/αφαίρεση καρέ-κλειδιού
+	Adjust	Προσαρμογή
+	Adjustment Layer	Επίπεδο προσαρμογής
+	Adjustment Layer…	Επίπεδο προσαρμογής…
+	Align to Video Frame	Στοίχιση ως προς το καρέ βίντεο
+	Align to Video Frame as Group	Στοίχιση ως προς το καρέ βίντεο ως ομάδα
+	All Panels	Όλα τα πάνελ
+	All files	Όλα τα αρχεία
+	Amplitude and Compression	Πλάτος και συμπίεση
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Μια μηχανή χωρίς `serve` δημιουργήθηκε από κλάδο χωρίς το Qt GUI: μεταβείτε στον κλάδο του Qt GUI και κάντε ξανά build, ή δώστε --engine PATH.
+	Anchor Point	Σημείο αγκύρωσης
+	Animation	Κίνηση
+	Anti-flicker Filter	Φίλτρο κατά του τρεμοπαίγματος
+	Apply Audio Transition	Εφαρμογή μετάβασης ήχου
+	Apply Default Transitions to Selection	Εφαρμογή προεπιλεγμένων μεταβάσεων στην επιλογή
+	Apply Video Transition	Εφαρμογή μετάβασης βίντεο
+	Assembly	Συναρμολόγηση
+	Attach Proxies…	Σύνδεση proxy…
+	Audio	Ήχος
+	Audio Channels…	Κανάλια ήχου…
+	Audio Clip Mixer	Μείκτης κλιπ ήχου
+	Audio Effects	Εφέ ήχου
+	Audio Gain…	Απολαβή ήχου…
+	Audio In	Είσοδος ήχου
+	Audio Meters	Μετρητές ήχου
+	Audio Options	Επιλογές ήχου
+	Audio Out	Έξοδος ήχου
+	Audio Track Mixer	Μείκτης κομματιών ήχου
+	Audio Transitions	Μεταβάσεις ήχου
+	Audio Bitrate	Ρυθμός bit ήχου
+	Audio Format	Μορφή ήχου
+	Auto Bezier	Αυτόματη Bezier
+	Automate to Sequence…	Αυτόματη τοποθέτηση στην ακολουθία…
+	Avid Log Exchange…	Avid Log Exchange…
+	Bars and Tone…	Μπάρες και τόνος…
+	Bezier	Bezier
+	Bin	Κάδος
+	Bin From Selection	Κάδος από την επιλογή
+	Bitrate Encoding	Κωδικοποίηση ρυθμού bit
+	Black Video…	Μαύρο βίντεο…
+	Blur & Sharpen	Θόλωση και όξυνση
+	Breakout to Mono	Διάσπαση σε μονοφωνικά
+	Brown	Καφέ
+	Burn in captions	Ενσωμάτωση υποτίτλων στην εικόνα
+	Bypass	Παράκαμψη
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	Ακύρωση επιλεγμένων
+	Cancelled	Ακυρώθηκε
+	Cannot create the output folder: {error}	Δεν είναι δυνατή η δημιουργία του φακέλου εξόδου: {error}
+	Cannot check the output folder for files to replace: {error}	Δεν είναι δυνατός ο έλεγχος του φακέλου εξόδου για αρχεία προς αντικατάσταση: {error}
+	Captions	Υπότιτλοι
+	Captions and Graphics	Υπότιτλοι και γραφικά
+	Captions…	Υπότιτλοι…
+	Caribbean	Καραϊβική
+	Center Horizontally	Οριζόντια στο κέντρο
+	Center Vertically	Κατακόρυφα στο κέντρο
+	Cerulean	Γαλάζιο
+	Channel Volume	Ένταση καναλιού
+	Checked:	Ελέγχθηκαν:
+	Choose a file name and location.	Επιλέξτε όνομα και θέση αρχείου.
+	Choose folder	Επιλογή φακέλου
+	Media File	Αρχείο πολυμέσων
+	Sequence name	Όνομα ακολουθίας
+	Clear Finished	Εκκαθάριση ολοκληρωμένων
+	Clear In	Εκκαθάριση εισόδου
+	Clear In and Out	Εκκαθάριση εισόδου και εξόδου
+	Clear Markers	Εκκαθάριση δεικτών
+	Clear Out	Εκκαθάριση εξόδου
+	Clear Selected Marker	Εκκαθάριση επιλεγμένου δείκτη
+	Clip	Κλιπ
+	Close All Other Projects	Κλείσιμο όλων των άλλων έργων
+	Close All Projects	Κλείσιμο όλων των έργων
+	Close Gap	Κλείσιμο κενού
+	Close Project	Κλείσιμο έργου
+	Color Correction	Διόρθωση χρώματος
+	Color Management…	Διαχείριση χρωμάτων…
+	Color Matte…	Χρωματικό φόντο…
+	Consolidate Duplicates	Ενοποίηση διπλότυπων
+	Constant quality (CRF)	Σταθερή ποιότητα (CRF)
+	Continuous Bezier	Συνεχής Bezier
+	Copy Paste Includes Sequence Markers	Η αντιγραφή-επικόλληση περιλαμβάνει τους δείκτες ακολουθίας
+	Create Captions from Transcript…	Δημιουργία υποτίτλων από απομαγνητοφώνηση…
+	Create Multi-Camera Source Sequence…	Δημιουργία ακολουθίας πηγής πολλαπλών καμερών…
+	Create Proxies…	Δημιουργία proxy…
+	Crossfade	Διασταυρούμενο σβήσιμο
+	Darker Color	Πιο σκούρο χρώμα
+	Delay and Echo	Καθυστέρηση και ηχώ
+	Delete Keyframe	Διαγραφή καρέ-κλειδιού
+	Delete Render Files	Διαγραφή αρχείων απόδοσης
+	Delete Render Files In to Out	Διαγραφή αρχείων απόδοσης από είσοδο ως έξοδο
+	Delete Tracks…	Διαγραφή κομματιών…
+	Delete Transcript	Διαγραφή απομαγνητοφώνησης
+	Demo Footage	Πλάνα επίδειξης
+	Demo Project	Έργο επίδειξης
+	Detach Proxies	Αποσύνδεση proxy
+	Dissolve	Διάλυση
+	Distribute Horizontally	Οριζόντια κατανομή
+	Distribute Space Horizontally	Οριζόντια κατανομή διαστήματος
+	Distribute Space Vertically	Κατακόρυφη κατανομή διαστήματος
+	Distribute Vertically	Κατακόρυφη κατανομή
+	Double-click a clip in the Project panel to open it here.	Κάντε διπλό κλικ σε ένα κλιπ στο πάνελ Έργο για να ανοίξει εδώ.
+	EDL…	EDL…
+	Ease In	Ομαλή είσοδος
+	Ease Out	Ομαλή έξοδος
+	Edit Offline…	Επεξεργασία εκτός σύνδεσης…
+	Edit Subclip…	Επεξεργασία υποκλιπ…
+	Edit Workspaces…	Επεξεργασία χώρων εργασίας…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Επεξεργάζεται στα εργαλεία Lumetri και μάσκας (όχι ακόμη στο Qt GUI)
+	Effect Controls	Στοιχεία ελέγχου εφέ
+	Enable	Ενεργοποίηση
+	Enable Remix	Ενεργοποίηση Remix
+	Enabled	Ενεργό
+	Encoding	Κωδικοποίηση
+	End	Τέλος
+	Engine stopped	Η μηχανή σταμάτησε
+	Entire Sequence	Ολόκληρη η ακολουθία
+	Essential Graphics	Βασικά γραφικά
+	Essential Sound	Βασικός ήχος
+	Events	Συμβάντα
+	Export As Motion Graphics Template…	Εξαγωγή ως πρότυπο κινούμενων γραφικών…
+	Export Markers as CSV…	Εξαγωγή δεικτών ως CSV…
+	Export Media	Εξαγωγή πολυμέσων
+	Export Media…	Εξαγωγή πολυμέσων…
+	Export Queue	Ουρά εξαγωγής
+	Queue ({n})	Ουρά ({n})
+	Send exports here with Send to Queue, then start the queue.	Στείλτε εξαγωγές εδώ με την Αποστολή στην ουρά και μετά ξεκινήστε την ουρά.
+	Open a sequence to export	Ανοίξτε μια ακολουθία για εξαγωγή
+	The sequence has no caption track.	Η ακολουθία δεν έχει κομμάτι υποτίτλων.
+	Export Audio	Εξαγωγή ήχου
+	Export failed: {path}	Η εξαγωγή απέτυχε: {path}
+	Export finished: {path}	Η εξαγωγή ολοκληρώθηκε: {path}
+	Extract Audio	Εξαγωγή ήχου από το κλιπ
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Απέτυχε
+	Field Options…	Επιλογές πεδίων…
+	File…	Αρχείο…
+	Fill frame	Γέμισμα καρέ
+	Filter and EQ	Φίλτρο και EQ
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Fit to frame	Προσαρμογή στο καρέ
+	Forest	Πράσινο δάσους
+	Frame Blending	Ανάμειξη καρέ
+	Frame Hold Options…	Επιλογές παγώματος καρέ…
+	Frame Sampling	Δειγματοληψία καρέ
+	Frame Size	Μέγεθος καρέ
+	From Bin	Από τον κάδο
+	From Source Monitor	Από την οθόνη πηγής
+	From Source Monitor, Match Frame	Από την οθόνη πηγής, αντιστοίχιση καρέ
+	From file…	Από αρχείο…
+	From the preset	Από την προρύθμιση
+	Adaptive ({bpp} bits per pixel)	Προσαρμοστικό ({bpp} bit ανά pixel)
+	Set a fixed bitrate	Ορισμός σταθερού ρυθμού bit
+	Gain	Απολαβή
+	Generate Audio Waveform	Δημιουργία κυματομορφής ήχου
+	Get Media File Properties for	Λήψη ιδιοτήτων αρχείου πολυμέσων για
+	Go to End	Μετάβαση στο τέλος
+	Go to Gap	Μετάβαση στο κενό
+	Go to In	Μετάβαση στην είσοδο
+	Go to Next Caption Segment	Μετάβαση στο επόμενο τμήμα υποτίτλων
+	Go to Next Keyframe	Μετάβαση στο επόμενο καρέ-κλειδί
+	Go to Next Marker	Μετάβαση στον επόμενο δείκτη
+	Go to Out	Μετάβαση στην έξοδο
+	Go to Previous Caption Segment	Μετάβαση στο προηγούμενο τμήμα υποτίτλων
+	Go to Previous Keyframe	Μετάβαση στο προηγούμενο καρέ-κλειδί
+	Go to Previous Marker	Μετάβαση στον προηγούμενο δείκτη
+	Go to Split	Μετάβαση στη διαίρεση
+	Go to Start	Μετάβαση στην αρχή
+	Graphics and Titles	Γραφικά και τίτλοι
+	Grunge & Distort	Φθορά και παραμόρφωση
+	Hide All Caption Tracks	Απόκρυψη όλων των κομματιών υποτίτλων
+	Hold	Κράτημα
+	Image Control	Έλεγχος εικόνας
+	Image Sequence	Ακολουθία εικόνων
+	Immersive Video	Καθηλωτικό βίντεο
+	Import Credits Spreadsheet…	Εισαγωγή υπολογιστικού φύλλου τίτλων τέλους…
+	Import From	Εισαγωγή από
+	Import Image Sequence…	Εισαγωγή ακολουθίας εικόνων…
+	Import from Media Browser	Εισαγωγή από το πρόγραμμα περιήγησης πολυμέσων
+	Ingest Settings…	Ρυθμίσεις πρόσληψης…
+	Insert Frame Hold Segment	Εισαγωγή τμήματος παγώματος καρέ
+	Inspector	Επιθεωρητής
+	Install Motion Graphics Template…	Εγκατάσταση προτύπου κινούμενων γραφικών…
+	Interpret Footage…	Ερμηνεία πλάνων…
+	Iris	Ίριδα
+	Keying	Απομόνωση φόντου
+	Lavender	Λεβάντα
+	Legacy	Παλαιό
+	Level	Στάθμη
+	Lift	Ανύψωση
+	Lights & Blurs	Φώτα και θολώσεις
+	Lights & Glows	Φώτα και λάμψεις
+	Linear Dodge (Add)	Γραμμικός φωτισμός (πρόσθεση)
+	Link Media…	Σύνδεση πολυμέσων…
+	Linked Selection	Συνδεδεμένη επιλογή
+	Lumetri Color	Lumetri Color
+	Lumetri Scopes	Lumetri Scopes
+	Make Offline…	Μετατροπή σε εκτός σύνδεσης…
+	Make Subclip…	Δημιουργία υποκλιπ…
+	Make Subsequence	Δημιουργία υποακολουθίας
+	Mango	Μάνγκο
+	Mark Clip	Σήμανση κλιπ
+	Mark In	Ορισμός εισόδου
+	Mark Out	Ορισμός εξόδου
+	Mark Selection	Σήμανση επιλογής
+	Mark Split	Σήμανση διαίρεσης
+	Markers	Δείκτες
+	Match Frame	Αντιστοίχιση καρέ
+	Match sequence	Αντιστοίχιση με την ακολουθία
+	Media Browser	Πρόγραμμα περιήγησης πολυμέσων
+	Media offline	Πολυμέσα εκτός σύνδεσης
+	Media…	Πολυμέσα…
+	Merge Clips…	Συγχώνευση κλιπ…
+	Merged Clip	Συγχωνευμένο κλιπ
+	Modulation	Διαμόρφωση
+	Motion Graphics Template…	Πρότυπο κινούμενων γραφικών…
+	Movie	Ταινία
+	Multi-Camera	Πολλαπλές κάμερες
+	Mute Track	Σίγαση κομματιού
+	Nest…	Ένθεση…
+	New Bin	Νέος κάδος
+	New Project Panel	Νέο πάνελ έργου
+	New Sequence…	Νέα ακολουθία…
+	Next in Sequence	Επόμενο στην ακολουθία
+	Next in Track	Επόμενο στο κομμάτι
+	No sequence	Καμία ακολουθία
+	Drop media here to create sequence.	Αφήστε πολυμέσα εδώ για να δημιουργηθεί ακολουθία.
+	Open Demo Project	Άνοιγμα έργου επίδειξης
+	Double-click a sequence in the Project panel to open it here.	Κάντε διπλό κλικ σε μια ακολουθία στο πάνελ Έργο για να ανοίξει εδώ.
+	Noise & Grain	Θόρυβος και κόκκος
+	Noise Reduction	Μείωση θορύβου
+	Normalize Mix Track…	Κανονικοποίηση κομματιού μίξης…
+	Not Now	Όχι τώρα
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Όχι ακόμη στο Qt GUI (δείτε docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	Παρωχημένο
+	Offline File…	Αρχείο εκτός σύνδεσης…
+	Open Project	Άνοιγμα έργου
+	Open Project…	Άνοιγμα έργου…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	Οπτική ροή
+	Opus	Opus
+	Output file	Αρχείο εξόδου
+	Overwrite	Αντικατάσταση
+	PCM (uncompressed)	PCM (ασυμπίεστο)
+	Panels	Πάνελ
+	Panner	Πανοραμικός ρυθμιστής
+	Paste Attributes…	Επικόλληση χαρακτηριστικών…
+	Paste Insert	Επικόλληση με εισαγωγή
+	Play/Stop	Αναπαραγωγή/Διακοπή
+	Preset	Προρύθμιση
+	Previous in Sequence	Προηγούμενο στην ακολουθία
+	Previous in Track	Προηγούμενο στο κομμάτι
+	Program	Πρόγραμμα
+	Progress	Πρόοδος
+	Project	Έργο
+	Project Manager…	Διαχείριση έργου…
+	Project Notes	Σημειώσεις έργου
+	Project Settings	Ρυθμίσεις έργου
+	Project…	Έργο…
+	Proxy	Proxy
+	Quit	Έξοδος
+	Razor Tool	Ξυράφι (Razor Tool)
+	Reconnect Full Resolution Media…	Επανασύνδεση πολυμέσων πλήρους ανάλυσης…
+	Recover Unsaved Changes	Ανάκτηση μη αποθηκευμένων αλλαγών
+	Recover Unsaved Changes…	Ανάκτηση μη αποθηκευμένων αλλαγών…
+	Reference Monitor	Οθόνη αναφοράς
+	Remaining	Απομένει
+	Remix	Remix
+	Remix Properties…	Ιδιότητες Remix…
+	Remove Attributes…	Αφαίρεση χαρακτηριστικών…
+	Remove Effect	Αφαίρεση εφέ
+	Remove Filler Words	Αφαίρεση λέξεων-γεμισμάτων
+	Remove Pauses	Αφαίρεση παύσεων
+	Remove Unused	Αφαίρεση αχρησιμοποίητων
+	Render Audio	Απόδοση ήχου
+	Render Effects In to Out	Απόδοση εφέ από είσοδο ως έξοδο
+	Render In to Out	Απόδοση από είσοδο ως έξοδο
+	Render Selection	Απόδοση επιλογής
+	Replace Fonts in Projects…	Αντικατάσταση γραμματοσειρών στα έργα…
+	Replace With Clip	Αντικατάσταση με κλιπ
+	Reset All Parameters	Επαναφορά όλων των παραμέτρων
+	Reset Duration	Επαναφορά διάρκειας
+	Reset Effect	Επαναφορά εφέ
+	Reset Panel Layout	Επαναφορά διάταξης πάνελ
+	Reset Parameter	Επαναφορά παραμέτρου
+	Reset to Saved Layout	Επαναφορά στην αποθηκευμένη διάταξη
+	Restoration	Αποκατάσταση
+	Restore Captions from Source Clip	Επαναφορά υποτίτλων από το κλιπ πηγής
+	Retry	Επανάληψη
+	Reverb	Αντήχηση
+	Reverse Match Frame	Αντίστροφη αντιστοίχιση καρέ
+	Revert Remix	Αναίρεση Remix
+	Ripple Delete	Διαγραφή με μετατόπιση
+	Ripple Delete Head Frame	Διαγραφή πρώτου καρέ με μετατόπιση
+	Ripple Sequence Markers	Μετατόπιση δεικτών ακολουθίας
+	Rose	Ροζ
+	Save All	Αποθήκευση όλων
+	Save Changes to this Workspace	Αποθήκευση αλλαγών σε αυτόν τον χώρο εργασίας
+	Save as New Workspace	Αποθήκευση ως νέος χώρος εργασίας
+	Save as New Workspace…	Αποθήκευση ως νέος χώρος εργασίας…
+	Save changes to '{name}' before closing?	Αποθήκευση αλλαγών στο '{name}' πριν από το κλείσιμο;
+	Save changes to '{name}' before continuing?	Αποθήκευση αλλαγών στο '{name}' πριν από τη συνέχεια;
+	Scale Width	Κλιμάκωση πλάτους
+	Scale to Frame Size	Κλιμάκωση στο μέγεθος καρέ
+	Scene Edit Detection…	Ανίχνευση αλλαγών σκηνής…
+	Search Bin	Κάδος αναζήτησης
+	Select All Matching	Επιλογή όλων των αντίστοιχων
+	Select Label Group	Επιλογή ομάδας ετικέτας
+	Select Next Graphic	Επιλογή επόμενου γραφικού
+	Select Next Layer	Επιλογή επόμενου επιπέδου
+	Select Previous Graphic	Επιλογή προηγούμενου γραφικού
+	Select Previous Layer	Επιλογή προηγούμενου επιπέδου
+	Select a clip in the Timeline.	Επιλέξτε ένα κλιπ στη χρονογραμμή.
+	Selected	Επιλεγμένο
+	Selection Follows Playhead	Η επιλογή ακολουθεί την κεφαλή αναπαραγωγής
+	Selection Tool	Εργαλείο επιλογής
+	Selection as CFA4 Project…	Επιλογή ως έργο CFA4…
+	Selection…	Επιλογή…
+	Sequence	Ακολουθία
+	Sequence From Clip	Ακολουθία από κλιπ
+	Sequence In/Out	Είσοδος/έξοδος ακολουθίας
+	Sequence Settings…	Ρυθμίσεις ακολουθίας…
+	Sequence…	Ακολουθία…
+	Show Active Caption Tracks Only	Εμφάνιση μόνο των ενεργών κομματιών υποτίτλων
+	Show All Caption Tracks	Εμφάνιση όλων των κομματιών υποτίτλων
+	Show All Marker Colors	Εμφάνιση όλων των χρωμάτων δεικτών
+	Show Through Edits	Εμφάνιση διαφανών τομών
+	Simplify Sequence…	Απλοποίηση ακολουθίας…
+	Slide	Ολίσθηση
+	Smart Tools	Έξυπνα εργαλεία
+	Snap in Timeline	Προσκόλληση στη χρονογραμμή
+	Solo Track	Σόλο κομματιού
+	Some panel labels change language after a restart.	Ορισμένες ετικέτες πάνελ αλλάζουν γλώσσα μετά από επανεκκίνηση.
+	Source	Πηγή
+	Source In	Είσοδος πηγής
+	Source Settings…	Ρυθμίσεις πηγής…
+	Source patch	Σύνδεση πηγής
+	Speed/Duration…	Ταχύτητα/Διάρκεια…
+	Start	Έναρξη
+	Start Queue	Έναρξη ουράς
+	Starting engine…	Εκκίνηση μηχανής…
+	Step Back 1 Frame	Ένα καρέ πίσω
+	Step Forward 1 Frame	Ένα καρέ μπροστά
+	Stereo Imagery	Στερεοφωνική εικόνα
+	Still Image	Στατική εικόνα
+	Stop Queue	Διακοπή ουράς
+	Subclip	Υποκλιπ
+	Synchronize…	Συγχρονισμός…
+	Synthetic	Συνθετικό
+	Tan	Μπεζ
+	Target Bitrate	Ρυθμός bit-στόχος
+	Teal	Πετρόλ
+	Text to Speech	Κείμενο σε ομιλία
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Η μηχανή του CFA4 (cfa4-cli) δεν βρέθηκε. Δημιουργήστε την με: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Η μηχανή του CFA4 σταμάτησε απροσδόκητα. Οι μη αποθηκευμένες αλλαγές φυλάσσονται στο ημερολόγιο ανάκτησης· επανεκκινήστε το CFA4 για να τις ανακτήσετε.
+	The engine stopped	Η μηχανή σταμάτησε
+	Time	Χρόνος
+	Time Interpolation	Χρονική παρεμβολή
+	Time Remapping	Αναδιάταξη χρόνου
+	Time and Pitch	Χρόνος και τονικό ύψος
+	Timecode	Χρονοκώδικας
+	Timecode…	Χρονοκώδικας…
+	Toggle Animation	Εναλλαγή κίνησης
+	Toggle Proxies	Εναλλαγή proxy
+	Toggle Sync Lock	Εναλλαγή κλειδώματος συγχρονισμού
+	Toggle Track Lock	Εναλλαγή κλειδώματος κομματιού
+	Toggle Track Output	Εναλλαγή εξόδου κομματιού
+	Toggle the effect on or off	Ενεργοποίηση ή απενεργοποίηση του εφέ
+	Toggle track targeting	Εναλλαγή στόχευσης κομματιού
+	Transcribe Sequence…	Απομαγνητοφώνηση ακολουθίας…
+	Transcribe…	Απομαγνητοφώνηση…
+	Transcript	Απομαγνητοφώνηση
+	Transformers	Μετασχηματιστές
+	Transparent Video…	Διαφανές βίντεο…
+	Trim Edit	Περικοπή τομής
+	Uniform Scale	Ομοιόμορφη κλιμάκωση
+	Universal Counting Leader…	Καθολική αντίστροφη μέτρηση…
+	Update Metadata…	Ενημέρωση μεταδεδομένων…
+	Upgrade Caption to Graphic	Αναβάθμιση υπότιτλου σε γραφικό
+	Upgrade to Source Graphic	Αναβάθμιση σε γραφικό πηγής
+	Use hardware encoding when available	Χρήση κωδικοποίησης υλικού όταν είναι διαθέσιμη
+	Utility	Βοηθητικά
+	VBR, 1 pass	VBR, 1 πέρασμα
+	VBR, 2 pass	VBR, 2 περάσματα
+	Vertical Text	Κατακόρυφο κείμενο
+	Video Effects	Εφέ βίντεο
+	Video In	Είσοδος βίντεο
+	Video Options	Επιλογές βίντεο
+	Video Out	Έξοδος βίντεο
+	Video Transitions	Μεταβάσεις βίντεο
+	Volume	Ένταση
+	Wipe	Σάρωση
+	Work Area	Περιοχή εργασίας
+	Workspaces	Χώροι εργασίας
+	Zoom to Sequence	Ζουμ στην ακολουθία
+	an unknown time	άγνωστος χρόνος
+	automatic	αυτόματο
+	frames	καρέ
+	not available	μη διαθέσιμο
+	off	ανενεργό
+	optional	προαιρετικό
+	…	…
+	Ellipse Tool	Εργαλείο έλλειψης
+	Hand Tool	Εργαλείο χεριού
+	Pen Tool	Εργαλείο πένας
+	Rate Stretch Tool	Τέντωμα ρυθμού (Rate Stretch Tool)
+	Rectangle Tool	Εργαλείο ορθογωνίου
+	Remix Tool	Remix (Remix Tool)
+	Ripple Edit Tool	Επεξεργασία με μετατόπιση (Ripple Edit Tool)
+	Rolling Edit Tool	Κυλιόμενη επεξεργασία (Rolling Edit Tool)
+	Slide Tool	Ολίσθηση (Slide Tool)
+	Slip Tool	Μετατόπιση περιεχομένου (Slip Tool)
+	Track Select Backward Tool	Επιλογή κομματιού προς τα πίσω (Track Select Backward Tool)
+	Track Select Forward Tool	Επιλογή κομματιού προς τα εμπρός (Track Select Forward Tool)
+	Type Tool	Εργαλείο κειμένου
+	Vertical Type Tool	Εργαλείο κατακόρυφου κειμένου
+	Zoom Tool	Εργαλείο ζουμ
+	Add Marker (M)	Προσθήκη δείκτη (M)
+	Button Editor	Επεξεργαστής κουμπιών
+	Composite Video	Σύνθετο βίντεο
+	Display Mode	Λειτουργία προβολής
+	Export Frame	Εξαγωγή καρέ
+	Extract (')	Εξαγωγή με μετατόπιση (')
+	Go to In (Shift+I)	Μετάβαση στην είσοδο (Shift+I)
+	Go to Out (Shift+O)	Μετάβαση στην έξοδο (Shift+O)
+	High Quality Playback	Αναπαραγωγή υψηλής ποιότητας
+	Insert (,)	Εισαγωγή (,)
+	Lift (;)	Ανύψωση (;)
+	Loop	Επανάληψη
+	Loop marked range	Επανάληψη σημειωμένου εύρους
+	Mark In (I)	Ορισμός εισόδου (I)
+	Mark Out (O)	Ορισμός εξόδου (O)
+	More transport controls	Περισσότερα στοιχεία ελέγχου αναπαραγωγής
+	Overwrite (.)	Αντικατάσταση (.)
+	Paused Resolution	Ανάλυση σε παύση
+	Play In to Out	Αναπαραγωγή από είσοδο ως έξοδο
+	Play-Stop Toggle (Space)	Αναπαραγωγή/Διακοπή (Space)
+	Playback Resolution	Ανάλυση αναπαραγωγής
+	RGBA Channels	Κανάλια RGBA
+	Safe Margins	Περιθώρια ασφαλείας
+	Select Playback Resolution	Επιλογή ανάλυσης αναπαραγωγής
+	Select Zoom Level	Επιλογή επιπέδου ζουμ
+	Show Transport Controls	Εμφάνιση στοιχείων ελέγχου αναπαραγωγής
+	Shuttle Left	Γρήγορη κίνηση αριστερά
+	Shuttle Right	Γρήγορη κίνηση δεξιά
+	Shuttle Stop	Διακοπή γρήγορης κίνησης
+	Step Back 1 Frame (Left)	Ένα καρέ πίσω (Left)
+	Step Forward 1 Frame (Right)	Ένα καρέ μπροστά (Right)
+	Darkest	Πιο σκούρο
+	(no sequence)	(καμία ακολουθία)
+	All markers are hidden by the colour filter.	Όλοι οι δείκτες είναι κρυμμένοι από το φίλτρο χρώματος.
+	Audio {n}:	Ήχος {n}:
+	Audio:	Ήχος:
+	Clip: {name}	Κλιπ: {name}
+	Codec:	Codec:
+	Duration:	Διάρκεια:
+	Marker	Δείκτης
+	No markers. Press M to add one.	Δεν υπάρχουν δείκτες. Πατήστε M για να προσθέσετε έναν.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Σημειώσεις για αυτό το έργο: εκκρεμότητες, οδηγίες, αριθμοί καρέ… Αποθηκεύονται μαζί με το έργο.
+	Playhead:	Κεφαλή αναπαραγωγής:
+	Select a clip to view its metadata.	Επιλέξτε ένα κλιπ για να δείτε τα μεταδεδομένα του.
+	Settings:	Ρυθμίσεις:
+	Show or hide {color} markers	Εμφάνιση ή απόκρυψη δεικτών {color}
+	Video {n}:	Βίντεο {n}:
+	Video:	Βίντεο:
+	{tc}  Chapter	{tc}  Κεφάλαιο
+	Media Type	Τύπος πολυμέσων
+	Frame Rate	Ρυθμός καρέ
+	Media Start	Αρχή πολυμέσων
+	Media End	Τέλος πολυμέσων
+	Media Duration	Διάρκεια πολυμέσων
+	Video Info	Πληροφορίες βίντεο
+	Video Codec	Codec βίντεο
+	Audio Info	Πληροφορίες ήχου
+	Audio Codec	Codec ήχου
+	Scene	Σκηνή
+	Shot	Λήψη
+	Log Note	Σημείωση καταγραφής
+	Comment	Σχόλιο
+	Tape Name	Όνομα ταινίας
+	Client	Πελάτης
+	Camera Angle	Γωνία κάμερας
+	File Path	Διαδρομή αρχείου
+	 · {time} left	 · απομένουν {time}
+	Active Monitor	Ενεργή οθόνη
+	Add a timecode row	Προσθήκη γραμμής χρονοκώδικα
+	Audio Samples	Δείγματα ήχου
+	Current Time	Τρέχων χρόνος
+	Failed: {e}	Απέτυχε: {e}
+	Feet + Frames 16mm	Πόδια + καρέ 16mm
+	Feet + Frames 35mm	Πόδια + καρέ 35mm
+	Frames	Καρέ
+	In/Out Duration	Διάρκεια εισόδου/εξόδου
+	Media Time	Χρόνος πολυμέσων
+	No background jobs.	Δεν υπάρχουν εργασίες στο παρασκήνιο.
+	Remove Row	Αφαίρεση γραμμής
+	Seconds	Δευτερόλεπτα
+	Show finished jobs	Εμφάνιση ολοκληρωμένων εργασιών
+	{mode} · no clip	{mode} · κανένα κλιπ
+	{mode} · no sequence	{mode} · καμία ακολουθία
+	Render	Απόδοση
+	Job	Εργασία
+	Audio Track Mixer menu	Μενού μείκτη κομματιών ήχου
+	Automation mode	Λειτουργία αυτοματισμού
+	Enable track for recording	Ενεργοποίηση κομματιού για εγγραφή
+	Fill the slots above first	Συμπληρώστε πρώτα τις παραπάνω θέσεις
+	Go to In Point	Μετάβαση στο σημείο εισόδου
+	Go to Out Point	Μετάβαση στο σημείο εξόδου
+	Input channel mapping	Αντιστοίχιση καναλιών εισόδου
+	Meter Input(s) Only	Μέτρηση μόνο εισόδων
+	Mix	Μίξη
+	Mute Send	Σίγαση αποστολής
+	New Submix	Νέα υπομίξη
+	Pan / balance (drag; double-click: centre)	Πανοραμική / ισορροπία (σύρετε· διπλό κλικ: κέντρο)
+	Post-Fader	Μετά το fader
+	Pre-Fader	Πριν από το fader
+	Remove Send	Αφαίρεση αποστολής
+	Show/Hide Effects and Sends	Εμφάνιση/απόκρυψη εφέ και αποστολών
+	Show/Hide Tracks	Εμφάνιση/απόκρυψη κομματιών
+	Solo safe	Προστασία από σόλο
+	Track output assignment	Ανάθεση εξόδου κομματιού
+	Voice-over recording is not in the Qt GUI yet	Η εγγραφή αφήγησης δεν υπάρχει ακόμη στο Qt GUI
+	Volume (drag; double-click: 0 dB)	Ένταση (σύρετε· διπλό κλικ: 0 dB)
+	pre 	πριν 
+	Read	Ανάγνωση
+	Latch	Μανδάλωση
+	Touch	Άγγιγμα
+	Write	Εγγραφή
+	Stereo	Στερεοφωνικό
+	Swap	Εναλλαγή
+	Write keyframes	Εγγραφή καρέ-κλειδιών
+	Match Playhead	Ακολούθηση κεφαλής αναπαραγωγής
+	Gang to Program	Σύζευξη με το Πρόγραμμα
+	(no sequences)	(καμία ακολουθία)
+	8 Bit	8 bit
+	Bright	Φωτεινό
+	Clamp Signal	Περιορισμός σήματος
+	Colour Space	Χρωματικός χώρος
+	Dimmed	Χαμηλωμένο
+	Float	Κινητής υποδιαστολής
+	Four Scopes (RGB, 8 bit)	Τέσσερα όργανα (RGB, 8 bit)
+	Four Scopes (YUV, float, no clamp)	Τέσσερα όργανα (YUV, κινητής υποδιαστολής, χωρίς περιορισμό)
+	HDR	HDR
+	HLS Vectorscope + Histogram	Vectorscope HLS + ιστόγραμμα
+	Luma	Φωτεινότητα
+	Parade	Parade
+	Parade (RGB)	Parade (RGB)
+	Parade ({kind})	Parade ({kind})
+	Parade Type	Τύπος Parade
+	Presets	Προρυθμίσεις
+	RGB-White	RGB-λευκό
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Ρυθμίσεις οργάνων
+	Signal Scale	Κλίμακα σήματος
+	Vectorscope (YUV)	Vectorscope (YUV)
+	Vectorscope + Waveform YC	Vectorscope + κυματομορφή YC
+	Vectorscope HLS	Vectorscope HLS
+	Vectorscope Targets	Στόχοι vectorscope
+	Vectorscope YUV	Vectorscope YUV
+	Waveform	Κυματομορφή
+	Waveform (Luma)	Κυματομορφή (φωτεινότητα)
+	Waveform (RGB)	Κυματομορφή (RGB)
+	Waveform ({kind})	Κυματομορφή ({kind})
+	Waveform Type	Τύπος κυματομορφής
+	YC	YC
+	YC no Chroma	YC χωρίς χρωματικότητα
+	YUV	YUV
+	(no clip selected)	(δεν έχει επιλεγεί κλιπ)
+	Add Lumetri Color to clip	Προσθήκη Lumetri Color στο κλιπ
+	Apply Match	Εφαρμογή αντιστοίχισης
+	Basic Correction	Βασική διόρθωση
+	Bleach Bypass	Παράκαμψη λεύκανσης
+	Color Match	Αντιστοίχιση χρωμάτων
+	Color Wheels & Match	Χρωματικοί τροχοί και αντιστοίχιση
+	Color/Black	Χρώμα/Μαύρο
+	Color/Gray	Χρώμα/Γκρι
+	Comparison View	Προβολή σύγκρισης
+	Cool Blue	Ψυχρό μπλε
+	Creative	Δημιουργικό
+	Denoise	Αφαίρεση θορύβου
+	Face Detection (protect skin tones)	Ανίχνευση προσώπου (προστασία τόνων δέρματος)
+	Faded Matte	Ξεθωριασμένο ματ
+	Golden Hour	Χρυσή ώρα
+	HDR Range	Εύρος HDR
+	HDR Specular	Κατοπτρικά HDR
+	HDR White	Λευκό HDR
+	HSL Secondary	Δευτερεύον HSL
+	Hue Range	Εύρος απόχρωσης
+	Hue Saturation Curves	Καμπύλες απόχρωσης/κορεσμού
+	Hue vs Hue	Απόχρωση έναντι απόχρωσης
+	Hue vs Luma	Απόχρωση έναντι φωτεινότητας
+	Hue vs Sat	Απόχρωση έναντι κορεσμού
+	Input LUT	LUT εισόδου
+	Key	Απομόνωση
+	LUT	LUT
+	Look	Ύφος
+	Look LUT	LUT ύφους
+	Luma Max	Μέγιστη φωτεινότητα
+	Luma Min	Ελάχιστη φωτεινότητα
+	Luma vs Sat	Φωτεινότητα έναντι κορεσμού
+	Master · {name}	Κύριο · {name}
+	Night	Νύχτα
+	RGB Curves	Καμπύλες RGB
+	Reference	Αναφορά
+	Sat vs Sat	Κορεσμός έναντι κορεσμού
+	Saturation Min	Ελάχιστος κορεσμός
+	Teal & Orange	Πετρόλ και πορτοκαλί
+	Vignette	Βινιέτα
+	Warm Film	Ζεστό φιλμ
+	White/Black	Λευκό/Μαύρο
+	Add to Favorites	Προσθήκη στα αγαπημένα
+	All Supported Files	Όλα τα υποστηριζόμενα αρχεία
+	Allow Duplicate Media During Project Import	Να επιτρέπονται διπλότυπα πολυμέσα κατά την εισαγωγή έργου
+	Audio Files	Αρχεία ήχου
+	Cannot open {dir}: {e}	Δεν είναι δυνατό το άνοιγμα του {dir}: {e}
+	Clear Recent Directories	Εκκαθάριση πρόσφατων καταλόγων
+	Create Folder For Imported Projects	Δημιουργία φακέλου για τα εισαγόμενα έργα
+	Date Modified	Ημερομηνία τροποποίησης
+	Edit Columns	Επεξεργασία στηλών
+	Edit Columns…	Επεξεργασία στηλών…
+	File Extension	Επέκταση αρχείου
+	File Types Displayed	Τύποι αρχείων που εμφανίζονται
+	Go Back	Πίσω
+	Go Forward	Μπροστά
+	Hover Scrub	Προεπισκόπηση με αιώρηση
+	Import as Image Sequence	Εισαγωγή ως ακολουθία εικόνων
+	Ingest	Πρόσληψη
+	Local Drives	Τοπικοί δίσκοι
+	Network	Δίκτυο
+	New Media Browser Panel	Νέο πάνελ προγράμματος περιήγησης πολυμέσων
+	Open In Source Monitor	Άνοιγμα στην οθόνη πηγής
+	Open Ingest Settings	Άνοιγμα ρυθμίσεων πρόσληψης
+	Projects and Interchange	Έργα και ανταλλαγή
+	Recent Directories	Πρόσφατοι κατάλογοι
+	Remove from Favorites	Αφαίρεση από τα αγαπημένα
+	Show in File Manager	Εμφάνιση στη διαχείριση αρχείων
+	Still Images	Στατικές εικόνες
+	Thumbnail View	Προβολή μικρογραφιών
+	Up One Level	Ένα επίπεδο πάνω
+	Video Files	Αρχεία βίντεο
+	{sel} of {total} items selected	Επιλέχθηκαν {sel} από {total} στοιχεία
+	{total} items	{total} στοιχεία
+	#	#
+	Add caption at playhead	Προσθήκη υπότιτλου στην κεφαλή αναπαραγωγής
+	Add captions	Προσθήκη υποτίτλων
+	Box	Πλαίσιο
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Δημιουργήστε κομμάτι υποτίτλων ή εισαγάγετε αρχείο υποτίτλων.
+	Create captions	Δημιουργία υποτίτλων
+	Create new caption track	Δημιουργία νέου κομματιού υποτίτλων
+	Delete selected captions	Διαγραφή επιλεγμένων υποτίτλων
+	Export captions…	Εξαγωγή υποτίτλων…
+	Extract selected text	Εξαγωγή επιλεγμένου κειμένου με μετατόπιση
+	Go to caption	Μετάβαση στον υπότιτλο
+	Go to graphic	Μετάβαση στο γραφικό
+	Import captions file…	Εισαγωγή αρχείου υποτίτλων…
+	In	Είσοδος
+	Lift selected text	Ανύψωση επιλεγμένου κειμένου
+	Merge selected captions	Συγχώνευση επιλεγμένων υποτίτλων
+	New {format} track	Νέο κομμάτι {format}
+	No captions on this track. Press + to add one at the playhead.	Δεν υπάρχουν υπότιτλοι σε αυτό το κομμάτι. Πατήστε + για να προσθέσετε έναν στην κεφαλή αναπαραγωγής.
+	No matching captions.	Δεν βρέθηκαν αντίστοιχοι υπότιτλοι.
+	No matching text.	Δεν βρέθηκε αντίστοιχο κείμενο.
+	No text graphics in this sequence. Add text with the Type tool.	Δεν υπάρχουν γραφικά κειμένου σε αυτή την ακολουθία. Προσθέστε κείμενο με το εργαλείο Κείμενο.
+	Open a sequence to search its graphics	Ανοίξτε μια ακολουθία για αναζήτηση στα γραφικά της
+	Open a sequence to see its transcript	Ανοίξτε μια ακολουθία για να δείτε την απομαγνητοφώνησή της
+	Open a sequence to work with captions	Ανοίξτε μια ακολουθία για να εργαστείτε με υπότιτλους
+	Out	Έξοδος
+	Position: bottom	Θέση: κάτω
+	Position: middle	Θέση: μέση
+	Position: top	Θέση: πάνω
+	Remove filler words	Αφαίρεση λέξεων-γεμισμάτων
+	Speaker	Ομιλητής
+	Speech-to-text turns the dialogue into editable text.	Η ομιλία σε κείμενο μετατρέπει τον διάλογο σε επεξεργάσιμο κείμενο.
+	Split caption at playhead	Διαίρεση υπότιτλου στην κεφαλή αναπαραγωγής
+	Subtitle	Υπότιτλος
+	Teletext	Teletext
+	Text colour	Χρώμα κειμένου
+	This build has no speech-to-text; import a transcript with transcript.set.	Αυτή η έκδοση δεν έχει ομιλία σε κείμενο· εισαγάγετε απομαγνητοφώνηση με το transcript.set.
+	Track	Κομμάτι
+	Transcribe	Απομαγνητοφώνηση
+	Transcribe sequence	Απομαγνητοφώνηση ακολουθίας
+	(Custom)	(Προσαρμοσμένο)
+	(Default)	(Προεπιλογή)
+	Ambience	Ατμόσφαιρα
+	Assign an audio type to the selection:	Ανάθεση τύπου ήχου στην επιλογή:
+	Auto-Match	Αυτόματη αντιστοίχιση
+	Balanced Voice	Ισορροπημένη φωνή
+	Bright Air	Φωτεινός αέρας
+	Bright Studio	Φωτεινό στούντιο
+	Clean Up Noisy Dialogue	Καθαρισμός θορυβώδους διαλόγου
+	Clear Audio Type	Εκκαθάριση τύπου ήχου
+	Clear Muddiness	Αφαίρεση θολότητας
+	Clip Volume	Ένταση κλιπ
+	DeEss	Αφαίρεση σφυριγμάτων
+	DeHum	Αφαίρεση βόμβου
+	Delete Preset	Διαγραφή προρύθμισης
+	Dialogue	Διάλογος
+	Dry Up a Roomy Voice	Στέγνωμα φωνής με αντήχηση χώρου
+	Duck Deep Under Dialogue	Βαθιά χαμήλωση κάτω από τον διάλογο
+	Duck Under Dialogue	Χαμήλωση κάτω από τον διάλογο
+	Duck Under Voice and Effects	Χαμήλωση κάτω από φωνή και εφέ
+	Duck against:	Χαμήλωση έναντι:
+	Ducking	Αυτόματη χαμήλωση
+	EQ	EQ
+	Enhance Speech	Βελτίωση ομιλίας
+	Fades	Σβησίματα
+	Far Away	Από μακριά
+	From the Left	Από αριστερά
+	From the Right	Από δεξιά
+	Generate Keyframes	Δημιουργία καρέ-κλειδιών
+	High Tone	Υψηλός τόνος
+	In a Room	Σε δωμάτιο
+	Interior Room Tone	Ήχος εσωτερικού χώρου
+	Large Hall	Μεγάλη αίθουσα
+	Loudness	Ακουστότητα
+	Low Tone	Χαμηλός τόνος
+	Matches each of the {n} clips on its own.	Αντιστοιχίζει χωριστά καθένα από τα {n} κλιπ.
+	Medium Room	Μεσαίο δωμάτιο
+	Multiple Clips Selected	Επιλέχθηκαν πολλά κλιπ
+	Music	Μουσική
+	Mute	Σίγαση
+	Not matched yet	Δεν έχει αντιστοιχιστεί ακόμη
+	Open Air	Ύπαιθρος
+	Pan	Πανοραμική
+	Phone Call	Τηλεφωνική κλήση
+	Podcast Voice	Φωνή podcast
+	Presence Lift	Ενίσχυση παρουσίας
+	Preset name	Όνομα προρύθμισης
+	Preset:	Προρύθμιση:
+	Radio Announcer	Εκφωνητής ραδιοφώνου
+	Radio Voice	Ραδιοφωνική φωνή
+	Reduce By	Μείωση κατά
+	Reduce Reverb	Μείωση αντήχησης
+	Reduce Rumble	Μείωση βουητού
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	Το remix μουσικής σε διάρκεια-στόχο δεν είναι ακόμη διαθέσιμο. Περικόψτε το κλιπ και προσθέστε διασταυρούμενο σβήσιμο.
+	Repair	Επιδιόρθωση
+	SFX	Ηχητικά εφέ
+	Save Preset	Αποθήκευση προρύθμισης
+	Select audio clips to edit them here	Επιλέξτε κλιπ ήχου για να τα επεξεργαστείτε εδώ
+	Select audio clips, then click a preset to apply it.	Επιλέξτε κλιπ ήχου και μετά κάντε κλικ σε μια προρύθμιση για να την εφαρμόσετε.
+	Small Room	Μικρό δωμάτιο
+	Soften Harshness	Απάλυνση τραχύτητας
+	Stereo Width	Στερεοφωνικό εύρος
+	Stone Church	Πέτρινη εκκλησία
+	Telephone	Τηλέφωνο
+	The selected clips have different audio types. Assign one type to edit them together.	Τα επιλεγμένα κλιπ έχουν διαφορετικούς τύπους ήχου. Αναθέστε έναν τύπο για να τα επεξεργαστείτε μαζί.
+	Untagged	Χωρίς ετικέτα
+	Voice in a Hall	Φωνή σε αίθουσα
+	Warm Room	Ζεστό δωμάτιο
+	Warm Voice	Ζεστή φωνή
+	Wide Outdoor	Ευρύς υπαίθριος χώρος
+	{name} (user)	{name} (χρήστη)
+	Align Bottom	Στοίχιση κάτω
+	Align Center Horizontally	Οριζόντια στοίχιση στο κέντρο
+	Align Center Vertically	Κατακόρυφη στοίχιση στο κέντρο
+	Align Left	Στοίχιση αριστερά
+	Align Right	Στοίχιση δεξιά
+	Align Top	Στοίχιση πάνω
+	Align and Transform	Στοίχιση και μετασχηματισμός
+	Anchor point	Σημείο αγκύρωσης
+	Center Align Text	Στοίχιση κειμένου στο κέντρο
+	Corner Radius	Ακτίνα γωνιών
+	Crawl Left	Κύλιση προς τα αριστερά
+	Crawl Right	Κύλιση προς τα δεξιά
+	Create new graphic	Δημιουργία νέου γραφικού
+	End Off Screen	Λήξη εκτός οθόνης
+	Faux Bold	Ψευδοέντονα
+	Faux Italic	Ψευδοπλάγια
+	Font Style	Στυλ γραμματοσειράς
+	Gradient	Διαβάθμιση
+	Inner	Εσωτερικό
+	Install Motion Graphics Template (.fcgt)	Εγκατάσταση προτύπου κινούμενων γραφικών (.fcgt)
+	Install…	Εγκατάσταση…
+	Intro Duration	Διάρκεια εισαγωγής
+	Left Align Text	Στοίχιση κειμένου αριστερά
+	Ligatures	Συμπλέγματα
+	Linear Gradient	Γραμμική διαβάθμιση
+	New Ellipse	Νέα έλλειψη
+	New Rectangle	Νέο ορθογώνιο
+	New Text	Νέο κείμενο
+	New Text Layer	Νέο επίπεδο κειμένου
+	No templates match.	Δεν βρέθηκαν αντίστοιχα πρότυπα.
+	Outer	Εξωτερικό
+	Outro Duration	Διάρκεια κλεισίματος
+	Paragraph Text	Κείμενο παραγράφου
+	Pin To	Καρφίτσωμα σε
+	Pinned Edges	Καρφιτσωμένες άκρες
+	Point Text	Κείμενο σημείου
+	Polygon Sides	Πλευρές πολυγώνου
+	Postroll	Μετά την αναπαραγωγή
+	Preroll	Πριν από την αναπαραγωγή
+	Responsive Design - Position	Προσαρμοστική σχεδίαση - Θέση
+	Responsive Design - Time	Προσαρμοστική σχεδίαση - Χρόνος
+	Right Align Text	Στοίχιση κειμένου δεξιά
+	Roll	Κύλιση
+	Search templates	Αναζήτηση προτύπων
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Επιλέξτε ένα κλιπ γραφικών ή χρησιμοποιήστε το εργαλείο Κείμενο (T) στην οθόνη Προγράμματος
+	Select a layer to edit its properties.	Επιλέξτε ένα επίπεδο για να επεξεργαστείτε τις ιδιότητές του.
+	Solid	Συμπαγές
+	Start Off Screen	Έναρξη εκτός οθόνης
+	Stroke 2	Περίγραμμα 2
+	Template Properties	Ιδιότητες προτύπου
+	Template: {name}	Πρότυπο: {name}
+	Text Box Height	Ύψος πλαισίου κειμένου
+	Text Box Width	Πλάτος πλαισίου κειμένου
+	Text Layer Type	Τύπος επιπέδου κειμένου
+	Text Properties	Ιδιότητες κειμένου
+	Text Styling	Μορφοποίηση κειμένου
+	Toggle animation	Εναλλαγή κίνησης
+	Toggle visibility	Εναλλαγή ορατότητας
+	Video Frame	Καρέ βίντεο
+	{category} · My Template	{category} · Το πρότυπό μου
+	{n} editable properties	{n} επεξεργάσιμες ιδιότητες
+	Add pause	Προσθήκη παύσης
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	Η Προσθήκη παύσης εισάγει [pause 1s]. Αλλάξτε τον αριθμό για μεγαλύτερη ή μικρότερη παύση, π.χ. [pause 500ms] ή [pause 2s].
+	Add to timeline	Προσθήκη στη χρονογραμμή
+	Basic voices (built in)	Βασικές φωνές (ενσωματωμένες)
+	Download natural voices ({mb} MB)…	Λήψη φυσικών φωνών ({mb} MB)…
+	Download of the natural voices failed: {e}	Η λήψη των φυσικών φωνών απέτυχε: {e}
+	Download the natural voices? {mb} MB, once.	Λήψη των φυσικών φωνών; {mb} MB, μία φορά.
+	Downloading…	Λήψη…
+	Editing the selected narration	Επεξεργασία της επιλεγμένης αφήγησης
+	Extra high	Πολύ υψηλό
+	Extra low	Πολύ χαμηλό
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Από {source} και github.com/cmusphinx/cmudict (προφορές). Άδεια: {license}. Κάθε αρχείο ελέγχεται με ένα καθορισμένο SHA-256.
+	Hear this voice	Ακρόαση αυτής της φωνής
+	Narration added on {track}	Η αφήγηση προστέθηκε στο {track}
+	Narration updated	Η αφήγηση ενημερώθηκε
+	Natural voices	Φυσικές φωνές
+	Natural voices installed	Οι φυσικές φωνές εγκαταστάθηκαν
+	Natural voices need a one-time download.	Οι φυσικές φωνές χρειάζονται μία λήψη.
+	New narration	Νέα αφήγηση
+	Pace	Ρυθμός
+	Synthesizing narration…	Σύνθεση αφήγησης…
+	Synthesizing…	Σύνθεση…
+	Text to Speech: {e}	Κείμενο σε ομιλία: {e}
+	Type what you want the voice to say	Πληκτρολογήστε τι θέλετε να πει η φωνή
+	Vocal pitch	Τονικό ύψος φωνής
+	Voice	Φωνή
+	an audio track	ένα κομμάτι ήχου
+	no audio output (check Settings ▸ Audio Hardware)	καμία έξοδος ήχου (ελέγξτε Ρυθμίσεις ▸ Υλικό ήχου)
+	the job disappeared	η εργασία εξαφανίστηκε
+	{name} (download)	{name} (λήψη)
+	5.1 panner (drag the puck; double-click: front centre)	Πανοραμικός ρυθμιστής 5.1 (σύρετε τον δείκτη· διπλό κλικ: εμπρός κέντρο)
+	Add keyframe	Προσθήκη καρέ-κλειδιού
+	Go to next keyframe	Μετάβαση στο επόμενο καρέ-κλειδί
+	Go to previous keyframe	Μετάβαση στο προηγούμενο καρέ-κλειδί
+	Remove keyframe	Αφαίρεση καρέ-κλειδιού
+	Select a clip to see its properties	Επιλέξτε ένα κλιπ για να δείτε τις ιδιότητές του
+	Speed {n}%	Ταχύτητα {n}%
+	Turn on animation and add keyframe	Ενεργοποίηση κίνησης και προσθήκη καρέ-κλειδιού
+	Apply to Selected Clips	Εφαρμογή στα επιλεγμένα κλιπ
+	Export Preset…	Εξαγωγή προρύθμισης…
+	Import Presets…	Εισαγωγή προρυθμίσεων…
+	Lumetri Presets	Προρυθμίσεις Lumetri
+	Search effects	Αναζήτηση εφέ
+	Text to Speech: another sequence is open now; the narration was not placed	Κείμενο σε ομιλία: είναι πλέον ανοιχτή άλλη ακολουθία· η αφήγηση δεν τοποθετήθηκε
+	Effect presets	Προρυθμίσεις εφέ
+	Automate to Sequence	Αυτόματη τοποθέτηση στην ακολουθία
+	Bin: {name}	Κάδος: {name}
+	Clear (Delete)	Εκκαθάριση (Delete)
+	Convert to Master Clip	Μετατροπή σε κύριο κλιπ
+	Date Created	Ημερομηνία δημιουργίας
+	Descending	Φθίνουσα
+	Drag to reorder; tick the columns to show.	Σύρετε για αλλαγή σειράς· επιλέξτε τις στήλες προς εμφάνιση.
+	Extra Large	Πολύ μεγάλο
+	Freeform	Ελεύθερη μορφή
+	Freeform View Options…	Επιλογές προβολής ελεύθερης μορφής…
+	Icon View	Προβολή εικονιδίων
+	Manage Saved View Presets	Διαχείριση αποθηκευμένων προρυθμίσεων προβολής
+	Medium (default)	Μεσαίο (προεπιλογή)
+	Metadata Display	Εμφάνιση μεταδεδομένων
+	Metadata Display…	Εμφάνιση μεταδεδομένων…
+	New Bin From Selection	Νέος κάδος από την επιλογή
+	New Item	Νέο στοιχείο
+	New Project Shortcut	Νέα συντόμευση έργου
+	New Search Bin	Νέος κάδος αναζήτησης
+	New Sequence From Clip	Νέα ακολουθία από κλιπ
+	Open in New Tab	Άνοιγμα σε νέα καρτέλα
+	Open in New Window	Άνοιγμα σε νέο παράθυρο
+	Open in Place	Άνοιγμα στη θέση του
+	Open in Source Monitor	Άνοιγμα στην οθόνη πηγής
+	Open in Timeline	Άνοιγμα στη χρονογραμμή
+	Preview Area	Περιοχή προεπισκόπησης
+	Project View Preset {n}	Προρύθμιση προβολής έργου {n}
+	Project: {name}	Έργο: {name}
+	Refresh Project	Ανανέωση έργου
+	Refresh Sort Order	Ανανέωση σειράς ταξινόμησης
+	Restore View Preset	Επαναφορά προρύθμισης προβολής
+	Reveal Project in Finder…	Εμφάνιση έργου στη διαχείριση αρχείων…
+	Reveal in Finder	Εμφάνιση στη διαχείριση αρχείων
+	Save As New View Preset	Αποθήκευση ως νέα προρύθμιση προβολής
+	Save Current View Preset	Αποθήκευση τρέχουσας προρύθμισης προβολής
+	Save Project	Αποθήκευση έργου
+	Select an item to preview it	Επιλέξτε ένα στοιχείο για προεπισκόπηση
+	Set Poster Frame	Ορισμός καρέ αφίσας
+	Sort Icons	Ταξινόμηση εικονιδίων
+	Thumbnail controls for all pointing devices	Στοιχεία ελέγχου μικρογραφιών για όλες τις συσκευές κατάδειξης
+	Thumbnails show effects applied	Οι μικρογραφίες δείχνουν τα εφαρμοσμένα εφέ
+	Up one level	Ένα επίπεδο πάνω
+	User Order	Σειρά χρήστη
+	Video Usage: {vu}  Audio Usage: {au}	Χρήση βίντεο: {vu}  Χρήση ήχου: {au}
+	{n} items	{n} στοιχεία
+	Freeform View	Προβολή ελεύθερης μορφής
+	Stack	Στοίβαξη
+	Unstack	Αποστοίβαξη
+	Clip Size	Μέγεθος κλιπ
+	Larger	Μεγαλύτερο
+	Smaller	Μικρότερο
+	Align to Grid	Στοίχιση στο πλέγμα
+	Reset to Grid	Επαναφορά στο πλέγμα
+	Save Arrangement…	Αποθήκευση διάταξης…
+	Save Arrangement	Αποθήκευση διάταξης
+	Restore Arrangement	Επαναφορά διάταξης
+	Delete Arrangement	Διαγραφή διάταξης
+	Arrangement {n}	Διάταξη {n}
+	Freeform View Options	Επιλογές προβολής ελεύθερης μορφής
+	Snap to grid	Προσκόλληση στο πλέγμα
+	Show clip names	Εμφάνιση ονομάτων κλιπ
+	Show clip durations	Εμφάνιση διάρκειας κλιπ
+	Grid spacing:	Απόσταση πλέγματος:
+	Default clip size:	Προεπιλεγμένο μέγεθος κλιπ:
+	{panel} — coming in a later milestone	{panel} — έρχεται σε επόμενο ορόσημο
+	Edit Workspaces	Επεξεργασία χώρων εργασίας
+	Restore Original	Επαναφορά αρχικού
+	Drag Video Only	Μεταφορά μόνο βίντεο
+	Drag Audio Only	Μεταφορά μόνο ήχου
+	Drag Video and Audio	Μεταφορά βίντεο και ήχου
+	Source clips	Κλιπ πηγής
+	(no audio)	(χωρίς ήχο)
+	Generating waveform…	Δημιουργία κυματομορφής…
+	Audio Waveform	Κυματομορφή ήχου
+	Video and Audio Waveform Split	Βίντεο και κυματομορφή ήχου χωριστά
+	Anchor to In Point	Αγκύρωση στο σημείο εισόδου
+	Anchor to Out Point	Αγκύρωση στο σημείο εξόδου
+	Custom ({n} points)	Προσαρμοσμένο ({n} σημεία)
+	Save Preset…	Αποθήκευση προρύθμισης…
+	Source · {name}	Πηγή · {name}
+	Temporal Interpolation	Χρονική παρεμβολή
+	Twirl open or shut	Ανάπτυξη ή σύμπτυξη
+	Without keyframes	Χωρίς καρέ-κλειδιά
+	Create 4-point polygon mask	Δημιουργία πολυγωνικής μάσκας 4 σημείων
+	Create ellipse mask	Δημιουργία ελλειπτικής μάσκας
+	Delete Mask	Διαγραφή μάσκας
+	Free draw bezier	Ελεύθερη σχεδίαση bezier
+	Inverted	Αντεστραμμένη
+	Position & Rotation	Θέση και περιστροφή
+	Position, Scale & Rotation	Θέση, κλίμακα και περιστροφή
+	Show graphs	Εμφάνιση γραφημάτων
+	Stop tracking	Διακοπή παρακολούθησης
+	Track selected mask backward	Παρακολούθηση επιλεγμένης μάσκας προς τα πίσω
+	Track selected mask backward 1 frame	Παρακολούθηση επιλεγμένης μάσκας 1 καρέ πίσω
+	Track selected mask forward	Παρακολούθηση επιλεγμένης μάσκας προς τα εμπρός
+	Track selected mask forward 1 frame	Παρακολούθηση επιλεγμένης μάσκας 1 καρέ μπροστά
+	Tracking method: {method}	Μέθοδος παρακολούθησης: {method}
+	Value	Τιμή
+	Velocity	Ταχύτητα μεταβολής
+	Set Transition Duration	Ορισμός διάρκειας μετάβασης
+	Center at Cut	Κεντραρισμένη στην τομή
+	Start at Cut	Έναρξη στην τομή
+	End at Cut	Λήξη στην τομή
+	Custom Start	Προσαρμοσμένη έναρξη
+	Eyedropper (pick a color from the Program monitor)	Σταγονόμετρο (επιλογή χρώματος από την οθόνη Προγράμματος)
+	Interpret Footage	Ερμηνεία πλάνων
+	Color Management · {n} item	Διαχείριση χρωμάτων · {n} στοιχείο
+	Color Management · {n} items	Διαχείριση χρωμάτων · {n} στοιχεία
+	Media colour space (from file metadata): {detected}	Χρωματικός χώρος πολυμέσων (από τα μεταδεδομένα του αρχείου): {detected}
+	Override media colour space:	Παράκαμψη χρωματικού χώρου πολυμέσων:
+	Decode Auro-3D height channels	Αποκωδικοποίηση καναλιών ύψους Auro-3D
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Ανενεργό: το αρχείο αναπαράγει τα δικά του κανάλια, όπως χωρίς αποκωδικοποιητή Auro-3D.
+	Use file metadata	Χρήση μεταδεδομένων αρχείου
+	Motion Graphics Templates	Πρότυπα κινούμενων γραφικών
+	Clip Fx Editor	Επεξεργαστής εφέ κλιπ
+	Track Fx Editor	Επεξεργαστής εφέ κομματιού
+	Custom Setup	Προσαρμοσμένη ρύθμιση
+	Master Gain	Κύρια απολαβή
+	Band {n}	Ζώνη {n}
+	Solo	Σόλο
+	Thr	Κατ.
+	Att	Επίθ.
+	Rel	Απελ.
+	Output Gain	Απολαβή εξόδου
+	Limiter	Περιοριστής
+	Link Channels	Σύνδεση καναλιών
+	Limiter Threshold	Κατώφλι περιοριστή
+	Limiter Release	Απελευθέρωση περιοριστή
+	Auto Gate	Αυτόματη πύλη
+	Attack	Επίθεση
+	Release	Απελευθέρωση
+	Compressor	Συμπιεστής
+	Auto Makeup	Αυτόματη αντιστάθμιση
+	Makeup	Αντιστάθμιση
+	Expander	Διαστολέας
+	Soft Clip	Ήπιο ψαλίδισμα
+	out	έξοδος
+	in	είσοδος
+	Parametric Equalizer	Παραμετρικός ισοσταθμιστής
+	Graphic Equalizer (10 Bands)	Γραφικός ισοσταθμιστής (10 ζώνες)
+	Graphic Equalizer (20 Bands)	Γραφικός ισοσταθμιστής (20 ζώνες)
+	Graphic Equalizer (30 Bands)	Γραφικός ισοσταθμιστής (30 ζώνες)
+	Multiband Compressor	Πολυζωνικός συμπιεστής
+	CFA4 encountered an error	Το CFA4 αντιμετώπισε σφάλμα
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Κάτι πήγε στραβά κατά τη σχεδίαση του παραθύρου. Το έργο σας είναι ακόμη ανοιχτό· αποθηκεύστε το για ασφάλεια.
+	Details: {path}	Λεπτομέρειες: {path}
+	Engine restarted	Η μηχανή επανεκκινήθηκε
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Η μηχανή του CFA4 σταμάτησε απροσδόκητα και επανεκκινήθηκε. Οι μη αποθηκευμένες αλλαγές φυλάσσονται στο ημερολόγιο ανάκτησης, που προσφέρεται να τις ανακτήσει.
+	 ({ch} output channels)	 ({ch} κανάλια εξόδου)
+	Appearance Mode	Λειτουργία εμφάνισης
+	Auto-saves go to: {dir}	Οι αυτόματες αποθηκεύσεις πηγαίνουν στο: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	Το CFA4 αφήνει την υπόλοιπη RAM ελεύθερη για άλλες εφαρμογές.
+	Currently: {loc} — {files} file(s), {size}	Τώρα: {loc} — {files} αρχεία, {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	Αποκωδικοποιημένα καρέ για τις οθόνες και τις μικρογραφίες: {used} από {budget}.
+	Default location	Προεπιλεγμένη θέση
+	Delete this preset	Διαγραφή αυτής της προρύθμισης
+	Deleted preset “{active}”	Η προρύθμιση «{active}» διαγράφηκε
+	Deleted {n} file(s), {size}.	Διαγράφηκαν {n} αρχεία, {size}.
+	Export the labels to a preset file…	Εξαγωγή των ετικετών σε αρχείο προρύθμισης…
+	Font family	Οικογένεια γραμματοσειράς
+	Import a preset file…	Εισαγωγή αρχείου προρύθμισης…
+	Imported “{name}”	Εισήχθη το «{name}»
+	Label Color Presets	Προρυθμίσεις χρωμάτων ετικετών
+	Label Colors	Χρώματα ετικετών
+	Last auto-save {a}	Τελευταία αυτόματη αποθήκευση {a}
+	Last auto-save {a} · last recovery copy {j}	Τελευταία αυτόματη αποθήκευση {a} · τελευταίο αντίγραφο ανάκτησης {j}
+	Last recovery copy {j}	Τελευταίο αντίγραφο ανάκτησης {j}
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	Αριστερό προγράμματος → έξοδος συσκευής {l}, δεξί → έξοδος συσκευής {r}{dev}. Έξοδοι πέρα από τα κανάλια της συσκευής επιστρέφουν στο 1 και το 2.
+	Recovery copy: {dir}	Αντίγραφο ανάκτησης: {dir}
+	Reset…	Επαναφορά…
+	Revert to the preset's colors and names	Επαναφορά στα χρώματα και τα ονόματα της προρύθμισης
+	Show the presets folder	Εμφάνιση του φακέλου προρυθμίσεων
+	System Default	Προεπιλογή συστήματος
+	not available in this session	μη διαθέσιμο σε αυτή την περίοδο λειτουργίας
+	{name} (Modified)	{name} (Τροποποιημένο)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	Προσβάσιμη χρωματική αντίθεση
+	Add tracks automatically when editing source clips onto the Timeline	Αυτόματη προσθήκη κομματιών κατά την τοποθέτηση κλιπ πηγής στη χρονογραμμή
+	All lines	Όλες οι γραμμές
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	Το εργαλείο Επιλογή να επιλέγει κυλιόμενη περικοπή και περικοπή με μετατόπιση χωρίς πλήκτρο τροποποίησης
+	Allow current tool to change trim type of previously selected edit point	Το τρέχον εργαλείο να αλλάζει τον τύπο περικοπής του σημείου τομής που επιλέχθηκε πριν
+	Allow duplicate media during project import	Να επιτρέπονται διπλότυπα πολυμέσα κατά την εισαγωγή έργου
+	Always import embedded CEA-708 closed captions with wide aspect.	Πάντα εισαγωγή ενσωματωμένων υποτίτλων CEA-708 με ευρεία αναλογία.
+	Always override audio tags	Πάντα παράκαμψη ετικετών ήχου
+	Analyze all imported media to search for visuals or audio	Ανάλυση όλων των εισαγόμενων πολυμέσων για αναζήτηση εικόνας ή ήχου
+	Animate zoom, scrolling and menus	Κίνηση στο ζουμ, την κύλιση και τα μενού
+	Appearance…	Εμφάνιση…
+	At Startup	Κατά την εκκίνηση
+	At playback end, return to beginning when restarting playback	Στο τέλος της αναπαραγωγής, επιστροφή στην αρχή κατά την επανέναρξη
+	Attempt to force hardware to document sample rate	Προσπάθεια επιβολής του ρυθμού δειγματοληψίας του εγγράφου στο υλικό
+	Audio Hardware	Υλικό ήχου
+	Audio Hardware…	Υλικό ήχου…
+	Audio Time Units	Μονάδες χρόνου ήχου
+	Audio Transition Default Duration	Προεπιλεγμένη διάρκεια μετάβασης ήχου
+	Audio…	Ήχος…
+	Auto (system)	Αυτόματα (σύστημα)
+	Auto Save	Αυτόματη αποθήκευση
+	Auto Save also saves the current project(s)	Η αυτόματη αποθήκευση αποθηκεύει και τα τρέχοντα έργα
+	Auto Save…	Αυτόματη αποθήκευση…
+	Auto-tag audio types in the timeline	Αυτόματη επισήμανση τύπων ήχου στη χρονογραμμή
+	Auto-transcribe all imported clips	Αυτόματη απομαγνητοφώνηση όλων των εισαγόμενων κλιπ
+	Auto-transcribe only clips in sequences	Αυτόματη απομαγνητοφώνηση μόνο των κλιπ σε ακολουθίες
+	Automatch Time	Χρόνος αυτόματης αντιστοίχισης
+	Automatically Hide Dependent Clips	Αυτόματη απόκρυψη εξαρτημένων κλιπ
+	Automatically Save Every	Αυτόματη αποθήκευση κάθε
+	Automatically delete cache files older than	Αυτόματη διαγραφή αρχείων cache παλαιότερων από
+	Automatically delete oldest cache files when cache exceeds	Αυτόματη διαγραφή των παλαιότερων αρχείων cache όταν η cache υπερβεί τα
+	Automatically refresh growing files	Αυτόματη ανανέωση αυξανόμενων αρχείων
+	Automatically resume playback for growing files in Source Monitor	Αυτόματη συνέχιση αναπαραγωγής αυξανόμενων αρχείων στην οθόνη πηγής
+	Automatically save projects	Αυτόματη αποθήκευση έργων
+	Automatically transcribe clips	Αυτόματη απομαγνητοφώνηση κλιπ
+	Automation Keyframe Optimization	Βελτιστοποίηση καρέ-κλειδιών αυτοματισμού
+	Background fill	Γέμισμα φόντου
+	Bevel join	Λοξή ένωση
+	Bins	Κάδοι
+	Butt cap	Επίπεδο άκρο
+	Cache analysis results for re-use	Αποθήκευση αποτελεσμάτων ανάλυσης στην cache για επαναχρησιμοποίηση
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	Οι αλλαγές αντιγράφονται στο παρασκήνιο λίγο μετά από κάθε επεξεργασία. Αν το CFA4 κλείσει απροσδόκητα, προσφέρονται στην επόμενη εκκίνηση.
+	Chinese	Κινεζικά
+	Closed Captions	Κλειστοί υπότιτλοι
+	Color Theme	Χρωματικό θέμα
+	Crash Recovery	Ανάκτηση μετά από κατάρρευση
+	Create folder for imported projects	Δημιουργία φακέλου για τα εισαγόμενα έργα
+	Default Audio Tracks	Προεπιλεγμένα κομμάτια ήχου
+	Default Emoji font	Προεπιλεγμένη γραμματοσειρά emoji
+	Default Input	Προεπιλεγμένη είσοδος
+	Default Media Scaling	Προεπιλεγμένη κλιμάκωση πολυμέσων
+	Default Output	Προεπιλεγμένη έξοδος
+	Default closed caption font	Προεπιλεγμένη γραμματοσειρά κλειστών υποτίτλων
+	Default language	Προεπιλεγμένη γλώσσα
+	Default paragraph direction	Προεπιλεγμένη κατεύθυνση παραγράφου
+	Default subtitle and text font	Προεπιλεγμένη γραμματοσειρά υποτίτλων και κειμένου
+	Delete files older than	Διαγραφή αρχείων παλαιότερων από
+	Delete oldest files when the cache exceeds	Διαγραφή των παλαιότερων αρχείων όταν η cache υπερβεί τα
+	Delete…	Διαγραφή…
+	Device Class	Κατηγορία συσκευής
+	Disable video output when in the background	Απενεργοποίηση εξόδου βίντεο στο παρασκήνιο
+	Display Color Management	Διαχείριση χρωμάτων οθόνης
+	Display Color Settings	Ρυθμίσεις χρωμάτων οθόνης
+	Display out of sync indicators for unlinked clips	Εμφάνιση ενδείξεων ασυγχρονισμού για μη συνδεδεμένα κλιπ
+	Do not delete cache files automatically	Να μη διαγράφονται αυτόματα τα αρχεία cache
+	Don't label speakers	Χωρίς ετικέτες ομιλητών
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	Πρόχειρη αποκωδικοποίηση σε μειωμένη ανάλυση αναπαραγωγής (H.264: ταχύτερη, ορισμένα καρέ λιγότερο φιλτραρισμένα)
+	Dynamic Link	Dynamic Link
+	Enable Mercury Transmit	Ενεργοποίηση Mercury Transmit
+	Enable ProRes hardware accelerated encoding, if available	Ενεργοποίηση κωδικοποίησης ProRes με επιτάχυνση υλικού, αν είναι διαθέσιμη
+	Enable clip and XMP metadata linking	Ενεργοποίηση σύνδεσης μεταδεδομένων κλιπ και XMP
+	Enable developer mode	Ενεργοποίηση λειτουργίας προγραμματιστή
+	Enable hardware accelerated decoding (requires restart)	Ενεργοποίηση αποκωδικοποίησης με επιτάχυνση υλικού (απαιτεί επανεκκίνηση)
+	Enable language auto-detection	Ενεργοποίηση αυτόματης ανίχνευσης γλώσσας
+	Enable proxies	Ενεργοποίηση proxy
+	English	Αγγλικά
+	Extended Dynamic Range Monitoring	Παρακολούθηση εκτεταμένου δυναμικού εύρους
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	Για τις παραμέτρους διαχείρισης χρωμάτων, μεταβείτε στην καρτέλα Ρυθμίσεις του πάνελ Lumetri Color.
+	Frame Count	Πλήθος καρέ
+	Frame cache for monitors and thumbnails	Cache καρέ για οθόνες και μικρογραφίες
+	Front + LFE	Εμπρός + LFE
+	Front + Rear	Εμπρός + πίσω
+	Front + Rear + LFE	Εμπρός + πίσω + LFE
+	Front Only	Μόνο εμπρός
+	Generate Timecode	Δημιουργία χρονοκώδικα
+	Generate waveforms and conform audio using multithreading	Δημιουργία κυματομορφών και προσαρμογή ήχου με πολυνηματική επεξεργασία
+	Generate waveforms automatically during import	Αυτόματη δημιουργία κυματομορφών κατά την εισαγωγή
+	Graphics…	Γραφικά…
+	Growing Files	Αυξανόμενα αρχεία
+	HDR Graphics White (Nits)	Λευκό γραφικών HDR (nits)
+	Hardware decoding	Αποκωδικοποίηση υλικού
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Αποκωδικοποίηση υλικού: η επιλογή Αυτόματα χρησιμοποιεί τον αποκωδικοποιητή βίντεο του συστήματος (VA-API ή NVDEC για H.264 και HEVC) για τις ροές που υποστηρίζει, και τον δικό αποκωδικοποιητή του CFA4 για όλα τα άλλα ή αν το υλικό αποτύχει. Τα ήδη ανοιχτά πολυμέσα κρατούν τον αποκωδικοποιητή τους μέχρι να ανοιχτούν ξανά.
+	Highlight Color	Χρώμα επισήμανσης
+	Hindi digits	Ψηφία Χίντι
+	I/O Buffer Size	Μέγεθος buffer εισόδου/εξόδου
+	Import numbered stills as image sequences	Εισαγωγή αριθμημένων στατικών εικόνων ως ακολουθιών εικόνων
+	In the Media Cache	Στην cache πολυμέσων
+	In the project	Στο έργο
+	Include captions on import	Συμπερίληψη υποτίτλων κατά την εισαγωγή
+	Indeterminate Media Timebase	Ακαθόριστη χρονική βάση πολυμέσων
+	Keep a recovery copy of unsaved changes	Διατήρηση αντιγράφου ανάκτησης των μη αποθηκευμένων αλλαγών
+	Korean	Κορεατικά
+	Label Defaults	Προεπιλογές ετικετών
+	Label speakers	Ετικέτες ομιλητών
+	Labels…	Ετικέτες…
+	Large Trim Offset	Μεγάλη μετατόπιση περικοπής
+	Large Volume Adjustment	Μεγάλη ρύθμιση έντασης
+	Left channel to device output	Αριστερό κανάλι στην έξοδο συσκευής
+	Left to right	Αριστερά προς δεξιά
+	Linear keyframe thinning	Γραμμική αραίωση καρέ-κλειδιών
+	Local Projects	Τοπικά έργα
+	Maintain pitch while shuttling	Διατήρηση τονικού ύψους κατά τη γρήγορη κίνηση
+	Match frame sets in point	Η αντιστοίχιση καρέ ορίζει σημείο εισόδου
+	Maximum Project Versions	Μέγιστος αριθμός εκδόσεων έργου
+	Media	Πολυμέσα
+	Media Analysis	Ανάλυση πολυμέσων
+	Media Analysis & Transcription	Ανάλυση πολυμέσων και απομαγνητοφώνηση
+	Media Analysis & Transcription…	Ανάλυση πολυμέσων και απομαγνητοφώνηση…
+	Media Cache	Cache πολυμέσων
+	Media Cache Database	Βάση δεδομένων cache πολυμέσων
+	Media Cache Files	Αρχεία cache πολυμέσων
+	Media Cache Management	Διαχείριση cache πολυμέσων
+	Media Cache…	Cache πολυμέσων…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	Οι αναλύσεις πολυμέσων και οι απομαγνητοφωνήσεις θα αποθηκεύονται στον φάκελο cache πολυμέσων. Δεν θα χρειαστεί νέα ανάλυση αν τα πολυμέσα εισαχθούν σε άλλο έργο σε αυτόν τον υπολογιστή.
+	Memory	Μνήμη
+	Memory…	Μνήμη…
+	Minimum time	Ελάχιστος χρόνος
+	Minimum time interval thinning	Αραίωση ελάχιστου χρονικού διαστήματος
+	Missing font replacement	Αντικατάσταση γραμματοσειρών που λείπουν
+	Miter join	Γωνιακή ένωση
+	Miter limit	Όριο γωνιακής ένωσης
+	Mono Media	Μονοφωνικά πολυμέσα
+	Monospace only	Μόνο σταθερού πλάτους
+	Movie (audio and video)	Ταινία (ήχος και βίντεο)
+	Multichannel Mono Media	Πολυκαναλικά μονοφωνικά πολυμέσα
+	Mute input during timeline recording	Σίγαση εισόδου κατά την εγγραφή στη χρονογραμμή
+	Next to original media files	Δίπλα στα αρχικά αρχεία πολυμέσων
+	No Scroll	Χωρίς κύλιση
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Δεν υπάρχουν εγκατεστημένα πρόσθετα. Οι αλλαγές θα ισχύσουν στην επόμενη εκκίνηση του CFA4.
+	Open Most Recent	Άνοιγμα του πιο πρόσφατου
+	Open in new window	Άνοιγμα σε νέο παράθυρο
+	Open in place	Άνοιγμα στη θέση του
+	Open new tab	Άνοιγμα νέας καρτέλας
+	Output Mapping	Αντιστοίχιση εξόδου
+	Page Scroll	Κύλιση ανά σελίδα
+	Pause Media Encoder queue during playback	Παύση ουράς Media Encoder κατά την αναπαραγωγή
+	Per line	Ανά γραμμή
+	Place files dropped onto the Timeline directly on the Timeline	Τοποθέτηση αρχείων που αφήνονται στη χρονογραμμή απευθείας στη χρονογραμμή
+	Play after rendering previews	Αναπαραγωγή μετά την απόδοση προεπισκοπήσεων
+	Play audio while scrubbing in Source and Program Monitors	Αναπαραγωγή ήχου κατά την ανίχνευση στις οθόνες Πηγής και Προγράμματος
+	Playback	Αναπαραγωγή
+	Playback…	Αναπαραγωγή…
+	Playhead position determines trim monitor loop playback	Η θέση της κεφαλής αναπαραγωγής καθορίζει την επαναλαμβανόμενη αναπαραγωγή της οθόνης περικοπής
+	Plugins	Πρόσθετα
+	Plugins…	Πρόσθετα…
+	Policy	Πολιτική
+	Projecting cap	Προεξέχον άκρο
+	Projects	Έργα
+	RAM reserved for other applications	RAM δεσμευμένη για άλλες εφαρμογές
+	Refresh growing Files Every	Ανανέωση αυξανόμενων αρχείων κάθε
+	Render Edit in Audition files to:	Απόδοση αρχείων Edit in Audition στο:
+	Render audio when rendering video	Απόδοση ήχου κατά την απόδοση βίντεο
+	Restore open sequences when opening projects	Επαναφορά ανοιχτών ακολουθιών κατά το άνοιγμα έργων
+	Right channel to device output	Δεξί κανάλι στην έξοδο συσκευής
+	Right to left	Δεξιά προς αριστερά
+	Ripple trim adds edits to keep both sides of trim in sync	Η περικοπή με μετατόπιση προσθέτει τομές για να μένουν συγχρονισμένες και οι δύο πλευρές
+	Round cap	Στρογγυλό άκρο
+	Round join	Στρογγυλή ένωση
+	Russian	Ρωσικά
+	Sample Rate	Ρυθμός δειγματοληψίας
+	Save .cfa and .pek media cache files next to original media files when possible	Αποθήκευση αρχείων cache .cfa και .pek δίπλα στα αρχικά αρχεία πολυμέσων όταν είναι δυνατό
+	Scale to frame size	Κλιμάκωση στο μέγεθος καρέ
+	Scratch disk location for Captured Audio	Θέση δίσκου προσωρινής εργασίας για τον ηχογραφημένο ήχο
+	Set focus on the Timeline when performing Insert/Overwrite edits	Εστίαση στη χρονογραμμή κατά την εισαγωγή/αντικατάσταση
+	Set to frame size	Ορισμός στο μέγεθος καρέ
+	Shift clips that overlap trim point during ripple trimming	Μετατόπιση κλιπ που επικαλύπτουν το σημείο περικοπής κατά την περικοπή με μετατόπιση
+	Show "Project:" and "Bin:" in Project panel tab	Εμφάνιση "Έργο:" και "Κάδος:" στην καρτέλα του πάνελ Έργο
+	Show Clip Mismatch Warning dialog	Εμφάνιση προειδοποίησης ασυμφωνίας κλιπ
+	Show Event Indicator	Εμφάνιση ένδειξης συμβάντων
+	Show Home	Εμφάνιση αρχικής οθόνης
+	Show Mask Tracker Preview	Εμφάνιση προεπισκόπησης παρακολούθησης μάσκας
+	Show Open Dialog	Εμφάνιση παραθύρου Άνοιγμα
+	Show Project Load Error Dialog	Εμφάνιση παραθύρου σφάλματος φόρτωσης έργου
+	Show Rich Tool Tips	Εμφάνιση αναλυτικών συμβουλών εργαλείων
+	Show Workspace Reset Warning dialog on double click	Εμφάνιση προειδοποίησης επαναφοράς χώρου εργασίας με διπλό κλικ
+	Show system compatibility issues at startup	Εμφάνιση ζητημάτων συμβατότητας συστήματος κατά την εκκίνηση
+	Smooth Scroll	Ομαλή κύλιση
+	Snap playhead in Timeline when Snap is enabled	Προσκόλληση της κεφαλής αναπαραγωγής στη χρονογραμμή όταν είναι ενεργή η προσκόλληση
+	Speaker Labeling	Ετικέτες ομιλητών
+	Speech model	Μοντέλο ομιλίας
+	Start at 0	Έναρξη από 0
+	Start at 1	Έναρξη από 1
+	Start with an Empty Project	Έναρξη με κενό έργο
+	Step forward/back many	Πολλά βήματα μπροστά/πίσω
+	Stereo Media	Στερεοφωνικά πολυμέσα
+	Still	Στατική εικόνα
+	Still Image Default Duration	Προεπιλεγμένη διάρκεια στατικής εικόνας
+	Stroke line cap	Άκρο γραμμής περιγράμματος
+	Stroke line join	Ένωση γραμμών περιγράμματος
+	Sum multichannel outputs to mono in Source Monitor	Άθροιση πολυκαναλικών εξόδων σε μονοφωνικό στην οθόνη πηγής
+	System Language	Γλώσσα συστήματος
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	Η cache πολυμέσων περιέχει προεπισκοπήσεις απόδοσης μη αποθηκευμένων έργων και άλλα αρχεία που το CFA4 μπορεί να δημιουργήσει ξανά. Η διαγραφή τους είναι πάντα ασφαλής· το CFA4 τα αναδημιουργεί όταν χρειάζεται.
+	Timecode Conversion	Μετατροπή χρονοκώδικα
+	Timeline Mouse Scrolling	Κύλιση χρονογραμμής με το ποντίκι
+	Timeline Playback Auto-Scrolling	Αυτόματη κύλιση χρονογραμμής κατά την αναπαραγωγή
+	Timeline…	Χρονογραμμή…
+	Transcription	Απομαγνητοφώνηση
+	Transcription preferences	Προτιμήσεις απομαγνητοφώνησης
+	Trim	Περικοπή
+	Trim…	Περικοπή…
+	UI Scale	Κλίμακα διεπαφής
+	Update it at least every	Ενημέρωση τουλάχιστον κάθε
+	Update timeline dynamically during ripple edits.	Δυναμική ενημέρωση της χρονογραμμής κατά την επεξεργασία με μετατόπιση.
+	Use File	Χρήση αρχείου
+	Use Media Source	Χρήση πηγής πολυμέσων
+	Validate Content Credentials on import	Επικύρωση Content Credentials κατά την εισαγωγή
+	Video Transition Default Duration	Προεπιλεγμένη διάρκεια μετάβασης βίντεο
+	When Opening a Project	Κατά το άνοιγμα έργου
+	Whisper base (balanced)	Whisper base (ισορροπημένο)
+	Whisper small (most accurate)	Whisper small (το πιο ακριβές)
+	Whisper tiny (fastest)	Whisper tiny (το ταχύτερο)
+	Write XMP ID to files on import	Εγγραφή XMP ID στα αρχεία κατά την εισαγωγή
+	Write clip markers to XMP	Εγγραφή δεικτών κλιπ σε XMP
+	days	ημέρες
+	milliseconds	χιλιοστά του δευτερολέπτου
+	minute(s)	λεπτά
+	second(s)	δευτερόλεπτα
+	seconds	δευτερόλεπτα
+	 seconds	 δευτερόλεπτα
+	Channel {n}	Κανάλι {n}
+	Countdown Sound Cues	Ηχητικά σήματα αντίστροφης μέτρησης
+	Discard take	Απόρριψη λήψης
+	Discard the active take	Απόρριψη της ενεργής λήψης
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	Η αναπαραγωγή ξεκινά λίγο πριν από την κεφαλή αναπαραγωγής (ή το σημείο εισόδου)· με ορισμένα είσοδο/έξοδο, η εγγραφή ξεκινά και σταματά εκεί.
+	Post-roll	Μετά την εγγραφή
+	Post-roll:	Μετά την εγγραφή:
+	Pre-roll:	Πριν από την εγγραφή:
+	Qt Multimedia is not available	Το Qt Multimedia δεν είναι διαθέσιμο
+	Record (voice-over on the record-enabled track)	Εγγραφή (αφήγηση στο κομμάτι με ενεργή εγγραφή)
+	Recording voice-over…	Εγγραφή αφήγησης…
+	Source:	Πηγή:
+	Stop Voice-over Recording	Διακοπή εγγραφής αφήγησης
+	The audio input could not be started	Δεν ήταν δυνατή η έναρξη της εισόδου ήχου
+	The audio input does not support a usable format	Η είσοδος ήχου δεν υποστηρίζει χρησιμοποιήσιμη μορφή
+	The voice-over input buffer is full: the take ends here	Το buffer εισόδου αφήγησης γέμισε: η λήψη τελειώνει εδώ
+	There is no audio input device	Δεν υπάρχει συσκευή εισόδου ήχου
+	Voice-Over Record Settings	Ρυθμίσεις εγγραφής αφήγησης
+	Voice-Over Record Settings…	Ρυθμίσεις εγγραφής αφήγησης…
+	Voice-over input: {error}	Είσοδος αφήγησης: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Εγγραφή αφήγησης (δεξί κλικ: Ρυθμίσεις εγγραφής αφήγησης…)
+	Voice-over recorded: {p}	Η αφήγηση εγγράφηκε: {p}
+	Voice-over recording stopped (nothing recorded)	Η εγγραφή αφήγησης σταμάτησε (δεν εγγράφηκε τίποτα)
+	Voice-over take discarded	Η λήψη αφήγησης απορρίφθηκε
+	 frames	 καρέ
+	All Cameras	Όλες οι κάμερες
+	Auto-Adjust Multi-Camera Playback Quality	Αυτόματη ρύθμιση ποιότητας αναπαραγωγής πολλαπλών καμερών
+	Camera 1	Κάμερα 1
+	Camera Angle Metadata	Μεταδεδομένα γωνίας κάμερας
+	Camera Names	Ονόματα καμερών
+	Camera {n} — {name}	Κάμερα {n} — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	Κάμερες που εμφανίζονται στην προβολή πολλαπλών καμερών (καταργήστε την επιλογή για απόκρυψη).
+	Clip Marker	Δείκτης κλιπ
+	Clip Name:	Όνομα κλιπ:
+	Clip Names	Ονόματα κλιπ
+	Create Multi-Camera Source Sequence	Δημιουργία ακολουθίας πηγής πολλαπλών καμερών
+	Edit Cameras	Επεξεργασία καμερών
+	Edit Cameras…	Επεξεργασία καμερών…
+	Enumerate Cameras	Αρίθμηση καμερών
+	Ignore Hours	Παράβλεψη ωρών
+	In Points	Σημεία εισόδου
+	Merge Clips	Συγχώνευση κλιπ
+	Merged clip created	Δημιουργήθηκε συγχωνευμένο κλιπ
+	Move source clips to Processed Clips bin	Μετακίνηση κλιπ πηγής στον κάδο Επεξεργασμένα κλιπ
+	Multi-Camera Audio Follows Video	Ο ήχος πολλαπλών καμερών ακολουθεί το βίντεο
+	Multi-Camera Layout	Διάταξη πολλαπλών καμερών
+	Multi-Camera Record	Εγγραφή πολλαπλών καμερών
+	Multi-Camera Record On/Off (0)	Εγγραφή πολλαπλών καμερών ναι/όχι (0)
+	Multi-Camera Record On/Off Toggle	Εναλλαγή εγγραφής πολλαπλών καμερών
+	Multi-Camera Record off	Εγγραφή πολλαπλών καμερών ανενεργή
+	Multi-Camera Record on	Εγγραφή πολλαπλών καμερών ενεργή
+	Multi-Camera Selection Top Down	Επιλογή πολλαπλών καμερών από πάνω προς τα κάτω
+	Multi-Camera View	Προβολή πολλαπλών καμερών
+	Multi-camera source sequence with {n} camera(s)	Ακολουθία πηγής πολλαπλών καμερών με {n} κάμερες
+	No multi-camera clip at the playhead	Κανένα κλιπ πολλαπλών καμερών στην κεφαλή αναπαραγωγής
+	Offset Audio by:	Μετατόπιση ήχου κατά:
+	Out Points	Σημεία εξόδου
+	Page {page} of {pages}	Σελίδα {page} από {pages}
+	Record	Εγγραφή
+	Recorded {n} multi-camera cut(s)	Εγγράφηκαν {n} τομές πολλαπλών καμερών
+	Reference track:	Κομμάτι αναφοράς:
+	Remove Audio from AV Clip	Αφαίρεση ήχου από κλιπ ήχου/βίντεο
+	Sequence Name:	Όνομα ακολουθίας:
+	Show Multi-Camera Preview Monitor	Εμφάνιση οθόνης προεπισκόπησης πολλαπλών καμερών
+	Switch Audio	Εναλλαγή ήχου
+	Synchronize Clips	Συγχρονισμός κλιπ
+	Synchronize Point	Σημείο συγχρονισμού
+	Synchronized {n} clip group(s)	Συγχρονίστηκαν {n} ομάδες κλιπ
+	Transmit Multi-Camera View	Μετάδοση προβολής πολλαπλών καμερών
+	first marker	πρώτος δείκτης
+	lowest (V1…)	χαμηλότερο (V1…)
+	no multi-camera clip at the playhead	κανένα κλιπ πολλαπλών καμερών στην κεφαλή αναπαραγωγής
+	{first} - Merged	{first} - Συγχωνευμένο
+	{first} Multicam	{first} Πολλαπλές κάμερες
+	{n} clip(s) selected; the clip on the reference track stays put.	Επιλέχθηκαν {n} κλιπ· το κλιπ στο κομμάτι αναφοράς μένει στη θέση του.
+	{n} clip(s): {names}	{n} κλιπ: {names}
+	Current duration {seconds} s	Τρέχουσα διάρκεια {seconds} s
+	Fewer · More	Λιγότερα · Περισσότερα
+	Remix Properties	Ιδιότητες Remix
+	Remixed to {seconds} s	Έγινε remix σε {seconds} s
+	Segments:	Τμήματα:
+	Target Duration:	Διάρκεια-στόχος:
+	Variations:	Παραλλαγές:
+	the selected clip is not remixed	το επιλεγμένο κλιπ δεν έχει γίνει remix
+	After installing, restart CFA4.	Μετά την εγκατάσταση, επανεκκινήστε το CFA4.
+	Available, switched off	Διαθέσιμο, απενεργοποιημένο
+	Left out by the routing table	Εξαιρείται από τον πίνακα δρομολόγησης
+	CFA4 engine	Μηχανή CFA4
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	Η δική μηχανή του CFA4 ανοίγει κάθε αρχείο που μπορεί. Τα συμπληρωματικά backend παρακάτω αναλαμβάνουν, με αυτή τη σειρά, μόνο αρχεία που η μηχανή δεν μπορεί ακόμη να ανοίξει. Η απενεργοποίηση ενός backend επηρεάζει τα αρχεία που ανοίγονται μετά.
+	Capabilities	Δυνατότητες
+	Copy command	Αντιγραφή εντολής
+	H.264 software encoding (x264)	Κωδικοποίηση H.264 με λογισμικό (x264)
+	HEVC software encoding (x265)	Κωδικοποίηση HEVC με λογισμικό (x265)
+	In use	Σε χρήση
+	Licence	Άδεια
+	Media Backends	Backend πολυμέσων
+	Media Backends…	Backend πολυμέσων…
+	Not available	Μη διαθέσιμο
+	Not part of this build	Δεν περιλαμβάνεται σε αυτή την έκδοση
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Δικοί του αποκωδικοποιητές και κωδικοποιητές σε Rust: χρησιμοποιούνται πάντα πρώτοι και ως εφεδρεία όταν ένα συμπληρωματικό backend αποτυγχάνει
+	Restricted Codecs…	Codec με περιορισμούς…
+	Restricted codecs	Codec με περιορισμούς
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Ορισμένα codec είναι ελεύθερο λογισμικό αλλά υλοποιούν μορφές με διπλώματα ευρεσιτεχνίας. Όπως το Ubuntu, το CFA4 δεν τα εγκαθιστά από προεπιλογή: το βασικό πακέτο λειτουργεί χωρίς αυτά, και εσείς αποφασίζετε αν θα τα εγκαταστήσετε. Η χρήση τους μπορεί να περιορίζεται σε ορισμένες χώρες· ελέγξτε ότι επιτρέπεται εκεί που βρίσκεστε.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Συμπληρωματικός αποκωδικοποιητής για μορφές που η δική μηχανή δεν διαβάζει ακόμη (πολυμέσα κάμερας 10 bit και 4:2:2, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Συμπληρωματικός αποκωδικοποιητής από το GStreamer του συστήματος (Ogg Theora, FLV, WMV και άλλες μορφές)· LGPL, από τα αποθετήρια του Ubuntu
+	The engine did not answer: {message}	Η μηχανή δεν απάντησε: {message}
+	To install them: {command}	Για εγκατάσταση: {command}
+	Use this backend	Χρήση αυτού του backend
+	installed	εγκατεστημένο
+	not installed	μη εγκατεστημένο
+	on	ενεργό
+	 (removed from {list})	 (αφαιρέθηκε από {list})
+	 and 	 και 
+	Add another shortcut	Προσθήκη άλλης συντόμευσης
+	Application shortcuts work whatever panel has focus	Οι συντομεύσεις εφαρμογής λειτουργούν όποιο πάνελ κι αν έχει την εστίαση
+	Assign {key} to {command}	Ανάθεση του {key} στο {command}
+	Cleared {n} shortcut(s) of {command}	Καταργήθηκαν {n} συντομεύσεις του {command}
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Κάντε κλικ στο κελί Συντόμευση μιας εντολής και πατήστε πλήκτρα για ανάθεση· το + προσθέτει άλλη συντόμευση.
+	Click a key on the keyboard to see its shortcuts	Κάντε κλικ σε ένα πλήκτρο του πληκτρολογίου για να δείτε τις συντομεύσεις του
+	Click and press keys to assign	Κάντε κλικ και πατήστε πλήκτρα για ανάθεση
+	Commands:	Εντολές:
+	Conflict: {key} is assigned to {commands} ({ctx})	Διένεξη: το {key} έχει ανατεθεί στο {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Εξαγωγή: δεν επιλέχθηκε αρχείο (agents: shortcuts.export {path})
+	Import: no file chosen (agents: shortcuts.import {path})	Εισαγωγή: δεν επιλέχθηκε αρχείο (agents: shortcuts.import {path})
+	Key:	Πλήκτρο:
+	Keyboard: US	Πληκτρολόγιο: US
+	Loaded “{name}”	Φορτώθηκε το «{name}»
+	Modifier held / selected	Πλήκτρο τροποποίησης πατημένο / επιλεγμένο
+	Modifiers	Πλήκτρα τροποποίησης
+	My Shortcuts	Οι συντομεύσεις μου
+	Nothing is assigned to this key	Δεν έχει ανατεθεί τίποτα σε αυτό το πλήκτρο
+	Panel shortcuts override application shortcuts while that panel has focus	Οι συντομεύσεις πάνελ υπερισχύουν των συντομεύσεων εφαρμογής όταν το πάνελ έχει την εστίαση
+	Save preset as:	Αποθήκευση προρύθμισης ως:
+	Saved preset “{name}”	Η προρύθμιση «{name}» αποθηκεύτηκε
+	Search commands or keys	Αναζήτηση εντολών ή πλήκτρων
+	Selected: {command}	Επιλεγμένο: {command}
+	Type a shortcut… (Esc cancels)	Πληκτρολογήστε συντόμευση… (Esc για ακύρωση)
+	{active} (modified)	{active} (τροποποιημένο)
+	{key} can't be used as a shortcut	Το {key} δεν μπορεί να χρησιμοποιηθεί ως συντόμευση
+	{panel} Panel	Πάνελ {panel}
+	Docking Action	Ενέργεια αγκύρωσης
+	Undock Panel	Αποσύνδεση πάνελ
+	Restore Workspace	Επαναφορά χώρου εργασίας
+	Add Guide…	Προσθήκη οδηγού…
+	Guide Templates	Πρότυπα οδηγών
+	Manage Guides	Διαχείριση οδηγών
+	Manage Guides…	Διαχείριση οδηγών…
+	No saved guide templates.	Δεν υπάρχουν αποθηκευμένα πρότυπα οδηγών.
+	Position:	Θέση:
+	Reference  {tc}	Αναφορά  {tc}
+	Reference: next frame	Αναφορά: επόμενο καρέ
+	Reference: previous frame	Αναφορά: προηγούμενο καρέ
+	Save Guides as Template	Αποθήκευση οδηγών ως προτύπου
+	Save Guides as Template…	Αποθήκευση οδηγών ως προτύπου…
+	Saved guide template “{name}”	Το πρότυπο οδηγών «{name}» αποθηκεύτηκε
+	Set	Ορισμός
+	Set Comparison Reference	Ορισμός αναφοράς σύγκρισης
+	Set the reference to the playhead	Ορισμός της αναφοράς στην κεφαλή αναπαραγωγής
+	Snap in Program Monitor	Προσκόλληση στην οθόνη Προγράμματος
+	The template needs a name.	Το πρότυπο χρειάζεται όνομα.
+	There are no guides to save.	Δεν υπάρχουν οδηγοί για αποθήκευση.
+	Join Through Edits	Ένωση διαφανών τομών
+	Replace With Clip From Source Monitor	Αντικατάσταση με κλιπ από την οθόνη πηγής
+	Reveal Nested Sequence	Εμφάνιση ένθετης ακολουθίας
+	Reveal in Project	Εμφάνιση στο έργο
+	Unlink	Αποσύνδεση
+	Apply Default Transitions	Εφαρμογή προεπιλεγμένων μεταβάσεων
+	Ripple Trim In	Περικοπή εισόδου με μετατόπιση
+	Ripple Trim Out	Περικοπή εξόδου με μετατόπιση
+	Roll Edit	Κυλιόμενη τομή
+	Trim In	Περικοπή εισόδου
+	Trim Out	Περικοπή εξόδου
+	Expand All Tracks	Ανάπτυξη όλων των κομματιών
+	Minimize All Tracks	Ελαχιστοποίηση όλων των κομματιών
+	Increase Video Tracks Height	Αύξηση ύψους κομματιών βίντεο
+	Decrease Video Tracks Height	Μείωση ύψους κομματιών βίντεο
+	Increase Audio Tracks Height	Αύξηση ύψους κομματιών ήχου
+	Decrease Audio Tracks Height	Μείωση ύψους κομματιών ήχου
+	Drag to change the track height	Σύρετε για αλλαγή του ύψους κομματιού
+	Head	Αρχή
+	Head and Tail	Αρχή και τέλος
+	Continuous	Συνεχής
+	Show Video Thumbnails	Εμφάνιση μικρογραφιών βίντεο
+	Show Audio Waveform	Εμφάνιση κυματομορφής ήχου
+	Timeline Display Settings	Ρυθμίσεις εμφάνισης χρονογραμμής
+	Snap in Timeline (S)	Προσκόλληση στη χρονογραμμή (S)
+	Caption track options	Επιλογές κομματιού υποτίτλων
+	Insert and overwrite sequences as nests or individual clips	Εισαγωγή και αντικατάσταση ακολουθιών ως ένθετων ή ως μεμονωμένων κλιπ
+	Close Other Timeline Panels	Κλείσιμο άλλων πάνελ χρονογραμμής
+	Show Keyframes	Εμφάνιση καρέ-κλειδιών
+	Clip Keyframes	Καρέ-κλειδιά κλιπ
+	Track Keyframes	Καρέ-κλειδιά κομματιού
+	Send {n} Level	Στάθμη αποστολής {n}
+	Delete Caption Track	Διαγραφή κομματιού υποτίτλων
+	Delete Empty Caption Tracks	Διαγραφή κενών κομματιών υποτίτλων
+	Toggle Caption Track Lock	Εναλλαγή κλειδώματος κομματιού υποτίτλων
+	Toggle Caption Track Output	Εναλλαγή εξόδου κομματιού υποτίτλων
+	Drag In point	Μετακίνηση σημείου εισόδου
+	Drag Out point	Μετακίνηση σημείου εξόδου
+	Move marked range	Μετακίνηση σημειωμένου εύρους
+	Auto Tone Map Media (HDR and log into SDR)	Αυτόματη αντιστοίχιση τόνων πολυμέσων (HDR και log σε SDR)
+	CFA4 always composites in linear light	Το CFA4 πάντα συνθέτει σε γραμμικό φως
+	Captured View:	Καταγεγραμμένη προβολή:
+	Channel Format:	Μορφή καναλιών:
+	Composite in Linear Color	Σύνθεση σε γραμμικό χρώμα
+	Configure…	Διαμόρφωση…
+	Custom ({ratio})	Προσαρμοσμένο ({ratio})
+	Display Format:	Μορφή εμφάνισης:
+	Editing Mode:	Λειτουργία επεξεργασίας:
+	Fields:	Πεδία:
+	Frame Size:	Μέγεθος καρέ:
+	Maximum Bit Depth	Μέγιστο βάθος bit
+	Maximum Render Quality	Μέγιστη ποιότητα απόδοσης
+	Milliseconds	Χιλιοστά του δευτερολέπτου
+	Monoscopic	Μονοσκοπικό
+	New Sequence	Νέα ακολουθία
+	No Fields (Progressive Scan)	Χωρίς πεδία (προοδευτική σάρωση)
+	Not supported in CFA4 yet	Δεν υποστηρίζεται ακόμη στο CFA4
+	Number of Channels:	Αριθμός καναλιών:
+	Pixel Aspect Ratio:	Αναλογία pixel:
+	Preview File Format:	Μορφή αρχείου προεπισκόπησης:
+	Projection:	Προβολή:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Ρυθμός δειγματοληψίας:
+	Scale motion effects proportionally when changing frame size	Αναλογική κλιμάκωση εφέ κίνησης κατά την αλλαγή μεγέθους καρέ
+	Sequence Settings	Ρυθμίσεις ακολουθίας
+	Square Pixels (1.0)	Τετράγωνα pixel (1,0)
+	Timebase:	Χρονική βάση:
+	Tracks	Κομμάτια
+	VR Properties	Ιδιότητες VR
+	Video Previews	Προεπισκοπήσεις βίντεο
+	Wide gamut color (composite in BT.2020)	Χρώμα ευρείας γκάμας (σύνθεση σε BT.2020)
+	Working Color Space:	Χρωματικός χώρος εργασίας:
+	horizontal	οριζόντια
+	no sequence is open	δεν είναι ανοιχτή καμία ακολουθία
+	tracks	κομμάτια
+	vertical	κατακόρυφα
+	{rate} fps Drop-Frame Timecode	Χρονοκώδικας drop-frame {rate} fps
+	{rate} fps Non Drop-Frame Timecode	Χρονοκώδικας non drop-frame {rate} fps
+	{rate} fps Timecode	Χρονοκώδικας {rate} fps
+	{rate} frames/second	{rate} καρέ/δευτερόλεπτο
+	Always Deinterlace	Πάντα αποπλεξία
+	Audio Attributes	Χαρακτηριστικά ήχου
+	Ch. {n}	Καν. {n}
+	Clip Channel Format:	Μορφή καναλιών κλιπ:
+	Clip Speed / Duration	Ταχύτητα / διάρκεια κλιπ
+	Clip {n}	Κλιπ {n}
+	Contains:	Περιέχει:
+	Edit Subclip	Επεξεργασία υποκλιπ
+	End:	Τέλος:
+	Field Options	Επιλογές πεδίων
+	File Name:	Όνομα αρχείου:
+	Flicker Removal	Αφαίρεση τρεμοπαίγματος
+	Frame Hold Options	Επιλογές παγώματος καρέ
+	Frame Rate:	Ρυθμός καρέ:
+	Hold Filters	Πάγωμα φίλτρων
+	Hold On	Πάγωμα στο
+	In Point	Σημείο εισόδου
+	Make Subclip	Δημιουργία υποκλιπ
+	Media Source Channels	Κανάλια πηγής πολυμέσων
+	Media Start:	Αρχή πολυμέσων:
+	Modify Clip: Audio Channels	Τροποποίηση κλιπ: Κανάλια ήχου
+	Modify Clip: Timecode	Τροποποίηση κλιπ: Χρονοκώδικας
+	Nested Sequence Name	Όνομα ένθετης ακολουθίας
+	New Offline File	Νέο αρχείο εκτός σύνδεσης
+	No effects	Χωρίς εφέ
+	Number of Audio Clips:	Αριθμός κλιπ ήχου:
+	Out Point	Σημείο εξόδου
+	Paste Attributes	Επικόλληση χαρακτηριστικών
+	Playhead	Κεφαλή αναπαραγωγής
+	Processing Options	Επιλογές επεξεργασίας
+	Remove Attributes	Αφαίρεση χαρακτηριστικών
+	Restrict Trims To Subclip Boundaries	Περιορισμός περικοπών στα όρια του υποκλιπ
+	Reverse Field Dominance	Αντιστροφή κυρίαρχου πεδίου
+	Reverse Speed	Αντίστροφη ταχύτητα
+	Ripple Edit, Shifting Trailing Clips	Επεξεργασία με μετατόπιση των επόμενων κλιπ
+	Scale Attribute Times	Κλιμάκωση χρόνων χαρακτηριστικών
+	Sequence Time	Χρόνος ακολουθίας
+	Set Timecode:	Ορισμός χρονοκώδικα:
+	Source Timecode	Χρονοκώδικας πηγής
+	Source channels the selected audio clips play:	Κανάλια πηγής που αναπαράγουν τα επιλεγμένα κλιπ ήχου:
+	Speed:	Ταχύτητα:
+	Start:	Αρχή:
+	Subclip: {name}	Υποκλιπ: {name}
+	Tape Name:	Όνομα ταινίας:
+	Timecode:	Χρονοκώδικας:
+	Use the file's timecode	Χρήση του χρονοκώδικα του αρχείου
+	Video Attributes	Χαρακτηριστικά βίντεο
+	no dialog	χωρίς παράθυρο διαλόγου
+	Action Safe Area	Ασφαλής περιοχή δράσης
+	Action and Title Safe Areas	Ασφαλείς περιοχές δράσης και τίτλων
+	Action:	Ενέργεια:
+	Analyze	Ανάλυση
+	Apply Default Audio Transition	Εφαρμογή προεπιλεγμένης μετάβασης ήχου
+	Apply Default Video Transition	Εφαρμογή προεπιλεγμένης μετάβασης βίντεο
+	Apply a cut at each detected cut point	Τομή σε κάθε εντοπισμένο σημείο αλλαγής
+	At Unnumbered Markers	Σε μη αριθμημένους δείκτες
+	Audio Only	Μόνο ήχος
+	Audio Previews:	Προεπισκοπήσεις ήχου:
+	Audio analysis:	Ανάλυση ήχου:
+	Audio effects	Εφέ ήχου
+	Audio on track {t}	Ήχος στο κομμάτι {t}
+	Automate To Sequence	Αυτόματη τοποθέτηση στην ακολουθία
+	Average Data Rate	Μέσος ρυθμός δεδομένων
+	Capture	Λήψη
+	Capture Format:	Μορφή λήψης:
+	Captured and Generated:	Ληφθέντα και δημιουργημένα:
+	Case Sensitive	Διάκριση πεζών-κεφαλαίων
+	Clip Names and Markers	Ονόματα κλιπ και δείκτες
+	Clip Overlap:	Επικάλυψη κλιπ:
+	Clips	Κλιπ
+	Codec: {codec}	Codec: {codec}
+	Color Matte Color	Χρώμα χρωματικού φόντου
+	Comments:	Σχόλια:
+	Copy and Create Proxies	Αντιγραφή και δημιουργία proxy
+	Create Proxies	Δημιουργία proxy
+	Create Search Bin	Δημιουργία κάδου αναζήτησης
+	Create a bin of subclips from each detected cut point	Δημιουργία κάδου υποκλιπ από κάθε εντοπισμένο σημείο αλλαγής
+	Create a clip marker at each detected cut point	Δημιουργία δείκτη κλιπ σε κάθε εντοπισμένο σημείο αλλαγής
+	Disabled clips	Απενεργοποιημένα κλιπ
+	Edit Offline File	Επεξεργασία αρχείου εκτός σύνδεσης
+	Empty tracks	Κενά κομμάτια
+	Existing XMP files written by other applications are left unchanged.	Τα υπάρχοντα αρχεία XMP που έγραψαν άλλες εφαρμογές μένουν αμετάβλητα.
+	File Size	Μέγεθος αρχείου
+	Find in:	Εύρεση σε:
+	Find:	Εύρεση:
+	Flash Cue Marker	Δείκτης Flash Cue
+	Frames per Still:	Καρέ ανά στατική εικόνα:
+	Gaps	Κενά
+	Ignore Audio	Παράβλεψη ήχου
+	Ignore Options	Επιλογές παράβλεψης
+	Ignore Video	Παράβλεψη βίντεο
+	Ingest Settings	Ρυθμίσεις πρόσληψης
+	Insert Edit	Εισαγωγή
+	Log Note:	Σημείωση καταγραφής:
+	Match {n} of {total}	Αποτέλεσμα {n} από {total}
+	Match:	Αντιστοίχιση:
+	Media Name:	Όνομα πολυμέσων:
+	Move clips to the lowest track possible	Μετακίνηση κλιπ στο χαμηλότερο δυνατό κομμάτι
+	New Color Matte	Νέο χρωματικό φόντο
+	Next to the media	Δίπλα στα πολυμέσα
+	Normalize Mix Track	Κανονικοποίηση κομματιού μίξης
+	Normalize Mix Track to:	Κανονικοποίηση κομματιού μίξης σε:
+	Ordering:	Σειρά:
+	Overwrite Edit	Αντικατάσταση
+	Path: {path}	Διαδρομή: {path}
+	Placement:	Τοποθέτηση:
+	Project Auto Save:	Αυτόματη αποθήκευση έργου:
+	Recognize when different speakers are talking	Αναγνώριση όταν μιλούν διαφορετικοί ομιλητές
+	Renderer:	Μηχανή απόδοσης:
+	Same as Project	Όπως το έργο
+	Saved template {path}	Το πρότυπο αποθηκεύτηκε: {path}
+	Scene Edit Detection	Ανίχνευση αλλαγών σκηνής
+	Scene Edit Detection: analysing in the background (see Progress)	Ανίχνευση αλλαγών σκηνής: ανάλυση στο παρασκήνιο (δείτε Πρόοδος)
+	Scene:	Σκηνή:
+	Scratch Disks	Δίσκοι προσωρινής εργασίας
+	Search:	Αναζήτηση:
+	Selection Order	Σειρά επιλογής
+	Sensitivity:	Ευαισθησία:
+	Sequentially	Διαδοχικά
+	Shot/Take:	Λήψη/Επανάληψη:
+	Simplify Sequence	Απλοποίηση ακολουθίας
+	Sort Order	Σειρά ταξινόμησης
+	Source Settings	Ρυθμίσεις πηγής
+	Template Name:	Όνομα προτύπου:
+	Text (graphics and captions)	Κείμενο (γραφικά και υπότιτλοι)
+	Title Safe Area	Ασφαλής περιοχή τίτλων
+	To {name}	Προς {name}
+	Total Duration	Συνολική διάρκεια
+	Transcode	Διακωδικοποίηση
+	Transcribe Sequence	Απομαγνητοφώνηση ακολουθίας
+	Transitions	Μεταβάσεις
+	Update Metadata	Ενημέρωση μεταδεδομένων
+	Video Only	Μόνο βίντεο
+	Video Previews:	Προεπισκοπήσεις βίντεο:
+	Video Rendering and Playback	Απόδοση και αναπαραγωγή βίντεο
+	Video and Audio	Βίντεο και ήχος
+	Video effects	Εφέ βίντεο
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	Εγγραφή των μεταδεδομένων των επιλεγμένων κλιπ ({n}) σε αρχεία XMP δίπλα στα πολυμέσα τους;
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} κανάλια
+	Constant quantiser	Σταθερός κβαντιστής
+	Container	Περιέκτης
+	 (unavailable)	 (μη διαθέσιμο)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Περιέκτες
+	Decoders	Αποκωδικοποιητές
+	Dynamic Audio Waveforms	Δυναμικές κυματομορφές ήχου
+	Export formats	Μορφές εξαγωγής
+	Reveal Log Files…	Εμφάνιση αρχείων καταγραφής…
+	Session log: {path}	Καταγραφή περιόδου λειτουργίας: {path}
+	System Compatibility Report	Αναφορά συμβατότητας συστήματος
+	System Compatibility Report…	Αναφορά συμβατότητας συστήματος…
+	not available now	μη διαθέσιμο τώρα
+	{name} Selection.fcproj	{name} Επιλογή.fcproj
+	Auto tone map media (HDR and log into SDR)	Αυτόματη αντιστοίχιση τόνων πολυμέσων (HDR και log σε SDR)
+	Sequence Color Management	Διαχείριση χρωμάτων ακολουθίας
+	Working Color Space	Χρωματικός χώρος εργασίας
+	Align Timecode	Στοίχιση χρονοκώδικα
+	All media is online.	Όλα τα πολυμέσα είναι συνδεδεμένα.
+	Clip ID (fingerprint)	Αναγνωριστικό κλιπ (αποτύπωμα)
+	Clip Name	Όνομα κλιπ
+	Collect Files and Copy to New Location	Συλλογή αρχείων και αντιγραφή σε νέα θέση
+	Consolidate and Transcode	Ενοποίηση και διακωδικοποίηση
+	Creating {n} proxy file(s)…	Δημιουργία {n} αρχείων proxy…
+	Destination Path	Διαδρομή προορισμού
+	Disk space: original {original} · resulting {result} ({n} files)	Χώρος δίσκου: αρχικό {original} · αποτέλεσμα {result} ({n} αρχεία)
+	Disk space: —	Χώρος δίσκου: —
+	Exact name matches only	Μόνο ακριβής αντιστοίχιση ονόματος
+	Exclude Unused Clips	Εξαίρεση αχρησιμοποίητων κλιπ
+	Format and size	Μορφή και μέγεθος
+	Frame Size / Rate	Μέγεθος / ρυθμός καρέ
+	Include Handles:	Συμπερίληψη περιθωρίων:
+	Include Preview Files	Συμπερίληψη αρχείων προεπισκόπησης
+	Include Proxies	Συμπερίληψη proxy
+	Link Media	Σύνδεση πολυμέσων
+	Linked {n} clip(s)	Συνδέθηκαν {n} κλιπ
+	Locate…	Εντοπισμός…
+	Make Offline	Μετατροπή σε εκτός σύνδεσης
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	Μετατροπή {n} επιλεγμένων κλιπ σε εκτός σύνδεσης. Τα κλιπ δείχνουν την πινακίδα εκτός σύνδεσης μέχρι να τα συνδέσετε ξανά.
+	Match file properties:	Αντιστοίχιση ιδιοτήτων αρχείου:
+	Media files are deleted	Τα αρχεία πολυμέσων διαγράφονται
+	Media files remain on disk	Τα αρχεία πολυμέσων παραμένουν στον δίσκο
+	Next to the original media, in a Proxies folder	Δίπλα στα αρχικά πολυμέσα, σε φάκελο Proxies
+	No candidates yet — Search a folder or Locate the file.	Δεν υπάρχουν ακόμη υποψήφια — Αναζητήστε σε φάκελο ή εντοπίστε το αρχείο.
+	Nothing found with that name.	Δεν βρέθηκε τίποτα με αυτό το όνομα.
+	Offline	Εκτός σύνδεσης
+	Offline All	Όλα εκτός σύνδεσης
+	Project Manager	Διαχείριση έργου
+	Project Manager: writing {path}	Διαχείριση έργου: εγγραφή {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	Τα proxy δημιουργούνται στο παρασκήνιο και συνδέονται όταν ολοκληρωθούν. Η εξαγωγή χρησιμοποιεί πάντα πολυμέσα πλήρους ανάλυσης.
+	Relink others automatically	Αυτόματη επανασύνδεση των υπολοίπων
+	Resulting Project	Έργο αποτελέσματος
+	Search in:	Αναζήτηση σε:
+	Sequences	Ακολουθίες
+	select a clip in the Project panel	επιλέξτε ένα κλιπ στο πάνελ Έργο
+	{name} (copy)	{name} (αντίγραφο)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} κλιπ δεν βρίσκουν τα πολυμέσα τους. Εντοπίστε τα, αναζητήστε σε φάκελο ή αφήστε τα εκτός σύνδεσης.
+	{n} clip(s) selected.	Επιλέχθηκαν {n} κλιπ.
+	✔ matches	✔ ταιριάζει
+	✔ same file	✔ ίδιο αρχείο
+	✖ different file	✖ διαφορετικό αρχείο
+	AAF Export Settings	Ρυθμίσεις εξαγωγής AAF
+	Audio File Format:	Μορφή αρχείου ήχου:
+	Bits per Sample:	Bit ανά δείγμα:
+	Breakout to mono	Διάσπαση σε μονοφωνικά
+	Depth:	Βάθος:
+	Encapsulate	Ενθυλάκωση
+	Exported frame to {path}	Το καρέ εξήχθη στο {path}
+	Frame time: {timecode}	Χρόνος καρέ: {timecode}
+	Handle Frames:	Καρέ περιθωρίου:
+	Import into project	Εισαγωγή στο έργο
+	Keep existing file	Διατήρηση υπάρχοντος αρχείου
+	Link to Media	Σύνδεση με πολυμέσα
+	Mixdown video	Μίξη βίντεο
+	OMF Export Settings	Ρυθμίσεις εξαγωγής OMF
+	OMF Title:	Τίτλος OMF:
+	Render audio clip effects	Απόδοση εφέ κλιπ ήχου
+	Separate Audio	Ξεχωριστός ήχος
+	Separate Files	Ξεχωριστά αρχεία
+	This file already exists: {path}	Αυτό το αρχείο υπάρχει ήδη: {path}
+	Trim audio files	Περικοπή αρχείων ήχου
+	{bits} Bit	{bits} bit
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Αναφορά δεικτών (CSV)
+	DCP (Digital Cinema Package)	DCP (πακέτο ψηφιακού κινηματογράφου)
+	Digital Cinema	Ψηφιακός κινηματογράφος
+	DCP resolution	Ανάλυση DCP
+	DCP container	Περιέκτης DCP
+	Content kind	Είδος περιεχομένου
+	Output folder	Φάκελος εξόδου
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1.85:1)
+	Scope (2.39:1)	Scope (2.39:1)
+	Full container (1.90:1)	Πλήρης περιέκτης (1.90:1)
+	Feature	Μεγάλου μήκους
+	Trailer	Τρέιλερ
+	Teaser	Teaser
+	Short	Μικρού μήκους
+	Advertisement	Διαφήμιση
+	Test	Δοκιμή
+	Transitional	Μεταβατικό
+	Rating	Διαβάθμιση
+	Public service announcement	Ανακοίνωση δημόσιου συμφέροντος
+	Off (5.1 only)	Ανενεργό (μόνο 5.1)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB bed από τη μίξη (7.1 DS, 9.1OH από 7.1.2)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB από αρχείο (IAB MXF, .iab ή Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab ή Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	Κανένα: μόνο συγχρονισμός FSK (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: το IAB μετά την απόδοση (όχι ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: η μίξη της χρονογραμμής (όχι ST 429-19)
+	Main sound channels 1-6	Κύρια κανάλια ήχου 1-6
+	Immersive audio	Καθηλωτικός ήχος
+	IAB source	Πηγή IAB
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Μια μίξη 7.1.2 γίνεται bed 9.1OH, μια μίξη 7.1 bed 7.1 DS και κάθε άλλη μίξη bed 7.1 DS από την εκδοχή 5.1 της (IAB Profile 1)· το κανάλι 14 του κύριου ήχου μεταφέρει το σήμα συγχρονισμού FSK.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Επιλέξτε αρχείο κομματιού IAB (IMF ή DCP), ακατέργαστη ροή IAB ή Dolby Atmos TrueHD: ροή .thd ή αρχείο MKV, MP4 ή M2TS με κομμάτι Atmos.
+	Reading the IAB source…	Ανάγνωση της πηγής IAB…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} καρέ, {fps} fps, {rate} Hz· έως {beds} κανάλια bed και {objects} αντικείμενα
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} s, {rate} Hz· έως {beds} κανάλια bed και {objects} αντικείμενα, που γίνονται αντικείμενα IAB
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Ορισμένα καρέ επανακωδικοποιούνται για το DCP (DLC, 24 bit).
+	Beyond IAB Profile 1: {notes}	Πέρα από το IAB Profile 1: {notes}
+	Not a usable IAB source: {error}	Μη χρησιμοποιήσιμη πηγή IAB: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE DCP: JPEG 2000 1998×1080 (1.85:1), PCM 5.1 24 bit 48 kHz
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE DCP: JPEG 2000 2048×858 (2.39:1), PCM 5.1 24 bit 48 kHz
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bit 48 kHz
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bit 48 kHz
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	B pictures	Εικόνες B
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV Transport Stream (.m2ts, ήχος AAC)
+	Chroma	Χρωματικότητα
+	Elementary Stream (.m2v, no audio)	Elementary Stream (.m2v, χωρίς ήχο)
+	Key Frame Distance	Απόσταση καρέ-κλειδιών
+	None (I and P only)	Καμία (μόνο I και P)
+	Off (target bitrate)	Ανενεργό (ρυθμός bit-στόχος)
+	Program Stream (.mpg, LPCM audio)	Program Stream (.mpg, ήχος LPCM)
+	Transport Stream (.ts, AAC audio)	Transport Stream (.ts, ήχος AAC)
+	Estimated file size: {size}	Εκτιμώμενο μέγεθος αρχείου: {size}
+	File Name & Location	Όνομα και θέση αρχείου
+	Quick Export	Γρήγορη εξαγωγή
+	Quick Export: open a sequence first	Γρήγορη εξαγωγή: ανοίξτε πρώτα μια ακολουθία
+	Quick Export: {path}	Γρήγορη εξαγωγή: {path}
+	Export presets	Προρυθμίσεις εξαγωγής
+	Favorites only	Μόνο αγαπημένα
+	More presets…	Περισσότερες προρυθμίσεις…
+	Preset Manager	Διαχείριση προρυθμίσεων
+	Save current settings as:	Αποθήκευση τρεχουσών ρυθμίσεων ως:
+	Search presets	Αναζήτηση προρυθμίσεων
+	Show in the Preset menu	Εμφάνιση στο μενού Προρύθμιση
+	User	Χρήστης
+	Add Beat Markers	Προσθήκη δεικτών ρυθμού
+	Clear Beat Markers	Εκκαθάριση δεικτών ρυθμού
+	Clear Check Markers	Εκκαθάριση δεικτών ελέγχου
+	Auto Reframe Sequence…	Αυτόματη αναπλαισίωση ακολουθίας…
+	Batch Variants from Spreadsheet…	Μαζικές παραλλαγές από υπολογιστικό φύλλο…
+	Check Before Export…	Έλεγχος πριν από την εξαγωγή…
+	Social Deliverables…	Παραδοτέα για κοινωνικά δίκτυα…
+	Social Safe Zones	Ασφαλείς ζώνες κοινωνικών δικτύων
+	Text Animator	Κίνηση κειμένου
+	Counter	Μετρητής
+	Word by Word	Λέξη προς λέξη
+	Animator	Κίνηση
+	Animator Duration	Διάρκεια κίνησης
+	Animator Delay	Καθυστέρηση κίνησης
+	Spreadsheets	Υπολογιστικά φύλλα
+	{n} beat markers added ({bpm} BPM)	Προστέθηκαν {n} δείκτες ρυθμού ({bpm} BPM)
+	Check Before Export: no problems found	Έλεγχος πριν από την εξαγωγή: δεν βρέθηκαν προβλήματα
+	Check Before Export: {n} problems marked on the timeline (red markers)	Έλεγχος πριν από την εξαγωγή: σημειώθηκαν {n} προβλήματα στη χρονογραμμή (κόκκινοι δείκτες)
+	{n} exports queued (the Export window shows the queue)	{n} εξαγωγές στην ουρά (το παράθυρο Εξαγωγή δείχνει την ουρά)
+	{n} variant sequences made, {q} exports queued	Δημιουργήθηκαν {n} ακολουθίες παραλλαγών, {q} εξαγωγές στην ουρά
+	no column for {names}	δεν υπάρχει στήλη για {names}
+	Film Scan 1	Σάρωση φιλμ 1
+	Film Scan 2	Σάρωση φιλμ 2
+	Film Scan 3	Σάρωση φιλμ 3
+	Include Alpha Channel	Συμπερίληψη καναλιού άλφα
+	ZIP (1 scan line)	ZIP (1 γραμμή σάρωσης)
+	ZIP (16 scan lines)	ZIP (16 γραμμές σάρωσης)
+	Bottom Center	Κάτω στο κέντρο
+	Burn Captions Into Video	Ενσωμάτωση υποτίτλων στο βίντεο
+	Center Left	Κέντρο αριστερά
+	Center Right	Κέντρο δεξιά
+	Create Sidecar File	Δημιουργία συνοδευτικού αρχείου
+	Export Options	Επιλογές εξαγωγής
+	File Format	Μορφή αρχείου
+	Image Overlay	Επικάλυψη εικόνας
+	Loudness Normalization	Κανονικοποίηση ακουστότητας
+	Luma Min / Max	Ελάχιστη / μέγιστη φωτεινότητα
+	Name Overlay	Επικάλυψη ονόματος
+	PNG or JPEG file	Αρχείο PNG ή JPEG
+	Size / Opacity	Μέγεθος / αδιαφάνεια
+	SubRip Subtitle (.srt)	Υπότιτλοι SubRip (.srt)
+	Target Loudness	Ακουστότητα-στόχος
+	Timecode Overlay	Επικάλυψη χρονοκώδικα
+	Top Center	Πάνω στο κέντρο
+	True Peak Limit	Όριο πραγματικής κορυφής
+	Video Limiter	Περιοριστής βίντεο
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Creator	Δημιουργός
+	Multiplexer	Πολυπλέκτης
+	Audio only	Μόνο ήχος
+	Scale To Fill	Κλιμάκωση για γέμισμα
+	Scale To Fit	Κλιμάκωση για προσαρμογή
+	Stretch To Fill	Τέντωμα για γέμισμα
+	Quick Export cancelled	Η γρήγορη εξαγωγή ακυρώθηκε
+	0 fastest, 8 smallest	0 ταχύτερο, 8 μικρότερο
+	16 bit	16 bit
+	32 bit float	32 bit κινητής υποδιαστολής
+	Anamorphic 2:1 (2.0)	Αναμορφικό 2:1 (2.0)
+	Aspect	Αναλογία
+	Composite on the GPU when available	Σύνθεση στη GPU όταν είναι διαθέσιμη
+	Compression Level	Επίπεδο συμπίεσης
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0.9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1.0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1.5)
+	Field Order	Σειρά πεδίων
+	GPU Rendering	Απόδοση με GPU
+	HD Anamorphic 1080 (1.333)	HD αναμορφικό 1080 (1.333)
+	Lower First	Πρώτα το κάτω
+	Match Source	Αντιστοίχιση με την πηγή
+	Maximum Bitrate	Μέγιστος ρυθμός bit
+	Quality (CRF)	Ποιότητα (CRF)
+	Render at Maximum Depth	Απόδοση σε μέγιστο βάθος
+	Upper First	Πρώτα το πάνω
+	Use Maximum Render Quality	Χρήση μέγιστης ποιότητας απόδοσης
+	Browse files…	Περιήγηση αρχείων…
+	Movies, audio and stills from disk	Ταινίες, ήχος και στατικές εικόνες από τον δίσκο
+	Demo footage	Πλάνα επίδειξης
+	Six procedural 1080p clips with sound	Έξι διαδικαστικά κλιπ 1080p με ήχο
+	Demo project	Έργο επίδειξης
+	A cut sequence with transitions, effects and music	Μια μονταρισμένη ακολουθία με μεταβάσεις, εφέ και μουσική
+	Bars and Tone	Μπάρες και τόνος
+	SMPTE HD bars with 1 kHz reference tone	Μπάρες SMPTE HD με τόνο αναφοράς 1 kHz
+	CFA4 on GitHub	Το CFA4 στο GitHub
+	Report a CFA4 issue…	Αναφορά προβλήματος του CFA4…
+	CFA4 project links	Σύνδεσμοι του έργου CFA4
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	Προσθέστε πολυμέσα στο έργο σας. Αφήστε αρχεία οπουδήποτε στο παράθυρο ή επιλέξτε μια πηγή παρακάτω.
+	Shuttle Slow Left	Αργή κίνηση αριστερά
+	Shuttle Slow Right	Αργή κίνηση δεξιά
+	Play Around	Αναπαραγωγή γύρω
+	Out: {name}	Έξοδος: {name}
+	In: {name}	Είσοδος: {name}
+	(gap)	(κενό)
+	Outgoing clip (drag to trim the Out point)	Εξερχόμενο κλιπ (σύρετε για περικοπή του σημείου εξόδου)
+	Incoming clip (drag to trim the In point)	Εισερχόμενο κλιπ (σύρετε για περικοπή του σημείου εισόδου)
+	Drag to roll the edit	Σύρετε για κύλιση της τομής
+	Play Around Edit (Space loops, Shift+K once)	Αναπαραγωγή γύρω από την τομή (Space επανάληψη, Shift+K μία φορά)
+	Trim Backward Many	Περικοπή πολλών προς τα πίσω
+	Trim Backward	Περικοπή προς τα πίσω
+	Apply Default Transitions to Selection (Shift+D)	Εφαρμογή προεπιλεγμένων μεταβάσεων στην επιλογή (Shift+D)
+	Trim Forward	Περικοπή προς τα εμπρός
+	Trim Forward Many	Περικοπή πολλών προς τα εμπρός
+	Exit Trim Mode	Έξοδος από τη λειτουργία περικοπής
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	Η έξοδος ήχου απέτυχε: αναπαραγωγή χωρίς ήχο (ελέγξτε Ρυθμίσεις ▸ Υλικό ήχου)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	Η έξοδος ήχου δεν αποκρίνεται: αναπαραγωγή χωρίς ήχο (ελέγξτε Ρυθμίσεις ▸ Υλικό ήχου)
+	Settings not taken	Οι ρυθμίσεις δεν εφαρμόστηκαν
+	Encoder	Κωδικοποιητής
+	Software, or hardware where available	Λογισμικό ή υλικό όπου είναι διαθέσιμο
+	Main (8-bit; Main 10 for HDR sequences)	Main (8 bit· Main 10 για ακολουθίες HDR)
+	Main 10 (10-bit, HDR)	Main 10 (10 bit, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bit· 10 bit για ακολουθίες HDR)
+	Main (10-bit, HDR)	Main (10 bit, HDR)
+	FLAC stores whole-number samples only	Το FLAC αποθηκεύει μόνο ακέραια δείγματα
+	MXF export writes integer PCM only	Η εξαγωγή MXF γράφει μόνο ακέραιο PCM
+	Not supported by CFA4's encoders yet	Δεν υποστηρίζεται ακόμη από τους κωδικοποιητές του CFA4
+	Overwrite with Current View	Αντικατάσταση με την τρέχουσα προβολή
+	Saves the view, columns, sort, thumbnail and font size.	Αποθηκεύει την προβολή, τις στήλες, την ταξινόμηση, τη μικρογραφία και το μέγεθος γραμματοσειράς.
+	Search fields	Πεδία αναζήτησης
+	{n}. (empty)	{n}. (κενό)
+	No video	Χωρίς βίντεο
+	No audio	Χωρίς ήχο
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 για HDR
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 Profile
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main Profile 4:2:0
+	no B pictures	χωρίς εικόνες B
+	1 B picture between anchors	1 εικόνα B ανάμεσα στις άγκυρες
+	AV1 Main (10-bit for HDR)	AV1 Main (10 bit για HDR)
+	10-bit RGB	RGB 10 bit
+	12-bit X'Y'Z'	X'Y'Z' 12 bit
+	16-bit half float	μισής ακρίβειας 16 bit
+	linear	γραμμικό
+	uncompressed	ασυμπίεστο
+	Animated GIF	Κινούμενο GIF
+	Waveform Audio	Ήχος Waveform
+	AAC Audio	Ήχος AAC
+	Opus Audio	Ήχος Opus
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	κατακερματισμένα τμήματα MP4
+	Program Stream	Program Stream
+	Transport Stream	Transport Stream
+	BDAV Transport Stream	BDAV Transport Stream
+	Elementary Stream	Elementary Stream
+	Image sequence	Ακολουθία εικόνων
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} fps
+	{profile} auto level	{profile} αυτόματο επίπεδο
+	{n} pass	{n} περάσματα
+	CRF (constant quality) {crf}	CRF (σταθερή ποιότητα) {crf}
+	{v} Mbps	{v} Mbps
+	Target {v} Mbps	Στόχος {v} Mbps
+	Max {v} Mbps	Μέγιστο {v} Mbps
+	average {v} Mbps	μέσος όρος {v} Mbps
+	CBR {v} Mbps	CBR {v} Mbps
+	VBR Target {v} Mbps	VBR στόχος {v} Mbps
+	keyframe every {n} frames	καρέ-κλειδί κάθε {n} καρέ
+	constant quantiser {q}	σταθερός κβαντιστής {q}
+	{n} B pictures between anchors	{n} εικόνες B ανάμεσα στις άγκυρες
+	quantizer {q}	κβαντιστής {q}
+	quality {q}	ποιότητα {q}
+	{word} compression	συμπίεση {word}
+	{sampling} {bits}-bit	{sampling} {bits} bit
+	FLAC (lossless) {bits}-bit	FLAC (χωρίς απώλειες) {bits} bit
+	level {n}	επίπεδο {n}
+	Uncompressed {bits}-bit PCM	Ασυμπίεστο PCM {bits} bit
+	Uncompressed {bits}-bit float PCM	Ασυμπίεστο PCM κινητής υποδιαστολής {bits} bit
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} s
+	{n} ch {rate} Hz	{n} καν. {rate} Hz
+	All Events	Όλα τα συμβάντα
+	Warnings and Errors	Προειδοποιήσεις και σφάλματα
+	Errors Only	Μόνο σφάλματα
+	No events.	Δεν υπάρχουν συμβάντα.
+	{n} s ago	πριν από {n} s
+	Caption Export Settings	Ρυθμίσεις εξαγωγής υποτίτλων
+	Export Captions	Εξαγωγή υποτίτλων
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	Το {name} υπάρχει ήδη, οπότε δεν εξήχθη τίποτα. Για να το αντικαταστήσετε, επιλέξτε το στο παράθυρο αποθήκευσης.
+	Delete Redoable Actions	Διαγραφή ενεργειών προς επανάληψη
+	Delete the dimmed actions after the current state? They cannot be redone.	Διαγραφή των αχνών ενεργειών μετά την τρέχουσα κατάσταση; Δεν θα μπορούν να επαναληφθούν.
+	Work Area Bar	Γραμμή περιοχής εργασίας
+	Start: {tc}	Αρχή: {tc}
+	End: {tc}	Τέλος: {tc}
+	Duration: {tc}	Διάρκεια: {tc}
+	Show/Hide Tracks…	Εμφάνιση/απόκρυψη κομματιών…
+	Move panel	Μετακίνηση πάνελ
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Κάντε κλικ για επιλογή ή κάντε κλικ σε κενό χώρο και σύρετε για επιλογή με πλαίσιο. Χρησιμοποιήστε Shift, Alt και Ctrl για άλλες επιλογές.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Κάντε κλικ για επιλογή όλων των κλιπ δεξιά σε όλα τα κομμάτια. Shift-κλικ για ένα μόνο κομμάτι.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Κάντε κλικ για επιλογή όλων των κλιπ αριστερά σε όλα τα κομμάτια. Shift-κλικ για ένα μόνο κομμάτι.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Σύρετε ένα σημείο τομής για περικοπή με μετατόπιση· τα επόμενα κλιπ μετακινούνται ώστε να μη μένει κενό.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Σύρετε ένα σημείο τομής για κύλιση: η έξοδος του ενός κλιπ και η είσοδος του επόμενου μετακινούνται μαζί.
+	Drag an edge to change the clip's speed so it fills the new duration.	Σύρετε μια άκρη για να αλλάξει η ταχύτητα του κλιπ ώστε να γεμίσει τη νέα διάρκεια.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Σύρετε την άκρη ενός μουσικού κλιπ για remix στη νέα διάρκεια σε μουσικά ταιριαστούς χτύπους.
+	Click to split a clip. Shift-click to split all tracks.	Κάντε κλικ για διαίρεση κλιπ. Shift-κλικ για διαίρεση όλων των κομματιών.
+	Drag a clip to slip its source in/out without moving it.	Σύρετε ένα κλιπ για μετατόπιση της εισόδου/εξόδου πηγής χωρίς να το μετακινήσετε.
+	Drag a clip to slide it between its neighbours.	Σύρετε ένα κλιπ για ολίσθηση ανάμεσα στα γειτονικά του.
+	Drag to scroll the timeline.	Σύρετε για κύλιση της χρονογραμμής.
+	Click to zoom in; Alt-click to zoom out.	Κάντε κλικ για μεγέθυνση· Alt-κλικ για σμίκρυνση.
+	Exporting	Εξαγωγή
+	Grab bag	Διάφορα
+	No contributor data was built into this copy.	Δεν ενσωματώθηκαν δεδομένα συντελεστών σε αυτό το αντίγραφο.
+	No model credits were built into this copy.	Δεν ενσωματώθηκαν αναφορές μοντέλων σε αυτό το αντίγραφο.
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Γραμματοσειρές: Inter, Noto Serif και JetBrains Mono (SIL OFL 1.1).
+	Binary assets removed	Δυαδικά στοιχεία που αφαιρέθηκαν
+	CFA4 was closed while “{name}” had unsaved changes.	Το CFA4 έκλεισε ενώ το «{name}» είχε μη αποθηκευμένες αλλαγές.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	Το CFA4 τερματίστηκε απροσδόκητα ενώ το «{name}» είχε μη αποθηκευμένες αλλαγές.
+	Recover unsaved changes from {when}?	Ανάκτηση μη αποθηκευμένων αλλαγών από {when};
+	The project had not been saved yet.	Το έργο δεν είχε αποθηκευτεί ακόμη.
+	{n} sessions have unsaved changes:	{n} περίοδοι λειτουργίας έχουν μη αποθηκευμένες αλλαγές:
+	Are you sure you want to discard your changes to '{file}'?	Είστε βέβαιοι ότι θέλετε να απορρίψετε τις αλλαγές στο '{file}';
+	the project has not been saved yet	το έργο δεν έχει αποθηκευτεί ακόμη
+	Export As Motion Graphics Template	Εξαγωγή ως πρότυπο κινούμενων γραφικών
+	Editable properties:	Επεξεργάσιμες ιδιότητες:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	Αποθηκεύτηκε ως πρότυπο γραφικών CFA4 (.fcgt) στον φάκελο προτύπων σας.
+	My Templates	Τα πρότυπά μου
+	{n} Font	Γραμματοσειρά {n}
+	{n} Size	Μέγεθος {n}
+	{n} Color	Χρώμα {n}
+	{n} Position	Θέση {n}
+	Show {n}	Εμφάνιση {n}
+	Exported graphics template to {path}	Το πρότυπο γραφικών εξήχθη σε {path}
+	Replace Fonts in Projects	Αντικατάσταση γραμματοσειρών στα έργα
+	Fonts used in the project:	Γραμματοσειρές που χρησιμοποιούνται στο έργο:
+	{f} (missing)	{f} (λείπει)
+	Replace:	Αντικατάσταση:
+	with:	με:
+	Replaced {n} font uses	Αντικαταστάθηκαν {n} χρήσεις γραμματοσειράς
+	Track Color	Χρώμα κομματιού
+	Unrendered: should play back in real time	Χωρίς απόδοση: θα πρέπει να αναπαράγεται σε πραγματικό χρόνο
+	Unrendered: render to play back in real time	Χωρίς απόδοση: απαιτείται απόδοση για αναπαραγωγή σε πραγματικό χρόνο
+	Rendered preview	Αποδοσμένη προεπισκόπηση
+	Transparency Grid	Πλέγμα διαφάνειας
+	Show Duplicate Frame Markers	Εμφάνιση δεικτών διπλότυπων καρέ
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Το διάστημα εισόδου/εξόδου της ακολουθίας είναι μόνο 1 καρέ. Επιλέξτε «Ολόκληρη η ακολουθία» για να εξαγάγετε όλη την ακολουθία.
+	more tabs	περισσότερες καρτέλες
+	Set Work Area Bar In Point	Ορισμός σημείου εισόδου της γραμμής περιοχής εργασίας
+	Set Work Area Bar Out Point	Ορισμός σημείου εξόδου της γραμμής περιοχής εργασίας
+	Delete Clips	Διαγραφή κλιπ
+	Destinations	Προορισμοί
+	Analyzing the clip…	Ανάλυση του κλιπ…
+	At GOP boundaries (no re-encoding)	Στα όρια GOP (χωρίς επανακωδικοποίηση)
+	Bit-exact copy	Αντίγραφο ακριβές ως το bit
+	Choose the output file.	Επιλέξτε το αρχείο εξόδου.
+	Compatible copy	Συμβατό αντίγραφο
+	Copy:	Αντιγραφή:
+	Cut:	Αποκοπή:
+	Frame accurate (re-encode the boundaries)	Με ακρίβεια καρέ (επανακωδικοποίηση των ορίων)
+	Open a video clip in the Source monitor first.	Ανοίξτε πρώτα ένα κλιπ βίντεο στην οθόνη Πηγής.
+	Smart Cut Source	Έξυπνη αποκοπή πηγής
+	Smart Cut Source…	Έξυπνη αποκοπή πηγής…
+	Smart Cut is not available for this clip: {why}	Η έξυπνη αποκοπή δεν είναι διαθέσιμη για αυτό το κλιπ: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Η έξυπνη αποκοπή γράφτηκε και επαληθεύτηκε: {path} ({frames} καρέ)
+	The cut cannot run.	Η αποκοπή δεν μπορεί να εκτελεστεί.
+	The engine sent no analysis.	Η μηχανή δεν έστειλε ανάλυση.
+	Writing and verifying the cut…	Εγγραφή και επαλήθευση της αποκοπής…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} σε {container}: {gops} GOP, {points} καθαρά σημεία αποκοπής
+	{copied} frames copied, {reencoded} frames re-encoded	Αντιγράφηκαν {copied} καρέ, επανακωδικοποιήθηκαν {reencoded} καρέ
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} καρέ στα όρια θα επανακωδικοποιηθούν. Συνέχεια;
+	Show GOP Boundaries	Εμφάνιση ορίων GOP
+	Export mode	Λειτουργία εξαγωγής
+	Full Render	Πλήρης απόδοση
+	Planning…	Σχεδιασμός…
+	Recommended: Smart Render (asks before re-encoding)	Συνιστάται: Έξυπνη απόδοση (ρωτά πριν από την επανακωδικοποίηση)
+	Recommended: Stream Copy (nothing is re-encoded)	Συνιστάται: Αντιγραφή ροής (τίποτα δεν επανακωδικοποιείται)
+	Rendered because of: {causes}	Αποδόθηκε λόγω: {causes}
+	Smart Export	Έξυπνη εξαγωγή
+	Smart Export written and verified: {path}	Η έξυπνη εξαγωγή γράφτηκε και επαληθεύτηκε: {path}
+	Smart Render	Έξυπνη απόδοση
+	Stream Copy – Bit-exact	Αντιγραφή ροής – ακριβής ως το bit
+	Stream Copy – Compatible	Αντιγραφή ροής – συμβατή
+	Stream copy is not possible: {frames} frames need re-encoding.	Η αντιγραφή ροής δεν είναι δυνατή: {frames} καρέ χρειάζονται επανακωδικοποίηση.
+	The export cannot run.	Η εξαγωγή δεν μπορεί να εκτελεστεί.
+	Wait for the export plan.	Περιμένετε το σχέδιο εξαγωγής.
+	Writing and verifying the export…	Εγγραφή και επαλήθευση της εξαγωγής…
+	colour conversion	μετατροπή χρώματος
+	compositing	σύνθεση
+	copied	αντιγράφηκαν
+	effects	εφέ
+	frame rate	ρυθμός καρέ
+	proxies or nested sequences	proxy ή ένθετες ακολουθίες
+	re-encoded at a cut	επανακωδικοποιήθηκαν σε σημείο αποκοπής
+	rendered	αποδόθηκαν
+	sources that cannot be copied	πηγές που δεν μπορούν να αντιγραφούν
+	speed changes	αλλαγές ταχύτητας
+	titles or overlays	τίτλοι ή επικαλύψεις
+	transforms	μετασχηματισμοί
+	transitions	μεταβάσεις
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	Αντιγράφηκαν {copied} καρέ, {reencoded} επανακωδικοποιήθηκαν σε σημεία αποκοπής, {rendered} αποδόθηκαν
+	{frames} frames are re-encoded or rendered. Continue?	{frames} καρέ θα επανακωδικοποιηθούν ή θα αποδοθούν. Συνέχεια;
+	CFA4 Help…	Βοήθεια CFA4…
+	Learning	Εκμάθηση
+	Refresh Changed Media	Ανανέωση πολυμέσων που άλλαξαν
+	{name} - Edited	{name} - Επεξεργασμένο
+	Audio Gain	Απολαβή ήχου
+	Set Gain to:	Ορισμός απολαβής σε:
+	Adjust Gain by:	Προσαρμογή απολαβής κατά:
+	Normalize Max Peak to:	Κανονικοποίηση μέγιστης κορυφής σε:
+	Normalize All Peaks to:	Κανονικοποίηση όλων των κορυφών σε:
+	Peak Amplitude: {peak}	Πλάτος κορυφής: {peak}
+	Standard	Τυπικό
+	Add Tracks	Προσθήκη κομματιών
+	Placement	Τοποθέτηση
+	Track type	Τύπος κομματιού
+	Add video tracks	Προσθήκη κομματιών βίντεο
+	Add audio tracks	Προσθήκη κομματιών ήχου
+	Add audio submix tracks	Προσθήκη κομματιών υπομίξης ήχου
+	After {name}	Μετά το {name}
+	Before First Track	Πριν από το πρώτο κομμάτι
+	Delete Tracks	Διαγραφή κομματιών
+	Video Tracks	Κομμάτια βίντεο
+	Audio Tracks	Κομμάτια ήχου
+	Delete Video Tracks	Διαγραφή κομματιών βίντεο
+	Delete Audio Tracks	Διαγραφή κομματιών ήχου
+	All Empty Tracks	Όλα τα κενά κομμάτια
+	Caption Tracks	Κομμάτια υποτίτλων
+	Delete Caption Tracks	Διαγραφή κομματιών υποτίτλων
+	Report an issue	Αναφορά προβλήματος
+	Rendering:	Απόδοση:
+	UI:	Διεπαφή:
+	{fps} fps · {n} frames queued	{fps} fps · {n} καρέ στην ουρά
+	Maximize Frame	Μεγιστοποίηση πλαισίου
+	Restore Frame	Επαναφορά πλαισίου
+	Reveal Sequence in Project	Εμφάνιση ακολουθίας στο έργο
+	Video Thumbnails	Μικρογραφίες βίντεο
+	Audio Waveforms	Κυματομορφές ήχου
+	Untitled Workspace	Χώρος εργασίας χωρίς τίτλο
+	Show durations	Εμφάνιση διαρκειών
+	Project Metadata	Μεταδεδομένα έργου
+	Add Property…	Προσθήκη ιδιότητας…
+	Column order	Σειρά στηλών
+	Graphics text search arrives with M10.1–M10.2	Η αναζήτηση κειμένου σε γραφικά έρχεται με το M10.1–M10.2
+	(no clips)	(κανένα κλιπ)
+	Export Frame (Shift+E)	Εξαγωγή καρέ (Shift+E)
+	Export Frame: use Export mode (M6)	Εξαγωγή καρέ: χρησιμοποιήστε τη λειτουργία Εξαγωγής (M6)
+	Save changes to “{project_name}” before closing?	Αποθήκευση αλλαγών στο «{project_name}» πριν από το κλείσιμο;
+	A file dialog is already open	Ένας διάλογος αρχείων είναι ήδη ανοιχτός
+	Timeline: (no sequences)	Χρονογραμμή: (καμία ακολουθία)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Κάντε κλικ στην οθόνη Προγράμματος για να τοποθετήσετε σημεία μάσκας (σύρετε για καμπύλες)· κάντε κλικ στο πρώτο σημείο ή πατήστε Enter για κλείσιμο
+	Composite	Σύνθετο
+	Comparison	Σύγκριση
+	Video and Waveform	Βίντεο και κυματομορφή
+	Remove Media Cache Files	Αφαίρεση αρχείων κρυφής μνήμης πολυμέσων
+	Eyedropper: no picture to sample	Σταγονόμετρο: δεν υπάρχει εικόνα για δειγματοληψία
+	Select a clip to grade	Επιλέξτε ένα κλιπ για χρωματική διόρθωση
+	   Opacity	   Αδιαφάνεια
+	   Size	   Μέγεθος
+	   Corner Radius	   Ακτίνα γωνίας
+	   Angle	   Γωνία
+	   Distance	   Απόσταση
+	   Blur	   Θόλωση
+	   Template: {name}	   Πρότυπο: {name}
+	CFA4 Graphics Template	Πρότυπο γραφικών CFA4
+	  (none)	  (κανένα)
+	Select items to clear	Επιλέξτε στοιχεία για εκκαθάριση
+	Media missing	Λείπουν πολυμέσα
+	Unreadable	Μη αναγνώσιμο
+	✓ Enable	✓ Ενεργοποίηση
+	(RGB) Gamma	(RGB) Γάμμα
+	(RGB) Input Black Level	(RGB) Στάθμη μαύρου εισόδου
+	(RGB) Input White Level	(RGB) Στάθμη λευκού εισόδου
+	(RGB) Output Black Level	(RGB) Στάθμη μαύρου εξόδου
+	(RGB) Output White Level	(RGB) Στάθμη λευκού εξόδου
+	10 Bit Black Point	Σημείο μαύρου 10 bit
+	10 Bit White Point	Σημείο λευκού 10 bit
+	105mm Prime	Σταθερός φακός 105mm
+	29.97 fps Drop-Frame	29,97 fps drop-frame
+	29.97 fps Non Drop-Frame	29,97 fps non drop-frame
+	35mm Prime	Σταθερός φακός 35mm
+	3D Roll	Κύλιση 3D
+	3D Rotate	Περιστροφή 3D
+	3D Spin	Στροβιλισμός 3D
+	3D Spinback	Αντίστροφος στροβιλισμός 3D
+	4-Color Gradient	Διαβάθμιση 4 χρωμάτων
+	5.1 Media	Πολυμέσα 5.1
+	5.1 Mixdown Type	Τύπος μίξης 5.1
+	50-300mm Zoom	Φακός zoom 50-300mm
+	59.94 fps Drop-Frame	59,94 fps drop-frame
+	59.94 fps Non Drop-Frame	59,94 fps non drop-frame
+	ASC CDL	ASC CDL
+	Action-Safe Margin	Ασφαλές περιθώριο δράσης
+	Additional Scale	Πρόσθετη κλίμακα
+	Additive Dissolve	Προσθετική διάλυση
+	Additive Dissolve (Legacy)	Προσθετική διάλυση (Παλαιό)
+	Aggressive	Επιθετική
+	Alpha Adjust	Προσαρμογή άλφα
+	Alpha Blurriness	Θόλωση άλφα
+	Alpha Channel	Κανάλι άλφα
+	Alpha Glow	Λάμψη άλφα
+	Ambience Intensity	Ένταση περιβάλλοντος φωτισμού
+	Ambience Light Color	Χρώμα περιβάλλοντος φωτισμού
+	Amount of Noise	Ποσότητα θορύβου
+	Amount to Decolor	Ποσοστό αποχρωματισμού
+	Amount to Tint	Ποσοστό χρωματισμού
+	Amplifier	Ενισχυτής
+	Amplify	Ενίσχυση
+	Amplitude	Πλάτος
+	Analog	Αναλογικό
+	Analog Delay	Αναλογική καθυστέρηση
+	Anamorphic	Αναμορφικό
+	Anchor	Άγκυρα
+	Anti-aliasing Quality	Ποιότητα εξομάλυνσης
+	Antialiasing for Best Quality	Εξομάλυνση για βέλτιστη ποιότητα
+	Asymmetry	Ασυμμετρία
+	Audio Duration	Διάρκεια ήχου
+	Audio In Point	Σημείο εισόδου ήχου
+	Audio Out Point	Σημείο εξόδου ήχου
+	Audio Usage	Χρήση ήχου
+	Auto Align	Αυτόματη στοίχιση
+	Auto Reframe	Αυτόματο επανακαδράρισμα
+	Automatic Click Remover	Αυτόματη αφαίρεση κλικ
+	Background Corner Radius	Ακτίνα γωνίας φόντου
+	Background Opacity	Αδιαφάνεια φόντου
+	Background Size	Μέγεθος φόντου
+	Band 1	Ζώνη 1
+	Band 2	Ζώνη 2
+	Band 3	Ζώνη 3
+	Band 4	Ζώνη 4
+	Band 5	Ζώνη 5
+	Band Pass	Ζωνοδιαβατό
+	Band Slide	Ολίσθηση ζωνών
+	Band Stop	Ζωνοφρακτικό
+	Bandpass	Ζωνοδιαβατό
+	Barn Doors	Πτερύγια φωτισμού
+	Basic 3D	Βασικό 3D
+	Bass	Μπάσα
+	Behind	Πίσω
+	Bessel	Bessel
+	Bevel Alpha	Λοξότμηση άλφα
+	Binauralizer - Ambisonics	Binauralizer - Ambisonics
+	Black Input Level	Στάθμη μαύρου εισόδου
+	Black and white with crushed blacks and strong contrast	Ασπρόμαυρο με βαθιά μαύρα και έντονη αντίθεση
+	Bleach-bypass style: desaturated with hard contrast	Στυλ bleach-bypass: αποκορεσμένο με σκληρή αντίθεση
+	Blend	Ανάμειξη
+	Blend With Original	Ανάμειξη με το πρωτότυπο
+	Block Dissolve	Διάλυση σε μπλοκ
+	Block Height	Ύψος μπλοκ
+	Block Motion	Κίνηση μπλοκ
+	Block Size	Μέγεθος μπλοκ
+	Block Width	Πλάτος μπλοκ
+	Blue Blurriness	Θόλωση μπλε
+	Blue Curve	Καμπύλη μπλε
+	Blue Offset	Μετατόπιση μπλε
+	Blue Power	Ισχύς μπλε
+	Blue Slope	Κλίση μπλε
+	Blue-Blue	Μπλε-Μπλε
+	Blue-Const	Μπλε-Σταθερά
+	Blue-Green	Μπλε-Πράσινο
+	Blue-Red	Μπλε-Κόκκινο
+	Blur Amount	Ποσότητα θόλωσης
+	Blur Dimensions	Διαστάσεις θόλωσης
+	Blur Dissolve	Διάλυση με θόλωση
+	Blur Layer	Επίπεδο θόλωσης
+	Blur Length	Μήκος θόλωσης
+	Blurriness	Θόλωση
+	Bokeh Blur	Θόλωση bokeh
+	Boost	Ενίσχυση
+	Border Color	Χρώμα περιγράμματος
+	Border Width	Πάχος περιγράμματος
+	Borders	Περιγράμματα
+	Bounce	Αναπήδηση
+	Branching	Διακλάδωση
+	Brightness & Contrast	Φωτεινότητα και αντίθεση
+	British Stack	Βρετανική στοίβα
+	Brush Hardness	Σκληρότητα πινέλου
+	Brush Opacity	Αδιαφάνεια πινέλου
+	Brush Position	Θέση πινέλου
+	Brush Spacing (secs)	Διάστημα πινέλου (δευτ.)
+	Bubbles	Φυσαλίδες
+	Bulge Smoother	Εξομάλυνση διόγκωσης
+	Bump Height	Ύψος ανάγλυφου
+	Burn Alpha	Κάψιμο άλφα
+	Burn Chroma	Κάψιμο χρωματικότητας
+	Burn Color	Κάψιμο χρώματος
+	Butterworth	Butterworth
+	Camera Blur	Θόλωση κάμερας
+	Camera Shake	Κούνημα κάμερας
+	Capitalisation	Κεφαλαιοποίηση
+	Cathedral	Καθεδρικός ναός
+	Cell Pattern	Μοτίβο κελιών
+	Center Channel Pan	Πανόραμα κεντρικού καναλιού
+	Center Gradient	Κεντρική διαβάθμιση
+	Center Input	Κεντρική είσοδος
+	Center Out	Από το κέντρο προς τα έξω
+	Center Point (Latitude)	Κεντρικό σημείο (γεωγραφικό πλάτος)
+	Center Point (Longitude)	Κεντρικό σημείο (γεωγραφικό μήκος)
+	Center Split	Κεντρικός διαχωρισμός
+	Center of Sphere	Κέντρο σφαίρας
+	Cents	Σεντ
+	Change to Color	Αλλαγή σε χρώμα
+	Channel Blur	Θόλωση καναλιού
+	Channel Mix	Μίξη καναλιών
+	Chaos	Χάος
+	Chebyshev	Chebyshev
+	Checker Wipe	Σάρωση σκακιέρας
+	Checkerboard	Σκακιέρα
+	Choke	Συρρίκνωση
+	Chorus	Chorus
+	Chorus/Flanger	Chorus/Flanger
+	Chroma Leak	Διαρροή χρωματικότητας
+	Chromatic Aberration (Blue)	Χρωματική εκτροπή (μπλε)
+	Chromatic Aberration (Green)	Χρωματική εκτροπή (πράσινο)
+	Chromatic Aberration (Red)	Χρωματική εκτροπή (κόκκινο)
+	Cineon Converter	Μετατροπέας Cineon
+	Clean Combo	Καθαρός συνδυασμός
+	Clip Level	Στάθμη ψαλιδισμού
+	Clipping	Ψαλιδισμός
+	Clock Wipe	Σάρωση ρολογιού
+	Clock Wipe (Legacy)	Σάρωση ρολογιού (Παλαιό)
+	Clockwise	Δεξιόστροφα
+	Color & Alpha	Χρώμα και άλφα
+	Color 1	Χρώμα 1
+	Color 2	Χρώμα 2
+	Color 3	Χρώμα 3
+	Color 4	Χρώμα 4
+	Color Channel	Κανάλι χρώματος
+	Color Distortion	Χρωματική παραμόρφωση
+	Color Emboss	Έγχρωμο ανάγλυφο
+	Color Key	Κλειδί χρώματος
+	Color Pass	Διατήρηση χρώματος
+	Color Replace	Αντικατάσταση χρώματος
+	Color To Leave	Χρώμα προς διατήρηση
+	Color Tolerance	Ανοχή χρώματος
+	Complexity	Πολυπλοκότητα
+	Composite In Back	Σύνθεση από πίσω
+	Composite In Front	Σύνθεση από μπροστά
+	Composite Using	Σύνθεση με χρήση
+	Composite on Original	Σύνθεση πάνω στο πρωτότυπο
+	Compound Blur	Σύνθετη θόλωση
+	Compression Before Clipping	Συμπίεση πριν από τον ψαλιδισμό
+	Constant Gain	Σταθερή απολαβή
+	Constant Power	Σταθερή ισχύς
+	Conversion Type	Τύπος μετατροπής
+	Convolution Reverb	Αντήχηση συνέλιξης
+	Cool, desaturated and punchy	Ψυχρό, αποκορεσμένο και δυναμικό
+	Core Width	Πλάτος πυρήνα
+	Corner Pin	Καρφίτσωμα γωνιών
+	Count	Πλήθος
+	Counter-clockwise	Αριστερόστροφα
+	Crop Less <-> Smooth More	Λιγότερη περικοπή <-> Περισσότερη ομαλότητα
+	Cross Displacement	Διασταυρούμενη μετατόπιση
+	Cross Dissolve	Διασταυρούμενη διάλυση
+	Cross Dissolve (Legacy)	Διασταυρούμενη διάλυση (Παλαιό)
+	Cross Zoom	Διασταυρούμενο ζουμ
+	Cross Zoom (Legacy)	Διασταυρούμενο ζουμ (Παλαιό)
+	Crossovers	Διαχωριστές συχνοτήτων
+	Crystals	Κρύσταλλοι
+	Cube Spin	Περιστροφή κύβου
+	Curl Radius	Ακτίνα κύρτωσης
+	Cursor	Δρομέας
+	Custom Color	Προσαρμοσμένο χρώμα
+	Cutoff	Συχνότητα αποκοπής
+	Cyan-teal shadows and warm highlights with a little more contrast	Κυανές-πετρόλ σκιές και θερμά φωτεινά σημεία με λίγο περισσότερη αντίθεση
+	Cycle (in Revolutions)	Κύκλος (σε περιστροφές)
+	Cycle Evolution	Κυκλική εξέλιξη
+	Damping	Απόσβεση
+	Damping HF	Απόσβεση υψηλών συχνοτήτων
+	Damping LF	Απόσβεση χαμηλών συχνοτήτων
+	Day for night: darker, cooler and less saturated	Μέρα για νύχτα: πιο σκοτεινό, πιο ψυχρό και λιγότερο κορεσμένο
+	DeEsser	Αφαίρεση σφυριγμάτων
+	DeHummer	Αφαίρεση βόμβου
+	DeNoise	Αφαίρεση θορύβου
+	DeReverb	Αφαίρεση αντήχησης
+	Decay	Απόσβεση
+	Decay Time (RT60)	Χρόνος απόσβεσης (RT60)
+	Delay	Καθυστέρηση
+	Delay 1	Καθυστέρηση 1
+	Delay 2	Καθυστέρηση 2
+	Delay 3	Καθυστέρηση 3
+	Delay 4	Καθυστέρηση 4
+	Detail Amplitude	Πλάτος λεπτομέρειας
+	Detail Level	Επίπεδο λεπτομέρειας
+	Detailed Analysis	Λεπτομερής ανάλυση
+	Dip to Black	Βύθιση σε μαύρο
+	Dip to Black (Legacy)	Βύθιση σε μαύρο (Παλαιό)
+	Dip to Color	Βύθιση σε χρώμα
+	Dip to White	Βύθιση σε λευκό
+	Dip to White (Legacy)	Βύθιση σε λευκό (Παλαιό)
+	Directional	Κατευθυντικό
+	Directional Blur	Κατευθυντική θόλωση
+	Directional Blur (Legacy)	Κατευθυντική θόλωση (Παλαιό)
+	Disperse	Διασπορά
+	Displacement	Μετατόπιση
+	Dissolve Blocks	Διάλυση μπλοκ
+	Distance to Image	Απόσταση από την εικόνα
+	Distortion Complexity	Πολυπλοκότητα παραμόρφωσης
+	Distortion Rate	Ρυθμός παραμόρφωσης
+	Distortion Type	Τύπος παραμόρφωσης
+	Drive	Οδήγηση
+	Dry	Ξηρό σήμα
+	Dry Out	Έξοδος ξηρού σήματος
+	Dynamics Processing	Επεξεργασία δυναμικής
+	Early Reflections	Πρώιμες ανακλάσεις
+	Earthquake	Σεισμός
+	Ease In and Out	Ομαλή είσοδος και έξοδος
+	Easing	Ομαλοποίηση κίνησης
+	Echo	Ηχώ
+	Echo Glow	Λάμψη ηχούς
+	Echo Operator	Τελεστής ηχούς
+	Echo Time (seconds)	Χρόνος ηχούς (δευτερόλεπτα)
+	Echoes	Ηχώ (πλήθος)
+	Edge Color	Χρώμα ακμής
+	Edge Feather	Απάλυνση ακμής
+	Edge Glow	Λάμψη ακμής
+	Edge Sharpness	Ευκρίνεια ακμής
+	Edge Softness	Απαλότητα ακμής
+	Edge Thin	Λέπτυνση ακμής
+	Edge Threshold	Κατώφλι ακμής
+	Edge Type	Τύπος ακμής
+	Elliptical	Ελλειπτικό
+	Enable HSL Secondary	Ενεργοποίηση δευτερεύουσας HSL
+	End Color	Τελικό χρώμα
+	End Point	Τελικό σημείο
+	End of Ramp	Τέλος διαβάθμισης
+	Evolution	Εξέλιξη
+	Evolution Options	Επιλογές εξέλιξης
+	Exciter Amount	Ποσότητα διέγερσης
+	Exciter Mode	Λειτουργία διέγερσης
+	Exponential Fade	Εκθετικό σβήσιμο
+	FFT Filter	Φίλτρο FFT
+	Fade	Σβήσιμο
+	Fade Out	Σταδιακό σβήσιμο
+	Falloff	Εξασθένηση
+	Faster Motion	Ταχύτερη κίνηση
+	Feedback	Ανάδραση
+	Feedback 1	Ανάδραση 1
+	Feedback 2	Ανάδραση 2
+	Feedback 3	Ανάδραση 3
+	Feedback 4	Ανάδραση 4
+	Female	Γυναικεία
+	Fill Background	Γέμισμα φόντου
+	Fill Color	Χρώμα γεμίσματος
+	Fill Left with Right	Γέμισμα αριστερού με δεξί
+	Fill Point	Σημείο γεμίσματος
+	Fill Right with Left	Γέμισμα δεξιού με αριστερό
+	Fill Selector	Επιλογέας γεμίσματος
+	Film Dissolve	Διάλυση φιλμ
+	Film Dissolve (Legacy)	Διάλυση φιλμ (Παλαιό)
+	Film Roll	Κύλιση φιλμ
+	Filter Frequency	Συχνότητα φίλτρου
+	Filter Resonance	Συντονισμός φίλτρου
+	Final Delay	Τελική καθυστέρηση
+	Find Edges	Εύρεση ακμών
+	Flanger	Flanger
+	Flare	Αντανάκλαση φακού
+	Flare Brightness	Φωτεινότητα αντανάκλασης
+	Flare Center	Κέντρο αντανάκλασης
+	Flare Color	Χρώμα αντανάκλασης
+	Flicker	Τρεμόπαιγμα
+	Flickers	Τρεμοπαίγματα
+	Flip Motion	Κίνηση αναστροφής
+	Flip Over	Αναστροφή
+	Focus Blur	Θόλωση εστίασης
+	Focus Point	Σημείο εστίασης
+	Focus Shape	Σχήμα εστίασης
+	Focus Size	Μέγεθος εστίασης
+	Fold Motion	Κίνηση διπλώματος
+	Foldback	Αναδίπλωση
+	Fractal Influence	Επίδραση fractal
+	Fractal Type	Τύπος fractal
+	Frame	Καρέ
+	Frame Color	Χρώμα πλαισίου
+	Frame Layout	Διάταξη πλαισίου
+	Frame Width	Πάχος πλαισίου
+	Framing	Καδράρισμα
+	From East	Από ανατολικά
+	From North	Από βόρεια
+	From South	Από νότια
+	From West	Από δυτικά
+	Fuzz	Fuzz
+	GB	GB
+	Gamut Warning Color	Χρώμα προειδοποίησης γκάμας
+	Gap	Κενό
+	Gap Color	Χρώμα κενού
+	Gaussian Blur	Θόλωση Gauss
+	Gaussian Blur (Legacy)	Θόλωση Gauss (Παλαιό)
+	Ghosts	Φαντάσματα
+	Glint	Λάμψη
+	Glitch	Glitch
+	Glow Color	Χρώμα λάμψης
+	Glow Only	Μόνο λάμψη
+	Glow Radius	Ακτίνα λάμψης
+	Glow Saturation	Κορεσμός λάμψης
+	Glow Width	Πλάτος λάμψης
+	Gradient End	Τέλος διαβάθμισης
+	Gradient Layer	Επίπεδο διαβάθμισης
+	Gradient Placement	Τοποθέτηση διαβάθμισης
+	Gradient Scatter	Διασπορά διαβάθμισης
+	Gradient Shape	Σχήμα διαβάθμισης
+	Gradient Start	Αρχή διαβάθμισης
+	Gradient Wipe	Σάρωση διαβάθμισης
+	Gradient Wipe (Legacy)	Σάρωση διαβάθμισης (Παλαιό)
+	Grain Size	Μέγεθος κόκκου
+	Green Blurriness	Θόλωση πράσινου
+	Green Curve	Καμπύλη πράσινου
+	Green Offset	Μετατόπιση πράσινου
+	Green Power	Ισχύς πράσινου
+	Green Slope	Κλίση πράσινου
+	Green-Blue	Πράσινο-Μπλε
+	Green-Const	Πράσινο-Σταθερά
+	Green-Green	Πράσινο-Πράσινο
+	Green-Red	Πράσινο-Κόκκινο
+	Grow	Ανάπτυξη
+	Grunge	Grunge
+	GuitarSuite	GuitarSuite
+	Hard Clip	Σκληρός ψαλιδισμός
+	Hard Limiter	Σκληρός περιοριστής
+	Head Size	Μέγεθος κεφαλής
+	Hide Back Face	Απόκρυψη πίσω όψης
+	High Cutoff	Υψηλή αποκοπή
+	High Frequency Cut	Αποκοπή υψηλών συχνοτήτων
+	High Frequency Damping	Απόσβεση υψηλών συχνοτήτων
+	High Shelf	Υψηλό ράφι
+	High Shelf Gain	Απολαβή υψηλού ραφιού
+	High contrast with held highlights and deep shadows	Υψηλή αντίθεση με συγκρατημένα φωτεινά σημεία και βαθιές σκιές
+	Highlight	Φωτεινά σημεία
+	Highlight Blue Balance	Ισορροπία μπλε στα φωτεινά σημεία
+	Highlight Brightness	Φωτεινότητα φωτεινών σημείων
+	Highlight Green Balance	Ισορροπία πράσινου στα φωτεινά σημεία
+	Highlight Red Balance	Ισορροπία κόκκινου στα φωτεινά σημεία
+	Highlight Rolloff	Ομαλή μετάβαση φωτεινών σημείων
+	Highlight Threshold	Κατώφλι φωτεινών σημείων
+	Highlight Tint	Απόχρωση φωτεινών σημείων
+	Highlights Lightness	Φωτεινότητα στα φωτεινά σημεία
+	Highpass	Υψιπερατό
+	Horizontal 16:9	Οριζόντιο 16:9
+	Horizontal Alignment	Οριζόντια στοίχιση
+	Horizontal Blocks	Οριζόντια μπλοκ
+	Horizontal Decentering	Οριζόντια αποκέντρωση
+	Horizontal Displacement	Οριζόντια μετατόπιση
+	Horizontal Flip	Οριζόντια αναστροφή
+	Horizontal Margin	Οριζόντιο περιθώριο
+	Horizontal and Vertical	Οριζόντια και κατακόρυφα
+	Hue Center	Κέντρο απόχρωσης
+	Hue Tolerance	Ανοχή απόχρωσης
+	Ignore Alpha	Παράβλεψη άλφα
+	Impulse	Κρουστική απόκριση
+	Incoming	Εισερχόμενο
+	Initial Delay	Αρχική καθυστέρηση
+	Inner Radius	Εσωτερική ακτίνα
+	Input Boost	Ενίσχυση εισόδου
+	Inset	Ένθεση
+	Inside Color	Εσωτερικό χρώμα
+	Inter	Inter
+	Internal Black Point	Εσωτερικό σημείο μαύρου
+	Internal White Point	Εσωτερικό σημείο λευκού
+	Inverse Falloff	Αντίστροφη εξασθένηση
+	Invert Alpha	Αντιστροφή άλφα
+	Invert Blur	Αντιστροφή θόλωσης
+	Invert Fill	Αντιστροφή γεμίσματος
+	Invert Gradient	Αντιστροφή διαβάθμισης
+	Invert Left	Αντιστροφή αριστερού
+	Invert Right	Αντιστροφή δεξιού
+	Iris Box	Ίριδα τετράγωνη
+	Iris Cross	Ίριδα σταυρός
+	Iris Diamond	Ίριδα ρόμβος
+	Iris Radius	Ακτίνα ίριδας
+	Iris Rotation	Περιστροφή ίριδας
+	Iris Round	Ίριδα στρογγυλή
+	Iris Shape	Σχήμα ίριδας
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	Καλειδοσκόπιο
+	Key Color	Χρώμα κλειδιού
+	Layer Name	Όνομα επιπέδου
+	Leave Color	Διατήρηση χρώματος
+	Left - Left	Αριστερό - Αριστερό
+	Left - Right	Αριστερό - Δεξί
+	Lens Blur	Θόλωση φακού
+	Lens Distortion	Παραμόρφωση φακού
+	Lens Type	Τύπος φακού
+	Level 1	Επίπεδο 1
+	Level 2	Επίπεδο 2
+	Level 3	Επίπεδο 3
+	Level 4	Επίπεδο 4
+	Levels	Στάθμες
+	Lifted blacks, softer contrast, muted colour	Ανυψωμένα μαύρα, πιο ήπια αντίθεση, συγκρατημένα χρώματα
+	Light 1	Φως 1
+	Light 2	Φως 2
+	Light 3	Φως 3
+	Light 4	Φως 4
+	Light 5	Φως 5
+	Light Angle	Γωνία φωτός
+	Light Color	Χρώμα φωτός
+	Light Leak	Διαρροή φωτός
+	Light Leaks	Διαρροές φωτός
+	Light Sweep	Σάρωση φωτός
+	Lightning	Κεραυνός
+	Line Thickness	Πάχος γραμμής
+	Linear Ramp	Γραμμική διαβάθμιση
+	Linear Wipe	Γραμμική σάρωση
+	Linear Wipe (Legacy)	Γραμμική σάρωση (Παλαιό)
+	Linear to Log	Γραμμικό σε log
+	Liquid Distortion	Παραμόρφωση υγρού
+	Log to Linear	Log σε γραμμικό
+	Log to Log	Log σε log
+	Logo Cutout	Αποκοπή λογότυπου
+	Long Shadow	Μακριά σκιά
+	Look-Ahead Time	Χρόνος πρόβλεψης
+	Loudness Maximizer	Μεγιστοποίηση έντασης
+	Loudness Meter	Μετρητής έντασης
+	Louver	Περσίδες
+	Low Frequency Cut	Αποκοπή χαμηλών συχνοτήτων
+	Low Pass	Χαμηλοπερατό
+	Low Shelf	Χαμηλό ράφι
+	Low Shelf Gain	Απολαβή χαμηλού ραφιού
+	Lower Left	Κάτω αριστερά
+	Lower Right	Κάτω δεξιά
+	Lowpass	Χαμηλοπερατό
+	Luma Curve	Καμπύλη φωτεινότητας
+	Luma Fade	Σβήσιμο φωτεινότητας
+	Luma Key	Κλειδί φωτεινότητας
+	Luma Source	Πηγή φωτεινότητας
+	Luma and Chroma	Φωτεινότητα και χρωματικότητα
+	Luminance Threshold	Κατώφλι φωτεινότητας
+	MB	MB
+	Magnify	Μεγέθυνση
+	Magnify (Legacy)	Μεγέθυνση (Παλαιό)
+	Major Radius	Μεγάλη ακτίνα
+	Male	Ανδρική
+	Map Black To	Αντιστοίχιση μαύρου σε
+	Map White To	Αντιστοίχιση λευκού σε
+	Maps full-range levels into 16–235 (video range) with a luma curve	Αντιστοιχίζει στάθμες πλήρους εύρους στο 16–235 (εύρος βίντεο) με καμπύλη φωτεινότητας
+	Mask Only	Μόνο μάσκα
+	Master Amplitude	Κύριο πλάτος
+	Mastering	Mastering
+	Matte	Ματ
+	Matte Alpha	Άλφα μάσκας
+	Matte Cleanup	Καθαρισμός μάσκας
+	Matte Generation	Δημιουργία μάσκας
+	Matte Luma	Φωτεινότητα μάσκας
+	Maximum Amplitude	Μέγιστο πλάτος
+	Maximum Block Size	Μέγιστο μέγεθος μπλοκ
+	Maximum Blur	Μέγιστη θόλωση
+	Maximum Reduction	Μέγιστη μείωση
+	Maximum Scale	Μέγιστη κλίμακα
+	Media Timecode	Χρονοκώδικας πολυμέσων
+	Metadata & Timecode Burn-in	Ενσωμάτωση μεταδεδομένων και χρονοκώδικα
+	Metrics Kerning	Διάστιχο βάσει μετρικών
+	Mid	Μεσαίες
+	Mid Point	Μέσο σημείο
+	Midtone Blue Balance	Ισορροπία μπλε στους μεσαίους τόνους
+	Midtone Green Balance	Ισορροπία πράσινου στους μεσαίους τόνους
+	Midtone Red Balance	Ισορροπία κόκκινου στους μεσαίους τόνους
+	Midtones Lightness	Φωτεινότητα μεσαίων τόνων
+	Minor Radius	Μικρή ακτίνα
+	Mirror Alternate	Εναλλασσόμενος κατοπτρισμός
+	Mixed Crystals	Μικτοί κρύσταλλοι
+	Modern High Gain	Σύγχρονη υψηλή απολαβή
+	Modulation Rate	Ρυθμός διαμόρφωσης
+	Monochrome toned cyan-blue	Μονόχρωμο με κυανομπλέ τόνο
+	Monochrome toned warm brown	Μονόχρωμο με θερμό καφέ τόνο
+	More colour in the less saturated areas	Περισσότερο χρώμα στις λιγότερο κορεσμένες περιοχές
+	Morph Cut	Αποκοπή μορφοποίησης
+	Mosaic (Legacy)	Μωσαϊκό (Παλαιό)
+	Motion Blur	Θόλωση κίνησης
+	Motion Camera	Κάμερα κίνησης
+	Motion Preset	Προρύθμιση κίνησης
+	Motion Tween	Παρεμβολή κίνησης
+	Multitap Delay	Καθυστέρηση πολλαπλών λήψεων
+	Narrow	Στενό
+	Neon Color	Χρώμα νέον
+	Neon Wipe	Σάρωση νέον
+	No Motion	Χωρίς κίνηση
+	Noise (Legacy)	Θόρυβος (Παλαιό)
+	Noise Level	Στάθμη θορύβου
+	Noise Reduction/Restoration	Μείωση θορύβου/Αποκατάσταση
+	Noise Type	Τύπος θορύβου
+	Non-Additive Dissolve	Μη προσθετική διάλυση
+	Notch 1	Εγκοπή 1
+	Notch 2	Εγκοπή 2
+	Notch 3	Εγκοπή 3
+	Notch 4	Εγκοπή 4
+	Notch 5	Εγκοπή 5
+	Notch 6	Εγκοπή 6
+	Notch Filter	Φίλτρο εγκοπής
+	Notch Width	Εύρος εγκοπής
+	Number Of Echoes	Αριθμός ηχών
+	Number of Harmonics	Αριθμός αρμονικών
+	Offset (Turbulence)	Μετατόπιση (αναταραχή)
+	Offset From	Μετατόπιση από
+	Offset To	Μετατόπιση προς
+	Omni	Πανκατευθυντικό
+	On Original Image	Πάνω στην αρχική εικόνα
+	On Transparent	Σε διαφανές
+	Opens up the shadows	Ανοίγει τις σκιές
+	Order	Τάξη
+	Outgoing	Εξερχόμενο
+	Outside Color	Εξωτερικό χρώμα
+	Overflow	Υπερχείλιση
+	Overshoot	Υπέρβαση
+	Page Peel	Ξεφλούδισμα σελίδας
+	Page Turn	Γύρισμα σελίδας
+	Paint Bucket	Κουβάς βαφής
+	Paint On Black	Ζωγραφική σε μαύρο
+	Paint On Original Image	Ζωγραφική πάνω στην αρχική εικόνα
+	Paint On Transparent	Ζωγραφική σε διαφανές
+	Paint On White	Ζωγραφική σε λευκό
+	Paint Style	Στυλ ζωγραφικής
+	Paint Surface	Επιφάνεια ζωγραφικής
+	Pan (Y Axis)	Πανοραμική κίνηση (άξονας Y)
+	Panel Wipe	Σάρωση πάνελ
+	Panner - Ambisonics	Πανοραμικός ρυθμιστής - Ambisonics
+	Passband Ripple	Κυμάτωση ζώνης διέλευσης
+	Path Points	Σημεία διαδρομής
+	Peak Frequency	Συχνότητα κορυφής
+	Peak Gain	Απολαβή κορυφής
+	Pedestal	Βάθρο
+	Percent Blur	Ποσοστό θόλωσης
+	Phase Difference	Διαφορά φάσης
+	Phaser	Phaser
+	Phosphor	Φωσφόρος
+	Phosphor Color	Χρώμα φωσφόρου
+	Photocopy Color	Χρώμα φωτοαντιγράφου
+	Pillow	Μαξιλάρι
+	Pin All	Καρφίτσωμα όλων
+	Pin Horizontal	Οριζόντιο καρφίτσωμα
+	Pin Vertical	Κατακόρυφο καρφίτσωμα
+	Pinning	Καρφίτσωμα
+	Pitch Shifter	Μετατόπιση τονικού ύψους
+	Plate	Πλάκα
+	Plateau Wipe	Σάρωση οροπεδίων
+	Plateaus	Οροπέδια
+	Plates	Πλάκες
+	Point 1	Σημείο 1
+	Point 1 Color	Χρώμα σημείου 1
+	Point 1 Latitude	Γεωγραφικό πλάτος σημείου 1
+	Point 1 Longitude	Γεωγραφικό μήκος σημείου 1
+	Point 2	Σημείο 2
+	Point 2 Color	Χρώμα σημείου 2
+	Point 2 Latitude	Γεωγραφικό πλάτος σημείου 2
+	Point 2 Longitude	Γεωγραφικό μήκος σημείου 2
+	Point 3	Σημείο 3
+	Point 3 Color	Χρώμα σημείου 3
+	Point 3 Latitude	Γεωγραφικό πλάτος σημείου 3
+	Point 3 Longitude	Γεωγραφικό μήκος σημείου 3
+	Point 4	Σημείο 4
+	Point 5	Σημείο 5
+	Point 6	Σημείο 6
+	Point 7	Σημείο 7
+	Point 8	Σημείο 8
+	Pop Motion	Κίνηση αναπήδησης
+	Position Amount	Ποσότητα θέσης
+	Position, Scale, Rotation	Θέση, κλίμακα, περιστροφή
+	Posterize Time	Χρονική αφίσα
+	Pre-Delay	Προκαθυστέρηση
+	Preserve Scale	Διατήρηση κλίμακας
+	ProcAmp	ProcAmp
+	Pull Motion	Κίνηση έλξης
+	Pulls highlights and whites down	Χαμηλώνει τα φωτεινά σημεία και τα λευκά
+	Push	Ώθηση
+	Push (Legacy)	Ώθηση (Παλαιό)
+	Q	Q
+	RGB Split	Διαχωρισμός RGB
+	Radial Ramp	Ακτινική διαβάθμιση
+	Radial Wipe	Ακτινική σάρωση
+	Radial Wipe (Legacy)	Ακτινική σάρωση (Παλαιό)
+	Ramp	Διαβάθμιση
+	Ramp Shape	Σχήμα διαβάθμισης
+	Random Seed	Τυχαίος σπόρος
+	Ray	Ακτίνα φωτός
+	Ray Color	Χρώμα ακτίνων
+	Ray Length	Μήκος ακτίνων
+	Rays Only	Μόνο ακτίνες
+	Red Blurriness	Θόλωση κόκκινου
+	Red Curve	Καμπύλη κόκκινου
+	Red Offset	Μετατόπιση κόκκινου
+	Red Power	Ισχύς κόκκινου
+	Red Slope	Κλίση κόκκινου
+	Red-Blue	Κόκκινο-Μπλε
+	Red-Const	Κόκκινο-Σταθερά
+	Red-Green	Κόκκινο-Πράσινο
+	Red-Red	Κόκκινο-Κόκκινο
+	Reduce Axis	Άξονας μείωσης
+	Reduce Interlace Flicker	Μείωση τρεμοπαίγματος πλεξίματος
+	Reflection Angle	Γωνία ανάκλασης
+	Reflection Center	Κέντρο ανάκλασης
+	Refraction	Διάθλαση
+	Reframe Offset	Μετατόπιση επανακαδραρίσματος
+	Reframe Zoom	Ζουμ επανακαδραρίσματος
+	Relaxed	Χαλαρό
+	Release Time	Χρόνος αποδέσμευσης
+	Remove Fringe	Αφαίρεση χρωματικών κροσσών
+	Repeat Edge Pixels	Επανάληψη pixel ακμής
+	Replace Color	Αντικατάσταση χρώματος
+	Replicate	Αναπαραγωγή
+	Retro	Ρετρό
+	Reveal Original Image	Αποκάλυψη αρχικής εικόνας
+	Reverb Amount	Ποσότητα αντήχησης
+	Right - Left	Δεξί - Αριστερό
+	Right - Right	Δεξί - Δεξί
+	Roll (Z Axis)	Κύλιση (άξονας Z)
+	Room Size	Μέγεθος δωματίου
+	Rotation Amount	Ποσότητα περιστροφής
+	Roughen	Τράχυνση
+	Roughen Color	Χρώμα τράχυνσης
+	Roughen Edges	Τράχυνση ακμών
+	Rounded Crop	Στρογγυλεμένη περικοπή
+	Rusty	Σκουριασμένο
+	Rusty Color	Σκουριασμένο χρώμα
+	Saturation at 50 %	Κορεσμός στο 50 %
+	Scale (Degrees)	Κλίμακα (μοίρες)
+	Scale Amount	Ποσότητα κλίμακας
+	Scale From	Κλίμακα από
+	Scale Height	Κλίμακα ύψους
+	Scale Match	Αντιστοίχιση κλίμακας
+	Scale To	Κλίμακα προς
+	Scan Lines	Γραμμές σάρωσης
+	Scientific Filter	Επιστημονικό φίλτρο
+	Semi-tones	Ημιτόνια
+	Sequence Name	Όνομα ακολουθίας
+	Sequence Timecode	Χρονοκώδικας ακολουθίας
+	Setting	Ρύθμιση
+	Shadow Angle	Γωνία σκιάς
+	Shadow Blue Balance	Ισορροπία μπλε στις σκιές
+	Shadow Blur	Θόλωση σκιάς
+	Shadow Color	Χρώμα σκιάς
+	Shadow Distance	Απόσταση σκιάς
+	Shadow Green Balance	Ισορροπία πράσινου στις σκιές
+	Shadow Only	Μόνο σκιά
+	Shadow Opacity	Αδιαφάνεια σκιάς
+	Shadow Red Balance	Ισορροπία κόκκινου στις σκιές
+	Shadow Size	Μέγεθος σκιάς
+	Shadow Tint	Απόχρωση σκιών
+	Shadows Lightness	Φωτεινότητα σκιών
+	Shake	Κούνημα
+	Shape Dissolve	Διάλυση σχήματος
+	Shape Flow	Ροή σχήματος
+	Shape Size	Μέγεθος σχήματος
+	Shard Size	Μέγεθος θραυσμάτων
+	Sharp Colors	Έντονα χρώματα
+	Sharpen Amount	Ποσότητα όξυνσης
+	Shift Center To	Μετακίνηση κέντρου σε
+	Show Focus Area	Εμφάνιση περιοχής εστίασης
+	Show Only Noise	Εμφάνιση μόνο θορύβου
+	Shrink	Συρρίκνωση
+	Shutter Angle	Γωνία κλείστρου
+	Similarity	Ομοιότητα
+	Simple Notch Filter	Απλό φίλτρο εγκοπής
+	Simple Parametric EQ	Απλός παραμετρικός ισοσταθμιστής
+	Simple Text	Απλό κείμενο
+	Single-band Compressor	Συμπιεστής μίας ζώνης
+	Sinusoidal	Ημιτονοειδές
+	Skew Axis	Άξονας λοξότητας
+	Slats	Πήχεις
+	Slide (Legacy)	Ολίσθηση (Παλαιό)
+	Slope	Κλίση
+	Slow	Αργό
+	Slower Motion	Πιο αργή κίνηση
+	Smart Limit	Έξυπνο όριο
+	Smooth	Ομαλό
+	Smooth Motion	Ομαλή κίνηση
+	Soft Clamp	Ήπιος περιορισμός
+	Soft Edges (Best Quality)	Απαλές ακμές (βέλτιστη ποιότητα)
+	Soft Wipe	Απαλή σάρωση
+	Solid Colors	Συμπαγή χρώματα
+	Source Point	Σημείο πηγής
+	Source Text	Κείμενο πηγής
+	Spacer	Διάστημα
+	Speaker Angle	Γωνία ηχείων
+	Special Effects	Ειδικά εφέ
+	Spiky	Αιχμηρό
+	Spill	Διάχυση χρώματος
+	Spill Suppression	Καταστολή διάχυσης χρώματος
+	Spin	Στροβιλισμός
+	Spin Direction	Κατεύθυνση στροβιλισμού
+	Spin Motion	Κίνηση στροβιλισμού
+	Split (Legacy)	Διαχωρισμός (Παλαιό)
+	Spotlight	Προβολέας
+	Spread	Εξάπλωση
+	Spring Motion	Κίνηση ελατηρίου
+	Square (Width Only)	Τετράγωνο (μόνο πλάτος)
+	Square 1:1	Τετράγωνο 1:1
+	Stabilization	Σταθεροποίηση
+	Stabilize Only	Μόνο σταθεροποίηση
+	Stabilize, Crop	Σταθεροποίηση, περικοπή
+	Stabilize, Crop, Auto-scale	Σταθεροποίηση, περικοπή, αυτόματη κλιμάκωση
+	Stabilize, Synthesize Edges	Σταθεροποίηση, σύνθεση ακμών
+	Stages	Στάδια
+	Star Wipe	Σάρωση αστεριού
+	Start Angle	Αρχική γωνία
+	Start Color	Αρχικό χρώμα
+	Start Point	Αρχικό σημείο
+	Start of Ramp	Αρχή διαβάθμισης
+	Starting Intensity	Αρχική ένταση
+	Static Plates	Στατικές πλάκες
+	Stereo Expand	Στερεοφωνική διεύρυνση
+	Stereo Expander	Στερεοφωνικός διευρυντής
+	Stereo Phasing	Στερεοφωνική μετατόπιση φάσης
+	Stereoscopic - Over/Under	Στερεοσκοπικό - Πάνω/Κάτω
+	Stereoscopic - Side by Side	Στερεοσκοπικό - Δίπλα-δίπλα
+	Stopband Attenuation	Εξασθένηση ζώνης αποκοπής
+	Straight Color	Ευθύ χρώμα
+	Stretch Gradient to Fit	Τέντωμα διαβάθμισης για προσαρμογή
+	Stretch Map to Fit	Τέντωμα χάρτη για προσαρμογή
+	Stretch Width or Height	Τέντωμα πλάτους ή ύψους
+	Stretch Wipe	Σάρωση τεντώματος
+	Stretch to Fit Frame	Τέντωμα για προσαρμογή στο καρέ
+	Stripe	Λωρίδα
+	Stripes	Λωρίδες
+	Strobe Color	Χρώμα στροβοσκοπίου
+	Strobe Duration (secs)	Διάρκεια στροβοσκοπίου (δευτ.)
+	Strobe Light	Στροβοσκοπικό φως
+	Strobe Period (secs)	Περίοδος στροβοσκοπίου (δευτ.)
+	Stroke 2 Color	Χρώμα περιγράμματος 2
+	Stroke 2 Type	Τύπος περιγράμματος 2
+	Stroke 2 Width	Πάχος περιγράμματος 2
+	Stroke Angle	Γωνία πινελιάς
+	Stroke Density	Πυκνότητα πινελιών
+	Stroke Length (secs)	Μήκος πινελιάς (δευτ.)
+	Stroke Only	Μόνο περίγραμμα
+	Stroke Randomness	Τυχαιότητα πινελιών
+	Stroke Type	Τύπος περιγράμματος
+	Stroke Width	Πάχος περιγράμματος
+	Studio Reverb	Αντήχηση στούντιο
+	Subclip End	Τέλος υποκλίπ
+	Subclip Start	Αρχή υποκλίπ
+	Subspace Warp	Στρέβλωση υποχώρου
+	Super Narrow	Υπερβολικά στενό
+	Surface Gloss	Γυαλάδα επιφάνειας
+	Surface Material	Υλικό επιφάνειας
+	Surround Reverb	Αντήχηση surround
+	Swap Channels	Εναλλαγή καναλιών
+	Swivel	Περιστροφή γύρω από άξονα
+	TV Power	Ενεργοποίηση TV
+	Tape	Ταινία
+	Tape/Tube	Ταινία/Λυχνία
+	Target Aspect	Λόγος διαστάσεων προορισμού
+	Target Color	Χρώμα-στόχος
+	Target Field of View	Οπτικό πεδίο-στόχος
+	Text Color	Χρώμα κειμένου
+	Tile Gradient	Διαβάθμιση σε πλακίδια
+	Tilt (X Axis)	Κλίση (άξονας X)
+	To	Έως
+	Tone	Τόνος
+	Track Matte Key	Κλειδί μάσκας κομματιού
+	Transience	Παροδικότητα
+	Transition Completion	Ολοκλήρωση μετάβασης
+	Transition Softness	Απαλότητα μετάβασης
+	Trash	Κάδος απορριμμάτων
+	Travel Motion	Κίνηση μετακίνησης
+	Treble	Πρίμα
+	Tube	Λυχνία
+	Tube-modeled Compressor	Συμπιεστής με μοντελοποίηση λυχνίας
+	Tubular	Σωληνοειδές
+	Turbulent Displace	Ταραχώδης μετατόπιση
+	Turbulent Sharp	Ταραχώδες έντονο
+	Turbulent Smooth	Ταραχώδες ομαλό
+	Turbulent Smoother	Ταραχώδες πιο ομαλό
+	Tweed	Tweed
+	Twirl (Legacy)	Συστροφή (Παλαιό)
+	Twirl Center	Κέντρο συστροφής
+	Twirl Radius	Ακτίνα συστροφής
+	Twist Smoother	Εξομάλυνση συστροφής
+	Ultra Key	Ultra Key
+	Uniform Spacing	Ομοιόμορφη απόσταση
+	Upper Frequency	Ανώτερη συχνότητα
+	Upper Left	Πάνω αριστερά
+	Upper Right	Πάνω δεξιά
+	Use Color Noise	Χρήση χρωματικού θορύβου
+	Use End Color	Χρήση τελικού χρώματος
+	Use Glow Color	Χρήση χρώματος λάμψης
+	Use Tint Color	Χρήση χρώματος απόχρωσης
+	VHS Damage	Φθορά VHS
+	VR Blur	Θόλωση VR
+	VR Chroma Leaks	Διαρροές χρωματικότητας VR
+	VR Chromatic Aberrations	Χρωματικές εκτροπές VR
+	VR Color Gradients	Χρωματικές διαβαθμίσεις VR
+	VR De-Noise	Αφαίρεση θορύβου VR
+	VR Digital Glitch	Ψηφιακό glitch VR
+	VR Fractal Noise	Θόρυβος fractal VR
+	VR Glow	Λάμψη VR
+	VR Gradient Wipe	Σάρωση διαβάθμισης VR
+	VR Iris Wipe	Σάρωση ίριδας VR
+	VR Light Leaks	Διαρροές φωτός VR
+	VR Light Rays	Ακτίνες φωτός VR
+	VR Mobius Zoom	Ζουμ Möbius VR
+	VR Plane to Sphere	Επίπεδο σε σφαίρα VR
+	VR Projection	Προβολή VR
+	VR Random Blocks	Τυχαία μπλοκ VR
+	VR Rotate Sphere	Περιστροφή σφαίρας VR
+	VR Sharpen	Όξυνση VR
+	VR Spherical Blur	Σφαιρική θόλωση VR
+	Venetian Blinds	Βενετικά στόρια
+	Vertical 4:5	Κατακόρυφο 4:5
+	Vertical 9:16	Κατακόρυφο 9:16
+	Vertical Alignment	Κατακόρυφη στοίχιση
+	Vertical Blocks	Κατακόρυφα μπλοκ
+	Vertical Decentering	Κατακόρυφη αποκέντρωση
+	Vertical Displacement	Κατακόρυφη μετατόπιση
+	Vertical Flip	Κατακόρυφη αναστροφή
+	Vertical Margin	Κατακόρυφο περιθώριο
+	Very Narrow	Πολύ στενό
+	Video 1	Βίντεο 1
+	Video 2	Βίντεο 2
+	Video 3	Βίντεο 3
+	Video 4	Βίντεο 4
+	Video 5	Βίντεο 5
+	Video 6	Βίντεο 6
+	Video 7	Βίντεο 7
+	Video 8	Βίντεο 8
+	Video Duration	Διάρκεια βίντεο
+	Video In Point	Σημείο εισόδου βίντεο
+	Video Out Point	Σημείο εξόδου βίντεο
+	Video Usage	Χρήση βίντεο
+	Vocal Booth	Θάλαμος φωνής
+	Vocal Enhancer	Βελτίωση φωνής
+	Volumetric Rays	Ογκομετρικές ακτίνες
+	Warm print stock with gentle roll-off	Θερμό φιλμ εκτύπωσης με ήπια μετάβαση
+	Warm, soft late-afternoon light	Θερμό, απαλό απογευματινό φως
+	Warp Stabilizer	Σταθεροποιητής Warp
+	Wave Height	Ύψος κύματος
+	Wave Speed	Ταχύτητα κύματος
+	Wave Warp	Κυματική στρέβλωση
+	Wave Width	Πλάτος κύματος
+	Wavelength	Μήκος κύματος
+	Wet	Υγρό σήμα
+	Wet Out	Έξοδος επεξεργασμένου σήματος
+	Whip	Μαστίγωμα
+	Whip (Legacy)	Μαστίγωμα (Παλαιό)
+	White Input Level	Στάθμη λευκού εισόδου
+	Widener	Διευρυντής
+	Wiggle	Κυμάτισμα
+	Wipe Angle	Γωνία σάρωσης
+	Wonder Glow	Μαγική λάμψη
+	Wrap Back	Αναδίπλωση προς τα πίσω
+	Write-on	Σταδιακή γραφή
+	X Rotation	Περιστροφή X
+	Y Rotation	Περιστροφή Y
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	Κιτρινοπράσινα φωτεινά σημεία και μπλε ανυψωμένες σκιές από διασταυρωμένες καμπύλες καναλιών
+	Z Position	Θέση Z
+	Z Rotation	Περιστροφή Z
+	Zoom Amount	Ποσότητα ζουμ
+	Zoom Blur	Θόλωση ζουμ
+	Zoom Strength	Ένταση ζουμ
+	no GPU adapter: the CPU compositor is used	δεν υπάρχει προσαρμογέας GPU: χρησιμοποιείται ο συνθέτης CPU
+	CFA4 Project	Έργο CFA4
+	{name} (Simplified)	{name} (Απλοποιημένο)
+	Delete Search Bin	Διαγραφή κάδου αναζήτησης
+	No export preset named `{name}`	Δεν υπάρχει προρύθμιση εξαγωγής με όνομα `{name}`
+	Encoding {n}%	Κωδικοποίηση {n}%
+	Uncompressed (PCM)	Χωρίς συμπίεση (PCM)
+	Match Source ({seq_sr} Hz)	Αντιστοίχιση με την πηγή ({seq_sr} Hz)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	Ακολουθία, {w}x{h}, {fps} fps, {rate} Hz
+	Exporting {path}	Εξαγωγή {path}
+	Added to the export queue	Προστέθηκε στην ουρά εξαγωγής
+	Import: no file chosen (agents: export.presets.import {path})	Εισαγωγή: δεν επιλέχθηκε αρχείο (agents: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	Εξαγωγή: δεν επιλέχθηκε αρχείο (agents: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	Πρόβλημα γραφικών: έγινε μετάβαση σε σύνθεση λογισμικού
+	GPU acceleration is unavailable; preview renders on the CPU	Η επιτάχυνση GPU δεν είναι διαθέσιμη· η προεπισκόπηση αποδίδεται στη CPU
+	CFA4 hit an error	Το CFA4 αντιμετώπισε σφάλμα
+	Opened {url}	Άνοιξε το {url}
+	(empty)	(κενό)
+	AAC Audio 48 kHz 320 kbps	Ήχος AAC 48 kHz 320 kbps
+	Opus Audio 48 kHz 160 kbps	Ήχος Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), στερεοφωνικό 48 kHz στα 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 στα 8 Mbps, Opus 128 kbps στερεοφωνικό
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Ήχος MPEG-4 (.m4a), στερεοφωνικό 48 kHz AAC-LC στα 320 kbps
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bit
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, στερεοφωνικό PCM 48 kHz 16 bit
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 bit
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, στερεοφωνικό 48 kHz 24 bit, χωρίς απώλειες
+	FLAC (lossless)	FLAC (χωρίς απώλειες)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	Κινούμενο GIF 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	Apple ProRes 4444 με άλφα
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Apply Guide Template	Εφαρμογή προτύπου οδηγών
+	Auto Save Now	Αυτόματη αποθήκευση τώρα
+	Auto-Match Loudness	Αυτόματη αντιστοίχιση έντασης
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	OP-Atom τύπου Avid: αρχείο εικόνας DNxHR HQ και ένα αρχείο PCM 24 bit 48 kHz ανά κανάλι (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	Ακολουθία BMP
+	Begin Text Editing for a Graphic Layer	Έναρξη επεξεργασίας κειμένου σε επίπεδο γραφικού
+	Begins With	Ξεκινά με
+	Blur In	Εμφάνιση με θόλωση
+	Blur Out	Απόκρυψη με θόλωση
+	Brightens inside a feathered circular mask	Φωτίζει το εσωτερικό μιας κυκλικής μάσκας με απαλές ακμές
+	Broadcast	Μετάδοση
+	Cancel Dynamic Trim	Ακύρωση δυναμικού ψαλιδίσματος
+	Cancel Queued Export	Ακύρωση εξαγωγής στην ουρά
+	Center align text	Στοίχιση κειμένου στο κέντρο
+	Change Mask	Αλλαγή μάσκας
+	Clear All Events	Εκκαθάριση όλων των συμβάντων
+	Clear Edit Point Selection	Εκκαθάριση επιλογής σημείου επεξεργασίας
+	Clear Finished Exports	Εκκαθάριση ολοκληρωμένων εξαγωγών
+	Clear Poster Frame	Εκκαθάριση καρέ αφίσας
+	Close Bin	Κλείσιμο κάδου
+	Close Sequence	Κλείσιμο ακολουθίας
+	Contains	Περιέχει
+	Cut to Camera 1	Αποκοπή στην κάμερα 1
+	Cut to Camera 2	Αποκοπή στην κάμερα 2
+	Cut to Camera 3	Αποκοπή στην κάμερα 3
+	Cut to Camera 4	Αποκοπή στην κάμερα 4
+	Cut to Camera 5	Αποκοπή στην κάμερα 5
+	Cut to Camera 6	Αποκοπή στην κάμερα 6
+	Cut to Camera 7	Αποκοπή στην κάμερα 7
+	Cut to Camera 8	Αποκοπή στην κάμερα 8
+	Cut to Camera 9	Αποκοπή στην κάμερα 9
+	Darkens outside a feathered oval mask	Σκουραίνει το εξωτερικό μιας οβάλ μάσκας με απαλές ακμές
+	Decrease Clip Volume	Μείωση έντασης κλιπ
+	Decrease Clip Volume Many	Μεγάλη μείωση έντασης κλιπ
+	Decrease Font Size by Five Units	Μείωση μεγέθους γραμματοσειράς κατά πέντε μονάδες
+	Decrease Font Size by One Unit	Μείωση μεγέθους γραμματοσειράς κατά μία μονάδα
+	Decrease Leading by Five Units	Μείωση διάστιχου κατά πέντε μονάδες
+	Decrease Leading by One Unit	Μείωση διάστιχου κατά μία μονάδα
+	Delete Captions	Διαγραφή υποτίτλων
+	Delete Graphic Layer	Διαγραφή επιπέδου γραφικού
+	Delete Guide Template	Διαγραφή προτύπου οδηγών
+	Delete Media Cache Files	Διαγραφή αρχείων κρυφής μνήμης πολυμέσων
+	Discard Unsaved Changes	Απόρριψη μη αποθηκευμένων αλλαγών
+	Does Not Contain	Δεν περιέχει
+	Download Speech Model	Λήψη μοντέλου ομιλίας
+	Dynamic Trim Stop	Διακοπή δυναμικού ψαλιδίσματος
+	Edit Caption Text	Επεξεργασία κειμένου υποτίτλου
+	Ends With	Τελειώνει με
+	Entire Source	Ολόκληρη η πηγή
+	EssentialSound	EssentialSound
+	Extend Next Edit To Playhead	Επέκταση επόμενης επεξεργασίας ως την κεφαλή αναπαραγωγής
+	Extend Previous Edit To Playhead	Επέκταση προηγούμενης επεξεργασίας ως την κεφαλή αναπαραγωγής
+	Extend Selected Edit to Playhead	Επέκταση επιλεγμένης επεξεργασίας ως την κεφαλή αναπαραγωγής
+	Extend Selection Down	Επέκταση επιλογής προς τα κάτω
+	Extend Selection Left	Επέκταση επιλογής προς τα αριστερά
+	Extend Selection Right	Επέκταση επιλογής προς τα δεξιά
+	Extend Selection Up	Επέκταση επιλογής προς τα πάνω
+	Fade In	Σταδιακή εμφάνιση
+	Gaussian Blur from 0 to 60 over the last second	Θόλωση Gauss από 0 έως 60 στο τελευταίο δευτερόλεπτο
+	Gaussian Blur from 60 to 0 over the first second	Θόλωση Gauss από 60 έως 0 στο πρώτο δευτερόλεπτο
+	Generate Ducking Keyframes	Δημιουργία καρέ-κλειδιών εξασθένησης
+	Go to Next Edit Point	Μετάβαση στο επόμενο σημείο επεξεργασίας
+	Go to Next Edit Point on Any Track	Μετάβαση στο επόμενο σημείο επεξεργασίας σε οποιοδήποτε κομμάτι
+	Go to Previous Edit Point	Μετάβαση στο προηγούμενο σημείο επεξεργασίας
+	Go to Previous Edit Point on Any Track	Μετάβαση στο προηγούμενο σημείο επεξεργασίας σε οποιοδήποτε κομμάτι
+	Go to Selected Clip End	Μετάβαση στο τέλος του επιλεγμένου κλιπ
+	Go to Selected Clip Start	Μετάβαση στην αρχή του επιλεγμένου κλιπ
+	Go to Sequence End	Μετάβαση στο τέλος της ακολουθίας
+	Go to Sequence Start	Μετάβαση στην αρχή της ακολουθίας
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	H.264 1920×1080 για ιστότοπους κοινής χρήσης βίντεο, VBR 1 πέρασμα, 16 Mbps
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 πέρασμα, στόχος 20 Mbps, AAC 320 kbps
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 περάσματα, 18 Mbps
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	H.264 3840×2160 για ιστότοπους κοινής χρήσης βίντεο, VBR 1 πέρασμα, 45 Mbps
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 πέρασμα, στόχος 60 Mbps, AAC 320 kbps
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 περάσματα, 50 Mbps
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	H.264 9:16 κατακόρυφο για σύντομα βίντεο κοινωνικών δικτύων, κλιμάκωση για γέμισμα, 12 Mbps
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	H.264 με το μέγεθος και τον ρυθμό καρέ της ακολουθίας· 0,05 bit ανά pixel
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	H.264 με το μέγεθος και τον ρυθμό καρέ της ακολουθίας· 0,1 bit ανά pixel
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	H.264 με το μέγεθος και τον ρυθμό καρέ της ακολουθίας· ο ρυθμός bit προσαρμόζεται στο μέγεθος καρέ (0,2 bit ανά pixel)
+	High Quality 1080p HD	Υψηλή ποιότητα 1080p HD
+	High Quality 2160p 4K	Υψηλή ποιότητα 2160p 4K
+	Increase Clip Volume	Αύξηση έντασης κλιπ
+	Increase Clip Volume Many	Μεγάλη αύξηση έντασης κλιπ
+	Increase Font Size by Five Units	Αύξηση μεγέθους γραμματοσειράς κατά πέντε μονάδες
+	Increase Font Size by One Unit	Αύξηση μεγέθους γραμματοσειράς κατά μία μονάδα
+	Increase Leading by Five Units	Αύξηση διάστιχου κατά πέντε μονάδες
+	Increase Leading by One Unit	Αύξηση διάστιχου κατά μία μονάδα
+	Large blocks resolving to the picture over the first second	Μεγάλα μπλοκ που σχηματίζουν την εικόνα στο πρώτο δευτερόλεπτο
+	Left align text	Στοίχιση κειμένου αριστερά
+	Looping GIF, 640×360 at 15 fps	GIF σε βρόχο, 640×360 στα 15 fps
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bit 4:2:2), PCM 24 bit 48 kHz, αρχικός χρονοκώδικας
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High με μακρύ GOP (0,3 bit ανά pixel), PCM 24 bit 48 kHz
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bit 48 kHz, αρχικός χρονοκώδικας
+	Main	Κύριο
+	Mark In (Hover Scrub)	Σημείο εισόδου (ανίχνευση με αιώρηση)
+	Mark Out (Hover Scrub)	Σημείο εξόδου (ανίχνευση με αιώρηση)
+	Masks	Μάσκες
+	Match Source – Adaptive High Bitrate	Αντιστοίχιση με την πηγή – προσαρμοστικός υψηλός ρυθμός bit
+	Match Source – Adaptive Low Bitrate	Αντιστοίχιση με την πηγή – προσαρμοστικός χαμηλός ρυθμός bit
+	Match Source – Adaptive Medium Bitrate	Αντιστοίχιση με την πηγή – προσαρμοστικός μεσαίος ρυθμός bit
+	Matches	Ταιριάζει με
+	Maximize or Restore Active Frame	Μεγιστοποίηση ή επαναφορά ενεργού πλαισίου
+	Maximize or Restore Frame Under Cursor	Μεγιστοποίηση ή επαναφορά πλαισίου κάτω από τον δρομέα
+	Media Browser Settings	Ρυθμίσεις προγράμματος περιήγησης πολυμέσων
+	MediaBrowser	MediaBrowser
+	MediaCache	MediaCache
+	Merge Captions	Συγχώνευση υποτίτλων
+	Mixer	Μίκτης
+	Mosaic In	Εμφάνιση με μωσαϊκό
+	Move All Audio Targets Down	Μετακίνηση όλων των προορισμών ήχου κάτω
+	Move All Audio Targets Up	Μετακίνηση όλων των προορισμών ήχου πάνω
+	Move All Video Targets Down	Μετακίνηση όλων των προορισμών βίντεο κάτω
+	Move All Video Targets Up	Μετακίνηση όλων των προορισμών βίντεο πάνω
+	Move Selection Down	Μετακίνηση επιλογής κάτω
+	Move Selection End	Μετακίνηση επιλογής στο τέλος
+	Move Selection Home	Μετακίνηση επιλογής στην αρχή
+	Move Selection Left	Μετακίνηση επιλογής αριστερά
+	Move Selection Page Down	Μετακίνηση επιλογής μία σελίδα κάτω
+	Move Selection Page Up	Μετακίνηση επιλογής μία σελίδα πάνω
+	Move Selection Right	Μετακίνηση επιλογής δεξιά
+	Move Selection Up	Μετακίνηση επιλογής πάνω
+	Multicam	Πολλαπλές κάμερες
+	Navigate to End of Segment	Μετάβαση στο τέλος του τμήματος
+	Navigate to Next Line	Μετάβαση στην επόμενη γραμμή
+	Navigate to Next Word	Μετάβαση στην επόμενη λέξη
+	Navigate to Previous Line	Μετάβαση στην προηγούμενη γραμμή
+	Navigate to Previous Word	Μετάβαση στην προηγούμενη λέξη
+	Navigate to Start of Segment	Μετάβαση στην αρχή του τμήματος
+	Navigation	Πλοήγηση
+	Next Multi-Camera Page	Επόμενη σελίδα πολλαπλών καμερών
+	Nudge Clip Selection Down	Μικρομετακίνηση επιλεγμένων κλιπ κάτω
+	Nudge Clip Selection Left Five Frames	Μικρομετακίνηση επιλεγμένων κλιπ αριστερά κατά πέντε καρέ
+	Nudge Clip Selection Left One Frame	Μικρομετακίνηση επιλεγμένων κλιπ αριστερά κατά ένα καρέ
+	Nudge Clip Selection Right Five Frames	Μικρομετακίνηση επιλεγμένων κλιπ δεξιά κατά πέντε καρέ
+	Nudge Clip Selection Right One Frame	Μικρομετακίνηση επιλεγμένων κλιπ δεξιά κατά ένα καρέ
+	Nudge Clip Selection Up	Μικρομετακίνηση επιλεγμένων κλιπ πάνω
+	Nudge Selected Object down by five	Μικρομετακίνηση επιλεγμένου αντικειμένου κάτω κατά πέντε
+	Nudge Selected Object down by one	Μικρομετακίνηση επιλεγμένου αντικειμένου κάτω κατά ένα
+	Nudge Selected Object to left by five	Μικρομετακίνηση επιλεγμένου αντικειμένου αριστερά κατά πέντε
+	Nudge Selected Object to left by one	Μικρομετακίνηση επιλεγμένου αντικειμένου αριστερά κατά ένα
+	Nudge Selected Object to right by five	Μικρομετακίνηση επιλεγμένου αντικειμένου δεξιά κατά πέντε
+	Nudge Selected Object to right by one	Μικρομετακίνηση επιλεγμένου αντικειμένου δεξιά κατά ένα
+	Nudge Selected Object up by five	Μικρομετακίνηση επιλεγμένου αντικειμένου πάνω κατά πέντε
+	Nudge Selected Object up by one	Μικρομετακίνηση επιλεγμένου αντικειμένου πάνω κατά ένα
+	Nudge Volume +1dB	Μικρορύθμιση έντασης +1dB
+	Nudge Volume +3dB	Μικρορύθμιση έντασης +3dB
+	Nudge Volume -1dB	Μικρορύθμιση έντασης -1dB
+	Nudge Volume -3dB	Μικρορύθμιση έντασης -3dB
+	Numbered BMP stills (24-bit)	Αριθμημένες στατικές εικόνες BMP (24 bit)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	Ακολουθία JPEG
+	Targa Sequence	Ακολουθία Targa
+	DPX Sequence	Ακολουθία DPX
+	Numbered JPEG stills (quality 90)	Αριθμημένες στατικές εικόνες JPEG (ποιότητα 90)
+	Numbered Targa stills (24-bit, uncompressed)	Αριθμημένες στατικές εικόνες Targa (24 bit, χωρίς συμπίεση)
+	Numbered DPX stills (10-bit RGB)	Αριθμημένες στατικές εικόνες DPX (RGB 10 bit)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	Ακολουθία OpenEXR
+	Numbered OpenEXR stills (half float, linear, uncompressed)	Αριθμημένες στατικές εικόνες OpenEXR (half float, γραμμικές, χωρίς συμπίεση)
+	Numbered PNG stills at the sequence's frame size	Αριθμημένες στατικές εικόνες PNG στο μέγεθος καρέ της ακολουθίας
+	Numbered TIFF stills (RGB, 8-bit)	Αριθμημένες στατικές εικόνες TIFF (RGB, 8 bit)
+	Opacity 0 → 100 % over the first second	Αδιαφάνεια 0 → 100 % στο πρώτο δευτερόλεπτο
+	Opacity 100 → 0 % over the last second	Αδιαφάνεια 100 → 0 % στο τελευταίο δευτερόλεπτο
+	Open Bin	Άνοιγμα κάδου
+	Open Search	Άνοιγμα αναζήτησης
+	PNG	PNG
+	PNG Sequence	Ακολουθία PNG
+	Panel	Πάνελ
+	PiP 35% Upper Right	PiP 35% πάνω δεξιά
+	Picture-in-picture: 35 % scale in the upper right	Εικόνα σε εικόνα: κλίμακα 35 % πάνω δεξιά
+	Play In to Out with Preroll/Postroll	Αναπαραγωγή από είσοδο σε έξοδο με προκύλιση/μετακύλιση
+	Play from Playhead to Out Point	Αναπαραγωγή από την κεφαλή αναπαραγωγής ως το σημείο εξόδου
+	Previous Multi-Camera Page	Προηγούμενη σελίδα πολλαπλών καμερών
+	ProjectPanel	ProjectPanel
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8 bit 4:2:2), PCM 24 bit 48 kHz
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, PCM 24 bit 48 kHz
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, PCM 24 bit 48 kHz
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, PCM 24 bit 48 kHz
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), PCM 24 bit 48 kHz
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) με κανάλι άλφα, PCM 24 bit 48 kHz
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), PCM 24 bit 48 kHz
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, PCM 24 bit 48 kHz
+	Quit CFA4	Έξοδος από το CFA4
+	Right align text	Στοίχιση κειμένου δεξιά
+	Ripple Trim Next Edit to Playhead	Ψαλίδισμα με μετατόπιση της επόμενης επεξεργασίας ως την κεφαλή αναπαραγωγής
+	Ripple Trim Previous Edit to Playhead	Ψαλίδισμα με μετατόπιση της προηγούμενης επεξεργασίας ως την κεφαλή αναπαραγωγής
+	Select Camera 1	Επιλογή κάμερας 1
+	Select Camera 2	Επιλογή κάμερας 2
+	Select Camera 3	Επιλογή κάμερας 3
+	Select Camera 4	Επιλογή κάμερας 4
+	Select Camera 5	Επιλογή κάμερας 5
+	Select Camera 6	Επιλογή κάμερας 6
+	Select Camera 7	Επιλογή κάμερας 7
+	Select Camera 8	Επιλογή κάμερας 8
+	Select Camera 9	Επιλογή κάμερας 9
+	Select Clip at Playhead	Επιλογή κλιπ στην κεφαλή αναπαραγωγής
+	Select Find Box	Επιλογή πλαισίου εύρεσης
+	Select Next Clip	Επιλογή επόμενου κλιπ
+	Select Next Panel	Επιλογή επόμενου πάνελ
+	Select Previous Clip	Επιλογή προηγούμενου κλιπ
+	Select Previous Panel	Επιλογή προηγούμενου πάνελ
+	Select to Next Line	Επιλογή ως την επόμενη γραμμή
+	Select to Next Word	Επιλογή ως την επόμενη λέξη
+	Select to Previous Line	Επιλογή ως την προηγούμενη γραμμή
+	Select to Previous Word	Επιλογή ως την προηγούμενη λέξη
+	Select to Segment End	Επιλογή ως το τέλος του τμήματος
+	Select to Segment Start	Επιλογή ως την αρχή του τμήματος
+	Set Creative Look	Ορισμός δημιουργικής εμφάνισης
+	Set Input LUT	Ορισμός LUT εισόδου
+	Set Project Panel View	Ορισμός προβολής πάνελ Έργου
+	Show Next Screen	Εμφάνιση επόμενης οθόνης
+	Show Previous Screen	Εμφάνιση προηγούμενης οθόνης
+	Show Program Transcript	Εμφάνιση απομαγνητοφώνησης προγράμματος
+	Slide Clip Selection Left Five Frames	Ολίσθηση επιλεγμένων κλιπ αριστερά κατά πέντε καρέ
+	Slide Clip Selection Left One Frame	Ολίσθηση επιλεγμένων κλιπ αριστερά κατά ένα καρέ
+	Slide Clip Selection Right Five Frames	Ολίσθηση επιλεγμένων κλιπ δεξιά κατά πέντε καρέ
+	Slide Clip Selection Right One Frame	Ολίσθηση επιλεγμένων κλιπ δεξιά κατά ένα καρέ
+	Slip Clip Selection Left Five Frames	Ολίσθηση περιεχομένου επιλεγμένων κλιπ αριστερά κατά πέντε καρέ
+	Slip Clip Selection Left One Frame	Ολίσθηση περιεχομένου επιλεγμένων κλιπ αριστερά κατά ένα καρέ
+	Slip Clip Selection Right Five Frames	Ολίσθηση περιεχομένου επιλεγμένων κλιπ δεξιά κατά πέντε καρέ
+	Slip Clip Selection Right One Frame	Ολίσθηση περιεχομένου επιλεγμένων κλιπ δεξιά κατά ένα καρέ
+	Social Vertical 1080×1920	Κατακόρυφο για κοινωνικά δίκτυα 1080×1920
+	Soft Vignette	Απαλή βινιέτα
+	Source In/Out	Είσοδος/έξοδος πηγής
+	Split Caption	Διαίρεση υποτίτλου
+	Stack Clips	Στοίβαξη κλιπ
+	Start Export Queue	Έναρξη ουράς εξαγωγής
+	Start Voice-over Recording	Έναρξη εγγραφής αφήγησης
+	Step Back Five Frames	Πέντε καρέ πίσω
+	Step Back One Frame	Ένα καρέ πίσω
+	Step Forward Five Frames	Πέντε καρέ μπροστά
+	Step Forward One Frame	Ένα καρέ μπροστά
+	Stop Export Queue	Διακοπή ουράς εξαγωγής
+	Stop Multi-Camera Recording	Διακοπή εγγραφής πολλαπλών καμερών
+	Sync Voice-over Capture	Συγχρονισμός λήψης αφήγησης
+	TIFF	TIFF
+	TIFF Sequence	Ακολουθία TIFF
+	TextPanel	TextPanel
+	Thumbnail Size Next	Επόμενο μέγεθος μικρογραφίας
+	Thumbnail Size Previous	Προηγούμενο μέγεθος μικρογραφίας
+	Toggle All Audio Targets	Εναλλαγή όλων των προορισμών ήχου
+	Toggle All Source Audio	Εναλλαγή όλου του ήχου πηγής
+	Toggle All Source Video	Εναλλαγή όλου του βίντεο πηγής
+	Toggle All Video Targets	Εναλλαγή όλων των προορισμών βίντεο
+	Toggle Audio During Scrubbing	Εναλλαγή ήχου κατά την ανίχνευση
+	Toggle Full Screen	Εναλλαγή πλήρους οθόνης
+	Toggle Mute for All Targeted Audio Tracks	Εναλλαγή σίγασης για όλα τα στοχευμένα κομμάτια ήχου
+	Toggle Solo for All Targeted Audio Tracks	Εναλλαγή σόλο για όλα τα στοχευμένα κομμάτια ήχου
+	Toggle Source/Program Monitor Focus	Εναλλαγή εστίασης οθόνης Πηγής/Προγράμματος
+	Toggle Target Audio 1	Εναλλαγή προορισμού ήχου 1
+	Toggle Target Audio 2	Εναλλαγή προορισμού ήχου 2
+	Toggle Target Audio 3	Εναλλαγή προορισμού ήχου 3
+	Toggle Target Audio 4	Εναλλαγή προορισμού ήχου 4
+	Toggle Target Audio 5	Εναλλαγή προορισμού ήχου 5
+	Toggle Target Audio 6	Εναλλαγή προορισμού ήχου 6
+	Toggle Target Audio 7	Εναλλαγή προορισμού ήχου 7
+	Toggle Target Audio 8	Εναλλαγή προορισμού ήχου 8
+	Toggle Target Video 1	Εναλλαγή προορισμού βίντεο 1
+	Toggle Target Video 2	Εναλλαγή προορισμού βίντεο 2
+	Toggle Target Video 3	Εναλλαγή προορισμού βίντεο 3
+	Toggle Target Video 4	Εναλλαγή προορισμού βίντεο 4
+	Toggle Target Video 5	Εναλλαγή προορισμού βίντεο 5
+	Toggle Target Video 6	Εναλλαγή προορισμού βίντεο 6
+	Toggle Target Video 7	Εναλλαγή προορισμού βίντεο 7
+	Toggle Target Video 8	Εναλλαγή προορισμού βίντεο 8
+	Toggle Track Output for All Targeted Video Tracks	Εναλλαγή εξόδου για όλα τα στοχευμένα κομμάτια βίντεο
+	Toggle Trim Type	Εναλλαγή τύπου ψαλιδίσματος
+	Toggle View	Εναλλαγή προβολής
+	Track Selected Mask	Παρακολούθηση επιλεγμένης μάσκας
+	Trim Next Edit to Playhead	Ψαλίδισμα επόμενης επεξεργασίας ως την κεφαλή αναπαραγωγής
+	Trim Previous Edit to Playhead	Ψαλίδισμα προηγούμενης επεξεργασίας ως την κεφαλή αναπαραγωγής
+	Trimming	Ψαλίδισμα
+	Unstack Clips	Κατάργηση στοίβαξης κλιπ
+	CRF (constant quality)	CRF (σταθερή ποιότητα)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	Εγγραφή αφήγησης
+	Voiceover	Αφήγηση
+	WAV, stereo 48 kHz 16-bit PCM	WAV, στερεοφωνικό PCM 48 kHz 16 bit
+	WAV, stereo 48 kHz 24-bit PCM	WAV, στερεοφωνικό PCM 48 kHz 24 bit
+	Warm Tint	Θερμή απόχρωση
+	Warm highlights, brown shadows	Θερμά φωτεινά σημεία, καφέ σκιές
+	Waveform Audio 48 kHz 16-bit	Ήχος Waveform 48 kHz 16 bit
+	Waveform Audio 48 kHz 24-bit	Ήχος Waveform 48 kHz 24 bit
+	Web & Social	Web και κοινωνικά δίκτυα
+	Write Automation	Εγγραφή αυτοματισμού
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	Ζουμ οθόνης Προγράμματος στο 100%
+	Zoom Program Monitor to Fit	Ζουμ οθόνης Προγράμματος για προσαρμογή
+	Zoom Source Monitor to 100%	Ζουμ οθόνης Πηγής στο 100%
+	Zoom Source Monitor to Fit	Ζουμ οθόνης Πηγής για προσαρμογή
+	Cinematic	Κινηματογραφικό
+	Film Emulation	Εξομοίωση φιλμ
+	Technical	Τεχνικό
+	Teal Shadows, Warm Skin	Σκιές πετρόλ, θερμό δέρμα
+	Night Exterior	Νυχτερινό εξωτερικό
+	Golden Dusk	Χρυσό σούρουπο
+	Steel Blue	Μπλε ατσαλιού
+	Hard Sun	Σκληρός ήλιος
+	Faded Print	Ξεθωριασμένη εκτύπωση
+	Silver Retention	Διατήρηση αργύρου
+	Cross Processed	Διασταυρωμένη επεξεργασία
+	Warm Negative	Θερμό αρνητικό
+	Neutral Mono	Ουδέτερο μονόχρωμο
+	Hard Mono	Σκληρό μονόχρωμο
+	Sepia Tone	Τόνος σέπια
+	Cold Mono	Ψυχρό μονόχρωμο
+	Lift Shadows	Ανύψωση σκιών
+	Protect Highlights	Προστασία φωτεινών σημείων
+	Half Saturation	Μισός κορεσμός
+	Boost Vibrance	Ενίσχυση ζωντάνιας
+	Legal Range Squeeze	Συμπίεση σε νόμιμο εύρος
+	A boxed label with a round pointer; move the label and the pointer follows.	Ετικέτα σε πλαίσιο με στρογγυλό δείκτη· μετακινήστε την ετικέτα και ο δείκτης ακολουθεί.
+	A rounded tag that fits its text, with a status dot.	Στρογγυλεμένη ετικέτα που προσαρμόζεται στο κείμενό της, με κουκκίδα κατάστασης.
+	A title on a rounded card with a soft shadow.	Τίτλος σε στρογγυλεμένη κάρτα με απαλή σκιά.
+	Accent Color	Χρώμα έμφασης
+	Bar Color	Χρώμα μπάρας
+	Box Color	Χρώμα πλαισίου
+	Box Opacity	Αδιαφάνεια πλαισίου
+	Callout – Pointer	Επισήμανση – Δείκτης
+	Callout – Tag	Επισήμανση – Ετικέτα
+	Callouts	Επισημάνσεις
+	Credits	Τίτλοι συντελεστών
+	Dot Color	Χρώμα κουκκίδας
+	Heading	Επικεφαλίδα
+	Large centred title, accent rule and subtitle.	Μεγάλος κεντραρισμένος τίτλος, γραμμή έμφασης και υπότιτλος.
+	Lower Third – Rule	Κάτω τρίτο – Γραμμή
+	Lower Third – Slab	Κάτω τρίτο – Πλάκα
+	Lower Thirds	Κάτω τρίτα
+	Name Color	Χρώμα ονόματος
+	Name Size	Μέγεθος ονόματος
+	Name and role on a coloured slab that widens with the name.	Όνομα και ρόλος σε χρωματιστή πλάκα που φαρδαίνει με το όνομα.
+	Name over a thin rule that always matches the name's width.	Όνομα πάνω από λεπτή γραμμή που ταιριάζει πάντα με το πλάτος του ονόματος.
+	Pointer Color	Χρώμα δείκτη
+	Role	Ρόλος
+	Rule Color	Χρώμα γραμμής
+	Show Dot	Εμφάνιση κουκκίδας
+	Show Role	Εμφάνιση ρόλου
+	Slab Color	Χρώμα πλάκας
+	Tag Color	Χρώμα ετικέτας
+	Title Color	Χρώμα τίτλου
+	Title Size	Μέγεθος τίτλου
+	Title – Boxed	Τίτλος – Σε πλαίσιο
+	Title – Centered	Τίτλος – Κεντραρισμένος
+	Titles	Τίτλοι
+	End Credits	Τίτλοι τέλους
+	End Credits – Roll	Τίτλοι τέλους – Κύλιση
+	Ticker – Crawl	Ταινία ειδήσεων – Οριζόντια κύλιση
+	Centred credits that roll up from below the frame and leave at the top.	Κεντραρισμένοι τίτλοι που ανεβαίνουν από κάτω από το καρέ και φεύγουν από πάνω.
+	A news-style line that crawls in from the right and leaves at the left.	Μια γραμμή σε στυλ ειδήσεων που μπαίνει από δεξιά και φεύγει από αριστερά.
+	The language changed but could not be saved: {e}	Η γλώσσα άλλαξε αλλά δεν ήταν δυνατή η αποθήκευση: {e}
+	no Chinese font is installed on this system; the interface stays in English	δεν είναι εγκατεστημένη κινεζική γραμματοσειρά σε αυτό το σύστημα· η διεπαφή παραμένει στα αγγλικά
+	no Korean font is installed on this system; the interface stays in English	δεν είναι εγκατεστημένη κορεατική γραμματοσειρά σε αυτό το σύστημα· η διεπαφή παραμένει στα αγγλικά
+	no Georgian font is installed on this system; the interface stays in English	δεν είναι εγκατεστημένη γεωργιανή γραμματοσειρά σε αυτό το σύστημα· η διεπαφή παραμένει στα αγγλικά
+	no Japanese font is installed on this system; the interface stays in English	δεν είναι εγκατεστημένη ιαπωνική γραμματοσειρά σε αυτό το σύστημα· η διεπαφή παραμένει στα αγγλικά
+	Main (8-bit)	Main (8 bit)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 bit
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 bit με άλφα
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bit
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 bit, Film Scan 1, PCM 24 bit 48 kHz
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 bit με κανάλι άλφα, Film Scan 1, PCM 24 bit 48 kHz
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bit, Film Scan 1, PCM 24 bit 48 kHz
+	Deselect All Project Items	Αποεπιλογή όλων των στοιχείων έργου
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	Επιλογή όλων των στοιχείων έργου
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	Σύρσιμο: μετακίνηση · Alt-κλικ: ομαλό/γωνία · Ctrl-κλικ: διαγραφή
+	Drag inward to round the corners	Σύρετε προς τα μέσα για να στρογγυλέψετε τις γωνίες
+	Play Source	Αναπαραγωγή πηγής
+	Source Play/Stop	Αναπαραγωγή/Διακοπή πηγής
+	Stop Source	Διακοπή πηγής
+	Clear Transition	Εκκαθάριση μετάβασης
+	Fill Type	Τύπος γεμίσματος
+	Gradient Angle	Γωνία διαβάθμισης
+	Edit Narration	Επεξεργασία αφήγησης
+	Resize floating panel	Αλλαγή μεγέθους αιωρούμενου πάνελ
+	Get Project Notes	Λήψη σημειώσεων έργου
+	Edit Project Notes	Επεξεργασία σημειώσεων έργου
+	Use Effect Shutter Angle	Χρήση γωνίας κλείστρου του εφέ
+	Safe graphics mode: {mode}	Ασφαλής λειτουργία γραφικών: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Μια προηγούμενη εκκίνηση απέτυχε με τα προεπιλεγμένα γραφικά. Η ενημέρωση του προγράμματος οδήγησης γραφικών συνήθως το διορθώνει.
+	Use Default Graphics	Χρήση προεπιλεγμένων γραφικών
+	The default graphics are used from the next start.	Τα προεπιλεγμένα γραφικά θα χρησιμοποιούνται από την επόμενη εκκίνηση.
+	DirectX 12 only	Μόνο DirectX 12
+	software rendering	απόδοση μέσω λογισμικού
+	Opens in your web browser: {url}	Ανοίγει στο πρόγραμμα περιήγησης: {url}
+	Saves this session's log and shows it in your file manager.	Αποθηκεύει το αρχείο καταγραφής αυτής της συνεδρίας και το εμφανίζει στη διαχείριση αρχείων.
+	Shows a report on this computer.	Εμφανίζει μια αναφορά για αυτόν τον υπολογιστή.
+	Shows the version, community links and credits in a CFA4 window.	Εμφανίζει την έκδοση, συνδέσμους κοινότητας και συντελεστές σε ένα παράθυρο CFA4.
+	Couldn't open your web browser	Δεν ήταν δυνατό το άνοιγμα του προγράμματος περιήγησης
+	Open this address in your browser yourself:	Ανοίξτε μόνοι σας αυτή τη διεύθυνση στο πρόγραμμα περιήγησης:
+	Reset Interface Zoom	Επαναφορά ζουμ διεπαφής
+	Stereoscopic 3D	Στερεοσκοπικό 3D
+	Swap Eyes	Εναλλαγή ματιών
+	Over/Under	Πάνω/Κάτω
+	Side by Side	Δίπλα-δίπλα
+	Stereo to 2D	Στερεοσκοπικό σε 2D
+	Eye	Μάτι
+	Stereo Parallax	Στερεοσκοπική παράλλαξη
+	Horizontal Shift	Οριζόντια μετατόπιση
+	Slit Scan	Σάρωση σχισμής
+	Time Span (seconds)	Χρονικό διάστημα (δευτερόλεπτα)
+	Current Frame At	Τρέχον καρέ στο
+	Blend Slices	Ανάμειξη τομών
+	Creative Looks	Δημιουργικές εμφανίσεις
+	Film Grain	Κόκκος φιλμ
+	Animated	Κινούμενο
+	Color Grain	Χρωματικός κόκκος
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 στα 8 Mbps, AAC 160 kbps, κατακερματισμένα τμήματα MP4 των 6 δευτερολέπτων
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 Program Stream
+	MPEG-2 Transport Stream HD 1080	MPEG-2 Transport Stream HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 στα 29,97 fps, 16:9 αναμορφικό, 6 Mbps, GOP 18, LPCM 16 bit 48 kHz, .mpg (ροή έτοιμη για DVD· χωρίς δημιουργία VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 στα 25 fps, 16:9 αναμορφικό, 6 Mbps, GOP 15, LPCM 16 bit 48 kHz, .mpg (ροή έτοιμη για DVD· χωρίς δημιουργία VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Βίντεο MPEG-2 (Main Profile 4:2:0, 0,4 bit ανά pixel) με το μέγεθος και τον ρυθμό καρέ της ακολουθίας, LPCM 16 bit 48 kHz, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Βίντεο MPEG-2 1920×1080, μέσος όρος 18 Mbps, AAC 192 kbps, .ts
+	Six-Point Pin	Καρφίτσωμα έξι σημείων
+	Upper Center	Πάνω κέντρο
+	Lower Center	Κάτω κέντρο
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	Χρήση FFmpeg για αρχεία που δεν μπορεί να ανοίξει η μηχανή CFA4 (FFmpeg 9.0.2 ή νεότερο, έκδοση GPL-3)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	Χρήση του GStreamer του συστήματος για αρχεία που δεν μπορούν να ανοίξουν ούτε η μηχανή ούτε το FFmpeg
+	Analyze Source for Smart Cut	Ανάλυση πηγής για έξυπνη αποκοπή
+	Plan Smart Cut	Σχεδιασμός έξυπνης αποκοπής
+	Run Smart Cut	Εκτέλεση έξυπνης αποκοπής
+	No sequence open. Double-click a sequence in the Project panel.	Δεν υπάρχει ανοιχτή ακολουθία. Κάντε διπλό κλικ σε μια ακολουθία στο πάνελ Έργου.
+	English (US)	Αγγλικά (ΗΠΑ)
+	English (UK)	Αγγλικά (ΗΒ)
+	English (Australia)	Αγγλικά (Αυστραλία)
+export.summary	High	υψηλή
+export.summary	Medium	μέτρια
+export.summary	Low	χαμηλή
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Ο ήχος αντιγράφηκε: {tracks}
+	Audio track {track} is not copied: {why}	Το κανάλι ήχου {track} δεν αντιγράφεται: {why}
+	Point tracker	Παρακολούθηση σημείου
+	Correlation tracker	Παρακολούθηση συσχέτισης
+	DCP language	Γλώσσα DCP
+	None (RFC 5646 tag, e.g. en-US)	Καμία (ετικέτα RFC 5646, π.χ. el-GR)
+	ISDCF name	Όνομα ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Ονομασία του φακέλου DCP κατά το Digital Cinema Naming Convention
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/el/common.tsv at aa36bd8, 2026-11-10. MIT OR Apache-2.0; the copyright
+# notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (el). These rows were
+# written clean-room there; only rows whose English and meaning match CFA4's were taken, and a few
+# were reworded above for video editing.
+
+	Align to Selection	Στοίχιση ως προς την επιλογή
+	Arrange	Διάταξη
+	Automatic	Αυτόματο
+	Balance	Ισορροπία
+	Blend Mode	Λειτουργία ανάμειξης
+	Blue	Μπλε
+	Bottom	Κάτω
+	Bring Forward	Μεταφορά ένα βήμα εμπρός
+	Bring to Front	Μεταφορά στο προσκήνιο
+	Browse…	Περιήγηση…
+	Clear	Εκκαθάριση
+	Close	Κλείσιμο
+	Color	Χρώμα
+	Color Burn	Κάψιμο χρώματος
+	Color Dodge	Φωτισμός χρώματος
+	Copy	Αντιγραφή
+	Custom	Προσαρμοσμένο
+	Cut	Αποκοπή
+	Darken	Σκοτείνιασμα
+	Deselect All	Αποεπιλογή όλων
+	Difference	Διαφορά
+	Discard	Απόρριψη
+	Distort	Παραμόρφωση
+	Distribute	Κατανομή
+	Divide	Διαίρεση
+	Done	Ολοκληρώθηκε
+	Duplicate	Δημιουργία αντιγράφου
+	Duration	Διάρκεια
+	Edit	Επεξεργασία
+	Edit Original	Επεξεργασία πρωτοτύπου
+	Editing	Επεξεργασία
+	Effects	Εφέ
+	Ellipse	Έλλειψη
+	Exclusion	Αποκλεισμός
+	Export	Εξαγωγή
+	Extract	Εξαγωγή
+	File	Αρχείο
+	Find Next	Εύρεση επόμενου
+	Find…	Εύρεση…
+	Fit	Προσαρμογή
+	Flatten	Ισοπέδωση
+	Format	Μορφή
+	General…	Γενικά…
+	Generate	Δημιουργία
+	Graphic	Γραφικό
+	Green	Πράσινο
+	Group	Ομαδοποίηση
+	Hard Light	Έντονο φως
+	Hard Mix	Έντονη ανάμειξη
+	Help	Βοήθεια
+	History	Ιστορικό
+	Hue	Απόχρωση
+	Import…	Εισαγωγή…
+	Info	Πληροφορίες
+	Insert	Εισαγωγή
+	Label	Ετικέτα
+	Language	Γλώσσα
+	Left	Αριστερά
+	Libraries	Βιβλιοθήκες
+	Lighten	Φώτισμα
+	Lighter Color	Πιο ανοιχτό χρώμα
+	Linear	Γραμμικό
+	Linear Burn	Γραμμικό κάψιμο
+	Linear Light	Γραμμικό φως
+	Link	Σύνδεσμος
+	Luminosity	Φωτεινότητα
+	Magenta	Ματζέντα
+	Metadata	Μεταδεδομένα
+	Modify	Τροποποίηση
+	Motion	Κίνηση
+	Multiply	Πολλαπλασιασμός
+	Name	Όνομα
+	New	Νέο
+	New Layer	Νέο επίπεδο
+	No	Όχι
+	Normal	Κανονική
+	Opacity	Αδιαφάνεια
+	Output	Έξοδος
+	Overlay	Επικάλυψη
+	Paste	Επικόλληση
+	Perspective	Προοπτική
+	Pin Light	Φως σημείου
+	Polygon	Πολύγωνο
+	Position	Θέση
+	Properties	Ιδιότητες
+	Purple	Μοβ
+	Range	Εύρος
+	Ready	Έτοιμο
+	Recover	Ανάκτηση
+	Rectangle	Ορθογώνιο
+	Redo	Επανάληψη
+	Remove	Αφαίρεση
+	Rename…	Μετονομασία…
+	Revert	Επαναφορά αποθηκευμένης έκδοσης
+	Right	Δεξιά
+	Rotation	Περιστροφή
+	Saturation	Κορεσμός
+	Save	Αποθήκευση
+	Save As…	Αποθήκευση ως…
+	Save a Copy…	Αποθήκευση αντιγράφου…
+	Save as Template…	Αποθήκευση ως πρότυπο…
+	Scale	Κλιμάκωση
+	Scratch Disks…	Δίσκοι προσωρινής εργασίας…
+	Screen	Αρνητικός πολλαπλασιασμός
+	Search	Αναζήτηση
+	Select	Επιλογή
+	Select All	Επιλογή όλων
+	Send Backward	Μεταφορά ένα βήμα πίσω
+	Send to Back	Μεταφορά στο παρασκήνιο
+	Soft Light	Απαλό φως
+	Special	Ειδικό
+	Speed	Ταχύτητα
+	Status	Κατάσταση
+	Stylize	Στιλιζάρισμα
+	Subtract	Αφαίρεση
+	Text	Κείμενο
+	Timeline	Χρονογραμμή
+	Tools	Εργαλεία
+	Top	Πάνω
+	Transform	Μετασχηματισμός
+	Type	Τύπος
+	Undo	Αναίρεση
+	Ungroup	Κατάργηση ομαδοποίησης
+	Untitled	Χωρίς τίτλο
+	Video	Βίντεο
+	View	Προβολή
+	Violet	Βιολετί
+	Vivid Light	Ζωντανό φως
+	Window	Παράθυρο
+	Yellow	Κίτρινο
+	Yes	Ναι
+	Alpha	Άλφα
+	Full	Πλήρης
+	Magnification	Μεγέθυνση
+	Red	Κόκκινο
+	Reset	Επαναφορά
+	Settings	Ρυθμίσεις
+	Appearance	Εμφάνιση
+	Dark	Σκούρο
+	Light	Ανοιχτό
+	Next Appearance Mode	Επόμενη λειτουργία εμφάνισης
+	Type:	Τύπος:
+	Color Space	Χρωματικός χώρος
+	Description	Περιγραφή
+	Cancel	Ακύρωση
+	Show All	Εμφάνιση όλων
+	Off	Ανενεργό
+	Mono	Μονοφωνικό
+	Auto	Αυτόματα
+	Brightness	Φωτεινότητα
+	Histogram	Ιστόγραμμα
+	RGB	RGB
+	Adjustments	Προσαρμογές
+	Amount	Ποσότητα
+	Blacks	Μαύρα
+	Blur	Θόλωση
+	Contrast	Αντίθεση
+	Correction	Διόρθωση
+	Curves	Καμπύλες
+	Exposure	Έκθεση
+	Faded Film	Ξεθωριασμένο φιλμ
+	Feather	Απαλό περίγραμμα
+	Highlights	Φωτεινές περιοχές
+	Hue Shift	Μετατόπιση απόχρωσης
+	Intensity	Ένταση
+	Midpoint	Μεσαίο σημείο
+	Midtones	Μεσαίοι τόνοι
+	Monochrome	Μονόχρωμο
+	None	Κανένα
+	Refine	Βελτίωση
+	Roundness	Στρογγυλότητα
+	Shadows	Σκιές
+	Sharpen	Όξυνση
+	Show Mask	Εμφάνιση μάσκας
+	Soften	Απαλότητα
+	Temperature	Θερμοκρασία
+	Tint	Χρωματική απόχρωση
+	Vibrance	Ζωντάνια
+	Whites	Λευκά
+	(none)	(κανένα)
+	Favorites	Αγαπημένα
+	Import	Εισαγωγή
+	List View	Προβολή λίστας
+	Refresh	Ανανέωση
+	Size	Μέγεθος
+	Align	Στοίχιση
+	Align center	Στοίχιση στο κέντρο
+	Align left	Στοίχιση αριστερά
+	Align right	Στοίχιση δεξιά
+	Graphics	Γραφικά
+	Browse	Περιήγηση
+	Clarity	Διαύγεια
+	Dynamics	Δυναμική
+	Reduce Noise	Μείωση θορύβου
+	Sensitivity	Ευαισθησία
+	Alignment	Στοίχιση
+	All Caps	Όλα κεφαλαία
+	All Categories	Όλες οι κατηγορίες
+	Angle	Γωνία
+	Apply	Εφαρμογή
+	Background	Φόντο
+	Baseline Shift	Μετατόπιση γραμμής βάσης
+	Center	Κέντρο
+	Delete Layer	Διαγραφή επιπέδου
+	Distance	Απόσταση
+	Fill	Γέμισμα
+	Font	Γραμματοσειρά
+	Font Size	Μέγεθος γραμματοσειράς
+	Justify	Πλήρης στοίχιση
+	Kerning	Διαγραμμάτωση
+	Layers	Επίπεδα
+	Leading	Διάστιχο
+	OK	Εντάξει
+	OpenType	OpenType
+	Orientation	Προσανατολισμός
+	Path	Διαδρομή
+	Shadow	Σκιά
+	Shape	Σχήμα
+	Small Caps	Μικρά κεφαλαία
+	Stroke	Περίγραμμα
+	Style	Στυλ
+	Tracking	Απόσταση χαρακτήρων
+	Underline	Υπογράμμιση
+	Advanced	Για προχωρημένους
+	Default	Προεπιλογή
+	Download	Λήψη
+	High	Υψηλή
+	Low	Χαμηλή
+	Preview	Προεπισκόπηση
+	Open	Άνοιγμα
+	Crop	Περικοπή
+	Delete	Διαγραφή
+	Find	Εύρεση
+	Icon	Εικονίδιο
+	Large	Μεγάλο
+	List	Λίστα
+	Name:	Όνομα:
+	Rename	Μετονομασία
+	Small	Μικρό
+	Thumbnails	Μικρογραφίες
+	Zoom	Μεγέθυνση
+	Close All	Κλείσιμο όλων
+	Description:	Περιγραφή:
+	Add	Προσθήκη
+	Intersect	Τομή
+	Reverse	Αντιστροφή
+	Edit…	Επεξεργασία…
+	Ratio	Αναλογία
+	Threshold	Κατώφλι
+	Continue	Συνέχεια
+	Active	Ενεργό
+	Add to favorites	Προσθήκη στα αγαπημένα
+	Appearance Settings…	Ρυθμίσεις εμφάνισης…
+	Exported to {path}	Εξήχθη στο {path}
+	Preferences	Προτιμήσεις
+	Remove from favorites	Αφαίρεση από τα αγαπημένα
+	Sync with system	Συγχρονισμός με το σύστημα
+	Adaptive	Προσαρμοστικό
+	Color…	Χρώμα…
+	Dark Theme	Σκούρο θέμα
+	Double-click	Διπλό κλικ
+	Dutch	Ολλανδικά
+	French	Γαλλικά
+	General	Γενικά
+	German	Γερμανικά
+	Hindi	Χίντι
+	Horizontal	Οριζόντια
+	Interface Language	Γλώσσα διεπαφής
+	Italian	Ιταλικά
+	Japanese	Ιαπωνικά
+	Labels	Ετικέτες
+	Light Theme	Ανοιχτό θέμα
+	Location	Τοποθεσία
+	Portuguese	Πορτογαλικά
+	Shapes	Σχήματα
+	Show Tool Tips	Εμφάνιση συμβουλών εργαλείων
+	Smart quotes	Τυπογραφικά εισαγωγικά
+	Spanish	Ισπανικά
+	Vertical	Κατακόρυφα
+	Input:	Είσοδος:
+	● Recording	● Εγγραφή
+	Next page	Επόμενη σελίδα
+	Offset:	Μετατόπιση:
+	Previous page	Προηγούμενη σελίδα
+	Version	Έκδοση
+	Command	Εντολή
+	Export…	Εξαγωγή…
+	Keyboard Shortcuts	Συντομεύσεις πληκτρολογίου
+	Keyboard Shortcuts…	Συντομεύσεις πληκτρολογίου…
+	No matching commands	Δεν βρέθηκαν αντίστοιχες εντολές
+	Shortcut	Συντόμευση
+	Dock Panel	Αγκύρωση πάνελ
+	Close Panel	Κλείσιμο πάνελ
+	Add Guide	Προσθήκη οδηγού
+	Clear Guides	Αφαίρεση οδηγών
+	Guides	Οδηγοί
+	Lock Guides	Κλείδωμα οδηγών
+	Orientation:	Προσανατολισμός:
+	Show Guides	Εμφάνιση οδηγών
+	Show Rulers	Εμφάνιση χαράκων
+	Color Management	Διαχείριση χρωμάτων
+	Height:	Ύψος:
+	Layout:	Διάταξη:
+	Width:	Πλάτος:
+	All	Όλες
+	Any	Οποιαδήποτε
+	Color:	Χρώμα:
+	Colour	Χρώμα
+	Destination:	Προορισμός:
+	Keep:	Διατήρηση:
+	Language:	Γλώσσα:
+	Method:	Μέθοδος:
+	Save as Template	Αποθήκευση ως πρότυπο
+	Simplify	Απλοποίηση
+	Calculate	Υπολογισμός
+	Destination	Προορισμός
+	File Name	Όνομα αρχείου
+	Folder	Φάκελος
+	Missing	Λείπει
+	Options	Επιλογές
+	Embed	Ενσωμάτωση
+	Exported {path}	Εξήχθη το {path}
+	Format:	Μορφή:
+	Path:	Διαδρομή:
+	Replace	Αντικατάσταση
+	Typewriter	Γραφομηχανή
+	Compression	Συμπίεση
+	Medium	Μέτριος
+	Profile	Προφίλ
+	Quality	Ποιότητα
+	Bottom Left	Κάτω αριστερά
+	Bottom Right	Κάτω δεξιά
+	Image	Εικόνα
+	Images	Εικόνες
+	Prefix	Πρόθεμα
+	Top Left	Επάνω αριστερά
+	Top Right	Επάνω δεξιά
+	Copyright	Πνευματικά δικαιώματα
+	Title	Τίτλος
+	Scaling	Κλιμάκωση
+	Summary	Σύνοψη
+	24 bit	24 bit
+	32 bit	32 bit
+	Channels	Κανάλια
+	Progressive	Προοδευτικό
+	Sample Size	Μέγεθος δείγματος
+	Home	Αρχική
+	Recent	Πρόσφατα
+	Up	Πάνω
+	Down	Κάτω
+	Restore	Επαναφορά
+	Show:	Εμφάνιση:
+	Clear All	Εκκαθάριση όλων
+	just now	μόλις τώρα
+	{n} min ago	πριν από {n} λεπτά
+	{n} h ago	πριν από {n} ώρες
+	Warning	Προειδοποίηση
+	Error	Σφάλμα
+	Strikethrough	Διακριτή διαγραφή
+	Clear History	Εκκαθάριση ιστορικού
+	Panel menu	Μενού πάνελ
+	About	Πληροφορίες
+	Contributors	Συντελεστές
+	Models	Μοντέλα
+	Show	Εμφάνιση
+	Sort	Ταξινόμηση
+	Reverse the order	Αντιστροφή σειράς
+	Table	Πίνακας
+	Company	Εταιρεία
+	Model	Μοντέλο
+	Commits	Καταχωρίσεις
+	% of all commits	% όλων των καταχωρίσεων
+	Lines +/−	Γραμμές +/−
+	Version {version}	Έκδοση {version}
+	Username	Όνομα χρήστη
+	Display name	Εμφανιζόμενο όνομα
+	Real name	Πραγματικό όνομα
+	Name (A–Z)	Όνομα (Α–Ω)
+	Merged PRs	Συγχωνευμένα αιτήματα αλλαγών
+	Lines added	Γραμμές που προστέθηκαν
+	Lines deleted	Γραμμές που διαγράφηκαν
+	Line delta	Καθαρή μεταβολή γραμμών
+	Binary assets added	Δυαδικά στοιχεία που προστέθηκαν
+	First commit	Πρώτη καταχώριση
+	Last commit	Τελευταία καταχώριση
+	Category:	Κατηγορία:
+	Output:	Έξοδος:
+	Open Recent	Πρόσφατα αρχεία
+	Clear Recent Files	Εκκαθάριση πρόσφατων αρχείων
+	Report an Issue…	Αναφορά προβλήματος…
+	Review	Ανασκόπηση
+	Zoom In	Μεγέθυνση
+	Zoom Out	Σμίκρυνση
+	Source code on GitHub	Πηγαίος κώδικας στο GitHub
+	Community	Κοινότητα
+	Join us on Discord	Ελάτε στην κοινότητά μας στο Discord
+	New Workspace	Νέος χώρος εργασίας
+	Effect	Εφέ
+	Don't Save	Να μην αποθηκευτεί
+	1 file	1 αρχείο
+	{n} files	{n} αρχεία
+	Background Color	Χρώμα φόντου
+	Basic	Βασικό
+	Black	Μαύρο
+	Black & White	Ασπρόμαυρο
+	Black and white	Ασπρόμαυρο
+	Blending Mode	Λειτουργία ανάμειξης
+	Blocks	Τμήματα
+	Blur Angle	Γωνία θόλωσης
+	Border	Περίγραμμα
+	Brush Size	Μέγεθος πινέλου
+	Brush Strokes	Πινελιές
+	Bulge	Κυρτότητα
+	Channel	Κανάλι
+	Channel Mixer	Μείκτης καναλιών
+	Circle	Κύκλος
+	Clone	Κλωνοποίηση
+	Color Balance	Ισορροπία χρωμάτων
+	Colorize	Χρωματισμός
+	Columns	Στήλες
+	Corner	Γωνία
+	Crystallize	Κρυσταλλοποίηση
+	Curvature	Καμπυλότητα
+	Curve	Καμπύλη
+	Depth	Βάθος
+	Desaturate	Αφαίρεση κορεσμού
+	Diamond	Ρόμβος
+	Dimensions	Διαστάσεις
+	Direction	Κατεύθυνση
+	Distortion	Παραμόρφωση
+	Drop Shadow	Εξωτερική σκιά
+	Edge Thickness	Πάχος άκρων
+	Edge Width	Πλάτος ακμών
+	Emboss	Ανάγλυφο
+	Fast	Γρήγορο
+	Filter	Φίλτρο
+	Flash	Φλας
+	Focus	Εστίαση
+	Frequency	Συχνότητα
+	From	Από
+	Gamma	Γάμμα
+	Gamma Correction	Διόρθωση γάμμα
+	Gamut Warning	Προειδοποίηση χρωματικής γκάμας
+	Glass	Γυαλί
+	Glow	Λάμψη
+	Glow Brightness	Φωτεινότητα λάμψης
+	Good	Καλή
+	Grid	Πλέγμα
+	Hard	Σκληρό
+	Heart	Καρδιά
+	Height	Ύψος
+	Hexagon	Εξάγωνο
+	High Pass	Υψηλοπερατό φίλτρο
+	Inside	Εσωτερικά
+	Interpolation	Παρεμβολή
+	Invert	Αντιστροφή
+	Left to Right	Αριστερά προς δεξιά
+	Length	Μήκος
+	Lens Flare	Αντανάκλαση φακού
+	Light Intensity	Ένταση φωτισμού
+	Light Type	Τύπος φωτισμού
+	Lighting Effects	Εφέ φωτισμού
+	Luminance	Φωτεινότητα
+	Maximum	Μέγιστο
+	Median	Διάμεσος
+	Method	Μέθοδος
+	Minimum	Ελάχιστο
+	Mirror	Κατοπτρισμός
+	Mode	Λειτουργία
+	Mosaic	Μωσαϊκό
+	Move	Μετακίνηση
+	Noise	Θόρυβος
+	Octagon	Οκτάγωνο
+	Offset	Μετατόπιση
+	On	Ενεργό
+	Outside	Εξωτερικά
+	Pentagon	Πεντάγωνο
+	Photocopy	Φωτοαντίγραφο
+	Points	Σημεία
+	Posterize	Μείωση διαβαθμίσεων
+	Preserve Luminosity	Διατήρηση φωτεινότητας
+	Radial	Ακτινικό
+	Radial Blur	Ακτινωτή θόλωση
+	Radius	Ακτίνα
+	Random	Τυχαίο
+	Rays	Ακτίνες
+	Reflected	Ανακλώμενο
+	Relief	Ανάγλυφο
+	Result	Αποτέλεσμα
+	Rows	Γραμμές
+	Segments	Τμήματα
+	Skew	Λοξότητα
+	Slice	Τομή
+	Slices	Τομές
+	Smoothness	Ομαλότητα
+	Soft	Απαλό
+	Softness	Απαλότητα
+	Solarize	Ηλιακή έκθεση
+	Spherize	Σφαιροποίηση
+	Split	Διαχωρισμός
+	Square	Τετράγωνο
+	Star	Αστέρι
+	Strength	Ένταση
+	Stretch	Τέντωμα
+	Stroke Color	Χρώμα περιγράμματος
+	Stroke Length	Μήκος πινελιάς
+	Thickness	Πάχος
+	Tilt	Κλίση
+	Tint Color	Χρώμα χρωματισμού
+	Tolerance	Ανοχή
+	Transparency	Διαφάνεια
+	Triangle	Τρίγωνο
+	Turbulent	Τυρβώδες
+	Twirl	Στροβιλισμός
+	Twist	Συστροφή
+	Unsharp Mask	Μάσκα όξυνσης
+	Wave	Κύμα
+	White	Λευκό
+	White Is High	Το λευκό αντιστοιχεί σε ύψωμα
+	Width	Πλάτος
+	Stop	Διακοπή
+	Application	Εφαρμογή
+	Baseline	Γραμμή βάσης
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Τίτλοι συντελεστών από υπολογιστικό φύλλο
+	A .ods, .xlsx or CSV credits sheet	Φύλλο τίτλων συντελεστών .ods, .xlsx ή CSV
+	The spreadsheet's folder	Ο φάκελος του υπολογιστικού φύλλου
+	Built-in styles	Ενσωματωμένα στυλ
+	Spreadsheet	Υπολογιστικό φύλλο
+	Sheet	Φύλλο
+	Pictures	Εικόνες
+	Styling	Μορφοποίηση
+	Page	Σελίδα
+	Warnings	Προειδοποιήσεις
+	Moment in the page	Χρονική στιγμή στη σελίδα
+	Place at Playhead	Τοποθέτηση στην κεφαλή αναπαραγωγής
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Υπολογιστικά φύλλα (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Στυλ τίτλων συντελεστών (*.json)
+	Card	Κάρτα
+	Credits Spreadsheet	Υπολογιστικό φύλλο τίτλων συντελεστών
+	Reading…	Ανάγνωση…
+	(one table)	(ένας πίνακας)
+	Total: {time}	Σύνολο: {time}
+	Row {row}: {message}	Γραμμή {row}: {message}
+	Choose a credits spreadsheet.	Επιλέξτε ένα υπολογιστικό φύλλο τίτλων συντελεστών.
+	No preview	Χωρίς προεπισκόπηση
+	Placing…	Τοποθέτηση…
+	Placed {n} pages on the timeline.	Τοποθετήθηκαν {n} σελίδες στη χρονογραμμή.
+	Credits Page Picture	Εικόνα σελίδας τίτλων συντελεστών
+	Preview Credits	Προεπισκόπηση τίτλων συντελεστών
+	Credits Styles	Στυλ τίτλων συντελεστών
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Υπολογιστικά φύλλα και αρχεία τίτλων συντελεστών (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Αρχείο τίτλων συντελεστών CFA4 (*.cfa4credits)
+	Save as Credits File…	Αποθήκευση ως αρχείο τίτλων συντελεστών…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Υπολογιστικό φύλλο, φύλλο εργασίας, στυλ και πίνακας σε ένα αρχείο, για άνοιγμα σε οποιονδήποτε υπολογιστή
+	Saved: {path}	Αποθηκεύτηκε: {path}
+	Added	Προστέθηκε
+	Removed	Αφαιρέθηκε
+	Changed	Άλλαξε
+	(empty row)	(κενή γραμμή)
+	Refresh Credits from Spreadsheet	Ανανέωση τίτλων συντελεστών από το υπολογιστικό φύλλο
+	Change	Αλλαγή
+	Before → After	Πριν → Μετά
+	Select None	Καμία επιλογή
+	Keep my edits on the pages (where their block is unchanged)	Διατήρηση των αλλαγών μου στις σελίδες (όπου το μπλοκ τους δεν άλλαξε)
+	Locate Spreadsheet…	Εντοπισμός υπολογιστικού φύλλου…
+	Comparing…	Σύγκριση…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} αλλαγές στο {file} από την τοποθέτηση των τίτλων συντελεστών. Αποεπιλέξτε ό,τι δεν θέλετε.
+	The spreadsheet {file} has not changed since the credits were placed.	Το υπολογιστικό φύλλο {file} δεν έχει αλλάξει από την τοποθέτηση των τίτλων συντελεστών.
+	{n} layers were edited by hand on the pages.	{n} επίπεδα επεξεργάστηκαν χειροκίνητα στις σελίδες.
+	Accepting every change would replace these, because their block changed: {names}	Η αποδοχή όλων των αλλαγών θα αντικαταστήσει αυτά, επειδή το μπλοκ τους άλλαξε: {names}
+	Refreshing…	Ανανέωση…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Ανανεώθηκε: εφαρμόστηκαν {n} αλλαγές, διατηρήθηκαν {kept} χειροκίνητες επεξεργασίες.
+	Refresh Credits from Spreadsheet…	Ανανέωση τίτλων συντελεστών από το υπολογιστικό φύλλο…
+	Save Credits File…	Αποθήκευση αρχείου τίτλων συντελεστών…
+	Compare Credits with Spreadsheet	Σύγκριση τίτλων συντελεστών με το υπολογιστικό φύλλο
+	“{name}” appears twice in the same block	Το “{name}” εμφανίζεται δύο φορές στο ίδιο μπλοκ
+	“{name}” is written as “{other}” in row {otherRow}	Το “{name}” γράφεται “{other}” στη γραμμή {otherRow}
+	The font “{font}” is not installed; another font is used	Η γραμματοσειρά “{font}” δεν είναι εγκατεστημένη· χρησιμοποιείται άλλη
+	The font “{font}” has no “{chars}”; another font draws them	Η γραμματοσειρά “{font}” δεν έχει “{chars}”· τα σχεδιάζει άλλη
+	“{text}” is outside the title-safe area	Το “{text}” είναι εκτός της ασφαλούς περιοχής τίτλων
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	Το “{text}” είναι πολύ σκούρο σε μαύρο (αντίθεση {ratio}:1· χρειάζεται τουλάχιστον 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	Το “{text}” έχει ύψος {px} px· από 24 px και πάνω διαβάζεται καλά
+	The roll moves {speed} px per frame; a whole number does not shimmer	Η κύλιση κινείται {speed} px ανά καρέ· ένας ακέραιος δεν τρεμοπαίζει
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Μια γραμμή διασχίζει το κάδρο σε {seconds} s· τουλάχιστον 6 s διαβάζεται καλά
+	The card holds for only {seconds} s after its fades	Η κάρτα μένει μόνο {seconds} s μετά τα σβησίματα
+	This page starts {seconds} s before the previous one ends	Αυτή η σελίδα ξεκινά {seconds} s πριν τελειώσει η προηγούμενη
+	“{file}” is shown at {percent} % of its pixels; it will look soft	Το “{file}” εμφανίζεται στο {percent} % των pixel του· θα φαίνεται θολό
+	{more} more of the same	{more} ακόμη του ίδιου είδους
+	Page {page}: {message}	Σελίδα {page}: {message}
+	Checks and warnings	Έλεγχοι και προειδοποιήσεις
+	Checks: {errors} errors, {warnings} warnings	Έλεγχοι: {errors} σφάλματα, {warnings} προειδοποιήσεις
+	Check Credits	Έλεγχος τίτλων συντελεστών
+	The whole music ({time})	Όλη η μουσική ({time})
+	Until the sound ends ({time})	Μέχρι να τελειώσει ο ήχος ({time})
+	To the last bar line ({time})	Μέχρι την τελευταία διαστολή ({time})
+	Fit Credits to Music	Προσαρμογή τίτλων συντελεστών στη μουσική
+	Fit Credits to Music…	Προσαρμογή τίτλων συντελεστών στη μουσική…
+	Analyse Music for Credits	Ανάλυση μουσικής για τους τίτλους συντελεστών
+	Length:	Διάρκεια:
+	Cards last whole beats (cuts on the beat)	Οι κάρτες διαρκούν ολόκληρους χτύπους (κοψίματα στον χτύπο)
+	Start the credits where the music starts	Έναρξη τίτλων συντελεστών εκεί που αρχίζει η μουσική
+	Length of the credits	Διάρκεια τίτλων συντελεστών
+	Remove Fitting	Αφαίρεση προσαρμογής
+	Listening to the music…	Ακρόαση της μουσικής…
+	Length: {time}	Διάρκεια: {time}
+	the sound ends at {time}	ο ήχος τελειώνει στο {time}
+	tempo {bpm} BPM	ρυθμός {bpm} BPM
+	the credits without fitting: {time}	οι τίτλοι συντελεστών χωρίς προσαρμογή: {time}
+	Select a credits page on the timeline.	Επιλέξτε μια σελίδα τίτλων συντελεστών στη χρονογραμμή.
+	Fitting…	Προσαρμογή…
+	The credits now last {time}.	Οι τίτλοι συντελεστών διαρκούν τώρα {time}.
+	Fitting removed.	Η προσαρμογή αφαιρέθηκε.
+	Fit to This Length	Προσαρμογή σε αυτή τη διάρκεια
+	No music to measure ({problem}); type the length.	Δεν υπάρχει μουσική για μέτρηση ({problem})· πληκτρολογήστε τη διάρκεια.
+	The text moves {speed} px per frame; a whole number does not shimmer	Το κείμενο κινείται {speed} px ανά καρέ· ένας ακέραιος δεν τρεμοπαίζει
+	Crawl	Κυλιόμενο κείμενο
+	Picture: {file}	Εικόνα: {file}
+	Video: {file}	Βίντεο: {file}
+	Into the next	Προς την επόμενη
+	Safe areas and spines	Ασφαλείς περιοχές και άξονες
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Ασφαλής περιοχή δράσης (93 %), τίτλων (90 %), το κέντρο και οι άξονες της σελίδας
+	Baseline grid	Πλέγμα γραμμών βάσης
+	Lines one gap unit apart, moving with the page	Γραμμές σε απόσταση μίας μονάδας κενού, που κινούνται με τη σελίδα
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	Το “{text}” δεν ξεχωρίζει από το φόντο (αντίθεση {ratio}:1· χρειάζεται τουλάχιστον 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Πίσω από το κείμενο υπάρχει εικόνα ή βίντεο: ελέγξτε την αντίθεση με το μάτι
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Έτοιμη εμφάνιση: στυλ, φόντα, μεταβάσεις και χρονισμός. Ένα αρχείο στυλ, αν δοθεί, υπερισχύει.
+	New Spreadsheet from Template…	Νέο υπολογιστικό φύλλο από πρότυπο…
+	built in	ενσωματωμένο
+	mine	δικό μου
+	this project	αυτό το έργο
+	Template	Πρότυπο
+	Choose a template first.	Επιλέξτε πρώτα ένα πρότυπο.
+	Name of the template:	Όνομα του προτύπου:
+	Template saved: {name}	Το πρότυπο αποθηκεύτηκε: {name}
+	Apply Credits Template…	Εφαρμογή προτύπου τίτλων συντελεστών…
+	Template:	Πρότυπο:
+	Credits Templates	Πρότυπα τίτλων συντελεστών
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Υπολογιστικά φύλλα, αρχεία τίτλων συντελεστών και έργα Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Έργο Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Άνοιγμα φακέλου έργου Cinecred (Styling.toml και το υπολογιστικό φύλλο τίτλων του)

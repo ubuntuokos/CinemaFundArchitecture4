@@ -202,7 +202,7 @@ fn channel_picks_are_checked_against_the_clips_own_stream() {
     let item = ItemId(r["items"][0].as_u64().unwrap());
     s.execute("file.newSequenceFromClip", json!({"items": [item.0]})).unwrap();
     let mut clip = s.active_sequence().unwrap().audio_tracks.iter().flat_map(|t| &t.items).next().unwrap().clone();
-    let stream = |channels| cfa4_media::AudioStreamInfo { sample_rate: 48_000, channels, codec: "PCM".into(), bits_per_sample: Some(24) };
+    let stream = |channels| cfa4_media::AudioStreamInfo { sample_rate: 48_000, channels, codec: "PCM".into(), bits_per_sample: Some(24), speakers: Vec::new() };
     let streams = [stream(2), stream(6)];
     clip.audio_stream = 1;
     clip.source_channels = vec![4, 5];

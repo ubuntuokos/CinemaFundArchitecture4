@@ -77,6 +77,7 @@ pub fn wrap(src: SharedSource) -> SharedSource {
         let Some(c) = c else { continue };
         let Some(speakers) = output_order(c.detection.original) else { continue };
         a.channels = speakers.len() as u32;
+        a.speakers = speakers.iter().map(|s| s.name().to_string()).collect();
         let name = c.detection.original.auro_name().or(c.detection.original.name()).unwrap_or("?");
         a.codec = format!("{} + Auro-3D {name}", a.codec);
         a.bits_per_sample = Some(24);
@@ -262,7 +263,13 @@ mod tests {
                 kind: MediaKind::AudioOnly,
                 duration: Tick::from_units(frames as i64, 48_000),
                 video: None,
-                audio_streams: vec![AudioStreamInfo { sample_rate: 48_000, channels: planes.len() as u32, codec: codec.into(), bits_per_sample: Some(24) }],
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: 48_000,
+                    channels: planes.len() as u32,
+                    codec: codec.into(),
+                    bits_per_sample: Some(24),
+                    speakers: Vec::new(),
+                }],
                 container: "WAV".into(),
                 start_timecode: None,
                 file_size: None,
@@ -340,6 +347,8 @@ mod tests {
         let src = wrap(Arc::new(Planes::new(planes.iter().map(|p| f32_from_pcm24(p)).collect(), "PCM")));
         let a = src.info().audio().cloned().unwrap();
         assert_eq!((a.channels, a.codec.as_str()), (10, "PCM + Auro-3D 9.1"));
+        // the restored loudspeakers by name (#323)
+        assert_eq!(a.speakers, ["L", "R", "C", "LFE", "Ls", "Rs", "HL", "HR", "HLs", "HRs"]);
         // the carrier itself, for playing it undecoded (#323)
         let carrier = src.carrier().unwrap();
         assert_eq!(carrier.info().audio().map(|a| a.channels), Some(6));
