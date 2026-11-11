@@ -112,7 +112,7 @@
 	Go to caption	캡션으로 이동
 	Go to graphic	그래픽으로 이동
 	Hear this voice	이 음성 듣기
-	IAB 7.1 DS bed from the 5.1 mix	5.1 믹스에서 만든 IAB 7.1 DS 베드
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	믹스에서 만든 IAB 베드(7.1 DS, 7.1.2에서는 9.1OH)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab 또는 Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	파일의 IAB (IAB MXF, .iab 또는 Dolby Atmos TrueHD)
 	IAB source	IAB 소스
@@ -213,7 +213,7 @@
 	Text colour	텍스트 색상
 	Text to Speech: another sequence is open now; the narration was not placed	텍스트 음성 변환: 지금 다른 시퀀스가 열려 있어 내레이션을 배치하지 않았습니다
 	Text to Speech: {e}	텍스트 음성 변환: {e}
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	5.1 믹스는 7.1 DS 베드(IAB 프로필 1)가 되며, 메인 사운드의 채널 14에 FSK 동기 신호가 실립니다.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	7.1.2 믹스는 9.1OH 베드, 7.1 믹스는 7.1 DS 베드, 그 밖의 믹스는 5.1 버전에서 만든 7.1 DS 베드(IAB 프로필 1)가 되며, 메인 사운드의 채널 14에 FSK 동기 신호가 실립니다.
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	CFA4 엔진(cfa4-cli)을 찾을 수 없습니다. 다음으로 빌드하십시오: cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	CFA4 엔진이 예기치 않게 중지되어 다시 시작되었습니다. 저장되지 않은 변경 사항은 복구 저널에 보관되며, 복구할 수 있습니다.
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	CFA4 엔진이 예기치 않게 중지되었습니다. 저장되지 않은 변경 사항은 복구 저널에 보관됩니다. CFA4를 다시 시작하여 복구하십시오.
