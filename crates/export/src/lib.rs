@@ -19,6 +19,7 @@
 use std::io::Write;
 
 mod aac_out;
+pub mod atomic;
 pub mod audio_copy;
 mod audio_out;
 pub mod boundary_reencode;
@@ -28,6 +29,7 @@ mod boundary_reencode_hevc_tests;
 pub mod boundary_reencode_mpeg;
 #[cfg(test)]
 mod boundary_reencode_mpeg_tests;
+pub mod copy;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -110,8 +112,8 @@ pub enum Format {
     /// WebM (Matroska), VP9 Profile 0 (8-bit 4:2:0) video by CFA4's own encoder + Opus audio.
     #[serde(rename = "webm", alias = "WebM")]
     WebM,
-    /// HTTP Live Streaming (RFC 8216): H.264 + AAC in CMAF fragmented-MP4 segments with a media
-    /// playlist and a multivariant playlist (the output path), see [`hls_files`].
+    /// HTTP Live Streaming (RFC 8216): H.264 and AAC in separate CMAF fragmented-MP4 segments, each
+    /// with a media playlist, and a multivariant playlist (the output path), see [`hls_files`].
     #[serde(rename = "hls", alias = "Hls")]
     Hls,
     /// QuickTime, Apple ProRes 422 (HQ unless the settings pick another flavour) + PCM.
@@ -533,8 +535,9 @@ pub struct ExportSettings {
     pub caption_sidecar: Option<String>,
     pub effects: ExportEffects,
     pub metadata: ExportMetadata,
-    /// Write the sequence's Chapter markers inside the export range as chapters of MP4, MOV,
-    /// M4A and HLS output (`chpl`). On by default.
+    /// Write the sequence's Chapter markers inside the export range as chapters: `chpl` plus a
+    /// QuickTime chapter track in MP4, MOV and M4A, `chpl` in the HLS init segments, Matroska
+    /// chapters in WebM. On by default.
     pub chapters: bool,
     /// Two-pass state (set by the exporter).
     #[serde(skip)]
