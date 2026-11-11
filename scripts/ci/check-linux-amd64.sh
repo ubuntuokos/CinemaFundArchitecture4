@@ -19,13 +19,15 @@ for script in \
   scripts/dev/audit-ffmpeg-hwaccel.sh \
   scripts/dev/recheck-libplacebo.sh \
   scripts/dev/audit-native-media-e2e.sh \
+  scripts/dev/setup-dcp-inspect.sh \
   scripts/ci/read-ffmpeg-audit-sha256.sh \
   scripts/ci/test-ffmpeg-audit-sha256.sh \
   scripts/ci/test-gpu-hardware-log.sh \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/check-package-docs.sh \
   scripts/ci/install-ffmpeg-oracle-deps.sh \
-  scripts/ci/install-ffmpeg-9.0.2.sh; do
+  scripts/ci/install-ffmpeg-9.0.2.sh \
+  scripts/dev/fetch-ffmpeg-9.0.2.sh; do
   bash -n "$script"
 done
 # Strict GPU hardware log parser regression (only shell + temporary logs,

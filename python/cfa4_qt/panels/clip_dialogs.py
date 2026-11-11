@@ -58,7 +58,7 @@ DIALOGS: dict[str, tuple[str, str]] = {
 }
 INTRINSIC_VIDEO = [("motion", N_("Motion")), ("opacity", N_("Opacity")), ("timeRemapping", N_("Time Remapping"))]
 INTRINSIC_AUDIO = [("volume", N_("Volume")), ("channelVolume", N_("Channel Volume")), ("panner", N_("Panner"))]
-FORMATS = [("mono", N_("Mono")), ("stereo", N_("Stereo")), ("5.1", "5.1"), ("adaptive", N_("Adaptive"))]
+FORMATS = [("mono", N_("Mono")), ("stereo", N_("Stereo")), ("5.1", "5.1"), ("7.1", "7.1"), ("7.1.2", "7.1.2"), ("adaptive", N_("Adaptive"))]
 HOLD_ON = [
     ("in", N_("In Point")),
     ("out", N_("Out Point")),
@@ -414,8 +414,15 @@ class ClipDialog(QDialog):
             w = item.widget() if item is not None else None
             if w is not None:
                 w.deleteLater()
+        # the loudspeaker under each channel number, when the media knows its layout (#323)
+        raw = self.info.get("speakers")
+        speakers = [x if isinstance(x, str) else "" for x in raw] if isinstance(raw, list) else []
         for c in range(self._n):
-            self.grid.addWidget(QLabel(fmt("Ch. {n}", n=c + 1), self.matrix), 0, c + 1)
+            name = speakers[c] if c < len(speakers) else ""
+            label = QLabel(fmt("Ch. {n}", n=c + 1) + (f"\n{name}" if name else ""), self.matrix)
+            label.setObjectName(f"{self.pre}.ch.{c}")
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.grid.addWidget(label, 0, c + 1)
         for ci, chans in enumerate(self.params["clips"]):
             self.grid.addWidget(QLabel(fmt("Clip {n}", n=ci + 1), self.matrix), ci + 1, 0)
             for c in range(self._n):

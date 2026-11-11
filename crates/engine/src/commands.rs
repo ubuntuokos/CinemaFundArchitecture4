@@ -1343,7 +1343,7 @@ fn build() -> Vec<CommandSpec> {
             "Sequence…",
             ["File", "New"],
             Some("Cmd+N"),
-            r#"{"name":str,"width":u32=1920,"height":u32=1080,"fps":f64=23.976,"sampleRate":u32=48000,"video":n=3,"audio":n=3,"mix":"Stereo|Mono|5.1|Adaptive"?,"trackType":"Standard|Mono|5.1|Adaptive"?,"fromItem":itemId?,"fromItems":[itemId]?}"#,
+            r#"{"name":str,"width":u32=1920,"height":u32=1080,"fps":f64=23.976,"sampleRate":u32=48000,"video":n=3,"audio":n=3,"mix":"Stereo|Mono|5.1|7.1|7.1.2|Adaptive"?,"trackType":"Standard|Mono|5.1|7.1|7.1.2|Adaptive"?,"fromItem":itemId?,"fromItems":[itemId]?}"#,
             always,
             |s, p| s.edit_group("New Sequence", |s| {
                 // `fromItems` is `fromItem` for a list: the first sets the sequence, the rest follow it back to back
@@ -1374,13 +1374,13 @@ fn build() -> Vec<CommandSpec> {
                     st.sample_rate = sr;
                 }
                 if let Some(m) = str_p(p, "mix") {
-                    st.audio_master =
-                        crate::mixer::channels_from(m).ok_or_else(|| bad("file.newSequence", format!("unknown mix `{m}` (Stereo, Mono, 5.1, Adaptive)")))?;
+                    st.audio_master = crate::mixer::channels_from(m)
+                        .ok_or_else(|| bad("file.newSequence", format!("unknown mix `{m}` (Stereo, Mono, 5.1, 7.1, 7.1.2, Adaptive)")))?;
                 }
                 let track_type = match str_p(p, "trackType") {
                     Some(t) => Some(
                         crate::mixer::channels_from(t)
-                            .ok_or_else(|| bad("file.newSequence", format!("unknown track type `{t}` (Standard, Mono, 5.1, Adaptive)")))?,
+                            .ok_or_else(|| bad("file.newSequence", format!("unknown track type `{t}` (Standard, Mono, 5.1, 7.1, 7.1.2, Adaptive)")))?,
                     ),
                     None => None,
                 };
@@ -1811,7 +1811,7 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
@@ -2457,14 +2457,16 @@ fn build() -> Vec<CommandSpec> {
             "Sequence Settings…",
             ["Sequence"],
             None,
-            r#"{"width":u32?,"height":u32?,"fps":f64?,"name":str?,"sampleRate":u32?,"mix":"Stereo|Mono|5.1|Adaptive"?,"dropFrame":bool?,"maxRenderQuality":bool?,"workingSpace":"rec709"|"rec2100-pq"|"rec2100-hlg"?,"wideGamut":bool?,"autoToneMap":bool?,"scaleMotion":bool=false}"#,
+            r#"{"width":u32?,"height":u32?,"fps":f64?,"name":str?,"sampleRate":u32?,"mix":"Stereo|Mono|5.1|7.1|7.1.2|Adaptive"?,"dropFrame":bool?,"maxRenderQuality":bool?,"workingSpace":"rec709"|"rec2100-pq"|"rec2100-hlg"?,"wideGamut":bool?,"autoToneMap":bool?,"scaleMotion":bool=false}"#,
             has_seq,
             |s, p| {
                 const CMD: &str = "sequence.settings";
                 let id = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
                 let fps = fps_p(p, CMD)?;
                 let mix = match str_p(p, "mix") {
-                    Some(m) => Some(crate::mixer::channels_from(m).ok_or_else(|| bad(CMD, format!("unknown mix `{m}` (Stereo, Mono, 5.1, Adaptive)")))?),
+                    Some(m) => {
+                        Some(crate::mixer::channels_from(m).ok_or_else(|| bad(CMD, format!("unknown mix `{m}` (Stereo, Mono, 5.1, 7.1, 7.1.2, Adaptive)")))?)
+                    }
                     None => None,
                 };
                 let working = match str_p(p, "workingSpace") {
@@ -3834,6 +3836,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::fx_editor::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
+    v.extend(crate::smart_cut::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
@@ -4530,6 +4533,7 @@ fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
                         "mode": m.mode.label(),
                         "inverted": m.inverted,
                         "trackMethod": m.track_method.label(),
+                        "tracker": m.tracker.label(),
                         "shape": shape,
                         "selected": s.state.selected_mask == Some(target),
                         "trackJob": job,

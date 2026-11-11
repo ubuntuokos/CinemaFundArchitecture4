@@ -38,12 +38,15 @@ cfa4-ogg = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-vp9 = { workspace = true }
 cfa4-h264enc = { workspace = true }
+cfa4-h264 = { workspace = true }
+cfa4-bitstream = { workspace = true }
 cfa4-hevc = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-smart-edit = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+tempfile = "3.27"
 rayon = { workspace = true }
 web-time = "1"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "tiff", "bmp"] }

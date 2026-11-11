@@ -430,7 +430,10 @@ impl Mp4Source {
             CodecConfig::Pcm(p) => (decode_pcm(&data, p), false),
             c => {
                 if st.decoder.is_none() {
-                    st.decoder = Some(PacketDecoder::for_isobmff(c, ainfo.sample_rate)?);
+                    st.decoder = Some(match qt_adpcm(c) {
+                        Some(codec) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
+                        None => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
+                    });
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
                 // a packet, more for DTS, or `OPUS_PRE_ROLL` worth for Opus).
@@ -625,10 +628,21 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         c => codec_label(c),
     };
     let (rate, ch) = cfa4_media::bounded_audio_dimensions(rate, ch).ok()?;
-    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits })
+    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits, speakers: Vec::new() })
+}
+
+/// QuickTime G.711 (`ulaw`, `alaw`) and IMA ADPCM (`ima4`) sample descriptions.
+fn qt_adpcm(c: &CodecConfig) -> Option<cfa4_adpcm::Codec> {
+    match c {
+        CodecConfig::Unknown { fourcc, .. } => cfa4_adpcm::Codec::from_fourcc(&fourcc.0),
+        _ => None,
+    }
 }
 
 fn codec_label(c: &CodecConfig) -> String {
+    if let Some(a) = qt_adpcm(c) {
+        return a.name().into();
+    }
     match c {
         CodecConfig::Avc(a) => format!(
             "H.264 ({})",
