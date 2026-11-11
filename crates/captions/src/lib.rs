@@ -7,7 +7,8 @@
 //!   [`Document`] of [`Cue`]s and write back. Readers are forgiving (BOM, UTF-16, Windows-1252 fallback, CRLF/CR,
 //!   missing SRT indexes, `,` or `.` milliseconds, missing hours, no blank line between cues);
 //!   writers are strict. WebVTT cue identifiers, cue settings, `<v Speaker>` voices and
-//!   STYLE/REGION/NOTE blocks are kept.
+//!   STYLE/REGION/NOTE blocks are kept. [D-Cinema subtitles](dcst) (SMPTE ST 428-7, DCP) are read
+//!   only.
 //! - **Time:** cue times are exact [`Tick`]s. SRT/VTT milliseconds and SCC 29.97 fps timecodes
 //!   (drop-frame or not) convert exactly; [`Document::snap_to_frames`] snaps to a sequence's frames.
 //! - **Model:** [`track_from_document`] / [`document_from_track`] convert to and from the project's
@@ -19,6 +20,7 @@
 
 pub mod burn;
 pub mod cea608;
+pub mod dcst;
 pub mod mcc;
 pub mod scc;
 pub mod srt;

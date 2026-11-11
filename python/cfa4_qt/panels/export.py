@@ -471,12 +471,7 @@ class ExportDialog(QDialog):
         self.chroma.setObjectName("export.mpeg2Chroma")
         self.chroma.addItem(tr("4:2:0 (Main Profile)"), "420")
         self.chroma.addItem(tr("4:2:2 (4:2:2 Profile)"), "422")
-        self.field_order = QComboBox(self)
-        self.field_order.setObjectName("export.fieldOrder")
-        self.field_order.addItem(tr("Progressive"), "progressive")
-        self.field_order.addItem(tr("Interlaced, upper field first"), "upperFirst")
-        self.field_order.addItem(tr("Interlaced, lower field first"), "lowerFirst")
-        for w in (self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
+        for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(False)
         # per-format settings: shown for the chosen format, sent only once changed here
         self.format_choices: dict[str, QComboBox] = {}
@@ -549,7 +544,6 @@ class ExportDialog(QDialog):
         fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
-        fv.addRow(tr("Field order"), self.field_order)
         for key, label, _name, _choices in FORMAT_CHOICES:
             fv.addRow(tr(label), self.format_choices[key])
         mux = Section("multiplexer", tr("Multiplexer"), self)
@@ -750,7 +744,7 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.textChanged.connect(self._changed)
         self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
         self.dcp_language.currentTextChanged.connect(self._changed)
-        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma), ("fieldOrder", self.field_order)):
+        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
@@ -914,7 +908,6 @@ class ExportDialog(QDialog):
         self.b_frames.setValue(2)
         self.quantizer.setValue(0)
         self.chroma.setCurrentIndex(0)
-        self.field_order.setCurrentIndex(0)
         index = self.container.findData(preset.get("mpeg2Container") or "ps")
         self.container.setCurrentIndex(max(0, index))
         self.dcp_resolution.setCurrentIndex(max(0, self.dcp_resolution.findData(preset.get("dcpResolution") or "2k")))
@@ -938,9 +931,9 @@ class ExportDialog(QDialog):
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate_box.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         mpeg2 = self.format.currentData() == "mpeg2"
-        # only MPEG-2 export codes interlaced video
-        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
+        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(mpeg2)
+        self.rows.allow_interlaced(mpeg2)  # only MPEG-2 export codes interlaced video (egui's Field Order)
         self.video_form.setRowVisible(self.gop, mpeg2)  # H.264 / H.265 / AV1 have egui's own row
         self._sync_format_rows()
         video = bool(fmt.get("video", True))
@@ -1257,8 +1250,6 @@ class ExportDialog(QDialog):
                 p["mpeg2Quantizer"] = self.quantizer.value()
             if "chroma" in self.touched:
                 p["mpeg2Chroma"] = self.chroma.currentData()
-            if "fieldOrder" in self.touched:
-                p["fieldOrder"] = self.field_order.currentData()
         if self.dcp_resolution.isEnabled():
             p["dcpResolution"] = self.dcp_resolution.currentData()
             p["dcpAspect"] = self.dcp_aspect.currentData()

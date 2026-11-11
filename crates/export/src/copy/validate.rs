@@ -33,8 +33,8 @@ pub(super) fn validate_strict(f: &Mp4File, src: &File, tracks: &[usize], out: &F
         if a.edits != b.edits || a.edit_offset != b.edit_offset {
             return Err(fail(format!("track {t}: the edit list changed")));
         }
-        if (a.matrix, a.enabled, a.alternate_group, &a.language) != (b.matrix, b.enabled, b.alternate_group, &b.language) {
-            return Err(fail(format!("track {t}: the track header (matrix, enabled flag, alternate group or language) changed")));
+        if (a.matrix, a.enabled, a.alternate_group, a.volume, &a.language) != (b.matrix, b.enabled, b.alternate_group, b.volume, &b.language) {
+            return Err(fail(format!("track {t}: the track header (matrix, enabled flag, alternate group, volume or language) changed")));
         }
         if b.sample_groups.len() != a.sample_groups.len() || b.sdtp != a.sdtp {
             return Err(fail(format!("track {t}: sample groups or dependency flags changed")));
