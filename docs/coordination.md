@@ -30,8 +30,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
 5. **Közös fájlok** (kodek-regiszter, `crates/codecs`, `crates/export/src/lib.rs`, effektlisták,
    `i18n/*.tsv`, `docs/*-parity.md`, `Cargo.toml`, `Cargo.lock`): csak a saját sorodat add hozzá,
    ne rendezd át és ne formázd újra a fájlt.
-6. **Új téma indítása előtt** nézd meg a nyitott PR-okat. Ha 20-nál több van, új munkát csak
-   a tulajdonos kérésére kezdj.
+6. **Új téma indítása előtt** nézd meg a nyitott PR-okat. Ha 30-nál több van, új munkát csak
+   a tulajdonos kérésére kezdj. (Tulajdonosi döntés, 2026-11-07: a korábbi 20-as határ 30-ra nőtt.)
 7. Munka végén **hagyd tisztán**: ne maradjon PR nélküli ág, ideiglenes (`tmp/`, `ci-debug/`) ág.
 8. **Projekthatár** (tulajdonosi döntés, 2026-10-31). A saját projekteden (a tulajdonos által
    jóváhagyott terv, ADR vagy issue, amellyel a munkamenet indult) belül logikus sorrendben magad
