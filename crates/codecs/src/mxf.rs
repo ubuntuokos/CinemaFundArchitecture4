@@ -2,9 +2,10 @@
 //!
 //! - Video: H.264 / AVC-Intra (Annex B byte stream, our decoder), MPEG-2 (D-10 / IMX, XDCAM HD /
 //!   HD422; our decoder), VC-3 (DNxHD/DNxHR) and ProRes through the decoder factories, JPEG 2000
-//!   (broadcast and DCP picture tracks, X'Y'Z' included; [`crate::j2k`]). Other codings (DV,
-//!   MPEG-4 visual…) are identified and reported as unsupported; the file still opens so its audio
-//!   can be used.
+//!   (broadcast and DCP picture tracks, X'Y'Z' included; [`crate::j2k`]), DV, uncompressed
+//!   pictures (ST 384, unpacked by `cfa4_mxf::uncompressed`; 8-bit R'G'B'(A) as RGBA, deeper
+//!   R'G'B' as BT.709 Y'CbCr 4:4:4). Other codings (MPEG-4 visual…) are identified and reported
+//!   as unsupported; the file still opens so its audio can be used.
 //! - Presentation order: the index table's temporal offsets; for AVC whose index marks B pictures
 //!   but carries no temporal offsets, the picture order counts of the slice headers (8.2.1).
 //! - Audio: every PCM sound track (Broadcast Wave / AES3, ST 382; ST 331 AES3 elements in D-10)
@@ -58,6 +59,8 @@ pub struct MxfSource {
     mpeg2_header: Vec<u8>,
     /// How the JPEG 2000 picture track's components are read.
     j2k_hints: crate::j2k::J2kHints,
+    /// Uncompressed pictures (ST 384): the stored layout, the descriptor and the frames' colour.
+    raw: Option<(cfa4_mxf::uncompressed::Layout, cfa4_mxf::PictureInfo, cfa4_color::ColorInfo)>,
     /// Sound tracks combined into one stream: (track, first stored sample frame).
     atracks: Vec<(usize, u64)>,
     /// Presented sample frames.
@@ -366,6 +369,7 @@ impl MxfSource {
         let mut explicit_color = None;
         let mut mpeg2_header = Vec::new();
         let mut j2k_hints = crate::j2k::J2kHints::default();
+        let mut raw = None;
         if let Some(vi) = vtrack {
             let t = &file.tracks[vi];
             let p = t.picture.clone().unwrap_or_default();
@@ -438,6 +442,17 @@ impl MxfSource {
                 Codec::ProRes { profile } => prores_name(profile).into(),
                 c @ Codec::Avc { .. } => c.name().into(),
                 Codec::Mpeg2 if mpeg.is_some() => mpeg.as_ref().map(|m| m.0.codec_name()).unwrap_or_default(),
+                Codec::Uncompressed => match cfa4_mxf::uncompressed::Layout::of(&p) {
+                    Ok(l) => {
+                        let name = l.name();
+                        raw = Some((l, p.clone(), cfa4_color::ColorInfo::REC709));
+                        name
+                    }
+                    Err(e) => {
+                        unsupported = Some(e.to_string());
+                        "Uncompressed (unsupported)".into()
+                    }
+                },
                 Codec::Jpeg2000 => match &j2k {
                     Some((Ok(_), hd)) if hd.digital_cinema() => "JPEG 2000 (digital cinema)".into(),
                     Some((Ok(_), _)) => "JPEG 2000".into(),
@@ -492,6 +507,28 @@ impl MxfSource {
                 color.range = cfa4_color::Range::Full;
                 explicit_color = Some(color);
             }
+            let mut has_alpha = p.alpha_depth > 0;
+            if let Some((l, _, _)) = &raw {
+                let chroma = match l.subsampling() {
+                    (2, 2) => "4:2:0",
+                    (2, 1) => "4:2:2",
+                    _ => "4:4:4",
+                };
+                pixel_format =
+                    if l.rgb() { format!("{} {}-bit", if l.alpha() { "RGBA" } else { "RGB" }, l.depth()) } else { format!("YUV {chroma} {}-bit", l.depth()) };
+                has_alpha = l.alpha();
+                // the frames carry their colour: the descriptor's colorimetry; R'G'B' deeper than
+                // 8 bits becomes video-range BT.709 Y'CbCr 4:4:4
+                let s = descriptor_colorimetry(&p);
+                if l.rgb() {
+                    color = cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt709, ..cfa4_color::ColorInfo::REC709 };
+                } else if let Some(m) = s.matrix {
+                    color.matrix = m;
+                }
+                color.transfer = s.transfer.unwrap_or(color.transfer);
+                color.primaries = s.primaries.unwrap_or(color.primaries);
+                explicit_color = None;
+            }
             let mut par = par;
             if let Some(d) = &dv {
                 pixel_format = d.pixel_format.clone();
@@ -504,6 +541,9 @@ impl MxfSource {
             }
             let secs = vcount as f64 / rate.as_f64().max(1e-9);
             let bytes_total: u64 = t.samples.iter().map(|s| s.size as u64).sum();
+            if let Some(r) = raw.as_mut() {
+                r.2 = color;
+            }
             video = Some(VideoStreamInfo {
                 width: w,
                 height: h,
@@ -512,7 +552,7 @@ impl MxfSource {
                 codec,
                 pixel_format,
                 color,
-                has_alpha: p.alpha_depth > 0,
+                has_alpha,
                 bitrate: (secs > 0.0).then(|| (bytes_total as f64 * 8.0 / (t.samples.len().max(1) as f64 / rate.as_f64().max(1e-9))) as u64),
                 hdr: None,
             });
@@ -597,6 +637,7 @@ impl MxfSource {
             unsupported,
             mpeg2_header,
             j2k_hints,
+            raw,
             atracks: combined,
             aframes,
             iab,
@@ -608,6 +649,79 @@ impl MxfSource {
     pub fn file(&self) -> &MxfFile {
         &self.file
     }
+}
+
+/// Uncompressed pictures (ST 384): every edit unit unpacked by [`cfa4_mxf::uncompressed`].
+struct RawDecoder {
+    layout: cfa4_mxf::uncompressed::Layout,
+    info: cfa4_mxf::PictureInfo,
+    color: cfa4_color::ColorInfo,
+}
+
+impl VideoDecoder for RawDecoder {
+    fn decode(&mut self, sample: &[u8], pts: i64) -> crate::Result<Vec<crate::video::DecodedFrame>> {
+        let pic = cfa4_mxf::uncompressed::decode(&self.layout, &self.info, sample).map_err(|e| match e {
+            cfa4_mxf::Error::Unsupported(s) => CodecError::Unsupported(s),
+            other => CodecError::Decode(other.to_string()),
+        })?;
+        Ok(vec![crate::video::DecodedFrame { pts, frame: raw_frame(pic, self.color), draft: false }])
+    }
+    fn flush(&mut self) -> Vec<crate::video::DecodedFrame> {
+        Vec::new()
+    }
+    fn reset(&mut self) {}
+    fn name(&self) -> &str {
+        "CFA4 uncompressed"
+    }
+    fn intra_only(&self) -> bool {
+        true
+    }
+    fn is_random_access(&self, _sample: &[u8]) -> Option<bool> {
+        Some(true)
+    }
+}
+
+/// An unpacked uncompressed picture as a [`VideoFrame`] cut to its display rectangle: Y'CbCr as
+/// stored (samples under 8 bits widened to 8), 8-bit R'G'B'(A) as RGBA, deeper R'G'B' as
+/// video-range BT.709 Y'CbCr 4:4:4 with straight alpha.
+fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo) -> VideoFrame {
+    use cfa4_frame::{Chroma, PixelData, Region};
+    let (w, h) = (pic.width, pic.height);
+    let [mut p0, mut p1, mut p2] = pic.planes;
+    let mut alpha = pic.alpha;
+    let mut bits = pic.depth;
+    if bits < 8 {
+        for p in [&mut p0, &mut p1, &mut p2].into_iter().chain(alpha.as_mut()) {
+            p.iter_mut().for_each(|v| *v <<= 8 - bits);
+        }
+        bits = 8;
+    }
+    let data = if pic.rgb && bits == 8 {
+        let mut rgba = Vec::with_capacity(p0.len() * 4);
+        for (i, ((r, g), b)) in p0.iter().zip(&p1).zip(&p2).enumerate() {
+            let a = alpha.as_ref().and_then(|a| a.get(i)).map_or(255, |&a| a as u8);
+            rgba.extend_from_slice(&[*r as u8, *g as u8, *b as u8, a]);
+        }
+        PixelData::Rgba8(Arc::new(rgba))
+    } else {
+        if pic.rgb {
+            crate::j2k::rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits);
+        }
+        let chroma = match pic.subsampling {
+            (2, 2) => Chroma::C420,
+            (2, 1) => Chroma::C422,
+            _ => Chroma::C444,
+        };
+        if bits == 8 {
+            let to8 = |p: Vec<u16>| Arc::new(p.into_iter().map(|v| v as u8).collect::<Vec<u8>>());
+            PixelData::Yuv8 { planes: [to8(p0), to8(p1), to8(p2)], chroma, alpha: alpha.map(to8) }
+        } else {
+            PixelData::Yuv16 { planes: [Arc::new(p0), Arc::new(p1), Arc::new(p2)], chroma, bits, alpha: alpha.map(Arc::new) }
+        }
+    };
+    let frame = VideoFrame { width: w, height: h, data, color, par: (1, 1), pts: Tick::ZERO };
+    let (x, y, dw, dh) = pic.display;
+    frame.cropped(Region { x: x as usize, y: y as usize, w: dw as usize, h: dh as usize })
 }
 
 fn gcd(a: u64, b: u64) -> u64 {
@@ -654,6 +768,10 @@ impl VideoSamples for MxfVideo<'_> {
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
             Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
             Codec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
+            Codec::Uncompressed => match &self.src.raw {
+                Some((layout, info, color)) => Ok(Box::new(RawDecoder { layout: layout.clone(), info: info.clone(), color: *color })),
+                None => Err(CodecError::Unsupported("uncompressed video in MXF without a known layout".into())),
+            },
             other => Err(CodecError::Unsupported(format!("{} video in MXF", other.name()))),
         }
     }
@@ -799,5 +917,32 @@ mod tests {
         assert_eq!((s.transfer, s.primaries, s.matrix), (Some(Transfer::Pq), Some(Primaries::Bt2020), Some(Matrix::Bt2020Ncl)));
         let p = cfa4_mxf::PictureInfo { transfer_characteristic: label(1, 1, 0x7F), ..Default::default() };
         assert_eq!(descriptor_colorimetry(&p), crate::j2k::Signalled::default());
+    }
+
+    fn picture(depth: u32, rgb: bool, planes: [Vec<u16>; 3], alpha: Option<Vec<u16>>) -> cfa4_mxf::uncompressed::Picture {
+        cfa4_mxf::uncompressed::Picture { width: 2, height: 1, depth, subsampling: (1, 1), rgb, planes, alpha, display: (0, 0, 2, 1) }
+    }
+
+    #[test]
+    fn uncompressed_rgb_frames() {
+        use cfa4_frame::PixelData;
+        // 8-bit R'G'B'A stays RGBA
+        let f = raw_frame(picture(8, true, [vec![1, 2], vec![3, 4], vec![5, 6]], Some(vec![7, 8])), cfa4_color::ColorInfo::REC709);
+        let PixelData::Rgba8(px) = &f.data else { panic!("RGBA expected") };
+        assert_eq!(**px, vec![1, 3, 5, 7, 2, 4, 6, 8]);
+        // without alpha: opaque
+        let f = raw_frame(picture(8, true, [vec![1, 2], vec![3, 4], vec![5, 6]], None), cfa4_color::ColorInfo::REC709);
+        let PixelData::Rgba8(px) = &f.data else { panic!("RGBA expected") };
+        assert_eq!(px[3], 255);
+        // 10-bit white and black become video-range Y'CbCr
+        let f = raw_frame(picture(10, true, [vec![1023, 0], vec![1023, 0], vec![1023, 0]], None), cfa4_color::ColorInfo::REC709);
+        let PixelData::Yuv16 { planes, bits: 10, chroma: cfa4_frame::Chroma::C444, .. } = &f.data else { panic!("10-bit 4:4:4 expected") };
+        assert_eq!((planes[0][0], planes[0][1], planes[1][0], planes[2][1]), (940, 64, 512, 512));
+        // under 8 bits widens to 8; the display rectangle crops
+        let mut p = picture(4, false, [vec![15, 1], vec![8, 8], vec![8, 8]], None);
+        p.display = (1, 0, 1, 1);
+        let f = raw_frame(p, cfa4_color::ColorInfo::REC709);
+        let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit Y'CbCr expected") };
+        assert_eq!((f.width, f.height, planes[0][0], planes[1][0]), (1, 1, 16, 128));
     }
 }

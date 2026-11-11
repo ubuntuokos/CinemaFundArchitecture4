@@ -128,6 +128,8 @@ pub enum PictureCoding {
     /// 2K / 4K Digital Cinema profiles (ST 429-4 coding labels), anything else is written as an
     /// unconstrained Part 1 codestream.
     J2k { rsiz: u16 },
+    /// Uncompressed Y'CbCr pictures (ST 384) in one of the labelled layouts of ST 377-1 G.2.25.
+    Uncompressed { layout: crate::UncompressedLayout },
 }
 
 impl PictureCoding {
@@ -174,6 +176,7 @@ impl PictureCoding {
                 };
                 [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, version, 0x04, 0x01, 0x02, 0x02, 0x03, 0x01, 0x01, last]
             }
+            PictureCoding::Uncompressed { layout } => layout.label(),
         }
     }
     /// (essence container label, element type) for frame or clip wrapping.
@@ -185,6 +188,8 @@ impl PictureCoding {
             PictureCoding::Avc { .. } => (essence_container(0x0A, 0x10, 0x60, w), if clip { 0x16 } else { 0x15 }),
             // ST 422 Table 2 ("FU" frame wrapping / "Cn" clip wrapping) and Table 1
             PictureCoding::J2k { .. } => (essence_container(0x07, 0x0C, w, 0x00), if clip { 0x09 } else { 0x08 }),
+            // ST 384 Tables 5-7: lines and rate from the descriptor (7Fh); element types 02h / 03h
+            PictureCoding::Uncompressed { .. } => (essence_container(0x01, 0x05, 0x7F, w), if clip { 0x03 } else { 0x02 }),
         }
     }
 }
@@ -268,6 +273,7 @@ impl PictureDesc {
                 (if matches!(cid, 1235 | 1241 | 1250 | 1256 | 1270 | 1271) { 10 } else { 8 }, if matches!(cid, 1256 | 1270) { (1, 1) } else { (2, 1) })
             }
             PictureCoding::J2k { .. } => (12, (1, 1)),
+            PictureCoding::Uncompressed { layout } => (layout.depth(), layout.subsampling()),
         };
         PictureDesc {
             coding,
