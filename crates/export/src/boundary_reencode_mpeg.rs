@@ -31,7 +31,8 @@ use serde::{Deserialize, Serialize};
 use crate::boundary_reencode::{BoundaryEncoding, incompatible};
 use crate::smart_cut::{SmartCutError, io};
 use crate::smart_cut_mpeg::{
-    CLOCK, MpegAudioDrop, MpegAudioReport, MpegCopySource, audio_copies, container_of, container_of_format, output_id, verify_audio, write_audio,
+    CLOCK, MpegAudioDrop, MpegAudioReport, MpegAudioTrack, MpegCopySource, audio_copies, container_of, container_of_format, output_id, verify_audio,
+    write_audio,
 };
 
 /// Profile, chroma format and bit depth of an MPEG-2 video stream, for the registry's encoder
@@ -43,6 +44,15 @@ pub fn mpeg2_stream_format(info: &SequenceInfo) -> StreamFormat {
         ChromaFormat::Yuv444 => ("high", "4:4:4"),
     };
     StreamFormat { profile: profile.into(), chroma: chroma.into(), bit_depth: 8 }
+}
+
+/// The stream format of the MPEG-2 `video` stream of `file`, from the sequence header of its first
+/// unit (`None` when it has none or does not decode).
+pub fn mpeg2_source_format<S: ByteSource + ?Sized>(file: &File, bytes: &S, video: usize) -> Option<StreamFormat> {
+    let data = file.read_unit(bytes, video, 0).ok()?;
+    let mut decoder = Decoder::new();
+    let _ = decoder.decode(&data, 0);
+    decoder.sequence().map(mpeg2_stream_format)
 }
 
 /// What an MPEG-2 boundary re-encode wrote.
@@ -329,6 +339,22 @@ pub fn check_mpeg_boundary_reencode<S: ByteSource + ?Sized>(
     encoding: &BoundaryEncoding,
 ) -> Result<(), SmartCutError> {
     setup(plan, index, source, format, encoding).map(|_| ())
+}
+
+/// The audio a boundary re-encode of `plan` takes along (the plan preview), as
+/// [`crate::smart_cut_mpeg::plan_mpeg_audio`] for a copy.
+pub fn plan_mpeg_boundary_audio<S: ByteSource + ?Sized>(
+    plan: &ExportExecutionPlan,
+    index: &StreamIndex,
+    source: &MpegCopySource<'_, S>,
+    format: MuxFormat,
+    encoding: &BoundaryEncoding,
+) -> Result<(Vec<MpegAudioTrack>, Vec<MpegAudioDrop>), SmartCutError> {
+    let Setup { p } = setup(plan, index, source, format, encoding)?;
+    let (audio, dropped) = audio_copies(source, format, p.base, p.base + p.duration)?;
+    let tracks =
+        audio.iter().map(|a| MpegAudioTrack { stream: a.stream, codec: source.file.streams[a.stream].codec.name(), units: a.units.len() as u64 }).collect();
+    Ok((tracks, dropped))
 }
 
 /// The planar 8-bit input of a decoded picture.
