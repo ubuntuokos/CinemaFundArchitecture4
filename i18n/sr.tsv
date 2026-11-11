@@ -3266,6 +3266,10 @@
 	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
 	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, дуги GOP (12 слика, IBBP), 50 Mbit/s у стилу XDCAM HD422, 24-битни PCM 48 kHz; HD величине слике
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High дуги GOP (0,3 бита по пикселу), 24-битни 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типа D-10 (IMX 50): MPEG-2 4:2:2P@ML само интра, 50 Mbit/s, 720x486 при 29,97 fps (4:3), четири 24-битна аудио канала 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типа D-10 (IMX 50): MPEG-2 4:2:2P@ML само интра, 50 Mbit/s, 720x576 при 25 fps (4:3), четири 24-битна аудио канала 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-битни 48 kHz PCM, почетни временски код
 	Main	Главно
 	Mark In (Hover Scrub)	Означи улаз (преглед лебдењем)
