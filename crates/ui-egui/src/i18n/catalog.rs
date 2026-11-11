@@ -1,4 +1,4 @@
-//! Parser and lookup tables for translation catalogs (`*.tsv`, format documented in `es.tsv`).
+//! Parser and lookup tables for translation catalogs (`*.tsv`, format documented in the header of `i18n/es.tsv`).
 
 use std::collections::HashMap;
 

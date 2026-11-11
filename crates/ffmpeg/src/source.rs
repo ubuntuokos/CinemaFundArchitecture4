@@ -236,6 +236,7 @@ impl FfSource {
                     channels,
                     codec: format!("{} (FFmpeg)", backend::codec_name(s)),
                     bits_per_sample: u32::try_from(s.bits_per_sample).ok().filter(|b| *b > 0),
+                    speakers: Vec::new(),
                 });
                 ameta = Some(AudioMeta { tb, origin: us_to_ts(probed.start_us, tb), start_us: probed.start_us, channels });
             }
