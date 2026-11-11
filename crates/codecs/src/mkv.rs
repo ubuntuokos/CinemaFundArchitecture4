@@ -185,7 +185,7 @@ fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
         Codec::Pcm { bits, .. } => a.bit_depth.or(Some(u64::from(*bits))),
         _ => a.bit_depth,
     };
-    Some(AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32) })
+    Some(AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32), speakers: Vec::new() })
 }
 
 /// The track timestamp that media time zero stands for (#715): the earliest start among the

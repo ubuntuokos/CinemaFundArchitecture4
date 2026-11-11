@@ -395,3 +395,13 @@
 	Progressive	프로그레시브
 	Interlaced, upper field first	인터레이스, 상위 필드 우선
 	Interlaced, lower field first	인터레이스, 하위 필드 우선
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	복사된 오디오: {tracks}
+	Audio track {track} is not copied: {why}	오디오 트랙 {track}은(는) 복사되지 않습니다: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	포인트 트래커
+	Correlation tracker	상관 트래커
+	DCP language	DCP 언어
+	None (RFC 5646 tag, e.g. en-US)	없음(RFC 5646 태그, 예: ko-KR)
+	ISDCF name	ISDCF 이름
+	Name the DCP folder by the Digital Cinema Naming Convention	Digital Cinema Naming Convention에 따라 DCP 폴더 이름 지정
