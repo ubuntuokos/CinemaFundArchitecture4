@@ -43,7 +43,7 @@ jobs:
       - name: Measure (objdump, ldd, dpkg-query)
         run: |
           bash scripts/dev/audit-runtime-deps.sh
-          report="$(ls -d target/audit/runtime-deps/*/ | tail -n 1)"
+          report="$(find target/audit/runtime-deps -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"
           {
             echo "## Runtime dependencies on $(. /etc/os-release && echo "$PRETTY_NAME") ($(uname -m))"
             echo
