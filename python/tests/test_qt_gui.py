@@ -11762,9 +11762,20 @@ def test_real_engine_control_channel_names_project_rows_as_egui(app, tmp_path: P
         item = min(i for i in els() if re.fullmatch(r"project\.item\.\d+", i))
         assert c.call("ui.click", {"id": item})["ok"]
         assert wait_until(app, lambda: win.project_panel.main.selected_items() == [int(item.rsplit(".", 1)[1])], 10_000), (item, win.project_panel.main.selected_items())
-        # the Icon view's cards carry the same ids
+        # the Icon view's cards carry the same ids: it shows the bins at the root as cards (the item
+        # opened in place inside a bin is not on them), so a bin's row id now names its card
+        rows = {b: e[b]["rect"] for b in bins}
         win.execute("project.view.set", {"view": "icon"})
-        assert wait_until(app, lambda: item in els() and "project.list.header.Name" not in els(), 10_000), sorted(els())
+
+        def cards() -> bool:
+            now = els()
+            return (
+                "project.tree" not in now
+                and "project.list.header.Name" not in now
+                and all(b in now and now[b]["rect"] != rows[b] and f"{b}.toggle" not in now for b in bins)
+            )
+
+        assert wait_until(app, cards, 10_000), (rows, {k: v["rect"] for k, v in els().items()})
     finally:
         server.close()
         win._quit_confirmed = True
@@ -13295,7 +13306,14 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
                     return False
                 snap.clear()
                 snap.update(els())
-                return "project.empty" in snap and any(re.fullmatch(r"project\.(bin|item)\.\d+", i) for i in snap)
+                # and only this view's rows: the other view's container gone from the snapshot, every
+                # row a list line (with the bin's arrow) or a card (no arrow)
+                other = "project.tree" if mode == "icon" else "project.icons"
+                rows = [k for k in snap if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
+                arrows = [k for k in rows if k.startswith("project.bin.") and f"{k}.toggle" in snap]
+                bins = [k for k in rows if k.startswith("project.bin.")]
+                shaped = arrows == bins if mode == "list" else not arrows
+                return other not in snap and "project.empty" in snap and bool(rows) and shaped
 
             assert wait_until(app, ready, 20_000), (mode, sorted(snap))
             e = dict(snap)
