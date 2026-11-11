@@ -82,7 +82,7 @@ impl Fixture {
         Fixture::new(source(format, true, |i| i), format)
     }
     fn source(&self) -> MpegCopySource<'_, Vec<u8>> {
-        MpegCopySource { file: &self.file, bytes: &self.bytes, video: self.video }
+        MpegCopySource { file: &self.file, bytes: &self.bytes, video: self.video, audio: true }
     }
     fn stream_format(&self) -> StreamFormat {
         let data = self.file.read_unit(&self.bytes, self.video, 0).unwrap();

@@ -16,8 +16,12 @@
 //!   copies the whole GOPs and re-encodes the boundary pictures (WP-06), and runs only with
 //!   `"confirm": true`: nothing is re-encoded silently.
 //!
+//! - An MPEG program or transport stream source (`.mpg`, `.ts`, `.m2ts`: MPEG-2 video) is cut by
+//!   [`crate::smart_cut_mpeg`] (WP-09c): GOP copies only, into an `.mpg`, `.ts` or `.m2ts` output.
+//!
 //! Times are ticks or time objects (`{"seconds": n}`, `{"frame": n}`, `{"timecode": "…"}`) on the
-//! source stream's PTS timeline; frames and timecodes count at the stream's frame rate.
+//! source stream's PTS timeline (an MPEG source: from its first picture); frames and timecodes
+//! count at the stream's frame rate.
 
 use std::io::Cursor;
 
@@ -112,7 +116,7 @@ impl Source {
 /// The source named in `p`: a file (`"path"`), or a project media item (`"item"`, the clip of the
 /// Source monitor; a subclip names its media). With an item, times are media times (the Source
 /// monitor's), its marked range is the default cut, and the item's view comes back.
-fn source_p(s: &Session, p: &Value, cmd: &str) -> Result<(String, Option<SourceView>)> {
+pub(crate) fn source_p(s: &Session, p: &Value, cmd: &str) -> Result<(String, Option<SourceView>)> {
     if let Some(path) = str_p(p, "path").filter(|s| !s.is_empty()) {
         return Ok((path.to_string(), None));
     }
@@ -173,13 +177,16 @@ pub(crate) fn open_source(s: &Session, path: &str, cmd: &str) -> Result<Source> 
     Ok(Source { path: path.to_string(), bytes, file, container, track, index: MediaIndex::new(path, fingerprint, vec![stream]), format })
 }
 
-fn ticks(t: Option<i64>, tb: Rational) -> Value {
+pub(crate) fn ticks(t: Option<i64>, tb: Rational) -> Value {
     t.and_then(|v| MediaTime::new(v, tb).to_tick()).map(|t| json!(t.0)).unwrap_or(Value::Null)
 }
 
 fn analyze(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.analyze";
     let (path, view) = source_p(s, p, cmd)?;
+    if crate::smart_cut_mpeg::is_mpeg(s, &path) {
+        return crate::smart_cut_mpeg::analyze(s, p, &path, view.as_ref());
+    }
     let src = open_source(s, &path, cmd)?;
     let stream = src.stream().ok_or_else(|| EngineError::Other(format!("{path}: no stream was indexed")))?;
     let tb = stream.timebase;
@@ -227,7 +234,7 @@ pub(crate) fn guarantee_p(p: &Value, cmd: &str) -> Result<CopyGuarantee> {
 }
 
 /// Whether `p` names the timeline scope (Smart Render of a sequence) rather than one source file.
-fn timeline_scope(p: &Value, cmd: &str) -> Result<bool> {
+pub(crate) fn timeline_scope(p: &Value, cmd: &str) -> Result<bool> {
     match str_p(p, "scope").unwrap_or("source") {
         "source" => Ok(false),
         "timeline" => Ok(true),
@@ -235,29 +242,47 @@ fn timeline_scope(p: &Value, cmd: &str) -> Result<bool> {
     }
 }
 
+/// How a source maps the Source monitor's media times onto its stream timeline.
+pub(crate) struct CutSource<'a> {
+    pub(crate) path: &'a str,
+    pub(crate) view: Option<&'a SourceView>,
+    pub(crate) rate: FrameRate,
+    pub(crate) stream_time: &'a dyn Fn(Tick) -> Option<Tick>,
+}
+
+/// The cut mode named in `p` (`"mode"`, default GOP boundary).
+pub(crate) fn mode_p(p: &Value, cmd: &str) -> Result<CutMode> {
+    match str_p(p, "mode").unwrap_or("gop-boundary") {
+        "gop-boundary" => Ok(CutMode::GopBoundary),
+        "frame-accurate" => Ok(CutMode::FrameAccurate),
+        m => Err(bad(cmd, format!("unknown `mode` {m:?}: gop-boundary or frame-accurate"))),
+    }
+}
+
+/// The range named in `p` on the stream's PTS timeline: `in` / `out` stream times, or with an item
+/// media times of the Source monitor (default: its marked range).
+pub(crate) fn range_p(p: &Value, cmd: &str, src: &CutSource<'_>) -> Result<(Tick, Tick)> {
+    let in_point = tick_or_time_p(p, "in", src.rate, false, cmd)?;
+    let out_point = tick_or_time_p(p, "out", src.rate, false, cmd)?;
+    match src.view {
+        None => Ok((in_point.ok_or_else(|| bad(cmd, "`in` is required"))?, out_point.ok_or_else(|| bad(cmd, "`out` is required (exclusive)"))?)),
+        Some(view) => {
+            let marked = view.selected_range();
+            let unmapped = || bad(cmd, format!("{}: its media time does not map to the stream timeline without guessing (edit list)", src.path));
+            let in_point = (src.stream_time)(in_point.unwrap_or(marked.start)).ok_or_else(unmapped)?;
+            let out_point = (src.stream_time)(out_point.unwrap_or(marked.end())).ok_or_else(unmapped)?;
+            Ok((in_point, out_point))
+        }
+    }
+}
+
 /// The plan of the range named in `p`.
 fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan)> {
     let (path, view) = source_p(s, p, cmd)?;
     let src = open_source(s, &path, cmd)?;
-    let rate = src.rate();
-    let in_point = tick_or_time_p(p, "in", rate, false, cmd)?;
-    let out_point = tick_or_time_p(p, "out", rate, false, cmd)?;
-    let (in_point, out_point) = match &view {
-        None => (in_point.ok_or_else(|| bad(cmd, "`in` is required"))?, out_point.ok_or_else(|| bad(cmd, "`out` is required (exclusive)"))?),
-        Some(view) => {
-            // media times of the Source monitor (default: the marked range), on the stream's timeline
-            let marked = view.selected_range();
-            let unmapped = || bad(cmd, format!("{path}: its media time does not map to the stream timeline without guessing (edit list)"));
-            let in_point = src.stream_time(in_point.unwrap_or(marked.start)).ok_or_else(unmapped)?;
-            let out_point = src.stream_time(out_point.unwrap_or(marked.end())).ok_or_else(unmapped)?;
-            (in_point, out_point)
-        }
-    };
-    let mode = match str_p(p, "mode").unwrap_or("gop-boundary") {
-        "gop-boundary" => CutMode::GopBoundary,
-        "frame-accurate" => CutMode::FrameAccurate,
-        m => return Err(bad(cmd, format!("unknown `mode` {m:?}: gop-boundary or frame-accurate"))),
-    };
+    let map = |t: Tick| src.stream_time(t);
+    let (in_point, out_point) = range_p(p, cmd, &CutSource { path: &path, view: view.as_ref(), rate: src.rate(), stream_time: &map })?;
+    let mode = mode_p(p, cmd)?;
     let guarantee = guarantee_p(p, cmd)?;
     let output_container = match str_p(p, "output") {
         Some(o) if o.to_ascii_lowercase().ends_with(".mov") => Container::Mov,
@@ -266,21 +291,13 @@ fn plan_of(s: &Session, p: &Value, cmd: &str) -> Result<(Source, SmartCutPlan)> 
         None => src.container,
     };
     let stream_id = src.stream().map(|x| x.stream_id).unwrap_or_default();
-    let request = SmartCutRequest {
-        stream_id,
-        in_point: Tick(in_point.0),
-        out_point: Tick(out_point.0),
-        mode,
-        guarantee,
-        source_container: src.container,
-        output_container,
-        format: src.format.clone(),
-    };
+    let request =
+        SmartCutRequest { stream_id, in_point, out_point, mode, guarantee, source_container: src.container, output_container, format: src.format.clone() };
     let plan = plan_smart_cut(&Registry::native(), &src.index, &request, POLICY).map_err(|e| bad(cmd, e.to_string()))?;
     Ok((src, plan))
 }
 
-fn summary(p: &SmartCutPlan) -> Value {
+pub(crate) fn summary(p: &SmartCutPlan) -> Value {
     json!({
         "lossless": p.plan.is_lossless(),
         "requiresConfirmation": p.plan.requires_confirmation(),
@@ -334,6 +351,10 @@ fn plan(s: &mut Session, p: &Value) -> Result<Value> {
     if timeline_scope(p, cmd)? {
         return crate::smart_render::plan(s, p);
     }
+    let (path, _) = source_p(s, p, cmd)?;
+    if crate::smart_cut_mpeg::is_mpeg(s, &path) {
+        return crate::smart_cut_mpeg::plan(s, p);
+    }
     let encoding = encoding_p(p, cmd)?;
     let (src, plan) = plan_of(s, p, cmd)?;
     let summary = summary(&plan);
@@ -351,6 +372,10 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "export.start";
     if timeline_scope(p, cmd)? {
         return crate::smart_render::start(s, p);
+    }
+    let (path, _) = source_p(s, p, cmd)?;
+    if crate::smart_cut_mpeg::is_mpeg(s, &path) {
+        return crate::smart_cut_mpeg::start(s, p);
     }
     let output = str_p(p, "output").filter(|o| !o.is_empty()).map(str::to_string).ok_or_else(|| bad(cmd, "`output` (the file to write) is required"))?;
     let encoding = encoding_p(p, cmd)?;

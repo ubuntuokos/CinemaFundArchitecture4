@@ -13530,6 +13530,20 @@ def test_smart_cut_plan_text_names_the_audio():
     assert "AAC, PCM" in text and "4" in text and "MP3" in text
 
 
+def test_smart_cut_default_output_keeps_mpeg_streams():
+    """An MPEG program or transport stream is cut into one of the same kind (WP-09c)."""
+    from cfa4_qt.panels.smart_cut import default_output
+
+    assert default_output("/a/clip.mp4") == "/a/clip_cut.mp4"
+    assert default_output("/a/clip.MOV") == "/a/clip_cut.mov"
+    assert default_output("/a/clip.ts") == "/a/clip_cut.ts"
+    assert default_output("/a/clip.m2ts") == "/a/clip_cut.m2ts"
+    assert default_output("/a/clip.mpg") == "/a/clip_cut.mpg"
+    assert default_output("/a/VTS_01_1.VOB") == "/a/VTS_01_1_cut.mpg"
+    assert default_output("/a/clip.mkv") == "/a/clip_cut.mp4"
+    assert default_output("/a/clip") == "/a/clip_cut.mp4"
+
+
 def test_smart_export_plan_text():
     """The Smart Export preview names what is copied, re-encoded and rendered, and why a copy mode
     cannot run (WP-08)."""
