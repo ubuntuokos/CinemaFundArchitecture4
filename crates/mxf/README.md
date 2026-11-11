@@ -35,6 +35,9 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
 | SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
+| SMPTE ST 2067-2 / 2067-5 | 2020 | IMF track files (writer): OP1a, KAG 1, at least 8 KiB of fill after the header, primary package, frame-wrapped pictures in 60 s essence partitions each followed by an index partition, clip-wrapped 24-bit sound at the sample rate with a constant-rate index, UMIDs, the MCA channel assignment, reference image edit rate and audio alignment level |
+| SMPTE ST 2067-21 | 2026 | IMF App 2E pictures (writer): RGBA (QE.1 / QE.2 component ranges) or CDCI (narrow-range levels) descriptor, the JPEG 2000 sub-descriptor with coding style, quantization and J2CLayout |
+| SMPTE ST 422 | 2022, Table 3 | the IMF JPEG 2000 picture coding labels (profile and level from Rsiz) |
 | SMPTE ST 377-4 | (via asdcplib's dictionary and real DCP-o-matic files) | MCA labels (writer): soundfield group and audio channel label sub-descriptors on the sound descriptor |
 
 ## Timed text track files
@@ -171,6 +174,18 @@ w.finish()?;
   soundfield group (`6Ch`) and audio channel (`6Bh`) label sub-descriptors referenced from the
   Wave descriptor, their items under dynamic tags named in the primer; cinecert `asdcp-info -H`
   reads them back.
+- **IMF track files** (`Pattern::Imf`, ST 2067-5 / 2067-2 / 2067-21, #931): one essence track,
+  OP1a with KAG 1, the preface's primary package, at least 8 KiB of fill after the header
+  metadata, closed complete partitions and a RIP, no header metadata or index in the footer.
+  Pictures: JPEG 2000 frame-wrapped (the ST 422 Table 3 IMF coding label from Rsiz,
+  `cfa4_j2k::ImfProfile`), a new essence partition every 60 s, each essence partition followed
+  by an index partition holding its index segment; an RGBA descriptor (`PictureDesc::rgb`, narrow
+  or `full_range` component refs) or a CDCI descriptor with the ST 2067-21 levels, and a JPEG 2000
+  sub-descriptor taken from a codestream (`J2kSubDescriptor::from_codestream`: SIZ, COD, QCD,
+  J2CLayout). Sound: 24-bit PCM at 48 or 96 kHz, clip-wrapped at the sample rate, the IMF MCA
+  channel assignment label with `WriterConfig::mca` labels, `reference_image_edit_rate` and
+  `reference_audio_alignment_level`, a constant-rate index partition after the essence. The IMP
+  package (CPL, PKL, ASSETMAP) and the export option are #1011.
 - **Index tables** (ST 377-1 §11): VBR entries per edit unit — stream offset (from the first
   essence byte; clip-wrapped: from the element value), key-frame offset, flags (`0x80` random
   access, `0xC0` AVC IDR with its parameter sets, `0x22` P, `0x33` B) and temporal offsets from the
@@ -234,7 +249,11 @@ w.finish()?;
   configurations; RDD 9 at 25 Hz over 13 s (partitions every 126 units with the previous index
   segment, partition links and footer offsets, system item bytes, delta entries, per-channel
   element keys and PCM, presentation order) and 59.94 Hz (800 / 801-sample elements of one size,
-  a silent second channel) and its refused configurations; truncation and random mutation of written files never panic.
+  a silent second channel) and its refused configurations; IMF picture track files over 130 s
+  (three essence partitions with their index partitions, partition links, 8 KiB fill, IMF coding
+  label, sub-descriptor COD and layout), CDCI levels, IMF sound (clip wrapping, PCM exact, CBR
+  index partition, MCA channel assignment, reference tags), refused IMF configurations and hostile
+  codestream headers; truncation and random mutation of written files never panic.
 - `crates/export/src/mxf_tests.rs` (ffprobe / ffmpeg as external oracles): OP1a exports with
   DNxHR, ProRes and H.264 — ffprobe reports the OP1a label, codec, 24 frames, frame rate, duration
   and `01:00:00:00` timecode; ffmpeg decodes the MXF picture exactly as it decodes the same
