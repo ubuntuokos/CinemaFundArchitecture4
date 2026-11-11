@@ -77,6 +77,7 @@ from .monitor_view import (
     res_label,
     social_safe_rect,
 )
+from .smart_cut import SmartCutDialog
 from .time_bar import ScrubBar
 from .timeline_media import TimelineMedia
 from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
@@ -1912,6 +1913,24 @@ class SourceMonitor(Monitor):
             a.setObjectName(f"source.clips.{key}")
             a.setEnabled(current is not None)
             a.triggered.connect(lambda _c=False, c=cid: self.command.emit(c, {}))
+
+    def _fill_wrench_menu(self) -> None:
+        super()._fill_wrench_menu()
+        # GOP Smart Cut is a Source monitor action, not an export mode (SCE-001 v1.5)
+        m = self.wrench.menu()
+        m.addSeparator()
+        a = m.addAction(tr("Smart Cut Source…"))
+        a.setObjectName("source.settings.smartCut")
+        a.setEnabled(self.source is not None and self.has_video())
+        a.triggered.connect(lambda: self.open_smart_cut())
+
+    def open_smart_cut(self) -> QDialog | None:
+        """Cut the clip's marked range into a new file, copying what needs no re-encoding."""
+        item = (self.source or {}).get("item")
+        if not isinstance(item, int) or not self.has_video():
+            self.status.emit(tr("Open a video clip in the Source monitor first."))
+            return None
+        return self._show_dialog(SmartCutDialog(self.window(), self.engine, item, self.status.emit))
 
     def has_video(self) -> bool:
         return (self.source or {}).get("hasVideo") is not False
