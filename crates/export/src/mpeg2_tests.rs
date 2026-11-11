@@ -198,6 +198,35 @@ fn constant_quantiser_and_4_2_2() {
     assert!(psnr(&pics[0].y, &y) > 40.0 && psnr(&pics[0].cb, &u) > 40.0 && psnr(&pics[0].cr, &v) > 40.0);
 }
 
+/// CBR codes a constant bitrate with real vbv_delay values; VBR signals its maximum and
+/// variable bitrate.
+#[test]
+fn constant_and_variable_bitrate() {
+    let (p, seq, m) = project();
+    for (mode, signalled) in [(settings::BitrateMode::Cbr, 4_000_000), (settings::BitrateMode::Vbr1Pass, 5_000_000)] {
+        let path = tmp(&format!("{mode:?}.m2v"));
+        let s = ExportSettings { bitrate_mode: mode, max_bitrate_kbps: Some(5_000), ..settings(&path) };
+        let video = s.summary(320, 180, FrameRate::new(25, 1), 48_000, Tick(TICKS_PER_SECOND)).video;
+        assert!(video.contains(if mode == settings::BitrateMode::Cbr { "CBR 4" } else { "VBR Target 4" }), "{video}");
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let es = std::fs::read(&path).unwrap();
+        let pics = decode(&es);
+        assert_eq!(pics[0].info.bit_rate, signalled, "{mode:?}");
+        // vbv_delay: the 16 bits after temporal_reference and picture_coding_type
+        let delays: Vec<u16> =
+            es.windows(8).filter(|w| w[..4] == [0, 0, 1, 0]).map(|w| ((u16::from(w[5]) & 7) << 13) | (u16::from(w[6]) << 5) | (u16::from(w[7]) >> 3)).collect();
+        assert_eq!(delays.len(), 25);
+        if mode == settings::BitrateMode::Cbr {
+            assert!(delays.iter().all(|&d| d < 0xFFFF));
+            // a second of video at 4 Mbit/s, give or take the 1.8 Mbit buffer's fill
+            let bits = es.len() as f64 * 8.0;
+            assert!((bits - 4e6).abs() < 1.9e6, "{bits} bits");
+        } else {
+            assert!(delays.iter().all(|&d| d == 0xFFFF));
+        }
+    }
+}
+
 /// An interlaced field order codes interlaced frame pictures with that field first; ffprobe
 /// agrees.
 #[test]
