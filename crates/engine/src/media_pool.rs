@@ -893,19 +893,28 @@ mod tests {
         }
     }
 
-    /// #626 end to end: an H.264 feature CFA4 does not decode yet (monochrome 4:0:0) imports
-    /// and shows the unreadable slate with the decoder's reason, instead of a black picture.
+    /// #626 end to end: an H.264 feature CFA4 does not decode yet imports and shows the
+    /// unreadable slate with the decoder's reason, instead of a black picture. Monochrome 4:0:0
+    /// decodes now (#832), so the fixture is a High 4:4:4 stream whose SPS claims
+    /// separate_colour_plane_flag, which the decoder still refuses.
     #[test]
     fn ffmpeg_unsupported_h264_profile_shows_the_unreadable_slate() {
         let Some(ffmpeg) = cfa4_testkit::oracle::ffmpeg_or_skip("media_pool") else { return };
-        let path = cfa4_testkit::fixtures_dir("engine/media_pool").join("h264_gray_64x32.mp4");
+        let path = cfa4_testkit::fixtures_dir("engine/media_pool").join("h264_planes_64x32.mp4");
         let Some(path) = cfa4_testkit::fixtures::generate(&path, |tmp| {
-            std::process::Command::new(&ffmpeg)
+            let ok = std::process::Command::new(&ffmpeg)
                 .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=64x32:rate=24:duration=0.5"])
-                .args(["-c:v", "libx264", "-preset", "fast", "-pix_fmt", "gray"])
+                .args(["-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv444p", "-f", "mp4"])
                 .arg(tmp)
                 .status()
-                .is_ok_and(|s| s.success())
+                .is_ok_and(|s| s.success());
+            let Some(mut bytes) = ok.then(|| std::fs::read(tmp).ok()).flatten() else { return false };
+            // The avcC SPS: NAL header 0x67, profile_idc 244, constraint flags, level_idc, then
+            // seq_parameter_set_id 0 (ue `1`), chroma_format_idc 3 (ue `00100`) and the flag.
+            let Some(at) = bytes.windows(2).position(|w| w == [0x67, 0xF4]) else { return false };
+            let Some(b) = bytes.get_mut(at + 4).filter(|b| **b & 0xFC == 0x90) else { return false };
+            *b |= 0x02;
+            std::fs::write(tmp, &bytes).is_ok()
         }) else {
             return;
         };
@@ -914,10 +923,10 @@ mod tests {
         let item = ItemId(r["items"][0].as_u64().unwrap());
         let src = s.media.source_for(&s.project, item, &*s.services).unwrap();
         let f = src.video_frame(FrameRequest { time: cfa4_time::Tick::ZERO, scale: 1.0 }).unwrap();
-        assert_eq!(f.to_rgba8(), cfa4_render::offline::slate_rgba8(64, 32, "h264_gray_64x32.mp4", OfflineReason::Unreadable));
+        assert_eq!(f.to_rgba8(), cfa4_render::offline::slate_rgba8(64, 32, "h264_planes_64x32.mp4", OfflineReason::Unreadable));
         let st = s.media.offline_status(item).unwrap();
         assert_eq!(st.reason, OfflineReason::Unreadable);
-        assert!(st.error.contains("H.264") && st.error.contains("monochrome"), "{}", st.error);
+        assert!(st.error.contains("H.264") && st.error.contains("separate_colour_plane"), "{}", st.error);
     }
 
     /// High 4:4:4 Predictive (#161) imports and decodes: a picture, not the unreadable slate.
