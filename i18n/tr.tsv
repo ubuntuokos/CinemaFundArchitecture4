@@ -4132,3 +4132,28 @@ export.summary	Low	düşük
 	Low Light	Düşük Işık
 	Max Brightening	En Fazla Aydınlatma
 	Show Illumination	Aydınlatmayı Göster
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Yumuşatma Hazır Ayarları
+	Sine	Sinüs
+	Exponential	Üstel
+	Circular	Dairesel
+	Elastic	Elastik
+	Film Gate	Film Kapısı
+	Gate Weave	Kapı Salınımı
+	Weave Rotation	Salınım Dönüşü
+	Particles	Parçacıklar
+	Emitter Position	Yayıcı Konumu
+	Birth Rate	Doğum Hızı
+	Lifetime (seconds)	Ömür (saniye)
+	Velocity Random	Hız Rastgeleliği
+	Gravity	Yerçekimi
+	Particle Size	Parçacık Boyutu
+	Keyhole	Anahtar Deliği
+	Burn Away	Yanarak Kaybol
+	Burn Size	Yanma Boyutu
+	Ember Width	Kor Genişliği
+	Ember Color	Kor Rengi
+	Check Text Legibility	Metin Okunabilirliğini Denetle
+	Clear Legibility Markers	Okunabilirlik İşaretçilerini Temizle
+	Text legibility: no problems found	Metin okunabilirliği: sorun bulunamadı
+	Text legibility: {count} problems marked on the timeline (orange markers)	Metin okunabilirliği: zaman çizelgesinde {count} sorun işaretlendi (turuncu işaretçiler)

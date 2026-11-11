@@ -4134,3 +4134,28 @@ export.summary	Low	žema
 	Low Light	Silpnas apšvietimas
 	Max Brightening	Didžiausias pašviesinimas
 	Show Illumination	Rodyti apšvietimą
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Švelninimo ruošiniai
+	Sine	Sinusinis
+	Exponential	Eksponentinis
+	Circular	Apskritiminis
+	Elastic	Elastingas
+	Film Gate	Kino kadro langelis
+	Gate Weave	Langelio virpėjimas
+	Weave Rotation	Virpėjimo pasukimas
+	Particles	Dalelės
+	Emitter Position	Spinduolio padėtis
+	Birth Rate	Atsiradimo dažnis
+	Lifetime (seconds)	Gyvavimo trukmė (sekundės)
+	Velocity Random	Greičio atsitiktinumas
+	Gravity	Gravitacija
+	Particle Size	Dalelių dydis
+	Keyhole	Rakto skylutė
+	Burn Away	Išdeginimas
+	Burn Size	Išdeginimo dydis
+	Ember Width	Žarijų krašto plotis
+	Ember Color	Žarijų krašto spalva
+	Check Text Legibility	Tikrinti teksto įskaitomumą
+	Clear Legibility Markers	Išvalyti įskaitomumo žymes
+	Text legibility: no problems found	Teksto įskaitomumas: problemų nerasta
+	Text legibility: {count} problems marked on the timeline (orange markers)	Teksto įskaitomumas: laiko juostoje pažymėta problemų: {count} (oranžinės žymės)

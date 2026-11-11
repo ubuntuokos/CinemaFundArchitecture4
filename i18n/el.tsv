@@ -4133,3 +4133,28 @@ export.summary	Low	χαμηλή
 	Low Light	Χαμηλός φωτισμός
 	Max Brightening	Μέγιστη φωτεινότητα
 	Show Illumination	Εμφάνιση φωτισμού
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Προκαθορισμένες ομαλές μεταβάσεις
+	Sine	Ημιτονοειδής
+	Exponential	Εκθετική
+	Circular	Κυκλική
+	Elastic	Ελαστική
+	Film Gate	Παράθυρο φιλμ
+	Gate Weave	Ταλάντωση παραθύρου
+	Weave Rotation	Περιστροφή ταλάντωσης
+	Particles	Σωματίδια
+	Emitter Position	Θέση πομπού
+	Birth Rate	Ρυθμός γέννησης
+	Lifetime (seconds)	Διάρκεια ζωής (δευτερόλεπτα)
+	Velocity Random	Τυχαιότητα ταχύτητας
+	Gravity	Βαρύτητα
+	Particle Size	Μέγεθος σωματιδίων
+	Keyhole	Κλειδαρότρυπα
+	Burn Away	Κάψιμο
+	Burn Size	Μέγεθος καψίματος
+	Ember Width	Πλάτος θράκας
+	Ember Color	Χρώμα θράκας
+	Check Text Legibility	Έλεγχος αναγνωσιμότητας κειμένου
+	Clear Legibility Markers	Απαλοιφή δεικτών αναγνωσιμότητας
+	Text legibility: no problems found	Αναγνωσιμότητα κειμένου: δεν βρέθηκαν προβλήματα
+	Text legibility: {count} problems marked on the timeline (orange markers)	Αναγνωσιμότητα κειμένου: {count} προβλήματα σημειώθηκαν στη λωρίδα χρόνου (πορτοκαλί δείκτες)

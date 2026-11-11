@@ -4116,3 +4116,28 @@
 	Low Light	Слабое освещение
 	Max Brightening	Максимальное осветление
 	Show Illumination	Показать освещённость
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Пресеты сглаживания
+	Sine	Синусоидальная
+	Exponential	Экспоненциальная
+	Circular	Круговая
+	Elastic	Упругая
+	Film Gate	Кадровое окно
+	Gate Weave	Колебание кадрового окна
+	Weave Rotation	Поворот колебания
+	Particles	Частицы
+	Emitter Position	Положение излучателя
+	Birth Rate	Частота появления
+	Lifetime (seconds)	Время жизни (секунды)
+	Velocity Random	Случайность скорости
+	Gravity	Гравитация
+	Particle Size	Размер частиц
+	Keyhole	Замочная скважина
+	Burn Away	Прожигание
+	Burn Size	Размер прожога
+	Ember Width	Ширина тлеющей кромки
+	Ember Color	Цвет тлеющей кромки
+	Check Text Legibility	Проверить читаемость текста
+	Clear Legibility Markers	Удалить маркеры читаемости
+	Text legibility: no problems found	Читаемость текста: проблем не найдено
+	Text legibility: {count} problems marked on the timeline (orange markers)	Читаемость текста: проблем отмечено на таймлайне: {count} (оранжевые маркеры)

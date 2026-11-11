@@ -4130,3 +4130,28 @@ export.summary	Low	低
 	Low Light	低光源
 	Max Brightening	最大提亮
 	Show Illumination	顯示照明
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	緩動預設
+	Sine	正弦
+	Exponential	指數
+	Circular	圓形
+	Elastic	彈性
+	Film Gate	片門
+	Gate Weave	片門晃動
+	Weave Rotation	晃動旋轉
+	Particles	粒子
+	Emitter Position	發射器位置
+	Birth Rate	生成速率
+	Lifetime (seconds)	存留時間 (秒)
+	Velocity Random	隨機速度
+	Gravity	重力
+	Particle Size	粒子大小
+	Keyhole	鑰匙孔
+	Burn Away	燒除
+	Burn Size	燃燒大小
+	Ember Width	餘燼寬度
+	Ember Color	餘燼色彩
+	Check Text Legibility	檢查文字易讀性
+	Clear Legibility Markers	清除易讀性標記
+	Text legibility: no problems found	文字易讀性：未發現問題
+	Text legibility: {count} problems marked on the timeline (orange markers)	文字易讀性：已在時間軸上標記 {count} 個問題 (橘色標記)

@@ -4137,3 +4137,28 @@ export.summary	Low	తక్కువ
 	Low Light	తక్కువ వెలుతురు
 	Max Brightening	గరిష్ఠ ప్రకాశవంతం
 	Show Illumination	ప్రకాశాన్ని చూపు
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	ఈజింగ్ ప్రీసెట్‌లు
+	Sine	సైన్
+	Exponential	ఎక్స్‌పోనెన్షియల్
+	Circular	వృత్తాకార
+	Elastic	ఎలాస్టిక్
+	Film Gate	ఫిల్మ్ గేట్
+	Gate Weave	గేట్ వీవ్
+	Weave Rotation	వీవ్ భ్రమణం
+	Particles	కణాలు
+	Emitter Position	ఉద్గారిణి స్థానం
+	Birth Rate	జనన రేటు
+	Lifetime (seconds)	జీవితకాలం (సెకన్లు)
+	Velocity Random	వేగం యాదృచ్ఛికత
+	Gravity	గురుత్వాకర్షణ
+	Particle Size	కణ పరిమాణం
+	Keyhole	తాళం రంధ్రం
+	Burn Away	కాలిపోవడం
+	Burn Size	కాలే పరిమాణం
+	Ember Width	నిప్పు అంచు వెడల్పు
+	Ember Color	నిప్పు అంచు రంగు
+	Check Text Legibility	వచనం చదవగలతను తనిఖీ చేయి
+	Clear Legibility Markers	చదవగలత మార్కర్లను తొలగించు
+	Text legibility: no problems found	వచనం చదవగలత: సమస్యలు ఏవీ కనబడలేదు
+	Text legibility: {count} problems marked on the timeline (orange markers)	వచనం చదవగలత: టైమ్‌లైన్‌లో {count} సమస్యలు గుర్తించబడ్డాయి (నారింజ మార్కర్లు)

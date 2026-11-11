@@ -4133,3 +4133,28 @@ export.summary	Low	төмен
 	Low Light	Әлсіз жарық
 	Max Brightening	Ең көп ағарту
 	Show Illumination	Жарықтануды көрсету
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Бәсеңдету дайындамалары
+	Sine	Синусоидалық
+	Exponential	Экспоненциалдық
+	Circular	Шеңберлік
+	Elastic	Серпімді
+	Film Gate	Пленка терезесі
+	Gate Weave	Терезенің тербелуі
+	Weave Rotation	Тербеліс бұрылысы
+	Particles	Бөлшектер
+	Emitter Position	Шығарғыштың орны
+	Birth Rate	Пайда болу жиілігі
+	Lifetime (seconds)	Өмір ұзақтығы (секунд)
+	Velocity Random	Жылдамдықтың кездейсоқтығы
+	Gravity	Гравитация
+	Particle Size	Бөлшек өлшемі
+	Keyhole	Кілт тесігі
+	Burn Away	Күйіп кету
+	Burn Size	Күю өлшемі
+	Ember Width	Шоқ жиегінің ені
+	Ember Color	Шоқ жиегінің түсі
+	Check Text Legibility	Мәтіннің оқылуын тексеру
+	Clear Legibility Markers	Оқылу белгілерін тазалау
+	Text legibility: no problems found	Мәтіннің оқылуы: ақау табылмады
+	Text legibility: {count} problems marked on the timeline (orange markers)	Мәтіннің оқылуы: уақыт сызығында {count} ақау белгіленді (қызғылт сары белгілер)

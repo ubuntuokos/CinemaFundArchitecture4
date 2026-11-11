@@ -4131,3 +4131,28 @@ export.summary	Low	niska
 	Low Light	Słabe światło
 	Max Brightening	Maksymalne rozjaśnienie
 	Show Illumination	Pokaż oświetlenie
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Ustawienia łagodzenia
+	Sine	Sinusoidalne
+	Exponential	Wykładnicze
+	Circular	Kołowe
+	Elastic	Sprężyste
+	Film Gate	Okienko filmowe
+	Gate Weave	Drganie okienka
+	Weave Rotation	Obrót drgania
+	Particles	Cząsteczki
+	Emitter Position	Położenie emitera
+	Birth Rate	Tempo powstawania
+	Lifetime (seconds)	Czas życia (sekundy)
+	Velocity Random	Losowość prędkości
+	Gravity	Grawitacja
+	Particle Size	Rozmiar cząsteczek
+	Keyhole	Dziurka od klucza
+	Burn Away	Wypalenie
+	Burn Size	Rozmiar wypalenia
+	Ember Width	Szerokość żaru
+	Ember Color	Kolor żaru
+	Check Text Legibility	Sprawdź czytelność tekstu
+	Clear Legibility Markers	Wyczyść znaczniki czytelności
+	Text legibility: no problems found	Czytelność tekstu: nie znaleziono problemów
+	Text legibility: {count} problems marked on the timeline (orange markers)	Czytelność tekstu: oznaczono problemy na osi czasu: {count} (pomarańczowe znaczniki)

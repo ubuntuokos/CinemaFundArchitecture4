@@ -4116,3 +4116,28 @@
 	Low Light	Слабке освітлення
 	Max Brightening	Максимальне освітлення
 	Show Illumination	Показати освітленість
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Пресети згладжування
+	Sine	Синусоїдальна
+	Exponential	Експоненційна
+	Circular	Колова
+	Elastic	Пружна
+	Film Gate	Кадрове вікно
+	Gate Weave	Коливання кадрового вікна
+	Weave Rotation	Поворот коливання
+	Particles	Частинки
+	Emitter Position	Положення випромінювача
+	Birth Rate	Частота появи
+	Lifetime (seconds)	Час життя (секунди)
+	Velocity Random	Випадковість швидкості
+	Gravity	Гравітація
+	Particle Size	Розмір частинок
+	Keyhole	Замкова шпарина
+	Burn Away	Пропалювання
+	Burn Size	Розмір пропалу
+	Ember Width	Ширина жевріючого краю
+	Ember Color	Колір жевріючого краю
+	Check Text Legibility	Перевірити читабельність тексту
+	Clear Legibility Markers	Видалити маркери читабельності
+	Text legibility: no problems found	Читабельність тексту: проблем не знайдено
+	Text legibility: {count} problems marked on the timeline (orange markers)	Читабельність тексту: проблем позначено на таймлайні: {count} (помаранчеві маркери)

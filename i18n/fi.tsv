@@ -4133,3 +4133,28 @@ export.summary	Low	matala
 	Low Light	Heikko valo
 	Max Brightening	Suurin kirkastus
 	Show Illumination	Näytä valaistus
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Pehmennysesiasetukset
+	Sine	Sini
+	Exponential	Eksponentiaalinen
+	Circular	Ympyrä
+	Elastic	Joustava
+	Film Gate	Filmiportti
+	Gate Weave	Portin huojunta
+	Weave Rotation	Huojunnan kierto
+	Particles	Partikkelit
+	Emitter Position	Lähteen sijainti
+	Birth Rate	Syntynopeus
+	Lifetime (seconds)	Elinaika (sekuntia)
+	Velocity Random	Nopeuden satunnaisuus
+	Gravity	Painovoima
+	Particle Size	Partikkelin koko
+	Keyhole	Avaimenreikä
+	Burn Away	Polta pois
+	Burn Size	Palon koko
+	Ember Width	Hiillosreunan leveys
+	Ember Color	Hiillosreunan väri
+	Check Text Legibility	Tarkista tekstin luettavuus
+	Clear Legibility Markers	Poista luettavuusmerkit
+	Text legibility: no problems found	Tekstin luettavuus: ongelmia ei löytynyt
+	Text legibility: {count} problems marked on the timeline (orange markers)	Tekstin luettavuus: {count} ongelmaa merkitty aikajanalle (oranssit merkit)

@@ -4133,3 +4133,28 @@ export.summary	Low	låg
 	Low Light	Svagt ljus
 	Max Brightening	Max. uppljusning
 	Show Illumination	Visa belysning
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Förinställda mjukövergångar
+	Sine	Sinus
+	Exponential	Exponentiell
+	Circular	Cirkulär
+	Elastic	Elastisk
+	Film Gate	Filmfönster
+	Gate Weave	Fönstergungning
+	Weave Rotation	Gungningsrotation
+	Particles	Partiklar
+	Emitter Position	Sändarens position
+	Birth Rate	Födelsetakt
+	Lifetime (seconds)	Livslängd (sekunder)
+	Velocity Random	Slumpmässig hastighet
+	Gravity	Gravitation
+	Particle Size	Partikelstorlek
+	Keyhole	Nyckelhål
+	Burn Away	Bränn bort
+	Burn Size	Brännstorlek
+	Ember Width	Glödkantens bredd
+	Ember Color	Glödkantens färg
+	Check Text Legibility	Kontrollera textens läsbarhet
+	Clear Legibility Markers	Rensa läsbarhetsmarkörer
+	Text legibility: no problems found	Textens läsbarhet: inga problem hittades
+	Text legibility: {count} problems marked on the timeline (orange markers)	Textens läsbarhet: {count} problem markerade på tidslinjen (orange markörer)

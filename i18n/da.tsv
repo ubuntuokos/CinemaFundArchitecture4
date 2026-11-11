@@ -4133,3 +4133,28 @@ export.summary	Low	lav
 	Low Light	Svagt lys
 	Max Brightening	Maks. oplysning
 	Show Illumination	Vis belysning
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Blødhedsforudindstillinger
+	Sine	Sinus
+	Exponential	Eksponentiel
+	Circular	Cirkulær
+	Elastic	Elastisk
+	Film Gate	Filmvindue
+	Gate Weave	Vindueslingren
+	Weave Rotation	Lingrerotation
+	Particles	Partikler
+	Emitter Position	Emitterplacering
+	Birth Rate	Fødselsrate
+	Lifetime (seconds)	Levetid (sekunder)
+	Velocity Random	Tilfældig hastighed
+	Gravity	Tyngdekraft
+	Particle Size	Partikelstørrelse
+	Keyhole	Nøglehul
+	Burn Away	Brænd væk
+	Burn Size	Brændstørrelse
+	Ember Width	Gløders bredde
+	Ember Color	Gløders farve
+	Check Text Legibility	Kontrollér tekstens læsbarhed
+	Clear Legibility Markers	Ryd læsbarhedsmarkører
+	Text legibility: no problems found	Tekstens læsbarhed: ingen problemer fundet
+	Text legibility: {count} problems marked on the timeline (orange markers)	Tekstens læsbarhed: {count} problemer markeret på tidslinjen (orange markører)

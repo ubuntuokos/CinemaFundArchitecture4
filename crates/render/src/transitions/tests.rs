@@ -212,6 +212,48 @@ fn wipe_border_and_centre() {
 }
 
 #[test]
+fn keyhole_opens_from_the_centre_in_a_keyhole_shape() {
+    use crate::transitions::wipe::keyhole_dist;
+    // the head is wider than the slot: at the same distance, sideways in the head is inside a
+    // smaller keyhole than sideways in the slot
+    assert!(keyhole_dist(0.4, 0.3) < keyhole_dist(0.4, -0.5));
+    // scale-invariant metric: doubling the point doubles the value
+    for (x, y) in [(0.3, 0.2), (-0.1, -0.6), (0.0, 0.7)] {
+        assert!((keyhole_dist(2.0 * x, 2.0 * y) - 2.0 * keyhole_dist(x, y)).abs() < 1e-4);
+    }
+    assert_eq!(keyhole_dist(0.0, 0.0), 0.0);
+    assert!(keyhole_dist(f32::NAN, 1.0).is_finite());
+    // early on, the centre shows B and the corners still show A
+    let (a, b) = (frame_a(), frame_b());
+    let e = cfa4_project::find_effect("keyhole").unwrap().instance();
+    let o = apply(&e, &a, &b, 0.3);
+    let (cx, cy) = (o.w / 2, o.h / 2);
+    assert_eq!(o.get(cx, cy), b.get(cx, cy));
+    assert_eq!(o.get(0, 0), a.get(0, 0));
+}
+
+#[test]
+fn burn_away_leaves_an_ember_edge_between_the_clips() {
+    let (a, b) = (frame_a(), frame_b());
+    let e = cfa4_project::find_effect("burn_away").unwrap().instance();
+    let o = apply(&e, &a, &b, 0.5);
+    // pixels that are neither clip: the glowing rim (red well above blue) and the dark char
+    let near = |p: [f32; 4], q: [f32; 4]| (0..3).all(|k| (p[k] - q[k]).abs() < 0.02);
+    let between: Vec<[f32; 4]> = (0..o.h)
+        .flat_map(|y| (0..o.w).map(move |x| (x, y)))
+        .filter(|&(x, y)| !near(o.get(x, y), a.get(x, y)) && !near(o.get(x, y), b.get(x, y)))
+        .map(|(x, y)| o.get(x, y))
+        .collect();
+    let ember = between.iter().filter(|p| p[0] > 0.5 && p[0] > p[2] * 3.0).count();
+    let char_px = between.iter().filter(|p| p[0] + p[1] + p[2] < 0.15).count();
+    assert!(char_px > 0, "a charred band shows mid-transition");
+    assert!(ember > 0, "an orange ember edge shows mid-transition");
+    let from_a = (0..o.h).flat_map(|y| (0..o.w).map(move |x| (x, y))).filter(|&(x, y)| near(o.get(x, y), a.get(x, y))).count();
+    let from_b = (0..o.h).flat_map(|y| (0..o.w).map(move |x| (x, y))).filter(|&(x, y)| near(o.get(x, y), b.get(x, y))).count();
+    assert!(from_a > o.w * o.h / 20 && from_b > o.w * o.h / 20, "both clips show at the midpoint: {from_a} / {from_b}");
+}
+
+#[test]
 fn linear_wipe_reveals_from_the_trailing_side() {
     let (a, b) = (frame_a(), frame_b());
     let e = cfa4_project::find_effect("linear_wipe").unwrap().instance(); // 90° = left → right

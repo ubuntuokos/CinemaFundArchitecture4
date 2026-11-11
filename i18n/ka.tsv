@@ -4134,3 +4134,28 @@ export.summary	Low	დაბალი
 	Low Light	სუსტი განათება
 	Max Brightening	მაქსიმალური გაღიავება
 	Show Illumination	განათების ჩვენება
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	შენელების წინასწარი პარამეტრები
+	Sine	სინუსოიდური
+	Exponential	ექსპონენციური
+	Circular	წრიული
+	Elastic	ელასტიური
+	Film Gate	კინოკადრის ჩარჩო
+	Gate Weave	ჩარჩოს რხევა
+	Weave Rotation	რხევის ბრუნვა
+	Particles	ნაწილაკები
+	Emitter Position	გამომსხივებლის პოზიცია
+	Birth Rate	წარმოქმნის სიხშირე
+	Lifetime (seconds)	სიცოცხლის ხანგრძლივობა (წამი)
+	Velocity Random	სიჩქარის შემთხვევითობა
+	Gravity	გრავიტაცია
+	Particle Size	ნაწილაკის ზომა
+	Keyhole	საკეტის ჭუჭრუტანა
+	Burn Away	ამოწვა
+	Burn Size	წვის ზომა
+	Ember Width	ნაღვერდლის სიგანე
+	Ember Color	ნაღვერდლის ფერი
+	Check Text Legibility	ტექსტის წაკითხვადობის შემოწმება
+	Clear Legibility Markers	წაკითხვადობის მარკერების წაშლა
+	Text legibility: no problems found	ტექსტის წაკითხვადობა: პრობლემები ვერ მოიძებნა
+	Text legibility: {count} problems marked on the timeline (orange markers)	ტექსტის წაკითხვადობა: {count} პრობლემა მონიშნულია დროის ხაზზე (ნარინჯისფერი მარკერები)

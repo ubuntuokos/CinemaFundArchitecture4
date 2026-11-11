@@ -56,6 +56,33 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
                 split(t, x - ox, y - oy, (fine - 0.5) * amt * env * 30.0 * u, kk)
             })
         }
+        "burn_away" => {
+            // A burns from seeded noise: B shows where the fire has passed, then a hot rim in the
+            // ember colour, a band of char, and scorched A fading back to clean A
+            let size = t.px("noise_size").max(4.0);
+            let ember = t.px("border_width").max(0.5);
+            let soft = t.px("feather").max(0.0) * 0.5 + 0.5;
+            let col = t.color("border_color");
+            let hot = [col[0] * 0.5 + 0.5, col[1] * 0.5 + 0.5, col[2] * 0.5 + 0.25, 1.0];
+            let char_col = [0.03, 0.018, 0.012, 1.0];
+            let m = 4.0 * ember + soft + 1.0;
+            let thr = -m + p * (size + 2.0 * m);
+            paint(t.w, t.h, |x, y| {
+                let d = fbm(x / size, y / size, s) * size - thr;
+                if d >= 4.0 * ember + soft {
+                    return t.pa(x, y);
+                }
+                let burnt = if d < ember {
+                    mix(hot, col, (d / ember).max(0.0))
+                } else if d < 2.0 * ember {
+                    mix(col, char_col, (d - ember) / ember)
+                } else {
+                    mix(char_col, t.pa(x, y), smoothstep(2.0 * ember, 4.0 * ember, d))
+                };
+                let kb = 1.0 - smoothstep(-soft, soft, d);
+                mix(burnt, t.pb(x, y), kb)
+            })
+        }
         "earthquake" => {
             let shake = t.px("shake");
             let (sh, n) = shutter(t, 0.03);

@@ -4131,3 +4131,28 @@ export.summary	Low	thấp
 	Low Light	Thiếu sáng
 	Max Brightening	Làm sáng tối đa
 	Show Illumination	Hiện độ chiếu sáng
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Thiết lập sẵn chuyển động mượt
+	Sine	Hình sin
+	Exponential	Hàm mũ
+	Circular	Hình tròn
+	Elastic	Đàn hồi
+	Film Gate	Khung phim
+	Gate Weave	Rung khung
+	Weave Rotation	Xoay khi rung
+	Particles	Hạt
+	Emitter Position	Vị trí nguồn phát
+	Birth Rate	Tốc độ sinh
+	Lifetime (seconds)	Thời gian tồn tại (giây)
+	Velocity Random	Vận tốc ngẫu nhiên
+	Gravity	Trọng lực
+	Particle Size	Kích thước hạt
+	Keyhole	Lỗ khóa
+	Burn Away	Cháy biến mất
+	Burn Size	Kích thước vùng cháy
+	Ember Width	Độ rộng viền than hồng
+	Ember Color	Màu viền than hồng
+	Check Text Legibility	Kiểm tra độ dễ đọc của chữ
+	Clear Legibility Markers	Xóa điểm đánh dấu độ dễ đọc
+	Text legibility: no problems found	Độ dễ đọc của chữ: không có vấn đề
+	Text legibility: {count} problems marked on the timeline (orange markers)	Độ dễ đọc của chữ: {count} vấn đề được đánh dấu trên dòng thời gian (điểm đánh dấu màu cam)

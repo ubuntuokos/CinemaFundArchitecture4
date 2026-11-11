@@ -4133,3 +4133,28 @@ export.summary	Low	madal
 	Low Light	Vähene valgus
 	Max Brightening	Suurim heledamaks muutmine
 	Show Illumination	Näita valgustust
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Sujuvuse eelseaded
+	Sine	Siinus
+	Exponential	Eksponentsiaalne
+	Circular	Ringjas
+	Elastic	Elastne
+	Film Gate	Filmiaken
+	Gate Weave	Akna võbelus
+	Weave Rotation	Võbeluse pööre
+	Particles	Osakesed
+	Emitter Position	Kiirguri asukoht
+	Birth Rate	Tekkesagedus
+	Lifetime (seconds)	Eluiga (sekundites)
+	Velocity Random	Kiiruse juhuslikkus
+	Gravity	Gravitatsioon
+	Particle Size	Osakeste suurus
+	Keyhole	Võtmeauk
+	Burn Away	Põletus
+	Burn Size	Põletuse suurus
+	Ember Width	Hõõguva serva laius
+	Ember Color	Hõõguva serva värv
+	Check Text Legibility	Kontrolli teksti loetavust
+	Clear Legibility Markers	Eemalda loetavuse markerid
+	Text legibility: no problems found	Teksti loetavus: probleeme ei leitud
+	Text legibility: {count} problems marked on the timeline (orange markers)	Teksti loetavus: {count} probleemi on ajateljel märgitud (oranžid markerid)

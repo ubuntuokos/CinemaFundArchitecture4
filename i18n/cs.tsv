@@ -4131,3 +4131,28 @@ export.summary	Low	nízká
 	Low Light	Slabé světlo
 	Max Brightening	Maximální zesvětlení
 	Show Illumination	Zobrazit osvětlení
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Předvolby náběhu
+	Sine	Sinusový
+	Exponential	Exponenciální
+	Circular	Kruhový
+	Elastic	Elastický
+	Film Gate	Filmové okénko
+	Gate Weave	Kmitání okénka
+	Weave Rotation	Rotace kmitání
+	Particles	Částice
+	Emitter Position	Poloha emitoru
+	Birth Rate	Rychlost vzniku
+	Lifetime (seconds)	Životnost (sekundy)
+	Velocity Random	Náhodnost rychlosti
+	Gravity	Gravitace
+	Particle Size	Velikost částic
+	Keyhole	Klíčová dírka
+	Burn Away	Propálení
+	Burn Size	Velikost propálení
+	Ember Width	Šířka žhavého okraje
+	Ember Color	Barva žhavého okraje
+	Check Text Legibility	Zkontrolovat čitelnost textu
+	Clear Legibility Markers	Vymazat značky čitelnosti
+	Text legibility: no problems found	Čitelnost textu: nenalezeny žádné problémy
+	Text legibility: {count} problems marked on the timeline (orange markers)	Čitelnost textu: {count} problémů označeno na časové ose (oranžové značky)

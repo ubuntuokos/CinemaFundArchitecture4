@@ -4134,3 +4134,28 @@ export.summary	Low	nizka
 	Low Light	Šibka svetloba
 	Max Brightening	Največja osvetlitev
 	Show Illumination	Pokaži osvetljenost
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Prednastavitve blaženja
+	Sine	Sinusno
+	Exponential	Eksponentno
+	Circular	Krožno
+	Elastic	Elastično
+	Film Gate	Filmsko okence
+	Gate Weave	Nihanje okenca
+	Weave Rotation	Vrtenje nihanja
+	Particles	Delci
+	Emitter Position	Položaj oddajnika
+	Birth Rate	Hitrost nastajanja
+	Lifetime (seconds)	Življenjska doba (sekunde)
+	Velocity Random	Naključnost hitrosti
+	Gravity	Težnost
+	Particle Size	Velikost delcev
+	Keyhole	Ključavnica
+	Burn Away	Izžiganje
+	Burn Size	Velikost izžiga
+	Ember Width	Širina žerjavice
+	Ember Color	Barva žerjavice
+	Check Text Legibility	Preveri berljivost besedila
+	Clear Legibility Markers	Počisti oznake berljivosti
+	Text legibility: no problems found	Berljivost besedila: ni najdenih težav
+	Text legibility: {count} problems marked on the timeline (orange markers)	Berljivost besedila: na časovnici označenih težav: {count} (oranžne oznake)

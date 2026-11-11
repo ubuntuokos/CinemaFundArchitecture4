@@ -4130,3 +4130,28 @@ export.summary	Low	alacsony
 	Low Light	Gyenge fény
 	Max Brightening	Legnagyobb világosítás
 	Show Illumination	Megvilágítás mutatása
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Simítási előbeállítások
+	Sine	Szinusz
+	Exponential	Exponenciális
+	Circular	Kör
+	Elastic	Rugalmas
+	Film Gate	Filmkapu
+	Gate Weave	Kapuremegés
+	Weave Rotation	Remegés forgása
+	Particles	Részecskék
+	Emitter Position	Kibocsátó pozíciója
+	Birth Rate	Keletkezési ütem
+	Lifetime (seconds)	Élettartam (másodperc)
+	Velocity Random	Sebesség véletlenszerűsége
+	Gravity	Gravitáció
+	Particle Size	Részecskeméret
+	Keyhole	Kulcslyuk
+	Burn Away	Kiégés
+	Burn Size	Égés mérete
+	Ember Width	Parázsszegély szélessége
+	Ember Color	Parázsszegély színe
+	Check Text Legibility	Szöveg olvashatóságának ellenőrzése
+	Clear Legibility Markers	Olvashatósági jelölők törlése
+	Text legibility: no problems found	Szöveg olvashatósága: nincs probléma
+	Text legibility: {count} problems marked on the timeline (orange markers)	Szöveg olvashatósága: {count} probléma megjelölve az idővonalon (narancssárga jelölők)

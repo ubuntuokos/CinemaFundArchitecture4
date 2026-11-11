@@ -247,6 +247,18 @@ distributions are not targets.
     Hosted services (Veo, Kling, Seedance, Suno, ElevenLabs) are out (local-first, licences);
     only openly licensed local models qualify. Kokoro TTS narration exists already.
   - *Poster or still to motion:* animate a single image into a short promo (image-to-video).
+- **CFA4 candidates** (from the 2026-10-26 repository reviews; each needs its model's licence and
+  weights checked before it ships, and a menu entry like every effect):
+  - *Word Highlight captions* (karaoke style: the spoken word lights up). Needs word timings
+    from the local Whisper transcription (`crates/speech`, G19); the styling itself is not AI.
+  - *Low Light* enhancement: SGZ / Semantic-Guided LLIE (MIT, ~53 KB ONNX); alternatives
+    TBEFN (BSD-3) and URetinex-Net (MIT). Zero-DCE, SCI and RUAS have no licence and are out.
+  - *Face-limited Skin Smoothing*: YuNet face detection (libfacedetection, BSD-3) to restrict the
+    existing Skin Smoothing effect to faces.
+  - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
+    (Apache-2.0) as the fallback.
+  - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
+    model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 
 ## G13. Delivery formats
 
@@ -366,4 +378,5 @@ distributions are not targets.
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |
 | 2026-10-27 | minor | Ubuntu 26.04 is the only target (macOS, Windows and RPM dropped): G3, G4, G5, G8 and G9 rewritten, G4 40–80 → 30–60 h, G5 120–200 → 100–170 h, G9 50–90 → 30–60 h |
 | 2026-10-26 | minor | G10: JPEG 2000 MXF import, DCP picture tracks included (#77) |
+| 2026-10-26 | minor | G12: AI candidates from the repository reviews (word-highlight captions, low light, face detection, background matting, foley) |
 | 2026-11-11 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |
