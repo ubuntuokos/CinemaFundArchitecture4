@@ -75,6 +75,7 @@ whole interface, one PR) at ~4–8 h per language for the catalog plus tests.
 | *Other shipped:* Finnish | fi | 4,073 (every entry of the Spanish catalog, egui and Qt GUI strings; 375 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin (bundled fonts) | not recorded; welcome | **full** (catalog) | review |
 | *Other shipped:* Lithuanian | lt | 4,073 (every entry of the Spanish catalog, egui and Qt GUI strings; 158 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin (bundled fonts) | not recorded; welcome | **full** (catalog) | review |
 | *Other shipped:* Croatian | hr | 4,073 (every entry of the Spanish catalog, egui and Qt GUI strings; 149 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin (bundled fonts) | not recorded; welcome | **full** (catalog) | review |
+| *Other shipped:* Kazakh | kk | 4,073 (every entry of the Spanish catalog, egui and Qt GUI strings; 144 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Cyrillic (bundled fonts) | not recorded; welcome | **full** (catalog) | review |
 
 UI strings are catalog entries (the non-comment lines of `i18n/<code>.tsv`; English counts the
 source strings in the code), so the rows were measured at different times: at this change the
@@ -108,6 +109,7 @@ Every language needs native-speaker review (human).
 | 2026-11-11 | minor | Finnish (fi) added, complete: 4,073 entries (375 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
 | 2026-11-11 | minor | Lithuanian (lt) added, complete: 4,073 entries (158 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
 | 2026-11-11 | minor | Croatian (hr) added, complete: 4,073 entries (149 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
+| 2026-11-11 | minor | Kazakh (kk) added, complete: 4,073 entries (144 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
 | 2026-11-10 | minor | English (UK) and English (Australia) added (US English is the source, shown as English (US)); de, es, fr, it, ja, ko, zh-cn, pt-br and id completed (718 entries) |
 | 2026-11-10 | minor | Every catalog moved to the top-level `i18n/` (owner decision 2026-11-09), one per language for egui and the Qt GUI (the Qt-only strings in a "Qt GUI" section; where the two had translated the same string differently, the Qt GUI's wording was kept); Hungarian (hu) completed (1,572 new entries) and added to egui's Edit ▸ Language, Settings and System Language |
 | 2026-10-27 | minor | Ubuntu 26.04 only: the macOS app-menu entries (Settings, Hide CFA4, Hide Others) and macOS hints left the catalogs; Korean font list names Linux fonts |
