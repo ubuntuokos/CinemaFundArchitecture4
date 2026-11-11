@@ -3,7 +3,8 @@
 //! index pack), ST 378 (OP1a), ST 390 (OP-Atom), ST 379-1/2 (generic container), ST 381-1 (MPEG
 //! video mapping), ST 381-3 (AVC mapping), ST 382 (AES3 / Broadcast Wave audio mapping), ST 331
 //! (AES3 element data, D-10 sound), ST 2019-4 (VC-3 mapping), RDD 44 (ProRes mapping) and ST
-//! 2067-201 (IAB immersive audio track files).
+//! 2067-201 (IAB immersive audio track files), ST 429-5 (timed text track files, also used by ST
+//! 2067-2 IMF) and ST 410 (generic stream partitions).
 //!
 //! [`open`] walks the file's KLV packets (keys and lengths only; essence payloads are never read
 //! while opening), parses the partition packs, the primer pack and header metadata of the most
@@ -25,14 +26,22 @@ mod file;
 mod index;
 mod klv;
 mod meta;
+mod peek;
 mod source;
+mod timed_text;
 pub mod write;
+
+#[cfg(any(test, feature = "test-util"))]
+#[doc(hidden)]
+pub mod testing;
 
 pub use essence::{Codec, PictureInfo, SoundFormat, SoundInfo, aes3_element_samples, decode_pcm};
 pub use file::{Chunk, EssenceTrack, MxfFile, OperationalPattern, Partition, PartitionKind, Sample, Timecode, TrackKind, Wrapping, open};
 pub use index::{IndexEntry, IndexSegment};
 pub use klv::{Rational, Ul};
+pub use peek::{HeaderPeek, peek};
 pub use source::ByteSource;
+pub use timed_text::{AncillaryResource, MAX_RESOURCE_BYTES, Region, TimedText, is_timed_text, open_timed_text};
 pub use write::{
     CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc, SoundDesc,
     StartTimecode, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm,

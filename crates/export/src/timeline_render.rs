@@ -3,8 +3,10 @@
 //! MP4 / MOV stream.
 //!
 //! - **Copied runs** are read from their own source and written packet for packet. Every copied
-//!   run must use the same codec configuration (one `avcC`), the same timescale and the same
-//!   composition delay, and starts at an IDR picture, so decoding never reaches across a splice.
+//!   run must use the same codec configuration (one `avcC`) and the same composition delay, and
+//!   starts at an IDR picture, so decoding never reaches across a splice. Runs in another
+//!   timescale are rescaled exactly to the output's (WP-09d), or refused when a timestamp does
+//!   not convert without rounding.
 //! - **Re-encoded runs** (boundaries, and runs whose stream does not match the output) are decoded
 //!   from their source with the CFA4 H.264 decoder and encoded with the CFA4 H.264 encoder.
 //! - **Rendered segments** (gaps, effects, transitions…) are encoded from the pictures the caller
@@ -132,6 +134,16 @@ struct Prepared<'s, 'a> {
 
 fn stale(detail: String) -> SmartCutError {
     SmartCutError::StaleIndex { detail }
+}
+
+/// `v` ticks of 1/`from` s in 1/`to` s ticks, when that is exact.
+pub(crate) fn rescale(v: i64, from: u32, to: u32) -> Option<i64> {
+    if from == to {
+        return Some(v);
+    }
+    let scaled = i128::from(v).checked_mul(i128::from(to))?;
+    let from = i128::from(from);
+    (from > 0 && scaled % from == 0).then(|| i64::try_from(scaled / from).ok()).flatten()
 }
 
 fn gcd(mut a: u64, mut b: u64) -> u64 {
@@ -265,11 +277,10 @@ fn prepare<'s, 'a>(
     if plan.expected_duration.timebase != TICK_TIMEBASE || plan.expected_duration.value != at {
         return Err(stale(format!("the segments last {at} ticks, the plan says {}", plan.expected_duration.value)));
     }
-    // the copied runs share one configuration, timescale and composition delay
+    // the copied runs share one configuration
     let mut base: Option<String> = None;
-    let mut delay: Option<i64> = None;
     for seg in &segs {
-        let Seg::Copy { src: id, first, last } = seg else { continue };
+        let Seg::Copy { src: id, .. } = seg else { continue };
         let src = srcs.get(id).ok_or_else(|| SmartCutError::MissingSource { source_id: id.clone() })?;
         match base.as_ref().and_then(|b| srcs.get(b)) {
             None => base = Some(id.clone()),
@@ -277,19 +288,8 @@ fn prepare<'s, 'a>(
                 if b.avc.to_bytes() != src.avc.to_bytes() {
                     return Err(incompatible(format!("{id} has another codec configuration than the other copied runs")));
                 }
-                if b.track.timescale != src.track.timescale {
-                    return Err(incompatible(format!("{id} has another timescale than the other copied runs")));
-                }
             }
         }
-        let run = src.track.samples.get(*first..=*last).unwrap_or_default();
-        let first_dts = run.first().map_or(0, |s| s.dts);
-        let min_pts = run.iter().map(|s| s.pts).min().unwrap_or(first_dts);
-        let d = min_pts.checked_sub(first_dts).filter(|d| *d >= 0).ok_or(SmartCutError::Timestamps { decode_index: *first as u64 })?;
-        if delay.is_some_and(|x| x != d) {
-            return Err(incompatible(format!("the copied run of {id} has another composition delay than the runs before it")));
-        }
-        delay = Some(d);
     }
     // the output timescale: the copied runs', else the frame rate's own
     let (timescale, frame) = match base.as_ref().and_then(|b| srcs.get(b)) {
@@ -311,6 +311,22 @@ fn prepare<'s, 'a>(
             }
         }
     };
+    // ... and one composition delay, in the output timescale
+    let mut delay: Option<i64> = None;
+    for seg in &segs {
+        let Seg::Copy { src: id, first, last } = seg else { continue };
+        let src = srcs.get(id).ok_or_else(|| SmartCutError::MissingSource { source_id: id.clone() })?;
+        let run = src.track.samples.get(*first..=*last).unwrap_or_default();
+        let first_dts = run.first().map_or(0, |s| s.dts);
+        let min_pts = run.iter().map(|s| s.pts).min().unwrap_or(first_dts);
+        let d = min_pts.checked_sub(first_dts).filter(|d| *d >= 0).ok_or(SmartCutError::Timestamps { decode_index: *first as u64 })?;
+        let d = rescale(d, src.track.timescale, timescale)
+            .ok_or_else(|| incompatible(format!("the composition delay of {id} does not convert exactly to 1/{timescale} s units")))?;
+        if delay.is_some_and(|x| x != d) {
+            return Err(incompatible(format!("the copied run of {id} has another composition delay than the runs before it")));
+        }
+        delay = Some(d);
+    }
     // constant frame rate: every source picture shown lasts one output frame
     for seg in &segs {
         let (id, shown): (&String, Vec<usize>) = match seg {
@@ -578,7 +594,12 @@ pub fn execute_mp4_timeline<W: Write + Seek>(
                     if data.len() as u64 != u64::from(s.size) {
                         return Err(stale(format!("packet {d} of {id}: read {} bytes, expected {}", data.len(), s.size)));
                     }
-                    let offset = s.pts.checked_sub(s.dts).and_then(|o| i32::try_from(o).ok()).ok_or(SmartCutError::Timestamps { decode_index: d as u64 })?;
+                    let offset = s
+                        .pts
+                        .checked_sub(s.dts)
+                        .and_then(|o| rescale(o, src.track.timescale, p.timescale))
+                        .and_then(|o| i32::try_from(o).ok())
+                        .ok_or(SmartCutError::Timestamps { decode_index: d as u64 })?;
                     w.write_sample(t, WriteSample { data: &data, duration: p.frame, composition_offset: offset, is_sync: s.is_sync }).map_err(io)?;
                     if d == *last {
                         last_idr = idr_pic_id(&data, src.avc.length_size, &src.params)?;
@@ -717,7 +738,8 @@ pub fn verify_mp4_timeline<O: ByteSource>(
             Expect::Copied { src: id, d } => {
                 let src = p.srcs.get(*id).ok_or_else(|| SmartCutError::MissingSource { source_id: (*id).to_string() })?;
                 let s = src.track.samples.get(*d).ok_or_else(|| fail(format!("packet {d} of {id} is missing")))?;
-                if src.read(*d)? != data || out.is_sync != s.is_sync || out.pts.checked_sub(out.dts) != s.pts.checked_sub(s.dts) {
+                let offset = s.pts.checked_sub(s.dts).and_then(|o| rescale(o, src.track.timescale, p.timescale));
+                if src.read(*d)? != data || out.is_sync != s.is_sync || out.pts.checked_sub(out.dts) != offset {
                     return Err(fail(format!("sample {k} differs from packet {d} of {id}")));
                 }
                 report.copied += 1;

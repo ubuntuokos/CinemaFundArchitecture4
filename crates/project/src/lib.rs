@@ -39,7 +39,7 @@ pub use essential::{AudioType, EssentialSound};
 pub use find::{FindOp, FindQuery, FindRow, SearchBin};
 pub use graphic_design::{CharStyle, CreditsLink, GraphicMeta, LayerExtra, LayerStamp, Pin, PinTarget, Roll, RollMode, SourceGraphic, StyleRun};
 pub use keyframe::{Interpolation, Keyframe, Param, ParamValue};
-pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod};
+pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod, Tracker};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
 pub use narration::{Narration, VocalPitch};
@@ -197,13 +197,13 @@ pub struct AudioChannelMap {
 
 impl AudioChannelMap {
     /// The default mapping of a source with `channels` channels in `format`: mono = one clip per
-    /// channel, stereo = channel pairs, 5.1 / adaptive = one clip with every channel.
+    /// channel, stereo = channel pairs, 5.1 / 7.1 / 7.1.2 / adaptive = one clip with every channel.
     pub fn for_format(format: AudioChannels, channels: u16) -> Self {
         let n = channels.max(1);
         let clips = match format {
             AudioChannels::Mono => (0..n).map(|c| vec![c]).collect(),
             AudioChannels::Stereo => (0..n).step_by(2).map(|c| if c + 1 < n { vec![c, c + 1] } else { vec![c] }).collect(),
-            AudioChannels::Surround51 | AudioChannels::Adaptive => vec![(0..n).collect()],
+            AudioChannels::Surround51 | AudioChannels::Surround71 | AudioChannels::Surround712 | AudioChannels::Adaptive => vec![(0..n).collect()],
         };
         Self { format, clips }
     }
@@ -507,6 +507,29 @@ pub enum AudioChannels {
     Stereo,
     Surround51,
     Adaptive,
+    /// 7.1 DS: L, R, C, LFE, Lss, Rss, Lrs, Rrs (a Mix or submix; tracks of 7.1 sources).
+    Surround71,
+    /// 7.1.2 (9.1OH): 7.1 DS and the overhead Lts, Rts.
+    Surround712,
+}
+
+impl AudioChannels {
+    /// The channel count of a fixed format (5.1: 6, 7.1: 8, 7.1.2: 10, stereo: 2, mono: 1);
+    /// `None` for adaptive.
+    pub fn fixed_channels(self) -> Option<usize> {
+        match self {
+            AudioChannels::Mono => Some(1),
+            AudioChannels::Stereo => Some(2),
+            AudioChannels::Surround51 => Some(6),
+            AudioChannels::Surround71 => Some(8),
+            AudioChannels::Surround712 => Some(10),
+            AudioChannels::Adaptive => None,
+        }
+    }
+    /// Whether this is a surround format (5.1, 7.1 or 7.1.2), panned with the surround panner.
+    pub fn is_surround(self) -> bool {
+        matches!(self, AudioChannels::Surround51 | AudioChannels::Surround71 | AudioChannels::Surround712)
+    }
 }
 
 /// A clip instance on a track.

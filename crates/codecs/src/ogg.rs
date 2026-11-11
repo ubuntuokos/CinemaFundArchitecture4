@@ -110,7 +110,13 @@ impl OggSource {
             kind: MediaKind::AudioOnly,
             duration: Tick::from_units(frames, rate as i64),
             video: None,
-            audio_streams: vec![AudioStreamInfo { sample_rate: rate, channels: channels.max(1), codec: codec.into(), bits_per_sample: None }],
+            audio_streams: vec![AudioStreamInfo {
+                sample_rate: rate,
+                channels: channels.max(1),
+                codec: codec.into(),
+                bits_per_sample: None,
+                speakers: Vec::new(),
+            }],
             container: "Ogg".into(),
             start_timecode: None,
             file_size: Some(bytes.0.len()),
@@ -158,7 +164,7 @@ impl OggSource {
 
 /// Decode a Vorbis stream fully, aligned to its granule positions.
 fn decode_vorbis(file: &OggFile, bytes: &crate::Src, s: usize) -> crate::Result<(u32, Vec<Vec<f32>>)> {
-    use symphonia::core::codecs::CODEC_TYPE_VORBIS;
+    use symphonia::core::codecs::audio::well_known::CODEC_ID_VORBIS;
     let st = &file.streams[s];
     if st.headers.len() < 3 {
         return Err(CodecError::Decode("Vorbis: missing header packets".into()));
@@ -166,7 +172,7 @@ fn decode_vorbis(file: &OggFile, bytes: &crate::Src, s: usize) -> crate::Result<
     let vi = cfa4_ogg::VorbisInfo::parse(&st.headers[0]).ok_or_else(|| CodecError::Decode("Vorbis: bad identification header".into()))?;
     let mut extra = st.headers[0].clone();
     extra.extend_from_slice(&st.headers[2]);
-    let mut dec = PacketDecoder::new(CODEC_TYPE_VORBIS, vi.sample_rate, Some(extra))?;
+    let mut dec = PacketDecoder::new(CODEC_ID_VORBIS, vi.sample_rate, Some(extra))?;
     let ch = vi.channels.max(1) as usize;
     let mut out: Vec<Vec<f32>> = vec![Vec::new(); ch];
     let mut lead: Option<i64> = None;

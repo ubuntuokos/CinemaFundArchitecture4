@@ -106,14 +106,33 @@ fn hls_writes_segments_and_playlists() {
     assert_eq!(r.frames, 13 * 24);
     let files = hls_files(&path, 36);
     let segs: Vec<String> = (0..3).map(|n| files.segment(n)).collect();
+    let asegs: Vec<String> = (0..3).map(|n| files.audio_segment(n)).collect();
     let mut want = vec![files.media.clone(), files.init.clone()];
     want.extend(segs.clone());
+    want.extend([files.audio_media.clone(), files.audio_init.clone()]);
+    want.extend(asegs.clone());
     assert_eq!(r.extra_files, want);
-    assert!(!Path::new(&files.segment(3)).exists());
+    assert!(!Path::new(&files.segment(3)).exists() && !Path::new(&files.audio_segment(3)).exists());
 
+    // the sound is an audio group the variant refers to (RFC 8216 §4.3.4.1, §4.3.4.2)
     let master = std::fs::read_to_string(&path).unwrap();
     assert!(master.starts_with("#EXTM3U\n#EXT-X-VERSION:7\n"), "{master}");
-    assert!(master.contains("CODECS=\"avc1.") && master.contains(",mp4a.40.2\",RESOLUTION=64x36,FRAME-RATE=24.000\nDemo_36p.m3u8\n"), "{master}");
+    assert!(
+        master.contains(
+            "\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",NAME=\"Audio\",DEFAULT=YES,AUTOSELECT=YES,CHANNELS=\"2\",URI=\"Demo_audio.m3u8\"\n#EXT-X-STREAM-INF:"
+        ),
+        "{master}"
+    );
+    assert!(
+        master.contains("CODECS=\"avc1.") && master.contains(",mp4a.40.2\",RESOLUTION=64x36,FRAME-RATE=24.000,AUDIO=\"audio\"\nDemo_36p.m3u8\n"),
+        "{master}"
+    );
+    let audio_media = std::fs::read_to_string(&files.audio_media).unwrap();
+    assert!(audio_media.contains("#EXT-X-MAP:URI=\"Demo_audio_init.mp4\"\n") && !audio_media.contains("EXT-X-MEDIA:"), "{audio_media}");
+    let adurations: Vec<f64> = audio_media.lines().filter_map(|l| l.strip_prefix("#EXTINF:")).map(|l| l.trim_end_matches(',').parse().unwrap()).collect();
+    assert_eq!(adurations.len(), 3, "{audio_media}");
+    assert!((adurations.iter().sum::<f64>() - 13.0).abs() < 0.1, "{audio_media}");
+    assert!(audio_media.contains("\nDemo_audio_00000.m4s\n") && audio_media.contains("\nDemo_audio_00002.m4s\n"));
     let media = std::fs::read_to_string(&files.media).unwrap();
     assert!(media.contains("#EXT-X-TARGETDURATION:6\n") && media.contains("#EXT-X-MAP:URI=\"Demo_36p_init.mp4\"\n"), "{media}");
     assert!(media.ends_with("#EXT-X-ENDLIST\n"), "{media}");
@@ -136,11 +155,21 @@ fn hls_writes_segments_and_playlists() {
     assert_eq!(firsts, [true, true, true], "every segment starts at a key frame");
     let f = cfa4_isobmff::open(whole.as_slice()).unwrap();
     assert!(f.fragmented);
-    assert_eq!(f.tracks.len(), 2);
+    assert_eq!(f.tracks.len(), 1, "one track per file (CMAF)");
     assert_eq!(f.tracks[0].samples.len(), 13 * 24);
     assert_eq!(f.tracks[0].samples[0].pts, 0, "the first picture at 0");
+    // the sound's init and segments are their own fragmented MP4
+    let mut whole = std::fs::read(&files.audio_init).unwrap();
+    for seg in &asegs {
+        let b = std::fs::read(seg).unwrap();
+        assert_eq!(&b[4..8], b"moof", "{seg}");
+        whole.extend(b);
+    }
+    let f = cfa4_isobmff::open(whole.as_slice()).unwrap();
+    assert_eq!(f.tracks.len(), 1);
+    assert_eq!(f.tracks[0].kind, cfa4_isobmff::TrackKind::Audio);
     // the sound covers the picture: 13 s plus the AAC priming, in 1024-sample units
-    let audio_end: i64 = f.tracks[1].samples.iter().map(|s| i64::from(s.duration)).sum();
+    let audio_end: i64 = f.tracks[0].samples.iter().map(|s| i64::from(s.duration)).sum();
     assert!((13 * 48_000 + 1024..13 * 48_000 + 3 * 1024).contains(&audio_end), "{audio_end}");
 
     if let Some(j) = ffprobe_json(&["-show_streams", "-show_format"], &path) {
@@ -1622,6 +1651,7 @@ fn sample_formats_each_codec_and_container_stores() {
     assert_eq!(supported(Format::Flac, AudioCodec::Auto), [Int16, Int24, Int32]);
     assert_eq!(supported(Format::ProRes, AudioCodec::Flac), [Int16, Int24, Int32]);
     assert!(supported(Format::H264, AudioCodec::Auto).is_empty(), "MP4 is AAC");
+    assert_eq!(supported(Format::Mpeg2, AudioCodec::Auto), [Int16, Int24], "DVD LPCM");
     // `bits` rounds down to a size; `float` only with 32
     let fmt = |bits, float| AudioSettings { bits, float, ..Default::default() }.sample_format();
     assert_eq!(
@@ -1939,6 +1969,7 @@ fn chapter_markers_become_export_chapters() {
 
 #[test]
 fn chapters_reach_mp4_m4a_and_hls_init() {
+    // `chpl` everywhere, plus the QuickTime chapter track in progressive MP4/MOV and M4A
     use cfa4_project::MarkerKind::Chapter as C;
     let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 2);
     let p = with_markers(p, seq, &[(0, "Intro", "", C), (1_000, "Ünnep", "", C)]);
@@ -1946,11 +1977,21 @@ fn chapters_reach_mp4_m4a_and_hls_init() {
     let dir = Scratch::new("chapters");
     let range = Some(TimeRange::new(Tick::ZERO, Tick(2 * TICKS_PER_SECOND)));
     let chapters_of = |path: &str| cfa4_isobmff::open(std::fs::read(path).unwrap()).unwrap().metadata.chapters;
+    // the QuickTime chapter track alone: `chpl` renamed away, so the demuxer reads the track
+    let track_chapters_of = |path: &str| {
+        let mut b = std::fs::read(path).unwrap();
+        let at = b.windows(4).position(|w| w == b"chpl").unwrap();
+        b[at..at + 4].copy_from_slice(b"skip");
+        let f = cfa4_isobmff::open(b).unwrap();
+        assert!(f.tracks.iter().any(|t| t.handler == cfa4_isobmff::FourCc(*b"text") && !t.enabled), "{path}: no disabled text track");
+        f.metadata.chapters
+    };
 
     let mp4 = dir.path("c.mp4");
     export(&p, seq, &ExportSettings { format: Format::H264, path: mp4.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
         .unwrap();
     assert_eq!(chapters_of(&mp4), want);
+    assert_eq!(track_chapters_of(&mp4), want);
     if let Some(j) = ffprobe_json(&["-show_chapters"], &mp4) {
         let titles: Vec<&str> = j["chapters"].as_array().unwrap().iter().map(|c| c["tags"]["title"].as_str().unwrap()).collect();
         assert_eq!(titles, ["Intro", "Ünnep"]);
@@ -1965,13 +2006,42 @@ fn chapters_reach_mp4_m4a_and_hls_init() {
     )
     .unwrap();
     assert!(chapters_of(&off).is_empty());
+    assert_eq!(cfa4_isobmff::open(std::fs::read(&off).unwrap()).unwrap().tracks.len(), 2, "no chapter track either");
 
     let m4a = dir.path("c.m4a");
     export(&p, seq, &ExportSettings { format: Format::Aac, path: m4a.clone(), range, ..Default::default() }, &m, &Progress::default()).unwrap();
     assert_eq!(chapters_of(&m4a), want);
+    assert_eq!(track_chapters_of(&m4a), want);
 
     let hls = dir.path("c.m3u8");
     export(&p, seq, &ExportSettings { format: Format::Hls, path: hls.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
         .unwrap();
     assert_eq!(chapters_of(&hls_files(&hls, 36).init), want);
+}
+
+#[test]
+fn chapters_reach_webm() {
+    use cfa4_project::MarkerKind::Chapter as C;
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 2);
+    let p = with_markers(p, seq, &[(0, "Intro", "", C), (1_000, "Ünnep", "", C)]);
+    let dir = Scratch::new("webm-chapters");
+    let range = Some(TimeRange::new(Tick::ZERO, Tick(2 * TICKS_PER_SECOND)));
+    let path = dir.path("c.webm");
+    export(&p, seq, &ExportSettings { format: Format::WebM, path: path.clone(), range, bitrate_kbps: 300, ..Default::default() }, &m, &Progress::default())
+        .unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let f = cfa4_matroska::open(&bytes[..]).unwrap();
+    assert_eq!(f.chapters.len(), 1, "one edition");
+    let got: Vec<(u64, Option<u64>, Option<&str>)> = f.chapters[0].chapters.iter().map(|c| (c.start_ns, c.end_ns, c.title())).collect();
+    // each chapter ends where the next starts, the last with the export (2 s)
+    assert_eq!(got, [(0, Some(1_000_000_000), Some("Intro")), (1_000_000_000, Some(2_000_000_000), Some("Ünnep"))]);
+    if let Some(j) = ffprobe_json(&["-show_chapters"], &path) {
+        let titles: Vec<&str> = j["chapters"].as_array().unwrap().iter().map(|c| c["tags"]["title"].as_str().unwrap()).collect();
+        assert_eq!(titles, ["Intro", "Ünnep"]);
+    }
+    // switched off: no Chapters element
+    let off = dir.path("off.webm");
+    let s = ExportSettings { format: Format::WebM, path: off.clone(), range, bitrate_kbps: 300, chapters: false, ..Default::default() };
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert!(cfa4_matroska::open(&std::fs::read(&off).unwrap()[..]).unwrap().chapters.is_empty());
 }
