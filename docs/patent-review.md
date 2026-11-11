@@ -56,6 +56,9 @@ szabadalommal védett formátumot.
 | HEIF / HEIC állókép | olvasás (a képelemek HEVC-dekódolása a `crates/hevc` sorában) | `crates/heif` | alap | függőben | | |
 | Animált WebP | dekódolás (VP8 / VP8L) | `crates/media` (a VP8-dekódolás a `crates/vp8` sorában) | alap | függőben | | |
 | DNG / CinemaDNG (lossless JPEG) | dekódolás | `crates/dng` | alap | függőben | | |
+| FFV1 (RFC 9043) | dekódolás | `crates/ffv1` | alap | függőben | | |
+| Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
+| Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
 
 ## Hang
 
