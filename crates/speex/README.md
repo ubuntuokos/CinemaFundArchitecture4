@@ -34,3 +34,7 @@ Bit-exact against the reference `speexdec` 1.2.1 on files from the reference `sp
 every narrowband quality 0–10, wideband and ultra-wideband qualities, VBR, ABR, VAD + DTX, 2–4
 frames per packet, narrowband and wideband stereo; and through the media source, front to back
 and after a seek.
+
+The reference is the portable float build (SSE, no fused multiply-add), which CI builds from the
+upstream tag (`scripts/ci/install-speex.sh`). Distribution packages built for x86-64-v3 (Ubuntu
+26.04) let the compiler fuse multiplies and adds, and their output differs by a few LSB.
