@@ -7,17 +7,17 @@ on) `rayon`. No `unsafe`, no panics on damaged input.
 The crate decodes DIF frames (step DV-1 of the DV/DVCPRO plan). `cfa4-codecs` imports them
 (DV-2) from raw `.dv` / `.dif` files (`DifSource`), type-2 AVI, MOV / MP4 and MXF; 4:1:1 enters
 the engine as 4:2:2, and the stream info's aspect, sampling and colour come from the first
-frame (`cfa4_codecs::video::dv_stream_info`). DVCPRO 50 and DVCPRO HD are DV-3, DV audio and
-type-1 AVI are DV-4.
+frame (`cfa4_codecs::video::dv_stream_info`). DVCPRO 50 and DVCPRO HD are DV-3. DV-4 adds the audio
+(`decode_audio`, raw `.dv` files play it); type-1 AVI is still to do.
 
 ## Sources and licence
 
 | Source | Edition / revision | Used for |
 |---|---|---|
-| libdv | 1.0.0 (Ubuntu `libdv_1.0.0.orig.tar.gz`, sha256 `a305734033a9c25541a59e8dd1c254409953269ea7c710c39e540bd8853389ba`), LGPL-2.1-or-later | AC VLC table (`vlc.c`), zigzag orders and area maps (`parse.c`, `quant.c`), quantisation step table and class offsets (`quant.c`), weighting constants (`weighting.c`), macroblock placement (`place.c`), the three-pass bit distribution (`parse.c`) |
+| libdv | 1.0.0 (Ubuntu `libdv_1.0.0.orig.tar.gz`, sha256 `a305734033a9c25541a59e8dd1c254409953269ea7c710c39e540bd8853389ba`), LGPL-2.1-or-later | AC VLC table (`vlc.c`), zigzag orders and area maps (`parse.c`, `quant.c`), quantisation step table and class offsets (`quant.c`), weighting constants (`weighting.c`), macroblock placement (`place.c`), the three-pass bit distribution (`parse.c`), audio shuffle tables, samples-per-frame minimums, AAUX source pack fields and 12-bit expansion (`audio.c`, `dv_types.h`) |
 | IEC 61834-2, SMPTE 314M | not consulted directly (not purchased) | libdv implements these; the DIF structure, VAUX packs and the 2-4-8 transform follow their published structure |
 
-`vlc.rs`, `quant.rs`, `layout.rs` and `segment.rs` are derived from libdv and keep its licence
+`vlc.rs`, `quant.rs`, `layout.rs`, `segment.rs` and `audio.rs` are derived from libdv and keep its licence
 (LGPL-2.1-or-later, `COPYING.LGPL-2.1`); the rest of the crate is GPL-3.0-or-later. The port is
 recorded in `docs/licensing.md` §5. The IDCTs (`idct.rs`) are written from the transform
 definitions (orthonormal 8-8 DCT; 2-4-8 as two 4x8 DCTs of the field sum and difference), not
@@ -60,11 +60,24 @@ intra-only and independent.
 - DVCPRO 50 (signal type 4) and DVCPRO HD (0x14, 0x15, 0x18) are recognised by `probe` and
   refused by `decode` with `Error::Unsupported`.
 
+## Audio
+
+`decode_audio(frame)` returns the frame's PCM per channel (`Audio`), `audio_format(frame)` only
+its format. The AAUX source pack (`0x50`, first sequence, audio block 3) gives the rate (48,
+44.1, 32 kHz), the quantisation and the sample count (`source_pack_samples` reads it from the 5
+bytes at `SOURCE_PACK_OFFSET`). 16-bit linear audio is two channels; 12-bit non-linear audio is
+expanded to 16 bits and has a second channel pair when the second half's source pack carries
+audio. Samples marked damaged (`0x8000`) repeat the sample before them (`Audio::errors`).
+Pre-emphasis is reported (`AudioFormat::emphasis`) but not undone; 20-bit audio is not supported.
+
 ## Tests
 
 - Unit tests: VLC table completeness, scan/area tables, IDCT round trips against the forward
   transforms, macroblock placement coverage of every format, split codes, overflowing blocks,
   random data.
+- `tests/audio_oracle.rs`: ffmpeg-written 16-bit PCM at 48 kHz (525 and 625), 44.1 and 32 kHz
+  (625): every sample and every frame's sample count equal ffmpeg's decode; damaged samples,
+  truncation and garbage never panic.
 - `tests/oracle.rs`: six ffmpeg-encoded fixtures (525 4:1:1, 625 4:2:0 16:9, DVCPRO 25 625,
   interlaced 2-4-8 at 525 and 625, noise with heavy bit spilling) decoded within ±3 of ffmpeg's
   decode, PSNR ≥ 48 dB (measured: max diff 2, PSNR 57-65 dB), no coding errors; bit flips,

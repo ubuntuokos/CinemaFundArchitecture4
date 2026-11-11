@@ -112,7 +112,7 @@
 	Go to caption	Vai al sottotitolo
 	Go to graphic	Vai alla grafica
 	Hear this voice	Ascolta questa voce
-	IAB 7.1 DS bed from the 5.1 mix	Base IAB 7.1 DS dal mix 5.1
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	Base IAB dal mix (7.1 DS; 9.1OH da 7.1.2)
 	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab o Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB da un file (IAB MXF, .iab o Dolby Atmos TrueHD)
 	IAB source	Sorgente IAB
@@ -213,7 +213,7 @@
 	Text colour	Colore del testo
 	Text to Speech: another sequence is open now; the narration was not placed	Sintesi vocale: ora è aperta un'altra sequenza; la narrazione non è stata inserita
 	Text to Speech: {e}	Sintesi vocale: {e}
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Il mix 5.1 diventa una base 7.1 DS (profilo IAB 1); il canale 14 del suono principale porta il segnale di sincronismo FSK.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Un mix 7.1.2 diventa una base 9.1OH, un mix 7.1 una base 7.1 DS, ogni altro mix una base 7.1 DS dal suo 5.1 (profilo IAB 1); il canale 14 del suono principale porta il segnale di sincronismo FSK.
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	Il motore di CFA4 (cfa4-cli) non è stato trovato. Compilalo con: cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	Il motore di CFA4 si è arrestato inaspettatamente ed è stato riavviato. Le modifiche non salvate restano nel registro di recupero, che propone di recuperarle.
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	Il motore di CFA4 si è arrestato inaspettatamente. Le modifiche non salvate restano nel registro di recupero; riavvia CFA4 per recuperarle.
@@ -391,6 +391,10 @@
 	transitions	transizioni
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogrammi copiati, {reencoded} ricodificati ai tagli, {rendered} renderizzati
 	{frames} frames are re-encoded or rendered. Continue?	{frames} fotogrammi vengono ricodificati o renderizzati. Continuare?
+	Field order	Ordine dei campi
+	Progressive	Progressivo
+	Interlaced, upper field first	Interlacciato, campo superiore prima
+	Interlaced, lower field first	Interlacciato, campo inferiore prima
 # Smart Cut audio (WP-09b)
 	Audio copied: {tracks}	Audio copiato: {tracks}
 	Audio track {track} is not copied: {why}	La traccia audio {track} non viene copiata: {why}
@@ -401,5 +405,6 @@
 	None (RFC 5646 tag, e.g. en-US)	Nessuna (tag RFC 5646, ad es. it-IT)
 	ISDCF name	Nome ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Denomina la cartella DCP secondo la Digital Cinema Naming Convention
+	Height	Altezza
 # MPEG-2 export audio (#268)
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)

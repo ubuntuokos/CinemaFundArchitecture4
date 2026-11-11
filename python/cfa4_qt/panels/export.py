@@ -80,7 +80,7 @@ DCP_KINDS = (
 # DCP immersive audio (`DcpImmersive` in crates/export): id, label
 DCP_IMMERSIVE = (
     ("off", N_("Off (5.1 only)")),
-    ("bed", N_("IAB 7.1 DS bed from the 5.1 mix")),
+    ("bed", N_("IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)")),
     ("file", N_("IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)")),
 )
 # what channels 1-6 of an immersive DCP's main sound carry; ST 429-19:2023 7.1.2 wants none (#348)
@@ -474,7 +474,12 @@ class ExportDialog(QDialog):
         self.chroma.setObjectName("export.mpeg2Chroma")
         self.chroma.addItem(tr("4:2:0 (Main Profile)"), "420")
         self.chroma.addItem(tr("4:2:2 (4:2:2 Profile)"), "422")
-        for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
+        self.field_order = QComboBox(self)
+        self.field_order.setObjectName("export.fieldOrder")
+        self.field_order.addItem(tr("Progressive"), "progressive")
+        self.field_order.addItem(tr("Interlaced, upper field first"), "upperFirst")
+        self.field_order.addItem(tr("Interlaced, lower field first"), "lowerFirst")
+        for w in (self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
             w.setEnabled(False)
         # per-format settings: shown for the chosen format, sent only once changed here
         self.format_choices: dict[str, QComboBox] = {}
@@ -547,6 +552,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
+        fv.addRow(tr("Field order"), self.field_order)
         for key, label, _name, _choices in FORMAT_CHOICES:
             fv.addRow(tr(label), self.format_choices[key])
         mux = Section("multiplexer", tr("Multiplexer"), self)
@@ -747,7 +753,7 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.textChanged.connect(self._changed)
         self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
         self.dcp_language.currentTextChanged.connect(self._changed)
-        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
+        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma), ("fieldOrder", self.field_order)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
@@ -911,6 +917,7 @@ class ExportDialog(QDialog):
         self.b_frames.setValue(2)
         self.quantizer.setValue(0)
         self.chroma.setCurrentIndex(0)
+        self.field_order.setCurrentIndex(0)
         index = self.container.findData(preset.get("mpeg2Container") or "ps")
         self.container.setCurrentIndex(max(0, index))
         self.dcp_resolution.setCurrentIndex(max(0, self.dcp_resolution.findData(preset.get("dcpResolution") or "2k")))
@@ -934,7 +941,8 @@ class ExportDialog(QDialog):
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate_box.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         mpeg2 = self.format.currentData() == "mpeg2"
-        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
+        # only MPEG-2 export codes interlaced video
+        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
             w.setEnabled(mpeg2)
         self.video_form.setRowVisible(self.gop, mpeg2)  # H.264 / H.265 / AV1 have egui's own row
         self._sync_format_rows()
@@ -1072,7 +1080,7 @@ class ExportDialog(QDialog):
             w.setEnabled(mode == "file")
         self.dcp_iab_fallback.setEnabled(mode in ("bed", "file"))
         if mode == "bed":
-            self.dcp_iab_info.setText(tr("The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal."))
+            self.dcp_iab_info.setText(tr("A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal."))
         elif mode == "file":
             self._probe_iab()
         else:
@@ -1253,6 +1261,8 @@ class ExportDialog(QDialog):
                 p["mpeg2Quantizer"] = self.quantizer.value()
             if "chroma" in self.touched:
                 p["mpeg2Chroma"] = self.chroma.currentData()
+            if "fieldOrder" in self.touched:
+                p["fieldOrder"] = self.field_order.currentData()
         if self.dcp_resolution.isEnabled():
             p["dcpResolution"] = self.dcp_resolution.currentData()
             p["dcpAspect"] = self.dcp_aspect.currentData()
