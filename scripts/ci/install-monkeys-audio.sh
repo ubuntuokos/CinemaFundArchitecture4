@@ -12,7 +12,10 @@ curl -fsSL --retry 3 -o "$work/sdk.zip" "https://monkeysaudio.com/files/MAC_${ve
 echo "$sha256  $work/sdk.zip" | sha256sum -c -
 mkdir "$work/src"
 (cd "$work/src" && unzip -q ../sdk.zip)
-cmake -S "$work/src" -B "$work/build" -DCMAKE_BUILD_TYPE=Release >/dev/null
+cmake -S "$work/src" -B "$work/build" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED=OFF >/dev/null
 cmake --build "$work/build" --target macutil -j "$(nproc)" >/dev/null
 sudo install -m 0755 "$work/build/mac" "$prefix/mac"
-"$prefix/mac" 2>&1 | head -1 || true
+# a static build: the binary must run on its own once the build directory is gone
+banner="$("$prefix/mac" 2>&1 || true)"
+grep -q "Monkey's Audio" <<<"$banner" || { echo "mac does not run: $banner" >&2; exit 1; }
+head -1 <<<"$banner"
