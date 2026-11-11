@@ -33,13 +33,21 @@ from ..i18n import N_, fmt, tr
 MODES = (("gop-boundary", N_("At GOP boundaries (no re-encoding)")), ("frame-accurate", N_("Frame accurate (re-encode the boundaries)")))
 GUARANTEES = (("bit-exact", N_("Bit-exact copy")), ("compatible", N_("Compatible copy")))
 
+# the output extensions Smart Cut writes as they are (MP4 / MOV; MPEG program and transport streams)
+KEPT_EXTENSIONS = ("mp4", "m4v", "mov", "mpg", "mpeg", "ts", "m2t", "m2ts", "mts")
+OUTPUT_FILTER = "MP4 / MOV (*.mp4 *.m4v *.mov);;MPEG-PS / MPEG-TS (*.mpg *.mpeg *.ts *.m2ts *.mts)"
+
 
 def default_output(path: str) -> str:
-    """``clip.mp4`` → ``clip_cut.mp4`` (MOV stays MOV)."""
+    """``clip.mp4`` → ``clip_cut.mp4``: MOV stays MOV, an MPEG program or transport stream stays one
+    (WP-09c; a ``.vob`` becomes ``.mpg``)."""
     stem, dot, ext = path.rpartition(".")
     if not dot or "/" in ext:
         return f"{path}_cut.mp4"
-    return f"{stem}_cut.{ext if ext.lower() in ('mp4', 'm4v', 'mov') else 'mp4'}"
+    ext = ext.lower()
+    if ext in ("vob", "m2p"):
+        return f"{stem}_cut.mpg"
+    return f"{stem}_cut.{ext if ext in KEPT_EXTENSIONS else 'mp4'}"
 
 
 def plan_text(result: dict[str, Any]) -> tuple[str, str | None]:
@@ -47,6 +55,14 @@ def plan_text(result: dict[str, Any]) -> tuple[str, str | None]:
     summary = result.get("summary") or {}
     copied, reencoded = int(summary.get("copiedFrames") or 0), int(summary.get("reencodedFrames") or 0)
     text = fmt("{copied} frames copied, {reencoded} frames re-encoded", copied=copied, reencoded=reencoded)
+    # the audio tracks copied with the video, and those that are not (WP-09b)
+    audio = result.get("audio") or {}
+    tracks = [t for t in audio.get("tracks") or [] if isinstance(t, dict)]
+    if tracks:
+        text += "\n" + fmt("Audio copied: {tracks}", tracks=", ".join(str(t.get("codec") or "?").upper() for t in tracks))
+    for d in audio.get("dropped") or []:
+        if isinstance(d, dict):
+            text += "\n" + fmt("Audio track {track} is not copied: {why}", track=d.get("trackId", "?"), why=str(d.get("reason") or ""))
     plan = result.get("plan") or {}
     blockers = [str(b) for b in plan.get("blockers") or []]
     boundary = result.get("boundaryReencode") or {}
@@ -185,7 +201,7 @@ class SmartCutDialog(QDialog):
 
     # ----- actions -----
     def browse(self) -> None:
-        path, _f = QFileDialog.getSaveFileName(self, tr("Smart Cut Source"), self.output.text(), "MP4 / MOV (*.mp4 *.m4v *.mov)")
+        path, _f = QFileDialog.getSaveFileName(self, tr("Smart Cut Source"), self.output.text(), OUTPUT_FILTER)
         if path:
             self.output.setText(path)
             self.replan()
