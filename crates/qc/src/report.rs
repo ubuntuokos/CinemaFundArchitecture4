@@ -29,6 +29,8 @@ pub const MAX_EVENTS: usize = 1000;
 pub const MAX_REVIEW_ITEMS: usize = 1000;
 /// Longest free text kept (descriptions, notes, reasons), in characters.
 pub const MAX_TEXT: usize = 4000;
+/// Reason prefix of a result that does not apply ([`CheckResult::not_applicable`]).
+pub const NOT_APPLICABLE: &str = "not applicable: ";
 
 fn clip(s: &str) -> String {
     s.chars().take(MAX_TEXT).collect()
@@ -246,6 +248,19 @@ impl CheckResult {
         r
     }
 
+    /// The check does not apply: the render plan rules out what it measures (no audio in a
+    /// video-only export) and the file agrees. PASS without a value, with the reason.
+    pub fn not_applicable(id: &str, spec: &CheckSpec, reason: &str) -> CheckResult {
+        let mut r = CheckResult::base(id, spec, Status::Pass);
+        r.reason = Some(clip(&format!("{NOT_APPLICABLE}{reason}")));
+        r
+    }
+
+    /// A [`CheckResult::not_applicable`] result.
+    pub fn is_not_applicable(&self) -> bool {
+        self.status == Status::Pass && self.value.is_none() && self.reason.as_deref().is_some_and(|r| r.starts_with(NOT_APPLICABLE))
+    }
+
     /// The check could not run, and why.
     pub fn not_run(id: &str, spec: &CheckSpec, reason: &str) -> CheckResult {
         let mut r = CheckResult::base(id, spec, Status::NotRun);
@@ -445,7 +460,7 @@ impl QcReport {
                 && r.status != Status::NotRun
             {
                 r.status = evaluate(spec, v);
-            } else if catalog::check(&r.id).is_some_and(|c| c.measure == Measure::Value) && r.status != Status::NotRun {
+            } else if catalog::check(&r.id).is_some_and(|c| c.measure == Measure::Value) && r.status != Status::NotRun && !r.is_not_applicable() {
                 r.status = Status::NotRun;
                 r.reason = Some("no measured value".into());
             }
@@ -577,7 +592,11 @@ impl QcReport {
             {
                 return Err(Error::InvalidReport(format!("`{}`: status does not match its value and bounds", c.id)));
             }
-            if catalog::check(&c.id).is_some_and(|i| i.measure == Measure::Value) && c.status != Status::NotRun && (c.value.is_none() || c.pass.is_none()) {
+            if catalog::check(&c.id).is_some_and(|i| i.measure == Measure::Value)
+                && c.status != Status::NotRun
+                && !c.is_not_applicable()
+                && (c.value.is_none() || c.pass.is_none())
+            {
                 return Err(Error::InvalidReport(format!("`{}`: a result without a value or bounds", c.id)));
             }
         }

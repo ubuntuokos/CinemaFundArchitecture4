@@ -71,6 +71,8 @@ jobs:
           CFA4_REQUIRE_ORACLES: "1"
         run: cargo xtask ci
       - name: HEIF/HEIC native import and export oracles
+        env:
+          CFA4_REQUIRE_ORACLES: "1"
         run: |
           cargo test --locked -p cfa4-media --test heif_oracle
           cargo test --locked -p cfa4-export --lib heic_heif_single_frame_exports_round_trip

@@ -4215,3 +4215,106 @@ export.summary	Low	alacsony
 	Lines one gap unit apart, moving with the page	Egy térköz-egységnyi vonalak, az oldallal együtt mozognak
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” nem válik el a háttértől (kontraszt {ratio}:1; legalább 4,5:1 kell)
 	A picture or video is behind the text: check the contrast by eye	A szöveg mögött kép vagy videó van: a kontrasztot szemmel ellenőrizd
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videoeszközök
+	Audio Tools	Hangeszközök
+	Publication Tools	Publikációs eszközök
+	Smart Export…	Smart Export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Északnyugatról
+	From North-East	Északkeletről
+	From South-East	Délkeletről
+	From South-West	Délnyugatról
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Javítás
+	Skin Smoothing	Bőrsimítás
+	Keep Texture	Textúra megtartása
+	Skin Tone	Bőrtónus
+	Smooth Entire Image	Teljes kép simítása
+	Low Light	Gyenge fény
+	Max Brightening	Legnagyobb világosítás
+	Show Illumination	Megvilágítás mutatása
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Simítási előbeállítások
+	Sine	Szinusz
+	Exponential	Exponenciális
+	Circular	Kör
+	Elastic	Rugalmas
+	Film Gate	Filmkapu
+	Gate Weave	Kapuremegés
+	Weave Rotation	Remegés forgása
+	Particles	Részecskék
+	Emitter Position	Kibocsátó pozíciója
+	Birth Rate	Keletkezési ütem
+	Lifetime (seconds)	Élettartam (másodperc)
+	Velocity Random	Sebesség véletlenszerűsége
+	Gravity	Gravitáció
+	Particle Size	Részecskeméret
+	Keyhole	Kulcslyuk
+	Burn Away	Kiégés
+	Burn Size	Égés mérete
+	Ember Width	Parázsszegély szélessége
+	Ember Color	Parázsszegély színe
+	Check Text Legibility	Szöveg olvashatóságának ellenőrzése
+	Clear Legibility Markers	Olvashatósági jelölők törlése
+	Text legibility: no problems found	Szöveg olvashatósága: nincs probléma
+	Text legibility: {count} problems marked on the timeline (orange markers)	Szöveg olvashatósága: {count} probléma megjelölve az idővonalon (narancssárga jelölők)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitmélység-csökkentés
+	Bits per Channel	Bit csatornánként
+	Ordered Dither	Rendezett dither
+	Dither Cell Size	Ditherrács cellamérete
+	Block Glitch	Blokkos glitch
+	Blocks Moved	Mozgatott blokkok
+	Max Distance	Legnagyobb távolság
+	Snap to Grid	Rácsra illesztés
+	Swap Blocks	Blokkok cseréje
+	Changes per Second	Változás másodpercenként
+	Databend	Adatrongálás
+	Breaks	Törések
+	Shift	Eltolás
+	Color Damage	Színsérülés
+	VHS	VHS
+	Color Bleed	Színkifolyás
+	Wobble	Imbolygás
+	Snow	Hóesés
+	Tracking Bar	Követési sáv
+	Head Switching	Fejváltás
+	Scan Line Jitter	Sorremegés
+	Jitter	Remegés
+	Interval	Időköz
+	Infinite	Végtelen
+	Periodic	Időszakos
+	Tile Jitter	Csempe-remegés
+	Tiles	Csempék
+	Band Direction	Sávok iránya
+	Jitter Direction	Remegés iránya
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Féltónus
+	Dither	Dither
+	Pattern	Minta
+	Cell Size	Cellaméret
+	Cyan Angle	Cián szöge
+	Magenta Angle	Bíbor szöge
+	Yellow Angle	Sárga szöge
+	Black Angle	Fekete szöge
+	Monochrome Angle	Egyszínű szög
+	Sharpness	Élesség
+	Ink Color	Tinta színe
+	Paper Color	Papír színe
+	Color (CMYK)	Színes (CMYK)
+	Dot	Pont
+	Line	Vonal
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Képpontméret
+	Palette	Paletta
+	Input Colors	Bemeneti színek
+	Green Phosphor	Zöld foszfor
+	Amber Monitor	Borostyán monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
