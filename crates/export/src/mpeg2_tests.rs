@@ -198,6 +198,60 @@ fn constant_quantiser_and_4_2_2() {
     assert!(psnr(&pics[0].y, &y) > 40.0 && psnr(&pics[0].cb, &u) > 40.0 && psnr(&pics[0].cr, &v) > 40.0);
 }
 
+/// CBR codes a constant bitrate with real vbv_delay values; VBR signals its maximum and
+/// variable bitrate.
+#[test]
+fn constant_and_variable_bitrate() {
+    let (p, seq, m) = project();
+    for (mode, signalled) in [(settings::BitrateMode::Cbr, 4_000_000), (settings::BitrateMode::Vbr1Pass, 5_000_000)] {
+        let path = tmp(&format!("{mode:?}.m2v"));
+        let s = ExportSettings { bitrate_mode: mode, max_bitrate_kbps: Some(5_000), ..settings(&path) };
+        let video = s.summary(320, 180, FrameRate::new(25, 1), 48_000, Tick(TICKS_PER_SECOND)).video;
+        assert!(video.contains(if mode == settings::BitrateMode::Cbr { "CBR 4" } else { "VBR Target 4" }), "{video}");
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let es = std::fs::read(&path).unwrap();
+        let pics = decode(&es);
+        assert_eq!(pics[0].info.bit_rate, signalled, "{mode:?}");
+        // vbv_delay: the 16 bits after temporal_reference and picture_coding_type
+        let delays: Vec<u16> =
+            es.windows(8).filter(|w| w[..4] == [0, 0, 1, 0]).map(|w| ((u16::from(w[5]) & 7) << 13) | (u16::from(w[6]) << 5) | (u16::from(w[7]) >> 3)).collect();
+        assert_eq!(delays.len(), 25);
+        if mode == settings::BitrateMode::Cbr {
+            assert!(delays.iter().all(|&d| d < 0xFFFF));
+            // a second of video at 4 Mbit/s, give or take the 1.8 Mbit buffer's fill
+            let bits = es.len() as f64 * 8.0;
+            assert!((bits - 4e6).abs() < 1.9e6, "{bits} bits");
+        } else {
+            assert!(delays.iter().all(|&d| d == 0xFFFF));
+        }
+    }
+}
+
+/// An interlaced field order codes interlaced frame pictures with that field first; ffprobe
+/// agrees.
+#[test]
+fn interlaced_field_order() {
+    let (p, seq, m) = project();
+    for (order, want) in [(FieldOrder::UpperFirst, cfa4_mpeg2v::FieldOrder::TopFirst), (FieldOrder::LowerFirst, cfa4_mpeg2v::FieldOrder::BottomFirst)] {
+        let path = tmp(&format!("{}.m2v", order.label().replace(' ', "")));
+        let s = ExportSettings { field_order: order, ..settings(&path) };
+        s.validate().unwrap();
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let pics = decode(&std::fs::read(&path).unwrap());
+        assert_eq!(pics.len(), 25);
+        assert!(!pics[0].info.progressive_sequence);
+        assert!(pics.iter().all(|p| p.field_order() == Some(want)), "{order:?}");
+        let Some(probe) = cfa4_testkit::ffprobe_or_skip("mpeg2 interlaced") else { return };
+        let o = Command::new(probe)
+            .args(["-v", "error", "-select_streams", "v", "-show_entries", "stream=field_order", "-of", "csv=p=0"])
+            .arg(&path)
+            .output()
+            .unwrap();
+        let fo = String::from_utf8_lossy(&o.stdout).trim().trim_end_matches(',').to_string();
+        assert_eq!(fo, if want == cfa4_mpeg2v::FieldOrder::TopFirst { "tt" } else { "bb" }, "{order:?}");
+    }
+}
+
 #[test]
 fn dvd_presets_signal_16_9_and_the_dvd_rate() {
     let (p, seq, m) = project();

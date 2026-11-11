@@ -19,11 +19,15 @@
 use std::io::Write;
 
 mod aac_out;
+pub mod audio_copy;
 mod audio_out;
 pub mod boundary_reencode;
 mod boundary_reencode_hevc;
 #[cfg(test)]
 mod boundary_reencode_hevc_tests;
+pub mod boundary_reencode_mpeg;
+#[cfg(test)]
+mod boundary_reencode_mpeg_tests;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -41,13 +45,17 @@ pub mod presets;
 mod raster;
 pub mod settings;
 pub mod smart_cut;
+pub mod smart_cut_mpeg;
 pub mod still;
+pub mod timeline_audio;
 pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use dash_out::{DashMedia, DashRepresentation, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
-pub use dcp_out::{DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_rate, rgba_to_xyz12};
+pub use dcp_out::{
+    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
+};
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
@@ -462,6 +470,10 @@ pub struct ExportSettings {
     /// silence there (`none`).
     #[serde(default)]
     pub dcp_iab_fallback: String,
+    /// DCP spoken language, an RFC 5646 tag such as `en-US` or `hu-HU` (empty = none): the MCA
+    /// labels' `RFC5646SpokenLanguage`, the CPL title's language and the DCNC language field.
+    #[serde(default)]
+    pub dcp_language: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -737,6 +749,7 @@ impl Default for ExportSettings {
             dcp_immersive: String::new(),
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
+            dcp_language: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -816,8 +829,11 @@ impl ExportSettings {
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        if self.field_order != FieldOrder::Progressive && self.has_video() {
-            return Err(ExportError::Unsupported(format!("{} field order: CFA4's encoders write progressive frames", self.field_order.label())));
+        if self.field_order != FieldOrder::Progressive && self.has_video() && self.format != Format::Mpeg2 {
+            return Err(ExportError::Unsupported(format!(
+                "{} field order: only MPEG-2 export codes interlaced video; the other encoders write progressive frames",
+                self.field_order.label()
+            )));
         }
         if self.effects.image_overlay.enabled && self.effects.image_overlay.path.trim().is_empty() {
             return Err(ExportError::Unsupported("image overlay: no image file chosen".into()));
@@ -1379,13 +1395,29 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         let mut cfg = cfa4_mpeg2v::encode::Config::new(w, h, rate.num as u32, rate.den as u32);
         cfg.rate = match s.mpeg2_quantizer {
             Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
-            None => cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(s.bitrate_kbps.max(100)) * 1000 },
+            None => {
+                let kbps = s.bitrate_kbps.max(100);
+                let bps = u64::from(kbps) * 1000;
+                match s.bitrate_mode {
+                    // the level's VBV buffer, constant bitrate with stuffing
+                    BitrateMode::Cbr => cfa4_mpeg2v::encode::Rate::Cbr { bits_per_second: bps, buffer_bits: 0 },
+                    _ => {
+                        let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).map_or(bps * 3 / 2, |m| u64::from(m) * 1000);
+                        cfa4_mpeg2v::encode::Rate::ConstrainedVbr { bits_per_second: bps, max_bits_per_second: max, buffer_bits: 0 }
+                    }
+                }
+            }
         };
         if s.mpeg2_422 {
             cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
         }
         cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
         cfg.b_frames = u32::from(s.mpeg2_b_frames.unwrap_or(2).min(7));
+        cfg.interlaced = match s.field_order {
+            FieldOrder::Progressive => None,
+            FieldOrder::UpperFirst => Some(cfa4_mpeg2v::FieldOrder::TopFirst),
+            FieldOrder::LowerFirst => Some(cfa4_mpeg2v::FieldOrder::BottomFirst),
+        };
         cfg.aspect = mpeg2_aspect(w, h, s.pixel_aspect);
         // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
         cfg.colour = Some((1, 1, 1));
@@ -1473,7 +1505,7 @@ impl AudioEncoder for FlacAudio {
     }
 }
 
-fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
+pub(crate) fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
     // AAC caps a frame at 6144 bits per channel (ISO/IEC 14496-3 §4.5.3.2): 6 bits per sample, so
     // 264.6 kbps for stereo at 22.05 kHz; a higher setting is capped instead of refused
     let max = (6 * sample_rate as u64 * channels.max(1) as u64).min(u32::MAX as u64) as u32;
@@ -2924,6 +2956,8 @@ mod settings_tests;
 mod surround_tests;
 
 #[cfg(test)]
+mod audio_copy_tests;
+#[cfg(test)]
 mod boundary_reencode_tests;
 #[cfg(test)]
 mod dcp_tests;
@@ -2934,7 +2968,11 @@ mod mxf_tests;
 #[cfg(test)]
 mod smart_cut_av1_tests;
 #[cfg(test)]
+mod smart_cut_edge_tests;
+#[cfg(test)]
 mod smart_cut_hevc_tests;
+#[cfg(test)]
+mod smart_cut_mpeg_tests;
 #[cfg(test)]
 mod smart_cut_tests;
 #[cfg(test)]

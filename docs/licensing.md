@@ -147,6 +147,7 @@ that adds them names the source and revision.
 | `crates/truehd/src/` (except `cfa4.rs`, `anyhow.rs`) | `truehd` crate 0.7.2, <https://github.com/truehdd/truehdd>, crates.io release 0.7.2, `truehd/src/` | Rainbaby | Apache-2.0 (`crates/truehd/LICENSE`) |
 | `.claude/skills/cfa4-skill-review/SKILL.md` | NVIDIA SkillSpector, <https://github.com/NVIDIA/SkillSpector>, commit `54921c8c7c23008c8af2328d5ab492a904b6ece4`, `skills/skill-inspector/SKILL.md`; CFA4 Hungarian adaptation | NVIDIA CORPORATION & AFFILIATES (Copyright 2026) | Apache-2.0 upstream; CFA4 adaptation GPL-3.0-or-later (`LICENSE-APACHE`) |
 | `crates/aac/src/usac/`, `crates/aac/src/drc/`, `crates/aac/tools/usac_tables.py` | libxaac, <https://github.com/ittiam-systems/libxaac> (Android `platform/external/libxaac`), commit `2fbadd57bca46693b7a077bcf1513131106d960c`, `decoder/` (USAC) and `decoder/drc_src/` (MPEG-D DRC); fixed point converted to floating point, the arithmetic-coder tables generated from its sources | The Android Open Source Project; Ittiam Systems Pvt. Ltd | Apache-2.0 (`crates/aac/LICENSE.libxaac`, `crates/aac/NOTICE.libxaac`) |
+| `crates/metrics/src/ciede2000.rs`, `crates/metrics/src/ssim.rs` (formula structure, rewritten) | OxiMedia 0.2.1, <https://github.com/cool-japan/oximedia>, commit `5263510374761ec8ef02dace5d26d62fb20e405b`, `crates/oximedia-quality/src/ciede2000.rs`, `crates/oximedia-quality/src/ssim.rs`; rewritten without panics, separable SSIM filter, Lab conversion through `cfa4-color` | Copyright 2024-2026 COOLJAPAN OU (Team Kitasan) | Apache-2.0 (`crates/metrics/LICENSE-oximedia`); CFA4 changes GPL-3.0-or-later |
 
 ## 6. Dependency checks
 
@@ -186,6 +187,7 @@ Current classification:
 |---|---|
 | x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` (FFmpeg 9.0.2 `--restricted` build in `/opt/cfa4/ffmpeg-9.0.2-restricted`; `packaging/linux/package.sh --formats "deb restricted"`, ADR 0005 step 4) |
 | CFA4's own codecs (H.264, HEVC, AAC, AC-3 and the other decoders, the H.264 encoder) | base package (owner decision, 2026-10-25) |
+| H.266/VVC: VVdeC decoder, VVenC and uvg266 encoders, FFmpeg `libvvenc` (all VVC components, decoding included; [CFA4-VVC-PLAN-001](plans/CFA4-VVC-PLAN-001-2026-11-07.md)) | `cfa4-restricted-extras` (owner decision, 2026-11-07) |
 
 A new patent-encumbered component goes to `cfa4-restricted-extras` unless the owner decides
 otherwise; record each decision in the table above.

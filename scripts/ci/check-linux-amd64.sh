@@ -25,7 +25,8 @@ for script in \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/check-package-docs.sh \
   scripts/ci/install-ffmpeg-oracle-deps.sh \
-  scripts/ci/install-ffmpeg-9.0.2.sh; do
+  scripts/ci/install-ffmpeg-9.0.2.sh \
+  scripts/dev/fetch-ffmpeg-9.0.2.sh; do
   bash -n "$script"
 done
 # Strict GPU hardware log parser regression (only shell + temporary logs,

@@ -10,8 +10,10 @@
 //!   ±32 samples (f_code 3); intra / inter / skip decisions per macroblock.
 //! - Intra VLC table one, the non-linear quantiser scale, intra DC precision 8-11 bits, the
 //!   default quantiser matrices.
-//! - Constant quantiser, or an average bitrate (picture targets after Test Model 5, an even
-//!   quantiser per picture, optional adaptive quantisation by spatial activity).
+//! - Constant quantiser, or a bitrate (picture targets after Test Model 5, an even quantiser
+//!   per picture, optional adaptive quantisation by spatial activity): an unconstrained
+//!   average, a variable bitrate within a VBV buffer, or a constant bitrate with real
+//!   vbv_delay values and stuffing (Annex C).
 //!
 //! Every coded picture is decoded by this crate's own decoder to form the next reference, so
 //! encoder and decoder reconstructions agree by construction.
@@ -36,6 +38,7 @@
 
 mod analyse;
 mod rate;
+mod vbv;
 mod write;
 
 #[cfg(test)]
@@ -47,7 +50,7 @@ use crate::headers::{DEFAULT_INTRA, SCAN};
 use crate::mc::Frame;
 use crate::slice::NON_LINEAR_Q;
 use crate::vlc::{MB_BWD, MB_FWD, MB_INTRA, MB_PATTERN, MB_QUANT, MBA_ESCAPE};
-use crate::{ChromaFormat, Decoder, Error, PictureType, Result};
+use crate::{ChromaFormat, Decoder, Error, FieldOrder, PictureType, Result};
 
 use analyse::{Ctx, F_CODE, Plan, analyse_row};
 use write::{BitWriter, Code, EncTables, MAX_TABLE_LEVEL, tables};
@@ -58,8 +61,29 @@ pub enum Rate {
     /// A constant quantiser_scale_code 1..=31 on the non-linear scale (Table 7-6: 1-8 step 1,
     /// then up to 112). Lower is better quality.
     Quantizer(u8),
-    /// Average bitrate (VBR, vbv_delay 0xFFFF).
+    /// Average bitrate with no buffer model (VBR, vbv_delay 0xFFFF; the sequence header
+    /// signals the average).
     Bitrate { bits_per_second: u64 },
+    /// Variable bitrate within a decoder's buffer (Annex C.3, vbv_delay 0xFFFF): an average
+    /// of `bits_per_second`, with no picture larger than what `max_bits_per_second` fills into a
+    /// `buffer_bits` VBV (0: the level's buffer). DVD-Video and Blu-ray style.
+    ConstrainedVbr { bits_per_second: u64, max_bits_per_second: u64, buffer_bits: u64 },
+    /// Constant bitrate (Annex C): real vbv_delay values, every picture within the
+    /// `buffer_bits` VBV (0: the level's buffer), stuffing where pictures would leave it to
+    /// overflow. Broadcast, XDCAM / IMX style.
+    Cbr { bits_per_second: u64, buffer_bits: u64 },
+}
+
+impl Rate {
+    /// (average, signalled bitrate, buffer bits (0: the level's), constant).
+    fn bitrate(self) -> Option<(u64, u64, u64, bool)> {
+        match self {
+            Rate::Quantizer(_) => None,
+            Rate::Bitrate { bits_per_second } => Some((bits_per_second, bits_per_second, 0, false)),
+            Rate::ConstrainedVbr { bits_per_second, max_bits_per_second, buffer_bits } => Some((bits_per_second, max_bits_per_second, buffer_bits, false)),
+            Rate::Cbr { bits_per_second, buffer_bits } => Some((bits_per_second, bits_per_second, buffer_bits, true)),
+        }
+    }
 }
 
 /// aspect_ratio_information (Table 6-3).
@@ -92,6 +116,9 @@ pub struct Config {
     /// Closed GOPs: the B pictures before each I picture predict from it alone, so every GOP
     /// decodes on its own (editing, chapter points). Open GOPs predict them from both sides.
     pub closed_gop: bool,
+    /// Interlaced frame pictures with this field first (field or frame prediction and DCT per
+    /// macroblock), or progressive (`None`).
+    pub interlaced: Option<FieldOrder>,
     /// Intra DC precision in bits: 8-10 (Main Profile), 8-11 (4:2:2 Profile).
     pub intra_dc_precision: u8,
     pub aspect: AspectRatio,
@@ -106,6 +133,11 @@ pub struct Config {
     /// Scene-cut detection: an anchor picture that motion prediction cannot follow (most of its
     /// macroblocks would be intra coded) becomes an I picture that starts a new GOP.
     pub scene_cut: bool,
+    /// The sequence extension's `low_delay` flag. `None` sets it exactly when there are no B
+    /// pictures; `Some(false)` keeps it clear without B pictures too, so the pictures can be
+    /// spliced into a stream that has them (a decoder then keeps its usual one-picture delay).
+    /// `Some(true)` with B pictures is refused.
+    pub low_delay: Option<bool>,
 }
 
 impl Config {
@@ -122,12 +154,14 @@ impl Config {
             gop: 15,
             b_frames: 0,
             closed_gop: true,
+            interlaced: None,
             intra_dc_precision: 9,
             aspect: AspectRatio::Square,
             colour: None,
             adaptive_quantization: false,
             threads: true,
             scene_cut: true,
+            low_delay: None,
         }
     }
 }
@@ -243,6 +277,8 @@ pub struct Encoder {
     mv_span: u64,
     dec: Decoder,
     rc: Option<rate::Rc>,
+    /// The decoder's buffer (constrained bitrates).
+    vbv: Option<vbv::Vbv>,
     /// Average quantiser_scale of the last picture (motion search weight).
     last_scale: f64,
     /// intra_vlc_format of the next picture, and what the intra blocks of the current one cost
@@ -268,30 +304,51 @@ impl Encoder {
         if !(8..=max_dc).contains(&cfg.intra_dc_precision) {
             return Err(Error::Unsupported(format!("intra DC precision {} bits (8..={max_dc})", cfg.intra_dc_precision)));
         }
-        match cfg.rate {
-            Rate::Quantizer(q) if !(1..=31).contains(&q) => return Err(Error::Unsupported(format!("quantiser_scale_code {q} (1..=31)"))),
-            Rate::Bitrate { bits_per_second } if !(16_000..=1_000_000_000).contains(&bits_per_second) => {
-                return Err(Error::Unsupported(format!("bitrate {bits_per_second} bit/s")));
+        if let Rate::Quantizer(q) = cfg.rate
+            && !(1..=31).contains(&q)
+        {
+            return Err(Error::Unsupported(format!("quantiser_scale_code {q} (1..=31)")));
+        }
+        if let Some((avg, peak, _, _)) = cfg.rate.bitrate() {
+            for b in [avg, peak] {
+                if !(16_000..=1_000_000_000).contains(&b) {
+                    return Err(Error::Unsupported(format!("bitrate {b} bit/s")));
+                }
             }
-            _ => {}
+            if peak < avg {
+                return Err(Error::Unsupported(format!("maximum bitrate {peak} below the average {avg} bit/s")));
+            }
         }
         if cfg.gop == 0 {
             return Err(Error::Unsupported("a GOP of 0 pictures".into()));
+        }
+        if cfg.low_delay == Some(true) && cfg.b_frames > 0 {
+            return Err(Error::Unsupported("low delay with B pictures".into()));
         }
         if cfg.b_frames > 7 {
             return Err(Error::Unsupported(format!("{} B pictures between anchors (0..=7)", cfg.b_frames)));
         }
         let fps = cfg.fps_num as f64 / cfg.fps_den as f64;
-        let bitrate = match cfg.rate {
-            Rate::Bitrate { bits_per_second } => Some(bits_per_second),
-            Rate::Quantizer(_) => None,
-        };
+        let rates = cfg.rate.bitrate();
+        let bitrate = rates.map(|r| r.1);
+        let buffer = rates.map_or(0, |r| r.2);
         let samples = (w as u64 * h as u64 * cfg.fps_num as u64).div_ceil(cfg.fps_den as u64);
-        let fitting = levels.iter().find(|l| w <= l.w && h <= l.h && samples <= l.samples && bitrate.is_none_or(|b| b <= l.rate));
+        let fitting = levels.iter().find(|l| w <= l.w && h <= l.h && samples <= l.samples && bitrate.is_none_or(|b| b <= l.rate) && buffer <= l.vbv);
         // beyond the highest level: still decodable, signalled as the highest level
         let level = fitting.or(levels.last()).ok_or_else(|| Error::Unsupported("no level".into()))?;
         let bit_rate_units = bitrate.unwrap_or(level.rate).div_ceil(400).clamp(1, (1 << 30) - 1) as u32;
-        let vbv_units = (level.vbv / 16384).clamp(1, (1 << 18) - 1) as u32;
+        let vbv_units = ((if buffer > 0 { buffer } else { level.vbv }) / 16384).clamp(1, (1 << 18) - 1) as u32;
+        let vbv = match rates {
+            Some((_, peak, _, cbr)) if !matches!(cfg.rate, Rate::Bitrate { .. }) => {
+                let v = vbv::Vbv::new(peak, u64::from(vbv_units) * 16384, cbr, cfg.fps_num, cfg.fps_den);
+                // room for at least two pictures' worth of input
+                if v.size() < 2 * v.per_picture() {
+                    return Err(Error::Unsupported(format!("a {}-bit VBV buffer at {peak} bit/s", v.size())));
+                }
+                Some(v)
+            }
+            _ => None,
+        };
         let mb_width = (w as usize).div_ceil(16);
         let mb_height = (h as usize).div_ceil(16);
         let cmbh = if cfg.chroma == ChromaFormat::Yuv420 { 8 } else { 16 };
@@ -317,7 +374,8 @@ impl Encoder {
             prev_mvs: vec![[0, 0]; mb_width * mb_height],
             mv_span: 1,
             dec,
-            rc: bitrate.map(|b| rate::Rc::new(b, fps, cfg.adaptive_quantization)),
+            rc: rates.map(|r| rate::Rc::new(r.0, fps, cfg.adaptive_quantization)),
+            vbv,
             last_scale: 8.0,
             intra_vlc: true,
             vlc_cost: [0; 2],
@@ -333,6 +391,17 @@ impl Encoder {
     /// The bitrate the sequence header signals (bit/s).
     pub fn signalled_bit_rate(&self) -> u64 {
         self.bit_rate_units as u64 * 400
+    }
+
+    /// The vbv_buffer_size the sequence header signals (bits).
+    pub fn signalled_buffer(&self) -> u64 {
+        self.vbv_units as u64 * 16384
+    }
+
+    /// Pictures that overflowed the VBV however coarsely they were quantised (0 in all but
+    /// pathological cases: tiny buffers at tiny bitrates).
+    pub fn vbv_underflows(&self) -> u64 {
+        self.vbv.as_ref().map_or(0, |v| v.underflows())
     }
 
     /// Encode the next picture (display order). Returns the pictures that can be coded now, in
@@ -438,6 +507,7 @@ impl Encoder {
             preds_f: &preds_f,
             preds_b: &preds_b,
             lambda,
+            interlaced: self.cfg.interlaced.is_some(),
         };
         let plans = self.analyse(&ctx);
         if ptype == PictureType::P {
@@ -461,7 +531,9 @@ impl Encoder {
                 rc.start_gop(np as u32, (n - 1 - np) as u32);
             }
         }
-        self.picture_header(&mut w, tref, ptype);
+        // the bits up to the end of the picture start code arrive before the vbv_delay starts
+        let delay = self.vbv.as_ref().map_or(0xFFFF, |v| v.delay(w.bits().div_ceil(8) * 8 + 32));
+        self.picture_header(&mut w, tref, ptype, delay);
         let avg_act = plans.iter().flatten().map(|p| p.act as f64).sum::<f64>() / (self.mb_width * self.mb_height).max(1) as f64;
         // slices
         let start = w.bits();
@@ -473,6 +545,14 @@ impl Encoder {
         if let Some(rc) = self.rc.as_mut() {
             let weights: Vec<f64> = plans.iter().flatten().map(|p| p.weight as f64).collect();
             rc.start_picture(kind, &weights, avg_act);
+            if let Some(v) = &self.vbv {
+                // the picture must fit what has arrived, keeping a tenth of the buffer for the
+                // next ones; at a constant bitrate, bits it leaves unspent would be stuffed
+                let room = v.occupancy() as f64;
+                let hi = (room - v.size() as f64 / 10.0).max(room / 2.0);
+                let lo = if v.cbr() { (room + v.per_picture() as f64 - v.size() as f64).min(hi) } else { 0.0 };
+                rc.limit_target(lo, hi);
+            }
         }
         // the first picture of each type: a trial run measures its complexity
         if self.rc.as_ref().is_some_and(|rc| rc.needs_trial()) {
@@ -484,10 +564,21 @@ impl Encoder {
                 rc.calibrate(trial.bits());
             }
         }
-        let mut scale_sum = 0f64;
-        self.vlc_cost = [0; 2];
-        for (row, plans) in plans.iter().enumerate() {
-            scale_sum += self.slice(&mut w, row, plans, ptype, start);
+        let head = w;
+        let (mut w, mut scale_sum);
+        loop {
+            w = head.clone();
+            scale_sum = 0f64;
+            self.vlc_cost = [0; 2];
+            for (row, plans) in plans.iter().enumerate() {
+                scale_sum += self.slice(&mut w, row, plans, ptype, start);
+            }
+            // too large for the buffer: again, coarser
+            let (Some(v), Some(rc)) = (&self.vbv, self.rc.as_mut()) else { break };
+            let (size, room) = (w.bits().div_ceil(8) * 8, v.occupancy());
+            if size <= room || !rc.retry(size as f64 / (room as f64 * 0.95).max(1.0)) {
+                break;
+            }
         }
         if let Some(rc) = self.rc.as_mut() {
             rc.end_picture(w.bits() - start);
@@ -500,7 +591,7 @@ impl Encoder {
             self.intra_vlc = self.vlc_cost[1] < self.vlc_cost[0];
         }
         w.align();
-        let data = w.out;
+        let mut data = w.out;
         // reconstruction: decode the picture (B pictures too: the decoder checks every one)
         let errors = self.dec.errors();
         self.dec.decode(&data, index as i64)?;
@@ -513,10 +604,21 @@ impl Encoder {
                 self.mv_span = 1;
             }
             PictureType::P => {
-                self.prev_mvs = plans.iter().flatten().map(|p| if p.intra { [0, 0] } else { p.mv }).collect();
+                self.prev_mvs = plans.iter().flatten().map(|p| if p.intra { [0, 0] } else { p.frame_mv(0) }).collect();
                 self.mv_span = self.anchor_index[1].map_or(1, |a| index.saturating_sub(a).max(1));
             }
             _ => {}
+        }
+        // the picture leaves the buffer; zero bytes before the next start code keep a constant
+        // bitrate buffer from overflowing
+        if let Some(v) = self.vbv.as_mut() {
+            let stuffing = v.remove(data.len() as u64 * 8);
+            if stuffing > 0 {
+                data.resize(data.len() + stuffing as usize, 0);
+                if let Some(rc) = self.rc.as_mut() {
+                    rc.spend(stuffing * 8);
+                }
+            }
         }
         let dts = self.coded as i64 - i64::from(self.cfg.b_frames > 0);
         self.coded += 1;
@@ -582,14 +684,14 @@ impl Encoder {
         w.start(crate::headers::EXTENSION);
         w.put(1, 4);
         w.put(self.pli as u32, 8);
-        w.put(1, 1); // progressive_sequence
+        w.put(self.cfg.interlaced.is_none() as u32, 1); // progressive_sequence
         w.put(if self.cmbh == 8 { 1 } else { 2 }, 2);
         w.put(c.width >> 12, 2);
         w.put(c.height >> 12, 2);
         w.put(self.bit_rate_units >> 18, 12);
         w.put(1, 1); // marker_bit
         w.put(self.vbv_units >> 10, 8);
-        w.put((self.cfg.b_frames == 0) as u32, 1); // low_delay
+        w.put(self.cfg.low_delay.unwrap_or(self.cfg.b_frames == 0) as u32, 1); // low_delay
         w.put(0, 2); // frame_rate_extension_n
         w.put(0, 5); // frame_rate_extension_d
         if let Some((p, t, m)) = c.colour {
@@ -621,7 +723,7 @@ impl Encoder {
         w.put(0, 1); // broken_link
     }
 
-    fn picture_header(&self, w: &mut BitWriter, tref: u32, ptype: PictureType) {
+    fn picture_header(&self, w: &mut BitWriter, tref: u32, ptype: PictureType, vbv_delay: u16) {
         w.start(crate::headers::PICTURE_START);
         w.put(tref & 1023, 10);
         w.put(
@@ -632,7 +734,7 @@ impl Encoder {
             },
             3,
         );
-        w.put(0xFFFF, 16); // vbv_delay: variable bitrate
+        w.put(vbv_delay as u32, 16); // 0xFFFF: variable bitrate
         if ptype != PictureType::I {
             w.put(0, 1); // full_pel_forward_vector
             w.put(7, 3); // forward_f_code (MPEG-2: in the extension)
@@ -651,16 +753,17 @@ impl Encoder {
             w.put(v, 4);
         }
         w.put((self.cfg.intra_dc_precision - 8) as u32, 2);
+        let progressive = self.cfg.interlaced.is_none();
         w.put(3, 2); // picture_structure: frame
-        w.put(0, 1); // top_field_first
-        w.put(1, 1); // frame_pred_frame_dct
+        w.put((self.cfg.interlaced == Some(FieldOrder::TopFirst)) as u32, 1); // top_field_first
+        w.put(progressive as u32, 1); // frame_pred_frame_dct
         w.put(0, 1); // concealment_motion_vectors
         w.put(1, 1); // q_scale_type: non-linear
         w.put(self.intra_vlc as u32, 1); // intra_vlc_format
-        w.put(0, 1); // alternate_scan
+        w.put(!progressive as u32, 1); // alternate_scan
         w.put(0, 1); // repeat_first_field
-        w.put((self.cmbh == 8) as u32, 1); // chroma_420_type = progressive_frame for 4:2:0
-        w.put(1, 1); // progressive_frame
+        w.put((self.cmbh == 8 && progressive) as u32, 1); // chroma_420_type = progressive_frame for 4:2:0
+        w.put(progressive as u32, 1); // progressive_frame
         w.put(0, 1); // composite_display_flag
     }
 
@@ -678,6 +781,8 @@ impl Encoder {
         let t = tables();
         let mbw = self.mb_width;
         let dc_reset = 1i32 << (self.cfg.intra_dc_precision - 1);
+        let interlaced = self.cfg.interlaced.is_some();
+        let scan = &SCAN[interlaced as usize];
         let mut code = self.mb_code(row * mbw, w.bits() - pic_start, plans.first().map_or(1.0, |p| p.act));
         w.start(1 + (row & 127) as u8);
         if self.cfg.height > 2800 {
@@ -686,10 +791,10 @@ impl Encoder {
         w.put(code as u32, 5);
         w.put(0, 1); // extra_bit_slice
         let mut dc = [dc_reset; 3];
-        // motion vector predictors (forward, backward) and the previous macroblock's prediction
-        // directions (B pictures skip by repeating them)
-        let mut pmv = [0i32; 2];
-        let mut pmvb = [0i32; 2];
+        // motion vector predictors PMV[r][s] as the decoder keeps them (§7.6.3.4), and the
+        // previous macroblock's prediction directions when it used frame prediction (B
+        // pictures skip by repeating them)
+        let mut pmv = [[[0i32; 2]; 2]; 2];
         let mut prev_dir: Option<i16> = None;
         let mut skipped = 0usize;
         let mut scale_sum = 0f64;
@@ -711,6 +816,9 @@ impl Encoder {
                     PictureType::B => t.mbtype_b[flags as usize],
                     _ => t.mbtype_p[flags as usize],
                 });
+                if interlaced {
+                    w.put(plan.field_dct as u32, 1); // dct_type
+                }
                 if quant {
                     w.put(code as u32, 5);
                 }
@@ -721,10 +829,9 @@ impl Encoder {
                     let v = ((b[0] + m / 2) / m).clamp(0, max);
                     write_dc(w, t, cc, v - dc[cc]);
                     dc[cc] = v;
-                    write_coefficients(w, t, lv, true, self.intra_vlc, &mut self.vlc_cost);
+                    write_coefficients(w, t, lv, scan, true, self.intra_vlc, &mut self.vlc_cost);
                 }
-                pmv = [0, 0];
-                pmvb = [0, 0];
+                pmv = [[[0; 2]; 2]; 2];
                 prev_dir = None;
                 scale_sum += qs as f64;
                 continue;
@@ -736,49 +843,30 @@ impl Encoder {
                 }
             }
             dc = [dc_reset; 3];
+            let mut dir = plan.dir;
             if ptype == PictureType::B {
-                let dir = plan.dir;
-                // a skipped B macroblock repeats the previous one's prediction (§7.6.6.4)
-                let same = prev_dir == Some(dir) && (dir & MB_FWD == 0 || plan.mv == pmv) && (dir & MB_BWD == 0 || plan.mvb == pmvb);
+                // a skipped B macroblock repeats the previous one's frame prediction (§7.6.6.4)
+                let same = !plan.field_mc
+                    && prev_dir == Some(dir)
+                    && (dir & MB_FWD == 0 || plan.mvs[0][0] == pmv[0][0])
+                    && (dir & MB_BWD == 0 || plan.mvs[0][1] == pmv[0][1]);
                 if cbp == 0 && same && mbx > 0 && mbx + 1 < mbw {
                     skipped += 1;
                     scale_sum += NON_LINEAR_Q[code as usize] as f64;
                     continue;
                 }
-                address_increment(w, t, skipped + 1);
-                skipped = 0;
-                let quant = cbp != 0 && want != code;
-                if cbp != 0 {
-                    code = want;
+            } else {
+                // P: skipped, or "MC not coded", when frame prediction has a zero vector
+                let zero = !plan.field_mc && plan.mvs[0][0] == [0, 0];
+                if cbp == 0 && zero && mbx > 0 && mbx + 1 < mbw {
+                    skipped += 1;
+                    pmv = [[[0; 2]; 2]; 2];
+                    scale_sum += NON_LINEAR_Q[code as usize] as f64;
+                    continue;
                 }
-                scale_sum += NON_LINEAR_Q[code as usize] as f64;
-                let flags = dir | if cbp != 0 { MB_PATTERN } else { 0 } | if quant { MB_QUANT } else { 0 };
-                w.code(t.mbtype_b[flags as usize]);
-                if quant {
-                    w.put(code as u32, 5);
+                if zero && cbp != 0 {
+                    dir = 0;
                 }
-                if dir & MB_FWD != 0 {
-                    for c in 0..2 {
-                        write_motion(w, t, plan.mv[c] - pmv[c]);
-                    }
-                    pmv = plan.mv;
-                }
-                if dir & MB_BWD != 0 {
-                    for c in 0..2 {
-                        write_motion(w, t, plan.mvb[c] - pmvb[c]);
-                    }
-                    pmvb = plan.mvb;
-                }
-                prev_dir = Some(dir);
-                write_pattern(w, t, cbp, self.nblocks, &levels, &mut self.vlc_cost);
-                continue;
-            }
-            let zero = plan.mv == [0, 0];
-            if cbp == 0 && zero && mbx > 0 && mbx + 1 < mbw {
-                skipped += 1;
-                pmv = [0, 0];
-                scale_sum += NON_LINEAR_Q[code as usize] as f64;
-                continue;
             }
             address_increment(w, t, skipped + 1);
             skipped = 0;
@@ -787,36 +875,56 @@ impl Encoder {
                 code = want;
             }
             scale_sum += NON_LINEAR_Q[code as usize] as f64;
-            let mut flags = if cbp == 0 {
-                MB_FWD
-            } else if zero {
-                MB_PATTERN
-            } else {
-                MB_FWD | MB_PATTERN
-            };
-            if quant {
-                flags |= MB_QUANT;
+            let flags = dir | if cbp != 0 { MB_PATTERN } else { 0 } | if quant { MB_QUANT } else { 0 };
+            w.code(if ptype == PictureType::B { t.mbtype_b[flags as usize] } else { t.mbtype_p[flags as usize] });
+            if interlaced && dir != 0 {
+                w.put(if plan.field_mc { 1 } else { 2 }, 2); // frame_motion_type
             }
-            w.code(t.mbtype_p[flags as usize]);
+            if interlaced && cbp != 0 {
+                w.put(plan.field_dct as u32, 1); // dct_type
+            }
             if quant {
                 w.put(code as u32, 5);
             }
-            if flags & MB_FWD != 0 {
-                for c in 0..2 {
-                    write_motion(w, t, plan.mv[c] - pmv[c]);
+            for (s, bit) in [MB_FWD, MB_BWD].into_iter().enumerate() {
+                if dir & bit != 0 {
+                    write_vectors(w, t, plan, s, &mut pmv);
                 }
-                pmv = plan.mv;
-            } else {
-                pmv = [0, 0];
             }
-            write_pattern(w, t, cbp, self.nblocks, &levels, &mut self.vlc_cost);
+            if dir == 0 {
+                pmv = [[[0; 2]; 2]; 2];
+            }
+            prev_dir = if plan.field_mc { None } else { Some(dir) };
+            write_pattern(w, t, cbp, self.nblocks, &levels, scan, &mut self.vlc_cost);
         }
         scale_sum
     }
 }
 
+/// The vectors of direction `s` of a macroblock against the predictors, which they replace
+/// (§7.6.3): one frame vector, or a field select and a vector per field (vertical predicted
+/// from half the stored predictor, stored doubled).
+fn write_vectors(w: &mut BitWriter, t: &EncTables, plan: &Plan, s: usize, pmv: &mut [[[i32; 2]; 2]; 2]) {
+    if plan.field_mc {
+        for r in 0..2 {
+            w.put(plan.sel[r][s] as u32, 1); // motion_vertical_field_select
+            let v = plan.mvs[r][s];
+            write_motion(w, t, v[0] - pmv[r][s][0]);
+            write_motion(w, t, v[1] - (pmv[r][s][1] >> 1));
+            pmv[r][s] = [v[0], v[1] * 2];
+        }
+    } else {
+        let v = plan.mvs[0][s];
+        for c in 0..2 {
+            write_motion(w, t, v[c] - pmv[0][s][c]);
+        }
+        pmv[0][s] = v;
+        pmv[1][s] = v;
+    }
+}
+
 /// coded_block_pattern and the coded blocks of a non-intra macroblock (nothing when `cbp` is 0).
-fn write_pattern(w: &mut BitWriter, t: &EncTables, cbp: u32, nblocks: usize, levels: &[[i32; 64]; 8], cost: &mut [u64; 2]) {
+fn write_pattern(w: &mut BitWriter, t: &EncTables, cbp: u32, nblocks: usize, levels: &[[i32; 64]; 8], scan: &[u8; 64], cost: &mut [u64; 2]) {
     if cbp == 0 {
         return;
     }
@@ -828,7 +936,7 @@ fn write_pattern(w: &mut BitWriter, t: &EncTables, cbp: u32, nblocks: usize, lev
     }
     for (i, lv) in levels.iter().take(nblocks).enumerate() {
         if cbp & (1 << (nblocks - 1 - i)) != 0 {
-            write_coefficients(w, t, lv, false, false, cost);
+            write_coefficients(w, t, lv, scan, false, false, cost);
         }
     }
 }
@@ -890,15 +998,15 @@ fn write_dc(w: &mut BitWriter, t: &EncTables, cc: usize, diff: i32) {
     }
 }
 
-/// The run/level pairs of a block in zigzag order (from the first AC coefficient for intra
+/// The run/level pairs of a block in `scan` order (from the first AC coefficient for intra
 /// blocks), then end_of_block. Intra blocks use table one when `one`, and add what they would
 /// cost with table zero and table one to `cost`.
-fn write_coefficients(w: &mut BitWriter, t: &EncTables, levels: &[i32; 64], intra: bool, one: bool, cost: &mut [u64; 2]) {
+fn write_coefficients(w: &mut BitWriter, t: &EncTables, levels: &[i32; 64], scan: &[u8; 64], intra: bool, one: bool, cost: &mut [u64; 2]) {
     let tab = &t.dct[one as usize];
     let code_of = |tab: &[[Code; MAX_TABLE_LEVEL + 1]], run: usize, a: usize| tab.get(run).and_then(|r| r.get(a)).copied().filter(|c| c.1 > 0);
     let mut run = 0usize;
     let mut first = !intra;
-    for &pos in &SCAN[0][intra as usize..] {
+    for &pos in &scan[intra as usize..] {
         let l = levels[pos as usize];
         if l == 0 {
             run += 1;

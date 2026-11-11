@@ -80,7 +80,7 @@ DCP_KINDS = (
 # DCP immersive audio (`DcpImmersive` in crates/export): id, label
 DCP_IMMERSIVE = (
     ("off", N_("Off (5.1 only)")),
-    ("bed", N_("IAB 7.1 DS bed from the 5.1 mix")),
+    ("bed", N_("IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)")),
     ("file", N_("IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)")),
 )
 # what channels 1-6 of an immersive DCP's main sound carry; ST 429-19:2023 7.1.2 wants none (#348)
@@ -89,6 +89,8 @@ DCP_IAB_FALLBACK = (
     ("5.1", N_("5.1: the IAB rendered (not ST 429-19)")),
     ("mix", N_("5.1: the timeline mix (not ST 429-19)")),
 )
+# DCP spoken language (RFC 5646, #309): common tags offered; any tag can be typed
+DCP_LANGUAGES = ("", "en-US", "en-GB", "hu-HU", "de-DE", "fr-FR", "es-ES", "it-IT", "ja-JP", "zh-CN")
 AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
@@ -332,7 +334,15 @@ class ExportDialog(QDialog):
         self.dcp_kind.setObjectName("export.dcpContentKind")
         for key, label in DCP_KINDS:
             self.dcp_kind.addItem(tr(label), key)
-        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
+        # DCP only: spoken language (MCA labels, CPL title, DCNC name field)
+        self.dcp_language = QComboBox(self)
+        self.dcp_language.setObjectName("export.dcpLanguage")
+        self.dcp_language.setEditable(True)
+        self.dcp_language.addItems(DCP_LANGUAGES)
+        line = self.dcp_language.lineEdit()
+        if line is not None:
+            line.setPlaceholderText(tr("None (RFC 5646 tag, e.g. en-US)"))
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_language):
             w.setEnabled(False)
         # DCP only: immersive audio, an IAB track file beside the 16-channel main sound (#343)
         self.dcp_immersive = QComboBox(self)
@@ -364,9 +374,17 @@ class ExportDialog(QDialog):
         browse.setObjectName("export.location.browse")
         browse.setToolTip(tr("Choose folder"))
         browse.clicked.connect(self._browse)
+        # DCP only: name the package folder by the ISDCF Digital Cinema Naming Convention
+        self.dcp_isdcf = QPushButton(tr("ISDCF name"), self)
+        self.dcp_isdcf.setObjectName("export.dcpIsdcfName")
+        self.dcp_isdcf.setToolTip(tr("Name the DCP folder by the Digital Cinema Naming Convention"))
+        self.dcp_isdcf.clicked.connect(self._use_isdcf_name)
+        self.dcp_isdcf.setEnabled(False)
+        self._dcp_name = ""
         path_row = QHBoxLayout()
         path_row.addWidget(self.path.location, 1)
         path_row.addWidget(browse)
+        path_row.addWidget(self.dcp_isdcf)
 
         self.range = QComboBox(self)
         self.range.setObjectName("export.range")
@@ -453,7 +471,12 @@ class ExportDialog(QDialog):
         self.chroma.setObjectName("export.mpeg2Chroma")
         self.chroma.addItem(tr("4:2:0 (Main Profile)"), "420")
         self.chroma.addItem(tr("4:2:2 (4:2:2 Profile)"), "422")
-        for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
+        self.field_order = QComboBox(self)
+        self.field_order.setObjectName("export.fieldOrder")
+        self.field_order.addItem(tr("Progressive"), "progressive")
+        self.field_order.addItem(tr("Interlaced, upper field first"), "upperFirst")
+        self.field_order.addItem(tr("Interlaced, lower field first"), "lowerFirst")
+        for w in (self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
             w.setEnabled(False)
         # per-format settings: shown for the chosen format, sent only once changed here
         self.format_choices: dict[str, QComboBox] = {}
@@ -512,6 +535,7 @@ class ExportDialog(QDialog):
         f.addRow(tr("DCP resolution"), self.dcp_resolution)
         f.addRow(tr("DCP container"), self.dcp_aspect)
         f.addRow(tr("Content kind"), self.dcp_kind)
+        f.addRow(tr("DCP language"), self.dcp_language)
         f.addRow(tr("Range"), range_row)
         f.addRow("", self.range_warning)
         video = Section("video", tr("Video"), self)
@@ -525,6 +549,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
+        fv.addRow(tr("Field order"), self.field_order)
         for key, label, _name, _choices in FORMAT_CHOICES:
             fv.addRow(tr(label), self.format_choices[key])
         mux = Section("multiplexer", tr("Multiplexer"), self)
@@ -724,7 +749,8 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.editingFinished.connect(self._probe_iab)
         self.dcp_iab_source.textChanged.connect(self._changed)
         self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
-        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
+        self.dcp_language.currentTextChanged.connect(self._changed)
+        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma), ("fieldOrder", self.field_order)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
@@ -888,6 +914,7 @@ class ExportDialog(QDialog):
         self.b_frames.setValue(2)
         self.quantizer.setValue(0)
         self.chroma.setCurrentIndex(0)
+        self.field_order.setCurrentIndex(0)
         index = self.container.findData(preset.get("mpeg2Container") or "ps")
         self.container.setCurrentIndex(max(0, index))
         self.dcp_resolution.setCurrentIndex(max(0, self.dcp_resolution.findData(preset.get("dcpResolution") or "2k")))
@@ -896,6 +923,7 @@ class ExportDialog(QDialog):
         self.dcp_immersive.setCurrentIndex(max(0, self.dcp_immersive.findData(preset.get("dcpImmersive") or "off")))
         self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
         self.dcp_iab_fallback.setCurrentIndex(max(0, self.dcp_iab_fallback.findData(preset.get("dcpIabFallback") or "none")))
+        self.dcp_language.setCurrentText(str(preset.get("dcpLanguage") or ""))
         self.touched.clear()
         self.agent_settings = {}
         self._loading = False
@@ -910,7 +938,8 @@ class ExportDialog(QDialog):
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate_box.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         mpeg2 = self.format.currentData() == "mpeg2"
-        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
+        # only MPEG-2 export codes interlaced video
+        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
             w.setEnabled(mpeg2)
         self.video_form.setRowVisible(self.gop, mpeg2)  # H.264 / H.265 / AV1 have egui's own row
         self._sync_format_rows()
@@ -922,8 +951,9 @@ class ExportDialog(QDialog):
         self.sections["multiplexer"].setVisible(self._muxed())
         self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         dcp = self._dcp()
-        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive):
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive, self.dcp_language):
             w.setEnabled(dcp)
+        self.dcp_isdcf.setEnabled(dcp and bool(self._dcp_name))
         self._immersive_changed()
         if dcp:
             # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
@@ -1047,7 +1077,7 @@ class ExportDialog(QDialog):
             w.setEnabled(mode == "file")
         self.dcp_iab_fallback.setEnabled(mode in ("bed", "file"))
         if mode == "bed":
-            self.dcp_iab_info.setText(tr("The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal."))
+            self.dcp_iab_info.setText(tr("A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal."))
         elif mode == "file":
             self._probe_iab()
         else:
@@ -1227,6 +1257,8 @@ class ExportDialog(QDialog):
                 p["mpeg2Quantizer"] = self.quantizer.value()
             if "chroma" in self.touched:
                 p["mpeg2Chroma"] = self.chroma.currentData()
+            if "fieldOrder" in self.touched:
+                p["fieldOrder"] = self.field_order.currentData()
         if self.dcp_resolution.isEnabled():
             p["dcpResolution"] = self.dcp_resolution.currentData()
             p["dcpAspect"] = self.dcp_aspect.currentData()
@@ -1237,6 +1269,7 @@ class ExportDialog(QDialog):
                 p["dcpIabSource"] = os.path.expanduser(self.dcp_iab_source.text().strip())
             if mode != "off":
                 p["dcpIabFallback"] = self.dcp_iab_fallback.currentData()
+            p["dcpLanguage"] = self.dcp_language.currentText().strip()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         return p
@@ -1303,6 +1336,18 @@ class ExportDialog(QDialog):
         self.range_warning.setVisible(bool(r.get("warnings")))
         self.export_button.setEnabled(True)
         self.queue_button.setEnabled(True)
+        self._dcp_name = str(r.get("dcpName") or "")
+        self.dcp_isdcf.setEnabled(self._dcp() and bool(self._dcp_name))
+
+    def _use_isdcf_name(self) -> None:
+        """Rename the package folder (the last part of the output path) to the engine's ISDCF name."""
+        if not self._dcp_name:
+            return
+        # the package folder is the File Name row (a DCP has no extension); set it directly so a
+        # dot in the name is not taken for one
+        if not self.path.location.text().strip():
+            self.path.location.setText(str(default_output_dir(self.project_path)))
+        self.path.file_name.setText(self._dcp_name)
 
     def open_sections(self) -> list[str]:
         return [k for k in SECTION_KEYS if self.sections[k].is_open()]
@@ -1320,6 +1365,8 @@ class ExportDialog(QDialog):
         self._resolve()
 
     def _summary_error(self, message: str) -> None:
+        self._dcp_name = ""
+        self.dcp_isdcf.setEnabled(False)
         if self._agent_before is not None:
             self.agent_settings, self._agent_before = self._agent_before, None
             self._resolve_timer.start()
