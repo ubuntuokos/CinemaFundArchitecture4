@@ -391,3 +391,6 @@
 	transitions	Übergänge
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} Bilder kopiert, {reencoded} an Schnitten neu kodiert, {rendered} gerendert
 	{frames} frames are re-encoded or rendered. Continue?	{frames} Bilder werden neu kodiert oder gerendert. Fortfahren?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Audio kopiert: {tracks}
+	Audio track {track} is not copied: {why}	Tonspur {track} wird nicht kopiert: {why}

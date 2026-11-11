@@ -250,3 +250,70 @@ fn gop_marks_place_each_clips_access_points_on_the_sequence() {
     assert!(clips.iter().all(|c| c["points"].as_array().unwrap().iter().all(|p| p["clean"] == true)));
     let _ = std::fs::remove_dir_all(&fx.dir);
 }
+
+/// [`source_mp4`] with a 48 kHz mono PCM tone as long as the video.
+fn source_with_tone(seed: usize, bframes: u8) -> Vec<u8> {
+    use cfa4_isobmff::PcmConfig;
+    let video = source_mp4(seed, bframes);
+    let v = cfa4_isobmff::open(video.as_slice()).unwrap();
+    let vt = &v.tracks[0];
+    let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+    let mut cfg = TrackConfig::new(vt.entries[0].clone(), vt.timescale);
+    cfg.edits = vt.edits.clone();
+    let t = mux.add_track(cfg).unwrap();
+    for (i, s) in vt.samples.iter().enumerate() {
+        let data = v.read_sample(video.as_slice(), 0, i).unwrap();
+        mux.write_sample(t, WriteSample { data: &data, duration: s.duration, composition_offset: (s.pts - s.dts) as i32, is_sync: s.is_sync }).unwrap();
+    }
+    let pcm = PcmConfig { bits: 16, float: false, big_endian: false, signed: true, channels: 1, sample_rate: 48_000.0 };
+    let p = mux.add_track(TrackConfig::new(SampleEntry::pcm(pcm), 48_000)).unwrap();
+    let tone: Vec<u8> = (0..48_000 * 8 / 5).flat_map(|i: u32| (((i as f32 * 0.0577).sin() * 12_000.0) as i16).to_le_bytes()).collect();
+    mux.write_sample(p, WriteSample { data: &tone, duration: 0, composition_offset: 0, is_sync: true }).unwrap();
+    mux.finish().unwrap().into_inner()
+}
+
+#[test]
+fn the_sequence_audio_is_mixed_encoded_and_presented_with_the_video() {
+    // SCE-001 §9 (WP-09b): the timeline's audio is a mix, so it is encoded as AAC; its priming is
+    // hidden and it lasts exactly as long as the copied video
+    let dir = tmp_dir("smart-render-audio");
+    let a = dir.join("a.mp4");
+    std::fs::write(&a, source_with_tone(0, 2)).unwrap();
+    let (mut s, items, seq) = session_with(&[a.as_path()]);
+    let mut p = (*s.project).clone();
+    let v = p.make_track_item(items[0], TrackKind::Video, f(0), TimeRange::new(f(0), f(40)), RATE).unwrap();
+    let au = p.make_track_item(items[0], TrackKind::Audio, f(0), TimeRange::new(f(0), f(40)), RATE).unwrap();
+    let q = p.sequence_mut(seq).unwrap();
+    q.video_tracks[0].items = vec![v];
+    q.audio_tracks[0].items = vec![au];
+    s.project = Arc::new(p);
+    let out = |n: &str| dir.join(n).to_string_lossy().into_owned();
+    let r = s.execute("export.start", json!({"scope": "timeline", "output": out("av.mp4")})).unwrap();
+    assert_eq!(r["summary"]["lossless"], true, "{r}");
+    let verified = r["audio"]["verified"].as_array().unwrap();
+    assert_eq!(verified.len(), 1, "{r}");
+    assert_eq!(verified[0]["codec"], "aac");
+    assert!(verified[0]["syncErrorNs"].as_i64().unwrap().abs() <= 10_417, "{r}");
+    let file = cfa4_isobmff::open(std::fs::read(out("av.mp4")).unwrap().as_slice()).unwrap();
+    assert_eq!(file.tracks.len(), 2);
+    let audio = &file.tracks[1];
+    // presented: the edit list hides the priming and ends with the video (1.6 s)
+    let presented: u64 = audio.edits.iter().filter(|e| e.media_time >= 0).map(|e| e.segment_duration).sum();
+    assert_eq!(presented * 48_000 / u64::from(file.timescale), 76_800, "{:?} @ {}", audio.edits, file.timescale);
+    if let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("Smart Render audio decode") {
+        let o = Command::new(&ffmpeg).args(["-v", "error", "-i", &out("av.mp4"), "-map", "0:a", "-f", "s16le", "-ac", "1", "-"]).output().unwrap();
+        assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+        let samples: Vec<i16> = o.stdout.chunks(2).map(|x| i16::from_le_bytes([x[0], x[1]])).collect();
+        assert!((76_800..76_800 + 1024).contains(&samples.len()), "{}", samples.len());
+        // the tone is there from the first picture (no priming silence in front of it)
+        let loud = |r: std::ops::Range<usize>| samples[r].iter().map(|x| i64::from(*x).abs()).max().unwrap();
+        assert!(loud(0..480) > 3000, "the first 10 ms are the tone, not priming silence");
+        assert!(loud(38_400..48_000) > 3000);
+    }
+    // "audio": false leaves the video alone
+    let r = s.execute("export.start", json!({"scope": "timeline", "output": out("mute.mp4"), "audio": false})).unwrap();
+    assert_eq!(r["audio"]["verified"], json!([]));
+    let file = cfa4_isobmff::open(std::fs::read(out("mute.mp4")).unwrap().as_slice()).unwrap();
+    assert_eq!(file.tracks.len(), 1);
+    let _ = std::fs::remove_dir_all(&dir);
+}
