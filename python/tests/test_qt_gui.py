@@ -2615,11 +2615,15 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.b_frames.setValue(0)
         assert dlg.params()["mpeg2BFrames"] == 0
         dlg.b_frames.setValue(2)
-        # progressive unless an interlaced field order is chosen
-        assert dlg.field_order.isEnabled() and dlg.field_order.currentData() == "progressive" and "fieldOrder" not in p
-        dlg.field_order.setCurrentIndex(dlg.field_order.findData("lowerFirst"))
-        assert dlg.params()["fieldOrder"] == "lowerFirst"
-        dlg.field_order.setCurrentIndex(dlg.field_order.findData("progressive"))
+        # progressive unless an interlaced field order is chosen: egui's one Field Order row
+        # (export.video.fieldOrder), its interlaced orders open for MPEG-2 only
+        fo = dlg.rows.field_order
+        assert dlg.findChild(QtWidgets.QComboBox, "export.fieldOrder") is None, "one Field Order control"
+        assert fo.currentData() == "progressive" and "fieldOrder" not in p.get("settings", {}) and "fieldOrder" not in p
+        assert all(fo.model().item(i).isEnabled() for i in range(fo.count()))
+        fo.setCurrentIndex(fo.findData("lowerFirst"))
+        assert dlg.params()["settings"]["fieldOrder"] == "lowerFirst"
+        fo.setCurrentIndex(fo.findData("progressive"))
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
