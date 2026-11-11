@@ -130,6 +130,9 @@ pub struct Config {
     pub adaptive_quantization: bool,
     /// Analyse macroblock rows in parallel (with the `threads` feature).
     pub threads: bool,
+    /// Scene-cut detection: an anchor picture that motion prediction cannot follow (most of its
+    /// macroblocks would be intra coded) becomes an I picture that starts a new GOP.
+    pub scene_cut: bool,
     /// The sequence extension's `low_delay` flag. `None` sets it exactly when there are no B
     /// pictures; `Some(false)` keeps it clear without B pictures too, so the pictures can be
     /// spliced into a stream that has them (a decoder then keeps its usual one-picture delay).
@@ -157,6 +160,7 @@ impl Config {
             colour: None,
             adaptive_quantization: false,
             threads: true,
+            scene_cut: true,
             low_delay: None,
         }
     }
@@ -184,6 +188,14 @@ pub struct Packet {
     /// that every picture's decode time is at most its presentation time (-1 for the first).
     pub dts: i64,
 }
+
+/// Scene cuts: the prediction ratio of a P picture is the SAD its best inter predictions leave,
+/// over the luma deviation from the macroblock means (both summed over the picture). A P
+/// picture is a cut when its ratio reaches `SCENE_CUT_RATIO` (motion explains little of it) and
+/// `SCENE_CUT_JUMP` times the previous P picture's ratio (content that is hard to predict
+/// throughout, such as noise or brightness changes, does not count).
+const SCENE_CUT_RATIO: f64 = 0.8;
+const SCENE_CUT_JUMP: f64 = 1.8;
 
 /// A picture waiting for the anchor after it (B pictures), in display order.
 struct Pending {
@@ -254,6 +266,10 @@ pub struct Encoder {
     anchor_index: [Option<u64>; 2],
     /// Display number of the current GOP's first picture (temporal_reference 0).
     gop_first: u64,
+    /// Display number of the I picture the GOP cadence counts from (moves with scene cuts).
+    gop_origin: u64,
+    /// The previous P picture's prediction ratio (see [`SCENE_CUT_RATIO`]).
+    last_ratio: Option<f64>,
     /// B pictures waiting for their backward anchor.
     pending: Vec<Pending>,
     /// The last P picture's vectors (temporal predictors), over `mv_span` pictures.
@@ -352,6 +368,8 @@ impl Encoder {
             refs: [None, None],
             anchor_index: [None, None],
             gop_first: 0,
+            gop_origin: 0,
+            last_ratio: None,
             pending: Vec::new(),
             prev_mvs: vec![[0, 0]; mb_width * mb_height],
             mv_span: 1,
@@ -393,7 +411,7 @@ impl Encoder {
         let frame = self.padded(input)?;
         let index = self.frames;
         self.frames += 1;
-        let pos = index % u64::from(self.cfg.gop);
+        let pos = (index - self.gop_origin.min(index)) % u64::from(self.cfg.gop.max(1));
         if pos != 0 && !pos.is_multiple_of(u64::from(self.cfg.b_frames) + 1) {
             self.pending.push(Pending { index, frame });
             return Ok(Vec::new());
@@ -417,20 +435,35 @@ impl Encoder {
     fn code_anchor(&mut self, frame: Frame, index: u64, intra: bool) -> Result<Vec<Packet>> {
         let pending = std::mem::take(&mut self.pending);
         let mut out = Vec::with_capacity(1 + pending.len());
+        let past = self.refs[1].clone();
+        let mut intra = intra;
+        let mut anchor = None;
+        if !intra {
+            anchor = self.code_picture(&frame, index, PictureType::P, past.as_ref(), None, self.cfg.scene_cut)?;
+            // a scene cut: this picture starts a new GOP
+            intra = anchor.is_none();
+            if intra {
+                self.gop_origin = index;
+            }
+        }
         if intra {
             // the GOP starts with the B pictures displayed before its I picture
             self.gop_first = pending.first().map_or(index, |p| p.index);
         }
-        let ptype = if intra { PictureType::I } else { PictureType::P };
-        let past = self.refs[1].clone();
-        out.push(self.code_picture(&frame, index, ptype, if intra { None } else { past.as_ref() }, None)?);
+        let anchor = match anchor {
+            Some(p) => p,
+            None => self.code_picture(&frame, index, PictureType::I, None, None, false)?.ok_or_else(|| Error::Invalid("I picture not coded".into()))?,
+        };
+        out.push(anchor);
         // the anchors move on: the B pictures predict from the previous and this one
         let anchor = self.dec.last_anchor().ok_or_else(|| Error::Invalid("no reconstructed picture".into()))?;
         self.refs = [self.refs[1].take(), Some(anchor)];
         self.anchor_index = [self.anchor_index[1], Some(index)];
         let (fwd, bwd) = (if intra && self.cfg.closed_gop { None } else { self.refs[0].clone() }, self.refs[1].clone());
         for p in pending {
-            out.push(self.code_picture(&p.frame, p.index, PictureType::B, fwd.as_ref(), bwd.as_ref())?);
+            if let Some(b) = self.code_picture(&p.frame, p.index, PictureType::B, fwd.as_ref(), bwd.as_ref(), false)? {
+                out.push(b);
+            }
         }
         Ok(out)
     }
@@ -444,23 +477,19 @@ impl Encoder {
     }
 
     /// Code one picture predicted from `fwd` (the anchor before) and / or `bwd` (the anchor
-    /// after).
-    fn code_picture(&mut self, cur: &Frame, index: u64, ptype: PictureType, fwd: Option<&Arc<Frame>>, bwd: Option<&Arc<Frame>>) -> Result<Packet> {
+    /// after). With `cut_check`, returns `None` (and changes nothing) when the analysis finds a
+    /// scene cut (see [`SCENE_CUT_RATIO`]).
+    fn code_picture(
+        &mut self,
+        cur: &Frame,
+        index: u64,
+        ptype: PictureType,
+        fwd: Option<&Arc<Frame>>,
+        bwd: Option<&Arc<Frame>>,
+        cut_check: bool,
+    ) -> Result<Option<Packet>> {
         let tref = index.saturating_sub(self.gop_first) as u32;
         let mut w = BitWriter::default();
-        if ptype == PictureType::I {
-            self.sequence_headers(&mut w);
-            self.gop_header(&mut w, self.gop_first, self.cfg.closed_gop || self.gop_first == index);
-            if let Some(rc) = self.rc.as_mut() {
-                let m = u64::from(self.cfg.b_frames) + 1;
-                let n = u64::from(self.cfg.gop);
-                let np = (n - 1) / m;
-                rc.start_gop(np as u32, (n - 1 - np) as u32);
-            }
-        }
-        // the bits up to the end of the picture start code arrive before the vbv_delay starts
-        let delay = self.vbv.as_ref().map_or(0xFFFF, |v| v.delay(w.bits().div_ceil(8) * 8 + 32));
-        self.picture_header(&mut w, tref, ptype, delay);
         // analysis
         let lambda = (self.last_scale * 0.6).round().clamp(1.0, 64.0) as u32;
         let (preds_f, preds_b) = if ptype == PictureType::B {
@@ -481,6 +510,30 @@ impl Encoder {
             interlaced: self.cfg.interlaced.is_some(),
         };
         let plans = self.analyse(&ctx);
+        if ptype == PictureType::P {
+            let intra = plans.iter().flatten().map(|p| u64::from(p.intra_cost)).sum::<u64>();
+            let inter = plans.iter().flatten().map(|p| u64::from(p.inter_sad)).sum::<u64>();
+            let ratio = inter as f64 / intra.max(1) as f64;
+            let last = self.last_ratio.replace(ratio);
+            if cut_check && last.is_some_and(|l| ratio >= SCENE_CUT_RATIO && ratio >= SCENE_CUT_JUMP * l) {
+                // the next P picture is not compared with this one
+                self.last_ratio = None;
+                return Ok(None);
+            }
+        }
+        if ptype == PictureType::I {
+            self.sequence_headers(&mut w);
+            self.gop_header(&mut w, self.gop_first, self.cfg.closed_gop || self.gop_first == index);
+            if let Some(rc) = self.rc.as_mut() {
+                let m = u64::from(self.cfg.b_frames) + 1;
+                let n = u64::from(self.cfg.gop);
+                let np = (n - 1) / m;
+                rc.start_gop(np as u32, (n - 1 - np) as u32);
+            }
+        }
+        // the bits up to the end of the picture start code arrive before the vbv_delay starts
+        let delay = self.vbv.as_ref().map_or(0xFFFF, |v| v.delay(w.bits().div_ceil(8) * 8 + 32));
+        self.picture_header(&mut w, tref, ptype, delay);
         let avg_act = plans.iter().flatten().map(|p| p.act as f64).sum::<f64>() / (self.mb_width * self.mb_height).max(1) as f64;
         // slices
         let start = w.bits();
@@ -569,7 +622,7 @@ impl Encoder {
         }
         let dts = self.coded as i64 - i64::from(self.cfg.b_frames > 0);
         self.coded += 1;
-        Ok(Packet { data, keyframe: ptype == PictureType::I, picture_type: ptype, index, dts })
+        Ok(Some(Packet { data, keyframe: ptype == PictureType::I, picture_type: ptype, index, dts }))
     }
 
     fn analyse(&self, ctx: &Ctx) -> Vec<Vec<Plan>> {
@@ -912,14 +965,27 @@ fn quantize_intra(coef: &[i32; 64], qs: i32, out: &mut [i32; 64]) {
 /// `floor(|F| / qs)` puts it in the middle of each step (and a dead zone of one step).
 /// Returns whether any level is non-zero.
 fn quantize_inter(coef: &[i32; 64], qs: i32, out: &mut [i32; 64]) -> bool {
-    let mut any = false;
-    for k in 0..64 {
-        let a = coef[k].abs();
-        let l = (a / qs).min(2047);
-        out[k] = if coef[k] < 0 { -l } else { l };
-        any |= l != 0;
+    let m = recip(qs);
+    let mut any = 0i32;
+    for (o, &c) in out.iter_mut().zip(coef) {
+        let l = div_recip(c.unsigned_abs(), m);
+        *o = if c < 0 { -l } else { l };
+        any |= l;
     }
-    any
+    any != 0
+}
+
+/// `ceil(2^32 / qs)` for [`div_recip`] (`qs` ≥ 1).
+fn recip(qs: i32) -> u64 {
+    let d = qs.max(1) as u64;
+    (1u64 << 32).div_ceil(d)
+}
+
+/// `min(a / qs, 2047)` by multiplication with `recip(qs)`: exact for `a` < 2^16 and `qs` ≤ 112
+/// (the error a·(m − 2^32/qs)/2^32 stays below 1/qs), and larger `a` saturate anyway.
+#[inline(always)]
+fn div_recip(a: u32, m: u64) -> i32 {
+    (((a.min(0xFFFF) as u64) * m) >> 32).min(2047) as i32
 }
 
 fn write_dc(w: &mut BitWriter, t: &EncTables, cc: usize, diff: i32) {
