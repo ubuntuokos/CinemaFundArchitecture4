@@ -2,7 +2,7 @@
 
 > **Nem cél / Non-goal (2026-10-30):** a Windows-, macOS- és Android-paritás nem cél. A CFA4 kizárólag Ubuntu/Kubuntu 26.04 AMD64-re készül; a célalkalmazás más platformokon elérhető funkciói csak a Linuxra átültethető részükben számítanak. Az Apple-formátumok (ProRes, Apple Log, QuickTime/MOV) támogatása formátum, nem platform, ezért marad. / Windows, macOS and Android parity is not a goal; CFA4 targets Ubuntu 26.04 AMD64 only. Apple formats stay supported.
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-27 · **Change:** minor (Ubuntu 26.04 only: G3, G4, G5, G9) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-11 · **Change:** minor (`cfa4-metrics`, G1) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -39,6 +39,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G1. Nothing compares our output with Premiere's
 
+- **Have:** the scoring metrics: `cfa4-metrics` computes CIEDE2000 ΔE (mean, max, share above 1)
+  between two 8-bit sRGB images and SSIM of 8 / 10-16-bit or float planes, checked against the
+  Sharma et al. (2005) ΔE test data and scikit-image (PSNR already exists in the oracle tests).
 - **Missing:** a fidelity harness. Every effect, transition, Lumetri control, blend mode, keyframe
   interpolation and audio effect counts once it exists; nothing renders the same project in
   Premiere and CFA4 and compares frames or samples. Effects described as approximations
@@ -361,3 +364,4 @@ distributions are not targets.
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |
 | 2026-10-27 | minor | Ubuntu 26.04 is the only target (macOS, Windows and RPM dropped): G3, G4, G5, G8 and G9 rewritten, G4 40–80 → 30–60 h, G5 120–200 → 100–170 h, G9 50–90 → 30–60 h |
 | 2026-10-26 | minor | G10: JPEG 2000 MXF import, DCP picture tracks included (#77) |
+| 2026-11-11 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |

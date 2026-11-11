@@ -19,6 +19,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::Cursor;
 use std::sync::Arc;
 
+use cfa4_export::audio_copy::{mux_audio_tracks, verify_audio_tracks};
 use cfa4_export::boundary_reencode::BoundaryEncoding;
 use cfa4_export::smart_cut::{Mp4CopySource, SmartCutError};
 use cfa4_export::timeline_render::{
@@ -403,6 +404,28 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
     if (verified.samples, verified.copied, verified.reencoded, verified.rendered) != (report.samples, report.copied, report.reencoded, report.rendered) {
         return Err(EngineError::Other("Smart Render verification read back another file than was written".into()));
     }
+    // the sequence's audio: mixed and encoded (a mix cannot be copied), presented with the video
+    let mut audio = Vec::new();
+    let bytes = if bool_p(p, "audio").unwrap_or(true) {
+        // the written video's length, as the export range of the mix
+        let length = i64::try_from(verified.duration)
+            .ok()
+            .and_then(|d| MediaTime::new(d, Rational::new(1, i64::from(verified.timescale.max(1)))).to_tick())
+            .ok_or_else(|| EngineError::Other("the sequence duration does not fit the output".into()))?;
+        let range = cfa4_time::TimeRange::new(Tick::ZERO, length);
+        let provider = s.media.full_res_provider(Arc::clone(&s.project), s.services.clone());
+        match cfa4_export::timeline_audio::encode_sequence_audio(&s.project, planned.seq, range, &provider).map_err(other)? {
+            Some(track) => {
+                let tracks = [track];
+                let with_audio = mux_audio_tracks(&bytes, &tracks, (verified.duration, verified.timescale), cfa4_isobmff::Brand::Mp4).map_err(other)?;
+                audio = verify_audio_tracks(&with_audio, &bytes, &tracks).map_err(other)?;
+                with_audio
+            }
+            None => bytes,
+        }
+    } else {
+        bytes
+    };
     s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
     Ok(json!({
         "sequence": planned.seq.0,
@@ -411,6 +434,7 @@ pub(crate) fn start(s: &mut Session, p: &Value) -> Result<Value> {
         "report": verified,
         "verified": true,
         "summary": summary(plan),
+        "audio": {"verified": audio},
     }))
 }
 
