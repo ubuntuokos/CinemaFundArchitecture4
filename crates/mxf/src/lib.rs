@@ -1,6 +1,6 @@
 //! Clean-room MXF demuxer, written from the SMPTE specifications (editions in the README):
 //! ST 377-1 (file format: KLV, partitions, primer pack, header metadata, index tables, random
-//! index pack), ST 378 (OP1a), ST 390 (OP-Atom), ST 379-1/2 (generic container), ST 381-1 (MPEG
+//! index pack), ST 378 (OP1a), ST 391 / 392 / 393 / 407 / 408 (OP1b–OP3c edit lists), ST 390 (OP-Atom), ST 379-1/2 (generic container), ST 381-1 (MPEG
 //! video mapping), ST 381-3 (AVC mapping), ST 384 (uncompressed pictures, [`uncompressed`]),
 //! ST 382 (AES3 / Broadcast Wave audio mapping), ST 331 (AES3 element data, D-10 sound), ST 2019-4
 //! (VC-3 mapping), RDD 44 (ProRes mapping) and ST 2067-201 (IAB immersive audio track files), ST
