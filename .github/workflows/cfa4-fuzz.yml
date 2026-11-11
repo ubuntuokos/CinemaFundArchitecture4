@@ -1,0 +1,89 @@
+name: CFA4 fuzzing (nightly)
+
+# CFA4-SECURITY-001 B2: every L0 parser (containers, codecs) and the project, interchange, caption
+# and credits readers under libFuzzer, every night, in six shards. Not a PR check: automatic PR
+# checks stay quick (AGENTS.md CFA4 section); run it by hand with workflow_dispatch.
+# The corpus grows from night to night through the Actions cache; a finding fails the shard and the
+# crashing input is printed (base64) in the log, to be turned into a regression test (AGENTS.md §0.8).
+
+on:
+  schedule:
+    - cron: "17 1 * * *"   # nightly
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: "Seconds per target"
+        default: "300"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-fuzz-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  coverage:
+    name: Every L0 parser has a fuzz target
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Rust toolchain from rust-toolchain.toml
+        run: rustup show
+      - name: cargo xtask fuzz-targets
+        run: cargo xtask fuzz-targets
+
+  fuzz:
+    name: Fuzz shard ${{ matrix.shard }}/6
+    needs: coverage
+    runs-on: ubuntu-26.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    env:
+      SECONDS_PER_TARGET: ${{ github.event.inputs.seconds || '300' }}
+      CFA4_FUZZ_CLEAN: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Tools (C++ compiler for libFuzzer, ffmpeg for the seed corpus)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential clang ffmpeg python3
+      - name: Nightly toolchain and cargo-fuzz
+        run: |
+          rustup toolchain install nightly --profile minimal
+          cargo +nightly install cargo-fuzz --version 0.13.2 --locked
+      - name: Restore corpus
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus
+          key: cfa4-fuzz-corpus-${{ matrix.shard }}-${{ github.run_id }}
+          restore-keys: cfa4-fuzz-corpus-${{ matrix.shard }}-
+      - name: Seed corpus
+        run: fuzz/seeds.sh
+      - name: Fuzz this shard's targets
+        run: |
+          mapfile -t all < <(sed -n 's/^name = "\([a-z0-9_]*\)"$/\1/p' fuzz/Cargo.toml | grep -v '^cfa4-fuzz$')
+          mine=()
+          for i in "${!all[@]}"; do
+            if (( i % 6 == ${{ matrix.shard }} )); then mine+=("${all[$i]}"); fi
+          done
+          echo "targets: ${mine[*]}"
+          fuzz/run.sh "$SECONDS_PER_TARGET" "${mine[@]}"
+      - name: Print findings
+        if: failure()
+        run: |
+          for f in fuzz/artifacts/*/*; do
+            [ -f "$f" ] || continue
+            echo "== $f ($(stat -c %s "$f") bytes)"
+            head -c 65536 "$f" | base64 -w0; echo
+          done

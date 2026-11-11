@@ -1,0 +1,363 @@
+# CFA4 fuzz targets (CFA4-SECURITY-001 B2): `cargo +nightly fuzz run <target>` from the repository root,
+# or `cargo test --lib --manifest-path fuzz/Cargo.toml` (stable) for the deterministic smoke run over the
+# seed corpus. Its own workspace (excluded from the main one): libFuzzer needs nightly and a C++
+# compiler, neither of which the quality gates require. See fuzz/README.md.
+[package]
+name = "cfa4-fuzz"
+version = "0.0.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
+cfa4-aac = { path = "../crates/aac" }
+cfa4-ac3 = { path = "../crates/ac3" }
+cfa4-adpcm = { path = "../crates/adpcm" }
+cfa4-apv = { path = "../crates/apv" }
+cfa4-auro = { path = "../crates/auro" }
+cfa4-av1 = { path = "../crates/av1" }
+cfa4-avi = { path = "../crates/avi" }
+cfa4-captions = { path = "../crates/captions" }
+cfa4-cfb = { path = "../crates/cfb" }
+cfa4-cineform = { path = "../crates/cineform" }
+cfa4-credits = { path = "../crates/credits" }
+cfa4-dcp = { path = "../crates/dcp" }
+cfa4-dng = { path = "../crates/dng" }
+cfa4-dnx = { path = "../crates/dnx" }
+cfa4-dts = { path = "../crates/dts" }
+cfa4-dv = { path = "../crates/dv" }
+cfa4-ffv1 = { path = "../crates/ffv1" }
+cfa4-h264 = { path = "../crates/h264" }
+cfa4-hap = { path = "../crates/hap" }
+cfa4-heif = { path = "../crates/heif" }
+cfa4-hevc = { path = "../crates/hevc" }
+cfa4-huffyuv = { path = "../crates/huffyuv" }
+cfa4-iab = { path = "../crates/iab" }
+cfa4-interchange = { path = "../crates/interchange" }
+cfa4-isobmff = { path = "../crates/isobmff" }
+cfa4-j2k = { path = "../crates/j2k" }
+cfa4-jxl = { path = "../crates/jxl" }
+cfa4-lcevc = { path = "../crates/lcevc" }
+cfa4-matroska = { path = "../crates/matroska" }
+cfa4-mpa = { path = "../crates/mpa" }
+cfa4-mpeg2v = { path = "../crates/mpeg2v" }
+cfa4-mpegts = { path = "../crates/mpegts" }
+cfa4-mxf = { path = "../crates/mxf" }
+cfa4-ogg = { path = "../crates/ogg" }
+cfa4-opus = { path = "../crates/opus" }
+cfa4-project = { path = "../crates/project" }
+cfa4-prores = { path = "../crates/prores" }
+cfa4-truehd = { path = "../crates/truehd" }
+cfa4-utvideo = { path = "../crates/utvideo" }
+cfa4-vp8 = { path = "../crates/vp8" }
+cfa4-vp9 = { path = "../crates/vp9" }
+
+# Opt-level 3 and debug assertions (overflow checks) for every crate under test, as release fuzzing does.
+[profile.release]
+debug = 1
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev]
+opt-level = 2
+debug = "line-tables-only"
+
+[[bin]]
+name = "isobmff"
+path = "fuzz_targets/isobmff.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "matroska"
+path = "fuzz_targets/matroska.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mxf"
+path = "fuzz_targets/mxf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "avi"
+path = "fuzz_targets/avi.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mpegts"
+path = "fuzz_targets/mpegts.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ogg"
+path = "fuzz_targets/ogg.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cfb"
+path = "fuzz_targets/cfb.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "heif"
+path = "fuzz_targets/heif.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dcp"
+path = "fuzz_targets/dcp.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "iab"
+path = "fuzz_targets/iab.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dv"
+path = "fuzz_targets/dv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "lcevc"
+path = "fuzz_targets/lcevc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "h264"
+path = "fuzz_targets/h264.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hevc"
+path = "fuzz_targets/hevc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mpeg2v"
+path = "fuzz_targets/mpeg2v.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "vp8"
+path = "fuzz_targets/vp8.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "vp9"
+path = "fuzz_targets/vp9.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "av1"
+path = "fuzz_targets/av1.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "prores"
+path = "fuzz_targets/prores.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dnx"
+path = "fuzz_targets/dnx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cineform"
+path = "fuzz_targets/cineform.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "apv"
+path = "fuzz_targets/apv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "j2k"
+path = "fuzz_targets/j2k.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jxl"
+path = "fuzz_targets/jxl.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dng"
+path = "fuzz_targets/dng.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "hap"
+path = "fuzz_targets/hap.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "utvideo"
+path = "fuzz_targets/utvideo.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "huffyuv"
+path = "fuzz_targets/huffyuv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ffv1"
+path = "fuzz_targets/ffv1.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "aac"
+path = "fuzz_targets/aac.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ac3"
+path = "fuzz_targets/ac3.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mpa"
+path = "fuzz_targets/mpa.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dts"
+path = "fuzz_targets/dts.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "truehd"
+path = "fuzz_targets/truehd.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "opus"
+path = "fuzz_targets/opus.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "adpcm"
+path = "fuzz_targets/adpcm.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "auro"
+path = "fuzz_targets/auro.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "project"
+path = "fuzz_targets/project.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "interchange"
+path = "fuzz_targets/interchange.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "captions"
+path = "fuzz_targets/captions.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "credits"
+path = "fuzz_targets/credits.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "graphics_template"
+path = "fuzz_targets/graphics_template.rs"
+test = false
+doc = false
+bench = false
