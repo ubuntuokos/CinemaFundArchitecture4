@@ -313,7 +313,9 @@ fn defaults(s: &Session, id: &str) -> Option<(Value, Value)> {
                 Some(m) => {
                     let n = u16::try_from(m.info.audio().map_or(2, |a| a.channels)).unwrap_or(u16::MAX);
                     let map = m.interpret.audio_channels.clone().unwrap_or_else(|| AudioChannelMap::for_format(AudioChannels::Stereo, n));
-                    (json!({"format": format_name(map.format), "clips": map.clips}), json!({"channels": n, "items": true}))
+                    // the loudspeaker of each channel, when the media knows its layout (#323)
+                    let speakers = m.info.audio().map(|a| a.speakers.clone()).unwrap_or_default();
+                    (json!({"format": format_name(map.format), "clips": map.clips}), json!({"channels": n, "items": true, "speakers": speakers}))
                 }
                 None => (json!({"channels": [0, 1]}), json!({"channels": 2, "items": false})),
             }

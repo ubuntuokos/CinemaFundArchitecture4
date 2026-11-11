@@ -79,3 +79,41 @@ nem teljesül**. Regresszió nincs, de a terv kötelező követelményei közül
 3. **Pótló tesztek** a 🟡 esetekre (9, 10, 15, 19). → WP-09d.
 
 A WP-10 (csomagolás) ezek után következik.
+
+## 5. Frissítés (2026-11-11): WP-09b, WP-09c, WP-09d
+
+A 4. fejezet hiányai közül a hang, az MPEG-2 csomagmásolás és a pótló tesztek elkészültek
+(#853, #854, #909, és a jelen WP-09d). A korábbi sorok helyett az alábbi állapot érvényes.
+
+### Codec-vizsgálatok (MPEG-2 oszlop)
+
+| Vizsgálat | MPEG-2 |
+|---|---|
+| Biztonságos stream copy | ✅ `export::smart_cut_mpeg_tests` (PS: LPCM + AC-3, TS: AAC + MP2; payload-egyezés, ffmpeg framemd5), motor: `smart_cut_mpeg_tests` |
+| Nyitott GOP | ✅ indexelés; másolás csak tiszta hozzáférési ponttól (zárt GOP / I-kép), a GOP-index szerint |
+| Pontos vágás | ⛔ a terv képpontos vágásnál `boundaryReencode.ready = false` indoklással; futtatáskor írás előtt elutasítva (`mpeg_cuts_the_executor_cannot_run_are_refused_before_writing`) → WP-09e |
+| Boundary re-encode | ⛔ → WP-09e (`cfa4-mpeg2v` kódolóval) |
+| Export / reimport | ✅ `verify_mpeg_copy` (újra-demux, képek, hangkeretek, időbélyegek, A/V eltolás), `a_gop_cut_of_an_mpeg_source_is_copied_with_its_audio_and_verified` |
+
+### Szélső esetek
+
+| # | Eset | Állapot | Bizonyíték |
+|---|---|---|---|
+| 9 | Eltérő időalapok | ✅ | `smart_cut_edge_tests::one_stream_in_other_timescales_is_cut_to_the_same_samples` (25, 90 000, 12 800 Hz); idővonalon: `smart_render_tests::clips_in_other_timescales_at_one_frame_rate_are_copied`. **A teszt hibát talált:** a terv másolást ígért, a végrehajtó viszont elutasította az eltérő timescale-ű másolt szakaszokat. Javítva: a kompozíciós eltolások pontosan átszámolódnak a kimeneti timescale-re, kerekítés nélkül (ha nem egész, elutasítás; `copied_timestamps_are_rescaled_only_when_exact`) |
+| 10 | VFR bemenet | ✅ | `a_variable_frame_rate_source_keeps_its_durations`: GOP-másolás képenkénti időtartammal; képpontos vágás csak egyforma időtartamú határképekkel, különben írás előtt elutasítva; ffmpeg: `ffmpeg_decodes_the_timescale_and_vfr_copies` |
+| 12 | AAC encoder delay | ✅ | `audio_copy_tests::aac_and_pcm_tracks_are_copied_unchanged_and_in_sync` (pre-roll csomag + edit list), `ffmpeg_plays_the_cut_audio_from_the_cut_point`; idővonal: `the_sequence_audio_is_mixed_encoded_and_presented_with_the_video` (priming az edit listben) |
+| 13 | Több hangsáv | ✅ | ugyanaz (AAC + PCM sáv egyszerre), `the_audio_tracks_are_copied_with_the_cut_and_in_sync`; MPEG: két hangfolyam PS-ben és TS-ben |
+| 15 | HDR metadata | ✅ | `hdr_metadata_survives_copies_and_re_encoded_boundaries`: HEVC Main 10, BT.2020/PQ, ST 2086 + CLL; másolásnál `colr`/`mdcv`/`clli` és SEI bájtra azonos, a határ-újrakódolt IDR ugyanazt az SEI-t hordozza; ffprobe: `ffprobe_reads_the_hdr_copy_as_bt2020_pq` |
+| 19 | Export közben módosított projekt | ✅ | `an_edit_after_the_plan_is_what_the_export_writes`: a korábbi terv nem használódik újra, a szerkesztés utáni állapot íródik ki, a megerősítést újra kéri |
+| 24 | HW és SW encoder | 🟡 | változatlan: a CI-ban nincs hardveres kódoló |
+
+### Elfogadási metrikák
+
+- **Packet Copy:** ✅ MPEG-2 PS / TS is (`verify_mpeg_copy`, ffmpeg framemd5).
+- **A/V:** ✅ az A/V eltérés mérve és korlátozva (`verify_audio_tracks`: legfeljebb fél videóképkocka; MPEG: az első hangkeret eltolása az első képhez képest bitpontosan megmarad).
+
+### Kapufeltétel
+
+Regresszió továbbra sincs. A terv kötelező elemei közül egy hiányzik még: az **MPEG-2
+határ-újrakódolás** (képpontos vágás) → WP-09e. A 24. eset hardverfüggő, CI-ban nem mérhető;
+ez nem blokkoló, a szoftveres út teljesen tesztelt. WP-09e után következik a WP-10 (csomagolás).
