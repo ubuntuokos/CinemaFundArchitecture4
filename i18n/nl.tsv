@@ -4122,3 +4122,12 @@ export.summary	Low	laag
 	From North-East	Vanuit het noordoosten
 	From South-East	Vanuit het zuidoosten
 	From South-West	Vanuit het zuidwesten
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Verbeteren
+	Skin Smoothing	Huid verzachten
+	Keep Texture	Textuur behouden
+	Skin Tone	Huidtint
+	Smooth Entire Image	Hele beeld verzachten
+	Low Light	Weinig licht
+	Max Brightening	Maximale verheldering
+	Show Illumination	Belichting tonen

@@ -4122,3 +4122,12 @@ export.summary	Low	thấp
 	From North-East	Từ phía đông bắc
 	From South-East	Từ phía đông nam
 	From South-West	Từ phía tây nam
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Cải thiện
+	Skin Smoothing	Làm mịn da
+	Keep Texture	Giữ kết cấu
+	Skin Tone	Tông da
+	Smooth Entire Image	Làm mịn toàn bộ ảnh
+	Low Light	Thiếu sáng
+	Max Brightening	Làm sáng tối đa
+	Show Illumination	Hiện độ chiếu sáng

@@ -4128,3 +4128,12 @@ export.summary	Low	తక్కువ
 	From North-East	ఈశాన్యం నుండి
 	From South-East	ఆగ్నేయం నుండి
 	From South-West	నైరుతి నుండి
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	మెరుగుపరచు
+	Skin Smoothing	చర్మం మృదువుగా చేయడం
+	Keep Texture	ఆకృతిని ఉంచు
+	Skin Tone	చర్మపు రంగు
+	Smooth Entire Image	మొత్తం చిత్రాన్ని మృదువుగా చేయి
+	Low Light	తక్కువ వెలుతురు
+	Max Brightening	గరిష్ఠ ప్రకాశవంతం
+	Show Illumination	ప్రకాశాన్ని చూపు

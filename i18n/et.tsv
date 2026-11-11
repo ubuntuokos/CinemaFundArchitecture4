@@ -4124,3 +4124,12 @@ export.summary	Low	madal
 	From North-East	Kirdest
 	From South-East	Kagust
 	From South-West	Edelast
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Täiustamine
+	Skin Smoothing	Naha silumine
+	Keep Texture	Säilita tekstuur
+	Skin Tone	Nahatoon
+	Smooth Entire Image	Silu kogu pilti
+	Low Light	Vähene valgus
+	Max Brightening	Suurim heledamaks muutmine
+	Show Illumination	Näita valgustust

@@ -4125,3 +4125,12 @@ export.summary	Low	დაბალი
 	From North-East	ჩრდილო-აღმოსავლეთიდან
 	From South-East	სამხრეთ-აღმოსავლეთიდან
 	From South-West	სამხრეთ-დასავლეთიდან
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	გაუმჯობესება
+	Skin Smoothing	კანის გასწორება
+	Keep Texture	ტექსტურის შენარჩუნება
+	Skin Tone	კანის ტონი
+	Smooth Entire Image	მთელი გამოსახულების გასწორება
+	Low Light	სუსტი განათება
+	Max Brightening	მაქსიმალური გაღიავება
+	Show Illumination	განათების ჩვენება

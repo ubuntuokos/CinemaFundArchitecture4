@@ -4125,3 +4125,12 @@ export.summary	Low	žema
 	From North-East	Iš šiaurės rytų
 	From South-East	Iš pietryčių
 	From South-West	Iš pietvakarių
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Pagerinimas
+	Skin Smoothing	Odos glotninimas
+	Keep Texture	Išlaikyti tekstūrą
+	Skin Tone	Odos atspalvis
+	Smooth Entire Image	Glotninti visą vaizdą
+	Low Light	Silpnas apšvietimas
+	Max Brightening	Didžiausias pašviesinimas
+	Show Illumination	Rodyti apšvietimą

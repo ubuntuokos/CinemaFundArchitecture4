@@ -4121,3 +4121,12 @@ export.summary	Low	低
 	From North-East	從東北
 	From South-East	從東南
 	From South-West	從西南
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	增強
+	Skin Smoothing	皮膚平滑
+	Keep Texture	保留紋理
+	Skin Tone	膚色
+	Smooth Entire Image	平滑整張影像
+	Low Light	低光源
+	Max Brightening	最大提亮
+	Show Illumination	顯示照明

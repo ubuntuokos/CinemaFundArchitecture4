@@ -4120,3 +4120,12 @@
 	From North-East	东北向
 	From South-East	东南向
 	From South-West	西南向
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	增强
+	Skin Smoothing	皮肤柔化
+	Keep Texture	保留纹理
+	Skin Tone	肤色
+	Smooth Entire Image	柔化整幅图像
+	Low Light	弱光增强
+	Max Brightening	最大提亮
+	Show Illumination	显示照度

@@ -4122,3 +4122,12 @@ export.summary	Low	niska
 	From North-East	Z północnego wschodu
 	From South-East	Z południowego wschodu
 	From South-West	Z południowego zachodu
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Ulepszanie
+	Skin Smoothing	Wygładzanie skóry
+	Keep Texture	Zachowaj teksturę
+	Skin Tone	Odcień skóry
+	Smooth Entire Image	Wygładź cały obraz
+	Low Light	Słabe światło
+	Max Brightening	Maksymalne rozjaśnienie
+	Show Illumination	Pokaż oświetlenie

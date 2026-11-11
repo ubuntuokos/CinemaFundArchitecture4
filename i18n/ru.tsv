@@ -4107,3 +4107,12 @@
 	From North-East	С северо-востока
 	From South-East	С юго-востока
 	From South-West	С юго-запада
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Улучшение
+	Skin Smoothing	Сглаживание кожи
+	Keep Texture	Сохранить текстуру
+	Skin Tone	Тон кожи
+	Smooth Entire Image	Сглаживать всё изображение
+	Low Light	Слабое освещение
+	Max Brightening	Максимальное осветление
+	Show Illumination	Показать освещённость

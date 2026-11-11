@@ -4124,3 +4124,12 @@ export.summary	Low	nizak
 	From North-East	Sa severoistoka
 	From South-East	Sa jugoistoka
 	From South-West	Sa jugozapada
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Poboljšanje
+	Skin Smoothing	Izglađivanje kože
+	Keep Texture	Zadrži teksturu
+	Skin Tone	Ton kože
+	Smooth Entire Image	Izgladi celu sliku
+	Low Light	Slabo svetlo
+	Max Brightening	Najveće posvetljavanje
+	Show Illumination	Prikaži osvetljenje

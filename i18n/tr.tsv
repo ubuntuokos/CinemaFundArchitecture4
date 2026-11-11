@@ -4123,3 +4123,12 @@ export.summary	Low	düşük
 	From North-East	Kuzeydoğudan
 	From South-East	Güneydoğudan
 	From South-West	Güneybatıdan
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	İyileştir
+	Skin Smoothing	Cilt Yumuşatma
+	Keep Texture	Dokuyu Koru
+	Skin Tone	Cilt Tonu
+	Smooth Entire Image	Tüm Görüntüyü Yumuşat
+	Low Light	Düşük Işık
+	Max Brightening	En Fazla Aydınlatma
+	Show Illumination	Aydınlatmayı Göster

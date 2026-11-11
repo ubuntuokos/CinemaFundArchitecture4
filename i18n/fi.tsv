@@ -4124,3 +4124,12 @@ export.summary	Low	matala
 	From North-East	Koillisesta
 	From South-East	Kaakosta
 	From South-West	Lounaasta
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Paranna
+	Skin Smoothing	Ihon pehmennys
+	Keep Texture	Säilytä tekstuuri
+	Skin Tone	Ihon sävy
+	Smooth Entire Image	Pehmennä koko kuva
+	Low Light	Heikko valo
+	Max Brightening	Suurin kirkastus
+	Show Illumination	Näytä valaistus

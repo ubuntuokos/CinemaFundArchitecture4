@@ -4131,3 +4131,12 @@
 	From North-East	右上から
 	From South-East	右下から
 	From South-West	左下から
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	補正
+	Skin Smoothing	肌のなめらか補正
+	Keep Texture	質感を保持
+	Skin Tone	肌の色
+	Smooth Entire Image	画像全体をなめらかに
+	Low Light	暗所補正
+	Max Brightening	最大明るさ補正
+	Show Illumination	照明を表示

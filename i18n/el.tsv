@@ -4124,3 +4124,12 @@ export.summary	Low	χαμηλή
 	From North-East	Από βορειοανατολικά
 	From South-East	Από νοτιοανατολικά
 	From South-West	Από νοτιοδυτικά
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Βελτίωση
+	Skin Smoothing	Λείανση επιδερμίδας
+	Keep Texture	Διατήρηση υφής
+	Skin Tone	Τόνος επιδερμίδας
+	Smooth Entire Image	Λείανση ολόκληρης της εικόνας
+	Low Light	Χαμηλός φωτισμός
+	Max Brightening	Μέγιστη φωτεινότητα
+	Show Illumination	Εμφάνιση φωτισμού

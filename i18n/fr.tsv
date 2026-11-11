@@ -4127,3 +4127,12 @@
 	From North-East	Depuis le nord-est
 	From South-East	Depuis le sud-est
 	From South-West	Depuis le sud-ouest
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Améliorer
+	Skin Smoothing	Lissage de la peau
+	Keep Texture	Conserver la texture
+	Skin Tone	Teint de peau
+	Smooth Entire Image	Lisser toute l'image
+	Low Light	Faible luminosité
+	Max Brightening	Éclaircissement max.
+	Show Illumination	Afficher l'éclairage

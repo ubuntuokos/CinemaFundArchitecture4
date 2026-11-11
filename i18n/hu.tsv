@@ -4121,3 +4121,12 @@ export.summary	Low	alacsony
 	From North-East	Északkeletről
 	From South-East	Délkeletről
 	From South-West	Délnyugatról
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Javítás
+	Skin Smoothing	Bőrsimítás
+	Keep Texture	Textúra megtartása
+	Skin Tone	Bőrtónus
+	Smooth Entire Image	Teljes kép simítása
+	Low Light	Gyenge fény
+	Max Brightening	Legnagyobb világosítás
+	Show Illumination	Megvilágítás mutatása

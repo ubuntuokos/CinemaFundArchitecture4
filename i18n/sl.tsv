@@ -4125,3 +4125,12 @@ export.summary	Low	nizka
 	From North-East	S severovzhoda
 	From South-East	Z jugovzhoda
 	From South-West	Z jugozahoda
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Izboljšanje
+	Skin Smoothing	Glajenje kože
+	Keep Texture	Ohrani teksturo
+	Skin Tone	Ton kože
+	Smooth Entire Image	Zgladi celo sliko
+	Low Light	Šibka svetloba
+	Max Brightening	Največja osvetlitev
+	Show Illumination	Pokaži osvetljenost

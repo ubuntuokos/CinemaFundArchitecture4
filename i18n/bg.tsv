@@ -4125,3 +4125,12 @@ export.summary	Low	ниско
 	From North-East	От североизток
 	From South-East	От югоизток
 	From South-West	От югозапад
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Подобряване
+	Skin Smoothing	Изглаждане на кожата
+	Keep Texture	Запазване на текстурата
+	Skin Tone	Цвят на кожата
+	Smooth Entire Image	Изглаждане на цялото изображение
+	Low Light	Слаба светлина
+	Max Brightening	Максимално изсветляване
+	Show Illumination	Показване на осветеността

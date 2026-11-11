@@ -4124,3 +4124,12 @@ export.summary	Low	төмен
 	From North-East	Солтүстік-шығыстан
 	From South-East	Оңтүстік-шығыстан
 	From South-West	Оңтүстік-батыстан
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Жақсарту
+	Skin Smoothing	Теріні тегістеу
+	Keep Texture	Текстураны сақтау
+	Skin Tone	Тері реңі
+	Smooth Entire Image	Бүкіл кескінді тегістеу
+	Low Light	Әлсіз жарық
+	Max Brightening	Ең көп ағарту
+	Show Illumination	Жарықтануды көрсету

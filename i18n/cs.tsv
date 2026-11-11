@@ -4122,3 +4122,12 @@ export.summary	Low	nízká
 	From North-East	Ze severovýchodu
 	From South-East	Z jihovýchodu
 	From South-West	Z jihozápadu
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Vylepšení
+	Skin Smoothing	Vyhlazení pleti
+	Keep Texture	Zachovat texturu
+	Skin Tone	Odstín pleti
+	Smooth Entire Image	Vyhladit celý obraz
+	Low Light	Slabé světlo
+	Max Brightening	Maximální zesvětlení
+	Show Illumination	Zobrazit osvětlení

@@ -4124,3 +4124,12 @@ export.summary	Low	lav
 	From North-East	Fra nordøst
 	From South-East	Fra sydøst
 	From South-West	Fra sydvest
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Forbedr
+	Skin Smoothing	Hududglatning
+	Keep Texture	Bevar tekstur
+	Skin Tone	Hudtone
+	Smooth Entire Image	Udglat hele billedet
+	Low Light	Svagt lys
+	Max Brightening	Maks. oplysning
+	Show Illumination	Vis belysning
