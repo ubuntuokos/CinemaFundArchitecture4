@@ -277,22 +277,24 @@ pub struct MxfFile {
 
 /// An essence element found by the KLV walk.
 #[derive(Clone, Copy, Debug)]
-struct Element {
-    key: Ul,
-    value_offset: u64,
-    size: u64,
+pub(crate) struct Element {
+    pub(crate) key: Ul,
+    pub(crate) value_offset: u64,
+    pub(crate) size: u64,
     /// Cut short by the end of the file.
-    truncated: bool,
+    pub(crate) truncated: bool,
 }
 
-struct WalkResult {
-    run_in: u64,
-    partitions: Vec<Partition>,
+pub(crate) struct WalkResult {
+    pub(crate) run_in: u64,
+    pub(crate) partitions: Vec<Partition>,
     /// Header metadata per partition index: (primer, sets as (key, value)).
-    metadata: Vec<(usize, Primer, Vec<(Ul, Vec<u8>)>)>,
-    index: Vec<IndexSegment>,
-    elements: Vec<Element>,
-    warnings: Vec<String>,
+    pub(crate) metadata: Vec<(usize, Primer, Vec<(Ul, Vec<u8>)>)>,
+    pub(crate) index: Vec<IndexSegment>,
+    pub(crate) elements: Vec<Element>,
+    /// Generic stream data elements (ST 410) with the BodySID of their partition.
+    pub(crate) generic_streams: Vec<(u32, Element)>,
+    pub(crate) warnings: Vec<String>,
 }
 
 /// Values larger than this are never read while opening (metadata and index values are small).
@@ -319,11 +321,19 @@ impl<S: ByteSource + ?Sized> Window<'_, S> {
     }
 }
 
-fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
+pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
     let len = src.len();
     let head = read_upto(src, 0, 65_536 + 32)?;
     let run_in = find_header_partition(&head).ok_or_else(|| Error::NotMxf("no header partition pack".into()))? as u64;
-    let mut w = WalkResult { run_in, partitions: Vec::new(), metadata: Vec::new(), index: Vec::new(), elements: Vec::new(), warnings: Vec::new() };
+    let mut w = WalkResult {
+        run_in,
+        partitions: Vec::new(),
+        metadata: Vec::new(),
+        index: Vec::new(),
+        elements: Vec::new(),
+        generic_streams: Vec::new(),
+        warnings: Vec::new(),
+    };
     let mut win = Window { src, off: 0, buf: Vec::new() };
     let mut pos = run_in;
     let mut cur_meta: Option<usize> = None;
@@ -404,6 +414,11 @@ fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                     w.elements.push(Element { key, value_offset: vstart, size: vlen, truncated: false });
                 }
             }
+            KeyClass::Other if key.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
+                cur_meta = None;
+                let sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                w.generic_streams.push((sid, Element { key, value_offset: vstart, size: vlen, truncated: false }));
+            }
             KeyClass::Fill | KeyClass::RandomIndexPack | KeyClass::Other => {}
         }
         pos = vend;
@@ -413,6 +428,9 @@ fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
     }
     Ok(w)
 }
+
+/// Generic stream data element keys (ST 410): 06 0E 2B 34 01 01 01 xx 0D 01 05 09 01 ...
+const GENERIC_STREAM_DATA_ITEM: [u8; 5] = [0x0D, 0x01, 0x05, 0x09, 0x01];
 
 /// Generic container picture / sound / data / compound items (not system items).
 fn is_essence_item(k: &Ul) -> bool {
@@ -700,34 +718,38 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<TrackRef>, 
     (out, timecode, name)
 }
 
-/// Open an MXF file: walk the KLV structure and resolve the essence tracks.
-pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
-    let w = walk(src)?;
-    let mut warnings = w.warnings;
-    // Metadata of the most complete partition (closed complete > open complete > closed > open;
-    // later partitions win ties: the footer has the final durations).
+/// The header metadata of the most complete partition (closed complete > open complete > closed >
+/// open; later partitions win ties: the footer has the final durations), with its partition index.
+pub(crate) fn best_metadata(w: &WalkResult) -> Result<(usize, Metadata)> {
     let best = w
         .metadata
         .iter()
-        .enumerate()
-        .filter(|(_, m)| !m.2.is_empty())
-        .max_by_key(|(_, m)| {
-            let p = &w.partitions[m.0];
-            (p.complete(), p.closed(), p.offset)
-        })
-        .map(|(i, _)| i);
-    let Some(best) = best else { return Err(Error::Invalid("no header metadata".into())) };
-    let (meta_partition, primer, sets) = &w.metadata[best];
+        .filter(|m| !m.2.is_empty())
+        .max_by_key(|m| w.partitions.get(m.0).map(|p| (p.complete(), p.closed(), p.offset)))
+        .ok_or_else(|| Error::Invalid("no header metadata".into()))?;
+    let (meta_partition, primer, sets) = best;
     let mut md = Metadata::default();
     for (k, v) in sets {
         md.push(Set::parse(*k, v, primer));
     }
+    Ok((*meta_partition, md))
+}
+
+/// Open an MXF file: walk the KLV structure and resolve the essence tracks.
+pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
+    let w = walk(src)?;
+    let (meta_partition, md) = best_metadata(&w)?;
+    let meta_partition = &meta_partition;
+    let mut warnings = w.warnings;
     let preface = md.of_kind(st::PREFACE).next();
     let op_label = preface.and_then(|p| p.ul(tag::OPERATIONAL_PATTERN)).unwrap_or(w.partitions[0].operational_pattern);
     let ident = md.of_kind(st::IDENTIFICATION).last();
     let product_name = ident.and_then(|i| i.string(tag::PRODUCT_NAME));
     let company_name = ident.and_then(|i| i.string(tag::COMPANY_NAME));
     let (refs, timecode, material_name) = resolve_tracks(&md, &mut warnings);
+    if refs.iter().all(|r| r.kind == TrackKind::Data) && md.of_kind(crate::timed_text::TIMED_TEXT_DESCRIPTOR).next().is_some() {
+        return Err(Error::Unsupported("timed text track file (read it with open_timed_text)".into()));
+    }
     if refs.is_empty() {
         return Err(Error::Invalid("no essence tracks in the header metadata".into()));
     }

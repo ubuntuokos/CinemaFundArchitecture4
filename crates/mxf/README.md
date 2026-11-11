@@ -29,8 +29,29 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 330 | 2011 | basic UMIDs of the written packages |
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
+| SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
+| SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 377-4 | (via asdcplib's dictionary and real DCP-o-matic files) | MCA labels (writer): soundfield group and audio channel label sub-descriptors on the sound descriptor |
+
+## Timed text track files
+
+`is_timed_text(head)` recognises a DCP or IMF subtitle track file from its header partition;
+`open_timed_text(src)` returns the XML document's location, its namespace, resource id and the
+ancillary resources (fonts, images: id, MIME type, generic stream). `open` reports such a file as
+`Unsupported` (it has no picture or sound). `cfa4-engine` imports the XML as a caption track
+(ST 428-7 D-Cinema subtitles through `cfa4_captions::dcst`, IMSC1 through `cfa4_captions::ttml`).
+
+The `test-util` feature exposes `testing::build_timed_text` and the other synthetic file builders
+for tests in other crates.
+
+## Peeking at the header
+
+`peek(src)` reads only the header partition pack and header metadata: the operational pattern
+and the material and file package UMIDs. `cfa4-engine` uses it to find the OP-Atom files of one
+clip (ST 390: one essence track per file, a shared material package) in an Avid MediaFiles folder
+or on a P2 card (`CONTENTS/VIDEO` + `CONTENTS/AUDIO`), and `cfa4_codecs::MxfSource::open_group`
+opens them as one source.
 
 ## Reading a file
 

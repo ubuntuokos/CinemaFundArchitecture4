@@ -112,6 +112,34 @@ impl Rc {
         q
     }
 
+    /// Keep the picture's target within `lo..=hi` bits (the VBV's room).
+    pub fn limit_target(&mut self, lo: f64, hi: f64) {
+        let t = self.target.min(hi).max(lo).max(1.0);
+        if t != self.target {
+            self.q_pic = (self.q_pic * self.target / t).clamp(1.0, 112.0);
+            self.target = t;
+        }
+    }
+
+    /// The picture came out `factor` times too large for the buffer: code it again, coarser.
+    /// Returns false when the quantiser is already the coarsest.
+    pub fn retry(&mut self, factor: f64) -> bool {
+        if self.q_pic >= 112.0 {
+            return false;
+        }
+        let f = if factor.is_finite() { factor.max(1.1) } else { 2.0 };
+        self.q_pic = (self.q_pic * f).min(112.0);
+        self.target = (self.target / f).max(1.0);
+        self.q_sum = 0.0;
+        self.q_count = 0.0;
+        true
+    }
+
+    /// Stuffing bits spent after the picture.
+    pub fn spend(&mut self, bits: u64) {
+        self.r -= bits as f64;
+    }
+
     /// The complexity of this picture type is still a guess.
     pub fn needs_trial(&self) -> bool {
         !self.measured[self.kind as usize]

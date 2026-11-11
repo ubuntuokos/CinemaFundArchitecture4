@@ -22,6 +22,11 @@ attribution and original copyright/licence requirements remain in force.
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
+- **BacklotHub business logic in Python** (owner decision, 2026-11-02, BacklotHub #21): in the
+  BacklotHub (CFA4-BACKLOTHUB-001) and its shared libraries (`cfa4_audit`, ADR 0008; the `cfa4_files`
+  catalogue, ADR 0009), a component is written in Python when its reliable operation is more reasonably
+  guaranteed there. It runs outside the editor process (BacklotHub service), never in the media path,
+  and the "Non-Rust components" rule below applies to it unchanged.
 - **Port or keep the original language** (owner decision, 2026-11-03): reusable code is ported to
   Rust by default. When a port would take disproportionately long, the code may stay in its original
   language (C++, Python, …) **if it does not slow CFA4 down**. In practice it then runs outside the
@@ -80,6 +85,15 @@ attribution and original copyright/licence requirements remain in force.
   (§0), the licence rules above, the media-backend routing (`cfa4-route`), vendor neutrality, and the
   `cfa4-restricted-extras` model for patent-encumbered components
   ([docs/licensing.md](docs/licensing.md) §7).
+- **Translations live in `i18n/`** (owner decision, 2026-11-09). Every interface translation of
+  every CFA4 part (the Qt GUI, engine command and menu labels, credits, live graphics and the live
+  studio, and every part still to come) goes in the top-level `i18n/` directory, one catalog per
+  language in the shared TSV format, with its `.attribution` sidecar where one is needed. No part
+  keeps its own translation directory, and no frontend's source tree (`crates/ui-egui`, which is
+  being retired) owns them. Until the move (step 1 of the egui removal in
+  `docs/plans/CFA4-QT6-FINISH-001.md`, PR #779; the move is its own PR), add strings to the existing catalogs
+  (`crates/ui-egui/src/i18n/`, `python/cfa4_qt/i18n/`) and create no new catalog directory
+  anywhere else.
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.

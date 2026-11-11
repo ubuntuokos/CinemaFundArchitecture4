@@ -61,18 +61,20 @@ class F5StagingTests(unittest.TestCase):
         """A stand-in `cfa4-cli run` that prints `results` and writes the cut file."""
         cli = tmp / "cfa4-cli"
         out = tmp / "work" / "smart-cut.ts"
+        accurate = tmp / "work" / "smart-cut-frame-accurate.ts"
         lines = "\n".join(json.dumps({"line": n + 1, "id": "x", **r}) for n, r in enumerate(results))
         size = 0 if write is None else write
         cli.write_text(
             "#!/bin/sh\n"
             f"head -c {size} /dev/zero > '{out}'\n"
+            f"head -c {size} /dev/zero > '{accurate}'\n"
             f"cat <<'EOF'\nnoise before\n{lines}\nEOF\n"
         )
         cli.chmod(0o755)
         return cli
 
     def good_results(self, size: int) -> list[dict]:
-        frames = f5.SMART_CUT_FRAMES
+        frames, accurate = f5.SMART_CUT_FRAMES, f5.FRAME_ACCURATE_FRAMES
         return [
             {"ok": True, "result": {"codec": "mpeg2-video", "frames": 100}},
             {"ok": True, "result": {"summary": {"lossless": True, "requiresConfirmation": False,
@@ -80,6 +82,12 @@ class F5StagingTests(unittest.TestCase):
             {"ok": True, "result": {"verified": True, "bytes": size, "report": {"samples": frames},
                                     "audio": {"tracks": [{"trackId": 1}]}}},
             {"ok": True, "result": {"codec": "mpeg2-video", "frames": frames}},
+            {"ok": True, "result": {"boundaryReencode": {"ready": True, "problem": None},
+                                    "summary": {"lossless": False, "reencodedFrames": 6}}},
+            {"ok": True, "result": {"verified": True, "bytes": size,
+                                    "report": {"samples": accurate, "copied": 34, "reencoded": 6,
+                                               "minPsnr": 46.0}}},
+            {"ok": True, "result": {"codec": "mpeg2-video", "frames": accurate}},
         ]
 
     def test_smart_cut_smoke_accepts_a_verified_gop_copy(self):
@@ -91,8 +99,12 @@ class F5StagingTests(unittest.TestCase):
             self.assertEqual(result["audio_tracks"], 1)
             script = (tmp / "work" / "smart-cut.jsonl").read_text().splitlines()
             ids = [json.loads(line)["id"] for line in script]
-            self.assertEqual(ids, ["export.analyze", "export.plan", "export.start", "export.analyze"])
+            self.assertEqual(ids, ["export.analyze", "export.plan", "export.start", "export.analyze",
+                                   "export.plan", "export.start", "export.analyze"])
             self.assertEqual(json.loads(script[1])["params"]["mode"], "gop-boundary")
+            fa = json.loads(script[5])["params"]
+            self.assertEqual((fa["mode"], fa["confirm"]), ("frame-accurate", True))
+            self.assertEqual(result["frame_accurate"]["reencoded"], 6)
 
     def test_smart_cut_smoke_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -103,6 +115,9 @@ class F5StagingTests(unittest.TestCase):
                 "not verified": lambda r: r[2]["result"].update(verified=False),
                 "reads back wrong": lambda r: r[3]["result"].update(frames=1),
                 "not MPEG-2": lambda r: r[0]["result"].update(codec="h264"),
+                "unexpected frame-accurate plan": lambda r: r[4]["result"].update(boundaryReencode={"ready": False}),
+                "frame-accurate cut was not verified": lambda r: r[5]["result"]["report"].update(minPsnr=20.0),
+                "frame-accurate output reads back wrong": lambda r: r[6]["result"].update(frames=39),
             }
             for message, spoil in cases.items():
                 results = self.good_results(188)

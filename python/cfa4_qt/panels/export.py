@@ -80,7 +80,7 @@ DCP_KINDS = (
 # DCP immersive audio (`DcpImmersive` in crates/export): id, label
 DCP_IMMERSIVE = (
     ("off", N_("Off (5.1 only)")),
-    ("bed", N_("IAB 7.1 DS bed from the 5.1 mix")),
+    ("bed", N_("IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)")),
     ("file", N_("IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)")),
 )
 # what channels 1-6 of an immersive DCP's main sound carry; ST 429-19:2023 7.1.2 wants none (#348)
@@ -933,6 +933,7 @@ class ExportDialog(QDialog):
         mpeg2 = self.format.currentData() == "mpeg2"
         for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(mpeg2)
+        self.rows.allow_interlaced(mpeg2)  # only MPEG-2 export codes interlaced video (egui's Field Order)
         self.video_form.setRowVisible(self.gop, mpeg2)  # H.264 / H.265 / AV1 have egui's own row
         self._sync_format_rows()
         video = bool(fmt.get("video", True))
@@ -1069,7 +1070,7 @@ class ExportDialog(QDialog):
             w.setEnabled(mode == "file")
         self.dcp_iab_fallback.setEnabled(mode in ("bed", "file"))
         if mode == "bed":
-            self.dcp_iab_info.setText(tr("The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal."))
+            self.dcp_iab_info.setText(tr("A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal."))
         elif mode == "file":
             self._probe_iab()
         else:

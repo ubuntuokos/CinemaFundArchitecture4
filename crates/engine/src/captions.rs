@@ -112,7 +112,103 @@ pub fn detect(path: &str, bytes: &[u8]) -> Option<Format> {
 /// Import a caption file as a new caption track in the active sequence (a new sequence is made
 /// when none is open), snapped to the sequence's frames. One undo step.
 pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format, name: Option<&str>) -> Result<Value> {
-    let mut doc = cfa4_captions::parse(bytes, format).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    let doc = cfa4_captions::parse(bytes, format).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    import_document(s, path, doc, format.name(), format.track_format(), format == Format::Scc, name)
+}
+
+/// Bytes of a timed text document read from an MXF file, at most this many.
+const MAX_TIMED_TEXT_FILE: u64 = 1 << 30;
+
+/// Whether `bytes` is a D-Cinema subtitle XML file (ST 428-7 `SubtitleReel`, `.xml`).
+pub fn is_dcst(path: &str, bytes: &[u8]) -> bool {
+    let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    ext.as_deref() == Some("xml") && cfa4_captions::dcst::sniff(&cfa4_captions::decode_text(&bytes[..bytes.len().min(4096)]))
+}
+
+/// A timed text XML document (ST 428-7 D-Cinema subtitles or IMSC1 TTML) as captions, with the
+/// format name and the reel's language.
+fn parse_timed_text(xml: &[u8]) -> std::result::Result<(Document, &'static str, Option<String>), String> {
+    let text = cfa4_captions::decode_text(xml);
+    if cfa4_captions::dcst::sniff(&text) {
+        let reel = cfa4_captions::dcst::parse_reel(&text).map_err(|e| e.to_string())?;
+        return Ok((reel.document, "D-Cinema subtitles (ST 428-7)", reel.language));
+    }
+    let doc = cfa4_captions::ttml::parse(&text).map_err(|e| e.to_string())?;
+    Ok((doc, "IMSC1 / TTML", None))
+}
+
+/// Import a D-Cinema subtitle XML file (ST 428-7) as a caption track.
+pub fn import_dcst(s: &mut Session, path: &str, bytes: &[u8]) -> Result<Value> {
+    let (doc, format, _) = parse_timed_text(bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    import_document(s, path, doc, format, CaptionFormat::Subtitle, false, None)
+}
+
+/// Import a DCP or IMF timed text track file (SMPTE ST 429-5 / ST 2067-2 MXF) as a caption track.
+/// `None` when `path` is not an MXF timed text track file (other MXF files import as media).
+pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value>> {
+    let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    if ext.as_deref() != Some("mxf") {
+        return None;
+    }
+    let src: Box<dyn cfa4_mxf::ByteSource> = match s.services.reader(path) {
+        Some(Ok(r)) => Box::new(MxfReader(r)),
+        Some(Err(_)) => return None,
+        None => {
+            // hosts without random access: only small files are read whole
+            let b = s.services.read_file(path).ok()?;
+            if b.len() as u64 > MAX_TIMED_TEXT_FILE {
+                return None;
+            }
+            Box::new(b)
+        }
+    };
+    let mut head = vec![0u8; src.len().min(65_536 + 1024) as usize];
+    src.read_at(0, &mut head).ok()?;
+    if !cfa4_mxf::is_timed_text(&head) {
+        return None;
+    }
+    let parsed = cfa4_mxf::open_timed_text(src.as_ref()).map_err(|e| e.to_string()).and_then(|tt| {
+        let xml = tt.read_document(src.as_ref()).map_err(|e| e.to_string())?;
+        let (mut doc, format, language) = parse_timed_text(&xml)?;
+        doc.warnings.extend(tt.warnings);
+        Ok((doc, format, language))
+    });
+    Some(match parsed {
+        Ok((doc, format, language)) => {
+            let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Subtitles".into());
+            let name = match language {
+                Some(l) => format!("{stem} ({l})"),
+                None => stem,
+            };
+            import_document(s, path, doc, format, CaptionFormat::Subtitle, false, Some(&name))
+        }
+        Err(e) => Err(EngineError::Other(format!("{path}: {e}"))),
+    })
+}
+
+/// The host's random-access reader as an MXF byte source.
+struct MxfReader(cfa4_media::SharedReader);
+
+impl cfa4_mxf::ByteSource for MxfReader {
+    fn len(&self) -> u64 {
+        self.0.len()
+    }
+    fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+        self.0.read_at(offset, buf)
+    }
+}
+
+/// Add parsed captions as a new caption track in the active sequence (a new sequence is made when
+/// none is open), snapped to the sequence's frames. One undo step.
+fn import_document(
+    s: &mut Session,
+    path: &str,
+    mut doc: Document,
+    format_name: &str,
+    track_format: CaptionFormat,
+    black_background: bool,
+    name: Option<&str>,
+) -> Result<Value> {
     let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Captions".into());
     let track_name = name.map(str::to_string).unwrap_or_else(|| stem.clone());
     let seq_id = match s.state.active_sequence.filter(|id| s.project.sequence(*id).is_some()) {
@@ -136,8 +232,8 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format, name: O
             next += 1;
             v
         };
-        let mut track = cfa4_captions::track_from_document(&doc, tid, &track_name, format.track_format(), &mut alloc);
-        if format == Format::Scc {
+        let mut track = cfa4_captions::track_from_document(&doc, tid, &track_name, track_format, &mut alloc);
+        if black_background {
             track.style.background_color = [0, 0, 0, 255];
         }
         p.next_id = next;
@@ -147,7 +243,7 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format, name: O
         st.caption_selection.clear();
         Ok(tid)
     })?;
-    Ok(json!({"format": format.name(), "sequence": seq_id.0, "track": tid.0, "captions": n, "warnings": warnings}))
+    Ok(json!({"format": format_name, "sequence": seq_id.0, "track": tid.0, "captions": n, "warnings": warnings}))
 }
 
 /// Delete captions (Clear / Ripple Delete with captions selected).
