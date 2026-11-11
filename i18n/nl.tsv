@@ -1,0 +1,4217 @@
+# Dutch (nl) catalog for the whole CFA4 interface (Qt GUI and egui). Same format as es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Dutch video-editing vocabulary (tijdlijn, track, clip, reeks, bin, afspeelkop, markering,
+# overgang, keyframe). No proprietary localisation resource, string table or product UI was
+# consulted or copied; add entries the same way. Commands use the infinitive ("Opslaan als…"),
+# labels use sentence case, and product and format names (CFA4, Lumetri, ProRes, AAF, EDL…) keep
+# their spelling. Decimal comma (0,5). A native-speaker review is welcome.
+#
+# Terms: clip = clip, track = track, sequence = reeks, timeline = tijdlijn, bin = bin, playhead =
+# afspeelkop, marker = markering, In/Out point = in-/uitpunt, keyframe = keyframe, caption =
+# ondertitel, preset = voorinstelling, workspace = werkruimte, gain = versterking, opacity =
+# dekking, render = renderen, ripple = ripple, dissolve = overvloeier, wipe = veeg, highlights =
+# hooglichten, frame hold = stilstaand beeld, (Legacy) = (verouderd).
+#
+# Licence: GPL-3.0-or-later (CFA4 contributors), except the section imported from craft-i18n at
+# the end (MIT OR Apache-2.0); see nl.tsv.attribution.
+
+	'{name}' already exists. Replace it?	'{name}' bestaat al. Vervangen?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	Over CFA4
+	Add Audio Submix Track	Audio-submixtrack toevoegen
+	Add Caption at Playhead	Ondertitel toevoegen bij afspeelkop
+	Add Chapter Marker…	Hoofdstukmarkering toevoegen…
+	Add Edit	Bewerkpunt toevoegen
+	Add Edit to All Tracks	Bewerkpunt toevoegen aan alle tracks
+	Add Flash Cue Marker…	Flash-cuemarkering toevoegen…
+	Add Frame Hold	Stilstaand beeld toevoegen
+	Add Marker	Markering toevoegen
+	Add New Caption Track…	Nieuwe ondertiteltrack toevoegen…
+	Add Range Marker	Bereikmarkering toevoegen
+	Add Range Marker to In and Out	Bereikmarkering toevoegen aan in- en uitpunt
+	Add Tracks…	Tracks toevoegen…
+	Full screen	Volledig scherm
+	Master volume: use the Audio Track Mixer	Hoofdvolume: gebruik de audiotrackmixer
+	Send to Queue	Naar wachtrij sturen
+	Add/Remove Keyframe	Keyframe toevoegen/verwijderen
+	Adjust	Aanpassen
+	Adjustment Layer	Aanpassingslaag
+	Adjustment Layer…	Aanpassingslaag…
+	Align to Video Frame	Uitlijnen op videoframe
+	Align to Video Frame as Group	Als groep uitlijnen op videoframe
+	All Panels	Alle panelen
+	All files	Alle bestanden
+	Amplitude and Compression	Amplitude en compressie
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Een engine zonder `serve` is gebouwd vanuit een branch zonder de Qt-GUI: schakel over naar de Qt-GUI-branch en bouw opnieuw, of geef --engine PATH op.
+	Anchor Point	Ankerpunt
+	Animation	Animatie
+	Anti-flicker Filter	Antiflikkerfilter
+	Apply Audio Transition	Audio-overgang toepassen
+	Apply Default Transitions to Selection	Standaardovergangen toepassen op selectie
+	Apply Video Transition	Video-overgang toepassen
+	Assembly	Montage
+	Attach Proxies…	Proxy's koppelen…
+	Audio Channels…	Audiokanalen…
+	Audio Clip Mixer	Audioclipmixer
+	Audio Effects	Audio-effecten
+	Audio Gain…	Audioversterking…
+	Audio In	Audio-in
+	Audio Meters	Audiometers
+	Audio Options	Audio-opties
+	Audio Out	Audio-uit
+	Audio Track Mixer	Audiotrackmixer
+	Audio Transitions	Audio-overgangen
+	Audio Bitrate	Audiobitsnelheid
+	Audio Format	Audio-indeling
+	Auto Bezier	Automatische bezier
+	Automate to Sequence…	Automatiseren naar reeks…
+	Avid Log Exchange…	Avid Log Exchange…
+	Bars and Tone…	Balken en toon…
+	Bezier	Bezier
+	Bin	Bin
+	Bin From Selection	Bin uit selectie
+	Bitrate Encoding	Bitsnelheidcodering
+	Black Video…	Zwarte video…
+	Blur & Sharpen	Vervagen en verscherpen
+	Breakout to Mono	Splitsen naar mono
+	Burn in captions	Ondertitels inbranden
+	Bypass	Omzeilen
+	CBR	CBR
+	CFA4	CFA4
+	Cancel Selected	Selectie annuleren
+	Cancelled	Geannuleerd
+	Cannot create the output folder: {error}	Kan de uitvoermap niet maken: {error}
+	Cannot check the output folder for files to replace: {error}	Kan de uitvoermap niet controleren op te vervangen bestanden: {error}
+	Captions	Ondertitels
+	Captions and Graphics	Ondertitels en grafische elementen
+	Captions…	Ondertitels…
+	Caribbean	Caribisch
+	Center Horizontally	Horizontaal centreren
+	Center Vertically	Verticaal centreren
+	Cerulean	Hemelsblauw
+	Channel Volume	Kanaalvolume
+	Checked:	Aangevinkt:
+	Choose a file name and location.	Kies een bestandsnaam en locatie.
+	Choose folder	Map kiezen
+	Media File	Mediabestand
+	Sequence name	Reeksnaam
+	Clear Finished	Voltooide wissen
+	Clear In	In-punt wissen
+	Clear In and Out	In- en uitpunt wissen
+	Clear Markers	Markeringen wissen
+	Clear Out	Uitpunt wissen
+	Clear Selected Marker	Geselecteerde markering wissen
+	Clip	Clip
+	Close All Other Projects	Alle andere projecten sluiten
+	Close All Projects	Alle projecten sluiten
+	Close Gap	Tussenruimte sluiten
+	Close Project	Project sluiten
+	Color Burn	Kleur doordrukken
+	Color Correction	Kleurcorrectie
+	Color Dodge	Kleur tegenhouden
+	Color Management…	Kleurbeheer…
+	Color Matte…	Kleurmat…
+	Consolidate Duplicates	Duplicaten samenvoegen
+	Constant quality (CRF)	Constante kwaliteit (CRF)
+	Continuous Bezier	Doorlopende bezier
+	Copy Paste Includes Sequence Markers	Kopiëren en plakken neemt reeksmarkeringen mee
+	Create Captions from Transcript…	Ondertitels maken van transcript…
+	Create Multi-Camera Source Sequence…	Multicamera-bronreeks maken…
+	Create Proxies…	Proxy's maken…
+	Crossfade	Crossfade
+	Darker Color	Donkerdere kleur
+	Delay and Echo	Vertraging en echo
+	Delete Keyframe	Keyframe verwijderen
+	Delete Render Files	Renderbestanden verwijderen
+	Delete Render Files In to Out	Renderbestanden van in- tot uitpunt verwijderen
+	Delete Tracks…	Tracks verwijderen…
+	Delete Transcript	Transcript verwijderen
+	Demo Footage	Demobeelden
+	Demo Project	Demoproject
+	Detach Proxies	Proxy's ontkoppelen
+	Discard	Verwerpen
+	Dissolve	Overvloeier
+	Distribute Horizontally	Horizontaal verdelen
+	Distribute Space Horizontally	Ruimte horizontaal verdelen
+	Distribute Space Vertically	Ruimte verticaal verdelen
+	Distribute Vertically	Verticaal verdelen
+	Divide	Delen
+	Double-click a clip in the Project panel to open it here.	Dubbelklik op een clip in het projectpaneel om deze hier te openen.
+	EDL…	EDL…
+	Ease In	Geleidelijk in
+	Ease Out	Geleidelijk uit
+	Edit Offline…	Offline bewerken…
+	Edit Subclip…	Subclip bewerken…
+	Edit Workspaces…	Werkruimten bewerken…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Bewerkt in de Lumetri- en maskergereedschappen (nog niet in de Qt-GUI)
+	Editing	Bewerken
+	Effect Controls	Effectinstellingen
+	Enable Remix	Remix inschakelen
+	Enabled	Ingeschakeld
+	Encoding	Coderen
+	End	Einde
+	Engine stopped	Engine gestopt
+	Entire Sequence	Volledige reeks
+	Essential Graphics	Essentiële grafische elementen
+	Essential Sound	Essentieel geluid
+	Events	Gebeurtenissen
+	Export As Motion Graphics Template…	Exporteren als bewegende-graphics-sjabloon…
+	Export Markers as CSV…	Markeringen exporteren als CSV…
+	Export Media	Media exporteren
+	Export Media…	Media exporteren…
+	Export Queue	Exportwachtrij
+	Queue ({n})	Wachtrij ({n})
+	Send exports here with Send to Queue, then start the queue.	Stuur exports hierheen met Naar wachtrij sturen en start daarna de wachtrij.
+	Open a sequence to export	Open een reeks om te exporteren
+	The sequence has no caption track.	De reeks heeft geen ondertiteltrack.
+	Export Audio	Audio exporteren
+	Export failed: {path}	Export mislukt: {path}
+	Export finished: {path}	Export voltooid: {path}
+	Extract	Extraheren
+	Extract Audio	Audio extraheren
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Mislukt
+	Field Options…	Veldopties…
+	File…	Bestand…
+	Fill frame	Frame vullen
+	Filter and EQ	Filter en EQ
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Find…	Zoeken…
+	Fit to frame	Passend in frame
+	Forest	Bos
+	Frame Blending	Framemenging
+	Frame Hold Options…	Opties voor stilstaand beeld…
+	Frame Sampling	Framebemonstering
+	Frame Size	Framegrootte
+	From Bin	Uit bin
+	From Source Monitor	Uit bronmonitor
+	From Source Monitor, Match Frame	Uit bronmonitor, overeenkomend frame
+	From file…	Uit bestand…
+	From the preset	Uit de voorinstelling
+	Adaptive ({bpp} bits per pixel)	Adaptief ({bpp} bits per pixel)
+	Set a fixed bitrate	Vaste bitsnelheid instellen
+	Gain	Versterking
+	Generate Audio Waveform	Audiogolfvorm genereren
+	Get Media File Properties for	Mediabestandseigenschappen ophalen voor
+	Go to End	Naar einde
+	Go to Gap	Naar tussenruimte
+	Go to In	Naar in-punt
+	Go to Next Caption Segment	Naar volgend ondertitelsegment
+	Go to Next Keyframe	Naar volgende keyframe
+	Go to Next Marker	Naar volgende markering
+	Go to Out	Naar uitpunt
+	Go to Previous Caption Segment	Naar vorig ondertitelsegment
+	Go to Previous Keyframe	Naar vorige keyframe
+	Go to Previous Marker	Naar vorige markering
+	Go to Split	Naar splitsing
+	Go to Start	Naar begin
+	Graphic	Grafisch element
+	Graphics and Titles	Grafische elementen en titels
+	Grunge & Distort	Grunge en vervorming
+	Hide All Caption Tracks	Alle ondertiteltracks verbergen
+	History	Geschiedenis
+	Hold	Vasthouden
+	Hue	Kleurtoon
+	Image Control	Beeldregeling
+	Image Sequence	Afbeeldingsreeks
+	Immersive Video	Immersieve video
+	Import Credits Spreadsheet…	Aftitelingsspreadsheet importeren…
+	Import From	Importeren uit
+	Import Image Sequence…	Afbeeldingsreeks importeren…
+	Import from Media Browser	Importeren uit mediabrowser
+	Ingest Settings…	Opname-instellingen…
+	Insert Frame Hold Segment	Segment met stilstaand beeld invoegen
+	Inspector	Inspector
+	Install Motion Graphics Template…	Bewegende-graphics-sjabloon installeren…
+	Interpret Footage…	Beeldmateriaal interpreteren…
+	Iris	Iris
+	Keying	Keying
+	Lavender	Lavendel
+	Legacy	Verouderd
+	Lift	Optillen
+	Lights & Blurs	Licht en vervaging
+	Lights & Glows	Licht en gloed
+	Linear Dodge (Add)	Lineair tegenhouden (toevoegen)
+	Link	Koppelen
+	Link Media…	Media koppelen…
+	Linked Selection	Gekoppelde selectie
+	Lumetri Color	Lumetri-kleur
+	Lumetri Scopes	Lumetri-scopes
+	Make Offline…	Offline maken…
+	Make Subclip…	Subclip maken…
+	Make Subsequence	Subreeks maken
+	Mango	Mango
+	Mark Clip	Clip markeren
+	Mark In	In-punt markeren
+	Mark Out	Uitpunt markeren
+	Mark Selection	Selectie markeren
+	Mark Split	Splitsing markeren
+	Markers	Markeringen
+	Match Frame	Overeenkomend frame
+	Match sequence	Reeks volgen
+	Media Browser	Mediabrowser
+	Media offline	Media offline
+	Media…	Media…
+	Merge Clips…	Clips samenvoegen…
+	Merged Clip	Samengevoegde clip
+	Modulation	Modulatie
+	Motion Graphics Template…	Bewegende-graphics-sjabloon…
+	Movie	Film
+	Multi-Camera	Multicamera
+	Mute Track	Track dempen
+	Nest…	Nesten…
+	New Bin	Nieuwe bin
+	New Project Panel	Nieuw projectpaneel
+	New Sequence…	Nieuwe reeks…
+	Next in Sequence	Volgende in reeks
+	Next in Track	Volgende in track
+	No sequence	Geen reeks
+	Drop media here to create sequence.	Zet media hier neer om een reeks te maken.
+	Open Demo Project	Demoproject openen
+	Double-click a sequence in the Project panel to open it here.	Dubbelklik op een reeks in het projectpaneel om deze hier te openen.
+	Noise & Grain	Ruis en korrel
+	Noise Reduction	Ruisonderdrukking
+	Normalize Mix Track…	Mixtrack normaliseren…
+	Not Now	Niet nu
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Nog niet in de Qt-GUI (zie docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	Achterhaald
+	Offline File…	Offline bestand…
+	Open Project	Project openen
+	Open Project…	Project openen…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	Optische stroom
+	Opus	Opus
+	Output file	Uitvoerbestand
+	Overlay	Overlay
+	Overwrite	Overschrijven
+	PCM (uncompressed)	PCM (ongecomprimeerd)
+	Panner	Panner
+	Paste Attributes…	Kenmerken plakken…
+	Paste Insert	Invoegend plakken
+	Play/Stop	Afspelen/stoppen
+	Previous in Sequence	Vorige in reeks
+	Previous in Track	Vorige in track
+	Program	Programma
+	Progress	Voortgang
+	Project	Project
+	Project Manager…	Projectbeheer…
+	Project Notes	Projectnotities
+	Project Settings	Projectinstellingen
+	Project…	Project…
+	Proxy	Proxy
+	Quit	Afsluiten
+	Razor Tool	Scheermesgereedschap
+	Reconnect Full Resolution Media…	Media met volledige resolutie opnieuw koppelen…
+	Recover	Herstellen
+	Recover Unsaved Changes	Niet-opgeslagen wijzigingen herstellen
+	Recover Unsaved Changes…	Niet-opgeslagen wijzigingen herstellen…
+	Reference Monitor	Referentiemonitor
+	Remaining	Resterend
+	Remix	Remix
+	Remix Properties…	Remix-eigenschappen…
+	Remove Attributes…	Kenmerken verwijderen…
+	Remove Effect	Effect verwijderen
+	Remove Filler Words	Stopwoorden verwijderen
+	Remove Pauses	Pauzes verwijderen
+	Remove Unused	Ongebruikte verwijderen
+	Render Audio	Audio renderen
+	Render Effects In to Out	Effecten renderen van in- tot uitpunt
+	Render In to Out	Renderen van in- tot uitpunt
+	Render Selection	Selectie renderen
+	Replace Fonts in Projects…	Lettertypen in projecten vervangen…
+	Replace With Clip	Vervangen door clip
+	Reset All Parameters	Alle parameters herstellen
+	Reset Duration	Duur herstellen
+	Reset Effect	Effect herstellen
+	Reset Panel Layout	Paneelindeling herstellen
+	Reset Parameter	Parameter herstellen
+	Reset to Saved Layout	Opgeslagen indeling herstellen
+	Restoration	Restauratie
+	Restore Captions from Source Clip	Ondertitels herstellen uit bronclip
+	Retry	Opnieuw proberen
+	Reverb	Galm
+	Reverse Match Frame	Omgekeerd overeenkomend frame
+	Revert Remix	Remix terugdraaien
+	Ripple Delete	Ripple-verwijderen
+	Ripple Delete Head Frame	Beginframe ripple-verwijderen
+	Ripple Sequence Markers	Reeksmarkeringen meeschuiven
+	Rose	Roze
+	Save All	Alles opslaan
+	Save Changes to this Workspace	Wijzigingen in deze werkruimte opslaan
+	Save as New Workspace	Opslaan als nieuwe werkruimte
+	Save as New Workspace…	Opslaan als nieuwe werkruimte…
+	Save changes to '{name}' before closing?	Wijzigingen in '{name}' opslaan voor het sluiten?
+	Save changes to '{name}' before continuing?	Wijzigingen in '{name}' opslaan voordat u verdergaat?
+	Scale Width	Breedte schalen
+	Scale to Frame Size	Schalen naar framegrootte
+	Scene Edit Detection…	Scènewisseldetectie…
+	Search Bin	Zoekbin
+	Select All Matching	Alle overeenkomende selecteren
+	Select Label Group	Labelgroep selecteren
+	Select Next Graphic	Volgend grafisch element selecteren
+	Select Next Layer	Volgende laag selecteren
+	Select Previous Graphic	Vorig grafisch element selecteren
+	Select Previous Layer	Vorige laag selecteren
+	Select a clip in the Timeline.	Selecteer een clip in de tijdlijn.
+	Selected	Geselecteerd
+	Selection Follows Playhead	Selectie volgt afspeelkop
+	Selection Tool	Selectiegereedschap
+	Selection as CFA4 Project…	Selectie als CFA4-project…
+	Selection…	Selectie…
+	Sequence	Reeks
+	Sequence From Clip	Reeks uit clip
+	Sequence In/Out	In-/uitpunt van reeks
+	Sequence Settings…	Reeksinstellingen…
+	Sequence…	Reeks…
+	Show Active Caption Tracks Only	Alleen actieve ondertiteltracks tonen
+	Show All Caption Tracks	Alle ondertiteltracks tonen
+	Show All Marker Colors	Alle markeringskleuren tonen
+	Show Through Edits	Doorlopende bewerkpunten tonen
+	Simplify Sequence…	Reeks vereenvoudigen…
+	Slide	Verschuiven
+	Smart Tools	Slimme gereedschappen
+	Snap in Timeline	Magnetisch in tijdlijn
+	Solo Track	Track solo
+	Some panel labels change language after a restart.	Sommige paneellabels veranderen pas van taal na een herstart.
+	Source In	Bron-in
+	Source Settings…	Broninstellingen…
+	Source patch	Bronkoppeling
+	Special	Speciaal
+	Speed/Duration…	Snelheid/duur…
+	Start	Begin
+	Start Queue	Wachtrij starten
+	Starting engine…	Engine starten…
+	Step Back 1 Frame	1 frame terug
+	Step Forward 1 Frame	1 frame vooruit
+	Stereo Imagery	Stereobeeld
+	Still Image	Stilstaand beeld
+	Stop Queue	Wachtrij stoppen
+	Subclip	Subclip
+	Synchronize…	Synchroniseren…
+	Synthetic	Synthetisch
+	Tan	Zandkleur
+	Target Bitrate	Doelbitsnelheid
+	Teal	Blauwgroen
+	Text to Speech	Tekst naar spraak
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	De CFA4-engine (cfa4-cli) is niet gevonden. Bouw deze met: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	De CFA4-engine is onverwacht gestopt. Niet-opgeslagen wijzigingen staan in het herstellogboek; start CFA4 opnieuw om ze te herstellen.
+	The engine stopped	De engine is gestopt
+	Time Interpolation	Tijdinterpolatie
+	Time Remapping	Tijd opnieuw toewijzen
+	Time and Pitch	Tijd en toonhoogte
+	Timecode…	Tijdcode…
+	Toggle Animation	Animatie aan/uit
+	Toggle Proxies	Proxy's aan/uit
+	Toggle Sync Lock	Synchronisatievergrendeling aan/uit
+	Toggle Track Lock	Trackvergrendeling aan/uit
+	Toggle Track Output	Trackuitvoer aan/uit
+	Toggle the effect on or off	Het effect in- of uitschakelen
+	Toggle track targeting	Trackdoel aan/uit
+	Transcribe Sequence…	Reeks transcriberen…
+	Transcribe…	Transcriberen…
+	Transcript	Transcript
+	Transformers	Transformatoren
+	Transparent Video…	Transparante video…
+	Trim Edit	Bewerkpunt trimmen
+	Uniform Scale	Uniform schalen
+	Universal Counting Leader…	Universele aftelleader…
+	Update Metadata…	Metagegevens bijwerken…
+	Upgrade Caption to Graphic	Ondertitel omzetten naar grafisch element
+	Upgrade to Source Graphic	Omzetten naar brongrafisch element
+	Use hardware encoding when available	Hardwarecodering gebruiken indien beschikbaar
+	Utility	Hulpmiddelen
+	VBR, 1 pass	VBR, 1 doorgang
+	VBR, 2 pass	VBR, 2 doorgangen
+	Vertical Text	Verticale tekst
+	Video Effects	Video-effecten
+	Video In	Video-in
+	Video Options	Video-opties
+	Video Out	Video-uit
+	Video Transitions	Video-overgangen
+	Volume	Volume
+	Wipe	Veeg
+	Work Area	Werkgebied
+	Zoom to Sequence	Zoomen naar reeks
+	an unknown time	een onbekende tijd
+	automatic	automatisch
+	frames	frames
+	not available	niet beschikbaar
+	off	uit
+	optional	optioneel
+	…	…
+	Ellipse Tool	Ellipsgereedschap
+	Hand Tool	Handgereedschap
+	Pen Tool	Pengereedschap
+	Rate Stretch Tool	Snelheid-rekgereedschap
+	Rectangle Tool	Rechthoekgereedschap
+	Remix Tool	Remixgereedschap
+	Ripple Edit Tool	Ripple-bewerkgereedschap
+	Rolling Edit Tool	Rolbewerkgereedschap
+	Slide Tool	Verschuifgereedschap
+	Slip Tool	Slipgereedschap
+	Track Select Backward Tool	Gereedschap Track achterwaarts selecteren
+	Track Select Forward Tool	Gereedschap Track voorwaarts selecteren
+	Type Tool	Tekstgereedschap
+	Vertical Type Tool	Verticaal tekstgereedschap
+	Zoom Tool	Zoomgereedschap
+	Add Marker (M)	Markering toevoegen (M)
+	Button Editor	Knoppeneditor
+	Composite Video	Samengestelde video
+	Display Mode	Weergavemodus
+	Export Frame	Frame exporteren
+	Extract (')	Extraheren (')
+	Go to In (Shift+I)	Naar in-punt (Shift+I)
+	Go to Out (Shift+O)	Naar uitpunt (Shift+O)
+	High Quality Playback	Afspelen in hoge kwaliteit
+	Insert (,)	Invoegen (,)
+	Lift (;)	Optillen (;)
+	Loop	Herhalen
+	Loop marked range	Gemarkeerd bereik herhalen
+	Magnification	Vergroting
+	Mark In (I)	In-punt markeren (I)
+	Mark Out (O)	Uitpunt markeren (O)
+	More transport controls	Meer transportknoppen
+	Overwrite (.)	Overschrijven (.)
+	Paused Resolution	Resolutie bij pauze
+	Play In to Out	Afspelen van in- tot uitpunt
+	Play-Stop Toggle (Space)	Afspelen/stoppen (spatie)
+	Playback Resolution	Afspeelresolutie
+	RGBA Channels	RGBA-kanalen
+	Safe Margins	Veilige marges
+	Select Playback Resolution	Afspeelresolutie selecteren
+	Select Zoom Level	Zoomniveau selecteren
+	Show Transport Controls	Transportknoppen tonen
+	Shuttle Left	Shuttle links
+	Shuttle Right	Shuttle rechts
+	Shuttle Stop	Shuttle stoppen
+	Step Back 1 Frame (Left)	1 frame terug (links)
+	Step Forward 1 Frame (Right)	1 frame vooruit (rechts)
+	Darkest	Donkerst
+	Next Appearance Mode	Volgende weergavemodus
+	(no sequence)	(geen reeks)
+	All markers are hidden by the colour filter.	Alle markeringen zijn verborgen door het kleurfilter.
+	Audio {n}:	Audio {n}:
+	Audio:	Audio:
+	Clip: {name}	Clip: {name}
+	Codec:	Codec:
+	Duration:	Duur:
+	Marker	Markering
+	No markers. Press M to add one.	Geen markeringen. Druk op M om er een toe te voegen.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Notities voor dit project: taken, instructies, framenummers… Opgeslagen met het project.
+	Playhead:	Afspeelkop:
+	Select a clip to view its metadata.	Selecteer een clip om de metagegevens te bekijken.
+	Show or hide {color} markers	{color} markeringen tonen of verbergen
+	Video {n}:	Video {n}:
+	Video:	Video:
+	{tc}  Chapter	{tc}  Hoofdstuk
+	Media Type	Mediatype
+	Frame Rate	Framesnelheid
+	Media Start	Mediabegin
+	Media End	Media-einde
+	Media Duration	Mediaduur
+	Video Info	Video-info
+	Video Codec	Videocodec
+	Audio Info	Audio-info
+	Audio Codec	Audiocodec
+	Scene	Scène
+	Shot	Opname
+	Log Note	Lognotitie
+	Comment	Opmerking
+	Tape Name	Bandnaam
+	Client	Klant
+	Camera Angle	Camerahoek
+	File Path	Bestandspad
+	 · {time} left	 · nog {time}
+	Active Monitor	Actieve monitor
+	Add a timecode row	Een tijdcoderij toevoegen
+	Audio Samples	Audiosamples
+	Failed: {e}	Mislukt: {e}
+	Feet + Frames 16mm	Voet + frames 16mm
+	Feet + Frames 35mm	Voet + frames 35mm
+	Frames	Frames
+	In/Out Duration	In-/uitduur
+	Media Time	Mediatijd
+	No background jobs.	Geen achtergrondtaken.
+	Remove Row	Rij verwijderen
+	Seconds	Seconden
+	Show finished jobs	Voltooide taken tonen
+	{mode} · no clip	{mode} · geen clip
+	{mode} · no sequence	{mode} · geen reeks
+	Render	Renderen
+	Job	Taak
+	Audio Track Mixer menu	Menu Audiotrackmixer
+	Automation mode	Automatiseringsmodus
+	Enable track for recording	Track inschakelen voor opname
+	Fill the slots above first	Vul eerst de vakken hierboven
+	Go to In Point	Naar in-punt
+	Go to Out Point	Naar uitpunt
+	Input channel mapping	Toewijzing invoerkanalen
+	Meter Input(s) Only	Alleen invoer meten
+	Mix	Mix
+	Mute Send	Send dempen
+	New Submix	Nieuwe submix
+	Pan / balance (drag; double-click: centre)	Pan / balans (slepen; dubbelklik: midden)
+	Post-Fader	Na fader
+	Pre-Fader	Voor fader
+	Remove Send	Send verwijderen
+	Show/Hide Effects and Sends	Effecten en sends tonen/verbergen
+	Show/Hide Tracks	Tracks tonen/verbergen
+	Solo safe	Solo-veilig
+	Track output assignment	Toewijzing trackuitvoer
+	Voice-over recording is not in the Qt GUI yet	Voice-over-opname zit nog niet in de Qt-GUI
+	Volume (drag; double-click: 0 dB)	Volume (slepen; dubbelklik: 0 dB)
+	pre 	pre 
+	Read	Lezen
+	Latch	Vergrendelen
+	Touch	Aanraken
+	Write	Schrijven
+	Stereo	Stereo
+	Swap	Verwisselen
+	Write keyframes	Keyframes schrijven
+	Match Playhead	Afspeelkop volgen
+	Gang to Program	Koppelen aan programma
+	(no sequences)	(geen reeksen)
+	8 Bit	8 bit
+	Bright	Helder
+	Clamp Signal	Signaal begrenzen
+	Colour Space	Kleurruimte
+	Dimmed	Gedimd
+	Float	Zwevende komma
+	Four Scopes (RGB, 8 bit)	Vier scopes (RGB, 8 bit)
+	Four Scopes (YUV, float, no clamp)	Vier scopes (YUV, zwevende komma, niet begrensd)
+	HDR	HDR
+	HLS Vectorscope + Histogram	HLS-vectorscoop + histogram
+	Luma	Luma
+	Parade	Parade
+	Parade (RGB)	Parade (RGB)
+	Parade ({kind})	Parade ({kind})
+	Parade Type	Paradetype
+	RGB-White	RGB-wit
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Scope-instellingen
+	Signal Scale	Signaalschaal
+	Vectorscope (YUV)	Vectorscoop (YUV)
+	Vectorscope + Waveform YC	Vectorscoop + golfvorm YC
+	Vectorscope HLS	Vectorscoop HLS
+	Vectorscope Targets	Vectorscoopdoelen
+	Vectorscope YUV	Vectorscoop YUV
+	Waveform	Golfvorm
+	Waveform (Luma)	Golfvorm (luma)
+	Waveform (RGB)	Golfvorm (RGB)
+	Waveform ({kind})	Golfvorm ({kind})
+	Waveform Type	Golfvormtype
+	YC	YC
+	YC no Chroma	YC zonder chroma
+	YUV	YUV
+	(no clip selected)	(geen clip geselecteerd)
+	Add Lumetri Color to clip	Lumetri-kleur toevoegen aan clip
+	Apply Match	Afstemming toepassen
+	Basic Correction	Basiscorrectie
+	Bleach Bypass	Bleach bypass
+	Color Match	Kleurafstemming
+	Color Wheels & Match	Kleurwielen en afstemming
+	Color/Black	Kleur/zwart
+	Color/Gray	Kleur/grijs
+	Comparison View	Vergelijkingsweergave
+	Cool Blue	Koel blauw
+	Creative	Creatief
+	Denoise	Ruis verwijderen
+	Face Detection (protect skin tones)	Gezichtsdetectie (huidtinten beschermen)
+	Faded Matte	Vervaagd mat
+	Feather	Doezelen
+	Golden Hour	Gouden uur
+	HDR Range	HDR-bereik
+	HDR Specular	HDR-spiegeling
+	HDR White	HDR-wit
+	HSL Secondary	HSL-secundair
+	Hue Range	Kleurtoonbereik
+	Hue Saturation Curves	Kleurtoon-verzadigingscurven
+	Hue vs Hue	Kleurtoon t.o.v. kleurtoon
+	Hue vs Luma	Kleurtoon t.o.v. luma
+	Hue vs Sat	Kleurtoon t.o.v. verzadiging
+	Input LUT	Invoer-LUT
+	Key	Key
+	LUT	LUT
+	Look	Look
+	Look LUT	Look-LUT
+	Luma Max	Luma max.
+	Luma Min	Luma min.
+	Luma vs Sat	Luma t.o.v. verzadiging
+	Master · {name}	Master · {name}
+	Night	Nacht
+	RGB Curves	RGB-curven
+	Reference	Referentie
+	Sat vs Sat	Verzadiging t.o.v. verzadiging
+	Saturation Min	Verzadiging min.
+	Teal & Orange	Blauwgroen en oranje
+	Vignette	Vignet
+	Warm Film	Warme film
+	White/Black	Wit/zwart
+	(none)	(geen)
+	Add to Favorites	Toevoegen aan favorieten
+	All Supported Files	Alle ondersteunde bestanden
+	Allow Duplicate Media During Project Import	Dubbele media toestaan bij projectimport
+	Audio Files	Audiobestanden
+	Cannot open {dir}: {e}	Kan {dir} niet openen: {e}
+	Clear Recent Directories	Recente mappen wissen
+	Create Folder For Imported Projects	Map maken voor geïmporteerde projecten
+	Date Modified	Wijzigingsdatum
+	Edit Columns	Kolommen bewerken
+	Edit Columns…	Kolommen bewerken…
+	File Extension	Bestandsextensie
+	File Types Displayed	Weergegeven bestandstypen
+	Go Back	Terug
+	Go Forward	Vooruit
+	Hover Scrub	Scrubben bij aanwijzen
+	Import as Image Sequence	Importeren als afbeeldingsreeks
+	Ingest	Opname
+	Local Drives	Lokale stations
+	Network	Netwerk
+	New Media Browser Panel	Nieuw mediabrowserpaneel
+	Open In Source Monitor	Openen in bronmonitor
+	Open Ingest Settings	Opname-instellingen openen
+	Projects and Interchange	Projecten en uitwisseling
+	Recent Directories	Recente mappen
+	Remove from Favorites	Verwijderen uit favorieten
+	Show in File Manager	Tonen in bestandsbeheer
+	Still Images	Stilstaande beelden
+	Thumbnail View	Miniatuurweergave
+	Up One Level	Eén niveau omhoog
+	Video Files	Videobestanden
+	{sel} of {total} items selected	{sel} van {total} items geselecteerd
+	{total} items	{total} items
+	#	#
+	Add caption at playhead	Ondertitel toevoegen bij afspeelkop
+	Add captions	Ondertitels toevoegen
+	Box	Kader
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Maak een ondertiteltrack of importeer een ondertitelbestand.
+	Create captions	Ondertitels maken
+	Create new caption track	Nieuwe ondertiteltrack maken
+	Delete selected captions	Geselecteerde ondertitels verwijderen
+	Export captions…	Ondertitels exporteren…
+	Extract selected text	Geselecteerde tekst extraheren
+	Go to caption	Naar ondertitel
+	Go to graphic	Naar grafisch element
+	Graphics	Grafische elementen
+	Import captions file…	Ondertitelbestand importeren…
+	In	In
+	Lift selected text	Geselecteerde tekst optillen
+	Merge selected captions	Geselecteerde ondertitels samenvoegen
+	New {format} track	Nieuwe {format}-track
+	No captions on this track. Press + to add one at the playhead.	Geen ondertitels op deze track. Druk op + om er een toe te voegen bij de afspeelkop.
+	No matching captions.	Geen overeenkomende ondertitels.
+	No matching text.	Geen overeenkomende tekst.
+	No text graphics in this sequence. Add text with the Type tool.	Geen tekstelementen in deze reeks. Voeg tekst toe met het tekstgereedschap.
+	Open a sequence to search its graphics	Open een reeks om de grafische elementen te doorzoeken
+	Open a sequence to see its transcript	Open een reeks om het transcript te zien
+	Open a sequence to work with captions	Open een reeks om met ondertitels te werken
+	Out	Uit
+	Position: bottom	Positie: onder
+	Position: middle	Positie: midden
+	Position: top	Positie: boven
+	Remove filler words	Stopwoorden verwijderen
+	Speaker	Spreker
+	Speech-to-text turns the dialogue into editable text.	Spraak-naar-tekst zet de dialoog om in bewerkbare tekst.
+	Split caption at playhead	Ondertitel splitsen bij afspeelkop
+	Subtitle	Ondertitel
+	Teletext	Teletekst
+	Text colour	Tekstkleur
+	This build has no speech-to-text; import a transcript with transcript.set.	Deze build heeft geen spraak-naar-tekst; importeer een transcript met transcript.set.
+	Track	Track
+	Transcribe	Transcriberen
+	Transcribe sequence	Reeks transcriberen
+	(Custom)	(Aangepast)
+	(Default)	(Standaard)
+	Ambience	Omgevingsgeluid
+	Assign an audio type to the selection:	Wijs een audiotype toe aan de selectie:
+	Auto-Match	Automatisch afstemmen
+	Balanced Voice	Gebalanceerde stem
+	Bright Air	Heldere lucht
+	Bright Studio	Heldere studio
+	Clean Up Noisy Dialogue	Rumoerige dialoog opschonen
+	Clear Audio Type	Audiotype wissen
+	Clear Muddiness	Modderigheid verwijderen
+	Clip Volume	Clipvolume
+	DeEss	De-esser
+	DeHum	Brom verwijderen
+	Delete Preset	Voorinstelling verwijderen
+	Dialogue	Dialoog
+	Dry Up a Roomy Voice	Galmende stem droger maken
+	Duck Deep Under Dialogue	Diep dempen onder dialoog
+	Duck Under Dialogue	Dempen onder dialoog
+	Duck Under Voice and Effects	Dempen onder stem en effecten
+	Duck against:	Dempen ten opzichte van:
+	Ducking	Ducking
+	EQ	EQ
+	Enhance Speech	Spraak verbeteren
+	Fades	Fades
+	Far Away	Ver weg
+	From the Left	Van links
+	From the Right	Van rechts
+	Generate Keyframes	Keyframes genereren
+	High Tone	Hoge toon
+	In a Room	In een kamer
+	Interior Room Tone	Ruimtetoon binnen
+	Large Hall	Grote zaal
+	Loudness	Luidheid
+	Low Tone	Lage toon
+	Matches each of the {n} clips on its own.	Stemt elk van de {n} clips afzonderlijk af.
+	Medium Room	Middelgrote kamer
+	Multiple Clips Selected	Meerdere clips geselecteerd
+	Music	Muziek
+	Mute	Dempen
+	Not matched yet	Nog niet afgestemd
+	Open Air	Openlucht
+	Pan	Pan
+	Phone Call	Telefoongesprek
+	Podcast Voice	Podcaststem
+	Presence Lift	Presence verhogen
+	Preset name	Naam voorinstelling
+	Radio Announcer	Radio-omroeper
+	Radio Voice	Radiostem
+	Reduce By	Verminderen met
+	Reduce Reverb	Galm verminderen
+	Reduce Rumble	Gerommel verminderen
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	Muziek remixen naar een doelduur is nog niet beschikbaar. Trim de clip en voeg in plaats daarvan een crossfade toe.
+	Repair	Herstellen
+	SFX	SFX
+	Save Preset	Voorinstelling opslaan
+	Select audio clips to edit them here	Selecteer audioclips om ze hier te bewerken
+	Select audio clips, then click a preset to apply it.	Selecteer audioclips en klik op een voorinstelling om deze toe te passen.
+	Small Room	Kleine kamer
+	Soften Harshness	Scherpte verzachten
+	Stereo Width	Stereobreedte
+	Stone Church	Stenen kerk
+	Telephone	Telefoon
+	The selected clips have different audio types. Assign one type to edit them together.	De geselecteerde clips hebben verschillende audiotypen. Wijs één type toe om ze samen te bewerken.
+	Untagged	Zonder type
+	Voice in a Hall	Stem in een zaal
+	Warm Room	Warme kamer
+	Warm Voice	Warme stem
+	Wide Outdoor	Wijds buiten
+	{name} (user)	{name} (gebruiker)
+	Align Bottom	Onder uitlijnen
+	Align Center Horizontally	Horizontaal centreren
+	Align Center Vertically	Verticaal centreren
+	Align Left	Links uitlijnen
+	Align Right	Rechts uitlijnen
+	Align Top	Boven uitlijnen
+	Align and Transform	Uitlijnen en transformeren
+	Anchor point	Ankerpunt
+	Center Align Text	Tekst centreren
+	Corner Radius	Hoekradius
+	Crawl Left	Naar links lopen
+	Crawl Right	Naar rechts lopen
+	Create new graphic	Nieuw grafisch element maken
+	End Off Screen	Buiten beeld eindigen
+	Faux Bold	Schijnvet
+	Faux Italic	Schijncursief
+	Font Style	Letterstijl
+	Inner	Binnen
+	Install Motion Graphics Template (.fcgt)	Bewegende-graphics-sjabloon installeren (.fcgt)
+	Install…	Installeren…
+	Intro Duration	Introduur
+	Left Align Text	Tekst links uitlijnen
+	Ligatures	Ligaturen
+	New Ellipse	Nieuwe ellips
+	New Rectangle	Nieuwe rechthoek
+	New Text	Nieuwe tekst
+	New Text Layer	Nieuwe tekstlaag
+	No templates match.	Geen overeenkomende sjablonen.
+	Outer	Buiten
+	Outro Duration	Outroduur
+	Paragraph Text	Alineatekst
+	Pin To	Vastmaken aan
+	Pinned Edges	Vastgemaakte randen
+	Point Text	Punttekst
+	Polygon Sides	Zijden veelhoek
+	Postroll	Naloop
+	Preroll	Voorloop
+	Responsive Design - Position	Responsief ontwerp - positie
+	Responsive Design - Time	Responsief ontwerp - tijd
+	Right Align Text	Tekst rechts uitlijnen
+	Roll	Rollen
+	Search templates	Sjablonen zoeken
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Selecteer een grafische clip, of gebruik het tekstgereedschap (T) op de programmamonitor
+	Select a layer to edit its properties.	Selecteer een laag om de eigenschappen te bewerken.
+	Solid	Effen
+	Start Off Screen	Buiten beeld beginnen
+	Stroke 2	Contour 2
+	Template Properties	Sjablooneigenschappen
+	Template: {name}	Sjabloon: {name}
+	Text Box Height	Hoogte tekstvak
+	Text Box Width	Breedte tekstvak
+	Text Layer Type	Type tekstlaag
+	Text Properties	Teksteigenschappen
+	Text Styling	Tekstopmaak
+	Toggle animation	Animatie aan/uit
+	Toggle visibility	Zichtbaarheid aan/uit
+	Video Frame	Videoframe
+	{category} · My Template	{category} · Mijn sjabloon
+	{n} editable properties	{n} bewerkbare eigenschappen
+	Add pause	Pauze toevoegen
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	Pauze toevoegen voegt [pause 1s] in. Wijzig het getal voor een langere of kortere pauze, bijv. [pause 500ms] of [pause 2s].
+	Add to timeline	Toevoegen aan tijdlijn
+	Basic voices (built in)	Basisstemmen (ingebouwd)
+	Download natural voices ({mb} MB)…	Natuurlijke stemmen downloaden ({mb} MB)…
+	Download of the natural voices failed: {e}	Downloaden van de natuurlijke stemmen mislukt: {e}
+	Download the natural voices? {mb} MB, once.	De natuurlijke stemmen downloaden? {mb} MB, eenmalig.
+	Downloading…	Downloaden…
+	Editing the selected narration	De geselecteerde voice-over wordt bewerkt
+	Extra high	Extra hoog
+	Extra low	Extra laag
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Van {source} en github.com/cmusphinx/cmudict (uitspraken). Licentie: {license}. Elk bestand wordt gecontroleerd tegen een vastgelegde SHA-256.
+	Hear this voice	Deze stem beluisteren
+	Narration added on {track}	Voice-over toegevoegd op {track}
+	Narration updated	Voice-over bijgewerkt
+	Natural voices	Natuurlijke stemmen
+	Natural voices installed	Natuurlijke stemmen geïnstalleerd
+	Natural voices need a one-time download.	Natuurlijke stemmen vereisen een eenmalige download.
+	New narration	Nieuwe voice-over
+	Pace	Tempo
+	Synthesizing narration…	Voice-over synthetiseren…
+	Synthesizing…	Synthetiseren…
+	Text to Speech: {e}	Tekst naar spraak: {e}
+	Type what you want the voice to say	Typ wat de stem moet zeggen
+	Vocal pitch	Stemhoogte
+	Voice	Stem
+	an audio track	een audiotrack
+	no audio output (check Settings ▸ Audio Hardware)	geen audio-uitvoer (controleer Instellingen ▸ Audiohardware)
+	the job disappeared	de taak is verdwenen
+	{name} (download)	{name} (download)
+	5.1 panner (drag the puck; double-click: front centre)	5.1-panner (sleep het puntje; dubbelklik: midden voor)
+	Add keyframe	Keyframe toevoegen
+	Go to next keyframe	Naar volgende keyframe
+	Go to previous keyframe	Naar vorige keyframe
+	Remove keyframe	Keyframe verwijderen
+	Select a clip to see its properties	Selecteer een clip om de eigenschappen te zien
+	Speed {n}%	Snelheid {n}%
+	Turn on animation and add keyframe	Animatie inschakelen en keyframe toevoegen
+	Apply to Selected Clips	Toepassen op geselecteerde clips
+	Export Preset…	Voorinstelling exporteren…
+	Import Presets…	Voorinstellingen importeren…
+	Lumetri Presets	Lumetri-voorinstellingen
+	Search effects	Effecten zoeken
+	Text to Speech: another sequence is open now; the narration was not placed	Tekst naar spraak: er is nu een andere reeks open; de voice-over is niet geplaatst
+	Effect presets	Effectvoorinstellingen
+	Automate to Sequence	Automatiseren naar reeks
+	Bin: {name}	Bin: {name}
+	Clear (Delete)	Wissen (Delete)
+	Convert to Master Clip	Omzetten naar masterclip
+	Descending	Aflopend
+	Drag to reorder; tick the columns to show.	Sleep om de volgorde te wijzigen; vink de kolommen aan die u wilt tonen.
+	Extra Large	Extra groot
+	Freeform	Vrije vorm
+	Freeform View Options…	Opties voor vrije weergave…
+	Icon	Pictogram
+	Icon View	Pictogramweergave
+	Manage Saved View Presets	Opgeslagen weergavevoorinstellingen beheren
+	Medium (default)	Middel (standaard)
+	Metadata Display	Weergave metagegevens
+	Metadata Display…	Weergave metagegevens…
+	New Bin From Selection	Nieuwe bin uit selectie
+	New Item	Nieuw item
+	New Project Shortcut	Nieuwe projectsnelkoppeling
+	New Search Bin	Nieuwe zoekbin
+	New Sequence From Clip	Nieuwe reeks uit clip
+	Open in New Tab	Openen in nieuw tabblad
+	Open in New Window	Openen in nieuw venster
+	Open in Place	Ter plaatse openen
+	Open in Source Monitor	Openen in bronmonitor
+	Open in Timeline	Openen in tijdlijn
+	Preview Area	Voorbeeldgebied
+	Project View Preset {n}	Projectweergavevoorinstelling {n}
+	Project: {name}	Project: {name}
+	Refresh Project	Project vernieuwen
+	Refresh Sort Order	Sorteervolgorde vernieuwen
+	Restore View Preset	Weergavevoorinstelling herstellen
+	Reveal Project in Finder…	Project tonen in bestandsbeheer…
+	Reveal in Finder	Tonen in bestandsbeheer
+	Save As New View Preset	Opslaan als nieuwe weergavevoorinstelling
+	Save Current View Preset	Huidige weergavevoorinstelling opslaan
+	Save Project	Project opslaan
+	Select an item to preview it	Selecteer een item voor een voorbeeld
+	Set Poster Frame	Posterframe instellen
+	Sort Icons	Pictogrammen sorteren
+	Thumbnail controls for all pointing devices	Miniatuurbediening voor alle aanwijsapparaten
+	Thumbnails	Miniaturen
+	Thumbnails show effects applied	Miniaturen tonen toegepaste effecten
+	Up one level	Eén niveau omhoog
+	User Order	Gebruikersvolgorde
+	Video Usage: {vu}  Audio Usage: {au}	Videogebruik: {vu}  Audiogebruik: {au}
+	{n} items	{n} items
+	Freeform View	Vrije weergave
+	Stack	Stapelen
+	Unstack	Ontstapelen
+	Clip Size	Clipgrootte
+	Larger	Groter
+	Smaller	Kleiner
+	Align to Grid	Uitlijnen op raster
+	Reset to Grid	Terugzetten op raster
+	Save Arrangement…	Schikking opslaan…
+	Save Arrangement	Schikking opslaan
+	Restore Arrangement	Schikking herstellen
+	Delete Arrangement	Schikking verwijderen
+	Arrangement {n}	Schikking {n}
+	Freeform View Options	Opties voor vrije weergave
+	Snap to grid	Magnetisch raster
+	Show clip names	Clipnamen tonen
+	Show clip durations	Clipduur tonen
+	Grid spacing:	Rasterafstand:
+	Default clip size:	Standaard clipgrootte:
+	{panel} — coming in a later milestone	{panel} — komt in een latere mijlpaal
+	Edit Workspaces	Werkruimten bewerken
+	Restore Original	Origineel herstellen
+	Drag Video Only	Alleen video slepen
+	Drag Audio Only	Alleen audio slepen
+	Drag Video and Audio	Video en audio slepen
+	Source clips	Bronclips
+	(no audio)	(geen audio)
+	Generating waveform…	Golfvorm genereren…
+	Audio Waveform	Audiogolfvorm
+	Video and Audio Waveform Split	Video en audiogolfvorm gesplitst
+	Anchor to In Point	Verankeren aan in-punt
+	Anchor to Out Point	Verankeren aan uitpunt
+	Custom ({n} points)	Aangepast ({n} punten)
+	Source · {name}	Bron · {name}
+	Temporal Interpolation	Tijdelijke interpolatie
+	Twirl open or shut	Uitklappen of inklappen
+	Without keyframes	Zonder keyframes
+	Create 4-point polygon mask	Veelhoekmasker met 4 punten maken
+	Create ellipse mask	Ellipsmasker maken
+	Free draw bezier	Vrij getekende bezier
+	Inverted	Omgekeerd
+	Position & Rotation	Positie en rotatie
+	Position, Scale & Rotation	Positie, schaal en rotatie
+	Show graphs	Grafieken tonen
+	Stop tracking	Volgen stoppen
+	Track selected mask backward	Geselecteerd masker achterwaarts volgen
+	Track selected mask backward 1 frame	Geselecteerd masker 1 frame achterwaarts volgen
+	Track selected mask forward	Geselecteerd masker voorwaarts volgen
+	Track selected mask forward 1 frame	Geselecteerd masker 1 frame voorwaarts volgen
+	Tracking method: {method}	Volgmethode: {method}
+	Value	Waarde
+	Velocity	Snelheid
+	Set Transition Duration	Overgangsduur instellen
+	Center at Cut	Gecentreerd op snede
+	Start at Cut	Beginnen bij snede
+	End at Cut	Eindigen bij snede
+	Custom Start	Aangepast begin
+	Eyedropper (pick a color from the Program monitor)	Pipet (kies een kleur uit de programmamonitor)
+	Interpret Footage	Beeldmateriaal interpreteren
+	Color Management · {n} item	Kleurbeheer · {n} item
+	Color Management · {n} items	Kleurbeheer · {n} items
+	Media colour space (from file metadata): {detected}	Kleurruimte van media (uit bestandsmetagegevens): {detected}
+	Override media colour space:	Kleurruimte van media overschrijven:
+	Decode Auro-3D height channels	Auro-3D-hoogtekanalen decoderen
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Uit: het bestand speelt zijn eigen kanalen af, zoals zonder Auro-3D-decoder.
+	Use file metadata	Bestandsmetagegevens gebruiken
+	Motion Graphics Templates	Bewegende-graphics-sjablonen
+	Clip Fx Editor	Clip-fx-editor
+	Track Fx Editor	Track-fx-editor
+	Custom Setup	Aangepaste instelling
+	Master Gain	Masterversterking
+	Band {n}	Band {n}
+	Solo	Solo
+	Thr	Drempel
+	Att	Attack
+	Rel	Release
+	Output Gain	Uitvoerversterking
+	Limiter	Limiter
+	Link Channels	Kanalen koppelen
+	Limiter Threshold	Limiterdrempel
+	Limiter Release	Limiter-release
+	Auto Gate	Automatische gate
+	Attack	Attack
+	Release	Release
+	Compressor	Compressor
+	Auto Makeup	Automatische make-up
+	Makeup	Make-up
+	Expander	Expander
+	Soft Clip	Zachte clipping
+	out	uit
+	in	in
+	Parametric Equalizer	Parametrische equalizer
+	Graphic Equalizer (10 Bands)	Grafische equalizer (10 banden)
+	Graphic Equalizer (20 Bands)	Grafische equalizer (20 banden)
+	Graphic Equalizer (30 Bands)	Grafische equalizer (30 banden)
+	Multiband Compressor	Multibandcompressor
+	CFA4 encountered an error	CFA4 heeft een fout aangetroffen
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Er ging iets mis bij het tekenen van het venster. Uw project is nog open; sla het voor de zekerheid op.
+	Details: {path}	Details: {path}
+	Engine restarted	Engine opnieuw gestart
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	De CFA4-engine is onverwacht gestopt en opnieuw gestart. Niet-opgeslagen wijzigingen staan in het herstellogboek; dat biedt aan ze te herstellen.
+	 ({ch} output channels)	 ({ch} uitvoerkanalen)
+	Appearance Mode	Weergavemodus
+	Appearance Settings…	Instellingen uiterlijk…
+	Auto-saves go to: {dir}	Automatisch opslaan gaat naar: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	CFA4 houdt de rest van het RAM vrij voor andere toepassingen.
+	Currently: {loc} — {files} file(s), {size}	Momenteel: {loc} — {files} bestand(en), {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	Gedecodeerde frames bewaard voor de monitors en miniaturen: {used} van {budget}.
+	Default location	Standaardlocatie
+	Delete this preset	Deze voorinstelling verwijderen
+	Deleted preset “{active}”	Voorinstelling “{active}” verwijderd
+	Deleted {n} file(s), {size}.	{n} bestand(en) verwijderd, {size}.
+	Export the labels to a preset file…	De labels exporteren naar een voorinstellingsbestand…
+	Exported to {path}	Geëxporteerd naar {path}
+	Font family	Lettertypefamilie
+	Import a preset file…	Een voorinstellingsbestand importeren…
+	Imported “{name}”	“{name}” geïmporteerd
+	Label Color Presets	Voorinstellingen labelkleuren
+	Label Colors	Labelkleuren
+	Last auto-save {a}	Laatst automatisch opgeslagen {a}
+	Last auto-save {a} · last recovery copy {j}	Laatst automatisch opgeslagen {a} · laatste herstelkopie {j}
+	Last recovery copy {j}	Laatste herstelkopie {j}
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	Programma links → apparaatuitvoer {l}, rechts → apparaatuitvoer {r}{dev}. Uitvoer voorbij de kanalen van het apparaat valt terug op 1 en 2.
+	Recovery copy: {dir}	Herstelkopie: {dir}
+	Reset…	Herstellen…
+	Revert to the preset's colors and names	Terug naar de kleuren en namen van de voorinstelling
+	Show the presets folder	De map met voorinstellingen tonen
+	System Default	Systeemstandaard
+	not available in this session	niet beschikbaar in deze sessie
+	{name} (Modified)	{name} (gewijzigd)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	Toegankelijk kleurcontrast
+	Add tracks automatically when editing source clips onto the Timeline	Automatisch tracks toevoegen bij het monteren van bronclips in de tijdlijn
+	All lines	Alle regels
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	Selectiegereedschap mag rol- en ripple-trims kiezen zonder wijzigingstoets
+	Allow current tool to change trim type of previously selected edit point	Huidig gereedschap mag het trimtype van het eerder geselecteerde bewerkpunt wijzigen
+	Allow duplicate media during project import	Dubbele media toestaan bij projectimport
+	Always import embedded CEA-708 closed captions with wide aspect.	Ingesloten CEA-708-ondertitels altijd met brede beeldverhouding importeren.
+	Always override audio tags	Audiotags altijd overschrijven
+	Analyze all imported media to search for visuals or audio	Alle geïmporteerde media analyseren om te zoeken op beeld of geluid
+	Animate zoom, scrolling and menus	Zoomen, scrollen en menu's animeren
+	Appearance…	Uiterlijk…
+	At Startup	Bij opstarten
+	At playback end, return to beginning when restarting playback	Aan het einde van het afspelen terugkeren naar het begin bij opnieuw afspelen
+	Attempt to force hardware to document sample rate	Proberen de hardware te dwingen tot de samplefrequentie van het document
+	Audio Hardware	Audiohardware
+	Audio Hardware…	Audiohardware…
+	Audio Time Units	Audiotijdseenheden
+	Audio Transition Default Duration	Standaardduur audio-overgang
+	Audio…	Audio…
+	Auto (system)	Automatisch (systeem)
+	Auto Save	Automatisch opslaan
+	Auto Save also saves the current project(s)	Automatisch opslaan slaat ook de huidige project(en) op
+	Auto Save…	Automatisch opslaan…
+	Auto-tag audio types in the timeline	Audiotypen in de tijdlijn automatisch taggen
+	Auto-transcribe all imported clips	Alle geïmporteerde clips automatisch transcriberen
+	Auto-transcribe only clips in sequences	Alleen clips in reeksen automatisch transcriberen
+	Automatch Time	Tijd voor automatisch afstemmen
+	Automatically Hide Dependent Clips	Afhankelijke clips automatisch verbergen
+	Automatically Save Every	Automatisch opslaan elke
+	Automatically delete cache files older than	Cachebestanden automatisch verwijderen ouder dan
+	Automatically delete oldest cache files when cache exceeds	Oudste cachebestanden automatisch verwijderen als de cache groter wordt dan
+	Automatically refresh growing files	Groeiende bestanden automatisch vernieuwen
+	Automatically resume playback for growing files in Source Monitor	Afspelen van groeiende bestanden in de bronmonitor automatisch hervatten
+	Automatically save projects	Projecten automatisch opslaan
+	Automatically transcribe clips	Clips automatisch transcriberen
+	Automation Keyframe Optimization	Optimalisatie automatiseringskeyframes
+	Background fill	Achtergrondvulling
+	Bevel join	Afgeschuinde hoek
+	Bins	Bins
+	Butt cap	Platte uiteinden
+	Cache analysis results for re-use	Analyseresultaten cachen voor hergebruik
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	Wijzigingen worden kort na elke bewerking op de achtergrond gekopieerd. Als CFA4 onverwacht afsluit, worden ze bij de volgende start aangeboden.
+	Chinese	Chinees
+	Closed Captions	Gesloten ondertiteling
+	Color Theme	Kleurthema
+	Crash Recovery	Crashherstel
+	Create folder for imported projects	Map maken voor geïmporteerde projecten
+	Default Audio Tracks	Standaard audiotracks
+	Default Emoji font	Standaard emojilettertype
+	Default Input	Standaardinvoer
+	Default Media Scaling	Standaard mediaschaling
+	Default Output	Standaarduitvoer
+	Default closed caption font	Standaardlettertype gesloten ondertiteling
+	Default language	Standaardtaal
+	Default paragraph direction	Standaard alinearichting
+	Default subtitle and text font	Standaardlettertype ondertitels en tekst
+	Delete files older than	Bestanden verwijderen ouder dan
+	Delete oldest files when the cache exceeds	Oudste bestanden verwijderen als de cache groter wordt dan
+	Device Class	Apparaatklasse
+	Disable video output when in the background	Video-uitvoer uitschakelen op de achtergrond
+	Display Color Management	Kleurbeheer beeldscherm
+	Display Color Settings	Kleurinstellingen beeldscherm
+	Display out of sync indicators for unlinked clips	Niet-synchroon-indicatoren tonen voor ontkoppelde clips
+	Do not delete cache files automatically	Cachebestanden niet automatisch verwijderen
+	Don't label speakers	Sprekers niet labelen
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	Conceptdecodering bij verlaagde afspeelresolutie (H.264: sneller, sommige frames minder gefilterd)
+	Dynamic Link	Dynamic Link
+	Enable Mercury Transmit	Mercury Transmit inschakelen
+	Enable ProRes hardware accelerated encoding, if available	Hardwareversnelde ProRes-codering inschakelen, indien beschikbaar
+	Enable clip and XMP metadata linking	Koppeling van clip- en XMP-metagegevens inschakelen
+	Enable developer mode	Ontwikkelaarsmodus inschakelen
+	Enable hardware accelerated decoding (requires restart)	Hardwareversnelde decodering inschakelen (herstart vereist)
+	Enable language auto-detection	Automatische taaldetectie inschakelen
+	Enable proxies	Proxy's inschakelen
+	English	Engels
+	Extended Dynamic Range Monitoring	Monitoring met uitgebreid dynamisch bereik
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	Ga voor kleurbeheerparameters naar het tabblad Instellingen in het paneel Lumetri-kleur.
+	Frame Count	Aantal frames
+	Frame cache for monitors and thumbnails	Framecache voor monitors en miniaturen
+	Front + LFE	Voor + LFE
+	Front + Rear	Voor + achter
+	Front + Rear + LFE	Voor + achter + LFE
+	Front Only	Alleen voor
+	Generate Timecode	Tijdcode genereren
+	Generate waveforms and conform audio using multithreading	Golfvormen genereren en audio conformeren met multithreading
+	Generate waveforms automatically during import	Golfvormen automatisch genereren tijdens import
+	Graphics…	Grafische elementen…
+	Growing Files	Groeiende bestanden
+	HDR Graphics White (Nits)	HDR-wit voor grafische elementen (nits)
+	Hardware decoding	Hardwaredecodering
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Hardwaredecodering: Automatisch gebruikt de videodecoder van het systeem (VA-API of NVDEC voor H.264 en HEVC) voor de streams die deze ondersteunt, en de eigen decoder van CFA4 voor al het andere of als de hardware faalt. Media die al open zijn, houden hun decoder tot ze opnieuw worden geopend.
+	Highlight Color	Markeerkleur
+	Hindi digits	Hindi-cijfers
+	I/O Buffer Size	I/O-buffergrootte
+	Import numbered stills as image sequences	Genummerde stilstaande beelden importeren als afbeeldingsreeksen
+	In the Media Cache	In de mediacache
+	In the project	In het project
+	Include captions on import	Ondertitels meenemen bij import
+	Indeterminate Media Timebase	Onbepaalde mediatijdbasis
+	Keep a recovery copy of unsaved changes	Een herstelkopie van niet-opgeslagen wijzigingen bewaren
+	Korean	Koreaans
+	Label Defaults	Standaardlabels
+	Label speakers	Sprekers labelen
+	Labels…	Labels…
+	Large Trim Offset	Grote trimverschuiving
+	Large Volume Adjustment	Grote volumeaanpassing
+	Left channel to device output	Linkerkanaal naar apparaatuitvoer
+	Left to right	Van links naar rechts
+	Linear keyframe thinning	Lineair keyframes uitdunnen
+	Local Projects	Lokale projecten
+	Maintain pitch while shuttling	Toonhoogte behouden bij shuttelen
+	Match frame sets in point	Overeenkomend frame stelt in-punt in
+	Maximum Project Versions	Maximaal aantal projectversies
+	Media	Media
+	Media Analysis	Media-analyse
+	Media Analysis & Transcription	Media-analyse en transcriptie
+	Media Analysis & Transcription…	Media-analyse en transcriptie…
+	Media Cache	Mediacache
+	Media Cache Database	Mediacachedatabase
+	Media Cache Files	Mediacachebestanden
+	Media Cache Management	Mediacachebeheer
+	Media Cache…	Mediacache…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	Media-analyse en transcripties worden in de mediacachemap opgeslagen. Opnieuw analyseren is niet nodig als de media in een ander project op deze computer worden geïmporteerd.
+	Memory	Geheugen
+	Memory…	Geheugen…
+	Minimum time	Minimale tijd
+	Minimum time interval thinning	Uitdunnen op minimaal tijdsinterval
+	Missing font replacement	Vervanging ontbrekend lettertype
+	Miter join	Verstek
+	Miter limit	Verstekgrens
+	Mono Media	Monomedia
+	Monospace only	Alleen vaste breedte
+	Movie (audio and video)	Film (audio en video)
+	Multichannel Mono Media	Meerkanaals monomedia
+	Mute input during timeline recording	Invoer dempen tijdens opname in tijdlijn
+	Next to original media files	Naast originele mediabestanden
+	No Scroll	Niet scrollen
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Er zijn geen plug-ins geïnstalleerd. Wijzigingen worden van kracht bij de volgende start van CFA4.
+	Open Most Recent	Meest recente openen
+	Open in new window	Openen in nieuw venster
+	Open in place	Ter plaatse openen
+	Open new tab	Nieuw tabblad openen
+	Output Mapping	Uitvoertoewijzing
+	Page Scroll	Paginagewijs scrollen
+	Pause Media Encoder queue during playback	Media Encoder-wachtrij pauzeren tijdens afspelen
+	Per line	Per regel
+	Place files dropped onto the Timeline directly on the Timeline	Bestanden die op de tijdlijn worden neergezet direct op de tijdlijn plaatsen
+	Play after rendering previews	Afspelen na renderen van voorvertoningen
+	Play audio while scrubbing in Source and Program Monitors	Audio afspelen tijdens scrubben in bron- en programmamonitor
+	Playback	Afspelen
+	Playback…	Afspelen…
+	Playhead position determines trim monitor loop playback	Positie van afspeelkop bepaalt herhaald afspelen in trimmonitor
+	Plugins	Plug-ins
+	Plugins…	Plug-ins…
+	Policy	Beleid
+	Projecting cap	Uitstekende uiteinden
+	Projects	Projecten
+	RAM reserved for other applications	RAM gereserveerd voor andere toepassingen
+	Refresh growing Files Every	Groeiende bestanden vernieuwen elke
+	Render Edit in Audition files to:	Bewerken-in-Audition-bestanden renderen naar:
+	Render audio when rendering video	Audio renderen bij het renderen van video
+	Restore open sequences when opening projects	Open reeksen herstellen bij het openen van projecten
+	Right channel to device output	Rechterkanaal naar apparaatuitvoer
+	Right to left	Van rechts naar links
+	Ripple trim adds edits to keep both sides of trim in sync	Ripple-trim voegt bewerkpunten toe om beide kanten van de trim synchroon te houden
+	Round cap	Ronde uiteinden
+	Round join	Ronde hoek
+	Russian	Russisch
+	Sample Rate	Samplefrequentie
+	Save .cfa and .pek media cache files next to original media files when possible	.cfa- en .pek-mediacachebestanden indien mogelijk naast originele mediabestanden opslaan
+	Scale to frame size	Schalen naar framegrootte
+	Scratch disk location for Captured Audio	Werkschijflocatie voor opgenomen audio
+	Set focus on the Timeline when performing Insert/Overwrite edits	Focus op de tijdlijn zetten bij invoegen/overschrijven
+	Set to frame size	Instellen op framegrootte
+	Shift clips that overlap trim point during ripple trimming	Clips die het trimpunt overlappen verschuiven bij ripple-trimmen
+	Show "Project:" and "Bin:" in Project panel tab	"Project:" en "Bin:" tonen in tabblad van projectpaneel
+	Show Clip Mismatch Warning dialog	Waarschuwing voor niet-overeenkomende clip tonen
+	Show Event Indicator	Gebeurtenisindicator tonen
+	Show Home	Startscherm tonen
+	Show Mask Tracker Preview	Voorbeeld van maskervolger tonen
+	Show Open Dialog	Dialoogvenster Openen tonen
+	Show Project Load Error Dialog	Dialoogvenster voor laadfouten van project tonen
+	Show Rich Tool Tips	Uitgebreide tooltips tonen
+	Show Workspace Reset Warning dialog on double click	Waarschuwing voor herstellen werkruimte tonen bij dubbelklikken
+	Show system compatibility issues at startup	Systeemcompatibiliteitsproblemen tonen bij opstarten
+	Smooth Scroll	Vloeiend scrollen
+	Snap playhead in Timeline when Snap is enabled	Afspeelkop magnetisch in tijdlijn als magnetisch is ingeschakeld
+	Speaker Labeling	Sprekerlabels
+	Speech model	Spraakmodel
+	Start at 0	Beginnen bij 0
+	Start at 1	Beginnen bij 1
+	Start with an Empty Project	Beginnen met een leeg project
+	Step forward/back many	Veel stappen vooruit/terug
+	Stereo Media	Stereomedia
+	Still	Stilstaand
+	Still Image Default Duration	Standaardduur stilstaand beeld
+	Stroke line cap	Lijnuiteinden contour
+	Stroke line join	Lijnhoeken contour
+	Sum multichannel outputs to mono in Source Monitor	Meerkanaalsuitvoer optellen tot mono in bronmonitor
+	System Language	Systeemtaal
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	De mediacache bevat rendervoorbeelden van niet-opgeslagen projecten en andere bestanden die CFA4 opnieuw kan maken. Verwijderen is altijd veilig; CFA4 bouwt ze zo nodig opnieuw op.
+	Timecode Conversion	Tijdcodeconversie
+	Timeline Mouse Scrolling	Muisscrollen in tijdlijn
+	Timeline Playback Auto-Scrolling	Automatisch scrollen tijdens afspelen in tijdlijn
+	Timeline…	Tijdlijn…
+	Transcription	Transcriptie
+	Transcription preferences	Transcriptievoorkeuren
+	Trim	Trimmen
+	Trim…	Trimmen…
+	UI Scale	UI-schaal
+	Update it at least every	Minstens bijwerken elke
+	Update timeline dynamically during ripple edits.	Tijdlijn dynamisch bijwerken tijdens ripple-bewerkingen.
+	Use File	Bestand gebruiken
+	Use Media Source	Mediabron gebruiken
+	Validate Content Credentials on import	Content Credentials valideren bij import
+	Video Transition Default Duration	Standaardduur video-overgang
+	When Opening a Project	Bij het openen van een project
+	Whisper base (balanced)	Whisper base (gebalanceerd)
+	Whisper small (most accurate)	Whisper small (nauwkeurigst)
+	Whisper tiny (fastest)	Whisper tiny (snelst)
+	Write XMP ID to files on import	XMP-ID naar bestanden schrijven bij import
+	Write clip markers to XMP	Clipmarkeringen naar XMP schrijven
+	days	dagen
+	milliseconds	milliseconden
+	minute(s)	minuut/minuten
+	second(s)	seconde(n)
+	seconds	seconden
+	 seconds	 seconden
+	Channel {n}	Kanaal {n}
+	Countdown Sound Cues	Afteltonen
+	Discard take	Opname verwerpen
+	Discard the active take	De actieve opname verwerpen
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	Het afspelen begint met de voorloop vóór de afspeelkop (of het in-punt); met gemarkeerd in-/uitpunt start en stopt de opname daar.
+	Post-roll	Naloop
+	Post-roll:	Naloop:
+	Pre-roll:	Voorloop:
+	Qt Multimedia is not available	Qt Multimedia is niet beschikbaar
+	Record (voice-over on the record-enabled track)	Opnemen (voice-over op de track met opname ingeschakeld)
+	Recording voice-over…	Voice-over opnemen…
+	Source:	Bron:
+	Stop Voice-over Recording	Voice-over-opname stoppen
+	The audio input could not be started	De audio-invoer kon niet worden gestart
+	The audio input does not support a usable format	De audio-invoer ondersteunt geen bruikbare indeling
+	The voice-over input buffer is full: the take ends here	De voice-over-invoerbuffer is vol: de opname eindigt hier
+	There is no audio input device	Er is geen audio-invoerapparaat
+	Voice-Over Record Settings	Instellingen voice-over-opname
+	Voice-Over Record Settings…	Instellingen voice-over-opname…
+	Voice-over input: {error}	Voice-over-invoer: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Voice-over opnemen (rechtsklik: Instellingen voice-over-opname…)
+	Voice-over recorded: {p}	Voice-over opgenomen: {p}
+	Voice-over recording stopped (nothing recorded)	Voice-over-opname gestopt (niets opgenomen)
+	Voice-over take discarded	Voice-over-opname verworpen
+	 frames	 frames
+	All Cameras	Alle camera's
+	Auto-Adjust Multi-Camera Playback Quality	Afspeelkwaliteit multicamera automatisch aanpassen
+	Camera 1	Camera 1
+	Camera Angle Metadata	Metagegevens camerahoek
+	Camera Names	Cameranamen
+	Camera {n} — {name}	Camera {n} — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	Camera's die in de multicameraweergave worden getoond (vinkje weghalen om te verbergen).
+	Clip Marker	Clipmarkering
+	Clip Name:	Clipnaam:
+	Clip Names	Clipnamen
+	Create Multi-Camera Source Sequence	Multicamera-bronreeks maken
+	Edit Cameras	Camera's bewerken
+	Edit Cameras…	Camera's bewerken…
+	Enumerate Cameras	Camera's nummeren
+	Ignore Hours	Uren negeren
+	In Points	In-punten
+	Merge Clips	Clips samenvoegen
+	Merged clip created	Samengevoegde clip gemaakt
+	Move source clips to Processed Clips bin	Bronclips naar bin Verwerkte clips verplaatsen
+	Multi-Camera Audio Follows Video	Multicamera-audio volgt video
+	Multi-Camera Layout	Multicamera-indeling
+	Multi-Camera Record	Multicamera-opname
+	Multi-Camera Record On/Off (0)	Multicamera-opname aan/uit (0)
+	Multi-Camera Record On/Off Toggle	Multicamera-opname aan/uit schakelen
+	Multi-Camera Record off	Multicamera-opname uit
+	Multi-Camera Record on	Multicamera-opname aan
+	Multi-Camera Selection Top Down	Multicameraselectie van boven naar beneden
+	Multi-Camera View	Multicameraweergave
+	Multi-camera source sequence with {n} camera(s)	Multicamera-bronreeks met {n} camera('s)
+	No multi-camera clip at the playhead	Geen multicameraclip bij de afspeelkop
+	Offset Audio by:	Audio verschuiven met:
+	Offset:	Verschuiving:
+	Out Points	Uitpunten
+	Page {page} of {pages}	Pagina {page} van {pages}
+	Record	Opnemen
+	Recorded {n} multi-camera cut(s)	{n} multicamerasnede(n) opgenomen
+	Reference track:	Referentietrack:
+	Remove Audio from AV Clip	Audio verwijderen uit AV-clip
+	Sequence Name:	Reeksnaam:
+	Show Multi-Camera Preview Monitor	Multicamera-voorbeeldmonitor tonen
+	Switch Audio	Audio wisselen
+	Synchronize Clips	Clips synchroniseren
+	Synchronize Point	Synchronisatiepunt
+	Synchronized {n} clip group(s)	{n} clipgroep(en) gesynchroniseerd
+	Transmit Multi-Camera View	Multicameraweergave verzenden
+	first marker	eerste markering
+	lowest (V1…)	laagste (V1…)
+	no multi-camera clip at the playhead	geen multicameraclip bij de afspeelkop
+	{first} - Merged	{first} - samengevoegd
+	{first} Multicam	{first} multicamera
+	{n} clip(s) selected; the clip on the reference track stays put.	{n} clip(s) geselecteerd; de clip op de referentietrack blijft staan.
+	{n} clip(s): {names}	{n} clip(s): {names}
+	Current duration {seconds} s	Huidige duur {seconds} s
+	Fewer · More	Minder · meer
+	Remix Properties	Remix-eigenschappen
+	Remixed to {seconds} s	Geremixt naar {seconds} s
+	Segments:	Segmenten:
+	Target Duration:	Doelduur:
+	Variations:	Variaties:
+	the selected clip is not remixed	de geselecteerde clip is niet geremixt
+	After installing, restart CFA4.	Start CFA4 opnieuw na de installatie.
+	Available, switched off	Beschikbaar, uitgeschakeld
+	Left out by the routing table	Weggelaten door de routeringstabel
+	CFA4 engine	CFA4-engine
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	De eigen engine van CFA4 opent elk bestand dat hij kan. De aanvullende backends hieronder nemen het in deze volgorde over, alleen voor bestanden die de engine nog niet kan openen. Een backend uitschakelen geldt voor bestanden die daarna worden geopend.
+	Capabilities	Mogelijkheden
+	Copy command	Opdracht kopiëren
+	H.264 software encoding (x264)	H.264-softwarecodering (x264)
+	HEVC software encoding (x265)	HEVC-softwarecodering (x265)
+	In use	In gebruik
+	Licence	Licentie
+	Media Backends	Mediabackends
+	Media Backends…	Mediabackends…
+	Not available	Niet beschikbaar
+	Not part of this build	Geen deel van deze build
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Eigen Rust-decoders en -encoders: altijd eerst gebruikt, en de terugval als een aanvullende backend faalt
+	Restricted Codecs…	Beperkte codecs…
+	Restricted codecs	Beperkte codecs
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Sommige codecs zijn vrije software maar implementeren gepatenteerde formaten. Net als Ubuntu installeert CFA4 ze niet standaard: het basispakket werkt zonder, en u beslist of u ze installeert. Het gebruik ervan kan in sommige landen beperkt zijn; controleer of het is toegestaan waar u bent.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Aanvullende decoder voor formaten die de eigen engine nog niet leest (10-bit- en 4:2:2-cameramedia, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Aanvullende decoder uit de GStreamer van het systeem (Ogg Theora, FLV, WMV en andere formaten); LGPL, uit de repository's van Ubuntu
+	The engine did not answer: {message}	De engine antwoordde niet: {message}
+	To install them: {command}	Om ze te installeren: {command}
+	Use this backend	Deze backend gebruiken
+	installed	geïnstalleerd
+	not installed	niet geïnstalleerd
+	on	aan
+	 (removed from {list})	 (verwijderd uit {list})
+	 and 	 en 
+	Add another shortcut	Nog een sneltoets toevoegen
+	Application shortcuts work whatever panel has focus	Toepassingssneltoetsen werken ongeacht welk paneel focus heeft
+	Assign {key} to {command}	{key} toewijzen aan {command}
+	Cleared {n} shortcut(s) of {command}	{n} sneltoets(en) van {command} gewist
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Klik op de cel Sneltoets van een opdracht en druk op toetsen om deze toe te wijzen; + voegt nog een sneltoets toe.
+	Click a key on the keyboard to see its shortcuts	Klik op een toets van het toetsenbord om de sneltoetsen te zien
+	Click and press keys to assign	Klik en druk op toetsen om toe te wijzen
+	Commands:	Opdrachten:
+	Conflict: {key} is assigned to {commands} ({ctx})	Conflict: {key} is toegewezen aan {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Exporteren: geen bestand gekozen (agents: shortcuts.export {path})
+	Import: no file chosen (agents: shortcuts.import {path})	Importeren: geen bestand gekozen (agents: shortcuts.import {path})
+	Key:	Toets:
+	Keyboard: US	Toetsenbord: VS
+	Loaded “{name}”	“{name}” geladen
+	Modifier held / selected	Wijzigingstoets ingedrukt / geselecteerd
+	Modifiers	Wijzigingstoetsen
+	My Shortcuts	Mijn sneltoetsen
+	Nothing is assigned to this key	Aan deze toets is niets toegewezen
+	Panel shortcuts override application shortcuts while that panel has focus	Paneelsneltoetsen gaan voor toepassingssneltoetsen zolang dat paneel focus heeft
+	Save preset as:	Voorinstelling opslaan als:
+	Saved preset “{name}”	Voorinstelling “{name}” opgeslagen
+	Search commands or keys	Opdrachten of toetsen zoeken
+	Selected: {command}	Geselecteerd: {command}
+	Type a shortcut… (Esc cancels)	Typ een sneltoets… (Esc annuleert)
+	{active} (modified)	{active} (gewijzigd)
+	{key} can't be used as a shortcut	{key} kan niet als sneltoets worden gebruikt
+	{panel} Panel	Paneel {panel}
+	Docking Action	Dokactie
+	Undock Panel	Paneel losmaken
+	Restore Workspace	Werkruimte herstellen
+	Add Guide…	Hulplijn toevoegen…
+	Guide Templates	Hulplijnsjablonen
+	Manage Guides	Hulplijnen beheren
+	Manage Guides…	Hulplijnen beheren…
+	No saved guide templates.	Geen opgeslagen hulplijnsjablonen.
+	Position:	Positie:
+	Reference  {tc}	Referentie  {tc}
+	Reference: next frame	Referentie: volgend frame
+	Reference: previous frame	Referentie: vorig frame
+	Save Guides as Template	Hulplijnen opslaan als sjabloon
+	Save Guides as Template…	Hulplijnen opslaan als sjabloon…
+	Saved guide template “{name}”	Hulplijnsjabloon “{name}” opgeslagen
+	Set	Instellen
+	Set Comparison Reference	Vergelijkingsreferentie instellen
+	Set the reference to the playhead	De referentie op de afspeelkop zetten
+	Snap in Program Monitor	Magnetisch in programmamonitor
+	The template needs a name.	Het sjabloon heeft een naam nodig.
+	There are no guides to save.	Er zijn geen hulplijnen om op te slaan.
+	Join Through Edits	Doorlopende bewerkpunten samenvoegen
+	Replace With Clip From Source Monitor	Vervangen door clip uit bronmonitor
+	Reveal Nested Sequence	Geneste reeks tonen
+	Reveal in Project	Tonen in project
+	Unlink	Ontkoppelen
+	Apply Default Transitions	Standaardovergangen toepassen
+	Ripple Trim In	In-punt ripple-trimmen
+	Ripple Trim Out	Uitpunt ripple-trimmen
+	Roll Edit	Rolbewerking
+	Trim In	In-punt trimmen
+	Trim Out	Uitpunt trimmen
+	Expand All Tracks	Alle tracks uitvouwen
+	Minimize All Tracks	Alle tracks minimaliseren
+	Increase Video Tracks Height	Hoogte videotracks vergroten
+	Decrease Video Tracks Height	Hoogte videotracks verkleinen
+	Increase Audio Tracks Height	Hoogte audiotracks vergroten
+	Decrease Audio Tracks Height	Hoogte audiotracks verkleinen
+	Drag to change the track height	Sleep om de trackhoogte te wijzigen
+	Head	Begin
+	Head and Tail	Begin en einde
+	Continuous	Doorlopend
+	Show Video Thumbnails	Videominiaturen tonen
+	Show Audio Waveform	Audiogolfvorm tonen
+	Timeline Display Settings	Weergave-instellingen tijdlijn
+	Snap in Timeline (S)	Magnetisch in tijdlijn (S)
+	Caption track options	Opties ondertiteltrack
+	Insert and overwrite sequences as nests or individual clips	Reeksen invoegen en overschrijven als nest of als afzonderlijke clips
+	Close Other Timeline Panels	Andere tijdlijnpanelen sluiten
+	Show Keyframes	Keyframes tonen
+	Clip Keyframes	Clipkeyframes
+	Track Keyframes	Trackkeyframes
+	Send {n} Level	Niveau send {n}
+	Delete Caption Track	Ondertiteltrack verwijderen
+	Delete Empty Caption Tracks	Lege ondertiteltracks verwijderen
+	Toggle Caption Track Lock	Vergrendeling ondertiteltrack aan/uit
+	Toggle Caption Track Output	Uitvoer ondertiteltrack aan/uit
+	Drag In point	In-punt slepen
+	Drag Out point	Uitpunt slepen
+	Move marked range	Gemarkeerd bereik verplaatsen
+	Auto Tone Map Media (HDR and log into SDR)	Media automatisch tonemappen (HDR en log naar SDR)
+	CFA4 always composites in linear light	CFA4 stelt altijd samen in lineair licht
+	Captured View:	Opgenomen weergave:
+	Channel Format:	Kanaalindeling:
+	Composite in Linear Color	Samenstellen in lineaire kleur
+	Configure…	Configureren…
+	Custom ({ratio})	Aangepast ({ratio})
+	Display Format:	Weergave-indeling:
+	Editing Mode:	Bewerkingsmodus:
+	Fields:	Velden:
+	Frame Size:	Framegrootte:
+	Maximum Bit Depth	Maximale bitdiepte
+	Maximum Render Quality	Maximale renderkwaliteit
+	Milliseconds	Milliseconden
+	Monoscopic	Monoscopisch
+	New Sequence	Nieuwe reeks
+	No Fields (Progressive Scan)	Geen velden (progressieve scan)
+	Not supported in CFA4 yet	Nog niet ondersteund in CFA4
+	Number of Channels:	Aantal kanalen:
+	Pixel Aspect Ratio:	Pixelverhouding:
+	Preview File Format:	Bestandsindeling voorvertoning:
+	Projection:	Projectie:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Samplefrequentie:
+	Scale motion effects proportionally when changing frame size	Bewegingseffecten proportioneel schalen bij het wijzigen van de framegrootte
+	Sequence Settings	Reeksinstellingen
+	Square Pixels (1.0)	Vierkante pixels (1,0)
+	Timebase:	Tijdbasis:
+	Tracks	Tracks
+	VR Properties	VR-eigenschappen
+	Video Previews	Videovoorvertoningen
+	Wide gamut color (composite in BT.2020)	Kleur met breed gamut (samenstellen in BT.2020)
+	Working Color Space:	Werkkleurruimte:
+	horizontal	horizontaal
+	no sequence is open	er is geen reeks open
+	tracks	tracks
+	vertical	verticaal
+	{rate} fps Drop-Frame Timecode	{rate} fps drop-frame-tijdcode
+	{rate} fps Non Drop-Frame Timecode	{rate} fps non-drop-frame-tijdcode
+	{rate} fps Timecode	{rate} fps tijdcode
+	{rate} frames/second	{rate} frames/seconde
+	Always Deinterlace	Altijd deïnterlacen
+	Audio Attributes	Audiokenmerken
+	Ch. {n}	Kan. {n}
+	Clip Channel Format:	Kanaalindeling clip:
+	Clip Speed / Duration	Clipsnelheid / duur
+	Clip {n}	Clip {n}
+	Contains:	Bevat:
+	Edit Subclip	Subclip bewerken
+	End:	Einde:
+	Field Options	Veldopties
+	File Name:	Bestandsnaam:
+	Flicker Removal	Flikkering verwijderen
+	Frame Hold Options	Opties voor stilstaand beeld
+	Frame Rate:	Framesnelheid:
+	Hold Filters	Filters vasthouden
+	Hold On	Vasthouden op
+	In Point	In-punt
+	Make Subclip	Subclip maken
+	Media Source Channels	Kanalen mediabron
+	Media Start:	Mediabegin:
+	Modify Clip: Audio Channels	Clip wijzigen: audiokanalen
+	Modify Clip: Timecode	Clip wijzigen: tijdcode
+	Nested Sequence Name	Naam geneste reeks
+	New Offline File	Nieuw offline bestand
+	No effects	Geen effecten
+	Number of Audio Clips:	Aantal audioclips:
+	Out Point	Uitpunt
+	Paste Attributes	Kenmerken plakken
+	Playhead	Afspeelkop
+	Processing Options	Verwerkingsopties
+	Remove Attributes	Kenmerken verwijderen
+	Restrict Trims To Subclip Boundaries	Trims beperken tot subclipgrenzen
+	Reverse Field Dominance	Velddominantie omkeren
+	Reverse Speed	Snelheid omkeren
+	Ripple Edit, Shifting Trailing Clips	Ripple-bewerking, volgende clips verschuiven
+	Scale Attribute Times	Kenmerktijden schalen
+	Sequence Time	Reekstijd
+	Set Timecode:	Tijdcode instellen:
+	Source Timecode	Brontijdcode
+	Source channels the selected audio clips play:	Bronkanalen die de geselecteerde audioclips afspelen:
+	Speed:	Snelheid:
+	Start:	Begin:
+	Subclip: {name}	Subclip: {name}
+	Tape Name:	Bandnaam:
+	Timecode:	Tijdcode:
+	Use the file's timecode	De tijdcode van het bestand gebruiken
+	Video Attributes	Videokenmerken
+	no dialog	geen dialoogvenster
+	Action Safe Area	Actieveilig gebied
+	Action and Title Safe Areas	Actie- en titelveilige gebieden
+	Action:	Actie:
+	Analyze	Analyseren
+	Any	Willekeurig
+	Apply Default Audio Transition	Standaard audio-overgang toepassen
+	Apply Default Video Transition	Standaard video-overgang toepassen
+	Apply a cut at each detected cut point	Een snede toepassen op elk gedetecteerd snijpunt
+	At Unnumbered Markers	Bij ongenummerde markeringen
+	Audio Only	Alleen audio
+	Audio Previews:	Audiovoorvertoningen:
+	Audio analysis:	Audio-analyse:
+	Audio effects	Audio-effecten
+	Audio on track {t}	Audio op track {t}
+	Automate To Sequence	Automatiseren naar reeks
+	Average Data Rate	Gemiddelde gegevenssnelheid
+	Capture	Opnemen
+	Capture Format:	Opname-indeling:
+	Captured and Generated:	Opgenomen en gegenereerd:
+	Case Sensitive	Hoofdlettergevoelig
+	Clip Names and Markers	Clipnamen en markeringen
+	Clip Overlap:	Clipoverlap:
+	Clips	Clips
+	Codec: {codec}	Codec: {codec}
+	Color Matte Color	Kleur van kleurmat
+	Colour	Kleur
+	Comments:	Opmerkingen:
+	Copy and Create Proxies	Kopiëren en proxy's maken
+	Create Proxies	Proxy's maken
+	Create Search Bin	Zoekbin maken
+	Create a bin of subclips from each detected cut point	Een bin met subclips maken van elk gedetecteerd snijpunt
+	Create a clip marker at each detected cut point	Een clipmarkering maken bij elk gedetecteerd snijpunt
+	Disabled clips	Uitgeschakelde clips
+	Edit Offline File	Offline bestand bewerken
+	Empty tracks	Lege tracks
+	Existing XMP files written by other applications are left unchanged.	Bestaande XMP-bestanden die door andere toepassingen zijn geschreven, blijven ongewijzigd.
+	Find in:	Zoeken in:
+	Find:	Zoeken:
+	Flash Cue Marker	Flash-cuemarkering
+	Frames per Still:	Frames per stilstaand beeld:
+	Gaps	Tussenruimten
+	Ignore Audio	Audio negeren
+	Ignore Options	Opties negeren
+	Ignore Video	Video negeren
+	Ingest Settings	Opname-instellingen
+	Insert Edit	Invoegbewerking
+	Log Note:	Lognotitie:
+	Match {n} of {total}	Overeenkomst {n} van {total}
+	Match:	Overeenkomst:
+	Media Name:	Medianaam:
+	Move clips to the lowest track possible	Clips naar de laagst mogelijke track verplaatsen
+	New Color Matte	Nieuwe kleurmat
+	Next to the media	Naast de media
+	Normalize Mix Track	Mixtrack normaliseren
+	Normalize Mix Track to:	Mixtrack normaliseren naar:
+	Ordering:	Volgorde:
+	Overwrite Edit	Overschrijfbewerking
+	Path: {path}	Pad: {path}
+	Placement:	Plaatsing:
+	Project Auto Save:	Automatisch opslaan project:
+	Recognize when different speakers are talking	Herkennen wanneer verschillende sprekers praten
+	Renderer:	Renderer:
+	Same as Project	Zelfde als project
+	Saved template {path}	Sjabloon {path} opgeslagen
+	Scene Edit Detection	Scènewisseldetectie
+	Scene Edit Detection: analysing in the background (see Progress)	Scènewisseldetectie: analyse op de achtergrond (zie Voortgang)
+	Scene:	Scène:
+	Scratch Disks	Werkschijven
+	Search:	Zoeken:
+	Selection Order	Selectievolgorde
+	Sensitivity:	Gevoeligheid:
+	Sequentially	Opeenvolgend
+	Shot/Take:	Opname/take:
+	Simplify Sequence	Reeks vereenvoudigen
+	Sort Order	Sorteervolgorde
+	Source Settings	Broninstellingen
+	Template Name:	Sjabloonnaam:
+	Text (graphics and captions)	Tekst (grafische elementen en ondertitels)
+	Title Safe Area	Titelveilig gebied
+	To {name}	Naar {name}
+	Total Duration	Totale duur
+	Transcode	Transcoderen
+	Transcribe Sequence	Reeks transcriberen
+	Transitions	Overgangen
+	Update Metadata	Metagegevens bijwerken
+	Video Only	Alleen video
+	Video Previews:	Videovoorvertoningen:
+	Video Rendering and Playback	Video renderen en afspelen
+	Video and Audio	Video en audio
+	Video effects	Video-effecten
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	De metagegevens van de geselecteerde clip(s) ({n}) naar XMP-bestanden naast hun media schrijven?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} kanaal/kanalen
+	Constant quantiser	Constante quantiser
+	Container	Container
+	 (unavailable)	 (niet beschikbaar)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Containers
+	Decoders	Decoders
+	Dynamic Audio Waveforms	Dynamische audiogolfvormen
+	Export formats	Exportformaten
+	Reveal Log Files…	Logbestanden tonen…
+	Session log: {path}	Sessielog: {path}
+	System Compatibility Report	Systeemcompatibiliteitsrapport
+	System Compatibility Report…	Systeemcompatibiliteitsrapport…
+	not available now	nu niet beschikbaar
+	{name} Selection.fcproj	{name} selectie.fcproj
+	Auto tone map media (HDR and log into SDR)	Media automatisch tonemappen (HDR en log naar SDR)
+	Sequence Color Management	Kleurbeheer reeks
+	Working Color Space	Werkkleurruimte
+	Align Timecode	Tijdcode uitlijnen
+	All media is online.	Alle media zijn online.
+	Calculate	Berekenen
+	Clip ID (fingerprint)	Clip-ID (vingerafdruk)
+	Clip Name	Clipnaam
+	Collect Files and Copy to New Location	Bestanden verzamelen en naar nieuwe locatie kopiëren
+	Consolidate and Transcode	Consolideren en transcoderen
+	Creating {n} proxy file(s)…	{n} proxybestand(en) maken…
+	Destination Path	Doelpad
+	Disk space: original {original} · resulting {result} ({n} files)	Schijfruimte: origineel {original} · resultaat {result} ({n} bestanden)
+	Disk space: —	Schijfruimte: —
+	Exact name matches only	Alleen exact overeenkomende namen
+	Exclude Unused Clips	Ongebruikte clips uitsluiten
+	Format and size	Indeling en grootte
+	Frame Size / Rate	Framegrootte / -snelheid
+	Include Handles:	Handles meenemen:
+	Include Preview Files	Voorvertoningsbestanden meenemen
+	Include Proxies	Proxy's meenemen
+	Link Media	Media koppelen
+	Linked {n} clip(s)	{n} clip(s) gekoppeld
+	Locate…	Zoeken…
+	Make Offline	Offline maken
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	{n} geselecteerde clip(s) offline maken. De clips tonen het offline-scherm totdat u ze opnieuw koppelt.
+	Match file properties:	Bestandseigenschappen vergelijken:
+	Media files are deleted	Mediabestanden worden verwijderd
+	Media files remain on disk	Mediabestanden blijven op schijf
+	Next to the original media, in a Proxies folder	Naast de originele media, in een map Proxies
+	No candidates yet — Search a folder or Locate the file.	Nog geen kandidaten — doorzoek een map of zoek het bestand.
+	Nothing found with that name.	Niets gevonden met die naam.
+	Offline	Offline
+	Offline All	Alles offline
+	Project Manager	Projectbeheer
+	Project Manager: writing {path}	Projectbeheer: {path} wordt geschreven
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	Proxy's worden op de achtergrond gemaakt en gekoppeld wanneer ze klaar zijn. Exporteren gebruikt altijd media met volledige resolutie.
+	Relink others automatically	Andere automatisch opnieuw koppelen
+	Resulting Project	Resulterend project
+	Search in:	Zoeken in:
+	Sequences	Reeksen
+	select a clip in the Project panel	selecteer een clip in het projectpaneel
+	{name} (copy)	{name} (kopie)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} clip(s) kunnen hun media niet vinden. Zoek ze, doorzoek een map of laat ze offline.
+	{n} clip(s) selected.	{n} clip(s) geselecteerd.
+	✔ matches	✔ komt overeen
+	✔ same file	✔ zelfde bestand
+	✖ different file	✖ ander bestand
+	AAF Export Settings	AAF-exportinstellingen
+	Audio File Format:	Audiobestandsindeling:
+	Bits per Sample:	Bits per sample:
+	Breakout to mono	Splitsen naar mono
+	Depth:	Diepte:
+	Encapsulate	Inkapselen
+	Exported frame to {path}	Frame geëxporteerd naar {path}
+	Frame time: {timecode}	Frametijd: {timecode}
+	Handle Frames:	Handle-frames:
+	Import into project	Importeren in project
+	Keep existing file	Bestaand bestand behouden
+	Link to Media	Koppelen aan media
+	Mixdown video	Video samenvoegen
+	OMF Export Settings	OMF-exportinstellingen
+	OMF Title:	OMF-titel:
+	Render audio clip effects	Audioclipeffecten renderen
+	Separate Audio	Aparte audio
+	Separate Files	Aparte bestanden
+	This file already exists: {path}	Dit bestand bestaat al: {path}
+	Trim audio files	Audiobestanden trimmen
+	{bits} Bit	{bits} bit
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Markeringsrapport (CSV)
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Digitale bioscoop
+	DCP resolution	DCP-resolutie
+	DCP container	DCP-container
+	Content kind	Soort inhoud
+	Output folder	Uitvoermap
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1,85:1)
+	Scope (2.39:1)	Scope (2,39:1)
+	Full container (1.90:1)	Volledige container (1,90:1)
+	Feature	Speelfilm
+	Trailer	Trailer
+	Teaser	Teaser
+	Short	Korte film
+	Advertisement	Reclame
+	Test	Test
+	Transitional	Overgang
+	Rating	Classificatie
+	Public service announcement	Publieke mededeling
+	Off (5.1 only)	Uit (alleen 5.1)
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB-bed uit de mix (7.1 DS, 9.1OH uit 7.1.2)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB uit een bestand (IAB MXF, .iab of Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab of Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	None: FSK sync only (SMPTE ST 429-19)	Geen: alleen FSK-synchronisatie (SMPTE ST 429-19)
+	5.1: the IAB rendered (not ST 429-19)	5.1: de gerenderde IAB (niet ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: de tijdlijnmix (niet ST 429-19)
+	Main sound channels 1-6	Hoofdgeluidskanalen 1-6
+	Immersive audio	Immersieve audio
+	IAB source	IAB-bron
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Een 7.1.2-mix wordt een 9.1OH-bed, een 7.1-mix een 7.1 DS-bed en elke andere mix een 7.1 DS-bed uit de 5.1-versie (IAB Profile 1); kanaal 14 van het hoofdgeluid draagt het FSK-synchronisatiesignaal.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Kies een IAB-trackbestand (IMF of DCP), een onbewerkte IAB-stream of Dolby Atmos TrueHD: een .thd-stream of een MKV-, MP4- of M2TS-bestand met een Atmos-track.
+	Reading the IAB source…	De IAB-bron wordt gelezen…
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} frames, {fps} fps, {rate} Hz; tot {beds} bedkanalen en {objects} objecten
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; tot {beds} bedkanalen en {objects} objecten, omgezet naar IAB-objecten
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Sommige frames worden opnieuw gecodeerd voor de DCP (DLC, 24 bit).
+	Beyond IAB Profile 1: {notes}	Buiten IAB Profile 1: {notes}
+	Not a usable IAB source: {error}	Geen bruikbare IAB-bron: {error}
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-map: JPEG 2000 1998×1080 (1,85:1), 5.1 24-bit 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-map: JPEG 2000 2048×858 (2,39:1), 5.1 24-bit 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-map: JPEG 2000 3996×2160 (1,85:1), 5.1 24-bit 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-map: JPEG 2000 4096×1716 (2,39:1), 5.1 24-bit 48 kHz PCM
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	B pictures	B-beelden
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV-transportstream (.m2ts, AAC-audio)
+	Chroma	Chroma
+	Elementary Stream (.m2v, no audio)	Elementaire stream (.m2v, geen audio)
+	Key Frame Distance	Keyframe-afstand
+	None (I and P only)	Geen (alleen I en P)
+	Off (target bitrate)	Uit (doelbitsnelheid)
+	Program Stream (.mpg, LPCM audio)	Programmastream (.mpg, LPCM-audio)
+	Transport Stream (.ts, AAC audio)	Transportstream (.ts, AAC-audio)
+	Estimated file size: {size}	Geschatte bestandsgrootte: {size}
+	File Name & Location	Bestandsnaam en locatie
+	Quick Export	Snel exporteren
+	Quick Export: open a sequence first	Snel exporteren: open eerst een reeks
+	Quick Export: {path}	Snel exporteren: {path}
+	Export presets	Exportvoorinstellingen
+	Favorites only	Alleen favorieten
+	More presets…	Meer voorinstellingen…
+	Save current settings as:	Huidige instellingen opslaan als:
+	Search presets	Voorinstellingen zoeken
+	Show in the Preset menu	Tonen in het menu Voorinstelling
+	User	Gebruiker
+	Add Beat Markers	Beatmarkeringen toevoegen
+	Clear Beat Markers	Beatmarkeringen wissen
+	Clear Check Markers	Controlemarkeringen wissen
+	Auto Reframe Sequence…	Reeks automatisch herkadreren…
+	Batch Variants from Spreadsheet…	Batchvarianten uit spreadsheet…
+	Check Before Export…	Controleren voor export…
+	Social Deliverables…	Socialemedia-leveringen…
+	Social Safe Zones	Veilige zones sociale media
+	Text Animator	Tekstanimator
+	Counter	Teller
+	Typewriter	Typemachine
+	Word by Word	Woord voor woord
+	Animator	Animator
+	Animator Duration	Animatorduur
+	Animator Delay	Animatorvertraging
+	Spreadsheets	Spreadsheets
+	{n} beat markers added ({bpm} BPM)	{n} beatmarkeringen toegevoegd ({bpm} BPM)
+	Check Before Export: no problems found	Controleren voor export: geen problemen gevonden
+	Check Before Export: {n} problems marked on the timeline (red markers)	Controleren voor export: {n} problemen gemarkeerd op de tijdlijn (rode markeringen)
+	{n} exports queued (the Export window shows the queue)	{n} exports in de wachtrij (het exportvenster toont de wachtrij)
+	{n} variant sequences made, {q} exports queued	{n} variantreeksen gemaakt, {q} exports in de wachtrij
+	no column for {names}	geen kolom voor {names}
+	Film Scan 1	Film Scan 1
+	Film Scan 2	Film Scan 2
+	Film Scan 3	Film Scan 3
+	Include Alpha Channel	Alfakanaal meenemen
+	ZIP (1 scan line)	ZIP (1 scanlijn)
+	ZIP (16 scan lines)	ZIP (16 scanlijnen)
+	Bottom Center	Midden onder
+	Burn Captions Into Video	Ondertitels in video inbranden
+	Center Left	Midden links
+	Center Right	Midden rechts
+	Create Sidecar File	Sidecarbestand maken
+	Image Overlay	Afbeeldingsoverlay
+	Loudness Normalization	Luidheidsnormalisatie
+	Luma Min / Max	Luma min. / max.
+	Name Overlay	Naamoverlay
+	PNG or JPEG file	PNG- of JPEG-bestand
+	Prefix	Voorvoegsel
+	Size / Opacity	Grootte / dekking
+	SubRip Subtitle (.srt)	SubRip-ondertitel (.srt)
+	Target Loudness	Doelluidheid
+	Timecode Overlay	Tijdcode-overlay
+	Top Center	Midden boven
+	True Peak Limit	True-peaklimiet
+	Video Limiter	Videobegrenzer
+	WebVTT (.vtt)	WebVTT (.vtt)
+	Creator	Maker
+	Multiplexer	Multiplexer
+	Title	Titel
+	Audio only	Alleen audio
+	Scale To Fill	Schalen om te vullen
+	Scale To Fit	Schalen om te passen
+	Stretch To Fill	Uitrekken om te vullen
+	Quick Export cancelled	Snel exporteren geannuleerd
+	0 fastest, 8 smallest	0 snelst, 8 kleinst
+	32 bit float	32 bit zwevende komma
+	Anamorphic 2:1 (2.0)	Anamorf 2:1 (2,0)
+	Aspect	Beeldverhouding
+	Composite on the GPU when available	Samenstellen op de GPU indien beschikbaar
+	Compression Level	Compressieniveau
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0,9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1,0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1,5)
+	Field Order	Veldvolgorde
+	GPU Rendering	GPU-rendering
+	HD Anamorphic 1080 (1.333)	HD anamorf 1080 (1,333)
+	Lower First	Onderste eerst
+	Match Source	Bron volgen
+	Maximum Bitrate	Maximale bitsnelheid
+	Quality (CRF)	Kwaliteit (CRF)
+	Render at Maximum Depth	Renderen op maximale diepte
+	Upper First	Bovenste eerst
+	Use Maximum Render Quality	Maximale renderkwaliteit gebruiken
+	Browse files…	Bestanden bladeren…
+	Movies, audio and stills from disk	Films, audio en stilstaande beelden van schijf
+	Demo footage	Demobeelden
+	Six procedural 1080p clips with sound	Zes procedurele 1080p-clips met geluid
+	Demo project	Demoproject
+	A cut sequence with transitions, effects and music	Een gemonteerde reeks met overgangen, effecten en muziek
+	Bars and Tone	Balken en toon
+	SMPTE HD bars with 1 kHz reference tone	SMPTE HD-balken met referentietoon van 1 kHz
+	CFA4 on GitHub	CFA4 op GitHub
+	Report a CFA4 issue…	Een CFA4-probleem melden…
+	CFA4 project links	CFA4-projectlinks
+	Add media to your project. Drop files anywhere in the window, or choose a source below.	Voeg media toe aan uw project. Zet bestanden ergens in het venster neer, of kies hieronder een bron.
+	Shuttle Slow Left	Langzaam shuttelen links
+	Shuttle Slow Right	Langzaam shuttelen rechts
+	Play Around	Rondom afspelen
+	Out: {name}	Uit: {name}
+	In: {name}	In: {name}
+	(gap)	(tussenruimte)
+	Outgoing clip (drag to trim the Out point)	Uitgaande clip (sleep om het uitpunt te trimmen)
+	Incoming clip (drag to trim the In point)	Inkomende clip (sleep om het in-punt te trimmen)
+	Drag to roll the edit	Sleep om het bewerkpunt te rollen
+	Play Around Edit (Space loops, Shift+K once)	Rond bewerkpunt afspelen (spatie herhaalt, Shift+K eenmaal)
+	Trim Backward Many	Veel terug trimmen
+	Trim Backward	Terug trimmen
+	Apply Default Transitions to Selection (Shift+D)	Standaardovergangen toepassen op selectie (Shift+D)
+	Trim Forward	Vooruit trimmen
+	Trim Forward Many	Veel vooruit trimmen
+	Exit Trim Mode	Trimmodus verlaten
+	Up	Omhoog
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	Audio-uitvoer mislukt: afspelen zonder geluid (controleer Instellingen ▸ Audiohardware)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	Audio-uitvoer reageert niet: afspelen zonder geluid (controleer Instellingen ▸ Audiohardware)
+	Settings not taken	Instellingen niet overgenomen
+	Encoder	Encoder
+	Software, or hardware where available	Software, of hardware indien beschikbaar
+	Main (8-bit; Main 10 for HDR sequences)	Main (8-bit; Main 10 voor HDR-reeksen)
+	Main 10 (10-bit, HDR)	Main 10 (10-bit, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8-bit; 10-bit voor HDR-reeksen)
+	Main (10-bit, HDR)	Main (10-bit, HDR)
+	FLAC stores whole-number samples only	FLAC slaat alleen samples met gehele getallen op
+	MXF export writes integer PCM only	MXF-export schrijft alleen integer-PCM
+	Not supported by CFA4's encoders yet	Nog niet ondersteund door de encoders van CFA4
+	Overwrite with Current View	Overschrijven met huidige weergave
+	Saves the view, columns, sort, thumbnail and font size.	Slaat de weergave, kolommen, sortering, miniatuur- en lettergrootte op.
+	Search fields	Zoekvelden
+	Show:	Tonen:
+	{n}. (empty)	{n}. (leeg)
+	No video	Geen video
+	No audio	Geen audio
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 voor HDR
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 Profile
+	MPEG-2 Main Profile 4:2:0	MPEG-2 Main Profile 4:2:0
+	no B pictures	geen B-beelden
+	1 B picture between anchors	1 B-beeld tussen ankers
+	AV1 Main (10-bit for HDR)	AV1 Main (10-bit voor HDR)
+	10-bit RGB	10-bit RGB
+	12-bit X'Y'Z'	12-bit X'Y'Z'
+	16-bit half float	16-bit halve precisie
+	linear	lineair
+	uncompressed	ongecomprimeerd
+	Animated GIF	Geanimeerde GIF
+	Waveform Audio	Waveform Audio
+	AAC Audio	AAC-audio
+	Opus Audio	Opus-audio
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	fragmented MP4 segments	gefragmenteerde MP4-segmenten
+	Program Stream	Programmastream
+	Transport Stream	Transportstream
+	BDAV Transport Stream	BDAV-transportstream
+	Elementary Stream	Elementaire stream
+	Image sequence	Afbeeldingsreeks
+	{w}x{h} ({par})	{w}x{h} ({par})
+	{fps} fps	{fps} fps
+	{profile} auto level	{profile} automatisch niveau
+	{n} pass	{n} doorgang(en)
+	CRF (constant quality) {crf}	CRF (constante kwaliteit) {crf}
+	{v} Mbps	{v} Mbps
+	Target {v} Mbps	Doel {v} Mbps
+	Max {v} Mbps	Max. {v} Mbps
+	average {v} Mbps	gemiddeld {v} Mbps
+	CBR {v} Mbps	CBR {v} Mbps
+	VBR Target {v} Mbps	VBR doel {v} Mbps
+	keyframe every {n} frames	keyframe elke {n} frames
+	constant quantiser {q}	constante quantiser {q}
+	{n} B pictures between anchors	{n} B-beelden tussen ankers
+	quantizer {q}	quantizer {q}
+	quality {q}	kwaliteit {q}
+	{word} compression	{word}-compressie
+	{sampling} {bits}-bit	{sampling} {bits}-bit
+	FLAC (lossless) {bits}-bit	FLAC (verliesvrij) {bits}-bit
+	level {n}	niveau {n}
+	Uncompressed {bits}-bit PCM	Ongecomprimeerde {bits}-bit PCM
+	Uncompressed {bits}-bit float PCM	Ongecomprimeerde {bits}-bit float-PCM
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{seconds} s	{seconds} s
+	{n} ch {rate} Hz	{n} kan. {rate} Hz
+	All Events	Alle gebeurtenissen
+	Warnings and Errors	Waarschuwingen en fouten
+	Errors Only	Alleen fouten
+	No events.	Geen gebeurtenissen.
+	just now	zojuist
+	{n} s ago	{n} s geleden
+	{n} min ago	{n} min geleden
+	{n} h ago	{n} u geleden
+	Caption Export Settings	Exportinstellingen ondertitels
+	Export Captions	Ondertitels exporteren
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} bestaat al, dus er is niets geëxporteerd. Kies het in het opslagvenster om het te vervangen.
+	Delete Redoable Actions	Opnieuw uit te voeren acties verwijderen
+	Clear History	Geschiedenis wissen
+	Delete the dimmed actions after the current state? They cannot be redone.	De gedimde acties na de huidige status verwijderen? Ze kunnen niet opnieuw worden uitgevoerd.
+	Work Area Bar	Werkgebiedbalk
+	Start: {tc}	Begin: {tc}
+	End: {tc}	Einde: {tc}
+	Duration: {tc}	Duur: {tc}
+	Show/Hide Tracks…	Tracks tonen/verbergen…
+	Move panel	Paneel verplaatsen
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Klik om te selecteren, of klik in een lege ruimte en sleep om een selectiekader te trekken. Gebruik Shift, Alt en Ctrl voor andere opties.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Klik om alle clips rechts in alle tracks te selecteren. Shift-klik voor één track.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Klik om alle clips links in alle tracks te selecteren. Shift-klik voor één track.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Sleep een bewerkpunt om te ripple-trimmen; latere clips schuiven mee zodat er geen tussenruimte ontstaat.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Sleep een bewerkpunt om het te rollen: het uitpunt van de ene clip en het in-punt van de volgende bewegen samen.
+	Drag an edge to change the clip's speed so it fills the new duration.	Sleep een rand om de snelheid van de clip te wijzigen zodat deze de nieuwe duur vult.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Sleep de rand van een muziekclip om deze op muzikaal passende beats te remixen naar de nieuwe duur.
+	Click to split a clip. Shift-click to split all tracks.	Klik om een clip te splitsen. Shift-klik om alle tracks te splitsen.
+	Drag a clip to slip its source in/out without moving it.	Sleep een clip om het bron-in-/uitpunt te verschuiven zonder de clip te verplaatsen.
+	Drag a clip to slide it between its neighbours.	Sleep een clip om deze tussen de buren te verschuiven.
+	Drag to scroll the timeline.	Sleep om door de tijdlijn te scrollen.
+	Click to zoom in; Alt-click to zoom out.	Klik om in te zoomen; Alt-klik om uit te zoomen.
+	Exporting	Exporteren
+	Grab bag	Allegaartje
+	No contributor data was built into this copy.	Er zijn geen bijdragersgegevens in deze kopie ingebouwd.
+	No model credits were built into this copy.	Er zijn geen modelvermeldingen in deze kopie ingebouwd.
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Lettertypen: Inter, Noto Serif en JetBrains Mono (SIL OFL 1.1).
+	CFA4 was closed while “{name}” had unsaved changes.	CFA4 is gesloten terwijl “{name}” niet-opgeslagen wijzigingen had.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	CFA4 is onverwacht afgesloten terwijl “{name}” niet-opgeslagen wijzigingen had.
+	Recover unsaved changes from {when}?	Niet-opgeslagen wijzigingen van {when} herstellen?
+	The project had not been saved yet.	Het project was nog niet opgeslagen.
+	{n} sessions have unsaved changes:	{n} sessies hebben niet-opgeslagen wijzigingen:
+	Are you sure you want to discard your changes to '{file}'?	Weet u zeker dat u uw wijzigingen in '{file}' wilt verwerpen?
+	the project has not been saved yet	het project is nog niet opgeslagen
+	Export As Motion Graphics Template	Exporteren als bewegende-graphics-sjabloon
+	Category:	Categorie:
+	Editable properties:	Bewerkbare eigenschappen:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	Opgeslagen als CFA4-graphicssjabloon (.fcgt) in uw sjablonenmap.
+	My Templates	Mijn sjablonen
+	{n} Font	{n} lettertype
+	{n} Size	{n} grootte
+	{n} Color	{n} kleur
+	{n} Position	{n} positie
+	Show {n}	{n} tonen
+	Exported graphics template to {path}	Graphicssjabloon geëxporteerd naar {path}
+	Replace Fonts in Projects	Lettertypen in projecten vervangen
+	Fonts used in the project:	Lettertypen gebruikt in het project:
+	{f} (missing)	{f} (ontbreekt)
+	Replace:	Vervangen:
+	with:	door:
+	Replaced {n} font uses	{n} lettertypegebruiken vervangen
+	Track Color	Trackkleur
+	Unrendered: should play back in real time	Niet gerenderd: zou in realtime moeten afspelen
+	Unrendered: render to play back in real time	Niet gerenderd: renderen om in realtime af te spelen
+	Rendered preview	Gerenderde voorvertoning
+	Transparency Grid	Transparantieraster
+	Show Duplicate Frame Markers	Markeringen voor dubbele frames tonen
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	In-/uitpunt van reeks is slechts 1 frame. Kies Volledige reeks om de hele reeks te exporteren.
+	more tabs	meer tabbladen
+	Set Work Area Bar In Point	In-punt werkgebiedbalk instellen
+	Set Work Area Bar Out Point	Uitpunt werkgebiedbalk instellen
+	Delete Clips	Clips verwijderen
+	Destinations	Bestemmingen
+	Analyzing the clip…	De clip wordt geanalyseerd…
+	At GOP boundaries (no re-encoding)	Op GOP-grenzen (geen hercodering)
+	Bit-exact copy	Bitexacte kopie
+	Choose the output file.	Kies het uitvoerbestand.
+	Compatible copy	Compatibele kopie
+	Copy:	Kopiëren:
+	Cut:	Knippen:
+	Frame accurate (re-encode the boundaries)	Framenauwkeurig (grenzen hercoderen)
+	Open a video clip in the Source monitor first.	Open eerst een videoclip in de bronmonitor.
+	Smart Cut Source	Bron slim knippen
+	Smart Cut Source…	Bron slim knippen…
+	Smart Cut is not available for this clip: {why}	Slim knippen is niet beschikbaar voor deze clip: {why}
+	Smart Cut written and verified: {path} ({frames} frames)	Slimme snede geschreven en gecontroleerd: {path} ({frames} frames)
+	The cut cannot run.	De snede kan niet worden uitgevoerd.
+	The engine sent no analysis.	De engine heeft geen analyse gestuurd.
+	Writing and verifying the cut…	De snede wordt geschreven en gecontroleerd…
+	{codec} in {container}: {gops} GOPs, {points} clean cut points	{codec} in {container}: {gops} GOP's, {points} schone snijpunten
+	{copied} frames copied, {reencoded} frames re-encoded	{copied} frames gekopieerd, {reencoded} frames gehercodeerd
+	{frames} frames at the boundaries are re-encoded. Continue?	{frames} frames op de grenzen worden gehercodeerd. Doorgaan?
+	Show GOP Boundaries	GOP-grenzen tonen
+	Export mode	Exportmodus
+	Full Render	Volledig renderen
+	Planning…	Plannen…
+	Recommended: Smart Render (asks before re-encoding)	Aanbevolen: slim renderen (vraagt voor hercoderen)
+	Recommended: Stream Copy (nothing is re-encoded)	Aanbevolen: streamkopie (niets wordt gehercodeerd)
+	Rendered because of: {causes}	Gerenderd vanwege: {causes}
+	Smart Export	Slim exporteren
+	Smart Export written and verified: {path}	Slimme export geschreven en gecontroleerd: {path}
+	Smart Render	Slim renderen
+	Stream Copy – Bit-exact	Streamkopie – bitexact
+	Stream Copy – Compatible	Streamkopie – compatibel
+	Stream copy is not possible: {frames} frames need re-encoding.	Streamkopie is niet mogelijk: {frames} frames moeten worden gehercodeerd.
+	The export cannot run.	De export kan niet worden uitgevoerd.
+	Wait for the export plan.	Wacht op het exportplan.
+	Writing and verifying the export…	De export wordt geschreven en gecontroleerd…
+	colour conversion	kleurconversie
+	compositing	samenstellen
+	copied	gekopieerd
+	effects	effecten
+	frame rate	framesnelheid
+	proxies or nested sequences	proxy's of geneste reeksen
+	re-encoded at a cut	gehercodeerd bij een snede
+	rendered	gerenderd
+	sources that cannot be copied	bronnen die niet kunnen worden gekopieerd
+	speed changes	snelheidswijzigingen
+	titles or overlays	titels of overlays
+	transforms	transformaties
+	transitions	overgangen
+	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} frames gekopieerd, {reencoded} gehercodeerd bij sneden, {rendered} gerenderd
+	{frames} frames are re-encoded or rendered. Continue?	{frames} frames worden gehercodeerd of gerenderd. Doorgaan?
+	CFA4 Help…	CFA4 Help…
+	Learning	Leren
+	Refresh Changed Media	Gewijzigde media vernieuwen
+	Review	Beoordelen
+	{name} - Edited	{name} - bewerkt
+	Audio Gain	Audioversterking
+	Set Gain to:	Versterking instellen op:
+	Adjust Gain by:	Versterking aanpassen met:
+	Normalize Max Peak to:	Maximale piek normaliseren naar:
+	Normalize All Peaks to:	Alle pieken normaliseren naar:
+	Peak Amplitude: {peak}	Piekamplitude: {peak}
+	Add Tracks	Tracks toevoegen
+	Placement	Plaatsing
+	Track type	Tracktype
+	Add video tracks	Videotracks toevoegen
+	Add audio tracks	Audiotracks toevoegen
+	Add audio submix tracks	Audio-submixtracks toevoegen
+	After {name}	Na {name}
+	Before First Track	Vóór eerste track
+	Delete Tracks	Tracks verwijderen
+	Video Tracks	Videotracks
+	Audio Tracks	Audiotracks
+	Delete Video Tracks	Videotracks verwijderen
+	Delete Audio Tracks	Audiotracks verwijderen
+	All Empty Tracks	Alle lege tracks
+	Caption Tracks	Ondertiteltracks
+	Delete Caption Tracks	Ondertiteltracks verwijderen
+	Report an issue	Een probleem melden
+	Rendering:	Renderen:
+	UI:	UI:
+	{fps} fps · {n} frames queued	{fps} fps · {n} frames in wachtrij
+	Maximize Frame	Frame maximaliseren
+	Restore Frame	Frame herstellen
+	Reveal Sequence in Project	Reeks tonen in project
+	Video Thumbnails	Videominiaturen
+	Audio Waveforms	Audiogolfvormen
+	Untitled Workspace	Naamloze werkruimte
+	Show durations	Duur tonen
+	Project Metadata	Projectmetagegevens
+	Add Property…	Eigenschap toevoegen…
+	Column order	Kolomvolgorde
+	Graphics text search arrives with M10.1–M10.2	Zoeken in grafische tekst komt met M10.1–M10.2
+	(no clips)	(geen clips)
+	Export Frame (Shift+E)	Frame exporteren (Shift+E)
+	Export Frame: use Export mode (M6)	Frame exporteren: gebruik de exportmodus (M6)
+	Save changes to “{project_name}” before closing?	Wijzigingen in “{project_name}” opslaan voor het sluiten?
+	A file dialog is already open	Er is al een bestandsdialoogvenster open
+	Timeline: (no sequences)	Tijdlijn: (geen reeksen)
+	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Klik in de programmamonitor om maskerpunten te plaatsen (sleep voor curven); klik op het eerste punt of druk op Enter om te sluiten
+	Comparison	Vergelijking
+	Video and Waveform	Video en golfvorm
+	Remove Media Cache Files	Mediacachebestanden verwijderen
+	Eyedropper: no picture to sample	Pipet: geen beeld om te bemonsteren
+	Select a clip to grade	Selecteer een clip om te graden
+	   Opacity	   Dekking
+	   Size	   Grootte
+	   Corner Radius	   Hoekradius
+	   Angle	   Hoek
+	   Distance	   Afstand
+	   Blur	   Vervaging
+	   Template: {name}	   Sjabloon: {name}
+	CFA4 Graphics Template	CFA4-graphicssjabloon
+	  (none)	  (geen)
+	Select items to clear	Selecteer items om te wissen
+	Media missing	Media ontbreken
+	Unreadable	Onleesbaar
+	✓ Enable	✓ Inschakelen
+	(RGB) Gamma	(RGB) Gamma
+	(RGB) Input Black Level	(RGB) Invoerzwartniveau
+	(RGB) Input White Level	(RGB) Invoerwitniveau
+	(RGB) Output Black Level	(RGB) Uitvoerzwartniveau
+	(RGB) Output White Level	(RGB) Uitvoerwitniveau
+	10 Bit Black Point	10-bit zwartpunt
+	10 Bit White Point	10-bit witpunt
+	105mm Prime	105mm prime
+	29.97 fps Drop-Frame	29,97 fps drop-frame
+	29.97 fps Non Drop-Frame	29,97 fps non-drop-frame
+	35mm Prime	35mm prime
+	3D Roll	3D-rol
+	3D Rotate	3D-rotatie
+	3D Spin	3D-draai
+	3D Spinback	3D-terugdraai
+	4-Color Gradient	Verloop met 4 kleuren
+	5.1 Media	5.1-media
+	5.1 Mixdown Type	Type 5.1-mixdown
+	50-300mm Zoom	50-300mm zoom
+	59.94 fps Drop-Frame	59,94 fps drop-frame
+	59.94 fps Non Drop-Frame	59,94 fps non-drop-frame
+	ASC CDL	ASC CDL
+	Action-Safe Margin	Actieveilige marge
+	1 file	1 bestand
+	{n} files	{n} bestanden
+	Additional Scale	Extra schaal
+	Additive Dissolve	Additieve overvloeier
+	Additive Dissolve (Legacy)	Additieve overvloeier (verouderd)
+	Aggressive	Agressief
+	Alpha Adjust	Alfa aanpassen
+	Alpha Blurriness	Alfavervaging
+	Alpha Channel	Alfakanaal
+	Alpha Glow	Alfagloed
+	Ambience Intensity	Intensiteit omgevingslicht
+	Ambience Light Color	Kleur omgevingslicht
+	Amount of Noise	Hoeveelheid ruis
+	Amount to Decolor	Hoeveelheid ontkleuring
+	Amount to Tint	Hoeveelheid tint
+	Amplifier	Versterker
+	Amplify	Versterken
+	Amplitude	Amplitude
+	Analog	Analoog
+	Analog Delay	Analoge vertraging
+	Anamorphic	Anamorf
+	Anchor	Anker
+	Anti-aliasing Quality	Anti-aliasingkwaliteit
+	Antialiasing for Best Quality	Anti-aliasing voor beste kwaliteit
+	Asymmetry	Asymmetrie
+	Audio Duration	Audioduur
+	Audio In Point	Audio-in-punt
+	Audio Out Point	Audio-uitpunt
+	Audio Usage	Audiogebruik
+	Auto Align	Automatisch uitlijnen
+	Auto Reframe	Automatisch herkadreren
+	Automatic Click Remover	Automatische klikverwijderaar
+	Background Corner Radius	Hoekradius achtergrond
+	Background Opacity	Dekking achtergrond
+	Background Size	Grootte achtergrond
+	Band 1	Band 1
+	Band 2	Band 2
+	Band 3	Band 3
+	Band 4	Band 4
+	Band 5	Band 5
+	Band Pass	Banddoorlaat
+	Band Slide	Bandverschuiving
+	Band Stop	Bandstop
+	Bandpass	Banddoorlaat
+	Barn Doors	Flappen
+	Basic	Basis
+	Basic 3D	Basis-3D
+	Bass	Bas
+	Behind	Achter
+	Bessel	Bessel
+	Bevel Alpha	Alfa afschuinen
+	Binauralizer - Ambisonics	Binauralizer - Ambisonics
+	Black Input Level	Zwartinvoerniveau
+	Black and white	Zwart-wit
+	Black and white with crushed blacks and strong contrast	Zwart-wit met dichtgelopen zwarten en sterk contrast
+	Bleach-bypass style: desaturated with hard contrast	Bleach-bypass-stijl: onverzadigd met hard contrast
+	Blend	Mengen
+	Blend With Original	Mengen met origineel
+	Blending Mode	Overvloeimodus
+	Block Dissolve	Blokovervloeier
+	Block Height	Blokhoogte
+	Block Motion	Blokbeweging
+	Block Size	Blokgrootte
+	Block Width	Blokbreedte
+	Blue Blurriness	Blauwvervaging
+	Blue Curve	Blauwcurve
+	Blue Offset	Blauwverschuiving
+	Blue Power	Blauwsterkte
+	Blue Slope	Blauwhelling
+	Blue-Blue	Blauw-blauw
+	Blue-Const	Blauw-constant
+	Blue-Green	Blauw-groen
+	Blue-Red	Blauw-rood
+	Blur Amount	Mate van vervaging
+	Blur Dimensions	Vervagingsrichting
+	Blur Dissolve	Vervagende overvloeier
+	Blur Layer	Vervagingslaag
+	Blur Length	Vervagingslengte
+	Blurriness	Vervaging
+	Bokeh Blur	Bokeh-vervaging
+	Boost	Versterking
+	Border Color	Randkleur
+	Border Width	Randbreedte
+	Borders	Randen
+	Bounce	Stuiteren
+	Branching	Vertakking
+	Brightness & Contrast	Helderheid en contrast
+	British Stack	Britse stapel
+	Brush Hardness	Penseelhardheid
+	Brush Opacity	Penseeldekking
+	Brush Position	Penseelpositie
+	Brush Spacing (secs)	Penseelafstand (s)
+	Bubbles	Bellen
+	Bulge Smoother	Uitstulping gladder
+	Bump Height	Bulthoogte
+	Burn Alpha	Alfa doordrukken
+	Burn Chroma	Chroma doordrukken
+	Burn Color	Kleur doordrukken
+	Butterworth	Butterworth
+	Camera Blur	Cameravervaging
+	Camera Shake	Camerabeweging
+	Capitalisation	Hoofdlettergebruik
+	Cathedral	Kathedraal
+	Cell Pattern	Celpatroon
+	Center Channel Pan	Pan middenkanaal
+	Center Gradient	Verloop centreren
+	Center Input	Middeninvoer
+	Center Out	Vanuit het midden
+	Center Point (Latitude)	Middelpunt (breedtegraad)
+	Center Point (Longitude)	Middelpunt (lengtegraad)
+	Center Split	Splitsing in het midden
+	Center of Sphere	Middelpunt van bol
+	Cents	Cent
+	Change to Color	Wijzigen in kleur
+	Channel Blur	Kanaalvervaging
+	Channel Mix	Kanaalmix
+	Chaos	Chaos
+	Chebyshev	Chebyshev
+	Checker Wipe	Schaakbordveeg
+	Checkerboard	Schaakbord
+	Choke	Insnoeren
+	Chorus	Chorus
+	Chorus/Flanger	Chorus/flanger
+	Chroma Leak	Chromalek
+	Chromatic Aberration (Blue)	Chromatische aberratie (blauw)
+	Chromatic Aberration (Green)	Chromatische aberratie (groen)
+	Chromatic Aberration (Red)	Chromatische aberratie (rood)
+	Cineon Converter	Cineon-converter
+	Clean Combo	Schone combinatie
+	Clip Level	Clipniveau
+	Clipping	Clipping
+	Clock Wipe	Klokveeg
+	Clock Wipe (Legacy)	Klokveeg (verouderd)
+	Clockwise	Rechtsom
+	Color & Alpha	Kleur en alfa
+	Color 1	Kleur 1
+	Color 2	Kleur 2
+	Color 3	Kleur 3
+	Color 4	Kleur 4
+	Color Channel	Kleurkanaal
+	Color Distortion	Kleurvervorming
+	Color Emboss	Kleurreliëf
+	Color Key	Kleurkey
+	Color Pass	Kleur doorlaten
+	Color Replace	Kleur vervangen
+	Color To Leave	Te behouden kleur
+	Color Tolerance	Kleurtolerantie
+	Complexity	Complexiteit
+	Composite In Back	Achter samenstellen
+	Composite In Front	Voor samenstellen
+	Composite Using	Samenstellen met
+	Composite on Original	Samenstellen op origineel
+	Compound Blur	Samengestelde vervaging
+	Compression Before Clipping	Compressie voor clipping
+	Constant Gain	Constante versterking
+	Constant Power	Constant vermogen
+	Conversion Type	Conversietype
+	Convolution Reverb	Convolutiegalm
+	Cool, desaturated and punchy	Koel, onverzadigd en krachtig
+	Core Width	Kernbreedte
+	Corner Pin	Hoekpunten
+	Count	Aantal
+	Counter-clockwise	Linksom
+	Crop Less <-> Smooth More	Minder bijsnijden <-> meer gladmaken
+	Cross Displacement	Kruisverplaatsing
+	Cross Dissolve	Kruisovervloeier
+	Cross Dissolve (Legacy)	Kruisovervloeier (verouderd)
+	Cross Zoom	Kruiszoom
+	Cross Zoom (Legacy)	Kruiszoom (verouderd)
+	Crossovers	Crossovers
+	Crystals	Kristallen
+	Cube Spin	Kubusdraai
+	Curl Radius	Krulstraal
+	Cursor	Cursor
+	Custom Color	Aangepaste kleur
+	Cutoff	Afsnijfrequentie
+	Cyan-teal shadows and warm highlights with a little more contrast	Cyaan-blauwgroene schaduwen en warme hooglichten met iets meer contrast
+	Cycle (in Revolutions)	Cyclus (in omwentelingen)
+	Cycle Evolution	Evolutie herhalen
+	Damping	Demping
+	Damping HF	Demping HF
+	Damping LF	Demping LF
+	Day for night: darker, cooler and less saturated	Dag voor nacht: donkerder, koeler en minder verzadigd
+	DeEsser	De-esser
+	DeHummer	Bromfilter
+	DeNoise	Ruisfilter
+	DeReverb	Galmfilter
+	Decay	Uitsterven
+	Decay Time (RT60)	Uitsterftijd (RT60)
+	Delay	Vertraging
+	Delay 1	Vertraging 1
+	Delay 2	Vertraging 2
+	Delay 3	Vertraging 3
+	Delay 4	Vertraging 4
+	Detail Amplitude	Detailamplitude
+	Detail Level	Detailniveau
+	Detailed Analysis	Gedetailleerde analyse
+	Dip to Black	Overgang via zwart
+	Dip to Black (Legacy)	Overgang via zwart (verouderd)
+	Dip to Color	Overgang via kleur
+	Dip to White	Overgang via wit
+	Dip to White (Legacy)	Overgang via wit (verouderd)
+	Directional	Richtingsgebonden
+	Directional Blur	Richtingsvervaging
+	Directional Blur (Legacy)	Richtingsvervaging (verouderd)
+	Disperse	Verspreiden
+	Displacement	Verplaatsing
+	Dissolve Blocks	Blokken overvloeien
+	Distance to Image	Afstand tot afbeelding
+	Distortion Complexity	Vervormingscomplexiteit
+	Distortion Rate	Vervormingssnelheid
+	Distortion Type	Vervormingstype
+	Drive	Drive
+	Dry	Droog
+	Dry Out	Droge uitvoer
+	Dynamics Processing	Dynamiekbewerking
+	Early Reflections	Vroege reflecties
+	Earthquake	Aardbeving
+	Ease In and Out	Geleidelijk in en uit
+	Easing	Versoepeling
+	Echo	Echo
+	Echo Glow	Echogloed
+	Echo Operator	Echo-operator
+	Echo Time (seconds)	Echotijd (seconden)
+	Echoes	Echo's
+	Edge Color	Randkleur
+	Edge Feather	Rand doezelen
+	Edge Glow	Randgloed
+	Edge Sharpness	Randscherpte
+	Edge Softness	Randzachtheid
+	Edge Thin	Rand verdunnen
+	Edge Threshold	Randdrempel
+	Edge Type	Randtype
+	Elliptical	Elliptisch
+	Enable HSL Secondary	HSL-secundair inschakelen
+	End Color	Eindkleur
+	End Point	Eindpunt
+	End of Ramp	Einde van verloop
+	Evolution	Evolutie
+	Evolution Options	Evolutie-opties
+	Exciter Amount	Hoeveelheid exciter
+	Exciter Mode	Exciter-modus
+	Exponential Fade	Exponentiële fade
+	FFT Filter	FFT-filter
+	Fade	Fade
+	Fade Out	Uitfaden
+	Falloff	Afnemen
+	Faster Motion	Snellere beweging
+	Feedback	Feedback
+	Feedback 1	Feedback 1
+	Feedback 2	Feedback 2
+	Feedback 3	Feedback 3
+	Feedback 4	Feedback 4
+	Female	Vrouw
+	Fill Background	Achtergrond vullen
+	Fill Color	Vulkleur
+	Fill Left with Right	Links vullen met rechts
+	Fill Point	Vulpunt
+	Fill Right with Left	Rechts vullen met links
+	Fill Selector	Vulselectie
+	Film Dissolve	Filmovervloeier
+	Film Dissolve (Legacy)	Filmovervloeier (verouderd)
+	Film Roll	Filmrol
+	Filter	Filter
+	Filter Frequency	Filterfrequentie
+	Filter Resonance	Filterresonantie
+	Final Delay	Laatste vertraging
+	Find Edges	Randen zoeken
+	Flanger	Flanger
+	Flare	Schittering
+	Flare Brightness	Helderheid schittering
+	Flare Center	Middelpunt schittering
+	Flare Color	Kleur schittering
+	Flash	Flits
+	Flicker	Flikkering
+	Flickers	Flikkeringen
+	Flip Motion	Omklapbeweging
+	Flip Over	Omklappen
+	Focus Blur	Focusvervaging
+	Focus Point	Focuspunt
+	Focus Shape	Focusvorm
+	Focus Size	Focusgrootte
+	Fold Motion	Vouwbeweging
+	Foldback	Terugvouwen
+	Fractal Influence	Fractale invloed
+	Fractal Type	Fractaltype
+	Frame	Frame
+	Frame Color	Kaderkleur
+	Frame Layout	Kaderindeling
+	Frame Width	Kaderbreedte
+	Framing	Kadrering
+	From East	Vanuit het oosten
+	From North	Vanuit het noorden
+	From South	Vanuit het zuiden
+	From West	Vanuit het westen
+	Fuzz	Fuzz
+	GB	GB
+	Gamut Warning Color	Kleur gamutwaarschuwing
+	Gap	Tussenruimte
+	Gap Color	Kleur tussenruimte
+	Gaussian Blur (Legacy)	Gaussiaanse vervaging (verouderd)
+	Ghosts	Spookbeelden
+	Glint	Glinstering
+	Glitch	Glitch
+	Glow Color	Gloedkleur
+	Glow Only	Alleen gloed
+	Glow Radius	Gloedstraal
+	Glow Saturation	Gloedverzadiging
+	Glow Width	Gloedbreedte
+	Gradient End	Einde verloop
+	Gradient Layer	Verlooplaag
+	Gradient Placement	Plaatsing verloop
+	Gradient Scatter	Verloopspreiding
+	Gradient Shape	Verloopvorm
+	Gradient Start	Begin verloop
+	Gradient Wipe	Verloopveeg
+	Gradient Wipe (Legacy)	Verloopveeg (verouderd)
+	Grain Size	Korrelgrootte
+	Green Blurriness	Groenvervaging
+	Green Curve	Groencurve
+	Green Offset	Groenverschuiving
+	Green Power	Groensterkte
+	Green Slope	Groenhelling
+	Green-Blue	Groen-blauw
+	Green-Const	Groen-constant
+	Green-Green	Groen-groen
+	Green-Red	Groen-rood
+	Grow	Groeien
+	Grunge	Grunge
+	GuitarSuite	GuitarSuite
+	Hard Clip	Harde clipping
+	Hard Limiter	Harde begrenzer
+	Head Size	Hoofdgrootte
+	Hide Back Face	Achterkant verbergen
+	High Cutoff	Hoge afsnijfrequentie
+	High Frequency Cut	Hoge frequenties afsnijden
+	High Frequency Damping	Demping hoge frequenties
+	High Shelf	High shelf
+	High Shelf Gain	Versterking high shelf
+	High contrast with held highlights and deep shadows	Hoog contrast met behouden hooglichten en diepe schaduwen
+	Highlight	Hooglicht
+	Highlight Blue Balance	Blauwbalans hooglichten
+	Highlight Brightness	Helderheid hooglichten
+	Highlight Green Balance	Groenbalans hooglichten
+	Highlight Red Balance	Roodbalans hooglichten
+	Highlight Rolloff	Afvlakking hooglichten
+	Highlight Threshold	Drempel hooglichten
+	Highlight Tint	Tint hooglichten
+	Highlights Lightness	Lichtheid hooglichten
+	Highpass	Hoogdoorlaat
+	Horizontal 16:9	Horizontaal 16:9
+	Horizontal Alignment	Horizontale uitlijning
+	Horizontal Blocks	Horizontale blokken
+	Horizontal Decentering	Horizontale decentrering
+	Horizontal Displacement	Horizontale verplaatsing
+	Horizontal Flip	Horizontaal spiegelen
+	Horizontal Margin	Horizontale marge
+	Horizontal and Vertical	Horizontaal en verticaal
+	Hue Center	Kleurtoonmidden
+	Hue Tolerance	Kleurtoontolerantie
+	Ignore Alpha	Alfa negeren
+	Impulse	Impuls
+	Incoming	Inkomend
+	Initial Delay	Beginvertraging
+	Inner Radius	Binnenstraal
+	Input Boost	Invoerversterking
+	Inset	Inzet
+	Inside Color	Binnenkleur
+	Inter	Inter
+	Internal Black Point	Intern zwartpunt
+	Internal White Point	Intern witpunt
+	Inverse Falloff	Omgekeerde afname
+	Invert Alpha	Alfa omkeren
+	Invert Blur	Vervaging omkeren
+	Invert Fill	Vulling omkeren
+	Invert Gradient	Verloop omkeren
+	Invert Left	Links omkeren
+	Invert Right	Rechts omkeren
+	Iris Box	Iris vierkant
+	Iris Cross	Iris kruis
+	Iris Diamond	Iris ruit
+	Iris Radius	Irisstraal
+	Iris Rotation	Irisrotatie
+	Iris Round	Iris rond
+	Iris Shape	Irisvorm
+	JetBrains Mono	JetBrains Mono
+	Kaleidoscope	Caleidoscoop
+	Key Color	Keykleur
+	Layer Name	Laagnaam
+	Leave Color	Kleur behouden
+	Left - Left	Links - links
+	Left - Right	Links - rechts
+	Lens Blur	Lensvervaging
+	Lens Distortion	Lensvervorming
+	Lens Type	Lenstype
+	Level 1	Niveau 1
+	Level 2	Niveau 2
+	Level 3	Niveau 3
+	Level 4	Niveau 4
+	Lifted blacks, softer contrast, muted colour	Opgetilde zwarten, zachter contrast, gedempte kleur
+	Light 1	Licht 1
+	Light 2	Licht 2
+	Light 3	Licht 3
+	Light 4	Licht 4
+	Light 5	Licht 5
+	Light Angle	Lichthoek
+	Light Color	Lichtkleur
+	Light Leak	Lichtlek
+	Light Leaks	Lichtlekken
+	Light Sweep	Lichtzwaai
+	Lightning	Bliksem
+	Line Thickness	Lijndikte
+	Linear Ramp	Lineair verloop
+	Linear Wipe	Lineaire veeg
+	Linear Wipe (Legacy)	Lineaire veeg (verouderd)
+	Linear to Log	Lineair naar log
+	Liquid Distortion	Vloeibare vervorming
+	Log to Linear	Log naar lineair
+	Log to Log	Log naar log
+	Logo Cutout	Logo-uitsnede
+	Long Shadow	Lange schaduw
+	Look-Ahead Time	Vooruitkijktijd
+	Loudness Maximizer	Luidheidsmaximalisator
+	Loudness Meter	Luidheidsmeter
+	Louver	Lamellen
+	Low Frequency Cut	Lage frequenties afsnijden
+	Low Pass	Laagdoorlaat
+	Low Shelf	Low shelf
+	Low Shelf Gain	Versterking low shelf
+	Lower Left	Linksonder
+	Lower Right	Rechtsonder
+	Lowpass	Laagdoorlaat
+	Luma Curve	Lumacurve
+	Luma Fade	Luma-fade
+	Luma Key	Lumakey
+	Luma Source	Lumabron
+	Luma and Chroma	Luma en chroma
+	Luminance Threshold	Luminantiedrempel
+	MB	MB
+	Magnify	Vergroten
+	Magnify (Legacy)	Vergroten (verouderd)
+	Major Radius	Grote straal
+	Male	Man
+	Map Black To	Zwart toewijzen aan
+	Map White To	Wit toewijzen aan
+	Maps full-range levels into 16–235 (video range) with a luma curve	Zet niveaus met volledig bereik om naar 16–235 (videobereik) met een lumacurve
+	Mask Only	Alleen masker
+	Master Amplitude	Masteramplitude
+	Mastering	Mastering
+	Matte Alpha	Matalfa
+	Matte Cleanup	Mat opschonen
+	Matte Generation	Matgeneratie
+	Matte Luma	Matluma
+	Maximum Amplitude	Maximale amplitude
+	Maximum Block Size	Maximale blokgrootte
+	Maximum Blur	Maximale vervaging
+	Maximum Reduction	Maximale reductie
+	Maximum Scale	Maximale schaal
+	Media Timecode	Mediatijdcode
+	Metadata & Timecode Burn-in	Metagegevens en tijdcode inbranden
+	Metrics Kerning	Metrische kerning
+	Mid	Midden
+	Mid Point	Middelpunt
+	Midtone Blue Balance	Blauwbalans middentonen
+	Midtone Green Balance	Groenbalans middentonen
+	Midtone Red Balance	Roodbalans middentonen
+	Midtones Lightness	Lichtheid middentonen
+	Minor Radius	Kleine straal
+	Mirror	Spiegelen
+	Mirror Alternate	Afwisselend spiegelen
+	Mixed Crystals	Gemengde kristallen
+	Modern High Gain	Modern high gain
+	Modulation Rate	Modulatiesnelheid
+	Monochrome toned cyan-blue	Monochroom met cyaanblauwe tint
+	Monochrome toned warm brown	Monochroom met warmbruine tint
+	More colour in the less saturated areas	Meer kleur in de minder verzadigde gebieden
+	Morph Cut	Morph-snede
+	Mosaic (Legacy)	Mozaïek (verouderd)
+	Motion Blur	Bewegingsonscherpte
+	Motion Camera	Bewegende camera
+	Motion Preset	Bewegingsvoorinstelling
+	Motion Tween	Bewegingstussenstap
+	Multitap Delay	Multitap-vertraging
+	Narrow	Smal
+	Neon Color	Neonkleur
+	Neon Wipe	Neonveeg
+	No Motion	Geen beweging
+	Noise (Legacy)	Ruis (verouderd)
+	Noise Level	Ruisniveau
+	Noise Reduction/Restoration	Ruisonderdrukking/restauratie
+	Noise Type	Ruistype
+	Non-Additive Dissolve	Niet-additieve overvloeier
+	Notch 1	Notch 1
+	Notch 2	Notch 2
+	Notch 3	Notch 3
+	Notch 4	Notch 4
+	Notch 5	Notch 5
+	Notch 6	Notch 6
+	Notch Filter	Notchfilter
+	Notch Width	Notchbreedte
+	Number Of Echoes	Aantal echo's
+	Number of Harmonics	Aantal harmonischen
+	Offset	Verschuiving
+	Offset (Turbulence)	Verschuiving (turbulentie)
+	Offset From	Verschuiving vanaf
+	Offset To	Verschuiving naar
+	Omni	Omni
+	On Original Image	Op originele afbeelding
+	On Transparent	Op transparant
+	Opens up the shadows	Maakt de schaduwen lichter
+	Order	Volgorde
+	Outgoing	Uitgaand
+	Outside Color	Buitenkleur
+	Overflow	Overloop
+	Overshoot	Doorschieten
+	Page Peel	Pagina afpellen
+	Page Turn	Pagina omslaan
+	Paint Bucket	Verfemmer
+	Paint On Black	Schilderen op zwart
+	Paint On Original Image	Schilderen op originele afbeelding
+	Paint On Transparent	Schilderen op transparant
+	Paint On White	Schilderen op wit
+	Paint Style	Schilderstijl
+	Paint Surface	Schilderoppervlak
+	Pan (Y Axis)	Pan (Y-as)
+	Panel Wipe	Paneelveeg
+	Panner - Ambisonics	Panner - Ambisonics
+	Passband Ripple	Doorlaatbandrimpel
+	Path Points	Padpunten
+	Peak Frequency	Piekfrequentie
+	Peak Gain	Piekversterking
+	Pedestal	Sokkel
+	Percent Blur	Percentage vervaging
+	Phase Difference	Faseverschil
+	Phaser	Phaser
+	Phosphor	Fosfor
+	Phosphor Color	Fosforkleur
+	Photocopy Color	Fotokopiekleur
+	Pillow	Kussen
+	Pin All	Alles vastzetten
+	Pin Horizontal	Horizontaal vastzetten
+	Pin Vertical	Verticaal vastzetten
+	Pinning	Vastzetten
+	Pitch Shifter	Toonhoogteverschuiver
+	Plate	Plaat
+	Plateau Wipe	Plateauveeg
+	Plateaus	Plateaus
+	Plates	Platen
+	Point 1	Punt 1
+	Point 1 Color	Kleur punt 1
+	Point 1 Latitude	Breedtegraad punt 1
+	Point 1 Longitude	Lengtegraad punt 1
+	Point 2	Punt 2
+	Point 2 Color	Kleur punt 2
+	Point 2 Latitude	Breedtegraad punt 2
+	Point 2 Longitude	Lengtegraad punt 2
+	Point 3	Punt 3
+	Point 3 Color	Kleur punt 3
+	Point 3 Latitude	Breedtegraad punt 3
+	Point 3 Longitude	Lengtegraad punt 3
+	Point 4	Punt 4
+	Point 5	Punt 5
+	Point 6	Punt 6
+	Point 7	Punt 7
+	Point 8	Punt 8
+	Pop Motion	Pop-beweging
+	Position Amount	Positiehoeveelheid
+	Position, Scale, Rotation	Positie, schaal, rotatie
+	Posterize Time	Tijd posteriseren
+	Pre-Delay	Voorvertraging
+	Preserve Scale	Schaal behouden
+	ProcAmp	ProcAmp
+	Pull Motion	Trekbeweging
+	Pulls highlights and whites down	Trekt hooglichten en witten omlaag
+	Push	Duwen
+	Push (Legacy)	Duwen (verouderd)
+	Q	Q
+	RGB Split	RGB-splitsing
+	Radial Ramp	Radiaal verloop
+	Radial Wipe	Radiale veeg
+	Radial Wipe (Legacy)	Radiale veeg (verouderd)
+	Ramp	Verloop
+	Ramp Shape	Verloopvorm
+	Random Seed	Willekeurige beginwaarde
+	Ray	Straal
+	Ray Color	Straalkleur
+	Ray Length	Straallengte
+	Rays Only	Alleen stralen
+	Red Blurriness	Roodvervaging
+	Red Curve	Roodcurve
+	Red Offset	Roodverschuiving
+	Red Power	Roodsterkte
+	Red Slope	Roodhelling
+	Red-Blue	Rood-blauw
+	Red-Const	Rood-constant
+	Red-Green	Rood-groen
+	Red-Red	Rood-rood
+	Reduce Axis	As verkleinen
+	Reduce Interlace Flicker	Interlaceflikkering verminderen
+	Reflection Angle	Reflectiehoek
+	Reflection Center	Reflectiemidden
+	Refraction	Breking
+	Reframe Offset	Herkadreringsverschuiving
+	Reframe Zoom	Herkadreringszoom
+	Relaxed	Ontspannen
+	Release Time	Releasetijd
+	Remove Fringe	Rafelrand verwijderen
+	Repeat Edge Pixels	Randpixels herhalen
+	Replace Color	Kleur vervangen
+	Replicate	Repliceren
+	Retro	Retro
+	Reveal Original Image	Originele afbeelding tonen
+	Reverb Amount	Hoeveelheid galm
+	Right - Left	Rechts - links
+	Right - Right	Rechts - rechts
+	Roll (Z Axis)	Rol (Z-as)
+	Room Size	Ruimtegrootte
+	Rotation Amount	Rotatiehoeveelheid
+	Roughen	Ruw maken
+	Roughen Color	Ruwheidskleur
+	Roughen Edges	Randen ruw maken
+	Rounded Crop	Afgerond bijsnijden
+	Rusty	Roestig
+	Rusty Color	Roestkleur
+	Saturation at 50 %	Verzadiging op 50 %
+	Scale (Degrees)	Schaal (graden)
+	Scale Amount	Schaalhoeveelheid
+	Scale From	Schalen vanaf
+	Scale Height	Hoogte schalen
+	Scale Match	Schaal afstemmen
+	Scale To	Schalen naar
+	Scan Lines	Scanlijnen
+	Scientific Filter	Wetenschappelijk filter
+	Semi-tones	Halve tonen
+	Sequence Name	Reeksnaam
+	Sequence Timecode	Reekstijdcode
+	Setting	Instelling
+	Shadow Angle	Schaduwhoek
+	Shadow Blue Balance	Blauwbalans schaduwen
+	Shadow Blur	Schaduwvervaging
+	Shadow Color	Schaduwkleur
+	Shadow Distance	Schaduwafstand
+	Shadow Green Balance	Groenbalans schaduwen
+	Shadow Only	Alleen schaduw
+	Shadow Opacity	Schaduwdekking
+	Shadow Red Balance	Roodbalans schaduwen
+	Shadow Size	Schaduwgrootte
+	Shadow Tint	Tint schaduwen
+	Shadows Lightness	Lichtheid schaduwen
+	Shake	Schudden
+	Shape Dissolve	Vormovervloeier
+	Shape Flow	Vormstroom
+	Shape Size	Vormgrootte
+	Shard Size	Scherfgrootte
+	Sharp Colors	Scherpe kleuren
+	Sharpen Amount	Mate van verscherping
+	Shift Center To	Midden verschuiven naar
+	Show Focus Area	Focusgebied tonen
+	Show Only Noise	Alleen ruis tonen
+	Shrink	Krimpen
+	Shutter Angle	Sluiterhoek
+	Similarity	Overeenkomst
+	Simple Notch Filter	Eenvoudig notchfilter
+	Simple Parametric EQ	Eenvoudige parametrische EQ
+	Simple Text	Eenvoudige tekst
+	Single-band Compressor	Enkelbandscompressor
+	Sinusoidal	Sinusvormig
+	Skew	Scheeftrekken
+	Skew Axis	Schuintrekas
+	Slats	Latten
+	Slice	Plak
+	Slices	Plakken
+	Slide (Legacy)	Verschuiven (verouderd)
+	Slope	Helling
+	Slow	Langzaam
+	Slower Motion	Langzamere beweging
+	Smart Limit	Slimme limiet
+	Smooth	Vloeiend
+	Smooth Motion	Vloeiende beweging
+	Soft Clamp	Zachte begrenzing
+	Soft Edges (Best Quality)	Zachte randen (beste kwaliteit)
+	Soft Wipe	Zachte veeg
+	Solid Colors	Effen kleuren
+	Source Point	Bronpunt
+	Source Text	Brontekst
+	Spacer	Tussenruimte
+	Speaker Angle	Luidsprekerhoek
+	Special Effects	Speciale effecten
+	Spiky	Puntig
+	Spill	Overspraak
+	Spill Suppression	Overspraakonderdrukking
+	Spin	Draaien
+	Spin Direction	Draairichting
+	Spin Motion	Draaibeweging
+	Split	Splitsen
+	Split (Legacy)	Splitsen (verouderd)
+	Spotlight	Spotlicht
+	Spread	Spreiding
+	Spring Motion	Veerbeweging
+	Square (Width Only)	Vierkant (alleen breedte)
+	Square 1:1	Vierkant 1:1
+	Stabilization	Stabilisatie
+	Stabilize Only	Alleen stabiliseren
+	Stabilize, Crop	Stabiliseren, bijsnijden
+	Stabilize, Crop, Auto-scale	Stabiliseren, bijsnijden, automatisch schalen
+	Stabilize, Synthesize Edges	Stabiliseren, randen synthetiseren
+	Stages	Fasen
+	Star Wipe	Sterveeg
+	Start Angle	Beginhoek
+	Start Color	Beginkleur
+	Start Point	Beginpunt
+	Start of Ramp	Begin van verloop
+	Starting Intensity	Beginintensiteit
+	Static Plates	Statische platen
+	Stereo Expand	Stereoverbreding
+	Stereo Expander	Stereoverbreder
+	Stereo Phasing	Stereofasering
+	Stereoscopic - Over/Under	Stereoscopisch - boven/onder
+	Stereoscopic - Side by Side	Stereoscopisch - naast elkaar
+	Stopband Attenuation	Sperbanddemping
+	Straight Color	Rechte kleur
+	Stretch Gradient to Fit	Verloop uitrekken om te passen
+	Stretch Map to Fit	Map uitrekken om te passen
+	Stretch Width or Height	Breedte of hoogte uitrekken
+	Stretch Wipe	Rekveeg
+	Stretch to Fit Frame	Uitrekken om in frame te passen
+	Stripe	Streep
+	Stripes	Strepen
+	Strobe Color	Stroboscoopkleur
+	Strobe Duration (secs)	Stroboscoopduur (s)
+	Strobe Light	Stroboscooplicht
+	Strobe Period (secs)	Stroboscoopperiode (s)
+	Stroke 2 Color	Kleur contour 2
+	Stroke 2 Type	Type contour 2
+	Stroke 2 Width	Breedte contour 2
+	Stroke Angle	Streekhoek
+	Stroke Density	Streekdichtheid
+	Stroke Length (secs)	Streeklengte (s)
+	Stroke Only	Alleen contour
+	Stroke Randomness	Willekeurigheid streken
+	Stroke Type	Contourtype
+	Stroke Width	Contourbreedte
+	Studio Reverb	Studiogalm
+	Subclip End	Einde subclip
+	Subclip Start	Begin subclip
+	Subspace Warp	Subruimtevervorming
+	Super Narrow	Supersmal
+	Surface Gloss	Oppervlakteglans
+	Surface Material	Oppervlaktemateriaal
+	Surround Reverb	Surroundgalm
+	Swap Channels	Kanalen verwisselen
+	Swivel	Zwenken
+	TV Power	Tv aan/uit
+	Tape	Band
+	Tape/Tube	Band/buis
+	Target Aspect	Doelbeeldverhouding
+	Target Color	Doelkleur
+	Target Field of View	Doelgezichtsveld
+	Text Color	Tekstkleur
+	Tile Gradient	Tegelverloop
+	Tilt (X Axis)	Kanteling (X-as)
+	To	Naar
+	Tone	Toon
+	Track Matte Key	Trackmatkey
+	Transience	Transiënt
+	Transition Completion	Voltooiing overgang
+	Transition Softness	Zachtheid overgang
+	Trash	Vernield
+	Travel Motion	Reisbeweging
+	Treble	Hoge tonen
+	Tube	Buis
+	Tube-modeled Compressor	Buisgemodelleerde compressor
+	Tubular	Buisvormig
+	Turbulent	Turbulent
+	Turbulent Displace	Turbulente verplaatsing
+	Turbulent Sharp	Turbulent scherp
+	Turbulent Smooth	Turbulent vloeiend
+	Turbulent Smoother	Turbulent vloeiender
+	Tweed	Tweed
+	Twirl	Draaikolk
+	Twirl (Legacy)	Draaikolk (verouderd)
+	Twirl Center	Midden draaikolk
+	Twirl Radius	Straal draaikolk
+	Twist Smoother	Torsie vloeiender
+	Ultra Key	Ultra Key
+	Uniform Spacing	Gelijkmatige tussenruimte
+	Upper Frequency	Bovenfrequentie
+	Upper Left	Linksboven
+	Upper Right	Rechtsboven
+	Use Color Noise	Kleurruis gebruiken
+	Use End Color	Eindkleur gebruiken
+	Use Glow Color	Gloedkleur gebruiken
+	Use Tint Color	Tintkleur gebruiken
+	VHS Damage	VHS-schade
+	VR Blur	VR-vervaging
+	VR Chroma Leaks	VR-chromalekken
+	VR Chromatic Aberrations	VR-chromatische aberraties
+	VR Color Gradients	VR-kleurverlopen
+	VR De-Noise	VR-ruisverwijdering
+	VR Digital Glitch	VR-digitale glitch
+	VR Fractal Noise	VR-fractalruis
+	VR Glow	VR-gloed
+	VR Gradient Wipe	VR-verloopveeg
+	VR Iris Wipe	VR-irisveeg
+	VR Light Leaks	VR-lichtlekken
+	VR Light Rays	VR-lichtstralen
+	VR Mobius Zoom	VR-möbiuszoom
+	VR Plane to Sphere	VR-vlak naar bol
+	VR Projection	VR-projectie
+	VR Random Blocks	VR-willekeurige blokken
+	VR Rotate Sphere	VR-bol roteren
+	VR Sharpen	VR-verscherpen
+	VR Spherical Blur	VR-bolvormige vervaging
+	Venetian Blinds	Jaloezieën
+	Vertical 4:5	Verticaal 4:5
+	Vertical 9:16	Verticaal 9:16
+	Vertical Alignment	Verticale uitlijning
+	Vertical Blocks	Verticale blokken
+	Vertical Decentering	Verticale decentrering
+	Vertical Displacement	Verticale verplaatsing
+	Vertical Flip	Verticaal spiegelen
+	Vertical Margin	Verticale marge
+	Very Narrow	Zeer smal
+	Video 1	Video 1
+	Video 2	Video 2
+	Video 3	Video 3
+	Video 4	Video 4
+	Video 5	Video 5
+	Video 6	Video 6
+	Video 7	Video 7
+	Video 8	Video 8
+	Video Duration	Videoduur
+	Video In Point	Video-in-punt
+	Video Out Point	Video-uitpunt
+	Video Usage	Videogebruik
+	Vocal Booth	Zangcabine
+	Vocal Enhancer	Stemversterker
+	Volumetric Rays	Volumetrische stralen
+	Warm print stock with gentle roll-off	Warm afdrukmateriaal met zachte afvlakking
+	Warm, soft late-afternoon light	Warm, zacht namiddaglicht
+	Warp Stabilizer	Warp-stabilisator
+	Wave Height	Golfhoogte
+	Wave Speed	Golfsnelheid
+	Wave Warp	Golfvervorming
+	Wave Width	Golfbreedte
+	Wavelength	Golflengte
+	Wet Out	Natte uitvoer
+	Whip	Zweep
+	Whip (Legacy)	Zweep (verouderd)
+	White Input Level	Witinvoerniveau
+	Widener	Verbreder
+	Wiggle	Wiebelen
+	Wipe Angle	Veeghoek
+	Wonder Glow	Wondergloed
+	Wrap Back	Terugvouwen
+	Write-on	Inschrijven
+	X Rotation	X-rotatie
+	Y Rotation	Y-rotatie
+	Yellow-green highlights and blue-lifted shadows from crossed channel curves	Geelgroene hooglichten en blauw opgetilde schaduwen door gekruiste kanaalcurven
+	Z Position	Z-positie
+	Z Rotation	Z-rotatie
+	Zoom Amount	Zoomhoeveelheid
+	Zoom Blur	Zoomvervaging
+	Zoom Strength	Zoomsterkte
+	no GPU adapter: the CPU compositor is used	geen GPU-adapter: de CPU-compositor wordt gebruikt
+	CFA4 Project	CFA4-project
+	{name} (Simplified)	{name} (vereenvoudigd)
+	Delete Search Bin	Zoekbin verwijderen
+	No export preset named `{name}`	Geen exportvoorinstelling met de naam `{name}`
+	Encoding {n}%	Coderen {n}%
+	Uncompressed (PCM)	Ongecomprimeerd (PCM)
+	Match Source ({seq_sr} Hz)	Bron volgen ({seq_sr} Hz)
+	Sequence, {w}x{h}, {fps} fps, {rate} Hz	Reeks, {w}x{h}, {fps} fps, {rate} Hz
+	Exporting {path}	{path} exporteren
+	Added to the export queue	Toegevoegd aan de exportwachtrij
+	Import: no file chosen (agents: export.presets.import {path})	Importeren: geen bestand gekozen (agents: export.presets.import {path})
+	Export: no file chosen (agents: export.presets.export {path, names})	Exporteren: geen bestand gekozen (agents: export.presets.export {path, names})
+	Graphics problem: switched to software compositing	Grafisch probleem: overgeschakeld op softwarematig samenstellen
+	GPU acceleration is unavailable; preview renders on the CPU	GPU-versnelling is niet beschikbaar; de voorvertoning rendert op de CPU
+	CFA4 hit an error	CFA4 stuitte op een fout
+	Opened {url}	{url} geopend
+	(empty)	(leeg)
+	AAC Audio 48 kHz 320 kbps	AAC-audio 48 kHz 320 kbps
+	Opus Audio 48 kHz 160 kbps	Opus-audio 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stereo 48 kHz met 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 met 8 Mbps, Opus 128 kbps stereo
+	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4-audio (.m4a), stereo 48 kHz AAC-LC met 320 kbps
+	AIFF	AIFF
+	AIFF 48 kHz 16-bit	AIFF 48 kHz 16-bit
+	AIFF, stereo 48 kHz 16-bit PCM	AIFF, stereo 48 kHz 16-bit PCM
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24-bit
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, stereo 48 kHz 24-bit, verliesvrij
+	FLAC (lossless)	FLAC (verliesvrij)
+	APV	APV
+	APV 422-10	APV 422-10
+	APV 422-12	APV 422-12
+	Animated GIF 640×360	Geanimeerde GIF 640×360
+	Apple ProRes	Apple ProRes
+	Apple ProRes 422	Apple ProRes 422
+	Apple ProRes 422 HQ	Apple ProRes 422 HQ
+	Apple ProRes 422 LT	Apple ProRes 422 LT
+	Apple ProRes 422 Proxy	Apple ProRes 422 Proxy
+	Apple ProRes 4444	Apple ProRes 4444
+	Apple ProRes 4444 with Alpha	Apple ProRes 4444 met alfa
+	Apple ProRes 4444 XQ	Apple ProRes 4444 XQ
+	Application	Toepassing
+	Apply Guide Template	Hulplijnsjabloon toepassen
+	Auto Save Now	Nu automatisch opslaan
+	Auto-Match Loudness	Luidheid automatisch afstemmen
+	Avid DNxHR	Avid DNxHR
+	Avid DNxHR HQ	Avid DNxHR HQ
+	Avid DNxHR LB	Avid DNxHR LB
+	Avid DNxHR SQ	Avid DNxHR SQ
+	Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)	OP-Atom in Avid-stijl: DNxHR HQ-beeldbestand plus één 24-bit 48 kHz PCM-bestand per kanaal (_A1, _A2…)
+	BMP	BMP
+	BMP Sequence	BMP-reeks
+	Begin Text Editing for a Graphic Layer	Tekstbewerking starten voor een grafische laag
+	Begins With	Begint met
+	Blur In	Vervaagd in
+	Blur Out	Vervaagd uit
+	Brightens inside a feathered circular mask	Verheldert binnen een gedoezeld rond masker
+	Broadcast	Uitzending
+	Cancel Dynamic Trim	Dynamisch trimmen annuleren
+	Cancel Queued Export	Export in wachtrij annuleren
+	Center align text	Tekst centreren
+	Change Mask	Masker wijzigen
+	Clear All Events	Alle gebeurtenissen wissen
+	Clear Edit Point Selection	Selectie van bewerkpunten wissen
+	Clear Finished Exports	Voltooide exports wissen
+	Clear Poster Frame	Posterframe wissen
+	Close Bin	Bin sluiten
+	Close Sequence	Reeks sluiten
+	Contains	Bevat
+	Cut to Camera 1	Snijden naar camera 1
+	Cut to Camera 2	Snijden naar camera 2
+	Cut to Camera 3	Snijden naar camera 3
+	Cut to Camera 4	Snijden naar camera 4
+	Cut to Camera 5	Snijden naar camera 5
+	Cut to Camera 6	Snijden naar camera 6
+	Cut to Camera 7	Snijden naar camera 7
+	Cut to Camera 8	Snijden naar camera 8
+	Cut to Camera 9	Snijden naar camera 9
+	Darkens outside a feathered oval mask	Verdonkert buiten een gedoezeld ovaal masker
+	Decrease Clip Volume	Clipvolume verlagen
+	Decrease Clip Volume Many	Clipvolume veel verlagen
+	Decrease Font Size by Five Units	Lettergrootte met vijf eenheden verkleinen
+	Decrease Font Size by One Unit	Lettergrootte met één eenheid verkleinen
+	Decrease Leading by Five Units	Regelafstand met vijf eenheden verkleinen
+	Decrease Leading by One Unit	Regelafstand met één eenheid verkleinen
+	Delete Captions	Ondertitels verwijderen
+	Delete Graphic Layer	Grafische laag verwijderen
+	Delete Guide Template	Hulplijnsjabloon verwijderen
+	Delete Media Cache Files	Mediacachebestanden verwijderen
+	Discard Unsaved Changes	Niet-opgeslagen wijzigingen verwerpen
+	Does Not Contain	Bevat niet
+	Download Speech Model	Spraakmodel downloaden
+	Dynamic Trim Stop	Dynamisch trimmen stoppen
+	Edit Caption Text	Ondertiteltekst bewerken
+	Ends With	Eindigt op
+	Entire Source	Volledige bron
+	EssentialSound	Essentieel geluid
+	Extend Next Edit To Playhead	Volgend bewerkpunt uitbreiden tot afspeelkop
+	Extend Previous Edit To Playhead	Vorig bewerkpunt uitbreiden tot afspeelkop
+	Extend Selected Edit to Playhead	Geselecteerd bewerkpunt uitbreiden tot afspeelkop
+	Extend Selection Down	Selectie omlaag uitbreiden
+	Extend Selection Left	Selectie naar links uitbreiden
+	Extend Selection Right	Selectie naar rechts uitbreiden
+	Extend Selection Up	Selectie omhoog uitbreiden
+	Fade In	Infaden
+	Gaussian Blur from 0 to 60 over the last second	Gaussiaanse vervaging van 0 tot 60 in de laatste seconde
+	Gaussian Blur from 60 to 0 over the first second	Gaussiaanse vervaging van 60 tot 0 in de eerste seconde
+	Generate Ducking Keyframes	Ducking-keyframes genereren
+	Go to Next Edit Point	Naar volgend bewerkpunt
+	Go to Next Edit Point on Any Track	Naar volgend bewerkpunt op elke track
+	Go to Previous Edit Point	Naar vorig bewerkpunt
+	Go to Previous Edit Point on Any Track	Naar vorig bewerkpunt op elke track
+	Go to Selected Clip End	Naar einde geselecteerde clip
+	Go to Selected Clip Start	Naar begin geselecteerde clip
+	Go to Sequence End	Naar einde reeks
+	Go to Sequence Start	Naar begin reeks
+	H.264	H.264
+	AV1	AV1
+	H.264 1920×1080 for video sharing sites, VBR 1 pass, 16 Mbps	H.264 1920×1080 voor videodeelsites, VBR 1 doorgang, 16 Mbps
+	H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps	H.264 1920×1080, VBR 1 doorgang, doel 20 Mbps, AAC 320 kbps
+	H.264 1920×1080, VBR 2 pass, 18 Mbps	H.264 1920×1080, VBR 2 doorgangen, 18 Mbps
+	H.264 3840×2160 for video sharing sites, VBR 1 pass, 45 Mbps	H.264 3840×2160 voor videodeelsites, VBR 1 doorgang, 45 Mbps
+	H.264 3840×2160, VBR 1 pass, 60 Mbps target, AAC 320 kbps	H.264 3840×2160, VBR 1 doorgang, doel 60 Mbps, AAC 320 kbps
+	H.264 3840×2160, VBR 2 pass, 50 Mbps	H.264 3840×2160, VBR 2 doorgangen, 50 Mbps
+	H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps	H.264 9:16 staand voor korte sociale video, geschaald om te vullen, 12 Mbps
+	H.264 at the sequence's frame size and rate; 0.05 bits per pixel	H.264 op de framegrootte en -snelheid van de reeks; 0,05 bits per pixel
+	H.264 at the sequence's frame size and rate; 0.1 bits per pixel	H.264 op de framegrootte en -snelheid van de reeks; 0,1 bits per pixel
+	H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)	H.264 op de framegrootte en -snelheid van de reeks; bitsnelheid past zich aan de framegrootte aan (0,2 bits per pixel)
+	High Quality 1080p HD	Hoge kwaliteit 1080p HD
+	High Quality 2160p 4K	Hoge kwaliteit 2160p 4K
+	Increase Clip Volume	Clipvolume verhogen
+	Increase Clip Volume Many	Clipvolume veel verhogen
+	Increase Font Size by Five Units	Lettergrootte met vijf eenheden vergroten
+	Increase Font Size by One Unit	Lettergrootte met één eenheid vergroten
+	Increase Leading by Five Units	Regelafstand met vijf eenheden vergroten
+	Increase Leading by One Unit	Regelafstand met één eenheid vergroten
+	Large blocks resolving to the picture over the first second	Grote blokken die in de eerste seconde overgaan in het beeld
+	Left align text	Tekst links uitlijnen
+	Looping GIF, 640×360 at 15 fps	Herhalende GIF, 640×360 met 15 fps
+	Lumetri	Lumetri
+	MXF OP-Atom	MXF OP-Atom
+	MXF OP-Atom DNxHR (Avid)	MXF OP-Atom DNxHR (Avid)
+	MXF OP1a	MXF OP1a
+	MXF OP1a DNxHR HQ	MXF OP1a DNxHR HQ
+	MXF OP1a H.264	MXF OP1a H.264
+	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
+	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, begintijdcode
+	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High lange GOP (0,3 bits per pixel), 24-bit 48 kHz PCM
+	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, begintijdcode
+	Main	Main
+	Mark In (Hover Scrub)	In-punt markeren (scrubben bij aanwijzen)
+	Mark Out (Hover Scrub)	Uitpunt markeren (scrubben bij aanwijzen)
+	Match Source – Adaptive High Bitrate	Bron volgen – adaptieve hoge bitsnelheid
+	Match Source – Adaptive Low Bitrate	Bron volgen – adaptieve lage bitsnelheid
+	Match Source – Adaptive Medium Bitrate	Bron volgen – adaptieve gemiddelde bitsnelheid
+	Matches	Komt overeen met
+	Maximize or Restore Active Frame	Actief frame maximaliseren of herstellen
+	Maximize or Restore Frame Under Cursor	Frame onder cursor maximaliseren of herstellen
+	Media Browser Settings	Instellingen mediabrowser
+	MediaBrowser	Mediabrowser
+	MediaCache	Mediacache
+	Merge Captions	Ondertitels samenvoegen
+	Mixer	Mixer
+	Mosaic In	Mozaïek in
+	Move All Audio Targets Down	Alle audiodoelen omlaag verplaatsen
+	Move All Audio Targets Up	Alle audiodoelen omhoog verplaatsen
+	Move All Video Targets Down	Alle videodoelen omlaag verplaatsen
+	Move All Video Targets Up	Alle videodoelen omhoog verplaatsen
+	Move Selection Down	Selectie omlaag verplaatsen
+	Move Selection End	Selectie naar einde verplaatsen
+	Move Selection Home	Selectie naar begin verplaatsen
+	Move Selection Left	Selectie naar links verplaatsen
+	Move Selection Page Down	Selectie een pagina omlaag verplaatsen
+	Move Selection Page Up	Selectie een pagina omhoog verplaatsen
+	Move Selection Right	Selectie naar rechts verplaatsen
+	Move Selection Up	Selectie omhoog verplaatsen
+	Multicam	Multicamera
+	Navigate to End of Segment	Naar einde van segment
+	Navigate to Next Line	Naar volgende regel
+	Navigate to Next Word	Naar volgend woord
+	Navigate to Previous Line	Naar vorige regel
+	Navigate to Previous Word	Naar vorig woord
+	Navigate to Start of Segment	Naar begin van segment
+	Navigation	Navigatie
+	Next Multi-Camera Page	Volgende multicamerapagina
+	Nudge Clip Selection Down	Clipselectie omlaag verschuiven
+	Nudge Clip Selection Left Five Frames	Clipselectie vijf frames naar links verschuiven
+	Nudge Clip Selection Left One Frame	Clipselectie één frame naar links verschuiven
+	Nudge Clip Selection Right Five Frames	Clipselectie vijf frames naar rechts verschuiven
+	Nudge Clip Selection Right One Frame	Clipselectie één frame naar rechts verschuiven
+	Nudge Clip Selection Up	Clipselectie omhoog verschuiven
+	Nudge Selected Object down by five	Geselecteerd object vijf omlaag verschuiven
+	Nudge Selected Object down by one	Geselecteerd object één omlaag verschuiven
+	Nudge Selected Object to left by five	Geselecteerd object vijf naar links verschuiven
+	Nudge Selected Object to left by one	Geselecteerd object één naar links verschuiven
+	Nudge Selected Object to right by five	Geselecteerd object vijf naar rechts verschuiven
+	Nudge Selected Object to right by one	Geselecteerd object één naar rechts verschuiven
+	Nudge Selected Object up by five	Geselecteerd object vijf omhoog verschuiven
+	Nudge Selected Object up by one	Geselecteerd object één omhoog verschuiven
+	Nudge Volume +1dB	Volume +1dB bijstellen
+	Nudge Volume +3dB	Volume +3dB bijstellen
+	Nudge Volume -1dB	Volume -1dB bijstellen
+	Nudge Volume -3dB	Volume -3dB bijstellen
+	Numbered BMP stills (24-bit)	Genummerde BMP-beelden (24-bit)
+	JPEG	JPEG
+	Targa	Targa
+	DPX	DPX
+	JPEG Sequence	JPEG-reeks
+	Targa Sequence	Targa-reeks
+	DPX Sequence	DPX-reeks
+	Numbered JPEG stills (quality 90)	Genummerde JPEG-beelden (kwaliteit 90)
+	Numbered Targa stills (24-bit, uncompressed)	Genummerde Targa-beelden (24-bit, ongecomprimeerd)
+	Numbered DPX stills (10-bit RGB)	Genummerde DPX-beelden (10-bit RGB)
+	OpenEXR	OpenEXR
+	OpenEXR Sequence	OpenEXR-reeks
+	Numbered OpenEXR stills (half float, linear, uncompressed)	Genummerde OpenEXR-beelden (halve precisie, lineair, ongecomprimeerd)
+	Numbered PNG stills at the sequence's frame size	Genummerde PNG-beelden op de framegrootte van de reeks
+	Numbered TIFF stills (RGB, 8-bit)	Genummerde TIFF-beelden (RGB, 8-bit)
+	Opacity 0 → 100 % over the first second	Dekking 0 → 100 % in de eerste seconde
+	Opacity 100 → 0 % over the last second	Dekking 100 → 0 % in de laatste seconde
+	Open Bin	Bin openen
+	Open Search	Zoeken openen
+	PNG	PNG
+	PNG Sequence	PNG-reeks
+	PiP 35% Upper Right	PiP 35% rechtsboven
+	Picture-in-picture: 35 % scale in the upper right	Beeld-in-beeld: 35 % schaal rechtsboven
+	Play In to Out with Preroll/Postroll	Van in- tot uitpunt afspelen met voor-/naloop
+	Play from Playhead to Out Point	Afspelen van afspeelkop tot uitpunt
+	Previous Multi-Camera Page	Vorige multicamerapagina
+	ProjectPanel	Projectpaneel
+	QuickTime (Motion JPEG)	QuickTime (Motion JPEG)
+	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM	QuickTime, DNxHR SQ (8-bit 4:2:2), 24-bit 48 kHz PCM
+	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM	QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM
+	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM	QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM
+	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM	QuickTime, ProRes 422 Proxy, 24-bit 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4), 24-bit 48 kHz PCM
+	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) met alfakanaal, 24-bit 48 kHz PCM
+	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM
+	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, 24-bit 48 kHz PCM
+	Quit CFA4	CFA4 afsluiten
+	Right align text	Tekst rechts uitlijnen
+	Ripple Trim Next Edit to Playhead	Volgend bewerkpunt ripple-trimmen tot afspeelkop
+	Ripple Trim Previous Edit to Playhead	Vorig bewerkpunt ripple-trimmen tot afspeelkop
+	Select Camera 1	Camera 1 selecteren
+	Select Camera 2	Camera 2 selecteren
+	Select Camera 3	Camera 3 selecteren
+	Select Camera 4	Camera 4 selecteren
+	Select Camera 5	Camera 5 selecteren
+	Select Camera 6	Camera 6 selecteren
+	Select Camera 7	Camera 7 selecteren
+	Select Camera 8	Camera 8 selecteren
+	Select Camera 9	Camera 9 selecteren
+	Select Clip at Playhead	Clip bij afspeelkop selecteren
+	Select Find Box	Zoekvak selecteren
+	Select Next Clip	Volgende clip selecteren
+	Select Next Panel	Volgend paneel selecteren
+	Select Previous Clip	Vorige clip selecteren
+	Select Previous Panel	Vorig paneel selecteren
+	Select to Next Line	Selecteren tot volgende regel
+	Select to Next Word	Selecteren tot volgend woord
+	Select to Previous Line	Selecteren tot vorige regel
+	Select to Previous Word	Selecteren tot vorig woord
+	Select to Segment End	Selecteren tot einde segment
+	Select to Segment Start	Selecteren tot begin segment
+	Set Creative Look	Creatieve look instellen
+	Set Input LUT	Invoer-LUT instellen
+	Set Project Panel View	Weergave projectpaneel instellen
+	Show Next Screen	Volgend scherm tonen
+	Show Previous Screen	Vorig scherm tonen
+	Show Program Transcript	Programmatranscript tonen
+	Slide Clip Selection Left Five Frames	Clipselectie vijf frames naar links schuiven
+	Slide Clip Selection Left One Frame	Clipselectie één frame naar links schuiven
+	Slide Clip Selection Right Five Frames	Clipselectie vijf frames naar rechts schuiven
+	Slide Clip Selection Right One Frame	Clipselectie één frame naar rechts schuiven
+	Slip Clip Selection Left Five Frames	Clipselectie vijf frames naar links slippen
+	Slip Clip Selection Left One Frame	Clipselectie één frame naar links slippen
+	Slip Clip Selection Right Five Frames	Clipselectie vijf frames naar rechts slippen
+	Slip Clip Selection Right One Frame	Clipselectie één frame naar rechts slippen
+	Social Vertical 1080×1920	Sociaal verticaal 1080×1920
+	Soft Vignette	Zacht vignet
+	Source In/Out	Bron-in/-uit
+	Split Caption	Ondertitel splitsen
+	Stack Clips	Clips stapelen
+	Start Export Queue	Exportwachtrij starten
+	Start Voice-over Recording	Voice-over-opname starten
+	Step Back Five Frames	Vijf frames terug
+	Step Back One Frame	Eén frame terug
+	Step Forward Five Frames	Vijf frames vooruit
+	Step Forward One Frame	Eén frame vooruit
+	Stop Export Queue	Exportwachtrij stoppen
+	Stop Multi-Camera Recording	Multicamera-opname stoppen
+	Sync Voice-over Capture	Voice-over-opname synchroniseren
+	TIFF	TIFF
+	TIFF Sequence	TIFF-reeks
+	TextPanel	Tekstpaneel
+	Thumbnail Size Next	Volgende miniatuurgrootte
+	Thumbnail Size Previous	Vorige miniatuurgrootte
+	Toggle All Audio Targets	Alle audiodoelen aan/uit
+	Toggle All Source Audio	Alle bronaudio aan/uit
+	Toggle All Source Video	Alle bronvideo aan/uit
+	Toggle All Video Targets	Alle videodoelen aan/uit
+	Toggle Audio During Scrubbing	Audio tijdens scrubben aan/uit
+	Toggle Full Screen	Volledig scherm aan/uit
+	Toggle Mute for All Targeted Audio Tracks	Dempen voor alle doel-audiotracks aan/uit
+	Toggle Solo for All Targeted Audio Tracks	Solo voor alle doel-audiotracks aan/uit
+	Toggle Source/Program Monitor Focus	Focus bron-/programmamonitor wisselen
+	Toggle Target Audio 1	Doelaudio 1 aan/uit
+	Toggle Target Audio 2	Doelaudio 2 aan/uit
+	Toggle Target Audio 3	Doelaudio 3 aan/uit
+	Toggle Target Audio 4	Doelaudio 4 aan/uit
+	Toggle Target Audio 5	Doelaudio 5 aan/uit
+	Toggle Target Audio 6	Doelaudio 6 aan/uit
+	Toggle Target Audio 7	Doelaudio 7 aan/uit
+	Toggle Target Audio 8	Doelaudio 8 aan/uit
+	Toggle Target Video 1	Doelvideo 1 aan/uit
+	Toggle Target Video 2	Doelvideo 2 aan/uit
+	Toggle Target Video 3	Doelvideo 3 aan/uit
+	Toggle Target Video 4	Doelvideo 4 aan/uit
+	Toggle Target Video 5	Doelvideo 5 aan/uit
+	Toggle Target Video 6	Doelvideo 6 aan/uit
+	Toggle Target Video 7	Doelvideo 7 aan/uit
+	Toggle Target Video 8	Doelvideo 8 aan/uit
+	Toggle Track Output for All Targeted Video Tracks	Trackuitvoer voor alle doel-videotracks aan/uit
+	Toggle Trim Type	Trimtype wisselen
+	Toggle View	Weergave wisselen
+	Track Selected Mask	Geselecteerd masker volgen
+	Trim Next Edit to Playhead	Volgend bewerkpunt trimmen tot afspeelkop
+	Trim Previous Edit to Playhead	Vorig bewerkpunt trimmen tot afspeelkop
+	Trimming	Trimmen
+	Unstack Clips	Clips ontstapelen
+	CRF (constant quality)	CRF (constante kwaliteit)
+	Vimeo 1080p Full HD	Vimeo 1080p Full HD
+	Vimeo 2160p 4K Ultra HD	Vimeo 2160p 4K Ultra HD
+	Voice-over Record	Voice-over-opname
+	Voiceover	Voice-over
+	WAV, stereo 48 kHz 16-bit PCM	WAV, stereo 48 kHz 16-bit PCM
+	WAV, stereo 48 kHz 24-bit PCM	WAV, stereo 48 kHz 24-bit PCM
+	Warm Tint	Warme tint
+	Warm highlights, brown shadows	Warme hooglichten, bruine schaduwen
+	Waveform Audio 48 kHz 16-bit	Waveform Audio 48 kHz 16-bit
+	Waveform Audio 48 kHz 24-bit	Waveform Audio 48 kHz 24-bit
+	Web & Social	Web en sociale media
+	Write Automation	Automatisering schrijven
+	YouTube 1080p Full HD	YouTube 1080p Full HD
+	YouTube 2160p 4K Ultra HD	YouTube 2160p 4K Ultra HD
+	Zoom Program Monitor to 100%	Programmamonitor zoomen naar 100%
+	Zoom Program Monitor to Fit	Programmamonitor passend zoomen
+	Zoom Source Monitor to 100%	Bronmonitor zoomen naar 100%
+	Zoom Source Monitor to Fit	Bronmonitor passend zoomen
+	Cinematic	Filmisch
+	Film Emulation	Filmemulatie
+	Technical	Technisch
+	Teal Shadows, Warm Skin	Blauwgroene schaduwen, warme huid
+	Night Exterior	Buiten bij nacht
+	Golden Dusk	Gouden schemering
+	Steel Blue	Staalblauw
+	Hard Sun	Harde zon
+	Faded Print	Vervaagde afdruk
+	Silver Retention	Zilverbehoud
+	Cross Processed	Crossgeprocest
+	Warm Negative	Warm negatief
+	Neutral Mono	Neutraal mono
+	Hard Mono	Hard mono
+	Sepia Tone	Sepiatoon
+	Cold Mono	Koud mono
+	Lift Shadows	Schaduwen optillen
+	Protect Highlights	Hooglichten beschermen
+	Half Saturation	Halve verzadiging
+	Boost Vibrance	Levendigheid versterken
+	Legal Range Squeeze	Samenpersen tot legaal bereik
+	A boxed label with a round pointer; move the label and the pointer follows.	Een label in een kader met een ronde aanwijzer; verplaats het label en de aanwijzer volgt.
+	A rounded tag that fits its text, with a status dot.	Een afgerond label dat bij de tekst past, met een statusstip.
+	A title on a rounded card with a soft shadow.	Een titel op een afgeronde kaart met een zachte schaduw.
+	Accent Color	Accentkleur
+	Bar Color	Balkkleur
+	Box Color	Kaderkleur
+	Box Opacity	Kaderdekking
+	Callout – Pointer	Toelichting – aanwijzer
+	Callout – Tag	Toelichting – label
+	Callouts	Toelichtingen
+	Credits	Aftiteling
+	Dot Color	Stipkleur
+	Heading	Kop
+	Large centred title, accent rule and subtitle.	Grote gecentreerde titel, accentlijn en ondertitel.
+	Lower Third – Rule	Onderbalk – lijn
+	Lower Third – Slab	Onderbalk – blok
+	Lower Thirds	Onderbalken
+	Name Color	Naamkleur
+	Name Size	Naamgrootte
+	Name and role on a coloured slab that widens with the name.	Naam en functie op een gekleurd blok dat met de naam meegroeit.
+	Name over a thin rule that always matches the name's width.	Naam boven een dunne lijn die altijd even breed is als de naam.
+	Pointer Color	Aanwijzerkleur
+	Role	Functie
+	Rule Color	Lijnkleur
+	Show Dot	Stip tonen
+	Show Role	Functie tonen
+	Slab Color	Blokkleur
+	Tag Color	Labelkleur
+	Title Color	Titelkleur
+	Title Size	Titelgrootte
+	Title – Boxed	Titel – in kader
+	Title – Centered	Titel – gecentreerd
+	Titles	Titels
+	End Credits	Aftiteling
+	End Credits – Roll	Aftiteling – rol
+	Ticker – Crawl	Ticker – lopend
+	Centred credits that roll up from below the frame and leave at the top.	Gecentreerde aftiteling die van onder het beeld omhoog rolt en bovenaan verdwijnt.
+	A news-style line that crawls in from the right and leaves at the left.	Een regel in nieuwsstijl die van rechts binnenkomt en links verdwijnt.
+	The language changed but could not be saved: {e}	De taal is gewijzigd maar kon niet worden opgeslagen: {e}
+	no Chinese font is installed on this system; the interface stays in English	er is geen Chinees lettertype op dit systeem geïnstalleerd; de interface blijft in het Engels
+	no Korean font is installed on this system; the interface stays in English	er is geen Koreaans lettertype op dit systeem geïnstalleerd; de interface blijft in het Engels
+	no Georgian font is installed on this system; the interface stays in English	er is geen Georgisch lettertype op dit systeem geïnstalleerd; de interface blijft in het Engels
+	no Japanese font is installed on this system; the interface stays in English	er is geen Japans lettertype op dit systeem geïnstalleerd; de interface blijft in het Engels
+	Main (8-bit)	Main (8-bit)
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12-bit
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12-bit met alfa
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10-bit
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit met alfakanaal, Film Scan 1, 24-bit 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM
+	Deselect All Project Items	Selectie van alle projectitems opheffen
+	H.265 (HEVC)	H.265 (HEVC)
+	Select All Project Items	Alle projectitems selecteren
+	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	Slepen: verplaatsen · Alt-klik: vloeiend/hoek · Ctrl-klik: verwijderen
+	Drag inward to round the corners	Sleep naar binnen om de hoeken af te ronden
+	Play Source	Bron afspelen
+	Source Play/Stop	Bron afspelen/stoppen
+	Stop Source	Bron stoppen
+	Clear Transition	Overgang wissen
+	Fill Type	Vultype
+	Gradient Angle	Verloophoek
+	Edit Narration	Voice-over bewerken
+	Resize floating panel	Zwevend paneel vergroten/verkleinen
+	Get Project Notes	Projectnotities ophalen
+	Edit Project Notes	Projectnotities bewerken
+	Use Effect Shutter Angle	Sluiterhoek van effect gebruiken
+	Safe graphics mode: {mode}	Veilige grafische modus: {mode}
+	An earlier start failed with the default graphics. Updating the graphics driver usually fixes this.	Een eerdere start is mislukt met de standaardgraphics. Het bijwerken van het grafische stuurprogramma lost dit meestal op.
+	Use Default Graphics	Standaardgraphics gebruiken
+	The default graphics are used from the next start.	De standaardgraphics worden gebruikt vanaf de volgende start.
+	DirectX 12 only	Alleen DirectX 12
+	software rendering	softwarematig renderen
+	Opens in your web browser: {url}	Opent in uw webbrowser: {url}
+	Saves this session's log and shows it in your file manager.	Slaat het log van deze sessie op en toont het in uw bestandsbeheer.
+	Shows a report on this computer.	Toont een rapport over deze computer.
+	Shows the version, community links and credits in a CFA4 window.	Toont de versie, communitylinks en vermeldingen in een CFA4-venster.
+	Couldn't open your web browser	Kon uw webbrowser niet openen
+	Open this address in your browser yourself:	Open dit adres zelf in uw browser:
+	Reset Interface Zoom	Interfacezoom herstellen
+	Stereoscopic 3D	Stereoscopisch 3D
+	Swap Eyes	Ogen verwisselen
+	Over/Under	Boven/onder
+	Side by Side	Naast elkaar
+	Stereo to 2D	Stereo naar 2D
+	Eye	Oog
+	Stereo Parallax	Stereoparallax
+	Horizontal Shift	Horizontale verschuiving
+	Slit Scan	Spleetscan
+	Time Span (seconds)	Tijdspanne (seconden)
+	Current Frame At	Huidig frame op
+	Blend Slices	Plakken mengen
+	Creative Looks	Creatieve looks
+	Film Grain	Filmkorrel
+	Animated	Geanimeerd
+	Color Grain	Kleurkorrel
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 met 8 Mbps, AAC 160 kbps, gefragmenteerde MP4-segmenten van 6 seconden
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2-programmastream
+	MPEG-2 Transport Stream HD 1080	MPEG-2-transportstream HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 met 29,97 fps, 16:9 anamorf, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (dvd-klare stream; geen VIDEO_TS-authoring)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 met 25 fps, 16:9 anamorf, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (dvd-klare stream; geen VIDEO_TS-authoring)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2-video (Main Profile 4:2:0, 0,4 bits per pixel) op de framegrootte en -snelheid van de reeks, 16-bit 48 kHz LPCM, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2-video 1920×1080, gemiddeld 18 Mbps, AAC 192 kbps, .ts
+	Six-Point Pin	Zespuntsbevestiging
+	Upper Center	Midden boven
+	Lower Center	Midden onder
+	Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)	FFmpeg gebruiken voor bestanden die de CFA4-engine niet kan openen (FFmpeg 9.0.2 of later, GPL-3-build)
+	Use the system's GStreamer for files neither the engine nor FFmpeg can open	De GStreamer van het systeem gebruiken voor bestanden die de engine en FFmpeg niet kunnen openen
+	Analyze Source for Smart Cut	Bron analyseren voor slim knippen
+	Plan Smart Cut	Slim knippen plannen
+	Run Smart Cut	Slim knippen uitvoeren
+	No sequence open. Double-click a sequence in the Project panel.	Geen reeks open. Dubbelklik op een reeks in het projectpaneel.
+	English (US)	English (US)
+	English (UK)	English (UK)
+	English (Australia)	English (Australia)
+export.summary	High	hoog
+export.summary	Medium	gemiddeld
+export.summary	Low	laag
+
+
+# Strings from main, 2026-11-11 (Smart Cut audio, tracker and DCP naming)
+	Audio copied: {tracks}	Audio gekopieerd: {tracks}
+	Audio track {track} is not copied: {why}	Audiotrack {track} wordt niet gekopieerd: {why}
+	Point tracker	Puntvolger
+	Correlation tracker	Correlatievolger
+	DCP language	DCP-taal
+	None (RFC 5646 tag, e.g. en-US)	Geen (RFC 5646-tag, bijv. nl-NL)
+	ISDCF name	ISDCF-naam
+	Name the DCP folder by the Digital Cinema Naming Convention	DCP-map een naam geven volgens de Digital Cinema Naming Convention
+
+# Imported from craft-i18n (github.com/ubuntuokos/CFA4_craft-i18n, a fork of storytold's
+# craft-i18n), locales/nl/common.tsv at aa36bd8, 2026-11-10. MIT OR Apache-2.0; the copyright
+# notice is in NOTICE, the translators in that repository's ATTRIBUTION.md (nl). These rows were
+# written clean-room there; only rows whose English and meaning match CFA4's were taken, and a few
+# were reworded above for video editing.
+
+	Align to Selection	Uitlijnen op selectie
+	Arrange	Schikken
+	Audio	Audio
+	Automatic	Automatisch
+	Balance	Balans
+	Blend Mode	Overvloeimodus
+	Blue	Blauw
+	Bottom	Onder
+	Bring Forward	Naar voren brengen
+	Bring to Front	Naar de voorgrond brengen
+	Brown	Bruin
+	Browse…	Bladeren…
+	Clear	Wissen
+	Close	Sluiten
+	Color	Kleur
+	Copy	Kopiëren
+	Custom	Aangepast
+	Cut	Knippen
+	Darken	Donkerder
+	Deselect All	Alles deselecteren
+	Difference	Verschil
+	Distort	Vervormen
+	Distribute	Verdelen
+	Done	Gereed
+	Duplicate	Dupliceren
+	Duration	Duur
+	Edit	Bewerken
+	Edit Original	Origineel bewerken
+	Effects	Effecten
+	Ellipse	Ellips
+	Enable	Inschakelen
+	Exclusion	Uitsluiting
+	Export	Exporteren
+	File	Bestand
+	Find Next	Volgende zoeken
+	Fit	Passen
+	Flatten	Platmaken
+	Format	Formaat
+	General…	Algemeen…
+	Generate	Genereren
+	Green	Groen
+	Group	Groeperen
+	Hard Light	Hard licht
+	Hard Mix	Harde mix
+	Help	Help
+	Import…	Importeren…
+	Info	Info
+	Insert	Invoegen
+	Label	Label
+	Language	Taal
+	Left	Links
+	Level	Niveau
+	Libraries	Bibliotheken
+	Lighten	Lichter
+	Lighter Color	Lichtere kleur
+	Linear	Lineair
+	Linear Burn	Lineair doordrukken
+	Linear Light	Lineair licht
+	Luminosity	Luminositeit
+	Magenta	Magenta
+	Metadata	Metagegevens
+	Modify	Wijzigen
+	Motion	Beweging
+	Multiply	Vermenigvuldigen
+	Name	Naam
+	New	Nieuw
+	New Layer	Nieuwe laag
+	No	Nee
+	Normal	Normaal
+	Opacity	Dekking
+	Output	Uitvoer
+	Panels	Panelen
+	Paste	Plakken
+	Perspective	Perspectief
+	Pin Light	Puntlicht
+	Polygon	Polygoon
+	Position	Positie
+	Preset	Voorinstelling
+	Properties	Eigenschappen
+	Purple	Paars
+	Range	Bereik
+	Ready	Klaar
+	Rectangle	Rechthoek
+	Redo	Opnieuw uitvoeren
+	Remove	Verwijderen
+	Rename…	Hernoemen…
+	Revert	Terugzetten
+	Right	Rechts
+	Rotation	Rotatie
+	Saturation	Verzadiging
+	Save	Opslaan
+	Save As…	Opslaan als…
+	Save a Copy…	Een kopie opslaan…
+	Save as Template…	Opslaan als sjabloon…
+	Scale	Schaal
+	Scratch Disks…	Werkschijven…
+	Screen	Scherm
+	Search	Zoeken
+	Select	Selecteren
+	Select All	Alles selecteren
+	Send Backward	Naar achteren brengen
+	Send to Back	Naar de achtergrond brengen
+	Soft Light	Zacht licht
+	Source	Bron
+	Speed	Snelheid
+	Status	Status
+	Stylize	Stileren
+	Subtract	Aftrekken
+	Text	Tekst
+	Time	Tijd
+	Timecode	Tijdcode
+	Timeline	Tijdlijn
+	Tools	Gereedschappen
+	Top	Boven
+	Transform	Transformeren
+	Type	Type
+	Undo	Ongedaan maken
+	Ungroup	Groepering opheffen
+	Untitled	Naamloos
+	Video	Video
+	View	Beeld
+	Violet	Violet
+	Vivid Light	Fel licht
+	Window	Venster
+	Workspaces	Werkruimten
+	Yellow	Geel
+	Yes	Ja
+	Alpha	Alfa
+	Full	Volledig
+	Red	Rood
+	Reset	Opnieuw instellen
+	Settings	Instellingen
+	Appearance	Uiterlijk
+	Dark	Donker
+	Light	Licht
+	Settings:	Instellingen:
+	Type:	Type:
+	Color Space	Kleurruimte
+	Description	Beschrijving
+	Cancel	Annuleren
+	Current Time	Huidige tijd
+	Show All	Alles tonen
+	Off	Uit
+	Mono	Mono
+	Auto	Automatisch
+	Brightness	Helderheid
+	Histogram	Histogram
+	Presets	Voorinstellingen
+	RGB	RGB
+	Adjustments	Aanpassingen
+	Amount	Hoeveelheid
+	Blacks	Zwarten
+	Blur	Vervagen
+	Contrast	Contrast
+	Correction	Correctie
+	Curves	Curven
+	Exposure	Belichting
+	Faded Film	Vervaagde film
+	Highlights	Hooglichten
+	Hue Shift	Tintverschuiving
+	Intensity	Intensiteit
+	Midpoint	Middelpunt
+	Midtones	Middentonen
+	Monochrome	Monochroom
+	None	Geen
+	Refine	Verfijnen
+	Roundness	Rondheid
+	Shadows	Schaduwen
+	Sharpen	Verscherpen
+	Show Mask	Masker tonen
+	Soften	Verzachten
+	Temperature	Temperatuur
+	Tint	Tint
+	Vibrance	Levendigheid
+	Whites	Witten
+	Favorites	Favorieten
+	Import	Importeren
+	List View	Lijstweergave
+	Refresh	Vernieuwen
+	Size	Grootte
+	Align	Uitlijnen
+	Align center	Centreren
+	Align left	Links uitlijnen
+	Align right	Rechts uitlijnen
+	Browse	Bladeren
+	Clarity	Duidelijkheid
+	Dynamics	Dynamiek
+	Preset:	Voorinstelling:
+	Reduce Noise	Ruis verminderen
+	Sensitivity	Gevoeligheid
+	Alignment	Uitlijning
+	All Caps	Alle kapitalen
+	All Categories	Alle categorieën
+	Angle	Hoek
+	Apply	Toepassen
+	Background	Achtergrond
+	Baseline Shift	Basislijnverschuiving
+	Center	Midden
+	Delete Layer	Laag verwijderen
+	Distance	Afstand
+	Fill	Vulling
+	Font	Lettertype
+	Font Size	Lettertypegrootte
+	Gradient	Verloop
+	Justify	Uitvullen
+	Kerning	Kerning
+	Layers	Lagen
+	Leading	Regelafstand
+	Linear Gradient	Lineair verloop
+	OK	OK
+	OpenType	OpenType
+	Orientation	Oriëntatie
+	Path	Pad
+	Shadow	Schaduw
+	Shape	Vorm
+	Small Caps	Kleine kapitalen
+	Stroke	Contour
+	Style	Stijl
+	Tracking	Tracking
+	Underline	Onderstrepen
+	Advanced	Geavanceerd
+	Default	Standaard
+	Download	Downloaden
+	High	Hoog
+	Low	Laag
+	Preview	Voorbeeld
+	Open	Openen
+	Crop	Bijsnijden
+	Date Created	Aanmaakdatum
+	Delete	Verwijderen
+	Find	Zoeken
+	Large	Groot
+	List	Lijst
+	Name:	Naam:
+	Rename	Hernoemen
+	Small	Klein
+	Zoom	Zoom
+	Close All	Alles sluiten
+	Description:	Beschrijving:
+	Save Preset…	Voorinstelling opslaan…
+	Add	Toevoegen
+	Delete Mask	Masker verwijderen
+	Intersect	Doorsnede
+	Reverse	Omkeren
+	Edit…	Bewerken…
+	Ratio	Verhouding
+	Threshold	Drempel
+	Continue	Doorgaan
+	Active	Actief
+	Add to favorites	Toevoegen aan favorieten
+	Preferences	Voorkeuren
+	Remove from favorites	Verwijderen uit favorieten
+	Sync with system	Synchroniseren met systeem
+	Adaptive	Adaptief
+	Color…	Kleur…
+	Dark Theme	Donker thema
+	Delete…	Verwijderen…
+	Double-click	Dubbelklik
+	Dutch	Nederlands
+	French	Frans
+	General	Algemeen
+	German	Duits
+	Hindi	Hindi
+	Horizontal	Horizontaal
+	Interface Language	Interfacetaal
+	Italian	Italiaans
+	Japanese	Japans
+	Labels	Labels
+	Light Theme	Licht thema
+	Location	Locatie
+	Portuguese	Portugees
+	Shapes	Vormen
+	Show Tool Tips	Tooltips tonen
+	Smart quotes	Slimme aanhalingstekens
+	Spanish	Spaans
+	Vertical	Verticaal
+	Input:	Invoer:
+	● Recording	● Opnemen
+	Next page	Volgende pagina
+	Previous page	Vorige pagina
+	Version	Versie
+	Command	Opdracht
+	Export…	Exporteren…
+	Keyboard Shortcuts	Sneltoetsen
+	Keyboard Shortcuts…	Sneltoetsen…
+	No matching commands	Geen overeenkomende opdrachten
+	Shortcut	Sneltoets
+	Dock Panel	Paneel dokken
+	Close Panel	Paneel sluiten
+	Add Guide	Hulplijn toevoegen
+	Clear Guides	Hulplijnen wissen
+	Guides	Hulplijnen
+	Lock Guides	Hulplijnen vergrendelen
+	Orientation:	Oriëntatie:
+	Show Guides	Hulplijnen tonen
+	Show Rulers	Linialen tonen
+	Color Management	Kleurbeheer
+	Height:	Hoogte:
+	Layout:	Indeling:
+	Width:	Breedte:
+	All	Alles
+	Color:	Kleur:
+	Destination:	Bestemming:
+	File Size	Bestandsgrootte
+	Keep:	Behouden:
+	Language:	Taal:
+	Method:	Methode:
+	Save as Template	Opslaan als sjabloon
+	Simplify	Vereenvoudigen
+	Destination	Bestemming
+	File Name	Bestandsnaam
+	Folder	Map
+	Missing	Ontbreekt
+	Options	Opties
+	Embed	Insluiten
+	Exported {path}	{path} geëxporteerd
+	Format:	Indeling:
+	Path:	Pad:
+	Replace	Vervangen
+	Preset Manager	Voorinstellingenbeheer
+	Compression	Compressie
+	Medium	Gemiddeld
+	Profile	Profiel
+	Quality	Kwaliteit
+	Bottom Left	Linksonder
+	Bottom Right	Rechtsonder
+	Export Options	Exportopties
+	File Format	Bestandsformaat
+	Image	Afbeelding
+	Images	Afbeeldingen
+	Top Left	Linksboven
+	Top Right	Rechtsboven
+	Copyright	Copyright
+	Scaling	Schaling
+	Summary	Samenvatting
+	16 bit	16 bit
+	24 bit	24 bit
+	32 bit	32 bit
+	Channels	Kanalen
+	Progressive	Progressief
+	Sample Size	Monstergrootte
+	Home	Home
+	Recent	Recent
+	Down	Omlaag
+	Restore	Herstellen
+	Clear All	Alles wissen
+	Warning	Waarschuwing
+	Error	Fout
+	Strikethrough	Doorhalen
+	Panel menu	Paneelmenu
+	About	Over
+	Contributors	Bijdragers
+	Models	Modellen
+	Show	Tonen
+	Sort	Sorteren
+	Reverse the order	Volgorde omkeren
+	Table	Tabel
+	Company	Bedrijf
+	Model	Model
+	Commits	Commits
+	% of all commits	% van alle commits
+	Lines +/−	Regels +/−
+	Version {version}	Versie {version}
+	Username	Gebruikersnaam
+	Display name	Weergavenaam
+	Real name	Echte naam
+	Name (A–Z)	Naam (A–Z)
+	Merged PRs	Samengevoegde PR's
+	Lines added	Toegevoegde regels
+	Lines deleted	Verwijderde regels
+	Line delta	Regelverschil
+	Binary assets added	Toegevoegde binaire assets
+	Binary assets removed	Verwijderde binaire assets
+	First commit	Eerste commit
+	Last commit	Laatste commit
+	Output:	Uitvoer:
+	Open Recent	Recent geopend
+	Clear Recent Files	Recente bestanden wissen
+	Report an Issue…	Probleem melden…
+	Zoom In	Inzoomen
+	Zoom Out	Uitzoomen
+	Standard	Standaard
+	Source code on GitHub	Broncode op GitHub
+	Community	Community
+	Join us on Discord	Doe mee op Discord
+	New Workspace	Nieuwe werkruimte
+	Effect	Effect
+	Don't Save	Niet opslaan
+	Composite	Composiet
+	Background Color	Achtergrondkleur
+	Black	Zwart
+	Black & White	Zwart-wit
+	Blocks	Blokken
+	Blur Angle	Vervagingshoek
+	Border	Rand
+	Brush Size	Penseelgrootte
+	Brush Strokes	Penseelstreken
+	Bulge	Uitstulping
+	Channel	Kanaal
+	Channel Mixer	Kanaalmixer
+	Circle	Cirkel
+	Clone	Klonen
+	Color Balance	Kleurbalans
+	Colorize	Inkleuren
+	Columns	Kolommen
+	Corner	Hoek
+	Crystallize	Kristalliseren
+	Curvature	Kromming
+	Curve	Curve
+	Depth	Diepte
+	Desaturate	Verzadiging verwijderen
+	Diamond	Ruit
+	Dimensions	Afmetingen
+	Direction	Richting
+	Distortion	Vervorming
+	Drop Shadow	Slagschaduw
+	Edge Thickness	Randdikte
+	Edge Width	Randbreedte
+	Emboss	Reliëf
+	Fast	Snel
+	Focus	Scherpstelling
+	Frequency	Frequentie
+	From	Van
+	Gamma	Gamma
+	Gamma Correction	Gammacorrectie
+	Gamut Warning	Gamutwaarschuwing
+	Gaussian Blur	Gaussiaanse vervaging
+	Glass	Glas
+	Glow	Gloed
+	Glow Brightness	Gloedhelderheid
+	Good	Goed
+	Grid	Raster
+	Hard	Hard
+	Heart	Hart
+	Height	Hoogte
+	Hexagon	Zeshoek
+	High Pass	Hoogdoorlaat
+	Inside	Binnen
+	Interpolation	Interpolatie
+	Invert	Omkeren
+	Left to Right	Links naar rechts
+	Length	Lengte
+	Lens Flare	Lensschittering
+	Levels	Niveaus
+	Light Intensity	Lichtintensiteit
+	Light Type	Lichttype
+	Lighting Effects	Belichtingseffecten
+	Luminance	Luminantie
+	Matte	Mat
+	Maximum	Maximum
+	Median	Mediaan
+	Method	Methode
+	Minimum	Minimum
+	Mode	Modus
+	Mosaic	Mozaïek
+	Move	Verplaatsen
+	Noise	Ruis
+	Octagon	Achthoek
+	On	Aan
+	Outside	Buiten
+	Pentagon	Vijfhoek
+	Photocopy	Fotokopie
+	Points	Punten
+	Posterize	Posteriseren
+	Preserve Luminosity	Lichtsterkte behouden
+	Radial	Radiaal
+	Radial Blur	Radiale vervaging
+	Radius	Straal
+	Random	Willekeurig
+	Rays	Stralen
+	Reflected	Gespiegeld
+	Relief	Reliëf
+	Result	Resultaat
+	Rows	Rijen
+	Segments	Segmenten
+	Smoothness	Gladheid
+	Soft	Zacht
+	Softness	Zachtheid
+	Solarize	Solariseren
+	Spherize	Bolvorm
+	Square	Vierkant
+	Star	Ster
+	Strength	Sterkte
+	Stretch	Uitrekken
+	Stroke Color	Contourkleur
+	Stroke Length	Streeklengte
+	Thickness	Dikte
+	Tilt	Kanteling
+	Tint Color	Tintkleur
+	Tolerance	Tolerantie
+	Transparency	Transparantie
+	Triangle	Driehoek
+	Twist	Torsie
+	Unsharp Mask	Onscherp maskeren
+	Wave	Golf
+	Wet	Nat
+	White	Wit
+	White Is High	Wit is hoog
+	Width	Breedte
+	Stop	Stoppen
+	Baseline	Basislijn
+	Masks	Maskers
+	Panel	Paneel
+# Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videogereedschappen
+	Audio Tools	Audiogereedschappen
+	Publication Tools	Publicatiegereedschappen
+	Smart Export…	Slim exporteren…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Vanuit het noordwesten
+	From North-East	Vanuit het noordoosten
+	From South-East	Vanuit het zuidoosten
+	From South-West	Vanuit het zuidwesten
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Verbeteren
+	Skin Smoothing	Huid verzachten
+	Keep Texture	Textuur behouden
+	Skin Tone	Huidtint
+	Smooth Entire Image	Hele beeld verzachten
+	Low Light	Weinig licht
+	Max Brightening	Maximale verheldering
+	Show Illumination	Belichting tonen
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Easing-voorinstellingen
+	Sine	Sinus
+	Exponential	Exponentieel
+	Circular	Cirkelvormig
+	Elastic	Elastisch
+	Film Gate	Filmvenster
+	Gate Weave	Venstertrilling
+	Weave Rotation	Trillingsrotatie
+	Particles	Deeltjes
+	Emitter Position	Positie van bron
+	Birth Rate	Ontstaanssnelheid
+	Lifetime (seconds)	Levensduur (seconden)
+	Velocity Random	Willekeurige snelheid
+	Gravity	Zwaartekracht
+	Particle Size	Deeltjesgrootte
+	Keyhole	Sleutelgat
+	Burn Away	Wegbranden
+	Burn Size	Brandgrootte
+	Ember Width	Breedte van gloeirand
+	Ember Color	Kleur van gloeirand
+	Check Text Legibility	Leesbaarheid van tekst controleren
+	Clear Legibility Markers	Leesbaarheidsmarkeringen wissen
+	Text legibility: no problems found	Leesbaarheid van tekst: geen problemen gevonden
+	Text legibility: {count} problems marked on the timeline (orange markers)	Leesbaarheid van tekst: {count} problemen gemarkeerd op de tijdlijn (oranje markeringen)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitreductie
+	Bits per Channel	Bits per kanaal
+	Ordered Dither	Geordende dithering
+	Dither Cell Size	Celgrootte van dithering
+	Block Glitch	Blokglitch
+	Blocks Moved	Verplaatste blokken
+	Max Distance	Maximale afstand
+	Snap to Grid	Uitlijnen op raster
+	Swap Blocks	Blokken verwisselen
+	Changes per Second	Wijzigingen per seconde
+	Databend	Datavervorming
+	Breaks	Breuken
+	Shift	Verschuiving
+	Color Damage	Kleurschade
+	VHS	VHS
+	Color Bleed	Kleurvervloeiing
+	Wobble	Schommeling
+	Snow	Sneeuw
+	Tracking Bar	Trackingbalk
+	Head Switching	Kopwisseling
+	Scan Line Jitter	Lijnjitter
+	Jitter	Jitter
+	Interval	Interval
+	Infinite	Oneindig
+	Periodic	Periodiek
+	Tile Jitter	Tegeljitter
+	Tiles	Tegels
+	Band Direction	Richting van banden
+	Jitter Direction	Richting van jitter
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Halftoon
+	Dither	Dithering
+	Pattern	Patroon
+	Cell Size	Celgrootte
+	Cyan Angle	Hoek cyaan
+	Magenta Angle	Hoek magenta
+	Yellow Angle	Hoek geel
+	Black Angle	Hoek zwart
+	Monochrome Angle	Hoek monochroom
+	Sharpness	Scherpte
+	Ink Color	Inktkleur
+	Paper Color	Papierkleur
+	Color (CMYK)	Kleur (CMYK)
+	Dot	Punt
+	Line	Lijn
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pixelgrootte
+	Palette	Palet
+	Input Colors	Invoerkleuren
+	Green Phosphor	Groene fosfor
+	Amber Monitor	Amberkleurige monitor
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

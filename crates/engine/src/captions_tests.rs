@@ -224,3 +224,51 @@ fn captions_copy_cut_and_paste() {
     s.execute("edit.undo", json!({})).unwrap();
     assert_eq!(caption_spans(&s).len(), 1);
 }
+
+const DCP_REEL: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<SubtitleReel xmlns="http://www.smpte-ra.org/schemas/428-7/2010/DCST">
+  <Id>urn:uuid:7c5bd5b8-3b0f-4a3b-9b1e-1c2d3e4f5a6b</Id>
+  <ContentTitleText>Reel</ContentTitleText>
+  <Language>hu</Language>
+  <EditRate>24 1</EditRate>
+  <TimeCodeRate>24</TimeCodeRate>
+  <StartTime>01:00:00:00</StartTime>
+  <SubtitleList>
+    <Font Italic="no">
+      <Subtitle SpotNumber="1" TimeIn="01:00:01:00" TimeOut="01:00:03:00"><Text Valign="bottom" Vposition="10">Jó estét!</Text></Subtitle>
+      <Subtitle SpotNumber="2" TimeIn="01:00:04:00" TimeOut="01:00:06:00"><Text Valign="bottom" Vposition="10"><Font Italic="yes">Második</Font></Text></Subtitle>
+    </Font>
+  </SubtitleList>
+</SubtitleReel>
+"#;
+
+#[test]
+fn dcp_timed_text_mxf_and_dcst_xml_import_as_caption_tracks() {
+    let dir = std::env::temp_dir().join(format!("fc-dcst-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let mxf = dir.join("sub_reel1.mxf");
+    std::fs::write(&mxf, cfa4_mxf::testing::build_timed_text(DCP_REEL.as_bytes(), &[("application/x-font-opentype", b"font")])).unwrap();
+    let xml = dir.join("reel2.xml");
+    std::fs::write(&xml, DCP_REEL).unwrap();
+    let mut s = demo();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    assert_eq!(r["documents"][0]["captions"], 2, "{r}");
+    assert_eq!(r["documents"][0]["format"], "D-Cinema subtitles (ST 428-7)");
+    let q = s.active_sequence().unwrap();
+    let tr = &q.caption_tracks[0];
+    assert_eq!(tr.name, "sub_reel1 (hu)");
+    assert_eq!(tr.captions[0].start, q.settings.frame_rate.snap_nearest(Tick(TICKS_PER_SECOND)), "one second after StartTime");
+    assert_eq!(tr.captions[0].text, "Jó estét!");
+    assert_eq!(tr.captions[1].text, "<i>Második</i>");
+    let r = s.execute("file.import", json!({"paths": [xml.to_string_lossy()]})).unwrap();
+    assert_eq!(r["documents"][0]["captions"], 2, "{r}");
+    assert_eq!(s.active_sequence().unwrap().caption_tracks[0].name, "reel2");
+    // a damaged timed text file is an error, not a crash or a media item
+    let mut bad = std::fs::read(&mxf).unwrap();
+    let at = bad.windows(9).position(|w| w == b"<Subtitle").unwrap();
+    bad[at + 1] = b'!';
+    let broken = dir.join("broken.mxf");
+    std::fs::write(&broken, bad).unwrap();
+    assert!(s.execute("file.import", json!({"paths": [broken.to_string_lossy()]})).is_err());
+    let _ = std::fs::remove_dir_all(&dir);
+}

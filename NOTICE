@@ -9,7 +9,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 General Public License for more details.
 
-The licensing policy (what may be reused, how paid extras are licensed) is in
+The licensing policy (what may be reused; CFA4 has no paid part) is in
 docs/licensing.md.
 
 Upstream
@@ -18,6 +18,11 @@ CFA4 is based on the following upstream work, whose notice is retained as requir
 
 FilmCraft
 Copyright (c) 2026 ArtCraft Team and the FilmCraft contributors.
+Licensed under the MIT License or the Apache License, Version 2.0, at your option
+(LICENSE-MIT, LICENSE-APACHE).
+
+craft-i18n (the rows in the "Imported from craft-i18n" section of i18n/<code>.tsv catalogs)
+Copyright (c) 2026 ArtCraft Team and the craft-i18n contributors.
 Licensed under the MIT License or the Apache License, Version 2.0, at your option
 (LICENSE-MIT, LICENSE-APACHE).
 

@@ -1044,7 +1044,9 @@ static CATEGORIES: &[Category] = &[
                 "Interface Language",
                 Kind::Choice(&[
                     ("system", "System Language"),
-                    ("en", "English"),
+                    ("en", "English (US)"),
+                    ("en-gb", "English (UK)"),
+                    ("en-au", "English (Australia)"),
                     ("ja", "日本語"),
                     ("es", "Español"),
                     ("pt-br", "Português (Brasil)"),
@@ -1056,6 +1058,26 @@ static CATEGORIES: &[Category] = &[
                     ("id", "Bahasa Indonesia"),
                     ("it", "Italiano"),
                     ("ko", "한국어"),
+                    ("hu", "Magyar"),
+                    ("pl", "Polski"),
+                    ("tr", "Türkçe"),
+                    ("nl", "Nederlands"),
+                    ("cs", "Čeština"),
+                    ("vi", "Tiếng Việt"),
+                    ("zh-hant", "繁體中文"),
+                    ("el", "Ελληνικά"),
+                    ("sv", "Svenska"),
+                    ("sr-latn", "Srpski (latinica)"),
+                    ("bg", "Български"),
+                    ("ka", "ქართული"),
+                    ("da", "Dansk"),
+                    ("fi", "Suomi"),
+                    ("lt", "Lietuvių"),
+                    ("hr", "Hrvatski"),
+                    ("kk", "Қазақ тілі"),
+                    ("sl", "Slovenščina"),
+                    ("et", "Eesti"),
+                    ("sr", "Српски (ћирилица)"),
                 ]),
                 true,
             ),
@@ -1576,10 +1598,25 @@ pub fn migrate(v: &mut Value) {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Whether this test thread may move the process-wide hardware decoding switch
+    /// ([`crate::autosave::Preferences::apply_hardware_decoding`]).
+    pub(crate) static HW_SWITCH_OWNER: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 impl crate::autosave::Preferences {
     /// Settings ▸ Playback ▸ Hardware decoding as the process-wide switch the hardware decoder
     /// factories consult (new decoders only).
     pub fn apply_hardware_decoding(&self) {
+        // The switch is process-wide and the unit tests run in parallel: in them only the thread
+        // that asked for it moves the switch, so a Session another test creates or changes cannot
+        // flip it under the one test that checks it.
+        #[cfg(test)]
+        if !HW_SWITCH_OWNER.with(std::cell::Cell::get) {
+            self.apply_media_backends();
+            return;
+        }
         cfa4_codecs::hw::set_hardware_decoding(self.playback.hardware_decoding != "off");
         self.apply_media_backends();
     }

@@ -117,10 +117,14 @@ impl Recorder {
     }
 }
 
-/// Lanes a Write pass records on a strip (the 5.1 puck instead of pan when it feeds a 5.1 bus).
+/// Lanes a Write pass records on a strip (the surround puck instead of pan when it feeds a
+/// surround bus, and the height when that bus is 7.1.2).
 fn write_lanes(seq: &Sequence, strip: TrackId) -> &'static [&'static str] {
     if strip == MASTER_STRIP {
         &[LANE_VOLUME]
+    } else if seq.output_channels(strip) == cfa4_project::AudioChannels::Surround712 {
+        // a 7.1.2 bus: the height too (#406)
+        &[LANE_VOLUME, LANE_PAN51_X, LANE_PAN51_Y, cfa4_project::mixer::LANE_PAN51_HEIGHT, LANE_MUTE]
     } else if seq.pans_51(strip) {
         &[LANE_VOLUME, LANE_PAN51_X, LANE_PAN51_Y, LANE_MUTE]
     } else {
@@ -604,16 +608,21 @@ pub(crate) fn channels_name(c: AudioChannels) -> &'static str {
         AudioChannels::Mono => "Mono",
         AudioChannels::Stereo => "Stereo",
         AudioChannels::Surround51 => "5.1",
+        AudioChannels::Surround71 => "7.1",
+        AudioChannels::Surround712 => "7.1.2",
         AudioChannels::Adaptive => "Adaptive",
     }
 }
 
-/// Parse a channel format / track type name (`Mono`, `Stereo` or `Standard`, `5.1`, `Adaptive`).
+/// Parse a channel format / track type name (`Mono`, `Stereo` or `Standard`, `5.1`, `7.1`,
+/// `7.1.2`, `Adaptive`).
 pub(crate) fn channels_from(s: &str) -> Option<AudioChannels> {
     match s.to_ascii_lowercase().as_str() {
         "mono" => Some(AudioChannels::Mono),
         "stereo" | "standard" => Some(AudioChannels::Stereo),
         "5.1" | "surround51" => Some(AudioChannels::Surround51),
+        "7.1" | "surround71" => Some(AudioChannels::Surround71),
+        "7.1.2" | "surround712" => Some(AudioChannels::Surround712),
         "adaptive" => Some(AudioChannels::Adaptive),
         _ => None,
     }
@@ -659,7 +668,9 @@ pub fn strip_json(s: &Session, seq: &Sequence, id: TrackId, t: Tick) -> Value {
         "at": {"time": t.0, "volumeDb": shown(LANE_VOLUME), "pan": shown(LANE_PAN), "mute": shown(LANE_MUTE) >= 0.5},
         "outputChannels": channels_name(seq.output_channels(id)),
         "pans51": seq.pans_51(id),
-        "pan51": {"x": shown(LANE_PAN51_X), "y": shown(LANE_PAN51_Y), "center": shown(pm::LANE_PAN51_CENTER), "lfeDb": shown(pm::LANE_PAN51_LFE)},
+        "pan51": {"x": shown(LANE_PAN51_X), "y": shown(LANE_PAN51_Y), "center": shown(pm::LANE_PAN51_CENTER), "lfeDb": shown(pm::LANE_PAN51_LFE), "height": shown(pm::LANE_PAN51_HEIGHT)},
+        // a strip feeding a 7.1.2 bus also pans up to the top surrounds (#406)
+        "panHeight": id != MASTER_STRIP && seq.output_channels(id) == cfa4_project::AudioChannels::Surround712,
         "lanes": lanes,
     })
 }
@@ -1236,7 +1247,7 @@ pub fn commands() -> Vec<CommandSpec> {
             "Track Mixer Settings",
             &[],
             None,
-            r#"{"strip":"A1"|"S1"|"Mix"|id,"name":str?,"volumeDb":f64?,"pan":f64?,"muted":bool?,"solo":bool?,"recordArm":bool?,"soloSafe":bool?,"mode":"Off|Read|Latch|Touch|Write"?,"output":"Mix"|"S1"?,"inputMap":"Stereo|Left|Right|Swap|Mono"?,"channels":"Mono|Stereo|5.1"?}"#,
+            r#"{"strip":"A1"|"S1"|"Mix"|id,"name":str?,"volumeDb":f64?,"pan":f64?,"muted":bool?,"solo":bool?,"recordArm":bool?,"soloSafe":bool?,"mode":"Off|Read|Latch|Touch|Write"?,"output":"Mix"|"S1"?,"inputMap":"Stereo|Left|Right|Swap|Mono"?,"channels":"Mono|Stereo|5.1|7.1|7.1.2"?}"#,
             has_seq,
             set_strip,
             true,
@@ -1385,7 +1396,16 @@ pub fn commands() -> Vec<CommandSpec> {
             set_default_transition,
             true,
         ),
-        spec("mixer.addSubmix", "Add Audio Submix Track", &["Sequence"], None, r#"{"name":str?,"channels":"Mono|Stereo|5.1"?}"#, has_seq, add_submix, true),
+        spec(
+            "mixer.addSubmix",
+            "Add Audio Submix Track",
+            &["Sequence"],
+            None,
+            r#"{"name":str?,"channels":"Mono|Stereo|5.1|7.1|7.1.2"?}"#,
+            has_seq,
+            add_submix,
+            true,
+        ),
         spec("mixer.deleteSubmix", "Delete Submix Track", &[], None, r#"{"strip":"S1"|id}"#, has_seq, delete_submix, true),
         spec(
             "mixer.addInsert",

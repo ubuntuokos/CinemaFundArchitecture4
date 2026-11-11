@@ -20,6 +20,8 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 382 | 2007 | AES3 and Broadcast Wave audio mapping (wave / AES3 descriptors) |
 | SMPTE ST 331 | 2011 | element data of 8-channel AES3 sound (D-10) |
 | SMPTE ST 2067-201 | 2019 | IAB track files: IAB essence descriptor (set 0x7B), clip-wrapped container, element type 0x0D (labels from the SMPTE registers) |
+| SMPTE ST 384 | 2005 | uncompressed picture mapping: container label (mapping 05h, frame / clip / line wrapping), element types 02h / 03h / 04h |
+| SMPTE ST 377-1 | 2019, G.1, G.2.22–G.2.25, G.2.35, G.2.40 | uncompressed layouts: stored / sampled / display rectangles, image start / end fill, the Y'CbCr layout labels of G.2.25, Reversed Byte Order, Padding Bits, RGBA Pixel Layout and Component Min / Max Ref |
 | SMPTE ST 386 | 2004 | D-10 (IMX) mapping: container label, sound element type |
 | SMPTE ST 2019-4 | 2009 | VC-3 (DNxHD / DNxHR) mapping |
 | SMPTE RDD 44 | 2017 | Apple ProRes mapping |
@@ -27,8 +29,29 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 330 | 2011 | basic UMIDs of the written packages |
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
+| SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
+| SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 377-4 | (via asdcplib's dictionary and real DCP-o-matic files) | MCA labels (writer): soundfield group and audio channel label sub-descriptors on the sound descriptor |
+
+## Timed text track files
+
+`is_timed_text(head)` recognises a DCP or IMF subtitle track file from its header partition;
+`open_timed_text(src)` returns the XML document's location, its namespace, resource id and the
+ancillary resources (fonts, images: id, MIME type, generic stream). `open` reports such a file as
+`Unsupported` (it has no picture or sound). `cfa4-engine` imports the XML as a caption track
+(ST 428-7 D-Cinema subtitles through `cfa4_captions::dcst`, IMSC1 through `cfa4_captions::ttml`).
+
+The `test-util` feature exposes `testing::build_timed_text` and the other synthetic file builders
+for tests in other crates.
+
+## Peeking at the header
+
+`peek(src)` reads only the header partition pack and header metadata: the operational pattern
+and the material and file package UMIDs. `cfa4-engine` uses it to find the OP-Atom files of one
+clip (ST 390: one essence track per file, a shared material package) in an Avid MediaFiles folder
+or on a P2 card (`CONTENTS/VIDEO` + `CONTENTS/AUDIO`), and `cfa4_codecs::MxfSource::open_group`
+opens them as one source.
 
 ## Reading a file
 
@@ -68,6 +91,19 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
 - **Codecs.** From the picture essence coding label, then the essence container label, then the
   essence bytes: AVC / AVC-Intra, VC-3, ProRes (profile from the label), MPEG-2 (decoded in `cfa4-codecs`),
   MPEG-4 visual, JPEG 2000 (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
+- **Uncompressed pictures** (`uncompressed`, ST 384). `Layout::of` takes the layout from the
+  picture essence coding label (the nine Y'CbCr layouts of ST 377-1 G.2.25: 8-bit 4:4:4, UYVY,
+  YUY2, planar 4:2:2 and 4:2:0, v210, planar 10-bit, 12- and 16-bit Cb Y Cr Y), else from the
+  descriptor: RGBA Pixel Layout (R, G, B, A and fill components up to 16 bits, Component Min /
+  Max Ref rescaled to full range), or CDCI depth, subsampling, Reversed Byte Order and Padding
+  Bits (10-bit 4:2:2 without a label is v210). `decode` unpacks one edit unit into planes: image
+  start / end fill skipped, separate fields woven (field 1 on the even lines), the display
+  rectangle given from the sampled and display offsets. G.2.25 draws every layout as big-endian
+  bit-fields; v210 and planar 10-bit are read as files store them: little-endian 32-bit words,
+  first component in the low bits (FFmpeg decodes our v210 files identically). A clip-wrapped
+  element without an index is split by the edit unit size. Not supported: line wrapping (the
+  track is listed as unknown with a warning), X'Y'Z' and palette pixel layouts, float
+  components.
   `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
@@ -160,7 +196,12 @@ w.finish()?;
   H.264 long-GOP with B pictures (bit-exact every frame + 25 random seeks), H.264 29.97 DF
   timecode, DNxHR LB (±2), ProRes 422 (±1), MPEG-2 long GOP, XDCAM HD422 and D-10 (±4),
   OP-Atom VC-3 (clip-wrapped) and PCM, D-10 AES3 audio; PCM sample-exact in every file;
-  truncated and corrupted files. `cargo xtask fixtures codecs` pre-generates them.
+  truncated and corrupted files. Uncompressed: our writer packs FFmpeg's `testsrc2` frames in
+  five layouts (OP1a and OP-Atom); our decode is bit-exact, and FFmpeg's decode of the UYVY, YUY2
+  and v210 files is bit-exact too.
+- `src/uncompressed/tests.rs`: every labelled layout packed and unpacked at three sizes, the bit
+  order of each table entry by hand, descriptor fallbacks (CDCI, RGBA with fill and video-range
+  codes), field weaving with start / end fill, display rectangles, hostile sizes. `cargo xtask fixtures codecs` pre-generates them.
 - `src/write/tests.rs`: writer output read back by `open`: OP1a with two sound tracks pushed in
   uneven chunks (durations, codec label, aspect, PCM exact, index slices, closed partitions),
   29.97 sound per edit unit (1601/1602), a long-GOP AVC index (presentation order, key and B

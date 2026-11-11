@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from collections import deque
 from collections.abc import Callable
 from typing import Any
@@ -36,6 +37,7 @@ from PySide6.QtGui import (
     QActionGroup,
     QColor,
     QDrag,
+    QGuiApplication,
     QImage,
     QKeyEvent,
     QMouseEvent,
@@ -44,6 +46,11 @@ from PySide6.QtGui import (
     QPen,
     QWheelEvent,
 )
+
+try:
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget
+except ImportError:  # pragma: no cover - a PySide6 without the OpenGL widgets keeps the raster view
+    QOpenGLWidget = None  # type: ignore[assignment, misc]
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -77,6 +84,7 @@ from .monitor_view import (
     res_label,
     social_safe_rect,
 )
+from .smart_cut import SmartCutDialog
 from .time_bar import ScrubBar
 from .timeline_media import TimelineMedia
 from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
@@ -238,16 +246,74 @@ class PlaybackMeter:
         return self.shown, self.dropped
 
 
-class FrameView(QWidget):
-    """The picture: fitted or magnified and panned, with the display mode, safe margins and the
-    dropped-frame light drawn over it."""
+def monitor_gl_wanted() -> bool:
+    """``CFA4_QT_MONITOR_GL=1``: the monitors draw through OpenGL (qt-parity 5.5, step 1 of
+    docs/plans/CFA4-QT6-FINISH-001.md Q3), each frame uploaded as a texture straight from the
+    shared memory the engine wrote it to and scaled on the GPU. Off by default until it is
+    measured on the reference machine."""
+    return os.environ.get("CFA4_QT_MONITOR_GL", "").strip().lower() in ("1", "true", "yes", "on")
 
-    view_changed = Signal()  # magnification or pan
-    guides_changed = Signal()  # a guide added, moved or removed on the picture
-    drag_out = Signal()  # a left-button drag on the picture (the Source monitor lifts its clip)
+
+_GL_OK: bool | None = None
+
+
+def monitor_gl_available() -> bool:
+    """An OpenGL context can be made and made current here (not on ``offscreen``/``minimal``,
+    nor without a GL driver): checked once, so a machine without GL keeps the raster monitors."""
+    global _GL_OK
+    if _GL_OK is None:
+        _GL_OK = False
+        try:
+            if QGuiApplication.platformName() not in ("offscreen", "minimal", ""):
+                from PySide6.QtGui import QOffscreenSurface, QOpenGLContext
+
+                ctx = QOpenGLContext()
+                if ctx.create():
+                    surface = QOffscreenSurface()
+                    surface.setFormat(ctx.format())
+                    surface.create()
+                    if surface.isValid() and ctx.makeCurrent(surface):
+                        ctx.doneCurrent()
+                        _GL_OK = True
+                    surface.destroy()
+        except Exception:  # noqa: BLE001 - any GL failure means the raster path (AGENTS.md §0)
+            _GL_OK = False
+    return _GL_OK
+
+
+class PresentStats:
+    """How long drawing the monitor's picture takes (``perf.stats`` ``playback.present``): the
+    measure for qt-parity 5.5 on the reference machine, raster against OpenGL."""
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self.count = 0
+        self.total_ms = 0.0
+        self.max_ms = 0.0
+
+    def add(self, ms: float) -> None:
+        self.count += 1
+        self.total_ms += ms
+        self.max_ms = max(self.max_ms, ms)
+
+    def as_dict(self, path: str) -> dict[str, Any]:
+        mean = self.total_ms / self.count if self.count else 0.0
+        return {"path": path, "frames": self.count, "meanMs": round(mean, 3), "maxMs": round(self.max_ms, 3)}
+
+
+class _FrameViewBase:
+    """The picture: fitted or magnified and panned, with the display mode, safe margins and the
+    dropped-frame light drawn over it. Shared by :class:`FrameView` (raster) and
+    :class:`GLFrameView` (OpenGL); a plain mixin, as PySide6 cannot derive one class from two Qt
+    widget classes."""
+
+    present_path = "raster"
 
     def __init__(self, name: str = "program", mv: MonitorView | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.present = PresentStats()
         self.setObjectName(f"{name}.view")
         self.view_name = name
         self.mv = mv or MonitorView()
@@ -470,12 +536,13 @@ class FrameView(QWidget):
             self.unsetCursor()
 
     # ----- drawing -----
-    def paintEvent(self, _e: QPaintEvent) -> None:
-        p = QPainter(self)
+    def _paint(self, p: QPainter) -> None:
         T = theme.current()
         p.fillRect(self.rect(), T.c("panel_bg"))
         img = self.shown
         if img is not None and not img.isNull():
+            clock = QElapsedTimer()
+            clock.start()
             pic = self.picture_rect()
             if self.mv.transparency_grid and self.mv.display == "composite" and img.hasAlphaChannel():
                 paint_transparency_grid(p, pic, QRectF(self.rect()))
@@ -483,6 +550,7 @@ class FrameView(QWidget):
                 p.fillRect(pic, QColor("#000000"))
             p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
             p.drawImage(pic, img)
+            self.present.add(clock.nsecsElapsed() / 1e6)
             if self.mv.safe_margins:
                 for f, alpha in ((0.9, 120), (0.8, 90)):
                     r = QRectF(0, 0, pic.width() * f, pic.height() * f)
@@ -513,7 +581,6 @@ class FrameView(QWidget):
         if self.message:
             p.setPen(T.c("text_dim"))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.message)
-
 
     def social_zone_rect(self) -> QRectF | None:
         """View ▸ Social Safe Zones: the platform's uncovered area on screen (automation:
@@ -548,6 +615,48 @@ class FrameView(QWidget):
         p.setFont(f)
         p.setPen(QColor(255, 255, 255, 170))
         p.drawText(safe.adjusted(4, 4, -4, -4), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, label)
+
+
+class FrameView(_FrameViewBase, QWidget):
+    """The monitor's picture drawn by Qt's raster engine (the default, and the fallback)."""
+
+    view_changed = Signal()  # magnification or pan
+    guides_changed = Signal()  # a guide added, moved or removed on the picture
+    drag_out = Signal()  # a left-button drag on the picture (the Source monitor lifts its clip)
+
+    def paintEvent(self, _e: QPaintEvent) -> None:
+        p = QPainter(self)
+        self._paint(p)
+        p.end()
+
+
+if QOpenGLWidget is not None:
+
+    class GLFrameView(_FrameViewBase, QOpenGLWidget):  # type: ignore[misc, valid-type]
+        """The monitor's picture drawn through OpenGL: the frame (a QImage over the engine's
+        shared-memory slot) goes up as a texture and is scaled on the GPU; the overlays are the
+        same QPainter drawing as the raster view's."""
+
+        present_path = "gl"
+        view_changed = Signal()
+        guides_changed = Signal()
+        drag_out = Signal()
+
+        def paintGL(self) -> None:
+            p = QPainter(self)
+            self._paint(p)
+            p.end()
+
+else:  # pragma: no cover - PySide6 without QtOpenGLWidgets
+    GLFrameView = None  # type: ignore[assignment, misc]
+
+
+def new_frame_view(name: str, mv: MonitorView | None = None, parent: QWidget | None = None) -> FrameView:
+    """The monitor's picture: OpenGL when asked for (``CFA4_QT_MONITOR_GL``) and a GL context
+    works here, else the raster view."""
+    if GLFrameView is not None and monitor_gl_wanted() and monitor_gl_available():
+        return GLFrameView(name, mv, parent)  # type: ignore[return-value]
+    return FrameView(name, mv, parent)
 
 
 class TimecodeField(QLineEdit):
@@ -637,7 +746,7 @@ class Monitor(QWidget):
         self._shown: tuple[Any, ...] | None = None
         # Settings ▸ Playback ▸ Draft decoding, read when playback starts
         self.draft_decode = False
-        self.view = FrameView(self.target, self.mv, self)
+        self.view = new_frame_view(self.target, self.mv, self)
         self.view.view_changed.connect(self._view_changed)
         self.view.guides_changed.connect(self._guides_changed)
         self.program_peer: Monitor | None = None  # the Program monitor (Snap in Program Monitor)
@@ -1217,6 +1326,7 @@ class Monitor(QWidget):
         self.view.dropped = 0
         if not self._loop_restart:
             self.meter.start(self.speed)
+            self.view.present.reset()
             self._meter_speed = self.speed
             self._meter_hidden = False
         # the first frame due (a loop's start too: the jump back is not a drop, the frame counts)
@@ -1280,6 +1390,8 @@ class Monitor(QWidget):
             "dropRate": dropped / (shown + dropped) if shown + dropped else 0.0,
             "resolution": next((label for key, label, _s in RESOLUTIONS if key == self.mv.res), "1/2"),
             "draftDecode": self.draft_decode,
+            # drawing the picture since playback last started (qt-parity 5.5): "gl" or "raster"
+            "present": self.view.present.as_dict(self.view.present_path),
         }
 
     def _halt(self) -> None:
@@ -1912,6 +2024,15 @@ class SourceMonitor(Monitor):
             a.setObjectName(f"source.clips.{key}")
             a.setEnabled(current is not None)
             a.triggered.connect(lambda _c=False, c=cid: self.command.emit(c, {}))
+
+    def open_smart_cut(self) -> QDialog | None:
+        """Cut the clip's marked range into a new file, copying what needs no re-encoding
+        (Tools ▸ Video Tools ▸ Smart Cut Source…, ``tools_menu.py``)."""
+        item = (self.source or {}).get("item")
+        if not isinstance(item, int) or not self.has_video():
+            self.status.emit(tr("Open a video clip in the Source monitor first."))
+            return None
+        return self._show_dialog(SmartCutDialog(self.window(), self.engine, item, self.status.emit))
 
     def has_video(self) -> bool:
         return (self.source or {}).get("hasVideo") is not False

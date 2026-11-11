@@ -5,7 +5,7 @@
 # Other distributions and architectures are not CFA4 release targets.
 # Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb tar restricted"]
 #        [--without-ffmpeg].
-# Prerequisites: cargo; nfpm for deb; for AppImage: reviewed local appimagetool
+# Prerequisites: cargo; for deb the pinned nfpm (nfpm.lock, scripts/release/install-nfpm.sh); for AppImage: reviewed local appimagetool
 # plus CFA4_APPIMAGETOOL_SHA256, and CFA4_PYSIDE6_WHEELS (a local wheelhouse with the PySide6 6.12
 # wheels pinned in requirements/linux-amd64.txt, for the Qt GUI); optional zsyncmake. Never
 # auto-download tools.
@@ -122,7 +122,7 @@ install -Dm755 "$BIN/cfa4-cli" "$STAGE/usr/bin/cfa4-cli"
 strip "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
 # The Qt 6 GUI (ADR F8 phase 7): its Python package and the cfa4-qt launcher. In the .deb and the
 # tarball PySide6 comes from Ubuntu's archive (python3-pyside6.*, LGPL-3.0); the AppImage (below) and
-# the Flatpak (flatpak-bundle.sh) carry their own (stage-pyside6.py). The shared egui
+# the Flatpak (flatpak-bundle.sh) carry their own (stage-pyside6.py). The top-level i18n/
 # catalogs (with their attribution sidecars) go with it, so an installed GUI translates as a
 # checkout does.
 install -Dm755 "$HERE/cfa4-qt" "$STAGE/usr/bin/cfa4-qt"
@@ -130,8 +130,8 @@ QT_PY="$STAGE/usr/lib/cfa4/python"
 mkdir -p "$QT_PY"
 cp -R "$ROOT/python/cfa4_qt" "$QT_PY/"
 find "$QT_PY" -name __pycache__ -type d -prune -exec rm -rf {} +
-mkdir -p "$QT_PY/cfa4_qt/i18n/shared"
-cp "$ROOT"/crates/ui-egui/src/i18n/*.tsv "$ROOT"/crates/ui-egui/src/i18n/*.tsv.attribution "$QT_PY/cfa4_qt/i18n/shared/"
+mkdir -p "$QT_PY/cfa4_qt/i18n"
+cp "$ROOT"/i18n/*.tsv "$ROOT"/i18n/*.tsv.attribution "$QT_PY/cfa4_qt/i18n/"
 # the About window's credits, as egui bakes them in (crates/ui-egui/build.rs)
 mkdir -p "$QT_PY/cfa4_qt/credits"
 cp "$ROOT/contributors/contributors.json" "$ROOT/contributors/people.toml" "$QT_PY/cfa4_qt/credits/"
@@ -177,31 +177,25 @@ fi
 
 # ---- .deb ----------------------------------------------------------------------------------------
 if has deb; then
-  command -v nfpm >/dev/null || { echo "error: nfpm not found (https://nfpm.goreleaser.com/install/)" >&2; exit 1; }
   export VERSION
   # nfpm.yaml pins arch=amd64; only VERSION is read from the environment. The FFmpeg libraries'
-  # Ubuntu packages replace the @FFMPEG_DEPENDS@ line.
-  ffmpeg_depends="$(sed 's/^/      - /' "$WORK/ffmpeg-depends.txt")"
-  sed -e "s|\${STAGE}|$STAGE|g" -e "s|\${FFMPEG_DEB}|$FFMPEG_DEB|g" "$HERE/nfpm.yaml" \
-    | deps="$ffmpeg_depends" awk '/# @FFMPEG_DEPENDS@/ { if (ENVIRON["deps"] != "") print ENVIRON["deps"]; next } { print }' >"$WORK/nfpm.yaml"
-  (cd "$ROOT" && nfpm package -f "$WORK/nfpm.yaml" -p deb -t "$DIST/$BASENAME.deb")
+  # Ubuntu packages replace the @FFMPEG_DEPENDS@ line. Only the pinned nfpm runs (check-nfpm.sh).
+  bash "$HERE/nfpm-package.sh" "$HERE/nfpm.yaml" "$WORK/ffmpeg-depends.txt" "$DIST/$BASENAME.deb" \
+    STAGE="$STAGE" FFMPEG_DEB="$FFMPEG_DEB"
 fi
 
 # ---- cfa4-restricted-extras .deb (only on request: --formats "... restricted") ---------------------
 if has restricted; then
-  command -v nfpm >/dev/null || { echo "error: nfpm not found (https://nfpm.goreleaser.com/install/)" >&2; exit 1; }
+  bash "$HERE/check-nfpm.sh" >/dev/null
   RESTRICTED="$WORK/restricted"
   bash "$HERE/stage-ffmpeg.sh" --restricted --build "$FFMPEG_BUILD-restricted" \
     --dest "$RESTRICTED/opt/cfa4/ffmpeg-$FFMPEG_VERSION-restricted" --depends-out "$WORK/restricted-depends.txt"
   # Exactly this cfa4: the extras replace its FFmpeg libraries through the binaries' RUNPATH.
   # nfpm's semver schema writes 0.2.0-rc.1 as 0.2.0~rc.1, release 1.
   deb_version="${VERSION/-/\~}-1"
-  restricted_depends="$(sed 's/^/      - /' "$WORK/restricted-depends.txt")"
-  sed -e "s|\${RESTRICTED}|$RESTRICTED|g" -e "s|@CFA4_DEB_VERSION@|$deb_version|g" "$HERE/nfpm-restricted.yaml" \
-    | deps="$restricted_depends" awk '/# @FFMPEG_DEPENDS@/ { if (ENVIRON["deps"] != "") print ENVIRON["deps"]; next } { print }' >"$WORK/nfpm-restricted.yaml"
   export VERSION
-  (cd "$ROOT" && nfpm package -f "$WORK/nfpm-restricted.yaml" -p deb \
-    -t "$DIST/cfa4-restricted-extras-$VERSION-linux-$ARCH.deb")
+  bash "$HERE/nfpm-package.sh" "$HERE/nfpm-restricted.yaml" "$WORK/restricted-depends.txt" \
+    "$DIST/cfa4-restricted-extras-$VERSION-linux-$ARCH.deb" RESTRICTED="$RESTRICTED" CFA4_DEB_VERSION="$deb_version"
 fi
 
 # ---- AppImage -----------------------------------------------------------------------------------
@@ -291,8 +285,8 @@ assert ff and ff[0].get("available") and "9.0.2" in str(ff[0]["version"]), ff
 ' "$backends" || { echo "error: the staged cfa4-cli does not report FFmpeg 9.0.2 as available" >&2; exit 1; }
 fi
 # -P: the staged package, never a checkout's python/ that the caller's directory would put first
-PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIRS[1].name == "shared"' \
-  || { echo "error: the staged Qt GUI does not find its shared catalogs" >&2; exit 1; }
+PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIR == i.PACKAGED_CATALOGS and (i.CATALOG_DIR / "hu.tsv").is_file()' \
+  || { echo "error: the staged Qt GUI does not find its catalogs" >&2; exit 1; }
 PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.credits as c; assert c.CREDITS_DIR.name == "credits" and c.load().contributors' \
   || { echo "error: the staged Qt GUI does not find its credits" >&2; exit 1; }
 echo "==> done"

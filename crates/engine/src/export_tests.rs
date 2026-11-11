@@ -224,6 +224,14 @@ fn mpeg2_b_pictures_are_a_parameter() {
 }
 
 #[test]
+fn interlaced_mpeg2_is_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"mpeg2", "fieldOrder":"upperFirst"})).unwrap();
+    assert_eq!(r["settings"]["fieldOrder"], "upperFirst");
+    assert!(s.execute("export.resolve", json!({"format":"mpeg2", "fieldOrder":"sideways"})).is_err());
+}
+
+#[test]
 fn resolve_reports_hdr_encoder_audio_codec_and_sample_sizes() {
     let mut s = demo();
     let sizes = |r: &Value| -> Vec<bool> { r["sampleSizes"].as_array().unwrap().iter().map(|z| z["supported"].as_bool().unwrap()).collect() };
@@ -1175,6 +1183,24 @@ fn dcp_immersive_params_and_iab_info() {
     let e = s.execute("export.iabInfo", json!({"path": dir.path("missing.iab")})).unwrap_err().to_string();
     assert!(e.contains("missing.iab"), "{e}");
     assert!(s.execute("export.iabInfo", json!({})).is_err());
+}
+
+/// #309: the DCP spoken language param and the ISDCF package name from `export.resolve`.
+#[test]
+fn dcp_language_param_and_isdcf_name() {
+    let s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpLanguage": " hu-HU "})).unwrap();
+    assert_eq!(st.dcp_language, "hu-HU");
+    let e = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpLanguage": "Hungarian"})).unwrap_err().to_string();
+    assert!(e.contains("RFC 5646"), "{e}");
+    let mut s = s;
+    let r = s.execute("export.resolve", json!({"format": "dcp", "dcpLanguage": "en-US", "dcpContentKind": "trailer", "dcpAspect": "scope"})).unwrap();
+    let name = r["dcpName"].as_str().unwrap().to_string();
+    let date = cfa4_export::dcp_isdcf_date();
+    assert!(name.ends_with(&format!("_TLR-1_S_EN-XX_51_2K_{date}_SMPTE_OV")), "{name}");
+    assert_eq!(r["settings"]["dcpLanguage"], "en-US");
+    assert!(s.execute("export.resolve", json!({"format": "h264"})).unwrap()["dcpName"].is_null());
 }
 
 /// A two-channel DLC bed (L, R) of silence.

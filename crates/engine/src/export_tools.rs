@@ -347,12 +347,20 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         let f = cfa4_export::IabFallback::from_name(v).ok_or_else(|| bad(cmd, "dcpIabFallback: 5.1 | mix | none"))?;
         settings.dcp_iab_fallback = f.id().to_string();
     }
+    if let Some(v) = str_p(p, "dcpLanguage") {
+        let probe = ExportSettings { dcp_language: v.to_string(), ..Default::default() };
+        let tag = cfa4_export::dcp_language(&probe).ok_or_else(|| bad(cmd, "dcpLanguage: an RFC 5646 tag such as en-US or hu-HU (empty = none)"))?;
+        settings.dcp_language = tag.to_string();
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
             0 => None,
             1..=31 => Some(v as u8),
             _ => return Err(bad(cmd, "mpeg2Quantizer: 1 to 31 (0: the bitrate)")),
         };
+    }
+    if let Some(v) = str_p(p, "fieldOrder") {
+        settings.field_order = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "fieldOrder: progressive | upperFirst | lowerFirst"))?;
     }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2BFrames", cmd)? {
         settings.mpeg2_b_frames = Some(u8::try_from(v).ok().filter(|b| *b <= 7).ok_or_else(|| bad(cmd, "mpeg2BFrames: 0 to 7"))?);
@@ -683,6 +691,9 @@ pub struct QueueItem {
     /// The background job while encoding / after it ran.
     pub job: Option<u64>,
     pub error: Option<String>,
+    /// Media QC of the output, kept apart from `status` (the render state).
+    #[serde(skip)]
+    pub qc: crate::qc::ItemQc,
     /// The project as it was when the item was queued.
     #[serde(skip)]
     pub project: Arc<Project>,
@@ -742,6 +753,7 @@ fn item_json(s: &Session, it: &QueueItem) -> Value {
         "job": it.job,
         "error": it.error,
         "offlineMedia": it.job.map_or_else(|| json!([]), |j| offline_media_json(s, j)),
+        "qc": crate::qc::item_json(&it.qc),
     })
 }
 
@@ -751,6 +763,7 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
     loop {
         // settle
         let mut finished_any = false;
+        let mut checked = Vec::new();
         for i in 0..s.export_queue.items.len() {
             let it = &s.export_queue.items[i];
             if it.status != QueueStatus::Encoding {
@@ -761,7 +774,12 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
             let Some(r) = res else { continue };
             let it = &mut s.export_queue.items[i];
             match r {
-                Ok(_) => it.status = QueueStatus::Done,
+                Ok(_) => {
+                    it.status = QueueStatus::Done;
+                    if it.qc.profile.is_some() {
+                        checked.push(it.id);
+                    }
+                }
                 Err(e) if e == "cancelled" => it.status = QueueStatus::Cancelled,
                 Err(e) => {
                     it.status = QueueStatus::Failed;
@@ -769,6 +787,10 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
                 }
             }
             finished_any = true;
+        }
+        // automatic QC of finished outputs (`export.queue.add` with `qc`)
+        for id in checked {
+            crate::qc::after_export(s, id, wait);
         }
         if s.export_queue.items.iter().any(|i| i.status == QueueStatus::Encoding) || !s.export_queue.running {
             return;
@@ -827,6 +849,16 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
         Some(a) if !a.is_empty() => a.iter().map(Some).collect(),
         _ => vec![p.get("range")],
     };
+    // `qc`: check each output with this QC profile when it finishes (`true`: the default profile)
+    let qc_profile = match p.get("qc") {
+        None | Some(Value::Null) | Some(Value::Bool(false)) => None,
+        Some(Value::Bool(true)) => Some("delivery-web".to_string()),
+        Some(Value::String(id)) => {
+            cfa4_qc::QcProfile::builtin(id).map_err(|e| bad(cmd, format!("`qc`: {e}")))?;
+            Some(id.clone())
+        }
+        Some(_) => return Err(bad(cmd, "`qc` must be a QC profile id or a boolean")),
+    };
     let project = s.project.clone();
     let many = seqs.len() * ranges.len() > 1;
     let mut ids = Vec::new();
@@ -863,6 +895,7 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             status: QueueStatus::Ready,
             job: None,
             error: None,
+            qc: crate::qc::ItemQc { profile: qc_profile.clone(), ..Default::default() },
             project: project.clone(),
         });
         ids.push(id);
@@ -946,6 +979,8 @@ fn queue_retry(s: &mut Session, p: &Value) -> Result<Value> {
     it.status = QueueStatus::Ready;
     it.error = None;
     it.job = None;
+    let id = it.id;
+    crate::qc::reset_for_retry(s, id);
     if bool_p(p, "start").unwrap_or(false) {
         s.export_queue.running = true;
         pump_queue(s, bool_p(p, "wait").unwrap_or(false));
@@ -1033,7 +1068,13 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
     let hdr = q.settings.color.working.is_hdr() && !settings.sdr;
     let sizes: Vec<Value> =
         SampleFormat::ALL.iter().map(|&f| json!({"bits": f.bits(), "float": f.is_float(), "supported": settings.supports_sample_format(f)})).collect();
+    // DCP: an ISDCF (DCNC) name for the package folder, from the sequence name
+    let dcp_name = (settings.format == Format::Dcp).then(|| {
+        let title = project.item(seq).map(|i| i.name.clone()).unwrap_or_default();
+        cfa4_export::dcp_isdcf_name(&settings, &title, &cfa4_export::dcp_isdcf_date())
+    });
     Ok(json!({
+        "dcpName": dcp_name,
         "preset": preset.map(|x| x.name),
         "hdr": hdr,
         "videoFormat": settings.video_format().id(),
@@ -1067,6 +1108,7 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "dcpImmersive": pr.settings.dcp_immersive,
         "dcpIabSource": pr.settings.dcp_iab_source,
         "dcpIabFallback": pr.settings.dcp_iab_fallback,
+        "dcpLanguage": pr.settings.dcp_language,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();
@@ -1283,7 +1325,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.queue.add",
             "Send to Export Queue",
-            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"start":bool?,"wait":bool?}"#,
+            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"qc":str|bool?,"start":bool?,"wait":bool?}"#,
             has_seq,
             queue_add,
             true,

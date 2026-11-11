@@ -32,6 +32,7 @@ pub struct Vui {
 
 #[derive(Clone, Debug)]
 pub struct Sps {
+    pub id: u32,
     pub profile_idc: u8,
     pub constraint_flags: u8,
     pub level_idc: u8,
@@ -51,7 +52,7 @@ impl Sps {
         w.write_bits(self.profile_idc as u32, 8);
         w.write_bits(self.constraint_flags as u32, 8);
         w.write_bits(self.level_idc as u32, 8);
-        w.write_ue(0); // seq_parameter_set_id
+        w.write_ue(self.id); // seq_parameter_set_id
         if matches!(self.profile_idc, 100 | 110 | 122 | 244 | 44 | 83 | 86 | 118 | 128 | 138 | 139 | 134 | 135) {
             w.write_ue(1); // chroma_format_idc 4:2:0
             w.write_ue(0); // bit_depth_luma_minus8
@@ -120,6 +121,8 @@ impl Sps {
 
 #[derive(Clone, Debug)]
 pub struct Pps {
+    pub id: u32,
+    pub sps_id: u32,
     pub cabac: bool,
     pub pic_init_qp: i32,
     pub chroma_qp_offset: i32,
@@ -130,8 +133,8 @@ pub struct Pps {
 impl Pps {
     pub fn rbsp(&self) -> Vec<u8> {
         let mut w = BitWriter::new();
-        w.write_ue(0); // pic_parameter_set_id
-        w.write_ue(0); // seq_parameter_set_id
+        w.write_ue(self.id); // pic_parameter_set_id
+        w.write_ue(self.sps_id); // seq_parameter_set_id
         w.write_bit(self.cabac);
         w.write_bit(false); // bottom_field_pic_order_in_frame_present_flag
         w.write_ue(0); // num_slice_groups_minus1
@@ -220,6 +223,7 @@ pub struct SliceHeader {
     pub log2_max_poc_lsb: u32,
     /// Reorder RefPicList0 so that this picNum difference (abs_diff_pic_num_minus1, subtract) comes first.
     pub l0_modification: Option<u32>,
+    pub pps_id: u32,
     pub cabac: bool,
     pub slice_qp: i32,
     pub pic_init_qp: i32,
@@ -233,7 +237,7 @@ impl SliceHeader {
     pub fn write(&self, w: &mut BitWriter) {
         w.write_ue(self.first_mb);
         w.write_ue(self.slice_type as u32);
-        w.write_ue(0); // pic_parameter_set_id
+        w.write_ue(self.pps_id); // pic_parameter_set_id
         w.write_bits(self.frame_num, self.log2_max_frame_num);
         if self.idr {
             w.write_ue(self.idr_pic_id);

@@ -28,9 +28,10 @@ otherwise English.
 The `app.language.*` UI commands and `prefs.set` reach it through the control channel.
 Japanese requires an extra-fonts build or a suitable installed font.
 
-English source strings are lookup keys in `src/i18n/<code>.tsv`. `tl!` translates literals, `tlf!`
-fills translated templates, and `i18n::t` translates names from registries. Placeholder values
-(including user filenames containing braces) are inserted literally. Catalog translations are
+English source strings are lookup keys in the repository's top-level `i18n/<code>.tsv`, shared
+with the Qt GUI. `tl!` translates literals, `tlf!` fills translated templates, and `i18n::t`
+translates names from registries. Placeholder values (including user filenames containing braces)
+are inserted literally. Catalog translations are
 original work using ordinary language, without proprietary localisation resources.
 
 Spanish, Japanese, Simplified Chinese, French, Brazilian Portuguese and German cover menus, panels, dialogs, settings and registry labels. Searches accept both the

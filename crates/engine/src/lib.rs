@@ -31,6 +31,7 @@ pub mod graphics;
 pub mod interchange;
 pub mod keyboard;
 mod keyframe_move;
+pub mod legibility;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;
@@ -40,6 +41,7 @@ pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+mod opatom;
 pub mod panels;
 pub mod paste_media;
 pub mod perf;
@@ -50,6 +52,7 @@ pub mod project_manager;
 pub mod project_panel;
 pub mod project_tools;
 pub mod proxies;
+pub mod qc;
 pub mod relink;
 pub mod remix;
 pub mod scene_detect;
@@ -59,6 +62,9 @@ pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod smart_cut;
+mod smart_cut_mpeg;
+mod smart_render;
 pub mod social;
 pub mod source_monitor;
 pub mod sync;
@@ -81,6 +87,21 @@ pub use cfa4_render as render;
 pub use cfa4_time as time;
 pub use commands::{CommandSpec, command_specs, find as find_command};
 pub use media_pool::MediaPool;
+
+/// Draws a Program frame as opaque sRGB RGBA8 bytes off the CPU (the desktop monitors' GPU
+/// compositor), for [`Session::try_render_program_rgba8_using`]: `w`, `h`, pixels and whether the
+/// GPU drew it (false when the frame's plan already was a CPU picture it hands back). `None`
+/// leaves the frame to the CPU renderer.
+pub trait DisplayRenderer {
+    fn render_rgba8(
+        &mut self,
+        project: &Project,
+        seq: ItemId,
+        t: Tick,
+        opts: cfa4_render::RenderOptions,
+        sources: &dyn cfa4_render::SourceProvider,
+    ) -> Option<(usize, usize, Vec<u8>, bool)>;
+}
 
 /// The OS temp folder; `/tmp` on wasm32, where `std::env::temp_dir()` panics ("no filesystem on
 /// this platform"). Use this instead of `std::env::temp_dir()` in any code the web build runs.
@@ -492,6 +513,8 @@ pub struct Session {
     pub export_presets: export_tools::ExportPresetLibrary,
     /// The export queue (session state, not saved with the project).
     pub export_queue: export_tools::ExportQueue,
+    /// Media QC jobs whose results are still to be applied (`qc.*` commands).
+    pub qc: qc::QcSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -593,6 +616,7 @@ impl Session {
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
+            qc: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -628,7 +652,7 @@ impl Session {
                 break;
             }
         }
-        !self.stepped.is_empty() || self.export_queue.is_active()
+        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty()
     }
 
     /// Start auto-save and the crash-recovery journal (native frontends). Loads preferences from
@@ -686,6 +710,7 @@ impl Session {
         masks::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
+        qc::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
@@ -1213,16 +1238,35 @@ impl Session {
     /// a frame that is one opaque video picture goes straight to bytes
     /// ([`cfa4_render::render_sequence_rgba8`]), without the linear float picture in between.
     pub fn try_render_program_rgba8_with_offline_at(&self, scale: f32, t: Tick) -> Result<(usize, usize, Vec<u8>, Vec<media_pool::OfflineMedia>)> {
+        self.try_render_program_rgba8_using(scale, t, None).map(|(w, h, px, offline, _)| (w, h, px, offline))
+    }
+
+    /// [`Self::try_render_program_rgba8_with_offline_at`], composited by `display` (the GPU
+    /// compositor the desktop monitors use) when it takes the frame, else by the CPU renderer.
+    /// The last value is whether the GPU drew it.
+    #[expect(clippy::type_complexity, reason = "the frame, its offline media and who drew it")]
+    pub fn try_render_program_rgba8_using(
+        &self,
+        scale: f32,
+        t: Tick,
+        display: Option<&mut dyn DisplayRenderer>,
+    ) -> Result<(usize, usize, Vec<u8>, Vec<media_pool::OfflineMedia>, bool)> {
         let provider = self.media.provider(self.project.clone(), self.services.clone()).recording();
         let seq = self.renderable_sequence(scale)?;
         let t = self.sequence_rate().snap(t.max(Tick::ZERO));
         let opts = cfa4_render::RenderOptions { scale, captions: true, ..Default::default() };
+        if let Some((w, h, mut px, on_gpu)) = display.and_then(|d| d.render_rgba8(&self.project, seq, t, opts, &provider)) {
+            for a in px.iter_mut().skip(3).step_by(4) {
+                *a = 255;
+            }
+            return Ok((w, h, px, provider.offline_used(), on_gpu));
+        }
         let (w, h, mut px) = cfa4_render::render_sequence_rgba8(&self.project, seq, t, opts, &provider);
         // opaque, as `Image::over_black_rgba8`: the fallback keeps the picture's alpha in the fourth byte
         for a in px.iter_mut().skip(3).step_by(4) {
             *a = 255;
         }
-        Ok((w, h, px, provider.offline_used()))
+        Ok((w, h, px, provider.offline_used(), false))
     }
 
     fn render_program_with(&self, scale: f32, t: Tick, provider: &dyn cfa4_render::SourceProvider) -> Result<cfa4_render::Image> {
@@ -1327,6 +1371,8 @@ mod interchange_auto_points_tests;
 #[cfg(test)]
 mod keyboard_tests;
 #[cfg(test)]
+mod legibility_tests;
+#[cfg(test)]
 mod linked_speed_tests;
 #[cfg(test)]
 mod linked_trim_tests;
@@ -1353,6 +1399,8 @@ mod nest_fidelity_tests;
 #[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
+mod opatom_tests;
+#[cfg(test)]
 mod panels_tests;
 #[cfg(test)]
 mod par_tests;
@@ -1370,6 +1418,8 @@ mod project_manager_tests;
 mod project_panel_tests;
 #[cfg(test)]
 mod proxies_tests;
+#[cfg(test)]
+mod qc_tests;
 #[cfg(test)]
 mod relink_tests;
 #[cfg(test)]
@@ -1392,6 +1442,12 @@ mod sequence_tools_tests;
 mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod smart_cut_mpeg_tests;
+#[cfg(test)]
+mod smart_cut_tests;
+#[cfg(test)]
+mod smart_render_tests;
 #[cfg(test)]
 mod social_tests;
 #[cfg(test)]

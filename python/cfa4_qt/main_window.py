@@ -93,6 +93,7 @@ from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
 from .status_bar import JobStatus, tool_hint
 from .timecode import TICKS_PER_SECOND
+from .tools_menu import build_tools_menu
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
 
 # egui's EXPORT_SAVE_DIALOGS: exports that ask where to save (filter label, extension)
@@ -470,6 +471,8 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.files_dropped.connect(self.place_files)
         self.timeline.canvas.files_dropped_empty.connect(self.sequence_from_files)
         self.timeline.canvas.menu_host = self
+        self.timeline.canvas.gop_marks_wanted.connect(lambda: self.update_gop_marks(force=True))
+        self._gop_marks_revision: Any = None
         # voice-over recording: the audio track headers' microphones and the mixer's record button
         self.voiceover = VoiceOverRecorder(engine, self.monitor, self)
         self.voiceover_dialog: VoiceOverSettingsDialog | None = None
@@ -1042,10 +1045,17 @@ class MainWindow(QMainWindow):
         window_menu = QMenu(tr("Window"), self.menuBar())
         self._window_menu = window_menu
         window_menu.setObjectName("menu.Window")
+        # Tools (Video / Audio / Publication Tools), before Window; rebuilt with the menus
+        if getattr(self, "_tools_menu", None) is not None:
+            self._tools_menu.deleteLater()
+        tools_menu = self._tools_menu = QMenu(tr("Tools"), self.menuBar())
+        build_tools_menu(self, tools_menu)
         help_action = menus.get("menu.Help")
         if help_action is not None:
+            self.menuBar().insertMenu(help_action, tools_menu)
             self.menuBar().insertMenu(help_action, window_menu)
         else:
+            self.menuBar().addMenu(tools_menu)
             self.menuBar().addMenu(window_menu)
         window_shortcuts = build_window_menu(
             self, window_menu, self.docks, self.monitor, self.workspaces, self.restore_layout, self.reset_layout
@@ -1959,6 +1969,7 @@ class MainWindow(QMainWindow):
         self.engine.execute("history.list", {}, on_reply=lambda r, _b: self.history.set_history(r))
         self.events.refresh()
         self.update_render_bar()
+        self.update_gop_marks()
         self.engine.execute("source.inspect", {}, on_reply=self._on_source, on_error=lambda _m: self._on_source(None, None))
 
     def _on_state(self, result: Any, _b: bytes | None) -> None:
@@ -2873,6 +2884,17 @@ class MainWindow(QMainWindow):
                 self.monitor.play()
 
         self.engine.execute("prefs.get", {"key": "timeline.playAfterRendering"}, on_reply=play, on_error=lambda _m: None)
+
+    def update_gop_marks(self, force: bool = False) -> None:
+        """The Timeline's Show GOP Boundaries marks (``export.gopMarks``), again when the project
+        changed: indexing reads the clips' files, so not on every refresh."""
+        canvas = self.timeline.canvas
+        if not canvas.show_gop_marks or not self.engine.running:
+            return
+        if not force and self._gop_marks_revision == self.revision:
+            return
+        self._gop_marks_revision = self.revision
+        self.engine.execute("export.gopMarks", {}, on_reply=lambda r, _b: canvas.set_gop_marks(r), on_error=lambda _m: canvas.set_gop_marks(None))
 
     def update_render_bar(self) -> None:
         """The Timeline's render bar (``sequence.renderBar``), again every 250 ms while a job runs,

@@ -146,6 +146,13 @@ mod tests {
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
     #[test]
     fn heic_heif_single_frame_exports_round_trip() {
+        if !cfa4_testkit::oracle::on_path_or_skip(
+            "heic_heif_single_frame_exports_round_trip",
+            &["heif-enc", "heif-dec"],
+            "Ubuntu packages libheif-examples, libheif-plugin-x265, libheif-plugin-libde265",
+        ) {
+            return;
+        }
         let source = Image::filled(64, 64, [0.25, 0.4, 0.6, 1.0]);
         for format in [StillFormat::Heic, StillFormat::Heif] {
             assert_eq!(StillFormat::parse(format.extension()).unwrap(), format);

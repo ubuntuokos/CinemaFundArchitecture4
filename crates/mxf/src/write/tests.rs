@@ -573,3 +573,102 @@ fn iab_is_only_a_dcinema_track_file() {
     cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 6, bits: 24 }];
     assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
 }
+
+/// Three uncompressed pictures of `layout` (32×4), each a different flat colour.
+fn build_uncompressed(pattern: Pattern, layout: crate::UncompressedLayout) -> (Vec<u8>, Vec<Vec<u8>>) {
+    let mut cfg = WriterConfig::new(pattern, Rational::new(25, 1), PackageIds::from_seed("raw", "Raw Clip"));
+    cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout }, 48, 4));
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    let mut pictures = Vec::new();
+    for i in 0..3u16 {
+        let (sx, sy) = layout.subsampling();
+        let n = (48 / sx * 4 / sy) as usize;
+        let p = layout.pack(48, 4, [&[16 + i; 192], &vec![100 + i; n], &vec![200 - i; n]]);
+        w.push_picture(&p, FrameInfo::intra()).unwrap();
+        pictures.push(p);
+    }
+    (w.finish().unwrap().into_inner(), pictures)
+}
+
+#[test]
+fn uncompressed_pictures_round_trip() {
+    use crate::uncompressed::{Layout, decode};
+    for pattern in [Pattern::Op1a, Pattern::OpAtom] {
+        for layout in [crate::UncompressedLayout::V210, crate::UncompressedLayout::Uyvy8, crate::UncompressedLayout::Planar420x8] {
+            let (bytes, pictures) = build_uncompressed(pattern, layout);
+            let f = open(&bytes[..]).unwrap();
+            let t = f.tracks.iter().position(|t| t.kind == TrackKind::Picture).unwrap();
+            let track = &f.tracks[t];
+            assert_eq!(track.codec, Codec::Uncompressed, "{pattern:?} {layout:?}");
+            assert_eq!(track.samples.len(), 3);
+            assert_eq!(track.wrapping, if pattern == Pattern::OpAtom { Wrapping::Clip } else { Wrapping::Frame });
+            let pi = track.picture.as_ref().unwrap();
+            let l = Layout::of(pi).unwrap();
+            assert_eq!(l, Layout::YCbCr(layout));
+            for (i, want) in pictures.iter().enumerate() {
+                let s = f.read_sample(&bytes[..], t, i).unwrap();
+                assert_eq!(&s, want);
+                let pic = decode(&l, pi, &s).unwrap();
+                assert_eq!(pic.planes[0][0], 16 + i as u16);
+                assert_eq!(pic.planes[2][0], 200 - i as u16);
+            }
+        }
+    }
+}
+
+#[test]
+fn clip_wrapped_uncompressed_without_an_index_splits_by_picture_size() {
+    let (mut bytes, pictures) = build_uncompressed(Pattern::OpAtom, crate::UncompressedLayout::Uyvy8);
+    // turn every index table segment into fill
+    let index_key = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x10, 0x01, 0x00];
+    let mut hits = 0;
+    for at in 0..bytes.len().saturating_sub(16) {
+        if bytes[at..at + 16] == index_key {
+            bytes[at..at + 16].copy_from_slice(&KLV_FILL);
+            hits += 1;
+        }
+    }
+    assert!(hits > 0);
+    let f = open(&bytes[..]).unwrap();
+    let track = &f.tracks[0];
+    assert_eq!(track.samples.len(), 3);
+    assert_eq!(track.wrapping, Wrapping::Clip);
+    assert_eq!(f.read_sample(&bytes[..], 0, 2).unwrap(), pictures[2]);
+}
+#[test]
+fn peek_reads_the_packages_of_op_atom_files_without_the_essence() {
+    let clip = PackageIds::from_seed("clip", "Clip");
+    let mut cfg = WriterConfig::new(Pattern::OpAtom, Rational::new(25, 1), PackageIds { file: Umid::from_seed(b"v1"), ..clip.clone() });
+    cfg.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..5 {
+        w.push_picture(&vc3_like(i), FrameInfo::intra()).unwrap();
+    }
+    let v = w.finish().unwrap().into_inner();
+    let a = write_opatom_pcm(
+        &OpAtomPcm {
+            sample_rate: 48_000,
+            bits: 16,
+            channels: 1,
+            edit_rate: Some(Rational::new(25, 1)),
+            ids: PackageIds { file: Umid::from_seed(b"a1"), ..clip.clone() },
+            timecode: None,
+        },
+        &[0; 9600],
+    )
+    .unwrap();
+    let pv = crate::peek(&v).unwrap();
+    let pa = crate::peek(&a).unwrap();
+    assert_eq!(pv.operational_pattern, OperationalPattern::Atom);
+    assert_eq!(pv.material_package, Some(clip.material.0));
+    assert_eq!(pa.material_package, pv.material_package);
+    assert_eq!(pv.file_packages, vec![Umid::from_seed(b"v1").0]);
+    assert_eq!(pa.file_packages, vec![Umid::from_seed(b"a1").0]);
+    // only the header is needed: the file cut right after the header metadata still peeks
+    let header_end = v.windows(4).position(|w| w == [0x00, 0x00, 0x02, 0x80]).unwrap();
+    assert_eq!(crate::peek(&v[..header_end].to_vec()).unwrap(), pv);
+    assert!(crate::peek(&b"not mxf".to_vec()).is_err());
+    for cut in (0..v.len().min(4000)).step_by(13) {
+        let _ = crate::peek(&v[..cut].to_vec());
+    }
+}

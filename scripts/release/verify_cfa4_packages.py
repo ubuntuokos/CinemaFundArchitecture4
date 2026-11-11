@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Validate CFA4 local candidate artifacts without publishing or installing packages.
 
-This is a package-structure/checksum gate, not a clean-install or license gate.
+This is a package-structure/checksum gate, not a clean-install or license gate. It lists the
+real contents of the .deb (dpkg-deb) and of the AppImage (its squashfs, with unsquashfs, without
+running it) and requires the licence and attribution files in each (#220).
 The Flatpak bundle's internal ref and the AppImage runtime are tested in F5.
 """
 from __future__ import annotations
@@ -27,6 +29,17 @@ FFMPEG_REQUIRED = ("lib/libavcodec.so.", "lib/libavformat.so.", "lib/libavutil.s
 FFMPEG_DOCS = ("share/doc/ffmpeg/BUILDINFO", "share/doc/ffmpeg/COPYING.GPLv3", "share/doc/ffmpeg/LICENSE.md")
 # Patent-restricted libraries belong only in cfa4-restricted-extras (docs/licensing.md §7).
 RESTRICTED = re.compile(r"(^|/)libx26[45]\.so")
+# The AppImage's and the Flatpak's own PySide6 / Qt 6 (stage-pyside6.py) and its licences.
+PYSIDE6_DIR = "usr/lib/cfa4/pyside6"
+PYSIDE6_DOCS = ("LICENSE.LGPL-3.0", "LICENSE.LGPL-2.1", "PYSIDE6-QT-NOTICE.txt")
+
+
+def package_docs(root: Path = ROOT) -> tuple[str, ...]:
+    """The licence/attribution files every package carries in share/doc/cfa4
+    (scripts/ci/check-package-docs.sh, the same list)."""
+    fonts = sorted(path.name for path in (root / "assets/fonts").glob("OFL-*.txt"))
+    return ("LICENSE", "NOTICE", "ATTRIBUTION.md", "LICENSE-MIT", "LICENSE-APACHE",
+            "LICENSE-logo.txt", "copyright", "THIRD-PARTY-LICENSES.txt", "cfa4.cdx.json", *fonts)
 
 
 class AuditError(ValueError):
@@ -94,6 +107,36 @@ def verify_ffmpeg(names: set[str], base: str, package: str) -> None:
         raise AuditError(f"{package} contains patent-restricted codecs: {restricted}")
 
 
+def verify_docs(sizes: dict[str, int], base: str, package: str) -> None:
+    """Every licence/attribution file, non-empty, in `base` (a share/doc/cfa4 directory)."""
+    missing = [doc for doc in package_docs() if sizes.get(f"{base}/{doc}", 0) <= 0]
+    if missing:
+        raise AuditError(f"{package} lacks licence/attribution files in {base}: {missing}")
+
+
+def parse_listing(listing: str, strip: str) -> dict[str, int]:
+    """Regular files and links of a `dpkg-deb --contents` / `unsquashfs -lls` listing
+    ("-rw-r--r-- root/root 1234 2026-11-08 07:00 ./usr/bin/cfa4"), relative to `strip`, with their
+    sizes (a link counts as non-empty)."""
+    entries: dict[str, int] = {}
+    for line in listing.splitlines():
+        fields = line.split(None, 5)
+        if len(fields) < 6 or fields[0][:1] not in ("-", "l"):
+            continue
+        name = fields[5].split(" -> ", 1)[0] if fields[0].startswith("l") else fields[5]
+        if not name.startswith(strip):
+            raise AuditError(f"unexpected package entry: {name}")
+        name = name[len(strip):]
+        if not name or ".." in Path(name).parts:
+            raise AuditError(f"unsafe package entry: {fields[5]}")
+        try:
+            size = int(fields[2])
+        except ValueError as exc:
+            raise AuditError(f"unreadable package listing line: {line}") from exc
+        entries[name] = max(size, 1) if fields[0].startswith("l") else size
+    return entries
+
+
 def verify_tarball(path: Path, version: str) -> None:
     folder = f"cfa4-{version}-linux-x86_64"
     required = {
@@ -123,6 +166,7 @@ def verify_tarball(path: Path, version: str) -> None:
         if missing:
             raise AuditError(f"tarball missing required entries: {sorted(missing)}")
         verify_ffmpeg(set(files), FFMPEG_DIR, "tarball")
+        verify_docs({name: member.size for name, member in files.items()}, "share/doc/cfa4", "tarball")
         for name in ("install.sh", "bin/cfa4", "bin/cfa4-cli"):
             if not files[name].mode & 0o111 or files[name].size == 0:
                 raise AuditError(f"tarball executable invalid: {name}")
@@ -164,22 +208,23 @@ def verify_deb(path: Path, version: str) -> None:
     if package_version not in (version, f"{version}-1"):
         raise AuditError(f".deb version mismatch: {package_version} != {version}")
     files = dpkg("--contents", str(path))
+    sizes = parse_listing(files, "./")
     for entry in (
-        "./usr/bin/cfa4", "./usr/bin/cfa4-cli",
-        f"./usr/share/applications/{APP_ID}.desktop",
-        f"./usr/share/mime/packages/{APP_ID}.xml",
-        f"./usr/share/metainfo/{APP_ID}.metainfo.xml",
-        f"./usr/share/icons/hicolor/scalable/apps/{APP_ID}.svg",
+        "usr/bin/cfa4", "usr/bin/cfa4-cli", "usr/bin/cfa4-qt",
+        "usr/lib/cfa4/python/cfa4_qt/__main__.py",
+        f"usr/share/applications/{APP_ID}.desktop",
+        f"usr/share/mime/packages/{APP_ID}.xml",
+        f"usr/share/metainfo/{APP_ID}.metainfo.xml",
+        f"usr/share/icons/hicolor/scalable/apps/{APP_ID}.svg",
     ):
-        if entry not in files:
-            raise AuditError(f".deb missing {entry}")
-    names = set()
-    for line in files.splitlines():
-        # dpkg-deb --contents: "-rw-r--r-- root/root 1234 2026-11-08 07:00 ./opt/…"
-        entry = line.split()[-1] if line.split() else ""
-        if entry.startswith("./"):
-            names.add(entry[2:].rstrip("/"))
+        if sizes.get(entry, 0) <= 0:
+            raise AuditError(f".deb missing ./{entry}")
+    names = set(sizes)
     verify_ffmpeg(names, FFMPEG_DEB_DIR, ".deb")
+    verify_docs(sizes, "usr/share/doc/cfa4", ".deb")
+    # the Ubuntu archive provides PySide6 to the .deb; it never carries its own
+    if any(name.startswith(PYSIDE6_DIR + "/") for name in names):
+        raise AuditError(".deb bundles PySide6; it depends on python3-pyside6.* instead")
     if any(name.startswith(f"usr/{FFMPEG_DIR}") for name in names):
         raise AuditError(".deb carries the relocatable FFmpeg copy; it belongs in /opt/cfa4")
     depends = dpkg("--field", str(path), "Depends")
@@ -187,13 +232,48 @@ def verify_deb(path: Path, version: str) -> None:
         raise AuditError(f".deb Depends lacks the system libraries: {depends}")
 
 
-def verify_appimage(path: Path) -> None:
+def appimage_offset(path: Path) -> int:
+    """Where the squashfs starts: right after the runtime ELF's section header table."""
     with path.open("rb") as file:
-        elf = file.read(20)
-    if len(elf) < 20 or elf[:5] != b"\x7fELF\x02" or elf[5] != 1:
-        raise AuditError("AppImage is not a 64-bit little-endian ELF")
-    if int.from_bytes(elf[18:20], "little") != 62:
-        raise AuditError("AppImage ELF machine is not x86_64")
+        elf = file.read(64)
+        if len(elf) < 64 or elf[:5] != b"\x7fELF\x02" or elf[5] != 1:
+            raise AuditError("AppImage is not a 64-bit little-endian ELF")
+        if int.from_bytes(elf[18:20], "little") != 62:
+            raise AuditError("AppImage ELF machine is not x86_64")
+        shoff = int.from_bytes(elf[40:48], "little")
+        shentsize = int.from_bytes(elf[58:60], "little")
+        shnum = int.from_bytes(elf[60:62], "little")
+        offset = shoff + shentsize * shnum
+        file.seek(offset)
+        if file.read(4) != b"hsqs":
+            raise AuditError("AppImage carries no squashfs after its runtime")
+    return offset
+
+
+def verify_appimage(path: Path) -> None:
+    offset = appimage_offset(path)
+    try:
+        listing = subprocess.check_output(
+            ["unsquashfs", "-o", str(offset), "-lls", str(path)],
+            text=True, stderr=subprocess.STDOUT, timeout=120,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise AuditError(f"unsquashfs listing of the AppImage unavailable or failed: {exc}") from exc
+    sizes = parse_listing(listing, "squashfs-root/")
+    for entry in (
+        "AppRun", f"{APP_ID}.desktop", f"{APP_ID}.png", ".DirIcon",
+        "usr/bin/cfa4", "usr/bin/cfa4-cli", "usr/bin/cfa4-qt",
+        "usr/lib/cfa4/python/cfa4_qt/__main__.py",
+        f"{PYSIDE6_DIR}/PySide6/__init__.py",
+        f"usr/share/metainfo/{APP_ID}.metainfo.xml",
+    ):
+        if sizes.get(entry, 0) <= 0:
+            raise AuditError(f"AppImage missing {entry}")
+    verify_ffmpeg(set(sizes), f"usr/{FFMPEG_DIR}", "AppImage")
+    verify_docs(sizes, "usr/share/doc/cfa4", "AppImage")
+    missing = [doc for doc in PYSIDE6_DOCS if sizes.get(f"usr/share/doc/cfa4/pyside6/{doc}", 0) <= 0]
+    if missing:
+        raise AuditError(f"AppImage lacks the bundled PySide6 / Qt licences: {missing}")
 
 
 def verify_package_set(dist: Path, version: str) -> dict:
@@ -211,7 +291,8 @@ def verify_package_set(dist: Path, version: str) -> dict:
         "status": "PASS_PACKAGE_STRUCTURE_NOT_RUNTIME",
         "files": [{"name": name, "bytes": (dist / name).stat().st_size, "sha256": hashes[name]}
                   for name in names],
-        "limitations": ["Flatpak ref/runtime not inspected", "AppImage runtime not executed",
+        "limitations": ["Flatpak ref/runtime not inspected",
+                        "AppImage contents listed, its runtime not executed",
                         "no clean-install, distribution or license approval"],
     }
 

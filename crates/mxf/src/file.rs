@@ -277,22 +277,24 @@ pub struct MxfFile {
 
 /// An essence element found by the KLV walk.
 #[derive(Clone, Copy, Debug)]
-struct Element {
-    key: Ul,
-    value_offset: u64,
-    size: u64,
+pub(crate) struct Element {
+    pub(crate) key: Ul,
+    pub(crate) value_offset: u64,
+    pub(crate) size: u64,
     /// Cut short by the end of the file.
-    truncated: bool,
+    pub(crate) truncated: bool,
 }
 
-struct WalkResult {
-    run_in: u64,
-    partitions: Vec<Partition>,
+pub(crate) struct WalkResult {
+    pub(crate) run_in: u64,
+    pub(crate) partitions: Vec<Partition>,
     /// Header metadata per partition index: (primer, sets as (key, value)).
-    metadata: Vec<(usize, Primer, Vec<(Ul, Vec<u8>)>)>,
-    index: Vec<IndexSegment>,
-    elements: Vec<Element>,
-    warnings: Vec<String>,
+    pub(crate) metadata: Vec<(usize, Primer, Vec<(Ul, Vec<u8>)>)>,
+    pub(crate) index: Vec<IndexSegment>,
+    pub(crate) elements: Vec<Element>,
+    /// Generic stream data elements (ST 410) with the BodySID of their partition.
+    pub(crate) generic_streams: Vec<(u32, Element)>,
+    pub(crate) warnings: Vec<String>,
 }
 
 /// Values larger than this are never read while opening (metadata and index values are small).
@@ -319,11 +321,19 @@ impl<S: ByteSource + ?Sized> Window<'_, S> {
     }
 }
 
-fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
+pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
     let len = src.len();
     let head = read_upto(src, 0, 65_536 + 32)?;
     let run_in = find_header_partition(&head).ok_or_else(|| Error::NotMxf("no header partition pack".into()))? as u64;
-    let mut w = WalkResult { run_in, partitions: Vec::new(), metadata: Vec::new(), index: Vec::new(), elements: Vec::new(), warnings: Vec::new() };
+    let mut w = WalkResult {
+        run_in,
+        partitions: Vec::new(),
+        metadata: Vec::new(),
+        index: Vec::new(),
+        elements: Vec::new(),
+        generic_streams: Vec::new(),
+        warnings: Vec::new(),
+    };
     let mut win = Window { src, off: 0, buf: Vec::new() };
     let mut pos = run_in;
     let mut cur_meta: Option<usize> = None;
@@ -404,6 +414,11 @@ fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                     w.elements.push(Element { key, value_offset: vstart, size: vlen, truncated: false });
                 }
             }
+            KeyClass::Other if key.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
+                cur_meta = None;
+                let sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                w.generic_streams.push((sid, Element { key, value_offset: vstart, size: vlen, truncated: false }));
+            }
             KeyClass::Fill | KeyClass::RandomIndexPack | KeyClass::Other => {}
         }
         pos = vend;
@@ -413,6 +428,9 @@ fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
     }
     Ok(w)
 }
+
+/// Generic stream data element keys (ST 410): 06 0E 2B 34 01 01 01 xx 0D 01 05 09 01 ...
+const GENERIC_STREAM_DATA_ITEM: [u8; 5] = [0x0D, 0x01, 0x05, 0x09, 0x01];
 
 /// Generic container picture / sound / data / compound items (not system items).
 fn is_essence_item(k: &Ul) -> bool {
@@ -511,6 +529,7 @@ fn descriptor_kind(s: &Set) -> Option<TrackKind> {
 
 fn picture_info(d: &Set) -> PictureInfo {
     let u = |t| d.u(t).unwrap_or(0) as u32;
+    let i = |t| d.i(t).unwrap_or(0).clamp(i32::MIN as i64, i32::MAX as i64) as i32;
     PictureInfo {
         stored_width: u(tag::STORED_WIDTH),
         stored_height: u(tag::STORED_HEIGHT),
@@ -529,6 +548,17 @@ fn picture_info(d: &Set) -> PictureInfo {
         transfer_characteristic: d.ul(tag::TRANSFER_CHARACTERISTIC),
         coding_equations: d.ul(tag::CODING_EQUATIONS),
         color_primaries: d.ul(tag::COLOR_PRIMARIES),
+        reversed_byte_order: d.u(tag::REVERSED_BYTE_ORDER).is_some_and(|v| v != 0),
+        padding_bits: d.u(tag::PADDING_BITS).unwrap_or(0).clamp(0, 64) as u32,
+        image_start_offset: u(tag::IMAGE_START_OFFSET),
+        image_end_offset: u(tag::IMAGE_END_OFFSET),
+        sampled_x_offset: i(tag::SAMPLED_X_OFFSET),
+        sampled_y_offset: i(tag::SAMPLED_Y_OFFSET),
+        display_x_offset: i(tag::DISPLAY_X_OFFSET),
+        display_y_offset: i(tag::DISPLAY_Y_OFFSET),
+        pixel_layout: d.get(tag::PIXEL_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
+        component_min_ref: d.u(tag::COMPONENT_MIN_REF).map(|v| v as u32),
+        component_max_ref: d.u(tag::COMPONENT_MAX_REF).map(|v| v as u32),
     }
 }
 
@@ -688,34 +718,38 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<TrackRef>, 
     (out, timecode, name)
 }
 
-/// Open an MXF file: walk the KLV structure and resolve the essence tracks.
-pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
-    let w = walk(src)?;
-    let mut warnings = w.warnings;
-    // Metadata of the most complete partition (closed complete > open complete > closed > open;
-    // later partitions win ties: the footer has the final durations).
+/// The header metadata of the most complete partition (closed complete > open complete > closed >
+/// open; later partitions win ties: the footer has the final durations), with its partition index.
+pub(crate) fn best_metadata(w: &WalkResult) -> Result<(usize, Metadata)> {
     let best = w
         .metadata
         .iter()
-        .enumerate()
-        .filter(|(_, m)| !m.2.is_empty())
-        .max_by_key(|(_, m)| {
-            let p = &w.partitions[m.0];
-            (p.complete(), p.closed(), p.offset)
-        })
-        .map(|(i, _)| i);
-    let Some(best) = best else { return Err(Error::Invalid("no header metadata".into())) };
-    let (meta_partition, primer, sets) = &w.metadata[best];
+        .filter(|m| !m.2.is_empty())
+        .max_by_key(|m| w.partitions.get(m.0).map(|p| (p.complete(), p.closed(), p.offset)))
+        .ok_or_else(|| Error::Invalid("no header metadata".into()))?;
+    let (meta_partition, primer, sets) = best;
     let mut md = Metadata::default();
     for (k, v) in sets {
         md.push(Set::parse(*k, v, primer));
     }
+    Ok((*meta_partition, md))
+}
+
+/// Open an MXF file: walk the KLV structure and resolve the essence tracks.
+pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
+    let w = walk(src)?;
+    let (meta_partition, md) = best_metadata(&w)?;
+    let meta_partition = &meta_partition;
+    let mut warnings = w.warnings;
     let preface = md.of_kind(st::PREFACE).next();
     let op_label = preface.and_then(|p| p.ul(tag::OPERATIONAL_PATTERN)).unwrap_or(w.partitions[0].operational_pattern);
     let ident = md.of_kind(st::IDENTIFICATION).last();
     let product_name = ident.and_then(|i| i.string(tag::PRODUCT_NAME));
     let company_name = ident.and_then(|i| i.string(tag::COMPANY_NAME));
     let (refs, timecode, material_name) = resolve_tracks(&md, &mut warnings);
+    if refs.iter().all(|r| r.kind == TrackKind::Data) && md.of_kind(crate::timed_text::TIMED_TEXT_DESCRIPTOR).next().is_some() {
+        return Err(Error::Unsupported("timed text track file (read it with open_timed_text)".into()));
+    }
     if refs.is_empty() {
         return Err(Error::Invalid("no essence tracks in the header metadata".into()));
     }
@@ -835,8 +869,9 @@ fn build_track(
             if r.sub_descriptors.iter().any(|s| s.kind() == Some(st::AVC_SUBDESCRIPTOR)) && !matches!(codec, Codec::Avc { .. }) {
                 codec = Codec::Avc { intra: false };
             }
-            // A wrong or missing label: trust the essence bytes.
-            if let Some(first) = elements.first() {
+            // A wrong or missing label: trust the essence bytes (uncompressed samples are not
+            // coded, so any pattern can start them).
+            if let Some(first) = elements.first().filter(|_| codec != Codec::Uncompressed) {
                 let head = read_upto(src, first.value_offset, 64)?;
                 if let Some(sniffed) = sniff_picture(&head) {
                     let agree = std::mem::discriminant(&sniffed) == std::mem::discriminant(&codec);
@@ -846,8 +881,24 @@ fn build_track(
                 }
             }
             t.codec = codec;
+            let line_wrapped = container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x05]) && c.0[15] == 0x03)
+                || elements.first().is_some_and(|e| e.key.0[12] == 0x15 && e.key.0[14] == 0x04);
+            if codec == Codec::Uncompressed && line_wrapped {
+                warnings.push("line-wrapped uncompressed pictures are not supported".into());
+                t.codec = Codec::Unknown;
+                t.picture = Some(pi);
+                return Ok(t);
+            }
+            let unit = (codec == Codec::Uncompressed).then(|| crate::uncompressed::Layout::of(&pi).ok().map(|l| l.edit_unit_bytes(&pi))).flatten();
             t.picture = Some(pi);
             build_pictures(src, &mut t, elements, index, warnings)?;
+            // a clip-wrapped element without an index: every edit unit has the same size
+            if let (Some(unit), [e]) = (unit.filter(|&u| u > 0 && u <= u64::from(u32::MAX)), elements)
+                && t.samples.len() < 2
+                && e.size / unit > 1
+            {
+                split_constant(&mut t, e, unit);
+            }
         }
         TrackKind::Data if desc.is_some_and(|d| is_dcp_iab_descriptor(d)) || elements.first().is_some_and(|e| crate::klv::is_dcp_iab_element(&e.key)) => {
             // a D-Cinema immersive audio track file: read as the IAB sound track of IMF
@@ -933,6 +984,14 @@ fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl 
     let [0x01, a, b, c, d] = head[..] else { return false };
     let pre = u64::from(u32::from_be_bytes([a, b, c, d]));
     pre < first.size && read_upto(src, first.value_offset + 5 + pre, 1).is_ok_and(|t| t == [0x02])
+}
+
+/// Splits a clip-wrapped element into edit units of `unit` bytes.
+fn split_constant(t: &mut EssenceTrack, e: &Element, unit: u64) {
+    let n = e.size / unit;
+    t.wrapping = Wrapping::Clip;
+    t.samples = (0..n).map(|i| Sample { offset: e.value_offset + i * unit, size: unit as u32, pts: i as i64, key: true, b_picture: false }).collect();
+    t.display_order = (0..t.samples.len()).collect();
 }
 
 /// Splits a clip-wrapped IAB element without an index into its IABitstream frames (each a

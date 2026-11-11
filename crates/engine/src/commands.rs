@@ -1343,7 +1343,7 @@ fn build() -> Vec<CommandSpec> {
             "Sequence…",
             ["File", "New"],
             Some("Cmd+N"),
-            r#"{"name":str,"width":u32=1920,"height":u32=1080,"fps":f64=23.976,"sampleRate":u32=48000,"video":n=3,"audio":n=3,"mix":"Stereo|Mono|5.1|Adaptive"?,"trackType":"Standard|Mono|5.1|Adaptive"?,"fromItem":itemId?,"fromItems":[itemId]?}"#,
+            r#"{"name":str,"width":u32=1920,"height":u32=1080,"fps":f64=23.976,"sampleRate":u32=48000,"video":n=3,"audio":n=3,"mix":"Stereo|Mono|5.1|7.1|7.1.2|Adaptive"?,"trackType":"Standard|Mono|5.1|7.1|7.1.2|Adaptive"?,"fromItem":itemId?,"fromItems":[itemId]?}"#,
             always,
             |s, p| s.edit_group("New Sequence", |s| {
                 // `fromItems` is `fromItem` for a list: the first sets the sequence, the rest follow it back to back
@@ -1374,13 +1374,13 @@ fn build() -> Vec<CommandSpec> {
                     st.sample_rate = sr;
                 }
                 if let Some(m) = str_p(p, "mix") {
-                    st.audio_master =
-                        crate::mixer::channels_from(m).ok_or_else(|| bad("file.newSequence", format!("unknown mix `{m}` (Stereo, Mono, 5.1, Adaptive)")))?;
+                    st.audio_master = crate::mixer::channels_from(m)
+                        .ok_or_else(|| bad("file.newSequence", format!("unknown mix `{m}` (Stereo, Mono, 5.1, 7.1, 7.1.2, Adaptive)")))?;
                 }
                 let track_type = match str_p(p, "trackType") {
                     Some(t) => Some(
                         crate::mixer::channels_from(t)
-                            .ok_or_else(|| bad("file.newSequence", format!("unknown track type `{t}` (Standard, Mono, 5.1, Adaptive)")))?,
+                            .ok_or_else(|| bad("file.newSequence", format!("unknown track type `{t}` (Standard, Mono, 5.1, 7.1, 7.1.2, Adaptive)")))?,
                     ),
                     None => None,
                 };
@@ -1520,7 +1520,13 @@ fn build() -> Vec<CommandSpec> {
             // Settings ▸ Media ▸ Import image sequences on, a single numbered still is detected.
             let as_sequence = p.get("imageSequence").and_then(Value::as_bool).unwrap_or(false);
             let detect = !as_sequence && s.prefs.media.import_image_sequences && paths.len() == 1;
+            // OP-Atom files already imported with their clip (Avid / P2: picture and sound files
+            // of one clip are one item)
+            let mut clip_files: std::collections::HashSet<String> = std::collections::HashSet::new();
             for path in paths {
+                if clip_files.contains(&path) {
+                    continue;
+                }
                 if as_sequence || (detect && detect_image_sequence(s, &path)) {
                     match import_image_sequence(s, &path, bin) {
                         Ok((id, frames, missing)) => {
@@ -1531,16 +1537,32 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // DCP / IMF subtitles: timed text track files are caption tracks, not media.
+                if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
+                    match r {
+                        Ok(r) => reports.push(r),
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
                 // Media files through the host's reader (no whole-file read) when it has one.
                 let streamed = cfa4_media::is_importable(std::path::Path::new(&path)) && s.services.reader(&path).is_some();
                 let read = if streamed { Ok(Vec::new()) } else { s.services.read_file(&path) };
                 match read {
                     Ok(_) if streamed => match import_streamed(s, &path, bin) {
-                        Ok(id) => ids.push(id.0),
+                        Ok(id) => {
+                            ids.push(id.0);
+                            clip_files.extend(s.media.op_atom_clip_files(&path, &*s.services).unwrap_or_default());
+                        }
                         Err(e) => errors.push(format!("{path}: {e}")),
                     },
                     Ok(b) => {
-                        if let Some(fmt) = crate::captions::detect(&path, &b) {
+                        if crate::captions::is_dcst(&path, &b) {
+                            match crate::captions::import_dcst(s, &path, &b) {
+                                Ok(r) => reports.push(r),
+                                Err(e) => errors.push(format!("{path}: {e}")),
+                            }
+                        } else if let Some(fmt) = crate::captions::detect(&path, &b) {
                             match crate::captions::import(s, &path, &b, fmt, None) {
                                 Ok(r) => reports.push(r),
                                 Err(e) => errors.push(format!("{path}: {e}")),
@@ -1811,7 +1833,7 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
@@ -2457,14 +2479,16 @@ fn build() -> Vec<CommandSpec> {
             "Sequence Settings…",
             ["Sequence"],
             None,
-            r#"{"width":u32?,"height":u32?,"fps":f64?,"name":str?,"sampleRate":u32?,"mix":"Stereo|Mono|5.1|Adaptive"?,"dropFrame":bool?,"maxRenderQuality":bool?,"workingSpace":"rec709"|"rec2100-pq"|"rec2100-hlg"?,"wideGamut":bool?,"autoToneMap":bool?,"scaleMotion":bool=false}"#,
+            r#"{"width":u32?,"height":u32?,"fps":f64?,"name":str?,"sampleRate":u32?,"mix":"Stereo|Mono|5.1|7.1|7.1.2|Adaptive"?,"dropFrame":bool?,"maxRenderQuality":bool?,"workingSpace":"rec709"|"rec2100-pq"|"rec2100-hlg"?,"wideGamut":bool?,"autoToneMap":bool?,"scaleMotion":bool=false}"#,
             has_seq,
             |s, p| {
                 const CMD: &str = "sequence.settings";
                 let id = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
                 let fps = fps_p(p, CMD)?;
                 let mix = match str_p(p, "mix") {
-                    Some(m) => Some(crate::mixer::channels_from(m).ok_or_else(|| bad(CMD, format!("unknown mix `{m}` (Stereo, Mono, 5.1, Adaptive)")))?),
+                    Some(m) => {
+                        Some(crate::mixer::channels_from(m).ok_or_else(|| bad(CMD, format!("unknown mix `{m}` (Stereo, Mono, 5.1, 7.1, 7.1.2, Adaptive)")))?)
+                    }
                     None => None,
                 };
                 let working = match str_p(p, "workingSpace") {
@@ -3610,7 +3634,7 @@ fn build() -> Vec<CommandSpec> {
             "Keyframe Interpolation",
             [],
             None,
-            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut"}"#,
+            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut|sine|expo|circ|overshoot|elastic|bounce"}"#,
             has_seq,
             |s, p| keyframe_op(s, p, "interp")
         ),
@@ -3824,6 +3848,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
     v.extend(crate::dialog_defaults::commands());
+    v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());
     v.extend(crate::relink::commands());
     v.extend(crate::proxies::commands());
@@ -3834,6 +3859,8 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::fx_editor::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
+    v.extend(crate::smart_cut::commands());
+    v.extend(crate::qc::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
@@ -3968,6 +3995,12 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
                     "hold" => cfa4_project::Interpolation::Hold,
                     "easein" => cfa4_project::Interpolation::EaseIn,
                     "easeout" => cfa4_project::Interpolation::EaseOut,
+                    "sine" => cfa4_project::Interpolation::Sine,
+                    "expo" => cfa4_project::Interpolation::Expo,
+                    "circ" => cfa4_project::Interpolation::Circ,
+                    "overshoot" => cfa4_project::Interpolation::Overshoot,
+                    "elastic" => cfa4_project::Interpolation::Elastic,
+                    "bounce" => cfa4_project::Interpolation::Bounce,
                     _ => cfa4_project::Interpolation::Linear,
                 };
                 let k = prm.keyframes.iter_mut().find(|k| k.time == at).ok_or_else(|| bad("keyframe", "no keyframe at that time"))?;
@@ -4438,6 +4471,12 @@ fn interpolation_id(i: cfa4_project::Interpolation) -> &'static str {
         I::ContinuousBezier => "continuousBezier",
         I::EaseIn => "easeIn",
         I::EaseOut => "easeOut",
+        I::Sine => "sine",
+        I::Expo => "expo",
+        I::Circ => "circ",
+        I::Overshoot => "overshoot",
+        I::Elastic => "elastic",
+        I::Bounce => "bounce",
     }
 }
 
@@ -4530,6 +4569,7 @@ fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
                         "mode": m.mode.label(),
                         "inverted": m.inverted,
                         "trackMethod": m.track_method.label(),
+                        "tracker": m.tracker.label(),
                         "shape": shape,
                         "selected": s.state.selected_mask == Some(target),
                         "trackJob": job,

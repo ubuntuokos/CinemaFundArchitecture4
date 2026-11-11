@@ -2,7 +2,7 @@
 
 > **Nem cél / Non-goal (2026-10-30):** a Windows-, macOS- és Android-paritás nem cél. A CFA4 kizárólag Ubuntu/Kubuntu 26.04 AMD64-re készül; a célalkalmazás más platformokon elérhető funkciói csak a Linuxra átültethető részükben számítanak. Az Apple-formátumok (ProRes, Apple Log, QuickTime/MOV) támogatása formátum, nem platform, ezért marad. / Windows, macOS and Android parity is not a goal; CFA4 targets Ubuntu 26.04 AMD64 only. Apple formats stay supported.
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-27 · **Change:** minor (Ubuntu 26.04 only: G3, G4, G5, G9) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-11 · **Change:** minor (`cfa4-metrics`, G1) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -39,6 +39,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G1. Nothing compares our output with Premiere's
 
+- **Have:** the scoring metrics: `cfa4-metrics` computes CIEDE2000 ΔE (mean, max, share above 1)
+  between two 8-bit sRGB images and SSIM of 8 / 10-16-bit or float planes, checked against the
+  Sharma et al. (2005) ΔE test data and scikit-image (PSNR already exists in the oracle tests).
 - **Missing:** a fidelity harness. Every effect, transition, Lumetri control, blend mode, keyframe
   interpolation and audio effect counts once it exists; nothing renders the same project in
   Premiere and CFA4 and compares frames or samples. Effects described as approximations
@@ -69,7 +72,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 - **Have:** our H.264 decoder does 4:2:0, 4:2:2 and 4:4:4 at 8 to 14 bits (High 10, High 4:2:2 and
   High 4:4:4 Predictive bit-exact with ffmpeg, #161).
-- **Missing:** H.264 interlaced field / MBAFF (#162), lossless (#163), monochrome (#279)
+- **Missing:** H.264 interlaced field / MBAFF (#162), lossless (#163)
   (`crates/h264/README.md`); HEVC now decodes 4:2:2 / 4:4:4 up to 12-bit (#93); its RExt coding tools are #167. Most mirrorless and
   cinema cameras record exactly these (Sony XAVC S-I / XAVC HS 4:2:2 10-bit, Panasonic, Canon
   XF-AVC, Fujifilm).
@@ -230,6 +233,11 @@ distributions are not targets.
   Enhance Speech, Auto Reframe beyond heuristics, auto colour, Auto-Tag Audio Types.
 - **Have:** local Whisper transcription (off in releases, G19), Kokoro-82M text-to-speech
   narration (#278), scene edit detection, colour match.
+- **Candidates from the glitch-effect review (2026-10-30):** a subject-masked glitch (Pixel Sort,
+  Block Glitch or Databend only on a person or object) needs the same segmentation model as Object
+  Mask; the reviewed example, h43lb1t0/PixelSorter, uses YOLOv8 (AGPL-3.0), which CFA4 cannot ship,
+  so it needs an openly licensed model. Beat-synced glitch bursts (keyframing the Glitch effects on
+  music onsets) need no model beyond beat detection.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
 - **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the
   non-AI parts of that review are implemented, see [marketing-tools.md](marketing-tools.md)):
@@ -244,23 +252,37 @@ distributions are not targets.
     Hosted services (Veo, Kling, Seedance, Suno, ElevenLabs) are out (local-first, licences);
     only openly licensed local models qualify. Kokoro TTS narration exists already.
   - *Poster or still to motion:* animate a single image into a short promo (image-to-video).
+- **CFA4 candidates** (from the 2026-10-26 repository reviews; each needs its model's licence and
+  weights checked before it ships, and a menu entry like every effect):
+  - *Word Highlight captions* (karaoke style: the spoken word lights up). Needs word timings
+    from the local Whisper transcription (`crates/speech`, G19); the styling itself is not AI.
+  - *Low Light* enhancement: SGZ / Semantic-Guided LLIE (MIT, ~53 KB ONNX); alternatives
+    TBEFN (BSD-3) and URetinex-Net (MIT). Zero-DCE, SCI and RUAS have no licence and are out.
+  - *Face-limited Skin Smoothing*: YuNet face detection (libfacedetection, BSD-3) to restrict the
+    existing Skin Smoothing effect to faces.
+  - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
+    (Apache-2.0) as the fallback.
+  - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
+    model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 
 ## G13. Delivery formats
 
 - **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
-  CBR / VBV and interlace (#241, #242), MP2 audio (#267), JPEG 2000 MXF
+  field pictures / dual prime (#274), P-STD / T-STD buffer models in the multiplexer (#277), field-aware scaling and field-rate rendering for interlaced export (#275), MP2 audio (#267), JPEG 2000 MXF
   (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; SMPTE DCP export is done, #115),
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
-  interlaced encoding, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
+  interlaced encoding other than MPEG-2, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
   (#171–#180).
 - **Have:** MPEG-2 export (#243: program stream with DVD LPCM, transport stream / BDAV `.m2ts`
-  with AAC, `.m2v` elementary stream; IBBP with closed GOPs by default, #240); AV1 export with the own software encoder (CRF / CBR / VBR, HDR PQ / HLG with
+  with AAC, `.m2v` elementary stream; IBBP with closed GOPs by default, #240; interlaced upper / lower field first with
+  per-macroblock field prediction and field DCT, #241; CBR with real vbv_delay and stuffing, or
+  VBR within the VBV buffer, Annex C, #242); AV1 export with the own software encoder (CRF / CBR / VBR, HDR PQ / HLG with
   metadata, MP4 `av01`; #95); PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); Opus Audio (`.opus`, own CELT encoder, #99); WebM (VP9 + Opus, own encoders, #149); ProRes 4444 / 4444 XQ in the export UI (#342);
   H.265 software encoder (Main / Main 10 HDR, CRF / CBR / VBR, parallel slices; hardware
-  encoders go first where present; #94); HLS (H.264 + AAC CMAF segments, one rendition; #100, ABR ladder #230).
+  encoders go first where present; #94); HLS (H.264 + AAC CMAF segments, one rendition; #100, ABR ladder #230). Chapter markers export as chapters: `chpl` plus a QuickTime chapter track in MP4/MOV/M4A, `chpl` in the HLS init segments, Matroska `Chapters` in WebM (`ExportSettings::chapters`, on by default).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x264 for a higher-quality software H.264 encoder,
   LAME (LGPL) for MP3 audio. H.264 / HEVC / AAC patents are a separate question from the licence. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h. Doc: [file-format-parity.md](file-format-parity.md).
@@ -361,3 +383,5 @@ distributions are not targets.
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |
 | 2026-10-27 | minor | Ubuntu 26.04 is the only target (macOS, Windows and RPM dropped): G3, G4, G5, G8 and G9 rewritten, G4 40–80 → 30–60 h, G5 120–200 → 100–170 h, G9 50–90 → 30–60 h |
 | 2026-10-26 | minor | G10: JPEG 2000 MXF import, DCP picture tracks included (#77) |
+| 2026-10-26 | minor | G12: AI candidates from the repository reviews (word-highlight captions, low light, face detection, background matting, foley) |
+| 2026-11-11 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |

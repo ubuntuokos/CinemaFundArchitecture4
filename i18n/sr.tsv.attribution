@@ -1,0 +1,8 @@
+asset:        sr.tsv
+title:        Serbian (Cyrillic) interface translation catalog
+author:       CFA4 contributors; the "Imported from craft-i18n" section: the craft-i18n contributors (see NOTICE)
+source:       original work; the imported section from github.com/ubuntuokos/CFA4_craft-i18n (fork of storytold's craft-i18n), locales/sr-latn/ (transliterated to Cyrillic)
+license:      GPL-3.0-or-later; the imported section MIT OR Apache-2.0
+license-file: LICENSE; the imported section LICENSE-MIT and LICENSE-APACHE
+added:        2026-11-11 by ubuntuokos
+notes:        Serbian (Cyrillic) translations of every CFA4 interface string, transliterated letter for letter from the clean-room sr-latn.tsv (3591 entries). 482 rows whose English and meaning match CFA4's were imported once from craft-i18n's sr-latn locale (also written clean-room there), transliterated, and are kept in their own section with that origin.
