@@ -3525,6 +3525,8 @@
 	Analyze Source for Smart Cut	Phân tích nguồn để cắt thông minh
 	Plan Smart Cut	Lập kế hoạch cắt thông minh
 	Run Smart Cut	Thực hiện cắt thông minh
+	DASH Manifest	Tệp kê khai DASH
+	Also write a DASH manifest (.mpd)	Ghi thêm tệp kê khai DASH (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Chưa mở chuỗi nào. Hãy nhấp đúp vào một chuỗi trong bảng Dự án.
 	English (US)	Tiếng Anh (Mỹ)
 	English (UK)	Tiếng Anh (Anh)

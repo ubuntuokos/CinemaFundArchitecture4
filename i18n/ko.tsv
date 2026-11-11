@@ -3658,6 +3658,8 @@
 	Analyze Source for Smart Cut	스마트 컷용 소스 분석
 	Plan Smart Cut	스마트 컷 계획
 	Run Smart Cut	스마트 컷 실행
+	DASH Manifest	DASH 매니페스트
+	Also write a DASH manifest (.mpd)	DASH 매니페스트(.mpd)도 기록
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/ko.tsv).

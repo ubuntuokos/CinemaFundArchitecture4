@@ -3685,6 +3685,8 @@
 	Analyze Source for Smart Cut	Аналіз джерела для Smart Cut
 	Plan Smart Cut	Спланувати Smart Cut
 	Run Smart Cut	Виконати Smart Cut
+	DASH Manifest	Маніфест DASH
+	Also write a DASH manifest (.mpd)	Також записати маніфест DASH (.mpd)
 	#	#
 	'{name}' already exists. Replace it?	«{name}» уже існує. Замінити?
 	(none)	(немає)

@@ -3638,6 +3638,8 @@
 	Analyze Source for Smart Cut	Анализиране на източника за интелигентен срез
 	Plan Smart Cut	Планиране на интелигентен срез
 	Run Smart Cut	Изпълнение на интелигентен срез
+	DASH Manifest	Манифест DASH
+	Also write a DASH manifest (.mpd)	Записване и на манифест DASH (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Няма отворена последователност. Щракнете двукратно върху последователност в панела „Проект“.
 	English (US)	Английски (САЩ)
 	English (UK)	Английски (Обединеното кралство)

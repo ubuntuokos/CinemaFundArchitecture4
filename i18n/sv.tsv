@@ -3664,6 +3664,8 @@
 	Analyze Source for Smart Cut	Analysera källan för smart klippning
 	Plan Smart Cut	Planera smart klippning
 	Run Smart Cut	Kör smart klippning
+	DASH Manifest	DASH-manifest
+	Also write a DASH manifest (.mpd)	Skriv även ett DASH-manifest (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Ingen sekvens är öppen. Dubbelklicka på en sekvens i projektpanelen.
 	English (US)	Engelska (USA)
 	English (UK)	Engelska (Storbritannien)

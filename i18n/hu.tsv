@@ -4102,6 +4102,8 @@ export.summary	Low	alacsony
 	Analyze Source for Smart Cut	Forrás elemzése a Smart Cuthoz
 	Plan Smart Cut	Smart Cut megtervezése
 	Run Smart Cut	Smart Cut futtatása
+	DASH Manifest	DASH-manifeszt
+	Also write a DASH manifest (.mpd)	DASH-manifeszt (.mpd) írása is
 	No sequence open. Double-click a sequence in the Project panel.	Nincs nyitott szekvencia. Kattintson duplán egy szekvenciára a Projekt panelen.
 
 # Language names in the language menu: the English variants keep their English names.

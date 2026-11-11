@@ -3682,6 +3682,8 @@
 	Analyze Source for Smart Cut	წყაროს ანალიზი ჭკვიანი ჭრისთვის
 	Plan Smart Cut	ჭკვიანი ჭრის დაგეგმვა
 	Run Smart Cut	ჭკვიანი ჭრის გაშვება
+	DASH Manifest	DASH მანიფესტი
+	Also write a DASH manifest (.mpd)	ასევე ჩაიწეროს DASH მანიფესტი (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	მიმდევრობა არ არის გახსნილი. ორჯერ დააწკაპუნეთ მიმდევრობაზე პროექტის პანელში.
 	English (US)	ინგლისური (აშშ)
 	English (UK)	ინგლისური (გაერთიანებული სამეფო)

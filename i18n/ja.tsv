@@ -3692,6 +3692,8 @@
 	Analyze Source for Smart Cut	スマートカット用にソースを解析
 	Plan Smart Cut	スマートカットを計画
 	Run Smart Cut	スマートカットを実行
+	DASH Manifest	DASH マニフェスト
+	Also write a DASH manifest (.mpd)	DASH マニフェスト (.mpd) も書き出す
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/ja.tsv).

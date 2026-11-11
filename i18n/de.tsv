@@ -3665,6 +3665,8 @@
 	Analyze Source for Smart Cut	Quelle für Smart Cut analysieren
 	Plan Smart Cut	Smart Cut planen
 	Run Smart Cut	Smart Cut ausführen
+	DASH Manifest	DASH-Manifest
+	Also write a DASH manifest (.mpd)	Zusätzlich ein DASH-Manifest (.mpd) schreiben
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/de.tsv).

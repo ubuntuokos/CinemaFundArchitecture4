@@ -3911,6 +3911,8 @@
 	Analyze Source for Smart Cut	Analüüsi allikat nutika lõikamise jaoks
 	Plan Smart Cut	Planeeri nutikas lõikamine
 	Run Smart Cut	Käivita nutikas lõikamine
+	DASH Manifest	DASH-manifest
+	Also write a DASH manifest (.mpd)	Kirjuta ka DASH-manifest (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Ükski jada pole avatud. Topeltklõpsa jada paneelil Projekt.
 	English (US)	Inglise keel (USA)
 	English (UK)	Inglise keel (Ühendkuningriik)

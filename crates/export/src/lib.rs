@@ -53,7 +53,7 @@ pub mod timeline_audio;
 pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
-pub use dash_out::{DashMedia, DashRepresentation, dash_mpd};
+pub use dash_out::{DashMedia, DashRepresentation, dash_files, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
 pub use dcp_out::{
     DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
@@ -539,6 +539,9 @@ pub struct ExportSettings {
     /// QuickTime chapter track in MP4, MOV and M4A, `chpl` in the HLS init segments, Matroska
     /// chapters in WebM. On by default.
     pub chapters: bool,
+    /// HLS only: also write a DASH manifest (`<stem>.mpd`, see [`dash_files`]) over the same CMAF
+    /// segments, so the export plays in DASH players too. Off by default.
+    pub dash_manifest: bool,
     /// Two-pass state (set by the exporter).
     #[serde(skip)]
     pub h264_pass: H264Pass,
@@ -778,6 +781,7 @@ impl Default for ExportSettings {
             effects: ExportEffects::default(),
             metadata: ExportMetadata::default(),
             chapters: true,
+            dash_manifest: false,
             h264_pass: H264Pass::Single,
             signal: ColorSignal::default(),
             sink: None,

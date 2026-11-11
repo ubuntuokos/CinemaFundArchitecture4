@@ -3690,6 +3690,8 @@
 	Analyze Source for Smart Cut	Analizar origen para Smart Cut
 	Plan Smart Cut	Planificar Smart Cut
 	Run Smart Cut	Ejecutar Smart Cut
+	DASH Manifest	Manifiesto DASH
+	Also write a DASH manifest (.mpd)	Escribir también un manifiesto DASH (.mpd)
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/es.tsv).

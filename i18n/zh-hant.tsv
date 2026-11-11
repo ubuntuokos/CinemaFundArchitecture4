@@ -3565,6 +3565,8 @@
 	Analyze Source for Smart Cut	分析來源以進行智慧剪下
 	Plan Smart Cut	規劃智慧剪下
 	Run Smart Cut	執行智慧剪下
+	DASH Manifest	DASH 清單
+	Also write a DASH manifest (.mpd)	同時寫入 DASH 清單 (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	沒有開啟的序列。請在「專案」面板中按兩下一個序列。
 	English (US)	English (US)
 	English (UK)	English (UK)

@@ -285,6 +285,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "burnCaptions") {
         settings.burn_captions = v;
     }
+    if let Some(v) = bool_p(p, "dashManifest") {
+        settings.dash_manifest = v;
+    }
     if let Some(v) = str_p(p, "proresProfile") {
         settings.prores_profile = v.to_string();
     }
