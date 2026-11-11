@@ -463,7 +463,7 @@ terv vagy nyitott PR részben lefed. Ezeket nem írjuk meg újra:
 
 **Szállítás** ([`coordination.md`](../coordination.md), tulajdonosi döntés 2026-10-27): ág mindig
 friss `main`-ből, egy PR egy K-pont (vagy annak egy lépése); csak a kijelölt beolvasztási gazda
-olvaszt be; ebben a közös fájlban csak a saját sor módosítható; ha 20-nál több PR nyitott, új
+olvaszt be; ebben a közös fájlban csak a saját sor módosítható; ha 30-nál több PR nyitott, új
 K-pont csak a tulajdonos kérésére indul.
 
 **MI-pontok** (tulajdonosi szabály, 2026-10-27, az ADR 0006 2026-10-30-i kapuival pontosítva): a
