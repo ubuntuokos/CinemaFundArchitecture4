@@ -13634,3 +13634,28 @@ def test_real_engine_timeline_shows_gop_boundaries(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
+    """qt-parity 5.5: ``CFA4_QT_MONITOR_GL=1`` asks for the OpenGL picture, but where no GL
+    context can be made (Qt's ``offscreen`` platform here) the monitor keeps the raster view; either
+    way it measures how long drawing the picture takes (``perf.stats`` ``playback.present``)."""
+    from cfa4_qt.panels import monitor
+
+    monkeypatch.setenv("CFA4_QT_MONITOR_GL", "1")
+    assert monitor.monitor_gl_wanted()
+    assert not monitor.monitor_gl_available()
+    view = monitor.new_frame_view("program")
+    assert type(view) is monitor.FrameView and view.present_path == "raster"
+    frame = QtGui.QImage(320, 180, QtGui.QImage.Format.Format_RGBA8888)
+    frame.fill(QtGui.QColor("#4060a0"))
+    view.resize(320, 200)
+    view.set_image(frame, full=(320, 180))
+    view.grab()
+    stats = view.present.as_dict(view.present_path)
+    assert stats["path"] == "raster" and stats["frames"] >= 1 and stats["meanMs"] >= 0 and stats["maxMs"] >= stats["meanMs"]
+    view.present.reset()
+    assert view.present.as_dict("raster") == {"path": "raster", "frames": 0, "meanMs": 0.0, "maxMs": 0.0}
+    monkeypatch.setenv("CFA4_QT_MONITOR_GL", "0")
+    assert not monitor.monitor_gl_wanted()
+    view.deleteLater()
