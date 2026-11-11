@@ -81,9 +81,10 @@ kihasználható.
 | Böngészőforrás (a stúdión belül, Chromium-sandbox) | semmit | semmit | a betöltött oldal | nincs |
 | Bővítmények, MI-modellek | a D7 szerint | | | |
 
-3. **A szabályok (never crash):** ha egy védelmet a rendszer nem támogat, a CFA4 akkor is fut,
-   de a Beállítások ▸ Biztonság jelzi, mi hiányzik. Ha egy elszigetelt folyamat megsérti a
-   szabályt vagy összeomlik, a felügyelő újraindítja, a felhasználó üzenetet kap, a projekt marad.
+3. **A szabályok (never crash, D4):** ha egy védelem hiányzik, a hozzá tartozó kockázatos rész nem
+   indul, és a Beállítások ▸ Biztonság megmondja, mi hiányzik; a CFA4 többi része fut. Ha egy
+   elszigetelt folyamat megsérti a szabályt vagy összeomlik, a felügyelő újraindítja, a felhasználó
+   üzenetet kap, a projekt marad.
 
 ## V. Fázisok (javaslat)
 
@@ -112,7 +113,7 @@ oldal a Qt6 befejezése után. A B6 az élő stúdió S9-ével együtt.
 | D1 | Hatókör | **Eldöntve (2026-11-11): futásidejű réteg és fuzzing együtt.** A fuzzing a hibákat keresi meg, mielőtt a támadók tennék; a futásidejű réteg a javítatlanok kárát korlátozza |
 | D2 | Az FFmpeg és a GStreamer helye | **Eldöntve (2026-11-11): külön `cfa4-media-host` folyamat** (B4), mindig; a saját Rust dekóderek a motorban maradnak. A külső dekóder csak a megnyitott fájlt olvashatja, nem ír, nincs hálózata, nem indít programot; a képkockák osztott memórián mennek a motornak; összeomlás után a motor újraindítja. Teljesítménycél: a lejátszás és az export a külső dekóderrel megnyitott fájlokon legfeljebb 5%-kal lassulhat (a referenciagépen mérve); ha többet, az optimalizálandó, nem ok a visszatérésre a motorba |
 | D3 | Eszközök | **Eldöntve (2026-11-11): Landlock és seccomp a saját Rust kódban** (`cfa4-sandbox`, a `landlock` és a `seccompiler` crate): minden folyamat induláskor maga zárja le magát, csomagformátumtól függetlenül, rendszergazdai jog nélkül. **AppArmor-profil csak ahol kell:** a `.deb` telepíti a `cfa4-studio-host`-hoz (a Chromium-sandbox `userns` szabálya). A bubblewrap nem része a rétegnek |
-| D4 | Ha a rendszer nem támogat egy védelmet | fut tovább, de jelzi (never crash); kérésre „szigorú mód”, amely ilyenkor nem indítja a kockázatos részt |
+| D4 | Ha egy védelem hiányzik | **Eldöntve (2026-11-11): alapból szigorú.** A minimális követelmény az Ubuntu 26.04, amelyben a Landlock, a seccomp és az AppArmor gyárilag megvan, így a támogatott rendszeren a védelmek mindig működnek (B0-ban ellenőrizve). Ha egy hiányzik, a hozzá tartozó kockázatos rész (külső dekóder, böngészőforrás, hálózati bemenet) nem indul, és a CFA4 megmondja, mi hiányzik; a szerkesztő, a projekt és a saját Rust dekóderek működnek (never crash). A felhasználó kifejezett figyelmeztetés után a Beállításokban engedélyezheti a védelem nélküli futást, de **az így futó CFA4 nem támogatott**: a `security.status` és a hibajelentés ezt rögzíti, és az erre épülő hibajelentéseket nem kezeljük |
 | D5 | Hálózat | a motor csak 127.0.0.1-et érhet el; külső hálózat csak a stúdió kimeneteinek és a felhasználó által kért letöltéseknek (MI-modellek), külön engedéllyel |
 | D6 | Idegen projekt megnyitása | figyelmeztetés, ha a projekt nem ezen a gépen készült, és külső útvonalakra hivatkozik |
 | D7 | MI-modellek és bővítmények | modellek csak biztonságos formátumban (safetensors, ONNX, GGUF; pickle nincs); natív bővítmények külön folyamatban |
@@ -127,8 +128,8 @@ oldal a Qt6 befejezése után. A B6 az élő stúdió S9-ével együtt.
   hiányzó jogot.
 - **GPU-illesztők:** az NVIDIA- és Mesa-illesztők sok fájlt és ioctl-t használnak; a seccomp-szűrő
   a GPU-s folyamatokban engedékenyebb.
-- **AppImage:** nem tud AppArmor-profilt telepíteni; ott a Chromium-sandbox a rendszer
-  beállításától függ (jelezve).
+- **AppImage:** nem tud AppArmor-profilt telepíteni, ezért ott a böngészőforrás a D4 szerint nem
+  indul (a `.deb` vagy a Flatpak kell hozzá); ezt a letöltési oldal és a hibaüzenet is megmondja.
 
 ## IX. Források
 
