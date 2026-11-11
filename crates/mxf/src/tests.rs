@@ -1,110 +1,8 @@
 //! Synthetic files: a small OP1a writer (enough of ST 377-1 to exercise the demuxer without
 //! ffmpeg) and robustness checks.
 
+use crate::testing::*;
 use crate::*;
-
-fn ul(b: &[u8]) -> [u8; 16] {
-    let mut k = [0u8; 16];
-    k[..b.len()].copy_from_slice(b);
-    k
-}
-
-fn ber(n: usize) -> Vec<u8> {
-    let mut v = vec![0x83];
-    v.extend_from_slice(&(n as u32).to_be_bytes()[1..]);
-    v
-}
-
-fn klv(out: &mut Vec<u8>, key: [u8; 16], v: &[u8]) {
-    out.extend_from_slice(&key);
-    out.extend_from_slice(&ber(v.len()));
-    out.extend_from_slice(v);
-}
-
-struct LocalSet(Vec<u8>);
-impl LocalSet {
-    fn new(uid: u8) -> Self {
-        let mut s = LocalSet(Vec::new());
-        s.p(0x3C0A, &uuid(uid));
-        s
-    }
-    fn p(&mut self, tag: u16, v: &[u8]) -> &mut Self {
-        self.0.extend_from_slice(&tag.to_be_bytes());
-        self.0.extend_from_slice(&(v.len() as u16).to_be_bytes());
-        self.0.extend_from_slice(v);
-        self
-    }
-}
-
-fn uuid(n: u8) -> [u8; 16] {
-    let mut u = [0xAAu8; 16];
-    u[15] = n;
-    u
-}
-
-fn umid(n: u8) -> [u8; 32] {
-    let mut u = [0x55u8; 32];
-    u[31] = n;
-    u
-}
-
-fn batch(items: &[&[u8]]) -> Vec<u8> {
-    let mut v = (items.len() as u32).to_be_bytes().to_vec();
-    v.extend_from_slice(&(items.first().map_or(0, |i| i.len()) as u32).to_be_bytes());
-    for i in items {
-        v.extend_from_slice(i);
-    }
-    v
-}
-
-fn set_key(t: u8) -> [u8; 16] {
-    ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x01, 0x01, 0x01, 0x01, t, 0x00])
-}
-
-const PICTURE_DEF: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x01, 0x03, 0x02, 0x02, 0x01, 0, 0, 0];
-const SOUND_DEF: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x01, 0x03, 0x02, 0x02, 0x02, 0, 0, 0];
-const TC_DEF: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x01, 0x03, 0x02, 0x01, 0x01, 0, 0, 0];
-const OP1A: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x01, 0x09, 0x00];
-const PIC_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x02, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x15, 0x01, 0x05, 0x00];
-const SND_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x02, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x16, 0x01, 0x03, 0x00];
-
-fn partition(kind: u8, this: u64, body_sid: u32, index_sid: u32, hbc: u64) -> Vec<u8> {
-    let mut v = Vec::new();
-    v.extend_from_slice(&1u16.to_be_bytes());
-    v.extend_from_slice(&3u16.to_be_bytes());
-    v.extend_from_slice(&1u32.to_be_bytes());
-    v.extend_from_slice(&this.to_be_bytes());
-    v.extend_from_slice(&0u64.to_be_bytes());
-    v.extend_from_slice(&0u64.to_be_bytes());
-    v.extend_from_slice(&hbc.to_be_bytes());
-    v.extend_from_slice(&0u64.to_be_bytes());
-    v.extend_from_slice(&index_sid.to_be_bytes());
-    v.extend_from_slice(&0u64.to_be_bytes());
-    v.extend_from_slice(&body_sid.to_be_bytes());
-    v.extend_from_slice(&OP1A);
-    v.extend_from_slice(&batch(&[]));
-    let mut out = Vec::new();
-    klv(&mut out, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x05, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, kind, 0x04, 0x00]), &v);
-    out
-}
-
-fn track(uid: u8, id: u32, number: u32, seq: u8) -> Vec<u8> {
-    let mut s = LocalSet::new(uid);
-    s.p(0x4801, &id.to_be_bytes()).p(0x4804, &number.to_be_bytes()).p(0x4B01, &[0, 0, 0, 25, 0, 0, 0, 1]).p(0x4B02, &0i64.to_be_bytes()).p(0x4803, &uuid(seq));
-    s.0
-}
-
-fn sequence(uid: u8, def: [u8; 16], dur: i64, comp: u8) -> Vec<u8> {
-    let mut s = LocalSet::new(uid);
-    s.p(0x0201, &def).p(0x0202, &dur.to_be_bytes()).p(0x1001, &batch(&[&uuid(comp)]));
-    s.0
-}
-
-fn source_clip(uid: u8, def: [u8; 16], dur: i64, pkg: [u8; 32], track: u32) -> Vec<u8> {
-    let mut s = LocalSet::new(uid);
-    s.p(0x0201, &def).p(0x0202, &dur.to_be_bytes()).p(0x1201, &0i64.to_be_bytes()).p(0x1101, &pkg).p(0x1102, &track.to_be_bytes());
-    s.0
-}
 
 /// An OP1a file: `n` frame-wrapped content packages, each a picture element of `pic(i)` and a
 /// 16-bit stereo sound element of 1920 frames (sample k of the file = k, -k on the channels);
@@ -516,4 +414,89 @@ fn pcm_that_happens_to_look_like_iab_stays_pcm() {
     let m = open(&f).unwrap();
     let a = m.track_of_kind(TrackKind::Sound).unwrap();
     assert_eq!(m.tracks[a].codec, Codec::Pcm);
+}
+
+const DCST: &[u8] = br#"<?xml version="1.0" encoding="UTF-8"?><SubtitleReel xmlns="http://www.smpte-ra.org/schemas/428-7/2010/DCST"><Id>urn:uuid:11111111-1111-1111-1111-111111111111</Id></SubtitleReel>"#;
+
+#[test]
+fn timed_text_track_file_gives_the_document_and_its_resources() {
+    let font = b"OTTO fake font bytes".as_slice();
+    let png = b"\x89PNG fake".as_slice();
+    let f = build_timed_text(DCST, &[("application/x-font-opentype", font), ("image/png", png)]);
+    assert!(is_timed_text(&f));
+    assert!(sniff(&f));
+    let tt = open_timed_text(&f).unwrap();
+    assert_eq!(tt.edit_rate, Rational::new(24, 1));
+    assert_eq!(tt.duration, Some(240));
+    assert_eq!(tt.resource_id, Some([0x11; 16]));
+    assert_eq!(tt.ucs_encoding.as_deref(), Some("UTF-8"));
+    assert_eq!(tt.namespace.as_deref(), Some("http://www.smpte-ra.org/schemas/428-7/2010/DCST"));
+    assert_eq!(tt.read_document(&f).unwrap(), DCST);
+    assert_eq!(tt.resources.len(), 2);
+    assert_eq!(tt.resources[0].id, [0x20; 16]);
+    assert_eq!(tt.resources[0].mime.as_deref(), Some("application/x-font-opentype"));
+    assert_eq!(tt.resources[1].stream_id, 3);
+    assert_eq!(tt.read_resource(&f, 0).unwrap(), font);
+    assert_eq!(tt.read_resource(&f, 1).unwrap(), png);
+    assert!(tt.read_resource(&f, 2).is_err());
+    assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+    // the picture/sound demuxer says what it is instead of failing obscurely
+    assert!(matches!(open(&f), Err(Error::Unsupported(m)) if m.contains("timed text")));
+}
+
+#[test]
+fn ordinary_files_are_not_timed_text() {
+    let (to, flags) = ipbb();
+    let f = build(3, prores_like, &to, &flags);
+    assert!(!is_timed_text(&f));
+    assert!(open_timed_text(&f).is_err());
+    assert!(!is_timed_text(b""));
+    assert!(!is_timed_text(&f[..40]));
+}
+
+#[test]
+fn a_missing_resource_partition_is_a_warning_not_a_failure() {
+    let f = build_timed_text(DCST, &[("image/png", b"png")]);
+    // drop the generic stream partition and its KLV: cut from the GS partition to the footer
+    let gs = f.windows(16).position(|w| w == GS_KEY).unwrap();
+    let gs_partition = f[..gs].windows(16).rposition(|w| w[..13] == crate::klv::PARTITION_PREFIX).unwrap();
+    let footer = f.windows(16).rposition(|w| w[..13] == crate::klv::PARTITION_PREFIX).unwrap();
+    let mut g = f[..gs_partition].to_vec();
+    g.extend_from_slice(&f[footer..]);
+    let tt = open_timed_text(&g).unwrap();
+    assert_eq!(tt.read_document(&g).unwrap(), DCST);
+    assert!(tt.resources[0].data.is_none());
+    assert!(tt.read_resource(&g, 0).is_err());
+    assert_eq!(tt.warnings.len(), 1);
+}
+
+#[test]
+fn hostile_timed_text_never_panics() {
+    let f = build_timed_text(DCST, &[("image/png", b"png data here")]);
+    for cut in (0..f.len()).step_by(11) {
+        let part = f[..cut].to_vec();
+        let _ = is_timed_text(&part);
+        if let Ok(tt) = open_timed_text(&part) {
+            let _ = tt.read_document(&part);
+            let _ = tt.read_resource(&part, 0);
+        }
+    }
+    let mut seed = 0x9E37_79B9u64;
+    for _ in 0..400 {
+        let mut g = f.clone();
+        for _ in 0..4 {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            let at = (seed as usize) % g.len();
+            g[at] = (seed >> 32) as u8;
+        }
+        let _ = is_timed_text(&g);
+        if let Ok(tt) = open_timed_text(&g) {
+            let _ = tt.read_document(&g);
+            for i in 0..tt.resources.len() {
+                let _ = tt.read_resource(&g, i);
+            }
+        }
+    }
 }

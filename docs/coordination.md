@@ -11,7 +11,8 @@ olvasztott PR-ok és ágak.
 |---|---|---|
 | **Tulajdonos** | ubuntuokos | Dönt a sorrendről, jóváhagyja a beolvasztásokat, ágat töröl a GitHubon. |
 | **Beolvasztási gazda** | egyetlen gazda munkamenet, a tulajdonos `/gazda`-val hívja | **Csak a tulajdonos utasítására cselekszik.** Egyedül ő olvaszt be a `main`-be, kizárólag tulajdonosi jóváhagyással. Sorrendet javasol, ütközést old fel, lezár, ha valamit egy másik PR kivált. |
-| **Fejlesztő munkamenet** | minden más | Egy témán dolgozik, egy PR-ban. **Nem olvaszt be**, más PR-jához és ágához nem nyúl. |
+| **Dependabot-előkészítő** | egyetlen, erre kijelölt Claude-munkamenet (tulajdonosi döntés, 2026-11-09) | A Dependabot-PR-okat **előkészíti**: friss ágra hozza (`update-branch`), lefuttatja rajtuk a teljes CI-t (`cfa4-full-validation`), a csoportosítást a `.github/dependabot.yml`-ben saját PR-ban javítja, és „Gazda:” issue-ban átadja a beolvasztásra kész listát. **Nem olvaszt be** és nem zár le PR-t; a Dependabot-PR-okhoz kódjavítást nem tölt fel (ha egy frissítés kódmódosítást igényel, azt az érintett crate projektjének adja át). |
+| **Fejlesztő munkamenet** | minden más | Egy témán dolgozik, egy PR-ban. **Nem olvaszt be**, más PR-jához és ágához nem nyúl. A Dependabot-PR-okhoz sem. |
 
 Egy gazda munkamenet van. A tulajdonos a `/gazda` paranccsal hívja
 ([`.claude/skills/gazda/SKILL.md`](../.claude/skills/gazda/SKILL.md)), és minden sikeres

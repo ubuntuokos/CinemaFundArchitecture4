@@ -1,0 +1,8 @@
+# Australian English (en-au) catalog. Same format as es.tsv: context <TAB> source <TAB> translation.
+# Australian English is shown with the British catalog (en-gb.tsv: colour, centre, -ise…); this
+# file holds only the strings where Australian usage differs from British, read on top of it.
+# It has none yet. Any string without an entry in either file is shown as written.
+#
+# Clean-room: every entry is written from the plain meaning of the English text in ordinary
+# Australian usage. No proprietary localisation resource, string table or product UI was consulted
+# or copied; add entries the same way.

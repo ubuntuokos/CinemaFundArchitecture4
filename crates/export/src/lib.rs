@@ -19,6 +19,7 @@
 use std::io::Write;
 
 mod aac_out;
+pub mod atomic;
 pub mod audio_copy;
 mod audio_out;
 pub mod boundary_reencode;
@@ -28,6 +29,7 @@ mod boundary_reencode_hevc_tests;
 pub mod boundary_reencode_mpeg;
 #[cfg(test)]
 mod boundary_reencode_mpeg_tests;
+pub mod copy;
 mod dash_out;
 mod dcp_atmos;
 mod dcp_iab;
@@ -110,8 +112,8 @@ pub enum Format {
     /// WebM (Matroska), VP9 Profile 0 (8-bit 4:2:0) video by CFA4's own encoder + Opus audio.
     #[serde(rename = "webm", alias = "WebM")]
     WebM,
-    /// HTTP Live Streaming (RFC 8216): H.264 + AAC in CMAF fragmented-MP4 segments with a media
-    /// playlist and a multivariant playlist (the output path), see [`hls_files`].
+    /// HTTP Live Streaming (RFC 8216): H.264 and AAC in separate CMAF fragmented-MP4 segments, each
+    /// with a media playlist, and a multivariant playlist (the output path), see [`hls_files`].
     #[serde(rename = "hls", alias = "Hls")]
     Hls,
     /// QuickTime, Apple ProRes 422 (HQ unless the settings pick another flavour) + PCM.
@@ -175,7 +177,7 @@ pub enum Format {
     #[serde(rename = "mxf-opatom", alias = "MxfOpAtom")]
     MxfOpAtom,
     /// MPEG-2 video (ITU-T H.262, Main Profile 4:2:0 or 4:2:2 Profile, IBBP) in an MPEG-2 program stream
-    /// with 16-bit DVD LPCM (`.mpg`), a transport stream with AAC (`.ts`, `.m2ts`), or an
+    /// with 16- or 24-bit DVD LPCM (`.mpg`), a transport stream with AAC (`.ts`, `.m2ts`), or an
     /// elementary stream without audio (`.m2v`): [`Mpeg2Container`].
     #[serde(rename = "mpeg2", alias = "Mpeg2")]
     Mpeg2,
@@ -533,8 +535,9 @@ pub struct ExportSettings {
     pub caption_sidecar: Option<String>,
     pub effects: ExportEffects,
     pub metadata: ExportMetadata,
-    /// Write the sequence's Chapter markers inside the export range as chapters of MP4, MOV,
-    /// M4A and HLS output (`chpl`). On by default.
+    /// Write the sequence's Chapter markers inside the export range as chapters: `chpl` plus a
+    /// QuickTime chapter track in MP4, MOV and M4A, `chpl` in the HLS init segments, Matroska
+    /// chapters in WebM. On by default.
     pub chapters: bool,
     /// Two-pass state (set by the exporter).
     #[serde(skip)]
@@ -824,13 +827,16 @@ impl ExportSettings {
             && !self.supports_sample_format(sample_format)
         {
             if self.format == Format::Mpeg2 {
-                return Err(ExportError::Unsupported("MPEG-2 program streams carry 16-bit LPCM: set the sample size to 16".into()));
+                return Err(ExportError::Unsupported("MPEG-2 program streams carry 16- or 24-bit LPCM: set the sample size to 16 or 24".into()));
             }
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        if self.field_order != FieldOrder::Progressive && self.has_video() {
-            return Err(ExportError::Unsupported(format!("{} field order: CFA4's encoders write progressive frames", self.field_order.label())));
+        if self.field_order != FieldOrder::Progressive && self.has_video() && self.format != Format::Mpeg2 {
+            return Err(ExportError::Unsupported(format!(
+                "{} field order: only MPEG-2 export codes interlaced video; the other encoders write progressive frames",
+                self.field_order.label()
+            )));
         }
         if self.effects.image_overlay.enabled && self.effects.image_overlay.path.trim().is_empty() {
             return Err(ExportError::Unsupported("image overlay: no image file chosen".into()));
@@ -1422,13 +1428,29 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         let mut cfg = cfa4_mpeg2v::encode::Config::new(w, h, rate.num as u32, rate.den as u32);
         cfg.rate = match s.mpeg2_quantizer {
             Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
-            None => cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(s.bitrate_kbps.max(100)) * 1000 },
+            None => {
+                let kbps = s.bitrate_kbps.max(100);
+                let bps = u64::from(kbps) * 1000;
+                match s.bitrate_mode {
+                    // the level's VBV buffer, constant bitrate with stuffing
+                    BitrateMode::Cbr => cfa4_mpeg2v::encode::Rate::Cbr { bits_per_second: bps, buffer_bits: 0 },
+                    _ => {
+                        let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).map_or(bps * 3 / 2, |m| u64::from(m) * 1000);
+                        cfa4_mpeg2v::encode::Rate::ConstrainedVbr { bits_per_second: bps, max_bits_per_second: max, buffer_bits: 0 }
+                    }
+                }
+            }
         };
         if s.mpeg2_422 {
             cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
         }
         cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
         cfg.b_frames = u32::from(s.mpeg2_b_frames.unwrap_or(2).min(7));
+        cfg.interlaced = match s.field_order {
+            FieldOrder::Progressive => None,
+            FieldOrder::UpperFirst => Some(cfa4_mpeg2v::FieldOrder::TopFirst),
+            FieldOrder::LowerFirst => Some(cfa4_mpeg2v::FieldOrder::BottomFirst),
+        };
         cfg.aspect = mpeg2_aspect(w, h, s.pixel_aspect);
         // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
         cfg.colour = Some((1, 1, 1));
