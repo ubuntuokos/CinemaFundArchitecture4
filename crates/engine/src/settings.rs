@@ -1073,6 +1073,7 @@ static CATEGORIES: &[Category] = &[
                     ("da", "Dansk"),
                     ("fi", "Suomi"),
                     ("lt", "Lietuvių"),
+                    ("hr", "Hrvatski"),
                 ]),
                 true,
             ),

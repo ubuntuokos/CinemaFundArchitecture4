@@ -90,6 +90,8 @@ pub enum Language {
     Fi,
     /// Lithuanian, persisted as `lt`.
     Lt,
+    /// Croatian, persisted as `hr`.
+    Hr,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -125,11 +127,12 @@ static GEORGIAN: OnceLock<Catalog> = OnceLock::new();
 static DANISH: OnceLock<Catalog> = OnceLock::new();
 static FINNISH: OnceLock<Catalog> = OnceLock::new();
 static LITHUANIAN: OnceLock<Catalog> = OnceLock::new();
+static CROATIAN: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 29] = [
+    pub const ALL: [Self; 30] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -157,6 +160,7 @@ impl Language {
         Self::Da,
         Self::Fi,
         Self::Lt,
+        Self::Hr,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -190,6 +194,7 @@ impl Language {
             Self::Da => "Dansk",
             Self::Fi => "Suomi",
             Self::Lt => "Lietuvių",
+            Self::Hr => "Hrvatski",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -224,6 +229,7 @@ impl Language {
             "da" => Some(Self::Da),
             "fi" => Some(Self::Fi),
             "lt" => Some(Self::Lt),
+            "hr" => Some(Self::Hr),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -240,7 +246,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 26] = [
+        const PRIMARY: [(&str, Language); 27] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -267,6 +273,7 @@ impl Language {
             ("da", Language::Da),
             ("fi", Language::Fi),
             ("lt", Language::Lt),
+            ("hr", Language::Hr),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -334,6 +341,7 @@ impl Language {
             Self::Da => "da",
             Self::Fi => "fi",
             Self::Lt => "lt",
+            Self::Hr => "hr",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -369,6 +377,7 @@ impl Language {
             Self::Da => Some(DANISH.get_or_init(|| Catalog::parse(catalog_file!("da")))),
             Self::Fi => Some(FINNISH.get_or_init(|| Catalog::parse(catalog_file!("fi")))),
             Self::Lt => Some(LITHUANIAN.get_or_init(|| Catalog::parse(catalog_file!("lt")))),
+            Self::Hr => Some(CROATIAN.get_or_init(|| Catalog::parse(catalog_file!("hr")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -572,6 +581,7 @@ mod tests {
             ("da", catalog_file!("da")),
             ("fi", catalog_file!("fi")),
             ("lt", catalog_file!("lt")),
+            ("hr", catalog_file!("hr")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1784,6 +1794,13 @@ mod tests {
             catalog_file!("lt"),
             "ĄČĘĖĮŠŲŪŽąčęėįšųūž„“",
             &[("File", "Failas"), ("Sequence", "Seka"), ("Playhead", "Atkūrimo žymeklis"), ("Cross Dissolve", "Kryžminis išnykimas")],
+        ),
+        (
+            Language::Hr,
+            "app.language.croatian",
+            catalog_file!("hr"),
+            "ČĆĐŠŽčćđšž„”",
+            &[("File", "Datoteka"), ("Sequence", "Sekvenca"), ("Playhead", "Glava za reprodukciju"), ("Cross Dissolve", "Križno pretapanje")],
         ),
     ];
 
