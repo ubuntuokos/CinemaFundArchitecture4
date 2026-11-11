@@ -4342,3 +4342,23 @@
 	Cinecred Project…	Projet Cinecred…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Ouvrir un dossier de projet Cinecred (Styling.toml et son tableur de générique)
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tableurs, fichiers de générique et projets Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	(bloc vide)
+	Apply Template…	Appliquer un modèle…
+	Change them in the spreadsheet; the credits follow when you save it.	Modifiez-les dans le tableur ; le générique suit à l’enregistrement.
+	Compact View	Vue compacte
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Comparer le générique sélectionné dans la timeline avec son tableur, ligne par ligne
+	Fit the selected credits to the music under them	Ajuster le générique sélectionné à la musique en dessous
+	Fit to Music…	Ajuster à la musique…
+	Full View	Vue complète
+	Give the selected credits on the timeline another template	Donner un autre modèle au générique sélectionné dans la timeline
+	Names	Noms
+	No pages	Aucune page
+	Refresh Placed Credits…	Actualiser le générique placé…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Tout afficher : blocs, propriétés, les pages dans le temps, vérifications et outils du générique
+	Spine	Axe
+	Tails	Mentions
+	The blocks of the chosen page; choose one to see it in the preview	Les blocs de la page choisie ; choisissez-en un pour le voir dans l’aperçu
+	The pages along time; click one to choose it	Les pages dans le temps ; cliquez sur une page pour la choisir
+	{n} more	{n} de plus
+	Block	Bloc
+	parallel	parallèle

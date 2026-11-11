@@ -4337,3 +4337,23 @@ export.summary	Low	niska
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Arkusze, pliki napisów końcowych i projekty Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Projekt Cinecred…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Otwórz folder projektu Cinecred (Styling.toml i jego arkusz napisów końcowych)
+	(empty block)	(pusty blok)
+	Apply Template…	Zastosuj szablon…
+	Change them in the spreadsheet; the credits follow when you save it.	Zmień je w arkuszu; napisy końcowe dostosują się po jego zapisaniu.
+	Compact View	Widok kompaktowy
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Porównaj zaznaczone napisy końcowe na osi czasu z ich arkuszem, wiersz po wierszu
+	Fit the selected credits to the music under them	Dopasuj zaznaczone napisy końcowe do muzyki pod nimi
+	Fit to Music…	Dopasuj do muzyki…
+	Full View	Widok pełny
+	Give the selected credits on the timeline another template	Nadaj zaznaczonym napisom końcowym na osi czasu inny szablon
+	Names	Nazwiska
+	No pages	Brak stron
+	Refresh Placed Credits…	Odśwież umieszczone napisy końcowe…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Pokaż wszystko: bloki, właściwości, strony w czasie, kontrole i narzędzia napisów końcowych
+	Spine	Oś
+	Tails	Koniec
+	The blocks of the chosen page; choose one to see it in the preview	Bloki wybranej strony; wybierz jeden, aby zobaczyć go w podglądzie
+	The pages along time; click one to choose it	Strony w czasie; kliknij jedną, aby ją wybrać
+	{n} more	Jeszcze {n}
+	Block	Blok
+	parallel	równolegle

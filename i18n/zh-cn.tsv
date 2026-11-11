@@ -4335,3 +4335,23 @@
 	Cinecred Project…	Cinecred 项目…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	打开 Cinecred 项目文件夹(Styling.toml 及其演职员表表格)
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	表格、演职员表文件和 Cinecred 项目 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	（空块）
+	Apply Template…	应用模板…
+	Change them in the spreadsheet; the credits follow when you save it.	请在表格中修改；保存后演职员表随之更新。
+	Compact View	紧凑视图
+	Compare the selected credits on the timeline with their spreadsheet, row by row	将时间线上选中的演职员表与其表格逐行比较
+	Fit the selected credits to the music under them	使选中的演职员表适配其下方的音乐
+	Fit to Music…	适配音乐…
+	Full View	完整视图
+	Give the selected credits on the timeline another template	为时间线上选中的演职员表换用其他模板
+	Names	名字
+	No pages	没有页面
+	Refresh Placed Credits…	刷新已放置的演职员表…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	显示全部：块、属性、随时间排列的页面、检查和演职员表工具
+	Spine	轴线
+	Tails	附注
+	The blocks of the chosen page; choose one to see it in the preview	所选页面的块；选择一个即可在预览中查看
+	The pages along time; click one to choose it	随时间排列的页面；点击一个即可选中
+	{n} more	另有 {n} 项
+	Block	块
+	parallel	并列

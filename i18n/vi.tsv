@@ -4337,3 +4337,23 @@ export.summary	Low	thấp
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Bảng tính, tệp danh đề và dự án Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Dự án Cinecred…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Mở thư mục dự án Cinecred (Styling.toml và bảng tính danh đề của nó)
+	(empty block)	(khối trống)
+	Apply Template…	Áp dụng mẫu…
+	Change them in the spreadsheet; the credits follow when you save it.	Hãy sửa chúng trong bảng tính; danh đề sẽ cập nhật khi bạn lưu.
+	Compact View	Chế độ xem gọn
+	Compare the selected credits on the timeline with their spreadsheet, row by row	So sánh danh đề đã chọn trên dòng thời gian với bảng tính của nó, từng hàng một
+	Fit the selected credits to the music under them	Khớp danh đề đã chọn với nhạc bên dưới
+	Fit to Music…	Khớp với nhạc…
+	Full View	Chế độ xem đầy đủ
+	Give the selected credits on the timeline another template	Dùng mẫu khác cho danh đề đã chọn trên dòng thời gian
+	Names	Tên
+	No pages	Không có trang
+	Refresh Placed Credits…	Làm mới danh đề đã đặt…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Hiện tất cả: khối, thuộc tính, các trang theo thời gian, kiểm tra và công cụ danh đề
+	Spine	Trục
+	Tails	Cuối
+	The blocks of the chosen page; choose one to see it in the preview	Các khối của trang đã chọn; chọn một khối để xem trong bản xem trước
+	The pages along time; click one to choose it	Các trang theo thời gian; bấm vào một trang để chọn
+	{n} more	Thêm {n}
+	Block	Khối
+	parallel	song song

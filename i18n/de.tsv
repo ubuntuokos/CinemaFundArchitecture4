@@ -4344,3 +4344,23 @@
 	Cinecred Project…	Cinecred-Projekt…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Einen Cinecred-Projektordner öffnen (Styling.toml und die zugehörige Abspanntabelle)
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tabellen, Abspanndateien und Cinecred-Projekte (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	(leerer Block)
+	Apply Template…	Vorlage anwenden…
+	Change them in the spreadsheet; the credits follow when you save it.	In der Tabelle ändern; der Abspann folgt beim Speichern.
+	Compact View	Kompakte Ansicht
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Den ausgewählten Abspann in der Zeitleiste Zeile für Zeile mit seiner Tabelle vergleichen
+	Fit the selected credits to the music under them	Den ausgewählten Abspann an die Musik darunter anpassen
+	Fit to Music…	An Musik anpassen…
+	Full View	Vollständige Ansicht
+	Give the selected credits on the timeline another template	Dem ausgewählten Abspann in der Zeitleiste eine andere Vorlage geben
+	Names	Namen
+	No pages	Keine Seiten
+	Refresh Placed Credits…	Platzierten Abspann aktualisieren…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Alles zeigen: Blöcke, Eigenschaften, die Seiten im Zeitverlauf, Prüfungen und die Abspann-Werkzeuge
+	Spine	Achse
+	Tails	Nachsätze
+	The blocks of the chosen page; choose one to see it in the preview	Die Blöcke der gewählten Seite; einen wählen, um ihn in der Vorschau zu sehen
+	The pages along time; click one to choose it	Die Seiten im Zeitverlauf; zum Auswählen eine anklicken
+	{n} more	{n} weitere
+	Block	Block
+	parallel	parallel

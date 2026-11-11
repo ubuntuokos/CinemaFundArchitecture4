@@ -4338,3 +4338,23 @@ export.summary	Low	düşük
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tablolar, jenerik dosyaları ve Cinecred projeleri (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred projesi…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Bir Cinecred proje klasörü aç (Styling.toml ve jenerik tablosu)
+	(empty block)	(boş blok)
+	Apply Template…	Şablon uygula…
+	Change them in the spreadsheet; the credits follow when you save it.	Bunları tabloda değiştirin; tabloyu kaydettiğinizde jenerik de güncellenir.
+	Compact View	Sıkışık görünüm
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Zaman çizelgesinde seçili jeneriği tablosuyla satır satır karşılaştır
+	Fit the selected credits to the music under them	Seçili jeneriği altındaki müziğe uydur
+	Fit to Music…	Müziğe uydur…
+	Full View	Tam görünüm
+	Give the selected credits on the timeline another template	Zaman çizelgesindeki seçili jeneriğe başka bir şablon ver
+	Names	Adlar
+	No pages	Sayfa yok
+	Refresh Placed Credits…	Yerleştirilmiş jeneriği yenile…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Her şeyi göster: bloklar, özellikler, zamandaki sayfalar, denetimler ve jenerik araçları
+	Spine	Eksen
+	Tails	Son
+	The blocks of the chosen page; choose one to see it in the preview	Seçilen sayfanın blokları; önizlemede görmek için birini seçin
+	The pages along time; click one to choose it	Zamandaki sayfalar; seçmek için birine tıklayın
+	{n} more	{n} tane daha
+	Block	Blok
+	parallel	paralel

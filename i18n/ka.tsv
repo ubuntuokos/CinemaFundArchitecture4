@@ -4340,3 +4340,23 @@ export.summary	Low	დაბალი
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	ცხრილები, ტიტრების ფაილები და Cinecred-ის პროექტები (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred-ის პროექტი…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred-ის პროექტის საქაღალდის გახსნა (Styling.toml და მისი ტიტრების ცხრილი)
+	(empty block)	(ცარიელი ბლოკი)
+	Apply Template…	შაბლონის გამოყენება…
+	Change them in the spreadsheet; the credits follow when you save it.	შეცვალეთ ისინი ცხრილში; ტიტრები მიჰყვება, როცა მას შეინახავთ.
+	Compact View	კომპაქტური ხედი
+	Compare the selected credits on the timeline with their spreadsheet, row by row	შეადარეთ დროის ხაზზე არჩეული ტიტრები მათ ცხრილს მწკრივ-მწკრივ
+	Fit the selected credits to the music under them	არჩეული ტიტრების მორგება მათ ქვეშ არსებულ მუსიკაზე
+	Fit to Music…	მუსიკაზე მორგება…
+	Full View	სრული ხედი
+	Give the selected credits on the timeline another template	დროის ხაზზე არჩეული ტიტრებისთვის სხვა შაბლონის მიცემა
+	Names	სახელები
+	No pages	გვერდები არ არის
+	Refresh Placed Credits…	განთავსებული ტიტრების განახლება…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	ყველაფრის ჩვენება: ბლოკები, თვისებები, გვერდები დროში, შემოწმებები და ტიტრების ხელსაწყოები
+	Spine	ღერძი
+	Tails	დასასრული
+	The blocks of the chosen page; choose one to see it in the preview	არჩეული გვერდის ბლოკები; აირჩიეთ ერთი, რომ წინასწარ ნახვაში დაინახოთ
+	The pages along time; click one to choose it	გვერდები დროში; დააწკაპუნეთ ერთზე მის ასარჩევად
+	{n} more	კიდევ {n}
+	Block	ბლოკი
+	parallel	პარალელური

@@ -4339,3 +4339,23 @@ export.summary	Low	lav
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Regneark, rulletekstfiler og Cinecred-projekter (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred-projekt…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Åbn en Cinecred-projektmappe (Styling.toml og dets rulletekstregneark)
+	(empty block)	(tom blok)
+	Apply Template…	Anvend skabelon…
+	Change them in the spreadsheet; the credits follow when you save it.	Ret dem i regnearket; rulleteksterne følger med, når du gemmer det.
+	Compact View	Kompakt visning
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Sammenlign de valgte rulletekster på tidslinjen med deres regneark, række for række
+	Fit the selected credits to the music under them	Tilpas de valgte rulletekster til musikken under dem
+	Fit to Music…	Tilpas til musik…
+	Full View	Fuld visning
+	Give the selected credits on the timeline another template	Giv de valgte rulletekster på tidslinjen en anden skabelon
+	Names	Navne
+	No pages	Ingen sider
+	Refresh Placed Credits…	Opdater placerede rulletekster…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Vis alt: blokke, egenskaber, siderne over tid, kontroller og rulletekstværktøjerne
+	Spine	Akse
+	Tails	Slutning
+	The blocks of the chosen page; choose one to see it in the preview	Blokkene på den valgte side; vælg en for at se den i forhåndsvisningen
+	The pages along time; click one to choose it	Siderne over tid; klik på en for at vælge den
+	{n} more	{n} mere
+	Block	Blok
+	parallel	parallel

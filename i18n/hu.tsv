@@ -4336,3 +4336,23 @@ export.summary	Low	alacsony
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Táblázatok, stáblista-fájlok és Cinecred-projektek (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred-projekt…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred-projektmappa megnyitása (Styling.toml és a stáblista-táblázat)
+	(empty block)	(üres blokk)
+	Apply Template…	Sablon alkalmazása…
+	Change them in the spreadsheet; the credits follow when you save it.	A táblázatban módosíthatók; mentéskor a stáblista követi.
+	Compact View	Kompakt nézet
+	Compare the selected credits on the timeline with their spreadsheet, row by row	A kijelölt stáblista összevetése a táblázatával, soronként
+	Fit the selected credits to the music under them	A kijelölt stáblista igazítása az alatta szóló zenéhez
+	Fit to Music…	Igazítás a zenéhez…
+	Full View	Teljes nézet
+	Give the selected credits on the timeline another template	Másik sablon a kijelölt stáblistának
+	Names	Nevek
+	No pages	Nincsenek oldalak
+	Refresh Placed Credits…	Elhelyezett stáblista frissítése…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Minden látszik: blokkok, tulajdonságok, az oldalak az időben, ellenőrzések és a stáblista-eszközök
+	Spine	Gerinc
+	Tails	Lábak
+	The blocks of the chosen page; choose one to see it in the preview	A kiválasztott oldal blokkjai; válassz egyet, és az előnézet odaugrik
+	The pages along time; click one to choose it	Az oldalak az időben; kattints egyre a kiválasztásához
+	{n} more	még {n}
+	Block	Blokk
+	parallel	párhuzamos

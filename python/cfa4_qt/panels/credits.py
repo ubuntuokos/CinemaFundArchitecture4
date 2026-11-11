@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
 from ..engine import EngineClient
 from ..i18n import N_, TR, tr
 from ..timecode import TICKS_PER_SECOND
+from .credits_workspace import PropertiesPanel, TimelineStrip, block_label
 
 SHEET_FILTER = N_("Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)")
 CREDITS_FILE_FILTER = N_("CFA4 credits file (*.cfa4credits)")
@@ -144,6 +145,9 @@ class CreditsDialog(QDialog):
     """Non-modal: the editor stays usable while the sheet is being written."""
 
     imported = Signal(object)  # number of pages placed (an object: integer signals are 32-bit in PySide6)
+    # a command of the editor the workspace offers (refresh, fit to music, apply a template): the
+    # main window runs it as from its menu
+    tool_requested = Signal(str)
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -155,6 +159,7 @@ class CreditsDialog(QDialog):
         self._generation = 0  # replies to older requests are dropped
         self._thumb_generation = 0
         self._loading = False
+        self.full_view = False
 
         # ----- source -----
         self.path = QLineEdit(self)
@@ -218,6 +223,29 @@ class CreditsDialog(QDialog):
         form.addRow(tr("Pictures"), pic_row)
         form.addRow(tr("Template"), tpl_row)
         form.addRow(tr("Styling"), sty_row)
+        self.form = form
+
+        # ----- view and the editor's credits tools -----
+        self.view_button = QPushButton(tr("Full View"), self)
+        self.view_button.setObjectName("credits.fullView")
+        self.view_button.setCheckable(True)
+        self.view_button.setToolTip(tr("Show everything: blocks, properties, the pages along time, checks and the credits tools"))
+        self.view_button.toggled.connect(self.set_full_view)
+        self.tools: list[QPushButton] = []
+        tools_row = QHBoxLayout()
+        tools_row.addWidget(self.view_button)
+        tools_row.addStretch(1)
+        for cid, label, tip in (
+            ("graphics.credits.refresh", N_("Refresh Placed Credits…"), N_("Compare the selected credits on the timeline with their spreadsheet, row by row")),
+            ("graphics.credits.fit", N_("Fit to Music…"), N_("Fit the selected credits to the music under them")),
+            ("graphics.credits.template.apply", N_("Apply Template…"), N_("Give the selected credits on the timeline another template")),
+        ):
+            b = QPushButton(tr(label), self)
+            b.setObjectName(f"credits.tool.{cid.removeprefix('graphics.credits.')}")
+            b.setToolTip(tr(tip))
+            b.clicked.connect(lambda _c=False, c=cid: self.tool_requested.emit(c))
+            tools_row.addWidget(b)
+            self.tools.append(b)
 
         # ----- pages and warnings -----
         self.pages = QTableWidget(0, 5, self)
@@ -231,7 +259,7 @@ class CreditsDialog(QDialog):
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for col in (1, 2, 3, 4):
             header.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
-        self.pages.itemSelectionChanged.connect(self._request_thumbnail)
+        self.pages.itemSelectionChanged.connect(self._page_chosen)
         self.total = QLabel(self)
         self.total.setObjectName("credits.total")
         self.warnings = QListWidget(self)
@@ -241,14 +269,18 @@ class CreditsDialog(QDialog):
         self.check_summary = QLabel(self)
         self.check_summary.setObjectName("credits.checkSummary")
 
+        self.blocks = QListWidget(self)
+        self.blocks.setObjectName("credits.blocks")
+        self.blocks.setToolTip(tr("The blocks of the chosen page; choose one to see it in the preview"))
+        self.blocks.currentRowChanged.connect(self._block_chosen)
+        self.blocks_label = QLabel(tr("Blocks"), self)
+
         left = QWidget(self)
         lv = QVBoxLayout(left)
         lv.setContentsMargins(0, 0, 0, 0)
-        lv.addWidget(self.pages, 1)
-        lv.addWidget(self.total)
-        lv.addWidget(self.check_summary)
-        lv.addWidget(QLabel(tr("Checks and warnings"), self))
-        lv.addWidget(self.warnings)
+        lv.addWidget(self.pages, 2)
+        lv.addWidget(self.blocks_label)
+        lv.addWidget(self.blocks, 3)
 
         # ----- page picture -----
         self.picture = QLabel(self)
@@ -261,7 +293,7 @@ class CreditsDialog(QDialog):
         self.position.setRange(0, 100)
         self.position.setValue(50)
         self.position.setToolTip(tr("Moment in the page"))
-        self.position.valueChanged.connect(self._request_thumbnail)
+        self.position.valueChanged.connect(self._position_changed)
         self.guides = QCheckBox(tr("Safe areas and spines"), self)
         self.guides.setObjectName("credits.guides")
         self.guides.setToolTip(tr("Action safe (93 %), title safe (90 %), the centre and the page's spines"))
@@ -274,18 +306,33 @@ class CreditsDialog(QDialog):
         guide_row.addWidget(self.guides)
         guide_row.addWidget(self.grid)
         guide_row.addStretch(1)
-        right = QWidget(self)
-        rv = QVBoxLayout(right)
+        centre = QWidget(self)
+        rv = QVBoxLayout(centre)
         rv.setContentsMargins(0, 0, 0, 0)
         rv.addWidget(self.picture, 1)
         rv.addWidget(self.position)
         rv.addLayout(guide_row)
 
+        self.properties = PropertiesPanel(self)
+
         split = QSplitter(Qt.Orientation.Horizontal, self)
+        split.setObjectName("credits.split")
         split.addWidget(left)
-        split.addWidget(right)
-        split.setStretchFactor(0, 1)
-        split.setStretchFactor(1, 1)
+        split.addWidget(centre)
+        split.addWidget(self.properties)
+        split.setStretchFactor(0, 2)
+        split.setStretchFactor(1, 3)
+        split.setStretchFactor(2, 1)
+        self.split = split
+
+        # ----- the pages along time, the checks -----
+        self.timeline = TimelineStrip(self)
+        self.timeline.page_clicked.connect(self.choose_page)
+        self.warnings_label = QLabel(tr("Checks and warnings"), self)
+        summary_row = QHBoxLayout()
+        summary_row.addWidget(self.total)
+        summary_row.addStretch(1)
+        summary_row.addWidget(self.check_summary)
 
         # ----- buttons -----
         self.status = QLabel(self)
@@ -310,9 +357,15 @@ class CreditsDialog(QDialog):
 
         layout = QVBoxLayout(self)
         layout.addLayout(form)
+        layout.addLayout(tools_row)
         layout.addWidget(split, 1)
+        layout.addWidget(self.timeline)
+        layout.addLayout(summary_row)
+        layout.addWidget(self.warnings_label)
+        layout.addWidget(self.warnings)
         layout.addLayout(buttons)
         self.resize(980, 600)
+        self.set_full_view(False)
 
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
@@ -324,6 +377,79 @@ class CreditsDialog(QDialog):
         self.template.currentIndexChanged.connect(self._template_changed)
         self._show(None, "")
         self.load_templates()
+
+    # ----- view -----
+    def set_full_view(self, full: bool) -> None:
+        """The compact view has what cutting needs (the sheet, its pages, the picture, Place);
+        the full view adds the blocks, their properties, the pages along time, the checks and the
+        credits tools."""
+        self.full_view = bool(full)
+        if self.view_button.isChecked() != self.full_view:
+            self.view_button.setChecked(self.full_view)
+        self.view_button.setText(tr("Compact View") if self.full_view else tr("Full View"))
+        for row in (2, 3, 4):  # pictures, template, styling
+            self.form.setRowVisible(row, self.full_view)
+        for w in (self.blocks, self.blocks_label, self.properties, self.timeline, self.warnings, self.warnings_label, *self.tools):
+            w.setVisible(self.full_view)
+        if self.full_view:
+            if self.isVisible() and self.width() < 1280:
+                self.resize(1280, max(self.height(), 720))
+            # the pages' columns, the picture, the properties
+            w = max(self.width(), 1280) - 40
+            self.split.setSizes([w * 32 // 100, w * 46 // 100, w * 22 // 100])
+
+    # ----- pages and blocks -----
+    def current_page(self) -> dict[str, Any] | None:
+        pages = (self.preview or {}).get("pages") or []
+        i = self.pages.currentRow()
+        return pages[i] if 0 <= i < len(pages) and isinstance(pages[i], dict) else None
+
+    def choose_page(self, index: int) -> None:
+        if 0 <= index < self.pages.rowCount():
+            self.pages.selectRow(index)
+
+    def _page_chosen(self) -> None:
+        page = self.current_page() or {}
+        blocks = [b for b in page.get("blocks") or [] if isinstance(b, dict)]
+        self.blocks.blockSignals(True)
+        try:
+            self.blocks.clear()
+            for b in blocks:
+                item = QListWidgetItem(block_label(b))
+                item.setToolTip(str(b.get("style") or ""))
+                self.blocks.addItem(item)
+        finally:
+            self.blocks.blockSignals(False)
+        behaviour = page.get("behaviour")
+        row, blocks_n = page.get("row"), len(blocks)
+        last = max((b.get("lastRow") for b in blocks if isinstance(b.get("lastRow"), int)), default=None)
+        rows = f"{row}–{last}" if isinstance(row, int) and isinstance(last, int) and last > row else (str(row) if isinstance(row, int) else "")
+        self.properties.show_page(
+            {
+                "name": str(page.get("name") or ""),
+                "kind": tr(BEHAVIOURS[behaviour]) if behaviour in BEHAVIOURS else "",
+                "style": str(page.get("style") or ""),
+                "rows": rows,
+                "blocks": str(blocks_n) if page else "",
+                "duration": format_seconds(page.get("duration")) if page else "",
+                "background": background_text(page.get("background")),
+                "transition": transition_text(page.get("transition")),
+            }
+        )
+        self.properties.show_block(None)
+        self.timeline.set_current(self.pages.currentRow(), self.position.value() / 100.0)
+        self._request_thumbnail()
+
+    def _block_chosen(self, index: int) -> None:
+        page = self.current_page() or {}
+        blocks = [b for b in page.get("blocks") or [] if isinstance(b, dict)]
+        block = blocks[index] if 0 <= index < len(blocks) else None
+        self.properties.show_block(block)
+        if block is not None:
+            at = block.get("at")
+            if isinstance(at, (int, float)) and 0 <= at <= 1:
+                # moving the slider asks for the picture at the block
+                self.position.setValue(round(at * 100))
 
     # ----- parameters -----
     def params(self) -> dict[str, Any]:
@@ -406,9 +532,14 @@ class CreditsDialog(QDialog):
             on_error=lambda m: self.status.setText(m),
         )
 
-    def open_with(self, path: str | None = None) -> None:
+    def open_with(self, path: str | None = None, full: bool = False) -> None:
+        """Open from the editor: the compact view, unless `full` asks for the whole workspace."""
         # the project may have changed since: its templates with it
         self.load_templates()
+        if not self.isVisible():
+            self.set_full_view(full)
+        elif full:
+            self.set_full_view(True)
         if path:
             self.path.setText(path)
         self.show()
@@ -510,8 +641,12 @@ class CreditsDialog(QDialog):
                 if col == 4:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self.pages.setItem(row, col, item)
+        self.timeline.set_pages(pages)
         if pages:
+            self.pages.blockSignals(True)
             self.pages.selectRow(min(max(selected, 0), len(pages) - 1))
+            self.pages.blockSignals(False)
+        self._page_chosen()
         self.total.setText(tr("Total: {time}").replace("{time}", format_seconds((preview or {}).get("duration"))) if pages else "")
         self.warnings.clear()
         style = self.style()
@@ -547,6 +682,9 @@ class CreditsDialog(QDialog):
         if not pages:
             self.picture.setPixmap(QPixmap())
             self.picture.setText(tr("No preview"))
+
+    def _position_changed(self, value: int) -> None:
+        self.timeline.set_current(self.pages.currentRow(), value / 100.0)
         self._request_thumbnail()
 
     def _request_thumbnail(self) -> None:

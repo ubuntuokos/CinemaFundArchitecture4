@@ -286,12 +286,33 @@ not change the other. Copied or pasted credits pages are credits of their own: r
 copy leaves the original alone. Import and refresh are each one undo step, and a refresh that
 fails leaves the old pages as they were.
 
+## The Credits workspace
+
+The Credits window opens **compact** from the editor: the spreadsheet and its worksheet, the
+pages with their type and length, the page picture and *Place at Playhead*: what cutting needs.
+**Full View** turns it into the workspace (as the original plan's §14–16 asked):
+
+- **left:** the pages, and under them the chosen page's blocks (head or first name, and how many
+  names follow);
+- **middle:** the page picture at a moment of the page, with safe areas, spines and the baseline
+  grid; choosing a block of a roll moves the moment to where the block reaches the middle of the
+  frame;
+- **right:** what the chosen page and block are made of: style, rows of the sheet, names, tails,
+  pictures, spine, the block's text. Read only: the spreadsheet is where they change, and the
+  credits follow it when it is saved (refresh);
+- **bottom:** the pages along time, as long as they last (overlaps and gaps as placed); clicking
+  one chooses it, the mark is the moment the picture shows; under it the checks;
+- **tools:** *Refresh Placed Credits…*, *Fit to Music…* and *Apply Template…* run the editor's
+  commands on the credits selected on the timeline, as from the menu.
+
+Reopened from the editor the window is compact again; while it stays open it keeps the view chosen.
+
 ## Commands
 
 | Command | Menu | Params |
 |---|---|---|
 | `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, transition}], group, end, sheet, warnings}`; one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}}], duration, sheets, sheet, warnings, issues}` |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block)}]}], duration, sheets, sheet, warnings, issues}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
