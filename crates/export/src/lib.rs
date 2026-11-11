@@ -2949,6 +2949,8 @@ mod mxf_tests;
 #[cfg(test)]
 mod smart_cut_av1_tests;
 #[cfg(test)]
+mod smart_cut_edge_tests;
+#[cfg(test)]
 mod smart_cut_hevc_tests;
 #[cfg(test)]
 mod smart_cut_mpeg_tests;
