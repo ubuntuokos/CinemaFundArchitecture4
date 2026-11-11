@@ -655,6 +655,8 @@ class ParamRow(LinedRow):
 
 MASK_MODES = (N_("None"), N_("Add"), N_("Subtract"), N_("Intersect"), N_("Lighten"), N_("Darken"), N_("Difference"))
 TRACK_METHODS = (N_("Position"), N_("Position & Rotation"), N_("Position, Scale & Rotation"))
+# (engine label, menu text): the point tracker (default) or the correlation-filter object tracker
+TRACKERS = (("Points", N_("Point tracker")), ("Correlation", N_("Correlation tracker")))
 MASK_GLYPHS = {"ellipse": "◯", "polygon": "▭", "bezier": "✎"}
 
 
@@ -712,6 +714,14 @@ class MaskTracking(QWidget):
             a.setChecked(label == method)
             a.triggered.connect(lambda _c=False, m=label: self.row.panel.send(
                 "masks.set", {"clip": self.row.clip, "effect": self.row.effect, "mask": self.row.mask, "trackMethod": m}))
+        self.method_menu.addSeparator()
+        tracker = str(mask.get("tracker") or "Points")
+        for value, text in TRACKERS:
+            a = self.method_menu.addAction(tr(text))
+            a.setCheckable(True)
+            a.setChecked(value == tracker)
+            a.triggered.connect(lambda _c=False, t=value: self.row.panel.send(
+                "masks.set", {"clip": self.row.clip, "effect": self.row.effect, "mask": self.row.mask, "tracker": t.lower()}))
         progress = mask.get("trackProgress")
         if self.job is not None and isinstance(progress, list) and len(progress) == 2:
             self.progress.setText(f"{as_int(progress[0])}/{as_int(progress[1])}")
