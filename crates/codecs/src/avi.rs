@@ -278,6 +278,7 @@ impl AviSource {
             return Err(CodecError::Unsupported("no playable streams".into()));
         }
         // video: frame slots, pictures and key frames
+        let mut dv_timecode = None;
         let (mut vcodec, mut vframes, mut vslots, mut rate, mut bottom_up, mut video) =
             (VCodec::Unsupported(String::new()), Vec::new(), 0i64, FrameRate::new(25, 1), false, None);
         if let Some(vs) = vstream.and_then(|i| file.streams.get(i)) {
@@ -376,6 +377,13 @@ impl AviSource {
                     (info.width, info.height) = (d.profile.width, d.profile.height);
                 }
             }
+            // DV: the time code of the first frame's subcode
+            if codec == VCodec::Dv
+                && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
+                && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, (c.size as usize).min(crate::dif::MAX_FRAME_BYTES))
+            {
+                dv_timecode = crate::dif::start_timecode(&first, info.frame_rate);
+            }
             video = Some(info);
             vcodec = codec;
         }
@@ -451,7 +459,7 @@ impl AviSource {
         if audios.is_empty()
             && let Some(vs) = vstream.and_then(|i| file.streams.get(i)).filter(|s| is_iavs(s))
             && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
-            && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, c.size as usize)
+            && let Ok(first) = cfa4_media::reader::read_range(&*bytes.0, c.offset, (c.size as usize).min(crate::dif::MAX_FRAME_BYTES))
         {
             dv_audio = crate::dif::DvAudio::scan(&first, vframes.len(), |i| {
                 let c = vframes.get(i).and_then(|f| vs.chunks.get(f.chunk))?;
@@ -480,7 +488,7 @@ impl AviSource {
             video,
             audio_streams,
             container: "AVI".into(),
-            start_timecode: None,
+            start_timecode: dv_timecode,
             file_size: Some(bytes.0.len()),
         };
         let mut vorder: Vec<usize> = (0..vframes.len()).collect();
