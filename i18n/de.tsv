@@ -4119,6 +4119,3 @@
 	None (RFC 5646 tag, e.g. en-US)	Keine (RFC-5646-Tag, z. B. de-DE)
 	ISDCF name	ISDCF-Name
 	Name the DCP folder by the Digital Cinema Naming Convention	DCP-Ordner nach der Digital Cinema Naming Convention benennen
-	Field order	Halbbildreihenfolge
-	Interlaced, upper field first	Interlaced, oberes Halbbild zuerst
-	Interlaced, lower field first	Interlaced, unteres Halbbild zuerst

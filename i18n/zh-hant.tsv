@@ -4111,6 +4111,3 @@ export.summary	Low	低
 	Contains	包含
 	Navigation	導覽
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	場序
-	Interlaced, upper field first	交錯，上場優先
-	Interlaced, lower field first	交錯，下場優先

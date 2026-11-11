@@ -4114,6 +4114,3 @@ export.summary	Low	niska
 	Triangle	Trokut
 	Stop	Zaustavi
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Redoslijed poluslika
-	Interlaced, upper field first	Isprepleteno, gornja poluslika prva
-	Interlaced, lower field first	Isprepleteno, donja poluslika prva

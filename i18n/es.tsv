@@ -4119,6 +4119,3 @@
 	None (RFC 5646 tag, e.g. en-US)	Ninguno (etiqueta RFC 5646, p. ej. es-ES)
 	ISDCF name	Nombre ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Nombrar la carpeta DCP según la Digital Cinema Naming Convention
-	Field order	Orden de campos
-	Interlaced, upper field first	Entrelazado, campo superior primero
-	Interlaced, lower field first	Entrelazado, campo inferior primero

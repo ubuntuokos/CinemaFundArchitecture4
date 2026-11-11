@@ -4121,6 +4121,3 @@
 	None (RFC 5646 tag, e.g. en-US)	なし（RFC 5646 タグ、例: ja-JP）
 	ISDCF name	ISDCF 名
 	Name the DCP folder by the Digital Cinema Naming Convention	DCP フォルダーに Digital Cinema Naming Convention に従って名前を付ける
-	Field order	フィールドオーダー
-	Interlaced, upper field first	インターレース（上位フィールド優先）
-	Interlaced, lower field first	インターレース（下位フィールド優先）

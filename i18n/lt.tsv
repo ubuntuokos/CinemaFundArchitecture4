@@ -4115,6 +4115,3 @@ export.summary	Low	žema
 	Star	Žvaigždė
 	Width	Plotis
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Laukų tvarka
-	Interlaced, upper field first	Pynutinis, pirmiau viršutinis laukas
-	Interlaced, lower field first	Pynutinis, pirmiau apatinis laukas

@@ -4120,6 +4120,3 @@
 	None (RFC 5646 tag, e.g. en-US)	Tidak ada (tag RFC 5646, mis. id-ID)
 	ISDCF name	Nama ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Namai folder DCP menurut Digital Cinema Naming Convention
-	Field order	Urutan field
-	Interlaced, upper field first	Interlaced, field atas dahulu
-	Interlaced, lower field first	Interlaced, field bawah dahulu

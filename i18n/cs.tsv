@@ -4112,6 +4112,3 @@ export.summary	Low	nízká
 	Navigation	Navigace
 	Panel	Panel
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Pořadí půlsnímků
-	Interlaced, upper field first	Prokládané, horní půlsnímek první
-	Interlaced, lower field first	Prokládané, dolní půlsnímek první

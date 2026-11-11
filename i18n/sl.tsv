@@ -4115,6 +4115,3 @@ export.summary	Low	nizka
 	Star	Zvezda
 	Width	Širina
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Vrstni red polsličic
-	Interlaced, upper field first	Prepleteno, najprej zgornja polsličica
-	Interlaced, lower field first	Prepleteno, najprej spodnja polsličica

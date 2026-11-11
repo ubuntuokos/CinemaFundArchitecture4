@@ -4114,6 +4114,3 @@ export.summary	Low	matala
 	Baseline	Perusviiva
 	Accent Color	Korostusväri
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Kenttäjärjestys
-	Interlaced, upper field first	Lomitettu, ylempi kenttä ensin
-	Interlaced, lower field first	Lomitettu, alempi kenttä ensin

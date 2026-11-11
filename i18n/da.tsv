@@ -4114,6 +4114,3 @@ export.summary	Low	lav
 	Stop	Stop
 	Accent Color	Accentfarve
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Feltrækkefølge
-	Interlaced, upper field first	Interlaced, øverste felt først
-	Interlaced, lower field first	Interlaced, nederste felt først

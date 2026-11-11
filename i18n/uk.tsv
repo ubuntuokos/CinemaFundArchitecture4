@@ -4097,6 +4097,3 @@
 	ISDCF name	Ім’я ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Називати теку DCP за Digital Cinema Naming Convention
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Порядок полів
-	Interlaced, upper field first	Черезрядкова, спершу верхнє поле
-	Interlaced, lower field first	Черезрядкова, спершу нижнє поле

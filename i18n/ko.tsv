@@ -4106,6 +4106,3 @@
 	None (RFC 5646 tag, e.g. en-US)	없음(RFC 5646 태그, 예: ko-KR)
 	ISDCF name	ISDCF 이름
 	Name the DCP folder by the Digital Cinema Naming Convention	Digital Cinema Naming Convention에 따라 DCP 폴더 이름 지정
-	Field order	필드 순서
-	Interlaced, upper field first	인터레이스, 상위 필드 우선
-	Interlaced, lower field first	인터레이스, 하위 필드 우선

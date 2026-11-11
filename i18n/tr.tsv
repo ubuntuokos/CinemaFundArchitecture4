@@ -4113,6 +4113,3 @@ export.summary	Low	düşük
 	Masks	Maskeler
 	Navigation	Gezinti
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Alan Sırası
-	Interlaced, upper field first	Geçmeli, önce üst alan
-	Interlaced, lower field first	Geçmeli, önce alt alan

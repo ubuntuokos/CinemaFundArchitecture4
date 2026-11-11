@@ -4114,6 +4114,3 @@ export.summary	Low	madal
 	Contains	Sisaldab
 	Navigation	Navigeerimine
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Poolkaadrite järjekord
-	Interlaced, upper field first	Ridahüppega, ülemine poolkaader enne
-	Interlaced, lower field first	Ridahüppega, alumine poolkaader enne

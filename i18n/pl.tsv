@@ -4112,6 +4112,3 @@ export.summary	Low	niska
 	Contains	Zawiera
 	Navigation	Nawigacja
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Kolejność półobrazów
-	Interlaced, upper field first	Z przeplotem, najpierw górny półobraz
-	Interlaced, lower field first	Z przeplotem, najpierw dolny półobraz

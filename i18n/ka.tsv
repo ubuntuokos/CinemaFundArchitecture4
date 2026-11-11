@@ -4115,6 +4115,3 @@ export.summary	Low	დაბალი
 	Baseline	საბაზისო ხაზი
 	Accent Color	აქცენტის ფერი
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	ველების რიგი
-	Interlaced, upper field first	ჩართული, ჯერ ზედა ველი
-	Interlaced, lower field first	ჩართული, ჯერ ქვედა ველი

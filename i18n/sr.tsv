@@ -4112,6 +4112,3 @@ export.summary	Low	низак
 	Navigation	Навигација
 	Panel	Панел
 # Qt GUI strings from main, 2026-11-11 (MPEG-2 field order)
-	Field order	Редослед полуслика
-	Interlaced, upper field first	Проред, прво горња полуслика
-	Interlaced, lower field first	Проред, прво доња полуслика
