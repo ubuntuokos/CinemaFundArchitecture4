@@ -391,4 +391,14 @@
 	transitions	转场
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	已复制 {copied} 帧，在剪切处重新编码 {reencoded} 帧，渲染 {rendered} 帧
 	{frames} frames are re-encoded or rendered. Continue?	{frames} 帧将重新编码或渲染。是否继续？
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	已复制音频：{tracks}
+	Audio track {track} is not copied: {why}	音轨 {track} 未复制：{why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	点跟踪器
+	Correlation tracker	相关跟踪器
+	DCP language	DCP 语言
+	None (RFC 5646 tag, e.g. en-US)	无（RFC 5646 标签，例如 zh-CN）
+	ISDCF name	ISDCF 名称
+	Name the DCP folder by the Digital Cinema Naming Convention	按 Digital Cinema Naming Convention 命名 DCP 文件夹
 	Height	高度

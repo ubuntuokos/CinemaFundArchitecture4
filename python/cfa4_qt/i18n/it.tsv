@@ -391,4 +391,14 @@
 	transitions	transizioni
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogrammi copiati, {reencoded} ricodificati ai tagli, {rendered} renderizzati
 	{frames} frames are re-encoded or rendered. Continue?	{frames} fotogrammi vengono ricodificati o renderizzati. Continuare?
+# Smart Cut audio (WP-09b)
+	Audio copied: {tracks}	Audio copiato: {tracks}
+	Audio track {track} is not copied: {why}	La traccia audio {track} non viene copiata: {why}
+# Tracker and DCP naming strings (köteg 2026-11-11)
+	Point tracker	Tracker di punti
+	Correlation tracker	Tracker a correlazione
+	DCP language	Lingua del DCP
+	None (RFC 5646 tag, e.g. en-US)	Nessuna (tag RFC 5646, ad es. it-IT)
+	ISDCF name	Nome ISDCF
+	Name the DCP folder by the Digital Cinema Naming Convention	Denomina la cartella DCP secondo la Digital Cinema Naming Convention
 	Height	Altezza
