@@ -16,6 +16,83 @@ pub enum Behaviour {
     /// Rolls up from below the frame to above it at a constant speed.
     #[default]
     Scroll,
+    /// A one-line ticker: the blocks stand side by side and run from right to left.
+    Crawl,
+}
+
+impl Behaviour {
+    /// Rolls and crawls move at a constant speed; cards stand still.
+    pub fn moves(self) -> bool {
+        self != Behaviour::Card
+    }
+}
+
+/// What is behind a page.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum BackgroundKind {
+    /// Nothing: whatever is on the tracks below shows through (black on an empty sequence).
+    #[default]
+    None,
+    Color,
+    /// From `color` to `color2` along `angle`.
+    Gradient,
+    /// A still picture (`file`).
+    Image,
+    /// A video (`file`), from its start.
+    Video,
+}
+
+/// How a picture or video background meets the frame.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum BackgroundFit {
+    /// Covers the whole frame; the overhang is cut off.
+    #[default]
+    Fill,
+    /// Fits inside the frame, whole; the rest stays empty.
+    Fit,
+}
+
+/// A page's background. It becomes its own clip below the page (it does not roll).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Background {
+    pub kind: BackgroundKind,
+    /// `#rrggbb`: the colour, or where the gradient starts.
+    pub color: String,
+    /// `#rrggbb`: where the gradient ends.
+    pub color2: String,
+    /// Gradient direction in degrees (0 = left to right, 90 = top to bottom).
+    pub angle: f64,
+    /// Picture or video: relative to the picture folder, or absolute.
+    pub file: String,
+    pub fit: BackgroundFit,
+    /// 0–100 %.
+    pub opacity: f64,
+    /// Blur radius in pixels of a 1080-high frame (0 = sharp).
+    pub blur: f64,
+}
+
+impl Default for Background {
+    fn default() -> Self {
+        Background {
+            kind: BackgroundKind::None,
+            color: "#000000".into(),
+            color2: "#202020".into(),
+            angle: 90.0,
+            file: String::new(),
+            fit: BackgroundFit::Fill,
+            opacity: 100.0,
+            blur: 0.0,
+        }
+    }
+}
+
+impl Background {
+    pub fn is_none(&self) -> bool {
+        self.kind == BackgroundKind::None
+    }
 }
 
 /// A page style (`Page Style` column).
@@ -33,6 +110,20 @@ pub struct PageStyle {
     pub scroll_px_per_frame: f64,
     /// Frames of empty screen after the page (negative: the next page starts earlier).
     pub gap_after_frames: i32,
+    /// Crawl: the line's centre, as a fraction of the frame height from the top (0–1).
+    pub crawl_line: f64,
+    /// Crawl: space between blocks (pixels), besides their own gaps.
+    pub crawl_gap: f64,
+    /// What is behind the page.
+    #[serde(skip_serializing_if = "Background::is_none")]
+    pub background: Background,
+    /// Transition into the next page: a video transition id (`cross_dissolve`, `push`, …) or
+    /// `dissolve` / `push` / `slide` / `wipe`; empty = a cut. Only where the pages touch
+    /// (page gap 0); it replaces the cards' fades at that cut.
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub transition: String,
+    /// Transition length in frames.
+    pub transition_frames: u32,
 }
 
 impl Default for PageStyle {
@@ -45,6 +136,11 @@ impl Default for PageStyle {
             fade_out_frames: 12,
             scroll_px_per_frame: 3.0,
             gap_after_frames: 0,
+            crawl_line: 0.85,
+            crawl_gap: 120.0,
+            background: Background::default(),
+            transition: String::new(),
+            transition_frames: 12,
         }
     }
 }
@@ -196,9 +292,28 @@ fn norm(s: &str) -> String {
     s.trim().to_lowercase()
 }
 
-/// The built-in page styles: `Scroll` and `Card`.
+/// The built-in page styles: `Scroll`, `Card` and `Crawl` (4 px per frame, near the bottom).
 pub fn builtin_page_styles() -> Vec<PageStyle> {
-    vec![PageStyle::default(), PageStyle { name: "Card".into(), behaviour: Behaviour::Card, ..PageStyle::default() }]
+    vec![
+        PageStyle::default(),
+        PageStyle { name: "Card".into(), behaviour: Behaviour::Card, ..PageStyle::default() },
+        PageStyle { name: "Crawl".into(), behaviour: Behaviour::Crawl, scroll_px_per_frame: 4.0, ..PageStyle::default() },
+    ]
+}
+
+/// The video transition a page style's `transition` names, or `None` for a cut.
+pub fn transition_id(name: &str) -> Option<String> {
+    let n = norm(name);
+    let id = match n.as_str() {
+        "" | "none" | "cut" => return None,
+        "dissolve" | "crossdissolve" | "cross dissolve" | "áttűnés" => "cross_dissolve",
+        "push" | "eltolás" => "push",
+        "slide" => "slide",
+        "wipe" => "wipe",
+        "dip" | "dip to black" => "dip_to_black",
+        _ => n.as_str(),
+    };
+    Some(id.to_string())
 }
 
 /// The built-in content styles (original CFA4 designs).

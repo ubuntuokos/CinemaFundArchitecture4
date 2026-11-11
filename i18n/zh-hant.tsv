@@ -4309,3 +4309,14 @@ export.summary	Low	低
 	Fitting removed.	已移除配合。
 	Fit to This Length	配合此長度
 	No music to measure ({problem}); type the length.	沒有可測量的音樂（{problem}）；請輸入長度。
+	The text moves {speed} px per frame; a whole number does not shimmer	文字每格移動 {speed} px；整數不會閃爍
+	Crawl	跑馬燈
+	Picture: {file}	圖片：{file}
+	Video: {file}	影片：{file}
+	Into the next	轉入下一頁
+	Safe areas and spines	安全區與軸線
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	動作安全區（93 %）、字幕安全區（90 %）、中心與頁面軸線
+	Baseline grid	基線網格
+	Lines one gap unit apart, moving with the page	間隔一個間距單位的線，隨頁面移動
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	「{text}」與背景區分不明顯（對比 {ratio}:1；至少需要 4.5:1）
+	A picture or video is behind the text: check the contrast by eye	文字後方有圖片或影片：請目視檢查對比

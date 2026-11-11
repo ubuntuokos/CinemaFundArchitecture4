@@ -4320,3 +4320,14 @@
 	the sound ends at {time}	o som termina em {time}
 	Fit Credits to Music…	Ajustar créditos à música…
 	Analyse Music for Credits	Analisar a música para os créditos
+	A picture or video is behind the text: check the contrast by eye	Há uma imagem ou um vídeo atrás do texto: confira o contraste a olho
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Área segura de ação (93 %), área segura de título (90 %), o centro e as guias da página
+	Baseline grid	Grade da linha de base
+	Crawl	Rolagem
+	Into the next	Para o próximo
+	Lines one gap unit apart, moving with the page	Linhas separadas por uma unidade de espaçamento, movendo-se com a página
+	Picture: {file}	Imagem: {file}
+	Safe areas and spines	Áreas seguras e guias
+	The text moves {speed} px per frame; a whole number does not shimmer	O texto se move {speed} px por quadro; um número inteiro não cintila
+	Video: {file}	Vídeo: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” não se destaca do fundo (contraste {ratio}:1; é preciso pelo menos 4,5:1)

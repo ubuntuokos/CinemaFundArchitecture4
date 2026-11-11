@@ -584,3 +584,165 @@ fn music_is_heard_as_the_timeline_plays_it_and_fitting_works_without_music() {
     assert_eq!(r["report"]["result"], r["report"]["target"], "{r}");
     assert!((r["report"]["result"].as_i64().unwrap() - 30 * cfa4_time::TICKS_PER_SECOND).abs() < cfa4_time::TICKS_PER_SECOND / 20);
 }
+
+// ----- C4: backgrounds, transitions, crawls, guides -----
+
+const LOOK: &str = r##"{"pageStyles":[
+    {"name":"Night","behaviour":"card","transition":"dissolve","transitionFrames":10,
+     "background":{"kind":"gradient","color":"#101030","color2":"#000000","opacity":80,"blur":4}},
+    {"name":"Sky","behaviour":"card","background":{"kind":"image","file":"sky.png","fit":"fill"}}
+]}"##;
+
+fn track_of(s: &Session, c: ClipId) -> usize {
+    s.active_sequence().unwrap().video_tracks.iter().position(|t| t.items.iter().any(|i| i.id == c)).unwrap()
+}
+
+#[test]
+fn backgrounds_sit_below_their_pages_and_transitions_join_the_pages() {
+    let mut s = demo("credits-look");
+    let dir = tmp_dir("credits-look");
+    image::RgbaImage::from_pixel(960, 400, image::Rgba([40, 90, 200, 255])).save(dir.join("sky.png")).unwrap();
+    let undo = s.history.undo.len();
+    std::fs::write(dir.join("look.csv"), "Body,Page Style\nFIRST,Night\nSECOND,Night\nTHIRD,Sky\n").unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": dir.join("look.csv"), "styling": LOOK})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    assert_eq!(s.history.undo.len(), undo + 1, "one undo step");
+    let pages = clips(&v);
+    let bgs: Vec<ClipId> = v["clips"].as_array().unwrap().iter().map(|c| ClipId(c["background"].as_u64().unwrap())).collect();
+    for (p, b) in pages.iter().zip(&bgs) {
+        assert_eq!(track_of(&s, *b) + 1, track_of(&s, *p), "the background is just below its page");
+        let (pi, bi) = (item(&s, *p), item(&s, *b));
+        assert_eq!((pi.start, pi.duration), (bi.start, bi.duration));
+    }
+    // a gradient behind the first page, at 80 % and blurred
+    let b0 = item(&s, bgs[0]);
+    let shape = b0.effects.iter().find(|e| e.effect == "graphic_shape").unwrap();
+    assert_eq!(shape.params["fill_kind"].value, ParamValue::Choice(1));
+    assert_eq!(b0.effects.iter().find(|e| e.effect == "opacity").unwrap().params["opacity"].value, ParamValue::Float(80.0));
+    assert!(b0.effects.iter().any(|e| e.effect == "gaussian_blur"));
+    // the picture fills the 16:9 frame: 960×400 → scale by the height, 1080 / 400
+    let q = s.active_sequence().unwrap();
+    let fh = f64::from(q.settings.height);
+    let b2 = item(&s, bgs[2]);
+    let ParamValue::Float(scale) = b2.effects.iter().find(|e| e.effect == "motion").unwrap().params["scale"].value else { panic!() };
+    assert!((scale - fh / 400.0 * 100.0).abs() < 1e-6, "{scale}");
+    // a dissolve on the cuts out of the Night pages, and between their backgrounds; none out of
+    // the last page
+    let on = |c: ClipId| {
+        let q = s.active_sequence().unwrap();
+        q.video_tracks.iter().flat_map(|t| t.transitions.iter()).filter(|x| x.from == Some(c)).map(|x| x.effect.effect.clone()).collect::<Vec<_>>()
+    };
+    assert_eq!(on(pages[0]), vec!["cross_dissolve"]);
+    assert_eq!(on(bgs[0]), vec!["cross_dissolve"]);
+    assert_eq!(on(pages[1]), vec!["cross_dissolve"]);
+    assert_eq!(on(bgs[1]), vec!["cross_dissolve"]);
+    assert!(on(pages[2]).is_empty());
+    assert_eq!(v["clips"][0]["transition"], json!(true));
+    // the dissolve replaces the fades at its cut
+    let fades = |c: ClipId| {
+        let it = item(&s, c);
+        let e = it.effects.iter().find(|e| e.effect == "graphic_text").unwrap();
+        e.params["opacity"].keyframes.iter().map(|k| (k.time, k.value.clone())).collect::<Vec<_>>()
+    };
+    let f0 = fades(pages[0]);
+    assert_eq!(f0.last().map(|k| k.1.clone()), Some(ParamValue::Float(100.0)), "no fade out into the dissolve: {f0:?}");
+
+    // a refresh with nothing changed puts everything back on the same tracks
+    let tracks: Vec<usize> = pages.iter().chain(&bgs).map(|c| track_of(&s, *c)).collect();
+    let r = s.execute("graphics.credits.refresh", json!({"clip": pages[0].0})).unwrap();
+    let pages2 = clips(&r);
+    let bgs2: Vec<ClipId> = r["clips"].as_array().unwrap().iter().map(|c| ClipId(c["background"].as_u64().unwrap())).collect();
+    let tracks2: Vec<usize> = pages2.iter().chain(&bgs2).map(|c| track_of(&s, *c)).collect();
+    assert_eq!(tracks, tracks2);
+    for c in &bgs {
+        assert!(s.active_sequence().unwrap().find_item(*c).is_none(), "old backgrounds are gone");
+    }
+    s.execute("edit.undo", json!({})).unwrap();
+    s.execute("edit.undo", json!({})).unwrap();
+    assert!(s.active_sequence().unwrap().find_item(bgs[0]).is_none());
+}
+
+#[test]
+fn a_crawl_runs_left_and_its_pictures_go_with_it() {
+    let mut s = demo("credits-crawl");
+    let dir = tmp_dir("credits-crawl");
+    image::RgbaImage::from_pixel(200, 100, image::Rgba([200, 200, 30, 255])).save(dir.join("logo.png")).unwrap();
+    let csv = "Head,Body,Page Style\nMusic,Kiss Anna,Crawl\n,{{Pic logo.png 80}},\nThanks,Everyone,\n";
+    let v = s.execute("graphics.credits.import", json!({"csv": csv, "pictureDir": dir})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    assert_eq!(v["clips"][0]["behaviour"], "crawl");
+    let page = item(&s, clips(&v)[0]);
+    assert_eq!(page.graphic.as_ref().unwrap().roll.mode, RollMode::CrawlLeft);
+    let pic = item(&s, ClipId(v["clips"][0]["pictures"][0].as_u64().unwrap()));
+    let motion = pic.effects.iter().find(|e| e.effect == "motion").unwrap();
+    let q = s.active_sequence().unwrap();
+    let canvas = (q.settings.width, q.settings.height);
+    for k in [0i64, 3, 7, 10] {
+        let u = Tick(page.duration.0 * k / 10);
+        let specs = item_layer_specs(&page, page.source_in + u, canvas);
+        let holder = specs.iter().find(|(_, sp)| matches!(sp.content, LayerContent::Shape(_))).unwrap();
+        let ParamValue::Vec2(at) = motion.params["position"].value_at(u) else { panic!() };
+        let want = holder.1.transform.position;
+        assert!((at.x - want.x).abs() < 1e-6 && (at.y - want.y).abs() < 1e-6, "t={k}/10: {at:?} vs {want:?}");
+    }
+}
+
+#[test]
+fn thumbnail_shows_the_background_and_guides() {
+    let mut s = demo("credits-thumb-look");
+    let styling = r##"{"pageStyles":[{"name":"Red","behaviour":"card","background":{"kind":"color","color":"#c00000"}}]}"##;
+    let csv = "Body,Page Style,Spine Position\nA,Red,\nB,,-400\n";
+    let shot = |s: &mut Session, extra: Value| {
+        let mut p = json!({"csv": csv, "styling": styling, "width": 384});
+        for (k, v) in extra.as_object().unwrap() {
+            p[k] = v.clone();
+        }
+        let v = s.execute("graphics.credits.thumbnail", p).unwrap();
+        let png = cfa4_project::gtemplate::base64_decode(v["pngBase64"].as_str().unwrap()).unwrap();
+        image::load_from_memory(&png).unwrap().to_rgba8()
+    };
+    let plain = shot(&mut s, json!({}));
+    // red in the corner: the background is behind the whole frame
+    let c = plain.get_pixel(2, 2);
+    assert!(c[0] > 150 && c[1] < 40 && c[3] > 250, "{c:?}");
+    let guided = shot(&mut s, json!({"guides": true, "grid": true}));
+    // the title-safe line is 5 % in (yellow over red), the centre line in the middle
+    let (w, h) = guided.dimensions();
+    let y = (f64::from(h) * 0.05).round() as u32;
+    let g = guided.get_pixel(w / 2 + 20, y);
+    assert!(g[1] > 150, "title safe at y={y}: {g:?}");
+    assert_ne!(plain.get_pixel(w / 2, h / 4), guided.get_pixel(w / 2, h / 4), "centre line");
+    // a spine 400 px left of the centre (on a 1080 frame) is drawn too
+    let x = ((960.0 - 400.0 * f64::from(h) / 1080.0 * 1080.0 / f64::from(h)) * f64::from(w) / 1920.0).round() as u32;
+    assert_ne!(plain.get_pixel(x, h / 3), guided.get_pixel(x, h / 3), "spine at x={x}");
+}
+
+#[test]
+fn transitions_join_pages_with_and_without_backgrounds_and_take_their_pictures_along() {
+    let mut s = demo("credits-look-mixed");
+    let dir = tmp_dir("credits-look-mixed");
+    image::RgbaImage::from_pixel(200, 100, image::Rgba([200, 30, 30, 255])).save(dir.join("logo.png")).unwrap();
+    let styling = r##"{"pageStyles":[
+        {"name":"Lit","behaviour":"card","transition":"dissolve","transitionFrames":10,"background":{"kind":"color","color":"#202040"}},
+        {"name":"Plain","behaviour":"card","transition":"dissolve","transitionFrames":10}
+    ]}"##;
+    let csv = "Body,Page Style\nFIRST,Lit\n{{Pic logo.png}},Plain\nTHIRD,Lit\n";
+    let v = s.execute("graphics.credits.import", json!({"csv": csv, "styling": styling, "pictureDir": dir, "track": 0})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    let pages = clips(&v);
+    // all pages on one track, the backgrounds on the one below
+    let tracks: Vec<usize> = pages.iter().map(|c| track_of(&s, *c)).collect();
+    assert!(tracks.iter().all(|t| *t == tracks[0]), "{tracks:?}");
+    let bg = ClipId(v["clips"][0]["background"].as_u64().unwrap());
+    assert_eq!(track_of(&s, bg) + 1, tracks[0]);
+    for c in &pages[..2] {
+        let q = s.active_sequence().unwrap();
+        assert!(q.video_tracks.iter().flat_map(|t| t.transitions.iter()).any(|x| x.from == Some(*c)), "a transition out of every page but the last");
+    }
+    // the middle page's picture fades in and out across half of each transition
+    let pic = item(&s, ClipId(v["clips"][1]["pictures"][0].as_u64().unwrap()));
+    let op = &pic.effects.iter().find(|e| e.effect == "opacity").unwrap().params["opacity"];
+    assert_eq!(op.value_at(Tick::ZERO), ParamValue::Float(0.0));
+    assert_eq!(op.value_at(pic.duration), ParamValue::Float(0.0));
+    assert_eq!(op.value_at(Tick(pic.duration.0 / 2)), ParamValue::Float(100.0));
+}

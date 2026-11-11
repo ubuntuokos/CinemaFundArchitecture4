@@ -4304,3 +4304,14 @@
 	the sound ends at {time}	소리가 {time}에 끝납니다
 	Fit Credits to Music…	크레딧을 음악에 맞추기…
 	Analyse Music for Credits	크레딧용 음악 분석
+	A picture or video is behind the text: check the contrast by eye	텍스트 뒤에 이미지나 영상이 있습니다. 대비를 눈으로 확인하세요
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	액션 세이프(93 %), 타이틀 세이프(90 %), 중앙 및 페이지의 스파인
+	Baseline grid	기준선 그리드
+	Crawl	크롤
+	Into the next	다음으로 전환
+	Lines one gap unit apart, moving with the page	간격 한 단위로 떨어진 선, 페이지와 함께 이동
+	Picture: {file}	이미지: {file}
+	Safe areas and spines	세이프 영역과 스파인
+	The text moves {speed} px per frame; a whole number does not shimmer	텍스트가 프레임당 {speed} px 이동합니다. 정수 값이면 깜빡이지 않습니다
+	Video: {file}	영상: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”이(가) 배경과 구분되지 않습니다(대비 {ratio}:1, 최소 4.5:1 필요)

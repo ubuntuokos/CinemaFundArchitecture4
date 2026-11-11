@@ -4310,3 +4310,14 @@ export.summary	Low	laag
 	Fitting removed.	Aanpassing verwijderd.
 	Fit to This Length	Aan deze lengte aanpassen
 	No music to measure ({problem}); type the length.	Geen muziek om te meten ({problem}); typ de lengte.
+	The text moves {speed} px per frame; a whole number does not shimmer	De tekst beweegt {speed} px per frame; een geheel getal flikkert niet
+	Crawl	Lichtkrant
+	Picture: {file}	Afbeelding: {file}
+	Video: {file}	Video: {file}
+	Into the next	Naar de volgende
+	Safe areas and spines	Veilige gebieden en assen
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Actieveilig (93 %), titelveilig (90 %), het midden en de assen van de pagina
+	Baseline grid	Basislijnraster
+	Lines one gap unit apart, moving with the page	Lijnen één afstandseenheid uit elkaar, die met de pagina meebewegen
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” steekt niet af tegen de achtergrond (contrast {ratio}:1; minstens 4,5:1 is nodig)
+	A picture or video is behind the text: check the contrast by eye	Achter de tekst staat een afbeelding of video: controleer het contrast op het oog

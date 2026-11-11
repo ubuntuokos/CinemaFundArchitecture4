@@ -4310,3 +4310,14 @@ export.summary	Low	nízká
 	Fitting removed.	Přizpůsobení odebráno.
 	Fit to This Length	Přizpůsobit této délce
 	No music to measure ({problem}); type the length.	Není co měřit, chybí hudba ({problem}); zadejte délku.
+	The text moves {speed} px per frame; a whole number does not shimmer	Text se posouvá o {speed} px na snímek; celé číslo nebliká
+	Crawl	Běžící text
+	Picture: {file}	Obrázek: {file}
+	Video: {file}	Video: {file}
+	Into the next	Do další
+	Safe areas and spines	Bezpečné oblasti a osy
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Bezpečná oblast akce (93 %), titulků (90 %), střed a osy stránky
+	Baseline grid	Mřížka účaří
+	Lines one gap unit apart, moving with the page	Čáry vzdálené o jednu jednotku mezery, pohybují se se stránkou
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ nevyniká na pozadí (kontrast {ratio}:1; je potřeba alespoň 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Za textem je obrázek nebo video: zkontrolujte kontrast okem

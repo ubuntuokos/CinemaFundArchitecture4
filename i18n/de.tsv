@@ -4317,3 +4317,14 @@
 	the sound ends at {time}	der Ton endet bei {time}
 	Fit Credits to Music…	Abspann an Musik anpassen…
 	Analyse Music for Credits	Musik für den Abspann analysieren
+	A picture or video is behind the text: check the contrast by eye	Hinter dem Text liegt ein Bild oder Video: Kontrast bitte visuell prüfen
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Aktionssicher (93 %), titelsicher (90 %), die Mitte und die Achsen der Seite
+	Baseline grid	Grundlinienraster
+	Crawl	Lauftext
+	Into the next	In den nächsten
+	Lines one gap unit apart, moving with the page	Linien im Abstand von einer Abstandseinheit, die sich mit der Seite bewegen
+	Picture: {file}	Bild: {file}
+	Safe areas and spines	Sicherheitsbereiche und Achsen
+	The text moves {speed} px per frame; a whole number does not shimmer	Der Text bewegt sich {speed} px pro Bild; bei ganzen Zahlen flimmert er nicht
+	Video: {file}	Video: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ hebt sich nicht vom Hintergrund ab (Kontrast {ratio}:1; mindestens 4.5:1 erforderlich)

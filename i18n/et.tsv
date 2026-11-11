@@ -4312,3 +4312,14 @@ export.summary	Low	madal
 	Fitting removed.	Sobitus eemaldatud.
 	Fit to This Length	Sobita selle pikkusega
 	No music to measure ({problem}); type the length.	Pole muusikat, mida mõõta ({problem}); sisesta pikkus.
+	The text moves {speed} px per frame; a whole number does not shimmer	Tekst liigub {speed} px kaadri kohta; täisarv ei virvenda
+	Crawl	Jooksev tekst
+	Picture: {file}	Pilt: {file}
+	Video: {file}	Video: {file}
+	Into the next	Järgmisse
+	Safe areas and spines	Ohutud alad ja teljed
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Tegevuse ohuala (93 %), tiitrite ohuala (90 %), kese ja lehe teljed
+	Baseline grid	Põhijoonte ruudustik
+	Lines one gap unit apart, moving with the page	Jooned ühe vaheühiku kaugusel, liiguvad koos lehega
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ei eristu taustast (kontrast {ratio}:1; vaja on vähemalt 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Teksti taga on pilt või video: kontrolli kontrasti silmaga

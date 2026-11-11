@@ -4295,3 +4295,14 @@
 	Fitting removed.	Подгонка снята.
 	Fit to This Length	Подогнать под эту длительность
 	No music to measure ({problem}); type the length.	Нет музыки для измерения ({problem}); введите длительность.
+	The text moves {speed} px per frame; a whole number does not shimmer	Текст сдвигается на {speed} px за кадр; целое число не мерцает
+	Crawl	Бегущая строка
+	Picture: {file}	Изображение: {file}
+	Video: {file}	Видео: {file}
+	Into the next	В следующую
+	Safe areas and spines	Безопасные зоны и оси
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасная зона действия (93 %), безопасная зона заголовков (90 %), центр и оси страницы
+	Baseline grid	Сетка базовых линий
+	Lines one gap unit apart, moving with the page	Линии через единицу интервала, движутся вместе со страницей
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» не выделяется на фоне (контраст {ratio}:1; нужно не менее 4.5:1)
+	A picture or video is behind the text: check the contrast by eye	За текстом изображение или видео: проверьте контраст на глаз

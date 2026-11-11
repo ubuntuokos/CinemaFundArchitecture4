@@ -53,6 +53,7 @@ The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 | Linked credits (C1): `.cfa4credits` file with the table embedded; pages remember their document and layer fingerprints; row-by-row diff, selective refresh in place keeping hand edits, one undo step; Qt6 Refresh window | done (2026-10-25) |
 | Checks (C2): names, fonts and missing letters, title safe, contrast, text size, roll speed and shimmer, card length, overlap, soft pictures; stable codes, Hungarian in Qt6 | done (2026-10-26) |
 | Fit to music (C3): music length, sound end, last bar (Remix beat analysis), typed length; cards on the beat; align to the music; rolls stretch their gaps, cards keep theirs; stored in the document, kept by refresh; Qt6 Fit window | done (2026-10-26) |
+| Backgrounds, transitions, crawls, guides (C4): per page style a colour, gradient, picture or video background (fill / fit, opacity, blur) as its own clip below the page; a library transition on the cut into the next page (replacing the cards' fade there); a one-line crawl page type (Crawl Left); safe areas, spines and baseline grid in the page picture; contrast measured against the background | done (2026-10-26) |
 | Qt6 Credits window (sheet, worksheet, pictures, styling, pages, warnings, page picture, place at playhead) on the Qt6 GUI's engine server | done (2026-10-25); **the owner decided the UI is Qt6 only**: no more egui work, no standalone app |
 
 ## Consequences

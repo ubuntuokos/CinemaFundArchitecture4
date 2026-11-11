@@ -4313,3 +4313,14 @@ export.summary	Low	nizka
 	Fitting removed.	Prilagoditev odstranjena.
 	Fit to This Length	Prilagodi tej dolžini
 	No music to measure ({problem}); type the length.	Ni glasbe za merjenje ({problem}); vnesite dolžino.
+	The text moves {speed} px per frame; a whole number does not shimmer	Besedilo se premakne za {speed} px na sličico; celo število ne utripa
+	Crawl	Tekoči napis
+	Picture: {file}	Slika: {file}
+	Video: {file}	Video: {file}
+	Into the next	V naslednjo
+	Safe areas and spines	Varna območja in osi
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Varno območje dogajanja (93 %), napisov (90 %), sredina in osi strani
+	Baseline grid	Mreža osnovnic
+	Lines one gap unit apart, moving with the page	Črte na razdalji ene enote razmika, ki se premikajo s stranjo
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	»{text}« ne izstopa iz ozadja (kontrast {ratio}:1; potrebno je vsaj 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Za besedilom je slika ali video: kontrast preverite na oko

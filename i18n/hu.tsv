@@ -4309,3 +4309,14 @@ export.summary	Low	alacsony
 	Fitting removed.	Az igazítás megszűnt.
 	Fit to This Length	Igazítás erre a hosszra
 	No music to measure ({problem}); type the length.	Nincs mérhető zene ({problem}); add meg a hosszt.
+	The text moves {speed} px per frame; a whole number does not shimmer	A szöveg képkockánként {speed} px-t mozdul; egész számnál nem vibrál
+	Crawl	Futószöveg
+	Picture: {file}	Kép: {file}
+	Video: {file}	Videó: {file}
+	Into the next	Átmenet a következőbe
+	Safe areas and spines	Biztonsági területek és gerincek
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Akcióbiztos (93 %), címbiztos (90 %) terület, a középvonalak és az oldal gerincei
+	Baseline grid	Alapvonal-rács
+	Lines one gap unit apart, moving with the page	Egy térköz-egységnyi vonalak, az oldallal együtt mozognak
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” nem válik el a háttértől (kontraszt {ratio}:1; legalább 4,5:1 kell)
+	A picture or video is behind the text: check the contrast by eye	A szöveg mögött kép vagy videó van: a kontrasztot szemmel ellenőrizd

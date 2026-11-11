@@ -48,8 +48,9 @@ Example:
 
 Sizes are pixels of a 1080-pixel-high frame and scale with the sequence.
 
-- **Page styles:** `Scroll` (rolls from below to above the frame, 3 px per frame) and `Card`
-  (120 frames, 12-frame fades).
+- **Page styles:** `Scroll` (rolls from below to above the frame, 3 px per frame), `Card`
+  (120 frames, 12-frame fades) and `Crawl` (a one-line ticker near the bottom, right to left,
+  4 px per frame).
 - **Content styles:** `Gutter` (role left of the centre, names right; the default), `Centered`,
   `Heading`, `Title`, `Grid` (3 columns), `Bullets` (names run on with •), `Paragraphs`.
 
@@ -75,8 +76,50 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 `layout` (`grid`, `flow`, `paragraphs`), `columns`, `align` (`left`, `center`, `right`), `body` /
 `head` / `tail` letter styles (`font`, `fontStyle`, `size`, `color`, `tracking`, `allCaps`,
 `leading`), `headGap`, `tailGap`, `columnGap`, `paragraphGap`, `wrapWidth`, `flowSeparator`,
-`margin`. Page style fields: `behaviour` (`scroll`, `card`), `scrollPxPerFrame`, `cardFrames`,
-`fadeInFrames`, `fadeOutFrames`, `gapAfterFrames`.
+`margin`. Page style fields: `behaviour` (`scroll`, `card`, `crawl`), `scrollPxPerFrame` (rolls
+and crawls), `cardFrames`, `fadeInFrames`, `fadeOutFrames`, `gapAfterFrames`, `crawlLine`,
+`crawlGap`, `background`, `transition`, `transitionFrames` (see below).
+
+## Backgrounds, transitions and crawls
+
+**Background.** A page style can put something behind its pages:
+
+```json
+{ "name": "Night", "behaviour": "card",
+  "background": { "kind": "gradient", "color": "#1d2b53", "color2": "#000000", "angle": 90,
+                  "opacity": 100, "blur": 0 } }
+```
+
+`kind` is `none` (the default: whatever is on the tracks below shows through, black on an empty
+sequence), `color`, `gradient` (from `color` to `color2` along `angle` degrees), `image` or
+`video` (`file`, relative to the picture folder or absolute; `fit`: `fill` covers the frame and
+cuts the overhang, `fit` shows it whole). `opacity` is 0–100 %, `blur` a radius in pixels of a
+1080-high frame. The background is **its own clip just below the page**, as long as the page: it
+does not roll, and its opacity, blur (Gaussian Blur), size and position stay editable like any
+clip's. A video shorter than the page ends early (it is not looped). A missing file is a warning
+and the background is left out. A refresh replaces the backgrounds with the pages.
+
+**Transition.** `transition` names the transition into the next page – `dissolve` (or
+`áttűnés`), `push` (`eltolás`), `slide`, `wipe`, `dip to black`, or any video transition's id
+(`iris_round`, …) – and `transitionFrames` its length (default 12). It is an ordinary transition
+on the cut, centred, from the transition library, so it can be changed or removed on the
+timeline; when both pages have a background, their backgrounds get the same transition. It needs
+the pages to touch (page gap 0; otherwise a warning), the last page has none, and on cards it
+takes the place of the fade at that cut. All pages of the credits go on one track (the asked
+`track`, else the first above everything the credits cover), their backgrounds on the track
+below, so every transition finds its two pages. Pictures (`{{Pic …}}`) fade out and in across
+half of each transition.
+
+**Crawl.** A `crawl` page puts its blocks side by side on one line – each block as it would look
+on a roll (head above or beside the body), `crawlGap` pixels (default 120) plus the block's own
+vertical gap apart – centred at `crawlLine` (fraction of the frame height from the top, default
+0.85) and runs it from the right edge to the left at `scrollPxPerFrame` (the graphic's Crawl
+Left). `Page Runtime` sets its length; the speed changes to fit. Pictures crawl with it.
+
+**Guides.** Below the page picture of the Credits window, *Safe areas and spines* draws the
+action-safe (93 %) and title-safe (90 %) areas, the centre lines and the spines of the page's
+blocks; *Baseline grid* draws lines one gap unit (`unitPx`) apart that move with the page. They
+are only in the picture, never in the credits.
 
 ## Checks
 
@@ -90,11 +133,12 @@ or information icon and the spreadsheet row or page (`graphics.credits.validate`
 | One person written two ways | warning | e.g. `Kiss Anna` and `Kiss Ánna`; names the other row |
 | Font not installed | error | another font is used instead |
 | Letters missing from a font | warning | e.g. a font without `ő` / `ű`: another font draws them |
-| Outside the title-safe area | warning | text beyond 5 % from the frame edges (rolls: the sides only) |
-| Low contrast | warning | text colour against black below 4.5:1 (WCAG 2.1) |
+| Outside the title-safe area | warning | text beyond 5 % from the frame edges (rolls: the sides only; crawls: top and bottom only) |
+| Low contrast | warning | text against the page's background colour (both ends of a gradient; black without a background; a background's opacity mixed with black in linear light, as it is rendered) below 4.5:1 (WCAG 2.1) |
+| Contrast not measured | info | a picture or video is behind the text: check it by eye |
 | Small text | warning | below 24 px on a 1080-line frame |
-| Shimmering roll | warning | not a whole number of pixels per frame |
-| Fast roll | warning | a line crosses the frame in under 6 seconds |
+| Shimmering roll or crawl | warning | not a whole number of pixels per frame |
+| Fast roll or crawl | warning | a line crosses the frame (a crawl: its width) in under 6 seconds |
 | Short card | warning | less than 2 seconds on screen after its fades |
 | Overlapping pages | info | a negative page gap |
 | Soft picture | warning | a picture shown larger than its pixels |
@@ -169,9 +213,9 @@ fails leaves the old pages as they were.
 
 | Command | Menu | Params |
 |---|---|---|
-| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits) or `csv` (text), `sheet`, `pictureDir`, `styling`, `time`, `track` → `{clips: [{clip, start, duration, pictures}], group, end, sheet, warnings}`; one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, sheets, sheet, warnings, issues}` |
-| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width` → `{width, height, page, pages, time, pngBase64}`: the page's text with the roll or fades applied, pictures outlined |
+| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits) or `csv` (text), `sheet`, `pictureDir`, `styling`, `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, transition}], group, end, sheet, warnings}`; one undo step |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}}], duration, sheets, sheet, warnings, issues}` |
+| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
 | `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
@@ -186,5 +230,6 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), inline letter styles, videos in the credits, parallel and
-hooked spines, leaders, head-width harmonisation.
+Online sheets (download as `.xlsx`), inline letter styles, videos in the credits (inside a
+page; a video *background* works), parallel and hooked spines, leaders, head-width
+harmonisation, looping a short background video, transitions on pictures.
