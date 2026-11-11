@@ -88,6 +88,8 @@ pub enum Language {
     Da,
     /// Finnish, persisted as `fi`.
     Fi,
+    /// Lithuanian, persisted as `lt`.
+    Lt,
     /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
     /// where it differs (`en-gb.tsv`).
     #[serde(rename = "en-gb")]
@@ -122,11 +124,12 @@ static BULGARIAN: OnceLock<Catalog> = OnceLock::new();
 static GEORGIAN: OnceLock<Catalog> = OnceLock::new();
 static DANISH: OnceLock<Catalog> = OnceLock::new();
 static FINNISH: OnceLock<Catalog> = OnceLock::new();
+static LITHUANIAN: OnceLock<Catalog> = OnceLock::new();
 static BRITISH: OnceLock<Catalog> = OnceLock::new();
 static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 28] = [
+    pub const ALL: [Self; 29] = [
         Self::En,
         Self::Ja,
         Self::Es,
@@ -153,6 +156,7 @@ impl Language {
         Self::Ka,
         Self::Da,
         Self::Fi,
+        Self::Lt,
         Self::EnGb,
         Self::EnAu,
     ];
@@ -185,6 +189,7 @@ impl Language {
             Self::Ka => "ქართული",
             Self::Da => "Dansk",
             Self::Fi => "Suomi",
+            Self::Lt => "Lietuvių",
             Self::EnGb => "English (UK)",
             Self::EnAu => "English (Australia)",
         }
@@ -218,6 +223,7 @@ impl Language {
             "ka" => Some(Self::Ka),
             "da" => Some(Self::Da),
             "fi" => Some(Self::Fi),
+            "lt" => Some(Self::Lt),
             "en-gb" => Some(Self::EnGb),
             "en-au" => Some(Self::EnAu),
             _ => None,
@@ -234,7 +240,7 @@ impl Language {
     /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
     /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 25] = [
+        const PRIMARY: [(&str, Language); 26] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -260,6 +266,7 @@ impl Language {
             ("ka", Language::Ka),
             ("da", Language::Da),
             ("fi", Language::Fi),
+            ("lt", Language::Lt),
         ];
         tags.iter()
             .find_map(|tag| {
@@ -326,6 +333,7 @@ impl Language {
             Self::Ka => "ka",
             Self::Da => "da",
             Self::Fi => "fi",
+            Self::Lt => "lt",
             Self::EnGb => "en-gb",
             Self::EnAu => "en-au",
         }
@@ -360,6 +368,7 @@ impl Language {
             Self::Ka => Some(GEORGIAN.get_or_init(|| Catalog::parse(catalog_file!("ka")))),
             Self::Da => Some(DANISH.get_or_init(|| Catalog::parse(catalog_file!("da")))),
             Self::Fi => Some(FINNISH.get_or_init(|| Catalog::parse(catalog_file!("fi")))),
+            Self::Lt => Some(LITHUANIAN.get_or_init(|| Catalog::parse(catalog_file!("lt")))),
             Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
             // later rows win, so the Australian entries override the British ones
             Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
@@ -562,6 +571,7 @@ mod tests {
             ("ka", catalog_file!("ka")),
             ("da", catalog_file!("da")),
             ("fi", catalog_file!("fi")),
+            ("lt", catalog_file!("lt")),
             ("en-gb", catalog_file!("en-gb")),
             ("en-au", catalog_file!("en-au")),
         ] {
@@ -1767,6 +1777,13 @@ mod tests {
             catalog_file!("fi"),
             "ÄÖäö”",
             &[("File", "Tiedosto"), ("Sequence", "Sekvenssi"), ("Playhead", "Toistopaikka"), ("Cross Dissolve", "Ristikuva")],
+        ),
+        (
+            Language::Lt,
+            "app.language.lithuanian",
+            catalog_file!("lt"),
+            "ĄČĘĖĮŠŲŪŽąčęėįšųūž„“",
+            &[("File", "Failas"), ("Sequence", "Seka"), ("Playhead", "Atkūrimo žymeklis"), ("Cross Dissolve", "Kryžminis išnykimas")],
         ),
     ];
 
