@@ -589,6 +589,102 @@ fn a_71_source_folds_to_51_instead_of_dropping_centre_and_rear_surrounds() {
 }
 
 #[test]
+fn a_71_source_plays_as_71_on_71_and_712_tracks_and_mixes() {
+    // L R C LFE Lb Rb Ls Rs (WAV order) = 0.1 … 0.8 → the bus order L R C LFE Lss Rss Lrs Rrs
+    let mut r = Rig::with_channels(&[chan_dc], 8);
+    r.track(0).channels = AudioChannels::Surround71;
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround71;
+    let m = mix_all(&r, 0, 256);
+    assert_eq!(m.len(), 8);
+    for (c, want) in [0.1, 0.2, 0.3, 0.4, 0.7, 0.8, 0.5, 0.6].into_iter().enumerate() {
+        assert!(close(m[c][17], want, 1e-6), "7.1 channel {c} = {}", m[c][17]);
+    }
+    // a 7.1.2 track and Mix: the same eight, silent heights
+    r.track(0).channels = AudioChannels::Surround712;
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround712;
+    let m = mix_all(&r, 0, 256);
+    assert_eq!(m.len(), 10);
+    for (c, want) in [0.1, 0.2, 0.3, 0.4, 0.7, 0.8, 0.5, 0.6, 0.0, 0.0].into_iter().enumerate() {
+        assert!(close(m[c][17], want, 1e-6), "7.1.2 channel {c} = {}", m[c][17]);
+    }
+    // a 7.1 track into a 5.1 Mix: side and rear join the 5.1 surround at -3 dB each
+    r.track(0).channels = AudioChannels::Surround71;
+    set_master_51(&mut r);
+    let k = std::f32::consts::FRAC_1_SQRT_2;
+    let m = mix_all(&r, 0, 256);
+    assert_eq!(m.len(), 6);
+    assert!(close(m[4][17], k * 0.7 + k * 0.5, 1e-6) && close(m[5][17], k * 0.8 + k * 0.6, 1e-6), "{} {}", m[4][17], m[5][17]);
+    // meters: one per channel of the Mix
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround712;
+    let live = LiveMix::new();
+    mix_graph(&r.p, r.p.sequence(r.seq).unwrap(), 0, 256, &r.map, Some(&live));
+    assert_eq!(live.take_meters().get(&crate::mixer::MASTER).map(Vec::len), Some(10));
+}
+
+#[test]
+fn stereo_and_51_tracks_pan_into_a_712_mix() {
+    use cfa4_project::mixer::{LANE_PAN51_X, LANE_PAN51_Y};
+    // a stereo track at the default puck: L → L, R → R, nothing else
+    let mut r = Rig::new(&[chan_dc]);
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround712;
+    let m = mix_all(&r, 0, 256);
+    assert_eq!(m.len(), 10);
+    assert!(close(m[0][9], 0.1, 1e-6) && close(m[1][9], 0.2, 1e-6));
+    for (c, ch) in m.iter().enumerate().skip(2) {
+        assert!(ch[9].abs() < 1e-6, "channel {c} = {}", ch[9]);
+    }
+    // a mono track hard rear right lands on Rrs; the power stays the source's
+    r.track(0).channels = AudioChannels::Mono;
+    r.track(0).set_lane_static(LANE_PAN51_X, 100.0);
+    r.track(0).set_lane_static(LANE_PAN51_Y, -100.0);
+    let m = mix_all(&r, 0, 256);
+    assert!(close(m[7][9], 0.15, 1e-6), "Rrs = {}", m[7][9]);
+    let power: f32 = m.iter().map(|c| c[9] * c[9]).sum();
+    assert!(close(power, 0.15 * 0.15, 1e-6));
+    // a 5.1 track at the default puck: its surrounds split -3 dB to the side and rear speakers
+    let mut r = Rig::with_channels(&[chan_dc], 6);
+    r.track(0).channels = AudioChannels::Surround51;
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround71;
+    let k = std::f32::consts::FRAC_1_SQRT_2;
+    let m = mix_all(&r, 0, 256);
+    for (c, want) in [0.1, 0.2, 0.3, 0.4, k * 0.5, k * 0.6, k * 0.5, k * 0.6].into_iter().enumerate() {
+        assert!(close(m[c][17], want, 1e-6), "channel {c} = {}", m[c][17]);
+    }
+}
+
+#[test]
+fn the_height_lane_lifts_a_track_to_the_top_surrounds_of_a_712_mix() {
+    use cfa4_project::mixer::LANE_PAN51_HEIGHT;
+    let mut r = Rig::new(&[chan_dc]);
+    r.track(0).channels = AudioChannels::Mono;
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround712;
+    // front centre, fully up: Lts and Rts at -3 dB each, nothing on the floor
+    r.track(0).set_lane_static(LANE_PAN51_HEIGHT, 100.0);
+    let m = mix_all(&r, 0, 256);
+    let k = std::f32::consts::FRAC_1_SQRT_2;
+    assert!(close(m[8][9], 0.15 * k, 1e-6) && close(m[9][9], 0.15 * k, 1e-6), "{} {}", m[8][9], m[9][9]);
+    for (c, ch) in m.iter().enumerate().take(8) {
+        assert!(ch[9].abs() < 1e-6, "floor channel {c} = {}", ch[9]);
+    }
+    // automated from the floor to the top: block-invariant like the other panner lanes
+    let p = r.track(0).lane_mut(LANE_PAN51_HEIGHT).unwrap();
+    p.keyframes.push(kf(0, 0.0));
+    p.keyframes.push(kf(4_800, 100.0));
+    let whole = mix_all(&r, 0, 4_800);
+    let (a, b) = (mix_all(&r, 0, 1_234), mix_all(&r, 1_234, 4_800 - 1_234));
+    for c in 0..10 {
+        let cut: Vec<f32> = a[c].iter().chain(&b[c]).copied().collect();
+        assert_eq!(cut, whole[c], "channel {c}");
+    }
+    assert!(whole[2][10] > whole[8][10] && whole[8][4_700] > whole[2][4_700], "the source rises");
+    // on a 7.1 Mix the height does nothing
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Surround71;
+    r.track(0).lane_mut(LANE_PAN51_HEIGHT).unwrap().keyframes.clear();
+    r.track(0).set_lane_static(LANE_PAN51_HEIGHT, 100.0);
+    assert!(close(mix_all(&r, 0, 64)[2][9], 0.15, 1e-6));
+}
+
+#[test]
 fn stereo_track_through_a_51_submix_into_a_stereo_mix() {
     let mut r = Rig::new(&[chan_dc]);
     let sub = r.add_submix("5.1 bus");
