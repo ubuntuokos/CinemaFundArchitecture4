@@ -4365,3 +4365,5 @@
 	{n} more	{n} lagi
 	Block	Blok
 	parallel	paralel
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

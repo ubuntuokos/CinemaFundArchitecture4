@@ -4359,3 +4359,5 @@ export.summary	Low	төмен
 	{n} more	Тағы {n}
 	Block	Блок
 	parallel	қатар
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

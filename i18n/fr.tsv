@@ -4362,3 +4362,5 @@
 	{n} more	{n} de plus
 	Block	Bloc
 	parallel	parallèle
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

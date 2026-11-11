@@ -4358,3 +4358,5 @@ export.summary	Low	düşük
 	{n} more	{n} tane daha
 	Block	Blok
 	parallel	paralel
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

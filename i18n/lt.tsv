@@ -4360,3 +4360,5 @@ export.summary	Low	žema
 	{n} more	Dar {n}
 	Block	Blokas
 	parallel	lygiagrečiai
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

@@ -490,7 +490,7 @@ impl<W: Write> Muxer<W> {
         let audio = self.streams.iter().filter(|s| s.codec != MuxCodec::Mpeg2Video).count() as u8;
         let video = self.streams.iter().filter(|s| s.codec == MuxCodec::Mpeg2Video).count() as u8;
         // P-STD buffer bounds, one per stream id: 1194 × 1024 bytes for video (the largest MP@HL
-        // VBV), 58 × 128 for private stream 1 (shared by every LPCM sub-stream)
+        // VBV), 58 × 128 for private stream 1 (shared by every LPCM and AC-3 sub-stream)
         let mut entries: Vec<[u8; 3]> = (0..video).map(|v| [0xE0 + v, 0xE0 | (1194 >> 8) as u8, 1194u16 as u8]).collect();
         // MPEG audio: 32 × 128 bytes per stream id
         let mpa = self.streams.iter().filter(|s| s.codec == MuxCodec::MpegAudio).count() as u8;

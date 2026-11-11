@@ -4355,3 +4355,5 @@
 	{n} more	另有 {n} 项
 	Block	块
 	parallel	并列
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

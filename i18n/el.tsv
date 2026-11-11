@@ -4359,3 +4359,5 @@ export.summary	Low	χαμηλή
 	{n} more	{n} ακόμη
 	Block	Μπλοκ
 	parallel	παράλληλα
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

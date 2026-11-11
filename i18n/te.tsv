@@ -4363,3 +4363,5 @@ export.summary	Low	తక్కువ
 	{n} more	మరో {n}
 	Block	బ్లాక్
 	parallel	సమాంతరం
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

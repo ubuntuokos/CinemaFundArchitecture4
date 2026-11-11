@@ -4356,3 +4356,5 @@ export.summary	Low	alacsony
 	{n} more	még {n}
 	Block	Blokk
 	parallel	párhuzamos
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

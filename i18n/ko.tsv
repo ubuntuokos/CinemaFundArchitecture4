@@ -4351,3 +4351,5 @@
 	{n} more	{n}개 더
 	Block	블록
 	parallel	병렬
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)

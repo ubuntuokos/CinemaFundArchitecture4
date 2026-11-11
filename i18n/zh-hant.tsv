@@ -4356,3 +4356,5 @@ export.summary	Low	低
 	{n} more	另有 {n} 項
 	Block	區塊
 	parallel	並列
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
