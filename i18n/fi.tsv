@@ -4119,3 +4119,8 @@ export.summary	Low	matala
 	Audio Tools	Äänityökalut
 	Publication Tools	Julkaisutyökalut
 	Smart Export…	Älykäs vienti…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Luoteesta
+	From North-East	Koillisesta
+	From South-East	Kaakosta
+	From South-West	Lounaasta

@@ -4116,3 +4116,8 @@ export.summary	Low	低
 	Audio Tools	音訊工具
 	Publication Tools	發佈工具
 	Smart Export…	智慧匯出…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	從西北
+	From North-East	從東北
+	From South-East	從東南
+	From South-West	從西南

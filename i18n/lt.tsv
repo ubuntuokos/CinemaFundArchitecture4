@@ -4120,3 +4120,8 @@ export.summary	Low	žema
 	Audio Tools	Garso įrankiai
 	Publication Tools	Publikavimo įrankiai
 	Smart Export…	Išmanusis eksportas…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Iš šiaurės vakarų
+	From North-East	Iš šiaurės rytų
+	From South-East	Iš pietryčių
+	From South-West	Iš pietvakarių

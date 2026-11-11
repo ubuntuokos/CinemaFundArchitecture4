@@ -4120,3 +4120,8 @@ export.summary	Low	დაბალი
 	Audio Tools	აუდიო ხელსაწყოები
 	Publication Tools	გამოქვეყნების ხელსაწყოები
 	Smart Export…	ჭკვიანი ექსპორტი…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	ჩრდილო-დასავლეთიდან
+	From North-East	ჩრდილო-აღმოსავლეთიდან
+	From South-East	სამხრეთ-აღმოსავლეთიდან
+	From South-West	სამხრეთ-დასავლეთიდან

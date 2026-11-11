@@ -4117,3 +4117,8 @@ export.summary	Low	nízká
 	Audio Tools	Zvukové nástroje
 	Publication Tools	Nástroje pro publikování
 	Smart Export…	Chytrý export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Ze severozápadu
+	From North-East	Ze severovýchodu
+	From South-East	Z jihovýchodu
+	From South-West	Z jihozápadu

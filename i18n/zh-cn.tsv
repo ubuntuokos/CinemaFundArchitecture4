@@ -4115,3 +4115,8 @@
 	Audio Tools	音频工具
 	Publication Tools	发布工具
 	Smart Export…	智能导出…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	西北向
+	From North-East	东北向
+	From South-East	东南向
+	From South-West	西南向

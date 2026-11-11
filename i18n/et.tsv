@@ -4119,3 +4119,8 @@ export.summary	Low	madal
 	Audio Tools	Helitööriistad
 	Publication Tools	Avaldamistööriistad
 	Smart Export…	Nutikas eksport…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Loodest
+	From North-East	Kirdest
+	From South-East	Kagust
+	From South-West	Edelast

@@ -4116,3 +4116,8 @@ export.summary	Low	alacsony
 	Audio Tools	Hangeszközök
 	Publication Tools	Publikációs eszközök
 	Smart Export…	Smart Export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Északnyugatról
+	From North-East	Északkeletről
+	From South-East	Délkeletről
+	From South-West	Délnyugatról

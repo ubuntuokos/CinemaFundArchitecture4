@@ -4117,3 +4117,8 @@ export.summary	Low	laag
 	Audio Tools	Audiogereedschappen
 	Publication Tools	Publicatiegereedschappen
 	Smart Export…	Slim exporteren…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Vanuit het noordwesten
+	From North-East	Vanuit het noordoosten
+	From South-East	Vanuit het zuidoosten
+	From South-West	Vanuit het zuidwesten

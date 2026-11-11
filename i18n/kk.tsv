@@ -4119,3 +4119,8 @@ export.summary	Low	төмен
 	Audio Tools	Аудио құралдары
 	Publication Tools	Жариялау құралдары
 	Smart Export…	Ақылды экспорт…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Солтүстік-батыстан
+	From North-East	Солтүстік-шығыстан
+	From South-East	Оңтүстік-шығыстан
+	From South-West	Оңтүстік-батыстан

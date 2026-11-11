@@ -4117,3 +4117,8 @@ export.summary	Low	niska
 	Audio Tools	Narzędzia audio
 	Publication Tools	Narzędzia publikacji
 	Smart Export…	Inteligentny eksport…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Z północnego zachodu
+	From North-East	Z północnego wschodu
+	From South-East	Z południowego wschodu
+	From South-West	Z południowego zachodu

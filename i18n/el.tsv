@@ -4119,3 +4119,8 @@ export.summary	Low	χαμηλή
 	Audio Tools	Εργαλεία ήχου
 	Publication Tools	Εργαλεία δημοσίευσης
 	Smart Export…	Έξυπνη εξαγωγή…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Από βορειοδυτικά
+	From North-East	Από βορειοανατολικά
+	From South-East	Από νοτιοανατολικά
+	From South-West	Από νοτιοδυτικά

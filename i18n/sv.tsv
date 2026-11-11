@@ -4119,3 +4119,8 @@ export.summary	Low	låg
 	Audio Tools	Ljudverktyg
 	Publication Tools	Publiceringsverktyg
 	Smart Export…	Smart export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Från nordväst
+	From North-East	Från nordöst
+	From South-East	Från sydöst
+	From South-West	Från sydväst

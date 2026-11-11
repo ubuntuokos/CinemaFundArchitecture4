@@ -4126,3 +4126,8 @@
 	Audio Tools	オーディオツール
 	Publication Tools	公開ツール
 	Smart Export…	スマート書き出し…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	左上から
+	From North-East	右上から
+	From South-East	右下から
+	From South-West	左下から

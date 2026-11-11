@@ -4118,3 +4118,8 @@ export.summary	Low	düşük
 	Audio Tools	Ses Araçları
 	Publication Tools	Yayınlama Araçları
 	Smart Export…	Akıllı Dışa Aktarma…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Kuzeybatıdan
+	From North-East	Kuzeydoğudan
+	From South-East	Güneydoğudan
+	From South-West	Güneybatıdan

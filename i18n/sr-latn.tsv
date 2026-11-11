@@ -4119,3 +4119,8 @@ export.summary	Low	nizak
 	Audio Tools	Audio alati
 	Publication Tools	Alati za objavljivanje
 	Smart Export…	Pametni izvoz…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Sa severozapada
+	From North-East	Sa severoistoka
+	From South-East	Sa jugoistoka
+	From South-West	Sa jugozapada

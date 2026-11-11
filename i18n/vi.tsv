@@ -4117,3 +4117,8 @@ export.summary	Low	thấp
 	Audio Tools	Công cụ âm thanh
 	Publication Tools	Công cụ xuất bản
 	Smart Export…	Xuất thông minh…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Từ phía tây bắc
+	From North-East	Từ phía đông bắc
+	From South-East	Từ phía đông nam
+	From South-West	Từ phía tây nam
