@@ -241,7 +241,10 @@ impl Mp4Source {
         // A track needs samples, a sample description and a timescale to be playable (damaged
         // files can lack them: indexing `entries[0]` or dividing by the timescale used to panic).
         let playable = |t: &&cfa4_isobmff::Track, kind| t.kind == kind && !t.samples.is_empty() && !t.entries.is_empty() && t.timescale > 0;
-        let vtrack = file.tracks.iter().position(|t| playable(&t, TrackKind::Video));
+        // an LCEVC enhancement track ('lvc1') is not a picture of its own: the base track plays
+        let is_lcevc = |t: &cfa4_isobmff::Track| t.entries.first().is_some_and(|e| e.format.0 == cfa4_lcevc::SAMPLE_ENTRY);
+        let lcevc_track = file.tracks.iter().any(is_lcevc);
+        let vtrack = file.tracks.iter().position(|t| playable(&t, TrackKind::Video) && !is_lcevc(t));
         // every audio track is a stream (the track count comes from the file: capped)
         let atracks: Vec<usize> =
             file.tracks.iter().enumerate().filter(|(_, t)| playable(t, TrackKind::Audio)).map(|(i, _)| i).take(cfa4_media::MAX_AUDIO_STREAMS).collect();
@@ -308,6 +311,16 @@ impl Mp4Source {
                     };
                     info.pixel_format = format!("{sub} {}-bit", h.bit_depth);
                     info.has_alpha = h.alpha;
+                }
+            }
+            // LCEVC: a separate enhancement track, or T.35 SEI in the base track's first samples
+            if lcevc_track {
+                crate::lcevc::mark(name, &mut info.codec, "separate 'lvc1' track");
+            } else if let Some((base, framing)) = crate::lcevc::base_of(&entry.codec) {
+                let heads =
+                    t.samples.iter().take(crate::lcevc::SCAN_SAMPLES).filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok());
+                if heads.into_iter().any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, framing)) {
+                    crate::lcevc::mark(name, &mut info.codec, "T.35 SEI");
                 }
             }
             if matches!(entry.codec, CodecConfig::Dv { .. }) {
@@ -430,7 +443,10 @@ impl Mp4Source {
             CodecConfig::Pcm(p) => (decode_pcm(&data, p), false),
             c => {
                 if st.decoder.is_none() {
-                    st.decoder = Some(PacketDecoder::for_isobmff(c, ainfo.sample_rate)?);
+                    st.decoder = Some(match qt_adpcm(c) {
+                        Some(codec) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
+                        None => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
+                    });
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
                 // a packet, more for DTS, or `OPUS_PRE_ROLL` worth for Opus).
@@ -625,10 +641,21 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         c => codec_label(c),
     };
     let (rate, ch) = cfa4_media::bounded_audio_dimensions(rate, ch).ok()?;
-    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits })
+    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits, speakers: Vec::new() })
+}
+
+/// QuickTime G.711 (`ulaw`, `alaw`) and IMA ADPCM (`ima4`) sample descriptions.
+fn qt_adpcm(c: &CodecConfig) -> Option<cfa4_adpcm::Codec> {
+    match c {
+        CodecConfig::Unknown { fourcc, .. } => cfa4_adpcm::Codec::from_fourcc(&fourcc.0),
+        _ => None,
+    }
 }
 
 fn codec_label(c: &CodecConfig) -> String {
+    if let Some(a) = qt_adpcm(c) {
+        return a.name().into();
+    }
     match c {
         CodecConfig::Avc(a) => format!(
             "H.264 ({})",

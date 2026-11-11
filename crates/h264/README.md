@@ -238,9 +238,10 @@ file; `H264_BENCH_ITERS=n` (and `H264_THREADS=t`, `H264_DRAFT=1`) turns it into 
 
 ## Known gaps
 
-- Luma and chroma bit depth must be equal. Monochrome 4:0:0 (the paths exist, no test stream yet:
-  [#279](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/279)) and `separate_colour_plane_flag`
-  ([#280](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/280)) return `Error::Unsupported`.
+- Luma and chroma bit depth must be equal. `separate_colour_plane_flag`
+  ([#280](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/280)) returns `Error::Unsupported`.
+  Monochrome 4:0:0 (#279) decodes, 8 and 10 bits bit-exact with ffmpeg on 10 libx264 `gray`
+  fixtures (`mono_*`), and comes out with neutral 4:2:0 chroma planes like ffmpeg's.
 - FMO (slice groups), SP/SI slices, data partitioning (Extended profile), MVC/SVC NAL units.
 - Error concealment is minimal: undecodable slices leave the prediction/previous content; missing
   references are replaced by other references.

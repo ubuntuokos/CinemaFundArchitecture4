@@ -1,6 +1,6 @@
 # CFA4-EVENT-FABRIC-001 1.0 – CFA4-illesztési melléklet
 
-**Dátum:** 2026-11-02 · **Állapot:** Q1–Q4 és Q9–Q12 eldöntve (tulajdonos, 2026-11-06); Q5–Q8 nyitott · **Terv:**
+**Dátum:** 2026-11-02 · **Állapot:** minden kérdés eldöntve (tulajdonos: Q1–Q4 és Q9–Q12 2026-11-06, Q5–Q8 2026-11-08) · **Terv:**
 [`CFA4-EVENT-FABRIC-001-1.0.md`](CFA4-EVENT-FABRIC-001-1.0.md)
 
 Ez a melléklet **nem módosítja** a jóváhagyott tervet. Azt rögzíti, hol tér el a terv a `main`-ben ma
@@ -40,10 +40,10 @@ a terv új verziót kap (1.1).
 | Q2 | Lehet-e részkiadás (E7), amelyre fogyasztó építhet? | Igen: EF-R1 = F1–F5 + Rust és Python SDK | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
 | Q3 | Kell-e most a C++ és a TypeScript SDK (E8)? | Csak ha lesz fogyasztója | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
 | Q4 | Egygépes módban is a teljes NATS + JetStream + Valkey fusson-e, és hogyan települjön (E9)? | Igen, felhasználói systemd-szolgáltatásként; előbb mérés a minimális kliensgépen | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
-| Q5 | Kötelező legyen-e a `producer` mező hitelesített identitáshoz kötése (E13)? | Igen; a Gateway a kapcsolat identitásából tölti ki, eltérésnél elutasít | Nyitott |
-| Q6 | Hogyan fusson a replay az idempotencia mellett (E14)? | Külön replay-Consumer-identitás vagy külön idempotencia-névtér | Nyitott |
-| Q7 | Bekerüljön-e a mutációs fuzz-teszt a 20. pontba és a 25. kapuba (E11)? | Igen (`AGENTS.md` §0.8) | Nyitott |
-| Q8 | Melyik az eseménytípus kanonikus alakja (E15)? | `event_type` verzió nélkül; `.vN` csak a `schema_id`-ban | Nyitott |
+| Q5 | Kötelező legyen-e a `producer` mező hitelesített identitáshoz kötése (E13)? | Igen; a Gateway a kapcsolat identitásából tölti ki, eltérésnél elutasít | Elfogadva a javaslat szerint (tulajdonos, 2026-11-08) |
+| Q6 | Hogyan fusson a replay az idempotencia mellett (E14)? | Külön replay-Consumer-identitás vagy külön idempotencia-névtér | Elfogadva a javaslat szerint (tulajdonos, 2026-11-08) |
+| Q7 | Bekerüljön-e a mutációs fuzz-teszt a 20. pontba és a 25. kapuba (E11)? | Igen (`AGENTS.md` §0.8) | Elfogadva a javaslat szerint (tulajdonos, 2026-11-08) |
+| Q8 | Melyik az eseménytípus kanonikus alakja (E15)? | `event_type` verzió nélkül; `.vN` csak a `schema_id`-ban | Elfogadva a javaslat szerint (tulajdonos, 2026-11-08) |
 | Q9 | Kötelező-e az outbox (vagy egyenértékű) a kritikus események kibocsátóinál (E16)? | Igen, összeomlási-ablak teszttel | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
 | Q10 | Hogyan biztosítjuk egy entitás eseményeinek sorrendjét (E17)? | Entitásonkénti sorszám, elavult frissítés elvetése; teszt átrendezett kézbesítéssel | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |
 | Q11 | Mi a Protobuf-payload kanonikus kódolása (E18)? | Rögzített kódolás és `content_type`-leképezés, közös Protobuf-tesztvektorok | Elfogadva a javaslat szerint (tulajdonos, 2026-11-06) |

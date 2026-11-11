@@ -186,3 +186,168 @@ fn generate_fixtures() {
         cfa4_testkit::fixtures::generate_and_report(s.name, std::slice::from_ref(&out), || fixture(&ff, s.name, &args(s)));
     }
 }
+
+fn riff_chunk(id: &[u8; 4], data: &[u8]) -> Vec<u8> {
+    let mut v = id.to_vec();
+    v.extend_from_slice(&(data.len() as u32).to_le_bytes());
+    v.extend_from_slice(data);
+    if data.len() % 2 == 1 {
+        v.push(0);
+    }
+    v
+}
+
+fn riff_list(kind: &[u8; 4], body: &[u8]) -> Vec<u8> {
+    riff_chunk(b"LIST", &[&kind[..], body].concat())
+}
+
+/// A type-1 DV AVI: one `iavs` stream (handler `dvsd`, a DVINFO `strf`) of whole DIF frames,
+/// with an `idx1` (ffmpeg only writes type 2, so the file is built here from a raw DV file).
+fn type1_avi(frames: &[&[u8]], rate: (u32, u32)) -> Vec<u8> {
+    let mut avih = vec![0u8; 56];
+    avih[16..20].copy_from_slice(&(frames.len() as u32).to_le_bytes());
+    avih[24..28].copy_from_slice(&1u32.to_le_bytes());
+    let mut strh = vec![0u8; 56];
+    strh[..4].copy_from_slice(b"iavs");
+    strh[4..8].copy_from_slice(b"dvsd");
+    strh[20..24].copy_from_slice(&rate.1.to_le_bytes());
+    strh[24..28].copy_from_slice(&rate.0.to_le_bytes());
+    strh[32..36].copy_from_slice(&(frames.len() as u32).to_le_bytes());
+    let strl = riff_list(b"strl", &[riff_chunk(b"strh", &strh), riff_chunk(b"strf", &[0u8; 32])].concat());
+    let hdrl = riff_list(b"hdrl", &[riff_chunk(b"avih", &avih), strl].concat());
+    let mut body = Vec::new();
+    let mut idx = Vec::new();
+    for f in frames {
+        idx.extend_from_slice(b"00__");
+        idx.extend_from_slice(&0x10u32.to_le_bytes());
+        idx.extend_from_slice(&(body.len() as u32 + 4).to_le_bytes());
+        idx.extend_from_slice(&(f.len() as u32).to_le_bytes());
+        body.extend(riff_chunk(b"00__", f));
+    }
+    let movi = riff_list(b"movi", &body);
+    riff_chunk(b"RIFF", &[&b"AVI "[..], &hdrl, &movi, &riff_chunk(b"idx1", &idx)].concat())
+}
+
+/// Type-1 DV AVI: the `iavs` stream's video decodes like the raw DV file it was built from.
+#[test]
+fn type1_dv_avi_video_matches_raw_dv() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    for (k, rate) in [(0usize, (30000u32, 1001u32)), (1, (25, 1))] {
+        let s = &SPECS[k];
+        let raw = std::fs::read(make(&ff, s)).unwrap();
+        let ranges = cfa4_dv::frames(&raw).unwrap();
+        let frames: Vec<&[u8]> = ranges.iter().map(|r| &raw[r.clone()]).collect();
+        let avi = cfa4_codecs::open_bytes("type1.avi", type1_avi(&frames, rate).into()).unwrap();
+        let dv = cfa4_codecs::open_bytes(s.name, raw.clone().into()).unwrap();
+        let (a, b) = (avi.info().video.clone().unwrap(), dv.info().video.clone().unwrap());
+        assert_eq!((a.width, a.height, a.par, &a.codec, &a.pixel_format), (b.width, b.height, b.par, &b.codec, &b.pixel_format), "{}", s.name);
+        assert_eq!(a.frame_rate, b.frame_rate, "{}", s.name);
+        assert_eq!(avi.info().container, "AVI");
+        let fr = FrameRate::new(i64::from(rate.0), i64::from(rate.1));
+        for i in 0..FRAMES {
+            let (x, y) = (avi.video_frame(at(i, fr)).unwrap(), dv.video_frame(at(i, fr)).unwrap());
+            assert_eq!((planes(&x), x.par), (planes(&y), y.par), "{} frame {i}", s.name);
+        }
+    }
+}
+
+/// Raw DV with 16-bit audio: the source's audio (at the file's rate) equals ffmpeg's decode, and
+/// a request at another rate is resampled.
+#[test]
+fn raw_dv_audio_matches_ffmpeg() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    for (name, lavfi, pix, rate) in [("dv_ntsc_audio48k.dv", NTSC, "yuv411p", 48_000u32), ("dv_pal_audio32k.dv", PAL, "yuv420p", 32_000)] {
+        let r = rate.to_string();
+        let audio = format!("aevalsrc=0.5*sin(2*PI*440*t)|0.3*sin(2*PI*997*t):s={r}");
+        let args = [
+            "-f",
+            "lavfi",
+            "-i",
+            lavfi,
+            "-f",
+            "lavfi",
+            "-i",
+            &audio,
+            "-frames:v",
+            "10",
+            "-c:v",
+            "dvvideo",
+            "-pix_fmt",
+            pix,
+            "-c:a",
+            "pcm_s16le",
+            "-ar",
+            &r,
+            "-ac",
+            "2",
+            "-f",
+            "dv",
+        ];
+        let file = fixture(&ff, name, &args).unwrap_or_else(|| panic!("could not generate {name}"));
+        let src = cfa4_codecs::open_bytes(name, bytes(&file)).unwrap();
+        let a = src.info().audio_streams.first().cloned().unwrap_or_else(|| panic!("{name}: no audio stream"));
+        assert_eq!((a.sample_rate, a.channels, a.bits_per_sample), (rate, 2, Some(16)), "{name}");
+        let want = ffmpeg_audio_f32(&ff, &file, &[]);
+        let n = want.len() / 2;
+        let got = src.audio(0, n, rate).unwrap();
+        let worst = (0..n).flat_map(|k| (0..2).map(move |c| (k, c))).map(|(k, c)| (got.channels[c][k] - want[2 * k + c]).abs()).fold(0f32, f32::max);
+        assert!(worst < 1e-4, "{name}: worst difference {worst}");
+        // a window in the middle, resampled to 48 kHz, has the same tone power
+        let mid = src.audio(i64::from(rate) / 10, 4800, 48_000).unwrap();
+        let rms = (mid.channels[0].iter().map(|v| v * v).sum::<f32>() / 4800.0).sqrt();
+        assert!((rms - 0.5 / 2f32.sqrt()).abs() < 0.02, "{name}: rms {rms}");
+    }
+}
+
+/// Type-1 DV AVI: the sound inside the `iavs` frames is audio stream 0 and equals the raw DV
+/// file's (which matches ffmpeg, `raw_dv_audio_matches_ffmpeg`); a type-1 file whose frames carry
+/// no audio has no audio stream.
+#[test]
+fn type1_dv_avi_audio_matches_raw_dv() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let audio = "aevalsrc=0.5*sin(2*PI*440*t)|0.3*sin(2*PI*997*t):s=48000";
+    let args = [
+        "-f",
+        "lavfi",
+        "-i",
+        NTSC,
+        "-f",
+        "lavfi",
+        "-i",
+        audio,
+        "-frames:v",
+        "10",
+        "-c:v",
+        "dvvideo",
+        "-pix_fmt",
+        "yuv411p",
+        "-c:a",
+        "pcm_s16le",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+        "-f",
+        "dv",
+    ];
+    let file = fixture(&ff, "dv_ntsc_audio48k.dv", &args).unwrap_or_else(|| panic!("could not generate dv_ntsc_audio48k.dv"));
+    let raw = std::fs::read(&file).unwrap();
+    let ranges = cfa4_dv::frames(&raw).unwrap();
+    let frames: Vec<&[u8]> = ranges.iter().map(|r| &raw[r.clone()]).collect();
+    let avi = cfa4_codecs::open_bytes("type1_audio.avi", type1_avi(&frames, (30000, 1001)).into()).unwrap();
+    let dv = cfa4_codecs::open_bytes("dv_ntsc_audio48k.dv", raw.clone().into()).unwrap();
+    let (a, b) = (avi.info().audio_streams.clone(), dv.info().audio_streams.clone());
+    assert_eq!(a.len(), 1, "type-1 AVI: one audio stream");
+    assert_eq!((a[0].sample_rate, a[0].channels, &a[0].codec, a[0].bits_per_sample), (b[0].sample_rate, b[0].channels, &b[0].codec, b[0].bits_per_sample));
+    // the whole sound, and a window in the middle resampled to 44.1 kHz
+    let n = 10 * 1601;
+    assert_eq!(avi.audio(0, n, 48_000).unwrap().channels, dv.audio(0, n, 48_000).unwrap().channels);
+    assert_eq!(avi.audio(5000, 2000, 44_100).unwrap().channels, dv.audio(5000, 2000, 44_100).unwrap().channels);
+    // frames without audio blocks' content: no audio stream
+    let silent = std::fs::read(make(&ff, &SPECS[0])).unwrap();
+    let ranges = cfa4_dv::frames(&silent).unwrap();
+    let frames: Vec<&[u8]> = ranges.iter().map(|r| &silent[r.clone()]).collect();
+    let avi = cfa4_codecs::open_bytes("type1.avi", type1_avi(&frames, (30000, 1001)).into()).unwrap();
+    let dv = cfa4_codecs::open_bytes(SPECS[0].name, silent.clone().into()).unwrap();
+    assert_eq!(avi.info().audio_streams.len(), dv.info().audio_streams.len());
+}
