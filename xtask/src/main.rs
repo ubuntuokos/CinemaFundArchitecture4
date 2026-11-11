@@ -98,6 +98,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("playback", 3),
     ("export", 3),
     ("dcp-validate", 3),
+    ("dcp-inspect", 3),
     ("smart-edit", 3),
     ("format", 3),
     ("engine", 4),
@@ -115,6 +116,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 
 /// Allowed same-layer edges (from, to).
 const SAME_LAYER: &[(&str, &str)] = &[
+    ("dcp-inspect", "dcp-validate"),
     ("media", "frame"),
     ("project", "media"),
     ("project", "frame"),

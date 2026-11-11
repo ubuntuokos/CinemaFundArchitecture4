@@ -1187,6 +1187,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-dcp-inspect"
+version = "0.10.0"
+dependencies = [
+ "cfa4-dcp",
+ "cfa4-dcp-validate",
+ "cfa4-export",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-time",
+ "rustix 1.1.6",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-dcp-validate"
 version = "0.10.0"
 dependencies = [

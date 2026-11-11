@@ -199,8 +199,8 @@ fn md(s: &str) -> String {
     s.replace('|', "\\|").replace(['\n', '\r'], " ")
 }
 
-/// Now, as RFC 3339 UTC with seconds.
-pub(crate) fn now() -> String {
+/// Now, as RFC 3339 UTC with seconds (the report's `started_at` and `finished_at`).
+pub fn now() -> String {
     let secs = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
     rfc3339(secs)
 }
