@@ -63,6 +63,7 @@ cfa4-dcp-validate = { path = "crates/dcp-validate" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-av1 = { path = "crates/av1" }
+cfa4-av2 = { path = "crates/av2" }
 cfa4-aac = { path = "crates/aac" }
 cfa4-flac = { path = "crates/flac" }
 cfa4-opus = { path = "crates/opus" }
