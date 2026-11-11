@@ -6,7 +6,7 @@
 **Kiegészíti:** [CFA4-LIVE-STUDIO-001](CFA4-LIVE-STUDIO-001.md) (v1.1), D4 (csak nyílt protokollok)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-11-én megerősítette, hogy az ST 2110 nyílt
 protokollként a D4 szerint bekerül az élő stúdió tervébe, fázisbeosztással (ez a dokumentum). A
-D8-at és a D10-et a tulajdonos 2026-11-11-én eldöntötte; a fázisok és a D9, D11, D12 a jóváhagyására várnak.
+D8-at, a D9-et és a D10-et a tulajdonos 2026-11-11-én eldöntötte; a fázisok, a D11 és a D12 a jóváhagyására várnak.
 **Források:** a tulajdonos által 2026-11-11-én átadott SMPTE ST 2110 szabványszövegek (17 dokumentum,
 II. fejezet). A szabványszövegek szerzői jog alatt állnak: **nem kerülnek a tárolóba**, csak a
 kiadásuk és a fejezetszámaik (`AGENTS.md` §2: a megvalósított kiadást a crate README-je rögzíti).
@@ -176,7 +176,7 @@ előfeltételként megnevezett fázisai után.
 |---|---|---|
 | D4+ | ST 2110 mint nyílt protokoll | **Eldöntve (2026-11-11):** az ST 2110 a D4 nyílt protokolljai közé tartozik, a terv része ezzel a kiegészítéssel |
 | D8 | Megvalósítás | **Eldöntve (2026-11-11): saját Rust crate** (`cfa4-st2110`) a nyilvános SMPTE/IETF-szövegekből; a GStreamer és más megvalósítás csak tesztbeli összevetés. Indok: a crate független a libobs-tól, így az S12+ Rust-csere után is marad |
-| D9 | PTP | **Javaslat:** a rendszer `linuxptp`-je (`ptp4l` ST 2059-2 profillal, `phc2sys`), a CFA4 csak olvas; saját PTP-szolga nincs. Más lehetőség: saját Rust PTP-szolga (sok munka, a hardveres időbélyeg kezelése miatt kockázatos) |
+| D9 | PTP | **Eldöntve (2026-11-11):** a rendszer `linuxptp`-je (`ptp4l` ST 2059-2 profillal, `phc2sys`), a CFA4 csak olvas; saját PTP-szolga nincs. Más lehetőség: saját Rust PTP-szolga (sok munka, a hardveres időbélyeg kezelése miatt kockázatos) |
 | D10 | Tömörített kép (-22) kodekje | **Eldöntve (2026-11-11): csak VC-2** (SMPTE ST 2042, jogdíjmentes; RTP: RFC 8450). **JPEG XS-t a CFA4 semmilyen csomagban nem szállít**, a `cfa4-restricted-extras`-ban sem: a JPEG XS szabadalmi poolja (Vectis IP; Fraunhofer IIS, intoPIX) a kodeket tartalmazó termék terjesztőjét terheli, és az extra csomagot is a CFA4 terjeszti. A VC-2 szabadalmi átnézése a kiadás előtt a `patent-review.md`-be kerül |
 | D11 | Menedzsment | **Javaslat:** először a CFA4 parancsai (SDP be/ki a vezérlőcsatornán és az MCP-n), a T7-ben az AMWA NMOS IS-04/IS-05 (nyílt specifikáció) |
 | D12 | Ütemezés | **Javaslat:** a T0–T1 a D7-től eltérve, Qt6 nélkül indulhat az S0 beolvasztása után; a T2-től a fő terv fázisai szerint |
