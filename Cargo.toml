@@ -88,6 +88,7 @@ cfa4-ffmpeg = { path = "crates/ffmpeg" }
 rsmedia = { version = "0.7.1", path = "vendor/ffmpeg-bindings/rsmedia", default-features = false, features = ["ndarray", "ffmpeg9", "link_system_ffmpeg"] }
 rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-features = false, features = ["ffmpeg9", "link_system_ffmpeg"] }
 rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
+cfa4-metrics = { path = "crates/metrics" }
 
 # foundation
 thiserror = "2"
