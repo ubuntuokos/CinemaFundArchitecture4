@@ -445,6 +445,83 @@ pub fn linear_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     });
 }
 
+/// Most particles drawn in one frame, and most pixel visits for all of them together.
+const MAX_PARTICLES: usize = 20_000;
+const MAX_PARTICLE_WORK: f64 = 4.0e7;
+
+/// Particles (CFA4): particle `i` is born at `i / rate` seconds into the clip and flies on a
+/// seeded path under gravity until its lifetime ends, so every frame is a pure function of time.
+pub fn particles(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+    let finite = |v: f32, lo: f32, hi: f32, def: f32| if v.is_finite() { v.clamp(lo, hi) } else { def };
+    let k = if cx.px_scale.is_finite() && cx.px_scale > 0.0 { cx.px_scale } else { 1.0 };
+    let emitter = pv(e, "emitter", cx, img);
+    let rate = finite(fv(e, "rate", cx), 0.0, 500.0, 0.0) as f64;
+    let life = finite(fv(e, "life", cx), 0.05, 10.0, 2.0) as f64;
+    let dir = (finite(fv(e, "direction", cx), -1.0e6, 1.0e6, 0.0) as f64).to_radians();
+    let spread = (finite(fv(e, "spread", cx), 0.0, 360.0, 60.0) as f64).to_radians();
+    let speed = finite(fv(e, "speed", cx), 0.0, 5000.0, 300.0) as f64 * k as f64;
+    let speed_random = finite(fv(e, "speed_random", cx), 0.0, 100.0, 30.0) as f64 / 100.0;
+    let gravity = finite(fv(e, "gravity", cx), -5000.0, 5000.0, 200.0) as f64 * k as f64;
+    let radius = (finite(fv(e, "size", cx), 0.0, 200.0, 6.0) * k / 2.0).max(0.5);
+    let rgba = cv(e, "color", cx);
+    let color = lin(rgba);
+    let opacity = if rgba[3].is_finite() { rgba[3].clamp(0.0, 1.0) } else { 1.0 };
+    let fade = bv(e, "fade");
+    let seed = finite(fv(e, "seed", cx), 0.0, 1.0e6, 0.0) as u64;
+    if !bv(e, "composite") {
+        img.px.fill(0.0);
+    }
+    let t = cx.seconds;
+    if !t.is_finite() || t < 0.0 || rate <= 0.0 || !emitter.x.is_finite() || !emitter.y.is_finite() {
+        return;
+    }
+    // the newest particles first, within the frame's budget
+    let last = (t * rate).floor();
+    let first = ((t - life) * rate).ceil().max(0.0);
+    let area = ((2.0 * radius + 2.0) as f64).powi(2);
+    let budget = (MAX_PARTICLE_WORK / area).clamp(1.0, MAX_PARTICLES as f64);
+    let count = (last - first + 1.0).clamp(0.0, budget);
+    let first = last - count + 1.0;
+    let (w, h) = (img.w, img.h);
+    for n in 0..count as u64 {
+        let i = first + n as f64;
+        let age = t - i / rate;
+        if !(0.0..life).contains(&age) {
+            continue;
+        }
+        let mut rng = Rng(seed.wrapping_mul(0x2545_F491_4F6C_DD1D) ^ (i as u64).wrapping_mul(0x9E37_79B9));
+        let a = dir + spread * (rng.next() as f64 - 0.5);
+        let v = speed * (1.0 + speed_random * rng.signed() as f64).max(0.0);
+        let x = emitter.x + a.sin() * v * age;
+        let y = emitter.y - a.cos() * v * age + 0.5 * gravity * age * age;
+        let alpha = opacity * if fade { (1.0 - age / life) as f32 } else { 1.0 };
+        if !x.is_finite() || !y.is_finite() || alpha <= 0.0 {
+            continue;
+        }
+        let (cx_, cy_) = (x as f32, y as f32);
+        let x0 = (cx_ - radius - 1.0).floor().max(0.0) as usize;
+        let x1 = ((cx_ + radius + 1.0).ceil().max(0.0) as usize).min(w);
+        let y0 = (cy_ - radius - 1.0).floor().max(0.0) as usize;
+        let y1 = ((cy_ + radius + 1.0).ceil().max(0.0) as usize).min(h);
+        for py in y0..y1 {
+            for px in x0..x1 {
+                let d = ((px as f32 + 0.5 - cx_).powi(2) + (py as f32 + 0.5 - cy_).powi(2)).sqrt();
+                // soft round dot: solid core, one-pixel antialiased rim
+                let cover = (radius + 0.5 - d).clamp(0.0, 1.0) * alpha;
+                if cover <= 0.0 {
+                    continue;
+                }
+                let Some(p) = img.px.get_mut((py * w + px) * 4..(py * w + px) * 4 + 4) else { continue };
+                let keep = 1.0 - cover;
+                p[0] = color[0] * cover + p[0] * keep;
+                p[1] = color[1] * cover + p[1] * keep;
+                p[2] = color[2] * cover + p[2] * keep;
+                p[3] = cover + p[3] * keep;
+            }
+        }
+    }
+}
+
 struct Rng(u64);
 impl Rng {
     fn next(&mut self) -> f32 {

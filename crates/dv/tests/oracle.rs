@@ -85,6 +85,70 @@ const SPECS: &[Spec] = &[
         chroma: ChromaFormat::Yuv420,
         aspect: Aspect::Ratio4x3,
     },
+    // DVCPRO 50, 4:2:2
+    Spec {
+        name: "dvcpro50_625",
+        lavfi: "testsrc2=size=720x576:rate=25",
+        frames: 3,
+        enc: &["-pix_fmt", "yuv422p"],
+        pix_fmt: "yuv422p",
+        format: Format::Dvcpro50,
+        chroma: ChromaFormat::Yuv422,
+        aspect: Aspect::Ratio4x3,
+    },
+    Spec {
+        name: "dvcpro50_525_248_wide",
+        lavfi: "mandelbrot=size=720x480:rate=60000/1001,tinterlace=mode=interleave_bottom",
+        frames: 3,
+        enc: &["-pix_fmt", "yuv422p", "-flags", "+ildct", "-aspect", "16:9"],
+        pix_fmt: "yuv422p",
+        format: Format::Dvcpro50,
+        chroma: ChromaFormat::Yuv422,
+        aspect: Aspect::Ratio16x9,
+    },
+    // DVCPRO HD 1080i50 (1440x1080), field-coded macroblocks
+    Spec {
+        name: "dvcprohd_1080i50",
+        lavfi: "mandelbrot=size=1440x1080:rate=50,tinterlace=mode=interleave_top",
+        frames: 3,
+        enc: &["-pix_fmt", "yuv422p", "-flags", "+ildct"],
+        pix_fmt: "yuv422p",
+        format: Format::DvcproHd,
+        chroma: ChromaFormat::Yuv422,
+        aspect: Aspect::Ratio16x9,
+    },
+    // DVCPRO HD 1080i60 (1280x1080)
+    Spec {
+        name: "dvcprohd_1080i60",
+        lavfi: "testsrc2=size=1280x1080:rate=30000/1001",
+        frames: 3,
+        enc: &["-pix_fmt", "yuv422p"],
+        pix_fmt: "yuv422p",
+        format: Format::DvcproHd,
+        chroma: ChromaFormat::Yuv422,
+        aspect: Aspect::Ratio16x9,
+    },
+    // DVCPRO HD 720p (960x720) at 50 and 59.94 frames/s
+    Spec {
+        name: "dvcprohd_720p50",
+        lavfi: "testsrc2=size=960x720:rate=50",
+        frames: 3,
+        enc: &["-pix_fmt", "yuv422p"],
+        pix_fmt: "yuv422p",
+        format: Format::DvcproHd,
+        chroma: ChromaFormat::Yuv422,
+        aspect: Aspect::Ratio16x9,
+    },
+    Spec {
+        name: "dvcprohd_720p60_noise",
+        lavfi: "nullsrc=size=960x720:rate=60000/1001,geq=random(1)*255:128+40*sin(X/7):128+40*cos(Y/5)",
+        frames: 3,
+        enc: &["-pix_fmt", "yuv422p"],
+        pix_fmt: "yuv422p",
+        format: Format::DvcproHd,
+        chroma: ChromaFormat::Yuv422,
+        aspect: Aspect::Ratio16x9,
+    },
 ];
 
 /// Per frame: max |Δ| and PSNR against ffmpeg.
@@ -212,6 +276,36 @@ fn dv25_525_248() {
 #[test]
 fn dv25_625_noise() {
     check(&SPECS[5]);
+}
+
+#[test]
+fn dvcpro50_625() {
+    check(&SPECS[6]);
+}
+
+#[test]
+fn dvcpro50_525_248_wide() {
+    check(&SPECS[7]);
+}
+
+#[test]
+fn dvcprohd_1080i50() {
+    check(&SPECS[8]);
+}
+
+#[test]
+fn dvcprohd_1080i60() {
+    check(&SPECS[9]);
+}
+
+#[test]
+fn dvcprohd_720p50() {
+    check(&SPECS[10]);
+}
+
+#[test]
+fn dvcprohd_720p60_noise() {
+    check(&SPECS[11]);
 }
 
 /// Damaged input: truncation, bit flips and corrupted DIF IDs never panic, and the frame

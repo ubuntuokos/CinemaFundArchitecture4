@@ -4234,3 +4234,106 @@ export.summary	Low	låg
 	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Kalkylark, eftertextfiler och Cinecred-projekt (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	Cinecred Project…	Cinecred-projekt…
 	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Öppna en Cinecred-projektmapp (Styling.toml och dess eftertextkalkylark)
+# Qt GUI: Tools menu (#868)
+	Video Tools	Videoverktyg
+	Audio Tools	Ljudverktyg
+	Publication Tools	Publiceringsverktyg
+	Smart Export…	Smart export…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Från nordväst
+	From North-East	Från nordöst
+	From South-East	Från sydöst
+	From South-West	Från sydväst
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Förbättra
+	Skin Smoothing	Hudutjämning
+	Keep Texture	Behåll textur
+	Skin Tone	Hudton
+	Smooth Entire Image	Jämna ut hela bilden
+	Low Light	Svagt ljus
+	Max Brightening	Max. uppljusning
+	Show Illumination	Visa belysning
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Förinställda mjukövergångar
+	Sine	Sinus
+	Exponential	Exponentiell
+	Circular	Cirkulär
+	Elastic	Elastisk
+	Film Gate	Filmfönster
+	Gate Weave	Fönstergungning
+	Weave Rotation	Gungningsrotation
+	Particles	Partiklar
+	Emitter Position	Sändarens position
+	Birth Rate	Födelsetakt
+	Lifetime (seconds)	Livslängd (sekunder)
+	Velocity Random	Slumpmässig hastighet
+	Gravity	Gravitation
+	Particle Size	Partikelstorlek
+	Keyhole	Nyckelhål
+	Burn Away	Bränn bort
+	Burn Size	Brännstorlek
+	Ember Width	Glödkantens bredd
+	Ember Color	Glödkantens färg
+	Check Text Legibility	Kontrollera textens läsbarhet
+	Clear Legibility Markers	Rensa läsbarhetsmarkörer
+	Text legibility: no problems found	Textens läsbarhet: inga problem hittades
+	Text legibility: {count} problems marked on the timeline (orange markers)	Textens läsbarhet: {count} problem markerade på tidslinjen (orange markörer)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Bitreducering
+	Bits per Channel	Bitar per kanal
+	Ordered Dither	Ordnad dithering
+	Dither Cell Size	Cellstorlek för dithering
+	Block Glitch	Blockglitch
+	Blocks Moved	Flyttade block
+	Max Distance	Max. avstånd
+	Snap to Grid	Fäst mot rutnät
+	Swap Blocks	Byt block
+	Changes per Second	Ändringar per sekund
+	Databend	Datakorruption
+	Breaks	Brott
+	Shift	Förskjutning
+	Color Damage	Färgskada
+	VHS	VHS
+	Color Bleed	Färgutflytning
+	Wobble	Vingling
+	Snow	Snö
+	Tracking Bar	Spårningsfält
+	Head Switching	Huvudväxling
+	Scan Line Jitter	Linjeskakning
+	Jitter	Skakning
+	Interval	Intervall
+	Infinite	Oändlig
+	Periodic	Periodisk
+	Tile Jitter	Plattskakning
+	Tiles	Plattor
+	Band Direction	Bandriktning
+	Jitter Direction	Skakningsriktning
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Halvton
+	Dither	Dithering
+	Pattern	Mönster
+	Cell Size	Cellstorlek
+	Cyan Angle	Cyanvinkel
+	Magenta Angle	Magentavinkel
+	Yellow Angle	Gul vinkel
+	Black Angle	Svart vinkel
+	Monochrome Angle	Monokrom vinkel
+	Sharpness	Skärpa
+	Ink Color	Bläckfärg
+	Paper Color	Pappersfärg
+	Color (CMYK)	Färg (CMYK)
+	Dot	Punkt
+	Line	Linje
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Pixelstorlek
+	Palette	Palett
+	Input Colors	Indatafärger
+	Green Phosphor	Grön fosfor
+	Amber Monitor	Bärnstensfärgad skärm
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

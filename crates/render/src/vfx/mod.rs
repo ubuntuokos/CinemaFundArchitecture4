@@ -15,6 +15,7 @@ mod blur;
 mod color;
 pub(crate) use color::cdl;
 pub(crate) mod distort;
+mod glitch;
 mod immersive;
 mod lights;
 mod stylize;
@@ -485,6 +486,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "spin" => distort::spin(img, e, cx),
         "wiggle" => distort::wiggle(img, e, cx),
         "camera_shake" => distort::camera_shake(img, e, cx),
+        "film_gate" => distort::film_gate(img, e, cx),
         "transform" if bv(e, "shutter_override") && fv(e, "shutter_angle", cx) > 0.5 => distort::transform_fx(img, e, cx),
         "spacer" => distort::spacer(img, e, cx),
         "clone" => distort::clone_fx(img, e, cx),
@@ -509,6 +511,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "long_shadow" => stylize::long_shadow(img, e, cx),
         "stroke" => stylize::stroke(img, e, cx),
         "gradient" => stylize::gradient(img, e, cx),
+        "particles" => stylize::particles(img, e, cx),
         "block_dissolve" => stylize::block_dissolve(img, e, cx),
         "gradient_wipe_legacy" => stylize::gradient_wipe(img, e, cx),
         "linear_wipe_legacy" => stylize::linear_wipe(img, e, cx),
@@ -518,6 +521,13 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "ellipse" => stylize::ellipse(img, e, cx),
         "paint_bucket" => stylize::paint_bucket(img, e, cx),
         "write_on" => stylize::write_on(img, e, cx),
+        // Glitch (CFA4's own folder)
+        "bit_crush" => glitch::bit_crush(img, e, cx),
+        "block_glitch" => glitch::block_glitch(img, e, cx),
+        "databend" => glitch::databend(img, e, cx),
+        "vhs" => glitch::vhs(img, e, cx),
+        "scan_line_jitter" => glitch::scan_line_jitter(img, e, cx),
+        "tile_jitter" => glitch::tile_jitter(img, e, cx),
         // Time / analysis
         "posterize_time" => temporal::posterize_time(img, e, cx),
         "echo" => temporal::echo(img, e, cx),
