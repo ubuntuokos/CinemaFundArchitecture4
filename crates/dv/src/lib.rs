@@ -25,12 +25,14 @@ mod idct;
 mod layout;
 mod quant;
 mod segment;
+pub mod subcode;
 mod vlc;
 
 use std::ops::Range;
 
 pub use audio::{Audio, AudioFormat, SOURCE_PACK_OFFSET, audio_format, decode_audio, source_pack_samples};
 pub use dif::{Aspect, ChromaFormat, Format, Profile, System, probe};
+pub use subcode::{Timecode, timecode};
 
 use dif::{BLOCK_SIZE, SEQUENCE_SIZE};
 use layout::Shape;

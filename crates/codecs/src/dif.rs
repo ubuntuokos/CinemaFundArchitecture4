@@ -20,6 +20,10 @@ use crate::CodecError;
 
 const BLOCK: usize = 80;
 
+/// The largest DIF frame (DVCPRO HD 1080i50: 4 channels of 12 sequences): caps reads sized by a
+/// container's (untrusted) sample size.
+pub(crate) const MAX_FRAME_BYTES: usize = 4 * 12 * 150 * BLOCK;
+
 /// True when `head` starts with the first DIF sequence of a frame: a header block, two subcode
 /// blocks, three VAUX blocks, an audio block and a video block, all of DIF sequence 0, and a
 /// header `cfa4-dv` recognises.
@@ -37,6 +41,14 @@ pub struct DifSource {
     frame_bytes: usize,
     rate: FrameRate,
     audio: Option<DvAudio>,
+}
+
+/// Start timecode of a DV stream: the time code pack of its first frame's subcode, as a frame
+/// count at `rate` (drop-frame counted when the pack's flag says so and the rate allows it).
+pub(crate) fn start_timecode(first: &[u8], rate: FrameRate) -> Option<i64> {
+    let tc = cfa4_dv::timecode(first)?;
+    let n = |v: u8| i64::from(v);
+    Some(cfa4_time::fields_to_frames(n(tc.hours), n(tc.minutes), n(tc.seconds), n(tc.frames), rate, tc.drop_frame))
 }
 
 /// The sound carried in the DIF frames of a stream (a raw `.dv` file, or a type-1 DV AVI): its
@@ -145,6 +157,7 @@ impl DifSource {
             cfa4_media::reader::read_range(&*reader, at, 5).ok()
         });
         let audio_streams = audio.iter().map(|a| a.info.clone()).collect();
+        let start_timecode = start_timecode(&first, rate);
         let info = MediaInfo {
             name: name.to_string(),
             kind: MediaKind::Movie,
@@ -163,7 +176,7 @@ impl DifSource {
             }),
             audio_streams,
             container: "DV".into(),
-            start_timecode: None,
+            start_timecode,
             file_size: Some(len),
         };
         Ok(Self { info, reader, frames, frame_bytes, rate, audio })

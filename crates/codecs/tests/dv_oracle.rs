@@ -351,3 +351,35 @@ fn type1_dv_avi_audio_matches_raw_dv() {
     let dv = cfa4_codecs::open_bytes(SPECS[0].name, silent.clone().into()).unwrap();
     assert_eq!(avi.info().audio_streams.len(), dv.info().audio_streams.len());
 }
+
+/// The start timecode of raw DV and of DV AVI (type 1 and type 2) comes from the first frame's
+/// subcode time code pack, which ffmpeg's DV muxer writes from `-timecode`; the drop-frame flag
+/// is honoured at 29.97. An AVI written by ffmpeg's `dvvideo` encoder alone has no time code pack.
+#[test]
+fn dv_start_timecode_from_subcode() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    for (name, lavfi, pix, tc, df) in [("dv_ntsc_tc_df.dv", NTSC, "yuv411p", "01:02:03;04", true), ("dv_pal_tc.dv", PAL, "yuv420p", "10:20:30:12", false)] {
+        let args = ["-f", "lavfi", "-i", lavfi, "-frames:v", "4", "-c:v", "dvvideo", "-pix_fmt", pix, "-timecode", tc, "-f", "dv"];
+        let file = fixture(&ff, name, &args).unwrap_or_else(|| panic!("could not generate {name}"));
+        let raw = std::fs::read(&file).unwrap();
+        let dv = cfa4_codecs::open_bytes(name, raw.clone().into()).unwrap();
+        let rate = dv.info().video.clone().unwrap().frame_rate;
+        let start = dv.info().start_timecode.unwrap_or_else(|| panic!("{name}: no start timecode"));
+        // CFA4 writes every drop-frame separator as `;`, ffmpeg only the last
+        assert_eq!(cfa4_time::format_timecode_frames(start, rate, df), tc.replace(':', if df { ";" } else { ":" }), "{name}");
+        // type 2: ffmpeg copies the frames into a `dvsd` stream
+        let avi_name = name.replace(".dv", ".avi");
+        let avi_file = fixture(&ff, &avi_name, &["-i", file.to_str().unwrap(), "-c", "copy"]).unwrap_or_else(|| panic!("could not generate {avi_name}"));
+        let avi = cfa4_codecs::open_bytes(&avi_name, bytes(&avi_file)).unwrap();
+        assert_eq!(avi.info().start_timecode, Some(start), "{avi_name}");
+        // type 1: whole DIF frames in an `iavs` stream
+        let ranges = cfa4_dv::frames(&raw).unwrap();
+        let frames: Vec<&[u8]> = ranges.iter().map(|r| &raw[r.clone()]).collect();
+        let (n, d) = (rate.num as u32, rate.den as u32);
+        let t1 = cfa4_codecs::open_bytes("type1_tc.avi", type1_avi(&frames, (n, d)).into()).unwrap();
+        assert_eq!(t1.info().start_timecode, Some(start), "{name}: type-1 AVI");
+    }
+    let plain = make(&ff, &SPECS[3]);
+    let src = cfa4_codecs::open_bytes(SPECS[3].name, bytes(&plain)).unwrap();
+    assert_eq!(src.info().start_timecode, None, "{}", SPECS[3].name);
+}
