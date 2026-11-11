@@ -4216,3 +4216,106 @@ export.summary	Low	низак
 	Lines one gap unit apart, moving with the page	Линије размакнуте за једну јединицу размака, померају се са страницом
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” се не истиче од позадине (контраст {ratio}:1; потребно је најмање 4,5:1)
 	A picture or video is behind the text: check the contrast by eye	Иза текста је слика или видео: проверите контраст оком
+# Qt GUI: Tools menu (#868)
+	Video Tools	Видео алати
+	Audio Tools	Аудио алати
+	Publication Tools	Алати за објављивање
+	Smart Export…	Паметни извоз…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Са северозапада
+	From North-East	Са североистока
+	From South-East	Са југоистока
+	From South-West	Са југозапада
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Побољшање
+	Skin Smoothing	Изглађивање коже
+	Keep Texture	Задржи текстуру
+	Skin Tone	Тон коже
+	Smooth Entire Image	Изглади целу слику
+	Low Light	Слабо светло
+	Max Brightening	Највеће посветљавање
+	Show Illumination	Прикажи осветљење
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Предлошци ублажавања
+	Sine	Синусно
+	Exponential	Експоненцијално
+	Circular	Кружно
+	Elastic	Еластично
+	Film Gate	Филмски прозор
+	Gate Weave	Подрхтавање прозора
+	Weave Rotation	Ротација подрхтавања
+	Particles	Честице
+	Emitter Position	Положај емитера
+	Birth Rate	Стопа настанка
+	Lifetime (seconds)	Трајање (секунде)
+	Velocity Random	Насумичност брзине
+	Gravity	Гравитација
+	Particle Size	Величина честица
+	Keyhole	Кључаоница
+	Burn Away	Изгоревање
+	Burn Size	Величина изгоревања
+	Ember Width	Ширина жара
+	Ember Color	Боја жара
+	Check Text Legibility	Провери читљивост текста
+	Clear Legibility Markers	Уклони ознаке читљивости
+	Text legibility: no problems found	Читљивост текста: нису пронађени проблеми
+	Text legibility: {count} problems marked on the timeline (orange markers)	Читљивост текста: проблема означено на временској линији: {count} (наранџасте ознаке)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Смањење битова
+	Bits per Channel	Битова по каналу
+	Ordered Dither	Уређено распршивање
+	Dither Cell Size	Величина ћелије распршивања
+	Block Glitch	Блоковска сметња
+	Blocks Moved	Померени блокови
+	Max Distance	Највећа удаљеност
+	Snap to Grid	Прилепи уз мрежу
+	Swap Blocks	Замена блокова
+	Changes per Second	Промена у секунди
+	Databend	Оштећење података
+	Breaks	Прекиди
+	Shift	Помак
+	Color Damage	Оштећење боје
+	VHS	VHS
+	Color Bleed	Разливање боје
+	Wobble	Љуљање
+	Snow	Снег
+	Tracking Bar	Трака праћења
+	Head Switching	Пребацивање глава
+	Scan Line Jitter	Подрхтавање редова
+	Jitter	Подрхтавање
+	Interval	Интервал
+	Infinite	Бесконачно
+	Periodic	Периодично
+	Tile Jitter	Подрхтавање плочица
+	Tiles	Плочице
+	Band Direction	Смер трака
+	Jitter Direction	Смер подрхтавања
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Полутон
+	Dither	Распршивање
+	Pattern	Узорак
+	Cell Size	Величина ћелије
+	Cyan Angle	Угао цијан
+	Magenta Angle	Угао магента
+	Yellow Angle	Угао жуте
+	Black Angle	Угао црне
+	Monochrome Angle	Угао једнобојног
+	Sharpness	Оштрина
+	Ink Color	Боја мастила
+	Paper Color	Боја папира
+	Color (CMYK)	Боја (CMYK)
+	Dot	Тачка
+	Line	Линија
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Величина пиксела
+	Palette	Палета
+	Input Colors	Улазне боје
+	Green Phosphor	Зелени фосфор
+	Amber Monitor	Ћилибарски монитор
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

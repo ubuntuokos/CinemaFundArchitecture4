@@ -16,9 +16,17 @@
 use crate::dif::{BLOCK_SIZE, sct};
 use crate::vlc::{Code, Entry};
 
-/// Byte offset of each DCT block's area in a DIF block, and the end of each area.
-const AREA_START: [usize; 6] = [4, 18, 32, 46, 60, 70];
-const AREA_END: [usize; 6] = [18, 32, 46, 60, 70, 80];
+/// Byte offset of each DCT block's area in a DIF block, and the end of each area: six blocks
+/// (Y0-Y3 in 14 bytes, Cr and Cb in 10) at 25 and 50 Mbit/s, eight blocks (Y0-Y3, Cr0, Cr1 in
+/// 10 bytes, Cb0, Cb1 in 8) in DVCPRO HD.
+#[derive(Clone, Copy)]
+pub(crate) struct Areas {
+    start: &'static [usize],
+    end: &'static [usize],
+}
+
+pub(crate) const AREAS_SD: Areas = Areas { start: &[4, 18, 32, 46, 60, 70], end: &[18, 32, 46, 60, 70, 80] };
+pub(crate) const AREAS_HD: Areas = Areas { start: &[4, 14, 24, 34, 44, 54, 64, 72], end: &[14, 24, 34, 44, 54, 64, 72, 80] };
 
 /// One DCT block after VLC decoding.
 #[derive(Clone)]
@@ -39,7 +47,8 @@ pub(crate) struct Block {
 /// One macroblock after VLC decoding.
 pub(crate) struct Macroblock {
     pub qno: u8,
-    pub blocks: [Block; 6],
+    /// Six (25 / 50 Mbit/s) or eight (DVCPRO HD) blocks.
+    pub blocks: Vec<Block>,
     /// The DIF block was missing or of the wrong type: the macroblock is concealed.
     pub concealed: bool,
 }
@@ -145,8 +154,9 @@ fn empty_block() -> Block {
 }
 
 /// Decode the five DIF video blocks of a segment (`data` holds 5 × 80 bytes; a short slice
-/// conceals the missing macroblocks).
-pub(crate) fn decode(data: &[u8], seq: usize, table: &[Entry]) -> Segment {
+/// conceals the missing macroblocks). `seq` is the DIF sequence number within its channel.
+pub(crate) fn decode(data: &[u8], seq: usize, table: &[Entry], areas: Areas) -> Segment {
+    let n = areas.start.len();
     let mut errors = 0u32;
     let mut mbs = Vec::with_capacity(5);
     // pass 1: each block from its own area
@@ -156,37 +166,39 @@ pub(crate) fn decode(data: &[u8], seq: usize, table: &[Entry]) -> Segment {
         let valid = block.filter(|b| b.first().map(|x| x >> 5) == Some(sct::VIDEO) && b.get(1).map(|x| usize::from(x >> 4)) == Some(seq));
         let Some(block) = valid else {
             errors += 1;
-            mbs.push(Macroblock { qno: 0, blocks: std::array::from_fn(|_| empty_block()), concealed: true });
+            mbs.push(Macroblock { qno: 0, blocks: (0..n).map(|_| empty_block()).collect(), concealed: true });
             mb_pools.push(Vec::new());
             continue;
         };
         let bits = bits_of(block);
         let qno = (read(&bits, 24, 8) & 0x0f) as u8;
         let mut pool = Vec::new();
-        let blocks: [Block; 6] = std::array::from_fn(|b| {
-            let start = AREA_START[b] * 8;
-            let end = AREA_END[b] * 8;
-            let mut dc = read(&bits, start, 9) as i32;
-            if dc > 255 {
-                dc -= 512;
-            }
-            let mode248 = read(&bits, start + 9, 1) == 1;
-            let class = read(&bits, start + 10, 2) as u8;
-            let mut blk = Block { dc, mode248, class, amps: [0; 64], pos: 1, done: false, partial: Vec::new() };
-            let area = bits.get(start + 12..end).unwrap_or(&[]);
-            match run(&mut blk, table, area, &[]) {
-                Outcome::Eob(n) => {
-                    blk.done = true;
-                    pool.extend_from_slice(area.get(n..).unwrap_or(&[]));
+        let blocks: Vec<Block> = (0..n)
+            .map(|b| {
+                let start = areas.start.get(b).copied().unwrap_or(0) * 8;
+                let end = areas.end.get(b).copied().unwrap_or(0) * 8;
+                let mut dc = read(&bits, start, 9) as i32;
+                if dc > 255 {
+                    dc -= 512;
                 }
-                Outcome::Exhausted(n) => blk.partial = area.get(n..).unwrap_or(&[]).to_vec(),
-                Outcome::Error => {
-                    blk.done = true;
-                    errors += 1;
+                let mode248 = read(&bits, start + 9, 1) == 1;
+                let class = read(&bits, start + 10, 2) as u8;
+                let mut blk = Block { dc, mode248, class, amps: [0; 64], pos: 1, done: false, partial: Vec::new() };
+                let area = bits.get(start + 12..end).unwrap_or(&[]);
+                match run(&mut blk, table, area, &[]) {
+                    Outcome::Eob(n) => {
+                        blk.done = true;
+                        pool.extend_from_slice(area.get(n..).unwrap_or(&[]));
+                    }
+                    Outcome::Exhausted(n) => blk.partial = area.get(n..).unwrap_or(&[]).to_vec(),
+                    Outcome::Error => {
+                        blk.done = true;
+                        errors += 1;
+                    }
                 }
-            }
-            blk
-        });
+                blk
+            })
+            .collect();
         mbs.push(Macroblock { qno, blocks, concealed: false });
         mb_pools.push(pool);
     }
@@ -260,8 +272,9 @@ mod tests {
                     x as u8
                 })
                 .collect();
-            let _ = decode(&data, 0, t);
-            let _ = decode(&data[..123], 3, t);
+            let _ = decode(&data, 0, t, AREAS_SD);
+            let _ = decode(&data, 0, t, AREAS_HD);
+            let _ = decode(&data[..123], 3, t, AREAS_SD);
         }
     }
 }
