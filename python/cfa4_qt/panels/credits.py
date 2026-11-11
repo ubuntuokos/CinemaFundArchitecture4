@@ -44,6 +44,7 @@ from PySide6.QtWidgets import (
 from ..engine import EngineClient
 from ..i18n import N_, TR, tr
 from ..timecode import TICKS_PER_SECOND
+from .credits_messages import note_text
 from .credits_workspace import PropertiesPanel, TimelineStrip, block_label
 
 SHEET_FILTER = N_("Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)")
@@ -695,7 +696,7 @@ class CreditsDialog(QDialog):
                 self.warnings.addItem(item)
         for w in (preview or {}).get("warnings") or []:
             row = w.get("row") if isinstance(w, dict) else None
-            text = str(w.get("message") if isinstance(w, dict) else w)
+            text = note_text(str(w.get("message") if isinstance(w, dict) else w))
             item = QListWidgetItem(icons["warning"], tr("Row {row}: {message}").replace("{row}", str(row)).replace("{message}", text) if row else text)
             self.warnings.addItem(item)
         issues = [i for i in (preview or {}).get("issues") or [] if isinstance(i, dict)]

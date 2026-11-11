@@ -207,7 +207,7 @@ végéhez közeledik, a hátralévő fázisok mehetnek):
   hátterek, átmenetek és ellenőrzések pedig a munkaterületen. Dokkolható panel helyett nem modális
   ablak: a munkaterület a vágás mellett nyitva maradhat.
 
-### C10 – Élő grafika (tervezet)
+### C10 – Élő grafika – **KÉSZ (2026-11-09)**
 
 A tulajdonos döntése (2026-10-25): **az élő adás kell, de egyelőre tervezet** (`VISION.md` 4. és
 8. pont, #60). Az eredeti terv §17–19-éből ez a fázis vázlata; ütemezése és mélysége külön döntés.
@@ -223,6 +223,34 @@ A tulajdonos döntése (2026-10-25): **az élő adás kell, de egyelőre terveze
   hagyva.
 - **Műsorterv (rundown)** csak akkor, ha a tulajdonos a mélységről így dönt (`VISION.md` 8. pont).
 - **Együttélés:** saját port és beállításmappa, OBS-szel egyszerre futtatva tesztelve (C9).
+
+Elkészült (2026-11-09, `cfa4/credits-c10`; a tulajdonos döntése 2026-11-09: a hátralévő
+fázisok mehetnek):
+
+- **Futtató** (`crates/engine/src/live.rs`, `live.*` parancsok): elemek (cue-k) stáblistából
+  (táblázat, stáblista-fájl, sablon) vagy a szekvencia grafikus klipjéből (cím, alsó harmad);
+  PREVIEW, TAKE, NEXT / PREVIOUS, HOLD / CONTINUE, UPDATE (a táblázat vagy a klip újraolvasva,
+  adásban azonnal), OUT. A kártya a NEXT-ig a kiúsztatás előtti utolsó teljes pillanaton áll; a
+  gördülő és futó oldal végigfut a következő oldalba. Ugyanaz az elrendezés és grafikus
+  renderelő, mint a szerkesztőben (képek és képhátterek is; a stáblistában lévő videók adásban
+  kimaradnak). Munkamenet-állapot: semmi nem kerül a projektbe, nem vonható vissza.
+- **Élő oldal** (`crates/live`, új L1 crate): HTTP csak a 127.0.0.1-en (más hosztnév,
+  módszer elutasítva), az OBS böngészőforrásának; átlátszó PNG, állapot, a hang bájttartományokkal.
+- **Hang:** a három mód (az oldalban / külön médiaforrásként / nincs).
+- **OBS-kapcsolat:** obs-websocket 5 (jelszóval), a „CFA4 Live” böngészőforrás (és külön
+  módban a „CFA4 Live Audio” médiaforrás) létrehozása vagy átirányítása; csak a saját gépen.
+  Az OBS nem irányítja a CFA4-et.
+- **Qt6:** Grafika és címek ▸ Élő grafika… ablak: elemlista, ELŐNÉZET / PROGRAM monitor, a
+  vezérlőgombok, élő oldal, hangmód, OBS-kapcsolat; magyarul és a többi kész nyelven.
+- **Folytatás:** a műsorterv (rundown) és az OBS-képességek beépítése a [CFA4-LIVE-STUDIO-001](plans/CFA4-LIVE-STUDIO-001.md)
+  terv része (S4a; a tulajdonos döntése 2026-11-09); ott az Élő grafika ablaka az önálló „Élő”
+  munkaterületbe olvad.
+- **Próba valódi OBS-szel** (2026-11-09, felhőben, Xvfb, Ubuntu OBS 30.0.2, obs-websocket
+  5.3.4): rossz vagy hiányzó jelszó érthető hibát ad; jó jelszóval kapcsolódik; külön hangmódban
+  a „CFA4 Live Audio” médiaforrás létrejön a program-jelenetben, újabb beállításkor frissül. Az
+  Ubuntu saját OBS-csomagjából hiányzik a böngészőforrás (obs-browser), ezt a CFA4 érthetően
+  jelzi (telepítés az OBS PPA-ból vagy Flatpakból, vagy kézzel felvett böngészőforrás). A
+  böngészőforrásos ágat a referenciagépen, a hivatalos OBS-sel érdemes egyszer kipróbálni.
 
 ### C9 – Csomagolás és együttélés (K) – **KÉSZ (2026-11-09)**
 
@@ -261,12 +289,11 @@ Elkészült (2026-11-09, `cfa4/credits-c9`):
 C1 kapcsolt stáblista ─┬─> C2 ellenőrzések ─> C3 zene
                        └─> C6 sablonok ─> C7 Cinecred-import
 C4 háttér / átmenet ───> C5 gazdagabb elrendezés
-Qt6 felület (F8, #48–#54) ─> C8 Qt6 munkaterület (első része kész, a többi fázisonként)
-C9 együttélés: C7 után, illetve minden kiadás előtt
-C10 élő grafika: tervezet; ütemezése külön döntés (VISION 8. pont)
+Qt6 felület (F8, #48–#54) ─> C8 Qt6 munkaterület
+C8 ─> C9 csomagolás és együttélés ─> C10 élő grafika ─> CFA4-LIVE-STUDIO-001 (élő stúdió, műsorterv)
 ```
 
-Javasolt sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7**. Minden fázis a motorral együtt a Qt6-os
+Sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7 → C8 → C9 → C10** (mind kész, 2026-11-09). Minden fázis a motorral együtt a Qt6-os
 felületét is megkapja (C8 folyamatosan), egui-felületet nem.
 
 ## 6. Kész-feltételek (az eredeti §32 helyett)
@@ -291,7 +318,7 @@ gépen (Kubuntu referenciagép) végigvitt munkamenet igazolja: táblázat → s
 | §3 Story/Screenplay híd | halasztva | a CFA4-ben nincs forgatókönyv-alkalmazás; a táblázat tölti be ezt a szerepet |
 | §11 saját hangrendszer | kihagyva | a CFA4 idővonala és keverője ezt már tudja |
 | §14 önálló alkalmazás | halasztva | munkaterület a CFA4-en belül (C8); lásd 8. pont |
-| §17–19 OBS, élő adás, Show/Rundown | **tervezet: C10** | a tulajdonos döntése (2026-10-25): kell, de egyelőre tervezet; a műsorterv mélysége nyitott |
+| §17–19 OBS, élő adás, Show/Rundown | **C10 kész; a folytatás a CFA4-LIVE-STUDIO-001** | a tulajdonos döntései: 2026-10-25 tervezet, 2026-11-09 megvalósítás (C10); az OBS-képességek és a műsorterv a [CFA4-LIVE-STUDIO-001](plans/CFA4-LIVE-STUDIO-001.md) tervben |
 | §21, §25, §32 HRB, Model Router, Canonical Gate, Evidence Registry, visszamenőleges audit | kihagyva | FA3-intézmények; a CFA4-ben a tesztek, ADR-ek és a kiadási kapuk (F9) felelnek meg nekik |
 | §2 teljes `.fa3credits` séma (személyek, cégek, jogi adatok, revíziók) | szűkítve | a `.cfa4credits` (C1) a forrást, a stílust és a sorokat tárolja; a teljes produkciós adatmodell csak Story-híddal lenne értelmes |
 
@@ -302,3 +329,7 @@ gépen (Kubuntu referenciagép) végigvitt munkamenet igazolja: táblázat → s
    `VISION.md` #60).
 3. ~~Külön `.cfa4credits` fájl?~~ **Eldöntve (2026-10-25): igen** – C1 része, kész.
 4. ~~A C1 → C7 sorrend?~~ **Eldöntve (2026-10-25): igen.**
+5. ~~A C8–C10 indítása?~~ **Eldöntve (2026-11-09): mehet**, mert a Qt6 a végéhez közeledik; ütközésnél
+   a Qt6 megy előre, a lánc utólag igazodik.
+6. ~~Az OBS funkcióinak beépítése és a műsorterv?~~ **Eldöntve (2026-11-09):** külön terv,
+   [CFA4-LIVE-STUDIO-001](plans/CFA4-LIVE-STUDIO-001.md) (jóváhagyva), külön munkamenetben.

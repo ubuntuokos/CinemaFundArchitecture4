@@ -322,6 +322,55 @@ pages with their type and length, the page picture and *Place at Playhead*: what
 
 Reopened from the editor the window is compact again; while it stays open it keeps the view chosen.
 
+## Live graphics
+
+**Graphics and Titles ▸ Live Graphics…** (Qt6) runs CFA4 graphics live, like a character
+generator: credits from a spreadsheet, credits file or template, or a graphic clip of the
+sequence (a title, a lower third), prepared as **cues**.
+
+- **PREVIEW / PROGRAM:** two monitors; double-click a cue to put it in preview.
+- **TAKE** puts the preview cue on air from its first page and the next cue into preview;
+  **NEXT** / **PREVIOUS** step through its pages (after the last page NEXT takes the preview
+  cue); **HOLD** / **CONTINUE** stop and resume the program; **UPDATE** reads the spreadsheet
+  (or the clip) again, and what is on air changes at once; **OUT** takes everything off air.
+  Cards wait at their last full moment until NEXT (`holdCards`); rolls and crawls run out into
+  the next page, and after the last one the picture is empty until OUT or the next TAKE.
+- **The live page:** *Start Live Page* serves the program on `http://127.0.0.1:PORT/` (this
+  computer only; other host names are refused) as a transparent picture for **OBS's Browser
+  Source**. The program keeps moving while the page runs, also with the window closed.
+- **Sound:** a cue can have a sound file (`audio`, or `audioClip` of the sequence). *In the page*:
+  the Browser Source plays it in step (OBS takes it with "Control audio via OBS"); *Separate*: it
+  is served on `/audio` for a media source in OBS; *No sound*.
+- **OBS:** *Connect to OBS* (obs-websocket 5, port 4455, the password from OBS ▸ Tools ▸
+  WebSocket Server Settings) creates or points the Browser Source **CFA4 Live** in the program
+  scene (and **CFA4 Live Audio** in the separate mode). Only CFA4 drives OBS, and only on this
+  computer; OBS never drives CFA4.
+  Ubuntu's own `obs-studio` package has no Browser Source (the obs-browser plugin): CFA4 says
+  so; use OBS from obsproject.com's PPA or Flatpak, or add a Browser Source by hand with the
+  live page's address.
+
+The same layout and graphics renderer as the editor draws the program (pictures and picture
+backgrounds included; videos in credits are left out on air). The live state is the session's:
+nothing is saved in the project or undone. The full live studio (OBS Studio's capabilities in
+CFA4) and the running order (rundown) follow in their own plan,
+[CFA4-LIVE-STUDIO-001](plans/CFA4-LIVE-STUDIO-001.md).
+
+| Command | Params |
+|---|---|
+| `live.window` | Graphics and Titles ▸ Live Graphics… (status, like `live.status`) |
+| `live.status` | → `{cues: [{id, name, kind (credits/clip), pages, duration, seconds, audio, holdCards}], preview, program: {cue, name, page, pages, elapsed, held, finished}, onAir, audioMode, width, height, server: {port, url}, obs, seq}` |
+| `live.cue.add` | `name`?, `clip` (a graphic clip) or the credits parameters of `graphics.credits.preview`, `audio` / `audioClip`?, `holdCards` (default true) |
+| `live.cue.remove` | `id` (not while on air) |
+| `live.preview` | `id`, or `next: true` |
+| `live.take`, `live.next`, `live.previous`, `live.hold`, `live.continue`, `live.out` | — |
+| `live.update` | `id`? (default on air, else preview), new credits parameters? |
+| `live.tick` | `at`? (seconds into the page) → draws the program for the page, advances run-out pages → `{seq, onAir, page, finished}` |
+| `live.frame` | `which` (program/preview), `width`, `page`?, `at`? → `{pngBase64, width, height, cue, page, time, empty}` |
+| `live.audio` | `mode` (embedded/separate/ignore), `width`? (program picture width) |
+| `live.server.start` / `.stop` | `port` (0: any free port) |
+| `live.obs.connect` | `host` (this computer only), `port` (4455), `password`?, `source` ("CFA4 Live"), `scene`?, `timeout` |
+| `live.obs.setup`, `live.obs.disconnect` | — |
+
 ## Commands
 
 | Command | Menu | Params |
@@ -331,16 +380,16 @@ Reopened from the editor the window is compact again; while it stays open it kee
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
-| `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
+| `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, group, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
 | `graphics.credits.save` | Credits window: *Save as Credits File…* | `to` (.cfa4credits), and `clip` (placed credits; default the selection) or `from` {import parameters} → `{path, rows}` |
 | `graphics.credits.diff` | (query) | `clip`?, `source`? (the spreadsheet's new place) → `{group, clip (a page of the group), source, changes: [{id, kind: added/removed/changed, oldRows, newRows (1-based), before, after}], manual: [{key, page, layer, text, survivesAll}]}` |
-| `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step |
+| `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, group, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step. The pages are new clips: `group` (the first page) names the credits for the next command |
 | `graphics.credits.styles` | (query) | `styling` → style names, inline style names, column names and a starter styling |
 | `graphics.credits.templates` | (query) | → `{templates: [{id, name, description, category, source, license, path, pages, fit}]}` |
 | `graphics.credits.template.get` | (query) | `id` (id, name or `.cfa4credtpl` path) → `{template, sampleCsv}` |
 | `graphics.credits.template.save` | Credits window: *Save as Template…* | `name`, `description`?, `license`?, `source`?, `where` (`user`, `project`, `file` with `to`), and `clip` (placed credits) or `from` {import parameters} or `styling` (+ `sample`) → `{id, category, path?}`; to the project: one undo step |
 | `graphics.credits.template.delete` | (query) | `id` (user or project templates) |
-| `graphics.credits.template.apply` | Graphics and Titles ▸ Apply Credits Template… | `id`, `clip`? → `{clips, end, template, warnings}`; one undo step |
+| `graphics.credits.template.apply` | Graphics and Titles ▸ Apply Credits Template… | `id`, `clip`? → `{clips, group, end, template, warnings}`; one undo step |
 | `graphics.credits.template.newSheet` | Credits window: *New Spreadsheet from Template…* | `id`, `to` (.csv) → `{path, rows}` |
 
 Problems in the sheet (unknown styles, bad numbers, unsupported `{{…}}` tags) are warnings with

@@ -4362,3 +4362,88 @@ export.summary	Low	დაბალი
 	parallel	პარალელური
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	გვერდზე (OBS მას ბრაუზერის წყაროდან იღებს)
+	Separate (a media source in OBS)	ცალკე (მედია წყარო OBS-ში)
+	No sound	ხმის გარეშე
+	credits	ტიტრები
+	graphic	გრაფიკა
+	{n} pages	გვერდები: {n}
+	Live Graphics	პირდაპირი გრაფიკა
+	Prepared cues; double-click one to put it in preview	მომზადებული ელემენტები; ორჯერ დააწკაპუნეთ ერთზე, რომ წინასწარ ნახვაში გადავიდეს
+	Add Credits…	ტიტრების დამატება…
+	A credits spreadsheet, credits file or Cinecred project as a cue	ტიტრების ცხრილი, ტიტრების ფაილი ან Cinecred-ის პროექტი ელემენტად
+	Add Selected Graphic	არჩეული გრაფიკის დამატება
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	დროის ხაზზე არჩეული გრაფიკული კლიპი (სათაური, ქვედა მესამედი) ელემენტად
+	Cues	ელემენტები
+	TAKE	ეთერში
+	The preview cue goes on air from its first page	წინასწარი ნახვის ელემენტი ეთერში გადის პირველი გვერდიდან
+	PREVIOUS	წინა
+	The page before (on the first page: from its start)	წინა გვერდი (პირველ გვერდზე: მისი დასაწყისიდან)
+	NEXT	შემდეგი
+	The next page; after the last one, the preview cue	შემდეგი გვერდი; ბოლოს შემდეგ — წინასწარი ნახვის ელემენტი
+	HOLD	შეჩერება
+	Stop the program where it is	პროგრამის შეჩერება იქ, სადაც არის
+	CONTINUE	გაგრძელება
+	Go on from where it stopped	გაგრძელება იქიდან, სადაც შეჩერდა
+	UPDATE	განახლება
+	Read the spreadsheet (or the clip) again; on air it changes at once	ცხრილის (ან კლიპის) ხელახლა წაკითხვა; ეთერში მაშინვე იცვლება
+	OUT	გამორთვა
+	Take everything off air	ყველაფრის ეთერიდან მოხსნა
+	Start Live Page	პირდაპირი გვერდის გაშვება
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	პროგრამის მიწოდება ამ კომპიუტერზე OBS-ის ბრაუზერის წყაროსთვის (მხოლოდ 127.0.0.1)
+	not running	არ მუშაობს
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	OBS-თან დაკავშირება
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	ამ კომპიუტერზე OBS-თან დაკავშირება და მისი ბრაუზერის წყაროს „CFA4 Live“ პირდაპირ გვერდზე მიმართვა
+	Port	პორტი
+	Password	პაროლი
+	Live page	პირდაპირი გვერდი
+	Sound	ხმა
+	OBS	OBS
+	Nothing in preview	წინასწარ ნახვაში არაფერია
+	page {page} of {pages}	გვერდი {page} / {pages}
+	held	შეჩერებულია
+	ended	დასრულდა
+	Off air	ეთერის გარეთ
+	Stop Live Page	პირდაპირი გვერდის შეჩერება
+	Connected to OBS {version}; source “{source}”	დაკავშირებულია OBS {version}; წყარო „{source}“
+	Point OBS Again	OBS-ის ხელახლა მიმართვა
+	Select a graphic clip on the timeline first.	ჯერ აირჩიეთ გრაფიკული კლიპი დროის ხაზზე.
+	Connecting to OBS…	OBS-თან დაკავშირება…
+	Live Graphics…	პირდაპირი გრაფიკა…
+	PREVIEW	წინასწარი ნახვა
+	PROGRAM	პროგრამა
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	სურათის ან ვიდეოს ტეგი ტანის უჯრაში მარტო დგას (ან ერთ სახელთან, პორტრეტად); სხვა ტეგები წაიშალა
+	the page gap is not a duration; the page style's is used	გვერდებს შორის დაშორება ხანგრძლივობა არ არის; გამოიყენება გვერდის სტილისა
+	the page runtime is not a positive duration; the page style's is used	გვერდის ხანგრძლივობა დადებითი არ არის; გამოიყენება გვერდის სტილისა
+	background “{file}” was not found; it is left out	ფონი „{file}“ ვერ მოიძებნა; გამოტოვებულია
+	card page {page} is taller than the frame; use a roll page	ბარათის გვერდი {page} კადრზე მაღალია; გამოიყენეთ გადასახვევი გვერდი
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	ასოს სტილის „{style}“ ფერი „{colour}“ არ არის #rrggbb; გამოტოვებულია
+	colour “{colour}” is not #rrggbb; black is used	ფერი „{colour}“ არ არის #rrggbb; გამოიყენება შავი
+	colour “{colour}” is not #rrggbb; white is used	ფერი „{colour}“ არ არის #rrggbb; გამოიყენება თეთრი
+	content style “{style}” does not exist; “{used}” is used	შიგთავსის სტილი „{style}“ არ არსებობს; გამოიყენება „{used}“
+	letter style “{style}” does not exist; the text keeps the block's style	ასოს სტილი „{style}“ არ არსებობს; ტექსტი ინარჩუნებს ბლოკის სტილს
+	page gap “{value}” is not a duration	გვერდებს შორის დაშორება „{value}“ ხანგრძლივობა არ არის
+	page runtime “{value}” is not a duration	გვერდის ხანგრძლივობა „{value}“ ხანგრძლივობა არ არის
+	page style “{style}” does not exist; a roll page is used	გვერდის სტილი „{style}“ არ არსებობს; გამოიყენება გადასახვევი გვერდი
+	page {page}: the background names no file; it is left out	გვერდი {page}: ფონი ფაილს არ ასახელებს; გამოტოვებულია
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	გვერდი {page}: ხანგრძლივობა მიიღწევა გადახვევის სიჩქარის შეცვლით (გვერდზე ბლოკებს შორის გასაჭიმი დაშორება არ არის)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	გვერდი {page}: ხანგრძლივობა მიიღწევა გადახვევის სიჩქარის შეცვლით (ტიტრები დაშორების გარეშეც ზედმეტად გრძელია)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	გვერდი {page}: ხანგრძლივობა მიიღწევა გადახვევის სიჩქარის შეცვლით (დაშორებები 20-ჯერ მეტად უნდა გაიზარდოს)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	გვერდი {page}: გადასვლას სჭირდება, რომ გვერდები ერთმანეთს ეხებოდეს (დაშორება 0); გამოტოვებულია
+	page {page}: there is no transition “{name}”; the pages cut	გვერდი {page}: გადასვლა „{name}“ არ არსებობს; გვერდები ჭრით იცვლება
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	ღერძის პოზიცია „{value}“ არ არის მხარდაჭერილი (მხარდაჭერილია პიქსელური წანაცვლება, სურვილისამებრ „parallel“-ით)
+	vertical gap “{value}” is not a number	ვერტიკალური დაშორება „{value}“ რიცხვი არ არის
+	picture “{file}” was not found or cannot be read; it is left out	სურათი „{file}“ ვერ მოიძებნა ან ვერ იკითხება; გამოტოვებულია
+	video “{file}” was not found or cannot be read; it is left out	ვიდეო „{file}“ ვერ მოიძებნა ან ვერ იკითხება; გამოტოვებულია
+	there is no roll page without its own runtime to stretch; the length cannot change	არ არის საკუთარი ხანგრძლივობის გარეშე გადასახვევი გვერდი გასაჭიმად; ხანგრძლივობა ვერ შეიცვლება
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	მხოლოდ ბარათები და დაშორებები {seconds} წმ-ია; მოთხოვნილი ხანგრძლივობა უფრო მოკლეა, ამიტომ გადასახვევი გვერდები ბუნებრივ ხანგრძლივობას ინარჩუნებენ
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	ასოს სტილი „{style}“: გამოიყენება მხოლოდ პირველი ფერადი ფენა (კონტურების, ჩრდილებისა და ზოლების გარეშე)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	მთლიანი ტიტრების ხანგრძლივობა არ გადადის; ნაცვლად გამოიყენეთ ტიტრების მორგება მუსიკაზე (ან ხანგრძლივობა)
+	page style “{style}”: fade curves become linear fades	გვერდის სტილი „{style}“: გაქრობის მრუდები წრფივი ხდება
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	შიგთავსის სტილს „{style}“ Cinecred-ში დასაწყისი არ აქვს; ცხრილში ჩაწერილი დასაწყისები მაინც ჩანს
+	content style “{style}”: sorting the names is not carried over	შიგთავსის სტილი „{style}“: სახელების დალაგება არ გადადის
+	transition curves are not carried over	გადასვლის მრუდები არ გადადის
+	picture styles (pictures keep their own size) are not carried over	სურათის სტილები (სურათები საკუთარ ზომას ინარჩუნებენ) არ გადადის
+	video (tape) styles are not carried over	ვიდეოს (ფირის) სტილები არ გადადის
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-ის პროექტს ტიტრების ცხრილები აქვს: {n}; გამოიყენება „{name}“ (სხვა აირჩიეთ ველში ცხრილი)

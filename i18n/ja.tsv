@@ -4368,3 +4368,88 @@
 	parallel	並列
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	ページ内（OBS がブラウザソースから取得）
+	Separate (a media source in OBS)	別（OBS のメディアソース）
+	No sound	音声なし
+	credits	クレジット
+	graphic	グラフィック
+	{n} pages	{n} ページ
+	Live Graphics	ライブグラフィック
+	Prepared cues; double-click one to put it in preview	準備したキュー。ダブルクリックでプレビューへ
+	Add Credits…	クレジットを追加…
+	A credits spreadsheet, credits file or Cinecred project as a cue	クレジットのスプレッドシート、クレジットファイル、Cinecred プロジェクトをキューとして
+	Add Selected Graphic	選択したグラフィックを追加
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	タイムラインで選択したグラフィッククリップ（タイトル、テロップ）をキューとして
+	Cues	キュー
+	TAKE	テイク
+	The preview cue goes on air from its first page	プレビューのキューを最初のページから送出
+	PREVIOUS	前へ
+	The page before (on the first page: from its start)	前のページ（最初のページでは先頭から）
+	NEXT	次へ
+	The next page; after the last one, the preview cue	次のページ。最後の後はプレビューのキュー
+	HOLD	ホールド
+	Stop the program where it is	番組をその場で止める
+	CONTINUE	再開
+	Go on from where it stopped	止めたところから続ける
+	UPDATE	更新
+	Read the spreadsheet (or the clip) again; on air it changes at once	スプレッドシート（またはクリップ）を読み直す。送出中は即座に変わる
+	OUT	アウト
+	Take everything off air	すべてを送出から外す
+	Start Live Page	ライブページを開始
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	OBS のブラウザソース向けにこのコンピューターで番組を配信（127.0.0.1 のみ）
+	not running	停止中
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ ツール ▸ WebSocket サーバー設定
+	Connect to OBS	OBS に接続
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	このコンピューターの OBS に接続し、ブラウザソース「CFA4 Live」をライブページに向ける
+	Port	ポート
+	Password	パスワード
+	Live page	ライブページ
+	Sound	音声
+	OBS	OBS
+	Nothing in preview	プレビューは空です
+	page {page} of {pages}	{pages} ページ中 {page} ページ
+	held	ホールド中
+	ended	終了
+	Off air	送出なし
+	Stop Live Page	ライブページを停止
+	Connected to OBS {version}; source “{source}”	OBS {version} に接続済み。ソース「{source}」
+	Point OBS Again	OBS を再設定
+	Select a graphic clip on the timeline first.	先にタイムラインでグラフィッククリップを選択してください。
+	Connecting to OBS…	OBS に接続中…
+	Live Graphics…	ライブグラフィック…
+	PREVIEW	プレビュー
+	PROGRAM	プログラム
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	画像またはビデオのタグが本文セルに単独で置かれています(または名前1つと一緒の場合はポートレートとして)。他のタグは削除されました
+	the page gap is not a duration; the page style's is used	ページ間隔が時間ではありません。ページスタイルの値を使用します
+	the page runtime is not a positive duration; the page style's is used	ページの長さが正の時間ではありません。ページスタイルの値を使用します
+	background “{file}” was not found; it is left out	背景“{file}”が見つかりません。省略します
+	card page {page} is taller than the frame; use a roll page	カードページ{page}がフレームより高いため、ロールページを使用してください
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	レタースタイル“{style}”の色“{colour}”は#rrggbb形式ではありません。省略します
+	colour “{colour}” is not #rrggbb; black is used	色“{colour}”は#rrggbb形式ではありません。黒を使用します
+	colour “{colour}” is not #rrggbb; white is used	色“{colour}”は#rrggbb形式ではありません。白を使用します
+	content style “{style}” does not exist; “{used}” is used	コンテンツスタイル“{style}”は存在しません。“{used}”を使用します
+	letter style “{style}” does not exist; the text keeps the block's style	レタースタイル“{style}”は存在しません。テキストはブロックのスタイルを維持します
+	page gap “{value}” is not a duration	ページ間隔“{value}”は時間ではありません
+	page runtime “{value}” is not a duration	ページの長さ“{value}”は時間ではありません
+	page style “{style}” does not exist; a roll page is used	ページスタイル“{style}”は存在しません。ロールページを使用します
+	page {page}: the background names no file; it is left out	ページ{page}:背景にファイルが指定されていません。省略します
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	ページ{page}:ロール速度を変えて長さを合わせます(ブロック間に伸ばせる間隔がありません)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	ページ{page}:ロール速度を変えて長さを合わせます(間隔がなくてもクレジットが長すぎます)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	ページ{page}:ロール速度を変えて長さを合わせます(間隔を20倍より大きく広げる必要があります)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	ページ{page}:トランジションにはページが接している必要があります(ページ間隔0)。省略します
+	page {page}: there is no transition “{name}”; the pages cut	ページ{page}:トランジション“{name}”はありません。ページはカットでつながります
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	スパイン位置“{value}”はサポートされていません(ピクセル単位のオフセットと、任意で“parallel”が使えます)
+	vertical gap “{value}” is not a number	縦の間隔“{value}”は数値ではありません
+	picture “{file}” was not found or cannot be read; it is left out	画像“{file}”が見つからないか読み込めません。省略します
+	video “{file}” was not found or cannot be read; it is left out	ビデオ“{file}”が見つからないか読み込めません。省略します
+	there is no roll page without its own runtime to stretch; the length cannot change	伸ばせる独自の長さを持つロールページがないため、長さは変更できません
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	カードと間隔だけで{seconds} sあり、指定された長さはそれより短いため、ロールページは本来の長さのままです
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	レタースタイル“{style}”:最初の色付きレイヤーのみ使用します(アウトライン、影、ストライプは使用しません)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	クレジット全体の長さは引き継がれません。代わりにクレジットを音楽に合わせる(または長さ)を使用してください
+	page style “{style}”: fade curves become linear fades	ページスタイル“{style}”:フェードカーブは直線的なフェードになります
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	コンテンツスタイル“{style}”にはCinecredで見出しがありません。シートに書かれた見出しは引き続き表示されます
+	content style “{style}”: sorting the names is not carried over	コンテンツスタイル“{style}”:名前の並べ替えは引き継がれません
+	transition curves are not carried over	トランジションカーブは引き継がれません
+	picture styles (pictures keep their own size) are not carried over	画像スタイル(画像は元のサイズを保ちます)は引き継がれません
+	video (tape) styles are not carried over	ビデオ(テープ)スタイルは引き継がれません
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecredプロジェクトにはクレジットのスプレッドシートが{n}個あります。“{name}”を使用します(スプレッドシートの欄で別のものを選択できます)

@@ -4367,3 +4367,88 @@
 	parallel	paralel
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Di halaman (OBS mengambilnya dari Browser Source)
+	Separate (a media source in OBS)	Terpisah (sumber media di OBS)
+	No sound	Tanpa suara
+	credits	kredit
+	graphic	grafik
+	{n} pages	{n} halaman
+	Live Graphics	Grafik Langsung
+	Prepared cues; double-click one to put it in preview	Isyarat yang disiapkan; klik ganda untuk menaruhnya di pratinjau
+	Add Credits…	Tambah Kredit…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Spreadsheet kredit, berkas kredit, atau proyek Cinecred sebagai isyarat
+	Add Selected Graphic	Tambah Grafik Terpilih
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Klip grafik yang dipilih di timeline (judul, lower third) sebagai isyarat
+	Cues	Isyarat
+	TAKE	TAKE
+	The preview cue goes on air from its first page	Isyarat pratinjau tayang mulai dari halaman pertamanya
+	PREVIOUS	SEBELUMNYA
+	The page before (on the first page: from its start)	Halaman sebelumnya (di halaman pertama: dari awalnya)
+	NEXT	BERIKUTNYA
+	The next page; after the last one, the preview cue	Halaman berikutnya; setelah yang terakhir, isyarat pratinjau
+	HOLD	TAHAN
+	Stop the program where it is	Hentikan program di posisinya
+	CONTINUE	LANJUTKAN
+	Go on from where it stopped	Lanjutkan dari tempat berhenti
+	UPDATE	PERBARUI
+	Read the spreadsheet (or the clip) again; on air it changes at once	Baca ulang spreadsheet (atau klip); saat tayang langsung berubah
+	OUT	OUT
+	Take everything off air	Turunkan semuanya dari siaran
+	Start Live Page	Mulai Halaman Langsung
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Sajikan program di komputer ini untuk Browser Source OBS (hanya 127.0.0.1)
+	not running	tidak berjalan
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	Hubungkan ke OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Hubungkan ke OBS di komputer ini dan arahkan Browser Source “CFA4 Live” ke halaman langsung
+	Port	Port
+	Password	Kata sandi
+	Live page	Halaman langsung
+	Sound	Suara
+	OBS	OBS
+	Nothing in preview	Tidak ada di pratinjau
+	page {page} of {pages}	halaman {page} dari {pages}
+	held	ditahan
+	ended	selesai
+	Off air	Tidak tayang
+	Stop Live Page	Hentikan Halaman Langsung
+	Connected to OBS {version}; source “{source}”	Terhubung ke OBS {version}; sumber “{source}”
+	Point OBS Again	Atur OBS Lagi
+	Select a graphic clip on the timeline first.	Pilih klip grafik di timeline terlebih dahulu.
+	Connecting to OBS…	Menghubungkan ke OBS…
+	Live Graphics…	Grafik Langsung…
+	PREVIEW	PRATINJAU
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	tag gambar atau video berdiri sendiri di sel isi (atau dengan satu nama, sebagai potret); tag lainnya dihapus
+	the page gap is not a duration; the page style's is used	jeda halaman bukan durasi; yang dari gaya halaman digunakan
+	the page runtime is not a positive duration; the page style's is used	durasi halaman bukan durasi positif; yang dari gaya halaman digunakan
+	background “{file}” was not found; it is left out	latar “{file}” tidak ditemukan; dilewati
+	card page {page} is taller than the frame; use a roll page	halaman kartu {page} lebih tinggi daripada bingkai; gunakan halaman gulir
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	warna “{colour}” pada gaya huruf “{style}” bukan #rrggbb; dilewati
+	colour “{colour}” is not #rrggbb; black is used	warna “{colour}” bukan #rrggbb; hitam digunakan
+	colour “{colour}” is not #rrggbb; white is used	warna “{colour}” bukan #rrggbb; putih digunakan
+	content style “{style}” does not exist; “{used}” is used	gaya konten “{style}” tidak ada; “{used}” digunakan
+	letter style “{style}” does not exist; the text keeps the block's style	gaya huruf “{style}” tidak ada; teks mempertahankan gaya blok
+	page gap “{value}” is not a duration	jeda halaman “{value}” bukan durasi
+	page runtime “{value}” is not a duration	durasi halaman “{value}” bukan durasi
+	page style “{style}” does not exist; a roll page is used	gaya halaman “{style}” tidak ada; halaman gulir digunakan
+	page {page}: the background names no file; it is left out	halaman {page}: latar tidak menyebut file; dilewati
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	halaman {page}: durasi dicapai dengan mengubah kecepatan gulir (halaman tidak memiliki jarak antarblok yang dapat diregangkan)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	halaman {page}: durasi dicapai dengan mengubah kecepatan gulir (kredit terlalu panjang bahkan tanpa jarak)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	halaman {page}: durasi dicapai dengan mengubah kecepatan gulir (jarak harus membesar lebih dari 20 kali lipat)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	halaman {page}: transisi mengharuskan halaman saling bersentuhan (jeda halaman 0); dilewati
+	page {page}: there is no transition “{name}”; the pages cut	halaman {page}: tidak ada transisi “{name}”; halaman berpindah dengan potongan langsung
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	posisi sumbu “{value}” tidak didukung (offset piksel, opsional dengan “parallel”, didukung)
+	vertical gap “{value}” is not a number	jarak vertikal “{value}” bukan angka
+	picture “{file}” was not found or cannot be read; it is left out	gambar “{file}” tidak ditemukan atau tidak dapat dibaca; dilewati
+	video “{file}” was not found or cannot be read; it is left out	video “{file}” tidak ditemukan atau tidak dapat dibaca; dilewati
+	there is no roll page without its own runtime to stretch; the length cannot change	tidak ada halaman gulir dengan durasi sendiri yang dapat diregangkan; panjang tidak dapat diubah
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	kartu dan jeda saja berdurasi {seconds} s; panjang yang diminta lebih pendek, sehingga halaman gulir mempertahankan panjang alaminya
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	gaya huruf “{style}”: hanya lapisan berwarna pertama yang digunakan (tanpa kontur, bayangan, atau garis)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	durasi seluruh kredit tidak dibawa; gunakan Sesuaikan kredit dengan musik (atau suatu panjang)
+	page style “{style}”: fade curves become linear fades	gaya halaman “{style}”: kurva pudar menjadi pudar linear
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	gaya konten “{style}” tidak memiliki judul di Cinecred; judul yang ditulis di lembar tetap ditampilkan
+	content style “{style}”: sorting the names is not carried over	gaya konten “{style}”: pengurutan nama tidak dibawa
+	transition curves are not carried over	kurva transisi tidak dibawa
+	picture styles (pictures keep their own size) are not carried over	gaya gambar (gambar mempertahankan ukurannya sendiri) tidak dibawa
+	video (tape) styles are not carried over	gaya video (pita) tidak dibawa
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	proyek Cinecred memiliki {n} spreadsheet kredit; “{name}” digunakan (pilih yang lain di kolom Spreadsheet)

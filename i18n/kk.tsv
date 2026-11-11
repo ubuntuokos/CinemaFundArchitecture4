@@ -4361,3 +4361,88 @@ export.summary	Low	төмен
 	parallel	қатар
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Бетте (OBS оны браузер көзінен алады)
+	Separate (a media source in OBS)	Бөлек (OBS-тағы медиа көзі)
+	No sound	Дыбыссыз
+	credits	титрлер
+	graphic	графика
+	{n} pages	{n} бет
+	Live Graphics	Тікелей графика
+	Prepared cues; double-click one to put it in preview	Дайындалған элементтер; алдын ала қарауға жіберу үшін біреуін екі рет басыңыз
+	Add Credits…	Титрлер қосу…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Титрлер кестесі, титрлер файлы немесе Cinecred жобасы элемент ретінде
+	Add Selected Graphic	Таңдалған графиканы қосу
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Уақыт шкаласында таңдалған графикалық клип (тақырып, төменгі үштен бір) элемент ретінде
+	Cues	Элементтер
+	TAKE	ЭФИРГЕ
+	The preview cue goes on air from its first page	Алдын ала қараудағы элемент бірінші бетінен эфирге шығады
+	PREVIOUS	АЛДЫҢҒЫ
+	The page before (on the first page: from its start)	Алдыңғы бет (бірінші бетте: оның басынан)
+	NEXT	КЕЛЕСІ
+	The next page; after the last one, the preview cue	Келесі бет; соңғысынан кейін алдын ала қараудағы элемент
+	HOLD	ТОҚТАТУ
+	Stop the program where it is	Бағдарламаны тұрған жерінде тоқтату
+	CONTINUE	ЖАЛҒАСТЫРУ
+	Go on from where it stopped	Тоқтаған жерінен жалғастыру
+	UPDATE	ЖАҢАРТУ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Кестені (немесе клипті) қайта оқу; эфирде бірден өзгереді
+	OUT	ШЫҒАРУ
+	Take everything off air	Барлығын эфирден алу
+	Start Live Page	Тікелей бетті іске қосу
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Бағдарламаны осы компьютерде OBS браузер көзіне беру (тек 127.0.0.1)
+	not running	іске қосылмаған
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	OBS-ке қосылу
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Осы компьютердегі OBS-ке қосылып, оның «CFA4 Live» браузер көзін тікелей бетке бағыттау
+	Port	Порт
+	Password	Құпиясөз
+	Live page	Тікелей бет
+	Sound	Дыбыс
+	OBS	OBS
+	Nothing in preview	Алдын ала қарауда ештеңе жоқ
+	page {page} of {pages}	{page}/{pages} бет
+	held	тоқтатылды
+	ended	аяқталды
+	Off air	Эфирден тыс
+	Stop Live Page	Тікелей бетті тоқтату
+	Connected to OBS {version}; source “{source}”	OBS {version} қосылды; көзі «{source}»
+	Point OBS Again	OBS-ті қайта бағыттау
+	Select a graphic clip on the timeline first.	Алдымен уақыт шкаласынан графикалық клипті таңдаңыз.
+	Connecting to OBS…	OBS-ке қосылуда…
+	Live Graphics…	Тікелей графика…
+	PREVIEW	АЛДЫН АЛА ҚАРАУ
+	PROGRAM	БАҒДАРЛАМА
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	сурет не бейне тегі негізгі ұяшықта жалғыз тұрады (немесе бір есіммен, портрет ретінде); басқа тегтер жойылды
+	the page gap is not a duration; the page style's is used	бет аралығы ұзақтық емес; бет стилінікі қолданылады
+	the page runtime is not a positive duration; the page style's is used	бет ұзақтығы оң емес; бет стилінікі қолданылады
+	background “{file}” was not found; it is left out	«{file}» фоны табылмады; ол алынып тасталды
+	card page {page} is taller than the frame; use a roll page	{page} карта беті кадрдан биік; жылжымалы бетті қолданыңыз
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	«{style}» әріп стилінің «{colour}» түсі #rrggbb емес; ол алынып тасталды
+	colour “{colour}” is not #rrggbb; black is used	«{colour}» түсі #rrggbb емес; қара түс қолданылады
+	colour “{colour}” is not #rrggbb; white is used	«{colour}» түсі #rrggbb емес; ақ түс қолданылады
+	content style “{style}” does not exist; “{used}” is used	«{style}» мазмұн стилі жоқ; «{used}» қолданылады
+	letter style “{style}” does not exist; the text keeps the block's style	«{style}» әріп стилі жоқ; мәтін блок стилін сақтайды
+	page gap “{value}” is not a duration	«{value}» бет аралығы ұзақтық емес
+	page runtime “{value}” is not a duration	«{value}» бет ұзақтығы ұзақтық емес
+	page style “{style}” does not exist; a roll page is used	«{style}» бет стилі жоқ; жылжымалы бет қолданылады
+	page {page}: the background names no file; it is left out	{page}-бет: фон файлды көрсетпейді; ол алынып тасталды
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	{page}-бет: ұзақтыққа жылжу жылдамдығын өзгерту арқылы жетеді (бетте созуға болатын блок аралықтары жоқ)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	{page}-бет: ұзақтыққа жылжу жылдамдығын өзгерту арқылы жетеді (титрлер аралықсыз да тым ұзын)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page}-бет: ұзақтыққа жылжу жылдамдығын өзгерту арқылы жетеді (аралықтар 20 еседен артық өсуі керек еді)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page}-бет: ауысу үшін беттер түйісуі керек (бет аралығы 0); ол алынып тасталды
+	page {page}: there is no transition “{name}”; the pages cut	{page}-бет: «{name}» ауысуы жоқ; беттер кесумен ауысады
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	«{value}» ось орны қолдау көрсетілмейді (пиксельмен ығысу қолданылады, қаласаңыз «parallel» белгісімен)
+	vertical gap “{value}” is not a number	«{value}» тік аралық сан емес
+	picture “{file}” was not found or cannot be read; it is left out	«{file}» суреті табылмады немесе оқылмайды; ол алынып тасталды
+	video “{file}” was not found or cannot be read; it is left out	«{file}» бейнесі табылмады немесе оқылмайды; ол алынып тасталды
+	there is no roll page without its own runtime to stretch; the length cannot change	созатын өз ұзақтығы жоқ жылжымалы бет жоқ; ұзақтық өзгермейді
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	тек карталар мен аралықтар {seconds} с; сұралған ұзақтық қысқарақ, сондықтан жылжымалы беттер табиғи ұзақтығын сақтайды
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	«{style}» әріп стилі: тек бірінші түсті қабат қолданылады (контур, көлеңке не жолақсыз)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	бүкіл титрлердің ұзақтығы ауыспайды; оның орнына «Титрлерді музыкаға сәйкестендіру» (немесе ұзақтық) қолданыңыз
+	page style “{style}”: fade curves become linear fades	«{style}» бет стилі: сөну қисықтары сызықтық болады
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	«{style}» мазмұн стилінің Cinecred-те басы жоқ; кестеде жазылған бастар бәрібір көрсетіледі
+	content style “{style}”: sorting the names is not carried over	«{style}» мазмұн стилі: есімдерді сұрыптау ауыспайды
+	transition curves are not carried over	ауысу қисықтары ауыспайды
+	picture styles (pictures keep their own size) are not carried over	сурет стильдері (суреттер өз өлшемін сақтайды) ауыспайды
+	video (tape) styles are not carried over	бейне (таспа) стильдері ауыспайды
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred жобасында {n} титрлер кестесі бар; «{name}» қолданылады (басқасын Кесте өрісінде таңдаңыз)

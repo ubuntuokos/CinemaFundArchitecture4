@@ -4361,3 +4361,88 @@ export.summary	Low	lav
 	parallel	parallel
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	På siden (OBS tager den fra browserkilden)
+	Separate (a media source in OBS)	Separat (en mediekilde i OBS)
+	No sound	Ingen lyd
+	credits	rulletekster
+	graphic	grafik
+	{n} pages	{n} sider
+	Live Graphics	Livegrafik
+	Prepared cues; double-click one to put it in preview	Forberedte cues; dobbeltklik på en for at sætte den i preview
+	Add Credits…	Tilføj rulletekster…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Et rulletekstregneark, en rulletekstfil eller et Cinecred-projekt som cue
+	Add Selected Graphic	Tilføj valgt grafik
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Det grafiske klip, der er valgt på tidslinjen (en titel, en navneplade) som cue
+	Cues	Cues
+	TAKE	TAKE
+	The preview cue goes on air from its first page	Preview-cuen går i luften fra sin første side
+	PREVIOUS	FORRIGE
+	The page before (on the first page: from its start)	Siden før (på første side: fra dens start)
+	NEXT	NÆSTE
+	The next page; after the last one, the preview cue	Næste side; efter den sidste preview-cuen
+	HOLD	HOLD
+	Stop the program where it is	Stop programmet, hvor det er
+	CONTINUE	FORTSÆT
+	Go on from where it stopped	Fortsæt derfra, hvor det stoppede
+	UPDATE	OPDATER
+	Read the spreadsheet (or the clip) again; on air it changes at once	Læs regnearket (eller klippet) igen; i luften ændres det med det samme
+	OUT	UD
+	Take everything off air	Tag alt ud af luften
+	Start Live Page	Start livesiden
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Server programmet på denne computer til OBS' browserkilde (kun 127.0.0.1)
+	not running	kører ikke
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Værktøjer ▸ WebSocket-serverindstillinger
+	Connect to OBS	Forbind til OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Forbind til OBS på denne computer, og peg dens browserkilde “CFA4 Live” på livesiden
+	Port	Port
+	Password	Adgangskode
+	Live page	Liveside
+	Sound	Lyd
+	OBS	OBS
+	Nothing in preview	Intet i preview
+	page {page} of {pages}	side {page} af {pages}
+	held	holdt
+	ended	slut
+	Off air	Ikke i luften
+	Stop Live Page	Stop livesiden
+	Connected to OBS {version}; source “{source}”	Forbundet til OBS {version}; kilde “{source}”
+	Point OBS Again	Peg OBS igen
+	Select a graphic clip on the timeline first.	Vælg først et grafisk klip på tidslinjen.
+	Connecting to OBS…	Forbinder til OBS…
+	Live Graphics…	Livegrafik…
+	PREVIEW	PREVIEW
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	et billed- eller videotag står alene i en brødtekstcelle (eller med ét navn, som portræt); de andre tags blev fjernet
+	the page gap is not a duration; the page style's is used	sideafstanden er ikke en varighed; sidestilens bruges
+	the page runtime is not a positive duration; the page style's is used	sidens spilletid er ikke en positiv varighed; sidestilens bruges
+	background “{file}” was not found; it is left out	baggrunden “{file}” blev ikke fundet; den udelades
+	card page {page} is taller than the frame; use a roll page	kortsiden {page} er højere end billedet; brug en rulleside
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	farven “{colour}” i bogstavstilen “{style}” er ikke #rrggbb; den udelades
+	colour “{colour}” is not #rrggbb; black is used	farven “{colour}” er ikke #rrggbb; sort bruges
+	colour “{colour}” is not #rrggbb; white is used	farven “{colour}” er ikke #rrggbb; hvid bruges
+	content style “{style}” does not exist; “{used}” is used	indholdsstilen “{style}” findes ikke; “{used}” bruges
+	letter style “{style}” does not exist; the text keeps the block's style	bogstavstilen “{style}” findes ikke; teksten beholder blokkens stil
+	page gap “{value}” is not a duration	sideafstanden “{value}” er ikke en varighed
+	page runtime “{value}” is not a duration	sidens spilletid “{value}” er ikke en varighed
+	page style “{style}” does not exist; a roll page is used	sidestilen “{style}” findes ikke; en rulleside bruges
+	page {page}: the background names no file; it is left out	side {page}: baggrunden angiver ingen fil; den udelades
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	side {page}: spilletiden nås ved at ændre rullehastigheden (siden har ingen afstande mellem blokke at strække)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	side {page}: spilletiden nås ved at ændre rullehastigheden (rulleteksterne er for lange selv uden afstande)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	side {page}: spilletiden nås ved at ændre rullehastigheden (afstandene skulle vokse mere end 20 gange)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	side {page}: overgangen kræver, at siderne mødes (sideafstand 0); den udelades
+	page {page}: there is no transition “{name}”; the pages cut	side {page}: der findes ingen overgang “{name}”; siderne klippes
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	aksepositionen “{value}” understøttes ikke (en pixelforskydning, evt. med “parallel”, gør)
+	vertical gap “{value}” is not a number	den lodrette afstand “{value}” er ikke et tal
+	picture “{file}” was not found or cannot be read; it is left out	billedet “{file}” blev ikke fundet eller kan ikke læses; det udelades
+	video “{file}” was not found or cannot be read; it is left out	videoen “{file}” blev ikke fundet eller kan ikke læses; den udelades
+	there is no roll page without its own runtime to stretch; the length cannot change	der er ingen rulleside uden egen spilletid at strække; længden kan ikke ændres
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	kortene og afstandene alene er {seconds} s; den ønskede længde er kortere, så rullesiderne beholder deres naturlige længde
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	bogstavstilen “{style}”: kun det første farvede lag bruges (ingen konturer, skygger eller striber)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	den samlede rulletekst-spilletid overføres ikke; brug Tilpas rulletekster til musikken (eller en længde) i stedet
+	page style “{style}”: fade curves become linear fades	sidestilen “{style}”: toningskurver bliver lineære toninger
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	indholdsstilen “{style}” har ingen start i Cinecred; starter skrevet i arket vises stadig
+	content style “{style}”: sorting the names is not carried over	indholdsstilen “{style}”: sortering af navnene overføres ikke
+	transition curves are not carried over	overgangskurver overføres ikke
+	picture styles (pictures keep their own size) are not carried over	billedstilarter (billeder beholder deres egen størrelse) overføres ikke
+	video (tape) styles are not carried over	video- (bånd-)stilarter overføres ikke
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektet har {n} rulletekstregneark; “{name}” bruges (vælg et andet i feltet Regneark)

@@ -4359,3 +4359,88 @@ export.summary	Low	niska
 	parallel	równolegle
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Na stronie (OBS pobiera go ze źródła przeglądarki)
+	Separate (a media source in OBS)	Osobno (źródło multimediów w OBS)
+	No sound	Bez dźwięku
+	credits	napisy końcowe
+	graphic	grafika
+	{n} pages	Strony: {n}
+	Live Graphics	Grafika na żywo
+	Prepared cues; double-click one to put it in preview	Przygotowane elementy; kliknij dwukrotnie, aby przenieść do podglądu
+	Add Credits…	Dodaj napisy końcowe…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Arkusz napisów, plik napisów lub projekt Cinecred jako element
+	Add Selected Graphic	Dodaj zaznaczoną grafikę
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Klip graficzny zaznaczony na osi czasu (tytuł, belka) jako element
+	Cues	Elementy
+	TAKE	NA ANTENĘ
+	The preview cue goes on air from its first page	Element z podglądu trafia na antenę od pierwszej strony
+	PREVIOUS	POPRZEDNIA
+	The page before (on the first page: from its start)	Poprzednia strona (na pierwszej stronie: od jej początku)
+	NEXT	NASTĘPNA
+	The next page; after the last one, the preview cue	Następna strona; po ostatniej element z podglądu
+	HOLD	ZATRZYMAJ
+	Stop the program where it is	Zatrzymaj program tam, gdzie jest
+	CONTINUE	KONTYNUUJ
+	Go on from where it stopped	Kontynuuj od miejsca zatrzymania
+	UPDATE	AKTUALIZUJ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Wczytaj ponownie arkusz (lub klip); na antenie zmienia się od razu
+	OUT	ZDEJMIJ
+	Take everything off air	Zdejmij wszystko z anteny
+	Start Live Page	Uruchom stronę na żywo
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Udostępniaj program na tym komputerze dla źródła przeglądarki OBS (tylko 127.0.0.1)
+	not running	nie działa
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Narzędzia ▸ Ustawienia serwera WebSocket
+	Connect to OBS	Połącz z OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Połącz z OBS na tym komputerze i skieruj jego źródło przeglądarki „CFA4 Live” na stronę na żywo
+	Port	Port
+	Password	Hasło
+	Live page	Strona na żywo
+	Sound	Dźwięk
+	OBS	OBS
+	Nothing in preview	Nic w podglądzie
+	page {page} of {pages}	strona {page} z {pages}
+	held	zatrzymane
+	ended	zakończone
+	Off air	Poza anteną
+	Stop Live Page	Zatrzymaj stronę na żywo
+	Connected to OBS {version}; source “{source}”	Połączono z OBS {version}; źródło „{source}”
+	Point OBS Again	Wskaż ponownie w OBS
+	Select a graphic clip on the timeline first.	Najpierw zaznacz klip graficzny na osi czasu.
+	Connecting to OBS…	Łączenie z OBS…
+	Live Graphics…	Grafika na żywo…
+	PREVIEW	PODGLĄD
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	znacznik obrazu lub wideo stoi sam w komórce treści (lub z jednym nazwiskiem, jako portret); pozostałe znaczniki usunięto
+	the page gap is not a duration; the page style's is used	odstęp stron nie jest czasem trwania; użyto wartości ze stylu strony
+	the page runtime is not a positive duration; the page style's is used	czas strony nie jest dodatni; użyto wartości ze stylu strony
+	background “{file}” was not found; it is left out	nie znaleziono tła „{file}”; zostaje pominięte
+	card page {page} is taller than the frame; use a roll page	strona planszy {page} jest wyższa niż kadr; użyj strony przewijanej
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	kolor „{colour}” stylu liter „{style}” nie jest w formacie #rrggbb; zostaje pominięty
+	colour “{colour}” is not #rrggbb; black is used	kolor „{colour}” nie jest w formacie #rrggbb; użyto czarnego
+	colour “{colour}” is not #rrggbb; white is used	kolor „{colour}” nie jest w formacie #rrggbb; użyto białego
+	content style “{style}” does not exist; “{used}” is used	styl treści „{style}” nie istnieje; użyto „{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	styl liter „{style}” nie istnieje; tekst zachowuje styl bloku
+	page gap “{value}” is not a duration	odstęp stron „{value}” nie jest czasem trwania
+	page runtime “{value}” is not a duration	czas strony „{value}” nie jest czasem trwania
+	page style “{style}” does not exist; a roll page is used	styl strony „{style}” nie istnieje; użyto strony przewijanej
+	page {page}: the background names no file; it is left out	strona {page}: tło nie wskazuje pliku; zostaje pominięte
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	strona {page}: czas osiągnięto zmianą prędkości przewijania (strona nie ma odstępów między blokami do rozciągnięcia)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	strona {page}: czas osiągnięto zmianą prędkości przewijania (napisy są za długie nawet bez odstępów)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	strona {page}: czas osiągnięto zmianą prędkości przewijania (odstępy musiałyby wzrosnąć ponad 20-krotnie)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	strona {page}: przejście wymaga stykających się stron (odstęp 0); zostaje pominięte
+	page {page}: there is no transition “{name}”; the pages cut	strona {page}: nie ma przejścia „{name}”; strony zmieniają się cięciem
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	pozycja osi „{value}” nie jest obsługiwana (obsługiwane jest przesunięcie w pikselach, opcjonalnie z „parallel”)
+	vertical gap “{value}” is not a number	odstęp pionowy „{value}” nie jest liczbą
+	picture “{file}” was not found or cannot be read; it is left out	obrazu „{file}” nie znaleziono lub nie można go odczytać; zostaje pominięty
+	video “{file}” was not found or cannot be read; it is left out	wideo „{file}” nie znaleziono lub nie można go odczytać; zostaje pominięte
+	there is no roll page without its own runtime to stretch; the length cannot change	nie ma strony przewijanej bez własnego czasu do rozciągnięcia; długość nie może się zmienić
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	same plansze i odstępy trwają {seconds} s; żądana długość jest krótsza, więc strony przewijane zachowują naturalną długość
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	styl liter „{style}”: używana jest tylko pierwsza kolorowa warstwa (bez obrysów, cieni i pasów)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	czas całych napisów nie jest przenoszony; użyj zamiast tego „Dopasuj napisy końcowe do muzyki” (lub długości)
+	page style “{style}”: fade curves become linear fades	styl strony „{style}”: krzywe zanikania stają się liniowe
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	styl treści „{style}” nie ma w Cinecred początku; początki wpisane w arkuszu nadal są wyświetlane
+	content style “{style}”: sorting the names is not carried over	styl treści „{style}”: sortowanie nazwisk nie jest przenoszone
+	transition curves are not carried over	krzywe przejść nie są przenoszone
+	picture styles (pictures keep their own size) are not carried over	style obrazów (obrazy zachowują własny rozmiar) nie są przenoszone
+	video (tape) styles are not carried over	style wideo (taśmy) nie są przenoszone
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred ma arkusze napisów końcowych: {n}; użyto „{name}” (wybierz inny w polu Arkusz)

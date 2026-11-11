@@ -14332,6 +14332,137 @@ def test_real_engine_credits_file_and_template_open_in_the_workspace(app, tmp_pa
         engine.stop()
 
 
+def test_live_window_helpers(app):
+    from cfa4_qt.panels.live import cue_text, png_pixmap
+
+    text = cue_text({"name": "End", "kind": "credits", "pages": 3, "duration": 4 * TICKS_PER_SECOND, "audio": "/m.wav"})
+    assert "End" in text and "3" in text and "0:04" in text and text.endswith("♪")
+    assert cue_text({}) and cue_text({"pages": "x", "duration": None})
+    assert png_pixmap(None) is None and png_pixmap({"pngBase64": "not base64!"}) is None and png_pixmap({"pngBase64": ""}) is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_live_window(app, tmp_path: Path):
+    """C10: Graphics and Titles ▸ Live Graphics… prepares cues, shows PREVIEW and PROGRAM, runs
+    TAKE / NEXT / HOLD / CONTINUE / OUT, serves the live page on 127.0.0.1 and keeps it moving."""
+    import urllib.request
+
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Head,Body,Page Style,Page Runtime\n,THE LONG WAY HOME,Card,4s\nDirected by,Jordan Lee,Scroll,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "live.window" in win.registry.commands, 60_000)
+        win.invoke("live.window")
+        dlg = win.live_dialog
+        assert dlg is not None and dlg.isVisible()
+        assert not dlg.buttons["live.take"].isEnabled()
+        dlg.add_selected_clip()
+        assert wait_until(app, lambda: bool(dlg.status.text()), 5_000)
+        dlg.add_credits(str(sheet))
+        assert wait_until(app, lambda: dlg.cues.count() == 1 and dlg.buttons["live.take"].isEnabled(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: dlg.preview_monitor.pixmap_ is not None, 30_000)
+        dlg.buttons["live.take"].click()
+        assert wait_until(app, lambda: (dlg.state.get("program") or {}).get("cue") is not None, 30_000), dlg.status.text()
+        assert dlg.buttons["live.out"].isEnabled() and dlg.tick_timer.isActive()
+        assert wait_until(app, lambda: dlg.program_monitor.pixmap_ is not None, 30_000)
+        dlg.buttons["live.next"].click()
+        assert wait_until(app, lambda: (dlg.state.get("program") or {}).get("page") == 1, 30_000)
+        dlg.buttons["live.hold"].click()
+        assert wait_until(app, lambda: dlg.buttons["live.continue"].isEnabled(), 30_000)
+        dlg.buttons["live.continue"].click()
+        assert wait_until(app, lambda: dlg.buttons["live.hold"].isEnabled(), 30_000)
+        # the live page, on this computer only
+        dlg.page_button.click()
+        assert wait_until(app, lambda: dlg.url.text().startswith("http://127.0.0.1:"), 30_000)
+        page = urllib.request.urlopen(dlg.url.text(), timeout=5).read().decode()
+        assert "frame.png" in page
+        seq0 = json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())["seq"]
+        assert wait_until(app, lambda: json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())["seq"] > seq0, 10_000)
+        dlg.audio.setCurrentIndex(1)
+        assert wait_until(app, lambda: dlg.state.get("audioMode") == "separate", 10_000)
+        dlg.buttons["live.out"].click()
+        assert wait_until(app, lambda: dlg.state.get("program") is None and dlg.program_label.text() == tr_("Off air"), 30_000)
+        # the page keeps being served after OUT, with nothing on it
+        status = json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())
+        assert status["onAir"] is False
+        dlg.page_button.click()
+        assert wait_until(app, lambda: dlg.url.text() == "" and not dlg.tick_timer.isActive(), 30_000)
+        # nothing to connect to: an error in the window, not a crash
+        dlg.obs_port.setValue(1)
+        dlg.connect_obs()
+        assert wait_until(app, lambda: "OBS" in dlg.status.text() and "Connecting" not in dlg.status.text(), 30_000), dlg.status.text()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def tr_(text: str) -> str:
+    from cfa4_qt.i18n import tr
+
+    return tr(text)
+
+
+def test_credits_engine_notes_are_translated():
+    """Every note the credits engine writes has a template in credits_messages (so it is shown in
+    the user's language), and the values come through."""
+    import re as _re
+    from pathlib import Path as _P
+
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits_messages import NOTES, note_text
+
+    root = _P(__file__).resolve().parents[2] / "crates" / "credits" / "src"
+    engine = _P(__file__).resolve().parents[2] / "crates" / "engine" / "src" / "credits.rs"
+    # literal openings of the engine's notes (up to the first value): each must be matched by one
+    found = set()
+    for src in [*root.glob("*.rs"), engine]:
+        # tests, and the checks (validate.rs: issues with codes, shown by issue_text) are not notes
+        if "test" in src.name or src.name == "validate.rs":
+            continue
+        text = src.read_text(encoding="utf-8")
+        for m in _re.finditer(r'(?:warn\([^,]+,\s*|message:\s*|notes\.(?:push|insert)\((?:0,\s*)?)(?:format!\(\s*)?"([^"]+)"', text):
+            found.add(m.group(1))
+    assert len(found) >= 20, found
+    samples = {
+        "letter style `Bold` does not exist; the text keeps the block's style": "Bold",
+        "page 3: there is no transition `wobble`; the pages cut": "wobble",
+        "the cards and gaps alone are 12.5 s; the asked length is shorter, so the scroll pages keep their natural length": "12.5",
+        "the Cinecred project has 2 credits spreadsheets; `Credits.csv` is used (choose another with `credits`)": "Credits.csv",
+    }
+    TR.set_language("hu")
+    try:
+        for message, value in samples.items():
+            out = note_text(message)
+            assert out != message and value in out, (message, out)
+        # every template is in the Hungarian catalog
+        for _pattern, template in NOTES:
+            assert TR.has(template), template
+        # an unknown note stays as the engine wrote it
+        assert note_text("something new") == "something new"
+    finally:
+        TR.set_language("en")
+    # each engine note (its fixed opening) is matched by a pattern, with any value put in
+    for literal in found:
+        filled = _re.sub(r"\{[^}]*\}", "1", literal)
+        filled = filled.replace("`1`", "`x`")
+        # the three reasons and the three kinds of style each have their own pattern
+        if "{why}" in literal or literal.startswith("{what} are"):
+            continue
+        if literal.startswith("{what}"):
+            filled = "picture" + filled[1:]
+        assert any(p.match(filled) for p, _t in NOTES), literal
+
+
 def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     """qt-parity 5.5: ``CFA4_QT_MONITOR_GL=1`` asks for the OpenGL picture, but where no GL
     context can be made (Qt's ``offscreen`` platform here) the monitor keeps the raster view; either

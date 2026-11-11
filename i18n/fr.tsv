@@ -4364,3 +4364,88 @@
 	parallel	parallèle
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Dans la page (OBS le prend de la source navigateur)
+	Separate (a media source in OBS)	Séparé (une source média dans OBS)
+	No sound	Pas de son
+	credits	générique
+	graphic	graphique
+	{n} pages	{n} pages
+	Live Graphics	Graphismes en direct
+	Prepared cues; double-click one to put it in preview	Éléments préparés ; double-cliquez pour en mettre un en aperçu
+	Add Credits…	Ajouter un générique…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Un tableur de générique, un fichier de générique ou un projet Cinecred comme élément
+	Add Selected Graphic	Ajouter le graphisme sélectionné
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Le clip graphique sélectionné dans la timeline (un titre, un synthé) comme élément
+	Cues	Éléments
+	TAKE	ENVOI
+	The preview cue goes on air from its first page	L’élément en aperçu passe à l’antenne à partir de sa première page
+	PREVIOUS	PRÉCÉDENT
+	The page before (on the first page: from its start)	La page précédente (sur la première : depuis son début)
+	NEXT	SUIVANT
+	The next page; after the last one, the preview cue	La page suivante ; après la dernière, l’élément en aperçu
+	HOLD	PAUSE
+	Stop the program where it is	Arrêter le programme là où il est
+	CONTINUE	REPRENDRE
+	Go on from where it stopped	Reprendre là où il s’est arrêté
+	UPDATE	ACTUALISER
+	Read the spreadsheet (or the clip) again; on air it changes at once	Relire le tableur (ou le clip) ; à l’antenne le changement est immédiat
+	OUT	SORTIE
+	Take everything off air	Tout retirer de l’antenne
+	Start Live Page	Démarrer la page en direct
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Servir le programme sur cet ordinateur pour la source navigateur d’OBS (127.0.0.1 uniquement)
+	not running	arrêtée
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Outils ▸ Paramètres du serveur WebSocket
+	Connect to OBS	Se connecter à OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Se connecter à OBS sur cet ordinateur et diriger sa source navigateur « CFA4 Live » vers la page en direct
+	Port	Port
+	Password	Mot de passe
+	Live page	Page en direct
+	Sound	Son
+	OBS	OBS
+	Nothing in preview	Rien en aperçu
+	page {page} of {pages}	page {page} sur {pages}
+	held	en pause
+	ended	terminé
+	Off air	Hors antenne
+	Stop Live Page	Arrêter la page en direct
+	Connected to OBS {version}; source “{source}”	Connecté à OBS {version} ; source « {source} »
+	Point OBS Again	Reconfigurer OBS
+	Select a graphic clip on the timeline first.	Sélectionnez d’abord un clip graphique dans la timeline.
+	Connecting to OBS…	Connexion à OBS…
+	Live Graphics…	Graphismes en direct…
+	PREVIEW	APERÇU
+	PROGRAM	PROGRAMME
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	une balise d’image ou de vidéo se trouve seule dans une cellule de corps (ou avec un seul nom, comme portrait) ; les autres balises ont été supprimées
+	the page gap is not a duration; the page style's is used	l’intervalle entre pages n’est pas une durée ; celui du style de page est utilisé
+	the page runtime is not a positive duration; the page style's is used	la durée de la page n’est pas une durée positive ; celle du style de page est utilisée
+	background “{file}” was not found; it is left out	l’arrière-plan “{file}” est introuvable ; il est omis
+	card page {page} is taller than the frame; use a roll page	la page carte {page} est plus haute que le cadre ; utilisez une page déroulante
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	la couleur “{colour}” du style de lettre “{style}” n’est pas #rrggbb ; elle est omise
+	colour “{colour}” is not #rrggbb; black is used	la couleur “{colour}” n’est pas #rrggbb ; le noir est utilisé
+	colour “{colour}” is not #rrggbb; white is used	la couleur “{colour}” n’est pas #rrggbb ; le blanc est utilisé
+	content style “{style}” does not exist; “{used}” is used	le style de contenu “{style}” n’existe pas ; “{used}” est utilisé
+	letter style “{style}” does not exist; the text keeps the block's style	le style de lettre “{style}” n’existe pas ; le texte garde le style du bloc
+	page gap “{value}” is not a duration	l’intervalle entre pages “{value}” n’est pas une durée
+	page runtime “{value}” is not a duration	la durée de page “{value}” n’est pas une durée
+	page style “{style}” does not exist; a roll page is used	le style de page “{style}” n’existe pas ; une page déroulante est utilisée
+	page {page}: the background names no file; it is left out	page {page} : l’arrière-plan ne nomme aucun fichier ; il est omis
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	page {page} : la durée est atteinte en modifiant la vitesse de défilement (la page n’a pas d’espaces entre les blocs à étirer)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	page {page} : la durée est atteinte en modifiant la vitesse de défilement (le générique est trop long même sans espaces)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	page {page} : la durée est atteinte en modifiant la vitesse de défilement (les espaces devraient être multipliés par plus de 20)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	page {page} : la transition exige que les pages se touchent (intervalle entre pages 0) ; elle est omise
+	page {page}: there is no transition “{name}”; the pages cut	page {page} : la transition “{name}” n’existe pas ; les pages s’enchaînent en coupe franche
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	la position d’axe “{value}” n’est pas prise en charge (un décalage en pixels, éventuellement avec “parallel”, l’est)
+	vertical gap “{value}” is not a number	l’espace vertical “{value}” n’est pas un nombre
+	picture “{file}” was not found or cannot be read; it is left out	l’image “{file}” est introuvable ou illisible ; elle est omise
+	video “{file}” was not found or cannot be read; it is left out	la vidéo “{file}” est introuvable ou illisible ; elle est omise
+	there is no roll page without its own runtime to stretch; the length cannot change	aucune page déroulante n’a de durée propre à étirer ; la longueur ne peut pas changer
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	les cartes et les espaces seuls durent {seconds} s ; la longueur demandée est plus courte, donc les pages déroulantes gardent leur longueur naturelle
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	style de lettre “{style}” : seule la première couche colorée est utilisée (pas de contours, d’ombres ni de bandes)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	la durée du générique entier n’est pas reprise ; utilisez Ajuster le générique à la musique (ou une longueur)
+	page style “{style}”: fade curves become linear fades	style de page “{style}” : les courbes de fondu deviennent des fondus linéaires
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	le style de contenu “{style}” n’a pas de titre dans Cinecred ; les titres écrits dans la feuille sont toujours affichés
+	content style “{style}”: sorting the names is not carried over	style de contenu “{style}” : le tri des noms n’est pas repris
+	transition curves are not carried over	les courbes de transition ne sont pas reprises
+	picture styles (pictures keep their own size) are not carried over	les styles d’image (les images gardent leur propre taille) ne sont pas repris
+	video (tape) styles are not carried over	les styles de vidéo (bande) ne sont pas repris
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	le projet Cinecred contient {n} feuilles de calcul de générique ; “{name}” est utilisée (choisissez-en une autre dans le champ Feuille de calcul)

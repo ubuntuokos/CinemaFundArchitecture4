@@ -4353,3 +4353,88 @@
 	parallel	병렬
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	페이지 안 (OBS가 브라우저 소스에서 가져옴)
+	Separate (a media source in OBS)	별도 (OBS의 미디어 소스)
+	No sound	소리 없음
+	credits	크레딧
+	graphic	그래픽
+	{n} pages	{n}페이지
+	Live Graphics	라이브 그래픽
+	Prepared cues; double-click one to put it in preview	준비된 큐입니다. 두 번 클릭하면 미리 보기로 갑니다
+	Add Credits…	크레딧 추가…
+	A credits spreadsheet, credits file or Cinecred project as a cue	크레딧 스프레드시트, 크레딧 파일 또는 Cinecred 프로젝트를 큐로
+	Add Selected Graphic	선택한 그래픽 추가
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	타임라인에서 선택한 그래픽 클립(제목, 하단 자막)을 큐로
+	Cues	큐
+	TAKE	테이크
+	The preview cue goes on air from its first page	미리 보기 큐를 첫 페이지부터 송출
+	PREVIOUS	이전
+	The page before (on the first page: from its start)	이전 페이지 (첫 페이지에서는 처음부터)
+	NEXT	다음
+	The next page; after the last one, the preview cue	다음 페이지. 마지막 다음에는 미리 보기 큐
+	HOLD	정지
+	Stop the program where it is	프로그램을 그 자리에서 멈춤
+	CONTINUE	계속
+	Go on from where it stopped	멈춘 곳에서 이어서
+	UPDATE	업데이트
+	Read the spreadsheet (or the clip) again; on air it changes at once	스프레드시트(또는 클립)를 다시 읽음. 송출 중이면 바로 바뀜
+	OUT	아웃
+	Take everything off air	모두 송출에서 내림
+	Start Live Page	라이브 페이지 시작
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	OBS 브라우저 소스용으로 이 컴퓨터에서 프로그램 제공 (127.0.0.1만)
+	not running	실행 안 함
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ 도구 ▸ WebSocket 서버 설정
+	Connect to OBS	OBS에 연결
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	이 컴퓨터의 OBS에 연결하고 “CFA4 Live” 브라우저 소스를 라이브 페이지로 지정
+	Port	포트
+	Password	비밀번호
+	Live page	라이브 페이지
+	Sound	소리
+	OBS	OBS
+	Nothing in preview	미리 보기에 없음
+	page {page} of {pages}	{pages}페이지 중 {page}페이지
+	held	정지됨
+	ended	끝남
+	Off air	송출 안 함
+	Stop Live Page	라이브 페이지 중지
+	Connected to OBS {version}; source “{source}”	OBS {version}에 연결됨. 소스 “{source}”
+	Point OBS Again	OBS 다시 설정
+	Select a graphic clip on the timeline first.	먼저 타임라인에서 그래픽 클립을 선택하세요.
+	Connecting to OBS…	OBS에 연결 중…
+	Live Graphics…	라이브 그래픽…
+	PREVIEW	미리 보기
+	PROGRAM	프로그램
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	이미지 또는 비디오 태그가 본문 셀에 단독으로 있습니다(또는 이름 하나와 함께 있는 경우 인물 사진으로). 나머지 태그는 제거되었습니다
+	the page gap is not a duration; the page style's is used	페이지 간격이 시간이 아닙니다. 페이지 스타일의 값을 사용합니다
+	the page runtime is not a positive duration; the page style's is used	페이지 길이가 양의 시간이 아닙니다. 페이지 스타일의 값을 사용합니다
+	background “{file}” was not found; it is left out	배경 “{file}”을(를) 찾을 수 없습니다. 제외합니다
+	card page {page} is taller than the frame; use a roll page	카드 페이지 {page}이(가) 프레임보다 큽니다. 롤 페이지를 사용하세요
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	글자 스타일 “{style}”의 색상 “{colour}”이(가) #rrggbb 형식이 아닙니다. 제외합니다
+	colour “{colour}” is not #rrggbb; black is used	색상 “{colour}”이(가) #rrggbb 형식이 아닙니다. 검정을 사용합니다
+	colour “{colour}” is not #rrggbb; white is used	색상 “{colour}”이(가) #rrggbb 형식이 아닙니다. 흰색을 사용합니다
+	content style “{style}” does not exist; “{used}” is used	콘텐츠 스타일 “{style}”이(가) 없습니다. “{used}”을(를) 사용합니다
+	letter style “{style}” does not exist; the text keeps the block's style	글자 스타일 “{style}”이(가) 없습니다. 텍스트는 블록의 스타일을 유지합니다
+	page gap “{value}” is not a duration	페이지 간격 “{value}”은(는) 시간이 아닙니다
+	page runtime “{value}” is not a duration	페이지 길이 “{value}”은(는) 시간이 아닙니다
+	page style “{style}” does not exist; a roll page is used	페이지 스타일 “{style}”이(가) 없습니다. 롤 페이지를 사용합니다
+	page {page}: the background names no file; it is left out	페이지 {page}: 배경에 파일이 지정되어 있지 않습니다. 제외합니다
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	페이지 {page}: 롤 속도를 바꿔 길이를 맞춥니다(페이지에 늘릴 수 있는 블록 간 간격이 없습니다)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	페이지 {page}: 롤 속도를 바꿔 길이를 맞춥니다(간격이 없어도 크레딧이 너무 깁니다)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	페이지 {page}: 롤 속도를 바꿔 길이를 맞춥니다(간격을 20배보다 더 늘려야 합니다)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	페이지 {page}: 전환을 쓰려면 페이지가 맞닿아야 합니다(페이지 간격 0). 제외합니다
+	page {page}: there is no transition “{name}”; the pages cut	페이지 {page}: 전환 “{name}”이(가) 없습니다. 페이지는 컷으로 이어집니다
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	스파인 위치 “{value}”은(는) 지원되지 않습니다(픽셀 오프셋과, 선택적으로 “parallel”은 지원됩니다)
+	vertical gap “{value}” is not a number	세로 간격 “{value}”은(는) 숫자가 아닙니다
+	picture “{file}” was not found or cannot be read; it is left out	이미지 “{file}”을(를) 찾을 수 없거나 읽을 수 없습니다. 제외합니다
+	video “{file}” was not found or cannot be read; it is left out	비디오 “{file}”을(를) 찾을 수 없거나 읽을 수 없습니다. 제외합니다
+	there is no roll page without its own runtime to stretch; the length cannot change	늘릴 수 있는 자체 길이를 가진 롤 페이지가 없어 길이를 바꿀 수 없습니다
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	카드와 간격만으로 {seconds} s입니다. 요청한 길이가 더 짧으므로 롤 페이지는 원래 길이를 유지합니다
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	글자 스타일 “{style}”: 첫 번째 색상 레이어만 사용합니다(윤곽선, 그림자, 줄무늬 제외)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	크레딧 전체 길이는 가져오지 않습니다. 대신 크레딧을 음악에 맞추기(또는 길이)를 사용하세요
+	page style “{style}”: fade curves become linear fades	페이지 스타일 “{style}”: 페이드 곡선은 선형 페이드가 됩니다
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	콘텐츠 스타일 “{style}”에는 Cinecred에서 머리글이 없습니다. 시트에 적은 머리글은 계속 표시됩니다
+	content style “{style}”: sorting the names is not carried over	콘텐츠 스타일 “{style}”: 이름 정렬은 가져오지 않습니다
+	transition curves are not carried over	전환 곡선은 가져오지 않습니다
+	picture styles (pictures keep their own size) are not carried over	이미지 스타일(이미지는 자체 크기를 유지)은 가져오지 않습니다
+	video (tape) styles are not carried over	비디오(테이프) 스타일은 가져오지 않습니다
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 프로젝트에 크레딧 스프레드시트가 {n}개 있습니다. “{name}”을(를) 사용합니다(스프레드시트 필드에서 다른 것을 선택하세요)

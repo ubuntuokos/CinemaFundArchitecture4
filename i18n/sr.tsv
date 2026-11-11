@@ -4359,3 +4359,88 @@ export.summary	Low	низак
 	parallel	паралелно
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	На страници (OBS га узима из извора прегледача)
+	Separate (a media source in OBS)	Одвојено (медијски извор у OBS-у)
+	No sound	Без звука
+	credits	шпица
+	graphic	графика
+	{n} pages	Страница: {n}
+	Live Graphics	Графика уживо
+	Prepared cues; double-click one to put it in preview	Припремљене ставке; двапут кликните једну да је ставите у преглед
+	Add Credits…	Додај шпицу…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Табела шпице, датотека шпице или Cinecred пројекат као ставка
+	Add Selected Graphic	Додај изабрану графику
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Графички клип изабран на временској линији (наслов, доња трећина) као ставка
+	Cues	Ставке
+	TAKE	У ЕТАР
+	The preview cue goes on air from its first page	Ставка из прегледа иде у етар од своје прве странице
+	PREVIOUS	ПРЕТХОДНА
+	The page before (on the first page: from its start)	Претходна страница (на првој страници: од њеног почетка)
+	NEXT	СЛЕДЕЋА
+	The next page; after the last one, the preview cue	Следећа страница; после последње ставка из прегледа
+	HOLD	ЗАДРЖИ
+	Stop the program where it is	Заустави програм где јесте
+	CONTINUE	НАСТАВИ
+	Go on from where it stopped	Настави одакле је стало
+	UPDATE	АЖУРИРАЈ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Поново прочитај табелу (или клип); у етру се одмах мења
+	OUT	СКИНИ
+	Take everything off air	Скини све из етра
+	Start Live Page	Покрени страницу уживо
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Послужуј програм на овом рачунару за извор прегледача у OBS-у (само 127.0.0.1)
+	not running	не ради
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Алатке ▸ Подешавања WebSocket сервера
+	Connect to OBS	Повежи се са OBS-ом
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Повежи се са OBS-ом на овом рачунару и усмери његов извор прегледача „CFA4 Live” на страницу уживо
+	Port	Порт
+	Password	Лозинка
+	Live page	Страница уживо
+	Sound	Звук
+	OBS	OBS
+	Nothing in preview	Ништа у прегледу
+	page {page} of {pages}	страница {page} од {pages}
+	held	задржано
+	ended	завршено
+	Off air	Ван етра
+	Stop Live Page	Заустави страницу уживо
+	Connected to OBS {version}; source “{source}”	Повезано са OBS {version}; извор „{source}”
+	Point OBS Again	Поново усмери OBS
+	Select a graphic clip on the timeline first.	Најпре изаберите графички клип на временској линији.
+	Connecting to OBS…	Повезивање са OBS-ом…
+	Live Graphics…	Графика уживо…
+	PREVIEW	ПРЕГЛЕД
+	PROGRAM	ПРОГРАМ
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	ознака слике или видеа стоји сама у ћелији тела (или са једним именом, као портрет); остале ознаке су уклоњене
+	the page gap is not a duration; the page style's is used	размак страница није трајање; користи се онај из стила странице
+	the page runtime is not a positive duration; the page style's is used	трајање странице није позитивно; користи се оно из стила странице
+	background “{file}” was not found; it is left out	позадина „{file}” није пронађена; изоставља се
+	card page {page} is taller than the frame; use a roll page	страница картице {page} виша је од кадра; користите покретну страницу
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	боја „{colour}” стила слова „{style}” није #rrggbb; изоставља се
+	colour “{colour}” is not #rrggbb; black is used	боја „{colour}” није #rrggbb; користи се црна
+	colour “{colour}” is not #rrggbb; white is used	боја „{colour}” није #rrggbb; користи се бела
+	content style “{style}” does not exist; “{used}” is used	стил садржаја „{style}” не постоји; користи се „{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	стил слова „{style}” не постоји; текст задржава стил блока
+	page gap “{value}” is not a duration	размак страница „{value}” није трајање
+	page runtime “{value}” is not a duration	трајање странице „{value}” није трајање
+	page style “{style}” does not exist; a roll page is used	стил странице „{style}” не постоји; користи се покретна страница
+	page {page}: the background names no file; it is left out	страница {page}: позадина не наводи датотеку; изоставља се
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	страница {page}: трајање се постиже променом брзине померања (страница нема размака између блокова за растезање)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	страница {page}: трајање се постиже променом брзине померања (шпица је предуга и без размака)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: трајање се постиже променом брзине померања (размаци би морали да порасту више од 20 пута)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: прелаз захтева да се странице додирују (размак 0); изоставља се
+	page {page}: there is no transition “{name}”; the pages cut	страница {page}: нема прелаза „{name}”; странице се мењају резом
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положај осе „{value}” није подржан (подржан је помак у пикселима, по жељи уз „parallel”)
+	vertical gap “{value}” is not a number	вертикални размак „{value}” није број
+	picture “{file}” was not found or cannot be read; it is left out	слика „{file}” није пронађена или се не може прочитати; изоставља се
+	video “{file}” was not found or cannot be read; it is left out	видео „{file}” није пронађен или се не може прочитати; изоставља се
+	there is no roll page without its own runtime to stretch; the length cannot change	нема покретне странице без сопственог трајања која би се растегла; трајање се не може променити
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	саме картице и размаци трају {seconds} s; тражена дужина је краћа, па покретне странице задржавају природно трајање
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	стил слова „{style}”: користи се само први обојени слој (без оквира, сенки и трака)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	трајање целе шпице се не преноси; уместо тога користите Прилагоди шпицу музици (или трајање)
+	page style “{style}”: fade curves become linear fades	стил странице „{style}”: криве претапања постају линеарне
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	стил садржаја „{style}” нема почетак у Cinecred-у; почеци уписани у табелу и даље се приказују
+	content style “{style}”: sorting the names is not carried over	стил садржаја „{style}”: сортирање имена се не преноси
+	transition curves are not carried over	криве прелаза се не преносе
+	picture styles (pictures keep their own size) are not carried over	стилови слика (слике задржавају сопствену величину) се не преносе
+	video (tape) styles are not carried over	стилови видеа (траке) се не преносе
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred пројекат има табела шпице: {n}; користи се „{name}” (изаберите другу у пољу Табела)

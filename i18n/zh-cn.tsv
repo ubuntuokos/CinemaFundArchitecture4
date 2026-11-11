@@ -4357,3 +4357,88 @@
 	parallel	并列
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	在页面中（OBS 从浏览器源获取）
+	Separate (a media source in OBS)	单独（OBS 中的媒体源）
+	No sound	无声音
+	credits	演职员表
+	graphic	图形
+	{n} pages	{n} 页
+	Live Graphics	直播图形
+	Prepared cues; double-click one to put it in preview	已准备的提示；双击可放入预览
+	Add Credits…	添加演职员表…
+	A credits spreadsheet, credits file or Cinecred project as a cue	将演职员表表格、演职员表文件或 Cinecred 项目作为提示
+	Add Selected Graphic	添加所选图形
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	将时间线上所选的图形剪辑（标题、下三分之一字幕）作为提示
+	Cues	提示
+	TAKE	切出
+	The preview cue goes on air from its first page	预览中的提示从第一页开始播出
+	PREVIOUS	上一页
+	The page before (on the first page: from its start)	上一页（在第一页时：从开头）
+	NEXT	下一页
+	The next page; after the last one, the preview cue	下一页；最后一页之后为预览中的提示
+	HOLD	暂停
+	Stop the program where it is	让节目停在当前位置
+	CONTINUE	继续
+	Go on from where it stopped	从停下的位置继续
+	UPDATE	更新
+	Read the spreadsheet (or the clip) again; on air it changes at once	重新读取表格（或剪辑）；播出中立即生效
+	OUT	撤下
+	Take everything off air	撤下所有播出内容
+	Start Live Page	启动直播页面
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	在本机为 OBS 浏览器源提供节目（仅 127.0.0.1）
+	not running	未运行
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ 工具 ▸ WebSocket 服务器设置
+	Connect to OBS	连接到 OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	连接到本机的 OBS，并将其浏览器源“CFA4 Live”指向直播页面
+	Port	端口
+	Password	密码
+	Live page	直播页面
+	Sound	声音
+	OBS	OBS
+	Nothing in preview	预览中没有内容
+	page {page} of {pages}	第 {page} 页，共 {pages} 页
+	held	已暂停
+	ended	已结束
+	Off air	未播出
+	Stop Live Page	停止直播页面
+	Connected to OBS {version}; source “{source}”	已连接到 OBS {version}；源“{source}”
+	Point OBS Again	重新设置 OBS
+	Select a graphic clip on the timeline first.	请先在时间线上选择一个图形剪辑。
+	Connecting to OBS…	正在连接到 OBS…
+	Live Graphics…	直播图形…
+	PREVIEW	预览
+	PROGRAM	节目
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	图片或视频标签单独出现在正文单元格中(或与一个姓名一起,作为肖像);其他标签已被移除
+	the page gap is not a duration; the page style's is used	页间隔不是时长;改用页面样式的值
+	the page runtime is not a positive duration; the page style's is used	页面时长不是正数时长;改用页面样式的值
+	background “{file}” was not found; it is left out	未找到背景“{file}”;已忽略
+	card page {page} is taller than the frame; use a roll page	卡片页 {page} 比画面高;请改用滚动页
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	字母样式“{style}”的颜色“{colour}”不是 #rrggbb;已忽略
+	colour “{colour}” is not #rrggbb; black is used	颜色“{colour}”不是 #rrggbb;改用黑色
+	colour “{colour}” is not #rrggbb; white is used	颜色“{colour}”不是 #rrggbb;改用白色
+	content style “{style}” does not exist; “{used}” is used	内容样式“{style}”不存在;改用“{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	字母样式“{style}”不存在;文字沿用区块的样式
+	page gap “{value}” is not a duration	页间隔“{value}”不是时长
+	page runtime “{value}” is not a duration	页面时长“{value}”不是时长
+	page style “{style}” does not exist; a roll page is used	页面样式“{style}”不存在;改用滚动页
+	page {page}: the background names no file; it is left out	第 {page} 页:背景未指定文件;已忽略
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	第 {page} 页:通过改变滚动速度来达到时长(该页的区块之间没有可拉伸的间隔)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	第 {page} 页:通过改变滚动速度来达到时长(即使没有间隔,演职员表也太长)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 页:通过改变滚动速度来达到时长(间隔需要增大到 20 倍以上)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 页:转场要求页面首尾相接(页间隔为 0);已忽略
+	page {page}: there is no transition “{name}”; the pages cut	第 {page} 页:不存在转场“{name}”;页面直接切换
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支持对齐轴位置“{value}”(支持像素偏移,可选加“parallel”)
+	vertical gap “{value}” is not a number	垂直间距“{value}”不是数字
+	picture “{file}” was not found or cannot be read; it is left out	未找到图片“{file}”或无法读取;已忽略
+	video “{file}” was not found or cannot be read; it is left out	未找到视频“{file}”或无法读取;已忽略
+	there is no roll page without its own runtime to stretch; the length cannot change	没有带自身时长、可拉伸的滚动页;长度无法改变
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	仅卡片和间隔就有 {seconds} s;要求的长度更短,因此滚动页保持其自然长度
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	字母样式“{style}”:仅使用第一个彩色图层(不含轮廓、阴影或条纹)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	不会沿用整个演职员表的时长;请改用使演职员表适配音乐(或指定长度)
+	page style “{style}”: fade curves become linear fades	页面样式“{style}”:淡变曲线变为线性淡变
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	内容样式“{style}”在 Cinecred 中没有标题;表格中写入的标题仍会显示
+	content style “{style}”: sorting the names is not carried over	内容样式“{style}”:姓名排序不会沿用
+	transition curves are not carried over	转场曲线不会沿用
+	picture styles (pictures keep their own size) are not carried over	图片样式(图片保持自身尺寸)不会沿用
+	video (tape) styles are not carried over	视频(磁带)样式不会沿用
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 项目有 {n} 个演职员表电子表格;使用“{name}”(可在电子表格字段中选择其他表格)

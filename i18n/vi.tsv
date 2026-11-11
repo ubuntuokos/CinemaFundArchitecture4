@@ -4359,3 +4359,88 @@ export.summary	Low	thấp
 	parallel	song song
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Trong trang (OBS lấy từ nguồn trình duyệt)
+	Separate (a media source in OBS)	Riêng (một nguồn đa phương tiện trong OBS)
+	No sound	Không có âm thanh
+	credits	danh đề
+	graphic	đồ họa
+	{n} pages	{n} trang
+	Live Graphics	Đồ họa trực tiếp
+	Prepared cues; double-click one to put it in preview	Các mục đã chuẩn bị; bấm đúp vào một mục để đưa vào xem trước
+	Add Credits…	Thêm danh đề…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Bảng tính danh đề, tệp danh đề hoặc dự án Cinecred làm một mục
+	Add Selected Graphic	Thêm đồ họa đã chọn
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Clip đồ họa đã chọn trên dòng thời gian (tiêu đề, dải chữ dưới) làm một mục
+	Cues	Mục
+	TAKE	LÊN SÓNG
+	The preview cue goes on air from its first page	Mục xem trước lên sóng từ trang đầu tiên
+	PREVIOUS	TRƯỚC
+	The page before (on the first page: from its start)	Trang trước (ở trang đầu: từ đầu trang)
+	NEXT	TIẾP
+	The next page; after the last one, the preview cue	Trang tiếp theo; sau trang cuối là mục xem trước
+	HOLD	GIỮ
+	Stop the program where it is	Dừng chương trình tại chỗ
+	CONTINUE	TIẾP TỤC
+	Go on from where it stopped	Tiếp tục từ chỗ đã dừng
+	UPDATE	CẬP NHẬT
+	Read the spreadsheet (or the clip) again; on air it changes at once	Đọc lại bảng tính (hoặc clip); trên sóng sẽ đổi ngay
+	OUT	XUỐNG SÓNG
+	Take everything off air	Đưa mọi thứ xuống sóng
+	Start Live Page	Bắt đầu trang trực tiếp
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Phát chương trình trên máy này cho nguồn trình duyệt của OBS (chỉ 127.0.0.1)
+	not running	không chạy
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Công cụ ▸ Cài đặt máy chủ WebSocket
+	Connect to OBS	Kết nối với OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Kết nối với OBS trên máy này và trỏ nguồn trình duyệt “CFA4 Live” của nó tới trang trực tiếp
+	Port	Cổng
+	Password	Mật khẩu
+	Live page	Trang trực tiếp
+	Sound	Âm thanh
+	OBS	OBS
+	Nothing in preview	Không có gì trong xem trước
+	page {page} of {pages}	trang {page}/{pages}
+	held	đang giữ
+	ended	đã kết thúc
+	Off air	Không lên sóng
+	Stop Live Page	Dừng trang trực tiếp
+	Connected to OBS {version}; source “{source}”	Đã kết nối OBS {version}; nguồn “{source}”
+	Point OBS Again	Trỏ lại OBS
+	Select a graphic clip on the timeline first.	Hãy chọn một clip đồ họa trên dòng thời gian trước.
+	Connecting to OBS…	Đang kết nối với OBS…
+	Live Graphics…	Đồ họa trực tiếp…
+	PREVIEW	XEM TRƯỚC
+	PROGRAM	CHƯƠNG TRÌNH
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	thẻ hình hoặc video đứng riêng trong ô nội dung (hoặc kèm một tên, làm chân dung); các thẻ khác đã bị xóa
+	the page gap is not a duration; the page style's is used	khoảng cách trang không phải thời lượng; dùng giá trị của kiểu trang
+	the page runtime is not a positive duration; the page style's is used	thời lượng trang không dương; dùng giá trị của kiểu trang
+	background “{file}” was not found; it is left out	không tìm thấy nền “{file}”; nền bị bỏ qua
+	card page {page} is taller than the frame; use a roll page	trang thẻ {page} cao hơn khung hình; hãy dùng trang cuộn
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	màu “{colour}” của kiểu chữ “{style}” không ở dạng #rrggbb; bị bỏ qua
+	colour “{colour}” is not #rrggbb; black is used	màu “{colour}” không ở dạng #rrggbb; dùng màu đen
+	colour “{colour}” is not #rrggbb; white is used	màu “{colour}” không ở dạng #rrggbb; dùng màu trắng
+	content style “{style}” does not exist; “{used}” is used	kiểu nội dung “{style}” không tồn tại; dùng “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	kiểu chữ “{style}” không tồn tại; văn bản giữ kiểu của khối
+	page gap “{value}” is not a duration	khoảng cách trang “{value}” không phải thời lượng
+	page runtime “{value}” is not a duration	thời lượng trang “{value}” không phải thời lượng
+	page style “{style}” does not exist; a roll page is used	kiểu trang “{style}” không tồn tại; dùng trang cuộn
+	page {page}: the background names no file; it is left out	trang {page}: nền không chỉ định tệp; bị bỏ qua
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (trang không có khoảng cách giữa các khối để kéo giãn)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (danh đề quá dài ngay cả khi không có khoảng cách)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (khoảng cách sẽ phải tăng hơn 20 lần)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	trang {page}: chuyển cảnh cần các trang liền nhau (khoảng cách 0); bị bỏ qua
+	page {page}: there is no transition “{name}”; the pages cut	trang {page}: không có chuyển cảnh “{name}”; các trang cắt thẳng
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	vị trí trục “{value}” không được hỗ trợ (hỗ trợ độ lệch theo điểm ảnh, tùy chọn kèm “parallel”)
+	vertical gap “{value}” is not a number	khoảng cách dọc “{value}” không phải là số
+	picture “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được hình “{file}”; bị bỏ qua
+	video “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được video “{file}”; bị bỏ qua
+	there is no roll page without its own runtime to stretch; the length cannot change	không có trang cuộn nào không có thời lượng riêng để kéo giãn; không thể đổi thời lượng
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	riêng thẻ và khoảng cách đã là {seconds} giây; thời lượng yêu cầu ngắn hơn nên các trang cuộn giữ thời lượng tự nhiên
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	kiểu chữ “{style}”: chỉ dùng lớp màu đầu tiên (không viền, bóng hay sọc)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	thời lượng toàn bộ danh đề không được chuyển sang; hãy dùng Khớp danh đề với nhạc (hoặc một thời lượng)
+	page style “{style}”: fade curves become linear fades	kiểu trang “{style}”: đường cong mờ dần trở thành tuyến tính
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	kiểu nội dung “{style}” không có phần đầu trong Cinecred; phần đầu viết trong bảng vẫn được hiển thị
+	content style “{style}”: sorting the names is not carried over	kiểu nội dung “{style}”: việc sắp xếp tên không được chuyển sang
+	transition curves are not carried over	đường cong chuyển cảnh không được chuyển sang
+	picture styles (pictures keep their own size) are not carried over	kiểu hình (hình giữ kích thước riêng) không được chuyển sang
+	video (tape) styles are not carried over	kiểu video (băng) không được chuyển sang
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	dự án Cinecred có {n} bảng tính danh đề; dùng “{name}” (chọn bảng khác trong trường Bảng tính)

@@ -4359,3 +4359,88 @@ export.summary	Low	nízká
 	parallel	souběžně
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Ve stránce (OBS jej převezme ze zdroje Prohlížeč)
+	Separate (a media source in OBS)	Samostatně (zdroj médií v OBS)
+	No sound	Bez zvuku
+	credits	titulky tvůrců
+	graphic	grafika
+	{n} pages	Stránky: {n}
+	Live Graphics	Živá grafika
+	Prepared cues; double-click one to put it in preview	Připravené položky; poklepáním jednu pošlete do náhledu
+	Add Credits…	Přidat titulky tvůrců…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Tabulka titulků tvůrců, soubor titulků nebo projekt Cinecred jako položka
+	Add Selected Graphic	Přidat vybranou grafiku
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Grafický klip vybraný na časové ose (titulek, spodní třetina) jako položka
+	Cues	Položky
+	TAKE	VYSÍLAT
+	The preview cue goes on air from its first page	Položka z náhledu jde do vysílání od své první stránky
+	PREVIOUS	PŘEDCHOZÍ
+	The page before (on the first page: from its start)	Předchozí stránka (na první stránce: od jejího začátku)
+	NEXT	DALŠÍ
+	The next page; after the last one, the preview cue	Další stránka; po poslední položka z náhledu
+	HOLD	ZASTAVIT
+	Stop the program where it is	Zastavit program tam, kde je
+	CONTINUE	POKRAČOVAT
+	Go on from where it stopped	Pokračovat tam, kde se zastavilo
+	UPDATE	AKTUALIZOVAT
+	Read the spreadsheet (or the clip) again; on air it changes at once	Znovu načíst tabulku (nebo klip); ve vysílání se změní hned
+	OUT	STÁHNOUT
+	Take everything off air	Stáhnout vše z vysílání
+	Start Live Page	Spustit živou stránku
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Poskytovat program na tomto počítači pro zdroj Prohlížeč v OBS (pouze 127.0.0.1)
+	not running	neběží
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Nástroje ▸ Nastavení serveru WebSocket
+	Connect to OBS	Připojit k OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Připojit se k OBS na tomto počítači a nasměrovat jeho zdroj Prohlížeč „CFA4 Live“ na živou stránku
+	Port	Port
+	Password	Heslo
+	Live page	Živá stránka
+	Sound	Zvuk
+	OBS	OBS
+	Nothing in preview	V náhledu nic není
+	page {page} of {pages}	stránka {page} z {pages}
+	held	zastaveno
+	ended	skončeno
+	Off air	Mimo vysílání
+	Stop Live Page	Zastavit živou stránku
+	Connected to OBS {version}; source “{source}”	Připojeno k OBS {version}; zdroj „{source}“
+	Point OBS Again	Znovu nasměrovat OBS
+	Select a graphic clip on the timeline first.	Nejprve vyberte na časové ose grafický klip.
+	Connecting to OBS…	Připojování k OBS…
+	Live Graphics…	Živá grafika…
+	PREVIEW	NÁHLED
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	značka obrázku nebo videa stojí v buňce těla sama (nebo s jedním jménem jako portrét); ostatní značky byly odebrány
+	the page gap is not a duration; the page style's is used	mezera mezi stránkami není doba trvání; použije se hodnota stylu stránky
+	the page runtime is not a positive duration; the page style's is used	doba stránky není kladná doba trvání; použije se hodnota stylu stránky
+	background “{file}” was not found; it is left out	pozadí „{file}“ nebylo nalezeno; vynechá se
+	card page {page} is taller than the frame; use a roll page	stránka karty {page} je vyšší než obraz; použijte rolovací stránku
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	barva „{colour}“ stylu písma „{style}“ není #rrggbb; vynechá se
+	colour “{colour}” is not #rrggbb; black is used	barva „{colour}“ není #rrggbb; použije se černá
+	colour “{colour}” is not #rrggbb; white is used	barva „{colour}“ není #rrggbb; použije se bílá
+	content style “{style}” does not exist; “{used}” is used	styl obsahu „{style}“ neexistuje; použije se „{used}“
+	letter style “{style}” does not exist; the text keeps the block's style	styl písma „{style}“ neexistuje; text si ponechá styl bloku
+	page gap “{value}” is not a duration	mezera mezi stránkami „{value}“ není doba trvání
+	page runtime “{value}” is not a duration	doba stránky „{value}“ není doba trvání
+	page style “{style}” does not exist; a roll page is used	styl stránky „{style}“ neexistuje; použije se rolovací stránka
+	page {page}: the background names no file; it is left out	stránka {page}: pozadí neuvádí žádný soubor; vynechá se
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	stránka {page}: doby se dosáhne změnou rychlosti rolování (stránka nemá mezi bloky žádné mezery k roztažení)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	stránka {page}: doby se dosáhne změnou rychlosti rolování (titulky tvůrců jsou příliš dlouhé i bez mezer)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stránka {page}: doby se dosáhne změnou rychlosti rolování (mezery by musely narůst více než dvacetkrát)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stránka {page}: přechod vyžaduje, aby na sebe stránky navazovaly (mezera 0); vynechá se
+	page {page}: there is no transition “{name}”; the pages cut	stránka {page}: přechod „{name}“ neexistuje; stránky se střihnou
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	poloha osy „{value}“ není podporována (podporován je posun v pixelech, volitelně s „parallel“)
+	vertical gap “{value}” is not a number	svislá mezera „{value}“ není číslo
+	picture “{file}” was not found or cannot be read; it is left out	obrázek „{file}“ nebyl nalezen nebo jej nelze načíst; vynechá se
+	video “{file}” was not found or cannot be read; it is left out	video „{file}“ nebylo nalezeno nebo jej nelze načíst; vynechá se
+	there is no roll page without its own runtime to stretch; the length cannot change	není žádná rolovací stránka bez vlastní doby, kterou by šlo roztáhnout; délku nelze změnit
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	samotné karty a mezery mají {seconds} s; požadovaná délka je kratší, takže rolovací stránky si ponechají přirozenou délku
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	styl písma „{style}“: použije se jen první barevná vrstva (bez obrysů, stínů a pruhů)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	doba celých titulků tvůrců se nepřenáší; použijte místo toho Přizpůsobit titulky tvůrců hudbě (nebo délku)
+	page style “{style}”: fade curves become linear fades	styl stránky „{style}“: křivky prolínání se změní na lineární
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	styl obsahu „{style}“ nemá v Cinecred začátek; začátky zapsané v tabulce se přesto zobrazí
+	content style “{style}”: sorting the names is not carried over	styl obsahu „{style}“: řazení jmen se nepřenáší
+	transition curves are not carried over	křivky přechodů se nepřenášejí
+	picture styles (pictures keep their own size) are not carried over	styly obrázků (obrázky si ponechají vlastní velikost) se nepřenášejí
+	video (tape) styles are not carried over	styly videa (pásky) se nepřenášejí
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred má tabulky titulků tvůrců: {n}; použije se „{name}“ (jinou zvolte v poli Tabulka)

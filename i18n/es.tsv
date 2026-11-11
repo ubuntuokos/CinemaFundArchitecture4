@@ -4366,3 +4366,88 @@
 	parallel	paralelo
 # MPEG-2 export audio (#268): a product name, kept as is
 	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	En la página (OBS lo toma de la fuente de navegador)
+	Separate (a media source in OBS)	Separado (una fuente multimedia en OBS)
+	No sound	Sin sonido
+	credits	créditos
+	graphic	gráfico
+	{n} pages	{n} páginas
+	Live Graphics	Gráficos en directo
+	Prepared cues; double-click one to put it in preview	Elementos preparados; doble clic para pasar uno a la vista previa
+	Add Credits…	Añadir créditos…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Una hoja de créditos, un archivo de créditos o un proyecto de Cinecred como elemento
+	Add Selected Graphic	Añadir gráfico seleccionado
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	El clip gráfico seleccionado en la línea de tiempo (un título, un rótulo) como elemento
+	Cues	Elementos
+	TAKE	ENTRADA
+	The preview cue goes on air from its first page	El elemento de la vista previa sale al aire desde su primera página
+	PREVIOUS	ANTERIOR
+	The page before (on the first page: from its start)	La página anterior (en la primera: desde su inicio)
+	NEXT	SIGUIENTE
+	The next page; after the last one, the preview cue	La página siguiente; tras la última, el elemento de la vista previa
+	HOLD	PAUSA
+	Stop the program where it is	Detener el programa donde está
+	CONTINUE	CONTINUAR
+	Go on from where it stopped	Seguir desde donde se detuvo
+	UPDATE	ACTUALIZAR
+	Read the spreadsheet (or the clip) again; on air it changes at once	Leer de nuevo la hoja (o el clip); en el aire cambia al instante
+	OUT	FUERA
+	Take everything off air	Quitar todo del aire
+	Start Live Page	Iniciar página en directo
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Servir el programa en este equipo para la fuente de navegador de OBS (solo 127.0.0.1)
+	not running	sin ejecutar
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Herramientas ▸ Configuración del servidor WebSocket
+	Connect to OBS	Conectar con OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Conectar con OBS en este equipo y apuntar su fuente de navegador «CFA4 Live» a la página en directo
+	Port	Puerto
+	Password	Contraseña
+	Live page	Página en directo
+	Sound	Sonido
+	OBS	OBS
+	Nothing in preview	Nada en la vista previa
+	page {page} of {pages}	página {page} de {pages}
+	held	en pausa
+	ended	terminado
+	Off air	Fuera del aire
+	Stop Live Page	Detener página en directo
+	Connected to OBS {version}; source “{source}”	Conectado a OBS {version}; fuente «{source}»
+	Point OBS Again	Volver a configurar OBS
+	Select a graphic clip on the timeline first.	Seleccione primero un clip gráfico en la línea de tiempo.
+	Connecting to OBS…	Conectando con OBS…
+	Live Graphics…	Gráficos en directo…
+	PREVIEW	VISTA PREVIA
+	PROGRAM	PROGRAMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	una etiqueta de imagen o vídeo está sola en una celda del cuerpo (o con un solo nombre, como retrato); las demás etiquetas se eliminaron
+	the page gap is not a duration; the page style's is used	el intervalo entre páginas no es una duración; se usa el del estilo de página
+	the page runtime is not a positive duration; the page style's is used	la duración de la página no es una duración positiva; se usa la del estilo de página
+	background “{file}” was not found; it is left out	no se encontró el fondo “{file}”; se omite
+	card page {page} is taller than the frame; use a roll page	la página de tarjeta {page} es más alta que el fotograma; usa una página de rodillo
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	el color “{colour}” del estilo de letra “{style}” no es #rrggbb; se omite
+	colour “{colour}” is not #rrggbb; black is used	el color “{colour}” no es #rrggbb; se usa negro
+	colour “{colour}” is not #rrggbb; white is used	el color “{colour}” no es #rrggbb; se usa blanco
+	content style “{style}” does not exist; “{used}” is used	el estilo de contenido “{style}” no existe; se usa “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	el estilo de letra “{style}” no existe; el texto conserva el estilo del bloque
+	page gap “{value}” is not a duration	el intervalo entre páginas “{value}” no es una duración
+	page runtime “{value}” is not a duration	la duración de página “{value}” no es una duración
+	page style “{style}” does not exist; a roll page is used	el estilo de página “{style}” no existe; se usa una página de rodillo
+	page {page}: the background names no file; it is left out	página {page}: el fondo no indica ningún archivo; se omite
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (la página no tiene espacios entre bloques que estirar)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (los créditos son demasiado largos incluso sin espacios)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (los espacios tendrían que crecer más de 20 veces)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	página {page}: la transición requiere que las páginas se toquen (intervalo entre páginas 0); se omite
+	page {page}: there is no transition “{name}”; the pages cut	página {page}: no existe la transición “{name}”; las páginas se cortan
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	la posición del eje “{value}” no es compatible (sí lo es un desplazamiento en píxeles, opcionalmente con “parallel”)
+	vertical gap “{value}” is not a number	el espacio vertical “{value}” no es un número
+	picture “{file}” was not found or cannot be read; it is left out	no se encontró la imagen “{file}” o no se puede leer; se omite
+	video “{file}” was not found or cannot be read; it is left out	no se encontró el vídeo “{file}” o no se puede leer; se omite
+	there is no roll page without its own runtime to stretch; the length cannot change	no hay ninguna página de rodillo con duración propia que estirar; la duración no puede cambiar
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	solo las tarjetas y los espacios suman {seconds} s; la duración pedida es menor, así que las páginas de rodillo mantienen su duración natural
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	estilo de letra “{style}”: solo se usa la primera capa de color (sin contornos, sombras ni franjas)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	la duración total de los créditos no se transfiere; usa Ajustar créditos a la música (o una duración)
+	page style “{style}”: fade curves become linear fades	estilo de página “{style}”: las curvas de fundido pasan a ser fundidos lineales
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	el estilo de contenido “{style}” no tiene encabezado en Cinecred; los encabezados escritos en la hoja se siguen mostrando
+	content style “{style}”: sorting the names is not carried over	estilo de contenido “{style}”: la ordenación de los nombres no se transfiere
+	transition curves are not carried over	las curvas de transición no se transfieren
+	picture styles (pictures keep their own size) are not carried over	los estilos de imagen (las imágenes conservan su propio tamaño) no se transfieren
+	video (tape) styles are not carried over	los estilos de vídeo (cinta) no se transfieren
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	el proyecto de Cinecred tiene {n} hojas de cálculo de créditos; se usa “{name}” (elige otra en el campo Hoja de cálculo)

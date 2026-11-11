@@ -16,8 +16,8 @@ use serde_json::{Value, json};
 
 use crate::{EngineError, Result, Session};
 
-type Run = fn(&mut Session, &Value) -> Result<Value>;
-type Enabled = fn(&Session) -> std::result::Result<(), String>;
+pub(crate) type Run = fn(&mut Session, &Value) -> Result<Value>;
+pub(crate) type Enabled = fn(&Session) -> std::result::Result<(), String>;
 
 /// Metadata + implementation for one command.
 pub struct CommandSpec {
@@ -3847,6 +3847,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::graphics::commands());
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
+    v.extend(crate::live::commands());
     v.extend(crate::dialog_defaults::commands());
     v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());
