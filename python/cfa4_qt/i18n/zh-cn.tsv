@@ -403,3 +403,51 @@
 	ISDCF name	ISDCF 名称
 	Name the DCP folder by the Digital Cinema Naming Convention	按 Digital Cinema Naming Convention 命名 DCP 文件夹
 	Height	高度
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	添加问题
+	Add as Finding	添加为问题
+	Are colour and contrast acceptable?	颜色和对比度是否可以接受?
+	Automatic Checks	自动检查
+	Bounds	范围
+	Check	检查
+	Check Now	立即检查
+	Check quality after export	导出后检查质量
+	Checking…	正在检查…
+	Contact Sheet	联系表
+	Critical	严重
+	Fail	失败
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	问题 {row}:时间码不是此文件中的时间 (HH:MM:SS:FF)。
+	Findings	问题
+	Human Review	人工审查
+	Incomplete	不完整
+	Is there a visible picture defect?	是否有可见的画面缺陷?
+	Is there audible distortion?	是否有可听见的失真?
+	Is there unwanted noise?	是否有不需要的噪声?
+	Major	重要
+	Message	消息
+	Minor	轻微
+	No contact sheet	无联系表
+	Not answered	未回答
+	Not checked	未检查
+	Not run	未运行
+	Note	备注
+	Pass	通过
+	Passed	已通过
+	Passed with warnings	通过但有警告
+	Profile: {id} v{version}	配置文件:{id} v{version}
+	Quality Check	质量检查
+	Quality Check…	质量检查…
+	Remove Finding	移除问题
+	Report: {path}	报告:{path}
+	Review complete	审查完成
+	Reviewer	审查人
+	Run the media quality check on the finished file (docs/media-qc.md)	对完成的文件运行媒体质量检查 (docs/media-qc.md)
+	Save Review	保存审查
+	Select a finished export in the queue	请在队列中选择已完成的导出
+	Severity	严重程度
+	The engine is not running.	引擎未运行。
+	Time code	时间码
+	Unsure	不确定
+	accept	可接受
+	the engine did not start the check	引擎未启动检查
+	the engine sent no report	引擎未发送报告

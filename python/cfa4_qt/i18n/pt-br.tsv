@@ -404,3 +404,51 @@
 	ISDCF name	Nome ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Nomear a pasta do DCP pela Digital Cinema Naming Convention
 	Height	Altura
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Adicionar constatação
+	Add as Finding	Adicionar como constatação
+	Are colour and contrast acceptable?	A cor e o contraste são aceitáveis?
+	Automatic Checks	Verificações automáticas
+	Bounds	Limites
+	Check	Verificação
+	Check Now	Verificar agora
+	Check quality after export	Verificar a qualidade após exportar
+	Checking…	Verificando…
+	Contact Sheet	Folha de contato
+	Critical	Crítica
+	Fail	Falha
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Constatação {row}: o timecode não é um instante deste arquivo (HH:MM:SS:FF).
+	Findings	Constatações
+	Human Review	Revisão humana
+	Incomplete	Incompleta
+	Is there a visible picture defect?	Há algum defeito visível na imagem?
+	Is there audible distortion?	Há distorção audível?
+	Is there unwanted noise?	Há ruído indesejado?
+	Major	Grave
+	Message	Mensagem
+	Minor	Leve
+	No contact sheet	Sem folha de contato
+	Not answered	Sem resposta
+	Not checked	Não verificado
+	Not run	Não executada
+	Note	Nota
+	Pass	Aprovada
+	Passed	Aprovado
+	Passed with warnings	Aprovado com avisos
+	Profile: {id} v{version}	Perfil: {id} v{version}
+	Quality Check	Verificação de qualidade
+	Quality Check…	Verificação de qualidade…
+	Remove Finding	Remover constatação
+	Report: {path}	Relatório: {path}
+	Review complete	Revisão concluída
+	Reviewer	Revisor
+	Run the media quality check on the finished file (docs/media-qc.md)	Executar a verificação de qualidade no arquivo pronto (docs/media-qc.md)
+	Save Review	Salvar revisão
+	Select a finished export in the queue	Selecione uma exportação concluída na fila
+	Severity	Gravidade
+	The engine is not running.	O mecanismo não está em execução.
+	Time code	Timecode
+	Unsure	Não tenho certeza
+	accept	aceitável
+	the engine did not start the check	o mecanismo não iniciou a verificação
+	the engine sent no report	o mecanismo não enviou relatório

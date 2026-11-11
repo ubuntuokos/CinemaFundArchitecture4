@@ -403,3 +403,51 @@
 	ISDCF name	Nome ISDCF
 	Name the DCP folder by the Digital Cinema Naming Convention	Denomina la cartella DCP secondo la Digital Cinema Naming Convention
 	Height	Altezza
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Aggiungi rilievo
+	Add as Finding	Aggiungi come rilievo
+	Are colour and contrast acceptable?	Colore e contrasto sono accettabili?
+	Automatic Checks	Controlli automatici
+	Bounds	Limiti
+	Check	Controllo
+	Check Now	Controlla ora
+	Check quality after export	Controlla la qualità dopo l’esportazione
+	Checking…	Controllo in corso…
+	Contact Sheet	Provino
+	Critical	Critico
+	Fail	Non superato
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Rilievo {row}: il timecode non è un istante di questo file (HH:MM:SS:FF).
+	Findings	Rilievi
+	Human Review	Revisione umana
+	Incomplete	Incompleto
+	Is there a visible picture defect?	C’è un difetto visibile nell’immagine?
+	Is there audible distortion?	C’è una distorsione udibile?
+	Is there unwanted noise?	C’è un rumore indesiderato?
+	Major	Grave
+	Message	Messaggio
+	Minor	Lieve
+	No contact sheet	Nessun provino
+	Not answered	Senza risposta
+	Not checked	Non controllato
+	Not run	Non eseguito
+	Note	Nota
+	Pass	Superato
+	Passed	Superato
+	Passed with warnings	Superato con avvisi
+	Profile: {id} v{version}	Profilo: {id} v{version}
+	Quality Check	Controllo qualità
+	Quality Check…	Controllo qualità…
+	Remove Finding	Rimuovi rilievo
+	Report: {path}	Rapporto: {path}
+	Review complete	Revisione completata
+	Reviewer	Revisore
+	Run the media quality check on the finished file (docs/media-qc.md)	Esegui il controllo di qualità sul file finito (docs/media-qc.md)
+	Save Review	Salva revisione
+	Select a finished export in the queue	Seleziona un’esportazione completata nella coda
+	Severity	Gravità
+	The engine is not running.	Il motore non è in esecuzione.
+	Time code	Timecode
+	Unsure	Incerto
+	accept	accettabile
+	the engine did not start the check	il motore non ha avviato il controllo
+	the engine sent no report	il motore non ha inviato alcun rapporto
