@@ -141,7 +141,7 @@ fn plane(p: &Plane, bits: u32, w: usize, h: usize, step: (usize, usize), origin:
 }
 
 /// Y'CbCr 4:4:4, video range, BT.709 matrix, from R'G'B' planes of `bits` bits (in place).
-fn rgb_to_ycbcr(r: &mut [u16], g: &mut [u16], b: &mut [u16], bits: u32) {
+pub(crate) fn rgb_to_ycbcr(r: &mut [u16], g: &mut [u16], b: &mut [u16], bits: u32) {
     let (kr, kb) = Matrix::Bt709.kr_kb();
     let kg = 1.0 - kr - kb;
     let max = ((1u32 << bits) - 1) as f32;

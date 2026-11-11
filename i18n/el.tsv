@@ -4168,3 +4168,106 @@ export.summary	Low	χαμηλή
 	Refresh Credits from Spreadsheet…	Ανανέωση τίτλων συντελεστών από το υπολογιστικό φύλλο…
 	Save Credits File…	Αποθήκευση αρχείου τίτλων συντελεστών…
 	Compare Credits with Spreadsheet	Σύγκριση τίτλων συντελεστών με το υπολογιστικό φύλλο
+# Qt GUI: Tools menu (#868)
+	Video Tools	Εργαλεία βίντεο
+	Audio Tools	Εργαλεία ήχου
+	Publication Tools	Εργαλεία δημοσίευσης
+	Smart Export…	Έξυπνη εξαγωγή…
+# Diagonal Slide and the missing transition variants (#153)
+	From North-West	Από βορειοδυτικά
+	From North-East	Από βορειοανατολικά
+	From South-East	Από νοτιοανατολικά
+	From South-West	Από νοτιοδυτικά
+# Enhance folder: Skin Smoothing and Low Light (#166)
+	Enhance	Βελτίωση
+	Skin Smoothing	Λείανση επιδερμίδας
+	Keep Texture	Διατήρηση υφής
+	Skin Tone	Τόνος επιδερμίδας
+	Smooth Entire Image	Λείανση ολόκληρης της εικόνας
+	Low Light	Χαμηλός φωτισμός
+	Max Brightening	Μέγιστη φωτεινότητα
+	Show Illumination	Εμφάνιση φωτισμού
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Easing Presets	Προκαθορισμένες ομαλές μεταβάσεις
+	Sine	Ημιτονοειδής
+	Exponential	Εκθετική
+	Circular	Κυκλική
+	Elastic	Ελαστική
+	Film Gate	Παράθυρο φιλμ
+	Gate Weave	Ταλάντωση παραθύρου
+	Weave Rotation	Περιστροφή ταλάντωσης
+	Particles	Σωματίδια
+	Emitter Position	Θέση πομπού
+	Birth Rate	Ρυθμός γέννησης
+	Lifetime (seconds)	Διάρκεια ζωής (δευτερόλεπτα)
+	Velocity Random	Τυχαιότητα ταχύτητας
+	Gravity	Βαρύτητα
+	Particle Size	Μέγεθος σωματιδίων
+	Keyhole	Κλειδαρότρυπα
+	Burn Away	Κάψιμο
+	Burn Size	Μέγεθος καψίματος
+	Ember Width	Πλάτος θράκας
+	Ember Color	Χρώμα θράκας
+	Check Text Legibility	Έλεγχος αναγνωσιμότητας κειμένου
+	Clear Legibility Markers	Απαλοιφή δεικτών αναγνωσιμότητας
+	Text legibility: no problems found	Αναγνωσιμότητα κειμένου: δεν βρέθηκαν προβλήματα
+	Text legibility: {count} problems marked on the timeline (orange markers)	Αναγνωσιμότητα κειμένου: {count} προβλήματα σημειώθηκαν στη λωρίδα χρόνου (πορτοκαλί δείκτες)
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Bit Crush	Μείωση bit
+	Bits per Channel	Bit ανά κανάλι
+	Ordered Dither	Διατεταγμένη διάχυση
+	Dither Cell Size	Μέγεθος κελιού διάχυσης
+	Block Glitch	Glitch μπλοκ
+	Blocks Moved	Μετακινημένα μπλοκ
+	Max Distance	Μέγιστη απόσταση
+	Snap to Grid	Προσκόλληση στο πλέγμα
+	Swap Blocks	Εναλλαγή μπλοκ
+	Changes per Second	Αλλαγές ανά δευτερόλεπτο
+	Databend	Αλλοίωση δεδομένων
+	Breaks	Διακοπές
+	Shift	Μετατόπιση
+	Color Damage	Αλλοίωση χρώματος
+	VHS	VHS
+	Color Bleed	Διάχυση χρώματος
+	Wobble	Ταλάντευση
+	Snow	Χιόνι
+	Tracking Bar	Μπάρα tracking
+	Head Switching	Εναλλαγή κεφαλών
+	Scan Line Jitter	Τρεμόπαιγμα γραμμών
+	Jitter	Τρεμόπαιγμα
+	Interval	Διάστημα
+	Infinite	Άπειρο
+	Periodic	Περιοδικό
+	Tile Jitter	Τρεμόπαιγμα πλακιδίων
+	Tiles	Πλακίδια
+	Band Direction	Κατεύθυνση ζωνών
+	Jitter Direction	Κατεύθυνση τρεμοπαίγματος
+# Creative Looks: Halftone and Dither (#354)
+	Halftone	Ημιτόνιο
+	Dither	Διάχυση
+	Pattern	Μοτίβο
+	Cell Size	Μέγεθος κελιού
+	Cyan Angle	Γωνία κυανού
+	Magenta Angle	Γωνία ματζέντα
+	Yellow Angle	Γωνία κίτρινου
+	Black Angle	Γωνία μαύρου
+	Monochrome Angle	Μονοχρωματική γωνία
+	Sharpness	Οξύτητα
+	Ink Color	Χρώμα μελανιού
+	Paper Color	Χρώμα χαρτιού
+	Color (CMYK)	Χρώμα (CMYK)
+	Dot	Κουκκίδα
+	Line	Γραμμή
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Μέγεθος εικονοστοιχείου
+	Palette	Παλέτα
+	Input Colors	Χρώματα εισόδου
+	Green Phosphor	Πράσινος φωσφόρος
+	Amber Monitor	Κεχριμπαρένια οθόνη
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

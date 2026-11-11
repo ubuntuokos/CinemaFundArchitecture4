@@ -124,6 +124,10 @@ heif-dec --version
 heif-enc --version
 ~~~
 
+The libheif tests (`cfa4-media --test heif_oracle`, the `cfa4-export` HEIC/HEIF round trip)
+are external-oracle tests: without `heif-enc` and `heif-dec` on `PATH` they print `SKIPPED`,
+and with `CFA4_REQUIRE_ORACLES=1` (as in CI) they fail instead of skipping.
+
 The `.deb` package **recommends** these Ubuntu packages rather than
 bundling their binaries. Other distributions are not CFA4 release targets; Ubuntu 26.04 HEIF runtime dependencies
 remain subject to the release audit.

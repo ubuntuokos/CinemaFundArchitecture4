@@ -491,6 +491,12 @@ Választható módok:
 
 *v1.5:* a GOP Smart Cut nem exportmód, hanem a forrásmonitor „Forrás vágása” művelete.
 
+*Tulajdonosi döntés, 2026-11-10:* a Qt GUI új felső szintű **Eszközök** (Tools) menüt kap, almenüi
+**Videoeszközök**, **Hangeszközök** és **Publikációs eszközök**. A „Forrás vágása (Smart Cut)…” a
+forrásmonitor csavarkulcs-menüjéből az Eszközök ▸ Videoeszközök alá került (továbbra is a
+forrásmonitor klipjére fut, nem exportmód); ugyanitt van a Smart Export… (az Export ablak
+Automatikus módban) és a GOP-határok kapcsolója. Megvalósítás: `python/cfa4_qt/tools_menu.py`.
+
 ### 10.3 Render Plan előnézet
 
 A felhasználó export előtt láthassa:
