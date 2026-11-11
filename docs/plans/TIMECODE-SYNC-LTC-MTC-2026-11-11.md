@@ -140,7 +140,9 @@ monitoron (LOCK / FREEWHEEL / NO SIGNAL, beérkező időkód). Minden vezérlő 
   MIDI 1.0 specifikáció része (a MIDI Association ingyenesen letölthetővé teszi). A fizetős
   SMPTE ST 12-1 megvásárlása **nem szükséges** a v1-hez.
 - Kódot nem veszünk át. A `libltc` (LGPL-3.0-or-later) kompatibilis lenne, de C-könyvtár, és a
-  feladat kicsi, ezért nem kell. Az Arcane Wizards TypeScript csomagjai csak referenciák.
+  feladat kicsi, ezért nem kell. Ugyanez áll elődjére, a `libltcsmpte`-re (ltcsmpte.sourceforge.net, a tulajdonos küldte);
+  ha valaha kód kerülne át belőlük, előbb a fájlfejlécek licencét ellenőrizzük (AGENTS.md, docs/licensing.md §5).
+  A böngészős LTC-generátor (elteesee.pehrhovey.net) kézi tesztjelforrásnak jelölt. Az Arcane Wizards TypeScript csomagjai csak referenciák.
 - **Tesztorákulum:** az Ubuntu `ltc-tools` csomag (`ltcgen`, `ltcdump`, libltc alapú) külső
   programként, csak tesztben, mint az ffmpeg CLI: LTC-wav generálása a dekódolónk ellen, és a
   mi kimenetünk visszaolvasása. Termékbe nem kerül. Hiánya esetén a teszt kihagyja magát.
