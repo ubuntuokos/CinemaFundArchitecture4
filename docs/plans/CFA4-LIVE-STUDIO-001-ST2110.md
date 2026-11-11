@@ -139,7 +139,7 @@ kapukkal. A fő terv fázisaihoz kötve (VI. fejezet a fő tervben):
 | **T0** – Alap | `cfa4-st2110` crate: RTP-fejléc, kiterjesztett sorszám, SDP olvasás/írás a -10/-20/-21/-30 paramétereivel, -20 pgroup-csomagolás (4:2:2 8/10 bit, 4:4:4 RGB 8/10 bit) GPM és BPM, bontás; fuzz-tesztek | S0 (#820) | a -10 B mellékletének és a -20 7.7 példájának SDP-je oda-vissza azonos; egy képkocka csomagolva–bontva bitazonos; a GStreamer `rtpvrawdepay` a mi csomagjainkból ugyanazt a képet adja |
 | **T1** – Idő | PTP-állapot és idő olvasása (`CLOCK_TAI`, `ptp4l` állapot), SMPTE Epoch szerinti képkocka-időbélyeg, `ts-refclk` (ptp és localmac), `mediaclk:direct=0` / `sender`; állapot a host státuszában | T0 | PTP-vel és anélkül is helyes SDP és időbélyeg; a 59,94 Hz-es 1501/1502 lépés tesztelve |
 | **T2** – Hang (-30) | AES67 küldő és vevő, A szint (48 kHz, 1 ms, 1–8 csatorna), utána B (125 µs); csatornarend; a libobs hangkeverőbe és -ből | T1, S3 (hangkeverő) | egy külső AES67-forrás hangja a keverőben; a program hangja egy AES67-vevőben; késleltetés mérve |
-| **T3** – Képbemenet (-20, -21 vevő) | A típusú vevő (GPM és BPM, 4:2:2 10 bit, 1080p50/59,94, 720p, 2160p ha a kártya bírja), 2022-7 redundáns pár, ST 2110 forrás a jelenetben | T1, S2 (rögzítő bemenetek) | egy 1080p59,94 4:2:2 10 bites folyam elejtett képkocka nélkül egy órán át a referenciagépen; csomagvesztésnél kerethiba nélkül (eldobott képkocka, számlálva) |
+| **T3** – Képbemenet (-20, -21 vevő) | A típusú vevő (GPM és BPM, 4:2:2 10 bit, 1080p50/59,94, 720p, 2160p ha a kártya bírja; V. fejezet), 2022-7 redundáns pár, ST 2110 forrás a jelenetben | T1, S2 (rögzítő bemenetek) | egy 1080p50 4:2:2 10 bites folyam (a 2,5 GbE-n ez fér el, V. fejezet) elejtett képkocka nélkül egy órán át a referenciagépen; csomagvesztésnél kerethiba nélkül (eldobott képkocka, számlálva) |
 | **T4** – Programkimenet (-20, -21 küldő) | W típusú küldő `SO_TXTIME` ütemezéssel, `TP=2110TPW`, saját -21 elemző, 2022-7 kimenet, SDP a menedzsment-API-n | T3, S4 (stúdió mód) | a saját elemző és egy külső vevő szerint W-megfelelő egy órán át; a program képe bitazonos a stúdióéval |
 | **T5** – Adatfolyamok (-40, -43, -41, -31) | ANC: CEA-608/708 (ST 334) és időkód a `cfa4-captions`-ből, CTM, később LLTM; TTML/IMSC1.2 (-43) a `cfa4-captions` TTML-íróból; -41 keretrendszer (a regisztrált típusok közül, amire igény van); -31 AM824 átlátszó továbbítás | T4 | az élő feliratok egy vevőben a képpel szinkronban; az AM824 tartalom bitazonosan átmegy |
 | **T6** – Tömörített kép (-22) | a D10 szerinti kodek(ek), CBR, 90 kHz, `b=AS`, N vagy W forgalom | T4, D10 | egy -22 folyam be és ki a referenciagépen, bitsebesség és késleltetés mérve |
@@ -154,17 +154,19 @@ előfeltételként megnevezett fázisai után.
 - **Sávszélesség:** 1080p59,94 4:2:2 10 bit ≈ 2,49 Gbit/s hasznos adat (1920 × 1080 × 20 bit ×
   59,94), ehhez **10 GbE** kell; 2160p59,94 ≈ 9,95 Gbit/s, ehhez **25 GbE**. 1 GbE-n csak a hang, az
   adat és a tömörített kép (-22) próbálható, a tömörítetlen kép legfeljebb kis felbontásban.
-- **Hálózati kártya:** a tulajdonos 2026-11-11-én jelezte, hogy **a referenciagépben nincs 10 GbE-s,
-  PTP-képes kártya** (rögzítve a [`reference-machine.md`](../development/reference-machine.md)-ben). Ezért:
-  - a T0 (csomagolás, SDP), a T1 (idő; `ptp4l` szoftveres időbélyeggel, `-S`, vagy PTP nélkül
-    `localmac` + `mediaclk:sender`), a T2 (AES67 hang, 1 ms-os csomagokkal pár Mbit/s), a T5 (adat)
-    és a T6 (tömörített kép) a meglévő hálózaton és a hurokinterfészen végigvihető és mérhető;
-  - a T3–T4 tömörítetlen képe a hurokinterfészen teljes felbontásban is tesztelhető (helyesség,
-    -21 elemző), de **valódi hálózaton csak kis felbontással** (1 GbE-n pl. 1080p25 8 bit ≈ 0,83 Gbit/s
-    vagy 720p25); a kész mérés (1080p59,94 egy órán át, külső vevővel) egy későbbi kártyára vár,
-    és ezt a PR-ek jelzik;
-  - egy ilyen kártya (PTP hardveres időbélyeggel, `ethtool -T`) és egy PTP-nagymester beszerzése a
-    tulajdonos döntése, nem feltétele a T0–T2 indulásának.
+- **Hálózati kártya:** a tulajdonos 2026-11-11-én jelezte, hogy a referenciagépben **2,5 GbE-s kártya**
+  van, 10 GbE-s nincs (rögzítve a [`reference-machine.md`](../development/reference-machine.md)-ben). A
+  kártya típusát és PTP-képességét a T1-et indító munkamenet a gépről olvassa ki (`lspci`, `ethtool -i`,
+  `ethtool -T`) és rögzíti; több 2,5 GbE-s vezérlő tud PTP hardveres időbélyeget. Mit ad a 2,5 GbE
+  (a csomag-, IP- és Ethernet-többlet kb. 6%):
+  - **elfér:** 1080p50 4:2:2 10 bit (≈ 2,07 Gbit/s hasznos, ≈ 2,2 a vonalon), 1080p59,94 4:2:2 8 bit
+    (≈ 1,99, ≈ 2,1), minden 1080p25/29,97 és 720p változat, a hang (-30/-31), az adat (-40/-41/-43)
+    és a tömörített kép (-22);
+  - **nem fér el:** 1080p59,94 4:2:2 10 bit (≈ 2,49 hasznos, ≈ 2,6 a vonalon) és minden 2160p
+    tömörítetlenül; ezek a hurokinterfészen tesztelhetők, valódi hálózaton -22-vel (tömörítve);
+  - ezért a T3 és T4 „kész, ha” mérése a referenciagépen **1080p50 4:2:2 10 biten** fut; a
+    1080p59,94 10 bites és a 2160p tömörítetlen mérés egy 10/25 GbE-s kártyára vár (a tulajdonos
+    döntése, nem feltétele egyik fázis indulásának sem).
 - **NUMA:** a kártya NUMA-csomópontjához rögzített szálak (a referenciagép két csomópontos; a mérési
   jegyzőkönyv rögzíti a magokat, `docs/performance.md`).
 
@@ -183,9 +185,8 @@ előfeltételként megnevezett fázisai után.
 
 - **Szoftveres időzítés:** egy általános Linux-rendszermag mellett a W típus tűrése is szoros lehet
   nagy felbontásnál; ezért az elemző az első naptól mér, és az AF_XDP csak mérés után jön.
-- **Hardverfüggés:** a teljes érték 10/25 GbE-s, PTP-képes kártyát és PTP-nagymestert kíván; ilyen
-  most nincs a referenciagépben, ezért a T3–T4 valódi hálózaton egyelőre csak kis felbontással mérhető
-  (V. fejezet).
+- **Hardverfüggés:** a teljes érték 10/25 GbE-s, PTP-képes kártyát és PTP-nagymestert kíván; a
+  referenciagépen 2,5 GbE van, ezért a T3–T4 valódi hálózaton 1080p50 10 bitig mérhető (V. fejezet).
 - **Két óra:** a libobs a saját órájához igazít; a PTP-hez kötött be- és kimenet közt a libobs
   képkocka-ütemét a PTP-hez kell zárni, különben a küldő `mediaclk:sender` módban marad. Ezt a T1–T4
   méri; ha a libobs nem zárható, ez az S12+ csere (saját kompozitálás) egyik oka.

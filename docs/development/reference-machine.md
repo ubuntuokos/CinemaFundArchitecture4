@@ -11,7 +11,7 @@ ne kérdezze meg újra a tulajdonostól. Ha a gép változik, ezt a fájlt kell 
 | Processzor | 2 × Intel Xeon E5-2696 v4 @ 2,20 GHz (2 × 22 mag, Hyper-Threadinggel 88 szál; Broadwell-EP, 2 NUMA-csomópont) |
 | Memória | 512 GiB RAM (503,8 GiB használható) |
 | GPU | NVIDIA RTX A1000 (csak monitorhoz) + NVIDIA RTX A4000 (csak számításra) |
-| Hálózat | nincs 10 GbE-s vagy PTP hardveres időbélyeget tudó kártya (a tulajdonos közlése, 2026-11-11; ST 2110-mérésekhez számít) |
+| Hálózat | 2,5 GbE-s kártya, 10 GbE-s nincs (a tulajdonos közlése, 2026-11-11); a típus és a PTP-képesség (`ethtool -T`) a gépről olvasandó; ST 2110-mérésekhez számít |
 | Operációs rendszer | Ubuntu Studio 26.04 (AMD64) |
 | Asztali környezet | KDE Plasma 6.6.6, KDE Frameworks 6.24.0 |
 | Grafikai platform | Wayland |
