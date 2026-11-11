@@ -380,6 +380,8 @@ pub(crate) fn output_id(format: MuxFormat, codecs: &[MuxCodec], k: usize) -> Opt
         MuxCodec::MpegAudio | MuxCodec::AacAdts => StreamId::Ps { stream_id: 0xC0 + nth, sub_id: None },
         MuxCodec::Ac3 => StreamId::Ps { stream_id: 0xBD, sub_id: Some(0x80 + nth) },
         MuxCodec::LpcmDvd { .. } => StreamId::Ps { stream_id: 0xBD, sub_id: Some(0xA0 + nth) },
+        // transport streams only: the muxer refuses them in program streams
+        MuxCodec::H264 | MuxCodec::Hevc => return None,
     })
 }
 
