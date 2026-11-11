@@ -1,0 +1,73 @@
+name: CFA4 security scanning (Semgrep, OSV)
+
+# Complements codeql.yml; nothing here compiles CFA4 code.
+# - Semgrep: CFA4 project rules in .semgrep/ (blocking): network listeners only on loopback,
+#   no shell command execution, no `unsafe` outside crates/platform (AGENTS.md §0).
+# - OSV-Scanner: lockfile vulnerability report for every ecosystem (report-only;
+#   the blocking Rust advisory check is cargo-deny).
+# Results go to GitHub code scanning (Security tab and PR annotations) as SARIF.
+
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "41 4 * * 1"   # weekly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-security-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SEMGREP_VERSION: "1.183.0"
+
+jobs:
+  semgrep:
+    name: Semgrep (CFA4 rules)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - name: Install Semgrep
+        run: python -m pip install "semgrep==${SEMGREP_VERSION}"
+      - name: Scan
+        run: semgrep scan --metrics=off --config .semgrep/ --error --sarif-output=semgrep.sarif
+      - name: Upload SARIF
+        if: always() && hashFiles('semgrep.sarif') != '' && github.event_name != 'merge_group'
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  osv:
+    name: OSV-Scanner (report-only)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Scan lockfiles
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --recursive
+            ./

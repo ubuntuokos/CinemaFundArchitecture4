@@ -90,6 +90,11 @@ environment, because rust-cache hashes those into its key: change them together.
 The older `cargo xtask wasm` code remains in source for historical compatibility,
 but WASM is **not** a supported CFA4 target or quality gate.
 
+## DCP validation
+
+Development dependencies of the planned DCP validation (isolated dcp_inspect reference engine,
+no system changes): [dcp-validation.md](dcp-validation.md).
+
 ## HEIF / HEIC still images (local libheif, Ubuntu 26.04 AMD64)
 
 CFA4 recognizes `.heic`, `.heif` and `.hif` image files. Its Rust

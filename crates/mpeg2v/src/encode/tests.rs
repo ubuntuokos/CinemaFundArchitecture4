@@ -376,6 +376,205 @@ fn extreme_content_stays_decodable() {
     }
 }
 
+/// Interlaced content: the two fields of frame `t` are sampled half a frame apart (the first
+/// field at `2t`, the second at `2t + 1` in [`textured`] time), so moving edges comb.
+fn interlaced(w: usize, h: usize, chroma: ChromaFormat, t: usize, order: FieldOrder, speed: usize) -> Clip {
+    let a = textured(w, h, chroma, 2 * t * speed, 4);
+    let b = textured(w, h, chroma, (2 * t + 1) * speed, 4);
+    let first_parity = if order == FieldOrder::TopFirst { 0 } else { 1 };
+    let weave = |pa: &[u8], pb: &[u8], stride: usize| -> Vec<u8> {
+        pa.chunks(stride).zip(pb.chunks(stride)).enumerate().flat_map(|(r, (ra, rb))| if r % 2 == first_parity { ra.to_vec() } else { rb.to_vec() }).collect()
+    };
+    // 4:2:0 chroma rows alternate parity like the luma rows
+    Clip { w, cw: a.cw, ch: a.ch, y: weave(&a.y, &b.y, w), cb: weave(&a.cb, &b.cb, a.cw), cr: weave(&a.cr, &b.cr, a.cw) }
+}
+
+fn encode_interlaced(cfg: Config, frames: usize, order: FieldOrder, speed: usize) -> (Vec<u8>, Vec<Clip>) {
+    let mut enc = Encoder::new(cfg.clone()).unwrap();
+    let mut es = Vec::new();
+    let mut clips = Vec::new();
+    for t in 0..frames {
+        let c = interlaced(cfg.width as usize, cfg.height as usize, cfg.chroma, t, order, speed);
+        es.extend(enc.encode(&input(&c)).unwrap().into_iter().flat_map(|p| p.data));
+        clips.push(c);
+    }
+    es.extend(enc.flush().unwrap().into_iter().flat_map(|p| p.data));
+    es.extend_from_slice(&enc.finish());
+    (es, clips)
+}
+
+/// Interlaced frame pictures, top or bottom field first, with and without B pictures.
+#[test]
+fn interlaced_frames_round_trip() {
+    for (order, chroma, b_frames) in
+        [(FieldOrder::TopFirst, ChromaFormat::Yuv420, 0), (FieldOrder::BottomFirst, ChromaFormat::Yuv420, 2), (FieldOrder::TopFirst, ChromaFormat::Yuv422, 2)]
+    {
+        let mut cfg = Config::new(176, 144, 25, 1);
+        cfg.chroma = chroma;
+        cfg.gop = 6;
+        cfg.b_frames = b_frames;
+        cfg.interlaced = Some(order);
+        cfg.rate = Rate::Quantizer(3);
+        let (es, clips) = encode_interlaced(cfg, 10, order, 1);
+        let pics = decode(&es);
+        assert_eq!(pics.len(), 10);
+        assert!(!pics[0].info.progressive_sequence);
+        for (i, (p, c)) in pics.iter().zip(&clips).enumerate() {
+            assert_eq!(p.field_order(), Some(order), "frame {i}");
+            assert!(!p.field_pictures && !p.repeat_first_field);
+            let (py, pc) = (psnr(&p.y, &c.y), psnr(&p.cb, &c.cb).min(psnr(&p.cr, &c.cr)));
+            assert!(py > 38.0 && pc > 38.0, "{order:?} {chroma:?} M={}: frame {i}: PSNR Y {py:.2} C {pc:.2}", b_frames + 1);
+        }
+    }
+}
+
+/// On combed moving content field prediction and field DCT pay: the interlaced tools code the
+/// same pictures in clearly fewer bits than progressive coding at the same quantiser.
+#[test]
+fn field_tools_pay_on_interlaced_motion() {
+    let order = FieldOrder::TopFirst;
+    let size = |interlaced: Option<FieldOrder>| {
+        let mut cfg = Config::new(176, 144, 25, 1);
+        cfg.gop = 12;
+        cfg.b_frames = 2;
+        cfg.interlaced = interlaced;
+        cfg.rate = Rate::Quantizer(4);
+        let (es, clips) = encode_interlaced(cfg, 12, order, 2);
+        let pics = decode(&es);
+        let worst = pics.iter().zip(&clips).map(|(p, c)| psnr(&p.y, &c.y)).fold(f64::MAX, f64::min);
+        (es.len(), worst)
+    };
+    let (progressive, pp) = size(None);
+    let (fields, pf) = size(Some(order));
+    assert!(fields * 100 < progressive * 95, "interlaced {fields} bytes vs progressive {progressive}");
+    assert!(pf > pp - 1.0, "PSNR interlaced {pf:.2} vs progressive {pp:.2}");
+}
+
+/// An independent Annex C check of `es` (decode order) against a `buffer`-bit VBV filled at
+/// `rate`: at a constant bitrate (real vbv_delay values) every picture is removed one period
+/// after the one before, has wholly arrived by then and the buffer never holds more than its
+/// size; at a variable bitrate (vbv_delay 0xFFFF) the buffer fills at `rate` until full, and no
+/// picture is larger than what it holds. Returns the vbv_delay values.
+fn vbv_check(es: &[u8], rate: u64, buffer: u64, fps: f64) -> std::result::Result<Vec<u16>, String> {
+    let es = es.strip_suffix(&[0, 0, 1, 0xB7]).unwrap_or(es);
+    let (r, b, period) = (rate as f64, buffer as f64, 1.0 / fps);
+    let mut delays = Vec::new();
+    let aus = access_units(es);
+    for au in &aus {
+        let a = &es[au.clone()];
+        let p = a.windows(4).position(|w| w == [0, 0, 1, 0]).ok_or("no picture start code")?;
+        let x = |k: usize| a.get(p + k).copied().unwrap_or(0) as u16;
+        delays.push(((x(5) & 7) << 13) | (x(6) << 5) | (x(7) >> 3));
+    }
+    if delays.iter().all(|&d| d == 0xFFFF) {
+        let total = es.len() as f64 * 8.0;
+        let mut occ = b.min(total);
+        let mut arrived = occ;
+        for (n, au) in aus.iter().enumerate() {
+            let size = au.len() as f64 * 8.0;
+            if size > occ + 1.0 {
+                return Err(format!("picture {n}: {size} bits, {occ} in the buffer"));
+            }
+            occ -= size;
+            let inc = (r * period).min(b - occ).min(total - arrived);
+            occ += inc;
+            arrived += inc;
+        }
+        return Ok(delays);
+    }
+    let tick = 1.0 / 90_000.0;
+    let mut last: Option<f64> = None;
+    for (n, (au, &d)) in aus.iter().zip(&delays).enumerate() {
+        let a = &es[au.clone()];
+        let p = a.windows(4).position(|w| w == [0, 0, 1, 0]).ok_or("no picture start code")?;
+        let removed = au.start as f64 * 8.0;
+        let decode = (au.start + p + 4) as f64 * 8.0 / r + d as f64 * tick;
+        if let Some(prev) = last
+            && (decode - prev - period).abs() > 2.0 * tick
+        {
+            return Err(format!("picture {n} removed {:.6} s after the one before", decode - prev));
+        }
+        last = Some(decode);
+        if au.end as f64 * 8.0 / r > decode + tick {
+            return Err(format!("picture {n} has not arrived when it is removed (underflow)"));
+        }
+        let occ = r * decode - removed;
+        if occ > b + r * tick + 8.0 {
+            return Err(format!("picture {n}: {occ:.0} bits in a {b}-bit buffer (overflow)"));
+        }
+    }
+    Ok(delays)
+}
+
+fn encode_rate(rate: Rate, b_frames: u32, frames: usize, amp: u32) -> (Vec<u8>, Encoder) {
+    let mut cfg = Config::new(352, 288, 25, 1);
+    cfg.gop = 12;
+    cfg.b_frames = b_frames;
+    cfg.rate = rate;
+    let mut enc = Encoder::new(cfg).unwrap();
+    let mut es = Vec::new();
+    for t in 0..frames {
+        let c = textured(352, 288, ChromaFormat::Yuv420, t, amp);
+        es.extend(enc.encode(&input(&c)).unwrap().into_iter().flat_map(|p| p.data));
+    }
+    es.extend(enc.flush().unwrap().into_iter().flat_map(|p| p.data));
+    es.extend_from_slice(&enc.finish());
+    (es, enc)
+}
+
+/// Constant bitrate: real vbv_delay values, the buffer valid over the whole stream, the stream
+/// exactly at its rate.
+#[test]
+fn constant_bitrate_keeps_the_vbv() {
+    for (bps, buffer, b_frames, amp) in [(1_500_000, 0, 2, 4), (800_000, 120_000, 0, 4), (600_000, 80_000, 2, 30), (4_000_000, 600_000, 2, 30)] {
+        let (es, enc) = encode_rate(Rate::Cbr { bits_per_second: bps, buffer_bits: buffer }, b_frames, 36, amp);
+        let name = format!("CBR {bps} buffer {buffer} M={} amp {amp}", b_frames + 1);
+        assert_eq!(enc.signalled_bit_rate(), bps, "{name}");
+        let size = if buffer > 0 { buffer / 16384 * 16384 } else { 1_835_008 };
+        assert_eq!(enc.signalled_buffer(), size, "{name}");
+        assert_eq!(enc.vbv_underflows(), 0, "{name}");
+        let delays = vbv_check(&es, bps, size, 25.0).unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(delays.iter().all(|&d| d < 0xFFFF), "{name}");
+        // 36 pictures at 25 fps: the stream is the bitrate's worth, give or take the buffer
+        let want = bps as f64 * 36.0 / 25.0 / 8.0;
+        let got = es.len() as f64;
+        assert!((got - want).abs() < size as f64 / 8.0, "{name}: {got} bytes, {want:.0} expected");
+        let pics = decode(&es);
+        assert_eq!(pics.len(), 36, "{name}");
+    }
+}
+
+/// Variable bitrate within a buffer: no picture larger than the buffer holds, the average
+/// near the target, vbv_delay 0xFFFF.
+#[test]
+fn constrained_vbr_keeps_the_vbv() {
+    for (avg, max, buffer, amp) in [(1_000_000, 1_500_000, 0, 4), (700_000, 1_000_000, 100_000, 30)] {
+        let rate = Rate::ConstrainedVbr { bits_per_second: avg, max_bits_per_second: max, buffer_bits: buffer };
+        let (es, enc) = encode_rate(rate, 2, 36, amp);
+        let name = format!("VBR {avg}/{max} buffer {buffer} amp {amp}");
+        assert_eq!(enc.signalled_bit_rate(), max, "{name}");
+        let size = enc.signalled_buffer();
+        assert_eq!(enc.vbv_underflows(), 0, "{name}");
+        let delays = vbv_check(&es, max, size, 25.0).unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(delays.iter().all(|&d| d == 0xFFFF), "{name}");
+        let bps = es.len() as f64 * 8.0 * 25.0 / 36.0;
+        assert!(bps < max as f64 && bps > avg as f64 * 0.6, "{name}: {bps:.0} bit/s");
+        assert_eq!(decode(&es).len(), 36, "{name}");
+    }
+}
+
+#[test]
+fn rejects_impossible_buffers() {
+    let mut cfg = Config::new(352, 288, 25, 1);
+    cfg.rate = Rate::Cbr { bits_per_second: 1_000_000, buffer_bits: 40_000 };
+    assert!(Encoder::new(cfg.clone()).is_err(), "less than two pictures' worth");
+    cfg.rate = Rate::ConstrainedVbr { bits_per_second: 2_000_000, max_bits_per_second: 1_000_000, buffer_bits: 0 };
+    assert!(Encoder::new(cfg.clone()).is_err(), "maximum below the average");
+    // a buffer beyond Main Level moves the stream to High-1440
+    cfg.rate = Rate::Cbr { bits_per_second: 8_000_000, buffer_bits: 4_000_000 };
+    assert_eq!(Encoder::new(cfg).unwrap().profile_and_level(), 0x46);
+}
+
 /// ffmpeg decodes our streams to the same pictures as our decoder (up to IDCT rounding).
 #[test]
 fn ffmpeg_decodes_our_streams() {
@@ -386,6 +585,11 @@ fn ffmpeg_decodes_our_streams() {
         ("enc_420_ibbp", ChromaFormat::Yuv420, Rate::Quantizer(4)),
         ("enc_420_ibbp_rate", ChromaFormat::Yuv420, Rate::Bitrate { bits_per_second: 800_000 }),
         ("enc_422_ibbp", ChromaFormat::Yuv422, Rate::Quantizer(3)),
+        ("enc_420_interlaced", ChromaFormat::Yuv420, Rate::Quantizer(4)),
+        ("enc_420_interlaced_ibbp_rate", ChromaFormat::Yuv420, Rate::Bitrate { bits_per_second: 800_000 }),
+        ("enc_422_interlaced_ibbp", ChromaFormat::Yuv422, Rate::Quantizer(3)),
+        ("enc_420_ibbp_cbr", ChromaFormat::Yuv420, Rate::Cbr { bits_per_second: 800_000, buffer_bits: 200_000 }),
+        ("enc_422_vbv", ChromaFormat::Yuv422, Rate::ConstrainedVbr { bits_per_second: 900_000, max_bits_per_second: 1_500_000, buffer_bits: 0 }),
     ] {
         let mut cfg = Config::new(160, 96, 25, 1);
         cfg.chroma = chroma;
@@ -396,7 +600,12 @@ fn ffmpeg_decodes_our_streams() {
             cfg.b_frames = 2;
             cfg.closed_gop = name.ends_with("rate");
         }
-        let (es, _, _) = encode(cfg, 14);
+        let es = if name.contains("interlaced") {
+            cfg.interlaced = Some(FieldOrder::BottomFirst);
+            encode_interlaced(cfg, 14, FieldOrder::BottomFirst, 1).0
+        } else {
+            encode(cfg, 14).0
+        };
         let ours = decode(&es);
         let Some(ff) = cfa4_testkit::ffmpeg_or_skip(name) else { return };
         let path = cfa4_testkit::fixtures_dir("mpeg2v").join(format!("{name}.m2v"));
@@ -419,6 +628,79 @@ fn ffmpeg_decodes_our_streams() {
         }
         assert!(worst <= 2, "{name}: ffmpeg differs by up to {worst}");
     }
+}
+
+#[test]
+fn reciprocal_division_is_exact_for_every_quantiser_scale() {
+    for qs in 1..=112 {
+        let m = recip(qs);
+        for a in 0..=0x1_0000u32 {
+            assert_eq!(div_recip(a, m), (a.min(0xFFFF) as i32 / qs).min(2047), "{a} / {qs}");
+        }
+    }
+    assert_eq!(div_recip(u32::MAX, recip(1)), 2047);
+}
+
+/// A hard cut to unrelated content: the anchor after it becomes an I picture that starts a new
+/// GOP (the B pictures before it predict from it alone in a closed GOP), unless detection is off.
+#[test]
+fn scene_cut_starts_a_new_gop() {
+    let cut = 12usize;
+    let run = |scene_cut: bool| {
+        let mut cfg = Config::new(176, 144, 25, 1);
+        cfg.gop = 15;
+        cfg.b_frames = 2;
+        cfg.rate = Rate::Quantizer(4);
+        cfg.scene_cut = scene_cut;
+        let mut enc = Encoder::new(cfg.clone()).unwrap();
+        let mut packets = Vec::new();
+        let mut clips = Vec::new();
+        for t in 0..24 {
+            let mut c = if t < cut { clip(176, 144, cfg.chroma, t) } else { textured(176, 144, cfg.chroma, t, 40) };
+            if t >= cut {
+                // the other scene: strong texture, mirrored, inverted luma, swapped chroma
+                for row in c.y.chunks_mut(c.w) {
+                    row.reverse();
+                    row.iter_mut().for_each(|v| *v = 255 - *v);
+                }
+                std::mem::swap(&mut c.cb, &mut c.cr);
+            }
+            packets.extend(enc.encode(&input(&c)).unwrap());
+            clips.push(c);
+        }
+        packets.extend(enc.flush().unwrap());
+        let mut es: Vec<u8> = packets.iter().flat_map(|p| p.data.iter().copied()).collect();
+        es.extend_from_slice(&enc.finish());
+        let pics = decode(&es);
+        assert_eq!(pics.len(), 24);
+        for (i, (p, c)) in pics.iter().zip(&clips).enumerate() {
+            let py = psnr(&p.y, &c.y);
+            assert!(py > 35.0, "frame {i}: PSNR Y {py:.2}");
+        }
+        let types: Vec<PictureType> = pics.iter().map(|p| p.picture_type).collect();
+        let keyframes: Vec<u64> = packets.iter().filter(|p| p.keyframe).map(|p| p.index).collect();
+        (types, keyframes)
+    };
+    let (types, keyframes) = run(true);
+    assert_eq!(types[cut], PictureType::I);
+    assert_eq!(keyframes, vec![0, cut as u64]);
+    // the GOP cadence restarts at the cut: anchors every third picture from it
+    assert_eq!(types[cut + 3], PictureType::P);
+    assert_eq!(types[cut + 1], PictureType::B);
+    let (types, keyframes) = run(false);
+    assert_eq!(types[cut], PictureType::P);
+    assert_eq!(keyframes, vec![0, 15]);
+}
+
+/// Pictures that differ only by motion never count as cuts.
+#[test]
+fn moving_content_is_not_a_scene_cut() {
+    let mut cfg = Config::new(176, 144, 25, 1);
+    cfg.gop = 30;
+    cfg.rate = Rate::Quantizer(4);
+    let (_, packets, _) = encode(cfg, 20);
+    let keyframes: Vec<u64> = packets.iter().filter(|p| p.keyframe).map(|p| p.index).collect();
+    assert_eq!(keyframes, vec![0]);
 }
 
 /// The low-delay flag can be kept clear without B pictures (to splice into a stream that has

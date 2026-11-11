@@ -1,12 +1,15 @@
 //! Synthetic failures at the third-party API boundary; no codec implementation is copied.
 use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use symphonia::core::audio::{AudioBufferRef, Channels};
-use symphonia::core::codecs::{CODEC_TYPE_PCM_S16LE, CodecDescriptor, FinalizeResult};
+use symphonia::core::audio::{GenericAudioBufferRef, Position};
+use symphonia::core::codecs::CodecInfo;
+use symphonia::core::codecs::audio::FinalizeResult;
+use symphonia::core::codecs::audio::well_known::CODEC_ID_PCM_S16LE;
 use symphonia::core::errors::{Error as SymphoniaError, Result as SymphoniaResult};
+use symphonia::core::packet::PacketRef;
 
 struct FaultDecoder {
-    inner: Box<dyn Decoder>,
+    inner: Box<dyn AudioDecoder>,
     calls: Arc<AtomicUsize>,
     resets: Arc<AtomicUsize>,
     panic_at: usize,
@@ -14,16 +17,12 @@ struct FaultDecoder {
     panic_reset: bool,
 }
 
-impl Decoder for FaultDecoder {
-    fn try_new(_: &CodecParameters, _: &DecoderOptions) -> SymphoniaResult<Self> {
-        Err(SymphoniaError::Unsupported("test decoder is constructed explicitly"))
+impl AudioDecoder for FaultDecoder {
+    fn codec_info(&self) -> &CodecInfo {
+        self.inner.codec_info()
     }
 
-    fn supported_codecs() -> &'static [CodecDescriptor] {
-        &[]
-    }
-
-    fn codec_params(&self) -> &CodecParameters {
+    fn codec_params(&self) -> &AudioCodecParameters {
         self.inner.codec_params()
     }
 
@@ -33,38 +32,38 @@ impl Decoder for FaultDecoder {
         self.inner.reset();
     }
 
-    fn decode(&mut self, packet: &Packet) -> SymphoniaResult<AudioBufferRef<'_>> {
+    fn decode_ref(&mut self, packet: &PacketRef<'_>) -> SymphoniaResult<GenericAudioBufferRef<'_>> {
         let call = self.calls.fetch_add(1, Ordering::SeqCst) + 1;
         assert_ne!(call, self.panic_at, "synthetic decoder panic after state mutation");
         if call == self.error_at {
             return Err(SymphoniaError::DecodeError("synthetic corrupt packet"));
         }
-        self.inner.decode(packet)
+        self.inner.decode_ref(packet)
     }
 
     fn finalize(&mut self) -> FinalizeResult {
         self.inner.finalize()
     }
 
-    fn last_decoded(&self) -> AudioBufferRef<'_> {
+    fn last_decoded(&self) -> GenericAudioBufferRef<'_> {
         self.inner.last_decoded()
     }
 }
 
-fn injected(params: &CodecParameters, panic_at: usize, error_at: usize, panic_reset: bool) -> (SymphoniaDecoder, Arc<AtomicUsize>, Arc<AtomicUsize>) {
+fn injected(params: &AudioCodecParameters, panic_at: usize, error_at: usize, panic_reset: bool) -> (SymphoniaDecoder, Arc<AtomicUsize>, Arc<AtomicUsize>) {
     let calls = Arc::new(AtomicUsize::new(0));
     let resets = Arc::new(AtomicUsize::new(0));
-    let inner = symphonia::default::get_codecs().make(params, &DecoderOptions::default()).unwrap();
+    let inner = symphonia::default::get_codecs().make_audio_decoder(params, &AudioDecoderOptions::default()).unwrap();
     let decoder = Box::new(FaultDecoder { inner, calls: calls.clone(), resets: resets.clone(), panic_at, error_at, panic_reset });
     (SymphoniaDecoder { decoder, failed: false }, calls, resets)
 }
 
-fn pcm_params() -> CodecParameters {
-    let mut params = CodecParameters::new();
+fn pcm_params() -> AudioCodecParameters {
+    let mut params = AudioCodecParameters::new();
     params
-        .for_codec(CODEC_TYPE_PCM_S16LE)
+        .for_codec(CODEC_ID_PCM_S16LE)
         .with_sample_rate(48_000)
-        .with_channels(Channels::FRONT_LEFT | Channels::FRONT_RIGHT)
+        .with_channels((Position::FRONT_LEFT | Position::FRONT_RIGHT).into())
         .with_bits_per_sample(16)
         .with_max_frames_per_packet(1024);
     params
@@ -94,7 +93,7 @@ fn packet_panic_is_an_error_and_decoder_is_not_reused() {
     assert_eq!(calls.load(Ordering::SeqCst), 2, "damaged decoder must never be called again");
     assert_eq!(resets.load(Ordering::SeqCst), 0, "reset must not touch damaged state");
     assert_eq!(decoder.channels, 2);
-    let mut fresh = PacketDecoder { inner: Inner::Symphonia(SymphoniaDecoder::new(&pcm_params()).unwrap()), channels: 0 };
+    let mut fresh = PacketDecoder { inner: Inner::Symphonia(SymphoniaDecoder::new(&pcm_params(), false).unwrap()), channels: 0 };
     assert_eq!(fresh.decode(&pcm, 0).unwrap(), vec![vec![0.25], vec![-0.5]]);
 }
 
@@ -127,7 +126,7 @@ fn wav() -> Arc<[u8]> {
 
 #[test]
 fn standalone_panic_after_good_audio_rejects_partial_source() {
-    let result = AudioFileSource::decode_with("test.wav", wav(), |params| Ok(injected(params, 2, 0, false).0));
+    let result = AudioFileSource::decode_with("test.wav", wav(), |params, _| Ok(injected(params, 2, 0, false).0));
     assert_panic_error(result);
     let source = AudioFileSource::decode("test.wav", wav()).unwrap();
     assert_eq!(source.samples.len(), 2);
@@ -137,12 +136,12 @@ fn standalone_panic_after_good_audio_rejects_partial_source() {
 
 #[test]
 fn standalone_constructor_panic_is_an_error() {
-    assert_panic_error(AudioFileSource::decode_with("test.wav", wav(), |_| panic!("synthetic constructor panic")));
+    assert_panic_error(AudioFileSource::decode_with("test.wav", wav(), |_, _| panic!("synthetic constructor panic")));
 }
 
 #[test]
 fn standalone_ordinary_corrupt_packet_keeps_existing_recovery() {
-    let source = AudioFileSource::decode_with("test.wav", wav(), |params| Ok(injected(params, 0, 2, false).0)).unwrap();
+    let source = AudioFileSource::decode_with("test.wav", wav(), |params, _| Ok(injected(params, 0, 2, false).0)).unwrap();
     assert!(!source.samples[0].is_empty());
     assert!(source.samples[0].len() < 16_384);
     assert_eq!(source.samples[0].len(), source.samples[1].len());

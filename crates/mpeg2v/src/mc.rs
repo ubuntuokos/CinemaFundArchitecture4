@@ -58,20 +58,20 @@ pub(crate) fn predict(dst: &mut [u8], doff: usize, dstride: usize, src: RefPlane
             match (hx, hy) {
                 (false, false) => row.copy_from_slice(&a[..bw]),
                 (true, false) => {
-                    for i in 0..bw {
-                        row[i] = ((a[i] as u16 + a[i + 1] as u16 + 1) >> 1) as u8;
+                    for (o, w) in row.iter_mut().zip(a.windows(2)) {
+                        *o = ((w[0] as u16 + w[1] as u16 + 1) >> 1) as u8;
                     }
                 }
                 (false, true) => {
                     let b = &src.data[p + s..p + s + bw];
-                    for i in 0..bw {
-                        row[i] = ((a[i] as u16 + b[i] as u16 + 1) >> 1) as u8;
+                    for ((o, &p0), &p1) in row.iter_mut().zip(a).zip(b) {
+                        *o = ((p0 as u16 + p1 as u16 + 1) >> 1) as u8;
                     }
                 }
                 (true, true) => {
                     let b = &src.data[p + s..p + s + bw + 1];
-                    for i in 0..bw {
-                        row[i] = ((a[i] as u16 + a[i + 1] as u16 + b[i] as u16 + b[i + 1] as u16 + 2) >> 2) as u8;
+                    for ((o, wa), wb) in row.iter_mut().zip(a.windows(2)).zip(b.windows(2)) {
+                        *o = ((wa[0] as u16 + wa[1] as u16 + wb[0] as u16 + wb[1] as u16 + 2) >> 2) as u8;
                     }
                 }
             }

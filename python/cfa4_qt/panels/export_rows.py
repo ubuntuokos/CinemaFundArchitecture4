@@ -109,11 +109,7 @@ class ExportRows(QObject):
         self.match_rate.toggled.connect(self._match_rate_toggled)
         self.fps.currentIndexChanged.connect(lambda _i: self._sync_rate_shown())
         self.field_order = _combo(parent, "export.video.fieldOrder", FIELD_ORDERS)
-        # CFA4's encoders write progressive frames (egui greys the others out)
-        for i in range(1, self.field_order.count()):
-            item = self.field_order.model().item(i)  # type: ignore[attr-defined]
-            if item is not None:
-                item.setEnabled(False)
+        self.allow_interlaced(False)
         self.aspect = _combo(parent, "export.video.aspect", PARS)
         self.profile = _combo(parent, "export.video.profile", H264_PROFILES, translate=False)
         self.level = _combo(parent, "export.video.level", H264_LEVELS)
@@ -237,6 +233,15 @@ class ExportRows(QObject):
     def _keyframe_toggled(self, on: bool) -> None:
         self.keyframe.setVisible(on)
         self.changed.emit("keyframe")
+
+    def allow_interlaced(self, on: bool) -> None:
+        """egui greys out the interlaced field orders except for MPEG-2, the one encoder that codes
+        interlaced video; the others write progressive frames."""
+        model = self.field_order.model()
+        for i in range(1, self.field_order.count()):
+            item = model.item(i)  # type: ignore[attr-defined]
+            if item is not None:
+                item.setEnabled(on)
 
     def show_settings(self, settings: dict[str, Any], touched: set[str]) -> None:
         for key, row in self.rows.items():

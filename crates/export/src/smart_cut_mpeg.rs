@@ -200,7 +200,7 @@ fn mux_codec(stream: &cfa4_mpegts::Stream, format: MuxFormat) -> Result<MuxCodec
         (TsCodec::MpegAudio, _) => Ok(MuxCodec::MpegAudio),
         (TsCodec::Ac3, _) => Ok(MuxCodec::Ac3),
         (TsCodec::AacAdts, _) if !ps => Ok(MuxCodec::AacAdts),
-        (TsCodec::LpcmDvd, Some(l)) if ps && l.bits == 16 => Ok(MuxCodec::LpcmDvd { sample_rate: l.sample_rate, channels: l.channels }),
+        (TsCodec::LpcmDvd, Some(l)) if ps && l.bits == 16 => Ok(MuxCodec::LpcmDvd { sample_rate: l.sample_rate, channels: l.channels, bits: 16 }),
         (TsCodec::AacAdts, _) => Err("AAC is written to transport streams only".into()),
         (TsCodec::LpcmDvd, _) => Err("DVD LPCM is written to 16-bit program streams only".into()),
         (c, _) => Err(format!("{} audio is not copied yet", c.name())),
@@ -380,6 +380,8 @@ pub(crate) fn output_id(format: MuxFormat, codecs: &[MuxCodec], k: usize) -> Opt
         MuxCodec::MpegAudio | MuxCodec::AacAdts => StreamId::Ps { stream_id: 0xC0 + nth, sub_id: None },
         MuxCodec::Ac3 => StreamId::Ps { stream_id: 0xBD, sub_id: Some(0x80 + nth) },
         MuxCodec::LpcmDvd { .. } => StreamId::Ps { stream_id: 0xBD, sub_id: Some(0xA0 + nth) },
+        // transport streams only: the muxer refuses them in program streams
+        MuxCodec::H264 | MuxCodec::Hevc => return None,
     })
 }
 

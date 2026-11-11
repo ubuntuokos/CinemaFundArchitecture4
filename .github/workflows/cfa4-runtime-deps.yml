@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Native build dependencies (the packaged features include GStreamer)
         run: |
           sudo apt-get update
@@ -43,7 +45,8 @@ jobs:
       - name: Measure (objdump, ldd, dpkg-query)
         run: |
           bash scripts/dev/audit-runtime-deps.sh
-          report="$(ls -d target/audit/runtime-deps/*/ | tail -n 1)"
+          reports=(target/audit/runtime-deps/*/)
+          report="${reports[-1]}"
           {
             echo "## Runtime dependencies on $(. /etc/os-release && echo "$PRETTY_NAME") ($(uname -m))"
             echo

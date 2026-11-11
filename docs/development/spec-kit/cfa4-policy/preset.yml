@@ -3,8 +3,8 @@ schema_version: "1.0"
 preset:
   id: "cfa4-policy"
   name: "CFA4 policy"
-  version: "1.0.0"
-  description: "CFA4: reference-only constitution, SK-02 requirement block, specify wrap (CFA4-DEV-SPEC-KIT-001 SK-F2)"
+  version: "1.1.0"
+  description: "CFA4: reference-only constitution, SK-02 requirement block, specify wrap, SK-07 blocking stubs (CFA4-DEV-SPEC-KIT-001 SK-F2, SK-F4)"
   author: "CFA4 (ubuntuokos)"
   repository: "https://github.com/ubuntuokos/CinemaFundArchitecture4"
   license: "GPL-3.0-or-later"
@@ -25,6 +25,24 @@ provides:
       file: "commands/speckit.specify.md"
       description: "Wrap specify with the CFA4 preconditions"
       strategy: "wrap"
+
+    - type: "command"
+      name: "speckit.implement"
+      file: "commands/speckit.implement.md"
+      description: "CFA4-BLOCKED stub (SK-07)"
+      strategy: "replace"
+
+    - type: "command"
+      name: "speckit.taskstoissues"
+      file: "commands/speckit.taskstoissues.md"
+      description: "CFA4-BLOCKED stub (SK-07)"
+      strategy: "replace"
+
+    - type: "command"
+      name: "speckit.constitution"
+      file: "commands/speckit.constitution.md"
+      description: "CFA4-BLOCKED stub (SK-07)"
+      strategy: "replace"
 
 tags:
   - "cfa4"
