@@ -1,10 +1,10 @@
 # CFA4-SECURITY-001 – A CFA4 futásidejű biztonsági rétege
 
-**Verzió:** 0.1 (tervezet, egyeztetés alatt)
+**Verzió:** 1.0 (jóváhagyva)
 **Dátum:** 2026-11-11
 **Projekt:** CinemaFundArchitecture4 (CFA4)
-**Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-11-én kérte; a döntéseket (VII. fejezet)
-lépésenként egyeztetjük, utána indul a munka.
+**Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-11-én kérte, a D1–D8 döntéseket aznap
+lépésenként egyeztette, és a tervet jóváhagyta. A B0–B2 most indulhat, külön munkamenetben (D8).
 **Kapcsolódik:** [`AGENTS.md`](../../AGENTS.md) §0 (never crash) és CFA4-szakasz,
 [ADR 0001](../adr/0001-platform-ffi.md) (FFI), [ADR 0005](../adr/ADR-0005-media-backends.md)
 (kiegészítő médiahátterek), [`CFA4-LIVE-STUDIO-001`](CFA4-LIVE-STUDIO-001.md) (D2, D3 és a
@@ -65,12 +65,12 @@ kihasználható.
   használja, ezért a `cfa4-studio-host`-nak saját, `userns` szabályt adó profil kell a `.deb`-ben.
 - **XDG-portálok**: fájlválasztás és képernyőrögzítés a felhasználó engedélyével (Wayland).
 
-## IV. Felépítés (javaslat)
+## IV. Felépítés
 
 1. **`cfa4-sandbox` crate** (L1): egy helyen írja le a folyamattípusok profiljait (Landlock-
    szabályok + seccomp-szűrő), „best effort” alkalmazással és állapotjelentéssel
    (`security.status` parancs, Beállítások ▸ Biztonság). A `unsafe`-mentes Rust crate-ekre épül.
-2. **Folyamatok és jogaik** (a D2 szerint):
+2. **Folyamatok és jogaik** (D2, D5, D7):
 
 | Folyamat | Olvas | Ír | Hálózat | Programindítás |
 |---|---|---|---|---|
@@ -88,7 +88,7 @@ kihasználható.
    elszigetelt folyamat megsérti a szabályt vagy összeomlik, a felügyelő újraindítja, a felhasználó
    üzenetet kap, a projekt marad.
 
-## V. Fázisok (javaslat)
+## V. Fázisok
 
 | Fázis | Tartalom | Kész, ha |
 |---|---|---|
@@ -103,14 +103,17 @@ kihasználható.
 | **B8** – Csomagolás és ellátási lánc | `.deb` (AppArmor-profilok), AppImage és Flatpak viselkedése, SBOM, aláírt kiadás | a csomagteszt a profilokat ellenőrzi |
 | **B9** – Biztonsági tesztkészlet | rosszindulatú média- és projektminták (a `target/fixtures/`-ben generálva), „mit nem érhet el” tesztek minden folyamatra | a CI-ban fut |
 
-## VI. Ütemezés (javaslat)
+## VI. Ütemezés (D8)
 
-B0, B1 és B2 nem érinti a Qt6 felület fájljait, így most indulhatnak; a Beállítások ▸ Biztonság
-oldal a Qt6 befejezése után. A B6 az élő stúdió S9-ével együtt.
+- **Most:** B0 (fenyegetésmodell, mérőkészlet), B1 (`cfa4-sandbox`), B2 (fuzzing). Nem érintik a
+  Qt6 felület fájljait.
+- **A Qt6 befejezése után:** B3 (a motor önkorlátozása), B4 (`cfa4-media-host`), B5, a
+  Beállítások ▸ Biztonság oldal, B8, B9.
+- **Később:** B6 az élő stúdió S9-ével, B7 az MI-modulok és a bővítmények beépítésével.
 
-## VII. Döntések (lépésenként egyeztetve)
+## VII. Döntések (2026-11-11-én lépésenként egyeztetve, mind eldöntve)
 
-| # | Kérdés | Javaslat |
+| # | Kérdés | Döntés |
 |---|---|---|
 | D1 | Hatókör | **Eldöntve (2026-11-11): futásidejű réteg és fuzzing együtt.** A fuzzing a hibákat keresi meg, mielőtt a támadók tennék; a futásidejű réteg a javítatlanok kárát korlátozza |
 | D2 | Az FFmpeg és a GStreamer helye | **Eldöntve (2026-11-11): külön `cfa4-media-host` folyamat** (B4), mindig; a saját Rust dekóderek a motorban maradnak. A külső dekóder csak a megnyitott fájlt olvashatja, nem ír, nincs hálózata, nem indít programot; a képkockák osztott memórián mennek a motornak; összeomlás után a motor újraindítja. Teljesítménycél: a lejátszás és az export a külső dekóderrel megnyitott fájlokon legfeljebb 5%-kal lassulhat (a referenciagépen mérve); ha többet, az optimalizálandó, nem ok a visszatérésre a motorba |
@@ -119,7 +122,7 @@ oldal a Qt6 befejezése után. A B6 az élő stúdió S9-ével együtt.
 | D5 | Hálózat | **Eldöntve (2026-11-11): csak ahol kell.** A motor csak a 127.0.0.1-et éri el (Qt GUI, MCP, élő oldal), kifelé nem nyithat kapcsolatot; a `cfa4-media-host` soha nem kap hálózatot; kifelé csak a `cfa4-studio-host` lép (a beállított streamelési célok és a hálózati bemenetek); a felhasználó által kért letöltések (MI-modellek, frissítésellenőrzés) egy külön, csak erre szolgáló kis folyamaton (`cfa4-fetch`) mennek, és mindig látszik, mit tölt le és honnan. Ahol a rendszermag Landlock-ABI-ja engedi, portszinten is kikényszerítve, egyébként seccomppal |
 | D6 | Idegen projekt megnyitása | **Eldöntve (2026-11-11): ellenőrzés és figyelmeztetés.** Minden projekt- és cserefájlra méret- és mélységkorlát (a túllépés hibaüzenet, nem összeomlás). Megnyitás előtt a CFA4 megmutatja, mely külső útvonalakra hivatkozik a projekt, és külön figyelmeztet a szokatlanokra (rejtett mappák, a projekten kívüli rendszerkönyvtárak, `..`-os vagy szimbolikus linken át kilépő útvonalak); a motor csak a jóváhagyott médiafájlokhoz kap Landlock-hozzáférést. Az ezen a gépen készült projekt, amelynek hivatkozásai a felhasználó saját mappáiba mutatnak, kérdés nélkül nyílik |
 | D7 | MI-modellek és bővítmények | **Eldöntve (2026-11-11).** **Modellek:** csak betöltéskor kódot nem futtató formátum (safetensors, ONNX, GGUF); a Python pickle-alapú `.pt`/`.bin`/`.ckpt` fájlokat a CFA4 nem nyitja meg. Ha egy modell csak így létezik, egy elszigetelt átalakító folyamat (Landlock + seccomp, hálózat nélkül) egyszer safetensorsra alakítja, és a felhasználó jóváhagyja az eredményt. **Natív bővítmények** (OFX, LV2/VST3 stb.): külön, lezárt folyamatban, nem a motorban; a hangbővítmények késleltetése mérve, a cél a valós idejű lejátszás megtartása |
-| D8 | Ütemezés | B0–B2 most, a többi a Qt6 után (VI.) |
+| D8 | Ütemezés és végrehajtás | **Eldöntve (2026-11-11):** a VI. fejezet szerint (B0–B2 most, B3–B4 és a Beállítások ▸ Biztonság a Qt6 után, B6 az élő stúdió S9-ével, B7 az MI-modulokkal és a bővítményekkel). A munkát **külön munkamenet** végzi, amely ebből a jóváhagyott tervből indul (CLAUDE.md: saját projekt) |
 
 ## VIII. Kockázatok
 
