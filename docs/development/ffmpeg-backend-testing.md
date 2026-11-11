@@ -23,7 +23,7 @@ kimenetében a `VAProfileH264…` és `VAProfileHEVC…` sorok jelzik, mit tud a
 ## 2. Az FFmpeg 9.0.2 lefordítása
 
 ```sh
-scripts/dev/build-ffmpeg-9.0.2.sh            # alap: /opt/cfa4/ffmpeg-9.0.2 (sudo-t kérhet)
+scripts/dev/build-ffmpeg-9.0.2.sh            # alap: /opt/cfa4/ffmpeg-9.0.2 (sudo-t kérhet; Ubuntu 24.04/26.04-en az előre megépítettet tölti le, scripts/dev/fetch-ffmpeg-9.0.2.sh)
 ```
 
 **Elvárt:** a végén `FFmpeg 9.0.2 installed in /opt/cfa4/ffmpeg-9.0.2 (GPL-3 or later, shared

@@ -33,6 +33,10 @@ jobs:
           bash -n packaging/linux/package.sh
           bash -n packaging/linux/flatpak-bundle.sh
           bash -n packaging/linux/install.sh
+          bash -n packaging/linux/check-nfpm.sh
+          bash -n packaging/linux/nfpm-package.sh
+          bash -n scripts/release/install-nfpm.sh
+          bash -n scripts/release/deb-contents-check.sh
           test "$(grep -c 'gh-releases-zsync|' packaging/linux/package.sh)" -eq 1
           grep -Fq 'REPO="ubuntuokos/CinemaFundArchitecture4"' packaging/linux/package.sh
       - name: XDG identity and desktop metadata audit (no graphical session)
@@ -42,10 +46,48 @@ jobs:
       - name: Four-format and isolated runtime regression tests (synthetic files)
         run: python3 -m unittest discover -s scripts/release -p 'test_*.py' -v
 
+  package-contents:
+    # #220: a real .deb, built by the pinned nfpm (packaging/linux/nfpm.lock) from the real
+    # nfpm.yaml, licence and desktop files, is listed with dpkg-deb and must carry every
+    # licence/attribution file; the AppImage content audit runs on a real squashfs image. Release
+    # binaries and FFmpeg are stand-ins here; the four-formats job audits the real packages.
+    name: CFA4 .deb and AppImage contents (pinned nfpm)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout CFA4 repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Go (builds the pinned nfpm) and squashfs-tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends golang-go squashfs-tools
+      - name: Build the pinned nfpm (module hash and binary SHA-256 from nfpm.lock)
+        run: bash scripts/release/install-nfpm.sh --dest "$RUNNER_TEMP/nfpm"
+      - name: An unpinned nfpm is refused
+        run: |
+          printf '#!/bin/sh\necho GitVersion: v0\n' >"$RUNNER_TEMP/fake-nfpm"
+          chmod +x "$RUNNER_TEMP/fake-nfpm"
+          if NFPM="$RUNNER_TEMP/fake-nfpm" bash packaging/linux/check-nfpm.sh; then
+            echo "::error::check-nfpm.sh accepted an unpinned nfpm"; exit 1
+          fi
+      - name: Real .deb from nfpm.yaml, contents and licence files audited
+        env:
+          NFPM: ${{ runner.temp }}/nfpm/nfpm
+        run: bash scripts/release/deb-contents-check.sh
+      - name: AppImage contents audit on a real squashfs (not skipped here)
+        run: |
+          set -o pipefail
+          python3 -m unittest discover -v -s scripts/release -p 'test_four_formats.py' 2>&1 \
+            | tee "$RUNNER_TEMP/four-formats.log"
+          if grep -q 'skipped' "$RUNNER_TEMP/four-formats.log"; then
+            echo "::error::the AppImage squashfs test was skipped"; exit 1
+          fi
+
   four-formats:
     # This job never runs automatically, never uploads a public GitHub Release,
     # and never provisions tools or system packages. Configure a trusted local
-    # runner with all reviewed packaging prerequisites and APPIMAGETOOL path/hash.
+    # runner with all reviewed packaging prerequisites, the APPIMAGETOOL path/hash and the
+    # CFA4_PYSIDE6_WHEELS wheelhouse path (repository variables).
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_four_packages && github.repository == 'ubuntuokos/CinemaFundArchitecture4' }}
     needs: source-policy
     runs-on: [self-hosted, Linux, X64, cfa4-ubuntu-26-04]
@@ -57,12 +99,21 @@ jobs:
         env:
           APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
           CFA4_APPIMAGETOOL_SHA256: ${{ vars.CFA4_APPIMAGETOOL_SHA256 }}
+          # the AppImage's and the Flatpak's PySide6 / Qt 6 (qt-parity 1.10): a wheelhouse on the
+          # runner with the wheels pinned in requirements/linux-amd64.txt, never downloaded here
+          CFA4_PYSIDE6_WHEELS: ${{ vars.CFA4_PYSIDE6_WHEELS }}
+          # the pinned nfpm (packaging/linux/nfpm.lock, scripts/release/install-nfpm.sh); unset, PATH
+          NFPM: ${{ vars.CFA4_NFPM }}
         run: bash scripts/release/check-cfa4-package-prereqs.sh
       - name: Build four private test packages and SHA256SUMS
         env:
           CFA4_ALLOW_LOCAL_PACKAGING: '1'
           APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
           CFA4_APPIMAGETOOL_SHA256: ${{ vars.CFA4_APPIMAGETOOL_SHA256 }}
+          # the AppImage's and the Flatpak's PySide6 / Qt 6 (qt-parity 1.10): a wheelhouse on the
+          # runner with the wheels pinned in requirements/linux-amd64.txt, never downloaded here
+          CFA4_PYSIDE6_WHEELS: ${{ vars.CFA4_PYSIDE6_WHEELS }}
+          NFPM: ${{ vars.CFA4_NFPM }}
         run: bash scripts/release/build-cfa4-four-formats.sh
       - name: Stage package payloads and audit local runtime (no host-wide installation)
         run: |
