@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """CFA4 F5: non-invasive staged runtime audit on Ubuntu 26.04 AMD64.
 
+Smart Cut (WP-10, docs/plans/CFA4-SMART-CUT-RENDER-R1.md): every format's packaged CLI cuts an
+MPEG-2 transport stream on its GOP boundaries with CFA4's own Rust code, verifies the copy and
+reads the result back; no package carries or depends on GOPchop.
+
 Does NOT certify actual system .deb install, Flatpak sandbox launch, GPU/GUI,
 AppImage AppRun, legal redistribution, or complete dlopen dependency inventory.
 All extracted files, trial prefix installs and imported bundle data are temporary.
@@ -73,8 +77,107 @@ def cli_smoke(exe: Path, version: str, env: dict[str, str]) -> dict:
     return {"cli_version": output, "version_match": True}
 
 
+# The Smart Cut smoke cuts frames [10, 50) of a 4 s, 25 fps MPEG-2 stream with closed GOPs of 10.
+SMART_CUT_RANGE = (10, 50)
+SMART_CUT_FRAMES = SMART_CUT_RANGE[1] - SMART_CUT_RANGE[0]
+
+
+def fixture_ffmpeg() -> str:
+    """FFmpeg makes the Smart Cut fixture: CFA4's own 9.0.2 build, else the one on PATH."""
+    build = Path(os.environ.get("CFA4_FFMPEG_BUILD", "/opt/cfa4/ffmpeg-9.0.2")) / "bin/ffmpeg"
+    if build.is_file() and os.access(build, os.X_OK):
+        return str(build)
+    found = shutil.which("ffmpeg")
+    if not found:
+        raise AuditError("the Smart Cut smoke needs ffmpeg for its MPEG-2 fixture "
+                         "(CFA4_FFMPEG_BUILD/bin/ffmpeg or PATH)")
+    return found
+
+
+def make_smart_cut_fixture(ffmpeg: str, work: Path, env: dict[str, str]) -> Path:
+    """An MPEG-2 transport stream: closed GOPs of 10 with two B pictures, and MP2 audio."""
+    source = work / "smart-cut-source.ts"
+    invoke([
+        ffmpeg, "-v", "error", "-y",
+        "-f", "lavfi", "-i", "testsrc2=size=176x144:rate=25",
+        "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000", "-t", "4",
+        "-c:v", "mpeg2video", "-g", "10", "-bf", "2", "-flags", "+cgop",
+        "-sc_threshold", "1000000000", "-c:a", "mp2", "-b:a", "128k",
+        "-f", "mpegts", str(source),
+    ], env=env, timeout=60)
+    if not source.is_file() or source.stat().st_size == 0:
+        raise AuditError("ffmpeg wrote no Smart Cut fixture")
+    return source
+
+
+def run_results(output: str) -> list[dict]:
+    """The result lines of `cfa4-cli run`, in order."""
+    results = []
+    for line in output.splitlines():
+        line = line.strip()
+        if line.startswith("{"):
+            try:
+                value = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(value, dict) and "line" in value:
+                results.append(value)
+    return results
+
+
+def smart_cut_smoke(cli: Path, source: Path, work: Path, env: dict[str, str]) -> dict:
+    """The packaged CLI cuts `source` on GOP boundaries, verifies the copy and reads it back."""
+    work.mkdir(parents=True, exist_ok=True)
+    output = work / "smart-cut.ts"
+    first, end = SMART_CUT_RANGE
+    cut = {"path": str(source), "in": {"frame": first}, "out": {"frame": end},
+           "mode": "gop-boundary", "output": str(output)}
+    steps = [
+        {"id": "export.analyze", "params": {"path": str(source)}},
+        {"id": "export.plan", "params": cut},
+        {"id": "export.start", "params": cut},
+        {"id": "export.analyze", "params": {"path": str(output)}},
+    ]
+    script = work / "smart-cut.jsonl"
+    script.write_text("".join(json.dumps(step) + "\n" for step in steps), encoding="utf-8")
+    results = run_results(invoke([str(cli), "run", str(script), "--data-dir", str(work / "data")],
+                                 env=env, timeout=180))
+    if len(results) != len(steps) or not all(r.get("ok") for r in results):
+        raise AuditError(f"Smart Cut smoke failed: {results}")
+    analyzed, planned, done, back = (r.get("result") or {} for r in results)
+    if analyzed.get("codec") != "mpeg2-video":
+        raise AuditError(f"Smart Cut smoke: the fixture is not MPEG-2 video: {analyzed}")
+    summary = planned.get("summary") or {}
+    want = {"lossless": True, "requiresConfirmation": False,
+            "copiedFrames": SMART_CUT_FRAMES, "reencodedFrames": 0}
+    if any(summary.get(k) != v for k, v in want.items()):
+        raise AuditError(f"Smart Cut smoke: unexpected plan {summary}")
+    report = done.get("report") or {}
+    tracks = (done.get("audio") or {}).get("tracks") or []
+    if done.get("verified") is not True or report.get("samples") != SMART_CUT_FRAMES or len(tracks) != 1:
+        raise AuditError(f"Smart Cut smoke: the copy was not verified: {done}")
+    if not output.is_file() or output.stat().st_size != done.get("bytes"):
+        raise AuditError("Smart Cut smoke: the output file differs from the reported copy")
+    if back.get("codec") != "mpeg2-video" or back.get("frames") != SMART_CUT_FRAMES:
+        raise AuditError(f"Smart Cut smoke: the output reads back wrong: {back}")
+    return {
+        "scope": "SMART_CUT_MPEG2_GOP_COPY_IN_PACKAGED_CLI",
+        "copied_frames": SMART_CUT_FRAMES,
+        "audio_tracks": len(tracks),
+        "output_bytes": done.get("bytes"),
+        "verified": True,
+    }
+
+
+def assert_no_gopchop(root: Path, what: str) -> None:
+    """Smart Cut is CFA4's own code: no package ships GOPchop (WP-10 gate)."""
+    found = sorted(str(p.relative_to(root)) for p in root.rglob("*") if "gopchop" in p.name.lower())
+    if found:
+        raise AuditError(f"{what} ships GOPchop files: {found[:10]}")
+
+
 def stage_tarball(archive_path: Path, target: Path, version: str,
-                  env: dict[str, str]) -> dict:
+                  env: dict[str, str], fixture: Path) -> dict:
     stage = target / "tar-source"
     stage.mkdir()
     # Already inspected by verify_package_set; tarfile data filter also rejects
@@ -89,30 +192,37 @@ def stage_tarball(archive_path: Path, target: Path, version: str,
     if not (installed / "share/metainfo" / f"{APP_ID}.metainfo.xml").is_file():
         raise AuditError("tar prefix installer omitted CFA4 AppStream data")
     binaries = [installed / "bin/cfa4", installed / "bin/cfa4-cli"]
+    assert_no_gopchop(installed, "the tarball")
     return {
         "scope": "PREFIX_INSTALL_AND_CLI_SMOKE_NOT_GUI",
         **cli_smoke(binaries[1], version, env),
+        "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "tar-smart-cut", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "isolated temporary prefix deleted by TemporaryDirectory",
     }
 
 
 def stage_deb(package: Path, target: Path, version: str,
-              env: dict[str, str]) -> dict:
+              env: dict[str, str], fixture: Path) -> dict:
     stage = target / "deb-unpacked"
     stage.mkdir()
     invoke(["dpkg-deb", "--extract", str(package), str(stage)], env=env)
     binaries = [stage / "usr/bin/cfa4", stage / "usr/bin/cfa4-cli"]
+    assert_no_gopchop(stage, "the .deb")
+    relations = invoke(["dpkg-deb", "--field", str(package), "Depends", "Recommends", "Suggests"], env=env)
+    if "gopchop" in relations.lower():
+        raise AuditError(f"the .deb depends on GOPchop: {relations.strip()}")
     return {
         "scope": "DEB_UNPACK_AND_CLI_SMOKE_NOT_DPKG_INSTALL",
         **cli_smoke(binaries[1], version, env),
+        "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "deb-smart-cut", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "temporary extracted FHS tree removed",
     }
 
 
 def stage_appimage(package: Path, target: Path, version: str,
-                   env: dict[str, str]) -> dict:
+                   env: dict[str, str], fixture: Path) -> dict:
     work = target / "appimage-unpacked"
     work.mkdir()
     invoke([str(package), "--appimage-extract"], cwd=work, env=env, timeout=120)
@@ -120,9 +230,11 @@ def stage_appimage(package: Path, target: Path, version: str,
     if not (appdir / "AppRun").exists():
         raise AuditError("AppImage extract has no AppRun")
     binaries = [appdir / "usr/bin/cfa4", appdir / "usr/bin/cfa4-cli"]
+    assert_no_gopchop(appdir, "the AppImage")
     return {
         "scope": "APPIMAGE_EXTRACT_AND_CLI_SMOKE_NOT_APPRUN",
         **cli_smoke(binaries[1], version, env),
+        "smart_cut": smart_cut_smoke(binaries[1], fixture, target / "appimage-smart-cut", env),
         "libraries": [library_inventory(path, env=env) for path in binaries],
         "cleanup": "temporary AppDir extracted files removed",
     }
@@ -144,6 +256,23 @@ def stage_flatpak(package: Path, target: Path, env: dict[str, str]) -> dict:
         "scope": "PRIVATE_BUNDLE_IMPORT_NOT_FLATPAK_INSTALL_OR_RUNTIME",
         "ref": found[0],
         "cleanup": "private temporary OSTree repo removed",
+    }
+
+
+def flatpak_payload(target: Path, ref: str, version: str, env: dict[str, str],
+                    fixture: Path) -> dict:
+    """The bundle's /app tree, checked out of the private repo: the same CLI and Smart Cut smoke
+    on the host (not inside the Flatpak sandbox or runtime)."""
+    repo = target / "private-flatpak-repo"
+    tree = target / "flatpak-checkout"
+    invoke(["ostree", f"--repo={repo}", "checkout", "--user-mode", ref, str(tree)], env=env,
+           timeout=120)
+    cli = tree / "files/bin/cfa4-cli"
+    assert_no_gopchop(tree, "the Flatpak bundle")
+    return {
+        "scope": "CHECKOUT_AND_CLI_SMOKE_ON_HOST_NOT_FLATPAK_SANDBOX",
+        **cli_smoke(cli, version, env),
+        "smart_cut": smart_cut_smoke(cli, fixture, target / "flatpak-smart-cut", env),
     }
 
 
@@ -169,14 +298,17 @@ def audit(dist: Path, version: str) -> dict:
     with tempfile.TemporaryDirectory(prefix="cfa4-f5-staging-") as tmp:
         root = Path(tmp)
         env = isolated_env(root)
+        fixture = make_smart_cut_fixture(fixture_ffmpeg(), root, env)
+        flatpak = stage_flatpak(dist / f"{basename}.flatpak", root, env)
+        flatpak["payload"] = flatpak_payload(root, flatpak["ref"], version, env, fixture)
         result = {
             "schema": "CFA4_F5_STAGING_V1",
             "build_version": version,
             "structure": structure["status"],
-            "tarball": stage_tarball(dist / f"{basename}.tar.gz", root, version, env),
-            "deb": stage_deb(dist / f"{basename}.deb", root, version, env),
-            "appimage": stage_appimage(dist / f"{basename}.AppImage", root, version, env),
-            "flatpak": stage_flatpak(dist / f"{basename}.flatpak", root, env),
+            "tarball": stage_tarball(dist / f"{basename}.tar.gz", root, version, env, fixture),
+            "deb": stage_deb(dist / f"{basename}.deb", root, version, env, fixture),
+            "appimage": stage_appimage(dist / f"{basename}.AppImage", root, version, env, fixture),
+            "flatpak": flatpak,
             "status": "PASS_STAGING_ONLY",
             "not_proven": [
                 "clean VM .deb install and removal",
