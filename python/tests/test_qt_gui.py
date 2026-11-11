@@ -13933,7 +13933,7 @@ def test_credits_page_look_texts(monkeypatch):
     i18n.TR.set_language("hu")
     try:
         assert background_text({"kind": "gradient", "opacity": 12.5}) == "Színátmenet (12,5 %)"
-        assert transition_text({"effect": "push", "duration": TICKS_PER_SECOND}) == "Eltolás, 0:01,0"
+        assert transition_text({"effect": "push", "duration": TICKS_PER_SECOND}) == "Tolás, 0:01,0"
     finally:
         i18n.TR.set_language("en")
 
