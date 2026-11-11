@@ -686,6 +686,7 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"2vuy" => "Uncompressed YUV 4:2:2".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"v210" => "Uncompressed YUV 4:2:2 10-bit".into(),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"drac" => "VC-2 / Dirac".into(),
         CodecConfig::Av1(c) => format!("AV1 ({} Profile)", ["Main", "High", "Professional"].get(c.seq_profile as usize).unwrap_or(&"Main")),
         CodecConfig::Apv(a) => match cfa4_apv::Profile::from_idc(a.profile_idc) {
             Some(p) => p.name().into(),

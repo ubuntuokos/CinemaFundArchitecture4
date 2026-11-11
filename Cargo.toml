@@ -52,6 +52,7 @@ cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
+cfa4-dirac = { path = "crates/dirac" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
 cfa4-dnx = { path = "crates/dnx" }
@@ -134,6 +135,9 @@ type_complexity = "allow"
 opt-level = 3
 
 [profile.dev.package.cfa4-ffv1]
+opt-level = 3
+
+[profile.dev.package.cfa4-dirac]
 opt-level = 3
 
 [profile.dev.package.cfa4-huffyuv]

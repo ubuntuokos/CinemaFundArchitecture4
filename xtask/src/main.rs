@@ -56,6 +56,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("utvideo", 0),
     ("huffyuv", 0),
     ("ffv1", 0),
+    ("dirac", 0),
     ("vp9", 0),
     ("prores", 0),
     ("mjpeg", 0),
