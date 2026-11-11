@@ -1531,6 +1531,14 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // DCP / IMF subtitles: timed text track files are caption tracks, not media.
+                if let Some(r) = crate::captions::import_timed_text_mxf(s, &path) {
+                    match r {
+                        Ok(r) => reports.push(r),
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                    continue;
+                }
                 // Media files through the host's reader (no whole-file read) when it has one.
                 let streamed = cfa4_media::is_importable(std::path::Path::new(&path)) && s.services.reader(&path).is_some();
                 let read = if streamed { Ok(Vec::new()) } else { s.services.read_file(&path) };
@@ -1540,7 +1548,12 @@ fn build() -> Vec<CommandSpec> {
                         Err(e) => errors.push(format!("{path}: {e}")),
                     },
                     Ok(b) => {
-                        if let Some(fmt) = crate::captions::detect(&path, &b) {
+                        if crate::captions::is_dcst(&path, &b) {
+                            match crate::captions::import_dcst(s, &path, &b) {
+                                Ok(r) => reports.push(r),
+                                Err(e) => errors.push(format!("{path}: {e}")),
+                            }
+                        } else if let Some(fmt) = crate::captions::detect(&path, &b) {
                             match crate::captions::import(s, &path, &b, fmt, None) {
                                 Ok(r) => reports.push(r),
                                 Err(e) => errors.push(format!("{path}: {e}")),
