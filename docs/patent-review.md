@@ -75,6 +75,7 @@ szabadalommal védett formátumot.
 | FLAC | kódolás | `crates/flac` | alap | függőben | | |
 | Vorbis | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | WMA | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
+| SMPTE LTC időkód (ST 12-1) és MIDI Timecode (MTC) | dekódolás, kódolás (hangjel, MIDI-üzenetek) | `crates/tcsync` | alap | függőben | | |
 
 ## Konténerek
 
