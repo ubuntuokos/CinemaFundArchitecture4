@@ -4175,3 +4175,5 @@
 	“{text}” is outside the title-safe area	“{text}”이(가) 타이틀 세이프 영역을 벗어났습니다
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”이(가) 검은색 위에서 너무 어둡습니다(대비 {ratio}:1, 최소 4.5:1 필요)
 	“{text}” is {px} px high; 24 px or more reads well	“{text}”의 높이는 {px} px입니다. 24 px 이상이면 읽기 좋습니다
+	The roll moves {speed} px per frame; a whole number does not shimmer	롤이 프레임당 {speed} px 이동합니다. 정수면 깜박이지 않습니다
+	Check Credits	크레딧 검사

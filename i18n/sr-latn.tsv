@@ -4168,3 +4168,20 @@ export.summary	Low	nizak
 	Refresh Credits from Spreadsheet…	Osveži špicu iz tabele…
 	Save Credits File…	Sačuvaj datoteku špice…
 	Compare Credits with Spreadsheet	Uporedi špicu sa tabelom
+	“{name}” appears twice in the same block	„{name}” se pojavljuje dvaput u istom bloku
+	“{name}” is written as “{other}” in row {otherRow}	„{name}” je u redu {otherRow} napisano kao „{other}”
+	The font “{font}” is not installed; another font is used	Font „{font}” nije instaliran; koristi se drugi font
+	The font “{font}” has no “{chars}”; another font draws them	Font „{font}” nema „{chars}”; iscrtava ih drugi font
+	“{text}” is outside the title-safe area	„{text}” je van bezbedne oblasti za natpise
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” je pretamno na crnoj (kontrast {ratio}:1; potrebno je najmanje 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}” je visok {px} px; od 24 px naviše dobro se čita
+	The roll moves {speed} px per frame; a whole number does not shimmer	Pomeranje je {speed} px po kadru; ceo broj ne treperi
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Red prelazi kadar za {seconds} s; najmanje 6 s dobro se čita
+	The card holds for only {seconds} s after its fades	Kartica ostaje samo {seconds} s posle pretapanja
+	This page starts {seconds} s before the previous one ends	Ova stranica počinje {seconds} s pre kraja prethodne
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}” se prikazuje na {percent} % svojih piksela; izgledaće mutno
+	{more} more of the same	Još {more} istih
+	Page {page}: {message}	Stranica {page}: {message}
+	Checks and warnings	Provere i upozorenja
+	Checks: {errors} errors, {warnings} warnings	Provere: greške {errors}, upozorenja {warnings}
+	Check Credits	Proveri špicu

@@ -4165,3 +4165,20 @@ export.summary	Low	低
 	Refresh Credits from Spreadsheet…	從試算表重新整理演職員表…
 	Save Credits File…	儲存演職員表檔案…
 	Compare Credits with Spreadsheet	將演職員表與試算表比較
+	“{name}” appears twice in the same block	「{name}」在同一區塊中出現兩次
+	“{name}” is written as “{other}” in row {otherRow}	「{name}」在第 {otherRow} 列寫成「{other}」
+	The font “{font}” is not installed; another font is used	未安裝字型「{font}」；改用其他字型
+	The font “{font}” has no “{chars}”; another font draws them	字型「{font}」沒有「{chars}」；改由其他字型繪製
+	“{text}” is outside the title-safe area	「{text}」超出字幕安全區
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	「{text}」在黑底上太暗（對比 {ratio}:1；至少需要 4.5:1）
+	“{text}” is {px} px high; 24 px or more reads well	「{text}」高 {px} px；24 px 以上較易閱讀
+	The roll moves {speed} px per frame; a whole number does not shimmer	捲動每格移動 {speed} px；整數不會閃爍
+	A line crosses the frame in {seconds} s; at least 6 s reads well	一行在 {seconds} 秒內越過畫面；至少 6 秒較易閱讀
+	The card holds for only {seconds} s after its fades	字卡在淡入淡出之後只停留 {seconds} 秒
+	This page starts {seconds} s before the previous one ends	此頁在上一頁結束前 {seconds} 秒開始
+	“{file}” is shown at {percent} % of its pixels; it will look soft	「{file}」以其像素的 {percent} % 顯示；看起來會模糊
+	{more} more of the same	另有 {more} 項相同
+	Page {page}: {message}	第 {page} 頁：{message}
+	Checks and warnings	檢查與警告
+	Checks: {errors} errors, {warnings} warnings	檢查：{errors} 個錯誤、{warnings} 個警告
+	Check Credits	檢查演職員表

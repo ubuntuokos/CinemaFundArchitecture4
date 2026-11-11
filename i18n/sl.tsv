@@ -4169,3 +4169,20 @@ export.summary	Low	nizka
 	Refresh Credits from Spreadsheet…	Osveži odjavno špico iz preglednice…
 	Save Credits File…	Shrani datoteko odjavne špice…
 	Compare Credits with Spreadsheet	Primerjaj odjavno špico s preglednico
+	“{name}” appears twice in the same block	»{name}« se v istem bloku pojavi dvakrat
+	“{name}” is written as “{other}” in row {otherRow}	»{name}« je v vrstici {otherRow} zapisano kot »{other}«
+	The font “{font}” is not installed; another font is used	Pisava »{font}« ni nameščena; uporabi se druga pisava
+	The font “{font}” has no “{chars}”; another font draws them	Pisava »{font}« nima »{chars}«; izriše jih druga pisava
+	“{text}” is outside the title-safe area	»{text}« je zunaj varnega območja za napise
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	»{text}« je na črni pretemno (kontrast {ratio}:1; potrebno je vsaj 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	»{text}« je visok {px} px; od 24 px naprej se dobro bere
+	The roll moves {speed} px per frame; a whole number does not shimmer	Pomik je {speed} px na sličico; celo število ne utripa
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Vrstica prečka sliko v {seconds} s; vsaj 6 s se dobro bere
+	The card holds for only {seconds} s after its fades	Kartica po pretapanjih ostane le {seconds} s
+	This page starts {seconds} s before the previous one ends	Ta stran se začne {seconds} s pred koncem prejšnje
+	“{file}” is shown at {percent} % of its pixels; it will look soft	»{file}« je prikazan pri {percent} % svojih slikovnih pik; videti bo mehko
+	{more} more of the same	Še {more} enakih
+	Page {page}: {message}	Stran {page}: {message}
+	Checks and warnings	Preverjanja in opozorila
+	Checks: {errors} errors, {warnings} warnings	Preverjanja: napake {errors}, opozorila {warnings}
+	Check Credits	Preveri odjavno špico

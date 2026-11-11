@@ -4181,3 +4181,5 @@
 	“{text}” is outside the title-safe area	“{text}” è fuori dall'area sicura dei titoli
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” è troppo scuro sul nero (contrasto {ratio}:1; ne servono almeno 4,5:1)
 	“{text}” is {px} px high; 24 px or more reads well	“{text}” è alto {px} px; da 24 px in su si legge bene
+	The roll moves {speed} px per frame; a whole number does not shimmer	Lo scorrimento avanza di {speed} px per fotogramma; un numero intero non sfarfalla
+	Check Credits	Controlla titoli di coda

@@ -4168,3 +4168,20 @@ export.summary	Low	lav
 	Refresh Credits from Spreadsheet…	Opdater rulletekster fra regneark…
 	Save Credits File…	Gem rulletekstfil…
 	Compare Credits with Spreadsheet	Sammenlign rulletekster med regneark
+	“{name}” appears twice in the same block	“{name}” optræder to gange i samme blok
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” er skrevet som “{other}” i række {otherRow}
+	The font “{font}” is not installed; another font is used	Skrifttypen “{font}” er ikke installeret; en anden skrifttype bruges
+	The font “{font}” has no “{chars}”; another font draws them	Skrifttypen “{font}” har ikke “{chars}”; en anden skrifttype tegner dem
+	“{text}” is outside the title-safe area	“{text}” er uden for det titelsikre område
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” er for mørk på sort (kontrast {ratio}:1; mindst 4,5:1 kræves)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” er {px} px høj; 24 px eller mere er let at læse
+	The roll moves {speed} px per frame; a whole number does not shimmer	Rulningen flytter {speed} px pr. billede; et helt tal flimrer ikke
+	A line crosses the frame in {seconds} s; at least 6 s reads well	En linje krydser billedet på {seconds} s; mindst 6 s er let at læse
+	The card holds for only {seconds} s after its fades	Kortet står kun {seconds} s efter sine overtoninger
+	This page starts {seconds} s before the previous one ends	Denne side starter {seconds} s før den forrige slutter
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” vises med {percent} % af sine pixels; det vil se blødt ud
+	{more} more of the same	{more} mere af samme slags
+	Page {page}: {message}	Side {page}: {message}
+	Checks and warnings	Kontroller og advarsler
+	Checks: {errors} errors, {warnings} warnings	Kontroller: {errors} fejl, {warnings} advarsler
+	Check Credits	Kontrollér rulletekster

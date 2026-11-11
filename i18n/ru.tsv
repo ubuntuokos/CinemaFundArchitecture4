@@ -4151,3 +4151,20 @@
 	Refresh Credits from Spreadsheet…	Обновить титры из таблицы…
 	Save Credits File…	Сохранить файл титров…
 	Compare Credits with Spreadsheet	Сравнить титры с таблицей
+	“{name}” appears twice in the same block	«{name}» встречается дважды в одном блоке
+	“{name}” is written as “{other}” in row {otherRow}	«{name}» записано как «{other}» в строке {otherRow}
+	The font “{font}” is not installed; another font is used	Шрифт «{font}» не установлен; используется другой шрифт
+	The font “{font}” has no “{chars}”; another font draws them	В шрифте «{font}» нет «{chars}»; их рисует другой шрифт
+	“{text}” is outside the title-safe area	«{text}» за пределами безопасной зоны заголовков
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» слишком тёмный на чёрном (контраст {ratio}:1; нужно не менее 4.5:1)
+	“{text}” is {px} px high; 24 px or more reads well	«{text}» высотой {px} px; от 24 px читается хорошо
+	The roll moves {speed} px per frame; a whole number does not shimmer	Прокрутка смещается на {speed} px за кадр; при целом числе нет мерцания
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Строка пересекает кадр за {seconds} с; читается хорошо от 6 с
+	The card holds for only {seconds} s after its fades	Карточка остаётся на экране всего {seconds} с после плавных переходов
+	This page starts {seconds} s before the previous one ends	Эта страница начинается за {seconds} с до конца предыдущей
+	“{file}” is shown at {percent} % of its pixels; it will look soft	«{file}» показан при {percent} % своих пикселей; изображение будет нечётким
+	{more} more of the same	Ещё {more} таких же
+	Page {page}: {message}	Страница {page}: {message}
+	Checks and warnings	Проверки и предупреждения
+	Checks: {errors} errors, {warnings} warnings	Проверки: ошибок — {errors}, предупреждений — {warnings}
+	Check Credits	Проверить титры

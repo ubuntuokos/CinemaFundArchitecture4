@@ -4190,3 +4190,5 @@
 	“{text}” is outside the title-safe area	“{text}”がタイトルセーフエリアの外にあります
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”は黒地では暗すぎます(コントラスト{ratio}:1。4.5:1以上が必要です)
 	“{text}” is {px} px high; 24 px or more reads well	“{text}”の高さは{px} pxです。24 px以上だと読みやすくなります
+	The roll moves {speed} px per frame; a whole number does not shimmer	ロールは 1 フレームあたり {speed} px 移動します。整数ならちらつきません
+	Check Credits	クレジットをチェック

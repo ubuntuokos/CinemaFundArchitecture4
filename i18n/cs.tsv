@@ -4166,3 +4166,20 @@ export.summary	Low	nízká
 	Refresh Credits from Spreadsheet…	Obnovit titulky tvůrců z tabulky…
 	Save Credits File…	Uložit soubor titulků tvůrců…
 	Compare Credits with Spreadsheet	Porovnat titulky tvůrců s tabulkou
+	“{name}” appears twice in the same block	„{name}“ je ve stejném bloku dvakrát
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ je v řádku {otherRow} zapsáno jako „{other}“
+	The font “{font}” is not installed; another font is used	Písmo „{font}“ není nainstalováno; použije se jiné
+	The font “{font}” has no “{chars}”; another font draws them	Písmo „{font}“ neobsahuje „{chars}“; vykreslí je jiné písmo
+	“{text}” is outside the title-safe area	„{text}“ je mimo oblast bezpečnou pro titulky
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ je na černé příliš tmavé (kontrast {ratio}:1; je potřeba alespoň 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ má výšku {px} px; od 24 px se dobře čte
+	The roll moves {speed} px per frame; a whole number does not shimmer	Posun je {speed} px na snímek; celé číslo nebliká
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Řádek přejde obraz za {seconds} s; alespoň 6 s se dobře čte
+	The card holds for only {seconds} s after its fades	Karta zůstane po prolnutích jen {seconds} s
+	This page starts {seconds} s before the previous one ends	Tato stránka začíná {seconds} s před koncem předchozí
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ se zobrazuje na {percent} % svých pixelů; bude vypadat neostře
+	{more} more of the same	Dalších {more} stejného druhu
+	Page {page}: {message}	Stránka {page}: {message}
+	Checks and warnings	Kontroly a upozornění
+	Checks: {errors} errors, {warnings} warnings	Kontroly: chyby {errors}, upozornění {warnings}
+	Check Credits	Zkontrolovat titulky tvůrců

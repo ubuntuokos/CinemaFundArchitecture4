@@ -4179,3 +4179,5 @@
 	“{text}” is outside the title-safe area	“{text}”超出了标题安全区
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”在黑色背景上太暗(对比度 {ratio}:1;至少需要 4.5:1)
 	“{text}” is {px} px high; 24 px or more reads well	“{text}”高 {px} px;24 px 或更高时便于阅读
+	The roll moves {speed} px per frame; a whole number does not shimmer	滚动每帧移动 {speed} px；整数不会闪烁
+	Check Credits	检查演职员表

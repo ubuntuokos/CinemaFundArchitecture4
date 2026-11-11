@@ -4189,3 +4189,5 @@
 	“{text}” is outside the title-safe area	“{text}” berada di luar area aman judul
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” terlalu gelap di atas hitam (kontras {ratio}:1; minimal 4,5:1 diperlukan)
 	“{text}” is {px} px high; 24 px or more reads well	“{text}” setinggi {px} px; 24 px atau lebih nyaman dibaca
+	The roll moves {speed} px per frame; a whole number does not shimmer	Gulungan bergerak {speed} px per bingkai; bilangan bulat tidak berkedip
+	Check Credits	Periksa Kredit

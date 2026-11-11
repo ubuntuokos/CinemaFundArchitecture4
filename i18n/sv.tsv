@@ -4168,3 +4168,20 @@ export.summary	Low	låg
 	Refresh Credits from Spreadsheet…	Uppdatera eftertexter från kalkylark…
 	Save Credits File…	Spara eftertextfil…
 	Compare Credits with Spreadsheet	Jämför eftertexter med kalkylark
+	“{name}” appears twice in the same block	”{name}” förekommer två gånger i samma block
+	“{name}” is written as “{other}” in row {otherRow}	”{name}” skrivs som ”{other}” på rad {otherRow}
+	The font “{font}” is not installed; another font is used	Typsnittet ”{font}” är inte installerat; ett annat typsnitt används
+	The font “{font}” has no “{chars}”; another font draws them	Typsnittet ”{font}” saknar ”{chars}”; ett annat typsnitt ritar dem
+	“{text}” is outside the title-safe area	”{text}” ligger utanför det textsäkra området
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” är för mörk mot svart (kontrast {ratio}:1; minst 4,5:1 behövs)
+	“{text}” is {px} px high; 24 px or more reads well	”{text}” är {px} px hög; 24 px eller mer är lättläst
+	The roll moves {speed} px per frame; a whole number does not shimmer	Rullningen flyttar {speed} px per bildruta; ett heltal flimrar inte
+	A line crosses the frame in {seconds} s; at least 6 s reads well	En rad korsar bilden på {seconds} s; minst 6 s är lättläst
+	The card holds for only {seconds} s after its fades	Kortet står bara {seconds} s efter tonningarna
+	This page starts {seconds} s before the previous one ends	Den här sidan börjar {seconds} s innan den föregående slutar
+	“{file}” is shown at {percent} % of its pixels; it will look soft	”{file}” visas med {percent} % av sina pixlar; den ser oskarp ut
+	{more} more of the same	{more} till av samma slag
+	Page {page}: {message}	Sida {page}: {message}
+	Checks and warnings	Kontroller och varningar
+	Checks: {errors} errors, {warnings} warnings	Kontroller: {errors} fel, {warnings} varningar
+	Check Credits	Kontrollera eftertexter

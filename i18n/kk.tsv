@@ -4168,3 +4168,20 @@ export.summary	Low	төмен
 	Refresh Credits from Spreadsheet…	Титрлерді кестеден жаңарту…
 	Save Credits File…	Титрлер файлын сақтау…
 	Compare Credits with Spreadsheet	Титрлерді кестемен салыстыру
+	“{name}” appears twice in the same block	«{name}» бір блокта екі рет кездеседі
+	“{name}” is written as “{other}” in row {otherRow}	«{name}» {otherRow}-жолда «{other}» болып жазылған
+	The font “{font}” is not installed; another font is used	«{font}» қаріпі орнатылмаған; басқа қаріп қолданылады
+	The font “{font}” has no “{chars}”; another font draws them	«{font}» қаріпінде «{chars}» жоқ; оларды басқа қаріп салады
+	“{text}” is outside the title-safe area	«{text}» титрлердің қауіпсіз аймағынан тыс
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» қара фонда тым қараңғы (контраст {ratio}:1; кемінде 4,5:1 қажет)
+	“{text}” is {px} px high; 24 px or more reads well	«{text}» биіктігі {px} px; 24 px не одан көп болса жақсы оқылады
+	The roll moves {speed} px per frame; a whole number does not shimmer	Жылжу кадр сайын {speed} px; бүтін сан жыпылықтамайды
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Жол кадрдан {seconds} с ішінде өтеді; кемінде 6 с жақсы оқылады
+	The card holds for only {seconds} s after its fades	Карта ауысулардан кейін тек {seconds} с тұрады
+	This page starts {seconds} s before the previous one ends	Бұл бет алдыңғысы аяқталғанға дейін {seconds} с бұрын басталады
+	“{file}” is shown at {percent} % of its pixels; it will look soft	«{file}» пикселдерінің {percent} %-ында көрсетіледі; бұлыңғыр көрінеді
+	{more} more of the same	Тағы {more} осындай
+	Page {page}: {message}	{page}-бет: {message}
+	Checks and warnings	Тексерулер мен ескертулер
+	Checks: {errors} errors, {warnings} warnings	Тексерулер: қателер {errors}, ескертулер {warnings}
+	Check Credits	Титрлерді тексеру
