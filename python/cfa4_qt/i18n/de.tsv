@@ -391,3 +391,7 @@
 	transitions	Übergänge
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} Bilder kopiert, {reencoded} an Schnitten neu kodiert, {rendered} gerendert
 	{frames} frames are re-encoded or rendered. Continue?	{frames} Bilder werden neu kodiert oder gerendert. Fortfahren?
+	Field order	Halbbildreihenfolge
+	Progressive	Progressiv
+	Interlaced, upper field first	Interlaced, oberes Halbbild zuerst
+	Interlaced, lower field first	Interlaced, unteres Halbbild zuerst

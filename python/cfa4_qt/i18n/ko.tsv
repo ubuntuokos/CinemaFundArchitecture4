@@ -391,3 +391,7 @@
 	transitions	전환
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} 프레임 복사, {reencoded} 컷에서 재인코딩, {rendered} 렌더링
 	{frames} frames are re-encoded or rendered. Continue?	{frames} 프레임을 재인코딩하거나 렌더링합니다. 계속할까요?
+	Field order	필드 순서
+	Progressive	프로그레시브
+	Interlaced, upper field first	인터레이스, 상위 필드 우선
+	Interlaced, lower field first	인터레이스, 하위 필드 우선

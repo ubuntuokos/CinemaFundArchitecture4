@@ -391,3 +391,7 @@
 	transitions	transizioni
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogrammi copiati, {reencoded} ricodificati ai tagli, {rendered} renderizzati
 	{frames} frames are re-encoded or rendered. Continue?	{frames} fotogrammi vengono ricodificati o renderizzati. Continuare?
+	Field order	Ordine dei campi
+	Progressive	Progressivo
+	Interlaced, upper field first	Interlacciato, campo superiore prima
+	Interlaced, lower field first	Interlacciato, campo inferiore prima

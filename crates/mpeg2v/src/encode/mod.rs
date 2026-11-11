@@ -47,7 +47,7 @@ use crate::headers::{DEFAULT_INTRA, SCAN};
 use crate::mc::Frame;
 use crate::slice::NON_LINEAR_Q;
 use crate::vlc::{MB_BWD, MB_FWD, MB_INTRA, MB_PATTERN, MB_QUANT, MBA_ESCAPE};
-use crate::{ChromaFormat, Decoder, Error, PictureType, Result};
+use crate::{ChromaFormat, Decoder, Error, FieldOrder, PictureType, Result};
 
 use analyse::{Ctx, F_CODE, Plan, analyse_row};
 use write::{BitWriter, Code, EncTables, MAX_TABLE_LEVEL, tables};
@@ -92,6 +92,9 @@ pub struct Config {
     /// Closed GOPs: the B pictures before each I picture predict from it alone, so every GOP
     /// decodes on its own (editing, chapter points). Open GOPs predict them from both sides.
     pub closed_gop: bool,
+    /// Interlaced frame pictures with this field first (field or frame prediction and DCT per
+    /// macroblock), or progressive (`None`).
+    pub interlaced: Option<FieldOrder>,
     /// Intra DC precision in bits: 8-10 (Main Profile), 8-11 (4:2:2 Profile).
     pub intra_dc_precision: u8,
     pub aspect: AspectRatio,
@@ -119,6 +122,7 @@ impl Config {
             gop: 15,
             b_frames: 0,
             closed_gop: true,
+            interlaced: None,
             intra_dc_precision: 9,
             aspect: AspectRatio::Square,
             colour: None,
@@ -407,6 +411,7 @@ impl Encoder {
             preds_f: &preds_f,
             preds_b: &preds_b,
             lambda,
+            interlaced: self.cfg.interlaced.is_some(),
         };
         let plans = self.analyse(&ctx);
         let avg_act = plans.iter().flatten().map(|p| p.act as f64).sum::<f64>() / (self.mb_width * self.mb_height).max(1) as f64;
@@ -460,7 +465,7 @@ impl Encoder {
                 self.mv_span = 1;
             }
             PictureType::P => {
-                self.prev_mvs = plans.iter().flatten().map(|p| if p.intra { [0, 0] } else { p.mv }).collect();
+                self.prev_mvs = plans.iter().flatten().map(|p| if p.intra { [0, 0] } else { p.frame_mv(0) }).collect();
                 self.mv_span = self.anchor_index[1].map_or(1, |a| index.saturating_sub(a).max(1));
             }
             _ => {}
@@ -529,7 +534,7 @@ impl Encoder {
         w.start(crate::headers::EXTENSION);
         w.put(1, 4);
         w.put(self.pli as u32, 8);
-        w.put(1, 1); // progressive_sequence
+        w.put(self.cfg.interlaced.is_none() as u32, 1); // progressive_sequence
         w.put(if self.cmbh == 8 { 1 } else { 2 }, 2);
         w.put(c.width >> 12, 2);
         w.put(c.height >> 12, 2);
@@ -598,16 +603,17 @@ impl Encoder {
             w.put(v, 4);
         }
         w.put((self.cfg.intra_dc_precision - 8) as u32, 2);
+        let progressive = self.cfg.interlaced.is_none();
         w.put(3, 2); // picture_structure: frame
-        w.put(0, 1); // top_field_first
-        w.put(1, 1); // frame_pred_frame_dct
+        w.put((self.cfg.interlaced == Some(FieldOrder::TopFirst)) as u32, 1); // top_field_first
+        w.put(progressive as u32, 1); // frame_pred_frame_dct
         w.put(0, 1); // concealment_motion_vectors
         w.put(1, 1); // q_scale_type: non-linear
         w.put(self.intra_vlc as u32, 1); // intra_vlc_format
-        w.put(0, 1); // alternate_scan
+        w.put(!progressive as u32, 1); // alternate_scan
         w.put(0, 1); // repeat_first_field
-        w.put((self.cmbh == 8) as u32, 1); // chroma_420_type = progressive_frame for 4:2:0
-        w.put(1, 1); // progressive_frame
+        w.put((self.cmbh == 8 && progressive) as u32, 1); // chroma_420_type = progressive_frame for 4:2:0
+        w.put(progressive as u32, 1); // progressive_frame
         w.put(0, 1); // composite_display_flag
     }
 
@@ -625,6 +631,8 @@ impl Encoder {
         let t = tables();
         let mbw = self.mb_width;
         let dc_reset = 1i32 << (self.cfg.intra_dc_precision - 1);
+        let interlaced = self.cfg.interlaced.is_some();
+        let scan = &SCAN[interlaced as usize];
         let mut code = self.mb_code(row * mbw, w.bits() - pic_start, plans.first().map_or(1.0, |p| p.act));
         w.start(1 + (row & 127) as u8);
         if self.cfg.height > 2800 {
@@ -633,10 +641,10 @@ impl Encoder {
         w.put(code as u32, 5);
         w.put(0, 1); // extra_bit_slice
         let mut dc = [dc_reset; 3];
-        // motion vector predictors (forward, backward) and the previous macroblock's prediction
-        // directions (B pictures skip by repeating them)
-        let mut pmv = [0i32; 2];
-        let mut pmvb = [0i32; 2];
+        // motion vector predictors PMV[r][s] as the decoder keeps them (§7.6.3.4), and the
+        // previous macroblock's prediction directions when it used frame prediction (B
+        // pictures skip by repeating them)
+        let mut pmv = [[[0i32; 2]; 2]; 2];
         let mut prev_dir: Option<i16> = None;
         let mut skipped = 0usize;
         let mut scale_sum = 0f64;
@@ -658,6 +666,9 @@ impl Encoder {
                     PictureType::B => t.mbtype_b[flags as usize],
                     _ => t.mbtype_p[flags as usize],
                 });
+                if interlaced {
+                    w.put(plan.field_dct as u32, 1); // dct_type
+                }
                 if quant {
                     w.put(code as u32, 5);
                 }
@@ -668,10 +679,9 @@ impl Encoder {
                     let v = ((b[0] + m / 2) / m).clamp(0, max);
                     write_dc(w, t, cc, v - dc[cc]);
                     dc[cc] = v;
-                    write_coefficients(w, t, lv, true, self.intra_vlc, &mut self.vlc_cost);
+                    write_coefficients(w, t, lv, scan, true, self.intra_vlc, &mut self.vlc_cost);
                 }
-                pmv = [0, 0];
-                pmvb = [0, 0];
+                pmv = [[[0; 2]; 2]; 2];
                 prev_dir = None;
                 scale_sum += qs as f64;
                 continue;
@@ -683,49 +693,30 @@ impl Encoder {
                 }
             }
             dc = [dc_reset; 3];
+            let mut dir = plan.dir;
             if ptype == PictureType::B {
-                let dir = plan.dir;
-                // a skipped B macroblock repeats the previous one's prediction (§7.6.6.4)
-                let same = prev_dir == Some(dir) && (dir & MB_FWD == 0 || plan.mv == pmv) && (dir & MB_BWD == 0 || plan.mvb == pmvb);
+                // a skipped B macroblock repeats the previous one's frame prediction (§7.6.6.4)
+                let same = !plan.field_mc
+                    && prev_dir == Some(dir)
+                    && (dir & MB_FWD == 0 || plan.mvs[0][0] == pmv[0][0])
+                    && (dir & MB_BWD == 0 || plan.mvs[0][1] == pmv[0][1]);
                 if cbp == 0 && same && mbx > 0 && mbx + 1 < mbw {
                     skipped += 1;
                     scale_sum += NON_LINEAR_Q[code as usize] as f64;
                     continue;
                 }
-                address_increment(w, t, skipped + 1);
-                skipped = 0;
-                let quant = cbp != 0 && want != code;
-                if cbp != 0 {
-                    code = want;
+            } else {
+                // P: skipped, or "MC not coded", when frame prediction has a zero vector
+                let zero = !plan.field_mc && plan.mvs[0][0] == [0, 0];
+                if cbp == 0 && zero && mbx > 0 && mbx + 1 < mbw {
+                    skipped += 1;
+                    pmv = [[[0; 2]; 2]; 2];
+                    scale_sum += NON_LINEAR_Q[code as usize] as f64;
+                    continue;
                 }
-                scale_sum += NON_LINEAR_Q[code as usize] as f64;
-                let flags = dir | if cbp != 0 { MB_PATTERN } else { 0 } | if quant { MB_QUANT } else { 0 };
-                w.code(t.mbtype_b[flags as usize]);
-                if quant {
-                    w.put(code as u32, 5);
+                if zero && cbp != 0 {
+                    dir = 0;
                 }
-                if dir & MB_FWD != 0 {
-                    for c in 0..2 {
-                        write_motion(w, t, plan.mv[c] - pmv[c]);
-                    }
-                    pmv = plan.mv;
-                }
-                if dir & MB_BWD != 0 {
-                    for c in 0..2 {
-                        write_motion(w, t, plan.mvb[c] - pmvb[c]);
-                    }
-                    pmvb = plan.mvb;
-                }
-                prev_dir = Some(dir);
-                write_pattern(w, t, cbp, self.nblocks, &levels, &mut self.vlc_cost);
-                continue;
-            }
-            let zero = plan.mv == [0, 0];
-            if cbp == 0 && zero && mbx > 0 && mbx + 1 < mbw {
-                skipped += 1;
-                pmv = [0, 0];
-                scale_sum += NON_LINEAR_Q[code as usize] as f64;
-                continue;
             }
             address_increment(w, t, skipped + 1);
             skipped = 0;
@@ -734,36 +725,56 @@ impl Encoder {
                 code = want;
             }
             scale_sum += NON_LINEAR_Q[code as usize] as f64;
-            let mut flags = if cbp == 0 {
-                MB_FWD
-            } else if zero {
-                MB_PATTERN
-            } else {
-                MB_FWD | MB_PATTERN
-            };
-            if quant {
-                flags |= MB_QUANT;
+            let flags = dir | if cbp != 0 { MB_PATTERN } else { 0 } | if quant { MB_QUANT } else { 0 };
+            w.code(if ptype == PictureType::B { t.mbtype_b[flags as usize] } else { t.mbtype_p[flags as usize] });
+            if interlaced && dir != 0 {
+                w.put(if plan.field_mc { 1 } else { 2 }, 2); // frame_motion_type
             }
-            w.code(t.mbtype_p[flags as usize]);
+            if interlaced && cbp != 0 {
+                w.put(plan.field_dct as u32, 1); // dct_type
+            }
             if quant {
                 w.put(code as u32, 5);
             }
-            if flags & MB_FWD != 0 {
-                for c in 0..2 {
-                    write_motion(w, t, plan.mv[c] - pmv[c]);
+            for (s, bit) in [MB_FWD, MB_BWD].into_iter().enumerate() {
+                if dir & bit != 0 {
+                    write_vectors(w, t, plan, s, &mut pmv);
                 }
-                pmv = plan.mv;
-            } else {
-                pmv = [0, 0];
             }
-            write_pattern(w, t, cbp, self.nblocks, &levels, &mut self.vlc_cost);
+            if dir == 0 {
+                pmv = [[[0; 2]; 2]; 2];
+            }
+            prev_dir = if plan.field_mc { None } else { Some(dir) };
+            write_pattern(w, t, cbp, self.nblocks, &levels, scan, &mut self.vlc_cost);
         }
         scale_sum
     }
 }
 
+/// The vectors of direction `s` of a macroblock against the predictors, which they replace
+/// (§7.6.3): one frame vector, or a field select and a vector per field (vertical predicted
+/// from half the stored predictor, stored doubled).
+fn write_vectors(w: &mut BitWriter, t: &EncTables, plan: &Plan, s: usize, pmv: &mut [[[i32; 2]; 2]; 2]) {
+    if plan.field_mc {
+        for r in 0..2 {
+            w.put(plan.sel[r][s] as u32, 1); // motion_vertical_field_select
+            let v = plan.mvs[r][s];
+            write_motion(w, t, v[0] - pmv[r][s][0]);
+            write_motion(w, t, v[1] - (pmv[r][s][1] >> 1));
+            pmv[r][s] = [v[0], v[1] * 2];
+        }
+    } else {
+        let v = plan.mvs[0][s];
+        for c in 0..2 {
+            write_motion(w, t, v[c] - pmv[0][s][c]);
+        }
+        pmv[0][s] = v;
+        pmv[1][s] = v;
+    }
+}
+
 /// coded_block_pattern and the coded blocks of a non-intra macroblock (nothing when `cbp` is 0).
-fn write_pattern(w: &mut BitWriter, t: &EncTables, cbp: u32, nblocks: usize, levels: &[[i32; 64]; 8], cost: &mut [u64; 2]) {
+fn write_pattern(w: &mut BitWriter, t: &EncTables, cbp: u32, nblocks: usize, levels: &[[i32; 64]; 8], scan: &[u8; 64], cost: &mut [u64; 2]) {
     if cbp == 0 {
         return;
     }
@@ -775,7 +786,7 @@ fn write_pattern(w: &mut BitWriter, t: &EncTables, cbp: u32, nblocks: usize, lev
     }
     for (i, lv) in levels.iter().take(nblocks).enumerate() {
         if cbp & (1 << (nblocks - 1 - i)) != 0 {
-            write_coefficients(w, t, lv, false, false, cost);
+            write_coefficients(w, t, lv, scan, false, false, cost);
         }
     }
 }
@@ -824,15 +835,15 @@ fn write_dc(w: &mut BitWriter, t: &EncTables, cc: usize, diff: i32) {
     }
 }
 
-/// The run/level pairs of a block in zigzag order (from the first AC coefficient for intra
+/// The run/level pairs of a block in `scan` order (from the first AC coefficient for intra
 /// blocks), then end_of_block. Intra blocks use table one when `one`, and add what they would
 /// cost with table zero and table one to `cost`.
-fn write_coefficients(w: &mut BitWriter, t: &EncTables, levels: &[i32; 64], intra: bool, one: bool, cost: &mut [u64; 2]) {
+fn write_coefficients(w: &mut BitWriter, t: &EncTables, levels: &[i32; 64], scan: &[u8; 64], intra: bool, one: bool, cost: &mut [u64; 2]) {
     let tab = &t.dct[one as usize];
     let code_of = |tab: &[[Code; MAX_TABLE_LEVEL + 1]], run: usize, a: usize| tab.get(run).and_then(|r| r.get(a)).copied().filter(|c| c.1 > 0);
     let mut run = 0usize;
     let mut first = !intra;
-    for &pos in &SCAN[0][intra as usize..] {
+    for &pos in &scan[intra as usize..] {
         let l = levels[pos as usize];
         if l == 0 {
             run += 1;
