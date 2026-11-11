@@ -4231,3 +4231,6 @@ export.summary	Low	matala
 	Template:	Malli:
 	Credits Templates	Tekijätietomallit
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Laskentataulukot, tekijätietotiedostot ja Cinecred-projektit (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-projekti…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Avaa Cinecred-projektikansio (Styling.toml ja sen tekijätietotaulukko)

@@ -4231,3 +4231,6 @@ export.summary	Low	niska
 	Template:	Predložak:
 	Credits Templates	Predlošci odjavne špice
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tablice, datoteke odjavne špice i Cinecred projekti (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Otvori mapu Cinecred projekta (Styling.toml i njegova tablica odjavne špice)

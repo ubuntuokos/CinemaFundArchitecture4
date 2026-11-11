@@ -4235,3 +4235,6 @@ export.summary	Low	తక్కువ
 	Template:	టెంప్లేట్:
 	Credits Templates	క్రెడిట్స్ టెంప్లేట్‌లు
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	స్ప్రెడ్‌షీట్‌లు, క్రెడిట్స్ ఫైళ్లు మరియు Cinecred ప్రాజెక్ట్‌లు (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred ప్రాజెక్ట్…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred ప్రాజెక్ట్ ఫోల్డర్‌ను తెరువు (Styling.toml మరియు దాని క్రెడిట్స్ స్ప్రెడ్‌షీట్)

@@ -4232,3 +4232,6 @@ export.summary	Low	დაბალი
 	Template:	შაბლონი:
 	Credits Templates	ტიტრების შაბლონები
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	ცხრილები, ტიტრების ფაილები და Cinecred-ის პროექტები (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-ის პროექტი…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred-ის პროექტის საქაღალდის გახსნა (Styling.toml და მისი ტიტრების ცხრილი)

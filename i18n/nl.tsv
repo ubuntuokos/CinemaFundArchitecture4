@@ -4229,3 +4229,6 @@ export.summary	Low	laag
 	Template:	Sjabloon:
 	Credits Templates	Aftitelingssjablonen
 	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Spreadsheets, aftitelingsbestanden en Cinecred-projecten (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-project…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Een Cinecred-projectmap openen (Styling.toml en de bijbehorende aftitelingsspreadsheet)
