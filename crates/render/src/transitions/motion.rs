@@ -139,10 +139,13 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
                 Layer::new(Card::flat().translate([dx * travel * (e - 1.0), dy * travel * (e - 1.0), 0.0]), t.b),
             ]
         }),
-        "slide" => scene(t, far, shutter(t, 0.12), |q| {
-            let e = ease_in_out(q);
-            vec![Layer::new(Card::flat(), t.a), Layer::new(Card::flat().translate([dx * travel * (e - 1.0), dy * travel * (e - 1.0), 0.0]), t.b)]
-        }),
+        "slide" => {
+            let (ox, oy) = t.shift8();
+            scene(t, far, shutter(t, 0.12), move |q| {
+                let e = ease_in_out(q);
+                vec![Layer::new(Card::flat(), t.a), Layer::new(Card::flat().translate([ox * (e - 1.0), oy * (e - 1.0), 0.0]), t.b)]
+            })
+        }
         "split" => {
             let vertical_cut = t.choice("orientation") == 0;
             scene(t, far, shutter(t, 0.12), move |q| {
@@ -572,25 +575,36 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
         }
         // ---------------- Smart Tools (camera-style) ----------------
         "motion_camera" => {
-            let zoom = t.frac("zoom");
+            // a negative Zoom pulls the camera back (A shrinks, B arrives from larger)
+            let zoom = t.frac("zoom").max(-0.9);
+            let pull_back = zoom < 0.0;
             let rot = t.num("rotation").to_radians();
             let mb = t.frac("motion_blur");
             let p = t.p;
             let k = mid_mix(p);
             // A pushes in and turns; B arrives from the same push, settling to rest
+            let zb0 = if pull_back { 1.0 / (1.0 + zoom) - 1.0 } else { zoom };
             let (za, ra) = (1.0 + zoom * ease_in(p.min(0.7) / 0.7), rot * ease_in(p));
-            let (zb, rb) = (1.0 + zoom * (1.0 - ease_out(((p - 0.3) / 0.7).clamp(0.0, 1.0))), -rot * (1.0 - ease_out(p)));
+            let (zb, rb) = (1.0 + zb0 * (1.0 - ease_out(((p - 0.3) / 0.7).clamp(0.0, 1.0))), -rot * (1.0 - ease_out(p)));
             let blur = mb * bell(p) * 0.35;
             let n = super::taps(blur * w * 0.3);
             paint(t.w, t.h, |x, y| {
+                // the sample and how much of the pixel lies inside the source frame
                 let sample = |img: &Image, z: f32, r: f32| {
                     let (s, co) = (-r).sin_cos();
                     let (ux, uy) = ((x - w / 2.0) / z, (y - h / 2.0) / z);
                     let (lx, ly) = (ux * co - uy * s + w / 2.0, ux * s + uy * co + h / 2.0);
-                    zoom_blur(img, lx, ly, w / 2.0, h / 2.0, blur, n)
+                    let cov = ((lx.min(w - lx).min(ly).min(h - ly)) * z + 0.5).clamp(0.0, 1.0);
+                    (zoom_blur(img, lx, ly, w / 2.0, h / 2.0, blur, n), cov)
                 };
-                let a = if k < 1.0 { sample(t.a, za, ra) } else { [0.0; 4] };
-                let b = if k > 0.0 { sample(t.b, zb, rb) } else { [0.0; 4] };
+                let b = if k > 0.0 || pull_back { sample(t.b, zb, rb).0 } else { [0.0; 4] };
+                let a = if k < 1.0 {
+                    let (a, cov) = sample(t.a, za, ra);
+                    // a shrunken A leaves its surroundings to B instead of smeared edge pixels
+                    if pull_back { mix(b, a, cov) } else { a }
+                } else {
+                    [0.0; 4]
+                };
                 mix(a, b, k)
             })
         }
