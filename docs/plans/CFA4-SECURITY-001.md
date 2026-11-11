@@ -93,7 +93,7 @@ kihasználható.
 | **B1** – `cfa4-sandbox` | crate, profilok, `security.status`, Beállítások ▸ Biztonság a Qt6-ban | egy tesztfolyamat a profiljával nem éri el a `~/.ssh`-t, nem indít programot |
 | **B2** – Fuzzing | `cargo fuzz` cél minden L0 elemzőre (konténerek, kodekek) és a projekt-/cserefájlokra; éjszakai CI; később OSS-Fuzz | minden elemzőnek van célja, a talált hibák javítva |
 | **B3** – A motor önkorlátozása | Landlock és seccomp a `cfa4-cli serve`-ben; a fájlválasztó adja hozzá az engedélyt (portál) | a meglévő tesztek zöldek, a tiltott hozzáférés tesztje bukik |
-| **B4** – Médiaszolgáltató | FFmpeg és GStreamer külön folyamatba, osztott memóriás képkockákkal | a C dekóder összeomlása nem viszi a motort; a sebesség-veszteség mérve, a D2 határán belül |
+| **B4** – Médiaszolgáltató | FFmpeg és GStreamer külön folyamatba, osztott memóriás képkockákkal (D2) | a C dekóder összeomlása nem viszi a motort; a lassulás legfeljebb 5% (D2) |
 | **B5** – Projekt- és cserefájlok | méret- és mélységkorlátok, útvonal-ellenőrzés (`../`, szimbolikus link), idegen projekt megnyitásakor figyelmeztetés | rosszindulatú mintakészlet tesztje zöld |
 | **B6** – Élő stúdió | a `cfa4-studio-host` profilja, AppArmor-profil a `.deb`-ben, a böngészőforrás négy védelme (LIVE-STUDIO S9), hálózati bemenetek a hoston | a négy védelem tesztje zöld |
 | **B7** – MI-modellek és bővítmények | csak biztonságos modellformátumok, bővítmények külön folyamatban (a D7 szerint) | — |
@@ -110,7 +110,7 @@ oldal a Qt6 befejezése után. A B6 az élő stúdió S9-ével együtt.
 | # | Kérdés | Javaslat |
 |---|---|---|
 | D1 | Hatókör | **Eldöntve (2026-11-11): futásidejű réteg és fuzzing együtt.** A fuzzing a hibákat keresi meg, mielőtt a támadók tennék; a futásidejű réteg a javítatlanok kárát korlátozza |
-| D2 | Az FFmpeg és a GStreamer helye | külön `cfa4-media-host` folyamat (B4); határ: a lejátszás és az export legfeljebb 5%-kal lassulhat, különben a motorban marad, Landlockkal és seccomppal |
+| D2 | Az FFmpeg és a GStreamer helye | **Eldöntve (2026-11-11): külön `cfa4-media-host` folyamat** (B4), mindig; a saját Rust dekóderek a motorban maradnak. A külső dekóder csak a megnyitott fájlt olvashatja, nem ír, nincs hálózata, nem indít programot; a képkockák osztott memórián mennek a motornak; összeomlás után a motor újraindítja. Teljesítménycél: a lejátszás és az export a külső dekóderrel megnyitott fájlokon legfeljebb 5%-kal lassulhat (a referenciagépen mérve); ha többet, az optimalizálandó, nem ok a visszatérésre a motorba |
 | D3 | Eszközök | Landlock + seccomp a saját Rust kódban (minden csomagformátumban működik) + AppArmor-profil csak ahol kell (Chromium-sandbox); a bubblewrap nem kötelező |
 | D4 | Ha a rendszer nem támogat egy védelmet | fut tovább, de jelzi (never crash); kérésre „szigorú mód”, amely ilyenkor nem indítja a kockázatos részt |
 | D5 | Hálózat | a motor csak 127.0.0.1-et érhet el; külső hálózat csak a stúdió kimeneteinek és a felhasználó által kért letöltéseknek (MI-modellek), külön engedéllyel |
@@ -120,8 +120,8 @@ oldal a Qt6 befejezése után. A B6 az élő stúdió S9-ével együtt.
 
 ## VIII. Kockázatok
 
-- **Sebesség:** a külön folyamat és az osztott memória másolást és késleltetést hozhat; mérve, a
-  D2 határával.
+- **Sebesség:** a külön folyamat és az osztott memória másolást és késleltetést hozhat; a D2 célja
+  legfeljebb 5%, a referenciagépen mérve (NUMA: a médiafolyamat és a motor ugyanazon a csomóponton).
 - **Túl szűk szabályok:** egy elfelejtett könyvtár (betűk, GPU-illesztő, ALSA/PipeWire) hibát
   okozhat; ezért a profilok tesztje a csomagolt alkalmazással fut, és a hibaüzenet megnevezi a
   hiányzó jogot.
