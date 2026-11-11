@@ -1406,7 +1406,12 @@ mod tests {
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
-        let (entries, _) = catalog::parse_entries(catalog_file!("uk"));
+        // the first section (before the divider) is still the original menu catalog; the rest
+        // of the interface follows it and is checked by complete_languages_cover_the_whole_interface
+        let text = catalog_file!("uk");
+        let menus = text.split("\n# ------").next().unwrap_or(text);
+        let (entries, _) = catalog::parse_entries(menus);
+        assert!(entries.len() > 300, "the original menu section is there");
         for (_, en, _) in entries {
             assert!(known(&en), "not a menu label: {en}");
         }
@@ -1509,7 +1514,12 @@ mod tests {
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
-        let (entries, _) = catalog::parse_entries(catalog_file!("ru"));
+        // the first section (before the divider) is still the original menu catalog; the rest
+        // of the interface follows it and is checked by complete_languages_cover_the_whole_interface
+        let text = catalog_file!("ru");
+        let menus = text.split("\n# ------").next().unwrap_or(text);
+        let (entries, _) = catalog::parse_entries(menus);
+        assert!(entries.len() > 300, "the original menu section is there");
         for (_, en, _) in entries {
             assert!(known(&en), "not a menu label: {en}");
         }
@@ -1879,6 +1889,20 @@ mod tests {
             catalog_file!("sr"),
             "ЂЈЉЊЋЏђјљњћџ„“",
             &[("File", "Датотека"), ("Sequence", "Секвенца"), ("Playhead", "Глава за репродукцију"), ("Cross Dissolve", "Унакрсно претапање")],
+        ),
+        (
+            Language::Ru,
+            "app.language.russian",
+            catalog_file!("ru"),
+            "ЁЪЫЭёъыэ«»",
+            &[("File", "Файл"), ("Make Subclip", "Создать субклип"), ("Merge Clips", "Объединить клипы"), ("Noise", "Шум")],
+        ),
+        (
+            Language::Uk,
+            "app.language.ukrainian",
+            catalog_file!("uk"),
+            "ҐЄІЇґєії’«»",
+            &[("File", "Файл"), ("Make Subclip", "Створити субкліп"), ("Merge Clips", "Об’єднати кліпи"), ("Noise", "Шум")],
         ),
     ];
 

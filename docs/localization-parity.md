@@ -58,7 +58,8 @@ whole interface, one PR) at ~4–8 h per language for the catalog plus tests.
 | Korean | ko | 3,573 (same entries as Spanish) | as Spanish | installed system Hangul font (Noto Sans CJK KR, NanumGothic…); refused without one | not recorded; welcome | partial (#508) | review; Hangul in extra-fonts for the web |
 | Vietnamese | vi | 0 (0%) | — | Latin with stacked diacritics (font coverage to check) | — | none | 6–12 h + review |
 | *Other shipped:* Italian | it | 3,573 (same entries as Spanish); must cover the core menus, no entry without a Spanish one | as Spanish | Latin (bundled fonts) | not recorded; welcome | partial | review |
-| *Other shipped:* Ukrainian | uk | 351 (10.0%) | menus only | Cyrillic (bundled) | not recorded | menus only | 5–9 h |
+| *Other shipped:* Ukrainian | uk | 4,081 (every entry of the Spanish catalog, egui and Qt GUI strings; the original menu section first, then the rest from #827 and this catalog); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Cyrillic (bundled) | not recorded; welcome | **full** (catalog) | review |
+| *Other shipped:* Russian | ru | 4,081 (as Ukrainian); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Cyrillic (bundled) | not recorded; welcome | **full** (catalog) | review |
 | *Other shipped:* Hungarian | hu | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings); the tests require it to stay complete (`hungarian_covers_the_whole_interface`) | as Spanish | Latin with ő/ű (bundled fonts, `hungarian_renders_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
 | *Other shipped:* Polish | pl | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings; 570 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin with ą ę ł ś ź ż (bundled fonts, `complete_languages_render_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
 | *Other shipped:* Turkish | tr | 4,072 (every entry of the Spanish catalog, egui and Qt GUI strings; 500 from craft-i18n); the tests require it to stay complete (`complete_languages_cover_the_whole_interface`) | as Spanish | Latin with ç ğ ı İ ö ş ü (bundled fonts, `complete_languages_render_with_bundled_fonts`) | not recorded; welcome | **full** (catalog) | review |
@@ -86,11 +87,11 @@ source strings in the code), so the rows were measured at different times: at th
 Spanish and German catalogs both have 3,590 entries, German every Spanish one. Strings added
 later may stay English in German until translated; only the core menus are required.
 
-Premiere also ships Italian, which we now cover like Spanish, and Russian (6–10 h).
+Premiere also ships Italian and Russian, which we now cover like Spanish.
 
 **Localization dimension:** 9 of the 12 key languages near-complete (English, Spanish, Japanese,
 Simplified Chinese, French, Portuguese (Brazil), Indonesian, Korean, German), 3 none (Hindi, Arabic,
-Vietnamese); against Premiere's 10 languages we cover 9 well and Russian partly. **~35%, 150–230 h** for all twelve to `full` plus Italian and Russian, of which the script
+Vietnamese); against Premiere's 10 languages we cover all 10. **~35%, 150–230 h** for all twelve to `full` plus Italian and Russian, of which the script
 work (RTL and complex shaping in the egui interface) is the largest and least parallel part.
 Every language needs native-speaker review (human).
 
@@ -118,6 +119,7 @@ Every language needs native-speaker review (human).
 | 2026-11-11 | minor | Estonian (et) added, complete: 4,073 entries (177 imported from craft-i18n), in egui's Edit ▸ Language, Settings, System Language and the Qt GUI |
 | 2026-11-11 | minor | Serbian in Cyrillic script (sr) added, complete: 4,073 entries, transliterated from sr-latn (482 imported rows from craft-i18n); Serbian locales now get Cyrillic unless they name the Latin script (`sr-Latn`, `@latin`), in egui and the Qt GUI |
 | 2026-11-11 | minor | Telugu (te) added, complete: 4,073 entries (197 imported from craft-i18n), in the Qt GUI only (View ▸ Language, System Language for `te` locales); egui cannot shape Telugu, so it is not offered there (owner decision 2026-11-11) |
+| 2026-11-11 | minor | Russian (ru) and Ukrainian (uk) complete: 4,081 entries each (the translations of #827 moved into the top-level catalogs, the 33 strings still missing added); 8 new strings from main (Smart Cut audio, tracker, DCP naming) in every complete catalog |
 | 2026-11-10 | minor | English (UK) and English (Australia) added (US English is the source, shown as English (US)); de, es, fr, it, ja, ko, zh-cn, pt-br and id completed (718 entries) |
 | 2026-11-10 | minor | Every catalog moved to the top-level `i18n/` (owner decision 2026-11-09), one per language for egui and the Qt GUI (the Qt-only strings in a "Qt GUI" section; where the two had translated the same string differently, the Qt GUI's wording was kept); Hungarian (hu) completed (1,572 new entries) and added to egui's Edit ▸ Language, Settings and System Language |
 | 2026-10-27 | minor | Ubuntu 26.04 only: the macOS app-menu entries (Settings, Hide CFA4, Hide Others) and macOS hints left the catalogs; Korean font list names Linux fonts |
