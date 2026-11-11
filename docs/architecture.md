@@ -27,7 +27,7 @@ Design principles:
  L4  engine
  L3  render · gpu · export · smart-edit · golden (test-only)
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
- L1  frame · media · project · audio-dsp · text · route (cfa4-route)
+ L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
 ```
@@ -69,6 +69,7 @@ and `cfa4-cli`.
 | `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV |
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
+| `tcsync` | L1 | external timecode sync: SMPTE LTC frame, biphase-mark encoder and decoder (any direction, 0.1–10× speed); MIDI Timecode and chase logic to follow ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)); depends only on `time` |
 | `text` | L1 | text engine: font database (bundled OFL fonts + system fonts), shaping (harfrust), bidi, line breaking, paragraph layout, glyph/path rasteriser, strokes ([crates/text/README.md](../crates/text/README.md)) |
 | `route` | L1 | `cfa4-route`: compute router: per-task choice of backend and device (GPU, NPU, CPU) from the routing table (`routing.toml`), the `/sys` device probe and the user's preferences, with reasons and fallback order; backend catalogue (implemented / planned, vendor-locked) and the vendor-neutrality coverage report; no `unsafe`, no workspace dependencies ([ADR 0004](adr/ADR-0004-compute-routing.md), [README](../crates/route/README.md)) |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
