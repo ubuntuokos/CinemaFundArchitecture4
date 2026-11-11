@@ -893,10 +893,11 @@ mod tests {
         }
     }
 
-    /// #626 end to end: an H.264 feature CFA4 does not decode yet (monochrome 4:0:0) imports
-    /// and shows the unreadable slate with the decoder's reason, instead of a black picture.
+    /// Monochrome 4:0:0 H.264 (#279) imports and decodes to a grey picture. Before #279 this
+    /// was the #626 end-to-end case for the unreadable slate; the slate path stays covered by
+    /// the other offline tests in this module.
     #[test]
-    fn ffmpeg_unsupported_h264_profile_shows_the_unreadable_slate() {
+    fn ffmpeg_h264_monochrome_decodes() {
         let Some(ffmpeg) = cfa4_testkit::oracle::ffmpeg_or_skip("media_pool") else { return };
         let path = cfa4_testkit::fixtures_dir("engine/media_pool").join("h264_gray_64x32.mp4");
         let Some(path) = cfa4_testkit::fixtures::generate(&path, |tmp| {
@@ -914,10 +915,10 @@ mod tests {
         let item = ItemId(r["items"][0].as_u64().unwrap());
         let src = s.media.source_for(&s.project, item, &*s.services).unwrap();
         let f = src.video_frame(FrameRequest { time: cfa4_time::Tick::ZERO, scale: 1.0 }).unwrap();
-        assert_eq!(f.to_rgba8(), cfa4_render::offline::slate_rgba8(64, 32, "h264_gray_64x32.mp4", OfflineReason::Unreadable));
-        let st = s.media.offline_status(item).unwrap();
-        assert_eq!(st.reason, OfflineReason::Unreadable);
-        assert!(st.error.contains("H.264") && st.error.contains("monochrome"), "{}", st.error);
+        let rgba = f.to_rgba8();
+        assert_ne!(rgba, cfa4_render::offline::slate_rgba8(64, 32, "h264_gray_64x32.mp4", OfflineReason::Unreadable));
+        assert!(s.media.offline_status(item).is_none(), "monochrome H.264 decodes");
+        assert!(rgba.chunks_exact(4).all(|p| p[0] == p[1] && p[1] == p[2]), "a 4:0:0 picture is grey");
     }
 
     /// High 4:4:4 Predictive (#161) imports and decodes: a picture, not the unreadable slate.
