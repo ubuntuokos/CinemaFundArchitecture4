@@ -3647,3 +3647,5 @@
 	Analyze Source for Smart Cut	分析源以进行智能剪切
 	Plan Smart Cut	规划智能剪切
 	Run Smart Cut	执行智能剪切
+	DASH Manifest	DASH 清单
+	Also write a DASH manifest (.mpd)	同时写出 DASH 清单 (.mpd)

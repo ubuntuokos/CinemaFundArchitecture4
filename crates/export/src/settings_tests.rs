@@ -2044,3 +2044,24 @@ fn chapters_reach_webm() {
     export(&p, seq, &s, &m, &Progress::default()).unwrap();
     assert!(cfa4_matroska::open(&std::fs::read(&off).unwrap()[..]).unwrap().chapters.is_empty());
 }
+
+#[test]
+fn hls_writes_a_dash_manifest_when_asked() {
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 3);
+    let dir = Scratch::new("hls-dash");
+    let path = dir.path("Demo.m3u8");
+    let mpd = dash_files(&path);
+    assert_eq!(mpd, dir.path("Demo.mpd"));
+    let s = ExportSettings { format: Format::Hls, path: path.clone(), bitrate_kbps: 300, ..Default::default() };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert!(!Path::new(&mpd).exists() && !r.extra_files.contains(&mpd), "off by default");
+
+    let s = ExportSettings { dash_manifest: true, ..s };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.extra_files.last(), Some(&mpd));
+    let x = std::fs::read_to_string(&mpd).unwrap();
+    assert!(x.contains("profiles=\"urn:mpeg:dash:profile:isoff-live:2011\" type=\"static\""), "{x}");
+    assert!(x.contains("initialization=\"Demo_36p_init.mp4\" media=\"Demo_36p_$Number%05d$.m4s\""), "{x}");
+    assert!(x.contains("initialization=\"Demo_audio_init.mp4\" media=\"Demo_audio_$Number%05d$.m4s\""), "{x}");
+    assert!(x.contains("width=\"64\" height=\"36\" frameRate=\"24\"") && x.contains("codecs=\"mp4a.40.2\""), "{x}");
+}
