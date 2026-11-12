@@ -355,6 +355,14 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         let tag = cfa4_export::dcp_language(&probe).ok_or_else(|| bad(cmd, "dcpLanguage: an RFC 5646 tag such as en-US or hu-HU (empty = none)"))?;
         settings.dcp_language = tag.to_string();
     }
+    if let Some(v) = str_p(p, "imfContentKind") {
+        let probe = ExportSettings { imf_content_kind: v.to_string(), ..Default::default() };
+        let kind = cfa4_export::imf_content_kind(&probe).ok_or_else(|| bad(cmd, format!("imfContentKind: {}", cfa4_export::IMF_CONTENT_KINDS.join(" | "))))?;
+        settings.imf_content_kind = kind.to_string();
+    }
+    if let Some(v) = bool_p(p, "imfLossless") {
+        settings.imf_lossless = v;
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
             0 => None,
@@ -485,8 +493,8 @@ pub fn file_safe(n: &str) -> String {
 
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
-    // a DCP is a folder
-    if settings.format == Format::Dcp {
+    // a DCP or IMF package is a folder
+    if matches!(settings.format, Format::Dcp | Format::Imf) {
         return path.to_string();
     }
     let ext = settings.extension();
@@ -533,7 +541,7 @@ fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, s
     };
     let path = with_extension(&base, settings);
     match suffix {
-        Some(n) if n > 0 && settings.format == Format::Dcp => format!("{path}_{}", n + 1),
+        Some(n) if n > 0 && matches!(settings.format, Format::Dcp | Format::Imf) => format!("{path}_{}", n + 1),
         Some(n) if n > 0 => match path.rsplit_once('.') {
             Some((a, e)) => format!("{a}_{}.{e}", n + 1),
             None => format!("{path}_{}", n + 1),
