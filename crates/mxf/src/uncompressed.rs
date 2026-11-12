@@ -112,12 +112,56 @@ pub enum Comp {
 /// A component of an RGBA pixel layout (G.2.40).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Rgba {
-    /// Red, green, blue, alpha; a fill component holds unused bits.
+    /// Red, green, blue, alpha (or the DCDM X', Y', Z'); a fill component holds unused bits.
     R,
     G,
     B,
     A,
     Fill,
+    /// The lower bits of a component split into two fields (`r`, `g`, `b`, `a`).
+    RLow,
+    GLow,
+    BLow,
+    ALow,
+    /// A palette index (`P`).
+    Index,
+}
+
+impl Rgba {
+    /// The colour channel (0 R, 1 G, 2 B, 3 A) and whether these are its lower bits.
+    fn channel(self) -> Option<(usize, bool)> {
+        match self {
+            Rgba::R => Some((0, false)),
+            Rgba::G => Some((1, false)),
+            Rgba::B => Some((2, false)),
+            Rgba::A => Some((3, false)),
+            Rgba::RLow => Some((0, true)),
+            Rgba::GLow => Some((1, true)),
+            Rgba::BLow => Some((2, true)),
+            Rgba::ALow => Some((3, true)),
+            Rgba::Fill | Rgba::Index => None,
+        }
+    }
+}
+
+/// How the colour components of an RGBA layout are coded.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RgbaCoding {
+    /// Unsigned integers (a component may be split into upper and lower fields).
+    Integer,
+    /// IEEE floating point (G.2.26: 16-bit HALF, 32 or 64 bits), stored most significant byte
+    /// first like the integer fields; 0.0 is black and 1.0 white, values outside are clipped.
+    Float,
+    /// Indices into a palette of R'G'B'(A) entries of `depth` bits (G.2.37, G.2.38).
+    Palette(Palette),
+}
+
+/// The entries of an RGBA palette: [R, G, B, A] each.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Palette {
+    pub entries: Vec<[u16; 4]>,
+    /// Bits of the palette's alpha, when its entries carry one.
+    pub alpha_bits: Option<u32>,
 }
 
 /// The stored layout of an uncompressed picture track.
@@ -130,7 +174,8 @@ pub enum Layout {
     Interleaved { pattern: &'static [Comp], pixels: u32, depth: u32, padding: u32 },
     /// R'G'B'(A) bit-fields from the RGBA descriptor's Pixel Layout: (component, bits) in stored
     /// order; R, G and B share one depth. `min`, `max`: the code values of black and white.
-    Rgba { components: Vec<(Rgba, u32)>, depth: u32, min: u32, max: u32 },
+    /// `xyz`: the components are the DCDM X', Y', Z' of ST 428-1 (in the R, G, B slots).
+    Rgba { components: Vec<(Rgba, u32)>, depth: u32, min: u32, max: u32, xyz: bool, coding: RgbaCoding },
 }
 
 const CB_Y_CR: &[Comp] = &[Comp::Cb, Comp::Y, Comp::Cr];
@@ -188,7 +233,16 @@ impl Layout {
 
     /// The layout carries an alpha component.
     pub fn alpha(&self) -> bool {
-        matches!(self, Layout::Rgba { components, .. } if components.iter().any(|c| c.0 == Rgba::A))
+        match self {
+            Layout::Rgba { coding: RgbaCoding::Palette(p), .. } => p.alpha_bits.is_some(),
+            Layout::Rgba { components, .. } => components.iter().any(|c| c.0 == Rgba::A),
+            _ => false,
+        }
+    }
+
+    /// The components are DCDM X'Y'Z' (ST 428-1).
+    pub fn xyz(&self) -> bool {
+        matches!(self, Layout::Rgba { xyz: true, .. })
     }
 
     /// A display name, e.g. "Uncompressed 4:2:2 10-bit (v210)".
@@ -201,7 +255,20 @@ impl Layout {
         match self {
             Layout::YCbCr(l) => format!("Uncompressed {chroma} {}-bit ({})", l.depth(), l.short_name()),
             Layout::Interleaved { depth, .. } => format!("Uncompressed {chroma} {depth}-bit"),
+            Layout::Rgba { depth, xyz: true, .. } => format!("Uncompressed X'Y'Z' {depth}-bit"),
+            Layout::Rgba { depth, coding: RgbaCoding::Float, .. } => {
+                format!("Uncompressed {} {}-bit float", if self.alpha() { "RGBA" } else { "RGB" }, self.float_bits().unwrap_or(*depth))
+            }
+            Layout::Rgba { depth, coding: RgbaCoding::Palette(_), .. } => format!("Uncompressed palette {depth}-bit"),
             Layout::Rgba { depth, .. } => format!("Uncompressed {} {depth}-bit", if self.alpha() { "RGBA" } else { "RGB" }),
+        }
+    }
+
+    /// Bits of each stored floating-point component (16, 32 or 64).
+    fn float_bits(&self) -> Option<u32> {
+        match self {
+            Layout::Rgba { components, coding: RgbaCoding::Float, .. } => components.iter().find(|c| c.0 == Rgba::R).map(|c| c.1),
+            _ => None,
         }
     }
 
@@ -245,42 +312,131 @@ impl Layout {
     }
 }
 
-fn rgba_layout(p: &PictureInfo) -> Result<Layout> {
-    let mut components = Vec::new();
-    for &(code, bits) in &p.pixel_layout {
+/// The (component, bits) list of an RGBALayout property. Integer fields have 1..=16 bits; the
+/// floating-point depth codes 253, 254 and 255 (G.2.26) give 16, 32 and 64 bits and `float`.
+fn rgba_components(layout: &[(u8, u8)], palette: bool) -> Result<(Vec<(Rgba, u32)>, bool, bool)> {
+    let (mut components, mut float, mut xyz, mut rgb) = (Vec::new(), false, false, false);
+    for &(code, bits) in layout {
         if code == 0 || bits == 0 {
             break;
         }
         let c = match code {
-            b'R' => Rgba::R,
-            b'G' => Rgba::G,
-            b'B' => Rgba::B,
+            b'R' | b'G' | b'B' => {
+                rgb = true;
+                [Rgba::R, Rgba::G, Rgba::B][usize::from(code == b'G') + 2 * usize::from(code == b'B')]
+            }
+            0xD8..=0xDA => {
+                xyz = true;
+                [Rgba::R, Rgba::G, Rgba::B][usize::from(code - 0xD8)]
+            }
             b'A' => Rgba::A,
+            b'r' => Rgba::RLow,
+            b'g' => Rgba::GLow,
+            b'b' => Rgba::BLow,
+            b'a' => Rgba::ALow,
             b'F' => Rgba::Fill,
-            0xD8..=0xDA => return Err(Error::Unsupported("uncompressed X'Y'Z' pictures".into())),
-            b'P' => return Err(Error::Unsupported("uncompressed palette pictures".into())),
+            b'P' if !palette => Rgba::Index,
             _ => return Err(Error::Unsupported(format!("uncompressed RGBA pixel layout component {:?}", code as char))),
         };
-        if bits > 16 {
-            return Err(Error::Unsupported(format!("uncompressed RGBA components of {bits} bits")));
-        }
-        components.push((c, u32::from(bits)));
+        let n = match bits {
+            1..=16 => u32::from(bits),
+            253..=255 if c.channel().is_some_and(|(_, low)| !low) => {
+                float = true;
+                16 << (bits - 253)
+            }
+            _ => return Err(Error::Unsupported(format!("uncompressed RGBA components of {bits} bits"))),
+        };
+        components.push((c, n));
     }
-    let depth_of = |want: Rgba| -> Result<u32> {
-        let mut found = components.iter().filter(|c| c.0 == want);
-        match (found.next(), found.next()) {
-            (Some(c), None) => Ok(c.1),
-            _ => Err(Error::Unsupported("uncompressed RGBA pixel layout without exactly one R, G and B".into())),
+    if rgb && xyz {
+        return Err(Error::Unsupported("uncompressed pixel layout mixing R'G'B' and X'Y'Z'".into()));
+    }
+    Ok((components, float, xyz))
+}
+
+/// The depth of channel `ch` (upper plus lower fields), if it occurs exactly once.
+fn channel_depth(components: &[(Rgba, u32)], ch: usize) -> Option<u32> {
+    let count = |low: bool| components.iter().filter(|c| c.0.channel() == Some((ch, low))).count();
+    if count(false) != 1 || count(true) > 1 {
+        return None;
+    }
+    Some(components.iter().filter(|c| c.0.channel().is_some_and(|(k, _)| k == ch)).map(|c| c.1).sum())
+}
+
+fn rgba_layout(p: &PictureInfo) -> Result<Layout> {
+    let (components, float, xyz) = rgba_components(&p.pixel_layout, false)?;
+    let index: Vec<u32> = components.iter().filter(|c| c.0 == Rgba::Index).map(|c| c.1).collect();
+    let coded = |ch: usize| components.iter().any(|c| c.0.channel().is_some_and(|(k, _)| k == ch));
+    if let [bits] = index[..] {
+        if (0..4).any(coded) {
+            return Err(Error::Unsupported("uncompressed pixel layout with a palette index and colour components".into()));
         }
+        let (entries, depth, alpha_bits) = palette(p)?;
+        if bits > 16 {
+            return Err(Error::Unsupported(format!("uncompressed palette indices of {bits} bits")));
+        }
+        let full = (1u32 << depth) - 1;
+        return Ok(Layout::Rgba { components, depth, min: 0, max: full, xyz: false, coding: RgbaCoding::Palette(Palette { entries, alpha_bits }) });
+    }
+    if !index.is_empty() {
+        return Err(Error::Unsupported("uncompressed pixel layout with several palette indices".into()));
+    }
+    let depths: Vec<Option<u32>> = (0..3).map(|ch| channel_depth(&components, ch)).collect();
+    let Some(depth) = depths[0].filter(|d| depths.iter().all(|x| *x == Some(*d))) else {
+        return Err(Error::Unsupported("uncompressed RGBA pixel layout without exactly one R, G and B of one depth".into()));
     };
-    let depth = depth_of(Rgba::R)?;
-    if depth_of(Rgba::G)? != depth || depth_of(Rgba::B)? != depth || components.iter().filter(|c| c.0 == Rgba::A).count() > 1 {
-        return Err(Error::Unsupported("uncompressed RGBA components of different depths".into()));
+    if coded(3) && channel_depth(&components, 3).is_none() {
+        return Err(Error::Unsupported("uncompressed RGBA pixel layout with several alpha components".into()));
+    }
+    if float {
+        // every colour and alpha component floating point, of one size, none split
+        let sizes: Vec<u32> = components.iter().filter(|c| c.0.channel().is_some()).map(|c| c.1).collect();
+        if components.iter().any(|c| c.0.channel().is_some_and(|(_, low)| low)) || sizes.iter().any(|n| *n != depth) || ![16, 32, 64].contains(&depth) {
+            return Err(Error::Unsupported("uncompressed RGBA pixel layout mixing floating-point and integer components".into()));
+        }
+        return Ok(Layout::Rgba { components, depth: 16, min: 0, max: 0xFFFF, xyz, coding: RgbaCoding::Float });
+    }
+    if depth > 16 || channel_depth(&components, 3).is_some_and(|a| a > 16) {
+        return Err(Error::Unsupported(format!("uncompressed RGBA components of {depth} bits")));
     }
     let full = (1u32 << depth) - 1;
     let min = p.component_min_ref.filter(|&m| m < full).unwrap_or(0);
     let max = p.component_max_ref.filter(|&m| m > min && m <= full).unwrap_or(full);
-    Ok(Layout::Rgba { components, depth, min, max })
+    Ok(Layout::Rgba { components, depth, min, max, xyz, coding: RgbaCoding::Integer })
+}
+
+/// The palette of a `P` pixel layout: its entries as [R, G, B, A] of the returned depth (the R, G,
+/// B fields of the PaletteLayout, integers of one depth), and the alpha's bits if it has one.
+fn palette(p: &PictureInfo) -> Result<(Vec<[u16; 4]>, u32, Option<u32>)> {
+    let (layout, float, xyz) = rgba_components(&p.palette_layout, true)?;
+    let bad = |why: &str| Error::Unsupported(format!("uncompressed palette: {why}"));
+    if float || xyz || layout.iter().any(|c| c.0.channel().is_some_and(|(_, low)| low)) {
+        return Err(bad("only integer R'G'B'(A) entries are read"));
+    }
+    let depths: Vec<Option<u32>> = (0..3).map(|ch| channel_depth(&layout, ch)).collect();
+    let Some(depth) = depths[0].filter(|d| depths.iter().all(|x| *x == Some(*d))) else {
+        return Err(bad("no PaletteLayout with one R, G and B of one depth"));
+    };
+    let alpha_bits = channel_depth(&layout, 3);
+    let entry_bits: u32 = layout.iter().map(|c| c.1).sum();
+    let count = (p.palette.len() as u64 * 8 / u64::from(entry_bits.max(1))).min(1 << 16) as usize;
+    if count == 0 {
+        return Err(bad("no Palette entries"));
+    }
+    let mut bits = Bits { data: &p.palette, pos: 0 };
+    let entries = (0..count)
+        .map(|_| {
+            let mut e = [0u16; 4];
+            for &(c, n) in &layout {
+                let v = bits.read(n);
+                if let Some((ch, _)) = c.channel() {
+                    e[ch] = v;
+                }
+            }
+            e
+        })
+        .collect();
+    Ok((entries, depth, alpha_bits))
 }
 
 /// How the lines of an edit unit form the frame.
@@ -313,6 +469,8 @@ pub struct Picture {
     pub depth: u32,
     pub subsampling: (u32, u32),
     pub rgb: bool,
+    /// The planes are DCDM X'Y'Z' (ST 428-1), not R'G'B'.
+    pub xyz: bool,
     pub planes: [Vec<u16>; 3],
     pub alpha: Option<Vec<u16>>,
     /// The display rectangle (x, y, width, height) within the picture.
@@ -334,6 +492,16 @@ impl Bits<'_> {
             self.pos += 1;
         }
         v as u16
+    }
+    /// Up to 64 bits, most significant first.
+    fn read_wide(&mut self, n: u32) -> u64 {
+        let mut v = 0u64;
+        for _ in 0..n.min(64) {
+            let byte = self.data.get((self.pos / 8) as usize).copied().unwrap_or(0);
+            v = (v << 1) | u64::from((byte >> (7 - (self.pos % 8) as u8)) & 1);
+            self.pos += 1;
+        }
+        v
     }
     fn skip(&mut self, n: u32) {
         self.pos += u64::from(n);
@@ -414,25 +582,39 @@ fn unpack(layout: &Layout, data: &[u8], w: usize, h: usize) -> ([Vec<u16>; 3], O
                 }
             }
         }
-        Layout::Rgba { components, .. } => {
+        Layout::Rgba { components, coding, .. } => {
             let mut a = layout.alpha().then(|| vec![0u16; w * h]);
             for row in 0..h {
                 let mut bits = Bits { data: data.get(row * stride..).unwrap_or(&[]), pos: 0 };
                 for x in 0..w {
                     let i = row * w + x;
+                    // upper and lower fields of each channel, joined after the pixel
+                    let (mut hi, mut lo, mut lo_bits) = ([0u32; 4], [0u32; 4], [0u32; 4]);
                     for &(c, n) in components {
-                        let v = bits.read(n);
-                        match c {
-                            Rgba::R => y[i] = v,
-                            Rgba::G => cb[i] = v,
-                            Rgba::B => cr[i] = v,
-                            Rgba::A => {
-                                if let Some(a) = a.as_mut() {
-                                    a[i] = v;
+                        match (c, coding) {
+                            (Rgba::Index, RgbaCoding::Palette(p)) => {
+                                let e = p.entries.get(usize::from(bits.read(n))).copied().unwrap_or_default();
+                                hi = e.map(u32::from);
+                            }
+                            (c, RgbaCoding::Float) if c.channel().is_some() => {
+                                if let Some((ch, _)) = c.channel() {
+                                    hi[ch] = u32::from(float_code(bits.read_wide(n), n));
                                 }
                             }
-                            Rgba::Fill => {}
+                            (c, _) => match c.channel() {
+                                Some((ch, false)) => hi[ch] = u32::from(bits.read(n)),
+                                Some((ch, true)) => {
+                                    lo[ch] = u32::from(bits.read(n));
+                                    lo_bits[ch] = n;
+                                }
+                                None => bits.skip(n),
+                            },
                         }
+                    }
+                    let v = |ch: usize| ((hi[ch] << lo_bits[ch]) | lo[ch]) as u16;
+                    (y[i], cb[i], cr[i]) = (v(0), v(1), v(2));
+                    if let Some(a) = a.as_mut() {
+                        a[i] = v(3);
                     }
                 }
             }
@@ -594,13 +776,49 @@ pub fn decode(layout: &Layout, p: &PictureInfo, data: &[u8]) -> Result<Picture> 
     let y0 = y0.min(frame_h.saturating_sub(1));
     let dw = p.frame_width().clamp(1, w - x0);
     let dh = p.frame_height().clamp(1, frame_h - y0);
-    Ok(Picture { width: w, height: frame_h, depth, subsampling: layout.subsampling(), rgb: layout.rgb(), planes, alpha, display: (x0, y0, dw, dh) })
+    Ok(Picture {
+        width: w,
+        height: frame_h,
+        depth,
+        subsampling: layout.subsampling(),
+        rgb: layout.rgb(),
+        xyz: layout.xyz(),
+        planes,
+        alpha,
+        display: (x0, y0, dw, dh),
+    })
 }
 
 fn layout_alpha_depth(layout: &Layout) -> u32 {
     match layout {
-        Layout::Rgba { components, .. } => components.iter().find(|c| c.0 == Rgba::A).map_or(8, |c| c.1.clamp(1, 16)),
+        Layout::Rgba { coding: RgbaCoding::Float, .. } => 16,
+        Layout::Rgba { coding: RgbaCoding::Palette(p), .. } => p.alpha_bits.unwrap_or(8).clamp(1, 16),
+        Layout::Rgba { components, .. } => channel_depth(components, 3).unwrap_or(8).clamp(1, 16),
         _ => 8,
+    }
+}
+
+/// A floating-point component of `bits` bits (16 HALF, 32, 64; most significant byte first) as a
+/// 16-bit code: 0.0 → 0, 1.0 → 65 535, clipped; NaN is 0.
+fn float_code(raw: u64, bits: u32) -> u16 {
+    let f = match bits {
+        16 => half_to_f64(raw as u16),
+        32 => f64::from(f32::from_bits(raw as u32)),
+        _ => f64::from_bits(raw),
+    };
+    if f.is_nan() { 0 } else { (f.clamp(0.0, 1.0) * 65535.0 + 0.5) as u16 }
+}
+
+/// An IEEE 754 binary16 (OpenEXR HALF) value.
+fn half_to_f64(h: u16) -> f64 {
+    let sign = if h & 0x8000 != 0 { -1.0 } else { 1.0 };
+    let exp = i32::from((h >> 10) & 0x1F);
+    let man = f64::from(h & 0x3FF);
+    sign * match exp {
+        0 => man * 2f64.powi(-24),
+        31 if man == 0.0 => f64::INFINITY,
+        31 => f64::NAN,
+        e => (1.0 + man / 1024.0) * 2f64.powi(e - 15),
     }
 }
 

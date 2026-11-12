@@ -25,7 +25,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 2067-201 | 2019 | IAB track files: IAB essence descriptor (set 0x7B), clip-wrapped container, element type 0x0D (labels from the SMPTE registers) |
 | SMPTE RDD 9 | 2013 | MPEG long GOP coding labels (Table 6: MP@HL, 422P@HL, MP@H-14) for the writer; the XDCAM HD422 OP1a layout (`WriterConfig::rdd9`) |
 | SMPTE ST 384 | 2005 | uncompressed picture mapping: container label (mapping 05h, frame / clip / line wrapping), element types 02h / 03h / 04h |
-| SMPTE ST 377-1 | 2019, G.1, G.2.22–G.2.25, G.2.35, G.2.40 | uncompressed layouts: stored / sampled / display rectangles, image start / end fill, the Y'CbCr layout labels of G.2.25, Reversed Byte Order, Padding Bits, RGBA Pixel Layout and Component Min / Max Ref |
+| SMPTE ST 377-1 | 2019, G.1, G.2.22–G.2.25, G.2.35, G.2.40 | uncompressed layouts: stored / sampled / display rectangles, image start / end fill, the Y'CbCr layout labels of G.2.25, Reversed Byte Order, Padding Bits, RGBA Pixel Layout (with X'Y'Z', split, float and palette codes), Palette, Palette Layout and Component Min / Max Ref |
 | SMPTE ST 386 | 2004 | D-10 (IMX) mapping: container label, sound element type; writer: content packages on a 512-byte KAG, constant-size index with delta entries, Annex A descriptor values |
 | SMPTE ST 2019-4 | 2009 | VC-3 (DNxHD / DNxHR) mapping |
 | SMPTE RDD 44 | 2017 | Apple ProRes mapping |
@@ -115,15 +115,18 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   picture essence coding label (the nine Y'CbCr layouts of ST 377-1 G.2.25: 8-bit 4:4:4, UYVY,
   YUY2, planar 4:2:2 and 4:2:0, v210, planar 10-bit, 12- and 16-bit Cb Y Cr Y), else from the
   descriptor: RGBA Pixel Layout (R, G, B, A and fill components up to 16 bits, Component Min /
-  Max Ref rescaled to full range), or CDCI depth, subsampling, Reversed Byte Order and Padding
+  Max Ref rescaled to full range; components split into upper and lower fields `R`…`r`; DCDM
+  X' Y' Z' codes D8h–DAh, converted to RGB in `cfa4-codecs`; HALF, 32- and 64-bit float
+  components, clipped to 0–1 and scaled to 16 bits, read most significant byte first because
+  ST 377-1 does not name a byte order; palette indices `P` looked up in the Palette with its
+  Palette Layout, an index past the end is black), or CDCI depth, subsampling, Reversed Byte Order and Padding
   Bits (10-bit 4:2:2 without a label is v210). `decode` unpacks one edit unit into planes: image
   start / end fill skipped, separate fields woven (field 1 on the even lines), the display
   rectangle given from the sampled and display offsets. G.2.25 draws every layout as big-endian
   bit-fields; v210 and planar 10-bit are read as files store them: little-endian 32-bit words,
   first component in the low bits (FFmpeg decodes our v210 files identically). A clip-wrapped
   element without an index is split by the edit unit size. Not supported: line wrapping (the
-  track is listed as unknown with a warning), X'Y'Z' and palette pixel layouts, float
-  components.
+  track is listed as unknown with a warning), palettes with float entries.
   `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
@@ -288,7 +291,7 @@ w.finish()?;
   and v210 files is bit-exact too.
 - `src/uncompressed/tests.rs`: every labelled layout packed and unpacked at three sizes, the bit
   order of each table entry by hand, descriptor fallbacks (CDCI, RGBA with fill and video-range
-  codes), field weaving with start / end fill, display rectangles, hostile sizes. `cargo xtask fixtures codecs` pre-generates them.
+  codes, X'Y'Z', split components, HALF / f32 / f64 floats, palettes), field weaving with start / end fill, display rectangles, hostile sizes. `cargo xtask fixtures codecs` pre-generates them.
 - `src/write/tests.rs`: writer output read back by `open`: OP1a with two sound tracks pushed in
   uneven chunks (durations, codec label, aspect, PCM exact, index slices, closed partitions),
   29.97 sound per edit unit (1601/1602), a long-GOP AVC index (presentation order, key and B
