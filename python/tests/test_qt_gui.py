@@ -2604,10 +2604,14 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         assert dlg.format.currentData() == "mpeg2" and dlg.container.isEnabled()
         assert dlg.container.currentData() == "ts"
         dlg.container.setCurrentIndex(dlg.container.findData("es"))
-        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled()
+        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled() and not dlg.audio_codec.isEnabled()
         dlg.container.setCurrentIndex(dlg.container.findData("ts"))
-        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled()
+        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled() and dlg.audio_codec.isEnabled()
         assert dlg.params()["mpeg2Container"] == "ts"
+        # AC-3 instead of the container's own audio (#268)
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("ac3"))
+        assert dlg.params()["audioCodec"] == "ac3"
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("auto"))
         # GOP, quantiser and chroma go to the engine once chosen
         dlg.gop.setValue(12)
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("422"))
@@ -4522,6 +4526,89 @@ def test_app_identifies_as_cfa4_to_the_desktop():
     src = (ROOT / "python" / "cfa4_qt" / "__main__.py").read_text(encoding="utf-8")
     assert 'setDesktopFileName("io.github.ubuntuokos.cfa4")' in src
     assert (ROOT / "packaging" / "linux" / "io.github.ubuntuokos.cfa4.desktop").is_file()
+
+
+def test_credits_seconds_format():
+    from cfa4_qt.panels.credits import format_seconds
+
+    assert format_seconds(0) == "0:00.0"
+    assert format_seconds(int(83.5 * TICKS_PER_SECOND)) == "1:23.5"
+    assert format_seconds(3725 * TICKS_PER_SECOND) == "1:02:05.0"
+    assert format_seconds("x") == "" and format_seconds(None) == ""
+    # rounded, not cut: 27.986 s is 0:28.0
+    assert format_seconds(int(27.986 * TICKS_PER_SECOND)) == "0:28.0" and format_seconds(int(59.97 * TICKS_PER_SECOND)) == "1:00.0"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_window(app, tmp_path: Path):
+    """The Credits window: the menu command opens it, it shows the engine's pages, warnings and a
+    page picture, and places the credits on the timeline in one undo step."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Fej,Törzs,Láb,Stílus,Oldal,Játékidő\n"
+        ",A HOSSZÚ ÚT HAZA,,Title,Card,4s\n"
+        "Rendező,Kiss Anna,,Centered,Scroll,\n"
+        ",,,,,\n"
+        "Szereplők,Nagy Béla,Béla szerepében,Gutter,,\n"
+        ",{{Pic nincs.png}},,,,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.import" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible()
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2, 30_000), dlg.status.text()
+        assert dlg.pages.item(0, 1).text() and dlg.pages.item(1, 4).text()
+        assert dlg.pages.item(0, 4).text() == "0:04.0"
+        # the missing picture is a warning with its row (the checks may list more)
+        texts = [dlg.warnings.item(i).text() for i in range(dlg.warnings.count())]
+        assert any("6" in t and "nincs.png" in t for t in texts), texts
+        assert dlg.check_summary.text()
+        assert wait_until(app, lambda: dlg.picture.pixmap() is not None and not dlg.picture.pixmap().isNull(), 30_000)
+        # guides change the page picture
+        before = dlg.picture.pixmap().toImage()
+        dlg.guides.setChecked(True)
+        assert wait_until(app, lambda: dlg.picture.pixmap().toImage() != before, 30_000)
+        # a styling with a background, a transition and a crawl shows in the pages table
+        styling = tmp_path / "look.json"
+        styling.write_text(
+            '{"pageStyles":[{"name":"Card","behaviour":"card","transition":"dissolve",'
+            '"background":{"kind":"gradient","color":"#203060","color2":"#000000","opacity":80}},'
+            '{"name":"Scroll","behaviour":"crawl"}]}',
+            encoding="utf-8",
+        )
+        dlg.styling.setText(str(styling))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2 and "80" in (dlg.pages.item(0, 2).text() if dlg.pages.item(0, 2) else ""), 30_000)
+        assert dlg.pages.item(0, 3).text().endswith("0:00.5"), dlg.pages.item(0, 3).text()
+        assert dlg.pages.item(1, 1).text() == "Crawl" and dlg.pages.item(1, 3).text() == ""
+        dlg.styling.setText("")
+        # a broken path is an error in the window, not a crash
+        dlg.path.setText(str(tmp_path / "missing.ods"))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 0 and dlg.status.text(), 30_000)
+        assert not dlg.import_button.isEnabled()
+        # place: two clips, one undo step
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2 and dlg.import_button.isEnabled(), 30_000)
+        undo_before = win.history.list.count()
+        dlg.place()
+        assert wait_until(app, lambda: "2" in dlg.status.text(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo_before + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
 
 
 # ----- desktop entry for checkout runs -----
@@ -13828,6 +13915,576 @@ def test_real_engine_timeline_shows_gop_boundaries(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_credits_refresh_text_helpers():
+    from cfa4_qt.panels.credits_refresh import row_text, rows_label
+
+    assert rows_label([3, 3]) == "3" and rows_label([3, 5]) == "3–5" and rows_label([4, 3]) == "–"
+    assert rows_label(None) == "" and rows_label(["x", 1]) == ""
+    assert row_text([["Rendező", "Kiss Anna", ""], ["", ""]]).splitlines()[0] == "Rendező | Kiss Anna"
+    assert row_text("bad") == "" and len(row_text([["x" * 500]])) <= 200
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_save_and_refresh(app, tmp_path: Path):
+    """Linked credits through the Qt windows: save a .cfa4credits file, place the credits, change
+    the spreadsheet, see the changes row by row, apply only some, keep the rest."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "stablista.csv"
+    sheet.write_text(
+        "Fej,Törzs,Oldal\n"
+        "Rendező,Kiss Anna,Scroll\n"
+        ",,\n"
+        "Szereplők,Nagy Béla,\n"
+        ",Tóth Cili,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.refresh" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1 and dlg.save_button.isEnabled(), 30_000), dlg.status.text()
+        # save a portable credits file
+        dlg.save_to(str(tmp_path / "stablista"))
+        assert wait_until(app, lambda: (tmp_path / "stablista.cfa4credits").is_file(), 30_000), dlg.status.text()
+        assert "Kiss Anna" in (tmp_path / "stablista.cfa4credits").read_text(encoding="utf-8")
+        # place, then change the sheet: the director renamed, a new actor
+        dlg.place()
+        assert wait_until(app, lambda: "1" in dlg.status.text() and dlg.import_button.isEnabled(), 30_000), dlg.status.text()
+        sheet.write_text(
+            "Fej,Törzs,Oldal\n"
+            "Rendező,Kiss Anna Mária,Scroll\n"
+            ",,\n"
+            "Szereplők,Nagy Béla,\n"
+            ",Tóth Cili,\n"
+            ",Új Ede,\n",
+            encoding="utf-8",
+        )
+        # the placed page is selected: the menu command opens the Refresh window
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.refresh"].enabled, 30_000)
+        win.invoke("graphics.credits.refresh")
+        ref = win.credits_refresh
+        assert ref is not None and ref.isVisible()
+        assert wait_until(app, lambda: ref.changes.rowCount() == 2, 30_000), ref.status.text()
+        assert "Kiss Anna Mária" in ref.changes.item(0, 3).text()
+        # the window is tied to the credits it compared, whatever is selected afterwards
+        assert isinstance(ref.clip, int)
+        win.execute("timeline.select", {"clips": []})
+        # apply only the first change
+        ref.changes.cellWidget(1, 0).findChild(QtWidgets.QCheckBox).setChecked(False)
+        assert ref.accepted_ids() == [0]
+        undo = win.history.list.count()
+        ref.apply()
+        # after the refresh the window compares again: the rejected change is still offered
+        assert wait_until(app, lambda: ref.changes.rowCount() == 1 and "Új Ede" in ref.changes.item(0, 3).text(), 30_000), ref.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_credits_issue_text_is_worded_from_code_and_values():
+    from cfa4_qt.panels.credits import ISSUE_TEXT, issue_text
+
+    i = {"code": "name-spelling", "severity": "warning", "row": 5, "values": {"name": "Kiss Ánna", "other": "Kiss Anna", "otherRow": "3"}}
+    text = issue_text(i)
+    assert "Kiss Ánna" in text and "Kiss Anna" in text and "5" in text
+    assert issue_text({"code": "fast-scroll", "page": 1, "values": {"seconds": "4.8"}}).count("4.8") == 1
+    # unknown codes fall back to the engine's message
+    assert issue_text({"code": "new-check", "message": "something new"}) == "something new"
+    assert issue_text({}) == ""
+    # every check the engine has is worded
+    import re
+
+    src = (ROOT / "crates" / "credits" / "src" / "validate.rs").read_text(encoding="utf-8")
+    codes = set(re.findall(r'^//! \| `([a-z-]+)` \|', src, re.MULTILINE))
+    assert codes and codes <= set(ISSUE_TEXT), codes - set(ISSUE_TEXT)
+
+
+def test_credits_page_look_texts(monkeypatch):
+    from cfa4_qt import i18n
+    from cfa4_qt.panels.credits import background_text, issue_text, transition_text
+
+    monkeypatch.setattr(i18n.TR, "language", "en")
+    assert background_text(None) == "" and background_text({"kind": "none"}) == "" and background_text("x") == ""
+    assert background_text({"kind": "color", "opacity": 100}) == "Color"
+    assert background_text({"kind": "gradient", "opacity": 80}) == "Gradient (80 %)"
+    assert background_text({"kind": "image", "file": "/a/b/sky.png", "opacity": 12.5}) == "Picture: sky.png (12.5 %)"
+    assert transition_text(None) == "" and transition_text([]) == ""
+    assert transition_text({"effect": "cross_dissolve", "duration": TICKS_PER_SECOND // 2}) == "Dissolve, 0:00.5"
+    assert transition_text({"effect": "iris_round", "duration": TICKS_PER_SECOND}) == "iris round, 0:01.0"
+    on_bg = issue_text({"code": "low-contrast", "values": {"text": "A", "ratio": "1.2", "against": "background"}})
+    on_black = issue_text({"code": "low-contrast", "values": {"text": "A", "ratio": "1.2", "against": "black"}})
+    assert "background" in on_bg and "black" in on_black
+    i18n.TR.set_language("hu")
+    try:
+        assert background_text({"kind": "gradient", "opacity": 12.5}) == "Színátmenet (12,5 %)"
+        assert transition_text({"effect": "push", "duration": TICKS_PER_SECOND}) == "Tolás, 0:01,0"
+    finally:
+        i18n.TR.set_language("en")
+
+
+def test_credits_numbers_use_the_languages_decimal_separator(monkeypatch):
+    from cfa4_qt import i18n
+    from cfa4_qt.panels.credits import format_seconds, local_number
+
+    monkeypatch.setattr(i18n.TR, "language", "hu")
+    assert local_number("7.47") == "7,47" and local_number("12") == "12" and local_number("v1.2.3") == "v1.2.3"
+    assert format_seconds(28 * TICKS_PER_SECOND) == "0:28,0"
+    monkeypatch.setattr(i18n.TR, "language", "en")
+    assert local_number("7.47") == "7.47"
+
+
+def _music_wav(path: Path, seconds: float = 32.0, silent_tail: float = 4.0, bpm: float = 120.0) -> None:
+    """A click track: a short tone burst on every beat, then silence."""
+    import math
+    import struct
+    import wave
+
+    sr = 48_000
+    n = int(seconds * sr)
+    loud = int((seconds - silent_tail) * sr)
+    beat = int(sr * 60 / bpm)
+    frames = bytearray()
+    for i in range(n):
+        v = 0.0
+        if i < loud:
+            k = i % beat
+            if k < sr // 20:
+                v = 0.6 * math.sin(2 * math.pi * 880 * i / sr) * (1 - k / (sr / 20))
+            v += 0.05 * math.sin(2 * math.pi * 110 * i / sr)
+        s = int(max(-1.0, min(1.0, v)) * 32767)
+        frames += struct.pack("<hh", s, s)
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes(bytes(frames))
+
+
+def test_credits_fit_helpers():
+    from cfa4_qt.panels.credits_fit import audio_clips
+
+    seq = {"audio": [{"items": [{"clip": 5, "start": 10}, {"clip": "x"}]}, {"items": [{"clip": 3, "start": 2}]}]}
+    assert [c["clip"] for c in audio_clips(seq)] == [3, 5]
+    assert audio_clips(None) == [] and audio_clips({"audio": None}) == []
+
+
+def test_credits_fit_window_keeps_the_typed_length_choice(app, fake_engine: Path):
+    """Regression: a second analysis deleted the "this length" choice (RuntimeError after); and
+    without music a typed length is offered."""
+    from cfa4_qt.panels.credits_fit import CreditsFitDialog
+
+    engine = EngineClient(str(fake_engine), [])
+    dlg = CreditsFitDialog(engine)
+    music = {"audio": 7, "credits": 3, "duration": 30 * TICKS_PER_SECOND, "suggestions": [{"id": "musicLength", "total": 30 * TICKS_PER_SECOND}]}
+    dlg._show(music)
+    dlg._show(music)
+    app.processEvents()
+    assert dlg.custom in dlg.choices.buttons() and dlg.custom.text()
+    dlg._show({"audio": None, "credits": 3, "natural": 20 * TICKS_PER_SECOND, "suggestions": [], "problem": "no music"})
+    app.processEvents()
+    assert dlg.custom.isChecked() and dlg.apply_button.isEnabled() and not dlg.align.isEnabled()
+    assert dlg.fit_params() == {"cardsOnBeat": False, "alignToAudio": False, "clip": 3, "seconds": 20.0}
+    dlg.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_fit_credits_to_music(app, tmp_path: Path):
+    """Place credits and music, open Fit Credits to Music, see the offered lengths, fit to where
+    the sound ends: one undo step, the credits as long as asked."""
+    from cfa4_qt.main_window import MainWindow
+
+    wav = tmp_path / "zene.wav"
+    _music_wav(wav)
+    sheet = tmp_path / "stablista.csv"
+    sheet.write_text("Törzs,Oldal,Térköz\nCÍM,Card,\nA,Scroll,\nB,,4\nC,,4\nD,,4\nVÉGE,Card,\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    replies: list = []
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.fit" in win.registry.commands, 60_000)
+        # the music on an audio track far after the demo clips, then the credits at the same place
+        engine.execute("file.import", {"paths": [str(wav)]}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: replies, 30_000)
+        item = replies[-1]["items"][0]
+        engine.execute("timeline.place", {"item": item, "audioTrack": "A2", "seconds": 600}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: len(replies) == 2, 30_000), replies
+        music = replies[-1]["clips"][0]
+        engine.execute("graphics.credits.import", {"path": str(sheet), "seconds": 600}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: len(replies) == 3, 30_000), replies
+        page = replies[-1]["clips"][0]["clip"]
+        win.execute("timeline.select", {"clips": [page]})
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.fit"].enabled, 30_000)
+        win.invoke("graphics.credits.fit")
+        dlg = win.credits_fit
+        assert dlg is not None and dlg.isVisible()
+        # the music under the credits is found; its lengths are offered
+        assert wait_until(app, lambda: dlg.info is not None and dlg.apply_button.isEnabled(), 60_000), dlg.status.text()
+        assert dlg.info["audio"] == music and dlg.credits is not None
+        names = [b.objectName() for b in dlg.choices.buttons()]
+        assert "creditsFit.use.musicLength" in names and "creditsFit.use.soundEnd" in names, names
+        assert "28" in dlg.findChild(QtWidgets.QRadioButton, "creditsFit.use.soundEnd").text()
+        assert dlg.cards_on_beat.isEnabled(), dlg.facts.text()
+        dlg.findChild(QtWidgets.QRadioButton, "creditsFit.use.soundEnd").setChecked(True)
+        assert dlg.fit_params()["use"] == "soundEnd"
+        undo = win.history.list.count()
+        dlg.apply()
+        assert wait_until(app, lambda: "0:28" in dlg.status.text(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+        assert dlg.off_button.isVisible()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_templates(app, tmp_path: Path, monkeypatch):
+    """Credits window: a built-in template gives a new spreadsheet and its look; the look is
+    saved as the user's template; Apply Credits Template… restyles placed credits."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.template.apply" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert wait_until(app, lambda: dlg.template.count() > 4, 30_000)
+        dlg.template.setCurrentIndex(dlg.template.findData("cfa4-cards-and-roll"))
+        sheet = tmp_path / "uj.csv"
+        dlg.new_sheet_to(str(sheet))
+        assert wait_until(app, lambda: sheet.is_file() and dlg.path.text() == str(sheet), 30_000)
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 3 and dlg.pages.item(0, 2) is not None and dlg.pages.item(0, 2).text(), 30_000), dlg.status.text()
+        dlg.save_template("Fesztivál")
+        assert wait_until(app, lambda: dlg.template.currentData() == "fesztivál", 30_000), dlg.status.text()
+        dlg.place()
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.template.apply"].enabled, 30_000)
+        undo = win.history.list.count()
+        monkeypatch.setattr(QtWidgets.QInputDialog, "getItem", staticmethod(lambda *a, **k: ("Classic Roll", True)))
+        win.invoke("graphics.credits.template.apply")
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_window_opens_a_cinecred_project(app, tmp_path: Path):
+    """A Cinecred project folder in the Credits window: its styles and sheet, and what could not
+    be carried over among the warnings."""
+    from cfa4_qt.main_window import MainWindow
+
+    proj = tmp_path / "Film"
+    proj.mkdir()
+    (proj / "Styling.toml").write_text(
+        '[global]\nresolution = "1920x1080"\n[[pageStyle]]\nname = "Card"\nbehavior = "CARD"\n'
+        '[[contentStyle]]\nname = "Gutter"\nblockOrientation = "HORIZONTAL"\n[[tapeStyle]]\nname = "T"\n',
+        encoding="utf-8",
+    )
+    (proj / "Credits.csv").write_text("@Kopf,@Körper,@Seitenstil\nRegie,Anna Kiss,Card\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.import" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        dlg.path.setText(str(proj))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1, 30_000), dlg.status.text()
+        texts = [dlg.warnings.item(i).text() for i in range(dlg.warnings.count())]
+        assert any("tape" in t for t in texts), texts
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_credits_workspace_strip_and_block_helpers(app):
+    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans
+
+    pages = [{"duration": 100, "gapAfter": 0}, {"duration": 50, "gapAfter": -20}, {"duration": 30}, {"duration": "x"}]
+    assert page_spans(pages) == [(0.0, 100.0), (100.0, 150.0), (130.0, 160.0), (160.0, 160.0)]
+    assert page_spans([{"duration": float("nan"), "gapAfter": float("inf")}]) == [(0.0, 0.0)]
+    strip = TimelineStrip()
+    strip.resize(162, 34)
+    strip.set_pages([*pages[:3], "bad"])
+    assert strip.index_at(10) == 0 and strip.index_at(140) == 2 and strip.index_at(500) == -1
+    chosen = []
+    strip.page_clicked.connect(chosen.append)
+    QtTest.QTest.mouseClick(strip, QtCore.Qt.MouseButton.LeftButton, pos=QtCore.QPoint(110, 17))
+    assert chosen == [1]
+    strip.set_current(1, 7)
+    assert strip.at == 1.0
+    strip.grab()  # paints without pages and with them
+    TimelineStrip().grab()
+    assert block_label({"head": "Cast", "body": ["A", "B"], "bodyCount": 2}) == "Cast  (+2)"
+    assert block_label({"body": ["A", "B"], "bodyCount": 5}) == "A  (+4)"
+    assert block_label({}) and block_label({"body": [None, 3]})
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_workspace(app, tmp_path: Path):
+    """C8: the Credits window opens compact from the editor; the full view shows the page's
+    blocks, their properties, the pages along time, the checks and the credits tools; choosing a
+    block of a roll moves the preview to it."""
+    from cfa4_qt.i18n import tr
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Head,Body,Tail,Content Style,Page Style\n"
+        ",THE LONG WAY HOME,,Heading,Card\n"
+        "Directed by,Jordan Lee,,Centered,Scroll\n"
+        ",,,,\n"
+        "Cast,Ann Smith,as Ann,Gutter,\n"
+        ",Bob Jones,,,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.refresh" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible() and not dlg.full_view
+        assert not dlg.blocks.isVisible() and not dlg.properties.isVisible() and not dlg.timeline.isVisible()
+        assert not dlg.styling.isVisible() and dlg.path.isVisible() and dlg.import_button.isVisible()
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2, 30_000), dlg.status.text()
+        dlg.findChild(QtWidgets.QPushButton, "credits.fullView").click()
+        assert dlg.full_view and dlg.blocks.isVisible() and dlg.properties.isVisible() and dlg.timeline.isVisible()
+        assert dlg.styling.isVisible() and all(b.isVisible() for b in dlg.tools)
+        assert dlg.timeline.spans and len(dlg.timeline.spans) == 2
+        # the roll's blocks and their properties
+        dlg.timeline.page_clicked.emit(1)
+        assert dlg.pages.currentRow() == 1 and dlg.blocks.count() == 2
+        assert dlg.properties.value("page.kind") == tr("Roll") and dlg.properties.value("page.blocks") == "2"
+        before = dlg.position.value()
+        dlg.blocks.setCurrentRow(1)
+        assert dlg.properties.value("block.rows") == "5–6" and dlg.properties.value("block.cells") == "2"
+        assert "Bob Jones" in dlg.properties.block_text.text() and dlg.properties.value("block.style") == "Gutter"
+        assert dlg.position.value() != before
+        assert wait_until(app, lambda: dlg.picture.pixmap() is not None and not dlg.picture.pixmap().isNull(), 30_000)
+        # the tools are the editor's commands: refresh opens its window
+        dlg.findChild(QtWidgets.QPushButton, "credits.tool.refresh").click()
+        assert wait_until(app, lambda: win.credits_refresh is not None and win.credits_refresh.isVisible(), 10_000)
+        win.credits_refresh.close()
+        # reopened from the editor while open, the view stays as chosen
+        win.invoke("graphics.credits.import")
+        assert dlg.full_view
+        dlg.close()
+        win.invoke("graphics.credits.import")
+        assert not dlg.full_view
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_credits_files_from_the_command_line(tmp_path: Path):
+    from cfa4_qt.__main__ import credits_file
+
+    assert credits_file(str(tmp_path / "a.cfa4credits")) == str((tmp_path / "a.cfa4credits").resolve())
+    assert credits_file(str(tmp_path / "B.CFA4CREDTPL"))
+    assert credits_file(str(tmp_path / "film.fcproj")) is None and credits_file(None) is None and credits_file("") is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_file_and_template_open_in_the_workspace(app, tmp_path: Path):
+    """C9: a credits file or template handed over by the file manager opens in the full Credits
+    workspace; a template with no spreadsheet brings its sample."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text("Head,Body\nDirected by,Jordan Lee\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.save" in win.registry.commands, 60_000)
+        saved = tmp_path / "film.cfa4credits"
+        engine.execute("graphics.credits.save", {"to": str(saved), "from": {"path": str(sheet)}})
+        assert wait_until(app, saved.is_file, 20_000)
+        win.open_credits_file(str(saved))
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible() and dlg.full_view
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1, 30_000), dlg.status.text()
+        dlg.close()
+        # a template file: chosen as the template, its sample sheet opened
+        got: list = []
+        engine.execute("graphics.credits.templates", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: bool(got), 20_000)
+        tid = got[0]["templates"][0]["id"]
+        tpl = tmp_path / "look.cfa4credtpl"
+        engine.execute("graphics.credits.template.save", {"name": "Look", "where": "file", "to": str(tpl), "from": {"path": str(sheet), "template": tid}})
+        assert wait_until(app, tpl.is_file, 20_000)
+        dlg.path.setText("")
+        win.open_credits_file(str(tpl))
+        assert dlg.isVisible() and dlg.full_view
+        assert wait_until(app, lambda: dlg.path.text().endswith("look.sample.csv") and dlg.pages.rowCount() >= 1, 30_000), dlg.status.text()
+        assert dlg.template.currentData() == str(tpl) and dlg.params().get("template") == str(tpl)
+        # the templates reload when the window opens again: the file stays chosen
+        dlg.load_templates()
+        assert wait_until(app, lambda: dlg.template.findData(str(tpl)) >= 0 and dlg.template.currentData() == str(tpl), 20_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_live_window_helpers(app):
+    from cfa4_qt.panels.live import cue_text, png_pixmap
+
+    text = cue_text({"name": "End", "kind": "credits", "pages": 3, "duration": 4 * TICKS_PER_SECOND, "audio": "/m.wav"})
+    assert "End" in text and "3" in text and "0:04" in text and text.endswith("♪")
+    assert cue_text({}) and cue_text({"pages": "x", "duration": None})
+    assert png_pixmap(None) is None and png_pixmap({"pngBase64": "not base64!"}) is None and png_pixmap({"pngBase64": ""}) is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_live_window(app, tmp_path: Path):
+    """C10: Graphics and Titles ▸ Live Graphics… prepares cues, shows PREVIEW and PROGRAM, runs
+    TAKE / NEXT / HOLD / CONTINUE / OUT, serves the live page on 127.0.0.1 and keeps it moving."""
+    import urllib.request
+
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Head,Body,Page Style,Page Runtime\n,THE LONG WAY HOME,Card,4s\nDirected by,Jordan Lee,Scroll,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "live.window" in win.registry.commands, 60_000)
+        win.invoke("live.window")
+        dlg = win.live_dialog
+        assert dlg is not None and dlg.isVisible()
+        assert not dlg.buttons["live.take"].isEnabled()
+        dlg.add_selected_clip()
+        assert wait_until(app, lambda: bool(dlg.status.text()), 5_000)
+        dlg.add_credits(str(sheet))
+        assert wait_until(app, lambda: dlg.cues.count() == 1 and dlg.buttons["live.take"].isEnabled(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: dlg.preview_monitor.pixmap_ is not None, 30_000)
+        dlg.buttons["live.take"].click()
+        assert wait_until(app, lambda: (dlg.state.get("program") or {}).get("cue") is not None, 30_000), dlg.status.text()
+        assert dlg.buttons["live.out"].isEnabled() and dlg.tick_timer.isActive()
+        assert wait_until(app, lambda: dlg.program_monitor.pixmap_ is not None, 30_000)
+        dlg.buttons["live.next"].click()
+        assert wait_until(app, lambda: (dlg.state.get("program") or {}).get("page") == 1, 30_000)
+        dlg.buttons["live.hold"].click()
+        assert wait_until(app, lambda: dlg.buttons["live.continue"].isEnabled(), 30_000)
+        dlg.buttons["live.continue"].click()
+        assert wait_until(app, lambda: dlg.buttons["live.hold"].isEnabled(), 30_000)
+        # the live page, on this computer only
+        dlg.page_button.click()
+        assert wait_until(app, lambda: dlg.url.text().startswith("http://127.0.0.1:"), 30_000)
+        page = urllib.request.urlopen(dlg.url.text(), timeout=5).read().decode()
+        assert "frame.png" in page
+        seq0 = json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())["seq"]
+        assert wait_until(app, lambda: json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())["seq"] > seq0, 10_000)
+        dlg.audio.setCurrentIndex(1)
+        assert wait_until(app, lambda: dlg.state.get("audioMode") == "separate", 10_000)
+        dlg.buttons["live.out"].click()
+        assert wait_until(app, lambda: dlg.state.get("program") is None and dlg.program_label.text() == tr_("Off air"), 30_000)
+        # the page keeps being served after OUT, with nothing on it
+        status = json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())
+        assert status["onAir"] is False
+        dlg.page_button.click()
+        assert wait_until(app, lambda: dlg.url.text() == "" and not dlg.tick_timer.isActive(), 30_000)
+        # nothing to connect to: an error in the window, not a crash
+        dlg.obs_port.setValue(1)
+        dlg.connect_obs()
+        assert wait_until(app, lambda: "OBS" in dlg.status.text() and "Connecting" not in dlg.status.text(), 30_000), dlg.status.text()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def tr_(text: str) -> str:
+    from cfa4_qt.i18n import tr
+
+    return tr(text)
+
+
+def test_credits_engine_notes_are_translated():
+    """Every note the credits engine writes has a template in credits_messages (so it is shown in
+    the user's language), and the values come through."""
+    import re as _re
+    from pathlib import Path as _P
+
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits_messages import NOTES, note_text
+
+    root = _P(__file__).resolve().parents[2] / "crates" / "credits" / "src"
+    engine = _P(__file__).resolve().parents[2] / "crates" / "engine" / "src" / "credits.rs"
+    # literal openings of the engine's notes (up to the first value): each must be matched by one
+    found = set()
+    for src in [*root.glob("*.rs"), engine]:
+        # tests, and the checks (validate.rs: issues with codes, shown by issue_text) are not notes
+        if "test" in src.name or src.name == "validate.rs":
+            continue
+        text = src.read_text(encoding="utf-8")
+        for m in _re.finditer(r'(?:warn\([^,]+,\s*|message:\s*|notes\.(?:push|insert)\((?:0,\s*)?)(?:format!\(\s*)?"([^"]+)"', text):
+            found.add(m.group(1))
+    assert len(found) >= 20, found
+    samples = {
+        "letter style `Bold` does not exist; the text keeps the block's style": "Bold",
+        "page 3: there is no transition `wobble`; the pages cut": "wobble",
+        "the cards and gaps alone are 12.5 s; the asked length is shorter, so the scroll pages keep their natural length": "12.5",
+        "the Cinecred project has 2 credits spreadsheets; `Credits.csv` is used (choose another with `credits`)": "Credits.csv",
+    }
+    TR.set_language("hu")
+    try:
+        for message, value in samples.items():
+            out = note_text(message)
+            assert out != message and value in out, (message, out)
+        # every template is in the Hungarian catalog
+        for _pattern, template in NOTES:
+            assert TR.has(template), template
+        # an unknown note stays as the engine wrote it
+        assert note_text("something new") == "something new"
+    finally:
+        TR.set_language("en")
+    # each engine note (its fixed opening) is matched by a pattern, with any value put in
+    for literal in found:
+        filled = _re.sub(r"\{[^}]*\}", "1", literal)
+        filled = filled.replace("`1`", "`x`")
+        # the three reasons and the three kinds of style each have their own pattern
+        if "{why}" in literal or literal.startswith("{what} are"):
+            continue
+        if literal.startswith("{what}"):
+            filled = "picture" + filled[1:]
+        assert any(p.match(filled) for p, _t in NOTES), literal
 
 
 def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):

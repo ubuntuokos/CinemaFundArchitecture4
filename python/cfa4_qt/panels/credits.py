@@ -1,0 +1,791 @@
+"""Credits window: a credits sequence from a spreadsheet (CSV, TSV, .xlsx, .ods).
+
+Everything is the engine's (``crates/credits``, ``crates/engine/src/credits.rs``): the window
+collects the file, worksheet, picture folder and styling, shows what the engine lays out
+(``graphics.credits.preview``: pages, durations, warnings) and a picture of the chosen page at a
+moment (``graphics.credits.thumbnail``), and places the credits at the playhead
+(``graphics.credits.import``, one undo step). It never lays out credits itself.
+"""
+
+from __future__ import annotations
+
+import base64
+import re
+import tempfile
+from pathlib import Path
+from typing import Any
+
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QFileDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QHeaderView,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QSlider,
+    QSplitter,
+    QStyle,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+from ..engine import EngineClient
+from ..i18n import N_, TR, tr
+from ..timecode import TICKS_PER_SECOND
+from .credits_messages import note_text
+from .credits_workspace import PropertiesPanel, TimelineStrip, block_label
+
+SHEET_FILTER = N_("Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)")
+CREDITS_FILE_FILTER = N_("CFA4 credits file (*.cfa4credits)")
+STYLING_FILTER = N_("Credits styling (*.json)")
+BEHAVIOURS = {"scroll": N_("Roll"), "card": N_("Card"), "crawl": N_("Crawl")}
+BACKGROUNDS = {"color": N_("Color"), "gradient": N_("Gradient"), "image": N_("Picture: {file}"), "video": N_("Video: {file}")}
+TRANSITIONS = {"cross_dissolve": N_("Dissolve"), "push": N_("Push"), "slide": N_("Slide"), "wipe": N_("Wipe"), "dip_to_black": N_("Dip to Black")}
+PREVIEW_WIDTH = 480
+# The engine's checks (crates/credits/src/validate.rs), worded from their code and values.
+ISSUE_TEXT = {
+    "duplicate-name": N_("“{name}” appears twice in the same block"),
+    "name-spelling": N_("“{name}” is written as “{other}” in row {otherRow}"),
+    "missing-font": N_("The font “{font}” is not installed; another font is used"),
+    "missing-glyphs": N_("The font “{font}” has no “{chars}”; another font draws them"),
+    "outside-title-safe": N_("“{text}” is outside the title-safe area"),
+    "low-contrast": N_("“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)"),
+    "low-contrast/background": N_("“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)"),
+    "contrast-unchecked": N_("A picture or video is behind the text: check the contrast by eye"),
+    "small-text": N_("“{text}” is {px} px high; 24 px or more reads well"),
+    "uneven-scroll": N_("The text moves {speed} px per frame; a whole number does not shimmer"),
+    "fast-scroll": N_("A line crosses the frame in {seconds} s; at least 6 s reads well"),
+    "short-card": N_("The card holds for only {seconds} s after its fades"),
+    "overlap": N_("This page starts {seconds} s before the previous one ends"),
+    "upscaled-picture": N_("“{file}” is shown at {percent} % of its pixels; it will look soft"),
+    "more-issues": N_("{more} more of the same"),
+}
+
+
+# languages of the GUI that write decimals with a comma
+COMMA_DECIMAL = {"hu", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"}
+DECIMAL = re.compile(r"-?\d+\.\d+")
+
+
+def local_number(value: Any) -> str:
+    """A value as text; decimals with the GUI language's separator (7.47 → 7,47 in Hungarian)."""
+    text = str(value)
+    if TR.language in COMMA_DECIMAL and DECIMAL.fullmatch(text):
+        return text.replace(".", ",")
+    return text
+
+
+def issue_text(issue: dict[str, Any]) -> str:
+    """An engine check in the user's language: its template filled with its values, after its
+    place (row or page). Unknown codes fall back to the engine's English message."""
+    values = issue.get("values") if isinstance(issue.get("values"), dict) else {}
+    code = str(issue.get("code"))
+    template = ISSUE_TEXT.get(f"{code}/{values.get('against')}") or ISSUE_TEXT.get(code)
+    if template:
+        text = tr(template)
+        for k, v in values.items():
+            text = text.replace("{" + str(k) + "}", local_number(v))
+    else:
+        text = str(issue.get("message") or issue.get("code") or "")
+    row, page = issue.get("row"), issue.get("page")
+    if isinstance(row, int):
+        return tr("Row {row}: {message}").replace("{row}", str(row)).replace("{message}", text)
+    if isinstance(page, int):
+        return tr("Page {page}: {message}").replace("{page}", str(page + 1)).replace("{message}", text)
+    return text
+def background_text(bg: Any) -> str:
+    """A page's background in a word or two (the engine's ``background`` of a preview page)."""
+    if not isinstance(bg, dict) or bg.get("kind") not in BACKGROUNDS:
+        return ""
+    name = Path(str(bg.get("file") or "")).name
+    text = tr(BACKGROUNDS[bg["kind"]]).replace("{file}", name)
+    opacity = bg.get("opacity")
+    if isinstance(opacity, (int, float)) and 0 <= opacity < 100:
+        text += f" ({local_number(f'{float(opacity):g}')} %)"
+    return text
+
+
+def transition_text(tr_: Any) -> str:
+    """The transition into the next page with its length (the engine's ``transition``)."""
+    if not isinstance(tr_, dict):
+        return ""
+    effect = str(tr_.get("effect") or "")
+    name = tr(TRANSITIONS[effect]) if effect in TRANSITIONS else effect.replace("_", " ")
+    return f"{name}, {format_seconds(tr_.get('duration'))}"
+
+
+# typing in a path field waits this long before asking the engine again
+DEBOUNCE_MS = 400
+
+
+def format_seconds(ticks: Any) -> str:
+    """Engine ticks as m:ss.f (or h:mm:ss.f), to the nearest tenth of a second."""
+    try:
+        tenths_total = max(0, round(float(ticks) / TICKS_PER_SECOND * 10))
+    except (TypeError, ValueError, OverflowError):
+        return ""
+    whole, tenth = divmod(tenths_total, 10)
+    sep = "," if TR.language in COMMA_DECIMAL else "."
+    if whole >= 3600:
+        return f"{whole // 3600}:{whole // 60 % 60:02d}:{whole % 60:02d}{sep}{tenth}"
+    return f"{whole // 60}:{whole % 60:02d}{sep}{tenth}"
+
+
+class CreditsDialog(QDialog):
+    """Non-modal: the editor stays usable while the sheet is being written."""
+
+    imported = Signal(object)  # number of pages placed (an object: integer signals are 32-bit in PySide6)
+    # a command of the editor the workspace offers (refresh, fit to music, apply a template): the
+    # main window runs it as from its menu
+    tool_requested = Signal(str)
+
+    def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("dialog.credits")
+        self.setWindowTitle(tr("Credits from a Spreadsheet"))
+        self.setModal(False)
+        self.engine = engine
+        self.preview: dict[str, Any] | None = None
+        self._generation = 0  # replies to older requests are dropped
+        self._thumb_generation = 0
+        self._loading = False
+        self.full_view = False
+
+        # ----- source -----
+        self.path = QLineEdit(self)
+        self.path.setObjectName("credits.path")
+        self.path.setPlaceholderText(tr("A .ods, .xlsx or CSV credits sheet"))
+        browse = QPushButton(tr("Browse…"), self)
+        browse.setObjectName("credits.browse")
+        browse.clicked.connect(self._browse)
+        cinecred = QPushButton(tr("Cinecred Project…"), self)
+        cinecred.setObjectName("credits.cinecred")
+        cinecred.setToolTip(tr("Open a Cinecred project folder (Styling.toml and its credits spreadsheet)"))
+        cinecred.clicked.connect(self._browse_cinecred)
+        path_row = QHBoxLayout()
+        path_row.addWidget(self.path, 1)
+        path_row.addWidget(browse)
+        path_row.addWidget(cinecred)
+
+        self.sheet = QComboBox(self)
+        self.sheet.setObjectName("credits.sheet")
+
+        self.pictures = QLineEdit(self)
+        self.pictures.setObjectName("credits.pictureDir")
+        self.pictures.setPlaceholderText(tr("The spreadsheet's folder"))
+        pic_browse = QPushButton(tr("Browse…"), self)
+        pic_browse.setObjectName("credits.pictureDir.browse")
+        pic_browse.clicked.connect(self._browse_pictures)
+        pic_row = QHBoxLayout()
+        pic_row.addWidget(self.pictures, 1)
+        pic_row.addWidget(pic_browse)
+
+        self.styling = QLineEdit(self)
+        self.styling.setObjectName("credits.styling")
+        self.styling.setPlaceholderText(tr("Built-in styles"))
+        sty_browse = QPushButton(tr("Browse…"), self)
+        sty_browse.setObjectName("credits.styling.browse")
+        sty_browse.clicked.connect(self._browse_styling)
+        sty_row = QHBoxLayout()
+        sty_row.addWidget(self.styling, 1)
+        sty_row.addWidget(sty_browse)
+
+        # ----- template -----
+        self.template = QComboBox(self)
+        self.template.setObjectName("credits.template")
+        self.template.setToolTip(tr("A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins."))
+        self.template.addItem(tr("(none)"), None)
+        self.new_sheet_button = QPushButton(tr("New Spreadsheet from Template…"), self)
+        self.new_sheet_button.setObjectName("credits.template.newSheet")
+        self.new_sheet_button.clicked.connect(self._new_sheet)
+        self.save_template_button = QPushButton(tr("Save as Template…"), self)
+        self.save_template_button.setObjectName("credits.template.save")
+        self.save_template_button.clicked.connect(self._save_template)
+        tpl_row = QHBoxLayout()
+        tpl_row.addWidget(self.template, 1)
+        tpl_row.addWidget(self.new_sheet_button)
+        tpl_row.addWidget(self.save_template_button)
+        self.templates: list[dict[str, Any]] = []
+        self.template_files: list[str] = []  # templates opened from a file, kept across reloads
+
+        form = QFormLayout()
+        form.addRow(tr("Spreadsheet"), path_row)
+        form.addRow(tr("Sheet"), self.sheet)
+        form.addRow(tr("Pictures"), pic_row)
+        form.addRow(tr("Template"), tpl_row)
+        form.addRow(tr("Styling"), sty_row)
+        self.form = form
+
+        # ----- view and the editor's credits tools -----
+        self.view_button = QPushButton(tr("Full View"), self)
+        self.view_button.setObjectName("credits.fullView")
+        self.view_button.setCheckable(True)
+        self.view_button.setToolTip(tr("Show everything: blocks, properties, the pages along time, checks and the credits tools"))
+        self.view_button.toggled.connect(self.set_full_view)
+        self.tools: list[QPushButton] = []
+        tools_row = QHBoxLayout()
+        tools_row.addWidget(self.view_button)
+        tools_row.addStretch(1)
+        for cid, label, tip in (
+            ("graphics.credits.refresh", N_("Refresh Placed Credits…"), N_("Compare the selected credits on the timeline with their spreadsheet, row by row")),
+            ("graphics.credits.fit", N_("Fit to Music…"), N_("Fit the selected credits to the music under them")),
+            ("graphics.credits.template.apply", N_("Apply Template…"), N_("Give the selected credits on the timeline another template")),
+        ):
+            b = QPushButton(tr(label), self)
+            b.setObjectName(f"credits.tool.{cid.removeprefix('graphics.credits.')}")
+            b.setToolTip(tr(tip))
+            b.clicked.connect(lambda _c=False, c=cid: self.tool_requested.emit(c))
+            tools_row.addWidget(b)
+            self.tools.append(b)
+
+        # ----- pages and warnings -----
+        self.pages = QTableWidget(0, 5, self)
+        self.pages.setObjectName("credits.pages")
+        self.pages.setHorizontalHeaderLabels([tr("Page"), tr("Type"), tr("Background"), tr("Into the next"), tr("Duration")])
+        self.pages.verticalHeader().setVisible(False)
+        self.pages.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.pages.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.pages.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        header = self.pages.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for col in (1, 2, 3, 4):
+            header.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+        self.pages.itemSelectionChanged.connect(self._page_chosen)
+        self.total = QLabel(self)
+        self.total.setObjectName("credits.total")
+        self.warnings = QListWidget(self)
+        self.warnings.setObjectName("credits.warnings")
+        self.warnings.setMaximumHeight(140)
+        self.warnings.setWordWrap(True)
+        self.check_summary = QLabel(self)
+        self.check_summary.setObjectName("credits.checkSummary")
+
+        self.blocks = QListWidget(self)
+        self.blocks.setObjectName("credits.blocks")
+        self.blocks.setToolTip(tr("The blocks of the chosen page; choose one to see it in the preview"))
+        self.blocks.currentRowChanged.connect(self._block_chosen)
+        self.blocks_label = QLabel(tr("Blocks"), self)
+
+        left = QWidget(self)
+        lv = QVBoxLayout(left)
+        lv.setContentsMargins(0, 0, 0, 0)
+        lv.addWidget(self.pages, 2)
+        lv.addWidget(self.blocks_label)
+        lv.addWidget(self.blocks, 3)
+
+        # ----- page picture -----
+        self.picture = QLabel(self)
+        self.picture.setObjectName("credits.picture")
+        self.picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.picture.setMinimumSize(PREVIEW_WIDTH // 2, PREVIEW_WIDTH * 9 // 32)
+        self.picture.setStyleSheet("background: #000; color: #888;")
+        self.position = QSlider(Qt.Orientation.Horizontal, self)
+        self.position.setObjectName("credits.position")
+        self.position.setRange(0, 100)
+        self.position.setValue(50)
+        self.position.setToolTip(tr("Moment in the page"))
+        self.position.valueChanged.connect(self._position_changed)
+        self.guides = QCheckBox(tr("Safe areas and spines"), self)
+        self.guides.setObjectName("credits.guides")
+        self.guides.setToolTip(tr("Action safe (93 %), title safe (90 %), the centre and the page's spines"))
+        self.guides.toggled.connect(self._request_thumbnail)
+        self.grid = QCheckBox(tr("Baseline grid"), self)
+        self.grid.setObjectName("credits.grid")
+        self.grid.setToolTip(tr("Lines one gap unit apart, moving with the page"))
+        self.grid.toggled.connect(self._request_thumbnail)
+        guide_row = QHBoxLayout()
+        guide_row.addWidget(self.guides)
+        guide_row.addWidget(self.grid)
+        guide_row.addStretch(1)
+        centre = QWidget(self)
+        rv = QVBoxLayout(centre)
+        rv.setContentsMargins(0, 0, 0, 0)
+        rv.addWidget(self.picture, 1)
+        rv.addWidget(self.position)
+        rv.addLayout(guide_row)
+
+        self.properties = PropertiesPanel(self)
+
+        split = QSplitter(Qt.Orientation.Horizontal, self)
+        split.setObjectName("credits.split")
+        split.addWidget(left)
+        split.addWidget(centre)
+        split.addWidget(self.properties)
+        split.setStretchFactor(0, 2)
+        split.setStretchFactor(1, 3)
+        split.setStretchFactor(2, 1)
+        self.split = split
+
+        # ----- the pages along time, the checks -----
+        self.timeline = TimelineStrip(self)
+        self.timeline.page_clicked.connect(self.choose_page)
+        self.warnings_label = QLabel(tr("Checks and warnings"), self)
+        summary_row = QHBoxLayout()
+        summary_row.addWidget(self.total)
+        summary_row.addStretch(1)
+        summary_row.addWidget(self.check_summary)
+
+        # ----- buttons -----
+        self.status = QLabel(self)
+        self.status.setObjectName("credits.status")
+        self.status.setWordWrap(True)
+        self.save_button = QPushButton(tr("Save as Credits File…"), self)
+        self.save_button.setObjectName("credits.save")
+        self.save_button.setToolTip(tr("Spreadsheet, worksheet, styling and the table in one file, to open on any machine"))
+        self.save_button.clicked.connect(self._save_file)
+        self.import_button = QPushButton(tr("Place at Playhead"), self)
+        self.import_button.setObjectName("credits.import")
+        self.import_button.setDefault(True)
+        self.import_button.clicked.connect(self.place)
+        close = QPushButton(tr("Close"), self)
+        close.setObjectName("credits.close")
+        close.clicked.connect(self.close)
+        buttons = QHBoxLayout()
+        buttons.addWidget(self.status, 1)
+        buttons.addWidget(self.save_button)
+        buttons.addWidget(self.import_button)
+        buttons.addWidget(close)
+
+        layout = QVBoxLayout(self)
+        layout.addLayout(form)
+        layout.addLayout(tools_row)
+        layout.addWidget(split, 1)
+        layout.addWidget(self.timeline)
+        layout.addLayout(summary_row)
+        layout.addWidget(self.warnings_label)
+        layout.addWidget(self.warnings)
+        layout.addLayout(buttons)
+        self.resize(980, 600)
+        self.set_full_view(False)
+
+        self._debounce = QTimer(self)
+        self._debounce.setSingleShot(True)
+        self._debounce.setInterval(DEBOUNCE_MS)
+        self._debounce.timeout.connect(self.refresh)
+        for field in (self.path, self.pictures, self.styling):
+            field.textChanged.connect(self._changed)
+        self.sheet.currentIndexChanged.connect(self._sheet_changed)
+        self.template.currentIndexChanged.connect(self._template_changed)
+        self._show(None, "")
+        self.load_templates()
+
+    # ----- view -----
+    def set_full_view(self, full: bool) -> None:
+        """The compact view has what cutting needs (the sheet, its pages, the picture, Place);
+        the full view adds the blocks, their properties, the pages along time, the checks and the
+        credits tools."""
+        self.full_view = bool(full)
+        if self.view_button.isChecked() != self.full_view:
+            self.view_button.setChecked(self.full_view)
+        self.view_button.setText(tr("Compact View") if self.full_view else tr("Full View"))
+        for row in (2, 3, 4):  # pictures, template, styling
+            self.form.setRowVisible(row, self.full_view)
+        for w in (self.blocks, self.blocks_label, self.properties, self.timeline, self.warnings, self.warnings_label, *self.tools):
+            w.setVisible(self.full_view)
+        if self.full_view:
+            if self.isVisible() and self.width() < 1280:
+                self.resize(1280, max(self.height(), 720))
+            # the pages' columns, the picture, the properties
+            w = max(self.width(), 1280) - 40
+            self.split.setSizes([w * 32 // 100, w * 46 // 100, w * 22 // 100])
+
+    # ----- pages and blocks -----
+    def current_page(self) -> dict[str, Any] | None:
+        pages = (self.preview or {}).get("pages") or []
+        i = self.pages.currentRow()
+        return pages[i] if 0 <= i < len(pages) and isinstance(pages[i], dict) else None
+
+    def choose_page(self, index: int) -> None:
+        if 0 <= index < self.pages.rowCount():
+            self.pages.selectRow(index)
+
+    def _page_chosen(self) -> None:
+        page = self.current_page() or {}
+        blocks = [b for b in page.get("blocks") or [] if isinstance(b, dict)]
+        self.blocks.blockSignals(True)
+        try:
+            self.blocks.clear()
+            for b in blocks:
+                item = QListWidgetItem(block_label(b))
+                item.setToolTip(str(b.get("style") or ""))
+                self.blocks.addItem(item)
+        finally:
+            self.blocks.blockSignals(False)
+        behaviour = page.get("behaviour")
+        row, blocks_n = page.get("row"), len(blocks)
+        last = max((b.get("lastRow") for b in blocks if isinstance(b.get("lastRow"), int)), default=None)
+        rows = f"{row}–{last}" if isinstance(row, int) and isinstance(last, int) and last > row else (str(row) if isinstance(row, int) else "")
+        self.properties.show_page(
+            {
+                "name": str(page.get("name") or ""),
+                "kind": tr(BEHAVIOURS[behaviour]) if behaviour in BEHAVIOURS else "",
+                "style": str(page.get("style") or ""),
+                "rows": rows,
+                "blocks": str(blocks_n) if page else "",
+                "duration": format_seconds(page.get("duration")) if page else "",
+                "background": background_text(page.get("background")),
+                "transition": transition_text(page.get("transition")),
+            }
+        )
+        self.properties.show_block(None)
+        self.timeline.set_current(self.pages.currentRow(), self.position.value() / 100.0)
+        self._request_thumbnail()
+
+    def _block_chosen(self, index: int) -> None:
+        page = self.current_page() or {}
+        blocks = [b for b in page.get("blocks") or [] if isinstance(b, dict)]
+        block = blocks[index] if 0 <= index < len(blocks) else None
+        self.properties.show_block(block)
+        if block is not None:
+            at = block.get("at")
+            if isinstance(at, (int, float)) and 0 <= at <= 1:
+                # moving the slider asks for the picture at the block
+                self.position.setValue(round(at * 100))
+
+    # ----- parameters -----
+    def params(self) -> dict[str, Any]:
+        """The engine parameters the fields stand for."""
+        p: dict[str, Any] = {"path": self.path.text().strip()}
+        if self.sheet.isEnabled() and self.sheet.currentData() is not None:
+            p["sheet"] = self.sheet.currentData()
+        if self.pictures.text().strip():
+            p["pictureDir"] = self.pictures.text().strip()
+        if self.styling.text().strip():
+            p["styling"] = self.styling.text().strip()
+        elif self.template.currentData():
+            p["template"] = self.template.currentData()
+        return p
+
+    # ----- templates -----
+    def load_templates(self, select: str | None = None) -> None:
+        """Ask the engine for the templates (built in, the user's, the project's)."""
+
+        def done(result: Any, _b: bytes | None) -> None:
+            items = result.get("templates") if isinstance(result, dict) else None
+            if not isinstance(items, list):
+                return
+            self.templates = [t for t in items if isinstance(t, dict) and t.get("id")]
+            current = select or self.template.currentData()
+            self._loading = True
+            try:
+                self.template.clear()
+                self.template.addItem(tr("(none)"), None)
+                for t in self.templates:
+                    kind = {"builtin": tr("built in"), "user": tr("mine"), "project": tr("this project")}.get(str(t.get("category")), "")
+                    self.template.addItem(f"{t.get('name')} ({kind})" if kind else str(t.get("name")), t.get("id"))
+                    tip = "\n".join(x for x in (str(t.get("description") or ""), str(t.get("license") or "")) if x)
+                    self.template.setItemData(self.template.count() - 1, tip, Qt.ItemDataRole.ToolTipRole)
+                for f in self.template_files:
+                    self.template.addItem(Path(f).stem, f)
+                    self.template.setItemData(self.template.count() - 1, f, Qt.ItemDataRole.ToolTipRole)
+                idx = self.template.findData(current) if current else 0
+                self.template.setCurrentIndex(max(0, idx))
+            finally:
+                self._loading = False
+
+        self.engine.execute("graphics.credits.templates", {}, on_reply=done, on_error=lambda _m: None)
+
+    def use_template_file(self, path: str) -> None:
+        """Choose a template file (a `.cfa4credtpl` from elsewhere) as this window's template; with
+        no spreadsheet yet, its sample opens as one so there is something to see."""
+        idx = self.template.findData(path)
+        if idx < 0:
+            self.template_files.append(path)
+            self.template.addItem(Path(path).stem, path)
+            self.template.setItemData(self.template.count() - 1, path, Qt.ItemDataRole.ToolTipRole)
+            idx = self.template.count() - 1
+        self._loading = True
+        try:
+            self.template.setCurrentIndex(idx)
+        finally:
+            self._loading = False
+        if not self.path.text().strip():
+            # beside the other temporary files: the template's own folder may be read only
+            folder = Path(tempfile.gettempdir()) / "cfa4-credits"
+            folder.mkdir(parents=True, exist_ok=True)
+            sample = folder / f"{Path(path).stem}.sample.csv"
+            self.engine.execute(
+                "graphics.credits.template.newSheet",
+                {"id": path, "to": str(sample)},
+                on_reply=lambda _r, _b: self.path.setText(str(sample)),
+                on_error=lambda m: self.status.setText(m),
+            )
+        else:
+            self.refresh()
+
+    def _template_changed(self, _i: int) -> None:
+        if not self._loading:
+            self.refresh()
+
+    def _new_sheet(self) -> None:
+        tid = self.template.currentData()
+        if not tid:
+            self.status.setText(tr("Choose a template first."))
+            return
+        path, _ = QFileDialog.getSaveFileName(self, tr("New Spreadsheet from Template…"), str(Path(self._start_dir()) / "credits.csv"), tr("CSV (*.csv)"))
+        if path:
+            self.new_sheet_to(path)
+
+    def new_sheet_to(self, path: str) -> None:
+        """Write the chosen template's sample sheet and open it here."""
+        self.engine.execute(
+            "graphics.credits.template.newSheet",
+            {"id": self.template.currentData(), "to": path},
+            on_reply=lambda _r, _b: self.path.setText(path),
+            on_error=lambda m: self.status.setText(m),
+        )
+
+    def _save_template(self) -> None:
+        name, ok = QInputDialog.getText(self, tr("Save as Template…"), tr("Name of the template:"))
+        if ok and name.strip():
+            self.save_template(name.strip())
+
+    def save_template(self, name: str, where: str = "user") -> None:
+        """Save the spreadsheet's look (its styling or template, and its rows as the sample)."""
+
+        def done(result: Any, _b: bytes | None) -> None:
+            self.status.setText(tr("Template saved: {name}").replace("{name}", name))
+            self.load_templates(select=(result or {}).get("id") if isinstance(result, dict) else None)
+
+        self.engine.execute(
+            "graphics.credits.template.save",
+            {"name": name, "where": where, "from": self.params()},
+            on_reply=done,
+            on_error=lambda m: self.status.setText(m),
+        )
+
+    def open_with(self, path: str | None = None, full: bool = False) -> None:
+        """Open from the editor: the compact view, unless `full` asks for the whole workspace."""
+        # the project may have changed since: its templates with it
+        self.load_templates()
+        if not self.isVisible():
+            self.set_full_view(full)
+        elif full:
+            self.set_full_view(True)
+        if path:
+            self.path.setText(path)
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        if self.path.text().strip():
+            self.refresh()
+
+    # ----- file pickers -----
+    def _start_dir(self) -> str:
+        text = self.path.text().strip()
+        return str(Path(text).expanduser().parent) if text else str(Path.home())
+
+    def _browse(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, tr("Credits Spreadsheet"), self._start_dir(), tr(SHEET_FILTER))
+        if path:
+            self.path.setText(path)
+
+    def _browse_cinecred(self) -> None:
+        path = QFileDialog.getExistingDirectory(self, tr("Cinecred Project…"), self._start_dir())
+        if path:
+            self.path.setText(path)
+
+    def _browse_pictures(self) -> None:
+        path = QFileDialog.getExistingDirectory(self, tr("Pictures"), self.pictures.text().strip() or self._start_dir())
+        if path:
+            self.pictures.setText(path)
+
+    def _browse_styling(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, tr("Styling"), self._start_dir(), tr(STYLING_FILTER))
+        if path:
+            self.styling.setText(path)
+
+    def _changed(self, _text: str) -> None:
+        if not self._loading:
+            self._debounce.start()
+
+    def _sheet_changed(self, _index: int) -> None:
+        if not self._loading:
+            self.refresh()
+
+    # ----- engine round trips -----
+    def refresh(self) -> None:
+        """Ask the engine to lay out the sheet as it stands."""
+        self._debounce.stop()
+        if not self.path.text().strip():
+            self._show(None, "")
+            return
+        self._generation += 1
+        gen = self._generation
+        self.status.setText(tr("Reading…"))
+        self.engine.execute(
+            "graphics.credits.preview",
+            self.params(),
+            on_reply=lambda r, _b, g=gen: self._on_preview(g, r),
+            on_error=lambda m, g=gen: self._on_preview_error(g, m),
+        )
+
+    def _on_preview(self, gen: int, result: Any) -> None:
+        if gen != self._generation or not isinstance(result, dict):
+            return
+        self._show(result, "")
+
+    def _on_preview_error(self, gen: int, message: str) -> None:
+        if gen == self._generation:
+            self._show(None, message)
+
+    def _show(self, preview: dict[str, Any] | None, error: str) -> None:
+        self.preview = preview
+        pages = (preview or {}).get("pages") or []
+        self._loading = True
+        try:
+            sheets = (preview or {}).get("sheets") or []
+            chosen = (preview or {}).get("sheet") or ""
+            if [self.sheet.itemText(i) for i in range(self.sheet.count())] != sheets:
+                self.sheet.clear()
+                for name in sheets:
+                    self.sheet.addItem(name, name)
+            if chosen:
+                self.sheet.setCurrentIndex(max(0, self.sheet.findData(chosen)))
+            self.sheet.setEnabled(len(sheets) > 1)
+            if not sheets:
+                self.sheet.clear()
+                self.sheet.addItem(tr("(one table)"), None)
+        finally:
+            self._loading = False
+        selected = self.pages.currentRow()
+        self.pages.setRowCount(len(pages))
+        for row, page in enumerate(pages):
+            cells = (
+                str(page.get("name") or ""),
+                tr(BEHAVIOURS.get(page.get("behaviour"), "")) if page.get("behaviour") in BEHAVIOURS else "",
+                background_text(page.get("background")),
+                transition_text(page.get("transition")),
+                format_seconds(page.get("duration")),
+            )
+            for col, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                if col == 4:
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                self.pages.setItem(row, col, item)
+        self.timeline.set_pages(pages)
+        if pages:
+            self.pages.blockSignals(True)
+            self.pages.selectRow(min(max(selected, 0), len(pages) - 1))
+            self.pages.blockSignals(False)
+        self._page_chosen()
+        self.total.setText(tr("Total: {time}").replace("{time}", format_seconds((preview or {}).get("duration"))) if pages else "")
+        self.warnings.clear()
+        style = self.style()
+        icons = {
+            "error": style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxCritical),
+            "warning": style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning),
+            "info": style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation),
+        }
+        for issue in (preview or {}).get("issues") or []:
+            if isinstance(issue, dict):
+                item = QListWidgetItem(icons.get(str(issue.get("severity")), icons["info"]), issue_text(issue))
+                item.setData(Qt.ItemDataRole.UserRole, issue.get("code"))
+                self.warnings.addItem(item)
+        for w in (preview or {}).get("warnings") or []:
+            row = w.get("row") if isinstance(w, dict) else None
+            text = note_text(str(w.get("message") if isinstance(w, dict) else w))
+            item = QListWidgetItem(icons["warning"], tr("Row {row}: {message}").replace("{row}", str(row)).replace("{message}", text) if row else text)
+            self.warnings.addItem(item)
+        issues = [i for i in (preview or {}).get("issues") or [] if isinstance(i, dict)]
+        errors = sum(1 for i in issues if i.get("severity") == "error")
+        warns = sum(1 for i in issues if i.get("severity") == "warning") + len((preview or {}).get("warnings") or [])
+        self.check_summary.setText(
+            tr("Checks: {errors} errors, {warnings} warnings").replace("{errors}", str(errors)).replace("{warnings}", str(warns)) if pages else ""
+        )
+        self.import_button.setEnabled(bool(pages))
+        self.save_button.setEnabled(bool(pages))
+        if error:
+            self.status.setText(error)
+        elif pages:
+            self.status.setText("")
+        else:
+            self.status.setText(tr("Choose a credits spreadsheet."))
+        if not pages:
+            self.picture.setPixmap(QPixmap())
+            self.picture.setText(tr("No preview"))
+
+    def _position_changed(self, value: int) -> None:
+        self.timeline.set_current(self.pages.currentRow(), value / 100.0)
+        self._request_thumbnail()
+
+    def _request_thumbnail(self) -> None:
+        if not (self.preview or {}).get("pages"):
+            return
+        page = max(0, self.pages.currentRow())
+        self._thumb_generation += 1
+        gen = self._thumb_generation
+        p = {
+            **self.params(),
+            "page": page,
+            "at": self.position.value() / 100.0,
+            # as wide as the picture area (sharp on large windows), within reason
+            "width": max(PREVIEW_WIDTH // 2, min(960, self.picture.width() - 8)),
+            "guides": self.guides.isChecked(),
+            "grid": self.grid.isChecked(),
+        }
+        self.engine.execute(
+            "graphics.credits.thumbnail",
+            p,
+            on_reply=lambda r, _b, g=gen: self._on_thumbnail(g, r),
+            on_error=lambda _m: None,
+        )
+
+    def _on_thumbnail(self, gen: int, result: Any) -> None:
+        if gen != self._thumb_generation or not isinstance(result, dict):
+            return
+        try:
+            png = base64.b64decode(result.get("pngBase64") or "", validate=True)
+        except (ValueError, TypeError):
+            return
+        image = QImage.fromData(png, "PNG")
+        if image.isNull():
+            return
+        self.picture.setText("")
+        self.picture.setPixmap(QPixmap.fromImage(image))
+
+    def _save_file(self) -> None:
+        start = Path(self.path.text().strip() or str(Path.home() / "credits")).with_suffix(".cfa4credits")
+        path, _ = QFileDialog.getSaveFileName(self, tr("Save as Credits File…"), str(start), tr(CREDITS_FILE_FILTER))
+        if path:
+            self.save_to(path)
+
+    def save_to(self, path: str) -> None:
+        """Write the credits as a `.cfa4credits` file (``graphics.credits.save``)."""
+
+        def done(result: Any, _b: bytes | None) -> None:
+            written = result.get("path") if isinstance(result, dict) else path
+            self.status.setText(tr("Saved: {path}").replace("{path}", str(written)))
+
+        self.engine.execute("graphics.credits.save", {"to": path, "from": self.params()}, on_reply=done, on_error=self.status.setText)
+
+    def place(self) -> None:
+        """Place the credits at the playhead (one undo step)."""
+        if not (self.preview or {}).get("pages"):
+            return
+        self.import_button.setEnabled(False)
+        self.status.setText(tr("Placing…"))
+
+        def done(result: Any, _b: bytes | None) -> None:
+            n = len((result or {}).get("clips") or []) if isinstance(result, dict) else 0
+            self.import_button.setEnabled(True)
+            self.status.setText(tr("Placed {n} pages on the timeline.").replace("{n}", str(n)))
+            self.imported.emit(n)
+
+        def failed(message: str) -> None:
+            self.import_button.setEnabled(True)
+            self.status.setText(message)
+
+        self.engine.execute("graphics.credits.import", self.params(), on_reply=done, on_error=failed)

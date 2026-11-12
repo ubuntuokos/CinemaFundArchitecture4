@@ -3595,6 +3595,8 @@
 	Analyze Source for Smart Cut	Akıllı Kesim için Kaynağı Analiz Et
 	Plan Smart Cut	Akıllı Kesimi Planla
 	Run Smart Cut	Akıllı Kesimi Çalıştır
+	DASH Manifest	DASH manifestosu
+	Also write a DASH manifest (.mpd)	Ayrıca bir DASH manifestosu (.mpd) yaz
 	No sequence open. Double-click a sequence in the Project panel.	Açık sekans yok. Proje panelinde bir sekansa çift tıklayın.
 	English (US)	English (US)
 	English (UK)	English (UK)
@@ -4224,3 +4226,230 @@ export.summary	Low	düşük
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Tablodan jenerik
+	A .ods, .xlsx or CSV credits sheet	.ods, .xlsx veya CSV jenerik tablosu
+	The spreadsheet's folder	Tablonun klasörü
+	Built-in styles	Yerleşik stiller
+	Spreadsheet	Tablo
+	Sheet	Sayfa
+	Pictures	Resimler
+	Styling	Stil
+	Page	Sayfa
+	Warnings	Uyarılar
+	Moment in the page	Sayfadaki an
+	Place at Playhead	Oynatma kafasına yerleştir
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tablolar (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Jenerik stili (*.json)
+	Card	Kart
+	Credits Spreadsheet	Jenerik tablosu
+	Reading…	Okunuyor…
+	(one table)	(tek tablo)
+	Total: {time}	Toplam: {time}
+	Row {row}: {message}	Satır {row}: {message}
+	Choose a credits spreadsheet.	Bir jenerik tablosu seçin.
+	No preview	Önizleme yok
+	Placing…	Yerleştiriliyor…
+	Placed {n} pages on the timeline.	Zaman çizelgesine {n} sayfa yerleştirildi.
+	Credits Page Picture	Jenerik sayfası resmi
+	Preview Credits	Jeneriği önizle
+	Credits Styles	Jenerik stilleri
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tablolar ve jenerik dosyaları (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 jenerik dosyası (*.cfa4credits)
+	Save as Credits File…	Jenerik dosyası olarak kaydet…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tablo, sayfa, stil ve satırlar tek dosyada; her bilgisayarda açılabilir
+	Saved: {path}	Kaydedildi: {path}
+	Added	Eklendi
+	Removed	Kaldırıldı
+	Changed	Değişti
+	(empty row)	(boş satır)
+	Refresh Credits from Spreadsheet	Jeneriği tablodan yenile
+	Change	Değişiklik
+	Before → After	Önce → Sonra
+	Select None	Hiçbirini seçme
+	Keep my edits on the pages (where their block is unchanged)	Sayfalardaki düzenlemelerimi koru (bloğu değişmeyenlerde)
+	Locate Spreadsheet…	Tabloyu bul…
+	Comparing…	Karşılaştırılıyor…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Jenerik yerleştirildiğinden beri {file} içinde {n} değişiklik var. İstemediklerinizin işaretini kaldırın.
+	The spreadsheet {file} has not changed since the credits were placed.	{file} tablosu jenerik yerleştirildiğinden beri değişmedi.
+	{n} layers were edited by hand on the pages.	Sayfalarda {n} katman elle düzenlendi.
+	Accepting every change would replace these, because their block changed: {names}	Tüm değişiklikleri kabul etmek bunları değiştirir, çünkü blokları değişti: {names}
+	Refreshing…	Yenileniyor…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Yenilendi: {n} değişiklik uygulandı, {kept} elle düzenleme korundu.
+	Refresh Credits from Spreadsheet…	Jeneriği tablodan yenile…
+	Save Credits File…	Jenerik dosyasını kaydet…
+	Compare Credits with Spreadsheet	Jeneriği tabloyla karşılaştır
+	“{name}” appears twice in the same block	“{name}” aynı blokta iki kez geçiyor
+	“{name}” is written as “{other}” in row {otherRow}	“{name}”, {otherRow}. satırda “{other}” olarak yazılmış
+	The font “{font}” is not installed; another font is used	“{font}” yazı tipi yüklü değil; başka bir yazı tipi kullanılıyor
+	The font “{font}” has no “{chars}”; another font draws them	“{font}” yazı tipinde “{chars}” yok; bunları başka bir yazı tipi çiziyor
+	“{text}” is outside the title-safe area	“{text}” başlık güvenli alanının dışında
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” siyah üzerinde çok koyu (kontrast {ratio}:1; en az 4,5:1 gerekir)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” {px} px yüksekliğinde; 24 px ve üzeri rahat okunur
+	The roll moves {speed} px per frame; a whole number does not shimmer	Kayma kare başına {speed} px; tam sayı titremez
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Bir satır kareyi {seconds} sn'de geçiyor; en az 6 sn rahat okunur
+	The card holds for only {seconds} s after its fades	Kart, geçişlerinden sonra yalnızca {seconds} sn kalıyor
+	This page starts {seconds} s before the previous one ends	Bu sayfa öncekinin bitişinden {seconds} sn önce başlıyor
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” piksellerinin %{percent} oranında gösteriliyor; yumuşak görünecek
+	{more} more of the same	Aynısından {more} tane daha
+	Page {page}: {message}	Sayfa {page}: {message}
+	Checks and warnings	Denetimler ve uyarılar
+	Checks: {errors} errors, {warnings} warnings	Denetimler: {errors} hata, {warnings} uyarı
+	Check Credits	Jeneriği denetle
+	The whole music ({time})	Müziğin tamamı ({time})
+	Until the sound ends ({time})	Ses bitene kadar ({time})
+	To the last bar line ({time})	Son ölçü çizgisine kadar ({time})
+	Fit Credits to Music	Jeneriği müziğe uydur
+	Fit Credits to Music…	Jeneriği müziğe uydur…
+	Analyse Music for Credits	Jenerik için müziği çözümle
+	Length:	Uzunluk:
+	Cards last whole beats (cuts on the beat)	Kartlar tam vuruş sürer (kesmeler vuruşta)
+	Start the credits where the music starts	Jeneriği müziğin başladığı yerde başlat
+	Length of the credits	Jeneriğin uzunluğu
+	Remove Fitting	Uydurmayı kaldır
+	Listening to the music…	Müzik dinleniyor…
+	Length: {time}	Uzunluk: {time}
+	the sound ends at {time}	ses {time} anında bitiyor
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	uydurmasız jenerik: {time}
+	Select a credits page on the timeline.	Zaman çizelgesinde bir jenerik sayfası seçin.
+	Fitting…	Uyduruluyor…
+	The credits now last {time}.	Jenerik artık {time} sürüyor.
+	Fitting removed.	Uydurma kaldırıldı.
+	Fit to This Length	Bu uzunluğa uydur
+	No music to measure ({problem}); type the length.	Ölçülecek müzik yok ({problem}); uzunluğu yazın.
+	The text moves {speed} px per frame; a whole number does not shimmer	Metin kare başına {speed} px kayıyor; tam sayı titremez
+	Crawl	Kayan yazı
+	Picture: {file}	Resim: {file}
+	Video: {file}	Video: {file}
+	Into the next	Sonrakine geçiş
+	Safe areas and spines	Güvenli alanlar ve eksenler
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Eylem güvenli (93 %), başlık güvenli (90 %), merkez ve sayfanın eksenleri
+	Baseline grid	Taban çizgisi ızgarası
+	Lines one gap unit apart, moving with the page	Bir boşluk birimi aralıklı, sayfayla birlikte hareket eden çizgiler
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” arka plandan ayrışmıyor (kontrast {ratio}:1; en az 4,5:1 gerekir)
+	A picture or video is behind the text: check the contrast by eye	Metnin arkasında resim veya video var: kontrastı gözle denetleyin
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Hazır bir görünüm: stiller, arka planlar, geçişler ve zamanlama. Verilen bir stil dosyası önceliklidir.
+	New Spreadsheet from Template…	Şablondan yeni tablo…
+	built in	yerleşik
+	mine	benim
+	this project	bu proje
+	Template	Şablon
+	Choose a template first.	Önce bir şablon seçin.
+	Name of the template:	Şablonun adı:
+	Template saved: {name}	Şablon kaydedildi: {name}
+	Apply Credits Template…	Jenerik şablonu uygula…
+	Template:	Şablon:
+	Credits Templates	Jenerik şablonları
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tablolar, jenerik dosyaları ve Cinecred projeleri (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred projesi…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Bir Cinecred proje klasörü aç (Styling.toml ve jenerik tablosu)
+	(empty block)	(boş blok)
+	Apply Template…	Şablon uygula…
+	Change them in the spreadsheet; the credits follow when you save it.	Bunları tabloda değiştirin; tabloyu kaydettiğinizde jenerik de güncellenir.
+	Compact View	Sıkışık görünüm
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Zaman çizelgesinde seçili jeneriği tablosuyla satır satır karşılaştır
+	Fit the selected credits to the music under them	Seçili jeneriği altındaki müziğe uydur
+	Fit to Music…	Müziğe uydur…
+	Full View	Tam görünüm
+	Give the selected credits on the timeline another template	Zaman çizelgesindeki seçili jeneriğe başka bir şablon ver
+	Names	Adlar
+	No pages	Sayfa yok
+	Refresh Placed Credits…	Yerleştirilmiş jeneriği yenile…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Her şeyi göster: bloklar, özellikler, zamandaki sayfalar, denetimler ve jenerik araçları
+	Spine	Eksen
+	Tails	Son
+	The blocks of the chosen page; choose one to see it in the preview	Seçilen sayfanın blokları; önizlemede görmek için birini seçin
+	The pages along time; click one to choose it	Zamandaki sayfalar; seçmek için birine tıklayın
+	{n} more	{n} tane daha
+	Block	Blok
+	parallel	paralel
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Sayfada (OBS bunu Tarayıcı Kaynağından alır)
+	Separate (a media source in OBS)	Ayrı (OBS'te bir medya kaynağı)
+	No sound	Ses yok
+	credits	jenerik
+	graphic	grafik
+	{n} pages	{n} sayfa
+	Live Graphics	Canlı grafikler
+	Prepared cues; double-click one to put it in preview	Hazırlanmış öğeler; önizlemeye almak için birine çift tıklayın
+	Add Credits…	Jenerik ekle…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Öğe olarak bir jenerik tablosu, jenerik dosyası veya Cinecred projesi
+	Add Selected Graphic	Seçili grafiği ekle
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Zaman çizelgesinde seçili grafik klip (başlık, alt yazı bandı) öğe olarak
+	Cues	Öğeler
+	TAKE	YAYINA AL
+	The preview cue goes on air from its first page	Önizlemedeki öğe ilk sayfasından yayına girer
+	PREVIOUS	ÖNCEKİ
+	The page before (on the first page: from its start)	Önceki sayfa (ilk sayfada: başından)
+	NEXT	SONRAKİ
+	The next page; after the last one, the preview cue	Sonraki sayfa; sonuncudan sonra önizlemedeki öğe
+	HOLD	DURDUR
+	Stop the program where it is	Programı olduğu yerde durdur
+	CONTINUE	DEVAM
+	Go on from where it stopped	Durduğu yerden devam et
+	UPDATE	GÜNCELLE
+	Read the spreadsheet (or the clip) again; on air it changes at once	Tabloyu (veya klibi) yeniden oku; yayında hemen değişir
+	OUT	ÇIKAR
+	Take everything off air	Her şeyi yayından kaldır
+	Start Live Page	Canlı sayfayı başlat
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Programı bu bilgisayarda OBS Tarayıcı Kaynağı için sun (yalnızca 127.0.0.1)
+	not running	çalışmıyor
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Araçlar ▸ WebSocket Sunucu Ayarları
+	Connect to OBS	OBS'e bağlan
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Bu bilgisayardaki OBS'e bağlan ve “CFA4 Live” Tarayıcı Kaynağını canlı sayfaya yönelt
+	Port	Bağlantı noktası
+	Password	Parola
+	Live page	Canlı sayfa
+	Sound	Ses
+	OBS	OBS
+	Nothing in preview	Önizlemede bir şey yok
+	page {page} of {pages}	sayfa {page}/{pages}
+	held	durduruldu
+	ended	bitti
+	Off air	Yayında değil
+	Stop Live Page	Canlı sayfayı durdur
+	Connected to OBS {version}; source “{source}”	OBS {version} sürümüne bağlanıldı; kaynak “{source}”
+	Point OBS Again	OBS'i yeniden yönelt
+	Select a graphic clip on the timeline first.	Önce zaman çizelgesinde bir grafik klip seçin.
+	Connecting to OBS…	OBS'e bağlanılıyor…
+	Live Graphics…	Canlı grafikler…
+	PREVIEW	ÖNİZLEME
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	bir resim veya video etiketi gövde hücresinde tek başına durur (ya da tek bir adla, portre olarak); diğer etiketler kaldırıldı
+	the page gap is not a duration; the page style's is used	sayfa aralığı bir süre değil; sayfa stilininki kullanılıyor
+	the page runtime is not a positive duration; the page style's is used	sayfa süresi pozitif bir süre değil; sayfa stilininki kullanılıyor
+	background “{file}” was not found; it is left out	“{file}” arka planı bulunamadı; dışarıda bırakıldı
+	card page {page} is taller than the frame; use a roll page	kart sayfası {page} kareden uzun; kayan sayfa kullanın
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	“{style}” harf stilinin “{colour}” rengi #rrggbb değil; dışarıda bırakıldı
+	colour “{colour}” is not #rrggbb; black is used	“{colour}” rengi #rrggbb değil; siyah kullanılıyor
+	colour “{colour}” is not #rrggbb; white is used	“{colour}” rengi #rrggbb değil; beyaz kullanılıyor
+	content style “{style}” does not exist; “{used}” is used	“{style}” içerik stili yok; “{used}” kullanılıyor
+	letter style “{style}” does not exist; the text keeps the block's style	“{style}” harf stili yok; metin bloğun stilini korur
+	page gap “{value}” is not a duration	“{value}” sayfa aralığı bir süre değil
+	page runtime “{value}” is not a duration	“{value}” sayfa süresi bir süre değil
+	page style “{style}” does not exist; a roll page is used	“{style}” sayfa stili yok; kayan sayfa kullanılıyor
+	page {page}: the background names no file; it is left out	sayfa {page}: arka plan bir dosya belirtmiyor; dışarıda bırakıldı
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	sayfa {page}: süreye kayma hızı değiştirilerek ulaşılıyor (sayfada bloklar arasında esnetilecek boşluk yok)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	sayfa {page}: süreye kayma hızı değiştirilerek ulaşılıyor (jenerik boşluksuz bile çok uzun)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sayfa {page}: süreye kayma hızı değiştirilerek ulaşılıyor (boşlukların 20 kattan fazla büyümesi gerekirdi)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sayfa {page}: geçiş için sayfaların bitişik olması gerekir (sayfa aralığı 0); dışarıda bırakıldı
+	page {page}: there is no transition “{name}”; the pages cut	sayfa {page}: “{name}” geçişi yok; sayfalar kesmeyle değişir
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	“{value}” eksen konumu desteklenmiyor (piksel kaydırma, isteğe bağlı “parallel” ile, destekleniyor)
+	vertical gap “{value}” is not a number	“{value}” dikey boşluğu bir sayı değil
+	picture “{file}” was not found or cannot be read; it is left out	“{file}” resmi bulunamadı veya okunamıyor; dışarıda bırakıldı
+	video “{file}” was not found or cannot be read; it is left out	“{file}” videosu bulunamadı veya okunamıyor; dışarıda bırakıldı
+	there is no roll page without its own runtime to stretch; the length cannot change	esnetilecek, kendi süresi olmayan kayan sayfa yok; uzunluk değişemez
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	yalnızca kartlar ve boşluklar {seconds} sn; istenen uzunluk daha kısa, bu yüzden kayan sayfalar doğal uzunluklarını korur
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	“{style}” harf stili: yalnızca ilk renkli katman kullanılır (dış çizgi, gölge veya şerit yok)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	jeneriğin tamamının süresi aktarılmaz; bunun yerine Jeneriği müziğe uydur'u (veya bir uzunluk) kullanın
+	page style “{style}”: fade curves become linear fades	“{style}” sayfa stili: solma eğrileri doğrusal solmaya dönüşür
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	“{style}” içerik stilinin Cinecred'de başı yok; tabloya yazılan başlar yine gösterilir
+	content style “{style}”: sorting the names is not carried over	“{style}” içerik stili: adların sıralanması aktarılmaz
+	transition curves are not carried over	geçiş eğrileri aktarılmaz
+	picture styles (pictures keep their own size) are not carried over	resim stilleri (resimler kendi boyutlarını korur) aktarılmaz
+	video (tape) styles are not carried over	video (bant) stilleri aktarılmaz
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projesinde {n} jenerik tablosu var; “{name}” kullanılıyor (Tablo alanında başka birini seçin)

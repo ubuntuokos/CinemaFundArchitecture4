@@ -3573,6 +3573,8 @@
 	Analyze Source for Smart Cut	分析來源以進行智慧剪下
 	Plan Smart Cut	規劃智慧剪下
 	Run Smart Cut	執行智慧剪下
+	DASH Manifest	DASH 清單
+	Also write a DASH manifest (.mpd)	同時寫入 DASH 清單 (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	沒有開啟的序列。請在「專案」面板中按兩下一個序列。
 	English (US)	English (US)
 	English (UK)	English (UK)
@@ -4222,3 +4224,230 @@ export.summary	Low	低
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	從試算表建立演職員表
+	A .ods, .xlsx or CSV credits sheet	.ods、.xlsx 或 CSV 演職員表試算表
+	The spreadsheet's folder	試算表所在的資料夾
+	Built-in styles	內建樣式
+	Spreadsheet	試算表
+	Sheet	工作表
+	Pictures	圖片
+	Styling	樣式
+	Page	頁面
+	Warnings	警告
+	Moment in the page	頁面中的時間點
+	Place at Playhead	放在播放指示器處
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	試算表 (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	演職員表樣式 (*.json)
+	Card	字卡
+	Credits Spreadsheet	演職員表試算表
+	Reading…	讀取中…
+	(one table)	(單一表格)
+	Total: {time}	總計：{time}
+	Row {row}: {message}	第 {row} 列：{message}
+	Choose a credits spreadsheet.	請選擇演職員表試算表。
+	No preview	無預覽
+	Placing…	放置中…
+	Placed {n} pages on the timeline.	已在時間軸上放置 {n} 頁。
+	Credits Page Picture	演職員表頁面圖片
+	Preview Credits	預覽演職員表
+	Credits Styles	演職員表樣式
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	試算表與演職員表檔案 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 演職員表檔案 (*.cfa4credits)
+	Save as Credits File…	另存為演職員表檔案…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	試算表、工作表、樣式與表格存成單一檔案，可在任何電腦上開啟
+	Saved: {path}	已儲存：{path}
+	Added	已新增
+	Removed	已移除
+	Changed	已變更
+	(empty row)	（空白列）
+	Refresh Credits from Spreadsheet	從試算表重新整理演職員表
+	Change	變更
+	Before → After	變更前 → 變更後
+	Select None	全部不選
+	Keep my edits on the pages (where their block is unchanged)	保留我在頁面上的編輯（其區塊未變更處）
+	Locate Spreadsheet…	尋找試算表…
+	Comparing…	比較中…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	放置演職員表後，{file} 有 {n} 項變更。請取消勾選不需要的項目。
+	The spreadsheet {file} has not changed since the credits were placed.	放置演職員表後，試算表 {file} 沒有變更。
+	{n} layers were edited by hand on the pages.	頁面上有 {n} 個圖層經過手動編輯。
+	Accepting every change would replace these, because their block changed: {names}	接受所有變更將取代以下項目，因為其區塊已變更：{names}
+	Refreshing…	重新整理中…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	已重新整理：套用 {n} 項變更，保留 {kept} 項手動編輯。
+	Refresh Credits from Spreadsheet…	從試算表重新整理演職員表…
+	Save Credits File…	儲存演職員表檔案…
+	Compare Credits with Spreadsheet	將演職員表與試算表比較
+	“{name}” appears twice in the same block	「{name}」在同一區塊中出現兩次
+	“{name}” is written as “{other}” in row {otherRow}	「{name}」在第 {otherRow} 列寫成「{other}」
+	The font “{font}” is not installed; another font is used	未安裝字型「{font}」；改用其他字型
+	The font “{font}” has no “{chars}”; another font draws them	字型「{font}」沒有「{chars}」；改由其他字型繪製
+	“{text}” is outside the title-safe area	「{text}」超出字幕安全區
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	「{text}」在黑底上太暗（對比 {ratio}:1；至少需要 4.5:1）
+	“{text}” is {px} px high; 24 px or more reads well	「{text}」高 {px} px；24 px 以上較易閱讀
+	The roll moves {speed} px per frame; a whole number does not shimmer	捲動每格移動 {speed} px；整數不會閃爍
+	A line crosses the frame in {seconds} s; at least 6 s reads well	一行在 {seconds} 秒內越過畫面；至少 6 秒較易閱讀
+	The card holds for only {seconds} s after its fades	字卡在淡入淡出之後只停留 {seconds} 秒
+	This page starts {seconds} s before the previous one ends	此頁在上一頁結束前 {seconds} 秒開始
+	“{file}” is shown at {percent} % of its pixels; it will look soft	「{file}」以其像素的 {percent} % 顯示；看起來會模糊
+	{more} more of the same	另有 {more} 項相同
+	Page {page}: {message}	第 {page} 頁：{message}
+	Checks and warnings	檢查與警告
+	Checks: {errors} errors, {warnings} warnings	檢查：{errors} 個錯誤、{warnings} 個警告
+	Check Credits	檢查演職員表
+	The whole music ({time})	整段音樂（{time}）
+	Until the sound ends ({time})	直到聲音結束（{time}）
+	To the last bar line ({time})	到最後一個小節線（{time}）
+	Fit Credits to Music	讓演職員表配合音樂
+	Fit Credits to Music…	讓演職員表配合音樂…
+	Analyse Music for Credits	為演職員表分析音樂
+	Length:	長度：
+	Cards last whole beats (cuts on the beat)	字卡持續完整拍數（在拍點上切換）
+	Start the credits where the music starts	演職員表從音樂開始處開始
+	Length of the credits	演職員表長度
+	Remove Fitting	移除配合
+	Listening to the music…	正在聆聽音樂…
+	Length: {time}	長度：{time}
+	the sound ends at {time}	聲音在 {time} 結束
+	tempo {bpm} BPM	速度 {bpm} BPM
+	the credits without fitting: {time}	未配合的演職員表：{time}
+	Select a credits page on the timeline.	請在時間軸上選取演職員表頁面。
+	Fitting…	配合中…
+	The credits now last {time}.	演職員表現在長 {time}。
+	Fitting removed.	已移除配合。
+	Fit to This Length	配合此長度
+	No music to measure ({problem}); type the length.	沒有可測量的音樂（{problem}）；請輸入長度。
+	The text moves {speed} px per frame; a whole number does not shimmer	文字每格移動 {speed} px；整數不會閃爍
+	Crawl	跑馬燈
+	Picture: {file}	圖片：{file}
+	Video: {file}	影片：{file}
+	Into the next	轉入下一頁
+	Safe areas and spines	安全區與軸線
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	動作安全區（93 %）、字幕安全區（90 %）、中心與頁面軸線
+	Baseline grid	基線網格
+	Lines one gap unit apart, moving with the page	間隔一個間距單位的線，隨頁面移動
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	「{text}」與背景區分不明顯（對比 {ratio}:1；至少需要 4.5:1）
+	A picture or video is behind the text: check the contrast by eye	文字後方有圖片或影片：請目視檢查對比
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	現成外觀：樣式、背景、轉場與時間。若指定樣式檔，以樣式檔為準。
+	New Spreadsheet from Template…	從範本建立新試算表…
+	built in	內建
+	mine	我的
+	this project	此專案
+	Template	範本
+	Choose a template first.	請先選擇範本。
+	Name of the template:	範本名稱：
+	Template saved: {name}	已儲存範本：{name}
+	Apply Credits Template…	套用演職員表範本…
+	Template:	範本：
+	Credits Templates	演職員表範本
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	試算表、演職員表檔案與 Cinecred 專案 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred 專案…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	開啟 Cinecred 專案資料夾（Styling.toml 及其演職員表試算表）
+	(empty block)	（空白區塊）
+	Apply Template…	套用範本…
+	Change them in the spreadsheet; the credits follow when you save it.	請在試算表中修改；儲存後演職員表會隨之更新。
+	Compact View	精簡檢視
+	Compare the selected credits on the timeline with their spreadsheet, row by row	逐列比較時間軸上所選的演職員表與其試算表
+	Fit the selected credits to the music under them	讓所選的演職員表配合其下方的音樂
+	Fit to Music…	配合音樂…
+	Full View	完整檢視
+	Give the selected credits on the timeline another template	為時間軸上所選的演職員表套用其他範本
+	Names	姓名
+	No pages	沒有頁面
+	Refresh Placed Credits…	重新整理已放置的演職員表…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	顯示全部：區塊、屬性、時間上的頁面、檢查與演職員表工具
+	Spine	軸線
+	Tails	尾段
+	The blocks of the chosen page; choose one to see it in the preview	所選頁面的區塊；選擇一個即可在預覽中查看
+	The pages along time; click one to choose it	時間上的頁面；按一下即可選擇
+	{n} more	另有 {n} 項
+	Block	區塊
+	parallel	並列
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	在頁面中（OBS 從瀏覽器來源取得）
+	Separate (a media source in OBS)	分開（OBS 中的媒體來源）
+	No sound	無聲音
+	credits	演職員表
+	graphic	圖形
+	{n} pages	{n} 頁
+	Live Graphics	即時圖形
+	Prepared cues; double-click one to put it in preview	已備妥的項目；按兩下即可放入預覽
+	Add Credits…	加入演職員表…
+	A credits spreadsheet, credits file or Cinecred project as a cue	以演職員表試算表、演職員表檔案或 Cinecred 專案作為項目
+	Add Selected Graphic	加入所選圖形
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	以時間軸上所選的圖形片段（標題、下三分之一字幕）作為項目
+	Cues	項目
+	TAKE	上播
+	The preview cue goes on air from its first page	預覽項目從第一頁開始上播
+	PREVIOUS	上一頁
+	The page before (on the first page: from its start)	上一頁（在第一頁時：從其開頭）
+	NEXT	下一頁
+	The next page; after the last one, the preview cue	下一頁；最後一頁之後為預覽項目
+	HOLD	暫停
+	Stop the program where it is	讓節目停在目前位置
+	CONTINUE	繼續
+	Go on from where it stopped	從停止處繼續
+	UPDATE	更新
+	Read the spreadsheet (or the clip) again; on air it changes at once	重新讀取試算表（或片段）；上播中會立即變更
+	OUT	下播
+	Take everything off air	全部下播
+	Start Live Page	啟動即時頁面
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	在本機為 OBS 的瀏覽器來源提供節目（僅限 127.0.0.1）
+	not running	未執行
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ 工具 ▸ WebSocket 伺服器設定
+	Connect to OBS	連線至 OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	連線至本機的 OBS，並將其「CFA4 Live」瀏覽器來源指向即時頁面
+	Port	連接埠
+	Password	密碼
+	Live page	即時頁面
+	Sound	聲音
+	OBS	OBS
+	Nothing in preview	預覽中沒有內容
+	page {page} of {pages}	第 {page} 頁，共 {pages} 頁
+	held	已暫停
+	ended	已結束
+	Off air	未上播
+	Stop Live Page	停止即時頁面
+	Connected to OBS {version}; source “{source}”	已連線至 OBS {version}；來源「{source}」
+	Point OBS Again	重新指向 OBS
+	Select a graphic clip on the timeline first.	請先在時間軸上選取圖形片段。
+	Connecting to OBS…	正在連線至 OBS…
+	Live Graphics…	即時圖形…
+	PREVIEW	預覽
+	PROGRAM	節目
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	圖片或影片標記須單獨位於內文儲存格（或搭配一個名字作為肖像）；其他標記已移除
+	the page gap is not a duration; the page style's is used	頁間距不是時長；改用頁面樣式的值
+	the page runtime is not a positive duration; the page style's is used	頁面時長不是正值；改用頁面樣式的值
+	background “{file}” was not found; it is left out	找不到背景「{file}」；已略過
+	card page {page} is taller than the frame; use a roll page	字卡頁 {page} 高於畫面；請改用捲動頁
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	字母樣式「{style}」的顏色「{colour}」不是 #rrggbb；已略過
+	colour “{colour}” is not #rrggbb; black is used	顏色「{colour}」不是 #rrggbb；改用黑色
+	colour “{colour}” is not #rrggbb; white is used	顏色「{colour}」不是 #rrggbb；改用白色
+	content style “{style}” does not exist; “{used}” is used	內容樣式「{style}」不存在；改用「{used}」
+	letter style “{style}” does not exist; the text keeps the block's style	字母樣式「{style}」不存在；文字保留區塊樣式
+	page gap “{value}” is not a duration	頁間距「{value}」不是時長
+	page runtime “{value}” is not a duration	頁面時長「{value}」不是時長
+	page style “{style}” does not exist; a roll page is used	頁面樣式「{style}」不存在；改用捲動頁
+	page {page}: the background names no file; it is left out	第 {page} 頁：背景未指定檔案；已略過
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	第 {page} 頁：以改變捲動速度達成時長（此頁的區塊間沒有可延展的間距）
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	第 {page} 頁：以改變捲動速度達成時長（即使沒有間距，演職員表仍太長）
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 頁：以改變捲動速度達成時長（間距必須放大超過 20 倍）
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 頁：轉場需要頁面相接（頁間距 0）；已略過
+	page {page}: there is no transition “{name}”; the pages cut	第 {page} 頁：沒有「{name}」轉場；頁面直接切換
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支援軸線位置「{value}」（支援像素位移，可選加「parallel」）
+	vertical gap “{value}” is not a number	垂直間距「{value}」不是數字
+	picture “{file}” was not found or cannot be read; it is left out	找不到或無法讀取圖片「{file}」；已略過
+	video “{file}” was not found or cannot be read; it is left out	找不到或無法讀取影片「{file}」；已略過
+	there is no roll page without its own runtime to stretch; the length cannot change	沒有可延展且未自訂時長的捲動頁；長度無法變更
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	僅字卡與間距就有 {seconds} 秒；要求的長度較短，因此捲動頁保留原本長度
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	字母樣式「{style}」：只使用第一個上色圖層（無外框、陰影或條紋）
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	不會沿用整份演職員表的時長；請改用「讓演職員表配合音樂」（或指定長度）
+	page style “{style}”: fade curves become linear fades	頁面樣式「{style}」：淡化曲線改為線性淡化
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	內容樣式「{style}」在 Cinecred 中沒有開頭；試算表中寫的開頭仍會顯示
+	content style “{style}”: sorting the names is not carried over	內容樣式「{style}」：不會沿用姓名排序
+	transition curves are not carried over	不會沿用轉場曲線
+	picture styles (pictures keep their own size) are not carried over	不會沿用圖片樣式（圖片保留原始大小）
+	video (tape) styles are not carried over	不會沿用影片（磁帶）樣式
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 專案含有 {n} 份演職員表試算表；使用「{name}」（可在「試算表」欄位選擇其他）

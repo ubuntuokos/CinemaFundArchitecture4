@@ -1378,7 +1378,7 @@
 	Block Motion	ブロックモーション
 	Block Size	ブロックサイズ
 	Block Width	ブロックの幅
-	Blocks	ブロック数
+	Blocks	ブロック
 	Blue Blurriness	青のぼかし
 	Blue Curve	ブルーカーブ
 	Blue Offset	青のオフセット
@@ -3700,6 +3700,8 @@
 	Analyze Source for Smart Cut	スマートカット用にソースを解析
 	Plan Smart Cut	スマートカットを計画
 	Run Smart Cut	スマートカットを実行
+	DASH Manifest	DASH マニフェスト
+	Also write a DASH manifest (.mpd)	DASH マニフェスト (.mpd) も書き出す
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/ja.tsv).
@@ -4232,3 +4234,230 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(テーブル1つ)
+	A .ods, .xlsx or CSV credits sheet	.ods、.xlsx、またはCSVのクレジットシート
+	Built-in styles	組み込みスタイル
+	Card	カード
+	Choose a credits spreadsheet.	クレジットのスプレッドシートを選択してください。
+	Credits Spreadsheet	クレジットスプレッドシート
+	Credits from a Spreadsheet	スプレッドシートからクレジットを作成
+	Credits styling (*.json)	クレジットスタイル (*.json)
+	Moment in the page	ページ内の時点
+	No preview	プレビューなし
+	Page	ページ
+	Pictures	画像
+	Place at Playhead	再生ヘッドの位置に配置
+	Placed {n} pages on the timeline.	{n}ページをタイムラインに配置しました。
+	Placing…	配置中…
+	Reading…	読み込み中…
+	Row {row}: {message}	{row}行目: {message}
+	Sheet	シート
+	Spreadsheet	スプレッドシート
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	スプレッドシート (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	スタイル
+	The spreadsheet's folder	スプレッドシートのフォルダー
+	Total: {time}	合計: {time}
+	Warnings	警告
+	Credits Page Picture	クレジットページの画像
+	Preview Credits	クレジットをプレビュー
+	Credits Styles	クレジットのスタイル
+	(empty row)	(空の行)
+	Accepting every change would replace these, because their block changed: {names}	すべての変更を承認すると、次のものは置き換えられます(ブロックが変更されているため): {names}
+	Added	追加
+	Before → After	変更前 → 変更後
+	CFA4 credits file (*.cfa4credits)	CFA4クレジットファイル (*.cfa4credits)
+	Change	変更
+	Changed	変更済み
+	Comparing…	比較中…
+	Keep my edits on the pages (where their block is unchanged)	ページ上の手動の編集を保持する(ブロックが変更されていない部分)
+	Locate Spreadsheet…	スプレッドシートを探す…
+	Refresh Credits from Spreadsheet	スプレッドシートからクレジットを更新
+	Refreshed: {n} changes applied, {kept} hand edits kept.	更新しました: {n}件の変更を適用、{kept}件の手動編集を保持。
+	Refreshing…	更新中…
+	Removed	削除
+	Save as Credits File…	クレジットファイルとして保存…
+	Saved: {path}	保存しました: {path}
+	Select None	選択解除
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	スプレッドシート、ワークシート、スタイル、表を1つのファイルにまとめ、どのマシンでも開けます
+	The spreadsheet {file} has not changed since the credits were placed.	スプレッドシート{file}は、クレジットを配置してから変更されていません。
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	クレジットを配置してから{file}に{n}件の変更があります。不要なものはチェックを外してください。
+	{n} layers were edited by hand on the pages.	ページ上で{n}個のレイヤーが手動で編集されました。
+	Refresh Credits from Spreadsheet…	スプレッドシートからクレジットを更新…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	スプレッドシートとクレジットファイル (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	クレジットファイルを保存…
+	Compare Credits with Spreadsheet	クレジットをスプレッドシートと比較
+	A line crosses the frame in {seconds} s; at least 6 s reads well	1行がフレームを横切るのに{seconds}秒かかります。読みやすいのは6秒以上です
+	Checks and warnings	チェックと警告
+	Checks: {errors} errors, {warnings} warnings	チェック: エラー{errors}件、警告{warnings}件
+	Page {page}: {message}	ページ{page}: {message}
+	The card holds for only {seconds} s after its fades	フェード後、カードは{seconds}秒しか表示されません
+	The font “{font}” has no “{chars}”; another font draws them	フォント“{font}”に“{chars}”がありません。別のフォントで表示されます
+	The font “{font}” is not installed; another font is used	フォント“{font}”がインストールされていません。別のフォントが使われます
+	This page starts {seconds} s before the previous one ends	このページは前のページが終わる{seconds}秒前に始まります
+	{more} more of the same	同様のものがさらに{more}件
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}”はピクセルの{percent} %で表示されます。ぼやけて見えます
+	“{name}” appears twice in the same block	“{name}”が同じブロックに2回出てきます
+	“{name}” is written as “{other}” in row {otherRow}	“{name}”が{otherRow}行目では“{other}”と書かれています
+	“{text}” is outside the title-safe area	“{text}”がタイトルセーフエリアの外にあります
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”は黒地では暗すぎます(コントラスト{ratio}:1。4.5:1以上が必要です)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}”の高さは{px} pxです。24 px以上だと読みやすくなります
+	The roll moves {speed} px per frame; a whole number does not shimmer	ロールは 1 フレームあたり {speed} px 移動します。整数ならちらつきません
+	Check Credits	クレジットをチェック
+	Cards last whole beats (cuts on the beat)	カードは拍の整数倍の長さにする(拍に合わせてカット)
+	Fit Credits to Music	クレジットを音楽に合わせる
+	Fit to This Length	この長さに合わせる
+	Fitting removed.	長さの調整を解除しました。
+	Fitting…	調整中…
+	Length of the credits	クレジットの長さ
+	Length:	長さ:
+	Length: {time}	長さ: {time}
+	Listening to the music…	音楽を解析中…
+	No music to measure ({problem}); type the length.	計測できる音楽がありません({problem})。長さを入力してください。
+	Remove Fitting	長さの調整を解除
+	Select a credits page on the timeline.	タイムラインでクレジットのページを選択してください。
+	Start the credits where the music starts	音楽が始まる位置からクレジットを開始
+	The credits now last {time}.	クレジットの長さは{time}になりました。
+	The whole music ({time})	音楽全体({time})
+	To the last bar line ({time})	最後の小節線まで({time})
+	Until the sound ends ({time})	音が終わるまで({time})
+	tempo {bpm} BPM	テンポ {bpm} BPM
+	the credits without fitting: {time}	調整なしのクレジット: {time}
+	the sound ends at {time}	音は{time}に終わります
+	Fit Credits to Music…	クレジットを音楽に合わせる…
+	Analyse Music for Credits	クレジット用に音楽を解析
+	A picture or video is behind the text: check the contrast by eye	テキストの背後に画像または動画があります。コントラストを目で確認してください
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	アクションセーフ(93 %)、タイトルセーフ(90 %)、中央、およびページのスパイン
+	Baseline grid	ベースライングリッド
+	Crawl	クロール
+	Into the next	次へのつなぎ
+	Lines one gap unit apart, moving with the page	1ギャップ単位間隔の線。ページと一緒に動きます
+	Picture: {file}	画像: {file}
+	Safe areas and spines	セーフエリアとスパイン
+	The text moves {speed} px per frame; a whole number does not shimmer	テキストは1フレームあたり{speed} px移動します。整数値だとちらつきません
+	Video: {file}	動画: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”が背景から目立ちません(コントラスト{ratio}:1。4.5:1以上が必要です)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	完成したデザイン: スタイル、背景、トランジション、タイミング。スタイルファイルを指定した場合はそちらが優先されます。
+	Apply Credits Template…	クレジットテンプレートを適用…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	先にテンプレートを選択してください。
+	Name of the template:	テンプレート名:
+	New Spreadsheet from Template…	テンプレートから新規スプレッドシート…
+	Template	テンプレート
+	Template saved: {name}	テンプレートを保存しました: {name}
+	Template:	テンプレート:
+	built in	組み込み
+	mine	マイ
+	this project	このプロジェクト
+	Credits Templates	クレジットテンプレート
+	Cinecred Project…	Cinecredプロジェクト…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecredプロジェクトフォルダーを開く(Styling.tomlとそのクレジットスプレッドシート)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	スプレッドシート、クレジットファイル、Cinecredプロジェクト (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	（空のブロック）
+	Apply Template…	テンプレートを適用…
+	Change them in the spreadsheet; the credits follow when you save it.	スプレッドシートで変更してください。保存するとクレジットに反映されます。
+	Compact View	コンパクト表示
+	Compare the selected credits on the timeline with their spreadsheet, row by row	タイムライン上の選択したクレジットをスプレッドシートと行ごとに比較
+	Fit the selected credits to the music under them	選択したクレジットを下の音楽に合わせる
+	Fit to Music…	音楽に合わせる…
+	Full View	全体表示
+	Give the selected credits on the timeline another template	タイムライン上の選択したクレジットに別のテンプレートを適用
+	Names	名前
+	No pages	ページがありません
+	Refresh Placed Credits…	配置したクレジットを更新…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	すべて表示：ブロック、プロパティ、時間に沿ったページ、チェック、クレジットツール
+	Spine	軸
+	Tails	補足
+	The blocks of the chosen page; choose one to see it in the preview	選択したページのブロック。選ぶとプレビューに表示されます
+	The pages along time; click one to choose it	時間に沿ったページ。クリックして選択
+	{n} more	ほか {n} 件
+	Block	ブロック
+	parallel	並列
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	ページ内（OBS がブラウザソースから取得）
+	Separate (a media source in OBS)	別（OBS のメディアソース）
+	No sound	音声なし
+	credits	クレジット
+	graphic	グラフィック
+	{n} pages	{n} ページ
+	Live Graphics	ライブグラフィック
+	Prepared cues; double-click one to put it in preview	準備したキュー。ダブルクリックでプレビューへ
+	Add Credits…	クレジットを追加…
+	A credits spreadsheet, credits file or Cinecred project as a cue	クレジットのスプレッドシート、クレジットファイル、Cinecred プロジェクトをキューとして
+	Add Selected Graphic	選択したグラフィックを追加
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	タイムラインで選択したグラフィッククリップ（タイトル、テロップ）をキューとして
+	Cues	キュー
+	TAKE	テイク
+	The preview cue goes on air from its first page	プレビューのキューを最初のページから送出
+	PREVIOUS	前へ
+	The page before (on the first page: from its start)	前のページ（最初のページでは先頭から）
+	NEXT	次へ
+	The next page; after the last one, the preview cue	次のページ。最後の後はプレビューのキュー
+	HOLD	ホールド
+	Stop the program where it is	番組をその場で止める
+	CONTINUE	再開
+	Go on from where it stopped	止めたところから続ける
+	UPDATE	更新
+	Read the spreadsheet (or the clip) again; on air it changes at once	スプレッドシート（またはクリップ）を読み直す。送出中は即座に変わる
+	OUT	アウト
+	Take everything off air	すべてを送出から外す
+	Start Live Page	ライブページを開始
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	OBS のブラウザソース向けにこのコンピューターで番組を配信（127.0.0.1 のみ）
+	not running	停止中
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ ツール ▸ WebSocket サーバー設定
+	Connect to OBS	OBS に接続
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	このコンピューターの OBS に接続し、ブラウザソース「CFA4 Live」をライブページに向ける
+	Port	ポート
+	Password	パスワード
+	Live page	ライブページ
+	Sound	音声
+	OBS	OBS
+	Nothing in preview	プレビューは空です
+	page {page} of {pages}	{pages} ページ中 {page} ページ
+	held	ホールド中
+	ended	終了
+	Off air	送出なし
+	Stop Live Page	ライブページを停止
+	Connected to OBS {version}; source “{source}”	OBS {version} に接続済み。ソース「{source}」
+	Point OBS Again	OBS を再設定
+	Select a graphic clip on the timeline first.	先にタイムラインでグラフィッククリップを選択してください。
+	Connecting to OBS…	OBS に接続中…
+	Live Graphics…	ライブグラフィック…
+	PREVIEW	プレビュー
+	PROGRAM	プログラム
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	画像またはビデオのタグが本文セルに単独で置かれています(または名前1つと一緒の場合はポートレートとして)。他のタグは削除されました
+	the page gap is not a duration; the page style's is used	ページ間隔が時間ではありません。ページスタイルの値を使用します
+	the page runtime is not a positive duration; the page style's is used	ページの長さが正の時間ではありません。ページスタイルの値を使用します
+	background “{file}” was not found; it is left out	背景“{file}”が見つかりません。省略します
+	card page {page} is taller than the frame; use a roll page	カードページ{page}がフレームより高いため、ロールページを使用してください
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	レタースタイル“{style}”の色“{colour}”は#rrggbb形式ではありません。省略します
+	colour “{colour}” is not #rrggbb; black is used	色“{colour}”は#rrggbb形式ではありません。黒を使用します
+	colour “{colour}” is not #rrggbb; white is used	色“{colour}”は#rrggbb形式ではありません。白を使用します
+	content style “{style}” does not exist; “{used}” is used	コンテンツスタイル“{style}”は存在しません。“{used}”を使用します
+	letter style “{style}” does not exist; the text keeps the block's style	レタースタイル“{style}”は存在しません。テキストはブロックのスタイルを維持します
+	page gap “{value}” is not a duration	ページ間隔“{value}”は時間ではありません
+	page runtime “{value}” is not a duration	ページの長さ“{value}”は時間ではありません
+	page style “{style}” does not exist; a roll page is used	ページスタイル“{style}”は存在しません。ロールページを使用します
+	page {page}: the background names no file; it is left out	ページ{page}:背景にファイルが指定されていません。省略します
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	ページ{page}:ロール速度を変えて長さを合わせます(ブロック間に伸ばせる間隔がありません)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	ページ{page}:ロール速度を変えて長さを合わせます(間隔がなくてもクレジットが長すぎます)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	ページ{page}:ロール速度を変えて長さを合わせます(間隔を20倍より大きく広げる必要があります)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	ページ{page}:トランジションにはページが接している必要があります(ページ間隔0)。省略します
+	page {page}: there is no transition “{name}”; the pages cut	ページ{page}:トランジション“{name}”はありません。ページはカットでつながります
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	スパイン位置“{value}”はサポートされていません(ピクセル単位のオフセットと、任意で“parallel”が使えます)
+	vertical gap “{value}” is not a number	縦の間隔“{value}”は数値ではありません
+	picture “{file}” was not found or cannot be read; it is left out	画像“{file}”が見つからないか読み込めません。省略します
+	video “{file}” was not found or cannot be read; it is left out	ビデオ“{file}”が見つからないか読み込めません。省略します
+	there is no roll page without its own runtime to stretch; the length cannot change	伸ばせる独自の長さを持つロールページがないため、長さは変更できません
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	カードと間隔だけで{seconds} sあり、指定された長さはそれより短いため、ロールページは本来の長さのままです
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	レタースタイル“{style}”:最初の色付きレイヤーのみ使用します(アウトライン、影、ストライプは使用しません)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	クレジット全体の長さは引き継がれません。代わりにクレジットを音楽に合わせる(または長さ)を使用してください
+	page style “{style}”: fade curves become linear fades	ページスタイル“{style}”:フェードカーブは直線的なフェードになります
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	コンテンツスタイル“{style}”にはCinecredで見出しがありません。シートに書かれた見出しは引き続き表示されます
+	content style “{style}”: sorting the names is not carried over	コンテンツスタイル“{style}”:名前の並べ替えは引き継がれません
+	transition curves are not carried over	トランジションカーブは引き継がれません
+	picture styles (pictures keep their own size) are not carried over	画像スタイル(画像は元のサイズを保ちます)は引き継がれません
+	video (tape) styles are not carried over	ビデオ(テープ)スタイルは引き継がれません
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecredプロジェクトにはクレジットのスプレッドシートが{n}個あります。“{name}”を使用します(スプレッドシートの欄で別のものを選択できます)
