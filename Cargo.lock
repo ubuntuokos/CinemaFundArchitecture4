@@ -1141,6 +1141,7 @@ dependencies = [
  "cfa4-bitstream",
  "cfa4-cineform",
  "cfa4-color",
+ "cfa4-dirac",
  "cfa4-dnx",
  "cfa4-dts",
  "cfa4-dv",
@@ -1241,6 +1242,13 @@ dependencies = [
  "chrono",
  "serde",
  "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-dirac"
+version = "0.10.0"
+dependencies = [
  "thiserror 2.0.21",
 ]
 
