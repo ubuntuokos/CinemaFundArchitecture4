@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -45,6 +46,9 @@ from .media_backends import MediaBackendsDialog
 from .panels.about import AboutDialog
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
 from .panels.clip_dialogs import ClipDialog
+from .panels.credits import CreditsDialog
+from .panels.credits_fit import CreditsFitDialog
+from .panels.credits_refresh import CreditsRefreshDialog
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
@@ -55,6 +59,7 @@ from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
 from .panels.media_dialogs import (
@@ -289,6 +294,10 @@ class MainWindow(QMainWindow):
         self.media_backends_dialog: MediaBackendsDialog | None = None
         # the header mode (egui's ``ui.mode``): Import shows the Home page over the panels
         self.mode = "Edit"
+        self.credits_dialog: CreditsDialog | None = None
+        self.live_dialog: LiveDialog | None = None
+        self.credits_refresh: CreditsRefreshDialog | None = None
+        self.credits_fit: CreditsFitDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -2084,6 +2093,18 @@ class MainWindow(QMainWindow):
 
     def ui_command(self, cid: str, params: dict[str, Any] | None = None) -> bool:
         """egui's UI commands (voice-over, multi-camera, docking, …): True when ``cid`` was one."""
+        if cid == "live.window" and not params:
+            # Graphics and Titles ▸ Live Graphics…: the Live window
+            self.open_live()
+            return True
+        if cid == "graphics.credits.import" and not params:
+            # from the menu or a key, the Credits window; an agent's parameters import directly
+            self.open_credits()
+            return True
+        if cid == "graphics.credits.refresh" and not params:
+            # the row-by-row review window; an agent's parameters refresh directly
+            self.open_credits_refresh()
+            return True
         if cid == "history.deleteRedoable" and not params:
             # the History panel menu or its key asks for OK first, as in Premiere (upstream #3075);
             # with parameters (an agent) the command runs as it is
@@ -2395,6 +2416,12 @@ class MainWindow(QMainWindow):
         if self.ui_command(cmd.id):
             # a menu item or key whose dialog or file manager is the frontend's (clip and menu
             # dialogs, Sequence Settings…, Reveal in Finder…), as from ``invoke``
+            return
+        if cmd.id == "graphics.credits.fit":
+            self.open_credits_fit()
+            return
+        if cmd.id == "graphics.credits.template.apply":
+            self.choose_credits_template()
             return
         if self.active_monitor == "source" and cmd.id in SOURCE_STEPS and self.source_monitor.has_content():
             step = SOURCE_STEPS[cmd.id]
@@ -2990,6 +3017,66 @@ class MainWindow(QMainWindow):
 
     def open_restricted_codecs(self) -> None:
         self._media_backends().show_restricted()
+
+    # ----- credits -----
+    def open_credits(self, path: str | None = None) -> None:
+        """Graphics and Titles ▸ Import Credits Spreadsheet…: the Credits window."""
+        if self.credits_dialog is None:
+            self.credits_dialog = CreditsDialog(self.engine, self)
+            self.credits_dialog.imported.connect(lambda _n: self.schedule_refresh())
+            self.credits_dialog.tool_requested.connect(self.invoke)
+        self.credits_dialog.open_with(path)
+
+    def open_live(self) -> None:
+        """Graphics and Titles ▸ Live Graphics…: cues, PREVIEW / PROGRAM, TAKE … OUT, the live page
+        for OBS."""
+        if self.live_dialog is None:
+            self.live_dialog = LiveDialog(self.engine, self, selected_clips=lambda: [c for c in (self.sequence or {}).get("selection") or [] if isinstance(c, int)])
+        self.live_dialog.open_window()
+
+    def open_credits_file(self, path: str) -> None:
+        """A credits file, template or spreadsheet opened from the file manager or the command
+        line: the full Credits workspace with it (a template is chosen, with its sample sheet)."""
+        self.open_credits()
+        dlg = self.credits_dialog
+        if dlg is None:
+            return
+        dlg.set_full_view(True)
+        if path.lower().endswith(".cfa4credtpl"):
+            dlg.use_template_file(path)
+        else:
+            dlg.path.setText(path)
+            dlg.refresh()
+
+    def open_credits_refresh(self, clip: int | None = None) -> None:
+        """Graphics and Titles ▸ Refresh Credits from Spreadsheet…: the changes, row by row."""
+        if self.credits_refresh is None:
+            self.credits_refresh = CreditsRefreshDialog(self.engine, self)
+            self.credits_refresh.refreshed.connect(lambda _r: self.schedule_refresh())
+        self.credits_refresh.open_for(clip)
+
+    def choose_credits_template(self) -> None:
+        """Graphics and Titles ▸ Apply Credits Template…: pick a template for the selected
+        credits; the engine replaces their pages in one undo step."""
+
+        def chosen(result: Any, _b: bytes | None) -> None:
+            items = [t for t in (result or {}).get("templates") or [] if isinstance(t, dict)] if isinstance(result, dict) else []
+            if not items:
+                return
+            names = [str(t.get("name")) for t in items]
+            name, ok = QInputDialog.getItem(self, tr("Apply Credits Template…"), tr("Template:"), names, 0, False)
+            if ok and name in names:
+                tid = items[names.index(name)].get("id")
+                self.execute("graphics.credits.template.apply", {"id": tid})
+
+        self.engine.execute("graphics.credits.templates", {}, on_reply=chosen, on_error=lambda m: self.statusBar().showMessage(m, 6000))
+
+    def open_credits_fit(self) -> None:
+        """Graphics and Titles ▸ Fit Credits to Music…: lengths from the music, then fit."""
+        if self.credits_fit is None:
+            self.credits_fit = CreditsFitDialog(self.engine, self)
+            self.credits_fit.fitted.connect(lambda _r: self.schedule_refresh())
+        self.credits_fit.open_for(self.sequence)
 
     def _export_finished(self, path: str, ok: bool) -> None:
         text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)
