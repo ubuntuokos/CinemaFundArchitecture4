@@ -31,6 +31,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
 | SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
 | SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
+| SMPTE ST 429-6 | 2023 | Encrypted track files (reader): Cryptographic Context set, Encrypted Triplet pack, AES-128-CBC decryption with the Check Value, HMAC-SHA1 MIC |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 377-4 | (via asdcplib's dictionary and real DCP-o-matic files) | MCA labels (writer): soundfield group and audio channel label sub-descriptors on the sound descriptor |
 
@@ -114,9 +115,19 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   drop frame), falling back to the file package's; `Timecode::format` gives `HH:MM:SS:FF` /
   `HH:MM:SS;FF`.
 
+- **Encrypted track files** (ST 429-6, #933). The Cryptographic Context set gives each encrypted
+  track its Key ID (`EssenceTrack::encryption`); Encrypted Triplets are filed under the Source Key
+  of the triplet they wrap, so tracks, samples and chunks build as usual. `read_sample` /
+  `read_pcm` decrypt them (AES-128-CBC, Check Value test; the HMAC-SHA1 MIC is checked when a MIC
+  key is loaded) with the content key from the in-memory key ring (`crypt::add_key`, filled from a
+  KDM by `cfa4-dcp` and the engine's `dcp.loadKdm`); without it they fail with `Error::Encrypted`
+  naming the Key ID. Keys are never written anywhere; `crypt::clear_keys` overwrites them.
+
 Not supported: OP1b/OP2x+ edit lists beyond the first source clip, external essence (OP-Atom
-material packages whose other tracks live in other files are opened track by track), partial or
-encrypted essence (ST 429-6), and descriptive metadata (parsed sets are ignored).
+material packages whose other tracks live in other files are opened track by track), partial
+essence, clip-wrapped encrypted essence, encrypted timed text track files, the legacy MIC key
+derivation of ST 429-6 Annex B (a MIC is checked only with an MDMK key), and descriptive metadata
+(parsed sets are ignored).
 
 ## Writing a file
 

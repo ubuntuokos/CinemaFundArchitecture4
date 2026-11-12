@@ -201,3 +201,117 @@ pub fn build_timed_text(xml: &[u8], resources: &[(&str, &[u8])]) -> Vec<u8> {
     f.extend_from_slice(&partition_with(4, 0x04, at, 0, 0, &[TT_CONTAINER]));
     f
 }
+
+// ---------- ST 429-6 encrypted track files ----------
+
+const TRIPLET_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x04, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x02, 0x7E, 0x01, 0x00];
+
+fn item(out: &mut Vec<u8>, v: &[u8]) {
+    out.extend_from_slice(&ber(v.len()));
+    out.extend_from_slice(v);
+}
+
+/// IV, then E(Check Value), the plaintext header and E(rest + RFC 2898 padding), one CBC chain.
+fn esv(plain: &[u8], po: usize, key: &[u8; 16], iv: [u8; 16]) -> Vec<u8> {
+    use aes::cipher::{BlockCipherEncrypt, KeyInit};
+    let c = aes::Aes128::new_from_slice(key).unwrap();
+    let mut body = crate::crypt::CHECK_VALUE.to_vec();
+    body.extend_from_slice(&plain[po..]);
+    let pad = 16 - (plain.len() - po) % 16;
+    body.extend(std::iter::repeat_n(pad as u8, pad));
+    let mut prev = iv;
+    let mut enc = Vec::new();
+    for b in body.chunks_exact(16) {
+        let x: [u8; 16] = std::array::from_fn(|i| b[i] ^ prev[i]);
+        let mut blk = aes::Block::from(x);
+        c.encrypt_block(&mut blk);
+        prev = blk.into();
+        enc.extend_from_slice(&prev);
+    }
+    let mut out = iv.to_vec();
+    out.extend_from_slice(&enc[..16]);
+    out.extend_from_slice(&plain[..po]);
+    out.extend_from_slice(&enc[16..]);
+    out
+}
+
+/// An Encrypted Triplet value (ST 429-6) wrapping `plain` (source key `source`) under content key
+/// `key`, plaintext offset `po`, with a TrackFile ID, sequence number and HMAC-SHA1 MIC when `mic_key`.
+pub fn encrypted_triplet(key: &[u8; 16], context: &[u8; 16], source: [u8; 16], plain: &[u8], po: usize, seq: u64, mic_key: Option<[u8; 16]>) -> Vec<u8> {
+    use hmac::{Hmac, KeyInit, Mac};
+    let mut v = Vec::new();
+    item(&mut v, context);
+    item(&mut v, &(po as u64).to_be_bytes());
+    item(&mut v, &source);
+    item(&mut v, &(plain.len() as u64).to_be_bytes());
+    let mic_from = v.len() + 4;
+    let iv: [u8; 16] = std::array::from_fn(|i| (i as u8).wrapping_mul(17) ^ seq as u8);
+    item(&mut v, &esv(plain, po, key, iv));
+    match mic_key {
+        Some(k) => {
+            item(&mut v, &[0x7F; 16]);
+            item(&mut v, &seq.to_be_bytes());
+            v.extend_from_slice(&ber(20));
+            let mut m = Hmac::<sha1::Sha1>::new_from_slice(&k).unwrap();
+            m.update(&v[mic_from..]);
+            v.extend_from_slice(&m.finalize().into_bytes());
+        }
+        None => {
+            for _ in 0..3 {
+                v.extend_from_slice(&ber(0));
+            }
+        }
+    }
+    v
+}
+
+/// Rewrites a plaintext track file as an encrypted one (ST 429-6 clauses 6-9): every essence
+/// triplet becomes an Encrypted Triplet, the primer gains the context's dynamic tags and a
+/// Cryptographic Context set follows it.
+pub fn encrypt_track_file(f: &[u8], key: &[u8; 16], key_id: &[u8; 16], context: &[u8; 16], po: usize, mic_key: Option<[u8; 16]>) -> Vec<u8> {
+    let mic = mic_key.is_some();
+    let mut out = Vec::new();
+    let mut pos = 0usize;
+    let mut seq = 1u64;
+    while pos + 17 <= f.len() {
+        let kbytes: [u8; 16] = f[pos..pos + 16].try_into().unwrap();
+        let (len, n) = crate::klv::ber_length(&f[pos + 16..]).unwrap();
+        let v = &f[pos + 16 + n..pos + 16 + n + len as usize];
+        let k = crate::Ul(kbytes);
+        if k.0[4] == 0x02 && k.0[5] == 0x05 && k.0[8..16] == [0x0D, 0x01, 0x02, 0x01, 0x01, 0x05, 0x01, 0x00] {
+            // primer: append five entries
+            let count = u32::from_be_bytes(v[..4].try_into().unwrap());
+            let dynamic: [(u16, [u8; 16]); 5] = [
+                (0xFF71, [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x09, 0x01, 0x01, 0x15, 0x11, 0, 0, 0, 0]),
+                (0xFF72, [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x09, 0x06, 0x01, 0x01, 0x02, 0x02, 0, 0, 0]),
+                (0xFF73, [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x09, 0x02, 0x09, 0x03, 0x01, 0x01, 0, 0, 0]),
+                (0xFF74, [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x09, 0x02, 0x09, 0x03, 0x02, 0x01, 0, 0, 0]),
+                (0xFF75, [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x09, 0x02, 0x09, 0x03, 0x01, 0x02, 0, 0, 0]),
+            ];
+            let mut p = (count + 5).to_be_bytes().to_vec();
+            p.extend_from_slice(&v[4..]);
+            for (tag, ul) in dynamic {
+                p.extend_from_slice(&tag.to_be_bytes());
+                p.extend_from_slice(&ul);
+            }
+            klv(&mut out, kbytes, &p);
+            // the Cryptographic Context set
+            let mut s = LocalSet::new(0xC5);
+            s.p(0xFF71, context);
+            s.p(0xFF72, &[0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x07, 0x0D, 0x01, 0x03, 0x01, 0x02, 0x0C, 0x01, 0x00]);
+            s.p(0xFF73, &[0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x07, 0x02, 0x09, 0x02, 0x01, 0x01, 0x00, 0x00, 0x00]);
+            s.p(0xFF74, &if mic { [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x07, 0x02, 0x09, 0x02, 0x02, 0x01, 0x00, 0x00, 0x00] } else { [0; 16] });
+            s.p(0xFF75, key_id);
+            let set_key = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x02, 0x02, 0x00, 0x00];
+            klv(&mut out, set_key, &s.0);
+        } else if k.0[8..12] == [0x0D, 0x01, 0x03, 0x01] && matches!(k.0[12], 0x15 | 0x16) {
+            let t = encrypted_triplet(key, context, k.0, v, po.min(v.len()), seq, mic_key);
+            seq += 1;
+            klv(&mut out, TRIPLET_KEY, &t);
+        } else {
+            out.extend_from_slice(&f[pos..pos + 16 + n + len as usize]);
+        }
+        pos += 16 + n + len as usize;
+    }
+    out
+}
