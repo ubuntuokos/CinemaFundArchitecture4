@@ -148,8 +148,11 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   pictures and plays silence in the gaps (#1008). AES3 elements (D-10) are cut exactly where a
   clip starts or ends inside one (29.97 Hz cadence): `Chunk::skip` counts the sample frames of
   the element before the clip. For OPxc (alternate packages), the first material package is
-  read. Long-GOP clips with B pictures and no index temporal offsets keep the stored order across
-  several clips, with a warning (#1008).
+  read. Long-GOP clips with B pictures and no index temporal offsets take their presentation
+  order from the bitstream: `open_with_order` hands each such clip's picture starts to the
+  caller's `PresentationOrder` (`cfa4-codecs` reads the H.264 picture order counts) before the
+  clips are cut. Without one (`open`, or a codec it cannot read) they keep the stored order, with
+  a warning (#1008).
 
 Not supported: external essence (OP-Atom
 material packages whose other tracks live in other files are opened track by track), partial or

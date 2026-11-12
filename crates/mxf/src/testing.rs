@@ -398,7 +398,7 @@ pub fn build_edit_list(comps: &[Comp], n: [usize; 2], pic: impl Fn(u8, usize) ->
             for k in 0..1920 {
                 let s = (p as usize * 10000 + i * 1920 + k) as i16;
                 snd.extend_from_slice(&s.to_le_bytes());
-                snd.extend_from_slice(&(-s).to_le_bytes());
+                snd.extend_from_slice(&s.wrapping_neg().to_le_bytes());
             }
             klv(&mut f, SND_KEY, &snd);
         }
