@@ -442,7 +442,7 @@ pub(crate) fn sha1(data: &[u8]) -> [u8; 20] {
 
 /// A version 4 (random) UUID made from a hash of `seed` (callers make the seed unique: output
 /// path, time, role).
-fn uuid(seed: &str) -> [u8; 16] {
+pub(crate) fn uuid(seed: &str) -> [u8; 16] {
     let h = sha1(seed.as_bytes());
     let mut u = [0u8; 16];
     u.copy_from_slice(&h[..16]);
@@ -451,13 +451,13 @@ fn uuid(seed: &str) -> [u8; 16] {
     u
 }
 
-fn uuid_text(u: &[u8; 16]) -> String {
+pub(crate) fn uuid_text(u: &[u8; 16]) -> String {
     let hex: String = u.iter().map(|b| format!("{b:02x}")).collect();
     format!("{}-{}-{}-{}-{}", &hex[0..8], &hex[8..12], &hex[12..16], &hex[16..20], &hex[20..32])
 }
 
 /// Text for XML element content.
-fn xml_text(s: &str) -> String {
+pub(crate) fn xml_text(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         match c {
@@ -472,16 +472,16 @@ fn xml_text(s: &str) -> String {
     out
 }
 
-fn base64(data: &[u8]) -> String {
+pub(crate) fn base64(data: &[u8]) -> String {
     cfa4_project::gtemplate::base64_encode(data)
 }
 
 /// `name` inside the folder `dir`.
-fn join(dir: &str, name: &str) -> String {
+pub(crate) fn join(dir: &str, name: &str) -> String {
     std::path::Path::new(dir).join(name).to_string_lossy().into_owned()
 }
 
-fn io(e: impl std::fmt::Display) -> ExportError {
+pub(crate) fn io(e: impl std::fmt::Display) -> ExportError {
     ExportError::Io(e.to_string())
 }
 

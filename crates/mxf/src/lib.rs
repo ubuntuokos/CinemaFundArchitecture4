@@ -24,12 +24,14 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod anc;
+pub mod crypt;
 mod essence;
 mod file;
 mod index;
 mod klv;
 mod meta;
 mod peek;
+pub mod regxml;
 mod source;
 mod timed_text;
 pub mod uncompressed;
@@ -67,6 +69,8 @@ pub enum Error {
     Invalid(String),
     /// Valid but unsupported (e.g. essence stored in another file).
     Unsupported(String),
+    /// Encrypted essence (ST 429-6) whose content key (this Key ID) is not loaded: a KDM is needed.
+    Encrypted(String),
 }
 
 impl fmt::Display for Error {
@@ -76,6 +80,7 @@ impl fmt::Display for Error {
             Error::NotMxf(s) => write!(f, "not an MXF file: {s}"),
             Error::Invalid(s) => write!(f, "invalid MXF: {s}"),
             Error::Unsupported(s) => write!(f, "unsupported MXF: {s}"),
+            Error::Encrypted(id) => write!(f, "encrypted MXF: load the KDM with content key {id}"),
         }
     }
 }
