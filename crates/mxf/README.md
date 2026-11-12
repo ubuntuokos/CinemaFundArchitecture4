@@ -61,7 +61,11 @@ container; `read_anc(src)` returns every ANC element of the first ANC data track
 line number, wrapping and coding and the low 8 bits of its words from the DID through the user
 data. `AncData::cdps` lists the caption distribution packets (DID 61h, SDID 01h, SMPTE ST 334-2);
 `cfa4-engine` decodes them with `cfa4_captions::mcc::decode_cdps` into a caption track when such
-a file is imported (#929). VI lines (element type 01h) are not read yet; writing ANC data on
+a file is imported (#929). Files with line-wrapped uncompressed pictures (ST 384) and no ST 436
+track: `has_anc` lists them too, and `read_anc` gathers the ST 291 packets of their VANC / HANC
+data elements (types 09h / 0Ah) per picture, found in the luma, colour difference or multiplexed
+samples (8-bit layouts, v210 / planar 10-bit with the checksum checked, 16-bit), on the stored
+line of the system element before them shifted by the Video Line Map (#1060). VI lines (element type 01h) are not read yet; writing ANC data on
 export is still to come.
 
 ## Peeking at the header
@@ -123,8 +127,8 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   element without an index is split by the edit unit size. Line wrapping (ST 384 6.3): the
   picture elements (one per stored line) are gathered into pictures, each starting at a "start of
   stored data" system element (14h 01h 01h), or counted by the stored size when a file has no
-  system elements; a picture whose lines do not add up is left out with a warning, and the
-  fill / VANC / HANC data elements are skipped (#1060). Not supported: X'Y'Z' and palette pixel layouts,
+  system elements; a picture whose lines do not add up is left out with a warning; the fill
+  data elements are skipped, and the VANC / HANC ones go to `read_anc` (#1060). Not supported: X'Y'Z' and palette pixel layouts,
   float components.
   `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
@@ -275,7 +279,8 @@ w.finish()?;
   codes), field weaving with start / end fill, display rectangles, hostile sizes. `cargo xtask fixtures codecs` pre-generates them.
 - `src/write/tests.rs` `line_wrapped_uncompressed_pictures_are_gathered_line_by_line`: our
   frame-wrapped UYVY file rewritten line by line (system, fill data and picture elements), a
-  missing line, and a file without system elements.
+  missing line, and a file without system elements; `line_wrapped_vanc_packets_are_read_as_anc`:
+  CDPs in the VANC luma samples of UYVY and v210 lines, by frame and line, a bad checksum.
 - `src/write/tests.rs`: writer output read back by `open`: OP1a with two sound tracks pushed in
   uneven chunks (durations, codec label, aspect, PCM exact, index slices, closed partitions),
   29.97 sound per edit unit (1601/1602), a long-GOP AVC index (presentation order, key and B

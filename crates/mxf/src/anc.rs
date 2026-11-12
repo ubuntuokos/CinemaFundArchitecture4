@@ -11,7 +11,8 @@
 //! the checksum. ANC elements are stored in display order (5.2), so element `n` belongs to frame
 //! `n` of the track.
 
-use crate::file::{best_metadata, walk};
+use crate::essence::Codec;
+use crate::file::{WalkResult, Wrapping, best_metadata, walk};
 use crate::klv::find_header_partition;
 use crate::meta::{set_type as st, tag};
 use crate::source::{ByteSource, read_upto};
@@ -140,7 +141,9 @@ impl AncData {
 }
 
 /// Whether `head` (the first bytes of a file) is an MXF file whose header partition lists the
-/// ANC packet essence container (Table 1: 06 0E 2B 34 04 01 01 xx 0D 01 03 01 02 0E 00 00).
+/// ANC packet essence container (Table 1: 06 0E 2B 34 04 01 01 xx 0D 01 03 01 02 0E 00 00) or
+/// line-wrapped uncompressed pictures (ST 384: 0D 01 03 01 02 05 xx 03), whose VANC / HANC data
+/// elements [`read_anc`] also reads.
 pub fn has_anc(head: &[u8]) -> bool {
     let Some(at) = find_header_partition(head) else { return false };
     let Some(rest) = head.get(at + 16..) else { return false };
@@ -148,7 +151,13 @@ pub fn has_anc(head: &[u8]) -> bool {
     let Some(value) = rest.get(n..).map(|v| &v[..v.len().min(len as usize)]) else { return false };
     // 80 bytes of fixed fields, then the essence container batch
     value.get(80..).is_some_and(|b| {
-        crate::klv::batch_of(b).into_iter().filter_map(crate::klv::ul_of).any(|ul| ul.is_smpte() && ul.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x0E]))
+        crate::klv::batch_of(b).into_iter().filter_map(crate::klv::ul_of).any(|ul| {
+            // the ANC packet container, or line-wrapped uncompressed pictures (ST 384 Table 5),
+            // whose VANC / HANC data elements may carry ANC packets
+            ul.is_smpte()
+                && (ul.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x0E])
+                    || (ul.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x05]) && ul.0[15] == 0x03))
+        })
     })
 }
 
@@ -157,11 +166,182 @@ fn is_anc_element(k: &crate::Ul) -> bool {
     k.0[8..12] == [0x0D, 0x01, 0x03, 0x01] && k.0[12] == 0x17 && k.0[14] == 0x02
 }
 
+/// The ANC packets in the line-wrapped VANC / HANC data elements of an uncompressed picture
+/// track (ST 384 7.2), or None when the file has no line-wrapped uncompressed pictures. Each
+/// element holds stored samples in the picture's layout; the ST 291 packets (ancillary data flag
+/// 000h 3FFh 3FFh, or 00h FFh FFh in 8-bit layouts) are looked for in the luma samples, the colour
+/// difference samples and the multiplexed sequence, and packets of 10-bit samples need a correct
+/// checksum. The line is the stored line of the system element before the data element (ST 384
+/// Table 4), moved to the video line when the descriptor has a Video Line Map; the frame is the
+/// picture the element follows a "start of stored data" of (or, without system elements, the
+/// picture whose first line comes after it).
+fn read_line_wrapped_anc(src: &(impl ByteSource + ?Sized), w: &WalkResult) -> Option<Result<AncData>> {
+    let file = match crate::file::open(src) {
+        Ok(f) => f,
+        Err(e) => return Some(Err(e)),
+    };
+    let t = file.tracks.iter().find(|t| t.wrapping == Wrapping::Line && t.codec == Codec::Uncompressed)?;
+    let mut warnings = Vec::new();
+    let Some(words) = t.picture.as_ref().and_then(|p| crate::uncompressed::Layout::of(p).ok()).and_then(|l| SampleWords::of(&l)) else {
+        warnings.push("line-wrapped VANC / HANC data in this picture layout are not read".into());
+        return Some(Ok(AncData { edit_rate: t.edit_rate, frames: vec![Vec::new(); t.samples.len()], warnings }));
+    };
+    let first_line = best_metadata(w)
+        .ok()
+        .and_then(|(_, md)| {
+            md.sets.iter().filter(|s| matches!(s.kind(), Some(st::CDCI_DESCRIPTOR | st::RGBA_DESCRIPTOR))).find_map(|d| {
+                let v = d.get(tag::VIDEO_LINE_MAP)?;
+                let n = be32(v, 0)?;
+                (n > 0).then(|| be32(v, 8)).flatten().filter(|&l| (1..=u32::from(u16::MAX)).contains(&l))
+            })
+        })
+        .unwrap_or(1);
+    // value offset -> (size, HANC)
+    let elements: std::collections::HashMap<u64, (u64, bool)> = w
+        .elements
+        .iter()
+        .filter(|e| e.key.0[12] == 0x17 && matches!(e.key.0[14], 0x09 | 0x0A) && !e.truncated)
+        .map(|e| (e.value_offset, (e.size, e.key.0[14] == 0x0A)))
+        .collect();
+    let picture_starts: Vec<u64> = t.samples.iter().map(|s| s.offset).collect();
+    let mut frames: Vec<Vec<AncPacket>> = vec![Vec::new(); t.samples.len()];
+    let mut skipped = 0usize;
+    for &(at, stored_line) in &w.anc_lines {
+        let Some(&(size, hanc)) = elements.get(&at) else { continue };
+        // which picture: the last start of stored data before the element, else the next picture
+        let frame =
+            if w.line_starts.is_empty() { picture_starts.partition_point(|&s| s < at) } else { w.line_starts.partition_point(|&s| s < at).saturating_sub(1) };
+        if frame >= MAX_ANC_FRAMES || size > MAX_ANC_ELEMENT_BYTES {
+            skipped += 1;
+            continue;
+        }
+        let v = match read_upto(src, at, size as usize) {
+            Ok(v) => v,
+            Err(e) => return Some(Err(e.into())),
+        };
+        let line = u16::try_from(stored_line.max(1).saturating_add(first_line - 1)).unwrap_or(u16::MAX);
+        if frames.len() <= frame {
+            frames.resize(frame + 1, Vec::new());
+        }
+        let Some(slot) = frames.get_mut(frame) else { continue };
+        for (coding, packet) in words.packets(&v) {
+            if !slot.iter().any(|p| p.line == line && p.words == packet) {
+                slot.push(AncPacket { line, wrapping: if hanc { 0x11 } else { 0x01 }, coding, words: packet });
+            }
+        }
+    }
+    if skipped > 0 {
+        warnings.push(format!("{skipped} line-wrapped VANC / HANC data elements skipped"));
+    }
+    Some(Ok(AncData { edit_rate: t.edit_rate, frames, warnings }))
+}
+
+/// How the stored samples of a line-wrapped data element become ancillary words.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SampleWords {
+    /// One byte per sample; `luma_odd`: the luma samples are the odd ones (Cb Y Cr Y), `subsampled`:
+    /// every other sample is luma (4:2:2).
+    Bytes { luma_odd: bool, subsampled: bool },
+    /// v210: three 10-bit samples in the low 30 bits of each little-endian 32-bit word, Cb Y Cr Y.
+    V210,
+    /// 16-bit big-endian samples (the top 10 bits are the word), Cb Y Cr Y.
+    Words16,
+}
+
+impl SampleWords {
+    fn of(l: &crate::uncompressed::Layout) -> Option<SampleWords> {
+        use crate::UncompressedLayout as U;
+        use crate::uncompressed::{Comp, Layout};
+        Some(match l {
+            Layout::YCbCr(U::Uyvy8) => SampleWords::Bytes { luma_odd: true, subsampled: true },
+            Layout::YCbCr(U::Yuy2x8) => SampleWords::Bytes { luma_odd: false, subsampled: true },
+            Layout::YCbCr(U::CbYCr444x8 | U::Planar422x8 | U::Planar420x8) => SampleWords::Bytes { luma_odd: false, subsampled: false },
+            Layout::YCbCr(U::V210 | U::Planar422x10) => SampleWords::V210,
+            Layout::YCbCr(U::CbYCrY16) => SampleWords::Words16,
+            Layout::Interleaved { pattern, pixels: 2, depth: 8, padding: 0 } => {
+                SampleWords::Bytes { luma_odd: pattern.first() != Some(&Comp::Y), subsampled: true }
+            }
+            Layout::Interleaved { depth: 8, padding: 0, .. } => SampleWords::Bytes { luma_odd: false, subsampled: false },
+            Layout::Interleaved { pattern, pixels: 2, depth: 16, padding: 0 } if pattern.first() != Some(&Comp::Y) => SampleWords::Words16,
+            _ => return None,
+        })
+    }
+
+    /// The ST 291 packets in `v` as (ST 436 payload coding, DID SDID DC user data words).
+    fn packets(self, v: &[u8]) -> Vec<(u8, Vec<u8>)> {
+        let (samples, ten, luma_odd, subsampled): (Vec<u16>, bool, bool, bool) = match self {
+            SampleWords::Bytes { luma_odd, subsampled } => (v.iter().map(|&b| u16::from(b)).collect(), false, luma_odd, subsampled),
+            SampleWords::V210 => (
+                v.chunks_exact(4)
+                    .flat_map(|c| {
+                        let w = u32::from_le_bytes([c[0], c[1], c[2], c[3]]);
+                        [(w & 0x3FF) as u16, (w >> 10 & 0x3FF) as u16, (w >> 20 & 0x3FF) as u16]
+                    })
+                    .collect(),
+                true,
+                true,
+                true,
+            ),
+            SampleWords::Words16 => (v.chunks_exact(2).map(|c| u16::from_be_bytes([c[0], c[1]]) >> 6).collect(), true, true, true),
+        };
+        // Table 7 codings: luma, colour difference, both; 8-bit 4–6, 10-bit 7–9
+        let base = if ten { 7 } else { 4 };
+        let mut streams: Vec<(u8, Vec<u16>)> = vec![(base + 2, samples.clone())];
+        if subsampled {
+            let pick = |odd: bool| samples.iter().skip(usize::from(odd)).step_by(2).copied().collect::<Vec<u16>>();
+            streams.push((base, pick(luma_odd)));
+            streams.push((base + 1, pick(!luma_odd)));
+        }
+        let mut out: Vec<(u8, Vec<u8>)> = Vec::new();
+        for (coding, s) in streams {
+            for p in st291_packets(&s, ten) {
+                if !out.iter().any(|o| o.1 == p) {
+                    out.push((coding, p));
+                }
+            }
+        }
+        out
+    }
+}
+
+/// The ST 291 packets of a sequence of ancillary words: after each ancillary data flag
+/// (000h 3FFh 3FFh, 8-bit 00h FFh FFh) the DID, SDID / DBN, data count and that many user data
+/// words, as their low 8 bits; with 10-bit words the checksum (9-bit sum of DID through the
+/// last user data word) must match.
+fn st291_packets(s: &[u16], ten: bool) -> Vec<Vec<u8>> {
+    let max = if ten { 0x3FF } else { 0xFF };
+    let mut out = Vec::new();
+    let mut i = 0usize;
+    while let Some(w) = s.get(i..i + 6) {
+        if w[0] != 0 || w[1] != max || w[2] != max {
+            i += 1;
+            continue;
+        }
+        let dc = usize::from(w[5] & 0xFF);
+        let Some(body) = s.get(i + 3..i + 6 + dc) else { break };
+        if ten {
+            let sum = body.iter().fold(0u16, |a, &x| a.wrapping_add(x & 0x1FF)) & 0x1FF;
+            match s.get(i + 6 + dc) {
+                Some(&cs) if cs & 0x1FF == sum => {}
+                _ => {
+                    i += 1;
+                    continue;
+                }
+            }
+        }
+        out.push(body.iter().map(|&x| (x & 0xFF) as u8).collect());
+        i += 6 + dc;
+    }
+    out
+}
+
 /// Read every ANC element of the file (the first ANC element stream when there are several).
 pub fn read_anc(src: &(impl ByteSource + ?Sized)) -> Result<AncData> {
     let w = walk(src)?;
     let mut warnings = w.warnings.clone();
-    let first = w.elements.iter().find(|e| is_anc_element(&e.key)).ok_or_else(|| Error::Invalid("no ANC data elements (ST 436)".into()))?;
+    let Some(first) = w.elements.iter().find(|e| is_anc_element(&e.key)) else {
+        return read_line_wrapped_anc(src, &w).unwrap_or_else(|| Err(Error::Invalid("no ANC data elements (ST 436)".into())));
+    };
     let number: [u8; 4] = first.key.0[12..16].try_into().unwrap_or([0; 4]);
     let edit_rate = best_metadata(&w)
         .ok()
@@ -225,6 +405,26 @@ mod tests {
             assert_eq!(got[1].user_data(), &[0xAA, 0x55]);
         }
         assert_eq!(parse_anc_element(&[0, 0]).unwrap(), vec![]);
+    }
+
+    /// ST 291 packets in sample words: cut packets, a data count past the end and a bad 10-bit
+    /// checksum give nothing, never a panic; 8-bit packets need no checksum.
+    #[test]
+    fn st291_packets_in_samples() {
+        let ten = [0u16, 0x3FF, 0x3FF, 0x161, 0x101, 0x102, 0x1AA, 0x155, 0];
+        let sum = ten[3..8].iter().fold(0u16, |a, &x| a + (x & 0x1FF)) & 0x1FF;
+        let mut good = ten.to_vec();
+        good[8] = sum;
+        assert_eq!(st291_packets(&good, true), vec![vec![0x61, 0x01, 0x02, 0xAA, 0x55]]);
+        for cut in 0..good.len() {
+            assert!(st291_packets(&good[..cut], true).is_empty(), "cut {cut}");
+        }
+        let mut bad = good.clone();
+        bad[8] ^= 1;
+        assert!(st291_packets(&bad, true).is_empty());
+        assert_eq!(st291_packets(&[7, 0, 0xFF, 0xFF, 0x41, 0x05, 1, 9], false), vec![vec![0x41, 0x05, 1, 9]]);
+        assert!(st291_packets(&[0, 0xFF, 0xFF, 0x41, 0x05, 200, 9], false).is_empty());
+        assert!(SampleWords::V210.packets(&[0xFF; 7]).is_empty());
     }
 
     /// Short, oversized or inconsistent elements are errors, never panics.

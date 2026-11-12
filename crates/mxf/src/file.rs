@@ -304,6 +304,9 @@ pub(crate) struct WalkResult {
     /// File offsets of the line-wrapped uncompressed picture system elements that start the
     /// stored data of a picture (ST 384 7.3, element identifier 01h).
     pub(crate) line_starts: Vec<u64>,
+    /// Line-wrapped VANC / HANC data elements (ST 384 7.2, types 09h / 0Ah): their value offset
+    /// and the line number of the system element before them (ST 384 Table 4).
+    pub(crate) anc_lines: Vec<(u64, u32)>,
     pub(crate) warnings: Vec<String>,
 }
 
@@ -343,11 +346,14 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
         elements: Vec::new(),
         generic_streams: Vec::new(),
         line_starts: Vec::new(),
+        anc_lines: Vec::new(),
         warnings: Vec::new(),
     };
     let mut win = Window { src, off: 0, buf: Vec::new() };
     let mut pos = run_in;
     let mut cur_meta: Option<usize> = None;
+    // the line number of the last line-wrapped system element (ST 384 Table 4)
+    let mut line: Option<u32> = None;
     let mut resync_budget = 64 << 20;
     while pos + 17 <= len {
         let hdr = win.get(pos, 25)?.to_vec();
@@ -429,6 +435,14 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                 if key.0[12..16] == [0x14, 0x01, 0x01, 0x00] {
                     w.line_starts.push(pos);
                 }
+                if key.0[12..14] == [0x14, 0x01] && matches!(key.0[14], 0x01 | 0x02) {
+                    // the pack's line number is in the 25 header bytes read (4-byte BER length)
+                    let at = (vstart - pos) as usize;
+                    line = hdr.get(at..at + 4).filter(|_| vlen >= 4).and_then(|b| b.try_into().ok()).map(u32::from_be_bytes);
+                }
+                if key.0[12] == 0x17 && matches!(key.0[14], 0x09 | 0x0A) && w.anc_lines.len() < MAX_LINE_ANC_ELEMENTS {
+                    w.anc_lines.push((vstart, line.unwrap_or(0)));
+                }
             }
             KeyClass::Other if key.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
                 cur_meta = None;
@@ -449,6 +463,9 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
 const GENERIC_STREAM_DATA_ITEM: [u8; 5] = [0x0D, 0x01, 0x05, 0x09, 0x01];
 
 /// Generic container picture / sound / data / compound items (not system items).
+/// Line-wrapped VANC / HANC data elements whose line numbers are kept.
+const MAX_LINE_ANC_ELEMENTS: usize = 1 << 20;
+
 fn is_essence_item(k: &Ul) -> bool {
     matches!(k.0[12], 0x05 | 0x06 | 0x07 | 0x15 | 0x16 | 0x17 | 0x18) || crate::klv::is_dcp_iab_element(k)
 }
