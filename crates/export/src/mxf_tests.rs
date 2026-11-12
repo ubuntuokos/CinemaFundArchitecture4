@@ -87,6 +87,7 @@ fn codec_name(c: MxfVideoCodec) -> &'static str {
         MxfVideoCodec::Dnxhr => "dnxhd",
         MxfVideoCodec::ProRes => "prores",
         MxfVideoCodec::H264 => "h264",
+        MxfVideoCodec::Mpeg2 => "mpeg2video",
     }
 }
 
@@ -175,7 +176,7 @@ fn mxf_formats_and_presets() {
     assert_eq!(s.audio_codec(), AudioCodec::Pcm);
     assert!(s.summary(1920, 1080, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND)).format.contains("MXF OP1a (Apple ProRes)"));
     let names: Vec<String> = builtin_presets().into_iter().filter(|p| p.settings.format.is_mxf()).map(|p| p.name).collect();
-    assert_eq!(names.len(), 4, "{names:?}");
+    assert_eq!(names.len(), 5, "{names:?}");
     assert_eq!(
         opatom_audio_paths("/a/b/clip.mxf", 2).iter().map(std::path::PathBuf::from).collect::<Vec<_>>(),
         vec![std::path::PathBuf::from("/a/b/clip_A1.mxf"), std::path::PathBuf::from("/a/b/clip_A2.mxf")]
@@ -260,5 +261,69 @@ fn ffmpeg_oracle_op1a_and_op_atom() {
         assert_eq!(mono.len(), 48_000 * 4, "{a}");
         let want: Vec<u8> = stereo.as_chunks::<8>().0.iter().flat_map(|f| f[k * 4..k * 4 + 4].to_vec()).collect();
         assert!(mono == want, "{a}: channel {k} differs from the WAV export");
+    }
+}
+
+/// MPEG-2 long GOP (ST 381-1) at 1280×720, 4:2:2 at 50 Mbit/s with IBBP: our demuxer finds the
+/// MPEG video descriptor, the presentation order and the GOP structure; ffmpeg decodes the MXF
+/// exactly as the same settings' elementary stream export, and our decode of the MXF matches
+/// ffmpeg's within the IDCT tolerance.
+#[test]
+fn mpeg2_long_gop_op1a_and_op_atom() {
+    let (p, seq, m) = project();
+    let mpeg2 = |format: Format, path: &str| ExportSettings {
+        frame_size: Some((1280, 720)),
+        mpeg2_422: true,
+        bitrate_kbps: 50_000,
+        max_bitrate_kbps: Some(50_000),
+        keyframe_distance: Some(12),
+        mpeg2_b_frames: Some(2),
+        ..settings(format, MxfVideoCodec::Mpeg2, path)
+    };
+    // standard definition is D-10, not this mapping
+    let sd = ExportSettings { frame_size: Some((720, 576)), ..mpeg2(Format::MxfOp1a, &tmp("sd.mxf")) };
+    assert!(matches!(export(&p, seq, &sd, &m, &Progress::default()), Err(ExportError::Unsupported(_))));
+    for format in [Format::MxfOp1a, Format::MxfOpAtom] {
+        let path = tmp(&format!("mpeg2_{format:?}.mxf"));
+        let r = export(&p, seq, &mpeg2(format, &path), &m, &Progress::default()).unwrap();
+        assert_eq!(r.frames, 24);
+        let bytes = std::fs::read(&path).unwrap();
+        let mx = cfa4_mxf::open(&bytes).unwrap();
+        assert!(mx.warnings.is_empty(), "{format:?}: {:?}", mx.warnings);
+        let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+        assert_eq!(v.codec, cfa4_mxf::Codec::Mpeg2);
+        assert_eq!(v.samples.len(), 24);
+        assert!(v.temporal_offsets, "{format:?}: B pictures, the index gives the presentation order");
+        assert_eq!(v.samples.iter().filter(|s| s.key).count(), 2, "{format:?}: an I picture every 12");
+        let pi = v.picture.as_ref().unwrap();
+        assert_eq!((pi.stored_width, pi.stored_height, pi.horizontal_subsampling, pi.vertical_subsampling), (1280, 720, 2, 1));
+        let coding = pi.picture_coding.unwrap().0;
+        assert_eq!(coding[8..16], [0x04, 0x01, 0x02, 0x02, 0x01, 0x04, 0x03, 0x00], "422P@HL long GOP (RDD 9 Table 6)");
+        // our decode, in presentation order
+        let src = cfa4_codecs::open_bytes("x.mxf", bytes.clone().into()).unwrap();
+        assert_eq!(src.info().video.as_ref().unwrap().width, 1280);
+        let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("MXF MPEG-2 decode") else { continue };
+        let raw = ["-f", "rawvideo", "-pix_fmt", "yuv422p"];
+        let theirs = ffmpeg_raw(&ffmpeg, &path, "0:v:0", &raw);
+        let fsize = 1280 * 720 * 2;
+        assert_eq!(theirs.len(), 24 * fsize, "{format:?}: 24 frames decoded");
+        let es = tmp(&format!("mpeg2_{format:?}.m2v"));
+        let ess = ExportSettings { format: Format::Mpeg2, mpeg2_container: "es".into(), ..mpeg2(Format::Mpeg2, &es) };
+        export(&p, seq, &ess, &m, &Progress::default()).unwrap();
+        assert!(theirs == ffmpeg_raw(&ffmpeg, &es, "0:v:0", &raw), "{format:?}: the MXF essence is the elementary stream's");
+        for f in [0usize, 1, 2, 3, 11, 12, 13, 23] {
+            let t = FrameRate::FPS_24.tick_of(f as i64) + Tick(1);
+            let ours = src.video_frame(FrameRequest::full(t)).unwrap();
+            let cfa4_frame::PixelData::Yuv8 { planes, .. } = &ours.data else { panic!("8-bit Y'CbCr") };
+            let want = &theirs[f * fsize..f * fsize + 1280 * 720];
+            let worst = planes[0].iter().zip(want).map(|(a, b)| a.abs_diff(*b)).max().unwrap_or(0);
+            assert!(worst <= 4, "{format:?}: frame {f} luma differs by {worst}");
+        }
+        if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("MXF MPEG-2 probe") {
+            let j = ffprobe_json(&ffprobe, &path);
+            let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
+            assert_eq!((v["codec_name"].as_str(), v["profile"].as_str(), v["pix_fmt"].as_str()), (Some("mpeg2video"), Some("4:2:2"), Some("yuv422p")));
+            assert_eq!(v["nb_read_frames"], "24");
+        }
     }
 }

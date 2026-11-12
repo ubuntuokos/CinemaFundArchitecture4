@@ -15,11 +15,12 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 378 | 2004 | OP1a |
 | SMPTE ST 390 | 2011 | OP-Atom |
 | SMPTE ST 379-1 / 379-2 | 2009 / 2010 | generic container: content packages, element keys, frame / clip wrapping |
-| SMPTE ST 381-1 | 2005 | MPEG video mapping (MPEG-2 identified, MPEG video descriptor; decoded by `cfa4-mpeg2v` in `cfa4-codecs`) |
+| SMPTE ST 381-1 | 2005 | MPEG video mapping (MPEG-2 identified, MPEG video descriptor; decoded by `cfa4-mpeg2v` in `cfa4-codecs`); writer: ES container, element keys, MPEG video descriptor, index flags |
 | SMPTE ST 381-3 | 2013 | AVC byte-stream mapping and AVC sub-descriptor |
 | SMPTE ST 382 | 2007 | AES3 and Broadcast Wave audio mapping (wave / AES3 descriptors) |
 | SMPTE ST 331 | 2011 | element data of 8-channel AES3 sound (D-10) |
 | SMPTE ST 2067-201 | 2019 | IAB track files: IAB essence descriptor (set 0x7B), clip-wrapped container, element type 0x0D (labels from the SMPTE registers) |
+| SMPTE RDD 9 | 2013 | MPEG long GOP coding labels (Table 6: MP@HL, 422P@HL, MP@H-14) for the writer |
 | SMPTE ST 384 | 2005 | uncompressed picture mapping: container label (mapping 05h, frame / clip / line wrapping), element types 02h / 03h / 04h |
 | SMPTE ST 377-1 | 2019, G.1, G.2.22–G.2.25, G.2.35, G.2.40 | uncompressed layouts: stored / sampled / display rectangles, image start / end fill, the Y'CbCr layout labels of G.2.25, Reversed Byte Order, Padding Bits, RGBA Pixel Layout and Component Min / Max Ref |
 | SMPTE ST 386 | 2004 | D-10 (IMX) mapping: container label, sound element type |
@@ -182,7 +183,13 @@ w.finish()?;
 - **Mappings.** VC-3 (ST 2019-4: coding label `…71 cc` from the compression id, container `02 11`,
   element types 0x0C / 0x0D), ProRes (RDD 44: coding label profile byte, container `02 1C`),
   AVC byte stream (ST 381-3: container `02 10 60`, coding label from `profile_idc`; Annex B access
-  units with in-band SPS / PPS — the AVC sub-descriptor is not written), Broadcast Wave PCM
+  units with in-band SPS / PPS — the AVC sub-descriptor is not written), MPEG-2 video
+  elementary stream (ST 381-1: container `02 04 60`, element types 0x05 / 0x06, the MPEG video
+  descriptor with SingleSequence, ConstantBframes, CodedContentType, LowDelay, ClosedGOP,
+  IdenticalGOP, MaxGOP, BPictureCount, ProfileAndLevel and BitRate under dynamic tags, the RDD 9
+  Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP; random access entries flagged
+  with their sequence header, P and B entries with the naive prediction flags of ST 381-1 A.2;
+  no SDTI-CP system item or AES3 elements, so not a strict RDD 9 file), Broadcast Wave PCM
   (ST 382: container `02 06 01/02`, element types 0x01 / 0x02).
 - `write_opatom_pcm(&OpAtomPcm, &[i32])` builds a complete in-memory OP-Atom PCM file (AAF media
   consolidation); `encode_pcm` interleaves planar f32 as little-endian PCM.

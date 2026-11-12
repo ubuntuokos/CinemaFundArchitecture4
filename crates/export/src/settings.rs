@@ -140,6 +140,9 @@ pub enum MxfVideoCodec {
     ProRes,
     /// H.264 long GOP (ST 381-3 byte-stream mapping).
     H264,
+    /// MPEG-2 long GOP (ST 381-1 elementary stream mapping; XDCAM HD422 style with 4:2:2 at
+    /// 50 Mbit/s). HD only: the High and High-1440 levels.
+    Mpeg2,
 }
 
 impl MxfVideoCodec {
@@ -149,6 +152,7 @@ impl MxfVideoCodec {
             MxfVideoCodec::Dnxhr => "Avid DNxHR",
             MxfVideoCodec::ProRes => "Apple ProRes",
             MxfVideoCodec::H264 => "H.264",
+            MxfVideoCodec::Mpeg2 => "MPEG-2",
         }
     }
     /// The export format whose encoder this codec uses.
@@ -157,6 +161,7 @@ impl MxfVideoCodec {
             MxfVideoCodec::Dnxhr => Format::DnxHr,
             MxfVideoCodec::ProRes => Format::ProRes,
             MxfVideoCodec::H264 => Format::H264,
+            MxfVideoCodec::Mpeg2 => Format::Mpeg2,
         }
     }
 }

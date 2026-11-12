@@ -860,7 +860,7 @@ impl ExportSettings {
         if self.format == Format::Hevc && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("H.265 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
         }
-        if self.format == Format::Mpeg2 {
+        if self.video_format() == Format::Mpeg2 {
             if self.mpeg2_quantizer.is_some_and(|q| !(1..=31).contains(&q)) {
                 return Err(ExportError::Unsupported("MPEG-2 quantiser must be between 1 and 31".into()));
             }
@@ -870,10 +870,11 @@ impl ExportSettings {
             if matches!(self.bitrate_mode, BitrateMode::Vbr2Pass | BitrateMode::Crf) {
                 return Err(ExportError::Unsupported("MPEG-2 export encodes to an average bitrate: choose CBR or VBR, 1 pass".into()));
             }
-            if !self.mpeg2_container.trim().is_empty() && Mpeg2Container::from_name(&self.mpeg2_container).is_none() {
+            if self.format == Format::Mpeg2 && !self.mpeg2_container.trim().is_empty() && Mpeg2Container::from_name(&self.mpeg2_container).is_none() {
                 return Err(ExportError::Unsupported(format!("unknown MPEG-2 container {:?}: choose ps, ts, m2ts or es", self.mpeg2_container)));
             }
-            if self.has_audio()
+            if self.format == Format::Mpeg2
+                && self.has_audio()
                 && self.audio_codec() == AudioCodec::Pcm
                 && self.audio.sample_rate.is_some_and(|r| ![48_000, 96_000, 44_100, 32_000].contains(&r))
             {
@@ -993,6 +994,24 @@ pub trait VideoEncoder: Send {
     fn prepare_ahead(&self) -> Option<PrepareAhead> {
         None
     }
+    /// MPEG-2 video: what the MXF MPEG video descriptor records (ST 381-1 Table 7).
+    fn mpeg_video(&self) -> Option<MpegVideoInfo> {
+        None
+    }
+}
+
+/// The coding parameters of an MPEG-2 video stream, for the MXF MPEG video descriptor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MpegVideoInfo {
+    /// profile_and_level_indication of the sequence extension.
+    pub profile_and_level: u8,
+    /// Pictures per GOP.
+    pub gop: u32,
+    /// B pictures between anchors.
+    pub b_frames: u32,
+    pub closed_gop: bool,
+    /// The bit rate the sequence header signals (bit/s).
+    pub bit_rate: u64,
 }
 
 /// Audio encoder (AAC) plugged in by codec crates; PCM is built in.
@@ -1338,6 +1357,8 @@ fn mjpeg_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
 /// MPEG-2 video (our encoder): BT.709 limited-range 4:2:0, average bitrate, IBBP (B pictures configurable).
 struct Mpeg2Encoder {
     enc: cfa4_mpeg2v::encode::Encoder,
+    /// GOP length, B pictures and closed GOPs of the configuration.
+    gop: (u32, u32, bool),
     rate: FrameRate,
     w: u16,
     h: u16,
@@ -1356,6 +1377,15 @@ impl VideoEncoder for Mpeg2Encoder {
     }
     fn timescale(&self) -> u32 {
         self.rate.num as u32
+    }
+    fn mpeg_video(&self) -> Option<MpegVideoInfo> {
+        Some(MpegVideoInfo {
+            profile_and_level: self.enc.profile_and_level(),
+            gop: self.gop.0,
+            b_frames: self.gop.1,
+            closed_gop: self.gop.2,
+            bit_rate: self.enc.signalled_bit_rate(),
+        })
     }
     fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
@@ -1441,8 +1471,9 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
         cfg.colour = Some((1, 1, 1));
         cfg.adaptive_quantization = true;
+        let gop = (cfg.gop, cfg.b_frames, cfg.closed_gop);
         let enc = cfa4_mpeg2v::encode::Encoder::new(cfg).map_err(|e| ExportError::Unsupported(format!("MPEG-2: {e}")))?;
-        Ok(Box::new(Mpeg2Encoder { enc, rate, w: w16, h: h16, yuv422: s.mpeg2_422, y: Vec::new(), u: Vec::new(), v: Vec::new() }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(Mpeg2Encoder { enc, gop, rate, w: w16, h: h16, yuv422: s.mpeg2_422, y: Vec::new(), u: Vec::new(), v: Vec::new() }) as Box<dyn VideoEncoder>)
     })())
 }
 

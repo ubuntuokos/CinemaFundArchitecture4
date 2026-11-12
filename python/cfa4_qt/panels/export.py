@@ -99,7 +99,7 @@ AUDIO_CODECS = (
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
 FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
-    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"))),
+    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"))),
     ("proresProfile", N_("Profile"), "export.video.proresProfile", (
         ("proxy", "Apple ProRes 422 Proxy"), ("lt", "Apple ProRes 422 LT"), ("standard", "Apple ProRes 422"),
         ("hq", "Apple ProRes 422 HQ"), ("4444", "Apple ProRes 4444"), ("4444xq", "Apple ProRes 4444 XQ"))),
@@ -116,7 +116,7 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
                    "cineformQuality": "filmscan1", "exrCompression": "none"}
 MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
-MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264"}
+MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
                       "cineformQuality": "cineform", "exrCompression": "exr"}
@@ -952,11 +952,6 @@ class ExportDialog(QDialog):
         self.audio_bitrate.setEnabled(bool(fmt.get("audio", True)))
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate_box.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
-        mpeg2 = self.format.currentData() == "mpeg2"
-        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
-            w.setEnabled(mpeg2)
-        self.rows.allow_interlaced(mpeg2)  # only MPEG-2 export codes interlaced video (egui's Field Order)
-        self.video_form.setRowVisible(self.gop, mpeg2)  # H.264 / H.265 / AV1 have egui's own row
         self._sync_format_rows()
         video = bool(fmt.get("video", True))
         self.captions.setVisible(video)
@@ -993,7 +988,18 @@ class ExportDialog(QDialog):
         rows["quality"] = enc in QUALITY_FORMATS
         return rows
 
+    def _sync_mpeg2_rows(self) -> None:
+        """MPEG-2 video settings: for MPEG-2 files and MPEG-2 in MXF (the container only for files)."""
+        fmt = str(self.format.currentData() or "")
+        video = encoder_format(fmt, self._choice("mxfVideoCodec")) == "mpeg2"
+        self.container.setEnabled(fmt == "mpeg2")
+        self.rows.allow_interlaced(fmt == "mpeg2")  # only MPEG-2 export codes interlaced video (egui's Field Order)
+        for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
+            w.setEnabled(video)
+        self.video_form.setRowVisible(self.gop, video)  # H.264 / H.265 / AV1 have egui's own row
+
     def _sync_format_rows(self) -> None:
+        self._sync_mpeg2_rows()
         widgets: dict[str, QWidget] = {**self.format_choices, "alpha": self.alpha, "quality": self.quality}
         for key, shown in self._format_rows().items():
             self.video_form.setRowVisible(widgets[key], shown)
@@ -1265,6 +1271,7 @@ class ExportDialog(QDialog):
             p["quality"] = self.quality.value()
         if self.container.isEnabled():
             p["mpeg2Container"] = self.container.currentData()
+        if self.gop.isEnabled():
             if self.gop.value():
                 p["keyframeDistance"] = self.gop.value()
             if "bFrames" in self.touched:
