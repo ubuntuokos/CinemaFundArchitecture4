@@ -4561,3 +4561,13 @@ export.summary	Low	låg
 	Chase External Timecode	Följ extern tidskod
 	Send LTC	Skicka LTC
 	Send MIDI Timecode	Skicka MIDI-tidskod
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Förhandsvisning av livestudio
+	Live studio: stopped	Livestudio: stoppad
+	Live studio: {state}	Livestudio: {state}
+	Live studio: {error}	Livestudio: {error}
+	restarted after {count} crashes (last: {exit})	omstartad efter {count} krascher (senaste: {exit})
+	software backend: {reason}	programvarubakände: {reason}
+	Start studio	Starta studio
+	Stop studio	Stoppa studio

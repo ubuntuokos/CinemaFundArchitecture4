@@ -4568,3 +4568,13 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	ライブスタジオのプレビュー
+	Live studio: stopped	ライブスタジオ: 停止中
+	Live studio: {state}	ライブスタジオ: {state}
+	Live studio: {error}	ライブスタジオ: {error}
+	restarted after {count} crashes (last: {exit})	{count} 回のクラッシュ後に再起動しました(最後: {exit})
+	software backend: {reason}	ソフトウェアバックエンド: {reason}
+	Start studio	スタジオを開始
+	Stop studio	スタジオを停止

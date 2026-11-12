@@ -4559,3 +4559,13 @@ export.summary	Low	низак
 	Chase External Timecode	Прати спољни временски код
 	Send LTC	Шаљи LTC
 	Send MIDI Timecode	Шаљи MIDI временски код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Преглед студија уживо
+	Live studio: stopped	Студио уживо: заустављен
+	Live studio: {state}	Студио уживо: {state}
+	Live studio: {error}	Студио уживо: {error}
+	restarted after {count} crashes (last: {exit})	поново покренут после {count} падова (последњи: {exit})
+	software backend: {reason}	софтверска позадина: {reason}
+	Start studio	Покрени студио
+	Stop studio	Заустави студио

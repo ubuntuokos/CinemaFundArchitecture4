@@ -4567,3 +4567,13 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Pratinjau studio langsung
+	Live studio: stopped	Studio langsung: berhenti
+	Live studio: {state}	Studio langsung: {state}
+	Live studio: {error}	Studio langsung: {error}
+	restarted after {count} crashes (last: {exit})	dimulai ulang setelah {count} kali mogok (terakhir: {exit})
+	software backend: {reason}	backend perangkat lunak: {reason}
+	Start studio	Mulai studio
+	Stop studio	Hentikan studio

@@ -4562,3 +4562,13 @@ export.summary	Low	ниско
 	Chase External Timecode	Следване на външен тайм код
 	Send LTC	Изпращане на LTC
 	Send MIDI Timecode	Изпращане на MIDI тайм код
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Преглед на студиото на живо
+	Live studio: stopped	Студио на живо: спряно
+	Live studio: {state}	Студио на живо: {state}
+	Live studio: {error}	Студио на живо: {error}
+	restarted after {count} crashes (last: {exit})	рестартирано след {count} срива (последен: {exit})
+	software backend: {reason}	софтуерна основа: {reason}
+	Start studio	Стартиране на студиото
+	Stop studio	Спиране на студиото

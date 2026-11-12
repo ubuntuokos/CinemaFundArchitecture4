@@ -4553,3 +4553,13 @@
 	Chase External Timecode	외부 타임코드 체이스
 	Send LTC	LTC 보내기
 	Send MIDI Timecode	MIDI 타임코드 보내기
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	라이브 스튜디오 미리 보기
+	Live studio: stopped	라이브 스튜디오: 중지됨
+	Live studio: {state}	라이브 스튜디오: {state}
+	Live studio: {error}	라이브 스튜디오: {error}
+	restarted after {count} crashes (last: {exit})	{count}번 충돌 후 다시 시작됨 (마지막: {exit})
+	software backend: {reason}	소프트웨어 백엔드: {reason}
+	Start studio	스튜디오 시작
+	Stop studio	스튜디오 중지

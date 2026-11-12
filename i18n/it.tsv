@@ -4559,3 +4559,13 @@
 	Chase External Timecode	Segui timecode esterno
 	Send LTC	Invia LTC
 	Send MIDI Timecode	Invia timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Anteprima dello studio dal vivo
+	Live studio: stopped	Studio dal vivo: fermo
+	Live studio: {state}	Studio dal vivo: {state}
+	Live studio: {error}	Studio dal vivo: {error}
+	restarted after {count} crashes (last: {exit})	riavviato dopo {count} arresti anomali (ultimo: {exit})
+	software backend: {reason}	backend software: {reason}
+	Start studio	Avvia studio
+	Stop studio	Ferma studio

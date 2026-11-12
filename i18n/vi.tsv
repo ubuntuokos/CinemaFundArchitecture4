@@ -4559,3 +4559,13 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Xem trước phòng thu trực tiếp
+	Live studio: stopped	Phòng thu trực tiếp: đã dừng
+	Live studio: {state}	Phòng thu trực tiếp: {state}
+	Live studio: {error}	Phòng thu trực tiếp: {error}
+	restarted after {count} crashes (last: {exit})	đã khởi động lại sau {count} lần gặp sự cố (lần cuối: {exit})
+	software backend: {reason}	phần phụ trợ phần mềm: {reason}
+	Start studio	Khởi động phòng thu
+	Stop studio	Dừng phòng thu

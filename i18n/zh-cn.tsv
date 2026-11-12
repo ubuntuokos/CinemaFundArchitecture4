@@ -4557,3 +4557,13 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播演播室预览
+	Live studio: stopped	直播演播室：已停止
+	Live studio: {state}	直播演播室：{state}
+	Live studio: {error}	直播演播室：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次崩溃后已重新启动（最近一次：{exit}）
+	software backend: {reason}	软件后端：{reason}
+	Start studio	启动演播室
+	Stop studio	停止演播室

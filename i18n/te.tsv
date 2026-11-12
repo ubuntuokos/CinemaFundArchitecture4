@@ -4565,3 +4565,13 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	లైవ్ స్టూడియో ప్రివ్యూ
+	Live studio: stopped	లైవ్ స్టూడియో: ఆపివేయబడింది
+	Live studio: {state}	లైవ్ స్టూడియో: {state}
+	Live studio: {error}	లైవ్ స్టూడియో: {error}
+	restarted after {count} crashes (last: {exit})	{count} క్రాష్‌ల తర్వాత మళ్లీ ప్రారంభించబడింది (చివరిది: {exit})
+	software backend: {reason}	సాఫ్ట్‌వేర్ బ్యాకెండ్: {reason}
+	Start studio	స్టూడియోను ప్రారంభించు
+	Stop studio	స్టూడియోను ఆపు

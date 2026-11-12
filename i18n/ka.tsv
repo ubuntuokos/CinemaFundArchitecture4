@@ -4562,3 +4562,13 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	პირდაპირი სტუდიის გადახედვა
+	Live studio: stopped	პირდაპირი სტუდია: გაჩერებულია
+	Live studio: {state}	პირდაპირი სტუდია: {state}
+	Live studio: {error}	პირდაპირი სტუდია: {error}
+	restarted after {count} crashes (last: {exit})	ხელახლა გაეშვა {count} ავარიის შემდეგ (ბოლო: {exit})
+	software backend: {reason}	პროგრამული ბექენდი: {reason}
+	Start studio	სტუდიის გაშვება
+	Stop studio	სტუდიის გაჩერება
