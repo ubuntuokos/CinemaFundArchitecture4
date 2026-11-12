@@ -3860,6 +3860,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());
     v.extend(crate::relink::commands());
+    v.extend(crate::kdm::commands());
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
