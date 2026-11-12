@@ -94,7 +94,7 @@ A munkát külön munkamenet végzi, ebből a jóváhagyott tervből.
 |---|---|---|
 | D1 | Mit veszünk át | **Eldöntve (2026-11-12): csak a `lib/` matematikáját és rajzelemeit** (`gait`, `motion`, `daynight`, `ink`) írjuk át Rustra; a figurák és a jelenetek saját tervezésűek, a mintapéldákból (`examples/`) semmi nem kerül át |
 | D2 | Hogyan állítja a felhasználó | **Eldöntve (2026-11-12): kész figurák és jelenetek paraméterekkel**, programozás nélkül (méret, irány, sebesség, ruhaszínek, napszak, mag) a jövő évi kiadásban; **egy későbbi kiadásban jelenetszerkesztő** a Qt6-ban, ahol a figurák és az épületek egérrel elhelyezhetők |
-| D3 | Hol rajzolódik | saját renderelőben, CPU-n és GPU-n is (a meglévő grafikus réteg útján), nem böngészőben |
+| D3 | Hol rajzolódik | **Eldöntve (2026-11-12): a saját renderelőben, CPU-n és GPU-n is**, a grafikus rétegek útján, mint a címek és az alakzatok; az előnézet, az export és az élő grafika ugyanazt adja, külső függőség nélkül. A renderelő két új képességet kap (nyitott vonás kerek véggel és illesztéssel, tintaremegés a geometriában), mindkettő CPU- és GPU-úton is, egyező eredménnyel |
 | D4 | Időkezelés | determinisztikus: bármely időpont ugyanazt adja, rögzített lépésű szimulációval |
 | D5 | Hol használható | stáblista (háttér és cella), címek és alsó harmadok, élő grafika |
 | D6 | Mozdulatok a figurákon | kulcskockázható „mozdulatok” (köszön, kalapot emel, megáll, leül) az idővonalon; interaktív kattintás nincs (videóról van szó) |
