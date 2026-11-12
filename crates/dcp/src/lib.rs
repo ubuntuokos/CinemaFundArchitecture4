@@ -11,8 +11,9 @@
 //! elements are kept by name, never dropped silently, so a validator can tell "not supported" from
 //! "absent".
 //!
-//! Only reading. No signature check (the presence of `Signer` / `ds:Signature` is recorded), no
-//! hashing of the assets, no file discovery: those belong to `cfa4-dcp-validate` (DCP-03 / DCP-05).
+//! Only reading. No signature check (the presence of `Signer` / `ds:Signature` is recorded) and no
+//! file discovery: those belong to `cfa4-dcp-validate` (DCP-03 / DCP-05). [`sha1`] is the streaming
+//! digest of the packing list `Hash`; the validator runs it over the files.
 //!
 //! Layer L0: depends on `roxmltree`, `serde`, `thiserror` and `chrono` (date checks) only. No `unsafe`, no panics on
 //! malformed input, DTDs are refused and the node count is capped.
@@ -22,6 +23,7 @@
 mod assetmap;
 mod cpl;
 mod pkl;
+pub mod sha1;
 mod xml;
 
 pub use assetmap::{AssetMap, AssetMapAsset, Chunk, VolumeIndex};
