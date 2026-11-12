@@ -6,16 +6,20 @@
 # big-endian lengths before each packet for the packet-fed decoders.
 # Usage: fuzz/seeds.sh  (needs python3 and the pinned FFmpeg 9.0.2 test oracle; formats it cannot
 # write are skipped). The oracle is found as the tests find it (docs/testing.md §2): CFA4_FFMPEG,
-# then the scripts/ci/install-ffmpeg-9.0.2.sh cache, then PATH; any other version is refused.
+# then the scripts/ci/install-ffmpeg-9.0.2.sh cache, then the prebuilt /opt/cfa4/ffmpeg-9.0.2
+# (scripts/dev/fetch-ffmpeg-9.0.2.sh), then PATH; any other version is refused.
 set -uo pipefail
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 C="$HERE/corpus"
 FFMPEG="${CFA4_FFMPEG:-}"
 if [[ -z "$FFMPEG" ]]; then
     cached="${CFA4_FFMPEG_CACHE_DIR:-$HOME/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7}/bin/ffmpeg"
-    if [[ -x "$cached" ]]; then FFMPEG="$cached"; else FFMPEG="$(command -v ffmpeg || true)"; fi
+    prebuilt=/opt/cfa4/ffmpeg-9.0.2/bin/ffmpeg   # scripts/dev/fetch-ffmpeg-9.0.2.sh (cloud and dev machines)
+    if [[ -x "$cached" ]]; then FFMPEG="$cached"
+    elif [[ -x "$prebuilt" ]]; then FFMPEG="$prebuilt"
+    else FFMPEG="$(command -v ffmpeg || true)"; fi
 fi
-[[ -n "$FFMPEG" && -x "$FFMPEG" ]] || { echo "FFmpeg 9.0.2 not found: run scripts/ci/install-ffmpeg-9.0.2.sh or set CFA4_FFMPEG" >&2; exit 2; }
+[[ -n "$FFMPEG" && -x "$FFMPEG" ]] || { echo "FFmpeg 9.0.2 not found: run scripts/dev/fetch-ffmpeg-9.0.2.sh or set CFA4_FFMPEG" >&2; exit 2; }
 have="$("$FFMPEG" -version | awk 'NR==1 {print $3}')"
 [[ "$have" == "9.0.2" ]] || { echo "$FFMPEG is FFmpeg $have; the seeds need the pinned 9.0.2 oracle (scripts/ci/install-ffmpeg-9.0.2.sh)" >&2; exit 2; }
 T="$(mktemp -d)"
