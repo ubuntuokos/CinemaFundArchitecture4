@@ -532,10 +532,16 @@ impl Exporter {
                     let header = crate::aac_out::AdtsHeader::from_asc(&cfg.asc)?;
                     Some(MpegAudio::Aac { header, sample_rate: a.sr, priming: enc.priming() })
                 }
+                (Some(a), None) if self.settings.audio_codec() == AudioCodec::Ac3 => {
+                    let enc = cfa4_ac3::Encoder::new(a.sr, a.channels, self.settings.audio.bitrate_kbps)
+                        .map_err(|e| ExportError::Unsupported(format!("AC-3: {e}")))?;
+                    Some(MpegAudio::Ac3(Box::new(enc)))
+                }
                 (Some(a), None) => Some(MpegAudio::Lpcm { sample_rate: a.sr, channels: a.channels as u32, bits: self.lpcm_bits() }),
             };
             let audio_bps = match (&self.audio, &self.aenc) {
                 (Some(_), Some(_)) => u64::from(self.settings.audio.bitrate_kbps) * 1000,
+                (Some(_), None) if self.settings.audio_codec() == AudioCodec::Ac3 => u64::from(self.settings.audio.bitrate_kbps) * 1000,
                 (Some(a), None) => u64::from(a.sr) * a.channels as u64 * u64::from(self.lpcm_bits()),
                 _ => 0,
             };
@@ -651,6 +657,9 @@ impl Exporter {
         }
         if let (Some(m), Some(a)) = (self.mpeg.as_mut(), self.aenc.as_mut()) {
             m.write_aac(a.flush()?, a.frame_size())?;
+        }
+        if let Some(m) = self.mpeg.as_mut() {
+            m.flush_ac3()?;
         }
         if let (Some(at), Some(a)) = (self.at, self.aenc.as_mut()) {
             let mux = self.mux.as_mut().ok_or_else(|| ExportError::Encode("internal: the container writer was not created".into()))?;

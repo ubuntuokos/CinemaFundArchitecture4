@@ -199,6 +199,53 @@ fn transport_streams_carry_mpeg2_video_and_aac() {
 }
 
 #[test]
+fn program_and_transport_streams_carry_ac3() {
+    let (p, seq, m) = project();
+    for (name, container) in [("ac3.mpg", "ps"), ("ac3.ts", "ts"), ("ac3.m2ts", "m2ts")] {
+        let path = tmp(name);
+        let mut s = settings(&path);
+        s.mpeg2_container = container.into();
+        s.audio.codec = settings::AudioCodec::Ac3;
+        assert_eq!(s.audio_codec(), settings::AudioCodec::Ac3);
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let (es, _, f, data) = demux(&path);
+        assert_eq!(decode(&es).len(), 25, "{name}");
+        assert!(f.find(cfa4_mpegts::Kind::Audio, |c| *c == cfa4_mpegts::Codec::LpcmDvd || *c == cfa4_mpegts::Codec::AacAdts).is_none());
+        let a = f.find(cfa4_mpegts::Kind::Audio, |c| *c == cfa4_mpegts::Codec::Ac3).unwrap();
+        let units = &f.streams[a].units;
+        // 1 s of 1536-sample syncframes and the 256-sample transform delay; the first is shown
+        // that much early
+        assert_eq!(units.len(), 32, "{name}");
+        assert_eq!(units[1].pts.unwrap() - units[0].pts.unwrap(), 2880, "{name}");
+        assert_eq!(units[0].pts.unwrap(), 63_000 - 480, "{name}");
+        // our decoder hears the -6 dB tone in both channels
+        let mut dec = cfa4_ac3::Decoder::new();
+        let mut left = Vec::new();
+        for k in 0..units.len() {
+            let d = dec.decode(&f.read_unit(&data, a, k).unwrap()).unwrap();
+            assert_eq!((d.header.acmod, d.channels.len()), (2, 2), "{name}");
+            left.extend_from_slice(&d.channels[0]);
+        }
+        let mid = &left[4800..43_200];
+        let rms = (mid.iter().map(|v| f64::from(*v).powi(2)).sum::<f64>() / mid.len() as f64).sqrt();
+        assert!((rms - 0.354).abs() < 0.02, "{name}: rms {rms}");
+    }
+    // AC-3 rates and sample rates only; other formats ignore the choice
+    let mut s = settings(&tmp("x.mpg"));
+    s.audio.codec = settings::AudioCodec::Ac3;
+    s.audio.bitrate_kbps = 200;
+    assert!(s.validate().unwrap_err().to_string().contains("AC-3"));
+    s.audio.bitrate_kbps = 448;
+    s.validate().unwrap();
+    s.audio.sample_rate = Some(96_000);
+    assert!(s.validate().is_err());
+    s.mpeg2_container = "es".into();
+    assert_ne!(s.audio_codec(), settings::AudioCodec::Ac3);
+    let mp4 = ExportSettings { format: Format::H264, audio: AudioSettings { codec: settings::AudioCodec::Ac3, ..Default::default() }, ..Default::default() };
+    assert_eq!(mp4.audio_codec(), settings::AudioCodec::Aac);
+}
+
+#[test]
 fn elementary_stream_is_the_bare_video() {
     let (p, seq, m) = project();
     let path = tmp("out.m2v");
@@ -391,6 +438,9 @@ fn ffmpeg_oracle_reads_every_container() {
         ("o24.mpg", "mpeg", Some("pcm_dvd")),
         ("o.ts", "mpegts", Some("aac")),
         ("o.m2ts", "mpegts", Some("aac")),
+        ("ac3.mpg", "mpeg", Some("ac3")),
+        ("ac3.ts", "mpegts", Some("ac3")),
+        ("ac3.m2ts", "mpegts", Some("ac3")),
         ("o.m2v", "mpegvideo", None),
     ] {
         let path = tmp(name);
@@ -398,6 +448,9 @@ fn ffmpeg_oracle_reads_every_container() {
         let deep = name == "o24.mpg";
         if deep {
             s.audio.bits = 24;
+        }
+        if name.starts_with("ac3") {
+            s.audio.codec = settings::AudioCodec::Ac3;
         }
         export(&p, seq, &s, &m, &Progress::default()).unwrap();
         let j = ffprobe_json(&ffprobe, &path);
@@ -426,7 +479,7 @@ fn ffmpeg_oracle_reads_every_container() {
             Some(_) => {
                 let s16 = ffmpeg_raw(&ffmpeg, &path, "0:a", &["-f", "s16le", "-ac", "2"]);
                 let secs = s16.len() as f64 / 4.0 / 48_000.0;
-                assert!((0.95..1.1).contains(&secs), "{name}: {secs} s of AAC");
+                assert!((0.95..1.1).contains(&secs), "{name}: {secs} s of {audio:?}");
             }
             None => {}
         }

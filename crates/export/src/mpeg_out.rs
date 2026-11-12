@@ -108,7 +108,15 @@ pub(crate) enum MpegAudio {
     /// AAC access units with their ADTS header (transport streams); `priming` samples of encoder
     /// delay come before the first output sample.
     Aac { header: AdtsHeader, sample_rate: u32, priming: u32 },
+    /// AC-3 syncframes of our encoder (program and transport streams).
+    Ac3(Box<cfa4_ac3::Encoder>),
 }
+
+/// The AC-3 bit rates (ATSC A/52 Table 5.18), kb/s.
+pub const AC3_BITRATES: [u32; 19] = [32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 448, 512, 576, 640];
+
+/// AC-3 output lags the input by this many samples (the transform overlap).
+const AC3_DELAY: i64 = 256;
 
 /// An MPEG-2 export in progress.
 pub(crate) struct MpegMux {
@@ -151,6 +159,7 @@ impl MpegMux {
                         streams.push(MuxCodec::LpcmDvd { sample_rate: *sample_rate, channels: *channels, bits: *bits })
                     }
                     Some(MpegAudio::Aac { .. }) => streams.push(MuxCodec::AacAdts),
+                    Some(MpegAudio::Ac3(_)) => streams.push(MuxCodec::Ac3),
                     None => {}
                 }
                 let format = match c {
@@ -186,8 +195,13 @@ impl MpegMux {
         Ok(())
     }
 
-    /// Planar samples of an LPCM export.
+    /// Planar samples of an LPCM or AC-3 export.
     pub fn write_pcm(&mut self, planar: &[Vec<f32>]) -> Result<()> {
+        if let (Some(MpegAudio::Ac3(enc)), Sink::Mux(_)) = (&mut self.audio, &self.sink) {
+            let refs: Vec<&[f32]> = planar.iter().map(Vec::as_slice).collect();
+            let frames = enc.encode(&refs).map_err(|e| ExportError::Encode(format!("AC-3: {e}")))?;
+            return self.write_ac3(frames);
+        }
         let (Some(MpegAudio::Lpcm { sample_rate, channels, bits }), Sink::Mux(m)) = (&self.audio, &mut self.sink) else { return Ok(()) };
         let n = planar.first().map_or(0, Vec::len);
         if n == 0 {
@@ -216,6 +230,24 @@ impl MpegMux {
         }
         self.samples += n as i64;
         Ok(())
+    }
+
+    /// AC-3 syncframes of 1536 samples, each shown [`AC3_DELAY`] samples before its input.
+    fn write_ac3(&mut self, frames: Vec<Vec<u8>>) -> Result<()> {
+        let (Some(MpegAudio::Ac3(enc)), Sink::Mux(m)) = (&self.audio, &mut self.sink) else { return Ok(()) };
+        let rate = i64::from(enc.sample_rate());
+        for f in frames {
+            m.write(1, &f, to_90k(self.samples - AC3_DELAY, rate, 1), None, true).map_err(mux_err)?;
+            self.samples += 1536;
+        }
+        Ok(())
+    }
+
+    /// The AC-3 encoder's last syncframes (the input it still holds, padded with silence).
+    pub fn flush_ac3(&mut self) -> Result<()> {
+        let Some(MpegAudio::Ac3(enc)) = &mut self.audio else { return Ok(()) };
+        let frames = enc.flush().map_err(|e| ExportError::Encode(format!("AC-3: {e}")))?;
+        self.write_ac3(frames)
     }
 
     /// AAC access units of `frame` samples each.

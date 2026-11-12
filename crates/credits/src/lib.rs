@@ -9,6 +9,11 @@
 //! - [`sheet`]: the spreadsheet's meaning (head / body / tail blocks, gaps, content and page
 //!   styles, spine offsets, page runtimes and gaps) → [`Credits`].
 //! - [`style`]: [`Styling`] (page, content and letter styles, JSON) with built-in styles.
+//! - [`doc`]: the `.cfa4credits` document (source, styling, accepted table); [`diff`]: what
+//!   changed in the sheet since, row by row, and the table after accepting some changes.
+//! - [`fit`]: fit credits to a length (their music), cards on the beat, length suggestions.
+//! - [`validate`]: checks a viewer or broadcaster would notice (names, fonts, safe area,
+//!   contrast, scroll speed, card length, pictures), with stable codes.
 //! - [`layout`]: [`Credits`] → one graphic clip per page ([`layout::PageOut`]): text layers, Roll
 //!   for scroll pages, opacity fades for cards, exact [`cfa4_time::Tick`] durations.
 //!
@@ -17,16 +22,25 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod cinecred;
+pub mod diff;
+pub mod doc;
+pub mod fit;
 pub mod layout;
+pub mod markup;
 pub mod office;
 pub mod sheet;
 pub mod style;
 pub mod table;
+pub mod template;
+pub mod validate;
 pub mod zip;
 
 pub use layout::{Frame, Laid, Measure, PageOut, PicturePlace, layout};
 pub use sheet::{Block, Credits, Gap, Page, Picture, TimeSpec, Warning, read_sheet};
-pub use style::{Align, Behaviour, BodyLayout, ContentStyle, LetterStyle, Orientation, PageStyle, Styling};
+pub use style::{
+    Align, Background, BackgroundFit, BackgroundKind, Behaviour, BodyLayout, ContentStyle, Entrance, LetterStyle, Orientation, PageStyle, PortraitSide, Styling,
+};
 
 /// Why credits could not be read or laid out.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -89,3 +103,24 @@ mod tests;
 
 #[cfg(test)]
 mod office_tests;
+
+#[cfg(test)]
+mod diff_tests;
+
+#[cfg(test)]
+mod validate_tests;
+
+#[cfg(test)]
+mod fit_tests;
+
+#[cfg(test)]
+mod look_tests;
+
+#[cfg(test)]
+mod rich_tests;
+
+#[cfg(test)]
+mod template_tests;
+
+#[cfg(test)]
+mod cinecred_tests;

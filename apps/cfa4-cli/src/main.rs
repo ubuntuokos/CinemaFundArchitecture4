@@ -93,7 +93,7 @@ SUBCOMMANDS
   import <file>...              import media into the project
   export <out> [--preset name] [--format f] [--range r] [--start s --end s] [--settings json]
          [--gpu-rendering auto|off]
-         [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]
+         [--scale f] [--quality 0-100] [--no-audio] [--dash] [--queue] [--allow-offline]
                                 export the active sequence and wait for it to finish: with an
                                 export preset (`export --list-presets`; built-in or the user's), or
                                 a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|gif|wav|aiff|aac, guessed
@@ -101,7 +101,8 @@ SUBCOMMANDS
                                 range in seconds; --settings is ExportSettings JSON merged over the
                                 preset; --scale renders at a fraction of the frame size (0.5 =
                                 half); --quality 0-100 for the formats that take one; --no-audio
-                                leaves the sound out; --queue adds to the export queue and runs it
+                                leaves the sound out; --dash also writes a DASH manifest (.mpd)
+                                next to an HLS export; --queue adds to the export queue and runs it
                                 instead. Offline media (missing, made offline, unreadable) renders
                                 as placeholder frames: the export then lists it in `offlineMedia`,
                                 warns on stderr and exits 1, unless --allow-offline accepts it
@@ -553,6 +554,9 @@ async fn cli() {
             }
             if a.flag("--no-audio") {
                 p["audio"] = json!(false);
+            }
+            if a.flag("--dash") {
+                p["dashManifest"] = json!(true);
             }
             if let Some(v) = a.opt("--gpu-rendering") {
                 p["gpuRendering"] = json!(v); // off | auto (validated by the export command)
