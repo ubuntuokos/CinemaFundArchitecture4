@@ -4446,3 +4446,51 @@ export.summary	Low	χαμηλή
 	picture styles (pictures keep their own size) are not carried over	τα στυλ εικόνων (οι εικόνες κρατούν το μέγεθός τους) δεν μεταφέρονται
 	video (tape) styles are not carried over	τα στυλ βίντεο (ταινίας) δεν μεταφέρονται
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	το έργο Cinecred έχει {n} υπολογιστικά φύλλα τίτλων· χρησιμοποιείται το “{name}” (επιλέξτε άλλο στο πεδίο Υπολογιστικό φύλλο)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Προσθήκη ευρήματος
+	Add as Finding	Προσθήκη ως εύρημα
+	Are colour and contrast acceptable?	Είναι αποδεκτά το χρώμα και η αντίθεση;
+	Automatic Checks	Αυτόματοι έλεγχοι
+	Bounds	Όρια
+	Check	Έλεγχος
+	Check Now	Έλεγχος τώρα
+	Check quality after export	Έλεγχος ποιότητας μετά την εξαγωγή
+	Checking…	Έλεγχος…
+	Contact Sheet	Φύλλο επαφής
+	Critical	Κρίσιμο
+	Fail	Αποτυχία
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Εύρημα {row}: ο κωδικός χρόνου δεν αντιστοιχεί σε χρόνο αυτού του αρχείου (HH:MM:SS:FF).
+	Findings	Ευρήματα
+	Human Review	Ανθρώπινος έλεγχος
+	Incomplete	Ελλιπές
+	Is there a visible picture defect?	Υπάρχει ορατό ελάττωμα εικόνας;
+	Is there audible distortion?	Υπάρχει ακουστή παραμόρφωση;
+	Is there unwanted noise?	Υπάρχει ανεπιθύμητος θόρυβος;
+	Major	Σοβαρό
+	Message	Μήνυμα
+	Minor	Μικρό
+	No contact sheet	Χωρίς φύλλο επαφής
+	Not answered	Χωρίς απάντηση
+	Not checked	Δεν ελέγχθηκε
+	Not run	Δεν εκτελέστηκε
+	Note	Σημείωση
+	Pass	Επιτυχία
+	Passed	Επιτυχής
+	Passed with warnings	Επιτυχής με προειδοποιήσεις
+	Profile: {id} v{version}	Προφίλ: {id} v{version}
+	Quality Check	Έλεγχος ποιότητας
+	Quality Check…	Έλεγχος ποιότητας…
+	Remove Finding	Αφαίρεση ευρήματος
+	Report: {path}	Αναφορά: {path}
+	Review complete	Ο έλεγχος ολοκληρώθηκε
+	Reviewer	Ελεγκτής
+	Run the media quality check on the finished file (docs/media-qc.md)	Εκτέλεση του ελέγχου ποιότητας πολυμέσων στο τελικό αρχείο (docs/media-qc.md)
+	Save Review	Αποθήκευση ελέγχου
+	Select a finished export in the queue	Επιλέξτε μια ολοκληρωμένη εξαγωγή στην ουρά
+	Severity	Σοβαρότητα
+	The engine is not running.	Η μηχανή δεν εκτελείται.
+	Time code	Κωδικός χρόνου
+	Unsure	Αβέβαιο
+	accept	αποδεκτό
+	the engine did not start the check	η μηχανή δεν ξεκίνησε τον έλεγχο
+	the engine sent no report	η μηχανή δεν έστειλε αναφορά

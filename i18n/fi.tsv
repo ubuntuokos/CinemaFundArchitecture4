@@ -4446,3 +4446,51 @@ export.summary	Low	matala
 	picture styles (pictures keep their own size) are not carried over	kuvatyylejä (kuvat säilyttävät oman kokonsa) ei siirretä
 	video (tape) styles are not carried over	video- (nauha-) tyylejä ei siirretä
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektissa on {n} tekijätietotaulukkoa; käytetään taulukkoa ”{name}” (valitse toinen Laskentataulukko-kentässä)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Lisää havainto
+	Add as Finding	Lisää havainnoksi
+	Are colour and contrast acceptable?	Ovatko värit ja kontrasti hyväksyttäviä?
+	Automatic Checks	Automaattiset tarkistukset
+	Bounds	Rajat
+	Check	Tarkistus
+	Check Now	Tarkista nyt
+	Check quality after export	Tarkista laatu viennin jälkeen
+	Checking…	Tarkistetaan…
+	Contact Sheet	Kontaktiarkki
+	Critical	Kriittinen
+	Fail	Hylätty
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Havainto {row}: aikakoodi ei ole tämän tiedoston aika (HH:MM:SS:FF).
+	Findings	Havainnot
+	Human Review	Ihmisen tarkastus
+	Incomplete	Keskeneräinen
+	Is there a visible picture defect?	Onko kuvassa näkyvä virhe?
+	Is there audible distortion?	Onko kuultavissa säröä?
+	Is there unwanted noise?	Onko kuultavissa ei-toivottua kohinaa?
+	Major	Merkittävä
+	Message	Viesti
+	Minor	Vähäinen
+	No contact sheet	Ei kontaktiarkkia
+	Not answered	Ei vastattu
+	Not checked	Ei tarkistettu
+	Not run	Ei suoritettu
+	Note	Huomautus
+	Pass	Hyväksytty
+	Passed	Hyväksytty
+	Passed with warnings	Hyväksytty varoituksin
+	Profile: {id} v{version}	Profiili: {id} v{version}
+	Quality Check	Laaduntarkistus
+	Quality Check…	Laaduntarkistus…
+	Remove Finding	Poista havainto
+	Report: {path}	Raportti: {path}
+	Review complete	Tarkastus valmis
+	Reviewer	Tarkastaja
+	Run the media quality check on the finished file (docs/media-qc.md)	Suorita median laaduntarkistus valmiille tiedostolle (docs/media-qc.md)
+	Save Review	Tallenna tarkastus
+	Select a finished export in the queue	Valitse jonosta valmis vienti
+	Severity	Vakavuus
+	The engine is not running.	Moottori ei ole käynnissä.
+	Time code	Aikakoodi
+	Unsure	Epävarma
+	accept	hyväksyttävä
+	the engine did not start the check	moottori ei käynnistänyt tarkistusta
+	the engine sent no report	moottori ei lähettänyt raporttia

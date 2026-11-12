@@ -4446,3 +4446,51 @@ export.summary	Low	төмен
 	picture styles (pictures keep their own size) are not carried over	сурет стильдері (суреттер өз өлшемін сақтайды) ауыспайды
 	video (tape) styles are not carried over	бейне (таспа) стильдері ауыспайды
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred жобасында {n} титрлер кестесі бар; «{name}» қолданылады (басқасын Кесте өрісінде таңдаңыз)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Табылғанды қосу
+	Add as Finding	Табылған ретінде қосу
+	Are colour and contrast acceptable?	Түс пен контраст қолайлы ма?
+	Automatic Checks	Автоматты тексерулер
+	Bounds	Шектер
+	Check	Тексеру
+	Check Now	Қазір тексеру
+	Check quality after export	Экспорттан кейін сапаны тексеру
+	Checking…	Тексерілуде…
+	Contact Sheet	Байланыс парағы
+	Critical	Шешуші
+	Fail	Өтпеді
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Табылған {row}: уақыт коды бұл файлдағы уақыт емес (HH:MM:SS:FF).
+	Findings	Табылғандар
+	Human Review	Адамның тексеруі
+	Incomplete	Толық емес
+	Is there a visible picture defect?	Суретте көрінетін ақау бар ма?
+	Is there audible distortion?	Естілетін бұрмалану бар ма?
+	Is there unwanted noise?	Қажетсіз шу бар ма?
+	Major	Елеулі
+	Message	Хабар
+	Minor	Шамалы
+	No contact sheet	Байланыс парағы жоқ
+	Not answered	Жауап берілмеген
+	Not checked	Тексерілмеген
+	Not run	Іске қосылмаған
+	Note	Ескертпе
+	Pass	Өтті
+	Passed	Өтті
+	Passed with warnings	Ескертулермен өтті
+	Profile: {id} v{version}	Профиль: {id} v{version}
+	Quality Check	Сапаны тексеру
+	Quality Check…	Сапаны тексеру…
+	Remove Finding	Табылғанды жою
+	Report: {path}	Есеп: {path}
+	Review complete	Тексеру аяқталды
+	Reviewer	Тексеруші
+	Run the media quality check on the finished file (docs/media-qc.md)	Дайын файлда медиа сапасын тексеруді іске қосу (docs/media-qc.md)
+	Save Review	Тексеруді сақтау
+	Select a finished export in the queue	Кезектен аяқталған экспортты таңдаңыз
+	Severity	Маңыздылығы
+	The engine is not running.	Қозғалтқыш жұмыс істеп тұрған жоқ.
+	Time code	Уақыт коды
+	Unsure	Сенімсіз
+	accept	қолайлы
+	the engine did not start the check	қозғалтқыш тексеруді бастамады
+	the engine sent no report	қозғалтқыш есеп жібермеді

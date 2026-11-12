@@ -4444,3 +4444,51 @@ export.summary	Low	nízká
 	picture styles (pictures keep their own size) are not carried over	styly obrázků (obrázky si ponechají vlastní velikost) se nepřenášejí
 	video (tape) styles are not carried over	styly videa (pásky) se nepřenášejí
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred má tabulky titulků tvůrců: {n}; použije se „{name}“ (jinou zvolte v poli Tabulka)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Přidat nález
+	Add as Finding	Přidat jako nález
+	Are colour and contrast acceptable?	Jsou barvy a kontrast přijatelné?
+	Automatic Checks	Automatické kontroly
+	Bounds	Meze
+	Check	Kontrola
+	Check Now	Zkontrolovat nyní
+	Check quality after export	Zkontrolovat kvalitu po exportu
+	Checking…	Kontroluje se…
+	Contact Sheet	Kontaktní arch
+	Critical	Kritická
+	Fail	Neprošlo
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Nález {row}: časový kód není čas v tomto souboru (HH:MM:SS:FF).
+	Findings	Nálezy
+	Human Review	Lidská kontrola
+	Incomplete	Neúplné
+	Is there a visible picture defect?	Je v obraze viditelná vada?
+	Is there audible distortion?	Je slyšet zkreslení?
+	Is there unwanted noise?	Je slyšet nežádoucí šum?
+	Major	Závažná
+	Message	Zpráva
+	Minor	Drobná
+	No contact sheet	Žádný kontaktní arch
+	Not answered	Bez odpovědi
+	Not checked	Nezkontrolováno
+	Not run	Nespuštěno
+	Note	Poznámka
+	Pass	Prošlo
+	Passed	Prošlo
+	Passed with warnings	Prošlo s upozorněními
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Kontrola kvality
+	Quality Check…	Kontrola kvality…
+	Remove Finding	Odebrat nález
+	Report: {path}	Protokol: {path}
+	Review complete	Kontrola dokončena
+	Reviewer	Kontrolor
+	Run the media quality check on the finished file (docs/media-qc.md)	Spustit kontrolu kvality médií na hotovém souboru (docs/media-qc.md)
+	Save Review	Uložit kontrolu
+	Select a finished export in the queue	Vyberte ve frontě dokončený export
+	Severity	Závažnost
+	The engine is not running.	Engine neběží.
+	Time code	Časový kód
+	Unsure	Nejisté
+	accept	přijatelné
+	the engine did not start the check	engine kontrolu nespustil
+	the engine sent no report	engine neposlal protokol
