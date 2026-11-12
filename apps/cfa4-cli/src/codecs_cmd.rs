@@ -109,7 +109,7 @@ static ROWS: &[Row] = &[
     video("APV", &["apv"], Own, Sw(""), false, Fmt(Format::Apv)),
     video("MPEG-2 / MPEG-1", &["mpeg2v"], Own, Sw("4:2:2, interlaced"), false, Fmt(Format::Mpeg2)),
     video("Motion JPEG", &[], Dependency, Sw(""), false, Fmt(Format::Mjpeg)),
-    video("JPEG 2000", &["j2k"], Ported, Sw("Part 1 and HTJ2K"), false, Fmt(Format::Dcp)),
+    video("JPEG 2000", &["j2k"], Ported, Sw("Part 1 and HTJ2K; DCP and IMF App 2E packages"), false, Fmt(Format::Dcp)),
     video("SMPTE VC-2 (Dirac)", &["dirac"], Ported, Sw("ST 2042-1"), false, NoEnc),
     video("FFV1", &["ffv1"], Own, Sw("versions 0, 1, 3, 8-16 bit"), false, NoEnc),
     video("Hap", &["hap"], Own, Sw(""), false, NoEnc),

@@ -29,6 +29,7 @@ mod fx_editor;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
+mod kdm;
 pub mod keyboard;
 mod keyframe_move;
 pub mod legibility;
