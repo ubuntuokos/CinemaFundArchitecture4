@@ -40,6 +40,16 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    vagy ütközést találsz egy másik projekttel, jelezd a PR-od leírásában vagy megjegyzésében, és
    az érintett részen ne dolgozz tovább. A tulajdonos és a gazda együtt dönt; **a döntés
    kötelező**, a munkamenetek nem nyitják újra.
+9. **CodeRabbit-ellenőrzés** (tulajdonosi döntés, 2026-11-12; terv:
+   [`plans/CFA4-CODERABBIT-001.md`](plans/CFA4-CODERABBIT-001.md); beállítás:
+   [`.coderabbit.yaml`](../.coderabbit.yaml)). Amikor a PR-odat „Ready for review”-nak jelölöd,
+   írd a PR-ba megjegyzésként: `@coderabbitai review`. Minden megállapítását vagy javítsd ki
+   a saját ágadon, vagy válaszolj rá a szálban, és indokold, miért nem javítod (például mert
+   az `AGENTS.md` mást ír elő: ütközésnél mindig a CFA4 szabályai nyernek). Javítás után kérd
+   újra (`@coderabbitai review`). A PR-t csak akkor add át a gazdának, ha nem maradt
+   megválaszolatlan CodeRabbit-szál. A CodeRabbit javító funkcióit (Autofix, „Fix comments”,
+   CI-javítás, ütközésfeloldás) nem indítod: a PR-ba csak te commitolsz. Dependabot-PR-on
+   és köteg-PR-on nem kérsz CodeRabbit-ellenőrzést.
 
 ## 3. A gazda munkamódja (minden `/gazda` hívásnál)
 
@@ -58,6 +68,13 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    Ezt a kötelező `full-validation-gate` ellenőrzés technikailag is kikényszeríti (tulajdonosi
    döntés, 2026-10-31): csak akkor zöld, ha minden blokkoló teljes job azon a fejen ténylegesen
    lefutott és zöld. A Qt6 GUI-tesztek a GUI elkészültéig futnak, de nem blokkolnak.
+   **CodeRabbit** (tulajdonosi döntés, 2026-11-12): a gazda nem olvaszt be olyan PR-t,
+   amelyen megválaszolatlan CodeRabbit-szál van, vagy amelyen a fejlesztő nem kért
+   CodeRabbit-ellenőrzést (§2.9). A szálakat a
+   `GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads` végpont adja vissza. Egy szál akkor
+   lezárt, ha meg van oldva, vagy a fejlesztő indokolva válaszolt rá. Az ilyen PR a „(c)
+   frissíteni kell” kategóriába kerül, és a gazda a PR-ban jelzi a fejlesztőnek. Ez nem
+   technikai CI-kapu. Dependabot- és köteg-PR-ra nem vonatkozik.
 5. Ha egy PR-t egy másik kivált, a gazda lezárja, és a megjegyzésben megnevezi, melyik váltotta ki.
 6. Minden hívás eredményét egy sorban beírja a [`docs/coordination-log.md`](coordination-log.md)-be.
 7. Ágat nem töröl (a munkamenetek nem kapnak rá engedélyt): a törölhető ágak listáját átadja
