@@ -882,6 +882,9 @@ class ExportDialog(QDialog):
             item = self.format.model().item(self.format.count() - 1)  # type: ignore[attr-defined]
             if item is not None and not f.get("available", True):
                 item.setEnabled(False)
+                reason = f.get("reason")
+                if isinstance(reason, str) and reason:
+                    item.setToolTip(reason)
         self.format.blockSignals(False)
 
     def _on_presets(self, result: Any, _b: bytes | None) -> None:

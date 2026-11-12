@@ -1272,7 +1272,8 @@ fn formats(_: &mut Session, _: &Value) -> Result<Value> {
             .map(|f| {
                 let st = ExportSettings { format: *f, ..Default::default() };
                 json!({"id": f.id(), "label": f.label(), "extension": f.extension(), "video": st.has_video(), "audio": st.has_audio() || !st.has_video(),
-                       "imageSequence": st.is_image_sequence(), "available": cfa4_export::available(*f)})
+                       "imageSequence": st.is_image_sequence(), "available": cfa4_export::available(*f),
+                       "reason": cfa4_export::unavailable_reason(*f)})
             })
             .collect(),
     ))

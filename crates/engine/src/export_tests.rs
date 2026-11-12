@@ -300,6 +300,23 @@ fn files_in(dir: &Path) -> Vec<String> {
     v
 }
 
+/// CFA4-PROCODEC-002 WP0: `export.formats` lists every format with whether it can be exported here
+/// and, when it cannot, the concrete reason (`null` otherwise); settings the encoders cannot honour
+/// are refused with the reason before any export starts.
+#[test]
+fn export_formats_and_resolve_say_why() {
+    let mut s = demo();
+    let list = s.execute("export.formats", json!({})).unwrap();
+    let list = list.as_array().unwrap();
+    assert_eq!(list.len(), cfa4_export::Format::ALL.len());
+    for f in list {
+        let available = f["available"].as_bool().unwrap();
+        assert_eq!(f["reason"].is_null(), available, "{f}");
+    }
+    let e = s.execute("export.resolve", json!({"format": "hevc", "bitrateMode": "vbr2Pass"})).unwrap_err().to_string();
+    assert!(e.contains("two-pass"), "{e}");
+}
+
 /// Every built-in preset: a quarter second of the demo sequence (seven frames at 23.976) exported
 /// with `file.exportMedia {preset}`; ffprobe checks container, codec, profile, frame size, frame
 /// rate and audio format, and the data rate where the codec fixes it.
