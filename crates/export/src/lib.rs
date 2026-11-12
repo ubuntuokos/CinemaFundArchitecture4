@@ -1355,6 +1355,12 @@ pub fn available(format: Format) -> bool {
     format.has_builtin_encoder() || format_probes().read().unwrap_or_else(|e| e.into_inner()).iter().any(|(f, probe)| *f == format && probe())
 }
 
+/// Why `format` cannot be exported on this machine, or `None` when it can ([`available`]). The UI,
+/// the CLI and the control channel show this text next to a format they cannot offer.
+pub fn unavailable_reason(format: Format) -> Option<String> {
+    (!available(format)).then(|| format!("{}: no encoder for this format is available on this machine", format.label()))
+}
+
 struct MjpegEncoder {
     w: u16,
     h: u16,

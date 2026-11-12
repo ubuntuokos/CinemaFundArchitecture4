@@ -116,6 +116,12 @@ chrono = { version = "0.4.45", default-features = false, features = ["std"] }
 rayon = "1"
 proptest = "1"
 roxmltree = "0.21"
+# D-Cinema decryption (ST 429-6 encrypted triplets, ST 430-1 KDM; #933): RustCrypto, MIT OR Apache-2.0
+aes = "0.9"
+hmac = "0.13"
+sha1 = "0.11"
+rsa = { version = "0.10", default-features = false, features = ["std", "encoding"] }
+base64 = "0.22"
 cfa4-docpath = { version = "0.1.0", path = "vendor/cfa4-libs/docpath" }
 
 # ui

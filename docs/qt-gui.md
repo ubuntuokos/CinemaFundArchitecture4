@@ -173,7 +173,8 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 ## Export window
 
 File ▸ Export ▸ Media… (and `export.queue.add`, Ctrl+M) opens a non-modal Export window. It
-lists the engine's presets (`export.presets.list`) and formats (`export.formats`), shows what
+lists the engine's presets (`export.presets.list`) and formats (`export.formats`; a format that
+cannot be exported here is greyed out with the engine's `reason` as its tooltip), shows what
 the current choice resolves to (`export.resolve`: size, rate, bitrate, sound, frames; whether the video is HDR, the encoder that writes it, the audio codec used and the sample sizes it can store) and sends
 the export to the engine's queue (`export.queue.add`), which the engine server encodes between
 requests; the queue table polls `export.queue.list` for status, progress and remaining time,
