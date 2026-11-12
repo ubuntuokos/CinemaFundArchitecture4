@@ -65,6 +65,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Speex | not checked | own decoder (`cfa4-speex`, CB-6.1): narrowband, wideband and ultra-wideband, every submode, VBR / ABR / DTX, several frames per packet, in-band stereo, in Ogg (`.spx`) | none | bit-exact vs the reference `speexdec` (31 files: every narrowband quality, wideband and ultra-wideband qualities, VBR, DTX, stereo), through the media source also after a seek | — | — |
 | G.711 μ-law / A-law, G.722 | not checked | own decoders (`cfa4-adpcm`, CB-4.1): G.711 in WAV, AVI, MOV (`ulaw`, `alaw`), Matroska (`A_MS/ACM`); G.722 at 64 kbit/s (ITU-T G.722 11/88) in WAV, AVI, Matroska | none | bit-exact vs ffmpeg in every container, also after a seek; G.722 also on random codewords | 90% | — |
 | IMA ADPCM, Microsoft ADPCM | not checked | own decoders (`cfa4-adpcm`, CB-4.2): IMA in WAV / AVI / Matroska blocks and QuickTime `ima4`, Microsoft ADPCM with custom coefficient sets; WAV read in place block by block | none | bit-exact vs ffmpeg in every container, also after a seek, and on random blocks | 90% | — |
+| AMR-NB, AMR-WB | not checked | own decoders (`cfa4-amr`, CB-6.2), ported from opencore-amr: every mode, DTX comfort noise, lost frames; `.amr` / `.awb`, 3GP / MP4 / MOV (`samr`, `sawb`), Matroska | none | bit-exact vs opencore-amr in every container, also after a seek (decoder checkpoints) | 90% | — |
 
 ## Summary
 
@@ -84,6 +85,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | 2026-11-11 | minor | Matrox MPEG-2 I-frame in AVI (`MMES`, `M701`–`M705`; codec backlog CB-7.1) |
 | 2026-11-11 | minor | Speex decode (`cfa4-speex`, codec backlog CB-6.1) |
 | 2026-11-11 | minor | SMPTE VC-2 decode (`cfa4-dirac`, codec backlog CB-7.2) |
+| 2026-11-11 | minor | AMR-NB and AMR-WB decode (`cfa4-amr`, codec backlog CB-6.2) |
 | 2026-11-10 | minor | MP2 (MPEG-1/2 Layer II) encoder in `cfa4-mpa` (#267) |
 | 2026-11-09 | minor | H.264 monochrome (4:0:0) decode, 8 and 10 bits (#279) |
 | 2026-11-09 | minor | G.711, G.722, IMA and Microsoft ADPCM decode (`cfa4-adpcm`, codec backlog CB-4.1, CB-4.2) |
