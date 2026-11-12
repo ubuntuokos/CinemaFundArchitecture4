@@ -54,11 +54,19 @@ bővítése egy CodeRabbit-oszloppal, hogy a gazdának ne kelljen PR-onként lek
   Dependabot-előkészítő munkamenet a teljes CI-vel ellenőrzi.
 - **D4 – nyelv:** magyar.
 
-## 5. Kockázatok
+## 5. Kockázatok és a próba eredménye (2026-11-12, #1118)
 
-- **A csillagkorlát:** ha a CodeRabbit a kézi kérést is visszautasítaná, a K3-ban kiderül; akkor a
-  §2.9 és a §3.4 CodeRabbit-része a tulajdonos döntéséig felfüggesztve marad, és nem blokkol.
-- **A magyar nyelv nem hivatalosan támogatott:** a `tone_instructions` kérés; ha nem tartja be, a K3
-  javasol megoldást (például angol nyelvet).
+- **A csillagkorlát:** a kézi `@coderabbitai review` kérés működik: a #1118-on a CodeRabbit a PR-ág
+  `.coderabbit.yaml`-jával („Layers: Repository YAML”), magyarul ellenőrzött, és három valós hibát
+  talált a §2.9/§3.4/§3a szövegében (ezeket a 4d4c635 javította).
+- **Ingyenes OSS-review-korlát – a D2-t érinti:** a második kérésre ugyanazon a PR-on, kb. 3 perccel
+  az első review után, a CodeRabbit ezt írta: „Review limit reached … Next included review
+  available in 52 minutes”. A tároló tehát nagyjából **óránként egy review**-t kap. Ez naponta
+  10–30 PR mellett szűk keresztmetszet: a D2 szerint a gazda vár, így a beolvasztás a
+  CodeRabbitre várna. **Tulajdonosi döntés kell** (D5), például: (a) marad blokkoló, a fejlesztő
+  a korlát lejárta után újra kér; (b) korlát esetén a gazda a PR-t CodeRabbit nélkül is
+  beolvaszthatja, és ezt a naplóba írja; (c) csak bizonyos PR-ok kérnek CodeRabbitet; (d) fizetős
+  csomag. A D5-ig a §2.9/§3.4 a beolvasztás után úgy él, ahogy írva van.
+- **A magyar nyelv nem hivatalosan támogatott:** a `tone_instructions` kérés; a próbán betartotta.
 - **Ugyanaz a GitHub-fiók:** a munkamenetek a tulajdonos fiókjával írnak, így a `@coderabbitai`
   kérések is az ő nevében jelennek meg. Ez megegyezik a többi munkamenet-tevékenységgel.
