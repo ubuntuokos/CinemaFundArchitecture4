@@ -96,6 +96,8 @@ Statuses map as follows:
 `DCP.AM.001` passes when the engine read an asset map.
 
 A profile rule the engine reported nothing on is `UNCHECKED`, so it never passes by omission.
+`DCP.PIC.001` (picture format, DCP-06) has no engine check of its own, so it is always `UNCHECKED`
+here; the engine's frame-rate and edit-rate messages land in `DCP.REF.001`.
 
 `DCP.REF.001` keeps whatever the engine said that no rule covers, for example "Reel duration less
 than 1 second". A `FAIL` there fails the package even if every profile rule passes. Absolute paths
