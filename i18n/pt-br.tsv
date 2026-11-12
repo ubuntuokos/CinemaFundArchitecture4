@@ -3636,6 +3636,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 de 24 bits a 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 de 24 bits a 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Pasta IMF SMPTE: JPEG 2000 1920×1080, PCM 5.1 de 24 bits a 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Pasta IMF SMPTE: JPEG 2000 3840×2160, PCM 5.1 de 24 bits a 48 kHz
+	Episode	Episódio
+	Event highlights	Destaques do evento
+	Event	Evento
+	Lossless (reversible JPEG 2000)	Sem perdas (JPEG 2000 reversível)
+	Package language	Idioma do pacote
 	Show Duplicate Frame Markers	Mostrar marcadores de quadros duplicados
 	Work Area Bar	Barra da área de trabalho
 	Set Work Area Bar In Point	Definir ponto de entrada da barra da área de trabalho
@@ -3918,6 +3928,9 @@
 	1 B picture between anchors	1 imagem B entre âncoras
 	10-bit RGB	RGB de 10 bits
 	12-bit X'Y'Z'	X'Y'Z' de 12 bits
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 de 10 bits
+	JPEG 2000 IMF lossy	JPEG 2000 IMF com perdas
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reversível
 	16-bit half float	ponto flutuante de meia precisão de 16 bits
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bits para HDR)
 	BDAV Transport Stream	fluxo de transporte BDAV
@@ -4513,3 +4526,12 @@
 	the engine did not start the check	o mecanismo não iniciou a verificação
 	the engine sent no report	o mecanismo não enviou relatório
 	Write the captions as ANC data (CEA-608/708)	Gravar as legendas como dados ANC (CEA-608/708)
+	Load KDM…	Carregar KDM…
+	Forget DCP Keys	Esquecer chaves DCP
+	Load KDM	Carregar KDM
+	KDM file	Arquivo KDM
+	Private key (PEM)	Chave privada (PEM)
+	{title}: {count} keys loaded	{title}: {count} chaves carregadas
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	As chaves ficam apenas na memória, até Esquecer chaves DCP ou o fim da sessão.
+	DCP keys forgotten	Chaves DCP esquecidas
+	Choose the KDM file and the private key.	Escolha o arquivo KDM e a chave privada.

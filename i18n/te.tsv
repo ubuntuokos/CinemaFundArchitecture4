@@ -2020,6 +2020,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 3996×2160 (1.85:1), 5.1 24-బిట్ 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 4096×1716 (2.39:1), 5.1 24-బిట్ 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (ఇంటర్‌ఆపరబుల్ మాస్టర్ ప్యాకేజ్)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF ఫోల్డర్: JPEG 2000 1920×1080, 5.1 24-బిట్ 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF ఫోల్డర్: JPEG 2000 3840×2160, 5.1 24-బిట్ 48 kHz PCM
+	Episode	ఎపిసోడ్
+	Event highlights	ఈవెంట్ ముఖ్యాంశాలు
+	Event	ఈవెంట్
+	Lossless (reversible JPEG 2000)	నష్టరహితం (రివర్సిబుల్ JPEG 2000)
+	Package language	ప్యాకేజీ భాష
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B చిత్రాలు
@@ -2185,6 +2195,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR కోసం 10-బిట్)
 	10-bit RGB	10-బిట్ RGB
 	12-bit X'Y'Z'	12-బిట్ X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-బిట్ R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF నష్టసహితం
+	JPEG 2000 IMF reversible	JPEG 2000 IMF రివర్సిబుల్
 	16-bit half float	16-బిట్ హాఫ్ ఫ్లోట్
 	linear	లీనియర్
 	uncompressed	కుదించని
@@ -4509,3 +4522,12 @@ export.summary	Low	తక్కువ
 	the engine did not start the check	ఇంజిన్ తనిఖీని ప్రారంభించలేదు
 	the engine sent no report	ఇంజిన్ నివేదికను పంపలేదు
 	Write the captions as ANC data (CEA-608/708)	ఉపశీర్షికలను ANC డేటాగా వ్రాయండి (CEA-608/708)
+	Load KDM…	KDM లోడ్ చేయి…
+	Forget DCP Keys	DCP కీలను మర్చిపో
+	Load KDM	KDM లోడ్ చేయి
+	KDM file	KDM ఫైల్
+	Private key (PEM)	ప్రైవేట్ కీ (PEM)
+	{title}: {count} keys loaded	{title}: {count} కీలు లోడ్ అయ్యాయి
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	కీలు మెమరీలో మాత్రమే ఉంటాయి, DCP కీలను మర్చిపో లేదా సెషన్ ముగిసే వరకు.
+	DCP keys forgotten	DCP కీలు మర్చిపోబడ్డాయి
+	Choose the KDM file and the private key.	KDM ఫైల్‌ను మరియు ప్రైవేట్ కీని ఎంచుకోండి.

@@ -2154,8 +2154,8 @@ impl<W: Write + Seek> MxfWriter<W> {
             .p(0x3210, &TC_DCDM)
             .u32(0x3406, max)
             .u32(0x3407, 0)
-            // X', Y', Z' (D8h, D9h, DAh) of `depth` bits each
-            .p(0x3401, &[0xD8, p.depth as u8, 0xD9, p.depth as u8, 0xDA, p.depth as u8, 0, 0]);
+            // X', Y', Z' (D8h, D9h, DAh) of `depth` bits each; RGBALayout is always 8 pairs (ST 377-1)
+            .p(0x3401, &[0xD8, p.depth as u8, 0xD9, p.depth as u8, 0xDA, p.depth as u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         if p.j2k.is_some() {
             s.refs(TAG_SUB_DESCRIPTORS, &[sub_uid]);
         }
@@ -2197,8 +2197,10 @@ impl<W: Write + Seek> MxfWriter<W> {
         let layout = if p.rgb {
             // Table 10: QE.1 narrow or QE.2 full range
             let (min, max) = if p.full_range { (0, (1u32 << depth) - 1) } else { (16u32 << (depth - 8), 235u32 << (depth - 8)) };
-            s.u32(0x3406, max).u32(0x3407, min).u8(0x3405, 0).p(0x3401, &[b'R', n, b'G', n, b'B', n, 0, 0]);
-            [b'R', n, b'G', n, b'B', n, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            // RGBALayout is always 8 pairs (ST 377-1): a shorter PixelLayout breaks RegXML readers
+            let layout = [b'R', n, b'G', n, b'B', n, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            s.u32(0x3406, max).u32(0x3407, min).u8(0x3405, 0).p(0x3401, &layout);
+            layout
         } else {
             // Table 12 (COLOR.1-5, 7, 8)
             s.p(0x321A, &ce)
