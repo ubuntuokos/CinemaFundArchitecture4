@@ -48,7 +48,7 @@ static ROWS: &[Row] = &[
     video("APV", Sw(""), false, Some(Format::Apv)),
     video("MPEG-2 / MPEG-1", Sw("4:2:2, interlaced"), false, Some(Format::Mpeg2)),
     video("Motion JPEG", Sw(""), false, Some(Format::Mjpeg)),
-    video("JPEG 2000", Sw("Part 1 and HTJ2K"), false, Some(Format::Dcp)),
+    video("JPEG 2000", Sw("Part 1 and HTJ2K; DCP and IMF App 2E packages"), false, Some(Format::Dcp)),
     video("Animated GIF", Sw(""), false, Some(Format::Gif)),
     video("CinemaDNG / DNG", Sw("uncompressed and lossless JPEG raw"), false, None),
     video("DV / DVCPRO", No, false, None),

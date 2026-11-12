@@ -227,6 +227,9 @@ pub struct EssenceTrack {
     /// (`display_order`, `chunks`, `duration`) holds only the rest; [`Self::essence_position`]
     /// maps between the two. Empty for every other file.
     pub gaps: Vec<(i64, i64)>,
+    /// The essence is encrypted (ST 429-6): samples and chunks cover Encrypted Triplet values,
+    /// which `read_sample` / `read_pcm` decrypt with the content key of the key ring.
+    pub encryption: Option<crate::crypt::Encryption>,
 }
 
 impl EssenceTrack {
@@ -345,6 +348,9 @@ pub(crate) struct Element {
     pub(crate) truncated: bool,
     /// BodySID of the partition the element is in (0 when unknown).
     pub(crate) body_sid: u32,
+    /// An Encrypted Triplet (ST 429-6): `key` is its Source Key, `value_offset` / `size` cover the
+    /// whole encrypted value and this is the plaintext Source Length.
+    pub(crate) plain: Option<u64>,
 }
 
 pub(crate) struct WalkResult {
@@ -429,7 +435,7 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
             if class == KeyClass::Essence && vstart < len && len - vstart > 0 && is_essence_item(&key) {
                 // keep a truncated clip-wrapped element's whole edit units
                 let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
-                w.elements.push(Element { key, value_offset: vstart, size: len - vstart, truncated: true, body_sid });
+                w.elements.push(Element { key, value_offset: vstart, size: len - vstart, truncated: true, body_sid, plain: None });
             }
             break;
         }
@@ -475,13 +481,30 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                 }
                 if is_essence_item(&key) {
                     let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
-                    w.elements.push(Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid });
+                    w.elements.push(Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid, plain: None });
+                } else if crate::crypt::is_encrypted_triplet(&key) {
+                    // an encrypted essence triplet: filed under the key of the triplet it wraps
+                    let head = win.get(vstart, (vlen as usize).min(128))?.to_vec();
+                    match crate::crypt::source_of(&head) {
+                        Some((source, plain)) if is_essence_item(&source) => {
+                            let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                            w.elements.push(Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid, plain: Some(plain) });
+                        }
+                        // an encrypted ancillary resource of a timed text track file (ST 429-5)
+                        Some((source, plain)) if source.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
+                            let sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                            w.generic_streams
+                                .push((sid, Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid: sid, plain: Some(plain) }));
+                        }
+                        Some(_) => {}
+                        None => w.warnings.push(format!("unreadable encrypted triplet at byte {pos}")),
+                    }
                 }
             }
             KeyClass::Other if key.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
                 cur_meta = None;
                 let sid = w.partitions.last().map_or(0, |p| p.body_sid);
-                w.generic_streams.push((sid, Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid: sid }));
+                w.generic_streams.push((sid, Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid: sid, plain: None }));
             }
             KeyClass::Fill | KeyClass::RandomIndexPack | KeyClass::Other => {}
         }
@@ -621,6 +644,9 @@ fn picture_info(d: &Set) -> PictureInfo {
         display_x_offset: i(tag::DISPLAY_X_OFFSET),
         display_y_offset: i(tag::DISPLAY_Y_OFFSET),
         pixel_layout: d.get(tag::PIXEL_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
+        // a palette of up to 65 536 entries of at most 8 bytes
+        palette: d.get(tag::PALETTE).filter(|v| v.len() <= 1 << 19).map(<[u8]>::to_vec).unwrap_or_default(),
+        palette_layout: d.get(tag::PALETTE_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
         component_min_ref: d.u(tag::COMPONENT_MIN_REF).map(|v| v as u32),
         component_max_ref: d.u(tag::COMPONENT_MAX_REF).map(|v| v as u32),
     }
@@ -857,6 +883,8 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
     let product_name = ident.and_then(|i| i.string(tag::PRODUCT_NAME));
     let company_name = ident.and_then(|i| i.string(tag::COMPANY_NAME));
     let (refs, timecode, material_name) = resolve_tracks(&md, &mut warnings);
+    // ST 429-6: one Cryptographic Context per encrypted track file
+    let encryption = md.sets.iter().find_map(crate::crypt::Encryption::from_set);
     if refs.iter().flatten().all(|r| r.kind == TrackKind::Data) && md.of_kind(crate::timed_text::TIMED_TEXT_DESCRIPTOR).next().is_some() {
         return Err(Error::Unsupported("timed text track file (read it with open_timed_text)".into()));
     }
@@ -904,7 +932,7 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
             // containers are told apart by body SID
             let by_sid = r.body_sid != 0 && w.elements.iter().any(|e| e.key.0[12..16] == key4 && e.body_sid == r.body_sid);
             let elements: Vec<Element> = w.elements.iter().filter(|e| e.key.0[12..16] == key4 && (!by_sid || e.body_sid == r.body_sid)).copied().collect();
-            let track = build_track(src, r, &elements, key4, &w.index, &mut warnings)?;
+            let track = build_track(src, r, &elements, key4, &w.index, encryption, &mut warnings)?;
             built.push(Part { track, gap_before: lost.saturating_add(r.gap_before), gap_after: r.gap_after });
             lost = 0;
         }
@@ -962,6 +990,7 @@ fn build_track(
     elements: &[Element],
     key4: [u8; 4],
     index: &[IndexSegment],
+    encryption: Option<crate::crypt::Encryption>,
     warnings: &mut Vec<String>,
 ) -> Result<EssenceTrack> {
     let desc = r.descriptor.as_ref();
@@ -990,7 +1019,16 @@ fn build_track(
         needs_reorder: false,
         indexed: false,
         gaps: Vec::new(),
+        encryption: None,
     };
+    let encrypted = elements.iter().any(|e| e.plain.is_some());
+    if encrypted {
+        t.encryption =
+            Some(encryption.unwrap_or(crate::crypt::Encryption { context_id: [0; 16], key_id: [0; 16], source_container: None, aes: true, mic: false }));
+        if encryption.is_none() {
+            warnings.push("encrypted essence without a Cryptographic Context: its key cannot be found".into());
+        }
+    }
     match r.kind {
         TrackKind::Picture => {
             let pi = desc.map(|d| picture_info(d)).unwrap_or_default();
@@ -1001,7 +1039,7 @@ fn build_track(
             }
             // A wrong or missing label: trust the essence bytes (uncompressed samples are not
             // coded, so any pattern can start them).
-            if let Some(first) = elements.first().filter(|_| codec != Codec::Uncompressed) {
+            if let Some(first) = elements.first().filter(|_| codec != Codec::Uncompressed && !encrypted) {
                 let head = read_upto(src, first.value_offset, 64)?;
                 if let Some(sniffed) = sniff_picture(&head) {
                     let agree = std::mem::discriminant(&sniffed) == std::mem::discriminant(&codec);
@@ -1046,7 +1084,7 @@ fn build_track(
             t.sound = Some(SoundInfo { sample_rate: rate, bits: 24, ..Default::default() });
             build_pictures(src, &mut t, elements, index, warnings)?;
         }
-        TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements) => {
+        TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements, encrypted) => {
             t.codec = Codec::Iab;
             t.sound_format = SoundFormat::Iab;
             t.sound = Some(desc.map(|d| sound_info(d)).unwrap_or_default());
@@ -1078,9 +1116,10 @@ fn build_track(
             let fb = si.frame_bytes() as u64;
             let mut first = 0u64;
             for e in elements {
+                let plain = e.plain.unwrap_or(e.size);
                 let n = match t.sound_format {
-                    SoundFormat::Aes3Element => e.size.saturating_sub(4) / 32,
-                    _ => e.size / fb.max(1),
+                    SoundFormat::Aes3Element => plain.saturating_sub(4) / 32,
+                    _ => plain / fb.max(1),
                 };
                 t.chunks.push(Chunk { offset: e.value_offset, size: e.size, first_sample: first, samples: n, skip: 0 });
                 first += n;
@@ -1244,7 +1283,7 @@ pub(crate) fn concat(parts: Vec<Part>, warnings: &mut Vec<String>) -> Option<Ess
 
 /// An Immersive Audio track: the IAB descriptor, the IAB essence container or element key
 /// (ST 2067-201: item 0x16, element type 0x0D), or essence that starts as an IABitstream frame.
-fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl ByteSource + ?Sized), elements: &[Element]) -> bool {
+fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl ByteSource + ?Sized), elements: &[Element], encrypted: bool) -> bool {
     if desc.is_some_and(|d| d.kind() == Some(st::IAB_ESSENCE_DESCRIPTOR))
         || container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x1D]))
         || key4[0] == 0x16 && key4[2] == 0x0D
@@ -1255,7 +1294,7 @@ fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl 
     // tag, IAFrame tag) at the start of the essence
     let pcm_desc = desc.is_some_and(|d| matches!(d.kind(), Some(st::AES3_DESCRIPTOR) | Some(st::WAVE_DESCRIPTOR)));
     let pcm_coding = desc.and_then(|d| d.ul(tag::SOUND_ESSENCE_CODING)).is_some_and(|c| c.item_starts_with(&[0x04, 0x02, 0x02, 0x01]));
-    if pcm_desc || pcm_coding {
+    if pcm_desc || pcm_coding || encrypted {
         return false;
     }
     let Some(first) = elements.first() else { return false };
@@ -1318,7 +1357,7 @@ fn build_pictures(
 ) -> Result<()> {
     let (entries, eubc) = index_entries(index, t.index_sid);
     let expected = t.duration.map(|d| d.saturating_add(t.first_edit_unit()).max(0) as usize);
-    let clip = elements.len() == 1 && expected.is_none_or(|n| n > 1) && (eubc > 0 || entries.len() > 1);
+    let clip = elements.len() == 1 && expected.is_none_or(|n| n > 1) && (eubc > 0 || entries.len() > 1) && t.encryption.is_none();
     let mut samples: Vec<Sample> = Vec::new();
     if clip {
         t.wrapping = Wrapping::Clip;
@@ -1365,6 +1404,11 @@ fn build_pictures(
                 warnings.push("no index table with random-access flags: key frames found by scanning the essence".into());
             }
             for (i, s) in samples.iter_mut().enumerate() {
+                if t.encryption.is_some() {
+                    // the bitstream is cipher text: every picture is a key frame candidate
+                    s.key = true;
+                    continue;
+                }
                 let head = read_upto(src, s.offset, (s.size as usize).min(1024))?;
                 s.key = i == 0 || is_random_access(t.codec, &head);
             }
@@ -1445,7 +1489,10 @@ impl MxfFile {
         }
         let mut v = vec![0u8; s.size as usize];
         src.read_at(s.offset, &mut v)?;
-        Ok(v)
+        match &t.encryption {
+            Some(e) => decrypt(e, &v),
+            None => Ok(v),
+        }
     }
 
     /// `frames` sound sample frames from stored sample `start` of track `track`, planar f32
@@ -1486,6 +1533,13 @@ impl MxfFile {
             let b = end.min(c.first_sample.saturating_add(c.samples));
             if b > a {
                 let decoded = match t.sound_format {
+                    SoundFormat::Pcm if t.encryption.is_some() => {
+                        let v = self.read_encrypted_chunk(src, t, c)?;
+                        let from = usize::try_from((a - c.first_sample).saturating_mul(fb as u64)).unwrap_or(usize::MAX);
+                        let bytes = ((b - a) as usize).saturating_mul(fb);
+                        let part = v.get(from..).map(|r| &r[..bytes.min(r.len()) / fb * fb]).unwrap_or_default();
+                        decode_pcm(part, SoundFormat::Pcm, ch, si.bits, fb)?
+                    }
                     SoundFormat::Pcm => {
                         let off = (a - c.first_sample)
                             .checked_mul(fb as u64)
@@ -1500,10 +1554,7 @@ impl MxfFile {
                         decode_pcm(&v, SoundFormat::Pcm, ch, si.bits, fb)?
                     }
                     SoundFormat::Aes3Element => {
-                        let size = c.size.min(src.len().saturating_sub(c.offset));
-                        let size = usize::try_from(size).map_err(|_| Error::Invalid("AES3 chunk exceeds the address space".into()))?;
-                        let mut v = vec![0u8; size];
-                        src.read_at(c.offset, &mut v)?;
+                        let v = self.read_encrypted_chunk(src, t, c)?;
                         let all = decode_pcm(&v, SoundFormat::Aes3Element, ch, si.bits, 0)?;
                         let s0 = usize::try_from(c.skip.saturating_add(a - c.first_sample)).unwrap_or(usize::MAX);
                         all.into_iter().map(|p| p.get(s0..).map(<[f32]>::to_vec).unwrap_or_default()).collect()
@@ -1521,6 +1572,29 @@ impl MxfFile {
         }
         Ok(out)
     }
+
+    /// The bytes of sound chunk `c` of `t`, decrypted when the track is encrypted.
+    fn read_encrypted_chunk(&self, src: &(impl ByteSource + ?Sized), t: &EssenceTrack, c: &Chunk) -> Result<Vec<u8>> {
+        let size = c.size.min(src.len().saturating_sub(c.offset));
+        let size = usize::try_from(size).map_err(|_| Error::Invalid("sound chunk exceeds the address space".into()))?;
+        let mut v = vec![0u8; size];
+        src.read_at(c.offset, &mut v)?;
+        match &t.encryption {
+            Some(e) => decrypt(e, &v),
+            None => Ok(v),
+        }
+    }
+
+    /// Whether some track is encrypted and its content key is not in the key ring.
+    pub fn needs_key(&self) -> bool {
+        self.tracks.iter().any(|t| t.encryption.is_some_and(|e| crate::crypt::key(&e.key_id).is_none()))
+    }
+}
+
+/// Decrypts an Encrypted Triplet value of a track with context `e` (key from the key ring).
+fn decrypt(e: &crate::crypt::Encryption, v: &[u8]) -> Result<Vec<u8>> {
+    let key = crate::crypt::key(&e.key_id).ok_or_else(|| Error::Encrypted(crate::crypt::uuid_text(&e.key_id)))?;
+    crate::crypt::decrypt(v, &key)
 }
 
 #[cfg(test)]

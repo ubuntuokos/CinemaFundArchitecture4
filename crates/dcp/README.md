@@ -11,6 +11,7 @@ proposed in [DCP-00](../../docs/audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md).
 | Composition playlist | ST 429-7:2006 (`429-7/2006/CPL`) | `PROTO-ASDCP-CPL-20040511` |
 | Stereoscopic picture asset | ST 429-10:2008 | `437-Y/2007/Main-Stereo-Picture-CPL` |
 | Composition metadata asset | ST 429-16:2014 (kept as an extension asset; its fields are listed by name) | n/a |
+| Key Delivery Message (`kdm` module) | ST 430-1:2023 (`430-1/2006/KDM`, ETM `430-3/2006/ETM`) | n/a |
 
 The root element and its namespace decide the document kind and the standard.
 
@@ -20,6 +21,15 @@ for issue in doc.issues() {
     println!("{}:{} {:?} {} {}", issue.pos.line, issue.pos.column, issue.kind, issue.path, issue.message);
 }
 ```
+
+## Key Delivery Messages
+
+`kdm::open_kdm` decrypts the content keys of a KDM with the recipient's RSA private key
+(`kdm::private_key_from_pem`: PEM PKCS#1 or PKCS#8, no password) using RSA-OAEP with SHA-1 (ST
+430-3; RustCrypto `rsa` 0.10, constant-time). It checks the Structure ID of every `EncryptedKey`,
+that each names the composition of the public part, and the validity window against the time given.
+Keys come back in memory only (`KdmKey`'s `Debug` hides them); nothing is stored. The KDM's XML
+signature is not verified yet: the keys only open with the recipient's own private key.
 
 ## What counts as an error
 
@@ -41,8 +51,10 @@ means for each standard.
 
 ## Not here
 
-- Signature verification. The model records that `Signer` and `ds:Signature` are present.
-- Hashing the assets, finding files on disk, resolving `Path`. These belong to `cfa4-dcp-validate`.
+- Signature verification (documents and KDMs). The model records that `Signer` and `ds:Signature` are present.
+- Finding files on disk and resolving `Path`. These belong to `cfa4-dcp-validate`, which also runs
+  the hash over the files. The digest itself is here: `sha1::Sha1` is a streaming SHA-1 (FIPS 180-4)
+  for the packing list `Hash`, checked against the FIPS 180-4 test vectors.
 - MXF track files. `cfa4-mxf` reads them.
 - Writing DCPs. `cfa4-export` (`dcp_out.rs`) writes them; its CPL layout is one of the test samples.
 

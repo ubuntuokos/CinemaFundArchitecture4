@@ -534,3 +534,24 @@ fn sample_size_lists_every_size_and_greys_out_what_the_format_cannot_store() {
     assert_eq!(d.app().ui.export.settings.audio.sample_format(), SampleFormat::Float32);
     d.snapshot("export-sample-size-prores");
 }
+
+/// CFA4-PROCODEC-002 WP0: settings the encoders cannot honour say why before Export is pressed, and
+/// the Export button does nothing until they are fixed.
+#[test]
+fn unsupported_settings_say_why_before_export() {
+    use cfa4_engine::export::{BitrateMode, ExportSettings, Format};
+    let mut d = Driver::new("problem");
+    d.ok("ui.set", json!({"mode": "export"}));
+    d.frames(4);
+    assert!(!d.has("export.problem"), "the default preset exports");
+    d.app().ui.export.settings = ExportSettings { format: Format::Hevc, bitrate_mode: BitrateMode::Vbr2Pass, ..Default::default() };
+    d.frames(4);
+    let why = d.ok("ui.elements", json!({"prefix": "export.problem"}))[0]["label"].as_str().unwrap().to_string();
+    assert!(why.contains("two-pass"), "{why}");
+    let before = d.app().ui.status.clone();
+    d.click("export.button");
+    assert_eq!(d.app().ui.status, before, "Export must not start");
+    d.app().ui.export.settings.bitrate_mode = BitrateMode::Vbr1Pass;
+    d.frames(4);
+    assert!(!d.has("export.problem"));
+}
