@@ -3684,6 +3684,8 @@
 	Analyze Source for Smart Cut	წყაროს ანალიზი ჭკვიანი ჭრისთვის
 	Plan Smart Cut	ჭკვიანი ჭრის დაგეგმვა
 	Run Smart Cut	ჭკვიანი ჭრის გაშვება
+	DASH Manifest	DASH მანიფესტი
+	Also write a DASH manifest (.mpd)	ასევე ჩაიწეროს DASH მანიფესტი (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	მიმდევრობა არ არის გახსნილი. ორჯერ დააწკაპუნეთ მიმდევრობაზე პროექტის პანელში.
 	English (US)	ინგლისური (აშშ)
 	English (UK)	ინგლისური (გაერთიანებული სამეფო)
@@ -4220,3 +4222,230 @@ export.summary	Low	დაბალი
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	ტიტრები ცხრილიდან
+	A .ods, .xlsx or CSV credits sheet	ტიტრების ცხრილი .ods, .xlsx ან CSV ფორმატში
+	The spreadsheet's folder	ცხრილის საქაღალდე
+	Built-in styles	ჩაშენებული სტილები
+	Spreadsheet	ცხრილი
+	Sheet	ფურცელი
+	Pictures	სურათები
+	Styling	სტილი
+	Page	გვერდი
+	Warnings	გაფრთხილებები
+	Moment in the page	მომენტი გვერდზე
+	Place at Playhead	დაკვრის მაჩვენებელთან განთავსება
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	ცხრილები (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	ტიტრების სტილი (*.json)
+	Card	ბარათი
+	Credits Spreadsheet	ტიტრების ცხრილი
+	Reading…	იკითხება…
+	(one table)	(ერთი ცხრილი)
+	Total: {time}	სულ: {time}
+	Row {row}: {message}	მწკრივი {row}: {message}
+	Choose a credits spreadsheet.	აირჩიეთ ტიტრების ცხრილი.
+	No preview	წინასწარი ნახვა არ არის
+	Placing…	თავსდება…
+	Placed {n} pages on the timeline.	დროის ხაზზე განთავსდა გვერდები: {n}.
+	Credits Page Picture	ტიტრების გვერდის სურათი
+	Preview Credits	ტიტრების წინასწარი ნახვა
+	Credits Styles	ტიტრების სტილები
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	ცხრილები და ტიტრების ფაილები (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 ტიტრების ფაილი (*.cfa4credits)
+	Save as Credits File…	ტიტრების ფაილად შენახვა…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	ცხრილი, ფურცელი, სტილი და მწკრივები ერთ ფაილში, რომელიც ნებისმიერ კომპიუტერზე იხსნება
+	Saved: {path}	შენახულია: {path}
+	Added	დამატებულია
+	Removed	წაშლილია
+	Changed	შეცვლილია
+	(empty row)	(ცარიელი მწკრივი)
+	Refresh Credits from Spreadsheet	ტიტრების განახლება ცხრილიდან
+	Change	ცვლილება
+	Before → After	მანამდე → შემდეგ
+	Select None	არცერთის არჩევა
+	Keep my edits on the pages (where their block is unchanged)	ჩემი ცვლილებების შენარჩუნება გვერდებზე (სადაც მათი ბლოკი არ შეცვლილა)
+	Locate Spreadsheet…	ცხრილის მოძებნა…
+	Comparing…	შედარება…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	ცვლილებები ფაილში {file} ტიტრების განთავსების შემდეგ: {n}. მოხსენით მონიშვნა იმას, რაც არ გსურთ.
+	The spreadsheet {file} has not changed since the credits were placed.	ცხრილი {file} ტიტრების განთავსების შემდეგ არ შეცვლილა.
+	{n} layers were edited by hand on the pages.	გვერდებზე ხელით შეცვლილი ფენები: {n}.
+	Accepting every change would replace these, because their block changed: {names}	ყველა ცვლილების მიღება ჩაანაცვლებს ამათ, რადგან მათი ბლოკი შეიცვალა: {names}
+	Refreshing…	ახლდება…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	განახლდა: გამოყენებული ცვლილებები: {n}, შენარჩუნებული ხელით ცვლილებები: {kept}.
+	Refresh Credits from Spreadsheet…	ტიტრების განახლება ცხრილიდან…
+	Save Credits File…	ტიტრების ფაილის შენახვა…
+	Compare Credits with Spreadsheet	ტიტრების შედარება ცხრილთან
+	“{name}” appears twice in the same block	„{name}“ ერთსა და იმავე ბლოკში ორჯერ გვხვდება
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ მწკრივში {otherRow} დაწერილია როგორც „{other}“
+	The font “{font}” is not installed; another font is used	შრიფტი „{font}“ დაყენებული არ არის; გამოიყენება სხვა შრიფტი
+	The font “{font}” has no “{chars}”; another font draws them	შრიფტს „{font}“ არ აქვს „{chars}“; მათ სხვა შრიფტი ხატავს
+	“{text}” is outside the title-safe area	„{text}“ ტიტრების უსაფრთხო არეს გარეთაა
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ შავ ფონზე ზედმეტად მუქია (კონტრასტი {ratio}:1; საჭიროა მინიმუმ 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ {px} px სიმაღლისაა; 24 px ან მეტი კარგად იკითხება
+	The roll moves {speed} px per frame; a whole number does not shimmer	გადახვევა კადრზე {speed} px-ით მოძრაობს; მთელი რიცხვი არ ციმციმებს
+	A line crosses the frame in {seconds} s; at least 6 s reads well	მწკრივი კადრს {seconds} წმ-ში კვეთს; მინიმუმ 6 წმ კარგად იკითხება
+	The card holds for only {seconds} s after its fades	ბარათი გაქრობების შემდეგ მხოლოდ {seconds} წმ რჩება
+	This page starts {seconds} s before the previous one ends	ეს გვერდი წინას დასრულებამდე {seconds} წმ-ით ადრე იწყება
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ ნაჩვენებია მისი პიქსელების {percent} %-ით; ბუნდოვნად გამოჩნდება
+	{more} more of the same	კიდევ {more} იგივე
+	Page {page}: {message}	გვერდი {page}: {message}
+	Checks and warnings	შემოწმებები და გაფრთხილებები
+	Checks: {errors} errors, {warnings} warnings	შემოწმებები: შეცდომები {errors}, გაფრთხილებები {warnings}
+	Check Credits	ტიტრების შემოწმება
+	The whole music ({time})	მთელი მუსიკა ({time})
+	Until the sound ends ({time})	ხმის დასრულებამდე ({time})
+	To the last bar line ({time})	ბოლო ტაქტის ხაზამდე ({time})
+	Fit Credits to Music	ტიტრების მორგება მუსიკაზე
+	Fit Credits to Music…	ტიტრების მორგება მუსიკაზე…
+	Analyse Music for Credits	მუსიკის ანალიზი ტიტრებისთვის
+	Length:	ხანგრძლივობა:
+	Cards last whole beats (cuts on the beat)	ბარათები მთელ დარტყმებს გრძელდება (ჭრა რიტმზე)
+	Start the credits where the music starts	ტიტრების დაწყება იქ, სადაც მუსიკა იწყება
+	Length of the credits	ტიტრების ხანგრძლივობა
+	Remove Fitting	მორგების მოხსნა
+	Listening to the music…	მუსიკის მოსმენა…
+	Length: {time}	ხანგრძლივობა: {time}
+	the sound ends at {time}	ხმა მთავრდება {time}-ზე
+	tempo {bpm} BPM	ტემპი {bpm} BPM
+	the credits without fitting: {time}	ტიტრები მორგების გარეშე: {time}
+	Select a credits page on the timeline.	აირჩიეთ ტიტრების გვერდი დროის ხაზზე.
+	Fitting…	ერგება…
+	The credits now last {time}.	ტიტრები ახლა {time} გრძელდება.
+	Fitting removed.	მორგება მოხსნილია.
+	Fit to This Length	ამ ხანგრძლივობაზე მორგება
+	No music to measure ({problem}); type the length.	გასაზომი მუსიკა არ არის ({problem}); შეიყვანეთ ხანგრძლივობა.
+	The text moves {speed} px per frame; a whole number does not shimmer	ტექსტი კადრზე {speed} px-ით მოძრაობს; მთელი რიცხვი არ ციმციმებს
+	Crawl	მცოცავი ტექსტი
+	Picture: {file}	სურათი: {file}
+	Video: {file}	ვიდეო: {file}
+	Into the next	შემდეგში გადასვლა
+	Safe areas and spines	უსაფრთხო არეები და ღერძები
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	მოქმედების უსაფრთხო არე (93 %), ტიტრების (90 %), ცენტრი და გვერდის ღერძები
+	Baseline grid	საბაზისო ხაზების ბადე
+	Lines one gap unit apart, moving with the page	ხაზები ერთი დაშორების ერთეულით, გვერდთან ერთად მოძრაობენ
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ფონზე არ გამოირჩევა (კონტრასტი {ratio}:1; საჭიროა მინიმუმ 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	ტექსტის უკან სურათი ან ვიდეოა: კონტრასტი თვალით შეამოწმეთ
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	მზა იერსახე: სტილები, ფონები, გადასვლები და დრო. მითითებულ სტილის ფაილს უპირატესობა აქვს.
+	New Spreadsheet from Template…	ახალი ცხრილი შაბლონიდან…
+	built in	ჩაშენებული
+	mine	ჩემი
+	this project	ეს პროექტი
+	Template	შაბლონი
+	Choose a template first.	ჯერ აირჩიეთ შაბლონი.
+	Name of the template:	შაბლონის სახელი:
+	Template saved: {name}	შაბლონი შენახულია: {name}
+	Apply Credits Template…	ტიტრების შაბლონის გამოყენება…
+	Template:	შაბლონი:
+	Credits Templates	ტიტრების შაბლონები
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	ცხრილები, ტიტრების ფაილები და Cinecred-ის პროექტები (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-ის პროექტი…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred-ის პროექტის საქაღალდის გახსნა (Styling.toml და მისი ტიტრების ცხრილი)
+	(empty block)	(ცარიელი ბლოკი)
+	Apply Template…	შაბლონის გამოყენება…
+	Change them in the spreadsheet; the credits follow when you save it.	შეცვალეთ ისინი ცხრილში; ტიტრები მიჰყვება, როცა მას შეინახავთ.
+	Compact View	კომპაქტური ხედი
+	Compare the selected credits on the timeline with their spreadsheet, row by row	შეადარეთ დროის ხაზზე არჩეული ტიტრები მათ ცხრილს მწკრივ-მწკრივ
+	Fit the selected credits to the music under them	არჩეული ტიტრების მორგება მათ ქვეშ არსებულ მუსიკაზე
+	Fit to Music…	მუსიკაზე მორგება…
+	Full View	სრული ხედი
+	Give the selected credits on the timeline another template	დროის ხაზზე არჩეული ტიტრებისთვის სხვა შაბლონის მიცემა
+	Names	სახელები
+	No pages	გვერდები არ არის
+	Refresh Placed Credits…	განთავსებული ტიტრების განახლება…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	ყველაფრის ჩვენება: ბლოკები, თვისებები, გვერდები დროში, შემოწმებები და ტიტრების ხელსაწყოები
+	Spine	ღერძი
+	Tails	დასასრული
+	The blocks of the chosen page; choose one to see it in the preview	არჩეული გვერდის ბლოკები; აირჩიეთ ერთი, რომ წინასწარ ნახვაში დაინახოთ
+	The pages along time; click one to choose it	გვერდები დროში; დააწკაპუნეთ ერთზე მის ასარჩევად
+	{n} more	კიდევ {n}
+	Block	ბლოკი
+	parallel	პარალელური
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	გვერდზე (OBS მას ბრაუზერის წყაროდან იღებს)
+	Separate (a media source in OBS)	ცალკე (მედია წყარო OBS-ში)
+	No sound	ხმის გარეშე
+	credits	ტიტრები
+	graphic	გრაფიკა
+	{n} pages	გვერდები: {n}
+	Live Graphics	პირდაპირი გრაფიკა
+	Prepared cues; double-click one to put it in preview	მომზადებული ელემენტები; ორჯერ დააწკაპუნეთ ერთზე, რომ წინასწარ ნახვაში გადავიდეს
+	Add Credits…	ტიტრების დამატება…
+	A credits spreadsheet, credits file or Cinecred project as a cue	ტიტრების ცხრილი, ტიტრების ფაილი ან Cinecred-ის პროექტი ელემენტად
+	Add Selected Graphic	არჩეული გრაფიკის დამატება
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	დროის ხაზზე არჩეული გრაფიკული კლიპი (სათაური, ქვედა მესამედი) ელემენტად
+	Cues	ელემენტები
+	TAKE	ეთერში
+	The preview cue goes on air from its first page	წინასწარი ნახვის ელემენტი ეთერში გადის პირველი გვერდიდან
+	PREVIOUS	წინა
+	The page before (on the first page: from its start)	წინა გვერდი (პირველ გვერდზე: მისი დასაწყისიდან)
+	NEXT	შემდეგი
+	The next page; after the last one, the preview cue	შემდეგი გვერდი; ბოლოს შემდეგ — წინასწარი ნახვის ელემენტი
+	HOLD	შეჩერება
+	Stop the program where it is	პროგრამის შეჩერება იქ, სადაც არის
+	CONTINUE	გაგრძელება
+	Go on from where it stopped	გაგრძელება იქიდან, სადაც შეჩერდა
+	UPDATE	განახლება
+	Read the spreadsheet (or the clip) again; on air it changes at once	ცხრილის (ან კლიპის) ხელახლა წაკითხვა; ეთერში მაშინვე იცვლება
+	OUT	გამორთვა
+	Take everything off air	ყველაფრის ეთერიდან მოხსნა
+	Start Live Page	პირდაპირი გვერდის გაშვება
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	პროგრამის მიწოდება ამ კომპიუტერზე OBS-ის ბრაუზერის წყაროსთვის (მხოლოდ 127.0.0.1)
+	not running	არ მუშაობს
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	OBS-თან დაკავშირება
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	ამ კომპიუტერზე OBS-თან დაკავშირება და მისი ბრაუზერის წყაროს „CFA4 Live“ პირდაპირ გვერდზე მიმართვა
+	Port	პორტი
+	Password	პაროლი
+	Live page	პირდაპირი გვერდი
+	Sound	ხმა
+	OBS	OBS
+	Nothing in preview	წინასწარ ნახვაში არაფერია
+	page {page} of {pages}	გვერდი {page} / {pages}
+	held	შეჩერებულია
+	ended	დასრულდა
+	Off air	ეთერის გარეთ
+	Stop Live Page	პირდაპირი გვერდის შეჩერება
+	Connected to OBS {version}; source “{source}”	დაკავშირებულია OBS {version}; წყარო „{source}“
+	Point OBS Again	OBS-ის ხელახლა მიმართვა
+	Select a graphic clip on the timeline first.	ჯერ აირჩიეთ გრაფიკული კლიპი დროის ხაზზე.
+	Connecting to OBS…	OBS-თან დაკავშირება…
+	Live Graphics…	პირდაპირი გრაფიკა…
+	PREVIEW	წინასწარი ნახვა
+	PROGRAM	პროგრამა
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	სურათის ან ვიდეოს ტეგი ტანის უჯრაში მარტო დგას (ან ერთ სახელთან, პორტრეტად); სხვა ტეგები წაიშალა
+	the page gap is not a duration; the page style's is used	გვერდებს შორის დაშორება ხანგრძლივობა არ არის; გამოიყენება გვერდის სტილისა
+	the page runtime is not a positive duration; the page style's is used	გვერდის ხანგრძლივობა დადებითი არ არის; გამოიყენება გვერდის სტილისა
+	background “{file}” was not found; it is left out	ფონი „{file}“ ვერ მოიძებნა; გამოტოვებულია
+	card page {page} is taller than the frame; use a roll page	ბარათის გვერდი {page} კადრზე მაღალია; გამოიყენეთ გადასახვევი გვერდი
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	ასოს სტილის „{style}“ ფერი „{colour}“ არ არის #rrggbb; გამოტოვებულია
+	colour “{colour}” is not #rrggbb; black is used	ფერი „{colour}“ არ არის #rrggbb; გამოიყენება შავი
+	colour “{colour}” is not #rrggbb; white is used	ფერი „{colour}“ არ არის #rrggbb; გამოიყენება თეთრი
+	content style “{style}” does not exist; “{used}” is used	შიგთავსის სტილი „{style}“ არ არსებობს; გამოიყენება „{used}“
+	letter style “{style}” does not exist; the text keeps the block's style	ასოს სტილი „{style}“ არ არსებობს; ტექსტი ინარჩუნებს ბლოკის სტილს
+	page gap “{value}” is not a duration	გვერდებს შორის დაშორება „{value}“ ხანგრძლივობა არ არის
+	page runtime “{value}” is not a duration	გვერდის ხანგრძლივობა „{value}“ ხანგრძლივობა არ არის
+	page style “{style}” does not exist; a roll page is used	გვერდის სტილი „{style}“ არ არსებობს; გამოიყენება გადასახვევი გვერდი
+	page {page}: the background names no file; it is left out	გვერდი {page}: ფონი ფაილს არ ასახელებს; გამოტოვებულია
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	გვერდი {page}: ხანგრძლივობა მიიღწევა გადახვევის სიჩქარის შეცვლით (გვერდზე ბლოკებს შორის გასაჭიმი დაშორება არ არის)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	გვერდი {page}: ხანგრძლივობა მიიღწევა გადახვევის სიჩქარის შეცვლით (ტიტრები დაშორების გარეშეც ზედმეტად გრძელია)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	გვერდი {page}: ხანგრძლივობა მიიღწევა გადახვევის სიჩქარის შეცვლით (დაშორებები 20-ჯერ მეტად უნდა გაიზარდოს)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	გვერდი {page}: გადასვლას სჭირდება, რომ გვერდები ერთმანეთს ეხებოდეს (დაშორება 0); გამოტოვებულია
+	page {page}: there is no transition “{name}”; the pages cut	გვერდი {page}: გადასვლა „{name}“ არ არსებობს; გვერდები ჭრით იცვლება
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	ღერძის პოზიცია „{value}“ არ არის მხარდაჭერილი (მხარდაჭერილია პიქსელური წანაცვლება, სურვილისამებრ „parallel“-ით)
+	vertical gap “{value}” is not a number	ვერტიკალური დაშორება „{value}“ რიცხვი არ არის
+	picture “{file}” was not found or cannot be read; it is left out	სურათი „{file}“ ვერ მოიძებნა ან ვერ იკითხება; გამოტოვებულია
+	video “{file}” was not found or cannot be read; it is left out	ვიდეო „{file}“ ვერ მოიძებნა ან ვერ იკითხება; გამოტოვებულია
+	there is no roll page without its own runtime to stretch; the length cannot change	არ არის საკუთარი ხანგრძლივობის გარეშე გადასახვევი გვერდი გასაჭიმად; ხანგრძლივობა ვერ შეიცვლება
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	მხოლოდ ბარათები და დაშორებები {seconds} წმ-ია; მოთხოვნილი ხანგრძლივობა უფრო მოკლეა, ამიტომ გადასახვევი გვერდები ბუნებრივ ხანგრძლივობას ინარჩუნებენ
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	ასოს სტილი „{style}“: გამოიყენება მხოლოდ პირველი ფერადი ფენა (კონტურების, ჩრდილებისა და ზოლების გარეშე)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	მთლიანი ტიტრების ხანგრძლივობა არ გადადის; ნაცვლად გამოიყენეთ ტიტრების მორგება მუსიკაზე (ან ხანგრძლივობა)
+	page style “{style}”: fade curves become linear fades	გვერდის სტილი „{style}“: გაქრობის მრუდები წრფივი ხდება
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	შიგთავსის სტილს „{style}“ Cinecred-ში დასაწყისი არ აქვს; ცხრილში ჩაწერილი დასაწყისები მაინც ჩანს
+	content style “{style}”: sorting the names is not carried over	შიგთავსის სტილი „{style}“: სახელების დალაგება არ გადადის
+	transition curves are not carried over	გადასვლის მრუდები არ გადადის
+	picture styles (pictures keep their own size) are not carried over	სურათის სტილები (სურათები საკუთარ ზომას ინარჩუნებენ) არ გადადის
+	video (tape) styles are not carried over	ვიდეოს (ფირის) სტილები არ გადადის
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-ის პროექტს ტიტრების ცხრილები აქვს: {n}; გამოიყენება „{name}“ (სხვა აირჩიეთ ველში ცხრილი)

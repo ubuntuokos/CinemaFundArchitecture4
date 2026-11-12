@@ -3687,6 +3687,8 @@
 	Analyze Source for Smart Cut	Анализ источника для Smart Cut
 	Plan Smart Cut	Спланировать Smart Cut
 	Run Smart Cut	Выполнить Smart Cut
+	DASH Manifest	Манифест DASH
+	Also write a DASH manifest (.mpd)	Также записать манифест DASH (.mpd)
 	#	#
 	'{name}' already exists. Replace it?	«{name}» уже существует. Заменить?
 	(none)	(нет)
@@ -4202,3 +4204,230 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Титры из таблицы
+	A .ods, .xlsx or CSV credits sheet	Лист титров в .ods, .xlsx или CSV
+	The spreadsheet's folder	Папка таблицы
+	Built-in styles	Встроенные стили
+	Spreadsheet	Таблица
+	Sheet	Лист
+	Pictures	Изображения
+	Styling	Оформление
+	Page	Страница
+	Warnings	Предупреждения
+	Moment in the page	Момент на странице
+	Place at Playhead	Разместить на текущей позиции
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Таблицы (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Оформление титров (*.json)
+	Card	Карточка
+	Credits Spreadsheet	Таблица титров
+	Reading…	Чтение…
+	(one table)	(одна таблица)
+	Total: {time}	Итого: {time}
+	Row {row}: {message}	Строка {row}: {message}
+	Choose a credits spreadsheet.	Выберите таблицу титров.
+	No preview	Нет предпросмотра
+	Placing…	Размещение…
+	Placed {n} pages on the timeline.	Размещено страниц на таймлайне: {n}.
+	Credits Page Picture	Изображение страницы титров
+	Preview Credits	Предпросмотр титров
+	Credits Styles	Стили титров
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Таблицы и файлы титров (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Файл титров CFA4 (*.cfa4credits)
+	Save as Credits File…	Сохранить как файл титров…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Таблица, лист, оформление и данные в одном файле, чтобы открыть на любом компьютере
+	Saved: {path}	Сохранено: {path}
+	Added	Добавлено
+	Removed	Удалено
+	Changed	Изменено
+	(empty row)	(пустая строка)
+	Refresh Credits from Spreadsheet	Обновить титры из таблицы
+	Change	Изменение
+	Before → After	До → После
+	Select None	Снять выделение
+	Keep my edits on the pages (where their block is unchanged)	Сохранить мои правки на страницах (где их блок не изменился)
+	Locate Spreadsheet…	Найти таблицу…
+	Comparing…	Сравнение…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Изменений в {file} с момента размещения титров: {n}. Снимите отметку с ненужных.
+	The spreadsheet {file} has not changed since the credits were placed.	Таблица {file} не изменялась с момента размещения титров.
+	{n} layers were edited by hand on the pages.	Слоёв, изменённых вручную на страницах: {n}.
+	Accepting every change would replace these, because their block changed: {names}	При принятии всех изменений они будут заменены, так как их блок изменился: {names}
+	Refreshing…	Обновление…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Обновлено: применено изменений — {n}, сохранено ручных правок — {kept}.
+	Refresh Credits from Spreadsheet…	Обновить титры из таблицы…
+	Save Credits File…	Сохранить файл титров…
+	Compare Credits with Spreadsheet	Сравнить титры с таблицей
+	“{name}” appears twice in the same block	«{name}» встречается дважды в одном блоке
+	“{name}” is written as “{other}” in row {otherRow}	«{name}» записано как «{other}» в строке {otherRow}
+	The font “{font}” is not installed; another font is used	Шрифт «{font}» не установлен; используется другой шрифт
+	The font “{font}” has no “{chars}”; another font draws them	В шрифте «{font}» нет «{chars}»; их рисует другой шрифт
+	“{text}” is outside the title-safe area	«{text}» за пределами безопасной зоны заголовков
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» слишком тёмный на чёрном (контраст {ratio}:1; нужно не менее 4.5:1)
+	“{text}” is {px} px high; 24 px or more reads well	«{text}» высотой {px} px; от 24 px читается хорошо
+	The roll moves {speed} px per frame; a whole number does not shimmer	Прокрутка смещается на {speed} px за кадр; при целом числе нет мерцания
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Строка пересекает кадр за {seconds} с; читается хорошо от 6 с
+	The card holds for only {seconds} s after its fades	Карточка остаётся на экране всего {seconds} с после плавных переходов
+	This page starts {seconds} s before the previous one ends	Эта страница начинается за {seconds} с до конца предыдущей
+	“{file}” is shown at {percent} % of its pixels; it will look soft	«{file}» показан при {percent} % своих пикселей; изображение будет нечётким
+	{more} more of the same	Ещё {more} таких же
+	Page {page}: {message}	Страница {page}: {message}
+	Checks and warnings	Проверки и предупреждения
+	Checks: {errors} errors, {warnings} warnings	Проверки: ошибок — {errors}, предупреждений — {warnings}
+	Check Credits	Проверить титры
+	The whole music ({time})	Вся музыка ({time})
+	Until the sound ends ({time})	Пока не закончится звук ({time})
+	To the last bar line ({time})	До последней тактовой черты ({time})
+	Fit Credits to Music	Подогнать титры под музыку
+	Fit Credits to Music…	Подогнать титры под музыку…
+	Analyse Music for Credits	Анализировать музыку для титров
+	Length:	Длительность:
+	Cards last whole beats (cuts on the beat)	Карточки длятся целое число долей (смена на долю)
+	Start the credits where the music starts	Начать титры там, где начинается музыка
+	Length of the credits	Длительность титров
+	Remove Fitting	Снять подгонку
+	Listening to the music…	Прослушивание музыки…
+	Length: {time}	Длительность: {time}
+	the sound ends at {time}	звук заканчивается на {time}
+	tempo {bpm} BPM	темп {bpm} BPM
+	the credits without fitting: {time}	титры без подгонки: {time}
+	Select a credits page on the timeline.	Выберите страницу титров на таймлайне.
+	Fitting…	Подгонка…
+	The credits now last {time}.	Теперь титры длятся {time}.
+	Fitting removed.	Подгонка снята.
+	Fit to This Length	Подогнать под эту длительность
+	No music to measure ({problem}); type the length.	Нет музыки для измерения ({problem}); введите длительность.
+	The text moves {speed} px per frame; a whole number does not shimmer	Текст сдвигается на {speed} px за кадр; целое число не мерцает
+	Crawl	Бегущая строка
+	Picture: {file}	Изображение: {file}
+	Video: {file}	Видео: {file}
+	Into the next	В следующую
+	Safe areas and spines	Безопасные зоны и оси
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасная зона действия (93 %), безопасная зона заголовков (90 %), центр и оси страницы
+	Baseline grid	Сетка базовых линий
+	Lines one gap unit apart, moving with the page	Линии через единицу интервала, движутся вместе со страницей
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» не выделяется на фоне (контраст {ratio}:1; нужно не менее 4.5:1)
+	A picture or video is behind the text: check the contrast by eye	За текстом изображение или видео: проверьте контраст на глаз
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Готовый вид: стили, фоны, переходы и тайминг. Файл оформления, если указан, имеет приоритет.
+	New Spreadsheet from Template…	Новая таблица из шаблона…
+	built in	встроенный
+	mine	мой
+	this project	этот проект
+	Template	Шаблон
+	Choose a template first.	Сначала выберите шаблон.
+	Name of the template:	Название шаблона:
+	Template saved: {name}	Шаблон сохранён: {name}
+	Apply Credits Template…	Применить шаблон титров…
+	Template:	Шаблон:
+	Credits Templates	Шаблоны титров
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Таблицы, файлы титров и проекты Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Проект Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Открыть папку проекта Cinecred (Styling.toml и её таблица титров)
+	(empty block)	(пустой блок)
+	Apply Template…	Применить шаблон…
+	Change them in the spreadsheet; the credits follow when you save it.	Измените их в таблице; титры обновятся при её сохранении.
+	Compact View	Компактный вид
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Сравнить выбранные титры на таймлайне с их таблицей по строкам
+	Fit the selected credits to the music under them	Подогнать выбранные титры под музыку, звучащую под ними
+	Fit to Music…	Подогнать под музыку…
+	Full View	Полный вид
+	Give the selected credits on the timeline another template	Применить к выбранным титрам на таймлайне другой шаблон
+	Names	Имена
+	No pages	Нет страниц
+	Refresh Placed Credits…	Обновить размещённые титры…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Показать всё: блоки, свойства, страницы по времени, проверки и инструменты титров
+	Spine	Ось
+	Tails	Роли
+	The blocks of the chosen page; choose one to see it in the preview	Блоки выбранной страницы; выберите блок, чтобы увидеть его в предпросмотре
+	The pages along time; click one to choose it	Страницы по времени; щёлкните страницу, чтобы выбрать её
+	{n} more	Ещё {n}
+	Block	Блок
+	parallel	параллельно
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	На странице (OBS берёт её из источника-браузера)
+	Separate (a media source in OBS)	Отдельно (медиаисточник в OBS)
+	No sound	Без звука
+	credits	титры
+	graphic	графика
+	{n} pages	Страниц: {n}
+	Live Graphics	Графика в эфире
+	Prepared cues; double-click one to put it in preview	Подготовленные элементы; дважды щёлкните, чтобы поместить элемент в предпросмотр
+	Add Credits…	Добавить титры…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Таблица титров, файл титров или проект Cinecred как элемент
+	Add Selected Graphic	Добавить выбранную графику
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Выбранный на таймлайне графический клип (заголовок, нижняя треть) как элемент
+	Cues	Элементы
+	TAKE	В ЭФИР
+	The preview cue goes on air from its first page	Элемент из предпросмотра выходит в эфир с первой страницы
+	PREVIOUS	НАЗАД
+	The page before (on the first page: from its start)	Предыдущая страница (на первой странице: с её начала)
+	NEXT	ДАЛЕЕ
+	The next page; after the last one, the preview cue	Следующая страница; после последней — элемент из предпросмотра
+	HOLD	ПАУЗА
+	Stop the program where it is	Остановить программу на текущем месте
+	CONTINUE	ПРОДОЛЖИТЬ
+	Go on from where it stopped	Продолжить с места остановки
+	UPDATE	ОБНОВИТЬ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Прочитать таблицу (или клип) заново; в эфире изменения применяются сразу
+	OUT	СНЯТЬ
+	Take everything off air	Снять всё с эфира
+	Start Live Page	Запустить эфирную страницу
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Отдавать программу на этом компьютере для источника-браузера OBS (только 127.0.0.1)
+	not running	не запущено
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	Подключиться к OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Подключиться к OBS на этом компьютере и направить его источник-браузер «CFA4 Live» на эфирную страницу
+	Port	Порт
+	Password	Пароль
+	Live page	Эфирная страница
+	Sound	Звук
+	OBS	OBS
+	Nothing in preview	В предпросмотре ничего нет
+	page {page} of {pages}	страница {page} из {pages}
+	held	на паузе
+	ended	завершено
+	Off air	Не в эфире
+	Stop Live Page	Остановить эфирную страницу
+	Connected to OBS {version}; source “{source}”	Подключено к OBS {version}; источник «{source}»
+	Point OBS Again	Направить OBS заново
+	Select a graphic clip on the timeline first.	Сначала выберите графический клип на таймлайне.
+	Connecting to OBS…	Подключение к OBS…
+	Live Graphics…	Графика в эфире…
+	PREVIEW	ПРЕДПРОСМОТР
+	PROGRAM	ПРОГРАММА
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	тег изображения или видео стоит один в ячейке основного текста (или с одним именем, как портрет); остальные теги удалены
+	the page gap is not a duration; the page style's is used	пауза между страницами не является длительностью; используется значение стиля страницы
+	the page runtime is not a positive duration; the page style's is used	длительность страницы не является положительной; используется значение стиля страницы
+	background “{file}” was not found; it is left out	фон “{file}” не найден; он пропущен
+	card page {page} is taller than the frame; use a roll page	страница-карточка {page} выше кадра; используйте прокручиваемую страницу
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	цвет “{colour}” стиля букв “{style}” не в формате #rrggbb; он пропущен
+	colour “{colour}” is not #rrggbb; black is used	цвет “{colour}” не в формате #rrggbb; используется чёрный
+	colour “{colour}” is not #rrggbb; white is used	цвет “{colour}” не в формате #rrggbb; используется белый
+	content style “{style}” does not exist; “{used}” is used	стиль содержимого “{style}” не существует; используется “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	стиль букв “{style}” не существует; текст сохраняет стиль блока
+	page gap “{value}” is not a duration	пауза между страницами “{value}” не является длительностью
+	page runtime “{value}” is not a duration	длительность страницы “{value}” не является длительностью
+	page style “{style}” does not exist; a roll page is used	стиль страницы “{style}” не существует; используется прокручиваемая страница
+	page {page}: the background names no file; it is left out	страница {page}: для фона не указан файл; он пропущен
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	страница {page}: длительность достигается изменением скорости прокрутки (на странице нет промежутков между блоками, которые можно растянуть)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	страница {page}: длительность достигается изменением скорости прокрутки (титры слишком длинные даже без промежутков)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: длительность достигается изменением скорости прокрутки (промежутки пришлось бы увеличить более чем в 20 раз)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: для перехода страницы должны соприкасаться (пауза между страницами 0); он пропущен
+	page {page}: there is no transition “{name}”; the pages cut	страница {page}: перехода “{name}” нет; страницы сменяются склейкой
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положение оси “{value}” не поддерживается (поддерживается смещение в пикселях, при желании с “parallel”)
+	vertical gap “{value}” is not a number	вертикальный промежуток “{value}” не является числом
+	picture “{file}” was not found or cannot be read; it is left out	изображение “{file}” не найдено или не читается; оно пропущено
+	video “{file}” was not found or cannot be read; it is left out	видео “{file}” не найдено или не читается; оно пропущено
+	there is no roll page without its own runtime to stretch; the length cannot change	нет прокручиваемой страницы с собственной длительностью, которую можно растянуть; длину изменить нельзя
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	одни карточки и промежутки занимают {seconds} s; запрошенная длина меньше, поэтому прокручиваемые страницы сохраняют естественную длину
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	стиль букв “{style}”: используется только первый цветной слой (без контуров, теней и полос)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	длительность всех титров целиком не переносится; используйте Подогнать титры под музыку (или длину)
+	page style “{style}”: fade curves become linear fades	стиль страницы “{style}”: кривые затухания становятся линейными
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	у стиля содержимого “{style}” нет заголовка в Cinecred; заголовки, написанные в таблице, по-прежнему показываются
+	content style “{style}”: sorting the names is not carried over	стиль содержимого “{style}”: сортировка имён не переносится
+	transition curves are not carried over	кривые переходов не переносятся
+	picture styles (pictures keep their own size) are not carried over	стили изображений (изображения сохраняют свой размер) не переносятся
+	video (tape) styles are not carried over	стили видео (ленты) не переносятся
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	в проекте Cinecred {n} таблиц титров; используется “{name}” (выберите другую в поле Таблица)

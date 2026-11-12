@@ -3639,6 +3639,8 @@
 	Analyze Source for Smart Cut	Analisis Sumber untuk Smart Cut
 	Plan Smart Cut	Rencanakan Smart Cut
 	Run Smart Cut	Jalankan Smart Cut
+	DASH Manifest	Manifes DASH
+	Also write a DASH manifest (.mpd)	Tulis juga manifes DASH (.mpd)
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/id.tsv).
@@ -4225,3 +4227,230 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(satu tabel)
+	A .ods, .xlsx or CSV credits sheet	Lembar kredit .ods, .xlsx, atau CSV
+	Built-in styles	Gaya bawaan
+	Card	Kartu
+	Choose a credits spreadsheet.	Pilih spreadsheet kredit.
+	Credits Spreadsheet	Spreadsheet Kredit
+	Credits from a Spreadsheet	Kredit dari Spreadsheet
+	Credits styling (*.json)	Gaya kredit (*.json)
+	Moment in the page	Momen dalam halaman
+	No preview	Tanpa pratinjau
+	Page	Halaman
+	Pictures	Gambar
+	Place at Playhead	Tempatkan di Playhead
+	Placed {n} pages on the timeline.	{n} halaman ditempatkan di lini masa.
+	Placing…	Menempatkan…
+	Reading…	Membaca…
+	Row {row}: {message}	Baris {row}: {message}
+	Sheet	Lembar
+	Spreadsheet	Spreadsheet
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Spreadsheet (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Gaya
+	The spreadsheet's folder	Folder spreadsheet
+	Total: {time}	Total: {time}
+	Warnings	Peringatan
+	Credits Page Picture	Gambar Halaman Kredit
+	Preview Credits	Pratinjau Kredit
+	Credits Styles	Gaya Kredit
+	(empty row)	(baris kosong)
+	Accepting every change would replace these, because their block changed: {names}	Menerima semua perubahan akan menggantikan ini, karena bloknya berubah: {names}
+	Added	Ditambahkan
+	Before → After	Sebelum → Sesudah
+	CFA4 credits file (*.cfa4credits)	File kredit CFA4 (*.cfa4credits)
+	Change	Perubahan
+	Changed	Diubah
+	Comparing…	Membandingkan…
+	Keep my edits on the pages (where their block is unchanged)	Pertahankan suntingan saya pada halaman (jika bloknya tidak berubah)
+	Locate Spreadsheet…	Cari Spreadsheet…
+	Refresh Credits from Spreadsheet	Segarkan Kredit dari Spreadsheet
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Disegarkan: {n} perubahan diterapkan, {kept} suntingan manual dipertahankan.
+	Refreshing…	Menyegarkan…
+	Removed	Dihapus
+	Save as Credits File…	Simpan sebagai File Kredit…
+	Saved: {path}	Tersimpan: {path}
+	Select None	Batalkan Semua Pilihan
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Spreadsheet, lembar kerja, gaya, dan tabel dalam satu file, untuk dibuka di mesin mana pun
+	The spreadsheet {file} has not changed since the credits were placed.	Spreadsheet {file} tidak berubah sejak kredit ditempatkan.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} perubahan di {file} sejak kredit ditempatkan. Hapus centang pada yang tidak diinginkan.
+	{n} layers were edited by hand on the pages.	{n} layer diedit manual pada halaman.
+	Refresh Credits from Spreadsheet…	Segarkan kredit dari spreadsheet…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Spreadsheet dan file kredit (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Simpan File Kredit…
+	Compare Credits with Spreadsheet	Bandingkan Kredit dengan Spreadsheet
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Satu baris melintasi bingkai dalam {seconds} s; minimal 6 s nyaman dibaca
+	Checks and warnings	Pemeriksaan dan peringatan
+	Checks: {errors} errors, {warnings} warnings	Pemeriksaan: {errors} kesalahan, {warnings} peringatan
+	Page {page}: {message}	Halaman {page}: {message}
+	The card holds for only {seconds} s after its fades	Kartu hanya bertahan {seconds} s setelah fade-nya
+	The font “{font}” has no “{chars}”; another font draws them	Font “{font}” tidak memiliki “{chars}”; font lain yang menggambarnya
+	The font “{font}” is not installed; another font is used	Font “{font}” belum terpasang; font lain digunakan
+	This page starts {seconds} s before the previous one ends	Halaman ini mulai {seconds} s sebelum halaman sebelumnya berakhir
+	{more} more of the same	{more} lagi yang serupa
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” ditampilkan pada {percent} % pikselnya; akan tampak buram
+	“{name}” appears twice in the same block	“{name}” muncul dua kali dalam blok yang sama
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” ditulis “{other}” di baris {otherRow}
+	“{text}” is outside the title-safe area	“{text}” berada di luar area aman judul
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” terlalu gelap di atas hitam (kontras {ratio}:1; minimal 4,5:1 diperlukan)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” setinggi {px} px; 24 px atau lebih nyaman dibaca
+	The roll moves {speed} px per frame; a whole number does not shimmer	Gulungan bergerak {speed} px per bingkai; bilangan bulat tidak berkedip
+	Check Credits	Periksa Kredit
+	Cards last whole beats (cuts on the beat)	Kartu berlangsung sepanjang ketukan utuh (potongan tepat di ketukan)
+	Fit Credits to Music	Sesuaikan Kredit dengan Musik
+	Fit to This Length	Sesuaikan dengan Durasi Ini
+	Fitting removed.	Penyesuaian dihapus.
+	Fitting…	Menyesuaikan…
+	Length of the credits	Durasi kredit
+	Length:	Durasi:
+	Length: {time}	Durasi: {time}
+	Listening to the music…	Mendengarkan musik…
+	No music to measure ({problem}); type the length.	Tidak ada musik untuk diukur ({problem}); ketik durasinya.
+	Remove Fitting	Hapus Penyesuaian
+	Select a credits page on the timeline.	Pilih halaman kredit di lini masa.
+	Start the credits where the music starts	Mulai kredit saat musik dimulai
+	The credits now last {time}.	Kredit kini berdurasi {time}.
+	The whole music ({time})	Seluruh musik ({time})
+	To the last bar line ({time})	Hingga garis birama terakhir ({time})
+	Until the sound ends ({time})	Hingga suara berakhir ({time})
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	kredit tanpa penyesuaian: {time}
+	the sound ends at {time}	suara berakhir pada {time}
+	Fit Credits to Music…	Sesuaikan kredit dengan musik…
+	Analyse Music for Credits	Analisis Musik untuk Kredit
+	A picture or video is behind the text: check the contrast by eye	Ada gambar atau video di belakang teks: periksa kontras dengan mata
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Area aman aksi (93 %), area aman judul (90 %), bagian tengah, dan garis pemandu halaman
+	Baseline grid	Kisi garis dasar
+	Crawl	Gulir
+	Into the next	Ke berikutnya
+	Lines one gap unit apart, moving with the page	Baris berjarak satu satuan celah, bergerak bersama halaman
+	Picture: {file}	Gambar: {file}
+	Safe areas and spines	Area aman dan garis pemandu
+	The text moves {speed} px per frame; a whole number does not shimmer	Teks bergerak {speed} px per bingkai; bilangan bulat tidak berkedip
+	Video: {file}	Video: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” tidak menonjol dari latar (kontras {ratio}:1; minimal 4,5:1 diperlukan)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Tampilan siap pakai: gaya, latar, transisi, dan waktu. File gaya, jika ada, diutamakan.
+	Apply Credits Template…	Terapkan Templat Kredit…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Pilih templat terlebih dahulu.
+	Name of the template:	Nama templat:
+	New Spreadsheet from Template…	Spreadsheet Baru dari Templat…
+	Template	Templat
+	Template saved: {name}	Templat disimpan: {name}
+	Template:	Templat:
+	built in	bawaan
+	mine	milik saya
+	this project	proyek ini
+	Credits Templates	Templat Kredit
+	Cinecred Project…	Proyek Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Buka folder proyek Cinecred (Styling.toml dan spreadsheet kreditnya)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Spreadsheet, file kredit, dan proyek Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	(blok kosong)
+	Apply Template…	Terapkan Templat…
+	Change them in the spreadsheet; the credits follow when you save it.	Ubah di spreadsheet; kredit mengikuti saat disimpan.
+	Compact View	Tampilan Ringkas
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Bandingkan kredit terpilih di timeline dengan spreadsheet-nya, baris demi baris
+	Fit the selected credits to the music under them	Sesuaikan kredit terpilih dengan musik di bawahnya
+	Fit to Music…	Sesuaikan dengan Musik…
+	Full View	Tampilan Lengkap
+	Give the selected credits on the timeline another template	Beri kredit terpilih di timeline templat lain
+	Names	Nama
+	No pages	Tidak ada halaman
+	Refresh Placed Credits…	Segarkan Kredit Terpasang…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Tampilkan semua: blok, properti, halaman sepanjang waktu, pemeriksaan, dan alat kredit
+	Spine	Poros
+	Tails	Keterangan
+	The blocks of the chosen page; choose one to see it in the preview	Blok halaman yang dipilih; pilih satu untuk melihatnya di pratinjau
+	The pages along time; click one to choose it	Halaman sepanjang waktu; klik salah satu untuk memilihnya
+	{n} more	{n} lagi
+	Block	Blok
+	parallel	paralel
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Di halaman (OBS mengambilnya dari Browser Source)
+	Separate (a media source in OBS)	Terpisah (sumber media di OBS)
+	No sound	Tanpa suara
+	credits	kredit
+	graphic	grafik
+	{n} pages	{n} halaman
+	Live Graphics	Grafik Langsung
+	Prepared cues; double-click one to put it in preview	Isyarat yang disiapkan; klik ganda untuk menaruhnya di pratinjau
+	Add Credits…	Tambah Kredit…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Spreadsheet kredit, berkas kredit, atau proyek Cinecred sebagai isyarat
+	Add Selected Graphic	Tambah Grafik Terpilih
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Klip grafik yang dipilih di timeline (judul, lower third) sebagai isyarat
+	Cues	Isyarat
+	TAKE	TAKE
+	The preview cue goes on air from its first page	Isyarat pratinjau tayang mulai dari halaman pertamanya
+	PREVIOUS	SEBELUMNYA
+	The page before (on the first page: from its start)	Halaman sebelumnya (di halaman pertama: dari awalnya)
+	NEXT	BERIKUTNYA
+	The next page; after the last one, the preview cue	Halaman berikutnya; setelah yang terakhir, isyarat pratinjau
+	HOLD	TAHAN
+	Stop the program where it is	Hentikan program di posisinya
+	CONTINUE	LANJUTKAN
+	Go on from where it stopped	Lanjutkan dari tempat berhenti
+	UPDATE	PERBARUI
+	Read the spreadsheet (or the clip) again; on air it changes at once	Baca ulang spreadsheet (atau klip); saat tayang langsung berubah
+	OUT	OUT
+	Take everything off air	Turunkan semuanya dari siaran
+	Start Live Page	Mulai Halaman Langsung
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Sajikan program di komputer ini untuk Browser Source OBS (hanya 127.0.0.1)
+	not running	tidak berjalan
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	Hubungkan ke OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Hubungkan ke OBS di komputer ini dan arahkan Browser Source “CFA4 Live” ke halaman langsung
+	Port	Port
+	Password	Kata sandi
+	Live page	Halaman langsung
+	Sound	Suara
+	OBS	OBS
+	Nothing in preview	Tidak ada di pratinjau
+	page {page} of {pages}	halaman {page} dari {pages}
+	held	ditahan
+	ended	selesai
+	Off air	Tidak tayang
+	Stop Live Page	Hentikan Halaman Langsung
+	Connected to OBS {version}; source “{source}”	Terhubung ke OBS {version}; sumber “{source}”
+	Point OBS Again	Atur OBS Lagi
+	Select a graphic clip on the timeline first.	Pilih klip grafik di timeline terlebih dahulu.
+	Connecting to OBS…	Menghubungkan ke OBS…
+	Live Graphics…	Grafik Langsung…
+	PREVIEW	PRATINJAU
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	tag gambar atau video berdiri sendiri di sel isi (atau dengan satu nama, sebagai potret); tag lainnya dihapus
+	the page gap is not a duration; the page style's is used	jeda halaman bukan durasi; yang dari gaya halaman digunakan
+	the page runtime is not a positive duration; the page style's is used	durasi halaman bukan durasi positif; yang dari gaya halaman digunakan
+	background “{file}” was not found; it is left out	latar “{file}” tidak ditemukan; dilewati
+	card page {page} is taller than the frame; use a roll page	halaman kartu {page} lebih tinggi daripada bingkai; gunakan halaman gulir
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	warna “{colour}” pada gaya huruf “{style}” bukan #rrggbb; dilewati
+	colour “{colour}” is not #rrggbb; black is used	warna “{colour}” bukan #rrggbb; hitam digunakan
+	colour “{colour}” is not #rrggbb; white is used	warna “{colour}” bukan #rrggbb; putih digunakan
+	content style “{style}” does not exist; “{used}” is used	gaya konten “{style}” tidak ada; “{used}” digunakan
+	letter style “{style}” does not exist; the text keeps the block's style	gaya huruf “{style}” tidak ada; teks mempertahankan gaya blok
+	page gap “{value}” is not a duration	jeda halaman “{value}” bukan durasi
+	page runtime “{value}” is not a duration	durasi halaman “{value}” bukan durasi
+	page style “{style}” does not exist; a roll page is used	gaya halaman “{style}” tidak ada; halaman gulir digunakan
+	page {page}: the background names no file; it is left out	halaman {page}: latar tidak menyebut file; dilewati
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	halaman {page}: durasi dicapai dengan mengubah kecepatan gulir (halaman tidak memiliki jarak antarblok yang dapat diregangkan)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	halaman {page}: durasi dicapai dengan mengubah kecepatan gulir (kredit terlalu panjang bahkan tanpa jarak)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	halaman {page}: durasi dicapai dengan mengubah kecepatan gulir (jarak harus membesar lebih dari 20 kali lipat)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	halaman {page}: transisi mengharuskan halaman saling bersentuhan (jeda halaman 0); dilewati
+	page {page}: there is no transition “{name}”; the pages cut	halaman {page}: tidak ada transisi “{name}”; halaman berpindah dengan potongan langsung
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	posisi sumbu “{value}” tidak didukung (offset piksel, opsional dengan “parallel”, didukung)
+	vertical gap “{value}” is not a number	jarak vertikal “{value}” bukan angka
+	picture “{file}” was not found or cannot be read; it is left out	gambar “{file}” tidak ditemukan atau tidak dapat dibaca; dilewati
+	video “{file}” was not found or cannot be read; it is left out	video “{file}” tidak ditemukan atau tidak dapat dibaca; dilewati
+	there is no roll page without its own runtime to stretch; the length cannot change	tidak ada halaman gulir dengan durasi sendiri yang dapat diregangkan; panjang tidak dapat diubah
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	kartu dan jeda saja berdurasi {seconds} s; panjang yang diminta lebih pendek, sehingga halaman gulir mempertahankan panjang alaminya
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	gaya huruf “{style}”: hanya lapisan berwarna pertama yang digunakan (tanpa kontur, bayangan, atau garis)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	durasi seluruh kredit tidak dibawa; gunakan Sesuaikan kredit dengan musik (atau suatu panjang)
+	page style “{style}”: fade curves become linear fades	gaya halaman “{style}”: kurva pudar menjadi pudar linear
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	gaya konten “{style}” tidak memiliki judul di Cinecred; judul yang ditulis di lembar tetap ditampilkan
+	content style “{style}”: sorting the names is not carried over	gaya konten “{style}”: pengurutan nama tidak dibawa
+	transition curves are not carried over	kurva transisi tidak dibawa
+	picture styles (pictures keep their own size) are not carried over	gaya gambar (gambar mempertahankan ukurannya sendiri) tidak dibawa
+	video (tape) styles are not carried over	gaya video (pita) tidak dibawa
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	proyek Cinecred memiliki {n} spreadsheet kredit; “{name}” digunakan (pilih yang lain di kolom Spreadsheet)

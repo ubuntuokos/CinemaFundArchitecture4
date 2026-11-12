@@ -1236,3 +1236,14 @@ fn max_threads_reaches_the_export_settings() {
     assert!(settings_of(json!({"format": "mjpeg", "path": "out.mov", "maxThreads": -1})).is_err(), "a negative count is refused");
     assert!(settings_of(json!({"format": "mjpeg", "path": "out.mov", "settings": {"maxThread": 2}})).is_err(), "a misspelt setting is refused, not ignored");
 }
+
+#[test]
+fn dash_manifest_is_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"hls"})).unwrap();
+    assert_eq!(r["settings"]["dashManifest"], false, "off by default");
+    let r = s.execute("export.resolve", json!({"format":"hls", "dashManifest":true})).unwrap();
+    assert_eq!(r["settings"]["dashManifest"], true);
+    let r = s.execute("export.resolve", json!({"format":"hls", "settings":{"dashManifest":true}})).unwrap();
+    assert_eq!(r["settings"]["dashManifest"], true);
+}

@@ -285,6 +285,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = bool_p(p, "burnCaptions") {
         settings.burn_captions = v;
     }
+    if let Some(v) = bool_p(p, "dashManifest") {
+        settings.dash_manifest = v;
+    }
     if let Some(v) = str_p(p, "proresProfile") {
         settings.prores_profile = v.to_string();
     }
@@ -301,7 +304,7 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.cineform_quality = v.to_string();
     }
     if let Some(v) = str_p(p, "audioCodec") {
-        settings.audio.codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "audioCodec: auto | aac | pcm | flac | opus"))?;
+        settings.audio.codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "audioCodec: auto | aac | pcm | flac | opus | ac3"))?;
     }
     if let Some(v) = crate::commands::checked_u32_p(p, "audioBitrateKbps", cmd)? {
         settings.audio.bitrate_kbps = v;
