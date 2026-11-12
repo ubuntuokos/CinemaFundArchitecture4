@@ -21,9 +21,9 @@ runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
-# This development manifest builds no Qt 6 GUI (no PySide6 in the runtime; the release bundle
-# carries it), so it starts the egui editor and its menu entry is pointed at `cfa4` below.
-command: cfa4
+# The Qt 6 GUI is what `flatpak run` and the menu entry start (owner decision 2026-11-12), as in the
+# release bundle; the frozen egui editor: `flatpak run --command=cfa4 io.github.ubuntuokos.cfa4`.
+command: cfa4-qt
 finish-args:
   # X11 shared memory (MIT-SHM). Without it the X11 fallback is slow or fails.
   - --share=ipc
@@ -51,6 +51,34 @@ finish-args:
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin
 modules:
+  # MIT Kerberos (libgssapi_krb5.so.2): the Qt 6 wheels' QtNetwork and QtMultimedia need it and the
+  # freedesktop runtime has none, so without it the Qt GUI cannot start in the sandbox. Only the
+  # shared libraries stay, with their licence (MIT-style NOTICE) in share/doc/cfa4/krb5. The tarball's
+  # PGP signature checks out against Greg Hudson's key (C4493CB739F4A89F9852CBC20CBA08575F8372DF).
+  - name: krb5
+    subdir: src
+    config-opts:
+      - --localstatedir=/var/lib
+      - --disable-static
+      - --disable-rpath
+      - --without-system-verto
+    post-install:
+      - install -Dm644 ../NOTICE /app/share/doc/cfa4/krb5/NOTICE
+    cleanup:
+      - /bin
+      - /sbin
+      - /include
+      - /lib/pkgconfig
+      - /lib/krb5/plugins/kdb
+      - /share/man
+      - /share/examples
+      - /share/locale
+      - /share/et
+      - /var
+    sources:
+      - type: archive
+        url: https://kerberos.org/dist/krb5/1.22/krb5-1.22.3.tar.gz
+        sha256: fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b
   - name: cfa4
     buildsystem: simple
     build-options:
@@ -63,10 +91,19 @@ modules:
       - install -Dm755 target/release/cfa4 /app/bin/cfa4
       # The headless CLI and its stdio MCP server, as in the release bundle (#346).
       - install -Dm755 target/release/cfa4-cli /app/bin/cfa4-cli
-      - >-
-        sed -e 's/^Exec=cfa4-qt /Exec=cfa4 /' -e 's/^TryExec=cfa4-qt$/TryExec=cfa4/'
-        packaging/linux/io.github.ubuntuokos.cfa4.desktop > io.github.ubuntuokos.cfa4.desktop &&
-        install -Dm644 io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop
+      - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop
+      # credits files open in the Qt GUI's Credits workspace (hidden from the menus), as in package.sh
+      - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.credits.desktop /app/share/applications/io.github.ubuntuokos.cfa4.credits.desktop
+      # The Qt 6 GUI (docs/qt-parity.md 1.10), staged as package.sh stages it: the cfa4-qt launcher
+      # (the runtime's python3 runs it), its Python package with the i18n/ catalogs and the About
+      # window's credits, and the PySide6 / Qt 6 of the pinned wheels below (stage-pyside6.py: only
+      # what the GUI loads, unmodified and replaceable, with the LGPL texts and the source offer).
+      - install -Dm755 packaging/linux/cfa4-qt /app/bin/cfa4-qt
+      - mkdir -p /app/lib/cfa4/python && cp -R python/cfa4_qt /app/lib/cfa4/python/
+      - find /app/lib/cfa4/python -name __pycache__ -type d -prune -exec rm -rf {} +
+      - mkdir -p /app/lib/cfa4/python/cfa4_qt/i18n && cp i18n/*.tsv i18n/*.tsv.attribution /app/lib/cfa4/python/cfa4_qt/i18n/
+      - mkdir -p /app/lib/cfa4/python/cfa4_qt/credits && cp contributors/contributors.json contributors/people.toml /app/lib/cfa4/python/cfa4_qt/credits/
+      - python3 packaging/linux/stage-pyside6.py --wheels pyside6-wheels --licences gnu-licences --dest /app/lib/cfa4/pyside6 --doc /app/share/doc/cfa4/pyside6
       - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.mime.xml /app/share/mime/packages/io.github.ubuntuokos.cfa4.xml
       - mkdir -p /app/share/icons && cp -R assets/cfa4/hicolor /app/share/icons/
       - >-
@@ -83,4 +120,31 @@ modules:
           - corpus
           - build-flatpak
           - .flatpak-builder
+          - .venv
       - cargo-sources.json
+      # The PySide6 / Qt 6 wheels pinned in requirements/linux-amd64.txt (same SHA-256; stage-pyside6.py
+      # refuses any other). Bump them together with that file.
+      - type: file
+        url: https://files.pythonhosted.org/packages/7b/3c/7597d8dcb36aa8315427635ec6ec9d850ffbad4ce78b9118ac854889f2d3/pyside6_essentials-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
+        sha256: 16f4b5e41daf49235ae048458243da9efe5f3d8040f9cc5aa454ce69893d3bd9
+        dest: pyside6-wheels
+      - type: file
+        url: https://files.pythonhosted.org/packages/ff/3e/0d6c5934de575286ac0699a701d4155048185035b8da0ee78d57a38bc7ef/pyside6_addons-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
+        sha256: 4ab38c0017f0453671a9313d3a53ca1c0e378924f54b07e596bcea94a9642391
+        dest: pyside6-wheels
+      - type: file
+        url: https://files.pythonhosted.org/packages/49/c2/a04fa003b4360e99d8e3fc2829abacf37396ace63ea1cd616402209ec7c6/shiboken6-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl
+        sha256: 3bde565bb0890044b5c7f63808adddede5abc241e9395a2bfed61919884d6240
+        dest: pyside6-wheels
+      # The LGPL texts the bundled Qt ships with (the SDK has no /usr/share/common-licenses):
+      # stage-pyside6.py --licences reads them as LGPL-3 and LGPL-2.1.
+      - type: file
+        url: https://www.gnu.org/licenses/lgpl-3.0.txt
+        sha256: e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118
+        dest: gnu-licences
+        dest-filename: LGPL-3
+      - type: file
+        url: https://www.gnu.org/licenses/lgpl-2.1.txt
+        sha256: 20e50fe7aae3e56378ebf0417d9de904f55a0e61e4df315333e632a4d3555d95
+        dest: gnu-licences
+        dest-filename: LGPL-2.1

@@ -107,8 +107,8 @@ Status as of 2026-11-08 (`main`, `docs/qt-parity.md`: 59 of 63 rows ✅, 4 🟡,
    .deb and the tar.gz ship the Qt GUI with Ubuntu's PySide6 as a dependency;
    the AppImage and the Flatpak do not carry it, and the desktop entry still
    starts egui (parity 1.10). Update 2026-11-12 (owner decision): the AppImage
-   and the Flatpak carry it (decision 2026-11-09), and the AppImage, the release
-   Flatpak and the desktop entry of every package now start the Qt GUI; egui
+   and the Flatpak carry it (decision 2026-11-09), and the AppImage, the Flatpak
+   and the desktop entry of every package now start the Qt GUI; egui
    stays installed as `cfa4` until its removal.
 
 The remaining work (parity 1.9, 1.10, 4.2, 5.5) and the egui removal

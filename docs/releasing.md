@@ -134,9 +134,13 @@ submission (its header says how to build it). Both manifests must keep the same 
 `finish-args`, and install the app and `cfa4-cli`, which runs the
 headless commands and the MCP server in the sandbox
 (`flatpak run --command=cfa4-cli io.github.ubuntuokos.cfa4 mcp`). packaging-lint checks this.
-The bundle also carries the Qt 6 GUI and starts it (`command: cfa4-qt`, owner decision 2026-11-12;
-the egui editor with `--command=cfa4`); the from-source manifest builds no Qt GUI, so it starts
-`cfa4` and points its menu entry there.
+Both also carry the Qt 6 GUI and start it (`command: cfa4-qt`, owner decision 2026-11-12; the egui
+editor with `--command=cfa4`): the bundle from the tarball, the from-source manifest staging it as
+`package.sh` does, with PySide6 / Qt 6 from the wheels pinned in `requirements/linux-amd64.txt`
+(the same SHA-256 as `file` sources; bump them together). Both build MIT Kerberos first (the `krb5`
+module, a pinned and PGP-checked tarball, its NOTICE in `share/doc/cfa4/krb5`): the wheels' QtNetwork
+and QtMultimedia need `libgssapi_krb5.so.2`, which the freedesktop runtime lacks. The bundle's test
+imports every module the GUI loads and starts it with `--smoke`.
 
 ## The draft release
 

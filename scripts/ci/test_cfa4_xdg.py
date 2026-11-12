@@ -126,16 +126,48 @@ class XDGDesktopMetadataTests(unittest.TestCase):
     def test_flatpak_manifests_share_application_and_runtime(self) -> None:
         from_source = f"{APP}.yml"
         bundle = f"{APP}.bundle.yml"
-        for field in ("id", "runtime", "runtime-version", "sdk"):
+        for field in ("id", "runtime", "runtime-version", "sdk", "command"):
             self.assertEqual(flatpak_value(from_source, field), flatpak_value(bundle, field))
         self.assertEqual(flatpak_value(from_source, "id"), APP)
-        # the release bundle starts the Qt 6 GUI (owner decision 2026-11-12); the development
-        # manifest builds no Qt GUI, so it starts egui and points its menu entry there
+        # both start the Qt 6 GUI (owner decision 2026-11-12)
         self.assertEqual(flatpak_value(bundle, "command"), "cfa4-qt")
-        self.assertEqual(flatpak_value(from_source, "command"), "cfa4")
-        source = (PACKAGE / "flatpak" / from_source).read_text(encoding="utf-8")
-        self.assertIn("s/^Exec=cfa4-qt /Exec=cfa4 /", source)
-        self.assertIn("s/^TryExec=cfa4-qt$/TryExec=cfa4/", source)
+
+    def test_both_flatpaks_build_kerberos_for_the_qt_gui(self) -> None:
+        """The Qt 6 wheels' QtNetwork and QtMultimedia need libgssapi_krb5.so.2, which the freedesktop
+        runtime lacks: both manifests build the same pinned MIT krb5 before CFA4, keep its licence,
+        and the bundle's smoke test imports every module the GUI loads."""
+        modules = {}
+        for name in (f"{APP}.yml", f"{APP}.bundle.yml"):
+            text = (PACKAGE / "flatpak" / name).read_text(encoding="utf-8")
+            self.assertLess(text.index("  - name: krb5\n"), text.index("  - name: cfa4\n"), name)
+            block = text[text.index("  - name: krb5\n"):text.index("  - name: cfa4\n")]
+            self.assertIn("install -Dm644 ../NOTICE /app/share/doc/cfa4/krb5/NOTICE", block)
+            self.assertRegex(block, r"url: https://kerberos\.org/dist/krb5/\S+\.tar\.gz\n\s+sha256: [0-9a-f]{64}")
+            modules[name] = block
+        self.assertEqual(modules[f"{APP}.yml"], modules[f"{APP}.bundle.yml"])
+        smoke = (PACKAGE / "flatpak-bundle.sh").read_text(encoding="utf-8")
+        self.assertIn("from PySide6 import QtCore, QtGui, QtWidgets, QtNetwork, QtTest, QtMultimedia, QtDBus", smoke)
+
+    def test_from_source_flatpak_builds_the_qt_gui_from_the_pinned_wheels(self) -> None:
+        """The development manifest stages the Qt GUI as package.sh does, with PySide6 / Qt 6 from
+        wheels whose SHA-256 are the ones pinned in requirements/linux-amd64.txt."""
+        source = (PACKAGE / "flatpak" / f"{APP}.yml").read_text(encoding="utf-8")
+        for step in (
+            "install -Dm755 packaging/linux/cfa4-qt /app/bin/cfa4-qt",
+            "cp -R python/cfa4_qt /app/lib/cfa4/python/",
+            "cp i18n/*.tsv i18n/*.tsv.attribution /app/lib/cfa4/python/cfa4_qt/i18n/",
+            "python3 packaging/linux/stage-pyside6.py --wheels pyside6-wheels --licences gnu-licences --dest /app/lib/cfa4/pyside6",
+            "dest-filename: LGPL-3",
+            "dest-filename: LGPL-2.1",
+            f"packaging/linux/{APP}.credits.desktop",
+        ):
+            self.assertIn(step, source)
+        pins = (ROOT / "requirements" / "linux-amd64.txt").read_text(encoding="utf-8")
+        wheels = re.findall(r"url: \S+/((?:pyside6_essentials|pyside6_addons|shiboken6)-6\.12\.0-\S+\.whl)\n\s+sha256: ([0-9a-f]{64})", source)
+        self.assertEqual(sorted(w.split("-")[0] for w, _ in wheels), ["pyside6_addons", "pyside6_essentials", "shiboken6"])
+        for wheel, digest in wheels:
+            self.assertIn("manylinux_2_34_x86_64", wheel)
+            self.assertIn(f"--hash=sha256:{digest}", pins, wheel)
 
     def test_local_package_install_paths_are_cfa4_only(self) -> None:
         contents = (PACKAGE / "package.sh").read_text(encoding="utf-8")

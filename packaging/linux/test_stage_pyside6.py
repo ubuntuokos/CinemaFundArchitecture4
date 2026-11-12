@@ -87,10 +87,10 @@ class StagePyside6Tests(unittest.TestCase):
         requirements.write_text("other==1.0 \\\n    --hash=sha256:" + "1" * 64 + "\n" + "\n".join(pins) + "\n")
         return house, requirements
 
-    def stage(self, house: Path, requirements: Path):
+    def stage(self, house: Path, requirements: Path, *extra: str):
         return subprocess.run(
             ["python3", str(STAGE), "--wheels", str(house), "--dest", str(self.root / "dest"),
-             "--doc", str(self.root / "doc"), "--requirements", str(requirements)],
+             "--doc", str(self.root / "doc"), "--requirements", str(requirements), *extra],
             capture_output=True, text=True, timeout=60, check=False,
         )
 
@@ -116,6 +116,25 @@ class StagePyside6Tests(unittest.TestCase):
         notice = (doc / "PYSIDE6-QT-NOTICE.txt").read_text()
         self.assertIn("pyside6_essentials-6.12.0-cp310-abi3-manylinux_2_34_x86_64.whl  sha256:", notice)
         self.assertIn("download.qt.io", notice)
+
+    def test_licence_texts_from_another_directory(self):
+        """The from-source Flatpak's SDK has no /usr/share/common-licenses: `--licences` names the
+        directory with the pinned GNU texts; without them nothing is staged."""
+        house, requirements = self.wheels()
+        texts = self.root / "gnu"
+        texts.mkdir()
+        (texts / "LGPL-3").write_text("lgpl 3 text\n")
+        (texts / "LGPL-2.1").write_text("lgpl 2.1 text\n")
+        result = self.stage(house, requirements, "--licences", str(texts))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.root / "doc/LICENSE.LGPL-3.0").read_text(), "lgpl 3 text\n")
+        self.assertEqual((self.root / "doc/LICENSE.LGPL-2.1").read_text(), "lgpl 2.1 text\n")
+        shutil.rmtree(self.root / "dest")
+        (texts / "LGPL-2.1").unlink()
+        result = self.stage(house, requirements, "--licences", str(texts))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("LGPL-2.1 is missing", result.stderr)
+        self.assertFalse((self.root / "dest").exists(), "nothing staged")
 
     def test_refuses_a_wheel_whose_hash_is_not_pinned(self):
         house, requirements = self.wheels()
