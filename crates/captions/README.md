@@ -65,6 +65,17 @@ Text is wrapped at 32 columns, bottom-aligned (last row 15) and centred. Charact
 character, as the standard requires); others are dropped. If there is no room to load a caption
 before its in point (for example a caption at 00:00:00:00), it appears as soon as it is loaded.
 
+### Line 21 waveforms
+
+`cea608::decode_line21(samples)` reads the byte pair of a digitised line 21 (CTA-608-E: seven
+cycles of clock run-in, start bits 0 0 1, 16 data bits least significant first at 0.5034965 MHz)
+from the luma samples of the active line, at any line width and any sample range: it slices at
+the middle of the range after a short box filter, finds the run-in by its rising edges one bit
+period apart and the start bit about 2.75 periods after the last of them, and samples the data
+bits at their centres. Both bytes must have odd parity. `cea608::line21_samples` draws the
+waveform (blanking to 50 IRE, softened edges) for tests and writers. `scc::decode_channel`
+decodes data channel 2 (CC2 / CC4) as well as channel 1.
+
 ### MCC writer
 
 The writer merges the scheduled CEA-608 and CEA-708 frames in timestamp order. Frames without

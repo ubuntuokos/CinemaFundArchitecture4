@@ -212,3 +212,45 @@ fn encrypted_sound_track_file() {
     }
     clear_keys();
 }
+
+#[test]
+fn encrypted_timed_text_track_file() {
+    let _g = RING.lock().unwrap_or_else(PoisonError::into_inner);
+    clear_keys();
+    let xml = b"<?xml version=\"1.0\"?><SubtitleReel xmlns=\"http://www.smpte-ra.org/schemas/428-7/2010/DCST\"/>".as_slice();
+    let font = b"OTTO fake font bytes, longer than one AES block".as_slice();
+    let png = b"\x89PNG fake".as_slice();
+    let plain = crate::testing::build_timed_text(xml, &[("application/x-font-opentype", font), ("image/png", png)]);
+    for mic in [false, true] {
+        let f = encrypt_file(&plain, 0, mic);
+        assert_ne!(f, plain);
+        assert!(!f.windows(xml.len()).any(|w| w == xml), "the document is not stored in the clear");
+        assert!(crate::is_timed_text(&f));
+        let tt = crate::open_timed_text(&f).unwrap();
+        assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+        assert_eq!(tt.encryption.map(|e| e.key_id), Some(KEY_ID));
+        assert!(tt.document.plain.is_some() && tt.resources.iter().all(|r| r.data.is_some_and(|d| d.plain.is_some())));
+        // without the key: the error names the key, never garbage
+        assert!(tt.needs_key());
+        assert!(matches!(tt.read_document(&f), Err(Error::Encrypted(_))));
+        assert!(matches!(tt.read_resource(&f, 0), Err(Error::Encrypted(_))));
+        ring(mic);
+        assert!(!tt.needs_key());
+        assert_eq!(tt.read_document(&f).unwrap(), xml);
+        assert_eq!(tt.read_resource(&f, 0).unwrap(), font);
+        assert_eq!(tt.read_resource(&f, 1).unwrap(), png);
+        // a wrong key fails the Check Value
+        add_key(KEY_ID, ContentKey { cipher: crate::testing::test_key("other"), mic: None });
+        assert!(tt.read_document(&f).is_err());
+        clear_keys();
+        // truncated files never panic
+        ring(mic);
+        for cut in (0..f.len()).step_by(37) {
+            if let Ok(tt) = crate::open_timed_text(&f[..cut]) {
+                let _ = tt.read_document(&f[..cut]);
+                let _ = tt.read_resource(&f[..cut], 0);
+            }
+        }
+        clear_keys();
+    }
+}

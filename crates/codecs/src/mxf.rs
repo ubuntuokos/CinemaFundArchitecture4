@@ -554,19 +554,30 @@ impl MxfSource {
                     (2, 1) => "4:2:2",
                     _ => "4:4:4",
                 };
-                pixel_format =
-                    if l.rgb() { format!("{} {}-bit", if l.alpha() { "RGBA" } else { "RGB" }, l.depth()) } else { format!("YUV {chroma} {}-bit", l.depth()) };
+                pixel_format = if l.xyz() {
+                    format!("XYZ {}-bit", l.depth())
+                } else if l.rgb() {
+                    format!("{} {}-bit", if l.alpha() { "RGBA" } else { "RGB" }, l.depth())
+                } else {
+                    format!("YUV {chroma} {}-bit", l.depth())
+                };
                 has_alpha = l.alpha();
                 // the frames carry their colour: the descriptor's colorimetry; R'G'B' deeper than
                 // 8 bits becomes video-range BT.709 Y'CbCr 4:4:4
                 let s = descriptor_colorimetry(&p);
-                if l.rgb() {
+                if l.xyz() {
+                    // decoded to P3-D65 R'G'B' (`raw_frame`), like DCP JPEG 2000 pictures
+                    color =
+                        cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt709, primaries: cfa4_color::Primaries::P3D65, ..cfa4_color::ColorInfo::REC709 };
+                } else if l.rgb() {
                     color = cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt709, ..cfa4_color::ColorInfo::REC709 };
                 } else if let Some(m) = s.matrix {
                     color.matrix = m;
                 }
-                color.transfer = s.transfer.unwrap_or(color.transfer);
-                color.primaries = s.primaries.unwrap_or(color.primaries);
+                if !l.xyz() {
+                    color.transfer = s.transfer.unwrap_or(color.transfer);
+                    color.primaries = s.primaries.unwrap_or(color.primaries);
+                }
                 explicit_color = None;
             }
             let mut par = par;
@@ -728,6 +739,10 @@ fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo)
     use cfa4_frame::{Chroma, PixelData, Region};
     let (w, h) = (pic.width, pic.height);
     let [mut p0, mut p1, mut p2] = pic.planes;
+    if pic.xyz {
+        // DCDM X'Y'Z' (ST 428-1): to P3-D65 R'G'B', as the JPEG 2000 path does
+        crate::j2k::xyz_to_rgb(&mut p0, &mut p1, &mut p2, pic.depth.clamp(1, 16));
+    }
     let mut alpha = pic.alpha;
     let mut bits = pic.depth;
     if bits < 8 {
@@ -972,7 +987,7 @@ mod tests {
     }
 
     fn picture(depth: u32, rgb: bool, planes: [Vec<u16>; 3], alpha: Option<Vec<u16>>) -> cfa4_mxf::uncompressed::Picture {
-        cfa4_mxf::uncompressed::Picture { width: 2, height: 1, depth, subsampling: (1, 1), rgb, planes, alpha, display: (0, 0, 2, 1) }
+        cfa4_mxf::uncompressed::Picture { width: 2, height: 1, depth, subsampling: (1, 1), rgb, xyz: false, planes, alpha, display: (0, 0, 2, 1) }
     }
 
     #[test]

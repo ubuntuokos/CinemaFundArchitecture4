@@ -155,7 +155,7 @@ def test_every_template_and_word_is_translated_into_hungarian():
 PASS_THROUGH = {
     "2K", "4K", "AAC", "MP2", "Opus", "HQ", "MP4", "QuickTime", "SMPTE", "VP9 Profile 0", "auto level", "float",
     "ProRes 422", "ProRes 422 HQ", "ProRes 422 LT", "ProRes 422 Proxy", "ProRes 4444", "ProRes 4444 XQ",
-    "Flat 1.85:1", "Scope 2.39:1", "Full 1.90:1",
+    "Flat 1.85:1", "Scope 2.39:1", "Full 1.90:1", "SMPTE ST 2067-21",
 }  # fmt: skip
 
 
