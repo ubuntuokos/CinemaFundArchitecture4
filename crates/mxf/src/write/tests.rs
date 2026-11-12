@@ -478,6 +478,7 @@ fn dcinema_sound_mca_labels() {
         channel,
         language: Some("en-US".into()),
         group,
+        titles: None,
     };
     cfg.mca = vec![label(2, "sg51", "5.1", None, None), label(1, "chL", "Left", Some(1), Some(group)), label(1, "chC", "Center", Some(3), Some(group))];
     let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
@@ -1007,4 +1008,267 @@ fn peek_reads_the_packages_of_op_atom_files_without_the_essence() {
     for cut in (0..v.len().min(4000)).step_by(13) {
         let _ = crate::peek(&v[..cut].to_vec());
     }
+}
+
+/// A minimal IMF JPEG 2000 codestream header (SOC, SIZ, COD, QCD) for a 3-component 10-bit
+/// `w`×`h` picture, then a fake tile and EOC. `i` varies the payload.
+fn imf_j2k(rsiz: u16, w: u32, h: u32, i: usize) -> Vec<u8> {
+    let mut v = vec![0xFF, 0x4F, 0xFF, 0x51, 0x00, 38 + 9];
+    v.extend_from_slice(&rsiz.to_be_bytes());
+    for x in [w, h, 0, 0, w, h, 0, 0] {
+        v.extend_from_slice(&x.to_be_bytes());
+    }
+    v.extend_from_slice(&3u16.to_be_bytes());
+    for _ in 0..3 {
+        v.extend_from_slice(&[9, 1, 1]);
+    }
+    // COD: precincts, CPRL, 1 layer, MCT, 5 levels, 32×32 code-blocks, 9/7, 6 precinct sizes
+    v.extend_from_slice(&[0xFF, 0x52, 0x00, 18, 0x01, 0x04, 0x00, 0x01, 0x01, 0x05, 0x03, 0x03, 0x00, 0x00, 0x77, 0x88, 0x88, 0x88, 0x88, 0x88]);
+    // QCD: scalar expounded, 2 guard bits, 16 subbands
+    v.extend_from_slice(&[0xFF, 0x5C, 0x00, 35, 0x42]);
+    v.extend((0..16u16).flat_map(|b| (0x4000 + b).to_be_bytes()));
+    v.extend_from_slice(&[0xFF, 0x90]);
+    v.extend(std::iter::repeat_n(i as u8 ^ 0x6C, 200 + 5 * (i % 13)));
+    v.extend_from_slice(&[0xFF, 0xD9]);
+    v
+}
+
+fn imf_picture_config(rate: Rational, rgb: bool) -> (WriterConfig, PackageIds) {
+    let mut ids = PackageIds::from_seed("imf-pic", "Main");
+    ids.file = Umid::dcinema([0x31; 16]);
+    let mut cfg = WriterConfig::new(Pattern::Imf, rate, ids.clone());
+    let rsiz = 0x0411; // IMF 2K lossy, mainlevel 1, sublevel 1
+    let mut p = PictureDesc::new(PictureCoding::J2k { rsiz }, 1920, 1080);
+    p.depth = 10;
+    p.rgb = rgb;
+    p.j2k = J2kSubDescriptor::from_codestream(&imf_j2k(rsiz, 1920, 1080, 0));
+    cfg.picture = Some(p);
+    cfg.timecode = Some(StartTimecode { frames: 0, rate, drop_frame: false });
+    (cfg, ids)
+}
+
+/// #931: an IMF App 2E picture track file (ST 2067-5, ST 2067-21): OP1a, frame-wrapped JPEG 2000,
+/// the IMF coding label, the RGBA descriptor with a complete JPEG 2000 sub-descriptor, essence
+/// partitions of 60 s, each followed by an index partition, and the RIP listing them all.
+#[test]
+fn imf_picture_track_file() {
+    let rate = Rational::new(1, 1); // 60 frames per essence partition
+    let (cfg, ids) = imf_picture_config(rate, true);
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    let n = 130;
+    for i in 0..n {
+        w.push_picture(&imf_j2k(0x0411, 1920, 1080, i), FrameInfo::intra()).unwrap();
+    }
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, OperationalPattern::Generalized { item: 1, package: 1 });
+    let t = &m.tracks[0];
+    assert_eq!(t.codec, Codec::Jpeg2000);
+    assert_eq!(t.wrapping, Wrapping::Frame);
+    assert_eq!(t.duration, Some(n as i64));
+    assert!(t.picture.as_ref().unwrap().rgba);
+    for i in [0, 59, 60, 61, 119, 120, 129] {
+        assert_eq!(m.read_sample(&f, 0, i).unwrap(), imf_j2k(0x0411, 1920, 1080, i), "frame {i}");
+    }
+    // header, then essence (60) / index / essence (60) / index / essence (10) / index, footer
+    let layout: Vec<(PartitionKind, u32, u32)> = m.partitions.iter().map(|p| (p.kind, p.body_sid, p.index_sid)).collect();
+    use PartitionKind::*;
+    assert_eq!(layout, vec![(Header, 0, 0), (Body, 1, 0), (Body, 0, 2), (Body, 1, 0), (Body, 0, 2), (Body, 1, 0), (Body, 0, 2), (Footer, 0, 0)]);
+    let footer = m.partitions.last().unwrap();
+    assert_eq!((footer.header_byte_count, footer.index_byte_count), (0, 0));
+    for p in &m.partitions {
+        assert_eq!(p.status, 4, "closed complete partitions");
+        assert_eq!(p.kag_size, 1);
+        if p.kind != Footer {
+            assert_eq!(p.footer_partition, footer.this_partition);
+        }
+    }
+    // essence partitions continue the essence stream: body offsets 0, 60 frames, 120 frames
+    let offsets: Vec<u64> = m.partitions.iter().filter(|p| p.body_sid == 1).map(|p| p.body_offset).collect();
+    assert_eq!(offsets[0], 0);
+    assert!(offsets[1] > 0 && offsets[2] > offsets[1]);
+    // ST 2067-5 5.1.1: at least 8 KiB of fill after the header metadata (a fill KLV, BER length 4)
+    let fill_key = KLV_FILL;
+    let header_end = usize::try_from(m.partitions[1].this_partition).unwrap();
+    let at = f[..header_end].windows(16).rposition(|w| w == fill_key).unwrap();
+    assert!(header_end - at - 20 >= 8192, "fill {}", header_end - at - 20);
+    // the primary package is the file package
+    assert!(f.windows(32).any(|w| w == ids.file.0));
+    assert!(f.windows(4).any(|w| w == [0x3B, 0x08, 0x00, 0x10]));
+    // ST 2067-21 7.1.2: mode P1 frame wrapping (ST 422 Table 2)
+    assert!(f.windows(16).any(|w| w == labels::essence_container(0x0D, 0x0C, 0x06, 0x00)));
+    // ST 422 Table 3 IMF coding label: 2K lossy (byte 15 = 02), mainlevel 1 sublevel 1 (byte 16 = 03)
+    let label = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x04, 0x01, 0x02, 0x02, 0x03, 0x01, 0x02, 0x03];
+    assert!(f.windows(16).any(|w| w == label));
+    // the sub-descriptor carries COD, QCD and the R10 G10 B10 layout
+    assert!(f.windows(10).any(|w| w == [0x01, 0x04, 0x00, 0x01, 0x01, 0x05, 0x03, 0x03, 0x00, 0x00]));
+    assert!(f.windows(8).any(|w| w == [b'R', 10, b'G', 10, b'B', 10, 0, 0]));
+    // truncation never panics
+    for cut in (0..f.len()).step_by(211) {
+        if let Ok(m) = open(&f[..cut]) {
+            for i in 0..m.tracks.first().map_or(0, |t| t.samples.len()).min(8) {
+                let _ = m.read_sample(&f[..cut], 0, i);
+            }
+        }
+    }
+}
+
+/// #931: Y'C'BC'R pictures get a CDCI descriptor with ST 2067-21 narrow-range levels.
+#[test]
+fn imf_ycbcr_picture_uses_cdci() {
+    let rate = Rational::new(24, 1);
+    let (mut cfg, _) = imf_picture_config(rate, false);
+    if let Some(p) = cfg.picture.as_mut() {
+        p.subsampling = (2, 1);
+    }
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..3 {
+        w.push_picture(&imf_j2k(0x0411, 1920, 1080, i), FrameInfo::intra()).unwrap();
+    }
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    let p = m.tracks[0].picture.as_ref().unwrap();
+    assert!(!p.rgba);
+    // one essence partition, one index partition
+    assert_eq!(m.partitions.iter().filter(|p| p.kind == PartitionKind::Body).count(), 2);
+    // 10-bit: black 64, white 940, colour range 897
+    let u32s = |v: u32| v.to_be_bytes();
+    assert!(f.windows(4).any(|w| w == u32s(64)));
+    assert!(f.windows(4).any(|w| w == u32s(940)));
+    assert!(f.windows(4).any(|w| w == u32s(897)));
+    assert!(f.windows(8).any(|w| w == [b'Y', 10, b'U', 10, b'V', 10, 0, 0]));
+}
+
+/// #931: an IMF sound track file: clip-wrapped 24-bit PCM at the sample rate, the IMF MCA
+/// channel assignment, the reference image edit rate and a constant-rate index partition.
+#[test]
+fn imf_sound_track_file() {
+    let mut ids = PackageIds::from_seed("imf-snd", "Main");
+    ids.file = Umid::dcinema([0x32; 16]);
+    let mut cfg = WriterConfig::new(Pattern::Imf, Rational::new(48_000, 1), ids);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 2, bits: 24 }];
+    cfg.reference_image_edit_rate = Some(Rational::new(24, 1));
+    cfg.reference_audio_alignment_level = Some(-20);
+    let group = [0x41; 16];
+    let label = |sym: &str, channel: Option<u32>, g: Option<[u8; 16]>| McaLabel {
+        dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, if channel.is_some() { 1 } else { 2 }, 0x01, 0, 0, 0, 0],
+        link: if channel.is_none() { group } else { [channel.unwrap_or(0) as u8; 16] },
+        symbol: sym.into(),
+        name: sym.into(),
+        channel,
+        language: None,
+        group: g,
+        titles: None,
+    };
+    let mut st = label("ST", None, None);
+    st.titles = Some(McaTitles { title: "Main".into(), title_version: "1".into(), content_kind: "PRM".into(), element_kind: "FULL".into() });
+    cfg.mca = vec![st, label("chL", Some(1), Some(group)), label("chR", Some(2), Some(group))];
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    let frames = 48_000 + 123;
+    let mut pcm = Vec::new();
+    for k in 0..frames {
+        for c in 0..2i32 {
+            let s = (k as i32 * 5 + c * 1_000_000) % 8_000_000;
+            pcm.extend_from_slice(&s.to_le_bytes()[..3]);
+        }
+    }
+    for chunk in pcm.chunks(6 * 1001) {
+        w.push_sound(0, chunk).unwrap();
+    }
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, OperationalPattern::Generalized { item: 1, package: 1 });
+    let t = &m.tracks[0];
+    assert_eq!(t.kind, TrackKind::Sound);
+    assert_eq!(t.wrapping, Wrapping::Clip);
+    assert_eq!(t.duration, Some(frames as i64));
+    assert_eq!(t.stored_sample_frames(), frames as u64);
+    let got = m.read_pcm(&f, 0, 0, frames).unwrap();
+    for k in (0..frames).step_by(101) {
+        for c in 0..2 {
+            let want = (k as i32 * 5 + c as i32 * 1_000_000) % 8_000_000;
+            assert_eq!(got[c][k], want as f32 / 8_388_608.0);
+        }
+    }
+    // header, essence, index partition, footer
+    let layout: Vec<(PartitionKind, u32, u32)> = m.partitions.iter().map(|p| (p.kind, p.body_sid, p.index_sid)).collect();
+    assert_eq!(layout, vec![(PartitionKind::Header, 0, 0), (PartitionKind::Body, 1, 0), (PartitionKind::Body, 0, 2), (PartitionKind::Footer, 0, 0)]);
+    assert!(f.windows(16).any(|w| w == labels::CA_IMF_MCA));
+    // the soundfield group's MCA title items (ST 2067-2 Table 7)
+    let utf16be = |t: &str| -> Vec<u8> { t.encode_utf16().flat_map(|u| u.to_be_bytes()).collect() };
+    for (k, t) in [(7u16, "Main"), (9, "PRM"), (10, "FULL")] {
+        let mut item = (labels::TAG_MCA + k).to_be_bytes().to_vec();
+        item.extend_from_slice(&(2 * t.len() as u16).to_be_bytes());
+        item.extend(utf16be(t));
+        assert!(f.windows(item.len()).any(|w| w == item), "MCA item {k}");
+    }
+    // reference image edit rate 24/1, alignment level -20
+    let mut rier = labels::TAG_REF_IMAGE_EDIT_RATE.to_be_bytes().to_vec();
+    rier.extend_from_slice(&[0, 8, 0, 0, 0, 24, 0, 0, 0, 1]);
+    assert!(f.windows(rier.len()).any(|w| w == rier));
+    let mut ral = (labels::TAG_REF_IMAGE_EDIT_RATE + 1).to_be_bytes().to_vec();
+    ral.extend_from_slice(&[0, 1, (-20i8) as u8]);
+    assert!(f.windows(ral.len()).any(|w| w == ral));
+}
+
+/// A real IMF track file (`CFA4_IMF_SAMPLE`, e.g. the track files of the Photon test IMP
+/// MERIDIAN_Netflix_Photon_161006) opens cleanly with the partition layout this writer uses:
+/// header, essence, index partition (BodySID 1, IndexSID 2), footer, all closed and complete.
+#[test]
+fn imf_sample_has_the_written_layout() {
+    let Ok(path) = std::env::var("CFA4_IMF_SAMPLE") else { return };
+    let f = std::fs::read(&path).unwrap();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, OperationalPattern::Generalized { item: 1, package: 1 });
+    let layout: Vec<(PartitionKind, u32, u32, u8)> = m.partitions.iter().map(|p| (p.kind, p.body_sid, p.index_sid, p.status)).collect();
+    use PartitionKind::*;
+    assert_eq!(layout[..3], [(Header, 0, 0, 4), (Body, 1, 0, 4), (Body, 0, 2, 4)]);
+    assert_eq!(layout.last(), Some(&(Footer, 0, 0, 4)));
+}
+
+#[test]
+fn imf_rejects_bad_configs() {
+    let ids = PackageIds::from_seed("x", "x");
+    let sound = |rate: i32, sd: SoundDesc| {
+        let mut cfg = WriterConfig::new(Pattern::Imf, Rational::new(rate, 1), ids.clone());
+        cfg.sound = vec![sd];
+        MxfWriter::new(Cursor::new(Vec::new()), cfg).err().map(|e| e.to_string())
+    };
+    assert!(sound(48_000, SoundDesc { sample_rate: 48_000, channels: 2, bits: 16 }).unwrap().contains("24-bit"));
+    assert!(sound(48_000, SoundDesc { sample_rate: 44_100, channels: 2, bits: 24 }).is_some());
+    assert!(sound(24, SoundDesc { sample_rate: 48_000, channels: 2, bits: 24 }).unwrap().contains("sample rate"));
+    assert!(sound(96_000, SoundDesc { sample_rate: 96_000, channels: 2, bits: 24 }).is_none());
+    // picture and sound in one file
+    let (mut cfg, _) = imf_picture_config(Rational::new(24, 1), true);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 2, bits: 24 }];
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+    // RDD 9 is not IMF
+    let (mut cfg, _) = imf_picture_config(Rational::new(24, 1), true);
+    cfg.rdd9 = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+}
+
+/// #931: hostile codestream headers give no sub-descriptor instead of a panic.
+#[test]
+fn j2k_sub_descriptor_from_hostile_codestreams() {
+    let good = imf_j2k(0x0411, 64, 32, 0);
+    let d = J2kSubDescriptor::from_codestream(&good).unwrap();
+    assert_eq!((d.rsiz, d.xsiz, d.ysiz, d.components.len()), (0x0411, 64, 32, 3));
+    assert_eq!(d.coding_style.as_deref().map(<[u8]>::len), Some(16));
+    assert_eq!(d.quantization.as_deref().map(<[u8]>::len), Some(33));
+    for cut in 0..good.len() {
+        let _ = J2kSubDescriptor::from_codestream(&good[..cut]);
+    }
+    for i in 0..good.len().min(120) {
+        for b in [0x00, 0xFF, 0x7F] {
+            let mut v = good.clone();
+            v[i] = b;
+            let _ = J2kSubDescriptor::from_codestream(&v);
+        }
+    }
+    assert!(J2kSubDescriptor::from_codestream(b"not j2k").is_none());
 }

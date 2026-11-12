@@ -209,6 +209,71 @@ fn cinema_4k_puts_the_4k_level_in_its_own_tile_parts() {
 }
 
 #[test]
+fn imf_profile_selection_follows_annex_e() {
+    // ST 2067-21 Annex E example: UHD 4:2:2 at 23.976 is 397.7 MSamples/s (417.6 with the 5 %
+    // headroom): mainlevel 5; 4K class because 3840 > 2048
+    let p = ImfProfile::select(3840, 2160, 2, 24000, 1001, true, 0).unwrap();
+    assert_eq!((p.size, p.mainlevel, p.sublevel), (ImfSize::FourK, 5, 0));
+    assert_eq!(p.rsiz(), 0x0805);
+    // HD 4:4:4 at 24 lossy, 250 Mbit/s: 149 MSamples/s (156.7) is mainlevel 3; 262.5 Mbit/s needs
+    // sublevel 2, but mainlevel 3 stops at sublevel 1
+    let p = ImfProfile::select(1920, 1080, 3, 24, 1, false, 250_000_000).unwrap();
+    assert_eq!((p.size, p.mainlevel, p.sublevel), (ImfSize::TwoK, 3, 1));
+    assert_eq!(p.rsiz(), 0x0413);
+    // UHD 4:4:4 at 60 lossy 800 Mbit/s: 1492.9 MSamples/s → mainlevel 7, sublevel 4 (1600)
+    let p = ImfProfile::select(3840, 2160, 3, 60, 1, false, 800_000_000).unwrap();
+    assert_eq!((p.size, p.mainlevel, p.sublevel), (ImfSize::FourK, 7, 4));
+    assert_eq!(ImfProfile::max_sublevel(4), 2);
+    assert_eq!(ImfProfile::sublevel_bitrate(3), 800_000_000);
+    assert!(ImfProfile::select(8193, 100, 3, 24, 1, true, 0).is_none());
+    assert!(ImfProfile::select(8192, 6224, 3, 1000, 1, true, 0).is_none(), "beyond mainlevel 10");
+    assert!(ImfProfile::select(64, 64, 3, 0, 0, true, 0).is_some(), "zero rates never divide by zero");
+}
+
+#[test]
+fn imf_codestreams_follow_the_profile() {
+    // reversible 4:4:4 10-bit: lossless, Rsiz with the levels, CPRL, 32 × 32, one tile-part per
+    // component with a TLM
+    let img = picture(256, 144, &[(10, false, 1, 1); 3], 41);
+    let p = ImfProfile::select(256, 144, 3, 24, 1, true, 0).unwrap();
+    let opts = EncodeOptions::imf(p, 256, 144, 24, 1);
+    assert_eq!((opts.levels, opts.max_bytes), (5, None));
+    let cs = encode(&img, &opts).unwrap();
+    assert_eq!(&cs[6..8], p.rsiz().to_be_bytes(), "Rsiz");
+    assert_eq!(p.rsiz() >> 8, 0x07);
+    let h = crate::parse_header(&cs).unwrap();
+    assert_eq!((h.levels, h.layers, h.reversible, h.progression), (5, 1, true, 4));
+    let parts = tile_parts(&cs);
+    assert_eq!(parts.len(), 3);
+    assert_eq!(tlm(&cs), parts);
+    assert_eq!(decode(&cs).unwrap().components.iter().map(|c| &c.data).collect::<Vec<_>>(), img.components.iter().map(|c| &c.data).collect::<Vec<_>>());
+    // lossy 4:2:2 12-bit: 9/7 under the sublevel's byte limit per frame
+    let img = picture(320, 180, &[(12, false, 1, 1), (12, false, 2, 1), (12, false, 2, 1)], 43);
+    let p = ImfProfile::select(320, 180, 2, 25, 1, false, 100_000_000).unwrap();
+    assert_eq!((p.mainlevel, p.sublevel), (1, 1));
+    let opts = EncodeOptions::imf(p, 320, 180, 25, 1);
+    assert_eq!(opts.max_bytes, Some(1_000_000));
+    let cs = encode(&img, &opts).unwrap();
+    assert_eq!(&cs[6..8], [0x04, 0x11]);
+    assert!(psnr(&img, &decode(&cs).unwrap()) > 45.0);
+    let tight = EncodeOptions { max_bytes: Some(4_000), ..opts.clone() };
+    assert!(encode(&img, &tight).unwrap().len() <= 4_000);
+    // what the profile does not allow
+    let bad = |img: &Image, o: &EncodeOptions| encode(img, o).is_err();
+    assert!(bad(&picture(64, 64, &[(12, true, 1, 1); 3], 1), &EncodeOptions::imf(p, 64, 64, 25, 1)), "signed");
+    assert!(bad(&picture(64, 64, &[(12, false, 1, 1); 4], 1), &EncodeOptions::imf(p, 64, 64, 25, 1)), "4 components");
+    assert!(bad(&picture(64, 64, &[(12, false, 1, 2); 3], 1), &EncodeOptions::imf(p, 64, 64, 25, 1)), "vertical sub-sampling");
+    assert!(bad(&picture(2050, 16, &[(12, false, 1, 1); 3], 1), &EncodeOptions::imf(p, 2050, 16, 25, 1)), "wider than 2K");
+    let img = picture(64, 64, &[(12, false, 1, 1); 3], 1);
+    assert!(bad(&img, &EncodeOptions { code_block: (6, 6), ..EncodeOptions::imf(p, 64, 64, 25, 1) }));
+    assert!(bad(&img, &EncodeOptions { progression: Progression::Lrcp, ..EncodeOptions::imf(p, 64, 64, 25, 1) }));
+    assert!(bad(&img, &EncodeOptions { reversible: true, ..EncodeOptions::imf(p, 64, 64, 25, 1) }));
+    assert!(bad(&img, &EncodeOptions::imf(ImfProfile { sublevel: 2, ..p }, 64, 64, 25, 1)), "sublevel above the mainlevel's");
+    assert!(bad(&img, &EncodeOptions::imf(ImfProfile { sublevel: 0, ..p }, 64, 64, 25, 1)), "lossy sublevel 0");
+    assert!(!bad(&img, &EncodeOptions::imf(p, 64, 64, 25, 1)));
+}
+
+#[test]
 fn bad_input_is_an_error() {
     let img = picture(16, 16, &[(8, false, 1, 1)], 1);
     let mut short = img.clone();
