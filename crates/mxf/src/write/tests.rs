@@ -1104,6 +1104,9 @@ fn imf_picture_track_file() {
     // the sub-descriptor carries COD, QCD and the R10 G10 B10 layout
     assert!(f.windows(10).any(|w| w == [0x01, 0x04, 0x00, 0x01, 0x01, 0x05, 0x03, 0x03, 0x00, 0x00]));
     assert!(f.windows(8).any(|w| w == [b'R', 10, b'G', 10, b'B', 10, 0, 0]));
+    // PixelLayout (3401h) is the full 8-pair RGBALayout: Photon's RegXML reader rejects a shorter one
+    let pixel_layout = [0x34, 0x01, 0x00, 0x10, b'R', 10, b'G', 10, b'B', 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert!(f.windows(20).any(|w| w == pixel_layout));
     // truncation never panics
     for cut in (0..f.len()).step_by(211) {
         if let Ok(m) = open(&f[..cut]) {

@@ -57,6 +57,16 @@ fn tmp(name: &str) -> String {
     d.to_string_lossy().to_string()
 }
 
+/// Netflix Photon's IMF validator (a test oracle only, never shipped), when `CFA4_PHOTON_CP` holds
+/// the Java class path of a local Photon build: every file of the package must have no errors.
+fn photon(dir: &str) {
+    let Ok(cp) = std::env::var("CFA4_PHOTON_CP") else { return };
+    let out = Command::new("java").args(["-cp", &cp, "com.netflix.imflibrary.app.IMPAnalyzer", dir]).output().unwrap();
+    let log = format!("{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+    assert!(log.contains("CPL_") && log.contains("has no errors"), "{log}");
+    assert!(!log.contains("ERROR"), "{log}");
+}
+
 /// The text of the first `<tag>` element in `xml`.
 fn element<'a>(xml: &'a str, tag: &str) -> Option<&'a str> {
     let open = format!("<{tag}>");
@@ -247,6 +257,7 @@ fn stereo_package() {
         }
         std::fs::remove_file(&wrapper).unwrap();
     }
+    photon(&dir);
     // ffprobe (oracle only)
     if Command::new("ffprobe").arg("-version").output().is_ok() {
         let out =
@@ -296,6 +307,10 @@ fn ntsc_lossless_51_package() {
     let intrinsic: u64 = element(audio, "IntrinsicDuration").unwrap().parse().unwrap();
     assert!(intrinsic >= 16016);
     assert_eq!(symbols(block(&cpl, "EssenceDescriptorList").unwrap()), ["sg51", "chL", "chR", "chC", "chLFE", "chLs", "chRs"]);
+    // no language set: the labels still carry one ("und"), as Photon requires of IMF audio
+    let und = block(&cpl, "EssenceDescriptorList").unwrap().matches("<r1:RFC5646SpokenLanguage>und</r1:RFC5646SpokenLanguage>").count();
+    assert_eq!(und, 7);
+    photon(&dir);
     let snd = std::fs::read(file(&dir, "AUDIO_")).unwrap();
     assert_eq!(cfa4_mxf::open(&snd).unwrap().tracks[0].sound.as_ref().unwrap().channels, 6);
 }

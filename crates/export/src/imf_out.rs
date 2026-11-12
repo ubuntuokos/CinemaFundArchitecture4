@@ -186,7 +186,7 @@ const fn mca_dict(facet: u8, designator: u8, item: u8, number: u8) -> [u8; 16] {
 /// The MCA labels of an IMF audio track file of `channels` channels: the soundfield group (with
 /// its ST 2067-2 titles) and one label per channel. Mono is a Discrete Numbered Sources group of
 /// one numbered source channel (ST 2067-8); stereo the Standard Stereo group (ST 2067-8); 5.1 the
-/// ST 428-12 group. `None` for other layouts.
+/// ST 428-12 group. An empty `language` is tagged "und". `None` for other layouts.
 pub(crate) fn imf_mca(channels: u32, title: &str, language: &str, id: &dyn Fn(&str) -> [u8; 16]) -> Option<Vec<McaLabel>> {
     type Channel = ([u8; 16], &'static str, &'static str);
     let (group, (sym, name), chans): ([u8; 16], (&str, &str), Vec<Channel>) = match channels {
@@ -214,7 +214,9 @@ pub(crate) fn imf_mca(channels: u32, title: &str, language: &str, id: &dyn Fn(&s
         ),
         _ => return None,
     };
-    let lang = (!language.is_empty()).then(|| language.to_string());
+    // ST 2067-2 5.3.6.5: the soundfield group carries the primary spoken language; when the user
+    // set none it is RFC 5646 "und" (undetermined), so validators find a tag
+    let lang = Some(if language.is_empty() { "und".to_string() } else { language.to_string() });
     let link = id(sym);
     let titles = McaTitles {
         title: if title.trim().is_empty() { "Untitled".into() } else { title.to_string() },
