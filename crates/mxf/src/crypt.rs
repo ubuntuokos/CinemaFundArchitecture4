@@ -186,6 +186,50 @@ pub(crate) fn source_of(head: &[u8]) -> Option<(Ul, u64)> {
     Some((key, length))
 }
 
+/// The MIC key that earlier editions of ST 429-6 derive from the content key (ST 429-6:2023
+/// Annex B, NIST FIPS 186-2 Appendix 3.1 with G(t, c) of Appendix 3.3 and no "mod q"): XKEY is
+/// the 128-bit key widened to b = 160 bits, x0 = G(XKEY) is discarded, XKEY = (1 + XKEY + x0) mod
+/// 2^160, and the MIC key is the first 16 bytes of x1 = G(XKEY). G is the SHA-1 compression of
+/// XKEY followed by zero bits, without SHA-1 padding.
+pub fn legacy_mic_key(cipher: &[u8; 16]) -> [u8; 16] {
+    const H: [u32; 5] = [0x6745_2301, 0xEFCD_AB89, 0x98BA_DCFE, 0x1032_5476, 0xC3D2_E1F0];
+    let g = |xkey: &[u8; 20]| -> [u8; 20] {
+        let mut block = [0u8; 64];
+        block[..20].copy_from_slice(xkey);
+        let mut h = H;
+        sha1::block_api::compress(&mut h, &[block]);
+        let mut out = [0u8; 20];
+        for (o, w) in out.chunks_exact_mut(4).zip(h) {
+            o.copy_from_slice(&w.to_be_bytes());
+        }
+        out
+    };
+    let mut xkey = [0u8; 20];
+    xkey[..16].copy_from_slice(cipher);
+    let x0 = g(&xkey);
+    // XKEY = (1 + XKEY + x0) mod 2^160, big-endian
+    let mut carry = 1u16;
+    for (k, x) in xkey.iter_mut().zip(x0).rev() {
+        let sum = u16::from(*k) + u16::from(x) + carry;
+        *k = sum as u8;
+        carry = sum >> 8;
+    }
+    let x1 = g(&xkey);
+    let mut key = [0u8; 16];
+    key.copy_from_slice(&x1[..16]);
+    key
+}
+
+/// Whether the MIC item of Encrypted Triplet value `v` is the HMAC-SHA1 of its integrity pack
+/// under `mic_key` (false without a MIC item or for a value that does not parse).
+pub fn mic_matches(v: &[u8], mic_key: &[u8; 16]) -> bool {
+    let Ok(t) = parse(v) else { return false };
+    let Some(mic) = t.mic else { return false };
+    let Ok(mut m) = Hmac::<Sha1>::new_from_slice(mic_key) else { return false };
+    m.update(t.mic_input);
+    m.verify_slice(&mic).is_ok()
+}
+
 /// Parses an Encrypted Triplet value.
 pub fn parse(v: &[u8]) -> Result<Triplet<'_>> {
     let mut it = Items { v, at: 0 };
