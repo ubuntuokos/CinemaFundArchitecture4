@@ -4518,3 +4518,12 @@ export.summary	Low	ниско
 	accept	допустимо
 	the engine did not start the check	двигателят не стартира проверката
 	the engine sent no report	двигателят не изпрати отчет
+	Load KDM…	Зареждане на KDM…
+	Forget DCP Keys	Забравяне на DCP ключовете
+	Load KDM	Зареждане на KDM
+	KDM file	KDM файл
+	Private key (PEM)	Частен ключ (PEM)
+	{title}: {count} keys loaded	{title}: заредени ключове: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключовете остават само в паметта, до „Забравяне на DCP ключовете“ или края на сесията.
+	DCP keys forgotten	DCP ключовете са забравени
+	Choose the KDM file and the private key.	Изберете KDM файла и частния ключ.

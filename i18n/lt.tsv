@@ -4518,3 +4518,12 @@ export.summary	Low	žema
 	accept	priimtina
 	the engine did not start the check	variklis nepradėjo patikrinimo
 	the engine sent no report	variklis neatsiuntė ataskaitos
+	Load KDM…	Įkelti KDM…
+	Forget DCP Keys	Pamiršti DCP raktus
+	Load KDM	Įkelti KDM
+	KDM file	KDM failas
+	Private key (PEM)	Privatusis raktas (PEM)
+	{title}: {count} keys loaded	{title}: įkelta raktų: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Raktai laikomi tik atmintyje, kol pasirenkama Pamiršti DCP raktus arba baigiasi seansas.
+	DCP keys forgotten	DCP raktai pamiršti
+	Choose the KDM file and the private key.	Pasirinkite KDM failą ir privatųjį raktą.

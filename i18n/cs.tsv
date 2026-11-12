@@ -4515,3 +4515,12 @@ export.summary	Low	nízká
 	accept	přijatelné
 	the engine did not start the check	engine kontrolu nespustil
 	the engine sent no report	engine neposlal protokol
+	Load KDM…	Načíst KDM…
+	Forget DCP Keys	Zapomenout klíče DCP
+	Load KDM	Načíst KDM
+	KDM file	Soubor KDM
+	Private key (PEM)	Soukromý klíč (PEM)
+	{title}: {count} keys loaded	{title}: načteno klíčů: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Klíče zůstávají jen v paměti, do příkazu Zapomenout klíče DCP nebo do konce relace.
+	DCP keys forgotten	Klíče DCP zapomenuty
+	Choose the KDM file and the private key.	Vyberte soubor KDM a soukromý klíč.

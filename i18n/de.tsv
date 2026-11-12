@@ -4522,3 +4522,12 @@
 	accept	annehmbar
 	the engine did not start the check	die Engine hat die Prüfung nicht gestartet
 	the engine sent no report	die Engine hat keinen Bericht gesendet
+	Load KDM…	KDM laden…
+	Forget DCP Keys	DCP-Schlüssel vergessen
+	Load KDM	KDM laden
+	KDM file	KDM-Datei
+	Private key (PEM)	Privater Schlüssel (PEM)
+	{title}: {count} keys loaded	{title}: {count} Schlüssel geladen
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Die Schlüssel bleiben nur im Arbeitsspeicher, bis „DCP-Schlüssel vergessen“ oder bis zum Ende der Sitzung.
+	DCP keys forgotten	DCP-Schlüssel vergessen
+	Choose the KDM file and the private key.	Wählen Sie die KDM-Datei und den privaten Schlüssel.

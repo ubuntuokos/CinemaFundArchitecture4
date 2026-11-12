@@ -4514,3 +4514,12 @@ export.summary	Low	alacsony
 	the engine sent no report	a motor nem küldött jelentést
 	The engine is not running.	A motor nem fut.
 	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Észrevétel {row}: az időkód nem létező időpont ebben a fájlban (ÓÓ:PP:MM:KK).
+	Load KDM…	KDM betöltése…
+	Forget DCP Keys	DCP kulcsok elfelejtése
+	Load KDM	KDM betöltése
+	KDM file	KDM fájl
+	Private key (PEM)	Privát kulcs (PEM)
+	{title}: {count} keys loaded	{title}: {count} kulcs betöltve
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	A kulcsok csak a memóriában maradnak, a DCP kulcsok elfelejtéséig vagy a munkamenet végéig.
+	DCP keys forgotten	DCP kulcsok elfelejtve
+	Choose the KDM file and the private key.	Válassza ki a KDM fájlt és a privát kulcsot.

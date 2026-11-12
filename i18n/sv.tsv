@@ -4517,3 +4517,12 @@ export.summary	Low	låg
 	accept	godtagbart
 	the engine did not start the check	motorn startade inte kontrollen
 	the engine sent no report	motorn skickade ingen rapport
+	Load KDM…	Läs in KDM…
+	Forget DCP Keys	Glöm DCP-nycklar
+	Load KDM	Läs in KDM
+	KDM file	KDM-fil
+	Private key (PEM)	Privat nyckel (PEM)
+	{title}: {count} keys loaded	{title}: {count} nycklar inlästa
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nycklarna finns bara i minnet, tills Glöm DCP-nycklar eller sessionens slut.
+	DCP keys forgotten	DCP-nycklarna glömda
+	Choose the KDM file and the private key.	Välj KDM-filen och den privata nyckeln.

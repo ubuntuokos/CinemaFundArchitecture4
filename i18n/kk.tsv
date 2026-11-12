@@ -4517,3 +4517,12 @@ export.summary	Low	төмен
 	accept	қолайлы
 	the engine did not start the check	қозғалтқыш тексеруді бастамады
 	the engine sent no report	қозғалтқыш есеп жібермеді
+	Load KDM…	KDM жүктеу…
+	Forget DCP Keys	DCP кілттерін ұмыту
+	Load KDM	KDM жүктеу
+	KDM file	KDM файлы
+	Private key (PEM)	Жеке кілт (PEM)
+	{title}: {count} keys loaded	{title}: жүктелген кілттер: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кілттер тек жадта сақталады, «DCP кілттерін ұмыту» командасына немесе сеанс соңына дейін.
+	DCP keys forgotten	DCP кілттері ұмытылды
+	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.

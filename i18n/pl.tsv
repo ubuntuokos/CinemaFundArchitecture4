@@ -4515,3 +4515,12 @@ export.summary	Low	niska
 	accept	dopuszczalne
 	the engine did not start the check	silnik nie rozpoczął kontroli
 	the engine sent no report	silnik nie przesłał raportu
+	Load KDM…	Wczytaj KDM…
+	Forget DCP Keys	Zapomnij klucze DCP
+	Load KDM	Wczytaj KDM
+	KDM file	Plik KDM
+	Private key (PEM)	Klucz prywatny (PEM)
+	{title}: {count} keys loaded	{title}: wczytano kluczy: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Klucze pozostają tylko w pamięci, do polecenia Zapomnij klucze DCP lub końca sesji.
+	DCP keys forgotten	Klucze DCP zapomniane
+	Choose the KDM file and the private key.	Wybierz plik KDM i klucz prywatny.

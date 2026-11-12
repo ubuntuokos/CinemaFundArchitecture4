@@ -4500,3 +4500,12 @@
 	accept	допустимо
 	the engine did not start the check	движок не начал проверку
 	the engine sent no report	движок не прислал отчёт
+	Load KDM…	Загрузить KDM…
+	Forget DCP Keys	Забыть ключи DCP
+	Load KDM	Загрузить KDM
+	KDM file	Файл KDM
+	Private key (PEM)	Закрытый ключ (PEM)
+	{title}: {count} keys loaded	{title}: загружено ключей: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключи хранятся только в памяти, до команды «Забыть ключи DCP» или конца сеанса.
+	DCP keys forgotten	Ключи DCP забыты
+	Choose the KDM file and the private key.	Выберите файл KDM и закрытый ключ.

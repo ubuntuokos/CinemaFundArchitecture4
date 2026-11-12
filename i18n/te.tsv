@@ -4521,3 +4521,12 @@ export.summary	Low	తక్కువ
 	accept	ఆమోదయోగ్యం
 	the engine did not start the check	ఇంజిన్ తనిఖీని ప్రారంభించలేదు
 	the engine sent no report	ఇంజిన్ నివేదికను పంపలేదు
+	Load KDM…	KDM లోడ్ చేయి…
+	Forget DCP Keys	DCP కీలను మర్చిపో
+	Load KDM	KDM లోడ్ చేయి
+	KDM file	KDM ఫైల్
+	Private key (PEM)	ప్రైవేట్ కీ (PEM)
+	{title}: {count} keys loaded	{title}: {count} కీలు లోడ్ అయ్యాయి
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	కీలు మెమరీలో మాత్రమే ఉంటాయి, DCP కీలను మర్చిపో లేదా సెషన్ ముగిసే వరకు.
+	DCP keys forgotten	DCP కీలు మర్చిపోబడ్డాయి
+	Choose the KDM file and the private key.	KDM ఫైల్‌ను మరియు ప్రైవేట్ కీని ఎంచుకోండి.

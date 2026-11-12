@@ -4515,3 +4515,12 @@
 	accept	accettabile
 	the engine did not start the check	il motore non ha avviato il controllo
 	the engine sent no report	il motore non ha inviato alcun rapporto
+	Load KDM…	Carica KDM…
+	Forget DCP Keys	Dimentica chiavi DCP
+	Load KDM	Carica KDM
+	KDM file	File KDM
+	Private key (PEM)	Chiave privata (PEM)
+	{title}: {count} keys loaded	{title}: {count} chiavi caricate
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Le chiavi restano solo in memoria, fino a Dimentica chiavi DCP o alla fine della sessione.
+	DCP keys forgotten	Chiavi DCP dimenticate
+	Choose the KDM file and the private key.	Scegli il file KDM e la chiave privata.

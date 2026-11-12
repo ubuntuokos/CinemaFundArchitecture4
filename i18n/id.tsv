@@ -4523,3 +4523,12 @@
 	accept	dapat diterima
 	the engine did not start the check	mesin tidak memulai pemeriksaan
 	the engine sent no report	mesin tidak mengirim laporan
+	Load KDM…	Muat KDM…
+	Forget DCP Keys	Lupakan Kunci DCP
+	Load KDM	Muat KDM
+	KDM file	File KDM
+	Private key (PEM)	Kunci privat (PEM)
+	{title}: {count} keys loaded	{title}: {count} kunci dimuat
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Kunci hanya disimpan di memori, sampai Lupakan Kunci DCP atau akhir sesi.
+	DCP keys forgotten	Kunci DCP dilupakan
+	Choose the KDM file and the private key.	Pilih file KDM dan kunci privat.
