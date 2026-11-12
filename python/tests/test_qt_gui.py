@@ -5010,7 +5010,7 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
     text = entry.read_text(encoding="utf-8")
     assert "Icon=io.github.ubuntuokos.cfa4" in text and "Name=CFA4 (development)" in text
     exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
-    assert exec_line.endswith(" %f") and "%" not in exec_line[:-3]
+    assert exec_line.endswith(" %F") and "%" not in exec_line[:-3]
     assert (home / "icons" / "hicolor" / "48x48" / "apps" / "io.github.ubuntuokos.cfa4.png").is_file()
     assert (home / "icons" / "hicolor" / "scalable" / "apps" / "io.github.ubuntuokos.cfa4.svg").is_file()
     # idempotent
