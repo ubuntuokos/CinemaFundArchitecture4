@@ -4505,3 +4505,4 @@ export.summary	Low	დაბალი
 	accept	მისაღები
 	the engine did not start the check	ძრავამ შემოწმება არ დაიწყო
 	the engine sent no report	ძრავამ ანგარიში არ გამოგზავნა
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	სუბტიტრების ჩაწერა ANC მონაცემებად (CEA-608/708, 29,97 fps)

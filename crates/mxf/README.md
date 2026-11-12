@@ -34,7 +34,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
 | SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
-| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate |
+| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate; writer: the ANC data track with 8-bit coded packets |
 | SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 2067-2 / 2067-5 | 2020 | IMF track files (writer): OP1a, KAG 1, at least 8 KiB of fill after the header, primary package, frame-wrapped pictures in 60 s essence partitions each followed by an index partition, clip-wrapped 24-bit sound at the sample rate with a constant-rate index, UMIDs, the MCA channel assignment, reference image edit rate and audio alignment level |
@@ -61,8 +61,16 @@ container; `read_anc(src)` returns every ANC element of the first ANC data track
 line number, wrapping and coding and the low 8 bits of its words from the DID through the user
 data. `AncData::cdps` lists the caption distribution packets (DID 61h, SDID 01h, SMPTE ST 334-2);
 `cfa4-engine` decodes them with `cfa4_captions::mcc::decode_cdps` into a caption track when such
-a file is imported (#929). VI lines (element type 01h) are not read yet; writing ANC data on
-export is still to come.
+a file is imported (#929). VI lines (element type 01h) are not read yet.
+
+Writing (#1004): `WriterConfig::anc` adds an ANC data track to an OP1a file with pictures (also
+RDD 9; not D-10, whose content packages have no data item): the ANC Data Descriptor (set 5Ch),
+the ST 436 essence container label, and per content package one frame-wrapped ANC element after
+the picture and sound, from `MxfWriter::push_anc` (an empty element when none was pushed), in
+its own index slice. `anc_element(packets)` builds an element value with the 8-bit luma coding
+(04h). `cfa4-export` uses it for `ExportSettings::mxf_anc_captions`: the first caption track as
+one CDP per frame (`cfa4_captions::mcc::CdpStream`, CEA-608 field 1 and CEA-708 service 1) on
+VANC line 9, at 29.97 fps (other rates: #1065).
 
 ## Peeking at the header
 

@@ -115,6 +115,28 @@ pub fn parse_anc_element(v: &[u8]) -> Result<Vec<AncPacket>> {
     Ok(out)
 }
 
+/// One ANC element value (Table 7) holding `packets`, each written with the 8-bit luma payload
+/// coding (04h): the low 8 bits of its words from the DID on (7.2), padded to whole 32-bit
+/// words. A packet's own `coding` is not used. At most 65535 packets of 65535 words.
+pub fn anc_element(packets: &[AncPacket]) -> Vec<u8> {
+    let packets = &packets[..packets.len().min(u16::MAX as usize)];
+    let mut v = (packets.len() as u16).to_be_bytes().to_vec();
+    for p in packets {
+        let words = &p.words[..p.words.len().min(u16::MAX as usize)];
+        let padded = words.len().next_multiple_of(4);
+        v.extend_from_slice(&p.line.to_be_bytes());
+        v.push(p.wrapping);
+        v.push(0x04);
+        v.extend_from_slice(&(words.len() as u16).to_be_bytes());
+        // the payload array: element count and element size (Annex B)
+        v.extend_from_slice(&(padded as u32).to_be_bytes());
+        v.extend_from_slice(&1u32.to_be_bytes());
+        v.extend_from_slice(words);
+        v.resize(v.len() + padded - words.len(), 0);
+    }
+    v
+}
+
 /// The ANC elements of a file, one per frame.
 #[derive(Clone, Debug)]
 pub struct AncData {

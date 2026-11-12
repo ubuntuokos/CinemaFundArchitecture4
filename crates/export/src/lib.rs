@@ -437,6 +437,11 @@ pub struct ExportSettings {
     /// Video codec of the MXF formats (DNxHR unless set; the ProRes / DNxHR profile fields apply).
     #[serde(default)]
     pub mxf_video_codec: MxfVideoCodec,
+    /// MXF OP1a: write the sequence's first caption track as closed captions in an ANC data
+    /// track (SMPTE ST 436-1, ST 334-2 caption distribution packets with CEA-608 field 1 and
+    /// CEA-708 service 1, VANC line 9) at 29.97 fps. Off by default.
+    #[serde(default)]
+    pub mxf_anc_captions: bool,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -745,6 +750,7 @@ impl Default for ExportSettings {
             cineform_profile: String::new(),
             cineform_quality: String::new(),
             mxf_video_codec: MxfVideoCodec::default(),
+            mxf_anc_captions: false,
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -871,6 +877,14 @@ impl ExportSettings {
                 && (self.audio.sample_rate.is_some_and(|r| r != 48_000) || !matches!(self.audio.bits, 16 | 24) || self.audio.float || self.audio.channels > 8)
             {
                 return Err(ExportError::Unsupported("D-10 (IMX) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
+            }
+        }
+        if self.format.is_mxf() && self.mxf_anc_captions {
+            if self.format == Format::MxfOpAtom {
+                return Err(ExportError::Unsupported("closed captions (ANC) are written in MXF OP1a".into()));
+            }
+            if self.mxf_video_codec == MxfVideoCodec::D10 {
+                return Err(ExportError::Unsupported("D-10 (IMX) content packages carry no ANC data: closed captions need another MXF codec".into()));
             }
         }
         if self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::XdcamHd422 {

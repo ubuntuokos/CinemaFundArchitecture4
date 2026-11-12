@@ -4505,3 +4505,4 @@ export.summary	Low	ниско
 	accept	допустимо
 	the engine did not start the check	двигателят не стартира проверката
 	the engine sent no report	двигателят не изпрати отчет
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записване на надписите като ANC данни (CEA-608/708, 29,97 fps)

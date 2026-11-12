@@ -4487,3 +4487,4 @@
 	accept	допустимо
 	the engine did not start the check	движок не начал проверку
 	the engine sent no report	движок не прислал отчёт
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записать субтитры как данные ANC (CEA-608/708, 29,97 к/с)

@@ -4504,3 +4504,4 @@ export.summary	Low	madal
 	accept	lubatud
 	the engine did not start the check	mootor ei käivitanud kontrolli
 	the engine sent no report	mootor ei saatnud aruannet
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjuta subtiitrid ANC-andmetena (CEA-608/708, 29,97 fps)

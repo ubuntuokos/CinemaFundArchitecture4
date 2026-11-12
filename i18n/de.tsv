@@ -4509,3 +4509,4 @@
 	accept	annehmbar
 	the engine did not start the check	die Engine hat die Prüfung nicht gestartet
 	the engine sent no report	die Engine hat keinen Bericht gesendet
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Untertitel als ANC-Daten schreiben (CEA-608/708, 29,97 fps)

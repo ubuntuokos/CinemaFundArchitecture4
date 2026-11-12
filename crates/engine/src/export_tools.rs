@@ -315,6 +315,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = str_p(p, "mxfVideoCodec") {
         settings.mxf_video_codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264 | mpeg2 | d10 | xdcamHd422"))?;
     }
+    if let Some(v) = bool_p(p, "mxfAncCaptions") {
+        settings.mxf_anc_captions = v;
+    }
     if let Some(v) = str_p(p, "mpeg2Container") {
         let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
         settings.mpeg2_container = c.id().to_string();

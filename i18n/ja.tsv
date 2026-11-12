@@ -4511,3 +4511,4 @@
 	accept	許容
 	the engine did not start the check	エンジンがチェックを開始しませんでした
 	the engine sent no report	エンジンがレポートを送信しませんでした
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	字幕を ANC データとして書き出す（CEA-608/708、29.97 fps）

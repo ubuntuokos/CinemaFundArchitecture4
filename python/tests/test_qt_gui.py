@@ -2540,6 +2540,39 @@ def test_export_dash_manifest_switch_only_for_hls(app):
     dlg.deleteLater()
 
 
+def test_export_mxf_anc_captions_switch_only_for_op1a(app):
+    """#1004: the closed-captions-as-ANC switch shows for MXF OP1a (not D-10, not OP-Atom) and is
+    sent as ``mxfAncCaptions`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "mxf-op1a", "label": "MXF OP1a"}, {"id": "mxf-opatom", "label": "MXF OP-Atom"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.mxfAncCaptions")
+    assert box is dlg.mxf_anc and box.text() == "Write the captions as ANC data (CEA-608/708, 29.97 fps)"
+    assert dlg.video_form.labelForField(box).text() == "Closed Captions"
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    assert "mxfAncCaptions" not in dlg.params()
+    box.setChecked(True)
+    assert dlg.params()["mxfAncCaptions"] is True
+    codec = dlg.format_choices["mxfVideoCodec"]
+    codec.setCurrentIndex(codec.findData("d10"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "mxfAncCaptions" not in dlg.params()
+    codec.setCurrentIndex(codec.findData("dnxhr"))
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-opatom"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "mxfAncCaptions" not in dlg.params()
+    dlg.deleteLater()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
     """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""

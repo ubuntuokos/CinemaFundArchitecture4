@@ -66,7 +66,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cfa4_isobmff::{Brand, CodecConfig, Mp4Writer, PcmConfig, SampleEntry, TrackConfig, WriteSample, WriterOptions};
 use cfa4_project::{ItemId, Project};
 use cfa4_render::SourceProvider;
-use cfa4_time::FrameRate;
+use cfa4_time::{FrameRate, TimeRange};
 use rayon::prelude::*;
 
 use crate::audio_out::AudioOut;
@@ -157,6 +157,21 @@ pub enum Step {
 }
 
 /// An export of an encoded-video format, advanced one batch at a time.
+/// The first caption track of `seq` inside `range` for the ANC data track of an MXF OP1a export
+/// (`ExportSettings::mxf_anc_captions`); `None` when not asked for or the sequence has none.
+fn anc_captions(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Option<cfa4_captions::Document> {
+    if settings.format != Format::MxfOp1a || !settings.mxf_anc_captions {
+        return None;
+    }
+    let track = project.sequence(seq)?.caption_tracks.first()?;
+    let mut doc = cfa4_captions::document_from_track(track, range.start);
+    doc.cues.retain_mut(|cue| {
+        cue.end = cue.end.min(range.duration);
+        cue.start < cue.end
+    });
+    Some(doc)
+}
+
 pub struct Exporter {
     pipe: Arc<Pipeline>,
     settings: ExportSettings,
@@ -199,6 +214,8 @@ pub struct Exporter {
     project: Arc<Project>,
     /// Chapters of MP4, MOV, HLS and WebM output ([`export_chapters`]).
     chapters: Vec<cfa4_isobmff::Chapter>,
+    /// MXF OP1a closed captions (ANC data), timed from the first exported frame.
+    anc_captions: Option<cfa4_captions::Document>,
     vt: usize,
     at: Option<usize>,
     t0: web_time::Instant,
@@ -329,6 +346,7 @@ impl Exporter {
             seq,
             project: project.clone(),
             chapters: export_chapters(&project, seq, &settings, range),
+            anc_captions: anc_captions(&project, seq, &settings, range),
             vt: 0,
             at: None,
             t0: web_time::Instant::now(),
@@ -568,6 +586,7 @@ impl Exporter {
                 audio: self.audio.as_ref().map(|a| (a.sr, a.channels)),
                 timecode: (start, q.settings.drop_frame),
                 mpeg: self.venc.mpeg_video(),
+                captions: self.anc_captions.clone(),
             })?);
             return Ok(());
         }
