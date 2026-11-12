@@ -14704,6 +14704,36 @@ def test_credits_files_from_the_command_line(tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_media_files_from_the_command_line_are_imported(app, tmp_path: Path):
+    """Owner decision 2026-11-12: the menu entry starts `cfa4-qt %F`, so files opened with CFA4
+    from a file manager are handled as egui handles them: the launch project opens and every media
+    file is imported into it (`import_at_start`, egui's `file.import` at start-up)."""
+    from cfa4_qt.__main__ import import_at_start, launch_files
+    from cfa4_qt.main_window import MainWindow
+
+    a, b = tmp_path / "first.wav", tmp_path / "second.wav"
+    _test_music(a, bars=2)
+    _test_music(b, bars=2)
+    project, credits, media = launch_files([str(a), str(b)])
+    assert project is None and credits is None and media == [str(a), str(b)]
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    import_at_start(engine, win, media)
+    win.show()
+    engine.start()
+    try:
+        names = lambda: {i.get("name") for i in _items(win.project or {})}
+        assert wait_until(app, lambda: {"first.wav", "second.wav"} <= names(), 60_000), names()
+        # into the launch project (here the demo), not instead of it
+        assert len(names()) > 2
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_credits_file_and_template_open_in_the_workspace(app, tmp_path: Path):
     """C9: a credits file or template handed over by the file manager opens in the full Credits
     workspace; a template with no spreadsheet brings its sample."""

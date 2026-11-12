@@ -36,6 +36,22 @@ def launch_files(files: list[str]) -> tuple[str | None, str | None, list[str]]:
     return project, credits, media
 
 
+def import_at_start(engine, window, paths: list[str]) -> None:
+    """egui's launch import: once the engine runs (and has opened the launch project, if any),
+    `file.import` with the media files given on the command line. Errors go to the status bar and
+    the Events panel like any command's; nothing is imported for an empty list."""
+    if not paths:
+        return
+    from PySide6.QtCore import QTimer
+
+    given = list(paths)
+
+    def started(_hello: dict) -> None:
+        QTimer.singleShot(0, lambda: window.execute("file.import", {"paths": given}))
+
+    engine.started.connect(started)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="cfa4-qt", description="CFA4 Qt 6 editor (Rust engine + PySide6)")
     parser.add_argument(
@@ -175,13 +191,7 @@ def main(argv: list[str] | None = None) -> int:
         # driving the app never steals the user's keyboard (egui's): opened without activating it
         window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
     window.show()
-    if media:
-        # once the engine runs (and has opened the project, if one was given): egui's launch
-        # import, `file.import` with every media file; an error goes to the status bar and Events
-        def import_media(_hello: dict, paths: list[str] = media) -> None:
-            QTimer.singleShot(0, lambda: window.execute("file.import", {"paths": paths}))
-
-        engine.started.connect(import_media)
+    import_at_start(engine, window, media)
     if credits:
         # once the engine has a sequence: the workspace lays out against its frame
         def open_credits(_hello: dict, path: str = credits) -> None:
