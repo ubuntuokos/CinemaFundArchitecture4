@@ -198,6 +198,9 @@ fn parity_streaming(name: &str, s: &Stream) {
 #[test]
 fn bit_exact_with_the_software_decoder() {
     let ff = cfa4_testkit::require_ffmpeg!();
+    if !cfa4_testkit::encoders_or_skip("vaapi bit exact", &ff, &["libx264", "libx265"]) {
+        return;
+    }
     let streams = small_streams(&ff);
     assert!(streams.len() > H264.len(), "fixtures");
     for (name, s) in streams {

@@ -165,13 +165,18 @@ fn dci2k_codestreams(ff: &Path) -> Option<()> {
     Some(())
 }
 
-fn make(ff: &Path, name: &str) -> PathBuf {
+/// The fixture `name`, or `None` after a skip when this ffmpeg lacks an optional encoder it needs
+/// (the development FFmpeg 9.0.2 has no libx264/libx265; CI fails instead, CFA4_REQUIRE_ORACLES=1).
+fn make(ff: &Path, name: &str) -> Option<PathBuf> {
+    if !cfa4_testkit::fixture_encoders_or_skip(name, ff, &spec(name)) {
+        return None;
+    }
     if name == "mxf_j2k_dci2k.mxf" {
         dci2k_codestreams(ff).unwrap_or_else(|| panic!("could not encode the codestreams of {name}"));
     }
     let args = spec(name);
     let refs: Vec<&str> = args.iter().map(String::as_str).collect();
-    fixture(ff, name, &refs).unwrap_or_else(|| panic!("could not generate {name}"))
+    Some(fixture(ff, name, &refs).unwrap_or_else(|| panic!("could not generate {name}")))
 }
 
 fn open(p: &Path) -> MxfSource {
@@ -255,7 +260,7 @@ fn check_audio_exact(ff: &Path, file: &Path, extra: &[&str]) {
 #[test]
 fn h264_long_gop_with_b_frames_bit_exact() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_h264_bf2.mxf");
+    let Some(f) = make(&ff, "mxf_h264_bf2.mxf") else { return };
     let src = open(&f);
     let info = src.info();
     assert_eq!(info.container, "MXF OP1a");
@@ -275,7 +280,7 @@ fn h264_long_gop_with_b_frames_bit_exact() {
 #[test]
 fn h264_2997_drop_frame_timecode_and_24_bit_audio() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_h264_2997df.mxf");
+    let Some(f) = make(&ff, "mxf_h264_2997df.mxf") else { return };
     let src = open(&f);
     let info = src.info();
     assert_eq!(info.video.as_ref().unwrap().frame_rate, FrameRate::FPS_29_97);
@@ -291,7 +296,7 @@ fn h264_2997_drop_frame_timecode_and_24_bit_audio() {
 #[test]
 fn dnxhr_op1a_within_two_lsb() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_dnxhr_lb.mxf");
+    let Some(f) = make(&ff, "mxf_dnxhr_lb.mxf") else { return };
     let src = open(&f);
     assert_eq!(src.info().video.as_ref().unwrap().codec, "DNxHR LB");
     check_video(&ff, &f, "yuv422p", (2, 1), 1, 2, 10);
@@ -301,7 +306,7 @@ fn dnxhr_op1a_within_two_lsb() {
 #[test]
 fn prores_op1a_within_one_lsb() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_prores.mxf");
+    let Some(f) = make(&ff, "mxf_prores.mxf") else { return };
     let src = open(&f);
     assert!(src.info().video.as_ref().unwrap().codec.starts_with("Apple ProRes 422"), "{}", src.info().video.as_ref().unwrap().codec);
     check_video(&ff, &f, "yuv422p10le", (2, 1), 2, 1, 10);
@@ -311,7 +316,7 @@ fn prores_op1a_within_one_lsb() {
 #[test]
 fn j2k_lossless_422_10bit_bit_exact() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_j2k_422p10.mxf");
+    let Some(f) = make(&ff, "mxf_j2k_422p10.mxf") else { return };
     let src = open(&f);
     let v = src.info().video.as_ref().unwrap();
     assert_eq!((v.codec.as_str(), v.pixel_format.as_str()), ("JPEG 2000", "YUV 4:2:2 10-bit"));
@@ -322,7 +327,7 @@ fn j2k_lossless_422_10bit_bit_exact() {
 #[test]
 fn j2k_irreversible_420_within_one_lsb() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_j2k_420_97.mxf");
+    let Some(f) = make(&ff, "mxf_j2k_420_97.mxf") else { return };
     check_video(&ff, &f, "yuv420p", (2, 2), 1, 1, 6);
 }
 
@@ -331,7 +336,7 @@ fn j2k_irreversible_420_within_one_lsb() {
 #[test]
 fn j2k_rgb_becomes_bt709_ycbcr() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_j2k_rgb.mxf");
+    let Some(f) = make(&ff, "mxf_j2k_rgb.mxf") else { return };
     let src = open(&f);
     let v = src.info().video.clone().unwrap();
     assert_eq!(v.pixel_format, "RGB 8-bit");
@@ -364,7 +369,7 @@ fn j2k_rgb_becomes_bt709_ycbcr() {
 #[test]
 fn j2k_gray_luma_bit_exact() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_j2k_gray.mxf");
+    let Some(f) = make(&ff, "mxf_j2k_gray.mxf") else { return };
     let src = open(&f);
     let v = src.info().video.clone().unwrap();
     assert_eq!(v.pixel_format, "Gray 8-bit");
@@ -385,7 +390,7 @@ fn j2k_gray_luma_bit_exact() {
 #[test]
 fn j2k_dci_xyz_decodes_to_p3() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_j2k_dci2k.mxf");
+    let Some(f) = make(&ff, "mxf_j2k_dci2k.mxf") else { return };
     let src = open(&f);
     let v = src.info().video.clone().unwrap();
     assert_eq!((v.codec.as_str(), v.pixel_format.as_str()), ("JPEG 2000 (digital cinema)", "X'Y'Z' 12-bit"));
@@ -441,7 +446,7 @@ const MPEG2_TOL: u16 = 4;
 #[test]
 fn mpeg2_long_gop_decodes() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_mpeg2.mxf");
+    let Some(f) = make(&ff, "mxf_mpeg2.mxf") else { return };
     let src = open(&f);
     let v = src.info().video.as_ref().unwrap();
     assert!(v.codec.starts_with("MPEG-2 Video (Main@"), "{}", v.codec);
@@ -456,7 +461,7 @@ fn mpeg2_long_gop_decodes() {
 #[test]
 fn xdcam_hd422_decodes() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_xdcam_hd422.mxf");
+    let Some(f) = make(&ff, "mxf_xdcam_hd422.mxf") else { return };
     let src = open(&f);
     let v = src.info().video.as_ref().unwrap();
     assert_eq!(v.codec, "MPEG-2 Video (4:2:2@High)");
@@ -469,13 +474,13 @@ fn xdcam_hd422_decodes() {
 #[test]
 fn op_atom_video_and_audio_files() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let v = make(&ff, "mxf_atom_dnxhr.mxf");
+    let Some(v) = make(&ff, "mxf_atom_dnxhr.mxf") else { return };
     let src = open(&v);
     assert_eq!(src.info().container, "MXF OP-Atom");
     assert!(!src.info().has_audio());
     assert_eq!(src.file().tracks[0].wrapping, cfa4_mxf::Wrapping::Clip);
     check_video(&ff, &v, "yuv422p", (2, 1), 1, 2, 10);
-    let a = make(&ff, "mxf_atom_pcm.mxf");
+    let Some(a) = make(&ff, "mxf_atom_pcm.mxf") else { return };
     let src = open(&a);
     assert_eq!(src.info().kind, MediaKind::AudioOnly);
     assert_eq!(src.info().container, "MXF OP-Atom");
@@ -488,7 +493,7 @@ fn op_atom_video_and_audio_files() {
 #[test]
 fn d10_aes3_elements_sample_exact() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    let f = make(&ff, "mxf_d10.mxf");
+    let Some(f) = make(&ff, "mxf_d10.mxf") else { return };
     let src = open(&f);
     let a = src.info().audio().cloned().unwrap();
     assert_eq!(a.codec, "AES3 PCM");
@@ -580,7 +585,7 @@ fn uncompressed_layouts_bit_exact() {
 fn truncated_and_corrupt_files_never_panic() {
     let ff = cfa4_testkit::require_ffmpeg!();
     for name in ["mxf_h264_bf2.mxf", "mxf_atom_pcm.mxf", "mxf_prores.mxf", "mxf_j2k_420_97.mxf"] {
-        let f = make(&ff, name);
+        let Some(f) = make(&ff, name) else { continue };
         let full = std::fs::read(&f).unwrap();
         let mut rng = Rng(0xDEAD_BEEF);
         for k in 1..=16 {
