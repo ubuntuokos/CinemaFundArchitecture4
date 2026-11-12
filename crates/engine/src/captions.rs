@@ -186,6 +186,50 @@ pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value
     })
 }
 
+/// Import the closed captions carried in an MXF file's ANC data (SMPTE ST 436-1 ANC elements with
+/// ST 334-2 caption distribution packets: CEA-608 field 1, else CEA-708 service 1) as a caption
+/// track. `None` when `path` is not an MXF file with ANC data or its ANC data holds no captions;
+/// the file's picture and sound import as media either way.
+pub fn import_anc_captions(s: &mut Session, path: &str) -> Option<Result<Value>> {
+    let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    if ext.as_deref() != Some("mxf") {
+        return None;
+    }
+    let src: Box<dyn cfa4_mxf::ByteSource> = match s.services.reader(path) {
+        Some(Ok(r)) => Box::new(MxfReader(r)),
+        Some(Err(_)) => return None,
+        None => {
+            // hosts without random access: only small files are read whole
+            let b = s.services.read_file(path).ok()?;
+            if b.len() as u64 > MAX_TIMED_TEXT_FILE {
+                return None;
+            }
+            Box::new(b)
+        }
+    };
+    let mut head = vec![0u8; src.len().min(65_536 + 1024) as usize];
+    src.read_at(0, &mut head).ok()?;
+    if !cfa4_mxf::has_anc(&head) {
+        return None;
+    }
+    let anc = match cfa4_mxf::read_anc(src.as_ref()) {
+        Ok(a) => a,
+        Err(e) => return Some(Err(EngineError::Other(format!("{path}: ANC data: {e}")))),
+    };
+    let cdps = anc.cdps();
+    if cdps.is_empty() {
+        return None;
+    }
+    let rate = cfa4_time::FrameRate::new(i64::from(anc.edit_rate.num), i64::from(anc.edit_rate.den));
+    let mut doc = cfa4_captions::mcc::decode_cdps(cdps.into_iter().map(|(f, b)| (f as i64, b)), rate);
+    if doc.cues.is_empty() {
+        return None;
+    }
+    doc.warnings.extend(anc.warnings);
+    let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Captions".into());
+    Some(import_document(s, path, doc, "MXF ANC captions", CaptionFormat::Cea708, false, Some(&format!("{stem} (CC)"))))
+}
+
 /// The host's random-access reader as an MXF byte source.
 struct MxfReader(cfa4_media::SharedReader);
 

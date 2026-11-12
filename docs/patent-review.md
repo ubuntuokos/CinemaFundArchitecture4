@@ -43,6 +43,7 @@ szabadalommal védett formátumot.
 | DV / DVCPRO 25 / 50, DVCPRO HD (IEC 61834-2, SMPTE 314M, SMPTE 370M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
 | AV1 | dekódolás | `crates/av1`; FFmpeg-háttér (dav1d) | alap | függőben | | |
 | AV1 | kódolás | tervezett (rav1e) | – | függőben | | |
+| AV2 | bitfolyam-elemzés (OBU, sequence header; dekódolás még nincs) | `crates/av2` | alap | függőben | | |
 | VP8 | dekódolás | `crates/vp8`; FFmpeg-háttér (libvpx) | alap | függőben | | |
 | VP8 | kódolás | FFmpeg-háttér (libvpx) | alap | függőben | | |
 | VP9 | dekódolás | `crates/vp9`; FFmpeg-háttér (libvpx) | alap | függőben | | |
@@ -58,6 +59,7 @@ szabadalommal védett formátumot.
 | Animált WebP | dekódolás (VP8 / VP8L) | `crates/media` (a VP8-dekódolás a `crates/vp8` sorában) | alap | függőben | | |
 | DNG / CinemaDNG (lossless JPEG) | dekódolás | `crates/dng` | alap | függőben | | |
 | FFV1 (RFC 9043) | dekódolás | `crates/ffv1` | alap | függőben | | |
+| SMPTE VC-2 (ST 2042-1) | dekódolás; QuickTime / MP4, AVI és Matroska olvasása | `crates/dirac` (a BBC VC-2 referencia-pszeudokódjának portja) | alap | függőben | | |
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
@@ -82,8 +84,10 @@ szabadalommal védett formátumot.
 | WMA | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | WavPack (veszteségmentes és hibrid) | dekódolás; `.wv` és Matroska `A_WAVPACK4` olvasása | `crates/wavpack` (a WavPack-könyvtár portja); `crates/matroska`; FFmpeg-háttér | alap | függőben | | |
 | Monkey's Audio (APE, veszteségmentes) | dekódolás; `.ape` fájlok olvasása | `crates/ape` (a Monkey's Audio SDK portja); FFmpeg-háttér | alap | függőben | | |
+| Speex | dekódolás; Ogg Speex (`.spx`) olvasása | `crates/speex` (a libspeex portja) | alap | függőben | | |
 | SMPTE LTC időkód (ST 12-1) és MIDI Timecode (MTC) | dekódolás, kódolás (hangjel, MIDI-üzenetek) | `crates/tcsync` | alap | függőben | | |
 | G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
+| AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 
 ## Konténerek
 

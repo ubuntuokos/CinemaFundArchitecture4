@@ -317,6 +317,7 @@
 	Output file	Outputfil
 	Overwrite	Overskriv
 	PCM (uncompressed)	PCM (ukomprimeret)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	Panner	Panorering
 	Paste Attributes…	Indsæt attributter…
 	Paste Insert	Indsæt med forskydning
@@ -3394,8 +3395,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, starttidskode
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile lang GOP (12 billeder, IBBP) ved 50 Mbit/s i XDCAM HD422-stil, 24-bit 48 kHz PCM; HD-billedstørrelser
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0,3 bit pr. pixel), 24-bit 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a type D-10 (IMX 50): kun intra MPEG-2 4:2:2P@ML ved 50 Mbit/s, 720x486 ved 29,97 fps (4:3), fire 24-bit 48 kHz lydkanaler
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a type D-10 (IMX 50): kun intra MPEG-2 4:2:2P@ML ved 50 Mbit/s, 720x576 ved 25 fps (4:3), fire 24-bit 48 kHz lydkanaler
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, starttidskode
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a i SMPTE RDD 9-layoutet: MPEG-2 4:2:2 Profile lang GOP (12 billeder, IBBP) ved 50 Mbit/s, 1920x1080 eller 1280x720 progressiv, fire 24-bit 48 kHz kanaler som AES3-elementer pr. kanal
 	Main	Hoved
 	Mark In (Hover Scrub)	Marker indpunkt (scrub ved hover)
 	Mark Out (Hover Scrub)	Marker udpunkt (scrub ved hover)
@@ -3737,6 +3746,8 @@
 	Analyze Source for Smart Cut	Analyser kilde til Smart Cut
 	Plan Smart Cut	Planlæg Smart Cut
 	Run Smart Cut	Kør Smart Cut
+	DASH Manifest	DASH-manifest
+	Also write a DASH manifest (.mpd)	Skriv også et DASH-manifest (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Ingen sekvens er åben. Dobbeltklik på en sekvens i projektpanelet.
 	English (US)	Engelsk (USA)
 	English (UK)	Engelsk (Storbritannien)
@@ -4217,3 +4228,279 @@ export.summary	Low	lav
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Rulletekster fra et regneark
+	A .ods, .xlsx or CSV credits sheet	Et rulletekstark i .ods, .xlsx eller CSV
+	The spreadsheet's folder	Regnearkets mappe
+	Built-in styles	Indbyggede stilarter
+	Spreadsheet	Regneark
+	Sheet	Ark
+	Pictures	Billeder
+	Styling	Stil
+	Page	Side
+	Warnings	Advarsler
+	Moment in the page	Tidspunkt på siden
+	Place at Playhead	Placer ved afspilningshovedet
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Regneark (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Rulletekststil (*.json)
+	Card	Kort
+	Credits Spreadsheet	Rulletekstregneark
+	Reading…	Læser…
+	(one table)	(én tabel)
+	Total: {time}	I alt: {time}
+	Row {row}: {message}	Række {row}: {message}
+	Choose a credits spreadsheet.	Vælg et rulletekstregneark.
+	No preview	Ingen forhåndsvisning
+	Placing…	Placerer…
+	Placed {n} pages on the timeline.	{n} sider placeret på tidslinjen.
+	Credits Page Picture	Billede af rulletekstside
+	Preview Credits	Forhåndsvis rulletekster
+	Credits Styles	Rulletekststilarter
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Regneark og rulletekstfiler (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4-rulletekstfil (*.cfa4credits)
+	Save as Credits File…	Gem som rulletekstfil…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Regneark, ark, stil og tabel i én fil, der kan åbnes på enhver maskine
+	Saved: {path}	Gemt: {path}
+	Added	Tilføjet
+	Removed	Fjernet
+	Changed	Ændret
+	(empty row)	(tom række)
+	Refresh Credits from Spreadsheet	Opdater rulletekster fra regneark
+	Change	Ændring
+	Before → After	Før → Efter
+	Select None	Fravælg alle
+	Keep my edits on the pages (where their block is unchanged)	Behold mine redigeringer på siderne (hvor deres blok er uændret)
+	Locate Spreadsheet…	Find regneark…
+	Comparing…	Sammenligner…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} ændringer i {file}, siden rulleteksterne blev placeret. Fjern fluebenet ved det, du ikke ønsker.
+	The spreadsheet {file} has not changed since the credits were placed.	Regnearket {file} er ikke ændret, siden rulleteksterne blev placeret.
+	{n} layers were edited by hand on the pages.	{n} lag blev redigeret manuelt på siderne.
+	Accepting every change would replace these, because their block changed: {names}	Hvis du accepterer alle ændringer, erstattes disse, fordi deres blok er ændret: {names}
+	Refreshing…	Opdaterer…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Opdateret: {n} ændringer anvendt, {kept} manuelle redigeringer bevaret.
+	Refresh Credits from Spreadsheet…	Opdater rulletekster fra regneark…
+	Save Credits File…	Gem rulletekstfil…
+	Compare Credits with Spreadsheet	Sammenlign rulletekster med regneark
+	“{name}” appears twice in the same block	“{name}” optræder to gange i samme blok
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” er skrevet som “{other}” i række {otherRow}
+	The font “{font}” is not installed; another font is used	Skrifttypen “{font}” er ikke installeret; en anden skrifttype bruges
+	The font “{font}” has no “{chars}”; another font draws them	Skrifttypen “{font}” har ikke “{chars}”; en anden skrifttype tegner dem
+	“{text}” is outside the title-safe area	“{text}” er uden for det titelsikre område
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” er for mørk på sort (kontrast {ratio}:1; mindst 4,5:1 kræves)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” er {px} px høj; 24 px eller mere er let at læse
+	The roll moves {speed} px per frame; a whole number does not shimmer	Rulningen flytter {speed} px pr. billede; et helt tal flimrer ikke
+	A line crosses the frame in {seconds} s; at least 6 s reads well	En linje krydser billedet på {seconds} s; mindst 6 s er let at læse
+	The card holds for only {seconds} s after its fades	Kortet står kun {seconds} s efter sine overtoninger
+	This page starts {seconds} s before the previous one ends	Denne side starter {seconds} s før den forrige slutter
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” vises med {percent} % af sine pixels; det vil se blødt ud
+	{more} more of the same	{more} mere af samme slags
+	Page {page}: {message}	Side {page}: {message}
+	Checks and warnings	Kontroller og advarsler
+	Checks: {errors} errors, {warnings} warnings	Kontroller: {errors} fejl, {warnings} advarsler
+	Check Credits	Kontrollér rulletekster
+	The whole music ({time})	Hele musikken ({time})
+	Until the sound ends ({time})	Indtil lyden slutter ({time})
+	To the last bar line ({time})	Til sidste taktstreg ({time})
+	Fit Credits to Music	Tilpas rulletekster til musikken
+	Fit Credits to Music…	Tilpas rulletekster til musikken…
+	Analyse Music for Credits	Analysér musik til rulletekster
+	Length:	Længde:
+	Cards last whole beats (cuts on the beat)	Kort varer hele slag (klip på slaget)
+	Start the credits where the music starts	Start rulleteksterne, hvor musikken starter
+	Length of the credits	Rulleteksternes længde
+	Remove Fitting	Fjern tilpasning
+	Listening to the music…	Lytter til musikken…
+	Length: {time}	Længde: {time}
+	the sound ends at {time}	lyden slutter ved {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	rulletekster uden tilpasning: {time}
+	Select a credits page on the timeline.	Vælg en rulletekstside på tidslinjen.
+	Fitting…	Tilpasser…
+	The credits now last {time}.	Rulleteksterne varer nu {time}.
+	Fitting removed.	Tilpasning fjernet.
+	Fit to This Length	Tilpas til denne længde
+	No music to measure ({problem}); type the length.	Ingen musik at måle ({problem}); skriv længden.
+	The text moves {speed} px per frame; a whole number does not shimmer	Teksten flytter {speed} px pr. billede; et helt tal flimrer ikke
+	Crawl	Rulletekst på tværs
+	Picture: {file}	Billede: {file}
+	Video: {file}	Video: {file}
+	Looped video: {file}	Video i løkke: {file}
+	Into the next	Ind i den næste
+	Safe areas and spines	Sikre områder og akser
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Handlingssikkert (93 %), titelsikkert (90 %), midten og sidens akser
+	Baseline grid	Grundlinjegitter
+	Lines one gap unit apart, moving with the page	Linjer med én afstandsenhed imellem, som følger siden
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” skiller sig ikke ud fra baggrunden (kontrast {ratio}:1; mindst 4,5:1 kræves)
+	A picture or video is behind the text: check the contrast by eye	Der er et billede eller en video bag teksten: kontrollér kontrasten med øjet
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Et færdigt udseende: stilarter, baggrunde, overgange og timing. En angivet stilfil har forrang.
+	New Spreadsheet from Template…	Nyt regneark fra skabelon…
+	built in	indbygget
+	mine	min
+	this project	dette projekt
+	Template	Skabelon
+	Choose a template first.	Vælg først en skabelon.
+	Name of the template:	Skabelonens navn:
+	Template saved: {name}	Skabelon gemt: {name}
+	Apply Credits Template…	Anvend rulletekstskabelon…
+	Template:	Skabelon:
+	Credits Templates	Rulletekstskabeloner
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Regneark, rulletekstfiler og Cinecred-projekter (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Åbn en Cinecred-projektmappe (Styling.toml og dets rulletekstregneark)
+	(empty block)	(tom blok)
+	Apply Template…	Anvend skabelon…
+	Change them in the spreadsheet; the credits follow when you save it.	Ret dem i regnearket; rulleteksterne følger med, når du gemmer det.
+	Compact View	Kompakt visning
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Sammenlign de valgte rulletekster på tidslinjen med deres regneark, række for række
+	Fit the selected credits to the music under them	Tilpas de valgte rulletekster til musikken under dem
+	Fit to Music…	Tilpas til musik…
+	Full View	Fuld visning
+	Give the selected credits on the timeline another template	Giv de valgte rulletekster på tidslinjen en anden skabelon
+	Names	Navne
+	No pages	Ingen sider
+	Refresh Placed Credits…	Opdater placerede rulletekster…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Vis alt: blokke, egenskaber, siderne over tid, kontroller og rulletekstværktøjerne
+	Spine	Akse
+	Tails	Slutning
+	The blocks of the chosen page; choose one to see it in the preview	Blokkene på den valgte side; vælg en for at se den i forhåndsvisningen
+	The pages along time; click one to choose it	Siderne over tid; klik på en for at vælge den
+	{n} more	{n} mere
+	Block	Blok
+	parallel	parallel
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	På siden (OBS tager den fra browserkilden)
+	Separate (a media source in OBS)	Separat (en mediekilde i OBS)
+	No sound	Ingen lyd
+	credits	rulletekster
+	graphic	grafik
+	{n} pages	{n} sider
+	Live Graphics	Livegrafik
+	Prepared cues; double-click one to put it in preview	Forberedte cues; dobbeltklik på en for at sætte den i preview
+	Add Credits…	Tilføj rulletekster…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Et rulletekstregneark, en rulletekstfil eller et Cinecred-projekt som cue
+	Add Selected Graphic	Tilføj valgt grafik
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Det grafiske klip, der er valgt på tidslinjen (en titel, en navneplade) som cue
+	Cues	Cues
+	TAKE	TAKE
+	The preview cue goes on air from its first page	Preview-cuen går i luften fra sin første side
+	PREVIOUS	FORRIGE
+	The page before (on the first page: from its start)	Siden før (på første side: fra dens start)
+	NEXT	NÆSTE
+	The next page; after the last one, the preview cue	Næste side; efter den sidste preview-cuen
+	HOLD	HOLD
+	Stop the program where it is	Stop programmet, hvor det er
+	CONTINUE	FORTSÆT
+	Go on from where it stopped	Fortsæt derfra, hvor det stoppede
+	UPDATE	OPDATER
+	Read the spreadsheet (or the clip) again; on air it changes at once	Læs regnearket (eller klippet) igen; i luften ændres det med det samme
+	OUT	UD
+	Take everything off air	Tag alt ud af luften
+	Start Live Page	Start livesiden
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Server programmet på denne computer til OBS' browserkilde (kun 127.0.0.1)
+	not running	kører ikke
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Værktøjer ▸ WebSocket-serverindstillinger
+	Connect to OBS	Forbind til OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Forbind til OBS på denne computer, og peg dens browserkilde “CFA4 Live” på livesiden
+	Port	Port
+	Password	Adgangskode
+	Live page	Liveside
+	Sound	Lyd
+	OBS	OBS
+	Nothing in preview	Intet i preview
+	page {page} of {pages}	side {page} af {pages}
+	held	holdt
+	ended	slut
+	Off air	Ikke i luften
+	Stop Live Page	Stop livesiden
+	Connected to OBS {version}; source “{source}”	Forbundet til OBS {version}; kilde “{source}”
+	Point OBS Again	Peg OBS igen
+	Select a graphic clip on the timeline first.	Vælg først et grafisk klip på tidslinjen.
+	Connecting to OBS…	Forbinder til OBS…
+	Live Graphics…	Livegrafik…
+	PREVIEW	PREVIEW
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	et billed- eller videotag står alene i en brødtekstcelle (eller med ét navn, som portræt); de andre tags blev fjernet
+	the page gap is not a duration; the page style's is used	sideafstanden er ikke en varighed; sidestilens bruges
+	the page runtime is not a positive duration; the page style's is used	sidens spilletid er ikke en positiv varighed; sidestilens bruges
+	background “{file}” was not found; it is left out	baggrunden “{file}” blev ikke fundet; den udelades
+	card page {page} is taller than the frame; use a roll page	kortsiden {page} er højere end billedet; brug en rulleside
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	farven “{colour}” i bogstavstilen “{style}” er ikke #rrggbb; den udelades
+	colour “{colour}” is not #rrggbb; black is used	farven “{colour}” er ikke #rrggbb; sort bruges
+	colour “{colour}” is not #rrggbb; white is used	farven “{colour}” er ikke #rrggbb; hvid bruges
+	content style “{style}” does not exist; “{used}” is used	indholdsstilen “{style}” findes ikke; “{used}” bruges
+	letter style “{style}” does not exist; the text keeps the block's style	bogstavstilen “{style}” findes ikke; teksten beholder blokkens stil
+	page gap “{value}” is not a duration	sideafstanden “{value}” er ikke en varighed
+	page runtime “{value}” is not a duration	sidens spilletid “{value}” er ikke en varighed
+	page style “{style}” does not exist; a roll page is used	sidestilen “{style}” findes ikke; en rulleside bruges
+	page {page}: the background names no file; it is left out	side {page}: baggrunden angiver ingen fil; den udelades
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	side {page}: spilletiden nås ved at ændre rullehastigheden (siden har ingen afstande mellem blokke at strække)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	side {page}: spilletiden nås ved at ændre rullehastigheden (rulleteksterne er for lange selv uden afstande)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	side {page}: spilletiden nås ved at ændre rullehastigheden (afstandene skulle vokse mere end 20 gange)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	side {page}: overgangen kræver, at siderne mødes (sideafstand 0); den udelades
+	page {page}: there is no transition “{name}”; the pages cut	side {page}: der findes ingen overgang “{name}”; siderne klippes
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	aksepositionen “{value}” understøttes ikke (en pixelforskydning, evt. med “parallel”, gør)
+	vertical gap “{value}” is not a number	den lodrette afstand “{value}” er ikke et tal
+	picture “{file}” was not found or cannot be read; it is left out	billedet “{file}” blev ikke fundet eller kan ikke læses; det udelades
+	video “{file}” was not found or cannot be read; it is left out	videoen “{file}” blev ikke fundet eller kan ikke læses; den udelades
+	there is no roll page without its own runtime to stretch; the length cannot change	der er ingen rulleside uden egen spilletid at strække; længden kan ikke ændres
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	kortene og afstandene alene er {seconds} s; den ønskede længde er kortere, så rullesiderne beholder deres naturlige længde
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	bogstavstilen “{style}”: kun det første farvede lag bruges (ingen konturer, skygger eller striber)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	den samlede rulletekst-spilletid overføres ikke; brug Tilpas rulletekster til musikken (eller en længde) i stedet
+	page style “{style}”: fade curves become linear fades	sidestilen “{style}”: toningskurver bliver lineære toninger
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	indholdsstilen “{style}” har ingen start i Cinecred; starter skrevet i arket vises stadig
+	content style “{style}”: sorting the names is not carried over	indholdsstilen “{style}”: sortering af navnene overføres ikke
+	transition curves are not carried over	overgangskurver overføres ikke
+	picture styles (pictures keep their own size) are not carried over	billedstilarter (billeder beholder deres egen størrelse) overføres ikke
+	video (tape) styles are not carried over	video- (bånd-)stilarter overføres ikke
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektet har {n} rulletekstregneark; “{name}” bruges (vælg et andet i feltet Regneark)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Tilføj fund
+	Add as Finding	Tilføj som fund
+	Are colour and contrast acceptable?	Er farve og kontrast acceptable?
+	Automatic Checks	Automatiske kontroller
+	Bounds	Grænser
+	Check	Kontrol
+	Check Now	Kontrollér nu
+	Check quality after export	Kontrollér kvaliteten efter eksport
+	Checking…	Kontrollerer…
+	Contact Sheet	Kontaktark
+	Critical	Kritisk
+	Fail	Ikke bestået
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Fund {row}: tidskoden er ikke et tidspunkt i denne fil (HH:MM:SS:FF).
+	Findings	Fund
+	Human Review	Menneskelig gennemgang
+	Incomplete	Ufuldstændig
+	Is there a visible picture defect?	Er der en synlig billedfejl?
+	Is there audible distortion?	Er der hørbar forvrængning?
+	Is there unwanted noise?	Er der uønsket støj?
+	Major	Alvorlig
+	Message	Meddelelse
+	Minor	Mindre
+	No contact sheet	Intet kontaktark
+	Not answered	Ikke besvaret
+	Not checked	Ikke kontrolleret
+	Not run	Ikke kørt
+	Note	Note
+	Pass	Bestået
+	Passed	Bestået
+	Passed with warnings	Bestået med advarsler
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Kvalitetskontrol
+	Quality Check…	Kvalitetskontrol…
+	Remove Finding	Fjern fund
+	Report: {path}	Rapport: {path}
+	Review complete	Gennemgang færdig
+	Reviewer	Kontrollant
+	Run the media quality check on the finished file (docs/media-qc.md)	Kør mediekvalitetskontrollen på den færdige fil (docs/media-qc.md)
+	Save Review	Gem gennemgang
+	Select a finished export in the queue	Vælg en færdig eksport i køen
+	Severity	Alvorlighed
+	The engine is not running.	Motoren kører ikke.
+	Time code	Tidskode
+	Unsure	Usikker
+	accept	acceptabelt
+	the engine did not start the check	motoren startede ikke kontrollen
+	the engine sent no report	motoren sendte ingen rapport

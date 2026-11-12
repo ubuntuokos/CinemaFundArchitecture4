@@ -3138,8 +3138,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 біт 4:2:2), PCM 24 біти 48 кГц, початковий таймкод
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 кадрів, IBBP), 50 Мбіт/с у стилі XDCAM HD422, PCM 24 біт 48 кГц; розміри кадру HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0,3 біта на піксель), PCM 24 біти 48 кГц
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типу D-10 (IMX 50): лише intra MPEG-2 4:2:2P@ML, 50 Мбіт/с, 720x486 при 29,97 кадр/с (4:3), чотири аудіоканали 24 біт 48 кГц
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типу D-10 (IMX 50): лише intra MPEG-2 4:2:2P@ML, 50 Мбіт/с, 720x576 при 25 кадр/с (4:3), чотири аудіоканали 24 біт 48 кГц
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 біти 48 кГц, початковий таймкод
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a у розкладці SMPTE RDD 9: MPEG-2 4:2:2 Profile long GOP (12 кадрів, IBBP), 50 Мбіт/с, 1920x1080 або 1280x720 прогресивна розгортка, чотири канали 24 біт 48 кГц окремими елементами AES3 на канал
 	Main	Main
 	Mark In (Hover Scrub)	Поставити точку входу (скраббінг при наведенні)
 	Mark Out (Hover Scrub)	Поставити точку виходу (скраббінг при наведенні)
@@ -3685,6 +3693,8 @@
 	Analyze Source for Smart Cut	Аналіз джерела для Smart Cut
 	Plan Smart Cut	Спланувати Smart Cut
 	Run Smart Cut	Виконати Smart Cut
+	DASH Manifest	Маніфест DASH
+	Also write a DASH manifest (.mpd)	Також записати маніфест DASH (.mpd)
 	#	#
 	'{name}' already exists. Replace it?	«{name}» уже існує. Замінити?
 	(none)	(немає)
@@ -3822,6 +3832,7 @@
 	Output file	Вихідний файл
 	Output folder	Вихідна тека
 	PCM (uncompressed)	PCM (без стиснення)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 рівень II)
 	Pace	Темп
 	Path:	Шлях:
 	Program Stream (.mpg, LPCM audio)	Програмний потік (.mpg, звук LPCM)
@@ -4200,3 +4211,279 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Титри з таблиці
+	A .ods, .xlsx or CSV credits sheet	Аркуш титрів у .ods, .xlsx або CSV
+	The spreadsheet's folder	Тека таблиці
+	Built-in styles	Вбудовані стилі
+	Spreadsheet	Таблиця
+	Sheet	Аркуш
+	Pictures	Зображення
+	Styling	Оформлення
+	Page	Сторінка
+	Warnings	Попередження
+	Moment in the page	Момент на сторінці
+	Place at Playhead	Розмістити на поточній позиції
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Таблиці (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Оформлення титрів (*.json)
+	Card	Картка
+	Credits Spreadsheet	Таблиця титрів
+	Reading…	Читання…
+	(one table)	(одна таблиця)
+	Total: {time}	Разом: {time}
+	Row {row}: {message}	Рядок {row}: {message}
+	Choose a credits spreadsheet.	Виберіть таблицю титрів.
+	No preview	Немає попереднього перегляду
+	Placing…	Розміщення…
+	Placed {n} pages on the timeline.	Розміщено сторінок на таймлайні: {n}.
+	Credits Page Picture	Зображення сторінки титрів
+	Preview Credits	Попередній перегляд титрів
+	Credits Styles	Стилі титрів
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Таблиці та файли титрів (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Файл титрів CFA4 (*.cfa4credits)
+	Save as Credits File…	Зберегти як файл титрів…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Таблиця, аркуш, оформлення та дані в одному файлі, щоб відкрити на будь-якому комп'ютері
+	Saved: {path}	Збережено: {path}
+	Added	Додано
+	Removed	Видалено
+	Changed	Змінено
+	(empty row)	(порожній рядок)
+	Refresh Credits from Spreadsheet	Оновити титри з таблиці
+	Change	Зміна
+	Before → After	До → Після
+	Select None	Зняти позначення
+	Keep my edits on the pages (where their block is unchanged)	Зберегти мої зміни на сторінках (де їхній блок не змінився)
+	Locate Spreadsheet…	Знайти таблицю…
+	Comparing…	Порівняння…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Змін у {file} від часу розміщення титрів: {n}. Зніміть позначку з непотрібних.
+	The spreadsheet {file} has not changed since the credits were placed.	Таблиця {file} не змінювалася від часу розміщення титрів.
+	{n} layers were edited by hand on the pages.	Шарів, змінених вручну на сторінках: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Прийняття всіх змін замінить їх, бо їхній блок змінився: {names}
+	Refreshing…	Оновлення…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Оновлено: застосовано змін — {n}, збережено ручних правок — {kept}.
+	Refresh Credits from Spreadsheet…	Оновити титри з таблиці…
+	Save Credits File…	Зберегти файл титрів…
+	Compare Credits with Spreadsheet	Порівняти титри з таблицею
+	“{name}” appears twice in the same block	«{name}» трапляється двічі в одному блоці
+	“{name}” is written as “{other}” in row {otherRow}	«{name}» записано як «{other}» у рядку {otherRow}
+	The font “{font}” is not installed; another font is used	Шрифт «{font}» не встановлено; використовується інший шрифт
+	The font “{font}” has no “{chars}”; another font draws them	У шрифті «{font}» немає «{chars}»; їх малює інший шрифт
+	“{text}” is outside the title-safe area	«{text}» за межами безпечної зони заголовків
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» занадто темний на чорному (контраст {ratio}:1; потрібно щонайменше 4.5:1)
+	“{text}” is {px} px high; 24 px or more reads well	«{text}» заввишки {px} px; від 24 px читається добре
+	The roll moves {speed} px per frame; a whole number does not shimmer	Прокрутка зсувається на {speed} px за кадр; ціле число не мерехтить
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Рядок перетинає кадр за {seconds} с; добре читається від 6 с
+	The card holds for only {seconds} s after its fades	Картка лишається на екрані лише {seconds} с після плавних переходів
+	This page starts {seconds} s before the previous one ends	Ця сторінка починається за {seconds} с до кінця попередньої
+	“{file}” is shown at {percent} % of its pixels; it will look soft	«{file}» показано на {percent} % своїх пікселів; зображення буде нечітким
+	{more} more of the same	Ще {more} таких самих
+	Page {page}: {message}	Сторінка {page}: {message}
+	Checks and warnings	Перевірки та попередження
+	Checks: {errors} errors, {warnings} warnings	Перевірки: помилок — {errors}, попереджень — {warnings}
+	Check Credits	Перевірити титри
+	The whole music ({time})	Уся музика ({time})
+	Until the sound ends ({time})	Доки не закінчиться звук ({time})
+	To the last bar line ({time})	До останньої тактової риски ({time})
+	Fit Credits to Music	Підігнати титри під музику
+	Fit Credits to Music…	Підігнати титри під музику…
+	Analyse Music for Credits	Аналізувати музику для титрів
+	Length:	Тривалість:
+	Cards last whole beats (cuts on the beat)	Картки тривають ціле число долей (зміна на долі)
+	Start the credits where the music starts	Почати титри там, де починається музика
+	Length of the credits	Тривалість титрів
+	Remove Fitting	Зняти підгонку
+	Listening to the music…	Прослуховування музики…
+	Length: {time}	Тривалість: {time}
+	the sound ends at {time}	звук закінчується на {time}
+	tempo {bpm} BPM	темп {bpm} BPM
+	the credits without fitting: {time}	титри без підгонки: {time}
+	Select a credits page on the timeline.	Виберіть сторінку титрів на таймлайні.
+	Fitting…	Підгонка…
+	The credits now last {time}.	Тепер титри тривають {time}.
+	Fitting removed.	Підгонку знято.
+	Fit to This Length	Підігнати під цю тривалість
+	No music to measure ({problem}); type the length.	Немає музики для вимірювання ({problem}); введіть тривалість.
+	The text moves {speed} px per frame; a whole number does not shimmer	Текст зсувається на {speed} px за кадр; ціле число не мерехтить
+	Crawl	Біжучий рядок
+	Picture: {file}	Зображення: {file}
+	Video: {file}	Відео: {file}
+	Looped video: {file}	Відео по колу: {file}
+	Into the next	У наступну
+	Safe areas and spines	Безпечні зони та осі
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безпечна зона дії (93 %), безпечна зона заголовків (90 %), центр і осі сторінки
+	Baseline grid	Сітка базових ліній
+	Lines one gap unit apart, moving with the page	Лінії через одиницю інтервалу, рухаються разом зі сторінкою
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» не виділяється на тлі (контраст {ratio}:1; потрібно щонайменше 4.5:1)
+	A picture or video is behind the text: check the contrast by eye	За текстом зображення або відео: перевірте контраст на око
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Готовий вигляд: стилі, тла, переходи та хронометраж. Файл оформлення, якщо вказано, має пріоритет.
+	New Spreadsheet from Template…	Нова таблиця з шаблону…
+	built in	вбудований
+	mine	мій
+	this project	цей проєкт
+	Template	Шаблон
+	Choose a template first.	Спершу виберіть шаблон.
+	Name of the template:	Назва шаблону:
+	Template saved: {name}	Шаблон збережено: {name}
+	Apply Credits Template…	Застосувати шаблон титрів…
+	Template:	Шаблон:
+	Credits Templates	Шаблони титрів
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Таблиці, файли титрів і проєкти Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Проєкт Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Відкрити теку проєкту Cinecred (Styling.toml та її таблиця титрів)
+	(empty block)	(порожній блок)
+	Apply Template…	Застосувати шаблон…
+	Change them in the spreadsheet; the credits follow when you save it.	Змініть їх у таблиці; титри оновляться, коли ви її збережете.
+	Compact View	Компактний вигляд
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Порівняти вибрані титри на таймлайні з їхньою таблицею рядок за рядком
+	Fit the selected credits to the music under them	Підігнати вибрані титри під музику, що лунає під ними
+	Fit to Music…	Підігнати під музику…
+	Full View	Повний вигляд
+	Give the selected credits on the timeline another template	Застосувати до вибраних титрів на таймлайні інший шаблон
+	Names	Імена
+	No pages	Немає сторінок
+	Refresh Placed Credits…	Оновити розміщені титри…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Показати все: блоки, властивості, сторінки за часом, перевірки та інструменти титрів
+	Spine	Вісь
+	Tails	Ролі
+	The blocks of the chosen page; choose one to see it in the preview	Блоки вибраної сторінки; виберіть блок, щоб побачити його в попередньому перегляді
+	The pages along time; click one to choose it	Сторінки за часом; клацніть сторінку, щоб вибрати її
+	{n} more	Ще {n}
+	Block	Блок
+	parallel	паралельно
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	На сторінці (OBS бере її з джерела-браузера)
+	Separate (a media source in OBS)	Окремо (медіаджерело в OBS)
+	No sound	Без звуку
+	credits	титри
+	graphic	графіка
+	{n} pages	Сторінок: {n}
+	Live Graphics	Графіка в ефірі
+	Prepared cues; double-click one to put it in preview	Підготовлені елементи; двічі клацніть, щоб помістити елемент у попередній перегляд
+	Add Credits…	Додати титри…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Таблиця титрів, файл титрів або проєкт Cinecred як елемент
+	Add Selected Graphic	Додати вибрану графіку
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Вибраний на таймлайні графічний кліп (заголовок, нижня третина) як елемент
+	Cues	Елементи
+	TAKE	В ЕФІР
+	The preview cue goes on air from its first page	Елемент із попереднього перегляду виходить в ефір з першої сторінки
+	PREVIOUS	НАЗАД
+	The page before (on the first page: from its start)	Попередня сторінка (на першій сторінці: з її початку)
+	NEXT	ДАЛІ
+	The next page; after the last one, the preview cue	Наступна сторінка; після останньої — елемент із попереднього перегляду
+	HOLD	ПАУЗА
+	Stop the program where it is	Зупинити програму на поточному місці
+	CONTINUE	ПРОДОВЖИТИ
+	Go on from where it stopped	Продовжити з місця зупинки
+	UPDATE	ОНОВИТИ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Прочитати таблицю (або кліп) знову; в ефірі зміни застосовуються одразу
+	OUT	ЗНЯТИ
+	Take everything off air	Зняти все з ефіру
+	Start Live Page	Запустити ефірну сторінку
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Віддавати програму на цьому комп'ютері для джерела-браузера OBS (лише 127.0.0.1)
+	not running	не запущено
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	Підключитися до OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Підключитися до OBS на цьому комп'ютері й спрямувати його джерело-браузер «CFA4 Live» на ефірну сторінку
+	Port	Порт
+	Password	Пароль
+	Live page	Ефірна сторінка
+	Sound	Звук
+	OBS	OBS
+	Nothing in preview	У попередньому перегляді нічого немає
+	page {page} of {pages}	сторінка {page} з {pages}
+	held	на паузі
+	ended	завершено
+	Off air	Не в ефірі
+	Stop Live Page	Зупинити ефірну сторінку
+	Connected to OBS {version}; source “{source}”	Підключено до OBS {version}; джерело «{source}»
+	Point OBS Again	Спрямувати OBS знову
+	Select a graphic clip on the timeline first.	Спершу виберіть графічний кліп на таймлайні.
+	Connecting to OBS…	Підключення до OBS…
+	Live Graphics…	Графіка в ефірі…
+	PREVIEW	ПОПЕРЕДНІЙ ПЕРЕГЛЯД
+	PROGRAM	ПРОГРАМА
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	тег зображення або відео стоїть окремо в клітинці основного тексту (або з одним іменем, як портрет); решту тегів видалено
+	the page gap is not a duration; the page style's is used	пауза між сторінками не є тривалістю; використовується значення стилю сторінки
+	the page runtime is not a positive duration; the page style's is used	тривалість сторінки не є додатною; використовується значення стилю сторінки
+	background “{file}” was not found; it is left out	тло “{file}” не знайдено; його пропущено
+	card page {page} is taller than the frame; use a roll page	сторінка-картка {page} вища за кадр; використовуйте прокручувану сторінку
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	колір “{colour}” стилю літер “{style}” не у форматі #rrggbb; його пропущено
+	colour “{colour}” is not #rrggbb; black is used	колір “{colour}” не у форматі #rrggbb; використовується чорний
+	colour “{colour}” is not #rrggbb; white is used	колір “{colour}” не у форматі #rrggbb; використовується білий
+	content style “{style}” does not exist; “{used}” is used	стиль вмісту “{style}” не існує; використовується “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	стиль літер “{style}” не існує; текст зберігає стиль блоку
+	page gap “{value}” is not a duration	пауза між сторінками “{value}” не є тривалістю
+	page runtime “{value}” is not a duration	тривалість сторінки “{value}” не є тривалістю
+	page style “{style}” does not exist; a roll page is used	стиль сторінки “{style}” не існує; використовується прокручувана сторінка
+	page {page}: the background names no file; it is left out	сторінка {page}: для тла не вказано файл; його пропущено
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	сторінка {page}: тривалість досягається зміною швидкості прокручування (на сторінці немає проміжків між блоками, які можна розтягнути)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	сторінка {page}: тривалість досягається зміною швидкості прокручування (титри задовгі навіть без проміжків)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	сторінка {page}: тривалість досягається зміною швидкості прокручування (проміжки довелося б збільшити більш ніж у 20 разів)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	сторінка {page}: для переходу сторінки мають торкатися одна одної (пауза між сторінками 0); його пропущено
+	page {page}: there is no transition “{name}”; the pages cut	сторінка {page}: переходу “{name}” немає; сторінки змінюються склейкою
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положення осі “{value}” не підтримується (підтримується зміщення в пікселях, за бажанням із “parallel”)
+	vertical gap “{value}” is not a number	вертикальний проміжок “{value}” не є числом
+	picture “{file}” was not found or cannot be read; it is left out	зображення “{file}” не знайдено або не читається; його пропущено
+	video “{file}” was not found or cannot be read; it is left out	відео “{file}” не знайдено або не читається; його пропущено
+	there is no roll page without its own runtime to stretch; the length cannot change	немає прокручуваної сторінки з власною тривалістю, яку можна розтягнути; довжину змінити не можна
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	самі картки та проміжки тривають {seconds} s; запитана довжина менша, тому прокручувані сторінки зберігають природну довжину
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	стиль літер “{style}”: використовується лише перший кольоровий шар (без контурів, тіней і смуг)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	тривалість усіх титрів загалом не переноситься; використовуйте Підігнати титри під музику (або довжину)
+	page style “{style}”: fade curves become linear fades	стиль сторінки “{style}”: криві згасання стають лінійними
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	стиль вмісту “{style}” не має заголовка в Cinecred; заголовки, написані в таблиці, і далі показуються
+	content style “{style}”: sorting the names is not carried over	стиль вмісту “{style}”: сортування імен не переноситься
+	transition curves are not carried over	криві переходів не переносяться
+	picture styles (pictures keep their own size) are not carried over	стилі зображень (зображення зберігають власний розмір) не переносяться
+	video (tape) styles are not carried over	стилі відео (стрічки) не переносяться
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	у проєкті Cinecred {n} таблиць титрів; використовується “{name}” (виберіть іншу в полі Таблиця)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Додати зауваження
+	Add as Finding	Додати як зауваження
+	Are colour and contrast acceptable?	Чи прийнятні колір і контраст?
+	Automatic Checks	Автоматичні перевірки
+	Bounds	Межі
+	Check	Перевірка
+	Check Now	Перевірити зараз
+	Check quality after export	Перевірити якість після експорту
+	Checking…	Перевірка…
+	Contact Sheet	Контактний аркуш
+	Critical	Критичне
+	Fail	Не пройдено
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Зауваження {row}: таймкод не є моментом цього файлу (HH:MM:SS:FF).
+	Findings	Зауваження
+	Human Review	Перевірка людиною
+	Incomplete	Незавершено
+	Is there a visible picture defect?	Чи є видимий дефект зображення?
+	Is there audible distortion?	Чи є чутні спотворення?
+	Is there unwanted noise?	Чи є небажаний шум?
+	Major	Серйозне
+	Message	Повідомлення
+	Minor	Незначне
+	No contact sheet	Немає контактного аркуша
+	Not answered	Немає відповіді
+	Not checked	Не перевірено
+	Not run	Не запускалося
+	Note	Примітка
+	Pass	Пройдено
+	Passed	Пройдено
+	Passed with warnings	Пройдено з попередженнями
+	Profile: {id} v{version}	Профіль: {id} v{version}
+	Quality Check	Контроль якості
+	Quality Check…	Контроль якості…
+	Remove Finding	Видалити зауваження
+	Report: {path}	Звіт: {path}
+	Review complete	Перевірку завершено
+	Reviewer	Перевіряльник
+	Run the media quality check on the finished file (docs/media-qc.md)	Запустити перевірку якості медіа для готового файлу (docs/media-qc.md)
+	Save Review	Зберегти перевірку
+	Select a finished export in the queue	Виберіть завершений експорт у черзі
+	Severity	Серйозність
+	The engine is not running.	Рушій не запущено.
+	Time code	Таймкод
+	Unsure	Не впевнений
+	accept	допустимо
+	the engine did not start the check	рушій не почав перевірку
+	the engine sent no report	рушій не надіслав звіт

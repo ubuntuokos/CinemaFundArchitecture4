@@ -42,3 +42,11 @@ sudo apt-get install -y --no-install-recommends wavpack \
 sudo apt-get install -y --no-install-recommends unzip \
   && bash "$(dirname "$0")/install-monkeys-audio.sh" \
   || echo "::warning::Monkey's Audio SDK build failed: the APE oracle tests skip"
+# Speex reference encoder / decoder (speexenc, speexdec 1.2.1, built from source) for the Speex
+# oracle tests (they skip without them)
+bash "$(dirname "$0")/install-speex.sh" \
+  || echo "::warning::speex tools unavailable: Speex oracle tests skip"
+# AMR oracle `cfa4-amr-oracle` (opencore-amr + vo-amrwbenc, built from the pinned upstream tags;
+# the AMR oracle tests skip without it)
+bash "$(dirname "$0")/install-amr-oracle.sh" \
+  || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"

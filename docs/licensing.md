@@ -18,6 +18,8 @@
   használati korlát, és a CFA4-nek nincs kereskedelmi része. A fejlesztés **önkéntes adománnyal**
   támogatható; az adomány semmilyen funkciót nem nyit meg. Zárt (nem GPL) kódmodul – sem a CFA4
   folyamatába betöltődő, sem külön folyamatként futó – nem készül. Részletek: 4. pont.
+  Egyetlen kivétel (tulajdonosi döntés, 2026-11-11): a GPL-3 BRAW-adapter a GPL-3 7. pontja
+  szerinti kiegészítő engedéllyel linkelheti a felhasználó által telepített Blackmagic RAW SDK-t.
 - **Szabadalmilag korlátozott komponensek – Ubuntu-modell (tulajdonosi döntés, 2026-10-25):**
   az alapcsomag nélkülük épül és működik; a felhasználó kifejezett kérésére a
   `cfa4-restricted-extras` kiegészítő csomag telepíti őket (pl. x264, x265). Ez minden jövőbeli
@@ -129,6 +131,17 @@ the donation link is published is listed in [`README.md`](../README.md#support-c
 process (dynamic libraries, Rust crates, Python modules) or shipped as separate programs.
 Third-party proprietary plug-ins are not loaded either (ADR 0003 §4).
 
+**The one exception: the Blackmagic RAW adapter** (owner decision 2026-10-31, confirmed for this
+section on 2026-11-11, [CFA4-PROCODEC-002](plans/CFA4-PROCODEC-002-2026-11-11.md) work package
+11). The BRAW adapter is CFA4 code under `GPL-3.0-or-later` with an additional permission under
+GPL-3 section 7 to link the Blackmagic RAW SDK. CFA4 never ships, downloads or installs the SDK:
+the user installs it from Blackmagic Design, and without it the adapter reports BRAW as
+unsupported. The adapter runs as a separate process, so an SDK crash is an error and never a
+CFA4 crash (`AGENTS.md` §0). The exact permission text goes into the adapter's source headers and
+`LICENSE` note when the adapter is written. No other proprietary library gets this exception;
+R3D and ARRIRAW are handled by calling the vendors' own command-line programs (REDline,
+`art-cmd`) as external processes.
+
 ## 5. Reused code register
 
 Every piece of code taken from another project is listed here (one row per source, file or
@@ -148,11 +161,24 @@ that adds them names the source and revision.
 | `crates/wavpack/src/` (decoder ported to safe Rust; the correction-file and DSD paths left out) | WavPack 5.9.0, <https://github.com/dbry/WavPack>, commit `0931f1f3405d07b5f0511cf218bfbc6eb64d4c7d`, `src/unpack.c`, `read_words.c`, `entropy_utils.c`, `decorr_utils.c`, `unpack_floats.c`, `open_utils.c`; block format from `doc/WavPack5FileFormat.pdf` | David Bryant, Conifer Software | BSD-3-Clause (`crates/wavpack/LICENSE.WavPack`) |
 | `crates/ape/src/` (decoder ported to safe Rust; versions before 3.99, the encoder and the SIMD paths left out) | Monkey's Audio SDK 13.46, <https://monkeysaudio.com/files/MAC_1346_SDK.zip> (sha256 `17359c36099b7e1000da40306905f027088ac798fed1cb5e2405c33aaa030f83`), `Source/MACLib/APEHeader.cpp`, `APEDecompress.cpp`, `APEDecompressCore.cpp`, `UnBitArray.cpp`, `UnBitArrayBase.cpp`, `NewPredictor.cpp`, `NNFilter.cpp`, `NNFilterGeneric.cpp`, `NNFilterCommon.h`, `Interim.cpp`, `Prepare.cpp`, `FloatTransform.cpp`, `ScaledFirstOrderFilter.h`, `Shared/RollBuffer.h` | Matthew T. Ashland | BSD-3-Clause (`crates/ape/LICENSE.MonkeysAudio`) |
 | `crates/truehd/src/` (except `cfa4.rs`, `anyhow.rs`) | `truehd` crate 0.7.2, <https://github.com/truehdd/truehdd>, crates.io release 0.7.2, `truehd/src/` | Rainbaby | Apache-2.0 (`crates/truehd/LICENSE`) |
+| `crates/amr/src/` (except `lib.rs`; each file names its sources) | opencore-amr 0.1.6, <https://sourceforge.net/projects/opencore-amr/>, tag `v0.1.6`, commit `7dba8c32238418ce0b316a852b2224df586ca896`, `opencore/codecs_v2/audio/gsm_amr/amr_nb/{common,dec}/`, `opencore/codecs_v2/audio/gsm_amr/amr_wb/dec/` and the `amrnb/wrapper.cpp`, `amrwb/wrapper.cpp` frame interfaces (decoders, basic operations, tables) | PacketVideo; 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TTA, TTC; 3GPP TS 26.073, 26.173) | Apache-2.0 (`crates/amr/LICENSE.opencore-amr`, `crates/amr/NOTICE.opencore-amr`); CFA4 changes GPL-3.0-or-later |
 | `.claude/skills/cfa4-skill-review/SKILL.md` | NVIDIA SkillSpector, <https://github.com/NVIDIA/SkillSpector>, commit `54921c8c7c23008c8af2328d5ab492a904b6ece4`, `skills/skill-inspector/SKILL.md`; CFA4 Hungarian adaptation | NVIDIA CORPORATION & AFFILIATES (Copyright 2026) | Apache-2.0 upstream; CFA4 adaptation GPL-3.0-or-later (`LICENSE-APACHE`) |
+| `crates/mxf/src/write/mod.rs` (the D-10 content package: item sizes on the 512-byte KAG, the system metadata pack fields, the AES3 element word layout, the D-10 descriptor values; the RDD 9 content package, body partitioning and index delta entries; reimplemented in Rust from the standards, no files copied) | bmx, <https://github.com/bbc/bmx>, commit `278a9027580ea5f4a27d5d5040d5dc208c6ef538`, `src/d10_mxf/D10ContentPackage.cpp`, `src/mxf_helper/D10MXFDescriptorHelper.cpp`, `src/rdd9_mxf/RDD9ContentPackage.cpp`, `src/rdd9_mxf/RDD9IndexTable.cpp`, `src/mxf_helper/WaveMXFDescriptorHelper.cpp`, `deps/libMXF/mxf/mxf_labels_and_keys.h` (consulted) | British Broadcasting Corporation | BSD-3-Clause |
 | `crates/aac/src/usac/`, `crates/aac/src/drc/`, `crates/aac/tools/usac_tables.py` | libxaac, <https://github.com/ittiam-systems/libxaac> (Android `platform/external/libxaac`), commit `2fbadd57bca46693b7a077bcf1513131106d960c`, `decoder/` (USAC) and `decoder/drc_src/` (MPEG-D DRC); fixed point converted to floating point, the arithmetic-coder tables generated from its sources | The Android Open Source Project; Ittiam Systems Pvt. Ltd | Apache-2.0 (`crates/aac/LICENSE.libxaac`, `crates/aac/NOTICE.libxaac`) |
 | `crates/metrics/src/ciede2000.rs`, `crates/metrics/src/ssim.rs` (formula structure, rewritten) | OxiMedia 0.2.1, <https://github.com/cool-japan/oximedia>, commit `5263510374761ec8ef02dace5d26d62fb20e405b`, `crates/oximedia-quality/src/ciede2000.rs`, `crates/oximedia-quality/src/ssim.rs`; rewritten without panics, separable SSIM filter, Lab conversion through `cfa4-color` | Copyright 2024-2026 COOLJAPAN OU (Team Kitasan) | Apache-2.0 (`crates/metrics/LICENSE-oximedia`); CFA4 changes GPL-3.0-or-later |
+| `crates/speex/src/` (decoder re-expressed in Rust; `tables.rs` holds the codebooks as data) | Speex 1.2.1, <https://github.com/xiph/speex> (mirror of gitlab.xiph.org/xiph/speex), tag `Speex-1.2.1` (commit `5dceaaf3e23ee7fd17c80cb5f02a838fd6c18e01`), `libspeex/nb_celp.c`, `sb_celp.c`, `filters.c`, `ltp.c`, `ltp_sse.h`, `cb_search.c`, `lsp.c`, `quant_lsp.c`, `bits.c`, `stereo.c`, `speex_callbacks.c`, `speex_header.c`, `modes.c`, `modes_wb.c`, `exc_*_table.c`, `gain_table*.c`, `hexc*_table.c`, `high_lsp_tables.c`, `lsp_tables_nb.c`, `speex.c` (`speex_decode_int`) | Xiph.org Foundation, Jean-Marc Valin, Analog Devices Inc., CSIRO and the other holders in `COPYING` | BSD-3-Clause (`crates/speex/LICENSE.Speex`); CFA4 changes GPL-3.0-or-later |
 | `crates/render/src/vfx/glitch.rs` (`bit_crush`, `block_glitch`, `databend`, `vhs`, `Rng`, `hash32`) | glitchESP, <https://github.com/koupypavel/glitchESP>, branch `main` as of 2026-10-30, `firmware/main/effects/fx_bitcrush.c`, `fx_blocks.c`, `fx_databend.c`, `fx_vhs.c`, `fx_rng.h`: algorithms and constants ported from RGB565 C to CFA4's float images; no files copied | koupypavel and glitchESP contributors (2026) | MIT (`crates/render/src/vfx/glitch/LICENSE-glitch-sources`) |
 | `crates/render/src/vfx/glitch.rs` (`scan_line_jitter`, `tile_jitter`) | X-PostProcessing Library, <https://github.com/QianMo/X-PostProcessing-Library>, branch `master` as of 2026-10-30, `Assets/X-PostProcessing/Effects/GlitchScanLineJitter/`, `GlitchTileJitter/` (shaders and parameter mapping), reimplemented on the CPU; the scan line jitter curve is KinoGlitch's (<https://github.com/keijiro/KinoGlitch>) | QianMo (2020); Keijiro Takahashi (2015) | MIT (`crates/render/src/vfx/glitch/LICENSE-glitch-sources`) |
+| `crates/j2k/src/encode/mod.rs` (`ImfProfile`, `EncodeOptions::imf`: the IMF profile codestream constraints of ISO/IEC 15444-1 Annex A, code-block / precinct / progression / level / tile-part / size limits, re-expressed in Rust; no files copied) | OpenJPEG, <https://github.com/uclouvain/openjpeg>, commit `8314119b067c0fc77834731168daaebd379fdb12`, `src/lib/openjp2/j2k.c` (`opj_j2k_is_imf_compliant`, consulted) | Université de Louvain (UCL), Belgium; the OpenJPEG contributors | BSD-2-Clause |
+| `crates/mxf/src/write/mod.rs` (`imf_j2k_label`: the numbering of byte 16 of the ST 422 IMF JPEG 2000 picture coding labels, checked against the label table; no files copied) | asdcplib, <https://github.com/cinecert/asdcplib>, commit `905d6047f67c8211c2d22f29fb0e2e44c142b59b`, `src/MDD.cpp` (consulted) | CineCert LLC; John Hurst | BSD-3-Clause |
+| `crates/dirac/src/` (the ST 2042-1 pseudocode re-expressed in Rust: `bits.rs`, `header.rs`, `picture.rs`, `lib.rs`; `tables.rs` holds the data tables) | BBC VC-2 conformance software `vc2_conformance` 2.0.0, <https://github.com/bbc/vc2_conformance>, commit `2a280349d4b9fd870ca6c0d92d301bbc22612adc`, `vc2_conformance/decoder/` and `vc2_conformance/pseudocode/`; `vc2_data_tables`, <https://github.com/bbc/vc2_data_tables>, commit `176290aef17c33cc2fb39cd075f550bec6163f85`, `vc2_data_tables/__init__.py` and `csv/` | British Broadcasting Corporation | GPL-3.0-only (compatible, §3); the Fidelity filter tap and the rounding of the final shift were checked against the BBC `vc2-reference` codec (Apache-2.0, <https://github.com/bbc/vc2-reference>, commit `46639dcf`), not copied |
+
+**File formats read, no code copied.** CFA4 code written independently to read another
+program's file format, from its documentation and published source:
+
+| CFA4 path | Format (project, URL, revision) | Licence of the source consulted |
+|---|---|---|
+| `crates/credits/src/cinecred.rs` | Cinecred project: `Styling.toml` keys and values, credits-sheet column and tag names in its languages ([LoadingByte/cinecred](https://github.com/LoadingByte/cinecred), 1.9.1, `24e5083`) | GPL-3.0-or-later |
 
 ## 6. Dependency checks
 

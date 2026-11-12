@@ -16,6 +16,8 @@ cfa4-frame = { workspace = true }
 cfa4-media = { workspace = true }
 cfa4-avi = { workspace = true }
 cfa4-adpcm = { workspace = true }
+cfa4-speex = { workspace = true }
+cfa4-amr = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-mxf = { workspace = true }
@@ -46,6 +48,7 @@ cfa4-hap = { workspace = true }
 cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
 cfa4-ffv1 = { workspace = true }
+cfa4-dirac = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-opus = { workspace = true }
 rayon = { workspace = true }

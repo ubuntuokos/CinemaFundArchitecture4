@@ -350,6 +350,7 @@
 	Output file	Kimeneti fájl
 	Overlay	Átfedés
 	Overwrite	Felülírás
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	PCM (uncompressed)	PCM (tömörítetlen)
 	Panels	Panelek
 	Panner	Panoráma
@@ -3758,8 +3759,16 @@ export.summary	Low	alacsony
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bites 4:2:2), 24 bites 48 kHz PCM, kezdő időkód
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, hosszú GOP (12 kép, IBBP), 50 Mbit/s, XDCAM HD422 stílusban, 24 bites 48 kHz PCM; HD képméretek
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High, hosszú GOP (0,3 bit/képpont), 24 bites 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, D-10 típus (IMX 50): csak intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29,97 fps (4:3), négy 24 bites 48 kHz-es hangcsatorna
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, D-10 típus (IMX 50): csak intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 fps (4:3), négy 24 bites 48 kHz-es hangcsatorna
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 bites 48 kHz PCM, kezdő időkód
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a SMPTE RDD 9 elrendezésben: MPEG-2 4:2:2 Profile, hosszú GOP (12 kép, IBBP), 50 Mbit/s, 1920x1080 vagy 1280x720 progresszív, négy 24 bites 48 kHz-es csatorna csatornánkénti AES3-elemként
 	Main	Main
 	Mark In (Hover Scrub)	Kezdőpont jelölése (léptetés rámutatással)
 	Mark Out (Hover Scrub)	Végpont jelölése (léptetés rámutatással)
@@ -4102,6 +4111,8 @@ export.summary	Low	alacsony
 	Analyze Source for Smart Cut	Forrás elemzése a Smart Cuthoz
 	Plan Smart Cut	Smart Cut megtervezése
 	Run Smart Cut	Smart Cut futtatása
+	DASH Manifest	DASH-manifeszt
+	Also write a DASH manifest (.mpd)	DASH-manifeszt (.mpd) írása is
 	No sequence open. Double-click a sequence in the Project panel.	Nincs nyitott szekvencia. Kattintson duplán egy szekvenciára a Projekt panelen.
 
 # Language names in the language menu: the English variants keep their English names.
@@ -4214,3 +4225,279 @@ export.summary	Low	alacsony
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Stáblista táblázatból
+	A .ods, .xlsx or CSV credits sheet	Egy .ods, .xlsx vagy CSV stáblista-táblázat
+	The spreadsheet's folder	A táblázat mappája
+	Built-in styles	Beépített stílusok
+	Spreadsheet	Táblázat
+	Sheet	Munkalap
+	Pictures	Képek
+	Styling	Stílus
+	Page	Oldal
+	Warnings	Figyelmeztetések
+	Moment in the page	Időpont az oldalon belül
+	Place at Playhead	Elhelyezés a lejátszófejnél
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Táblázatok (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Stáblista-stílus (*.json)
+	Card	Kártya
+	Credits Spreadsheet	Stáblista-táblázat
+	Reading…	Beolvasás…
+	(one table)	(egyetlen táblázat)
+	Total: {time}	Összesen: {time}
+	Row {row}: {message}	{row}. sor: {message}
+	Choose a credits spreadsheet.	Válassz egy stáblista-táblázatot.
+	No preview	Nincs előnézet
+	Placing…	Elhelyezés…
+	Placed {n} pages on the timeline.	{n} oldal került az idővonalra.
+	Credits Page Picture	Stáblista-oldal képe
+	Preview Credits	Stáblista előnézete
+	Credits Styles	Stáblista-stílusok
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Táblázatok és stáblista-fájlok (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 stáblista-fájl (*.cfa4credits)
+	Save as Credits File…	Mentés stáblista-fájlként…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	A táblázat, a munkalap, a stílus és a sorok egy fájlban – bármelyik gépen megnyitható
+	Saved: {path}	Mentve: {path}
+	Added	Új
+	Removed	Törölve
+	Changed	Módosult
+	(empty row)	(üres sor)
+	Refresh Credits from Spreadsheet	Stáblista frissítése a táblázatból
+	Change	Változás
+	Before → After	Előtte → utána
+	Select None	Kijelölés törlése
+	Keep my edits on the pages (where their block is unchanged)	A saját módosításaim maradjanak meg az oldalakon (ahol a blokkjuk nem változott)
+	Locate Spreadsheet…	Táblázat megkeresése…
+	Comparing…	Összehasonlítás…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} változás a(z) {file} táblázatban a stáblista elhelyezése óta. Vedd ki a pipát abból, amit nem kérsz.
+	The spreadsheet {file} has not changed since the credits were placed.	A(z) {file} táblázat nem változott a stáblista elhelyezése óta.
+	{n} layers were edited by hand on the pages.	{n} réteget kézzel módosítottál az oldalakon.
+	Accepting every change would replace these, because their block changed: {names}	Ha minden változást elfogadsz, ezek lecserélődnek, mert a blokkjuk megváltozott: {names}
+	Refreshing…	Frissítés…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Frissítve: {n} változás alkalmazva, {kept} kézi módosítás megtartva.
+	Refresh Credits from Spreadsheet…	Stáblista frissítése a táblázatból…
+	Save Credits File…	Stáblista-fájl mentése…
+	Compare Credits with Spreadsheet	Stáblista összevetése a táblázattal
+	“{name}” appears twice in the same block	„{name}” kétszer szerepel ugyanabban a blokkban
+	“{name}” is written as “{other}” in row {otherRow}	„{name}” a(z) {otherRow}. sorban „{other}” alakban szerepel
+	The font “{font}” is not installed; another font is used	A(z) „{font}” betűtípus nincs telepítve; helyette másik betűtípus látszik
+	The font “{font}” has no “{chars}”; another font draws them	A(z) „{font}” betűtípusból hiányzik: „{chars}”; ezeket másik betűtípus rajzolja
+	“{text}” is outside the title-safe area	„{text}” kilóg a címbiztos területből
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” túl sötét fekete alapon (kontraszt {ratio}:1; legalább 4,5:1 kell)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}” {px} px magas; 24 px felett jól olvasható
+	The roll moves {speed} px per frame; a whole number does not shimmer	A gördülés képkockánként {speed} px; egész számnál nem vibrál
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Egy sor {seconds} mp alatt fut át a képen; legalább 6 mp kell a kényelmes olvasáshoz
+	The card holds for only {seconds} s after its fades	A kártya az áttűnések után csak {seconds} mp-ig áll
+	This page starts {seconds} s before the previous one ends	Ez az oldal {seconds} mp-cel az előző vége előtt indul
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}” a képpontjai {percent} %-án látszik; elmosódott lesz
+	{more} more of the same	még {more} ugyanilyen
+	Page {page}: {message}	{page}. oldal: {message}
+	Checks and warnings	Ellenőrzés és figyelmeztetések
+	Checks: {errors} errors, {warnings} warnings	Ellenőrzés: {errors} hiba, {warnings} figyelmeztetés
+	Check Credits	Stáblista ellenőrzése
+	The whole music ({time})	A teljes zene ({time})
+	Until the sound ends ({time})	Ameddig a hang tart ({time})
+	To the last bar line ({time})	Az utolsó ütemhatárig ({time})
+	Fit Credits to Music	Stáblista igazítása a zenéhez
+	Fit Credits to Music…	Stáblista igazítása a zenéhez…
+	Analyse Music for Credits	Zene elemzése a stáblistához
+	Length:	Hossz:
+	Cards last whole beats (cuts on the beat)	A kártyák egész ütemig tartanak (vágás ütemre)
+	Start the credits where the music starts	A stáblista a zene kezdetén induljon
+	Length of the credits	A stáblista hossza
+	Remove Fitting	Igazítás megszüntetése
+	Listening to the music…	A zene elemzése…
+	Length: {time}	Hossz: {time}
+	the sound ends at {time}	a hang {time}-kor ér véget
+	tempo {bpm} BPM	tempó {bpm} BPM
+	the credits without fitting: {time}	a stáblista igazítás nélkül: {time}
+	Select a credits page on the timeline.	Jelölj ki egy stáblista-oldalt az idővonalon.
+	Fitting…	Igazítás…
+	The credits now last {time}.	A stáblista most {time} hosszú.
+	Fitting removed.	Az igazítás megszűnt.
+	Fit to This Length	Igazítás erre a hosszra
+	No music to measure ({problem}); type the length.	Nincs mérhető zene ({problem}); add meg a hosszt.
+	The text moves {speed} px per frame; a whole number does not shimmer	A szöveg képkockánként {speed} px-t mozdul; egész számnál nem vibrál
+	Crawl	Futószöveg
+	Picture: {file}	Kép: {file}
+	Video: {file}	Videó: {file}
+	Looped video: {file}	Ismétlődő videó: {file}
+	Into the next	Átmenet a következőbe
+	Safe areas and spines	Biztonsági területek és gerincek
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Akcióbiztos (93 %), címbiztos (90 %) terület, a középvonalak és az oldal gerincei
+	Baseline grid	Alapvonal-rács
+	Lines one gap unit apart, moving with the page	Egy térköz-egységnyi vonalak, az oldallal együtt mozognak
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” nem válik el a háttértől (kontraszt {ratio}:1; legalább 4,5:1 kell)
+	A picture or video is behind the text: check the contrast by eye	A szöveg mögött kép vagy videó van: a kontrasztot szemmel ellenőrizd
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Kész megjelenés: stílusok, hátterek, átmenetek és időzítés. Ha stílusfájlt is megadsz, az az erősebb.
+	New Spreadsheet from Template…	Új táblázat a sablonból…
+	built in	beépített
+	mine	saját
+	this project	ez a projekt
+	Template	Sablon
+	Choose a template first.	Előbb válassz sablont.
+	Name of the template:	A sablon neve:
+	Template saved: {name}	Sablon mentve: {name}
+	Apply Credits Template…	Stáblista-sablon alkalmazása…
+	Template:	Sablon:
+	Credits Templates	Stáblista-sablonok
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Táblázatok, stáblista-fájlok és Cinecred-projektek (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred-projektmappa megnyitása (Styling.toml és a stáblista-táblázat)
+	(empty block)	(üres blokk)
+	Apply Template…	Sablon alkalmazása…
+	Change them in the spreadsheet; the credits follow when you save it.	A táblázatban módosíthatók; mentéskor a stáblista követi.
+	Compact View	Kompakt nézet
+	Compare the selected credits on the timeline with their spreadsheet, row by row	A kijelölt stáblista összevetése a táblázatával, soronként
+	Fit the selected credits to the music under them	A kijelölt stáblista igazítása az alatta szóló zenéhez
+	Fit to Music…	Igazítás a zenéhez…
+	Full View	Teljes nézet
+	Give the selected credits on the timeline another template	Másik sablon a kijelölt stáblistának
+	Names	Nevek
+	No pages	Nincsenek oldalak
+	Refresh Placed Credits…	Elhelyezett stáblista frissítése…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Minden látszik: blokkok, tulajdonságok, az oldalak az időben, ellenőrzések és a stáblista-eszközök
+	Spine	Gerinc
+	Tails	Lábak
+	The blocks of the chosen page; choose one to see it in the preview	A kiválasztott oldal blokkjai; válassz egyet, és az előnézet odaugrik
+	The pages along time; click one to choose it	Az oldalak az időben; kattints egyre a kiválasztásához
+	{n} more	még {n}
+	Block	Blokk
+	parallel	párhuzamos
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Az oldalban (az OBS a böngészőforrásból veszi)
+	Separate (a media source in OBS)	Külön (médiaforrás az OBS-ben)
+	No sound	Nincs hang
+	credits	stáblista
+	graphic	grafika
+	{n} pages	{n} oldal
+	Live Graphics	Élő grafika
+	Prepared cues; double-click one to put it in preview	Előkészített elemek; dupla kattintással előnézetbe kerül
+	Add Credits…	Stáblista hozzáadása…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Stáblista-táblázat, stáblista-fájl vagy Cinecred-projekt mint elem
+	Add Selected Graphic	Kijelölt grafika hozzáadása
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Az idővonalon kijelölt grafikus klip (cím, alsó harmad) mint elem
+	Cues	Elemek
+	TAKE	ADÁSBA
+	The preview cue goes on air from its first page	Az előnézeti elem az első oldalától adásba megy
+	PREVIOUS	ELŐZŐ
+	The page before (on the first page: from its start)	Az előző oldal (az első oldalon: annak elejétől)
+	NEXT	KÖVETKEZŐ
+	The next page; after the last one, the preview cue	A következő oldal; az utolsó után az előnézeti elem
+	HOLD	MEGÁLLÍT
+	Stop the program where it is	A program megáll, ahol tart
+	CONTINUE	FOLYTAT
+	Go on from where it stopped	Folytatás onnan, ahol megállt
+	UPDATE	FRISSÍT
+	Read the spreadsheet (or the clip) again; on air it changes at once	A táblázat (vagy a klip) újraolvasása; adásban azonnal változik
+	OUT	LE
+	Take everything off air	Minden lekerül az adásból
+	Start Live Page	Élő oldal indítása
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	A program kiszolgálása ezen a gépen az OBS böngészőforrásának (csak 127.0.0.1)
+	not running	nem fut
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Eszközök ▸ WebSocket-kiszolgáló beállításai
+	Connect to OBS	Kapcsolódás az OBS-hez
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Kapcsolódás az ezen a gépen futó OBS-hez, és a „CFA4 Live” böngészőforrás ráirányítása az élő oldalra
+	Port	Port
+	Password	Jelszó
+	Live page	Élő oldal
+	Sound	Hang
+	OBS	OBS
+	Nothing in preview	Nincs semmi előnézetben
+	page {page} of {pages}	{page}. oldal / {pages}
+	held	megállítva
+	ended	véget ért
+	Off air	Nincs adásban
+	Stop Live Page	Élő oldal leállítása
+	Connected to OBS {version}; source “{source}”	Kapcsolódva: OBS {version}; forrás: „{source}”
+	Point OBS Again	OBS újra beállítása
+	Select a graphic clip on the timeline first.	Előbb jelölj ki egy grafikus klipet az idővonalon.
+	Connecting to OBS…	Kapcsolódás az OBS-hez…
+	Live Graphics…	Élő grafika…
+	PREVIEW	ELŐNÉZET
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	kép- vagy videócímke egyedül áll a törzscellában (vagy egyetlen névvel, portréként); a többi címke el lett távolítva
+	the page gap is not a duration; the page style's is used	az oldalköz nem időtartam; az oldalstílus értéke lesz használva
+	the page runtime is not a positive duration; the page style's is used	az oldal hossza nem pozitív időtartam; az oldalstílus értéke lesz használva
+	background “{file}” was not found; it is left out	a(z) “{file}” háttér nem található; kimarad
+	card page {page} is taller than the frame; use a roll page	a(z) {page}. kártyaoldal magasabb a keretnél; használj gördülő oldalt
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	a(z) “{style}” betűstílus “{colour}” színe nem #rrggbb; kimarad
+	colour “{colour}” is not #rrggbb; black is used	a(z) “{colour}” szín nem #rrggbb; fekete lesz használva
+	colour “{colour}” is not #rrggbb; white is used	a(z) “{colour}” szín nem #rrggbb; fehér lesz használva
+	content style “{style}” does not exist; “{used}” is used	a(z) “{style}” tartalomstílus nem létezik; helyette “{used}” lesz használva
+	letter style “{style}” does not exist; the text keeps the block's style	a(z) “{style}” betűstílus nem létezik; a szöveg megtartja a blokk stílusát
+	page gap “{value}” is not a duration	a(z) “{value}” oldalköz nem időtartam
+	page runtime “{value}” is not a duration	a(z) “{value}” oldalhossz nem időtartam
+	page style “{style}” does not exist; a roll page is used	a(z) “{style}” oldalstílus nem létezik; gördülő oldal lesz használva
+	page {page}: the background names no file; it is left out	{page}. oldal: a háttér nem nevez meg fájlt; kimarad
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	{page}. oldal: a hossz a gördülési sebesség módosításával érhető el (az oldalon nincsenek nyújtható közök a blokkok között)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	{page}. oldal: a hossz a gördülési sebesség módosításával érhető el (a stáblista még közök nélkül is túl hosszú)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page}. oldal: a hossz a gördülési sebesség módosításával érhető el (a közöknek több mint 20-szorosára kellene nőniük)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page}. oldal: az átmenethez az oldalaknak érintkezniük kell (oldalköz 0); kimarad
+	page {page}: there is no transition “{name}”; the pages cut	{page}. oldal: nincs “{name}” átmenet; az oldalak vágással váltanak
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	a(z) “{value}” gerincpozíció nem támogatott (a képpontban megadott eltolás igen, opcionálisan “parallel” megjelöléssel)
+	vertical gap “{value}” is not a number	a(z) “{value}” függőleges köz nem szám
+	picture “{file}” was not found or cannot be read; it is left out	a(z) “{file}” kép nem található vagy nem olvasható; kimarad
+	video “{file}” was not found or cannot be read; it is left out	a(z) “{file}” videó nem található vagy nem olvasható; kimarad
+	there is no roll page without its own runtime to stretch; the length cannot change	nincs saját játékidő nélküli gördülő oldal, amelyet nyújtani lehetne; a hossz nem változhat
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	a kártyák és a közök önmagukban {seconds} s hosszúak; a kért hossz ennél rövidebb, ezért a gördülő oldalak megtartják természetes hosszukat
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	a(z) “{style}” betűstílus: csak az első színes réteg lesz használva (nincs körvonal, árnyék vagy csík)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	az egész stáblista hossza nem kerül át; használd helyette a Stáblista igazítása a zenéhez menüpontot (vagy egy hosszt)
+	page style “{style}”: fade curves become linear fades	a(z) “{style}” oldalstílus: a halványítási görbék lineáris halványítássá válnak
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	a(z) “{style}” tartalomstílusnak nincs fejléce a Cinecredben; a táblázatban megadott fejlécek továbbra is megjelennek
+	content style “{style}”: sorting the names is not carried over	a(z) “{style}” tartalomstílus: a nevek rendezése nem kerül át
+	transition curves are not carried over	az átmeneti görbék nem kerülnek át
+	picture styles (pictures keep their own size) are not carried over	a képstílusok (a képek megtartják saját méretüket) nem kerülnek át
+	video (tape) styles are not carried over	a videó- (szalag-) stílusok nem kerülnek át
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	a Cinecred-projekt {n} stáblista-táblázatot tartalmaz; a(z) “{name}” lesz használva (válassz másikat a Táblázat mezőben)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Észrevétel hozzáadása
+	Add as Finding	Felvétel észrevételként
+	Are colour and contrast acceptable?	Elfogadható a szín és a kontraszt?
+	Automatic Checks	Automatikus ellenőrzések
+	Bounds	Határok
+	Check	Ellenőrzés
+	Check Now	Ellenőrzés most
+	Check quality after export	Minőségellenőrzés exportálás után
+	Checking…	Ellenőrzés…
+	Contact Sheet	Kontaktlap
+	Critical	Kritikus
+	Fail	Hiba
+	Findings	Észrevételek
+	Human Review	Emberi ellenőrzés
+	Incomplete	Hiányos
+	Is there a visible picture defect?	Van látható képhiba?
+	Is there audible distortion?	Van hallható torzítás?
+	Is there unwanted noise?	Van nem kívánt zaj?
+	Major	Jelentős
+	Message	Üzenet
+	Minor	Kisebb
+	No contact sheet	Nincs kontaktlap
+	Not answered	Nincs válasz
+	Not checked	Nincs ellenőrizve
+	Not run	Nem futott
+	Note	Megjegyzés
+	Pass	Megfelelt
+	Passed	Megfelelt
+	Passed with warnings	Megfelelt, figyelmeztetésekkel
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Minőségellenőrzés
+	Quality Check…	Minőségellenőrzés…
+	Remove Finding	Észrevétel eltávolítása
+	Report: {path}	Jelentés: {path}
+	Review complete	Az ellenőrzés kész
+	Reviewer	Ellenőrző
+	Run the media quality check on the finished file (docs/media-qc.md)	A kész fájl médiaminőség-ellenőrzése (docs/media-qc.md)
+	Save Review	Ellenőrzés mentése
+	Select a finished export in the queue	Válasszon ki egy befejezett exportot a sorban
+	Severity	Súlyosság
+	Time code	Időkód
+	Unsure	Bizonytalan
+	accept	elfogadható
+	the engine did not start the check	a motor nem indította el az ellenőrzést
+	the engine sent no report	a motor nem küldött jelentést
+	The engine is not running.	A motor nem fut.
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Észrevétel {row}: az időkód nem létező időpont ebben a fájlban (ÓÓ:PP:MM:KK).

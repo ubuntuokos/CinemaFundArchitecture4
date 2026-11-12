@@ -3127,8 +3127,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bits 4:2:2), PCM de 24 bits e 48 kHz, timecode inicial
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP longo (12 quadros, IBBP) a 50 Mbit/s no estilo XDCAM HD422, PCM de 24 bits a 48 kHz; tamanhos de quadro HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High GOP longo (0,3 bit por pixel), PCM de 24 bits e 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipo D-10 (IMX 50): MPEG-2 4:2:2P@ML somente intra a 50 Mbit/s, 720x486 a 29,97 fps (4:3), quatro canais de áudio de 24 bits a 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipo D-10 (IMX 50): MPEG-2 4:2:2P@ML somente intra a 50 Mbit/s, 720x576 a 25 fps (4:3), quatro canais de áudio de 24 bits a 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM de 24 bits e 48 kHz, timecode inicial
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a no layout SMPTE RDD 9: MPEG-2 4:2:2 Profile GOP longo (12 quadros, IBBP) a 50 Mbit/s, 1920x1080 ou 1280x720 progressivo, quatro canais de 24 bits a 48 kHz como elementos AES3 por canal
 	Main	Main
 	Mark In (Hover Scrub)	Marcar entrada (reprodução ao passar o mouse)
 	Mark Out (Hover Scrub)	Marcar saída (reprodução ao passar o mouse)
@@ -3639,6 +3647,8 @@
 	Analyze Source for Smart Cut	Analisar origem para Smart Cut
 	Plan Smart Cut	Planejar Smart Cut
 	Run Smart Cut	Executar Smart Cut
+	DASH Manifest	Manifesto DASH
+	Also write a DASH manifest (.mpd)	Gravar também um manifesto DASH (.mpd)
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/pt-br.tsv).
@@ -3796,6 +3806,7 @@
 	Output file	Arquivo de saída
 	Output folder	Pasta de saída
 	PCM (uncompressed)	PCM (sem compactação)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 camada II)
 	Pace	Ritmo
 	Path:	Caminho:
 	Program Stream (.mpg, LPCM audio)	Fluxo de programa (.mpg, áudio LPCM)
@@ -4225,3 +4236,279 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(uma tabela)
+	A .ods, .xlsx or CSV credits sheet	Uma planilha de créditos .ods, .xlsx ou CSV
+	Built-in styles	Estilos integrados
+	Card	Cartela
+	Choose a credits spreadsheet.	Escolha uma planilha de créditos.
+	Credits Spreadsheet	Planilha de créditos
+	Credits from a Spreadsheet	Créditos a partir de uma planilha
+	Credits styling (*.json)	Estilo dos créditos (*.json)
+	Moment in the page	Momento na página
+	No preview	Sem pré-visualização
+	Page	Página
+	Pictures	Imagens
+	Place at Playhead	Colocar no cursor de reprodução
+	Placed {n} pages on the timeline.	{n} páginas colocadas na linha do tempo.
+	Placing…	Colocando…
+	Reading…	Lendo…
+	Row {row}: {message}	Linha {row}: {message}
+	Sheet	Aba
+	Spreadsheet	Planilha
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Planilhas (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Estilo
+	The spreadsheet's folder	A pasta da planilha
+	Total: {time}	Total: {time}
+	Warnings	Avisos
+	Credits Page Picture	Imagem da página de créditos
+	Preview Credits	Pré-visualizar créditos
+	Credits Styles	Estilos de créditos
+	(empty row)	(linha vazia)
+	Accepting every change would replace these, because their block changed: {names}	Aceitar todas as alterações substituiria estes, pois o bloco deles mudou: {names}
+	Added	Adicionado
+	Before → After	Antes → Depois
+	CFA4 credits file (*.cfa4credits)	Arquivo de créditos CFA4 (*.cfa4credits)
+	Change	Alteração
+	Changed	Alterado
+	Comparing…	Comparando…
+	Keep my edits on the pages (where their block is unchanged)	Manter minhas edições nas páginas (onde o bloco delas não mudou)
+	Locate Spreadsheet…	Localizar planilha…
+	Refresh Credits from Spreadsheet	Atualizar créditos a partir da planilha
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Atualizado: {n} alterações aplicadas, {kept} edições manuais mantidas.
+	Refreshing…	Atualizando…
+	Removed	Removido
+	Save as Credits File…	Salvar como arquivo de créditos…
+	Saved: {path}	Salvo: {path}
+	Select None	Desmarcar tudo
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Planilha, aba, estilo e tabela em um só arquivo, para abrir em qualquer máquina
+	The spreadsheet {file} has not changed since the credits were placed.	A planilha {file} não mudou desde que os créditos foram colocados.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} alterações em {file} desde que os créditos foram colocados. Desmarque o que você não quer.
+	{n} layers were edited by hand on the pages.	{n} camadas foram editadas manualmente nas páginas.
+	Refresh Credits from Spreadsheet…	Atualizar créditos da planilha…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Planilhas e arquivos de créditos (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Salvar arquivo de créditos…
+	Compare Credits with Spreadsheet	Comparar créditos com a planilha
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Uma linha atravessa o quadro em {seconds} s; a partir de 6 s a leitura fica boa
+	Checks and warnings	Verificações e avisos
+	Checks: {errors} errors, {warnings} warnings	Verificações: {errors} erros, {warnings} avisos
+	Page {page}: {message}	Página {page}: {message}
+	The card holds for only {seconds} s after its fades	A cartela fica parada por apenas {seconds} s após os fades
+	The font “{font}” has no “{chars}”; another font draws them	A fonte “{font}” não tem “{chars}”; outra fonte os desenha
+	The font “{font}” is not installed; another font is used	A fonte “{font}” não está instalada; outra fonte é usada
+	This page starts {seconds} s before the previous one ends	Esta página começa {seconds} s antes do fim da anterior
+	{more} more of the same	mais {more} iguais
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” é exibido a {percent} % dos seus pixels; ficará borrado
+	“{name}” appears twice in the same block	“{name}” aparece duas vezes no mesmo bloco
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” está escrito como “{other}” na linha {otherRow}
+	“{text}” is outside the title-safe area	“{text}” está fora da área segura de título
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” está escuro demais sobre preto (contraste {ratio}:1; é preciso pelo menos 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” tem {px} px de altura; a partir de 24 px fica legível
+	The roll moves {speed} px per frame; a whole number does not shimmer	A rolagem avança {speed} px por quadro; um número inteiro não cintila
+	Check Credits	Verificar créditos
+	Cards last whole beats (cuts on the beat)	As cartelas duram batidas inteiras (cortes no tempo)
+	Fit Credits to Music	Ajustar créditos à música
+	Fit to This Length	Ajustar a esta duração
+	Fitting removed.	Ajuste removido.
+	Fitting…	Ajustando…
+	Length of the credits	Duração dos créditos
+	Length:	Duração:
+	Length: {time}	Duração: {time}
+	Listening to the music…	Ouvindo a música…
+	No music to measure ({problem}); type the length.	Sem música para medir ({problem}); digite a duração.
+	Remove Fitting	Remover ajuste
+	Select a credits page on the timeline.	Selecione uma página de créditos na linha do tempo.
+	Start the credits where the music starts	Iniciar os créditos onde a música começa
+	The credits now last {time}.	Os créditos agora duram {time}.
+	The whole music ({time})	A música inteira ({time})
+	To the last bar line ({time})	Até a última barra de compasso ({time})
+	Until the sound ends ({time})	Até o som terminar ({time})
+	tempo {bpm} BPM	andamento {bpm} BPM
+	the credits without fitting: {time}	os créditos sem ajuste: {time}
+	the sound ends at {time}	o som termina em {time}
+	Fit Credits to Music…	Ajustar créditos à música…
+	Analyse Music for Credits	Analisar a música para os créditos
+	A picture or video is behind the text: check the contrast by eye	Há uma imagem ou um vídeo atrás do texto: confira o contraste a olho
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Área segura de ação (93 %), área segura de título (90 %), o centro e as guias da página
+	Baseline grid	Grade da linha de base
+	Crawl	Rolagem
+	Into the next	Para o próximo
+	Lines one gap unit apart, moving with the page	Linhas separadas por uma unidade de espaçamento, movendo-se com a página
+	Picture: {file}	Imagem: {file}
+	Safe areas and spines	Áreas seguras e guias
+	The text moves {speed} px per frame; a whole number does not shimmer	O texto se move {speed} px por quadro; um número inteiro não cintila
+	Video: {file}	Vídeo: {file}
+	Looped video: {file}	Vídeo em loop: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” não se destaca do fundo (contraste {ratio}:1; é preciso pelo menos 4,5:1)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Um visual pronto: estilos, fundos, transições e tempos. Um arquivo de estilo, se informado, prevalece.
+	Apply Credits Template…	Aplicar modelo de créditos…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Escolha um modelo primeiro.
+	Name of the template:	Nome do modelo:
+	New Spreadsheet from Template…	Nova planilha a partir de modelo…
+	Template	Modelo
+	Template saved: {name}	Modelo salvo: {name}
+	Template:	Modelo:
+	built in	integrado
+	mine	meu
+	this project	este projeto
+	Credits Templates	Modelos de créditos
+	Cinecred Project…	Projeto Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Abra uma pasta de projeto Cinecred (Styling.toml e sua planilha de créditos)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Planilhas, arquivos de créditos e projetos Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	(bloco vazio)
+	Apply Template…	Aplicar modelo…
+	Change them in the spreadsheet; the credits follow when you save it.	Altere na planilha; os créditos acompanham ao salvar.
+	Compact View	Visualização compacta
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Comparar os créditos selecionados na linha do tempo com a planilha, linha por linha
+	Fit the selected credits to the music under them	Ajustar os créditos selecionados à música abaixo deles
+	Fit to Music…	Ajustar à música…
+	Full View	Visualização completa
+	Give the selected credits on the timeline another template	Dar outro modelo aos créditos selecionados na linha do tempo
+	Names	Nomes
+	No pages	Nenhuma página
+	Refresh Placed Credits…	Atualizar créditos posicionados…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Mostrar tudo: blocos, propriedades, as páginas ao longo do tempo, verificações e ferramentas de créditos
+	Spine	Eixo
+	Tails	Notas
+	The blocks of the chosen page; choose one to see it in the preview	Os blocos da página escolhida; escolha um para vê-lo na pré-visualização
+	The pages along time; click one to choose it	As páginas ao longo do tempo; clique em uma para escolhê-la
+	{n} more	mais {n}
+	Block	Bloco
+	parallel	paralelo
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Na página (o OBS pega da fonte de navegador)
+	Separate (a media source in OBS)	Separado (uma fonte de mídia no OBS)
+	No sound	Sem som
+	credits	créditos
+	graphic	gráfico
+	{n} pages	{n} páginas
+	Live Graphics	Gráficos ao vivo
+	Prepared cues; double-click one to put it in preview	Itens preparados; clique duas vezes para pôr um na pré-visualização
+	Add Credits…	Adicionar créditos…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Uma planilha de créditos, arquivo de créditos ou projeto do Cinecred como item
+	Add Selected Graphic	Adicionar gráfico selecionado
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	O clipe gráfico selecionado na linha do tempo (um título, uma legenda inferior) como item
+	Cues	Itens
+	TAKE	TAKE
+	The preview cue goes on air from its first page	O item da pré-visualização vai ao ar a partir da primeira página
+	PREVIOUS	ANTERIOR
+	The page before (on the first page: from its start)	A página anterior (na primeira: desde o início)
+	NEXT	PRÓXIMA
+	The next page; after the last one, the preview cue	A próxima página; depois da última, o item da pré-visualização
+	HOLD	PAUSAR
+	Stop the program where it is	Parar o programa onde está
+	CONTINUE	CONTINUAR
+	Go on from where it stopped	Seguir de onde parou
+	UPDATE	ATUALIZAR
+	Read the spreadsheet (or the clip) again; on air it changes at once	Ler de novo a planilha (ou o clipe); no ar muda na hora
+	OUT	SAIR
+	Take everything off air	Tirar tudo do ar
+	Start Live Page	Iniciar página ao vivo
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Servir o programa neste computador para a fonte de navegador do OBS (somente 127.0.0.1)
+	not running	parada
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Ferramentas ▸ Configurações do servidor WebSocket
+	Connect to OBS	Conectar ao OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Conectar ao OBS neste computador e apontar a fonte de navegador “CFA4 Live” para a página ao vivo
+	Port	Porta
+	Password	Senha
+	Live page	Página ao vivo
+	Sound	Som
+	OBS	OBS
+	Nothing in preview	Nada na pré-visualização
+	page {page} of {pages}	página {page} de {pages}
+	held	pausado
+	ended	encerrado
+	Off air	Fora do ar
+	Stop Live Page	Parar página ao vivo
+	Connected to OBS {version}; source “{source}”	Conectado ao OBS {version}; fonte “{source}”
+	Point OBS Again	Configurar o OBS de novo
+	Select a graphic clip on the timeline first.	Selecione primeiro um clipe gráfico na linha do tempo.
+	Connecting to OBS…	Conectando ao OBS…
+	Live Graphics…	Gráficos ao vivo…
+	PREVIEW	PRÉ-VISUALIZAÇÃO
+	PROGRAM	PROGRAMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	uma tag de imagem ou vídeo está sozinha em uma célula de corpo (ou com um só nome, como retrato); as outras tags foram removidas
+	the page gap is not a duration; the page style's is used	o intervalo entre páginas não é uma duração; o do estilo de página é usado
+	the page runtime is not a positive duration; the page style's is used	a duração da página não é uma duração positiva; a do estilo de página é usada
+	background “{file}” was not found; it is left out	o plano de fundo “{file}” não foi encontrado; ele é omitido
+	card page {page} is taller than the frame; use a roll page	a página de cartão {page} é mais alta que o quadro; use uma página rolante
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	a cor “{colour}” do estilo de letra “{style}” não é #rrggbb; ela é omitida
+	colour “{colour}” is not #rrggbb; black is used	a cor “{colour}” não é #rrggbb; preto é usado
+	colour “{colour}” is not #rrggbb; white is used	a cor “{colour}” não é #rrggbb; branco é usado
+	content style “{style}” does not exist; “{used}” is used	o estilo de conteúdo “{style}” não existe; “{used}” é usado
+	letter style “{style}” does not exist; the text keeps the block's style	o estilo de letra “{style}” não existe; o texto mantém o estilo do bloco
+	page gap “{value}” is not a duration	o intervalo entre páginas “{value}” não é uma duração
+	page runtime “{value}” is not a duration	a duração de página “{value}” não é uma duração
+	page style “{style}” does not exist; a roll page is used	o estilo de página “{style}” não existe; uma página rolante é usada
+	page {page}: the background names no file; it is left out	página {page}: o plano de fundo não indica nenhum arquivo; ele é omitido
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	página {page}: a duração é atingida alterando a velocidade de rolagem (a página não tem espaços entre blocos para esticar)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	página {page}: a duração é atingida alterando a velocidade de rolagem (os créditos são longos demais mesmo sem espaços)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	página {page}: a duração é atingida alterando a velocidade de rolagem (os espaços teriam de crescer mais de 20 vezes)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	página {page}: a transição exige que as páginas se toquem (intervalo entre páginas 0); ela é omitida
+	page {page}: there is no transition “{name}”; the pages cut	página {page}: não existe a transição “{name}”; as páginas passam com corte seco
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	a posição do eixo “{value}” não é compatível (um deslocamento em pixels, opcionalmente com “parallel”, é)
+	vertical gap “{value}” is not a number	o espaço vertical “{value}” não é um número
+	picture “{file}” was not found or cannot be read; it is left out	a imagem “{file}” não foi encontrada ou não pode ser lida; ela é omitida
+	video “{file}” was not found or cannot be read; it is left out	o vídeo “{file}” não foi encontrado ou não pode ser lido; ele é omitido
+	there is no roll page without its own runtime to stretch; the length cannot change	não há nenhuma página rolante com duração própria para esticar; o comprimento não pode mudar
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	só os cartões e os espaços somam {seconds} s; o comprimento pedido é menor, então as páginas rolantes mantêm o comprimento natural
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	estilo de letra “{style}”: só a primeira camada colorida é usada (sem contornos, sombras ou listras)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	a duração dos créditos inteiros não é transferida; use Ajustar créditos à música (ou um comprimento)
+	page style “{style}”: fade curves become linear fades	estilo de página “{style}”: as curvas de fade viram fades lineares
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	o estilo de conteúdo “{style}” não tem título no Cinecred; os títulos escritos na planilha continuam sendo exibidos
+	content style “{style}”: sorting the names is not carried over	estilo de conteúdo “{style}”: a ordenação dos nomes não é transferida
+	transition curves are not carried over	as curvas de transição não são transferidas
+	picture styles (pictures keep their own size) are not carried over	os estilos de imagem (as imagens mantêm o próprio tamanho) não são transferidos
+	video (tape) styles are not carried over	os estilos de vídeo (fita) não são transferidos
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	o projeto do Cinecred tem {n} planilhas de créditos; “{name}” é usada (escolha outra no campo Planilha)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Adicionar constatação
+	Add as Finding	Adicionar como constatação
+	Are colour and contrast acceptable?	A cor e o contraste são aceitáveis?
+	Automatic Checks	Verificações automáticas
+	Bounds	Limites
+	Check	Verificação
+	Check Now	Verificar agora
+	Check quality after export	Verificar a qualidade após exportar
+	Checking…	Verificando…
+	Contact Sheet	Folha de contato
+	Critical	Crítica
+	Fail	Falha
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Constatação {row}: o timecode não é um instante deste arquivo (HH:MM:SS:FF).
+	Findings	Constatações
+	Human Review	Revisão humana
+	Incomplete	Incompleta
+	Is there a visible picture defect?	Há algum defeito visível na imagem?
+	Is there audible distortion?	Há distorção audível?
+	Is there unwanted noise?	Há ruído indesejado?
+	Major	Grave
+	Message	Mensagem
+	Minor	Leve
+	No contact sheet	Sem folha de contato
+	Not answered	Sem resposta
+	Not checked	Não verificado
+	Not run	Não executada
+	Note	Nota
+	Pass	Aprovada
+	Passed	Aprovado
+	Passed with warnings	Aprovado com avisos
+	Profile: {id} v{version}	Perfil: {id} v{version}
+	Quality Check	Verificação de qualidade
+	Quality Check…	Verificação de qualidade…
+	Remove Finding	Remover constatação
+	Report: {path}	Relatório: {path}
+	Review complete	Revisão concluída
+	Reviewer	Revisor
+	Run the media quality check on the finished file (docs/media-qc.md)	Executar a verificação de qualidade no arquivo pronto (docs/media-qc.md)
+	Save Review	Salvar revisão
+	Select a finished export in the queue	Selecione uma exportação concluída na fila
+	Severity	Gravidade
+	The engine is not running.	O mecanismo não está em execução.
+	Time code	Timecode
+	Unsure	Não tenho certeza
+	accept	aceitável
+	the engine did not start the check	o mecanismo não iniciou a verificação
+	the engine sent no report	o mecanismo não enviou relatório

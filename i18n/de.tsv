@@ -3142,8 +3142,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 Bit 4:2:2), PCM 24 Bit 48 kHz, Start-Timecode
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile Long-GOP (12 Bilder, IBBP) mit 50 Mbit/s im XDCAM-HD422-Stil, PCM 24 Bit 48 kHz; HD-Bildgrößen
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High Long-GOP (0,3 Bit pro Pixel), PCM 24 Bit 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a Typ D-10 (IMX 50): reines Intra-MPEG-2 4:2:2P@ML mit 50 Mbit/s, 720x486 mit 29,97 fps (4:3), vier Audiokanäle 24 Bit 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a Typ D-10 (IMX 50): reines Intra-MPEG-2 4:2:2P@ML mit 50 Mbit/s, 720x576 mit 25 fps (4:3), vier Audiokanäle 24 Bit 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 Bit 48 kHz, Start-Timecode
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a im SMPTE-RDD-9-Layout: MPEG-2 4:2:2 Profile Long-GOP (12 Bilder, IBBP) mit 50 Mbit/s, 1920x1080 oder 1280x720 progressiv, vier Kanäle 24 Bit 48 kHz als AES3-Elemente je Kanal
 	Main	Main
 	Mark In (Hover Scrub)	In-Punkt setzen (Hover-Scrubbing)
 	Mark Out (Hover Scrub)	Out-Punkt setzen (Hover-Scrubbing)
@@ -3665,6 +3673,8 @@
 	Analyze Source for Smart Cut	Quelle für Smart Cut analysieren
 	Plan Smart Cut	Smart Cut planen
 	Run Smart Cut	Smart Cut ausführen
+	DASH Manifest	DASH-Manifest
+	Also write a DASH manifest (.mpd)	Zusätzlich ein DASH-Manifest (.mpd) schreiben
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/de.tsv).
@@ -3814,6 +3824,7 @@
 	Output file	Ausgabedatei
 	Output folder	Ausgabeordner
 	PCM (uncompressed)	PCM (unkomprimiert)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	Pace	Tempo
 	Path:	Pfad:
 	Program Stream (.mpg, LPCM audio)	Programmstrom (.mpg, LPCM-Audio)
@@ -4222,3 +4233,279 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(eine Tabelle)
+	A .ods, .xlsx or CSV credits sheet	Eine .ods-, .xlsx- oder CSV-Abspanntabelle
+	Built-in styles	Integrierte Stile
+	Card	Karte
+	Choose a credits spreadsheet.	Wählen Sie eine Abspanntabelle aus.
+	Credits Spreadsheet	Abspanntabelle
+	Credits from a Spreadsheet	Abspann aus einer Tabelle
+	Credits styling (*.json)	Abspannstil (*.json)
+	Moment in the page	Zeitpunkt innerhalb der Seite
+	No preview	Keine Vorschau
+	Page	Seite
+	Pictures	Bilder
+	Place at Playhead	An Abspielposition platzieren
+	Placed {n} pages on the timeline.	{n} Seiten auf der Zeitleiste platziert.
+	Placing…	Platzieren…
+	Reading…	Lesen…
+	Row {row}: {message}	Zeile {row}: {message}
+	Sheet	Blatt
+	Spreadsheet	Tabelle
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tabellen (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Stil
+	The spreadsheet's folder	Ordner der Tabelle
+	Total: {time}	Gesamt: {time}
+	Warnings	Warnungen
+	Credits Page Picture	Bild der Abspannseite
+	Preview Credits	Abspann-Vorschau
+	Credits Styles	Abspannstile
+	(empty row)	(leere Zeile)
+	Accepting every change would replace these, because their block changed: {names}	Wenn alle Änderungen übernommen werden, werden diese ersetzt, da sich ihr Block geändert hat: {names}
+	Added	Hinzugefügt
+	Before → After	Vorher → Nachher
+	CFA4 credits file (*.cfa4credits)	CFA4-Abspanndatei (*.cfa4credits)
+	Change	Änderung
+	Changed	Geändert
+	Comparing…	Vergleichen…
+	Keep my edits on the pages (where their block is unchanged)	Meine Änderungen auf den Seiten beibehalten (wo ihr Block unverändert ist)
+	Locate Spreadsheet…	Tabelle suchen…
+	Refresh Credits from Spreadsheet	Abspann aus Tabelle aktualisieren
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Aktualisiert: {n} Änderungen angewendet, {kept} manuelle Änderungen beibehalten.
+	Refreshing…	Aktualisieren…
+	Removed	Entfernt
+	Save as Credits File…	Als Abspanndatei speichern…
+	Saved: {path}	Gespeichert: {path}
+	Select None	Auswahl aufheben
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tabelle, Blatt, Stil und Zeilen in einer Datei, auf jedem Rechner zu öffnen
+	The spreadsheet {file} has not changed since the credits were placed.	Die Tabelle {file} hat sich seit dem Platzieren des Abspanns nicht geändert.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} Änderungen in {file} seit dem Platzieren des Abspanns. Deaktivieren Sie, was Sie nicht möchten.
+	{n} layers were edited by hand on the pages.	{n} Ebenen wurden auf den Seiten manuell bearbeitet.
+	Refresh Credits from Spreadsheet…	Abspann aus Tabelle aktualisieren…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tabellen und Abspanndateien (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Abspanndatei speichern…
+	Compare Credits with Spreadsheet	Abspann mit Tabelle vergleichen
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Eine Zeile durchquert das Bild in {seconds} s; mindestens 6 s sind gut lesbar
+	Checks and warnings	Prüfungen und Warnungen
+	Checks: {errors} errors, {warnings} warnings	Prüfung: {errors} Fehler, {warnings} Warnungen
+	Page {page}: {message}	Seite {page}: {message}
+	The card holds for only {seconds} s after its fades	Die Karte steht nach den Blenden nur {seconds} s
+	The font “{font}” has no “{chars}”; another font draws them	Die Schrift „{font}“ enthält „{chars}“ nicht; eine andere Schrift stellt sie dar
+	The font “{font}” is not installed; another font is used	Die Schrift „{font}“ ist nicht installiert; es wird eine andere Schrift verwendet
+	This page starts {seconds} s before the previous one ends	Diese Seite beginnt {seconds} s vor dem Ende der vorherigen
+	{more} more of the same	{more} weitere gleiche
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ wird mit {percent} % seiner Pixel angezeigt; es wirkt unscharf
+	“{name}” appears twice in the same block	„{name}“ kommt im selben Block zweimal vor
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ ist in Zeile {otherRow} als „{other}“ geschrieben
+	“{text}” is outside the title-safe area	„{text}“ liegt außerhalb des titelsicheren Bereichs
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ ist auf Schwarz zu dunkel (Kontrast {ratio}:1; mindestens 4.5:1 erforderlich)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ ist {px} px hoch; ab 24 px ist es gut lesbar
+	The roll moves {speed} px per frame; a whole number does not shimmer	Der Rolltitel bewegt sich {speed} px pro Bild; eine ganze Zahl flimmert nicht
+	Check Credits	Abspann prüfen
+	Cards last whole beats (cuts on the beat)	Karten dauern ganze Schläge (Schnitt auf den Schlag)
+	Fit Credits to Music	Abspann an die Musik anpassen
+	Fit to This Length	Auf diese Länge anpassen
+	Fitting removed.	Anpassung entfernt.
+	Fitting…	Anpassen…
+	Length of the credits	Länge des Abspanns
+	Length:	Länge:
+	Length: {time}	Länge: {time}
+	Listening to the music…	Musik wird analysiert…
+	No music to measure ({problem}); type the length.	Keine Musik zum Messen ({problem}); geben Sie die Länge ein.
+	Remove Fitting	Anpassung entfernen
+	Select a credits page on the timeline.	Wählen Sie eine Abspannseite auf der Zeitleiste aus.
+	Start the credits where the music starts	Abspann dort beginnen, wo die Musik beginnt
+	The credits now last {time}.	Der Abspann dauert jetzt {time}.
+	The whole music ({time})	Die gesamte Musik ({time})
+	To the last bar line ({time})	Bis zum letzten Taktstrich ({time})
+	Until the sound ends ({time})	Bis der Ton endet ({time})
+	tempo {bpm} BPM	Tempo {bpm} BPM
+	the credits without fitting: {time}	der Abspann ohne Anpassung: {time}
+	the sound ends at {time}	der Ton endet bei {time}
+	Fit Credits to Music…	Abspann an Musik anpassen…
+	Analyse Music for Credits	Musik für den Abspann analysieren
+	A picture or video is behind the text: check the contrast by eye	Hinter dem Text liegt ein Bild oder Video: Kontrast bitte visuell prüfen
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Aktionssicher (93 %), titelsicher (90 %), die Mitte und die Achsen der Seite
+	Baseline grid	Grundlinienraster
+	Crawl	Lauftext
+	Into the next	In den nächsten
+	Lines one gap unit apart, moving with the page	Linien im Abstand von einer Abstandseinheit, die sich mit der Seite bewegen
+	Picture: {file}	Bild: {file}
+	Safe areas and spines	Sicherheitsbereiche und Achsen
+	The text moves {speed} px per frame; a whole number does not shimmer	Der Text bewegt sich {speed} px pro Bild; bei ganzen Zahlen flimmert er nicht
+	Video: {file}	Video: {file}
+	Looped video: {file}	Video in Schleife: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ hebt sich nicht vom Hintergrund ab (Kontrast {ratio}:1; mindestens 4.5:1 erforderlich)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Ein fertiges Erscheinungsbild: Stile, Hintergründe, Übergänge und Timing. Eine angegebene Stildatei hat Vorrang.
+	Apply Credits Template…	Abspann-Vorlage anwenden…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Wählen Sie zuerst eine Vorlage aus.
+	Name of the template:	Name der Vorlage:
+	New Spreadsheet from Template…	Neue Tabelle aus Vorlage…
+	Template	Vorlage
+	Template saved: {name}	Vorlage gespeichert: {name}
+	Template:	Vorlage:
+	built in	integriert
+	mine	eigene
+	this project	dieses Projekt
+	Credits Templates	Abspannvorlagen
+	Cinecred Project…	Cinecred-Projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Einen Cinecred-Projektordner öffnen (Styling.toml und die zugehörige Abspanntabelle)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tabellen, Abspanndateien und Cinecred-Projekte (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	(leerer Block)
+	Apply Template…	Vorlage anwenden…
+	Change them in the spreadsheet; the credits follow when you save it.	In der Tabelle ändern; der Abspann folgt beim Speichern.
+	Compact View	Kompakte Ansicht
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Den ausgewählten Abspann in der Zeitleiste Zeile für Zeile mit seiner Tabelle vergleichen
+	Fit the selected credits to the music under them	Den ausgewählten Abspann an die Musik darunter anpassen
+	Fit to Music…	An Musik anpassen…
+	Full View	Vollständige Ansicht
+	Give the selected credits on the timeline another template	Dem ausgewählten Abspann in der Zeitleiste eine andere Vorlage geben
+	Names	Namen
+	No pages	Keine Seiten
+	Refresh Placed Credits…	Platzierten Abspann aktualisieren…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Alles zeigen: Blöcke, Eigenschaften, die Seiten im Zeitverlauf, Prüfungen und die Abspann-Werkzeuge
+	Spine	Achse
+	Tails	Nachsätze
+	The blocks of the chosen page; choose one to see it in the preview	Die Blöcke der gewählten Seite; einen wählen, um ihn in der Vorschau zu sehen
+	The pages along time; click one to choose it	Die Seiten im Zeitverlauf; zum Auswählen eine anklicken
+	{n} more	{n} weitere
+	Block	Block
+	parallel	parallel
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	In der Seite (OBS übernimmt ihn aus der Browserquelle)
+	Separate (a media source in OBS)	Separat (eine Medienquelle in OBS)
+	No sound	Kein Ton
+	credits	Abspann
+	graphic	Grafik
+	{n} pages	{n} Seiten
+	Live Graphics	Live-Grafik
+	Prepared cues; double-click one to put it in preview	Vorbereitete Einträge; Doppelklick legt einen in die Vorschau
+	Add Credits…	Abspann hinzufügen…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Eine Abspann-Tabelle, Abspanndatei oder ein Cinecred-Projekt als Eintrag
+	Add Selected Graphic	Ausgewählte Grafik hinzufügen
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Der in der Zeitleiste ausgewählte Grafikclip (Titel, Bauchbinde) als Eintrag
+	Cues	Einträge
+	TAKE	TAKE
+	The preview cue goes on air from its first page	Der Vorschau-Eintrag geht ab seiner ersten Seite auf Sendung
+	PREVIOUS	ZURÜCK
+	The page before (on the first page: from its start)	Die vorige Seite (auf der ersten Seite: von ihrem Anfang)
+	NEXT	WEITER
+	The next page; after the last one, the preview cue	Die nächste Seite; nach der letzten der Vorschau-Eintrag
+	HOLD	HALT
+	Stop the program where it is	Das Programm hält an, wo es ist
+	CONTINUE	FORTSETZEN
+	Go on from where it stopped	Von dort weiter, wo es anhielt
+	UPDATE	AKTUALISIEREN
+	Read the spreadsheet (or the clip) again; on air it changes at once	Die Tabelle (oder den Clip) neu lesen; auf Sendung ändert es sich sofort
+	OUT	AUS
+	Take everything off air	Alles von der Sendung nehmen
+	Start Live Page	Live-Seite starten
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Das Programm auf diesem Computer für die Browserquelle von OBS bereitstellen (nur 127.0.0.1)
+	not running	läuft nicht
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Werkzeuge ▸ WebSocket-Servereinstellungen
+	Connect to OBS	Mit OBS verbinden
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Mit OBS auf diesem Computer verbinden und dessen Browserquelle „CFA4 Live“ auf die Live-Seite richten
+	Port	Port
+	Password	Passwort
+	Live page	Live-Seite
+	Sound	Ton
+	OBS	OBS
+	Nothing in preview	Nichts in der Vorschau
+	page {page} of {pages}	Seite {page} von {pages}
+	held	angehalten
+	ended	beendet
+	Off air	Nicht auf Sendung
+	Stop Live Page	Live-Seite beenden
+	Connected to OBS {version}; source “{source}”	Verbunden mit OBS {version}; Quelle „{source}“
+	Point OBS Again	OBS erneut einrichten
+	Select a graphic clip on the timeline first.	Zuerst einen Grafikclip in der Zeitleiste auswählen.
+	Connecting to OBS…	Verbindung zu OBS…
+	Live Graphics…	Live-Grafik…
+	PREVIEW	VORSCHAU
+	PROGRAM	PROGRAMM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	Ein Bild- oder Video-Tag steht allein in einer Textzelle (oder mit einem Namen als Porträt); die übrigen Tags wurden entfernt
+	the page gap is not a duration; the page style's is used	der Seitenabstand ist keine Dauer; der des Seitenstils wird verwendet
+	the page runtime is not a positive duration; the page style's is used	die Seitenlaufzeit ist keine positive Dauer; die des Seitenstils wird verwendet
+	background “{file}” was not found; it is left out	Hintergrund “{file}” wurde nicht gefunden; er wird weggelassen
+	card page {page} is taller than the frame; use a roll page	Kartenseite {page} ist höher als das Bild; verwende eine Rollseite
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	Farbe “{colour}” des Buchstabenstils “{style}” ist nicht #rrggbb; sie wird weggelassen
+	colour “{colour}” is not #rrggbb; black is used	Farbe “{colour}” ist nicht #rrggbb; Schwarz wird verwendet
+	colour “{colour}” is not #rrggbb; white is used	Farbe “{colour}” ist nicht #rrggbb; Weiß wird verwendet
+	content style “{style}” does not exist; “{used}” is used	Inhaltsstil “{style}” existiert nicht; “{used}” wird verwendet
+	letter style “{style}” does not exist; the text keeps the block's style	Buchstabenstil “{style}” existiert nicht; der Text behält den Stil des Blocks
+	page gap “{value}” is not a duration	Seitenabstand “{value}” ist keine Dauer
+	page runtime “{value}” is not a duration	Seitenlaufzeit “{value}” ist keine Dauer
+	page style “{style}” does not exist; a roll page is used	Seitenstil “{style}” existiert nicht; eine Rollseite wird verwendet
+	page {page}: the background names no file; it is left out	Seite {page}: Der Hintergrund nennt keine Datei; er wird weggelassen
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	Seite {page}: Die Laufzeit wird durch Ändern der Rollgeschwindigkeit erreicht (die Seite hat keine Abstände zwischen den Blöcken, die sich dehnen ließen)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	Seite {page}: Die Laufzeit wird durch Ändern der Rollgeschwindigkeit erreicht (der Abspann ist selbst ohne Abstände zu lang)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	Seite {page}: Die Laufzeit wird durch Ändern der Rollgeschwindigkeit erreicht (die Abstände müssten auf mehr als das 20-Fache wachsen)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	Seite {page}: Der Übergang setzt voraus, dass die Seiten aneinanderstoßen (Seitenabstand 0); er wird weggelassen
+	page {page}: there is no transition “{name}”; the pages cut	Seite {page}: Es gibt keinen Übergang “{name}”; die Seiten werden hart geschnitten
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	Achsenposition “{value}” wird nicht unterstützt (ein Pixelversatz, optional mit “parallel”, wird unterstützt)
+	vertical gap “{value}” is not a number	Vertikaler Abstand “{value}” ist keine Zahl
+	picture “{file}” was not found or cannot be read; it is left out	Bild “{file}” wurde nicht gefunden oder kann nicht gelesen werden; es wird weggelassen
+	video “{file}” was not found or cannot be read; it is left out	Video “{file}” wurde nicht gefunden oder kann nicht gelesen werden; es wird weggelassen
+	there is no roll page without its own runtime to stretch; the length cannot change	Es gibt keine Rollseite ohne eigene Laufzeit, die sich dehnen ließe; die Länge kann nicht geändert werden
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	Die Karten und Abstände allein dauern {seconds} s; die gewünschte Länge ist kürzer, daher behalten die Rollseiten ihre natürliche Länge
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	Buchstabenstil “{style}”: Nur die erste farbige Ebene wird verwendet (keine Konturen, Schatten oder Streifen)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	die Laufzeit des gesamten Abspanns wird nicht übernommen; verwende stattdessen Abspann an Musik anpassen (oder eine Länge)
+	page style “{style}”: fade curves become linear fades	Seitenstil “{style}”: Überblendkurven werden zu linearen Überblendungen
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	Inhaltsstil “{style}” hat in Cinecred keine Überschrift; in der Tabelle geschriebene Überschriften werden weiterhin angezeigt
+	content style “{style}”: sorting the names is not carried over	Inhaltsstil “{style}”: Das Sortieren der Namen wird nicht übernommen
+	transition curves are not carried over	Übergangskurven werden nicht übernommen
+	picture styles (pictures keep their own size) are not carried over	Bildstile (Bilder behalten ihre eigene Größe) werden nicht übernommen
+	video (tape) styles are not carried over	Video- (Band-)Stile werden nicht übernommen
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Das Cinecred-Projekt hat {n} Abspann-Tabellen; “{name}” wird verwendet (wähle im Feld Tabelle eine andere)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Befund hinzufügen
+	Add as Finding	Als Befund übernehmen
+	Are colour and contrast acceptable?	Sind Farbe und Kontrast annehmbar?
+	Automatic Checks	Automatische Prüfungen
+	Bounds	Grenzen
+	Check	Prüfung
+	Check Now	Jetzt prüfen
+	Check quality after export	Qualität nach dem Export prüfen
+	Checking…	Wird geprüft…
+	Contact Sheet	Kontaktabzug
+	Critical	Kritisch
+	Fail	Fehler
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Befund {row}: Der Timecode ist keine Zeit in dieser Datei (HH:MM:SS:FF).
+	Findings	Befunde
+	Human Review	Menschliche Prüfung
+	Incomplete	Unvollständig
+	Is there a visible picture defect?	Gibt es einen sichtbaren Bildfehler?
+	Is there audible distortion?	Gibt es hörbare Verzerrungen?
+	Is there unwanted noise?	Gibt es unerwünschtes Rauschen?
+	Major	Schwer
+	Message	Meldung
+	Minor	Gering
+	No contact sheet	Kein Kontaktabzug
+	Not answered	Nicht beantwortet
+	Not checked	Nicht geprüft
+	Not run	Nicht ausgeführt
+	Note	Notiz
+	Pass	Bestanden
+	Passed	Bestanden
+	Passed with warnings	Bestanden mit Warnungen
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Qualitätsprüfung
+	Quality Check…	Qualitätsprüfung…
+	Remove Finding	Befund entfernen
+	Report: {path}	Bericht: {path}
+	Review complete	Prüfung abgeschlossen
+	Reviewer	Prüfer
+	Run the media quality check on the finished file (docs/media-qc.md)	Medienqualitätsprüfung der fertigen Datei ausführen (docs/media-qc.md)
+	Save Review	Prüfung speichern
+	Select a finished export in the queue	Wählen Sie einen fertigen Export in der Warteschlange
+	Severity	Schweregrad
+	The engine is not running.	Die Engine läuft nicht.
+	Time code	Timecode
+	Unsure	Unsicher
+	accept	annehmbar
+	the engine did not start the check	die Engine hat die Prüfung nicht gestartet
+	the engine sent no report	die Engine hat keinen Bericht gesendet
