@@ -215,9 +215,7 @@ pub fn legacy_mic_key(cipher: &[u8; 16]) -> [u8; 16] {
         carry = sum >> 8;
     }
     let x1 = g(&xkey);
-    let mut key = [0u8; 16];
-    key.copy_from_slice(&x1[..16]);
-    key
+    std::array::from_fn(|i| x1.get(i).copied().unwrap_or_default())
 }
 
 /// Whether the MIC item of Encrypted Triplet value `v` is the HMAC-SHA1 of its integrity pack
