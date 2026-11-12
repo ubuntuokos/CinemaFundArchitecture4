@@ -14,15 +14,15 @@ reached only through the optional GStreamer backend
 
 | Area | Have today | Missing | Public specification | Licence / patents | Est. |
 |---|---|---|---|---|---|
-| Dolby Digital (AC-3) | decode, all modes ([crates/ac3](../crates/ac3/README.md)) | encode | ATSC A/52:2012 | AC-3 patents expired (2017) | 20–30 h (encoder) |
+| Dolby Digital (AC-3) | decode, all modes, and encode (the export's AC-3 audio codec) ([crates/ac3](../crates/ac3/README.md)) | — | ATSC A/52:2012 | AC-3 patents expired (2017) | — |
 | Dolby Digital Plus (E-AC-3) | decode, independent substream (7.1 plays as 5.1) | dependent substreams (7.1), adaptive hybrid transform, enhanced coupling | ATSC A/52:2012 Annex E | essential patents mostly expired; check before shipping an encoder | 10–20 h |
 | Dolby Atmos in E-AC-3 (JOC) | none (plays the 5.1 bed) | object decoding, renderer to the speaker layout | ETSI TS 103 420 | ETSI FRAND licensing; Dolby trademark may not be used | 40–60 h |
-| Dolby TrueHD (MLP) | none | lossless decode | **no public specification** (MLP is described only in the DVD-Audio spec, licence-gated) | clean-room needs a public spec: owner decision | — |
+| Dolby TrueHD (MLP) | decode up to 7.1, Atmos objects for DCP IAB ([crates/truehd](../crates/truehd/README.md), ported) | lossless decode | **no public specification** (MLP is described only in the DVD-Audio spec, licence-gated) | clean-room needs a public spec: owner decision | — |
 | Dolby AC-4 | none | decode | ETSI TS 103 190-1 / -2 | FRAND, patents active | 60–100 h |
-| DTS (core, Coherent Acoustics) | none | decode | ETSI TS 102 114 | core patents expired | 25–40 h |
-| DTS-HD Master Audio (XLL) | none | lossless extension | ETSI TS 102 114 v1.4+ (extension substream) | DTS trademark may not be used | 30–50 h |
+| DTS (core, Coherent Acoustics) | decode ([crates/dts](../crates/dts/README.md), ported) | decode | ETSI TS 102 114 | core patents expired | 25–40 h |
+| DTS-HD Master Audio (XLL) | lossless decode up to 7.1 ([crates/dts](../crates/dts/README.md)) | lossless extension | ETSI TS 102 114 v1.4+ (extension substream) | DTS trademark may not be used | 30–50 h |
 | Auro-3D (Auro-Codec in 24-bit PCM) | detection + height decoding, any bit-exact carrier: DTS-HD MA, FLAC, WAV, PCM in MKV/MP4/MXF ([crates/auro](../crates/auro/README.md), #299) | Auro-CX (#322) | **no public specification**; ported from harletty-bridge `auro` (Apache-2.0) | US 8,620,465 B2 in force (owner accepted the risk, #299) | done |
-| JPEG 2000 (MXF, DCP) | none | decode + encode, Part 1 and the cinema profiles | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | 40–70 h |
+| JPEG 2000 (MXF, DCP) | Part 1 decode and DCI 2K / 4K encode, HTJ2K decode, MXF and DCP import ([crates/j2k](../crates/j2k/README.md)) | decode + encode, Part 1 and the cinema profiles | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | 40–70 h |
 | DCP packaging | SMPTE DCP write (#115): one reel, 2K / 4K, 5.1, unencrypted OV; IAB immersive audio (#343, ST 429-18 / 429-19, FSK sync ST 430-12) with ST 429-16 composition metadata, ISDCF Doc 15 IAB Profile 1 and MCA labels (#348); plain 5.1 per SMPTE RDD 52 (#309): MCA labels, RDD 52 constraints profile, FFOC/LFOC markers, spoken language, ISDCF folder name; Dolby Atmos TrueHD (.thd, or its track in MKV / MP4 / M2TS, #411) to IAB with its bed (7.1 DS / 9.1OH) and objects (#347); 7.1 DS bed from a 7.1 Mix, 9.1OH bed from a 7.1.2 Mix (#374) | Interop DCP, multiple reels, subtitles, 3D, KDM | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | 20–30 h after JPEG 2000 |
 | ProRes, DNxHD / DNxHR | decode + encode | ProRes RAW | — | — | see codec-parity.md |
 | OpenEXR, DPX | read + write | EXR PIZ / B44 / DWA, tiled, multi-part | OpenEXR file layout docs | BSD-3-Clause | 15–25 h |
