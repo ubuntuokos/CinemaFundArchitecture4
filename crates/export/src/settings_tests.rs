@@ -1318,11 +1318,21 @@ fn builtin_presets_are_valid_and_unique() {
     for p in &all {
         p.settings.validate().unwrap();
         assert!(p.builtin && !p.category.is_empty() && !p.description.is_empty(), "{}", p.name);
+        // a preset is only offered when an encoder and a container path exist for it
+        assert!(available(p.settings.format) && unavailable_reason(p.settings.format).is_none(), "{}", p.name);
     }
     assert_eq!(presets::find_builtin("match source - adaptive high bitrate").unwrap().name, presets::DEFAULT_PRESET);
     let json = serde_json::to_value(&all[0]).unwrap();
     let back: ExportPreset = serde_json::from_value(json).unwrap();
     assert_eq!(back.settings.adaptive_bitrate, Some(0.2));
+}
+
+/// CFA4-PROCODEC-002 WP0: every listed format has an encoder in this build, so none carries a reason.
+#[test]
+fn unavailable_formats_say_why() {
+    for f in Format::ALL {
+        assert_eq!(unavailable_reason(f), None, "{}", f.label());
+    }
 }
 
 /// #108: the default 320 kbps is more than AAC can carry in stereo at 22.05 kHz (6 bits per sample
