@@ -287,6 +287,7 @@
 	Output file	Излазна датотека
 	Overwrite	Препиши
 	PCM (uncompressed)	PCM (некомпресовано)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 слој II)
 	Panner	Панорама
 	Paste Attributes…	Налепи атрибуте…
 	Paste Insert	Налепи уметањем
@@ -3263,8 +3264,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-битни 4:2:2), 24-битни 48 kHz PCM, почетни временски код
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, дуги GOP (12 слика, IBBP), 50 Mbit/s у стилу XDCAM HD422, 24-битни PCM 48 kHz; HD величине слике
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High дуги GOP (0,3 бита по пикселу), 24-битни 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типа D-10 (IMX 50): MPEG-2 4:2:2P@ML само интра, 50 Mbit/s, 720x486 при 29,97 fps (4:3), четири 24-битна аудио канала 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типа D-10 (IMX 50): MPEG-2 4:2:2P@ML само интра, 50 Mbit/s, 720x576 при 25 fps (4:3), четири 24-битна аудио канала 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-битни 48 kHz PCM, почетни временски код
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a у распореду SMPTE RDD 9: MPEG-2 4:2:2 Profile, дуги GOP (12 слика, IBBP), 50 Mbit/s, 1920x1080 или 1280x720 прогресивно, четири 24-битна канала 48 kHz као AES3 елементи по каналу
 	Main	Главно
 	Mark In (Hover Scrub)	Означи улаз (преглед лебдењем)
 	Mark Out (Hover Scrub)	Означи излаз (преглед лебдењем)
@@ -3604,6 +3613,8 @@
 	Analyze Source for Smart Cut	Анализирај извор за паметни рез
 	Plan Smart Cut	Планирај паметни рез
 	Run Smart Cut	Покрени паметни рез
+	DASH Manifest	DASH манифест
+	Also write a DASH manifest (.mpd)	Упиши и DASH манифест (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Ниједна секвенца није отворена. Двапут кликните секвенцу на панелу Пројекат.
 	English (US)	Енглески (САД)
 	English (UK)	Енглески (UK)
@@ -4215,3 +4226,278 @@ export.summary	Low	низак
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Шпица из табеле
+	A .ods, .xlsx or CSV credits sheet	Табела шпице у формату .ods, .xlsx или CSV
+	The spreadsheet's folder	Фасцикла табеле
+	Built-in styles	Уграђени стилови
+	Spreadsheet	Табела
+	Sheet	Лист
+	Pictures	Слике
+	Styling	Стил
+	Page	Страница
+	Warnings	Упозорења
+	Moment in the page	Тренутак на страници
+	Place at Playhead	Постави на главу за репродукцију
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Табеле (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Стил шпице (*.json)
+	Card	Картица
+	Credits Spreadsheet	Табела шпице
+	Reading…	Читање…
+	(one table)	(једна табела)
+	Total: {time}	Укупно: {time}
+	Row {row}: {message}	Ред {row}: {message}
+	Choose a credits spreadsheet.	Изаберите табелу шпице.
+	No preview	Нема прегледа
+	Placing…	Постављање…
+	Placed {n} pages on the timeline.	На временску линију постављено страница: {n}.
+	Credits Page Picture	Слика странице шпице
+	Preview Credits	Преглед шпице
+	Credits Styles	Стилови шпице
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Табеле и датотеке шпице (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 датотека шпице (*.cfa4credits)
+	Save as Credits File…	Сачувај као датотеку шпице…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Табела, лист, стил и редови у једној датотеци која се отвара на било ком рачунару
+	Saved: {path}	Сачувано: {path}
+	Added	Додато
+	Removed	Уклоњено
+	Changed	Промењено
+	(empty row)	(празан ред)
+	Refresh Credits from Spreadsheet	Освежи шпицу из табеле
+	Change	Промена
+	Before → After	Пре → После
+	Select None	Поништи избор
+	Keep my edits on the pages (where their block is unchanged)	Задржи моје измене на страницама (где им се блок није променио)
+	Locate Spreadsheet…	Пронађи табелу…
+	Comparing…	Упоређивање…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Измене у {file} од постављања шпице: {n}. Поништите оно што не желите.
+	The spreadsheet {file} has not changed since the credits were placed.	Табела {file} се није променила од постављања шпице.
+	{n} layers were edited by hand on the pages.	Ручно измењени слојеви на страницама: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Прихватање свих измена заменило би ове јер им се блок променио: {names}
+	Refreshing…	Освежавање…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Освежено: примењене измене: {n}, задржане ручне измене: {kept}.
+	Refresh Credits from Spreadsheet…	Освежи шпицу из табеле…
+	Save Credits File…	Сачувај датотеку шпице…
+	Compare Credits with Spreadsheet	Упореди шпицу са табелом
+	“{name}” appears twice in the same block	„{name}” се појављује двапут у истом блоку
+	“{name}” is written as “{other}” in row {otherRow}	„{name}” је у реду {otherRow} написано као „{other}”
+	The font “{font}” is not installed; another font is used	Фонт „{font}” није инсталиран; користи се други фонт
+	The font “{font}” has no “{chars}”; another font draws them	Фонт „{font}” нема „{chars}”; исцртава их други фонт
+	“{text}” is outside the title-safe area	„{text}” је ван безбедне области за натписе
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” је претамно на црној (контраст {ratio}:1; потребно је најмање 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}” је висок {px} px; од 24 px навише добро се чита
+	The roll moves {speed} px per frame; a whole number does not shimmer	Померање је {speed} px по кадру; цео број не трепери
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Ред прелази кадар за {seconds} s; најмање 6 s добро се чита
+	The card holds for only {seconds} s after its fades	Картица остаје само {seconds} s после претапања
+	This page starts {seconds} s before the previous one ends	Ова страница почиње {seconds} s пре краја претходне
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}” се приказује на {percent} % својих пиксела; изгледаће мутно
+	{more} more of the same	Још {more} истих
+	Page {page}: {message}	Страница {page}: {message}
+	Checks and warnings	Провере и упозорења
+	Checks: {errors} errors, {warnings} warnings	Провере: грешке {errors}, упозорења {warnings}
+	Check Credits	Провери шпицу
+	The whole music ({time})	Цела музика ({time})
+	Until the sound ends ({time})	До краја звука ({time})
+	To the last bar line ({time})	До последње тактне црте ({time})
+	Fit Credits to Music	Прилагоди шпицу музици
+	Fit Credits to Music…	Прилагоди шпицу музици…
+	Analyse Music for Credits	Анализирај музику за шпицу
+	Length:	Трајање:
+	Cards last whole beats (cuts on the beat)	Картице трају целе добе (резови на добу)
+	Start the credits where the music starts	Почни шпицу где почиње музика
+	Length of the credits	Трајање шпице
+	Remove Fitting	Уклони прилагођавање
+	Listening to the music…	Слушање музике…
+	Length: {time}	Трајање: {time}
+	the sound ends at {time}	звук се завршава у {time}
+	tempo {bpm} BPM	темпо {bpm} BPM
+	the credits without fitting: {time}	шпица без прилагођавања: {time}
+	Select a credits page on the timeline.	Изаберите страницу шпице на временској линији.
+	Fitting…	Прилагођавање…
+	The credits now last {time}.	Шпица сада траје {time}.
+	Fitting removed.	Прилагођавање уклоњено.
+	Fit to This Length	Прилагоди овом трајању
+	No music to measure ({problem}); type the length.	Нема музике за мерење ({problem}); унесите трајање.
+	The text moves {speed} px per frame; a whole number does not shimmer	Текст се помера {speed} px по кадру; цео број не трепери
+	Crawl	Покретни текст
+	Picture: {file}	Слика: {file}
+	Video: {file}	Видео: {file}
+	Into the next	У следећу
+	Safe areas and spines	Безбедне области и осе
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безбедна област радње (93 %), натписа (90 %), центар и осе странице
+	Baseline grid	Мрежа основних линија
+	Lines one gap unit apart, moving with the page	Линије размакнуте за једну јединицу размака, померају се са страницом
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” се не истиче од позадине (контраст {ratio}:1; потребно је најмање 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Иза текста је слика или видео: проверите контраст оком
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Готов изглед: стилови, позадине, прелази и тајминг. Задата датотека стила има предност.
+	New Spreadsheet from Template…	Нова табела из шаблона…
+	built in	уграђени
+	mine	мој
+	this project	овај пројекат
+	Template	Шаблон
+	Choose a template first.	Најпре изаберите шаблон.
+	Name of the template:	Име шаблона:
+	Template saved: {name}	Шаблон сачуван: {name}
+	Apply Credits Template…	Примени шаблон шпице…
+	Template:	Шаблон:
+	Credits Templates	Шаблони шпице
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Табеле, датотеке шпице и Cinecred пројекти (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred пројекат…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Отвори фасциклу Cinecred пројекта (Styling.toml и његова табела шпице)
+	(empty block)	(празан блок)
+	Apply Template…	Примени шаблон…
+	Change them in the spreadsheet; the credits follow when you save it.	Промените их у табели; шпица прати када је сачувате.
+	Compact View	Сажети приказ
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Упореди изабрану шпицу на временској линији са њеном табелом, ред по ред
+	Fit the selected credits to the music under them	Прилагоди изабрану шпицу музици испод ње
+	Fit to Music…	Прилагоди музици…
+	Full View	Пун приказ
+	Give the selected credits on the timeline another template	Додели изабраној шпици на временској линији други шаблон
+	Names	Имена
+	No pages	Нема страница
+	Refresh Placed Credits…	Освежи постављену шпицу…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Прикажи све: блокове, својства, странице кроз време, провере и алате шпице
+	Spine	Оса
+	Tails	Крај
+	The blocks of the chosen page; choose one to see it in the preview	Блокови изабране странице; изаберите један да га видите у прегледу
+	The pages along time; click one to choose it	Странице кроз време; кликните једну да је изаберете
+	{n} more	Још {n}
+	Block	Блок
+	parallel	паралелно
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	На страници (OBS га узима из извора прегледача)
+	Separate (a media source in OBS)	Одвојено (медијски извор у OBS-у)
+	No sound	Без звука
+	credits	шпица
+	graphic	графика
+	{n} pages	Страница: {n}
+	Live Graphics	Графика уживо
+	Prepared cues; double-click one to put it in preview	Припремљене ставке; двапут кликните једну да је ставите у преглед
+	Add Credits…	Додај шпицу…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Табела шпице, датотека шпице или Cinecred пројекат као ставка
+	Add Selected Graphic	Додај изабрану графику
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Графички клип изабран на временској линији (наслов, доња трећина) као ставка
+	Cues	Ставке
+	TAKE	У ЕТАР
+	The preview cue goes on air from its first page	Ставка из прегледа иде у етар од своје прве странице
+	PREVIOUS	ПРЕТХОДНА
+	The page before (on the first page: from its start)	Претходна страница (на првој страници: од њеног почетка)
+	NEXT	СЛЕДЕЋА
+	The next page; after the last one, the preview cue	Следећа страница; после последње ставка из прегледа
+	HOLD	ЗАДРЖИ
+	Stop the program where it is	Заустави програм где јесте
+	CONTINUE	НАСТАВИ
+	Go on from where it stopped	Настави одакле је стало
+	UPDATE	АЖУРИРАЈ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Поново прочитај табелу (или клип); у етру се одмах мења
+	OUT	СКИНИ
+	Take everything off air	Скини све из етра
+	Start Live Page	Покрени страницу уживо
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Послужуј програм на овом рачунару за извор прегледача у OBS-у (само 127.0.0.1)
+	not running	не ради
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Алатке ▸ Подешавања WebSocket сервера
+	Connect to OBS	Повежи се са OBS-ом
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Повежи се са OBS-ом на овом рачунару и усмери његов извор прегледача „CFA4 Live” на страницу уживо
+	Port	Порт
+	Password	Лозинка
+	Live page	Страница уживо
+	Sound	Звук
+	OBS	OBS
+	Nothing in preview	Ништа у прегледу
+	page {page} of {pages}	страница {page} од {pages}
+	held	задржано
+	ended	завршено
+	Off air	Ван етра
+	Stop Live Page	Заустави страницу уживо
+	Connected to OBS {version}; source “{source}”	Повезано са OBS {version}; извор „{source}”
+	Point OBS Again	Поново усмери OBS
+	Select a graphic clip on the timeline first.	Најпре изаберите графички клип на временској линији.
+	Connecting to OBS…	Повезивање са OBS-ом…
+	Live Graphics…	Графика уживо…
+	PREVIEW	ПРЕГЛЕД
+	PROGRAM	ПРОГРАМ
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	ознака слике или видеа стоји сама у ћелији тела (или са једним именом, као портрет); остале ознаке су уклоњене
+	the page gap is not a duration; the page style's is used	размак страница није трајање; користи се онај из стила странице
+	the page runtime is not a positive duration; the page style's is used	трајање странице није позитивно; користи се оно из стила странице
+	background “{file}” was not found; it is left out	позадина „{file}” није пронађена; изоставља се
+	card page {page} is taller than the frame; use a roll page	страница картице {page} виша је од кадра; користите покретну страницу
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	боја „{colour}” стила слова „{style}” није #rrggbb; изоставља се
+	colour “{colour}” is not #rrggbb; black is used	боја „{colour}” није #rrggbb; користи се црна
+	colour “{colour}” is not #rrggbb; white is used	боја „{colour}” није #rrggbb; користи се бела
+	content style “{style}” does not exist; “{used}” is used	стил садржаја „{style}” не постоји; користи се „{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	стил слова „{style}” не постоји; текст задржава стил блока
+	page gap “{value}” is not a duration	размак страница „{value}” није трајање
+	page runtime “{value}” is not a duration	трајање странице „{value}” није трајање
+	page style “{style}” does not exist; a roll page is used	стил странице „{style}” не постоји; користи се покретна страница
+	page {page}: the background names no file; it is left out	страница {page}: позадина не наводи датотеку; изоставља се
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	страница {page}: трајање се постиже променом брзине померања (страница нема размака између блокова за растезање)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	страница {page}: трајање се постиже променом брзине померања (шпица је предуга и без размака)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	страница {page}: трајање се постиже променом брзине померања (размаци би морали да порасту више од 20 пута)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	страница {page}: прелаз захтева да се странице додирују (размак 0); изоставља се
+	page {page}: there is no transition “{name}”; the pages cut	страница {page}: нема прелаза „{name}”; странице се мењају резом
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	положај осе „{value}” није подржан (подржан је помак у пикселима, по жељи уз „parallel”)
+	vertical gap “{value}” is not a number	вертикални размак „{value}” није број
+	picture “{file}” was not found or cannot be read; it is left out	слика „{file}” није пронађена или се не може прочитати; изоставља се
+	video “{file}” was not found or cannot be read; it is left out	видео „{file}” није пронађен или се не може прочитати; изоставља се
+	there is no roll page without its own runtime to stretch; the length cannot change	нема покретне странице без сопственог трајања која би се растегла; трајање се не може променити
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	саме картице и размаци трају {seconds} s; тражена дужина је краћа, па покретне странице задржавају природно трајање
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	стил слова „{style}”: користи се само први обојени слој (без оквира, сенки и трака)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	трајање целе шпице се не преноси; уместо тога користите Прилагоди шпицу музици (или трајање)
+	page style “{style}”: fade curves become linear fades	стил странице „{style}”: криве претапања постају линеарне
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	стил садржаја „{style}” нема почетак у Cinecred-у; почеци уписани у табелу и даље се приказују
+	content style “{style}”: sorting the names is not carried over	стил садржаја „{style}”: сортирање имена се не преноси
+	transition curves are not carried over	криве прелаза се не преносе
+	picture styles (pictures keep their own size) are not carried over	стилови слика (слике задржавају сопствену величину) се не преносе
+	video (tape) styles are not carried over	стилови видеа (траке) се не преносе
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred пројекат има табела шпице: {n}; користи се „{name}” (изаберите другу у пољу Табела)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Додај налаз
+	Add as Finding	Додај као налаз
+	Are colour and contrast acceptable?	Да ли су боја и контраст прихватљиви?
+	Automatic Checks	Аутоматске провере
+	Bounds	Границе
+	Check	Провера
+	Check Now	Провери сада
+	Check quality after export	Провери квалитет после извоза
+	Checking…	Провера…
+	Contact Sheet	Контактни лист
+	Critical	Критично
+	Fail	Није прошло
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Налаз {row}: временски код није време у овој датотеци (HH:MM:SS:FF).
+	Findings	Налази
+	Human Review	Људски преглед
+	Incomplete	Непотпуно
+	Is there a visible picture defect?	Да ли постоји видљив недостатак слике?
+	Is there audible distortion?	Да ли се чује изобличење?
+	Is there unwanted noise?	Да ли постоји нежељени шум?
+	Major	Озбиљно
+	Message	Порука
+	Minor	Мање
+	No contact sheet	Нема контактног листа
+	Not answered	Без одговора
+	Not checked	Није проверено
+	Not run	Није покренуто
+	Note	Напомена
+	Pass	Прошло
+	Passed	Прошло
+	Passed with warnings	Прошло са упозорењима
+	Profile: {id} v{version}	Профил: {id} v{version}
+	Quality Check	Провера квалитета
+	Quality Check…	Провера квалитета…
+	Remove Finding	Уклони налаз
+	Report: {path}	Извештај: {path}
+	Review complete	Преглед је завршен
+	Reviewer	Прегледач
+	Run the media quality check on the finished file (docs/media-qc.md)	Покрени проверу квалитета медија на готовој датотеци (docs/media-qc.md)
+	Save Review	Сачувај преглед
+	Select a finished export in the queue	Изаберите завршени извоз у реду
+	Severity	Озбиљност
+	The engine is not running.	Машина није покренута.
+	Time code	Временски код
+	Unsure	Несигурно
+	accept	прихватљиво
+	the engine did not start the check	машина није покренула проверу
+	the engine sent no report	машина није послала извештај

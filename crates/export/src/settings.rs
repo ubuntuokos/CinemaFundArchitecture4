@@ -140,6 +140,19 @@ pub enum MxfVideoCodec {
     ProRes,
     /// H.264 long GOP (ST 381-3 byte-stream mapping).
     H264,
+    /// MPEG-2 long GOP (ST 381-1 elementary stream mapping; XDCAM HD422 style with 4:2:2 at
+    /// 50 Mbit/s). HD only: the High and High-1440 levels.
+    Mpeg2,
+    /// Type D-10 / IMX (ST 386): intra-only MPEG-2 4:2:2P@ML at 30, 40 or 50 Mbit/s (the
+    /// bitrate setting), 720 × 576 at 25 fps or 720 × 486 / 480 at 29.97 fps, with up to eight
+    /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only.
+    #[serde(rename = "d10", alias = "D10")]
+    D10,
+    /// XDCAM HD422 (SMPTE RDD 9): MPEG-2 4:2:2P@HL long GOP at 1920 × 1080 or 1280 × 720 in
+    /// RDD 9's OP1a layout (system items, one AES3 element per channel, body partitions every
+    /// five seconds), up to eight 16- or 24-bit 48 kHz channels. Progressive pictures only.
+    #[serde(rename = "xdcamHd422", alias = "XdcamHd422")]
+    XdcamHd422,
 }
 
 impl MxfVideoCodec {
@@ -149,6 +162,9 @@ impl MxfVideoCodec {
             MxfVideoCodec::Dnxhr => "Avid DNxHR",
             MxfVideoCodec::ProRes => "Apple ProRes",
             MxfVideoCodec::H264 => "H.264",
+            MxfVideoCodec::Mpeg2 => "MPEG-2",
+            MxfVideoCodec::D10 => "D-10 (IMX)",
+            MxfVideoCodec::XdcamHd422 => "XDCAM HD422 (RDD 9)",
         }
     }
     /// The export format whose encoder this codec uses.
@@ -157,6 +173,7 @@ impl MxfVideoCodec {
             MxfVideoCodec::Dnxhr => Format::DnxHr,
             MxfVideoCodec::ProRes => Format::ProRes,
             MxfVideoCodec::H264 => Format::H264,
+            MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422 => Format::Mpeg2,
         }
     }
 }
@@ -203,7 +220,7 @@ impl ExrCompression {
 
 /// Audio codec. `Auto` = AAC in MP4 and AAC Audio, PCM in QuickTime / WAV / AIFF, FLAC in FLAC,
 /// Opus in Opus Audio and WebM. MP4 and QuickTime can also carry FLAC; MXF is always PCM; Opus is
-/// only written as Opus Audio (Ogg) and in WebM.
+/// only written as Opus Audio (Ogg) and in WebM; AC-3 only in MPEG-2 program and transport streams.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AudioCodec {
@@ -215,6 +232,12 @@ pub enum AudioCodec {
     Flac,
     /// Opus (CELT, 48 kHz) at `bitrate_kbps`.
     Opus,
+    /// Dolby Digital (AC-3) at `bitrate_kbps` (a rate of ATSC A/52 Table 5.18, 32-640), 32, 44.1
+    /// or 48 kHz.
+    Ac3,
+    /// MPEG-1 Layer II (MP2) at `bitrate_kbps`, mono or stereo, in MPEG-2 program and transport
+    /// streams (elsewhere the format's default).
+    Mp2,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -587,7 +610,7 @@ impl ExportSettings {
     /// AIFF and QuickTime takes all four, MXF integers only; FLAC integers only; AAC none.
     pub fn supports_sample_format(&self, f: SampleFormat) -> bool {
         match self.audio_codec() {
-            AudioCodec::Aac | AudioCodec::Opus => false,
+            AudioCodec::Aac | AudioCodec::Opus | AudioCodec::Ac3 | AudioCodec::Mp2 => false,
             AudioCodec::Flac => !f.is_float(),
             // DVD LPCM in MPEG-2 program streams: 16 or 24 bits
             AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => matches!(f, SampleFormat::Int16 | SampleFormat::Int24),
@@ -600,12 +623,19 @@ impl ExportSettings {
     /// The audio codec actually used.
     pub fn audio_codec(&self) -> AudioCodec {
         // Opus is written only in Opus Audio and WebM; elsewhere it means the format's default
-        let asked = if self.audio.codec == AudioCodec::Opus { AudioCodec::Auto } else { self.audio.codec };
+        // and AC-3 and MP2 only in MPEG-2
+        let asked = match self.audio.codec {
+            AudioCodec::Opus => AudioCodec::Auto,
+            AudioCodec::Ac3 | AudioCodec::Mp2 if self.format != Format::Mpeg2 => AudioCodec::Auto,
+            c => c,
+        };
         match (self.format, asked) {
             (Format::Flac, _) => AudioCodec::Flac,
             (Format::Opus | Format::WebM, _) => AudioCodec::Opus,
             (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
             (Format::Aac | Format::Hls, _) => AudioCodec::Aac,
+            (Format::Mpeg2, AudioCodec::Ac3) if crate::Mpeg2Container::of(self).has_audio() => AudioCodec::Ac3,
+            (Format::Mpeg2, AudioCodec::Mp2) => AudioCodec::Mp2,
             (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
             (Format::Mpeg2, _) => AudioCodec::Pcm,
             (Format::Dcp, _) => AudioCodec::Pcm,
@@ -713,8 +743,9 @@ impl ExportSettings {
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             let pcm = r.sample_rate as f64 * r.channels as f64 * f64::from(self.audio.sample_format().bits());
             match self.audio_codec() {
-                AudioCodec::Aac => self.audio.bitrate_kbps as f64 * 1000.0,
+                AudioCodec::Aac | AudioCodec::Ac3 => self.audio.bitrate_kbps as f64 * 1000.0,
                 AudioCodec::Opus => f64::from(opus_bitrate_kbps(self.audio.bitrate_kbps)) * 1000.0,
+                AudioCodec::Mp2 => f64::from(mp2_bitrate_kbps(r.sample_rate, r.channels as usize, self.audio.bitrate_kbps)) * 1000.0,
                 // typical of music and dialogue; noise compresses less, silence far more
                 AudioCodec::Flac => pcm * 0.6,
                 _ => pcm,
@@ -729,6 +760,13 @@ impl ExportSettings {
 /// The Opus bit rate actually coded for `kbps` (Opus spans 6..=510 kbit/s).
 pub fn opus_bitrate_kbps(kbps: u32) -> u32 {
     kbps.clamp(6, 510)
+}
+
+/// The MP2 bit rate actually coded for `kbps` at `sample_rate` with `channels`: the highest
+/// Layer II rate not above it, or the lowest one (0 when the sampling frequency has none).
+pub fn mp2_bitrate_kbps(sample_rate: u32, channels: usize, kbps: u32) -> u32 {
+    let rates = cfa4_mpa::encode::bitrates(sample_rate, channels.clamp(1, 2));
+    rates.iter().copied().filter(|&r| r <= kbps).max().or_else(|| rates.first().copied()).unwrap_or(0)
 }
 
 /// The Export-mode Summary panel: one line each for the output video, audio and format.
@@ -854,7 +892,11 @@ impl ExportSettings {
             };
             match self.audio_codec() {
                 AudioCodec::Aac => format!("AAC, {} kbps, {} Hz, {ch}", self.audio.bitrate_kbps, r.sample_rate),
+                AudioCodec::Ac3 => format!("Dolby Digital (AC-3), {} kbps, {} Hz, {ch}", self.audio.bitrate_kbps, r.sample_rate),
                 AudioCodec::Opus => format!("Opus, {} kbps, {} Hz, {ch}", opus_bitrate_kbps(self.audio.bitrate_kbps), r.sample_rate),
+                AudioCodec::Mp2 => {
+                    format!("MP2, {} kbps, {} Hz, {ch}", mp2_bitrate_kbps(r.sample_rate, r.channels as usize, self.audio.bitrate_kbps), r.sample_rate)
+                }
                 AudioCodec::Flac => {
                     format!("FLAC (lossless) {}-bit, level {}, {} Hz, {ch}", self.audio.sample_format().bits(), self.audio.flac_level.min(8), r.sample_rate)
                 }

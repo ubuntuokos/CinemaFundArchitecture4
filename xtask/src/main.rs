@@ -82,6 +82,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("route", 1),
     ("tcsync", 1),
     ("metrics", 1),
+    ("live", 1),
     ("sandbox", 1),
     ("edit", 2),
     ("codecs", 2),

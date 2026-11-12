@@ -278,6 +278,7 @@
 	Output file	Plik wyjściowy
 	Overwrite	Nadpisz
 	PCM (uncompressed)	PCM (bez kompresji)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 warstwa II)
 	Panner	Panoramowanie
 	Paste Attributes…	Wklej atrybuty…
 	Paste Insert	Wklej z wstawieniem
@@ -3173,8 +3174,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bit 4:2:2), PCM 24-bit 48 kHz, początkowy kod czasowy
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, długi GOP (12 obrazów, IBBP), 50 Mbit/s w stylu XDCAM HD422, PCM 24 bity 48 kHz; rozmiary klatek HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High z długim GOP (0,3 bitu na piksel), PCM 24-bit 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a typu D-10 (IMX 50): MPEG-2 4:2:2P@ML tylko intra, 50 Mbit/s, 720x486 przy 29,97 kl./s (4:3), cztery kanały audio 24 bity 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a typu D-10 (IMX 50): MPEG-2 4:2:2P@ML tylko intra, 50 Mbit/s, 720x576 przy 25 kl./s (4:3), cztery kanały audio 24 bity 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24-bit 48 kHz, początkowy kod czasowy
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a w układzie SMPTE RDD 9: MPEG-2 4:2:2 Profile, długi GOP (12 obrazów, IBBP), 50 Mbit/s, 1920x1080 lub 1280x720 progresywnie, cztery kanały 24 bity 48 kHz jako osobne elementy AES3 na kanał
 	Main	Main
 	Mark In (Hover Scrub)	Zaznacz wejście (przewijanie po najechaniu)
 	Mark Out (Hover Scrub)	Zaznacz wyjście (przewijanie po najechaniu)
@@ -3516,6 +3525,8 @@
 	Analyze Source for Smart Cut	Analizuj źródło do inteligentnego cięcia
 	Plan Smart Cut	Zaplanuj inteligentne cięcie
 	Run Smart Cut	Wykonaj inteligentne cięcie
+	DASH Manifest	Manifest DASH
+	Also write a DASH manifest (.mpd)	Zapisz także manifest DASH (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Nie otwarto sekwencji. Kliknij dwukrotnie sekwencję w panelu Projekt.
 	English (US)	English (US)
 	English (UK)	English (UK)
@@ -4215,3 +4226,278 @@ export.summary	Low	niska
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Napisy końcowe z arkusza
+	A .ods, .xlsx or CSV credits sheet	Arkusz napisów końcowych .ods, .xlsx lub CSV
+	The spreadsheet's folder	Folder arkusza
+	Built-in styles	Wbudowane style
+	Spreadsheet	Arkusz kalkulacyjny
+	Sheet	Arkusz
+	Pictures	Obrazy
+	Styling	Styl
+	Page	Strona
+	Warnings	Ostrzeżenia
+	Moment in the page	Moment na stronie
+	Place at Playhead	Umieść przy głowicy odtwarzania
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Arkusze kalkulacyjne (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Styl napisów końcowych (*.json)
+	Card	Plansza
+	Credits Spreadsheet	Arkusz napisów końcowych
+	Reading…	Wczytywanie…
+	(one table)	(jedna tabela)
+	Total: {time}	Razem: {time}
+	Row {row}: {message}	Wiersz {row}: {message}
+	Choose a credits spreadsheet.	Wybierz arkusz napisów końcowych.
+	No preview	Brak podglądu
+	Placing…	Umieszczanie…
+	Placed {n} pages on the timeline.	Umieszczono strony na osi czasu: {n}.
+	Credits Page Picture	Obraz strony napisów końcowych
+	Preview Credits	Podgląd napisów końcowych
+	Credits Styles	Style napisów końcowych
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Arkusze i pliki napisów końcowych (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Plik napisów końcowych CFA4 (*.cfa4credits)
+	Save as Credits File…	Zapisz jako plik napisów końcowych…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Arkusz, karta, styl i tabela w jednym pliku, który otworzysz na dowolnym komputerze
+	Saved: {path}	Zapisano: {path}
+	Added	Dodano
+	Removed	Usunięto
+	Changed	Zmieniono
+	(empty row)	(pusty wiersz)
+	Refresh Credits from Spreadsheet	Odśwież napisy końcowe z arkusza
+	Change	Zmiana
+	Before → After	Przed → Po
+	Select None	Odznacz wszystko
+	Keep my edits on the pages (where their block is unchanged)	Zachowaj moje zmiany na stronach (tam, gdzie ich blok się nie zmienił)
+	Locate Spreadsheet…	Wskaż arkusz…
+	Comparing…	Porównywanie…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Zmiany w {file} od umieszczenia napisów końcowych: {n}. Odznacz to, czego nie chcesz.
+	The spreadsheet {file} has not changed since the credits were placed.	Arkusz {file} nie zmienił się od umieszczenia napisów końcowych.
+	{n} layers were edited by hand on the pages.	Ręcznie edytowane warstwy na stronach: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Przyjęcie wszystkich zmian zastąpi te elementy, bo zmienił się ich blok: {names}
+	Refreshing…	Odświeżanie…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Odświeżono: zastosowane zmiany: {n}, zachowane ręczne edycje: {kept}.
+	Refresh Credits from Spreadsheet…	Odśwież napisy końcowe z arkusza…
+	Save Credits File…	Zapisz plik napisów końcowych…
+	Compare Credits with Spreadsheet	Porównaj napisy końcowe z arkuszem
+	“{name}” appears twice in the same block	„{name}” występuje dwa razy w tym samym bloku
+	“{name}” is written as “{other}” in row {otherRow}	„{name}” zapisano w wierszu {otherRow} jako „{other}”
+	The font “{font}” is not installed; another font is used	Czcionka „{font}” nie jest zainstalowana; użyto innej
+	The font “{font}” has no “{chars}”; another font draws them	Czcionka „{font}” nie ma „{chars}”; rysuje je inna czcionka
+	“{text}” is outside the title-safe area	„{text}” wychodzi poza obszar bezpieczny dla napisów
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” jest za ciemny na czarnym tle (kontrast {ratio}:1; potrzeba co najmniej 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}” ma {px} px wysokości; od 24 px czyta się dobrze
+	The roll moves {speed} px per frame; a whole number does not shimmer	Przewijanie przesuwa się o {speed} px na klatkę; liczba całkowita nie migocze
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Wiersz przechodzi przez kadr w {seconds} s; co najmniej 6 s czyta się dobrze
+	The card holds for only {seconds} s after its fades	Plansza po przejściach trwa tylko {seconds} s
+	This page starts {seconds} s before the previous one ends	Ta strona zaczyna się {seconds} s przed końcem poprzedniej
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}” jest wyświetlany w {percent} % swoich pikseli; będzie wyglądał nieostro
+	{more} more of the same	{more} więcej takich samych
+	Page {page}: {message}	Strona {page}: {message}
+	Checks and warnings	Kontrole i ostrzeżenia
+	Checks: {errors} errors, {warnings} warnings	Kontrole: błędy {errors}, ostrzeżenia {warnings}
+	Check Credits	Sprawdź napisy końcowe
+	The whole music ({time})	Cała muzyka ({time})
+	Until the sound ends ({time})	Do końca dźwięku ({time})
+	To the last bar line ({time})	Do ostatniej kreski taktowej ({time})
+	Fit Credits to Music	Dopasuj napisy końcowe do muzyki
+	Fit Credits to Music…	Dopasuj napisy końcowe do muzyki…
+	Analyse Music for Credits	Analizuj muzykę dla napisów końcowych
+	Length:	Długość:
+	Cards last whole beats (cuts on the beat)	Plansze trwają pełne uderzenia (cięcia w rytm)
+	Start the credits where the music starts	Zacznij napisy końcowe tam, gdzie zaczyna się muzyka
+	Length of the credits	Długość napisów końcowych
+	Remove Fitting	Usuń dopasowanie
+	Listening to the music…	Słuchanie muzyki…
+	Length: {time}	Długość: {time}
+	the sound ends at {time}	dźwięk kończy się w {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	napisy końcowe bez dopasowania: {time}
+	Select a credits page on the timeline.	Zaznacz stronę napisów końcowych na osi czasu.
+	Fitting…	Dopasowywanie…
+	The credits now last {time}.	Napisy końcowe trwają teraz {time}.
+	Fitting removed.	Usunięto dopasowanie.
+	Fit to This Length	Dopasuj do tej długości
+	No music to measure ({problem}); type the length.	Brak muzyki do zmierzenia ({problem}); wpisz długość.
+	The text moves {speed} px per frame; a whole number does not shimmer	Tekst przesuwa się o {speed} px na klatkę; liczba całkowita nie migocze
+	Crawl	Pasek przewijany
+	Picture: {file}	Obraz: {file}
+	Video: {file}	Wideo: {file}
+	Into the next	Do następnej
+	Safe areas and spines	Obszary bezpieczne i osie
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Obszar bezpieczny akcji (93 %), napisów (90 %), środek i osie strony
+	Baseline grid	Siatka linii bazowych
+	Lines one gap unit apart, moving with the page	Linie co jedną jednostkę odstępu, przesuwają się razem ze stroną
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” nie wyróżnia się na tle (kontrast {ratio}:1; potrzeba co najmniej 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Za tekstem jest obraz lub wideo: sprawdź kontrast na oko
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Gotowy wygląd: style, tła, przejścia i czasy. Podany plik stylu ma pierwszeństwo.
+	New Spreadsheet from Template…	Nowy arkusz z szablonu…
+	built in	wbudowany
+	mine	mój
+	this project	ten projekt
+	Template	Szablon
+	Choose a template first.	Najpierw wybierz szablon.
+	Name of the template:	Nazwa szablonu:
+	Template saved: {name}	Zapisano szablon: {name}
+	Apply Credits Template…	Zastosuj szablon napisów końcowych…
+	Template:	Szablon:
+	Credits Templates	Szablony napisów końcowych
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Arkusze, pliki napisów końcowych i projekty Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Projekt Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Otwórz folder projektu Cinecred (Styling.toml i jego arkusz napisów końcowych)
+	(empty block)	(pusty blok)
+	Apply Template…	Zastosuj szablon…
+	Change them in the spreadsheet; the credits follow when you save it.	Zmień je w arkuszu; napisy końcowe dostosują się po jego zapisaniu.
+	Compact View	Widok kompaktowy
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Porównaj zaznaczone napisy końcowe na osi czasu z ich arkuszem, wiersz po wierszu
+	Fit the selected credits to the music under them	Dopasuj zaznaczone napisy końcowe do muzyki pod nimi
+	Fit to Music…	Dopasuj do muzyki…
+	Full View	Widok pełny
+	Give the selected credits on the timeline another template	Nadaj zaznaczonym napisom końcowym na osi czasu inny szablon
+	Names	Nazwiska
+	No pages	Brak stron
+	Refresh Placed Credits…	Odśwież umieszczone napisy końcowe…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Pokaż wszystko: bloki, właściwości, strony w czasie, kontrole i narzędzia napisów końcowych
+	Spine	Oś
+	Tails	Koniec
+	The blocks of the chosen page; choose one to see it in the preview	Bloki wybranej strony; wybierz jeden, aby zobaczyć go w podglądzie
+	The pages along time; click one to choose it	Strony w czasie; kliknij jedną, aby ją wybrać
+	{n} more	Jeszcze {n}
+	Block	Blok
+	parallel	równolegle
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Na stronie (OBS pobiera go ze źródła przeglądarki)
+	Separate (a media source in OBS)	Osobno (źródło multimediów w OBS)
+	No sound	Bez dźwięku
+	credits	napisy końcowe
+	graphic	grafika
+	{n} pages	Strony: {n}
+	Live Graphics	Grafika na żywo
+	Prepared cues; double-click one to put it in preview	Przygotowane elementy; kliknij dwukrotnie, aby przenieść do podglądu
+	Add Credits…	Dodaj napisy końcowe…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Arkusz napisów, plik napisów lub projekt Cinecred jako element
+	Add Selected Graphic	Dodaj zaznaczoną grafikę
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Klip graficzny zaznaczony na osi czasu (tytuł, belka) jako element
+	Cues	Elementy
+	TAKE	NA ANTENĘ
+	The preview cue goes on air from its first page	Element z podglądu trafia na antenę od pierwszej strony
+	PREVIOUS	POPRZEDNIA
+	The page before (on the first page: from its start)	Poprzednia strona (na pierwszej stronie: od jej początku)
+	NEXT	NASTĘPNA
+	The next page; after the last one, the preview cue	Następna strona; po ostatniej element z podglądu
+	HOLD	ZATRZYMAJ
+	Stop the program where it is	Zatrzymaj program tam, gdzie jest
+	CONTINUE	KONTYNUUJ
+	Go on from where it stopped	Kontynuuj od miejsca zatrzymania
+	UPDATE	AKTUALIZUJ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Wczytaj ponownie arkusz (lub klip); na antenie zmienia się od razu
+	OUT	ZDEJMIJ
+	Take everything off air	Zdejmij wszystko z anteny
+	Start Live Page	Uruchom stronę na żywo
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Udostępniaj program na tym komputerze dla źródła przeglądarki OBS (tylko 127.0.0.1)
+	not running	nie działa
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Narzędzia ▸ Ustawienia serwera WebSocket
+	Connect to OBS	Połącz z OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Połącz z OBS na tym komputerze i skieruj jego źródło przeglądarki „CFA4 Live” na stronę na żywo
+	Port	Port
+	Password	Hasło
+	Live page	Strona na żywo
+	Sound	Dźwięk
+	OBS	OBS
+	Nothing in preview	Nic w podglądzie
+	page {page} of {pages}	strona {page} z {pages}
+	held	zatrzymane
+	ended	zakończone
+	Off air	Poza anteną
+	Stop Live Page	Zatrzymaj stronę na żywo
+	Connected to OBS {version}; source “{source}”	Połączono z OBS {version}; źródło „{source}”
+	Point OBS Again	Wskaż ponownie w OBS
+	Select a graphic clip on the timeline first.	Najpierw zaznacz klip graficzny na osi czasu.
+	Connecting to OBS…	Łączenie z OBS…
+	Live Graphics…	Grafika na żywo…
+	PREVIEW	PODGLĄD
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	znacznik obrazu lub wideo stoi sam w komórce treści (lub z jednym nazwiskiem, jako portret); pozostałe znaczniki usunięto
+	the page gap is not a duration; the page style's is used	odstęp stron nie jest czasem trwania; użyto wartości ze stylu strony
+	the page runtime is not a positive duration; the page style's is used	czas strony nie jest dodatni; użyto wartości ze stylu strony
+	background “{file}” was not found; it is left out	nie znaleziono tła „{file}”; zostaje pominięte
+	card page {page} is taller than the frame; use a roll page	strona planszy {page} jest wyższa niż kadr; użyj strony przewijanej
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	kolor „{colour}” stylu liter „{style}” nie jest w formacie #rrggbb; zostaje pominięty
+	colour “{colour}” is not #rrggbb; black is used	kolor „{colour}” nie jest w formacie #rrggbb; użyto czarnego
+	colour “{colour}” is not #rrggbb; white is used	kolor „{colour}” nie jest w formacie #rrggbb; użyto białego
+	content style “{style}” does not exist; “{used}” is used	styl treści „{style}” nie istnieje; użyto „{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	styl liter „{style}” nie istnieje; tekst zachowuje styl bloku
+	page gap “{value}” is not a duration	odstęp stron „{value}” nie jest czasem trwania
+	page runtime “{value}” is not a duration	czas strony „{value}” nie jest czasem trwania
+	page style “{style}” does not exist; a roll page is used	styl strony „{style}” nie istnieje; użyto strony przewijanej
+	page {page}: the background names no file; it is left out	strona {page}: tło nie wskazuje pliku; zostaje pominięte
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	strona {page}: czas osiągnięto zmianą prędkości przewijania (strona nie ma odstępów między blokami do rozciągnięcia)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	strona {page}: czas osiągnięto zmianą prędkości przewijania (napisy są za długie nawet bez odstępów)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	strona {page}: czas osiągnięto zmianą prędkości przewijania (odstępy musiałyby wzrosnąć ponad 20-krotnie)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	strona {page}: przejście wymaga stykających się stron (odstęp 0); zostaje pominięte
+	page {page}: there is no transition “{name}”; the pages cut	strona {page}: nie ma przejścia „{name}”; strony zmieniają się cięciem
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	pozycja osi „{value}” nie jest obsługiwana (obsługiwane jest przesunięcie w pikselach, opcjonalnie z „parallel”)
+	vertical gap “{value}” is not a number	odstęp pionowy „{value}” nie jest liczbą
+	picture “{file}” was not found or cannot be read; it is left out	obrazu „{file}” nie znaleziono lub nie można go odczytać; zostaje pominięty
+	video “{file}” was not found or cannot be read; it is left out	wideo „{file}” nie znaleziono lub nie można go odczytać; zostaje pominięte
+	there is no roll page without its own runtime to stretch; the length cannot change	nie ma strony przewijanej bez własnego czasu do rozciągnięcia; długość nie może się zmienić
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	same plansze i odstępy trwają {seconds} s; żądana długość jest krótsza, więc strony przewijane zachowują naturalną długość
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	styl liter „{style}”: używana jest tylko pierwsza kolorowa warstwa (bez obrysów, cieni i pasów)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	czas całych napisów nie jest przenoszony; użyj zamiast tego „Dopasuj napisy końcowe do muzyki” (lub długości)
+	page style “{style}”: fade curves become linear fades	styl strony „{style}”: krzywe zanikania stają się liniowe
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	styl treści „{style}” nie ma w Cinecred początku; początki wpisane w arkuszu nadal są wyświetlane
+	content style “{style}”: sorting the names is not carried over	styl treści „{style}”: sortowanie nazwisk nie jest przenoszone
+	transition curves are not carried over	krzywe przejść nie są przenoszone
+	picture styles (pictures keep their own size) are not carried over	style obrazów (obrazy zachowują własny rozmiar) nie są przenoszone
+	video (tape) styles are not carried over	style wideo (taśmy) nie są przenoszone
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred ma arkusze napisów końcowych: {n}; użyto „{name}” (wybierz inny w polu Arkusz)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Dodaj ustalenie
+	Add as Finding	Dodaj jako ustalenie
+	Are colour and contrast acceptable?	Czy kolory i kontrast są do przyjęcia?
+	Automatic Checks	Kontrole automatyczne
+	Bounds	Granice
+	Check	Kontrola
+	Check Now	Sprawdź teraz
+	Check quality after export	Sprawdź jakość po eksporcie
+	Checking…	Sprawdzanie…
+	Contact Sheet	Arkusz stykowy
+	Critical	Krytyczne
+	Fail	Niezaliczone
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Ustalenie {row}: kod czasowy nie jest czasem w tym pliku (HH:MM:SS:FF).
+	Findings	Ustalenia
+	Human Review	Ocena przez człowieka
+	Incomplete	Niekompletne
+	Is there a visible picture defect?	Czy w obrazie jest widoczna wada?
+	Is there audible distortion?	Czy słychać zniekształcenia?
+	Is there unwanted noise?	Czy występuje niepożądany szum?
+	Major	Poważne
+	Message	Komunikat
+	Minor	Drobne
+	No contact sheet	Brak arkusza stykowego
+	Not answered	Bez odpowiedzi
+	Not checked	Nie sprawdzono
+	Not run	Nie uruchomiono
+	Note	Uwaga
+	Pass	Zaliczone
+	Passed	Zaliczono
+	Passed with warnings	Zaliczono z ostrzeżeniami
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Kontrola jakości
+	Quality Check…	Kontrola jakości…
+	Remove Finding	Usuń ustalenie
+	Report: {path}	Raport: {path}
+	Review complete	Ocena zakończona
+	Reviewer	Oceniający
+	Run the media quality check on the finished file (docs/media-qc.md)	Uruchom kontrolę jakości multimediów na gotowym pliku (docs/media-qc.md)
+	Save Review	Zapisz ocenę
+	Select a finished export in the queue	Wybierz zakończony eksport w kolejce
+	Severity	Waga
+	The engine is not running.	Silnik nie działa.
+	Time code	Kod czasowy
+	Unsure	Niepewne
+	accept	dopuszczalne
+	the engine did not start the check	silnik nie rozpoczął kontroli
+	the engine sent no report	silnik nie przesłał raportu

@@ -280,6 +280,7 @@
 	Output file	Tệp đầu ra
 	Overwrite	Ghi đè
 	PCM (uncompressed)	PCM (không nén)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Lớp II)
 	Panner	Bộ chỉnh vị trí âm
 	Paste Attributes…	Dán thuộc tính…
 	Paste Insert	Dán chèn
@@ -3182,8 +3183,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bit 4:2:2), PCM 24 bit 48 kHz, mã thời gian bắt đầu
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP dài (12 ảnh, IBBP) ở 50 Mbit/s theo kiểu XDCAM HD422, PCM 24 bit 48 kHz; kích thước khung hình HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High GOP dài (0,3 bit mỗi điểm ảnh), PCM 24 bit 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a loại D-10 (IMX 50): MPEG-2 4:2:2P@ML chỉ intra ở 50 Mbit/s, 720x486 ở 29,97 fps (4:3), bốn kênh âm thanh 24 bit 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a loại D-10 (IMX 50): MPEG-2 4:2:2P@ML chỉ intra ở 50 Mbit/s, 720x576 ở 25 fps (4:3), bốn kênh âm thanh 24 bit 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bit 48 kHz, mã thời gian bắt đầu
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a theo bố cục SMPTE RDD 9: MPEG-2 4:2:2 Profile GOP dài (12 ảnh, IBBP) ở 50 Mbit/s, 1920x1080 hoặc 1280x720 quét liên tục, bốn kênh 24 bit 48 kHz dưới dạng phần tử AES3 riêng cho mỗi kênh
 	Main	Chính
 	Mark In (Hover Scrub)	Đặt điểm vào (rê để tua)
 	Mark Out (Hover Scrub)	Đặt điểm ra (rê để tua)
@@ -3525,6 +3534,8 @@
 	Analyze Source for Smart Cut	Phân tích nguồn để cắt thông minh
 	Plan Smart Cut	Lập kế hoạch cắt thông minh
 	Run Smart Cut	Thực hiện cắt thông minh
+	DASH Manifest	Tệp kê khai DASH
+	Also write a DASH manifest (.mpd)	Ghi thêm tệp kê khai DASH (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Chưa mở chuỗi nào. Hãy nhấp đúp vào một chuỗi trong bảng Dự án.
 	English (US)	Tiếng Anh (Mỹ)
 	English (UK)	Tiếng Anh (Anh)
@@ -4215,3 +4226,278 @@ export.summary	Low	thấp
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Danh đề từ bảng tính
+	A .ods, .xlsx or CSV credits sheet	Bảng danh đề dạng .ods, .xlsx hoặc CSV
+	The spreadsheet's folder	Thư mục của bảng tính
+	Built-in styles	Kiểu dựng sẵn
+	Spreadsheet	Bảng tính
+	Sheet	Trang tính
+	Pictures	Hình ảnh
+	Styling	Kiểu dáng
+	Page	Trang
+	Warnings	Cảnh báo
+	Moment in the page	Thời điểm trong trang
+	Place at Playhead	Đặt tại đầu phát
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Bảng tính (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Kiểu danh đề (*.json)
+	Card	Thẻ
+	Credits Spreadsheet	Bảng tính danh đề
+	Reading…	Đang đọc…
+	(one table)	(một bảng)
+	Total: {time}	Tổng: {time}
+	Row {row}: {message}	Hàng {row}: {message}
+	Choose a credits spreadsheet.	Chọn một bảng tính danh đề.
+	No preview	Không có bản xem trước
+	Placing…	Đang đặt…
+	Placed {n} pages on the timeline.	Đã đặt {n} trang lên dòng thời gian.
+	Credits Page Picture	Hình trang danh đề
+	Preview Credits	Xem trước danh đề
+	Credits Styles	Kiểu danh đề
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Bảng tính và tệp danh đề (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Tệp danh đề CFA4 (*.cfa4credits)
+	Save as Credits File…	Lưu thành tệp danh đề…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Bảng tính, trang tính, kiểu dáng và bảng trong một tệp, mở được trên mọi máy
+	Saved: {path}	Đã lưu: {path}
+	Added	Đã thêm
+	Removed	Đã xóa
+	Changed	Đã thay đổi
+	(empty row)	(hàng trống)
+	Refresh Credits from Spreadsheet	Làm mới danh đề từ bảng tính
+	Change	Thay đổi
+	Before → After	Trước → Sau
+	Select None	Bỏ chọn tất cả
+	Keep my edits on the pages (where their block is unchanged)	Giữ các chỉnh sửa của tôi trên trang (nơi khối của chúng không đổi)
+	Locate Spreadsheet…	Tìm bảng tính…
+	Comparing…	Đang so sánh…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{file} có {n} thay đổi kể từ khi đặt danh đề. Bỏ chọn những gì bạn không muốn.
+	The spreadsheet {file} has not changed since the credits were placed.	Bảng tính {file} không thay đổi kể từ khi đặt danh đề.
+	{n} layers were edited by hand on the pages.	{n} lớp đã được chỉnh sửa thủ công trên các trang.
+	Accepting every change would replace these, because their block changed: {names}	Chấp nhận mọi thay đổi sẽ thay thế các mục này vì khối của chúng đã đổi: {names}
+	Refreshing…	Đang làm mới…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Đã làm mới: áp dụng {n} thay đổi, giữ {kept} chỉnh sửa thủ công.
+	Refresh Credits from Spreadsheet…	Làm mới danh đề từ bảng tính…
+	Save Credits File…	Lưu tệp danh đề…
+	Compare Credits with Spreadsheet	So sánh danh đề với bảng tính
+	“{name}” appears twice in the same block	“{name}” xuất hiện hai lần trong cùng một khối
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” được viết là “{other}” ở hàng {otherRow}
+	The font “{font}” is not installed; another font is used	Phông “{font}” chưa được cài; dùng phông khác thay thế
+	The font “{font}” has no “{chars}”; another font draws them	Phông “{font}” không có “{chars}”; phông khác sẽ vẽ chúng
+	“{text}” is outside the title-safe area	“{text}” nằm ngoài vùng an toàn cho tiêu đề
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” quá tối trên nền đen (độ tương phản {ratio}:1; cần ít nhất 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” cao {px} px; từ 24 px trở lên dễ đọc
+	The roll moves {speed} px per frame; a whole number does not shimmer	Cuộn di chuyển {speed} px mỗi khung hình; số nguyên sẽ không bị nhấp nháy
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Một dòng đi qua khung hình trong {seconds} giây; ít nhất 6 giây mới dễ đọc
+	The card holds for only {seconds} s after its fades	Thẻ chỉ dừng {seconds} giây sau các hiệu ứng mờ
+	This page starts {seconds} s before the previous one ends	Trang này bắt đầu {seconds} giây trước khi trang trước kết thúc
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” hiển thị ở {percent} % số điểm ảnh; sẽ trông bị mờ
+	{more} more of the same	Thêm {more} mục tương tự
+	Page {page}: {message}	Trang {page}: {message}
+	Checks and warnings	Kiểm tra và cảnh báo
+	Checks: {errors} errors, {warnings} warnings	Kiểm tra: {errors} lỗi, {warnings} cảnh báo
+	Check Credits	Kiểm tra danh đề
+	The whole music ({time})	Toàn bộ bản nhạc ({time})
+	Until the sound ends ({time})	Đến khi âm thanh kết thúc ({time})
+	To the last bar line ({time})	Đến vạch nhịp cuối ({time})
+	Fit Credits to Music	Khớp danh đề với nhạc
+	Fit Credits to Music…	Khớp danh đề với nhạc…
+	Analyse Music for Credits	Phân tích nhạc cho danh đề
+	Length:	Thời lượng:
+	Cards last whole beats (cuts on the beat)	Thẻ kéo dài trọn nhịp (cắt đúng nhịp)
+	Start the credits where the music starts	Bắt đầu danh đề khi nhạc bắt đầu
+	Length of the credits	Thời lượng danh đề
+	Remove Fitting	Bỏ khớp
+	Listening to the music…	Đang nghe nhạc…
+	Length: {time}	Thời lượng: {time}
+	the sound ends at {time}	âm thanh kết thúc tại {time}
+	tempo {bpm} BPM	nhịp độ {bpm} BPM
+	the credits without fitting: {time}	danh đề chưa khớp: {time}
+	Select a credits page on the timeline.	Chọn một trang danh đề trên dòng thời gian.
+	Fitting…	Đang khớp…
+	The credits now last {time}.	Danh đề giờ kéo dài {time}.
+	Fitting removed.	Đã bỏ khớp.
+	Fit to This Length	Khớp với thời lượng này
+	No music to measure ({problem}); type the length.	Không có nhạc để đo ({problem}); hãy nhập thời lượng.
+	The text moves {speed} px per frame; a whole number does not shimmer	Chữ di chuyển {speed} px mỗi khung hình; số nguyên sẽ không bị nhấp nháy
+	Crawl	Chữ chạy ngang
+	Picture: {file}	Hình: {file}
+	Video: {file}	Video: {file}
+	Into the next	Sang trang sau
+	Safe areas and spines	Vùng an toàn và trục
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Vùng an toàn hành động (93 %), vùng an toàn tiêu đề (90 %), tâm và các trục của trang
+	Baseline grid	Lưới đường cơ sở
+	Lines one gap unit apart, moving with the page	Các đường cách nhau một đơn vị khoảng cách, di chuyển cùng trang
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” không nổi bật trên nền (độ tương phản {ratio}:1; cần ít nhất 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Phía sau chữ có hình hoặc video: hãy kiểm tra độ tương phản bằng mắt
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Giao diện dựng sẵn: kiểu, nền, chuyển cảnh và thời gian. Nếu có tệp kiểu thì tệp đó được ưu tiên.
+	New Spreadsheet from Template…	Bảng tính mới từ mẫu…
+	built in	dựng sẵn
+	mine	của tôi
+	this project	dự án này
+	Template	Mẫu
+	Choose a template first.	Hãy chọn mẫu trước.
+	Name of the template:	Tên mẫu:
+	Template saved: {name}	Đã lưu mẫu: {name}
+	Apply Credits Template…	Áp dụng mẫu danh đề…
+	Template:	Mẫu:
+	Credits Templates	Mẫu danh đề
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Bảng tính, tệp danh đề và dự án Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Dự án Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Mở thư mục dự án Cinecred (Styling.toml và bảng tính danh đề của nó)
+	(empty block)	(khối trống)
+	Apply Template…	Áp dụng mẫu…
+	Change them in the spreadsheet; the credits follow when you save it.	Hãy sửa chúng trong bảng tính; danh đề sẽ cập nhật khi bạn lưu.
+	Compact View	Chế độ xem gọn
+	Compare the selected credits on the timeline with their spreadsheet, row by row	So sánh danh đề đã chọn trên dòng thời gian với bảng tính của nó, từng hàng một
+	Fit the selected credits to the music under them	Khớp danh đề đã chọn với nhạc bên dưới
+	Fit to Music…	Khớp với nhạc…
+	Full View	Chế độ xem đầy đủ
+	Give the selected credits on the timeline another template	Dùng mẫu khác cho danh đề đã chọn trên dòng thời gian
+	Names	Tên
+	No pages	Không có trang
+	Refresh Placed Credits…	Làm mới danh đề đã đặt…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Hiện tất cả: khối, thuộc tính, các trang theo thời gian, kiểm tra và công cụ danh đề
+	Spine	Trục
+	Tails	Cuối
+	The blocks of the chosen page; choose one to see it in the preview	Các khối của trang đã chọn; chọn một khối để xem trong bản xem trước
+	The pages along time; click one to choose it	Các trang theo thời gian; bấm vào một trang để chọn
+	{n} more	Thêm {n}
+	Block	Khối
+	parallel	song song
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Trong trang (OBS lấy từ nguồn trình duyệt)
+	Separate (a media source in OBS)	Riêng (một nguồn đa phương tiện trong OBS)
+	No sound	Không có âm thanh
+	credits	danh đề
+	graphic	đồ họa
+	{n} pages	{n} trang
+	Live Graphics	Đồ họa trực tiếp
+	Prepared cues; double-click one to put it in preview	Các mục đã chuẩn bị; bấm đúp vào một mục để đưa vào xem trước
+	Add Credits…	Thêm danh đề…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Bảng tính danh đề, tệp danh đề hoặc dự án Cinecred làm một mục
+	Add Selected Graphic	Thêm đồ họa đã chọn
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Clip đồ họa đã chọn trên dòng thời gian (tiêu đề, dải chữ dưới) làm một mục
+	Cues	Mục
+	TAKE	LÊN SÓNG
+	The preview cue goes on air from its first page	Mục xem trước lên sóng từ trang đầu tiên
+	PREVIOUS	TRƯỚC
+	The page before (on the first page: from its start)	Trang trước (ở trang đầu: từ đầu trang)
+	NEXT	TIẾP
+	The next page; after the last one, the preview cue	Trang tiếp theo; sau trang cuối là mục xem trước
+	HOLD	GIỮ
+	Stop the program where it is	Dừng chương trình tại chỗ
+	CONTINUE	TIẾP TỤC
+	Go on from where it stopped	Tiếp tục từ chỗ đã dừng
+	UPDATE	CẬP NHẬT
+	Read the spreadsheet (or the clip) again; on air it changes at once	Đọc lại bảng tính (hoặc clip); trên sóng sẽ đổi ngay
+	OUT	XUỐNG SÓNG
+	Take everything off air	Đưa mọi thứ xuống sóng
+	Start Live Page	Bắt đầu trang trực tiếp
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Phát chương trình trên máy này cho nguồn trình duyệt của OBS (chỉ 127.0.0.1)
+	not running	không chạy
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Công cụ ▸ Cài đặt máy chủ WebSocket
+	Connect to OBS	Kết nối với OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Kết nối với OBS trên máy này và trỏ nguồn trình duyệt “CFA4 Live” của nó tới trang trực tiếp
+	Port	Cổng
+	Password	Mật khẩu
+	Live page	Trang trực tiếp
+	Sound	Âm thanh
+	OBS	OBS
+	Nothing in preview	Không có gì trong xem trước
+	page {page} of {pages}	trang {page}/{pages}
+	held	đang giữ
+	ended	đã kết thúc
+	Off air	Không lên sóng
+	Stop Live Page	Dừng trang trực tiếp
+	Connected to OBS {version}; source “{source}”	Đã kết nối OBS {version}; nguồn “{source}”
+	Point OBS Again	Trỏ lại OBS
+	Select a graphic clip on the timeline first.	Hãy chọn một clip đồ họa trên dòng thời gian trước.
+	Connecting to OBS…	Đang kết nối với OBS…
+	Live Graphics…	Đồ họa trực tiếp…
+	PREVIEW	XEM TRƯỚC
+	PROGRAM	CHƯƠNG TRÌNH
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	thẻ hình hoặc video đứng riêng trong ô nội dung (hoặc kèm một tên, làm chân dung); các thẻ khác đã bị xóa
+	the page gap is not a duration; the page style's is used	khoảng cách trang không phải thời lượng; dùng giá trị của kiểu trang
+	the page runtime is not a positive duration; the page style's is used	thời lượng trang không dương; dùng giá trị của kiểu trang
+	background “{file}” was not found; it is left out	không tìm thấy nền “{file}”; nền bị bỏ qua
+	card page {page} is taller than the frame; use a roll page	trang thẻ {page} cao hơn khung hình; hãy dùng trang cuộn
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	màu “{colour}” của kiểu chữ “{style}” không ở dạng #rrggbb; bị bỏ qua
+	colour “{colour}” is not #rrggbb; black is used	màu “{colour}” không ở dạng #rrggbb; dùng màu đen
+	colour “{colour}” is not #rrggbb; white is used	màu “{colour}” không ở dạng #rrggbb; dùng màu trắng
+	content style “{style}” does not exist; “{used}” is used	kiểu nội dung “{style}” không tồn tại; dùng “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	kiểu chữ “{style}” không tồn tại; văn bản giữ kiểu của khối
+	page gap “{value}” is not a duration	khoảng cách trang “{value}” không phải thời lượng
+	page runtime “{value}” is not a duration	thời lượng trang “{value}” không phải thời lượng
+	page style “{style}” does not exist; a roll page is used	kiểu trang “{style}” không tồn tại; dùng trang cuộn
+	page {page}: the background names no file; it is left out	trang {page}: nền không chỉ định tệp; bị bỏ qua
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (trang không có khoảng cách giữa các khối để kéo giãn)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (danh đề quá dài ngay cả khi không có khoảng cách)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	trang {page}: đạt thời lượng bằng cách đổi tốc độ cuộn (khoảng cách sẽ phải tăng hơn 20 lần)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	trang {page}: chuyển cảnh cần các trang liền nhau (khoảng cách 0); bị bỏ qua
+	page {page}: there is no transition “{name}”; the pages cut	trang {page}: không có chuyển cảnh “{name}”; các trang cắt thẳng
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	vị trí trục “{value}” không được hỗ trợ (hỗ trợ độ lệch theo điểm ảnh, tùy chọn kèm “parallel”)
+	vertical gap “{value}” is not a number	khoảng cách dọc “{value}” không phải là số
+	picture “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được hình “{file}”; bị bỏ qua
+	video “{file}” was not found or cannot be read; it is left out	không tìm thấy hoặc không đọc được video “{file}”; bị bỏ qua
+	there is no roll page without its own runtime to stretch; the length cannot change	không có trang cuộn nào không có thời lượng riêng để kéo giãn; không thể đổi thời lượng
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	riêng thẻ và khoảng cách đã là {seconds} giây; thời lượng yêu cầu ngắn hơn nên các trang cuộn giữ thời lượng tự nhiên
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	kiểu chữ “{style}”: chỉ dùng lớp màu đầu tiên (không viền, bóng hay sọc)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	thời lượng toàn bộ danh đề không được chuyển sang; hãy dùng Khớp danh đề với nhạc (hoặc một thời lượng)
+	page style “{style}”: fade curves become linear fades	kiểu trang “{style}”: đường cong mờ dần trở thành tuyến tính
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	kiểu nội dung “{style}” không có phần đầu trong Cinecred; phần đầu viết trong bảng vẫn được hiển thị
+	content style “{style}”: sorting the names is not carried over	kiểu nội dung “{style}”: việc sắp xếp tên không được chuyển sang
+	transition curves are not carried over	đường cong chuyển cảnh không được chuyển sang
+	picture styles (pictures keep their own size) are not carried over	kiểu hình (hình giữ kích thước riêng) không được chuyển sang
+	video (tape) styles are not carried over	kiểu video (băng) không được chuyển sang
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	dự án Cinecred có {n} bảng tính danh đề; dùng “{name}” (chọn bảng khác trong trường Bảng tính)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Thêm phát hiện
+	Add as Finding	Thêm làm phát hiện
+	Are colour and contrast acceptable?	Màu sắc và độ tương phản có chấp nhận được không?
+	Automatic Checks	Kiểm tra tự động
+	Bounds	Giới hạn
+	Check	Kiểm tra
+	Check Now	Kiểm tra ngay
+	Check quality after export	Kiểm tra chất lượng sau khi xuất
+	Checking…	Đang kiểm tra…
+	Contact Sheet	Bảng hình thu nhỏ
+	Critical	Nghiêm trọng
+	Fail	Không đạt
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Phát hiện {row}: mã thời gian không phải là thời điểm trong tệp này (HH:MM:SS:FF).
+	Findings	Phát hiện
+	Human Review	Đánh giá thủ công
+	Incomplete	Chưa hoàn tất
+	Is there a visible picture defect?	Có lỗi hình ảnh nhìn thấy được không?
+	Is there audible distortion?	Có méo tiếng nghe thấy được không?
+	Is there unwanted noise?	Có nhiễu không mong muốn không?
+	Major	Lớn
+	Message	Thông báo
+	Minor	Nhỏ
+	No contact sheet	Không có bảng hình thu nhỏ
+	Not answered	Chưa trả lời
+	Not checked	Chưa kiểm tra
+	Not run	Chưa chạy
+	Note	Ghi chú
+	Pass	Đạt
+	Passed	Đạt
+	Passed with warnings	Đạt kèm cảnh báo
+	Profile: {id} v{version}	Hồ sơ: {id} v{version}
+	Quality Check	Kiểm tra chất lượng
+	Quality Check…	Kiểm tra chất lượng…
+	Remove Finding	Xóa phát hiện
+	Report: {path}	Báo cáo: {path}
+	Review complete	Đã đánh giá xong
+	Reviewer	Người đánh giá
+	Run the media quality check on the finished file (docs/media-qc.md)	Chạy kiểm tra chất lượng media trên tệp đã hoàn tất (docs/media-qc.md)
+	Save Review	Lưu đánh giá
+	Select a finished export in the queue	Chọn một bản xuất đã hoàn tất trong hàng đợi
+	Severity	Mức độ
+	The engine is not running.	Engine không chạy.
+	Time code	Mã thời gian
+	Unsure	Không chắc
+	accept	chấp nhận
+	the engine did not start the check	engine không bắt đầu kiểm tra
+	the engine sent no report	engine không gửi báo cáo

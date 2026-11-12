@@ -80,6 +80,15 @@ expanded to 16 bits and has a second channel pair when the second half's source 
 audio. Samples marked damaged (`0x8000`) repeat the sample before them (`Audio::errors`).
 Pre-emphasis is reported (`AudioFormat::emphasis`) but not undone; 20-bit audio is not supported.
 
+## Time code
+
+`timecode(frame)` returns the frame's SMPTE time code (`Timecode`: hours, minutes, seconds,
+frames, drop-frame flag) from the first valid time code pack (`0x13`) in the subcode sync blocks;
+packs holding `0xFF` or non-BCD digits are skipped. The pack layout (BCD fields, flag bits masked
+off) follows the published SMPTE 12M field order; nothing is taken from libdv or FFmpeg.
+`cfa4-codecs` uses the first frame's time code as the start timecode of raw `.dv` files and of
+type-1 and type-2 DV AVI files.
+
 ## Tests
 
 - Unit tests: VLC table completeness, scan/area tables, IDCT round trips against the forward
