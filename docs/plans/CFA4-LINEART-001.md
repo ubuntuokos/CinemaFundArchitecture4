@@ -1,11 +1,12 @@
 # CFA4-LINEART-001 – Animált vonalrajz-réteg Rustban (a stáblista-terv C12-je)
 
-**Verzió:** 0.1 (tervezet, egyeztetés alatt)
+**Verzió:** 1.0 (jóváhagyva)
 **Dátum:** 2026-11-12
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos 2026-11-11-én döntött: a vonalrajzos animáció két lépcsőben kerül a
 CFA4-be. Az első lépcső (C11: ismétlődő videóháttér, külső eszközzel; #1015) ebben a kiadásban,
-ez a második lépcső **a jövő évi kiadásban**. A döntéseket (VII.) lépésenként egyeztetjük.
+ez a második lépcső **a jövő évi kiadásban**. A D1–D7 döntéseket a tulajdonos 2026-11-12-én
+lépésenként egyeztette, és a tervet jóváhagyta; a munkát külön munkamenet végzi (D7).
 **Kapcsolódik:** `docs/credits-plan.md` C11–C12 (#1015), [`AGENTS.md`](../../AGENTS.md) §1–2 és a
 CFA4-szakasz, [`docs/licensing.md`](../licensing.md) §3 és §5,
 [`CFA4-SECURITY-001`](CFA4-SECURITY-001.md) (#981), [`CFA4-LIVE-STUDIO-001`](CFA4-LIVE-STUDIO-001.md)
@@ -45,7 +46,7 @@ TypeScript + SVG, egy Claude-skill és egy kis könyvtár:
   (`crates/lineart/LICENSE-line-art-animation`), a fájlfejlécek megnevezik a forrást, és a
   §5-ös nyilvántartásba új sor kerül (forrás, commit, fájlok).
 
-## IV. Felépítés (javaslat)
+## IV. Felépítés
 
 1. **`cfa4-lineart` crate** (L2, csak a `cfa4-geom`-tól függ): tiszta számítás, idő → rajz.
    - `motion`: rugó, inga, szél, simítás; **determinisztikus**: rögzített 1/240 s lépésben
@@ -69,7 +70,7 @@ TypeScript + SVG, egy Claude-skill és egy kis könyvtár:
 4. **Stáblista:** az oldalstílus hátterének új fajtája (`"kind": "lineart"`, a jelenet és a
    paraméterei), és egy cellában figura (`{{LineArt walker …}}`), ami a nevekkel együtt halad.
 
-## V. Fázisok (javaslat)
+## V. Fázisok
 
 | Fázis | Tartalom | Kész, ha |
 |---|---|---|
@@ -82,15 +83,21 @@ TypeScript + SVG, egy Claude-skill és egy kis könyvtár:
 | **L6** – Teljesítmény | valós idejű lejátszás és élő adás a referenciagépen | 4K 60 fps egy jelenettel, mérve |
 | **L7** – Dokumentáció | `docs/credits.md`, grafikai dokumentáció, nyilvántartás, szerzői megjegyzés | — |
 
-## VI. Ütemezés (javaslat)
+## VI. Ütemezés (D7)
 
-A jövő évi kiadás, a tulajdonos döntése szerint (2026-11-11). Javaslat: L0–L2 az év elején
-(nem érinti a felületet), L3–L4 utána a tulajdonos jóváhagyásaival figuránként, L5–L7 a végén.
+A jövő évi kiadás (a tulajdonos döntése, 2026-11-11):
+
+- **Az év elején:** L0–L2 (referenciaadat, Rust-mag, a renderelő két új képessége); nem érinti a
+  felületet.
+- **Utána:** L3–L4 (figurák és jelenetek), figuránként a tulajdonos jóváhagyásával.
+- **A végén:** L5–L7 (felület, teljesítmény, dokumentáció).
+- **Később, egy következő kiadásban:** a jelenetszerkesztő (D2).
+
 A munkát külön munkamenet végzi, ebből a jóváhagyott tervből.
 
-## VII. Döntések (lépésenként egyeztetve)
+## VII. Döntések (2026-11-12-én lépésenként egyeztetve, mind eldöntve)
 
-| # | Kérdés | Javaslat |
+| # | Kérdés | Döntés |
 |---|---|---|
 | D1 | Mit veszünk át | **Eldöntve (2026-11-12): csak a `lib/` matematikáját és rajzelemeit** (`gait`, `motion`, `daynight`, `ink`) írjuk át Rustra; a figurák és a jelenetek saját tervezésűek, a mintapéldákból (`examples/`) semmi nem kerül át |
 | D2 | Hogyan állítja a felhasználó | **Eldöntve (2026-11-12): kész figurák és jelenetek paraméterekkel**, programozás nélkül (méret, irány, sebesség, ruhaszínek, napszak, mag) a jövő évi kiadásban; **egy későbbi kiadásban jelenetszerkesztő** a Qt6-ban, ahol a figurák és az épületek egérrel elhelyezhetők |
@@ -98,7 +105,7 @@ A munkát külön munkamenet végzi, ebből a jóváhagyott tervből.
 | D4 | Időkezelés | **Eldöntve (2026-11-12): determinisztikus.** A rugók, ingák és a szél rögzített 1/240 s lépésben integrálnak a klip elejétől, mentett köztes állapotokkal (ellenőrzőpontokkal); bármely időpont ugyanazt adja előre- és hátrajátszásnál, ugrásnál, exportnál és élő adásban. Ugráskor a legközelebbi ellenőrzőponttól számol tovább (néhány ms) |
 | D5 | Hol használható | **Eldöntve (2026-11-12): mindenhol, ahol grafika van:** a stáblistában háttérként és cellában (a nevekkel haladó figura), a címekben és az alsó harmadokban (Grafika panel), és az élő grafikában (C10) változtatás nélkül, mert a réteg közös |
 | D6 | Mozdulatok a figurákon | **Eldöntve (2026-11-12): kulcskockázható mozdulatok az idővonalon** (köszön, kalapot emel, megáll, leül, továbbmegy), adott időpontra téve; a figura a járásból simán áll meg és indul tovább (a járásmegoldó `go` keverése). A stáblistában is időzíthető (pl. a figura az utolsó oldalnál megáll és köszön). Kattintásra reagálás nincs |
-| D7 | Ütemezés | a jövő évi kiadás, külön munkamenettel (VI.) |
+| D7 | Ütemezés és végrehajtás | **Eldöntve (2026-11-12):** a jövő évi kiadás; L0–L2 az év elején, L3–L4 utána (figuránként a tulajdonos jóváhagyásával), L5–L7 a végén. A munkát **külön munkamenet** végzi, ebből a jóváhagyott tervből (CLAUDE.md: saját projekt) |
 
 ## VIII. Kockázatok
 
