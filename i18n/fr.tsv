@@ -4507,4 +4507,4 @@
 	accept	acceptable
 	the engine did not start the check	le moteur n’a pas lancé le contrôle
 	the engine sent no report	le moteur n’a envoyé aucun rapport
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Écrire les sous-titres en données ANC (CEA-608/708, 29,97 i/s)
+	Write the captions as ANC data (CEA-608/708)	Écrire les sous-titres en données ANC (CEA-608/708)

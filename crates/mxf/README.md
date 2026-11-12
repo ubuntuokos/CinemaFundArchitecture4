@@ -70,7 +70,7 @@ the picture and sound, from `MxfWriter::push_anc` (an empty element when none wa
 its own index slice. `anc_element(packets)` builds an element value with the 8-bit luma coding
 (04h). `cfa4-export` uses it for `ExportSettings::mxf_anc_captions`: the first caption track as
 one CDP per frame (`cfa4_captions::mcc::CdpStream`, CEA-608 field 1 and CEA-708 service 1) on
-VANC line 9, at 29.97 fps (other rates: #1065).
+VANC line 9, at every ST 334-2 rate (23.976, 24, 25, 29.97, 30, 50, 59.94, 60 fps).
 
 ## Peeking at the header
 

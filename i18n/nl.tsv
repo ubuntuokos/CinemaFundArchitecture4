@@ -4502,4 +4502,4 @@ export.summary	Low	laag
 	accept	aanvaardbaar
 	the engine did not start the check	de engine heeft de controle niet gestart
 	the engine sent no report	de engine heeft geen rapport gestuurd
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Ondertiteling als ANC-gegevens schrijven (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Ondertiteling als ANC-gegevens schrijven (CEA-608/708)

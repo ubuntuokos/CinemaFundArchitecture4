@@ -4502,4 +4502,4 @@ export.summary	Low	niska
 	accept	dopuszczalne
 	the engine did not start the check	silnik nie rozpoczął kontroli
 	the engine sent no report	silnik nie przesłał raportu
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapisz napisy jako dane ANC (CEA-608/708, 29,97 kl./s)
+	Write the captions as ANC data (CEA-608/708)	Zapisz napisy jako dane ANC (CEA-608/708)

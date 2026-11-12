@@ -4505,4 +4505,4 @@ export.summary	Low	nizka
 	accept	sprejemljivo
 	the engine did not start the check	pogon ni začel preverjanja
 	the engine sent no report	pogon ni poslal poročila
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapiši podnapise kot podatke ANC (CEA-608/708, 29,97 sl./s)
+	Write the captions as ANC data (CEA-608/708)	Zapiši podnapise kot podatke ANC (CEA-608/708)

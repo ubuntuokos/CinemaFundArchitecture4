@@ -154,14 +154,14 @@ impl MxfMux {
         cfg.rdd9 = settings.mxf_video_codec == MxfVideoCodec::XdcamHd422;
         let cdp = match s.captions.as_ref().filter(|_| !atom) {
             Some(doc) => {
-                if s.rate != cfa4_captions::mcc::RATE {
+                let Some(st) = cfa4_captions::mcc::CdpStream::new_at(doc, s.rate) else {
                     return Err(ExportError::Unsupported(format!(
-                        "closed captions in MXF (ANC) are written at 29.97 fps for now (#1065), not {}",
+                        "closed captions in MXF (ANC) need 23.976, 24, 25, 29.97, 30, 50, 59.94 or 60 fps (SMPTE ST 334-2), not {}",
                         s.rate.label()
                     )));
-                }
+                };
                 cfg.anc = true;
-                Some(cfa4_captions::mcc::CdpStream::new(doc))
+                Some(st)
             }
             None => None,
         };

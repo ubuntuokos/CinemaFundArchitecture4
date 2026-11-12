@@ -4503,4 +4503,4 @@ export.summary	Low	düşük
 	accept	kabul
 	the engine did not start the check	motor denetimi başlatmadı
 	the engine sent no report	motor rapor göndermedi
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Altyazıları ANC verisi olarak yaz (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Altyazıları ANC verisi olarak yaz (CEA-608/708)

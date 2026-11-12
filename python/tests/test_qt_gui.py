@@ -2554,7 +2554,7 @@ def test_export_mxf_anc_captions_switch_only_for_op1a(app):
     dlg = ExportDialog(Engine())  # type: ignore[arg-type]
     dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "mxf-op1a", "label": "MXF OP1a"}, {"id": "mxf-opatom", "label": "MXF OP-Atom"}], None)
     box = dlg.findChild(QtWidgets.QCheckBox, "export.video.mxfAncCaptions")
-    assert box is dlg.mxf_anc and box.text() == "Write the captions as ANC data (CEA-608/708, 29.97 fps)"
+    assert box is dlg.mxf_anc and box.text() == "Write the captions as ANC data (CEA-608/708)"
     assert dlg.video_form.labelForField(box).text() == "Closed Captions"
     dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
     dlg._sync_format_rows()

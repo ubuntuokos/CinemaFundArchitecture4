@@ -439,7 +439,8 @@ pub struct ExportSettings {
     pub mxf_video_codec: MxfVideoCodec,
     /// MXF OP1a: write the sequence's first caption track as closed captions in an ANC data
     /// track (SMPTE ST 436-1, ST 334-2 caption distribution packets with CEA-608 field 1 and
-    /// CEA-708 service 1, VANC line 9) at 29.97 fps. Off by default.
+    /// CEA-708 service 1, VANC line 9) at 23.976, 24, 25, 29.97, 30, 50, 59.94 or 60 fps. Off by
+    /// default.
     #[serde(default)]
     pub mxf_anc_captions: bool,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's

@@ -4504,4 +4504,4 @@ export.summary	Low	matala
 	accept	hyväksyttävä
 	the engine did not start the check	moottori ei käynnistänyt tarkistusta
 	the engine sent no report	moottori ei lähettänyt raporttia
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjoita tekstitys ANC-datana (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Kirjoita tekstitys ANC-datana (CEA-608/708)

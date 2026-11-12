@@ -4501,4 +4501,4 @@ export.summary	Low	低
 	accept	可接受
 	the engine did not start the check	引擎未開始檢查
 	the engine sent no report	引擎未傳送報告
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	將字幕寫為 ANC 資料（CEA-608/708，29.97 fps）
+	Write the captions as ANC data (CEA-608/708)	將字幕寫為 ANC 資料（CEA-608/708）

@@ -4504,4 +4504,4 @@ export.summary	Low	låg
 	accept	godtagbart
 	the engine did not start the check	motorn startade inte kontrollen
 	the engine sent no report	motorn skickade ingen rapport
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Skriv undertexterna som ANC-data (CEA-608/708, 29,97 bild/s)
+	Write the captions as ANC data (CEA-608/708)	Skriv undertexterna som ANC-data (CEA-608/708)

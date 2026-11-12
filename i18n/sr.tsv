@@ -4502,4 +4502,4 @@ export.summary	Low	низак
 	accept	прихватљиво
 	the engine did not start the check	машина није покренула проверу
 	the engine sent no report	машина није послала извештај
-	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Упиши титлове као ANC податке (CEA-608/708, 29,97 fps)
+	Write the captions as ANC data (CEA-608/708)	Упиши титлове као ANC податке (CEA-608/708)
