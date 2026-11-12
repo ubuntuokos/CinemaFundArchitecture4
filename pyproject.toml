@@ -30,6 +30,32 @@ include = ["cfa4_devtools*", "cfa4_qt*"]
 [tool.ruff]
 target-version = "py312"
 line-length = 120
+# Az Ubuntu 26.04 alapértelmezett modern Python verziójának megfelelően (pl. 3.12 vagy 3.13)
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle hibák
+    "F",    # pyflakes hibák
+    "UP",   # pyupgrade: automatikusan jelzi és frissíti az elavult Python szintaxist
+    "B",    # flake8-bugbear: gyakori hibák és elavult minták szűrése
+    "TID",  # flake8-tidy-imports: tiltott modulok ellenőrzése
+    "YTT",  # flake8-2020: elavult verzióellenőrzések tiltása
+]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+# Elavult Qt és régi GUI keretrendszerek importjának szigorú tiltása
+"PyQt5".msg = "TILOS: Használj PySide6-ot (Qt 6)!"
+"PyQt6".msg = "TILOS: A projekt szabványa a PySide6 (LGPLv3)!"
+"PySide2".msg = "TILOS: Elavult Qt 5 könyvtár, használj PySide6-ot!"
+"PySide6.QtWidgets.QDesktopWidget".msg = "Elavult Qt5 osztály. Használd a QScreen-t helyette!"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]
