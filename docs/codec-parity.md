@@ -65,6 +65,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Speex | not checked | own decoder (`cfa4-speex`, CB-6.1): narrowband, wideband and ultra-wideband, every submode, VBR / ABR / DTX, several frames per packet, in-band stereo, in Ogg (`.spx`) | none | bit-exact vs the reference `speexdec` (31 files: every narrowband quality, wideband and ultra-wideband qualities, VBR, DTX, stereo), through the media source also after a seek | — | — |
 | G.711 μ-law / A-law, G.722 | not checked | own decoders (`cfa4-adpcm`, CB-4.1): G.711 in WAV, AVI, MOV (`ulaw`, `alaw`), Matroska (`A_MS/ACM`); G.722 at 64 kbit/s (ITU-T G.722 11/88) in WAV, AVI, Matroska | none | bit-exact vs ffmpeg in every container, also after a seek; G.722 also on random codewords | 90% | — |
 | IMA ADPCM, Microsoft ADPCM | not checked | own decoders (`cfa4-adpcm`, CB-4.2): IMA in WAV / AVI / Matroska blocks and QuickTime `ima4`, Microsoft ADPCM with custom coefficient sets; WAV read in place block by block | none | bit-exact vs ffmpeg in every container, also after a seek, and on random blocks | 90% | — |
+| TTA (True Audio) | not checked | own decoder ([`cfa4-tta`](../crates/tta/README.md), backlog CB-9.1, ported from libtta): 8 / 16 / 24 bits, 1–8 channels, password-protected streams; `.tta` and Matroska (`A_TTA1`) | none | bit-exact vs ffmpeg on 10 encoder fixtures; `.tta` and Matroska files sample for sample, also read from the middle | parity | — |
 | AMR-NB, AMR-WB | not checked | own decoders (`cfa4-amr`, CB-6.2), ported from opencore-amr: every mode, DTX comfort noise, lost frames; `.amr` / `.awb`, 3GP / MP4 / MOV (`samr`, `sawb`), Matroska | none | bit-exact vs opencore-amr in every container, also after a seek (decoder checkpoints) | 90% | — |
 
 ## Summary
@@ -82,6 +83,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Date | Change | Summary |
 |---|---|---|
 | 2026-11-12 | minor | AV2 early decoder behind a feature flag: out-of-process dav2d helper and Rust adapter, bit-exact with the AVM oracle on the `Main_420_10_IP0` corpus (AV2 plan X/6) |
+| 2026-11-12 | minor | TTA decode (`cfa4-tta`, codec backlog CB-9.1) |
 | 2026-11-11 | minor | AV2 identified (Annex B, IVF, MP4 `av02`) and reported as unsupported (AV2 plan X/4) |
 | 2026-11-11 | minor | Matrox MPEG-2 I-frame in AVI (`MMES`, `M701`–`M705`; codec backlog CB-7.1) |
 | 2026-11-11 | minor | Speex decode (`cfa4-speex`, codec backlog CB-6.1) |
