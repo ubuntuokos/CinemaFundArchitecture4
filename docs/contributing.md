@@ -9,7 +9,7 @@ of the crate you will change.
 | | All platforms |
 |---|---|
 | Rust | 1.97.1, pinned by `rust-toolchain.toml` (minimum 1.97; edition 2024), via [rustup](https://rustup.rs) |
-| wasm target | `rustup target add wasm32-unknown-unknown` (for `cargo xtask wasm`) |
+| wasm target (optional) | `rustup target add wasm32-unknown-unknown`, only for the opt-in legacy `cargo xtask wasm` |
 | Components | `rustup component add rustfmt clippy` |
 | ffmpeg + ffprobe (optional) | test oracle and fixture generator only; tests skip without it |
 
@@ -63,8 +63,7 @@ By default CFA4's own crates log at `info` and everything else at `warn`. `RUST_
 that with env_logger-style directives, for example `RUST_LOG=debug`,
 `RUST_LOG=warn,cfa4_codecs=trace` or `RUST_LOG=info,wgpu_core=warn`; a directive ending in `*`
 covers every target starting with it (`cfa4*=debug`). The logger is
-`apps/cfa4/src/logging.rs`; the realtime audio callbacks do not log. The web app logs to the
-browser console instead.
+`apps/cfa4/src/logging.rs`; the realtime audio callbacks do not log.
 
 ### Building with extra-fonts
 
@@ -79,8 +78,7 @@ CFA4_FONTS_DIR="$PWD/../extra-fonts" cargo run --release -p cfa4
 
 Use an absolute path: `build.rs` runs in `crates/text`, so a relative `CFA4_FONTS_DIR` would
 resolve from there. `crates/text/build.rs` reads `fonts/manifest.txt` in that directory and embeds the fonts as
-`cfa4_text::fonts::CFA4_FONTS` (native: all of them; the web build: only BIZ UDPGothic
-Regular, to keep the wasm small). The Japanese ones become the last fallback of every UI font family
+`cfa4_text::fonts::CFA4_FONTS`. The Japanese ones become the last fallback of every UI font family
 (`crates/ui-egui/src/theme.rs`, BIZ UDPGothic first) and fallback faces in the text engine (Gothic
 for sans text, Mincho for serif text). Without `CFA4_FONTS_DIR`, `CFA4_FONTS` is empty and
 CFA4 uses its bundled and system fonts. A `CFA4_FONTS_DIR` that is not a checkout is a build
@@ -92,7 +90,6 @@ fallbacks in every UI font family, regardless of interface language (Japanese an
 points, so Japanese text keeps Japanese glyph forms; the Chinese faces cover hanzi the Japanese ones lack). Without those build inputs,
 native builds look up an installed Chinese face (for example Microsoft YaHei or Noto Sans CJK SC)
 once and reuse it across theme changes. No system font files are bundled or copied into the app.
-Web builds depend on the font faces selected by `crates/text/build.rs`; they cannot scan system fonts.
 `theme::tests::chinese_names_render_in_every_theme_and_font_family` verifies Chinese glyphs in the
 timeline's proportional, monospace, medium and semibold families under all three themes.
 
