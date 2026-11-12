@@ -120,9 +120,12 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   rectangle given from the sampled and display offsets. G.2.25 draws every layout as big-endian
   bit-fields; v210 and planar 10-bit are read as files store them: little-endian 32-bit words,
   first component in the low bits (FFmpeg decodes our v210 files identically). A clip-wrapped
-  element without an index is split by the edit unit size. Not supported: line wrapping (the
-  track is listed as unknown with a warning), X'Y'Z' and palette pixel layouts, float
-  components.
+  element without an index is split by the edit unit size. Line wrapping (ST 384 6.3): the
+  picture elements (one per stored line) are gathered into pictures, each starting at a "start of
+  stored data" system element (14h 01h 01h), or counted by the stored size when a file has no
+  system elements; a picture whose lines do not add up is left out with a warning, and the
+  fill / VANC / HANC data elements are skipped (#1060). Not supported: X'Y'Z' and palette pixel layouts,
+  float components.
   `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
@@ -270,6 +273,9 @@ w.finish()?;
 - `src/uncompressed/tests.rs`: every labelled layout packed and unpacked at three sizes, the bit
   order of each table entry by hand, descriptor fallbacks (CDCI, RGBA with fill and video-range
   codes), field weaving with start / end fill, display rectangles, hostile sizes. `cargo xtask fixtures codecs` pre-generates them.
+- `src/write/tests.rs` `line_wrapped_uncompressed_pictures_are_gathered_line_by_line`: our
+  frame-wrapped UYVY file rewritten line by line (system, fill data and picture elements), a
+  missing line, and a file without system elements.
 - `src/write/tests.rs`: writer output read back by `open`: OP1a with two sound tracks pushed in
   uneven chunks (durations, codec label, aspect, PCM exact, index slices, closed partitions),
   29.97 sound per edit unit (1601/1602), a long-GOP AVC index (presentation order, key and B
