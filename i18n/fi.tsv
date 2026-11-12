@@ -4325,6 +4325,7 @@ export.summary	Low	matala
 	Crawl	Vaakavieritys
 	Picture: {file}	Kuva: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Toistuva video: {file}
 	Into the next	Seuraavaan
 	Safe areas and spines	Turva-alueet ja akselit
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Toiminnan turva-alue (93 %), tekstin turva-alue (90 %), keskikohta ja sivun akselit

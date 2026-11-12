@@ -52,6 +52,7 @@ CREDITS_FILE_FILTER = N_("CFA4 credits file (*.cfa4credits)")
 STYLING_FILTER = N_("Credits styling (*.json)")
 BEHAVIOURS = {"scroll": N_("Roll"), "card": N_("Card"), "crawl": N_("Crawl")}
 BACKGROUNDS = {"color": N_("Color"), "gradient": N_("Gradient"), "image": N_("Picture: {file}"), "video": N_("Video: {file}")}
+LOOPED_VIDEO = N_("Looped video: {file}")
 TRANSITIONS = {"cross_dissolve": N_("Dissolve"), "push": N_("Push"), "slide": N_("Slide"), "wipe": N_("Wipe"), "dip_to_black": N_("Dip to Black")}
 PREVIEW_WIDTH = 480
 # The engine's checks (crates/credits/src/validate.rs), worded from their code and values.
@@ -110,7 +111,8 @@ def background_text(bg: Any) -> str:
     if not isinstance(bg, dict) or bg.get("kind") not in BACKGROUNDS:
         return ""
     name = Path(str(bg.get("file") or "")).name
-    text = tr(BACKGROUNDS[bg["kind"]]).replace("{file}", name)
+    template = LOOPED_VIDEO if bg["kind"] == "video" and bg.get("loop") is True else BACKGROUNDS[bg["kind"]]
+    text = tr(template).replace("{file}", name)
     opacity = bg.get("opacity")
     if isinstance(opacity, (int, float)) and 0 <= opacity < 100:
         text += f" ({local_number(f'{float(opacity):g}')} %)"

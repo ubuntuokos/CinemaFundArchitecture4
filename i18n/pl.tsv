@@ -4323,6 +4323,7 @@ export.summary	Low	niska
 	Crawl	Pasek przewijany
 	Picture: {file}	Obraz: {file}
 	Video: {file}	Wideo: {file}
+	Looped video: {file}	Wideo w pętli: {file}
 	Into the next	Do następnej
 	Safe areas and spines	Obszary bezpieczne i osie
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Obszar bezpieczny akcji (93 %), napisów (90 %), środek i osie strony

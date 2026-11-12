@@ -56,6 +56,9 @@ never claims full integrity, because it does not contain the hash rule.
 The rule catalogue is in [`src/rules.rs`](src/rules.rs). Rule ids are stable (`DCP.AM.001` …
 `DCP.SIG.002`). If a rule's meaning changes, it gets a new id.
 
+`DCP.REF.001` is in no profile. A reference-engine backend (`cfa4-dcp-inspect`, DCP-04) keeps
+there every engine message that no catalogue rule covers, and a `FAIL` there fails the package.
+
 The eight profiles of plan §5 are built in, all at version 1:
 
 - `quick-scan`

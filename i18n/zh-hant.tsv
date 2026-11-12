@@ -4322,6 +4322,7 @@ export.summary	Low	低
 	Crawl	跑馬燈
 	Picture: {file}	圖片：{file}
 	Video: {file}	影片：{file}
+	Looped video: {file}	循環影片：{file}
 	Into the next	轉入下一頁
 	Safe areas and spines	安全區與軸線
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	動作安全區（93 %）、字幕安全區（90 %）、中心與頁面軸線

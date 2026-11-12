@@ -4325,6 +4325,7 @@ export.summary	Low	χαμηλή
 	Crawl	Κυλιόμενο κείμενο
 	Picture: {file}	Εικόνα: {file}
 	Video: {file}	Βίντεο: {file}
+	Looped video: {file}	Βίντεο σε επανάληψη: {file}
 	Into the next	Προς την επόμενη
 	Safe areas and spines	Ασφαλείς περιοχές και άξονες
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Ασφαλής περιοχή δράσης (93 %), τίτλων (90 %), το κέντρο και οι άξονες της σελίδας

@@ -4323,6 +4323,7 @@ export.summary	Low	laag
 	Crawl	Lichtkrant
 	Picture: {file}	Afbeelding: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Herhaalde video: {file}
 	Into the next	Naar de volgende
 	Safe areas and spines	Veilige gebieden en assen
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Actieveilig (93 %), titelveilig (90 %), het midden en de assen van de pagina
