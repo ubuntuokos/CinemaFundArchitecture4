@@ -722,6 +722,11 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
             check(ui, reg, "export.video.alpha", &mut s.alpha, tl!("Include Alpha Channel"));
         });
     }
+    if s.format == Format::Hls {
+        row(ui, t, tl!("DASH Manifest"), |ui| {
+            check(ui, reg, "export.video.dashManifest", &mut s.dash_manifest, tl!("Also write a DASH manifest (.mpd)"));
+        });
+    }
     match s.video_format() {
         f @ (Format::H264 | Format::Hevc | Format::Av1) => {
             // H.265 and AV1: one profile, level chosen by the encoder

@@ -203,7 +203,7 @@ impl ExrCompression {
 
 /// Audio codec. `Auto` = AAC in MP4 and AAC Audio, PCM in QuickTime / WAV / AIFF, FLAC in FLAC,
 /// Opus in Opus Audio and WebM. MP4 and QuickTime can also carry FLAC; MXF is always PCM; Opus is
-/// only written as Opus Audio (Ogg) and in WebM.
+/// only written as Opus Audio (Ogg) and in WebM; AC-3 only in MPEG-2 program and transport streams.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AudioCodec {
@@ -215,6 +215,9 @@ pub enum AudioCodec {
     Flac,
     /// Opus (CELT, 48 kHz) at `bitrate_kbps`.
     Opus,
+    /// Dolby Digital (AC-3) at `bitrate_kbps` (a rate of ATSC A/52 Table 5.18, 32-640), 32, 44.1
+    /// or 48 kHz.
+    Ac3,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -587,7 +590,7 @@ impl ExportSettings {
     /// AIFF and QuickTime takes all four, MXF integers only; FLAC integers only; AAC none.
     pub fn supports_sample_format(&self, f: SampleFormat) -> bool {
         match self.audio_codec() {
-            AudioCodec::Aac | AudioCodec::Opus => false,
+            AudioCodec::Aac | AudioCodec::Opus | AudioCodec::Ac3 => false,
             AudioCodec::Flac => !f.is_float(),
             // DVD LPCM in MPEG-2 program streams: 16 or 24 bits
             AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => matches!(f, SampleFormat::Int16 | SampleFormat::Int24),
@@ -600,12 +603,18 @@ impl ExportSettings {
     /// The audio codec actually used.
     pub fn audio_codec(&self) -> AudioCodec {
         // Opus is written only in Opus Audio and WebM; elsewhere it means the format's default
-        let asked = if self.audio.codec == AudioCodec::Opus { AudioCodec::Auto } else { self.audio.codec };
+        // and AC-3 only in MPEG-2
+        let asked = match self.audio.codec {
+            AudioCodec::Opus => AudioCodec::Auto,
+            AudioCodec::Ac3 if self.format != Format::Mpeg2 => AudioCodec::Auto,
+            c => c,
+        };
         match (self.format, asked) {
             (Format::Flac, _) => AudioCodec::Flac,
             (Format::Opus | Format::WebM, _) => AudioCodec::Opus,
             (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
             (Format::Aac | Format::Hls, _) => AudioCodec::Aac,
+            (Format::Mpeg2, AudioCodec::Ac3) if crate::Mpeg2Container::of(self).has_audio() => AudioCodec::Ac3,
             (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
             (Format::Mpeg2, _) => AudioCodec::Pcm,
             (Format::Dcp, _) => AudioCodec::Pcm,
@@ -713,7 +722,7 @@ impl ExportSettings {
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             let pcm = r.sample_rate as f64 * r.channels as f64 * f64::from(self.audio.sample_format().bits());
             match self.audio_codec() {
-                AudioCodec::Aac => self.audio.bitrate_kbps as f64 * 1000.0,
+                AudioCodec::Aac | AudioCodec::Ac3 => self.audio.bitrate_kbps as f64 * 1000.0,
                 AudioCodec::Opus => f64::from(opus_bitrate_kbps(self.audio.bitrate_kbps)) * 1000.0,
                 // typical of music and dialogue; noise compresses less, silence far more
                 AudioCodec::Flac => pcm * 0.6,
@@ -854,6 +863,7 @@ impl ExportSettings {
             };
             match self.audio_codec() {
                 AudioCodec::Aac => format!("AAC, {} kbps, {} Hz, {ch}", self.audio.bitrate_kbps, r.sample_rate),
+                AudioCodec::Ac3 => format!("Dolby Digital (AC-3), {} kbps, {} Hz, {ch}", self.audio.bitrate_kbps, r.sample_rate),
                 AudioCodec::Opus => format!("Opus, {} kbps, {} Hz, {ch}", opus_bitrate_kbps(self.audio.bitrate_kbps), r.sample_rate),
                 AudioCodec::Flac => {
                     format!("FLAC (lossless) {}-bit, level {}, {} Hz, {ch}", self.audio.sample_format().bits(), self.audio.flac_level.min(8), r.sample_rate)

@@ -165,7 +165,7 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 | `python/cfa4_qt/theme.py`, `branding.py`, `desktop_entry.py` | egui's design tokens, CFA4 logo, user desktop entry |
 | `python/cfa4_qt/status_bar.py`, `hot_number.py`, `calc.py`, `timecode.py`, `dialogs.py` | shared widgets and helpers |
 | `python/cfa4_qt/credits.py`, `export_summary.py` | About credits, export summary lines |
-| `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Preferences, …) |
+| `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Credits ([credits.md](credits.md)), Preferences, …) |
 | `python/cfa4_qt/i18n.py`, top-level `i18n/*.tsv` | translations: one catalog per language shared with egui (full Hungarian; the Qt-only strings in a "Qt GUI" section of the other ten) |
 | `python/tests/test_qt_gui.py` | framing, registry, i18n, window against a fake and the real engine |
 | `python/tests/test_qt_translations.py` | every finished language covers the Qt strings, placeholders kept |

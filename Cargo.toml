@@ -78,6 +78,7 @@ cfa4-interchange = { path = "crates/interchange" }
 cfa4-text = { path = "crates/text" }
 cfa4-captions = { path = "crates/captions" }
 cfa4-credits = { path = "crates/credits" }
+cfa4-live = { path = "crates/live" }
 cfa4-speech = { path = "crates/speech" }
 cfa4-tts = { path = "crates/tts" }
 cfa4-tts-text = { path = "crates/tts-text" }

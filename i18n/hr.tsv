@@ -3939,6 +3939,8 @@
 	Analyze Source for Smart Cut	Analiziraj izvor za pametni rez
 	Plan Smart Cut	Planiraj pametni rez
 	Run Smart Cut	Izvrši pametni rez
+	DASH Manifest	DASH manifest
+	Also write a DASH manifest (.mpd)	Zapiši i DASH manifest (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Nijedna sekvenca nije otvorena. Dvaput kliknite sekvencu na ploči Projekt.
 	English (US)	Engleski (SAD)
 	English (UK)	Engleski (UK)
@@ -4217,3 +4219,230 @@ export.summary	Low	niska
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Odjavna špica iz tablice
+	A .ods, .xlsx or CSV credits sheet	Tablica odjavne špice u formatu .ods, .xlsx ili CSV
+	The spreadsheet's folder	Mapa tablice
+	Built-in styles	Ugrađeni stilovi
+	Spreadsheet	Tablica
+	Sheet	List
+	Pictures	Slike
+	Styling	Stil
+	Page	Stranica
+	Warnings	Upozorenja
+	Moment in the page	Trenutak na stranici
+	Place at Playhead	Postavi na glavu za reprodukciju
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tablice (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Stil odjavne špice (*.json)
+	Card	Kartica
+	Credits Spreadsheet	Tablica odjavne špice
+	Reading…	Čitanje…
+	(one table)	(jedna tablica)
+	Total: {time}	Ukupno: {time}
+	Row {row}: {message}	Redak {row}: {message}
+	Choose a credits spreadsheet.	Odaberite tablicu odjavne špice.
+	No preview	Nema pregleda
+	Placing…	Postavljanje…
+	Placed {n} pages on the timeline.	Na vremensku crtu postavljeno stranica: {n}.
+	Credits Page Picture	Slika stranice odjavne špice
+	Preview Credits	Pregled odjavne špice
+	Credits Styles	Stilovi odjavne špice
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tablice i datoteke odjavne špice (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 datoteka odjavne špice (*.cfa4credits)
+	Save as Credits File…	Spremi kao datoteku odjavne špice…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tablica, list, stil i reci u jednoj datoteci koja se otvara na bilo kojem računalu
+	Saved: {path}	Spremljeno: {path}
+	Added	Dodano
+	Removed	Uklonjeno
+	Changed	Promijenjeno
+	(empty row)	(prazan redak)
+	Refresh Credits from Spreadsheet	Osvježi odjavnu špicu iz tablice
+	Change	Promjena
+	Before → After	Prije → Poslije
+	Select None	Poništi odabir
+	Keep my edits on the pages (where their block is unchanged)	Zadrži moje izmjene na stranicama (gdje im se blok nije promijenio)
+	Locate Spreadsheet…	Pronađi tablicu…
+	Comparing…	Uspoređivanje…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Promjene u {file} od postavljanja odjavne špice: {n}. Odznačite ono što ne želite.
+	The spreadsheet {file} has not changed since the credits were placed.	Tablica {file} nije se promijenila od postavljanja odjavne špice.
+	{n} layers were edited by hand on the pages.	Ručno uređeni slojevi na stranicama: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Prihvaćanje svih promjena zamijenilo bi ove jer im se blok promijenio: {names}
+	Refreshing…	Osvježavanje…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Osvježeno: primijenjene promjene: {n}, zadržane ručne izmjene: {kept}.
+	Refresh Credits from Spreadsheet…	Osvježi odjavnu špicu iz tablice…
+	Save Credits File…	Spremi datoteku odjavne špice…
+	Compare Credits with Spreadsheet	Usporedi odjavnu špicu s tablicom
+	“{name}” appears twice in the same block	„{name}” se pojavljuje dvaput u istom bloku
+	“{name}” is written as “{other}” in row {otherRow}	„{name}” je u retku {otherRow} napisano kao „{other}”
+	The font “{font}” is not installed; another font is used	Font „{font}” nije instaliran; koristi se drugi font
+	The font “{font}” has no “{chars}”; another font draws them	Font „{font}” nema „{chars}”; iscrtava ih drugi font
+	“{text}” is outside the title-safe area	„{text}” je izvan sigurnog područja za natpise
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” je pretaman na crnoj (kontrast {ratio}:1; potrebno je najmanje 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}” je visok {px} px; od 24 px naviše dobro se čita
+	The roll moves {speed} px per frame; a whole number does not shimmer	Pomicanje je {speed} px po sličici; cijeli broj ne treperi
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Redak prijeđe kadar za {seconds} s; najmanje 6 s dobro se čita
+	The card holds for only {seconds} s after its fades	Kartica ostaje samo {seconds} s nakon pretapanja
+	This page starts {seconds} s before the previous one ends	Ova stranica počinje {seconds} s prije kraja prethodne
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}” se prikazuje na {percent} % svojih piksela; izgledat će mutno
+	{more} more of the same	Još {more} istih
+	Page {page}: {message}	Stranica {page}: {message}
+	Checks and warnings	Provjere i upozorenja
+	Checks: {errors} errors, {warnings} warnings	Provjere: pogreške {errors}, upozorenja {warnings}
+	Check Credits	Provjeri odjavnu špicu
+	The whole music ({time})	Cijela glazba ({time})
+	Until the sound ends ({time})	Do kraja zvuka ({time})
+	To the last bar line ({time})	Do posljednje taktne crte ({time})
+	Fit Credits to Music	Prilagodi odjavnu špicu glazbi
+	Fit Credits to Music…	Prilagodi odjavnu špicu glazbi…
+	Analyse Music for Credits	Analiziraj glazbu za odjavnu špicu
+	Length:	Duljina:
+	Cards last whole beats (cuts on the beat)	Kartice traju cijele dobe (rezovi na dobu)
+	Start the credits where the music starts	Pokreni odjavnu špicu gdje počinje glazba
+	Length of the credits	Duljina odjavne špice
+	Remove Fitting	Ukloni prilagodbu
+	Listening to the music…	Slušanje glazbe…
+	Length: {time}	Duljina: {time}
+	the sound ends at {time}	zvuk završava u {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	odjavna špica bez prilagodbe: {time}
+	Select a credits page on the timeline.	Odaberite stranicu odjavne špice na vremenskoj crti.
+	Fitting…	Prilagođavanje…
+	The credits now last {time}.	Odjavna špica sada traje {time}.
+	Fitting removed.	Prilagodba uklonjena.
+	Fit to This Length	Prilagodi ovoj duljini
+	No music to measure ({problem}); type the length.	Nema glazbe za mjerenje ({problem}); upišite duljinu.
+	The text moves {speed} px per frame; a whole number does not shimmer	Tekst se pomiče {speed} px po sličici; cijeli broj ne treperi
+	Crawl	Pomični tekst
+	Picture: {file}	Slika: {file}
+	Video: {file}	Video: {file}
+	Into the next	U sljedeću
+	Safe areas and spines	Sigurna područja i osi
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Sigurno područje radnje (93 %), natpisa (90 %), središte i osi stranice
+	Baseline grid	Mreža osnovnih linija
+	Lines one gap unit apart, moving with the page	Linije razmaknute za jednu jedinicu razmaka, pomiču se sa stranicom
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” se ne ističe od pozadine (kontrast {ratio}:1; potrebno je najmanje 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Iza teksta je slika ili video: provjerite kontrast okom
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Gotov izgled: stilovi, pozadine, prijelazi i tempiranje. Zadana datoteka stila ima prednost.
+	New Spreadsheet from Template…	Nova tablica iz predloška…
+	built in	ugrađeni
+	mine	moj
+	this project	ovaj projekt
+	Template	Predložak
+	Choose a template first.	Najprije odaberite predložak.
+	Name of the template:	Naziv predloška:
+	Template saved: {name}	Predložak spremljen: {name}
+	Apply Credits Template…	Primijeni predložak odjavne špice…
+	Template:	Predložak:
+	Credits Templates	Predlošci odjavne špice
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tablice, datoteke odjavne špice i Cinecred projekti (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Otvori mapu Cinecred projekta (Styling.toml i njegova tablica odjavne špice)
+	(empty block)	(prazan blok)
+	Apply Template…	Primijeni predložak…
+	Change them in the spreadsheet; the credits follow when you save it.	Promijenite ih u tablici; odjavna špica slijedi kad je spremite.
+	Compact View	Sažeti prikaz
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Usporedi odabranu odjavnu špicu na vremenskoj crti s njezinom tablicom, redak po redak
+	Fit the selected credits to the music under them	Prilagodi odabranu odjavnu špicu glazbi ispod nje
+	Fit to Music…	Prilagodi glazbi…
+	Full View	Puni prikaz
+	Give the selected credits on the timeline another template	Dodijeli odabranoj odjavnoj špici na vremenskoj crti drugi predložak
+	Names	Imena
+	No pages	Nema stranica
+	Refresh Placed Credits…	Osvježi postavljenu odjavnu špicu…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Prikaži sve: blokove, svojstva, stranice kroz vrijeme, provjere i alate odjavne špice
+	Spine	Os
+	Tails	Kraj
+	The blocks of the chosen page; choose one to see it in the preview	Blokovi odabrane stranice; odaberite jedan da ga vidite u pregledu
+	The pages along time; click one to choose it	Stranice kroz vrijeme; kliknite jednu da je odaberete
+	{n} more	Još {n}
+	Block	Blok
+	parallel	paralelno
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Na stranici (OBS ga uzima iz izvora preglednika)
+	Separate (a media source in OBS)	Zasebno (medijski izvor u OBS-u)
+	No sound	Bez zvuka
+	credits	odjavna špica
+	graphic	grafika
+	{n} pages	Stranica: {n}
+	Live Graphics	Grafika uživo
+	Prepared cues; double-click one to put it in preview	Pripremljene stavke; dvaput kliknite jednu da je stavite u pregled
+	Add Credits…	Dodaj odjavnu špicu…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Tablica odjavne špice, datoteka odjavne špice ili Cinecred projekt kao stavka
+	Add Selected Graphic	Dodaj odabranu grafiku
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Grafički isječak odabran na vremenskoj crti (naslov, donja trećina) kao stavka
+	Cues	Stavke
+	TAKE	U ETER
+	The preview cue goes on air from its first page	Stavka iz pregleda ide u eter od svoje prve stranice
+	PREVIOUS	PRETHODNA
+	The page before (on the first page: from its start)	Prethodna stranica (na prvoj stranici: od njezina početka)
+	NEXT	SLJEDEĆA
+	The next page; after the last one, the preview cue	Sljedeća stranica; nakon posljednje stavka iz pregleda
+	HOLD	ZADRŽI
+	Stop the program where it is	Zaustavi program gdje jest
+	CONTINUE	NASTAVI
+	Go on from where it stopped	Nastavi odakle je stalo
+	UPDATE	AŽURIRAJ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Ponovno pročitaj tablicu (ili isječak); u eteru se odmah mijenja
+	OUT	VAN
+	Take everything off air	Skini sve iz etera
+	Start Live Page	Pokreni stranicu uživo
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Poslužuj program na ovom računalu za izvor preglednika u OBS-u (samo 127.0.0.1)
+	not running	ne radi
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Alati ▸ Postavke WebSocket poslužitelja
+	Connect to OBS	Poveži s OBS-om
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Poveži se s OBS-om na ovom računalu i usmjeri njegov izvor preglednika „CFA4 Live” na stranicu uživo
+	Port	Priključak
+	Password	Lozinka
+	Live page	Stranica uživo
+	Sound	Zvuk
+	OBS	OBS
+	Nothing in preview	Ništa u pregledu
+	page {page} of {pages}	stranica {page} od {pages}
+	held	zadržano
+	ended	završeno
+	Off air	Izvan etera
+	Stop Live Page	Zaustavi stranicu uživo
+	Connected to OBS {version}; source “{source}”	Povezano s OBS {version}; izvor „{source}”
+	Point OBS Again	Ponovno usmjeri OBS
+	Select a graphic clip on the timeline first.	Najprije odaberite grafički isječak na vremenskoj crti.
+	Connecting to OBS…	Povezivanje s OBS-om…
+	Live Graphics…	Grafika uživo…
+	PREVIEW	PREGLED
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	oznaka slike ili videa stoji sama u ćeliji tijela (ili s jednim imenom, kao portret); ostale oznake su uklonjene
+	the page gap is not a duration; the page style's is used	razmak stranica nije trajanje; koristi se onaj iz stila stranice
+	the page runtime is not a positive duration; the page style's is used	trajanje stranice nije pozitivno; koristi se ono iz stila stranice
+	background “{file}” was not found; it is left out	pozadina „{file}” nije pronađena; izostavlja se
+	card page {page} is taller than the frame; use a roll page	stranica kartice {page} viša je od kadra; koristite pomičnu stranicu
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	boja „{colour}” stila slova „{style}” nije #rrggbb; izostavlja se
+	colour “{colour}” is not #rrggbb; black is used	boja „{colour}” nije #rrggbb; koristi se crna
+	colour “{colour}” is not #rrggbb; white is used	boja „{colour}” nije #rrggbb; koristi se bijela
+	content style “{style}” does not exist; “{used}” is used	stil sadržaja „{style}” ne postoji; koristi se „{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	stil slova „{style}” ne postoji; tekst zadržava stil bloka
+	page gap “{value}” is not a duration	razmak stranica „{value}” nije trajanje
+	page runtime “{value}” is not a duration	trajanje stranice „{value}” nije trajanje
+	page style “{style}” does not exist; a roll page is used	stil stranice „{style}” ne postoji; koristi se pomična stranica
+	page {page}: the background names no file; it is left out	stranica {page}: pozadina ne navodi datoteku; izostavlja se
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	stranica {page}: trajanje se postiže promjenom brzine pomicanja (stranica nema razmaka između blokova za rastezanje)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	stranica {page}: trajanje se postiže promjenom brzine pomicanja (odjavna špica je predugačka i bez razmaka)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stranica {page}: trajanje se postiže promjenom brzine pomicanja (razmaci bi morali narasti više od 20 puta)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stranica {page}: prijelaz zahtijeva da se stranice dodiruju (razmak 0); izostavlja se
+	page {page}: there is no transition “{name}”; the pages cut	stranica {page}: nema prijelaza „{name}”; stranice se mijenjaju rezom
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	položaj osi „{value}” nije podržan (podržan je pomak u pikselima, po želji uz „parallel”)
+	vertical gap “{value}” is not a number	okomiti razmak „{value}” nije broj
+	picture “{file}” was not found or cannot be read; it is left out	slika „{file}” nije pronađena ili se ne može pročitati; izostavlja se
+	video “{file}” was not found or cannot be read; it is left out	video „{file}” nije pronađen ili se ne može pročitati; izostavlja se
+	there is no roll page without its own runtime to stretch; the length cannot change	nema pomične stranice bez vlastitog trajanja koja bi se rastegnula; duljina se ne može promijeniti
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	same kartice i razmaci traju {seconds} s; tražena duljina je kraća, pa pomične stranice zadržavaju prirodnu duljinu
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	stil slova „{style}”: koristi se samo prvi obojeni sloj (bez obruba, sjena i pruga)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	trajanje cijele odjavne špice ne prenosi se; umjesto toga koristite Prilagodi odjavnu špicu glazbi (ili duljinu)
+	page style “{style}”: fade curves become linear fades	stil stranice „{style}”: krivulje pretapanja postaju linearne
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	stil sadržaja „{style}” nema početak u Cinecredu; počeci upisani u tablicu i dalje se prikazuju
+	content style “{style}”: sorting the names is not carried over	stil sadržaja „{style}”: razvrstavanje imena ne prenosi se
+	transition curves are not carried over	krivulje prijelaza ne prenose se
+	picture styles (pictures keep their own size) are not carried over	stilovi slika (slike zadržavaju vlastitu veličinu) ne prenose se
+	video (tape) styles are not carried over	stilovi videa (vrpce) ne prenose se
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projekt ima tablica odjavne špice: {n}; koristi se „{name}” (odaberite drugu u polju Tablica)

@@ -3931,6 +3931,8 @@
 	Analyze Source for Smart Cut	Analizuoti šaltinį išmaniajam karpymui
 	Plan Smart Cut	Planuoti išmanųjį karpymą
 	Run Smart Cut	Vykdyti išmanųjį karpymą
+	DASH Manifest	DASH manifestas
+	Also write a DASH manifest (.mpd)	Taip pat įrašyti DASH manifestą (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Neatidaryta jokia seka. Dukart spustelėkite seką projekto skydelyje.
 	English (US)	Anglų (JAV)
 	English (UK)	Anglų (JK)
@@ -4218,3 +4220,230 @@ export.summary	Low	žema
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Titrai iš skaičiuoklės
+	A .ods, .xlsx or CSV credits sheet	Titrų lentelė .ods, .xlsx arba CSV formatu
+	The spreadsheet's folder	Skaičiuoklės aplankas
+	Built-in styles	Įtaisyti stiliai
+	Spreadsheet	Skaičiuoklė
+	Sheet	Lapas
+	Pictures	Paveikslėliai
+	Styling	Stilius
+	Page	Puslapis
+	Warnings	Įspėjimai
+	Moment in the page	Momentas puslapyje
+	Place at Playhead	Įdėti ties atkūrimo žymekliu
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Skaičiuoklės (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Titrų stilius (*.json)
+	Card	Kortelė
+	Credits Spreadsheet	Titrų skaičiuoklė
+	Reading…	Skaitoma…
+	(one table)	(viena lentelė)
+	Total: {time}	Iš viso: {time}
+	Row {row}: {message}	{row} eilutė: {message}
+	Choose a credits spreadsheet.	Pasirinkite titrų skaičiuoklę.
+	No preview	Peržiūros nėra
+	Placing…	Dedama…
+	Placed {n} pages on the timeline.	Į laiko juostą įdėta puslapių: {n}.
+	Credits Page Picture	Titrų puslapio paveikslėlis
+	Preview Credits	Titrų peržiūra
+	Credits Styles	Titrų stiliai
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Skaičiuoklės ir titrų failai (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 titrų failas (*.cfa4credits)
+	Save as Credits File…	Įrašyti kaip titrų failą…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Skaičiuoklė, lapas, stilius ir lentelė viename faile, kurį galima atverti bet kuriame kompiuteryje
+	Saved: {path}	Įrašyta: {path}
+	Added	Pridėta
+	Removed	Pašalinta
+	Changed	Pakeista
+	(empty row)	(tuščia eilutė)
+	Refresh Credits from Spreadsheet	Atnaujinti titrus iš skaičiuoklės
+	Change	Pakeitimas
+	Before → After	Prieš → Po
+	Select None	Nieko nežymėti
+	Keep my edits on the pages (where their block is unchanged)	Išlaikyti mano pakeitimus puslapiuose (kur jų blokas nepasikeitė)
+	Locate Spreadsheet…	Rasti skaičiuoklę…
+	Comparing…	Lyginama…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Pakeitimai faile {file} nuo titrų įdėjimo: {n}. Nuimkite žymę nuo to, ko nenorite.
+	The spreadsheet {file} has not changed since the credits were placed.	Skaičiuoklė {file} nepasikeitė nuo titrų įdėjimo.
+	{n} layers were edited by hand on the pages.	Rankiniu būdu keisti sluoksniai puslapiuose: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Priėmus visus pakeitimus, šie būtų pakeisti, nes pasikeitė jų blokas: {names}
+	Refreshing…	Atnaujinama…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Atnaujinta: pritaikyta pakeitimų: {n}, išlaikyta rankinių pakeitimų: {kept}.
+	Refresh Credits from Spreadsheet…	Atnaujinti titrus iš skaičiuoklės…
+	Save Credits File…	Įrašyti titrų failą…
+	Compare Credits with Spreadsheet	Palyginti titrus su skaičiuokle
+	“{name}” appears twice in the same block	„{name}“ tame pačiame bloke yra du kartus
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ eilutėje {otherRow} parašyta kaip „{other}“
+	The font “{font}” is not installed; another font is used	Šriftas „{font}“ neįdiegtas; naudojamas kitas šriftas
+	The font “{font}” has no “{chars}”; another font draws them	Šrifte „{font}“ nėra „{chars}“; juos piešia kitas šriftas
+	“{text}” is outside the title-safe area	„{text}“ yra už saugios titrų srities
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ per tamsus ant juodo fono (kontrastas {ratio}:1; reikia bent 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ aukštis {px} px; nuo 24 px gerai skaitoma
+	The roll moves {speed} px per frame; a whole number does not shimmer	Slinkimas juda {speed} px per kadrą; sveikasis skaičius nemirga
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Eilutė kerta kadrą per {seconds} s; bent 6 s gerai skaitoma
+	The card holds for only {seconds} s after its fades	Kortelė po perėjimų rodoma tik {seconds} s
+	This page starts {seconds} s before the previous one ends	Šis puslapis prasideda {seconds} s prieš baigiantis ankstesniam
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ rodomas {percent} % jo pikselių; atrodys neryškiai
+	{more} more of the same	Dar {more} tokių pat
+	Page {page}: {message}	{page} puslapis: {message}
+	Checks and warnings	Patikros ir įspėjimai
+	Checks: {errors} errors, {warnings} warnings	Patikros: klaidų {errors}, įspėjimų {warnings}
+	Check Credits	Tikrinti titrus
+	The whole music ({time})	Visa muzika ({time})
+	Until the sound ends ({time})	Kol baigiasi garsas ({time})
+	To the last bar line ({time})	Iki paskutinės takto linijos ({time})
+	Fit Credits to Music	Pritaikyti titrus prie muzikos
+	Fit Credits to Music…	Pritaikyti titrus prie muzikos…
+	Analyse Music for Credits	Analizuoti muziką titrams
+	Length:	Trukmė:
+	Cards last whole beats (cuts on the beat)	Kortelės trunka sveikus mušimus (kirpimai ties mušimu)
+	Start the credits where the music starts	Pradėti titrus ten, kur prasideda muzika
+	Length of the credits	Titrų trukmė
+	Remove Fitting	Pašalinti pritaikymą
+	Listening to the music…	Klausomasi muzikos…
+	Length: {time}	Trukmė: {time}
+	the sound ends at {time}	garsas baigiasi ties {time}
+	tempo {bpm} BPM	tempas {bpm} BPM
+	the credits without fitting: {time}	titrai be pritaikymo: {time}
+	Select a credits page on the timeline.	Pasirinkite titrų puslapį laiko juostoje.
+	Fitting…	Pritaikoma…
+	The credits now last {time}.	Titrai dabar trunka {time}.
+	Fitting removed.	Pritaikymas pašalintas.
+	Fit to This Length	Pritaikyti šiai trukmei
+	No music to measure ({problem}); type the length.	Nėra muzikos matuoti ({problem}); įveskite trukmę.
+	The text moves {speed} px per frame; a whole number does not shimmer	Tekstas juda {speed} px per kadrą; sveikasis skaičius nemirga
+	Crawl	Bėganti eilutė
+	Picture: {file}	Paveikslėlis: {file}
+	Video: {file}	Vaizdo įrašas: {file}
+	Into the next	Į kitą
+	Safe areas and spines	Saugios sritys ir ašys
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Veiksmo saugi sritis (93 %), titrų (90 %), centras ir puslapio ašys
+	Baseline grid	Pagrindinių linijų tinklelis
+	Lines one gap unit apart, moving with the page	Linijos kas vieną tarpo vienetą, judančios kartu su puslapiu
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ neišsiskiria iš fono (kontrastas {ratio}:1; reikia bent 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Už teksto yra paveikslėlis ar vaizdo įrašas: kontrastą patikrinkite akimis
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Paruošta išvaizda: stiliai, fonai, perėjimai ir laikas. Nurodytas stiliaus failas turi pirmenybę.
+	New Spreadsheet from Template…	Nauja skaičiuoklė iš šablono…
+	built in	įtaisytas
+	mine	mano
+	this project	šis projektas
+	Template	Šablonas
+	Choose a template first.	Pirmiausia pasirinkite šabloną.
+	Name of the template:	Šablono pavadinimas:
+	Template saved: {name}	Šablonas įrašytas: {name}
+	Apply Credits Template…	Taikyti titrų šabloną…
+	Template:	Šablonas:
+	Credits Templates	Titrų šablonai
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Skaičiuoklės, titrų failai ir Cinecred projektai (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred projektas…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Atverti Cinecred projekto aplanką (Styling.toml ir jo titrų skaičiuoklę)
+	(empty block)	(tuščias blokas)
+	Apply Template…	Taikyti šabloną…
+	Change them in the spreadsheet; the credits follow when you save it.	Pakeiskite juos skaičiuoklėje; titrai atsinaujins, kai ją įrašysite.
+	Compact View	Kompaktiškas rodinys
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Palyginti pasirinktus titrus laiko juostoje su jų skaičiuokle eilutė po eilutės
+	Fit the selected credits to the music under them	Pritaikyti pasirinktus titrus prie po jais esančios muzikos
+	Fit to Music…	Pritaikyti prie muzikos…
+	Full View	Visas rodinys
+	Give the selected credits on the timeline another template	Suteikti pasirinktiems titrams laiko juostoje kitą šabloną
+	Names	Vardai
+	No pages	Puslapių nėra
+	Refresh Placed Credits…	Atnaujinti įdėtus titrus…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Rodyti viską: blokus, savybes, puslapius laike, patikras ir titrų įrankius
+	Spine	Ašis
+	Tails	Pabaiga
+	The blocks of the chosen page; choose one to see it in the preview	Pasirinkto puslapio blokai; pasirinkite vieną, kad pamatytumėte peržiūroje
+	The pages along time; click one to choose it	Puslapiai laike; spustelėkite vieną, kad jį pasirinktumėte
+	{n} more	Dar {n}
+	Block	Blokas
+	parallel	lygiagrečiai
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Puslapyje (OBS jį ima iš naršyklės šaltinio)
+	Separate (a media source in OBS)	Atskirai (medijos šaltinis OBS)
+	No sound	Be garso
+	credits	titrai
+	graphic	grafika
+	{n} pages	Puslapių: {n}
+	Live Graphics	Tiesioginė grafika
+	Prepared cues; double-click one to put it in preview	Paruošti elementai; dukart spustelėkite vieną, kad patektų į peržiūrą
+	Add Credits…	Pridėti titrus…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Titrų skaičiuoklė, titrų failas ar Cinecred projektas kaip elementas
+	Add Selected Graphic	Pridėti pasirinktą grafiką
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Laiko juostoje pasirinktas grafinis klipas (pavadinimas, apatinis trečdalis) kaip elementas
+	Cues	Elementai
+	TAKE	Į ETERĮ
+	The preview cue goes on air from its first page	Peržiūros elementas eina į eterį nuo pirmojo puslapio
+	PREVIOUS	ANKSTESNIS
+	The page before (on the first page: from its start)	Ankstesnis puslapis (pirmajame puslapyje: nuo jo pradžios)
+	NEXT	KITAS
+	The next page; after the last one, the preview cue	Kitas puslapis; po paskutinio – peržiūros elementas
+	HOLD	SUSTABDYTI
+	Stop the program where it is	Sustabdyti programą ten, kur ji yra
+	CONTINUE	TĘSTI
+	Go on from where it stopped	Tęsti nuo ten, kur sustojo
+	UPDATE	ATNAUJINTI
+	Read the spreadsheet (or the clip) again; on air it changes at once	Iš naujo nuskaityti skaičiuoklę (ar klipą); eteryje pasikeičia iš karto
+	OUT	IŠ ETERIO
+	Take everything off air	Viską pašalinti iš eterio
+	Start Live Page	Paleisti tiesioginį puslapį
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Teikti programą šiame kompiuteryje OBS naršyklės šaltiniui (tik 127.0.0.1)
+	not running	neveikia
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Įrankiai ▸ WebSocket serverio nuostatos
+	Connect to OBS	Prisijungti prie OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Prisijungti prie šio kompiuterio OBS ir nukreipti jo naršyklės šaltinį „CFA4 Live“ į tiesioginį puslapį
+	Port	Prievadas
+	Password	Slaptažodis
+	Live page	Tiesioginis puslapis
+	Sound	Garsas
+	OBS	OBS
+	Nothing in preview	Peržiūroje nieko nėra
+	page {page} of {pages}	{page} puslapis iš {pages}
+	held	sustabdyta
+	ended	baigėsi
+	Off air	Ne eteryje
+	Stop Live Page	Sustabdyti tiesioginį puslapį
+	Connected to OBS {version}; source “{source}”	Prisijungta prie OBS {version}; šaltinis „{source}“
+	Point OBS Again	Iš naujo nukreipti OBS
+	Select a graphic clip on the timeline first.	Pirmiausia pasirinkite grafinį klipą laiko juostoje.
+	Connecting to OBS…	Jungiamasi prie OBS…
+	Live Graphics…	Tiesioginė grafika…
+	PREVIEW	PERŽIŪRA
+	PROGRAM	PROGRAMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	paveikslėlio ar vaizdo žyma stovi viena turinio langelyje (arba su vienu vardu, kaip portretas); kitos žymos pašalintos
+	the page gap is not a duration; the page style's is used	puslapių tarpas nėra trukmė; naudojamas puslapio stiliaus
+	the page runtime is not a positive duration; the page style's is used	puslapio trukmė nėra teigiama; naudojama puslapio stiliaus
+	background “{file}” was not found; it is left out	fonas „{file}“ nerastas; praleidžiamas
+	card page {page} is taller than the frame; use a roll page	kortelės puslapis {page} aukštesnis už kadrą; naudokite slenkantį puslapį
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	raidžių stiliaus „{style}“ spalva „{colour}“ nėra #rrggbb; praleidžiama
+	colour “{colour}” is not #rrggbb; black is used	spalva „{colour}“ nėra #rrggbb; naudojama juoda
+	colour “{colour}” is not #rrggbb; white is used	spalva „{colour}“ nėra #rrggbb; naudojama balta
+	content style “{style}” does not exist; “{used}” is used	turinio stiliaus „{style}“ nėra; naudojamas „{used}“
+	letter style “{style}” does not exist; the text keeps the block's style	raidžių stiliaus „{style}“ nėra; tekstas išlaiko bloko stilių
+	page gap “{value}” is not a duration	puslapių tarpas „{value}“ nėra trukmė
+	page runtime “{value}” is not a duration	puslapio trukmė „{value}“ nėra trukmė
+	page style “{style}” does not exist; a roll page is used	puslapio stiliaus „{style}“ nėra; naudojamas slenkantis puslapis
+	page {page}: the background names no file; it is left out	{page} puslapis: fonas nenurodo failo; praleidžiamas
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	{page} puslapis: trukmė pasiekiama keičiant slinkimo greitį (puslapyje nėra tarpų tarp blokų, kuriuos būtų galima ištempti)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	{page} puslapis: trukmė pasiekiama keičiant slinkimo greitį (titrai per ilgi net be tarpų)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page} puslapis: trukmė pasiekiama keičiant slinkimo greitį (tarpai turėtų padidėti daugiau nei 20 kartų)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page} puslapis: perėjimui reikia, kad puslapiai liestųsi (tarpas 0); praleidžiamas
+	page {page}: there is no transition “{name}”; the pages cut	{page} puslapis: perėjimo „{name}“ nėra; puslapiai keičiasi kirpimu
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	ašies padėtis „{value}“ nepalaikoma (palaikomas poslinkis pikseliais, pasirinktinai su „parallel“)
+	vertical gap “{value}” is not a number	vertikalus tarpas „{value}“ nėra skaičius
+	picture “{file}” was not found or cannot be read; it is left out	paveikslėlis „{file}“ nerastas arba neperskaitomas; praleidžiamas
+	video “{file}” was not found or cannot be read; it is left out	vaizdo įrašas „{file}“ nerastas arba neperskaitomas; praleidžiamas
+	there is no roll page without its own runtime to stretch; the length cannot change	nėra slenkančio puslapio be savos trukmės, kurį būtų galima ištempti; trukmė negali keistis
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	vien kortelės ir tarpai trunka {seconds} s; prašoma trukmė trumpesnė, todėl slenkantys puslapiai išlaiko natūralią trukmę
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	raidžių stilius „{style}“: naudojamas tik pirmasis spalvotas sluoksnis (be kontūrų, šešėlių ar juostų)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	visų titrų trukmė neperkeliama; vietoj to naudokite „Pritaikyti titrus prie muzikos“ (arba trukmę)
+	page style “{style}”: fade curves become linear fades	puslapio stilius „{style}“: išblukimo kreivės tampa tiesinės
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	turinio stilius „{style}“ Cinecred neturi pradžios; skaičiuoklėje įrašytos pradžios vis tiek rodomos
+	content style “{style}”: sorting the names is not carried over	turinio stilius „{style}“: vardų rikiavimas neperkeliamas
+	transition curves are not carried over	perėjimų kreivės neperkeliamos
+	picture styles (pictures keep their own size) are not carried over	paveikslėlių stiliai (paveikslėliai išlaiko savo dydį) neperkeliami
+	video (tape) styles are not carried over	vaizdo (juostos) stiliai neperkeliami
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projekte yra titrų skaičiuoklių: {n}; naudojama „{name}“ (kitą pasirinkite lauke Skaičiuoklė)

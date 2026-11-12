@@ -7,10 +7,22 @@ import os
 import sys
 from pathlib import Path
 
+# files that open in the Credits workspace rather than as a project (docs/credits.md; the
+# packaged io.github.ubuntuokos.cfa4.credits.desktop hands them over)
+CREDITS_SUFFIXES = (".cfa4credits", ".cfa4credtpl")
+
+
+def credits_file(path: str | None) -> str | None:
+    """`path` when it is a credits file or credits template, made absolute; else None."""
+    if not path or not path.lower().endswith(CREDITS_SUFFIXES):
+        return None
+    return str(Path(path).expanduser().resolve())
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="cfa4-qt", description="CFA4 Qt 6 editor (Rust engine + PySide6)")
-    parser.add_argument("project", nargs="?", help="project file (.fcproj) to open")
+    parser.add_argument("project", nargs="?", help="project file (.fcproj) to open, or a credits file (.cfa4credits) or template (.cfa4credtpl) to open in the Credits workspace")
+    parser.add_argument("--credits", metavar="FILE", help="open this credits file (.cfa4credits), template (.cfa4credtpl) or spreadsheet in the Credits workspace")
     parser.add_argument("--engine", help="path to cfa4-cli (default: PATH, then target/)")
     parser.add_argument("--demo", action="store_true", help="open the built-in demo project")
     parser.add_argument("--data-dir", help="CFA4 data directory (auto-save, recovery, presets)")
@@ -100,6 +112,11 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         QMessageBox.critical(None, "CFA4", message)
         return 1
+    credits = credits_file(args.project)
+    if credits:
+        args.project = None
+    elif args.credits:
+        credits = str(Path(args.credits).expanduser().resolve())
     engine_args: list[str] = []
     if args.project:
         engine_args += ["--project", str(Path(args.project).expanduser().resolve())]
@@ -136,6 +153,12 @@ def main(argv: list[str] | None = None) -> int:
         # driving the app never steals the user's keyboard (egui's): opened without activating it
         window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
     window.show()
+    if credits:
+        # once the engine has a sequence: the workspace lays out against its frame
+        def open_credits(_hello: dict, path: str = credits) -> None:
+            QTimer.singleShot(0, lambda: window.open_credits_file(path))
+
+        engine.started.connect(open_credits)
 
     if args.smoke:
         status = {"code": 1}
