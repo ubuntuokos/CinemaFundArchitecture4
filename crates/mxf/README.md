@@ -15,6 +15,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 377-1 | 2011 (+ Amd 1:2012) | partitions, primer pack, header metadata sets and local tags, index table segments, random index pack, run-in |
 | SMPTE ST 378 | 2004 | OP1a |
 | SMPTE ST 390 | 2011 | OP-Atom |
+| SMPTE ST 391 / 392 / 393 / 407 / 408 | 2004 / 2004 / 2004 / 2006 / 2006 | OP1b (ganged packages), OP2a/b (playlist items), OP3a/b (edit items), OP1c–OP3c (alternate packages) |
 | SMPTE ST 379-1 / 379-2 | 2009 / 2010 | generic container: content packages, element keys, frame / clip wrapping |
 | SMPTE ST 381-1 | 2005 | MPEG video mapping (MPEG-2 identified, MPEG video descriptor; decoded by `cfa4-mpeg2v` in `cfa4-codecs`); writer: ES container, element keys, MPEG video descriptor, index flags |
 | SMPTE ST 381-3 | 2013 | AVC byte-stream mapping and AVC sub-descriptor |
@@ -33,6 +34,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
 | SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
+| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate |
 | SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 2067-2 / 2067-5 | 2020 | IMF track files (writer): OP1a, KAG 1, at least 8 KiB of fill after the header, primary package, frame-wrapped pictures in 60 s essence partitions each followed by an index partition, clip-wrapped 24-bit sound at the sample rate with a constant-rate index, UMIDs, the MCA channel assignment, reference image edit rate and audio alignment level |
@@ -50,6 +52,17 @@ ancillary resources (fonts, images: id, MIME type, generic stream). `open` repor
 
 The `test-util` feature exposes `testing::build_timed_text` and the other synthetic file builders
 for tests in other crates.
+
+## ANC data (closed captions)
+
+`has_anc(head)` tells from the header partition whether a file lists the ANC packet essence
+container; `read_anc(src)` returns every ANC element of the first ANC data track, one per frame
+(ST 436-1 stores them in display order), with the track's edit rate. Each `AncPacket` keeps its
+line number, wrapping and coding and the low 8 bits of its words from the DID through the user
+data. `AncData::cdps` lists the caption distribution packets (DID 61h, SDID 01h, SMPTE ST 334-2);
+`cfa4-engine` decodes them with `cfa4_captions::mcc::decode_cdps` into a caption track when such
+a file is imported (#929). VI lines (element type 01h) are not read yet; writing ANC data on
+export is still to come.
 
 ## Peeking at the header
 
@@ -120,7 +133,18 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   drop frame), falling back to the file package's; `Timecode::format` gives `HH:MM:SS:FF` /
   `HH:MM:SS;FF`.
 
-Not supported: OP1b/OP2x+ edit lists beyond the first source clip, external essence (OP-Atom
+- **OP1b–OP3c** (ST 391, 392, 393, 407, 408). A material track whose sequence holds several
+  source clips plays them back to back as one `EssenceTrack`. Each clip contributes its own
+  range: from its start position, for its duration. The clips may point into different file
+  packages, each in its own essence container, and those packages may reuse track numbers,
+  because elements are matched by track number and body SID. Before a long-GOP clip's first
+  presented picture, the pictures it needs for decoding are kept as hidden samples: a `pts` no
+  presented picture uses, and absent from `display_order`. Fillers are left out with a warning.
+  Clips whose essence differs from the first clip's are also left out with a warning. That
+  covers a different codec, edit rate, picture size or sound format. For OPxc (alternate
+  packages), the first material package is read.
+
+Not supported: gaps (fillers) inside edit lists (#1008), external essence (OP-Atom
 material packages whose other tracks live in other files are opened track by track), partial or
 encrypted essence (ST 429-6), and descriptive metadata (parsed sets are ignored).
 
@@ -238,7 +262,12 @@ w.finish()?;
 
 - `src/tests.rs`: a small OP1a writer builds synthetic files (temporal offsets, key flags, PCM,
   timecode); open, presentation order, sample bytes, PCM values; truncation at every 37 bytes and
-  600 random mutations never panic and only list fully-present samples.
+  600 random mutations never panic and only list fully-present samples. An OP3a writer with two
+  file packages that share track numbers checks several things:
+  - edit lists across packages: picture bytes, PCM values, and reads that cross a clip boundary;
+  - fillers;
+  - hidden long-GOP references;
+  - hostile start positions and durations.
 - `crates/codecs/tests/mxf_oracle.rs` (FFmpeg-written fixtures, FFmpeg as the decode oracle):
   H.264 long-GOP with B pictures (bit-exact every frame + 25 random seeks), H.264 29.97 DF
   timecode, DNxHR LB (±2), ProRes 422 (±1), MPEG-2 long GOP, XDCAM HD422 and D-10 (±4),

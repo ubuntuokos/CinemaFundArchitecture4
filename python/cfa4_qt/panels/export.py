@@ -51,6 +51,7 @@ from .export_effects import METADATA_FORMATS, SECTION_KEYS, CaptionsSection, Eff
 from .export_preview import PreviewColumn
 from .export_rows import ExportRows
 from .preset_manager import PresetManager
+from .qc import QcDialog
 from .smart_export import SmartExportBox
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
@@ -97,7 +98,11 @@ DCP_IAB_FALLBACK = (
 )
 # DCP spoken language (RFC 5646, #309): common tags offered; any tag can be typed
 DCP_LANGUAGES = ("", "en-US", "en-GB", "hu-HU", "de-DE", "fr-FR", "es-ES", "it-IT", "ja-JP", "zh-CN")
-AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
+AUDIO_CODECS = (
+    ("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")),
+    ("ac3", N_("Dolby Digital (AC-3)")),  # MPEG-2 program and transport streams only
+    ("mp2", N_("MP2 (MPEG-1 Layer II)")),  # likewise
+)
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
 FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
@@ -127,6 +132,16 @@ QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
 FINISHED = {"done", "failed", "cancelled"}
 STATUS_LABELS = {"ready": N_("Ready"), "encoding": N_("Encoding"), "done": N_("Done"), "failed": N_("Failed"), "cancelled": N_("Cancelled")}
+# engine QcStatus (crates/engine/src/qc.rs), kept apart from the render status
+QC_LABELS = {
+    "notChecked": N_("Not checked"),
+    "running": N_("Checking…"),
+    "passed": N_("Passed"),
+    "warned": N_("Passed with warnings"),
+    "failed": N_("Failed"),
+    "incomplete": N_("Incomplete"),
+}
+QC_PROFILE = "delivery-web"
 
 
 def encoder_format(fmt: str, mxf_codec: str) -> str:
@@ -262,6 +277,7 @@ def deep_merge(dst: dict[str, Any], src: dict[str, Any]) -> dict[str, Any]:
 
 QUEUE_COLUMN_W = 500
 QUEUE_ACTIONS_COL = 6
+QUEUE_QC_COL = 7
 
 
 class QueueTable(QTableWidget):
@@ -494,6 +510,9 @@ class ExportDialog(QDialog):
             self.format_choices[key] = c
         self.alpha = QCheckBox(tr("Include Alpha Channel"), self)
         self.alpha.setObjectName("export.video.alpha")
+        # egui's "DASH Manifest" row: an HLS export also writes a DASH manifest over the same segments
+        self.dash_manifest = QCheckBox(tr("Also write a DASH manifest (.mpd)"), self)
+        self.dash_manifest.setObjectName("export.video.dashManifest")
         self.quality = QSpinBox(self)
         self.quality.setObjectName("export.video.quality")
         self.quality.setRange(1, 100)
@@ -561,6 +580,7 @@ class ExportDialog(QDialog):
         mux.setObjectName("export.multiplexerSection")
         QFormLayout(mux.body).addRow(tr("Multiplexer"), self.multiplexer)
         fv.addRow(tr("Alpha"), self.alpha)
+        fv.addRow(tr("DASH Manifest"), self.dash_manifest)
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
@@ -576,6 +596,9 @@ class ExportDialog(QDialog):
         fa.addRow(tr("Main sound channels 1-6"), self.dcp_iab_fallback)
         self.rows = ExportRows(self, fv, fa)
         self.mux_section = mux
+        self.qc_after = QCheckBox(tr("Check quality after export"), self)
+        self.qc_after.setObjectName("export.qcAfter")
+        self.qc_after.setToolTip(tr("Run the media quality check on the finished file (docs/media-qc.md)"))
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -592,16 +615,17 @@ class ExportDialog(QDialog):
         close = QPushButton(tr("Close"), self)
         close.clicked.connect(self.hide)
         buttons = QHBoxLayout()
+        buttons.addWidget(self.qc_after)
         buttons.addStretch(1)
         buttons.addWidget(self.queue_button)
         buttons.addWidget(self.export_button)
         buttons.addWidget(close)
 
         # ----- queue -----
-        self.table = QueueTable(0, 7, self)
+        self.table = QueueTable(0, 8, self)
         self.table.setObjectName("export.queue")
         self.table.setHorizontalHeaderLabels(
-            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining"), ""]
+            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining"), "", tr("Quality")]
         )
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -613,6 +637,8 @@ class ExportDialog(QDialog):
         header.moveSection(2, 6)
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
         header.resizeSection(4, 64)
+        self.table.cellDoubleClicked.connect(lambda _r, _c: self.open_quality_check())
+        self.qc_dialog: QcDialog | None = None
         # two rows of four: the column is narrow (egui's is 300 px)
         queue_buttons = QGridLayout()
         for n_button, (name, text, slot) in enumerate((
@@ -625,6 +651,7 @@ class ExportDialog(QDialog):
             # egui's Up / Down: the order the queue encodes in (not past the export encoding now)
             ("up", N_("Up"), lambda: self._move_selected(-1)),
             ("down", N_("Down"), lambda: self._move_selected(1)),
+            ("qc", N_("Quality Check…"), self.open_quality_check),
         )):
             b = QPushButton(tr(text), self)
             b.setObjectName(f"export.queue.{name}")
@@ -758,7 +785,7 @@ class ExportDialog(QDialog):
         self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
         for key, c in self.format_choices.items():
             c.currentIndexChanged.connect(lambda _i, k=key: (self._touch(k), self._sync_format_rows()))
@@ -999,6 +1026,7 @@ class ExportDialog(QDialog):
         rows["mxfVideoCodec"] = fmt in MXF_FORMATS
         rows["alpha"] = supports_alpha(fmt, self._choice("proresProfile"), self._choice("cineformProfile"))
         rows["quality"] = enc in QUALITY_FORMATS
+        rows["dashManifest"] = fmt == "hls"
         return rows
 
     def _sync_mpeg2_rows(self) -> None:
@@ -1016,7 +1044,7 @@ class ExportDialog(QDialog):
 
     def _sync_format_rows(self) -> None:
         self._sync_mpeg2_rows()
-        widgets: dict[str, QWidget] = {**self.format_choices, "alpha": self.alpha, "quality": self.quality}
+        widgets: dict[str, QWidget] = {**self.format_choices, "alpha": self.alpha, "quality": self.quality, "dashManifest": self.dash_manifest}
         for key, shown in self._format_rows().items():
             self.video_form.setRowVisible(widgets[key], shown)
 
@@ -1029,10 +1057,11 @@ class ExportDialog(QDialog):
                 c.blockSignals(True)
                 c.setCurrentIndex(i)
                 c.blockSignals(False)
-        if "alpha" not in self.touched and isinstance(settings.get("alpha"), bool):
-            self.alpha.blockSignals(True)
-            self.alpha.setChecked(settings["alpha"])
-            self.alpha.blockSignals(False)
+        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
+            if key not in self.touched and isinstance(settings.get(key), bool):
+                box.blockSignals(True)
+                box.setChecked(settings[key])
+                box.blockSignals(False)
         self.rows.show_settings(settings, self.touched)
         self._show_bitrate(settings)
         if "bitrateMode" not in self.touched and isinstance(settings.get("bitrateMode"), str):
@@ -1203,7 +1232,8 @@ class ExportDialog(QDialog):
             # the elementary stream has no audio
             has_audio = self.container.currentData() != "es"
             self.audio.setEnabled(has_audio)
-            self.audio_codec.setEnabled(False)  # LPCM in program streams, AAC in transport streams
+            # Automatic: LPCM in program streams, AAC in transport streams; or AC-3 or MP2 in either
+            self.audio_codec.setEnabled(has_audio)
         self._changed()  # the output path takes the new extension
 
     def _range_changed(self) -> None:
@@ -1290,6 +1320,8 @@ class ExportDialog(QDialog):
                 p[key] = self._choice(key)
         if rows["alpha"] and "alpha" in self.touched:
             p["alpha"] = self.alpha.isChecked()
+        if rows["dashManifest"] and "dashManifest" in self.touched:
+            p["dashManifest"] = self.dash_manifest.isChecked()
         if rows["quality"] and "quality" in self.touched:
             p["quality"] = self.quality.value()
         if self.container.isEnabled():
@@ -1320,6 +1352,8 @@ class ExportDialog(QDialog):
             p["dcpLanguage"] = self.dcp_language.currentText().strip()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
+        if self.qc_after.isChecked():
+            p["qc"] = QC_PROFILE
         return p
 
     # ----- engine answers -----
@@ -1593,6 +1627,8 @@ class ExportDialog(QDialog):
         self.table.setRowCount(len(items))
         for row, it in enumerate(items):
             status = str(it.get("status") or "").lower()
+            qc = it.get("qc") if isinstance(it.get("qc"), dict) else {}
+            qc_status = str(qc.get("status") or "notChecked")
             texts = [
                 str(it.get("sequenceName") or ""),
                 str(it.get("path") or ""),
@@ -1600,6 +1636,8 @@ class ExportDialog(QDialog):
                 tr(STATUS_LABELS.get(status, status)) + (f" — {it['error']}" if it.get("error") else ""),
                 "",
                 format_eta(it.get("etaSeconds")) if status not in FINISHED else "",
+                "",  # the row's buttons (QUEUE_ACTIONS_COL)
+                tr(QC_LABELS.get(qc_status, qc_status)),
             ]
             for col, text in enumerate(texts):
                 cell = self.table.item(row, col)
@@ -1614,6 +1652,10 @@ class ExportDialog(QDialog):
                     cell.setToolTip(text)
                 if col == 3:
                     cell.setToolTip(str(it.get("statusText") or ""))
+                    cell.setData(Qt.ItemDataRole.UserRole, status)
+                if col == QUEUE_QC_COL:
+                    cell.setData(Qt.ItemDataRole.UserRole, qc_status)
+                    cell.setToolTip(str(qc.get("error") or qc.get("report") or ""))
             bar = self.table.cellWidget(row, 4)
             if not isinstance(bar, QProgressBar):
                 bar = QProgressBar(self.table)
@@ -1637,9 +1679,33 @@ class ExportDialog(QDialog):
             if row is not None:
                 self.table.selectRow(row)
         self._update_move_buttons()
-        running = bool(data.get("running")) or any(str(i.get("status") or "").lower() == "encoding" for i in items)
+        running = bool(data.get("running")) or any(
+            str(i.get("status") or "").lower() == "encoding" or (i.get("qc") or {}).get("status") == "running" for i in items
+        )
         if not running and not self.isVisible():
             self._poll.stop()
+
+    # ----- quality check -----
+    def open_quality_check(self) -> None:
+        """The QC window for the selected finished export: its report, or a check now."""
+        rows = sorted({i.row() for i in self.table.selectedIndexes()})
+        if not rows:
+            self._error(tr("Select a finished export in the queue"))
+            return
+        row = rows[0]
+        status_cell, path_cell, id_cell, qc_cell = (self.table.item(row, c) for c in (3, 1, 0, QUEUE_QC_COL))
+        if path_cell is None or id_cell is None:
+            return
+        status = status_cell.data(Qt.ItemDataRole.UserRole) if status_cell is not None else ""
+        if status not in ("done", "failed"):
+            self._error(tr("Select a finished export in the queue"))
+            return
+        qc_status = qc_cell.data(Qt.ItemDataRole.UserRole) if qc_cell is not None else "notChecked"
+        if self.qc_dialog is None:
+            self.qc_dialog = QcDialog(self.engine, self)
+            self.qc_dialog.review_saved.connect(lambda _p, _v: self.refresh_queue())
+        self.qc_dialog.open_for(path_cell.toolTip() or path_cell.text(), id_cell.data(Qt.ItemDataRole.UserRole), run=qc_status == "notChecked")
+        self._poll.start()
 
     def hideEvent(self, e) -> None:
         super().hideEvent(e)

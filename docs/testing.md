@@ -93,6 +93,31 @@ asserts name (H.264, HEVC and the HEVC picture parameters with their SEI payload
 Compare the numbers with the asserts (a difference is drift, which must be understood before
 anything is "fixed" to match) and add asserts for anything new.
 
+### AV2 oracle (AVM)
+
+AV2 has no ffmpeg oracle (FFmpeg 9.0.x has no AV2). The reference is the AOM reference decoder
+`avmdec`, pinned to AVM v1.0.0 (`966a7d7`), with the AVM `av2-normative` branch (`14f43e4`) as a
+cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
+
+- `crates/testkit/data/av2-corpus.json` is the committed manifest: pinned commits, synthetic
+  sources, avmenc arguments, and per vector the bitstream SHA-256 and the per-frame, per-plane
+  SHA-256 of the AVM v1.0.0 output (after film grain synthesis). Only hashes, never media.
+- `python3 scripts/dev/av2-oracle.py build [--ref av2-normative]` builds `avmenc`/`avmdec` at the
+  pinned commit into `target/av2-oracle/avm-<ref>/bin` with an `AVM_COMMIT` stamp (nothing is
+  installed system-wide). `python3 scripts/dev/av2-oracle.py corpus` makes the sources with ffmpeg,
+  encodes the vectors into `target/fixtures/av2/vectors` and removes any bitstream whose SHA-256
+  differs from the manifest. `manifest --from <AV2-00 evidence>` refreshes the hashes.
+- `cfa4_testkit::av2` finds the oracle (`CFA4_AVMDEC`, else `CFA4_AVM_PREFIX` or the default
+  prefix; the stamp must name the pinned commit, and `PATH` is never searched), checks corpus
+  bitstreams against the manifest, hashes Y4M output and compares it frame by frame and plane by
+  plane. Decoder tests (dav2d adapter, `cfa4-av2`) use the same manifest.
+- `cargo test -p cfa4-testkit --test av2_oracle` checks the harness itself. Without the oracle or
+  the corpus the tests print `SKIPPED`; `CFA4_REQUIRE_AV2_ORACLE=1` makes that a failure.
+  `CFA4_REQUIRE_ORACLES` does not cover AV2, since ordinary CI has no AVM build.
+- CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
+  on a `cfa4-full-validation` label event of a PR that touches the harness. It is not a required
+  check.
+
 ### Pass criteria per codec
 
 | Crate | Oracle check | Criterion |

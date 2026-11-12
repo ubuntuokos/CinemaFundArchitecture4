@@ -16,8 +16,8 @@ use serde_json::{Value, json};
 
 use crate::{EngineError, Result, Session};
 
-type Run = fn(&mut Session, &Value) -> Result<Value>;
-type Enabled = fn(&Session) -> std::result::Result<(), String>;
+pub(crate) type Run = fn(&mut Session, &Value) -> Result<Value>;
+pub(crate) type Enabled = fn(&Session) -> std::result::Result<(), String>;
 
 /// Metadata + implementation for one command.
 pub struct CommandSpec {
@@ -1545,6 +1545,14 @@ fn build() -> Vec<CommandSpec> {
                     }
                     continue;
                 }
+                // Broadcast MXF: closed captions in the ANC data become a caption track; the
+                // picture and sound still import as media below.
+                if let Some(r) = crate::captions::import_anc_captions(s, &path) {
+                    match r {
+                        Ok(r) => reports.push(r),
+                        Err(e) => errors.push(format!("{path}: {e}")),
+                    }
+                }
                 // Media files through the host's reader (no whole-file read) when it has one.
                 let streamed = cfa4_media::is_importable(std::path::Path::new(&path)) && s.services.reader(&path).is_some();
                 let read = if streamed { Ok(Vec::new()) } else { s.services.read_file(&path) };
@@ -1833,7 +1841,7 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|imf|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac|opus|ac3|mp2"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"dashManifest":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264|mpeg2|d10|xdcamHd422"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"dcpLanguage":str?,"imfLossless":bool?,"imfContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|psa|episode|highlights|event"?,"fieldOrder":"progressive|upperFirst|lowerFirst"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
@@ -3847,6 +3855,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::graphics::commands());
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
+    v.extend(crate::live::commands());
     v.extend(crate::dialog_defaults::commands());
     v.extend(crate::legibility::commands());
     v.extend(crate::shortcuts::commands());
@@ -4214,11 +4223,13 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
         // pasted clips get groups of their own, as their links: sharing the originals' group
         // would select (and so drag or delete) the originals with them
         let mut groups = std::collections::HashMap::new();
+        let mut ids = std::collections::HashMap::new();
         for (kind, ti, item) in clip {
             let tracks = q.tracks(kind);
             let Some(t) = tracks.get(ti).or(tracks.last()) else { continue };
             let mut it = item.clone();
             it.id = ClipId(ctx.alloc());
+            ids.insert(item.id, it.id);
             it.start += at;
             if let Some(l) = it.link {
                 it.link = Some(*links.entry(l).or_insert_with(|| ctx.alloc()));
@@ -4228,6 +4239,8 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
             }
             placements.push((t.id, it));
         }
+        // pasted credits pages form a credits group of their own
+        cfa4_project::graphic_design::remap_copied_credits(placements.iter_mut().map(|(_, it)| it), &ids, || ctx.alloc());
         let end = placements.iter().map(|p| p.1.end()).max().unwrap_or(at);
         let ids = if insert { edit::insert(q, placements, ctx)? } else { edit::overwrite(q, placements, ctx)? };
         if insert && st.ripple_sequence_markers {

@@ -83,6 +83,22 @@ while IFS= read -r line || [ -n "$line" ]; do
     *) printf '%s\n' "$line" ;;
   esac
 done <"$source_dir/share/applications/$app_id.desktop" >"$prefix/share/applications/$app_id.desktop"
+# Credits files open in the Qt GUI (cfa4-qt): its entry with the absolute launcher, or none
+# when this tarball has no Qt GUI.
+credits_entry="$prefix/share/applications/$app_id.credits.desktop"
+if [ -f "$source_dir/bin/cfa4-qt" ] && [ -f "$source_dir/share/applications/$app_id.credits.desktop" ]; then
+  qt_exec="$(printf '%s' "$prefix/bin/cfa4-qt" | sed 's/[\\"`$]/\\&/g; s/\\/\\\\/g')"
+  qt_try="$(printf '%s' "$prefix/bin/cfa4-qt" | sed 's/\\/\\\\/g')"
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      Exec=*) printf 'Exec="%s" %%f\n' "$qt_exec" ;;
+      TryExec=*) printf 'TryExec=%s\n' "$qt_try" ;;
+      *) printf '%s\n' "$line" ;;
+    esac
+  done <"$source_dir/share/applications/$app_id.credits.desktop" >"$credits_entry"
+else
+  rm -f -- "$credits_entry"
+fi
 
 # Cache tools are optional; installing binaries must also work on minimal systems.
 if command -v update-desktop-database >/dev/null 2>&1; then

@@ -108,11 +108,11 @@ A két rész egymástól független, így külön PR-ban mehetnek. Az 1. réssze
 
 **2. rész: DASH (kb. 2–3 nap)**
 
-- [ ] D1: külön videó- és hangszegmensek a HLS exportban, külön hang média lejátszási listával, a hangcsoport (`EXT-X-MEDIA` + `AUDIO`) a multivariant listában
-- [ ] D2: `dash_out.rs`: MPD-író `SegmentTimeline`-nal, unit tesztek
-- [ ] D3: „DASH manifest is” kapcsoló, `dash_files()`, CLI
-- [ ] D4: export teszt (MPD ↔ m3u8 egyezés) és ffprobe-megnyitás
-- [ ] D5: dokumentáció, `docs/gaps.md`
+- [x] D1: külön videó- és hangszegmensek a HLS exportban, külön hang média lejátszási listával, a hangcsoport (`EXT-X-MEDIA` + `AUDIO`) a multivariant listában
+- [x] D2: `dash_out.rs`: MPD-író `SegmentTimeline`-nal, unit tesztek
+- [x] D3: „DASH manifest is” kapcsoló, `dash_files()`, CLI
+- [x] D4: export teszt (MPD ↔ m3u8 egyezés) és ffprobe-megnyitás
+- [x] D5: dokumentáció, `docs/gaps.md`
 
 ## Döntések
 

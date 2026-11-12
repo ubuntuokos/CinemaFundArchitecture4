@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-testkit"
-description = "Test-only helpers: ffmpeg/ffprobe oracle discovery, fixture directories, golden-image comparison"
+description = "Test-only helpers: ffmpeg/ffprobe and AVM (AV2) oracle discovery, fixture directories, golden-image comparison"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,6 +15,9 @@ workspace = true
 [dependencies]
 png = "0.18"
 chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = "0.11"
 
 [dev-dependencies]
 tempfile = "3.27"

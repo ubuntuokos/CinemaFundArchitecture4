@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Name=CFA4 Credits
+Name[hu]=CFA4 stáblista
+GenericName=Credits Editor
+GenericName[hu]=Stáblista-szerkesztő
+Comment=Open a CFA4 credits file or credits template in the CFA4 Qt editor's Credits workspace
+Comment[hu]=CFA4 stáblista-fájl vagy -sablon megnyitása a CFA4 Qt szerkesztő stáblista-munkaterületén
+Exec=cfa4-qt %f
+TryExec=cfa4-qt
+Icon=io.github.ubuntuokos.cfa4
+Terminal=false
+NoDisplay=true
+StartupNotify=true
+StartupWMClass=io.github.ubuntuokos.cfa4
+Categories=AudioVideo;Video;AudioVideoEditing;
+MimeType=application/x-cfa4-credits;application/x-cfa4-credits-template;

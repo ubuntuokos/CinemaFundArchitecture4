@@ -26,6 +26,10 @@ then uses a disposable directory and a private HOME/XDG profile.
 | AppImage | \`--appimage-extract\`; verify AppRun and run extracted CLI; record \`ldd\` | Real AppRun/GUI launch and FUSE variants |
 | Flatpak | Import bundle into private temporary OSTree repo; inspect exact \`app/io.github.ubuntuokos.cfa4/x86_64/*\` ref | Install, Freedesktop runtime compatibility, sandbox CLI/GUI and removal |
 
+Every format's CLI also runs the Media QC smoke (`qc` in the JSON; [media-qc.md](../media-qc.md),
+"Installed builds"): the built-in profile, the packaged decoders, and FAIL for a truncated file and
+for a render-plan mismatch.
+
 The JSON result intentionally reports \`PASS_STAGING_ONLY\`, **never**
 \`PASS_INSTALL\`. It only appears after successful checks of actual binaries.
 Missing artifacts, libraries, incorrect IDs and command failures are fatal.

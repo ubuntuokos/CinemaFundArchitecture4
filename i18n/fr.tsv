@@ -3682,6 +3682,8 @@
 	Analyze Source for Smart Cut	Analyser la source pour Smart Cut
 	Plan Smart Cut	Planifier Smart Cut
 	Run Smart Cut	Exécuter Smart Cut
+	DASH Manifest	Manifeste DASH
+	Also write a DASH manifest (.mpd)	Écrire aussi un manifeste DASH (.mpd)
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/fr.tsv).
@@ -3828,6 +3830,7 @@
 	Output file	Fichier de sortie
 	Output folder	Dossier de sortie
 	PCM (uncompressed)	PCM (non compressé)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 couche II)
 	Pace	Débit de parole
 	Path:	Chemin :
 	Program Stream (.mpg, LPCM audio)	Flux de programme (.mpg, audio LPCM)
@@ -4233,3 +4236,279 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(un seul tableau)
+	A .ods, .xlsx or CSV credits sheet	Une feuille de générique .ods, .xlsx ou CSV
+	Built-in styles	Styles intégrés
+	Card	Carte
+	Choose a credits spreadsheet.	Choisissez un tableur de générique.
+	Credits Spreadsheet	Tableur de générique
+	Credits from a Spreadsheet	Générique depuis un tableur
+	Credits styling (*.json)	Style de générique (*.json)
+	Moment in the page	Instant dans la page
+	No preview	Aucun aperçu
+	Page	Page
+	Pictures	Images
+	Place at Playhead	Placer sur la tête de lecture
+	Placed {n} pages on the timeline.	{n} pages placées sur la timeline.
+	Placing…	Placement…
+	Reading…	Lecture…
+	Row {row}: {message}	Ligne {row} : {message}
+	Sheet	Feuille
+	Spreadsheet	Tableur
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tableurs (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Style
+	The spreadsheet's folder	Le dossier du tableur
+	Total: {time}	Total : {time}
+	Warnings	Avertissements
+	Credits Page Picture	Image de page de générique
+	Preview Credits	Aperçu du générique
+	Credits Styles	Styles de générique
+	(empty row)	(ligne vide)
+	Accepting every change would replace these, because their block changed: {names}	Accepter toutes les modifications remplacerait ceux-ci, car leur bloc a changé : {names}
+	Added	Ajouté
+	Before → After	Avant → Après
+	CFA4 credits file (*.cfa4credits)	Fichier de générique CFA4 (*.cfa4credits)
+	Change	Modification
+	Changed	Modifié
+	Comparing…	Comparaison…
+	Keep my edits on the pages (where their block is unchanged)	Conserver mes modifications sur les pages (là où leur bloc est inchangé)
+	Locate Spreadsheet…	Localiser le tableur…
+	Refresh Credits from Spreadsheet	Actualiser le générique depuis le tableur
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Actualisé : {n} modifications appliquées, {kept} modifications manuelles conservées.
+	Refreshing…	Actualisation…
+	Removed	Supprimé
+	Save as Credits File…	Enregistrer comme fichier de générique…
+	Saved: {path}	Enregistré : {path}
+	Select None	Tout désélectionner
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tableur, feuille, style et tableau dans un seul fichier, à ouvrir sur n'importe quelle machine
+	The spreadsheet {file} has not changed since the credits were placed.	Le tableur {file} n'a pas changé depuis le placement du générique.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} modifications dans {file} depuis le placement du générique. Décochez ce que vous ne souhaitez pas.
+	{n} layers were edited by hand on the pages.	{n} calques ont été modifiés à la main sur les pages.
+	Refresh Credits from Spreadsheet…	Actualiser le générique depuis la feuille de calcul…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tableurs et fichiers de générique (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Enregistrer le fichier de générique…
+	Compare Credits with Spreadsheet	Comparer le générique au tableur
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Une ligne traverse l'image en {seconds} s ; au moins 6 s se lisent bien
+	Checks and warnings	Vérifications et avertissements
+	Checks: {errors} errors, {warnings} warnings	Vérification : {errors} erreurs, {warnings} avertissements
+	Page {page}: {message}	Page {page} : {message}
+	The card holds for only {seconds} s after its fades	La carte ne reste que {seconds} s après ses fondus
+	The font “{font}” has no “{chars}”; another font draws them	La police « {font} » n'a pas « {chars} » ; une autre police les affiche
+	The font “{font}” is not installed; another font is used	La police « {font} » n'est pas installée ; une autre police est utilisée
+	This page starts {seconds} s before the previous one ends	Cette page commence {seconds} s avant la fin de la précédente
+	{more} more of the same	{more} autres identiques
+	“{file}” is shown at {percent} % of its pixels; it will look soft	« {file} » est affiché à {percent} % de ses pixels ; il paraîtra flou
+	“{name}” appears twice in the same block	« {name} » apparaît deux fois dans le même bloc
+	“{name}” is written as “{other}” in row {otherRow}	« {name} » est écrit « {other} » à la ligne {otherRow}
+	“{text}” is outside the title-safe area	« {text} » est en dehors de la zone de sécurité des titres
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	« {text} » est trop sombre sur noir (contraste {ratio}:1 ; au moins 4.5:1 requis)
+	“{text}” is {px} px high; 24 px or more reads well	« {text} » fait {px} px de haut ; à partir de 24 px, la lecture est confortable
+	The roll moves {speed} px per frame; a whole number does not shimmer	Le défilement avance de {speed} px par image ; un nombre entier ne scintille pas
+	Check Credits	Vérifier le générique
+	Cards last whole beats (cuts on the beat)	Les cartes durent des temps entiers (coupes sur le temps)
+	Fit Credits to Music	Ajuster le générique à la musique
+	Fit to This Length	Ajuster à cette durée
+	Fitting removed.	Ajustement supprimé.
+	Fitting…	Ajustement…
+	Length of the credits	Durée du générique
+	Length:	Durée :
+	Length: {time}	Durée : {time}
+	Listening to the music…	Analyse de la musique…
+	No music to measure ({problem}); type the length.	Aucune musique à mesurer ({problem}) ; saisissez la durée.
+	Remove Fitting	Supprimer l'ajustement
+	Select a credits page on the timeline.	Sélectionnez une page de générique sur la timeline.
+	Start the credits where the music starts	Démarrer le générique là où la musique commence
+	The credits now last {time}.	Le générique dure maintenant {time}.
+	The whole music ({time})	Toute la musique ({time})
+	To the last bar line ({time})	Jusqu'à la dernière barre de mesure ({time})
+	Until the sound ends ({time})	Jusqu'à la fin du son ({time})
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	le générique sans ajustement : {time}
+	the sound ends at {time}	le son se termine à {time}
+	Fit Credits to Music…	Ajuster le générique à la musique…
+	Analyse Music for Credits	Analyser la musique pour le générique
+	A picture or video is behind the text: check the contrast by eye	Une image ou une vidéo se trouve derrière le texte : vérifiez le contraste à l'œil
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Zone de sécurité action (93 %), titres (90 %), le centre et les axes de la page
+	Baseline grid	Grille de ligne de base
+	Crawl	Texte défilant
+	Into the next	Vers le suivant
+	Lines one gap unit apart, moving with the page	Lignes espacées d'une unité d'intervalle, se déplaçant avec la page
+	Picture: {file}	Image : {file}
+	Safe areas and spines	Zones de sécurité et axes
+	The text moves {speed} px per frame; a whole number does not shimmer	Le texte se déplace de {speed} px par image ; un nombre entier ne scintille pas
+	Video: {file}	Vidéo : {file}
+	Looped video: {file}	Vidéo en boucle : {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	« {text} » ne se détache pas de l'arrière-plan (contraste {ratio}:1 ; au moins 4.5:1 requis)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Un rendu prêt à l'emploi : styles, arrière-plans, transitions et minutage. Un fichier de style, s'il est indiqué, est prioritaire.
+	Apply Credits Template…	Appliquer un modèle de générique…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Choisissez d'abord un modèle.
+	Name of the template:	Nom du modèle :
+	New Spreadsheet from Template…	Nouveau tableur à partir d'un modèle…
+	Template	Modèle
+	Template saved: {name}	Modèle enregistré : {name}
+	Template:	Modèle :
+	built in	intégré
+	mine	personnel
+	this project	ce projet
+	Credits Templates	Modèles de générique
+	Cinecred Project…	Projet Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Ouvrir un dossier de projet Cinecred (Styling.toml et son tableur de générique)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tableurs, fichiers de générique et projets Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	(bloc vide)
+	Apply Template…	Appliquer un modèle…
+	Change them in the spreadsheet; the credits follow when you save it.	Modifiez-les dans le tableur ; le générique suit à l’enregistrement.
+	Compact View	Vue compacte
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Comparer le générique sélectionné dans la timeline avec son tableur, ligne par ligne
+	Fit the selected credits to the music under them	Ajuster le générique sélectionné à la musique en dessous
+	Fit to Music…	Ajuster à la musique…
+	Full View	Vue complète
+	Give the selected credits on the timeline another template	Donner un autre modèle au générique sélectionné dans la timeline
+	Names	Noms
+	No pages	Aucune page
+	Refresh Placed Credits…	Actualiser le générique placé…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Tout afficher : blocs, propriétés, les pages dans le temps, vérifications et outils du générique
+	Spine	Axe
+	Tails	Mentions
+	The blocks of the chosen page; choose one to see it in the preview	Les blocs de la page choisie ; choisissez-en un pour le voir dans l’aperçu
+	The pages along time; click one to choose it	Les pages dans le temps ; cliquez sur une page pour la choisir
+	{n} more	{n} de plus
+	Block	Bloc
+	parallel	parallèle
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Dans la page (OBS le prend de la source navigateur)
+	Separate (a media source in OBS)	Séparé (une source média dans OBS)
+	No sound	Pas de son
+	credits	générique
+	graphic	graphique
+	{n} pages	{n} pages
+	Live Graphics	Graphismes en direct
+	Prepared cues; double-click one to put it in preview	Éléments préparés ; double-cliquez pour en mettre un en aperçu
+	Add Credits…	Ajouter un générique…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Un tableur de générique, un fichier de générique ou un projet Cinecred comme élément
+	Add Selected Graphic	Ajouter le graphisme sélectionné
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Le clip graphique sélectionné dans la timeline (un titre, un synthé) comme élément
+	Cues	Éléments
+	TAKE	ENVOI
+	The preview cue goes on air from its first page	L’élément en aperçu passe à l’antenne à partir de sa première page
+	PREVIOUS	PRÉCÉDENT
+	The page before (on the first page: from its start)	La page précédente (sur la première : depuis son début)
+	NEXT	SUIVANT
+	The next page; after the last one, the preview cue	La page suivante ; après la dernière, l’élément en aperçu
+	HOLD	PAUSE
+	Stop the program where it is	Arrêter le programme là où il est
+	CONTINUE	REPRENDRE
+	Go on from where it stopped	Reprendre là où il s’est arrêté
+	UPDATE	ACTUALISER
+	Read the spreadsheet (or the clip) again; on air it changes at once	Relire le tableur (ou le clip) ; à l’antenne le changement est immédiat
+	OUT	SORTIE
+	Take everything off air	Tout retirer de l’antenne
+	Start Live Page	Démarrer la page en direct
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Servir le programme sur cet ordinateur pour la source navigateur d’OBS (127.0.0.1 uniquement)
+	not running	arrêtée
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Outils ▸ Paramètres du serveur WebSocket
+	Connect to OBS	Se connecter à OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Se connecter à OBS sur cet ordinateur et diriger sa source navigateur « CFA4 Live » vers la page en direct
+	Port	Port
+	Password	Mot de passe
+	Live page	Page en direct
+	Sound	Son
+	OBS	OBS
+	Nothing in preview	Rien en aperçu
+	page {page} of {pages}	page {page} sur {pages}
+	held	en pause
+	ended	terminé
+	Off air	Hors antenne
+	Stop Live Page	Arrêter la page en direct
+	Connected to OBS {version}; source “{source}”	Connecté à OBS {version} ; source « {source} »
+	Point OBS Again	Reconfigurer OBS
+	Select a graphic clip on the timeline first.	Sélectionnez d’abord un clip graphique dans la timeline.
+	Connecting to OBS…	Connexion à OBS…
+	Live Graphics…	Graphismes en direct…
+	PREVIEW	APERÇU
+	PROGRAM	PROGRAMME
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	une balise d’image ou de vidéo se trouve seule dans une cellule de corps (ou avec un seul nom, comme portrait) ; les autres balises ont été supprimées
+	the page gap is not a duration; the page style's is used	l’intervalle entre pages n’est pas une durée ; celui du style de page est utilisé
+	the page runtime is not a positive duration; the page style's is used	la durée de la page n’est pas une durée positive ; celle du style de page est utilisée
+	background “{file}” was not found; it is left out	l’arrière-plan “{file}” est introuvable ; il est omis
+	card page {page} is taller than the frame; use a roll page	la page carte {page} est plus haute que le cadre ; utilisez une page déroulante
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	la couleur “{colour}” du style de lettre “{style}” n’est pas #rrggbb ; elle est omise
+	colour “{colour}” is not #rrggbb; black is used	la couleur “{colour}” n’est pas #rrggbb ; le noir est utilisé
+	colour “{colour}” is not #rrggbb; white is used	la couleur “{colour}” n’est pas #rrggbb ; le blanc est utilisé
+	content style “{style}” does not exist; “{used}” is used	le style de contenu “{style}” n’existe pas ; “{used}” est utilisé
+	letter style “{style}” does not exist; the text keeps the block's style	le style de lettre “{style}” n’existe pas ; le texte garde le style du bloc
+	page gap “{value}” is not a duration	l’intervalle entre pages “{value}” n’est pas une durée
+	page runtime “{value}” is not a duration	la durée de page “{value}” n’est pas une durée
+	page style “{style}” does not exist; a roll page is used	le style de page “{style}” n’existe pas ; une page déroulante est utilisée
+	page {page}: the background names no file; it is left out	page {page} : l’arrière-plan ne nomme aucun fichier ; il est omis
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	page {page} : la durée est atteinte en modifiant la vitesse de défilement (la page n’a pas d’espaces entre les blocs à étirer)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	page {page} : la durée est atteinte en modifiant la vitesse de défilement (le générique est trop long même sans espaces)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	page {page} : la durée est atteinte en modifiant la vitesse de défilement (les espaces devraient être multipliés par plus de 20)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	page {page} : la transition exige que les pages se touchent (intervalle entre pages 0) ; elle est omise
+	page {page}: there is no transition “{name}”; the pages cut	page {page} : la transition “{name}” n’existe pas ; les pages s’enchaînent en coupe franche
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	la position d’axe “{value}” n’est pas prise en charge (un décalage en pixels, éventuellement avec “parallel”, l’est)
+	vertical gap “{value}” is not a number	l’espace vertical “{value}” n’est pas un nombre
+	picture “{file}” was not found or cannot be read; it is left out	l’image “{file}” est introuvable ou illisible ; elle est omise
+	video “{file}” was not found or cannot be read; it is left out	la vidéo “{file}” est introuvable ou illisible ; elle est omise
+	there is no roll page without its own runtime to stretch; the length cannot change	aucune page déroulante n’a de durée propre à étirer ; la longueur ne peut pas changer
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	les cartes et les espaces seuls durent {seconds} s ; la longueur demandée est plus courte, donc les pages déroulantes gardent leur longueur naturelle
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	style de lettre “{style}” : seule la première couche colorée est utilisée (pas de contours, d’ombres ni de bandes)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	la durée du générique entier n’est pas reprise ; utilisez Ajuster le générique à la musique (ou une longueur)
+	page style “{style}”: fade curves become linear fades	style de page “{style}” : les courbes de fondu deviennent des fondus linéaires
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	le style de contenu “{style}” n’a pas de titre dans Cinecred ; les titres écrits dans la feuille sont toujours affichés
+	content style “{style}”: sorting the names is not carried over	style de contenu “{style}” : le tri des noms n’est pas repris
+	transition curves are not carried over	les courbes de transition ne sont pas reprises
+	picture styles (pictures keep their own size) are not carried over	les styles d’image (les images gardent leur propre taille) ne sont pas repris
+	video (tape) styles are not carried over	les styles de vidéo (bande) ne sont pas repris
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	le projet Cinecred contient {n} feuilles de calcul de générique ; “{name}” est utilisée (choisissez-en une autre dans le champ Feuille de calcul)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Ajouter une constatation
+	Add as Finding	Ajouter comme constatation
+	Are colour and contrast acceptable?	La couleur et le contraste sont-ils acceptables ?
+	Automatic Checks	Contrôles automatiques
+	Bounds	Limites
+	Check	Contrôle
+	Check Now	Contrôler maintenant
+	Check quality after export	Contrôler la qualité après l’exportation
+	Checking…	Contrôle en cours…
+	Contact Sheet	Planche contact
+	Critical	Critique
+	Fail	Échec
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Constatation {row} : le timecode ne correspond à aucun instant de ce fichier (HH:MM:SS:II).
+	Findings	Constatations
+	Human Review	Vérification humaine
+	Incomplete	Incomplet
+	Is there a visible picture defect?	Y a-t-il un défaut d’image visible ?
+	Is there audible distortion?	Y a-t-il une distorsion audible ?
+	Is there unwanted noise?	Y a-t-il un bruit indésirable ?
+	Major	Majeure
+	Message	Message
+	Minor	Mineure
+	No contact sheet	Aucune planche contact
+	Not answered	Sans réponse
+	Not checked	Non contrôlé
+	Not run	Non exécuté
+	Note	Note
+	Pass	Réussi
+	Passed	Réussi
+	Passed with warnings	Réussi avec avertissements
+	Profile: {id} v{version}	Profil : {id} v{version}
+	Quality Check	Contrôle qualité
+	Quality Check…	Contrôle qualité…
+	Remove Finding	Supprimer la constatation
+	Report: {path}	Rapport : {path}
+	Review complete	Vérification terminée
+	Reviewer	Vérificateur
+	Run the media quality check on the finished file (docs/media-qc.md)	Lancer le contrôle qualité du fichier terminé (docs/media-qc.md)
+	Save Review	Enregistrer la vérification
+	Select a finished export in the queue	Sélectionnez une exportation terminée dans la file
+	Severity	Gravité
+	The engine is not running.	Le moteur ne fonctionne pas.
+	Time code	Timecode
+	Unsure	Incertain
+	accept	acceptable
+	the engine did not start the check	le moteur n’a pas lancé le contrôle
+	the engine sent no report	le moteur n’a envoyé aucun rapport
