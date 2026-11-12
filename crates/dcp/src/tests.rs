@@ -510,3 +510,32 @@ fn smpte_chunks_ratings_and_text_only_values() {
     assert!(c.issues.iter().any(|i| i.path.starts_with("CompositionPlaylist/RatingList/Rating[1]/Extra")), "{:#?}", c.issues);
     assert!(c.issues.iter().any(|i| i.path.starts_with("CompositionPlaylist/RatingList/Bogus")), "{:#?}", c.issues);
 }
+
+#[test]
+fn sha1_vectors() {
+    use crate::sha1::{Sha1, base64, sha1};
+    let hex = |d: [u8; 20]| d.iter().map(|b| format!("{b:02x}")).collect::<String>();
+    // FIPS 180-4 examples
+    assert_eq!(hex(sha1(b"")), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
+    assert_eq!(hex(sha1(b"abc")), "a9993e364706816aba3e25717850c26c9cd0d89d");
+    assert_eq!(hex(sha1(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")), "84983e441c3bd26ebaae4aa1f95129e5e54670f1");
+    let mut s = Sha1::new();
+    for _ in 0..1000 {
+        s.update(&[b'a'; 1000]);
+    }
+    assert_eq!(hex(s.finish()), "34aa973cd4c4daa4f61eeb2bdbad27316534016f");
+    // streaming in odd pieces gives the one-shot digest, across every padding boundary
+    let data: Vec<u8> = (0..300u32).map(|i| (i * 7 + 3) as u8).collect();
+    for len in [0, 1, 55, 56, 57, 63, 64, 65, 119, 120, 128, 300] {
+        let mut s = Sha1::new();
+        for piece in data[..len].chunks(13) {
+            s.update(piece);
+        }
+        assert_eq!(s.finish(), sha1(&data[..len]), "{len}");
+    }
+    // the packing list form, and back
+    assert_eq!(base64(&sha1(b"")), H);
+    assert_eq!(decode_sha1(H), Some(sha1(b"")));
+    assert_eq!(base64(b"ab"), "YWI=");
+    assert_eq!(base64(b"a"), "YQ==");
+}

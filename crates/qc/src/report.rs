@@ -5,9 +5,12 @@
 //! let a missing, skipped or failed mandatory result pass:
 //!
 //! 1. a mandatory check FAIL, or a critical human finding → [`Verdict::Fail`];
-//! 2. otherwise a mandatory check NOT_RUN or missing, a required human review not done, a render
-//!    that did not finish, or a cancelled run → [`Verdict::Incomplete`];
-//! 3. otherwise any WARN, an optional check FAIL, or a major/minor human finding → [`Verdict::Warn`];
+//! 2. otherwise a mandatory check NOT_RUN or missing, a required human review not done (or done
+//!    with a guided question unanswered or "unsure", or a problem answered without a finding that
+//!    gives its severity), a render that did not finish, or a cancelled run →
+//!    [`Verdict::Incomplete`];
+//! 3. otherwise any WARN, an optional check FAIL, a major/minor human finding, or a problem
+//!    answered without a finding in an optional review → [`Verdict::Warn`];
 //! 4. otherwise [`Verdict::Pass`].
 //!
 //! The render's own outcome is kept in [`QcReport::render`], apart from the QC result: a render
@@ -332,6 +335,12 @@ pub const QUESTIONS: &[(&str, &str)] = &[
     ("audio.noise", "Is there unwanted noise?"),
 ];
 
+/// The answer to a guided question that reports a problem (colour and contrast are asked the
+/// other way round).
+pub fn problem_answer(question: &str) -> AnswerValue {
+    if question == "picture.colorContrast" { AnswerValue::No } else { AnswerValue::Yes }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ReviewState {
@@ -535,8 +544,25 @@ impl QcReport {
                 Severity::Info => {}
             }
         }
-        if self.human_review_requirement == Requirement::Mandatory && self.human.as_ref().is_none_or(|h| h.state != ReviewState::Done) {
+        let review_required = self.human_review_requirement == Requirement::Mandatory;
+        if review_required && self.human.as_ref().is_none_or(|h| h.state != ReviewState::Done) {
             incomplete.push("human review: not done".into());
+        }
+        // A finished review vouches for the file only when every guided question is answered,
+        // and a problem the person reported carries a severity (a finding).
+        if let Some(h) = self.human.as_ref().filter(|h| h.state == ReviewState::Done) {
+            for (id, _) in QUESTIONS {
+                match h.answers.iter().find(|a| a.question == *id).map(|a| a.answer) {
+                    None | Some(AnswerValue::Unsure) if review_required => {
+                        incomplete.push(format!("human review: `{id}` not answered"));
+                    }
+                    Some(a) if a == problem_answer(id) && findings.is_empty() => {
+                        let text = format!("human review: `{id}` reports a problem but no finding gives its severity");
+                        if review_required { &mut incomplete } else { &mut warn }.push(text);
+                    }
+                    _ => {}
+                }
+            }
         }
         if let Some(r) = &self.render
             && r.status != RenderStatus::Done

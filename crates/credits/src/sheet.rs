@@ -58,7 +58,8 @@ impl Column {
             "pagestyle" | "page" | "oldal" | "oldalstílus" => Column::Page,
             "pageruntime" | "runtime" | "játékidő" | "oldalhossz" => Column::Runtime,
             "pagegap" | "oldalköz" => Column::PageGap,
-            _ => return None,
+            // Cinecred's names in its other languages
+            _ => return crate::cinecred::column(cell),
         })
     }
 }
@@ -128,6 +129,14 @@ pub struct Block {
     pub tails: Vec<(usize, String)>,
     /// Pictures shown in place of a body (a body cell holding only `{{Pic …}}` tags).
     pub pictures: Vec<Picture>,
+    /// A portrait beside each body cell (a cell with a picture tag and a name), or `None`;
+    /// empty when the block has none.
+    pub portraits: Vec<Option<Picture>>,
+    /// 1-based spreadsheet row of each body cell (rows of heads or tails alone are skipped).
+    pub body_rows: Vec<usize>,
+    /// Starts a parallel column: the block stands beside the column before it, from the same
+    /// top (`Spine Position` `-400 parallel` / `párhuzamos`).
+    pub parallel: bool,
     /// 1-based row of the block's first cell.
     pub row: usize,
 }
@@ -139,9 +148,13 @@ pub struct Picture {
     /// As written: a file name relative to the spreadsheet's folder, or an absolute path.
     pub file: String,
     pub height: Option<f64>,
+    /// A video (`{{Video …}}`), placed and moved like a picture, playing from its start.
+    pub video: bool,
 }
 
 const PIC_TAGS: [&str; 4] = ["pic", "picture", "kép", "logo"];
+/// Tags of a video in a cell.
+const VIDEO_TAGS: [&str; 3] = ["video", "videó", "mozgókép"];
 
 /// Take the picture tags out of a cell: the rest of the cell and the pictures, in order.
 pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
@@ -154,7 +167,8 @@ pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
         let tag = after.get(..j).unwrap_or("").trim();
         let (word, arg) = tag.split_once(char::is_whitespace).unwrap_or((tag, ""));
         let lower = word.to_lowercase();
-        if PIC_TAGS.contains(&lower.as_str()) && !arg.trim().is_empty() && pics.len() < 64 {
+        let video = VIDEO_TAGS.contains(&lower.as_str()) || crate::cinecred::is_video_word(&lower);
+        if (video || PIC_TAGS.contains(&lower.as_str()) || crate::cinecred::is_pic_word(&lower)) && !arg.trim().is_empty() && pics.len() < 64 {
             let arg = arg.trim();
             let (file, height) = match arg.rsplit_once(char::is_whitespace) {
                 Some((f, h)) => {
@@ -167,7 +181,7 @@ pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
                 None => (arg, None),
             };
             out.push_str(rest.get(..i).unwrap_or(""));
-            pics.push(Picture { file: file.to_string(), height });
+            pics.push(Picture { file: file.to_string(), height, video });
         } else {
             out.push_str(rest.get(..i + 2 + j + 2).unwrap_or(""));
         }
@@ -198,8 +212,9 @@ pub struct Credits {
 pub const MAX_PAGES: usize = 1_000;
 pub const MAX_BLOCKS: usize = 50_000;
 
-/// Replace inline markup: `{{Blank}}` becomes an empty line; other `{{…}}` tags (letter styles,
-/// videos, and pictures not standing alone in a body cell) are removed. Returns the text and whether anything was removed.
+/// Replace inline markup: `{{Blank}}` becomes an empty line; letter-style tags (`{{Style …}}`,
+/// see [`crate::markup`]) stay; other `{{…}}` tags (videos, and pictures not standing alone in a
+/// body cell) are removed. Returns the text and whether anything was removed.
 pub fn clean_markup(cell: &str) -> (String, bool) {
     let mut out = String::with_capacity(cell.len());
     let mut rest = cell;
@@ -213,7 +228,10 @@ pub fn clean_markup(cell: &str) -> (String, bool) {
             break;
         };
         let tag = after.get(..j).unwrap_or("").trim();
-        if !tag.eq_ignore_ascii_case("blank") {
+        if crate::markup::style_tag(tag).is_some() {
+            // letter styles stay for the layout
+            out.push_str(rest.get(i..i + 2 + j + 2).unwrap_or(""));
+        } else if !crate::cinecred::is_blank_word(tag) {
             dropped = true;
         }
         rest = after.get(j + 2..).unwrap_or("");
@@ -235,11 +253,18 @@ fn parse_gap(s: &str) -> Option<Gap> {
     Some(if px { Gap::Px(v) } else { Gap::Units(v) })
 }
 
-fn parse_spine(s: &str) -> Option<f64> {
+/// A spine position: a pixel offset, optionally `parallel` (`párhuzamos`) to the column before.
+fn parse_spine(s: &str) -> Option<(f64, bool)> {
     let t = s.trim().to_lowercase().replace(',', ".");
+    let last = t.split_whitespace().last().unwrap_or("").to_string();
+    let (t, parallel) = if last == "parallel" || last == "párhuzamos" || crate::cinecred::is_parallel_word(&last) {
+        (t.get(..t.len() - last.len()).unwrap_or("").trim().to_string(), true)
+    } else {
+        (t.clone(), false)
+    };
     let n = t.strip_suffix("px").unwrap_or(&t).trim();
     let v: f64 = n.parse().ok()?;
-    (v.is_finite() && v.abs() <= 100_000.0).then_some(v)
+    (v.is_finite() && v.abs() <= 100_000.0).then_some((v, parallel))
 }
 
 /// Interpret a table (rows of cells) as credits.
@@ -257,6 +282,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
     let mut page = Page { style: default_page.to_string(), runtime: None, gap_after: None, blocks: vec![], row: header + 2 };
     let mut style = default_content.to_string();
     let mut spine = 0.0;
+    let mut parallel_next = false;
     let mut pending_units = 0.0f64;
     let mut explicit_gap: Option<Gap> = None;
     let mut open = false; // the last block still takes body cells
@@ -265,22 +291,24 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
     for (i, r) in rows.iter().enumerate().skip(header + 1) {
         let rowno = i + 1;
         let raw_body = cols.iter().position(|k| *k == Some(Column::Body)).and_then(|j| r.get(j)).map(String::as_str).unwrap_or("");
-        // a body cell of only picture tags is a picture block
+        // a body cell of only picture tags is a picture block; a picture tag with a name is a
+        // portrait beside that name
         let (pic_rest, pics) = take_pictures(raw_body);
-        let pics = if pic_rest.trim().is_empty() { pics } else { Vec::new() };
+        let (pics, portrait) = if pic_rest.trim().is_empty() { (pics, None) } else { (Vec::new(), pics.into_iter().next()) };
         let pic_only = !pics.is_empty();
         let mut cell = |c: Column| -> String {
             if c == Column::Body && pic_only {
                 return String::new();
             }
             let raw = cols.iter().position(|k| *k == Some(c)).and_then(|j| r.get(j)).map(String::as_str).unwrap_or("");
+            let raw = if c == Column::Body && portrait.is_some() { pic_rest.trim() } else { raw };
             let (t, dropped) = clean_markup(raw);
             if dropped && !warned_markup {
                 warned_markup = true;
                 warn(
                     &mut out,
                     rowno,
-                    "letter styles and videos in `{{…}}` are not supported yet, and a picture needs a body cell of its own; the tags were removed".into(),
+                    "a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed".into(),
                 );
             }
             t
@@ -288,7 +316,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         let (head, body, tail) = (cell(Column::Head), cell(Column::Body), cell(Column::Tail));
         let (gap, cstyle, spine_s) = (cell(Column::Gap), cell(Column::Style), cell(Column::Spine));
         let (pstyle, runtime, pgap) = (cell(Column::Page), cell(Column::Runtime), cell(Column::PageGap));
-        let body_blank = raw_body.trim().eq_ignore_ascii_case("{{blank}}");
+        let body_blank = raw_body.trim().strip_prefix("{{").and_then(|x| x.strip_suffix("}}")).is_some_and(crate::cinecred::is_blank_word);
 
         // a new page
         if !pstyle.trim().is_empty() {
@@ -324,8 +352,11 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         }
         if !spine_s.trim().is_empty() {
             match parse_spine(&spine_s) {
-                Some(v) => spine = v,
-                None => warn(&mut out, rowno, format!("spine position `{}` is not supported (a pixel offset is)", spine_s.trim())),
+                Some((v, par)) => {
+                    spine = v;
+                    parallel_next = par;
+                }
+                None => warn(&mut out, rowno, format!("spine position `{}` is not supported (a pixel offset, optionally `parallel`, is)", spine_s.trim())),
             }
             open = false;
         }
@@ -363,8 +394,11 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
                 gap_before,
                 head: has_head.then(|| head.trim().to_string()),
                 body: if has_body { vec![body_text] } else { vec![] },
+                body_rows: if has_body { vec![rowno] } else { vec![] },
                 tails: vec![],
+                portraits: if has_body && portrait.is_some() { vec![portrait.clone()] } else { vec![] },
                 pictures: pics,
+                parallel: std::mem::take(&mut parallel_next),
                 row: rowno,
             });
             pending_units = 0.0;
@@ -372,6 +406,12 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
             open = !has_pics;
         } else if has_body && let Some(b) = page.blocks.last_mut() {
             b.body.push(body_text);
+            b.body_rows.push(rowno);
+            if portrait.is_some() || !b.portraits.is_empty() {
+                // portraits line up with the body cells
+                b.portraits.resize(b.body.len() - 1, None);
+                b.portraits.push(portrait.clone());
+            }
         }
         if has_tail && let Some(b) = page.blocks.last_mut() {
             let at = b.body.len().saturating_sub(1);

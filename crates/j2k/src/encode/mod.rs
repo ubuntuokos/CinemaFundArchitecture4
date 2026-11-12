@@ -53,6 +53,127 @@ pub enum Profile {
     /// Digital Cinema 4K (Rsiz 4): at most 4096 × 2160, 1-6 levels, the 4K resolution in its own
     /// progression (POC).
     Cinema4k,
+    /// An IMF profile (Rsiz 0400h-0900h with the mainlevel and sublevel; see [`ImfProfile`]).
+    Imf(ImfProfile),
+}
+
+/// Frame size class of an IMF profile.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ImfSize {
+    /// At most 2048 × 1556.
+    TwoK,
+    /// At most 4096 × 3112.
+    FourK,
+    /// At most 8192 × 6224.
+    EightK,
+}
+
+impl ImfSize {
+    /// The smallest class that holds `width` × `height`.
+    pub fn of(width: u32, height: u32) -> Option<Self> {
+        [(ImfSize::TwoK, 2048, 1556), (ImfSize::FourK, 4096, 3112), (ImfSize::EightK, 8192, 6224)]
+            .into_iter()
+            .find(|&(_, w, h)| width <= w && height <= h)
+            .map(|(s, _, _)| s)
+    }
+    fn max(self) -> (u32, u32) {
+        match self {
+            ImfSize::TwoK => (2048, 1556),
+            ImfSize::FourK => (4096, 3112),
+            ImfSize::EightK => (8192, 6224),
+        }
+    }
+}
+
+/// An IMF profile of ISO/IEC 15444-1 (the 2K / 4K / 8K IMF Single Tile Lossy and Single/Multi
+/// Tile Reversible profiles that SMPTE ST 2067-21 lists) with its operating level.
+///
+/// Our codestreams use one tile, 32 × 32 code-blocks, CPRL, 128 × 128 precincts in the lowest
+/// resolution and 256 × 256 above, one quality layer and one tile-part per component.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ImfProfile {
+    pub size: ImfSize,
+    /// Reversible 5/3 (Single/Multi Tile Reversible profile); else 9/7 (Single Tile Lossy).
+    pub reversible: bool,
+    /// 1-10: the maximum component sampling rate (ST 2067-21 Table E.2).
+    pub mainlevel: u8,
+    /// 0 for the reversible profiles; 1..=max(1, mainlevel - 2) for the lossy ones: the maximum
+    /// compressed bit rate, 200 · 2^(sublevel - 1) Mbit/s (Table E.3).
+    pub sublevel: u8,
+}
+
+/// Maximum component sampling rate of each mainlevel, in MSamples/s (ST 2067-21 Table E.2).
+const IMF_MAINLEVEL_MSPS: [u64; 10] = [65, 130, 195, 260, 520, 1200, 2400, 4800, 9600, 19200];
+
+impl ImfProfile {
+    /// The codestream's Rsiz: profile in the high byte, sublevel in bits 4-7, mainlevel in
+    /// bits 0-3.
+    pub fn rsiz(&self) -> u16 {
+        let base: u16 = match (self.size, self.reversible) {
+            (ImfSize::TwoK, false) => 0x0400,
+            (ImfSize::FourK, false) => 0x0500,
+            (ImfSize::EightK, false) => 0x0600,
+            (ImfSize::TwoK, true) => 0x0700,
+            (ImfSize::FourK, true) => 0x0800,
+            (ImfSize::EightK, true) => 0x0900,
+        };
+        base | u16::from(self.sublevel & 0x0F) << 4 | u16::from(self.mainlevel & 0x0F)
+    }
+
+    /// The highest sublevel of a mainlevel (ST 2067-21 Table E.2).
+    pub fn max_sublevel(mainlevel: u8) -> u8 {
+        mainlevel.saturating_sub(2).max(1)
+    }
+
+    /// Maximum compressed bit rate of a lossy sublevel, in bits per second.
+    pub fn sublevel_bitrate(sublevel: u8) -> u64 {
+        200_000_000u64 << sublevel.clamp(1, 8).saturating_sub(1)
+    }
+
+    /// The smallest profile and levels (ST 2067-21 Annex E) for `width` × `height` pictures of
+    /// `components` components per pixel (3 for 4:4:4, 2 for 4:2:2) at `fps_num / fps_den`
+    /// frames per second, with 5 % headroom for speed-up; lossy profiles at `bitrate` bits per
+    /// second. `None` when the pictures exceed the 8K profiles or mainlevel 10.
+    pub fn select(width: u32, height: u32, components: u32, fps_num: u32, fps_den: u32, reversible: bool, bitrate: u64) -> Option<Self> {
+        let size = ImfSize::of(width, height)?;
+        let den = u128::from(fps_den.max(1));
+        // MSamples/s × 1.05, rounded up
+        let rate = u128::from(width) * u128::from(height) * u128::from(components) * u128::from(fps_num) * 105;
+        let msps = rate.div_ceil(den * 100 * 1_000_000);
+        let mainlevel = IMF_MAINLEVEL_MSPS.iter().position(|&m| u128::from(m) >= msps)? as u8 + 1;
+        let sublevel = if reversible {
+            0
+        } else {
+            let want = u128::from(bitrate) * 105 / 100;
+            (1..=Self::max_sublevel(mainlevel)).find(|&s| u128::from(Self::sublevel_bitrate(s)) >= want).unwrap_or(Self::max_sublevel(mainlevel))
+        };
+        Some(ImfProfile { size, reversible, mainlevel, sublevel })
+    }
+
+    /// Decomposition levels allowed for an image (tile) `width` wide.
+    fn levels(&self, width: u32) -> std::ops::RangeInclusive<u8> {
+        let max = match (self.reversible, self.size) {
+            (false, ImfSize::TwoK) => 5,
+            (false, ImfSize::FourK) => 6,
+            (false, ImfSize::EightK) => 7,
+            (true, s) => {
+                let cap = match s {
+                    ImfSize::TwoK => 5,
+                    ImfSize::FourK => 6,
+                    ImfSize::EightK => 7,
+                };
+                let by_width = match width {
+                    8192.. => 7,
+                    4096.. => 6,
+                    2048.. => 5,
+                    1024.. => 4,
+                    _ => cap,
+                };
+                by_width.min(cap)
+            }
+        };
+        1..=max
+    }
 }
 
 /// Encoder settings. Start from [`EncodeOptions::lossless`], [`EncodeOptions::lossy`] or a
@@ -138,6 +259,32 @@ impl EncodeOptions {
     /// Digital Cinema 4K at `fps` frames per second.
     pub fn cinema_4k(fps: u32) -> Self {
         Self::cinema(Profile::Cinema4k, 6, fps)
+    }
+
+    /// An IMF profile ([`ImfProfile`]) for `width` × `height` pictures at `fps_num / fps_den`
+    /// frames per second: the most decomposition levels the profile and the picture allow,
+    /// and, for the lossy profiles, the sublevel's bit rate as the byte limit of each frame.
+    pub fn imf(profile: ImfProfile, width: u32, height: u32, fps_num: u32, fps_den: u32) -> Self {
+        let fit = (width.min(height).max(1).ilog2()).min(32) as u8;
+        let levels = (*profile.levels(width).end()).min(fit).max(1);
+        let max_bytes = (!profile.reversible).then(|| {
+            let bits = u128::from(ImfProfile::sublevel_bitrate(profile.sublevel)) * u128::from(fps_den.max(1));
+            usize::try_from(bits / (8 * u128::from(fps_num.max(1)))).unwrap_or(usize::MAX)
+        });
+        EncodeOptions {
+            reversible: profile.reversible,
+            levels,
+            progression: Progression::Cprl,
+            code_block: (5, 5),
+            precincts: vec![(7, 7), (8, 8)],
+            mct: true,
+            step: 1.0,
+            max_bytes,
+            max_component_bytes: None,
+            tile_part_per_component: true,
+            tlm: true,
+            profile: Profile::Imf(profile),
+        }
     }
 }
 
@@ -567,8 +714,32 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
     if (0..=usize::from(opts.levels)).any(|r| precinct(r).0 > 15 || precinct(r).1 > 15 || r > 0 && (precinct(r).0 == 0 || precinct(r).1 == 0)) {
         return Err(Error::Invalid("precinct size"));
     }
+    if let Profile::Imf(imf) = opts.profile {
+        let (max_w, max_h) = imf.size.max();
+        let c = &image.components;
+        let components_ok = c.len() <= 3
+            && c.iter().all(|p| (8..=16).contains(&p.precision) && !p.signed && p.dy == 1)
+            && c.first().is_some_and(|p| p.dx == 1)
+            && c.iter().skip(1).all(|p| (p.dx == 1 || p.dx == 2) && p.dx == c[1].dx);
+        let levels_ok = (1..=10).contains(&imf.mainlevel)
+            && if imf.reversible { imf.sublevel == 0 } else { (1..=ImfProfile::max_sublevel(imf.mainlevel)).contains(&imf.sublevel) };
+        if !components_ok
+            || !levels_ok
+            || w > max_w
+            || h > max_h
+            || !imf.levels(w).contains(&opts.levels)
+            || opts.reversible != imf.reversible
+            || opts.code_block != (5, 5)
+            || opts.progression != Progression::Cprl
+            || opts.precincts.first() != Some(&(7, 7))
+            || opts.precincts.iter().skip(1).any(|&p| p != (8, 8))
+        {
+            return Err(Error::Invalid("image or options outside the IMF profile"));
+        }
+        return Ok(());
+    }
     let (max_w, max_h, levels) = match opts.profile {
-        Profile::Part1 => return Ok(()),
+        Profile::Part1 | Profile::Imf(_) => return Ok(()),
         Profile::Cinema2k => (2048, 1080, 1..=5),
         Profile::Cinema4k => (4096, 2160, 1..=6),
     };
@@ -828,6 +999,7 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
         Profile::Part1 => 0,
         Profile::Cinema2k => 3,
         Profile::Cinema4k => 4,
+        Profile::Imf(imf) => imf.rsiz(),
     };
     marker(&mut o, 0xFF51, |s| {
         s.extend(rsiz.to_be_bytes());

@@ -272,3 +272,118 @@ fn dcp_timed_text_mxf_and_dcst_xml_import_as_caption_tracks() {
     assert!(s.execute("file.import", json!({"paths": [broken.to_string_lossy()]})).is_err());
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// #929: closed captions in an MXF file's ANC data (ST 436-1 elements carrying ST 334-2 CDPs)
+/// import as a caption track with the same cues as the MCC file of those CDPs.
+#[test]
+fn mxf_anc_closed_captions_import_as_a_caption_track() {
+    let doc = cfa4_captions::Document {
+        cues: vec![
+            cfa4_captions::Cue { start: Tick(TICKS_PER_SECOND), end: Tick(3 * TICKS_PER_SECOND), text: "Hello ANC".into(), ..Default::default() },
+            cfa4_captions::Cue { start: Tick(4 * TICKS_PER_SECOND), end: Tick(6 * TICKS_PER_SECOND), text: "Second line".into(), ..Default::default() },
+        ],
+        ..Default::default()
+    };
+    let mcc = cfa4_captions::mcc::write_with(&doc, false, true, true);
+    let expected = cfa4_captions::mcc::parse(&mcc).unwrap();
+    // the MCC file's CDPs, frame by frame (non-drop 30 fps labels on the 29.97 grid)
+    let mut frames: Vec<Vec<u8>> = Vec::new();
+    for l in mcc.lines().filter(|l| !l.starts_with("//") && !l.contains('=')) {
+        let Some((tc, data)) = l.split_once('\t') else { continue };
+        let p: Vec<usize> = tc.split([':', ';']).map(|x| x.parse().unwrap()).collect();
+        let frame = ((p[0] * 60 + p[1]) * 60 + p[2]) * 30 + p[3];
+        frames.resize(frame + 1, cfa4_mxf::testing::anc_element(&[], false));
+        frames[frame] = cfa4_mxf::testing::anc_element(&[cfa4_captions::mcc::expand(data).unwrap()], false);
+    }
+    assert!(frames.len() > 150, "{} frames", frames.len());
+    let dir = std::env::temp_dir().join(format!("fc-anc-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let mxf = dir.join("xdcam_cc.mxf");
+    std::fs::write(&mxf, cfa4_mxf::testing::build_anc((30000, 1001), &frames)).unwrap();
+    let mut s = demo();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]}));
+    let r = match r {
+        Ok(r) => r,
+        Err(e) => panic!("{e}"),
+    };
+    assert_eq!(r["documents"][0]["format"], "MXF ANC captions", "{r}");
+    assert_eq!(r["documents"][0]["captions"], 2, "{r}");
+    let q = s.active_sequence().unwrap();
+    let tr = &q.caption_tracks[0];
+    assert_eq!(tr.name, "xdcam_cc (CC)");
+    assert_eq!(tr.captions.len(), expected.cues.len());
+    for (c, e) in tr.captions.iter().zip(&expected.cues) {
+        assert_eq!(c.text, e.text);
+        assert_eq!(c.start, q.settings.frame_rate.snap_nearest(e.start));
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// An MXF file without caption distribution packets: CC1 in digitised line 21 VI lines (10-bit,
+/// luma and colour difference), CC3 in ST 334-1 CEA-608 packets on field 2. Each channel
+/// becomes its own caption track with the right texts and times.
+#[test]
+fn mxf_line21_and_cea608_packets_import_per_channel() {
+    use cfa4_captions::cea608::{line21_samples, with_parity};
+    use cfa4_mxf::testing::{anc_element, build_anc, build_vi, vi_element};
+    let cue = |a: i64, b: i64, t: &str| cfa4_captions::Cue {
+        start: Tick(a * TICKS_PER_SECOND),
+        end: Tick(b * TICKS_PER_SECOND),
+        text: t.into(),
+        ..Default::default()
+    };
+    let cc1 = cfa4_captions::Document { cues: vec![cue(1, 3, "From line 21"), cue(4, 6, "Second one")], ..Default::default() };
+    let cc3 = cfa4_captions::Document { cues: vec![cue(2, 4, "Field two")], ..Default::default() };
+    let rate = cfa4_time::FrameRate::new(30000, 1001);
+    let expect = |d: &cfa4_captions::Document| {
+        let s = cfa4_captions::scc::schedule(d);
+        cfa4_captions::scc::decode_pairs(s.into_iter().map(|(f, (a, b))| (f, a, b)), rate)
+    };
+    let s1 = cfa4_captions::scc::schedule(&cc1);
+    // field 2 carries CC3 with the misc control codes 15h instead of 14h
+    let s3: std::collections::BTreeMap<i64, (u8, u8)> =
+        cfa4_captions::scc::schedule(&cc3).into_iter().map(|(f, (a, b))| (f, (if a == 0x14 { 0x15 } else { a }, b))).collect();
+    let frames = s1.keys().chain(s3.keys()).max().map_or(0, |&f| f as usize + 2);
+    let dir = std::env::temp_dir().join(format!("fc-l21-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    // line 21 as 4:2:2 Cb Y Cr Y samples (coding 9), chroma at 512
+    let vi: Vec<Vec<u8>> = (0..frames as i64)
+        .map(|f| {
+            let (a, b) = s1.get(&f).copied().unwrap_or((0, 0));
+            let luma = line21_samples(with_parity(a), with_parity(b), 720, 20.0);
+            let both: Vec<u16> = luma.iter().flat_map(|&y| [512, y]).collect();
+            vi_element(&[(21, 2, 9, both), (284, 3, 7, vec![64; 720])])
+        })
+        .collect();
+    let anc: Vec<Vec<u8>> = (0..frames as i64)
+        .map(|f| match s3.get(&f) {
+            Some(&(a, b)) => anc_element(&[vec![0x61, 0x02, 3, 0x09, with_parity(a), with_parity(b)]], false),
+            None => anc_element(&[], false),
+        })
+        .collect();
+    let mut s = demo();
+    for (name, bytes, want) in [
+        ("vbi_cc.mxf", build_vi((30000, 1001), &vi), vec![("vbi_cc (CC1)", expect(&cc1))]),
+        ("anc608.mxf", build_anc((30000, 1001), &anc), vec![("anc608 (CC3)", expect(&cc3))]),
+    ] {
+        let mxf = dir.join(name);
+        std::fs::write(&mxf, bytes).unwrap();
+        let r = match s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})) {
+            Ok(r) => r,
+            Err(e) => panic!("{e}"),
+        };
+        assert_eq!(r["documents"][0]["format"], "MXF line 21 captions", "{r}");
+        let q = s.active_sequence().unwrap();
+        for (track, cues) in want {
+            assert!(!cues.is_empty());
+            let tr = q.caption_tracks.iter().find(|t| t.name == track).unwrap_or_else(|| panic!("no {track}: {r}"));
+            assert_eq!(tr.format, cfa4_project::CaptionFormat::Cea608);
+            assert_eq!(tr.captions.len(), cues.len(), "{track}");
+            for (c, e) in tr.captions.iter().zip(&cues) {
+                assert_eq!(c.text, e.text);
+                assert_eq!(c.start, q.settings.frame_rate.snap_nearest(e.start));
+            }
+        }
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}

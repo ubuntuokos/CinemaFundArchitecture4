@@ -3124,8 +3124,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bit 4:2:2), PCM 24 bit 48 kHz, timecode iniziale
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP lungo (12 immagini, IBBP) a 50 Mbit/s in stile XDCAM HD422, PCM 24 bit 48 kHz; dimensioni HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0,3 bit per pixel), PCM 24 bit 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipo D-10 (IMX 50): MPEG-2 4:2:2P@ML solo intra a 50 Mbit/s, 720x486 a 29,97 fps (4:3), quattro canali audio 24 bit 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipo D-10 (IMX 50): MPEG-2 4:2:2P@ML solo intra a 50 Mbit/s, 720x576 a 25 fps (4:3), quattro canali audio 24 bit 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bit 48 kHz, timecode iniziale
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a con lo schema SMPTE RDD 9: MPEG-2 4:2:2 Profile GOP lungo (12 immagini, IBBP) a 50 Mbit/s, 1920x1080 o 1280x720 progressivo, quattro canali 24 bit 48 kHz come elementi AES3 per canale
 	Main	Main
 	Mark In (Hover Scrub)	Imposta attacco (scorrimento al passaggio)
 	Mark Out (Hover Scrub)	Imposta stacco (scorrimento al passaggio)
@@ -3651,6 +3659,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Cartella DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 a 24 bit 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Cartella DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 a 24 bit 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Cartella IMF SMPTE: JPEG 2000 1920×1080, PCM 5.1 a 24 bit 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Cartella IMF SMPTE: JPEG 2000 3840×2160, PCM 5.1 a 24 bit 48 kHz
+	Episode	Episodio
+	Event highlights	Momenti salienti dell'evento
+	Event	Evento
+	Lossless (reversible JPEG 2000)	Senza perdita (JPEG 2000 reversibile)
+	Package language	Lingua del pacchetto
 	Show Duplicate Frame Markers	Mostra indicatori dei fotogrammi duplicati
 	Work Area Bar	Barra dell’area di lavoro
 	Set Work Area Bar In Point	Imposta punto di attacco della barra dell’area di lavoro
@@ -3662,6 +3680,8 @@
 	Analyze Source for Smart Cut	Analizza sorgente per Smart Cut
 	Plan Smart Cut	Pianifica Smart Cut
 	Run Smart Cut	Esegui Smart Cut
+	DASH Manifest	Manifest DASH
+	Also write a DASH manifest (.mpd)	Scrivi anche un manifest DASH (.mpd)
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/it.tsv).
@@ -3808,6 +3828,7 @@
 	Output file	File di output
 	Output folder	Cartella di output
 	PCM (uncompressed)	PCM (non compresso)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	Pace	Ritmo
 	Path:	Percorso:
 	Program Stream (.mpg, LPCM audio)	Flusso di programma (.mpg, audio LPCM)
@@ -3913,6 +3934,9 @@
 	1 B picture between anchors	1 immagine B tra le immagini di ancoraggio
 	10-bit RGB	RGB a 10 bit
 	12-bit X'Y'Z'	X'Y'Z' a 12 bit
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 a 10 bit
+	JPEG 2000 IMF lossy	JPEG 2000 IMF con perdita
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reversibile
 	16-bit half float	virgola mobile a mezza precisione a 16 bit
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bit per HDR)
 	BDAV Transport Stream	flusso di trasporto BDAV
@@ -4215,3 +4239,288 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(una tabella)
+	A .ods, .xlsx or CSV credits sheet	Un foglio di titoli di coda .ods, .xlsx o CSV
+	Built-in styles	Stili integrati
+	Card	Cartello
+	Choose a credits spreadsheet.	Scegli un foglio di calcolo dei titoli di coda.
+	Credits Spreadsheet	Foglio di calcolo dei titoli di coda
+	Credits from a Spreadsheet	Titoli di coda da un foglio di calcolo
+	Credits styling (*.json)	Stile dei titoli di coda (*.json)
+	Moment in the page	Momento nella pagina
+	No preview	Nessuna anteprima
+	Page	Pagina
+	Pictures	Immagini
+	Place at Playhead	Posiziona sull'indicatore di riproduzione
+	Placed {n} pages on the timeline.	Posizionate {n} pagine sulla sequenza.
+	Placing…	Posizionamento…
+	Reading…	Lettura…
+	Row {row}: {message}	Riga {row}: {message}
+	Sheet	Foglio
+	Spreadsheet	Foglio di calcolo
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Fogli di calcolo (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Stile
+	The spreadsheet's folder	La cartella del foglio di calcolo
+	Total: {time}	Totale: {time}
+	Warnings	Avvisi
+	Credits Page Picture	Immagine della pagina dei titoli di coda
+	Preview Credits	Anteprima titoli di coda
+	Credits Styles	Stili dei titoli di coda
+	(empty row)	(riga vuota)
+	Accepting every change would replace these, because their block changed: {names}	Accettando tutte le modifiche verrebbero sostituiti questi, perché il loro blocco è cambiato: {names}
+	Added	Aggiunto
+	Before → After	Prima → Dopo
+	CFA4 credits file (*.cfa4credits)	File titoli di coda CFA4 (*.cfa4credits)
+	Change	Modifica
+	Changed	Modificato
+	Comparing…	Confronto in corso…
+	Keep my edits on the pages (where their block is unchanged)	Mantieni le mie modifiche sulle pagine (dove il loro blocco è invariato)
+	Locate Spreadsheet…	Individua foglio di calcolo…
+	Refresh Credits from Spreadsheet	Aggiorna titoli di coda dal foglio di calcolo
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Aggiornato: {n} modifiche applicate, {kept} modifiche manuali mantenute.
+	Refreshing…	Aggiornamento…
+	Removed	Rimosso
+	Save as Credits File…	Salva come file titoli di coda…
+	Saved: {path}	Salvato: {path}
+	Select None	Deseleziona tutto
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Foglio di calcolo, foglio di lavoro, stile e tabella in un unico file, da aprire su qualsiasi computer
+	The spreadsheet {file} has not changed since the credits were placed.	Il foglio di calcolo {file} non è cambiato da quando sono stati posizionati i titoli di coda.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} modifiche in {file} da quando sono stati posizionati i titoli di coda. Deseleziona quelle che non vuoi.
+	{n} layers were edited by hand on the pages.	{n} livelli sono stati modificati a mano sulle pagine.
+	Refresh Credits from Spreadsheet…	Aggiorna titoli di coda dal foglio di calcolo…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Fogli di calcolo e file dei titoli di coda (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Salva file dei titoli di coda…
+	Compare Credits with Spreadsheet	Confronta i titoli di coda con il foglio di calcolo
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Una riga attraversa l'inquadratura in {seconds} s; da 6 s in su si legge bene
+	Checks and warnings	Controlli e avvisi
+	Checks: {errors} errors, {warnings} warnings	Controlli: {errors} errori, {warnings} avvisi
+	Page {page}: {message}	Pagina {page}: {message}
+	The card holds for only {seconds} s after its fades	Il cartello resta fermo solo {seconds} s dopo le dissolvenze
+	The font “{font}” has no “{chars}”; another font draws them	Il font “{font}” non ha “{chars}”; li disegna un altro font
+	The font “{font}” is not installed; another font is used	Il font “{font}” non è installato; viene usato un altro font
+	This page starts {seconds} s before the previous one ends	Questa pagina inizia {seconds} s prima della fine della precedente
+	{more} more of the same	altri {more} uguali
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” è mostrato al {percent} % dei suoi pixel; apparirà sfocato
+	“{name}” appears twice in the same block	“{name}” compare due volte nello stesso blocco
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” è scritto “{other}” alla riga {otherRow}
+	“{text}” is outside the title-safe area	“{text}” è fuori dall'area sicura dei titoli
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” è troppo scuro sul nero (contrasto {ratio}:1; ne servono almeno 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” è alto {px} px; da 24 px in su si legge bene
+	The roll moves {speed} px per frame; a whole number does not shimmer	Lo scorrimento avanza di {speed} px per fotogramma; un numero intero non sfarfalla
+	Check Credits	Controlla titoli di coda
+	Cards last whole beats (cuts on the beat)	I cartelli durano battute intere (stacchi a tempo)
+	Fit Credits to Music	Adatta titoli di coda alla musica
+	Fit to This Length	Adatta a questa durata
+	Fitting removed.	Adattamento rimosso.
+	Fitting…	Adattamento in corso…
+	Length of the credits	Durata dei titoli di coda
+	Length:	Durata:
+	Length: {time}	Durata: {time}
+	Listening to the music…	Ascolto della musica…
+	No music to measure ({problem}); type the length.	Nessuna musica da misurare ({problem}); inserisci la durata.
+	Remove Fitting	Rimuovi adattamento
+	Select a credits page on the timeline.	Seleziona una pagina dei titoli di coda sulla sequenza.
+	Start the credits where the music starts	Fai iniziare i titoli di coda dove inizia la musica
+	The credits now last {time}.	I titoli di coda ora durano {time}.
+	The whole music ({time})	Tutta la musica ({time})
+	To the last bar line ({time})	Fino all'ultima stanghetta ({time})
+	Until the sound ends ({time})	Fino alla fine del suono ({time})
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	i titoli di coda senza adattamento: {time}
+	the sound ends at {time}	il suono termina a {time}
+	Fit Credits to Music…	Adatta titoli di coda alla musica…
+	Analyse Music for Credits	Analizza la musica per i titoli di coda
+	A picture or video is behind the text: check the contrast by eye	Dietro il testo c'è un'immagine o un video: controlla il contrasto a occhio
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Area sicura azione (93 %), area sicura titoli (90 %), il centro e le linee guida della pagina
+	Baseline grid	Griglia della linea di base
+	Crawl	Scorrimento
+	Into the next	Nel successivo
+	Lines one gap unit apart, moving with the page	Righe distanziate di un'unità di spazio, che si muovono con la pagina
+	Picture: {file}	Immagine: {file}
+	Safe areas and spines	Aree sicure e linee guida
+	The text moves {speed} px per frame; a whole number does not shimmer	Il testo si sposta di {speed} px per fotogramma; un numero intero non sfarfalla
+	Video: {file}	Video: {file}
+	Looped video: {file}	Video in loop: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” non risalta dallo sfondo (contrasto {ratio}:1; ne servono almeno 4,5:1)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Un aspetto pronto: stili, sfondi, transizioni e tempi. Un file di stile, se indicato, ha la precedenza.
+	Apply Credits Template…	Applica modello di titoli di coda…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Scegli prima un modello.
+	Name of the template:	Nome del modello:
+	New Spreadsheet from Template…	Nuovo foglio di calcolo da modello…
+	Template	Modello
+	Template saved: {name}	Modello salvato: {name}
+	Template:	Modello:
+	built in	integrato
+	mine	mio
+	this project	questo progetto
+	Credits Templates	Modelli di titoli di coda
+	Cinecred Project…	Progetto Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Apri una cartella di progetto Cinecred (Styling.toml e il suo foglio di calcolo dei titoli)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Fogli di calcolo, file titoli di coda e progetti Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	(blocco vuoto)
+	Apply Template…	Applica modello…
+	Change them in the spreadsheet; the credits follow when you save it.	Modificali nel foglio di calcolo; i titoli di coda si aggiornano al salvataggio.
+	Compact View	Vista compatta
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Confronta i titoli di coda selezionati nella timeline con il loro foglio di calcolo, riga per riga
+	Fit the selected credits to the music under them	Adatta i titoli di coda selezionati alla musica sottostante
+	Fit to Music…	Adatta alla musica…
+	Full View	Vista completa
+	Give the selected credits on the timeline another template	Assegna un altro modello ai titoli di coda selezionati nella timeline
+	Names	Nomi
+	No pages	Nessuna pagina
+	Refresh Placed Credits…	Aggiorna titoli di coda inseriti…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Mostra tutto: blocchi, proprietà, le pagine nel tempo, controlli e strumenti dei titoli di coda
+	Spine	Asse
+	Tails	Note
+	The blocks of the chosen page; choose one to see it in the preview	I blocchi della pagina scelta; scegline uno per vederlo nell’anteprima
+	The pages along time; click one to choose it	Le pagine nel tempo; fai clic su una per sceglierla
+	{n} more	altri {n}
+	Block	Blocco
+	parallel	parallelo
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Nella pagina (OBS lo prende dalla sorgente browser)
+	Separate (a media source in OBS)	Separato (una sorgente multimediale in OBS)
+	No sound	Nessun suono
+	credits	titoli di coda
+	graphic	grafica
+	{n} pages	{n} pagine
+	Live Graphics	Grafica in diretta
+	Prepared cues; double-click one to put it in preview	Elementi preparati; doppio clic per metterne uno in anteprima
+	Add Credits…	Aggiungi titoli di coda…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Un foglio di titoli di coda, un file di titoli o un progetto Cinecred come elemento
+	Add Selected Graphic	Aggiungi grafica selezionata
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	La clip grafica selezionata nella timeline (un titolo, un sottopancia) come elemento
+	Cues	Elementi
+	TAKE	TAKE
+	The preview cue goes on air from its first page	L’elemento in anteprima va in onda dalla sua prima pagina
+	PREVIOUS	PRECEDENTE
+	The page before (on the first page: from its start)	La pagina precedente (sulla prima: dal suo inizio)
+	NEXT	SUCCESSIVA
+	The next page; after the last one, the preview cue	La pagina successiva; dopo l’ultima, l’elemento in anteprima
+	HOLD	PAUSA
+	Stop the program where it is	Ferma il programma dov’è
+	CONTINUE	CONTINUA
+	Go on from where it stopped	Riprendi da dove si è fermato
+	UPDATE	AGGIORNA
+	Read the spreadsheet (or the clip) again; on air it changes at once	Rileggi il foglio (o la clip); in onda cambia subito
+	OUT	FUORI
+	Take everything off air	Togli tutto dall’onda
+	Start Live Page	Avvia pagina in diretta
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Servi il programma su questo computer per la sorgente browser di OBS (solo 127.0.0.1)
+	not running	non avviata
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Strumenti ▸ Impostazioni server WebSocket
+	Connect to OBS	Collega a OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Collega a OBS su questo computer e punta la sua sorgente browser “CFA4 Live” alla pagina in diretta
+	Port	Porta
+	Password	Password
+	Live page	Pagina in diretta
+	Sound	Suono
+	OBS	OBS
+	Nothing in preview	Niente in anteprima
+	page {page} of {pages}	pagina {page} di {pages}
+	held	in pausa
+	ended	terminato
+	Off air	Non in onda
+	Stop Live Page	Ferma pagina in diretta
+	Connected to OBS {version}; source “{source}”	Collegato a OBS {version}; sorgente “{source}”
+	Point OBS Again	Reimposta OBS
+	Select a graphic clip on the timeline first.	Seleziona prima una clip grafica nella timeline.
+	Connecting to OBS…	Collegamento a OBS…
+	Live Graphics…	Grafica in diretta…
+	PREVIEW	ANTEPRIMA
+	PROGRAM	PROGRAMMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	un tag di immagine o video sta da solo in una cella del corpo (o con un solo nome, come ritratto); gli altri tag sono stati rimossi
+	the page gap is not a duration; the page style's is used	l’intervallo tra le pagine non è una durata; viene usato quello dello stile di pagina
+	the page runtime is not a positive duration; the page style's is used	la durata della pagina non è una durata positiva; viene usata quella dello stile di pagina
+	background “{file}” was not found; it is left out	lo sfondo “{file}” non è stato trovato; viene omesso
+	card page {page} is taller than the frame; use a roll page	la pagina carta {page} è più alta dell’inquadratura; usa una pagina a scorrimento
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	il colore “{colour}” dello stile di carattere “{style}” non è #rrggbb; viene omesso
+	colour “{colour}” is not #rrggbb; black is used	il colore “{colour}” non è #rrggbb; viene usato il nero
+	colour “{colour}” is not #rrggbb; white is used	il colore “{colour}” non è #rrggbb; viene usato il bianco
+	content style “{style}” does not exist; “{used}” is used	lo stile di contenuto “{style}” non esiste; viene usato “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	lo stile di carattere “{style}” non esiste; il testo mantiene lo stile del blocco
+	page gap “{value}” is not a duration	l’intervallo tra le pagine “{value}” non è una durata
+	page runtime “{value}” is not a duration	la durata della pagina “{value}” non è una durata
+	page style “{style}” does not exist; a roll page is used	lo stile di pagina “{style}” non esiste; viene usata una pagina a scorrimento
+	page {page}: the background names no file; it is left out	pagina {page}: lo sfondo non indica alcun file; viene omesso
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	pagina {page}: la durata si ottiene cambiando la velocità di scorrimento (la pagina non ha spazi tra i blocchi da allungare)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	pagina {page}: la durata si ottiene cambiando la velocità di scorrimento (i titoli di coda sono troppo lunghi anche senza spazi)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	pagina {page}: la durata si ottiene cambiando la velocità di scorrimento (gli spazi dovrebbero crescere di più di 20 volte)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	pagina {page}: la transizione richiede che le pagine si tocchino (intervallo tra le pagine 0); viene omessa
+	page {page}: there is no transition “{name}”; the pages cut	pagina {page}: non esiste la transizione “{name}”; le pagine passano con uno stacco netto
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	la posizione dell’asse “{value}” non è supportata (è supportato uno spostamento in pixel, facoltativamente con “parallel”)
+	vertical gap “{value}” is not a number	lo spazio verticale “{value}” non è un numero
+	picture “{file}” was not found or cannot be read; it is left out	l’immagine “{file}” non è stata trovata o non può essere letta; viene omessa
+	video “{file}” was not found or cannot be read; it is left out	il video “{file}” non è stato trovato o non può essere letto; viene omesso
+	there is no roll page without its own runtime to stretch; the length cannot change	non c’è alcuna pagina a scorrimento con una durata propria da allungare; la lunghezza non può cambiare
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	le carte e gli spazi da soli durano {seconds} s; la lunghezza richiesta è inferiore, quindi le pagine a scorrimento mantengono la lunghezza naturale
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	stile di carattere “{style}”: viene usato solo il primo livello colorato (niente contorni, ombre o strisce)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	la durata complessiva dei titoli di coda non viene riportata; usa Adatta titoli di coda alla musica (o una lunghezza)
+	page style “{style}”: fade curves become linear fades	stile di pagina “{style}”: le curve di dissolvenza diventano dissolvenze lineari
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	lo stile di contenuto “{style}” non ha intestazione in Cinecred; le intestazioni scritte nel foglio vengono comunque mostrate
+	content style “{style}”: sorting the names is not carried over	stile di contenuto “{style}”: l’ordinamento dei nomi non viene riportato
+	transition curves are not carried over	le curve di transizione non vengono riportate
+	picture styles (pictures keep their own size) are not carried over	gli stili di immagine (le immagini mantengono la propria dimensione) non vengono riportati
+	video (tape) styles are not carried over	gli stili di video (nastro) non vengono riportati
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	il progetto Cinecred ha {n} fogli di calcolo dei titoli di coda; viene usato “{name}” (scegline un altro nel campo Foglio di calcolo)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Aggiungi rilievo
+	Add as Finding	Aggiungi come rilievo
+	Are colour and contrast acceptable?	Colore e contrasto sono accettabili?
+	Automatic Checks	Controlli automatici
+	Bounds	Limiti
+	Check	Controllo
+	Check Now	Controlla ora
+	Check quality after export	Controlla la qualità dopo l’esportazione
+	Checking…	Controllo in corso…
+	Contact Sheet	Provino
+	Critical	Critico
+	Fail	Non superato
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Rilievo {row}: il timecode non è un istante di questo file (HH:MM:SS:FF).
+	Findings	Rilievi
+	Human Review	Revisione umana
+	Incomplete	Incompleto
+	Is there a visible picture defect?	C’è un difetto visibile nell’immagine?
+	Is there audible distortion?	C’è una distorsione udibile?
+	Is there unwanted noise?	C’è un rumore indesiderato?
+	Major	Grave
+	Message	Messaggio
+	Minor	Lieve
+	No contact sheet	Nessun provino
+	Not answered	Senza risposta
+	Not checked	Non controllato
+	Not run	Non eseguito
+	Note	Nota
+	Pass	Superato
+	Passed	Superato
+	Passed with warnings	Superato con avvisi
+	Profile: {id} v{version}	Profilo: {id} v{version}
+	Quality Check	Controllo qualità
+	Quality Check…	Controllo qualità…
+	Remove Finding	Rimuovi rilievo
+	Report: {path}	Rapporto: {path}
+	Review complete	Revisione completata
+	Reviewer	Revisore
+	Run the media quality check on the finished file (docs/media-qc.md)	Esegui il controllo di qualità sul file finito (docs/media-qc.md)
+	Save Review	Salva revisione
+	Select a finished export in the queue	Seleziona un’esportazione completata nella coda
+	Severity	Gravità
+	The engine is not running.	Il motore non è in esecuzione.
+	Time code	Timecode
+	Unsure	Incerto
+	accept	accettabile
+	the engine did not start the check	il motore non ha avviato il controllo
+	the engine sent no report	il motore non ha inviato alcun rapporto
+	Load KDM…	Carica KDM…
+	Forget DCP Keys	Dimentica chiavi DCP
+	Load KDM	Carica KDM
+	KDM file	File KDM
+	Private key (PEM)	Chiave privata (PEM)
+	{title}: {count} keys loaded	{title}: {count} chiavi caricate
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Le chiavi restano solo in memoria, fino a Dimentica chiavi DCP o alla fine della sessione.
+	DCP keys forgotten	Chiavi DCP dimenticate
+	Choose the KDM file and the private key.	Scegli il file KDM e la chiave privata.

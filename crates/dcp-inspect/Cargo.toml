@@ -1,0 +1,26 @@
+[package]
+name = "cfa4-dcp-inspect"
+description = "DCP validation backend (DCP-04) that runs the isolated dcp_inspect reference engine as a separate process"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-dcp = { workspace = true }
+cfa4-dcp-validate = { workspace = true }
+# Process-group signals (SIGINT on cancel, SIGKILL on timeout); already in the tree via av1/render.
+rustix = { version = "1", default-features = false, features = ["std", "process"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+# The round trip with the real engine: a package written by CFA4's own DCP export.
+cfa4-export = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-project = { workspace = true }
+cfa4-render = { workspace = true }
+cfa4-time = { workspace = true }

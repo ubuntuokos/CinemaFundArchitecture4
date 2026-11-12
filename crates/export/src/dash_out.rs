@@ -7,6 +7,12 @@
 
 use std::fmt::Write as _;
 
+/// The DASH manifest an HLS export to `path` writes with [`crate::ExportSettings::dash_manifest`]:
+/// `<stem>.mpd` next to the multivariant playlist.
+pub fn dash_files(path: &str) -> String {
+    std::path::Path::new(path).with_extension("mpd").to_string_lossy().to_string()
+}
+
 /// What a [`DashRepresentation`] carries.
 #[derive(Clone, Debug, PartialEq)]
 pub enum DashMedia {
