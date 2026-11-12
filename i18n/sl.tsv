@@ -4514,3 +4514,6 @@ export.summary	Low	nizka
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključi ostanejo samo v pomnilniku, do ukaza Pozabi ključe DCP ali konca seje.
 	DCP keys forgotten	Ključi DCP pozabljeni
 	Choose the KDM file and the private key.	Izberite datoteko KDM in zasebni ključ.
+	Load even with an unverified signature	Naloži tudi z nepreverjenim podpisom
+	Signature verified: {chain}	Podpis preverjen: {chain}
+	Signature not verified: {problem}	Podpis ni preverjen: {problem}

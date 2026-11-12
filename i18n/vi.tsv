@@ -4511,3 +4511,6 @@ export.summary	Low	thấp
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Các khóa chỉ nằm trong bộ nhớ, cho đến khi chọn Quên khóa DCP hoặc kết thúc phiên.
 	DCP keys forgotten	Đã quên khóa DCP
 	Choose the KDM file and the private key.	Chọn tệp KDM và khóa riêng.
+	Load even with an unverified signature	Tải cả khi chữ ký chưa được xác minh
+	Signature verified: {chain}	Đã xác minh chữ ký: {chain}
+	Signature not verified: {problem}	Chưa xác minh chữ ký: {problem}

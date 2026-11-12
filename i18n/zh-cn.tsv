@@ -4509,3 +4509,6 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	密钥只保存在内存中，直到执行“清除 DCP 密钥”或会话结束。
 	DCP keys forgotten	已清除 DCP 密钥
 	Choose the KDM file and the private key.	请选择 KDM 文件和私钥。
+	Load even with an unverified signature	即使签名未经验证也加载
+	Signature verified: {chain}	签名已验证：{chain}
+	Signature not verified: {problem}	签名未验证：{problem}

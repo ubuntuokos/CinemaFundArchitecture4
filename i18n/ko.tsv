@@ -4505,3 +4505,6 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	키는 메모리에만 남으며, DCP 키 지우기 또는 세션이 끝날 때까지 유지됩니다.
 	DCP keys forgotten	DCP 키를 지웠습니다
 	Choose the KDM file and the private key.	KDM 파일과 개인 키를 선택하십시오.
+	Load even with an unverified signature	확인되지 않은 서명이어도 불러오기
+	Signature verified: {chain}	서명 확인됨: {chain}
+	Signature not verified: {problem}	서명 확인 안 됨: {problem}

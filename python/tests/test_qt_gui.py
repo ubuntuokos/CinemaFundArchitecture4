@@ -14796,6 +14796,12 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     text = describe({"title": "Film", "composition": "1111", "keys": [{"keyId": "5a5a", "type": "MDIK", "notValidBefore": "a", "notValidAfter": "b"}]})
     assert text.splitlines()[0] == "Film: 1 keys loaded" and "MDIK  5a5a  a – b" in text and "CPL 1111" in text
     assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
+    # #1075: how the signature check went
+    ok = describe({"title": "F", "keys": [], "signature": {"valid": True, "chain": ["leaf", "root"]}})
+    assert ok.splitlines()[-1] == "Signature verified: leaf ← root"
+    bad = describe({"title": "F", "keys": [], "signature": {"valid": False, "problem": "the KDM is not signed"}})
+    assert bad.splitlines()[-1] == "Signature not verified: the KDM is not signed"
+    assert describe({"keys": [], "signature": {"valid": False}}).endswith("Signature not verified: ?")
 
 
 def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
@@ -14826,9 +14832,15 @@ def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
         dlg.load()
         assert wait_until(app, lambda: "not made for this private key" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
         dlg.key_path.setText(str(tmp_path / "key.pem"))
+        # #1075: the test KDM is not signed, so the engine refuses it until the box is ticked
+        assert not dlg.allow_unverified.isChecked()
+        dlg.load()
+        assert wait_until(app, lambda: "signature does not check out" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+        dlg.allow_unverified.setChecked(True)
         dlg.load()
         assert wait_until(app, lambda: dlg.result.toPlainText().startswith("Encrypted Test: 1 keys loaded"), 20_000), dlg.result.toPlainText()
         assert "MDAK" in dlg.result.toPlainText() and "5a5a5a5a-5a5a" in dlg.result.toPlainText()
+        assert dlg.result.toPlainText().splitlines()[-1] == "Signature not verified: the KDM is not signed"
         got: list = []
         engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
         assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == ["5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a"]

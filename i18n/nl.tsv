@@ -4511,3 +4511,6 @@ export.summary	Low	laag
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	De sleutels blijven alleen in het geheugen, tot DCP-sleutels vergeten of het einde van de sessie.
 	DCP keys forgotten	DCP-sleutels vergeten
 	Choose the KDM file and the private key.	Kies het KDM-bestand en de privésleutel.
+	Load even with an unverified signature	Ook laden met een niet-geverifieerde handtekening
+	Signature verified: {chain}	Handtekening geverifieerd: {chain}
+	Signature not verified: {problem}	Handtekening niet geverifieerd: {problem}

@@ -4513,3 +4513,6 @@ export.summary	Low	төмен
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кілттер тек жадта сақталады, «DCP кілттерін ұмыту» командасына немесе сеанс соңына дейін.
 	DCP keys forgotten	DCP кілттері ұмытылды
 	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.
+	Load even with an unverified signature	Тексерілмеген қолтаңбамен де жүктеу
+	Signature verified: {chain}	Қолтаңба тексерілді: {chain}
+	Signature not verified: {problem}	Қолтаңба тексерілмеді: {problem}

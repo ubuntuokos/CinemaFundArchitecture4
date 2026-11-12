@@ -4496,3 +4496,6 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключи хранятся только в памяти, до команды «Забыть ключи DCP» или конца сеанса.
 	DCP keys forgotten	Ключи DCP забыты
 	Choose the KDM file and the private key.	Выберите файл KDM и закрытый ключ.
+	Load even with an unverified signature	Загружать и с непроверенной подписью
+	Signature verified: {chain}	Подпись проверена: {chain}
+	Signature not verified: {problem}	Подпись не проверена: {problem}

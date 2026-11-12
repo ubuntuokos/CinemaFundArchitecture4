@@ -4513,3 +4513,6 @@ export.summary	Low	lav
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nøglerne findes kun i hukommelsen, indtil Glem DCP-nøgler eller sessionens afslutning.
 	DCP keys forgotten	DCP-nøgler glemt
 	Choose the KDM file and the private key.	Vælg KDM-filen og den private nøgle.
+	Load even with an unverified signature	Indlæs også med en ubekræftet signatur
+	Signature verified: {chain}	Signatur bekræftet: {chain}
+	Signature not verified: {problem}	Signatur ikke bekræftet: {problem}

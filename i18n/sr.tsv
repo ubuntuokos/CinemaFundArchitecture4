@@ -4511,3 +4511,6 @@ export.summary	Low	низак
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кључеви остају само у меморији, до команде Заборави DCP кључеве или краја сесије.
 	DCP keys forgotten	DCP кључеви заборављени
 	Choose the KDM file and the private key.	Изаберите KDM датотеку и приватни кључ.
+	Load even with an unverified signature	Учитај и са непровереним потписом
+	Signature verified: {chain}	Потпис проверен: {chain}
+	Signature not verified: {problem}	Потпис није проверен: {problem}

@@ -4511,3 +4511,6 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Le chiavi restano solo in memoria, fino a Dimentica chiavi DCP o alla fine della sessione.
 	DCP keys forgotten	Chiavi DCP dimenticate
 	Choose the KDM file and the private key.	Scegli il file KDM e la chiave privata.
+	Load even with an unverified signature	Carica anche con firma non verificata
+	Signature verified: {chain}	Firma verificata: {chain}
+	Signature not verified: {problem}	Firma non verificata: {problem}

@@ -4510,3 +4510,6 @@ export.summary	Low	alacsony
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	A kulcsok csak a memóriában maradnak, a DCP kulcsok elfelejtéséig vagy a munkamenet végéig.
 	DCP keys forgotten	DCP kulcsok elfelejtve
 	Choose the KDM file and the private key.	Válassza ki a KDM fájlt és a privát kulcsot.
+	Load even with an unverified signature	Betöltés ellenőrizetlen aláírással is
+	Signature verified: {chain}	Aláírás ellenőrizve: {chain}
+	Signature not verified: {problem}	Az aláírás nincs ellenőrizve: {problem}

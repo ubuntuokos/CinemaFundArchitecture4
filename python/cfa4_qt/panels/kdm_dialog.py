@@ -2,11 +2,14 @@
 
 The user picks a KDM (SMPTE ST 430-1 XML) and the PEM private key of its recipient; the engine's
 ``dcp.loadKdm`` decrypts the content keys into memory, and the encrypted track files play from
-then on. The dialog shows what the KDM holds (title, key types, validity), never a key. Forget DCP
-Keys (``dcp.clearKeys``) drops them again. Keys are never written anywhere.
+then on. The engine checks the KDM's signature and certificate chain and refuses a KDM that does
+not check out unless "Load even with an unverified signature" is ticked (``allowUnverified``,
+#1028 / #1075). The dialog shows what the KDM holds (title, key types, validity) and how the
+signature check went, never a key. Forget DCP Keys (``dcp.clearKeys``) drops them again. Keys are
+never written anywhere.
 
 Automation ids: ``kdm.kdmPath``, ``kdm.kdmBrowse``, ``kdm.keyPath``, ``kdm.keyBrowse``,
-``kdm.load``, ``kdm.forget``, ``kdm.result``, ``kdm.close``.
+``kdm.allowUnverified``, ``kdm.load``, ``kdm.forget``, ``kdm.result``, ``kdm.close``.
 """
 
 from __future__ import annotations
@@ -16,6 +19,7 @@ from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -33,7 +37,8 @@ from ..i18n import fmt, tr
 
 
 def describe(r: Any) -> str:
-    """The engine's ``dcp.loadKdm`` reply as text: title, then one line per key (never the key)."""
+    """The engine's ``dcp.loadKdm`` reply as text: title, one line per key (never the key), the
+    composition, then how the signature check went (the signer's chain, or the problem)."""
     if not isinstance(r, dict):
         return ""
     title = str(r.get("title") or r.get("annotation") or "KDM")
@@ -44,6 +49,13 @@ def describe(r: Any) -> str:
             lines.append(f"{k.get('type', '?')}  {k.get('keyId', '')}  {k.get('notValidBefore', '')} – {k.get('notValidAfter', '')}")
     if isinstance(r.get("composition"), str):
         lines.append(f"CPL {r['composition']}")
+    sig = r.get("signature")
+    if isinstance(sig, dict):
+        if sig.get("valid") is True:
+            chain = sig.get("chain") if isinstance(sig.get("chain"), list) else []
+            lines.append(fmt("Signature verified: {chain}", chain=" ← ".join(str(c) for c in chain)))
+        else:
+            lines.append(fmt("Signature not verified: {problem}", problem=str(sig.get("problem") or "?")))
     return "\n".join(lines)
 
 
@@ -72,6 +84,9 @@ class KdmDialog(QDialog):
             row.addWidget(edit, 1)
             row.addWidget(browse)
             form.addRow(label, row)
+        self.allow_unverified = QCheckBox(tr("Load even with an unverified signature"), self)
+        self.allow_unverified.setObjectName("kdm.allowUnverified")
+        form.addRow("", self.allow_unverified)
         note = QLabel(tr("The keys stay in memory only, until Forget DCP Keys or the end of the session."), self)
         note.setWordWrap(True)
         self.result = QPlainTextEdit(self)
@@ -105,7 +120,9 @@ class KdmDialog(QDialog):
         if not kdm or not key:
             self.result.setPlainText(tr("Choose the KDM file and the private key."))
             return
-        params = {"kdm": os.path.expanduser(kdm), "privateKey": os.path.expanduser(key)}
+        params: dict[str, Any] = {"kdm": os.path.expanduser(kdm), "privateKey": os.path.expanduser(key)}
+        if self.allow_unverified.isChecked():
+            params["allowUnverified"] = True
         self.load_button.setEnabled(False)
 
         def got(r: Any, _b: bytes | None) -> None:

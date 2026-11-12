@@ -4514,3 +4514,6 @@ export.summary	Low	დაბალი
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	გასაღებები მხოლოდ მეხსიერებაში რჩება, DCP გასაღებების დავიწყებამდე ან სესიის დასრულებამდე.
 	DCP keys forgotten	DCP გასაღებები დავიწყებულია
 	Choose the KDM file and the private key.	აირჩიეთ KDM ფაილი და პირადი გასაღები.
+	Load even with an unverified signature	ჩატვირთვა გადაუმოწმებელი ხელმოწერითაც
+	Signature verified: {chain}	ხელმოწერა გადამოწმებულია: {chain}
+	Signature not verified: {problem}	ხელმოწერა არ არის გადამოწმებული: {problem}
