@@ -1,7 +1,8 @@
 # CFA4-CODERABBIT-001 – a Claude és a CodeRabbit összehangolása
 
-**Állapot:** 1.0. A tulajdonos 2026-11-12-én a D1–D4 döntési pontokat a javasolt alapértékkel elfogadta
-(4. fejezet). A K0–K2 lépések ebben a PR-ban vannak; a K3 a beolvasztás után következik.
+**Állapot:** 1.1. A tulajdonos 2026-11-12-én a D1–D4 döntési pontokat a javasolt alapértékkel elfogadta,
+2026-11-13-án pedig a próba után a D5-öt (4. fejezet). A K0–K2 lépések és a próba első része ebben a PR-ban
+vannak; a K3 többi része a beolvasztás után következik.
 
 **Összefoglaló:** a CodeRabbit a CFA4 tárolójában telepítve van, de eddig egyetlen PR-t sem ellenőrzött,
 és a Claude-munkamenetek szabályai nem tudtak róla. A terv után egyetlen szabályforrás marad (az
@@ -53,6 +54,14 @@ bővítése egy CodeRabbit-oszloppal, hogy a gazdának ne kelljen PR-onként lek
 - **D3 – Dependabot:** a Dependabot-PR-ok kimaradnak, ahogy az upstreamnél is; ezeket a
   Dependabot-előkészítő munkamenet a teljes CI-vel ellenőrzi.
 - **D4 – nyelv:** magyar.
+- **D5 – az ingyenes keret miatt (2026-11-13, a D1 és a D2 hatókörét szűkíti):** CodeRabbit-ellenőrzés
+  csak **kockázatos** PR-on kell: biztonság (CFA4-SECURITY-001, `crates/platform/`, `deny.toml`,
+  `.semgrep/`), kodek és konténer (`crates/codecs/`, `crates/ffmpeg/`, `crates/gstreamer/` és a
+  `docs/architecture.md` §1 kodek- és konténer-crate-jei), CI (`.github/`), szabályfájlok (`AGENTS.md`,
+  `CLAUDE.md`, `docs/coordination.md`, `.coderabbit.yaml`, `.claude/`). A pontos lista csak a
+  `docs/coordination.md` §2.9-ben szerepel. Ha a keret elfogyott, a kockázatos PR vár, és a fejlesztő a
+  jelzett idő után újra kér; a gazda CodeRabbit nélkül nem engedi tovább. Más PR-on nem kérünk
+  ellenőrzést, hogy a keret a kockázatos PR-oknak maradjon.
 
 ## 5. Kockázatok és a próba eredménye (2026-11-12, #1118)
 
@@ -63,10 +72,9 @@ bővítése egy CodeRabbit-oszloppal, hogy a gazdának ne kelljen PR-onként lek
   az első review után, a CodeRabbit ezt írta: „Review limit reached … Next included review
   available in 52 minutes”. A tároló tehát nagyjából **óránként egy review**-t kap. Ez naponta
   10–30 PR mellett szűk keresztmetszet: a D2 szerint a gazda vár, így a beolvasztás a
-  CodeRabbitre várna. **Tulajdonosi döntés kell** (D5), például: (a) marad blokkoló, a fejlesztő
-  a korlát lejárta után újra kér; (b) korlát esetén a gazda a PR-t CodeRabbit nélkül is
-  beolvaszthatja, és ezt a naplóba írja; (c) csak bizonyos PR-ok kérnek CodeRabbitet; (d) fizetős
-  csomag. A D5-ig a §2.9/§3.4 a beolvasztás után úgy él, ahogy írva van.
+  CodeRabbitre várna. A tulajdonos a D5-ben
+  úgy döntött (2026-11-13), hogy csak a kockázatos PR-ok kérnek ellenőrzést, és azok kivárják a keretet.
+  A K3 próbaüzemben azt is figyelni kell, belefér-e a kockázatos PR-ok száma az órás keretbe.
 - **A magyar nyelv nem hivatalosan támogatott:** a `tone_instructions` kérés; a próbán betartotta.
 - **Ugyanaz a GitHub-fiók:** a munkamenetek a tulajdonos fiókjával írnak, így a `@coderabbitai`
   kérések is az ő nevében jelennek meg. Ez megegyezik a többi munkamenet-tevékenységgel.

@@ -38,8 +38,11 @@ $ARGUMENTS
 - Csak olyan PR-t, amit a tulajdonos **ebben a hívásban** kifejezetten jóváhagyott. Egy
   hívásban több PR is jóváhagyható; ilyenkor a megadott sorrendben, egymás után dolgozol.
 - Egyenként: ág frissítése a `main`-hez, zöld `full-validation-gate` azon a fejen, utána merge.
-- **CodeRabbit** (`docs/coordination.md` §3.4): beolvasztás előtt, és köteg esetén minden
-  kötegbe szánt eredeti PR-on, ellenőrizd mindhárom feltételt (`R=repos/ubuntuokos/CinemaFundArchitecture4`):
+- **CodeRabbit** (`docs/coordination.md` §2.9 és §3.4): csak **kockázatos** PR-ra vonatkozik.
+  Hogy egy PR kockázatos-e, azt a fájllistájából (`gh api --paginate $R/pulls/<n>/files`)
+  magad döntöd el a §2.9 listája szerint, nem a leírásban álló jelzésből. Kockázatos PR-on
+  beolvasztás előtt (köteg esetén minden kötegbe szánt eredeti PR-on) ellenőrizd mindhárom
+  feltételt (`R=repos/ubuntuokos/CinemaFundArchitecture4`). Ha a keret elfogyott, a PR vár:
   (a) kérés: `gh api --paginate $R/issues/<n>/comments` – van `@coderabbitai review`;
   (b) befejezett review: `gh api --paginate $R/pulls/<n>/reviews` – van `coderabbitai[bot]`
   review a mostani fejre (`commit_id`), az utolsó kérésnél későbbi;

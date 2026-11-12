@@ -42,8 +42,23 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    kötelező**, a munkamenetek nem nyitják újra.
 9. **CodeRabbit-ellenőrzés** (tulajdonosi döntés, 2026-11-12; terv:
    [`plans/CFA4-CODERABBIT-001.md`](plans/CFA4-CODERABBIT-001.md); beállítás:
-   [`.coderabbit.yaml`](../.coderabbit.yaml)). Amikor a PR-odat „Ready for review”-nak jelölöd,
-   írd a PR-ba megjegyzésként: `@coderabbitai review`. Minden megállapítását vagy javítsd ki
+   [`.coderabbit.yaml`](../.coderabbit.yaml)). **Csak kockázatos PR-on kell** (tulajdonosi
+   döntés D5, 2026-11-13: az ingyenes keret nagyjából óránként egy review). Kockázatos a PR,
+   ha a `git diff --name-only origin/main...HEAD` bármelyik fájlja ide tartozik:
+   - **biztonság:** a CFA4-SECURITY-001 projekt PR-jai, `crates/platform/`, `deny.toml`,
+     `.semgrep/`;
+   - **kodek és konténer:** `crates/codecs/`, `crates/ffmpeg/`, `crates/gstreamer/`, valamint
+     minden olyan crate, amelyet a [`architecture.md`](architecture.md) §1 kodek- vagy
+     konténer-crate-ként sorol fel;
+   - **CI:** `.github/`;
+   - **szabályfájlok:** `AGENTS.md`, `CLAUDE.md`, `docs/coordination.md`, `.coderabbit.yaml`,
+     `.claude/`.
+
+   Kockázatos PR-on, amikor „Ready for review”-nak jelölöd, írd a PR-ba megjegyzésként:
+   `@coderabbitai review`, és a PR leírásába: „CodeRabbit: kell”. Más PR-on ne kérj
+   ellenőrzést (a keretet a kockázatos PR-ok elől venné el), a leírásba pedig ezt írd:
+   „CodeRabbit: nem kell”. Ha a CodeRabbit „Review limit reached” választ ad, várd meg
+   a jelzett időt, és kérd újra; addig a PR nem adható át. Minden megállapítását vagy javítsd ki
    a saját ágadon, vagy válaszolj rá a szálban, és indokold, miért nem javítod (például mert
    az `AGENTS.md` mást ír elő: ütközésnél mindig a CFA4 szabályai nyernek). Javítás után kérd
    újra (`@coderabbitai review`). A PR-t csak akkor add át a gazdának, ha a legutóbbi kérésedre
@@ -69,8 +84,10 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    Ezt a kötelező `full-validation-gate` ellenőrzés technikailag is kikényszeríti (tulajdonosi
    döntés, 2026-10-31): csak akkor zöld, ha minden blokkoló teljes job azon a fejen ténylegesen
    lefutott és zöld. A Qt6 GUI-tesztek a GUI elkészültéig futnak, de nem blokkolnak.
-   **CodeRabbit** (tulajdonosi döntés, 2026-11-12): a gazda csak akkor olvaszt be egy PR-t, ha
-   mindhárom feltétel teljesül:
+   **CodeRabbit** (tulajdonosi döntés, 2026-11-12; D5, 2026-11-13): a gazda a fájllistából maga
+   is megnézi, kockázatos-e a PR (§2.9), a leírásban álló jelzéstől függetlenül. Kockázatos
+   PR-t csak akkor olvaszt be, ha mindhárom feltétel teljesül; ha a keret elfogyott, a PR vár,
+   CodeRabbit nélkül nem engedi tovább:
    (a) a fejlesztő kért ellenőrzést, vagyis a PR megjegyzései között
    (`GET /repos/{owner}/{repo}/issues/{n}/comments`, minden oldal) van `@coderabbitai review`;
    (b) a kért review be is fejeződött: van `coderabbitai[bot]` review
@@ -82,7 +99,7 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    van oldva, vagy a fejlesztő indokolva válaszolt rá.
    Ha valamelyik hiányzik, a PR a „(c) frissíteni kell” kategóriába kerül, és a gazda a PR-ban
    jelzi a fejlesztőnek. Ez nem technikai CI-kapu. Dependabot-PR-ra és magára a köteg-PR-ra
-   nem vonatkozik; a kötegbe kerülő eredeti PR-okra igen (§3a.1).
+   nem vonatkozik; a kötegbe kerülő kockázatos eredeti PR-okra igen (§3a.1).
 5. Ha egy PR-t egy másik kivált, a gazda lezárja, és a megjegyzésben megnevezi, melyik váltotta ki.
 6. Minden hívás eredményét egy sorban beírja a [`docs/coordination-log.md`](coordination-log.md)-be.
 7. Ágat nem töröl (a munkamenetek nem kapnak rá engedélyt): a törölhető ágak listáját átadja
@@ -101,7 +118,7 @@ személyes fiók alatti tárolóban nem érhető el, ezért a kötegelést a gaz
 
 1. **Indítás:** `/gazda köteg #12 #15 #18` – a tulajdonos által ebben a hívásban jóváhagyott
    PR-ok, alapból 3–8 darab (a tulajdonos kisebbet is kérhet). Aktív PR (§3.2) nem kerül bele.
-   Olyan eredeti PR sem, amely nem teljesíti a §3.4 CodeRabbit-feltételeit (a Dependabot-PR-ok
+   Olyan kockázatos eredeti PR sem, amely nem teljesíti a §3.4 CodeRabbit-feltételeit (a Dependabot-PR-ok
    kivételek); a gazda ezt a köteg összerakása előtt PR-onként ellenőrzi.
 2. **Összerakás:** `scripts/dev/gazda-koteg.sh #12 #15 #18`. A mostani `main`-ből nyit egy
    `koteg/ÉÉÉÉHHNN-N` ágat, a PR-okat a megadott sorrendben, egyenként, merge committal rárakja,
