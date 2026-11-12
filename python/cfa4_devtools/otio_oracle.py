@@ -127,7 +127,7 @@ def compare(expected: dict[str, Any], observed: dict[str, Any], ticks_per_second
     obs_tracks = observed.get("tracks") or []
     if len(exp_tracks) != len(obs_tracks):
         problems.append(f"track count {len(obs_tracks)} != {len(exp_tracks)}")
-    for ti, (et, ot) in enumerate(zip(exp_tracks, obs_tracks)):
+    for ti, (et, ot) in enumerate(zip(exp_tracks, obs_tracks, strict=False)):
         where = f"track {ti} ({et.get('kind')} {et.get('name')!r})"
         if et.get("kind") != ot.get("kind"):
             problems.append(f"{where}: kind {ot.get('kind')!r}")
@@ -136,7 +136,7 @@ def compare(expected: dict[str, Any], observed: dict[str, Any], ticks_per_second
         e_items, o_items = et.get("items") or [], ot.get("items") or []
         if len(e_items) != len(o_items):
             problems.append(f"{where}: {len(o_items)} items, expected {len(e_items)}")
-        for ii, (ei, oi) in enumerate(zip(e_items, o_items)):
+        for ii, (ei, oi) in enumerate(zip(e_items, o_items, strict=False)):
             at = f"{where} item {ii} ({ei.get('name')!r})"
             if ei.get("name") != oi.get("name"):
                 problems.append(f"{at}: name {oi.get('name')!r}")
