@@ -401,6 +401,17 @@ fn openexr_sequences() {
         let first = dir.0.join(&want[0]);
         let bytes = std::fs::read(&first).unwrap();
         assert_eq!(&bytes[..4], &[0x76, 0x2F, 0x31, 0x01]);
+        // every frame carries its time code (consecutive) and the frame rate
+        let timing: Vec<(Option<i64>, FrameRate)> = want
+            .iter()
+            .map(|f| {
+                let src = cfa4_media::open_bytes("f.exr", std::fs::read(dir.0.join(f)).unwrap().into(), &[]).unwrap();
+                (src.info().start_timecode, src.info().video.as_ref().unwrap().frame_rate)
+            })
+            .collect();
+        let t0 = timing[0].0.expect("time code");
+        assert_eq!(timing.iter().map(|t| t.0).collect::<Vec<_>>(), vec![Some(t0), Some(t0 + 1), Some(t0 + 2)]);
+        assert!(timing.iter().all(|t| t.1 == timing[0].1));
         let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("OpenEXR sequences") else { continue };
         let out = std::process::Command::new(ffmpeg)
             .args(["-v", "error", "-i"])

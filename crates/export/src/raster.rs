@@ -166,7 +166,38 @@ fn half(v: f32) -> u16 {
 
 /// An OpenEXR file: half-float scene-linear Rec.709 RGB, or RGBA with `alpha` (premultiplied, as
 /// EXR defines alpha; the frame's straight alpha is multiplied in after linearisation).
+#[cfg(test)]
 pub(crate) fn exr(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrCompression) -> Result<Vec<u8>> {
+    exr_with(rgba, w, h, alpha, compression, None)
+}
+
+/// The time code of a still in a sequence: `frame` counted at `rate` (drop-frame labels when
+/// `drop_frame` and the rate has them). OpenEXR writes it as the `timeCode` attribute and the rate
+/// as `framesPerSecond`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StillTiming {
+    pub frame: i64,
+    pub rate: cfa4_time::FrameRate,
+    pub drop_frame: bool,
+}
+
+impl StillTiming {
+    /// SMPTE ST 12-1 time and flags as OpenEXR packs them: BCD frames (drop-frame flag in bit 6),
+    /// seconds, minutes and hours in bytes 0–3 of a little-endian word; hours wrap at 24. `None`
+    /// before 00:00:00:00.
+    pub fn packed(&self) -> Option<u32> {
+        let drop = self.drop_frame && self.rate.supports_drop_frame();
+        let (neg, h, m, s, f) = cfa4_time::frames_to_fields(self.frame, self.rate, drop);
+        if neg || f > 99 {
+            return None;
+        }
+        let bcd = |v: i64| ((v / 10) as u32) << 4 | (v % 10) as u32;
+        Some(bcd(f) | u32::from(drop) << 6 | bcd(s) << 8 | bcd(m) << 16 | bcd(h % 24) << 24)
+    }
+}
+
+/// [`exr`] with the time code and frame rate of a sequence frame.
+pub(crate) fn exr_with(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrCompression, timing: Option<StillTiming>) -> Result<Vec<u8>> {
     let n = checked_len(rgba, w, h)?;
     let too_large = || ExportError::Unsupported(format!("an OpenEXR frame of {w}×{h} is too large"));
     let (Ok(x_max), Ok(y_max)) = (i32::try_from(w - 1), i32::try_from(h - 1)) else {
@@ -208,10 +239,22 @@ pub(crate) fn exr(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrComp
     attr(&mut hd, "compression", "compression", &[compression.code()]);
     attr(&mut hd, "dataWindow", "box2i", &window);
     attr(&mut hd, "displayWindow", "box2i", &window);
+    if let Some(t) = timing {
+        // a rational: signed numerator, unsigned denominator
+        if let (Ok(num), Ok(den)) = (i32::try_from(t.rate.num), u32::try_from(t.rate.den)) {
+            let fps: Vec<u8> = num.to_le_bytes().into_iter().chain(den.to_le_bytes()).collect();
+            attr(&mut hd, "framesPerSecond", "rational", &fps);
+        }
+    }
     attr(&mut hd, "lineOrder", "lineOrder", &[0]); // INCREASING_Y
     attr(&mut hd, "pixelAspectRatio", "float", &le(&[1.0]));
     attr(&mut hd, "screenWindowCenter", "v2f", &le(&[0.0, 0.0]));
     attr(&mut hd, "screenWindowWidth", "float", &le(&[1.0]));
+    if let Some(tc) = timing.and_then(|t| t.packed()) {
+        // time and flags, then user data (none)
+        let v: Vec<u8> = tc.to_le_bytes().into_iter().chain([0; 4]).collect();
+        attr(&mut hd, "timeCode", "timecode", &v);
+    }
     hd.push(0); // end of header
 
     // offset table (one entry per chunk), then the chunks: first y, data size, data
@@ -548,6 +591,44 @@ mod tests {
                 }
             }
         }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// The `timeCode` and `framesPerSecond` attributes: their packing, our reader, and OpenImageIO
+    /// (the OpenEXR library, an external test oracle; skipped when not installed).
+    #[test]
+    fn exr_records_time_code_and_rate() {
+        use cfa4_time::FrameRate;
+        let at = |frame, rate, drop_frame| StillTiming { frame, rate, drop_frame }.packed();
+        assert_eq!(at(25 * 3600, FrameRate::new(25, 1), false), Some(0x0100_0000));
+        // 1800 frames at 29.97 drop-frame is 00:01:00;02
+        assert_eq!(at(1800, FrameRate::FPS_29_97, true), Some(0x02 | 1 << 6 | 0x01 << 16));
+        assert_eq!(at(1800, FrameRate::FPS_29_97, false), Some(0x01 << 16), "00:01:00:00 non-drop");
+        assert_eq!(at(24 * 3600 * 25 + 5, FrameRate::new(24, 1), false), Some(0x05 | 0x01 << 24), "hours wrap at 24");
+        assert_eq!(at(-1, FrameRate::new(24, 1), false), None);
+
+        let (px, w, h) = picture();
+        let t = StillTiming { frame: 24 * 3723 + 4, rate: FrameRate::new(24, 1), drop_frame: false };
+        let f = exr_with(&px, w, h, false, ExrCompression::Zip, Some(t)).unwrap();
+        let src = cfa4_media::open_bytes("a.exr", f.clone().into(), &[]).unwrap();
+        assert_eq!(src.info().start_timecode, Some(t.frame), "01:02:03:04");
+        assert_eq!(src.info().video.as_ref().unwrap().frame_rate, FrameRate::new(24, 1));
+        let plain = cfa4_media::open_bytes("b.exr", exr(&px, w, h, false, ExrCompression::Zip).unwrap().into(), &[]).unwrap();
+        assert_eq!(plain.info().start_timecode, None);
+
+        if !std::process::Command::new("oiiotool").arg("--version").status().is_ok_and(|s| s.success()) {
+            eprintln!("SKIPPED: oiiotool is not installed");
+            return;
+        }
+        let dir = cfa4_testkit::fixtures::workspace_root().join("target").join("export-tests").join(format!("exr-tc-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("tc.exr");
+        std::fs::write(&path, &f).unwrap();
+        let out = std::process::Command::new("oiiotool").args(["--info", "-v"]).arg(&path).output().unwrap();
+        let info = String::from_utf8_lossy(&out.stdout);
+        assert!(info.contains("smpte:TimeCode: 01:02:03:04"), "{info}");
+        // OpenImageIO 2.4 names it as stored; later versions as FramesPerSecond
+        assert!(info.to_lowercase().contains("framespersecond: 24/1"), "{info}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
