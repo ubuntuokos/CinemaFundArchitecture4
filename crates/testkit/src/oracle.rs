@@ -127,33 +127,46 @@ pub fn ffmpeg_has_encoder(ffmpeg: &Path, encoder: &str) -> bool {
     encoders_output_lists(&String::from_utf8_lossy(&out.stdout), encoder)
 }
 
-/// Encoders a fixture recipe needs that a CFA4 FFmpeg may lack: the development FFmpeg 9.0.2
-/// (`scripts/dev/fetch-ffmpeg-9.0.2.sh`) is built without libx264 and libx265, the CI oracle has them.
-pub const OPTIONAL_FIXTURE_ENCODERS: &[&str] = &["libx264", "libx265"];
+/// Patent-restricted encoders that CFA4's FFmpeg never contains (docs/licensing.md §7, the Ubuntu
+/// model): x264 and x265 come from the Ubuntu archive at the user's own risk (`cfa4-restricted-extras`),
+/// so neither the development nor the CI FFmpeg 9.0.2 has them. A test whose fixture needs one skips
+/// without it, even with `CFA4_REQUIRE_ORACLES=1`.
+pub const RESTRICTED_ENCODERS: &[&str] = &["libx264", "libx265"];
 
-/// The first of [`OPTIONAL_FIXTURE_ENCODERS`] named in the ffmpeg arguments `args` that `ffmpeg` lacks.
+/// The first of [`RESTRICTED_ENCODERS`] named in the ffmpeg arguments `args` that `ffmpeg` lacks.
 pub fn missing_fixture_encoder<S: AsRef<str>>(ffmpeg: &Path, args: &[S]) -> Option<&'static str> {
-    OPTIONAL_FIXTURE_ENCODERS.iter().copied().find(|enc| args.iter().any(|a| a.as_ref() == *enc) && !ffmpeg_has_encoder(ffmpeg, enc))
+    RESTRICTED_ENCODERS.iter().copied().find(|enc| args.iter().any(|a| a.as_ref() == *enc) && !ffmpeg_has_encoder(ffmpeg, enc))
 }
 
-/// Whether `ffmpeg` has every encoder in `encoders`. Otherwise [`skip`]s, naming the first missing
-/// one, and returns `false` (a hard failure with `CFA4_REQUIRE_ORACLES=1`, as in CI).
+/// Report a test skipped because `encoder` is missing: a plain `SKIPPED` for a [restricted
+/// encoder](RESTRICTED_ENCODERS), which no CFA4 FFmpeg has; [`skip`] (a failure with
+/// `CFA4_REQUIRE_ORACLES=1`) for any other.
+fn skip_missing_encoder(context: &str, encoder: &str) {
+    if RESTRICTED_ENCODERS.contains(&encoder) {
+        eprintln!("SKIPPED ({context}): this ffmpeg has no {encoder} encoder (patent-restricted, never in CFA4's FFmpeg)");
+    } else {
+        skip(context, &format!("this ffmpeg has no {encoder} encoder"));
+    }
+}
+
+/// Whether `ffmpeg` has every encoder in `encoders`. Otherwise reports the skip, naming the first
+/// missing one (see [`RESTRICTED_ENCODERS`]), and returns `false`.
 pub fn encoders_or_skip(context: &str, ffmpeg: &Path, encoders: &[&str]) -> bool {
     match encoders.iter().find(|enc| !ffmpeg_has_encoder(ffmpeg, enc)) {
         None => true,
         Some(enc) => {
-            skip(context, &format!("this ffmpeg has no {enc} encoder"));
+            skip_missing_encoder(context, enc);
             false
         }
     }
 }
 
-/// [`encoders_or_skip`] for the optional encoders named in the ffmpeg arguments `args`.
+/// [`encoders_or_skip`] for the restricted encoders named in the ffmpeg arguments `args`.
 pub fn fixture_encoders_or_skip<S: AsRef<str>>(context: &str, ffmpeg: &Path, args: &[S]) -> bool {
     match missing_fixture_encoder(ffmpeg, args) {
         None => true,
         Some(enc) => {
-            skip(context, &format!("this ffmpeg has no {enc} encoder"));
+            skip_missing_encoder(context, enc);
             false
         }
     }

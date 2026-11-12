@@ -951,7 +951,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
     let dir = fixtures_dir();
     let h264 = dir.join(format!("{}.h264", f.name));
     let yuv = dir.join(format!("{}.yuv", f.name));
-    // the development FFmpeg 9.0.2 has no libx264: its fixtures skip there (and fail in CI, CFA4_REQUIRE_ORACLES=1)
+    // libx264 is patent-restricted and never in CFA4's FFmpeg (cfa4_testkit::RESTRICTED_ENCODERS): its fixtures skip without it
     if !h264.exists() && !f.args.contains(&"-c:v") && !cfa4_testkit::encoders_or_skip(f.name, &ff, &["libx264"]) {
         return None;
     }
