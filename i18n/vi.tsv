@@ -4502,3 +4502,12 @@ export.summary	Low	thấp
 	accept	chấp nhận
 	the engine did not start the check	engine không bắt đầu kiểm tra
 	the engine sent no report	engine không gửi báo cáo
+	Load KDM…	Tải KDM…
+	Forget DCP Keys	Quên khóa DCP
+	Load KDM	Tải KDM
+	KDM file	Tệp KDM
+	Private key (PEM)	Khóa riêng (PEM)
+	{title}: {count} keys loaded	{title}: đã tải {count} khóa
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Các khóa chỉ nằm trong bộ nhớ, cho đến khi chọn Quên khóa DCP hoặc kết thúc phiên.
+	DCP keys forgotten	Đã quên khóa DCP
+	Choose the KDM file and the private key.	Chọn tệp KDM và khóa riêng.

@@ -4500,3 +4500,12 @@
 	accept	可接受
 	the engine did not start the check	引擎未启动检查
 	the engine sent no report	引擎未发送报告
+	Load KDM…	加载 KDM…
+	Forget DCP Keys	清除 DCP 密钥
+	Load KDM	加载 KDM
+	KDM file	KDM 文件
+	Private key (PEM)	私钥 (PEM)
+	{title}: {count} keys loaded	{title}：已加载 {count} 个密钥
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	密钥只保存在内存中，直到执行“清除 DCP 密钥”或会话结束。
+	DCP keys forgotten	已清除 DCP 密钥
+	Choose the KDM file and the private key.	请选择 KDM 文件和私钥。

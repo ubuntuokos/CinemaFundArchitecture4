@@ -4504,3 +4504,12 @@ export.summary	Low	χαμηλή
 	accept	αποδεκτό
 	the engine did not start the check	η μηχανή δεν ξεκίνησε τον έλεγχο
 	the engine sent no report	η μηχανή δεν έστειλε αναφορά
+	Load KDM…	Φόρτωση KDM…
+	Forget DCP Keys	Διαγραφή κλειδιών DCP
+	Load KDM	Φόρτωση KDM
+	KDM file	Αρχείο KDM
+	Private key (PEM)	Ιδιωτικό κλειδί (PEM)
+	{title}: {count} keys loaded	{title}: φορτώθηκαν {count} κλειδιά
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Τα κλειδιά μένουν μόνο στη μνήμη, μέχρι τη «Διαγραφή κλειδιών DCP» ή το τέλος της συνεδρίας.
+	DCP keys forgotten	Τα κλειδιά DCP διαγράφηκαν
+	Choose the KDM file and the private key.	Επιλέξτε το αρχείο KDM και το ιδιωτικό κλειδί.

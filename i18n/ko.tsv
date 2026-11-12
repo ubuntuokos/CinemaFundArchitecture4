@@ -4496,3 +4496,12 @@
 	accept	허용
 	the engine did not start the check	엔진이 검사를 시작하지 않았습니다
 	the engine sent no report	엔진이 보고서를 보내지 않았습니다
+	Load KDM…	KDM 불러오기…
+	Forget DCP Keys	DCP 키 지우기
+	Load KDM	KDM 불러오기
+	KDM file	KDM 파일
+	Private key (PEM)	개인 키 (PEM)
+	{title}: {count} keys loaded	{title}: 키 {count}개 불러옴
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	키는 메모리에만 남으며, DCP 키 지우기 또는 세션이 끝날 때까지 유지됩니다.
+	DCP keys forgotten	DCP 키를 지웠습니다
+	Choose the KDM file and the private key.	KDM 파일과 개인 키를 선택하십시오.

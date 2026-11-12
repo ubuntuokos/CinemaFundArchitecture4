@@ -5295,6 +5295,7 @@ def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path
     finally:
         win._quit_confirmed = True
         win.close()
+        engine.stop()
 
 
 # ----- timeline: track headers, thumbnails, waveforms (egui parity) -----
@@ -14751,3 +14752,94 @@ def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     monkeypatch.setenv("CFA4_QT_MONITOR_GL", "0")
     assert not monitor.monitor_gl_wanted()
     view.deleteLater()
+
+
+def _openssl_kdm(tmp_path: Path) -> bool:
+    """A recipient key (``key.pem``), another key (``other.pem``) and a KDM (``kdm.xml``) for the
+    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData)."""
+    import shutil
+    import subprocess
+
+    ossl = shutil.which("openssl")
+    if ossl is None:
+        return False
+
+    def run(*args: str) -> None:
+        subprocess.run([ossl, *args], cwd=tmp_path, check=True, capture_output=True)
+
+    for name in ("key.pem", "other.pem"):
+        run("genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", name)
+    structure = bytes.fromhex("f1dc124460169a0e85bc300642f866ab")
+    plain = structure + b"\x77" * 20 + b"\x11" * 16 + b"MDAK" + b"\x5a" * 16
+    plain += b"2020-01-01T00:00:00+00:00" + b"2099-12-31T23:59:59+00:00" + os.urandom(16)
+    (tmp_path / "p.bin").write_bytes(plain)
+    run("pkeyutl", "-encrypt", "-inkey", "key.pem", "-pkeyopt", "rsa_padding_mode:oaep", "-pkeyopt", "rsa_oaep_md:sha1",
+        "-pkeyopt", "rsa_mgf1_md:sha1", "-in", "p.bin", "-out", "c.bin")
+    b64 = base64.b64encode((tmp_path / "c.bin").read_bytes()).decode()
+    (tmp_path / "kdm.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM">'
+        "<AuthenticatedPublic><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>"
+        '<KDMRequiredExtensions xmlns="http://www.smpte-ra.org/schemas/430-1/2006/KDM">'
+        "<CompositionPlaylistId>urn:uuid:11111111-1111-1111-1111-111111111111</CompositionPlaylistId>"
+        "<ContentTitleText>Encrypted Test</ContentTitleText></KDMRequiredExtensions></RequiredExtensions></AuthenticatedPublic>"
+        '<AuthenticatedPrivate><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
+        f"<enc:CipherValue>{b64}</enc:CipherValue></enc:CipherData></enc:EncryptedKey></AuthenticatedPrivate>"
+        "</DCinemaSecurityMessage>",
+        encoding="utf-8",
+    )
+    return True
+
+
+def test_kdm_dialog_describes_the_reply_never_a_key():
+    from cfa4_qt.panels.kdm_dialog import describe
+
+    text = describe({"title": "Film", "composition": "1111", "keys": [{"keyId": "5a5a", "type": "MDIK", "notValidBefore": "a", "notValidAfter": "b"}]})
+    assert text.splitlines()[0] == "Film: 1 keys loaded" and "MDIK  5a5a  a – b" in text and "CPL 1111" in text
+    assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
+
+
+def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
+    """File ▸ Load KDM… (#1029): a wrong private key shows the engine's message, the right one the
+    KDM's title and key types (never the key); Forget DCP Keys empties the key ring."""
+    from cfa4_qt.main_window import MainWindow
+
+    if not _openssl_kdm(tmp_path):
+        assert not os.environ.get("CFA4_REQUIRE_ORACLES"), "openssl not found"
+        pytest.skip("openssl not found")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
+        names = {a.objectName() for m in win.menuBar().actions() if m.menu() for a in m.menu().actions()}
+        assert {"qt.file.loadKdm", "qt.file.forgetDcpKeys"} <= names
+        # dcp.loadKdm without parameters (menu, control channel) opens the dialog
+        win.run_command(win.registry.commands["dcp.loadKdm"])
+        dlg = win.kdm_dialog
+        assert dlg is not None and dlg.isVisible()
+        dlg.load()
+        assert dlg.result.toPlainText() == "Choose the KDM file and the private key."
+        dlg.kdm_path.setText(str(tmp_path / "kdm.xml"))
+        dlg.key_path.setText(str(tmp_path / "other.pem"))
+        dlg.load()
+        assert wait_until(app, lambda: "not made for this private key" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+        dlg.key_path.setText(str(tmp_path / "key.pem"))
+        dlg.load()
+        assert wait_until(app, lambda: dlg.result.toPlainText().startswith("Encrypted Test: 1 keys loaded"), 20_000), dlg.result.toPlainText()
+        assert "MDAK" in dlg.result.toPlainText() and "5a5a5a5a-5a5a" in dlg.result.toPlainText()
+        got: list = []
+        engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == ["5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a"]
+        dlg.forget()
+        assert wait_until(app, lambda: dlg.result.toPlainText() == "DCP keys forgotten", 10_000)
+        got.clear()
+        engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == []
+        dlg.close()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

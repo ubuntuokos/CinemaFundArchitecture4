@@ -4501,3 +4501,12 @@ export.summary	Low	低
 	accept	可接受
 	the engine did not start the check	引擎未開始檢查
 	the engine sent no report	引擎未傳送報告
+	Load KDM…	載入 KDM…
+	Forget DCP Keys	清除 DCP 金鑰
+	Load KDM	載入 KDM
+	KDM file	KDM 檔案
+	Private key (PEM)	私密金鑰 (PEM)
+	{title}: {count} keys loaded	{title}：已載入 {count} 個金鑰
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	金鑰只保存在記憶體中，直到執行「清除 DCP 金鑰」或工作階段結束。
+	DCP keys forgotten	已清除 DCP 金鑰
+	Choose the KDM file and the private key.	請選擇 KDM 檔案和私密金鑰。

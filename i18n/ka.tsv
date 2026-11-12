@@ -4505,3 +4505,12 @@ export.summary	Low	დაბალი
 	accept	მისაღები
 	the engine did not start the check	ძრავამ შემოწმება არ დაიწყო
 	the engine sent no report	ძრავამ ანგარიში არ გამოგზავნა
+	Load KDM…	KDM-ის ჩატვირთვა…
+	Forget DCP Keys	DCP გასაღებების დავიწყება
+	Load KDM	KDM-ის ჩატვირთვა
+	KDM file	KDM ფაილი
+	Private key (PEM)	პირადი გასაღები (PEM)
+	{title}: {count} keys loaded	{title}: ჩატვირთულია {count} გასაღები
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	გასაღებები მხოლოდ მეხსიერებაში რჩება, DCP გასაღებების დავიწყებამდე ან სესიის დასრულებამდე.
+	DCP keys forgotten	DCP გასაღებები დავიწყებულია
+	Choose the KDM file and the private key.	აირჩიეთ KDM ფაილი და პირადი გასაღები.
