@@ -23,10 +23,13 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod assetmap;
+mod c14n;
 mod cpl;
 pub mod kdm;
 mod pkl;
+pub mod x509;
 mod xml;
+pub mod xmldsig;
 
 pub use assetmap::{AssetMap, AssetMapAsset, Chunk, VolumeIndex};
 pub use cpl::{AssetKind, Composition, ContentVersion, Marker, Rating, Reel, ReelAsset, ScreenAspectRatio};

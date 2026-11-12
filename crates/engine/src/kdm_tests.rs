@@ -111,8 +111,13 @@ fn encrypted_dcp_audio_plays_after_its_kdm() {
     assert!(openssl(&dir, &["genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", "other.pem"]));
     let e = s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join("kdm.xml")), "privateKey": s_path(&dir.join("other.pem"))})).unwrap_err();
     assert!(e.to_string().contains("not made for this private key"), "{e}");
-    // the right one
-    let r = s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join("kdm.xml")), "privateKey": s_path(&dir.join("key.pem"))})).unwrap();
+    // the right one, but unsigned: refused unless asked for
+    let e = s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join("kdm.xml")), "privateKey": s_path(&dir.join("key.pem"))})).unwrap_err();
+    assert!(e.to_string().contains("not signed") && e.to_string().contains("allowUnverified"), "{e}");
+    assert!(s.execute("dcp.keys", json!({})).unwrap()["keyIds"].as_array().unwrap().is_empty(), "nothing loaded");
+    let r =
+        s.execute("dcp.loadKdm", json!({"kdm": s_path(&dir.join("kdm.xml")), "privateKey": s_path(&dir.join("key.pem")), "allowUnverified": true})).unwrap();
+    assert_eq!(r["signature"]["valid"], false);
     assert_eq!(r["title"], "Encrypted Test");
     assert_eq!(r["keys"][0]["type"], "MDAK");
     assert_eq!(r["keys"][0]["keyId"], "5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a");

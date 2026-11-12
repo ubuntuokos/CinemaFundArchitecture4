@@ -171,3 +171,33 @@ fn bad_inputs_are_errors() {
     let xml = kdm_xml("11111111-1111-1111-1111-111111111111", &["A".repeat(344)]);
     assert!(open_kdm(&xml, &key, now()).is_err());
 }
+
+/// The KDM's signature: an xmlsec1-signed KDM checks out with its chain; unsigned and changed
+/// ones say so, and still open (the caller decides).
+#[test]
+fn kdm_signatures_are_checked() {
+    let Some(o) = Ossl::new("sig") else { return };
+    let Some(signer) = crate::xmldsig::tests::Signed::new("kdm") else { return };
+    let (pem, _) = o.key();
+    let key = private_key_from_pem(&pem).unwrap();
+    let blocks = [o.wrap(&plaintext(STRUCTURE_ID, CPL, "MDIK", KEY_ID, FROM, TO))];
+    let unsigned = kdm_xml("11111111-1111-1111-1111-111111111111", &blocks);
+    let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
+    let now = DateTime::from_timestamp(secs, 0).unwrap();
+    assert_eq!(open_kdm(&unsigned, &key, now).unwrap().signature, Signature::Missing);
+    let template = unsigned.replace("</DCinemaSecurityMessage>", &format!("{}\n</DCinemaSecurityMessage>", crate::xmldsig::tests::TEMPLATE_SIGNATURE));
+    let signed = signer.sign(&template);
+    let k = open_kdm(&signed, &key, now).unwrap();
+    assert_eq!(k.signature, Signature::Valid { chain: vec!["CS.signer".into(), ".inter".into(), ".root".into()] });
+    assert!(k.signature.is_valid());
+    let changed = open_kdm(&signed.replace("Test Feature", "Other Feature"), &key, now).unwrap();
+    assert!(matches!(&changed.signature, Signature::Invalid(e) if e.contains("ID_AuthenticatedPublic")), "{:?}", changed.signature);
+    assert_eq!(changed.content_title.as_deref(), Some("Other Feature"));
+    // a signature that leaves the private part out
+    let partial = signer.sign(&unsigned.replace(
+        "</DCinemaSecurityMessage>",
+        &format!("{}\n</DCinemaSecurityMessage>", crate::xmldsig::tests::TEMPLATE_SIGNATURE.replace("<dsig:Reference URI=\"#ID_AuthenticatedPrivate\"><dsig:DigestMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#sha256\"/><dsig:DigestValue/></dsig:Reference>", "")),
+    ));
+    let p = open_kdm(&partial, &key, now).unwrap();
+    assert!(matches!(&p.signature, Signature::Invalid(e) if e.contains("AuthenticatedPrivate")), "{:?}", p.signature);
+}

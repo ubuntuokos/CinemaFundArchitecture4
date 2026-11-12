@@ -28,8 +28,20 @@ for issue in doc.issues() {
 (`kdm::private_key_from_pem`: PEM PKCS#1 or PKCS#8, no password) using RSA-OAEP with SHA-1 (ST
 430-3; RustCrypto `rsa` 0.10, constant-time). It checks the Structure ID of every `EncryptedKey`,
 that each names the composition of the public part, and the validity window against the time given.
-Keys come back in memory only (`KdmKey`'s `Debug` hides them); nothing is stored. The KDM's XML
-signature is not verified yet: the keys only open with the recipient's own private key.
+Keys come back in memory only (`KdmKey`'s `Debug` hides them); nothing is stored.
+
+The KDM's XML signature is checked and reported in `Kdm::signature` (`Valid` with the chain's
+common names, `Missing` or `Invalid` with the reason); the caller decides what to do (the engine's
+`dcp.loadKdm` refuses an unverified KDM unless `allowUnverified` is given). `xmldsig::verify`
+checks an enveloped XML Signature: same-document references (`URI="#id"`, optional
+enveloped-signature and C14N transforms) with SHA-256 or SHA-1 digests, inclusive Canonical XML
+1.0 with or without comments (`c14n`), RSA PKCS#1 v1.5 (SHA-256 or SHA-1), and the certificate
+chain in `KeyInfo`: each certificate signed by the next, issuer and subject names chained, issuers
+are CAs within their path length, all valid at the given time, ending in a self-signed root
+(`x509`: a small DER reader for the fields this needs). For a KDM both `AuthenticatedPublic` and
+`AuthenticatedPrivate` must be referenced. Not checked yet (#1028): the ST 430-2 certificate
+profile rules (dnQualifier, roles, key usage), the signer thumbprint in the RSA blocks (ST 430-1
+7.2.3) and a trusted root list.
 
 ## What counts as an error
 
@@ -51,7 +63,7 @@ means for each standard.
 
 ## Not here
 
-- Signature verification (documents and KDMs). The model records that `Signer` and `ds:Signature` are present.
+- Signature verification of CPLs and PKLs. The model records that `Signer` and `ds:Signature` are present.
 - Hashing the assets, finding files on disk, resolving `Path`. These belong to `cfa4-dcp-validate`.
 - MXF track files. `cfa4-mxf` reads them.
 - Writing DCPs. `cfa4-export` (`dcp_out.rs`) writes them; its CPL layout is one of the test samples.
