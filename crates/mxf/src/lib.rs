@@ -4,8 +4,8 @@
 //! video mapping), ST 381-3 (AVC mapping), ST 384 (uncompressed pictures, [`uncompressed`]),
 //! ST 382 (AES3 / Broadcast Wave audio mapping), ST 331 (AES3 element data, D-10 sound), ST 2019-4
 //! (VC-3 mapping), RDD 44 (ProRes mapping) and ST 2067-201 (IAB immersive audio track files), ST
-//! 429-5 (timed text track files, also used by ST 2067-2 IMF) and ST 410 (generic stream
-//! partitions).
+//! 429-5 (timed text track files, also used by ST 2067-2 IMF), ST 410 (generic stream
+//! partitions) and ST 436-1 (ANC data packets, [`read_anc`]).
 //!
 //! [`open`] walks the file's KLV packets (keys and lengths only; essence payloads are never read
 //! while opening), parses the partition packs, the primer pack and header metadata of the most
@@ -23,6 +23,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+mod anc;
 mod essence;
 mod file;
 mod index;
@@ -38,6 +39,7 @@ pub mod write;
 #[doc(hidden)]
 pub mod testing;
 
+pub use anc::{AncData, AncPacket, MAX_ANC_ELEMENT_BYTES, MAX_ANC_FRAMES, has_anc, parse_anc_element, read_anc};
 pub use essence::{Codec, PictureInfo, SoundFormat, SoundInfo, aes3_element_samples, decode_pcm};
 pub use file::{Chunk, EssenceTrack, MxfFile, OperationalPattern, Partition, PartitionKind, Sample, Timecode, TrackKind, Wrapping, open};
 pub use index::{IndexEntry, IndexSegment};
