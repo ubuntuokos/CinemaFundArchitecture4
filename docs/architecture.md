@@ -26,7 +26,7 @@ Design principles:
  L5  ui-egui · automation · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
-     DCP validation: dcp-validate
+     DCP validation: dcp-validate · dcp-inspect
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
  L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
@@ -97,6 +97,7 @@ and `cfa4-cli`.
 | `qc` | L3 | media quality control: QC profiles (`cfa4-qc-profile/1`, TOML) with mandatory/optional checks and PASS/WARN/FAIL bounds, the versioned QC report (`cfa4-qc-report/1`, JSON) with SHA-256 file identities, tool versions and human review, input and integrity checks on a full decode, loudness / true peak / clipping / silence and black / luma-clipping / contact-sheet analysis, and a verdict that never passes a skipped or failed mandatory check ([media-qc.md](media-qc.md)) |
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
 | `dcp-validate` | L3 | DCP validation API (DCP-03): `DcpValidator` trait, seven result states and the package verdict, versioned profiles, `cfa4-dcp-report/1` JSON / Markdown report, safe package discovery, native backend ([README](../crates/dcp-validate/README.md)) |
+| `dcp-inspect` | L3 | DCP validation backend (DCP-04) that runs the isolated dcp_inspect reference engine as a separate process: argument array, own process group, private `HOME`/`TMPDIR`, timeout and cancel, `--dump-result` mapped onto the rule catalogue ([README](../crates/dcp-inspect/README.md)) |
 | `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
