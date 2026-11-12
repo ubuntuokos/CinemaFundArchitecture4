@@ -123,6 +123,15 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
                    "cineformQuality": "filmscan1", "exrCompression": "none"}
 MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
+# the bitrates of D-10 / IMX (ST 356), Mbit/s
+D10_MBPS = (30.0, 40.0, 50.0)
+
+
+def d10_mbps(v: float) -> float:
+    """The D-10 bitrate nearest to `v` Mbit/s."""
+    return min(D10_MBPS, key=lambda m: abs(m - v))
+
+
 MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
@@ -323,6 +332,7 @@ class ExportDialog(QDialog):
         self._follow: Any = None  # a moved item's id: the selection follows it
         # settings the user changed since the preset was chosen: only these override the preset
         self.touched: set[str] = set()
+        self._d10_bitrate = False  # the bitrate field steps through the D-10 rates (#1017)
         self._want_preset: str | None = None
         self._shown_preset: str | None = None
         self.preset_manager: PresetManager | None = None
@@ -1044,6 +1054,24 @@ class ExportDialog(QDialog):
             w.setEnabled(video)
         self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))
         self.video_form.setRowVisible(self.gop, video)  # H.264 / H.265 / AV1 have egui's own row
+        self._sync_d10_bitrate(fmt in MXF_FORMATS and mxf_codec == "d10")
+
+    def _sync_d10_bitrate(self, d10: bool) -> None:
+        """D-10 / IMX runs at 30, 40 or 50 Mbit/s only (#1017): the target bitrate field steps
+        through them (50 by default); `params` always sends one of them."""
+        if d10 == self._d10_bitrate:
+            return
+        self._d10_bitrate = d10
+        self.bitrate.blockSignals(True)
+        if d10:
+            v = self.bitrate.value()
+            self.bitrate.setRange(30.0, 50.0)
+            self.bitrate.setSingleStep(10.0)
+            self.bitrate.setValue(d10_mbps(v) if "bitrate" in self.touched else 50.0)
+        else:
+            self.bitrate.setRange(0.1, 800.0)
+            self.bitrate.setSingleStep(0.1)
+        self.bitrate.blockSignals(False)
 
     def _sync_format_rows(self) -> None:
         self._sync_mpeg2_rows()
@@ -1293,6 +1321,8 @@ class ExportDialog(QDialog):
                 p["bitrateMode"] = self.bitrate_mode.currentData()
             if "bitrate" in self.touched:
                 p["bitrateKbps"] = round(self.bitrate.value() * 1000)
+        if self._d10_bitrate:
+            p["bitrateKbps"] = round(d10_mbps(self.bitrate.value()) * 1000)
         if "hardware" in self.touched:
             p["hardwareEncoding"] = "auto" if self.hardware.isChecked() else "off"
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
