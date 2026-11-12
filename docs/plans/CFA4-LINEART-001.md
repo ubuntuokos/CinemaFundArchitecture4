@@ -34,7 +34,7 @@ TypeScript + SVG, egy Claude-skill és egy kis könyvtár:
 | `examples/`, `references/`, `SKILL.md` | két mintajelenet (egy sétáló alak, egy japán utca), a stílus szabályai, ellenőrzési és videós munkamenet | — |
 | `scripts/` | képkocka-mentés fej nélküli Chrome-mal, hurokhossz-mérés ffmpeggel | — |
 
-## III. Mit veszünk át és mit nem (javaslat, D1)
+## III. Mit veszünk át és mit nem (D1)
 
 - **Átírjuk Rustra:** a `lib/` négy modulját (a mozgásmatematika, a paletta és a rajzelemek
   geometriája). Ez a projekt értéke, és függőség nélküli.
@@ -88,11 +88,11 @@ A jövő évi kiadás, a tulajdonos döntése szerint (2026-11-11). Javaslat: L0
 (nem érinti a felületet), L3–L4 utána a tulajdonos jóváhagyásaival figuránként, L5–L7 a végén.
 A munkát külön munkamenet végzi, ebből a jóváhagyott tervből.
 
-## VII. Döntések (egyeztetendők)
+## VII. Döntések (lépésenként egyeztetve)
 
 | # | Kérdés | Javaslat |
 |---|---|---|
-| D1 | Mit veszünk át | csak a `lib/` matematikáját és rajzelemeit; a figurák és jelenetek sajátok |
+| D1 | Mit veszünk át | **Eldöntve (2026-11-12): csak a `lib/` matematikáját és rajzelemeit** (`gait`, `motion`, `daynight`, `ink`) írjuk át Rustra; a figurák és a jelenetek saját tervezésűek, a mintapéldákból (`examples/`) semmi nem kerül át |
 | D2 | Hogyan állítja a felhasználó | kész figurák és jelenetek paraméterekkel (nincs programozás); később egy jelenetszerkesztő a Qt6-ban, ahol figurákat és épületeket lehet elhelyezni |
 | D3 | Hol rajzolódik | saját renderelőben, CPU-n és GPU-n is (a meglévő grafikus réteg útján), nem böngészőben |
 | D4 | Időkezelés | determinisztikus: bármely időpont ugyanazt adja, rögzített lépésű szimulációval |
