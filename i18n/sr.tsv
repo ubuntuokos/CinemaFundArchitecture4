@@ -4502,3 +4502,12 @@ export.summary	Low	низак
 	accept	прихватљиво
 	the engine did not start the check	машина није покренула проверу
 	the engine sent no report	машина није послала извештај
+	Load KDM…	Учитај KDM…
+	Forget DCP Keys	Заборави DCP кључеве
+	Load KDM	Учитај KDM
+	KDM file	KDM датотека
+	Private key (PEM)	Приватни кључ (PEM)
+	{title}: {count} keys loaded	{title}: учитано кључева: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кључеви остају само у меморији, до команде Заборави DCP кључеве или краја сесије.
+	DCP keys forgotten	DCP кључеви заборављени
+	Choose the KDM file and the private key.	Изаберите KDM датотеку и приватни кључ.

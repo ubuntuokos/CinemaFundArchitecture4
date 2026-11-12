@@ -4487,3 +4487,12 @@
 	accept	допустимо
 	the engine did not start the check	рушій не почав перевірку
 	the engine sent no report	рушій не надіслав звіт
+	Load KDM…	Завантажити KDM…
+	Forget DCP Keys	Забути ключі DCP
+	Load KDM	Завантажити KDM
+	KDM file	Файл KDM
+	Private key (PEM)	Закритий ключ (PEM)
+	{title}: {count} keys loaded	{title}: завантажено ключів: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключі зберігаються лише в пам’яті, до команди «Забути ключі DCP» або кінця сеансу.
+	DCP keys forgotten	Ключі DCP забуто
+	Choose the KDM file and the private key.	Виберіть файл KDM і закритий ключ.

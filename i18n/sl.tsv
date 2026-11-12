@@ -4505,3 +4505,12 @@ export.summary	Low	nizka
 	accept	sprejemljivo
 	the engine did not start the check	pogon ni začel preverjanja
 	the engine sent no report	pogon ni poslal poročila
+	Load KDM…	Naloži KDM…
+	Forget DCP Keys	Pozabi ključe DCP
+	Load KDM	Naloži KDM
+	KDM file	Datoteka KDM
+	Private key (PEM)	Zasebni ključ (PEM)
+	{title}: {count} keys loaded	{title}: naloženih ključev: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključi ostanejo samo v pomnilniku, do ukaza Pozabi ključe DCP ali konca seje.
+	DCP keys forgotten	Ključi DCP pozabljeni
+	Choose the KDM file and the private key.	Izberite datoteko KDM in zasebni ključ.

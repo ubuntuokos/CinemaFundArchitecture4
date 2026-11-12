@@ -4512,3 +4512,12 @@
 	accept	aceitável
 	the engine did not start the check	o mecanismo não iniciou a verificação
 	the engine sent no report	o mecanismo não enviou relatório
+	Load KDM…	Carregar KDM…
+	Forget DCP Keys	Esquecer chaves DCP
+	Load KDM	Carregar KDM
+	KDM file	Arquivo KDM
+	Private key (PEM)	Chave privada (PEM)
+	{title}: {count} keys loaded	{title}: {count} chaves carregadas
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	As chaves ficam apenas na memória, até Esquecer chaves DCP ou o fim da sessão.
+	DCP keys forgotten	Chaves DCP esquecidas
+	Choose the KDM file and the private key.	Escolha o arquivo KDM e a chave privada.

@@ -4504,3 +4504,12 @@ export.summary	Low	lav
 	accept	acceptabelt
 	the engine did not start the check	motoren startede ikke kontrollen
 	the engine sent no report	motoren sendte ingen rapport
+	Load KDM…	Indlæs KDM…
+	Forget DCP Keys	Glem DCP-nøgler
+	Load KDM	Indlæs KDM
+	KDM file	KDM-fil
+	Private key (PEM)	Privat nøgle (PEM)
+	{title}: {count} keys loaded	{title}: {count} nøgler indlæst
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nøglerne findes kun i hukommelsen, indtil Glem DCP-nøgler eller sessionens afslutning.
+	DCP keys forgotten	DCP-nøgler glemt
+	Choose the KDM file and the private key.	Vælg KDM-filen og den private nøgle.

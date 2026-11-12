@@ -4502,3 +4502,12 @@ export.summary	Low	laag
 	accept	aanvaardbaar
 	the engine did not start the check	de engine heeft de controle niet gestart
 	the engine sent no report	de engine heeft geen rapport gestuurd
+	Load KDM…	KDM laden…
+	Forget DCP Keys	DCP-sleutels vergeten
+	Load KDM	KDM laden
+	KDM file	KDM-bestand
+	Private key (PEM)	Privésleutel (PEM)
+	{title}: {count} keys loaded	{title}: {count} sleutels geladen
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	De sleutels blijven alleen in het geheugen, tot DCP-sleutels vergeten of het einde van de sessie.
+	DCP keys forgotten	DCP-sleutels vergeten
+	Choose the KDM file and the private key.	Kies het KDM-bestand en de privésleutel.
