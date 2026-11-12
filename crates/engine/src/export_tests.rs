@@ -452,6 +452,16 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (640, 360));
                 continue;
             }
+            "mxf-op1a" if settings["mxfVideoCodec"] == "d10" => {
+                // D-10 / IMX: the stored frame with its vertical interval lines, 4-channel AES3
+                assert_eq!(fmt_name, "mxf", "{name}");
+                let v = stream(&j, "video").unwrap();
+                let stored = if h == 576 { 608 } else { 512 };
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("mpeg2video"), Some(w), Some(stored)), "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("48000"), Some(4)), "{name}");
+                continue;
+            }
             "mxf-opatom" => {
                 // Avid style: picture only in Demo.mxf, one mono PCM file per channel
                 assert_eq!(fmt_name, "mxf", "{name}");

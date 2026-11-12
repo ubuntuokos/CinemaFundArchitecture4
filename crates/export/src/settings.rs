@@ -143,6 +143,11 @@ pub enum MxfVideoCodec {
     /// MPEG-2 long GOP (ST 381-1 elementary stream mapping; XDCAM HD422 style with 4:2:2 at
     /// 50 Mbit/s). HD only: the High and High-1440 levels.
     Mpeg2,
+    /// Type D-10 / IMX (ST 386): intra-only MPEG-2 4:2:2P@ML at 30, 40 or 50 Mbit/s (the
+    /// bitrate setting), 720 × 576 at 25 fps or 720 × 486 / 480 at 29.97 fps, with up to eight
+    /// 16- or 24-bit 48 kHz audio channels in one AES3 element. OP1a only.
+    #[serde(rename = "d10", alias = "D10")]
+    D10,
 }
 
 impl MxfVideoCodec {
@@ -153,6 +158,7 @@ impl MxfVideoCodec {
             MxfVideoCodec::ProRes => "Apple ProRes",
             MxfVideoCodec::H264 => "H.264",
             MxfVideoCodec::Mpeg2 => "MPEG-2",
+            MxfVideoCodec::D10 => "D-10 (IMX)",
         }
     }
     /// The export format whose encoder this codec uses.
@@ -161,7 +167,7 @@ impl MxfVideoCodec {
             MxfVideoCodec::Dnxhr => Format::DnxHr,
             MxfVideoCodec::ProRes => Format::ProRes,
             MxfVideoCodec::H264 => Format::H264,
-            MxfVideoCodec::Mpeg2 => Format::Mpeg2,
+            MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 => Format::Mpeg2,
         }
     }
 }

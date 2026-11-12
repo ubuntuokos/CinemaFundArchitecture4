@@ -3128,6 +3128,10 @@
 	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
 	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP long (12 images, IBBP) à 50 Mbit/s dans le style XDCAM HD422, PCM 24 bits 48 kHz ; tailles d'image HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High GOP long (0,3 bit par pixel), PCM 24 bits 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a type D-10 (IMX 50) : MPEG-2 4:2:2P@ML intra seulement à 50 Mbit/s, 720x486 à 29,97 fps (4:3), quatre canaux audio 24 bits 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a type D-10 (IMX 50) : MPEG-2 4:2:2P@ML intra seulement à 50 Mbit/s, 720x576 à 25 fps (4:3), quatre canaux audio 24 bits 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bits 48 kHz, timecode de début
 	Main	Main
 	Mark In (Hover Scrub)	Marquer l'entrée (défilement au survol)

@@ -7,7 +7,7 @@ use cfa4_mxf::{
 };
 use cfa4_time::FrameRate;
 
-use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, Format, H264Profile, MpegVideoInfo, Out, Result};
+use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
 
 /// Paths of the OP-Atom audio files for an export to `path` with `channels` channels.
 pub fn opatom_audio_paths(path: &str, channels: usize) -> Vec<String> {
@@ -30,7 +30,15 @@ fn io(e: std::io::Error) -> ExportError {
 
 /// The picture essence description for an export (codec from the MXF video codec setting; MPEG-2
 /// from what its encoder reports).
-fn picture(settings: &ExportSettings, w: u32, h: u32, mpeg: Option<MpegVideoInfo>) -> Result<PictureDesc> {
+fn picture(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate, mpeg: Option<MpegVideoInfo>) -> Result<PictureDesc> {
+    if settings.mxf_video_codec == MxfVideoCodec::D10 {
+        let (mbps, lines) = crate::d10_params(settings, w, h, rate)?;
+        let mut d = PictureDesc::new(PictureCoding::D10 { mbps, lines }, 720, if lines == 625 { 608 } else { 512 });
+        // the display aspect ratio of the active picture: 16:9 when the pixel aspect says so
+        let wide = settings.pixel_aspect.is_some_and(|(n, dn)| dn > 0 && u64::from(w) * u64::from(n) * 9 >= u64::from(h) * u64::from(dn) * 15);
+        d.aspect = if wide { Rational::new(16, 9) } else { Rational::new(4, 3) };
+        return Ok(d);
+    }
     let coding = match settings.video_format() {
         Format::Mpeg2 => {
             let m = mpeg.ok_or_else(|| ExportError::Encode("internal: MPEG-2 encoder without stream parameters".into()))?;
@@ -129,7 +137,7 @@ impl MxfMux {
         // integers only: `ExportSettings::validate` refuses float PCM in MXF
         let bits = u32::from(settings.audio.sample_format().bits());
         let mut cfg = WriterConfig::new(if atom { Pattern::OpAtom } else { Pattern::Op1a }, rate, ids.clone());
-        cfg.picture = Some(picture(settings, s.width, s.height, s.mpeg)?);
+        cfg.picture = Some(picture(settings, s.width, s.height, s.rate, s.mpeg)?);
         cfg.modified = Timestamp::from_unix((now / 1_000_000_000) as i64);
         cfg.timecode = Some(StartTimecode { frames: s.timecode.0, rate, drop_frame: s.timecode.1 && s.rate.supports_drop_frame() });
         if !atom && let Some((sr, ch)) = s.audio {

@@ -117,8 +117,18 @@ fn mxf(format: Format, codec: MxfVideoCodec, profile: &str) -> ExportSettings {
             s.keyframe_distance = Some(12);
             s.mpeg2_b_frames = Some(2);
         }
+        MxfVideoCodec::D10 => {
+            // IMX 50 with four audio channels, the usual D-10 configuration
+            s.bitrate_kbps = 50_000;
+            s.audio.channels = 4;
+        }
     }
     s
+}
+
+/// MXF OP1a type D-10 (IMX 50): `size` at `rate` with pixel aspect `par` (4:3).
+fn d10(size: (u32, u32), rate: FrameRate, par: (u32, u32)) -> ExportSettings {
+    ExportSettings { frame_size: Some(size), frame_rate: Some(rate), pixel_aspect: Some(par), ..mxf(Format::MxfOp1a, MxfVideoCodec::D10, "") }
 }
 
 fn audio_only(format: Format, bits: u16) -> ExportSettings {
@@ -221,6 +231,18 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             bc,
             "MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes",
             mxf(Format::MxfOp1a, MxfVideoCodec::Mpeg2, ""),
+        ),
+        p(
+            "MXF OP1a D-10 (IMX) 50 Mbit/s 625/25",
+            bc,
+            "MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels",
+            d10((720, 576), FrameRate::new(25, 1), (16, 15)),
+        ),
+        p(
+            "MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97",
+            bc,
+            "MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels",
+            d10((720, 486), FrameRate::new(30000, 1001), (9, 10)),
         ),
         p(
             "MXF OP-Atom DNxHR (Avid)",
