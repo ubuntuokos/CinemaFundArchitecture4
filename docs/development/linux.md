@@ -189,8 +189,9 @@ python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_
 export CFA4_PYSIDE6_WHEELS=/path/to/wheels
 ```
 
-The AppImage starts egui; `--qt` (or `CFA4_GUI=qt`) starts the Qt GUI with the host's
-`python3`. In the Flatpak: `flatpak run --command=cfa4-qt io.github.ubuntuokos.cfa4`.
+The AppImage starts the Qt GUI by default (owner decision 2026-11-12) with the host's `python3`;
+`--egui` (or `CFA4_GUI=egui`) starts the frozen egui editor, and without `python3` the default
+falls back to egui with a message. In the Flatpak: `flatpak run --command=cfa4-qt io.github.ubuntuokos.cfa4`.
 Read https://www.qt.io/development/open-source-lgpl-obligations .
 
 **Branding:** the inherited upstream brand marks, screenshots, application icons and names have

@@ -134,7 +134,7 @@ class StagePyside6Tests(unittest.TestCase):
 
 
 class AppRunTests(unittest.TestCase):
-    """AppRun starts egui by default and the Qt GUI with --qt or CFA4_GUI=qt."""
+    """AppRun starts the Qt GUI by default (owner decision 2026-11-12) and egui with --egui or CFA4_GUI=egui."""
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cfa4-apprun-")
@@ -153,11 +153,31 @@ class AppRunTests(unittest.TestCase):
                                 capture_output=True, text=True, timeout=30, check=True)
         return result.stdout.strip()
 
-    def test_egui_by_default_and_qt_on_request(self):
-        self.assertEqual(self.run_app("film.fcproj"), "egui film.fcproj")
+    def test_qt_by_default_and_egui_on_request(self):
+        self.assertEqual(self.run_app("film.fcproj"), "qt film.fcproj")
         self.assertEqual(self.run_app("--qt", "--demo"), "qt --demo")
         self.assertEqual(self.run_app("--demo", CFA4_GUI="qt"), "qt --demo")
+        self.assertEqual(self.run_app("--egui", "x"), "egui x")
+        self.assertEqual(self.run_app("x", CFA4_GUI="egui"), "egui x")
         self.assertEqual(self.run_app("--egui", "x", CFA4_GUI="qt"), "egui x")
+        self.assertEqual(self.run_app("--qt", "x", CFA4_GUI="egui"), "qt x")
+
+    def test_without_python3_the_default_falls_back_to_egui(self):
+        """Only sh and the egui binary on PATH: the default still starts; an explicit --qt fails."""
+        bindir = Path(self.temp.name) / "bin"
+        bindir.mkdir()
+        for tool in ("sh", "dirname", "readlink"):
+            found = shutil.which(tool)
+            self.assertIsNotNone(found, tool)
+            (bindir / tool).symlink_to(found)
+        env = {"PATH": str(bindir)}
+        app = str(self.appdir / "AppRun")
+        result = subprocess.run([app, "x"], env=env, capture_output=True, text=True, timeout=30, check=True)
+        self.assertEqual(result.stdout.strip(), "egui x")
+        self.assertIn("python3 is missing", result.stderr)
+        result = subprocess.run([app, "--qt", "x"], env=env, capture_output=True, text=True, timeout=30, check=False)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("needs python3", result.stderr)
 
 
 if __name__ == "__main__":
