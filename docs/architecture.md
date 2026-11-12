@@ -72,6 +72,7 @@ and `cfa4-cli`.
 | `dts` | L0 | DTS core, DTS-HD MA / HRA decoder, FFmpeg-derived, LGPL-2.1-or-later ([README](../crates/dts/README.md)) |
 | `iab` | L0 | Immersive Audio Bitstream (SMPTE ST 2098-2, DCP / IMF object audio): parser, DLC lossless decoder and encoder, loudspeaker renderer, writer ([README](../crates/iab/README.md)) |
 | `mpa` | L0 | MPEG-1/2 Audio Layer I and II (MP1 / MP2) decoder ([README](../crates/mpa/README.md)) |
+| `speex` | L0 | Speex decoder (narrowband, wideband, ultra-wideband, VBR / DTX, in-band stereo), ported from the BSD-3-Clause libspeex 1.2.1 ([README](../crates/speex/README.md)) |
 | `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
