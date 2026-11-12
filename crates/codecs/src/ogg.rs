@@ -76,8 +76,8 @@ impl OggSource {
         let stream = file
             .streams
             .iter()
-            .position(|s| matches!(s.codec, Codec::Opus | Codec::Vorbis) && !s.packets.is_empty())
-            .ok_or_else(|| CodecError::Unsupported("Ogg: no Opus or Vorbis stream".into()))?;
+            .position(|s| matches!(s.codec, Codec::Opus | Codec::Vorbis | Codec::Speex) && !s.packets.is_empty())
+            .ok_or_else(|| CodecError::Unsupported("Ogg: no Opus, Vorbis or Speex stream".into()))?;
         let st = &file.streams[stream];
         let (kind, rate, channels, codec) = match st.codec {
             Codec::Opus => {
@@ -94,6 +94,11 @@ impl OggSource {
                     channels,
                     "Opus",
                 )
+            }
+            Codec::Speex => {
+                let (rate, samples) = decode_speex(&file, &bytes, stream)?;
+                let ch = samples.len() as u32;
+                (Kind::Pcm { rate, samples }, rate, ch, "Speex")
             }
             _ => {
                 let (rate, samples) = decode_vorbis(&file, &bytes, stream)?;
@@ -160,6 +165,63 @@ impl OggSource {
         }
         Ok(p)
     }
+}
+
+/// Decode a Speex stream fully (`cfa4-speex`), trimmed as the reference `speexdec` trims it: the
+/// first page's leading samples (the encoder's lookahead, from its granule position) plus the
+/// decoder's lookahead are dropped, and the end-of-stream page is cut to its granule position.
+fn decode_speex(file: &OggFile, bytes: &crate::Src, s: usize) -> crate::Result<(u32, Vec<Vec<f32>>)> {
+    let st = &file.streams[s];
+    let head = st.headers.first().ok_or_else(|| CodecError::Decode("Speex: missing header".into()))?;
+    let header = cfa4_speex::Header::parse(head).map_err(|e| CodecError::Unsupported(format!("Speex: {e}")))?;
+    let mut dec = cfa4_speex::Decoder::new(&header);
+    let (fs, la, ch) = (dec.frame_size() as i64, dec.lookahead() as i64, header.channels.max(1) as usize);
+    let nframes = i64::from(header.frames_per_packet);
+    let mut out: Vec<Vec<f32>> = vec![Vec::new(); ch];
+    let mut last_granule = 0i64;
+    let mut i = header.extra_headers as usize;
+    while i < st.packets.len() {
+        // The packets completed on one page.
+        let page = st.packets[i].page;
+        let end = st.packets[i..].iter().position(|p| p.page != page).map_or(st.packets.len(), |k| i + k);
+        let on_page = &st.packets[i..end];
+        let n = on_page.len() as i64;
+        let granule = on_page.iter().find_map(|p| p.granule).unwrap_or(-1);
+        let eos = on_page.iter().any(|p| p.eos);
+        let mut skip = 0i64;
+        if granule > 0 {
+            skip = n.saturating_mul(fs).saturating_mul(nframes).saturating_sub(granule.saturating_sub(last_granule));
+            if eos {
+                skip = -skip;
+            }
+        }
+        last_granule = granule;
+        for (k, _) in on_page.iter().enumerate() {
+            let data = file.read_packet(bytes, s, i + k).map_err(|e| CodecError::Container(e.to_string()))?;
+            let pcm = dec.decode_packet(&data);
+            let packet_no = k as i64 + 1;
+            for (j, frame) in pcm.chunks(fs as usize * ch).enumerate() {
+                let j = j as i64;
+                let (mut offset, mut size) = (0i64, fs);
+                if packet_no == 1 && j == 0 && skip > 0 {
+                    size -= skip + la;
+                    offset = skip + la;
+                }
+                if packet_no == n && skip < 0 {
+                    size = (nframes * fs + skip + la - j * fs).clamp(0, fs);
+                }
+                if size > 0 {
+                    let from = offset as usize * ch;
+                    let to = ((offset + size) as usize * ch).min(frame.len());
+                    for (t, v) in frame.get(from..to).unwrap_or(&[]).iter().enumerate() {
+                        out[t % ch].push(f32::from(*v) / 32768.0);
+                    }
+                }
+            }
+        }
+        i = end;
+    }
+    Ok((header.rate, out))
 }
 
 /// Decode a Vorbis stream fully, aligned to its granule positions.
@@ -274,7 +336,7 @@ impl MediaSource for OggSource {
 
 /// Ogg Opus / Vorbis; other Ogg codecs (FLAC) fall through to the bootstrap audio opener.
 fn handles(head: &[u8]) -> bool {
-    sniff(head) && (head.windows(8).any(|w| w == b"OpusHead") || head.windows(7).any(|w| w == b"\x01vorbis"))
+    sniff(head) && (head.windows(8).any(|w| w == b"OpusHead" || w == b"Speex   ") || head.windows(7).any(|w| w == b"\x01vorbis"))
 }
 
 pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<Result<SharedSource, MediaError>> {

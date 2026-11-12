@@ -3119,8 +3119,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a、DNxHR HQ (8-bit 4:2:2)、24-bit 48 kHz PCM、開始タイムコード付き
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a、MPEG-2 4:2:2 Profile ロング GOP（12 ピクチャ、IBBP）50 Mbit/s、XDCAM HD422 形式、24-bit 48 kHz PCM、HD フレームサイズ
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a、H.264 High ロング GOP (1 ピクセルあたり 0.3 ビット)、24-bit 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a タイプ D-10（IMX 50）：イントラのみの MPEG-2 4:2:2P@ML 50 Mbit/s、720x486、29.97 fps（4:3）、24-bit 48 kHz オーディオ 4 チャンネル
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a タイプ D-10（IMX 50）：イントラのみの MPEG-2 4:2:2P@ML 50 Mbit/s、720x576、25 fps（4:3）、24-bit 48 kHz オーディオ 4 チャンネル
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a、ProRes 422 HQ、24-bit 48 kHz PCM、開始タイムコード付き
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 レイアウトの MXF OP1a：MPEG-2 4:2:2 Profile ロング GOP（12 ピクチャ、IBBP）50 Mbit/s、1920x1080 または 1280x720 プログレッシブ、24-bit 48 kHz 4 チャンネル（チャンネルごとの AES3 エレメント）
 	Main	メイン
 	Mark In (Hover Scrub)	イン点をマーク (ホバースクラブ)
 	Mark Out (Hover Scrub)	アウト点をマーク (ホバースクラブ)
@@ -3677,6 +3685,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 3996×2160（1.85:1）、5.1 24 ビット 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 4096×1716（2.39:1）、5.1 24 ビット 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E（インターオペラブル マスター パッケージ）
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF フォルダー：JPEG 2000 1920×1080、5.1 24 ビット 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF フォルダー：JPEG 2000 3840×2160、5.1 24 ビット 48 kHz PCM
+	Episode	エピソード
+	Event highlights	イベントハイライト
+	Event	イベント
+	Lossless (reversible JPEG 2000)	ロスレス (可逆 JPEG 2000)
+	Package language	パッケージの言語
 	Show Duplicate Frame Markers	重複フレームマーカーを表示
 # Settings ▸ Media & Playback ▸ Media Backends (ADR 0005)
 	Media Backends	メディアバックエンド
@@ -3840,6 +3858,7 @@
 	Output file	出力ファイル
 	Output folder	出力フォルダー
 	PCM (uncompressed)	PCM（非圧縮）
+	MP2 (MPEG-1 Layer II)	MP2（MPEG-1 レイヤー II）
 	Pace	話す速さ
 	Path:	パス：
 	Program Stream (.mpg, LPCM audio)	プログラムストリーム（.mpg、LPCM オーディオ）
@@ -3945,6 +3964,9 @@
 	1 B picture between anchors	アンカー間の B ピクチャ 1 枚
 	10-bit RGB	10 ビット RGB
 	12-bit X'Y'Z'	12 ビット X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 ビット R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF 非可逆
+	JPEG 2000 IMF reversible	JPEG 2000 IMF 可逆
 	16-bit half float	16 ビット半精度浮動小数点
 	AV1 Main (10-bit for HDR)	AV1 Main（HDR は 10 ビット）
 	BDAV Transport Stream	BDAV トランスポートストリーム
@@ -4329,6 +4351,7 @@
 	Safe areas and spines	セーフエリアとスパイン
 	The text moves {speed} px per frame; a whole number does not shimmer	テキストは1フレームあたり{speed} px移動します。整数値だとちらつきません
 	Video: {file}	動画: {file}
+	Looped video: {file}	ループ動画: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”が背景から目立ちません(コントラスト{ratio}:1。4.5:1以上が必要です)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	完成したデザイン: スタイル、背景、トランジション、タイミング。スタイルファイルを指定した場合はそちらが優先されます。
 	Apply Credits Template…	クレジットテンプレートを適用…
@@ -4453,3 +4476,60 @@
 	picture styles (pictures keep their own size) are not carried over	画像スタイル(画像は元のサイズを保ちます)は引き継がれません
 	video (tape) styles are not carried over	ビデオ(テープ)スタイルは引き継がれません
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecredプロジェクトにはクレジットのスプレッドシートが{n}個あります。“{name}”を使用します(スプレッドシートの欄で別のものを選択できます)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	所見を追加
+	Add as Finding	所見として追加
+	Are colour and contrast acceptable?	色とコントラストは許容範囲ですか?
+	Automatic Checks	自動チェック
+	Bounds	範囲
+	Check	チェック
+	Check Now	今すぐチェック
+	Check quality after export	書き出し後に品質をチェック
+	Checking…	チェック中…
+	Contact Sheet	コンタクトシート
+	Critical	重大
+	Fail	不合格
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	所見 {row}: タイムコードがこのファイル内の時刻ではありません (HH:MM:SS:FF)。
+	Findings	所見
+	Human Review	目視レビュー
+	Incomplete	不完全
+	Is there a visible picture defect?	目に見える映像の欠陥がありますか?
+	Is there audible distortion?	聞き取れる歪みがありますか?
+	Is there unwanted noise?	不要なノイズがありますか?
+	Major	重要
+	Message	メッセージ
+	Minor	軽微
+	No contact sheet	コンタクトシートなし
+	Not answered	未回答
+	Not checked	未チェック
+	Not run	未実行
+	Note	メモ
+	Pass	合格
+	Passed	合格
+	Passed with warnings	警告付きで合格
+	Profile: {id} v{version}	プロファイル: {id} v{version}
+	Quality Check	品質チェック
+	Quality Check…	品質チェック…
+	Remove Finding	所見を削除
+	Report: {path}	レポート: {path}
+	Review complete	レビュー完了
+	Reviewer	レビュー担当者
+	Run the media quality check on the finished file (docs/media-qc.md)	完成したファイルのメディア品質チェックを実行 (docs/media-qc.md)
+	Save Review	レビューを保存
+	Select a finished export in the queue	キュー内の完了した書き出しを選択してください
+	Severity	重大度
+	The engine is not running.	エンジンが動作していません。
+	Time code	タイムコード
+	Unsure	不明
+	accept	許容
+	the engine did not start the check	エンジンがチェックを開始しませんでした
+	the engine sent no report	エンジンがレポートを送信しませんでした
+	Load KDM…	KDM を読み込む…
+	Forget DCP Keys	DCP キーを破棄
+	Load KDM	KDM を読み込む
+	KDM file	KDM ファイル
+	Private key (PEM)	秘密鍵 (PEM)
+	{title}: {count} keys loaded	{title}: {count} 個のキーを読み込みました
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	キーはメモリ上にのみ保持され、「DCP キーを破棄」またはセッション終了まで残ります。
+	DCP keys forgotten	DCP キーを破棄しました
+	Choose the KDM file and the private key.	KDM ファイルと秘密鍵を選択してください。

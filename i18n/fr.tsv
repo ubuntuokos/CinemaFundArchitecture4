@@ -3125,8 +3125,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bits 4:2:2), PCM 24 bits 48 kHz, timecode de début
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP long (12 images, IBBP) à 50 Mbit/s dans le style XDCAM HD422, PCM 24 bits 48 kHz ; tailles d'image HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High GOP long (0,3 bit par pixel), PCM 24 bits 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a type D-10 (IMX 50) : MPEG-2 4:2:2P@ML intra seulement à 50 Mbit/s, 720x486 à 29,97 fps (4:3), quatre canaux audio 24 bits 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a type D-10 (IMX 50) : MPEG-2 4:2:2P@ML intra seulement à 50 Mbit/s, 720x576 à 25 fps (4:3), quatre canaux audio 24 bits 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bits 48 kHz, timecode de début
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a selon la disposition SMPTE RDD 9 : MPEG-2 4:2:2 Profile GOP long (12 images, IBBP) à 50 Mbit/s, 1920x1080 ou 1280x720 progressif, quatre canaux 24 bits 48 kHz en éléments AES3 par canal
 	Main	Main
 	Mark In (Hover Scrub)	Marquer l'entrée (défilement au survol)
 	Mark Out (Hover Scrub)	Marquer la sortie (défilement au survol)
@@ -3628,6 +3636,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bits 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bits 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Dossier IMF SMPTE : JPEG 2000 1920×1080, PCM 5.1 24 bits 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Dossier IMF SMPTE : JPEG 2000 3840×2160, PCM 5.1 24 bits 48 kHz
+	Episode	Épisode
+	Event highlights	Temps forts de l'événement
+	Event	Événement
+	Lossless (reversible JPEG 2000)	Sans perte (JPEG 2000 réversible)
+	Package language	Langue du paquet
 	Show Duplicate Frame Markers	Afficher les repères d’images en double
 	More transport controls	Autres commandes de transport
 	A file dialog is already open	Une fenêtre de sélection de fichier est déjà ouverte
@@ -3817,6 +3835,7 @@
 	Output file	Fichier de sortie
 	Output folder	Dossier de sortie
 	PCM (uncompressed)	PCM (non compressé)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 couche II)
 	Pace	Débit de parole
 	Path:	Chemin :
 	Program Stream (.mpg, LPCM audio)	Flux de programme (.mpg, audio LPCM)
@@ -3922,6 +3941,9 @@
 	1 B picture between anchors	1 image B entre les images d'ancrage
 	10-bit RGB	RVB 10 bits
 	12-bit X'Y'Z'	X'Y'Z' 12 bits
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 10 bits
+	JPEG 2000 IMF lossy	JPEG 2000 IMF avec perte
+	JPEG 2000 IMF reversible	JPEG 2000 IMF réversible
 	16-bit half float	virgule flottante demi-précision 16 bits
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bits pour le HDR)
 	BDAV Transport Stream	flux de transport BDAV
@@ -4325,6 +4347,7 @@
 	Safe areas and spines	Zones de sécurité et axes
 	The text moves {speed} px per frame; a whole number does not shimmer	Le texte se déplace de {speed} px par image ; un nombre entier ne scintille pas
 	Video: {file}	Vidéo : {file}
+	Looped video: {file}	Vidéo en boucle : {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	« {text} » ne se détache pas de l'arrière-plan (contraste {ratio}:1 ; au moins 4.5:1 requis)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Un rendu prêt à l'emploi : styles, arrière-plans, transitions et minutage. Un fichier de style, s'il est indiqué, est prioritaire.
 	Apply Credits Template…	Appliquer un modèle de générique…
@@ -4449,3 +4472,60 @@
 	picture styles (pictures keep their own size) are not carried over	les styles d’image (les images gardent leur propre taille) ne sont pas repris
 	video (tape) styles are not carried over	les styles de vidéo (bande) ne sont pas repris
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	le projet Cinecred contient {n} feuilles de calcul de générique ; “{name}” est utilisée (choisissez-en une autre dans le champ Feuille de calcul)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Ajouter une constatation
+	Add as Finding	Ajouter comme constatation
+	Are colour and contrast acceptable?	La couleur et le contraste sont-ils acceptables ?
+	Automatic Checks	Contrôles automatiques
+	Bounds	Limites
+	Check	Contrôle
+	Check Now	Contrôler maintenant
+	Check quality after export	Contrôler la qualité après l’exportation
+	Checking…	Contrôle en cours…
+	Contact Sheet	Planche contact
+	Critical	Critique
+	Fail	Échec
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Constatation {row} : le timecode ne correspond à aucun instant de ce fichier (HH:MM:SS:II).
+	Findings	Constatations
+	Human Review	Vérification humaine
+	Incomplete	Incomplet
+	Is there a visible picture defect?	Y a-t-il un défaut d’image visible ?
+	Is there audible distortion?	Y a-t-il une distorsion audible ?
+	Is there unwanted noise?	Y a-t-il un bruit indésirable ?
+	Major	Majeure
+	Message	Message
+	Minor	Mineure
+	No contact sheet	Aucune planche contact
+	Not answered	Sans réponse
+	Not checked	Non contrôlé
+	Not run	Non exécuté
+	Note	Note
+	Pass	Réussi
+	Passed	Réussi
+	Passed with warnings	Réussi avec avertissements
+	Profile: {id} v{version}	Profil : {id} v{version}
+	Quality Check	Contrôle qualité
+	Quality Check…	Contrôle qualité…
+	Remove Finding	Supprimer la constatation
+	Report: {path}	Rapport : {path}
+	Review complete	Vérification terminée
+	Reviewer	Vérificateur
+	Run the media quality check on the finished file (docs/media-qc.md)	Lancer le contrôle qualité du fichier terminé (docs/media-qc.md)
+	Save Review	Enregistrer la vérification
+	Select a finished export in the queue	Sélectionnez une exportation terminée dans la file
+	Severity	Gravité
+	The engine is not running.	Le moteur ne fonctionne pas.
+	Time code	Timecode
+	Unsure	Incertain
+	accept	acceptable
+	the engine did not start the check	le moteur n’a pas lancé le contrôle
+	the engine sent no report	le moteur n’a envoyé aucun rapport
+	Load KDM…	Charger un KDM…
+	Forget DCP Keys	Oublier les clés DCP
+	Load KDM	Charger le KDM
+	KDM file	Fichier KDM
+	Private key (PEM)	Clé privée (PEM)
+	{title}: {count} keys loaded	{title} : {count} clés chargées
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Les clés restent uniquement en mémoire, jusqu’à « Oublier les clés DCP » ou la fin de la session.
+	DCP keys forgotten	Clés DCP oubliées
+	Choose the KDM file and the private key.	Choisissez le fichier KDM et la clé privée.

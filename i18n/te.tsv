@@ -332,6 +332,7 @@
 	Overlay	ఓవర్‌లే
 	Overwrite	ఓవర్‌రైట్
 	PCM (uncompressed)	PCM (కుదించని)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 లేయర్ II)
 	Panner	ప్యానర్
 	Paste	అతికించు
 	Paste Attributes…	లక్షణాలను అతికించు…
@@ -2019,6 +2020,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 3996×2160 (1.85:1), 5.1 24-బిట్ 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP ఫోల్డర్: JPEG 2000 4096×1716 (2.39:1), 5.1 24-బిట్ 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (ఇంటర్‌ఆపరబుల్ మాస్టర్ ప్యాకేజ్)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF ఫోల్డర్: JPEG 2000 1920×1080, 5.1 24-బిట్ 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF ఫోల్డర్: JPEG 2000 3840×2160, 5.1 24-బిట్ 48 kHz PCM
+	Episode	ఎపిసోడ్
+	Event highlights	ఈవెంట్ ముఖ్యాంశాలు
+	Event	ఈవెంట్
+	Lossless (reversible JPEG 2000)	నష్టరహితం (రివర్సిబుల్ JPEG 2000)
+	Package language	ప్యాకేజీ భాష
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B చిత్రాలు
@@ -2184,6 +2195,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR కోసం 10-బిట్)
 	10-bit RGB	10-బిట్ RGB
 	12-bit X'Y'Z'	12-బిట్ X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-బిట్ R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF నష్టసహితం
+	JPEG 2000 IMF reversible	JPEG 2000 IMF రివర్సిబుల్
 	16-bit half float	16-బిట్ హాఫ్ ఫ్లోట్
 	linear	లీనియర్
 	uncompressed	కుదించని
@@ -3551,8 +3565,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile లాంగ్ GOP (12 చిత్రాలు, IBBP), 50 Mbit/s, XDCAM HD422 శైలిలో, 24-బిట్ 48 kHz PCM; HD ఫ్రేమ్ పరిమాణాలు
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (పిక్సెల్‌కు 0.3 బిట్‌లు), 24-బిట్ 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a రకం D-10 (IMX 50): ఇంట్రా మాత్రమే MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29.97 fps (4:3), నాలుగు 24-బిట్ 48 kHz ఆడియో ఛానెల్‌లు
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a రకం D-10 (IMX 50): ఇంట్రా మాత్రమే MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 fps (4:3), నాలుగు 24-బిట్ 48 kHz ఆడియో ఛానెల్‌లు
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 అమరికలో MXF OP1a: MPEG-2 4:2:2 Profile లాంగ్ GOP (12 చిత్రాలు, IBBP), 50 Mbit/s, 1920x1080 లేదా 1280x720 ప్రోగ్రెసివ్, ఒక్కో ఛానెల్‌కు వేరే AES3 ఎలిమెంట్‌గా నాలుగు 24-బిట్ 48 kHz ఛానెల్‌లు
 	Main	ప్రధాన
 	Mark In (Hover Scrub)	ఇన్ గుర్తించు (హోవర్ స్క్రబ్)
 	Mark Out (Hover Scrub)	అవుట్ గుర్తించు (హోవర్ స్క్రబ్)
@@ -4320,6 +4342,7 @@ export.summary	Low	తక్కువ
 	Crawl	క్రాల్
 	Picture: {file}	చిత్రం: {file}
 	Video: {file}	వీడియో: {file}
+	Looped video: {file}	లూప్ వీడియో: {file}
 	Into the next	తదుపరిలోకి
 	Safe areas and spines	సురక్షిత ప్రాంతాలు మరియు అక్షాలు
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	యాక్షన్ సేఫ్ (93 %), టైటిల్ సేఫ్ (90 %), మధ్య భాగం మరియు పేజీ అక్షాలు
@@ -4450,3 +4473,60 @@ export.summary	Low	తక్కువ
 	picture styles (pictures keep their own size) are not carried over	చిత్ర శైలులు (చిత్రాలు తమ పరిమాణాన్ని ఉంచుకుంటాయి) బదిలీ కావు
 	video (tape) styles are not carried over	వీడియో (టేప్) శైలులు బదిలీ కావు
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred ప్రాజెక్ట్‌లో {n} క్రెడిట్స్ స్ప్రెడ్‌షీట్‌లు ఉన్నాయి; “{name}” వాడబడుతుంది (స్ప్రెడ్‌షీట్ ఫీల్డ్‌లో మరొకటి ఎంచుకోండి)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	అన్వేషణను జోడించు
+	Add as Finding	అన్వేషణగా జోడించు
+	Are colour and contrast acceptable?	రంగు, కాంట్రాస్ట్ ఆమోదయోగ్యంగా ఉన్నాయా?
+	Automatic Checks	స్వయంచాలక తనిఖీలు
+	Bounds	పరిమితులు
+	Check	తనిఖీ
+	Check Now	ఇప్పుడే తనిఖీ చేయి
+	Check quality after export	ఎగుమతి తర్వాత నాణ్యతను తనిఖీ చేయి
+	Checking…	తనిఖీ చేస్తోంది…
+	Contact Sheet	కాంటాక్ట్ షీట్
+	Critical	క్లిష్టమైనది
+	Fail	విఫలం
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	అన్వేషణ {row}: టైమ్ కోడ్ ఈ ఫైల్‌లోని సమయం కాదు (HH:MM:SS:FF).
+	Findings	అన్వేషణలు
+	Human Review	మానవ సమీక్ష
+	Incomplete	అసంపూర్ణం
+	Is there a visible picture defect?	కనిపించే చిత్ర లోపం ఉందా?
+	Is there audible distortion?	వినిపించే వక్రీకరణ ఉందా?
+	Is there unwanted noise?	అవాంఛిత శబ్దం ఉందా?
+	Major	ప్రధానమైనది
+	Message	సందేశం
+	Minor	చిన్నది
+	No contact sheet	కాంటాక్ట్ షీట్ లేదు
+	Not answered	సమాధానం ఇవ్వలేదు
+	Not checked	తనిఖీ చేయలేదు
+	Not run	అమలు కాలేదు
+	Note	గమనిక
+	Pass	ఉత్తీర్ణం
+	Passed	ఉత్తీర్ణమైంది
+	Passed with warnings	హెచ్చరికలతో ఉత్తీర్ణమైంది
+	Profile: {id} v{version}	ప్రొఫైల్: {id} v{version}
+	Quality Check	నాణ్యత తనిఖీ
+	Quality Check…	నాణ్యత తనిఖీ…
+	Remove Finding	అన్వేషణను తీసివేయి
+	Report: {path}	నివేదిక: {path}
+	Review complete	సమీక్ష పూర్తయింది
+	Reviewer	సమీక్షకుడు
+	Run the media quality check on the finished file (docs/media-qc.md)	పూర్తయిన ఫైల్‌పై మీడియా నాణ్యత తనిఖీని అమలు చేయి (docs/media-qc.md)
+	Save Review	సమీక్షను సేవ్ చేయి
+	Select a finished export in the queue	క్యూలో పూర్తయిన ఎగుమతిని ఎంచుకోండి
+	Severity	తీవ్రత
+	The engine is not running.	ఇంజిన్ నడవడం లేదు.
+	Time code	టైమ్ కోడ్
+	Unsure	ఖచ్చితంగా తెలియదు
+	accept	ఆమోదయోగ్యం
+	the engine did not start the check	ఇంజిన్ తనిఖీని ప్రారంభించలేదు
+	the engine sent no report	ఇంజిన్ నివేదికను పంపలేదు
+	Load KDM…	KDM లోడ్ చేయి…
+	Forget DCP Keys	DCP కీలను మర్చిపో
+	Load KDM	KDM లోడ్ చేయి
+	KDM file	KDM ఫైల్
+	Private key (PEM)	ప్రైవేట్ కీ (PEM)
+	{title}: {count} keys loaded	{title}: {count} కీలు లోడ్ అయ్యాయి
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	కీలు మెమరీలో మాత్రమే ఉంటాయి, DCP కీలను మర్చిపో లేదా సెషన్ ముగిసే వరకు.
+	DCP keys forgotten	DCP కీలు మర్చిపోబడ్డాయి
+	Choose the KDM file and the private key.	KDM ఫైల్‌ను మరియు ప్రైవేట్ కీని ఎంచుకోండి.

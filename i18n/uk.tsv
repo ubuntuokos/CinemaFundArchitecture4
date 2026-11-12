@@ -3138,8 +3138,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 біт 4:2:2), PCM 24 біти 48 кГц, початковий таймкод
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 кадрів, IBBP), 50 Мбіт/с у стилі XDCAM HD422, PCM 24 біт 48 кГц; розміри кадру HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0,3 біта на піксель), PCM 24 біти 48 кГц
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типу D-10 (IMX 50): лише intra MPEG-2 4:2:2P@ML, 50 Мбіт/с, 720x486 при 29,97 кадр/с (4:3), чотири аудіоканали 24 біт 48 кГц
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типу D-10 (IMX 50): лише intra MPEG-2 4:2:2P@ML, 50 Мбіт/с, 720x576 при 25 кадр/с (4:3), чотири аудіоканали 24 біт 48 кГц
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 біти 48 кГц, початковий таймкод
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a у розкладці SMPTE RDD 9: MPEG-2 4:2:2 Profile long GOP (12 кадрів, IBBP), 50 Мбіт/с, 1920x1080 або 1280x720 прогресивна розгортка, чотири канали 24 біт 48 кГц окремими елементами AES3 на канал
 	Main	Main
 	Mark In (Hover Scrub)	Поставити точку входу (скраббінг при наведенні)
 	Mark Out (Hover Scrub)	Поставити точку виходу (скраббінг при наведенні)
@@ -3649,6 +3657,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Тека SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), 5.1, 24 біти, 48 кГц, PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Тека SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), 5.1, 24 біти, 48 кГц, PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Тека SMPTE IMF: JPEG 2000 1920×1080, 5.1, 24 біти, 48 кГц, PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Тека SMPTE IMF: JPEG 2000 3840×2160, 5.1, 24 біти, 48 кГц, PCM
+	Episode	Епізод
+	Event highlights	Найкращі моменти події
+	Event	Подія
+	Lossless (reversible JPEG 2000)	Без втрат (оборотний JPEG 2000)
+	Package language	Мова пакета
 	Show Duplicate Frame Markers	Показувати маркери дубльованих кадрів
 	Work Area Bar	Смуга робочої області
 	Set Work Area Bar In Point	Задати точку входу смуги робочої області
@@ -3824,6 +3842,7 @@
 	Output file	Вихідний файл
 	Output folder	Вихідна тека
 	PCM (uncompressed)	PCM (без стиснення)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 рівень II)
 	Pace	Темп
 	Path:	Шлях:
 	Program Stream (.mpg, LPCM audio)	Програмний потік (.mpg, звук LPCM)
@@ -3929,6 +3948,9 @@
 	1 B picture between anchors	1 B-кадр між опорними
 	10-bit RGB	10-бітний RGB
 	12-bit X'Y'Z'	12-бітний X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-бітний R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF із втратами
+	JPEG 2000 IMF reversible	JPEG 2000 IMF оборотний
 	16-bit half float	16-бітний half float
 	AV1 Main (10-bit for HDR)	AV1 Main (10 біт для HDR)
 	BDAV Transport Stream	Транспортний потік BDAV
@@ -4299,6 +4321,7 @@
 	Crawl	Біжучий рядок
 	Picture: {file}	Зображення: {file}
 	Video: {file}	Відео: {file}
+	Looped video: {file}	Відео по колу: {file}
 	Into the next	У наступну
 	Safe areas and spines	Безпечні зони та осі
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безпечна зона дії (93 %), безпечна зона заголовків (90 %), центр і осі сторінки
@@ -4429,3 +4452,60 @@
 	picture styles (pictures keep their own size) are not carried over	стилі зображень (зображення зберігають власний розмір) не переносяться
 	video (tape) styles are not carried over	стилі відео (стрічки) не переносяться
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	у проєкті Cinecred {n} таблиць титрів; використовується “{name}” (виберіть іншу в полі Таблиця)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Додати зауваження
+	Add as Finding	Додати як зауваження
+	Are colour and contrast acceptable?	Чи прийнятні колір і контраст?
+	Automatic Checks	Автоматичні перевірки
+	Bounds	Межі
+	Check	Перевірка
+	Check Now	Перевірити зараз
+	Check quality after export	Перевірити якість після експорту
+	Checking…	Перевірка…
+	Contact Sheet	Контактний аркуш
+	Critical	Критичне
+	Fail	Не пройдено
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Зауваження {row}: таймкод не є моментом цього файлу (HH:MM:SS:FF).
+	Findings	Зауваження
+	Human Review	Перевірка людиною
+	Incomplete	Незавершено
+	Is there a visible picture defect?	Чи є видимий дефект зображення?
+	Is there audible distortion?	Чи є чутні спотворення?
+	Is there unwanted noise?	Чи є небажаний шум?
+	Major	Серйозне
+	Message	Повідомлення
+	Minor	Незначне
+	No contact sheet	Немає контактного аркуша
+	Not answered	Немає відповіді
+	Not checked	Не перевірено
+	Not run	Не запускалося
+	Note	Примітка
+	Pass	Пройдено
+	Passed	Пройдено
+	Passed with warnings	Пройдено з попередженнями
+	Profile: {id} v{version}	Профіль: {id} v{version}
+	Quality Check	Контроль якості
+	Quality Check…	Контроль якості…
+	Remove Finding	Видалити зауваження
+	Report: {path}	Звіт: {path}
+	Review complete	Перевірку завершено
+	Reviewer	Перевіряльник
+	Run the media quality check on the finished file (docs/media-qc.md)	Запустити перевірку якості медіа для готового файлу (docs/media-qc.md)
+	Save Review	Зберегти перевірку
+	Select a finished export in the queue	Виберіть завершений експорт у черзі
+	Severity	Серйозність
+	The engine is not running.	Рушій не запущено.
+	Time code	Таймкод
+	Unsure	Не впевнений
+	accept	допустимо
+	the engine did not start the check	рушій не почав перевірку
+	the engine sent no report	рушій не надіслав звіт
+	Load KDM…	Завантажити KDM…
+	Forget DCP Keys	Забути ключі DCP
+	Load KDM	Завантажити KDM
+	KDM file	Файл KDM
+	Private key (PEM)	Закритий ключ (PEM)
+	{title}: {count} keys loaded	{title}: завантажено ключів: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключі зберігаються лише в пам’яті, до команди «Забути ключі DCP» або кінця сеансу.
+	DCP keys forgotten	Ключі DCP забуто
+	Choose the KDM file and the private key.	Виберіть файл KDM і закритий ключ.

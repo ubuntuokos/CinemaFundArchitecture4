@@ -72,6 +72,10 @@ pub struct Background {
     pub opacity: f64,
     /// Blur radius in pixels of a 1080-high frame (0 = sharp).
     pub blur: f64,
+    /// Video: start it again from the beginning until the page ends (for loops such as an
+    /// animated line-art scene); without it a video shorter than the page ends early.
+    #[serde(rename = "loop", skip_serializing_if = "std::ops::Not::not")]
+    pub repeat: bool,
 }
 
 impl Default for Background {
@@ -85,6 +89,7 @@ impl Default for Background {
             fit: BackgroundFit::Fill,
             opacity: 100.0,
             blur: 0.0,
+            repeat: false,
         }
     }
 }

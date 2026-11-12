@@ -289,6 +289,7 @@
 	Output file	Izlazna datoteka
 	Overwrite	Prepiši
 	PCM (uncompressed)	PCM (nekompresovano)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 sloj II)
 	Panner	Panorama
 	Paste Attributes…	Nalepi atribute…
 	Paste Insert	Nalepi umetanjem
@@ -1845,6 +1846,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP fascikla: JPEG 2000 3996×2160 (1,85:1), 5.1 24-bitni 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP fascikla: JPEG 2000 4096×1716 (2,39:1), 5.1 24-bitni 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (interoperabilni master paket)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF fascikla: JPEG 2000 1920×1080, 5.1 24-bitni 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF fascikla: JPEG 2000 3840×2160, 5.1 24-bitni 48 kHz PCM
+	Episode	Epizoda
+	Event highlights	Najzanimljiviji trenuci događaja
+	Event	Događaj
+	Lossless (reversible JPEG 2000)	Bez gubitaka (reverzibilni JPEG 2000)
+	Package language	Jezik paketa
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B slike
@@ -2000,6 +2011,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bitni za HDR)
 	10-bit RGB	10-bitni RGB
 	12-bit X'Y'Z'	12-bitni X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitni R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF sa gubicima
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reverzibilni
 	16-bit half float	16-bitni pokretni zarez polovične preciznosti
 	linear	linearno
 	uncompressed	nekompresovano
@@ -3265,8 +3279,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bitni 4:2:2), 24-bitni 48 kHz PCM, početni vremenski kod
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, dugi GOP (12 slika, IBBP), 50 Mbit/s u stilu XDCAM HD422, 24-bitni PCM 48 kHz; HD veličine slike
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High dugi GOP (0,3 bita po pikselu), 24-bitni 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipa D-10 (IMX 50): MPEG-2 4:2:2P@ML samo intra, 50 Mbit/s, 720x486 pri 29,97 fps (4:3), četiri 24-bitna audio kanala 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipa D-10 (IMX 50): MPEG-2 4:2:2P@ML samo intra, 50 Mbit/s, 720x576 pri 25 fps (4:3), četiri 24-bitna audio kanala 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bitni 48 kHz PCM, početni vremenski kod
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a u rasporedu SMPTE RDD 9: MPEG-2 4:2:2 Profile, dugi GOP (12 slika, IBBP), 50 Mbit/s, 1920x1080 ili 1280x720 progresivno, četiri 24-bitna kanala 48 kHz kao AES3 elementi po kanalu
 	Main	Glavno
 	Mark In (Hover Scrub)	Označi ulaz (pregled lebdenjem)
 	Mark Out (Hover Scrub)	Označi izlaz (pregled lebdenjem)
@@ -4316,6 +4338,7 @@ export.summary	Low	nizak
 	Crawl	Pokretni tekst
 	Picture: {file}	Slika: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video u petlji: {file}
 	Into the next	U sledeću
 	Safe areas and spines	Bezbedne oblasti i ose
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Bezbedna oblast radnje (93 %), natpisa (90 %), centar i ose stranice
@@ -4446,3 +4469,60 @@ export.summary	Low	nizak
 	picture styles (pictures keep their own size) are not carried over	stilovi slika (slike zadržavaju sopstvenu veličinu) se ne prenose
 	video (tape) styles are not carried over	stilovi videa (trake) se ne prenose
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projekat ima tabela špice: {n}; koristi se „{name}” (izaberite drugu u polju Tabela)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Dodaj nalaz
+	Add as Finding	Dodaj kao nalaz
+	Are colour and contrast acceptable?	Da li su boja i kontrast prihvatljivi?
+	Automatic Checks	Automatske provere
+	Bounds	Granice
+	Check	Provera
+	Check Now	Proveri sada
+	Check quality after export	Proveri kvalitet posle izvoza
+	Checking…	Provera…
+	Contact Sheet	Kontaktni list
+	Critical	Kritično
+	Fail	Nije prošlo
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Nalaz {row}: vremenski kod nije vreme u ovoj datoteci (HH:MM:SS:FF).
+	Findings	Nalazi
+	Human Review	Ljudski pregled
+	Incomplete	Nepotpuno
+	Is there a visible picture defect?	Da li postoji vidljiv nedostatak slike?
+	Is there audible distortion?	Da li se čuje izobličenje?
+	Is there unwanted noise?	Da li postoji neželjeni šum?
+	Major	Ozbiljno
+	Message	Poruka
+	Minor	Manje
+	No contact sheet	Nema kontaktnog lista
+	Not answered	Bez odgovora
+	Not checked	Nije provereno
+	Not run	Nije pokrenuto
+	Note	Napomena
+	Pass	Prošlo
+	Passed	Prošlo
+	Passed with warnings	Prošlo sa upozorenjima
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Provera kvaliteta
+	Quality Check…	Provera kvaliteta…
+	Remove Finding	Ukloni nalaz
+	Report: {path}	Izveštaj: {path}
+	Review complete	Pregled je završen
+	Reviewer	Pregledač
+	Run the media quality check on the finished file (docs/media-qc.md)	Pokreni proveru kvaliteta medija na gotovoj datoteci (docs/media-qc.md)
+	Save Review	Sačuvaj pregled
+	Select a finished export in the queue	Izaberite završeni izvoz u redu
+	Severity	Ozbiljnost
+	The engine is not running.	Mašina nije pokrenuta.
+	Time code	Vremenski kod
+	Unsure	Nesigurno
+	accept	prihvatljivo
+	the engine did not start the check	mašina nije pokrenula proveru
+	the engine sent no report	mašina nije poslala izveštaj
+	Load KDM…	Učitaj KDM…
+	Forget DCP Keys	Zaboravi DCP ključeve
+	Load KDM	Učitaj KDM
+	KDM file	KDM datoteka
+	Private key (PEM)	Privatni ključ (PEM)
+	{title}: {count} keys loaded	{title}: učitano ključeva: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključevi ostaju samo u memoriji, do komande Zaboravi DCP ključeve ili kraja sesije.
+	DCP keys forgotten	DCP ključevi zaboravljeni
+	Choose the KDM file and the private key.	Izaberite KDM datoteku i privatni ključ.

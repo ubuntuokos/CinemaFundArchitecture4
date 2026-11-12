@@ -489,3 +489,67 @@ fn ffmpeg_oracle_reads_every_container() {
 fn demux_or_es(path: &str) -> Vec<u8> {
     if path.ends_with(".m2v") { std::fs::read(path).unwrap() } else { demux(path).0 }
 }
+
+/// MP2 (#267) in the program and transport streams: our demuxer finds an MPEG audio stream of
+/// 1152-sample frames on the 90 kHz clock, our Layer II decoder gives back the WAV export's mix
+/// (after the encoder's filter delay) at a Layer II quality, and ffmpeg decodes the same audio.
+#[test]
+fn program_and_transport_streams_carry_mp2() {
+    let (p, seq, m) = project();
+    let wav: Vec<f32> = wav_pcm(&p, seq, &m).chunks_exact(2).map(|b| f32::from(i16::from_le_bytes([b[0], b[1]])) / 32768.0).collect();
+    let ff = cfa4_testkit::ffmpeg_or_skip("MPEG-2 MP2 decode");
+    for (name, ps) in [("mp2.mpg", true), ("mp2.ts", false)] {
+        let path = tmp(name);
+        let mut s = settings(&path);
+        s.audio.codec = AudioCodec::Mp2;
+        s.audio.bitrate_kbps = 256;
+        assert_eq!(s.audio_codec(), AudioCodec::Mp2);
+        assert!(s.summary(320, 180, FrameRate::new(25, 1), 48_000, Tick(TICKS_PER_SECOND)).audio.starts_with("MP2, 256 kbps, 48000 Hz"));
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let (_, _, f, data) = demux(&path);
+        assert_eq!(matches!(f.format, cfa4_mpegts::Format::Ps { .. }), ps, "{name}");
+        let a = f.find(cfa4_mpegts::Kind::Audio, |c| *c == cfa4_mpegts::Codec::MpegAudio).unwrap();
+        let units = &f.streams[a].units;
+        // 1 s + the 481-sample delay in 1152-sample frames, 2160 ticks of 90 kHz apart, the first
+        // the delay before the first picture
+        assert_eq!(units.len(), (48_000 + cfa4_mpa::encode::DELAY).div_ceil(1152), "{name}");
+        assert_eq!(units[1].pts.unwrap() - units[0].pts.unwrap(), 2160);
+        assert_eq!(units[0].pts.unwrap(), 63_000 - 902, "{name}");
+        let mut dec = cfa4_mpa::Decoder::new();
+        let mut left = Vec::new();
+        for k in 0..units.len() {
+            let fr = dec.decode(&f.read_unit(&data, a, k).unwrap()).unwrap();
+            assert_eq!((fr.header.layer, fr.header.bitrate_kbps, fr.header.sample_rate), (2, 256, 48_000), "{name}");
+            left.extend_from_slice(&fr.channels[0]);
+        }
+        let d = cfa4_mpa::encode::DELAY;
+        let (sig, err) = (0..48_000).fold((0f64, 0f64), |(s, e), i| {
+            let want = f64::from(wav[2 * i]);
+            (s + want * want, e + (want - f64::from(left[i + d])).powi(2))
+        });
+        let snr = 10.0 * (sig / err.max(1e-12)).log10();
+        assert!(snr > 25.0, "{name}: {snr:.1} dB");
+        if let Some(ff) = &ff {
+            let s16 = ffmpeg_raw(ff, &path, "0:a", &["-f", "s16le", "-ac", "2"]);
+            let secs = s16.len() as f64 / 4.0 / 48_000.0;
+            assert!((0.99..1.1).contains(&secs), "{name}: {secs} s of MP2");
+        }
+    }
+    // mono at an MPEG-1 mono rate; 5.1 and 96 kHz are refused
+    let path = tmp("mp2_mono.mpg");
+    let mut s = settings(&path);
+    s.audio.codec = AudioCodec::Mp2;
+    s.audio.channels = 1;
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let (_, _, f, data) = demux(&path);
+    let a = f.find(cfa4_mpegts::Kind::Audio, |c| *c == cfa4_mpegts::Codec::MpegAudio).unwrap();
+    let h = cfa4_mpa::parse_header(&f.read_unit(&data, a, 0).unwrap()).unwrap();
+    assert_eq!((h.channels(), h.bitrate_kbps), (1, 192), "192 kbit/s: the highest mono rate not above 192");
+    for (ch, sr) in [(6, 48_000), (2, 96_000)] {
+        let mut bad = settings(&tmp("mp2_bad.mpg"));
+        bad.audio.codec = AudioCodec::Mp2;
+        bad.audio.channels = ch;
+        bad.audio.sample_rate = Some(sr);
+        assert!(matches!(export(&p, seq, &bad, &m, &Progress::default()), Err(ExportError::Unsupported(_))), "{ch} ch {sr} Hz");
+    }
+}

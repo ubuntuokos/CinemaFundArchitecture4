@@ -3130,8 +3130,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bit 4:2:2), PCM 24-bit 48 kHz, kode waktu awal
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP panjang (12 gambar, IBBP) pada 50 Mbit/s bergaya XDCAM HD422, PCM 24-bit 48 kHz; ukuran bingkai HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0,3 bit per piksel), PCM 24-bit 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipe D-10 (IMX 50): MPEG-2 4:2:2P@ML hanya intra pada 50 Mbit/s, 720x486 pada 29,97 fps (4:3), empat kanal audio 24-bit 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipe D-10 (IMX 50): MPEG-2 4:2:2P@ML hanya intra pada 50 Mbit/s, 720x576 pada 25 fps (4:3), empat kanal audio 24-bit 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24-bit 48 kHz, kode waktu awal
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a dalam tata letak SMPTE RDD 9: MPEG-2 4:2:2 Profile GOP panjang (12 gambar, IBBP) pada 50 Mbit/s, 1920x1080 atau 1280x720 progresif, empat kanal 24-bit 48 kHz sebagai elemen AES3 per kanal
 	Main	Main
 	Mark In (Hover Scrub)	Tandai Masuk (Scrub saat Melayang)
 	Mark Out (Hover Scrub)	Tandai Keluar (Scrub saat Melayang)
@@ -3626,6 +3634,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Folder DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24-bit 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Folder DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24-bit 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Folder IMF SMPTE: JPEG 2000 1920×1080, PCM 5.1 24-bit 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Folder IMF SMPTE: JPEG 2000 3840×2160, PCM 5.1 24-bit 48 kHz
+	Episode	Episode
+	Event highlights	Sorotan acara
+	Event	Acara
+	Lossless (reversible JPEG 2000)	Tanpa kehilangan (JPEG 2000 reversibel)
+	Package language	Bahasa paket
 	Show Duplicate Frame Markers	Tampilkan Penanda Frame Duplikat
 	Work Area Bar	Bilah Area Kerja
 	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
@@ -3796,6 +3814,7 @@
 	Output file	Berkas keluaran
 	Output folder	Folder keluaran
 	PCM (uncompressed)	PCM (tanpa kompresi)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	Pace	Tempo
 	Path:	Jalur:
 	Program Stream (.mpg, LPCM audio)	Aliran program (.mpg, audio LPCM)
@@ -3907,6 +3926,9 @@
 	1 B picture between anchors	1 gambar B di antara gambar jangkar
 	10-bit RGB	RGB 10-bit
 	12-bit X'Y'Z'	X'Y'Z' 12-bit
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 10-bit
+	JPEG 2000 IMF lossy	JPEG 2000 IMF dengan kehilangan
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reversibel
 	16-bit half float	floating point setengah presisi 16-bit
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bit untuk HDR)
 	BDAV Transport Stream	aliran transport BDAV
@@ -4328,6 +4350,7 @@
 	Safe areas and spines	Area aman dan garis pemandu
 	The text moves {speed} px per frame; a whole number does not shimmer	Teks bergerak {speed} px per bingkai; bilangan bulat tidak berkedip
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video berulang: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” tidak menonjol dari latar (kontras {ratio}:1; minimal 4,5:1 diperlukan)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Tampilan siap pakai: gaya, latar, transisi, dan waktu. File gaya, jika ada, diutamakan.
 	Apply Credits Template…	Terapkan Templat Kredit…
@@ -4452,3 +4475,60 @@
 	picture styles (pictures keep their own size) are not carried over	gaya gambar (gambar mempertahankan ukurannya sendiri) tidak dibawa
 	video (tape) styles are not carried over	gaya video (pita) tidak dibawa
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	proyek Cinecred memiliki {n} spreadsheet kredit; “{name}” digunakan (pilih yang lain di kolom Spreadsheet)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Tambah Temuan
+	Add as Finding	Tambahkan sebagai Temuan
+	Are colour and contrast acceptable?	Apakah warna dan kontras dapat diterima?
+	Automatic Checks	Pemeriksaan Otomatis
+	Bounds	Batas
+	Check	Pemeriksaan
+	Check Now	Periksa Sekarang
+	Check quality after export	Periksa kualitas setelah ekspor
+	Checking…	Memeriksa…
+	Contact Sheet	Lembar Kontak
+	Critical	Kritis
+	Fail	Gagal
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Temuan {row}: kode waktu bukan waktu yang ada di file ini (HH:MM:SS:FF).
+	Findings	Temuan
+	Human Review	Tinjauan Manusia
+	Incomplete	Tidak lengkap
+	Is there a visible picture defect?	Apakah ada cacat gambar yang terlihat?
+	Is there audible distortion?	Apakah ada distorsi yang terdengar?
+	Is there unwanted noise?	Apakah ada derau yang tidak diinginkan?
+	Major	Berat
+	Message	Pesan
+	Minor	Ringan
+	No contact sheet	Tidak ada lembar kontak
+	Not answered	Belum dijawab
+	Not checked	Belum diperiksa
+	Not run	Tidak dijalankan
+	Note	Catatan
+	Pass	Lulus
+	Passed	Lulus
+	Passed with warnings	Lulus dengan peringatan
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Pemeriksaan Kualitas
+	Quality Check…	Pemeriksaan Kualitas…
+	Remove Finding	Hapus Temuan
+	Report: {path}	Laporan: {path}
+	Review complete	Tinjauan selesai
+	Reviewer	Peninjau
+	Run the media quality check on the finished file (docs/media-qc.md)	Jalankan pemeriksaan kualitas media pada file yang selesai (docs/media-qc.md)
+	Save Review	Simpan Tinjauan
+	Select a finished export in the queue	Pilih ekspor yang selesai di antrean
+	Severity	Tingkat keparahan
+	The engine is not running.	Mesin tidak berjalan.
+	Time code	Kode waktu
+	Unsure	Tidak yakin
+	accept	dapat diterima
+	the engine did not start the check	mesin tidak memulai pemeriksaan
+	the engine sent no report	mesin tidak mengirim laporan
+	Load KDM…	Muat KDM…
+	Forget DCP Keys	Lupakan Kunci DCP
+	Load KDM	Muat KDM
+	KDM file	File KDM
+	Private key (PEM)	Kunci privat (PEM)
+	{title}: {count} keys loaded	{title}: {count} kunci dimuat
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Kunci hanya disimpan di memori, sampai Lupakan Kunci DCP atau akhir sesi.
+	DCP keys forgotten	Kunci DCP dilupakan
+	Choose the KDM file and the private key.	Pilih file KDM dan kunci privat.

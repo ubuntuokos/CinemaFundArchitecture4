@@ -286,6 +286,7 @@
 	Output file	Çıkış dosyası
 	Overwrite	Üzerine Yaz
 	PCM (uncompressed)	PCM (sıkıştırmasız)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Katman II)
 	Panner	Kaydırıcı
 	Paste Attributes…	Öznitelikleri Yapıştır…
 	Paste Insert	Ekleyerek Yapıştır
@@ -1828,6 +1829,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP klasörü: JPEG 2000 3996×2160 (1,85:1), 5.1 24 bit 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP klasörü: JPEG 2000 4096×1716 (2,39:1), 5.1 24 bit 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Birlikte Çalışabilir Ana Paket)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF klasörü: JPEG 2000 1920×1080, 5.1 24 bit 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF klasörü: JPEG 2000 3840×2160, 5.1 24 bit 48 kHz PCM
+	Episode	Bölüm
+	Event highlights	Etkinlik özeti
+	Event	Etkinlik
+	Lossless (reversible JPEG 2000)	Kayıpsız (tersinir JPEG 2000)
+	Package language	Paket dili
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B resimleri
@@ -1979,6 +1990,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR için 10 bit)
 	10-bit RGB	10 bit RGB
 	12-bit X'Y'Z'	12 bit X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 bit R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF kayıplı
+	JPEG 2000 IMF reversible	JPEG 2000 IMF tersinir
 	16-bit half float	16 bit yarım kayan nokta
 	linear	doğrusal
 	uncompressed	sıkıştırmasız
@@ -3245,8 +3259,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bit 4:2:2), 24 bit 48 kHz PCM, başlangıç zaman kodu
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile uzun GOP (12 resim, IBBP), 50 Mbit/s, XDCAM HD422 tarzında, 24 bit 48 kHz PCM; HD kare boyutları
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High uzun GOP (piksel başına 0,3 bit), 24 bit 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 türü (IMX 50): yalnızca intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29,97 fps (4:3), dört adet 24 bit 48 kHz ses kanalı
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 türü (IMX 50): yalnızca intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 fps (4:3), dört adet 24 bit 48 kHz ses kanalı
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 bit 48 kHz PCM, başlangıç zaman kodu
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a, SMPTE RDD 9 düzeninde: MPEG-2 4:2:2 Profile uzun GOP (12 resim, IBBP), 50 Mbit/s, 1920x1080 veya 1280x720 aşamalı, kanal başına AES3 öğesi olarak dört adet 24 bit 48 kHz kanal
 	Main	Main
 	Mark In (Hover Scrub)	Giriş İşaretle (Üzerinde Gezinme)
 	Mark Out (Hover Scrub)	Çıkış İşaretle (Üzerinde Gezinme)
@@ -4315,6 +4337,7 @@ export.summary	Low	düşük
 	Crawl	Kayan yazı
 	Picture: {file}	Resim: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Döngülü video: {file}
 	Into the next	Sonrakine geçiş
 	Safe areas and spines	Güvenli alanlar ve eksenler
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Eylem güvenli (93 %), başlık güvenli (90 %), merkez ve sayfanın eksenleri
@@ -4445,3 +4468,60 @@ export.summary	Low	düşük
 	picture styles (pictures keep their own size) are not carried over	resim stilleri (resimler kendi boyutlarını korur) aktarılmaz
 	video (tape) styles are not carried over	video (bant) stilleri aktarılmaz
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projesinde {n} jenerik tablosu var; “{name}” kullanılıyor (Tablo alanında başka birini seçin)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Bulgu ekle
+	Add as Finding	Bulgu olarak ekle
+	Are colour and contrast acceptable?	Renk ve kontrast kabul edilebilir mi?
+	Automatic Checks	Otomatik denetimler
+	Bounds	Sınırlar
+	Check	Denetim
+	Check Now	Şimdi denetle
+	Check quality after export	Dışa aktarmadan sonra kaliteyi denetle
+	Checking…	Denetleniyor…
+	Contact Sheet	Temas sayfası
+	Critical	Kritik
+	Fail	Kaldı
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Bulgu {row}: zaman kodu bu dosyada bir zaman değil (HH:MM:SS:FF).
+	Findings	Bulgular
+	Human Review	İnsan incelemesi
+	Incomplete	Eksik
+	Is there a visible picture defect?	Görüntüde görünür bir kusur var mı?
+	Is there audible distortion?	Duyulabilir bozulma var mı?
+	Is there unwanted noise?	İstenmeyen gürültü var mı?
+	Major	Büyük
+	Message	İleti
+	Minor	Küçük
+	No contact sheet	Temas sayfası yok
+	Not answered	Yanıtlanmadı
+	Not checked	Denetlenmedi
+	Not run	Çalıştırılmadı
+	Note	Not
+	Pass	Geçti
+	Passed	Geçti
+	Passed with warnings	Uyarılarla geçti
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Kalite denetimi
+	Quality Check…	Kalite denetimi…
+	Remove Finding	Bulguyu kaldır
+	Report: {path}	Rapor: {path}
+	Review complete	İnceleme tamamlandı
+	Reviewer	İnceleyen
+	Run the media quality check on the finished file (docs/media-qc.md)	Bitmiş dosyada medya kalite denetimini çalıştır (docs/media-qc.md)
+	Save Review	İncelemeyi kaydet
+	Select a finished export in the queue	Kuyrukta bitmiş bir dışa aktarma seçin
+	Severity	Önem
+	The engine is not running.	Motor çalışmıyor.
+	Time code	Zaman kodu
+	Unsure	Emin değilim
+	accept	kabul
+	the engine did not start the check	motor denetimi başlatmadı
+	the engine sent no report	motor rapor göndermedi
+	Load KDM…	KDM Yükle…
+	Forget DCP Keys	DCP Anahtarlarını Unut
+	Load KDM	KDM Yükle
+	KDM file	KDM dosyası
+	Private key (PEM)	Özel anahtar (PEM)
+	{title}: {count} keys loaded	{title}: {count} anahtar yüklendi
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Anahtarlar yalnızca bellekte kalır; DCP Anahtarlarını Unut komutuna veya oturumun sonuna kadar.
+	DCP keys forgotten	DCP anahtarları unutuldu
+	Choose the KDM file and the private key.	KDM dosyasını ve özel anahtarı seçin.

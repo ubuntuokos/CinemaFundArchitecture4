@@ -3113,8 +3113,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a，DNxHR HQ（8 位 4:2:2），24 位 48 kHz PCM，起始时间码
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a，MPEG-2 4:2:2 Profile 长 GOP（12 帧，IBBP），50 Mbit/s，XDCAM HD422 风格，24 位 48 kHz PCM；HD 画面尺寸
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a，H.264 High long GOP（每像素 0.3 位），24 位 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 类型（IMX 50）：仅帧内 MPEG-2 4:2:2P@ML，50 Mbit/s，720x486，29.97 fps（4:3），四个 24 位 48 kHz 音频声道
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 类型（IMX 50）：仅帧内 MPEG-2 4:2:2P@ML，50 Mbit/s，720x576，25 fps（4:3），四个 24 位 48 kHz 音频声道
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a，ProRes 422 HQ，24 位 48 kHz PCM，起始时间码
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 布局的 MXF OP1a：MPEG-2 4:2:2 Profile 长 GOP（12 帧，IBBP），50 Mbit/s，1920x1080 或 1280x720 逐行，四个 24 位 48 kHz 声道，每声道一个 AES3 元素
 	Main	主要
 	Mark In (Hover Scrub)	标记入点（悬停擦除）
 	Mark Out (Hover Scrub)	标记出点（悬停擦除）
@@ -3637,6 +3645,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 3996×2160（1.85:1），5.1 24 位 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 4096×1716（2.39:1），5.1 24 位 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E（可互操作母版包）
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF 文件夹：JPEG 2000 1920×1080，5.1 24 位 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF 文件夹：JPEG 2000 3840×2160，5.1 24 位 48 kHz PCM
+	Episode	剧集
+	Event highlights	活动集锦
+	Event	活动
+	Lossless (reversible JPEG 2000)	无损（可逆 JPEG 2000）
+	Package language	包语言
 	Show Duplicate Frame Markers	显示重复帧标记
 	Work Area Bar	工作区栏
 	Set Work Area Bar In Point	设置工作区栏入点
@@ -3799,6 +3817,7 @@
 	Output file	输出文件
 	Output folder	输出文件夹
 	PCM (uncompressed)	PCM（未压缩）
+	MP2 (MPEG-1 Layer II)	MP2（MPEG-1 第二层）
 	Pace	语速
 	Path:	路径：
 	Program Stream (.mpg, LPCM audio)	节目流（.mpg，LPCM 音频）
@@ -3910,6 +3929,9 @@
 	1 B picture between anchors	锚帧之间 1 个 B 帧
 	10-bit RGB	10 位 RGB
 	12-bit X'Y'Z'	12 位 X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 位 R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF 有损
+	JPEG 2000 IMF reversible	JPEG 2000 IMF 可逆
 	16-bit half float	16 位半精度浮点
 	AV1 Main (10-bit for HDR)	AV1 Main（HDR 用 10 位）
 	BDAV Transport Stream	BDAV 传输流
@@ -4318,6 +4340,7 @@
 	Safe areas and spines	安全区与脊线
 	The text moves {speed} px per frame; a whole number does not shimmer	文字每帧移动 {speed} px;整数值不会闪烁
 	Video: {file}	视频:{file}
+	Looped video: {file}	循环视频：{file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”与背景区分不明显(对比度 {ratio}:1;至少需要 4.5:1)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	现成的外观:样式、背景、转场和时间设置。如果同时提供了样式文件,则以样式文件为准。
 	Apply Credits Template…	应用演职员表模板…
@@ -4442,3 +4465,60 @@
 	picture styles (pictures keep their own size) are not carried over	图片样式(图片保持自身尺寸)不会沿用
 	video (tape) styles are not carried over	视频(磁带)样式不会沿用
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 项目有 {n} 个演职员表电子表格;使用“{name}”(可在电子表格字段中选择其他表格)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	添加问题
+	Add as Finding	添加为问题
+	Are colour and contrast acceptable?	颜色和对比度是否可以接受?
+	Automatic Checks	自动检查
+	Bounds	范围
+	Check	检查
+	Check Now	立即检查
+	Check quality after export	导出后检查质量
+	Checking…	正在检查…
+	Contact Sheet	联系表
+	Critical	严重
+	Fail	失败
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	问题 {row}:时间码不是此文件中的时间 (HH:MM:SS:FF)。
+	Findings	问题
+	Human Review	人工审查
+	Incomplete	不完整
+	Is there a visible picture defect?	是否有可见的画面缺陷?
+	Is there audible distortion?	是否有可听见的失真?
+	Is there unwanted noise?	是否有不需要的噪声?
+	Major	重要
+	Message	消息
+	Minor	轻微
+	No contact sheet	无联系表
+	Not answered	未回答
+	Not checked	未检查
+	Not run	未运行
+	Note	备注
+	Pass	通过
+	Passed	已通过
+	Passed with warnings	通过但有警告
+	Profile: {id} v{version}	配置文件:{id} v{version}
+	Quality Check	质量检查
+	Quality Check…	质量检查…
+	Remove Finding	移除问题
+	Report: {path}	报告:{path}
+	Review complete	审查完成
+	Reviewer	审查人
+	Run the media quality check on the finished file (docs/media-qc.md)	对完成的文件运行媒体质量检查 (docs/media-qc.md)
+	Save Review	保存审查
+	Select a finished export in the queue	请在队列中选择已完成的导出
+	Severity	严重程度
+	The engine is not running.	引擎未运行。
+	Time code	时间码
+	Unsure	不确定
+	accept	可接受
+	the engine did not start the check	引擎未启动检查
+	the engine sent no report	引擎未发送报告
+	Load KDM…	加载 KDM…
+	Forget DCP Keys	清除 DCP 密钥
+	Load KDM	加载 KDM
+	KDM file	KDM 文件
+	Private key (PEM)	私钥 (PEM)
+	{title}: {count} keys loaded	{title}：已加载 {count} 个密钥
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	密钥只保存在内存中，直到执行“清除 DCP 密钥”或会话结束。
+	DCP keys forgotten	已清除 DCP 密钥
+	Choose the KDM file and the private key.	请选择 KDM 文件和私钥。

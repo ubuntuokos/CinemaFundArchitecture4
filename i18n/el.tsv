@@ -284,6 +284,7 @@
 	Output file	Αρχείο εξόδου
 	Overwrite	Αντικατάσταση
 	PCM (uncompressed)	PCM (ασυμπίεστο)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	Panels	Πάνελ
 	Panner	Πανοραμικός ρυθμιστής
 	Paste Attributes…	Επικόλληση χαρακτηριστικών…
@@ -1819,6 +1820,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bit 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bit 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (διαλειτουργικό πακέτο master)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE IMF: JPEG 2000 1920×1080, PCM 5.1 24 bit 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE IMF: JPEG 2000 3840×2160, PCM 5.1 24 bit 48 kHz
+	Episode	Επεισόδιο
+	Event highlights	Στιγμιότυπα εκδήλωσης
+	Event	Εκδήλωση
+	Lossless (reversible JPEG 2000)	Χωρίς απώλειες (αναστρέψιμο JPEG 2000)
+	Package language	Γλώσσα πακέτου
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	Εικόνες B
@@ -1971,6 +1982,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bit για HDR)
 	10-bit RGB	RGB 10 bit
 	12-bit X'Y'Z'	X'Y'Z' 12 bit
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 10 bit
+	JPEG 2000 IMF lossy	JPEG 2000 IMF με απώλειες
+	JPEG 2000 IMF reversible	JPEG 2000 IMF αναστρέψιμο
 	16-bit half float	μισής ακρίβειας 16 bit
 	linear	γραμμικό
 	uncompressed	ασυμπίεστο
@@ -3221,8 +3235,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bit 4:2:2), PCM 24 bit 48 kHz, αρχικός χρονοκώδικας
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile μακρύ GOP (12 εικόνες, IBBP) στα 50 Mbit/s σε στυλ XDCAM HD422, PCM 24 bit 48 kHz· μεγέθη καρέ HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High με μακρύ GOP (0,3 bit ανά pixel), PCM 24 bit 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a τύπου D-10 (IMX 50): μόνο intra MPEG-2 4:2:2P@ML στα 50 Mbit/s, 720x486 στα 29,97 fps (4:3), τέσσερα κανάλια ήχου 24 bit 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a τύπου D-10 (IMX 50): μόνο intra MPEG-2 4:2:2P@ML στα 50 Mbit/s, 720x576 στα 25 fps (4:3), τέσσερα κανάλια ήχου 24 bit 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bit 48 kHz, αρχικός χρονοκώδικας
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a στη διάταξη SMPTE RDD 9: MPEG-2 4:2:2 Profile μακρύ GOP (12 εικόνες, IBBP) στα 50 Mbit/s, 1920x1080 ή 1280x720 προοδευτική σάρωση, τέσσερα κανάλια 24 bit 48 kHz ως στοιχεία AES3 ανά κανάλι
 	Main	Κύριο
 	Mark In (Hover Scrub)	Σημείο εισόδου (ανίχνευση με αιώρηση)
 	Mark Out (Hover Scrub)	Σημείο εξόδου (ανίχνευση με αιώρηση)
@@ -4316,6 +4338,7 @@ export.summary	Low	χαμηλή
 	Crawl	Κυλιόμενο κείμενο
 	Picture: {file}	Εικόνα: {file}
 	Video: {file}	Βίντεο: {file}
+	Looped video: {file}	Βίντεο σε επανάληψη: {file}
 	Into the next	Προς την επόμενη
 	Safe areas and spines	Ασφαλείς περιοχές και άξονες
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Ασφαλής περιοχή δράσης (93 %), τίτλων (90 %), το κέντρο και οι άξονες της σελίδας
@@ -4446,3 +4469,60 @@ export.summary	Low	χαμηλή
 	picture styles (pictures keep their own size) are not carried over	τα στυλ εικόνων (οι εικόνες κρατούν το μέγεθός τους) δεν μεταφέρονται
 	video (tape) styles are not carried over	τα στυλ βίντεο (ταινίας) δεν μεταφέρονται
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	το έργο Cinecred έχει {n} υπολογιστικά φύλλα τίτλων· χρησιμοποιείται το “{name}” (επιλέξτε άλλο στο πεδίο Υπολογιστικό φύλλο)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Προσθήκη ευρήματος
+	Add as Finding	Προσθήκη ως εύρημα
+	Are colour and contrast acceptable?	Είναι αποδεκτά το χρώμα και η αντίθεση;
+	Automatic Checks	Αυτόματοι έλεγχοι
+	Bounds	Όρια
+	Check	Έλεγχος
+	Check Now	Έλεγχος τώρα
+	Check quality after export	Έλεγχος ποιότητας μετά την εξαγωγή
+	Checking…	Έλεγχος…
+	Contact Sheet	Φύλλο επαφής
+	Critical	Κρίσιμο
+	Fail	Αποτυχία
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Εύρημα {row}: ο κωδικός χρόνου δεν αντιστοιχεί σε χρόνο αυτού του αρχείου (HH:MM:SS:FF).
+	Findings	Ευρήματα
+	Human Review	Ανθρώπινος έλεγχος
+	Incomplete	Ελλιπές
+	Is there a visible picture defect?	Υπάρχει ορατό ελάττωμα εικόνας;
+	Is there audible distortion?	Υπάρχει ακουστή παραμόρφωση;
+	Is there unwanted noise?	Υπάρχει ανεπιθύμητος θόρυβος;
+	Major	Σοβαρό
+	Message	Μήνυμα
+	Minor	Μικρό
+	No contact sheet	Χωρίς φύλλο επαφής
+	Not answered	Χωρίς απάντηση
+	Not checked	Δεν ελέγχθηκε
+	Not run	Δεν εκτελέστηκε
+	Note	Σημείωση
+	Pass	Επιτυχία
+	Passed	Επιτυχής
+	Passed with warnings	Επιτυχής με προειδοποιήσεις
+	Profile: {id} v{version}	Προφίλ: {id} v{version}
+	Quality Check	Έλεγχος ποιότητας
+	Quality Check…	Έλεγχος ποιότητας…
+	Remove Finding	Αφαίρεση ευρήματος
+	Report: {path}	Αναφορά: {path}
+	Review complete	Ο έλεγχος ολοκληρώθηκε
+	Reviewer	Ελεγκτής
+	Run the media quality check on the finished file (docs/media-qc.md)	Εκτέλεση του ελέγχου ποιότητας πολυμέσων στο τελικό αρχείο (docs/media-qc.md)
+	Save Review	Αποθήκευση ελέγχου
+	Select a finished export in the queue	Επιλέξτε μια ολοκληρωμένη εξαγωγή στην ουρά
+	Severity	Σοβαρότητα
+	The engine is not running.	Η μηχανή δεν εκτελείται.
+	Time code	Κωδικός χρόνου
+	Unsure	Αβέβαιο
+	accept	αποδεκτό
+	the engine did not start the check	η μηχανή δεν ξεκίνησε τον έλεγχο
+	the engine sent no report	η μηχανή δεν έστειλε αναφορά
+	Load KDM…	Φόρτωση KDM…
+	Forget DCP Keys	Διαγραφή κλειδιών DCP
+	Load KDM	Φόρτωση KDM
+	KDM file	Αρχείο KDM
+	Private key (PEM)	Ιδιωτικό κλειδί (PEM)
+	{title}: {count} keys loaded	{title}: φορτώθηκαν {count} κλειδιά
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Τα κλειδιά μένουν μόνο στη μνήμη, μέχρι τη «Διαγραφή κλειδιών DCP» ή το τέλος της συνεδρίας.
+	DCP keys forgotten	Τα κλειδιά DCP διαγράφηκαν
+	Choose the KDM file and the private key.	Επιλέξτε το αρχείο KDM και το ιδιωτικό κλειδί.
