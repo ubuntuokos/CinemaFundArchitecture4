@@ -1,7 +1,7 @@
 # CFA4 fenyegetésmodell (CFA4-SECURITY-001, B0)
 
-**Verzió:** 0.1 (tervezet, a tulajdonos jóváhagyására vár)
-**Dátum:** 2026-11-11
+**Verzió:** 1.0 (a tulajdonos jóváhagyta 2026-11-12-én; a referenciagépes mérés még hátravan)
+**Dátum:** 2026-11-11, jóváhagyva 2026-11-12
 **Terv:** [`CFA4-SECURITY-001`](../plans/CFA4-SECURITY-001.md) V. fejezet, B0 fázis
 **Kész, ha:** a tulajdonos jóváhagyja ezt a dokumentumot, és a többletterhelés mérése a
 referenciagépen lefutott (`scripts/dev/security-overhead.sh`, lásd 6. pont).
@@ -133,12 +133,12 @@ kevesebb rendszerhívást tesz másodpercenként, így a valós lassulás ennek 
 mérés a B4-ben a lejátszáson és az exporton történik. A referenciagépen mért számok kerülnek ide a
 B0 lezárásakor.
 
-## 7. Jóváhagyásra
+## 7. Jóváhagyás
 
-A tulajdonos döntése kell:
+**A tulajdonos (`ubuntuokos`) 2026-11-12-én jóváhagyta** a dokumentumot:
 
-1. Elfogadja-e a 2. pont határait (mi nem cél).
-2. Elfogadja-e a 3. pont megállapításait és azok helyét a fázisokban (a modelletöltés a B3 előtt a
+1. Elfogadva: a 2. pont határai (mi nem cél).
+2. Elfogadva: a 3. pont megállapításai és helyük a fázisokban (a modelletöltés a B3 előtt a
    `cfa4-fetch`-be költözik).
-3. A mérés lefuttatása a referenciagépen (`scripts/dev/security-overhead.sh`), és az eredmény
-   felvétele a 6. pontba.
+3. **Nyitott:** a mérés lefuttatása a referenciagépen (`scripts/dev/security-overhead.sh`), és az
+   eredmény felvétele a 6. pontba. Ezzel zárul a B0.
