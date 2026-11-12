@@ -3690,6 +3690,8 @@
 	Analyze Source for Smart Cut	Analizar origen para Smart Cut
 	Plan Smart Cut	Planificar Smart Cut
 	Run Smart Cut	Ejecutar Smart Cut
+	DASH Manifest	Manifiesto DASH
+	Also write a DASH manifest (.mpd)	Escribir también un manifiesto DASH (.mpd)
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/es.tsv).
@@ -4222,3 +4224,230 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(una tabla)
+	A .ods, .xlsx or CSV credits sheet	Una hoja de créditos .ods, .xlsx o CSV
+	Built-in styles	Estilos integrados
+	Card	Tarjeta
+	Choose a credits spreadsheet.	Elija una hoja de cálculo de créditos.
+	Credits Spreadsheet	Hoja de cálculo de créditos
+	Credits from a Spreadsheet	Créditos desde una hoja de cálculo
+	Credits styling (*.json)	Estilo de créditos (*.json)
+	Moment in the page	Momento dentro de la página
+	No preview	Sin vista previa
+	Page	Página
+	Pictures	Imágenes
+	Place at Playhead	Colocar en el cabezal
+	Placed {n} pages on the timeline.	Se colocaron {n} páginas en la línea de tiempo.
+	Placing…	Colocando…
+	Reading…	Leyendo…
+	Row {row}: {message}	Fila {row}: {message}
+	Sheet	Hoja
+	Spreadsheet	Hoja de cálculo
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Hojas de cálculo (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Estilo
+	The spreadsheet's folder	La carpeta de la hoja de cálculo
+	Total: {time}	Total: {time}
+	Warnings	Advertencias
+	Credits Page Picture	Imagen de página de créditos
+	Preview Credits	Previsualizar créditos
+	Credits Styles	Estilos de créditos
+	(empty row)	(fila vacía)
+	Accepting every change would replace these, because their block changed: {names}	Aceptar todos los cambios reemplazaría estos, porque su bloque ha cambiado: {names}
+	Added	Añadido
+	Before → After	Antes → Después
+	CFA4 credits file (*.cfa4credits)	Archivo de créditos CFA4 (*.cfa4credits)
+	Change	Cambio
+	Changed	Modificado
+	Comparing…	Comparando…
+	Keep my edits on the pages (where their block is unchanged)	Conservar mis ediciones en las páginas (donde su bloque no ha cambiado)
+	Locate Spreadsheet…	Localizar hoja de cálculo…
+	Refresh Credits from Spreadsheet	Actualizar créditos desde la hoja de cálculo
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Actualizado: {n} cambios aplicados, {kept} ediciones manuales conservadas.
+	Refreshing…	Actualizando…
+	Removed	Eliminado
+	Save as Credits File…	Guardar como archivo de créditos…
+	Saved: {path}	Guardado: {path}
+	Select None	Deseleccionar todo
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Hoja de cálculo, hoja, estilo y tabla en un solo archivo, para abrir en cualquier equipo
+	The spreadsheet {file} has not changed since the credits were placed.	La hoja de cálculo {file} no ha cambiado desde que se colocaron los créditos.
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} cambios en {file} desde que se colocaron los créditos. Desmarque lo que no desee.
+	{n} layers were edited by hand on the pages.	{n} capas se editaron a mano en las páginas.
+	Refresh Credits from Spreadsheet…	Actualizar créditos desde la hoja de cálculo…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Hojas de cálculo y archivos de créditos (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	Guardar archivo de créditos…
+	Compare Credits with Spreadsheet	Comparar créditos con la hoja de cálculo
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Una línea cruza el encuadre en {seconds} s; con al menos 6 s se lee bien
+	Checks and warnings	Comprobaciones y advertencias
+	Checks: {errors} errors, {warnings} warnings	Comprobación: {errors} errores, {warnings} advertencias
+	Page {page}: {message}	Página {page}: {message}
+	The card holds for only {seconds} s after its fades	La tarjeta se mantiene solo {seconds} s después de sus fundidos
+	The font “{font}” has no “{chars}”; another font draws them	La fuente «{font}» no tiene «{chars}»; otra fuente los dibuja
+	The font “{font}” is not installed; another font is used	La fuente «{font}» no está instalada; se usa otra fuente
+	This page starts {seconds} s before the previous one ends	Esta página empieza {seconds} s antes de que termine la anterior
+	{more} more of the same	{more} más del mismo tipo
+	“{file}” is shown at {percent} % of its pixels; it will look soft	«{file}» se muestra al {percent} % de sus píxeles; se verá borroso
+	“{name}” appears twice in the same block	«{name}» aparece dos veces en el mismo bloque
+	“{name}” is written as “{other}” in row {otherRow}	«{name}» está escrito como «{other}» en la fila {otherRow}
+	“{text}” is outside the title-safe area	«{text}» está fuera de la zona segura de títulos
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» es demasiado oscuro sobre negro (contraste {ratio}:1; se necesita al menos 4.5:1)
+	“{text}” is {px} px high; 24 px or more reads well	«{text}» mide {px} px de alto; con 24 px o más se lee bien
+	The roll moves {speed} px per frame; a whole number does not shimmer	El rodillo avanza {speed} px por fotograma; un número entero no parpadea
+	Check Credits	Comprobar créditos
+	Cards last whole beats (cuts on the beat)	Las tarjetas duran tiempos completos (cortes al compás)
+	Fit Credits to Music	Ajustar créditos a la música
+	Fit to This Length	Ajustar a esta duración
+	Fitting removed.	Ajuste eliminado.
+	Fitting…	Ajustando…
+	Length of the credits	Duración de los créditos
+	Length:	Duración:
+	Length: {time}	Duración: {time}
+	Listening to the music…	Analizando la música…
+	No music to measure ({problem}); type the length.	No hay música que medir ({problem}); escriba la duración.
+	Remove Fitting	Quitar ajuste
+	Select a credits page on the timeline.	Seleccione una página de créditos en la línea de tiempo.
+	Start the credits where the music starts	Iniciar los créditos donde empieza la música
+	The credits now last {time}.	Los créditos ahora duran {time}.
+	The whole music ({time})	Toda la música ({time})
+	To the last bar line ({time})	Hasta la última barra de compás ({time})
+	Until the sound ends ({time})	Hasta que termine el sonido ({time})
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	los créditos sin ajuste: {time}
+	the sound ends at {time}	el sonido termina en {time}
+	Fit Credits to Music…	Ajustar créditos a la música…
+	Analyse Music for Credits	Analizar la música para los créditos
+	A picture or video is behind the text: check the contrast by eye	Hay una imagen o un vídeo detrás del texto: compruebe el contraste a simple vista
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Zona segura de acción (93 %), de títulos (90 %), el centro y los ejes de la página
+	Baseline grid	Cuadrícula de línea base
+	Crawl	Texto en marquesina
+	Into the next	Hacia el siguiente
+	Lines one gap unit apart, moving with the page	Líneas separadas por una unidad de espacio, que se mueven con la página
+	Picture: {file}	Imagen: {file}
+	Safe areas and spines	Zonas seguras y ejes
+	The text moves {speed} px per frame; a whole number does not shimmer	El texto se mueve {speed} px por fotograma; un número entero no parpadea
+	Video: {file}	Vídeo: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» no destaca sobre el fondo (contraste {ratio}:1; se necesita al menos 4.5:1)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Un aspecto listo: estilos, fondos, transiciones y tiempos. Si se indica un archivo de estilos, prevalece.
+	Apply Credits Template…	Aplicar plantilla de créditos…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Elija primero una plantilla.
+	Name of the template:	Nombre de la plantilla:
+	New Spreadsheet from Template…	Nueva hoja de cálculo desde plantilla…
+	Template	Plantilla
+	Template saved: {name}	Plantilla guardada: {name}
+	Template:	Plantilla:
+	built in	integrado
+	mine	propio
+	this project	este proyecto
+	Credits Templates	Plantillas de créditos
+	Cinecred Project…	Proyecto de Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Abrir una carpeta de proyecto de Cinecred (Styling.toml y su hoja de cálculo de créditos)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Hojas de cálculo, archivos de créditos y proyectos de Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	(bloque vacío)
+	Apply Template…	Aplicar plantilla…
+	Change them in the spreadsheet; the credits follow when you save it.	Cámbielos en la hoja de cálculo; los créditos se actualizan al guardarla.
+	Compact View	Vista compacta
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Comparar los créditos seleccionados en la línea de tiempo con su hoja de cálculo, fila por fila
+	Fit the selected credits to the music under them	Ajustar los créditos seleccionados a la música que tienen debajo
+	Fit to Music…	Ajustar a la música…
+	Full View	Vista completa
+	Give the selected credits on the timeline another template	Dar otra plantilla a los créditos seleccionados en la línea de tiempo
+	Names	Nombres
+	No pages	Sin páginas
+	Refresh Placed Credits…	Actualizar créditos colocados…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Mostrar todo: bloques, propiedades, las páginas en el tiempo, comprobaciones y las herramientas de créditos
+	Spine	Eje
+	Tails	Notas
+	The blocks of the chosen page; choose one to see it in the preview	Los bloques de la página elegida; elija uno para verlo en la vista previa
+	The pages along time; click one to choose it	Las páginas en el tiempo; haga clic en una para elegirla
+	{n} more	{n} más
+	Block	Bloque
+	parallel	paralelo
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	En la página (OBS lo toma de la fuente de navegador)
+	Separate (a media source in OBS)	Separado (una fuente multimedia en OBS)
+	No sound	Sin sonido
+	credits	créditos
+	graphic	gráfico
+	{n} pages	{n} páginas
+	Live Graphics	Gráficos en directo
+	Prepared cues; double-click one to put it in preview	Elementos preparados; doble clic para pasar uno a la vista previa
+	Add Credits…	Añadir créditos…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Una hoja de créditos, un archivo de créditos o un proyecto de Cinecred como elemento
+	Add Selected Graphic	Añadir gráfico seleccionado
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	El clip gráfico seleccionado en la línea de tiempo (un título, un rótulo) como elemento
+	Cues	Elementos
+	TAKE	ENTRADA
+	The preview cue goes on air from its first page	El elemento de la vista previa sale al aire desde su primera página
+	PREVIOUS	ANTERIOR
+	The page before (on the first page: from its start)	La página anterior (en la primera: desde su inicio)
+	NEXT	SIGUIENTE
+	The next page; after the last one, the preview cue	La página siguiente; tras la última, el elemento de la vista previa
+	HOLD	PAUSA
+	Stop the program where it is	Detener el programa donde está
+	CONTINUE	CONTINUAR
+	Go on from where it stopped	Seguir desde donde se detuvo
+	UPDATE	ACTUALIZAR
+	Read the spreadsheet (or the clip) again; on air it changes at once	Leer de nuevo la hoja (o el clip); en el aire cambia al instante
+	OUT	FUERA
+	Take everything off air	Quitar todo del aire
+	Start Live Page	Iniciar página en directo
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Servir el programa en este equipo para la fuente de navegador de OBS (solo 127.0.0.1)
+	not running	sin ejecutar
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Herramientas ▸ Configuración del servidor WebSocket
+	Connect to OBS	Conectar con OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Conectar con OBS en este equipo y apuntar su fuente de navegador «CFA4 Live» a la página en directo
+	Port	Puerto
+	Password	Contraseña
+	Live page	Página en directo
+	Sound	Sonido
+	OBS	OBS
+	Nothing in preview	Nada en la vista previa
+	page {page} of {pages}	página {page} de {pages}
+	held	en pausa
+	ended	terminado
+	Off air	Fuera del aire
+	Stop Live Page	Detener página en directo
+	Connected to OBS {version}; source “{source}”	Conectado a OBS {version}; fuente «{source}»
+	Point OBS Again	Volver a configurar OBS
+	Select a graphic clip on the timeline first.	Seleccione primero un clip gráfico en la línea de tiempo.
+	Connecting to OBS…	Conectando con OBS…
+	Live Graphics…	Gráficos en directo…
+	PREVIEW	VISTA PREVIA
+	PROGRAM	PROGRAMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	una etiqueta de imagen o vídeo está sola en una celda del cuerpo (o con un solo nombre, como retrato); las demás etiquetas se eliminaron
+	the page gap is not a duration; the page style's is used	el intervalo entre páginas no es una duración; se usa el del estilo de página
+	the page runtime is not a positive duration; the page style's is used	la duración de la página no es una duración positiva; se usa la del estilo de página
+	background “{file}” was not found; it is left out	no se encontró el fondo “{file}”; se omite
+	card page {page} is taller than the frame; use a roll page	la página de tarjeta {page} es más alta que el fotograma; usa una página de rodillo
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	el color “{colour}” del estilo de letra “{style}” no es #rrggbb; se omite
+	colour “{colour}” is not #rrggbb; black is used	el color “{colour}” no es #rrggbb; se usa negro
+	colour “{colour}” is not #rrggbb; white is used	el color “{colour}” no es #rrggbb; se usa blanco
+	content style “{style}” does not exist; “{used}” is used	el estilo de contenido “{style}” no existe; se usa “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	el estilo de letra “{style}” no existe; el texto conserva el estilo del bloque
+	page gap “{value}” is not a duration	el intervalo entre páginas “{value}” no es una duración
+	page runtime “{value}” is not a duration	la duración de página “{value}” no es una duración
+	page style “{style}” does not exist; a roll page is used	el estilo de página “{style}” no existe; se usa una página de rodillo
+	page {page}: the background names no file; it is left out	página {page}: el fondo no indica ningún archivo; se omite
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (la página no tiene espacios entre bloques que estirar)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (los créditos son demasiado largos incluso sin espacios)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	página {page}: la duración se alcanza cambiando la velocidad de desplazamiento (los espacios tendrían que crecer más de 20 veces)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	página {page}: la transición requiere que las páginas se toquen (intervalo entre páginas 0); se omite
+	page {page}: there is no transition “{name}”; the pages cut	página {page}: no existe la transición “{name}”; las páginas se cortan
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	la posición del eje “{value}” no es compatible (sí lo es un desplazamiento en píxeles, opcionalmente con “parallel”)
+	vertical gap “{value}” is not a number	el espacio vertical “{value}” no es un número
+	picture “{file}” was not found or cannot be read; it is left out	no se encontró la imagen “{file}” o no se puede leer; se omite
+	video “{file}” was not found or cannot be read; it is left out	no se encontró el vídeo “{file}” o no se puede leer; se omite
+	there is no roll page without its own runtime to stretch; the length cannot change	no hay ninguna página de rodillo con duración propia que estirar; la duración no puede cambiar
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	solo las tarjetas y los espacios suman {seconds} s; la duración pedida es menor, así que las páginas de rodillo mantienen su duración natural
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	estilo de letra “{style}”: solo se usa la primera capa de color (sin contornos, sombras ni franjas)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	la duración total de los créditos no se transfiere; usa Ajustar créditos a la música (o una duración)
+	page style “{style}”: fade curves become linear fades	estilo de página “{style}”: las curvas de fundido pasan a ser fundidos lineales
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	el estilo de contenido “{style}” no tiene encabezado en Cinecred; los encabezados escritos en la hoja se siguen mostrando
+	content style “{style}”: sorting the names is not carried over	estilo de contenido “{style}”: la ordenación de los nombres no se transfiere
+	transition curves are not carried over	las curvas de transición no se transfieren
+	picture styles (pictures keep their own size) are not carried over	los estilos de imagen (las imágenes conservan su propio tamaño) no se transfieren
+	video (tape) styles are not carried over	los estilos de vídeo (cinta) no se transfieren
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	el proyecto de Cinecred tiene {n} hojas de cálculo de créditos; se usa “{name}” (elige otra en el campo Hoja de cálculo)

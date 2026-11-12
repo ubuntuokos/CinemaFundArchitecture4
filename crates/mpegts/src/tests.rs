@@ -331,6 +331,13 @@ fn timestamps_unwrap_across_the_33_bit_wrap() {
     assert_eq!(u.unwrap(4200), (1 << 33) + 4200);
 }
 
+/// A 1792-byte AC-3 syncframe (48 kHz, 448 kb/s, bsid 8) filled with `k`.
+pub(crate) fn ac3_frame(k: u8) -> Vec<u8> {
+    let mut v = vec![0x0B, 0x77, 0, 0, 30, 0x40];
+    v.extend(std::iter::repeat_n(k, 1792 - 6));
+    v
+}
+
 pub(crate) fn adts_frame(k: u8) -> Vec<u8> {
     let mut v = vec![0xFF, 0xF1, 0x50, 0x80, 0x0C, 0x9F, 0xFC];
     v.extend([k; 93]);

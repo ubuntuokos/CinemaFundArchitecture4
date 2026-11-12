@@ -1,7 +1,7 @@
 # CFA4 ADR F10 – Credits sequences from a spreadsheet (Cinecred-like capability)
 
 **Date:** 2026-10-23  
-**Status:** ACCEPTED; ENGINE + egui MENU IMPLEMENTED (CSV, xlsx, ods, pictures); Qt6 PANEL PENDING (F8 bridge)  
+**Status:** ACCEPTED; ENGINE (CSV, xlsx, ods, pictures) + Qt6 CREDITS WINDOW; UI IS QT6 ONLY (owner, 2026-10-25)  
 **Owner request:** “a Cinecred feliratozó beépítése a CFA4-be” (owner: ubuntuokos)
 
 ## Context
@@ -9,7 +9,8 @@
 The owner asked to build [Cinecred](https://github.com/LoadingByte/cinecred) into CFA4. Three
 facts rule out taking the program itself:
 
-1. **Licence.** Cinecred is GPL-3.0-or-later; CFA4 is MIT OR Apache-2.0. `AGENTS.md` §2 forbids
+1. **Licence.** Cinecred is GPL-3.0-or-later; CFA4 was MIT OR Apache-2.0 then (GPL-3.0-or-later
+   since 2026-10, which allows reading Cinecred's source for its file format: see C7). `AGENTS.md` §2 forbids
    copying GPL code, and `VISION.md` §4 says CFA4 takes over other programs' *capabilities*, not
    their code, names or trademarks.
 2. **Language.** Cinecred is Kotlin on the JVM; CFA4's product code is pure Rust with a Qt6
@@ -47,10 +48,17 @@ The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 | `.xlsx` (ECMA-376) and `.ods` (OASIS ODF) from their specifications, sheet choice; own ZIP reader on CFA4's RFC 1951 inflater | done (2026-10-24) |
 | Online sheets, Apple Numbers | not yet: download / export as `.xlsx` (clear error) |
 | Pictures and logos (`{{Pic file [height]}}`): own clips that follow the roll exactly / fade with the card, placeholder layer in the page | done (2026-10-24) |
-| Inline letter styles and videos (`{{…}}`) | not yet: tags are removed with a warning |
-| Parallel / hooked spines, head/tail leaders, width harmonisation | not yet |
-| Scroll runtime by stretching gaps (instead of changing speed) | not yet: a runtime changes the speed |
-| Qt6 panel | pending: the F8 Qt bridge allowlists read-only commands; `graphics.credits.preview` can be allowlisted first, `…import` once mutating commands are allowed |
+| Inline letter styles (`{{Style …}}`, C5): character styles of the text layer, built-in and `inlineStyles` | done (2026-10-27) |
+| Videos inside a page (`{{Video …}}`), portraits beside names, card entrances (slide, stagger) (C5) | done (2026-10-27) |
+| Parallel spines, head leaders, head-width harmonisation (C5) | done (2026-10-27); hooked spines and body-width harmonisation not yet |
+| Scroll runtime by stretching the gaps between blocks at constant speed (falls back to a speed change with a warning) | done (2026-10-24) |
+| Linked credits (C1): `.cfa4credits` file with the table embedded; pages remember their document and layer fingerprints; row-by-row diff, selective refresh in place keeping hand edits, one undo step; Qt6 Refresh window | done (2026-10-25) |
+| Checks (C2): names, fonts and missing letters, title safe, contrast, text size, roll speed and shimmer, card length, overlap, soft pictures; stable codes, Hungarian in Qt6 | done (2026-10-26) |
+| Fit to music (C3): music length, sound end, last bar (Remix beat analysis), typed length; cards on the beat; align to the music; rolls stretch their gaps, cards keep theirs; stored in the document, kept by refresh; Qt6 Fit window | done (2026-10-26) |
+| Backgrounds, transitions, crawls, guides (C4): per page style a colour, gradient, picture or video background (fill / fit, opacity, blur) as its own clip below the page; a library transition on the cut into the next page (replacing the cards' fade there); a one-line crawl page type (Crawl Left); safe areas, spines and baseline grid in the page picture; contrast measured against the background | done (2026-10-26) |
+| Templates (C6): `.cfa4credtpl` (styling, sample sheet, fitting; versioned, with id, source and licence); built in (original, MIT OR Apache-2.0), user and project templates; apply to placed credits in one undo step | done (2026-10-27) |
+| Cinecred projects (C7): a project folder (`Styling.toml` + credits sheet) opens as credits; its styles carried over as far as CFA4's go, the rest listed; Cinecred's column and tag names in its languages. CFA4 is GPL-3.0-or-later since 2026-10, so Cinecred's published source was consulted for the format (no code copied; `docs/licensing.md` §5) | done (2026-10-27) |
+| Qt6 Credits window (sheet, worksheet, pictures, styling, pages, warnings, page picture, place at playhead) on the Qt6 GUI's engine server | done (2026-10-25); **the owner decided the UI is Qt6 only**: no more egui work, no standalone app |
 
 ## Consequences
 
