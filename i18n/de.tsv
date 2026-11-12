@@ -4336,6 +4336,7 @@
 	Safe areas and spines	Sicherheitsbereiche und Achsen
 	The text moves {speed} px per frame; a whole number does not shimmer	Der Text bewegt sich {speed} px pro Bild; bei ganzen Zahlen flimmert er nicht
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video in Schleife: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ hebt sich nicht vom Hintergrund ab (Kontrast {ratio}:1; mindestens 4.5:1 erforderlich)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Ein fertiges Erscheinungsbild: Stile, Hintergründe, Übergänge und Timing. Eine angegebene Stildatei hat Vorrang.
 	Apply Credits Template…	Abspann-Vorlage anwenden…

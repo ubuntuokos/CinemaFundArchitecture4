@@ -4326,6 +4326,7 @@ export.summary	Low	დაბალი
 	Crawl	მცოცავი ტექსტი
 	Picture: {file}	სურათი: {file}
 	Video: {file}	ვიდეო: {file}
+	Looped video: {file}	ციკლური ვიდეო: {file}
 	Into the next	შემდეგში გადასვლა
 	Safe areas and spines	უსაფრთხო არეები და ღერძები
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	მოქმედების უსაფრთხო არე (93 %), ტიტრების (90 %), ცენტრი და გვერდის ღერძები

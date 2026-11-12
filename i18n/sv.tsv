@@ -4325,6 +4325,7 @@ export.summary	Low	låg
 	Crawl	Rullande textrad
 	Picture: {file}	Bild: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video i slinga: {file}
 	Into the next	In i nästa
 	Safe areas and spines	Säkra områden och axlar
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Handlingssäkert (93 %), textsäkert (90 %), mitten och sidans axlar

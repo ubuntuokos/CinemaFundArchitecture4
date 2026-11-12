@@ -4308,6 +4308,7 @@
 	Crawl	Бегущая строка
 	Picture: {file}	Изображение: {file}
 	Video: {file}	Видео: {file}
+	Looped video: {file}	Видео по кругу: {file}
 	Into the next	В следующую
 	Safe areas and spines	Безопасные зоны и оси
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасная зона действия (93 %), безопасная зона заголовков (90 %), центр и оси страницы

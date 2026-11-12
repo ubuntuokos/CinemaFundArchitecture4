@@ -4326,6 +4326,7 @@ export.summary	Low	žema
 	Crawl	Bėganti eilutė
 	Picture: {file}	Paveikslėlis: {file}
 	Video: {file}	Vaizdo įrašas: {file}
+	Looped video: {file}	Kartojamas vaizdo įrašas: {file}
 	Into the next	Į kitą
 	Safe areas and spines	Saugios sritys ir ašys
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Veiksmo saugi sritis (93 %), titrų (90 %), centras ir puslapio ašys
