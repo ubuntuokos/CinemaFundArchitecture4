@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import configparser
-from pathlib import Path
 import re
 import unittest
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 APP = "io.github.ubuntuokos.cfa4"
@@ -25,7 +25,7 @@ def desktop_metadata() -> configparser.SectionProxy:
 
 def flatpak_value(filename: str, field: str) -> str:
     content = (PACKAGE / "flatpak" / filename).read_text(encoding="utf-8")
-    match = re.search(rf"^{re.escape(field)}:\s*(.+?)\s*$", content, flags=re.M)
+    match = re.search(rf"^{re.escape(field)}:\s*(.+?)\s*$", content, flags=re.MULTILINE)
     if not match:
         raise AssertionError(f"{filename}: {field} missing")
     return match.group(1).strip("'\"")
@@ -172,9 +172,9 @@ class XDGDesktopMetadataTests(unittest.TestCase):
     def test_local_package_install_paths_are_cfa4_only(self) -> None:
         contents = (PACKAGE / "package.sh").read_text(encoding="utf-8")
         self.assertIn(f"APP_ID={APP}", contents)
-        self.assertIn(f"$HERE/$APP_ID.desktop", contents)
-        self.assertIn(f"$HERE/$APP_ID.mime.xml", contents)
-        self.assertIn(f"$HERE/$APP_ID.metainfo.xml.in", contents)
+        self.assertIn("$HERE/$APP_ID.desktop", contents)
+        self.assertIn("$HERE/$APP_ID.mime.xml", contents)
+        self.assertIn("$HERE/$APP_ID.metainfo.xml.in", contents)
         self.assertIn("assets/cfa4/hicolor", contents)
 
 

@@ -3,14 +3,13 @@
 
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import tarfile
 import tempfile
 import time
 import unittest
-
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 APP_ID = "io.github.ubuntuokos.cfa4"
@@ -42,7 +41,7 @@ class InstallTests(unittest.TestCase):
         # Run outside the extracted directory to check that the script finds its own files.
         return subprocess.run(
             ["bash", str(self.bundle / "install.sh"), *map(str, args)],
-            cwd=self.root, capture_output=True, text=True, timeout=30,
+            cwd=self.root, capture_output=True, text=True, timeout=30, check=False,
         )
 
     def test_install_and_update_preserve_other_applications(self):
@@ -246,7 +245,7 @@ class InstallTests(unittest.TestCase):
         result = subprocess.run(
             ["bash", str(HERE / "package.sh"), "--skip-build", "--formats", "deb", "--without-ffmpeg"],
             env={**os.environ, "CFA4_ALLOW_LOCAL_PACKAGING": "1"},
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=30, check=False,
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn("--without-ffmpeg is for local tarball tests only", result.stderr)
@@ -292,7 +291,7 @@ class InstallTests(unittest.TestCase):
             env={**os.environ, "CARGO_TARGET_DIR": str(target), "DIST": str(dist),
                  "CFA4_ALLOW_LOCAL_PACKAGING": "1", "CFA4_THIRD_PARTY_LICENSES_FILE": str(notices),
                  "CFA4_SBOM_FILE": str(sbom)},
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=30, check=False,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         archives = list(dist.glob("*.tar.gz"))
