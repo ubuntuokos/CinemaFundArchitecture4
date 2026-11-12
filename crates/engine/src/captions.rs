@@ -186,11 +186,13 @@ pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value
     })
 }
 
-/// Import the closed captions carried in an MXF file's ANC data (SMPTE ST 436-1 ANC elements with
-/// ST 334-2 caption distribution packets: CEA-608 field 1, else CEA-708 service 1) as a caption
-/// track. `None` when `path` is not an MXF file with ANC data or its ANC data holds no captions;
-/// the file's picture and sound import as media either way.
-pub fn import_anc_captions(s: &mut Session, path: &str) -> Option<Result<Value>> {
+/// Import the closed captions carried in an MXF file's ANC data (SMPTE ST 436-1) as caption
+/// tracks: ST 334-2 caption distribution packets (CEA-608 field 1, else CEA-708 service 1) as one
+/// track; without them, the CEA-608 byte pairs of ST 334-1 packets and of digitised line 21 VI
+/// lines as one track per data channel that holds captions (CC1–CC4). `None` when `path` is not
+/// an MXF file with ANC or VBI data or that data holds no captions; the file's picture and sound
+/// import as media either way.
+pub fn import_anc_captions(s: &mut Session, path: &str) -> Option<Result<Vec<Value>>> {
     let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
     if ext.as_deref() != Some("mxf") {
         return None;
@@ -216,18 +218,65 @@ pub fn import_anc_captions(s: &mut Session, path: &str) -> Option<Result<Value>>
         Ok(a) => a,
         Err(e) => return Some(Err(EngineError::Other(format!("{path}: ANC data: {e}")))),
     };
-    let cdps = anc.cdps();
-    if cdps.is_empty() {
-        return None;
-    }
     let rate = cfa4_time::FrameRate::new(i64::from(anc.edit_rate.num), i64::from(anc.edit_rate.den));
-    let mut doc = cfa4_captions::mcc::decode_cdps(cdps.into_iter().map(|(f, b)| (f as i64, b)), rate);
-    if doc.cues.is_empty() {
-        return None;
-    }
-    doc.warnings.extend(anc.warnings);
     let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Captions".into());
-    Some(import_document(s, path, doc, "MXF ANC captions", CaptionFormat::Cea708, false, Some(&format!("{stem} (CC)"))))
+    let cdps = anc.cdps();
+    if !cdps.is_empty() {
+        let mut doc = cfa4_captions::mcc::decode_cdps(cdps.into_iter().map(|(f, b)| (f as i64, b)), rate);
+        if !doc.cues.is_empty() {
+            doc.warnings.extend(anc.warnings);
+            return Some(import_document(s, path, doc, "MXF ANC captions", CaptionFormat::Cea708, false, Some(&format!("{stem} (CC)"))).map(|r| vec![r]));
+        }
+    }
+    let fields = line21_pairs(&anc);
+    let mut reports = Vec::new();
+    let mut warnings = anc.warnings;
+    for (name, field, channel2) in [("CC1", 0usize, false), ("CC2", 0, true), ("CC3", 1, false), ("CC4", 1, true)] {
+        let Some(pairs) = fields.get(field) else { continue };
+        let cues = cfa4_captions::scc::decode_channel(pairs.iter().copied(), rate, channel2);
+        if cues.is_empty() {
+            continue;
+        }
+        // the file's warnings go with its first track
+        let doc = Document { cues, warnings: std::mem::take(&mut warnings), ..Default::default() };
+        match import_document(s, path, doc, "MXF line 21 captions", CaptionFormat::Cea608, false, Some(&format!("{stem} ({name})"))) {
+            Ok(r) => reports.push(r),
+            Err(e) => return Some(Err(e)),
+        }
+    }
+    if reports.is_empty() { None } else { Some(Ok(reports)) }
+}
+
+/// The CEA-608 byte pairs `(frame, b1, b2)` of field 1 and field 2 in an MXF file's ST 334-1
+/// packets and digitised line 21 VI lines (the first line per frame and field that decodes), in
+/// frame order.
+fn line21_pairs(anc: &cfa4_mxf::AncData) -> [Vec<(i64, u8, u8)>; 2] {
+    let mut by_frame: std::collections::BTreeMap<(usize, bool), (u8, u8)> = std::collections::BTreeMap::new();
+    for p in anc.cea608() {
+        by_frame.entry((p.frame, p.field2)).or_insert((p.bytes[0], p.bytes[1]));
+    }
+    for (frame, lines) in anc.vi.iter().enumerate() {
+        for l in lines {
+            let decoded = match l.coding {
+                // luma only
+                1 | 4 | 7 => cfa4_captions::cea608::decode_line21(&l.samples),
+                // luma and colour difference, Cb Y Cr Y: the luma samples are the odd ones
+                3 | 6 | 9 => cfa4_captions::cea608::decode_line21(&l.samples.iter().skip(1).step_by(2).copied().collect::<Vec<u16>>()),
+                _ => None,
+            };
+            if let Some((a, b)) = decoded {
+                by_frame.entry((frame, l.field2())).or_insert((a, b));
+            }
+        }
+    }
+    let mut out = [Vec::new(), Vec::new()];
+    for ((frame, field2), (a, b)) in by_frame {
+        if let Some(v) = out.get_mut(usize::from(field2)) {
+            v.push((frame as i64, a, b));
+        }
+    }
+    // BTreeMap order is (frame, field): each field's pairs are already in frame order
+    out
 }
 
 /// The host's random-access reader as an MXF byte source.
