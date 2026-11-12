@@ -1,13 +1,14 @@
 # CFA4-PY-TYPING-001 – A Python-kód típusellenőrzése (mypy strict) blokkoló CI-kapuvá
 
-**Verzió:** 0.2 (az ütemezés eldöntve; a terv többi része jóváhagyásra vár)
+**Verzió:** 1.0 (jóváhagyva)
 **Dátum:** 2026-11-12
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-12-én kérte a tervet, miután a #1106 (a #1090
 javított változata) a `mypy`-t felvette a `dev` csoportba és a lockfájlba, de CI-kapuvá nem
 tette. 2026-11-12-én a tulajdonos eldöntette az ütemezést (VI, D8): a Qt6 GUI tesztelésre vár,
 ezért most csak a T0 és a gyanús helyek listája (T0b) készül, a T2–T5 a Qt6 tesztelése után. A
-VII. fejezet többi döntése nyitott; a terv a tulajdonos jóváhagyásáig nem indul.
+tulajdonos ugyanaznap a tervet jóváhagyta, a D1–D7 döntéseket a javaslatok szerint (VII). A
+munkát külön munkamenet végzi (D5); a T0 a #1106 beolvasztása után indulhat, a T0b azonnal.
 **Kapcsolódik:** [`AGENTS.md`](../../AGENTS.md) §0 (never crash), [`CLAUDE.md`](../../CLAUDE.md)
 (Python / Qt ellenőrzések), [`docs/coordination.md`](../coordination.md) (§2 PR-szabályok, §3.4 Qt
 GUI-tesztek), [`CFA4-QT6-FINISH-001`](CFA4-QT6-FINISH-001.md) (a Qt6 GUI befejezése),
@@ -185,9 +186,9 @@ Amit a terv a döntéshez jelezett:
 - A nyitott PR-ok száma ma 30 fölött van (coordination.md §2.6); új PR-t a tulajdonos kérésére
   nyit a munkamenet.
 
-## VII. Döntések (nyitottak, javaslattal)
+## VII. Döntések (2026-11-12, mind eldöntve)
 
-| # | Kérdés | Javaslat |
+| # | Kérdés | Döntés (a tulajdonos 2026-11-12-én a javaslatokat jóváhagyta) |
 |---|---|---|
 | D1 | Hogyan kezeljük a ma hibás fájlokat a kapu bevezetésekor? (a) fájlonkénti kivétellista a `pyproject.toml`-ban (IV.1); (b) külső „baseline” eszköz (pl. `mypy-baseline`), amely a meglévő hibák listáját tárolja; (c) először az alapbeállítás (1711 hiba), csak később strict. | **(a)**: nincs új függőség, a lista a `pyproject.toml`-ban jól látható és csak rövidülhet. |
 | D2 | A tesztekre is a teljes strict vonatkozzon? | **Igen.** A tesztekben a hibák nagy része a hiányzó `-> None` (gépies pótlás). Enyhített teszt-beállítás nem kell. |
