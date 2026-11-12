@@ -315,3 +315,18 @@ pub fn encrypt_track_file(f: &[u8], key: &[u8; 16], key_id: &[u8; 16], context: 
     }
     out
 }
+
+/// A 16-byte test key made at run time (SHA-1 of `label`, the process id and the clock), so
+/// that no test carries a fixed cryptographic key.
+pub fn test_key(label: &str) -> [u8; 16] {
+    use sha1::Digest as _;
+    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+    let mut h = sha1::Sha1::new();
+    h.update(label.as_bytes());
+    h.update(std::process::id().to_le_bytes());
+    h.update(nanos.to_le_bytes());
+    let d = h.finalize();
+    let mut k = [0u8; 16];
+    k.copy_from_slice(&d[..16]);
+    k
+}

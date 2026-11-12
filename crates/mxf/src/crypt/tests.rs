@@ -8,39 +8,45 @@ use crate::{Codec, Rational, TrackKind, open};
 use std::io::Cursor;
 use std::process::Command;
 
-const KEY: [u8; 16] = *b"0123456789abcdef";
-const MIC_KEY: [u8; 16] = *b"fedcba9876543210";
+/// The content and MIC keys, made once per run (no fixed key in the source).
+static KEYS: std::sync::LazyLock<([u8; 16], [u8; 16])> = std::sync::LazyLock::new(|| (crate::testing::test_key("content"), crate::testing::test_key("mic")));
+fn content_key() -> [u8; 16] {
+    KEYS.0
+}
+fn mic_key() -> [u8; 16] {
+    KEYS.1
+}
 const KEY_ID: [u8; 16] = [0x5A; 16];
 const CONTEXT: [u8; 16] = [0xC0; 16];
 
 fn triplet(source: [u8; 16], plain: &[u8], po: usize, seq: u64, mic_key: Option<[u8; 16]>) -> Vec<u8> {
-    crate::testing::encrypted_triplet(&KEY, &CONTEXT, source, plain, po, seq, mic_key)
+    crate::testing::encrypted_triplet(&content_key(), &CONTEXT, source, plain, po, seq, mic_key)
 }
 
 fn encrypt_file(f: &[u8], po: usize, mic: bool) -> Vec<u8> {
-    crate::testing::encrypt_track_file(f, &KEY, &KEY_ID, &CONTEXT, po, mic.then_some(MIC_KEY))
+    crate::testing::encrypt_track_file(f, &content_key(), &KEY_ID, &CONTEXT, po, mic.then_some(mic_key()))
 }
 
 fn ring(mic: bool) {
-    add_key(KEY_ID, ContentKey { cipher: KEY, mic: mic.then_some(MIC_KEY) });
+    add_key(KEY_ID, ContentKey { cipher: content_key(), mic: mic.then_some(mic_key()) });
 }
 
 #[test]
 fn triplets_round_trip_with_every_plaintext_offset() {
     let plain: Vec<u8> = (0..1000u32).map(|i| (i * 7 % 251) as u8).collect();
-    let key = ContentKey { cipher: KEY, mic: Some(MIC_KEY) };
+    let key = ContentKey { cipher: content_key(), mic: Some(mic_key()) };
     for po in [0, 1, 15, 16, 17, 200, 999, 1000] {
         for len in [po, po + 1, po + 16, 1000.max(po)] {
             let p = &plain[..len.min(1000)];
             if po > p.len() {
                 continue;
             }
-            let v = triplet([0x06; 16], p, po, 3, Some(MIC_KEY));
+            let v = triplet([0x06; 16], p, po, 3, Some(mic_key()));
             let t = parse(&v).unwrap();
             assert_eq!((t.plaintext_offset, t.source_length, t.sequence), (po as u64, p.len() as u64, Some(3)));
             assert_eq!(decrypt(&v, &key).unwrap(), p, "offset {po} length {}", p.len());
             // without the MIC key the MIC is not checked
-            assert_eq!(decrypt(&v, &ContentKey { cipher: KEY, mic: None }).unwrap(), p);
+            assert_eq!(decrypt(&v, &ContentKey { cipher: content_key(), mic: None }).unwrap(), p);
         }
     }
 }
@@ -48,23 +54,23 @@ fn triplets_round_trip_with_every_plaintext_offset() {
 #[test]
 fn wrong_keys_and_damage_are_errors_not_garbage() {
     let plain = vec![0x42u8; 333];
-    let v = triplet([0x06; 16], &plain, 20, 1, Some(MIC_KEY));
-    let e = decrypt(&v, &ContentKey { cipher: [9; 16], mic: None }).unwrap_err().to_string();
+    let v = triplet([0x06; 16], &plain, 20, 1, Some(mic_key()));
+    let e = decrypt(&v, &ContentKey { cipher: crate::testing::test_key("wrong"), mic: None }).unwrap_err().to_string();
     assert!(e.contains("Check Value"), "{e}");
-    let e = decrypt(&v, &ContentKey { cipher: KEY, mic: Some([9; 16]) }).unwrap_err().to_string();
+    let e = decrypt(&v, &ContentKey { cipher: content_key(), mic: Some(crate::testing::test_key("wrong mic")) }).unwrap_err().to_string();
     assert!(e.contains("integrity"), "{e}");
     // a flipped cipher text bit fails the MIC
     let mut bad = v.clone();
     let n = bad.len();
     bad[n - 60] ^= 1;
-    assert!(decrypt(&bad, &ContentKey { cipher: KEY, mic: Some(MIC_KEY) }).is_err());
+    assert!(decrypt(&bad, &ContentKey { cipher: content_key(), mic: Some(mic_key()) }).is_err());
     // truncation and hostile lengths never panic
     for cut in 0..v.len() {
-        let _ = decrypt(&v[..cut], &ContentKey { cipher: KEY, mic: Some(MIC_KEY) });
+        let _ = decrypt(&v[..cut], &ContentKey { cipher: content_key(), mic: Some(mic_key()) });
     }
     let mut lie = v.clone();
     lie[16 + 4 + 4 + 8 + 4 + 16 + 4..][..8].copy_from_slice(&u64::MAX.to_be_bytes());
-    assert!(decrypt(&lie, &ContentKey { cipher: KEY, mic: None }).is_err());
+    assert!(decrypt(&lie, &ContentKey { cipher: content_key(), mic: None }).is_err());
 }
 
 fn openssl() -> Option<&'static str> {
@@ -88,7 +94,7 @@ fn openssl_oracle() {
     std::fs::create_dir_all(&dir).unwrap();
     let plain: Vec<u8> = (0..777u32).map(|i| (i * 13 % 256) as u8).collect();
     let po = 33;
-    let v = triplet([0x06; 16], &plain, po, 9, Some(MIC_KEY));
+    let v = triplet([0x06; 16], &plain, po, 9, Some(mic_key()));
     let t = parse(&v).unwrap();
     // OpenSSL encrypts Check Value + rest of the source (PKCS#7 padding = RFC 2898 for 16-byte blocks)
     let input = dir.join("in.bin");
@@ -96,7 +102,7 @@ fn openssl_oracle() {
     body.extend_from_slice(&plain[po..]);
     std::fs::write(&input, &body).unwrap();
     let iv = &t.esv[..16];
-    let out = Command::new(ossl).args(["enc", "-aes-128-cbc", "-K", &hex(&KEY), "-iv", &hex(iv), "-in"]).arg(&input).output().unwrap();
+    let out = Command::new(ossl).args(["enc", "-aes-128-cbc", "-K", &hex(&content_key()), "-iv", &hex(iv), "-in"]).arg(&input).output().unwrap();
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
     let ct = out.stdout;
     assert_eq!(&t.esv[16..32], &ct[..16], "encrypted Check Value");
@@ -104,7 +110,7 @@ fn openssl_oracle() {
     assert_eq!(&t.esv[32 + po..], &ct[16..], "cipher blocks");
     // and decrypting OpenSSL's own cipher text gives the source back
     std::fs::write(&input, t.mic_input).unwrap();
-    let out = Command::new(ossl).args(["dgst", "-sha1", "-mac", "HMAC", "-macopt"]).arg(format!("hexkey:{}", hex(&MIC_KEY))).arg(&input).output().unwrap();
+    let out = Command::new(ossl).args(["dgst", "-sha1", "-mac", "HMAC", "-macopt"]).arg(format!("hexkey:{}", hex(&mic_key()))).arg(&input).output().unwrap();
     let text = String::from_utf8_lossy(&out.stdout);
     assert!(text.trim_end().ends_with(&hex(&t.mic.unwrap())), "{text}");
     std::fs::remove_dir_all(&dir).unwrap();
@@ -153,7 +159,7 @@ fn encrypted_picture_track_file() {
         assert_eq!(m.read_sample(&f, 0, i).unwrap(), j2k_like(i));
     }
     // a wrong key is refused by the Check Value
-    add_key(KEY_ID, ContentKey { cipher: [1; 16], mic: None });
+    add_key(KEY_ID, ContentKey { cipher: crate::testing::test_key("other"), mic: None });
     assert!(m.read_sample(&f, 0, 0).is_err());
     clear_keys();
     assert!(key_ids().is_empty());
