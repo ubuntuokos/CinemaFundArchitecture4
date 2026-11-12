@@ -139,12 +139,19 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   packages, each in its own essence container, and those packages may reuse track numbers,
   because elements are matched by track number and body SID. Before a long-GOP clip's first
   presented picture, the pictures it needs for decoding are kept as hidden samples: a `pts` no
-  presented picture uses, and absent from `display_order`. Fillers are left out with a warning.
-  Clips whose essence differs from the first clip's are also left out with a warning. That
-  covers a different codec, edit rate, picture size or sound format. For OPxc (alternate
-  packages), the first material package is read.
+  presented picture uses, and absent from `display_order`. Fillers play as blank: they become
+  `EssenceTrack::gaps` (presentation edit unit, length), and so do clips whose package is not in
+  the file and clips whose essence differs from the first clip's (codec, edit rate, picture size
+  or sound format; with a warning). The stored essence holds the rest:
+  `EssenceTrack::essence_position` maps a presentation edit unit to it (`None` in a gap) and
+  `EssenceTrack::sound_runs` splits a sound range into stored runs. `cfa4-codecs` shows black
+  pictures and plays silence in the gaps (#1008). AES3 elements (D-10) are cut exactly where a
+  clip starts or ends inside one (29.97 Hz cadence): `Chunk::skip` counts the sample frames of
+  the element before the clip. For OPxc (alternate packages), the first material package is
+  read. Long-GOP clips with B pictures and no index temporal offsets keep the stored order across
+  several clips, with a warning (#1008).
 
-Not supported: gaps (fillers) inside edit lists (#1008), external essence (OP-Atom
+Not supported: external essence (OP-Atom
 material packages whose other tracks live in other files are opened track by track), partial or
 encrypted essence (ST 429-6), and descriptive metadata (parsed sets are ignored).
 
@@ -257,7 +264,8 @@ w.finish()?;
   600 random mutations never panic and only list fully-present samples. An OP3a writer with two
   file packages that share track numbers checks several things:
   - edit lists across packages: picture bytes, PCM values, and reads that cross a clip boundary;
-  - fillers;
+  - fillers and clips of other files as gaps (picture positions, sound runs);
+  - AES3 elements cut inside at 29.97 Hz (`src/write/tests.rs`);
   - hidden long-GOP references;
   - hostile start positions and durations.
 - `crates/codecs/tests/mxf_oracle.rs` (FFmpeg-written fixtures, FFmpeg as the decode oracle):
