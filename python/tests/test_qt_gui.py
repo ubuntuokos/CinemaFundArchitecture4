@@ -8143,7 +8143,12 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
         assert not dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
         p = dlg.params()
         assert p["mxfVideoCodec"] == "d10" and "mpeg2BFrames" not in p
-        assert resolved()["mxfVideoCodec"] == "d10"
+        # D-10 runs at 30, 40 or 50 Mbit/s only (#1017): 50 unless one of them was chosen
+        assert p["bitrateKbps"] == 50_000 and dlg.bitrate.value() == 50.0
+        s = resolved()
+        assert s["mxfVideoCodec"] == "d10" and s["bitrateKbps"] == 50_000
+        dlg.bitrate.setValue(33.0)
+        assert dlg.params()["bitrateKbps"] == 30_000 and resolved()["bitrateKbps"] == 30_000
         # XDCAM HD422 / RDD 9 (#949): GOP and B pictures, the 4:2:2 chroma fixed
         pick(c["mxfVideoCodec"], "xdcamHd422")
         assert dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
@@ -8151,6 +8156,7 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
         assert resolved()["mxfVideoCodec"] == "xdcamHd422"
         pick(c["mxfVideoCodec"], "proRes")
         assert not dlg.gop.isEnabled()
+        assert dlg.bitrate.maximum() == 800.0, "other codecs get the full bitrate range back"
         # CineForm: encoding and quality; RGBA keeps alpha
         pick(dlg.format, "cineform")
         assert shown("cineformProfile") and shown("cineformQuality") and not shown("alpha")
