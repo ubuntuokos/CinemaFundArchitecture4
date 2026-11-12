@@ -101,7 +101,8 @@ fn sweep() {
                 // not an oracle the CFA4 CI's FFmpeg has: the other seeds still run
                 eprintln!("NOTE (hevc fuzz): this ffmpeg has no {enc} encoder; seed {name} not run");
             } else {
-                cfa4_testkit::skip("hevc fuzz", &format!("this ffmpeg has no {enc} encoder (seed {name})"));
+                // libx265 is patent-restricted and never in CFA4's FFmpeg: a plain skip
+                cfa4_testkit::encoders_or_skip(&format!("hevc fuzz seed {name}"), &ff, &[enc]);
             }
             continue;
         }

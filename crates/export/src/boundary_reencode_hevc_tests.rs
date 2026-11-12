@@ -10,7 +10,7 @@ use cfa4_smart_edit::plan::{ExportExecutionPlan, SegmentMode, SegmentReason};
 
 use crate::boundary_reencode::{BoundaryEncoding, BoundaryReport, check_mp4_boundary_reencode, execute_mp4_boundary_reencode, verify_mp4_boundary_reencode};
 use crate::smart_cut::SmartCutError;
-use crate::smart_cut_hevc_tests::{Source, cfa4_hevc_mp4, cfa4_hevc_mp4_with, framemd5, has_libx265, x265_mp4};
+use crate::smart_cut_hevc_tests::{Source, cfa4_hevc_mp4, cfa4_hevc_mp4_with, framemd5, x265_mp4};
 
 fn encoding() -> BoundaryEncoding {
     BoundaryEncoding { threads: 1, ..BoundaryEncoding::default() }
@@ -83,8 +83,7 @@ fn hevc_boundaries_are_checked_before_writing() {
 #[test]
 fn ffmpeg_decodes_spliced_hevc() {
     let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("HEVC boundary re-encode decode") else { return };
-    if !has_libx265(&ffmpeg) {
-        cfa4_testkit::skip("boundary_reencode_hevc_tests", "ffmpeg has no libx265");
+    if !cfa4_testkit::encoders_or_skip("boundary_reencode_hevc_tests", &ffmpeg, &["libx265"]) {
         return;
     }
     let dir = std::env::temp_dir().join(format!("cfa4-hevc-splice-{}", std::process::id()));
