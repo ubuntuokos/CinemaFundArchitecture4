@@ -430,6 +430,12 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                             let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
                             w.elements.push(Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid, plain: Some(plain) });
                         }
+                        // an encrypted ancillary resource of a timed text track file (ST 429-5)
+                        Some((source, plain)) if source.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
+                            let sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                            w.generic_streams
+                                .push((sid, Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid: sid, plain: Some(plain) }));
+                        }
                         Some(_) => {}
                         None => w.warnings.push(format!("unreadable encrypted triplet at byte {pos}")),
                     }
@@ -578,6 +584,9 @@ fn picture_info(d: &Set) -> PictureInfo {
         display_x_offset: i(tag::DISPLAY_X_OFFSET),
         display_y_offset: i(tag::DISPLAY_Y_OFFSET),
         pixel_layout: d.get(tag::PIXEL_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
+        // a palette of up to 65 536 entries of at most 8 bytes
+        palette: d.get(tag::PALETTE).filter(|v| v.len() <= 1 << 19).map(<[u8]>::to_vec).unwrap_or_default(),
+        palette_layout: d.get(tag::PALETTE_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
         component_min_ref: d.u(tag::COMPONENT_MIN_REF).map(|v| v as u32),
         component_max_ref: d.u(tag::COMPONENT_MAX_REF).map(|v| v as u32),
     }

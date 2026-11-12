@@ -52,7 +52,9 @@ means for each standard.
 ## Not here
 
 - Signature verification (documents and KDMs). The model records that `Signer` and `ds:Signature` are present.
-- Hashing the assets, finding files on disk, resolving `Path`. These belong to `cfa4-dcp-validate`.
+- Finding files on disk and resolving `Path`. These belong to `cfa4-dcp-validate`, which also runs
+  the hash over the files. The digest itself is here: `sha1::Sha1` is a streaming SHA-1 (FIPS 180-4)
+  for the packing list `Hash`, checked against the FIPS 180-4 test vectors.
 - MXF track files. `cfa4-mxf` reads them.
 - Writing DCPs. `cfa4-export` (`dcp_out.rs`) writes them; its CPL layout is one of the test samples.
 
