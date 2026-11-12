@@ -3127,8 +3127,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bits 4:2:2), PCM de 24 bits e 48 kHz, timecode inicial
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP longo (12 quadros, IBBP) a 50 Mbit/s no estilo XDCAM HD422, PCM de 24 bits a 48 kHz; tamanhos de quadro HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High GOP longo (0,3 bit por pixel), PCM de 24 bits e 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipo D-10 (IMX 50): MPEG-2 4:2:2P@ML somente intra a 50 Mbit/s, 720x486 a 29,97 fps (4:3), quatro canais de áudio de 24 bits a 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipo D-10 (IMX 50): MPEG-2 4:2:2P@ML somente intra a 50 Mbit/s, 720x576 a 25 fps (4:3), quatro canais de áudio de 24 bits a 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM de 24 bits e 48 kHz, timecode inicial
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a no layout SMPTE RDD 9: MPEG-2 4:2:2 Profile GOP longo (12 quadros, IBBP) a 50 Mbit/s, 1920x1080 ou 1280x720 progressivo, quatro canais de 24 bits a 48 kHz como elementos AES3 por canal
 	Main	Main
 	Mark In (Hover Scrub)	Marcar entrada (reprodução ao passar o mouse)
 	Mark Out (Hover Scrub)	Marcar saída (reprodução ao passar o mouse)
@@ -3798,6 +3806,7 @@
 	Output file	Arquivo de saída
 	Output folder	Pasta de saída
 	PCM (uncompressed)	PCM (sem compactação)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 camada II)
 	Pace	Ritmo
 	Path:	Caminho:
 	Program Stream (.mpg, LPCM audio)	Fluxo de programa (.mpg, áudio LPCM)

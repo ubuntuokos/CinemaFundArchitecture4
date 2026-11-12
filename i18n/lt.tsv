@@ -337,6 +337,7 @@
 	Overlay	Perdanga
 	Overwrite	Perrašyti
 	PCM (uncompressed)	PCM (nesuspaustas)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 sluoksnis II)
 	Panner	Panoramavimas
 	Paste	Įklijuoti
 	Paste Attributes…	Įklijuoti atributus…
@@ -3587,8 +3588,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bitų 4:2:2), 24 bitų 48 kHz PCM, pradžios laiko kodas
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile ilgas GOP (12 kadrų, IBBP), 50 Mbit/s XDCAM HD422 stiliumi, 24 bitų 48 kHz PCM; HD kadrų dydžiai
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High ilgas GOP (0,3 bito pikseliui), 24 bitų 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 tipas (IMX 50): tik intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29,97 kadr./s (4:3), keturi 24 bitų 48 kHz garso kanalai
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 tipas (IMX 50): tik intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 kadr./s (4:3), keturi 24 bitų 48 kHz garso kanalai
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 bitų 48 kHz PCM, pradžios laiko kodas
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a pagal SMPTE RDD 9 išdėstymą: MPEG-2 4:2:2 Profile ilgas GOP (12 kadrų, IBBP), 50 Mbit/s, 1920x1080 arba 1280x720 progresyvinis, keturi 24 bitų 48 kHz kanalai kaip atskiri AES3 elementai kiekvienam kanalui
 	Main	Pagrindinis
 	Mark In (Hover Scrub)	Pažymėti pradžią (peržiūra užvedus)
 	Mark Out (Hover Scrub)	Pažymėti pabaigą (peržiūra užvedus)

@@ -286,6 +286,7 @@
 	Output file	Çıkış dosyası
 	Overwrite	Üzerine Yaz
 	PCM (uncompressed)	PCM (sıkıştırmasız)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Katman II)
 	Panner	Kaydırıcı
 	Paste Attributes…	Öznitelikleri Yapıştır…
 	Paste Insert	Ekleyerek Yapıştır
@@ -3245,8 +3246,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bit 4:2:2), 24 bit 48 kHz PCM, başlangıç zaman kodu
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile uzun GOP (12 resim, IBBP), 50 Mbit/s, XDCAM HD422 tarzında, 24 bit 48 kHz PCM; HD kare boyutları
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High uzun GOP (piksel başına 0,3 bit), 24 bit 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 türü (IMX 50): yalnızca intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29,97 fps (4:3), dört adet 24 bit 48 kHz ses kanalı
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 türü (IMX 50): yalnızca intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 fps (4:3), dört adet 24 bit 48 kHz ses kanalı
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 bit 48 kHz PCM, başlangıç zaman kodu
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a, SMPTE RDD 9 düzeninde: MPEG-2 4:2:2 Profile uzun GOP (12 resim, IBBP), 50 Mbit/s, 1920x1080 veya 1280x720 aşamalı, kanal başına AES3 öğesi olarak dört adet 24 bit 48 kHz kanal
 	Main	Main
 	Mark In (Hover Scrub)	Giriş İşaretle (Üzerinde Gezinme)
 	Mark Out (Hover Scrub)	Çıkış İşaretle (Üzerinde Gezinme)

@@ -280,6 +280,7 @@
 	Output file	Tệp đầu ra
 	Overwrite	Ghi đè
 	PCM (uncompressed)	PCM (không nén)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Lớp II)
 	Panner	Bộ chỉnh vị trí âm
 	Paste Attributes…	Dán thuộc tính…
 	Paste Insert	Dán chèn
@@ -3182,8 +3183,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bit 4:2:2), PCM 24 bit 48 kHz, mã thời gian bắt đầu
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP dài (12 ảnh, IBBP) ở 50 Mbit/s theo kiểu XDCAM HD422, PCM 24 bit 48 kHz; kích thước khung hình HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High GOP dài (0,3 bit mỗi điểm ảnh), PCM 24 bit 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a loại D-10 (IMX 50): MPEG-2 4:2:2P@ML chỉ intra ở 50 Mbit/s, 720x486 ở 29,97 fps (4:3), bốn kênh âm thanh 24 bit 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a loại D-10 (IMX 50): MPEG-2 4:2:2P@ML chỉ intra ở 50 Mbit/s, 720x576 ở 25 fps (4:3), bốn kênh âm thanh 24 bit 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bit 48 kHz, mã thời gian bắt đầu
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a theo bố cục SMPTE RDD 9: MPEG-2 4:2:2 Profile GOP dài (12 ảnh, IBBP) ở 50 Mbit/s, 1920x1080 hoặc 1280x720 quét liên tục, bốn kênh 24 bit 48 kHz dưới dạng phần tử AES3 riêng cho mỗi kênh
 	Main	Chính
 	Mark In (Hover Scrub)	Đặt điểm vào (rê để tua)
 	Mark Out (Hover Scrub)	Đặt điểm ra (rê để tua)

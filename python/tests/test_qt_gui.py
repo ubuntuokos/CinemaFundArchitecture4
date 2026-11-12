@@ -2396,7 +2396,7 @@ EGUI_EXPORT_IDS: frozenset[str] = frozenset({
     "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
     "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
     "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
-    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dnxProfile",
+    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
     "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
     "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
     "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
@@ -2509,6 +2509,35 @@ def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
             win.export_dialog.hide()
         win._quit_confirmed = True
         win.close()
+
+
+def test_export_dash_manifest_switch_only_for_hls(app):
+    """egui's "DASH Manifest" row: shown for HLS only, and sent as ``dashManifest`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "hls", "label": "HLS"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.dashManifest")
+    assert box is dlg.dash_manifest and box.text() == "Also write a DASH manifest (.mpd)"
+    assert dlg.video_form.labelForField(box).text() == "DASH Manifest"
+    dlg.format.setCurrentIndex(dlg.format.findData("hls"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    assert "dashManifest" not in dlg.params()  # untouched: the preset's value stands
+    box.setChecked(True)
+    assert dlg.params()["dashManifest"] is True
+    dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dashManifest" not in dlg.params()
+    dlg._show_settings({"dashManifest": False})  # touched: the user's choice is kept
+    assert box.isChecked()
+    dlg.deleteLater()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -2816,6 +2845,11 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         # AC-3 instead of the container's own audio (#268)
         dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("ac3"))
         assert dlg.params()["audioCodec"] == "ac3"
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("auto"))
+        # MP2 audio (#267) instead of the container's default
+        assert dlg.audio_codec.isEnabled()
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("mp2"))
+        assert dlg.params()["audioCodec"] == "mp2"
         dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("auto"))
         # GOP, quantiser and chroma go to the engine once chosen
         dlg.gop.setValue(12)
@@ -8034,6 +8068,9 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     from cfa4_qt.panels.export import encoder_format, supports_alpha
 
     assert encoder_format("mxf-op1a", "proRes") == "prores" and encoder_format("hls", "") == "h264"
+    assert encoder_format("mxf-op1a", "mpeg2") == "mpeg2"
+    assert encoder_format("mxf-op1a", "d10") == "mpeg2"
+    assert encoder_format("mxf-op1a", "xdcamHd422") == "mpeg2"
     assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
     assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
     assert supports_alpha("gif", "", ""), "GIF keeps binary transparency, as the engine says (#3423)"
@@ -8093,6 +8130,27 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
         p = dlg.params()
         assert p["mxfVideoCodec"] == "proRes" and "dnxProfile" not in p
         assert resolved()["mxfVideoCodec"] == "proRes"
+        # MPEG-2 in MXF (#928): its GOP, B picture and chroma rows, no MPEG-2 container
+        pick(c["mxfVideoCodec"], "mpeg2")
+        assert dlg.gop.isEnabled() and dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        assert form.isRowVisible(dlg.gop) and not shown("proresProfile")
+        dlg.b_frames.setValue(3)
+        p = dlg.params()
+        assert p["mxfVideoCodec"] == "mpeg2" and p["mpeg2BFrames"] == 3 and "mpeg2Container" not in p
+        assert resolved()["mxfVideoCodec"] == "mpeg2"
+        # D-10 / IMX (#949): MPEG-2 video with fixed GOP, B pictures and chroma
+        pick(c["mxfVideoCodec"], "d10")
+        assert not dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        p = dlg.params()
+        assert p["mxfVideoCodec"] == "d10" and "mpeg2BFrames" not in p
+        assert resolved()["mxfVideoCodec"] == "d10"
+        # XDCAM HD422 / RDD 9 (#949): GOP and B pictures, the 4:2:2 chroma fixed
+        pick(c["mxfVideoCodec"], "xdcamHd422")
+        assert dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        assert dlg.params()["mxfVideoCodec"] == "xdcamHd422"
+        assert resolved()["mxfVideoCodec"] == "xdcamHd422"
+        pick(c["mxfVideoCodec"], "proRes")
+        assert not dlg.gop.isEnabled()
         # CineForm: encoding and quality; RGBA keeps alpha
         pick(dlg.format, "cineform")
         assert shown("cineformProfile") and shown("cineformQuality") and not shown("alpha")
