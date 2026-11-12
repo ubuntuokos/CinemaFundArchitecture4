@@ -4443,3 +4443,13 @@ export.summary	Low	alacsony
 	picture styles (pictures keep their own size) are not carried over	a képstílusok (a képek megtartják saját méretüket) nem kerülnek át
 	video (tape) styles are not carried over	a videó- (szalag-) stílusok nem kerülnek át
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	a Cinecred-projekt {n} stáblista-táblázatot tartalmaz; a(z) “{name}” lesz használva (válassz másikat a Táblázat mezőben)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Élő stúdió előnézet
+	Live studio: stopped	Élő stúdió: leállítva
+	Live studio: {state}	Élő stúdió: {state}
+	Live studio: {error}	Élő stúdió: {error}
+	restarted after {count} crashes (last: {exit})	{count} összeomlás után újraindítva (utolsó: {exit})
+	software backend: {reason}	szoftveres háttér: {reason}
+	Start studio	Stúdió indítása
+	Stop studio	Stúdió leállítása

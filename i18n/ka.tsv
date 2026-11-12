@@ -4447,3 +4447,13 @@ export.summary	Low	დაბალი
 	picture styles (pictures keep their own size) are not carried over	სურათის სტილები (სურათები საკუთარ ზომას ინარჩუნებენ) არ გადადის
 	video (tape) styles are not carried over	ვიდეოს (ფირის) სტილები არ გადადის
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-ის პროექტს ტიტრების ცხრილები აქვს: {n}; გამოიყენება „{name}“ (სხვა აირჩიეთ ველში ცხრილი)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	პირდაპირი სტუდიის გადახედვა
+	Live studio: stopped	პირდაპირი სტუდია: გაჩერებულია
+	Live studio: {state}	პირდაპირი სტუდია: {state}
+	Live studio: {error}	პირდაპირი სტუდია: {error}
+	restarted after {count} crashes (last: {exit})	ხელახლა გაეშვა {count} ავარიის შემდეგ (ბოლო: {exit})
+	software backend: {reason}	პროგრამული ბექენდი: {reason}
+	Start studio	სტუდიის გაშვება
+	Stop studio	სტუდიის გაჩერება

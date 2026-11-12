@@ -4443,3 +4443,13 @@ export.summary	Low	低
 	picture styles (pictures keep their own size) are not carried over	不會沿用圖片樣式（圖片保留原始大小）
 	video (tape) styles are not carried over	不會沿用影片（磁帶）樣式
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 專案含有 {n} 份演職員表試算表；使用「{name}」（可在「試算表」欄位選擇其他）
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播攝影棚預覽
+	Live studio: stopped	直播攝影棚：已停止
+	Live studio: {state}	直播攝影棚：{state}
+	Live studio: {error}	直播攝影棚：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次當機後已重新啟動（最近一次：{exit}）
+	software backend: {reason}	軟體後端：{reason}
+	Start studio	啟動攝影棚
+	Stop studio	停止攝影棚

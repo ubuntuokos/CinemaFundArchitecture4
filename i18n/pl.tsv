@@ -4444,3 +4444,13 @@ export.summary	Low	niska
 	picture styles (pictures keep their own size) are not carried over	style obrazów (obrazy zachowują własny rozmiar) nie są przenoszone
 	video (tape) styles are not carried over	style wideo (taśmy) nie są przenoszone
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred ma arkusze napisów końcowych: {n}; użyto „{name}” (wybierz inny w polu Arkusz)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Podgląd studia na żywo
+	Live studio: stopped	Studio na żywo: zatrzymane
+	Live studio: {state}	Studio na żywo: {state}
+	Live studio: {error}	Studio na żywo: {error}
+	restarted after {count} crashes (last: {exit})	uruchomione ponownie po {count} awariach (ostatnia: {exit})
+	software backend: {reason}	zaplecze programowe: {reason}
+	Start studio	Uruchom studio
+	Stop studio	Zatrzymaj studio

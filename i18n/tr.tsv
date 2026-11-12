@@ -4445,3 +4445,13 @@ export.summary	Low	düşük
 	picture styles (pictures keep their own size) are not carried over	resim stilleri (resimler kendi boyutlarını korur) aktarılmaz
 	video (tape) styles are not carried over	video (bant) stilleri aktarılmaz
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projesinde {n} jenerik tablosu var; “{name}” kullanılıyor (Tablo alanında başka birini seçin)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Canlı stüdyo önizlemesi
+	Live studio: stopped	Canlı stüdyo: durduruldu
+	Live studio: {state}	Canlı stüdyo: {state}
+	Live studio: {error}	Canlı stüdyo: {error}
+	restarted after {count} crashes (last: {exit})	{count} çökmeden sonra yeniden başlatıldı (son: {exit})
+	software backend: {reason}	yazılım arka ucu: {reason}
+	Start studio	Stüdyoyu başlat
+	Stop studio	Stüdyoyu durdur

@@ -4446,3 +4446,13 @@ export.summary	Low	χαμηλή
 	picture styles (pictures keep their own size) are not carried over	τα στυλ εικόνων (οι εικόνες κρατούν το μέγεθός τους) δεν μεταφέρονται
 	video (tape) styles are not carried over	τα στυλ βίντεο (ταινίας) δεν μεταφέρονται
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	το έργο Cinecred έχει {n} υπολογιστικά φύλλα τίτλων· χρησιμοποιείται το “{name}” (επιλέξτε άλλο στο πεδίο Υπολογιστικό φύλλο)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Προεπισκόπηση ζωντανού στούντιο
+	Live studio: stopped	Ζωντανό στούντιο: σταματημένο
+	Live studio: {state}	Ζωντανό στούντιο: {state}
+	Live studio: {error}	Ζωντανό στούντιο: {error}
+	restarted after {count} crashes (last: {exit})	επανεκκίνηση μετά από {count} καταρρεύσεις (τελευταία: {exit})
+	software backend: {reason}	λογισμικό υποστήριξης: {reason}
+	Start studio	Έναρξη στούντιο
+	Stop studio	Διακοπή στούντιο

@@ -4447,3 +4447,13 @@ export.summary	Low	ниско
 	picture styles (pictures keep their own size) are not carried over	стиловете на изображенията (изображенията запазват размера си) не се пренасят
 	video (tape) styles are not carried over	стиловете на видео (лента) не се пренасят
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	проектът на Cinecred има таблици с надписи: {n}; използва се „{name}“ (изберете друга в полето „Таблица“)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Преглед на студиото на живо
+	Live studio: stopped	Студио на живо: спряно
+	Live studio: {state}	Студио на живо: {state}
+	Live studio: {error}	Студио на живо: {error}
+	restarted after {count} crashes (last: {exit})	рестартирано след {count} срива (последен: {exit})
+	software backend: {reason}	софтуерна основа: {reason}
+	Start studio	Стартиране на студиото
+	Stop studio	Спиране на студиото

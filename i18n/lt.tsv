@@ -4447,3 +4447,13 @@ export.summary	Low	žema
 	picture styles (pictures keep their own size) are not carried over	paveikslėlių stiliai (paveikslėliai išlaiko savo dydį) neperkeliami
 	video (tape) styles are not carried over	vaizdo (juostos) stiliai neperkeliami
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projekte yra titrų skaičiuoklių: {n}; naudojama „{name}“ (kitą pasirinkite lauke Skaičiuoklė)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Tiesioginės studijos peržiūra
+	Live studio: stopped	Tiesioginė studija: sustabdyta
+	Live studio: {state}	Tiesioginė studija: {state}
+	Live studio: {error}	Tiesioginė studija: {error}
+	restarted after {count} crashes (last: {exit})	paleista iš naujo po {count} strigčių (paskutinė: {exit})
+	software backend: {reason}	programinė posistemė: {reason}
+	Start studio	Paleisti studiją
+	Stop studio	Sustabdyti studiją

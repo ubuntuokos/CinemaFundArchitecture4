@@ -4444,3 +4444,13 @@ export.summary	Low	laag
 	picture styles (pictures keep their own size) are not carried over	afbeeldingsstijlen (afbeeldingen houden hun eigen formaat) worden niet overgenomen
 	video (tape) styles are not carried over	video- (band)stijlen worden niet overgenomen
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	het Cinecred-project heeft {n} aftitelingsspreadsheets; “{name}” wordt gebruikt (kies een andere in het veld Spreadsheet)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Voorbeeld livestudio
+	Live studio: stopped	Livestudio: gestopt
+	Live studio: {state}	Livestudio: {state}
+	Live studio: {error}	Livestudio: {error}
+	restarted after {count} crashes (last: {exit})	herstart na {count} crashes (laatste: {exit})
+	software backend: {reason}	software-backend: {reason}
+	Start studio	Studio starten
+	Stop studio	Studio stoppen

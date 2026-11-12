@@ -4429,3 +4429,13 @@
 	picture styles (pictures keep their own size) are not carried over	стили изображений (изображения сохраняют свой размер) не переносятся
 	video (tape) styles are not carried over	стили видео (ленты) не переносятся
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	в проекте Cinecred {n} таблиц титров; используется “{name}” (выберите другую в поле Таблица)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Предпросмотр студии прямого эфира
+	Live studio: stopped	Студия прямого эфира: остановлена
+	Live studio: {state}	Студия прямого эфира: {state}
+	Live studio: {error}	Студия прямого эфира: {error}
+	restarted after {count} crashes (last: {exit})	перезапущена после {count} сбоев (последний: {exit})
+	software backend: {reason}	программный бэкенд: {reason}
+	Start studio	Запустить студию
+	Stop studio	Остановить студию

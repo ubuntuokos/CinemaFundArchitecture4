@@ -4446,3 +4446,13 @@ export.summary	Low	låg
 	picture styles (pictures keep their own size) are not carried over	bildstilar (bilderna behåller sin egen storlek) förs inte över
 	video (tape) styles are not carried over	video- (band)stilar förs inte över
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektet har {n} eftertextkalkylark; ”{name}” används (välj ett annat i fältet Kalkylark)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Förhandsvisning av livestudio
+	Live studio: stopped	Livestudio: stoppad
+	Live studio: {state}	Livestudio: {state}
+	Live studio: {error}	Livestudio: {error}
+	restarted after {count} crashes (last: {exit})	omstartad efter {count} krascher (senaste: {exit})
+	software backend: {reason}	programvarubakände: {reason}
+	Start studio	Starta studio
+	Stop studio	Stoppa studio

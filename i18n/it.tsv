@@ -4444,3 +4444,13 @@
 	picture styles (pictures keep their own size) are not carried over	gli stili di immagine (le immagini mantengono la propria dimensione) non vengono riportati
 	video (tape) styles are not carried over	gli stili di video (nastro) non vengono riportati
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	il progetto Cinecred ha {n} fogli di calcolo dei titoli di coda; viene usato “{name}” (scegline un altro nel campo Foglio di calcolo)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Anteprima dello studio dal vivo
+	Live studio: stopped	Studio dal vivo: fermo
+	Live studio: {state}	Studio dal vivo: {state}
+	Live studio: {error}	Studio dal vivo: {error}
+	restarted after {count} crashes (last: {exit})	riavviato dopo {count} arresti anomali (ultimo: {exit})
+	software backend: {reason}	backend software: {reason}
+	Start studio	Avvia studio
+	Stop studio	Ferma studio

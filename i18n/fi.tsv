@@ -4446,3 +4446,13 @@ export.summary	Low	matala
 	picture styles (pictures keep their own size) are not carried over	kuvatyylejä (kuvat säilyttävät oman kokonsa) ei siirretä
 	video (tape) styles are not carried over	video- (nauha-) tyylejä ei siirretä
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektissa on {n} tekijätietotaulukkoa; käytetään taulukkoa ”{name}” (valitse toinen Laskentataulukko-kentässä)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Suoran studion esikatselu
+	Live studio: stopped	Suora studio: pysäytetty
+	Live studio: {state}	Suora studio: {state}
+	Live studio: {error}	Suora studio: {error}
+	restarted after {count} crashes (last: {exit})	käynnistetty uudelleen {count} kaatumisen jälkeen (viimeisin: {exit})
+	software backend: {reason}	ohjelmistotaustaosa: {reason}
+	Start studio	Käynnistä studio
+	Stop studio	Pysäytä studio

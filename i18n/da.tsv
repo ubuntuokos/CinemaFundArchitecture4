@@ -4446,3 +4446,13 @@ export.summary	Low	lav
 	picture styles (pictures keep their own size) are not carried over	billedstilarter (billeder beholder deres egen størrelse) overføres ikke
 	video (tape) styles are not carried over	video- (bånd-)stilarter overføres ikke
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektet har {n} rulletekstregneark; “{name}” bruges (vælg et andet i feltet Regneark)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Forhåndsvisning af livestudie
+	Live studio: stopped	Livestudie: stoppet
+	Live studio: {state}	Livestudie: {state}
+	Live studio: {error}	Livestudie: {error}
+	restarted after {count} crashes (last: {exit})	genstartet efter {count} nedbrud (sidste: {exit})
+	software backend: {reason}	software-backend: {reason}
+	Start studio	Start studie
+	Stop studio	Stop studie

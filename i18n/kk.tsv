@@ -4446,3 +4446,13 @@ export.summary	Low	төмен
 	picture styles (pictures keep their own size) are not carried over	сурет стильдері (суреттер өз өлшемін сақтайды) ауыспайды
 	video (tape) styles are not carried over	бейне (таспа) стильдері ауыспайды
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred жобасында {n} титрлер кестесі бар; «{name}» қолданылады (басқасын Кесте өрісінде таңдаңыз)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Тікелей студияны алдын ала қарау
+	Live studio: stopped	Тікелей студия: тоқтатылды
+	Live studio: {state}	Тікелей студия: {state}
+	Live studio: {error}	Тікелей студия: {error}
+	restarted after {count} crashes (last: {exit})	{count} құлаудан кейін қайта іске қосылды (соңғысы: {exit})
+	software backend: {reason}	бағдарламалық бэкенд: {reason}
+	Start studio	Студияны іске қосу
+	Stop studio	Студияны тоқтату

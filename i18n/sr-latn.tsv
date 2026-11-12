@@ -4446,3 +4446,13 @@ export.summary	Low	nizak
 	picture styles (pictures keep their own size) are not carried over	stilovi slika (slike zadržavaju sopstvenu veličinu) se ne prenose
 	video (tape) styles are not carried over	stilovi videa (trake) se ne prenose
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projekat ima tabela špice: {n}; koristi se „{name}” (izaberite drugu u polju Tabela)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Pregled studija uživo
+	Live studio: stopped	Studio uživo: zaustavljen
+	Live studio: {state}	Studio uživo: {state}
+	Live studio: {error}	Studio uživo: {error}
+	restarted after {count} crashes (last: {exit})	ponovo pokrenut posle {count} padova (poslednji: {exit})
+	software backend: {reason}	softverska pozadina: {reason}
+	Start studio	Pokreni studio
+	Stop studio	Zaustavi studio

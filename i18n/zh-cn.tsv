@@ -4442,3 +4442,13 @@
 	picture styles (pictures keep their own size) are not carried over	图片样式(图片保持自身尺寸)不会沿用
 	video (tape) styles are not carried over	视频(磁带)样式不会沿用
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 项目有 {n} 个演职员表电子表格;使用“{name}”(可在电子表格字段中选择其他表格)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	直播演播室预览
+	Live studio: stopped	直播演播室：已停止
+	Live studio: {state}	直播演播室：{state}
+	Live studio: {error}	直播演播室：{error}
+	restarted after {count} crashes (last: {exit})	在 {count} 次崩溃后已重新启动（最近一次：{exit}）
+	software backend: {reason}	软件后端：{reason}
+	Start studio	启动演播室
+	Stop studio	停止演播室

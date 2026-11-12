@@ -4444,3 +4444,13 @@ export.summary	Low	thấp
 	picture styles (pictures keep their own size) are not carried over	kiểu hình (hình giữ kích thước riêng) không được chuyển sang
 	video (tape) styles are not carried over	kiểu video (băng) không được chuyển sang
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	dự án Cinecred có {n} bảng tính danh đề; dùng “{name}” (chọn bảng khác trong trường Bảng tính)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Xem trước phòng thu trực tiếp
+	Live studio: stopped	Phòng thu trực tiếp: đã dừng
+	Live studio: {state}	Phòng thu trực tiếp: {state}
+	Live studio: {error}	Phòng thu trực tiếp: {error}
+	restarted after {count} crashes (last: {exit})	đã khởi động lại sau {count} lần gặp sự cố (lần cuối: {exit})
+	software backend: {reason}	phần phụ trợ phần mềm: {reason}
+	Start studio	Khởi động phòng thu
+	Stop studio	Dừng phòng thu

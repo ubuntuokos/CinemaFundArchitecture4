@@ -4444,3 +4444,13 @@ export.summary	Low	nízká
 	picture styles (pictures keep their own size) are not carried over	styly obrázků (obrázky si ponechají vlastní velikost) se nepřenášejí
 	video (tape) styles are not carried over	styly videa (pásky) se nepřenášejí
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred má tabulky titulků tvůrců: {n}; použije se „{name}“ (jinou zvolte v poli Tabulka)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Náhled živého studia
+	Live studio: stopped	Živé studio: zastaveno
+	Live studio: {state}	Živé studio: {state}
+	Live studio: {error}	Živé studio: {error}
+	restarted after {count} crashes (last: {exit})	restartováno po {count} pádech (poslední: {exit})
+	software backend: {reason}	softwarový backend: {reason}
+	Start studio	Spustit studio
+	Stop studio	Zastavit studio

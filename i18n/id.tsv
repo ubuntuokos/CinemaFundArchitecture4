@@ -4452,3 +4452,13 @@
 	picture styles (pictures keep their own size) are not carried over	gaya gambar (gambar mempertahankan ukurannya sendiri) tidak dibawa
 	video (tape) styles are not carried over	gaya video (pita) tidak dibawa
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	proyek Cinecred memiliki {n} spreadsheet kredit; “{name}” digunakan (pilih yang lain di kolom Spreadsheet)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	Pratinjau studio langsung
+	Live studio: stopped	Studio langsung: berhenti
+	Live studio: {state}	Studio langsung: {state}
+	Live studio: {error}	Studio langsung: {error}
+	restarted after {count} crashes (last: {exit})	dimulai ulang setelah {count} kali mogok (terakhir: {exit})
+	software backend: {reason}	backend perangkat lunak: {reason}
+	Start studio	Mulai studio
+	Stop studio	Hentikan studio

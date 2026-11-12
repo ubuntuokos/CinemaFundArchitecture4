@@ -4453,3 +4453,13 @@
 	picture styles (pictures keep their own size) are not carried over	画像スタイル(画像は元のサイズを保ちます)は引き継がれません
 	video (tape) styles are not carried over	ビデオ(テープ)スタイルは引き継がれません
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecredプロジェクトにはクレジットのスプレッドシートが{n}個あります。“{name}”を使用します(スプレッドシートの欄で別のものを選択できます)
+
+# Live studio preview (CFA4-LIVE-STUDIO-001 S0)
+	Live studio preview	ライブスタジオのプレビュー
+	Live studio: stopped	ライブスタジオ: 停止中
+	Live studio: {state}	ライブスタジオ: {state}
+	Live studio: {error}	ライブスタジオ: {error}
+	restarted after {count} crashes (last: {exit})	{count} 回のクラッシュ後に再起動しました(最後: {exit})
+	software backend: {reason}	ソフトウェアバックエンド: {reason}
+	Start studio	スタジオを開始
+	Stop studio	スタジオを停止
