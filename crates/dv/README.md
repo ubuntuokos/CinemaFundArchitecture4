@@ -8,8 +8,8 @@ The crate decodes DIF frames (step DV-1 of the DV/DVCPRO plan). `cfa4-codecs` im
 (DV-2) from raw `.dv` / `.dif` files (`DifSource`), type-2 AVI, MOV / MP4 and MXF; 4:1:1 enters
 the engine as 4:2:2, and the stream info's aspect, sampling and colour come from the first
 frame (`cfa4_codecs::video::dv_stream_info`). DVCPRO 50 and DVCPRO HD are DV-3 (`pro.rs`). DV-4
-adds the audio (`decode_audio`, raw `.dv` files play it) and type-1 AVI video; type-1 AVI audio is
-still to do.
+adds the audio (`decode_audio`): raw `.dv` files and type-1 AVI files (`iavs`, video and the
+sound inside its DIF frames) play it.
 
 ## Sources and licence
 
@@ -79,6 +79,15 @@ bytes at `SOURCE_PACK_OFFSET`). 16-bit linear audio is two channels; 12-bit non-
 expanded to 16 bits and has a second channel pair when the second half's source pack carries
 audio. Samples marked damaged (`0x8000`) repeat the sample before them (`Audio::errors`).
 Pre-emphasis is reported (`AudioFormat::emphasis`) but not undone; 20-bit audio is not supported.
+
+## Time code
+
+`timecode(frame)` returns the frame's SMPTE time code (`Timecode`: hours, minutes, seconds,
+frames, drop-frame flag) from the first valid time code pack (`0x13`) in the subcode sync blocks;
+packs holding `0xFF` or non-BCD digits are skipped. The pack layout (BCD fields, flag bits masked
+off) follows the published SMPTE 12M field order; nothing is taken from libdv or FFmpeg.
+`cfa4-codecs` uses the first frame's time code as the start timecode of raw `.dv` files and of
+type-1 and type-2 DV AVI files.
 
 ## Tests
 

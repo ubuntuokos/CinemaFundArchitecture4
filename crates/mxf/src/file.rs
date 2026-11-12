@@ -219,6 +219,9 @@ pub struct EssenceTrack {
     pub needs_reorder: bool,
     /// Random-access flags came from an index table.
     pub indexed: bool,
+    /// The essence is encrypted (ST 429-6): samples and chunks cover Encrypted Triplet values,
+    /// which `read_sample` / `read_pcm` decrypt with the content key of the key ring.
+    pub encryption: Option<crate::crypt::Encryption>,
 }
 
 impl EssenceTrack {
@@ -283,6 +286,11 @@ pub(crate) struct Element {
     pub(crate) size: u64,
     /// Cut short by the end of the file.
     pub(crate) truncated: bool,
+    /// BodySID of the partition the element is in (0 when unknown).
+    pub(crate) body_sid: u32,
+    /// An Encrypted Triplet (ST 429-6): `key` is its Source Key, `value_offset` / `size` cover the
+    /// whole encrypted value and this is the plaintext Source Length.
+    pub(crate) plain: Option<u64>,
 }
 
 pub(crate) struct WalkResult {
@@ -366,7 +374,8 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
             w.warnings.push(format!("file truncated: KLV at byte {pos} needs {} bytes, {} left", vlen, len.saturating_sub(vstart)));
             if class == KeyClass::Essence && vstart < len && len - vstart > 0 && is_essence_item(&key) {
                 // keep a truncated clip-wrapped element's whole edit units
-                w.elements.push(Element { key, value_offset: vstart, size: len - vstart, truncated: true });
+                let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                w.elements.push(Element { key, value_offset: vstart, size: len - vstart, truncated: true, body_sid, plain: None });
             }
             break;
         }
@@ -411,13 +420,31 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                     p.essence_start = Some(pos);
                 }
                 if is_essence_item(&key) {
-                    w.elements.push(Element { key, value_offset: vstart, size: vlen, truncated: false });
+                    let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                    w.elements.push(Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid, plain: None });
+                } else if crate::crypt::is_encrypted_triplet(&key) {
+                    // an encrypted essence triplet: filed under the key of the triplet it wraps
+                    let head = win.get(vstart, (vlen as usize).min(128))?.to_vec();
+                    match crate::crypt::source_of(&head) {
+                        Some((source, plain)) if is_essence_item(&source) => {
+                            let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                            w.elements.push(Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid, plain: Some(plain) });
+                        }
+                        // an encrypted ancillary resource of a timed text track file (ST 429-5)
+                        Some((source, plain)) if source.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
+                            let sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                            w.generic_streams
+                                .push((sid, Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid: sid, plain: Some(plain) }));
+                        }
+                        Some(_) => {}
+                        None => w.warnings.push(format!("unreadable encrypted triplet at byte {pos}")),
+                    }
                 }
             }
             KeyClass::Other if key.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
                 cur_meta = None;
                 let sid = w.partitions.last().map_or(0, |p| p.body_sid);
-                w.generic_streams.push((sid, Element { key, value_offset: vstart, size: vlen, truncated: false }));
+                w.generic_streams.push((sid, Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid: sid, plain: None }));
             }
             KeyClass::Fill | KeyClass::RandomIndexPack | KeyClass::Other => {}
         }
@@ -557,6 +584,9 @@ fn picture_info(d: &Set) -> PictureInfo {
         display_x_offset: i(tag::DISPLAY_X_OFFSET),
         display_y_offset: i(tag::DISPLAY_Y_OFFSET),
         pixel_layout: d.get(tag::PIXEL_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
+        // a palette of up to 65 536 entries of at most 8 bytes
+        palette: d.get(tag::PALETTE).filter(|v| v.len() <= 1 << 19).map(<[u8]>::to_vec).unwrap_or_default(),
+        palette_layout: d.get(tag::PALETTE_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
         component_min_ref: d.u(tag::COMPONENT_MIN_REF).map(|v| v as u32),
         component_max_ref: d.u(tag::COMPONENT_MAX_REF).map(|v| v as u32),
     }
@@ -593,8 +623,8 @@ fn umid_of(s: &Set, t: u16) -> Option<[u8; 32]> {
     s.get(t).and_then(|v| v.get(..32)).map(|b| b.try_into().unwrap_or([0; 32]))
 }
 
-/// Material package tracks → file package tracks with descriptors.
-fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<TrackRef>, Option<Timecode>, Option<String>) {
+/// Material package tracks → the file package tracks of their source clips, with descriptors.
+fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<Vec<TrackRef>>, Option<Timecode>, Option<String>) {
     let sources: Vec<&Set> = md.of_kind(st::SOURCE_PACKAGE).collect();
     let file_pkg = |umid: &[u8; 32]| sources.iter().find(|p| umid_of(p, tag::PACKAGE_UID).as_ref() == Some(umid)).copied();
     // EssenceContainerData: package → (body SID, index SID)
@@ -666,34 +696,49 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<TrackRef>, 
             let Some(t) = md.get(&r) else { continue };
             let (seq, comps) = components(md, t);
             let Some((false, kind)) = track_kind_of(seq.and_then(|s| s.ul(tag::DATA_DEFINITION))) else { continue };
-            let Some(clip) = comps.iter().find(|c| c.kind() == Some(st::SOURCE_CLIP)) else { continue };
-            let Some(umid) = umid_of(clip, tag::SOURCE_PACKAGE_ID) else { continue };
-            let Some(pkg) = file_pkg(&umid) else {
-                if kind != TrackKind::Data {
-                    warnings.push(format!("material track {} refers to a package not in this file", t.u(tag::TRACK_ID).unwrap_or(0)));
-                }
-                continue;
-            };
-            let src_track = clip.u(tag::SOURCE_TRACK_ID).map(|v| v as u32);
-            // data tracks: only the immersive audio of a D-Cinema track file (ST 429-18)
-            if kind == TrackKind::Data && !descriptor_for(md, pkg, src_track.unwrap_or(0), kind).is_some_and(is_dcp_iab_descriptor) {
-                continue;
+            let mtid = t.u(tag::TRACK_ID).unwrap_or(0);
+            // OP1x: one source clip; OP2x (playlist) and OP3x (edit) items: a sequence of source
+            // clips into one or more file packages, played one after another (ST 377-1 B.1,
+            // ST 392 / ST 393 / ST 407 / ST 408).
+            let clips: Vec<&Set> = comps.iter().copied().filter(|c| c.kind() == Some(st::SOURCE_CLIP)).collect();
+            let fillers: i64 = comps.iter().filter(|c| c.kind() == Some(st::FILLER)).filter_map(|c| c.i(tag::DURATION)).filter(|d| *d > 0).sum();
+            if fillers > 0 && !clips.is_empty() {
+                warnings.push(format!("material track {mtid}: {fillers} edit units of filler are left out (the clips play back to back)"));
             }
-            let duration = clip.i(tag::DURATION).or_else(|| seq.and_then(|s| s.i(tag::DURATION))).filter(|d| *d >= 0);
-            // durations are in the material track's edit rate; convert when the file track's differs
-            let mrate = t.rational(tag::EDIT_RATE).unwrap_or_default();
-            if let Some(mut tr) = file_track(pkg, Some(kind), src_track, clip.i(tag::START_POSITION).unwrap_or(0), duration, t.string(tag::TRACK_NAME)) {
-                if mrate.is_valid() && tr.edit_rate.is_valid() && mrate != tr.edit_rate {
-                    let conv = |v: i64| (v as i128 * tr.edit_rate.num as i128 * mrate.den as i128 / (tr.edit_rate.den as i128 * mrate.num as i128)) as i64;
-                    tr.duration = tr.duration.map(conv);
-                    tr.start_position = conv(tr.start_position);
+            let single = clips.len() == 1;
+            let mut parts: Vec<TrackRef> = Vec::new();
+            for clip in clips {
+                let Some(umid) = umid_of(clip, tag::SOURCE_PACKAGE_ID) else { continue };
+                let Some(pkg) = file_pkg(&umid) else {
+                    if kind != TrackKind::Data {
+                        warnings.push(format!("material track {mtid} refers to a package not in this file"));
+                    }
+                    continue;
+                };
+                let src_track = clip.u(tag::SOURCE_TRACK_ID).map(|v| v as u32);
+                // data tracks: only the immersive audio of a D-Cinema track file (ST 429-18)
+                if kind == TrackKind::Data && !descriptor_for(md, pkg, src_track.unwrap_or(0), kind).is_some_and(is_dcp_iab_descriptor) {
+                    continue;
                 }
-                if timecode.is_none() {
-                    timecode = package_timecode(md, pkg);
+                let duration = clip.i(tag::DURATION).or_else(|| seq.filter(|_| single).and_then(|s| s.i(tag::DURATION))).filter(|d| *d >= 0);
+                // durations are in the material track's edit rate; convert when the file track's differs
+                let mrate = t.rational(tag::EDIT_RATE).unwrap_or_default();
+                if let Some(mut tr) = file_track(pkg, Some(kind), src_track, clip.i(tag::START_POSITION).unwrap_or(0), duration, t.string(tag::TRACK_NAME)) {
+                    if mrate.is_valid() && tr.edit_rate.is_valid() && mrate != tr.edit_rate {
+                        let conv = |v: i64| (v as i128 * tr.edit_rate.num as i128 * mrate.den as i128 / (tr.edit_rate.den as i128 * mrate.num as i128)) as i64;
+                        tr.duration = tr.duration.map(conv);
+                        tr.start_position = conv(tr.start_position);
+                    }
+                    if timecode.is_none() {
+                        timecode = package_timecode(md, pkg);
+                    }
+                    parts.push(tr);
                 }
-                if !out.iter().any(|o: &TrackRef| o.track_id == tr.track_id && o.track_number == tr.track_number) {
-                    out.push(tr);
-                }
+            }
+            let duplicate =
+                |o: &Vec<TrackRef>| o.len() == 1 && parts.len() == 1 && o[0].track_id == parts[0].track_id && o[0].track_number == parts[0].track_number;
+            if !parts.is_empty() && !out.iter().any(duplicate) {
+                out.push(parts);
             }
         }
     }
@@ -707,7 +752,7 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<TrackRef>, 
                 let Some(t) = md.get(&r) else { continue };
                 let id = t.u(tag::TRACK_ID).unwrap_or(0) as u32;
                 if let Some(tr) = file_track(pkg, None, Some(id), 0, None, None) {
-                    out.push(tr);
+                    out.push(vec![tr]);
                 }
             }
             if timecode.is_none() {
@@ -747,7 +792,9 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
     let product_name = ident.and_then(|i| i.string(tag::PRODUCT_NAME));
     let company_name = ident.and_then(|i| i.string(tag::COMPANY_NAME));
     let (refs, timecode, material_name) = resolve_tracks(&md, &mut warnings);
-    if refs.iter().all(|r| r.kind == TrackKind::Data) && md.of_kind(crate::timed_text::TIMED_TEXT_DESCRIPTOR).next().is_some() {
+    // ST 429-6: one Cryptographic Context per encrypted track file
+    let encryption = md.sets.iter().find_map(crate::crypt::Encryption::from_set);
+    if refs.iter().flatten().all(|r| r.kind == TrackKind::Data) && md.of_kind(crate::timed_text::TIMED_TEXT_DESCRIPTOR).next().is_some() {
         return Err(Error::Unsupported("timed text track file (read it with open_timed_text)".into()));
     }
     if refs.is_empty() {
@@ -762,29 +809,41 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
         v.dedup();
         v
     };
-    for r in &refs {
-        let number = r.track_number.to_be_bytes();
-        let mut key4 = all_numbers.iter().find(|n| **n == number).copied();
-        if key4.is_none() {
-            // Track number missing or not matching (some OP-Atom writers): the only unclaimed
-            // element stream of the right kind.
-            let kind_items: &[u8] = match r.kind {
-                TrackKind::Picture => &[0x05, 0x15],
-                TrackKind::Sound => &[0x06, 0x16],
-                TrackKind::Data => &[0x07, 0x17],
-            };
-            let cands: Vec<[u8; 4]> = all_numbers.iter().filter(|n| kind_items.contains(&n[0]) && !claimed.contains(n)).copied().collect();
-            if cands.len() == 1 {
-                key4 = Some(cands[0]);
+    for parts in &refs {
+        let mut built = Vec::new();
+        for r in parts {
+            let number = r.track_number.to_be_bytes();
+            let mut key4 = all_numbers.iter().find(|n| **n == number).copied();
+            if key4.is_none() {
+                // Track number missing or not matching (some OP-Atom writers): the only unclaimed
+                // element stream of the right kind.
+                let kind_items: &[u8] = match r.kind {
+                    TrackKind::Picture => &[0x05, 0x15],
+                    TrackKind::Sound => &[0x06, 0x16],
+                    TrackKind::Data => &[0x07, 0x17],
+                };
+                let cands: Vec<[u8; 4]> = all_numbers.iter().filter(|n| kind_items.contains(&n[0]) && !claimed.contains(n)).copied().collect();
+                if cands.len() == 1 {
+                    key4 = Some(cands[0]);
+                }
             }
+            let Some(key4) = key4 else {
+                warnings.push(format!("no essence in this file for track {} (number {:08x})", r.track_id, r.track_number));
+                continue;
+            };
+            if !claimed.contains(&key4) {
+                claimed.push(key4);
+            }
+            // several file packages (OP2x / OP3x) may use the same track number: their essence
+            // containers are told apart by body SID
+            let by_sid = r.body_sid != 0 && w.elements.iter().any(|e| e.key.0[12..16] == key4 && e.body_sid == r.body_sid);
+            let elements: Vec<Element> = w.elements.iter().filter(|e| e.key.0[12..16] == key4 && (!by_sid || e.body_sid == r.body_sid)).copied().collect();
+            built.push(build_track(src, r, &elements, key4, &w.index, encryption, &mut warnings)?);
         }
-        let Some(key4) = key4 else {
-            warnings.push(format!("no essence in this file for track {} (number {:08x})", r.track_id, r.track_number));
-            continue;
-        };
-        claimed.push(key4);
-        let elements: Vec<Element> = w.elements.iter().filter(|e| e.key.0[12..16] == key4).copied().collect();
-        tracks.push(build_track(src, r, &elements, key4, &w.index, &mut warnings)?);
+        let mut built = built.into_iter();
+        if let Some(first) = built.next() {
+            tracks.push(concat(first, built.collect(), &mut warnings));
+        }
     }
     if tracks.is_empty() {
         return Err(Error::Unsupported("no essence of the material package is stored in this file".into()));
@@ -833,6 +892,7 @@ fn build_track(
     elements: &[Element],
     key4: [u8; 4],
     index: &[IndexSegment],
+    encryption: Option<crate::crypt::Encryption>,
     warnings: &mut Vec<String>,
 ) -> Result<EssenceTrack> {
     let desc = r.descriptor.as_ref();
@@ -860,7 +920,16 @@ fn build_track(
         temporal_offsets: false,
         needs_reorder: false,
         indexed: false,
+        encryption: None,
     };
+    let encrypted = elements.iter().any(|e| e.plain.is_some());
+    if encrypted {
+        t.encryption =
+            Some(encryption.unwrap_or(crate::crypt::Encryption { context_id: [0; 16], key_id: [0; 16], source_container: None, aes: true, mic: false }));
+        if encryption.is_none() {
+            warnings.push("encrypted essence without a Cryptographic Context: its key cannot be found".into());
+        }
+    }
     match r.kind {
         TrackKind::Picture => {
             let pi = desc.map(|d| picture_info(d)).unwrap_or_default();
@@ -871,7 +940,7 @@ fn build_track(
             }
             // A wrong or missing label: trust the essence bytes (uncompressed samples are not
             // coded, so any pattern can start them).
-            if let Some(first) = elements.first().filter(|_| codec != Codec::Uncompressed) {
+            if let Some(first) = elements.first().filter(|_| codec != Codec::Uncompressed && !encrypted) {
                 let head = read_upto(src, first.value_offset, 64)?;
                 if let Some(sniffed) = sniff_picture(&head) {
                     let agree = std::mem::discriminant(&sniffed) == std::mem::discriminant(&codec);
@@ -916,7 +985,7 @@ fn build_track(
             t.sound = Some(SoundInfo { sample_rate: rate, bits: 24, ..Default::default() });
             build_pictures(src, &mut t, elements, index, warnings)?;
         }
-        TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements) => {
+        TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements, encrypted) => {
             t.codec = Codec::Iab;
             t.sound_format = SoundFormat::Iab;
             t.sound = Some(desc.map(|d| sound_info(d)).unwrap_or_default());
@@ -948,9 +1017,10 @@ fn build_track(
             let fb = si.frame_bytes() as u64;
             let mut first = 0u64;
             for e in elements {
+                let plain = e.plain.unwrap_or(e.size);
                 let n = match t.sound_format {
-                    SoundFormat::Aes3Element => e.size.saturating_sub(4) / 32,
-                    _ => e.size / fb.max(1),
+                    SoundFormat::Aes3Element => plain.saturating_sub(4) / 32,
+                    _ => plain / fb.max(1),
                 };
                 t.chunks.push(Chunk { offset: e.value_offset, size: e.size, first_sample: first, samples: n });
                 first += n;
@@ -963,9 +1033,116 @@ fn build_track(
     Ok(t)
 }
 
+/// One material track whose sequence holds several source clips (OP2x / OP3x): the clips' file
+/// package tracks played back to back as one track. Each clip contributes its presented range
+/// (from its start position, for its duration); pictures before that range that the first
+/// presented picture needs for decoding are kept as hidden (never presented) samples. Clips whose
+/// essence differs from the first clip's (codec, edit rate, picture size, sound format) are left
+/// out with a warning.
+fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<String>) -> EssenceTrack {
+    if rest.is_empty() {
+        return first;
+    }
+    let signature = |t: &EssenceTrack| {
+        (
+            t.kind,
+            t.codec,
+            t.edit_rate,
+            t.sound_format,
+            t.picture.as_ref().map(|p| (p.stored_width, p.stored_height)),
+            t.sound.as_ref().map(|s| (s.sample_rate, s.channels, s.bits, s.frame_bytes())),
+        )
+    };
+    let mut parts = vec![first];
+    for t in rest {
+        if signature(&t) == signature(&parts[0]) {
+            parts.push(t);
+        } else {
+            warnings.push(format!("track {}: a clip with different essence ({}) is left out of the edit list", parts[0].track_id, t.codec.name()));
+        }
+    }
+    let mut out = parts[0].clone();
+    out.origin = 0;
+    out.start_position = 0;
+    out.samples = Vec::new();
+    out.display_order = Vec::new();
+    out.chunks = Vec::new();
+    out.temporal_offsets = parts.iter().any(|t| t.temporal_offsets);
+    out.indexed = parts.iter().all(|t| t.indexed);
+    out.needs_reorder = false;
+    if parts.iter().any(|t| t.needs_reorder) {
+        warnings.push(format!("track {}: B pictures without index temporal offsets across several clips: the stored order is used", out.track_id));
+    }
+    let chunked = out.kind == TrackKind::Sound && matches!(out.sound_format, SoundFormat::Pcm | SoundFormat::Aes3Element);
+    let mut total: i64 = 0;
+    if chunked {
+        let mut next = 0u64;
+        let mut partial = false;
+        for t in &parts {
+            let (n, d) = t.samples_per_edit_unit();
+            let (n, d) = (i128::from(n.max(1)), i128::from(d.max(1)));
+            let frames = |eu: i64| u64::try_from(i128::from(eu.max(0)) * n / d).unwrap_or(u64::MAX);
+            let stored = t.stored_sample_frames();
+            let a = frames(t.first_edit_unit()).min(stored);
+            let len = t.duration.map_or(stored - a, |du| frames(du).min(stored - a));
+            let b = a.saturating_add(len);
+            let fb = t.sound.as_ref().map_or(1, |s| s.frame_bytes() as u64).max(1);
+            for c in &t.chunks {
+                let (cs, ce) = (c.first_sample, c.first_sample.saturating_add(c.samples));
+                if ce <= a || cs >= b {
+                    continue;
+                }
+                if t.sound_format == SoundFormat::Pcm {
+                    let (x, y) = (a.max(cs), b.min(ce));
+                    let offset = c.offset.saturating_add((x - cs).saturating_mul(fb));
+                    out.chunks.push(Chunk { offset, size: (y - x).saturating_mul(fb), first_sample: next, samples: y - x });
+                    next = next.saturating_add(y - x);
+                } else {
+                    // AES3 elements are not cut: a clip boundary inside one keeps the whole element
+                    partial |= cs < a || ce > b;
+                    out.chunks.push(Chunk { first_sample: next, ..*c });
+                    next = next.saturating_add(c.samples);
+                }
+            }
+            total = total.saturating_add(i64::try_from(i128::from(len) * d / n).unwrap_or(i64::MAX));
+        }
+        if partial {
+            warnings.push(format!("track {}: a clip boundary falls inside an AES3 element: the whole element is played", out.track_id));
+        }
+        out.wrapping = Wrapping::Frame;
+    } else {
+        let mut hidden = i64::MIN / 2;
+        for t in &parts {
+            let first = usize::try_from(t.first_edit_unit()).unwrap_or(0).min(t.display_order.len());
+            let avail = t.display_order.len() - first;
+            let count = t.duration.and_then(|d| usize::try_from(d).ok()).map_or(avail, |d| d.min(avail));
+            let Some(shown) = t.display_order.get(first..first + count) else { continue };
+            let (Some(&lo), Some(&hi)) = (shown.iter().min(), shown.iter().max()) else { continue };
+            let start = t.sync_before(lo).min(lo);
+            let at = out.samples.len();
+            let Some(stored) = t.samples.get(start..=hi) else { continue };
+            for s in stored {
+                let p = s.pts.saturating_sub(first as i64);
+                let pts = if (0..count as i64).contains(&p) {
+                    total.saturating_add(p)
+                } else {
+                    // a decoding reference outside the clip: a pts no presented picture uses
+                    hidden += 1;
+                    hidden
+                };
+                out.samples.push(Sample { pts, ..*s });
+            }
+            out.display_order.extend(shown.iter().map(|&s| at + (s - start)));
+            total = total.saturating_add(count as i64);
+        }
+    }
+    out.duration = Some(total);
+    out
+}
+
 /// An Immersive Audio track: the IAB descriptor, the IAB essence container or element key
 /// (ST 2067-201: item 0x16, element type 0x0D), or essence that starts as an IABitstream frame.
-fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl ByteSource + ?Sized), elements: &[Element]) -> bool {
+fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl ByteSource + ?Sized), elements: &[Element], encrypted: bool) -> bool {
     if desc.is_some_and(|d| d.kind() == Some(st::IAB_ESSENCE_DESCRIPTOR))
         || container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x1D]))
         || key4[0] == 0x16 && key4[2] == 0x0D
@@ -976,7 +1153,7 @@ fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl 
     // tag, IAFrame tag) at the start of the essence
     let pcm_desc = desc.is_some_and(|d| matches!(d.kind(), Some(st::AES3_DESCRIPTOR) | Some(st::WAVE_DESCRIPTOR)));
     let pcm_coding = desc.and_then(|d| d.ul(tag::SOUND_ESSENCE_CODING)).is_some_and(|c| c.item_starts_with(&[0x04, 0x02, 0x02, 0x01]));
-    if pcm_desc || pcm_coding {
+    if pcm_desc || pcm_coding || encrypted {
         return false;
     }
     let Some(first) = elements.first() else { return false };
@@ -1039,7 +1216,7 @@ fn build_pictures(
 ) -> Result<()> {
     let (entries, eubc) = index_entries(index, t.index_sid);
     let expected = t.duration.map(|d| d.saturating_add(t.first_edit_unit()).max(0) as usize);
-    let clip = elements.len() == 1 && expected.is_none_or(|n| n > 1) && (eubc > 0 || entries.len() > 1);
+    let clip = elements.len() == 1 && expected.is_none_or(|n| n > 1) && (eubc > 0 || entries.len() > 1) && t.encryption.is_none();
     let mut samples: Vec<Sample> = Vec::new();
     if clip {
         t.wrapping = Wrapping::Clip;
@@ -1070,7 +1247,9 @@ fn build_pictures(
     let n = samples.len();
     // Key frames and B pictures from the index.
     let flagged = entries.values().any(|e| e.random_access());
-    if !t.codec.intra_only() {
+    // type D-10 (ST 386 container, SMPTE 356 streams) is I-frame only
+    let d10 = t.essence_container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x01]));
+    if !t.codec.intra_only() && !d10 {
         if flagged {
             t.indexed = true;
             for (i, s) in samples.iter_mut().enumerate() {
@@ -1084,6 +1263,11 @@ fn build_pictures(
                 warnings.push("no index table with random-access flags: key frames found by scanning the essence".into());
             }
             for (i, s) in samples.iter_mut().enumerate() {
+                if t.encryption.is_some() {
+                    // the bitstream is cipher text: every picture is a key frame candidate
+                    s.key = true;
+                    continue;
+                }
                 let head = read_upto(src, s.offset, (s.size as usize).min(1024))?;
                 s.key = i == 0 || is_random_access(t.codec, &head);
             }
@@ -1164,7 +1348,10 @@ impl MxfFile {
         }
         let mut v = vec![0u8; s.size as usize];
         src.read_at(s.offset, &mut v)?;
-        Ok(v)
+        match &t.encryption {
+            Some(e) => decrypt(e, &v),
+            None => Ok(v),
+        }
     }
 
     /// `frames` sound sample frames from stored sample `start` of track `track`, planar f32
@@ -1205,6 +1392,13 @@ impl MxfFile {
             let b = end.min(c.first_sample.saturating_add(c.samples));
             if b > a {
                 let decoded = match t.sound_format {
+                    SoundFormat::Pcm if t.encryption.is_some() => {
+                        let v = self.read_encrypted_chunk(src, t, c)?;
+                        let from = usize::try_from((a - c.first_sample).saturating_mul(fb as u64)).unwrap_or(usize::MAX);
+                        let bytes = ((b - a) as usize).saturating_mul(fb);
+                        let part = v.get(from..).map(|r| &r[..bytes.min(r.len()) / fb * fb]).unwrap_or_default();
+                        decode_pcm(part, SoundFormat::Pcm, ch, si.bits, fb)?
+                    }
                     SoundFormat::Pcm => {
                         let off = (a - c.first_sample)
                             .checked_mul(fb as u64)
@@ -1219,10 +1413,7 @@ impl MxfFile {
                         decode_pcm(&v, SoundFormat::Pcm, ch, si.bits, fb)?
                     }
                     SoundFormat::Aes3Element => {
-                        let size = c.size.min(src.len().saturating_sub(c.offset));
-                        let size = usize::try_from(size).map_err(|_| Error::Invalid("AES3 chunk exceeds the address space".into()))?;
-                        let mut v = vec![0u8; size];
-                        src.read_at(c.offset, &mut v)?;
+                        let v = self.read_encrypted_chunk(src, t, c)?;
                         let all = decode_pcm(&v, SoundFormat::Aes3Element, ch, si.bits, 0)?;
                         let s0 = (a - c.first_sample) as usize;
                         all.into_iter().map(|p| p.get(s0..).map(<[f32]>::to_vec).unwrap_or_default()).collect()
@@ -1240,6 +1431,29 @@ impl MxfFile {
         }
         Ok(out)
     }
+
+    /// The bytes of sound chunk `c` of `t`, decrypted when the track is encrypted.
+    fn read_encrypted_chunk(&self, src: &(impl ByteSource + ?Sized), t: &EssenceTrack, c: &Chunk) -> Result<Vec<u8>> {
+        let size = c.size.min(src.len().saturating_sub(c.offset));
+        let size = usize::try_from(size).map_err(|_| Error::Invalid("sound chunk exceeds the address space".into()))?;
+        let mut v = vec![0u8; size];
+        src.read_at(c.offset, &mut v)?;
+        match &t.encryption {
+            Some(e) => decrypt(e, &v),
+            None => Ok(v),
+        }
+    }
+
+    /// Whether some track is encrypted and its content key is not in the key ring.
+    pub fn needs_key(&self) -> bool {
+        self.tracks.iter().any(|t| t.encryption.is_some_and(|e| crate::crypt::key(&e.key_id).is_none()))
+    }
+}
+
+/// Decrypts an Encrypted Triplet value of a track with context `e` (key from the key ring).
+fn decrypt(e: &crate::crypt::Encryption, v: &[u8]) -> Result<Vec<u8>> {
+    let key = crate::crypt::key(&e.key_id).ok_or_else(|| Error::Encrypted(crate::crypt::uuid_text(&e.key_id)))?;
+    crate::crypt::decrypt(v, &key)
 }
 
 #[cfg(test)]

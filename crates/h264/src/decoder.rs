@@ -367,13 +367,15 @@ impl Decoder {
         let (sh, _, _) = SliceHeader::parse(&rbsp, hdr, |id| {
             let pps = ppss[id as usize].as_ref().ok_or_else(|| Error::MissingParameterSet(format!("PPS {id}")))?;
             let sps = spss[pps.sps_id as usize].as_ref().ok_or_else(|| Error::MissingParameterSet(format!("SPS {}", pps.sps_id)))?;
+            // Before the rest of the header: an unsupported SPS gets its own reason, not a parse
+            // error from header fields it would change.
+            sps.check_supported()?;
             found = Some((pps.clone(), sps.clone()));
             Ok((&**pps, &**sps))
         })?;
         let Some((pps, sps)) = found else {
             return Err(Error::MissingParameterSet("PPS".into()));
         };
-        sps.check_supported()?;
         if pps.num_slice_groups > 1 {
             return unsupported("slice groups (FMO)");
         }

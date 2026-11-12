@@ -165,7 +165,7 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 | `python/cfa4_qt/theme.py`, `branding.py`, `desktop_entry.py` | egui's design tokens, CFA4 logo, user desktop entry |
 | `python/cfa4_qt/status_bar.py`, `hot_number.py`, `calc.py`, `timecode.py`, `dialogs.py` | shared widgets and helpers |
 | `python/cfa4_qt/credits.py`, `export_summary.py` | About credits, export summary lines |
-| `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Preferences, …) |
+| `python/cfa4_qt/panels/` | one module per panel or dialog (Project, Media Browser, Timeline, monitors, Effect Controls, mixers, Lumetri, Essential Graphics / Sound, Text, Export, Credits ([credits.md](credits.md)), Preferences, …) |
 | `python/cfa4_qt/i18n.py`, top-level `i18n/*.tsv` | translations: one catalog per language shared with egui (full Hungarian; the Qt-only strings in a "Qt GUI" section of the other ten) |
 | `python/tests/test_qt_gui.py` | framing, registry, i18n, window against a fake and the real engine |
 | `python/tests/test_qt_translations.py` | every finished language covers the Qt strings, placeholders kept |
@@ -173,7 +173,8 @@ removed: `docs/plans/CFA4-QT6-FINISH-001.md`.
 ## Export window
 
 File ▸ Export ▸ Media… (and `export.queue.add`, Ctrl+M) opens a non-modal Export window. It
-lists the engine's presets (`export.presets.list`) and formats (`export.formats`), shows what
+lists the engine's presets (`export.presets.list`) and formats (`export.formats`; a format that
+cannot be exported here is greyed out with the engine's `reason` as its tooltip), shows what
 the current choice resolves to (`export.resolve`: size, rate, bitrate, sound, frames; whether the video is HDR, the encoder that writes it, the audio codec used and the sample sizes it can store) and sends
 the export to the engine's queue (`export.queue.add`), which the engine server encodes between
 requests; the queue table polls `export.queue.list` for status, progress and remaining time,
@@ -194,3 +195,16 @@ Target Bitrate and Maximum Bitrate are in Mbps as in egui and show the preset's 
 adaptive (Match Source) preset shows "Adaptive (n bits per pixel)" with Set, which sends a fixed
 `bitrateKbps`. Key Frame Distance (H.264 / H.265 / AV1) is off or a distance in frames
 (`settings.keyframeDistance`); MPEG-2 keeps its own GOP length field (`export.mpeg2Gop`).
+
+**Quality check** ([media-qc.md](media-qc.md)). "Check quality after export" sends
+`"qc": "delivery-web"` with the export; the queue's Quality column shows each item's QC state
+(from `export.queue.list`), apart from its render status. Quality Check… (or a double-click on a
+finished item) opens the Quality Check window: it runs `qc.run` when the item was not checked
+(followed in `jobs.list`), then shows the engine's verified report (`qc.report.get`): verdict,
+reasons, every check with status, value and bounds, the time-coded events, and the contact
+sheet. Human Review asks the engine's guided questions and takes findings (description,
+severity, time code, note); an automatic event can be copied into a finding with its time code.
+Save Review stores the review in the report (`qc.review.save`), and the engine recomputes the
+verdict. The window measures nothing itself and never changes the project. Playing the export at
+a flagged time code needs a preview that does not import the file into the project; it is not
+there yet. `test_real_engine_quality_check_through_the_export_window` covers the round trip.

@@ -151,6 +151,7 @@ pub(crate) fn mca_51(language: &str, id: &dyn Fn(&str) -> [u8; 16]) -> Vec<McaLa
         channel: None,
         language: lang.clone(),
         group: None,
+        titles: None,
     }];
     for (k, (item, symbol, name)) in MCA_51.iter().enumerate() {
         v.push(McaLabel {
@@ -161,6 +162,7 @@ pub(crate) fn mca_51(language: &str, id: &dyn Fn(&str) -> [u8; 16]) -> Vec<McaLa
             channel: Some(k as u32 + 1),
             language: lang.clone(),
             group: Some(group),
+            titles: None,
         });
     }
     v
@@ -180,6 +182,7 @@ pub(crate) fn main_sound_mca(fallback: IabFallback, language: &str, id: &dyn Fn(
         channel: Some(FSK_CHANNEL as u32 + 1),
         language: (!language.is_empty()).then(|| language.to_string()),
         group: None,
+        titles: None,
     });
     v
 }

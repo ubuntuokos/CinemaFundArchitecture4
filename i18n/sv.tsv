@@ -297,6 +297,7 @@
 	Output file	Utdatafil
 	Overwrite	Skriv över
 	PCM (uncompressed)	PCM (okomprimerat)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 lager II)
 	Panels	Paneler
 	Panner	Panorering
 	Paste Attributes…	Klistra in attribut…
@@ -1868,6 +1869,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mapp: JPEG 2000 3996×2160 (1,85:1), 5.1 PCM 24 bitar 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mapp: JPEG 2000 4096×1716 (2,39:1), 5.1 PCM 24 bitar 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF-mapp: JPEG 2000 1920×1080, 5.1 PCM 24 bitar 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF-mapp: JPEG 2000 3840×2160, 5.1 PCM 24 bitar 48 kHz
+	Episode	Avsnitt
+	Event highlights	Höjdpunkter från evenemang
+	Event	Evenemang
+	Lossless (reversible JPEG 2000)	Förlustfritt (reversibel JPEG 2000)
+	Package language	Paketspråk
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-bilder
@@ -2025,6 +2036,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bitar för HDR)
 	10-bit RGB	10-bitars RGB
 	12-bit X'Y'Z'	12-bitars X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitars R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF med förlust
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reversibel
 	16-bit half float	16-bitars halvt flyttal
 	linear	linjär
 	uncompressed	okomprimerat
@@ -3321,8 +3335,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bitar 4:2:2), PCM 24 bitar 48 kHz, starttidskod
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile lång GOP (12 bilder, IBBP) med 50 Mbit/s i XDCAM HD422-stil, 24-bitars 48 kHz PCM; HD-bildstorlekar
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High lång GOP (0,3 bitar per pixel), PCM 24 bitar 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a typ D-10 (IMX 50): endast intra MPEG-2 4:2:2P@ML med 50 Mbit/s, 720x486 vid 29,97 fps (4:3), fyra 24-bitars 48 kHz ljudkanaler
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a typ D-10 (IMX 50): endast intra MPEG-2 4:2:2P@ML med 50 Mbit/s, 720x576 vid 25 fps (4:3), fyra 24-bitars 48 kHz ljudkanaler
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 bitar 48 kHz, starttidskod
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a i SMPTE RDD 9-layouten: MPEG-2 4:2:2 Profile lång GOP (12 bilder, IBBP) med 50 Mbit/s, 1920x1080 eller 1280x720 progressiv, fyra 24-bitars 48 kHz kanaler som AES3-element per kanal
 	Main	Huvud
 	Mark In (Hover Scrub)	Sätt inpunkt (skrubba vid hovring)
 	Mark Out (Hover Scrub)	Sätt utpunkt (skrubba vid hovring)
@@ -3664,6 +3686,8 @@
 	Analyze Source for Smart Cut	Analysera källan för smart klippning
 	Plan Smart Cut	Planera smart klippning
 	Run Smart Cut	Kör smart klippning
+	DASH Manifest	DASH-manifest
+	Also write a DASH manifest (.mpd)	Skriv även ett DASH-manifest (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Ingen sekvens är öppen. Dubbelklicka på en sekvens i projektpanelen.
 	English (US)	Engelska (USA)
 	English (UK)	Engelska (Storbritannien)
@@ -4217,3 +4241,288 @@ export.summary	Low	låg
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Eftertexter från ett kalkylark
+	A .ods, .xlsx or CSV credits sheet	Ett eftertextark i .ods, .xlsx eller CSV
+	The spreadsheet's folder	Kalkylarkets mapp
+	Built-in styles	Inbyggda stilar
+	Spreadsheet	Kalkylark
+	Sheet	Blad
+	Pictures	Bilder
+	Styling	Stil
+	Page	Sida
+	Warnings	Varningar
+	Moment in the page	Tidpunkt på sidan
+	Place at Playhead	Placera vid uppspelningshuvudet
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Kalkylark (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Eftertextstil (*.json)
+	Card	Kort
+	Credits Spreadsheet	Eftertextkalkylark
+	Reading…	Läser…
+	(one table)	(en tabell)
+	Total: {time}	Totalt: {time}
+	Row {row}: {message}	Rad {row}: {message}
+	Choose a credits spreadsheet.	Välj ett eftertextkalkylark.
+	No preview	Ingen förhandsvisning
+	Placing…	Placerar…
+	Placed {n} pages on the timeline.	{n} sidor placerades på tidslinjen.
+	Credits Page Picture	Bild av eftertextsida
+	Preview Credits	Förhandsvisa eftertexter
+	Credits Styles	Eftertextstilar
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Kalkylark och eftertextfiler (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4-eftertextfil (*.cfa4credits)
+	Save as Credits File…	Spara som eftertextfil…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Kalkylark, blad, stil och tabell i en fil som kan öppnas på vilken dator som helst
+	Saved: {path}	Sparad: {path}
+	Added	Tillagd
+	Removed	Borttagen
+	Changed	Ändrad
+	(empty row)	(tom rad)
+	Refresh Credits from Spreadsheet	Uppdatera eftertexter från kalkylark
+	Change	Ändring
+	Before → After	Före → Efter
+	Select None	Avmarkera alla
+	Keep my edits on the pages (where their block is unchanged)	Behåll mina ändringar på sidorna (där deras block är oförändrat)
+	Locate Spreadsheet…	Leta upp kalkylark…
+	Comparing…	Jämför…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} ändringar i {file} sedan eftertexterna placerades. Avmarkera det du inte vill ha.
+	The spreadsheet {file} has not changed since the credits were placed.	Kalkylarket {file} har inte ändrats sedan eftertexterna placerades.
+	{n} layers were edited by hand on the pages.	{n} lager redigerades för hand på sidorna.
+	Accepting every change would replace these, because their block changed: {names}	Om du godkänner alla ändringar ersätts dessa, eftersom deras block ändrats: {names}
+	Refreshing…	Uppdaterar…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Uppdaterat: {n} ändringar tillämpade, {kept} manuella ändringar behållna.
+	Refresh Credits from Spreadsheet…	Uppdatera eftertexter från kalkylark…
+	Save Credits File…	Spara eftertextfil…
+	Compare Credits with Spreadsheet	Jämför eftertexter med kalkylark
+	“{name}” appears twice in the same block	”{name}” förekommer två gånger i samma block
+	“{name}” is written as “{other}” in row {otherRow}	”{name}” skrivs som ”{other}” på rad {otherRow}
+	The font “{font}” is not installed; another font is used	Typsnittet ”{font}” är inte installerat; ett annat typsnitt används
+	The font “{font}” has no “{chars}”; another font draws them	Typsnittet ”{font}” saknar ”{chars}”; ett annat typsnitt ritar dem
+	“{text}” is outside the title-safe area	”{text}” ligger utanför det textsäkra området
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” är för mörk mot svart (kontrast {ratio}:1; minst 4,5:1 behövs)
+	“{text}” is {px} px high; 24 px or more reads well	”{text}” är {px} px hög; 24 px eller mer är lättläst
+	The roll moves {speed} px per frame; a whole number does not shimmer	Rullningen flyttar {speed} px per bildruta; ett heltal flimrar inte
+	A line crosses the frame in {seconds} s; at least 6 s reads well	En rad korsar bilden på {seconds} s; minst 6 s är lättläst
+	The card holds for only {seconds} s after its fades	Kortet står bara {seconds} s efter tonningarna
+	This page starts {seconds} s before the previous one ends	Den här sidan börjar {seconds} s innan den föregående slutar
+	“{file}” is shown at {percent} % of its pixels; it will look soft	”{file}” visas med {percent} % av sina pixlar; den ser oskarp ut
+	{more} more of the same	{more} till av samma slag
+	Page {page}: {message}	Sida {page}: {message}
+	Checks and warnings	Kontroller och varningar
+	Checks: {errors} errors, {warnings} warnings	Kontroller: {errors} fel, {warnings} varningar
+	Check Credits	Kontrollera eftertexter
+	The whole music ({time})	Hela musiken ({time})
+	Until the sound ends ({time})	Tills ljudet tar slut ({time})
+	To the last bar line ({time})	Till sista taktstrecket ({time})
+	Fit Credits to Music	Anpassa eftertexter till musiken
+	Fit Credits to Music…	Anpassa eftertexter till musiken…
+	Analyse Music for Credits	Analysera musik för eftertexter
+	Length:	Längd:
+	Cards last whole beats (cuts on the beat)	Korten varar hela taktslag (klipp på slaget)
+	Start the credits where the music starts	Starta eftertexterna där musiken börjar
+	Length of the credits	Eftertexternas längd
+	Remove Fitting	Ta bort anpassning
+	Listening to the music…	Lyssnar på musiken…
+	Length: {time}	Längd: {time}
+	the sound ends at {time}	ljudet slutar vid {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	eftertexterna utan anpassning: {time}
+	Select a credits page on the timeline.	Markera en eftertextsida på tidslinjen.
+	Fitting…	Anpassar…
+	The credits now last {time}.	Eftertexterna varar nu {time}.
+	Fitting removed.	Anpassningen togs bort.
+	Fit to This Length	Anpassa till den här längden
+	No music to measure ({problem}); type the length.	Ingen musik att mäta ({problem}); skriv längden.
+	The text moves {speed} px per frame; a whole number does not shimmer	Texten flyttar {speed} px per bildruta; ett heltal flimrar inte
+	Crawl	Rullande textrad
+	Picture: {file}	Bild: {file}
+	Video: {file}	Video: {file}
+	Looped video: {file}	Video i slinga: {file}
+	Into the next	In i nästa
+	Safe areas and spines	Säkra områden och axlar
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Handlingssäkert (93 %), textsäkert (90 %), mitten och sidans axlar
+	Baseline grid	Baslinjerutnät
+	Lines one gap unit apart, moving with the page	Linjer en avståndsenhet isär som följer med sidan
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” syns inte mot bakgrunden (kontrast {ratio}:1; minst 4,5:1 behövs)
+	A picture or video is behind the text: check the contrast by eye	Bakom texten finns en bild eller video: kontrollera kontrasten med ögat
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Ett färdigt utseende: stilar, bakgrunder, övergångar och timing. En angiven stilfil har företräde.
+	New Spreadsheet from Template…	Nytt kalkylark från mall…
+	built in	inbyggd
+	mine	egen
+	this project	detta projekt
+	Template	Mall
+	Choose a template first.	Välj en mall först.
+	Name of the template:	Mallens namn:
+	Template saved: {name}	Mall sparad: {name}
+	Apply Credits Template…	Använd eftertextmall…
+	Template:	Mall:
+	Credits Templates	Eftertextmallar
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Kalkylark, eftertextfiler och Cinecred-projekt (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Öppna en Cinecred-projektmapp (Styling.toml och dess eftertextkalkylark)
+	(empty block)	(tomt block)
+	Apply Template…	Använd mall…
+	Change them in the spreadsheet; the credits follow when you save it.	Ändra dem i kalkylarket; eftertexterna följer med när du sparar det.
+	Compact View	Kompakt vy
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Jämför de markerade eftertexterna på tidslinjen med deras kalkylark, rad för rad
+	Fit the selected credits to the music under them	Anpassa de markerade eftertexterna till musiken under dem
+	Fit to Music…	Anpassa till musik…
+	Full View	Fullständig vy
+	Give the selected credits on the timeline another template	Ge de markerade eftertexterna på tidslinjen en annan mall
+	Names	Namn
+	No pages	Inga sidor
+	Refresh Placed Credits…	Uppdatera placerade eftertexter…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Visa allt: block, egenskaper, sidorna över tid, kontroller och eftertextverktygen
+	Spine	Axel
+	Tails	Slut
+	The blocks of the chosen page; choose one to see it in the preview	Blocken på den valda sidan; välj ett för att se det i förhandsvisningen
+	The pages along time; click one to choose it	Sidorna över tid; klicka på en för att välja den
+	{n} more	{n} till
+	Block	Block
+	parallel	parallell
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	På sidan (OBS hämtar det från webbläsarkällan)
+	Separate (a media source in OBS)	Separat (en mediekälla i OBS)
+	No sound	Inget ljud
+	credits	eftertexter
+	graphic	grafik
+	{n} pages	{n} sidor
+	Live Graphics	Livegrafik
+	Prepared cues; double-click one to put it in preview	Förberedda cues; dubbelklicka på en för att lägga den i förhandsvisningen
+	Add Credits…	Lägg till eftertexter…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Ett eftertextkalkylark, en eftertextfil eller ett Cinecred-projekt som cue
+	Add Selected Graphic	Lägg till markerad grafik
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Grafikklippet som är markerat på tidslinjen (en titel, en namnskylt) som cue
+	Cues	Cues
+	TAKE	SÄND
+	The preview cue goes on air from its first page	Förhandsvisningens cue sänds från sin första sida
+	PREVIOUS	FÖREGÅENDE
+	The page before (on the first page: from its start)	Sidan innan (på första sidan: från dess början)
+	NEXT	NÄSTA
+	The next page; after the last one, the preview cue	Nästa sida; efter den sista förhandsvisningens cue
+	HOLD	STOPPA
+	Stop the program where it is	Stoppa programmet där det är
+	CONTINUE	FORTSÄTT
+	Go on from where it stopped	Fortsätt där det stannade
+	UPDATE	UPPDATERA
+	Read the spreadsheet (or the clip) again; on air it changes at once	Läs kalkylarket (eller klippet) igen; i sändning ändras det direkt
+	OUT	AV
+	Take everything off air	Ta bort allt från sändningen
+	Start Live Page	Starta livesidan
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Leverera programmet på den här datorn till OBS webbläsarkälla (endast 127.0.0.1)
+	not running	körs inte
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Verktyg ▸ WebSocket-serverinställningar
+	Connect to OBS	Anslut till OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Anslut till OBS på den här datorn och peka dess webbläsarkälla ”CFA4 Live” mot livesidan
+	Port	Port
+	Password	Lösenord
+	Live page	Livesida
+	Sound	Ljud
+	OBS	OBS
+	Nothing in preview	Inget i förhandsvisningen
+	page {page} of {pages}	sida {page} av {pages}
+	held	stoppad
+	ended	slut
+	Off air	Ej i sändning
+	Stop Live Page	Stoppa livesidan
+	Connected to OBS {version}; source “{source}”	Ansluten till OBS {version}; källa ”{source}”
+	Point OBS Again	Peka OBS igen
+	Select a graphic clip on the timeline first.	Markera först ett grafikklipp på tidslinjen.
+	Connecting to OBS…	Ansluter till OBS…
+	Live Graphics…	Livegrafik…
+	PREVIEW	FÖRHANDSVISNING
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	en bild- eller videotagg står ensam i en brödtextcell (eller med ett namn, som porträtt); de andra taggarna togs bort
+	the page gap is not a duration; the page style's is used	sidavståndet är ingen varaktighet; sidstilens används
+	the page runtime is not a positive duration; the page style's is used	sidans speltid är ingen positiv varaktighet; sidstilens används
+	background “{file}” was not found; it is left out	bakgrunden ”{file}” hittades inte; den utelämnas
+	card page {page} is taller than the frame; use a roll page	kortsidan {page} är högre än bilden; använd en rullsida
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	färgen ”{colour}” i bokstavsstilen ”{style}” är inte #rrggbb; den utelämnas
+	colour “{colour}” is not #rrggbb; black is used	färgen ”{colour}” är inte #rrggbb; svart används
+	colour “{colour}” is not #rrggbb; white is used	färgen ”{colour}” är inte #rrggbb; vitt används
+	content style “{style}” does not exist; “{used}” is used	innehållsstilen ”{style}” finns inte; ”{used}” används
+	letter style “{style}” does not exist; the text keeps the block's style	bokstavsstilen ”{style}” finns inte; texten behåller blockets stil
+	page gap “{value}” is not a duration	sidavståndet ”{value}” är ingen varaktighet
+	page runtime “{value}” is not a duration	sidans speltid ”{value}” är ingen varaktighet
+	page style “{style}” does not exist; a roll page is used	sidstilen ”{style}” finns inte; en rullsida används
+	page {page}: the background names no file; it is left out	sida {page}: bakgrunden anger ingen fil; den utelämnas
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	sida {page}: speltiden nås genom att ändra rullhastigheten (sidan har inga avstånd mellan block att sträcka)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	sida {page}: speltiden nås genom att ändra rullhastigheten (eftertexterna är för långa även utan avstånd)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sida {page}: speltiden nås genom att ändra rullhastigheten (avstånden skulle behöva växa mer än 20 gånger)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sida {page}: övergången kräver att sidorna möts (sidavstånd 0); den utelämnas
+	page {page}: there is no transition “{name}”; the pages cut	sida {page}: det finns ingen övergång ”{name}”; sidorna klipps
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	axelpositionen ”{value}” stöds inte (en pixelförskjutning, eventuellt med ”parallel”, gör det)
+	vertical gap “{value}” is not a number	det lodräta avståndet ”{value}” är inget tal
+	picture “{file}” was not found or cannot be read; it is left out	bilden ”{file}” hittades inte eller kan inte läsas; den utelämnas
+	video “{file}” was not found or cannot be read; it is left out	videon ”{file}” hittades inte eller kan inte läsas; den utelämnas
+	there is no roll page without its own runtime to stretch; the length cannot change	det finns ingen rullsida utan egen speltid att sträcka; längden kan inte ändras
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	korten och avstånden ensamma är {seconds} s; den önskade längden är kortare, så rullsidorna behåller sin naturliga längd
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	bokstavsstilen ”{style}”: bara det första färgade lagret används (inga konturer, skuggor eller ränder)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	speltiden för hela eftertexterna förs inte över; använd Anpassa eftertexter till musiken (eller en längd) i stället
+	page style “{style}”: fade curves become linear fades	sidstilen ”{style}”: tonkurvor blir linjära toningar
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	innehållsstilen ”{style}” har ingen början i Cinecred; början som skrivits i arket visas ändå
+	content style “{style}”: sorting the names is not carried over	innehållsstilen ”{style}”: sorteringen av namnen förs inte över
+	transition curves are not carried over	övergångskurvor förs inte över
+	picture styles (pictures keep their own size) are not carried over	bildstilar (bilderna behåller sin egen storlek) förs inte över
+	video (tape) styles are not carried over	video- (band)stilar förs inte över
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektet har {n} eftertextkalkylark; ”{name}” används (välj ett annat i fältet Kalkylark)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Lägg till anmärkning
+	Add as Finding	Lägg till som anmärkning
+	Are colour and contrast acceptable?	Är färg och kontrast acceptabla?
+	Automatic Checks	Automatiska kontroller
+	Bounds	Gränser
+	Check	Kontroll
+	Check Now	Kontrollera nu
+	Check quality after export	Kontrollera kvaliteten efter export
+	Checking…	Kontrollerar…
+	Contact Sheet	Kontaktark
+	Critical	Kritisk
+	Fail	Underkänd
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Anmärkning {row}: tidskoden är ingen tidpunkt i den här filen (HH:MM:SS:FF).
+	Findings	Anmärkningar
+	Human Review	Manuell granskning
+	Incomplete	Ofullständig
+	Is there a visible picture defect?	Finns det ett synligt bildfel?
+	Is there audible distortion?	Finns det hörbar distorsion?
+	Is there unwanted noise?	Finns det oönskat brus?
+	Major	Allvarlig
+	Message	Meddelande
+	Minor	Mindre
+	No contact sheet	Inget kontaktark
+	Not answered	Inte besvarad
+	Not checked	Inte kontrollerad
+	Not run	Inte körd
+	Note	Not
+	Pass	Godkänd
+	Passed	Godkänd
+	Passed with warnings	Godkänd med varningar
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Kvalitetskontroll
+	Quality Check…	Kvalitetskontroll…
+	Remove Finding	Ta bort anmärkning
+	Report: {path}	Rapport: {path}
+	Review complete	Granskning klar
+	Reviewer	Granskare
+	Run the media quality check on the finished file (docs/media-qc.md)	Kör mediekvalitetskontrollen på den färdiga filen (docs/media-qc.md)
+	Save Review	Spara granskning
+	Select a finished export in the queue	Välj en färdig export i kön
+	Severity	Allvarlighetsgrad
+	The engine is not running.	Motorn körs inte.
+	Time code	Tidskod
+	Unsure	Osäker
+	accept	godtagbart
+	the engine did not start the check	motorn startade inte kontrollen
+	the engine sent no report	motorn skickade ingen rapport
+	Load KDM…	Läs in KDM…
+	Forget DCP Keys	Glöm DCP-nycklar
+	Load KDM	Läs in KDM
+	KDM file	KDM-fil
+	Private key (PEM)	Privat nyckel (PEM)
+	{title}: {count} keys loaded	{title}: {count} nycklar inlästa
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nycklarna finns bara i minnet, tills Glöm DCP-nycklar eller sessionens slut.
+	DCP keys forgotten	DCP-nycklarna glömda
+	Choose the KDM file and the private key.	Välj KDM-filen och den privata nyckeln.

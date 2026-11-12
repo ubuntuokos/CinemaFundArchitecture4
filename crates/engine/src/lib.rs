@@ -29,9 +29,11 @@ mod fx_editor;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
+mod kdm;
 pub mod keyboard;
 mod keyframe_move;
 pub mod legibility;
+pub mod live;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;
@@ -500,6 +502,8 @@ pub struct Session {
     pub tts_cache: narration::SynthCache,
     /// Dynamic (J/K/L) trimming and trim-mode loop playback in progress.
     pub trim_play: trim::TrimPlayback,
+    /// Live graphics: cues, preview, program, the live page and the OBS link (`live.*`).
+    pub live: live::LiveState,
     /// Keyboard shortcuts (active bindings, presets; `shortcuts.*` commands).
     pub shortcuts: shortcuts::Shortcuts,
     /// Missing / offline media found by the last scan (Link Media dialog).
@@ -612,6 +616,7 @@ impl Session {
             tts_preview: None,
             tts_cache: Default::default(),
             trim_play: Default::default(),
+            live: Default::default(),
             shortcuts: shortcuts::Shortcuts::new(),
             offline: Default::default(),
             media_jobs: Vec::new(),

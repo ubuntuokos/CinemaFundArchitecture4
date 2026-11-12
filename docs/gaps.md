@@ -269,7 +269,7 @@ distributions are not targets.
 
 - **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
   field pictures / dual prime (#274), P-STD / T-STD buffer models in the multiplexer (#277), field-aware scaling and field-rate rendering for interlaced export (#275), MP2 audio (#267), JPEG 2000 MXF
-  (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; SMPTE DCP export is done, #115),
+  (the `cfa4-j2k` encoder with the DCI 2K / 4K and IMF profiles exists, #81, #931; SMPTE DCP export is done, #115; IMF App 2E package export, #1011),
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding other than MPEG-2, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
@@ -282,7 +282,7 @@ distributions are not targets.
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); Opus Audio (`.opus`, own CELT encoder, #99); WebM (VP9 + Opus, own encoders, #149); ProRes 4444 / 4444 XQ in the export UI (#342);
   H.265 software encoder (Main / Main 10 HDR, CRF / CBR / VBR, parallel slices; hardware
-  encoders go first where present; #94); HLS (H.264 + AAC CMAF segments, one rendition; #100, ABR ladder #230). Chapter markers export as chapters: `chpl` plus a QuickTime chapter track in MP4/MOV/M4A, `chpl` in the HLS init segments, Matroska `Chapters` in WebM (`ExportSettings::chapters`, on by default).
+  encoders go first where present; #94); HLS (H.264 + AAC CMAF segments, one rendition; #100, ABR ladder #230), optionally with a DASH manifest over the same segments (`ExportSettings::dash_manifest`, CLI `export --dash`). Chapter markers export as chapters: `chpl` plus a QuickTime chapter track in MP4/MOV/M4A, `chpl` in the HLS init segments, Matroska `Chapters` in WebM (`ExportSettings::chapters`, on by default).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x264 for a higher-quality software H.264 encoder,
   LAME (LGPL) for MP3 audio. H.264 / HEVC / AAC patents are a separate question from the licence. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h. Doc: [file-format-parity.md](file-format-parity.md).

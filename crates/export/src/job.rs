@@ -72,6 +72,7 @@ use rayon::prelude::*;
 use crate::audio_out::AudioOut;
 use crate::dcp_out::{DcpMux, DcpSetup};
 use crate::hls_out::{HlsMux, HlsSetup};
+use crate::imf_out::{ImfMux, ImfSetup};
 use crate::mpeg_out::{MpegAudio, MpegMux};
 use crate::mxf_out::{MxfMux, MxfSetup};
 use crate::pipeline::Pipeline;
@@ -195,6 +196,7 @@ pub struct Exporter {
     mpeg: Option<MpegMux>,
     /// DCP exports write through this.
     dcp: Option<DcpMux>,
+    imf: Option<ImfMux>,
     seq: ItemId,
     project: Arc<Project>,
     /// Chapters of MP4, MOV, HLS and WebM output ([`export_chapters`]).
@@ -222,6 +224,7 @@ pub fn stepped(format: Format) -> bool {
             | Format::MxfOpAtom
             | Format::Mpeg2
             | Format::Dcp
+            | Format::Imf
     )
 }
 
@@ -260,6 +263,9 @@ impl Exporter {
         let dcp;
         let settings = if settings.format == Format::Dcp {
             dcp = crate::dcp_out::normalize(settings, q.settings.frame_rate);
+            &dcp
+        } else if settings.format == Format::Imf {
+            dcp = crate::imf_out::normalize(settings, q.settings.frame_rate);
             &dcp
         } else {
             settings
@@ -326,6 +332,7 @@ impl Exporter {
             hls: None,
             mpeg: None,
             dcp: None,
+            imf: None,
             seq,
             project: project.clone(),
             chapters: export_chapters(&project, seq, &settings, range),
@@ -390,10 +397,16 @@ impl Exporter {
 
     /// Whether the container writer exists (it is created after the first group is encoded).
     fn mux_open(&self) -> bool {
-        self.mux.is_some() || self.mxf.is_some() || self.webm.is_some() || self.hls.is_some() || self.mpeg.is_some() || self.dcp.is_some()
+        self.mux.is_some() || self.mxf.is_some() || self.webm.is_some() || self.hls.is_some() || self.mpeg.is_some() || self.dcp.is_some() || self.imf.is_some()
     }
 
     fn write_audio(&mut self, planar: Option<Vec<Vec<f32>>>) -> Result<()> {
+        if let Some(m) = self.imf.as_mut() {
+            return match planar {
+                Some(buf) => m.write_audio(&buf),
+                None => Ok(()),
+            };
+        }
         if let Some(m) = self.dcp.as_mut() {
             return match planar {
                 Some(buf) => m.write_audio(&buf),
@@ -452,6 +465,9 @@ impl Exporter {
     }
 
     fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
+        if let Some(m) = self.imf.as_mut() {
+            return m.write_video(&self.settings, packets);
+        }
         if let Some(m) = self.dcp.as_mut() {
             return m.write_video(packets);
         }
@@ -477,6 +493,16 @@ impl Exporter {
 
     /// Create the muxer and its tracks (after the first batch was encoded).
     fn open_mux(&mut self) -> Result<()> {
+        if self.settings.format == Format::Imf {
+            let title = match self.settings.metadata.title.trim() {
+                "" => self.project.item(self.seq).map(|i| i.name.clone()).unwrap_or_default(),
+                t => t.to_string(),
+            };
+            let channels = self.audio.as_ref().map_or(0, |a| a.channels as u32);
+            self.imf =
+                Some(ImfMux::new(ImfSetup { settings: &self.settings, title, width: self.pipe.w, height: self.pipe.h, rate: self.pipe.rate, channels })?);
+            return Ok(());
+        }
         if self.settings.format == Format::Dcp {
             let title = match self.settings.metadata.title.trim() {
                 "" => self.project.item(self.seq).map(|i| i.name.clone()).unwrap_or_default(),
@@ -532,10 +558,20 @@ impl Exporter {
                     let header = crate::aac_out::AdtsHeader::from_asc(&cfg.asc)?;
                     Some(MpegAudio::Aac { header, sample_rate: a.sr, priming: enc.priming() })
                 }
+                (Some(a), None) if self.settings.audio_codec() == AudioCodec::Ac3 => {
+                    let enc = cfa4_ac3::Encoder::new(a.sr, a.channels, self.settings.audio.bitrate_kbps)
+                        .map_err(|e| ExportError::Unsupported(format!("AC-3: {e}")))?;
+                    Some(MpegAudio::Ac3(Box::new(enc)))
+                }
+                (Some(a), None) if self.settings.audio_codec() == AudioCodec::Mp2 => Some(MpegAudio::mp2(a.sr, a.channels, self.settings.audio.bitrate_kbps)?),
                 (Some(a), None) => Some(MpegAudio::Lpcm { sample_rate: a.sr, channels: a.channels as u32, bits: self.lpcm_bits() }),
             };
             let audio_bps = match (&self.audio, &self.aenc) {
                 (Some(_), Some(_)) => u64::from(self.settings.audio.bitrate_kbps) * 1000,
+                (Some(_), None) if self.settings.audio_codec() == AudioCodec::Ac3 => u64::from(self.settings.audio.bitrate_kbps) * 1000,
+                (Some(a), None) if self.settings.audio_codec() == AudioCodec::Mp2 => {
+                    u64::from(crate::settings::mp2_bitrate_kbps(a.sr, a.channels, self.settings.audio.bitrate_kbps)) * 1000
+                }
                 (Some(a), None) => u64::from(a.sr) * a.channels as u64 * u64::from(self.lpcm_bits()),
                 _ => 0,
             };
@@ -557,6 +593,7 @@ impl Exporter {
                 rate: self.pipe.rate,
                 audio: self.audio.as_ref().map(|a| (a.sr, a.channels)),
                 timecode: (start, q.settings.drop_frame),
+                mpeg: self.venc.mpeg_video(),
             })?);
             return Ok(());
         }
@@ -652,6 +689,9 @@ impl Exporter {
         if let (Some(m), Some(a)) = (self.mpeg.as_mut(), self.aenc.as_mut()) {
             m.write_aac(a.flush()?, a.frame_size())?;
         }
+        if let Some(m) = self.mpeg.as_mut() {
+            m.flush_ac3()?;
+        }
         if let (Some(at), Some(a)) = (self.at, self.aenc.as_mut()) {
             let mux = self.mux.as_mut().ok_or_else(|| ExportError::Encode("internal: the container writer was not created".into()))?;
             for (au, duration) in a.flush_timed()? {
@@ -662,7 +702,10 @@ impl Exporter {
             }
         }
         let cancelled = || progress.cancel.load(Ordering::Relaxed);
-        let dcp = self.dcp.take().map(|m| m.finish(&self.settings, &cancelled)).transpose()?;
+        let dcp = match self.imf.take() {
+            Some(m) => Some(m.finish(&self.settings)?),
+            None => self.dcp.take().map(|m| m.finish(&self.settings, &cancelled)).transpose()?,
+        };
         let (bytes, extra_files) = match (self.mxf.take(), self.webm.take(), self.hls.take(), self.mpeg.take()) {
             _ if dcp.is_some() => dcp.unwrap_or_default(),
             (Some(m), _, _, _) => m.finish(&self.settings)?,

@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-speex"
+description = "Pure-Rust Speex decoder (narrowband, wideband, ultra-wideband, stereo), ported from libspeex 1.2.1"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

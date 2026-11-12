@@ -30,12 +30,16 @@ ENGINE_VERSION="1.2026.10.03"
 # build-essential). base64 is a separate gem from Ruby 3.4 on.
 GEMS=("racc 1.8.1" "nokogiri 1.19.4" "bigdecimal 3.3.1" "ttfunk 1.8.0")
 GEM_BASE64="base64 0.2.0"
+# The engine's own test suite (--verify) needs rake and minitest. They go to a separate gem
+# directory, so the engine's runtime GEM_HOME keeps exactly the set above.
+TEST_GEMS=("rake 13.1.0" "minitest 5.20.0")
 FFMPEG_VERSION="9.0.2"
 
 root="${CFA4_DCP_INSPECT_DIR:-${XDG_CACHE_HOME:-${HOME}/.cache}/cfa4/dcp-inspect}"
 prefix="${root}/${COMMIT}"
 src="${prefix}/src"
 gems="${prefix}/gems"
+test_gems="${prefix}/test-gems"
 wrapper="${prefix}/bin/cfa4-dcp-inspect"
 ffmpeg_bin="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v6}/bin"
 asdcp_bin="${CFA4_ASDCPLIB_PREFIX:+${CFA4_ASDCPLIB_PREFIX}/bin}"
@@ -188,8 +192,18 @@ verify() {
   trap 'rm -rf "$verify_work"' EXIT
   local work="$verify_work"
   # The test suite writes only temporary files; HOME and TMPDIR point into a scratch directory.
-  (cd "$src" && HOME="$work" TMPDIR="$work" isolated ruby -Ilib -S rake xsd:check)
-  (cd "$src" && HOME="$work" TMPDIR="$work" isolated ruby -Ilib -S rake test)
+  local g name version
+  for g in "${TEST_GEMS[@]}"; do
+    read -r name version <<<"$g"
+    if ! GEM_HOME="$test_gems" GEM_PATH="$test_gems" gem list --installed --exact "$name" --version "$version" >/dev/null 2>&1; then
+      env -u RUBYOPT -u RUBYLIB GEM_HOME="$test_gems" GEM_PATH="$test_gems" GEM_SPEC_CACHE="${prefix}/gem-spec-cache" \
+        gem install --install-dir "$test_gems" --no-document --no-user-install --ignore-dependencies --version "$version" "$name"
+    fi
+  done
+  # TERM: the engine's progress output asks the terminal for its size.
+  local t=(env GEM_PATH="${gems}:${test_gems}" PATH="${test_gems}/bin:$(engine_path)" TERM="${TERM:-dumb}" HOME="$work" TMPDIR="$work")
+  (cd "$src" && isolated "${t[@]}" ruby -Ilib -S rake xsd:check)
+  (cd "$src" && isolated "${t[@]}" ruby -Ilib -S rake test)
   "$wrapper" --version
 }
 

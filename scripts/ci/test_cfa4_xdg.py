@@ -53,6 +53,50 @@ class XDGDesktopMetadataTests(unittest.TestCase):
         self.assertEqual(project.find(MIME_NS + "icon").get("name"), APP)
         self.assertEqual(project.find(MIME_NS + "glob").get("pattern"), "*.fcproj")
 
+    def test_credits_types_open_in_the_qt_workspace_and_claim_nothing_else(self) -> None:
+        """Credits plan C9: `.cfa4credits` / `.cfa4credtpl` are CFA4's own types in its namespace,
+        opened by the Qt GUI through a hidden entry; Cinecred's files are never claimed."""
+        tree = ET.parse(PACKAGE / f"{APP}.mime.xml")
+        globs = {
+            t.get("type"): [g.get("pattern") for g in t.findall(MIME_NS + "glob")]
+            for t in tree.getroot().findall(MIME_NS + "mime-type")
+        }
+        self.assertEqual(globs["application/x-cfa4-credits"], ["*.cfa4credits"])
+        self.assertEqual(globs["application/x-cfa4-credits-template"], ["*.cfa4credtpl"])
+        for t, patterns in globs.items():
+            self.assertTrue(t.startswith("application/x-cfa4"), t)
+            for p in patterns:
+                # spreadsheets, TOML (Cinecred's Styling.toml) and JSON stay with their own apps
+                self.assertFalse(p.lower().endswith((".toml", ".csv", ".ods", ".xlsx", ".json", ".tsv")), p)
+        config = configparser.ConfigParser(interpolation=None, strict=True)
+        config.optionxform = str
+        with (PACKAGE / f"{APP}.credits.desktop").open(encoding="utf-8") as file:
+            config.read_file(file)
+        entry = config["Desktop Entry"]
+        self.assertEqual(entry["Exec"], "cfa4-qt %f")
+        self.assertEqual(entry["TryExec"], "cfa4-qt")
+        self.assertEqual(entry["NoDisplay"], "true")
+        self.assertEqual(entry["Icon"], APP)
+        self.assertEqual(set(filter(None, entry["MimeType"].split(";"))), {"application/x-cfa4-credits", "application/x-cfa4-credits-template"})
+        # the main entry (the egui editor until the Qt GUI replaces it) does not take them
+        self.assertNotIn("application/x-cfa4-credits", desktop_metadata()["MimeType"])
+        contents = (PACKAGE / "package.sh").read_text(encoding="utf-8")
+        self.assertIn("$HERE/$APP_ID.credits.desktop", contents)
+
+    def test_credits_module_brings_no_binary_service_or_port(self) -> None:
+        """Credits plan C9: the credits module is a library inside CFA4: no program, service or
+        network port of its own, so it cannot clash with Cinecred or anything else."""
+        crate = ROOT / "crates/credits"
+        manifest = (crate / "Cargo.toml").read_text(encoding="utf-8")
+        self.assertNotIn("[[bin]]", manifest)
+        self.assertFalse((crate / "src/main.rs").exists() or (crate / "src/bin").exists())
+        for src in (crate / "src").rglob("*.rs"):
+            text = src.read_text(encoding="utf-8")
+            for banned in ("std::net", "TcpListener", "UdpSocket", "std::process::Command"):
+                self.assertNotIn(banned, text, f"{src}: {banned}")
+        services = [p for p in PACKAGE.rglob("*") if p.suffix in (".service", ".socket") or "dbus" in p.name.lower()]
+        self.assertEqual(services, [])
+
     def test_cfa4_icon_is_valid_svg_and_has_identity(self) -> None:
         root = ET.parse(ICON).getroot()
         self.assertEqual(root.tag, "{http://www.w3.org/2000/svg}svg")
