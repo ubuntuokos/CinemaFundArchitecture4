@@ -32,8 +32,11 @@ pub const DEF_TIMECODE: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x
 /// Generic container: multiple wrappings (ST 379-2).
 pub const EC_MULTIPLE: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x03, 0x0D, 0x01, 0x03, 0x01, 0x02, 0x7F, 0x01, 0x00];
 
+/// AES3 PCM frame-wrapped (ST 382 Table 2), one per RDD 9 channel track.
+pub const EC_AES3: [u8; 16] = essence_container(0x01, 0x06, 0x03, 0x00);
+
 /// Essence container label of a generic-container mapping: 06 0E 2B 34 04 01 01 vv 0D 01 03 01 02 mm ww xx.
-pub fn essence_container(version: u8, mapping: u8, b14: u8, b15: u8) -> [u8; 16] {
+pub const fn essence_container(version: u8, mapping: u8, b14: u8, b15: u8) -> [u8; 16] {
     [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, version, 0x0D, 0x01, 0x03, 0x01, 0x02, mapping, b14, b15]
 }
 

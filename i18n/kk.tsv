@@ -3608,6 +3608,8 @@
 	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, D-10 түрі (IMX 50): тек intra MPEG-2 4:2:2P@ML, 50 Мбит/с, 720x486, 29,97 кадр/с (4:3), төрт 24 биттік 48 кГц аудиоарна
 	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, D-10 түрі (IMX 50): тек intra MPEG-2 4:2:2P@ML, 50 Мбит/с, 720x576, 25 кадр/с (4:3), төрт 24 биттік 48 кГц аудиоарна
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 биттік 48 кГц PCM, бастапқы уақыт коды
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a, SMPTE RDD 9 орналасуында: MPEG-2 4:2:2 Profile ұзын GOP (12 кадр, IBBP), 50 Мбит/с, 1920x1080 немесе 1280x720 прогрессивті, әр арнаға жеке AES3 элементі ретінде төрт 24 биттік 48 кГц арна
 	Main	Негізгі
 	Mark In (Hover Scrub)	Кіруді белгілеу (меңзерді апарып қарау)
 	Mark Out (Hover Scrub)	Шығуды белгілеу (меңзерді апарып қарау)

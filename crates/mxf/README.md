@@ -1,7 +1,8 @@
 # cfa4-mxf
 
 A clean-room MXF demuxer and writer. Layer L0: no dependencies beyond `std`, no `unsafe`, builds for
-`wasm32-unknown-unknown`. No GPL/LGPL code (FFmpeg, libMXF, bmx, MXFLib) was consulted; FFmpeg is
+`wasm32-unknown-unknown`. No GPL/LGPL code (FFmpeg) was consulted; the BSD-3-Clause bmx (BBC) was
+read for the D-10 and RDD 9 layouts (register in `docs/licensing.md` §5, nothing copied). FFmpeg is
 used only as an external fixture generator and test oracle.
 
 ## Specifications
@@ -21,7 +22,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 331 | 2011 | element data of 8-channel AES3 sound (D-10; reader and writer), ST 12-1 time code metadata of the system item |
 | SMPTE ST 385 | 2012 | SDTI-CP compatible system item (writer: system metadata pack, package metadata set) |
 | SMPTE ST 2067-201 | 2019 | IAB track files: IAB essence descriptor (set 0x7B), clip-wrapped container, element type 0x0D (labels from the SMPTE registers) |
-| SMPTE RDD 9 | 2013 | MPEG long GOP coding labels (Table 6: MP@HL, 422P@HL, MP@H-14) for the writer |
+| SMPTE RDD 9 | 2013 | MPEG long GOP coding labels (Table 6: MP@HL, 422P@HL, MP@H-14) for the writer; the XDCAM HD422 OP1a layout (`WriterConfig::rdd9`) |
 | SMPTE ST 384 | 2005 | uncompressed picture mapping: container label (mapping 05h, frame / clip / line wrapping), element types 02h / 03h / 04h |
 | SMPTE ST 377-1 | 2019, G.1, G.2.22–G.2.25, G.2.35, G.2.40 | uncompressed layouts: stored / sampled / display rectangles, image start / end fill, the Y'CbCr layout labels of G.2.25, Reversed Byte Order, Padding Bits, RGBA Pixel Layout and Component Min / Max Ref |
 | SMPTE ST 386 | 2004 | D-10 (IMX) mapping: container label, sound element type; writer: content packages on a 512-byte KAG, constant-size index with delta entries, Annex A descriptor values |
@@ -190,7 +191,14 @@ w.finish()?;
   IdenticalGOP, MaxGOP, BPictureCount, ProfileAndLevel and BitRate under dynamic tags, the RDD 9
   Table 6 coding labels for MP@HL / MP@H-14 / 422P@HL long GOP; random access entries flagged
   with their sequence header, P and B entries with the naive prediction flags of ST 381-1 A.2;
-  no SDTI-CP system item or AES3 elements, so not a strict RDD 9 file), type D-10 / IMX
+  without `rdd9` no SDTI-CP system item or AES3 elements; with `WriterConfig::rdd9` the strict
+  RDD 9 layout: per content package the ST 385 system item (bitmap 5Ch, the time code as the user
+  stamp), the picture element (number 0) and one frame-wrapped AES3 element per channel (ST 382
+  container `02 06 03 00`, 4 or 8 elements, the unused ones silent, every element padded to the
+  size of the largest edit unit's samples), each item on the 512-byte KAG; a new body partition at
+  the first key frame five seconds into the previous one, carrying the previous partition's index
+  table segment (one slice for the sound, delta entries system / picture (reordered) / channels),
+  the footer indexing the last; an AES3 audio descriptor per mono channel track), type D-10 / IMX
   (`PictureCoding::D10`, ST 386: the defined-template container `01 01 rr 01` and the RP 224
   422P@ML I-frame coding label for 30 / 40 / 50 Mbit/s at 625 / 525 lines; one SDTI-CP
   compatible content package per frame: the ST 385 system item with the time code of the frame,
@@ -223,7 +231,10 @@ w.finish()?;
   flags), OP-Atom picture (clip wrapping) and PCM files at both edit rates, multi-segment index
   of 12 000 units, UMIDs; D-10 625 and 525 content packages (KAG alignment, system item bytes,
   padded pictures, AES3 headers and the 5-sequence count, PCM exact) and their refused
-  configurations; truncation and random mutation of written files never panic.
+  configurations; RDD 9 at 25 Hz over 13 s (partitions every 126 units with the previous index
+  segment, partition links and footer offsets, system item bytes, delta entries, per-channel
+  element keys and PCM, presentation order) and 59.94 Hz (800 / 801-sample elements of one size,
+  a silent second channel) and its refused configurations; truncation and random mutation of written files never panic.
 - `crates/export/src/mxf_tests.rs` (ffprobe / ffmpeg as external oracles): OP1a exports with
   DNxHR, ProRes and H.264 — ffprobe reports the OP1a label, codec, 24 frames, frame rate, duration
   and `01:00:00:00` timecode; ffmpeg decodes the MXF picture exactly as it decodes the same

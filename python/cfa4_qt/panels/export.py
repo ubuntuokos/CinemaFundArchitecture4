@@ -99,7 +99,7 @@ AUDIO_CODECS = (
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
 FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
-    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"), ("d10", "D-10 (IMX)"))),
+    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"), ("d10", "D-10 (IMX)"), ("xdcamHd422", "XDCAM HD422 (RDD 9)"))),
     ("proresProfile", N_("Profile"), "export.video.proresProfile", (
         ("proxy", "Apple ProRes 422 Proxy"), ("lt", "Apple ProRes 422 LT"), ("standard", "Apple ProRes 422"),
         ("hq", "Apple ProRes 422 HQ"), ("4444", "Apple ProRes 4444"), ("4444xq", "Apple ProRes 4444 XQ"))),
@@ -116,7 +116,7 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
                    "cineformQuality": "filmscan1", "exrCompression": "none"}
 MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
-MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2"}
+MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
                       "cineformQuality": "cineform", "exrCompression": "exr"}
@@ -990,14 +990,15 @@ class ExportDialog(QDialog):
 
     def _sync_mpeg2_rows(self) -> None:
         """MPEG-2 video settings: for MPEG-2 files and MPEG-2 in MXF (the container only for files;
-        D-10 / IMX fixes its own GOP, B pictures and chroma)."""
+        D-10 / IMX fixes its own GOP, B pictures and chroma, XDCAM HD422 its 4:2:2 chroma)."""
         fmt = str(self.format.currentData() or "")
         mxf_codec = self._choice("mxfVideoCodec")
         video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
         self.container.setEnabled(fmt == "mpeg2")
         self.rows.allow_interlaced(fmt == "mpeg2")  # only MPEG-2 export codes interlaced video (egui's Field Order)
-        for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
+        for w in (self.gop, self.b_frames, self.quantizer):
             w.setEnabled(video)
+        self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))
         self.video_form.setRowVisible(self.gop, video)  # H.264 / H.265 / AV1 have egui's own row
 
     def _sync_format_rows(self) -> None:
@@ -1280,7 +1281,7 @@ class ExportDialog(QDialog):
                 p["mpeg2BFrames"] = self.b_frames.value()
             if "quantizer" in self.touched:
                 p["mpeg2Quantizer"] = self.quantizer.value()
-            if "chroma" in self.touched:
+            if "chroma" in self.touched and self.chroma.isEnabled():
                 p["mpeg2Chroma"] = self.chroma.currentData()
         if self.dcp_resolution.isEnabled():
             p["dcpResolution"] = self.dcp_resolution.currentData()

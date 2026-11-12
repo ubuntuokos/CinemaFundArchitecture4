@@ -117,6 +117,15 @@ fn mxf(format: Format, codec: MxfVideoCodec, profile: &str) -> ExportSettings {
             s.keyframe_distance = Some(12);
             s.mpeg2_b_frames = Some(2);
         }
+        MxfVideoCodec::XdcamHd422 => {
+            // XDCAM HD422 50: a closed GOP of 12 with IBBP, four 24-bit channels
+            s.bitrate_kbps = 50_000;
+            s.max_bitrate_kbps = Some(50_000);
+            s.keyframe_distance = Some(12);
+            s.mpeg2_b_frames = Some(2);
+            s.mpeg2_422 = true;
+            s.audio.channels = 4;
+        }
         MxfVideoCodec::D10 => {
             // IMX 50 with four audio channels, the usual D-10 configuration
             s.bitrate_kbps = 50_000;
@@ -231,6 +240,12 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             bc,
             "MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes",
             mxf(Format::MxfOp1a, MxfVideoCodec::Mpeg2, ""),
+        ),
+        p(
+            "MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s",
+            bc,
+            "MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements",
+            mxf(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, ""),
         ),
         p(
             "MXF OP1a D-10 (IMX) 50 Mbit/s 625/25",

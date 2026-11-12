@@ -1990,6 +1990,8 @@
 	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 유형(IMX 50): 인트라 전용 MPEG-2 4:2:2P@ML 50 Mbit/s, 720x486, 29.97 fps(4:3), 24비트 48 kHz 오디오 4채널
 	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 유형(IMX 50): 인트라 전용 MPEG-2 4:2:2P@ML 50 Mbit/s, 720x576, 25 fps(4:3), 24비트 48 kHz 오디오 4채널
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24비트 48 kHz PCM, 시작 타임코드
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 배치의 MXF OP1a: MPEG-2 4:2:2 Profile 롱 GOP(12픽처, IBBP) 50 Mbit/s, 1920x1080 또는 1280x720 프로그레시브, 채널별 AES3 요소로 24비트 48 kHz 4채널
 	My Shortcuts	내 단축키
 	My Templates	내 템플릿
 	Name	이름
