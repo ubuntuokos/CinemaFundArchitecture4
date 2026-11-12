@@ -25,7 +25,7 @@ reached only through the optional GStreamer backend
 | JPEG 2000 (MXF, DCP) | none | decode + encode, Part 1 and the cinema profiles | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | 40–70 h |
 | DCP packaging | SMPTE DCP write (#115): one reel, 2K / 4K, 5.1, unencrypted OV; IAB immersive audio (#343, ST 429-18 / 429-19, FSK sync ST 430-12) with ST 429-16 composition metadata, ISDCF Doc 15 IAB Profile 1 and MCA labels (#348); plain 5.1 per SMPTE RDD 52 (#309): MCA labels, RDD 52 constraints profile, FFOC/LFOC markers, spoken language, ISDCF folder name; Dolby Atmos TrueHD (.thd, or its track in MKV / MP4 / M2TS, #411) to IAB with its bed (7.1 DS / 9.1OH) and objects (#347); 7.1 DS bed from a 7.1 Mix, 9.1OH bed from a 7.1.2 Mix (#374) | Interop DCP, multiple reels, subtitles, 3D, KDM | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | 20–30 h after JPEG 2000 |
 | ProRes, DNxHD / DNxHR | decode + encode | ProRes RAW | — | — | see codec-parity.md |
-| OpenEXR, DPX | read + write | EXR PIZ / B44 / DWA, tiled, multi-part | OpenEXR file layout docs | BSD-3-Clause | 15–25 h |
+| OpenEXR, DPX | read + write | EXR B44 / DWA, tiled, multi-part (PIZ read and write done) | OpenEXR file layout docs | BSD-3-Clause | 15–25 h |
 | OpenMAX IL hardware codecs | **probe only** (this change) | — | Khronos OpenMAX IL 1.1.2 | the API is open; components are vendor drivers | see below |
 
 ## OpenMAX

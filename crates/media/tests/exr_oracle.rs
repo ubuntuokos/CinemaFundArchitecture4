@@ -189,3 +189,56 @@ fn exr_pxr24_matches_openexr() {
         assert_eq!(max_diff(&ours, &want), 0.0, "{name}");
     }
 }
+
+/// PIZ (wavelet + Huffman; ffmpeg's encoder cannot write it): OpenImageIO (the OpenEXR library)
+/// writes the files and re-writes them uncompressed, and our decode of the PIZ file must give
+/// exactly the floats of that uncompressed copy. The sizes cover several 32-line chunks, a short
+/// last chunk, odd widths and both wavelet bases (the noisy float files use the 16-bit one).
+#[test]
+fn exr_piz_matches_openexr() {
+    let tool = |args: &[&str]| std::process::Command::new("oiiotool").args(args).status().is_ok_and(|s| s.success());
+    if !tool(&["--version"]) {
+        eprintln!("SKIPPED: oiiotool is not installed");
+        return;
+    }
+    for (name, depth, channels, size) in
+        [("f4", "float", 4, "95x63"), ("h4", "half", 4, "40x35"), ("f3", "float", 3, "17x16"), ("h3", "half", 3, "129x97"), ("h1", "half", 1, "1x40")]
+    {
+        let packed = dir().join(format!("piz_{name}.exr"));
+        let plain = dir().join(format!("piz_{name}_plain.exr"));
+        let ok = |p: &Path| {
+            cfa4_testkit::fixtures::generate(p, |tmp| {
+                let t = tmp.to_string_lossy().to_string();
+                if p == packed.as_path() {
+                    tool(&[
+                        "--pattern",
+                        "fill:topleft=1,0,0,0.5:topright=0,1,0,0.5:bottomleft=0,0,1,1:bottomright=1,1,1,1",
+                        size,
+                        &channels.to_string(),
+                        "--noise:type=gaussian:mean=0:stddev=0.3",
+                        "-d",
+                        depth,
+                        "--compression",
+                        "piz",
+                        "-o",
+                        &t,
+                    ])
+                } else {
+                    tool(&[packed.to_string_lossy().as_ref(), "-d", depth, "--compression", "none", "-o", &t])
+                }
+            })
+        };
+        let (Some(packed), Some(plain)) = (ok(&packed), ok(&plain)) else {
+            eprintln!("SKIPPED: oiiotool cannot write {name}");
+            continue;
+        };
+        let bytes = std::fs::read(&packed).unwrap();
+        let at = bytes.windows(24).position(|w| w == b"compression\0compression\0").unwrap() + 28;
+        assert_eq!(bytes[at], 4, "{name} is PIZ compressed");
+        let decode = |p: &Path| {
+            floats(&cfa4_media::open_bytes("still.exr", std::fs::read(p).unwrap().into(), &[]).unwrap().video_frame(FrameRequest::full(Tick(0))).unwrap())
+        };
+        let (ours, want) = (decode(&packed), decode(&plain));
+        assert_eq!(max_diff(&ours, &want), 0.0, "{name}");
+    }
+}

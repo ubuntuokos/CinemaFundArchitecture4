@@ -883,6 +883,7 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                     ExrCompression::Rle => "RLE",
                     ExrCompression::Zips => tl!("ZIP (1 scan line)"),
                     ExrCompression::Zip => tl!("ZIP (16 scan lines)"),
+                    ExrCompression::Piz => "PIZ",
                 };
                 let labels: Vec<&str> = ExrCompression::ALL.iter().map(|&c| label(c)).collect();
                 if let Some(i) = combo(ui, reg, "export.video.exrCompression", label(s.exr_compression), &opts(&labels), 220.0) {

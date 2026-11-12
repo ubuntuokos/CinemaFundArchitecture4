@@ -440,7 +440,7 @@ fn openexr_sequences_compress() {
         let path = dir.0.join("c000.exr");
         let bytes = std::fs::read(&path).unwrap();
         let at = bytes.windows(24).position(|w| w == b"compression\0compression\0").unwrap() + 28;
-        assert_eq!(bytes[at], [0, 1, 2, 3][files.len()], "{c:?}");
+        assert_eq!(bytes[at], [0, 1, 2, 3, 4][files.len()], "{c:?}");
         files.push((c, path, bytes.len(), dir));
     }
     let plain = files[0].2;
