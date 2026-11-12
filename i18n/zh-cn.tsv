@@ -4522,3 +4522,35 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	密钥只保存在内存中，直到执行“清除 DCP 密钥”或会话结束。
 	DCP keys forgotten	已清除 DCP 密钥
 	Choose the KDM file and the private key.	请选择 KDM 文件和私钥。
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	时间码同步
+	TimecodeSync	时间码同步
+	Chase	追随
+	Follow external timecode during playback	播放时追随外部时间码
+	Lock after	锁定前帧数
+	Keep playing without signal for	无信号时继续播放
+	External frame rate	外部帧速率
+	Offset (added to the external timecode)	偏移（加到外部时间码上）
+	LTC	LTC
+	LTC input device	LTC 输入设备
+	LTC input channel	LTC 输入声道
+	Send LTC during playback	播放时发送 LTC
+	LTC output device	LTC 输出设备
+	LTC output channel	LTC 输出声道
+	LTC level	LTC 电平
+	dBFS	dBFS
+	MIDI Timecode	MIDI 时间码
+	MTC input port (empty = CFA4 port)	MTC 输入端口（留空 = CFA4 端口）
+	Send MIDI Timecode during playback	播放时发送 MIDI 时间码
+	MTC output port (empty = CFA4 port)	MTC 输出端口（留空 = CFA4 端口）
+	Send timecode ahead of the picture by	时间码提前于画面发送
+	LTC (audio input)	LTC（音频输入）
+	MIDI Timecode (MIDI input)	MIDI 时间码（MIDI 输入）
+	Same as the sequence	与序列相同
+	29.97 fps drop-frame	29.97 fps 丢帧
+	29.97 fps non-drop	29.97 fps 不丢帧
+	Timecode Sync Status	时间码同步状态
+	Chase External Timecode	追随外部时间码
+	Send LTC	发送 LTC
+	Send MIDI Timecode	发送 MIDI 时间码

@@ -4526,3 +4526,35 @@ export.summary	Low	χαμηλή
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Τα κλειδιά μένουν μόνο στη μνήμη, μέχρι τη «Διαγραφή κλειδιών DCP» ή το τέλος της συνεδρίας.
 	DCP keys forgotten	Τα κλειδιά DCP διαγράφηκαν
 	Choose the KDM file and the private key.	Επιλέξτε το αρχείο KDM και το ιδιωτικό κλειδί.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Συγχρονισμός χρονοκώδικα
+	TimecodeSync	Συγχρονισμός χρονοκώδικα
+	Chase	Παρακολούθηση
+	Follow external timecode during playback	Παρακολούθηση εξωτερικού χρονοκώδικα κατά την αναπαραγωγή
+	Lock after	Κλείδωμα μετά από
+	Keep playing without signal for	Συνέχιση χωρίς σήμα για
+	External frame rate	Εξωτερικός ρυθμός καρέ
+	Offset (added to the external timecode)	Μετατόπιση (προστίθεται στον εξωτερικό χρονοκώδικα)
+	LTC	LTC
+	LTC input device	Συσκευή εισόδου LTC
+	LTC input channel	Κανάλι εισόδου LTC
+	Send LTC during playback	Αποστολή LTC κατά την αναπαραγωγή
+	LTC output device	Συσκευή εξόδου LTC
+	LTC output channel	Κανάλι εξόδου LTC
+	LTC level	Στάθμη LTC
+	dBFS	dBFS
+	MIDI Timecode	Χρονοκώδικας MIDI
+	MTC input port (empty = CFA4 port)	Θύρα εισόδου MTC (κενό = θύρα CFA4)
+	Send MIDI Timecode during playback	Αποστολή χρονοκώδικα MIDI κατά την αναπαραγωγή
+	MTC output port (empty = CFA4 port)	Θύρα εξόδου MTC (κενό = θύρα CFA4)
+	Send timecode ahead of the picture by	Αποστολή χρονοκώδικα πριν από την εικόνα κατά
+	LTC (audio input)	LTC (είσοδος ήχου)
+	MIDI Timecode (MIDI input)	Χρονοκώδικας MIDI (είσοδος MIDI)
+	Same as the sequence	Ίδιος με την ακολουθία
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Κατάσταση συγχρονισμού χρονοκώδικα
+	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
+	Send LTC	Αποστολή LTC
+	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI

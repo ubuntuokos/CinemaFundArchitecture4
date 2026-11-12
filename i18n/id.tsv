@@ -4532,3 +4532,35 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Kunci hanya disimpan di memori, sampai Lupakan Kunci DCP atau akhir sesi.
 	DCP keys forgotten	Kunci DCP dilupakan
 	Choose the KDM file and the private key.	Pilih file KDM dan kunci privat.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sinkronisasi Timecode
+	TimecodeSync	Sinkronisasi Timecode
+	Chase	Ikuti
+	Follow external timecode during playback	Ikuti timecode eksternal saat pemutaran
+	Lock after	Kunci setelah
+	Keep playing without signal for	Tetap putar tanpa sinyal selama
+	External frame rate	Frame rate eksternal
+	Offset (added to the external timecode)	Offset (ditambahkan ke timecode eksternal)
+	LTC	LTC
+	LTC input device	Perangkat input LTC
+	LTC input channel	Kanal input LTC
+	Send LTC during playback	Kirim LTC saat pemutaran
+	LTC output device	Perangkat output LTC
+	LTC output channel	Kanal output LTC
+	LTC level	Level LTC
+	dBFS	dBFS
+	MIDI Timecode	Timecode MIDI
+	MTC input port (empty = CFA4 port)	Port input MTC (kosong = port CFA4)
+	Send MIDI Timecode during playback	Kirim Timecode MIDI saat pemutaran
+	MTC output port (empty = CFA4 port)	Port output MTC (kosong = port CFA4)
+	Send timecode ahead of the picture by	Kirim timecode mendahului gambar sebesar
+	LTC (audio input)	LTC (input audio)
+	MIDI Timecode (MIDI input)	Timecode MIDI (input MIDI)
+	Same as the sequence	Sama dengan sequence
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status Sinkronisasi Timecode
+	Chase External Timecode	Ikuti Timecode Eksternal
+	Send LTC	Kirim LTC
+	Send MIDI Timecode	Kirim Timecode MIDI

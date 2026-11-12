@@ -4531,3 +4531,35 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Las claves solo se guardan en memoria, hasta Olvidar claves DCP o el final de la sesión.
 	DCP keys forgotten	Claves DCP olvidadas
 	Choose the KDM file and the private key.	Elija el archivo KDM y la clave privada.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sincronización de código de tiempo
+	TimecodeSync	Sincronización de código de tiempo
+	Chase	Seguimiento
+	Follow external timecode during playback	Seguir el código de tiempo externo durante la reproducción
+	Lock after	Bloquear tras
+	Keep playing without signal for	Seguir reproduciendo sin señal durante
+	External frame rate	Velocidad de fotogramas externa
+	Offset (added to the external timecode)	Desplazamiento (se suma al código de tiempo externo)
+	LTC	LTC
+	LTC input device	Dispositivo de entrada LTC
+	LTC input channel	Canal de entrada LTC
+	Send LTC during playback	Enviar LTC durante la reproducción
+	LTC output device	Dispositivo de salida LTC
+	LTC output channel	Canal de salida LTC
+	LTC level	Nivel de LTC
+	dBFS	dBFS
+	MIDI Timecode	Código de tiempo MIDI
+	MTC input port (empty = CFA4 port)	Puerto de entrada MTC (vacío = puerto de CFA4)
+	Send MIDI Timecode during playback	Enviar código de tiempo MIDI durante la reproducción
+	MTC output port (empty = CFA4 port)	Puerto de salida MTC (vacío = puerto de CFA4)
+	Send timecode ahead of the picture by	Enviar el código de tiempo por delante de la imagen
+	LTC (audio input)	LTC (entrada de audio)
+	MIDI Timecode (MIDI input)	Código de tiempo MIDI (entrada MIDI)
+	Same as the sequence	Igual que la secuencia
+	29.97 fps drop-frame	29,97 fps con eliminación de fotogramas
+	29.97 fps non-drop	29,97 fps sin eliminación de fotogramas
+	Timecode Sync Status	Estado de la sincronización de código de tiempo
+	Chase External Timecode	Seguir código de tiempo externo
+	Send LTC	Enviar LTC
+	Send MIDI Timecode	Enviar código de tiempo MIDI

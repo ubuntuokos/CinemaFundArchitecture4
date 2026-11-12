@@ -4526,3 +4526,35 @@ export.summary	Low	төмен
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кілттер тек жадта сақталады, «DCP кілттерін ұмыту» командасына немесе сеанс соңына дейін.
 	DCP keys forgotten	DCP кілттері ұмытылды
 	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Уақыт кодын синхрондау
+	TimecodeSync	Уақыт кодын синхрондау
+	Chase	Ілесу
+	Follow external timecode during playback	Ойнату кезінде сыртқы уақыт кодына ілесу
+	Lock after	Бекіту уақыты
+	Keep playing without signal for	Сигналсыз ойнатуды жалғастыру
+	External frame rate	Сыртқы кадр жиілігі
+	Offset (added to the external timecode)	Ығысу (сыртқы уақыт кодына қосылады)
+	LTC	LTC
+	LTC input device	LTC кіріс құрылғысы
+	LTC input channel	LTC кіріс арнасы
+	Send LTC during playback	Ойнату кезінде LTC жіберу
+	LTC output device	LTC шығыс құрылғысы
+	LTC output channel	LTC шығыс арнасы
+	LTC level	LTC деңгейі
+	dBFS	dBFS
+	MIDI Timecode	MIDI уақыт коды
+	MTC input port (empty = CFA4 port)	MTC кіріс порты (бос = CFA4 порты)
+	Send MIDI Timecode during playback	Ойнату кезінде MIDI уақыт кодын жіберу
+	MTC output port (empty = CFA4 port)	MTC шығыс порты (бос = CFA4 порты)
+	Send timecode ahead of the picture by	Уақыт кодын кескіннен бұрын жіберу
+	LTC (audio input)	LTC (дыбыс кірісі)
+	MIDI Timecode (MIDI input)	MIDI уақыт коды (MIDI кірісі)
+	Same as the sequence	Тізбектегідей
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Уақыт кодын синхрондау күйі
+	Chase External Timecode	Сыртқы уақыт кодына ілесу
+	Send LTC	LTC жіберу
+	Send MIDI Timecode	MIDI уақыт кодын жіберу
