@@ -1792,6 +1792,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 資料夾：JPEG 2000 3996×2160（1.85:1），5.1 24 位 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 資料夾：JPEG 2000 4096×1716（2.39:1），5.1 24 位 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E（可互通母版包）
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF 資料夾：JPEG 2000 1920×1080，5.1 24 位 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF 資料夾：JPEG 2000 3840×2160，5.1 24 位 48 kHz PCM
+	Episode	劇集
+	Event highlights	活動精華
+	Event	活動
+	Lossless (reversible JPEG 2000)	無損（可逆 JPEG 2000）
+	Package language	套件語言
 	4:2:0 (Main Profile)	4:2:0（Main 配置檔案）
 	4:2:2 (4:2:2 Profile)	4:2:2（4:2:2 配置檔案）
 	B pictures	B 影格
@@ -1949,6 +1959,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main（HDR 用 10 位）
 	10-bit RGB	10 位 RGB
 	12-bit X'Y'Z'	12 位 X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 位 R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF 有損
+	JPEG 2000 IMF reversible	JPEG 2000 IMF 可逆
 	16-bit half float	16 位半精度浮點
 	linear	線性
 	uncompressed	未壓縮
@@ -4502,3 +4515,12 @@ export.summary	Low	低
 	the engine did not start the check	引擎未開始檢查
 	the engine sent no report	引擎未傳送報告
 	Write the captions as ANC data (CEA-608/708, 29.97 fps)	將字幕寫為 ANC 資料（CEA-608/708，29.97 fps）
+	Load KDM…	載入 KDM…
+	Forget DCP Keys	清除 DCP 金鑰
+	Load KDM	載入 KDM
+	KDM file	KDM 檔案
+	Private key (PEM)	私密金鑰 (PEM)
+	{title}: {count} keys loaded	{title}：已載入 {count} 個金鑰
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	金鑰只保存在記憶體中，直到執行「清除 DCP 金鑰」或工作階段結束。
+	DCP keys forgotten	已清除 DCP 金鑰
+	Choose the KDM file and the private key.	請選擇 KDM 檔案和私密金鑰。

@@ -25,6 +25,8 @@
 pub mod apv;
 pub mod audio;
 pub mod av2;
+#[cfg(feature = "av2-external")]
+pub mod av2_external;
 pub mod avi;
 pub mod dif;
 pub mod dirac;

@@ -1869,6 +1869,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mapp: JPEG 2000 3996×2160 (1,85:1), 5.1 PCM 24 bitar 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mapp: JPEG 2000 4096×1716 (2,39:1), 5.1 PCM 24 bitar 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF-mapp: JPEG 2000 1920×1080, 5.1 PCM 24 bitar 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF-mapp: JPEG 2000 3840×2160, 5.1 PCM 24 bitar 48 kHz
+	Episode	Avsnitt
+	Event highlights	Höjdpunkter från evenemang
+	Event	Evenemang
+	Lossless (reversible JPEG 2000)	Förlustfritt (reversibel JPEG 2000)
+	Package language	Paketspråk
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-bilder
@@ -2026,6 +2036,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bitar för HDR)
 	10-bit RGB	10-bitars RGB
 	12-bit X'Y'Z'	12-bitars X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitars R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF med förlust
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reversibel
 	16-bit half float	16-bitars halvt flyttal
 	linear	linjär
 	uncompressed	okomprimerat
@@ -4505,3 +4518,12 @@ export.summary	Low	låg
 	the engine did not start the check	motorn startade inte kontrollen
 	the engine sent no report	motorn skickade ingen rapport
 	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Skriv undertexterna som ANC-data (CEA-608/708, 29,97 bild/s)
+	Load KDM…	Läs in KDM…
+	Forget DCP Keys	Glöm DCP-nycklar
+	Load KDM	Läs in KDM
+	KDM file	KDM-fil
+	Private key (PEM)	Privat nyckel (PEM)
+	{title}: {count} keys loaded	{title}: {count} nycklar inlästa
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nycklarna finns bara i minnet, tills Glöm DCP-nycklar eller sessionens slut.
+	DCP keys forgotten	DCP-nycklarna glömda
+	Choose the KDM file and the private key.	Välj KDM-filen och den privata nyckeln.
