@@ -2337,6 +2337,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR-hez 10 bites)
 	10-bit RGB	10 bites RGB
 	12-bit X'Y'Z'	12 bites X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 bites R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF veszteséges
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reverzibilis
 	16-bit half float	16 bites, félpontos lebegőpontos
 	linear	lineáris
 	uncompressed	tömörítetlen

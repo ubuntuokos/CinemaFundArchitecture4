@@ -1834,6 +1834,11 @@
 	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF klasörü: JPEG 2000 1920×1080, 5.1 24 bit 48 kHz PCM
 	IMF App 2E UHD	IMF App 2E UHD
 	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF klasörü: JPEG 2000 3840×2160, 5.1 24 bit 48 kHz PCM
+	Episode	Bölüm
+	Event highlights	Etkinlik özeti
+	Event	Etkinlik
+	Lossless (reversible JPEG 2000)	Kayıpsız (tersinir JPEG 2000)
+	Package language	Paket dili
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B resimleri
@@ -1985,6 +1990,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR için 10 bit)
 	10-bit RGB	10 bit RGB
 	12-bit X'Y'Z'	12 bit X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 bit R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF kayıplı
+	JPEG 2000 IMF reversible	JPEG 2000 IMF tersinir
 	16-bit half float	16 bit yarım kayan nokta
 	linear	doğrusal
 	uncompressed	sıkıştırmasız

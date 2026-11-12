@@ -1787,6 +1787,11 @@
 	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Folder SMPTE IMF: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM
 	IMF App 2E UHD	IMF App 2E UHD
 	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Folder SMPTE IMF: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM
+	Episode	Odcinek
+	Event highlights	Skrót wydarzenia
+	Event	Wydarzenie
+	Lossless (reversible JPEG 2000)	Bezstratny (odwracalny JPEG 2000)
+	Package language	Język pakietu
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	Obrazy B
@@ -1939,6 +1944,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bit dla HDR)
 	10-bit RGB	10-bitowy RGB
 	12-bit X'Y'Z'	12-bitowy X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitowy R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF stratny
+	JPEG 2000 IMF reversible	JPEG 2000 IMF odwracalny
 	16-bit half float	16-bitowy półprecyzyjny zmiennoprzecinkowy
 	linear	liniowy
 	uncompressed	bez kompresji
