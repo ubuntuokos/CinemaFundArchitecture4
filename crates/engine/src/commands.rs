@@ -1549,7 +1549,7 @@ fn build() -> Vec<CommandSpec> {
                 // picture and sound still import as media below.
                 if let Some(r) = crate::captions::import_anc_captions(s, &path) {
                     match r {
-                        Ok(r) => reports.push(r),
+                        Ok(r) => reports.extend(r),
                         Err(e) => errors.push(format!("{path}: {e}")),
                     }
                 }

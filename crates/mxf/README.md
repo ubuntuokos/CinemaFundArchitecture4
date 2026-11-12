@@ -34,7 +34,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
 | SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
-| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate |
+| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h) and VI elements (element type 01h, VBI line essence container 0Dh, VBI Data Descriptor 5Bh, 1/8/10-bit sample codings), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate |
 | SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
 | SMPTE ST 429-6 | 2023 | Encrypted track files (reader): Cryptographic Context set, Encrypted Triplet pack, AES-128-CBC decryption with the Check Value, HMAC-SHA1 MIC |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
@@ -65,8 +65,14 @@ container; `read_anc(src)` returns every ANC element of the first ANC data track
 line number, wrapping and coding and the low 8 bits of its words from the DID through the user
 data. `AncData::cdps` lists the caption distribution packets (DID 61h, SDID 01h, SMPTE ST 334-2);
 `cfa4-engine` decodes them with `cfa4_captions::mcc::decode_cdps` into a caption track when such
-a file is imported (#929). VI lines (element type 01h) are not read yet; writing ANC data on
-export is still to come.
+a file is imported (#929). `AncData::cea608` lists the byte pairs of ST 334-1 Annex B CEA-608
+packets (DID 61h, SDID 02h) with their field. VI elements (element type 01h, the VBI line
+essence container, mapping 0Dh, VBI Data Descriptor 5Bh) are read too, also from files that
+have only them: `AncData::vi` holds each frame's `ViLine`s (line number, wrapping, coding and the
+samples as 10-bit values: 1-bit samples black 64 / white 940, 8-bit ones shifted up, 10-bit ones
+three per word), and `ViLine::field2` tells the field. The engine decodes digitised line 21 from
+them with `cfa4_captions::cea608::decode_line21` and imports each CEA-608 channel (CC1–CC4) as
+a caption track when there are no CDPs (#1005). Writing ANC data on export is still to come.
 
 ## Peeking at the header
 
