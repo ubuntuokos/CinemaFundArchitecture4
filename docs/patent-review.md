@@ -52,7 +52,7 @@ szabadalommal védett formátumot.
 | Apple ProRes | dekódolás, kódolás | `crates/prores` | alap | függőben | | |
 | DNxHD / DNxHR (VC-3) | dekódolás, kódolás | `crates/dnx` | alap | függőben | | |
 | JPEG 2000 (Part 1) | dekódolás, kódolás (DCI 2K / 4K profilok) | `crates/j2k` | alap | függőben | | |
-| HTJ2K (JPEG 2000 Part 15) | dekódolás | `crates/j2k` (az OpenJPH blokkdekódolójának portja) | alap | függőben | | |
+| HTJ2K (JPEG 2000 Part 15) | dekódolás, kódolás | `crates/j2k` (az OpenJPH blokkdekódolójának és blokk-kódolójának portja) | alap | függőben | | |
 | GoPro CineForm (CFHD) | dekódolás, kódolás | `crates/cineform` (a CineForm SDK portja) | alap | függőben | | |
 | JPEG XL | dekódolás | `crates/jxl` (a jxl-oxide portja) | alap | függőben | | |
 | HEIF / HEIC állókép | olvasás (a képelemek HEVC-dekódolása a `crates/hevc` sorában) | `crates/heif` | alap | függőben | | |
