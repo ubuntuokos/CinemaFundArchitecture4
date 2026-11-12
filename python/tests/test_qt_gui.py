@@ -2396,7 +2396,7 @@ EGUI_EXPORT_IDS: frozenset[str] = frozenset({
     "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
     "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
     "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
-    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dnxProfile",
+    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
     "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
     "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
     "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
@@ -2509,6 +2509,35 @@ def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
             win.export_dialog.hide()
         win._quit_confirmed = True
         win.close()
+
+
+def test_export_dash_manifest_switch_only_for_hls(app):
+    """egui's "DASH Manifest" row: shown for HLS only, and sent as ``dashManifest`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "hls", "label": "HLS"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.dashManifest")
+    assert box is dlg.dash_manifest and box.text() == "Also write a DASH manifest (.mpd)"
+    assert dlg.video_form.labelForField(box).text() == "DASH Manifest"
+    dlg.format.setCurrentIndex(dlg.format.findData("hls"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    assert "dashManifest" not in dlg.params()  # untouched: the preset's value stands
+    box.setChecked(True)
+    assert dlg.params()["dashManifest"] is True
+    dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dashManifest" not in dlg.params()
+    dlg._show_settings({"dashManifest": False})  # touched: the user's choice is kept
+    assert box.isChecked()
+    dlg.deleteLater()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
