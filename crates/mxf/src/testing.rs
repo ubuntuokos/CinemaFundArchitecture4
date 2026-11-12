@@ -325,8 +325,5 @@ pub fn test_key(label: &str) -> [u8; 16] {
     h.update(label.as_bytes());
     h.update(std::process::id().to_le_bytes());
     h.update(nanos.to_le_bytes());
-    let d = h.finalize();
-    let mut k = [0u8; 16];
-    k.copy_from_slice(&d[..16]);
-    k
+    h.finalize()[..16].try_into().unwrap()
 }
