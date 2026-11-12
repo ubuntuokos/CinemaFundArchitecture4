@@ -134,6 +134,11 @@ rfd = "0.18"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
+# CFA4-LINTS-001: no deprecated API, no future-incompatible code, idiomatic 2018+ Rust.
+# Lint groups need priority -1 so individual lints can still override them.
+deprecated = "deny"
+future_incompatible = { level = "deny", priority = -1 }
+rust_2018_idioms = { level = "deny", priority = -1 }
 
 [workspace.lints.clippy]
 dbg_macro = "warn"

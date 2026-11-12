@@ -9,7 +9,7 @@ use crate::modular::ChannelShift;
 use crate::render::{Region, Result};
 
 pub fn apply_jpeg_upsampling_single(
-    grid: SharedSubgrid<f32>,
+    grid: SharedSubgrid<'_, f32>,
     shift: ChannelShift,
     target_region: Region,
     tracker: Option<&AllocTracker>,

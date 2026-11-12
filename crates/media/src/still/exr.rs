@@ -471,7 +471,7 @@ pub fn decode(name: &str, b: &[u8]) -> Result<Decoded> {
         }
         let size = le32(b, off + 4).ok_or_else(|| bad(format!("chunk {i}")))? as usize;
         let data = b.get(off + 8..(off + 8).saturating_add(size)).ok_or_else(|| bad(format!("chunk {i} is truncated")))?;
-        let raw: std::borrow::Cow<[u8]> = if data.len() == expected {
+        let raw: std::borrow::Cow<'_, [u8]> = if data.len() == expected {
             // stored raw when compression would not shrink it
             data.into()
         } else {

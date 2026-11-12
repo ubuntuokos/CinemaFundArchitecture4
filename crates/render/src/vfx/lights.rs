@@ -54,7 +54,7 @@ fn tint(img: &mut Image, c: [f32; 3], k: f32) {
 }
 
 /// Echo Glow: glow repeated in widening echoes that fade by Decay.
-pub fn echo_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn echo_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let hi = highlights(img, fv(e, "threshold", cx) / 100.0, 0.1);
     let n = fv(e, "echoes", cx).clamp(1.0, 12.0) as usize;
     let r = fv(e, "radius", cx) * cx.px_scale * 0.5;
@@ -91,7 +91,7 @@ fn edges(img: &Image) -> Vec<f32> {
 }
 
 /// Edge Glow: coloured glow along the picture's edges.
-pub fn edge_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn edge_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let th = fv(e, "threshold", cx) / 100.0;
     let width = fv(e, "width", cx) * cx.px_scale;
     let r = fv(e, "radius", cx) * cx.px_scale * 0.5;
@@ -140,7 +140,7 @@ fn streak(src: &Image, dir: (f32, f32), len: f32) -> Image {
 }
 
 /// Glint: star streaks from the brightest points.
-pub fn glint(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn glint(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let hi = highlights(img, fv(e, "threshold", cx) / 100.0, 0.08);
     let rays = [2usize, 4, 6, 8][chv(e, "rays").min(3) as usize];
     let len = fv(e, "length", cx) * cx.px_scale;
@@ -164,7 +164,7 @@ pub fn glint(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Light Leaks: drifting warm coloured light washes (procedural, seeded, animated by Speed).
-pub fn light_leaks(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn light_leaks(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c1 = lin(cv(e, "c1", cx));
     let c2 = lin(cv(e, "c2", cx));
     let inten = fv(e, "intensity", cx) / 100.0;
@@ -196,7 +196,7 @@ pub fn light_leaks(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// RGB Split: red and blue sampled from opposite offsets (linear or radial from a centre).
-pub fn rgb_split(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn rgb_split(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let amt = fv(e, "amount", cx) * cx.px_scale;
     if amt.abs() < 1e-3 {
         return;
@@ -229,7 +229,7 @@ pub fn rgb_split(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Volumetric Rays: light shafts radiating from a source point (radial blur of the highlights).
-pub fn volumetric_rays(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn volumetric_rays(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = pv(e, "center", cx, img);
     let len = fv(e, "length", cx) / 100.0;
     let inten = fv(e, "intensity", cx) / 100.0;
@@ -273,7 +273,7 @@ pub fn volumetric_rays(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Wonder Glow: a rich multi-scale glow (three radii) with saturation and colour controls.
-pub fn wonder_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn wonder_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let mut hi = highlights(img, fv(e, "threshold", cx) / 100.0, 0.15);
     saturate_image(&mut hi, fv(e, "saturation", cx) / 100.0);
     if bv(e, "use_color") {
@@ -291,7 +291,7 @@ pub fn wonder_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Lens Flare (26.5 rebuild): core glow, halo, ghosts along the line through the frame centre and
 /// a lens-type-dependent streak; tinted by Flare Color, scaled by Size.
-pub fn lens_flare(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn lens_flare(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = pv(e, "center", cx, img);
     let br = fv(e, "brightness", cx) / 100.0;
     let blend = fv(e, "blend", cx) / 100.0;
@@ -348,7 +348,7 @@ pub fn lens_flare(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Alpha Glow (Legacy): glow outward from the alpha edges, Start Color fading to End Color.
-pub fn alpha_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn alpha_glow(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let r = fv(e, "glow", cx) * cx.px_scale * 0.5;
     if r <= 0.3 {
         return;

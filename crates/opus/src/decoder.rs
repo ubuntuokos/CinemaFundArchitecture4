@@ -219,7 +219,7 @@ impl StreamDecoder {
         }
         let data_len = data.map_or(0, |d| d.len());
         let mut dec_storage;
-        let mut dec: Option<&mut RangeDecoder> = match data {
+        let mut dec: Option<&mut RangeDecoder<'_>> = match data {
             Some(d) => {
                 dec_storage = RangeDecoder::new(d);
                 Some(&mut dec_storage)

@@ -350,7 +350,7 @@ impl MiInfo {
 mod tests {
     use super::*;
 
-    fn rows(b: &RowBand) -> (usize, usize) {
+    fn rows(b: &RowBand<'_>) -> (usize, usize) {
         (b.y0, b.data.len() / b.stride)
     }
 

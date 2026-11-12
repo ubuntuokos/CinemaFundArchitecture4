@@ -36,7 +36,7 @@ pub struct FxCtx<'a> {
     pub working: cfa4_color::WorkingSpace,
 }
 
-pub(crate) fn f(e: &EffectInstance, id: &str, cx: &FxCtx) -> f32 {
+pub(crate) fn f(e: &EffectInstance, id: &str, cx: &FxCtx<'_>) -> f32 {
     e.f64_at(id, cx.t) as f32
 }
 pub(crate) fn b(e: &EffectInstance, id: &str) -> bool {
@@ -58,11 +58,11 @@ pub(crate) fn choice(e: &EffectInstance, id: &str) -> u32 {
         _ => 0,
     }
 }
-pub(crate) fn color(e: &EffectInstance, id: &str, cx: &FxCtx) -> [f32; 4] {
+pub(crate) fn color(e: &EffectInstance, id: &str, cx: &FxCtx<'_>) -> [f32; 4] {
     e.param(id).and_then(|p| p.value_at(cx.t).as_color()).unwrap_or([1.0; 4])
 }
 /// A point param in working-image pixels; NaN components default to the image centre.
-pub(crate) fn point(e: &EffectInstance, id: &str, cx: &FxCtx, img: &Image) -> Vec2 {
+pub(crate) fn point(e: &EffectInstance, id: &str, cx: &FxCtx<'_>, img: &Image) -> Vec2 {
     let v = e.param(id).map(|p| p.vec2_at(cx.t)).unwrap_or(Vec2::new(f64::NAN, f64::NAN));
     Vec2::new(
         if v.x.is_nan() { img.w as f64 / 2.0 } else { v.x * cx.px_scale as f64 },
@@ -82,7 +82,7 @@ pub(crate) fn dec(c: [f32; 3]) -> [f32; 3] {
 /// Stable seed for the *exact* frame timestamp. A fixed 30 Hz quantizer
 /// would reuse the same noise field at 60/120 fps and can repeat at 30 fps
 /// through floating-point rounding of seconds.
-pub(crate) fn noise_frame_seed(cx: &FxCtx) -> u64 {
+pub(crate) fn noise_frame_seed(cx: &FxCtx<'_>) -> u64 {
     cx.t.0 as u64
 }
 
@@ -112,7 +112,7 @@ fn median_radius(radius: f32, px_scale: f32, longest_side: usize) -> isize {
     r.round().clamp(0.0, cap) as isize
 }
 
-pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     if !e.enabled || img.w == 0 || img.h == 0 {
         return;
     }
@@ -554,7 +554,7 @@ pub(crate) fn crop_px(img: &mut Image, x0: f32, x1: f32, y0: f32, y1: f32, fe: f
     });
 }
 
-pub(crate) fn key(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub(crate) fn key(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let ultra = e.effect == "ultra_key";
     let kc = if ultra { color(e, "key_color", cx) } else { color(e, "color", cx) };
     let kycc = cfa4_color::rgb_to_ycbcr(kc[0], kc[1], kc[2], cfa4_color::Matrix::Bt709);
@@ -604,7 +604,7 @@ pub(crate) fn key(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// The grading signal of the effect's section: HDR White (`white_id`) applies in HDR working
 /// spaces only.
-pub(crate) fn grade_space(e: &EffectInstance, cx: &FxCtx, white_id: &str) -> GradeSpace {
+pub(crate) fn grade_space(e: &EffectInstance, cx: &FxCtx<'_>, white_id: &str) -> GradeSpace {
     GradeSpace::new(cx.working, f(e, white_id, cx))
 }
 
@@ -621,7 +621,7 @@ fn within_unit(v: [f32; 3], hdr: bool, f: impl Fn([f32; 3]) -> [f32; 3]) -> [f32
     o.map(|q| q * m)
 }
 
-fn lumetri(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+fn lumetri(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let (basic_on, creative_on, vignette_on) = (on(e, "basic_on"), on(e, "creative_on"), on(e, "vignette_on"));
     let input_lut = if basic_on { crate::luts::resolve(cx.project, text(e, "input_lut")) } else { None };
     let bf = |id: &str| if basic_on { f(e, id, cx) } else { 0.0 };
@@ -1118,7 +1118,7 @@ pub fn apply_look(look: u32, c: [f32; 3]) -> [f32; 3] {
     }
 }
 
-fn lumetri_advanced(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+fn lumetri_advanced(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     const N: usize = 1024;
     let (creative_on, curves_on, wheels_on) = (on(e, "creative_on"), on(e, "curves_on"), on(e, "wheels_on"));
     let lut = |id: &str| curve_param(e, id).filter(|c| curves_on && !is_identity_curve(c)).map(|c| curve_lut(&c, N));
@@ -1240,7 +1240,7 @@ fn hsl_key(v: [f32; 3], hc: f32, hr: f32, smin: f32, lmin: f32, lmax: f32, soft:
 ///   resolution, scaled with the playback resolution) mixed in by the amount.
 /// - **Blur** softens the key's edges: a Gaussian (σ up to 20 px at full resolution, three box
 ///   passes) on the key.
-fn hsl_secondary(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+fn hsl_secondary(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     if !b(e, "hsl_on") {
         return;
     }

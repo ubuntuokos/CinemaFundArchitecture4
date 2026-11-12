@@ -56,7 +56,7 @@ const ROOT: &[&str] = &["Id", "AnnotationText", "Creator", "VolumeCount", "Issue
 const ASSET: &[&str] = &["Id", "AnnotationText", "PackingList", "ChunkList"];
 const CHUNK: &[&str] = &["Path", "VolumeIndex", "Offset", "Length"];
 
-pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
+pub(crate) fn read(doc: &Document<'_>, standard: Standard) -> AssetMap {
     let mut r = Reader::new(doc);
     let root = doc.root_element();
     let p = "AssetMap";
@@ -138,7 +138,7 @@ pub(crate) fn read(doc: &Document, standard: Standard) -> AssetMap {
     AssetMap { standard, id, annotation, creator, volume_count, issue_date, issuer, assets, extensions, issues: r.issues }
 }
 
-pub(crate) fn read_volume_index(doc: &Document, standard: Standard) -> VolumeIndex {
+pub(crate) fn read_volume_index(doc: &Document<'_>, standard: Standard) -> VolumeIndex {
     let mut r = Reader::new(doc);
     let root = doc.root_element();
     let index = r.positive(root, "VolumeIndex", "Index", true);

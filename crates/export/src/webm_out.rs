@@ -86,7 +86,7 @@ pub(crate) struct WebmMux {
 }
 
 impl WebmMux {
-    pub fn new(s: WebmSetup) -> Result<Self> {
+    pub fn new(s: WebmSetup<'_>) -> Result<Self> {
         let settings = s.settings;
         let mut v = TrackSpec::new(TrackKind::Video, "V_VP9");
         v.video_size = Some((s.width, s.height));

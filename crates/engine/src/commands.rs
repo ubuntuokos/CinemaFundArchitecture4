@@ -690,7 +690,7 @@ fn with_groups(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
 
 /// The delta a trim of `clips` (a clip and its linked partners) can apply together: `delta`
 /// clamped by each one's media and neighbours.
-fn clamp_trim_linked(q: &cfa4_project::Sequence, clips: &[ClipId], edge: Edge, mode: TrimMode, delta: Tick, ctx: &edit::EditCtx) -> Result<Tick> {
+fn clamp_trim_linked(q: &cfa4_project::Sequence, clips: &[ClipId], edge: Edge, mode: TrimMode, delta: Tick, ctx: &edit::EditCtx<'_>) -> Result<Tick> {
     let mut d = delta;
     let mut any = false;
     for c in clips {
@@ -738,7 +738,7 @@ fn with_links_p(s: &Session, p: &Value, clip: ClipId) -> Vec<ClipId> {
 /// The delta a roll of every cut in `pairs` can apply together: `delta` clamped by each pair's
 /// media and the frame left in each clip, each tried on a copy of `q`. 0 when a pair would roll
 /// by another amount (a clip whose Out point is past the end of its media rolls the other way).
-fn clamp_roll_linked(q: &cfa4_project::Sequence, pairs: &[(ClipId, ClipId)], delta: Tick, ctx: &mut edit::EditCtx) -> Result<Tick> {
+fn clamp_roll_linked(q: &cfa4_project::Sequence, pairs: &[(ClipId, ClipId)], delta: Tick, ctx: &mut edit::EditCtx<'_>) -> Result<Tick> {
     let mut d = delta;
     for &(pl, pr) in pairs {
         let mut probe = q.clone();
@@ -4184,7 +4184,7 @@ fn store_cut(s: &mut Session, cut: Option<Clipboard>) -> usize {
 /// `tracks` (the targeted ones) in `range`, cut at its edges and held the way Copy holds them.
 /// Extract also cuts sync-locked tracks only to keep them in sync; that material is not copied.
 /// Reads the sequence before the edit; None when the range has no clips on those tracks.
-fn cut_range(q: &cfa4_project::Sequence, tracks: &[TrackId], range: TimeRange, ctx: &mut edit::EditCtx, with_markers: bool) -> Option<Clipboard> {
+fn cut_range(q: &cfa4_project::Sequence, tracks: &[TrackId], range: TimeRange, ctx: &mut edit::EditCtx<'_>, with_markers: bool) -> Option<Clipboard> {
     let mut links = std::collections::HashMap::new();
     let mut clips = Vec::new();
     for (kind, list) in [(TrackKind::Video, &q.video_tracks), (TrackKind::Audio, &q.audio_tracks)] {

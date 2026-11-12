@@ -556,7 +556,7 @@ pub enum FixedFrames<'a> {
 /// syncframes of the program we decode in `first`. `None` when it is not known: an AAC
 /// configuration our decoder does not read, a header that does not parse, or a header whose rate
 /// is not `rate`.
-pub fn fixed_packet_samples(codec: FixedFrames, first: &[u8], rate: u32) -> Option<i64> {
+pub fn fixed_packet_samples(codec: FixedFrames<'_>, first: &[u8], rate: u32) -> Option<i64> {
     let mpegts = match codec {
         FixedFrames::Aac(asc) => {
             let Ok(dec) = cfa4_aac::Decoder::new(asc) else {
@@ -738,13 +738,13 @@ pub struct LatmConfig {
 
 const AAC_RATES: [u32; 13] = [96_000, 88_200, 64_000, 48_000, 44_100, 32_000, 24_000, 22_050, 16_000, 12_000, 11_025, 8_000, 7_350];
 
-fn latm_value(r: &mut cfa4_bitstream::BitReader) -> Option<u32> {
+fn latm_value(r: &mut cfa4_bitstream::BitReader<'_>) -> Option<u32> {
     let n = r.read_bits(2).ok()? + 1;
     r.read_bits(8 * n).ok()
 }
 
 /// StreamMuxConfig after `audioMuxVersion`, leaving the reader after it.
-fn stream_mux_config(r: &mut cfa4_bitstream::BitReader) -> Option<LatmConfig> {
+fn stream_mux_config(r: &mut cfa4_bitstream::BitReader<'_>) -> Option<LatmConfig> {
     let version = r.read_bits(1).ok()?;
     let version_a = if version == 1 { r.read_bits(1).ok()? } else { 0 };
     if version_a != 0 {

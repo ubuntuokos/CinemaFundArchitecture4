@@ -1002,13 +1002,13 @@ pub struct EncoderFrame<'a> {
 
 /// Per-picture work an encoder hands to the export's render threads, see
 /// [`VideoEncoder::prepare_ahead`].
-pub type PrepareAhead = std::sync::Arc<dyn Fn(&EncoderFrame) + Send + Sync>;
+pub type PrepareAhead = std::sync::Arc<dyn Fn(&EncoderFrame<'_>) + Send + Sync>;
 
 pub trait VideoEncoder: Send {
     /// MP4/MOV sample entry (codec config) — may only be complete after the first frame.
     fn sample_entry(&self) -> SampleEntry;
     fn timescale(&self) -> u32;
-    fn encode(&mut self, frame: &EncoderFrame) -> Result<Vec<EncodedPacket>>;
+    fn encode(&mut self, frame: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>>;
     fn flush(&mut self) -> Result<Vec<EncodedPacket>>;
     /// Media start offset for an edit list (B-frame delay), in the encoder timescale.
     fn media_start(&self) -> Option<i64> {
@@ -1375,7 +1375,7 @@ impl VideoEncoder for MjpegEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let rgb: Vec<u8> = f.rgba.as_chunks::<4>().0.iter().flat_map(|p| [p[0], p[1], p[2]]).collect();
         let mut out = Vec::new();
         let mut enc = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, self.quality);
@@ -1424,7 +1424,7 @@ impl VideoEncoder for Mpeg2Encoder {
             bit_rate: self.enc.signalled_bit_rate(),
         })
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         if self.yuv422 {
             timed(Stage::Convert, || rgba_to_yuv422_8(f.rgba, w, h, &mut self.y, &mut self.u, &mut self.v));
@@ -1606,7 +1606,7 @@ impl VideoEncoder for D10Encoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         if (w, h) != (usize::from(self.w), usize::from(self.h)) {
             return Err(ExportError::Encode(format!("D-10: a {w}x{h} frame in a {}x{} export", self.w, self.h)));
@@ -1785,7 +1785,7 @@ impl VideoEncoder for ProResEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let chroma = self.profile.chroma();
         let mut fr = cfa4_prores::Frame::new(f.width, f.height, chroma, 10, self.alpha);
         let (w, h) = (f.width as usize, f.height as usize);
@@ -1973,7 +1973,7 @@ impl VideoEncoder for DnxEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let mut fr = cfa4_dnx::Frame::new(f.width, f.height, cfa4_dnx::ChromaFormat::Yuv422, 10, false);
         match f.hdr {
             Some(rgb) => {
@@ -2036,7 +2036,7 @@ impl VideoEncoder for ApvEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         let mut fr = cfa4_apv::Frame::new(f.width, f.height, self.chroma, 10, self.chroma == cfa4_apv::ChromaFormat::Yuv4444);
         let mut y422 = vec![0u16; w * h];
@@ -2162,7 +2162,7 @@ impl VideoEncoder for CineformEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         use cfa4_cineform::EncodedFormat;
         let (w, h) = (f.width as usize, f.height as usize);
         if (f.width, f.height) != (self.cfg.width, self.cfg.height) {
@@ -2241,7 +2241,7 @@ struct H264Encoder {
 type Yuv420 = (Vec<u8>, Vec<u8>, Vec<u8>);
 
 /// The encoder input of `f`: 8-bit limited-range 4:2:0 in the export's colour signal.
-fn h264_input(f: &EncoderFrame, signal: ColorSignal, y: &mut Vec<u8>, u: &mut Vec<u8>, v: &mut Vec<u8>) {
+fn h264_input(f: &EncoderFrame<'_>, signal: ColorSignal, y: &mut Vec<u8>, u: &mut Vec<u8>, v: &mut Vec<u8>) {
     match f.hdr {
         Some(rgb) => {
             let (kr, kb) = signal.kr_kb();
@@ -2272,7 +2272,7 @@ impl VideoEncoder for H264Encoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let ready = {
             let mut ready = self.ready.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             let mine = ready.remove(&f.index);
@@ -2308,7 +2308,7 @@ impl VideoEncoder for H264Encoder {
     }
     fn prepare_ahead(&self) -> Option<PrepareAhead> {
         let (ready, signal) = (self.ready.clone(), self.signal);
-        Some(Arc::new(move |f: &EncoderFrame| {
+        Some(Arc::new(move |f: &EncoderFrame<'_>| {
             let (mut y, mut u, mut v) = (Vec::new(), Vec::new(), Vec::new());
             timed(Stage::Convert, || h264_input(f, signal, &mut y, &mut u, &mut v));
             ready.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(f.index, (y, u, v));
@@ -2347,7 +2347,7 @@ impl VideoEncoder for Vp9Encoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         timed(Stage::Convert, || rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, &mut self.y, &mut self.u, &mut self.v));
         let input = cfa4_vp9::encode::Input { y: &self.y, u: &self.u, v: &self.v, y_stride: f.width as usize, uv_stride: (f.width as usize).div_ceil(2) };
         let p = self.enc.encode(&input, false).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -2636,7 +2636,7 @@ impl VideoEncoder for HevcEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         let cw = w.div_ceil(2);
         let main10 = self.enc.config().bit_depth > 8;
@@ -2769,7 +2769,7 @@ impl VideoEncoder for Av1Encoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         let cw = w.div_ceil(2);
         let ten_bit = self.enc.config().bit_depth > 8;

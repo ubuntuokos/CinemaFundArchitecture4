@@ -252,7 +252,7 @@ impl<'a> Fwd<'a> {
 
 /// One step of the MEL event bookkeeping: the run counter counts events twice, its low bit
 /// telling whether the run ends in a one event. Returns the event.
-fn mel_event(run: &mut i32, mel: &mut Mel) -> bool {
+fn mel_event(run: &mut i32, mel: &mut Mel<'_>) -> bool {
     *run -= 2;
     let one = *run == -1;
     if *run < 0 {
@@ -264,7 +264,7 @@ fn mel_event(run: &mut i32, mel: &mut Mel) -> bool {
 /// Decodes the significant sample `bit` (0-3) of a quad from MagSgn: sign in bit 31, magnitude
 /// with the bin centre, shifted up to plane `p`. Also returns v_n (for the exponent of the next
 /// row's quads).
-fn mag_sgn(ms: &mut Fwd, inf: u32, bit: u32, u_q: u32, p: u32) -> (u32, u32) {
+fn mag_sgn(ms: &mut Fwd<'_>, inf: u32, bit: u32, u_q: u32, p: u32) -> (u32, u32) {
     if inf & (1 << (4 + bit)) == 0 {
         return (0, 0);
     }
@@ -287,7 +287,7 @@ fn pair(a: &[u16], i: usize) -> u32 {
 
 /// Decodes an HT code-block: its first segment is the HT cleanup segment (which may follow
 /// placeholder passes), the optional second the refinement (SigProp, MagRef) segment.
-pub(crate) fn decode(b: &Block) -> Result<Vec<i32>> {
+pub(crate) fn decode(b: &Block<'_>) -> Result<Vec<i32>> {
     let n = b.w.checked_mul(b.h).ok_or(Error::TooLarge)?;
     let Some((cup, cup_passes)) = b.segments.first() else { return Ok(vec![0; n]) };
     if b.mb > MAX_PLANES {
@@ -333,7 +333,7 @@ pub(crate) fn decode(b: &Block) -> Result<Vec<i32>> {
 }
 
 /// The cleanup pass: VLC and MEL into per-quad records, then MagSgn into `out` (stride `b.w`).
-fn cleanup(d: &[u8], lcup: usize, b: &Block, p: u32, out: &mut [u32]) -> Result<()> {
+fn cleanup(d: &[u8], lcup: usize, b: &Block<'_>, p: u32, out: &mut [u32]) -> Result<()> {
     let (width, height, stride) = (b.w, b.h, b.w);
     let scup = (usize::from(d.get(lcup - 1).copied().unwrap_or(0)) << 4) + usize::from(d.get(lcup - 2).copied().unwrap_or(0) & 0xF);
     if scup < 2 || scup > lcup || scup > 4079 {
@@ -496,7 +496,7 @@ fn set(out: &mut [u32], i: usize, v: u32) {
 }
 
 /// The significance propagation pass and, with three passes, the magnitude refinement pass.
-fn refinement(d: &[u8], lcup: usize, len2: usize, b: &Block, p: u32, passes: u32, out: &mut [u32]) {
+fn refinement(d: &[u8], lcup: usize, len2: usize, b: &Block<'_>, p: u32, passes: u32, out: &mut [u32]) {
     let (width, height, stride) = (b.w, b.h, b.w);
     let stripe_causal = b.style & STYLE_VSC != 0;
     // column significance: 4 bits per column of 4 rows, from the decoded samples (a sample is
