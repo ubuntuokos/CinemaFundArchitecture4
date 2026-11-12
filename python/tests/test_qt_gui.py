@@ -2511,6 +2511,26 @@ def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
         win.close()
 
 
+def test_export_unavailable_format_says_why(app):
+    """A format the engine cannot write here is greyed out and its tooltip carries the engine's reason."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    why = "H.265 (HEVC): no encoder for this format is available on this machine"
+    dlg._on_formats([{"id": "h264", "label": "H.264", "available": True, "reason": None},
+                     {"id": "hevc", "label": "H.265 (HEVC)", "available": False, "reason": why}], None)
+    item = dlg.format.model().item(dlg.format.findData("hevc"))
+    assert not item.isEnabled() and item.toolTip() == why
+    assert dlg.format.model().item(dlg.format.findData("h264")).toolTip() == ""
+    dlg.deleteLater()
+
+
 def test_export_dash_manifest_switch_only_for_hls(app):
     """egui's "DASH Manifest" row: shown for HLS only, and sent as ``dashManifest`` once changed."""
     from cfa4_qt.panels.export import ExportDialog
