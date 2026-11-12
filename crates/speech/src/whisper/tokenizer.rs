@@ -42,7 +42,8 @@ fn unicode_to_byte() -> HashMap<char, u8> {
             n += 1;
         }
     }
-    bs.iter().zip(&cs).map(|(&b, &c)| (char::from_u32(c).expect("valid"), b as u8)).collect()
+    // Every code point here is below 512, so `char::from_u32` never returns `None`.
+    bs.iter().zip(&cs).filter_map(|(&b, &c)| char::from_u32(c).map(|ch| (ch, b as u8))).collect()
 }
 
 impl Tokenizer {
@@ -125,21 +126,6 @@ impl Tokenizer {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn sparse_huge_vocab_id_is_rejected_before_allocation() {
-        let json = format!(r#"{{"model":{{"vocab":{{"x":{}}}}},"added_tokens":[]}}"#, MAX_VOCAB_ID + 1);
-        let error = match Tokenizer::from_json(&json) {
-            Err(error) => error,
-            Ok(_) => panic!("huge sparse vocabulary was accepted"),
-        };
-        assert!(error.to_string().contains("vocab id is too large"));
-    }
-}
-
 /// Group text tokens into words: a token whose text starts with a space starts a new word;
 /// punctuation-only tokens join the word before them (opening quotes/brackets the word after).
 /// Returns (word text, token index range).
@@ -185,4 +171,19 @@ pub fn group_words(tok: &Tokenizer, ids: &[u32]) -> Vec<(String, std::ops::Range
         groups.push((pre, start..ids.len()));
     }
     groups.into_iter().map(|(b, r)| (String::from_utf8_lossy(&b).trim().to_string(), r)).filter(|(t, _)| !t.is_empty()).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sparse_huge_vocab_id_is_rejected_before_allocation() {
+        let json = format!(r#"{{"model":{{"vocab":{{"x":{}}}}},"added_tokens":[]}}"#, MAX_VOCAB_ID + 1);
+        let error = match Tokenizer::from_json(&json) {
+            Err(error) => error,
+            Ok(_) => panic!("huge sparse vocabulary was accepted"),
+        };
+        assert!(error.to_string().contains("vocab id is too large"));
+    }
 }
