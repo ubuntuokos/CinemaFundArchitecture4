@@ -598,3 +598,16 @@ fn many_threads_create_use_and_drop_devices_at_once() {
         assert!(rx.recv_timeout(left).is_ok(), "only {i} of {THREADS} threads finished within 120 s: device setup deadlocked");
     }
 }
+
+/// CFA4-PROCODEC-002 1a: a planar R'G'B' frame uploads as the linear float texels of its CPU
+/// conversion (one RGBA f16 plane), with no GPU needed to prepare it.
+#[test]
+fn rgb16_frames_prepare_as_linear_float() {
+    use std::sync::Arc;
+    let data = PixelData::Rgb16 { planes: [Arc::new(vec![4095u16; 6]), Arc::new(vec![0u16; 6]), Arc::new(vec![2048u16; 6])], bits: 12, alpha: None };
+    let f =
+        VideoFrame { width: 3, height: 2, data, color: cfa4_color::ColorInfo::SRGB_FULL, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
+    let p = prepare_frame(&f).expect("planar R'G'B' is converted for upload");
+    assert_eq!(p.planes.len(), 1);
+    assert_eq!(p.planes[0], f32_to_f16_bytes(&f.to_linear_f32()));
+}

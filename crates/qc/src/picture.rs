@@ -122,7 +122,7 @@ fn luma(f: &VideoFrame) -> (Luma, bool, u32) {
             let (nominal, clip) = limits(bits, full);
             (count(planes[0].as_slice(), n, nominal, clip), full, bits)
         }
-        PixelData::Rgba8(_) | PixelData::RgbaF32(_) => {
+        PixelData::Rgba8(_) | PixelData::RgbaF32(_) | PixelData::Rgb16 { .. } => {
             let (nominal, clip) = limits(8, true);
             (count(&f.luma8(), n, nominal, clip), true, 8)
         }

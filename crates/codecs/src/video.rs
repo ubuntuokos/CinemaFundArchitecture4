@@ -517,15 +517,7 @@ pub struct Vp9Decoder {
 
 /// Colour primaries from an ISO/IEC 23091-2 code.
 pub(crate) fn primaries_from_code(c: u8) -> Option<cfa4_color::Primaries> {
-    use cfa4_color::Primaries;
-    match c {
-        1 => Some(Primaries::Bt709),
-        5 => Some(Primaries::Bt601_625),
-        6 => Some(Primaries::Bt601_525),
-        9 => Some(Primaries::Bt2020),
-        12 => Some(Primaries::P3D65),
-        _ => None,
-    }
+    cfa4_color::Primaries::from_code(c)
 }
 
 impl Vp9Decoder {

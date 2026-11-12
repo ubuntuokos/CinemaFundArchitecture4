@@ -1795,6 +1795,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Složka SMPTE DCP: JPEG 2000 3996×2160 (1,85:1), 5.1 24bitové 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Složka SMPTE DCP: JPEG 2000 4096×1716 (2,39:1), 5.1 24bitové 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Složka SMPTE IMF: JPEG 2000 1920×1080, 5.1 24bitové 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Složka SMPTE IMF: JPEG 2000 3840×2160, 5.1 24bitové 48 kHz PCM
+	Episode	Epizoda
+	Event highlights	Sestřih z události
+	Event	Událost
+	Lossless (reversible JPEG 2000)	Bezeztrátový (reverzibilní JPEG 2000)
+	Package language	Jazyk balíčku
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	Snímky B
@@ -1943,6 +1953,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bitů pro HDR)
 	10-bit RGB	10bitové RGB
 	12-bit X'Y'Z'	12bitové X'Y'Z'
+	10-bit R'G'B' 4:4:4	10bitové R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF ztrátový
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reverzibilní
 	16-bit half float	16bitová poloviční přesnost
 	linear	lineární
 	uncompressed	nekomprimované
@@ -4502,3 +4515,12 @@ export.summary	Low	nízká
 	accept	přijatelné
 	the engine did not start the check	engine kontrolu nespustil
 	the engine sent no report	engine neposlal protokol
+	Load KDM…	Načíst KDM…
+	Forget DCP Keys	Zapomenout klíče DCP
+	Load KDM	Načíst KDM
+	KDM file	Soubor KDM
+	Private key (PEM)	Soukromý klíč (PEM)
+	{title}: {count} keys loaded	{title}: načteno klíčů: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Klíče zůstávají jen v paměti, do příkazu Zapomenout klíče DCP nebo do konce relace.
+	DCP keys forgotten	Klíče DCP zapomenuty
+	Choose the KDM file and the private key.	Vyberte soubor KDM a soukromý klíč.

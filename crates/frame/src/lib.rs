@@ -56,6 +56,11 @@ pub enum PixelData {
     Yuv8 { planes: [Arc<Vec<u8>>; 3], chroma: Chroma, alpha: Option<Arc<Vec<u8>>> },
     /// 9–16-bit planar Y'CbCr stored in u16 (`bits` significant bits).
     Yuv16 { planes: [Arc<Vec<u16>>; 3], chroma: Chroma, bits: u32, alpha: Option<Arc<Vec<u16>>> },
+    /// 9–16-bit planar non-linear R'G'B' (or X'Y'Z' when [`ColorInfo::primaries`] is
+    /// [`cfa4_color::Primaries::Xyz`]) stored in u16, `bits` significant bits, full resolution,
+    /// planes in R, G, B order, optional straight alpha. The frame's transfer and primaries apply;
+    /// its matrix and range do not (every code is full range).
+    Rgb16 { planes: [Arc<Vec<u16>>; 3], bits: u32, alpha: Option<Arc<Vec<u16>>> },
 }
 
 /// How the two fields of an interlaced picture are ordered in time.
@@ -212,6 +217,7 @@ impl VideoFrame {
             PixelData::RgbaF32(_) => "RGBA 32-bit float".into(),
             PixelData::Yuv8 { chroma, .. } => format!("YUV {} 8-bit", chroma.label()),
             PixelData::Yuv16 { chroma, bits, .. } => format!("YUV {} {bits}-bit", chroma.label()),
+            PixelData::Rgb16 { bits, alpha, .. } => format!("{} {bits}-bit", if alpha.is_some() { "RGBA" } else { "RGB" }),
         }
     }
 
@@ -221,7 +227,9 @@ impl VideoFrame {
             PixelData::Rgba8(d) => d.len(),
             PixelData::RgbaF32(d) => d.len() * 4,
             PixelData::Yuv8 { planes, alpha, .. } => planes.iter().map(|p| p.len()).sum::<usize>() + alpha.as_ref().map_or(0, |a| a.len()),
-            PixelData::Yuv16 { planes, alpha, .. } => (planes.iter().map(|p| p.len()).sum::<usize>() + alpha.as_ref().map_or(0, |a| a.len())) * 2,
+            PixelData::Yuv16 { planes, alpha, .. } | PixelData::Rgb16 { planes, alpha, .. } => {
+                (planes.iter().map(|p| p.len()).sum::<usize>() + alpha.as_ref().map_or(0, |a| a.len())) * 2
+            }
         }
     }
 
@@ -266,6 +274,11 @@ impl VideoFrame {
                     alpha: alpha.as_ref().map(|a| Arc::new(box_plane(a, w, h, ow, oh, n))),
                 }
             }
+            PixelData::Rgb16 { planes, bits, alpha } => PixelData::Rgb16 {
+                planes: planes.clone().map(|p| Arc::new(box_plane(&p, w, h, ow, oh, n))),
+                bits: *bits,
+                alpha: alpha.as_ref().map(|a| Arc::new(box_plane(a, w, h, ow, oh, n))),
+            },
             PixelData::Rgba8(_) | PixelData::RgbaF32(_) => return None,
         };
         Some(VideoFrame { width: ow as u32, height: oh as u32, data, color: self.color, par: self.par, pts: self.pts, layout: self.layout })
@@ -279,7 +292,7 @@ impl VideoFrame {
         let (w, h) = (self.width as usize, self.height as usize);
         let (sx, sy) = match &self.data {
             PixelData::Yuv8 { chroma, .. } | PixelData::Yuv16 { chroma, .. } => chroma.shifts(),
-            PixelData::Rgba8(_) | PixelData::RgbaF32(_) => (0, 0),
+            PixelData::Rgba8(_) | PixelData::RgbaF32(_) | PixelData::Rgb16 { .. } => (0, 0),
         };
         let (mx, my) = ((1usize << sx) - 1, (1usize << sy) - 1);
         let (x, y) = (region.x.min(w) & !mx, region.y.min(h) & !my);
@@ -322,6 +335,11 @@ impl VideoFrame {
                     alpha: alpha.as_ref().map(|a| Arc::new(crop_plane(a, w, h, 1, r))),
                 }
             }
+            PixelData::Rgb16 { planes, bits, alpha } => PixelData::Rgb16 {
+                planes: planes.clone().map(|p| Arc::new(crop_plane(&p, w, h, 1, r))),
+                bits: *bits,
+                alpha: alpha.as_ref().map(|a| Arc::new(crop_plane(a, w, h, 1, r))),
+            },
         };
         VideoFrame { width: r.w as u32, height: r.h as u32, data, color: self.color, par: self.par, pts: self.pts, layout: self.layout }
     }
@@ -356,6 +374,11 @@ impl VideoFrame {
                     alpha: alpha.as_ref().map(|a| Arc::new(rotate_plane(a, w, h, 1, q))),
                 }
             }
+            PixelData::Rgb16 { planes, bits, alpha } => PixelData::Rgb16 {
+                planes: planes.clone().map(|p| Arc::new(rotate_plane(&p, w, h, 1, q))),
+                bits: *bits,
+                alpha: alpha.as_ref().map(|a| Arc::new(rotate_plane(a, w, h, 1, q))),
+            },
         };
         let (width, height, par) = if q % 2 == 1 { (self.height, self.width, (self.par.1, self.par.0)) } else { (self.width, self.height, self.par) };
         VideoFrame { width, height, data, color: self.color, par, pts: self.pts, layout: self.layout }
@@ -670,6 +693,37 @@ impl VideoFrame {
                     }
                 });
             }
+            PixelData::Rgb16 { planes, bits, alpha } => {
+                // full-range codes straight to the transfer: no matrix, no offsets
+                let max = ((1u32 << (*bits).clamp(1, 16)) - 1) as f32;
+                let px = w * h;
+                if planes.iter().any(|p| p.len() < px) || alpha.as_ref().is_some_and(|a| a.len() < px) {
+                    // a frame with less data than its size says: transparent
+                    out.fill(0.0);
+                    return;
+                }
+                out.par_chunks_mut(r.w * 4).enumerate().for_each(|(ry, row)| {
+                    let oy = r.y + ry;
+                    for rx in 0..r.w {
+                        let ox = r.x + rx;
+                        let mut acc = [0f32; 4];
+                        for dy in 0..n {
+                            let y = (oy * n + dy).min(h - 1);
+                            for dx in 0..n {
+                                let i = y * w + (ox * n + dx).min(w - 1);
+                                let a = alpha.as_ref().map_or(1.0, |al| (f32::from(al[i]) / max).min(1.0));
+                                for k in 0..3 {
+                                    acc[k] += q(f32::from(planes[k][i]) / max) * a;
+                                }
+                                acc[3] += a;
+                            }
+                        }
+                        for k in 0..4 {
+                            row[rx * 4 + k] = acc[k] * inv;
+                        }
+                    }
+                });
+            }
         }
     }
 
@@ -685,7 +739,9 @@ impl VideoFrame {
         // the first and last x of non-transparent pixels in source row `y`
         let extent: Box<dyn Fn(usize) -> Option<(usize, usize)> + Sync + '_> = match &self.data {
             PixelData::Yuv8 { alpha: Some(a), .. } if a.len() == px => Box::new(move |y| row_extent(&a[y * w..(y + 1) * w], |v| *v != 0)),
-            PixelData::Yuv16 { alpha: Some(a), .. } if a.len() == px => Box::new(move |y| row_extent(&a[y * w..(y + 1) * w], |v| *v != 0)),
+            PixelData::Yuv16 { alpha: Some(a), .. } | PixelData::Rgb16 { alpha: Some(a), .. } if a.len() == px => {
+                Box::new(move |y| row_extent(&a[y * w..(y + 1) * w], |v| *v != 0))
+            }
             PixelData::Rgba8(d) if d.len() == px.checked_mul(4)? => {
                 Box::new(move |y| row_extent(d[y * w * 4..(y + 1) * w * 4].as_chunks::<4>().0, |p: &[u8; 4]| p[3] != 0))
             }
@@ -1413,5 +1469,55 @@ mod tests {
             assert_eq!(g.layout, layout);
         }
         assert_eq!(VideoFrame::rgba8(1, 1, vec![0; 4]).layout, FrameLayout::default());
+    }
+
+    /// A 2×2 planar R'G'B' frame of `bits`-bit codes, R, G, B planes as given.
+    fn rgb16(bits: u32, r: [u16; 4], g: [u16; 4], b: [u16; 4], alpha: Option<[u16; 4]>, color: ColorInfo) -> VideoFrame {
+        let data = PixelData::Rgb16 { planes: [r, g, b].map(|p| Arc::new(p.to_vec())), bits, alpha: alpha.map(|a| Arc::new(a.to_vec())) };
+        VideoFrame { width: 2, height: 2, data, color, par: (1, 1), pts: Tick::ZERO, layout: FrameLayout::default() }
+    }
+
+    /// CFA4-PROCODEC-002 1a: planar R'G'B' codes go straight through the frame's transfer, full
+    /// range, with no matrix or offsets, and keep their bit depth through crop, rotate and decimate.
+    #[test]
+    fn rgb16_converts_full_range_through_its_transfer() {
+        let color = ColorInfo { transfer: cfa4_color::Transfer::Linear, ..ColorInfo::SRGB_FULL };
+        let max = 4095;
+        let f = rgb16(12, [0, max, 0, 2048], [0, 0, max, 2048], [max, 0, 0, 2048], None, color);
+        let lin = f.to_linear_f32();
+        let px: Vec<[f32; 4]> = lin.as_chunks::<4>().0.to_vec();
+        let close = |a: [f32; 4], b: [f32; 4]| a.iter().zip(b).all(|(x, y)| (x - y).abs() < 1e-3);
+        assert!(close(px[0], [0.0, 0.0, 1.0, 1.0]), "{:?}", px[0]);
+        assert!(close(px[1], [1.0, 0.0, 0.0, 1.0]), "{:?}", px[1]);
+        assert!(close(px[2], [0.0, 1.0, 0.0, 1.0]), "{:?}", px[2]);
+        assert!(close(px[3], [0.5, 0.5, 0.5, 1.0]), "{:?}", px[3]);
+        assert_eq!(f.format_label(), "RGB 12-bit");
+        assert_eq!(f.byte_size(), 3 * 4 * 2);
+        // the range flag does not apply to R'G'B' codes
+        let limited = VideoFrame { color: ColorInfo { range: Range::Limited, ..color }, ..f.clone() };
+        assert_eq!(limited.to_linear_f32(), lin);
+        for g in [f.cropped(Region { x: 1, y: 0, w: 1, h: 2 }), f.rotated(1), f.box_decimated(2).unwrap()] {
+            assert!(matches!(g.data, PixelData::Rgb16 { bits: 12, alpha: None, .. }), "{}", g.format_label());
+        }
+        // a 2×2 box of codes: the mean code of each channel, (0 + 4095 + 0 + 2048) / 4 rounded
+        let d = f.box_decimated(2).unwrap().to_linear_f32();
+        assert!(d[..3].iter().all(|v| (v - 1536.0 / 4095.0).abs() < 1e-3) && d[3] == 1.0, "{d:?}");
+    }
+
+    /// Straight alpha premultiplies, an alpha plane bounds the visible region, and a frame whose
+    /// planes are shorter than its size converts to transparent instead of reading past them.
+    #[test]
+    fn rgb16_alpha_and_short_planes() {
+        let color = ColorInfo { transfer: cfa4_color::Transfer::Linear, ..ColorInfo::SRGB_FULL };
+        let f = rgb16(10, [1023; 4], [1023; 4], [1023; 4], Some([0, 1023, 0, 0]), color);
+        let lin = f.to_linear_f32();
+        assert_eq!(&lin[0..4], &[0.0; 4]);
+        assert!(lin[4..8].iter().all(|v| (v - 1.0).abs() < 1e-6), "{:?}", &lin[4..8]);
+        assert_eq!(f.alpha_region(1), Some(Region { x: 1, y: 0, w: 1, h: 1 }));
+        assert_eq!(f.format_label(), "RGBA 10-bit");
+        let short =
+            VideoFrame { data: PixelData::Rgb16 { planes: [Arc::new(vec![1023]), Arc::new(vec![1023]), Arc::new(vec![1023])], bits: 10, alpha: None }, ..f };
+        assert!(short.to_linear_f32().iter().all(|v| *v == 0.0));
+        assert_eq!(short.to_rgba8().len(), 2 * 2 * 4);
     }
 }

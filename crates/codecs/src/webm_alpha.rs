@@ -223,7 +223,7 @@ pub(crate) fn set_alpha(frame: &mut VideoFrame, a: &VideoFrame) {
     };
     match &mut frame.data {
         PixelData::Yuv8 { alpha, .. } => *alpha = Some(Arc::new(codes.iter().map(|&v| rescale(v, 8) as u8).collect())),
-        PixelData::Yuv16 { alpha, bits, .. } => {
+        PixelData::Yuv16 { alpha, bits, .. } | PixelData::Rgb16 { alpha, bits, .. } => {
             let to = *bits;
             *alpha = Some(Arc::new(codes.iter().map(|&v| rescale(v, to) as u16).collect()));
         }
