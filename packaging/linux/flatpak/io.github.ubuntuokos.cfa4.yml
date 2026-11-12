@@ -21,6 +21,8 @@ runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
+# This development manifest builds no Qt 6 GUI (no PySide6 in the runtime; the release bundle
+# carries it), so it starts the egui editor and its menu entry is pointed at `cfa4` below.
 command: cfa4
 finish-args:
   # X11 shared memory (MIT-SHM). Without it the X11 fallback is slow or fails.
@@ -61,7 +63,10 @@ modules:
       - install -Dm755 target/release/cfa4 /app/bin/cfa4
       # The headless CLI and its stdio MCP server, as in the release bundle (#346).
       - install -Dm755 target/release/cfa4-cli /app/bin/cfa4-cli
-      - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop
+      - >-
+        sed -e 's/^Exec=cfa4-qt /Exec=cfa4 /' -e 's/^TryExec=cfa4-qt$/TryExec=cfa4/'
+        packaging/linux/io.github.ubuntuokos.cfa4.desktop > io.github.ubuntuokos.cfa4.desktop &&
+        install -Dm644 io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop
       - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.mime.xml /app/share/mime/packages/io.github.ubuntuokos.cfa4.xml
       - mkdir -p /app/share/icons && cp -R assets/cfa4/hicolor /app/share/icons/
       - >-

@@ -37,8 +37,9 @@ class XDGDesktopMetadataTests(unittest.TestCase):
         self.assertEqual(entry["Type"], "Application")
         self.assertEqual(entry["Name"], "CFA4")
         self.assertEqual(entry["Icon"], APP)
-        self.assertEqual(entry["Exec"], "cfa4 %F")
-        self.assertEqual(entry["TryExec"], "cfa4")
+        # the Qt 6 GUI is what the menu and the file manager start (owner decision 2026-11-12)
+        self.assertEqual(entry["Exec"], "cfa4-qt %F")
+        self.assertEqual(entry["TryExec"], "cfa4-qt")
         self.assertEqual(entry["Terminal"], "false")
         self.assertIn("AudioVideo", entry["Categories"].split(";"))
 
@@ -78,7 +79,7 @@ class XDGDesktopMetadataTests(unittest.TestCase):
         self.assertEqual(entry["NoDisplay"], "true")
         self.assertEqual(entry["Icon"], APP)
         self.assertEqual(set(filter(None, entry["MimeType"].split(";"))), {"application/x-cfa4-credits", "application/x-cfa4-credits-template"})
-        # the main entry (the egui editor until the Qt GUI replaces it) does not take them
+        # the main entry does not claim them: the hidden credits entry opens them in the workspace
         self.assertNotIn("application/x-cfa4-credits", desktop_metadata()["MimeType"])
         contents = (PACKAGE / "package.sh").read_text(encoding="utf-8")
         self.assertIn("$HERE/$APP_ID.credits.desktop", contents)
@@ -110,7 +111,7 @@ class XDGDesktopMetadataTests(unittest.TestCase):
         self.assertEqual(xml.findtext("id"), APP)
         self.assertEqual(xml.find("launchable").text, f"{APP}.desktop")
         self.assertEqual(xml.find("icon").text, APP)
-        self.assertEqual(xml.findtext("./provides/binary"), "cfa4")
+        self.assertEqual([b.text for b in xml.findall("./provides/binary")], ["cfa4", "cfa4-qt"])
         self.assertEqual(xml.findtext("./provides/mediatype"), "application/x-cfa4")
         desc = xml.find("./description/p")
         self.assertIsNotNone(desc)
@@ -125,10 +126,16 @@ class XDGDesktopMetadataTests(unittest.TestCase):
     def test_flatpak_manifests_share_application_and_runtime(self) -> None:
         from_source = f"{APP}.yml"
         bundle = f"{APP}.bundle.yml"
-        for field in ("id", "runtime", "runtime-version", "sdk", "command"):
+        for field in ("id", "runtime", "runtime-version", "sdk"):
             self.assertEqual(flatpak_value(from_source, field), flatpak_value(bundle, field))
         self.assertEqual(flatpak_value(from_source, "id"), APP)
-        self.assertEqual(flatpak_value(bundle, "command"), "cfa4")
+        # the release bundle starts the Qt 6 GUI (owner decision 2026-11-12); the development
+        # manifest builds no Qt GUI, so it starts egui and points its menu entry there
+        self.assertEqual(flatpak_value(bundle, "command"), "cfa4-qt")
+        self.assertEqual(flatpak_value(from_source, "command"), "cfa4")
+        source = (PACKAGE / "flatpak" / from_source).read_text(encoding="utf-8")
+        self.assertIn("s/^Exec=cfa4-qt /Exec=cfa4 /", source)
+        self.assertIn("s/^TryExec=cfa4-qt$/TryExec=cfa4/", source)
 
     def test_local_package_install_paths_are_cfa4_only(self) -> None:
         contents = (PACKAGE / "package.sh").read_text(encoding="utf-8")

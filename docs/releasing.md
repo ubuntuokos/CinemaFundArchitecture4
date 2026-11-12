@@ -131,9 +131,12 @@ runs `cfa4-cli --version` in the sandbox. Users install it with
 `flatpak install --user <file>`; the freedesktop runtime comes from Flathub.
 `packaging/linux/flatpak/io.github.ubuntuokos.cfa4.yml` is the from-source manifest for a Flathub
 submission (its header says how to build it). Both manifests must keep the same runtime and
-`finish-args`, and install the same programs: the app and `cfa4-cli`, which runs the
+`finish-args`, and install the app and `cfa4-cli`, which runs the
 headless commands and the MCP server in the sandbox
 (`flatpak run --command=cfa4-cli io.github.ubuntuokos.cfa4 mcp`). packaging-lint checks this.
+The bundle also carries the Qt 6 GUI and starts it (`command: cfa4-qt`, owner decision 2026-11-12;
+the egui editor with `--command=cfa4`); the from-source manifest builds no Qt GUI, so it starts
+`cfa4` and points its menu entry there.
 
 ## The draft release
 

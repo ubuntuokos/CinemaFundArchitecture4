@@ -70,6 +70,23 @@ class InstallTests(unittest.TestCase):
         # no Qt GUI in this bundle: no credits entry either
         self.assertFalse((prefix / "share/applications" / f"{APP_ID}.credits.desktop").exists())
 
+    def test_menu_entry_starts_the_qt_gui_when_the_tarball_has_it(self):
+        """Owner decision 2026-11-12: the menu entry (and files opened with it) start the Qt 6 GUI;
+        a tarball without it keeps the egui editor, so the entry never points at a missing program."""
+        prefix = self.root / "menu"
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        desktop = prefix / "share/applications" / f"{APP_ID}.desktop"
+        self.assertIn(f'Exec="{prefix}/bin/cfa4" %F\n', desktop.read_text())
+        self.add_qt_gui("def main():\n    return 0\n")
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entry = desktop.read_text()
+        self.assertIn(f'Exec="{prefix}/bin/cfa4-qt" %F\n', entry)
+        self.assertIn(f"TryExec={prefix}/bin/cfa4-qt\n", entry)
+        if shutil.which("desktop-file-validate"):
+            subprocess.run(["desktop-file-validate", str(desktop)], check=True)
+
     def test_credits_entry_points_at_the_installed_qt_gui(self):
         shutil.copyfile(
             HERE / f"{APP_ID}.credits.desktop", self.share / "applications" / f"{APP_ID}.credits.desktop"
