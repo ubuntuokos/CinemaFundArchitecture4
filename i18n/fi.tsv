@@ -3714,6 +3714,8 @@
 	Analyze Source for Smart Cut	Analysoi lähde Smart Cutia varten
 	Plan Smart Cut	Suunnittele Smart Cut
 	Run Smart Cut	Suorita Smart Cut
+	DASH Manifest	DASH-manifesti
+	Also write a DASH manifest (.mpd)	Kirjoita myös DASH-manifesti (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Sekvenssiä ei ole auki. Kaksoisnapsauta sekvenssiä Projekti-paneelissa.
 	English (US)	Englanti (Yhdysvallat)
 	English (UK)	Englanti (Iso-Britannia)
@@ -4218,3 +4220,230 @@ export.summary	Low	matala
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Tekijätiedot laskentataulukosta
+	A .ods, .xlsx or CSV credits sheet	Tekijätietotaulukko (.ods, .xlsx tai CSV)
+	The spreadsheet's folder	Laskentataulukon kansio
+	Built-in styles	Sisäänrakennetut tyylit
+	Spreadsheet	Laskentataulukko
+	Sheet	Taulukko
+	Pictures	Kuvat
+	Styling	Tyyli
+	Page	Sivu
+	Warnings	Varoitukset
+	Moment in the page	Hetki sivulla
+	Place at Playhead	Sijoita toistopaikkaan
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Laskentataulukot (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Tekijätietojen tyyli (*.json)
+	Card	Kortti
+	Credits Spreadsheet	Tekijätietotaulukko
+	Reading…	Luetaan…
+	(one table)	(yksi taulukko)
+	Total: {time}	Yhteensä: {time}
+	Row {row}: {message}	Rivi {row}: {message}
+	Choose a credits spreadsheet.	Valitse tekijätietotaulukko.
+	No preview	Ei esikatselua
+	Placing…	Sijoitetaan…
+	Placed {n} pages on the timeline.	Aikajanalle sijoitettiin {n} sivua.
+	Credits Page Picture	Tekijätietosivun kuva
+	Preview Credits	Esikatsele tekijätiedot
+	Credits Styles	Tekijätietojen tyylit
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Laskentataulukot ja tekijätietotiedostot (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4-tekijätietotiedosto (*.cfa4credits)
+	Save as Credits File…	Tallenna tekijätietotiedostona…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Laskentataulukko, taulukko, tyyli ja rivit yhdessä tiedostossa, joka aukeaa millä tahansa koneella
+	Saved: {path}	Tallennettu: {path}
+	Added	Lisätty
+	Removed	Poistettu
+	Changed	Muutettu
+	(empty row)	(tyhjä rivi)
+	Refresh Credits from Spreadsheet	Päivitä tekijätiedot laskentataulukosta
+	Change	Muutos
+	Before → After	Ennen → Jälkeen
+	Select None	Poista valinnat
+	Keep my edits on the pages (where their block is unchanged)	Säilytä muokkaukseni sivuilla (kun niiden lohko ei ole muuttunut)
+	Locate Spreadsheet…	Etsi laskentataulukko…
+	Comparing…	Verrataan…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} muutosta tiedostossa {file} tekijätietojen sijoittamisen jälkeen. Poista valinta niistä, joita et halua.
+	The spreadsheet {file} has not changed since the credits were placed.	Laskentataulukko {file} ei ole muuttunut tekijätietojen sijoittamisen jälkeen.
+	{n} layers were edited by hand on the pages.	Sivuilla muokattiin käsin {n} tasoa.
+	Accepting every change would replace these, because their block changed: {names}	Kaikkien muutosten hyväksyminen korvaisi nämä, koska niiden lohko muuttui: {names}
+	Refreshing…	Päivitetään…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Päivitetty: {n} muutosta otettu käyttöön, {kept} käsin tehtyä muokkausta säilytetty.
+	Refresh Credits from Spreadsheet…	Päivitä tekijätiedot laskentataulukosta…
+	Save Credits File…	Tallenna tekijätietotiedosto…
+	Compare Credits with Spreadsheet	Vertaa tekijätietoja laskentataulukkoon
+	“{name}” appears twice in the same block	”{name}” esiintyy samassa lohkossa kahdesti
+	“{name}” is written as “{other}” in row {otherRow}	”{name}” on kirjoitettu muodossa ”{other}” rivillä {otherRow}
+	The font “{font}” is not installed; another font is used	Fonttia ”{font}” ei ole asennettu; käytetään toista fonttia
+	The font “{font}” has no “{chars}”; another font draws them	Fontissa ”{font}” ei ole merkkejä ”{chars}”; ne piirtää toinen fontti
+	“{text}” is outside the title-safe area	”{text}” on tekstin turva-alueen ulkopuolella
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” on liian tumma mustalla (kontrasti {ratio}:1; vähintään 4,5:1 tarvitaan)
+	“{text}” is {px} px high; 24 px or more reads well	”{text}” on {px} px korkea; 24 px tai enemmän on helppolukuinen
+	The roll moves {speed} px per frame; a whole number does not shimmer	Rullaus liikkuu {speed} px kuvaa kohden; kokonaisluku ei värise
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Rivi ylittää kuvan {seconds} s:ssa; vähintään 6 s on helppolukuinen
+	The card holds for only {seconds} s after its fades	Kortti pysyy häivytysten jälkeen vain {seconds} s
+	This page starts {seconds} s before the previous one ends	Tämä sivu alkaa {seconds} s ennen edellisen loppua
+	“{file}” is shown at {percent} % of its pixels; it will look soft	”{file}” näytetään {percent} %:lla pikseleistään; se näyttää pehmeältä
+	{more} more of the same	{more} samanlaista lisää
+	Page {page}: {message}	Sivu {page}: {message}
+	Checks and warnings	Tarkistukset ja varoitukset
+	Checks: {errors} errors, {warnings} warnings	Tarkistukset: {errors} virhettä, {warnings} varoitusta
+	Check Credits	Tarkista tekijätiedot
+	The whole music ({time})	Koko musiikki ({time})
+	Until the sound ends ({time})	Kunnes ääni loppuu ({time})
+	To the last bar line ({time})	Viimeiseen tahtiviivaan ({time})
+	Fit Credits to Music	Sovita tekijätiedot musiikkiin
+	Fit Credits to Music…	Sovita tekijätiedot musiikkiin…
+	Analyse Music for Credits	Analysoi musiikki tekijätietoja varten
+	Length:	Pituus:
+	Cards last whole beats (cuts on the beat)	Kortit kestävät kokonaisia iskuja (leikkaukset iskulla)
+	Start the credits where the music starts	Aloita tekijätiedot kohdasta, jossa musiikki alkaa
+	Length of the credits	Tekijätietojen pituus
+	Remove Fitting	Poista sovitus
+	Listening to the music…	Kuunnellaan musiikkia…
+	Length: {time}	Pituus: {time}
+	the sound ends at {time}	ääni loppuu kohdassa {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	tekijätiedot ilman sovitusta: {time}
+	Select a credits page on the timeline.	Valitse tekijätietosivu aikajanalta.
+	Fitting…	Sovitetaan…
+	The credits now last {time}.	Tekijätiedot kestävät nyt {time}.
+	Fitting removed.	Sovitus poistettu.
+	Fit to This Length	Sovita tähän pituuteen
+	No music to measure ({problem}); type the length.	Ei musiikkia mitattavaksi ({problem}); kirjoita pituus.
+	The text moves {speed} px per frame; a whole number does not shimmer	Teksti liikkuu {speed} px kuvaa kohden; kokonaisluku ei värise
+	Crawl	Vaakavieritys
+	Picture: {file}	Kuva: {file}
+	Video: {file}	Video: {file}
+	Into the next	Seuraavaan
+	Safe areas and spines	Turva-alueet ja akselit
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Toiminnan turva-alue (93 %), tekstin turva-alue (90 %), keskikohta ja sivun akselit
+	Baseline grid	Peruslinjaruudukko
+	Lines one gap unit apart, moving with the page	Viivat yhden välyksen päässä toisistaan, liikkuvat sivun mukana
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	”{text}” ei erotu taustasta (kontrasti {ratio}:1; vähintään 4,5:1 tarvitaan)
+	A picture or video is behind the text: check the contrast by eye	Tekstin takana on kuva tai video: tarkista kontrasti silmämääräisesti
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Valmis ulkoasu: tyylit, taustat, siirtymät ja ajoitus. Annettu tyylitiedosto menee edelle.
+	New Spreadsheet from Template…	Uusi laskentataulukko mallista…
+	built in	sisäänrakennettu
+	mine	oma
+	this project	tämä projekti
+	Template	Malli
+	Choose a template first.	Valitse ensin malli.
+	Name of the template:	Mallin nimi:
+	Template saved: {name}	Malli tallennettu: {name}
+	Apply Credits Template…	Käytä tekijätietomallia…
+	Template:	Malli:
+	Credits Templates	Tekijätietomallit
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Laskentataulukot, tekijätietotiedostot ja Cinecred-projektit (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred-projekti…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Avaa Cinecred-projektikansio (Styling.toml ja sen tekijätietotaulukko)
+	(empty block)	(tyhjä lohko)
+	Apply Template…	Käytä mallia…
+	Change them in the spreadsheet; the credits follow when you save it.	Muuta ne laskentataulukossa; tekijätiedot seuraavat, kun tallennat sen.
+	Compact View	Tiivis näkymä
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Vertaa aikajanalla valittuja tekijätietoja niiden laskentataulukkoon rivi riviltä
+	Fit the selected credits to the music under them	Sovita valitut tekijätiedot niiden alla olevaan musiikkiin
+	Fit to Music…	Sovita musiikkiin…
+	Full View	Täysi näkymä
+	Give the selected credits on the timeline another template	Anna aikajanalla valituille tekijätiedoille toinen malli
+	Names	Nimet
+	No pages	Ei sivuja
+	Refresh Placed Credits…	Päivitä sijoitetut tekijätiedot…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Näytä kaikki: lohkot, ominaisuudet, sivut ajassa, tarkistukset ja tekijätietotyökalut
+	Spine	Akseli
+	Tails	Loppu
+	The blocks of the chosen page; choose one to see it in the preview	Valitun sivun lohkot; valitse yksi nähdäksesi sen esikatselussa
+	The pages along time; click one to choose it	Sivut ajassa; valitse sivu napsauttamalla
+	{n} more	{n} lisää
+	Block	Lohko
+	parallel	rinnakkain
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Sivulla (OBS ottaa sen selainlähteestä)
+	Separate (a media source in OBS)	Erikseen (medialähde OBS:ssä)
+	No sound	Ei ääntä
+	credits	tekijätiedot
+	graphic	grafiikka
+	{n} pages	{n} sivua
+	Live Graphics	Suora grafiikka
+	Prepared cues; double-click one to put it in preview	Valmistellut vihjeet; kaksoisnapsauta yhtä viedäksesi sen esikatseluun
+	Add Credits…	Lisää tekijätiedot…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Tekijätietotaulukko, tekijätietotiedosto tai Cinecred-projekti vihjeenä
+	Add Selected Graphic	Lisää valittu grafiikka
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Aikajanalta valittu grafiikkaleike (otsikko, alakolmannes) vihjeenä
+	Cues	Vihjeet
+	TAKE	LÄHETYKSEEN
+	The preview cue goes on air from its first page	Esikatselun vihje menee lähetykseen ensimmäiseltä sivultaan
+	PREVIOUS	EDELLINEN
+	The page before (on the first page: from its start)	Edellinen sivu (ensimmäisellä sivulla: sen alusta)
+	NEXT	SEURAAVA
+	The next page; after the last one, the preview cue	Seuraava sivu; viimeisen jälkeen esikatselun vihje
+	HOLD	PYSÄYTÄ
+	Stop the program where it is	Pysäytä ohjelma siihen, missä se on
+	CONTINUE	JATKA
+	Go on from where it stopped	Jatka siitä, mihin se pysähtyi
+	UPDATE	PÄIVITÄ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Lue laskentataulukko (tai leike) uudelleen; lähetyksessä se vaihtuu heti
+	OUT	POIS
+	Take everything off air	Poista kaikki lähetyksestä
+	Start Live Page	Käynnistä suora sivu
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Tarjoa ohjelma tällä tietokoneella OBS:n selainlähteelle (vain 127.0.0.1)
+	not running	ei käynnissä
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Työkalut ▸ WebSocket-palvelimen asetukset
+	Connect to OBS	Yhdistä OBS:ään
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Yhdistä tämän tietokoneen OBS:ään ja osoita sen selainlähde ”CFA4 Live” suoralle sivulle
+	Port	Portti
+	Password	Salasana
+	Live page	Suora sivu
+	Sound	Ääni
+	OBS	OBS
+	Nothing in preview	Esikatselussa ei ole mitään
+	page {page} of {pages}	sivu {page}/{pages}
+	held	pysäytetty
+	ended	päättynyt
+	Off air	Ei lähetyksessä
+	Stop Live Page	Pysäytä suora sivu
+	Connected to OBS {version}; source “{source}”	Yhdistetty OBS {version}; lähde ”{source}”
+	Point OBS Again	Osoita OBS uudelleen
+	Select a graphic clip on the timeline first.	Valitse ensin grafiikkaleike aikajanalta.
+	Connecting to OBS…	Yhdistetään OBS:ään…
+	Live Graphics…	Suora grafiikka…
+	PREVIEW	ESIKATSELU
+	PROGRAM	OHJELMA
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	kuva- tai videotunniste on yksin leipätekstisolussa (tai yhden nimen kanssa muotokuvana); muut tunnisteet poistettiin
+	the page gap is not a duration; the page style's is used	sivuväli ei ole kesto; sivutyylin arvoa käytetään
+	the page runtime is not a positive duration; the page style's is used	sivun kesto ei ole positiivinen; sivutyylin arvoa käytetään
+	background “{file}” was not found; it is left out	taustaa ”{file}” ei löytynyt; se jätetään pois
+	card page {page} is taller than the frame; use a roll page	korttisivu {page} on kuvaa korkeampi; käytä rullaavaa sivua
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	kirjaintyylin ”{style}” väri ”{colour}” ei ole #rrggbb; se jätetään pois
+	colour “{colour}” is not #rrggbb; black is used	väri ”{colour}” ei ole #rrggbb; käytetään mustaa
+	colour “{colour}” is not #rrggbb; white is used	väri ”{colour}” ei ole #rrggbb; käytetään valkoista
+	content style “{style}” does not exist; “{used}” is used	sisältötyyliä ”{style}” ei ole; käytetään tyyliä ”{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	kirjaintyyliä ”{style}” ei ole; teksti säilyttää lohkon tyylin
+	page gap “{value}” is not a duration	sivuväli ”{value}” ei ole kesto
+	page runtime “{value}” is not a duration	sivun kesto ”{value}” ei ole kesto
+	page style “{style}” does not exist; a roll page is used	sivutyyliä ”{style}” ei ole; käytetään rullaavaa sivua
+	page {page}: the background names no file; it is left out	sivu {page}: tausta ei nimeä tiedostoa; se jätetään pois
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (sivulla ei ole lohkojen välejä venytettäväksi)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (tekijätiedot ovat liian pitkät ilman välejäkin)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	sivu {page}: kesto saavutetaan rullausnopeutta muuttamalla (välien pitäisi kasvaa yli 20-kertaisiksi)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	sivu {page}: siirtymä vaatii sivujen koskettavan toisiaan (sivuväli 0); se jätetään pois
+	page {page}: there is no transition “{name}”; the pages cut	sivu {page}: siirtymää ”{name}” ei ole; sivut leikataan
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	akselin sijaintia ”{value}” ei tueta (pikselisiirtymää tuetaan, valinnaisesti ”parallel”)
+	vertical gap “{value}” is not a number	pystyväli ”{value}” ei ole luku
+	picture “{file}” was not found or cannot be read; it is left out	kuvaa ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
+	video “{file}” was not found or cannot be read; it is left out	videota ”{file}” ei löytynyt tai sitä ei voi lukea; se jätetään pois
+	there is no roll page without its own runtime to stretch; the length cannot change	ei ole rullaavaa sivua ilman omaa kestoa venytettäväksi; pituutta ei voi muuttaa
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	kortit ja välit yksinään ovat {seconds} s; pyydetty pituus on lyhyempi, joten rullaavat sivut säilyttävät luonnollisen pituutensa
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	kirjaintyyli ”{style}”: vain ensimmäistä värillistä tasoa käytetään (ei ääriviivoja, varjoja eikä raitoja)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	koko tekijätietojen kestoa ei siirretä; käytä sen sijaan toimintoa Sovita tekijätiedot musiikkiin (tai pituutta)
+	page style “{style}”: fade curves become linear fades	sivutyyli ”{style}”: häivytyskäyrät muuttuvat lineaarisiksi
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	sisältötyylillä ”{style}” ei ole alkua Cinecredissä; taulukkoon kirjoitetut alut näytetään silti
+	content style “{style}”: sorting the names is not carried over	sisältötyyli ”{style}”: nimien lajittelua ei siirretä
+	transition curves are not carried over	siirtymäkäyriä ei siirretä
+	picture styles (pictures keep their own size) are not carried over	kuvatyylejä (kuvat säilyttävät oman kokonsa) ei siirretä
+	video (tape) styles are not carried over	video- (nauha-) tyylejä ei siirretä
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-projektissa on {n} tekijätietotaulukkoa; käytetään taulukkoa ”{name}” (valitse toinen Laskentataulukko-kentässä)

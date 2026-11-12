@@ -152,6 +152,13 @@ that adds them names the source and revision.
 | `crates/render/src/vfx/glitch.rs` (`bit_crush`, `block_glitch`, `databend`, `vhs`, `Rng`, `hash32`) | glitchESP, <https://github.com/koupypavel/glitchESP>, branch `main` as of 2026-10-30, `firmware/main/effects/fx_bitcrush.c`, `fx_blocks.c`, `fx_databend.c`, `fx_vhs.c`, `fx_rng.h`: algorithms and constants ported from RGB565 C to CFA4's float images; no files copied | koupypavel and glitchESP contributors (2026) | MIT (`crates/render/src/vfx/glitch/LICENSE-glitch-sources`) |
 | `crates/render/src/vfx/glitch.rs` (`scan_line_jitter`, `tile_jitter`) | X-PostProcessing Library, <https://github.com/QianMo/X-PostProcessing-Library>, branch `master` as of 2026-10-30, `Assets/X-PostProcessing/Effects/GlitchScanLineJitter/`, `GlitchTileJitter/` (shaders and parameter mapping), reimplemented on the CPU; the scan line jitter curve is KinoGlitch's (<https://github.com/keijiro/KinoGlitch>) | QianMo (2020); Keijiro Takahashi (2015) | MIT (`crates/render/src/vfx/glitch/LICENSE-glitch-sources`) |
 
+**File formats read, no code copied.** CFA4 code written independently to read another
+program's file format, from its documentation and published source:
+
+| CFA4 path | Format (project, URL, revision) | Licence of the source consulted |
+|---|---|---|
+| `crates/credits/src/cinecred.rs` | Cinecred project: `Styling.toml` keys and values, credits-sheet column and tag names in its languages ([LoadingByte/cinecred](https://github.com/LoadingByte/cinecred), 1.9.1, `24e5083`) | GPL-3.0-or-later |
+
 ## 6. Dependency checks
 
 - Rust dependencies: `deny.toml` lists the licences that are GPL-3.0 compatible. Run

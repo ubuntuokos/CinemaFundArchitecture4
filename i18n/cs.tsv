@@ -3521,6 +3521,8 @@
 	Analyze Source for Smart Cut	Analyzovat zdroj pro chytrý střih
 	Plan Smart Cut	Naplánovat chytrý střih
 	Run Smart Cut	Spustit chytrý střih
+	DASH Manifest	Manifest DASH
+	Also write a DASH manifest (.mpd)	Zapsat také manifest DASH (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Není otevřena žádná sekvence. Poklepejte na sekvenci v panelu Projekt.
 	English (US)	English (US)
 	English (UK)	English (UK)
@@ -4216,3 +4218,230 @@ export.summary	Low	nízká
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Titulky tvůrců z tabulky
+	A .ods, .xlsx or CSV credits sheet	Tabulka titulků tvůrců ve formátu .ods, .xlsx nebo CSV
+	The spreadsheet's folder	Složka tabulky
+	Built-in styles	Vestavěné styly
+	Spreadsheet	Tabulka
+	Sheet	List
+	Pictures	Obrázky
+	Styling	Styl
+	Page	Stránka
+	Warnings	Upozornění
+	Moment in the page	Okamžik na stránce
+	Place at Playhead	Umístit na přehrávací hlavu
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tabulky (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Styl titulků tvůrců (*.json)
+	Card	Karta
+	Credits Spreadsheet	Tabulka titulků tvůrců
+	Reading…	Načítání…
+	(one table)	(jedna tabulka)
+	Total: {time}	Celkem: {time}
+	Row {row}: {message}	Řádek {row}: {message}
+	Choose a credits spreadsheet.	Zvolte tabulku titulků tvůrců.
+	No preview	Bez náhledu
+	Placing…	Umísťování…
+	Placed {n} pages on the timeline.	Na časovou osu umístěno stránek: {n}.
+	Credits Page Picture	Obrázek stránky titulků tvůrců
+	Preview Credits	Náhled titulků tvůrců
+	Credits Styles	Styly titulků tvůrců
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Tabulky a soubory titulků tvůrců (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Soubor titulků tvůrců CFA4 (*.cfa4credits)
+	Save as Credits File…	Uložit jako soubor titulků tvůrců…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Tabulka, list, styl a řádky v jednom souboru, který otevřete na libovolném počítači
+	Saved: {path}	Uloženo: {path}
+	Added	Přidáno
+	Removed	Odebráno
+	Changed	Změněno
+	(empty row)	(prázdný řádek)
+	Refresh Credits from Spreadsheet	Obnovit titulky tvůrců z tabulky
+	Change	Změna
+	Before → After	Před → Po
+	Select None	Nevybrat nic
+	Keep my edits on the pages (where their block is unchanged)	Zachovat mé úpravy na stránkách (kde se jejich blok nezměnil)
+	Locate Spreadsheet…	Vyhledat tabulku…
+	Comparing…	Porovnávání…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Změny v {file} od umístění titulků tvůrců: {n}. Odškrtněte, co nechcete.
+	The spreadsheet {file} has not changed since the credits were placed.	Tabulka {file} se od umístění titulků tvůrců nezměnila.
+	{n} layers were edited by hand on the pages.	Ručně upravené vrstvy na stránkách: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Přijetím všech změn by se nahradily tyto položky, protože se změnil jejich blok: {names}
+	Refreshing…	Obnovování…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Obnoveno: použité změny: {n}, zachované ruční úpravy: {kept}.
+	Refresh Credits from Spreadsheet…	Obnovit titulky tvůrců z tabulky…
+	Save Credits File…	Uložit soubor titulků tvůrců…
+	Compare Credits with Spreadsheet	Porovnat titulky tvůrců s tabulkou
+	“{name}” appears twice in the same block	„{name}“ je ve stejném bloku dvakrát
+	“{name}” is written as “{other}” in row {otherRow}	„{name}“ je v řádku {otherRow} zapsáno jako „{other}“
+	The font “{font}” is not installed; another font is used	Písmo „{font}“ není nainstalováno; použije se jiné
+	The font “{font}” has no “{chars}”; another font draws them	Písmo „{font}“ neobsahuje „{chars}“; vykreslí je jiné písmo
+	“{text}” is outside the title-safe area	„{text}“ je mimo oblast bezpečnou pro titulky
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ je na černé příliš tmavé (kontrast {ratio}:1; je potřeba alespoň 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}“ má výšku {px} px; od 24 px se dobře čte
+	The roll moves {speed} px per frame; a whole number does not shimmer	Posun je {speed} px na snímek; celé číslo nebliká
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Řádek přejde obraz za {seconds} s; alespoň 6 s se dobře čte
+	The card holds for only {seconds} s after its fades	Karta zůstane po prolnutích jen {seconds} s
+	This page starts {seconds} s before the previous one ends	Tato stránka začíná {seconds} s před koncem předchozí
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}“ se zobrazuje na {percent} % svých pixelů; bude vypadat neostře
+	{more} more of the same	Dalších {more} stejného druhu
+	Page {page}: {message}	Stránka {page}: {message}
+	Checks and warnings	Kontroly a upozornění
+	Checks: {errors} errors, {warnings} warnings	Kontroly: chyby {errors}, upozornění {warnings}
+	Check Credits	Zkontrolovat titulky tvůrců
+	The whole music ({time})	Celá hudba ({time})
+	Until the sound ends ({time})	Do konce zvuku ({time})
+	To the last bar line ({time})	Po poslední taktovou čáru ({time})
+	Fit Credits to Music	Přizpůsobit titulky tvůrců hudbě
+	Fit Credits to Music…	Přizpůsobit titulky tvůrců hudbě…
+	Analyse Music for Credits	Analyzovat hudbu pro titulky tvůrců
+	Length:	Délka:
+	Cards last whole beats (cuts on the beat)	Karty trvají celé doby (střih na dobu)
+	Start the credits where the music starts	Začít titulky tvůrců tam, kde začíná hudba
+	Length of the credits	Délka titulků tvůrců
+	Remove Fitting	Odebrat přizpůsobení
+	Listening to the music…	Poslouchání hudby…
+	Length: {time}	Délka: {time}
+	the sound ends at {time}	zvuk končí v {time}
+	tempo {bpm} BPM	tempo {bpm} BPM
+	the credits without fitting: {time}	titulky tvůrců bez přizpůsobení: {time}
+	Select a credits page on the timeline.	Vyberte na časové ose stránku titulků tvůrců.
+	Fitting…	Přizpůsobování…
+	The credits now last {time}.	Titulky tvůrců nyní trvají {time}.
+	Fitting removed.	Přizpůsobení odebráno.
+	Fit to This Length	Přizpůsobit této délce
+	No music to measure ({problem}); type the length.	Není co měřit, chybí hudba ({problem}); zadejte délku.
+	The text moves {speed} px per frame; a whole number does not shimmer	Text se posouvá o {speed} px na snímek; celé číslo nebliká
+	Crawl	Běžící text
+	Picture: {file}	Obrázek: {file}
+	Video: {file}	Video: {file}
+	Into the next	Do další
+	Safe areas and spines	Bezpečné oblasti a osy
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Bezpečná oblast akce (93 %), titulků (90 %), střed a osy stránky
+	Baseline grid	Mřížka účaří
+	Lines one gap unit apart, moving with the page	Čáry vzdálené o jednu jednotku mezery, pohybují se se stránkou
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}“ nevyniká na pozadí (kontrast {ratio}:1; je potřeba alespoň 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Za textem je obrázek nebo video: zkontrolujte kontrast okem
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Hotový vzhled: styly, pozadí, přechody a časování. Zadaný soubor stylu má přednost.
+	New Spreadsheet from Template…	Nová tabulka ze šablony…
+	built in	vestavěná
+	mine	moje
+	this project	tento projekt
+	Template	Šablona
+	Choose a template first.	Nejprve zvolte šablonu.
+	Name of the template:	Název šablony:
+	Template saved: {name}	Šablona uložena: {name}
+	Apply Credits Template…	Použít šablonu titulků tvůrců…
+	Template:	Šablona:
+	Credits Templates	Šablony titulků tvůrců
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Tabulky, soubory titulků tvůrců a projekty Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Projekt Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Otevřít složku projektu Cinecred (Styling.toml a jeho tabulka titulků tvůrců)
+	(empty block)	(prázdný blok)
+	Apply Template…	Použít šablonu…
+	Change them in the spreadsheet; the credits follow when you save it.	Změňte je v tabulce; titulky tvůrců se přizpůsobí, až ji uložíte.
+	Compact View	Kompaktní zobrazení
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Porovnat vybrané titulky tvůrců na časové ose s jejich tabulkou, řádek po řádku
+	Fit the selected credits to the music under them	Přizpůsobit vybrané titulky tvůrců hudbě pod nimi
+	Fit to Music…	Přizpůsobit hudbě…
+	Full View	Úplné zobrazení
+	Give the selected credits on the timeline another template	Dát vybraným titulkům tvůrců na časové ose jinou šablonu
+	Names	Jména
+	No pages	Žádné stránky
+	Refresh Placed Credits…	Obnovit umístěné titulky tvůrců…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Zobrazit vše: bloky, vlastnosti, stránky v čase, kontroly a nástroje titulků tvůrců
+	Spine	Osa
+	Tails	Konec
+	The blocks of the chosen page; choose one to see it in the preview	Bloky vybrané stránky; zvolte jeden a uvidíte ho v náhledu
+	The pages along time; click one to choose it	Stránky v čase; kliknutím jednu vyberete
+	{n} more	Dalších {n}
+	Block	Blok
+	parallel	souběžně
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Ve stránce (OBS jej převezme ze zdroje Prohlížeč)
+	Separate (a media source in OBS)	Samostatně (zdroj médií v OBS)
+	No sound	Bez zvuku
+	credits	titulky tvůrců
+	graphic	grafika
+	{n} pages	Stránky: {n}
+	Live Graphics	Živá grafika
+	Prepared cues; double-click one to put it in preview	Připravené položky; poklepáním jednu pošlete do náhledu
+	Add Credits…	Přidat titulky tvůrců…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Tabulka titulků tvůrců, soubor titulků nebo projekt Cinecred jako položka
+	Add Selected Graphic	Přidat vybranou grafiku
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Grafický klip vybraný na časové ose (titulek, spodní třetina) jako položka
+	Cues	Položky
+	TAKE	VYSÍLAT
+	The preview cue goes on air from its first page	Položka z náhledu jde do vysílání od své první stránky
+	PREVIOUS	PŘEDCHOZÍ
+	The page before (on the first page: from its start)	Předchozí stránka (na první stránce: od jejího začátku)
+	NEXT	DALŠÍ
+	The next page; after the last one, the preview cue	Další stránka; po poslední položka z náhledu
+	HOLD	ZASTAVIT
+	Stop the program where it is	Zastavit program tam, kde je
+	CONTINUE	POKRAČOVAT
+	Go on from where it stopped	Pokračovat tam, kde se zastavilo
+	UPDATE	AKTUALIZOVAT
+	Read the spreadsheet (or the clip) again; on air it changes at once	Znovu načíst tabulku (nebo klip); ve vysílání se změní hned
+	OUT	STÁHNOUT
+	Take everything off air	Stáhnout vše z vysílání
+	Start Live Page	Spustit živou stránku
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Poskytovat program na tomto počítači pro zdroj Prohlížeč v OBS (pouze 127.0.0.1)
+	not running	neběží
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Nástroje ▸ Nastavení serveru WebSocket
+	Connect to OBS	Připojit k OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Připojit se k OBS na tomto počítači a nasměrovat jeho zdroj Prohlížeč „CFA4 Live“ na živou stránku
+	Port	Port
+	Password	Heslo
+	Live page	Živá stránka
+	Sound	Zvuk
+	OBS	OBS
+	Nothing in preview	V náhledu nic není
+	page {page} of {pages}	stránka {page} z {pages}
+	held	zastaveno
+	ended	skončeno
+	Off air	Mimo vysílání
+	Stop Live Page	Zastavit živou stránku
+	Connected to OBS {version}; source “{source}”	Připojeno k OBS {version}; zdroj „{source}“
+	Point OBS Again	Znovu nasměrovat OBS
+	Select a graphic clip on the timeline first.	Nejprve vyberte na časové ose grafický klip.
+	Connecting to OBS…	Připojování k OBS…
+	Live Graphics…	Živá grafika…
+	PREVIEW	NÁHLED
+	PROGRAM	PROGRAM
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	značka obrázku nebo videa stojí v buňce těla sama (nebo s jedním jménem jako portrét); ostatní značky byly odebrány
+	the page gap is not a duration; the page style's is used	mezera mezi stránkami není doba trvání; použije se hodnota stylu stránky
+	the page runtime is not a positive duration; the page style's is used	doba stránky není kladná doba trvání; použije se hodnota stylu stránky
+	background “{file}” was not found; it is left out	pozadí „{file}“ nebylo nalezeno; vynechá se
+	card page {page} is taller than the frame; use a roll page	stránka karty {page} je vyšší než obraz; použijte rolovací stránku
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	barva „{colour}“ stylu písma „{style}“ není #rrggbb; vynechá se
+	colour “{colour}” is not #rrggbb; black is used	barva „{colour}“ není #rrggbb; použije se černá
+	colour “{colour}” is not #rrggbb; white is used	barva „{colour}“ není #rrggbb; použije se bílá
+	content style “{style}” does not exist; “{used}” is used	styl obsahu „{style}“ neexistuje; použije se „{used}“
+	letter style “{style}” does not exist; the text keeps the block's style	styl písma „{style}“ neexistuje; text si ponechá styl bloku
+	page gap “{value}” is not a duration	mezera mezi stránkami „{value}“ není doba trvání
+	page runtime “{value}” is not a duration	doba stránky „{value}“ není doba trvání
+	page style “{style}” does not exist; a roll page is used	styl stránky „{style}“ neexistuje; použije se rolovací stránka
+	page {page}: the background names no file; it is left out	stránka {page}: pozadí neuvádí žádný soubor; vynechá se
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	stránka {page}: doby se dosáhne změnou rychlosti rolování (stránka nemá mezi bloky žádné mezery k roztažení)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	stránka {page}: doby se dosáhne změnou rychlosti rolování (titulky tvůrců jsou příliš dlouhé i bez mezer)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	stránka {page}: doby se dosáhne změnou rychlosti rolování (mezery by musely narůst více než dvacetkrát)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	stránka {page}: přechod vyžaduje, aby na sebe stránky navazovaly (mezera 0); vynechá se
+	page {page}: there is no transition “{name}”; the pages cut	stránka {page}: přechod „{name}“ neexistuje; stránky se střihnou
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	poloha osy „{value}“ není podporována (podporován je posun v pixelech, volitelně s „parallel“)
+	vertical gap “{value}” is not a number	svislá mezera „{value}“ není číslo
+	picture “{file}” was not found or cannot be read; it is left out	obrázek „{file}“ nebyl nalezen nebo jej nelze načíst; vynechá se
+	video “{file}” was not found or cannot be read; it is left out	video „{file}“ nebylo nalezeno nebo jej nelze načíst; vynechá se
+	there is no roll page without its own runtime to stretch; the length cannot change	není žádná rolovací stránka bez vlastní doby, kterou by šlo roztáhnout; délku nelze změnit
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	samotné karty a mezery mají {seconds} s; požadovaná délka je kratší, takže rolovací stránky si ponechají přirozenou délku
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	styl písma „{style}“: použije se jen první barevná vrstva (bez obrysů, stínů a pruhů)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	doba celých titulků tvůrců se nepřenáší; použijte místo toho Přizpůsobit titulky tvůrců hudbě (nebo délku)
+	page style “{style}”: fade curves become linear fades	styl stránky „{style}“: křivky prolínání se změní na lineární
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	styl obsahu „{style}“ nemá v Cinecred začátek; začátky zapsané v tabulce se přesto zobrazí
+	content style “{style}”: sorting the names is not carried over	styl obsahu „{style}“: řazení jmen se nepřenáší
+	transition curves are not carried over	křivky přechodů se nepřenášejí
+	picture styles (pictures keep their own size) are not carried over	styly obrázků (obrázky si ponechají vlastní velikost) se nepřenášejí
+	video (tape) styles are not carried over	styly videa (pásky) se nepřenášejí
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred má tabulky titulků tvůrců: {n}; použije se „{name}“ (jinou zvolte v poli Tabulka)
