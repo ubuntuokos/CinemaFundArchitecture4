@@ -97,7 +97,7 @@ A munkát külön munkamenet végzi, ebből a jóváhagyott tervből.
 | D3 | Hol rajzolódik | **Eldöntve (2026-11-12): a saját renderelőben, CPU-n és GPU-n is**, a grafikus rétegek útján, mint a címek és az alakzatok; az előnézet, az export és az élő grafika ugyanazt adja, külső függőség nélkül. A renderelő két új képességet kap (nyitott vonás kerek véggel és illesztéssel, tintaremegés a geometriában), mindkettő CPU- és GPU-úton is, egyező eredménnyel |
 | D4 | Időkezelés | **Eldöntve (2026-11-12): determinisztikus.** A rugók, ingák és a szél rögzített 1/240 s lépésben integrálnak a klip elejétől, mentett köztes állapotokkal (ellenőrzőpontokkal); bármely időpont ugyanazt adja előre- és hátrajátszásnál, ugrásnál, exportnál és élő adásban. Ugráskor a legközelebbi ellenőrzőponttól számol tovább (néhány ms) |
 | D5 | Hol használható | **Eldöntve (2026-11-12): mindenhol, ahol grafika van:** a stáblistában háttérként és cellában (a nevekkel haladó figura), a címekben és az alsó harmadokban (Grafika panel), és az élő grafikában (C10) változtatás nélkül, mert a réteg közös |
-| D6 | Mozdulatok a figurákon | kulcskockázható „mozdulatok” (köszön, kalapot emel, megáll, leül) az idővonalon; interaktív kattintás nincs (videóról van szó) |
+| D6 | Mozdulatok a figurákon | **Eldöntve (2026-11-12): kulcskockázható mozdulatok az idővonalon** (köszön, kalapot emel, megáll, leül, továbbmegy), adott időpontra téve; a figura a járásból simán áll meg és indul tovább (a járásmegoldó `go` keverése). A stáblistában is időzíthető (pl. a figura az utolsó oldalnál megáll és köszön). Kattintásra reagálás nincs |
 | D7 | Ütemezés | a jövő évi kiadás, külön munkamenettel (VI.) |
 
 ## VIII. Kockázatok
