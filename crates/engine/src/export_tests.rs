@@ -300,6 +300,23 @@ fn files_in(dir: &Path) -> Vec<String> {
     v
 }
 
+/// CFA4-PROCODEC-002 WP0: `export.formats` lists every format with whether it can be exported here
+/// and, when it cannot, the concrete reason (`null` otherwise); settings the encoders cannot honour
+/// are refused with the reason before any export starts.
+#[test]
+fn export_formats_and_resolve_say_why() {
+    let mut s = demo();
+    let list = s.execute("export.formats", json!({})).unwrap();
+    let list = list.as_array().unwrap();
+    assert_eq!(list.len(), cfa4_export::Format::ALL.len());
+    for f in list {
+        let available = f["available"].as_bool().unwrap();
+        assert_eq!(f["reason"].is_null(), available, "{f}");
+    }
+    let e = s.execute("export.resolve", json!({"format": "hevc", "bitrateMode": "vbr2Pass"})).unwrap_err().to_string();
+    assert!(e.contains("two-pass"), "{e}");
+}
+
 /// Every built-in preset: a quarter second of the demo sequence (seven frames at 23.976) exported
 /// with `file.exportMedia {preset}`; ffprobe checks container, codec, profile, frame size, frame
 /// rate and audio format, and the data rate where the codec fixes it.
@@ -365,6 +382,30 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("jpeg2000"), Some("xyz12le")), "{name}");
                 assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), size, "{name}");
                 assert_eq!(v["r_frame_rate"], "24/1", "{name}: 23.976 becomes 24");
+            }
+            if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!(
+                    (a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()),
+                    (Some("pcm_s24le"), Some("48000"), Some(6)),
+                    "{name}"
+                );
+            }
+            continue;
+        }
+        if fmt == "imf" {
+            // a folder: the image and audio track files, CPL, PKL, asset map and volume index
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(Path::new(&out));
+            assert_eq!(files.len(), 6, "{name}: {files:?}");
+            assert!(files.iter().any(|f| f.starts_with("CPL_")) && files.iter().any(|f| f.starts_with("PKL_")), "{name}: {files:?}");
+            let pic = files.iter().find(|f| f.starts_with("VIDEO_")).unwrap();
+            let snd = files.iter().find(|f| f.starts_with("AUDIO_")).unwrap();
+            if let Some(j) = probe(&Path::new(&out).join(pic).to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!(v["codec_name"], "jpeg2000", "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (w, h), "{name}");
+                assert_eq!(v["r_frame_rate"], "24000/1001", "{name}: an App 2E rate stays");
             }
             if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
                 let a = stream(&j, "audio").unwrap();
@@ -1222,6 +1263,21 @@ fn dcp_language_param_and_isdcf_name() {
     assert!(name.ends_with(&format!("_TLR-1_S_EN-XX_51_2K_{date}_SMPTE_OV")), "{name}");
     assert_eq!(r["settings"]["dcpLanguage"], "en-US");
     assert!(s.execute("export.resolve", json!({"format": "h264"})).unwrap()["dcpName"].is_null());
+}
+
+/// #1011: the IMF params, the package folder path (no extension) and the resolved summary.
+#[test]
+fn imf_params() {
+    let s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "/tmp/pkg", "format": "imf", "imfLossless": true, "imfContentKind": "Episode", "dcpLanguage": "hu-HU"})).unwrap();
+    assert_eq!((st.format, st.imf_lossless, st.imf_content_kind.as_str(), st.dcp_language.as_str()), (cfa4_export::Format::Imf, true, "episode", "hu-HU"));
+    let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfContentKind": "policy"})).unwrap_err().to_string();
+    assert!(e.contains("imfContentKind"), "{e}");
+    let mut s = s;
+    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0})).unwrap();
+    assert_eq!(r["settings"]["imfContentKind"], "");
+    assert!(r["summary"]["video"].as_str().unwrap().contains("JPEG 2000 IMF lossy, 10-bit R'G'B' 4:4:4"), "{r}");
 }
 
 /// A two-channel DLC bed (L, R) of silence.

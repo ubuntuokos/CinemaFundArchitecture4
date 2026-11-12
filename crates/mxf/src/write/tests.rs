@@ -1104,6 +1104,9 @@ fn imf_picture_track_file() {
     // the sub-descriptor carries COD, QCD and the R10 G10 B10 layout
     assert!(f.windows(10).any(|w| w == [0x01, 0x04, 0x00, 0x01, 0x01, 0x05, 0x03, 0x03, 0x00, 0x00]));
     assert!(f.windows(8).any(|w| w == [b'R', 10, b'G', 10, b'B', 10, 0, 0]));
+    // PixelLayout (3401h) is the full 8-pair RGBALayout: Photon's RegXML reader rejects a shorter one
+    let pixel_layout = [0x34, 0x01, 0x00, 0x10, b'R', 10, b'G', 10, b'B', 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert!(f.windows(20).any(|w| w == pixel_layout));
     // truncation never panics
     for cut in (0..f.len()).step_by(211) {
         if let Ok(m) = open(&f[..cut]) {
@@ -1271,4 +1274,120 @@ fn j2k_sub_descriptor_from_hostile_codestreams() {
         }
     }
     assert!(J2kSubDescriptor::from_codestream(b"not j2k").is_none());
+}
+
+/// #1011: the CPL EssenceDescriptor of an IMF picture track file (RegXML, ST 2067-2 6.8): the
+/// RGBA descriptor with its JPEG 2000 sub-descriptor nested, values in the ST 2001-1 forms.
+#[test]
+fn imf_picture_regxml() {
+    let (cfg, _) = imf_picture_config(Rational::new(24, 1), true);
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..5 {
+        w.push_picture(&imf_j2k(0x0411, 1920, 1080, i), FrameInfo::intra()).unwrap();
+    }
+    let f = w.finish().unwrap().into_inner();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.starts_with("<r0:RGBADescriptor xmlns:r0=\"http://www.smpte-ra.org/reg/395/2014/13/1/aaf\""), "{x}");
+    for want in [
+        "<r1:SampleRate>24/1</r1:SampleRate>",
+        "<r1:EssenceLength>5</r1:EssenceLength>",
+        "<r1:LinkedTrackID>2</r1:LinkedTrackID>",
+        "<r1:ContainerFormat>urn:smpte:ul:060e2b34.0401010d.0d010301.020c0600</r1:ContainerFormat>",
+        "<r1:PictureCompression>urn:smpte:ul:060e2b34.0401010d.04010202.03010203</r1:PictureCompression>",
+        "<r1:FrameLayout>FullFrame</r1:FrameLayout>",
+        "<r1:ImageAspectRatio>16/9</r1:ImageAspectRatio>",
+        "<r1:ComponentMaxRef>940</r1:ComponentMaxRef>",
+        "<r1:ComponentMinRef>64</r1:ComponentMinRef>",
+        "<r1:ScanningDirection>ScanningDirection_LeftToRightTopToBottom</r1:ScanningDirection>",
+        "<r0:JPEG2000SubDescriptor>",
+        "<r1:Rsiz>1041</r1:Rsiz>",
+        "<r2:Ssiz>9</r2:Ssiz>",
+        "<r1:CodingStyleDefault>01040001010503030000778888888888</r1:CodingStyleDefault>",
+        "<r2:Code>CompRed</r2:Code>",
+        "<r2:ComponentSize>10</r2:ComponentSize>",
+    ] {
+        assert!(x.contains(want), "{want} missing in\n{x}");
+    }
+    assert_eq!(x.matches("<r1:InstanceID>urn:uuid:").count(), 2);
+    assert_eq!(x.matches("<r2:RGBAComponent>").count(), 16, "PixelLayout and J2CLayout, 8 pairs each");
+    for cut in (0..f.len().min(20_000)).step_by(101) {
+        let _ = crate::regxml::essence_descriptor(&f[..cut]);
+    }
+}
+
+/// #1011: the RegXML of an IMF sound track file: Wave descriptor, MCA sub-descriptors with the
+/// soundfield group's titles, the ST 2067-2 Annex E items.
+#[test]
+fn imf_sound_regxml() {
+    let mut ids = PackageIds::from_seed("imf-snd-x", "Main");
+    ids.file = Umid::dcinema([0x33; 16]);
+    let mut cfg = WriterConfig::new(Pattern::Imf, Rational::new(48_000, 1), ids);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 1, bits: 24 }];
+    cfg.reference_image_edit_rate = Some(Rational::new(25, 1));
+    cfg.reference_audio_alignment_level = Some(-20);
+    cfg.mca = vec![
+        McaLabel {
+            dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, 0x02, 0x20, 0x01, 0, 0, 0],
+            link: [0x44; 16],
+            symbol: "sgMono & <x>".into(),
+            name: "Mono".into(),
+            channel: None,
+            language: Some("hu".into()),
+            group: None,
+            titles: Some(McaTitles { title: "Film".into(), title_version: "1".into(), content_kind: "PRM".into(), element_kind: "FULL".into() }),
+        },
+        McaLabel {
+            dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, 0x01, 0x03, 0, 0, 0, 0],
+            link: [0x45; 16],
+            symbol: "chC".into(),
+            name: "Center".into(),
+            channel: Some(1),
+            language: None,
+            group: Some([0x44; 16]),
+            titles: None,
+        },
+    ];
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    w.push_sound(0, &vec![0u8; 3 * 4800]).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.starts_with("<r0:WAVEPCMDescriptor "), "{x}");
+    for want in [
+        "<r1:SampleRate>48000/1</r1:SampleRate>",
+        "<r1:EssenceLength>4800</r1:EssenceLength>",
+        "<r1:AudioSampleRate>48000/1</r1:AudioSampleRate>",
+        "<r1:Locked>True</r1:Locked>",
+        "<r1:ChannelCount>1</r1:ChannelCount>",
+        "<r1:QuantizationBits>24</r1:QuantizationBits>",
+        "<r1:BlockAlign>3</r1:BlockAlign>",
+        "<r1:AverageBytesPerSecond>144000</r1:AverageBytesPerSecond>",
+        "<r1:ChannelAssignment>urn:smpte:ul:060e2b34.0401010d.04020210.04010000</r1:ChannelAssignment>",
+        "<r1:ReferenceImageEditRate>25/1</r1:ReferenceImageEditRate>",
+        "<r1:ReferenceAudioAlignmentLevel>-20</r1:ReferenceAudioAlignmentLevel>",
+        "<r0:SoundfieldGroupLabelSubDescriptor>",
+        "<r1:MCALabelDictionaryID>urn:smpte:ul:060e2b34.0401010d.03020220.01000000</r1:MCALabelDictionaryID>",
+        "<r1:MCALinkID>urn:uuid:44444444-4444-4444-4444-444444444444</r1:MCALinkID>",
+        "<r1:MCATagSymbol>sgMono &amp; &lt;x&gt;</r1:MCATagSymbol>",
+        "<r1:RFC5646SpokenLanguage>hu</r1:RFC5646SpokenLanguage>",
+        "<r1:MCATitle>Film</r1:MCATitle>",
+        "<r1:MCATitleVersion>1</r1:MCATitleVersion>",
+        "<r1:MCAAudioContentKind>PRM</r1:MCAAudioContentKind>",
+        "<r1:MCAAudioElementKind>FULL</r1:MCAAudioElementKind>",
+        "<r0:AudioChannelLabelSubDescriptor>",
+        "<r1:MCAChannelID>1</r1:MCAChannelID>",
+        "<r1:SoundfieldGroupLinkID>urn:uuid:44444444-4444-4444-4444-444444444444</r1:SoundfieldGroupLinkID>",
+    ] {
+        assert!(x.contains(want), "{want} missing in\n{x}");
+    }
+}
+
+/// A real IMF track file (`CFA4_IMF_SAMPLE`): its descriptor maps to RegXML. Checked by hand
+/// against the MERIDIAN CPL of the Photon test IMP: every value of the audio descriptor and every
+/// mapped value of the picture descriptor are equal.
+#[test]
+fn imf_sample_regxml() {
+    let Ok(path) = std::env::var("CFA4_IMF_SAMPLE") else { return };
+    let f = std::fs::read(&path).unwrap();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.contains("<r1:InstanceID>urn:uuid:"), "{x}");
 }

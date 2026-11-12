@@ -1,9 +1,9 @@
 //! A package written by CFA4's own DCP export (`cfa4-export`, `dcp_out.rs`) passes the native Quick
-//! Scan, and every check the native backend implements passes on it.
+//! Scan and Full Integrity, and every check the native backend implements passes on it.
 
 use std::sync::Arc;
 
-use cfa4_dcp_validate::rules::{AM_PRESENT, STD_CONSISTENT};
+use cfa4_dcp_validate::rules::{AM_PRESENT, MARK_MARKERS, PKL_HASH, STD_CONSISTENT};
 use cfa4_dcp_validate::{DcpValidator, NativeValidator, Profile, Status, ValidationControl, ValidationReport, ValidationRequest, Verdict};
 use cfa4_export::{ExportSettings, Format, Progress, export};
 use cfa4_media::generators::GeneratorSource;
@@ -76,9 +76,15 @@ fn cfa4_dcp_export_passes_the_native_quick_scan() {
     assert!(quick.assets_checked >= 4, "{}", quick.assets_checked);
     assert!(quick.findings.iter().all(|f| f.status == Status::Pass), "{:?}", outcome(&quick));
 
+    // DCP-05: sizes, SHA-1 hashes, the packing list and composition consistency, the markers
+    let full = run("full-integrity");
+    assert_eq!(full.verdict, Verdict::Pass, "{:?}", outcome(&full));
+    assert!(full.findings.iter().any(|f| f.rule == PKL_HASH && f.status == Status::Pass));
+
     let smpte = run("smpte-cinema");
     assert!(smpte.findings.iter().any(|f| f.rule == STD_CONSISTENT && f.status == Status::Pass));
     assert!(smpte.findings.iter().any(|f| f.rule == AM_PRESENT && f.status == Status::Pass));
+    assert!(smpte.findings.iter().any(|f| f.rule == MARK_MARKERS && f.status == Status::Pass));
     // the rules of later work packages are reported, so the profile is not passed yet
     assert_eq!(smpte.verdict, Verdict::Incomplete, "{:?}", outcome(&smpte));
     assert_eq!(smpte.counts.fail, 0, "{:?}", outcome(&smpte));

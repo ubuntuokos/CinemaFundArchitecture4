@@ -78,6 +78,12 @@ DCP_KINDS = (
     ("policy", N_("Policy")),
     ("psa", N_("Public service announcement")),
 )
+# IMF content kinds (`IMF_CONTENT_KINDS` in crates/export, ST 2067-3 Table 3): id, label
+IMF_KINDS = tuple(k for k in DCP_KINDS if k[0] != "policy") + (
+    ("episode", N_("Episode")),
+    ("highlights", N_("Event highlights")),
+    ("event", N_("Event")),
+)
 # DCP immersive audio (`DcpImmersive` in crates/export): id, label
 DCP_IMMERSIVE = (
     ("off", N_("Off (5.1 only)")),
@@ -117,6 +123,15 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
                    "cineformQuality": "filmscan1", "exrCompression": "none"}
 MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
+# the bitrates of D-10 / IMX (ST 356), Mbit/s
+D10_MBPS = (30.0, 40.0, 50.0)
+
+
+def d10_mbps(v: float) -> float:
+    """The D-10 bitrate nearest to `v` Mbit/s."""
+    return min(D10_MBPS, key=lambda m: abs(m - v))
+
+
 MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
@@ -317,6 +332,7 @@ class ExportDialog(QDialog):
         self._follow: Any = None  # a moved item's id: the selection follows it
         # settings the user changed since the preset was chosen: only these override the preset
         self.touched: set[str] = set()
+        self._d10_bitrate = False  # the bitrate field steps through the D-10 rates (#1017)
         self._want_preset: str | None = None
         self._shown_preset: str | None = None
         self.preset_manager: PresetManager | None = None
@@ -350,7 +366,11 @@ class ExportDialog(QDialog):
         self.dcp_kind.setObjectName("export.dcpContentKind")
         for key, label in DCP_KINDS:
             self.dcp_kind.addItem(tr(label), key)
-        # DCP only: spoken language (MCA labels, CPL title, DCNC name field)
+        # IMF only: reversible (lossless) JPEG 2000 instead of the lossy IMF profile
+        self.imf_lossless = QCheckBox(tr("Lossless (reversible JPEG 2000)"), self)
+        self.imf_lossless.setObjectName("export.imfLossless")
+        self.imf_lossless.setEnabled(False)
+        # DCP and IMF: spoken language (MCA labels, CPL title or locale, DCNC name field)
         self.dcp_language = QComboBox(self)
         self.dcp_language.setObjectName("export.dcpLanguage")
         self.dcp_language.setEditable(True)
@@ -385,7 +405,7 @@ class ExportDialog(QDialog):
         for w in (self.dcp_immersive, self.dcp_iab_source, self.dcp_iab_browse, self.dcp_iab_fallback):
             w.setEnabled(False)
         # egui's Media File rows: File Name, then Location with its folder picker
-        self.path = OutputPath(self, lambda: "" if self._dcp() else (self._extension() or None))
+        self.path = OutputPath(self, lambda: "" if self._package() else (self._extension() or None))
         browse = QPushButton("…", self)
         browse.setObjectName("export.location.browse")
         browse.setToolTip(tr("Choose folder"))
@@ -549,7 +569,8 @@ class ExportDialog(QDialog):
         f.addRow(tr("DCP resolution"), self.dcp_resolution)
         f.addRow(tr("DCP container"), self.dcp_aspect)
         f.addRow(tr("Content kind"), self.dcp_kind)
-        f.addRow(tr("DCP language"), self.dcp_language)
+        f.addRow(tr("Package language"), self.dcp_language)
+        f.addRow("", self.imf_lossless)
         f.addRow(tr("Range"), range_row)
         f.addRow("", self.range_warning)
         video = Section("video", tr("Video"), self)
@@ -771,6 +792,7 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.textChanged.connect(self._changed)
         self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
         self.dcp_language.currentTextChanged.connect(self._changed)
+        self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
@@ -882,6 +904,9 @@ class ExportDialog(QDialog):
             item = self.format.model().item(self.format.count() - 1)  # type: ignore[attr-defined]
             if item is not None and not f.get("available", True):
                 item.setEnabled(False)
+                reason = f.get("reason")
+                if isinstance(reason, str) and reason:
+                    item.setToolTip(reason)
         self.format.blockSignals(False)
 
     def _on_presets(self, result: Any, _b: bytes | None) -> None:
@@ -944,6 +969,7 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
         self.dcp_iab_fallback.setCurrentIndex(max(0, self.dcp_iab_fallback.findData(preset.get("dcpIabFallback") or "none")))
         self.dcp_language.setCurrentText(str(preset.get("dcpLanguage") or ""))
+        self.imf_lossless.setChecked(bool(preset.get("imfLossless")))
         self.touched.clear()
         self.agent_settings = {}
         self._loading = False
@@ -966,8 +992,13 @@ class ExportDialog(QDialog):
         self.sections["multiplexer"].setVisible(self._muxed())
         self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         dcp = self._dcp()
-        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive, self.dcp_language):
+        imf = self.format.currentData() == "imf"
+        self._fill_kinds(IMF_KINDS if imf else DCP_KINDS)
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_immersive):
             w.setEnabled(dcp)
+        for w in (self.dcp_kind, self.dcp_language):
+            w.setEnabled(dcp or imf)
+        self.imf_lossless.setEnabled(imf)
         self.dcp_isdcf.setEnabled(dcp and bool(self._dcp_name))
         self._immersive_changed()
         if dcp:
@@ -978,7 +1009,24 @@ class ExportDialog(QDialog):
             self.match_size.setEnabled(True)
             self.width_spin.setEnabled(True)
             self.height_spin.setEnabled(True)
+        if imf:
+            # the IMF profile sets the J2K data rate; the sound is 24-bit 48 kHz PCM
+            for w in (self.bitrate_mode, self.bitrate_box, self.audio_codec, self.audio_bitrate):
+                w.setEnabled(False)
         self._container_changed()
+
+    def _fill_kinds(self, kinds: tuple[tuple[str, str], ...]) -> None:
+        """The content kind choices of a DCP or an IMF package, keeping the chosen kind when the
+        other list has it."""
+        if [self.dcp_kind.itemData(i) for i in range(self.dcp_kind.count())] == [k for k, _ in kinds]:
+            return
+        current = self.dcp_kind.currentData()
+        blocked = self.dcp_kind.blockSignals(True)
+        self.dcp_kind.clear()
+        for key, label in kinds:
+            self.dcp_kind.addItem(tr(label), key)
+        self.dcp_kind.setCurrentIndex(max(0, self.dcp_kind.findData(current)))
+        self.dcp_kind.blockSignals(blocked)
 
     def _choice(self, key: str) -> str:
         return str(self.format_choices[key].currentData() or "")
@@ -1006,6 +1054,24 @@ class ExportDialog(QDialog):
             w.setEnabled(video)
         self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))
         self.video_form.setRowVisible(self.gop, video)  # H.264 / H.265 / AV1 have egui's own row
+        self._sync_d10_bitrate(fmt in MXF_FORMATS and mxf_codec == "d10")
+
+    def _sync_d10_bitrate(self, d10: bool) -> None:
+        """D-10 / IMX runs at 30, 40 or 50 Mbit/s only (#1017): the target bitrate field steps
+        through them (50 by default); `params` always sends one of them."""
+        if d10 == self._d10_bitrate:
+            return
+        self._d10_bitrate = d10
+        self.bitrate.blockSignals(True)
+        if d10:
+            v = self.bitrate.value()
+            self.bitrate.setRange(30.0, 50.0)
+            self.bitrate.setSingleStep(10.0)
+            self.bitrate.setValue(d10_mbps(v) if "bitrate" in self.touched else 50.0)
+        else:
+            self.bitrate.setRange(0.1, 800.0)
+            self.bitrate.setSingleStep(0.1)
+        self.bitrate.blockSignals(False)
 
     def _sync_format_rows(self) -> None:
         self._sync_mpeg2_rows()
@@ -1067,6 +1133,10 @@ class ExportDialog(QDialog):
         if self._dcp():
             # the DCI specifications fix the J2K data rate and the sound (5.1 24-bit 48 kHz PCM)
             for key in ("crf", "maxBitrate", "sampleRate", "channels", "bits", "flacLevel"):
+                shown[key] = False
+        elif fmt == "imf":
+            # the IMF profile fixes the J2K data rate; the sound is 24-bit 48 kHz PCM (mono, stereo or 5.1)
+            for key in ("crf", "maxBitrate", "sampleRate", "bits", "flacLevel"):
                 shown[key] = False
         return shown
 
@@ -1174,6 +1244,10 @@ class ExportDialog(QDialog):
         """A DCP: the output is a folder."""
         return self.format.currentData() == "dcp"
 
+    def _package(self) -> bool:
+        """A DCP or an IMF package: the output is a folder."""
+        return self.format.currentData() in ("dcp", "imf")
+
     def _extension(self) -> str:
         """The output file's extension: the MPEG-2 container's, QuickTime's for H.264 / H.265 in
         a QuickTime file, else the format's."""
@@ -1247,6 +1321,8 @@ class ExportDialog(QDialog):
                 p["bitrateMode"] = self.bitrate_mode.currentData()
             if "bitrate" in self.touched:
                 p["bitrateKbps"] = round(self.bitrate.value() * 1000)
+        if self._d10_bitrate:
+            p["bitrateKbps"] = round(d10_mbps(self.bitrate.value()) * 1000)
         if "hardware" in self.touched:
             p["hardwareEncoding"] = "auto" if self.hardware.isChecked() else "off"
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
@@ -1302,6 +1378,10 @@ class ExportDialog(QDialog):
                 p["dcpIabSource"] = os.path.expanduser(self.dcp_iab_source.text().strip())
             if mode != "off":
                 p["dcpIabFallback"] = self.dcp_iab_fallback.currentData()
+            p["dcpLanguage"] = self.dcp_language.currentText().strip()
+        if self.imf_lossless.isEnabled():
+            p["imfContentKind"] = self.dcp_kind.currentData()
+            p["imfLossless"] = self.imf_lossless.isChecked()
             p["dcpLanguage"] = self.dcp_language.currentText().strip()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
