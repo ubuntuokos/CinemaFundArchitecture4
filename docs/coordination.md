@@ -44,7 +44,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    [`plans/CFA4-CODERABBIT-001.md`](plans/CFA4-CODERABBIT-001.md); beállítás:
    [`.coderabbit.yaml`](../.coderabbit.yaml)). **Csak kockázatos PR-on kell** (tulajdonosi
    döntés D5, 2026-11-13: az ingyenes keret nagyjából óránként egy review). Kockázatos a PR,
-   ha a `git diff --name-only origin/main...HEAD` bármelyik fájlja ide tartozik:
+   ha a `git diff --name-only --no-renames origin/main...HEAD` bármelyik fájlja ide tartozik
+   (átnevezésnél így a régi és az új útvonal is látszik):
    - **biztonság:** a CFA4-SECURITY-001 projekt PR-jai, `crates/platform/`, `deny.toml`,
      `.semgrep/`;
    - **kodek és konténer:** `crates/codecs/`, `crates/ffmpeg/`, `crates/gstreamer/`, valamint
@@ -59,7 +60,9 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    ellenőrzést (a keretet a kockázatos PR-ok elől venné el), a leírásba pedig ezt írd:
    „CodeRabbit: nem kell”. Ha a CodeRabbit „Review limit reached” választ ad, várd meg
    a jelzett időt, és kérd újra; addig a PR nem adható át. Minden megállapítását vagy javítsd ki
-   a saját ágadon, vagy válaszolj rá a szálban, és indokold, miért nem javítod (például mert
+   a saját ágadon, vagy válaszolj rá a szálban, és indokold, miért nem javítod. A review
+   törzsében, szál nélkül közölt megállapításokra (például a diffen kívüliekre) egy
+   PR-megjegyzésben válaszolj, pontonként (például mert
    az `AGENTS.md` mást ír elő: ütközésnél mindig a CFA4 szabályai nyernek). Javítás után kérd
    újra (`@coderabbitai review`). A PR-t csak akkor add át a gazdának, ha a legutóbbi kérésedre
    megérkezett a CodeRabbit review a PR mostani fejére, és nem maradt megválaszolatlan
@@ -94,9 +97,12 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    (`GET /repos/{owner}/{repo}/pulls/{n}/reviews`), amelynek `commit_id`-je a PR mostani feje, és
    amely az utolsó `@coderabbitai review` kérésnél később érkezett. Ha a fej a review után
    változott, a fejlesztőnek újra kell kérnie;
-   (c) nincs megválaszolatlan CodeRabbit-szál
-   (`GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads`). Egy szál akkor lezárt, ha meg
-   van oldva, vagy a fejlesztő indokolva válaszolt rá.
+   (c) nincs megválaszolatlan CodeRabbit-megállapítás: sem szál
+   (`GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads` a Claude Code munkamenetekben;
+   máshol a GitHub GraphQL `pullRequest.reviewThreads { isResolved }`), sem a legutóbbi
+   review törzsében szál nélkül közölt megállapítás, amelyre a fejlesztő nem válaszolt
+   PR-megjegyzésben. Egy megállapítás akkor lezárt, ha meg van oldva, vagy a fejlesztő
+   indokolva válaszolt rá.
    Ha valamelyik hiányzik, a PR a „(c) frissíteni kell” kategóriába kerül, és a gazda a PR-ban
    jelzi a fejlesztőnek. Ez nem technikai CI-kapu. Dependabot-PR-ra és magára a köteg-PR-ra
    nem vonatkozik; a kötegbe kerülő kockázatos eredeti PR-okra igen (§3a.1).
