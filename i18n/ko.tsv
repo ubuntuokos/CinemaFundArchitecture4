@@ -4438,3 +4438,51 @@
 	picture styles (pictures keep their own size) are not carried over	이미지 스타일(이미지는 자체 크기를 유지)은 가져오지 않습니다
 	video (tape) styles are not carried over	비디오(테이프) 스타일은 가져오지 않습니다
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 프로젝트에 크레딧 스프레드시트가 {n}개 있습니다. “{name}”을(를) 사용합니다(스프레드시트 필드에서 다른 것을 선택하세요)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	발견 사항 추가
+	Add as Finding	발견 사항으로 추가
+	Are colour and contrast acceptable?	색상과 대비가 허용 가능합니까?
+	Automatic Checks	자동 검사
+	Bounds	범위
+	Check	검사
+	Check Now	지금 검사
+	Check quality after export	내보낸 후 품질 검사
+	Checking…	검사 중…
+	Contact Sheet	콘택트 시트
+	Critical	치명적
+	Fail	실패
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	발견 사항 {row}: 타임코드가 이 파일의 시간이 아닙니다 (HH:MM:SS:FF).
+	Findings	발견 사항
+	Human Review	사람 검토
+	Incomplete	불완전
+	Is there a visible picture defect?	눈에 보이는 화면 결함이 있습니까?
+	Is there audible distortion?	들리는 왜곡이 있습니까?
+	Is there unwanted noise?	원치 않는 잡음이 있습니까?
+	Major	중대
+	Message	메시지
+	Minor	경미
+	No contact sheet	콘택트 시트 없음
+	Not answered	응답 없음
+	Not checked	검사 안 함
+	Not run	실행 안 됨
+	Note	메모
+	Pass	통과
+	Passed	통과
+	Passed with warnings	경고와 함께 통과
+	Profile: {id} v{version}	프로필: {id} v{version}
+	Quality Check	품질 검사
+	Quality Check…	품질 검사…
+	Remove Finding	발견 사항 제거
+	Report: {path}	보고서: {path}
+	Review complete	검토 완료
+	Reviewer	검토자
+	Run the media quality check on the finished file (docs/media-qc.md)	완료된 파일에 미디어 품질 검사 실행 (docs/media-qc.md)
+	Save Review	검토 저장
+	Select a finished export in the queue	대기열에서 완료된 내보내기를 선택하십시오
+	Severity	심각도
+	The engine is not running.	엔진이 실행되고 있지 않습니다.
+	Time code	타임코드
+	Unsure	확실하지 않음
+	accept	허용
+	the engine did not start the check	엔진이 검사를 시작하지 않았습니다
+	the engine sent no report	엔진이 보고서를 보내지 않았습니다

@@ -4443,3 +4443,51 @@ export.summary	Low	低
 	picture styles (pictures keep their own size) are not carried over	不會沿用圖片樣式（圖片保留原始大小）
 	video (tape) styles are not carried over	不會沿用影片（磁帶）樣式
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 專案含有 {n} 份演職員表試算表；使用「{name}」（可在「試算表」欄位選擇其他）
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	新增問題
+	Add as Finding	新增為問題
+	Are colour and contrast acceptable?	色彩與對比是否可接受？
+	Automatic Checks	自動檢查
+	Bounds	範圍
+	Check	檢查
+	Check Now	立即檢查
+	Check quality after export	匯出後檢查品質
+	Checking…	檢查中…
+	Contact Sheet	縮圖表
+	Critical	嚴重
+	Fail	未通過
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	問題 {row}：時間碼不是此檔案中的時間 (HH:MM:SS:FF)。
+	Findings	問題
+	Human Review	人工審查
+	Incomplete	不完整
+	Is there a visible picture defect?	是否有可見的畫面瑕疵？
+	Is there audible distortion?	是否有可聽見的失真？
+	Is there unwanted noise?	是否有多餘的雜訊？
+	Major	重大
+	Message	訊息
+	Minor	輕微
+	No contact sheet	沒有縮圖表
+	Not answered	未回答
+	Not checked	未檢查
+	Not run	未執行
+	Note	備註
+	Pass	通過
+	Passed	已通過
+	Passed with warnings	通過但有警告
+	Profile: {id} v{version}	設定檔：{id} v{version}
+	Quality Check	品質檢查
+	Quality Check…	品質檢查…
+	Remove Finding	移除問題
+	Report: {path}	報告：{path}
+	Review complete	審查完成
+	Reviewer	審查者
+	Run the media quality check on the finished file (docs/media-qc.md)	對完成的檔案執行媒體品質檢查 (docs/media-qc.md)
+	Save Review	儲存審查
+	Select a finished export in the queue	在佇列中選取已完成的匯出
+	Severity	嚴重性
+	The engine is not running.	引擎未執行。
+	Time code	時間碼
+	Unsure	不確定
+	accept	可接受
+	the engine did not start the check	引擎未開始檢查
+	the engine sent no report	引擎未傳送報告

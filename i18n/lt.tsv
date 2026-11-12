@@ -4447,3 +4447,51 @@ export.summary	Low	žema
 	picture styles (pictures keep their own size) are not carried over	paveikslėlių stiliai (paveikslėliai išlaiko savo dydį) neperkeliami
 	video (tape) styles are not carried over	vaizdo (juostos) stiliai neperkeliami
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred projekte yra titrų skaičiuoklių: {n}; naudojama „{name}“ (kitą pasirinkite lauke Skaičiuoklė)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Pridėti radinį
+	Add as Finding	Pridėti kaip radinį
+	Are colour and contrast acceptable?	Ar spalvos ir kontrastas priimtini?
+	Automatic Checks	Automatiniai patikrinimai
+	Bounds	Ribos
+	Check	Patikrinimas
+	Check Now	Tikrinti dabar
+	Check quality after export	Tikrinti kokybę po eksporto
+	Checking…	Tikrinama…
+	Contact Sheet	Kontaktinis lapas
+	Critical	Kritinis
+	Fail	Nepraėjo
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Radinys {row}: laiko kodas nėra šio failo laikas (HH:MM:SS:FF).
+	Findings	Radiniai
+	Human Review	Žmogaus peržiūra
+	Incomplete	Nebaigta
+	Is there a visible picture defect?	Ar vaizde matomas defektas?
+	Is there audible distortion?	Ar girdimas iškraipymas?
+	Is there unwanted noise?	Ar yra nepageidaujamo triukšmo?
+	Major	Didelis
+	Message	Pranešimas
+	Minor	Nedidelis
+	No contact sheet	Kontaktinio lapo nėra
+	Not answered	Neatsakyta
+	Not checked	Netikrinta
+	Not run	Nevykdyta
+	Note	Pastaba
+	Pass	Praėjo
+	Passed	Praėjo
+	Passed with warnings	Praėjo su įspėjimais
+	Profile: {id} v{version}	Profilis: {id} v{version}
+	Quality Check	Kokybės patikrinimas
+	Quality Check…	Kokybės patikrinimas…
+	Remove Finding	Pašalinti radinį
+	Report: {path}	Ataskaita: {path}
+	Review complete	Peržiūra baigta
+	Reviewer	Peržiūrėtojas
+	Run the media quality check on the finished file (docs/media-qc.md)	Atlikti baigto failo medijos kokybės patikrinimą (docs/media-qc.md)
+	Save Review	Įrašyti peržiūrą
+	Select a finished export in the queue	Eilėje pasirinkite baigtą eksportą
+	Severity	Svarba
+	The engine is not running.	Variklis neveikia.
+	Time code	Laiko kodas
+	Unsure	Neaišku
+	accept	priimtina
+	the engine did not start the check	variklis nepradėjo patikrinimo
+	the engine sent no report	variklis neatsiuntė ataskaitos

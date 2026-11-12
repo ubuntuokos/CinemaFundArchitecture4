@@ -4449,3 +4449,51 @@
 	picture styles (pictures keep their own size) are not carried over	les styles d’image (les images gardent leur propre taille) ne sont pas repris
 	video (tape) styles are not carried over	les styles de vidéo (bande) ne sont pas repris
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	le projet Cinecred contient {n} feuilles de calcul de générique ; “{name}” est utilisée (choisissez-en une autre dans le champ Feuille de calcul)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Ajouter une constatation
+	Add as Finding	Ajouter comme constatation
+	Are colour and contrast acceptable?	La couleur et le contraste sont-ils acceptables ?
+	Automatic Checks	Contrôles automatiques
+	Bounds	Limites
+	Check	Contrôle
+	Check Now	Contrôler maintenant
+	Check quality after export	Contrôler la qualité après l’exportation
+	Checking…	Contrôle en cours…
+	Contact Sheet	Planche contact
+	Critical	Critique
+	Fail	Échec
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Constatation {row} : le timecode ne correspond à aucun instant de ce fichier (HH:MM:SS:II).
+	Findings	Constatations
+	Human Review	Vérification humaine
+	Incomplete	Incomplet
+	Is there a visible picture defect?	Y a-t-il un défaut d’image visible ?
+	Is there audible distortion?	Y a-t-il une distorsion audible ?
+	Is there unwanted noise?	Y a-t-il un bruit indésirable ?
+	Major	Majeure
+	Message	Message
+	Minor	Mineure
+	No contact sheet	Aucune planche contact
+	Not answered	Sans réponse
+	Not checked	Non contrôlé
+	Not run	Non exécuté
+	Note	Note
+	Pass	Réussi
+	Passed	Réussi
+	Passed with warnings	Réussi avec avertissements
+	Profile: {id} v{version}	Profil : {id} v{version}
+	Quality Check	Contrôle qualité
+	Quality Check…	Contrôle qualité…
+	Remove Finding	Supprimer la constatation
+	Report: {path}	Rapport : {path}
+	Review complete	Vérification terminée
+	Reviewer	Vérificateur
+	Run the media quality check on the finished file (docs/media-qc.md)	Lancer le contrôle qualité du fichier terminé (docs/media-qc.md)
+	Save Review	Enregistrer la vérification
+	Select a finished export in the queue	Sélectionnez une exportation terminée dans la file
+	Severity	Gravité
+	The engine is not running.	Le moteur ne fonctionne pas.
+	Time code	Timecode
+	Unsure	Incertain
+	accept	acceptable
+	the engine did not start the check	le moteur n’a pas lancé le contrôle
+	the engine sent no report	le moteur n’a envoyé aucun rapport

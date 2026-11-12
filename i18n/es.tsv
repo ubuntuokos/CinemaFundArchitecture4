@@ -4451,3 +4451,51 @@
 	picture styles (pictures keep their own size) are not carried over	los estilos de imagen (las imágenes conservan su propio tamaño) no se transfieren
 	video (tape) styles are not carried over	los estilos de vídeo (cinta) no se transfieren
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	el proyecto de Cinecred tiene {n} hojas de cálculo de créditos; se usa “{name}” (elige otra en el campo Hoja de cálculo)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Añadir hallazgo
+	Add as Finding	Añadir como hallazgo
+	Are colour and contrast acceptable?	¿Son aceptables el color y el contraste?
+	Automatic Checks	Comprobaciones automáticas
+	Bounds	Límites
+	Check	Comprobación
+	Check Now	Comprobar ahora
+	Check quality after export	Comprobar la calidad tras exportar
+	Checking…	Comprobando…
+	Contact Sheet	Hoja de contactos
+	Critical	Crítico
+	Fail	Falla
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Hallazgo {row}: el código de tiempo no es un instante de este archivo (HH:MM:SS:FF).
+	Findings	Hallazgos
+	Human Review	Revisión humana
+	Incomplete	Incompleto
+	Is there a visible picture defect?	¿Hay algún defecto visible en la imagen?
+	Is there audible distortion?	¿Hay distorsión audible?
+	Is there unwanted noise?	¿Hay ruido no deseado?
+	Major	Grave
+	Message	Mensaje
+	Minor	Leve
+	No contact sheet	Sin hoja de contactos
+	Not answered	Sin responder
+	Not checked	Sin comprobar
+	Not run	No ejecutada
+	Note	Nota
+	Pass	Correcto
+	Passed	Superada
+	Passed with warnings	Superada con advertencias
+	Profile: {id} v{version}	Perfil: {id} v{version}
+	Quality Check	Control de calidad
+	Quality Check…	Control de calidad…
+	Remove Finding	Quitar hallazgo
+	Report: {path}	Informe: {path}
+	Review complete	Revisión terminada
+	Reviewer	Revisor
+	Run the media quality check on the finished file (docs/media-qc.md)	Ejecutar el control de calidad del archivo terminado (docs/media-qc.md)
+	Save Review	Guardar revisión
+	Select a finished export in the queue	Seleccione una exportación terminada en la cola
+	Severity	Gravedad
+	The engine is not running.	El motor no está en marcha.
+	Time code	Código de tiempo
+	Unsure	No estoy seguro
+	accept	aceptable
+	the engine did not start the check	el motor no inició la comprobación
+	the engine sent no report	el motor no envió ningún informe

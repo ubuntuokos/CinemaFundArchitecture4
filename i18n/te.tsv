@@ -4450,3 +4450,51 @@ export.summary	Low	తక్కువ
 	picture styles (pictures keep their own size) are not carried over	చిత్ర శైలులు (చిత్రాలు తమ పరిమాణాన్ని ఉంచుకుంటాయి) బదిలీ కావు
 	video (tape) styles are not carried over	వీడియో (టేప్) శైలులు బదిలీ కావు
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred ప్రాజెక్ట్‌లో {n} క్రెడిట్స్ స్ప్రెడ్‌షీట్‌లు ఉన్నాయి; “{name}” వాడబడుతుంది (స్ప్రెడ్‌షీట్ ఫీల్డ్‌లో మరొకటి ఎంచుకోండి)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	అన్వేషణను జోడించు
+	Add as Finding	అన్వేషణగా జోడించు
+	Are colour and contrast acceptable?	రంగు, కాంట్రాస్ట్ ఆమోదయోగ్యంగా ఉన్నాయా?
+	Automatic Checks	స్వయంచాలక తనిఖీలు
+	Bounds	పరిమితులు
+	Check	తనిఖీ
+	Check Now	ఇప్పుడే తనిఖీ చేయి
+	Check quality after export	ఎగుమతి తర్వాత నాణ్యతను తనిఖీ చేయి
+	Checking…	తనిఖీ చేస్తోంది…
+	Contact Sheet	కాంటాక్ట్ షీట్
+	Critical	క్లిష్టమైనది
+	Fail	విఫలం
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	అన్వేషణ {row}: టైమ్ కోడ్ ఈ ఫైల్‌లోని సమయం కాదు (HH:MM:SS:FF).
+	Findings	అన్వేషణలు
+	Human Review	మానవ సమీక్ష
+	Incomplete	అసంపూర్ణం
+	Is there a visible picture defect?	కనిపించే చిత్ర లోపం ఉందా?
+	Is there audible distortion?	వినిపించే వక్రీకరణ ఉందా?
+	Is there unwanted noise?	అవాంఛిత శబ్దం ఉందా?
+	Major	ప్రధానమైనది
+	Message	సందేశం
+	Minor	చిన్నది
+	No contact sheet	కాంటాక్ట్ షీట్ లేదు
+	Not answered	సమాధానం ఇవ్వలేదు
+	Not checked	తనిఖీ చేయలేదు
+	Not run	అమలు కాలేదు
+	Note	గమనిక
+	Pass	ఉత్తీర్ణం
+	Passed	ఉత్తీర్ణమైంది
+	Passed with warnings	హెచ్చరికలతో ఉత్తీర్ణమైంది
+	Profile: {id} v{version}	ప్రొఫైల్: {id} v{version}
+	Quality Check	నాణ్యత తనిఖీ
+	Quality Check…	నాణ్యత తనిఖీ…
+	Remove Finding	అన్వేషణను తీసివేయి
+	Report: {path}	నివేదిక: {path}
+	Review complete	సమీక్ష పూర్తయింది
+	Reviewer	సమీక్షకుడు
+	Run the media quality check on the finished file (docs/media-qc.md)	పూర్తయిన ఫైల్‌పై మీడియా నాణ్యత తనిఖీని అమలు చేయి (docs/media-qc.md)
+	Save Review	సమీక్షను సేవ్ చేయి
+	Select a finished export in the queue	క్యూలో పూర్తయిన ఎగుమతిని ఎంచుకోండి
+	Severity	తీవ్రత
+	The engine is not running.	ఇంజిన్ నడవడం లేదు.
+	Time code	టైమ్ కోడ్
+	Unsure	ఖచ్చితంగా తెలియదు
+	accept	ఆమోదయోగ్యం
+	the engine did not start the check	ఇంజిన్ తనిఖీని ప్రారంభించలేదు
+	the engine sent no report	ఇంజిన్ నివేదికను పంపలేదు

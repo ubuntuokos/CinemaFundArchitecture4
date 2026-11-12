@@ -4447,3 +4447,51 @@ export.summary	Low	nizka
 	picture styles (pictures keep their own size) are not carried over	slogi slik (slike ohranijo svojo velikost) se ne prenesejo
 	video (tape) styles are not carried over	slogi videa (traku) se ne prenesejo
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	projekt Cinecred ima preglednic odjavne špice: {n}; uporabi se »{name}« (drugo izberite v polju Preglednica)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Dodaj ugotovitev
+	Add as Finding	Dodaj kot ugotovitev
+	Are colour and contrast acceptable?	Sta barva in kontrast sprejemljiva?
+	Automatic Checks	Samodejna preverjanja
+	Bounds	Meje
+	Check	Preverjanje
+	Check Now	Preveri zdaj
+	Check quality after export	Preveri kakovost po izvozu
+	Checking…	Preverjanje …
+	Contact Sheet	Kontaktni list
+	Critical	Kritično
+	Fail	Ni opravljeno
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Ugotovitev {row}: časovna koda ni čas v tej datoteki (HH:MM:SS:FF).
+	Findings	Ugotovitve
+	Human Review	Človeški pregled
+	Incomplete	Nepopolno
+	Is there a visible picture defect?	Ali je na sliki vidna napaka?
+	Is there audible distortion?	Ali je slišno popačenje?
+	Is there unwanted noise?	Ali je prisoten neželen šum?
+	Major	Večje
+	Message	Sporočilo
+	Minor	Manjše
+	No contact sheet	Ni kontaktnega lista
+	Not answered	Brez odgovora
+	Not checked	Ni preverjeno
+	Not run	Ni zagnano
+	Note	Opomba
+	Pass	Opravljeno
+	Passed	Opravljeno
+	Passed with warnings	Opravljeno z opozorili
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Preverjanje kakovosti
+	Quality Check…	Preverjanje kakovosti …
+	Remove Finding	Odstrani ugotovitev
+	Report: {path}	Poročilo: {path}
+	Review complete	Pregled končan
+	Reviewer	Pregledovalec
+	Run the media quality check on the finished file (docs/media-qc.md)	Zaženi preverjanje kakovosti medijev na dokončani datoteki (docs/media-qc.md)
+	Save Review	Shrani pregled
+	Select a finished export in the queue	V čakalni vrsti izberite dokončan izvoz
+	Severity	Resnost
+	The engine is not running.	Pogon ne teče.
+	Time code	Časovna koda
+	Unsure	Negotovo
+	accept	sprejemljivo
+	the engine did not start the check	pogon ni začel preverjanja
+	the engine sent no report	pogon ni poslal poročila
