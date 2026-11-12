@@ -2051,6 +2051,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Mapa SMPTE DCP: JPEG 2000 3996 × 2160 (1,85 : 1), 5.1 24-bitni 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Mapa SMPTE DCP: JPEG 2000 4096 × 1716 (2,39 : 1), 5.1 24-bitni 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Mapa SMPTE IMF: JPEG 2000 1920 × 1080, 5.1 24-bitni 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Mapa SMPTE IMF: JPEG 2000 3840 × 2160, 5.1 24-bitni 48 kHz PCM
+	Episode	Epizoda
+	Event highlights	Vrhunci dogodka
+	Event	Dogodek
+	Lossless (reversible JPEG 2000)	Brez izgub (reverzibilni JPEG 2000)
+	Package language	Jezik paketa
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	Slike B
@@ -2220,6 +2230,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bitno za HDR)
 	10-bit RGB	10-bitni RGB
 	12-bit X'Y'Z'	12-bitni X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitni R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF z izgubami
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reverzibilni
 	16-bit half float	16-bitna polovična plavajoča vejica
 	linear	linearno
 	uncompressed	nestisnjeno
