@@ -10,6 +10,12 @@
 //! pack three words into the high 30 bits of each big-endian 32-bit word (5.4.4) and also carry
 //! the checksum. ANC elements are stored in display order (5.2), so element `n` belongs to frame
 //! `n` of the track.
+//!
+//! A VI element (element type 01h, Tables 3, 4) carries digitised vertical interval lines the same
+//! way: the number of lines, then per line its number, wrapping type, sample coding (1-, 8- or
+//! 10-bit luma, colour difference or both; 5.4.1, 5.4.2, 5.4.4) and the samples. [`ViLine`] keeps
+//! them as 10-bit values. ST 334-1 Annex B CEA-608 packets (DID 61h, SDID 02h) give a line byte
+//! (field in bit 7) and one byte pair; [`AncData::cea608`] lists them.
 
 use crate::essence::Codec;
 use crate::file::{WalkResult, Wrapping, best_metadata, walk};
@@ -20,6 +26,9 @@ use crate::{Error, Rational, Result};
 
 /// Set kind of the ANC Data Descriptor (Table 11).
 pub(crate) const ANC_DATA_DESCRIPTOR: u8 = 0x5C;
+
+/// Set kind of the VBI Data Descriptor (Table 10).
+pub(crate) const VBI_DATA_DESCRIPTOR: u8 = 0x5B;
 
 /// ANC elements larger than this are skipped (a frame of ANC packets is a few kilobytes).
 pub const MAX_ANC_ELEMENT_BYTES: u64 = 1 << 20;
@@ -75,6 +84,67 @@ fn be32(b: &[u8], at: usize) -> Option<u32> {
     Some(u32::from_be_bytes(b.get(at..at.checked_add(4)?)?.try_into().ok()?))
 }
 
+/// One stored vertical interval line of a VI element (Table 4).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ViLine {
+    /// Line number (ST 377-1 Annex G.1.4).
+    pub line: u16,
+    /// Wrapping type: 1 frame, 2 field 1, 3 field 2, 4 progressive frame.
+    pub wrapping: u8,
+    /// Payload sample coding: 1–3 1-bit, 4–6 8-bit, 7–9 10-bit (luma, colour difference, both).
+    pub coding: u8,
+    /// The samples as 10-bit values (8-bit samples are the high bits, 5.4.2; a 1-bit sample is
+    /// black 64 or white 940, 5.4.1), in order from the sample after SAV.
+    pub samples: Vec<u16>,
+}
+
+impl ViLine {
+    /// Field 2 of an interlaced picture: the wrapping type, else a 525-line field 2 line number
+    /// (264–525) or a 625-line one (314–625; both start past 263).
+    pub fn field2(&self) -> bool {
+        self.wrapping == 3 || (self.wrapping != 2 && self.line >= 264)
+    }
+}
+
+/// VI lines longer than this many samples are refused (an 8K line has 7680 luma samples).
+const MAX_VI_SAMPLES: usize = 16_384;
+
+/// Parse one VI element value (Table 4).
+pub fn parse_vi_element(v: &[u8]) -> Result<Vec<ViLine>> {
+    let short = || Error::Invalid("VI element cut short".into());
+    let n = be16(v, 0).ok_or_else(short)?;
+    let mut at = 2usize;
+    let mut out = Vec::with_capacity((n as usize).min(v.len() / 14 + 1));
+    for _ in 0..n {
+        let line = be16(v, at).ok_or_else(short)?;
+        let wrapping = *v.get(at + 2).ok_or_else(short)?;
+        let coding = *v.get(at + 3).ok_or_else(short)?;
+        let count = (be16(v, at + 4).ok_or_else(short)? as usize).min(MAX_VI_SAMPLES);
+        let elems = be32(v, at + 6).ok_or_else(short)? as usize;
+        let elem_len = be32(v, at + 10).ok_or_else(short)? as usize;
+        let bytes = elems.checked_mul(elem_len).ok_or_else(short)?;
+        let start = at + 14;
+        let end = start.checked_add(bytes).ok_or_else(short)?;
+        let payload = v.get(start..end).ok_or_else(short)?;
+        at = end;
+        let samples: Vec<u16> = match coding {
+            1..=3 => payload.iter().flat_map(|b| (0..8).rev().map(move |k| if b >> k & 1 == 1 { 940 } else { 64 })).take(count).collect(),
+            7..=9 => payload
+                .chunks_exact(4)
+                .flat_map(|c| {
+                    let w = u32::from_be_bytes([c[0], c[1], c[2], c[3]]);
+                    [(w >> 22) as u16 & 0x3FF, (w >> 12) as u16 & 0x3FF, (w >> 2) as u16 & 0x3FF]
+                })
+                .take(count)
+                .collect(),
+            4..=6 => payload.iter().map(|&b| u16::from(b) << 2).take(count).collect(),
+            other => return Err(Error::Unsupported(format!("VI sample coding {other}"))),
+        };
+        out.push(ViLine { line, wrapping, coding, samples });
+    }
+    Ok(out)
+}
+
 /// Parse one ANC element value (Table 7).
 pub fn parse_anc_element(v: &[u8]) -> Result<Vec<AncPacket>> {
     let short = || Error::Invalid("ANC element cut short".into());
@@ -116,18 +186,45 @@ pub fn parse_anc_element(v: &[u8]) -> Result<Vec<AncPacket>> {
     Ok(out)
 }
 
-/// The ANC elements of a file, one per frame.
+/// The ANC and VI elements of a file, one per frame.
 #[derive(Clone, Debug)]
 pub struct AncData {
     /// Edit rate of the ANC data track (the frames of `frames`).
     pub edit_rate: Rational,
     /// The packets of each frame, in frame order (empty for a frame without packets).
     pub frames: Vec<Vec<AncPacket>>,
+    /// The VI lines of each frame, in frame order (empty when the file has no VI elements).
+    pub vi: Vec<Vec<ViLine>>,
     /// Problems recovered from.
     pub warnings: Vec<String>,
 }
 
+/// A CEA-608 byte pair of an ST 334-1 Annex B packet (DID 61h, SDID 02h).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Cea608Pair {
+    pub frame: usize,
+    /// Field 2 (bit 7 of the line byte clear).
+    pub field2: bool,
+    /// Line offset from the format's base line (bits 4–0 of the line byte).
+    pub line_offset: u8,
+    /// The two bytes as stored (with their parity bits).
+    pub bytes: [u8; 2],
+}
+
 impl AncData {
+    /// The CEA-608 byte pairs of the ST 334-1 CEA-608 packets, in frame order.
+    pub fn cea608(&self) -> Vec<Cea608Pair> {
+        let mut out = Vec::new();
+        for (frame, f) in self.frames.iter().enumerate() {
+            for p in f.iter().filter(|p| p.is_cea608()) {
+                if let [line, a, b] = p.user_data() {
+                    out.push(Cea608Pair { frame, field2: line & 0x80 == 0, line_offset: line & 0x1F, bytes: [*a, *b] });
+                }
+            }
+        }
+        out
+    }
+
     /// The caption distribution packets as ancillary bytes (DID, SDID, DC, CDP), with their frames.
     pub fn cdps(&self) -> Vec<(usize, Vec<u8>)> {
         let mut out = Vec::new();
@@ -141,9 +238,9 @@ impl AncData {
 }
 
 /// Whether `head` (the first bytes of a file) is an MXF file whose header partition lists the
-/// ANC packet essence container (Table 1: 06 0E 2B 34 04 01 01 xx 0D 01 03 01 02 0E 00 00) or
-/// line-wrapped uncompressed pictures (ST 384: 0D 01 03 01 02 05 xx 03), whose VANC / HANC data
-/// elements [`read_anc`] also reads.
+/// ANC packet or the VI line essence container (Table 1: 06 0E 2B 34 04 01 01 xx 0D 01 03 01 02
+/// 0E 00 00, or mapping 0Dh), or line-wrapped uncompressed pictures (ST 384: 0D 01 03 01 02 05
+/// xx 03), whose VANC / HANC data elements [`read_anc`] also reads.
 pub fn has_anc(head: &[u8]) -> bool {
     let Some(at) = find_header_partition(head) else { return false };
     let Some(rest) = head.get(at + 16..) else { return false };
@@ -152,10 +249,11 @@ pub fn has_anc(head: &[u8]) -> bool {
     // 80 bytes of fixed fields, then the essence container batch
     value.get(80..).is_some_and(|b| {
         crate::klv::batch_of(b).into_iter().filter_map(crate::klv::ul_of).any(|ul| {
-            // the ANC packet container, or line-wrapped uncompressed pictures (ST 384 Table 5),
-            // whose VANC / HANC data elements may carry ANC packets
+            // the ANC packet or VI line container, or line-wrapped uncompressed pictures (ST 384
+            // Table 5), whose VANC / HANC data elements may carry ANC packets
             ul.is_smpte()
                 && (ul.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x0E])
+                    || ul.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x0D])
                     || (ul.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x05]) && ul.0[15] == 0x03))
         })
     })
@@ -184,7 +282,7 @@ fn read_line_wrapped_anc(src: &(impl ByteSource + ?Sized), w: &WalkResult) -> Op
     let mut warnings = Vec::new();
     let Some(words) = t.picture.as_ref().and_then(|p| crate::uncompressed::Layout::of(p).ok()).and_then(|l| SampleWords::of(&l)) else {
         warnings.push("line-wrapped VANC / HANC data in this picture layout are not read".into());
-        return Some(Ok(AncData { edit_rate: t.edit_rate, frames: vec![Vec::new(); t.samples.len()], warnings }));
+        return Some(Ok(AncData { edit_rate: t.edit_rate, frames: vec![Vec::new(); t.samples.len()], vi: Vec::new(), warnings }));
     };
     let first_line = best_metadata(w)
         .ok()
@@ -233,7 +331,7 @@ fn read_line_wrapped_anc(src: &(impl ByteSource + ?Sized), w: &WalkResult) -> Op
     if skipped > 0 {
         warnings.push(format!("{skipped} line-wrapped VANC / HANC data elements skipped"));
     }
-    Some(Ok(AncData { edit_rate: t.edit_rate, frames, warnings }))
+    Some(Ok(AncData { edit_rate: t.edit_rate, frames, vi: Vec::new(), warnings }))
 }
 
 /// How the stored samples of a line-wrapped data element become ancillary words.
@@ -335,18 +433,25 @@ fn st291_packets(s: &[u16], ten: bool) -> Vec<Vec<u8>> {
     out
 }
 
-/// Read every ANC element of the file (the first ANC element stream when there are several).
+/// A frame-wrapped VI element key: 06 0E 2B 34 01 02 01 01 0D 01 03 01 17 cc 01 nn (Table 3).
+fn is_vi_element(k: &crate::Ul) -> bool {
+    k.0[8..12] == [0x0D, 0x01, 0x03, 0x01] && k.0[12] == 0x17 && k.0[14] == 0x01
+}
+
+/// Read every ANC element and every VI element of the file (the first stream of each when there
+/// are several), or else the VANC / HANC packets of line-wrapped uncompressed pictures.
 pub fn read_anc(src: &(impl ByteSource + ?Sized)) -> Result<AncData> {
     let w = walk(src)?;
     let mut warnings = w.warnings.clone();
-    let Some(first) = w.elements.iter().find(|e| is_anc_element(&e.key)) else {
-        return read_line_wrapped_anc(src, &w).unwrap_or_else(|| Err(Error::Invalid("no ANC data elements (ST 436)".into())));
+    let Some(first) = w.elements.iter().find(|e| is_anc_element(&e.key)).or_else(|| w.elements.iter().find(|e| is_vi_element(&e.key))) else {
+        return read_line_wrapped_anc(src, &w).unwrap_or_else(|| Err(Error::Invalid("no ANC or VI data elements (ST 436)".into())));
     };
     let number: [u8; 4] = first.key.0[12..16].try_into().unwrap_or([0; 4]);
+    let vi_number: Option<[u8; 4]> = w.elements.iter().find(|e| is_vi_element(&e.key)).and_then(|e| e.key.0[12..16].try_into().ok());
     let edit_rate = best_metadata(&w)
         .ok()
         .and_then(|(_, md)| {
-            let desc = md.of_kind(ANC_DATA_DESCRIPTOR).find_map(|d| d.rational(tag::SAMPLE_RATE));
+            let desc = md.of_kind(ANC_DATA_DESCRIPTOR).chain(md.of_kind(VBI_DATA_DESCRIPTOR)).find_map(|d| d.rational(tag::SAMPLE_RATE));
             let track = || {
                 md.of_kind(st::TIMELINE_TRACK)
                     .filter(|t| t.u(tag::TRACK_NUMBER) == Some(u32::from_be_bytes(number) as i64))
@@ -356,7 +461,29 @@ pub fn read_anc(src: &(impl ByteSource + ?Sized)) -> Result<AncData> {
         })
         .ok_or_else(|| Error::Invalid("the ANC data track has no edit rate".into()))?;
     let mut frames = Vec::new();
-    for e in w.elements.iter().filter(|e| e.key.0[12..16] == number) {
+    let mut vi = Vec::new();
+    if let Some(vn) = vi_number {
+        for e in w.elements.iter().filter(|e| e.key.0[12..16] == vn) {
+            if vi.len() >= MAX_ANC_FRAMES {
+                warnings.push(format!("more than {MAX_ANC_FRAMES} VI elements; the rest are ignored"));
+                break;
+            }
+            if e.truncated || e.size > MAX_ANC_ELEMENT_BYTES {
+                warnings.push(format!("VI element of frame {} skipped ({} bytes{})", vi.len(), e.size, if e.truncated { ", truncated" } else { "" }));
+                vi.push(Vec::new());
+                continue;
+            }
+            let v = read_upto(src, e.value_offset, e.size as usize)?;
+            match parse_vi_element(&v) {
+                Ok(l) => vi.push(l),
+                Err(err) => {
+                    warnings.push(format!("VI element of frame {}: {err}", vi.len()));
+                    vi.push(Vec::new());
+                }
+            }
+        }
+    }
+    for e in w.elements.iter().filter(|e| e.key.0[12..16] == number && is_anc_element(&e.key)) {
         if frames.len() >= MAX_ANC_FRAMES {
             warnings.push(format!("more than {MAX_ANC_FRAMES} ANC elements; the rest are ignored"));
             break;
@@ -375,13 +502,13 @@ pub fn read_anc(src: &(impl ByteSource + ?Sized)) -> Result<AncData> {
             }
         }
     }
-    Ok(AncData { edit_rate, frames, warnings })
+    Ok(AncData { edit_rate, frames, vi, warnings })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{anc_element, build_anc, build_timed_text};
+    use crate::testing::{anc_element, build_anc, build_timed_text, build_vi, vi_element};
 
     fn cdp_packet(seq: u8) -> Vec<u8> {
         // DID 61h, SDID 01h, DC, then a CDP header fragment (enough for the ANC layer)
@@ -468,6 +595,71 @@ mod tests {
         for cut in [0, 20, f.len() / 2, f.len() - 30] {
             let _ = read_anc(&f[..cut]);
             let _ = has_anc(&f[..cut]);
+        }
+    }
+
+    /// The 1-, 8- and 10-bit VI codings give the line's samples as 10-bit values; the field comes
+    /// from the wrapping type or the line number.
+    #[test]
+    fn vi_line_codings() {
+        let ramp: Vec<u16> = (0..21).map(|i| (i * 48) as u16 & !3).collect();
+        let bits: Vec<u16> = (0..13).map(|i| if i % 3 == 0 { 940 } else { 64 }).collect();
+        let lines = vec![(21u16, 2u8, 7u8, ramp.clone()), (284, 1, 4, ramp.clone()), (21, 3, 1, bits.clone())];
+        let got = parse_vi_element(&vi_element(&lines)).unwrap();
+        assert_eq!(got.len(), 3);
+        for (g, (line, wrapping, coding, samples)) in got.iter().zip(&lines) {
+            assert_eq!((g.line, g.wrapping, g.coding), (*line, *wrapping, *coding));
+            assert_eq!(&g.samples, samples, "coding {coding}");
+        }
+        assert_eq!(got.iter().map(ViLine::field2).collect::<Vec<_>>(), vec![false, true, true]);
+        let good = vi_element(&lines);
+        for cut in 0..good.len() {
+            let _ = parse_vi_element(&good[..cut]);
+        }
+        let mut bad = vi_element(&lines[..1]);
+        bad[5] = 12;
+        assert!(parse_vi_element(&bad).is_err());
+        let mut huge = vi_element(&lines[..1]);
+        huge[8..12].copy_from_slice(&u32::MAX.to_be_bytes());
+        huge[12..16].copy_from_slice(&u32::MAX.to_be_bytes());
+        assert!(parse_vi_element(&huge).is_err());
+    }
+
+    /// ST 334-1 Annex B packets give their byte pairs and fields; other packets are skipped.
+    #[test]
+    fn cea608_packets() {
+        let frames = vec![
+            anc_element(&[vec![0x61, 0x02, 3, 0x89, 0x94, 0x2C], cdp_packet(1)], false),
+            anc_element(&[vec![0x61, 0x02, 3, 0x09, 0x80, 0x80], vec![0x61, 0x02, 2, 0x89, 0x94]], true),
+        ];
+        let a = read_anc(&build_anc((30000, 1001), &frames)).unwrap();
+        assert_eq!(
+            a.cea608(),
+            vec![
+                Cea608Pair { frame: 0, field2: false, line_offset: 9, bytes: [0x94, 0x2C] },
+                Cea608Pair { frame: 1, field2: true, line_offset: 9, bytes: [0x80, 0x80] }
+            ]
+        );
+        assert!(a.vi.is_empty());
+    }
+
+    /// A file with only a VBI data track reads its VI lines frame by frame.
+    #[test]
+    fn reads_a_vbi_track() {
+        let line = |v: u16| vec![(21u16, 2u8, 4u8, vec![v; 8])];
+        let frames = vec![vi_element(&line(64)), vi_element(&[]), vi_element(&line(500)), vec![0, 1]];
+        let f = build_vi((25, 1), &frames);
+        assert!(has_anc(&f));
+        let a = read_anc(&f).unwrap();
+        assert_eq!(a.edit_rate, Rational::new(25, 1));
+        assert!(a.frames.is_empty());
+        assert_eq!(a.vi.len(), 4);
+        assert_eq!(a.vi[0][0].samples, vec![64; 8]);
+        assert!(a.vi[1].is_empty() && a.vi[3].is_empty());
+        assert_eq!(a.vi[2][0].samples, vec![500; 8]);
+        assert_eq!(a.warnings.len(), 1, "{:?}", a.warnings);
+        for cut in [0, 20, f.len() / 2, f.len() - 30] {
+            let _ = read_anc(&f[..cut]);
         }
     }
 }
