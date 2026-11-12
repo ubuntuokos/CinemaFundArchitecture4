@@ -60,6 +60,7 @@ szabadalommal védett formátumot.
 | DNG / CinemaDNG (lossless JPEG) | dekódolás | `crates/dng` | alap | függőben | | |
 | FFV1 (RFC 9043) | dekódolás | `crates/ffv1` | alap | függőben | | |
 | SMPTE VC-2 (ST 2042-1) | dekódolás; QuickTime / MP4, AVI és Matroska olvasása | `crates/dirac` (a BBC VC-2 referencia-pszeudokódjának portja) | alap | függőben | | |
+| Dirac (core szintaxis) | dekódolás; QuickTime / MP4, AVI és Matroska olvasása | `crates/dirac` (az FFmpeg Dirac-dekódolójának portja) | alap | függőben | | |
 | Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
 | Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
 | Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |

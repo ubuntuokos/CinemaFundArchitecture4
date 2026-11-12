@@ -57,7 +57,7 @@ and `cfa4-cli`.
 | `prores` | L0 | ProRes decoder and encoder |
 | `dnx` | L0 | DNxHD / DNxHR (SMPTE ST 2019-1 VC-3) decoder and DNxHR encoder |
 | `hap` | L0 | Hap video decoder: `Hap1`, `Hap5`, `HapY`, `HapM`, `HapA`; Snappy, chunks, DXT1 / DXT5 / RGTC1 / scaled YCoCg textures to RGBA ([README](../crates/hap/README.md)) |
-| `dirac` | L0 | SMPTE VC-2 (ST 2042-1) decoder, the intra subset of Dirac: low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding ([README](../crates/dirac/README.md)) |
+| `dirac` | L0 | Dirac and SMPTE VC-2 (ST 2042-1) decoder: VC-2 low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding; Dirac core syntax with arithmetic coding and overlapped block motion compensation ([README](../crates/dirac/README.md)) |
 | `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
 | `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
 | `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
