@@ -12,14 +12,16 @@ toolchain and a C++ compiler, which the quality gates do not.
 ## Run
 
 ```sh
-fuzz/seeds.sh                                  # seed corpus into fuzz/corpus/ (ffmpeg; gitignored)
+fuzz/seeds.sh                                  # seed corpus into fuzz/corpus/ (FFmpeg 9.0.2 oracle; gitignored)
 cargo +nightly fuzz run isobmff fuzz/corpus/isobmff -- -max_total_time=300
 fuzz/run.sh 60                                 # every target, 60 s each
 fuzz/run.sh 300 h264 hevc av1                  # some targets
 (cd fuzz && cargo test --lib --release)        # stable smoke run: seeds + 400 mutations per target
 ```
 
-Tools: `rustup toolchain install nightly`, `cargo +nightly install cargo-fuzz --locked`. Builds use
+Tools: `rustup toolchain install nightly`, `cargo +nightly install cargo-fuzz --locked`, and the
+pinned FFmpeg 9.0.2 test oracle for the seeds (`scripts/ci/install-ffmpeg-9.0.2.sh`; `seeds.sh` refuses
+any other version). Builds use
 debug assertions (overflow checks), so an arithmetic overflow is a finding even where the release build
 would wrap.
 

@@ -54,10 +54,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Tools (C++ compiler for libFuzzer, ffmpeg for the seed corpus)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential clang ffmpeg python3
+      # Seeds are made with the pinned FFmpeg 9.0.2 test oracle, never Ubuntu's ffmpeg (docs/testing.md §2).
+      - name: Build tools and FFmpeg 9.0.2 oracle dependencies
+        run: bash scripts/ci/install-ffmpeg-oracle-deps.sh
+      - name: Restore FFmpeg 9.0.2 (saved on main by ci-cache-warm.yml)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v7
+      - name: Install verified FFmpeg 9.0.2
+        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Nightly toolchain and cargo-fuzz
         run: |
           rustup toolchain install nightly --profile minimal
@@ -68,8 +74,8 @@ jobs:
           path: fuzz/corpus
           key: cfa4-fuzz-corpus-${{ matrix.shard }}-${{ github.run_id }}
           restore-keys: cfa4-fuzz-corpus-${{ matrix.shard }}-
-      - name: Seed corpus
-        run: fuzz/seeds.sh
+      - name: Seed corpus (FFmpeg 9.0.2)
+        run: CFA4_FFMPEG="$HOME/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7/bin/ffmpeg" fuzz/seeds.sh
       - name: Fuzz this shard's targets
         run: |
           mapfile -t all < <(sed -n 's/^name = "\([a-z0-9_]*\)"$/\1/p' fuzz/Cargo.toml | grep -v '^cfa4-fuzz$')

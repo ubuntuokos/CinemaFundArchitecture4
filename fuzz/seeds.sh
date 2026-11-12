@@ -4,16 +4,25 @@
 # Each target's seeds use the byte layout its harness expects (fuzz/src/lib.rs): raw streams for the
 # elementary-stream decoders, parameter bytes first where a decoder needs them, and 2-byte
 # big-endian lengths before each packet for the packet-fed decoders.
-# Usage: fuzz/seeds.sh  (needs ffmpeg and python3; formats ffmpeg cannot write are skipped)
+# Usage: fuzz/seeds.sh  (needs python3 and the pinned FFmpeg 9.0.2 test oracle; formats it cannot
+# write are skipped). The oracle is found as the tests find it (docs/testing.md §2): CFA4_FFMPEG,
+# then the scripts/ci/install-ffmpeg-9.0.2.sh cache, then PATH; any other version is refused.
 set -uo pipefail
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 C="$HERE/corpus"
+FFMPEG="${CFA4_FFMPEG:-}"
+if [[ -z "$FFMPEG" ]]; then
+    cached="${CFA4_FFMPEG_CACHE_DIR:-$HOME/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7}/bin/ffmpeg"
+    if [[ -x "$cached" ]]; then FFMPEG="$cached"; else FFMPEG="$(command -v ffmpeg || true)"; fi
+fi
+[[ -n "$FFMPEG" && -x "$FFMPEG" ]] || { echo "FFmpeg 9.0.2 not found: run scripts/ci/install-ffmpeg-9.0.2.sh or set CFA4_FFMPEG" >&2; exit 2; }
+have="$("$FFMPEG" -version | awk 'NR==1 {print $3}')"
+[[ "$have" == "9.0.2" ]] || { echo "$FFMPEG is FFmpeg $have; the seeds need the pinned 9.0.2 oracle (scripts/ci/install-ffmpeg-9.0.2.sh)" >&2; exit 2; }
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
-command -v ffmpeg >/dev/null || { echo "ffmpeg not found" >&2; exit 2; }
 mkdir -p "$C"
 
-ff() { ffmpeg -hide_banner -loglevel error -y "$@" || echo "skip: ffmpeg $*" >&2; }
+ff() { "$FFMPEG" -hide_banner -loglevel error -y "$@" || echo "skip: ffmpeg $*" >&2; }
 V="-f lavfi -i testsrc2=size=64x48:rate=25:duration=0.2"
 VA="$V -f lavfi -i sine=frequency=440:sample_rate=48000:duration=0.2"
 A="-f lavfi -i sine=frequency=440:sample_rate=48000:duration=0.2"
