@@ -4504,3 +4504,5 @@ export.summary	Low	matala
 	accept	hyväksyttävä
 	the engine did not start the check	moottori ei käynnistänyt tarkistusta
 	the engine sent no report	moottori ei lähettänyt raporttia
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a pakkaamaton 10-bittinen 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, pakkaamaton 10-bittinen Y'CbCr 4:2:2 v210-asettelussa (SMPTE ST 384), 24-bittinen 48 kHz PCM, alkuaikakoodi

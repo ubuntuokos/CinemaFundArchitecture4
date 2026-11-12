@@ -153,6 +153,14 @@ pub enum MxfVideoCodec {
     /// five seconds), up to eight 16- or 24-bit 48 kHz channels. Progressive pictures only.
     #[serde(rename = "xdcamHd422", alias = "XdcamHd422")]
     XdcamHd422,
+    /// Uncompressed 10-bit Y'CbCr 4:2:2 in the `v210` layout (ST 384, ST 377-1 G.2.25 label
+    /// `01.02.02.01`): three components per 32-bit word, lines padded to 128 bytes. Rec. 709
+    /// narrow-range levels; HDR sources are tone mapped to SDR.
+    #[serde(rename = "v210", alias = "V210")]
+    V210,
+    /// Uncompressed 8-bit Y'CbCr 4:2:2, Cb Y Cr Y (`UYVY` / `2vuy`, label `01.02.01.01`).
+    #[serde(rename = "uyvy", alias = "Uyvy", alias = "UYVY")]
+    Uyvy,
 }
 
 impl MxfVideoCodec {
@@ -165,6 +173,16 @@ impl MxfVideoCodec {
             MxfVideoCodec::Mpeg2 => "MPEG-2",
             MxfVideoCodec::D10 => "D-10 (IMX)",
             MxfVideoCodec::XdcamHd422 => "XDCAM HD422 (RDD 9)",
+            MxfVideoCodec::V210 => "Uncompressed 10-bit 4:2:2 (v210)",
+            MxfVideoCodec::Uyvy => "Uncompressed 8-bit 4:2:2 (UYVY)",
+        }
+    }
+    /// The uncompressed picture layout of this codec, if it is one.
+    pub fn uncompressed_layout(self) -> Option<cfa4_mxf::UncompressedLayout> {
+        match self {
+            MxfVideoCodec::V210 => Some(cfa4_mxf::UncompressedLayout::V210),
+            MxfVideoCodec::Uyvy => Some(cfa4_mxf::UncompressedLayout::Uyvy8),
+            _ => None,
         }
     }
     /// The export format whose encoder this codec uses.
@@ -174,6 +192,8 @@ impl MxfVideoCodec {
             MxfVideoCodec::ProRes => Format::ProRes,
             MxfVideoCodec::H264 => Format::H264,
             MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422 => Format::Mpeg2,
+            // no compression: the MXF muxer's own packer (`uncompressed_factory`)
+            MxfVideoCodec::V210 | MxfVideoCodec::Uyvy => Format::MxfOp1a,
         }
     }
 }
@@ -736,6 +756,10 @@ impl ExportSettings {
                 px * if self.keeps_alpha() { 8.0 } else { 6.0 } * 8.0 * fps * k
             }
             Format::Gif => px * 0.6 * 8.0 * fps,
+            // uncompressed MXF pictures: their exact size
+            Format::MxfOp1a | Format::MxfOpAtom if let Some(l) = self.mxf_video_codec.uncompressed_layout() => {
+                l.picture_bytes(r.width, r.height) as f64 * 8.0 * fps
+            }
             Format::Wav | Format::Aiff | Format::Flac | Format::Opus | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
             // most frames of real pictures reach the DCI cap of 250 Mbit/s
             Format::Dcp => 200e6,

@@ -4502,3 +4502,5 @@ export.summary	Low	niska
 	accept	dopuszczalne
 	the engine did not start the check	silnik nie rozpoczął kontroli
 	the engine sent no report	silnik nie przesłał raportu
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a bez kompresji 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nieskompresowany 10-bitowy Y'CbCr 4:2:2 w układzie v210 (SMPTE ST 384), 24-bitowy PCM 48 kHz, początkowy kod czasowy

@@ -4502,3 +4502,5 @@ export.summary	Low	laag
 	accept	aanvaardbaar
 	the engine did not start the check	de engine heeft de controle niet gestart
 	the engine sent no report	de engine heeft geen rapport gestuurd
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ongecomprimeerd 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ongecomprimeerd 10-bit Y'CbCr 4:2:2 in de v210-indeling (SMPTE ST 384), 24-bit 48 kHz PCM, starttijdcode

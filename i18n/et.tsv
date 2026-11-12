@@ -4504,3 +4504,5 @@ export.summary	Low	madal
 	accept	lubatud
 	the engine did not start the check	mootor ei käivitanud kontrolli
 	the engine sent no report	mootor ei saatnud aruannet
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tihendamata 10-bitine 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tihendamata 10-bitine Y'CbCr 4:2:2 v210 paigutuses (SMPTE ST 384), 24-bitine 48 kHz PCM, algusajakood

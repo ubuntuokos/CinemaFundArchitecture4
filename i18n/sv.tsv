@@ -4504,3 +4504,5 @@ export.summary	Low	låg
 	accept	godtagbart
 	the engine did not start the check	motorn startade inte kontrollen
 	the engine sent no report	motorn skickade ingen rapport
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a okomprimerad 10-bitars 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, okomprimerad 10-bitars Y'CbCr 4:2:2 i v210-layout (SMPTE ST 384), 24-bitars 48 kHz PCM, starttidkod

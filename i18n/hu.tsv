@@ -4501,3 +4501,5 @@ export.summary	Low	alacsony
 	the engine sent no report	a motor nem küldött jelentést
 	The engine is not running.	A motor nem fut.
 	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Észrevétel {row}: az időkód nem létező időpont ebben a fájlban (ÓÓ:PP:MM:KK).
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tömörítetlen 10 bites 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tömörítetlen 10 bites Y'CbCr 4:2:2 v210 elrendezésben (SMPTE ST 384), 24 bites 48 kHz-es PCM, kezdő időkód

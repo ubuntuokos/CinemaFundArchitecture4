@@ -4509,3 +4509,5 @@
 	accept	annehmbar
 	the engine did not start the check	die Engine hat die Prüfung nicht gestartet
 	the engine sent no report	die Engine hat keinen Bericht gesendet
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a Unkomprimiert 10 Bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, unkomprimiertes 10-Bit-Y'CbCr 4:2:2 im v210-Layout (SMPTE ST 384), 24-Bit-PCM mit 48 kHz, Start-Timecode

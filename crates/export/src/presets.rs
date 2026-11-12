@@ -131,6 +131,8 @@ fn mxf(format: Format, codec: MxfVideoCodec, profile: &str) -> ExportSettings {
             s.bitrate_kbps = 50_000;
             s.audio.channels = 4;
         }
+        // uncompressed: no bitrate or profile
+        MxfVideoCodec::V210 | MxfVideoCodec::Uyvy => {}
     }
     s
 }
@@ -258,6 +260,12 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             bc,
             "MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels",
             d10((720, 486), FrameRate::new(30000, 1001), (9, 10)),
+        ),
+        p(
+            "MXF OP1a Uncompressed 10-bit 4:2:2 (v210)",
+            bc,
+            "MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode",
+            mxf(Format::MxfOp1a, MxfVideoCodec::V210, ""),
         ),
         p(
             "MXF OP-Atom DNxHR (Avid)",

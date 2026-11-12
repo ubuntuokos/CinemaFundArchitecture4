@@ -4505,3 +4505,5 @@ export.summary	Low	nizka
 	accept	sprejemljivo
 	the engine did not start the check	pogon ni začel preverjanja
 	the engine sent no report	pogon ni poslal poročila
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nestisnjeno 10-bitno 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nestisnjen 10-bitni Y'CbCr 4:2:2 v postavitvi v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, začetna časovna koda

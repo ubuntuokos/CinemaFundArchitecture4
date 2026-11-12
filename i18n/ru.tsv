@@ -4487,3 +4487,5 @@
 	accept	допустимо
 	the engine did not start the check	движок не начал проверку
 	the engine sent no report	движок не прислал отчёт
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a без сжатия, 10 бит 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, несжатый 10-битный Y'CbCr 4:2:2 в раскладке v210 (SMPTE ST 384), 24-битный PCM 48 кГц, начальный тайм-код
