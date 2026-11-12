@@ -335,7 +335,7 @@ impl H264Decoder {
         };
         let color = vui_color(p.width, p.height, p.color.primaries, p.color.matrix, p.color.transfer, p.color.full_range);
         let par = sar_par(p.sar);
-        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout: Default::default() };
         DecodedFrame { pts: p.pts, frame, draft }
     }
 }
@@ -454,7 +454,7 @@ impl HevcDecoder {
         };
         let color = vui_color(p.width, p.height, p.color.primaries, p.color.matrix, p.color.transfer, p.color.full_range);
         let par = sar_par(p.sar);
-        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout: Default::default() };
         DecodedFrame { pts: p.pts, frame, draft: p.draft }
     }
 }
@@ -594,7 +594,11 @@ impl Vp9Decoder {
         // render_size (the intended display size) is not applied: the container's display
         // dimensions / pixel aspect describe the presentation.
         let par = (1, 1);
-        Some(DecodedFrame { pts, frame: VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO }, draft })
+        Some(DecodedFrame {
+            pts,
+            frame: VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout: Default::default() },
+            draft,
+        })
     }
 }
 
@@ -649,7 +653,7 @@ impl Vp8Decoder {
         // color_space 0 is BT.601 YUV (RFC 6386 9.2), studio swing; a container's Colour wins
         let color = cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt601, ..cfa4_color::ColorInfo::REC709 };
         let data = PixelData::Yuv8 { planes: [Arc::new(p.y), Arc::new(p.u), Arc::new(p.v)], chroma: Chroma::C420, alpha: None };
-        let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
         DecodedFrame { pts: p.pts, frame, draft: false }
     }
 }
@@ -719,7 +723,11 @@ impl Av1Decoder {
         } else {
             cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma, bits: p.bit_depth as u32, alpha: None }
         };
-        DecodedFrame { pts, frame: VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO }, draft }
+        DecodedFrame {
+            pts,
+            frame: VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() },
+            draft,
+        }
     }
 }
 
@@ -803,6 +811,14 @@ impl VideoDecoder for ProResDecoder {
             color,
             par: (1, 1),
             pts: cfa4_time::Tick::ZERO,
+            layout: cfa4_frame::FrameLayout {
+                field_order: match f.interlace {
+                    cfa4_prores::Interlace::Progressive => cfa4_frame::FieldOrder::Progressive,
+                    cfa4_prores::Interlace::TopFieldFirst => cfa4_frame::FieldOrder::TopFirst,
+                    cfa4_prores::Interlace::BottomFieldFirst => cfa4_frame::FieldOrder::BottomFirst,
+                },
+                ..Default::default()
+            },
         };
         Ok(vec![DecodedFrame { pts, frame, draft: false }])
     }
@@ -859,7 +875,7 @@ pub fn apv_to_video_frame(f: cfa4_apv::Frame) -> VideoFrame {
     } else {
         cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(f.y), Arc::new(cb), Arc::new(cr)], chroma, bits: f.bit_depth as u32, alpha: f.alpha.map(Arc::new) }
     };
-    VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO }
+    VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() }
 }
 
 impl VideoDecoder for ApvDecoder {
@@ -931,7 +947,12 @@ pub fn dnx_to_video_frame(f: cfa4_dnx::Frame) -> VideoFrame {
     } else {
         cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits: f.bit_depth as u32, alpha: f.alpha.map(Arc::new) }
     };
-    VideoFrame { width: f.width, height: f.height, data, color, par, pts: cfa4_time::Tick::ZERO }
+    let field_order = match f.interlace {
+        cfa4_dnx::Interlace::Progressive => cfa4_frame::FieldOrder::Progressive,
+        cfa4_dnx::Interlace::TopFieldFirst => cfa4_frame::FieldOrder::TopFirst,
+    };
+    let layout = cfa4_frame::FrameLayout { field_order, ..Default::default() };
+    VideoFrame { width: f.width, height: f.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout }
 }
 
 impl VideoDecoder for DnxDecoder {
@@ -1026,7 +1047,11 @@ pub fn dv_to_video_frame(p: cfa4_dv::Picture) -> VideoFrame {
         }
     };
     let data = cfa4_frame::PixelData::Yuv8 { planes: [Arc::new(p.y), Arc::new(cb), Arc::new(cr)], chroma, alpha: None };
-    VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO }
+    // standard-definition DV is interlaced, bottom field first (IEC 61834-2, SMPTE 314M); the HD
+    // profiles say nothing here and keep the default
+    let field_order = if p.profile.format == cfa4_dv::Format::DvcproHd { cfa4_frame::FieldOrder::Progressive } else { cfa4_frame::FieldOrder::BottomFirst };
+    let layout = cfa4_frame::FrameLayout { field_order, ..Default::default() };
+    VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout }
 }
 
 impl VideoDecoder for DvDecoder {
@@ -1100,7 +1125,7 @@ pub fn cineform_to_video_frame(f: cfa4_cineform::Frame) -> Result<VideoFrame> {
     };
     let [y, cb, cr] = planes;
     let data = cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits, alpha: alpha.map(Arc::new) };
-    Ok(VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO })
+    Ok(VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
 }
 
 impl VideoDecoder for CineformDecoder {
@@ -1187,6 +1212,16 @@ pub fn mpeg2_to_video_frame(p: cfa4_mpeg2v::Picture) -> VideoFrame {
         color,
         par: if par.0 > 0 && par.1 > 0 { par } else { (1, 1) },
         pts: cfa4_time::Tick::ZERO,
+        // ISO/IEC 13818-2: a picture that is not a progressive frame is two fields in the order
+        // top_field_first says; chroma sits at type 0 (MPEG-2 4:2:0)
+        layout: cfa4_frame::FrameLayout {
+            field_order: match (p.progressive_frame, p.top_field_first) {
+                (true, _) => cfa4_frame::FieldOrder::Progressive,
+                (false, true) => cfa4_frame::FieldOrder::TopFirst,
+                (false, false) => cfa4_frame::FieldOrder::BottomFirst,
+            },
+            chroma_location: cfa4_frame::ChromaLocation::Left,
+        },
     }
 }
 
@@ -1439,6 +1474,7 @@ impl RawVideoDecoder {
             color: vui_color(self.width, self.height, 2, 2, 2, false),
             par: (1, 1),
             pts: cfa4_time::Tick::ZERO,
+            layout: Default::default(),
         }
     }
 

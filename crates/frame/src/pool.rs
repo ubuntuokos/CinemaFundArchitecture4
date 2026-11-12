@@ -250,6 +250,7 @@ mod tests {
                 color: cfa4_color::ColorInfo::SRGB_FULL,
                 par: (1, 1),
                 pts: cfa4_time::Tick::ZERO,
+                layout: Default::default(),
             })
         };
         let plane_ptrs = |frame: &VideoFrame| match &frame.data {

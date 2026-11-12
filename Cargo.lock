@@ -1469,6 +1469,7 @@ dependencies = [
  "cfa4-time",
  "rayon",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

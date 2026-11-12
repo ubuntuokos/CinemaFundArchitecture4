@@ -58,6 +58,90 @@ pub enum PixelData {
     Yuv16 { planes: [Arc<Vec<u16>>; 3], chroma: Chroma, bits: u32, alpha: Option<Arc<Vec<u16>>> },
 }
 
+/// How the two fields of an interlaced picture are ordered in time.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FieldOrder {
+    /// One picture sampled at one instant. The default when a stream says nothing.
+    #[default]
+    Progressive,
+    /// Interlaced, the top (first, even) line's field first in time.
+    TopFirst,
+    /// Interlaced, the bottom field first in time (DV, most PAL / NTSC SD tape).
+    BottomFirst,
+}
+
+impl FieldOrder {
+    pub fn is_interlaced(self) -> bool {
+        self != FieldOrder::Progressive
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            FieldOrder::Progressive => "progressive",
+            FieldOrder::TopFirst => "top field first",
+            FieldOrder::BottomFirst => "bottom field first",
+        }
+    }
+}
+
+/// Where a subsampled chroma sample sits relative to the luma samples it covers (ISO/IEC 23091-2
+/// `chroma_sample_loc_type`, the H.264 / HEVC VUI field of the same name). Meaningful only for
+/// 4:2:0 and 4:2:2 Y'CbCr.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ChromaLocation {
+    /// Type 0: horizontally co-sited with the left luma sample, vertically between the rows
+    /// (MPEG-2, H.264 and HEVC 4:2:0). The default when a stream says nothing.
+    #[default]
+    Left,
+    /// Type 1: centred between the luma samples (MPEG-1, JPEG / JFIF).
+    Center,
+    /// Type 2: co-sited with the top-left luma sample (BT.2020 / BT.2100 4:2:0, many HDR streams).
+    TopLeft,
+    /// Type 3: co-sited with the top luma row, centred horizontally.
+    Top,
+    /// Type 4: co-sited with the bottom-left luma sample.
+    BottomLeft,
+    /// Type 5: co-sited with the bottom luma row, centred horizontally.
+    Bottom,
+}
+
+impl ChromaLocation {
+    /// From an ISO/IEC 23091-2 `chroma_sample_loc_type` (0–5).
+    pub fn from_code(c: u8) -> Option<ChromaLocation> {
+        Some(match c {
+            0 => ChromaLocation::Left,
+            1 => ChromaLocation::Center,
+            2 => ChromaLocation::TopLeft,
+            3 => ChromaLocation::Top,
+            4 => ChromaLocation::BottomLeft,
+            5 => ChromaLocation::Bottom,
+            _ => return None,
+        })
+    }
+    /// The ISO/IEC 23091-2 code.
+    pub fn code(self) -> u8 {
+        match self {
+            ChromaLocation::Left => 0,
+            ChromaLocation::Center => 1,
+            ChromaLocation::TopLeft => 2,
+            ChromaLocation::Top => 3,
+            ChromaLocation::BottomLeft => 4,
+            ChromaLocation::Bottom => 5,
+        }
+    }
+}
+
+/// The sampling structure of a picture beyond its pixels: field order and chroma siting. Both
+/// default to what a stream that signals nothing means (progressive, chroma type 0); a decoder
+/// that knows better says so, and the value travels with the frame instead of being dropped.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FrameLayout {
+    pub field_order: FieldOrder,
+    pub chroma_location: ChromaLocation,
+}
+
 #[derive(Clone, Debug)]
 pub struct VideoFrame {
     pub width: u32,
@@ -68,6 +152,9 @@ pub struct VideoFrame {
     pub par: (u32, u32),
     /// Presentation time in media time (informational).
     pub pts: Tick,
+    /// Field order and chroma siting ([`FrameLayout`]; progressive, chroma type 0 unless the
+    /// decoder signals otherwise).
+    pub layout: FrameLayout,
 }
 
 /// A rectangle of pixels: `x`, `y` is its top-left corner.
@@ -105,11 +192,11 @@ fn row_extent<T>(row: &[T], on: impl Fn(&T) -> bool) -> Option<(usize, usize)> {
 impl VideoFrame {
     pub fn rgba8(width: u32, height: u32, data: Vec<u8>) -> Self {
         debug_assert_eq!(data.len(), (width * height * 4) as usize);
-        Self { width, height, data: PixelData::Rgba8(Arc::new(data)), color: ColorInfo::SRGB_FULL, par: (1, 1), pts: Tick::ZERO }
+        Self { width, height, data: PixelData::Rgba8(Arc::new(data)), color: ColorInfo::SRGB_FULL, par: (1, 1), pts: Tick::ZERO, layout: Default::default() }
     }
     pub fn rgba_f32(width: u32, height: u32, data: Vec<f32>) -> Self {
         debug_assert_eq!(data.len(), (width * height * 4) as usize);
-        Self { width, height, data: PixelData::RgbaF32(Arc::new(data)), color: ColorInfo::SRGB_FULL, par: (1, 1), pts: Tick::ZERO }
+        Self { width, height, data: PixelData::RgbaF32(Arc::new(data)), color: ColorInfo::SRGB_FULL, par: (1, 1), pts: Tick::ZERO, layout: Default::default() }
     }
     pub fn transparent_f32(width: u32, height: u32) -> Self {
         Self::rgba_f32(width, height, vec![0.0; (width * height * 4) as usize])
@@ -181,7 +268,7 @@ impl VideoFrame {
             }
             PixelData::Rgba8(_) | PixelData::RgbaF32(_) => return None,
         };
-        Some(VideoFrame { width: ow as u32, height: oh as u32, data, color: self.color, par: self.par, pts: self.pts })
+        Some(VideoFrame { width: ow as u32, height: oh as u32, data, color: self.color, par: self.par, pts: self.pts, layout: self.layout })
     }
 
     /// The part of the frame inside `region` (a container's clean aperture). The region is clipped
@@ -236,7 +323,7 @@ impl VideoFrame {
                 }
             }
         };
-        VideoFrame { width: r.w as u32, height: r.h as u32, data, color: self.color, par: self.par, pts: self.pts }
+        VideoFrame { width: r.w as u32, height: r.h as u32, data, color: self.color, par: self.par, pts: self.pts, layout: self.layout }
     }
 
     /// The frame turned clockwise by `quarter_turns` × 90° (a container's display rotation).
@@ -271,7 +358,7 @@ impl VideoFrame {
             }
         };
         let (width, height, par) = if q % 2 == 1 { (self.height, self.width, (self.par.1, self.par.0)) } else { (self.width, self.height, self.par) };
-        VideoFrame { width, height, data, color: self.color, par, pts: self.pts }
+        VideoFrame { width, height, data, color: self.color, par, pts: self.pts, layout: self.layout }
     }
 
     /// Convert to premultiplied linear RGBA f32 (the compositor's working format).
@@ -863,6 +950,7 @@ mod tests {
             color: Default::default(),
             par: (1, 1),
             pts: Default::default(),
+            layout: Default::default(),
         };
         // an odd corner moves onto the chroma grid (1,1 -> 0,0), keeping the size
         let c = yuv(Chroma::C420).cropped(Region { x: 1, y: 1, w: 3, h: 3 });
@@ -914,6 +1002,7 @@ mod tests {
             color: ColorInfo::REC709,
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         };
         let r = yuv(Chroma::C420, vec![10, 20]).rotated(1);
         let PixelData::Yuv8 { planes, chroma, .. } = &r.data else { panic!() };
@@ -936,6 +1025,7 @@ mod tests {
             color: ColorInfo::REC709,
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         };
         let d = f.box_decimated(2).expect("yuv");
         assert_eq!((d.width, d.height), (3, 2));
@@ -964,6 +1054,7 @@ mod tests {
             color: ColorInfo::REC709,
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         };
         assert_eq!(yuv.box_decimated(usize::MAX).expect("yuv").luma8(), vec![3]);
     }
@@ -991,6 +1082,7 @@ mod tests {
             color: ColorInfo::REC709,
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         };
         let rgb = f.to_rgba8();
         assert_eq!(&rgb[0..4], &[128, 128, 128, 255]);
@@ -1036,7 +1128,8 @@ mod tests {
         let c16: Vec<u16> = (0..w * h).map(|i| (64 + i * 7 % 896) as u16).collect();
         let a16: Vec<u16> = (0..w * h).map(|i| (alpha(i % w, i / w) as u16) * 4).collect();
         let c422: Vec<u16> = (0..cw * h).map(|i| (64 + i * 7 % 896) as u16).collect();
-        let mk = |data| VideoFrame { width: w as u32, height: h as u32, data, color: ColorInfo::REC709, par: (1, 1), pts: Tick::ZERO };
+        let mk =
+            |data| VideoFrame { width: w as u32, height: h as u32, data, color: ColorInfo::REC709, par: (1, 1), pts: Tick::ZERO, layout: Default::default() };
         vec![
             ("rgba8", mk(PixelData::Rgba8(Arc::new(rgba8)))),
             ("rgba f32", mk(PixelData::RgbaF32(Arc::new(f32s)))),
@@ -1220,6 +1313,7 @@ mod tests {
                         color: ColorInfo { matrix, range, ..ColorInfo::REC709 },
                         par: (1, 1),
                         pts: Tick::ZERO,
+                        layout: Default::default(),
                     };
                     for decode in [None, Some(&curve)] {
                         let (_, _, full) = f.to_linear_f32_decimated_with(1, decode);
@@ -1262,6 +1356,7 @@ mod tests {
                                 color: ColorInfo { matrix, transfer, primaries: Primaries::Bt709, range },
                                 par: (1, 1),
                                 pts: Tick::ZERO,
+                                layout: Default::default(),
                             };
                             for n in [1, 2, 3, 4] {
                                 let (dw, dh, lin) = f.to_linear_f32_decimated(n);
@@ -1286,6 +1381,7 @@ mod tests {
             color: Default::default(),
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         };
         assert_eq!(alpha.to_opaque_srgb8(1), None);
         assert_eq!(VideoFrame::rgba8(2, 2, vec![255; 16]).to_opaque_srgb8(1), None);
@@ -1294,5 +1390,28 @@ mod tests {
             ..alpha
         };
         assert_eq!(short.to_opaque_srgb8(1), None);
+    }
+
+    /// CFA4-PROCODEC-002 1a: field order and chroma siting default to what a silent stream
+    /// means, keep their ISO/IEC 23091-2 codes, and travel through crop, rotate and decimation.
+    #[test]
+    fn frame_layout_defaults_codes_and_survives_transforms() {
+        assert_eq!(FrameLayout::default(), FrameLayout { field_order: FieldOrder::Progressive, chroma_location: ChromaLocation::Left });
+        for c in 0..=5 {
+            assert_eq!(ChromaLocation::from_code(c).map(ChromaLocation::code), Some(c));
+        }
+        assert_eq!(ChromaLocation::from_code(6), None);
+        assert!(FieldOrder::BottomFirst.is_interlaced() && !FieldOrder::Progressive.is_interlaced());
+        assert_eq!(serde_json::to_value(FieldOrder::TopFirst).unwrap(), serde_json::json!("topFirst"));
+        assert_eq!(serde_json::to_value(ChromaLocation::TopLeft).unwrap(), serde_json::json!("topLeft"));
+        let layout = FrameLayout { field_order: FieldOrder::BottomFirst, chroma_location: ChromaLocation::TopLeft };
+        let n = 16 * 16;
+        let data =
+            PixelData::Yuv8 { planes: [Arc::new(vec![128; n]), Arc::new(vec![128; n / 4]), Arc::new(vec![128; n / 4])], chroma: Chroma::C420, alpha: None };
+        let f = VideoFrame { width: 16, height: 16, data, color: ColorInfo::REC709, par: (1, 1), pts: Tick::ZERO, layout };
+        for g in [f.cropped(Region { x: 2, y: 2, w: 8, h: 8 }), f.rotated(2), f.box_decimated(2).unwrap()] {
+            assert_eq!(g.layout, layout);
+        }
+        assert_eq!(VideoFrame::rgba8(1, 1, vec![0; 4]).layout, FrameLayout::default());
     }
 }

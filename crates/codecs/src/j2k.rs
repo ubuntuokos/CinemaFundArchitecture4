@@ -222,7 +222,15 @@ pub fn to_video_frame(image: &Image, origin: (u32, u32), components: Components,
     } else {
         PixelData::Yuv16 { planes: [Arc::new(p0), Arc::new(p1), Arc::new(p2)], chroma, bits, alpha: alpha.map(Arc::new) }
     };
-    Ok(VideoFrame { width: image.width, height: image.height, data, color: color(components, image.width, image.height, hints), par: (1, 1), pts: Tick::ZERO })
+    Ok(VideoFrame {
+        width: image.width,
+        height: image.height,
+        data,
+        color: color(components, image.width, image.height, hints),
+        par: (1, 1),
+        pts: Tick::ZERO,
+        layout: Default::default(),
+    })
 }
 
 /// [`components`] with the component transform decoding actually applied: tile-part CODs take

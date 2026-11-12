@@ -299,6 +299,7 @@ mod tests {
             color: ColorInfo::default(),
             par: (1, 1),
             pts: cfa4_time::Tick(0),
+            layout: Default::default(),
         }
     }
 
