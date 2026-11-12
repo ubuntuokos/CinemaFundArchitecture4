@@ -2048,6 +2048,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP бумасы: JPEG 2000 3996×2160 (1,85:1), 5.1 24 бит 48 кГц PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP бумасы: JPEG 2000 4096×1716 (2,39:1), 5.1 24 бит 48 кГц PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (үйлесімді мастер пакеті)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF бумасы: JPEG 2000 1920×1080, 5.1 24 бит 48 кГц PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF бумасы: JPEG 2000 3840×2160, 5.1 24 бит 48 кГц PCM
+	Episode	Эпизод
+	Event highlights	Іс-шара сәттері
+	Event	Іс-шара
+	Lossless (reversible JPEG 2000)	Шығынсыз (қайтымды JPEG 2000)
+	Package language	Пакет тілі
 	4:2:0 (Main Profile)	4:2:0 (Main профилі)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 профилі)
 	B pictures	B кадрлары
@@ -2217,6 +2227,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR үшін 10 бит)
 	10-bit RGB	10 биттік RGB
 	12-bit X'Y'Z'	12 биттік X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 биттік R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF шығынмен
+	JPEG 2000 IMF reversible	JPEG 2000 IMF қайтымды
 	16-bit half float	16 биттік жартылай жылжымалы нүкте
 	linear	сызықтық
 	uncompressed	сығылмаған
@@ -4504,3 +4517,12 @@ export.summary	Low	төмен
 	accept	қолайлы
 	the engine did not start the check	қозғалтқыш тексеруді бастамады
 	the engine sent no report	қозғалтқыш есеп жібермеді
+	Load KDM…	KDM жүктеу…
+	Forget DCP Keys	DCP кілттерін ұмыту
+	Load KDM	KDM жүктеу
+	KDM file	KDM файлы
+	Private key (PEM)	Жеке кілт (PEM)
+	{title}: {count} keys loaded	{title}: жүктелген кілттер: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кілттер тек жадта сақталады, «DCP кілттерін ұмыту» командасына немесе сеанс соңына дейін.
+	DCP keys forgotten	DCP кілттері ұмытылды
+	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.

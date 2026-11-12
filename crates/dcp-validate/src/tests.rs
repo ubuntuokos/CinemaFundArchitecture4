@@ -22,6 +22,27 @@ fn uuid(n: u32) -> String {
 /// A small SMPTE package: an asset map, a packing list, a playlist and a picture file. `paths`
 /// replaces the chunk paths (asset 1 PKL, 2 CPL, 3 picture).
 fn package(root: &Path, paths: [&str; 3]) {
+    package_with(root, paths, Edit::default());
+}
+
+/// Text replacements applied to the documents before they are written; the packing list's hash
+/// and size of the CPL are of the edited CPL.
+#[derive(Default)]
+struct Edit {
+    am: Vec<(&'static str, String)>,
+    pkl: Vec<(&'static str, String)>,
+    cpl: Vec<(&'static str, String)>,
+}
+
+fn edit(mut text: String, edits: &[(&'static str, String)]) -> String {
+    for (from, to) in edits {
+        assert!(text.contains(from), "{from} is not in the document");
+        text = text.replacen(from, to, 1);
+    }
+    text
+}
+
+fn package_with(root: &Path, paths: [&str; 3], e: Edit) {
     let am = format!(
         r#"<AssetMap xmlns="{AM_NS}"><Id>{}</Id><Creator>t</Creator><VolumeCount>1</VolumeCount><IssueDate>2026-11-09T00:00:00Z</IssueDate><Issuer>t</Issuer><AssetList>
 <Asset><Id>{}</Id><PackingList>true</PackingList><ChunkList><Chunk><Path>{}</Path></Chunk></ChunkList></Asset>
@@ -36,27 +57,38 @@ fn package(root: &Path, paths: [&str; 3]) {
         uuid(3),
         paths[2]
     );
-    let pkl = format!(
-        r#"<PackingList xmlns="http://www.smpte-ra.org/schemas/429-8/2007/PKL"><Id>{}</Id><IssueDate>2026-11-09T00:00:00Z</IssueDate><Issuer>t</Issuer><Creator>t</Creator><AssetList>
-<Asset><Id>{}</Id><Hash>{H}</Hash><Size>1</Size><Type>text/xml</Type></Asset>
-<Asset><Id>{}</Id><Hash>{H}</Hash><Size>4</Size><Type>application/mxf</Type></Asset>
-</AssetList></PackingList>"#,
-        uuid(1),
-        uuid(2),
-        uuid(3)
-    );
+    let am = edit(am, &e.am);
     let cpl = format!(
         r#"<CompositionPlaylist xmlns="http://www.smpte-ra.org/schemas/429-7/2006/CPL"><Id>{}</Id><IssueDate>2026-11-09T00:00:00Z</IssueDate><ContentTitleText>T</ContentTitleText><ContentKind>test</ContentKind><ContentVersion><Id>urn:uuid:00000005-2222-4333-8444-555555555555</Id><LabelText>T</LabelText></ContentVersion><ReelList><Reel><Id>{}</Id><AssetList>
+<MainMarkers><Id>{}</Id><EditRate>24 1</EditRate><IntrinsicDuration>1</IntrinsicDuration><MarkerList><Marker><Label>FFOC</Label><Offset>0</Offset></Marker><Marker><Label>LFOC</Label><Offset>0</Offset></Marker></MarkerList></MainMarkers>
 <MainPicture><Id>{}</Id><EditRate>24 1</EditRate><IntrinsicDuration>1</IntrinsicDuration><Duration>1</Duration><FrameRate>24 1</FrameRate><ScreenAspectRatio>1998 1080</ScreenAspectRatio></MainPicture>
 </AssetList></Reel></ReelList></CompositionPlaylist>"#,
         uuid(2),
         uuid(4),
+        uuid(6),
         uuid(3)
     );
+    let cpl = edit(cpl, &e.cpl);
+    let picture: &[u8] = b"MXF!";
+    let digest = |b: &[u8]| cfa4_dcp::sha1::base64(&cfa4_dcp::sha1::sha1(b));
+    let pkl = format!(
+        r#"<PackingList xmlns="http://www.smpte-ra.org/schemas/429-8/2007/PKL"><Id>{}</Id><IssueDate>2026-11-09T00:00:00Z</IssueDate><Issuer>t</Issuer><Creator>t</Creator><AssetList>
+<Asset><Id>{}</Id><Hash>{}</Hash><Size>{}</Size><Type>text/xml</Type></Asset>
+<Asset><Id>{}</Id><Hash>{}</Hash><Size>{}</Size><Type>application/mxf</Type></Asset>
+</AssetList></PackingList>"#,
+        uuid(1),
+        uuid(2),
+        digest(cpl.as_bytes()),
+        cpl.len(),
+        uuid(3),
+        digest(picture),
+        picture.len()
+    );
+    let pkl = edit(pkl, &e.pkl);
     std::fs::write(root.join("ASSETMAP.xml"), am).unwrap();
     std::fs::write(root.join("pkl.xml"), pkl).unwrap();
     std::fs::write(root.join("cpl.xml"), cpl).unwrap();
-    std::fs::write(root.join("picture.mxf"), b"MXF!").unwrap();
+    std::fs::write(root.join("picture.mxf"), picture).unwrap();
 }
 
 const GOOD: [&str; 3] = ["pkl.xml", "cpl.xml", "picture.mxf"];
@@ -88,12 +120,12 @@ fn quick_scan_of_a_good_package_passes() {
 fn incomplete_checks_never_pass() {
     let d = dir("incomplete");
     package(&d, GOOD);
-    let r = validate(&d, "full-integrity");
+    let r = validate(&d, "smpte-cinema");
     assert_eq!(r.verdict, Verdict::Incomplete);
-    assert_eq!(statuses(&r, PKL_HASH), [Status::Unchecked]);
-    assert!(r.findings.iter().any(|f| f.rule == PKL_HASH && f.message.contains("DCP-05")));
+    assert_eq!(statuses(&r, MXF_TRACK_FILES), [Status::Unchecked]);
+    assert!(r.findings.iter().any(|f| f.rule == MXF_TRACK_FILES && f.message.contains("DCP-06")));
     // every profile rule is reported
-    let p = Profile::builtin("full-integrity").unwrap();
+    let p = Profile::builtin("smpte-cinema").unwrap();
     for pr in &p.rules {
         assert!(r.findings.iter().any(|f| f.rule == pr.rule), "{} missing", pr.rule);
     }
@@ -403,4 +435,169 @@ fn xml_media_type_is_case_insensitive() {
     let r = validate(&d, "quick-scan");
     assert_eq!(r.verdict, Verdict::Pass, "{:?}", outcome(&r));
     assert_eq!(r.documents.compositions, [cfa4_dcp::Uuid::parse(&uuid(2)).unwrap()]);
+}
+
+fn edited(name: &str, e: Edit, profile: &str) -> ValidationReport {
+    let d = dir(name);
+    package_with(&d, GOOD, e);
+    validate(&d, profile)
+}
+
+#[test]
+fn full_integrity_of_a_good_package_passes() {
+    let r = edited("integrity-good", Edit::default(), "full-integrity");
+    assert_eq!(r.verdict, Verdict::Pass, "{:?}", outcome(&r));
+    for rule in [AM_UNIQUE_IDS, AM_HAS_PKL, PKL_IN_ASSETMAP, PKL_SIZE, PKL_HASH, CPL_IN_PKL, CPL_ASSETS_IN_PKL, CPL_DURATIONS, CPL_REEL_SYNC] {
+        assert_eq!(statuses(&r, rule), [Status::Pass], "{rule}");
+    }
+    assert!(r.findings.iter().any(|f| f.rule == PKL_HASH && f.message.starts_with("2 files")));
+    // Quick Scan does not hash
+    let quick = edited("integrity-quick", Edit::default(), "quick-scan");
+    assert!(statuses(&quick, PKL_HASH).is_empty());
+}
+
+#[test]
+fn size_and_hash_mismatches_fail() {
+    let d = dir("hash");
+    package(&d, GOOD);
+    std::fs::write(d.join("picture.mxf"), b"MXF?").unwrap();
+    let r = validate(&d, "full-integrity");
+    assert_eq!(statuses(&r, PKL_SIZE), [Status::Pass]);
+    assert_eq!(statuses(&r, PKL_HASH), [Status::Fail]);
+    assert_eq!(r.verdict, Verdict::Fail);
+    let f = r.findings.iter().find(|f| f.rule == PKL_HASH).unwrap();
+    assert_eq!(f.location.file.as_deref(), Some("picture.mxf"));
+    assert_eq!(f.location.asset, cfa4_dcp::Uuid::parse(&uuid(3)));
+    std::fs::write(d.join("picture.mxf"), b"MXF!!").unwrap();
+    let r = validate(&d, "full-integrity");
+    assert_eq!(statuses(&r, PKL_SIZE), [Status::Fail]);
+    assert_eq!(statuses(&r, PKL_HASH), [Status::Fail]);
+}
+
+#[test]
+fn asset_map_and_packing_list_consistency() {
+    // the same id twice in the asset map, and a packing list asset the asset map lacks
+    let dup = format!("<Asset><Id>{}</Id><ChunkList><Chunk><Path>cpl.xml</Path></Chunk></ChunkList></Asset>\n</AssetList>", uuid(2));
+    let extra = format!("<Asset><Id>{}</Id><Hash>{H}</Hash><Size>1</Size><Type>application/mxf</Type></Asset>\n</AssetList>", uuid(7));
+    let r = edited("consistency", Edit { am: vec![("</AssetList>", dup)], pkl: vec![("</AssetList>", extra)], ..Edit::default() }, "full-integrity");
+    assert_eq!(statuses(&r, AM_UNIQUE_IDS), [Status::Fail]);
+    assert_eq!(statuses(&r, PKL_IN_ASSETMAP), [Status::Fail]);
+    // its size and hash cannot be checked without a file
+    assert_eq!(statuses(&r, PKL_SIZE), [Status::Unchecked]);
+    assert_eq!(statuses(&r, PKL_HASH), [Status::Unchecked]);
+    assert_eq!(r.verdict, Verdict::Fail);
+
+    // no packing list at all
+    let r = edited("no-pkl-flag", Edit { am: vec![("<PackingList>true</PackingList>", String::new())], ..Edit::default() }, "full-integrity");
+    assert_eq!(statuses(&r, AM_HAS_PKL), [Status::Fail]);
+    assert!(statuses(&r, PKL_HASH).contains(&Status::Unchecked));
+}
+
+#[test]
+fn composition_assets_and_packing_lists() {
+    // the picture is in the asset map but no packing list names it
+    let r = edited(
+        "cpl-assets",
+        Edit {
+            pkl: vec![("application/mxf", "application/mxf".into()), ("<Asset><Id>urn:uuid:00000003", "<Asset><Id>urn:uuid:00000008".into())],
+            ..Edit::default()
+        },
+        "full-integrity",
+    );
+    assert_eq!(statuses(&r, CPL_ASSETS_IN_PKL), [Status::Fail], "{:?}", outcome(&r));
+    // a reel asset that is not in the package at all: a version file
+    let sound = format!("<MainSound><Id>{}</Id><EditRate>24 1</EditRate><IntrinsicDuration>1</IntrinsicDuration></MainSound>\n</AssetList>", uuid(10));
+    let r = edited("cpl-vf", Edit { cpl: vec![("</AssetList>", sound)], ..Edit::default() }, "full-integrity");
+    assert_eq!(statuses(&r, CPL_ASSETS_IN_PKL), [Status::Warning]);
+    assert_eq!(statuses(&r, CPL_REEL_SYNC), [Status::Pass]);
+    assert_eq!(r.verdict, Verdict::Pass, "a version file is not a failure: {:?}", outcome(&r));
+}
+
+#[test]
+fn composition_outside_the_packing_lists_fails() {
+    let d = dir("cpl-outside");
+    let extra = format!("<Asset><Id>{}</Id><ChunkList><Chunk><Path>cpl2.xml</Path></Chunk></ChunkList></Asset>\n</AssetList>", uuid(8));
+    package_with(&d, GOOD, Edit { am: vec![("</AssetList>", extra)], ..Edit::default() });
+    std::fs::copy(d.join("cpl.xml"), d.join("cpl2.xml")).unwrap();
+    let r = validate(&d, "full-integrity");
+    assert_eq!(statuses(&r, CPL_IN_PKL), [Status::Fail]);
+    assert_eq!(r.findings.iter().find(|f| f.rule == CPL_IN_PKL).unwrap().location.file.as_deref(), Some("cpl2.xml"));
+}
+
+#[test]
+fn durations_and_reel_sync() {
+    let r = edited(
+        "entry",
+        Edit { cpl: vec![("<Duration>1</Duration>", "<EntryPoint>1</EntryPoint><Duration>1</Duration>".into())], ..Edit::default() },
+        "full-integrity",
+    );
+    assert_eq!(statuses(&r, CPL_DURATIONS), [Status::Fail]);
+    let f = r.findings.iter().find(|f| f.rule == CPL_DURATIONS).unwrap();
+    assert_eq!(f.location.element.as_deref(), Some("ReelList/Reel[1]/AssetList/MainPicture"));
+    assert!(f.location.line.is_some());
+
+    // a sound track two edit units long next to a one-unit picture
+    let sound = format!("<MainSound><Id>{}</Id><EditRate>24 1</EditRate><IntrinsicDuration>2</IntrinsicDuration></MainSound>\n</AssetList>", uuid(10));
+    let r = edited("sync", Edit { cpl: vec![("</AssetList>", sound)], ..Edit::default() }, "full-integrity");
+    assert_eq!(statuses(&r, CPL_REEL_SYNC), [Status::Fail]);
+    // another edit rate
+    let sound = format!("<MainSound><Id>{}</Id><EditRate>48 1</EditRate><IntrinsicDuration>2</IntrinsicDuration></MainSound>\n</AssetList>", uuid(10));
+    let r = edited("rate", Edit { cpl: vec![("</AssetList>", sound)], ..Edit::default() }, "full-integrity");
+    assert!(r.findings.iter().any(|f| f.rule == CPL_REEL_SYNC && f.status == Status::Fail && f.message.contains("EditRate")));
+}
+
+#[test]
+fn composition_markers() {
+    let markers = |m: &str| Edit {
+        cpl: vec![
+            ("<IntrinsicDuration>1</IntrinsicDuration><MarkerList>", "<IntrinsicDuration>3</IntrinsicDuration><MarkerList>".to_string()),
+            ("<Marker><Label>FFOC</Label><Offset>0</Offset></Marker><Marker><Label>LFOC</Label><Offset>0</Offset></Marker>", m.to_string()),
+            ("<IntrinsicDuration>1</IntrinsicDuration><Duration>1</Duration>", "<IntrinsicDuration>3</IntrinsicDuration><Duration>3</Duration>".into()),
+        ],
+        ..Edit::default()
+    };
+    let m = |l: &str, o: u32| format!("<Marker><Label>{l}</Label><Offset>{o}</Offset></Marker>");
+    let run = |name: &str, list: String| edited(name, markers(&list), "smpte-cinema");
+    let good = run("mark-good", format!("{}{}{}", m("FFOC", 0), m("FFEC", 1), m("LFOC", 2)));
+    assert_eq!(statuses(&good, MARK_MARKERS), [Status::Pass], "{:?}", outcome(&good));
+    let r = run("mark-range", format!("{}{}", m("FFOC", 0), m("LFOC", 3)));
+    assert!(r.findings.iter().any(|f| f.rule == MARK_MARKERS && f.status == Status::Fail && f.message.contains("outside the reel")));
+    let r = run("mark-dup", format!("{}{}{}", m("FFOC", 0), m("FFOC", 1), m("LFOC", 2)));
+    assert!(statuses(&r, MARK_MARKERS).contains(&Status::Fail));
+    let r = run("mark-order", format!("{}{}{}{}", m("FFOC", 0), m("LFEC", 1), m("FFEC", 2), m("LFOC", 2)));
+    assert!(r.findings.iter().any(|f| f.rule == MARK_MARKERS && f.status == Status::Fail && f.message.contains("FFEC")));
+    let r = run("mark-label", format!("{}{}{}", m("FFOC", 0), m("XXXX", 1), m("LFOC", 2)));
+    assert_eq!(statuses(&r, MARK_MARKERS), [Status::Warning]);
+    let r = run("mark-outside", format!("{}{}{}", m("FFTC", 0), m("FFOC", 1), m("LFOC", 2)));
+    assert!(r.findings.iter().any(|f| f.rule == MARK_MARKERS && f.message.contains("outside FFOC")));
+    let r = run("mark-last", format!("{}{}", m("FFOC", 1), m("LFOC", 1)));
+    assert_eq!(statuses(&r, MARK_MARKERS), [Status::Warning], "FFOC at 1 is accepted, LFOC before the last frame is not: {:?}", outcome(&r));
+    assert!(r.findings.iter().any(|f| f.message.contains("not at the last frame")));
+}
+
+#[test]
+fn cancel_while_hashing_interrupts() {
+    let d = dir("cancel-hash");
+    package(&d, GOOD);
+    let c = ValidationControl::new();
+    let flag = c.cancel_flag();
+    let c = c.with_progress(move |p| {
+        if p.stage == "hash" {
+            flag.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+    });
+    let r = NativeValidator.validate(&ValidationRequest::new(&d, Profile::builtin("full-integrity").unwrap()), &c).unwrap();
+    assert_eq!(r.verdict, Verdict::Interrupted);
+    assert_eq!(statuses(&r, PKL_HASH), [Status::Interrupted]);
+    assert_eq!(statuses(&r, PKL_SIZE), [Status::Pass], "rules finished before the cancel keep their result");
+}
+
+#[test]
+fn chunk_length_is_the_file_length() {
+    let e =
+        |l: u32| Edit { am: vec![("<Path>picture.mxf</Path></Chunk>", format!("<Path>picture.mxf</Path><Length>{l}</Length></Chunk>"))], ..Edit::default() };
+    let r = edited("chunk-length", e(5), "quick-scan");
+    assert_eq!(statuses(&r, AM_FILE_EXISTS), [Status::Fail]);
+    let r = edited("chunk-length-ok", e(4), "quick-scan");
+    assert_eq!(statuses(&r, AM_FILE_EXISTS), [Status::Pass]);
 }
