@@ -95,6 +95,7 @@ DCP_LANGUAGES = ("", "en-US", "en-GB", "hu-HU", "de-DE", "fr-FR", "es-ES", "it-I
 AUDIO_CODECS = (
     ("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")),
     ("ac3", N_("Dolby Digital (AC-3)")),  # MPEG-2 program and transport streams only
+    ("mp2", N_("MP2 (MPEG-1 Layer II)")),  # likewise
 )
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
@@ -1182,7 +1183,7 @@ class ExportDialog(QDialog):
             # the elementary stream has no audio
             has_audio = self.container.currentData() != "es"
             self.audio.setEnabled(has_audio)
-            # Automatic: LPCM in program streams, AAC in transport streams; or AC-3 in either
+            # Automatic: LPCM in program streams, AAC in transport streams; or AC-3 or MP2 in either
             self.audio_codec.setEnabled(has_audio)
         self._changed()  # the output path takes the new extension
 

@@ -537,11 +537,15 @@ impl Exporter {
                         .map_err(|e| ExportError::Unsupported(format!("AC-3: {e}")))?;
                     Some(MpegAudio::Ac3(Box::new(enc)))
                 }
+                (Some(a), None) if self.settings.audio_codec() == AudioCodec::Mp2 => Some(MpegAudio::mp2(a.sr, a.channels, self.settings.audio.bitrate_kbps)?),
                 (Some(a), None) => Some(MpegAudio::Lpcm { sample_rate: a.sr, channels: a.channels as u32, bits: self.lpcm_bits() }),
             };
             let audio_bps = match (&self.audio, &self.aenc) {
                 (Some(_), Some(_)) => u64::from(self.settings.audio.bitrate_kbps) * 1000,
                 (Some(_), None) if self.settings.audio_codec() == AudioCodec::Ac3 => u64::from(self.settings.audio.bitrate_kbps) * 1000,
+                (Some(a), None) if self.settings.audio_codec() == AudioCodec::Mp2 => {
+                    u64::from(crate::settings::mp2_bitrate_kbps(a.sr, a.channels, self.settings.audio.bitrate_kbps)) * 1000
+                }
                 (Some(a), None) => u64::from(a.sr) * a.channels as u64 * u64::from(self.lpcm_bits()),
                 _ => 0,
             };

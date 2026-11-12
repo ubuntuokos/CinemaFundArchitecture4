@@ -839,7 +839,7 @@ impl ExportSettings {
         }
         let sample_format = self.audio.sample_format();
         if (self.has_audio() || self.format.is_audio_only())
-            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus | AudioCodec::Ac3)
+            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus | AudioCodec::Ac3 | AudioCodec::Mp2)
             && !self.supports_sample_format(sample_format)
         {
             if self.format == Format::Mpeg2 {
@@ -902,6 +902,14 @@ impl ExportSettings {
                 && self.audio.sample_rate.is_some_and(|r| ![48_000, 96_000, 44_100, 32_000].contains(&r))
             {
                 return Err(ExportError::Unsupported("MPEG-2 program streams carry LPCM at 48, 96, 44.1 or 32 kHz".into()));
+            }
+        }
+        if self.has_audio() && self.audio_codec() == AudioCodec::Mp2 {
+            if self.audio.channels > 2 {
+                return Err(ExportError::Unsupported("MP2 audio is mono or stereo: set 1 or 2 channels".into()));
+            }
+            if self.audio.sample_rate.is_some_and(|r| cfa4_mpa::encode::bitrates(r, 2).is_empty()) {
+                return Err(ExportError::Unsupported("MP2 audio runs at 32, 44.1 or 48 kHz (or 16, 22.05, 24 kHz)".into()));
             }
         }
         if self.format == Format::Dcp {

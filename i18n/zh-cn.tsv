@@ -3807,6 +3807,7 @@
 	Output file	输出文件
 	Output folder	输出文件夹
 	PCM (uncompressed)	PCM（未压缩）
+	MP2 (MPEG-1 Layer II)	MP2（MPEG-1 第二层）
 	Pace	语速
 	Path:	路径：
 	Program Stream (.mpg, LPCM audio)	节目流（.mpg，LPCM 音频）

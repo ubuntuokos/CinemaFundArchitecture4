@@ -3848,6 +3848,7 @@
 	Output file	出力ファイル
 	Output folder	出力フォルダー
 	PCM (uncompressed)	PCM（非圧縮）
+	MP2 (MPEG-1 Layer II)	MP2（MPEG-1 レイヤー II）
 	Pace	話す速さ
 	Path:	パス：
 	Program Stream (.mpg, LPCM audio)	プログラムストリーム（.mpg、LPCM オーディオ）

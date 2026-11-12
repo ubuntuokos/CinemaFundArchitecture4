@@ -3825,6 +3825,7 @@
 	Output file	Fichier de sortie
 	Output folder	Dossier de sortie
 	PCM (uncompressed)	PCM (non compressé)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 couche II)
 	Pace	Débit de parole
 	Path:	Chemin :
 	Program Stream (.mpg, LPCM audio)	Flux de programme (.mpg, audio LPCM)

@@ -3814,6 +3814,7 @@
 	Output file	출력 파일
 	Output folder	출력 폴더
 	PCM (uncompressed)	PCM (비압축)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 레이어 II)
 	Pace	속도
 	Path:	경로:
 	Program Stream (.mpg, LPCM audio)	프로그램 스트림 (.mpg, LPCM 오디오)

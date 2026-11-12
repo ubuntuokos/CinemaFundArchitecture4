@@ -3832,6 +3832,7 @@
 	Output file	Выходной файл
 	Output folder	Выходная папка
 	PCM (uncompressed)	PCM (без сжатия)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 уровень II)
 	Pace	Темп
 	Path:	Путь:
 	Program Stream (.mpg, LPCM audio)	Программный поток (.mpg, звук LPCM)

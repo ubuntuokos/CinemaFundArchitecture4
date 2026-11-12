@@ -3804,6 +3804,7 @@
 	Output file	Berkas keluaran
 	Output folder	Folder keluaran
 	PCM (uncompressed)	PCM (tanpa kompresi)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	Pace	Tempo
 	Path:	Jalur:
 	Program Stream (.mpg, LPCM audio)	Aliran program (.mpg, audio LPCM)

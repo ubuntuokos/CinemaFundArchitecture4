@@ -3846,6 +3846,7 @@
 	Output file	Archivo de salida
 	Output folder	Carpeta de salida
 	PCM (uncompressed)	PCM (sin comprimir)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 capa II)
 	Pace	Ritmo
 	Path:	Ruta:
 	Program Stream (.mpg, LPCM audio)	Flujo de programa (.mpg, audio LPCM)
