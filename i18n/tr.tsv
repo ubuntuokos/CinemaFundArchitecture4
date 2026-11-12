@@ -4515,3 +4515,5 @@ export.summary	Low	düşük
 	Load even with an unverified signature	Doğrulanmamış imzayla da yükle
 	Signature verified: {chain}	İmza doğrulandı: {chain}
 	Signature not verified: {problem}	İmza doğrulanmadı: {problem}
+	KDM required	KDM gerekli
+	Encrypted: load the KDM with content key {keys}	Şifreli: {keys} içerik anahtarını taşıyan KDM'yi yükleyin

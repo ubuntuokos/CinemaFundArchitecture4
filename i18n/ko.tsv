@@ -4508,3 +4508,5 @@
 	Load even with an unverified signature	확인되지 않은 서명이어도 불러오기
 	Signature verified: {chain}	서명 확인됨: {chain}
 	Signature not verified: {problem}	서명 확인 안 됨: {problem}
+	KDM required	KDM 필요
+	Encrypted: load the KDM with content key {keys}	암호화됨: 콘텐츠 키 {keys}가 든 KDM을 불러오십시오

@@ -4514,3 +4514,5 @@ export.summary	Low	laag
 	Load even with an unverified signature	Ook laden met een niet-geverifieerde handtekening
 	Signature verified: {chain}	Handtekening geverifieerd: {chain}
 	Signature not verified: {problem}	Handtekening niet geverifieerd: {problem}
+	KDM required	KDM vereist
+	Encrypted: load the KDM with content key {keys}	Versleuteld: laad de KDM met inhoudssleutel {keys}

@@ -4514,3 +4514,5 @@ export.summary	Low	низак
 	Load even with an unverified signature	Учитај и са непровереним потписом
 	Signature verified: {chain}	Потпис проверен: {chain}
 	Signature not verified: {problem}	Потпис није проверен: {problem}
+	KDM required	Потребан је KDM
+	Encrypted: load the KDM with content key {keys}	Шифровано: учитајте KDM са кључем садржаја {keys}

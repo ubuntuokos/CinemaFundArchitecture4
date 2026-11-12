@@ -4514,3 +4514,5 @@
 	Load even with an unverified signature	Carica anche con firma non verificata
 	Signature verified: {chain}	Firma verificata: {chain}
 	Signature not verified: {problem}	Firma non verificata: {problem}
+	KDM required	KDM richiesto
+	Encrypted: load the KDM with content key {keys}	Crittografato: carica il KDM con la chiave di contenuto {keys}

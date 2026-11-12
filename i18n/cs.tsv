@@ -4514,3 +4514,5 @@ export.summary	Low	nízká
 	Load even with an unverified signature	Načíst i s neověřeným podpisem
 	Signature verified: {chain}	Podpis ověřen: {chain}
 	Signature not verified: {problem}	Podpis neověřen: {problem}
+	KDM required	Vyžaduje KDM
+	Encrypted: load the KDM with content key {keys}	Šifrováno: načtěte KDM s klíčem obsahu {keys}

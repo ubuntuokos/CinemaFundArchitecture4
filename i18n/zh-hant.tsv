@@ -4513,3 +4513,5 @@ export.summary	Low	低
 	Load even with an unverified signature	即使簽章未經驗證也載入
 	Signature verified: {chain}	簽章已驗證：{chain}
 	Signature not verified: {problem}	簽章未驗證：{problem}
+	KDM required	需要 KDM
+	Encrypted: load the KDM with content key {keys}	已加密：請載入含有內容金鑰 {keys} 的 KDM

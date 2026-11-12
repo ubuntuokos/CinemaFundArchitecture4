@@ -4512,3 +4512,5 @@
 	Load even with an unverified signature	即使签名未经验证也加载
 	Signature verified: {chain}	签名已验证：{chain}
 	Signature not verified: {problem}	签名未验证：{problem}
+	KDM required	需要 KDM
+	Encrypted: load the KDM with content key {keys}	已加密：请加载含有内容密钥 {keys} 的 KDM

@@ -4514,3 +4514,5 @@ export.summary	Low	niska
 	Load even with an unverified signature	Wczytaj także z niezweryfikowanym podpisem
 	Signature verified: {chain}	Podpis zweryfikowany: {chain}
 	Signature not verified: {problem}	Podpis niezweryfikowany: {problem}
+	KDM required	Wymagany KDM
+	Encrypted: load the KDM with content key {keys}	Zaszyfrowane: wczytaj KDM z kluczem treści {keys}

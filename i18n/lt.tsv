@@ -4517,3 +4517,5 @@ export.summary	Low	žema
 	Load even with an unverified signature	Įkelti net su nepatikrintu parašu
 	Signature verified: {chain}	Parašas patikrintas: {chain}
 	Signature not verified: {problem}	Parašas nepatikrintas: {problem}
+	KDM required	Reikia KDM
+	Encrypted: load the KDM with content key {keys}	Užšifruota: įkelkite KDM su turinio raktu {keys}

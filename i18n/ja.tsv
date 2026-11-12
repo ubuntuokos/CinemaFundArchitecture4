@@ -4523,3 +4523,5 @@
 	Load even with an unverified signature	未検証の署名でも読み込む
 	Signature verified: {chain}	署名を検証済み: {chain}
 	Signature not verified: {problem}	署名は未検証: {problem}
+	KDM required	KDM が必要
+	Encrypted: load the KDM with content key {keys}	暗号化済み: コンテンツキー {keys} を含む KDM を読み込んでください

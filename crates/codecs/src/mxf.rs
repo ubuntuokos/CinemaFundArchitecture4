@@ -822,6 +822,16 @@ impl MediaSource for MxfSource {
         &self.info
     }
 
+    fn missing_keys(&self) -> Vec<String> {
+        let mut ids: Vec<[u8; 16]> = Vec::new();
+        for id in std::iter::once(&self.file).chain(self.companions.iter().map(|c| &c.1)).flat_map(MxfFile::missing_keys) {
+            if !ids.contains(&id) {
+                ids.push(id);
+            }
+        }
+        ids.iter().map(cfa4_mxf::crypt::uuid_text).collect()
+    }
+
     fn video_frame(&self, req: FrameRequest) -> Result<Arc<VideoFrame>, MediaError> {
         let ti = self.vtrack.ok_or(MediaError::NoStream("video"))?;
         if let Some(why) = &self.unsupported {

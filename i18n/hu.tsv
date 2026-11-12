@@ -4513,3 +4513,5 @@ export.summary	Low	alacsony
 	Load even with an unverified signature	Betöltés ellenőrizetlen aláírással is
 	Signature verified: {chain}	Aláírás ellenőrizve: {chain}
 	Signature not verified: {problem}	Az aláírás nincs ellenőrizve: {problem}
+	KDM required	KDM szükséges
+	Encrypted: load the KDM with content key {keys}	Titkosított: töltse be a KDM-et a(z) {keys} tartalomkulccsal

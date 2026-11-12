@@ -14804,6 +14804,39 @@ def test_kdm_dialog_describes_the_reply_never_a_key():
     assert describe({"keys": [], "signature": {"valid": False}}).endswith("Signature not verified: ?")
 
 
+def test_kdm_required_badge_opens_load_kdm(app, fake_engine: Path, tmp_path: Path):
+    """#1053: an encrypted clip whose content keys are not loaded (``needsKey``) shows "KDM required"
+    over the Source monitor, naming its Key IDs; a click opens File ▸ Load KDM…. The Project panel's
+    row names the keys in its tooltip."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    try:
+        key = "6b6b6b6b-6b6b-6b6b-6b6b-6b6b6b6b6b6b"
+        src = win.source_monitor
+        clip = {"item": 7, "name": "enc.mxf", "start": 0, "end": 254_016_000_000, "fps": 24.0}
+        button = src.findChild(QtWidgets.QPushButton, "source.kdmRequired")
+        assert button is not None and button.isHidden()
+        src.set_source({**clip, "needsKey": [key]}, 1)
+        assert not button.isHidden() and button.text() == "KDM required" and key in button.toolTip()
+        assert src.needed_keys() == [key]
+        button.click()
+        assert win.kdm_dialog is not None and win.kdm_dialog.isVisible()
+        win.kdm_dialog.close()
+        # the keys are loaded: the engine reports none missing
+        src.set_source({**clip, "needsKey": []}, 2)
+        assert button.isHidden() and src.needed_keys() == []
+        bv = win.project_panel.main
+        bv.own_mode = "list"
+        bv.set_data({"rows": [{"item": 7, "name": "enc.mxf", "offline": "KDM required", "needsKey": [key]}]})
+        it = bv.tree.topLevelItem(0)
+        assert it is not None and it.text(0) == "enc.mxf" and key in it.toolTip(0)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
     """File ▸ Load KDM… (#1029): a wrong private key shows the engine's message, the right one the
     KDM's title and key types (never the key); Forget DCP Keys empties the key ring."""

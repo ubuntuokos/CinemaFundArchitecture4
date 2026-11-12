@@ -4516,3 +4516,5 @@ export.summary	Low	madal
 	Load even with an unverified signature	Laadi ka kontrollimata allkirjaga
 	Signature verified: {chain}	Allkiri kontrollitud: {chain}
 	Signature not verified: {problem}	Allkiri kontrollimata: {problem}
+	KDM required	KDM on vajalik
+	Encrypted: load the KDM with content key {keys}	Krüptitud: laadi KDM sisuvõtmega {keys}

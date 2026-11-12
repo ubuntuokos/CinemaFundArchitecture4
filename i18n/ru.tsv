@@ -4499,3 +4499,5 @@
 	Load even with an unverified signature	Загружать и с непроверенной подписью
 	Signature verified: {chain}	Подпись проверена: {chain}
 	Signature not verified: {problem}	Подпись не проверена: {problem}
+	KDM required	Требуется KDM
+	Encrypted: load the KDM with content key {keys}	Зашифровано: загрузите KDM с ключом содержимого {keys}

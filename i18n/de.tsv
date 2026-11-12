@@ -4521,3 +4521,5 @@
 	Load even with an unverified signature	Auch mit ungeprüfter Signatur laden
 	Signature verified: {chain}	Signatur geprüft: {chain}
 	Signature not verified: {problem}	Signatur nicht geprüft: {problem}
+	KDM required	KDM erforderlich
+	Encrypted: load the KDM with content key {keys}	Verschlüsselt: Laden Sie die KDM mit dem Inhaltsschlüssel {keys}

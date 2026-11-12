@@ -4516,3 +4516,5 @@ export.summary	Low	matala
 	Load even with an unverified signature	Lataa myös vahvistamattomalla allekirjoituksella
 	Signature verified: {chain}	Allekirjoitus vahvistettu: {chain}
 	Signature not verified: {problem}	Allekirjoitusta ei vahvistettu: {problem}
+	KDM required	KDM tarvitaan
+	Encrypted: load the KDM with content key {keys}	Salattu: lataa KDM, jossa on sisältöavain {keys}

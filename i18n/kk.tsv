@@ -4516,3 +4516,5 @@ export.summary	Low	төмен
 	Load even with an unverified signature	Тексерілмеген қолтаңбамен де жүктеу
 	Signature verified: {chain}	Қолтаңба тексерілді: {chain}
 	Signature not verified: {problem}	Қолтаңба тексерілмеді: {problem}
+	KDM required	KDM қажет
+	Encrypted: load the KDM with content key {keys}	Шифрланған: {keys} мазмұн кілті бар KDM жүктеңіз

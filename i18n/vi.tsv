@@ -4514,3 +4514,5 @@ export.summary	Low	thấp
 	Load even with an unverified signature	Tải cả khi chữ ký chưa được xác minh
 	Signature verified: {chain}	Đã xác minh chữ ký: {chain}
 	Signature not verified: {problem}	Chưa xác minh chữ ký: {problem}
+	KDM required	Cần KDM
+	Encrypted: load the KDM with content key {keys}	Đã mã hóa: hãy tải KDM có khóa nội dung {keys}

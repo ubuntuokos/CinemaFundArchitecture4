@@ -4522,3 +4522,5 @@
 	Load even with an unverified signature	Muat juga dengan tanda tangan yang belum diverifikasi
 	Signature verified: {chain}	Tanda tangan terverifikasi: {chain}
 	Signature not verified: {problem}	Tanda tangan tidak terverifikasi: {problem}
+	KDM required	Perlu KDM
+	Encrypted: load the KDM with content key {keys}	Terenkripsi: muat KDM dengan kunci konten {keys}

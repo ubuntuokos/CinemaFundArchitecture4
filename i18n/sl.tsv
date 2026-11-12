@@ -4517,3 +4517,5 @@ export.summary	Low	nizka
 	Load even with an unverified signature	Naloži tudi z nepreverjenim podpisom
 	Signature verified: {chain}	Podpis preverjen: {chain}
 	Signature not verified: {problem}	Podpis ni preverjen: {problem}
+	KDM required	Potreben je KDM
+	Encrypted: load the KDM with content key {keys}	Šifrirano: naložite KDM s ključem vsebine {keys}

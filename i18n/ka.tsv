@@ -4517,3 +4517,5 @@ export.summary	Low	დაბალი
 	Load even with an unverified signature	ჩატვირთვა გადაუმოწმებელი ხელმოწერითაც
 	Signature verified: {chain}	ხელმოწერა გადამოწმებულია: {chain}
 	Signature not verified: {problem}	ხელმოწერა არ არის გადამოწმებული: {problem}
+	KDM required	საჭიროა KDM
+	Encrypted: load the KDM with content key {keys}	დაშიფრულია: ჩატვირთეთ KDM შიგთავსის გასაღებით {keys}

@@ -4516,3 +4516,5 @@ export.summary	Low	niska
 	Load even with an unverified signature	Učitaj i s neprovjerenim potpisom
 	Signature verified: {chain}	Potpis provjeren: {chain}
 	Signature not verified: {problem}	Potpis nije provjeren: {problem}
+	KDM required	Potreban je KDM
+	Encrypted: load the KDM with content key {keys}	Šifrirano: učitajte KDM s ključem sadržaja {keys}

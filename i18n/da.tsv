@@ -4516,3 +4516,5 @@ export.summary	Low	lav
 	Load even with an unverified signature	Indlæs også med en ubekræftet signatur
 	Signature verified: {chain}	Signatur bekræftet: {chain}
 	Signature not verified: {problem}	Signatur ikke bekræftet: {problem}
+	KDM required	KDM påkrævet
+	Encrypted: load the KDM with content key {keys}	Krypteret: indlæs KDM'en med indholdsnøglen {keys}

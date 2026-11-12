@@ -4516,3 +4516,5 @@ export.summary	Low	χαμηλή
 	Load even with an unverified signature	Φόρτωση ακόμη και με μη επαληθευμένη υπογραφή
 	Signature verified: {chain}	Η υπογραφή επαληθεύτηκε: {chain}
 	Signature not verified: {problem}	Η υπογραφή δεν επαληθεύτηκε: {problem}
+	KDM required	Απαιτείται KDM
+	Encrypted: load the KDM with content key {keys}	Κρυπτογραφημένο: φορτώστε το KDM με το κλειδί περιεχομένου {keys}
