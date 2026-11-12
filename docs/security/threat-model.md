@@ -1,10 +1,10 @@
 # CFA4 fenyegetésmodell (CFA4-SECURITY-001, B0)
 
-**Verzió:** 1.0 (a tulajdonos jóváhagyta 2026-11-12-én; a referenciagépes mérés még hátravan)
+**Verzió:** 1.1 (a tulajdonos jóváhagyta 2026-11-12-én; a mérés lefutott, a B0 lezárult)
 **Dátum:** 2026-11-11, jóváhagyva 2026-11-12
 **Terv:** [`CFA4-SECURITY-001`](../plans/CFA4-SECURITY-001.md) V. fejezet, B0 fázis
-**Kész, ha:** a tulajdonos jóváhagyja ezt a dokumentumot, és a többletterhelés mérése a
-referenciagépen lefutott (`scripts/dev/security-overhead.sh`, lásd 6. pont).
+**Kész, ha:** a tulajdonos jóváhagyja ezt a dokumentumot, és a többletterhelés mérése lefutott
+(`scripts/dev/security-overhead.sh`, lásd 6. pont). **Teljesült 2026-11-12-én.**
 
 Ez a dokumentum a terv II. fejezetének táblázatát bontja ki: kitől védünk, mit, hol lép be az idegen
 adat, melyik folyamat dolgozza fel, mi védi ma, és melyik fázis zárja le. A B1-ben elkészült
@@ -125,13 +125,24 @@ terhelést, és ha van `numactl`, a 0. NUMA-csomóponton fut. A jelentés: `targ
 (`overhead.json`, `record.txt`, `lscpu.txt`); `overheadPct` az esetenkénti eltérés a korlátozás
 nélküli mediántól, `applyUs` a profil alkalmazásának ideje.
 
-**Tájékoztató mérés (nem a referenciagépen, 2026-11-11):** a fejlesztői konténerben (4 mag,
-6.18-as rendszermag, Landlock 8-as ABI, párhuzamos fuzzing-terheléssel, tehát zajos) a profil
-alkalmazása kb. 0,5–0,6 ms; a rendszerhívás-sűrű ciklus fájlonként 2,87 µs korlátozás nélkül,
-+0,7% a `pluginHost`, +6,3% az `engine` profillal. A dekódolás és a renderelés ennél nagyságrendekkel
-kevesebb rendszerhívást tesz másodpercenként, így a valós lassulás ennek töredéke; a D2 szerinti
-mérés a B4-ben a lejátszáson és az exporton történik. A referenciagépen mért számok kerülnek ide a
-B0 lezárásakor.
+**A B0 mérése (2026-11-12, felhőben):** a tulajdonos döntése szerint (2026-11-12: „a felhőben megy a
+fejlesztés”) a B0 mérése a felhős fejlesztői környezetben fut, nem a referenciagépen. Környezet:
+4 vCPU (Intel Xeon @ 2,10 GHz, megosztott virtuális gép), 6.18-as rendszermag, Landlock 8-as ABI,
+seccomp; más terhelés nélkül (`scripts/dev/security-overhead.sh 0-3`, négy futás, 2000–5000 fájl,
+30–40 kör).
+
+| Eset | Profil alkalmazása | Fájlonként (megnyitás, olvasás, `stat`) | Többlet |
+|---|---|---|---|
+| korlátozás nélkül | – | 2,7–3,5 µs | – |
+| `pluginHost` | 0,55–0,62 ms | +0,4–0,5 µs | +8–16% |
+| `engine` | 0,49–0,62 ms | +0,4–1,2 µs | +17–35% (egy kiugró futás) |
+
+**Értelmezés:** a többlet a Landlock útvonal-ellenőrzése minden fájlmegnyitáskor (néhány tized
+mikroszekundum) és a seccomp-szűrő minden rendszerhíváson; a megosztott virtuális gép miatt a
+szórás nagy. Ez a legrosszabb eset: a ciklus csak rendszerhívásokat végez. A lejátszás és az export
+másodpercenként néhány fájlt nyit meg és sokszor nagyobb blokkokat olvas, így ott a többlet ennek
+töredéke; a profil alkalmazása folyamatonként egyszeri, kb. 0,6 ms. A D2 5%-os célját a B4 a
+valódi lejátszáson és exporton méri (ugyanezzel a módszerrel, a felhőben). **Ezzel a B0 lezárult.**
 
 ## 7. Jóváhagyás
 
@@ -140,5 +151,5 @@ B0 lezárásakor.
 1. Elfogadva: a 2. pont határai (mi nem cél).
 2. Elfogadva: a 3. pont megállapításai és helyük a fázisokban (a modelletöltés a B3 előtt a
    `cfa4-fetch`-be költözik).
-3. **Nyitott:** a mérés lefuttatása a referenciagépen (`scripts/dev/security-overhead.sh`), és az
-   eredmény felvétele a 6. pontba. Ezzel zárul a B0.
+3. Kész: a mérés a tulajdonos döntése szerint a felhős fejlesztői környezetben futott (2026-11-12),
+   az eredmény a 6. pontban. Ezzel a B0 lezárult.
