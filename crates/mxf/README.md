@@ -15,6 +15,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 377-1 | 2011 (+ Amd 1:2012) | partitions, primer pack, header metadata sets and local tags, index table segments, random index pack, run-in |
 | SMPTE ST 378 | 2004 | OP1a |
 | SMPTE ST 390 | 2011 | OP-Atom |
+| SMPTE ST 391 / 392 / 393 / 407 / 408 | 2004 / 2004 / 2004 / 2006 / 2006 | OP1b (ganged packages), OP2a/b (playlist items), OP3a/b (edit items), OP1c–OP3c (alternate packages) |
 | SMPTE ST 379-1 / 379-2 | 2009 / 2010 | generic container: content packages, element keys, frame / clip wrapping |
 | SMPTE ST 381-1 | 2005 | MPEG video mapping (MPEG-2 identified, MPEG video descriptor; decoded by `cfa4-mpeg2v` in `cfa4-codecs`); writer: ES container, element keys, MPEG video descriptor, index flags |
 | SMPTE ST 381-3 | 2013 | AVC byte-stream mapping and AVC sub-descriptor |
@@ -129,7 +130,18 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   drop frame), falling back to the file package's; `Timecode::format` gives `HH:MM:SS:FF` /
   `HH:MM:SS;FF`.
 
-Not supported: OP1b/OP2x+ edit lists beyond the first source clip, external essence (OP-Atom
+- **OP1b–OP3c** (ST 391, 392, 393, 407, 408). A material track whose sequence holds several
+  source clips plays them back to back as one `EssenceTrack`. Each clip contributes its own
+  range: from its start position, for its duration. The clips may point into different file
+  packages, each in its own essence container, and those packages may reuse track numbers,
+  because elements are matched by track number and body SID. Before a long-GOP clip's first
+  presented picture, the pictures it needs for decoding are kept as hidden samples: a `pts` no
+  presented picture uses, and absent from `display_order`. Fillers are left out with a warning.
+  Clips whose essence differs from the first clip's are also left out with a warning. That
+  covers a different codec, edit rate, picture size or sound format. For OPxc (alternate
+  packages), the first material package is read.
+
+Not supported: gaps (fillers) inside edit lists (#1008), external essence (OP-Atom
 material packages whose other tracks live in other files are opened track by track), partial or
 encrypted essence (ST 429-6), and descriptive metadata (parsed sets are ignored).
 
@@ -226,7 +238,12 @@ w.finish()?;
 
 - `src/tests.rs`: a small OP1a writer builds synthetic files (temporal offsets, key flags, PCM,
   timecode); open, presentation order, sample bytes, PCM values; truncation at every 37 bytes and
-  600 random mutations never panic and only list fully-present samples.
+  600 random mutations never panic and only list fully-present samples. An OP3a writer with two
+  file packages that share track numbers checks several things:
+  - edit lists across packages: picture bytes, PCM values, and reads that cross a clip boundary;
+  - fillers;
+  - hidden long-GOP references;
+  - hostile start positions and durations.
 - `crates/codecs/tests/mxf_oracle.rs` (FFmpeg-written fixtures, FFmpeg as the decode oracle):
   H.264 long-GOP with B pictures (bit-exact every frame + 25 random seeks), H.264 29.97 DF
   timecode, DNxHR LB (±2), ProRes 422 (±1), MPEG-2 long GOP, XDCAM HD422 and D-10 (±4),
