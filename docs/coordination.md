@@ -46,8 +46,9 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    írd a PR-ba megjegyzésként: `@coderabbitai review`. Minden megállapítását vagy javítsd ki
    a saját ágadon, vagy válaszolj rá a szálban, és indokold, miért nem javítod (például mert
    az `AGENTS.md` mást ír elő: ütközésnél mindig a CFA4 szabályai nyernek). Javítás után kérd
-   újra (`@coderabbitai review`). A PR-t csak akkor add át a gazdának, ha nem maradt
-   megválaszolatlan CodeRabbit-szál. A CodeRabbit javító funkcióit (Autofix, „Fix comments”,
+   újra (`@coderabbitai review`). A PR-t csak akkor add át a gazdának, ha a legutóbbi kérésedre
+   megérkezett a CodeRabbit review a PR mostani fejére, és nem maradt megválaszolatlan
+   CodeRabbit-szál (§3.4). A CodeRabbit javító funkcióit (Autofix, „Fix comments”,
    CI-javítás, ütközésfeloldás) nem indítod: a PR-ba csak te commitolsz. Dependabot-PR-on
    és köteg-PR-on nem kérsz CodeRabbit-ellenőrzést.
 
@@ -68,13 +69,20 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    Ezt a kötelező `full-validation-gate` ellenőrzés technikailag is kikényszeríti (tulajdonosi
    döntés, 2026-10-31): csak akkor zöld, ha minden blokkoló teljes job azon a fejen ténylegesen
    lefutott és zöld. A Qt6 GUI-tesztek a GUI elkészültéig futnak, de nem blokkolnak.
-   **CodeRabbit** (tulajdonosi döntés, 2026-11-12): a gazda nem olvaszt be olyan PR-t,
-   amelyen megválaszolatlan CodeRabbit-szál van, vagy amelyen a fejlesztő nem kért
-   CodeRabbit-ellenőrzést (§2.9). A szálakat a
-   `GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads` végpont adja vissza. Egy szál akkor
-   lezárt, ha meg van oldva, vagy a fejlesztő indokolva válaszolt rá. Az ilyen PR a „(c)
-   frissíteni kell” kategóriába kerül, és a gazda a PR-ban jelzi a fejlesztőnek. Ez nem
-   technikai CI-kapu. Dependabot- és köteg-PR-ra nem vonatkozik.
+   **CodeRabbit** (tulajdonosi döntés, 2026-11-12): a gazda csak akkor olvaszt be egy PR-t, ha
+   mindhárom feltétel teljesül:
+   (a) a fejlesztő kért ellenőrzést, vagyis a PR megjegyzései között
+   (`GET /repos/{owner}/{repo}/issues/{n}/comments`, minden oldal) van `@coderabbitai review`;
+   (b) a kért review be is fejeződött: van `coderabbitai[bot]` review
+   (`GET /repos/{owner}/{repo}/pulls/{n}/reviews`), amelynek `commit_id`-je a PR mostani feje, és
+   amely az utolsó `@coderabbitai review` kérésnél később érkezett. Ha a fej a review után
+   változott, a fejlesztőnek újra kell kérnie;
+   (c) nincs megválaszolatlan CodeRabbit-szál
+   (`GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads`). Egy szál akkor lezárt, ha meg
+   van oldva, vagy a fejlesztő indokolva válaszolt rá.
+   Ha valamelyik hiányzik, a PR a „(c) frissíteni kell” kategóriába kerül, és a gazda a PR-ban
+   jelzi a fejlesztőnek. Ez nem technikai CI-kapu. Dependabot-PR-ra és magára a köteg-PR-ra
+   nem vonatkozik; a kötegbe kerülő eredeti PR-okra igen (§3a.1).
 5. Ha egy PR-t egy másik kivált, a gazda lezárja, és a megjegyzésben megnevezi, melyik váltotta ki.
 6. Minden hívás eredményét egy sorban beírja a [`docs/coordination-log.md`](coordination-log.md)-be.
 7. Ágat nem töröl (a munkamenetek nem kapnak rá engedélyt): a törölhető ágak listáját átadja
@@ -93,6 +101,8 @@ személyes fiók alatti tárolóban nem érhető el, ezért a kötegelést a gaz
 
 1. **Indítás:** `/gazda köteg #12 #15 #18` – a tulajdonos által ebben a hívásban jóváhagyott
    PR-ok, alapból 3–8 darab (a tulajdonos kisebbet is kérhet). Aktív PR (§3.2) nem kerül bele.
+   Olyan eredeti PR sem, amely nem teljesíti a §3.4 CodeRabbit-feltételeit (a Dependabot-PR-ok
+   kivételek); a gazda ezt a köteg összerakása előtt PR-onként ellenőrzi.
 2. **Összerakás:** `scripts/dev/gazda-koteg.sh #12 #15 #18`. A mostani `main`-ből nyit egy
    `koteg/ÉÉÉÉHHNN-N` ágat, a PR-okat a megadott sorrendben, egyenként, merge committal rárakja,
    az ütközőket kihagyja és kiírja, majd köteg-PR-t nyit a `main`-re a `cfa4-full-validation`

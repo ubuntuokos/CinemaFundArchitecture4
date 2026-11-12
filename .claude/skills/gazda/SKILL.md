@@ -38,11 +38,14 @@ $ARGUMENTS
 - Csak olyan PR-t, amit a tulajdonos **ebben a hívásban** kifejezetten jóváhagyott. Egy
   hívásban több PR is jóváhagyható; ilyenkor a megadott sorrendben, egymás után dolgozol.
 - Egyenként: ág frissítése a `main`-hez, zöld `full-validation-gate` azon a fejen, utána merge.
-- **CodeRabbit** (`docs/coordination.md` §3.4): beolvasztás előtt a
-  `gh api repos/ubuntuokos/CinemaFundArchitecture4/pulls/<n>/ccr/review_threads` lekérdezéssel
-  nézd meg, maradt-e megválaszolatlan CodeRabbit-szál, és hogy a fejlesztő kért-e
-  ellenőrzést (`@coderabbitai review`). Ha bármelyik hiányzik, ne olvaszd be: a PR a (c)
-  kategóriába kerül, és a PR-ban jelzed a fejlesztőnek. Dependabot- és köteg-PR-ra nem vonatkozik.
+- **CodeRabbit** (`docs/coordination.md` §3.4): beolvasztás előtt, és köteg esetén minden
+  kötegbe szánt eredeti PR-on, ellenőrizd mindhárom feltételt (`R=repos/ubuntuokos/CinemaFundArchitecture4`):
+  (a) kérés: `gh api --paginate $R/issues/<n>/comments` – van `@coderabbitai review`;
+  (b) befejezett review: `gh api --paginate $R/pulls/<n>/reviews` – van `coderabbitai[bot]`
+  review a mostani fejre (`commit_id`), az utolsó kérésnél későbbi;
+  (c) nincs megválaszolatlan szál: `gh api $R/pulls/<n>/ccr/review_threads`.
+  Ha bármelyik hiányzik, ne olvaszd be és ne tedd kötegbe: a PR a (c) kategóriába kerül, és
+  a PR-ban jelzed a fejlesztőnek. Dependabot-PR-ra és magára a köteg-PR-ra nem vonatkozik.
 - **Köteg** (`/gazda köteg #12 #15 …`, `docs/coordination.md` §3a): `scripts/dev/gazda-koteg.sh`
   összerakja a köteg-ágat és megnyitja a köteg-PR-t a `cfa4-full-validation` címkével. Zöld kapu
   után a köteg-PR-t **csak merge committal** olvasztod be, majd ellenőrzöd, hogy minden bekerült
