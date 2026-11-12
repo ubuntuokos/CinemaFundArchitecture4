@@ -430,6 +430,12 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                             let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
                             w.elements.push(Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid, plain: Some(plain) });
                         }
+                        // an encrypted ancillary resource of a timed text track file (ST 429-5)
+                        Some((source, plain)) if source.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
+                            let sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                            w.generic_streams
+                                .push((sid, Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid: sid, plain: Some(plain) }));
+                        }
                         Some(_) => {}
                         None => w.warnings.push(format!("unreadable encrypted triplet at byte {pos}")),
                     }

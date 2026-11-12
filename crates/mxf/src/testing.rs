@@ -357,7 +357,7 @@ pub fn encrypted_triplet(key: &[u8; 16], context: &[u8; 16], source: [u8; 16], p
 }
 
 /// Rewrites a plaintext track file as an encrypted one (ST 429-6 clauses 6-9): every essence
-/// triplet becomes an Encrypted Triplet, the primer gains the context's dynamic tags and a
+/// triplet (and generic stream data element) becomes an Encrypted Triplet, the primer gains the context's dynamic tags and a
 /// Cryptographic Context set follows it.
 pub fn encrypt_track_file(f: &[u8], key: &[u8; 16], key_id: &[u8; 16], context: &[u8; 16], po: usize, mic_key: Option<[u8; 16]>) -> Vec<u8> {
     let mic = mic_key.is_some();
@@ -395,7 +395,9 @@ pub fn encrypt_track_file(f: &[u8], key: &[u8; 16], key_id: &[u8; 16], context: 
             s.p(0xFF75, key_id);
             let set_key = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x02, 0x02, 0x00, 0x00];
             klv(&mut out, set_key, &s.0);
-        } else if k.0[8..12] == [0x0D, 0x01, 0x03, 0x01] && matches!(k.0[12], 0x15 | 0x16) {
+        } else if (k.0[8..12] == [0x0D, 0x01, 0x03, 0x01] && matches!(k.0[12], 0x15..=0x17)) || k.0[8..13] == [0x0D, 0x01, 0x05, 0x09, 0x01] {
+            // picture, sound and data (timed text) elements, and generic stream data (timed text
+            // resources: ST 429-5 encrypts them with the document)
             let t = encrypted_triplet(key, context, k.0, v, po.min(v.len()), seq, mic_key);
             seq += 1;
             klv(&mut out, TRIPLET_KEY, &t);
