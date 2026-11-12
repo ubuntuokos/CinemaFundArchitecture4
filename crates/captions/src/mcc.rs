@@ -606,10 +606,8 @@ pub fn parse(text: &str) -> Result<Document> {
         _ => return Err(Error::NotFormat("MacCaption MCC")),
     }
     let mut rate = (RATE, true);
-    let mut doc = Document::default();
-    let mut f1: Vec<(i64, u8, u8)> = Vec::new();
-    let mut dtv: Vec<(i64, bool, u8, u8)> = Vec::new();
-    let mut any608 = false;
+    let mut packets: Vec<(i64, Vec<u8>)> = Vec::new();
+    let mut warnings = Vec::new();
     for (n, l) in lines {
         let l = l.trim_end();
         if l.trim().is_empty() || l.starts_with("//") {
@@ -632,11 +630,33 @@ pub fn parse(text: &str) -> Result<Document> {
         };
         let frame = fields_to_frames(h, m, s, f, rate.0, rate.1 || tc.contains(';'));
         let Some(bytes) = expand(data) else {
-            doc.warnings.push(format!("line {}: bad caption data", n + 1));
+            warnings.push(format!("line {}: bad caption data", n + 1));
             continue;
         };
+        if cc_triplets(&bytes).is_none() {
+            warnings.push(format!("line {}: not a caption distribution packet", n + 1));
+            continue;
+        }
+        packets.push((frame, bytes));
+    }
+    let mut doc = decode_cdps(packets, rate.0);
+    warnings.append(&mut doc.warnings);
+    doc.warnings = warnings;
+    Ok(doc)
+}
+
+/// Decode caption distribution packets (each with or without the `61 01` ancillary prefix) at
+/// their frames of `rate`: channel 1 CEA-608 field 1 when any is present, else CEA-708 service 1.
+/// Used for MCC files and for the CDPs of MXF ANC data (SMPTE ST 436-1).
+pub fn decode_cdps(packets: impl IntoIterator<Item = (i64, Vec<u8>)>, rate: FrameRate) -> Document {
+    let mut doc = Document::default();
+    let mut f1: Vec<(i64, u8, u8)> = Vec::new();
+    let mut dtv: Vec<(i64, bool, u8, u8)> = Vec::new();
+    let mut any608 = false;
+    let mut bad = 0usize;
+    for (frame, bytes) in packets {
         let Some(trips) = cc_triplets(&bytes) else {
-            doc.warnings.push(format!("line {}: not a caption distribution packet", n + 1));
+            bad += 1;
             continue;
         };
         for [m0, a, b] in trips {
@@ -653,8 +673,11 @@ pub fn parse(text: &str) -> Result<Document> {
             }
         }
     }
+    if bad > 0 {
+        doc.warnings.push(format!("{bad} packets are not caption distribution packets"));
+    }
     if any608 {
-        doc.cues = scc::decode_pairs(f1, rate.0);
+        doc.cues = scc::decode_pairs(f1, rate);
     } else {
         let mut d = Dec708::new();
         let mut last = 0;
@@ -665,9 +688,9 @@ pub fn parse(text: &str) -> Result<Document> {
         if let Some((s, t)) = d.open.take() {
             d.cues.push((s, last.max(s + 1), t));
         }
-        doc.cues = d.cues.into_iter().map(|(s, e, text)| Cue { start: rate.0.tick_of(s), end: rate.0.tick_of(e), text, ..Default::default() }).collect();
+        doc.cues = d.cues.into_iter().map(|(s, e, text)| Cue { start: rate.tick_of(s), end: rate.tick_of(e), text, ..Default::default() }).collect();
     }
-    Ok(doc)
+    doc
 }
 
 #[cfg(test)]

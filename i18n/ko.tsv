@@ -1982,8 +1982,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ(8비트 4:2:2), 24비트 48 kHz PCM, 시작 타임코드
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile 롱 GOP(12픽처, IBBP) 50 Mbit/s, XDCAM HD422 방식, 24비트 48 kHz PCM; HD 프레임 크기
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High 롱 GOP(픽셀당 0.3비트), 24비트 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 유형(IMX 50): 인트라 전용 MPEG-2 4:2:2P@ML 50 Mbit/s, 720x486, 29.97 fps(4:3), 24비트 48 kHz 오디오 4채널
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 유형(IMX 50): 인트라 전용 MPEG-2 4:2:2P@ML 50 Mbit/s, 720x576, 25 fps(4:3), 24비트 48 kHz 오디오 4채널
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24비트 48 kHz PCM, 시작 타임코드
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 배치의 MXF OP1a: MPEG-2 4:2:2 Profile 롱 GOP(12픽처, IBBP) 50 Mbit/s, 1920x1080 또는 1280x720 프로그레시브, 채널별 AES3 요소로 24비트 48 kHz 4채널
 	My Shortcuts	내 단축키
 	My Templates	내 템플릿
 	Name	이름
@@ -3806,6 +3814,7 @@
 	Output file	출력 파일
 	Output folder	출력 폴더
 	PCM (uncompressed)	PCM (비압축)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 레이어 II)
 	Pace	속도
 	Path:	경로:
 	Program Stream (.mpg, LPCM audio)	프로그램 스트림 (.mpg, LPCM 오디오)
@@ -4314,6 +4323,7 @@
 	Safe areas and spines	세이프 영역과 스파인
 	The text moves {speed} px per frame; a whole number does not shimmer	텍스트가 프레임당 {speed} px 이동합니다. 정수 값이면 깜빡이지 않습니다
 	Video: {file}	영상: {file}
+	Looped video: {file}	반복 영상: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”이(가) 배경과 구분되지 않습니다(대비 {ratio}:1, 최소 4.5:1 필요)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	완성된 룩: 스타일, 배경, 트랜지션, 타이밍. 스타일 파일을 지정하면 그것이 우선합니다.
 	Apply Credits Template…	크레딧 템플릿 적용…

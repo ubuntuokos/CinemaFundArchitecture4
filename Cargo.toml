@@ -48,10 +48,13 @@ cfa4-heif = { path = "crates/heif" }
 cfa4-jxl = { path = "crates/jxl" }
 cfa4-vp8 = { path = "crates/vp8" }
 cfa4-adpcm = { path = "crates/adpcm" }
+cfa4-speex = { path = "crates/speex" }
+cfa4-amr = { path = "crates/amr" }
 cfa4-hap = { path = "crates/hap" }
 cfa4-utvideo = { path = "crates/utvideo" }
 cfa4-huffyuv = { path = "crates/huffyuv" }
 cfa4-ffv1 = { path = "crates/ffv1" }
+cfa4-dirac = { path = "crates/dirac" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
 cfa4-dnx = { path = "crates/dnx" }
@@ -60,9 +63,11 @@ cfa4-j2k = { path = "crates/j2k" }
 cfa4-iab = { path = "crates/iab" }
 cfa4-dcp = { path = "crates/dcp" }
 cfa4-dcp-validate = { path = "crates/dcp-validate" }
+cfa4-dcp-inspect = { path = "crates/dcp-inspect" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-av1 = { path = "crates/av1" }
+cfa4-av2 = { path = "crates/av2" }
 cfa4-aac = { path = "crates/aac" }
 cfa4-flac = { path = "crates/flac" }
 cfa4-opus = { path = "crates/opus" }
@@ -143,6 +148,9 @@ opt-level = 3
 [profile.dev.package.cfa4-ffv1]
 opt-level = 3
 
+[profile.dev.package.cfa4-dirac]
+opt-level = 3
+
 [profile.dev.package.cfa4-huffyuv]
 opt-level = 3
 
@@ -205,7 +213,13 @@ opt-level = 3
 [profile.dev.package.cfa4-vp8]
 opt-level = 3
 
+[profile.dev.package.cfa4-speex]
+opt-level = 3
+
 [profile.dev.package.cfa4-adpcm]
+opt-level = 3
+
+[profile.dev.package.cfa4-amr]
 opt-level = 3
 
 [profile.dev.package.cfa4-vp9]

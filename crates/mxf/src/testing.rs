@@ -202,6 +202,97 @@ pub fn build_timed_text(xml: &[u8], resources: &[(&str, &[u8])]) -> Vec<u8> {
     f
 }
 
+/// The ANC packet essence container (ST 436-1 Table 1).
+pub const ANC_CONTAINER: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x02, 0x0E, 0x00, 0x00];
+/// The frame-wrapped ANC element key (ST 436-1 Table 6).
+pub const ANC_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x02, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x17, 0x01, 0x02, 0x01];
+
+/// An ANC element value (ST 436-1 Table 7) of VANC frame packets on line 9: each packet's words
+/// (DID, SDID, DC, user data) in the 8-bit luma coding (4), or the 10-bit coding (7) with even
+/// parity bits and a checksum when `ten_bit`; payload arrays padded to four bytes (Annex B.3).
+pub fn anc_element(packets: &[Vec<u8>], ten_bit: bool) -> Vec<u8> {
+    let mut v = (packets.len() as u16).to_be_bytes().to_vec();
+    for words in packets {
+        v.extend_from_slice(&9u16.to_be_bytes());
+        v.push(0x01);
+        let (coding, count, mut payload) = if ten_bit {
+            let parity = |b: u8| -> u16 {
+                let p = (b.count_ones() & 1) as u16;
+                b as u16 | p << 8 | (p ^ 1) << 9
+            };
+            let mut w: Vec<u16> = words.iter().map(|&b| parity(b)).collect();
+            let sum = w.iter().fold(0u16, |a, &x| (a + (x & 0x1ff)) & 0x1ff);
+            w.push(sum | ((!sum >> 8) & 1) << 9);
+            let n = w.len();
+            let mut p = Vec::new();
+            for c in w.chunks(3) {
+                let s = |i: usize| c.get(i).copied().unwrap_or(0) as u32;
+                p.extend_from_slice(&(s(0) << 22 | s(1) << 12 | s(2) << 2).to_be_bytes());
+            }
+            (7u8, n, p)
+        } else {
+            (4u8, words.len(), words.clone())
+        };
+        while payload.len() % 4 != 0 {
+            payload.push(0);
+        }
+        v.push(coding);
+        v.extend_from_slice(&(count as u16).to_be_bytes());
+        v.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+        v.extend_from_slice(&1u32.to_be_bytes());
+        v.extend_from_slice(&payload);
+    }
+    v
+}
+
+/// An OP1a file with one ANC data track (ST 436-1) at `rate` (num, den): one frame-wrapped ANC
+/// element per frame, `frames[i]` being frame `i`'s element value (see [`anc_element`]).
+pub fn build_anc(rate: (u32, u32), frames: &[Vec<u8>]) -> Vec<u8> {
+    let anc_def = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x01, 0x03, 0x02, 0x02, 0x03, 0, 0, 0];
+    let dur = frames.len() as i64;
+    let mut r = rate.0.to_be_bytes().to_vec();
+    r.extend_from_slice(&rate.1.to_be_bytes());
+    let mut md = Vec::new();
+    klv(&mut md, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x05, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x05, 0x01, 0x00]), &batch(&[]));
+    let mut pre = LocalSet::new(1);
+    pre.p(0x3B03, &uuid(2)).p(0x3B09, &OP1A);
+    klv(&mut md, set_key(0x2F), &pre.0);
+    let mut mp = LocalSet::new(3);
+    mp.p(0x4401, &umid(1)).p(0x4403, &batch(&[&uuid(10)]));
+    klv(&mut md, set_key(0x36), &mp.0);
+    let rated_track = |uid: u8, number: u32, seq: u8| {
+        let mut s = LocalSet::new(uid);
+        s.p(0x4801, &2u32.to_be_bytes()).p(0x4804, &number.to_be_bytes()).p(0x4B01, &r).p(0x4B02, &0i64.to_be_bytes()).p(0x4803, &uuid(seq));
+        s.0
+    };
+    klv(&mut md, set_key(0x3B), &rated_track(10, 0, 20));
+    klv(&mut md, set_key(0x0F), &sequence(20, anc_def, dur, 30));
+    klv(&mut md, set_key(0x11), &source_clip(30, anc_def, dur, umid(2), 2));
+    let mut fp = LocalSet::new(4);
+    fp.p(0x4401, &umid(2)).p(0x4403, &batch(&[&uuid(11)])).p(0x4701, &uuid(40));
+    klv(&mut md, set_key(0x37), &fp.0);
+    klv(&mut md, set_key(0x3B), &rated_track(11, 0x1701_0201, 21));
+    klv(&mut md, set_key(0x0F), &sequence(21, anc_def, dur, 31));
+    klv(&mut md, set_key(0x11), &source_clip(31, anc_def, dur, [0; 32], 0));
+    let mut desc = LocalSet::new(40);
+    desc.p(0x3001, &r).p(0x3002, &dur.to_be_bytes()).p(0x3004, &ANC_CONTAINER);
+    klv(&mut md, set_key(0x5C), &desc.0);
+    let mut ecd = LocalSet::new(5);
+    ecd.p(0x2701, &umid(2)).p(0x3F07, &1u32.to_be_bytes()).p(0x3F06, &0u32.to_be_bytes());
+    klv(&mut md, set_key(0x23), &ecd.0);
+
+    let mut f = partition_with(2, 0x04, 0, 0, md.len() as u64, &[ANC_CONTAINER]);
+    f.extend_from_slice(&md);
+    let at = f.len() as u64;
+    f.extend_from_slice(&partition_with(3, 0x04, at, 1, 0, &[ANC_CONTAINER]));
+    for v in frames {
+        klv(&mut f, ANC_KEY, v);
+    }
+    let at = f.len() as u64;
+    f.extend_from_slice(&partition_with(4, 0x04, at, 0, 0, &[ANC_CONTAINER]));
+    f
+}
+
 // ---------- ST 429-6 encrypted track files ----------
 
 const TRIPLET_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x04, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x02, 0x7E, 0x01, 0x00];

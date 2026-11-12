@@ -95,11 +95,12 @@ DCP_LANGUAGES = ("", "en-US", "en-GB", "hu-HU", "de-DE", "fr-FR", "es-ES", "it-I
 AUDIO_CODECS = (
     ("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")),
     ("ac3", N_("Dolby Digital (AC-3)")),  # MPEG-2 program and transport streams only
+    ("mp2", N_("MP2 (MPEG-1 Layer II)")),  # likewise
 )
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
 FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
-    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"))),
+    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"), ("d10", "D-10 (IMX)"), ("xdcamHd422", "XDCAM HD422 (RDD 9)"))),
     ("proresProfile", N_("Profile"), "export.video.proresProfile", (
         ("proxy", "Apple ProRes 422 Proxy"), ("lt", "Apple ProRes 422 LT"), ("standard", "Apple ProRes 422"),
         ("hq", "Apple ProRes 422 HQ"), ("4444", "Apple ProRes 4444"), ("4444xq", "Apple ProRes 4444 XQ"))),
@@ -116,7 +117,7 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
                    "cineformQuality": "filmscan1", "exrCompression": "none"}
 MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
-MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264"}
+MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
                       "cineformQuality": "cineform", "exrCompression": "exr"}
@@ -499,6 +500,9 @@ class ExportDialog(QDialog):
             self.format_choices[key] = c
         self.alpha = QCheckBox(tr("Include Alpha Channel"), self)
         self.alpha.setObjectName("export.video.alpha")
+        # egui's "DASH Manifest" row: an HLS export also writes a DASH manifest over the same segments
+        self.dash_manifest = QCheckBox(tr("Also write a DASH manifest (.mpd)"), self)
+        self.dash_manifest.setObjectName("export.video.dashManifest")
         self.quality = QSpinBox(self)
         self.quality.setObjectName("export.video.quality")
         self.quality.setRange(1, 100)
@@ -565,6 +569,7 @@ class ExportDialog(QDialog):
         mux.setObjectName("export.multiplexerSection")
         QFormLayout(mux.body).addRow(tr("Multiplexer"), self.multiplexer)
         fv.addRow(tr("Alpha"), self.alpha)
+        fv.addRow(tr("DASH Manifest"), self.dash_manifest)
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
@@ -768,7 +773,7 @@ class ExportDialog(QDialog):
         self.dcp_language.currentTextChanged.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
         for key, c in self.format_choices.items():
             c.currentIndexChanged.connect(lambda _i, k=key: (self._touch(k), self._sync_format_rows()))
@@ -952,11 +957,6 @@ class ExportDialog(QDialog):
         self.audio_bitrate.setEnabled(bool(fmt.get("audio", True)))
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate_box.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
-        mpeg2 = self.format.currentData() == "mpeg2"
-        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
-            w.setEnabled(mpeg2)
-        self.rows.allow_interlaced(mpeg2)  # only MPEG-2 export codes interlaced video (egui's Field Order)
-        self.video_form.setRowVisible(self.gop, mpeg2)  # H.264 / H.265 / AV1 have egui's own row
         self._sync_format_rows()
         video = bool(fmt.get("video", True))
         self.captions.setVisible(video)
@@ -991,10 +991,25 @@ class ExportDialog(QDialog):
         rows["mxfVideoCodec"] = fmt in MXF_FORMATS
         rows["alpha"] = supports_alpha(fmt, self._choice("proresProfile"), self._choice("cineformProfile"))
         rows["quality"] = enc in QUALITY_FORMATS
+        rows["dashManifest"] = fmt == "hls"
         return rows
 
+    def _sync_mpeg2_rows(self) -> None:
+        """MPEG-2 video settings: for MPEG-2 files and MPEG-2 in MXF (the container only for files;
+        D-10 / IMX fixes its own GOP, B pictures and chroma, XDCAM HD422 its 4:2:2 chroma)."""
+        fmt = str(self.format.currentData() or "")
+        mxf_codec = self._choice("mxfVideoCodec")
+        video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
+        self.container.setEnabled(fmt == "mpeg2")
+        self.rows.allow_interlaced(fmt == "mpeg2")  # only MPEG-2 export codes interlaced video (egui's Field Order)
+        for w in (self.gop, self.b_frames, self.quantizer):
+            w.setEnabled(video)
+        self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))
+        self.video_form.setRowVisible(self.gop, video)  # H.264 / H.265 / AV1 have egui's own row
+
     def _sync_format_rows(self) -> None:
-        widgets: dict[str, QWidget] = {**self.format_choices, "alpha": self.alpha, "quality": self.quality}
+        self._sync_mpeg2_rows()
+        widgets: dict[str, QWidget] = {**self.format_choices, "alpha": self.alpha, "quality": self.quality, "dashManifest": self.dash_manifest}
         for key, shown in self._format_rows().items():
             self.video_form.setRowVisible(widgets[key], shown)
 
@@ -1007,10 +1022,11 @@ class ExportDialog(QDialog):
                 c.blockSignals(True)
                 c.setCurrentIndex(i)
                 c.blockSignals(False)
-        if "alpha" not in self.touched and isinstance(settings.get("alpha"), bool):
-            self.alpha.blockSignals(True)
-            self.alpha.setChecked(settings["alpha"])
-            self.alpha.blockSignals(False)
+        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
+            if key not in self.touched and isinstance(settings.get(key), bool):
+                box.blockSignals(True)
+                box.setChecked(settings[key])
+                box.blockSignals(False)
         self.rows.show_settings(settings, self.touched)
         self._show_bitrate(settings)
         if "bitrateMode" not in self.touched and isinstance(settings.get("bitrateMode"), str):
@@ -1173,7 +1189,7 @@ class ExportDialog(QDialog):
             # the elementary stream has no audio
             has_audio = self.container.currentData() != "es"
             self.audio.setEnabled(has_audio)
-            # Automatic: LPCM in program streams, AAC in transport streams; or AC-3 in either
+            # Automatic: LPCM in program streams, AAC in transport streams; or AC-3 or MP2 in either
             self.audio_codec.setEnabled(has_audio)
         self._changed()  # the output path takes the new extension
 
@@ -1261,17 +1277,20 @@ class ExportDialog(QDialog):
                 p[key] = self._choice(key)
         if rows["alpha"] and "alpha" in self.touched:
             p["alpha"] = self.alpha.isChecked()
+        if rows["dashManifest"] and "dashManifest" in self.touched:
+            p["dashManifest"] = self.dash_manifest.isChecked()
         if rows["quality"] and "quality" in self.touched:
             p["quality"] = self.quality.value()
         if self.container.isEnabled():
             p["mpeg2Container"] = self.container.currentData()
+        if self.gop.isEnabled():
             if self.gop.value():
                 p["keyframeDistance"] = self.gop.value()
             if "bFrames" in self.touched:
                 p["mpeg2BFrames"] = self.b_frames.value()
             if "quantizer" in self.touched:
                 p["mpeg2Quantizer"] = self.quantizer.value()
-            if "chroma" in self.touched:
+            if "chroma" in self.touched and self.chroma.isEnabled():
                 p["mpeg2Chroma"] = self.chroma.currentData()
         if self.dcp_resolution.isEnabled():
             p["dcpResolution"] = self.dcp_resolution.currentData()

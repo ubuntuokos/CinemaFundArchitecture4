@@ -52,10 +52,13 @@ const LAYERS: &[(&str, u8)] = &[
     ("heif", 0),
     ("vp8", 0),
     ("adpcm", 0),
+    ("speex", 0),
+    ("amr", 0),
     ("hap", 0),
     ("utvideo", 0),
     ("huffyuv", 0),
     ("ffv1", 0),
+    ("dirac", 0),
     ("vp9", 0),
     ("prores", 0),
     ("mjpeg", 0),
@@ -68,6 +71,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("apv", 0),
     ("dng", 0),
     ("av1", 0),
+    ("av2", 0),
     ("aac", 0),
     ("flac", 0),
     ("opus", 0),
@@ -99,6 +103,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("playback", 3),
     ("export", 3),
     ("dcp-validate", 3),
+    ("dcp-inspect", 3),
     ("smart-edit", 3),
     ("format", 3),
     ("engine", 4),
@@ -116,6 +121,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 
 /// Allowed same-layer edges (from, to).
 const SAME_LAYER: &[(&str, &str)] = &[
+    ("dcp-inspect", "dcp-validate"),
     ("media", "frame"),
     ("project", "media"),
     ("project", "frame"),

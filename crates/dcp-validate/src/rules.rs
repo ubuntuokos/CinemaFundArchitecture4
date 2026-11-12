@@ -42,6 +42,9 @@ pub const NAME_ISDCF: &str = "DCP.NAME.001";
 pub const SIG_SIGNATURE: &str = "DCP.SIG.001";
 pub const SIG_CERTIFICATES: &str = "DCP.SIG.002";
 pub const MARK_MARKERS: &str = "DCP.MARK.001";
+/// A message of a reference engine (dcp_inspect) that no catalogue rule covers. It is in no
+/// profile; a backend that reports it as `Fail` fails the package.
+pub const REF_ENGINE: &str = "DCP.REF.001";
 
 pub const RULES: &[Rule] = &[
     r(AM_PRESENT, "The package has one readable asset map (ASSETMAP.xml or ASSETMAP)", "DCP-03"),
@@ -70,6 +73,7 @@ pub const RULES: &[Rule] = &[
     r(SIG_SIGNATURE, "Signatures of CPL and PKL verify", "DCP-10"),
     r(SIG_CERTIFICATES, "The signer certificate chain is valid", "DCP-10"),
     r(MARK_MARKERS, "Composition markers are present and in range", "DCP-05"),
+    r(REF_ENGINE, "Reference engine messages outside the catalogue rules", "DCP-04"),
 ];
 
 pub fn find(id: &str) -> Option<&'static Rule> {

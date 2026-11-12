@@ -452,6 +452,26 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (640, 360));
                 continue;
             }
+            "mxf-op1a" if settings["mxfVideoCodec"] == "d10" => {
+                // D-10 / IMX: the stored frame with its vertical interval lines, 4-channel AES3
+                assert_eq!(fmt_name, "mxf", "{name}");
+                let v = stream(&j, "video").unwrap();
+                let stored = if h == 576 { 608 } else { 512 };
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("mpeg2video"), Some(w), Some(stored)), "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("48000"), Some(4)), "{name}");
+                continue;
+            }
+            "mxf-op1a" if settings["mxfVideoCodec"] == "xdcamHd422" => {
+                // RDD 9: 4:2:2 MPEG-2, one mono AES3 track per channel
+                assert_eq!(fmt_name, "mxf", "{name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str(), v["width"].as_u64()), (Some("mpeg2video"), Some("yuv422p"), Some(w)), "{name}");
+                let audio: Vec<&serde_json::Value> = j["streams"].as_array().unwrap().iter().filter(|s| s["codec_type"] == "audio").collect();
+                assert_eq!(audio.len(), 4, "{name}");
+                assert!(audio.iter().all(|a| a["channels"].as_u64() == Some(1) && a["sample_rate"] == "48000"), "{name}");
+                continue;
+            }
             "mxf-opatom" => {
                 // Avid style: picture only in Demo.mxf, one mono PCM file per channel
                 assert_eq!(fmt_name, "mxf", "{name}");
@@ -554,6 +574,7 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 let codec = match settings["mxfVideoCodec"].as_str().unwrap() {
                     "proRes" => "prores",
                     "h264" => "h264",
+                    "mpeg2" => "mpeg2video",
                     _ => "dnxhd",
                 };
                 assert_eq!(v["codec_name"], codec, "{name}");

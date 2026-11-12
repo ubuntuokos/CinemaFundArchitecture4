@@ -283,6 +283,39 @@ Elkészült (2026-11-09, `cfa4/credits-c9`):
   `application/toml`), a `cfa4-qt` ugyanúgy működött. A referenciagépen (Kubuntu 26.04)
   asztali munkamenetben érdemes egyszer megismételni.
 
+### C11 – Animált vonalrajz-háttér, első lépcső (ebben a kiadásban) – **KÉSZ (2026-11-11)**
+
+A tulajdonos döntése (2026-11-11): a
+[`jdhruv14/line-art-animation`](https://github.com/jdhruv14/line-art-animation) (MIT,
+TypeScript/SVG, a videóhoz fej nélküli Chrome és ffmpeg) vonalrajzos animációi két lépcsőben
+kerülnek a stáblistába. Az első lépcső kódátvétel nélkül, külső eszközként használja: a projekt
+nem kerül a CFA4-be, a Chrome nem lesz függőség.
+
+- **Ismétlődő videóháttér:** az oldalstílus videó-hátterének új `loop` mezője (`true`): a
+  videó újraindul, amíg az oldal tart. Minden futás saját klip egymás után, képkockahatáron, a
+  háttérsávon (legfeljebb 1000); egyik sem hosszabb a videónál. A következő oldalba vezető átmenet
+  az utolsó futásból indul; frissítéskor minden futás cserélődik. Az import válasza a
+  `backgroundClips` listában adja őket (a `background` továbbra is az első).
+- **Munkamenet a dokumentációban** ([`docs/credits.md`](credits.md), „Animated line-art
+  backgrounds”): az animáció MP4-be renderelése a külső eszközzel, hurokhosszra vágva, majd
+  ismétlődő háttérként vagy videócímkeként a stáblistába.
+- **Qt6:** a háttér a lapok listájában „Ismétlődő videó: …”, minden nyelven.
+
+### C12 – Animált vonalrajz-réteg Rustban, második lépcső (a jövő évi kiadásban) – **TERVEZET**
+
+A tulajdonos döntése (2026-11-11): a vonalrajzos animáció saját grafikai elemmé válik a CFA4
+renderelőjében, Chrome nélkül, a stáblistában, a címekben és az élő grafikában is.
+
+- **Átvétel:** a projekt függőség nélküli mozgásmatematikája (lépésmegoldó, rugók és ingák, szél,
+  napszak szerinti színpaletta) Rustra átírva. Az MIT a `docs/licensing.md` §3 szerint
+  engedélyezett; az átvétel a reused-code registerbe kerül, a szerzői megjegyzéssel
+  (`AGENTS.md` §2).
+- **Elem:** új grafikus réteg (vonalrajzos figura vagy jelenet paraméterekkel), a grafikus klipek
+  közös renderelőjével; a stáblista oldalstílusa háttérként vagy rétegként használhatja.
+- **Vezérlés:** motorparancsok és Qt6-felület, mint minden grafikánál.
+- **Ütemezés:** a jövő évi kiadás; részletes terve indulás előtt készül, a tulajdonos
+  jóváhagyásával.
+
 ## 5. Sorrend és függőségek
 
 ```text
@@ -291,6 +324,7 @@ C1 kapcsolt stáblista ─┬─> C2 ellenőrzések ─> C3 zene
 C4 háttér / átmenet ───> C5 gazdagabb elrendezés
 Qt6 felület (F8, #48–#54) ─> C8 Qt6 munkaterület
 C8 ─> C9 csomagolás és együttélés ─> C10 élő grafika ─> CFA4-LIVE-STUDIO-001 (élő stúdió, műsorterv)
+C4 háttér ─> C11 ismétlődő videóháttér (vonalrajz, 1. lépcső) ─> C12 vonalrajz-réteg Rustban (jövő év)
 ```
 
 Sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7 → C8 → C9 → C10** (mind kész, 2026-11-09). Minden fázis a motorral együtt a Qt6-os
@@ -333,3 +367,6 @@ gépen (Kubuntu referenciagép) végigvitt munkamenet igazolja: táblázat → s
    a Qt6 megy előre, a lánc utólag igazodik.
 6. ~~Az OBS funkcióinak beépítése és a műsorterv?~~ **Eldöntve (2026-11-09):** külön terv,
    [CFA4-LIVE-STUDIO-001](plans/CFA4-LIVE-STUDIO-001.md) (jóváhagyva), külön munkamenetben.
+7. ~~A `line-art-animation` használata a stáblistában?~~ **Eldöntve (2026-11-11): két lépcsőben** –
+   ebben a kiadásban külső eszközként, ismétlődő videóháttérrel (C11), a jövő éviben saját
+   Rust-rétegként (C12).

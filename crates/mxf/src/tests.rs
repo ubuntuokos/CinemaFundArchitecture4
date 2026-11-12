@@ -500,3 +500,251 @@ fn hostile_timed_text_never_panics() {
         }
     }
 }
+
+/// A material sequence component of [`build_edit_list`]: a source clip into file package `pkg`
+/// (0 or 1) from `start` for `dur` edit units, or a filler.
+#[derive(Clone, Copy)]
+enum Comp {
+    Clip { pkg: u8, start: i64, dur: i64 },
+    Filler(i64),
+}
+
+/// An OP3a file: two file packages with the same track ids and numbers in their own essence
+/// containers (body SIDs 1 and 3, index SIDs 2 and 4), `n[p]` frame-wrapped content packages
+/// each (picture `pic(p, i)`; 16-bit stereo sound of 1920 frames, sample k of package p =
+/// p·10000 + k on the left, its negation on the right), and a material package whose picture and
+/// sound sequences are `comps`. Each package has a footer index with temporal offsets `to` and
+/// flags `flags`.
+fn build_edit_list(comps: &[Comp], n: [usize; 2], pic: impl Fn(u8, usize) -> Vec<u8>, to: &[i8], flags: &[u8]) -> Vec<u8> {
+    let op3a = ul(&[0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x03, 0x01, 0x09, 0x00]);
+    let clip = |uid: u8, def: [u8; 16], dur: i64, start: i64, pkg: [u8; 32], track: u32| {
+        let mut s = LocalSet::new(uid);
+        s.p(0x0201, &def).p(0x0202, &dur.to_be_bytes()).p(0x1201, &start.to_be_bytes()).p(0x1101, &pkg).p(0x1102, &track.to_be_bytes());
+        s.0
+    };
+    let mut md = Vec::new();
+    klv(&mut md, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x05, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x05, 0x01, 0x00]), &batch(&[]));
+    let mut pre = LocalSet::new(1);
+    pre.p(0x3B03, &uuid(2)).p(0x3B09, &op3a);
+    klv(&mut md, set_key(0x2F), &pre.0);
+    let mut cs = LocalSet::new(2);
+    cs.p(0x1901, &batch(&[&uuid(3), &uuid(4), &uuid(5)]));
+    klv(&mut md, set_key(0x18), &cs.0);
+    // material package: picture and sound sequences of the components
+    let mut mp = LocalSet::new(3);
+    mp.p(0x4401, &umid(1)).p(0x4402, &[0, b'E', 0, b'L']).p(0x4403, &batch(&[&uuid(10), &uuid(11)]));
+    klv(&mut md, set_key(0x36), &mp.0);
+    let total = comps.iter().fold(0i64, |a, c| match c {
+        Comp::Clip { dur, .. } | Comp::Filler(dur) => a.saturating_add(*dur),
+    });
+    for (k, (def, first_uid, track_id)) in [(PICTURE_DEF, 60u8, 2u32), (SOUND_DEF, 80, 3)].into_iter().enumerate() {
+        let k = k as u8;
+        klv(&mut md, set_key(0x3B), &track(10 + k, 1 + track_id - 1, 0, 20 + k));
+        let uids: Vec<[u8; 16]> = (0..comps.len()).map(|j| uuid(first_uid + j as u8)).collect();
+        let refs: Vec<&[u8]> = uids.iter().map(|u| &u[..]).collect();
+        let mut seq = LocalSet::new(20 + k);
+        seq.p(0x0201, &def).p(0x0202, &total.to_be_bytes()).p(0x1001, &batch(&refs));
+        klv(&mut md, set_key(0x0F), &seq.0);
+        for (j, c) in comps.iter().enumerate() {
+            let uid = first_uid + j as u8;
+            match *c {
+                Comp::Clip { pkg, start, dur } => klv(&mut md, set_key(0x11), &clip(uid, def, dur, start, umid(2 + pkg), track_id)),
+                Comp::Filler(dur) => {
+                    let mut f = LocalSet::new(uid);
+                    f.p(0x0201, &def).p(0x0202, &dur.to_be_bytes());
+                    klv(&mut md, set_key(0x09), &f.0);
+                }
+            }
+        }
+    }
+    // file packages
+    for p in 0..2u8 {
+        let d = n[p as usize] as i64;
+        let mut fp = LocalSet::new(4 + p);
+        fp.p(0x4401, &umid(2 + p)).p(0x4403, &batch(&[&uuid(13 + 2 * p), &uuid(14 + 2 * p)])).p(0x4701, &uuid(40 + 3 * p));
+        klv(&mut md, set_key(0x37), &fp.0);
+        klv(&mut md, set_key(0x3B), &track(13 + 2 * p, 2, 0x1501_0500, 23 + 2 * p));
+        klv(&mut md, set_key(0x0F), &sequence(23 + 2 * p, PICTURE_DEF, d, 33 + 2 * p));
+        klv(&mut md, set_key(0x11), &source_clip(33 + 2 * p, PICTURE_DEF, d, [0; 32], 0));
+        klv(&mut md, set_key(0x3B), &track(14 + 2 * p, 3, 0x1601_0300, 24 + 2 * p));
+        klv(&mut md, set_key(0x0F), &sequence(24 + 2 * p, SOUND_DEF, d, 34 + 2 * p));
+        klv(&mut md, set_key(0x11), &source_clip(34 + 2 * p, SOUND_DEF, d, [0; 32], 0));
+        let mut mdesc = LocalSet::new(40 + 3 * p);
+        mdesc.p(0x3001, &[0, 0, 0, 25, 0, 0, 0, 1]).p(0x3F01, &batch(&[&uuid(41 + 3 * p), &uuid(42 + 3 * p)]));
+        klv(&mut md, set_key(0x44), &mdesc.0);
+        let mut cdci = LocalSet::new(41 + 3 * p);
+        cdci.p(0x3006, &2u32.to_be_bytes())
+            .p(0x3203, &64u32.to_be_bytes())
+            .p(0x3202, &32u32.to_be_bytes())
+            .p(0x320E, &[0, 0, 0, 2, 0, 0, 0, 1])
+            .p(0x3301, &8u32.to_be_bytes())
+            .p(0x3201, &ul(&[0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0A, 0x04, 0x01, 0x02, 0x02, 0x03, 0x06, 0x03, 0x00]));
+        klv(&mut md, set_key(0x28), &cdci.0);
+        let mut wave = LocalSet::new(42 + 3 * p);
+        wave.p(0x3006, &3u32.to_be_bytes())
+            .p(0x3D03, &[0, 0, 0xBB, 0x80, 0, 0, 0, 1])
+            .p(0x3D07, &2u32.to_be_bytes())
+            .p(0x3D01, &16u32.to_be_bytes())
+            .p(0x3D0A, &4u16.to_be_bytes());
+        klv(&mut md, set_key(0x48), &wave.0);
+        let mut ecd = LocalSet::new(6 + p);
+        ecd.p(0x2701, &umid(2 + p)).p(0x3F07, &(1 + 2 * p as u32).to_be_bytes()).p(0x3F06, &(2 + 2 * p as u32).to_be_bytes());
+        klv(&mut md, set_key(0x23), &ecd.0);
+    }
+    let mut f = partition(2, 0, 0, 0, md.len() as u64);
+    f.extend_from_slice(&md);
+    let mut all_offsets = Vec::new();
+    for p in 0..2u8 {
+        let body_at = f.len() as u64;
+        f.extend_from_slice(&partition(3, body_at, 1 + 2 * p as u32, 0, 0));
+        let base = f.len() as u64;
+        let mut offsets = Vec::new();
+        for i in 0..n[p as usize] {
+            offsets.push(f.len() as u64 - base);
+            klv(&mut f, PIC_KEY, &pic(p, i));
+            let mut snd = Vec::new();
+            for k in 0..1920 {
+                let s = (p as usize * 10000 + i * 1920 + k) as i16;
+                snd.extend_from_slice(&s.to_le_bytes());
+                snd.extend_from_slice(&(-s).to_le_bytes());
+            }
+            klv(&mut f, SND_KEY, &snd);
+        }
+        all_offsets.push(offsets);
+    }
+    let footer_at = f.len() as u64;
+    f.extend_from_slice(&partition(4, footer_at, 0, 2, 0));
+    for (p, offsets) in all_offsets.iter().enumerate() {
+        let mut ix = LocalSet::new(8 + p as u8);
+        let entries: Vec<Vec<u8>> = offsets
+            .iter()
+            .enumerate()
+            .map(|(i, o)| {
+                let mut e = vec![to.get(i).copied().unwrap_or(0) as u8, 0, flags.get(i).copied().unwrap_or(0)];
+                e.extend_from_slice(&o.to_be_bytes());
+                e
+            })
+            .collect();
+        let refs: Vec<&[u8]> = entries.iter().map(Vec::as_slice).collect();
+        ix.p(0x3F0B, &[0, 0, 0, 25, 0, 0, 0, 1])
+            .p(0x3F0C, &0i64.to_be_bytes())
+            .p(0x3F0D, &(offsets.len() as i64).to_be_bytes())
+            .p(0x3F06, &(2 + 2 * p as u32).to_be_bytes())
+            .p(0x3F07, &(1 + 2 * p as u32).to_be_bytes())
+            .p(0x3F0A, &batch(&refs));
+        klv(&mut f, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x10, 0x01, 0x00]), &ix.0);
+    }
+    f
+}
+
+fn tagged(p: u8, i: usize) -> Vec<u8> {
+    let mut v = prores_like(i);
+    v.push(p);
+    v
+}
+
+#[test]
+fn op3a_edit_list_plays_the_clips_back_to_back() {
+    let comps = [Comp::Clip { pkg: 0, start: 2, dur: 3 }, Comp::Clip { pkg: 1, start: 0, dur: 2 }, Comp::Clip { pkg: 0, start: 0, dur: 1 }];
+    let f = build_edit_list(&comps, [5, 4], tagged, &[], &[]);
+    let m = open(&f).unwrap();
+    assert_eq!(m.operational_pattern.name(), "OP3a");
+    assert_eq!(m.tracks.len(), 2, "{:?}", m.warnings);
+    let v = m.track_of_kind(TrackKind::Picture).unwrap();
+    let t = &m.tracks[v];
+    assert_eq!((t.duration, t.first_edit_unit()), (Some(6), 0));
+    assert_eq!(t.display_order, (0..6).collect::<Vec<_>>());
+    // A2 A3 A4 B0 B1 A0
+    let want = [(0, 2), (0, 3), (0, 4), (1, 0), (1, 1), (0, 0)];
+    for (d, (p, i)) in want.into_iter().enumerate() {
+        assert_eq!(m.read_sample(&f, v, t.sample_at(d as i64).unwrap()).unwrap(), tagged(p, i), "display {d}");
+    }
+    // sound follows the same edit list, 1920 frames per edit unit
+    let a = m.track_of_kind(TrackKind::Sound).unwrap();
+    let s = &m.tracks[a];
+    assert_eq!((s.duration, s.stored_sample_frames()), (Some(6), 6 * 1920));
+    let left = |at: u64| m.read_pcm(&f, a, at, 1).unwrap()[0][0];
+    let value = |p: usize, k: usize| (p * 10000 + k) as f32 / 32768.0;
+    assert_eq!(left(0), value(0, 2 * 1920));
+    assert_eq!(left(3 * 1920 - 1), value(0, 5 * 1920 - 1));
+    assert_eq!(left(3 * 1920), value(1, 0));
+    assert_eq!(left(5 * 1920 - 1), value(1, 2 * 1920 - 1));
+    assert_eq!(left(5 * 1920), value(0, 0));
+    // a read across a clip boundary
+    let pcm = m.read_pcm(&f, a, 3 * 1920 - 2, 4).unwrap();
+    assert_eq!(pcm[1], vec![-value(0, 5 * 1920 - 2), -value(0, 5 * 1920 - 1), -value(1, 0), -value(1, 1)]);
+}
+
+#[test]
+fn fillers_in_an_edit_list_are_left_out_with_a_warning() {
+    let comps = [Comp::Clip { pkg: 1, start: 1, dur: 2 }, Comp::Filler(3), Comp::Clip { pkg: 0, start: 0, dur: 2 }];
+    let f = build_edit_list(&comps, [2, 4], tagged, &[], &[]);
+    let m = open(&f).unwrap();
+    let v = m.track_of_kind(TrackKind::Picture).unwrap();
+    assert_eq!(m.tracks[v].duration, Some(4));
+    assert_eq!(m.read_sample(&f, v, m.tracks[v].sample_at(2).unwrap()).unwrap(), tagged(0, 0));
+    assert!(m.warnings.iter().any(|w| w.contains("3 edit units of filler")), "{:?}", m.warnings);
+}
+
+#[test]
+fn long_gop_clips_keep_their_decoding_references_hidden() {
+    // stored I0 P3 B1 B2 P6 B4 B5 in each package; package A from display 4 needs its GOP from
+    // I0 (stored 0..=6 covers display 4 and 5): the pictures before it decode but never show
+    let (to, flags) = ipbb();
+    let avc = |p: u8, i: usize| vec![0, 0, 0, 1, 9, 0x10, p, i as u8];
+    let comps = [Comp::Clip { pkg: 0, start: 4, dur: 2 }, Comp::Clip { pkg: 1, start: 0, dur: 3 }];
+    let f = build_edit_list(&comps, [7, 7], avc, &to, &flags);
+    let mut f2 = f.clone();
+    let lbl = [0x04, 0x01, 0x02, 0x02, 0x03, 0x06, 0x03, 0x00];
+    while let Some(at) = f2.windows(8).position(|w| w == lbl) {
+        f2[at..at + 8].copy_from_slice(&[0x04, 0x01, 0x02, 0x02, 0x01, 0x31, 0x40, 0x01]);
+    }
+    let m = open(&f2).unwrap();
+    let v = m.track_of_kind(TrackKind::Picture).unwrap();
+    let t = &m.tracks[v];
+    assert_eq!(t.codec, Codec::Avc { intra: false });
+    assert_eq!(t.duration, Some(5));
+    assert_eq!(t.display_order.len(), 5);
+    // displays 4 and 5 of A are stored at 5 and 6; B's displays 0..3 at stored 0, 2, 3 (from I0 to P3)
+    let shown: Vec<Vec<u8>> = (0..5).map(|d| m.read_sample(&f2, v, t.sample_at(d).unwrap()).unwrap()).collect();
+    let want = [(0, 5), (0, 6), (1, 0), (1, 2), (1, 3)];
+    for (d, (p, i)) in want.into_iter().enumerate() {
+        assert_eq!(shown[d], avc(p, i), "display {d}");
+    }
+    // every presented picture's random-access point is a stored key picture of its own clip
+    for d in 0..5 {
+        let s = t.sample_at(d).unwrap();
+        assert_eq!(t.samples[s].pts, d);
+        let k = t.sync_before(s);
+        assert!(t.samples[k].key);
+        assert_eq!(m.read_sample(&f2, v, k).unwrap()[6], want[d as usize].0);
+    }
+    // the hidden references have pts no presented picture uses
+    let hidden = t.samples.iter().filter(|s| !(0..5).contains(&s.pts)).count();
+    assert_eq!(hidden, t.samples.len() - 5);
+    let mut all: Vec<i64> = t.samples.iter().map(|s| s.pts).collect();
+    all.sort_unstable();
+    all.dedup();
+    assert_eq!(all.len(), t.samples.len());
+}
+
+#[test]
+fn hostile_edit_lists_never_panic() {
+    for comps in [
+        vec![Comp::Clip { pkg: 0, start: i64::MAX, dur: 3 }, Comp::Clip { pkg: 1, start: 0, dur: i64::MAX }],
+        vec![Comp::Clip { pkg: 0, start: -5, dur: -1 }, Comp::Clip { pkg: 1, start: 9, dur: 2 }],
+        vec![Comp::Filler(i64::MAX), Comp::Clip { pkg: 1, start: 0, dur: 1 }],
+    ] {
+        let f = build_edit_list(&comps, [3, 2], tagged, &[], &[]);
+        if let Ok(m) = open(&f) {
+            for (i, t) in m.tracks.iter().enumerate() {
+                for d in 0..t.display_order.len() as i64 {
+                    let _ = t.sample_at(d).map(|s| m.read_sample(&f, i, s));
+                }
+                if t.kind == TrackKind::Sound {
+                    let _ = m.read_pcm(&f, i, 0, 64);
+                }
+            }
+        }
+    }
+}

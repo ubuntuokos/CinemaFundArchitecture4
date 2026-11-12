@@ -515,8 +515,8 @@ fn place_pages(
     let mut placed = Vec::new();
     let mut items: Vec<(std::path::PathBuf, ItemId)> = Vec::new();
     let mut group = 0u64;
-    // (page clip, background clip, transition into the next page)
-    let mut cuts: Vec<(ClipId, Option<ClipId>, Option<(String, Tick)>)> = Vec::new();
+    // (page clip, background clips (first, last), transition into the next page)
+    let mut cuts: Vec<(ClipId, Option<(ClipId, ClipId)>, Option<(String, Tick)>)> = Vec::new();
     // every page on one track (so transitions can join them), backgrounds on the one below:
     // the asked track, or the first above everything the credits cover
     let any_bg = laid.pages.iter().any(|p| p.background.is_some());
@@ -534,10 +534,12 @@ fn place_pages(
     let text_track = lowest + u64::from(any_bg);
     ensure_video_tracks(s, label, text_track as usize + 1)?;
     for (index, pg) in laid.pages.into_iter().enumerate() {
-        let bg = match &pg.background {
+        // a looped video background is several clips one after another
+        let bg_clips = match &pg.background {
             Some(b) => place_background(s, &base, &mut items, b, &pg, t, Some(lowest), (frame_w, frame_h))?,
-            None => None,
+            None => Vec::new(),
         };
+        let bg = bg_clips.first().copied();
         let want = Some(text_track);
         let mut pp = json!({"time": t.0});
         if let Some(tr) = want {
@@ -578,9 +580,7 @@ fn place_pages(
         }
         // the background is replaced with the page on a refresh
         let mut owned = pics.clone();
-        if let Some(b) = bg {
-            owned.push(b.0);
-        }
+        owned.extend(bg_clips.iter().map(|b| b.0));
         let mut meta = pg.meta.clone();
         meta.credits = Some(Box::new(CreditsLink { group, page: index as u32, doc: doc_text.clone(), pictures: owned, layers: stamps }));
         s.edit_sequence(label, move |q, _, _| {
@@ -596,9 +596,10 @@ fn place_pages(
             "behaviour": behaviour_name(pg.behaviour),
             "pictures": pics,
             "background": bg.map(|b| b.0),
+            "backgroundClips": bg_clips.iter().map(|b| b.0).collect::<Vec<_>>(),
             "keptEdits": kept,
         }));
-        cuts.push((clip, bg, pg.transition.clone()));
+        cuts.push((clip, bg.zip(bg_clips.last().copied()), pg.transition.clone()));
         t = rate.snap(Tick(t.0.saturating_add(dur.0).saturating_add(pg.gap_after.0).max(0)));
     }
     let mut applied = vec![false; placed.len()];
@@ -606,8 +607,9 @@ fn place_pages(
         let (Some(a), Some(b)) = (w.first(), w.get(1)) else { continue };
         let Some((id, d)) = &a.2 else { continue };
         let done = add_cut_transition(s, label, a.0, b.0, id, *d)?;
-        // the backgrounds follow the pages when both have one
-        if let (Some(x), Some(y)) = (a.1, b.1) {
+        // the backgrounds follow the pages when both have one (from the last clip of a looped
+        // video into the first of the next)
+        if let (Some((_, x)), Some((y, _))) = (a.1, b.1) {
             add_cut_transition(s, label, x, y, id, *d)?;
         }
         if let Some(f) = applied.get_mut(i) {
@@ -671,7 +673,9 @@ fn add_cut_transition(s: &mut Session, label: &str, from: ClipId, to: ClipId, id
 
 /// Place a page's background as its own clip at `t`, below the page: a colour or gradient is a
 /// full-frame shape in a graphic clip; a picture or video fills or fits the frame. Opacity and
-/// blur are the clip's own effects, so they stay editable.
+/// blur are the clip's own effects, so they stay editable. A looped video shorter than the page
+/// is several clips of it one after another; the clips are returned in order (none: no
+/// background).
 #[allow(clippy::too_many_arguments)]
 fn place_background(
     s: &mut Session,
@@ -682,8 +686,10 @@ fn place_background(
     t: Tick,
     track: Option<u64>,
     (fw, fh): (f64, f64),
-) -> Result<Option<ClipId>> {
+) -> Result<Vec<ClipId>> {
     use cfa4_credits::{BackgroundFit, BackgroundKind as K};
+    // a looped video stops repeating after this many clips (a 2 s loop covers over 30 minutes)
+    const MAX_REPEATS: u64 = 1000;
     const CMD: &str = "graphics.credits.import";
     const LABEL: &str = "Import Credits";
     let dur = pg.duration;
@@ -692,76 +698,115 @@ fn place_background(
         pp["track"] = json!(tr);
     }
     let s1 = fh / 1080.0;
-    let clip = match bg.kind {
-        K::None => return Ok(None),
+    let clips = match bg.kind {
+        K::None => return Ok(Vec::new()),
         K::Color | K::Gradient => {
             let layer = background_layer(bg, (fw, fh));
             let source =
                 move |pr: &mut cfa4_project::Project, (w, h, rate): (u32, u32, cfa4_time::FrameRate)| (crate::graphics::graphic_source(pr, w, h, rate), dur);
             let name = format!("{} – background", pg.name);
-            match place_video_clip(s, CMD, &name, &pp, LABEL, vec![layer.clone()], source) {
+            vec![match place_video_clip(s, CMD, &name, &pp, LABEL, vec![layer.clone()], source) {
                 Ok(c) => c,
                 Err(_) if track.is_some() => place_video_clip(s, CMD, &name, &json!({"time": t.0}), LABEL, vec![layer], source)?,
                 Err(e) => return Err(e),
-            }
+            }]
         }
         K::Image | K::Video => {
-            let Some(path) = picture_path(base.as_deref(), &bg.file) else { return Ok(None) };
+            let Some(path) = picture_path(base.as_deref(), &bg.file) else { return Ok(Vec::new()) };
             let item = match items.iter().find(|(p, _)| *p == path) {
                 Some((_, i)) => *i,
                 None => {
                     let r = s.execute("file.import", json!({"paths": [path.to_string_lossy()]}))?;
-                    let Some(i) = r["items"].as_array().and_then(|a| a.first()).and_then(Value::as_u64).map(ItemId) else { return Ok(None) };
+                    let Some(i) = r["items"].as_array().and_then(|a| a.first()).and_then(Value::as_u64).map(ItemId) else { return Ok(Vec::new()) };
                     items.push((path.clone(), i));
                     i
                 }
             };
-            // a video shorter than the page ends early (nothing is looped)
+            // a video shorter than the page ends early, unless it loops: then it starts again
+            // from the beginning (each run its own clip, on frame boundaries) until the page ends
             let media = s.project.item(item).map(|x| x.duration()).filter(|d| d.0 > 0 && bg.kind == K::Video);
-            let d = media.map_or(dur, |m| m.min(dur));
+            let rate = s.sequence_rate();
+            let mut runs: Vec<(Tick, Tick)> = Vec::new();
+            match media {
+                Some(m) if bg.repeat && m < dur => {
+                    let end = t.0.saturating_add(dur.0);
+                    let mut at = t;
+                    while at.0 < end && (runs.len() as u64) < MAX_REPEATS {
+                        let next = Tick(at.0.saturating_add(m.0).min(end));
+                        let next = rate.snap(next).min(Tick(end));
+                        if next <= at {
+                            break;
+                        }
+                        runs.push((at, Tick(next.0 - at.0)));
+                        at = next;
+                    }
+                }
+                _ => {}
+            }
+            // not looped, or a video shorter than a frame: one clip, ending early when short
+            if runs.is_empty() {
+                runs.push((t, media.map_or(dur, |m| m.min(dur))));
+            }
             let name = std::path::Path::new(&bg.file).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| bg.file.clone());
-            let c = match place_video_clip(s, CMD, &name, &pp, LABEL, Vec::new(), move |_, _| (item, d)) {
-                Ok(c) => c,
-                Err(_) if track.is_some() => place_video_clip(s, CMD, &name, &json!({"time": t.0}), LABEL, Vec::new(), move |_, _| (item, d))?,
-                Err(e) => return Err(e),
-            };
             let (sw, sh) = s.project.source_size(item).map(|(w, h)| (f64::from(w), f64::from(h))).filter(|(w, h)| *w > 0.0 && *h > 0.0).unwrap_or((fw, fh));
             let k = match bg.fit {
                 BackgroundFit::Fill => (fw / sw).max(fh / sh),
                 BackgroundFit::Fit => (fw / sw).min(fh / sh),
             };
             let scale = (k * 100.0).clamp(0.0, 10_000.0);
-            s.edit_sequence(LABEL, move |q, _, _| {
-                let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
-                if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
-                    m.params.insert("position".into(), Param::new(ParamValue::Vec2(Vec2::new(fw / 2.0, fh / 2.0))));
-                    m.params.insert("scale".into(), Param::new(ParamValue::Float(scale)));
+            let mut placed = Vec::with_capacity(runs.len());
+            for (at, d) in runs {
+                let mut pp = json!({"time": at.0});
+                // the later runs go on the track of the first, right after it
+                match (placed.first(), track) {
+                    (Some(first), _) => {
+                        if let Some(tr) = s.active_sequence().and_then(|q| q.video_tracks.iter().position(|tr| tr.items.iter().any(|i| i.id == *first))) {
+                            pp["track"] = json!(tr as u64);
+                        }
+                    }
+                    (None, Some(tr)) => pp["track"] = json!(tr),
+                    (None, None) => {}
                 }
-                Ok(())
-            })?;
-            c
+                let c = match place_video_clip(s, CMD, &name, &pp, LABEL, Vec::new(), move |_, _| (item, d)) {
+                    Ok(c) => c,
+                    Err(_) if pp.get("track").is_some() => place_video_clip(s, CMD, &name, &json!({"time": at.0}), LABEL, Vec::new(), move |_, _| (item, d))?,
+                    Err(e) => return Err(e),
+                };
+                s.edit_sequence(LABEL, move |q, _, _| {
+                    let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
+                    if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
+                        m.params.insert("position".into(), Param::new(ParamValue::Vec2(Vec2::new(fw / 2.0, fh / 2.0))));
+                        m.params.insert("scale".into(), Param::new(ParamValue::Float(scale)));
+                    }
+                    Ok(())
+                })?;
+                placed.push(c);
+            }
+            placed
         }
     };
     let opacity = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0);
     let blur = (if bg.blur.is_finite() { bg.blur } else { 0.0 }).clamp(0.0, 1_000.0) * s1;
-    s.edit_sequence(LABEL, move |q, _, _| {
-        let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
-        if opacity < 100.0
-            && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
-        {
-            o.params.insert("opacity".into(), Param::new(ParamValue::Float(opacity)));
-        }
-        if blur > 0.0
-            && let Some(def) = cfa4_project::find_effect("gaussian_blur")
-        {
-            let mut e = def.instance();
-            e.params.insert("blurriness".into(), Param::new(ParamValue::Float(blur.min(3_000.0))));
-            e.params.insert("repeat_edge".into(), Param::new(ParamValue::Bool(true)));
-            it.effects.push(e);
-        }
-        Ok(())
-    })?;
-    Ok(Some(clip))
+    for &clip in &clips {
+        s.edit_sequence(LABEL, move |q, _, _| {
+            let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
+            if opacity < 100.0
+                && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
+            {
+                o.params.insert("opacity".into(), Param::new(ParamValue::Float(opacity)));
+            }
+            if blur > 0.0
+                && let Some(def) = cfa4_project::find_effect("gaussian_blur")
+            {
+                let mut e = def.instance();
+                e.params.insert("blurriness".into(), Param::new(ParamValue::Float(blur.min(3_000.0))));
+                e.params.insert("repeat_edge".into(), Param::new(ParamValue::Bool(true)));
+                it.effects.push(e);
+            }
+            Ok(())
+        })?;
+    }
+    Ok(clips)
 }
 
 /// A full-frame shape layer with a background's colour or gradient.

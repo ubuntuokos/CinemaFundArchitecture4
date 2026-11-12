@@ -1017,6 +1017,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-amr"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-apv"
 version = "0.10.0"
 dependencies = [
@@ -1065,6 +1073,15 @@ dependencies = [
  "cfa4-testkit",
  "rayon",
  "rustix 1.1.6",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-av2"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 
@@ -1149,6 +1166,7 @@ dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
  "cfa4-adpcm",
+ "cfa4-amr",
  "cfa4-apv",
  "cfa4-auro",
  "cfa4-av1",
@@ -1156,6 +1174,7 @@ dependencies = [
  "cfa4-bitstream",
  "cfa4-cineform",
  "cfa4-color",
+ "cfa4-dirac",
  "cfa4-dnx",
  "cfa4-dts",
  "cfa4-dv",
@@ -1178,6 +1197,7 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-opus",
  "cfa4-prores",
+ "cfa4-speex",
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-truehd",
@@ -1230,6 +1250,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-dcp-inspect"
+version = "0.10.0"
+dependencies = [
+ "cfa4-dcp",
+ "cfa4-dcp-validate",
+ "cfa4-export",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-time",
+ "rustix 1.1.6",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-dcp-validate"
 version = "0.10.0"
 dependencies = [
@@ -1242,6 +1278,13 @@ dependencies = [
  "chrono",
  "serde",
  "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-dirac"
+version = "0.10.0"
+dependencies = [
  "thiserror 2.0.21",
 ]
 
@@ -1373,6 +1416,7 @@ dependencies = [
  "cfa4-j2k",
  "cfa4-matroska",
  "cfa4-media",
+ "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
  "cfa4-mxf",
@@ -1871,6 +1915,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-speex"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-tcsync"
 version = "0.10.0"
 dependencies = [
@@ -1883,6 +1935,9 @@ version = "0.10.0"
 dependencies = [
  "chrono",
  "png",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
  "tempfile",
 ]
 

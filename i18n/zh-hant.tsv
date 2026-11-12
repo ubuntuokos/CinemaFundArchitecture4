@@ -279,6 +279,7 @@
 	Output file	輸出檔案
 	Overwrite	覆蓋
 	PCM (uncompressed)	PCM（未壓縮）
+	MP2 (MPEG-1 Layer II)	MP2（MPEG-1 第二層）
 	Panner	聲像器
 	Paste Attributes…	貼上屬性…
 	Paste Insert	貼上插入
@@ -3222,8 +3223,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a，DNxHR HQ（8 位 4:2:2），24 位 48 kHz PCM，起始時間碼
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a，MPEG-2 4:2:2 Profile 長 GOP（12 幀，IBBP），50 Mbit/s，XDCAM HD422 風格，24 位元 48 kHz PCM；HD 畫面尺寸
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a，H.264 High long GOP（每像素 0.3 位），24 位 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 類型（IMX 50）：僅畫面內 MPEG-2 4:2:2P@ML，50 Mbit/s，720x486，29.97 fps（4:3），四個 24 位元 48 kHz 音訊聲道
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 類型（IMX 50）：僅畫面內 MPEG-2 4:2:2P@ML，50 Mbit/s，720x576，25 fps（4:3），四個 24 位元 48 kHz 音訊聲道
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a，ProRes 422 HQ，24 位 48 kHz PCM，起始時間碼
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 配置的 MXF OP1a：MPEG-2 4:2:2 Profile 長 GOP（12 幀，IBBP），50 Mbit/s，1920x1080 或 1280x720 循序，四個 24 位元 48 kHz 聲道，每聲道一個 AES3 元素
 	Main	主要
 	Mark In (Hover Scrub)	標記入點（懸停擦除）
 	Mark Out (Hover Scrub)	標記出點（懸停擦除）
@@ -4313,6 +4322,7 @@ export.summary	Low	低
 	Crawl	跑馬燈
 	Picture: {file}	圖片：{file}
 	Video: {file}	影片：{file}
+	Looped video: {file}	循環影片：{file}
 	Into the next	轉入下一頁
 	Safe areas and spines	安全區與軸線
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	動作安全區（93 %）、字幕安全區（90 %）、中心與頁面軸線

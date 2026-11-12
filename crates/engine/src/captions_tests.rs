@@ -272,3 +272,49 @@ fn dcp_timed_text_mxf_and_dcst_xml_import_as_caption_tracks() {
     assert!(s.execute("file.import", json!({"paths": [broken.to_string_lossy()]})).is_err());
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// #929: closed captions in an MXF file's ANC data (ST 436-1 elements carrying ST 334-2 CDPs)
+/// import as a caption track with the same cues as the MCC file of those CDPs.
+#[test]
+fn mxf_anc_closed_captions_import_as_a_caption_track() {
+    let doc = cfa4_captions::Document {
+        cues: vec![
+            cfa4_captions::Cue { start: Tick(TICKS_PER_SECOND), end: Tick(3 * TICKS_PER_SECOND), text: "Hello ANC".into(), ..Default::default() },
+            cfa4_captions::Cue { start: Tick(4 * TICKS_PER_SECOND), end: Tick(6 * TICKS_PER_SECOND), text: "Second line".into(), ..Default::default() },
+        ],
+        ..Default::default()
+    };
+    let mcc = cfa4_captions::mcc::write_with(&doc, false, true, true);
+    let expected = cfa4_captions::mcc::parse(&mcc).unwrap();
+    // the MCC file's CDPs, frame by frame (non-drop 30 fps labels on the 29.97 grid)
+    let mut frames: Vec<Vec<u8>> = Vec::new();
+    for l in mcc.lines().filter(|l| !l.starts_with("//") && !l.contains('=')) {
+        let Some((tc, data)) = l.split_once('\t') else { continue };
+        let p: Vec<usize> = tc.split([':', ';']).map(|x| x.parse().unwrap()).collect();
+        let frame = ((p[0] * 60 + p[1]) * 60 + p[2]) * 30 + p[3];
+        frames.resize(frame + 1, cfa4_mxf::testing::anc_element(&[], false));
+        frames[frame] = cfa4_mxf::testing::anc_element(&[cfa4_captions::mcc::expand(data).unwrap()], false);
+    }
+    assert!(frames.len() > 150, "{} frames", frames.len());
+    let dir = std::env::temp_dir().join(format!("fc-anc-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let mxf = dir.join("xdcam_cc.mxf");
+    std::fs::write(&mxf, cfa4_mxf::testing::build_anc((30000, 1001), &frames)).unwrap();
+    let mut s = demo();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]}));
+    let r = match r {
+        Ok(r) => r,
+        Err(e) => panic!("{e}"),
+    };
+    assert_eq!(r["documents"][0]["format"], "MXF ANC captions", "{r}");
+    assert_eq!(r["documents"][0]["captions"], 2, "{r}");
+    let q = s.active_sequence().unwrap();
+    let tr = &q.caption_tracks[0];
+    assert_eq!(tr.name, "xdcam_cc (CC)");
+    assert_eq!(tr.captions.len(), expected.cues.len());
+    for (c, e) in tr.captions.iter().zip(&expected.cues) {
+        assert_eq!(c.text, e.text);
+        assert_eq!(c.start, q.settings.frame_rate.snap_nearest(e.start));
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}

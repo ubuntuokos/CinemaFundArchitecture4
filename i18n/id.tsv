@@ -3130,8 +3130,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bit 4:2:2), PCM 24-bit 48 kHz, kode waktu awal
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile GOP panjang (12 gambar, IBBP) pada 50 Mbit/s bergaya XDCAM HD422, PCM 24-bit 48 kHz; ukuran bingkai HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0,3 bit per piksel), PCM 24-bit 48 kHz
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipe D-10 (IMX 50): MPEG-2 4:2:2P@ML hanya intra pada 50 Mbit/s, 720x486 pada 29,97 fps (4:3), empat kanal audio 24-bit 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tipe D-10 (IMX 50): MPEG-2 4:2:2P@ML hanya intra pada 50 Mbit/s, 720x576 pada 25 fps (4:3), empat kanal audio 24-bit 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24-bit 48 kHz, kode waktu awal
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a dalam tata letak SMPTE RDD 9: MPEG-2 4:2:2 Profile GOP panjang (12 gambar, IBBP) pada 50 Mbit/s, 1920x1080 atau 1280x720 progresif, empat kanal 24-bit 48 kHz sebagai elemen AES3 per kanal
 	Main	Main
 	Mark In (Hover Scrub)	Tandai Masuk (Scrub saat Melayang)
 	Mark Out (Hover Scrub)	Tandai Keluar (Scrub saat Melayang)
@@ -3796,6 +3804,7 @@
 	Output file	Berkas keluaran
 	Output folder	Folder keluaran
 	PCM (uncompressed)	PCM (tanpa kompresi)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	Pace	Tempo
 	Path:	Jalur:
 	Program Stream (.mpg, LPCM audio)	Aliran program (.mpg, audio LPCM)
@@ -4328,6 +4337,7 @@
 	Safe areas and spines	Area aman dan garis pemandu
 	The text moves {speed} px per frame; a whole number does not shimmer	Teks bergerak {speed} px per bingkai; bilangan bulat tidak berkedip
 	Video: {file}	Video: {file}
+	Looped video: {file}	Video berulang: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” tidak menonjol dari latar (kontras {ratio}:1; minimal 4,5:1 diperlukan)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Tampilan siap pakai: gaya, latar, transisi, dan waktu. File gaya, jika ada, diutamakan.
 	Apply Credits Template…	Terapkan Templat Kredit…

@@ -26,7 +26,7 @@ Design principles:
  L5  ui-egui · automation · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
-     DCP validation: dcp-validate
+     DCP validation: dcp-validate · dcp-inspect
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
  L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
@@ -57,6 +57,7 @@ and `cfa4-cli`.
 | `prores` | L0 | ProRes decoder and encoder |
 | `dnx` | L0 | DNxHD / DNxHR (SMPTE ST 2019-1 VC-3) decoder and DNxHR encoder |
 | `hap` | L0 | Hap video decoder: `Hap1`, `Hap5`, `HapY`, `HapM`, `HapA`; Snappy, chunks, DXT1 / DXT5 / RGTC1 / scaled YCoCg textures to RGBA ([README](../crates/hap/README.md)) |
+| `dirac` | L0 | SMPTE VC-2 (ST 2042-1) decoder, the intra subset of Dirac: low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding ([README](../crates/dirac/README.md)) |
 | `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
 | `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
 | `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
@@ -72,7 +73,9 @@ and `cfa4-cli`.
 | `dts` | L0 | DTS core, DTS-HD MA / HRA decoder, FFmpeg-derived, LGPL-2.1-or-later ([README](../crates/dts/README.md)) |
 | `iab` | L0 | Immersive Audio Bitstream (SMPTE ST 2098-2, DCP / IMF object audio): parser, DLC lossless decoder and encoder, loudspeaker renderer, writer ([README](../crates/iab/README.md)) |
 | `mpa` | L0 | MPEG-1/2 Audio Layer I and II (MP1 / MP2) decoder ([README](../crates/mpa/README.md)) |
+| `speex` | L0 | Speex decoder (narrowband, wideband, ultra-wideband, VBR / DTX, in-band stereo), ported from the BSD-3-Clause libspeex 1.2.1 ([README](../crates/speex/README.md)) |
 | `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
+| `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
 | `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |
@@ -97,6 +100,7 @@ and `cfa4-cli`.
 | `qc` | L3 | media quality control: QC profiles (`cfa4-qc-profile/1`, TOML) with mandatory/optional checks and PASS/WARN/FAIL bounds, the versioned QC report (`cfa4-qc-report/1`, JSON) with SHA-256 file identities, tool versions and human review, input and integrity checks on a full decode, loudness / true peak / clipping / silence and black / luma-clipping / contact-sheet analysis, and a verdict that never passes a skipped or failed mandatory check ([media-qc.md](media-qc.md)) |
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
 | `dcp-validate` | L3 | DCP validation API (DCP-03): `DcpValidator` trait, seven result states and the package verdict, versioned profiles, `cfa4-dcp-report/1` JSON / Markdown report, safe package discovery, native backend ([README](../crates/dcp-validate/README.md)) |
+| `dcp-inspect` | L3 | DCP validation backend (DCP-04) that runs the isolated dcp_inspect reference engine as a separate process: argument array, own process group, private `HOME`/`TMPDIR`, timeout and cancel, `--dump-result` mapped onto the rule catalogue ([README](../crates/dcp-inspect/README.md)) |
 | `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
@@ -707,9 +711,9 @@ file.exportMedia {path, preset?, settings?, format?, range?, …}     export.qui
 | `dnxhr` | `cfa4-dnx` (LB / SQ / HQ / HQX) | MOV (`AVdh`) |
 | `mjpeg` | built in | MOV |
 | `aac` | `cfa4-aac` (AAC-LC, the audio settings' bitrate) | audio only: MPEG-4 audio `.m4a` (`isobmff`, priming in an edit list), or raw ADTS when the path ends in `.aac` |
-| `mxf-op1a` | DNxHR (default), ProRes or H.264 (Annex B, long GOP), `mxfVideoCodec`; PCM 16/24/32-bit integer | MXF OP1a (`cfa4-mxf` writer: frame-wrapped, index with temporal offsets, start timecode) |
+| `mxf-op1a` | DNxHR (default), ProRes, H.264 (Annex B, long GOP) or MPEG-2 (`cfa4-mpeg2v` long GOP, HD only: MP@HL / MP@H-14 / 422P@HL; the `mpeg2Chroma`, `mpeg2BFrames`, `mpeg2Quantizer` and keyframe distance settings apply)) or D-10 / IMX (`d10`: intra-only 4:2:2P@ML at 30 / 40 / 50 Mbit/s, 720x576 at 25 fps or 720x486 / 480 at 29.97, SDTI-CP content packages with one 8-channel AES3 element; OP1a only) or XDCAM HD422 (`xdcamHd422`: MPEG-2 4:2:2P@HL long GOP at 1920x1080 / 1280x720 in the SMPTE RDD 9 layout: system items, one AES3 element per channel, body partitions every 5 s; up to 8 channels of 16 / 24-bit 48 kHz; OP1a only), `mxfVideoCodec`; PCM 16/24/32-bit integer | MXF OP1a (`cfa4-mxf` writer: frame-wrapped, index with temporal offsets, start timecode) |
 | `mxf-opatom` | as `mxf-op1a` | Avid-style MXF OP-Atom: clip-wrapped picture at `path`, one mono PCM file per channel (`<stem>_A1.mxf` …, `Report::extra_files`) |
-| `mpeg2` | `cfa4-mpeg2v` (Main Profile 4:2:0, I/P pictures, average bitrate, keyframe distance = GOP) + 16- or 24-bit DVD LPCM or `cfa4-aac` | `cfa4-mpegts` muxer, `mpeg2Container` or the path's extension: program stream `.mpg` (LPCM), transport stream `.ts` / BDAV `.m2ts` (AAC in ADTS), elementary stream `.m2v` (no audio) |
+| `mpeg2` | `cfa4-mpeg2v` (Main Profile 4:2:0, I/P pictures, average bitrate, keyframe distance = GOP) + 16- or 24-bit DVD LPCM or `cfa4-aac`, or AC-3 (`audioCodec: "ac3"`, `cfa4-ac3`), or MP2 (`audioCodec: "mp2"`, `cfa4-mpa` Layer II encoder, mono / stereo at 32 / 44.1 / 48 kHz and the MPEG-2 lower rates) | `cfa4-mpegts` muxer, `mpeg2Container` or the path's extension: program stream `.mpg` (LPCM, AC-3 or MP2), transport stream `.ts` / BDAV `.m2ts` (AAC in ADTS, AC-3 or MP2), elementary stream `.m2v` (no audio) |
 | `png`, `tiff`, `bmp`, `jpg` | `image` | numbered stills `<name>000.<ext>`, `<name>001.<ext>` … |
 | `tga`, `dpx`, `exr` | built in (`raster.rs`: uncompressed Targa 24/32-bit; DPX 10-bit RGB, SMPTE ST 268; OpenEXR half-float linear RGB(A), uncompressed scan lines) | numbered stills, as above |
 | `gif`, `wav`, `aiff` | built in / `image` | GIF / RIFF WAVE (`WAVE_FORMAT_EXTENSIBLE` for 5.1; `WAVE_FORMAT_IEEE_FLOAT` + `fact` for float) / AIFF (16-, 24- or 32-bit PCM; 32-bit float as AIFF-C `fl32`) |

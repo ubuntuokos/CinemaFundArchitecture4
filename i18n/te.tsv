@@ -332,6 +332,7 @@
 	Overlay	ఓవర్‌లే
 	Overwrite	ఓవర్‌రైట్
 	PCM (uncompressed)	PCM (కుదించని)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 లేయర్ II)
 	Panner	ప్యానర్
 	Paste	అతికించు
 	Paste Attributes…	లక్షణాలను అతికించు…
@@ -3551,8 +3552,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-బిట్ 4:2:2), 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile లాంగ్ GOP (12 చిత్రాలు, IBBP), 50 Mbit/s, XDCAM HD422 శైలిలో, 24-బిట్ 48 kHz PCM; HD ఫ్రేమ్ పరిమాణాలు
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (పిక్సెల్‌కు 0.3 బిట్‌లు), 24-బిట్ 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a రకం D-10 (IMX 50): ఇంట్రా మాత్రమే MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29.97 fps (4:3), నాలుగు 24-బిట్ 48 kHz ఆడియో ఛానెల్‌లు
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a రకం D-10 (IMX 50): ఇంట్రా మాత్రమే MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 fps (4:3), నాలుగు 24-బిట్ 48 kHz ఆడియో ఛానెల్‌లు
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 అమరికలో MXF OP1a: MPEG-2 4:2:2 Profile లాంగ్ GOP (12 చిత్రాలు, IBBP), 50 Mbit/s, 1920x1080 లేదా 1280x720 ప్రోగ్రెసివ్, ఒక్కో ఛానెల్‌కు వేరే AES3 ఎలిమెంట్‌గా నాలుగు 24-బిట్ 48 kHz ఛానెల్‌లు
 	Main	ప్రధాన
 	Mark In (Hover Scrub)	ఇన్ గుర్తించు (హోవర్ స్క్రబ్)
 	Mark Out (Hover Scrub)	అవుట్ గుర్తించు (హోవర్ స్క్రబ్)
@@ -4320,6 +4329,7 @@ export.summary	Low	తక్కువ
 	Crawl	క్రాల్
 	Picture: {file}	చిత్రం: {file}
 	Video: {file}	వీడియో: {file}
+	Looped video: {file}	లూప్ వీడియో: {file}
 	Into the next	తదుపరిలోకి
 	Safe areas and spines	సురక్షిత ప్రాంతాలు మరియు అక్షాలు
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	యాక్షన్ సేఫ్ (93 %), టైటిల్ సేఫ్ (90 %), మధ్య భాగం మరియు పేజీ అక్షాలు

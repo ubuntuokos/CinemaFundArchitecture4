@@ -300,6 +300,7 @@
 	Output file	Изходен файл
 	Overwrite	Презаписване
 	PCM (uncompressed)	PCM (некомпресиран)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 слой II)
 	Panner	Панорамиране
 	Paste Attributes…	Поставяне на атрибути…
 	Paste Insert	Поставяне с вмъкване
@@ -3295,8 +3296,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-битов 4:2:2), 24-битов 48 kHz PCM, начален времеви код
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, дълъг GOP (12 кадъра, IBBP), 50 Mbit/s в стила на XDCAM HD422, 24-битов PCM 48 kHz; HD размери на кадъра
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High дълъг GOP (0,3 бита на пиксел), 24-битов 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a тип D-10 (IMX 50): само интра MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486 при 29,97 кадъра/s (4:3), четири 24-битови аудиоканала 48 kHz
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a тип D-10 (IMX 50): само интра MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576 при 25 кадъра/s (4:3), четири 24-битови аудиоканала 48 kHz
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-битов 48 kHz PCM, начален времеви код
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a в оформлението SMPTE RDD 9: MPEG-2 4:2:2 Profile, дълъг GOP (12 кадъра, IBBP), 50 Mbit/s, 1920x1080 или 1280x720 прогресивно, четири 24-битови канала 48 kHz като отделни AES3 елементи за всеки канал
 	Main	Основен
 	Mark In (Hover Scrub)	Маркиране на начало (преглед при посочване)
 	Mark Out (Hover Scrub)	Маркиране на край (преглед при посочване)
@@ -4317,6 +4326,7 @@ export.summary	Low	ниско
 	Crawl	Бягащ текст
 	Picture: {file}	Изображение: {file}
 	Video: {file}	Видео: {file}
+	Looped video: {file}	Видео в цикъл: {file}
 	Into the next	Към следващата
 	Safe areas and spines	Безопасни зони и оси
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасна зона за действие (93 %), за надписи (90 %), центърът и осите на страницата
