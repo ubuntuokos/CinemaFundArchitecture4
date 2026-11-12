@@ -131,8 +131,32 @@ sequence), `color`, `gradient` (from `color` to `color2` along `angle` degrees),
 cuts the overhang, `fit` shows it whole). `opacity` is 0–100 %, `blur` a radius in pixels of a
 1080-high frame. The background is **its own clip just below the page**, as long as the page: it
 does not roll, and its opacity, blur (Gaussian Blur), size and position stay editable like any
-clip's. A video shorter than the page ends early (it is not looped). A missing file is a warning
-and the background is left out. A refresh replaces the backgrounds with the pages.
+clip's. A video shorter than the page ends early, unless `"loop": true`: then it starts again
+from the beginning until the page ends, each run its own clip right after the one before (on
+frame boundaries, at most 1000), and a transition into the next page starts from the last run.
+A missing file is a warning and the background is left out. A refresh replaces the backgrounds
+with the pages.
+
+**Animated line-art backgrounds.** Loops made with an animation tool – for example the
+line-art figures and day-to-night scenes of
+[line-art-animation](https://github.com/jdhruv14/line-art-animation) (MIT; it renders frames
+in a browser and encodes them with ffmpeg) – go behind a page as a looped video background. CFA4
+does not run the tool; use it on its own:
+
+1. Make the scene there, and render it to MP4 (H.264) at the sequence's frame size, exactly one
+   loop long (the tool can measure a loop's period), or a few loops.
+2. Put the file in the picture folder (next to the spreadsheet) and give the page style a looped
+   video background:
+   ```json
+   { "name": "Walk", "behaviour": "scroll",
+     "background": { "kind": "video", "file": "walk.mp4", "loop": true, "fit": "fill", "opacity": 70 } }
+   ```
+3. Import or refresh. The loop runs under the whole page; its opacity and blur stay editable. For
+   a figure that should move with the names instead, put it in a cell as `{{Video walk.mp4}}`.
+
+Keep the text readable over moving pictures (the contrast check cannot measure them: check by
+eye, or lower the background's opacity). A line-art layer drawn by CFA4 itself is planned for
+next year's release (plan C12).
 
 **Transition.** `transition` names the transition into the next page – `dissolve` (or
 `áttűnés`), `push` (`eltolás`), `slide`, `wipe`, `dip to black`, or any video transition's id
@@ -375,7 +399,7 @@ CFA4) and the running order (rundown) follow in their own plan,
 
 | Command | Menu | Params |
 |---|---|---|
-| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, transition}], group, end, sheet, warnings}`; one undo step |
+| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, backgroundClips, transition}], group, end, sheet, warnings}` (`backgroundClips`: every clip of the background, several for a looped video); one undo step |
 | `graphics.credits.preview` | (query) | as above → `{pages: [{name, style, row, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}, blocks: [{style, head, body (the first 40 cells), bodyCount, tails, pictures, row, lastRow, spine, parallel, at (0–1: the moment of the page that shows the block)}]}], duration, sheets, sheet, warnings, issues}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
@@ -398,5 +422,6 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), hooked and fused spines, body-width harmonisation, looping
-a short background or credits video, writing Cinecred projects (only on request, per the plan).
+Online sheets (download as `.xlsx`), hooked and fused spines, body-width harmonisation, looping a
+video in a cell (`{{Video …}}`), writing Cinecred projects (only on request, per the plan), a
+line-art layer drawn by CFA4 itself (plan C12, next year's release).

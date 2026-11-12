@@ -85,8 +85,16 @@ and decoder cannot disagree on them.
   tile-parts), TLM; at most 250 Mbit/s per frame and 200 Mbit/s per component (1 302 083 and
   1 041 666 bytes at 24 fps). The image and options are checked against the profile.
 
+- `ImfProfile::select(width, height, components, fps, reversible, bitrate)` picks the IMF
+  profile (2K / 4K / 8K, lossy or reversible) and the smallest mainlevel and sublevel of
+  ST 2067-21 Annex E for the sample rate and bit rate; `EncodeOptions::imf(profile, …)` writes
+  its Rsiz (`0x04xx`–`0x09xx`) with the profile's constraints: CPRL, 32×32 code-blocks,
+  precincts 128 / 256, one layer, a tile-part per component, TLM, 5–7 decomposition levels, at
+  most the sublevel's bit rate per frame (lossy). The MXF IMF track file writer takes its coding
+  label from the Rsiz (#931).
+
 Not yet (#117): several quality layers, tiles, HTJ2K encoding, other code-block styles, SOP /
-EPH / PLT, IMF and broadcast profiles. DCP / MXF export is #115, speed #116.
+EPH / PLT, broadcast profiles. DCP / MXF export is #115, speed #116.
 
 In MXF the decoder runs through `cfa4-codecs` (`j2k.rs`): Y'CbCr, R'G'B' and gray components
 become video frames, and the X'Y'Z' of the digital cinema profiles (`Header::digital_cinema`)

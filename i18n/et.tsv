@@ -334,6 +334,7 @@
 	Overlay	Ülekate
 	Overwrite	Kirjuta üle
 	PCM (uncompressed)	PCM (tihendamata)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 kiht II)
 	Panels	Paneelid
 	Panner	Panoraamija
 	Paste Attributes…	Kleebi atribuudid…
@@ -2025,6 +2026,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 3996×2160 (1,85:1), 5.1 24-bitine 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP kaust: JPEG 2000 4096×1716 (2,39:1), 5.1 24-bitine 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF kaust: JPEG 2000 1920×1080, 5.1 24-bitine 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF kaust: JPEG 2000 3840×2160, 5.1 24-bitine 48 kHz PCM
+	Episode	Episood
+	Event highlights	Sündmuse kokkuvõte
+	Event	Sündmus
+	Lossless (reversible JPEG 2000)	Kadudeta (pööratav JPEG 2000)
+	Package language	Paketi keel
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-pildid
@@ -2197,6 +2208,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR jaoks 10-bitine)
 	10-bit RGB	10-bitine RGB
 	12-bit X'Y'Z'	12-bitine X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitine R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF kadudega
+	JPEG 2000 IMF reversible	JPEG 2000 IMF pööratav
 	16-bit half float	16-bitine poolujukoma
 	linear	lineaarne
 	uncompressed	tihendamata
@@ -3568,8 +3582,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-bitine 4:2:2), 24-bitine 48 kHz PCM, algusajakood
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile pikk GOP (12 kaadrit, IBBP) 50 Mbit/s XDCAM HD422 stiilis, 24-bitine 48 kHz PCM; HD-kaadrisuurused
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High pikk GOP (0,3 bitti piksli kohta), 24-bitine 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tüüp D-10 (IMX 50): ainult intra MPEG-2 4:2:2P@ML 50 Mbit/s, 720x486 29,97 fps (4:3), neli 24-bitist 48 kHz helikanalit
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a tüüp D-10 (IMX 50): ainult intra MPEG-2 4:2:2P@ML 50 Mbit/s, 720x576 25 fps (4:3), neli 24-bitist 48 kHz helikanalit
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-bitine 48 kHz PCM, algusajakood
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a SMPTE RDD 9 paigutuses: MPEG-2 4:2:2 Profile pikk GOP (12 kaadrit, IBBP) 50 Mbit/s, 1920x1080 või 1280x720 progressiivne, neli 24-bitist 48 kHz kanalit kanalipõhiste AES3-elementidena
 	Main	Peamine
 	Mark In (Hover Scrub)	Märgi algus (hõljumisega kerimine)
 	Mark Out (Hover Scrub)	Märgi lõpp (hõljumisega kerimine)
@@ -4316,6 +4338,7 @@ export.summary	Low	madal
 	Crawl	Jooksev tekst
 	Picture: {file}	Pilt: {file}
 	Video: {file}	Video: {file}
+	Looped video: {file}	Korduv video: {file}
 	Into the next	Järgmisse
 	Safe areas and spines	Ohutud alad ja teljed
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Tegevuse ohuala (93 %), tiitrite ohuala (90 %), kese ja lehe teljed
@@ -4446,3 +4469,60 @@ export.summary	Low	madal
 	picture styles (pictures keep their own size) are not carried over	pildistiile (pildid säilitavad oma suuruse) üle ei kanta
 	video (tape) styles are not carried over	video- (lindi-) stiile üle ei kanta
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecredi projektil on tiitrite tabeleid: {n}; kasutatakse „{name}“ (vali muu väljal Tabel)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Lisa leid
+	Add as Finding	Lisa leiuna
+	Are colour and contrast acceptable?	Kas värv ja kontrast on vastuvõetavad?
+	Automatic Checks	Automaatsed kontrollid
+	Bounds	Piirid
+	Check	Kontroll
+	Check Now	Kontrolli kohe
+	Check quality after export	Kontrolli kvaliteeti pärast eksporti
+	Checking…	Kontrollimine…
+	Contact Sheet	Kontaktleht
+	Critical	Kriitiline
+	Fail	Läbikukkunud
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Leid {row}: ajakood ei ole selle faili aeg (HH:MM:SS:FF).
+	Findings	Leiud
+	Human Review	Inimese ülevaatus
+	Incomplete	Puudulik
+	Is there a visible picture defect?	Kas pildil on nähtav viga?
+	Is there audible distortion?	Kas on kuulda moonutust?
+	Is there unwanted noise?	Kas on soovimatut müra?
+	Major	Oluline
+	Message	Teade
+	Minor	Väike
+	No contact sheet	Kontaktleht puudub
+	Not answered	Vastamata
+	Not checked	Kontrollimata
+	Not run	Ei käivitatud
+	Note	Märkus
+	Pass	Läbitud
+	Passed	Läbitud
+	Passed with warnings	Läbitud hoiatustega
+	Profile: {id} v{version}	Profiil: {id} v{version}
+	Quality Check	Kvaliteedikontroll
+	Quality Check…	Kvaliteedikontroll…
+	Remove Finding	Eemalda leid
+	Report: {path}	Aruanne: {path}
+	Review complete	Ülevaatus lõpetatud
+	Reviewer	Ülevaataja
+	Run the media quality check on the finished file (docs/media-qc.md)	Käivita valmis failil meedia kvaliteedikontroll (docs/media-qc.md)
+	Save Review	Salvesta ülevaatus
+	Select a finished export in the queue	Vali järjekorrast lõpetatud eksport
+	Severity	Raskusaste
+	The engine is not running.	Mootor ei tööta.
+	Time code	Ajakood
+	Unsure	Ebakindel
+	accept	lubatud
+	the engine did not start the check	mootor ei käivitanud kontrolli
+	the engine sent no report	mootor ei saatnud aruannet
+	Load KDM…	Laadi KDM…
+	Forget DCP Keys	Unusta DCP võtmed
+	Load KDM	Laadi KDM
+	KDM file	KDM-fail
+	Private key (PEM)	Privaatvõti (PEM)
+	{title}: {count} keys loaded	{title}: laaditud {count} võtit
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Võtmed on ainult mälus, kuni valikuni Unusta DCP võtmed või seansi lõpuni.
+	DCP keys forgotten	DCP võtmed unustatud
+	Choose the KDM file and the private key.	Vali KDM-fail ja privaatvõti.

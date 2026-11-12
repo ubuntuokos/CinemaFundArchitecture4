@@ -2396,7 +2396,7 @@ EGUI_EXPORT_IDS: frozenset[str] = frozenset({
     "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
     "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
     "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
-    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dnxProfile",
+    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
     "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
     "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
     "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
@@ -2511,6 +2511,55 @@ def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
         win.close()
 
 
+def test_export_unavailable_format_says_why(app):
+    """A format the engine cannot write here is greyed out and its tooltip carries the engine's reason."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    why = "H.265 (HEVC): no encoder for this format is available on this machine"
+    dlg._on_formats([{"id": "h264", "label": "H.264", "available": True, "reason": None},
+                     {"id": "hevc", "label": "H.265 (HEVC)", "available": False, "reason": why}], None)
+    item = dlg.format.model().item(dlg.format.findData("hevc"))
+    assert not item.isEnabled() and item.toolTip() == why
+    assert dlg.format.model().item(dlg.format.findData("h264")).toolTip() == ""
+    dlg.deleteLater()
+
+
+def test_export_dash_manifest_switch_only_for_hls(app):
+    """egui's "DASH Manifest" row: shown for HLS only, and sent as ``dashManifest`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "hls", "label": "HLS"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.dashManifest")
+    assert box is dlg.dash_manifest and box.text() == "Also write a DASH manifest (.mpd)"
+    assert dlg.video_form.labelForField(box).text() == "DASH Manifest"
+    dlg.format.setCurrentIndex(dlg.format.findData("hls"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    assert "dashManifest" not in dlg.params()  # untouched: the preset's value stands
+    box.setChecked(True)
+    assert dlg.params()["dashManifest"] is True
+    dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dashManifest" not in dlg.params()
+    dlg._show_settings({"dashManifest": False})  # touched: the user's choice is kept
+    assert box.isChecked()
+    dlg.deleteLater()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
     """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""
@@ -2577,6 +2626,211 @@ def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path)
         win.close()
 
 
+def test_qc_window_helpers():
+    from cfa4_qt.panels.qc import bounds_text, frame_rate_of, parse_position, value_text
+
+    assert value_text({"value": -14.25, "unit": "LUFS"}) == "-14.25 LUFS"
+    assert value_text({"value": True}) == "" and value_text({}) == ""
+    assert bounds_text({"pass": {"min": -15.0, "max": -13.0}, "accept": {"min": -16.0, "max": -12.0}}).startswith("-15…-13 (")
+    assert bounds_text({"pass": {"max": 0.0}}) == "≤ 0"
+    report = {"checks": [{"id": "probe.video", "detail": {"frameRate": "25/1"}}]}
+    assert frame_rate_of(report) == (25, 1)
+    assert frame_rate_of({"checks": [{"id": "probe.video", "detail": {"frameRate": "0/0"}}]}) is None
+    pos = parse_position("00:00:01:05", (25, 1))
+    assert pos == {"timecode": "00:00:01:05", "frame": 30, "tick": 30 * TICKS_PER_SECOND // 25}
+    assert parse_position("00:00:01:05", None) == {"timecode": "00:00:01:05"}
+    for bad in ("", "1:2", "aa:bb:cc:dd", "-1:00:00:00", "00:60:00:00", "00:00:60:00", "00:00:00:25",
+                "00:00:00:-1", "00:00;00;00", "1:2:3:4:5", "0000:00:00:00", "00:00:00:٣"):
+        assert parse_position(bad, (25, 1)) is None, bad
+    assert parse_position("00:60:00:00", None) is None  # range is checked without a rate too
+    # 23.976 counts 24 frames a second; drop-frame exists only at 29.97 / 59.94 / 119.88
+    assert parse_position("00:00:00:23", (24000, 1001)) is not None
+    assert parse_position("00:00:00:24", (24000, 1001)) is None
+    assert parse_position("00;00;01;00", (24000, 1001)) is None
+    ntsc = (30000, 1001)
+    assert parse_position("00;01;00;00", ntsc) is None and parse_position("00;01;00;01", ntsc) is None  # skipped
+    assert parse_position("00;01;00;02", ntsc)["frame"] == 1800  # the picture after 00;00;59;29
+    assert parse_position("00;00;59;29", ntsc)["frame"] == 1799
+    assert parse_position("00;10;00;00", ntsc)["frame"] == 17982  # every tenth minute keeps its labels
+    assert parse_position("01;00;00;00", ntsc)["frame"] == 107892
+    assert parse_position("00;01;00;04", (60000, 1001))["frame"] == 3600
+    assert parse_position("00:01:00:00", ntsc)["frame"] == 1800  # non-drop at 29.97 counts every label
+
+
+def test_qc_window_drops_stale_replies_and_reports_failures(app):
+    """Regressions from the stage E2 review: a reply for the file the window showed before must
+    not replace the current report; a failed run, a missing report, a failed save and a time code
+    that is no time in the file each leave the window usable with a message."""
+    from cfa4_qt.panels.qc import QcDialog
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.pending = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.pending.append((command, dict(params or {}), on_reply, on_error))
+            return 0
+
+        def take(self, command, path=None):
+            for i, (c, params, ok, err) in enumerate(self.pending):
+                if c == command and (path is None or params.get("path") == path):
+                    del self.pending[i]
+                    return ok, err
+            raise AssertionError(f"no pending {command} {path}")
+
+    def report(name, verdict):
+        full = {"profile": {"id": "delivery-web", "version": 1}, "output": {"path": name},
+                "checks": [{"id": "probe.video", "status": "PASS", "detail": {"frameRate": "25/1"}}]}
+        return {"full": full, "verdict": verdict, "summary": {"reasons": [name]}, "questions": [], "report": name + ".cfa4qc.json"}
+
+    engine = Engine()
+    dlg = QcDialog(engine)  # type: ignore[arg-type]
+    try:
+        dlg.open_for("a.mp4")
+        dlg.open_for("b.mp4")
+        ok_a, _ = engine.take("qc.report.get", "a.mp4")
+        ok_b, _ = engine.take("qc.report.get", "b.mp4")
+        ok_b(report("b.mp4", "PASS"), None)
+        ok_a(report("a.mp4", "FAIL"), None)  # late answer for the previous file
+        assert dlg.report["output"]["path"] == "b.mp4" and dlg.reasons.item(0).text() == "b.mp4"
+
+        # a check started for a, then the window turned to b: a's job is no longer followed
+        dlg.open_for("a.mp4", run=True)
+        started_a, _ = engine.take("qc.run")
+        dlg.open_for("b.mp4")
+        started_a({"job": 7}, None)
+        assert dlg._job is None and not dlg._poll.isActive() and dlg.run_button.isEnabled()
+        engine.take("qc.report.get", "b.mp4")[0](report("b.mp4", "PASS"), None)
+
+        # qc.run refused
+        dlg.run_check()
+        _, err = engine.take("qc.run")
+        err("no such file")
+        assert dlg.message.text() == "no such file" and dlg.run_button.isEnabled() and dlg._job is None
+        # the job finished with an error
+        dlg.run_check()
+        engine.take("qc.run")[0]({"job": 9}, None)
+        assert dlg._poll.isActive()
+        dlg._poll_job()
+        engine.take("jobs.list")[0]([{"id": 9, "finished": True, "result": {"error": "decode failed"}}], None)
+        assert dlg.message.text() == "decode failed" and dlg.run_button.isEnabled() and not dlg._poll.isActive()
+
+        # no report: nothing to save
+        dlg.load()
+        engine.take("qc.report.get", "b.mp4")[1]("no report next to b.mp4")
+        assert dlg.message.text() == "no report next to b.mp4" and not dlg.save_button.isEnabled()
+
+        dlg.load()
+        engine.take("qc.report.get", "b.mp4")[0](report("b.mp4", "PASS"), None)
+        # a time code that is no picture of this 25 fps file is refused before anything is sent
+        dlg.add_finding("flash", "major", "00:00:01:25")
+        dlg.save_review()
+        assert not engine.pending and "Finding 1" in dlg.message.text() and dlg.save_button.isEnabled()
+        dlg.findings.item(0, 2).setText("00:00:01:24")
+        dlg.save_review()
+        command, params, _, err = engine.pending[-1]
+        assert command == "qc.review.save" and params["review"]["findings"][0]["at"]["frame"] == 49
+        assert not dlg.save_button.isEnabled()
+        engine.take("qc.review.save")[1]("disk full")
+        assert dlg.message.text() == "disk full" and dlg.save_button.isEnabled()
+
+        # a save answered after the window moved on still reaches the queue, for its own file
+        saved = []
+        dlg.review_saved.connect(lambda media, verdict: saved.append((media, verdict)))
+        dlg.save_review()
+        dlg.open_for("c.mp4")
+        engine.take("qc.review.save")[0]({"verdict": "WARN"}, None)
+        assert saved == [("b.mp4", "WARN")]
+        assert [c for c, p, *_ in engine.pending] == ["qc.report.get"] and engine.pending[0][1]["path"] == "c.mp4"
+
+        engine.running = False
+        dlg.run_check()
+        assert dlg.message.text() == "The engine is not running." and dlg.run_button.isEnabled()
+    finally:
+        dlg._poll.stop()
+        dlg.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_quality_check_through_the_export_window(app, tmp_path: Path):
+    """Media QC stage E: export with "Check quality after export", read the report in the QC
+    window, add a time-coded finding and save it into the report next to the export."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(160)
+        dlg.height_spin.setValue(90)
+        out = tmp_path / "qc" / "cut.mp4"
+        dlg.path.setText(str(out))
+        dlg.qc_after.setChecked(True)
+        assert dlg.params()["qc"] == "delivery-web"
+        assert wait_until(app, lambda: "160×90" in dlg.summary.text(), 10_000), dlg.summary.text()
+        dlg.export_button.click()
+
+        from cfa4_qt.panels.export import QUEUE_QC_COL
+
+        def qc_state() -> str:
+            cell = dlg.table.item(0, QUEUE_QC_COL)
+            return str(cell.data(QtCore.Qt.ItemDataRole.UserRole)) if cell is not None else ""
+
+        assert wait_until(app, lambda: qc_state() not in ("", "notChecked", "running"), 240_000), qc_state()
+        report_file = Path(str(out) + ".cfa4qc.json")
+        assert report_file.is_file() and Path(str(out) + ".cfa4qc.png").is_file()
+        # render and QC state stay apart: the render is done whatever QC says
+        assert dlg.table.item(0, 3).data(QtCore.Qt.ItemDataRole.UserRole) == "done"
+
+        dlg.table.selectRow(0)
+        dlg.open_quality_check()
+        qc = dlg.qc_dialog
+        assert qc is not None and qc.isVisible()
+        assert qc.media == str(out), "the whole path, not the queue's file name"
+        assert wait_until(app, lambda: qc.checks.rowCount() > 10, 30_000), qc.message.text()
+        assert qc.verdict.text()
+        assert not qc.sheet.pixmap().isNull(), "the contact sheet is shown"
+        assert len(qc.answers) == 4
+        combo, _note = qc.answers["picture.defect"]
+        combo.setCurrentIndex(combo.findData("no"))
+        row = qc.add_finding("flash frame", "major", "00:00:00:12", "check the source")
+        assert row == 0
+        qc.reviewer.setText("QC tester")
+        qc.review_done.setChecked(True)
+        saved: list[str] = []
+        qc.review_saved.connect(lambda _p, v: saved.append(v))
+        qc.save_button.click()
+        assert wait_until(app, lambda: bool(saved), 30_000), qc.message.text()
+        report = json.loads(report_file.read_text(encoding="utf-8"))
+        human = report["human"]
+        assert human["state"] == "done" and human["reviewer"] == "QC tester"
+        assert human["findings"][0]["at"]["timecode"] == "00:00:00:12"
+        assert human["findings"][0]["severity"] == "major"
+        assert human["answers"] == [{"question": "picture.defect", "answer": "no"}]
+        # a major finding never leaves a PASS
+        assert report["summary"]["verdict"] in ("WARN", "FAIL")
+        assert wait_until(app, lambda: qc.findings.rowCount() == 1, 10_000), "the saved review is read back"
+    finally:
+        if win.export_dialog is not None:
+            if win.export_dialog.qc_dialog is not None:
+                win.export_dialog.qc_dialog.hide()
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
     """MPEG-2: the Container choice sets the file extension and the audio, and the engine writes
@@ -2611,6 +2865,11 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         # AC-3 instead of the container's own audio (#268)
         dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("ac3"))
         assert dlg.params()["audioCodec"] == "ac3"
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("auto"))
+        # MP2 audio (#267) instead of the container's default
+        assert dlg.audio_codec.isEnabled()
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("mp2"))
+        assert dlg.params()["audioCodec"] == "mp2"
         dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("auto"))
         # GOP, quantiser and chroma go to the engine once chosen
         dlg.gop.setValue(12)
@@ -2729,6 +2988,70 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
         # another format brings the size fields back
         dlg.format.setCurrentIndex(dlg.format.findData("h264"))
         assert dlg.width_spin.isEnabled() and not dlg.dcp_resolution.isEnabled()
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_imf_export_writes_a_package_folder(app, tmp_path: Path):
+    """IMF App 2E (#1011): the preset sets the frame size, the output is a folder, the content
+    kinds are IMF's, lossless and the language go to the engine, which writes the package."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.imf_lossless.isEnabled()
+        assert "imfLossless" not in dlg.params()
+        dlg.preset.setCurrentIndex(dlg.preset.findData("IMF App 2E HD"))
+        assert dlg.format.currentData() == "imf"
+        assert dlg.imf_lossless.isEnabled() and dlg.dcp_kind.isEnabled() and dlg.dcp_language.isEnabled()
+        assert not dlg.dcp_resolution.isEnabled() and not dlg.bitrate.isEnabled() and dlg.width_spin.isEnabled()
+        assert Path(dlg.path.text()).suffix == "", dlg.path.text()
+        kinds = [dlg.dcp_kind.itemData(i) for i in range(dlg.dcp_kind.count())]
+        assert "episode" in kinds and "policy" not in kinds, kinds
+        dlg.dcp_kind.setCurrentIndex(dlg.dcp_kind.findData("episode"))
+        dlg.dcp_language.setCurrentText("hu-HU")
+        dlg.imf_lossless.setChecked(True)
+        p = dlg.params()
+        assert (p["imfContentKind"], p["imfLossless"], p["dcpLanguage"]) == ("episode", True, "hu-HU")
+        assert "dcpResolution" not in p and "bitrateKbps" not in p
+        # a small picture keeps the test quick
+        dlg.match_size.setChecked(False)
+        dlg.width_spin.setValue(320)
+        dlg.height_spin.setValue(180)
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(0.25)
+        out = tmp_path / "out" / "Demo_IMP"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "320×180" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        names = sorted(f.name for f in out.iterdir())
+        assert "ASSETMAP.xml" in names and "VOLINDEX.xml" in names, names
+        assert sum(n.startswith("VIDEO_") for n in names) == 1 and sum(n.startswith("AUDIO_") for n in names) == 1, names
+        cpl = next(out.glob("CPL_*.xml")).read_text()
+        assert "<ContentKind>episode</ContentKind>" in cpl and "<Language>hu-HU</Language>" in cpl
+        assert "http://www.smpte-ra.org/ns/2067-21/5ED" in cpl
+        # back to a DCP: its own kinds again
+        dlg.format.setCurrentIndex(dlg.format.findData("dcp"))
+        kinds = [dlg.dcp_kind.itemData(i) for i in range(dlg.dcp_kind.count())]
+        assert "policy" in kinds and "episode" not in kinds and not dlg.imf_lossless.isEnabled()
     finally:
         if win.export_dialog is not None:
             win.export_dialog.hide()
@@ -7829,6 +8152,9 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     from cfa4_qt.panels.export import encoder_format, supports_alpha
 
     assert encoder_format("mxf-op1a", "proRes") == "prores" and encoder_format("hls", "") == "h264"
+    assert encoder_format("mxf-op1a", "mpeg2") == "mpeg2"
+    assert encoder_format("mxf-op1a", "d10") == "mpeg2"
+    assert encoder_format("mxf-op1a", "xdcamHd422") == "mpeg2"
     assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
     assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
     assert supports_alpha("gif", "", ""), "GIF keeps binary transparency, as the engine says (#3423)"
@@ -7888,6 +8214,33 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
         p = dlg.params()
         assert p["mxfVideoCodec"] == "proRes" and "dnxProfile" not in p
         assert resolved()["mxfVideoCodec"] == "proRes"
+        # MPEG-2 in MXF (#928): its GOP, B picture and chroma rows, no MPEG-2 container
+        pick(c["mxfVideoCodec"], "mpeg2")
+        assert dlg.gop.isEnabled() and dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        assert form.isRowVisible(dlg.gop) and not shown("proresProfile")
+        dlg.b_frames.setValue(3)
+        p = dlg.params()
+        assert p["mxfVideoCodec"] == "mpeg2" and p["mpeg2BFrames"] == 3 and "mpeg2Container" not in p
+        assert resolved()["mxfVideoCodec"] == "mpeg2"
+        # D-10 / IMX (#949): MPEG-2 video with fixed GOP, B pictures and chroma
+        pick(c["mxfVideoCodec"], "d10")
+        assert not dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        p = dlg.params()
+        assert p["mxfVideoCodec"] == "d10" and "mpeg2BFrames" not in p
+        # D-10 runs at 30, 40 or 50 Mbit/s only (#1017): 50 unless one of them was chosen
+        assert p["bitrateKbps"] == 50_000 and dlg.bitrate.value() == 50.0
+        s = resolved()
+        assert s["mxfVideoCodec"] == "d10" and s["bitrateKbps"] == 50_000
+        dlg.bitrate.setValue(33.0)
+        assert dlg.params()["bitrateKbps"] == 30_000 and resolved()["bitrateKbps"] == 30_000
+        # XDCAM HD422 / RDD 9 (#949): GOP and B pictures, the 4:2:2 chroma fixed
+        pick(c["mxfVideoCodec"], "xdcamHd422")
+        assert dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        assert dlg.params()["mxfVideoCodec"] == "xdcamHd422"
+        assert resolved()["mxfVideoCodec"] == "xdcamHd422"
+        pick(c["mxfVideoCodec"], "proRes")
+        assert not dlg.gop.isEnabled()
+        assert dlg.bitrate.maximum() == 800.0, "other codecs get the full bitrate range back"
         # CineForm: encoding and quality; RGBA keeps alpha
         pick(dlg.format, "cineform")
         assert shown("cineformProfile") and shown("cineformQuality") and not shown("alpha")
@@ -13995,6 +14348,8 @@ def test_credits_page_look_texts(monkeypatch):
     assert background_text({"kind": "color", "opacity": 100}) == "Color"
     assert background_text({"kind": "gradient", "opacity": 80}) == "Gradient (80 %)"
     assert background_text({"kind": "image", "file": "/a/b/sky.png", "opacity": 12.5}) == "Picture: sky.png (12.5 %)"
+    assert background_text({"kind": "video", "file": "walk.mp4", "loop": True}) == "Looped video: walk.mp4"
+    assert background_text({"kind": "video", "file": "walk.mp4"}) == "Video: walk.mp4"
     assert transition_text(None) == "" and transition_text([]) == ""
     assert transition_text({"effect": "cross_dissolve", "duration": TICKS_PER_SECOND // 2}) == "Dissolve, 0:00.5"
     assert transition_text({"effect": "iris_round", "duration": TICKS_PER_SECOND}) == "iris round, 0:01.0"
@@ -14486,3 +14841,94 @@ def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     monkeypatch.setenv("CFA4_QT_MONITOR_GL", "0")
     assert not monitor.monitor_gl_wanted()
     view.deleteLater()
+
+
+def _openssl_kdm(tmp_path: Path) -> bool:
+    """A recipient key (``key.pem``), another key (``other.pem``) and a KDM (``kdm.xml``) for the
+    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData)."""
+    import shutil
+    import subprocess
+
+    ossl = shutil.which("openssl")
+    if ossl is None:
+        return False
+
+    def run(*args: str) -> None:
+        subprocess.run([ossl, *args], cwd=tmp_path, check=True, capture_output=True)
+
+    for name in ("key.pem", "other.pem"):
+        run("genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", name)
+    structure = bytes.fromhex("f1dc124460169a0e85bc300642f866ab")
+    plain = structure + b"\x77" * 20 + b"\x11" * 16 + b"MDAK" + b"\x5a" * 16
+    plain += b"2020-01-01T00:00:00+00:00" + b"2099-12-31T23:59:59+00:00" + os.urandom(16)
+    (tmp_path / "p.bin").write_bytes(plain)
+    run("pkeyutl", "-encrypt", "-inkey", "key.pem", "-pkeyopt", "rsa_padding_mode:oaep", "-pkeyopt", "rsa_oaep_md:sha1",
+        "-pkeyopt", "rsa_mgf1_md:sha1", "-in", "p.bin", "-out", "c.bin")
+    b64 = base64.b64encode((tmp_path / "c.bin").read_bytes()).decode()
+    (tmp_path / "kdm.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM">'
+        "<AuthenticatedPublic><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>"
+        '<KDMRequiredExtensions xmlns="http://www.smpte-ra.org/schemas/430-1/2006/KDM">'
+        "<CompositionPlaylistId>urn:uuid:11111111-1111-1111-1111-111111111111</CompositionPlaylistId>"
+        "<ContentTitleText>Encrypted Test</ContentTitleText></KDMRequiredExtensions></RequiredExtensions></AuthenticatedPublic>"
+        '<AuthenticatedPrivate><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
+        f"<enc:CipherValue>{b64}</enc:CipherValue></enc:CipherData></enc:EncryptedKey></AuthenticatedPrivate>"
+        "</DCinemaSecurityMessage>",
+        encoding="utf-8",
+    )
+    return True
+
+
+def test_kdm_dialog_describes_the_reply_never_a_key():
+    from cfa4_qt.panels.kdm_dialog import describe
+
+    text = describe({"title": "Film", "composition": "1111", "keys": [{"keyId": "5a5a", "type": "MDIK", "notValidBefore": "a", "notValidAfter": "b"}]})
+    assert text.splitlines()[0] == "Film: 1 keys loaded" and "MDIK  5a5a  a – b" in text and "CPL 1111" in text
+    assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
+
+
+def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
+    """File ▸ Load KDM… (#1029): a wrong private key shows the engine's message, the right one the
+    KDM's title and key types (never the key); Forget DCP Keys empties the key ring."""
+    from cfa4_qt.main_window import MainWindow
+
+    if not _openssl_kdm(tmp_path):
+        assert not os.environ.get("CFA4_REQUIRE_ORACLES"), "openssl not found"
+        pytest.skip("openssl not found")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
+        names = {a.objectName() for m in win.menuBar().actions() if m.menu() for a in m.menu().actions()}
+        assert {"qt.file.loadKdm", "qt.file.forgetDcpKeys"} <= names
+        # dcp.loadKdm without parameters (menu, control channel) opens the dialog
+        win.run_command(win.registry.commands["dcp.loadKdm"])
+        dlg = win.kdm_dialog
+        assert dlg is not None and dlg.isVisible()
+        dlg.load()
+        assert dlg.result.toPlainText() == "Choose the KDM file and the private key."
+        dlg.kdm_path.setText(str(tmp_path / "kdm.xml"))
+        dlg.key_path.setText(str(tmp_path / "other.pem"))
+        dlg.load()
+        assert wait_until(app, lambda: "not made for this private key" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+        dlg.key_path.setText(str(tmp_path / "key.pem"))
+        dlg.load()
+        assert wait_until(app, lambda: dlg.result.toPlainText().startswith("Encrypted Test: 1 keys loaded"), 20_000), dlg.result.toPlainText()
+        assert "MDAK" in dlg.result.toPlainText() and "5a5a5a5a-5a5a" in dlg.result.toPlainText()
+        got: list = []
+        engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == ["5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a"]
+        dlg.forget()
+        assert wait_until(app, lambda: dlg.result.toPlainText() == "DCP keys forgotten", 10_000)
+        got.clear()
+        engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == []
+        dlg.close()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

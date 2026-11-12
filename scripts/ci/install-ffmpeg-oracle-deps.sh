@@ -35,3 +35,11 @@ sudo apt-get install -y --no-install-recommends \
 # JPEG 2000 / HTJ2K oracles (the tests skip without them)
 sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
   || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
+# Speex reference encoder / decoder (speexenc, speexdec 1.2.1, built from source) for the Speex
+# oracle tests (they skip without them)
+bash "$(dirname "$0")/install-speex.sh" \
+  || echo "::warning::speex tools unavailable: Speex oracle tests skip"
+# AMR oracle `cfa4-amr-oracle` (opencore-amr + vo-amrwbenc, built from the pinned upstream tags;
+# the AMR oracle tests skip without it)
+bash "$(dirname "$0")/install-amr-oracle.sh" \
+  || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"

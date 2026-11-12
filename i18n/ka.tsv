@@ -303,6 +303,7 @@
 	Output file	გამოსატანი ფაილი
 	Overwrite	გადაწერა
 	PCM (uncompressed)	PCM (შეკუმშვის გარეშე)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 ფენა II)
 	Panner	პანორამირება
 	Paste Attributes…	ატრიბუტების ჩასმა…
 	Paste Insert	ჩასმა ჩართვით
@@ -1882,6 +1883,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP საქაღალდე: JPEG 2000 3996×2160 (1.85:1), 5.1 24-ბიტიანი 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP საქაღალდე: JPEG 2000 4096×1716 (2.39:1), 5.1 24-ბიტიანი 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (ურთიერთთავსებადი მასტერ პაკეტი)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF საქაღალდე: JPEG 2000 1920×1080, 5.1 24-ბიტიანი 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF საქაღალდე: JPEG 2000 3840×2160, 5.1 24-ბიტიანი 48 kHz PCM
+	Episode	ეპიზოდი
+	Event highlights	ღონისძიების მომენტები
+	Event	ღონისძიება
+	Lossless (reversible JPEG 2000)	უდანაკარგო (შექცევადი JPEG 2000)
+	Package language	პაკეტის ენა
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-კადრები
@@ -2041,6 +2052,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-ბიტიანი HDR-ისთვის)
 	10-bit RGB	10-ბიტიანი RGB
 	12-bit X'Y'Z'	12-ბიტიანი X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-ბიტიანი R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF დანაკარგით
+	JPEG 2000 IMF reversible	JPEG 2000 IMF შექცევადი
 	16-bit half float	16-ბიტიანი ნახევარ-სიზუსტის მცურავი
 	linear	წრფივი
 	uncompressed	შეუკუმშავი
@@ -3339,8 +3353,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8-ბიტიანი 4:2:2), 24-ბიტიანი 48 kHz PCM, საწყისი ტაიმკოდი
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile გრძელი GOP (12 კადრი, IBBP), 50 Mbit/s, XDCAM HD422 სტილში, 24-ბიტიანი 48 kHz PCM; HD კადრის ზომები
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0.3 ბიტი პიქსელზე), 24-ბიტიანი 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, ტიპი D-10 (IMX 50): მხოლოდ intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29,97 კადრი/წმ (4:3), ოთხი 24-ბიტიანი 48 kHz აუდიოარხი
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, ტიპი D-10 (IMX 50): მხოლოდ intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 კადრი/წმ (4:3), ოთხი 24-ბიტიანი 48 kHz აუდიოარხი
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24-ბიტიანი 48 kHz PCM, საწყისი ტაიმკოდი
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a, SMPTE RDD 9 განლაგებით: MPEG-2 4:2:2 Profile გრძელი GOP (12 კადრი, IBBP), 50 Mbit/s, 1920x1080 ან 1280x720 პროგრესული, ოთხი 24-ბიტიანი 48 kHz არხი, თითო არხი ცალკე AES3 ელემენტად
 	Main	ძირითადი
 	Mark In (Hover Scrub)	საწყისი წერტილის დასმა (გადატარებით)
 	Mark Out (Hover Scrub)	საბოლოო წერტილის დასმა (გადატარებით)
@@ -4317,6 +4339,7 @@ export.summary	Low	დაბალი
 	Crawl	მცოცავი ტექსტი
 	Picture: {file}	სურათი: {file}
 	Video: {file}	ვიდეო: {file}
+	Looped video: {file}	ციკლური ვიდეო: {file}
 	Into the next	შემდეგში გადასვლა
 	Safe areas and spines	უსაფრთხო არეები და ღერძები
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	მოქმედების უსაფრთხო არე (93 %), ტიტრების (90 %), ცენტრი და გვერდის ღერძები
@@ -4447,3 +4470,60 @@ export.summary	Low	დაბალი
 	picture styles (pictures keep their own size) are not carried over	სურათის სტილები (სურათები საკუთარ ზომას ინარჩუნებენ) არ გადადის
 	video (tape) styles are not carried over	ვიდეოს (ფირის) სტილები არ გადადის
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred-ის პროექტს ტიტრების ცხრილები აქვს: {n}; გამოიყენება „{name}“ (სხვა აირჩიეთ ველში ცხრილი)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	მიგნების დამატება
+	Add as Finding	მიგნებად დამატება
+	Are colour and contrast acceptable?	მისაღებია ფერი და კონტრასტი?
+	Automatic Checks	ავტომატური შემოწმებები
+	Bounds	საზღვრები
+	Check	შემოწმება
+	Check Now	ახლავე შემოწმება
+	Check quality after export	ხარისხის შემოწმება ექსპორტის შემდეგ
+	Checking…	მოწმდება…
+	Contact Sheet	საკონტაქტო ფურცელი
+	Critical	კრიტიკული
+	Fail	ჩავარდა
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	მიგნება {row}: დროის კოდი ამ ფაილის დრო არ არის (HH:MM:SS:FF).
+	Findings	მიგნებები
+	Human Review	ადამიანის მიერ შემოწმება
+	Incomplete	არასრული
+	Is there a visible picture defect?	არის ხილული გამოსახულების დეფექტი?
+	Is there audible distortion?	ისმის დამახინჯება?
+	Is there unwanted noise?	არის არასასურველი ხმაური?
+	Major	სერიოზული
+	Message	შეტყობინება
+	Minor	მცირე
+	No contact sheet	საკონტაქტო ფურცელი არ არის
+	Not answered	პასუხი არ არის
+	Not checked	არ შემოწმებულა
+	Not run	არ გაშვებულა
+	Note	შენიშვნა
+	Pass	გავიდა
+	Passed	გავიდა
+	Passed with warnings	გავიდა გაფრთხილებებით
+	Profile: {id} v{version}	პროფილი: {id} v{version}
+	Quality Check	ხარისხის შემოწმება
+	Quality Check…	ხარისხის შემოწმება…
+	Remove Finding	მიგნების წაშლა
+	Report: {path}	ანგარიში: {path}
+	Review complete	შემოწმება დასრულდა
+	Reviewer	შემმოწმებელი
+	Run the media quality check on the finished file (docs/media-qc.md)	მედიის ხარისხის შემოწმება დასრულებულ ფაილზე (docs/media-qc.md)
+	Save Review	შემოწმების შენახვა
+	Select a finished export in the queue	აირჩიეთ დასრულებული ექსპორტი რიგში
+	Severity	სიმძიმე
+	The engine is not running.	ძრავა არ მუშაობს.
+	Time code	დროის კოდი
+	Unsure	დარწმუნებული არ ვარ
+	accept	მისაღები
+	the engine did not start the check	ძრავამ შემოწმება არ დაიწყო
+	the engine sent no report	ძრავამ ანგარიში არ გამოგზავნა
+	Load KDM…	KDM-ის ჩატვირთვა…
+	Forget DCP Keys	DCP გასაღებების დავიწყება
+	Load KDM	KDM-ის ჩატვირთვა
+	KDM file	KDM ფაილი
+	Private key (PEM)	პირადი გასაღები (PEM)
+	{title}: {count} keys loaded	{title}: ჩატვირთულია {count} გასაღები
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	გასაღებები მხოლოდ მეხსიერებაში რჩება, DCP გასაღებების დავიწყებამდე ან სესიის დასრულებამდე.
+	DCP keys forgotten	DCP გასაღებები დავიწყებულია
+	Choose the KDM file and the private key.	აირჩიეთ KDM ფაილი და პირადი გასაღები.

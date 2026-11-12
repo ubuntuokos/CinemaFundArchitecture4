@@ -7,7 +7,7 @@ use cfa4_mxf::{
 };
 use cfa4_time::FrameRate;
 
-use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, Format, H264Profile, Out, Result};
+use crate::{ColorSignal, EncodedPacket, ExportError, ExportSettings, Format, H264Profile, MpegVideoInfo, MxfVideoCodec, Out, Result};
 
 /// Paths of the OP-Atom audio files for an export to `path` with `channels` channels.
 pub fn opatom_audio_paths(path: &str, channels: usize) -> Vec<String> {
@@ -28,9 +28,36 @@ fn io(e: std::io::Error) -> ExportError {
     ExportError::Io(e.to_string())
 }
 
-/// The picture essence description for an export (codec from the MXF video codec setting).
-fn picture(settings: &ExportSettings, w: u32, h: u32) -> PictureDesc {
+/// The picture essence description for an export (codec from the MXF video codec setting; MPEG-2
+/// from what its encoder reports).
+fn picture(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate, mpeg: Option<MpegVideoInfo>) -> Result<PictureDesc> {
+    if settings.mxf_video_codec == MxfVideoCodec::D10 {
+        let (mbps, lines) = crate::d10_params(settings, w, h, rate)?;
+        let mut d = PictureDesc::new(PictureCoding::D10 { mbps, lines }, 720, if lines == 625 { 608 } else { 512 });
+        // the display aspect ratio of the active picture: 16:9 when the pixel aspect says so
+        let wide = settings.pixel_aspect.is_some_and(|(n, dn)| dn > 0 && u64::from(w) * u64::from(n) * 9 >= u64::from(h) * u64::from(dn) * 15);
+        d.aspect = if wide { Rational::new(16, 9) } else { Rational::new(4, 3) };
+        return Ok(d);
+    }
     let coding = match settings.video_format() {
+        Format::Mpeg2 => {
+            let m = mpeg.ok_or_else(|| ExportError::Encode("internal: MPEG-2 encoder without stream parameters".into()))?;
+            if !matches!(m.profile_and_level, 0x44 | 0x46 | 0x82) {
+                return Err(ExportError::Unsupported(format!(
+                    "MPEG-2 in MXF is written for HD pictures (High and High-1440 levels); {w}x{h} is standard definition (D-10 / IMX)"
+                )));
+            }
+            if settings.mxf_video_codec == MxfVideoCodec::XdcamHd422 && (m.profile_and_level != 0x82 || !matches!((w, h), (1920, 1080) | (1280, 720))) {
+                return Err(ExportError::Unsupported(format!("XDCAM HD422 (RDD 9) pictures are 1920x1080 or 1280x720 in the 4:2:2 Profile; not {w}x{h}")));
+            }
+            PictureCoding::Mpeg2 {
+                profile_and_level: m.profile_and_level,
+                max_gop: u16::try_from(m.gop.max(1)).unwrap_or(u16::MAX),
+                b_pictures: u8::try_from(m.b_frames).unwrap_or(u8::MAX),
+                closed_gop: m.closed_gop,
+                bit_rate: u32::try_from(m.bit_rate).unwrap_or(u32::MAX),
+            }
+        }
         Format::ProRes => {
             use cfa4_prores::Profile;
             PictureCoding::ProRes {
@@ -65,7 +92,7 @@ fn picture(settings: &ExportSettings, w: u32, h: u32) -> PictureDesc {
         let g = gcd(a, b);
         d.aspect = Rational::new((a / g) as i32, (b / g) as i32);
     }
-    d
+    Ok(d)
 }
 
 fn gcd(a: u64, b: u64) -> u64 {
@@ -83,6 +110,8 @@ pub(crate) struct MxfSetup<'a> {
     pub audio: Option<(u32, usize)>,
     /// Start timecode in frames of `rate`, and drop-frame.
     pub timecode: (i64, bool),
+    /// MPEG-2 video: the encoder's stream parameters.
+    pub mpeg: Option<MpegVideoInfo>,
 }
 
 /// An MXF export in progress.
@@ -111,12 +140,13 @@ impl MxfMux {
         // integers only: `ExportSettings::validate` refuses float PCM in MXF
         let bits = u32::from(settings.audio.sample_format().bits());
         let mut cfg = WriterConfig::new(if atom { Pattern::OpAtom } else { Pattern::Op1a }, rate, ids.clone());
-        cfg.picture = Some(picture(settings, s.width, s.height));
+        cfg.picture = Some(picture(settings, s.width, s.height, s.rate, s.mpeg)?);
         cfg.modified = Timestamp::from_unix((now / 1_000_000_000) as i64);
         cfg.timecode = Some(StartTimecode { frames: s.timecode.0, rate, drop_frame: s.timecode.1 && s.rate.supports_drop_frame() });
         if !atom && let Some((sr, ch)) = s.audio {
             cfg.sound = vec![SoundDesc { sample_rate: sr, channels: ch as u32, bits }];
         }
+        cfg.rdd9 = settings.mxf_video_codec == MxfVideoCodec::XdcamHd422;
         let mut audio = Vec::new();
         if atom && let Some((sr, ch)) = s.audio {
             for (k, path) in opatom_audio_paths(&settings.path, ch).into_iter().enumerate() {
@@ -155,7 +185,10 @@ impl MxfMux {
 
     pub fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
         for p in packets {
-            let intra = !matches!(self.video.config().picture.as_ref().map(|p| p.coding), Some(PictureCoding::Avc { .. }));
+            let intra = !matches!(
+                self.video.config().picture.as_ref().map(|p| p.coding),
+                Some(PictureCoding::Avc { .. }) | Some(PictureCoding::Mpeg2 { max_gop: 2.., .. })
+            );
             let info = if intra {
                 FrameInfo::intra()
             } else {

@@ -342,6 +342,7 @@
 	Overlay	Қабаттастыру
 	Overwrite	Үстінен жазу
 	PCM (uncompressed)	PCM (сығылмаған)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 II қабат)
 	Panner	Панорамалағыш
 	Paste	Қою
 	Paste Attributes…	Атрибуттарды қою…
@@ -2047,6 +2048,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP бумасы: JPEG 2000 3996×2160 (1,85:1), 5.1 24 бит 48 кГц PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP бумасы: JPEG 2000 4096×1716 (2,39:1), 5.1 24 бит 48 кГц PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (үйлесімді мастер пакеті)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF бумасы: JPEG 2000 1920×1080, 5.1 24 бит 48 кГц PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF бумасы: JPEG 2000 3840×2160, 5.1 24 бит 48 кГц PCM
+	Episode	Эпизод
+	Event highlights	Іс-шара сәттері
+	Event	Іс-шара
+	Lossless (reversible JPEG 2000)	Шығынсыз (қайтымды JPEG 2000)
+	Package language	Пакет тілі
 	4:2:0 (Main Profile)	4:2:0 (Main профилі)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 профилі)
 	B pictures	B кадрлары
@@ -2216,6 +2227,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR үшін 10 бит)
 	10-bit RGB	10 биттік RGB
 	12-bit X'Y'Z'	12 биттік X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 биттік R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF шығынмен
+	JPEG 2000 IMF reversible	JPEG 2000 IMF қайтымды
 	16-bit half float	16 биттік жартылай жылжымалы нүкте
 	linear	сызықтық
 	uncompressed	сығылмаған
@@ -3600,8 +3614,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 бит 4:2:2), 24 биттік 48 кГц PCM, бастапқы уақыт коды
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile ұзын GOP (12 кадр, IBBP), 50 Мбит/с, XDCAM HD422 стилінде, PCM 24 бит 48 кГц; HD кадр өлшемдері
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High ұзын GOP (пиксельге 0,3 бит), 24 биттік 48 кГц PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, D-10 түрі (IMX 50): тек intra MPEG-2 4:2:2P@ML, 50 Мбит/с, 720x486, 29,97 кадр/с (4:3), төрт 24 биттік 48 кГц аудиоарна
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, D-10 түрі (IMX 50): тек intra MPEG-2 4:2:2P@ML, 50 Мбит/с, 720x576, 25 кадр/с (4:3), төрт 24 биттік 48 кГц аудиоарна
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 биттік 48 кГц PCM, бастапқы уақыт коды
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a, SMPTE RDD 9 орналасуында: MPEG-2 4:2:2 Profile ұзын GOP (12 кадр, IBBP), 50 Мбит/с, 1920x1080 немесе 1280x720 прогрессивті, әр арнаға жеке AES3 элементі ретінде төрт 24 биттік 48 кГц арна
 	Main	Негізгі
 	Mark In (Hover Scrub)	Кіруді белгілеу (меңзерді апарып қарау)
 	Mark Out (Hover Scrub)	Шығуды белгілеу (меңзерді апарып қарау)
@@ -4316,6 +4338,7 @@ export.summary	Low	төмен
 	Crawl	Жүгіртпе жол
 	Picture: {file}	Сурет: {file}
 	Video: {file}	Бейне: {file}
+	Looped video: {file}	Циклды бейне: {file}
 	Into the next	Келесіге өту
 	Safe areas and spines	Қауіпсіз аймақтар мен осьтер
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Әрекет қауіпсіз аймағы (93 %), титр аймағы (90 %), орталық және бет осьтері
@@ -4446,3 +4469,60 @@ export.summary	Low	төмен
 	picture styles (pictures keep their own size) are not carried over	сурет стильдері (суреттер өз өлшемін сақтайды) ауыспайды
 	video (tape) styles are not carried over	бейне (таспа) стильдері ауыспайды
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred жобасында {n} титрлер кестесі бар; «{name}» қолданылады (басқасын Кесте өрісінде таңдаңыз)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Табылғанды қосу
+	Add as Finding	Табылған ретінде қосу
+	Are colour and contrast acceptable?	Түс пен контраст қолайлы ма?
+	Automatic Checks	Автоматты тексерулер
+	Bounds	Шектер
+	Check	Тексеру
+	Check Now	Қазір тексеру
+	Check quality after export	Экспорттан кейін сапаны тексеру
+	Checking…	Тексерілуде…
+	Contact Sheet	Байланыс парағы
+	Critical	Шешуші
+	Fail	Өтпеді
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Табылған {row}: уақыт коды бұл файлдағы уақыт емес (HH:MM:SS:FF).
+	Findings	Табылғандар
+	Human Review	Адамның тексеруі
+	Incomplete	Толық емес
+	Is there a visible picture defect?	Суретте көрінетін ақау бар ма?
+	Is there audible distortion?	Естілетін бұрмалану бар ма?
+	Is there unwanted noise?	Қажетсіз шу бар ма?
+	Major	Елеулі
+	Message	Хабар
+	Minor	Шамалы
+	No contact sheet	Байланыс парағы жоқ
+	Not answered	Жауап берілмеген
+	Not checked	Тексерілмеген
+	Not run	Іске қосылмаған
+	Note	Ескертпе
+	Pass	Өтті
+	Passed	Өтті
+	Passed with warnings	Ескертулермен өтті
+	Profile: {id} v{version}	Профиль: {id} v{version}
+	Quality Check	Сапаны тексеру
+	Quality Check…	Сапаны тексеру…
+	Remove Finding	Табылғанды жою
+	Report: {path}	Есеп: {path}
+	Review complete	Тексеру аяқталды
+	Reviewer	Тексеруші
+	Run the media quality check on the finished file (docs/media-qc.md)	Дайын файлда медиа сапасын тексеруді іске қосу (docs/media-qc.md)
+	Save Review	Тексеруді сақтау
+	Select a finished export in the queue	Кезектен аяқталған экспортты таңдаңыз
+	Severity	Маңыздылығы
+	The engine is not running.	Қозғалтқыш жұмыс істеп тұрған жоқ.
+	Time code	Уақыт коды
+	Unsure	Сенімсіз
+	accept	қолайлы
+	the engine did not start the check	қозғалтқыш тексеруді бастамады
+	the engine sent no report	қозғалтқыш есеп жібермеді
+	Load KDM…	KDM жүктеу…
+	Forget DCP Keys	DCP кілттерін ұмыту
+	Load KDM	KDM жүктеу
+	KDM file	KDM файлы
+	Private key (PEM)	Жеке кілт (PEM)
+	{title}: {count} keys loaded	{title}: жүктелген кілттер: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кілттер тек жадта сақталады, «DCP кілттерін ұмыту» командасына немесе сеанс соңына дейін.
+	DCP keys forgotten	DCP кілттері ұмытылды
+	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.

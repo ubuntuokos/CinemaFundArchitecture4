@@ -1982,8 +1982,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ(8비트 4:2:2), 24비트 48 kHz PCM, 시작 타임코드
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile 롱 GOP(12픽처, IBBP) 50 Mbit/s, XDCAM HD422 방식, 24비트 48 kHz PCM; HD 프레임 크기
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High 롱 GOP(픽셀당 0.3비트), 24비트 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 유형(IMX 50): 인트라 전용 MPEG-2 4:2:2P@ML 50 Mbit/s, 720x486, 29.97 fps(4:3), 24비트 48 kHz 오디오 4채널
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 유형(IMX 50): 인트라 전용 MPEG-2 4:2:2P@ML 50 Mbit/s, 720x576, 25 fps(4:3), 24비트 48 kHz 오디오 4채널
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24비트 48 kHz PCM, 시작 타임코드
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 배치의 MXF OP1a: MPEG-2 4:2:2 Profile 롱 GOP(12픽처, IBBP) 50 Mbit/s, 1920x1080 또는 1280x720 프로그레시브, 채널별 AES3 요소로 24비트 48 kHz 4채널
 	My Shortcuts	내 단축키
 	My Templates	내 템플릿
 	Name	이름
@@ -3647,6 +3655,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 3996×2160(1.85:1), 5.1 24비트 48kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 4096×1716(2.39:1), 5.1 24비트 48kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E(상호 운용 마스터 패키지)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF 폴더: JPEG 2000 1920×1080, 5.1 24비트 48kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF 폴더: JPEG 2000 3840×2160, 5.1 24비트 48kHz PCM
+	Episode	에피소드
+	Event highlights	이벤트 하이라이트
+	Event	이벤트
+	Lossless (reversible JPEG 2000)	무손실(가역 JPEG 2000)
+	Package language	패키지 언어
 	Show Duplicate Frame Markers	중복 프레임 마커 표시
 	Work Area Bar	작업 영역 막대
 	Set Work Area Bar In Point	작업 영역 막대 시작 지점 설정
@@ -3806,6 +3824,7 @@
 	Output file	출력 파일
 	Output folder	출력 폴더
 	PCM (uncompressed)	PCM (비압축)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 레이어 II)
 	Pace	속도
 	Path:	경로:
 	Program Stream (.mpg, LPCM audio)	프로그램 스트림 (.mpg, LPCM 오디오)
@@ -3911,6 +3930,9 @@
 	1 B picture between anchors	앵커 사이 B 픽처 1개
 	10-bit RGB	10비트 RGB
 	12-bit X'Y'Z'	12비트 X'Y'Z'
+	10-bit R'G'B' 4:4:4	10비트 R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF 손실
+	JPEG 2000 IMF reversible	JPEG 2000 IMF 가역
 	16-bit half float	16비트 반정밀도 부동소수점
 	AV1 Main (10-bit for HDR)	AV1 Main(HDR은 10비트)
 	BDAV Transport Stream	BDAV 전송 스트림
@@ -4314,6 +4336,7 @@
 	Safe areas and spines	세이프 영역과 스파인
 	The text moves {speed} px per frame; a whole number does not shimmer	텍스트가 프레임당 {speed} px 이동합니다. 정수 값이면 깜빡이지 않습니다
 	Video: {file}	영상: {file}
+	Looped video: {file}	반복 영상: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”이(가) 배경과 구분되지 않습니다(대비 {ratio}:1, 최소 4.5:1 필요)
 	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	완성된 룩: 스타일, 배경, 트랜지션, 타이밍. 스타일 파일을 지정하면 그것이 우선합니다.
 	Apply Credits Template…	크레딧 템플릿 적용…
@@ -4438,3 +4461,60 @@
 	picture styles (pictures keep their own size) are not carried over	이미지 스타일(이미지는 자체 크기를 유지)은 가져오지 않습니다
 	video (tape) styles are not carried over	비디오(테이프) 스타일은 가져오지 않습니다
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 프로젝트에 크레딧 스프레드시트가 {n}개 있습니다. “{name}”을(를) 사용합니다(스프레드시트 필드에서 다른 것을 선택하세요)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	발견 사항 추가
+	Add as Finding	발견 사항으로 추가
+	Are colour and contrast acceptable?	색상과 대비가 허용 가능합니까?
+	Automatic Checks	자동 검사
+	Bounds	범위
+	Check	검사
+	Check Now	지금 검사
+	Check quality after export	내보낸 후 품질 검사
+	Checking…	검사 중…
+	Contact Sheet	콘택트 시트
+	Critical	치명적
+	Fail	실패
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	발견 사항 {row}: 타임코드가 이 파일의 시간이 아닙니다 (HH:MM:SS:FF).
+	Findings	발견 사항
+	Human Review	사람 검토
+	Incomplete	불완전
+	Is there a visible picture defect?	눈에 보이는 화면 결함이 있습니까?
+	Is there audible distortion?	들리는 왜곡이 있습니까?
+	Is there unwanted noise?	원치 않는 잡음이 있습니까?
+	Major	중대
+	Message	메시지
+	Minor	경미
+	No contact sheet	콘택트 시트 없음
+	Not answered	응답 없음
+	Not checked	검사 안 함
+	Not run	실행 안 됨
+	Note	메모
+	Pass	통과
+	Passed	통과
+	Passed with warnings	경고와 함께 통과
+	Profile: {id} v{version}	프로필: {id} v{version}
+	Quality Check	품질 검사
+	Quality Check…	품질 검사…
+	Remove Finding	발견 사항 제거
+	Report: {path}	보고서: {path}
+	Review complete	검토 완료
+	Reviewer	검토자
+	Run the media quality check on the finished file (docs/media-qc.md)	완료된 파일에 미디어 품질 검사 실행 (docs/media-qc.md)
+	Save Review	검토 저장
+	Select a finished export in the queue	대기열에서 완료된 내보내기를 선택하십시오
+	Severity	심각도
+	The engine is not running.	엔진이 실행되고 있지 않습니다.
+	Time code	타임코드
+	Unsure	확실하지 않음
+	accept	허용
+	the engine did not start the check	엔진이 검사를 시작하지 않았습니다
+	the engine sent no report	엔진이 보고서를 보내지 않았습니다
+	Load KDM…	KDM 불러오기…
+	Forget DCP Keys	DCP 키 지우기
+	Load KDM	KDM 불러오기
+	KDM file	KDM 파일
+	Private key (PEM)	개인 키 (PEM)
+	{title}: {count} keys loaded	{title}: 키 {count}개 불러옴
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	키는 메모리에만 남으며, DCP 키 지우기 또는 세션이 끝날 때까지 유지됩니다.
+	DCP keys forgotten	DCP 키를 지웠습니다
+	Choose the KDM file and the private key.	KDM 파일과 개인 키를 선택하십시오.

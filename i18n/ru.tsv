@@ -3138,8 +3138,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 бит 4:2:2), PCM 24 бит 48 кГц, начальный таймкод
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 кадров, IBBP), 50 Мбит/с в стиле XDCAM HD422, PCM 24 бит 48 кГц; размеры кадра HD
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High long GOP (0,3 бит на пиксель), PCM 24 бит 48 кГц
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типа D-10 (IMX 50): только intra MPEG-2 4:2:2P@ML, 50 Мбит/с, 720x486 при 29,97 кадр/с (4:3), четыре аудиоканала 24 бит 48 кГц
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a типа D-10 (IMX 50): только intra MPEG-2 4:2:2P@ML, 50 Мбит/с, 720x576 при 25 кадр/с (4:3), четыре аудиоканала 24 бит 48 кГц
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, PCM 24 бит 48 кГц, начальный таймкод
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a в раскладке SMPTE RDD 9: MPEG-2 4:2:2 Profile long GOP (12 кадров, IBBP), 50 Мбит/с, 1920x1080 или 1280x720 прогрессивная развёртка, четыре канала 24 бит 48 кГц отдельными элементами AES3 на канал
 	Main	Main
 	Mark In (Hover Scrub)	Поставить точку входа (скраббинг при наведении)
 	Mark Out (Hover Scrub)	Поставить точку выхода (скраббинг при наведении)
@@ -3649,6 +3657,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Папка SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), 5.1, 24 бит, 48 кГц, PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Папка SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), 5.1, 24 бит, 48 кГц, PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Папка SMPTE IMF: JPEG 2000 1920×1080, 5.1, 24 бит, 48 кГц, PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Папка SMPTE IMF: JPEG 2000 3840×2160, 5.1, 24 бит, 48 кГц, PCM
+	Episode	Эпизод
+	Event highlights	Лучшие моменты события
+	Event	Событие
+	Lossless (reversible JPEG 2000)	Без потерь (обратимый JPEG 2000)
+	Package language	Язык пакета
 	Show Duplicate Frame Markers	Показывать маркеры дублированных кадров
 	Work Area Bar	Полоса рабочей области
 	Set Work Area Bar In Point	Задать точку входа полосы рабочей области
@@ -3824,6 +3842,7 @@
 	Output file	Выходной файл
 	Output folder	Выходная папка
 	PCM (uncompressed)	PCM (без сжатия)
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 уровень II)
 	Pace	Темп
 	Path:	Путь:
 	Program Stream (.mpg, LPCM audio)	Программный поток (.mpg, звук LPCM)
@@ -3929,6 +3948,9 @@
 	1 B picture between anchors	1 B-кадр между опорными
 	10-bit RGB	10-бит RGB
 	12-bit X'Y'Z'	12-бит X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-бит R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF с потерями
+	JPEG 2000 IMF reversible	JPEG 2000 IMF обратимый
 	16-bit half float	16-бит half float
 	AV1 Main (10-bit for HDR)	AV1 Main (10 бит для HDR)
 	BDAV Transport Stream	Транспортный поток BDAV
@@ -4299,6 +4321,7 @@
 	Crawl	Бегущая строка
 	Picture: {file}	Изображение: {file}
 	Video: {file}	Видео: {file}
+	Looped video: {file}	Видео по кругу: {file}
 	Into the next	В следующую
 	Safe areas and spines	Безопасные зоны и оси
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасная зона действия (93 %), безопасная зона заголовков (90 %), центр и оси страницы
@@ -4429,3 +4452,60 @@
 	picture styles (pictures keep their own size) are not carried over	стили изображений (изображения сохраняют свой размер) не переносятся
 	video (tape) styles are not carried over	стили видео (ленты) не переносятся
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	в проекте Cinecred {n} таблиц титров; используется “{name}” (выберите другую в поле Таблица)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Добавить замечание
+	Add as Finding	Добавить как замечание
+	Are colour and contrast acceptable?	Приемлемы ли цвет и контраст?
+	Automatic Checks	Автоматические проверки
+	Bounds	Границы
+	Check	Проверка
+	Check Now	Проверить сейчас
+	Check quality after export	Проверить качество после экспорта
+	Checking…	Проверка…
+	Contact Sheet	Контактный лист
+	Critical	Критическое
+	Fail	Не пройдено
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Замечание {row}: тайм-код не является моментом этого файла (HH:MM:SS:FF).
+	Findings	Замечания
+	Human Review	Проверка человеком
+	Incomplete	Не завершено
+	Is there a visible picture defect?	Есть ли видимый дефект изображения?
+	Is there audible distortion?	Есть ли слышимые искажения?
+	Is there unwanted noise?	Есть ли нежелательный шум?
+	Major	Серьёзное
+	Message	Сообщение
+	Minor	Незначительное
+	No contact sheet	Нет контактного листа
+	Not answered	Нет ответа
+	Not checked	Не проверено
+	Not run	Не запускалось
+	Note	Примечание
+	Pass	Пройдено
+	Passed	Пройдено
+	Passed with warnings	Пройдено с предупреждениями
+	Profile: {id} v{version}	Профиль: {id} v{version}
+	Quality Check	Контроль качества
+	Quality Check…	Контроль качества…
+	Remove Finding	Удалить замечание
+	Report: {path}	Отчёт: {path}
+	Review complete	Проверка завершена
+	Reviewer	Проверяющий
+	Run the media quality check on the finished file (docs/media-qc.md)	Запустить проверку качества медиа для готового файла (docs/media-qc.md)
+	Save Review	Сохранить проверку
+	Select a finished export in the queue	Выберите завершённый экспорт в очереди
+	Severity	Серьёзность
+	The engine is not running.	Движок не запущен.
+	Time code	Тайм-код
+	Unsure	Не уверен
+	accept	допустимо
+	the engine did not start the check	движок не начал проверку
+	the engine sent no report	движок не прислал отчёт
+	Load KDM…	Загрузить KDM…
+	Forget DCP Keys	Забыть ключи DCP
+	Load KDM	Загрузить KDM
+	KDM file	Файл KDM
+	Private key (PEM)	Закрытый ключ (PEM)
+	{title}: {count} keys loaded	{title}: загружено ключей: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключи хранятся только в памяти, до команды «Забыть ключи DCP» или конца сеанса.
+	DCP keys forgotten	Ключи DCP забыты
+	Choose the KDM file and the private key.	Выберите файл KDM и закрытый ключ.

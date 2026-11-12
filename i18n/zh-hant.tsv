@@ -279,6 +279,7 @@
 	Output file	輸出檔案
 	Overwrite	覆蓋
 	PCM (uncompressed)	PCM（未壓縮）
+	MP2 (MPEG-1 Layer II)	MP2（MPEG-1 第二層）
 	Panner	聲像器
 	Paste Attributes…	貼上屬性…
 	Paste Insert	貼上插入
@@ -1791,6 +1792,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 資料夾：JPEG 2000 3996×2160（1.85:1），5.1 24 位 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 資料夾：JPEG 2000 4096×1716（2.39:1），5.1 24 位 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E（可互通母版包）
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF 資料夾：JPEG 2000 1920×1080，5.1 24 位 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF 資料夾：JPEG 2000 3840×2160，5.1 24 位 48 kHz PCM
+	Episode	劇集
+	Event highlights	活動精華
+	Event	活動
+	Lossless (reversible JPEG 2000)	無損（可逆 JPEG 2000）
+	Package language	套件語言
 	4:2:0 (Main Profile)	4:2:0（Main 配置檔案）
 	4:2:2 (4:2:2 Profile)	4:2:2（4:2:2 配置檔案）
 	B pictures	B 影格
@@ -1948,6 +1959,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main（HDR 用 10 位）
 	10-bit RGB	10 位 RGB
 	12-bit X'Y'Z'	12 位 X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 位 R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF 有損
+	JPEG 2000 IMF reversible	JPEG 2000 IMF 可逆
 	16-bit half float	16 位半精度浮點
 	linear	線性
 	uncompressed	未壓縮
@@ -3222,8 +3236,16 @@
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a，DNxHR HQ（8 位 4:2:2），24 位 48 kHz PCM，起始時間碼
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a，MPEG-2 4:2:2 Profile 長 GOP（12 幀，IBBP），50 Mbit/s，XDCAM HD422 風格，24 位元 48 kHz PCM；HD 畫面尺寸
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a，H.264 High long GOP（每像素 0.3 位），24 位 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 類型（IMX 50）：僅畫面內 MPEG-2 4:2:2P@ML，50 Mbit/s，720x486，29.97 fps（4:3），四個 24 位元 48 kHz 音訊聲道
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a D-10 類型（IMX 50）：僅畫面內 MPEG-2 4:2:2P@ML，50 Mbit/s，720x576，25 fps（4:3），四個 24 位元 48 kHz 音訊聲道
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a，ProRes 422 HQ，24 位 48 kHz PCM，起始時間碼
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	SMPTE RDD 9 配置的 MXF OP1a：MPEG-2 4:2:2 Profile 長 GOP（12 幀，IBBP），50 Mbit/s，1920x1080 或 1280x720 循序，四個 24 位元 48 kHz 聲道，每聲道一個 AES3 元素
 	Main	主要
 	Mark In (Hover Scrub)	標記入點（懸停擦除）
 	Mark Out (Hover Scrub)	標記出點（懸停擦除）
@@ -4313,6 +4335,7 @@ export.summary	Low	低
 	Crawl	跑馬燈
 	Picture: {file}	圖片：{file}
 	Video: {file}	影片：{file}
+	Looped video: {file}	循環影片：{file}
 	Into the next	轉入下一頁
 	Safe areas and spines	安全區與軸線
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	動作安全區（93 %）、字幕安全區（90 %）、中心與頁面軸線
@@ -4443,3 +4466,60 @@ export.summary	Low	低
 	picture styles (pictures keep their own size) are not carried over	不會沿用圖片樣式（圖片保留原始大小）
 	video (tape) styles are not carried over	不會沿用影片（磁帶）樣式
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 專案含有 {n} 份演職員表試算表；使用「{name}」（可在「試算表」欄位選擇其他）
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	新增問題
+	Add as Finding	新增為問題
+	Are colour and contrast acceptable?	色彩與對比是否可接受？
+	Automatic Checks	自動檢查
+	Bounds	範圍
+	Check	檢查
+	Check Now	立即檢查
+	Check quality after export	匯出後檢查品質
+	Checking…	檢查中…
+	Contact Sheet	縮圖表
+	Critical	嚴重
+	Fail	未通過
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	問題 {row}：時間碼不是此檔案中的時間 (HH:MM:SS:FF)。
+	Findings	問題
+	Human Review	人工審查
+	Incomplete	不完整
+	Is there a visible picture defect?	是否有可見的畫面瑕疵？
+	Is there audible distortion?	是否有可聽見的失真？
+	Is there unwanted noise?	是否有多餘的雜訊？
+	Major	重大
+	Message	訊息
+	Minor	輕微
+	No contact sheet	沒有縮圖表
+	Not answered	未回答
+	Not checked	未檢查
+	Not run	未執行
+	Note	備註
+	Pass	通過
+	Passed	已通過
+	Passed with warnings	通過但有警告
+	Profile: {id} v{version}	設定檔：{id} v{version}
+	Quality Check	品質檢查
+	Quality Check…	品質檢查…
+	Remove Finding	移除問題
+	Report: {path}	報告：{path}
+	Review complete	審查完成
+	Reviewer	審查者
+	Run the media quality check on the finished file (docs/media-qc.md)	對完成的檔案執行媒體品質檢查 (docs/media-qc.md)
+	Save Review	儲存審查
+	Select a finished export in the queue	在佇列中選取已完成的匯出
+	Severity	嚴重性
+	The engine is not running.	引擎未執行。
+	Time code	時間碼
+	Unsure	不確定
+	accept	可接受
+	the engine did not start the check	引擎未開始檢查
+	the engine sent no report	引擎未傳送報告
+	Load KDM…	載入 KDM…
+	Forget DCP Keys	清除 DCP 金鑰
+	Load KDM	載入 KDM
+	KDM file	KDM 檔案
+	Private key (PEM)	私密金鑰 (PEM)
+	{title}: {count} keys loaded	{title}：已載入 {count} 個金鑰
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	金鑰只保存在記憶體中，直到執行「清除 DCP 金鑰」或工作階段結束。
+	DCP keys forgotten	已清除 DCP 金鑰
+	Choose the KDM file and the private key.	請選擇 KDM 檔案和私密金鑰。

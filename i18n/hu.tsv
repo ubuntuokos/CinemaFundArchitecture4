@@ -350,6 +350,7 @@
 	Output file	Kimeneti fájl
 	Overlay	Átfedés
 	Overwrite	Felülírás
+	MP2 (MPEG-1 Layer II)	MP2 (MPEG-1 Layer II)
 	PCM (uncompressed)	PCM (tömörítetlen)
 	Panels	Panelek
 	Panner	Panoráma
@@ -2146,6 +2147,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 3996×2160 (1,85:1), 5.1 24 bites 48 kHz-es PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 4096×1716 (2,39:1), 5.1 24 bites 48 kHz-es PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (interoperábilis mastercsomag)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF-mappa: JPEG 2000 1920×1080, 5.1 24 bites 48 kHz-es PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF-mappa: JPEG 2000 3840×2160, 5.1 24 bites 48 kHz-es PCM
+	Episode	Epizód
+	Event highlights	Összefoglaló
+	Event	Esemény
+	Lossless (reversible JPEG 2000)	Veszteségmentes (reverzibilis JPEG 2000)
+	Package language	Csomag nyelve
 	4:2:0 (Main Profile)	4:2:0 (Main profil)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
 	B pictures	B-képek
@@ -2326,6 +2337,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR-hez 10 bites)
 	10-bit RGB	10 bites RGB
 	12-bit X'Y'Z'	12 bites X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 bites R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF veszteséges
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reverzibilis
 	16-bit half float	16 bites, félpontos lebegőpontos
 	linear	lineáris
 	uncompressed	tömörítetlen
@@ -3758,8 +3772,16 @@ export.summary	Low	alacsony
 	MXF OP1a H.264	MXF OP1a H.264
 	MXF OP1a ProRes 422 HQ	MXF OP1a ProRes 422 HQ
 	MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode	MXF OP1a, DNxHR HQ (8 bites 4:2:2), 24 bites 48 kHz PCM, kezdő időkód
+	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s	MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s
+	MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes	MXF OP1a, MPEG-2 4:2:2 Profile, hosszú GOP (12 kép, IBBP), 50 Mbit/s, XDCAM HD422 stílusban, 24 bites 48 kHz PCM; HD képméretek
 	MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM	MXF OP1a, H.264 High, hosszú GOP (0,3 bit/képpont), 24 bites 48 kHz PCM
+	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97	MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97
+	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25	MXF OP1a D-10 (IMX) 50 Mbit/s 625/25
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, D-10 típus (IMX 50): csak intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x486, 29,97 fps (4:3), négy 24 bites 48 kHz-es hangcsatorna
+	MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels	MXF OP1a, D-10 típus (IMX 50): csak intra MPEG-2 4:2:2P@ML, 50 Mbit/s, 720x576, 25 fps (4:3), négy 24 bites 48 kHz-es hangcsatorna
 	MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode	MXF OP1a, ProRes 422 HQ, 24 bites 48 kHz PCM, kezdő időkód
+	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s	MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s
+	MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements	MXF OP1a SMPTE RDD 9 elrendezésben: MPEG-2 4:2:2 Profile, hosszú GOP (12 kép, IBBP), 50 Mbit/s, 1920x1080 vagy 1280x720 progresszív, négy 24 bites 48 kHz-es csatorna csatornánkénti AES3-elemként
 	Main	Main
 	Mark In (Hover Scrub)	Kezdőpont jelölése (léptetés rámutatással)
 	Mark Out (Hover Scrub)	Végpont jelölése (léptetés rámutatással)
@@ -4313,6 +4335,7 @@ export.summary	Low	alacsony
 	Crawl	Futószöveg
 	Picture: {file}	Kép: {file}
 	Video: {file}	Videó: {file}
+	Looped video: {file}	Ismétlődő videó: {file}
 	Into the next	Átmenet a következőbe
 	Safe areas and spines	Biztonsági területek és gerincek
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Akcióbiztos (93 %), címbiztos (90 %) terület, a középvonalak és az oldal gerincei
@@ -4443,3 +4466,60 @@ export.summary	Low	alacsony
 	picture styles (pictures keep their own size) are not carried over	a képstílusok (a képek megtartják saját méretüket) nem kerülnek át
 	video (tape) styles are not carried over	a videó- (szalag-) stílusok nem kerülnek át
 	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	a Cinecred-projekt {n} stáblista-táblázatot tartalmaz; a(z) “{name}” lesz használva (válassz másikat a Táblázat mezőben)
+# Media QC: Quality Check window and the export queue's QC state (docs/media-qc.md)
+	Add Finding	Észrevétel hozzáadása
+	Add as Finding	Felvétel észrevételként
+	Are colour and contrast acceptable?	Elfogadható a szín és a kontraszt?
+	Automatic Checks	Automatikus ellenőrzések
+	Bounds	Határok
+	Check	Ellenőrzés
+	Check Now	Ellenőrzés most
+	Check quality after export	Minőségellenőrzés exportálás után
+	Checking…	Ellenőrzés…
+	Contact Sheet	Kontaktlap
+	Critical	Kritikus
+	Fail	Hiba
+	Findings	Észrevételek
+	Human Review	Emberi ellenőrzés
+	Incomplete	Hiányos
+	Is there a visible picture defect?	Van látható képhiba?
+	Is there audible distortion?	Van hallható torzítás?
+	Is there unwanted noise?	Van nem kívánt zaj?
+	Major	Jelentős
+	Message	Üzenet
+	Minor	Kisebb
+	No contact sheet	Nincs kontaktlap
+	Not answered	Nincs válasz
+	Not checked	Nincs ellenőrizve
+	Not run	Nem futott
+	Note	Megjegyzés
+	Pass	Megfelelt
+	Passed	Megfelelt
+	Passed with warnings	Megfelelt, figyelmeztetésekkel
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality Check	Minőségellenőrzés
+	Quality Check…	Minőségellenőrzés…
+	Remove Finding	Észrevétel eltávolítása
+	Report: {path}	Jelentés: {path}
+	Review complete	Az ellenőrzés kész
+	Reviewer	Ellenőrző
+	Run the media quality check on the finished file (docs/media-qc.md)	A kész fájl médiaminőség-ellenőrzése (docs/media-qc.md)
+	Save Review	Ellenőrzés mentése
+	Select a finished export in the queue	Válasszon ki egy befejezett exportot a sorban
+	Severity	Súlyosság
+	Time code	Időkód
+	Unsure	Bizonytalan
+	accept	elfogadható
+	the engine did not start the check	a motor nem indította el az ellenőrzést
+	the engine sent no report	a motor nem küldött jelentést
+	The engine is not running.	A motor nem fut.
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Észrevétel {row}: az időkód nem létező időpont ebben a fájlban (ÓÓ:PP:MM:KK).
+	Load KDM…	KDM betöltése…
+	Forget DCP Keys	DCP kulcsok elfelejtése
+	Load KDM	KDM betöltése
+	KDM file	KDM fájl
+	Private key (PEM)	Privát kulcs (PEM)
+	{title}: {count} keys loaded	{title}: {count} kulcs betöltve
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	A kulcsok csak a memóriában maradnak, a DCP kulcsok elfelejtéséig vagy a munkamenet végéig.
+	DCP keys forgotten	DCP kulcsok elfelejtve
+	Choose the KDM file and the private key.	Válassza ki a KDM fájlt és a privát kulcsot.
