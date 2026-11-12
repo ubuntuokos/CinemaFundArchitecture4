@@ -73,6 +73,11 @@ results. This oracle is separate from the product's supplementary FFmpeg backend
 - Fixture sources are synthetic: `testsrc2`, `mandelbrot`, SMPTE bars, noise and fades, sine tones.
   H.264 and HEVC fixtures need ffmpeg built with libx264 and libx265. The VP9 and
   AV1 fixtures (libvpx-vp9, libaom-av1; 360p, 1080p, 2160p, hidden alt-ref frames, two GOPs) need an ffmpeg with those encoders.
+- IMF packages (`crates/export/src/imf_tests.rs`) have two optional oracles that never run in CI:
+  `CFA4_IMF_SCHEMAS` (a folder of the SMPTE XML schemas, checked with `xmllint`) and
+  `CFA4_PHOTON_CP` (the Java class path of a local build of Netflix Photon, Apache-2.0, outside the
+  repository; its `IMPAnalyzer` must report no errors). Photon builds with Gradle (`gradle classes`;
+  pin its `latest.release` dependencies when Maven Central rate-limits the metadata lookups).
 
 The NVENC tests (`crates/platform/tests/nvenc.rs` and `nvenc_export.rs`; H.264, H.265 and Main 10
 HDR) skip, printing `SKIPPED`, without an NVIDIA GPU
