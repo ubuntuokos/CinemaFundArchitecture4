@@ -158,7 +158,7 @@ pub(crate) fn rgb_to_ycbcr(r: &mut [u16], g: &mut [u16], b: &mut [u16], bits: u3
 }
 
 /// X'Y'Z' planes of `bits` bits to P3-D65 R'G'B' (in place), for [`rgb_to_ycbcr`].
-fn xyz_to_rgb(x: &mut [u16], y: &mut [u16], z: &mut [u16], bits: u32) {
+pub(crate) fn xyz_to_rgb(x: &mut [u16], y: &mut [u16], z: &mut [u16], bits: u32) {
     let max = ((1u32 << bits) - 1) as f32;
     // DCI: luminance = 52.37 cd/m² × (code / max)^2.6; reference white (48 cd/m²) is 1.0
     let decode: Vec<f32> = (0..=(1u32 << bits) - 1).map(|v| (v as f32 / max).powf(2.6) * (52.37 / 48.0)).collect();
