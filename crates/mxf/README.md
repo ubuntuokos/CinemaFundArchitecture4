@@ -50,6 +50,9 @@ Implemented from the SMPTE documents (editions used):
 ancillary resources (fonts, images: id, MIME type, generic stream). `open` reports such a file as
 `Unsupported` (it has no picture or sound). `cfa4-engine` imports the XML as a caption track
 (ST 428-7 D-Cinema subtitles through `cfa4_captions::dcst`, IMSC1 through `cfa4_captions::ttml`).
+In an encrypted track file (ST 429-6) the document and the resources are Encrypted Triplets
+(`Region::plain`, `TimedText::encryption`): `read_document` / `read_resource` decrypt them with
+the subtitle key (MDSK) from the key ring, or fail with `Error::Encrypted` naming its Key ID.
 
 The `test-util` feature exposes `testing::build_timed_text` and the other synthetic file builders
 for tests in other crates.
@@ -158,7 +161,7 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
 
 Not supported: gaps (fillers) inside edit lists (#1008), external essence (OP-Atom
 material packages whose other tracks live in other files are opened track by track), partial
-essence, clip-wrapped encrypted essence, encrypted timed text track files, the legacy MIC key
+essence, clip-wrapped encrypted essence, the legacy MIC key
 derivation of ST 429-6 Annex B (a MIC is checked only with an MDMK key), and descriptive metadata
 (parsed sets are ignored).
 
