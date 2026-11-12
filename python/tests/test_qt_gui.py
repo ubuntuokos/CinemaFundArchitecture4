@@ -2996,6 +2996,70 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_imf_export_writes_a_package_folder(app, tmp_path: Path):
+    """IMF App 2E (#1011): the preset sets the frame size, the output is a folder, the content
+    kinds are IMF's, lossless and the language go to the engine, which writes the package."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.imf_lossless.isEnabled()
+        assert "imfLossless" not in dlg.params()
+        dlg.preset.setCurrentIndex(dlg.preset.findData("IMF App 2E HD"))
+        assert dlg.format.currentData() == "imf"
+        assert dlg.imf_lossless.isEnabled() and dlg.dcp_kind.isEnabled() and dlg.dcp_language.isEnabled()
+        assert not dlg.dcp_resolution.isEnabled() and not dlg.bitrate.isEnabled() and dlg.width_spin.isEnabled()
+        assert Path(dlg.path.text()).suffix == "", dlg.path.text()
+        kinds = [dlg.dcp_kind.itemData(i) for i in range(dlg.dcp_kind.count())]
+        assert "episode" in kinds and "policy" not in kinds, kinds
+        dlg.dcp_kind.setCurrentIndex(dlg.dcp_kind.findData("episode"))
+        dlg.dcp_language.setCurrentText("hu-HU")
+        dlg.imf_lossless.setChecked(True)
+        p = dlg.params()
+        assert (p["imfContentKind"], p["imfLossless"], p["dcpLanguage"]) == ("episode", True, "hu-HU")
+        assert "dcpResolution" not in p and "bitrateKbps" not in p
+        # a small picture keeps the test quick
+        dlg.match_size.setChecked(False)
+        dlg.width_spin.setValue(320)
+        dlg.height_spin.setValue(180)
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(0.25)
+        out = tmp_path / "out" / "Demo_IMP"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "320×180" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        names = sorted(f.name for f in out.iterdir())
+        assert "ASSETMAP.xml" in names and "VOLINDEX.xml" in names, names
+        assert sum(n.startswith("VIDEO_") for n in names) == 1 and sum(n.startswith("AUDIO_") for n in names) == 1, names
+        cpl = next(out.glob("CPL_*.xml")).read_text()
+        assert "<ContentKind>episode</ContentKind>" in cpl and "<Language>hu-HU</Language>" in cpl
+        assert "http://www.smpte-ra.org/ns/2067-21/5ED" in cpl
+        # back to a DCP: its own kinds again
+        dlg.format.setCurrentIndex(dlg.format.findData("dcp"))
+        kinds = [dlg.dcp_kind.itemData(i) for i in range(dlg.dcp_kind.count())]
+        assert "policy" in kinds and "episode" not in kinds and not dlg.imf_lossless.isEnabled()
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
     """DCP immersive audio (#343): the IAB choice, the source row only for "from a file", the
     engine's report on the source, and packages with an IAB track file and its CPL AuxData."""
