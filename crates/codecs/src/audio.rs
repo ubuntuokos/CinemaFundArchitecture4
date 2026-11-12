@@ -1087,6 +1087,26 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if ext == "mpc" {
+            let (mpc, samples) = cfa4_musepack::decode_file(&bytes).map_err(|e| CodecError::Decode(format!("{name}: {e}")))?;
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, i64::from(mpc.sample_rate)),
+                video: None,
+                audio_streams: vec![AudioStreamInfo {
+                    sample_rate: mpc.sample_rate,
+                    channels: samples.len() as u32,
+                    codec: format!("Musepack SV{}", mpc.stream_version),
+                    ..AudioStreamInfo::default()
+                }],
+                container: "Musepack".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate: mpc.sample_rate, samples });
+        }
         if ext == "aac" {
             let (rate, samples) = decode_adts(&bytes)?.ok_or_else(|| CodecError::Decode(format!("{name}: no ADTS AAC frames")))?;
             let frames = samples.first().map_or(0, Vec::len);
@@ -1371,7 +1391,7 @@ impl MediaSource for AudioFileSource {
 
 pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<SharedSource, MediaError>> {
     let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
-    if !matches!(ext.as_str(), "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc" | "amr" | "awb") {
+    if !matches!(ext.as_str(), "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc" | "amr" | "awb" | "mpc") {
         return None;
     }
     Some(AudioFileSource::decode(name, bytes).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))

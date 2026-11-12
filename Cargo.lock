@@ -1194,6 +1194,7 @@ dependencies = [
  "cfa4-mpa",
  "cfa4-mpeg2v",
  "cfa4-mpegts",
+ "cfa4-musepack",
  "cfa4-mxf",
  "cfa4-ogg",
  "cfa4-opus",
@@ -1741,6 +1742,14 @@ dependencies = [
 
 [[package]]
 name = "cfa4-mpegts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-musepack"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",

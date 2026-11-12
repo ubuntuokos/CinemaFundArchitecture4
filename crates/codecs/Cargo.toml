@@ -24,6 +24,7 @@ cfa4-avi = { workspace = true }
 cfa4-adpcm = { workspace = true }
 cfa4-speex = { workspace = true }
 cfa4-amr = { workspace = true }
+cfa4-musepack = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-mxf = { workspace = true }
