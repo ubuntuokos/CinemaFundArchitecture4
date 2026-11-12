@@ -3950,6 +3950,8 @@
 	Analyze Source for Smart Cut	Ақылды кесу үшін көзді талдау
 	Plan Smart Cut	Ақылды кесуді жоспарлау
 	Run Smart Cut	Ақылды кесуді орындау
+	DASH Manifest	DASH манифесі
+	Also write a DASH manifest (.mpd)	DASH манифесін (.mpd) де жазу
 	No sequence open. Double-click a sequence in the Project panel.	Ешбір тізбек ашылмаған. «Жоба» панеліндегі тізбекті екі рет басыңыз.
 	English (US)	Ағылшын (АҚШ)
 	English (UK)	Ағылшын (Ұлыбритания)
@@ -4223,3 +4225,230 @@ export.summary	Low	төмен
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Кестеден титрлер
+	A .ods, .xlsx or CSV credits sheet	.ods, .xlsx немесе CSV титрлер кестесі
+	The spreadsheet's folder	Кесте бумасы
+	Built-in styles	Кірістірілген стильдер
+	Spreadsheet	Кесте
+	Sheet	Парақ
+	Pictures	Суреттер
+	Styling	Стиль
+	Page	Бет
+	Warnings	Ескертулер
+	Moment in the page	Беттегі сәт
+	Place at Playhead	Ойнату көрсеткішіне орналастыру
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Кестелер (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Титрлер стилі (*.json)
+	Card	Карта
+	Credits Spreadsheet	Титрлер кестесі
+	Reading…	Оқылуда…
+	(one table)	(бір кесте)
+	Total: {time}	Барлығы: {time}
+	Row {row}: {message}	{row}-жол: {message}
+	Choose a credits spreadsheet.	Титрлер кестесін таңдаңыз.
+	No preview	Алдын ала қарау жоқ
+	Placing…	Орналастырылуда…
+	Placed {n} pages on the timeline.	Уақыт шкаласына {n} бет орналастырылды.
+	Credits Page Picture	Титрлер бетінің суреті
+	Preview Credits	Титрлерді алдын ала қарау
+	Credits Styles	Титрлер стильдері
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Кестелер мен титрлер файлдары (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 титрлер файлы (*.cfa4credits)
+	Save as Credits File…	Титрлер файлы ретінде сақтау…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Кесте, парақ, стиль және жолдар бір файлда, кез келген компьютерде ашылады
+	Saved: {path}	Сақталды: {path}
+	Added	Қосылды
+	Removed	Жойылды
+	Changed	Өзгерді
+	(empty row)	(бос жол)
+	Refresh Credits from Spreadsheet	Титрлерді кестеден жаңарту
+	Change	Өзгеріс
+	Before → After	Бұрын → Кейін
+	Select None	Ешқайсысын таңдамау
+	Keep my edits on the pages (where their block is unchanged)	Беттердегі өз өзгерістерімді сақтау (блогы өзгермеген жерде)
+	Locate Spreadsheet…	Кестені табу…
+	Comparing…	Салыстырылуда…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	Титрлер орналастырылғаннан бері {file} ішіндегі өзгерістер: {n}. Қажет еместерінің белгісін алыңыз.
+	The spreadsheet {file} has not changed since the credits were placed.	{file} кестесі титрлер орналастырылғаннан бері өзгермеген.
+	{n} layers were edited by hand on the pages.	Беттерде қолмен өңделген қабаттар: {n}.
+	Accepting every change would replace these, because their block changed: {names}	Барлық өзгерісті қабылдау мыналарды ауыстырады, себебі олардың блогы өзгерді: {names}
+	Refreshing…	Жаңартылуда…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Жаңартылды: қолданылған өзгерістер: {n}, сақталған қолмен өңдеулер: {kept}.
+	Refresh Credits from Spreadsheet…	Титрлерді кестеден жаңарту…
+	Save Credits File…	Титрлер файлын сақтау…
+	Compare Credits with Spreadsheet	Титрлерді кестемен салыстыру
+	“{name}” appears twice in the same block	«{name}» бір блокта екі рет кездеседі
+	“{name}” is written as “{other}” in row {otherRow}	«{name}» {otherRow}-жолда «{other}» болып жазылған
+	The font “{font}” is not installed; another font is used	«{font}» қаріпі орнатылмаған; басқа қаріп қолданылады
+	The font “{font}” has no “{chars}”; another font draws them	«{font}» қаріпінде «{chars}» жоқ; оларды басқа қаріп салады
+	“{text}” is outside the title-safe area	«{text}» титрлердің қауіпсіз аймағынан тыс
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» қара фонда тым қараңғы (контраст {ratio}:1; кемінде 4,5:1 қажет)
+	“{text}” is {px} px high; 24 px or more reads well	«{text}» биіктігі {px} px; 24 px не одан көп болса жақсы оқылады
+	The roll moves {speed} px per frame; a whole number does not shimmer	Жылжу кадр сайын {speed} px; бүтін сан жыпылықтамайды
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Жол кадрдан {seconds} с ішінде өтеді; кемінде 6 с жақсы оқылады
+	The card holds for only {seconds} s after its fades	Карта ауысулардан кейін тек {seconds} с тұрады
+	This page starts {seconds} s before the previous one ends	Бұл бет алдыңғысы аяқталғанға дейін {seconds} с бұрын басталады
+	“{file}” is shown at {percent} % of its pixels; it will look soft	«{file}» пикселдерінің {percent} %-ында көрсетіледі; бұлыңғыр көрінеді
+	{more} more of the same	Тағы {more} осындай
+	Page {page}: {message}	{page}-бет: {message}
+	Checks and warnings	Тексерулер мен ескертулер
+	Checks: {errors} errors, {warnings} warnings	Тексерулер: қателер {errors}, ескертулер {warnings}
+	Check Credits	Титрлерді тексеру
+	The whole music ({time})	Бүкіл музыка ({time})
+	Until the sound ends ({time})	Дыбыс біткенше ({time})
+	To the last bar line ({time})	Соңғы такт сызығына дейін ({time})
+	Fit Credits to Music	Титрлерді музыкаға сәйкестендіру
+	Fit Credits to Music…	Титрлерді музыкаға сәйкестендіру…
+	Analyse Music for Credits	Титрлер үшін музыканы талдау
+	Length:	Ұзақтығы:
+	Cards last whole beats (cuts on the beat)	Карталар бүтін соққыға созылады (кесу ырғақпен)
+	Start the credits where the music starts	Титрлерді музыка басталған жерден бастау
+	Length of the credits	Титрлердің ұзақтығы
+	Remove Fitting	Сәйкестендіруді алып тастау
+	Listening to the music…	Музыка тыңдалуда…
+	Length: {time}	Ұзақтығы: {time}
+	the sound ends at {time}	дыбыс {time} кезінде бітеді
+	tempo {bpm} BPM	темп {bpm} BPM
+	the credits without fitting: {time}	сәйкестендірусіз титрлер: {time}
+	Select a credits page on the timeline.	Уақыт шкаласынан титрлер бетін таңдаңыз.
+	Fitting…	Сәйкестендірілуде…
+	The credits now last {time}.	Титрлер енді {time} созылады.
+	Fitting removed.	Сәйкестендіру алынып тасталды.
+	Fit to This Length	Осы ұзақтыққа сәйкестендіру
+	No music to measure ({problem}); type the length.	Өлшейтін музыка жоқ ({problem}); ұзақтығын енгізіңіз.
+	The text moves {speed} px per frame; a whole number does not shimmer	Мәтін кадр сайын {speed} px жылжиды; бүтін сан жыпылықтамайды
+	Crawl	Жүгіртпе жол
+	Picture: {file}	Сурет: {file}
+	Video: {file}	Бейне: {file}
+	Into the next	Келесіге өту
+	Safe areas and spines	Қауіпсіз аймақтар мен осьтер
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Әрекет қауіпсіз аймағы (93 %), титр аймағы (90 %), орталық және бет осьтері
+	Baseline grid	Негізгі сызық торы
+	Lines one gap unit apart, moving with the page	Бір аралық бірлігімен сызықтар, бетпен бірге жылжиды
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» фоннан ерекшеленбейді (контраст {ratio}:1; кемінде 4,5:1 қажет)
+	A picture or video is behind the text: check the contrast by eye	Мәтіннің артында сурет не бейне бар: контрастты көзбен тексеріңіз
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Дайын көрініс: стильдер, фондар, ауысулар және уақыт. Стиль файлы берілсе, сол басым болады.
+	New Spreadsheet from Template…	Үлгіден жаңа кесте…
+	built in	кірістірілген
+	mine	менікі
+	this project	осы жоба
+	Template	Үлгі
+	Choose a template first.	Алдымен үлгіні таңдаңыз.
+	Name of the template:	Үлгі атауы:
+	Template saved: {name}	Үлгі сақталды: {name}
+	Apply Credits Template…	Титрлер үлгісін қолдану…
+	Template:	Үлгі:
+	Credits Templates	Титрлер үлгілері
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Кестелер, титрлер файлдары және Cinecred жобалары (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Cinecred жобасы…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred жобасының бумасын ашу (Styling.toml және оның титрлер кестесі)
+	(empty block)	(бос блок)
+	Apply Template…	Үлгіні қолдану…
+	Change them in the spreadsheet; the credits follow when you save it.	Оларды кестеде өзгертіңіз; кестені сақтағанда титрлер соған ереді.
+	Compact View	Ықшам көрініс
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Уақыт шкаласында таңдалған титрлерді кестесімен жол-жолымен салыстыру
+	Fit the selected credits to the music under them	Таңдалған титрлерді астындағы музыкаға сәйкестендіру
+	Fit to Music…	Музыкаға сәйкестендіру…
+	Full View	Толық көрініс
+	Give the selected credits on the timeline another template	Уақыт шкаласындағы таңдалған титрлерге басқа үлгі беру
+	Names	Есімдер
+	No pages	Беттер жоқ
+	Refresh Placed Credits…	Орналастырылған титрлерді жаңарту…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Барлығын көрсету: блоктар, қасиеттер, уақыт бойындағы беттер, тексерулер және титрлер құралдары
+	Spine	Ось
+	Tails	Соңы
+	The blocks of the chosen page; choose one to see it in the preview	Таңдалған беттің блоктары; алдын ала қарауда көру үшін біреуін таңдаңыз
+	The pages along time; click one to choose it	Уақыт бойындағы беттер; таңдау үшін біреуін басыңыз
+	{n} more	Тағы {n}
+	Block	Блок
+	parallel	қатар
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Бетте (OBS оны браузер көзінен алады)
+	Separate (a media source in OBS)	Бөлек (OBS-тағы медиа көзі)
+	No sound	Дыбыссыз
+	credits	титрлер
+	graphic	графика
+	{n} pages	{n} бет
+	Live Graphics	Тікелей графика
+	Prepared cues; double-click one to put it in preview	Дайындалған элементтер; алдын ала қарауға жіберу үшін біреуін екі рет басыңыз
+	Add Credits…	Титрлер қосу…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Титрлер кестесі, титрлер файлы немесе Cinecred жобасы элемент ретінде
+	Add Selected Graphic	Таңдалған графиканы қосу
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Уақыт шкаласында таңдалған графикалық клип (тақырып, төменгі үштен бір) элемент ретінде
+	Cues	Элементтер
+	TAKE	ЭФИРГЕ
+	The preview cue goes on air from its first page	Алдын ала қараудағы элемент бірінші бетінен эфирге шығады
+	PREVIOUS	АЛДЫҢҒЫ
+	The page before (on the first page: from its start)	Алдыңғы бет (бірінші бетте: оның басынан)
+	NEXT	КЕЛЕСІ
+	The next page; after the last one, the preview cue	Келесі бет; соңғысынан кейін алдын ала қараудағы элемент
+	HOLD	ТОҚТАТУ
+	Stop the program where it is	Бағдарламаны тұрған жерінде тоқтату
+	CONTINUE	ЖАЛҒАСТЫРУ
+	Go on from where it stopped	Тоқтаған жерінен жалғастыру
+	UPDATE	ЖАҢАРТУ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Кестені (немесе клипті) қайта оқу; эфирде бірден өзгереді
+	OUT	ШЫҒАРУ
+	Take everything off air	Барлығын эфирден алу
+	Start Live Page	Тікелей бетті іске қосу
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Бағдарламаны осы компьютерде OBS браузер көзіне беру (тек 127.0.0.1)
+	not running	іске қосылмаған
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Tools ▸ WebSocket Server Settings
+	Connect to OBS	OBS-ке қосылу
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Осы компьютердегі OBS-ке қосылып, оның «CFA4 Live» браузер көзін тікелей бетке бағыттау
+	Port	Порт
+	Password	Құпиясөз
+	Live page	Тікелей бет
+	Sound	Дыбыс
+	OBS	OBS
+	Nothing in preview	Алдын ала қарауда ештеңе жоқ
+	page {page} of {pages}	{page}/{pages} бет
+	held	тоқтатылды
+	ended	аяқталды
+	Off air	Эфирден тыс
+	Stop Live Page	Тікелей бетті тоқтату
+	Connected to OBS {version}; source “{source}”	OBS {version} қосылды; көзі «{source}»
+	Point OBS Again	OBS-ті қайта бағыттау
+	Select a graphic clip on the timeline first.	Алдымен уақыт шкаласынан графикалық клипті таңдаңыз.
+	Connecting to OBS…	OBS-ке қосылуда…
+	Live Graphics…	Тікелей графика…
+	PREVIEW	АЛДЫН АЛА ҚАРАУ
+	PROGRAM	БАҒДАРЛАМА
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	сурет не бейне тегі негізгі ұяшықта жалғыз тұрады (немесе бір есіммен, портрет ретінде); басқа тегтер жойылды
+	the page gap is not a duration; the page style's is used	бет аралығы ұзақтық емес; бет стилінікі қолданылады
+	the page runtime is not a positive duration; the page style's is used	бет ұзақтығы оң емес; бет стилінікі қолданылады
+	background “{file}” was not found; it is left out	«{file}» фоны табылмады; ол алынып тасталды
+	card page {page} is taller than the frame; use a roll page	{page} карта беті кадрдан биік; жылжымалы бетті қолданыңыз
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	«{style}» әріп стилінің «{colour}» түсі #rrggbb емес; ол алынып тасталды
+	colour “{colour}” is not #rrggbb; black is used	«{colour}» түсі #rrggbb емес; қара түс қолданылады
+	colour “{colour}” is not #rrggbb; white is used	«{colour}» түсі #rrggbb емес; ақ түс қолданылады
+	content style “{style}” does not exist; “{used}” is used	«{style}» мазмұн стилі жоқ; «{used}» қолданылады
+	letter style “{style}” does not exist; the text keeps the block's style	«{style}» әріп стилі жоқ; мәтін блок стилін сақтайды
+	page gap “{value}” is not a duration	«{value}» бет аралығы ұзақтық емес
+	page runtime “{value}” is not a duration	«{value}» бет ұзақтығы ұзақтық емес
+	page style “{style}” does not exist; a roll page is used	«{style}» бет стилі жоқ; жылжымалы бет қолданылады
+	page {page}: the background names no file; it is left out	{page}-бет: фон файлды көрсетпейді; ол алынып тасталды
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	{page}-бет: ұзақтыққа жылжу жылдамдығын өзгерту арқылы жетеді (бетте созуға болатын блок аралықтары жоқ)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	{page}-бет: ұзақтыққа жылжу жылдамдығын өзгерту арқылы жетеді (титрлер аралықсыз да тым ұзын)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	{page}-бет: ұзақтыққа жылжу жылдамдығын өзгерту арқылы жетеді (аралықтар 20 еседен артық өсуі керек еді)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	{page}-бет: ауысу үшін беттер түйісуі керек (бет аралығы 0); ол алынып тасталды
+	page {page}: there is no transition “{name}”; the pages cut	{page}-бет: «{name}» ауысуы жоқ; беттер кесумен ауысады
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	«{value}» ось орны қолдау көрсетілмейді (пиксельмен ығысу қолданылады, қаласаңыз «parallel» белгісімен)
+	vertical gap “{value}” is not a number	«{value}» тік аралық сан емес
+	picture “{file}” was not found or cannot be read; it is left out	«{file}» суреті табылмады немесе оқылмайды; ол алынып тасталды
+	video “{file}” was not found or cannot be read; it is left out	«{file}» бейнесі табылмады немесе оқылмайды; ол алынып тасталды
+	there is no roll page without its own runtime to stretch; the length cannot change	созатын өз ұзақтығы жоқ жылжымалы бет жоқ; ұзақтық өзгермейді
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	тек карталар мен аралықтар {seconds} с; сұралған ұзақтық қысқарақ, сондықтан жылжымалы беттер табиғи ұзақтығын сақтайды
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	«{style}» әріп стилі: тек бірінші түсті қабат қолданылады (контур, көлеңке не жолақсыз)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	бүкіл титрлердің ұзақтығы ауыспайды; оның орнына «Титрлерді музыкаға сәйкестендіру» (немесе ұзақтық) қолданыңыз
+	page style “{style}”: fade curves become linear fades	«{style}» бет стилі: сөну қисықтары сызықтық болады
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	«{style}» мазмұн стилінің Cinecred-те басы жоқ; кестеде жазылған бастар бәрібір көрсетіледі
+	content style “{style}”: sorting the names is not carried over	«{style}» мазмұн стилі: есімдерді сұрыптау ауыспайды
+	transition curves are not carried over	ауысу қисықтары ауыспайды
+	picture styles (pictures keep their own size) are not carried over	сурет стильдері (суреттер өз өлшемін сақтайды) ауыспайды
+	video (tape) styles are not carried over	бейне (таспа) стильдері ауыспайды
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred жобасында {n} титрлер кестесі бар; «{name}» қолданылады (басқасын Кесте өрісінде таңдаңыз)

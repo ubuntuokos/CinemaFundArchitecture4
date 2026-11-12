@@ -53,7 +53,7 @@ pub mod timeline_audio;
 pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
-pub use dash_out::{DashMedia, DashRepresentation, dash_mpd};
+pub use dash_out::{DashMedia, DashRepresentation, dash_files, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
 pub use dcp_out::{
     DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
@@ -539,6 +539,9 @@ pub struct ExportSettings {
     /// QuickTime chapter track in MP4, MOV and M4A, `chpl` in the HLS init segments, Matroska
     /// chapters in WebM. On by default.
     pub chapters: bool,
+    /// HLS only: also write a DASH manifest (`<stem>.mpd`, see [`dash_files`]) over the same CMAF
+    /// segments, so the export plays in DASH players too. Off by default.
+    pub dash_manifest: bool,
     /// Two-pass state (set by the exporter).
     #[serde(skip)]
     pub h264_pass: H264Pass,
@@ -778,6 +781,7 @@ impl Default for ExportSettings {
             effects: ExportEffects::default(),
             metadata: ExportMetadata::default(),
             chapters: true,
+            dash_manifest: false,
             h264_pass: H264Pass::Single,
             signal: ColorSignal::default(),
             sink: None,
@@ -821,9 +825,21 @@ impl ExportSettings {
         if self.audio.float && self.audio.bits != 32 {
             return Err(ExportError::Unsupported("floating-point audio is 32-bit: set the sample size to 32".into()));
         }
+        if self.has_audio() && self.audio_codec() == AudioCodec::Ac3 {
+            if !crate::mpeg_out::AC3_BITRATES.contains(&self.audio.bitrate_kbps) {
+                return Err(ExportError::Unsupported(format!(
+                    "AC-3 has no {} kbps: choose one of {}",
+                    self.audio.bitrate_kbps,
+                    crate::mpeg_out::AC3_BITRATES.map(|b| b.to_string()).join(", ")
+                )));
+            }
+            if self.audio.sample_rate.is_some_and(|r| !matches!(r, 32_000 | 44_100 | 48_000)) {
+                return Err(ExportError::Unsupported("AC-3 is 32, 44.1 or 48 kHz".into()));
+            }
+        }
         let sample_format = self.audio.sample_format();
         if (self.has_audio() || self.format.is_audio_only())
-            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus)
+            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus | AudioCodec::Ac3)
             && !self.supports_sample_format(sample_format)
         {
             if self.format == Format::Mpeg2 {

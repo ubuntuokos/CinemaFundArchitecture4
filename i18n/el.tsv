@@ -3571,6 +3571,8 @@
 	Analyze Source for Smart Cut	Ανάλυση πηγής για έξυπνη αποκοπή
 	Plan Smart Cut	Σχεδιασμός έξυπνης αποκοπής
 	Run Smart Cut	Εκτέλεση έξυπνης αποκοπής
+	DASH Manifest	Μανιφέστο DASH
+	Also write a DASH manifest (.mpd)	Εγγραφή και μανιφέστου DASH (.mpd)
 	No sequence open. Double-click a sequence in the Project panel.	Δεν υπάρχει ανοιχτή ακολουθία. Κάντε διπλό κλικ σε μια ακολουθία στο πάνελ Έργου.
 	English (US)	Αγγλικά (ΗΠΑ)
 	English (UK)	Αγγλικά (ΗΒ)
@@ -4223,3 +4225,230 @@ export.summary	Low	χαμηλή
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	Credits from a Spreadsheet	Τίτλοι συντελεστών από υπολογιστικό φύλλο
+	A .ods, .xlsx or CSV credits sheet	Φύλλο τίτλων συντελεστών .ods, .xlsx ή CSV
+	The spreadsheet's folder	Ο φάκελος του υπολογιστικού φύλλου
+	Built-in styles	Ενσωματωμένα στυλ
+	Spreadsheet	Υπολογιστικό φύλλο
+	Sheet	Φύλλο
+	Pictures	Εικόνες
+	Styling	Μορφοποίηση
+	Page	Σελίδα
+	Warnings	Προειδοποιήσεις
+	Moment in the page	Χρονική στιγμή στη σελίδα
+	Place at Playhead	Τοποθέτηση στην κεφαλή αναπαραγωγής
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Υπολογιστικά φύλλα (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Στυλ τίτλων συντελεστών (*.json)
+	Card	Κάρτα
+	Credits Spreadsheet	Υπολογιστικό φύλλο τίτλων συντελεστών
+	Reading…	Ανάγνωση…
+	(one table)	(ένας πίνακας)
+	Total: {time}	Σύνολο: {time}
+	Row {row}: {message}	Γραμμή {row}: {message}
+	Choose a credits spreadsheet.	Επιλέξτε ένα υπολογιστικό φύλλο τίτλων συντελεστών.
+	No preview	Χωρίς προεπισκόπηση
+	Placing…	Τοποθέτηση…
+	Placed {n} pages on the timeline.	Τοποθετήθηκαν {n} σελίδες στη χρονογραμμή.
+	Credits Page Picture	Εικόνα σελίδας τίτλων συντελεστών
+	Preview Credits	Προεπισκόπηση τίτλων συντελεστών
+	Credits Styles	Στυλ τίτλων συντελεστών
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Υπολογιστικά φύλλα και αρχεία τίτλων συντελεστών (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	Αρχείο τίτλων συντελεστών CFA4 (*.cfa4credits)
+	Save as Credits File…	Αποθήκευση ως αρχείο τίτλων συντελεστών…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	Υπολογιστικό φύλλο, φύλλο εργασίας, στυλ και πίνακας σε ένα αρχείο, για άνοιγμα σε οποιονδήποτε υπολογιστή
+	Saved: {path}	Αποθηκεύτηκε: {path}
+	Added	Προστέθηκε
+	Removed	Αφαιρέθηκε
+	Changed	Άλλαξε
+	(empty row)	(κενή γραμμή)
+	Refresh Credits from Spreadsheet	Ανανέωση τίτλων συντελεστών από το υπολογιστικό φύλλο
+	Change	Αλλαγή
+	Before → After	Πριν → Μετά
+	Select None	Καμία επιλογή
+	Keep my edits on the pages (where their block is unchanged)	Διατήρηση των αλλαγών μου στις σελίδες (όπου το μπλοκ τους δεν άλλαξε)
+	Locate Spreadsheet…	Εντοπισμός υπολογιστικού φύλλου…
+	Comparing…	Σύγκριση…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} αλλαγές στο {file} από την τοποθέτηση των τίτλων συντελεστών. Αποεπιλέξτε ό,τι δεν θέλετε.
+	The spreadsheet {file} has not changed since the credits were placed.	Το υπολογιστικό φύλλο {file} δεν έχει αλλάξει από την τοποθέτηση των τίτλων συντελεστών.
+	{n} layers were edited by hand on the pages.	{n} επίπεδα επεξεργάστηκαν χειροκίνητα στις σελίδες.
+	Accepting every change would replace these, because their block changed: {names}	Η αποδοχή όλων των αλλαγών θα αντικαταστήσει αυτά, επειδή το μπλοκ τους άλλαξε: {names}
+	Refreshing…	Ανανέωση…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Ανανεώθηκε: εφαρμόστηκαν {n} αλλαγές, διατηρήθηκαν {kept} χειροκίνητες επεξεργασίες.
+	Refresh Credits from Spreadsheet…	Ανανέωση τίτλων συντελεστών από το υπολογιστικό φύλλο…
+	Save Credits File…	Αποθήκευση αρχείου τίτλων συντελεστών…
+	Compare Credits with Spreadsheet	Σύγκριση τίτλων συντελεστών με το υπολογιστικό φύλλο
+	“{name}” appears twice in the same block	Το “{name}” εμφανίζεται δύο φορές στο ίδιο μπλοκ
+	“{name}” is written as “{other}” in row {otherRow}	Το “{name}” γράφεται “{other}” στη γραμμή {otherRow}
+	The font “{font}” is not installed; another font is used	Η γραμματοσειρά “{font}” δεν είναι εγκατεστημένη· χρησιμοποιείται άλλη
+	The font “{font}” has no “{chars}”; another font draws them	Η γραμματοσειρά “{font}” δεν έχει “{chars}”· τα σχεδιάζει άλλη
+	“{text}” is outside the title-safe area	Το “{text}” είναι εκτός της ασφαλούς περιοχής τίτλων
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	Το “{text}” είναι πολύ σκούρο σε μαύρο (αντίθεση {ratio}:1· χρειάζεται τουλάχιστον 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	Το “{text}” έχει ύψος {px} px· από 24 px και πάνω διαβάζεται καλά
+	The roll moves {speed} px per frame; a whole number does not shimmer	Η κύλιση κινείται {speed} px ανά καρέ· ένας ακέραιος δεν τρεμοπαίζει
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Μια γραμμή διασχίζει το κάδρο σε {seconds} s· τουλάχιστον 6 s διαβάζεται καλά
+	The card holds for only {seconds} s after its fades	Η κάρτα μένει μόνο {seconds} s μετά τα σβησίματα
+	This page starts {seconds} s before the previous one ends	Αυτή η σελίδα ξεκινά {seconds} s πριν τελειώσει η προηγούμενη
+	“{file}” is shown at {percent} % of its pixels; it will look soft	Το “{file}” εμφανίζεται στο {percent} % των pixel του· θα φαίνεται θολό
+	{more} more of the same	{more} ακόμη του ίδιου είδους
+	Page {page}: {message}	Σελίδα {page}: {message}
+	Checks and warnings	Έλεγχοι και προειδοποιήσεις
+	Checks: {errors} errors, {warnings} warnings	Έλεγχοι: {errors} σφάλματα, {warnings} προειδοποιήσεις
+	Check Credits	Έλεγχος τίτλων συντελεστών
+	The whole music ({time})	Όλη η μουσική ({time})
+	Until the sound ends ({time})	Μέχρι να τελειώσει ο ήχος ({time})
+	To the last bar line ({time})	Μέχρι την τελευταία διαστολή ({time})
+	Fit Credits to Music	Προσαρμογή τίτλων συντελεστών στη μουσική
+	Fit Credits to Music…	Προσαρμογή τίτλων συντελεστών στη μουσική…
+	Analyse Music for Credits	Ανάλυση μουσικής για τους τίτλους συντελεστών
+	Length:	Διάρκεια:
+	Cards last whole beats (cuts on the beat)	Οι κάρτες διαρκούν ολόκληρους χτύπους (κοψίματα στον χτύπο)
+	Start the credits where the music starts	Έναρξη τίτλων συντελεστών εκεί που αρχίζει η μουσική
+	Length of the credits	Διάρκεια τίτλων συντελεστών
+	Remove Fitting	Αφαίρεση προσαρμογής
+	Listening to the music…	Ακρόαση της μουσικής…
+	Length: {time}	Διάρκεια: {time}
+	the sound ends at {time}	ο ήχος τελειώνει στο {time}
+	tempo {bpm} BPM	ρυθμός {bpm} BPM
+	the credits without fitting: {time}	οι τίτλοι συντελεστών χωρίς προσαρμογή: {time}
+	Select a credits page on the timeline.	Επιλέξτε μια σελίδα τίτλων συντελεστών στη χρονογραμμή.
+	Fitting…	Προσαρμογή…
+	The credits now last {time}.	Οι τίτλοι συντελεστών διαρκούν τώρα {time}.
+	Fitting removed.	Η προσαρμογή αφαιρέθηκε.
+	Fit to This Length	Προσαρμογή σε αυτή τη διάρκεια
+	No music to measure ({problem}); type the length.	Δεν υπάρχει μουσική για μέτρηση ({problem})· πληκτρολογήστε τη διάρκεια.
+	The text moves {speed} px per frame; a whole number does not shimmer	Το κείμενο κινείται {speed} px ανά καρέ· ένας ακέραιος δεν τρεμοπαίζει
+	Crawl	Κυλιόμενο κείμενο
+	Picture: {file}	Εικόνα: {file}
+	Video: {file}	Βίντεο: {file}
+	Into the next	Προς την επόμενη
+	Safe areas and spines	Ασφαλείς περιοχές και άξονες
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Ασφαλής περιοχή δράσης (93 %), τίτλων (90 %), το κέντρο και οι άξονες της σελίδας
+	Baseline grid	Πλέγμα γραμμών βάσης
+	Lines one gap unit apart, moving with the page	Γραμμές σε απόσταση μίας μονάδας κενού, που κινούνται με τη σελίδα
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	Το “{text}” δεν ξεχωρίζει από το φόντο (αντίθεση {ratio}:1· χρειάζεται τουλάχιστον 4,5:1)
+	A picture or video is behind the text: check the contrast by eye	Πίσω από το κείμενο υπάρχει εικόνα ή βίντεο: ελέγξτε την αντίθεση με το μάτι
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Έτοιμη εμφάνιση: στυλ, φόντα, μεταβάσεις και χρονισμός. Ένα αρχείο στυλ, αν δοθεί, υπερισχύει.
+	New Spreadsheet from Template…	Νέο υπολογιστικό φύλλο από πρότυπο…
+	built in	ενσωματωμένο
+	mine	δικό μου
+	this project	αυτό το έργο
+	Template	Πρότυπο
+	Choose a template first.	Επιλέξτε πρώτα ένα πρότυπο.
+	Name of the template:	Όνομα του προτύπου:
+	Template saved: {name}	Το πρότυπο αποθηκεύτηκε: {name}
+	Apply Credits Template…	Εφαρμογή προτύπου τίτλων συντελεστών…
+	Template:	Πρότυπο:
+	Credits Templates	Πρότυπα τίτλων συντελεστών
+	CSV (*.csv)	CSV (*.csv)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Υπολογιστικά φύλλα, αρχεία τίτλων συντελεστών και έργα Cinecred (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	Cinecred Project…	Έργο Cinecred…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Άνοιγμα φακέλου έργου Cinecred (Styling.toml και το υπολογιστικό φύλλο τίτλων του)
+	(empty block)	(κενό μπλοκ)
+	Apply Template…	Εφαρμογή προτύπου…
+	Change them in the spreadsheet; the credits follow when you save it.	Αλλάξτε τα στο υπολογιστικό φύλλο· οι τίτλοι συντελεστών ακολουθούν όταν το αποθηκεύσετε.
+	Compact View	Συμπαγής προβολή
+	Compare the selected credits on the timeline with their spreadsheet, row by row	Σύγκριση των επιλεγμένων τίτλων συντελεστών στη χρονογραμμή με το υπολογιστικό φύλλο τους, γραμμή προς γραμμή
+	Fit the selected credits to the music under them	Προσαρμογή των επιλεγμένων τίτλων συντελεστών στη μουσική κάτω από αυτούς
+	Fit to Music…	Προσαρμογή στη μουσική…
+	Full View	Πλήρης προβολή
+	Give the selected credits on the timeline another template	Εφαρμογή άλλου προτύπου στους επιλεγμένους τίτλους συντελεστών της χρονογραμμής
+	Names	Ονόματα
+	No pages	Καμία σελίδα
+	Refresh Placed Credits…	Ανανέωση τοποθετημένων τίτλων συντελεστών…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	Εμφάνιση όλων: μπλοκ, ιδιότητες, οι σελίδες στον χρόνο, έλεγχοι και τα εργαλεία τίτλων συντελεστών
+	Spine	Άξονας
+	Tails	Τέλος
+	The blocks of the chosen page; choose one to see it in the preview	Τα μπλοκ της επιλεγμένης σελίδας· επιλέξτε ένα για να το δείτε στην προεπισκόπηση
+	The pages along time; click one to choose it	Οι σελίδες στον χρόνο· κάντε κλικ σε μία για να την επιλέξετε
+	{n} more	{n} ακόμη
+	Block	Μπλοκ
+	parallel	παράλληλα
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	Στη σελίδα (το OBS τον παίρνει από την πηγή προγράμματος περιήγησης)
+	Separate (a media source in OBS)	Ξεχωριστά (πηγή πολυμέσων στο OBS)
+	No sound	Χωρίς ήχο
+	credits	τίτλοι συντελεστών
+	graphic	γραφικό
+	{n} pages	{n} σελίδες
+	Live Graphics	Ζωντανά γραφικά
+	Prepared cues; double-click one to put it in preview	Έτοιμα στοιχεία· κάντε διπλό κλικ σε ένα για να μπει στην προεπισκόπηση
+	Add Credits…	Προσθήκη τίτλων συντελεστών…
+	A credits spreadsheet, credits file or Cinecred project as a cue	Υπολογιστικό φύλλο τίτλων, αρχείο τίτλων ή έργο Cinecred ως στοιχείο
+	Add Selected Graphic	Προσθήκη επιλεγμένου γραφικού
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	Το γραφικό κλιπ που επιλέχθηκε στη χρονογραμμή (τίτλος, λεζάντα κάτω τρίτου) ως στοιχείο
+	Cues	Στοιχεία
+	TAKE	ΣΤΟΝ ΑΕΡΑ
+	The preview cue goes on air from its first page	Το στοιχείο της προεπισκόπησης βγαίνει στον αέρα από την πρώτη του σελίδα
+	PREVIOUS	ΠΡΟΗΓΟΥΜΕΝΗ
+	The page before (on the first page: from its start)	Η προηγούμενη σελίδα (στην πρώτη σελίδα: από την αρχή της)
+	NEXT	ΕΠΟΜΕΝΗ
+	The next page; after the last one, the preview cue	Η επόμενη σελίδα· μετά την τελευταία, το στοιχείο της προεπισκόπησης
+	HOLD	ΠΑΥΣΗ
+	Stop the program where it is	Διακοπή του προγράμματος εκεί που βρίσκεται
+	CONTINUE	ΣΥΝΕΧΕΙΑ
+	Go on from where it stopped	Συνέχεια από εκεί που σταμάτησε
+	UPDATE	ΕΝΗΜΕΡΩΣΗ
+	Read the spreadsheet (or the clip) again; on air it changes at once	Νέα ανάγνωση του υπολογιστικού φύλλου (ή του κλιπ)· στον αέρα αλλάζει αμέσως
+	OUT	ΕΚΤΟΣ
+	Take everything off air	Αφαίρεση όλων από τον αέρα
+	Start Live Page	Έναρξη ζωντανής σελίδας
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	Διάθεση του προγράμματος σε αυτόν τον υπολογιστή για την πηγή περιήγησης του OBS (μόνο 127.0.0.1)
+	not running	δεν εκτελείται
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ Εργαλεία ▸ Ρυθμίσεις διακομιστή WebSocket
+	Connect to OBS	Σύνδεση στο OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	Σύνδεση στο OBS αυτού του υπολογιστή και στόχευση της πηγής περιήγησης “CFA4 Live” στη ζωντανή σελίδα
+	Port	Θύρα
+	Password	Κωδικός πρόσβασης
+	Live page	Ζωντανή σελίδα
+	Sound	Ήχος
+	OBS	OBS
+	Nothing in preview	Τίποτα στην προεπισκόπηση
+	page {page} of {pages}	σελίδα {page} από {pages}
+	held	σε παύση
+	ended	τελείωσε
+	Off air	Εκτός αέρα
+	Stop Live Page	Διακοπή ζωντανής σελίδας
+	Connected to OBS {version}; source “{source}”	Συνδέθηκε στο OBS {version}· πηγή “{source}”
+	Point OBS Again	Επαναστόχευση OBS
+	Select a graphic clip on the timeline first.	Επιλέξτε πρώτα ένα γραφικό κλιπ στη χρονογραμμή.
+	Connecting to OBS…	Σύνδεση στο OBS…
+	Live Graphics…	Ζωντανά γραφικά…
+	PREVIEW	ΠΡΟΕΠΙΣΚΟΠΗΣΗ
+	PROGRAM	ΠΡΟΓΡΑΜΜΑ
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	μια ετικέτα εικόνας ή βίντεο στέκεται μόνη σε κελί σώματος (ή με ένα όνομα, ως πορτρέτο)· οι άλλες ετικέτες αφαιρέθηκαν
+	the page gap is not a duration; the page style's is used	το κενό σελίδας δεν είναι διάρκεια· χρησιμοποιείται του στυλ σελίδας
+	the page runtime is not a positive duration; the page style's is used	η διάρκεια σελίδας δεν είναι θετική· χρησιμοποιείται του στυλ σελίδας
+	background “{file}” was not found; it is left out	το φόντο “{file}” δεν βρέθηκε· παραλείπεται
+	card page {page} is taller than the frame; use a roll page	η σελίδα κάρτας {page} είναι ψηλότερη από το κάδρο· χρησιμοποιήστε σελίδα κύλισης
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	το χρώμα “{colour}” του στυλ γραμμάτων “{style}” δεν είναι #rrggbb· παραλείπεται
+	colour “{colour}” is not #rrggbb; black is used	το χρώμα “{colour}” δεν είναι #rrggbb· χρησιμοποιείται μαύρο
+	colour “{colour}” is not #rrggbb; white is used	το χρώμα “{colour}” δεν είναι #rrggbb· χρησιμοποιείται λευκό
+	content style “{style}” does not exist; “{used}” is used	το στυλ περιεχομένου “{style}” δεν υπάρχει· χρησιμοποιείται το “{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	το στυλ γραμμάτων “{style}” δεν υπάρχει· το κείμενο κρατά το στυλ του μπλοκ
+	page gap “{value}” is not a duration	το κενό σελίδας “{value}” δεν είναι διάρκεια
+	page runtime “{value}” is not a duration	η διάρκεια σελίδας “{value}” δεν είναι διάρκεια
+	page style “{style}” does not exist; a roll page is used	το στυλ σελίδας “{style}” δεν υπάρχει· χρησιμοποιείται σελίδα κύλισης
+	page {page}: the background names no file; it is left out	σελίδα {page}: το φόντο δεν ορίζει αρχείο· παραλείπεται
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	σελίδα {page}: η διάρκεια επιτυγχάνεται αλλάζοντας την ταχύτητα κύλισης (η σελίδα δεν έχει κενά μεταξύ μπλοκ για επέκταση)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	σελίδα {page}: η διάρκεια επιτυγχάνεται αλλάζοντας την ταχύτητα κύλισης (οι τίτλοι είναι πολύ μεγάλοι ακόμη και χωρίς κενά)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	σελίδα {page}: η διάρκεια επιτυγχάνεται αλλάζοντας την ταχύτητα κύλισης (τα κενά θα έπρεπε να μεγαλώσουν πάνω από 20 φορές)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	σελίδα {page}: η μετάβαση απαιτεί οι σελίδες να εφάπτονται (κενό σελίδας 0)· παραλείπεται
+	page {page}: there is no transition “{name}”; the pages cut	σελίδα {page}: δεν υπάρχει μετάβαση “{name}”· οι σελίδες αλλάζουν με κόψιμο
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	η θέση άξονα “{value}” δεν υποστηρίζεται (υποστηρίζεται μετατόπιση σε pixel, προαιρετικά με “parallel”)
+	vertical gap “{value}” is not a number	το κατακόρυφο κενό “{value}” δεν είναι αριθμός
+	picture “{file}” was not found or cannot be read; it is left out	η εικόνα “{file}” δεν βρέθηκε ή δεν διαβάζεται· παραλείπεται
+	video “{file}” was not found or cannot be read; it is left out	το βίντεο “{file}” δεν βρέθηκε ή δεν διαβάζεται· παραλείπεται
+	there is no roll page without its own runtime to stretch; the length cannot change	δεν υπάρχει σελίδα κύλισης χωρίς δική της διάρκεια για επέκταση· η διάρκεια δεν μπορεί να αλλάξει
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	οι κάρτες και τα κενά μόνα τους είναι {seconds} s· η ζητούμενη διάρκεια είναι μικρότερη, άρα οι σελίδες κύλισης κρατούν τη φυσική τους διάρκεια
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	στυλ γραμμάτων “{style}”: χρησιμοποιείται μόνο το πρώτο χρωματιστό επίπεδο (χωρίς περιγράμματα, σκιές ή λωρίδες)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	η διάρκεια όλων των τίτλων δεν μεταφέρεται· χρησιμοποιήστε αντ' αυτού την Προσαρμογή τίτλων συντελεστών στη μουσική (ή μια διάρκεια)
+	page style “{style}”: fade curves become linear fades	στυλ σελίδας “{style}”: οι καμπύλες σβησίματος γίνονται γραμμικές
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	το στυλ περιεχομένου “{style}” δεν έχει αρχή στο Cinecred· οι αρχές που γράφτηκαν στο φύλλο εμφανίζονται κανονικά
+	content style “{style}”: sorting the names is not carried over	στυλ περιεχομένου “{style}”: η ταξινόμηση των ονομάτων δεν μεταφέρεται
+	transition curves are not carried over	οι καμπύλες μεταβάσεων δεν μεταφέρονται
+	picture styles (pictures keep their own size) are not carried over	τα στυλ εικόνων (οι εικόνες κρατούν το μέγεθός τους) δεν μεταφέρονται
+	video (tape) styles are not carried over	τα στυλ βίντεο (ταινίας) δεν μεταφέρονται
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	το έργο Cinecred έχει {n} υπολογιστικά φύλλα τίτλων· χρησιμοποιείται το “{name}” (επιλέξτε άλλο στο πεδίο Υπολογιστικό φύλλο)

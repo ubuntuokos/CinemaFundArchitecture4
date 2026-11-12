@@ -3654,6 +3654,8 @@
 	Analyze Source for Smart Cut	分析源以进行智能剪切
 	Plan Smart Cut	规划智能剪切
 	Run Smart Cut	执行智能剪切
+	DASH Manifest	DASH 清单
+	Also write a DASH manifest (.mpd)	同时写出 DASH 清单 (.mpd)
 
 # ---------------------------------------------------------------------------------------------
 # Qt GUI: the strings only the Qt GUI has (until 2026-11-10 python/cfa4_qt/i18n/zh-cn.tsv).
@@ -4219,3 +4221,230 @@
 	EGA	EGA
 	ZX Spectrum	ZX Spectrum
 	PICO-8	PICO-8
+
+# Credits workspace (stáblista)
+	(one table)	(单个表格)
+	A .ods, .xlsx or CSV credits sheet	.ods、.xlsx 或 CSV 演职员表表格
+	Built-in styles	内置样式
+	Card	卡片
+	Choose a credits spreadsheet.	请选择演职员表表格。
+	Credits Spreadsheet	演职员表表格
+	Credits from a Spreadsheet	从表格创建演职员表
+	Credits styling (*.json)	演职员表样式 (*.json)
+	Moment in the page	页面内的时刻
+	No preview	无预览
+	Page	页面
+	Pictures	图片
+	Place at Playhead	放置在播放头处
+	Placed {n} pages on the timeline.	已在时间线上放置 {n} 页。
+	Placing…	正在放置…
+	Reading…	正在读取…
+	Row {row}: {message}	第 {row} 行:{message}
+	Sheet	工作表
+	Spreadsheet	表格
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	表格 (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	样式
+	The spreadsheet's folder	表格所在的文件夹
+	Total: {time}	合计:{time}
+	Warnings	警告
+	Credits Page Picture	演职员表页面图片
+	Preview Credits	预览演职员表
+	Credits Styles	演职员表样式
+	(empty row)	(空行)
+	Accepting every change would replace these, because their block changed: {names}	接受全部更改会替换以下内容,因为它们所在的区块已更改:{names}
+	Added	新增
+	Before → After	之前 → 之后
+	CFA4 credits file (*.cfa4credits)	CFA4 演职员表文件 (*.cfa4credits)
+	Change	更改
+	Changed	已修改
+	Comparing…	正在比较…
+	Keep my edits on the pages (where their block is unchanged)	保留我在页面上的编辑(其区块未更改的部分)
+	Locate Spreadsheet…	查找表格…
+	Refresh Credits from Spreadsheet	从表格刷新演职员表
+	Refreshed: {n} changes applied, {kept} hand edits kept.	已刷新:应用了 {n} 项更改,保留了 {kept} 处手动编辑。
+	Refreshing…	正在刷新…
+	Removed	已删除
+	Save as Credits File…	另存为演职员表文件…
+	Saved: {path}	已保存:{path}
+	Select None	取消选择
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	表格、工作表、样式和数据表合并在一个文件中,可在任何电脑上打开
+	The spreadsheet {file} has not changed since the credits were placed.	自放置演职员表以来,表格 {file} 没有更改。
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	自放置演职员表以来,{file} 中有 {n} 项更改。请取消勾选不需要的项。
+	{n} layers were edited by hand on the pages.	页面上有 {n} 个图层被手动编辑过。
+	Refresh Credits from Spreadsheet…	从电子表格刷新演职员表…
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	表格和演职员表文件 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Save Credits File…	保存演职员表文件…
+	Compare Credits with Spreadsheet	将演职员表与表格比较
+	A line crosses the frame in {seconds} s; at least 6 s reads well	一行穿过画面需要 {seconds} 秒;至少 6 秒才便于阅读
+	Checks and warnings	检查与警告
+	Checks: {errors} errors, {warnings} warnings	检查:{errors} 个错误,{warnings} 个警告
+	Page {page}: {message}	第 {page} 页:{message}
+	The card holds for only {seconds} s after its fades	淡入淡出之后,卡片只停留 {seconds} 秒
+	The font “{font}” has no “{chars}”; another font draws them	字体“{font}”中没有“{chars}”;将由其他字体绘制
+	The font “{font}” is not installed; another font is used	字体“{font}”未安装;将使用其他字体
+	This page starts {seconds} s before the previous one ends	此页面比上一页结束早 {seconds} 秒开始
+	{more} more of the same	还有 {more} 个相同项
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}”以其像素的 {percent} % 显示;看起来会模糊
+	“{name}” appears twice in the same block	“{name}”在同一区块中出现两次
+	“{name}” is written as “{other}” in row {otherRow}	“{name}”在第 {otherRow} 行写作“{other}”
+	“{text}” is outside the title-safe area	“{text}”超出了标题安全区
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”在黑色背景上太暗(对比度 {ratio}:1;至少需要 4.5:1)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}”高 {px} px;24 px 或更高时便于阅读
+	The roll moves {speed} px per frame; a whole number does not shimmer	滚动每帧移动 {speed} px；整数不会闪烁
+	Check Credits	检查演职员表
+	Cards last whole beats (cuts on the beat)	卡片持续整数拍(在节拍上切换)
+	Fit Credits to Music	使演职员表适配音乐
+	Fit to This Length	适配此时长
+	Fitting removed.	已取消适配。
+	Fitting…	正在适配…
+	Length of the credits	演职员表时长
+	Length:	时长:
+	Length: {time}	时长:{time}
+	Listening to the music…	正在分析音乐…
+	No music to measure ({problem}); type the length.	没有可测量的音乐({problem});请输入时长。
+	Remove Fitting	取消适配
+	Select a credits page on the timeline.	请在时间线上选择一个演职员表页面。
+	Start the credits where the music starts	演职员表从音乐开始处开始
+	The credits now last {time}.	演职员表现在时长为 {time}。
+	The whole music ({time})	整段音乐({time})
+	To the last bar line ({time})	到最后一条小节线({time})
+	Until the sound ends ({time})	直到声音结束({time})
+	tempo {bpm} BPM	速度 {bpm} BPM
+	the credits without fitting: {time}	未适配的演职员表:{time}
+	the sound ends at {time}	声音在 {time} 结束
+	Fit Credits to Music…	使演职员表适配音乐…
+	Analyse Music for Credits	为演职员表分析音乐
+	A picture or video is behind the text: check the contrast by eye	文字后面有图片或视频:请目测对比度
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	动作安全区(93 %)、标题安全区(90 %)、中心线和页面的脊线
+	Baseline grid	基线网格
+	Crawl	滚动字幕
+	Into the next	过渡到下一个
+	Lines one gap unit apart, moving with the page	间隔为一个间距单位的线条,随页面移动
+	Picture: {file}	图片:{file}
+	Safe areas and spines	安全区与脊线
+	The text moves {speed} px per frame; a whole number does not shimmer	文字每帧移动 {speed} px;整数值不会闪烁
+	Video: {file}	视频:{file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”与背景区分不明显(对比度 {ratio}:1;至少需要 4.5:1)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	现成的外观:样式、背景、转场和时间设置。如果同时提供了样式文件,则以样式文件为准。
+	Apply Credits Template…	应用演职员表模板…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	请先选择模板。
+	Name of the template:	模板名称:
+	New Spreadsheet from Template…	从模板新建表格…
+	Template	模板
+	Template saved: {name}	模板已保存:{name}
+	Template:	模板:
+	built in	内置
+	mine	我的
+	this project	此项目
+	Credits Templates	演职员表模板
+	Cinecred Project…	Cinecred 项目…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	打开 Cinecred 项目文件夹(Styling.toml 及其演职员表表格)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	表格、演职员表文件和 Cinecred 项目 (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
+	(empty block)	（空块）
+	Apply Template…	应用模板…
+	Change them in the spreadsheet; the credits follow when you save it.	请在表格中修改；保存后演职员表随之更新。
+	Compact View	紧凑视图
+	Compare the selected credits on the timeline with their spreadsheet, row by row	将时间线上选中的演职员表与其表格逐行比较
+	Fit the selected credits to the music under them	使选中的演职员表适配其下方的音乐
+	Fit to Music…	适配音乐…
+	Full View	完整视图
+	Give the selected credits on the timeline another template	为时间线上选中的演职员表换用其他模板
+	Names	名字
+	No pages	没有页面
+	Refresh Placed Credits…	刷新已放置的演职员表…
+	Show everything: blocks, properties, the pages along time, checks and the credits tools	显示全部：块、属性、随时间排列的页面、检查和演职员表工具
+	Spine	轴线
+	Tails	附注
+	The blocks of the chosen page; choose one to see it in the preview	所选页面的块；选择一个即可在预览中查看
+	The pages along time; click one to choose it	随时间排列的页面；点击一个即可选中
+	{n} more	另有 {n} 项
+	Block	块
+	parallel	并列
+# MPEG-2 export audio (#268): a product name, kept as is
+	Dolby Digital (AC-3)	Dolby Digital (AC-3)
+	In the page (OBS takes it from the Browser Source)	在页面中（OBS 从浏览器源获取）
+	Separate (a media source in OBS)	单独（OBS 中的媒体源）
+	No sound	无声音
+	credits	演职员表
+	graphic	图形
+	{n} pages	{n} 页
+	Live Graphics	直播图形
+	Prepared cues; double-click one to put it in preview	已准备的提示；双击可放入预览
+	Add Credits…	添加演职员表…
+	A credits spreadsheet, credits file or Cinecred project as a cue	将演职员表表格、演职员表文件或 Cinecred 项目作为提示
+	Add Selected Graphic	添加所选图形
+	The graphic clip selected on the timeline (a title, a lower third) as a cue	将时间线上所选的图形剪辑（标题、下三分之一字幕）作为提示
+	Cues	提示
+	TAKE	切出
+	The preview cue goes on air from its first page	预览中的提示从第一页开始播出
+	PREVIOUS	上一页
+	The page before (on the first page: from its start)	上一页（在第一页时：从开头）
+	NEXT	下一页
+	The next page; after the last one, the preview cue	下一页；最后一页之后为预览中的提示
+	HOLD	暂停
+	Stop the program where it is	让节目停在当前位置
+	CONTINUE	继续
+	Go on from where it stopped	从停下的位置继续
+	UPDATE	更新
+	Read the spreadsheet (or the clip) again; on air it changes at once	重新读取表格（或剪辑）；播出中立即生效
+	OUT	撤下
+	Take everything off air	撤下所有播出内容
+	Start Live Page	启动直播页面
+	Serve the program on this computer for OBS's Browser Source (127.0.0.1 only)	在本机为 OBS 浏览器源提供节目（仅 127.0.0.1）
+	not running	未运行
+	OBS ▸ Tools ▸ WebSocket Server Settings	OBS ▸ 工具 ▸ WebSocket 服务器设置
+	Connect to OBS	连接到 OBS
+	Connect to OBS on this computer and point its “CFA4 Live” Browser Source at the live page	连接到本机的 OBS，并将其浏览器源“CFA4 Live”指向直播页面
+	Port	端口
+	Password	密码
+	Live page	直播页面
+	Sound	声音
+	OBS	OBS
+	Nothing in preview	预览中没有内容
+	page {page} of {pages}	第 {page} 页，共 {pages} 页
+	held	已暂停
+	ended	已结束
+	Off air	未播出
+	Stop Live Page	停止直播页面
+	Connected to OBS {version}; source “{source}”	已连接到 OBS {version}；源“{source}”
+	Point OBS Again	重新设置 OBS
+	Select a graphic clip on the timeline first.	请先在时间线上选择一个图形剪辑。
+	Connecting to OBS…	正在连接到 OBS…
+	Live Graphics…	直播图形…
+	PREVIEW	预览
+	PROGRAM	节目
+	a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed	图片或视频标签单独出现在正文单元格中(或与一个姓名一起,作为肖像);其他标签已被移除
+	the page gap is not a duration; the page style's is used	页间隔不是时长;改用页面样式的值
+	the page runtime is not a positive duration; the page style's is used	页面时长不是正数时长;改用页面样式的值
+	background “{file}” was not found; it is left out	未找到背景“{file}”;已忽略
+	card page {page} is taller than the frame; use a roll page	卡片页 {page} 比画面高;请改用滚动页
+	colour “{colour}” of letter style “{style}” is not #rrggbb; it is left out	字母样式“{style}”的颜色“{colour}”不是 #rrggbb;已忽略
+	colour “{colour}” is not #rrggbb; black is used	颜色“{colour}”不是 #rrggbb;改用黑色
+	colour “{colour}” is not #rrggbb; white is used	颜色“{colour}”不是 #rrggbb;改用白色
+	content style “{style}” does not exist; “{used}” is used	内容样式“{style}”不存在;改用“{used}”
+	letter style “{style}” does not exist; the text keeps the block's style	字母样式“{style}”不存在;文字沿用区块的样式
+	page gap “{value}” is not a duration	页间隔“{value}”不是时长
+	page runtime “{value}” is not a duration	页面时长“{value}”不是时长
+	page style “{style}” does not exist; a roll page is used	页面样式“{style}”不存在;改用滚动页
+	page {page}: the background names no file; it is left out	第 {page} 页:背景未指定文件;已忽略
+	page {page}: the runtime is reached by changing the roll speed (the page has no gaps between blocks to stretch)	第 {page} 页:通过改变滚动速度来达到时长(该页的区块之间没有可拉伸的间隔)
+	page {page}: the runtime is reached by changing the roll speed (the credits are too long even without gaps)	第 {page} 页:通过改变滚动速度来达到时长(即使没有间隔,演职员表也太长)
+	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 页:通过改变滚动速度来达到时长(间隔需要增大到 20 倍以上)
+	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 页:转场要求页面首尾相接(页间隔为 0);已忽略
+	page {page}: there is no transition “{name}”; the pages cut	第 {page} 页:不存在转场“{name}”;页面直接切换
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支持对齐轴位置“{value}”(支持像素偏移,可选加“parallel”)
+	vertical gap “{value}” is not a number	垂直间距“{value}”不是数字
+	picture “{file}” was not found or cannot be read; it is left out	未找到图片“{file}”或无法读取;已忽略
+	video “{file}” was not found or cannot be read; it is left out	未找到视频“{file}”或无法读取;已忽略
+	there is no roll page without its own runtime to stretch; the length cannot change	没有带自身时长、可拉伸的滚动页;长度无法改变
+	the cards and gaps alone are {seconds} s; the asked length is shorter, so the roll pages keep their natural length	仅卡片和间隔就有 {seconds} s;要求的长度更短,因此滚动页保持其自然长度
+	letter style “{style}”: only the first coloured layer is used (no outlines, shadows or stripes)	字母样式“{style}”:仅使用第一个彩色图层(不含轮廓、阴影或条纹)
+	the whole-credits runtime is not carried over; use Fit Credits to Music (or a length) instead	不会沿用整个演职员表的时长;请改用使演职员表适配音乐(或指定长度)
+	page style “{style}”: fade curves become linear fades	页面样式“{style}”:淡变曲线变为线性淡变
+	content style “{style}” has no head in Cinecred; heads written in the sheet are still shown	内容样式“{style}”在 Cinecred 中没有标题;表格中写入的标题仍会显示
+	content style “{style}”: sorting the names is not carried over	内容样式“{style}”:姓名排序不会沿用
+	transition curves are not carried over	转场曲线不会沿用
+	picture styles (pictures keep their own size) are not carried over	图片样式(图片保持自身尺寸)不会沿用
+	video (tape) styles are not carried over	视频(磁带)样式不会沿用
+	the Cinecred project has {n} credits spreadsheets; “{name}” is used (choose another in the Spreadsheet field)	Cinecred 项目有 {n} 个演职员表电子表格;使用“{name}”(可在电子表格字段中选择其他表格)
