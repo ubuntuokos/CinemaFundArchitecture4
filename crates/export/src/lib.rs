@@ -36,6 +36,7 @@ mod dcp_iab;
 mod dcp_out;
 mod deflate;
 mod hls_out;
+mod imf_out;
 mod job;
 mod mpeg_out;
 mod mxf_out;
@@ -59,6 +60,7 @@ pub use dcp_out::{
     DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
 };
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
+pub use imf_out::{IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, imf_content_kind, imf_profile, imf_rate, rgba_to_rgb10};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
@@ -185,6 +187,11 @@ pub enum Format {
     /// in a DCI 2K or 4K container + 5.1 24-bit PCM, see [`DcpResolution`] and [`DcpAspect`].
     #[serde(rename = "dcp", alias = "Dcp")]
     Dcp,
+    /// Interoperable Master Package (SMPTE ST 2067-21 Application #2E) in a folder (the output
+    /// path): JPEG 2000 10-bit R'G'B' 4:4:4 + 24-bit 48 kHz PCM track files, see
+    /// [`ExportSettings::imf_lossless`] and [`IMF_CONTENT_KINDS`].
+    #[serde(rename = "imf", alias = "Imf")]
+    Imf,
 }
 
 impl Format {
@@ -218,6 +225,7 @@ impl Format {
             "opus" | "opusaudio" | "ogg" | "oggopus" => Format::Opus,
             "mpeg2" | "mpeg2video" | "h262" | "mpg" | "mpeg" | "m2v" | "m2p" | "ts" | "m2ts" | "mts" | "mpegts" | "mpegps" => Format::Mpeg2,
             "dcp" | "digitalcinema" | "digitalcinemapackage" | "smptedcp" => Format::Dcp,
+            "imf" | "imp" | "imfapp2e" | "app2e" | "interoperablemasterformat" | "interoperablemasterpackage" => Format::Imf,
             _ => return None,
         })
     }
@@ -251,6 +259,7 @@ impl Format {
             Format::MxfOpAtom => "mxf-opatom",
             Format::Mpeg2 => "mpeg2",
             Format::Dcp => "dcp",
+            Format::Imf => "imf",
         }
     }
     pub fn extension(self) -> &'static str {
@@ -275,7 +284,7 @@ impl Format {
             Format::MxfOp1a | Format::MxfOpAtom => "mxf",
             Format::Mpeg2 => "mpg",
             // a folder
-            Format::Dcp => "",
+            Format::Dcp | Format::Imf => "",
         }
     }
     pub fn label(self) -> &'static str {
@@ -307,6 +316,7 @@ impl Format {
             Format::MxfOpAtom => "MXF OP-Atom",
             Format::Mpeg2 => "MPEG-2",
             Format::Dcp => "DCP (Digital Cinema Package)",
+            Format::Imf => "IMF App 2E (Interoperable Master Package)",
         }
     }
     /// Numbered stills, one per frame ([`image_sequence_path`]).
@@ -348,7 +358,7 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 27] = [
+    pub const ALL: [Format; 28] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
@@ -376,6 +386,7 @@ impl Format {
         Format::MxfOpAtom,
         Format::Mpeg2,
         Format::Dcp,
+        Format::Imf,
     ];
 }
 
@@ -474,8 +485,16 @@ pub struct ExportSettings {
     pub dcp_iab_fallback: String,
     /// DCP spoken language, an RFC 5646 tag such as `en-US` or `hu-HU` (empty = none): the MCA
     /// labels' `RFC5646SpokenLanguage`, the CPL title's language and the DCNC language field.
+    /// IMF exports use it too (MCA labels, the CPL locale).
     #[serde(default)]
     pub dcp_language: String,
+    /// IMF: reversible (lossless) JPEG 2000 instead of the lossy IMF profile.
+    #[serde(default)]
+    pub imf_lossless: bool,
+    /// IMF content kind ([`IMF_CONTENT_KINDS`], empty = `feature`). The spoken language is
+    /// [`ExportSettings::dcp_language`].
+    #[serde(default)]
+    pub imf_content_kind: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -756,6 +775,8 @@ impl Default for ExportSettings {
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
             dcp_language: String::new(),
+            imf_lossless: false,
+            imf_content_kind: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -914,6 +935,9 @@ impl ExportSettings {
         }
         if self.format == Format::Dcp {
             dcp_out::validate(self)?;
+        }
+        if self.format == Format::Imf {
+            imf_out::validate(self)?;
         }
         if self.format == Format::Av1 && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("AV1 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
@@ -1086,6 +1110,7 @@ fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
             mjpeg_factory,
             mpeg2_factory,
             dcp_out::dcp_factory,
+            imf_out::imf_factory,
         ])
     })
 }
@@ -1354,6 +1379,12 @@ pub fn available(format: Format) -> bool {
         return false;
     }
     format.has_builtin_encoder() || format_probes().read().unwrap_or_else(|e| e.into_inner()).iter().any(|(f, probe)| *f == format && probe())
+}
+
+/// Why `format` cannot be exported on this machine, or `None` when it can ([`available`]). The UI,
+/// the CLI and the control channel show this text next to a format they cannot offer.
+pub fn unavailable_reason(format: Format) -> Option<String> {
+    (!available(format)).then(|| format!("{}: no encoder for this format is available on this machine", format.label()))
 }
 
 struct MjpegEncoder {
@@ -3255,6 +3286,8 @@ mod audio_copy_tests;
 mod boundary_reencode_tests;
 #[cfg(test)]
 mod dcp_tests;
+#[cfg(test)]
+mod imf_tests;
 #[cfg(test)]
 mod mpeg2_tests;
 #[cfg(test)]

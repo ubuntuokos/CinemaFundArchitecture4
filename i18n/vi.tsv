@@ -1792,6 +1792,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Thư mục SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bit 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Thư mục SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bit 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Gói master liên thông)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Thư mục SMPTE IMF: JPEG 2000 1920×1080, PCM 5.1 24 bit 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Thư mục SMPTE IMF: JPEG 2000 3840×2160, PCM 5.1 24 bit 48 kHz
+	Episode	Tập
+	Event highlights	Điểm nổi bật sự kiện
+	Event	Sự kiện
+	Lossless (reversible JPEG 2000)	Không mất dữ liệu (JPEG 2000 khả nghịch)
+	Package language	Ngôn ngữ gói
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	Ảnh B
@@ -1946,6 +1956,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bit cho HDR)
 	10-bit RGB	RGB 10 bit
 	12-bit X'Y'Z'	X'Y'Z' 12 bit
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 10 bit
+	JPEG 2000 IMF lossy	JPEG 2000 IMF có mất dữ liệu
+	JPEG 2000 IMF reversible	JPEG 2000 IMF khả nghịch
 	16-bit half float	số thực nửa 16 bit
 	linear	tuyến tính
 	uncompressed	không nén
@@ -4504,3 +4517,12 @@ export.summary	Low	thấp
 	the engine sent no report	engine không gửi báo cáo
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a không nén 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit không nén theo bố cục v210 (SMPTE ST 384), PCM 24-bit 48 kHz, mã thời gian bắt đầu
+	Load KDM…	Tải KDM…
+	Forget DCP Keys	Quên khóa DCP
+	Load KDM	Tải KDM
+	KDM file	Tệp KDM
+	Private key (PEM)	Khóa riêng (PEM)
+	{title}: {count} keys loaded	{title}: đã tải {count} khóa
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Các khóa chỉ nằm trong bộ nhớ, cho đến khi chọn Quên khóa DCP hoặc kết thúc phiên.
+	DCP keys forgotten	Đã quên khóa DCP
+	Choose the KDM file and the private key.	Chọn tệp KDM và khóa riêng.

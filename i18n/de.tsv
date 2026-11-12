@@ -3662,6 +3662,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE-DCP-Ordner: JPEG 2000 3996×2160 (1.85:1), 5.1 PCM 24 Bit 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE-DCP-Ordner: JPEG 2000 4096×1716 (2.39:1), 5.1 PCM 24 Bit 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE-IMF-Ordner: JPEG 2000 1920×1080, 5.1 PCM 24 Bit 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE-IMF-Ordner: JPEG 2000 3840×2160, 5.1 PCM 24 Bit 48 kHz
+	Episode	Episode
+	Event highlights	Event-Highlights
+	Event	Event
+	Lossless (reversible JPEG 2000)	Verlustfrei (reversibles JPEG 2000)
+	Package language	Paketsprache
 	Show Duplicate Frame Markers	Markierungen für doppelte Frames anzeigen
 	Work Area Bar	Arbeitsbereichsleiste
 	Set Work Area Bar In Point	In-Point der Arbeitsbereichsleiste setzen
@@ -3930,6 +3940,9 @@
 	1 B picture between anchors	1 B-Bild zwischen Ankerbildern
 	10-bit RGB	10-Bit-RGB
 	12-bit X'Y'Z'	12-Bit-X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-Bit-R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF verlustbehaftet
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reversibel
 	16-bit half float	16-Bit-Halbfließkomma
 	AV1 Main (10-bit for HDR)	AV1 Main (10 Bit für HDR)
 	BDAV Transport Stream	BDAV-Transportstrom
@@ -4511,3 +4524,12 @@
 	the engine sent no report	die Engine hat keinen Bericht gesendet
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a Unkomprimiert 10 Bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, unkomprimiertes 10-Bit-Y'CbCr 4:2:2 im v210-Layout (SMPTE ST 384), 24-Bit-PCM mit 48 kHz, Start-Timecode
+	Load KDM…	KDM laden…
+	Forget DCP Keys	DCP-Schlüssel vergessen
+	Load KDM	KDM laden
+	KDM file	KDM-Datei
+	Private key (PEM)	Privater Schlüssel (PEM)
+	{title}: {count} keys loaded	{title}: {count} Schlüssel geladen
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Die Schlüssel bleiben nur im Arbeitsspeicher, bis „DCP-Schlüssel vergessen“ oder bis zum Ende der Sitzung.
+	DCP keys forgotten	DCP-Schlüssel vergessen
+	Choose the KDM file and the private key.	Wählen Sie die KDM-Datei und den privaten Schlüssel.

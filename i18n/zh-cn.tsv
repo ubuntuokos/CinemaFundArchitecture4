@@ -3645,6 +3645,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 3996×2160（1.85:1），5.1 24 位 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 4096×1716（2.39:1），5.1 24 位 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E（可互操作母版包）
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF 文件夹：JPEG 2000 1920×1080，5.1 24 位 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF 文件夹：JPEG 2000 3840×2160，5.1 24 位 48 kHz PCM
+	Episode	剧集
+	Event highlights	活动集锦
+	Event	活动
+	Lossless (reversible JPEG 2000)	无损（可逆 JPEG 2000）
+	Package language	包语言
 	Show Duplicate Frame Markers	显示重复帧标记
 	Work Area Bar	工作区栏
 	Set Work Area Bar In Point	设置工作区栏入点
@@ -3919,6 +3929,9 @@
 	1 B picture between anchors	锚帧之间 1 个 B 帧
 	10-bit RGB	10 位 RGB
 	12-bit X'Y'Z'	12 位 X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 位 R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF 有损
+	JPEG 2000 IMF reversible	JPEG 2000 IMF 可逆
 	16-bit half float	16 位半精度浮点
 	AV1 Main (10-bit for HDR)	AV1 Main（HDR 用 10 位）
 	BDAV Transport Stream	BDAV 传输流
@@ -4502,3 +4515,12 @@
 	the engine sent no report	引擎未发送报告
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 无压缩 10 位 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a，v210 布局的无压缩 10 位 Y'CbCr 4:2:2（SMPTE ST 384），24 位 48 kHz PCM，起始时间码
+	Load KDM…	加载 KDM…
+	Forget DCP Keys	清除 DCP 密钥
+	Load KDM	加载 KDM
+	KDM file	KDM 文件
+	Private key (PEM)	私钥 (PEM)
+	{title}: {count} keys loaded	{title}：已加载 {count} 个密钥
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	密钥只保存在内存中，直到执行“清除 DCP 密钥”或会话结束。
+	DCP keys forgotten	已清除 DCP 密钥
+	Choose the KDM file and the private key.	请选择 KDM 文件和私钥。

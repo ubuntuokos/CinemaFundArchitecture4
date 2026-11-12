@@ -3655,6 +3655,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 3996×2160(1.85:1), 5.1 24비트 48kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 4096×1716(2.39:1), 5.1 24비트 48kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E(상호 운용 마스터 패키지)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF 폴더: JPEG 2000 1920×1080, 5.1 24비트 48kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF 폴더: JPEG 2000 3840×2160, 5.1 24비트 48kHz PCM
+	Episode	에피소드
+	Event highlights	이벤트 하이라이트
+	Event	이벤트
+	Lossless (reversible JPEG 2000)	무손실(가역 JPEG 2000)
+	Package language	패키지 언어
 	Show Duplicate Frame Markers	중복 프레임 마커 표시
 	Work Area Bar	작업 영역 막대
 	Set Work Area Bar In Point	작업 영역 막대 시작 지점 설정
@@ -3920,6 +3930,9 @@
 	1 B picture between anchors	앵커 사이 B 픽처 1개
 	10-bit RGB	10비트 RGB
 	12-bit X'Y'Z'	12비트 X'Y'Z'
+	10-bit R'G'B' 4:4:4	10비트 R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF 손실
+	JPEG 2000 IMF reversible	JPEG 2000 IMF 가역
 	16-bit half float	16비트 반정밀도 부동소수점
 	AV1 Main (10-bit for HDR)	AV1 Main(HDR은 10비트)
 	BDAV Transport Stream	BDAV 전송 스트림
@@ -4498,3 +4511,12 @@
 	the engine sent no report	엔진이 보고서를 보내지 않았습니다
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 비압축 10비트 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 레이아웃의 비압축 10비트 Y'CbCr 4:2:2 (SMPTE ST 384), 24비트 48kHz PCM, 시작 타임코드
+	Load KDM…	KDM 불러오기…
+	Forget DCP Keys	DCP 키 지우기
+	Load KDM	KDM 불러오기
+	KDM file	KDM 파일
+	Private key (PEM)	개인 키 (PEM)
+	{title}: {count} keys loaded	{title}: 키 {count}개 불러옴
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	키는 메모리에만 남으며, DCP 키 지우기 또는 세션이 끝날 때까지 유지됩니다.
+	DCP keys forgotten	DCP 키를 지웠습니다
+	Choose the KDM file and the private key.	KDM 파일과 개인 키를 선택하십시오.

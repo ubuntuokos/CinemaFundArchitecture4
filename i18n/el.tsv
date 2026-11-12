@@ -1820,6 +1820,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bit 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bit 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (διαλειτουργικό πακέτο master)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE IMF: JPEG 2000 1920×1080, PCM 5.1 24 bit 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Φάκελος SMPTE IMF: JPEG 2000 3840×2160, PCM 5.1 24 bit 48 kHz
+	Episode	Επεισόδιο
+	Event highlights	Στιγμιότυπα εκδήλωσης
+	Event	Εκδήλωση
+	Lossless (reversible JPEG 2000)	Χωρίς απώλειες (αναστρέψιμο JPEG 2000)
+	Package language	Γλώσσα πακέτου
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	Εικόνες B
@@ -1972,6 +1982,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bit για HDR)
 	10-bit RGB	RGB 10 bit
 	12-bit X'Y'Z'	X'Y'Z' 12 bit
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 10 bit
+	JPEG 2000 IMF lossy	JPEG 2000 IMF με απώλειες
+	JPEG 2000 IMF reversible	JPEG 2000 IMF αναστρέψιμο
 	16-bit half float	μισής ακρίβειας 16 bit
 	linear	γραμμικό
 	uncompressed	ασυμπίεστο
@@ -4506,3 +4519,12 @@ export.summary	Low	χαμηλή
 	the engine sent no report	η μηχανή δεν έστειλε αναφορά
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a ασυμπίεστο 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, ασυμπίεστο 10-bit Y'CbCr 4:2:2 σε διάταξη v210 (SMPTE ST 384), PCM 24-bit 48 kHz, αρχικός κωδικός χρόνου
+	Load KDM…	Φόρτωση KDM…
+	Forget DCP Keys	Διαγραφή κλειδιών DCP
+	Load KDM	Φόρτωση KDM
+	KDM file	Αρχείο KDM
+	Private key (PEM)	Ιδιωτικό κλειδί (PEM)
+	{title}: {count} keys loaded	{title}: φορτώθηκαν {count} κλειδιά
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Τα κλειδιά μένουν μόνο στη μνήμη, μέχρι τη «Διαγραφή κλειδιών DCP» ή το τέλος της συνεδρίας.
+	DCP keys forgotten	Τα κλειδιά DCP διαγράφηκαν
+	Choose the KDM file and the private key.	Επιλέξτε το αρχείο KDM και το ιδιωτικό κλειδί.

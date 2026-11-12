@@ -3636,6 +3636,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bits 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bits 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Dossier IMF SMPTE : JPEG 2000 1920×1080, PCM 5.1 24 bits 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Dossier IMF SMPTE : JPEG 2000 3840×2160, PCM 5.1 24 bits 48 kHz
+	Episode	Épisode
+	Event highlights	Temps forts de l'événement
+	Event	Événement
+	Lossless (reversible JPEG 2000)	Sans perte (JPEG 2000 réversible)
+	Package language	Langue du paquet
 	Show Duplicate Frame Markers	Afficher les repères d’images en double
 	More transport controls	Autres commandes de transport
 	A file dialog is already open	Une fenêtre de sélection de fichier est déjà ouverte
@@ -3931,6 +3941,9 @@
 	1 B picture between anchors	1 image B entre les images d'ancrage
 	10-bit RGB	RVB 10 bits
 	12-bit X'Y'Z'	X'Y'Z' 12 bits
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 10 bits
+	JPEG 2000 IMF lossy	JPEG 2000 IMF avec perte
+	JPEG 2000 IMF reversible	JPEG 2000 IMF réversible
 	16-bit half float	virgule flottante demi-précision 16 bits
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bits pour le HDR)
 	BDAV Transport Stream	flux de transport BDAV
@@ -4509,3 +4522,12 @@
 	the engine sent no report	le moteur n’a envoyé aucun rapport
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a non compressé 10 bits 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10 bits non compressé au format v210 (SMPTE ST 384), PCM 24 bits 48 kHz, timecode de début
+	Load KDM…	Charger un KDM…
+	Forget DCP Keys	Oublier les clés DCP
+	Load KDM	Charger le KDM
+	KDM file	Fichier KDM
+	Private key (PEM)	Clé privée (PEM)
+	{title}: {count} keys loaded	{title} : {count} clés chargées
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Les clés restent uniquement en mémoire, jusqu’à « Oublier les clés DCP » ou la fin de la session.
+	DCP keys forgotten	Clés DCP oubliées
+	Choose the KDM file and the private key.	Choisissez le fichier KDM et la clé privée.

@@ -1898,6 +1898,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP -kansio: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP -kansio: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF -kansio: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF -kansio: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM
+	Episode	Jakso
+	Event highlights	Tapahtuman kohokohdat
+	Event	Tapahtuma
+	Lossless (reversible JPEG 2000)	Häviötön (käännettävä JPEG 2000)
+	Package language	Paketin kieli
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B-kuvat
@@ -2062,6 +2072,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bittinen HDR:lle)
 	10-bit RGB	10-bittinen RGB
 	12-bit X'Y'Z'	12-bittinen X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bittinen R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF häviöllinen
+	JPEG 2000 IMF reversible	JPEG 2000 IMF käännettävä
 	16-bit half float	16-bittinen puolitarkkuus
 	linear	lineaarinen
 	uncompressed	pakkaamaton
@@ -4506,3 +4519,12 @@ export.summary	Low	matala
 	the engine sent no report	moottori ei lähettänyt raporttia
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a pakkaamaton 10-bittinen 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, pakkaamaton 10-bittinen Y'CbCr 4:2:2 v210-asettelussa (SMPTE ST 384), 24-bittinen 48 kHz PCM, alkuaikakoodi
+	Load KDM…	Lataa KDM…
+	Forget DCP Keys	Unohda DCP-avaimet
+	Load KDM	Lataa KDM
+	KDM file	KDM-tiedosto
+	Private key (PEM)	Yksityinen avain (PEM)
+	{title}: {count} keys loaded	{title}: {count} avainta ladattu
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Avaimet ovat vain muistissa, kunnes valitaan Unohda DCP-avaimet tai istunto päättyy.
+	DCP keys forgotten	DCP-avaimet unohdettu
+	Choose the KDM file and the private key.	Valitse KDM-tiedosto ja yksityinen avain.
