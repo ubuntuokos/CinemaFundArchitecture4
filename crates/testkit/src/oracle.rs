@@ -127,6 +127,38 @@ pub fn ffmpeg_has_encoder(ffmpeg: &Path, encoder: &str) -> bool {
     encoders_output_lists(&String::from_utf8_lossy(&out.stdout), encoder)
 }
 
+/// Encoders a fixture recipe needs that a CFA4 FFmpeg may lack: the development FFmpeg 9.0.2
+/// (`scripts/dev/fetch-ffmpeg-9.0.2.sh`) is built without libx264 and libx265, the CI oracle has them.
+pub const OPTIONAL_FIXTURE_ENCODERS: &[&str] = &["libx264", "libx265"];
+
+/// The first of [`OPTIONAL_FIXTURE_ENCODERS`] named in the ffmpeg arguments `args` that `ffmpeg` lacks.
+pub fn missing_fixture_encoder<S: AsRef<str>>(ffmpeg: &Path, args: &[S]) -> Option<&'static str> {
+    OPTIONAL_FIXTURE_ENCODERS.iter().copied().find(|enc| args.iter().any(|a| a.as_ref() == *enc) && !ffmpeg_has_encoder(ffmpeg, enc))
+}
+
+/// Whether `ffmpeg` has every encoder in `encoders`. Otherwise [`skip`]s, naming the first missing
+/// one, and returns `false` (a hard failure with `CFA4_REQUIRE_ORACLES=1`, as in CI).
+pub fn encoders_or_skip(context: &str, ffmpeg: &Path, encoders: &[&str]) -> bool {
+    match encoders.iter().find(|enc| !ffmpeg_has_encoder(ffmpeg, enc)) {
+        None => true,
+        Some(enc) => {
+            skip(context, &format!("this ffmpeg has no {enc} encoder"));
+            false
+        }
+    }
+}
+
+/// [`encoders_or_skip`] for the optional encoders named in the ffmpeg arguments `args`.
+pub fn fixture_encoders_or_skip<S: AsRef<str>>(context: &str, ffmpeg: &Path, args: &[S]) -> bool {
+    match missing_fixture_encoder(ffmpeg, args) {
+        None => true,
+        Some(enc) => {
+            skip(context, &format!("this ffmpeg has no {enc} encoder"));
+            false
+        }
+    }
+}
+
 /// Pure function of the `ffmpeg -encoders` output: whether `encoder` is one of the listed names.
 fn encoders_output_lists(output: &str, encoder: &str) -> bool {
     // rows look like ` V....D libx264   libx264 H.264 …`; the name is the second whitespace-separated token
