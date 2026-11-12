@@ -18,6 +18,8 @@
   használati korlát, és a CFA4-nek nincs kereskedelmi része. A fejlesztés **önkéntes adománnyal**
   támogatható; az adomány semmilyen funkciót nem nyit meg. Zárt (nem GPL) kódmodul – sem a CFA4
   folyamatába betöltődő, sem külön folyamatként futó – nem készül. Részletek: 4. pont.
+  Egyetlen kivétel (tulajdonosi döntés, 2026-11-11): a GPL-3 BRAW-adapter a GPL-3 7. pontja
+  szerinti kiegészítő engedéllyel linkelheti a felhasználó által telepített Blackmagic RAW SDK-t.
 - **Szabadalmilag korlátozott komponensek – Ubuntu-modell (tulajdonosi döntés, 2026-10-25):**
   az alapcsomag nélkülük épül és működik; a felhasználó kifejezett kérésére a
   `cfa4-restricted-extras` kiegészítő csomag telepíti őket (pl. x264, x265). Ez minden jövőbeli
@@ -128,6 +130,17 @@ the donation link is published is listed in [`README.md`](../README.md#support-c
 **Still not part of CFA4:** proprietary (non-GPL) code of any kind, whether loaded into the CFA4
 process (dynamic libraries, Rust crates, Python modules) or shipped as separate programs.
 Third-party proprietary plug-ins are not loaded either (ADR 0003 §4).
+
+**The one exception: the Blackmagic RAW adapter** (owner decision 2026-10-31, confirmed for this
+section on 2026-11-11, [CFA4-PROCODEC-002](plans/CFA4-PROCODEC-002-2026-11-11.md) work package
+11). The BRAW adapter is CFA4 code under `GPL-3.0-or-later` with an additional permission under
+GPL-3 section 7 to link the Blackmagic RAW SDK. CFA4 never ships, downloads or installs the SDK:
+the user installs it from Blackmagic Design, and without it the adapter reports BRAW as
+unsupported. The adapter runs as a separate process, so an SDK crash is an error and never a
+CFA4 crash (`AGENTS.md` §0). The exact permission text goes into the adapter's source headers and
+`LICENSE` note when the adapter is written. No other proprietary library gets this exception;
+R3D and ARRIRAW are handled by calling the vendors' own command-line programs (REDline,
+`art-cmd`) as external processes.
 
 ## 5. Reused code register
 
