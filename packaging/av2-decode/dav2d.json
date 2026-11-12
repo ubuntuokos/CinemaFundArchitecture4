@@ -1,0 +1,7 @@
+{
+  "description": "The dav2d commit the cfa4-av2-decode helper is built from (ADR 0010; measured in docs/audit/av2-00-results.json). Change it only together with a new conformance run.",
+  "repo": "https://code.videolan.org/videolan/dav2d.git",
+  "commit": "18641bb8134fa45fe1ba66ea50c4c9567de911e7",
+  "version": "0.0.1-607-g18641bb8",
+  "license": "BSD-2-Clause"
+}

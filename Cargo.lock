@@ -1146,6 +1146,7 @@ dependencies = [
  "cfa4-apv",
  "cfa4-auro",
  "cfa4-av1",
+ "cfa4-av2",
  "cfa4-avi",
  "cfa4-bitstream",
  "cfa4-cineform",

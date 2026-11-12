@@ -109,9 +109,17 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
 - `cargo test -p cfa4-testkit --test av2_oracle` checks the harness itself. Without the oracle or
   the corpus the tests print `SKIPPED`; `CFA4_REQUIRE_AV2_ORACLE=1` makes that a failure.
   `CFA4_REQUIRE_ORACLES` does not cover AV2, since ordinary CI has no AVM build.
+- The early decoder (ADR 0010): `python3 scripts/dev/av2-decoder.py build` builds dav2d at the
+  commit pinned in `packaging/av2-decode/dav2d.json` and the `cfa4-av2-decode` helper into
+  `target/av2-decoder/bin` (`DAV2D_COMMIT` stamp). `cargo test -p cfa4-codecs --features
+  av2-external --test av2_external` decodes the corpus through the helper and the Rust adapter
+  and compares with the manifest: the `Main_420_10_IP0` vectors must be bit-exact, the others are
+  reported (dav2d's 4:4:4 inter mismatch is known). The same test checks that a crashing,
+  hanging or garbage-writing helper is an error, and feeds mutated units to the real helper.
+  `CFA4_AV2_DECODER` overrides the helper path.
 - CI: `.github/workflows/cfa4-av2-oracle.yml` (Ubuntu 26.04) runs only on `workflow_dispatch` or
-  on a `cfa4-full-validation` label event of a PR that touches the harness. It is not a required
-  check.
+  on a `cfa4-full-validation` label event of a PR that touches the harness or the decoder. It is
+  not a required check.
 
 ### Pass criteria per codec
 
