@@ -1,11 +1,13 @@
 # CFA4-PY-TYPING-001 – A Python-kód típusellenőrzése (mypy strict) blokkoló CI-kapuvá
 
-**Verzió:** 0.1 (javaslat, jóváhagyásra vár)
+**Verzió:** 0.2 (az ütemezés eldöntve; a terv többi része jóváhagyásra vár)
 **Dátum:** 2026-11-12
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Állapot:** a tulajdonos (`ubuntuokos`) 2026-11-12-én kérte a tervet, miután a #1106 (a #1090
 javított változata) a `mypy`-t felvette a `dev` csoportba és a lockfájlba, de CI-kapuvá nem
-tette. A VII. fejezet döntései nyitottak; a terv a tulajdonos jóváhagyásáig nem indul.
+tette. 2026-11-12-én a tulajdonos eldöntette az ütemezést (VI, D8): a Qt6 GUI tesztelésre vár,
+ezért most csak a T0 és a gyanús helyek listája (T0b) készül, a T2–T5 a Qt6 tesztelése után. A
+VII. fejezet többi döntése nyitott; a terv a tulajdonos jóváhagyásáig nem indul.
 **Kapcsolódik:** [`AGENTS.md`](../../AGENTS.md) §0 (never crash), [`CLAUDE.md`](../../CLAUDE.md)
 (Python / Qt ellenőrzések), [`docs/coordination.md`](../coordination.md) (§2 PR-szabályok, §3.4 Qt
 GUI-tesztek), [`CFA4-QT6-FINISH-001`](CFA4-QT6-FINISH-001.md) (a Qt6 GUI befejezése),
@@ -150,6 +152,7 @@ tükrözi, nem ütemezést.
 | Fázis | Tartalom | Hiba (2026-11-12) | Függ |
 |---|---|---:|---|
 | **T0** | Kapu bevezetése: CI-feladat (IV.2), kivétellista a ma hibás 108 fájllal (IV.1), a lista rövidülését figyelő ellenőrzés, dokumentáció (`CLAUDE.md`, `linux.md`). Ettől kezdve a 39 hibátlan fájl és minden új fájl védett. | 0 új | #1106 beolvasztva |
+| **T0b** | A gyanús helyek listája a Qt6 tesztelésének: a termékkód azon találatai, amelyek futás közbeni összeomlást jelenthetnek (`None`-on hívott metódus, kb. 100; nem létező Qt-metódus vagy attribútum). **Csak olvasó jelentés, javítás nélkül**, helyenként a fájllal, a sorral, a hibakóddal és azzal a GUI-művelettel, amellyel kipróbálható. Ami a tesztben valóban összeomlik, azt a Qt6-munkamenet javítja a szokásos hibajavításként (D6). | – | – |
 | **T1** | `cfa4_devtools/`: 8 fájl | 30 | T0 |
 | **T2** | `cfa4_qt/*.py` (nem panel): 14 fájl, köztük `main_window.py` (62), `control.py` (31) | 124 | T0 |
 | **T3** | `cfa4_qt/panels/`: 52 fájl. A Qt-metódus-elfedések átnevezése (II.3), a `_FrameViewBase`-hez hasonló alaposztályok deklarálása (II.4), a `None`-ellenőrzések. Fájlcsoportonként külön PR. | 568 | T0, T2 (közös típusok); ütközés a Qt6-munkával (VIII) |
@@ -163,7 +166,18 @@ A IV.4 szerinti valódi hibák bármelyik fázisban előkerülhetnek; ezekről a
 ## VI. Ütemezés
 
 A tulajdonos szabálya szerint (2026-11-11) a terv nem ír elő ütemezést: minden fázis indításáról és
-sorrendjéről a tulajdonos dönt, az igények szerint. Amit a terv a döntéshez jelez:
+sorrendjéről a tulajdonos dönt, az igények szerint.
+
+**Tulajdonosi döntés (D8, 2026-11-12):** a Qt6 GUI tesztelésre vár, és a tesztelésnek stabil kód
+kell. Ezért:
+- **most:** T0 (a kapu a kivétellistával; a Qt-fájlokhoz nem nyúl) és T0b (a gyanús helyek listája
+  a tesztelőknek, javítás nélkül);
+- **a Qt6 tesztelése után:** T2–T5 (a `cfa4_qt`, a panelek és a tesztek javítása);
+- a T1 (`cfa4_devtools`, Qt-független) ütközés nélkül bármikor mehet; az indításáról a tulajdonos
+  dönt;
+- a tesztelés közben talált valódi összeomlásokat a Qt6-munkamenet javítja (D6).
+
+Amit a terv a döntéshez jelezett:
 - A **T0** önállóan, kis kockázattal elvégezhető, és azonnal megvédi a már hibátlan fájlokat.
 - A **T3** és a **T5** a Qt6-munkával érintkezik (a `cfa4_qt/panels/` és a `test_qt_gui.py` a
   Qt6-munkamenetek fő fájljai). Ha a Qt6 GUI befejezése előtt indulnak, sok ütközés várható; utána
@@ -181,6 +195,8 @@ sorrendjéről a tulajdonos dönt, az igények szerint. Amit a terv a döntéshe
 | D4 | A Qt-metódusokat elfedő attribútumok (pl. `self.scroll`) átnevezhetők-e a termékkódban? | **Igen**, fájlonként külön PR-ban, a vezérlőcsatorna automatizálási azonosítóinak (`setObjectName`) változatlanul hagyásával. |
 | D5 | Melyik munkamenet végzi? | Saját, külön munkamenet (a többi tervhez hasonlóan), amely csak ezen a terven dolgozik, és minden PR-t a gazdának ad át. |
 | D6 | A IV.4 szerinti valódi hibák javítása megvárja-e a fázist? | **Nem kell megvárnia**: a never crash szabály miatt a talált összeomlási hibák külön, előre bekerülhetnek. |
+| D7 | A T0 kapuja a Qt6 tesztelése alatt blokkoló legyen, vagy csak jelentést adjon (és a teszt után váljon blokkolóvá)? | **Blokkoló.** A ma hibás fájlok a kivétellistán vannak, így a Qt6-javításokat nem akadályozza; csak az új fájloknak kell hibátlannak lenniük. |
+| D8 | Mikor javítsunk: most vagy a Qt6 tesztelése után? | **Eldöntve (tulajdonos, 2026-11-12):** most T0 és T0b, a T2–T5 a Qt6 tesztelése után (VI). |
 
 ## VIII. Kockázatok
 
