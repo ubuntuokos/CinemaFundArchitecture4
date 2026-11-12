@@ -5295,7 +5295,6 @@ def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path
     finally:
         win._quit_confirmed = True
         win.close()
-        engine.stop()
 
 
 # ----- timeline: track headers, thumbnails, waveforms (egui parity) -----
