@@ -204,8 +204,7 @@ fn generate_fixtures() {
 /// Concurrent consumers must publish one complete fixture without replacing an open file.
 #[test]
 fn concurrent_fixture_publication_is_safe() {
-    let Some(ff) = cfa4_testkit::ffmpeg_or_skip("concurrent_fixture_publication") else { return };
-    if !cfa4_testkit::encoders_or_skip("concurrent_fixture_publication", &ff, &["libx264"]) {
+    if cfa4_testkit::ffmpeg_or_skip("concurrent_fixture_publication").is_none() {
         return;
     }
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();

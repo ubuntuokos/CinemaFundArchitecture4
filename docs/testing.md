@@ -72,10 +72,7 @@ results. This oracle is separate from the product's supplementary FFmpeg backend
   `aac`, `opus` and `h264enc` oracles generate small per-test signals on demand and are not part of
   the matrix.
 - Fixture sources are synthetic: `testsrc2`, `mandelbrot`, SMPTE bars, noise and fades, sine tones.
-  H.264 and HEVC fixtures need ffmpeg built with libx264 and libx265 (the CI oracle has them). The
-  development FFmpeg 9.0.2 (`scripts/dev/fetch-ffmpeg-9.0.2.sh`) has neither, so the tests whose fixtures
-  need them print `SKIPPED` there (`cfa4_testkit::encoders_or_skip`, `fixture_encoders_or_skip`); with
-  `CFA4_REQUIRE_ORACLES=1`, as in CI, a missing encoder fails instead. The VP9 and
+  H.264 and HEVC fixtures need ffmpeg built with libx264 and libx265. The VP9 and
   AV1 fixtures (libvpx-vp9, libaom-av1; 360p, 1080p, 2160p, hidden alt-ref frames, two GOPs) need an ffmpeg with those encoders.
 
 The NVENC tests (`crates/platform/tests/nvenc.rs` and `nvenc_export.rs`; H.264, H.265 and Main 10

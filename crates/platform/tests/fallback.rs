@@ -170,9 +170,6 @@ fn damaged(sample: &[u8], nal_header: usize) -> Vec<u8> {
 #[test]
 fn a_sample_software_rejects_during_the_replay_loses_no_pictures() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    if !cfa4_testkit::encoders_or_skip("software rejects during replay", &ff, &["libx264", "libx265"]) {
-        return;
-    }
     let mut checked = 0;
     for (name, _) in FIXTURES {
         let Some(path) = named(&ff, name) else { continue };

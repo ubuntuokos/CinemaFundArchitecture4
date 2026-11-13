@@ -942,9 +942,6 @@ fn the_sequence_inspect_names_a_clips_cameras_for_the_clip_menu() {
 #[test]
 fn audio_sync_against_a_long_stereo_clip() {
     let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("long stereo sync") else { return };
-    if !cfa4_testkit::encoders_or_skip("long stereo sync", &ffmpeg, &["libx264"]) {
-        return;
-    }
     let dir = cfa4_testkit::fixtures_dir("multicam");
     // 25 minutes of stereo pink noise (AAC, small), and a 20 s excerpt of it starting at 100 s
     let gen_clip = |name: &str, extra: &[&str]| {
