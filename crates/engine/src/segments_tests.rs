@@ -104,3 +104,50 @@ fn hostile_marker_times_never_panic() {
     let _ = s.execute("segments.export", json!({"item": item.0, "output": out}));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn segments_become_named_subclips_in_one_undo_step() {
+    let (mut s, item, dir) = with_markers("segments-subclips", vec![marker(900, 0, 10, "intro"), marker(902, 20, 10, "")]);
+    let before = s.project.items.len();
+    let r = s.execute("segments.toSubclips", json!({"item": item.0})).unwrap();
+    let made = r["subclips"].as_array().unwrap();
+    assert_eq!(made.len(), 2);
+    assert_eq!(s.project.items.len(), before + 2);
+    let first = cfa4_project::ItemId(made[0]["item"].as_u64().unwrap());
+    let it = s.project.item(first).unwrap();
+    assert_eq!(it.name, "intro");
+    match &it.kind {
+        cfa4_project::ItemKind::Subclip { parent, range, .. } => {
+            assert_eq!(*parent, item);
+            assert_eq!((range.start, range.end()), (RATE.tick_of(0), RATE.tick_of(10)));
+        }
+        k => panic!("not a subclip: {k:?}"),
+    }
+    // an unnamed segment is named after the clip and its number
+    let second = s.project.item(cfa4_project::ItemId(made[1]["item"].as_u64().unwrap())).unwrap();
+    assert!(second.name.ends_with(" 2"), "{}", second.name);
+    // one undo step removes both
+    s.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(s.project.items.len(), before);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn segments_are_placed_back_to_back_on_the_timeline() {
+    let (mut s, item, dir) = with_markers("segments-timeline", vec![marker(900, 0, 10, "a"), marker(902, 20, 5, "b")]);
+    let r = s.execute("segments.toTimeline", json!({"item": item.0, "segments": [902, 900], "time": 0})).unwrap();
+    assert_eq!(r["subclips"][0]["marker"], 902);
+    let made: Vec<u64> = r["subclips"].as_array().unwrap().iter().map(|x| x["item"].as_u64().unwrap()).collect();
+    let seq = s.active_sequence().unwrap();
+    // only the placed subclips (the test project already holds a clip of its own)
+    let mut clips: Vec<(Tick, Tick)> = seq
+        .tracks(cfa4_project::TrackKind::Video)
+        .iter()
+        .flat_map(|t| t.items.iter())
+        .filter(|c| made.contains(&c.item.0))
+        .map(|c| (c.start, c.duration))
+        .collect();
+    clips.sort();
+    assert_eq!(clips, [(Tick(0), RATE.tick_of(5)), (RATE.tick_of(5), RATE.tick_of(10))]);
+    let _ = std::fs::remove_dir_all(&dir);
+}

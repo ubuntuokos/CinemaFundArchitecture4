@@ -10,15 +10,20 @@
 //!   `export.plan` / `export.start` with `ranges` ([`crate::smart_cut_ranges`]): one verified file
 //!   per segment, `{n}` and `{name}` in the output pattern, nothing written unless every segment
 //!   can run, one `"confirm"` for a batch that re-encodes.
+//! - `segments.toSubclips` (K3) makes one subclip per chosen segment, in one undo step, named after
+//!   the marker, so the segment keeps its link to the source file and its media times.
+//!   `segments.toTimeline` also places those subclips back to back on the active sequence
+//!   (`timeline.place` with `items`; `time`, `track`, `insert` pass through).
 
 use std::collections::BTreeSet;
 
-use cfa4_project::{ItemId, Marker};
+use cfa4_project::{ItemId, ItemKind, Marker};
+use cfa4_time::{Tick, TimeRange};
 use serde_json::{Value, json};
 
 use crate::clip_ops::source_view;
-use crate::commands::{CommandSpec, always, bad, item_p};
-use crate::{Result, Session};
+use crate::commands::{CommandSpec, always, bad, bool_p, item_p};
+use crate::{EngineError, Result, Session};
 
 /// The media item named by `item`, or the Source monitor's clip.
 fn item_of(s: &Session, p: &Value, cmd: &str) -> Result<ItemId> {
@@ -56,12 +61,12 @@ fn list(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"item": item.0, "segments": segments.iter().map(segment_json).collect::<Vec<_>>()}))
 }
 
-/// The `export.*` parameters of the chosen segments: the command's own, with `item` and `ranges`.
-fn ranges_of(s: &Session, p: &Value, cmd: &str) -> Result<Value> {
+/// The segments chosen by `segments` (default: all, in time order; a list sets the order).
+fn chosen(s: &Session, p: &Value, cmd: &str) -> Result<(ItemId, Vec<Marker>)> {
     let item = item_of(s, p, cmd)?;
     let all = segments_of(s, item, cmd)?;
-    let chosen: Vec<&Marker> = match p.get("segments") {
-        None | Some(Value::Null) => all.iter().collect(),
+    let chosen: Vec<Marker> = match p.get("segments") {
+        None | Some(Value::Null) => all,
         Some(Value::Array(ids)) => {
             if ids.is_empty() {
                 return Err(bad(cmd, "`segments` is empty"));
@@ -76,7 +81,7 @@ fn ranges_of(s: &Session, p: &Value, cmd: &str) -> Result<Value> {
                 if !seen.insert(id) {
                     return Err(bad(cmd, format!("segment {id} is listed twice")));
                 }
-                out.push(all.iter().find(|m| m.id.0 == id).ok_or_else(|| bad(cmd, format!("item {} has no segment (range marker) {id}", item.0)))?);
+                out.push(all.iter().find(|m| m.id.0 == id).cloned().ok_or_else(|| bad(cmd, format!("item {} has no segment (range marker) {id}", item.0)))?);
             }
             out
         }
@@ -85,6 +90,12 @@ fn ranges_of(s: &Session, p: &Value, cmd: &str) -> Result<Value> {
     if chosen.is_empty() {
         return Err(bad(cmd, format!("item {} has no segments: add range markers in the Source monitor first", item.0)));
     }
+    Ok((item, chosen))
+}
+
+/// The `export.*` parameters of the chosen segments: the command's own, with `item` and `ranges`.
+fn ranges_of(s: &Session, p: &Value, cmd: &str) -> Result<Value> {
+    let (item, chosen) = chosen(s, p, cmd)?;
     let ranges: Vec<Value> = chosen
         .iter()
         .map(|m| json!({"in": m.start.0, "out": m.start.0.saturating_add(m.duration.0), "name": if m.name.is_empty() { Value::Null } else { json!(m.name) }}))
@@ -100,17 +111,13 @@ fn ranges_of(s: &Session, p: &Value, cmd: &str) -> Result<Value> {
 
 /// The export result with each range's marker id beside it.
 fn with_markers(s: &Session, p: &Value, cmd: &str, mut r: Value) -> Result<Value> {
-    let q = ranges_of(s, p, cmd)?;
-    let ids: Vec<u64> = match p.get("segments").and_then(Value::as_array) {
-        Some(ids) => ids.iter().filter_map(Value::as_u64).collect(),
-        None => segments_of(s, item_of(s, p, cmd)?, cmd)?.iter().map(|m| m.id.0).collect(),
-    };
+    let (item, chosen) = chosen(s, p, cmd)?;
     if let Some(list) = r.get_mut("ranges").and_then(Value::as_array_mut) {
-        for (entry, id) in list.iter_mut().zip(&ids) {
-            entry["marker"] = json!(id);
+        for (entry, m) in list.iter_mut().zip(&chosen) {
+            entry["marker"] = json!(m.id.0);
         }
     }
-    r["item"] = q["item"].clone();
+    r["item"] = json!(item.0);
     Ok(r)
 }
 
@@ -126,6 +133,61 @@ fn export(s: &mut Session, p: &Value) -> Result<Value> {
     let q = ranges_of(s, p, cmd)?;
     let r = s.execute("export.start", q)?;
     with_markers(s, p, cmd, r)
+}
+
+/// One subclip per chosen segment, in one undo step; their ids in the segments' order.
+fn make_subclips(s: &mut Session, p: &Value, cmd: &str) -> Result<Vec<(u64, ItemId)>> {
+    let (item, chosen) = chosen(s, p, cmd)?;
+    let view = source_view(s, item).ok_or_else(|| bad(cmd, format!("no media item {}", item.0)))?;
+    let parent = view.media;
+    let (base, label) = s.project.item(parent).map(|i| (i.name.clone(), i.label)).ok_or_else(|| EngineError::Other(format!("no media item {}", parent.0)))?;
+    let restrict = bool_p(p, "restrictTrims").unwrap_or(false);
+    let bin = s.project.root.parent_of(parent).filter(|b| *b != s.project.root.id);
+    // the subclips stay inside the source (hostile marker times are clamped, empty ones refused)
+    let (lo, hi) = (view.start.max(Tick::ZERO), view.end);
+    let mut planned = Vec::with_capacity(chosen.len());
+    for (n, m) in chosen.iter().enumerate() {
+        let a = m.start.clamp(lo, hi);
+        let b = Tick(m.start.0.saturating_add(m.duration.0)).clamp(lo, hi);
+        if b <= a {
+            return Err(bad(cmd, format!("segment {} lies outside the source", m.id.0)));
+        }
+        let name = if m.name.trim().is_empty() { format!("{base} {}", n + 1) } else { m.name.clone() };
+        planned.push((m.id.0, name, TimeRange::from_bounds(a, b)));
+    }
+    s.edit("Segments to Subclips", |pr, st| {
+        let mut made = Vec::with_capacity(planned.len());
+        for (marker, name, range) in &planned {
+            if pr.next_id == u64::MAX {
+                return Err(bad(cmd, "project ids are exhausted"));
+            }
+            let id = pr.add_item(name, label, ItemKind::Subclip { parent, range: *range, restrict_trims: restrict }, bin);
+            made.push((*marker, id));
+        }
+        st.project_selection = made.iter().map(|(_, id)| *id).collect();
+        Ok(made)
+    })
+}
+
+fn to_subclips(s: &mut Session, p: &Value) -> Result<Value> {
+    let made = make_subclips(s, p, "segments.toSubclips")?;
+    Ok(json!({"subclips": made.iter().map(|(m, id)| json!({"marker": m, "item": id.0})).collect::<Vec<_>>()}))
+}
+
+fn to_timeline(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "segments.toTimeline";
+    if s.active_sequence().is_none() {
+        return Err(bad(cmd, "open a sequence first"));
+    }
+    let made = make_subclips(s, p, cmd)?;
+    let mut q = json!({"items": made.iter().map(|(_, id)| id.0).collect::<Vec<_>>()});
+    for k in ["time", "frame", "seconds", "track", "audioTrack", "insert", "video", "audio"] {
+        if let Some(v) = p.get(k) {
+            q[k] = v.clone();
+        }
+    }
+    let placed = s.execute("timeline.place", q)?;
+    Ok(json!({"subclips": made.iter().map(|(m, id)| json!({"marker": m, "item": id.0})).collect::<Vec<_>>(), "placed": placed}))
 }
 
 pub(crate) fn commands() -> Vec<CommandSpec> {
@@ -158,6 +220,26 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             params: r#"{"item":id?,"segments":[marker id]?,"output":"pattern with {n} and {name}","mode":…,"guarantee":…,"confirm":bool (once for the batch),"crf":…,"audio":…} → export.start with ranges: one verified file per segment, nothing written unless every segment can run"#,
             enabled: always,
             run: export,
+            journal: true,
+        },
+        CommandSpec {
+            id: "segments.toSubclips",
+            label: "Segments to Subclips",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"item":id?,"segments":[marker id]?,"restrictTrims":bool=false} → {subclips:[{marker, item}]} (one undo step, named after the markers)"#,
+            enabled: always,
+            run: to_subclips,
+            journal: true,
+        },
+        CommandSpec {
+            id: "segments.toTimeline",
+            label: "Segments to Timeline",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"item":id?,"segments":[marker id]?,"time":ticks?,"track":…?,"insert":bool?,"video":bool?,"audio":bool?} → {subclips:[{marker, item}], placed} (the subclips back to back on the active sequence, as timeline.place with items)"#,
+            enabled: always,
+            run: to_timeline,
             journal: true,
         },
     ]
