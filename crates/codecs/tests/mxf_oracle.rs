@@ -165,8 +165,8 @@ fn dci2k_codestreams(ff: &Path) -> Option<()> {
     Some(())
 }
 
-/// The fixture `name`, or `None` after a skip when it needs libx264/libx265, which CFA4's FFmpeg
-/// never has (patent-restricted, `cfa4_testkit::RESTRICTED_ENCODERS`).
+/// The fixture `name`, or `None` after a skip when this ffmpeg lacks an optional encoder it needs
+/// (the development FFmpeg 9.0.2 has no libx264/libx265; CI fails instead, CFA4_REQUIRE_ORACLES=1).
 fn make(ff: &Path, name: &str) -> Option<PathBuf> {
     if !cfa4_testkit::fixture_encoders_or_skip(name, ff, &spec(name)) {
         return None;
