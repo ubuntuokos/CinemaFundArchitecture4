@@ -5,7 +5,8 @@
 **Forrás:** az „FA3 Credits & Titles Composer – végleges materializációs és végrehajtási terv”,
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
 [GPL-3.0-or-later licencre](licensing.md).  
-**Kapcsolódó:** [ADR F10](adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md), [credits.md](credits.md), [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) (GPL-3 források)
+**Kapcsolódó:** [ADR F10](adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md), [credits.md](credits.md), [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) (GPL-3 források)  
+**Új javaslat (2026-11-14, jóváhagyásra vár):** [CFA4-TITLE-CREDITS-001 1.0](plans/CFA4-TITLE-CREDITS-001-1.0.md), a C1–C14-gyel való megfeleltetés és a nyitott kérdések a [CFA4-illesztési mellékletben](plans/CFA4-TITLE-CREDITS-001-1.0-CFA4-ILLESZTES.md)
 
 ## 1. Miért kell módosítani
 
