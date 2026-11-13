@@ -332,6 +332,12 @@ impl Format {
                 | Format::ExrSequence
         )
     }
+    /// Whether the format's encoder codes interlaced video ([`ExportSettings::field_order`]):
+    /// MPEG-2 (frame pictures) and ProRes (two field pictures). The others write progressive
+    /// frames.
+    pub fn codes_interlaced(self) -> bool {
+        matches!(self, Format::Mpeg2 | Format::ProRes)
+    }
     /// An MXF container format.
     pub fn is_mxf(self) -> bool {
         matches!(self, Format::MxfOp1a | Format::MxfOpAtom)
@@ -875,9 +881,9 @@ impl ExportSettings {
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        if self.field_order != FieldOrder::Progressive && self.has_video() && self.format != Format::Mpeg2 {
+        if self.field_order != FieldOrder::Progressive && self.has_video() && !self.format.codes_interlaced() {
             return Err(ExportError::Unsupported(format!(
-                "{} field order: only MPEG-2 export codes interlaced video; the other encoders write progressive frames",
+                "{} field order: only MPEG-2 and ProRes export code interlaced video; the other encoders write progressive frames",
                 self.field_order.label()
             )));
         }
@@ -1814,12 +1820,23 @@ struct ProResEncoder {
     h: u32,
     rate: FrameRate,
     signal: ColorSignal,
+    /// Progressive, or the field order of interlaced frames (two field pictures each).
+    interlace: cfa4_prores::Interlace,
 }
 
 impl VideoEncoder for ProResEncoder {
     fn sample_entry(&self) -> SampleEntry {
         let mut e = SampleEntry::prores(cfa4_isobmff::FourCc(self.profile.fourcc()), self.w as u16, self.h as u16);
         self.signal.apply_to(&mut e, true);
+        // QuickTime `fiel`: two woven fields, the top (1) or the bottom (6) one first
+        let detail = match self.interlace {
+            cfa4_prores::Interlace::Progressive => None,
+            cfa4_prores::Interlace::TopFieldFirst => Some(1),
+            cfa4_prores::Interlace::BottomFieldFirst => Some(6),
+        };
+        if let (Some(detail), Some(v)) = (detail, e.video.as_mut()) {
+            v.field_info = Some(cfa4_isobmff::FieldInfo { fields: 2, detail });
+        }
         e
     }
     fn timescale(&self) -> u32 {
@@ -1828,6 +1845,7 @@ impl VideoEncoder for ProResEncoder {
     fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let chroma = self.profile.chroma();
         let mut fr = cfa4_prores::Frame::new(f.width, f.height, chroma, 10, self.alpha);
+        fr.interlace = self.interlace;
         let (w, h) = (f.width as usize, f.height as usize);
         timed(Stage::Convert, || match (chroma, f.hdr) {
             (cfa4_prores::ChromaFormat::Yuv444, hdr) => {
@@ -1979,7 +1997,12 @@ fn prores_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSet
         let alpha = s.keeps_alpha();
         cfg.encode_alpha = alpha;
         let enc = cfa4_prores::Encoder::with_config(cfg);
-        Ok(Box::new(ProResEncoder { enc, profile, alpha, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+        let interlace = match s.field_order {
+            FieldOrder::Progressive => cfa4_prores::Interlace::Progressive,
+            FieldOrder::UpperFirst => cfa4_prores::Interlace::TopFieldFirst,
+            FieldOrder::LowerFirst => cfa4_prores::Interlace::BottomFieldFirst,
+        };
+        Ok(Box::new(ProResEncoder { enc, profile, alpha, w, h, rate, signal: s.signal, interlace }) as Box<dyn VideoEncoder>)
     })
 }
 
