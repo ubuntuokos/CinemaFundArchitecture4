@@ -1,10 +1,11 @@
-# CFA4-DCPOMATIC-001 – DCP-o-matic bekötése a CFA4-be: megvalósítási terv
+# CFA4-DCPOMATIC-001 v1.0 – DCP-o-matic bekötése a CFA4-be: végleges megvalósítási terv
 
 **Dátum:** 2026-11-13  
-**Státusz:** **tervezet, a tulajdonos jóváhagyására vár.** Amíg nincs jóváhagyva, ebből a tervből nem indul munka.  
-**Kapcsolódik:** [ADR 0011](../adr/ADR-0011-dcpomatic-external-mastering.md) (a bekötés módjáról, javasolt), [DCP-00 audit](../audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md), [DCP-VALIDATION](DCP-VALIDATION-2026-10-27.md), a `cfa4-dcp-inspect` minta
+**Státusz:** **végleges, a tulajdonos által jóváhagyva (2026-11-13).** A projektszálban a jóváhagyó kérdés így szólt: „Jóváhagyod a tervet, a nyitott pontokban (D0, D1, D5, D7, D10) a javaslataimmal?” A válasz: „Igen, jóváhagyom”.  
+**Dokumentumazonosító:** CFA4-DCPOMATIC-001 · **Verzió:** 1.0 (végleges)  
+**Kapcsolódik:** [ADR 0011](../adr/ADR-0011-dcpomatic-external-mastering.md) (a bekötés módjáról; a 2. pontját, „a felhasználó telepíti”, e terv D2/D9 döntése váltja ki, az ADR-t az 1. fázis PR-je igazítja hozzá), [DCP-00 audit](../audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md), [DCP-VALIDATION](DCP-VALIDATION-2026-10-27.md), a `cfa4-dcp-inspect` minta
 
-> **Előzmény, őszintén.** A tulajdonos 2026-11-13-án ennyit kért: „A DCP-o-matic beépítése a CFA4-be”. Terv és jóváhagyás nélkül elkészült egy megvalósítás (PR #1173, piszkozat). Ez a CLAUDE.md 3. pontjával ellentétes. A PR addig nem olvasztható, amíg ez a terv nincs jóváhagyva. Utána vagy a jóváhagyott tervhez igazítjuk, vagy lezárjuk (D0 döntés). A PR-ben lévő kódot ez a terv nem tekinti késznek, mert valódi DCP-o-matic-kal még nem futott (lásd 1. fázis).
+> **Előzmény, őszintén.** A tulajdonos 2026-11-13-án ennyit kért: „A DCP-o-matic beépítése a CFA4-be”. Terv és jóváhagyás nélkül elkészült egy megvalósítás (PR #1173, piszkozat). Ez a CLAUDE.md 3. pontjával ellentétes. A D0 döntés szerint a PR piszkozat marad, és fázisonként ehhez a tervhez igazítjuk. A PR-ben lévő kódot ez a terv nem tekinti késznek, mert valódi DCP-o-matic-kal még nem futott (lásd 1. fázis).
 
 ## 1. Cél
 
@@ -30,21 +31,23 @@ Ezeket a DCP-o-matic (GPL-2.0-or-later, C++) végezze, a CFA4 pedig vezérelje. 
 - `file.exportMedia`: mesterfájl exportja (pl. ProRes 4444, TIFF-sorozat + WAV).
 - DCP-o-matic: nincs az Ubuntu tárolóiban, a projekt maga ad ki `.deb`-et (dcpomatic.com).
 
-## 3. A tulajdonos döntései (kitöltendő)
+## 3. Döntési napló (2026-11-13)
+
+Minden sor a tulajdonos döntése. Ahol a döntés „a javaslat szerint”, ott a Javaslat oszlop a döntés szövege.
 
 | # | Kérdés | Javaslat | Döntés |
 |---|---|---|---|
-| D0 | Mi legyen a már elkészült PR #1173-mal? | Maradjon piszkozat, és fázisonként igazítsuk ehhez a tervhez. Ha egy fázist elvetsz, a hozzá tartozó kódot kivesszük. | |
-| D1 | Kell-e egyáltalán a DCP-o-matic, vagy inkább a saját DCP-exportot bővítsük (Interop, 3D, felirat, titkosítás)? | DCP-o-matic most, a saját export bővítése később, lépésenként. A DCP-o-matic évek óta mozikban használt. | |
+| D0 | Mi legyen a már elkészült PR #1173-mal? | Maradjon piszkozat, és fázisonként igazítsuk ehhez a tervhez. Ha a tulajdonos egy fázist elvet, a hozzá tartozó kódot kivesszük. | A javaslat szerint (a terv jóváhagyásával, 2026-11-13). |
+| D1 | Kell-e egyáltalán a DCP-o-matic, vagy inkább a saját DCP-exportot bővítsük (Interop, 3D, felirat, titkosítás)? | DCP-o-matic most, a saját export bővítése később, lépésenként. A DCP-o-matic évek óta mozikban használt. | A javaslat szerint (a terv jóváhagyásával, 2026-11-13). |
 | D2 | Bekötés módja | Külön folyamat, Rust-felület mögött (ADR 0011). Linkelés elvetve, mert a C++ összeomlás a CFA4-et is vinné. | **A CFA4-gyel szállított saját példány, külön folyamatként** (István, 2026-11-13). |
 | D3 | Honnan kapja a DCP-o-matic a képet és a hangot? | **a)** egy kész videofájlból. **b)** az idővonalból: a CFA4 maga készíti el a köztes mestert, majd átadja (sok lemezhelyet kér). | **Mindkettő** (István, 2026-11-13): a Fájl ▸ Export az éppen feldolgozott videót (az aktuális szekvenciát) adja át, b) szerint; az Eszközök ▸ Videoeszközök ▸ Publikálás a gépen található bármely videofájlt, a) szerint. |
-| D4 | Titkosított DCP és KDM a DCP-o-matic-kal | Igen (2026-11-13-án igent mondtál rá a szálban). A kulcsok a DCP-o-matic filmkönyvtárában maradnak, a CFA4 nem olvassa és nem tárolja őket. | |
-| D5 | Feliratok (SRT, SubRip, DCP XML) átadása | 3. fázis, a Subtitle Studio terv kimenetére építve. | |
-| D6 | Felület | A DCP-o-matic a CFA4 designját követi (lásd 4. fázis). Saját ablaka (wxWidgets) soha nem nyílik meg, és nincs külön „DCP-o-matic” stílusú ablak. Javaslat a módjára: a DCP-o-matic a meglévő Export ablak DCP formátumának egy választható motorja („CFA4” / „DCP-o-matic”), a futás az export sorában (Queue) látszik, a KDM-készítés pedig a Load KDM…-hoz hasonló párbeszédablak. | **A CFA4 designját kövesse; menü: Eszközök ▸ Videoeszközök ▸ Publikálás és Fájl ▸ Export; csak Qt6, egui nem** (István, 2026-11-13). A javasolt mód többi része még jóváhagyásra vár. |
-| D7 | Hol legyen a DCP-o-matic aláíró lánca és beállítása? | A CFA4 saját könyvtárában (`~/.config/cfa4/dcpomatic`), hogy a felhasználó DCP-o-matic-beállításai ne változzanak. | |
-| D8 | DCP-o-matic változat | Egy rögzített 2.18.x változat, amelyet a CFA4 maga fordít és szállít. A pontos szám az 1. fázis után dől el, frissítés csak külön PR-ben. | |
-| D9 | Csomagolás | A CFA4 `.deb` a DCP-o-matic parancssori eszközeit (`dcpomatic2_create`, `dcpomatic2_cli`, `dcpomatic2_kdm_cli`) és a hozzájuk kellő könyvtárakat egy privát mappában viszi (`/usr/lib/cfa4/dcpomatic/`). Ez nincs a PATH-on, nincs hozzá menüpont, `.desktop` fájl vagy man-oldal, és a DCP-o-matic grafikus felülete le sem fordul. A CFA4 csak ezt a példányt használja, a gépre esetleg telepített DCP-o-maticot nem. A GPL miatt a pontos forrás (és a CFA4 javításai) a kiadással együtt elérhető, a licencszöveg a csomagban van. | **Szállított saját példány** (István, 2026-11-13); a részletek jóváhagyásra várnak. |
-| D10 | CI | Egy job lefordítja a rögzített DCP-o-matic-változatot (gyorsítótárral), és valódi DCP-t készít vele egy rövid tesztmesterből. Kezdetben nem blokkoló. | |
+| D4 | Titkosított DCP és KDM a DCP-o-matic-kal | A tulajdonos 2026-11-13-án a projektszálban igent mondott rá. A kulcsok a DCP-o-matic filmkönyvtárában maradnak, a CFA4 nem olvassa és nem tárolja őket. | **Igen** (István, 2026-11-13, a projektszálban). |
+| D5 | Feliratok (SRT, SubRip, DCP XML) átadása | 3. fázis, a Subtitle Studio terv kimenetére építve. | A javaslat szerint (a terv jóváhagyásával, 2026-11-13). |
+| D6 | Felület | A DCP-o-matic a CFA4 designját követi (lásd 4. fázis). Saját ablaka (wxWidgets) soha nem nyílik meg, és nincs külön „DCP-o-matic” stílusú ablak. Javaslat a módjára: a DCP-o-matic a meglévő Export ablak DCP formátumának egy választható motorja („CFA4” / „DCP-o-matic”), a futás az export sorában (Queue) látszik, a KDM-készítés pedig a Load KDM…-hoz hasonló párbeszédablak. | **A CFA4 designját kövesse; menü: Eszközök ▸ Videoeszközök ▸ Publikálás és Fájl ▸ Export; csak Qt6, egui nem** (István, 2026-11-13). A javasolt mód a terv jóváhagyásával elfogadva. |
+| D7 | Hol legyen a DCP-o-matic aláíró lánca és beállítása? | A CFA4 saját könyvtárában (`~/.config/cfa4/dcpomatic`), hogy a felhasználó DCP-o-matic-beállításai ne változzanak. | A javaslat szerint (a terv jóváhagyásával, 2026-11-13). |
+| D8 | DCP-o-matic változat | Egy rögzített 2.18.x változat, amelyet a CFA4 maga fordít és szállít. A pontos szám az 1. fázis után dől el, frissítés csak külön PR-ben. | A javaslat szerint (a terv jóváhagyásával); a pontos változat az 1. fázis auditjában. |
+| D9 | Csomagolás | A CFA4 `.deb` a DCP-o-matic parancssori eszközeit (`dcpomatic2_create`, `dcpomatic2_cli`, `dcpomatic2_kdm_cli`) és a hozzájuk kellő könyvtárakat egy privát mappában viszi (`/usr/lib/cfa4/dcpomatic/`). Ez nincs a PATH-on, nincs hozzá menüpont, `.desktop` fájl vagy man-oldal, és a DCP-o-matic grafikus felülete le sem fordul. A CFA4 csak ezt a példányt használja, a gépre esetleg telepített DCP-o-maticot nem. A GPL miatt a pontos forrás (és a CFA4 javításai) a kiadással együtt elérhető, a licencszöveg a csomagban van. | **Szállított saját példány** (István, 2026-11-13); a részletek a terv jóváhagyásával elfogadva. |
+| D10 | CI | Egy job lefordítja a rögzített DCP-o-matic-változatot (gyorsítótárral), és valódi DCP-t készít vele egy rövid tesztmesterből. Kezdetben nem blokkoló. | A javaslat szerint (a terv jóváhagyásával, 2026-11-13). |
 
 ## 4. Fázisok
 
@@ -59,6 +62,7 @@ Ez a fázis kódot nem ír a termékbe.
 - Rögzítsd a `dcpomatic2_create`, `dcpomatic2_cli` és `dcpomatic2_kdm_cli` valódi kapcsolóit, kimenetét (haladás, hibák) és kilépési kódjait egy auditfájlban (`docs/audit/DCPOM-01-…`).
 - Készíts valódi DCP-t egy 10 mp-es tesztmesterből SMPTE és Interop változatban, és ellenőrizd a CFA4 `cfa4-dcp-validate` eszközével.
 - Mérd meg a futási időt és a lemezigényt a referenciagépen (`docs/development/reference-machine.md`).
+- Igazítsd az ADR 0011-et e tervhez (szállított saját példány a „felhasználó telepíti” helyett), és a `docs/development/dcpomatic.md`-t is.
 
 **Elfogadás:** az audit leírja a kapcsolókat, a függőségeket, a fordítás módját és a csomag méretét. A D8 és a D9 részletei ebből dőlnek el.
 
@@ -94,7 +98,7 @@ A tulajdonos döntése (D6): a DCP-o-matic **a CFA4 designját követi**. A felh
   - „DCP készítése DCP-o-matic-kal…” (`tools.video.publish.dcpomatic`): **a gépen található bármely videofájlból** készít DCP-t (D3 a). Fájlválasztóval indul, majd ugyanazokat a DCP-sorokat mutatja, mint az Export ablak, a CFA4 designjával;
   - „KDM készítése…” (`tools.video.publish.createKdm`): a KDM-párbeszédablak.
   - Az **Export menüben** (Fájl ▸ Export) is megjelenik egy „DCP DCP-o-matic-kal…” menüpont (a tulajdonos kérése, 2026-11-13). Ez **az éppen feldolgozott videót, vagyis az aktuális szekvenciát** adja át (D3 b): megnyitja az Export ablakot DCP formátummal és DCP-o-matic motorral. A „KDM készítése…” is itt van.
-  - Mindkét helyen letiltottak, ha a DCP-o-matic nincs telepítve, és a tippjük megmondja, miért.
+  - Mindkét helyen letiltottak, ha a CFA4-gyel szállított DCP-o-matic-példány hiányzik vagy sérült, és a tippjük megmondja, miért.
 - **Csak a Qt6 felület készül** (a tulajdonos döntése, 2026-11-13). Az egui szerkesztő (`crates/ui-egui`) nem kap DCP-o-matic-felületet. A `docs/qt-parity.md` ezt nem számítja hiánynak a Qt oldalon.
 - **KDM-készítés:** párbeszédablak a meglévő Load KDM… (`panels/kdm_dialog.py`) mintájára, ugyanazzal az elrendezéssel és viselkedéssel.
 - **Közös szabályok** (`docs/qt-gui.md`):
@@ -108,6 +112,7 @@ A tulajdonos döntése (D6): a DCP-o-matic **a CFA4 designját követi**. A felh
 **Elfogadás:**
 - A `--smoke --screenshot` képen az Export ablak DCP-o-matic motorral mind a három témában a CFA4 többi exportjával egyező kinézetű. Összevetés a CFA4 Qt Export ablakának többi formátumával és a `plan/premiere/screenshots/` képeivel.
 - A Qt-teszt a valódi engine-en át hamis eszközös DCP-készítést futtat a sorból.
+
 ### 5. fázis – Csomagolás és dokumentáció (DCPOM-5)
 
 - A rögzített DCP-o-matic fordítása a `packaging/linux/` folyamatában, a privát mappába (D9). Nincs PATH-bejegyzés, `.desktop` fájl, ikon vagy man-oldal.
