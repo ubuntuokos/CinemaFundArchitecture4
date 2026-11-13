@@ -26,6 +26,7 @@
 mod assetmap;
 mod c14n;
 mod cpl;
+pub mod kdb;
 pub mod kdm;
 mod pkl;
 pub mod sha1;

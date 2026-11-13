@@ -15,7 +15,8 @@ use base64::Engine as _;
 use chrono::{DateTime, Utc};
 use roxmltree::Node;
 use rsa::Oaep;
-use rsa::PrivateKey;
+/// The recipient's RSA private key.
+pub use rsa::PrivateKey;
 use sha1::Sha1;
 
 use crate::{Limits, Uuid};
