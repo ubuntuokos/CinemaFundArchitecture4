@@ -3,9 +3,12 @@
 //! or SHA-1 digests, inclusive Canonical XML 1.0 with or without comments, RSA PKCS#1 v1.5
 //! signatures, and the signer's certificate chain carried in `KeyInfo`.
 //!
-//! The chain is checked for consistency: every certificate is signed by the next one, names chain
-//! up, issuers are CAs, everything is valid at the given time and the last one is a self-signed
-//! root. Whether that root is trusted is the caller's decision.
+//! The signed content is checked first: the references' digests and the signature value under the
+//! signer's key. Only then the chain, which is a separate verdict: every certificate keeps the
+//! rules of ST 430-2 6.2 (steps 2 to 18: version 3, extensions, key usage, OrganizationName,
+//! roles, sha256WithRSA, 2048-bit keys, dnQualifier thumbprints, issuer names and validity
+//! nesting), is valid at the given time, is signed by the next one, and the last one is a
+//! self-signed root. Whether that root is trusted (step 19) is the caller's decision.
 
 use base64::Engine as _;
 use chrono::{DateTime, Utc};
@@ -26,13 +29,16 @@ const SHA1: &str = "http://www.w3.org/2000/09/xmldsig#sha1";
 /// Longest certificate chain followed.
 const MAX_CHAIN: usize = 16;
 
-/// A signature that checked out.
+/// A signature whose signed content checked out.
 #[derive(Clone, Debug)]
 pub struct Verified {
-    /// The signer's chain, signer first, root last.
+    /// The signer's chain, signer first, root last (as far as it was followed).
     pub chain: Vec<Certificate>,
     /// The `Id`s of the elements the signature covers.
     pub references: Vec<String>,
+    /// Why the certificate chain does not check out, when it does not. The content is intact
+    /// either way: this is about who signed it.
+    pub chain_problem: Option<String>,
 }
 
 fn ds_child<'a, 'i>(n: Node<'a, 'i>, name: &str) -> Option<Node<'a, 'i>> {
@@ -73,7 +79,9 @@ fn c14n_comments(alg: &str) -> Result<bool, String> {
 }
 
 /// Checks the `Signature` element `sig` of `doc` at time `now`. `signer_serial` (decimal), when
-/// given, picks the signer's certificate; otherwise it is the one that signs no other.
+/// given, picks the signer's certificate; otherwise it is the one that signs no other. An error
+/// means the signed content could not be verified (changed, malformed, or no signer key); a chain
+/// that does not check out is `Verified::chain_problem`.
 pub fn verify(doc: &Document, sig: Node, signer_serial: Option<&str>, now: DateTime<Utc>) -> Result<Verified, String> {
     let si = ds_child(sig, "SignedInfo").ok_or("Signature without SignedInfo")?;
     let canon = c14n_comments(algorithm(ds_child(si, "CanonicalizationMethod"), "CanonicalizationMethod")?)?;
@@ -124,19 +132,25 @@ pub fn verify(doc: &Document, sig: Node, signer_serial: Option<&str>, now: DateT
         Some(s) => certs.iter().position(|c| c.serial_decimal() == s.trim()).ok_or("the signer's certificate is not in KeyInfo")?,
         None => certs.iter().position(|c| !certs.iter().any(|o| o.issuer == c.subject && o.subject != c.subject)).ok_or("no signer certificate in KeyInfo")?,
     };
-    let chain = build_chain(&certs, leaf, now)?;
-    let signer = chain.first().ok_or("empty certificate chain")?;
+    let signer = certs.get(leaf).ok_or("no signer certificate")?;
     let value = b64(ds_child(sig, "SignatureValue"), "SignatureValue")?;
     let signed = canonicalize(si, canon, None)?;
     verify_rsa(&signer.public_key()?, alg, &signed, &value).map_err(|_| "the signature value does not verify with the signer's certificate".to_string())?;
-    Ok(Verified { chain, references })
+    let mut chain = Vec::new();
+    let chain_problem = build_chain(&certs, leaf, now, &mut chain).err();
+    Ok(Verified { chain, references, chain_problem })
 }
 
-/// The chain from `certs[leaf]` up to a self-signed root, every link checked.
-fn build_chain(certs: &[Certificate], leaf: usize, now: DateTime<Utc>) -> Result<Vec<Certificate>, String> {
-    let mut chain: Vec<Certificate> = Vec::new();
+/// The chain from `certs[leaf]` up to a self-signed root into `chain`, every certificate and
+/// link checked (ST 430-2 6.2).
+fn build_chain(certs: &[Certificate], leaf: usize, now: DateTime<Utc>, chain: &mut Vec<Certificate>) -> Result<(), String> {
     let mut cur = certs.get(leaf).ok_or("no signer certificate")?.clone();
     loop {
+        if let Some(p) = cur.st430_2_problem() {
+            let n = name(&cur);
+            chain.push(cur);
+            return Err(format!("certificate {n} {p} (ST 430-2)"));
+        }
         if now < cur.not_before || now > cur.not_after {
             return Err(format!("certificate {} is not valid at {now} (valid {} to {})", name(&cur), cur.not_before, cur.not_after));
         }
@@ -153,9 +167,12 @@ fn build_chain(certs: &[Certificate], leaf: usize, now: DateTime<Utc>) -> Result
             certs.iter().find(|c| c.subject == cur.issuer).cloned().ok_or_else(|| format!("the issuer of {} is not in KeyInfo", name(&cur)))?
         };
         cur.signed_by(&issuer).map_err(|e| format!("certificate {}: {e}", name(&cur)))?;
+        if cur.not_before < issuer.not_before || cur.not_after > issuer.not_after {
+            return Err(format!("certificate {} is valid outside its issuer's validity (ST 430-2)", name(&cur)));
+        }
         chain.push(cur);
         if root {
-            return Ok(chain);
+            return Ok(());
         }
         if chain.len() >= MAX_CHAIN {
             return Err("certificate chain too long".into());
@@ -166,8 +183,8 @@ fn build_chain(certs: &[Certificate], leaf: usize, now: DateTime<Utc>) -> Result
 
 /// A certificate's common name (or its serial number).
 pub fn name(c: &Certificate) -> String {
-    c.subject_attributes.iter().find(|(oid, _)| oid == &[0x55, 0x04, 0x03]).map(|(_, v)| v.clone()).unwrap_or_else(|| format!("#{}", c.serial_decimal()))
+    c.subject_attributes.iter().find(|(oid, _)| oid == crate::x509::OID_CN).map(|(_, v)| v.clone()).unwrap_or_else(|| format!("#{}", c.serial_decimal()))
 }
 
 #[cfg(test)]
-pub(crate) mod tests;
+mod tests;

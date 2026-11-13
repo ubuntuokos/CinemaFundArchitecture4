@@ -30,18 +30,49 @@ for issue in doc.issues() {
 that each names the composition of the public part, and the validity window against the time given.
 Keys come back in memory only (`KdmKey`'s `Debug` hides them); nothing is stored.
 
-The KDM's XML signature is checked and reported in `Kdm::signature` (`Valid` with the chain's
-common names, `Missing` or `Invalid` with the reason); the caller decides what to do (the engine's
-`dcp.loadKdm` refuses an unverified KDM unless `allowUnverified` is given). `xmldsig::verify`
-checks an enveloped XML Signature: same-document references (`URI="#id"`, optional
-enveloped-signature and C14N transforms) with SHA-256 or SHA-1 digests, inclusive Canonical XML
-1.0 with or without comments (`c14n`), RSA PKCS#1 v1.5 (SHA-256 or SHA-1), and the certificate
-chain in `KeyInfo`: each certificate signed by the next, issuer and subject names chained, issuers
-are CAs within their path length, all valid at the given time, ending in a self-signed root
+The KDM's XML signature is checked and reported in `Kdm::signature` (#1028, ST 430-1 / 430-2 /
+430-3):
+
+- `Valid` (with the chain's common names): the signed content and the signer's chain check out.
+- `Untrusted` (chain and reason): the content is intact, but who signed it is not established. The
+  chain breaks an ST 430-2 rule, a certificate is outside its validity, an issuer is missing, or
+  the encrypted key blocks name another signer certificate (their Certificate Thumbprint, ST 430-1
+  Table 6) than the one that signed.
+- `Missing`: the KDM is not signed.
+- `Invalid` (reason): the signed content does not check out. The KDM was changed after signing,
+  a part is not covered, or the signature cannot be verified.
+
+The caller decides what to do. `Signature::is_overridable` is true only for `Untrusted`. Owner
+decision 2026-11-13: the engine's `dcp.loadKdm` always refuses `Missing` and `Invalid`, and loads
+an `Untrusted` KDM only with `allowUnverified`.
+
+`xmldsig::verify` checks an enveloped XML Signature in two steps. First the signed content:
+same-document references (`URI="#id"`, optional enveloped-signature and C14N transforms) with
+SHA-256 or SHA-1 digests, inclusive Canonical XML 1.0 with or without comments (`c14n`), and the
+RSA PKCS#1 v1.5 (SHA-256 or SHA-1) signature value under the signer certificate's key. A failure
+there is an error. Then the certificate chain in `KeyInfo`, whose failure is
+`Verified::chain_problem`. Each certificate is checked against ST 430-2 6.2
+(`Certificate::st430_2_problem`):
+
+- version 3, and no unknown critical extension
+- BasicConstraints, AuthorityKeyIdentifier and KeyUsage present
+- CAs with a path length and keyCertSign (cRLSign) only; leaves with digitalSignature or
+  keyEncipherment
+- exactly one dnQualifier, OrganizationName and CommonName per name, the OrganizationName equal
+  to the issuer's
+- a role in a leaf's CommonName
+- sha256WithRSAEncryption inside and outside
+- a 2048-bit RSA key with exponent 65537
+- the dnQualifier equal to the public key thumbprint
+
+Along the chain: signed by the next certificate, issuer and subject names chained, within the
+issuer's validity and path length, all valid at the given time, ending in a self-signed root
 (`x509`: a small DER reader for the fields this needs). For a KDM both `AuthenticatedPublic` and
-`AuthenticatedPrivate` must be referenced. Not checked yet (#1028): the ST 430-2 certificate
-profile rules (dnQualifier, roles, key usage), the signer thumbprint in the RSA blocks (ST 430-1
-7.2.3) and a trusted root list.
+`AuthenticatedPrivate` must be referenced. Not checked: a list of trusted roots (ST 430-2 step 19)
+and revocation lists, which CFA4 does not have.
+
+`testing` (feature `test-util`) makes ST 430-2 conforming and plain X.509 signing chains with the
+openssl and xmlsec1 command lines for tests.
 
 ## What counts as an error
 

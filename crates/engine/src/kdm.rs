@@ -5,9 +5,12 @@
 //! Keys are never written anywhere: not into the project, the journal (these commands are not
 //! journaled), settings or logs. They live until `dcp.clearKeys` or the end of the process.
 //!
-//! The KDM's XML signature and its signer's certificate chain are checked (#1028). A KDM without
-//! a valid signature is refused unless the caller passes `allowUnverified` (a test KDM, a broken
-//! chain the user accepts); the answer always says how the check went.
+//! The KDM's XML signature and its signer's certificate chain are checked (#1028, ST 430-1 / 430-2
+//! / 430-3). An unsigned KDM, or one whose signed content does not check out (changed after
+//! signing), is always refused. One whose content is intact but whose certificate chain does not
+//! keep ST 430-2 (a test KDM, an expired or non-conforming certificate) is refused unless the
+//! caller passes `allowUnverified` (owner decision 2026-11-13); the answer always says how the
+//! check went.
 
 use serde_json::{Value, json};
 
@@ -43,12 +46,16 @@ pub(crate) fn load(s: &mut Session, p: &Value) -> Result<Value> {
     let kdm = cfa4_dcp::kdm::open_kdm(&xml, &key, chrono::DateTime::<chrono::Utc>::from(std::time::SystemTime::now())).map_err(|e| bad(CMD, e.to_string()))?;
     let signature = match &kdm.signature {
         cfa4_dcp::kdm::Signature::Valid { chain } => json!({"valid": true, "chain": chain}),
-        cfa4_dcp::kdm::Signature::Missing => json!({"valid": false, "problem": "the KDM is not signed"}),
-        cfa4_dcp::kdm::Signature::Invalid(e) => json!({"valid": false, "problem": e}),
+        cfa4_dcp::kdm::Signature::Untrusted { chain, problem } => json!({"valid": false, "overridable": true, "chain": chain, "problem": problem}),
+        cfa4_dcp::kdm::Signature::Missing => json!({"valid": false, "overridable": false, "problem": "the KDM is not signed"}),
+        cfa4_dcp::kdm::Signature::Invalid(e) => json!({"valid": false, "overridable": false, "problem": e}),
     };
-    if !kdm.signature.is_valid() && !bool_p(p, "allowUnverified").unwrap_or(false) {
-        let problem = signature["problem"].as_str().unwrap_or_default();
-        return Err(bad(CMD, format!("the KDM's signature does not check out ({problem}); pass allowUnverified to load its keys anyway")));
+    let problem = signature["problem"].as_str().unwrap_or_default();
+    if !kdm.signature.is_valid() && !kdm.signature.is_overridable() {
+        return Err(bad(CMD, format!("the KDM's signed content does not check out ({problem}); its keys are not loaded")));
+    }
+    if kdm.signature.is_overridable() && !bool_p(p, "allowUnverified").unwrap_or(false) {
+        return Err(bad(CMD, format!("the KDM's certificate chain does not check out ({problem}); pass allowUnverified to load its keys anyway")));
     }
     let mut keys = Vec::new();
     for k in &kdm.keys {
