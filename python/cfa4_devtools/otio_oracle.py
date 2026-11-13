@@ -25,6 +25,7 @@ Exit status: 0 every fixture passes, 1 at least one fails, 2 the oracle could no
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 from fractions import Fraction
@@ -47,13 +48,14 @@ class OracleError(RuntimeError):
 def load_otio() -> Any:
     """Import the official library, or explain how to install it."""
     try:
-        import opentimelineio  # optional development dependency, imported only when needed
+        # optional development dependency, imported only when needed (and not known to the type checker
+        # where it is not installed)
+        return importlib.import_module("opentimelineio")
     except ImportError as exc:
         raise OracleError(
             "the opentimelineio package is not installed; install the development extra: "
             "pip install -e '.[otio]'"
         ) from exc
-    return opentimelineio
 
 
 def load_manifest(directory: Path) -> dict[str, Any]:
