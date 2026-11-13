@@ -2062,7 +2062,7 @@ impl VideoEncoder for UncompressedEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         let cw = w.div_ceil(2);
         let (Some(n), Some(nc)) = (w.checked_mul(h), cw.checked_mul(h)) else {
