@@ -109,6 +109,7 @@ fidelity and the remaining work.
 | FFV1 (RFC 9043) | not a Premiere import format | own decoder ([`cfa4-ffv1`](../crates/ffv1/README.md), backlog CB-1.1): versions 0, 1, 3, Golomb Rice and range coding (default and custom state tables), YCbCr 4:2:0 / 4:2:2 / 4:4:4 / 4:1:0 (subsamplings without a frame type are shown upsampled to 4:4:4), gray, alpha, RGB (RCT) with alpha, 8–16 bits, slices, CRCs, non-key frames; in AVI and Matroska. RGB above 8 bits is shown rounded to 8 bits | none | bit-exact vs ffmpeg on 26 codec fixtures and 4 AVI / Matroska files (all frames, also seeking backwards) | ahead | — |
 | Huffyuv | — | own decoder ([`cfa4-huffyuv`](../crates/huffyuv/README.md), backlog CB-1.2): YUY2, RGB24, RGBA, left / gradient / median prediction, interlaced; in AVI and Matroska. **No** 1.x files with the built-in classic tables, no FFmpeg `FFVH` variant | none | bit-exact vs ffmpeg on 12 codec fixtures and 4 AVI / Matroska files | 85% | — |
 | Ut Video | — | own decoder ([`cfa4-utvideo`](../crates/utvideo/README.md), backlog CB-2.1): 8-bit `ULY0` / `ULH0` / `ULY2` / `ULH2` / `ULY4` / `ULH4` / `ULRG` / `ULRA`, no / left / median prediction, slices; in AVI and Matroska. **No** interlaced, 10-bit `UQ..` or `UM..` streams | none | bit-exact vs ffmpeg on 14 codec fixtures and 4 AVI / Matroska files | 80% | — |
+| Canopus HQ, HQA, HQX | — | own decoder ([`cfa4-canopus`](../crates/canopus/README.md), backlog CB-8.2, ported from FFmpeg): HQ (every profile) and HQA (with alpha) 8-bit 4:2:2, HQX 4:2:2 / 4:4:4 with or without alpha at 12 bits, progressive and interlaced; in AVI (`CUVC`, `CHQX`) and Matroska | none | bit-exact vs ffmpeg on 22 synthetic frames (random codes of every table, every HQX format and DC precision) and on ffmpeg's 5 FATE samples (local) | parity | — |
 
 ## Audio
 
@@ -148,6 +149,7 @@ fidelity and the remaining work.
 | Date | Change | Summary |
 |---|---|---|
 | 2026-11-12 | minor | Generated capability catalog from `cfa4-cli codecs` (CFA4-PROCODEC-002 work package 0) |
+| 2026-11-12 | minor | Canopus HQ / HQA / HQX decode (`cfa4-canopus`, codec backlog CB-8.2) |
 | 2026-11-12 | minor | AV2 early decoder behind a feature flag: out-of-process dav2d helper and Rust adapter, bit-exact with the AVM oracle on the `Main_420_10_IP0` corpus (AV2 plan X/6) |
 | 2026-11-12 | minor | TTA decode (`cfa4-tta`, codec backlog CB-9.1) |
 | 2026-11-11 | minor | AV2 identified (Annex B, IVF, MP4 `av02`) and reported as unsupported (AV2 plan X/4) |
