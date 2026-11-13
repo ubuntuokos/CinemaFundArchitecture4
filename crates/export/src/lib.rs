@@ -3091,15 +3091,17 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
 
 /// [`encode_still_with_quality`] with the OpenEXR compression (ignored by the other formats).
 pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool, quality: u8, exr: ExrCompression) -> Result<Vec<u8>> {
-    encode_still_timed(format, rgba, w, h, alpha, quality, exr, None)
+    encode_still_timed(format, rgba, None, w, h, alpha, quality, exr, None)
 }
 
 /// [`encode_still_with`] for a frame of a sequence: OpenEXR also records its time code and the
-/// frame rate (ignored by the other formats).
+/// frame rate (ignored by the other formats). DPX and OpenEXR take the frame's straight sRGB
+/// R'G'B' floats (3 per pixel) from `float` when given, instead of the 8-bit `rgba`.
 #[allow(clippy::too_many_arguments)]
 pub fn encode_still_timed(
     format: Format,
     rgba: Vec<u8>,
+    float: Option<&[f32]>,
     w: u32,
     h: u32,
     alpha: bool,
@@ -3122,8 +3124,8 @@ pub fn encode_still_timed(
             .map_err(enc)?
         }
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
-        Format::DpxSequence => return raster::dpx(&rgba, w, h),
-        Format::ExrSequence => return raster::exr_with(&rgba, w, h, alpha, exr, timing),
+        Format::DpxSequence => return raster::dpx_deep(&rgba, float, w, h),
+        Format::ExrSequence => return raster::exr_with(&rgba, float, w, h, alpha, exr, timing),
         Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
         }
@@ -3252,7 +3254,10 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
             (n, frames)
         }
         f if f.is_image_sequence() || f == Format::Gif => {
-            let pipe = pipeline::Pipeline::new(project.clone(), seq, settings, false)?;
+            // DPX (10-bit) and OpenEXR (half float) take the frame's floats: deep sources keep
+            // their precision
+            let deep = matches!(settings.format, Format::DpxSequence | Format::ExrSequence);
+            let pipe = pipeline::Pipeline::new(project.clone(), seq, settings, false)?.with_deep_sdr(deep);
             let batch = pipe.render_batch_limit(batch);
             let (f0, f1) = frame_span(pipe.rate, range);
             let count = (f1 - f0) as u64;
@@ -3298,9 +3303,11 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                     let written: Vec<Result<u64>> = (f..end)
                         .into_par_iter()
                         .map(|fi| {
+                            let (rgba, float) = pipe.frame(fi, sources);
                             let data = encode_still_timed(
                                 settings.format,
-                                pipe.frame(fi, sources).0,
+                                rgba,
+                                deep.then_some(float.as_slice()),
                                 w,
                                 h,
                                 settings.alpha,
