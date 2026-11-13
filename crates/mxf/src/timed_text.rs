@@ -5,6 +5,9 @@
 //! TimedTextDescriptor (Table A.3). Fonts and subpicture images it references are ancillary
 //! resources, each alone in a generic stream partition (ST 410, clause 6) whose BodySID a
 //! TimedTextResourceSubDescriptor (Table A.6) names.
+//!
+//! In an encrypted track file (ST 429-6) the document and each resource are Encrypted Triplets
+//! decrypted with the content key (key type MDSK) of the in-memory key ring.
 
 use crate::file::{Element, best_metadata, walk};
 use crate::klv::{find_header_partition, utf16_of};
@@ -34,6 +37,8 @@ pub const MAX_RESOURCE_BYTES: u64 = 64 << 20;
 pub struct Region {
     pub offset: u64,
     pub size: u64,
+    /// An Encrypted Triplet value: the plaintext length.
+    pub plain: Option<u64>,
 }
 
 /// A font or subpicture referenced by the timed text document.
@@ -66,6 +71,8 @@ pub struct TimedText {
     /// The XML document.
     pub document: Region,
     pub resources: Vec<AncillaryResource>,
+    /// The Cryptographic Context of an encrypted track file.
+    pub encryption: Option<crate::crypt::Encryption>,
     /// Problems recovered from.
     pub warnings: Vec<String>,
 }
@@ -73,25 +80,38 @@ pub struct TimedText {
 impl TimedText {
     /// The XML document's bytes.
     pub fn read_document(&self, src: &(impl ByteSource + ?Sized)) -> Result<Vec<u8>> {
-        read_region(src, self.document)
+        self.read_region(src, self.document)
     }
     /// The bytes of ancillary resource `i`.
     pub fn read_resource(&self, src: &(impl ByteSource + ?Sized), i: usize) -> Result<Vec<u8>> {
         let r = self.resources.get(i).ok_or_else(|| Error::Invalid(format!("no ancillary resource {i}")))?;
         let region = r.data.ok_or_else(|| Error::Invalid(format!("ancillary resource {i} (stream {}) is not in the file", r.stream_id)))?;
-        read_region(src, region)
+        self.read_region(src, region)
     }
-}
+    /// Whether the track file is encrypted and its content key is not in the key ring.
+    pub fn needs_key(&self) -> bool {
+        self.encryption.is_some_and(|e| crate::crypt::key(&e.key_id).is_none())
+    }
 
-fn read_region(src: &(impl ByteSource + ?Sized), r: Region) -> Result<Vec<u8>> {
-    if r.size > MAX_RESOURCE_BYTES {
-        return Err(Error::Unsupported(format!("timed text resource of {} bytes", r.size)));
+    fn read_region(&self, src: &(impl ByteSource + ?Sized), r: Region) -> Result<Vec<u8>> {
+        // an encrypted value holds the plaintext plus at most IV, Check Value, padding and MIC items
+        let limit = if r.plain.is_some() { MAX_RESOURCE_BYTES + 256 } else { MAX_RESOURCE_BYTES };
+        if r.size > limit || r.plain.is_some_and(|p| p > MAX_RESOURCE_BYTES) {
+            return Err(Error::Unsupported(format!("timed text resource of {} bytes", r.size)));
+        }
+        let v = read_upto(src, r.offset, r.size as usize)?;
+        if (v.len() as u64) < r.size {
+            return Err(Error::Invalid("timed text resource cut short by the end of the file".into()));
+        }
+        let Some(plain) = r.plain else { return Ok(v) };
+        let e = self.encryption.unwrap_or(crate::crypt::Encryption { context_id: [0; 16], key_id: [0; 16], source_container: None, aes: true, mic: false });
+        let key = crate::crypt::key(&e.key_id).ok_or_else(|| Error::Encrypted(crate::crypt::uuid_text(&e.key_id)))?;
+        let out = crate::crypt::decrypt(&v, &key)?;
+        if out.len() as u64 != plain {
+            return Err(Error::Invalid("decrypted timed text resource has the wrong length".into()));
+        }
+        Ok(out)
     }
-    let v = read_upto(src, r.offset, r.size as usize)?;
-    if (v.len() as u64) < r.size {
-        return Err(Error::Invalid("timed text resource cut short by the end of the file".into()));
-    }
-    Ok(v)
 }
 
 /// Whether `head` (the first bytes of a file) is an MXF file whose header partition lists the
@@ -122,6 +142,7 @@ pub fn open_timed_text(src: &(impl ByteSource + ?Sized)) -> Result<TimedText> {
     let w = walk(src)?;
     let (_, md) = best_metadata(&w)?;
     let mut warnings = w.warnings.clone();
+    let encryption = md.sets.iter().find_map(crate::crypt::Encryption::from_set);
     let desc = md.of_kind(TIMED_TEXT_DESCRIPTOR).next().ok_or_else(|| Error::Invalid("no TimedTextDescriptor in the header metadata".into()))?;
     let element: &Element = w.elements.iter().find(|e| e.key.0[12] == 0x17).ok_or_else(|| Error::Invalid("no timed text essence element".into()))?;
     if element.truncated {
@@ -147,7 +168,11 @@ pub fn open_timed_text(src: &(impl ByteSource + ?Sized)) -> Result<TimedText> {
             continue;
         };
         let stream_id = s.dynamic_item(&ESSENCE_STREAM_ID).and_then(|v| crate::klv::int_of(v, false)).and_then(|v| u32::try_from(v).ok()).unwrap_or(0);
-        let data = w.generic_streams.iter().find(|(sid, _)| *sid == stream_id && stream_id != 0).map(|(_, e)| Region { offset: e.value_offset, size: e.size });
+        let data = w.generic_streams.iter().find(|(sid, _)| *sid == stream_id && stream_id != 0).map(|(_, e)| Region {
+            offset: e.value_offset,
+            size: e.size,
+            plain: e.plain,
+        });
         if data.is_none() {
             warnings.push(format!("ancillary resource stream {stream_id} is not in the file"));
         }
@@ -159,8 +184,9 @@ pub fn open_timed_text(src: &(impl ByteSource + ?Sized)) -> Result<TimedText> {
         resource_id: desc.dynamic_item(&RESOURCE_ID).and_then(uuid),
         ucs_encoding: desc.dynamic_item(&UCS_ENCODING).and_then(text),
         namespace: desc.dynamic_item(&NAMESPACE_URI).and_then(text),
-        document: Region { offset: element.value_offset, size: element.size },
+        document: Region { offset: element.value_offset, size: element.size, plain: element.plain },
         resources,
+        encryption,
         warnings,
     })
 }

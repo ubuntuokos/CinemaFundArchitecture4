@@ -91,7 +91,7 @@ pub(crate) fn convert(p: cfa4_ffv1::Picture) -> Result<VideoFrame> {
         let [y, cb, cr] = yuv;
         PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits, alpha: p.alpha.map(Arc::new) }
     };
-    Ok(VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO })
+    Ok(VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout: Default::default() })
 }
 
 impl VideoDecoder for Ffv1Decoder {

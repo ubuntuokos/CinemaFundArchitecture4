@@ -137,16 +137,78 @@ fn rgba_pixel_layouts() {
     let pic = decode(&l, &p, &word.to_be_bytes()).unwrap();
     assert_eq!(pic.planes, [vec![1023], vec![0], vec![512]]);
     assert_eq!(pic.alpha, None);
-    // X'Y'Z', palettes, mixed depths and floats are refused
+    // mixed depths, missing or doubled components, palettes without a palette, R'G'B' with
+    // X'Y'Z', floats mixed with integers or split, and over-wide fields are refused
     for bad in [
-        vec![(0xD8, 12), (0xD9, 12), (0xDA, 12)],
         vec![(b'P', 8)],
         vec![(b'R', 8), (b'G', 10), (b'B', 8)],
-        vec![(b'R', 254), (b'G', 254), (b'B', 254)],
         vec![(b'R', 8), (b'G', 8)],
+        vec![(b'R', 8), (b'G', 8), (b'B', 8), (b'R', 8)],
+        vec![(b'R', 8), (0xD9, 8), (b'B', 8)],
+        vec![(b'R', 254), (b'G', 254), (b'B', 8)],
+        vec![(b'R', 253), (b'G', 253), (b'B', 253), (b'r', 253)],
+        vec![(b'R', 17), (b'G', 17), (b'B', 17)],
+        vec![(b'R', 12), (b'G', 12), (b'B', 12), (b'r', 6), (b'g', 6), (b'b', 6)],
+        vec![(b'R', 8), (b'G', 8), (b'B', 8), (b'P', 8)],
     ] {
         assert!(Layout::of(&rgba(&bad, 1, 1)).is_err(), "{bad:?}");
     }
+}
+
+/// #945: DCDM X'Y'Z' (D8h–DAh), split R'G'B' fields (`r`, `g`, `b`, `a`), HALF / 32 / 64-bit
+/// floating point and palettes (ST 377-1 G.2.26, G.2.37–G.2.40).
+#[test]
+fn xyz_split_float_and_palette_layouts() {
+    let rgba = |layout: &[(u8, u8)], w, h| PictureInfo { rgba: true, stored_width: w, stored_height: h, pixel_layout: layout.to_vec(), ..Default::default() };
+    // 12-bit X' Y' Z' in 16-bit words (4 fill bits each), as DCDM TIFFs store them
+    let p = rgba(&[(0xD8, 12), (b'F', 4), (0xD9, 12), (b'F', 4), (0xDA, 12), (b'F', 4)], 1, 1);
+    let l = Layout::of(&p).unwrap();
+    assert!(l.xyz() && l.rgb() && !l.alpha());
+    assert_eq!((l.name().as_str(), l.depth()), ("Uncompressed X'Y'Z' 12-bit", 12));
+    let pic = decode(&l, &p, &[0xFF, 0xF0, 0x80, 0x00, 0x00, 0x10]).unwrap();
+    assert!(pic.xyz && pic.rgb);
+    assert_eq!(pic.planes, [vec![4095], vec![2048], vec![1]]);
+    // 10-bit components split 8 + 2: R G B A upper bytes, then one byte of r g b a lower bits
+    let p = rgba(&[(b'R', 8), (b'G', 8), (b'B', 8), (b'A', 8), (b'r', 2), (b'g', 2), (b'b', 2), (b'a', 2)], 1, 1);
+    let l = Layout::of(&p).unwrap();
+    assert_eq!((l.depth(), l.alpha()), (10, true));
+    let pic = decode(&l, &p, &[0xFF, 0x80, 0x00, 0x40, 0b11_01_10_00]).unwrap();
+    assert_eq!(pic.planes, [vec![1023], vec![513], vec![2]]);
+    assert_eq!(pic.alpha, Some(vec![256]));
+    // HALF R G B: 1.0, 0.5, -2.0 (clipped to black); 16-bit full-range codes
+    let p = rgba(&[(b'R', 253), (b'G', 253), (b'B', 253)], 1, 1);
+    let l = Layout::of(&p).unwrap();
+    assert_eq!((l.name().as_str(), l.depth()), ("Uncompressed RGB 16-bit float", 16));
+    let pic = decode(&l, &p, &[0x3C, 0x00, 0x38, 0x00, 0xC0, 0x00]).unwrap();
+    assert_eq!(pic.planes, [vec![65535], vec![32768], vec![0]]);
+    // 32-bit float R G B A and 64-bit float R G B, most significant byte first
+    let p = rgba(&[(b'R', 254), (b'G', 254), (b'B', 254), (b'A', 254)], 1, 1);
+    let l = Layout::of(&p).unwrap();
+    let data: Vec<u8> = [0.25f32, 1.5, f32::NAN, 1.0].iter().flat_map(|f| f.to_be_bytes()).collect();
+    let pic = decode(&l, &p, &data).unwrap();
+    assert_eq!(pic.planes, [vec![16384], vec![65535], vec![0]]);
+    assert_eq!(pic.alpha, Some(vec![65535]));
+    let p = rgba(&[(b'R', 255), (b'G', 255), (b'B', 255)], 1, 1);
+    let data: Vec<u8> = [0.0f64, 0.75, 1.0].iter().flat_map(|f| f.to_be_bytes()).collect();
+    assert_eq!(decode(&Layout::of(&p).unwrap(), &p, &data).unwrap().planes, [vec![0], vec![49151], vec![65535]]);
+    assert_eq!(half_to_f64(0x0001), 2f64.powi(-24), "denormal");
+    assert!(half_to_f64(0x7C00).is_infinite() && half_to_f64(0x7E00).is_nan());
+    // a palette of three 8-bit R G B A entries indexed by 4-bit codes; an index past the end is black
+    let mut p = rgba(&[(b'P', 4)], 4, 1);
+    p.palette_layout = vec![(b'R', 8), (b'G', 8), (b'B', 8), (b'A', 8)];
+    p.palette = vec![255, 0, 0, 255, 0, 255, 0, 128, 0, 0, 255, 0];
+    let l = Layout::of(&p).unwrap();
+    assert_eq!((l.name().as_str(), l.alpha(), l.depth()), ("Uncompressed palette 8-bit", true, 8));
+    let pic = decode(&l, &p, &[0x01, 0x29]).unwrap();
+    assert_eq!(pic.planes, [vec![255, 0, 0, 0], vec![0, 255, 0, 0], vec![0, 0, 255, 0]]);
+    assert_eq!(pic.alpha, Some(vec![255, 128, 0, 0]));
+    // a palette without entries or with float entries is refused
+    let mut q = p.clone();
+    q.palette.clear();
+    assert!(Layout::of(&q).is_err());
+    q.palette = vec![0; 8];
+    q.palette_layout = vec![(b'R', 253), (b'G', 253), (b'B', 253)];
+    assert!(Layout::of(&q).is_err());
 }
 
 #[test]

@@ -153,6 +153,14 @@ pub enum MxfVideoCodec {
     /// five seconds), up to eight 16- or 24-bit 48 kHz channels. Progressive pictures only.
     #[serde(rename = "xdcamHd422", alias = "XdcamHd422")]
     XdcamHd422,
+    /// Uncompressed 10-bit Y'CbCr 4:2:2 in the `v210` layout (ST 384, ST 377-1 G.2.25 label
+    /// `01.02.02.01`): three components per 32-bit word, lines padded to 128 bytes. Rec. 709
+    /// narrow-range levels; HDR sources are tone mapped to SDR.
+    #[serde(rename = "v210", alias = "V210")]
+    V210,
+    /// Uncompressed 8-bit Y'CbCr 4:2:2, Cb Y Cr Y (`UYVY` / `2vuy`, label `01.02.01.01`).
+    #[serde(rename = "uyvy", alias = "Uyvy", alias = "UYVY")]
+    Uyvy,
 }
 
 impl MxfVideoCodec {
@@ -165,6 +173,16 @@ impl MxfVideoCodec {
             MxfVideoCodec::Mpeg2 => "MPEG-2",
             MxfVideoCodec::D10 => "D-10 (IMX)",
             MxfVideoCodec::XdcamHd422 => "XDCAM HD422 (RDD 9)",
+            MxfVideoCodec::V210 => "Uncompressed 10-bit 4:2:2 (v210)",
+            MxfVideoCodec::Uyvy => "Uncompressed 8-bit 4:2:2 (UYVY)",
+        }
+    }
+    /// The uncompressed picture layout of this codec, if it is one.
+    pub fn uncompressed_layout(self) -> Option<cfa4_mxf::UncompressedLayout> {
+        match self {
+            MxfVideoCodec::V210 => Some(cfa4_mxf::UncompressedLayout::V210),
+            MxfVideoCodec::Uyvy => Some(cfa4_mxf::UncompressedLayout::Uyvy8),
+            _ => None,
         }
     }
     /// The export format whose encoder this codec uses.
@@ -174,6 +192,8 @@ impl MxfVideoCodec {
             MxfVideoCodec::ProRes => Format::ProRes,
             MxfVideoCodec::H264 => Format::H264,
             MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422 => Format::Mpeg2,
+            // no compression: the MXF muxer's own packer (`uncompressed_factory`)
+            MxfVideoCodec::V210 | MxfVideoCodec::Uyvy => Format::MxfOp1a,
         }
     }
 }
@@ -575,6 +595,9 @@ impl ExportSettings {
         if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
             return crate::dcp_out::normalize(self, seq_rate).resolve(seq_w, seq_h, seq_rate, seq_sr);
         }
+        if self.format == Format::Imf && !crate::imf_out::is_normalized(self) {
+            return crate::imf_out::normalize(self, seq_rate).resolve(seq_w, seq_h, seq_rate, seq_sr);
+        }
         let (mut w, mut h) = match self.frame_size {
             Some((w, h)) => (w.max(2), h.max(2)),
             None => (((seq_w as f32 * self.scale).round() as u32).max(2), ((seq_h as f32 * self.scale).round() as u32).max(2)),
@@ -615,7 +638,7 @@ impl ExportSettings {
             // DVD LPCM in MPEG-2 program streams: 16 or 24 bits
             AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => matches!(f, SampleFormat::Int16 | SampleFormat::Int24),
             // a DCP is always 24-bit (the export sets it)
-            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Dcp => !f.is_float(),
+            AudioCodec::Pcm | AudioCodec::Auto if matches!(self.format, Format::Dcp | Format::Imf) => !f.is_float(),
             AudioCodec::Pcm | AudioCodec::Auto => !(f.is_float() && self.format.is_mxf()),
         }
     }
@@ -638,7 +661,7 @@ impl ExportSettings {
             (Format::Mpeg2, AudioCodec::Mp2) => AudioCodec::Mp2,
             (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
             (Format::Mpeg2, _) => AudioCodec::Pcm,
-            (Format::Dcp, _) => AudioCodec::Pcm,
+            (Format::Dcp | Format::Imf, _) => AudioCodec::Pcm,
             // MP4 and QuickTime both carry FLAC (`fLaC` + `dfLa`)
             (_, AudioCodec::Flac) => AudioCodec::Flac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
@@ -676,6 +699,9 @@ impl ExportSettings {
     pub fn estimate_bytes(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32, duration: Tick) -> u64 {
         if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
             return crate::dcp_out::normalize(self, seq_rate).estimate_bytes(seq_w, seq_h, seq_rate, seq_sr, duration);
+        }
+        if self.format == Format::Imf && !crate::imf_out::is_normalized(self) {
+            return crate::imf_out::normalize(self, seq_rate).estimate_bytes(seq_w, seq_h, seq_rate, seq_sr, duration);
         }
         let r = self.resolve(seq_w, seq_h, seq_rate, seq_sr);
         let secs = duration.seconds().max(0.0);
@@ -736,9 +762,18 @@ impl ExportSettings {
                 px * if self.keeps_alpha() { 8.0 } else { 6.0 } * 8.0 * fps * k
             }
             Format::Gif => px * 0.6 * 8.0 * fps,
+            // uncompressed MXF pictures: their exact size
+            Format::MxfOp1a | Format::MxfOpAtom if let Some(l) = self.mxf_video_codec.uncompressed_layout() => {
+                l.picture_bytes(r.width, r.height) as f64 * 8.0 * fps
+            }
             Format::Wav | Format::Aiff | Format::Flac | Format::Opus | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
             // most frames of real pictures reach the DCI cap of 250 Mbit/s
             Format::Dcp => 200e6,
+            // lossless 10-bit R'G'B' JPEG 2000 is about half the raw rate; lossy the profile's cap
+            Format::Imf if self.imf_lossless => px * 30.0 * fps * 0.5,
+            Format::Imf => {
+                crate::imf_profile(r.width, r.height, r.rate, false).map_or(200e6, |p| cfa4_j2k::ImfProfile::sublevel_bitrate(p.sublevel) as f64 * 0.8)
+            }
         };
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             let pcm = r.sample_rate as f64 * r.channels as f64 * f64::from(self.audio.sample_format().bits());
@@ -784,6 +819,9 @@ impl ExportSettings {
     pub fn summary(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32, duration: Tick) -> Summary {
         if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
             return crate::dcp_out::normalize(self, seq_rate).summary(seq_w, seq_h, seq_rate, seq_sr, duration);
+        }
+        if self.format == Format::Imf && !crate::imf_out::is_normalized(self) {
+            return crate::imf_out::normalize(self, seq_rate).summary(seq_w, seq_h, seq_rate, seq_sr, duration);
         }
         let r = self.resolve(seq_w, seq_h, seq_rate, seq_sr);
         let mbps = |k: u32| format!("{:.2} Mbps", k as f64 / 1000.0);
@@ -873,6 +911,9 @@ impl ExportSettings {
                     let res = if crate::DcpResolution::of(self) == crate::DcpResolution::FourK { "4K" } else { "2K" };
                     v += &format!(", JPEG 2000 DCI {res}, 12-bit X'Y'Z'");
                 }
+                Format::Imf => {
+                    v += if self.imf_lossless { ", JPEG 2000 IMF reversible, 10-bit R'G'B' 4:4:4" } else { ", JPEG 2000 IMF lossy, 10-bit R'G'B' 4:4:4" }
+                }
                 Format::ExrSequence => {
                     v += ", 16-bit half float, linear";
                     match self.exr_compression {
@@ -925,6 +966,7 @@ impl ExportSettings {
                 crate::DcpAspect::Scope => "SMPTE, Scope 2.39:1",
                 crate::DcpAspect::Full => "SMPTE, Full 1.90:1",
             },
+            Format::Imf => "SMPTE ST 2067-21",
             f if f.is_image_sequence() => "Image sequence",
             _ => "",
         };

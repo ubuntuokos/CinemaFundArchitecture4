@@ -972,6 +972,87 @@ fn clip_wrapped_uncompressed_without_an_index_splits_by_picture_size() {
     assert_eq!(f.read_sample(&bytes[..], 0, 2).unwrap(), pictures[2]);
 }
 
+/// Rewrites every frame-wrapped picture element of `bytes` as ST 384 line wrapping: a system
+/// element (start of stored data / start of line), a fill data element before the first line,
+/// then one picture element per stored line of `line` bytes.
+fn line_wrap(bytes: &[u8], line: usize) -> Vec<u8> {
+    let mut out = Vec::new();
+    let mut at = 0;
+    while at + 17 <= bytes.len() {
+        let key: [u8; 16] = bytes[at..at + 16].try_into().unwrap();
+        let (len, n) = crate::klv::ber_length(&bytes[at + 16..]).unwrap();
+        let v = &bytes[at + 16 + n..at + 16 + n + len as usize];
+        if key[12] == 0x15 && key[14] == 0x02 {
+            for (l, chunk) in v.chunks(line).enumerate() {
+                let mut sys = key;
+                sys[5] = 0x05;
+                sys[12..16].copy_from_slice(&[0x14, 0x01, if l == 0 { 0x01 } else { 0x02 }, 0x00]);
+                let mut pack = (l as u32 + 1).to_be_bytes().to_vec();
+                pack.extend_from_slice(&[0; 4]);
+                crate::testing::klv(&mut out, sys, &pack);
+                if l == 0 {
+                    let mut data = key;
+                    data[12..16].copy_from_slice(&[0x17, 0x01, 0x08, 0x01]);
+                    crate::testing::klv(&mut out, data, &[0xEE; 4]);
+                }
+                let mut pic = key;
+                pic[14] = 0x04;
+                crate::testing::klv(&mut out, pic, chunk);
+            }
+        } else {
+            out.extend_from_slice(&bytes[at..at + 16 + n + len as usize]);
+        }
+        at += 16 + n + len as usize;
+    }
+    // the essence container label: line wrapping (ST 384 Table 5)
+    for i in 0..out.len().saturating_sub(8) {
+        if out[i..i + 6] == [0x0D, 0x01, 0x03, 0x01, 0x02, 0x05] && out[i + 7] == 0x01 {
+            out[i + 7] = 0x03;
+        }
+    }
+    out
+}
+
+#[test]
+fn line_wrapped_uncompressed_pictures_are_gathered_line_by_line() {
+    use crate::uncompressed::{Layout, decode};
+    let layout = crate::UncompressedLayout::Uyvy8;
+    let (bytes, pictures) = build_uncompressed(Pattern::Op1a, layout);
+    let lined = line_wrap(&bytes, 96);
+    assert!(lined.len() > bytes.len());
+    let f = open(&lined[..]).unwrap();
+    let t = f.tracks.iter().position(|t| t.kind == TrackKind::Picture).unwrap();
+    let track = &f.tracks[t];
+    assert_eq!((track.codec, track.wrapping, track.samples.len()), (Codec::Uncompressed, Wrapping::Line, 3), "{:?}", f.warnings);
+    let pi = track.picture.as_ref().unwrap();
+    let l = Layout::of(pi).unwrap();
+    for (i, want) in pictures.iter().enumerate() {
+        let s = f.read_sample(&lined[..], t, i).unwrap();
+        assert_eq!(&s, want);
+        let pic = decode(&l, pi, &s).unwrap();
+        assert_eq!((pic.planes[0][0], pic.planes[2][0]), (16 + i as u16, 200 - i as u16));
+    }
+    // a picture with a line missing is left out; the system elements keep the others in step
+    let first_line = lined.windows(4).position(|w| w == [0x15, 0x01, 0x04, 0x01]).unwrap() - 12;
+    let mut short = lined[..first_line].to_vec();
+    short.extend_from_slice(&lined[first_line + 16 + 4 + 96..]);
+    let f = open(&short[..]).unwrap();
+    let track = &f.tracks[t];
+    assert_eq!(track.samples.len(), 2, "{:?}", f.warnings);
+    assert_eq!(f.read_sample(&short[..], t, 0).unwrap(), pictures[1]);
+    assert!(f.warnings.iter().any(|w| w.contains("1 line-wrapped picture(s)")), "{:?}", f.warnings);
+    // without system elements, the lines are counted
+    let mut bare = lined.clone();
+    for i in 0..bare.len() - 16 {
+        if bare[i..i + 4] == [0x06, 0x0E, 0x2B, 0x34] && bare[i + 12..i + 14] == [0x14, 0x01] {
+            bare[i..i + 16].copy_from_slice(&KLV_FILL);
+        }
+    }
+    let f = open(&bare[..]).unwrap();
+    assert_eq!(f.tracks[t].samples.len(), 3, "{:?}", f.warnings);
+    assert_eq!(f.read_sample(&bare[..], t, 2).unwrap(), pictures[2]);
+}
+
 #[test]
 fn peek_reads_the_packages_of_op_atom_files_without_the_essence() {
     let clip = PackageIds::from_seed("clip", "Clip");
@@ -1104,6 +1185,9 @@ fn imf_picture_track_file() {
     // the sub-descriptor carries COD, QCD and the R10 G10 B10 layout
     assert!(f.windows(10).any(|w| w == [0x01, 0x04, 0x00, 0x01, 0x01, 0x05, 0x03, 0x03, 0x00, 0x00]));
     assert!(f.windows(8).any(|w| w == [b'R', 10, b'G', 10, b'B', 10, 0, 0]));
+    // PixelLayout (3401h) is the full 8-pair RGBALayout: Photon's RegXML reader rejects a shorter one
+    let pixel_layout = [0x34, 0x01, 0x00, 0x10, b'R', 10, b'G', 10, b'B', 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert!(f.windows(20).any(|w| w == pixel_layout));
     // truncation never panics
     for cut in (0..f.len()).step_by(211) {
         if let Ok(m) = open(&f[..cut]) {
@@ -1271,4 +1355,194 @@ fn j2k_sub_descriptor_from_hostile_codestreams() {
         }
     }
     assert!(J2kSubDescriptor::from_codestream(b"not j2k").is_none());
+}
+
+/// One CDP-like ANC packet on VANC line 9 for frame `i` (DID 61h, SDID 01h).
+fn anc_packet(i: usize) -> crate::AncPacket {
+    crate::AncPacket { line: 9, wrapping: 0x01, coding: 4, words: vec![0x61, 0x01, 4, 0x96, 0x69, i as u8, 0x74] }
+}
+
+#[test]
+fn anc_data_track_round_trips_through_read_anc() {
+    // OP1a UYVY pictures with a PCM track, and RDD 9 with reordered pictures and a KAG
+    for rdd9 in [false, true] {
+        let rate = Rational::new(30000, 1001);
+        let mut cfg = if rdd9 { rdd9_config(rate, 2) } else { WriterConfig::new(Pattern::Op1a, rate, PackageIds::from_seed("anc", "ANC Clip")) };
+        if !rdd9 {
+            cfg.picture = Some(PictureDesc::new(PictureCoding::Uncompressed { layout: crate::UncompressedLayout::Uyvy8 }, 16, 2));
+            cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 2, bits: 16 }];
+        }
+        cfg.anc = true;
+        let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+        let n = 7;
+        for i in 0..n {
+            // frame 3 carries no ANC packet; frame 5 none pushed at all (an empty element)
+            if i != 5 {
+                let packets = if i == 3 { Vec::new() } else { vec![anc_packet(i)] };
+                w.push_anc(&crate::anc_element(&packets)).unwrap();
+            }
+            if rdd9 {
+                w.push_sound(0, &vec![0; 1602 * 6]).unwrap();
+                w.push_picture(&d10_picture(i, 3000), rdd9_frame(i)).unwrap();
+            } else {
+                w.push_sound(0, &vec![0; 1602 * 4]).unwrap();
+                w.push_picture(&[0x80; 64], FrameInfo::intra()).unwrap();
+            }
+        }
+        let f = w.finish().unwrap().into_inner();
+        assert!(crate::has_anc(&f));
+        let a = crate::read_anc(&f[..]).unwrap();
+        assert_eq!(a.edit_rate, rate);
+        assert!(a.warnings.is_empty(), "{:?}", a.warnings);
+        assert_eq!(a.frames.len(), n, "rdd9 {rdd9}");
+        let with: Vec<usize> = (0..n).filter(|&i| !a.frames[i].is_empty()).collect();
+        assert_eq!(with, vec![0, 1, 2, 4, 6], "rdd9 {rdd9}");
+        assert_eq!(a.frames[0][0].words, anc_packet(0).words);
+        assert_eq!(a.frames[6][0].words, anc_packet(6).words);
+        assert_eq!((a.frames[0][0].line, a.frames[0][0].coding), (9, 4));
+        // the picture and sound tracks are still read as before
+        let m = open(&f).unwrap();
+        assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+        let pic = m.track_of_kind(TrackKind::Picture).unwrap();
+        assert_eq!(m.tracks[pic].samples.len(), n);
+        assert!(m.track_of_kind(TrackKind::Sound).is_some());
+    }
+}
+
+#[test]
+fn anc_data_track_is_refused_where_it_does_not_fit() {
+    let ids = || PackageIds::from_seed("anc", "ANC Clip");
+    let mut atom = WriterConfig::new(Pattern::OpAtom, Rational::new(25, 1), ids());
+    atom.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+    atom.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), atom).is_err());
+    let mut sound_only = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    sound_only.sound = vec![SoundDesc { sample_rate: 48_000, channels: 2, bits: 16 }];
+    sound_only.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), sound_only).is_err());
+    let mut d10 = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    d10.picture = Some(PictureDesc::new(PictureCoding::D10 { mbps: 50, lines: 625 }, 720, 608));
+    d10.anc = true;
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), d10).is_err());
+    // without an ANC track push_anc is an error
+    let mut plain = WriterConfig::new(Pattern::Op1a, Rational::new(25, 1), ids());
+    plain.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), plain).unwrap();
+    assert!(w.push_anc(&[0, 0]).is_err());
+}
+
+/// #1011: the CPL EssenceDescriptor of an IMF picture track file (RegXML, ST 2067-2 6.8): the
+/// RGBA descriptor with its JPEG 2000 sub-descriptor nested, values in the ST 2001-1 forms.
+#[test]
+fn imf_picture_regxml() {
+    let (cfg, _) = imf_picture_config(Rational::new(24, 1), true);
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..5 {
+        w.push_picture(&imf_j2k(0x0411, 1920, 1080, i), FrameInfo::intra()).unwrap();
+    }
+    let f = w.finish().unwrap().into_inner();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.starts_with("<r0:RGBADescriptor xmlns:r0=\"http://www.smpte-ra.org/reg/395/2014/13/1/aaf\""), "{x}");
+    for want in [
+        "<r1:SampleRate>24/1</r1:SampleRate>",
+        "<r1:EssenceLength>5</r1:EssenceLength>",
+        "<r1:LinkedTrackID>2</r1:LinkedTrackID>",
+        "<r1:ContainerFormat>urn:smpte:ul:060e2b34.0401010d.0d010301.020c0600</r1:ContainerFormat>",
+        "<r1:PictureCompression>urn:smpte:ul:060e2b34.0401010d.04010202.03010203</r1:PictureCompression>",
+        "<r1:FrameLayout>FullFrame</r1:FrameLayout>",
+        "<r1:ImageAspectRatio>16/9</r1:ImageAspectRatio>",
+        "<r1:ComponentMaxRef>940</r1:ComponentMaxRef>",
+        "<r1:ComponentMinRef>64</r1:ComponentMinRef>",
+        "<r1:ScanningDirection>ScanningDirection_LeftToRightTopToBottom</r1:ScanningDirection>",
+        "<r0:JPEG2000SubDescriptor>",
+        "<r1:Rsiz>1041</r1:Rsiz>",
+        "<r2:Ssiz>9</r2:Ssiz>",
+        "<r1:CodingStyleDefault>01040001010503030000778888888888</r1:CodingStyleDefault>",
+        "<r2:Code>CompRed</r2:Code>",
+        "<r2:ComponentSize>10</r2:ComponentSize>",
+    ] {
+        assert!(x.contains(want), "{want} missing in\n{x}");
+    }
+    assert_eq!(x.matches("<r1:InstanceID>urn:uuid:").count(), 2);
+    assert_eq!(x.matches("<r2:RGBAComponent>").count(), 16, "PixelLayout and J2CLayout, 8 pairs each");
+    for cut in (0..f.len().min(20_000)).step_by(101) {
+        let _ = crate::regxml::essence_descriptor(&f[..cut]);
+    }
+}
+
+/// #1011: the RegXML of an IMF sound track file: Wave descriptor, MCA sub-descriptors with the
+/// soundfield group's titles, the ST 2067-2 Annex E items.
+#[test]
+fn imf_sound_regxml() {
+    let mut ids = PackageIds::from_seed("imf-snd-x", "Main");
+    ids.file = Umid::dcinema([0x33; 16]);
+    let mut cfg = WriterConfig::new(Pattern::Imf, Rational::new(48_000, 1), ids);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 1, bits: 24 }];
+    cfg.reference_image_edit_rate = Some(Rational::new(25, 1));
+    cfg.reference_audio_alignment_level = Some(-20);
+    cfg.mca = vec![
+        McaLabel {
+            dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, 0x02, 0x20, 0x01, 0, 0, 0],
+            link: [0x44; 16],
+            symbol: "sgMono & <x>".into(),
+            name: "Mono".into(),
+            channel: None,
+            language: Some("hu".into()),
+            group: None,
+            titles: Some(McaTitles { title: "Film".into(), title_version: "1".into(), content_kind: "PRM".into(), element_kind: "FULL".into() }),
+        },
+        McaLabel {
+            dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, 0x01, 0x03, 0, 0, 0, 0],
+            link: [0x45; 16],
+            symbol: "chC".into(),
+            name: "Center".into(),
+            channel: Some(1),
+            language: None,
+            group: Some([0x44; 16]),
+            titles: None,
+        },
+    ];
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    w.push_sound(0, &vec![0u8; 3 * 4800]).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.starts_with("<r0:WAVEPCMDescriptor "), "{x}");
+    for want in [
+        "<r1:SampleRate>48000/1</r1:SampleRate>",
+        "<r1:EssenceLength>4800</r1:EssenceLength>",
+        "<r1:AudioSampleRate>48000/1</r1:AudioSampleRate>",
+        "<r1:Locked>True</r1:Locked>",
+        "<r1:ChannelCount>1</r1:ChannelCount>",
+        "<r1:QuantizationBits>24</r1:QuantizationBits>",
+        "<r1:BlockAlign>3</r1:BlockAlign>",
+        "<r1:AverageBytesPerSecond>144000</r1:AverageBytesPerSecond>",
+        "<r1:ChannelAssignment>urn:smpte:ul:060e2b34.0401010d.04020210.04010000</r1:ChannelAssignment>",
+        "<r1:ReferenceImageEditRate>25/1</r1:ReferenceImageEditRate>",
+        "<r1:ReferenceAudioAlignmentLevel>-20</r1:ReferenceAudioAlignmentLevel>",
+        "<r0:SoundfieldGroupLabelSubDescriptor>",
+        "<r1:MCALabelDictionaryID>urn:smpte:ul:060e2b34.0401010d.03020220.01000000</r1:MCALabelDictionaryID>",
+        "<r1:MCALinkID>urn:uuid:44444444-4444-4444-4444-444444444444</r1:MCALinkID>",
+        "<r1:MCATagSymbol>sgMono &amp; &lt;x&gt;</r1:MCATagSymbol>",
+        "<r1:RFC5646SpokenLanguage>hu</r1:RFC5646SpokenLanguage>",
+        "<r1:MCATitle>Film</r1:MCATitle>",
+        "<r1:MCATitleVersion>1</r1:MCATitleVersion>",
+        "<r1:MCAAudioContentKind>PRM</r1:MCAAudioContentKind>",
+        "<r1:MCAAudioElementKind>FULL</r1:MCAAudioElementKind>",
+        "<r0:AudioChannelLabelSubDescriptor>",
+        "<r1:MCAChannelID>1</r1:MCAChannelID>",
+        "<r1:SoundfieldGroupLinkID>urn:uuid:44444444-4444-4444-4444-444444444444</r1:SoundfieldGroupLinkID>",
+    ] {
+        assert!(x.contains(want), "{want} missing in\n{x}");
+    }
+}
+
+/// A real IMF track file (`CFA4_IMF_SAMPLE`): its descriptor maps to RegXML. Checked by hand
+/// against the MERIDIAN CPL of the Photon test IMP: every value of the audio descriptor and every
+/// mapped value of the picture descriptor are equal.
+#[test]
+fn imf_sample_regxml() {
+    let Ok(path) = std::env::var("CFA4_IMF_SAMPLE") else { return };
+    let f = std::fs::read(&path).unwrap();
+    let x = crate::regxml::essence_descriptor(&f).unwrap();
+    assert!(x.contains("<r1:InstanceID>urn:uuid:"), "{x}");
 }

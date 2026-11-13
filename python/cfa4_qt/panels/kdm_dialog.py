@@ -1,0 +1,127 @@
+"""File ▸ Load KDM…: the content keys of an encrypted DCP (#933, #1029).
+
+The user picks a KDM (SMPTE ST 430-1 XML) and the PEM private key of its recipient; the engine's
+``dcp.loadKdm`` decrypts the content keys into memory, and the encrypted track files play from
+then on. The dialog shows what the KDM holds (title, key types, validity), never a key. Forget DCP
+Keys (``dcp.clearKeys``) drops them again. Keys are never written anywhere.
+
+Automation ids: ``kdm.kdmPath``, ``kdm.kdmBrowse``, ``kdm.keyPath``, ``kdm.keyBrowse``,
+``kdm.load``, ``kdm.forget``, ``kdm.result``, ``kdm.close``.
+"""
+
+from __future__ import annotations
+
+import os
+from collections.abc import Callable
+from typing import Any
+
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+from ..i18n import fmt, tr
+
+
+def describe(r: Any) -> str:
+    """The engine's ``dcp.loadKdm`` reply as text: title, then one line per key (never the key)."""
+    if not isinstance(r, dict):
+        return ""
+    title = str(r.get("title") or r.get("annotation") or "KDM")
+    keys = r.get("keys") if isinstance(r.get("keys"), list) else []
+    lines = [fmt("{title}: {count} keys loaded", title=title, count=len(keys))]
+    for k in keys:
+        if isinstance(k, dict):
+            lines.append(f"{k.get('type', '?')}  {k.get('keyId', '')}  {k.get('notValidBefore', '')} – {k.get('notValidAfter', '')}")
+    if isinstance(r.get("composition"), str):
+        lines.append(f"CPL {r['composition']}")
+    return "\n".join(lines)
+
+
+class KdmDialog(QDialog):
+    """Load a KDM and its private key; forget the loaded keys."""
+
+    def __init__(self, engine: Any, parent: QWidget | None = None, changed: Callable[[], None] | None = None):
+        super().__init__(parent)
+        self.engine = engine
+        self.changed = changed or (lambda: None)
+        self.setObjectName("kdm")
+        self.setWindowTitle(tr("Load KDM"))
+        self.kdm_path = QLineEdit(self)
+        self.kdm_path.setObjectName("kdm.kdmPath")
+        self.key_path = QLineEdit(self)
+        self.key_path.setObjectName("kdm.keyPath")
+        form = QFormLayout()
+        for edit, label, name, filt in (
+            (self.kdm_path, tr("KDM file"), "kdm.kdmBrowse", "KDM (*.xml)"),
+            (self.key_path, tr("Private key (PEM)"), "kdm.keyBrowse", "PEM (*.pem *.key)"),
+        ):
+            browse = QPushButton(tr("Browse…"), self)
+            browse.setObjectName(name)
+            browse.clicked.connect(lambda _c=False, e=edit, f=filt, t=label: self._browse(e, f, t))
+            row = QHBoxLayout()
+            row.addWidget(edit, 1)
+            row.addWidget(browse)
+            form.addRow(label, row)
+        note = QLabel(tr("The keys stay in memory only, until Forget DCP Keys or the end of the session."), self)
+        note.setWordWrap(True)
+        self.result = QPlainTextEdit(self)
+        self.result.setObjectName("kdm.result")
+        self.result.setReadOnly(True)
+        buttons = QDialogButtonBox(self)
+        self.load_button = buttons.addButton(tr("Load KDM"), QDialogButtonBox.ButtonRole.AcceptRole)
+        self.load_button.setObjectName("kdm.load")
+        self.forget_button = buttons.addButton(tr("Forget DCP Keys"), QDialogButtonBox.ButtonRole.ResetRole)
+        self.forget_button.setObjectName("kdm.forget")
+        close = buttons.addButton(QDialogButtonBox.StandardButton.Close)
+        close.setObjectName("kdm.close")
+        close.setText(tr("Close"))
+        self.load_button.clicked.connect(self.load)
+        self.forget_button.clicked.connect(self.forget)
+        close.clicked.connect(self.reject)
+        lay = QVBoxLayout(self)
+        lay.addLayout(form)
+        lay.addWidget(note)
+        lay.addWidget(self.result, 1)
+        lay.addWidget(buttons)
+        self.resize(640, 360)
+
+    def _browse(self, edit: QLineEdit, filt: str, title: str) -> None:
+        path, _f = QFileDialog.getOpenFileName(self, title, os.path.dirname(edit.text()), f"{filt};;{tr('All files')} (*)")
+        if path:
+            edit.setText(path)
+
+    def load(self) -> None:
+        kdm, key = self.kdm_path.text().strip(), self.key_path.text().strip()
+        if not kdm or not key:
+            self.result.setPlainText(tr("Choose the KDM file and the private key."))
+            return
+        params = {"kdm": os.path.expanduser(kdm), "privateKey": os.path.expanduser(key)}
+        self.load_button.setEnabled(False)
+
+        def got(r: Any, _b: bytes | None) -> None:
+            self.load_button.setEnabled(True)
+            self.result.setPlainText(describe(r))
+            self.changed()
+
+        def failed(m: str) -> None:
+            self.load_button.setEnabled(True)
+            self.result.setPlainText(str(m))
+
+        self.engine.execute("dcp.loadKdm", params, on_reply=got, on_error=failed)
+
+    def forget(self) -> None:
+        def got(_r: Any, _b: bytes | None) -> None:
+            self.result.setPlainText(tr("DCP keys forgotten"))
+            self.changed()
+
+        self.engine.execute("dcp.clearKeys", {}, on_reply=got, on_error=lambda m: self.result.setPlainText(str(m)))

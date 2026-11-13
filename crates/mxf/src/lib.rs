@@ -31,6 +31,7 @@ mod index;
 mod klv;
 mod meta;
 mod peek;
+pub mod regxml;
 mod source;
 mod timed_text;
 pub mod uncompressed;
@@ -40,7 +41,9 @@ pub mod write;
 #[doc(hidden)]
 pub mod testing;
 
-pub use anc::{AncData, AncPacket, MAX_ANC_ELEMENT_BYTES, MAX_ANC_FRAMES, has_anc, parse_anc_element, read_anc};
+pub use anc::{
+    AncData, AncPacket, Cea608Pair, MAX_ANC_ELEMENT_BYTES, MAX_ANC_FRAMES, ViLine, anc_element, has_anc, parse_anc_element, parse_vi_element, read_anc,
+};
 pub use essence::{Codec, PictureInfo, SoundFormat, SoundInfo, aes3_element_samples, decode_pcm};
 pub use file::{Chunk, EssenceTrack, MxfFile, OperationalPattern, Partition, PartitionKind, Sample, Timecode, TrackKind, Wrapping, open};
 pub use index::{IndexEntry, IndexSegment};

@@ -66,12 +66,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use cfa4_isobmff::{Brand, CodecConfig, Mp4Writer, PcmConfig, SampleEntry, TrackConfig, WriteSample, WriterOptions};
 use cfa4_project::{ItemId, Project};
 use cfa4_render::SourceProvider;
-use cfa4_time::FrameRate;
+use cfa4_time::{FrameRate, TimeRange};
 use rayon::prelude::*;
 
 use crate::audio_out::AudioOut;
 use crate::dcp_out::{DcpMux, DcpSetup};
 use crate::hls_out::{HlsMux, HlsSetup};
+use crate::imf_out::{ImfMux, ImfSetup};
 use crate::mpeg_out::{MpegAudio, MpegMux};
 use crate::mxf_out::{MxfMux, MxfSetup};
 use crate::pipeline::Pipeline;
@@ -157,6 +158,21 @@ pub enum Step {
 }
 
 /// An export of an encoded-video format, advanced one batch at a time.
+/// The first caption track of `seq` inside `range` for the ANC data track of an MXF OP1a export
+/// (`ExportSettings::mxf_anc_captions`); `None` when not asked for or the sequence has none.
+fn anc_captions(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Option<cfa4_captions::Document> {
+    if settings.format != Format::MxfOp1a || !settings.mxf_anc_captions {
+        return None;
+    }
+    let track = project.sequence(seq)?.caption_tracks.first()?;
+    let mut doc = cfa4_captions::document_from_track(track, range.start);
+    doc.cues.retain_mut(|cue| {
+        cue.end = cue.end.min(range.duration);
+        cue.start < cue.end
+    });
+    Some(doc)
+}
+
 pub struct Exporter {
     pipe: Arc<Pipeline>,
     settings: ExportSettings,
@@ -195,10 +211,13 @@ pub struct Exporter {
     mpeg: Option<MpegMux>,
     /// DCP exports write through this.
     dcp: Option<DcpMux>,
+    imf: Option<ImfMux>,
     seq: ItemId,
     project: Arc<Project>,
     /// Chapters of MP4, MOV, HLS and WebM output ([`export_chapters`]).
     chapters: Vec<cfa4_isobmff::Chapter>,
+    /// MXF OP1a closed captions (ANC data), timed from the first exported frame.
+    anc_captions: Option<cfa4_captions::Document>,
     vt: usize,
     at: Option<usize>,
     t0: web_time::Instant,
@@ -222,6 +241,7 @@ pub fn stepped(format: Format) -> bool {
             | Format::MxfOpAtom
             | Format::Mpeg2
             | Format::Dcp
+            | Format::Imf
     )
 }
 
@@ -260,6 +280,9 @@ impl Exporter {
         let dcp;
         let settings = if settings.format == Format::Dcp {
             dcp = crate::dcp_out::normalize(settings, q.settings.frame_rate);
+            &dcp
+        } else if settings.format == Format::Imf {
+            dcp = crate::imf_out::normalize(settings, q.settings.frame_rate);
             &dcp
         } else {
             settings
@@ -326,9 +349,11 @@ impl Exporter {
             hls: None,
             mpeg: None,
             dcp: None,
+            imf: None,
             seq,
             project: project.clone(),
             chapters: export_chapters(&project, seq, &settings, range),
+            anc_captions: anc_captions(&project, seq, &settings, range),
             vt: 0,
             at: None,
             t0: web_time::Instant::now(),
@@ -390,10 +415,16 @@ impl Exporter {
 
     /// Whether the container writer exists (it is created after the first group is encoded).
     fn mux_open(&self) -> bool {
-        self.mux.is_some() || self.mxf.is_some() || self.webm.is_some() || self.hls.is_some() || self.mpeg.is_some() || self.dcp.is_some()
+        self.mux.is_some() || self.mxf.is_some() || self.webm.is_some() || self.hls.is_some() || self.mpeg.is_some() || self.dcp.is_some() || self.imf.is_some()
     }
 
     fn write_audio(&mut self, planar: Option<Vec<Vec<f32>>>) -> Result<()> {
+        if let Some(m) = self.imf.as_mut() {
+            return match planar {
+                Some(buf) => m.write_audio(&buf),
+                None => Ok(()),
+            };
+        }
         if let Some(m) = self.dcp.as_mut() {
             return match planar {
                 Some(buf) => m.write_audio(&buf),
@@ -452,6 +483,9 @@ impl Exporter {
     }
 
     fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
+        if let Some(m) = self.imf.as_mut() {
+            return m.write_video(&self.settings, packets);
+        }
         if let Some(m) = self.dcp.as_mut() {
             return m.write_video(packets);
         }
@@ -477,6 +511,16 @@ impl Exporter {
 
     /// Create the muxer and its tracks (after the first batch was encoded).
     fn open_mux(&mut self) -> Result<()> {
+        if self.settings.format == Format::Imf {
+            let title = match self.settings.metadata.title.trim() {
+                "" => self.project.item(self.seq).map(|i| i.name.clone()).unwrap_or_default(),
+                t => t.to_string(),
+            };
+            let channels = self.audio.as_ref().map_or(0, |a| a.channels as u32);
+            self.imf =
+                Some(ImfMux::new(ImfSetup { settings: &self.settings, title, width: self.pipe.w, height: self.pipe.h, rate: self.pipe.rate, channels })?);
+            return Ok(());
+        }
         if self.settings.format == Format::Dcp {
             let title = match self.settings.metadata.title.trim() {
                 "" => self.project.item(self.seq).map(|i| i.name.clone()).unwrap_or_default(),
@@ -568,6 +612,7 @@ impl Exporter {
                 audio: self.audio.as_ref().map(|a| (a.sr, a.channels)),
                 timecode: (start, q.settings.drop_frame),
                 mpeg: self.venc.mpeg_video(),
+                captions: self.anc_captions.clone(),
             })?);
             return Ok(());
         }
@@ -676,7 +721,10 @@ impl Exporter {
             }
         }
         let cancelled = || progress.cancel.load(Ordering::Relaxed);
-        let dcp = self.dcp.take().map(|m| m.finish(&self.settings, &cancelled)).transpose()?;
+        let dcp = match self.imf.take() {
+            Some(m) => Some(m.finish(&self.settings)?),
+            None => self.dcp.take().map(|m| m.finish(&self.settings, &cancelled)).transpose()?,
+        };
         let (bytes, extra_files) = match (self.mxf.take(), self.webm.take(), self.hls.take(), self.mpeg.take()) {
             _ if dcp.is_some() => dcp.unwrap_or_default(),
             (Some(m), _, _, _) => m.finish(&self.settings)?,

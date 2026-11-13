@@ -158,7 +158,7 @@ pub(crate) fn rgb_to_ycbcr(r: &mut [u16], g: &mut [u16], b: &mut [u16], bits: u3
 }
 
 /// X'Y'Z' planes of `bits` bits to P3-D65 R'G'B' (in place), for [`rgb_to_ycbcr`].
-fn xyz_to_rgb(x: &mut [u16], y: &mut [u16], z: &mut [u16], bits: u32) {
+pub(crate) fn xyz_to_rgb(x: &mut [u16], y: &mut [u16], z: &mut [u16], bits: u32) {
     let max = ((1u32 << bits) - 1) as f32;
     // DCI: luminance = 52.37 cd/m² × (code / max)^2.6; reference white (48 cd/m²) is 1.0
     let decode: Vec<f32> = (0..=(1u32 << bits) - 1).map(|v| (v as f32 / max).powf(2.6) * (52.37 / 48.0)).collect();
@@ -222,7 +222,15 @@ pub fn to_video_frame(image: &Image, origin: (u32, u32), components: Components,
     } else {
         PixelData::Yuv16 { planes: [Arc::new(p0), Arc::new(p1), Arc::new(p2)], chroma, bits, alpha: alpha.map(Arc::new) }
     };
-    Ok(VideoFrame { width: image.width, height: image.height, data, color: color(components, image.width, image.height, hints), par: (1, 1), pts: Tick::ZERO })
+    Ok(VideoFrame {
+        width: image.width,
+        height: image.height,
+        data,
+        color: color(components, image.width, image.height, hints),
+        par: (1, 1),
+        pts: Tick::ZERO,
+        layout: Default::default(),
+    })
 }
 
 /// [`components`] with the component transform decoding actually applied: tile-part CODs take

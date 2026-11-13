@@ -3634,6 +3634,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Folder DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24-bit 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Folder DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24-bit 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Folder IMF SMPTE: JPEG 2000 1920×1080, PCM 5.1 24-bit 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Folder IMF SMPTE: JPEG 2000 3840×2160, PCM 5.1 24-bit 48 kHz
+	Episode	Episode
+	Event highlights	Sorotan acara
+	Event	Acara
+	Lossless (reversible JPEG 2000)	Tanpa kehilangan (JPEG 2000 reversibel)
+	Package language	Bahasa paket
 	Show Duplicate Frame Markers	Tampilkan Penanda Frame Duplikat
 	Work Area Bar	Bilah Area Kerja
 	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
@@ -3916,6 +3926,9 @@
 	1 B picture between anchors	1 gambar B di antara gambar jangkar
 	10-bit RGB	RGB 10-bit
 	12-bit X'Y'Z'	X'Y'Z' 12-bit
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 10-bit
+	JPEG 2000 IMF lossy	JPEG 2000 IMF dengan kehilangan
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reversibel
 	16-bit half float	floating point setengah presisi 16-bit
 	AV1 Main (10-bit for HDR)	AV1 Main (10-bit untuk HDR)
 	BDAV Transport Stream	aliran transport BDAV
@@ -4510,3 +4523,47 @@
 	accept	dapat diterima
 	the engine did not start the check	mesin tidak memulai pemeriksaan
 	the engine sent no report	mesin tidak mengirim laporan
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tanpa kompresi 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit tanpa kompresi dalam tata letak v210 (SMPTE ST 384), PCM 24-bit 48 kHz, timecode awal
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Tulis teks sebagai data ANC (CEA-608/708, 29,97 fps)
+	Load KDM…	Muat KDM…
+	Forget DCP Keys	Lupakan Kunci DCP
+	Load KDM	Muat KDM
+	KDM file	File KDM
+	Private key (PEM)	Kunci privat (PEM)
+	{title}: {count} keys loaded	{title}: {count} kunci dimuat
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Kunci hanya disimpan di memori, sampai Lupakan Kunci DCP atau akhir sesi.
+	DCP keys forgotten	Kunci DCP dilupakan
+	Choose the KDM file and the private key.	Pilih file KDM dan kunci privat.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sinkronisasi Timecode
+	TimecodeSync	Sinkronisasi Timecode
+	Chase	Ikuti
+	Follow external timecode during playback	Ikuti timecode eksternal saat pemutaran
+	Lock after	Kunci setelah
+	Keep playing without signal for	Tetap putar tanpa sinyal selama
+	External frame rate	Frame rate eksternal
+	Offset (added to the external timecode)	Offset (ditambahkan ke timecode eksternal)
+	LTC	LTC
+	LTC input device	Perangkat input LTC
+	LTC input channel	Kanal input LTC
+	Send LTC during playback	Kirim LTC saat pemutaran
+	LTC output device	Perangkat output LTC
+	LTC output channel	Kanal output LTC
+	LTC level	Level LTC
+	dBFS	dBFS
+	MIDI Timecode	Timecode MIDI
+	MTC input port (empty = CFA4 port)	Port input MTC (kosong = port CFA4)
+	Send MIDI Timecode during playback	Kirim Timecode MIDI saat pemutaran
+	MTC output port (empty = CFA4 port)	Port output MTC (kosong = port CFA4)
+	Send timecode ahead of the picture by	Kirim timecode mendahului gambar sebesar
+	LTC (audio input)	LTC (input audio)
+	MIDI Timecode (MIDI input)	Timecode MIDI (input MIDI)
+	Same as the sequence	Sama dengan sequence
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status Sinkronisasi Timecode
+	Chase External Timecode	Ikuti Timecode Eksternal
+	Send LTC	Kirim LTC
+	Send MIDI Timecode	Kirim Timecode MIDI
