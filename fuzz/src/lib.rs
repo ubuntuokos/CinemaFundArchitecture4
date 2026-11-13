@@ -109,6 +109,83 @@ pub fn mpegts(data: &[u8]) {
     }
 }
 
+/// ST 2110: an RTP datagram, SDP text (with its `fmtp` video description) and ST 2110-20
+/// reassembly of the input split into datagrams, into a small fixed 4:2:2 10-bit format.
+pub fn st2110(data: &[u8]) {
+    use cfa4_st2110::video::{Colorimetry, Depth, FrameRate, Sampling};
+    let _ = std::hint::black_box(cfa4_st2110::rtp::RtpPacket::parse(data));
+    if let Ok(text) = std::str::from_utf8(data) {
+        if let Ok(session) = cfa4_st2110::sdp::Session::parse(text) {
+            for m in &session.media {
+                let _ = std::hint::black_box((m.ts_refclk(), m.mediaclk()));
+                for pt in m.formats.iter().filter_map(|f| f.parse::<u8>().ok()) {
+                    let _ = std::hint::black_box(m.rtpmap(pt));
+                    if let Some(f) = m.fmtp(pt) {
+                        let _ = std::hint::black_box(cfa4_st2110::VideoFormat::from_fmtp(&f).map(|v| v.validate()));
+                    }
+                }
+            }
+        }
+        let _ = std::hint::black_box(cfa4_st2110::VideoFormat::from_fmtp(&cfa4_st2110::sdp::FmtpParams::parse(text)));
+    }
+    let Ok(rate) = FrameRate::new(50, 1) else { return };
+    let format = cfa4_st2110::VideoFormat::progressive(Sampling::YCbCr422, Depth::D10, 64, 48, rate, Colorimetry::Bt709);
+    if let Ok(mut d) = cfa4_st2110::Depacketizer::new(format) {
+        for datagram in data.chunks(1400) {
+            let _ = d.push(datagram);
+        }
+        d.flush();
+        while let Some(image) = d.pop() {
+            std::hint::black_box(image);
+        }
+    }
+}
+
+pub fn tta(data: &[u8]) {
+    if let Ok(f) = cfa4_tta::decode_file(data, None) {
+        std::hint::black_box(f);
+    }
+}
+
+pub fn amr(data: &[u8]) {
+    if let Ok(f) = cfa4_amr::decode_file(data) {
+        std::hint::black_box(f);
+    }
+}
+
+pub fn av2(data: &[u8]) {
+    if let Ok(f) = cfa4_av2::probe_annexb(data) {
+        std::hint::black_box(f);
+    }
+}
+
+/// Canopus HQ/HQA and HQX: the first byte picks the codec, the rest is one frame.
+pub fn canopus(data: &[u8]) {
+    let Some((&pick, frame)) = data.split_first() else { return };
+    let codec = if pick & 1 == 0 { cfa4_canopus::Codec::Hq } else { cfa4_canopus::Codec::Hqx };
+    if let Ok(p) = cfa4_canopus::Decoder::new(codec).decode(frame) {
+        std::hint::black_box(p);
+    }
+}
+
+/// Dirac / VC-2: the sequence header probe and the decoder over the whole input.
+pub fn dirac(data: &[u8]) {
+    std::hint::black_box((cfa4_dirac::sequence_header(data), cfa4_dirac::is_vc2(data)));
+    if let Ok(p) = cfa4_dirac::Decoder::new().decode(data) {
+        std::hint::black_box(p);
+    }
+}
+
+/// Speex: an 80-byte stream header, then the rest in 64-byte packets.
+pub fn speex(data: &[u8]) {
+    let (head, packets) = data.split_at(data.len().min(80));
+    let Ok(header) = cfa4_speex::Header::parse(head) else { return };
+    let mut d = cfa4_speex::Decoder::new(&header);
+    for p in packets.chunks(64).take(64) {
+        std::hint::black_box(d.decode_packet(p));
+    }
+}
+
 pub fn ogg(data: &[u8]) {
     if let Ok(f) = cfa4_ogg::open(data) {
         std::hint::black_box(f);
@@ -402,6 +479,13 @@ pub const TARGETS: &[(&str, &str, Target)] = &[
     ("avi", "cfa4-avi", avi),
     ("mpegts", "cfa4-mpegts", mpegts),
     ("ogg", "cfa4-ogg", ogg),
+    ("st2110", "cfa4-st2110", st2110),
+    ("tta", "cfa4-tta", tta),
+    ("amr", "cfa4-amr", amr),
+    ("av2", "cfa4-av2", av2),
+    ("canopus", "cfa4-canopus", canopus),
+    ("dirac", "cfa4-dirac", dirac),
+    ("speex", "cfa4-speex", speex),
     ("cfb", "cfa4-cfb", cfb),
     ("heif", "cfa4-heif", heif),
     ("dcp", "cfa4-dcp", dcp),

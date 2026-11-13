@@ -16,6 +16,10 @@ else
     mapfile -t TARGETS < <(sed -n 's/^name = "\([a-z0-9_]*\)"$/\1/p' fuzz/Cargo.toml | grep -v '^cfa4-fuzz$')
 fi
 TRIPLE="$(rustc +nightly -vV | sed -n 's/^host: //p')"
+# The workspace denies deprecated APIs (Cargo.toml [workspace.lints], CFA4-LINTS-001) against the
+# pinned stable toolchain; nightly deprecates earlier (e.g. `fetch_update` → `try_update`), so lints
+# only warn in the nightly fuzz build: the stable gates still enforce them.
+export RUSTFLAGS="${RUSTFLAGS:-} --cap-lints=warn"
 failed=()
 for t in "${TARGETS[@]}"; do
     mkdir -p "fuzz/corpus/$t" "fuzz/artifacts/$t"

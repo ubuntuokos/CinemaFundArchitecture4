@@ -50,6 +50,13 @@ cfa4-mpeg2v = { path = "../crates/mpeg2v" }
 cfa4-mpegts = { path = "../crates/mpegts" }
 cfa4-mxf = { path = "../crates/mxf" }
 cfa4-ogg = { path = "../crates/ogg" }
+cfa4-st2110 = { path = "../crates/st2110" }
+cfa4-tta = { path = "../crates/tta" }
+cfa4-amr = { path = "../crates/amr" }
+cfa4-av2 = { path = "../crates/av2" }
+cfa4-canopus = { path = "../crates/canopus" }
+cfa4-dirac = { path = "../crates/dirac" }
+cfa4-speex = { path = "../crates/speex" }
 cfa4-opus = { path = "../crates/opus" }
 cfa4-project = { path = "../crates/project" }
 cfa4-prores = { path = "../crates/prores" }
@@ -99,6 +106,55 @@ bench = false
 [[bin]]
 name = "mpegts"
 path = "fuzz_targets/mpegts.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "st2110"
+path = "fuzz_targets/st2110.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tta"
+path = "fuzz_targets/tta.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "amr"
+path = "fuzz_targets/amr.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "av2"
+path = "fuzz_targets/av2.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "canopus"
+path = "fuzz_targets/canopus.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "dirac"
+path = "fuzz_targets/dirac.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "speex"
+path = "fuzz_targets/speex.rs"
 test = false
 doc = false
 bench = false
