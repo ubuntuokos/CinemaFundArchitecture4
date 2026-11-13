@@ -445,11 +445,40 @@ fn start_single(s: &mut Session, p: &Value) -> Result<Value> {
         }
         _ => bytes,
     };
+    // the source's chapters inside the cut, moved onto its timeline (K14)
+    let (bytes, chapters) = with_chapters(&src, &plan, bytes)?;
     s.services.write_file(&output, &bytes).map_err(|e| EngineError::Other(format!("{output}: {e}")))?;
     let summary = summary(&plan);
     let mut audio = audio_json(&audio);
     audio["verified"] = json!(audio_reports);
-    Ok(json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary, "audio": audio}))
+    Ok(json!({"output": output, "bytes": bytes.len(), "report": report, "verified": true, "summary": summary, "audio": audio, "chapters": chapters}))
+}
+
+/// The cut file with the source's chapters that fall inside the cut (CFA4-LOSSLESS-MEDIA-TOOLS-001
+/// K14), read back to check that the chapters are there and nothing else changed.
+fn with_chapters(src: &Source, plan: &SmartCutPlan, bytes: Vec<u8>) -> Result<(Vec<u8>, Value)> {
+    let (Some(track), Some(first)) = (src.file.tracks.get(src.track), plan.plan.segments.first()) else {
+        return Ok((bytes, json!([])));
+    };
+    if src.file.metadata.chapters.is_empty() {
+        return Ok((bytes, json!([])));
+    }
+    let duration = u64::try_from(plan.plan.expected_duration.value).unwrap_or(0);
+    let chapters = cfa4_export::audio_copy::cut_chapters(&src.file.metadata.chapters, CutInterval::of_video(track, first.source_in.value, duration));
+    let other = |e: cfa4_isobmff::Error| EngineError::Other(format!("Smart Cut chapters: {e}"));
+    let before = cfa4_isobmff::open(bytes.as_slice()).map_err(other)?;
+    let out = cfa4_isobmff::replace_chapters(&bytes, &chapters).map_err(other)?;
+    let after = cfa4_isobmff::open(out.as_slice()).map_err(other)?;
+    let mut expected = chapters.clone();
+    expected.truncate(cfa4_isobmff::MAX_CHAPTERS);
+    if after.tracks != before.tracks
+        || after.metadata.chapters.len() != expected.len()
+        || after.metadata.chapters.iter().zip(&expected).any(|(a, b)| a.start_100ns != b.start_100ns)
+    {
+        return Err(EngineError::Other("Smart Cut verification: the chapters were not written as planned".into()));
+    }
+    let list: Vec<Value> = after.metadata.chapters.iter().map(|c| json!({"start100ns": c.start_100ns, "title": c.title})).collect();
+    Ok((out, Value::Array(list)))
 }
 
 fn spec(id: &'static str, label: &'static str, params: &'static str, run: Run, journal: bool) -> CommandSpec {

@@ -24,5 +24,5 @@ pub use codec::{
 };
 pub use demux::{Chapter, Edit, Metadata, Mp4File, Sample, SampleGroup, Track, TrackKind, open};
 pub use error::{Error, Result};
-pub use mux::{Brand, FragmentedWriter, MAX_CHAPTER_TITLE_BYTES, MAX_CHAPTERS, Mp4Writer, TrackConfig, WriteSample, WriterOptions};
+pub use mux::{Brand, FragmentedWriter, MAX_CHAPTER_TITLE_BYTES, MAX_CHAPTERS, Mp4Writer, TrackConfig, WriteSample, WriterOptions, replace_chapters};
 pub use source::ByteSource;
