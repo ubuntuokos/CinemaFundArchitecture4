@@ -400,6 +400,7 @@ impl MediaSource for YuvSource {
             color: cfa4_color::ColorInfo::REC709,
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         }))
     }
     fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<cfa4_frame::AudioBuffer> {

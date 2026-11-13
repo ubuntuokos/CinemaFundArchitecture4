@@ -106,7 +106,7 @@ AUDIO_CODECS = (
 # per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
 # camelCase setting), the row label, the automation id and the choices (id, label)
 FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
-    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"), ("d10", "D-10 (IMX)"), ("xdcamHd422", "XDCAM HD422 (RDD 9)"))),
+    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"), ("mpeg2", "MPEG-2"), ("d10", "D-10 (IMX)"), ("xdcamHd422", "XDCAM HD422 (RDD 9)"), ("v210", "Uncompressed 10-bit 4:2:2 (v210)"), ("uyvy", "Uncompressed 8-bit 4:2:2 (UYVY)"))),
     ("proresProfile", N_("Profile"), "export.video.proresProfile", (
         ("proxy", "Apple ProRes 422 Proxy"), ("lt", "Apple ProRes 422 LT"), ("standard", "Apple ProRes 422"),
         ("hq", "Apple ProRes 422 HQ"), ("4444", "Apple ProRes 4444"), ("4444xq", "Apple ProRes 4444 XQ"))),
@@ -132,7 +132,7 @@ def d10_mbps(v: float) -> float:
     return min(D10_MBPS, key=lambda m: abs(m - v))
 
 
-MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2"}
+MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264", "mpeg2": "mpeg2", "d10": "mpeg2", "xdcamHd422": "mpeg2", "v210": "mxf-op1a", "uyvy": "mxf-op1a"}
 # the encoder format each per-format row belongs to
 FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
                       "cineformQuality": "cineform", "exrCompression": "exr"}
@@ -523,6 +523,9 @@ class ExportDialog(QDialog):
         # egui's "DASH Manifest" row: an HLS export also writes a DASH manifest over the same segments
         self.dash_manifest = QCheckBox(tr("Also write a DASH manifest (.mpd)"), self)
         self.dash_manifest.setObjectName("export.video.dashManifest")
+        # MXF OP1a: the caption track as closed captions in an ANC data track (ST 436-1, CEA-608/708)
+        self.mxf_anc = QCheckBox(tr("Write the captions as ANC data (CEA-608/708, 29.97 fps)"), self)
+        self.mxf_anc.setObjectName("export.video.mxfAncCaptions")
         self.quality = QSpinBox(self)
         self.quality.setObjectName("export.video.quality")
         self.quality.setRange(1, 100)
@@ -591,6 +594,7 @@ class ExportDialog(QDialog):
         QFormLayout(mux.body).addRow(tr("Multiplexer"), self.multiplexer)
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("DASH Manifest"), self.dash_manifest)
+        fv.addRow(tr("Closed Captions"), self.mxf_anc)
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
@@ -795,7 +799,7 @@ class ExportDialog(QDialog):
         self.imf_lossless.toggled.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
         for key, c in self.format_choices.items():
             c.currentIndexChanged.connect(lambda _i, k=key: (self._touch(k), self._sync_format_rows()))
@@ -1040,6 +1044,7 @@ class ExportDialog(QDialog):
         rows["alpha"] = supports_alpha(fmt, self._choice("proresProfile"), self._choice("cineformProfile"))
         rows["quality"] = enc in QUALITY_FORMATS
         rows["dashManifest"] = fmt == "hls"
+        rows["mxfAncCaptions"] = fmt == "mxf-op1a" and self._choice("mxfVideoCodec") != "d10"
         return rows
 
     def _sync_mpeg2_rows(self) -> None:
@@ -1075,7 +1080,13 @@ class ExportDialog(QDialog):
 
     def _sync_format_rows(self) -> None:
         self._sync_mpeg2_rows()
-        widgets: dict[str, QWidget] = {**self.format_choices, "alpha": self.alpha, "quality": self.quality, "dashManifest": self.dash_manifest}
+        widgets: dict[str, QWidget] = {
+            **self.format_choices,
+            "alpha": self.alpha,
+            "quality": self.quality,
+            "dashManifest": self.dash_manifest,
+            "mxfAncCaptions": self.mxf_anc,
+        }
         for key, shown in self._format_rows().items():
             self.video_form.setRowVisible(widgets[key], shown)
 
@@ -1088,7 +1099,7 @@ class ExportDialog(QDialog):
                 c.blockSignals(True)
                 c.setCurrentIndex(i)
                 c.blockSignals(False)
-        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest)):
+        for key, box in (("alpha", self.alpha), ("dashManifest", self.dash_manifest), ("mxfAncCaptions", self.mxf_anc)):
             if key not in self.touched and isinstance(settings.get(key), bool):
                 box.blockSignals(True)
                 box.setChecked(settings[key])
@@ -1355,6 +1366,8 @@ class ExportDialog(QDialog):
             p["alpha"] = self.alpha.isChecked()
         if rows["dashManifest"] and "dashManifest" in self.touched:
             p["dashManifest"] = self.dash_manifest.isChecked()
+        if rows["mxfAncCaptions"] and "mxfAncCaptions" in self.touched:
+            p["mxfAncCaptions"] = self.mxf_anc.isChecked()
         if rows["quality"] and "quality" in self.touched:
             p["quality"] = self.quality.value()
         if self.container.isEnabled():

@@ -1410,6 +1410,49 @@ static CATEGORIES: &[Category] = &[
         ],
     },
     Category {
+        id: "timecodeSync",
+        group: "hardware",
+        title: "Timecode Sync",
+        rows: &[
+            Row::Group(
+                "Chase",
+                &[
+                    b("timecodeSync.chase", "Follow external timecode during playback", false),
+                    sub("timecodeSync.source", "Source", Kind::Choice(crate::timecode_sync::SOURCES), "timecodeSync.chase", false),
+                    sub("timecodeSync.lockFrames", "Lock after", int(1.0, 30.0, "frames"), "timecodeSync.chase", false),
+                    sub("timecodeSync.freewheelFrames", "Keep playing without signal for", int(2.0, 300.0, "frames"), "timecodeSync.chase", false),
+                ],
+            ),
+            Row::Group(
+                "Timecode",
+                &[
+                    f("timecodeSync.rate", "External frame rate", Kind::Choice(crate::timecode_sync::RATES), false),
+                    f("timecodeSync.offset", "Offset (added to the external timecode)", Kind::Text, false),
+                ],
+            ),
+            Row::Group(
+                "LTC",
+                &[
+                    f("timecodeSync.ltcInput", "LTC input device", Kind::Device(DeviceList::Inputs), false),
+                    f("timecodeSync.ltcInputChannel", "LTC input channel", int(0.0, 63.0, ""), false),
+                    b("timecodeSync.generateLtc", "Send LTC during playback", false),
+                    sub("timecodeSync.ltcOutput", "LTC output device", Kind::Device(DeviceList::Outputs), "timecodeSync.generateLtc", false),
+                    sub("timecodeSync.ltcOutputChannel", "LTC output channel", int(0.0, 63.0, ""), "timecodeSync.generateLtc", false),
+                    sub("timecodeSync.ltcLevelDbfs", "LTC level", float(-60.0, 0.0, 1, "dBFS"), "timecodeSync.generateLtc", false),
+                ],
+            ),
+            Row::Group(
+                "MIDI Timecode",
+                &[
+                    f("timecodeSync.mtcInputPort", "MTC input port (empty = CFA4 port)", Kind::Text, false),
+                    b("timecodeSync.generateMtc", "Send MIDI Timecode during playback", false),
+                    sub("timecodeSync.mtcOutputPort", "MTC output port (empty = CFA4 port)", Kind::Text, "timecodeSync.generateMtc", false),
+                ],
+            ),
+            f("timecodeSync.outputLatencyMs", "Send timecode ahead of the picture by", int(0.0, 1000.0, "milliseconds"), false),
+        ],
+    },
+    Category {
         id: "timeline",
         group: "editing",
         title: "Timeline",
@@ -1481,6 +1524,9 @@ pub fn field(key: &str) -> Option<Field> {
 
 /// Check a value for `key` against the schema (choices, colours). Ranges are clamped later.
 pub fn validate(key: &str, v: &Value) -> std::result::Result<(), String> {
+    if key == "timecodeSync.offset" {
+        return crate::timecode_sync::validate_offset(v);
+    }
     if key == "appearance.favoriteThemes" {
         let items = v.as_array().ok_or("favorite themes must be a list")?;
         let mut seen = Vec::new();
@@ -1525,6 +1571,11 @@ pub fn is_unit_key(key: &str) -> bool {
 /// Repair a preferences value in place against the schema: unknown choices and bad colours go back
 /// to their defaults, numbers are clamped to their ranges.
 pub fn sanitize(v: &mut Value, defaults: &Value) {
+    if let Some(slot) = v.pointer_mut("/timecodeSync/offset")
+        && validate("timecodeSync.offset", slot).is_err()
+    {
+        *slot = defaults.pointer("/timecodeSync/offset").cloned().unwrap_or(json!("00:00:00:00"));
+    }
     if let Some(slot) = v.pointer_mut("/appearance/favoriteThemes")
         && validate("appearance.favoriteThemes", slot).is_err()
     {

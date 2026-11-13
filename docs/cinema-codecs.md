@@ -1,32 +1,37 @@
 # Cinema-grade codecs: Dolby, DTS, OpenMAX, JPEG 2000 / DCP
 
-> **Last updated:** 2026-10-27 · **Change:** minor (Auro-3D row, #299)
+> **Last updated:** 2026-11-11 · **Change:** minor (status moved to codec-parity.md and file-format-parity.md; this file keeps specifications, licences and patents only)
 
-What CFA4 has, what is missing, which public specification each missing piece needs and which
-licence or patent constraint applies. Every row follows [AGENTS.md](../AGENTS.md) §2: codecs are
-clean-room Rust from public specifications, ffmpeg is a test oracle only, and system libraries are
-reached only through the optional GStreamer backend
-([ADR 0002](adr/ADR-0002-gstreamer-backend.md)) or `crates/platform`
-([ADR 0001](adr/0001-platform-ffi.md)). Effort estimates use the same scale as
-[codec-parity.md](codec-parity.md).
+Which public specification each cinema-grade format needs and which licence or patent constraint
+applies. Every row follows [AGENTS.md](../AGENTS.md) §2: codecs are clean-room Rust from public
+specifications, ffmpeg is a test oracle only, and system libraries are reached only through the
+optional GStreamer backend ([ADR 0002](adr/ADR-0002-gstreamer-backend.md)) or `crates/platform`
+([ADR 0001](adr/0001-platform-ffi.md)).
 
-## Status
+**This file does not track status.** What CFA4 decodes and encodes today, what is missing and the
+effort estimates live in one place only: [codec-parity.md](codec-parity.md) for codecs,
+[file-format-parity.md](file-format-parity.md) for DCP and image sequences. The patent review of
+each format is in [patent-review.md](patent-review.md). Before 2026-11-11 this file had its own
+status column; it was not updated when the JPEG 2000, DTS and TrueHD decoders landed on
+2026-10-26, so it is gone.
 
-| Area | Have today | Missing | Public specification | Licence / patents | Est. |
-|---|---|---|---|---|---|
-| Dolby Digital (AC-3) | decode, all modes ([crates/ac3](../crates/ac3/README.md)) | encode | ATSC A/52:2012 | AC-3 patents expired (2017) | 20–30 h (encoder) |
-| Dolby Digital Plus (E-AC-3) | decode, independent substream (7.1 plays as 5.1) | dependent substreams (7.1), adaptive hybrid transform, enhanced coupling | ATSC A/52:2012 Annex E | essential patents mostly expired; check before shipping an encoder | 10–20 h |
-| Dolby Atmos in E-AC-3 (JOC) | none (plays the 5.1 bed) | object decoding, renderer to the speaker layout | ETSI TS 103 420 | ETSI FRAND licensing; Dolby trademark may not be used | 40–60 h |
-| Dolby TrueHD (MLP) | none | lossless decode | **no public specification** (MLP is described only in the DVD-Audio spec, licence-gated) | clean-room needs a public spec: owner decision | — |
-| Dolby AC-4 | none | decode | ETSI TS 103 190-1 / -2 | FRAND, patents active | 60–100 h |
-| DTS (core, Coherent Acoustics) | none | decode | ETSI TS 102 114 | core patents expired | 25–40 h |
-| DTS-HD Master Audio (XLL) | none | lossless extension | ETSI TS 102 114 v1.4+ (extension substream) | DTS trademark may not be used | 30–50 h |
-| Auro-3D (Auro-Codec in 24-bit PCM) | detection + height decoding, any bit-exact carrier: DTS-HD MA, FLAC, WAV, PCM in MKV/MP4/MXF ([crates/auro](../crates/auro/README.md), #299) | Auro-CX (#322) | **no public specification**; ported from harletty-bridge `auro` (Apache-2.0) | US 8,620,465 B2 in force (owner accepted the risk, #299) | done |
-| JPEG 2000 (MXF, DCP) | none | decode + encode, Part 1 and the cinema profiles | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | 40–70 h |
-| DCP packaging | SMPTE DCP write (#115): one reel, 2K / 4K, 5.1, unencrypted OV; IAB immersive audio (#343, ST 429-18 / 429-19, FSK sync ST 430-12) with ST 429-16 composition metadata, ISDCF Doc 15 IAB Profile 1 and MCA labels (#348); plain 5.1 per SMPTE RDD 52 (#309): MCA labels, RDD 52 constraints profile, FFOC/LFOC markers, spoken language, ISDCF folder name; Dolby Atmos TrueHD (.thd, or its track in MKV / MP4 / M2TS, #411) to IAB with its bed (7.1 DS / 9.1OH) and objects (#347); 7.1 DS bed from a 7.1 Mix, 9.1OH bed from a 7.1.2 Mix (#374) | Interop DCP, multiple reels, subtitles, 3D, KDM | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | 20–30 h after JPEG 2000 |
-| ProRes, DNxHD / DNxHR | decode + encode | ProRes RAW | — | — | see codec-parity.md |
-| OpenEXR, DPX | read + write | EXR B44 / DWA, tiled, multi-part (PIZ read and write done) | OpenEXR file layout docs | BSD-3-Clause | 15–25 h |
-| OpenMAX IL hardware codecs | **probe only** (this change) | — | Khronos OpenMAX IL 1.1.2 | the API is open; components are vendor drivers | see below |
+## Specifications and licences
+
+| Area | Public specification | Licence / patents | Status |
+|---|---|---|---|
+| Dolby Digital (AC-3) | ATSC A/52:2012 | AC-3 patents expired (2017) | [codec-parity.md](codec-parity.md) (AC-3) |
+| Dolby Digital Plus (E-AC-3) | ATSC A/52:2012 Annex E | essential patents mostly expired; check before shipping an encoder | [codec-parity.md](codec-parity.md) (E-AC-3) |
+| Dolby Atmos in E-AC-3 (JOC) | ETSI TS 103 420 | ETSI FRAND licensing; Dolby trademark may not be used | [codec-parity.md](codec-parity.md) (Dolby Atmos in E-AC-3) |
+| Dolby TrueHD (MLP), Atmos in TrueHD | **no public specification** (MLP is described only in the licence-gated DVD-Audio spec); ported from the Apache-2.0 `truehd` crate ([licensing.md](licensing.md)) | Dolby trademark may not be used | [codec-parity.md](codec-parity.md) (Dolby TrueHD) |
+| Dolby AC-4 | ETSI TS 103 190-1 / -2 | FRAND, patents active: owner decision before work starts | [codec backlog](plans/CODEC-BACKLOG-2026-10-27.md) (K2, ⚖️) |
+| DTS (core, Coherent Acoustics) | ETSI TS 102 114 | core patents expired | [codec-parity.md](codec-parity.md) (DTS) |
+| DTS-HD Master Audio (XLL) | ETSI TS 102 114 v1.4+ (extension substream) | DTS trademark may not be used | [codec-parity.md](codec-parity.md) (DTS) |
+| Auro-3D (Auro-Codec in 24-bit PCM) | **no public specification**; ported from harletty-bridge `auro` (Apache-2.0) | US 8,620,465 B2 in force (owner accepted the risk, #299) | [codec-parity.md](codec-parity.md) (Auro-3D) |
+| JPEG 2000 (MXF, DCP) | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | [codec-parity.md](codec-parity.md) (JPEG 2000) |
+| DCP packaging | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | [file-format-parity.md](file-format-parity.md) (DCP) |
+| ProRes, DNxHD / DNxHR | — | — | [codec-parity.md](codec-parity.md) |
+| OpenEXR, DPX | OpenEXR file layout docs | BSD-3-Clause | [file-format-parity.md](file-format-parity.md) (OpenEXR, DPX) |
+| OpenMAX IL hardware codecs | Khronos OpenMAX IL 1.1.2 | the API is open; components are vendor drivers | probe only, by design: see below |
 
 ## OpenMAX
 
@@ -41,14 +46,7 @@ NVIDIA Tegra). CFA4 is Linux x86_64 only and vendor-neutral, so:
   vendor) stay the planned hardware paths ([hardware-parity.md](hardware-parity.md)), with the
   pure-Rust decoders as the fallback.
 
-## Proposed order
-
-1. **E-AC-3 7.1 dependent substreams**: extends an existing crate, the spec is already used.
-2. **DTS core decoder**: the most common cinema / Blu-ray audio CFA4 cannot open at all.
-3. **JPEG 2000 decoder**, then the encoder and **DCP** packaging: the cinema delivery path.
-4. **Dolby Atmos (E-AC-3 JOC)** and **DTS-HD MA**: after their base codecs.
-5. **TrueHD**: only if a public specification becomes available, or by the owner's decision to
-   leave it to the GStreamer backend on machines that have a suitable plugin installed.
+## Before work starts
 
 Each codec needs its specification in hand before work starts: the clean-room rule forbids
 writing a decoder from memory or from another implementation's source. The spec edition used is

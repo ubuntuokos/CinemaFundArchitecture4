@@ -14,3 +14,6 @@ cfa4-color = { workspace = true }
 cfa4-time = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

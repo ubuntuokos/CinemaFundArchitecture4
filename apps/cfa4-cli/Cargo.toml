@@ -40,6 +40,7 @@ cfa4-format = { workspace = true }
 cfa4-qc = { workspace = true }
 cfa4-platform = { workspace = true }
 cfa4-gstreamer = { workspace = true }
+cfa4-obs = { workspace = true }
 cfa4-ffmpeg = { workspace = true }
 log = { workspace = true }
 cfa4-mxf = { workspace = true }
