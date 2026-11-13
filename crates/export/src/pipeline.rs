@@ -150,6 +150,9 @@ pub struct Pipeline {
     geom: Geometry,
     opts: RenderOptions,
     pub hdr_out: bool,
+    /// An SDR export to a coder deeper than 8 bits ([`Pipeline::with_deep_sdr`]): each frame
+    /// also comes as R'G'B' floats, so 10 / 12-bit sources are not cut to 8 bits on the way.
+    pub deep_sdr: bool,
     /// Keep straight alpha in the RGBA8 output instead of flattening over black.
     alpha: bool,
     out_tf: Option<cfa4_color::OutputTransform>,
@@ -254,6 +257,7 @@ impl Pipeline {
             geom,
             opts,
             hdr_out,
+            deep_sdr: false,
             alpha: settings.keeps_alpha(),
             out_tf,
             effects,
@@ -261,8 +265,21 @@ impl Pipeline {
         })
     }
 
+    /// With `on` (and not HDR), [`Pipeline::frame`] also gives each SDR frame as R'G'B' floats
+    /// (CFA4-PROCODEC-002 1b): for coders deeper than 8 bits.
+    pub fn with_deep_sdr(mut self, on: bool) -> Self {
+        self.deep_sdr = on && !self.hdr_out;
+        self
+    }
+
+    /// Whether [`Pipeline::frame`] gives R'G'B' floats (HDR, or a deep SDR export).
+    pub fn float_out(&self) -> bool {
+        self.hdr_out || self.deep_sdr
+    }
+
     /// Output frame `f` as straight sRGB RGBA8 at the output size, or for HDR exports the encoded
-    /// R'G'B' floats (3 per pixel).
+    /// R'G'B' floats (3 per pixel). A deep SDR export ([`Pipeline::with_deep_sdr`]) gets both:
+    /// the RGBA8 (for alpha and 8-bit paths) and the same sRGB-encoded R'G'B' unrounded.
     pub fn frame(&self, f: i64, sources: &dyn SourceProvider) -> (Vec<u8>, Vec<f32>) {
         let t = self.rate.tick_of(f);
         // The registered GPU renderer goes first; `None` (no adapter, a plan the GPU cannot
@@ -312,12 +329,14 @@ impl Pipeline {
             return (Vec::new(), out);
         }
         let mut rgba = if self.alpha { img.to_rgba8() } else { img.over_black_rgba8() };
+        let mut float = if self.deep_sdr { sdr_float(&img, self.alpha) } else { Vec::new() };
         // the float image is not needed any more: its buffer serves the next frame's layers
         cfa4_frame::pool::recycle_f32(img.px);
         if lim.enabled {
             limit_rgba8(&mut rgba, lim.min_percent, lim.max_percent);
+            limit_f32(&mut float, lim.min_percent, lim.max_percent);
         }
-        (rgba, Vec::new())
+        (rgba, float)
     }
 
     /// Fit the rendered picture into the output frame.
@@ -523,6 +542,31 @@ pub fn limit_rgba8(rgba: &mut [u8], min_percent: f32, max_percent: f32) {
             }
         }
     });
+}
+
+/// The sRGB-encoded R'G'B' floats (3 per pixel, 0..1) of a premultiplied linear image: what
+/// [`Image::to_rgba8`] (`straight`) or [`Image::over_black_rgba8`] give, before rounding to 8 bits.
+pub(crate) fn sdr_float(img: &Image, straight: bool) -> Vec<f32> {
+    let mut out = vec![0f32; img.w * img.h * 3];
+    if img.w == 0 {
+        return out;
+    }
+    out.par_chunks_mut(img.w * 3).zip(img.px.par_chunks(img.w * 4)).for_each(|(o, s)| {
+        for (o, p) in o.as_chunks_mut::<3>().0.iter_mut().zip(s.as_chunks::<4>().0) {
+            let a = p[3].clamp(0.0, 1.0);
+            let k = if !straight {
+                1.0
+            } else if a > 0.0 {
+                1.0 / a
+            } else {
+                0.0
+            };
+            for c in 0..3 {
+                o[c] = cfa4_color::linear_to_srgb((p[c] * k).clamp(0.0, 1.0));
+            }
+        }
+    });
+    out
 }
 
 fn limit_f32(rgb: &mut [f32], min_percent: f32, max_percent: f32) {

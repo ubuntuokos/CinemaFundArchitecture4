@@ -1028,8 +1028,11 @@ pub struct EncodedPacket {
     pub composition_offset: i32,
 }
 
-/// Input picture for encoders: straight sRGB RGBA8 (encoders convert to their own YUV), or for
-/// HDR exports the encoded R'G'B' (PQ/HLG, BT.2020; 3 floats per pixel, 0..1) in `hdr`.
+/// Input picture for encoders: straight sRGB RGBA8 (encoders convert to their own YUV). `hdr`
+/// carries encoded R'G'B' floats (3 per pixel, 0..1) when the encoder should take them instead:
+/// PQ/HLG BT.2020 for HDR exports (`rgba` is then empty), or straight sRGB R'G'B' for SDR exports
+/// to deep formats (10 bits and more), so that 10/12-bit sources keep their precision; `rgba` is
+/// then filled as well and keeps the alpha.
 pub struct EncoderFrame<'a> {
     pub width: u32,
     pub height: u32,
@@ -1850,7 +1853,7 @@ impl VideoEncoder for ProResEncoder {
 
 /// Limited-range 10-bit 4:4:4 with matrix (Kr, Kb) from straight RGBA8, or from encoded R'G'B'
 /// floats (3 per pixel) when `hdr` is given. `alpha` (full range, 0 = transparent) takes the
-/// RGBA8 alpha; it stays opaque for float input, which carries none.
+/// RGBA8 alpha; it stays opaque where `rgba` has none (HDR float input).
 #[allow(clippy::too_many_arguments)]
 pub fn to_yuv444_10(
     rgba: &[u8],
@@ -1882,7 +1885,7 @@ pub fn to_yuv444_10(
             *crv = (512.0 + 896.0 * (r - yy) / sr).round().clamp(4.0, 1019.0) as u16;
         }
     });
-    if let (Some(a), None) = (alpha, hdr) {
+    if let Some(a) = alpha {
         for (i, dst) in a.iter_mut().enumerate().take(n) {
             *dst = rgba.get(i * 4 + 3).map_or(1023, |&v| ((v as u32 * 1023 + 127) / 255) as u16);
         }
@@ -2277,12 +2280,12 @@ impl VideoEncoder for CineformEncoder {
                 let n = w * h;
                 let mut planes = vec![vec![0u16; n]; format.channels()];
                 let to12 = |v: u8| ((u32::from(v) * 4095 + 127) / 255) as u16;
-                for (i, px) in (0..n).zip(f.rgba.chunks_exact(4)) {
+                for i in 0..n {
                     for (c, plane) in planes.iter_mut().enumerate() {
+                        let byte = f.rgba.get(i * 4 + c).copied();
                         let v = match (f.hdr, c) {
                             (Some(rgb), 0..=2) => rgb.get(i * 3 + c).map_or(0, |&x| (x.clamp(0.0, 1.0) * 4095.0).round() as u16),
-                            (Some(_), _) => 4095,
-                            (None, _) => px.get(c).map_or(4095, |&x| to12(x)),
+                            _ => byte.map_or(4095, to12),
                         };
                         if let Some(d) = plane.get_mut(i) {
                             *d = v;
@@ -3324,6 +3327,9 @@ mod determinism_tests;
 
 #[cfg(test)]
 mod hdr_tests;
+
+#[cfg(test)]
+mod deep_sdr_tests;
 
 #[cfg(test)]
 mod convert_tests {
