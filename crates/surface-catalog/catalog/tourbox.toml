@@ -1,0 +1,52 @@
+# TourBox (plan §2, M6). Source: tuxbox (MIT, Python), rewritten in Rust. USB serial (CDC-ACM).
+format = "cfa4-surface-catalog"
+version = 1
+family = "tourbox"
+
+[[model]]
+id = "tourbox.neo"
+vendor = "TourBox"
+name = "Neo"
+kind = "editing_console"
+goal = "BEST_EFFORT"
+adapter = "tourbox"
+phase = "M6"
+system_path = "userspace_uinput"
+connection = ["usb"]
+source = "tuxbox (MIT)"
+
+[[model]]
+id = "tourbox.elite"
+vendor = "TourBox"
+name = "Elite"
+kind = "editing_console"
+goal = "BEST_EFFORT"
+adapter = "tourbox"
+phase = "M6"
+system_path = "userspace_uinput"
+connection = ["usb", "bluetooth"]
+source = "tuxbox (MIT)"
+
+[[model]]
+id = "tourbox.elite-plus"
+vendor = "TourBox"
+name = "Elite Plus"
+kind = "editing_console"
+goal = "BEST_EFFORT"
+adapter = "tourbox"
+phase = "M6"
+system_path = "userspace_uinput"
+connection = ["usb", "bluetooth"]
+source = "tuxbox (MIT)"
+
+[[model]]
+id = "tourbox.lite"
+vendor = "TourBox"
+name = "Lite"
+kind = "editing_console"
+goal = "BEST_EFFORT"
+adapter = "tourbox"
+phase = "M6"
+system_path = "userspace_uinput"
+connection = ["usb", "bluetooth"]
+source = "tuxbox (MIT)"
