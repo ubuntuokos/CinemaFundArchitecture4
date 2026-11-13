@@ -1395,6 +1395,8 @@ mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
 #[cfg(test)]
+mod lossless_f4_tests;
+#[cfg(test)]
 mod masks_tests;
 #[cfg(test)]
 mod media_browser_tests;
