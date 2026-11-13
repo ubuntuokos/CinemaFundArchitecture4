@@ -475,7 +475,7 @@ impl Decoder {
     }
 
     /// frame_header_obu( ): returns the output for show_existing_frame.
-    fn frame_header(&mut self, r: &mut BitReader, temporal_id: u32, spatial_id: u32) -> Result<Option<Output>> {
+    fn frame_header(&mut self, r: &mut BitReader<'_>, temporal_id: u32, spatial_id: u32) -> Result<Option<Output>> {
         let seq = self.seq.clone().ok_or(Error::Invalid("frame before sequence header"))?;
         self.seen_frame_header = true;
         let mut st = HeaderState {
@@ -745,7 +745,7 @@ fn decode_frame(job: &FrameJob, pool: &Pool, stats: &mut DecodeStats) -> Result<
 /// go.
 type EncodeOut<'a> = (&'a crate::encode::FrameJobEnc, &'a mut Vec<Vec<u8>>, &'a mut crate::encode::Filters);
 
-fn run_frame(job: &FrameJob, pool: &Pool, stats: &mut DecodeStats, encode: Option<EncodeOut>) -> Result<(Arc<RefFrame>, Option<Picture>)> {
+fn run_frame(job: &FrameJob, pool: &Pool, stats: &mut DecodeStats, encode: Option<EncodeOut<'_>>) -> Result<(Arc<RefFrame>, Option<Picture>)> {
     let fh = &job.fh;
     let seq = &job.seq;
     // Wait for the reference frames this frame reads.

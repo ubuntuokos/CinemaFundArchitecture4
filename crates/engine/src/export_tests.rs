@@ -926,15 +926,15 @@ fn crf_param_picks_constant_quality() {
 
 #[test]
 fn exr_compression_param_is_parsed_and_defaults_to_none() {
-    use cfa4_export::ExrCompression::{None as Plain, Rle, Zip, Zips};
+    use cfa4_export::ExrCompression::{None as Plain, Piz, Rle, Zip, Zips};
     let s = demo();
     let setting = |p: Value| crate::export_tools::settings_from_params(&s, &p, "file.exportMedia").map(|(_, st)| st.exr_compression);
     assert_eq!(setting(json!({"path": "x.exr", "format": "exr"})).unwrap(), Plain);
-    for (name, want) in [("none", Plain), ("rle", Rle), ("zips", Zips), ("zip", Zip)] {
+    for (name, want) in [("none", Plain), ("rle", Rle), ("zips", Zips), ("zip", Zip), ("piz", Piz)] {
         assert_eq!(setting(json!({"path": "x.exr", "format": "exr", "exrCompression": name})).unwrap(), want);
     }
-    let e = setting(json!({"path": "x.exr", "format": "exr", "exrCompression": "piz"})).unwrap_err().to_string();
-    assert!(e.contains("none | rle | zips | zip"), "{e}");
+    let e = setting(json!({"path": "x.exr", "format": "exr", "exrCompression": "dwaa"})).unwrap_err().to_string();
+    assert!(e.contains("none | rle | zips | zip | piz"), "{e}");
     let old: cfa4_export::ExportSettings = serde_json::from_value(json!({"format": "exr"})).unwrap();
     assert_eq!(old.exr_compression, Plain);
 }

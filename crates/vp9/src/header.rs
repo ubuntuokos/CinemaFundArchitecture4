@@ -139,26 +139,26 @@ impl Default for HeaderState {
     }
 }
 
-fn read_s(r: &mut BitReader, bits: u32) -> Result<i32> {
+fn read_s(r: &mut BitReader<'_>, bits: u32) -> Result<i32> {
     let v = r.read_bits(bits)? as i32;
     Ok(if r.read_flag()? { -v } else { v })
 }
 
-fn read_delta_q(r: &mut BitReader) -> Result<i8> {
+fn read_delta_q(r: &mut BitReader<'_>) -> Result<i8> {
     Ok(if r.read_flag()? { read_s(r, 4)? as i8 } else { 0 })
 }
 
-fn read_prob(r: &mut BitReader) -> Result<u8> {
+fn read_prob(r: &mut BitReader<'_>) -> Result<u8> {
     Ok(if r.read_flag()? { r.read_bits(8)? as u8 } else { 255 })
 }
 
-fn frame_sync_code(r: &mut BitReader) -> Result<()> {
+fn frame_sync_code(r: &mut BitReader<'_>) -> Result<()> {
     let (a, b, c) = (r.read_bits(8)?, r.read_bits(8)?, r.read_bits(8)?);
     ensure!(a == 0x49 && b == 0x83 && c == 0x42, "invalid frame sync code");
     Ok(())
 }
 
-fn color_config(r: &mut BitReader, profile: u8) -> Result<ColorConfig> {
+fn color_config(r: &mut BitReader<'_>, profile: u8) -> Result<ColorConfig> {
     let bit_depth = if profile >= 2 { if r.read_flag()? { 12 } else { 10 } } else { 8 };
     let color_space = r.read_bits(3)? as u8;
     let mut c = ColorConfig { bit_depth, color_space, color_range: true, subsampling_x: true, subsampling_y: true };
@@ -179,13 +179,13 @@ fn color_config(r: &mut BitReader, profile: u8) -> Result<ColorConfig> {
     Ok(c)
 }
 
-fn frame_size(r: &mut BitReader, h: &mut FrameHeader) -> Result<()> {
+fn frame_size(r: &mut BitReader<'_>, h: &mut FrameHeader) -> Result<()> {
     h.width = r.read_bits(16)? + 1;
     h.height = r.read_bits(16)? + 1;
     Ok(())
 }
 
-fn render_size(r: &mut BitReader, h: &mut FrameHeader) -> Result<()> {
+fn render_size(r: &mut BitReader<'_>, h: &mut FrameHeader) -> Result<()> {
     if r.read_flag()? {
         h.render_width = r.read_bits(16)? + 1;
         h.render_height = r.read_bits(16)? + 1;
@@ -403,14 +403,14 @@ pub fn parse_uncompressed(data: &[u8], st: &mut HeaderState, refs: &[Option<RefI
 }
 
 /// diff_update_prob (6.3.3).
-fn diff_update_prob(bd: &mut BoolDecoder, prob: &mut u8) {
+fn diff_update_prob(bd: &mut BoolDecoder<'_>, prob: &mut u8) {
     if bd.read_bool(252) {
         let delta = decode_term_subexp(bd);
         *prob = inv_remap_prob(delta, *prob);
     }
 }
 
-fn decode_term_subexp(bd: &mut BoolDecoder) -> usize {
+fn decode_term_subexp(bd: &mut BoolDecoder<'_>) -> usize {
     if bd.read_literal(1) == 0 {
         return bd.read_literal(4) as usize;
     }
@@ -446,7 +446,7 @@ fn inv_remap_prob(delta: usize, prob: u8) -> u8 {
 }
 
 /// update_mv_prob (6.3.17).
-fn update_mv_prob(bd: &mut BoolDecoder, prob: &mut u8) {
+fn update_mv_prob(bd: &mut BoolDecoder<'_>, prob: &mut u8) {
     if bd.read_bool(252) {
         *prob = ((bd.read_literal(7) << 1) | 1) as u8;
     }

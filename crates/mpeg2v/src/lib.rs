@@ -763,7 +763,15 @@ impl SliceErrors {
 }
 
 /// Decode the slices of one picture into `frame`.
-fn decode_picture(p: &PicParams, data: &[u8], slices: &[(u8, std::ops::Range<usize>)], frame: &mut Frame, structure: u8, threads: bool, errors: &SliceErrors) {
+fn decode_picture(
+    p: &PicParams<'_>,
+    data: &[u8],
+    slices: &[(u8, std::ops::Range<usize>)],
+    frame: &mut Frame,
+    structure: u8,
+    threads: bool,
+    errors: &SliceErrors,
+) {
     let (w, cw) = (frame.w, frame.cw);
     let field = (structure != 3).then_some(p.parity);
     let lines = if structure == 3 { 16 } else { 32 };
