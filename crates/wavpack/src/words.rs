@@ -174,7 +174,7 @@ pub struct Mode {
 }
 
 impl Words {
-    fn zero_run(&mut self, bs: &mut Bits) -> Option<bool> {
+    fn zero_run(&mut self, bs: &mut Bits<'_>) -> Option<bool> {
         if self.zeros_acc != 0 {
             self.zeros_acc -= 1;
             return Some(self.zeros_acc != 0);
@@ -190,7 +190,7 @@ impl Words {
 
     /// The reference `get_words_lossless`: `out` holds `out.len()` words (interleaved when
     /// stereo). Returns how many were read before the stream ended or broke.
-    pub fn lossless(&mut self, bs: &mut Bits, mono: bool, out: &mut [i32]) -> usize {
+    pub fn lossless(&mut self, bs: &mut Bits<'_>, mono: bool, out: &mut [i32]) -> usize {
         let n = out.len();
         let mut i = 0;
         while i < n {
@@ -239,7 +239,7 @@ impl Words {
     }
 
     /// The reference `get_word` (hybrid streams, no correction file): one word of channel `ch`.
-    pub fn word(&mut self, bs: &mut Bits, ch: usize, mode: &Mode) -> i32 {
+    pub fn word(&mut self, bs: &mut Bits<'_>, ch: usize, mode: &Mode) -> i32 {
         if !bs.open {
             return WORD_EOF;
         }

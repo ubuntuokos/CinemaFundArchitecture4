@@ -1997,12 +1997,12 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         Ok(())
     }
 
-    fn read_te(r: &mut BitReader, range: u32) -> Result<u32> {
+    fn read_te(r: &mut BitReader<'_>, range: u32) -> Result<u32> {
         Ok(if range > 1 { r.read_ue()? } else { !r.read_bit()? as u32 })
     }
 
     /// Parse and reconstruct one macroblock_layer() with CAVLC.
-    pub fn decode_mb_cavlc(&mut self, r: &mut BitReader) -> Result<()> {
+    pub fn decode_mb_cavlc(&mut self, r: &mut BitReader<'_>) -> Result<()> {
         let mb_type = r.read_ue()?;
         let st = self.sh.slice_type;
         let info = match st {
@@ -2161,7 +2161,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         }
     }
 
-    fn residual_cavlc(&mut self, r: &mut BitReader, cbp: u8) -> Result<()> {
+    fn residual_cavlc(&mut self, r: &mut BitReader<'_>, cbp: u8) -> Result<()> {
         // residual_luma() for Y, then chroma DC / AC (4:2:0, 4:2:2) or Cb and Cr like luma (4:4:4)
         self.residual_luma_cavlc(r, cbp, 0)?;
         match self.chroma.0 {
@@ -2199,7 +2199,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
     }
 
     /// residual_luma() (7.3.5.3.1) of component `p` with CAVLC.
-    fn residual_luma_cavlc(&mut self, r: &mut BitReader, cbp: u8, p: usize) -> Result<()> {
+    fn residual_luma_cavlc(&mut self, r: &mut BitReader<'_>, cbp: u8, p: usize) -> Result<()> {
         let kind = self.mb().kind;
         let t8 = self.mb().transform_8x8;
         if kind == MbKind::I16x16 {
@@ -2245,7 +2245,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
     }
 
     /// Decode slice_data() with CAVLC. `r` is positioned after the slice header.
-    pub fn decode_cavlc(&mut self, r: &mut BitReader) -> Result<()> {
+    pub fn decode_cavlc(&mut self, r: &mut BitReader<'_>) -> Result<()> {
         if self.mbaff {
             return self.decode_cavlc_mbaff(r);
         }
@@ -2281,7 +2281,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
 
     /// slice_data() of an MBAFF frame with CAVLC (7.3.4): macroblocks are coded in pairs, and
     /// mb_field_decoding_flag precedes the first non-skipped macroblock of each pair.
-    fn decode_cavlc_mbaff(&mut self, r: &mut BitReader) -> Result<()> {
+    fn decode_cavlc_mbaff(&mut self, r: &mut BitReader<'_>) -> Result<()> {
         let total = self.mb_w * self.mb_h;
         let mut addr = 2 * self.sh.first_mb_in_slice as usize;
         let intra_slice = self.sh.slice_type.is_intra();

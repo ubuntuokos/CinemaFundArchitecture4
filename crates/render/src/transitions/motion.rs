@@ -41,7 +41,7 @@ impl<'a> Layer<'a> {
 }
 
 /// Composite the layers seen through screen pixel (x, y), nearest last.
-pub(crate) fn composite(layers: &[Layer], eye: V3, x: f32, y: f32) -> [f32; 4] {
+pub(crate) fn composite(layers: &[Layer<'_>], eye: V3, x: f32, y: f32) -> [f32; 4] {
     const MAX: usize = 8;
     let mut hits = [(0.0f32, [0.0f32; 4]); MAX];
     let mut nh = 0;
@@ -88,7 +88,7 @@ fn cross(a: V3, b: V3) -> V3 {
 fn scene<'a>(t: &Tx<'a>, focal: f32, blur: (f32, usize), build: impl Fn(f32) -> Vec<Layer<'a>> + Sync) -> Image {
     let (sh, n) = blur;
     let qs: Vec<f32> = if n <= 1 || sh <= 0.0 { vec![t.p] } else { (0..n).map(|i| (t.p + (i as f32 / (n - 1) as f32 - 0.5) * sh).clamp(0.0, 1.0)).collect() };
-    let scenes: Vec<Vec<Layer>> = qs.iter().map(|&q| build(q)).collect();
+    let scenes: Vec<Vec<Layer<'_>>> = qs.iter().map(|&q| build(q)).collect();
     let e = eye(t.wf, t.hf, focal);
     let inv = 1.0 / scenes.len() as f32;
     paint(t.w, t.h, |x, y| {
@@ -103,7 +103,7 @@ fn scene<'a>(t: &Tx<'a>, focal: f32, blur: (f32, usize), build: impl Fn(f32) -> 
     })
 }
 
-fn center3(t: &Tx) -> V3 {
+fn center3(t: &Tx<'_>) -> V3 {
     [t.wf / 2.0, t.hf / 2.0, 0.0]
 }
 
@@ -123,7 +123,7 @@ fn spring(x: f32, bounce: f32) -> f32 {
     f(x) + x * (1.0 - f(1.0))
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let c = center3(t);
     let (w, h) = (t.wf, t.hf);
     let (dx, dy) = t.dir();
@@ -625,7 +625,7 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
 
 /// Page Peel: the corner lifts and rolls over a cylinder of radius `r`; the peeled part lies
 /// face-down on top of the page (its back shows a washed-out mirror of A) and B shows beneath.
-fn page_peel(t: &Tx) -> Image {
+fn page_peel(t: &Tx<'_>) -> Image {
     let (w, h) = (t.wf, t.hf);
     let r = t.px("radius").max(1.0);
     let shadow = t.flag("shadow");

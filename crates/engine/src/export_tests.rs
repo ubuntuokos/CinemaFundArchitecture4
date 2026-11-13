@@ -300,6 +300,23 @@ fn files_in(dir: &Path) -> Vec<String> {
     v
 }
 
+/// CFA4-PROCODEC-002 WP0: `export.formats` lists every format with whether it can be exported here
+/// and, when it cannot, the concrete reason (`null` otherwise); settings the encoders cannot honour
+/// are refused with the reason before any export starts.
+#[test]
+fn export_formats_and_resolve_say_why() {
+    let mut s = demo();
+    let list = s.execute("export.formats", json!({})).unwrap();
+    let list = list.as_array().unwrap();
+    assert_eq!(list.len(), cfa4_export::Format::ALL.len());
+    for f in list {
+        let available = f["available"].as_bool().unwrap();
+        assert_eq!(f["reason"].is_null(), available, "{f}");
+    }
+    let e = s.execute("export.resolve", json!({"format": "hevc", "bitrateMode": "vbr2Pass"})).unwrap_err().to_string();
+    assert!(e.contains("two-pass"), "{e}");
+}
+
 /// Every built-in preset: a quarter second of the demo sequence (seven frames at 23.976) exported
 /// with `file.exportMedia {preset}`; ffprobe checks container, codec, profile, frame size, frame
 /// rate and audio format, and the data rate where the codec fixes it.
@@ -365,6 +382,30 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("jpeg2000"), Some("xyz12le")), "{name}");
                 assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), size, "{name}");
                 assert_eq!(v["r_frame_rate"], "24/1", "{name}: 23.976 becomes 24");
+            }
+            if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!(
+                    (a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()),
+                    (Some("pcm_s24le"), Some("48000"), Some(6)),
+                    "{name}"
+                );
+            }
+            continue;
+        }
+        if fmt == "imf" {
+            // a folder: the image and audio track files, CPL, PKL, asset map and volume index
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(Path::new(&out));
+            assert_eq!(files.len(), 6, "{name}: {files:?}");
+            assert!(files.iter().any(|f| f.starts_with("CPL_")) && files.iter().any(|f| f.starts_with("PKL_")), "{name}: {files:?}");
+            let pic = files.iter().find(|f| f.starts_with("VIDEO_")).unwrap();
+            let snd = files.iter().find(|f| f.starts_with("AUDIO_")).unwrap();
+            if let Some(j) = probe(&Path::new(&out).join(pic).to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!(v["codec_name"], "jpeg2000", "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (w, h), "{name}");
+                assert_eq!(v["r_frame_rate"], "24000/1001", "{name}: an App 2E rate stays");
             }
             if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
                 let a = stream(&j, "audio").unwrap();
@@ -575,6 +616,8 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                     "proRes" => "prores",
                     "h264" => "h264",
                     "mpeg2" => "mpeg2video",
+                    "v210" => "v210",
+                    "uyvy" => "rawvideo",
                     _ => "dnxhd",
                 };
                 assert_eq!(v["codec_name"], codec, "{name}");
@@ -883,15 +926,15 @@ fn crf_param_picks_constant_quality() {
 
 #[test]
 fn exr_compression_param_is_parsed_and_defaults_to_none() {
-    use cfa4_export::ExrCompression::{None as Plain, Rle, Zip, Zips};
+    use cfa4_export::ExrCompression::{None as Plain, Piz, Rle, Zip, Zips};
     let s = demo();
     let setting = |p: Value| crate::export_tools::settings_from_params(&s, &p, "file.exportMedia").map(|(_, st)| st.exr_compression);
     assert_eq!(setting(json!({"path": "x.exr", "format": "exr"})).unwrap(), Plain);
-    for (name, want) in [("none", Plain), ("rle", Rle), ("zips", Zips), ("zip", Zip)] {
+    for (name, want) in [("none", Plain), ("rle", Rle), ("zips", Zips), ("zip", Zip), ("piz", Piz)] {
         assert_eq!(setting(json!({"path": "x.exr", "format": "exr", "exrCompression": name})).unwrap(), want);
     }
-    let e = setting(json!({"path": "x.exr", "format": "exr", "exrCompression": "piz"})).unwrap_err().to_string();
-    assert!(e.contains("none | rle | zips | zip"), "{e}");
+    let e = setting(json!({"path": "x.exr", "format": "exr", "exrCompression": "dwaa"})).unwrap_err().to_string();
+    assert!(e.contains("none | rle | zips | zip | piz"), "{e}");
     let old: cfa4_export::ExportSettings = serde_json::from_value(json!({"format": "exr"})).unwrap();
     assert_eq!(old.exr_compression, Plain);
 }
@@ -1224,6 +1267,21 @@ fn dcp_language_param_and_isdcf_name() {
     assert!(s.execute("export.resolve", json!({"format": "h264"})).unwrap()["dcpName"].is_null());
 }
 
+/// #1011: the IMF params, the package folder path (no extension) and the resolved summary.
+#[test]
+fn imf_params() {
+    let s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "/tmp/pkg", "format": "imf", "imfLossless": true, "imfContentKind": "Episode", "dcpLanguage": "hu-HU"})).unwrap();
+    assert_eq!((st.format, st.imf_lossless, st.imf_content_kind.as_str(), st.dcp_language.as_str()), (cfa4_export::Format::Imf, true, "episode", "hu-HU"));
+    let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfContentKind": "policy"})).unwrap_err().to_string();
+    assert!(e.contains("imfContentKind"), "{e}");
+    let mut s = s;
+    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0})).unwrap();
+    assert_eq!(r["settings"]["imfContentKind"], "");
+    assert!(r["summary"]["video"].as_str().unwrap().contains("JPEG 2000 IMF lossy, 10-bit R'G'B' 4:4:4"), "{r}");
+}
+
 /// A two-channel DLC bed (L, R) of silence.
 fn bed_frame(rate: cfa4_iab::FrameRate) -> cfa4_iab::Frame {
     use cfa4_iab::*;
@@ -1266,4 +1324,53 @@ fn dash_manifest_is_a_parameter() {
     assert_eq!(r["settings"]["dashManifest"], true);
     let r = s.execute("export.resolve", json!({"format":"hls", "settings":{"dashManifest":true}})).unwrap();
     assert_eq!(r["settings"]["dashManifest"], true);
+}
+
+/// #1004: MXF OP1a with `mxfAncCaptions` carries the caption track as ST 436-1 ANC data (one CDP
+/// per frame on VANC line 9): our reader gives the cues back, ffprobe sees the data stream next
+/// to the picture, and other rates, OP-Atom and D-10 are refused.
+#[test]
+fn mxf_op1a_writes_captions_as_anc_data() {
+    let dir = Scratch::new("mxf-anc");
+    let vtt = dir.path("in.vtt");
+    std::fs::write(&vtt, "WEBVTT\n\n00:00:00.500 --> 00:00:01.500\nHello ANC\n\n00:00:02.000 --> 00:00:02.800\nSecond line\n").unwrap();
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name":"ANC", "fps":29.97, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    s.execute("captions.import", json!({"path": vtt})).unwrap();
+    let out = dir.path("anc.mxf");
+    let p = json!({"format":"mxf-op1a", "path": out, "mxfAncCaptions": true, "range":"custom", "startSeconds":0.0, "endSeconds":3.0, "wait":true});
+    s.execute("file.exportMedia", p.clone()).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let anc = cfa4_mxf::read_anc(&bytes[..]).unwrap();
+    assert!(anc.warnings.is_empty(), "{:?}", anc.warnings);
+    assert_eq!(anc.edit_rate, cfa4_mxf::Rational::new(30000, 1001));
+    assert_eq!(anc.frames.len(), 90);
+    assert!(anc.frames.iter().all(|f| f.len() == 1 && f[0].is_cdp() && f[0].line == 9));
+    let rate = cfa4_time::FrameRate::FPS_29_97;
+    let doc = cfa4_captions::mcc::decode_cdps(anc.cdps().into_iter().map(|(f, p)| (f as i64, p)), rate);
+    let got: Vec<(i64, i64, &str)> = doc.cues.iter().map(|c| (rate.frame_at(c.start), rate.frame_at(c.end), c.text.as_str())).collect();
+    assert_eq!(got, vec![(15, 45, "Hello ANC"), (60, 84, "Second line")]);
+    // the picture still opens, and ffprobe (when installed) lists the ANC data stream
+    let m = cfa4_mxf::open(&bytes[..]).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    if let Some(j) = probe(&out) {
+        let streams = j["streams"].as_array().unwrap();
+        assert!(streams.iter().any(|s| s["codec_type"] == "video"), "{j}");
+        assert!(streams.iter().any(|s| s["codec_type"] == "data"), "{j}");
+    }
+    // without the option: no ANC track
+    let mut q = p.clone();
+    q["mxfAncCaptions"] = json!(false);
+    s.execute("file.exportMedia", q).unwrap();
+    assert!(!cfa4_mxf::has_anc(&std::fs::read(&out).unwrap()));
+    for (key, value) in [("format", json!("mxf-opatom")), ("mxfVideoCodec", json!("d10"))] {
+        let mut q = p.clone();
+        q[key] = value;
+        assert!(s.execute("file.exportMedia", q).is_err(), "{key}");
+    }
+    let mut s25 = Session::default();
+    s25.execute("file.newSequence", json!({"name":"ANC 25", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    s25.execute("captions.import", json!({"path": vtt})).unwrap();
+    let err = s25.execute("file.exportMedia", p).unwrap_err().to_string();
+    assert!(err.contains("29.97"), "{err}");
 }

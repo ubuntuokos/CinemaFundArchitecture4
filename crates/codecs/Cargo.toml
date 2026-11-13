@@ -9,7 +9,13 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+# Early AV2 decoding through the external `cfa4-av2-decode` helper (ADR 0010, AV2-LAB; also
+# needs CFA4_AV2_DECODER). Off by default until the router registration after G1 (plan X/7).
+av2-external = ["dep:cfa4-av2"]
+
 [dependencies]
+cfa4-av2 = { workspace = true, optional = true }
 cfa4-time = { workspace = true }
 cfa4-color = { workspace = true }
 cfa4-frame = { workspace = true }
@@ -25,6 +31,7 @@ cfa4-iab = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-mpeg2v = { workspace = true }
 cfa4-ac3 = { workspace = true }
+cfa4-tta = { workspace = true }
 cfa4-dts = { workspace = true }
 cfa4-truehd = { workspace = true }
 cfa4-mpa = { workspace = true }
@@ -45,6 +52,7 @@ cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
 cfa4-hap = { workspace = true }
+cfa4-canopus = { workspace = true }
 cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
 cfa4-ffv1 = { workspace = true }
@@ -62,6 +70,11 @@ symphonia = { version = "0.6.1", default-features = false, features = ["aac", "m
 
 [dev-dependencies]
 cfa4-ac3 = { workspace = true, features = ["test-util"] }
+cfa4-mxf = { workspace = true, features = ["test-util"] }
 cfa4-auro = { workspace = true }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }
+
+[[test]]
+name = "av2_external"
+required-features = ["av2-external"]

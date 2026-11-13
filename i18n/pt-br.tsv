@@ -3636,6 +3636,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 de 24 bits a 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 de 24 bits a 48 kHz
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Pasta IMF SMPTE: JPEG 2000 1920×1080, PCM 5.1 de 24 bits a 48 kHz
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Pasta IMF SMPTE: JPEG 2000 3840×2160, PCM 5.1 de 24 bits a 48 kHz
+	Episode	Episódio
+	Event highlights	Destaques do evento
+	Event	Evento
+	Lossless (reversible JPEG 2000)	Sem perdas (JPEG 2000 reversível)
+	Package language	Idioma do pacote
 	Show Duplicate Frame Markers	Mostrar marcadores de quadros duplicados
 	Work Area Bar	Barra da área de trabalho
 	Set Work Area Bar In Point	Definir ponto de entrada da barra da área de trabalho
@@ -3918,6 +3928,9 @@
 	1 B picture between anchors	1 imagem B entre âncoras
 	10-bit RGB	RGB de 10 bits
 	12-bit X'Y'Z'	X'Y'Z' de 12 bits
+	10-bit R'G'B' 4:4:4	R'G'B' 4:4:4 de 10 bits
+	JPEG 2000 IMF lossy	JPEG 2000 IMF com perdas
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reversível
 	16-bit half float	ponto flutuante de meia precisão de 16 bits
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bits para HDR)
 	BDAV Transport Stream	fluxo de transporte BDAV
@@ -4512,3 +4525,47 @@
 	accept	aceitável
 	the engine did not start the check	o mecanismo não iniciou a verificação
 	the engine sent no report	o mecanismo não enviou relatório
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a sem compressão 10 bits 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 de 10 bits sem compressão no layout v210 (SMPTE ST 384), PCM de 24 bits a 48 kHz, timecode inicial
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Gravar as legendas como dados ANC (CEA-608/708, 29,97 fps)
+	Load KDM…	Carregar KDM…
+	Forget DCP Keys	Esquecer chaves DCP
+	Load KDM	Carregar KDM
+	KDM file	Arquivo KDM
+	Private key (PEM)	Chave privada (PEM)
+	{title}: {count} keys loaded	{title}: {count} chaves carregadas
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	As chaves ficam apenas na memória, até Esquecer chaves DCP ou o fim da sessão.
+	DCP keys forgotten	Chaves DCP esquecidas
+	Choose the KDM file and the private key.	Escolha o arquivo KDM e a chave privada.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sincronização de timecode
+	TimecodeSync	Sincronização de timecode
+	Chase	Seguir
+	Follow external timecode during playback	Seguir o timecode externo durante a reprodução
+	Lock after	Travar após
+	Keep playing without signal for	Continuar sem sinal por
+	External frame rate	Taxa de quadros externa
+	Offset (added to the external timecode)	Deslocamento (somado ao timecode externo)
+	LTC	LTC
+	LTC input device	Dispositivo de entrada LTC
+	LTC input channel	Canal de entrada LTC
+	Send LTC during playback	Enviar LTC durante a reprodução
+	LTC output device	Dispositivo de saída LTC
+	LTC output channel	Canal de saída LTC
+	LTC level	Nível do LTC
+	dBFS	dBFS
+	MIDI Timecode	Timecode MIDI
+	MTC input port (empty = CFA4 port)	Porta de entrada MTC (vazio = porta do CFA4)
+	Send MIDI Timecode during playback	Enviar timecode MIDI durante a reprodução
+	MTC output port (empty = CFA4 port)	Porta de saída MTC (vazio = porta do CFA4)
+	Send timecode ahead of the picture by	Enviar o timecode antes da imagem em
+	LTC (audio input)	LTC (entrada de áudio)
+	MIDI Timecode (MIDI input)	Timecode MIDI (entrada MIDI)
+	Same as the sequence	Igual à sequência
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status da sincronização de timecode
+	Chase External Timecode	Seguir timecode externo
+	Send LTC	Enviar LTC
+	Send MIDI Timecode	Enviar timecode MIDI

@@ -22,21 +22,21 @@ Design principles:
 ## 1. Layers
 
 ```text
- L6  apps/cfa4 · apps/cfa4-cli
- L5  ui-egui · automation · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional)
+ L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host
+ L5  ui-egui · automation · tcsync-io · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
  L3  render · gpu · export · smart-edit · qc · golden (test-only)
      DCP validation: dcp-validate · dcp-inspect
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
  L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
-     codecs/containers: isobmff · matroska · mxf · cfb · mpegts · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
+     codecs/containers: isobmff · matroska · mxf · cfb · mpegts · st2110 · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
      documents: dcp
 ```
 
 Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates are named
-`cfa4-<dir>` (`crates/gstreamer` is `cfa4-gstreamer`). The apps are `cfa4`
-and `cfa4-cli`.
+`cfa4-<dir>` (`crates/gstreamer` is `cfa4-gstreamer`). The apps are `cfa4`,
+`cfa4-cli` and `cfa4-studio-host`.
 
 | Crate | Layer | Purpose |
 |---|---|---|
@@ -46,10 +46,11 @@ and `cfa4-cli`.
 | `bitstream` | L0 | bit reader/writer, Exp-Golomb, emulation prevention |
 | `isobmff` | L0 | MP4/MOV demux and mux |
 | `matroska` | L0 | MKV/WebM demux |
-| `mxf` | L0 | MXF demux and mux (SMPTE ST 377-1): OP1a / OP-Atom, index tables, AVC / VC-3 / ProRes / MPEG-2 identification, PCM / AES3 sound, timecode; writer for OP1a / OP-Atom with VC-3, ProRes, AVC and PCM ([README](../crates/mxf/README.md)) |
-| `dcp` | L0 | Digital Cinema Package documents: SMPTE and Interop asset map, volume index, packing list and composition playlist read into a serde model, problems as positioned issues (DCP-02, [README](../crates/dcp/README.md)) |
+| `mxf` | L0 | MXF demux and mux (SMPTE ST 377-1): OP1a / OP-Atom, index tables, AVC / VC-3 / ProRes / MPEG-2 identification, PCM / AES3 sound, timecode; ST 429-6 encrypted track files decrypted with keys from an in-memory key ring; writer for OP1a / OP-Atom with VC-3, ProRes, AVC and PCM ([README](../crates/mxf/README.md)) |
+| `dcp` | L0 | Digital Cinema Package documents: SMPTE and Interop asset map, volume index, packing list and composition playlist read into a serde model, problems as positioned issues (DCP-02); Key Delivery Messages (ST 430-1) opened with the recipient's RSA key ([README](../crates/dcp/README.md)) |
 | `cfb` | L0 | Compound File Binary ([MS-CFB] structured storage) reader and writer, the container of AAF ([README](../crates/cfb/README.md)) |
 | `mpegts` | L0 | MPEG-2 Systems demux and mux (H.222.0): transport streams (188 / 192-byte BDAV / 204), program streams (MPEG-2 / MPEG-1, VOB, MOD), PSI, PES, PTS / PCR, access-unit index built on open ([README](../crates/mpegts/README.md)) |
+| `st2110` | L0 | SMPTE ST 2110 essence formats for the live studio: RTP packets, SDP (`ts-refclk`, `mediaclk`, `fmtp`), ST 2110-20 video packing and reassembly (GPM / BPM, interlace, 4:2:0, key), the -21 / -10:2022 SDP parameters; no sockets or clocks yet ([README](../crates/st2110/README.md)) |
 | `ogg` | L0 | Ogg demux (RFC 3533), Ogg Opus timing (RFC 7845 granules, pre-skip, end trimming), Vorbis headers |
 | `h264`, `h264enc` | L0 | H.264 decoder; H.264 encoder |
 | `hevc` | L0 | H.265 Main/Main 10 decoder |
@@ -61,6 +62,7 @@ and `cfa4-cli`.
 | `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
 | `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
 | `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
+| `canopus` | L0 | Canopus HQ, HQA and HQX intra video decoder (8-bit 4:2:2 with alpha, 12-bit 4:2:2 / 4:4:4 with alpha), ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/canopus/README.md)) |
 | `apv` | L0 | Advanced Professional Video (IETF RFC 9924) decoder and encoder ([README](../crates/apv/README.md)) |
 | `jxl` | L0 | JPEG XL decoder (ISO/IEC 18181): safe port of jxl-oxide, VarDCT and Modular, all restoration filters, patches, splines, noise; first frame of a file to interleaved floats; animation, ICC colour and encoder: #138–#141 ([README](../crates/jxl/README.md)) |
 | `dng` | L0 | DNG / CinemaDNG camera RAW decoder: TIFF container, uncompressed and lossless JPEG raw data, DNG processing to linear Rec. 709 ([README](../crates/dng/README.md)) |
@@ -78,6 +80,7 @@ and `cfa4-cli`.
 | `speex` | L0 | Speex decoder (narrowband, wideband, ultra-wideband, VBR / DTX, in-band stereo), ported from the BSD-3-Clause libspeex 1.2.1 ([README](../crates/speex/README.md)) |
 | `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
 | `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
+| `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
 | `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |
@@ -108,10 +111,13 @@ and `cfa4-cli`.
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
 | `gstreamer` | L5 | `cfa4-gstreamer`: optional GStreamer backend (feature `gstreamer`): installation probe with plugin licences, media discovery; supplements the Rust engine ([ADR 0002](adr/ADR-0002-gstreamer-backend.md), [README](../crates/gstreamer/README.md)) |
 | `ffmpeg` | L5 | `cfa4-ffmpeg`: FFmpeg (≥ 9.0.2, GPL-3 build) supplementary backend (feature `ffmpeg`): probe with licence and restricted-codec check, native-bit-depth decoding of what the engine cannot read yet, first fallback before GStreamer, `ffmpeg` route ([ADR 0005](adr/ADR-0005-media-backends.md), [README](../crates/ffmpeg/README.md)) |
+| `obs` | L5 | `cfa4-obs`: live studio core (CFA4-LIVE-STUDIO-001 S0): the `StudioBackend` trait, the libobs 33.0.1 binding (loaded at run time; `unsafe` only in `libobs::sys`, ADR 0001 addendum 2026-11-07), the pure-Rust software backend (the fallback), the shared-memory frame ring and the supervisor of `cfa4-studio-host` ([plan](plans/CFA4-LIVE-STUDIO-001.md), [README](../crates/obs/README.md)) |
+| `tcsync-io` | L5 | `cfa4-tcsync-io`: external timecode sync devices: LTC in and out through cpal (a chosen channel of a chosen device), MIDI Timecode in and out through the ALSA sequencer (client `CFA4`, ports `Timecode In` / `Timecode Out`), and the `SyncManager` that opens what the settings ask for, feeds the chase and returns locate / stop for the player; used by `cfa4-cli serve` ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)) |
 | `automation` | L5 | MCP server (`rmcp`, stdio), headless or bridged to the running app |
 | `platform` | L5 | OS media FFI only: hardware video decoding (NVDEC and VA-API H.264 / HEVC, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and NVIDIA NVENC H.264 (opt-in) and H.265 (CFA4's only H.265 encoder; the format exists only where it does) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
 | `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, TCP control server |
 | `cfa4-cli` | L6 | headless CLI: `exec`, `run`, `inspect`, `describe`, `commands`, `import`, `export`, `render`, `probe`, `mcp`; `--bridge` targets the running app |
+| `cfa4-studio-host` | L6 | the live studio's own process: runs libobs (or the software backend), writes program frames into the frame ring; started, watched and restarted by the engine (`live.studio.host.*`), so a libobs crash never ends the editor (plan D2) |
 
 ### What `cargo xtask layers` enforces
 
@@ -127,9 +133,9 @@ are exempt):
 | L0 codecs stay standalone | L0 crates other than `time`, `geom`, `color`, `bitstream`, `testkit` may depend on no workspace crate except `cfa4-bitstream`. External crates such as `thiserror` and `rayon` are allowed. |
 | No UI/OS crates below L5 | `egui`, `eframe`, `egui-wgpu`, `winit`, `rfd`, `cpal`, `muda` are allowed only in L5 and L6. |
 
-`cargo xtask wasm` (opt-in, not a CI or release gate) runs `cargo check --target
-wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only: the browser app
-`apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
+`cargo xtask wasm` (opt-in legacy, not a CI or release gate; nothing needs to build for wasm32) runs
+`cargo check --target wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only:
+the browser app `apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
 (`deny`, allowed only on its FFI modules; [ADR 0001](adr/0001-platform-ffi.md)).
 
 ## 2. Time base
@@ -713,8 +719,9 @@ file.exportMedia {path, preset?, settings?, format?, range?, …}     export.qui
 | `dnxhr` | `cfa4-dnx` (LB / SQ / HQ / HQX) | MOV (`AVdh`) |
 | `mjpeg` | built in | MOV |
 | `aac` | `cfa4-aac` (AAC-LC, the audio settings' bitrate) | audio only: MPEG-4 audio `.m4a` (`isobmff`, priming in an edit list), or raw ADTS when the path ends in `.aac` |
-| `mxf-op1a` | DNxHR (default), ProRes, H.264 (Annex B, long GOP) or MPEG-2 (`cfa4-mpeg2v` long GOP, HD only: MP@HL / MP@H-14 / 422P@HL; the `mpeg2Chroma`, `mpeg2BFrames`, `mpeg2Quantizer` and keyframe distance settings apply)) or D-10 / IMX (`d10`: intra-only 4:2:2P@ML at 30 / 40 / 50 Mbit/s, 720x576 at 25 fps or 720x486 / 480 at 29.97, SDTI-CP content packages with one 8-channel AES3 element; OP1a only) or XDCAM HD422 (`xdcamHd422`: MPEG-2 4:2:2P@HL long GOP at 1920x1080 / 1280x720 in the SMPTE RDD 9 layout: system items, one AES3 element per channel, body partitions every 5 s; up to 8 channels of 16 / 24-bit 48 kHz; OP1a only), `mxfVideoCodec`; PCM 16/24/32-bit integer | MXF OP1a (`cfa4-mxf` writer: frame-wrapped, index with temporal offsets, start timecode) |
+| `mxf-op1a` | DNxHR (default), ProRes, H.264 (Annex B, long GOP) or MPEG-2 (`cfa4-mpeg2v` long GOP, HD only: MP@HL / MP@H-14 / 422P@HL; the `mpeg2Chroma`, `mpeg2BFrames`, `mpeg2Quantizer` and keyframe distance settings apply)) or D-10 / IMX (`d10`: intra-only 4:2:2P@ML at 30 / 40 / 50 Mbit/s, 720x576 at 25 fps or 720x486 / 480 at 29.97, SDTI-CP content packages with one 8-channel AES3 element; OP1a only) or XDCAM HD422 (`xdcamHd422`: MPEG-2 4:2:2P@HL long GOP at 1920x1080 / 1280x720 in the SMPTE RDD 9 layout: system items, one AES3 element per channel, body partitions every 5 s; up to 8 channels of 16 / 24-bit 48 kHz; OP1a only) or uncompressed Y'CbCr 4:2:2 (`v210`: 10-bit, `uyvy`: 8-bit; SMPTE ST 384, Rec. 709 narrow range, OP1a and OP-Atom), `mxfVideoCodec`; PCM 16/24/32-bit integer | MXF OP1a (`cfa4-mxf` writer: frame-wrapped, index with temporal offsets, start timecode) |
 | `mxf-opatom` | as `mxf-op1a` | Avid-style MXF OP-Atom: clip-wrapped picture at `path`, one mono PCM file per channel (`<stem>_A1.mxf` …, `Report::extra_files`) |
+| `imf` | `cfa4-j2k` (the 2K / 4K / 8K IMF profile of the frame size, lossy or `imfLossless` reversible, 10-bit full-range R'G'B' 4:4:4) + 24-bit 48 kHz PCM | an IMF App 2E package folder at `path` (`imf_out.rs`, SMPTE ST 2067-21): image and audio track files (`cfa4-mxf` `Pattern::Imf`), CPL with RegXML essence descriptors, PKL, ASSETMAP, VOLINDEX; App 2E rates only (the nearest is chosen), at 29.97 / 59.94 the composition plays a multiple of 5 frames |
 | `mpeg2` | `cfa4-mpeg2v` (Main Profile 4:2:0, I/P pictures, average bitrate, keyframe distance = GOP) + 16- or 24-bit DVD LPCM or `cfa4-aac`, or AC-3 (`audioCodec: "ac3"`, `cfa4-ac3`), or MP2 (`audioCodec: "mp2"`, `cfa4-mpa` Layer II encoder, mono / stereo at 32 / 44.1 / 48 kHz and the MPEG-2 lower rates) | `cfa4-mpegts` muxer, `mpeg2Container` or the path's extension: program stream `.mpg` (LPCM, AC-3 or MP2), transport stream `.ts` / BDAV `.m2ts` (AAC in ADTS, AC-3 or MP2), elementary stream `.m2v` (no audio) |
 | `png`, `tiff`, `bmp`, `jpg` | `image` | numbered stills `<name>000.<ext>`, `<name>001.<ext>` … |
 | `tga`, `dpx`, `exr` | built in (`raster.rs`: uncompressed Targa 24/32-bit; DPX 10-bit RGB, SMPTE ST 268; OpenEXR half-float linear RGB(A), uncompressed scan lines) | numbered stills, as above |

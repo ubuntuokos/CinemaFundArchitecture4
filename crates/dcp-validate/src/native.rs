@@ -3,15 +3,37 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::path::PathBuf;
 
-use cfa4_dcp::{AssetMap, Document, Issue, IssueKind, Standard, Uuid};
+use cfa4_dcp::{AssetMap, Composition, Document, Issue, IssueKind, PackingList, Standard, Uuid};
 
+use crate::integrity::{self, Files};
 use crate::package::{self, Resolved};
 use crate::report::{self, BackendInfo, Counts, DocumentIds, ProfileInfo, SCHEMA, ValidationReport, Verdict};
 use crate::rules::{self, *};
 use crate::{DcpValidator, Finding, Location, Status, ValidationControl, ValidationError, ValidationRequest, ValidatorCapabilities};
 
 /// Rules the native backend checks today. The others of a profile are reported `Unchecked`.
-const IMPLEMENTED: &[&str] = &[AM_PRESENT, AM_DOCUMENT, AM_PATH_SAFE, AM_FILE_EXISTS, PKL_DOCUMENT, CPL_DOCUMENT, STD_CONSISTENT];
+const IMPLEMENTED: &[&str] = &[
+    AM_PRESENT,
+    AM_DOCUMENT,
+    AM_UNIQUE_IDS,
+    AM_PATH_SAFE,
+    AM_FILE_EXISTS,
+    AM_HAS_PKL,
+    PKL_DOCUMENT,
+    PKL_IN_ASSETMAP,
+    PKL_SIZE,
+    PKL_HASH,
+    CPL_DOCUMENT,
+    CPL_IN_PKL,
+    CPL_ASSETS_IN_PKL,
+    CPL_DURATIONS,
+    CPL_REEL_SYNC,
+    STD_CONSISTENT,
+    MXF_TRACK_FILES,
+    J2K_CODESTREAM,
+    PIC_FORMAT,
+    MARK_MARKERS,
+];
 
 /// The native validator. Stateless; one value can validate many packages from many threads.
 #[derive(Clone, Copy, Debug, Default)]
@@ -78,6 +100,9 @@ impl DcpValidator for NativeValidator {
     }
 }
 
+/// The packing lists and compositions read, each with its chunk path.
+type Read = (Vec<(String, PackingList)>, Vec<(String, Composition)>);
+
 struct Run<'a> {
     root: PathBuf,
     request: &'a ValidationRequest,
@@ -121,7 +146,27 @@ impl Run<'_> {
     }
 
     fn package(&mut self) {
-        let downstream = [AM_DOCUMENT, AM_PATH_SAFE, AM_FILE_EXISTS, PKL_DOCUMENT, CPL_DOCUMENT, STD_CONSISTENT];
+        let downstream = [
+            AM_DOCUMENT,
+            AM_UNIQUE_IDS,
+            AM_PATH_SAFE,
+            AM_FILE_EXISTS,
+            AM_HAS_PKL,
+            PKL_DOCUMENT,
+            PKL_IN_ASSETMAP,
+            PKL_SIZE,
+            PKL_HASH,
+            CPL_DOCUMENT,
+            CPL_IN_PKL,
+            CPL_ASSETS_IN_PKL,
+            CPL_DURATIONS,
+            CPL_REEL_SYNC,
+            STD_CONSISTENT,
+            MXF_TRACK_FILES,
+            J2K_CODESTREAM,
+            PIC_FORMAT,
+            MARK_MARKERS,
+        ];
         self.control.report("discover", 0, 1);
         let maps = package::asset_maps(&self.root);
         let Some(&name) = maps.first() else {
@@ -175,6 +220,10 @@ impl Run<'_> {
         }
         self.passed.insert(AM_DOCUMENT, format!("{} assets", am.assets.len()));
         self.done.insert(AM_DOCUMENT);
+        let r = integrity::unique_ids(name, &am);
+        self.rule(AM_UNIQUE_IDS, r);
+        let r = integrity::has_pkl(name, &am);
+        self.rule(AM_HAS_PKL, r);
         if self.control.is_cancelled() {
             return;
         }
@@ -182,11 +231,108 @@ impl Run<'_> {
         if self.control.is_cancelled() {
             return;
         }
-        self.documents(&am, &files);
+        let Some((pkls, cpls)) = self.documents(&am, &files) else { return };
+        self.integrity(&am, &files, &pkls, &cpls);
+        if self.control.is_cancelled() {
+            return;
+        }
+        self.media(&files, &cpls);
+    }
+
+    /// DCP-06: the track files and picture codestreams. Only a profile with one of its rules reads
+    /// the track files, and only one with `DCP.J2K.001` reads every frame.
+    fn media(&mut self, files: &Files, cpls: &[(String, Composition)]) {
+        let profile = &self.request.profile;
+        if ![MXF_TRACK_FILES, J2K_CODESTREAM, PIC_FORMAT].iter().any(|r| profile.contains(r)) {
+            return;
+        }
+        let Some(m) = crate::media::check(cpls, files, profile.contains(J2K_CODESTREAM), self.control) else { return };
+        if cpls.is_empty() {
+            for r in [MXF_TRACK_FILES, J2K_CODESTREAM, PIC_FORMAT] {
+                self.findings.push(Finding::new(r, Status::Unchecked, "no composition playlist was read"));
+            }
+        }
+        self.rule(MXF_TRACK_FILES, m.mxf);
+        if let Some(j) = m.j2k {
+            self.rule(J2K_CODESTREAM, j);
+        }
+        self.rule(PIC_FORMAT, m.pic);
+    }
+
+    /// Records a pure rule's result: its findings, and its pass message when it has none.
+    fn rule(&mut self, rule: &'static str, (findings, passed): (Vec<Finding>, String)) {
+        self.findings.extend(findings);
+        self.passed.insert(rule, passed);
+        self.done.insert(rule);
+    }
+
+    /// DCP-05: the rules over the documents read.
+    fn integrity(&mut self, am: &AssetMap, files: &Files, pkls: &[(String, PackingList)], cpls: &[(String, Composition)]) {
+        let pkl_note = self.findings.iter().any(|f| f.rule == PKL_DOCUMENT && f.status == Status::Unchecked);
+        self.rule(PKL_IN_ASSETMAP, integrity::pkl_in_assetmap(am, pkls));
+        self.rule(PKL_SIZE, integrity::sizes(pkls, files));
+        if self.request.profile.contains(PKL_HASH) {
+            // hashing reads every byte, so only a profile that asks for it pays for it
+            let Some(r) = integrity::hashes(pkls, files, self.control) else { return };
+            self.rule(PKL_HASH, r);
+        }
+        if pkl_note {
+            // packing lists that were not read leave the rules over them incomplete
+            for r in [PKL_IN_ASSETMAP, PKL_SIZE, PKL_HASH, CPL_IN_PKL, CPL_ASSETS_IN_PKL] {
+                self.findings.push(Finding::new(r, Status::Unchecked, "not every packing list was read (see DCP.PKL.001)"));
+            }
+        }
+        if self.control.is_cancelled() {
+            return;
+        }
+        // nothing read means nothing checked, not a pass
+        let empty = |rules: &[&str], what: &str, out: &mut Vec<Finding>| {
+            for r in rules {
+                out.push(Finding::new(r, Status::Unchecked, format!("no {what} was read")));
+            }
+        };
+        if pkls.is_empty() {
+            empty(&[PKL_IN_ASSETMAP, PKL_SIZE, PKL_HASH], "packing list", &mut self.findings);
+        }
+        if cpls.is_empty() {
+            empty(&[CPL_ASSETS_IN_PKL, CPL_DURATIONS, CPL_REEL_SYNC, MARK_MARKERS], "composition playlist", &mut self.findings);
+        }
+        let outside = self.cpls_outside_pkls(am, files, pkls);
+        self.rule(CPL_IN_PKL, integrity::cpl_in_pkl(cpls.len(), &outside));
+        self.rule(CPL_ASSETS_IN_PKL, integrity::cpl_assets_in_pkl(cpls, pkls, am));
+        self.rule(CPL_DURATIONS, integrity::durations(cpls));
+        self.rule(CPL_REEL_SYNC, integrity::reel_sync(cpls));
+        self.rule(MARK_MARKERS, integrity::markers(cpls));
+    }
+
+    /// Compositions among the asset map's XML files that no packing list names.
+    fn cpls_outside_pkls(&mut self, am: &AssetMap, files: &Files, pkls: &[(String, PackingList)]) -> Vec<(String, Option<Uuid>)> {
+        let named: BTreeSet<Uuid> = pkls.iter().flat_map(|(_, p)| p.assets.iter().filter_map(|a| a.id)).collect();
+        let mut out = Vec::new();
+        let mut read = 0usize;
+        for a in am.assets.iter().filter(|a| !a.packing_list) {
+            let Some(id) = a.id else { continue };
+            if named.contains(&id) {
+                continue;
+            }
+            let Some((path, file)) = files.get(&id) else { continue };
+            if !path.to_ascii_lowercase().ends_with(".xml") {
+                continue;
+            }
+            read += 1;
+            if read > self.request.limits.max_documents {
+                self.findings.push(Finding::new(CPL_IN_PKL, Status::Unchecked, "too many unlisted XML files; the rest were not opened"));
+                break;
+            }
+            if let Ok(Document::Composition(c)) = cfa4_dcp::read(file, self.request.limits.document) {
+                out.push((path.clone(), c.id.or(Some(id))));
+            }
+        }
+        out
     }
 
     /// Resolves every chunk; returns asset id → (path as written, file).
-    fn chunks(&mut self, name: &str, am: &AssetMap) -> BTreeMap<Uuid, (String, PathBuf)> {
+    fn chunks(&mut self, name: &str, am: &AssetMap) -> Files {
         let mut files = BTreeMap::new();
         let total = am.assets.len().min(self.request.limits.max_assets);
         let mut count = 0usize;
@@ -222,6 +368,14 @@ impl Run<'_> {
                 match package::resolve(&self.root, path) {
                     Resolved::File(f) => {
                         self.assets_checked += 1;
+                        // the optional chunk Length is the file's length (a single-chunk asset)
+                        if let (Some(len), Ok(m)) = (c.length, std::fs::metadata(&f))
+                            && c.offset.unwrap_or(0) == 0
+                            && a.chunks.len() == 1
+                            && m.len() != len
+                        {
+                            self.fail(AM_FILE_EXISTS, at.clone(), format!("'{path}' is {} bytes; the chunk Length is {len}", m.len()));
+                        }
                         if let Some(id) = a.id {
                             files.entry(id).or_insert((path.clone(), f));
                         }
@@ -244,7 +398,10 @@ impl Run<'_> {
         files
     }
 
-    fn documents(&mut self, am: &AssetMap, files: &BTreeMap<Uuid, (String, PathBuf)>) {
+    /// Reads the packing lists and compositions; `None` when cancelled.
+    fn documents(&mut self, am: &AssetMap, files: &Files) -> Option<Read> {
+        let mut pkl_docs: Vec<(String, PackingList)> = Vec::new();
+        let mut cpl_docs: Vec<(String, Composition)> = Vec::new();
         let limits = self.request.limits;
         let mut read = 0usize;
         let mut pkls_read = 0usize;
@@ -258,7 +415,7 @@ impl Run<'_> {
         let mut over_limit = false;
         for id in &pkl_ids {
             if self.control.is_cancelled() {
-                return;
+                return None;
             }
             let Some((path, file)) = files.get(id) else {
                 let msg = format!("packing list {id} could not be opened (see DCP.AM.004 / DCP.AM.005)");
@@ -288,6 +445,7 @@ impl Run<'_> {
                             xml_unopened = xml_unopened.saturating_add(1);
                         }
                     }
+                    pkl_docs.push((path.clone(), p));
                 }
                 Ok(other) => self.fail(PKL_DOCUMENT, Location::file(path.as_str()), format!("declared as a packing list, but it is a {}", kind(&other))),
                 Err(e) => self.fail(PKL_DOCUMENT, Location::file(path.as_str()), format!("cannot be read: {e}")),
@@ -303,7 +461,7 @@ impl Run<'_> {
         self.passed.insert(PKL_DOCUMENT, format!("{pkls_read} packing lists read"));
         self.done.insert(PKL_DOCUMENT);
         if self.control.is_cancelled() {
-            return;
+            return None;
         }
 
         if xml_unopened > 0 {
@@ -316,7 +474,7 @@ impl Run<'_> {
         for (k, id) in xml.iter().enumerate() {
             self.control.report("documents", k as u64, total as u64);
             if self.control.is_cancelled() {
-                return;
+                return None;
             }
             let Some((path, file)) = files.get(id) else {
                 let msg = format!("XML asset {id} of a packing list is not in the asset map's readable files, so it was not opened");
@@ -337,6 +495,7 @@ impl Run<'_> {
                     if let Some(id) = c.id {
                         self.docs.compositions.push(id);
                     }
+                    cpl_docs.push((path.clone(), c));
                 }
                 // subtitles, KDMs and other XML assets are other rules' business
                 Ok(_) | Err(cfa4_dcp::Error::UnknownDocument(_)) => {}
@@ -349,6 +508,7 @@ impl Run<'_> {
         self.passed.insert(CPL_DOCUMENT, format!("{cpls} composition playlists read"));
         self.done.insert(CPL_DOCUMENT);
         self.standards();
+        Some((pkl_docs, cpl_docs))
     }
 
     fn standards(&mut self) {

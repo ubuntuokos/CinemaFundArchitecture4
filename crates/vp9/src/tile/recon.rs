@@ -19,7 +19,7 @@ fn round_q4(v: i32) -> i32 {
 }
 
 impl<'a> TileDecoder<'a> {
-    pub(super) fn residual(&mut self, bd: &mut BoolDecoder, b: &mut Blk) {
+    pub(super) fn residual(&mut self, bd: &mut BoolDecoder<'_>, b: &mut Blk) {
         let bsize = b.size.max(BLOCK_8X8) as usize;
         let (ssx, ssy) = (self.ss_x, self.ss_y);
         let uv_tx = if b.size < BLOCK_8X8 { 0 } else { b.tx_size.min(MAX_TXSIZE[SS_SIZE_LOOKUP[b.size as usize][ssx][ssy] as usize]) };
@@ -126,7 +126,7 @@ impl<'a> TileDecoder<'a> {
     /// tokens (6.4.24): reads and dequantizes the coefficients into `self.coefs`. Returns the end
     /// of block position and the number of leading coefficient rows that may be non-zero.
     #[allow(clippy::too_many_arguments)]
-    fn tokens(&mut self, bd: &mut BoolDecoder, b: &Blk, plane: usize, start_x: usize, start_y: usize, tx_sz: u8, tx_type: u8) -> (usize, usize) {
+    fn tokens(&mut self, bd: &mut BoolDecoder<'_>, b: &Blk, plane: usize, start_x: usize, start_y: usize, tx_sz: u8, tx_type: u8) -> (usize, usize) {
         let seg_eob = 16usize << (tx_sz << 1);
         let sc = scan(tx_sz, tx_type);
         let nb = neighbors(tx_sz, tx_type);

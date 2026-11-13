@@ -29,6 +29,7 @@ mod fx_editor;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
+mod kdm;
 pub mod keyboard;
 mod keyframe_move;
 pub mod legibility;
@@ -69,6 +70,7 @@ mod smart_render;
 pub mod social;
 pub mod source_monitor;
 pub mod sync;
+pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
 pub mod variants;
@@ -492,6 +494,8 @@ pub struct Session {
     pub mcrec: multicam::Recorder,
     /// Voice-over recording: the input device and the take in progress.
     pub voiceover: voiceover::VoiceOver,
+    /// External timecode sync: what the devices report (Settings ▸ Timecode Sync).
+    pub timecode_sync: timecode_sync::SyncRuntime,
     /// The last `tts.preview` result, for the host to play (Text to Speech ▸ Preview).
     pub tts_preview: Option<Arc<cfa4_tts::Audio>>,
     /// Synthesized narrations (`tts.render` fills it from a background job).
@@ -608,6 +612,7 @@ impl Session {
             mixrec: Default::default(),
             mcrec: Default::default(),
             voiceover: Default::default(),
+            timecode_sync: Default::default(),
             tts_preview: None,
             tts_cache: Default::default(),
             trim_play: Default::default(),
@@ -1032,7 +1037,7 @@ impl Session {
     }
 
     /// Edit the active sequence with the edit-algebra context.
-    pub fn edit_sequence<R>(&mut self, label: &str, f: impl FnOnce(&mut Sequence, &mut EditCtx, &mut EditorState) -> Result<R>) -> Result<R> {
+    pub fn edit_sequence<R>(&mut self, label: &str, f: impl FnOnce(&mut Sequence, &mut EditCtx<'_>, &mut EditorState) -> Result<R>) -> Result<R> {
         self.edit_sequence_as(label, None, f)
     }
 
@@ -1042,7 +1047,7 @@ impl Session {
         &mut self,
         label: &str,
         merge: Option<&str>,
-        f: impl FnOnce(&mut Sequence, &mut EditCtx, &mut EditorState) -> Result<R>,
+        f: impl FnOnce(&mut Sequence, &mut EditCtx<'_>, &mut EditorState) -> Result<R>,
     ) -> Result<R> {
         let seq_id = self.state.active_sequence.ok_or(EngineError::NoSequence)?;
         let media = self.media.clone();
