@@ -883,11 +883,16 @@ impl ExportSettings {
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        if self.field_order != FieldOrder::Progressive && self.has_video() && !self.format.codes_interlaced() {
+        // MXF: MPEG-2 (also XDCAM HD422 and D-10) only, whose separate-field layout the writer has
+        let interlaced = if self.format.is_mxf() { self.video_format() == Format::Mpeg2 } else { self.format.codes_interlaced() };
+        if self.field_order != FieldOrder::Progressive && self.has_video() && !interlaced {
             return Err(ExportError::Unsupported(format!(
-                "{} field order: only MPEG-2 and ProRes export code interlaced video; the other encoders write progressive frames",
+                "{} field order: only MPEG-2 and ProRes export (in MXF: MPEG-2, XDCAM HD422, D-10) code interlaced video; the other encoders write progressive frames",
                 self.field_order.label()
             )));
+        }
+        if self.field_order == FieldOrder::LowerFirst && self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::D10 {
+            return Err(ExportError::Unsupported("D-10 (IMX) pictures are upper field first: choose upper field first or progressive".into()));
         }
         if self.effects.image_overlay.enabled && self.effects.image_overlay.path.trim().is_empty() {
             return Err(ExportError::Unsupported("image overlay: no image file chosen".into()));
@@ -1612,6 +1617,10 @@ impl D10Encoder {
         // ITU-R BT.470 B/G (625) or SMPTE 170M (525) primaries and matrix, BT.601 transfer
         cfg.colour = Some(if lines == 625 { (5, 6, 5) } else { (6, 6, 6) });
         cfg.adaptive_quantization = true;
+        // interlaced frame pictures, upper field first (ST 356); progressive for PsF material
+        if s.field_order != FieldOrder::Progressive {
+            cfg.interlaced = Some(cfa4_mpeg2v::FieldOrder::TopFirst);
+        }
         let enc = cfa4_mpeg2v::encode::Encoder::new(cfg.clone()).map_err(|e| ExportError::Unsupported(format!("D-10: {e}")))?;
         let n = 720 * stored as usize;
         Ok(D10Encoder { enc, cfg, frame_bytes, rate, w: w as u16, h: h as u16, top, y: vec![16; n], u: vec![128; n / 2], v: vec![128; n / 2] })

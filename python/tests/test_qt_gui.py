@@ -8272,6 +8272,15 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
         assert dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
         assert dlg.params()["mxfVideoCodec"] == "xdcamHd422"
         assert resolved()["mxfVideoCodec"] == "xdcamHd422"
+        # MPEG-2 in MXF codes interlaced video (1080i, interlaced D-10): the field orders open;
+        # ProRes in MXF stays progressive
+        fo = dlg.rows.field_order
+        assert all(fo.model().item(i).isEnabled() for i in range(fo.count()))
+        pick(c["mxfVideoCodec"], "d10")
+        assert fo.model().item(1).isEnabled()
+        pick(c["mxfVideoCodec"], "proRes")
+        assert not fo.model().item(1).isEnabled()
+        pick(c["mxfVideoCodec"], "xdcamHd422")
         # uncompressed (#946): no encoder rows, the MPEG-2 settings off
         for codec in ("v210", "uyvy"):
             pick(c["mxfVideoCodec"], codec)
