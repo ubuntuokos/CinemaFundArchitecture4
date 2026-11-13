@@ -1151,6 +1151,8 @@ dependencies = [
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
+ "cfa4-tcsync",
+ "cfa4-tcsync-io",
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-tts",
@@ -1962,6 +1964,16 @@ name = "cfa4-tcsync"
 version = "0.10.0"
 dependencies = [
  "cfa4-time",
+]
+
+[[package]]
+name = "cfa4-tcsync-io"
+version = "0.10.0"
+dependencies = [
+ "alsa",
+ "cfa4-tcsync",
+ "cfa4-time",
+ "cpal",
 ]
 
 [[package]]
