@@ -4,14 +4,17 @@ engine, the engine's locate / stop events move the monitor, the status bar shows
 from __future__ import annotations
 
 import os
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-QtCore = pytest.importorskip("PySide6.QtCore")
-QtWidgets = pytest.importorskip("PySide6.QtWidgets")
+pytest.importorskip("PySide6.QtCore")
+pytest.importorskip("PySide6.QtWidgets")
+
+from PySide6 import QtCore, QtWidgets
 
 from cfa4_qt.engine import EngineClient, locate_engine
 from cfa4_qt.timecode_sync import TimecodeSyncLink, status_text
@@ -20,7 +23,7 @@ REAL = locate_engine()
 
 
 @pytest.fixture(scope="module")
-def app():
+def app() -> Iterator[QtCore.QCoreApplication]:
     yield QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
@@ -72,7 +75,7 @@ def transports(engine: FakeEngine) -> list[dict[str, Any]]:
     return [p for m, p in engine.calls if m == "timecodeSync.transport"]
 
 
-def test_transport_follows_the_monitor(app):
+def test_transport_follows_the_monitor(app: QtCore.QCoreApplication) -> None:
     engine, mon, parent = FakeEngine(), FakeMonitor(), QtWidgets.QWidget()
     link = TimecodeSyncLink(engine, mon, parent)
     mon.playhead = 1000
@@ -95,7 +98,7 @@ def test_transport_follows_the_monitor(app):
     assert len(transports(engine)) == 3, "nothing is sent while the engine is down"
 
 
-def test_locate_and_stop_events_move_the_monitor(app):
+def test_locate_and_stop_events_move_the_monitor(app: QtCore.QCoreApplication) -> None:
     engine, mon, parent = FakeEngine(), FakeMonitor(), QtWidgets.QWidget()
     link = TimecodeSyncLink(engine, mon, parent)
     assert link.on_event({"event": "timecodeSync.locate", "time": 2540, "play": True})
@@ -110,7 +113,7 @@ def test_locate_and_stop_events_move_the_monitor(app):
     assert not link.on_event({"event": "projectChanged"})
 
 
-def test_status_text():
+def test_status_text() -> None:
     assert status_text(None) == ("", "", False)
     off = {"chase": False, "generateLtc": False, "chaseStatus": None, "ltcOutRunning": False, "mtcOutRunning": False, "error": None}
     assert status_text(off)[0] == ""
@@ -123,7 +126,7 @@ def test_status_text():
     assert status_text(broken) == ("TC: Error", "LTC output: no output `x`", True)
 
 
-def test_status_label(app):
+def test_status_label(app: QtCore.QCoreApplication) -> None:
     engine, mon, parent = FakeEngine(), FakeMonitor(), QtWidgets.QWidget()
     link = TimecodeSyncLink(engine, mon, parent)
     link.refresh_status()
@@ -134,7 +137,7 @@ def test_status_label(app):
     assert link.label.isHidden()
 
 
-def wait_until(app, predicate, timeout_ms: int = 10_000) -> bool:
+def wait_until(app: QtCore.QCoreApplication, predicate: Callable[[], object], timeout_ms: int = 10_000) -> bool:
     timer = QtCore.QElapsedTimer()
     timer.start()
     while not predicate():
@@ -145,9 +148,10 @@ def wait_until(app, predicate, timeout_ms: int = 10_000) -> bool:
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
-def test_real_engine_transport_devices_and_status(app, tmp_path: Path):
+def test_real_engine_transport_devices_and_status(app: QtCore.QCoreApplication, tmp_path: Path) -> None:
     """The engine takes the transport, lists the devices the settings can name, and its status
     shows a device error (no sound card here) without the GUI or the engine failing."""
+    assert REAL is not None
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     got: dict[str, Any] = {}
     engine.started.connect(lambda _h: got.setdefault("started", True))
@@ -166,7 +170,7 @@ def test_real_engine_transport_devices_and_status(app, tmp_path: Path):
 
         def poll() -> bool:
             engine.execute("timecodeSync.status", {}, on_reply=lambda r, _b: st.update(r))
-            return st.get("generateLtc") is True and (st.get("ltcOutRunning") or st.get("error"))
+            return st.get("generateLtc") is True and bool(st.get("ltcOutRunning") or st.get("error"))
 
         assert wait_until(app, poll, 20_000), st
     finally:
