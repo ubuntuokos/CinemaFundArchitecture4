@@ -46,6 +46,8 @@ pub struct PicturePlace {
     pub row: usize,
     /// A video, playing from its start.
     pub video: bool,
+    /// A video that starts again from its beginning until its page ends.
+    pub repeat: bool,
     /// When it comes in on a card with a staggered entrance (zero otherwise).
     pub delay: Tick,
 }
@@ -58,6 +60,7 @@ struct PicInfo {
     h: f64,
     row: usize,
     video: bool,
+    repeat: bool,
 }
 
 /// Default picture height (1080-high pixels).
@@ -367,7 +370,7 @@ fn picture_piece(p: &Picture, k: usize, w: f64, h: f64, cx: f64, top: f64, row: 
         b: [-w / 2.0, -h / 2.0, w / 2.0, h / 2.0],
         x: cx,
         top,
-        pic: Some(Box::new(PicInfo { file: p.file.clone(), w, h, row, video: p.video })),
+        pic: Some(Box::new(PicInfo { file: p.file.clone(), w, h, row, video: p.video, repeat: p.video && p.repeat })),
     }
 }
 
@@ -638,7 +641,7 @@ pub fn block_key(b: &Block) -> u64 {
         parts.push(format!("{i}:{t}").into_bytes());
     }
     for p in &b.pictures {
-        parts.push(format!("{}@{:?}{}", p.file, p.height, if p.video { "v" } else { "" }).into_bytes());
+        parts.push(format!("{}@{:?}{}{}", p.file, p.height, if p.video { "v" } else { "" }, if p.repeat { "l" } else { "" }).into_bytes());
     }
     for p in b.portraits.iter().flatten() {
         parts.push(format!("portrait {}@{:?}", p.file, p.height).into_bytes());
@@ -998,8 +1001,8 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
         set(&mut e, "position", ParamValue::Vec2(Vec2::new(p.x, y)));
         let delay = delay_of(p.row);
         if let Some(pic) = p.pic {
-            let PicInfo { file, w, h, row, video } = *pic;
-            pictures.push(PicturePlace { file, center: (p.x, y), size: (w, h), row, video, delay });
+            let PicInfo { file, w, h, row, video, repeat } = *pic;
+            pictures.push(PicturePlace { file, center: (p.x, y), size: (w, h), row, video, repeat, delay });
         } else if card {
             card_keys(&mut e, duration, delay, fade_in, fade_out, motion, (p.x, y));
         }

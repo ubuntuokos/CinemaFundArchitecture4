@@ -301,6 +301,16 @@ nem kerül a CFA4-be, a Chrome nem lesz függőség.
   ismétlődő háttérként vagy videócímkeként a stáblistába.
 - **Qt6:** a háttér a lapok listájában „Ismétlődő videó: …”, minden nyelven.
 
+### C13 – Ismétlődő videó egy cellában – **KÉSZ (2026-11-13)**
+
+A „Not yet” lista első pontja, a C11 folytatása (a tulajdonos 2026-11-13-i kérésére: „foglalkozzunk
+olyannal, ami nincs kész”): a cellában lévő videó (`{{Video walk.mp4 loop}}`; `loop`, `ismétlés`,
+`ismételve`, a magasság előtt vagy után) újraindul, amíg az oldal tart, így egy vonalrajz-figura a
+nevekkel együtt halad végig az oldalon. Minden futás saját klip egy sávon, egymás után,
+képkockahatáron (legfeljebb 1000); a mozgásuk és az áttetszőségük az egész oldalra számolt görbe
+megfelelő szelete, tehát gördülő oldalon és kártyán is úgy mozognak és tűnnek el, ahogy egyetlen
+klip tenné. A háttérvideó (C11) ugyanazt a futásbeosztást használja.
+
 ### C12 – Animált vonalrajz-réteg Rustban, második lépcső (a jövő évi kiadásban) – **TERVEZET**
 
 A tulajdonos döntése (2026-11-11): a vonalrajzos animáció saját grafikai elemmé válik a CFA4
@@ -324,7 +334,7 @@ C1 kapcsolt stáblista ─┬─> C2 ellenőrzések ─> C3 zene
 C4 háttér / átmenet ───> C5 gazdagabb elrendezés
 Qt6 felület (F8, #48–#54) ─> C8 Qt6 munkaterület
 C8 ─> C9 csomagolás és együttélés ─> C10 élő grafika ─> CFA4-LIVE-STUDIO-001 (élő stúdió, műsorterv)
-C4 háttér ─> C11 ismétlődő videóháttér (vonalrajz, 1. lépcső) ─> C12 vonalrajz-réteg Rustban (jövő év)
+C4 háttér ─> C11 ismétlődő videóháttér (vonalrajz, 1. lépcső) ─> C13 ismétlődő videó cellában ─> C12 vonalrajz-réteg Rustban (jövő év)
 ```
 
 Sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7 → C8 → C9 → C10** (mind kész, 2026-11-09). Minden fázis a motorral együtt a Qt6-os

@@ -150,11 +150,22 @@ pub struct Picture {
     pub height: Option<f64>,
     /// A video (`{{Video …}}`), placed and moved like a picture, playing from its start.
     pub video: bool,
+    /// A video that starts again from its beginning until its page ends (`{{Video walk.mp4 loop}}`);
+    /// otherwise a video shorter than its page ends early.
+    pub repeat: bool,
 }
 
 const PIC_TAGS: [&str; 4] = ["pic", "picture", "kép", "logo"];
 /// Tags of a video in a cell.
 const VIDEO_TAGS: [&str; 3] = ["video", "videó", "mozgókép"];
+/// Words after a video's file name that loop it.
+const LOOP_WORDS: [&str; 3] = ["loop", "ismétlés", "ismételve"];
+
+/// A picture height after the file name (`120`, `120px`, `120,5`), within 0–10 000.
+fn picture_height(word: &str) -> Option<f64> {
+    let n = word.strip_suffix("px").unwrap_or(word).replace(',', ".");
+    n.parse::<f64>().ok().filter(|v| v.is_finite() && *v > 0.0 && *v <= 10_000.0)
+}
 
 /// Take the picture tags out of a cell: the rest of the cell and the pictures, in order.
 pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
@@ -169,19 +180,23 @@ pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
         let lower = word.to_lowercase();
         let video = VIDEO_TAGS.contains(&lower.as_str()) || crate::cinecred::is_video_word(&lower);
         if (video || PIC_TAGS.contains(&lower.as_str()) || crate::cinecred::is_pic_word(&lower)) && !arg.trim().is_empty() && pics.len() < 64 {
-            let arg = arg.trim();
-            let (file, height) = match arg.rsplit_once(char::is_whitespace) {
-                Some((f, h)) => {
-                    let n = h.trim().to_lowercase();
-                    match n.strip_suffix("px").unwrap_or(&n).replace(',', ".").parse::<f64>() {
-                        Ok(v) if v.is_finite() && v > 0.0 && v <= 10_000.0 => (f.trim(), Some(v)),
-                        _ => (arg, None),
-                    }
+            // after the file name: an optional height and, for a video, a loop word (either order)
+            let mut file = arg.trim();
+            let (mut height, mut repeat) = (None, false);
+            for _ in 0..2 {
+                let Some((f, word)) = file.rsplit_once(char::is_whitespace) else { break };
+                let w = word.trim().to_lowercase();
+                if video && !repeat && LOOP_WORDS.contains(&w.as_str()) {
+                    repeat = true;
+                } else if let Some(v) = height.is_none().then(|| picture_height(&w)).flatten() {
+                    height = Some(v);
+                } else {
+                    break;
                 }
-                None => (arg, None),
-            };
+                file = f.trim_end();
+            }
             out.push_str(rest.get(..i).unwrap_or(""));
-            pics.push(Picture { file: file.to_string(), height, video });
+            pics.push(Picture { file: file.to_string(), height, video, repeat });
         } else {
             out.push_str(rest.get(..i + 2 + j + 2).unwrap_or(""));
         }

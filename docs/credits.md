@@ -56,8 +56,13 @@ warning and is left out.
 
 **Videos.** `{{Video intro.mp4}}` (`{{Videó …}}`, `{{Mozgókép …}}`, with an optional height like
 pictures) puts a video in the credits the same way: its own clip that moves with the roll or comes
-in with the card, playing from its start; a video shorter than its page ends early. Its size is
-read from the file (a file over 256 MiB is taken as 16:9).
+in with the card, playing from its start; a video shorter than its page ends early, unless a
+loop word follows its name – `{{Video walk.mp4 loop}}`, `{{Videó séta.mp4 120 ismétlés}}` (`loop`,
+`ismétlés` or `ismételve`, before or after the height): then it starts again from its beginning
+until the page ends, each run its own clip right after the one before on one track (on frame
+boundaries, at most 1000), moving and fading as one clip over the page would; the page's
+`pictures` list names every run. Its size is read from the file (a file over 256 MiB is taken as
+16:9).
 
 **Portraits.** A body cell with one picture tag and a name – `{{Pic anna.jpg}} Kiss Anna` – is a
 name with its portrait. A block with portraits is a grid of faces with the names under them
@@ -152,7 +157,8 @@ does not run the tool; use it on its own:
      "background": { "kind": "video", "file": "walk.mp4", "loop": true, "fit": "fill", "opacity": 70 } }
    ```
 3. Import or refresh. The loop runs under the whole page; its opacity and blur stay editable. For
-   a figure that should move with the names instead, put it in a cell as `{{Video walk.mp4}}`.
+   a figure that should move with the names instead, put it in a cell as
+   `{{Video walk.mp4 loop}}`.
 
 Keep the text readable over moving pictures (the contrast check cannot measure them: check by
 eye, or lower the background's opacity). A line-art layer drawn by CFA4 itself is planned for
@@ -422,6 +428,6 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), hooked and fused spines, body-width harmonisation, looping a
-video in a cell (`{{Video …}}`), writing Cinecred projects (only on request, per the plan), a
+Online sheets (download as `.xlsx`), hooked and fused spines, body-width harmonisation, writing
+Cinecred projects (only on request, per the plan), a
 line-art layer drawn by CFA4 itself (plan C12, next year's release).
