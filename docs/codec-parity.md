@@ -49,6 +49,7 @@ fidelity and the remaining work.
 | FFV1 | video | `crates/ffv1` | own | yes: versions 0, 1, 3, 8-16 bit | no |
 | Hap | video | `crates/hap` | own | yes | no |
 | Huffyuv | video | `crates/huffyuv` | own | yes | no |
+| Canopus HQ / HQA / HQX | video | `crates/canopus` | ported | yes | no |
 | Ut Video | video | `crates/utvideo` | own | yes | no |
 | DV / DVCPRO | video | `crates/dv` | ported | yes: DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD | no |
 | Animated GIF | video | — | dependency | yes | yes: Animated GIF |
@@ -71,6 +72,7 @@ fidelity and the remaining work.
 | ALAC, Vorbis | audio | — | dependency | yes | no |
 | AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
+| TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
 | ADPCM, G.711, G.722 | audio | `crates/adpcm` | own | yes | no |
 | IAB (SMPTE ST 2098-2) | audio | `crates/iab` | own | yes: decode and render | yes: IAB track in DCP exports |
 | Auro-3D | audio | `crates/auro` | ported | yes: side channel in 24-bit PCM | no |

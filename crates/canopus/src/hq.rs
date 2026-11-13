@@ -22,12 +22,12 @@ impl Tables {
     }
 
     #[cfg(test)]
-    pub(crate) fn ac_read(&self, b: &mut Bits) -> Option<usize> {
+    pub(crate) fn ac_read(&self, b: &mut Bits<'_>) -> Option<usize> {
         self.ac.read(b)
     }
 
     #[cfg(test)]
-    pub(crate) fn cbp_read(&self, b: &mut Bits) -> Option<usize> {
+    pub(crate) fn cbp_read(&self, b: &mut Bits<'_>) -> Option<usize> {
         self.cbp.read(b)
     }
 }
@@ -154,9 +154,9 @@ fn idct(blk: &mut [i16; 64]) {
     }
 }
 
-fn decode_block(t: &Tables, b: &mut Bits, block: &mut [i16; 64], qsel: usize, chroma: bool, hqa: bool) -> Result<()> {
+fn decode_block(t: &Tables, b: &mut Bits<'_>, block: &mut [i16; 64], qsel: usize, chroma: bool, hqa: bool) -> Result<()> {
     *block = [0; 64];
-    let quant = |b: &mut Bits| {
+    let quant = |b: &mut Bits<'_>| {
         let m = HQ_QUANTS.get(qsel * 8 + usize::from(chroma) * 4 + b.get(2) as usize).copied().unwrap_or(0);
         let m = usize::from(m) * 64;
         HQ_QMATS.get(m..m + 64)
@@ -187,7 +187,7 @@ fn decode_block(t: &Tables, b: &mut Bits, block: &mut [i16; 64], qsel: usize, ch
     Ok(())
 }
 
-fn decode_mb(t: &Tables, f: &mut Frame, b: &mut Bits, x: usize, y: usize, blocks: &mut [[i16; 64]; 12]) -> Result<()> {
+fn decode_mb(t: &Tables, f: &mut Frame, b: &mut Bits<'_>, x: usize, y: usize, blocks: &mut [[i16; 64]; 12]) -> Result<()> {
     let qgroup = b.get(4) as usize;
     let flag = b.bit();
     for (i, blk) in blocks.iter_mut().take(8).enumerate() {
@@ -260,7 +260,7 @@ pub(crate) fn decode_hq(t: &Tables, data: &[u8], profile: u8) -> Result<Picture>
     Ok(finish(f, width, height, Layout::Yuv422))
 }
 
-fn decode_hqa_mb(t: &Tables, f: &mut Frame, quant: usize, b: &mut Bits, x: usize, y: usize, blocks: &mut [[i16; 64]; 12]) -> Result<()> {
+fn decode_hqa_mb(t: &Tables, f: &mut Frame, quant: usize, b: &mut Bits<'_>, x: usize, y: usize, blocks: &mut [[i16; 64]; 12]) -> Result<()> {
     if b.left() < 1 {
         return Err(Error::Truncated);
     }

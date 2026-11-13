@@ -83,7 +83,7 @@ impl Vlc {
     }
 
     /// The next symbol, or `None` (consuming nothing) when the bits are no code.
-    pub(crate) fn read(&self, b: &mut Bits) -> Option<usize> {
+    pub(crate) fn read(&self, b: &mut Bits<'_>) -> Option<usize> {
         let &(sym, len) = self.table.get(b.peek(self.bits) as usize)?;
         if len == 0 {
             return None;

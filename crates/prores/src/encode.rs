@@ -185,7 +185,7 @@ impl Encoder {
     }
 
     /// The coded slices of one picture (a frame, or a field) `mb_height` macroblock rows high.
-    fn picture(&self, src: &Source, mb_width: usize, mb_height: usize) -> Vec<Vec<u8>> {
+    fn picture(&self, src: &Source<'_>, mb_width: usize, mb_height: usize) -> Vec<Vec<u8>> {
         let threads = self.cfg.threads;
         let widths = row_slice_widths(mb_width, self.cfg.log2_slice_mbs);
         let mut jobs = Vec::with_capacity(widths.len() * mb_height);

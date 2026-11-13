@@ -70,7 +70,7 @@ impl Ac {
     }
 
     /// `hqx_get_ac`: `(run, lev)`.
-    fn read(&self, b: &mut Bits) -> (usize, i32) {
+    fn read(&self, b: &mut Bits<'_>) -> (usize, i32) {
         let mut val = b.peek(self.lut_bits) as usize;
         let mut e = self.lut.get(val).copied().unwrap_or((0, 64, 0));
         if e.2 == -1 {
@@ -107,18 +107,18 @@ impl Tables {
     }
 
     #[cfg(test)]
-    pub(crate) fn cbp_read(&self, b: &mut Bits) -> Option<usize> {
+    pub(crate) fn cbp_read(&self, b: &mut Bits<'_>) -> Option<usize> {
         self.cbp.read(b)
     }
 
     #[cfg(test)]
-    pub(crate) fn dc_read(&self, dcb: u32, b: &mut Bits) -> Option<usize> {
+    pub(crate) fn dc_read(&self, dcb: u32, b: &mut Bits<'_>) -> Option<usize> {
         self.dc.get(dcb as usize - 9)?.read(b)
     }
 
     /// `(run, lev)` of the AC table for quantiser `q`.
     #[cfg(test)]
-    pub(crate) fn ac_read(&self, q: i32, b: &mut Bits) -> (usize, i32) {
+    pub(crate) fn ac_read(&self, q: i32, b: &mut Bits<'_>) -> (usize, i32) {
         self.ac.get(ac_class(q)).map_or((64, 0), |a| a.read(b))
     }
 }
@@ -251,7 +251,7 @@ struct Ctx<'t> {
 }
 
 impl Ctx<'_> {
-    fn decode_block(&mut self, b: &mut Bits, quants: &[i32; 4], i: usize, last_dc: &mut i32) {
+    fn decode_block(&mut self, b: &mut Bits<'_>, quants: &[i32; 4], i: usize, last_dc: &mut i32) {
         let t = self.t;
         let Some(block) = self.blocks.get_mut(i) else { return };
         *block = [0; 64];
@@ -279,7 +279,7 @@ impl Ctx<'_> {
         f.put_blocks(plane, x, y, flag, &mut b0, &mut b1, quant);
     }
 
-    fn decode_mb(&mut self, f: &mut Frame, b: &mut Bits, x: usize, y: usize) {
+    fn decode_mb(&mut self, f: &mut Frame, b: &mut Bits<'_>, x: usize, y: usize) {
         let alpha = self.format & 2 != 0;
         let full = self.format & 1 != 0;
         let n = match (full, alpha) {
@@ -372,7 +372,7 @@ impl Ctx<'_> {
     }
 
     /// `decode_slice`: the macroblocks of slice `slice_no`, spread over the picture in tiles.
-    fn decode_slice(&mut self, f: &mut Frame, b: &mut Bits, slice_no: usize, width: usize, height: usize) {
+    fn decode_slice(&mut self, f: &mut Frame, b: &mut Bits<'_>, slice_no: usize, width: usize, height: usize) {
         let mb_w = width.div_ceil(16);
         let mb_h = height.div_ceil(16);
         let grp_w = mb_w.div_ceil(5);

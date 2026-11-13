@@ -54,7 +54,7 @@ pub(crate) fn convert(p: cfa4_canopus::Picture) -> Result<VideoFrame> {
             PixelData::Yuv16 { planes: [y, u, v], chroma, bits: 12, alpha: it.next() }
         }
     };
-    Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO })
+    Ok(VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
 }
 
 impl VideoDecoder for CanopusDecoder {

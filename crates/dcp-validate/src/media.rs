@@ -221,7 +221,7 @@ pub(crate) fn check(cpls: &[(String, Composition)], files: &Files, codestreams: 
     let mut mxf = Vec::new();
     let mut pic = Vec::new();
     let mut read: BTreeMap<Uuid, Result<Option<Track>, String>> = BTreeMap::new();
-    let mut pictures: Vec<Picture> = Vec::new();
+    let mut pictures: Vec<Picture<'_>> = Vec::new();
     let mut seen_picture: BTreeMap<Uuid, bool> = BTreeMap::new();
     let mut unreadable = Vec::new();
     let mut uses = Vec::new();
@@ -367,7 +367,7 @@ pub(crate) fn check(cpls: &[(String, Composition)], files: &Files, codestreams: 
 }
 
 /// `DCP.PIC.001` for one picture reel asset.
-fn picture_format(u: &Use, file_path: &str, t: &Track) -> Vec<Finding> {
+fn picture_format(u: &Use<'_>, file_path: &str, t: &Track) -> Vec<Finding> {
     let mut out = Vec::new();
     let mut push = |status: Status, m: String| out.push(Finding::new(PIC_FORMAT, status, m).at(u.at()));
     let stereo = u.asset.kind == AssetKind::MainStereoscopicPicture;
@@ -440,7 +440,7 @@ impl Tally {
         e.1 += 1;
     }
 
-    fn findings(self, p: &Picture) -> Vec<Finding> {
+    fn findings(self, p: &Picture<'_>) -> Vec<Finding> {
         let loc = Location { file: Some(p.path.to_string()), asset: Some(p.asset), ..Location::default() };
         self.order
             .into_iter()
@@ -464,7 +464,7 @@ pub(crate) fn dci_budget(rate: Rational, stereo: bool) -> Option<(i64, i64)> {
 
 /// `DCP.J2K.001` for every frame of one picture track file; `None` when cancelled. Returns the
 /// findings and the frames checked.
-fn frames_of(p: &Picture, done: u64, total: u64, control: &ValidationControl) -> Option<(Vec<Finding>, u64)> {
+fn frames_of(p: &Picture<'_>, done: u64, total: u64, control: &ValidationControl) -> Option<(Vec<Finding>, u64)> {
     let mut tally = Tally::default();
     let src = match FileSource::open(p.file) {
         Ok(s) => s,

@@ -52,7 +52,7 @@ impl W {
 }
 
 /// A random code read by `read` from random bits; the consumed bits are written to `w`.
-fn code<R>(rng: &mut Rng, w: &mut W, read: impl Fn(&mut Bits) -> Option<R>) -> R {
+fn code<R>(rng: &mut Rng, w: &mut W, read: impl Fn(&mut Bits<'_>) -> Option<R>) -> R {
     loop {
         let v = rng.next();
         let bytes = v.to_be_bytes();

@@ -383,7 +383,7 @@ impl BitReader<'_> {
 }
 
 /// Read the packed code lengths of symbols `im..=i_max` and make the canonical code table.
-fn unpack_table(r: &mut BitReader, im: usize, i_max: usize) -> Result<Vec<u64>, &'static str> {
+fn unpack_table(r: &mut BitReader<'_>, im: usize, i_max: usize) -> Result<Vec<u64>, &'static str> {
     let mut hcode = vec![0u64; HUF_ENCSIZE];
     let mut i = im;
     while i <= i_max {
@@ -449,7 +449,7 @@ fn build_dec_table(hcode: &[u64], im: usize, i_max: usize) -> Result<Vec<Dec>, &
 }
 
 /// Emit a decoded symbol: the run code repeats the previous word.
-fn put(sym: u32, rlc: u32, r: &mut BitReader, out: &mut [u16], o: &mut usize) -> Result<(), &'static str> {
+fn put(sym: u32, rlc: u32, r: &mut BitReader<'_>, out: &mut [u16], o: &mut usize) -> Result<(), &'static str> {
     if sym == rlc {
         let run = r.bits(8).ok_or("truncated run")? as usize;
         if *o == 0 {

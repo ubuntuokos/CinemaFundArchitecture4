@@ -301,7 +301,7 @@ impl<'a> Bits<'a> {
 
 /// One coded value (`tta_decoder_get_value`).
 #[inline]
-fn value(bits: &mut Bits, rice: &mut Rice) -> Result<i32> {
+fn value(bits: &mut Bits<'_>, rice: &mut Rice) -> Result<i32> {
     let unary = bits.unary()?;
     let (level, k, mut v) = if unary != 0 { (true, rice.k1, unary - 1) } else { (false, rice.k0, 0) };
     if k > 0 {
