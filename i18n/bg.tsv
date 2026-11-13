@@ -4520,6 +4520,7 @@ export.summary	Low	ниско
 	the engine sent no report	двигателят не изпрати отчет
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a некомпресиран 10-битов 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, некомпресиран 10-битов Y'CbCr 4:2:2 в подредба v210 (SMPTE ST 384), 24-битов PCM 48 kHz, начален тайм код
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записване на надписите като ANC данни (CEA-608/708, 29,97 fps)
 	Load KDM…	Зареждане на KDM…
 	Forget DCP Keys	Забравяне на DCP ключовете
 	Load KDM	Зареждане на KDM

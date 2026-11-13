@@ -4519,6 +4519,7 @@ export.summary	Low	madal
 	the engine sent no report	mootor ei saatnud aruannet
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tihendamata 10-bitine 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tihendamata 10-bitine Y'CbCr 4:2:2 v210 paigutuses (SMPTE ST 384), 24-bitine 48 kHz PCM, algusajakood
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjuta subtiitrid ANC-andmetena (CEA-608/708, 29,97 fps)
 	Load KDM…	Laadi KDM…
 	Forget DCP Keys	Unusta DCP võtmed
 	Load KDM	Laadi KDM

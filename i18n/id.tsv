@@ -4525,6 +4525,7 @@
 	the engine sent no report	mesin tidak mengirim laporan
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tanpa kompresi 10-bit 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit tanpa kompresi dalam tata letak v210 (SMPTE ST 384), PCM 24-bit 48 kHz, timecode awal
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Tulis teks sebagai data ANC (CEA-608/708, 29,97 fps)
 	Load KDM…	Muat KDM…
 	Forget DCP Keys	Lupakan Kunci DCP
 	Load KDM	Muat KDM

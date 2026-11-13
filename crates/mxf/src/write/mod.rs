@@ -652,6 +652,10 @@ pub struct WriterConfig {
     pub reference_image_edit_rate: Option<Rational>,
     /// Sound tracks: the alignment level in dBFS, e.g. -20 (ST 2067-2 Annex E).
     pub reference_audio_alignment_level: Option<i8>,
+    /// An ANC data track (ST 436-1): one frame-wrapped ANC element per content package, the last
+    /// element of the package, from [`MxfWriter::push_anc`]. OP1a with pictures (also RDD 9), not
+    /// D-10.
+    pub anc: bool,
 }
 
 /// One ST 377-4 multichannel audio label: a soundfield group (`channel` is `None`) or an audio
@@ -706,6 +710,7 @@ impl WriterConfig {
             rdd9: false,
             reference_image_edit_rate: None,
             reference_audio_alignment_level: None,
+            anc: false,
         }
     }
 }
@@ -758,6 +763,8 @@ enum TrackKind {
     Aes3,
     /// One channel of an RDD 9 sound track: a frame-wrapped AES3 element (ST 382).
     Channel(usize),
+    /// ANC packets (ST 436-1).
+    Anc,
 }
 
 /// The sound of an RDD 9 content package.
@@ -963,6 +970,8 @@ pub struct MxfWriter<W: Write + Seek> {
     // OP1a
     pending: VecDeque<(Vec<u8>, FrameInfo)>,
     sound_buf: Vec<Vec<u8>>,
+    /// ANC element values not yet written (one per content package, in order).
+    anc_buf: VecDeque<Vec<u8>>,
     // OP-Atom
     clip_len: u64,
     clip_kl: u64,
@@ -1164,6 +1173,11 @@ impl<W: Write + Seek> MxfWriter<W> {
                 }
             }
         }
+        if cfg.anc
+            && (cfg.pattern != Pattern::Op1a || cfg.picture.is_none() || matches!(cfg.picture.as_ref().map(|p| p.coding), Some(PictureCoding::D10 { .. })))
+        {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "an ANC data track is written in OP1a files with pictures (not D-10)"));
+        }
         if cfg.sound.iter().any(|s| s.sample_rate == 0 || s.channels == 0 || !(1..=32).contains(&s.bits)) {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "invalid PCM sound description"));
         }
@@ -1248,6 +1262,10 @@ impl<W: Write + Seek> MxfWriter<W> {
             tracks.push(TrackW { id, kind: TrackKind::Sound(k), element_key: element_key(0x16, ns, if clip { 0x02 } else { 0x01 }, k as u8 + 1), container });
             id += 1;
         }
+        if cfg.anc {
+            // the data item follows the picture and sound items (ST 379-1 7.3)
+            tracks.push(TrackW { id, kind: TrackKind::Anc, element_key: ANC_ELEMENT, container: EC_ANC });
+        }
         let base = w.stream_position()?;
         let nsound = cfg.sound.len();
         let mut me = MxfWriter {
@@ -1268,6 +1286,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             imf_parts: Vec::new(),
             pending: VecDeque::new(),
             sound_buf: vec![Vec::new(); nsound],
+            anc_buf: VecDeque::new(),
             clip_len: 0,
             clip_kl: 0,
             samples: 0,
@@ -1531,6 +1550,31 @@ impl<W: Write + Seek> MxfWriter<W> {
         self.emit(false)
     }
 
+    /// Push the ANC element value (ST 436-1 Table 7, e.g. from [`crate::anc::anc_element`]) of
+    /// the next content package. Call it before that frame's [`MxfWriter::push_picture`]; a
+    /// content package written without one gets an empty element (no ANC packets).
+    pub fn push_anc(&mut self, element: &[u8]) -> io::Result<()> {
+        if !self.cfg.anc {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "this MXF file has no ANC data track"));
+        }
+        // ahead of the pictures by a bounded amount: the caller pairs them frame by frame
+        if self.anc_buf.len() > self.pending.len() + 1024 {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "ANC elements pushed far ahead of their pictures"));
+        }
+        self.anc_buf.push_back(element.to_vec());
+        Ok(())
+    }
+
+    /// The ANC element of the next content package, as a KLV (empty without an ANC track).
+    fn next_anc(&mut self) -> Option<Vec<u8>> {
+        let t = self.tracks.iter().find(|t| t.kind == TrackKind::Anc)?;
+        let key = t.element_key;
+        let v = self.anc_buf.pop_front().unwrap_or_else(|| vec![0, 0]);
+        let mut el = Vec::with_capacity(v.len() + 20);
+        klv(&mut el, &key, &v);
+        Some(el)
+    }
+
     /// Whether the edit units are pictures or IAB frames (one pushed element each).
     fn framed(&self) -> bool {
         self.cfg.picture.is_some() || self.cfg.iab.is_some()
@@ -1597,6 +1641,10 @@ impl<W: Write + Seek> MxfWriter<W> {
                     slices.push(cp.len() as u32);
                 }
                 klv(&mut cp, &self.tracks[first_sound + k].element_key, &chunk);
+            }
+            if let Some(anc) = self.next_anc() {
+                slices.push(cp.len() as u32);
+                cp.extend_from_slice(&anc);
             }
             let info = pic.map(|p| p.1).unwrap_or_else(FrameInfo::intra);
             self.entries.push(Entry { offset: self.pos - self.essence_start, slices, info });
@@ -1692,7 +1740,14 @@ impl<W: Write + Seek> MxfWriter<W> {
                 klv(&mut cp, &self.tracks[1 + k].element_key, &ch);
                 fill_to(&mut cp, at + el);
             }
-            self.entries.push(Entry { offset: self.stream, slices: vec![slice], info });
+            let mut slices = vec![slice];
+            if let Some(anc) = self.next_anc() {
+                slices.push(cp.len() as u32);
+                cp.extend_from_slice(&anc);
+                let end = kag_aligned(cp.len());
+                fill_to(&mut cp, end);
+            }
+            self.entries.push(Entry { offset: self.stream, slices, info });
             self.stream += cp.len() as u64;
             self.put(&cp)?;
         }
@@ -1852,7 +1907,7 @@ impl<W: Write + Seek> MxfWriter<W> {
                         ai += 1;
                         (DEF_SOUND, format!("A{ai}"))
                     }
-                    TrackKind::Iab => (DEF_DATA, "D1".to_string()),
+                    TrackKind::Iab | TrackKind::Anc => (DEF_DATA, "D1".to_string()),
                 };
                 let number = if material { 0 } else { u32::from_be_bytes(t.element_key[12..16].try_into().unwrap_or([0; 4])) };
                 let file = cfg.ids.file;
@@ -1995,6 +2050,16 @@ impl<W: Write + Seek> MxfWriter<W> {
                 TrackKind::Iab => {
                     let Some(ia) = cfg.iab else { continue };
                     self.iab_descriptor(&mut out, uid, t, ia, d);
+                }
+                TrackKind::Anc => {
+                    // ST 436-1 Table 11: the ANC data descriptor (a generic data essence descriptor)
+                    let mut s = Set::new(0x5C, uid);
+                    s.u32(0x3006, t.id).rat(0x3001, cfg.edit_rate);
+                    if d.essence >= 0 {
+                        s.i64(0x3002, d.essence);
+                    }
+                    s.p(0x3004, &t.container);
+                    s.write(&mut out);
                 }
                 TrackKind::Sound(i) => {
                     let sd = cfg.sound[i];
@@ -2314,6 +2379,10 @@ impl<W: Write + Seek> MxfWriter<W> {
                 let el = self.rdd9_element_size(l);
                 let mut v = vec![delta_entry(0, 0, 0), delta_entry(-1, 0, D10_KAG)];
                 v.extend((0..l.elements).map(|k| delta_entry(0, 1, k * el)));
+                if self.cfg.anc {
+                    // the ANC element in slice 2
+                    v.push(delta_entry(0, 2, 0));
+                }
                 v
             }
             None => (0..n_el).map(|k| delta_entry(0, k.min(nslices) as u8, 0)).collect(),

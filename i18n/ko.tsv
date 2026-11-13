@@ -4511,6 +4511,7 @@
 	the engine sent no report	엔진이 보고서를 보내지 않았습니다
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a 비압축 10비트 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 레이아웃의 비압축 10비트 Y'CbCr 4:2:2 (SMPTE ST 384), 24비트 48kHz PCM, 시작 타임코드
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	자막을 ANC 데이터로 기록 (CEA-608/708, 29.97fps)
 	Load KDM…	KDM 불러오기…
 	Forget DCP Keys	DCP 키 지우기
 	Load KDM	KDM 불러오기

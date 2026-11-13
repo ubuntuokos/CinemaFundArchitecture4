@@ -168,6 +168,39 @@ pub fn build_cdp(seq: u16, data: &FrameData) -> Vec<u8> {
     out
 }
 
+/// Caption distribution packets for every frame of a 29.97 fps picture stream, for SMPTE ST 436-1
+/// ANC data in MXF: CEA-608 field 1 and CEA-708 service 1 of a document, scheduled as
+/// [`write`] schedules them, one CDP per frame (padding only where nothing is scheduled) with
+/// the sequence counter advancing every frame.
+#[derive(Clone, Debug, Default)]
+pub struct CdpStream {
+    f1: BTreeMap<i64, (u8, u8)>,
+    dtv: BTreeMap<i64, Vec<(bool, u8, u8)>>,
+    seq: u16,
+}
+
+impl CdpStream {
+    pub fn new(doc: &Document) -> Self {
+        CdpStream { f1: scc::schedule(doc), dtv: schedule_708(doc), seq: 0 }
+    }
+
+    /// The ancillary packet of frame `f` (frames counted from the document's zero): DID 61h,
+    /// SDID 01h, the data count and the CDP, without the ST 291 checksum word.
+    pub fn frame(&mut self, f: i64) -> Vec<u8> {
+        let data = FrameData { f1: self.f1.get(&f).copied(), dtvcc: self.dtv.get(&f).cloned().unwrap_or_default() };
+        let mut p = build_cdp(self.seq, &data);
+        self.seq = self.seq.wrapping_add(1);
+        let dc = p.get(2).map_or(0, |&n| n as usize);
+        p.truncate(3 + dc);
+        p
+    }
+
+    /// The last frame with scheduled caption data, if any.
+    pub fn last_frame(&self) -> Option<i64> {
+        self.f1.keys().next_back().copied().max(self.dtv.keys().next_back().copied())
+    }
+}
+
 /// The cc_data triplets of one line's bytes (an ancillary packet with a CDP, or a bare CDP).
 pub fn cc_triplets(b: &[u8]) -> Option<Vec<[u8; 3]>> {
     let cdp = if b.starts_with(&[0x61, 0x01]) { b.get(3..)? } else { b };
@@ -821,6 +854,27 @@ mod tests {
         let got: Vec<(i64, i64, &str)> = back.cues.iter().map(|c| (RATE.frame_at(c.start), RATE.frame_at(c.end), c.text.as_str())).collect();
         assert_eq!(got, vec![(60, 120, "Hello, world!"), (120, 200, "Second caption\nwith two lines"), (260, 300, "Café “q” ♪")]);
         assert!(parse("garbage").is_err());
+    }
+
+    /// One CDP per frame for MXF ANC data: the sequence counter runs on, every packet is a
+    /// valid CDP without the ST 291 checksum word, and the packets decode to the cues.
+    #[test]
+    fn cdp_stream_gives_every_frame_a_packet() {
+        let doc = Document { cues: vec![cue(30, 90, "Hello, world!"), cue(120, 150, "Second")], ..Default::default() };
+        let mut st = CdpStream::new(&doc);
+        let last = st.last_frame().unwrap();
+        assert!((150..200).contains(&last), "{last}");
+        let packets: Vec<(i64, Vec<u8>)> = (0..=last + 5).map(|f| (f, st.frame(f))).collect();
+        for (f, p) in &packets {
+            assert_eq!(&p[..2], &[0x61, 0x01]);
+            assert_eq!(p.len(), 3 + p[2] as usize, "no checksum word");
+            assert_eq!(u16::from_be_bytes([p[8], p[9]]), *f as u16, "sequence counter");
+            assert!(cc_triplets(p).is_some());
+        }
+        let back = decode_cdps(packets, RATE);
+        let got: Vec<(i64, i64, &str)> = back.cues.iter().map(|c| (RATE.frame_at(c.start), RATE.frame_at(c.end), c.text.as_str())).collect();
+        assert_eq!(got, vec![(30, 90, "Hello, world!"), (120, 150, "Second")]);
+        assert_eq!(CdpStream::new(&Document::default()).last_frame(), None);
     }
 
     /// Keep separated short captions compact while preserving cues and valid CDP packets.

@@ -4519,6 +4519,7 @@ export.summary	Low	matala
 	the engine sent no report	moottori ei lähettänyt raporttia
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a pakkaamaton 10-bittinen 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, pakkaamaton 10-bittinen Y'CbCr 4:2:2 v210-asettelussa (SMPTE ST 384), 24-bittinen 48 kHz PCM, alkuaikakoodi
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Kirjoita tekstitys ANC-datana (CEA-608/708, 29,97 fps)
 	Load KDM…	Lataa KDM…
 	Forget DCP Keys	Unohda DCP-avaimet
 	Load KDM	Lataa KDM

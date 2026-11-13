@@ -4502,6 +4502,7 @@
 	the engine sent no report	рушій не надіслав звіт
 	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a без стиснення, 10 біт 4:2:2 (v210)
 	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, нестиснений 10-бітний Y'CbCr 4:2:2 у розкладці v210 (SMPTE ST 384), 24-бітний PCM 48 кГц, початковий таймкод
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записати субтитри як дані ANC (CEA-608/708, 29,97 кадр/с)
 	Load KDM…	Завантажити KDM…
 	Forget DCP Keys	Забути ключі DCP
 	Load KDM	Завантажити KDM
