@@ -4544,3 +4544,14 @@
 	Chase External Timecode	Стежити за зовнішнім тайм-кодом
 	Send LTC	Надсилати LTC
 	Send MIDI Timecode	Надсилати MIDI тайм-код
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	«Картинка в картинці» 35% ліворуч угорі
+	Picture-in-picture: 35 % scale in the upper left	«Картинка в картинці»: масштаб 35 % у лівому верхньому куті
+	PiP 35% Lower Left	«Картинка в картинці» 35% ліворуч унизу
+	Picture-in-picture: 35 % scale in the lower left	«Картинка в картинці»: масштаб 35 % у лівому нижньому куті
+	PiP 35% Lower Right	«Картинка в картинці» 35% праворуч унизу
+	Picture-in-picture: 35 % scale in the lower right	«Картинка в картинці»: масштаб 35 % у правому нижньому куті
+	Split Screen Left	Розділений екран ліворуч
+	Split screen: the middle half of the picture fills the left half of the frame	Розділений екран: середня половина зображення заповнює ліву половину кадру
+	Split Screen Right	Розділений екран праворуч
+	Split screen: the middle half of the picture fills the right half of the frame	Розділений екран: середня половина зображення заповнює праву половину кадру

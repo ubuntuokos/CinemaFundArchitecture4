@@ -4561,3 +4561,14 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% ylhäällä vasemmalla
+	Picture-in-picture: 35 % scale in the upper left	Kuva kuvassa: 35 %:n skaalaus ylhäällä vasemmalla
+	PiP 35% Lower Left	PiP 35% alhaalla vasemmalla
+	Picture-in-picture: 35 % scale in the lower left	Kuva kuvassa: 35 %:n skaalaus alhaalla vasemmalla
+	PiP 35% Lower Right	PiP 35% alhaalla oikealla
+	Picture-in-picture: 35 % scale in the lower right	Kuva kuvassa: 35 %:n skaalaus alhaalla oikealla
+	Split Screen Left	Jaettu näyttö vasen
+	Split screen: the middle half of the picture fills the left half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun vasemman puolen
+	Split Screen Right	Jaettu näyttö oikea
+	Split screen: the middle half of the picture fills the right half of the frame	Jaettu näyttö: kuvan keskimmäinen puolikas täyttää ruudun oikean puolen

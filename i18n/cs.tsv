@@ -4559,3 +4559,14 @@ export.summary	Low	nízká
 	Chase External Timecode	Sledovat externí časový kód
 	Send LTC	Odesílat LTC
 	Send MIDI Timecode	Odesílat časový kód MIDI
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Obraz v obraze 35% vlevo nahoře
+	Picture-in-picture: 35 % scale in the upper left	Obraz v obraze: měřítko 35 % vlevo nahoře
+	PiP 35% Lower Left	Obraz v obraze 35% vlevo dole
+	Picture-in-picture: 35 % scale in the lower left	Obraz v obraze: měřítko 35 % vlevo dole
+	PiP 35% Lower Right	Obraz v obraze 35% vpravo dole
+	Picture-in-picture: 35 % scale in the lower right	Obraz v obraze: měřítko 35 % vpravo dole
+	Split Screen Left	Rozdělená obrazovka vlevo
+	Split screen: the middle half of the picture fills the left half of the frame	Rozdělená obrazovka: prostřední polovina obrazu vyplní levou polovinu snímku
+	Split Screen Right	Rozdělená obrazovka vpravo
+	Split screen: the middle half of the picture fills the right half of the frame	Rozdělená obrazovka: prostřední polovina obrazu vyplní pravou polovinu snímku

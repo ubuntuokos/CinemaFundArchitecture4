@@ -4559,3 +4559,14 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% trên trái
+	Picture-in-picture: 35 % scale in the upper left	Hình trong hình: tỷ lệ 35 % ở góc trên trái
+	PiP 35% Lower Left	PiP 35% dưới trái
+	Picture-in-picture: 35 % scale in the lower left	Hình trong hình: tỷ lệ 35 % ở góc dưới trái
+	PiP 35% Lower Right	PiP 35% dưới phải
+	Picture-in-picture: 35 % scale in the lower right	Hình trong hình: tỷ lệ 35 % ở góc dưới phải
+	Split Screen Left	Chia màn hình trái
+	Split screen: the middle half of the picture fills the left half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa trái khung hình
+	Split Screen Right	Chia màn hình phải
+	Split screen: the middle half of the picture fills the right half of the frame	Chia màn hình: nửa giữa của hình lấp đầy nửa phải khung hình

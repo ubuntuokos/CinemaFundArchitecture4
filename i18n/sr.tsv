@@ -4559,3 +4559,14 @@ export.summary	Low	низак
 	Chase External Timecode	Прати спољни временски код
 	Send LTC	Шаљи LTC
 	Send MIDI Timecode	Шаљи MIDI временски код
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Слика у слици 35% горе лево
+	Picture-in-picture: 35 % scale in the upper left	Слика у слици: размера 35 % горе лево
+	PiP 35% Lower Left	Слика у слици 35% доле лево
+	Picture-in-picture: 35 % scale in the lower left	Слика у слици: размера 35 % доле лево
+	PiP 35% Lower Right	Слика у слици 35% доле десно
+	Picture-in-picture: 35 % scale in the lower right	Слика у слици: размера 35 % доле десно
+	Split Screen Left	Подељени екран лево
+	Split screen: the middle half of the picture fills the left half of the frame	Подељени екран: средња половина слике испуњава леву половину кадра
+	Split Screen Right	Подељени екран десно
+	Split screen: the middle half of the picture fills the right half of the frame	Подељени екран: средња половина слике испуњава десну половину кадра

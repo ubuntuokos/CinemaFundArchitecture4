@@ -4566,3 +4566,14 @@
 	Chase External Timecode	Seguir código de tiempo externo
 	Send LTC	Enviar LTC
 	Send MIDI Timecode	Enviar código de tiempo MIDI
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	Imagen en imagen al 35 % arriba a la izquierda
+	Picture-in-picture: 35 % scale in the upper left	Imagen en imagen: escala del 35 % arriba a la izquierda
+	PiP 35% Lower Left	Imagen en imagen al 35 % abajo a la izquierda
+	Picture-in-picture: 35 % scale in the lower left	Imagen en imagen: escala del 35 % abajo a la izquierda
+	PiP 35% Lower Right	Imagen en imagen al 35 % abajo a la derecha
+	Picture-in-picture: 35 % scale in the lower right	Imagen en imagen: escala del 35 % abajo a la derecha
+	Split Screen Left	Pantalla dividida izquierda
+	Split screen: the middle half of the picture fills the left half of the frame	Pantalla dividida: la mitad central de la imagen ocupa la mitad izquierda del cuadro
+	Split Screen Right	Pantalla dividida derecha
+	Split screen: the middle half of the picture fills the right half of the frame	Pantalla dividida: la mitad central de la imagen ocupa la mitad derecha del cuadro

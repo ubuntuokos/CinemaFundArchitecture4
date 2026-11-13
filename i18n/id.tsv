@@ -4567,3 +4567,14 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% Kiri Atas
+	Picture-in-picture: 35 % scale in the upper left	Gambar-dalam-gambar: skala 35 % di kiri atas
+	PiP 35% Lower Left	PiP 35% Kiri Bawah
+	Picture-in-picture: 35 % scale in the lower left	Gambar-dalam-gambar: skala 35 % di kiri bawah
+	PiP 35% Lower Right	PiP 35% Kanan Bawah
+	Picture-in-picture: 35 % scale in the lower right	Gambar-dalam-gambar: skala 35 % di kanan bawah
+	Split Screen Left	Layar Terbagi Kiri
+	Split screen: the middle half of the picture fills the left half of the frame	Layar terbagi: separuh tengah gambar mengisi separuh kiri bingkai
+	Split Screen Right	Layar Terbagi Kanan
+	Split screen: the middle half of the picture fills the right half of the frame	Layar terbagi: separuh tengah gambar mengisi separuh kanan bingkai

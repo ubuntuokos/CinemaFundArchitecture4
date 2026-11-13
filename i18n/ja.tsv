@@ -4568,3 +4568,14 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+# Layout presets: PiP corners, split screen (EffectsSDK review)
+	PiP 35% Upper Left	PiP 35% 左上
+	Picture-in-picture: 35 % scale in the upper left	ピクチャーインピクチャー: スケール 35 % で左上に配置
+	PiP 35% Lower Left	PiP 35% 左下
+	Picture-in-picture: 35 % scale in the lower left	ピクチャーインピクチャー: スケール 35 % で左下に配置
+	PiP 35% Lower Right	PiP 35% 右下
+	Picture-in-picture: 35 % scale in the lower right	ピクチャーインピクチャー: スケール 35 % で右下に配置
+	Split Screen Left	分割画面 左
+	Split screen: the middle half of the picture fills the left half of the frame	分割画面: 映像の中央半分をフレームの左半分に配置
+	Split Screen Right	分割画面 右
+	Split screen: the middle half of the picture fills the right half of the frame	分割画面: 映像の中央半分をフレームの右半分に配置
