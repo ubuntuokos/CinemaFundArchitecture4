@@ -1298,6 +1298,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-dcpomatic"
+version = "0.10.0"
+dependencies = [
+ "rustix 1.1.6",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-dirac"
 version = "0.10.0"
 dependencies = [
@@ -1370,6 +1380,7 @@ dependencies = [
  "cfa4-color",
  "cfa4-credits",
  "cfa4-dcp",
+ "cfa4-dcpomatic",
  "cfa4-dng",
  "cfa4-docpath",
  "cfa4-edit",
