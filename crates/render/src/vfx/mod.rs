@@ -13,6 +13,7 @@
 
 mod blur;
 mod color;
+mod denoise;
 pub(crate) use color::cdl;
 pub(crate) mod distort;
 mod glitch;
@@ -87,7 +88,7 @@ fn resize(img: Image, w: usize, h: usize) -> Image {
 
 /// Effects that read other frames (skipped when rendering another frame for one of them).
 pub fn is_temporal(id: &str) -> bool {
-    matches!(id, "posterize_time" | "echo" | "slit_scan" | "warp_stabilizer" | "auto_reframe")
+    matches!(id, "posterize_time" | "echo" | "slit_scan" | "warp_stabilizer" | "auto_reframe" | "temporal_denoise")
 }
 
 impl FxEnv for ItemEnv<'_> {
@@ -532,6 +533,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) -> bool {
         "posterize_time" => temporal::posterize_time(img, e, cx),
         "echo" => temporal::echo(img, e, cx),
         "slit_scan" => temporal::slit_scan(img, e, cx),
+        "temporal_denoise" => denoise::temporal_denoise(img, e, cx),
         "warp_stabilizer" => temporal::warp_stabilizer(img, e, cx),
         "auto_reframe" => temporal::auto_reframe(img, e, cx),
         // Text

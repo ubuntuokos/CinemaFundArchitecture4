@@ -4567,3 +4567,8 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Pengurangan Derau Temporal
+	Frames Each Side	Bingkai di Tiap Sisi
+	Motion Threshold	Ambang Gerakan
+	Show Motion	Tampilkan Gerakan

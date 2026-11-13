@@ -300,6 +300,17 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 b("show_illumination", "Show Illumination", false),
             ],
         ),
+        video(
+            "temporal_denoise",
+            "Temporal Denoise",
+            ENHANCE,
+            vec![
+                pct("amount", "Amount", 80.0),
+                fs("frames", "Frames Each Side", 2.0, (1.0, 4.0), (1.0, 4.0), "", 0),
+                fs("threshold", "Motion Threshold", 8.0, (0.1, 100.0), (0.1, 30.0), "%", 1),
+                b("show_motion", "Show Motion", false),
+            ],
+        ),
         // ---- Color Correction ----
         video(
             "asc_cdl",
@@ -1335,7 +1346,8 @@ pub(super) fn apply_badges(v: &mut [EffectDef]) {
         let accel = match e.category.first().copied() {
             Some("Legacy") => !matches!(id, "camera_blur"),
             _ if folder == "Obsolete" => false,
-            _ => !matches!(id, "clone" | "stroke"),
+            // CFA4's own CPU-only effects get no badge
+            _ => !matches!(id, "clone" | "stroke" | "temporal_denoise"),
         };
         e.accelerated = accel;
         e.float32 = a32;

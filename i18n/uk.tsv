@@ -4544,3 +4544,8 @@
 	Chase External Timecode	Стежити за зовнішнім тайм-кодом
 	Send LTC	Надсилати LTC
 	Send MIDI Timecode	Надсилати MIDI тайм-код
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Часове шумозаглушення
+	Frames Each Side	Кадрів з кожного боку
+	Motion Threshold	Поріг руху
+	Show Motion	Показати рух

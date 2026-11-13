@@ -4562,3 +4562,8 @@ export.summary	Low	ниско
 	Chase External Timecode	Следване на външен тайм код
 	Send LTC	Изпращане на LTC
 	Send MIDI Timecode	Изпращане на MIDI тайм код
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Времево обезшумяване
+	Frames Each Side	Кадри от всяка страна
+	Motion Threshold	Праг на движение
+	Show Motion	Показване на движението

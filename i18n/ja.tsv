@@ -4568,3 +4568,8 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間的ノイズ除去
+	Frames Each Side	片側のフレーム数
+	Motion Threshold	動きのしきい値
+	Show Motion	動きを表示

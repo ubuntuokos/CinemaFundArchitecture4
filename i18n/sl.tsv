@@ -4562,3 +4562,8 @@ export.summary	Low	nizka
 	Chase External Timecode	Sledi zunanji časovni kodi
 	Send LTC	Pošlji LTC
 	Send MIDI Timecode	Pošlji časovno kodo MIDI
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Časovno odstranjevanje šuma
+	Frames Each Side	Sličic na vsaki strani
+	Motion Threshold	Prag gibanja
+	Show Motion	Pokaži gibanje

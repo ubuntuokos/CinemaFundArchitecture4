@@ -4560,3 +4560,8 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Zamansal Gürültü Azaltma
+	Frames Each Side	Her Yandaki Kare
+	Motion Threshold	Hareket Eşiği
+	Show Motion	Hareketi Göster

@@ -4556,3 +4556,8 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Időbeli zajcsökkentés
+	Frames Each Side	Képkocka oldalanként
+	Motion Threshold	Mozgásküszöb
+	Show Motion	Mozgás mutatása

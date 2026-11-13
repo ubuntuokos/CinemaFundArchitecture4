@@ -4562,3 +4562,8 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	დროითი ხმაურის შემცირება
+	Frames Each Side	კადრები თითოეულ მხარეს
+	Motion Threshold	მოძრაობის ზღვარი
+	Show Motion	მოძრაობის ჩვენება

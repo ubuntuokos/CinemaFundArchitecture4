@@ -417,6 +417,7 @@ pub fn effect_cost_ms(id: &str) -> f64 {
         | "auto_reframe"
         | "echo"
         | "slit_scan"
+        | "temporal_denoise"
         | "echo_glow"
         | "glint"
         | "wonder_glow"

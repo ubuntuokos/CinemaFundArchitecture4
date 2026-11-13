@@ -4559,3 +4559,8 @@ export.summary	Low	nízká
 	Chase External Timecode	Sledovat externí časový kód
 	Send LTC	Odesílat LTC
 	Send MIDI Timecode	Odesílat časový kód MIDI
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	Časové odšumění
+	Frames Each Side	Snímků na každou stranu
+	Motion Threshold	Práh pohybu
+	Show Motion	Zobrazit pohyb

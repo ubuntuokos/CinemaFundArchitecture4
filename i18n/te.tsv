@@ -4565,3 +4565,8 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	కాలపరమైన శబ్ద తొలగింపు
+	Frames Each Side	ప్రతి వైపు ఫ్రేమ్‌లు
+	Motion Threshold	కదలిక పరిమితి
+	Show Motion	కదలికను చూపు

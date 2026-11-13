@@ -4558,3 +4558,8 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+# Temporal Denoise (EffectsSDK review)
+	Temporal Denoise	時間降噪
+	Frames Each Side	每側影格數
+	Motion Threshold	動態臨界值
+	Show Motion	顯示動態
