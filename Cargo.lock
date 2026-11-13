@@ -1143,6 +1143,7 @@ dependencies = [
  "cfa4-media",
  "cfa4-mpegts",
  "cfa4-mxf",
+ "cfa4-obs",
  "cfa4-ogg",
  "cfa4-platform",
  "cfa4-project",
@@ -1762,6 +1763,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-obs"
+version = "0.10.0"
+dependencies = [
+ "libloading 0.8.9",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-ogg"
 version = "0.10.0"
 dependencies = [
@@ -1932,6 +1944,15 @@ version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-studio-host"
+version = "0.10.0"
+dependencies = [
+ "cfa4-obs",
+ "rustix 1.1.6",
+ "serde_json",
 ]
 
 [[package]]
