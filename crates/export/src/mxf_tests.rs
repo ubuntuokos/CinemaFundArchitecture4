@@ -506,7 +506,7 @@ fn interlaced_mpeg2_mxf() {
     let refused = |s: ExportSettings| matches!(export(&p, seq, &s, &m, &Progress::default()), Err(ExportError::Unsupported(_)));
     assert!(refused(ExportSettings { frame_rate: Some(FrameRate::FPS_24), ..xd(&tmp("xd_1080i24.mxf")) }), "RDD 9 has no 1080i at 24 fps");
     assert!(refused(ExportSettings { frame_size: Some((1280, 720)), ..xd(&tmp("xd_720i.mxf")) }), "720 lines are progressive");
-    assert!(refused(ExportSettings { format: Format::ProRes, path: tmp("i.mov"), ..xd(&tmp("unused")) }), "ProRes codes progressive frames");
+    assert!(refused(ExportSettings { mxf_video_codec: MxfVideoCodec::ProRes, ..xd(&tmp("prores_i.mxf")) }), "ProRes in MXF is progressive");
     let path = tmp("xd_1080i.mxf");
     let r = export(&p, seq, &xd(&path), &m, &Progress::default()).unwrap();
     let n = r.frames as usize;

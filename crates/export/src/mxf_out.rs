@@ -154,7 +154,7 @@ pub(crate) struct MxfMux {
 }
 
 impl MxfMux {
-    pub fn new(s: MxfSetup) -> Result<Self> {
+    pub fn new(s: MxfSetup<'_>) -> Result<Self> {
         let settings = s.settings;
         let atom = settings.format == Format::MxfOpAtom;
         let rate = Rational::new(s.rate.num as i32, s.rate.den as i32);

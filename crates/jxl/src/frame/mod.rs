@@ -110,7 +110,7 @@ pub struct FrameContext<'a> {
 impl Bundle<FrameContext<'_>> for Frame {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, ctx: FrameContext) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, ctx: FrameContext<'_>) -> Result<Self> {
         let FrameContext { image_header, tracker, pool } = ctx;
         let tracker = tracker.cloned();
 
@@ -295,7 +295,7 @@ impl Frame {
         &self,
         lf_global_vardct: Option<&LfGlobalVarDct>,
         global_ma_config: Option<&MaConfig>,
-        mlf_group: Option<TransformedModularSubimage<S>>,
+        mlf_group: Option<TransformedModularSubimage<'_, S>>,
         lf_group_idx: u32,
     ) -> Option<Result<LfGroup<S>>> {
         if self.toc.is_single_entry() {

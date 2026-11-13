@@ -207,7 +207,7 @@ fn opj(tool: &str) -> Option<PathBuf> {
     ok.then(|| PathBuf::from(tool))
 }
 
-/// R, G, B planes of a binary PPM (P6, 8-bit).
+/// R, G, B planes of a binary PPM (P6; 8-bit, or 16-bit big-endian above maxval 255).
 fn ppm(data: &[u8]) -> Vec<Vec<i32>> {
     let mut fields = Vec::new();
     let mut at = 0;
@@ -231,8 +231,10 @@ fn ppm(data: &[u8]) -> Vec<Vec<i32>> {
     }
     assert_eq!(fields[0], "P6");
     let n = fields[1].parse::<usize>().unwrap() * fields[2].parse::<usize>().unwrap();
-    let px = &data[at + 1..at + 1 + 3 * n];
-    (0..3).map(|c| (0..n).map(|i| i32::from(px[3 * i + c])).collect()).collect()
+    let bytes = if fields[3].parse::<u32>().unwrap() > 255 { 2 } else { 1 };
+    let px = &data[at + 1..at + 1 + 3 * n * bytes];
+    let sample = |i: usize| if bytes == 2 { i32::from(u16::from_be_bytes([px[2 * i], px[2 * i + 1]])) } else { i32::from(px[i]) };
+    (0..3).map(|c| (0..n).map(|i| sample(3 * i + c)).collect()).collect()
 }
 
 /// What OpenJPEG writes and ffmpeg cannot: every code-block style (selective arithmetic coding
@@ -473,8 +475,10 @@ fn rawl(data: &[u8], planes: &[(usize, u8, bool)]) -> Vec<Vec<i32>> {
 }
 
 /// Our encoder's codestreams in OpenJPEG and ffmpeg: lossless ones decode to the input exactly
-/// there too, lossy ones (rate controlled, DCI 2K / 4K) within ±1 of our own decode. Skipped
-/// without the tools.
+/// there too, lossy ones (rate controlled, DCI 2K / 4K) within ±1 of our own decode. The HTJ2K
+/// ones also in OpenJPH's `ojph_expand` (the T.814 reference) when it is on the `PATH`, and in
+/// ffmpeg only from 7.0: 6.1's HT decoder misdecodes OpenJPH's own lossless streams the same way.
+/// Skipped without the tools.
 #[test]
 fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
     use cfa4_j2k::{EncodeOptions, Image, Plane, Progression};
@@ -493,6 +497,11 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
     assert!(matches!(st, Ok(s) if s.success()));
     let rgb = ppm(&std::fs::read(&input).unwrap());
     let plane = |data: Vec<i32>, precision: u8| Plane { width: 203, height: 117, precision, signed: false, dx: 1, dy: 1, data };
+    let ojph = opj("ojph_expand");
+    if ojph.is_none() {
+        eprintln!("OpenJPH's ojph_expand not on the PATH: HTJ2K streams checked in OpenJPEG only");
+    }
+    let ffmpeg_ht = cfa4_testkit::ffmpeg_version(&ff).and_then(|v| v.split('.').next()?.parse::<u32>().ok()).is_some_and(|major| major >= 7);
     let rgb8 = Image { width: 203, height: 117, components: rgb.iter().cloned().map(|d| plane(d, 8)).collect(), mct: false };
     // 12-bit for the cinema profiles (the 8-bit pattern scaled up, plus a ramp)
     let rgb12 = Image {
@@ -523,6 +532,25 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
         ("dci2k", &rgb12, EncodeOptions::cinema_2k(24), false),
         ("dci2k_budget", &rgb12, EncodeOptions { max_bytes: Some(12_000), max_component_bytes: Some(5_000), ..EncodeOptions::cinema_2k(24) }, false),
         ("dci4k", &rgb12, EncodeOptions::cinema_4k(24), false),
+        // HTJ2K (T.814) code-blocks
+        ("ht_lossless", &rgb8, EncodeOptions { ht: true, ..EncodeOptions::lossless() }, true),
+        (
+            "ht_lossless_cprl",
+            &rgb12,
+            EncodeOptions {
+                ht: true,
+                progression: Progression::Cprl,
+                precincts: vec![(7, 7), (8, 8)],
+                code_block: (5, 5),
+                tile_part_per_component: true,
+                tlm: true,
+                ..EncodeOptions::lossless()
+            },
+            true,
+        ),
+        ("ht_wide_blocks", &rgb8, EncodeOptions { ht: true, code_block: (10, 2), levels: 2, mct: false, ..EncodeOptions::lossless() }, true),
+        ("ht_lossy", &rgb8, EncodeOptions { ht: true, ..EncodeOptions::lossy(2.0) }, false),
+        ("ht_lossy_12bit", &rgb12, EncodeOptions { ht: true, ..EncodeOptions::lossy(0.5) }, false),
     ];
     for (name, img, opts, lossless) in cases {
         let data = cfa4_j2k::encode(img, &opts).unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -541,8 +569,18 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
             let worst = p.data.iter().zip(&theirs[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
             assert!(worst <= i32::from(!lossless), "{name}: OpenJPEG component {c} differs by {worst}");
         }
+        if let Some(expand) = ojph.as_ref().filter(|_| opts.ht) {
+            let out = dir.join(format!("{name}.ppm"));
+            let st = Command::new(expand).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+            assert!(st.is_ok_and(|s| s.success()), "{name}: ojph_expand");
+            let theirs = ppm(&std::fs::read(&out).unwrap());
+            for (c, p) in ours.components.iter().enumerate() {
+                let worst = p.data.iter().zip(&theirs[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+                assert!(worst <= i32::from(!lossless), "{name}: OpenJPH component {c} differs by {worst}");
+            }
+        }
         // ffmpeg's own decoder, for the 8-bit ones
-        if img.components[0].precision == 8 {
+        if img.components[0].precision == 8 && (!opts.ht || ffmpeg_ht) {
             let o =
                 Command::new(&ff).args(["-v", "error", "-c:v", "jpeg2000", "-i"]).arg(&cs).args(["-pix_fmt", "rgb24", "-f", "rawvideo", "-"]).output().unwrap();
             assert!(o.status.success(), "{name}: ffmpeg");

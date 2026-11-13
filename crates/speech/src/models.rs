@@ -253,7 +253,7 @@ pub type DownloadProgress<'a> = &'a mut dyn FnMut(u64, u64, &str) -> bool;
 /// and fails. Pure Rust TLS (rustls + RustCrypto) with the operating system's certificate
 /// verifier.
 #[cfg(feature = "download")]
-pub fn download(models_dir: &Path, m: &ModelInfo, progress: DownloadProgress) -> Result<(), crate::SpeechError> {
+pub fn download(models_dir: &Path, m: &ModelInfo, progress: DownloadProgress<'_>) -> Result<(), crate::SpeechError> {
     download_files(&model_dir(models_dir, m), m.files, progress)
 }
 
@@ -261,7 +261,7 @@ pub fn download(models_dir: &Path, m: &ModelInfo, progress: DownloadProgress) ->
 /// `files` go into `dir`, each verified against its SHA-256 and size before it is renamed into
 /// place.
 #[cfg(feature = "download")]
-pub fn download_files(dir: &Path, files: &[ModelFile], progress: DownloadProgress) -> Result<(), crate::SpeechError> {
+pub fn download_files(dir: &Path, files: &[ModelFile], progress: DownloadProgress<'_>) -> Result<(), crate::SpeechError> {
     use crate::SpeechError;
     use std::io::{Read, Write};
     if let Some(file) = files.iter().find(|file| !valid_name(file.name)) {
