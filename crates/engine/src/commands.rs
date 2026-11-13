@@ -3872,6 +3872,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::export_tools::commands());
     v.extend(crate::smart_cut::commands());
     v.extend(crate::segments::commands());
+    v.extend(crate::segment_detect::commands());
     v.extend(crate::qc::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());

@@ -12,7 +12,8 @@ Segments (CFA4-LOSSLESS-MEDIA-TOOLS-001 K1–K3): the clip's range markers are i
 one verified file per checked segment (``segments.plan`` / ``segments.export``, an output pattern
 with ``{n}`` and ``{name}``), and makes subclips of them or places them on the timeline
 (``segments.toSubclips`` / ``segments.toTimeline``). Nothing is written unless every checked
-segment can run.
+segment can run. "Find Segments…" proposes segments from scene changes, black or silence (K4–K5,
+``segment_finder.py``).
 """
 
 from __future__ import annotations
@@ -128,6 +129,7 @@ class SmartCutDialog(QDialog):
         self.said = said
         self.analysis: dict[str, Any] | None = None
         self.plan: dict[str, Any] | None = None
+        self.finder: QDialog | None = None
         self._plan_request = 0
         lay = QVBoxLayout(self)
         self.info = QLabel(tr("Analyzing the clip…"), self)
@@ -186,6 +188,11 @@ class SmartCutDialog(QDialog):
         self.to_timeline.setAutoDefault(False)
         self.to_timeline.clicked.connect(lambda _c=False: self.send("segments.toTimeline"))
         moves.addWidget(self.to_timeline)
+        self.find = QPushButton(tr("Find Segments…"), self.segments_box)
+        self.find.setObjectName("source.smartCut.findSegments")
+        self.find.setAutoDefault(False)
+        self.find.clicked.connect(lambda _c=False: self.find_segments())
+        moves.addWidget(self.find)
         moves.addStretch(1)
         seg.addLayout(moves)
         self.segments_box.hide()
@@ -283,6 +290,23 @@ class SmartCutDialog(QDialog):
             self._fail(tr("This clip has no segments: add range markers in the Source monitor first."))
             return
         self.replan()
+
+    def find_segments(self) -> QDialog:
+        """Find Segments (K4–K5); the list is read again once segments were added."""
+        from .segment_finder import SegmentFinderDialog
+
+        rate = (self.analysis or {}).get("frameRate") or {}
+        num, den = (int(rate.get("num") or 0), int(rate.get("den") or 0)) if isinstance(rate, dict) else (0, 0)
+        d = SegmentFinderDialog(self, self.engine, self.item, num / den if num > 0 and den > 0 else 0.0, self.said)
+        d.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        d.accepted.connect(self.reload_segments)
+        self.finder = d
+        d.open()
+        return d
+
+    def reload_segments(self) -> None:
+        self.error.hide()
+        self.engine.execute("segments.list", {"item": self.item}, on_reply=lambda r, _b: self._listed(r), on_error=self._fail)
 
     def chosen_segments(self) -> list[int]:
         out = []

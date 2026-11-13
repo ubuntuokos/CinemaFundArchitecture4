@@ -4570,3 +4570,25 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	Find Segments	Szegmensek keresése
+	Find Segments…	Szegmensek keresése…
+	Scene changes	Jelenetváltások
+	Black pictures	Fekete képek
+	Silence	Csend
+	Shortest shot (frames):	Legrövidebb snitt (képkocka):
+	Black level (%):	Feketeszint (%):
+	Black share of the picture (%):	Fekete aránya a képen (%):
+	Shortest black (s):	Legrövidebb fekete (mp):
+	Silence below (dBFS):	Csend e szint alatt (dBFS):
+	Shortest silence (s):	Legrövidebb csend (mp):
+	Analyzing…	Elemzés folyamatban…
+	First frame	Első képkocka
+	Last frame	Utolsó képkocka
+	Add as Segments	Hozzáadás szegmensként
+	The engine did not start the analysis.	A motor nem indította el az elemzést.
+	Analyzing… {percent}%	Elemzés folyamatban… {percent}%
+	The analysis stopped.	Az elemzés leállt.
+	{count} segments found	{count} szegmens található
+	(only the first ones are listed)	(csak az elsők látszanak)
+	Row {n}: the first and last frame must be whole numbers	{n}. sor: az első és az utolsó képkocka csak egész szám lehet
+	{count} segments added to the clip	{count} szegmens hozzáadva a kliphez

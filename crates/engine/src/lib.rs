@@ -59,6 +59,7 @@ pub mod relink;
 pub mod remix;
 pub mod scene_detect;
 pub mod scopes;
+pub mod segment_detect;
 mod segments;
 pub mod sequence_extras;
 pub mod sequence_tools;
@@ -516,6 +517,8 @@ pub struct Session {
     pub mask_jobs: Vec<masks::PendingTrack>,
     /// Scene Edit Detection jobs whose results are applied when they finish.
     pub scene_jobs: Vec<scene_detect::PendingScene>,
+    /// Segment analyses of a source (`segments.detect*`) and their proposals (the last few).
+    pub segment_scans: Vec<segment_detect::Scan>,
     /// Effect presets (built-in + the user's, persisted in the data directory).
     pub presets: presets::PresetLibrary,
     /// Export presets (built-in + the user's, persisted in the data directory) and favourites.
@@ -624,6 +627,7 @@ impl Session {
             media_jobs: Vec::new(),
             mask_jobs: Vec::new(),
             scene_jobs: Vec::new(),
+            segment_scans: Vec::new(),
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
@@ -1443,6 +1447,8 @@ mod ripple_head_tests;
 mod roll_linked_tests;
 #[cfg(test)]
 mod scopes_tests;
+#[cfg(test)]
+mod segment_detect_tests;
 #[cfg(test)]
 mod segments_tests;
 #[cfg(test)]

@@ -5136,9 +5136,11 @@ def test_tools_menu_groups_video_audio_and_publication_tools(app, fake_engine: P
         video, audio, publication = subs
         video.aboutToShow.emit()
         ids = {a.objectName(): a for a in video.actions() if not a.isSeparator()}
-        assert list(ids) == ["tools.video.smartCut", "tools.video.smartExport", "tools.video.showGopMarks"]
+        assert list(ids) == ["tools.video.smartCut", "tools.video.findSegments", "tools.video.smartExport", "tools.video.showGopMarks"]
         assert not ids["tools.video.smartCut"].isEnabled()  # no clip in the Source monitor
+        assert not ids["tools.video.findSegments"].isEnabled()
         ids["tools.video.smartCut"].trigger()  # says what to do instead of failing
+        ids["tools.video.findSegments"].trigger()
         # the GOP boundary marks follow the timeline's own toggle both ways
         gop = ids["tools.video.showGopMarks"]
         assert not gop.isChecked()
@@ -14216,6 +14218,78 @@ def test_real_engine_smart_cut_segments(app, tmp_path: Path):
     finally:
         engine.stop()
         win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_find_segments(app, tmp_path: Path):
+    """Tools ▸ Video Tools ▸ Find Segments… (CFA4-LOSSLESS-MEDIA-TOOLS-001 K4–K5): the black second
+    of a clip is proposed, corrected (renamed, one frame shorter) and added as a segment; nothing
+    changes before that."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        pytest.skip("ffmpeg makes the clip")
+    clip = tmp_path / "blk.mp4"
+    args = [ffmpeg, "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25:d=2", "-f", "lavfi", "-i", "color=black:size=128x96:rate=25:d=1"]
+    args += ["-f", "lavfi", "-i", "testsrc2=size=128x96:rate=25:d=1", "-filter_complex", "[0][1][2]concat=n=3:v=1:a=0", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(clip)]
+    if subprocess.run(args, stdin=subprocess.DEVNULL, check=False).returncode != 0:
+        pytest.skip("ffmpeg could not make the clip")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("file.import", {"paths": [str(clip)]})
+        assert wait_until(app, lambda: any(i.get("name", "").startswith("blk") for i in _items(win.project or {})), 30_000)
+        item = next(i for i in _items(win.project) if i.get("name", "").startswith("blk"))
+        src = win.source_monitor
+        win.execute("source.open", {"item": item["item"]})
+        assert wait_until(app, lambda: src.has_content(), 60_000)
+        d = src.open_find_segments()
+        assert d is not None
+        d.kind.setCurrentIndex(d.kind.findData("black"))
+        assert d.fields["blackSeconds"].isVisible() and not d.fields["sensitivity"].isVisible()
+        d.start()
+        assert wait_until(app, lambda: d.accept_button.isEnabled(), 60_000), d.error.text()
+        assert d.table.rowCount() == 1, d.state.text()
+        assert (d.table.item(0, 1).text(), d.table.item(0, 2).text()) == ("50", "74")
+        d.table.item(0, 0).setText("leader")
+        d.table.item(0, 2).setText("73")
+        said: list[str] = []
+        src.status.connect(said.append)
+        d.add()
+        assert wait_until(app, lambda: any("added" in m for m in said), 30_000), (said, d.error.text())
+        got: list = []
+        engine.execute("segments.list", {"item": item["item"]}, on_reply=lambda r, _b: got.append(r), on_error=got.append)
+        assert wait_until(app, lambda: bool(got), 30_000)
+        segments = got[0]["segments"]
+        ft = src.frame()
+        assert [(m["name"], m["in"], m["out"]) for m in segments] == [("leader", 50 * ft, 74 * ft)], segments
+    finally:
+        engine.stop()
+        win.close()
+
+
+def test_find_segment_values():
+    """Frames shown for the boundaries found, and the engine parameters of each analysis."""
+    from cfa4_qt.panels.segment_finder import kind_params, to_frame
+
+    tps = 254_016_000_000
+    assert to_frame(50 * tps // 25, 25.0) == 50
+    # NTSC frame starts round to their frame
+    assert to_frame(-(-1001 * 7 * tps // 30000), 30000 / 1001) == 7
+    assert to_frame(5, 0.0) == 0
+    values = {"sensitivity": 40.0, "minShotFrames": 3.0, "pixelThreshold": 10.0, "pictureThreshold": 98.0, "blackSeconds": 0.5, "thresholdDb": -50.0, "silenceSeconds": 1.0}
+    assert kind_params("scenes", values) == {"sensitivity": 40.0, "minShotFrames": 3}
+    assert kind_params("black", values) == {"pixelThreshold": 0.1, "pictureThreshold": 0.98, "minSeconds": 0.5}
+    assert kind_params("silence", values) == {"thresholdDb": -50.0, "minSeconds": 1.0}
 
 
 def test_smart_cut_segment_texts():
