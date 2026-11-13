@@ -1199,6 +1199,7 @@ dependencies = [
  "cfa4-hevc",
  "cfa4-huffyuv",
  "cfa4-iab",
+ "cfa4-ilbc",
  "cfa4-isobmff",
  "cfa4-j2k",
  "cfa4-lcevc",
@@ -1648,6 +1649,14 @@ name = "cfa4-iab"
 version = "0.10.0"
 dependencies = [
  "cfa4-bitstream",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-ilbc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 

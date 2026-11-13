@@ -33,6 +33,7 @@ cfa4-mpeg2v = { workspace = true }
 cfa4-ac3 = { workspace = true }
 cfa4-tta = { workspace = true }
 cfa4-g729 = { workspace = true }
+cfa4-ilbc = { workspace = true }
 cfa4-dts = { workspace = true }
 cfa4-truehd = { workspace = true }
 cfa4-mpa = { workspace = true }
