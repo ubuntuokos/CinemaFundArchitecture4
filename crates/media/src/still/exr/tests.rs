@@ -134,7 +134,11 @@ fn exr_file(chans: &[Chan], data: [i32; 4], display: [i32; 4], comp: u8, value: 
     attr(&mut f, "lineOrder", "lineOrder", &[0]);
     attr(&mut f, "pixelAspectRatio", "float", &1f32.to_le_bytes());
     f.push(0);
-    let lpc = if comp == 3 || comp == 5 { 16 } else { 1 };
+    let lpc = match comp {
+        3 | 5 => 16,
+        4 => 32,
+        _ => 1,
+    };
     let ys: Vec<i32> = (data[1]..=data[3]).step_by(lpc).collect();
     let table = f.len();
     f.resize(table + ys.len() * 8, 0);
@@ -153,6 +157,12 @@ fn exr_file(chans: &[Chan], data: [i32; 4], display: [i32; 4], comp: u8, value: 
             5 => {
                 let lines = (data[3] - y0 + 1).min(16) as usize;
                 zlib_stored(&pxr24(&raw, chans, (data[2] - data[0] + 1) as usize, lines))
+            }
+            4 => {
+                let lines = (data[3] - y0 + 1).min(32) as usize;
+                let width = (data[2] - data[0] + 1) as usize;
+                let pc: Vec<_> = chans.iter().map(|&(_, t)| super::piz::PizChannel { width, lines, bytes: if t == 1 { 2 } else { 4 } }).collect();
+                super::piz::compress(&raw, &pc).unwrap()
             }
             _ => zlib_stored(&predict(&raw)),
         };
@@ -243,6 +253,32 @@ fn pxr24_keeps_half_and_uint_exactly_and_floats_to_24_bits() {
 }
 
 #[test]
+fn piz_keeps_every_pixel_type_exactly() {
+    // 41 wide, 70 tall: three chunks of 32, 32 and 6 lines; one channel of every type
+    let chans: &[Chan] = &[("B", 2), ("G", 1), ("R", 2), ("Z", 0)];
+    let value = |c: usize, x: i32, y: i32| match c {
+        0 => 1.0 / 3.0 + x as f32 * 0.37 - y as f32 * 1.5,
+        1 => x as f32 * 0.0625 + y as f32,
+        2 => 6000.7 - (x * y) as f32 * 1.25,
+        _ => (x * 1000 + y) as f32,
+    };
+    let plain = decode("n.exr", &exr_file(chans, [0, 0, 40, 69], [0, 0, 40, 69], 0, value)).unwrap();
+    let f = exr_file(chans, [0, 0, 40, 69], [0, 0, 40, 69], 4, value);
+    let d = decode("p.exr", &f).unwrap();
+    assert_eq!(d.pixel_format, "RGB 32-bit float");
+    assert_eq!(floats(&d), floats(&plain));
+    // a damaged chunk is an error, never a panic
+    let mut cut = f.clone();
+    cut.truncate(f.len() - 40);
+    assert!(decode("p.exr", &cut).is_err());
+    for i in (f.len() - 200..f.len()).step_by(7) {
+        let mut b = f.clone();
+        b[i] ^= 0xA5;
+        let _ = decode("p.exr", &b);
+    }
+}
+
+#[test]
 fn damaged_pxr24_is_an_error() {
     let mut f = exr_file(RGBA_HALF, [0, 0, 9, 19], [0, 0, 9, 19], 5, pattern);
     assert!(decode("p.exr", &f).is_ok());
@@ -310,8 +346,9 @@ fn unsupported_files_say_why() {
     let mut tiled = f.clone();
     tiled[5] |= 0x02;
     assert!(matches!(decode("t.exr", &tiled), Err(MediaError::Unsupported(m)) if m.contains("tiled")));
+    // PIZ is read now (a chunk that would not shrink is stored as it is)
     let piz = exr_file(RGBA_HALF, [0, 0, 1, 1], [0, 0, 1, 1], 4, pattern);
-    assert!(matches!(decode("p.exr", &piz), Err(MediaError::Unsupported(m)) if m.contains("PIZ")));
+    assert!(decode("p.exr", &piz).is_ok());
     let b44 = exr_file(RGBA_HALF, [0, 0, 1, 1], [0, 0, 1, 1], 6, pattern);
     assert!(matches!(decode("b.exr", &b44), Err(MediaError::Unsupported(m)) if m.contains("B44")));
     let dwab = exr_file(RGBA_HALF, [0, 0, 1, 1], [0, 0, 1, 1], 9, pattern);

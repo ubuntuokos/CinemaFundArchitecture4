@@ -245,9 +245,57 @@ pub fn anc_element(packets: &[Vec<u8>], ten_bit: bool) -> Vec<u8> {
     v
 }
 
+/// The VBI line essence container (ST 436-1 Table 1, mapping 0Dh).
+pub const VBI_CONTAINER: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x02, 0x0D, 0x00, 0x00];
+/// The frame-wrapped VI element key (ST 436-1 Table 3).
+pub const VI_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x02, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x17, 0x01, 0x01, 0x01];
+
+/// A VI element value (ST 436-1 Table 4) of `(line, wrapping, coding, samples)` lines, the
+/// samples given as 10-bit values: the 1-bit codings (1–3) store white for samples of 502 and
+/// up, MSB first; the 8-bit ones (4–6) the high 8 bits; the 10-bit ones (7–9) three per word.
+/// Payload arrays are padded to four bytes.
+pub fn vi_element(lines: &[(u16, u8, u8, Vec<u16>)]) -> Vec<u8> {
+    let mut v = (lines.len() as u16).to_be_bytes().to_vec();
+    for (line, wrapping, coding, samples) in lines {
+        let mut payload: Vec<u8> = match coding {
+            1..=3 => samples.chunks(8).map(|c| c.iter().enumerate().fold(0u8, |b, (k, &x)| if x >= 502 { b | 0x80 >> k } else { b })).collect(),
+            7..=9 => samples
+                .chunks(3)
+                .flat_map(|c| {
+                    let s = |i: usize| u32::from(c.get(i).copied().unwrap_or(0));
+                    (s(0) << 22 | s(1) << 12 | s(2) << 2).to_be_bytes()
+                })
+                .collect(),
+            _ => samples.iter().map(|&x| (x >> 2) as u8).collect(),
+        };
+        while !payload.len().is_multiple_of(4) {
+            payload.push(0);
+        }
+        v.extend_from_slice(&line.to_be_bytes());
+        v.push(*wrapping);
+        v.push(*coding);
+        v.extend_from_slice(&(samples.len() as u16).to_be_bytes());
+        v.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+        v.extend_from_slice(&1u32.to_be_bytes());
+        v.extend_from_slice(&payload);
+    }
+    v
+}
+
 /// An OP1a file with one ANC data track (ST 436-1) at `rate` (num, den): one frame-wrapped ANC
 /// element per frame, `frames[i]` being frame `i`'s element value (see [`anc_element`]).
 pub fn build_anc(rate: (u32, u32), frames: &[Vec<u8>]) -> Vec<u8> {
+    build_436(rate, frames, false)
+}
+
+/// An OP1a file with one VBI data track (ST 436-1) at `rate`: one frame-wrapped VI element per
+/// frame, `frames[i]` being frame `i`'s element value (see [`vi_element`]).
+pub fn build_vi(rate: (u32, u32), frames: &[Vec<u8>]) -> Vec<u8> {
+    build_436(rate, frames, true)
+}
+
+fn build_436(rate: (u32, u32), frames: &[Vec<u8>], vbi: bool) -> Vec<u8> {
+    let (container, key, desc_kind, number) = if vbi { (VBI_CONTAINER, VI_KEY, 0x5B, 0x1701_0101u32) } else { (ANC_CONTAINER, ANC_KEY, 0x5C, 0x1701_0201) };
     let anc_def = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x01, 0x03, 0x02, 0x02, 0x03, 0, 0, 0];
     let dur = frames.len() as i64;
     let mut r = rate.0.to_be_bytes().to_vec();
@@ -271,25 +319,161 @@ pub fn build_anc(rate: (u32, u32), frames: &[Vec<u8>]) -> Vec<u8> {
     let mut fp = LocalSet::new(4);
     fp.p(0x4401, &umid(2)).p(0x4403, &batch(&[&uuid(11)])).p(0x4701, &uuid(40));
     klv(&mut md, set_key(0x37), &fp.0);
-    klv(&mut md, set_key(0x3B), &rated_track(11, 0x1701_0201, 21));
+    klv(&mut md, set_key(0x3B), &rated_track(11, number, 21));
     klv(&mut md, set_key(0x0F), &sequence(21, anc_def, dur, 31));
     klv(&mut md, set_key(0x11), &source_clip(31, anc_def, dur, [0; 32], 0));
     let mut desc = LocalSet::new(40);
-    desc.p(0x3001, &r).p(0x3002, &dur.to_be_bytes()).p(0x3004, &ANC_CONTAINER);
-    klv(&mut md, set_key(0x5C), &desc.0);
+    desc.p(0x3001, &r).p(0x3002, &dur.to_be_bytes()).p(0x3004, &container);
+    klv(&mut md, set_key(desc_kind), &desc.0);
     let mut ecd = LocalSet::new(5);
     ecd.p(0x2701, &umid(2)).p(0x3F07, &1u32.to_be_bytes()).p(0x3F06, &0u32.to_be_bytes());
     klv(&mut md, set_key(0x23), &ecd.0);
 
-    let mut f = partition_with(2, 0x04, 0, 0, md.len() as u64, &[ANC_CONTAINER]);
+    let mut f = partition_with(2, 0x04, 0, 0, md.len() as u64, &[container]);
     f.extend_from_slice(&md);
     let at = f.len() as u64;
-    f.extend_from_slice(&partition_with(3, 0x04, at, 1, 0, &[ANC_CONTAINER]));
+    f.extend_from_slice(&partition_with(3, 0x04, at, 1, 0, &[container]));
     for v in frames {
-        klv(&mut f, ANC_KEY, v);
+        klv(&mut f, key, v);
     }
     let at = f.len() as u64;
-    f.extend_from_slice(&partition_with(4, 0x04, at, 0, 0, &[ANC_CONTAINER]));
+    f.extend_from_slice(&partition_with(4, 0x04, at, 0, 0, &[container]));
+    f
+}
+
+/// A material sequence component of [`build_edit_list`]: a source clip into file package `pkg`
+/// (0 or 1) from `start` for `dur` edit units, or a filler.
+#[derive(Clone, Copy)]
+pub enum Comp {
+    Clip { pkg: u8, start: i64, dur: i64 },
+    Filler(i64),
+}
+
+/// An OP3a file: two file packages with the same track ids and numbers in their own essence
+/// containers (body SIDs 1 and 3, index SIDs 2 and 4), `n[p]` frame-wrapped content packages
+/// each (picture `pic(p, i)`; 16-bit stereo sound of 1920 frames, sample k of package p =
+/// p·10000 + k on the left, its negation on the right), and a material package whose picture and
+/// sound sequences are `comps`. Each package has a footer index with temporal offsets `to` and
+/// flags `flags`.
+pub fn build_edit_list(comps: &[Comp], n: [usize; 2], pic: impl Fn(u8, usize) -> Vec<u8>, to: &[i8], flags: &[u8]) -> Vec<u8> {
+    let op3a = ul(&[0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x03, 0x01, 0x09, 0x00]);
+    let clip = |uid: u8, def: [u8; 16], dur: i64, start: i64, pkg: [u8; 32], track: u32| {
+        let mut s = LocalSet::new(uid);
+        s.p(0x0201, &def).p(0x0202, &dur.to_be_bytes()).p(0x1201, &start.to_be_bytes()).p(0x1101, &pkg).p(0x1102, &track.to_be_bytes());
+        s.0
+    };
+    let mut md = Vec::new();
+    klv(&mut md, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x05, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x05, 0x01, 0x00]), &batch(&[]));
+    let mut pre = LocalSet::new(1);
+    pre.p(0x3B03, &uuid(2)).p(0x3B09, &op3a);
+    klv(&mut md, set_key(0x2F), &pre.0);
+    let mut cs = LocalSet::new(2);
+    cs.p(0x1901, &batch(&[&uuid(3), &uuid(4), &uuid(5)]));
+    klv(&mut md, set_key(0x18), &cs.0);
+    // material package: picture and sound sequences of the components
+    let mut mp = LocalSet::new(3);
+    mp.p(0x4401, &umid(1)).p(0x4402, &[0, b'E', 0, b'L']).p(0x4403, &batch(&[&uuid(10), &uuid(11)]));
+    klv(&mut md, set_key(0x36), &mp.0);
+    let total = comps.iter().fold(0i64, |a, c| match c {
+        Comp::Clip { dur, .. } | Comp::Filler(dur) => a.saturating_add(*dur),
+    });
+    for (k, (def, first_uid, track_id)) in [(PICTURE_DEF, 60u8, 2u32), (SOUND_DEF, 80, 3)].into_iter().enumerate() {
+        let k = k as u8;
+        klv(&mut md, set_key(0x3B), &track(10 + k, 1 + track_id - 1, 0, 20 + k));
+        let uids: Vec<[u8; 16]> = (0..comps.len()).map(|j| uuid(first_uid + j as u8)).collect();
+        let refs: Vec<&[u8]> = uids.iter().map(|u| &u[..]).collect();
+        let mut seq = LocalSet::new(20 + k);
+        seq.p(0x0201, &def).p(0x0202, &total.to_be_bytes()).p(0x1001, &batch(&refs));
+        klv(&mut md, set_key(0x0F), &seq.0);
+        for (j, c) in comps.iter().enumerate() {
+            let uid = first_uid + j as u8;
+            match *c {
+                Comp::Clip { pkg, start, dur } => klv(&mut md, set_key(0x11), &clip(uid, def, dur, start, umid(2 + pkg), track_id)),
+                Comp::Filler(dur) => {
+                    let mut f = LocalSet::new(uid);
+                    f.p(0x0201, &def).p(0x0202, &dur.to_be_bytes());
+                    klv(&mut md, set_key(0x09), &f.0);
+                }
+            }
+        }
+    }
+    // file packages
+    for p in 0..2u8 {
+        let d = n[p as usize] as i64;
+        let mut fp = LocalSet::new(4 + p);
+        fp.p(0x4401, &umid(2 + p)).p(0x4403, &batch(&[&uuid(13 + 2 * p), &uuid(14 + 2 * p)])).p(0x4701, &uuid(40 + 3 * p));
+        klv(&mut md, set_key(0x37), &fp.0);
+        klv(&mut md, set_key(0x3B), &track(13 + 2 * p, 2, 0x1501_0500, 23 + 2 * p));
+        klv(&mut md, set_key(0x0F), &sequence(23 + 2 * p, PICTURE_DEF, d, 33 + 2 * p));
+        klv(&mut md, set_key(0x11), &source_clip(33 + 2 * p, PICTURE_DEF, d, [0; 32], 0));
+        klv(&mut md, set_key(0x3B), &track(14 + 2 * p, 3, 0x1601_0300, 24 + 2 * p));
+        klv(&mut md, set_key(0x0F), &sequence(24 + 2 * p, SOUND_DEF, d, 34 + 2 * p));
+        klv(&mut md, set_key(0x11), &source_clip(34 + 2 * p, SOUND_DEF, d, [0; 32], 0));
+        let mut mdesc = LocalSet::new(40 + 3 * p);
+        mdesc.p(0x3001, &[0, 0, 0, 25, 0, 0, 0, 1]).p(0x3F01, &batch(&[&uuid(41 + 3 * p), &uuid(42 + 3 * p)]));
+        klv(&mut md, set_key(0x44), &mdesc.0);
+        let mut cdci = LocalSet::new(41 + 3 * p);
+        cdci.p(0x3006, &2u32.to_be_bytes())
+            .p(0x3203, &64u32.to_be_bytes())
+            .p(0x3202, &32u32.to_be_bytes())
+            .p(0x320E, &[0, 0, 0, 2, 0, 0, 0, 1])
+            .p(0x3301, &8u32.to_be_bytes())
+            .p(0x3201, &ul(&[0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0A, 0x04, 0x01, 0x02, 0x02, 0x03, 0x06, 0x03, 0x00]));
+        klv(&mut md, set_key(0x28), &cdci.0);
+        let mut wave = LocalSet::new(42 + 3 * p);
+        wave.p(0x3006, &3u32.to_be_bytes())
+            .p(0x3D03, &[0, 0, 0xBB, 0x80, 0, 0, 0, 1])
+            .p(0x3D07, &2u32.to_be_bytes())
+            .p(0x3D01, &16u32.to_be_bytes())
+            .p(0x3D0A, &4u16.to_be_bytes());
+        klv(&mut md, set_key(0x48), &wave.0);
+        let mut ecd = LocalSet::new(6 + p);
+        ecd.p(0x2701, &umid(2 + p)).p(0x3F07, &(1 + 2 * p as u32).to_be_bytes()).p(0x3F06, &(2 + 2 * p as u32).to_be_bytes());
+        klv(&mut md, set_key(0x23), &ecd.0);
+    }
+    let mut f = partition(2, 0, 0, 0, md.len() as u64);
+    f.extend_from_slice(&md);
+    let mut all_offsets = Vec::new();
+    for p in 0..2u8 {
+        let body_at = f.len() as u64;
+        f.extend_from_slice(&partition(3, body_at, 1 + 2 * p as u32, 0, 0));
+        let base = f.len() as u64;
+        let mut offsets = Vec::new();
+        for i in 0..n[p as usize] {
+            offsets.push(f.len() as u64 - base);
+            klv(&mut f, PIC_KEY, &pic(p, i));
+            let mut snd = Vec::new();
+            for k in 0..1920 {
+                let s = (p as usize * 10000 + i * 1920 + k) as i16;
+                snd.extend_from_slice(&s.to_le_bytes());
+                snd.extend_from_slice(&(-s).to_le_bytes());
+            }
+            klv(&mut f, SND_KEY, &snd);
+        }
+        all_offsets.push(offsets);
+    }
+    let footer_at = f.len() as u64;
+    f.extend_from_slice(&partition(4, footer_at, 0, 2, 0));
+    for (p, offsets) in all_offsets.iter().enumerate() {
+        let mut ix = LocalSet::new(8 + p as u8);
+        let entries: Vec<Vec<u8>> = offsets
+            .iter()
+            .enumerate()
+            .map(|(i, o)| {
+                let mut e = vec![to.get(i).copied().unwrap_or(0) as u8, 0, flags.get(i).copied().unwrap_or(0)];
+                e.extend_from_slice(&o.to_be_bytes());
+                e
+            })
+            .collect();
+        let refs: Vec<&[u8]> = entries.iter().map(Vec::as_slice).collect();
+        ix.p(0x3F0B, &[0, 0, 0, 25, 0, 0, 0, 1])
+            .p(0x3F0C, &0i64.to_be_bytes())
+            .p(0x3F0D, &(offsets.len() as i64).to_be_bytes())
+            .p(0x3F06, &(2 + 2 * p as u32).to_be_bytes())
+            .p(0x3F07, &(1 + 2 * p as u32).to_be_bytes())
+            .p(0x3F0A, &batch(&refs));
+        klv(&mut f, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x10, 0x01, 0x00]), &ix.0);
+    }
     f
 }
 
@@ -357,7 +541,7 @@ pub fn encrypted_triplet(key: &[u8; 16], context: &[u8; 16], source: [u8; 16], p
 }
 
 /// Rewrites a plaintext track file as an encrypted one (ST 429-6 clauses 6-9): every essence
-/// triplet becomes an Encrypted Triplet, the primer gains the context's dynamic tags and a
+/// triplet (and generic stream data element) becomes an Encrypted Triplet, the primer gains the context's dynamic tags and a
 /// Cryptographic Context set follows it.
 pub fn encrypt_track_file(f: &[u8], key: &[u8; 16], key_id: &[u8; 16], context: &[u8; 16], po: usize, mic_key: Option<[u8; 16]>) -> Vec<u8> {
     let mic = mic_key.is_some();
@@ -395,7 +579,9 @@ pub fn encrypt_track_file(f: &[u8], key: &[u8; 16], key_id: &[u8; 16], context: 
             s.p(0xFF75, key_id);
             let set_key = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x04, 0x01, 0x02, 0x02, 0x00, 0x00];
             klv(&mut out, set_key, &s.0);
-        } else if k.0[8..12] == [0x0D, 0x01, 0x03, 0x01] && matches!(k.0[12], 0x15 | 0x16) {
+        } else if (k.0[8..12] == [0x0D, 0x01, 0x03, 0x01] && matches!(k.0[12], 0x15..=0x17)) || k.0[8..13] == [0x0D, 0x01, 0x05, 0x09, 0x01] {
+            // picture, sound and data (timed text) elements, and generic stream data (timed text
+            // resources: ST 429-5 encrypts them with the document)
             let t = encrypted_triplet(key, context, k.0, v, po.min(v.len()), seq, mic_key);
             seq += 1;
             klv(&mut out, TRIPLET_KEY, &t);

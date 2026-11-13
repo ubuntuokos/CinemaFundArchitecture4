@@ -1359,7 +1359,7 @@ pub(crate) mod fixtures {
     }
 
     /// As [`alternate_payload`], with one gain code per height-row column.
-    pub(crate) fn alternate_payload_rows(records: &[ObjectRecord], height_rows: [HeightRow; 4]) -> Vec<u8> {
+    pub(crate) fn alternate_payload_rows(records: &[ObjectRecord], height_rows: [HeightRow<'_>; 4]) -> Vec<u8> {
         let mut w = BitWriter::new();
         type241_bits(&mut w, records);
         w.align();
@@ -1456,7 +1456,7 @@ pub(crate) mod fixtures {
     /// The type-3 element with one gain code per column, so a row can fold a
     /// height into several bed channels at different gains — which one IMAX
     /// stream does and no other stream known here does.
-    fn type3_bytes_rows(height_rows: [HeightRow; 4], explicit_type3_mask: bool) -> Vec<u8> {
+    fn type3_bytes_rows(height_rows: [HeightRow<'_>; 4], explicit_type3_mask: bool) -> Vec<u8> {
         let mut w = BitWriter::new();
         layout_header_bits(&mut w, 3, FULL_MASK_7_1, explicit_type3_mask);
         w.push(2, 5).push(0, 6).push(1, 1).push(0, 1).push(TYPE3_CONTROL, 12);

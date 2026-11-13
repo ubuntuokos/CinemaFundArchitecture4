@@ -139,7 +139,7 @@ impl Channel {
         }
     }
 
-    fn decode_indices(&mut self, dec: &mut RangeDecoder, frame_index: usize, decode_lbrr: bool, cond: Cond) {
+    fn decode_indices(&mut self, dec: &mut RangeDecoder<'_>, frame_index: usize, decode_lbrr: bool, cond: Cond) {
         let ix = if decode_lbrr || self.vad_flags[frame_index] { dec.icdf(&TYPE_ACTIVE, 8) + 2 } else { dec.icdf(&TYPE_INACTIVE, 8) };
         let ind = &mut self.indices;
         ind.signal_type = ix >> 1;
@@ -204,7 +204,7 @@ impl Channel {
         ind.seed = dec.icdf(&UNIFORM4, 8) as i32;
     }
 
-    fn decode_frame(&mut self, dec: Option<&mut RangeDecoder>, out: &mut [i16], lost: LostFlag, cond: Cond) {
+    fn decode_frame(&mut self, dec: Option<&mut RangeDecoder<'_>>, out: &mut [i16], lost: LostFlag, cond: Cond) {
         let l = self.frame_length;
         let decode = match (lost, &dec) {
             (LostFlag::Normal, Some(_)) => true,
@@ -506,7 +506,7 @@ fn lpc_analysis_filter(out: &mut [i16], input: &[i16], b: &[i32], d: usize) {
     }
 }
 
-fn decode_pulses(dec: &mut RangeDecoder, pulses: &mut [i32], signal_type: usize, quant_offset_type: usize, frame_length: usize) {
+fn decode_pulses(dec: &mut RangeDecoder<'_>, pulses: &mut [i32], signal_type: usize, quant_offset_type: usize, frame_length: usize) {
     let rate_level = dec.icdf(RATE_LEVEL[signal_type >> 1], 8);
     let mut iter = frame_length >> 4;
     if iter * 16 < frame_length {
@@ -560,8 +560,8 @@ fn decode_pulses(dec: &mut RangeDecoder, pulses: &mut [i32], signal_type: usize,
     }
 }
 
-fn shell_decode(dec: &mut RangeDecoder, out: &mut [i32], total: i32) {
-    fn split(dec: &mut RangeDecoder, out: &mut [i32], n: usize, count: i32) {
+fn shell_decode(dec: &mut RangeDecoder<'_>, out: &mut [i32], total: i32) {
+    fn split(dec: &mut RangeDecoder<'_>, out: &mut [i32], n: usize, count: i32) {
         if n == 1 {
             out[0] = count;
             return;
@@ -592,7 +592,7 @@ struct Stereo {
     s_side: [i16; 2],
 }
 
-fn stereo_decode_pred(dec: &mut RangeDecoder) -> [i32; 2] {
+fn stereo_decode_pred(dec: &mut RangeDecoder<'_>) -> [i32; 2] {
     let n = dec.icdf(&STEREO_PRED_JOINT, 8);
     let mut ix = [[0usize; 3]; 2];
     ix[0][2] = n / 5;
@@ -688,7 +688,7 @@ impl SilkDecoder {
     }
 
     /// Decodes one SILK frame (10 or 20 ms) into interleaved `out` at the API rate.
-    pub fn decode(&mut self, mut dec: Option<&mut RangeDecoder>, lost: LostFlag, new_packet: bool, payload_ms: usize, out: &mut [f32]) -> Result<usize> {
+    pub fn decode(&mut self, mut dec: Option<&mut RangeDecoder<'_>>, lost: LostFlag, new_packet: bool, payload_ms: usize, out: &mut [f32]) -> Result<usize> {
         let nci = self.channels_internal;
         if new_packet {
             for c in self.ch.iter_mut() {

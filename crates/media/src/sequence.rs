@@ -138,10 +138,7 @@ impl ImageSequenceSource {
         })?;
         let (frame, has_alpha, pixel_format, timing) = decode_frame(&first, &bytes)?;
         let (w, h) = (frame.width, frame.height);
-        let (rate, start_timecode) = match timing {
-            Some(info) => crate::still::dng::sequence_timing(&info, rate),
-            None => (rate, None),
-        };
+        let (rate, start_timecode) = timing.resolve(rate);
         let ext = first.rsplit('.').next().unwrap_or("image").to_ascii_uppercase();
         let n = frames.len() as i64;
         let info = MediaInfo {
@@ -224,26 +221,26 @@ impl MediaSource for ImageSequenceSource {
 /// Decode one frame file: OpenEXR, Radiance HDR, JPEG XL and DNG camera raw as linear floats (DNG with its metadata, for
 /// the sequence's timing), every other format through the still decoders as RGBA8. Returns the
 /// frame, whether it has alpha, and its pixel format for the media info.
-fn decode_frame(name: &str, bytes: &[u8]) -> Result<(VideoFrame, bool, String, Option<cfa4_dng::Info>)> {
+fn decode_frame(name: &str, bytes: &[u8]) -> Result<(VideoFrame, bool, String, crate::still::Timing)> {
     if crate::still::exr::sniff(bytes) {
         let d = crate::still::exr::decode(name, bytes)?;
-        return Ok((d.frame, d.has_alpha, d.pixel_format, None));
+        return Ok((d.frame, d.has_alpha, d.pixel_format, d.timing));
     }
     if crate::still::hdr::sniff(bytes) {
         let frame = crate::still::hdr::decode(name, bytes)?;
-        return Ok((frame, false, "RGB 32-bit float (RGBE)".to_string(), None));
+        return Ok((frame, false, "RGB 32-bit float (RGBE)".to_string(), Default::default()));
     }
     if crate::still::jxl::sniff(bytes) {
         let d = crate::still::jxl::decode(name, bytes)?;
-        return Ok((d.frame, d.has_alpha, d.pixel_format, None));
+        return Ok((d.frame, d.has_alpha, d.pixel_format, Default::default()));
     }
     if crate::still::dng::sniff(bytes) {
         let d = crate::still::dng::decode(name, bytes)?;
-        return Ok((d.frame, false, d.pixel_format, Some(d.info)));
+        return Ok((d.frame, false, d.pixel_format, crate::still::Timing { frame_rate: d.info.frame_rate, timecode: d.info.timecode }));
     }
     let img = crate::still::decode_raster(name, bytes)?;
     let pixel_format = if img.has_alpha { "RGBA 8-bit" } else { "RGB 8-bit" }.to_string();
-    Ok((VideoFrame::rgba8(img.width, img.height, img.rgba), img.has_alpha, pixel_format, None))
+    Ok((VideoFrame::rgba8(img.width, img.height, img.rgba), img.has_alpha, pixel_format, Default::default()))
 }
 
 #[cfg(test)]

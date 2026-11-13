@@ -210,3 +210,85 @@ fn encrypted_sound_track_file() {
     }
     clear_keys();
 }
+
+/// ST 429-6 Annex B: the MIC key earlier editions derive from the content key (FIPS 186-2).
+#[test]
+fn legacy_mic_key_known_answers() {
+    let k: [u8; 16] = std::array::from_fn(|i| i as u8);
+    assert_eq!(legacy_mic_key(&k), [0xbb, 0x12, 0xf6, 0xb8, 0x4b, 0x2e, 0x7b, 0x25, 0x8c, 0xd8, 0xc3, 0x5e, 0x8f, 0x87, 0xfc, 0x18]);
+    // XKEY + x0 + 1 carries through all 160 bits
+    assert_eq!(legacy_mic_key(&[0xff; 16]), [0x0d, 0x18, 0xd6, 0x21, 0x06, 0xb6, 0x08, 0x8e, 0x38, 0x4a, 0x9d, 0xf4, 0x74, 0x0a, 0xca, 0x77]);
+}
+
+/// A track file whose MIC key is the legacy one: without an MDMK in the KDM the derived key is
+/// found from the first triplet, joins the key ring and catches damage in later triplets.
+#[test]
+fn legacy_mic_key_is_used_without_an_mdmk() {
+    let _g = RING.lock().unwrap_or_else(PoisonError::into_inner);
+    clear_keys();
+    let legacy = legacy_mic_key(&content_key());
+    let mut f = crate::testing::encrypt_track_file(&picture_file(), &content_key(), &KEY_ID, &CONTEXT, 16, Some(legacy));
+    let m = open(&f).unwrap();
+    ring(false);
+    assert_eq!(m.read_sample(&f, 0, 0).unwrap(), j2k_like(0));
+    assert_eq!(key(&KEY_ID).and_then(|k| k.mic), Some(legacy));
+    for i in 0..5 {
+        assert_eq!(m.read_sample(&f, 0, i).unwrap(), j2k_like(i));
+    }
+    // a flipped cipher text bit in a later triplet now fails its MIC instead of decoding garbage
+    let s = m.tracks[0].samples[3];
+    let at = (s.offset + u64::from(s.size) - 60) as usize;
+    f[at] ^= 1;
+    let e = m.read_sample(&f, 0, 3).unwrap_err().to_string();
+    assert!(e.contains("integrity"), "{e}");
+    // a modern file (random MIC key, none in the KDM) still decrypts, unchecked
+    clear_keys();
+    let f = encrypt_file(&picture_file(), 16, true);
+    let m = open(&f).unwrap();
+    ring(false);
+    assert_eq!(m.read_sample(&f, 0, 2).unwrap(), j2k_like(2));
+    assert_eq!(key(&KEY_ID).and_then(|k| k.mic), None);
+    clear_keys();
+}
+
+#[test]
+fn encrypted_timed_text_track_file() {
+    let _g = RING.lock().unwrap_or_else(PoisonError::into_inner);
+    clear_keys();
+    let xml = b"<?xml version=\"1.0\"?><SubtitleReel xmlns=\"http://www.smpte-ra.org/schemas/428-7/2010/DCST\"/>".as_slice();
+    let font = b"OTTO fake font bytes, longer than one AES block".as_slice();
+    let png = b"\x89PNG fake".as_slice();
+    let plain = crate::testing::build_timed_text(xml, &[("application/x-font-opentype", font), ("image/png", png)]);
+    for mic in [false, true] {
+        let f = encrypt_file(&plain, 0, mic);
+        assert_ne!(f, plain);
+        assert!(!f.windows(xml.len()).any(|w| w == xml), "the document is not stored in the clear");
+        assert!(crate::is_timed_text(&f));
+        let tt = crate::open_timed_text(&f).unwrap();
+        assert!(tt.warnings.is_empty(), "{:?}", tt.warnings);
+        assert_eq!(tt.encryption.map(|e| e.key_id), Some(KEY_ID));
+        assert!(tt.document.plain.is_some() && tt.resources.iter().all(|r| r.data.is_some_and(|d| d.plain.is_some())));
+        // without the key: the error names the key, never garbage
+        assert!(tt.needs_key());
+        assert!(matches!(tt.read_document(&f), Err(Error::Encrypted(_))));
+        assert!(matches!(tt.read_resource(&f, 0), Err(Error::Encrypted(_))));
+        ring(mic);
+        assert!(!tt.needs_key());
+        assert_eq!(tt.read_document(&f).unwrap(), xml);
+        assert_eq!(tt.read_resource(&f, 0).unwrap(), font);
+        assert_eq!(tt.read_resource(&f, 1).unwrap(), png);
+        // a wrong key fails the Check Value
+        add_key(KEY_ID, ContentKey { cipher: crate::testing::test_key("other"), mic: None });
+        assert!(tt.read_document(&f).is_err());
+        clear_keys();
+        // truncated files never panic
+        ring(mic);
+        for cut in (0..f.len()).step_by(37) {
+            if let Ok(tt) = crate::open_timed_text(&f[..cut]) {
+                let _ = tt.read_document(&f[..cut]);
+                let _ = tt.read_resource(&f[..cut], 0);
+            }
+        }
+        clear_keys();
+    }
+}

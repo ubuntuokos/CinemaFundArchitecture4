@@ -162,7 +162,7 @@ impl Decoder {
 
     /// `mpc_decoder_decode_frame`: decodes one frame from `r` and appends its output samples
     /// to `out` (one plane per channel). `false` once the stream's samples are complete.
-    pub(crate) fn decode_frame(&mut self, r: &mut Reader, key_frame: bool, out: &mut [Vec<f32>]) -> bool {
+    pub(crate) fn decode_frame(&mut self, r: &mut Reader<'_>, key_frame: bool, out: &mut [Vec<f32>]) -> bool {
         let fl = FRAME_LENGTH as i64;
         let mut samples_left = (self.samples as i64).wrapping_sub(self.decoded as i64).wrapping_add(SYNTH_DELAY as i64);
         if samples_left <= 0 && self.samples != 0 {
@@ -241,7 +241,7 @@ impl Decoder {
         }
     }
 
-    fn read_sv7(&mut self, r: &mut Reader) {
+    fn read_sv7(&mut self, r: &mut Reader<'_>) {
         const IDX30: [i16; 27] = [-1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1];
         const IDX31: [i16; 27] = [-1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1, 0, 0, 0, 1, 1, 1, -1, -1, -1, 0, 0, 0, 1, 1, 1];
         const IDX32: [i16; 27] = [-1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -294,7 +294,7 @@ impl Decoder {
                     continue;
                 }
                 let scf = &mut self.scf_index[ch][n];
-                let delta = |r: &mut Reader, prev: i32| {
+                let delta = |r: &mut Reader<'_>, prev: i32| {
                     let idx = r.huff(&h::DSCF7);
                     if idx != 8 { prev.wrapping_add(idx) } else { r.read(6) as i32 }
                 };
@@ -372,7 +372,7 @@ impl Decoder {
         }
     }
 
-    fn read_sv8(&mut self, r: &mut Reader, key_frame: bool) {
+    fn read_sv8(&mut self, r: &mut Reader<'_>, key_frame: bool) {
         const THRES: [u32; 9] = [0, 0, 3, 0, 0, 1, 3, 4, 8];
         #[rustfmt::skip]
         const Q2_VAR: [u32; 125] = [
@@ -393,7 +393,7 @@ impl Decoder {
             [(&h::H8_Q7_1, &h::S8_Q7_1), (&h::H8_Q7_2, &h::S8_Q7_2)],
             [(&h::H8_Q8_1, &h::S8_Q8_1), (&h::H8_Q8_2, &h::S8_Q8_2)],
         ];
-        let can = |r: &mut Reader, t: Can| r.can(t.0, t.1);
+        let can = |r: &mut Reader<'_>, t: Can| r.can(t.0, t.1);
         let max_band = self.p.max_band.min(31);
 
         // header

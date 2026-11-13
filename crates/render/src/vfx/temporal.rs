@@ -19,7 +19,7 @@ use super::*;
 use crate::track::{Gray, Prepared, track_step};
 
 /// Posterize Time: the clip shows a new frame only at the effect's frame rate.
-pub fn posterize_time(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn posterize_time(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let Some(env) = cx.env else { return };
     let rate = fv(e, "rate", cx).max(0.01) as f64;
     let t = cx.seconds;
@@ -34,7 +34,7 @@ pub fn posterize_time(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Echo: composites copies of the clip from earlier (negative Echo Time) or later frames.
-pub fn echo(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn echo(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let Some(env) = cx.env else { return };
     let dt = fv(e, "time", cx) as f64;
     let n = fv(e, "count", cx).clamp(0.0, 30.0) as usize;
@@ -57,7 +57,7 @@ pub fn echo(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 /// time, from now at the Current Frame At edge to Time Span seconds away at the opposite edge.
 /// Frames are fetched one at a time and accumulated, so memory stays at two images whatever the
 /// slice count. Blend Slices cross-fades neighbouring slices (a smooth time gradient).
-pub fn slit_scan(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn slit_scan(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let Some(env) = cx.env else { return };
     let span = fv(e, "time", cx) as f64;
     if !span.is_finite() || span.abs() < 1e-6 {
@@ -205,7 +205,7 @@ fn centroid_cache() -> &'static CentroidCache {
 
 /// Auto Reframe: keeps the subject (a saliency centroid averaged over a time window set by the
 /// Motion Preset) in frame while zooming the clip to fill the sequence (or a chosen aspect).
-pub fn auto_reframe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn auto_reframe(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let (lw, lh) = (img.w as f64, img.h as f64);
     // the frame the layer must fill, in layer pixels (Motion at its defaults places the layer
     // centred in the sequence 1:1)
@@ -437,7 +437,7 @@ pub(crate) fn cover_scale(corr: &Affine, w: f64, h: f64, max: f64) -> f64 {
 }
 
 /// Warp Stabilizer: see the module docs.
-pub fn warp_stabilizer(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn warp_stabilizer(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let Some(env) = cx.env else { return };
     let method = if chv(e, "method") == 0 { TrackMethod::Position } else { TrackMethod::PositionScaleRotation };
     let Some(path) = stabilizer_path(env, cx.seconds, method, bv(e, "detailed")) else { return };

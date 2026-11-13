@@ -18,13 +18,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+from pathlib import Path
 
 from verify_cfa4_packages import APP_ID, AuditError, repo_version, verify_package_set
 
@@ -66,7 +66,7 @@ def library_inventory(exe: Path, *, env: dict[str, str]) -> dict:
     if not exe.is_file():
         raise AuditError(f"missing executable: {exe}")
     result = invoke(["ldd", str(exe)], env=env)
-    missing = re.findall(r"^\s*(\S+)\s*=>\s*not found\b", result, flags=re.M)
+    missing = re.findall(r"^\s*(\S+)\s*=>\s*not found\b", result, flags=re.MULTILINE)
     if missing:
         raise AuditError(f"missing ELF runtime dependencies for {exe.name}: {missing}")
     return {"executable": exe.name, "missing": [], "ldd": result.strip()}

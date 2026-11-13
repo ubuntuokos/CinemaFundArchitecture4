@@ -34,8 +34,8 @@ fn load() -> Result<Api, String> {
     // The library lives alongside the immutable function table, for the process lifetime.
     unsafe {
         let library = libloading::Library::new("libnvidia-encode.so.1").map_err(|e| format!("no NVIDIA encoder driver: {e}"))?;
-        let version: libloading::Symbol<MaxSupportedVersionFn> = library.get(b"NvEncodeAPIGetMaxSupportedVersion\0").map_err(|e| e.to_string())?;
-        let create: libloading::Symbol<CreateInstanceFn> = library.get(b"NvEncodeAPICreateInstance\0").map_err(|e| e.to_string())?;
+        let version: libloading::Symbol<'_, MaxSupportedVersionFn> = library.get(b"NvEncodeAPIGetMaxSupportedVersion\0").map_err(|e| e.to_string())?;
+        let create: libloading::Symbol<'_, CreateInstanceFn> = library.get(b"NvEncodeAPICreateInstance\0").map_err(|e| e.to_string())?;
         let mut v = 0;
         if version(&mut v) != NV_ENC_SUCCESS {
             return Err("cannot query the NVENC version".into());

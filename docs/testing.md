@@ -73,6 +73,11 @@ results. This oracle is separate from the product's supplementary FFmpeg backend
 - Fixture sources are synthetic: `testsrc2`, `mandelbrot`, SMPTE bars, noise and fades, sine tones.
   H.264 and HEVC fixtures need ffmpeg built with libx264 and libx265. The VP9 and
   AV1 fixtures (libvpx-vp9, libaom-av1; 360p, 1080p, 2160p, hidden alt-ref frames, two GOPs) need an ffmpeg with those encoders.
+- IMF packages (`crates/export/src/imf_tests.rs`) have two optional oracles that never run in CI:
+  `CFA4_IMF_SCHEMAS` (a folder of the SMPTE XML schemas, checked with `xmllint`) and
+  `CFA4_PHOTON_CP` (the Java class path of a local build of Netflix Photon, Apache-2.0, outside the
+  repository; its `IMPAnalyzer` must report no errors). Photon builds with Gradle (`gradle classes`;
+  pin its `latest.release` dependencies when Maven Central rate-limits the metadata lookups).
 
 The NVENC tests (`crates/platform/tests/nvenc.rs` and `nvenc_export.rs`; H.264, H.265 and Main 10
 HDR) skip, printing `SKIPPED`, without an NVIDIA GPU
@@ -127,6 +132,7 @@ cross-check ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) II.3, X/3).
 |---|---|---|
 | `h264` | decode every fixture single-threaded and frame-threaded; compare with `ffmpeg -f rawvideo -pix_fmt yuv420p` | **bit-exact**, every frame |
 | `hevc` | same, `yuv420p` / `yuv420p10le` | **bit-exact** (8- and 10-bit) |
+| OpenEXR (`media/tests/exr_oracle.rs`, `export` raster tests) | ffmpeg-written files (none / RLE / ZIP); `oiiotool` (OpenImageIO, the OpenEXR library; skipped when not installed) writes PXR24 and PIZ files and reads our PIZ files | **bit-exact** floats |
 | `h264enc` | `ffmpeg -v warning -err_detect +crccheck+bitstream+buffer+explode` decodes our stream | no output at all (a `corrupt decoded frame` warning fails; a negative control checks dropped and truncated slices are reported), exact frame count, **bit-identical to the encoder's reconstruction**; B-frame order checked with ffprobe; rate-control targets |
 | `prores` decode | ffmpeg `prores_ks` / `prores_aw` fixtures, compared at native depth | within **±1 LSB** (different integer IDCT); alpha bit-exact |
 | `prores` encode | ffmpeg decodes with `-xerror` | no errors; agrees with our decoder within ±1 |

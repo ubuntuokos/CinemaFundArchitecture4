@@ -107,7 +107,7 @@ fn block_at(data: &[u8], pos: usize) -> Option<Block> {
     Some(Block { key, payload: start..end })
 }
 
-fn varint(r: &mut Reader) -> u64 {
+fn varint(r: &mut Reader<'_>) -> u64 {
     let mut v = 0u64;
     for _ in 0..10 {
         let b = r.read(8);

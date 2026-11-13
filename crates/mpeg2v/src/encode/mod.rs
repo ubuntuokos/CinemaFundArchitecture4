@@ -407,7 +407,7 @@ impl Encoder {
     /// Encode the next picture (display order). Returns the pictures that can be coded now, in
     /// decode order: none while B pictures wait for their anchor, then the anchor and those B
     /// pictures.
-    pub fn encode(&mut self, input: &Input) -> Result<Vec<Packet>> {
+    pub fn encode(&mut self, input: &Input<'_>) -> Result<Vec<Packet>> {
         let frame = self.padded(input)?;
         let index = self.frames;
         self.frames += 1;
@@ -625,7 +625,7 @@ impl Encoder {
         Ok(Some(Packet { data, keyframe: ptype == PictureType::I, picture_type: ptype, index, dts }))
     }
 
-    fn analyse(&self, ctx: &Ctx) -> Vec<Vec<Plan>> {
+    fn analyse(&self, ctx: &Ctx<'_>) -> Vec<Vec<Plan>> {
         #[cfg(feature = "threads")]
         if self.cfg.threads {
             use rayon::prelude::*;
@@ -635,7 +635,7 @@ impl Encoder {
     }
 
     /// The input copied into a macroblock-aligned frame, edges replicated.
-    fn padded(&self, input: &Input) -> Result<Frame> {
+    fn padded(&self, input: &Input<'_>) -> Result<Frame> {
         let (w, h) = (self.cfg.width as usize, self.cfg.height as usize);
         let (cw, ch) = (w.div_ceil(2), if self.cmbh == 8 { h.div_ceil(2) } else { h });
         let (pw, ph) = (self.mb_width * 16, self.mb_height * 16);
