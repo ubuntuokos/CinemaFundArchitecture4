@@ -117,7 +117,7 @@ FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = 
         ("filmscan3", N_("Film Scan 3")), ("filmscan2", N_("Film Scan 2")), ("filmscan1", N_("Film Scan 1")),
         ("high", N_("High")), ("medium", N_("Medium")), ("low", N_("Low")))),
     ("exrCompression", N_("Compression"), "export.video.exrCompression", (
-        ("none", N_("None")), ("rle", "RLE"), ("zips", N_("ZIP (1 scan line)")), ("zip", N_("ZIP (16 scan lines)")))),
+        ("none", N_("None")), ("rle", "RLE"), ("zips", N_("ZIP (1 scan line)")), ("zip", N_("ZIP (16 scan lines)")), ("piz", "PIZ"))),
 )
 # what the engine encodes with when the setting is empty or unknown (`prores_profile()` & co.)
 FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
@@ -1054,7 +1054,7 @@ class ExportDialog(QDialog):
         mxf_codec = self._choice("mxfVideoCodec")
         video = encoder_format(fmt, mxf_codec) == "mpeg2" and not (fmt in MXF_FORMATS and mxf_codec == "d10")
         self.container.setEnabled(fmt == "mpeg2")
-        self.rows.allow_interlaced(fmt == "mpeg2")  # only MPEG-2 export codes interlaced video (egui's Field Order)
+        self.rows.allow_interlaced(fmt in ("mpeg2", "prores"))  # MPEG-2 and ProRes code interlaced video (egui's Field Order)
         for w in (self.gop, self.b_frames, self.quantizer):
             w.setEnabled(video)
         self.chroma.setEnabled(video and not (fmt in MXF_FORMATS and mxf_codec == "xdcamHd422"))

@@ -377,7 +377,7 @@ fn run_actions(app: &mut Cfa4App, ctx: &egui::Context, acts: Vec<(String, Value)
     }
 }
 
-fn strip(app: &mut Cfa4App, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, sr: Rect, meter: &[[f32; 2]]) {
+fn strip(app: &mut Cfa4App, ui: &mut egui::Ui, cx: &mut Ctx<'_>, id: TrackId, sr: Rect, meter: &[[f32; 2]]) {
     let t = cx.t;
     let seq = cx.seq;
     let Some(tr) = seq.strip(id).map(|c| c.into_owned()) else { return };
@@ -777,7 +777,7 @@ fn strip(app: &mut Cfa4App, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, sr: Re
 /// The 5.1 panner: a puck in the listening square (x left … right, y rear … front; speakers drawn
 /// at L, C, R, Ls, Rs), and the Center % and LFE values. Drags are `mixer.touch` / `mixer.release`
 /// on the `pan51.x` / `pan51.y` lanes, so they are heard live and recorded like the pan knob.
-fn pan51_panner(app: &mut Cfa4App, ui: &mut egui::Ui, cx: &mut Ctx, tr: &Track, ap: &str, sid: &Value, r: Rect) {
+fn pan51_panner(app: &mut Cfa4App, ui: &mut egui::Ui, cx: &mut Ctx<'_>, tr: &Track, ap: &str, sid: &Value, r: Rect) {
     let t = cx.t;
     let px = shown(app, tr, LANE_PAN51_X, cx.now);
     let py = shown(app, tr, LANE_PAN51_Y, cx.now);
@@ -839,7 +839,7 @@ fn pan51_panner(app: &mut Cfa4App, ui: &mut egui::Ui, cx: &mut Ctx, tr: &Track, 
     }
 }
 
-fn transport(app: &mut Cfa4App, ui: &mut egui::Ui, row: Rect, cx: &mut Ctx) {
+fn transport(app: &mut Cfa4App, ui: &mut egui::Ui, row: Rect, cx: &mut Ctx<'_>) {
     let t = cx.t;
     let seq = cx.seq;
     ui.painter().line_segment([pos2(row.min.x, row.min.y + 0.5), pos2(row.max.x, row.min.y + 0.5)], Stroke::new(1.0, t.separator));

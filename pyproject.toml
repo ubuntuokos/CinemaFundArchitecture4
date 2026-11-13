@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,11 +8,12 @@ version = "0.1.0"
 description = "CFA4 Qt 6 GUI (PySide6) and Linux development diagnostics"
 readme = "docs/development/linux.md"
 requires-python = ">=3.12"
-license = { text = "GPL-3.0-or-later" }
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10", "ruff>=0.9,<1", "mypy>=1.13"]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1", "packaging>=24", "mypy>=1.13"]
 qt = ["PySide6>=6.10,<7"]
 # Test oracle only (Apache-2.0): never imported by the product or shipped in packages.
 # docs/plans/OTIO-INTEGRATION-2026-10-24.md, OTIO-1.1.
@@ -70,14 +71,6 @@ disallow_untyped_defs = true
 # This list only ever shrinks: a PR that fixes a file removes it here, and a new file is never added
 # (scripts/ci/check-mypy-ratchet.py checks it against the base branch). Empty at T6, then deleted.
 module = [
-    "cfa4_devtools.otio_oracle",
-    "cfa4_devtools.otio_samples",
-    "cfa4_devtools.qt_app",
-    "cfa4_devtools.qt_settings",
-    "cfa4_devtools.release_gate",
-    "cfa4_devtools.runtime_deps",
-    "cfa4_devtools.sbom",
-    "cfa4_devtools.settings_backend",
     "cfa4_qt.__main__",
     "cfa4_qt.commands",
     "cfa4_qt.control",

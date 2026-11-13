@@ -37,7 +37,7 @@ pub struct LfGroup<S: Sample> {
 impl<S: Sample> Bundle<LfGroupParams<'_, '_, '_, S>> for LfGroup<S> {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, params: LfGroupParams<S>) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, params: LfGroupParams<'_, '_, '_, S>) -> Result<Self> {
         let LfGroupParams { frame_header, global_ma_config, mlf_group, lf_group_idx, allow_partial, tracker, pool, .. } = params;
         let (lf_width, lf_height) = frame_header.lf_group_size_for(lf_group_idx);
 

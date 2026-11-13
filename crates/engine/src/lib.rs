@@ -1037,7 +1037,7 @@ impl Session {
     }
 
     /// Edit the active sequence with the edit-algebra context.
-    pub fn edit_sequence<R>(&mut self, label: &str, f: impl FnOnce(&mut Sequence, &mut EditCtx, &mut EditorState) -> Result<R>) -> Result<R> {
+    pub fn edit_sequence<R>(&mut self, label: &str, f: impl FnOnce(&mut Sequence, &mut EditCtx<'_>, &mut EditorState) -> Result<R>) -> Result<R> {
         self.edit_sequence_as(label, None, f)
     }
 
@@ -1047,7 +1047,7 @@ impl Session {
         &mut self,
         label: &str,
         merge: Option<&str>,
-        f: impl FnOnce(&mut Sequence, &mut EditCtx, &mut EditorState) -> Result<R>,
+        f: impl FnOnce(&mut Sequence, &mut EditCtx<'_>, &mut EditorState) -> Result<R>,
     ) -> Result<R> {
         let seq_id = self.state.active_sequence.ok_or(EngineError::NoSequence)?;
         let media = self.media.clone();

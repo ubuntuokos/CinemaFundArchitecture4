@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 import hashlib
-from io import BytesIO
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
 import unittest
+from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
 
 RELEASE_DIR = Path(__file__).resolve().parent
@@ -187,14 +187,16 @@ class FourFormatArtifactTests(unittest.TestCase):
         deb = self.dist / self.names[0]
         with patch.object(audit.subprocess, "check_output", side_effect=fake_dpkg(listing())):
             audit.verify_deb(deb, VERSION)
-        with patch.object(audit.subprocess, "check_output",
-                          side_effect=fake_dpkg(listing({f"usr/{DOC}/copyright"}))):
-            with self.assertRaisesRegex(audit.AuditError, "licence/attribution.*copyright"):
-                audit.verify_deb(deb, VERSION)
-        with patch.object(audit.subprocess, "check_output",
-                          side_effect=fake_dpkg(listing({"usr/bin/cfa4-qt"}))):
-            with self.assertRaisesRegex(audit.AuditError, "missing ./usr/bin/cfa4-qt"):
-                audit.verify_deb(deb, VERSION)
+        with (
+            patch.object(audit.subprocess, "check_output", side_effect=fake_dpkg(listing({f"usr/{DOC}/copyright"}))),
+            self.assertRaisesRegex(audit.AuditError, "licence/attribution.*copyright"),
+        ):
+            audit.verify_deb(deb, VERSION)
+        with (
+            patch.object(audit.subprocess, "check_output", side_effect=fake_dpkg(listing({"usr/bin/cfa4-qt"}))),
+            self.assertRaisesRegex(audit.AuditError, "missing ./usr/bin/cfa4-qt"),
+        ):
+            audit.verify_deb(deb, VERSION)
 
     def test_listing_rejects_entries_outside_the_package(self):
         with self.assertRaisesRegex(audit.AuditError, "unexpected package entry"):

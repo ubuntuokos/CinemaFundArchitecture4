@@ -35,14 +35,14 @@ pub struct Decoder {
 impl Decoder {
     /// Create a decoder by reading symbol distribution, integer configurations and LZ77
     /// configuration from the bitstream.
-    pub fn parse(bitstream: &mut Bitstream, num_dist: u32) -> CodingResult<Self> {
+    pub fn parse(bitstream: &mut Bitstream<'_>, num_dist: u32) -> CodingResult<Self> {
         let lz77 = Lz77::parse(bitstream)?;
         let num_dist = if let Lz77::Disabled = &lz77 { num_dist } else { num_dist + 1 };
         let inner = DecoderInner::parse(bitstream, num_dist)?;
         Ok(Self { lz77, inner })
     }
 
-    fn parse_assume_no_lz77(bitstream: &mut Bitstream, num_dist: u32) -> CodingResult<Self> {
+    fn parse_assume_no_lz77(bitstream: &mut Bitstream<'_>, num_dist: u32) -> CodingResult<Self> {
         let lz77_enabled = bitstream.read_bool()?;
         if lz77_enabled {
             return Err(Error::Lz77NotAllowed);
@@ -53,13 +53,13 @@ impl Decoder {
 
     /// Read an integer from the bitstream with the given context.
     #[inline]
-    pub fn read_varint(&mut self, bitstream: &mut Bitstream, ctx: u32) -> CodingResult<u32> {
+    pub fn read_varint(&mut self, bitstream: &mut Bitstream<'_>, ctx: u32) -> CodingResult<u32> {
         self.read_varint_with_multiplier(bitstream, ctx, 0)
     }
 
     /// Read an integer from the bitstream with the given context and LZ77 distance multiplier.
     #[inline]
-    pub fn read_varint_with_multiplier(&mut self, bitstream: &mut Bitstream, ctx: u32, dist_multiplier: u32) -> CodingResult<u32> {
+    pub fn read_varint_with_multiplier(&mut self, bitstream: &mut Bitstream<'_>, ctx: u32, dist_multiplier: u32) -> CodingResult<u32> {
         let cluster = self.inner.clusters[ctx as usize];
         self.read_varint_with_multiplier_clustered(bitstream, cluster, dist_multiplier)
     }
@@ -68,7 +68,7 @@ impl Decoder {
     ///
     /// Contexts can be converted to clusters using [the cluster map][Self::cluster_map].
     #[inline(always)]
-    pub fn read_varint_with_multiplier_clustered(&mut self, bitstream: &mut Bitstream, cluster: u8, dist_multiplier: u32) -> CodingResult<u32> {
+    pub fn read_varint_with_multiplier_clustered(&mut self, bitstream: &mut Bitstream<'_>, cluster: u8, dist_multiplier: u32) -> CodingResult<u32> {
         if let Lz77::Enabled { ref mut state, min_symbol, min_length } = self.lz77 {
             self.inner.read_varint_with_multiplier_clustered_lz77(bitstream, cluster, dist_multiplier, state, min_symbol, min_length)
         } else {
@@ -120,7 +120,7 @@ impl Decoder {
     /// This involves reading an initial state for the ANS stream. It's okay to skip this method,
     /// as the state will be initialized on the first read.
     #[inline]
-    pub fn begin(&mut self, bitstream: &mut Bitstream) -> CodingResult<()> {
+    pub fn begin(&mut self, bitstream: &mut Bitstream<'_>) -> CodingResult<()> {
         self.inner.code.begin(bitstream)
     }
 
@@ -163,7 +163,7 @@ impl DecoderRleMode<'_> {
     ///
     /// Contexts can be converted to clusters using [the cluster map][Self::cluster_map].
     #[inline]
-    pub fn read_varint_clustered(&mut self, bitstream: &mut Bitstream, cluster: u8) -> CodingResult<RleToken> {
+    pub fn read_varint_clustered(&mut self, bitstream: &mut Bitstream<'_>, cluster: u8) -> CodingResult<RleToken> {
         self.inner.code.read_symbol(bitstream, cluster).map(|token| {
             if let Some(token) = token.checked_sub(self.min_symbol) {
                 RleToken::Repeat(self.inner.read_uint_prefilled(bitstream, &self.len_config, token) + self.min_length)
@@ -194,7 +194,7 @@ impl DecoderWithLz77<'_> {
     ///
     /// Contexts can be converted to clusters using [the cluster map][Self::cluster_map].
     #[inline]
-    pub fn read_varint_with_multiplier_clustered(&mut self, bitstream: &mut Bitstream, cluster: u8, dist_multiplier: u32) -> CodingResult<u32> {
+    pub fn read_varint_with_multiplier_clustered(&mut self, bitstream: &mut Bitstream<'_>, cluster: u8, dist_multiplier: u32) -> CodingResult<u32> {
         self.inner.read_varint_with_multiplier_clustered_lz77(bitstream, cluster, dist_multiplier, self.state, self.min_symbol, self.min_length)
     }
 
@@ -214,7 +214,7 @@ impl DecoderNoLz77<'_> {
     ///
     /// Contexts can be converted to clusters using [the cluster map][Self::cluster_map].
     #[inline]
-    pub fn read_varint_clustered(&mut self, bitstream: &mut Bitstream, cluster: u8) -> CodingResult<u32> {
+    pub fn read_varint_clustered(&mut self, bitstream: &mut Bitstream<'_>, cluster: u8) -> CodingResult<u32> {
         self.0.read_varint_with_multiplier_clustered(bitstream, cluster)
     }
 
@@ -238,7 +238,7 @@ enum Lz77 {
 }
 
 impl Lz77 {
-    fn parse(bitstream: &mut Bitstream) -> CodingResult<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>) -> CodingResult<Self> {
         Ok(if bitstream.read_bool()? {
             // enabled
             let min_symbol = bitstream.read_u32(224, 512, 4096, 8 + U(15))?;
@@ -286,7 +286,7 @@ struct IntegerConfig {
 }
 
 impl IntegerConfig {
-    fn parse(bitstream: &mut Bitstream, log_alphabet_size: u32) -> CodingResult<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, log_alphabet_size: u32) -> CodingResult<Self> {
         let split_exponent_bits = add_log2_ceil(log_alphabet_size);
         let split_exponent = bitstream.read_bits(split_exponent_bits as usize)?;
         let (msb_in_token, lsb_in_token) = if split_exponent != log_alphabet_size {
@@ -316,7 +316,7 @@ struct DecoderInner {
 }
 
 impl DecoderInner {
-    fn parse(bitstream: &mut Bitstream, num_dist: u32) -> CodingResult<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, num_dist: u32) -> CodingResult<Self> {
         let (num_clusters, clusters) = read_clusters(bitstream, num_dist)?;
         let use_prefix_code = bitstream.read_bool()?;
         let log_alphabet_size = if use_prefix_code { 15 } else { bitstream.read_bits(2)? + 5 };
@@ -353,14 +353,14 @@ impl DecoderInner {
     }
 
     #[inline]
-    fn read_varint_with_multiplier_clustered(&mut self, bitstream: &mut Bitstream, cluster: u8) -> CodingResult<u32> {
+    fn read_varint_with_multiplier_clustered(&mut self, bitstream: &mut Bitstream<'_>, cluster: u8) -> CodingResult<u32> {
         let token = self.code.read_symbol(bitstream, cluster)?;
         Ok(self.read_uint_prefilled(bitstream, &self.configs[cluster as usize], token))
     }
 
     fn read_varint_with_multiplier_clustered_lz77(
         &mut self,
-        bitstream: &mut Bitstream,
+        bitstream: &mut Bitstream<'_>,
         cluster: u8,
         dist_multiplier: u32,
         state: &mut Lz77State,
@@ -438,7 +438,7 @@ impl DecoderInner {
     }
 
     #[inline]
-    fn read_uint_prefilled(&self, bitstream: &mut Bitstream, config: &IntegerConfig, token: u32) -> u32 {
+    fn read_uint_prefilled(&self, bitstream: &mut Bitstream<'_>, config: &IntegerConfig, token: u32) -> u32 {
         let &IntegerConfig { split_exponent, split, msb_in_token, lsb_in_token, .. } = config;
         if token < split {
             return token;
@@ -475,7 +475,7 @@ enum Coder {
 
 impl Coder {
     #[inline(always)]
-    fn read_symbol(&mut self, bitstream: &mut Bitstream, cluster: u8) -> CodingResult<u32> {
+    fn read_symbol(&mut self, bitstream: &mut Bitstream<'_>, cluster: u8) -> CodingResult<u32> {
         match self {
             Self::PrefixCode(dist) => {
                 let dist = &dist[cluster as usize];
@@ -500,7 +500,7 @@ impl Coder {
         }
     }
 
-    fn begin(&mut self, bitstream: &mut Bitstream) -> CodingResult<()> {
+    fn begin(&mut self, bitstream: &mut Bitstream<'_>) -> CodingResult<()> {
         match self {
             Self::PrefixCode(_) => Ok(()),
             Self::Ans { state, initial, .. } => {
@@ -530,7 +530,7 @@ fn add_log2_ceil(x: u32) -> u32 {
 }
 
 /// Read a distribution clustering from the bitstream.
-pub fn read_clusters(bitstream: &mut Bitstream, num_dist: u32) -> CodingResult<(u32, Vec<u8>)> {
+pub fn read_clusters(bitstream: &mut Bitstream<'_>, num_dist: u32) -> CodingResult<(u32, Vec<u8>)> {
     if num_dist == 1 {
         return Ok((1, vec![0u8]));
     }

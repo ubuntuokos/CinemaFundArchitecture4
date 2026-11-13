@@ -27,7 +27,7 @@ impl Default for DecodeOptions {
 
 /// Parse RFC 9924 §7.1.4 variable-length codeword (`h(v)`).
 #[inline]
-pub(crate) fn read_vlc(r: &mut BitReader, k_param: u32) -> Result<u32> {
+pub(crate) fn read_vlc(r: &mut BitReader<'_>, k_param: u32) -> Result<u32> {
     let mut symbol_value: u64 = 0;
     let mut k = k_param;
     let parse_exp_golomb = if r.read_bit().map_err(|_| Error::Truncated)? {

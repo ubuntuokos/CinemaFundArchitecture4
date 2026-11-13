@@ -108,7 +108,7 @@ impl TransformInfo {
 impl Bundle<&WpHeader> for TransformInfo {
     type Error = crate::modular::Error;
 
-    fn parse(bitstream: &mut Bitstream, wp_header: &WpHeader) -> crate::modular::Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, wp_header: &WpHeader) -> crate::modular::Result<Self> {
         let tr = bitstream.read_bits(2)?;
         match tr {
             0 => Rct::parse(bitstream, ()).map(Self::Rct),
@@ -154,7 +154,7 @@ pub struct Palette {
 impl Bundle<&WpHeader> for Palette {
     type Error = crate::modular::Error;
 
-    fn parse(bitstream: &mut Bitstream, wp_header: &WpHeader) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, wp_header: &WpHeader) -> Result<Self> {
         let begin_c = bitstream.read_u32(U(3), 8 + U(6), 72 + U(10), 1096 + U(13))?;
         let num_c = bitstream.read_u32(1, 3, 4, 1 + U(13))?;
         let nb_colours = bitstream.read_u32(U(8), 256 + U(10), 1280 + U(12), 5376 + U(16))?;

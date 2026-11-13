@@ -226,10 +226,10 @@ fn transform(coeff: &mut MutableSubgrid<'_>, dct_select: TransformType) {
 }
 
 pub fn transform_varblocks(
-    lf: &[SharedSubgrid<f32>; 3],
+    lf: &[SharedSubgrid<'_, f32>; 3],
     coeff_out: &mut [MutableSubgrid<'_, f32>; 3],
     shifts_cbycr: [ChannelShift; 3],
-    block_info: &SharedSubgrid<BlockInfo>,
+    block_info: &SharedSubgrid<'_, BlockInfo>,
 ) {
     transform_varblocks_inner(lf, coeff_out, shifts_cbycr, block_info, super::dct::dct_2d, transform);
 }
