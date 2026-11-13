@@ -35,7 +35,7 @@ Ezeket a DCP-o-matic (GPL-2.0-or-later, C++) végezze, a CFA4 pedig vezérelje. 
 | D0 | Mi legyen a már elkészült PR #1173-mal? | Maradjon piszkozat, és fázisonként igazítsuk ehhez a tervhez. Ha egy fázist elvetsz, a hozzá tartozó kódot kivesszük. | |
 | D1 | Kell-e egyáltalán a DCP-o-matic, vagy inkább a saját DCP-exportot bővítsük (Interop, 3D, felirat, titkosítás)? | DCP-o-matic most, a saját export bővítése később, lépésenként. A DCP-o-matic évek óta mozikban használt. | |
 | D2 | Bekötés módja | Külön folyamat, Rust-felület mögött (ADR 0011). Linkelés elvetve, mert a C++ összeomlás a CFA4-et is vinné. | |
-| D3 | Honnan kapja a DCP-o-matic a képet és a hangot? | **a)** a felhasználó előbb exportál egy mestert, és azt adja át (egyszerű, már megvan). **b)** egy parancs az idővonalból maga készíti el a köztes mestert, majd átadja (kényelmesebb, sok lemezhelyet kér). Javaslat: előbb a), a b) a 4. fázisban. | |
+| D3 | Honnan kapja a DCP-o-matic a képet és a hangot? | **a)** egy kész videofájlból. **b)** az idővonalból: a CFA4 maga készíti el a köztes mestert, majd átadja (sok lemezhelyet kér). | **Mindkettő** (István, 2026-11-13): a Fájl ▸ Export az éppen feldolgozott videót (az aktuális szekvenciát) adja át, b) szerint; az Eszközök ▸ Videoeszközök ▸ Publikálás a gépen található bármely videofájlt, a) szerint. |
 | D4 | Titkosított DCP és KDM a DCP-o-matic-kal | Igen (2026-11-13-án igent mondtál rá a szálban). A kulcsok a DCP-o-matic filmkönyvtárában maradnak, a CFA4 nem olvassa és nem tárolja őket. | |
 | D5 | Feliratok (SRT, SubRip, DCP XML) átadása | 3. fázis, a Subtitle Studio terv kimenetére építve. | |
 | D6 | Felület | A DCP-o-matic a CFA4 designját követi (lásd 4. fázis). Saját ablaka (wxWidgets) soha nem nyílik meg, és nincs külön „DCP-o-matic” stílusú ablak. Javaslat a módjára: a DCP-o-matic a meglévő Export ablak DCP formátumának egy választható motorja („CFA4” / „DCP-o-matic”), a futás az export sorában (Queue) látszik, a KDM-készítés pedig a Load KDM…-hoz hasonló párbeszédablak. | **A CFA4 designját kövesse; menü: Eszközök ▸ Videoeszközök ▸ Publikálás és Fájl ▸ Export; csak Qt6, egui nem** (István, 2026-11-13). A javasolt mód többi része még jóváhagyásra vár. |
@@ -88,9 +88,9 @@ A tulajdonos döntése (D6): a DCP-o-matic **a CFA4 designját követi**. A felh
   - Az Összegzés (`export_summary.py`) írja ki, hogy a DCP-t a DCP-o-matic készíti, és mekkora a becsült lemezigény.
   - A futás az export sorában (Queue) látszik, ugyanazzal a haladásjelzéssel és megszakítással, mint a CFA4 saját exportjainál.
 - **Menü helye** (a tulajdonos döntése, 2026-11-13): **Eszközök ▸ Videoeszközök ▸ Publikálás** (`tools_menu.py`, `menu.Tools.Video.Publish`). Két menüpont kerül ide:
-  - „DCP készítése DCP-o-matic-kal…” (`tools.video.publish.dcpomatic`): megnyitja az Export ablakot DCP formátummal és DCP-o-matic motorral;
+  - „DCP készítése DCP-o-matic-kal…” (`tools.video.publish.dcpomatic`): **a gépen található bármely videofájlból** készít DCP-t (D3 a). Fájlválasztóval indul, majd ugyanazokat a DCP-sorokat mutatja, mint az Export ablak, a CFA4 designjával;
   - „KDM készítése…” (`tools.video.publish.createKdm`): a KDM-párbeszédablak.
-  - Ugyanez a két menüpont az **Export menüben** (Fájl ▸ Export) is megjelenik (a tulajdonos kérése, 2026-11-13), ugyanazzal a művelettel.
+  - Az **Export menüben** (Fájl ▸ Export) is megjelenik egy „DCP DCP-o-matic-kal…” menüpont (a tulajdonos kérése, 2026-11-13). Ez **az éppen feldolgozott videót, vagyis az aktuális szekvenciát** adja át (D3 b): megnyitja az Export ablakot DCP formátummal és DCP-o-matic motorral. A „KDM készítése…” is itt van.
   - Mindkét helyen letiltottak, ha a DCP-o-matic nincs telepítve, és a tippjük megmondja, miért.
 - **Csak a Qt6 felület készül** (a tulajdonos döntése, 2026-11-13). Az egui szerkesztő (`crates/ui-egui`) nem kap DCP-o-matic-felületet. A `docs/qt-parity.md` ezt nem számítja hiánynak a Qt oldalon.
 - **KDM-készítés:** párbeszédablak a meglévő Load KDM… (`panels/kdm_dialog.py`) mintájára, ugyanazzal az elrendezéssel és viselkedéssel.
@@ -100,7 +100,7 @@ A tulajdonos döntése (D6): a DCP-o-matic **a CFA4 designját követi**. A felh
   - minden vezérlőnek automation id-ja van;
   - minden felirat a fordításon (`i18n`) megy át, magyarul is;
   - dokkok esetén a `main_window.py` dokkszabályai.
-- Ha a D3 b) is elfogadott: az Export ablak az idővonalból maga készíti el a köztes mestert ideiglenes mappába, átadja, majd törli. Előtte kiírja a becsült lemezigényt.
+- Fájl ▸ Export útja (D3 b): az Export ablak az aktuális szekvenciából köztes mestert készít egy ideiglenes mappába, átadja a DCP-o-matic-nak, majd törli. Előtte kiírja a becsült lemezigényt, és nem indul el, ha a hely nem elég.
 
 **Elfogadás:**
 - A `--smoke --screenshot` képen az Export ablak DCP-o-matic motorral mind a három témában a CFA4 többi exportjával egyező kinézetű. Összevetés a CFA4 Qt Export ablakának többi formátumával és a `plan/premiere/screenshots/` képeivel.
