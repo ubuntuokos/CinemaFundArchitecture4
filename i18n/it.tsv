@@ -4515,6 +4515,9 @@
 	accept	accettabile
 	the engine did not start the check	il motore non ha avviato il controllo
 	the engine sent no report	il motore non ha inviato alcun rapporto
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a non compresso 10 bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 a 10 bit non compresso nel formato v210 (SMPTE ST 384), PCM a 24 bit 48 kHz, timecode iniziale
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Scrivi i sottotitoli come dati ANC (CEA-608/708, 29,97 fps)
 	Load KDM…	Carica KDM…
 	Forget DCP Keys	Dimentica chiavi DCP
 	Load KDM	Carica KDM
@@ -4524,3 +4527,35 @@
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Le chiavi restano solo in memoria, fino a Dimentica chiavi DCP o alla fine della sessione.
 	DCP keys forgotten	Chiavi DCP dimenticate
 	Choose the KDM file and the private key.	Scegli il file KDM e la chiave privata.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sincronizzazione timecode
+	TimecodeSync	Sincronizzazione timecode
+	Chase	Inseguimento
+	Follow external timecode during playback	Segui il timecode esterno durante la riproduzione
+	Lock after	Aggancia dopo
+	Keep playing without signal for	Continua senza segnale per
+	External frame rate	Frequenza fotogrammi esterna
+	Offset (added to the external timecode)	Offset (sommato al timecode esterno)
+	LTC	LTC
+	LTC input device	Dispositivo di ingresso LTC
+	LTC input channel	Canale di ingresso LTC
+	Send LTC during playback	Invia LTC durante la riproduzione
+	LTC output device	Dispositivo di uscita LTC
+	LTC output channel	Canale di uscita LTC
+	LTC level	Livello LTC
+	dBFS	dBFS
+	MIDI Timecode	Timecode MIDI
+	MTC input port (empty = CFA4 port)	Porta di ingresso MTC (vuota = porta CFA4)
+	Send MIDI Timecode during playback	Invia timecode MIDI durante la riproduzione
+	MTC output port (empty = CFA4 port)	Porta di uscita MTC (vuota = porta CFA4)
+	Send timecode ahead of the picture by	Invia il timecode in anticipo sull'immagine di
+	LTC (audio input)	LTC (ingresso audio)
+	MIDI Timecode (MIDI input)	Timecode MIDI (ingresso MIDI)
+	Same as the sequence	Uguale alla sequenza
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Stato della sincronizzazione timecode
+	Chase External Timecode	Segui timecode esterno
+	Send LTC	Invia LTC
+	Send MIDI Timecode	Invia timecode MIDI

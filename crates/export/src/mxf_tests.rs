@@ -88,6 +88,8 @@ fn codec_name(c: MxfVideoCodec) -> &'static str {
         MxfVideoCodec::ProRes => "prores",
         MxfVideoCodec::H264 => "h264",
         MxfVideoCodec::Mpeg2 | MxfVideoCodec::D10 | MxfVideoCodec::XdcamHd422 => "mpeg2video",
+        MxfVideoCodec::V210 => "v210",
+        MxfVideoCodec::Uyvy => "rawvideo",
     }
 }
 
@@ -176,7 +178,7 @@ fn mxf_formats_and_presets() {
     assert_eq!(s.audio_codec(), AudioCodec::Pcm);
     assert!(s.summary(1920, 1080, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND)).format.contains("MXF OP1a (Apple ProRes)"));
     let names: Vec<String> = builtin_presets().into_iter().filter(|p| p.settings.format.is_mxf()).map(|p| p.name).collect();
-    assert_eq!(names.len(), 8, "{names:?}");
+    assert_eq!(names.len(), 9, "{names:?}");
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "mxf-op1a", "mxfVideoCodec": "d10"})).unwrap();
     assert_eq!((s.mxf_video_codec, s.video_format()), (MxfVideoCodec::D10, Format::Mpeg2));
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "mxf-op1a", "mxfVideoCodec": "xdcamHd422"})).unwrap();
@@ -480,5 +482,62 @@ fn xdcam_hd422_rdd9_op1a() {
         let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
         assert_eq!((v["codec_name"].as_str(), v["profile"].as_str(), v["pix_fmt"].as_str()), (Some("mpeg2video"), Some("4:2:2"), Some("yuv422p")));
         assert_eq!(v["nb_read_frames"], n.to_string());
+    }
+}
+
+/// Uncompressed MXF (#946): v210 and UYVY pictures in OP1a and OP-Atom read back with our
+/// demuxer (layout, picture size, one picture per edit unit) and decode to the rendered frames
+/// within the 4:2:2 Rec. 709 round trip; ffprobe / ffmpeg (oracle) name the codec and decode
+/// the same pictures.
+#[test]
+fn uncompressed_v210_and_uyvy() {
+    let (p, seq, m) = project();
+    let leader = m.0.values().find(|s| s.info().video.is_some()).unwrap().clone();
+    let oracle = cfa4_testkit::ffprobe_or_skip("uncompressed MXF probe").zip(cfa4_testkit::ffmpeg_or_skip("uncompressed MXF decode"));
+    for (codec, layout, tol) in [(MxfVideoCodec::V210, cfa4_mxf::UncompressedLayout::V210, 6), (MxfVideoCodec::Uyvy, cfa4_mxf::UncompressedLayout::Uyvy8, 8)] {
+        for format in [Format::MxfOp1a, Format::MxfOpAtom] {
+            let path = tmp(&format!("unc_{codec:?}_{format:?}.mxf"));
+            let s = settings(format, codec, &path);
+            assert_eq!(s.video_format(), Format::MxfOp1a);
+            let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+            assert_eq!(r.frames, 24);
+            let bytes = std::fs::read(&path).unwrap();
+            let est = s.estimate_bytes(320, 180, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND));
+            assert!(est >= 24 * layout.picture_bytes(320, 180), "{codec:?}: estimate {est}");
+            let mx = cfa4_mxf::open(&bytes).unwrap();
+            assert!(mx.warnings.is_empty(), "{codec:?} {format:?}: {:?}", mx.warnings);
+            let v = &mx.tracks[mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap()];
+            assert_eq!(v.samples.len(), 24, "{codec:?} {format:?}");
+            assert_eq!(v.codec, cfa4_mxf::Codec::Uncompressed, "{codec:?}");
+            let want = layout.picture_bytes(320, 180);
+            assert!(v.samples.iter().all(|x| u64::from(x.size) == want), "{codec:?}: {want} bytes per picture");
+            let src = cfa4_codecs::open_bytes("x.mxf", bytes.into()).unwrap();
+            for f in [0i64, 7, 23] {
+                let t = FrameRate::FPS_24.tick_of(f) + Tick(1);
+                let a = src.video_frame(FrameRequest::full(t)).unwrap().to_rgba8();
+                let b = leader.video_frame(FrameRequest::full(t)).unwrap().to_rgba8();
+                assert_eq!(a.len(), b.len());
+                // chroma is halved horizontally: compare where the picture is flat
+                let worst =
+                    a.chunks(4).zip(b.chunks(4)).map(|(x, y)| (0..3).map(|c| x[c].abs_diff(y[c])).max().unwrap_or(0)).filter(|d| *d <= 64).max().unwrap_or(0);
+                let close = a.chunks(4).zip(b.chunks(4)).filter(|(x, y)| (0..3).all(|c| x[c].abs_diff(y[c]) <= tol)).count();
+                assert!(close * 100 >= a.len() / 4 * 95, "{codec:?} frame {f}: {close} of {} pixels within {tol} (worst {worst})", a.len() / 4);
+            }
+            let Some((ffprobe, ffmpeg)) = &oracle else { continue };
+            let j = ffprobe_json(ffprobe, &path);
+            let v = j["streams"].as_array().unwrap().iter().find(|s| s["codec_type"] == "video").unwrap().clone();
+            assert_eq!(v["codec_name"], codec_name(codec), "{codec:?} {format:?}");
+            assert_eq!((v["width"].as_u64(), v["height"].as_u64(), v["nb_read_frames"].as_str()), (Some(320), Some(180), Some("24")), "{codec:?}");
+            let fmt = if codec == MxfVideoCodec::V210 { "yuv422p10le" } else { "uyvy422" };
+            let raw = ffmpeg_raw(ffmpeg, &path, "0:v", &["-frames:v", "1", "-f", "rawvideo", "-pix_fmt", fmt]);
+            let first = &std::fs::read(&path).unwrap();
+            let mx = cfa4_mxf::open(first).unwrap();
+            let pic = mx.read_sample(first, mx.track_of_kind(cfa4_mxf::TrackKind::Picture).unwrap(), 0).unwrap();
+            if codec == MxfVideoCodec::Uyvy {
+                assert!(raw == pic, "ffmpeg reads our UYVY bytes as they are");
+            } else {
+                assert_eq!(raw.len(), 320 * 180 * 2 * 2, "4:2:2 10-bit planes");
+            }
+        }
     }
 }

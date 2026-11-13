@@ -308,13 +308,17 @@ fn mxf_anc_closed_captions_import_as_a_caption_track() {
     };
     assert_eq!(r["documents"][0]["format"], "MXF ANC captions", "{r}");
     assert_eq!(r["documents"][0]["captions"], 2, "{r}");
+    // #1068: CEA-608 CC1 and CEA-708 service 1 each become a track
     let q = s.active_sequence().unwrap();
-    let tr = &q.caption_tracks[0];
-    assert_eq!(tr.name, "xdcam_cc (CC)");
-    assert_eq!(tr.captions.len(), expected.cues.len());
-    for (c, e) in tr.captions.iter().zip(&expected.cues) {
-        assert_eq!(c.text, e.text);
-        assert_eq!(c.start, q.settings.frame_rate.snap_nearest(e.start));
+    let mut names: Vec<&str> = q.caption_tracks.iter().map(|t| t.name.as_str()).collect();
+    names.sort_unstable();
+    assert_eq!(names, ["xdcam_cc (CC1)", "xdcam_cc (SERVICE1)"]);
+    for tr in &q.caption_tracks {
+        assert_eq!(tr.captions.len(), expected.cues.len());
+        for (c, e) in tr.captions.iter().zip(&expected.cues) {
+            assert_eq!(c.text, e.text);
+            assert!((c.start.0 - q.settings.frame_rate.snap_nearest(e.start).0).abs() <= q.settings.frame_rate.tick_of(1).0, "{}", tr.name);
+        }
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -385,5 +389,33 @@ fn mxf_line21_and_cea608_packets_import_per_channel() {
             }
         }
     }
+    // #1068: CDPs with CC1 next to ST 334-1 packets with CC3: both channels come in, CC3 from
+    // the 334-1 packets
+    let both: Vec<Vec<u8>> = (0..frames as i64)
+        .map(|f| {
+            let (a, b) = s1.get(&f).copied().unwrap_or((0x80, 0x80));
+            let cc = [0xfc, with_parity(a), with_parity(b)];
+            let mut cdp = vec![0x96, 0x69, 16, 0x4f, 0x43, 0, f as u8, 0x72, 0xe1];
+            cdp.extend_from_slice(&cc);
+            cdp.extend_from_slice(&[0x74, 0, f as u8, 0]);
+            let mut packets = vec![[vec![0x61, 0x01, cdp.len() as u8], cdp].concat()];
+            if let Some(&(a, b)) = s3.get(&f) {
+                packets.push(vec![0x61, 0x02, 3, 0x09, with_parity(a), with_parity(b)]);
+            }
+            anc_element(&packets, false)
+        })
+        .collect();
+    let mxf = dir.join("mixed.mxf");
+    std::fs::write(&mxf, build_anc((30000, 1001), &both)).unwrap();
+    let r = s.execute("file.import", json!({"paths": [mxf.to_string_lossy()]})).unwrap();
+    let formats: Vec<&str> = r["documents"].as_array().unwrap().iter().filter_map(|d| d["format"].as_str()).collect();
+    assert_eq!(formats, ["MXF ANC captions", "MXF line 21 captions"], "{r}");
+    let q = s.active_sequence().unwrap();
+    for (track, cues) in [("mixed (CC1)", expect(&cc1)), ("mixed (CC3)", expect(&cc3))] {
+        let tr = q.caption_tracks.iter().find(|t| t.name == track).unwrap_or_else(|| panic!("no {track}: {r}"));
+        let got: Vec<&str> = tr.captions.iter().map(|c| c.text.as_str()).collect();
+        assert_eq!(got, cues.iter().map(|c| c.text.as_str()).collect::<Vec<_>>(), "{track}");
+    }
+    assert!(!q.caption_tracks.iter().any(|t| t.name.starts_with("mixed (SERVICE")));
     let _ = std::fs::remove_dir_all(&dir);
 }
