@@ -4460,7 +4460,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	halaman {page}: durasi dicapai dengan mengubah kecepatan gulir (jarak harus membesar lebih dari 20 kali lipat)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	halaman {page}: transisi mengharuskan halaman saling bersentuhan (jeda halaman 0); dilewati
 	page {page}: there is no transition “{name}”; the pages cut	halaman {page}: tidak ada transisi “{name}”; halaman berpindah dengan potongan langsung
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	posisi sumbu “{value}” tidak didukung (offset piksel, opsional dengan “parallel”, didukung)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	posisi sumbu “{value}” tidak didukung (offset piksel, opsional dengan “parallel” / “Hook N Bottom-Top dx dy”, didukung)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	halaman {page}: kait menjangkau lebih jauh ke belakang daripada jumlah sumbu; kait menempel pada sumbu pertama atau memulai sumbunya sendiri
+	hooked {n} spines back: its {from} meets this spine's {to}	dikaitkan {n} sumbu ke belakang: {from}-nya bertemu {to} sumbu ini
+	top	atas
+	middle	tengah
+	bottom	bawah
 	vertical gap “{value}” is not a number	jarak vertikal “{value}” bukan angka
 	picture “{file}” was not found or cannot be read; it is left out	gambar “{file}” tidak ditemukan atau tidak dapat dibaca; dilewati
 	video “{file}” was not found or cannot be read; it is left out	video “{file}” tidak ditemukan atau tidak dapat dibaca; dilewati

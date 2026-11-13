@@ -1056,6 +1056,16 @@ fn preview_blocks_survive_hostile_cells() {
 }
 
 #[test]
+fn preview_names_a_hooked_spine() {
+    let mut s = demo("credits-preview-hook");
+    let csv = "Head,Body,Spine Position\nCamera,Anna,-300\nSound,Emil,Hook 1 Middle-Top 600 10\n";
+    let v = s.execute("graphics.credits.preview", json!({"csv": csv})).unwrap();
+    let blocks = v["pages"][0]["blocks"].as_array().unwrap();
+    assert!(blocks[0]["hook"].is_null());
+    assert_eq!(blocks[1]["hook"], json!({"back": 1, "from": "middle", "to": "top", "dx": 600.0, "dy": 10.0}));
+}
+
+#[test]
 fn refresh_fit_and_template_name_the_new_group() {
     let mut s = demo("credits-new-group");
     let dir = tmp_dir("credits-new-group-sheet");

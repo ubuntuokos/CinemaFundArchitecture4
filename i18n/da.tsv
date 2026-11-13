@@ -4454,7 +4454,12 @@ export.summary	Low	lav
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	side {page}: spilletiden nås ved at ændre rullehastigheden (afstandene skulle vokse mere end 20 gange)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	side {page}: overgangen kræver, at siderne mødes (sideafstand 0); den udelades
 	page {page}: there is no transition “{name}”; the pages cut	side {page}: der findes ingen overgang “{name}”; siderne klippes
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	aksepositionen “{value}” understøttes ikke (en pixelforskydning, evt. med “parallel”, gør)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	aksepositionen “{value}” understøttes ikke (en pixelforskydning, evt. med “parallel” / “Hook N Bottom-Top dx dy”, gør)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	side {page}: krogen rækker længere tilbage, end der er akser; den hægtes på den første akse eller starter sin egen
+	hooked {n} spines back: its {from} meets this spine's {to}	hægtet {n} akser tilbage: dens {from} møder denne akses {to}
+	top	top
+	middle	midte
+	bottom	bund
 	vertical gap “{value}” is not a number	den lodrette afstand “{value}” er ikke et tal
 	picture “{file}” was not found or cannot be read; it is left out	billedet “{file}” blev ikke fundet eller kan ikke læses; det udelades
 	video “{file}” was not found or cannot be read; it is left out	videoen “{file}” blev ikke fundet eller kan ikke læses; den udelades

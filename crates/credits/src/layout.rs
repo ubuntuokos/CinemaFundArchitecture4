@@ -170,6 +170,8 @@ struct Ctx<'a> {
     /// Inline letter styles by lower-case name (Hungarian built-in names too), scaled.
     inline: Vec<(String, CharStyle)>,
     unknown_inline: Vec<String>,
+    /// Where the last stacked page's hooked spines stand (frame x), for the guides.
+    hooked_spines: Vec<f64>,
 }
 
 impl Ctx<'_> {
@@ -646,6 +648,9 @@ pub fn block_key(b: &Block) -> u64 {
     if b.parallel {
         parts.push(b"parallel".to_vec());
     }
+    if let Some(h) = b.hook {
+        parts.push(format!("hook {} {:?}-{:?} {} {}", h.back, h.from, h.to, h.dx, h.dy).into_bytes());
+    }
     let refs: Vec<&[u8]> = parts.iter().map(Vec::as_slice).collect();
     crate::doc::fnv1a(&refs)
 }
@@ -704,6 +709,13 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
     // parallel columns: where the current set of columns starts, how far down the finished
     // columns reach, and whether the block is in a column after the first
     let (mut group_top, mut group_bottom, mut in_parallel) = (0.0f64, 0.0f64, false);
+    // the page's finished spines (x, top, bottom), the open one (x, top), and a hooked spine
+    // being laid (its blocks are laid from 0, then moved to where the hook puts them)
+    let mut spines: Vec<(f64, f64, f64)> = Vec::new();
+    let mut open_spine: Option<(f64, f64)> = None;
+    let mut hooked: Option<HookRun> = None;
+    let mut warned_hook = false;
+    ctx.hooked_spines.clear();
     // the widest head of each harmonised style on the page
     let mut head_widths: Vec<(String, f64)> = Vec::new();
     for b in &page.blocks {
@@ -730,8 +742,55 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
             }
         };
         let margin = finite_or(cs.margin, 0.0).max(0.0) * s;
-        let spine_changed = k > 0 && page.blocks.get(k - 1).is_some_and(|p| p.spine.to_bits() != b.spine.to_bits());
-        if b.parallel && k > 0 {
+        let value_changed = k > 0 && page.blocks.get(k - 1).is_some_and(|p| p.spine.to_bits() != b.spine.to_bits());
+        // a new spine: a new offset, a parallel or hooked one, or any spine cell after a hook
+        let spine_changed = k > 0 && (value_changed || b.hook.is_some() || (hooked.is_some() && b.spine_cell));
+        if k > 0 && (spine_changed || b.parallel) {
+            // close the spine before it
+            if let Some(h) = hooked.take() {
+                let (top, bottom) = h.finish(&mut pieces, &spines, y, s);
+                spines.push((h.x, top, bottom));
+                group_bottom = group_bottom.max(bottom);
+                y = h.y_main.max(bottom);
+            } else if let Some((x, top)) = open_spine.take() {
+                spines.push((x, top, y));
+            }
+        }
+        let hook = b.hook.filter(|_| k > 0 && !spines.is_empty());
+        if b.hook.is_some() && hook.is_none() && !warned_hook {
+            warned_hook = true;
+            ctx.warn(
+                b.row,
+                format!("page {}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own", index + 1),
+            );
+        }
+        let mut spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
+        if let Some(hk) = hook {
+            // a hooked spine: laid from 0, moved into place when it ends
+            let back = hk.back as usize;
+            if back > spines.len() && !warned_hook {
+                warned_hook = true;
+                ctx.warn(
+                    b.row,
+                    format!("page {}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own", index + 1),
+                );
+            }
+            let target = spines.len().saturating_sub(back);
+            spine_x = spines[target].0 + finite_or(hk.dx, 0.0) * s;
+            hooked = Some(HookRun { hook: hk, target, x: spine_x, first_piece: pieces.len(), y_main: y.max(group_bottom) });
+            ctx.hooked_spines.push(spine_x);
+            group_bottom = group_bottom.max(y);
+            in_parallel = false;
+            y = 0.0;
+        } else if let Some(h) = &hooked {
+            // further blocks of the hooked spine (their gaps do not change the page's length)
+            spine_x = h.x;
+            let gap = match b.gap_before {
+                Gap::Units(u) => finite_or(u, 0.0).max(0.0) * unit,
+                Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
+            };
+            y += gap.max(margin).max(prev_margin) * gap_scale;
+        } else if b.parallel && k > 0 {
             // a parallel column starts beside the previous one, at the same top
             group_bottom = group_bottom.max(y);
             y = group_top;
@@ -759,8 +818,10 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
                 group_bottom = y;
             }
         }
+        if hooked.is_none() && open_spine.is_none() {
+            open_spine = Some((spine_x, if b.parallel { group_top } else { y }));
+        }
         prev_margin = margin;
-        let spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
         let head_w = head_widths.iter().find(|(n, _)| *n == cs.name).map(|(_, w)| *w);
         let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y, head_w)?;
         let nth = ctx.occurrences.get(index).and_then(|v| v.get(k)).copied().unwrap_or(0);
@@ -771,7 +832,50 @@ fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize
             return Err(CreditsError::TooLarge(format!("page {} needs more than {MAX_LAYERS_PER_PAGE} text layers", index + 1)));
         }
     }
-    Ok((pieces, y.max(group_bottom).max(0.0), elastic))
+    if let Some(h) = hooked.take() {
+        let (_, bottom) = h.finish(&mut pieces, &spines, y, s);
+        group_bottom = group_bottom.max(bottom);
+        y = h.y_main.max(bottom);
+    }
+    // a spine hooked above the page's top: everything moves down so the page starts at 0
+    let lowest = pieces.iter().map(|p| p.top).fold(0.0f64, f64::min);
+    if lowest < 0.0 {
+        for p in &mut pieces {
+            p.top -= lowest;
+        }
+    }
+    Ok((pieces, (y.max(group_bottom) - lowest).max(0.0), elastic))
+}
+
+/// A hooked spine while its blocks are laid (from 0): which spine it hangs on, where it stands,
+/// its first piece, and where the page's other content had reached.
+struct HookRun {
+    hook: crate::sheet::Hook,
+    target: usize,
+    x: f64,
+    first_piece: usize,
+    y_main: f64,
+}
+
+impl HookRun {
+    /// Move the spine's pieces to where the hook puts them (`height`: how far its blocks
+    /// reached from 0). Returns its top and bottom.
+    fn finish(&self, pieces: &mut [Piece], spines: &[(f64, f64, f64)], height: f64, s: f64) -> (f64, f64) {
+        use crate::sheet::SpinePoint as P;
+        let height = height.max(0.0);
+        let (_, t_top, t_bottom) = spines.get(self.target).copied().unwrap_or((0.0, 0.0, 0.0));
+        let at = |p: P, top: f64, h: f64| match p {
+            P::Top => top,
+            P::Middle => top + h / 2.0,
+            P::Bottom => top + h,
+        };
+        let anchor = at(self.hook.from, t_top, t_bottom - t_top) + finite_or(self.hook.dy, 0.0) * s;
+        let top = anchor - at(self.hook.to, 0.0, height);
+        for p in pieces.iter_mut().skip(self.first_piece) {
+            p.top += top;
+        }
+        (top, top + height)
+    }
 }
 
 /// Lay a crawl page's blocks side by side on one line centred at `line_y` (frame pixels), from
@@ -1014,8 +1118,9 @@ fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, ind
     let name = if name.trim().is_empty() { format!("Credits {}", index + 1) } else { format!("Credits {}: {}", index + 1, name.trim()) };
     let mut spines: Vec<f64> = Vec::new();
     if !crawl {
-        for b in &page.blocks {
-            let x = w / 2.0 + finite_or(b.spine, 0.0) * s;
+        // the blocks' own spines, and the hooked ones where the hooks put them
+        let own = page.blocks.iter().filter(|b| b.hook.is_none()).map(|b| w / 2.0 + finite_or(b.spine, 0.0) * s);
+        for x in own.chain(ctx.hooked_spines.clone()) {
             if !spines.iter().any(|v| (v - x).abs() < 0.5) {
                 spines.push(x);
             }
@@ -1087,6 +1192,7 @@ pub fn layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &dyn 
         occurrences: occurrences(credits),
         inline: Vec::new(),
         unknown_inline: vec![],
+        hooked_spines: vec![],
     };
     let s = ctx.s;
     let mut inline: Vec<(String, CharStyle)> = Vec::new();

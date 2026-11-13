@@ -4450,7 +4450,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	第 {page} 页:通过改变滚动速度来达到时长(间隔需要增大到 20 倍以上)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	第 {page} 页:转场要求页面首尾相接(页间隔为 0);已忽略
 	page {page}: there is no transition “{name}”; the pages cut	第 {page} 页:不存在转场“{name}”;页面直接切换
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	不支持对齐轴位置“{value}”(支持像素偏移,可选加“parallel”)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	不支持对齐轴位置“{value}”(支持像素偏移,可选加“parallel” / “Hook N Bottom-Top dx dy”)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	第 {page} 页：挂钩回溯的轴数超过了已有的轴；它挂到第一条轴上，或自成一条轴
+	hooked {n} spines back: its {from} meets this spine's {to}	挂在前面第 {n} 条轴上：那条轴的{from}与本轴的{to}相接
+	top	顶部
+	middle	中部
+	bottom	底部
 	vertical gap “{value}” is not a number	垂直间距“{value}”不是数字
 	picture “{file}” was not found or cannot be read; it is left out	未找到图片“{file}”或无法读取;已忽略
 	video “{file}” was not found or cannot be read; it is left out	未找到视频“{file}”或无法读取;已忽略

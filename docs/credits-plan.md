@@ -301,6 +301,21 @@ nem kerül a CFA4-be, a Chrome nem lesz függőség.
   ismétlődő háttérként vagy videócímkeként a stáblistába.
 - **Qt6:** a háttér a lapok listájában „Ismétlődő videó: …”, minden nyelven.
 
+### C14 – Horgas gerincek – **KÉSZ (2026-11-13)**
+
+A „Not yet” lista következő pontja (Cinecred-hűség), a Cinecred nyilvános útmutatója szerint
+(tisztaszobás: a forráskódját nem néztük): a `Spine Position` cellában `Hook N From-To dx dy`
+(`Horog …`) a következő blokkokat egy N gerinccel korábbi gerincre akasztja; a pontok `Top`,
+`Middle`, `Bottom` (`teteje`, `közepe`, `alja`), alapból `Bottom-Top`, a távolságok képpontban.
+A horgas gerinc blokkjai 0-tól rakódnak, majd a horog helyére tolódnak; ami utánuk jön, minden
+korábbi alá kerül; ha egy gerinc a lap teteje fölé kerül, a lap felfelé nő. A túl messzire mutató
+horog figyelmeztetés; a segédvonalak és a tulajdonságok a horog szerinti helyet mutatják, a Qt6
+minden nyelven.
+
+Ami még hátra van a listából: a kártya gerincének függőleges eltolása (`150 -50`, `Above`/`Below`),
+az egységes törzsszélesség, az online táblázatok (a `cfa4-fetch`-re vár), a Cinecred-projekt írása
+(csak kérésre).
+
 ### C12 – Animált vonalrajz-réteg Rustban, második lépcső (a jövő évi kiadásban) – **TERVEZET**
 
 A tulajdonos döntése (2026-11-11): a vonalrajzos animáció saját grafikai elemmé válik a CFA4

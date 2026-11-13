@@ -4454,7 +4454,12 @@ export.summary	Low	madal
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	leht {page}: kestus saavutatakse kerimiskiirust muutes (vahed peaksid kasvama üle 20 korra)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	leht {page}: üleminek nõuab, et lehed puutuksid (lehevahe 0); see jäetakse välja
 	page {page}: there is no transition “{name}”; the pages cut	leht {page}: üleminekut „{name}“ pole; lehed vahetuvad lõikega
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	telje asukohta „{value}“ ei toetata (toetatakse pikslinihet, soovi korral koos „parallel“ / „Hook N Bottom-Top dx dy“)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	lehekülg {page}: konks ulatub kaugemale tagasi, kui telgi on; see haakub esimese teljega või alustab oma
+	hooked {n} spines back: its {from} meets this spine's {to}	haagitud {n} telge tagasi: selle {from} kohtub selle telje {to}ga
+	top	ülaserv
+	middle	keskkoht
+	bottom	alaserv
 	vertical gap “{value}” is not a number	vertikaalne vahe „{value}“ ei ole arv
 	picture “{file}” was not found or cannot be read; it is left out	pilti „{file}“ ei leitud või ei saa lugeda; see jäetakse välja
 	video “{file}” was not found or cannot be read; it is left out	videot „{file}“ ei leitud või ei saa lugeda; see jäetakse välja

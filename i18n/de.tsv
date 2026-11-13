@@ -4459,7 +4459,12 @@
 	page {page}: the runtime is reached by changing the roll speed (the gaps would have to grow more than 20-fold)	Seite {page}: Die Laufzeit wird durch Ändern der Rollgeschwindigkeit erreicht (die Abstände müssten auf mehr als das 20-Fache wachsen)
 	page {page}: the transition needs the pages to touch (page gap 0); it is left out	Seite {page}: Der Übergang setzt voraus, dass die Seiten aneinanderstoßen (Seitenabstand 0); er wird weggelassen
 	page {page}: there is no transition “{name}”; the pages cut	Seite {page}: Es gibt keinen Übergang “{name}”; die Seiten werden hart geschnitten
-	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, is)	Achsenposition “{value}” wird nicht unterstützt (ein Pixelversatz, optional mit “parallel”, wird unterstützt)
+	spine position “{value}” is not supported (a pixel offset, optionally “parallel”, or “Hook N Bottom-Top dx dy” is)	Achsenposition “{value}” wird nicht unterstützt (ein Pixelversatz, optional mit “parallel” / “Hook N Bottom-Top dx dy”, wird unterstützt)
+	page {page}: the hook reaches back further than there are spines; it hooks onto the first spine, or starts its own	Seite {page}: Der Haken reicht weiter zurück, als es Achsen gibt; er hängt an der ersten Achse oder beginnt eine eigene
+	hooked {n} spines back: its {from} meets this spine's {to}	{n} Achsen zurück eingehakt: deren {from} trifft {to} dieser Achse
+	top	Oberkante
+	middle	Mitte
+	bottom	Unterkante
 	vertical gap “{value}” is not a number	Vertikaler Abstand “{value}” ist keine Zahl
 	picture “{file}” was not found or cannot be read; it is left out	Bild “{file}” wurde nicht gefunden oder kann nicht gelesen werden; es wird weggelassen
 	video “{file}” was not found or cannot be read; it is left out	Video “{file}” wurde nicht gefunden oder kann nicht gelesen werden; es wird weggelassen

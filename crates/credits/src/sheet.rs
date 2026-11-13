@@ -137,8 +137,69 @@ pub struct Block {
     /// Starts a parallel column: the block stands beside the column before it, from the same
     /// top (`Spine Position` `-400 parallel` / `párhuzamos`).
     pub parallel: bool,
+    /// Starts a spine hooked onto an earlier one (`Spine Position` `Hook 1 Bottom-Top 0 40`).
+    pub hook: Option<Hook>,
+    /// A `Spine Position` cell came before the block (since the block before it): after a
+    /// hooked spine, that starts a new spine even at the same offset.
+    pub spine_cell: bool,
     /// 1-based row of the block's first cell.
     pub row: usize,
+}
+
+/// A point along a spine (a column of blocks): its top, middle or bottom.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SpinePoint {
+    Top,
+    Middle,
+    Bottom,
+}
+
+impl SpinePoint {
+    fn parse(w: &str) -> Option<Self> {
+        match w {
+            "top" | "teteje" | "fent" => Some(Self::Top),
+            "middle" | "közepe" | "közép" => Some(Self::Middle),
+            "bottom" | "alja" | "lent" => Some(Self::Bottom),
+            _ => None,
+        }
+    }
+}
+
+/// A spine hooked onto an earlier spine of its page: point `from` of the spine `back` spines
+/// before it meets point `to` of this one, moved by `dx`, `dy` (1080-high pixels; `dx` is
+/// where this spine stands from the other's).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Hook {
+    pub back: u32,
+    pub from: SpinePoint,
+    pub to: SpinePoint,
+    pub dx: f64,
+    pub dy: f64,
+}
+
+/// A hook in a `Spine Position` cell: `Hook N`, then optionally `From-To` (`Bottom-Top` when
+/// left out) and a horizontal and a vertical distance in pixels (`Horog` works too).
+fn parse_hook(s: &str) -> Option<Hook> {
+    let t = s.trim().to_lowercase().replace(',', ".");
+    let mut words = t.split_whitespace();
+    if !matches!(words.next()?, "hook" | "horog") {
+        return None;
+    }
+    let back: u32 = words.next()?.parse().ok().filter(|n| (1..=1000).contains(n))?;
+    let mut rest: Vec<&str> = words.collect();
+    let (mut from, mut to) = (SpinePoint::Bottom, SpinePoint::Top);
+    if let Some((a, b)) = rest.first().and_then(|w| w.split_once('-')).and_then(|(a, b)| SpinePoint::parse(a).zip(SpinePoint::parse(b))) {
+        (from, to) = (a, b);
+        rest.remove(0);
+    }
+    let num = |w: &str| w.strip_suffix("px").unwrap_or(w).parse::<f64>().ok().filter(|v| v.is_finite() && v.abs() <= 100_000.0);
+    let (dx, dy) = match rest.as_slice() {
+        [] => (0.0, 0.0),
+        [x] => (num(x)?, 0.0),
+        [x, y] => (num(x)?, num(y)?),
+        _ => return None,
+    };
+    Some(Hook { back, from, to, dx, dy })
 }
 
 /// A picture tag: `{{Pic file}}` or `{{Pic file 120}}` (height in pixels of a 1080-high frame;
@@ -283,6 +344,8 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
     let mut style = default_content.to_string();
     let mut spine = 0.0;
     let mut parallel_next = false;
+    let mut hook_next: Option<Hook> = None;
+    let mut spine_cell_next = false;
     let mut pending_units = 0.0f64;
     let mut explicit_gap: Option<Gap> = None;
     let mut open = false; // the last block still takes body cells
@@ -351,12 +414,22 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
             open = false;
         }
         if !spine_s.trim().is_empty() {
-            match parse_spine(&spine_s) {
-                Some((v, par)) => {
+            spine_cell_next = true;
+            match (parse_spine(&spine_s), parse_hook(&spine_s)) {
+                (Some((v, par)), _) => {
                     spine = v;
                     parallel_next = par;
+                    hook_next = None;
                 }
-                None => warn(&mut out, rowno, format!("spine position `{}` is not supported (a pixel offset, optionally `parallel`, is)", spine_s.trim())),
+                (None, Some(h)) => {
+                    hook_next = Some(h);
+                    parallel_next = false;
+                }
+                (None, None) => warn(
+                    &mut out,
+                    rowno,
+                    format!("spine position `{}` is not supported (a pixel offset, optionally `parallel`, or `Hook N Bottom-Top dx dy` is)", spine_s.trim()),
+                ),
             }
             open = false;
         }
@@ -399,6 +472,8 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
                 portraits: if has_body && portrait.is_some() { vec![portrait.clone()] } else { vec![] },
                 pictures: pics,
                 parallel: std::mem::take(&mut parallel_next),
+                hook: hook_next.take(),
+                spine_cell: std::mem::take(&mut spine_cell_next),
                 row: rowno,
             });
             pending_units = 0.0;

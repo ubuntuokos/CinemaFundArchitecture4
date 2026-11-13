@@ -14610,7 +14610,7 @@ def test_real_engine_credits_window_opens_a_cinecred_project(app, tmp_path: Path
 
 
 def test_credits_workspace_strip_and_block_helpers(app):
-    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans
+    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans, spine_text
 
     pages = [{"duration": 100, "gapAfter": 0}, {"duration": 50, "gapAfter": -20}, {"duration": 30}, {"duration": "x"}]
     assert page_spans(pages) == [(0.0, 100.0), (100.0, 150.0), (130.0, 160.0), (160.0, 160.0)]
@@ -14630,6 +14630,11 @@ def test_credits_workspace_strip_and_block_helpers(app):
     assert block_label({"head": "Cast", "body": ["A", "B"], "bodyCount": 2}) == "Cast  (+2)"
     assert block_label({"body": ["A", "B"], "bodyCount": 5}) == "A  (+4)"
     assert block_label({}) and block_label({"body": [None, 3]})
+    # a spine: its offset, parallel, or where a hook puts it (bad values do not break it)
+    assert spine_text({"spine": -450, "parallel": True}) == "-450 px (parallel)"
+    hooked = {"spine": 0, "hook": {"back": 2, "from": "middle", "to": "top", "dx": 600, "dy": 10}}
+    assert spine_text(hooked) == "hooked 2 spines back: its middle meets this spine's top (+600, +10 px)"
+    assert spine_text({"hook": {"back": 1, "from": "?", "to": None, "dx": "x"}}) == "hooked 1 spines back: its top meets this spine's top"
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
