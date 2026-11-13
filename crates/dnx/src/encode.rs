@@ -1,4 +1,4 @@
-//! DNxHR encoder (RI profile, CBR, progressive).
+//! DNxHR and DNxHD encoder (RI and progressive HD profiles, CBR).
 //!
 //! Every macroblock is transformed once (orthonormal 8×8 FDCT). Quantisation follows equation
 //! 8.2 exactly (`X̂ = ⌊p·|X| / (qsf·W)⌋`, which the decoder reconstructs at the interval
@@ -27,15 +27,16 @@ pub struct EncoderConfig {
 
 impl EncoderConfig {
     pub fn new(profile: Profile, width: u32, height: u32) -> EncoderConfig {
-        let bit_depth = match profile {
-            Profile::Hqx | Profile::R444 => 10,
-            _ => 8,
+        let bit_depth = match profile.hd_raster() {
+            Some((_, _, depth)) => depth,
+            None if matches!(profile, Profile::Hqx | Profile::R444) => 10,
+            None => 8,
         };
         EncoderConfig { profile, width, height, bit_depth, color_volume: ColorVolume::Bt709, par: (0, 0) }
     }
 
     pub fn chroma(&self) -> ChromaFormat {
-        if self.profile == Profile::R444 { ChromaFormat::Yuv444 } else { ChromaFormat::Yuv422 }
+        if self.profile.is_444() { ChromaFormat::Yuv444 } else { ChromaFormat::Yuv422 }
     }
 }
 
@@ -73,7 +74,17 @@ impl Encoder {
         if cfg.chroma() == ChromaFormat::Yuv422 && !cfg.width.is_multiple_of(2) {
             return Err(Error::Input("4:2:2 needs an even width".into()));
         }
+        // DNxHD: one raster and depth per compression ID (Table C.1)
+        if let Some((w, h, depth)) = cfg.profile.hd_raster() {
+            if (cfg.width, cfg.height) != (w, h) {
+                return Err(Error::Input(format!("{} codes {w}x{h} pictures, not {}x{}", cfg.profile.name(), cfg.width, cfg.height)));
+            }
+            if cfg.bit_depth != depth {
+                return Err(Error::Input(format!("{} is {depth}-bit, not {}-bit", cfg.profile.name(), cfg.bit_depth)));
+            }
+        }
         let ok_depth = match cfg.profile {
+            _ if cfg.profile.hd_raster().is_some() => true,
             Profile::Hqx | Profile::R444 => matches!(cfg.bit_depth, 10 | 12),
             _ => cfg.bit_depth == 8,
         };
@@ -324,7 +335,8 @@ impl Encoder {
 
         let h = FrameHeader {
             header_size: self.header_size,
-            version: 3,
+            // header version 1 for the HD profile IDs, 3 for the resolution-independent ones
+            version: if cfg.profile.hd_raster().is_some() { 1 } else { 3 },
             cid: self.info.cid,
             vbr: false,
             field: FieldCode::Frame,
