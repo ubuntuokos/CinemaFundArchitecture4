@@ -1,6 +1,7 @@
 """Settings ▸ Control Surfaces (CFA4-CONTROL-SURFACE-001, docs/adr/ADR-0012-control-surface.md):
 the page lists the MIDI controllers and jog/shuttle devices `surface.devices` reports, each with
-Use and Profile; the choices are a draft that OK applies as `controlSurfaces.devices`. Runs when
+Use and Profile; the choices are a draft that OK applies as `controlSurfaces.devices`. The MIDI
+Monitor below shows the `surfaceMonitor` events while it is on. Runs when
 PySide6 is installed (offscreen), with a stub engine, and against a built `cfa4-cli` when there is one.
 """
 
@@ -55,11 +56,27 @@ DEVICES = {
 }
 
 
+class Notifications:
+    """Stands in for the engine client's ``event`` signal."""
+
+    def __init__(self) -> None:
+        self.slots: list[Any] = []
+
+    def connect(self, slot) -> None:
+        self.slots.append(slot)
+
+    def emit(self, message: dict[str, Any]) -> None:
+        for slot in self.slots:
+            slot(message)
+
+
 class StubEngine:
     """Answers at once, as the engine would; remembers every request."""
 
-    def __init__(self, devices: dict[str, Any]) -> None:
+    def __init__(self, devices: dict[str, Any], monitor_error: str = "") -> None:
         self.devices = devices
+        self.monitor_error = monitor_error
+        self.event = Notifications()
         self.sent: list[tuple[str, dict[str, Any]]] = []
         self.values: dict[str, Any] = {"controlSurfaces": {"enabled": True, "devices": []}}
 
@@ -67,6 +84,12 @@ class StubEngine:
         self.sent.append((method, params or {}))
         if method == "surface.devices" and on_reply:
             on_reply(self.devices, None)
+        if method == "surface.monitor":
+            if self.monitor_error and (params or {}).get("enabled"):
+                if on_error:
+                    on_error(self.monitor_error)
+            elif on_reply:
+                on_reply({"enabled": bool((params or {}).get("enabled"))}, None)
         return len(self.sent)
 
     def execute(self, command: str, params: dict[str, Any] | None = None, on_reply=None, on_error=None) -> int:
@@ -131,6 +154,59 @@ def test_control_surfaces_page_without_devices_and_refresh(app):
     assert not [m for m, _p in engine.sent if m == "prefs.set"]
 
 
+def monitor_calls(engine: StubEngine) -> list[bool]:
+    return [bool(p.get("enabled")) for m, p in engine.sent if m == "surface.monitor"]
+
+
+def test_midi_monitor_shows_messages_until_stopped(app):
+    engine = StubEngine(DEVICES)
+    d = PreferencesDialog(None, engine, "controlSurfaces")
+    toggle = find(d, QtWidgets.QPushButton, "settings.controlSurfaces.monitor.toggle")
+    log = find(d, QtWidgets.QPlainTextEdit, "settings.controlSurfaces.monitor.log")
+    assert toggle.text() == "Start Monitor" and not monitor_calls(engine)
+    # messages before Start are not shown
+    engine.event.emit({"event": "surfaceMonitor", "messages": [{"device": "midi:x", "at": 0, "raw": "B0 01 02", "decoded": "Ch 1 CC 1 = 2"}]})
+    assert log.toPlainText() == ""
+    toggle.click()
+    assert monitor_calls(engine) == [True]
+    assert toggle.isChecked() and toggle.text() == "Stop Monitor"
+    engine.event.emit({"event": "surfaceMonitor", "dropped": 0, "messages": [
+        {"device": "midi:nanoKONTROL2:nanoKONTROL2 _ CTRL", "at": 1_500_000_000, "raw": "B0 10 40", "decoded": "Ch 1 CC 16 = 64"},
+        {"device": "midi:Other:Port", "at": 1_600_000_000, "raw": "90 3C 64", "decoded": "Ch 1 Note On 60 vel 100"},
+    ]})
+    engine.event.emit({"event": "surfaceMonitor", "messages": [], "dropped": 7})
+    engine.event.emit({"event": "projectChanged", "revision": 3})
+    lines = log.toPlainText().splitlines()
+    assert len(lines) == 3
+    assert "nanoKONTROL2" in lines[0] and "B0 10 40" in lines[0] and "Ch 1 CC 16 = 64" in lines[0] and "1.500" in lines[0]
+    assert "Other:Port" in lines[1]
+    assert "7 messages not shown" in lines[2]
+    # the lines survive a rebuilt page (Refresh)
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.refresh").click()
+    log = find(d, QtWidgets.QPlainTextEdit, "settings.controlSurfaces.monitor.log")
+    assert len(log.toPlainText().splitlines()) == 3
+    assert find(d, QtWidgets.QPushButton, "settings.controlSurfaces.monitor.toggle").text() == "Stop Monitor"
+    find(d, QtWidgets.QPushButton, "settings.controlSurfaces.monitor.clear").click()
+    assert log.toPlainText() == "" and d.monitor_lines == []
+    # closing the dialog stops reading; the monitor sends no prefs.set
+    find(d, QtWidgets.QPushButton, "settings.cancel").click()
+    assert monitor_calls(engine) == [True, False]
+    assert not [m for m, _p in engine.sent if m == "prefs.set"]
+
+
+def test_midi_monitor_says_why_it_cannot_start(app):
+    engine = StubEngine(DEVICES, monitor_error="MIDI: no ALSA sequencer (No such file or directory)")
+    d = PreferencesDialog(None, engine, "controlSurfaces")
+    error = find(d, QtWidgets.QLabel, "settings.controlSurfaces.monitor.error")
+    assert error.isHidden()
+    toggle = find(d, QtWidgets.QPushButton, "settings.controlSurfaces.monitor.toggle")
+    toggle.click()
+    assert not toggle.isChecked() and toggle.text() == "Start Monitor"
+    assert "ALSA sequencer" in error.text() and not error.isHidden()
+    find(d, QtWidgets.QPushButton, "settings.cancel").click()
+    assert monitor_calls(engine) == [True], "nothing to stop"
+
+
 def _real_engine() -> Path | None:
     from cfa4_qt.engine import locate_engine
 
@@ -151,11 +227,17 @@ def test_real_engine_reports_control_surfaces(app, tmp_path: Path):
         engine.call("hello", {}, on_reply=lambda r, _b: got.update(hello=r))
         engine.call("surface.devices", {}, on_reply=lambda r, _b: got.update(devices=r))
         engine.execute("controlSurfaces.profiles", {}, on_reply=lambda r, _b: got.update(profiles=r))
+        # the MIDI Monitor starts on a desktop and says why not in a container; off always works
+        engine.call("surface.monitor", {"enabled": True}, on_reply=lambda r, _b: got.update(monitor=r),
+                    on_error=lambda m: got.update(monitor={"error": m}))
+        engine.call("surface.monitor", {"enabled": False}, on_reply=lambda r, _b: got.update(monitorOff=r))
         deadline = time.monotonic() + 30
-        while len(got) < 3 and time.monotonic() < deadline:
+        while len(got) < 5 and time.monotonic() < deadline:
             app.processEvents()
             time.sleep(0.01)
-        assert "surface" in got["hello"]["features"]
+        assert {"surface", "surfaceMonitor"} <= set(got["hello"]["features"])
+        assert got["monitor"].get("enabled") is True or "ALSA sequencer" in got["monitor"]["error"]
+        assert got["monitorOff"] == {"enabled": False}
         assert isinstance(got["devices"]["devices"], list)
         assert {p["id"] for p in got["profiles"]["profiles"]} >= {"cfa4.shuttlepro", "cfa4.generic-midi"}
     finally:

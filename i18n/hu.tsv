@@ -4575,3 +4575,9 @@ export.summary	Low	alacsony
 	CFA4 ShuttlePRO	CFA4 ShuttlePRO
 	Kdenlive-style ShuttlePRO	Kdenlive-szerű ShuttlePRO
 	Generic MIDI	Általános MIDI
+	MIDI Monitor	MIDI-figyelő
+	Shows every MIDI message from the controllers as it arrives, to check that a controller sends and what it sends. MIDI Clock and Active Sensing are left out.	Megmutat minden MIDI-üzenetet, amely a vezérlőkről érkezik, így ellenőrizhető, hogy egy vezérlő küld-e, és mit küld. A MIDI Clock és az Active Sensing üzenetek nem jelennek meg.
+	Start Monitor	Figyelés indítása
+	Stop Monitor	Figyelés leállítása
+	Press Start Monitor, then move a control.	Nyomja meg a Figyelés indítása gombot, majd mozdítson meg egy kezelőszervet.
+	… {count} messages not shown (too many at once)	… {count} üzenet nem látszik (egyszerre túl sok érkezett)
