@@ -140,7 +140,7 @@ pub fn parse_request(line: &[u8]) -> Result<(Value, String, Value), Reply> {
 }
 
 /// The time a request names: `time` (ticks), `seconds` or `frame`; else the playhead.
-fn time_param(s: &Session, p: &Value) -> Result<cfa4_time::Tick, String> {
+pub(crate) fn time_param(s: &Session, p: &Value) -> Result<cfa4_time::Tick, String> {
     if let Some(t) = p.get("time") {
         return t.as_i64().map(cfa4_time::Tick).ok_or_else(|| "`time` must be an integer tick count".to_string());
     }
@@ -951,6 +951,11 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             },
             Err(e) => Reply::err(id, e),
         },
+        // external timecode sync (serve_tcsync.rs): the player reports its transport
+        "timecodeSync.transport" => match crate::serve_tcsync::transport(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err(id, e),
+        },
         "app.quit" => return None,
         other => Reply::err(id, format!("unknown method `{other}`")),
     };
@@ -967,8 +972,16 @@ pub fn run(mut s: Session) {
     let stdout = std::io::stdout();
     let mut out = stdout.lock();
     let mut jobs = false;
+    let mut syncing = false;
     loop {
-        let wait = if jobs { Duration::from_millis(5) } else { Duration::from_millis(50) };
+        let wait = if jobs {
+            Duration::from_millis(5)
+        } else if syncing {
+            // the chase checks the player about every frame
+            Duration::from_millis(10)
+        } else {
+            Duration::from_millis(50)
+        };
         let incoming = match rx.recv_timeout(wait) {
             Ok(i) => Some(i),
             Err(mpsc::RecvTimeoutError::Timeout) => None,
@@ -1010,9 +1023,12 @@ pub fn run(mut s: Session) {
             s.pump_jobs(Duration::from_millis(8))
         }));
         jobs = upkeep.unwrap_or(false);
+        let (sync_events, sync_on) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::serve_tcsync::upkeep(&mut s))).unwrap_or_default();
+        syncing = sync_on;
         let mut broken = false;
-        for ev in s.drain_events() {
-            if write_reply(&mut out, &Reply { json: event_json(&ev), binary: None }).is_err() {
+        let engine_events = s.drain_events().into_iter().map(|ev| event_json(&ev));
+        for json in engine_events.chain(sync_events) {
+            if write_reply(&mut out, &Reply { json, binary: None }).is_err() {
                 broken = true;
                 break;
             }
@@ -1021,6 +1037,7 @@ pub fn run(mut s: Session) {
             break;
         }
     }
+    crate::serve_tcsync::shutdown();
     s.shutdown();
     crate::serve_shm::cleanup();
     crate::serve_live::stop();

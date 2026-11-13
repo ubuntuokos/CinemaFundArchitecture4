@@ -99,7 +99,7 @@ impl Ctx<'_> {
     }
 }
 
-fn probe_open(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn probe_open(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if let Some(e) = &c.facts.open_error {
         return CheckResult::findings(id, spec, Status::Fail, vec![finding(format!("cannot open: {e}"))]);
     }
@@ -115,7 +115,7 @@ fn probe_open(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn probe_video(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn probe_video(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if let Some(e) = c.not_open() {
         return CheckResult::not_run(id, spec, &e);
     }
@@ -170,7 +170,7 @@ fn probe_video(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn probe_color(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn probe_color(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if let Some(e) = c.not_open() {
         return CheckResult::not_run(id, spec, &e);
     }
@@ -190,7 +190,7 @@ fn probe_color(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn probe_audio(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn probe_audio(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if let Some(e) = c.not_open() {
         return CheckResult::not_run(id, spec, &e);
     }
@@ -226,7 +226,7 @@ fn probe_audio(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn probe_consistency(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn probe_consistency(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if let Some(e) = c.not_open() {
         return CheckResult::not_run(id, spec, &e);
     }
@@ -289,7 +289,7 @@ fn decode_events(s: &StreamDecode, what: &str, rate: Option<FrameRate>, frame_in
     (ev, dropped)
 }
 
-fn integrity_decode(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn integrity_decode(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if let Some(r) = c.no_decode() {
         return CheckResult::not_run(id, spec, &r);
     }
@@ -329,7 +329,7 @@ fn integrity_decode(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn integrity_frame_count(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn integrity_frame_count(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     let Some(want) = c.expect.frames else { return CheckResult::not_run(id, spec, "no render plan given (expected frame count)") };
     if let Some(r) = c.no_decode() {
         return CheckResult::not_run(id, spec, &r);
@@ -349,7 +349,7 @@ fn integrity_frame_count(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn integrity_duration(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn integrity_duration(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     let Some(want) = c.expect.duration_ms() else { return CheckResult::not_run(id, spec, "no render plan given (frames and frame rate)") };
     if let Some(r) = c.no_samples() {
         return CheckResult::not_run(id, spec, &r);
@@ -362,7 +362,7 @@ fn integrity_duration(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn integrity_frames(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn integrity_frames(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if let Some(r) = c.no_decode() {
         return CheckResult::not_run(id, spec, &r);
     }
@@ -399,7 +399,7 @@ fn integrity_frames(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn integrity_av(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn integrity_av(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if let Some(r) = c.no_samples() {
         return CheckResult::not_run(id, spec, &r);
     }
@@ -417,7 +417,7 @@ fn integrity_av(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn integrity_streams(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn integrity_streams(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if !c.expect.has_stream_plan() {
         return CheckResult::not_run(id, spec, "no render plan given (expected streams)");
     }
@@ -509,7 +509,7 @@ impl Ctx<'_> {
 }
 
 /// An audio check measured per track: the worst track gives the result, every track is listed.
-fn per_track(c: &Ctx, id: &str, spec: &CheckSpec, measure: impl Fn(&AudioFacts) -> Result<(f64, Option<String>), String>) -> CheckResult {
+fn per_track(c: &Ctx<'_>, id: &str, spec: &CheckSpec, measure: impl Fn(&AudioFacts) -> Result<(f64, Option<String>), String>) -> CheckResult {
     if c.no_audio_expected() {
         return CheckResult::not_applicable(id, spec, "the render plan has no audio and the file has none");
     }
@@ -543,7 +543,7 @@ fn per_track(c: &Ctx, id: &str, spec: &CheckSpec, measure: impl Fn(&AudioFacts) 
 /// Lowest level reported for silence, in dB (the measurement itself is −∞).
 const FLOOR_DB: f64 = -150.0;
 
-fn audio_loudness(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn audio_loudness(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     per_track(c, id, spec, |a| {
         if a.seconds() < audio::MIN_LOUDNESS_S {
             return Err(format!("shorter than {} s: no loudness gating block", audio::MIN_LOUDNESS_S));
@@ -558,7 +558,7 @@ fn audio_loudness(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     })
 }
 
-fn audio_range(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn audio_range(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     per_track(c, id, spec, |a| {
         if a.seconds() < audio::MIN_RANGE_S {
             return Err(format!("shorter than {} s: no short-term loudness window", audio::MIN_RANGE_S));
@@ -567,7 +567,7 @@ fn audio_range(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     })
 }
 
-fn audio_true_peak(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn audio_true_peak(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     per_track(c, id, spec, |a| {
         if a.true_peak_dbtp.is_finite() {
             Ok((a.true_peak_dbtp.max(FLOOR_DB), None))
@@ -580,7 +580,7 @@ fn audio_true_peak(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     })
 }
 
-fn audio_clipping(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn audio_clipping(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if c.no_audio_expected() {
         return CheckResult::not_applicable(id, spec, "the render plan has no audio and the file has none");
     }
@@ -606,7 +606,7 @@ fn finite(db: f64) -> Option<f64> {
     db.is_finite().then_some(db)
 }
 
-fn audio_silence(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn audio_silence(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if c.no_audio_expected() {
         return CheckResult::not_applicable(id, spec, "the render plan has no audio and the file has none");
     }
@@ -633,7 +633,7 @@ fn audio_silence(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn audio_layout(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn audio_layout(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     if c.no_audio_expected() {
         return CheckResult::not_applicable(id, spec, "the render plan has no audio and the file has none");
     }
@@ -672,14 +672,14 @@ fn audio_layout(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn picture_ready<'a>(c: &'a Ctx, id: &str, spec: &CheckSpec) -> Result<&'a PictureFacts, Box<CheckResult>> {
+fn picture_ready<'a>(c: &'a Ctx<'_>, id: &str, spec: &CheckSpec) -> Result<&'a PictureFacts, Box<CheckResult>> {
     if c.no_video_expected() {
         return Err(Box::new(CheckResult::not_applicable(id, spec, "the render plan has no video and the file has none")));
     }
     c.picture().map_err(|r| Box::new(CheckResult::not_run(id, spec, &r)))
 }
 
-fn video_black(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn video_black(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     let p = match picture_ready(c, id, spec) {
         Ok(p) => p,
         Err(r) => return *r,
@@ -703,7 +703,7 @@ fn video_black(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     r
 }
 
-fn video_clip(c: &Ctx, id: &str, spec: &CheckSpec, white: bool) -> CheckResult {
+fn video_clip(c: &Ctx<'_>, id: &str, spec: &CheckSpec, white: bool) -> CheckResult {
     let p = match picture_ready(c, id, spec) {
         Ok(p) => p,
         Err(r) => return *r,
@@ -726,7 +726,7 @@ fn video_clip(c: &Ctx, id: &str, spec: &CheckSpec, white: bool) -> CheckResult {
     r
 }
 
-fn video_contact_sheet(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
+fn video_contact_sheet(c: &Ctx<'_>, id: &str, spec: &CheckSpec) -> CheckResult {
     let p = match picture_ready(c, id, spec) {
         Ok(p) => p,
         Err(r) => return *r,

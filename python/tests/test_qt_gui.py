@@ -2918,7 +2918,7 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         assert dlg.params()["mpeg2BFrames"] == 0
         dlg.b_frames.setValue(2)
         # progressive unless an interlaced field order is chosen: egui's one Field Order row
-        # (export.video.fieldOrder), its interlaced orders open for MPEG-2 only
+        # (export.video.fieldOrder), its interlaced orders open for MPEG-2 and ProRes
         fo = dlg.rows.field_order
         assert dlg.findChild(QtWidgets.QComboBox, "export.fieldOrder") is None, "one Field Order control"
         assert fo.currentData() == "progressive" and "fieldOrder" not in p.get("settings", {}) and "fieldOrder" not in p

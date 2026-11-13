@@ -292,7 +292,7 @@ impl Encoder {
 
     /// Encode one picture; returns its access unit (pictures are coded in display order, so each
     /// call returns one packet).
-    pub fn encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, EncodeError> {
+    pub fn encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, EncodeError> {
         let cfg = &self.cfg;
         let p = match &mut self.core {
             Core::E8(st) => st.encode(cfg, frame, pts)?,
@@ -397,7 +397,7 @@ impl<S: Sample> State<S> {
     }
 
     /// The input at the coded size with edge replication, at the coded bit depth.
-    fn source(&self, f: &YuvFrame) -> Result<Source, EncodeError> {
+    fn source(&self, f: &YuvFrame<'_>) -> Result<Source, EncodeError> {
         let (w, h) = (self.seq.coded_w as usize, self.seq.coded_h as usize);
         let (vw, vh) = (self.seq.width as usize, self.seq.height as usize);
         let bd = self.seq.bit_depth;
@@ -435,7 +435,7 @@ impl<S: Sample> State<S> {
         if ok { Ok(src) } else { Err(EncodeError::BadFrame) }
     }
 
-    fn encode(&mut self, cfg: &EncoderConfig, frame: &YuvFrame, pts: i64) -> Result<Packet, EncodeError> {
+    fn encode(&mut self, cfg: &EncoderConfig, frame: &YuvFrame<'_>, pts: i64) -> Result<Packet, EncodeError> {
         let src = self.source(frame)?;
         let idr = self.frames == 0 || (self.keyint > 0 && self.frames.is_multiple_of(self.keyint as u64));
         if idr {

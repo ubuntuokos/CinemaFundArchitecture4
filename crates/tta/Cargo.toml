@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-tta"
+description = "Pure-Rust TTA (True Audio) lossless audio decoder, ported from the LGPL libtta library"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later AND LGPL-3.0-only"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

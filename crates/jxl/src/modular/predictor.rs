@@ -75,7 +75,7 @@ impl TryFrom<u32> for Predictor {
 
 impl Predictor {
     #[inline(always)]
-    pub(super) fn predict<S: Sample, const EDGE: bool>(self, properties: &Properties<S>) -> i32 {
+    pub(super) fn predict<S: Sample, const EDGE: bool>(self, properties: &Properties<'_, '_, '_, S>) -> i32 {
         use Predictor::*;
         let predictor = &*properties.predictor;
 
