@@ -301,7 +301,7 @@ fn par_map<T: Sync, R: Send>(threads: bool, items: &[T], f: impl Fn(&T) -> R + S
     items.iter().map(f).collect()
 }
 
-fn prepare_slice(src: &Source, mb_x: usize, mb_y: usize, mbs: usize) -> SliceData {
+fn prepare_slice(src: &Source<'_>, mb_x: usize, mb_y: usize, mbs: usize) -> SliceData {
     let f = src.frame;
     let x0 = mb_x * 16;
     let y0 = mb_y * 16;
@@ -348,7 +348,7 @@ fn slice_bits(sd: &SliceData, q: u8) -> u64 {
 /// Frame-level rate control: the smallest uniform quantiser whose frame fits the budget, then
 /// one step finer on as many slices as the remaining budget allows. Uniform quantisation
 /// approximately minimises frame MSE for a given size.
-fn choose_quantisers(slices: &[SliceData], src: &Source, total_mbs: usize, threads: bool) -> Vec<u8> {
+fn choose_quantisers(slices: &[SliceData], src: &Source<'_>, total_mbs: usize, threads: bool) -> Vec<u8> {
     let n = slices.len();
     let hsize = slices.first().map_or(6, SliceData::header_size);
     let fixed = 8 * (8 + 20 + 8 + n * (2 + hsize)) as u64;
@@ -428,7 +428,7 @@ fn write_slice(sd: &SliceData, q: u8) -> Vec<u8> {
 }
 
 /// Encode the slice's alpha samples (16-bit coding) in raster order over its 16 lines.
-fn encode_alpha_slice(src: &Source, x0: usize, y0: usize, mbs: usize) -> Vec<u8> {
+fn encode_alpha_slice(src: &Source<'_>, x0: usize, y0: usize, mbs: usize) -> Vec<u8> {
     let Some(a) = src.frame.alpha.as_ref() else { return Vec::new() };
     let d = src.frame.bit_depth as u32;
     let to16 = |v: u16| -> u32 {

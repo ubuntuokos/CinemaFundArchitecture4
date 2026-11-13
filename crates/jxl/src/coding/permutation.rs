@@ -6,7 +6,7 @@
 use crate::bitstream::Bitstream;
 
 /// Read a permutation from the entropy encoded stream.
-pub fn read_permutation(bitstream: &mut Bitstream, decoder: &mut crate::coding::Decoder, size: u32, skip: u32) -> crate::coding::CodingResult<Vec<usize>> {
+pub fn read_permutation(bitstream: &mut Bitstream<'_>, decoder: &mut crate::coding::Decoder, size: u32, skip: u32) -> crate::coding::CodingResult<Vec<usize>> {
     let end = decoder.read_varint(bitstream, get_context(size))?;
     if end > size - skip {
         crate::tracing::error!(size, skip, end, "Invalid permutation");

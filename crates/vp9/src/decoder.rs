@@ -301,7 +301,7 @@ impl Decoder {
         self.count_frame(&h);
 
         // References (8.5.2.3).
-        let mut refs: [Option<RefUse>; 3] = [None, None, None];
+        let mut refs: [Option<RefUse<'_>>; 3] = [None, None, None];
         let ref_frames: Vec<Option<Arc<Frame>>> =
             (0..3).map(|i| if h.frame_is_intra { None } else { self.slots[h.ref_frame_idx[i] as usize].clone() }).collect();
         if !h.frame_is_intra {

@@ -28,7 +28,7 @@ pub struct ProfileTierLevel {
     pub level_idc: u8,
 }
 
-pub fn parse_ptl(r: &mut BitReader, profile_present: bool, max_sub_layers_minus1: u32) -> Result<ProfileTierLevel> {
+pub fn parse_ptl(r: &mut BitReader<'_>, profile_present: bool, max_sub_layers_minus1: u32) -> Result<ProfileTierLevel> {
     let mut p = ProfileTierLevel::default();
     if profile_present {
         p.profile_space = r.read_bits(2)? as u8;
@@ -65,7 +65,7 @@ pub fn parse_ptl(r: &mut BitReader, profile_present: bool, max_sub_layers_minus1
     Ok(p)
 }
 
-fn skip_sub_layer_hrd(r: &mut BitReader, cpb_cnt: u32, sub_pic: bool) -> Result<()> {
+fn skip_sub_layer_hrd(r: &mut BitReader<'_>, cpb_cnt: u32, sub_pic: bool) -> Result<()> {
     for _ in 0..cpb_cnt {
         r.read_ue()?;
         r.read_ue()?;
@@ -79,7 +79,7 @@ fn skip_sub_layer_hrd(r: &mut BitReader, cpb_cnt: u32, sub_pic: bool) -> Result<
 }
 
 /// hrd_parameters() (E.2.2), skipped.
-pub fn skip_hrd(r: &mut BitReader, common: bool, max_sub_layers_minus1: u32) -> Result<()> {
+pub fn skip_hrd(r: &mut BitReader<'_>, common: bool, max_sub_layers_minus1: u32) -> Result<()> {
     let (mut nal, mut vcl, mut sub_pic) = (false, false, false);
     if common {
         nal = r.read_flag()?;
@@ -189,7 +189,7 @@ const SAR_TABLE: [(u16, u16); 17] = [
     (2, 1),
 ];
 
-fn parse_vui(r: &mut BitReader, max_sub_layers_minus1: u32) -> Result<Vui> {
+fn parse_vui(r: &mut BitReader<'_>, max_sub_layers_minus1: u32) -> Result<Vui> {
     let mut v = Vui::default();
     if r.read_flag()? {
         let idc = r.read_bits(8)?;
@@ -265,7 +265,7 @@ impl ScalingList {
         ScalingList { lists, dc: [[16; 6]; 2] }
     }
 
-    pub fn parse(r: &mut BitReader) -> Result<Self> {
+    pub fn parse(r: &mut BitReader<'_>) -> Result<Self> {
         let mut sl = Self::default_lists();
         for size in 0..4 {
             let step = if size == 3 { 3 } else { 1 };
@@ -360,7 +360,7 @@ impl StRps {
 
     /// st_ref_pic_set(idx) with the previously parsed candidate sets `sets` (idx == sets.len() for a
     /// slice-header RPS).
-    pub fn parse(r: &mut BitReader, idx: usize, sets: &[StRps], num_sets: usize) -> Result<StRps> {
+    pub fn parse(r: &mut BitReader<'_>, idx: usize, sets: &[StRps], num_sets: usize) -> Result<StRps> {
         let inter = if idx != 0 { r.read_flag()? } else { false };
         if inter {
             let delta_idx = if idx == num_sets { r.read_ue()? as usize + 1 } else { 1 };

@@ -157,11 +157,11 @@ EXIT STATUS
 
 /// Writes one diagnostic line to `w`, dropping any write error. `eprintln!` panics (exit 101) when stderr's
 /// reader is gone, which would turn a usage error, a failure or a finished export into a crash.
-fn write_diag(w: &mut dyn std::io::Write, msg: std::fmt::Arguments) {
+fn write_diag(w: &mut dyn std::io::Write, msg: std::fmt::Arguments<'_>) {
     let _ = writeln!(w, "{msg}");
 }
 
-fn diag(msg: std::fmt::Arguments) {
+fn diag(msg: std::fmt::Arguments<'_>) {
     write_diag(&mut std::io::stderr(), msg);
 }
 

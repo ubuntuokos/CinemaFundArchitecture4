@@ -106,7 +106,7 @@ pub fn show(app: &mut Cfa4App, ui: &mut egui::Ui, rect: Rect) {
 
 // ------------------------------------------------------------------------------------- browse
 
-fn browse(ui: &mut egui::Ui, cx: &mut Ctx, rect: Rect, presets: &[es::Preset], items: &[TrackItem]) {
+fn browse(ui: &mut egui::Ui, cx: &mut Ctx<'_>, rect: Rect, presets: &[es::Preset], items: &[TrackItem]) {
     let t = cx.t;
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink2(vec2(PAD, 4.0))).id_salt("es-browse"));
     egui::ScrollArea::vertical().auto_shrink([false, false]).show(&mut child, |ui| {
@@ -143,7 +143,7 @@ fn browse(ui: &mut egui::Ui, cx: &mut Ctx, rect: Rect, presets: &[es::Preset], i
 
 // ------------------------------------------------------------------------------------- edit
 
-fn edit(ui: &mut egui::Ui, cx: &mut Ctx, rect: Rect, items: &[TrackItem], presets: &[es::Preset], collapsed: Vec<String>, expanded: Vec<String>) {
+fn edit(ui: &mut egui::Ui, cx: &mut Ctx<'_>, rect: Rect, items: &[TrackItem], presets: &[es::Preset], collapsed: Vec<String>, expanded: Vec<String>) {
     let t = cx.t;
     if items.is_empty() {
         crate::dock::placeholder(ui, rect, &t, tl!("Select audio clips to edit them here"));
@@ -193,7 +193,15 @@ fn edit(ui: &mut egui::Ui, cx: &mut Ctx, rect: Rect, items: &[TrackItem], preset
 }
 
 #[allow(clippy::too_many_arguments)]
-fn typed_body(ui: &mut egui::Ui, cx: &mut Ctx, st: &EssentialSound, items: &[TrackItem], presets: &[es::Preset], collapsed: &[String], expanded: &[String]) {
+fn typed_body(
+    ui: &mut egui::Ui,
+    cx: &mut Ctx<'_>,
+    st: &EssentialSound,
+    items: &[TrackItem],
+    presets: &[es::Preset],
+    collapsed: &[String],
+    expanded: &[String],
+) {
     let t = cx.t;
     let kind = st.kind;
     // type badge + Clear Audio Type
@@ -330,7 +338,7 @@ fn typed_body(ui: &mut egui::Ui, cx: &mut Ctx, st: &EssentialSound, items: &[Tra
     ui.painter().line_segment([r.left_top(), r.right_top()], Stroke::new(1.0, t.separator));
 }
 
-fn loudness(ui: &mut egui::Ui, cx: &mut Ctx, st: &EssentialSound, items: &[TrackItem]) {
+fn loudness(ui: &mut egui::Ui, cx: &mut Ctx<'_>, st: &EssentialSound, items: &[TrackItem]) {
     let t = cx.t;
     let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 28.0), Sense::hover());
     let br = Rect::from_min_size(r.min + vec2(0.0, 2.0), vec2(104.0, 24.0));
@@ -347,7 +355,7 @@ fn loudness(ui: &mut egui::Ui, cx: &mut Ctx, st: &EssentialSound, items: &[Track
     }
 }
 
-fn ducking(ui: &mut egui::Ui, cx: &mut Ctx, st: &EssentialSound, on: bool) {
+fn ducking(ui: &mut egui::Ui, cx: &mut Ctx<'_>, st: &EssentialSound, on: bool) {
     let t = cx.t;
     ui.label(egui::RichText::new(tl!("Duck against:")).color(t.text_dim).size(12.0));
     let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 30.0), Sense::hover());
@@ -410,7 +418,7 @@ fn ducking(ui: &mut egui::Ui, cx: &mut Ctx, st: &EssentialSound, on: bool) {
     }
 }
 
-fn footer(ui: &mut egui::Ui, cx: &mut Ctx, rect: Rect, st: Option<&EssentialSound>) {
+fn footer(ui: &mut egui::Ui, cx: &mut Ctx<'_>, rect: Rect, st: Option<&EssentialSound>) {
     let t = cx.t;
     let p = ui.painter();
     p.line_segment([pos2(rect.min.x + PAD, rect.min.y + 4.0), pos2(rect.max.x - PAD, rect.min.y + 4.0)], Stroke::new(1.0, t.separator));
@@ -436,7 +444,7 @@ fn footer(ui: &mut egui::Ui, cx: &mut Ctx, rect: Rect, st: Option<&EssentialSoun
 // ------------------------------------------------------------------------------------- widgets
 
 /// Section header: twirl, bold title, switch at the right. Returns whether it is open.
-fn section_header(ui: &mut egui::Ui, cx: &mut Ctx, sec: Section, open: bool, enabled: Option<bool>, key: &str) -> bool {
+fn section_header(ui: &mut egui::Ui, cx: &mut Ctx<'_>, sec: Section, open: bool, enabled: Option<bool>, key: &str) -> bool {
     let t = cx.t;
     let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 44.0), Sense::click());
     ui.painter().line_segment([r.left_top(), r.right_top()], Stroke::new(1.0, t.separator));
@@ -462,7 +470,7 @@ fn section_header(ui: &mut egui::Ui, cx: &mut Ctx, sec: Section, open: bool, ena
 }
 
 /// A pill switch. Returns clicked.
-fn switch(ui: &mut egui::Ui, cx: &mut Ctx, r: Rect, on: bool, id: &str, label: &str) -> bool {
+fn switch(ui: &mut egui::Ui, cx: &mut Ctx<'_>, r: Rect, on: bool, id: &str, label: &str) -> bool {
     let resp = ui.interact(r.expand(3.0), egui::Id::new(("es-sw", id)), Sense::click());
     let p = ui.painter();
     let rad = r.height() / 2.0;
@@ -477,7 +485,7 @@ fn switch(ui: &mut egui::Ui, cx: &mut Ctx, r: Rect, on: bool, id: &str, label: &
     resp.clicked()
 }
 
-fn switch_row(ui: &mut egui::Ui, cx: &mut Ctx, label: &str, key: &str, on: bool, active: bool) {
+fn switch_row(ui: &mut egui::Ui, cx: &mut Ctx<'_>, label: &str, key: &str, on: bool, active: bool) {
     let t = cx.t;
     let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 30.0), Sense::hover());
     let sw = Rect::from_min_size(pos2(r.min.x, r.center().y - 7.5), vec2(30.0, 15.0));
@@ -488,14 +496,14 @@ fn switch_row(ui: &mut egui::Ui, cx: &mut Ctx, label: &str, key: &str, on: bool,
 }
 
 /// Switch + label row and its 0…10 amount slider.
-fn slot(ui: &mut egui::Ui, cx: &mut Ctx, label: &str, key: &str, s: Slot, active: bool) {
+fn slot(ui: &mut egui::Ui, cx: &mut Ctx<'_>, label: &str, key: &str, s: Slot, active: bool) {
     switch_row(ui, cx, label, &format!("{key}.on"), s.on, active);
     slider(ui, cx, "", &format!("{key}.amount"), s.amount, (0.0, 10.0), 1, "", active && s.on);
 }
 
 /// Label + value line, then a track with a ring knob.
 #[allow(clippy::too_many_arguments)]
-fn slider(ui: &mut egui::Ui, cx: &mut Ctx, label: &str, key: &str, v: f64, range: (f64, f64), decimals: usize, suffix: &str, active: bool) {
+fn slider(ui: &mut egui::Ui, cx: &mut Ctx<'_>, label: &str, key: &str, v: f64, range: (f64, f64), decimals: usize, suffix: &str, active: bool) {
     let t = cx.t;
     let h = if label.is_empty() { 26.0 } else { 46.0 };
     let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), h), Sense::hover());
@@ -515,7 +523,7 @@ fn slider(ui: &mut egui::Ui, cx: &mut Ctx, label: &str, key: &str, v: f64, range
 }
 
 /// The bare slider: 1 pt track, hollow ring knob. Sends `essentialSound.set` while dragged.
-fn slider_track(ui: &mut egui::Ui, cx: &mut Ctx, track: Rect, key: &str, v: f64, (lo, hi): (f64, f64), active: bool) {
+fn slider_track(ui: &mut egui::Ui, cx: &mut Ctx<'_>, track: Rect, key: &str, v: f64, (lo, hi): (f64, f64), active: bool) {
     let t = cx.t;
     let y = track.center().y;
     let f = ((v - lo) / (hi - lo)).clamp(0.0, 1.0) as f32;
@@ -557,7 +565,7 @@ fn slider_track(ui: &mut egui::Ui, cx: &mut Ctx, track: Rect, key: &str, v: f64,
     }
 }
 
-fn combo(ui: &mut egui::Ui, cx: &mut Ctx, key: &str, names: &[&str], current: &str, active: bool) {
+fn combo(ui: &mut egui::Ui, cx: &mut Ctx<'_>, key: &str, names: &[&str], current: &str, active: bool) {
     let mut picked = None;
     ui.add_enabled_ui(active, |ui| {
         let cb = egui::ComboBox::from_id_salt(("es-combo", key)).selected_text(crate::i18n::t(current)).width(ui.available_width() - 4.0).show_ui(ui, |ui| {
@@ -575,7 +583,7 @@ fn combo(ui: &mut egui::Ui, cx: &mut Ctx, key: &str, names: &[&str], current: &s
 }
 
 /// Segmented choice (50 Hz | 60 Hz, Low Tone | High Tone).
-fn choice_row(ui: &mut egui::Ui, cx: &mut Ctx, key: &str, opts: &[&str], sel: usize, active: bool, value: impl Fn(usize) -> Value) {
+fn choice_row(ui: &mut egui::Ui, cx: &mut Ctx<'_>, key: &str, opts: &[&str], sel: usize, active: bool, value: impl Fn(usize) -> Value) {
     let t = cx.t;
     let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 28.0), Sense::hover());
     let w = 84.0;
@@ -602,7 +610,7 @@ fn choice_row(ui: &mut egui::Ui, cx: &mut Ctx, key: &str, opts: &[&str], sel: us
     }
 }
 
-fn button(ui: &mut egui::Ui, cx: &mut Ctx, r: Rect, text: &str, id: &str) -> bool {
+fn button(ui: &mut egui::Ui, cx: &mut Ctx<'_>, r: Rect, text: &str, id: &str) -> bool {
     let t = cx.t;
     let resp = ui.interact(r, egui::Id::new(("es-btn", id)), Sense::click());
     ui.painter().rect_filled(r, 4.0, if resp.hovered() { cx.t.button_hover } else { t.field_bg });
