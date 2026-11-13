@@ -39,7 +39,7 @@ pub struct ExtraChannelMeaning {
 }
 
 impl ExtraChannelMeaning {
-    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut end_pos = reader.position()?;
 
         let extra_channel_meaning_length = reader.get_n(4)?;
@@ -146,7 +146,7 @@ pub struct FbbChannelMeaning {
 }
 
 impl FbbChannelMeaning {
-    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let cm = FbbChannelMeaning {
             fs: reader.get_n(5)?,
             wordwidth: reader.get_n(5)?,
@@ -187,7 +187,7 @@ impl Default for ChannelMeaning {
 }
 
 impl ChannelMeaning {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         match state.format_sync {
             MAJOR_SYNC_FBB => Ok(Self::Fbb(FbbChannelMeaning::read(state, reader)?)),
             _ => Ok(Self::Fba(FbaChannelMeaning::read(state, reader)?)),
@@ -217,7 +217,7 @@ impl ChannelMeaning {
 }
 
 impl FbaChannelMeaning {
-    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader) -> Result<Self> {
+    fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut cm = FbaChannelMeaning {
             heavy_drc_start_up_gain: reader.get_s(6)?,
             twoch_control_enabled: reader.get()?,
@@ -297,7 +297,7 @@ pub struct ChannelParams {
 }
 
 impl ChannelParams {
-    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader, chi: usize) -> Result<Self> {
+    pub fn read(state: &mut ParserState, reader: &mut BsIoSliceReader<'_>, chi: usize) -> Result<Self> {
         let mut cp = ChannelParams::default();
 
         let mut new_filter = false;

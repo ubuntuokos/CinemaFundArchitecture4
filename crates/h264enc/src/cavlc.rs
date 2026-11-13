@@ -132,7 +132,7 @@ fn nc_of(a: Option<u8>, b: Option<u8>) -> i32 {
 }
 
 /// Write the macroblock layer in CAVLC. For P/B slices the caller writes mb_skip_run first.
-pub fn write_mb(w: &mut BitWriter, nb: &NbCtx, c: &MbCode) {
+pub fn write_mb(w: &mut BitWriter, nb: &NbCtx<'_>, c: &MbCode) {
     let intra_base = match nb.slice_type {
         SliceType::I => 0,
         SliceType::P => 5,

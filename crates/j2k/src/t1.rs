@@ -355,7 +355,7 @@ impl State {
     }
 
     /// Cleanup pass (D.3.4), with run-length coding of all-insignificant stripe columns.
-    fn cup(&mut self, mq: &mut Mq, cx: &mut [Ctx; CONTEXTS], plane: u32) {
+    fn cup(&mut self, mq: &mut Mq<'_>, cx: &mut [Ctx; CONTEXTS], plane: u32) {
         let s = self.stride;
         for (stripe, y0) in (0..self.h).step_by(4).enumerate() {
             let rows = (self.h - y0).min(4);
@@ -393,7 +393,7 @@ impl State {
 
 /// Decodes a code-block into signed coefficients with one fractional bit (see the module
 /// documentation), `w · h` of them in raster order.
-pub(crate) fn decode(b: &Block) -> Result<Vec<i32>> {
+pub(crate) fn decode(b: &Block<'_>) -> Result<Vec<i32>> {
     let n = b.w.checked_mul(b.h).ok_or(Error::TooLarge)?;
     if b.mb <= b.zero || b.segments.is_empty() || n == 0 {
         return Ok(vec![0; n]);

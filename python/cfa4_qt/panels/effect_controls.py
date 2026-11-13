@@ -77,6 +77,16 @@ INTERPOLATIONS = (
     ("easeIn", N_("Ease In")),
     ("easeOut", N_("Ease Out")),
 )
+# CFA4's easing presets (egui's Easing Presets submenu of the keyframe menu): a fixed curve leaving
+# the keyframe, no influence handles
+EASING_PRESETS = (
+    ("sine", N_("Sine")),
+    ("expo", N_("Exponential")),
+    ("circ", N_("Circular")),
+    ("overshoot", N_("Overshoot")),
+    ("elastic", N_("Elastic")),
+    ("bounce", N_("Bounce")),
+)
 UNEDITABLE = {"curve", "wheel", "path"}
 ROW_H = 24
 HEAD_H = 18
@@ -871,7 +881,7 @@ def components(value: Any) -> list[float | None]:
 
 def eases(interpolation: Any) -> tuple[bool, bool]:
     """Whether a keyframe's curve eases (has an influence handle) out of it and into it."""
-    flat = ("linear", "hold", None)
+    flat = ("linear", "hold", None, *(k for k, _label in EASING_PRESETS))
     return interpolation not in (*flat, "easeIn"), interpolation not in (*flat, "easeOut")
 
 
@@ -1414,13 +1424,19 @@ class KeyLane(QWidget):
         menu = QMenu(self)
         title = menu.addAction(tr("Temporal Interpolation"))
         title.setEnabled(False)
-        for k, label in INTERPOLATIONS:
-            a = menu.addAction(tr(label))
+        def choice(into: QMenu, k: str, label: str) -> None:
+            a = into.addAction(tr(label))
             a.setObjectName(f"effectControls.keyframeMenu.{k}")
             a.setCheckable(True)
             a.setChecked(key["interp"] == k)
-            a.triggered.connect(lambda _c=False, kk=k: self.panel.send("effects.setInterpolation",
-                                                                       {**params, "interpolation": kk}))
+            a.triggered.connect(lambda _c=False: self.panel.send("effects.setInterpolation", {**params, "interpolation": k}))
+
+        for k, label in INTERPOLATIONS:
+            choice(menu, k, label)
+        presets = menu.addMenu(tr("Easing Presets"))
+        presets.setObjectName("effectControls.keyframeMenu.easingPresets")
+        for k, label in EASING_PRESETS:
+            choice(presets, k, label)
         menu.addSeparator()
         clear = menu.addAction(tr("Clear"))
         clear.setObjectName("effectControls.keyframeMenu.clear")

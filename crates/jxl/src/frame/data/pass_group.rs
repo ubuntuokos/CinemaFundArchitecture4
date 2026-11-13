@@ -33,7 +33,7 @@ pub struct PassGroupParamsVardct<'frame, 'buf, 'g> {
     pub hf_coeff_output: &'buf mut [MutableSubgrid<'g, f32>; 3],
 }
 
-pub fn decode_pass_group<S: Sample>(bitstream: &mut Bitstream, params: PassGroupParams<S>) -> Result<()> {
+pub fn decode_pass_group<S: Sample>(bitstream: &mut Bitstream<'_>, params: PassGroupParams<'_, '_, '_, '_, S>) -> Result<()> {
     let PassGroupParams { frame_header, lf_group, pass_idx, group_idx, global_ma_config, modular, vardct, allow_partial, tracker, pool } = params;
 
     if let (Some(PassGroupParamsVardct { lf_vardct, hf_global, hf_coeff_output }), Some(hf_meta)) = (vardct, &lf_group.hf_meta) {
@@ -101,12 +101,12 @@ pub fn decode_pass_group<S: Sample>(bitstream: &mut Bitstream, params: PassGroup
 
 #[allow(clippy::too_many_arguments)]
 pub fn decode_pass_group_modular<S: Sample>(
-    bitstream: &mut Bitstream,
+    bitstream: &mut Bitstream<'_>,
     frame_header: &FrameHeader,
     global_ma_config: Option<&MaConfig>,
     pass_idx: u32,
     group_idx: u32,
-    modular: TransformedModularSubimage<S>,
+    modular: TransformedModularSubimage<'_, S>,
     allow_partial: bool,
     tracker: Option<&AllocTracker>,
     pool: &JxlThreadPool,

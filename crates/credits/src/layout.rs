@@ -256,7 +256,7 @@ fn left_of(x: f64, w: f64, a: Align) -> f64 {
 }
 
 /// Lay out the body cells with their top at `top`, anchored at `x`. Returns the pieces.
-fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64) -> Result<Vec<Piece>, CreditsError> {
+fn lay_body(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64) -> Result<Vec<Piece>, CreditsError> {
     let s = ctx.s;
     let mut out = Vec::new();
     if b.body.is_empty() {
@@ -334,7 +334,7 @@ fn bottom(pieces: &[Piece]) -> Option<f64> {
 /// page's size and roll include them). `anchor_x` and `align` place the row like text.
 /// A picture's size on screen (`default_h` high unless the tag gives a height, never wider than
 /// the frame), or `None` with a warning when it cannot be read.
-fn size_picture(ctx: &mut Ctx, row: usize, p: &Picture, default_h: f64) -> Option<(f64, f64)> {
+fn size_picture(ctx: &mut Ctx<'_>, row: usize, p: &Picture, default_h: f64) -> Option<(f64, f64)> {
     let s = ctx.s;
     let Some((pw, ph)) = ctx.measure.picture_size(&p.file).filter(|(w, h)| w.is_finite() && h.is_finite() && *w > 0.0 && *h > 0.0) else {
         if !ctx.missing_pics.contains(&p.file) {
@@ -373,7 +373,7 @@ fn picture_piece(p: &Picture, k: usize, w: f64, h: f64, cx: f64, top: f64, row: 
 
 /// A row of pictures with its top at `top`: placeholder pieces (transparent rectangles, so the
 /// page's size and roll include them). `anchor_x` and `align` place the row like text.
-fn lay_pictures(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, anchor_x: f64, align: Align, top: f64) -> Vec<Piece> {
+fn lay_pictures(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, anchor_x: f64, align: Align, top: f64) -> Vec<Piece> {
     let s = ctx.s;
     let mut sized = Vec::new();
     for p in &b.pictures {
@@ -395,7 +395,7 @@ fn lay_pictures(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, anchor_x: f64, alig
 
 /// Names with their portraits, `columns` to a row: each portrait above its name (or left of
 /// it, `portraitSide: left`), the grid placed like text at `x` with `align`.
-fn lay_portraits(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64) -> Result<Vec<Piece>, CreditsError> {
+fn lay_portraits(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64) -> Result<Vec<Piece>, CreditsError> {
     let s = ctx.s;
     let left_side = cs.portrait_side == crate::style::PortraitSide::Left;
     let pgap = finite_or(cs.portrait_gap, 0.0).clamp(0.0, 10_000.0) * s;
@@ -454,7 +454,7 @@ const MAX_LEADER: usize = 2_000;
 
 /// Lay out one block with its top at `top`. `head_w`: the width the head column has (heads of a
 /// harmonised style); `None` = the head's own.
-fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64, head_w: Option<f64>) -> Result<(Vec<Piece>, f64), CreditsError> {
+fn lay_block(ctx: &mut Ctx<'_>, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64, head_w: Option<f64>) -> Result<(Vec<Piece>, f64), CreditsError> {
     let s = ctx.s;
     let mut pieces = Vec::new();
     let head_gap = finite_or(cs.head_gap, 0.0).max(0.0) * s;
@@ -692,7 +692,7 @@ fn occurrences(credits: &Credits) -> Vec<Vec<usize>> {
 
 /// Stack a page's blocks from the top; the gaps between blocks are multiplied by `gap_scale`.
 /// Returns the pieces, the content height and the total of those (elastic) gaps.
-fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, gap_scale: f64) -> Result<(Vec<Piece>, f64, f64), CreditsError> {
+fn stack(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, w: f64, index: usize, gap_scale: f64) -> Result<(Vec<Piece>, f64, f64), CreditsError> {
     let s = ctx.s;
     let unit = finite_or(styling.unit_px, 32.0).clamp(0.0, 10_000.0) * s;
     let mut pieces: Vec<Piece> = Vec::new();
@@ -776,7 +776,7 @@ fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, ga
 
 /// Lay a crawl page's blocks side by side on one line centred at `line_y` (frame pixels), from
 /// x = 0. Returns the pieces (tops in frame pixels) and the line's length.
-fn line(ctx: &mut Ctx, styling: &Styling, page: &Page, index: usize, line_y: f64, crawl_gap: f64) -> Result<(Vec<Piece>, f64), CreditsError> {
+fn line(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, index: usize, line_y: f64, crawl_gap: f64) -> Result<(Vec<Piece>, f64), CreditsError> {
     let s = ctx.s;
     let unit = finite_or(styling.unit_px, 32.0).clamp(0.0, 10_000.0) * s;
     let fallback = styling.content_style(&styling.default_content_style).unwrap_or_default();
@@ -841,7 +841,7 @@ fn key_pieces(b: &Block, nth: usize, pieces: &mut [Piece]) {
 }
 
 /// `last`: no page follows; `cut_in`: the previous page has a transition into this one.
-fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: usize, last: bool, cut_in: bool) -> Result<PageOut, CreditsError> {
+fn lay_page(ctx: &mut Ctx<'_>, styling: &Styling, page: &Page, frame: Frame, index: usize, last: bool, cut_in: bool) -> Result<PageOut, CreditsError> {
     let s = ctx.s;
     let (w, h) = (f64::from(frame.width), f64::from(frame.height));
     let ps = match styling.page_style(&page.style) {

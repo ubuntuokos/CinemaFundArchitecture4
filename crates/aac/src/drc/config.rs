@@ -164,7 +164,7 @@ impl DrcConfig {
     }
 }
 
-fn downmix_instructions(br: &mut BitReader, version: u8, base_channels: usize) -> Result<(u8, usize)> {
+fn downmix_instructions(br: &mut BitReader<'_>, version: u8, base_channels: usize) -> Result<(u8, usize)> {
     let id = br.read_bits(7)? as u8;
     let target_channels = br.read_bits(7)? as usize;
     br.skip(8)?; // targetLayout
@@ -178,7 +178,7 @@ fn downmix_instructions(br: &mut BitReader, version: u8, base_channels: usize) -
     Ok((id, target_channels))
 }
 
-fn instructions_basic(br: &mut BitReader) -> Result<()> {
+fn instructions_basic(br: &mut BitReader<'_>) -> Result<()> {
     br.skip(6 + 4)?; // drcSetId, drcLocation
     br.skip(7)?; // downmixId
     if br.read_flag()? {
@@ -210,7 +210,7 @@ fn instructions_basic(br: &mut BitReader) -> Result<()> {
     Ok(())
 }
 
-fn gain_set_params(br: &mut BitReader, version: u8, seq: &mut i32) -> Result<GainSet> {
+fn gain_set_params(br: &mut BitReader<'_>, version: u8, seq: &mut i32) -> Result<GainSet> {
     let coding_profile = br.read_bits(2)? as u8;
     let spline = !br.read_flag()?; // gainInterpolationType 0 = spline
     let full_frame = br.read_flag()?;
@@ -256,7 +256,7 @@ fn seq_index(seq: i32) -> Result<usize> {
     usize::try_from(seq).ok().filter(|&s| s < MAX_SEQUENCES).ok_or(Error::Bitstream("uniDrcConfig: bad gain sequence index"))
 }
 
-fn split_characteristic(br: &mut BitReader) -> Result<()> {
+fn split_characteristic(br: &mut BitReader<'_>) -> Result<()> {
     if !br.read_flag()? {
         br.skip(6 + 8 + 1)?; // sigmoid: gain, ioRatio + exp, flipSign
     } else {
@@ -266,7 +266,7 @@ fn split_characteristic(br: &mut BitReader) -> Result<()> {
     Ok(())
 }
 
-fn coefficients(br: &mut BitReader, version: u8) -> Result<Coefficients> {
+fn coefficients(br: &mut BitReader<'_>, version: u8) -> Result<Coefficients> {
     let mut c = Coefficients { version, location: br.read_bits(4)? as u8, ..Default::default() };
     if br.read_flag()? {
         c.frame_size = Some(br.read_bits(15)? + 1);
@@ -311,9 +311,9 @@ fn coefficients(br: &mut BitReader, version: u8) -> Result<Coefficients> {
     Ok(c)
 }
 
-fn gain_modifiers(br: &mut BitReader, version: u8, bands: usize) -> Result<GainModifiers> {
+fn gain_modifiers(br: &mut BitReader<'_>, version: u8, bands: usize) -> Result<GainModifiers> {
     let mut m = GainModifiers::default();
-    let read_scaling_offset = |br: &mut BitReader, m: &mut GainModifiers| -> Result<()> {
+    let read_scaling_offset = |br: &mut BitReader<'_>, m: &mut GainModifiers| -> Result<()> {
         if br.read_flag()? {
             m.attn_scaling = br.read_bits(4)? as f32 * 0.125;
             m.ampl_scaling = br.read_bits(4)? as f32 * 0.125;
@@ -348,7 +348,7 @@ fn gain_modifiers(br: &mut BitReader, version: u8, bands: usize) -> Result<GainM
     Ok(m)
 }
 
-fn instructions(br: &mut BitReader, version: u8, cfg: &DrcConfig) -> Result<Instructions> {
+fn instructions(br: &mut BitReader<'_>, version: u8, cfg: &DrcConfig) -> Result<Instructions> {
     let mut ins = Instructions { drc_set_id: br.read_bits(6)? as i32, ..Default::default() };
     if version == 1 {
         br.skip(4)?; // drcSetComplexityLevel
@@ -459,7 +459,7 @@ fn instructions(br: &mut BitReader, version: u8, cfg: &DrcConfig) -> Result<Inst
     Ok(ins)
 }
 
-fn config_extension(br: &mut BitReader, c: &mut DrcConfig) -> Result<()> {
+fn config_extension(br: &mut BitReader<'_>, c: &mut DrcConfig) -> Result<()> {
     loop {
         let t = br.read_bits(4)?;
         if t == 0 {
@@ -479,7 +479,7 @@ fn config_extension(br: &mut BitReader, c: &mut DrcConfig) -> Result<()> {
     }
 }
 
-fn config_v1(br: &mut BitReader, c: &mut DrcConfig) -> Result<()> {
+fn config_v1(br: &mut BitReader<'_>, c: &mut DrcConfig) -> Result<()> {
     if br.read_flag()? {
         let n = br.read_bits(7)?;
         for _ in 0..n {
@@ -551,7 +551,7 @@ impl LoudnessInfoSet {
         Ok(s)
     }
 
-    fn read_counts(&mut self, br: &mut BitReader, version: u8) -> Result<()> {
+    fn read_counts(&mut self, br: &mut BitReader<'_>, version: u8) -> Result<()> {
         let album = br.read_bits(6)?;
         let track = br.read_bits(6)?;
         for _ in 0..album {
@@ -564,7 +564,7 @@ impl LoudnessInfoSet {
     }
 }
 
-fn loudness_info(br: &mut BitReader, version: u8) -> Result<LoudnessInfo> {
+fn loudness_info(br: &mut BitReader<'_>, version: u8) -> Result<LoudnessInfo> {
     let mut l = LoudnessInfo { drc_set_id: br.read_bits(6)? as i32, ..Default::default() };
     if version >= 1 {
         l.eq_set_id = br.read_bits(6)? as i32;

@@ -362,7 +362,7 @@ fn rows(cb: &[i8], id: u32, n: usize) -> &[i8] {
 }
 
 /// `lsp_unquant_nb` (submodes 5 to 7).
-pub(crate) fn lsp_unquant_nb(lsp: &mut [f32; 10], bits: &mut crate::bits::Bits) {
+pub(crate) fn lsp_unquant_nb(lsp: &mut [f32; 10], bits: &mut crate::bits::Bits<'_>) {
     for (i, l) in lsp.iter_mut().enumerate() {
         *l = (0.25 * i as f64 + 0.25) as f32;
     }
@@ -389,7 +389,7 @@ pub(crate) fn lsp_unquant_nb(lsp: &mut [f32; 10], bits: &mut crate::bits::Bits) 
 }
 
 /// `lsp_unquant_lbr` (submodes 1 to 4 and 8).
-pub(crate) fn lsp_unquant_lbr(lsp: &mut [f32; 10], bits: &mut crate::bits::Bits) {
+pub(crate) fn lsp_unquant_lbr(lsp: &mut [f32; 10], bits: &mut crate::bits::Bits<'_>) {
     for (i, l) in lsp.iter_mut().enumerate() {
         *l = (0.25 * i as f64 + 0.25) as f32;
     }
@@ -408,7 +408,7 @@ pub(crate) fn lsp_unquant_lbr(lsp: &mut [f32; 10], bits: &mut crate::bits::Bits)
 }
 
 /// `lsp_unquant_high` (the 8 LSPs of a high band).
-pub(crate) fn lsp_unquant_high(lsp: &mut [f32; 8], bits: &mut crate::bits::Bits) {
+pub(crate) fn lsp_unquant_high(lsp: &mut [f32; 8], bits: &mut crate::bits::Bits<'_>) {
     for (i, l) in lsp.iter_mut().enumerate() {
         *l = (0.3125 * i as f64 + 0.75) as f32;
     }
@@ -432,7 +432,7 @@ pub(crate) struct SplitCb {
 }
 
 /// `split_cb_shape_sign_unquant`: adds the decoded innovation to `exc`.
-pub(crate) fn split_cb_unquant(exc: &mut [f32], p: &SplitCb, bits: &mut crate::bits::Bits) {
+pub(crate) fn split_cb_unquant(exc: &mut [f32], p: &SplitCb, bits: &mut crate::bits::Bits<'_>) {
     let mut ind = [0u32; 10];
     let mut signs = [false; 10];
     for i in 0..p.nb_subvect.min(10) {
