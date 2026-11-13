@@ -122,7 +122,7 @@ def expect_timeline(otio: Any, timeline: Any) -> dict[str, Any]:
         markers += [ticks_of(m.marked_range.start_time) for m in track.markers]
         children = list(track)
         cut = 0  # ticks: where the previous slot ends
-        for index, child in enumerate(children):
+        for _index, child in enumerate(children):
             if isinstance(child, otio.schema.Transition):
                 transitions += 1
                 inn, out = ticks_of(child.in_offset), ticks_of(child.out_offset)
