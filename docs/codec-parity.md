@@ -73,6 +73,7 @@ fidelity and the remaining work.
 | AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
 | Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
 | TTA (True Audio) | audio | `crates/tta` | ported | yes | no |
+| Musepack SV7 / SV8 | audio | `crates/musepack` | ported | yes | no |
 | ADPCM, G.711, G.722 | audio | `crates/adpcm` | own | yes | no |
 | IAB (SMPTE ST 2098-2) | audio | `crates/iab` | own | yes: decode and render | yes: IAB track in DCP exports |
 | Auro-3D | audio | `crates/auro` | ported | yes: side channel in 24-bit PCM | no |
