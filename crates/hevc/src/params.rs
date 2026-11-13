@@ -6,6 +6,16 @@ use crate::spec_tables::{DEFAULT_SCALING_INTER, DEFAULT_SCALING_INTRA};
 use crate::tables::scan_diag;
 use cfa4_bitstream::BitReader;
 
+/// HEVC picture state includes several per-pixel and per-block work buffers. This permits 8K
+/// pictures while rejecting dimensions that could exhaust memory during decode.
+pub const MAX_LUMA_SAMPLES: u64 = 1 << 26;
+
+fn check_picture_size(width: u32, height: u32) -> Result<()> {
+    ensure!(width > 0 && height > 0 && width <= 16888 && height <= 16888, "picture size {width}x{height} out of range");
+    ensure!(u64::from(width) * u64::from(height) <= MAX_LUMA_SAMPLES, "picture size {width}x{height} exceeds the decoded-frame budget");
+    Ok(())
+}
+
 /// General profile / tier / level information.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ProfileTierLevel {
@@ -18,7 +28,7 @@ pub struct ProfileTierLevel {
     pub level_idc: u8,
 }
 
-pub fn parse_ptl(r: &mut BitReader, profile_present: bool, max_sub_layers_minus1: u32) -> Result<ProfileTierLevel> {
+pub fn parse_ptl(r: &mut BitReader<'_>, profile_present: bool, max_sub_layers_minus1: u32) -> Result<ProfileTierLevel> {
     let mut p = ProfileTierLevel::default();
     if profile_present {
         p.profile_space = r.read_bits(2)? as u8;
@@ -55,7 +65,7 @@ pub fn parse_ptl(r: &mut BitReader, profile_present: bool, max_sub_layers_minus1
     Ok(p)
 }
 
-fn skip_sub_layer_hrd(r: &mut BitReader, cpb_cnt: u32, sub_pic: bool) -> Result<()> {
+fn skip_sub_layer_hrd(r: &mut BitReader<'_>, cpb_cnt: u32, sub_pic: bool) -> Result<()> {
     for _ in 0..cpb_cnt {
         r.read_ue()?;
         r.read_ue()?;
@@ -69,7 +79,7 @@ fn skip_sub_layer_hrd(r: &mut BitReader, cpb_cnt: u32, sub_pic: bool) -> Result<
 }
 
 /// hrd_parameters() (E.2.2), skipped.
-pub fn skip_hrd(r: &mut BitReader, common: bool, max_sub_layers_minus1: u32) -> Result<()> {
+pub fn skip_hrd(r: &mut BitReader<'_>, common: bool, max_sub_layers_minus1: u32) -> Result<()> {
     let (mut nal, mut vcl, mut sub_pic) = (false, false, false);
     if common {
         nal = r.read_flag()?;
@@ -179,7 +189,7 @@ const SAR_TABLE: [(u16, u16); 17] = [
     (2, 1),
 ];
 
-fn parse_vui(r: &mut BitReader, max_sub_layers_minus1: u32) -> Result<Vui> {
+fn parse_vui(r: &mut BitReader<'_>, max_sub_layers_minus1: u32) -> Result<Vui> {
     let mut v = Vui::default();
     if r.read_flag()? {
         let idc = r.read_bits(8)?;
@@ -255,7 +265,7 @@ impl ScalingList {
         ScalingList { lists, dc: [[16; 6]; 2] }
     }
 
-    pub fn parse(r: &mut BitReader) -> Result<Self> {
+    pub fn parse(r: &mut BitReader<'_>) -> Result<Self> {
         let mut sl = Self::default_lists();
         for size in 0..4 {
             let step = if size == 3 { 3 } else { 1 };
@@ -350,7 +360,7 @@ impl StRps {
 
     /// st_ref_pic_set(idx) with the previously parsed candidate sets `sets` (idx == sets.len() for a
     /// slice-header RPS).
-    pub fn parse(r: &mut BitReader, idx: usize, sets: &[StRps], num_sets: usize) -> Result<StRps> {
+    pub fn parse(r: &mut BitReader<'_>, idx: usize, sets: &[StRps], num_sets: usize) -> Result<StRps> {
         let inter = if idx != 0 { r.read_flag()? } else { false };
         if inter {
             let delta_idx = if idx == num_sets { r.read_ue()? as usize + 1 } else { 1 };
@@ -490,7 +500,7 @@ impl Sps {
         let separate_colour_plane = if chroma_format_idc == 3 { r.read_flag()? } else { false };
         let width = r.read_ue()?;
         let height = r.read_ue()?;
-        ensure!(width > 0 && height > 0 && width <= 16888 && height <= 16888, "picture size {width}x{height} out of range");
+        check_picture_size(width, height)?;
         let mut conf_win = (0, 0, 0, 0);
         if r.read_flag()? {
             conf_win = (r.read_ue()?, r.read_ue()?, r.read_ue()?, r.read_ue()?);
@@ -1000,5 +1010,12 @@ mod tests {
         s.check_supported().unwrap();
         let s = Sps::parse(&sps(1, 2, 0)).unwrap();
         assert_eq!((s.bit_depth_luma, s.bit_depth_chroma), (10, 8));
+    }
+
+    #[test]
+    fn picture_size_has_an_aggregate_pixel_budget() {
+        check_picture_size(8192, 8192).unwrap();
+        let err = check_picture_size(8192, 8193).unwrap_err();
+        assert!(err.to_string().contains("decoded-frame budget"));
     }
 }

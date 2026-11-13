@@ -196,7 +196,7 @@ class PropertiesPanel(QWidget):
 
     def __init__(self, engine: Any = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setObjectName("panel.Inspector")
+        self.setObjectName("panel.Properties")  # egui's PanelKind::Properties
         self.engine = engine
         self.settings: QSettings | None = None
         self.sequence: dict[str, Any] | None = None

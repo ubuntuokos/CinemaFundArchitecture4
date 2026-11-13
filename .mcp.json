@@ -2,7 +2,10 @@
   "mcpServers": {
     "cfa4": {
       "command": "target/release/cfa4-cli",
-      "args": ["mcp", "--bridge", "127.0.0.1:9876"]
+      "args": ["mcp", "--bridge", "127.0.0.1:9876"],
+      "env": {
+        "CFA4_CONTROL_TOKEN": "${CFA4_CONTROL_TOKEN:-}"
+      }
     },
     "cfa4-headless": {
       "command": "target/release/cfa4-cli",

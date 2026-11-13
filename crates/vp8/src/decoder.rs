@@ -15,6 +15,9 @@ use crate::transform;
 
 /// Largest frame dimension in macroblocks (14-bit sizes).
 const MAX_MBS: usize = 16384 / 16 + 1;
+/// Maximum padded luma samples retained by one VP8 reference picture (about 8K UHD).
+/// 2^26 luma samples: 8192x8192, above every VP8 frame a camera or encoder writes (8192x4320 is 35M).
+const MAX_LUMA_SAMPLES: usize = 1 << 26;
 
 /// A reconstructed frame: planes sized to whole macroblocks.
 #[derive(Clone)]
@@ -162,14 +165,18 @@ impl Decoder {
     /// (`show_frame`), `None` for a hidden frame (an altref).
     pub fn decode(&mut self, data: &[u8], pts: i64) -> Result<Option<Picture>> {
         let tag = FrameTag::parse(data)?;
+        ensure!(tag.first_part_size > 0, "empty first partition");
         if tag.key_frame {
             ensure!(tag.width > 0 && tag.height > 0, "key frame of size {}x{}", tag.width, tag.height);
             let (w, h) = (usize::from(tag.width), usize::from(tag.height));
+            let (mb_w, mb_h) = (w.div_ceil(16), h.div_ceil(16));
+            let samples = mb_w.checked_mul(16).and_then(|w| w.checked_mul(mb_h)).and_then(|h| h.checked_mul(16));
+            ensure!(samples.is_some_and(|n| n <= MAX_LUMA_SAMPLES), "frame size {}x{} exceeds the decoder memory limit", tag.width, tag.height);
             if w != self.width || h != self.height {
                 self.width = w;
                 self.height = h;
-                self.mb_w = w.div_ceil(16);
-                self.mb_h = h.div_ceil(16);
+                self.mb_w = mb_w;
+                self.mb_h = mb_h;
                 self.seg_map = vec![0; self.mb_w * self.mb_h];
             }
             // key frame defaults (9.3, 9.4, 9.7, 13.4, 16.1, 17.2)
@@ -214,7 +221,7 @@ impl Decoder {
             parts.push(&data[pos..end]);
             pos = end;
         }
-        let mut token_decoders: Vec<BoolDecoder> = parts.into_iter().map(BoolDecoder::new).collect();
+        let mut token_decoders: Vec<BoolDecoder<'_>> = parts.into_iter().map(BoolDecoder::new).collect();
 
         let mut frame = Frame::new(self.mb_w * 16, self.mb_h * 16);
         let dequant: [Dequant; 4] = std::array::from_fn(|s| {
@@ -481,7 +488,7 @@ impl Decoder {
     }
 
     /// Inter prediction record (16.2-16.4, 17) of the macroblock at `idx` in `infos`.
-    fn read_inter_modes(&self, bd: &mut BoolDecoder, infos: &[MbInfo], idx: usize, stride: usize, mb_x: usize, mb_y: usize, info: &mut MbInfo) {
+    fn read_inter_modes(&self, bd: &mut BoolDecoder<'_>, infos: &[MbInfo], idx: usize, stride: usize, mb_x: usize, mb_y: usize, info: &mut MbInfo) {
         let get = |i: usize| infos.get(i).copied().unwrap_or_default();
         let above = get(idx - stride);
         let left = get(idx - 1);
@@ -562,7 +569,7 @@ impl Decoder {
     }
 
     /// SPLITMV partitioning and subblock vectors (16.4).
-    fn read_split(&self, bd: &mut BoolDecoder, left: &MbInfo, above: &MbInfo, best: Mv, info: &mut MbInfo) {
+    fn read_split(&self, bd: &mut BoolDecoder<'_>, left: &MbInfo, above: &MbInfo, best: Mv, info: &mut MbInfo) {
         let part = usize::from(bd.read_tree(&MVPARTITION_TREE, &MVPARTITION_PROBS)) & 3;
         let map = &SPLIT_MAPS[part];
         let mut part_mv = [Mv::ZERO; 16];
@@ -598,7 +605,7 @@ impl Decoder {
     }
 
     /// `read_mv` (17.2): row, then column.
-    fn read_mv(&self, bd: &mut BoolDecoder) -> Mv {
+    fn read_mv(&self, bd: &mut BoolDecoder<'_>) -> Mv {
         let row = read_mv_component(bd, &self.ctx.mv[0]);
         let col = read_mv_component(bd, &self.ctx.mv[1]);
         Mv { row, col }
@@ -606,7 +613,7 @@ impl Decoder {
 }
 
 /// `read_mvcomponent` (17.1), in quarter pixels.
-fn read_mv_component(bd: &mut BoolDecoder, p: &[u8; 19]) -> i32 {
+fn read_mv_component(bd: &mut BoolDecoder<'_>, p: &[u8; 19]) -> i32 {
     let a = if bd.read_bool(p[MVP_IS_SHORT]) {
         let mut a = 0i32;
         for i in 0..3 {
@@ -661,7 +668,7 @@ fn implied_bmode(mode: u8) -> u8 {
 
 /// Decode the tokens of one block (13), storing dequantized coefficients in raster order.
 /// Returns the position after the last token (where the end of block was read, or 16).
-fn read_coefficients(bd: &mut BoolDecoder, probs: &[[[u8; 11]; 3]; 8], ctx: usize, first: usize, dq: [i32; 2], out: &mut [i16; 16]) -> usize {
+fn read_coefficients(bd: &mut BoolDecoder<'_>, probs: &[[[u8; 11]; 3]; 8], ctx: usize, first: usize, dq: [i32; 2], out: &mut [i16; 16]) -> usize {
     let mut ctx = ctx.min(2);
     let mut prev_zero = false;
     let mut i = first;

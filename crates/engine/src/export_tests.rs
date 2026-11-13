@@ -10,6 +10,16 @@ use serde_json::{Value, json};
 use crate::Session;
 
 #[test]
+fn project_names_become_one_export_filename_component() {
+    for name in ["../../outside", "/absolute/path", r"C:\\outside", ".."] {
+        let safe = crate::export_tools::file_safe(name);
+        assert!(!safe.contains(['/', '\\']), "{name:?} became {safe:?}");
+        assert_ne!(safe, ".");
+        assert_ne!(safe, "..");
+    }
+}
+
+#[test]
 fn hostile_export_ranges_are_rejected_without_panicking() {
     let mut session = demo();
     for params in [
@@ -83,6 +93,111 @@ fn demo() -> Session {
 }
 
 #[test]
+fn single_frame_in_out_warning_follows_the_selected_range() {
+    let mut s = demo();
+    for rate in [cfa4_time::FrameRate::FPS_25, cfa4_time::FrameRate::FPS_23_976] {
+        let seq = s.state.active_sequence.unwrap();
+        std::sync::Arc::make_mut(&mut s.project).sequence_mut(seq).unwrap().settings.frame_rate = rate;
+        s.execute("markers.markIn", json!({"frame": 12})).unwrap();
+        s.execute("markers.markOut", json!({"frame": 12})).unwrap();
+        std::sync::Arc::make_mut(&mut s.project).sequence_mut(seq).unwrap().work_area =
+            Some(cfa4_time::TimeRange::new(rate.tick_of(12), rate.frame_duration()));
+        for p in [json!({}), json!({"range":null}), json!({"range":"inOut"}), json!({"range":{"mode":"Sequence In/Out"}})] {
+            let v = s.execute("export.resolve", p.clone()).unwrap();
+            assert_eq!(v["frames"], 1, "{p}: {v}");
+            assert_eq!(v["warnings"].as_array().unwrap().len(), 1, "{p}: {v}");
+            assert!(v["warnings"][0].as_str().unwrap().contains("range: entire"));
+        }
+        let custom = json!({"range":"custom", "startFrame":12, "endFrame":13});
+        for p in [
+            json!({"range":"entire"}),
+            json!({"range":"workArea"}),
+            custom,
+            json!({"startFrame":12, "endFrame":13}),
+            json!({"range":{"startFrame":12, "endFrame":13}}),
+        ] {
+            let v = s.execute("export.resolve", p.clone()).unwrap();
+            assert_eq!(v["warnings"], json!([]), "{p}: {v}");
+        }
+        // Rate conversion does not change the length of the marked sequence range.
+        let v = s.execute("export.resolve", json!({"fps":60})).unwrap();
+        assert_eq!(v["warnings"].as_array().unwrap().len(), 1);
+        s.execute("markers.markOut", json!({"frame":13})).unwrap();
+        let v = s.execute("export.resolve", json!({})).unwrap();
+        assert_eq!(v["frames"], 2);
+        assert_eq!(v["warnings"], json!([]));
+    }
+    // A one-frame sequence without marks is intentional and must stay quiet.
+    let seq = s.state.active_sequence.unwrap();
+    let q = std::sync::Arc::make_mut(&mut s.project).sequence_mut(seq).unwrap();
+    q.mark_in = None;
+    q.mark_out = None;
+    q.video_tracks.clear();
+    q.audio_tracks.clear();
+    let v = s.execute("export.resolve", json!({})).unwrap();
+    assert_eq!(v["frames"], 1);
+    assert_eq!(v["warnings"], json!([]));
+}
+
+#[test]
+fn single_frame_in_out_queue_add_retains_warnings_and_ranges() {
+    let mut s = demo();
+    let dir = Scratch::new("queue-range-warning");
+    s.execute("markers.markIn", json!({"frame":12})).unwrap();
+    s.execute("markers.markOut", json!({"frame":12})).unwrap();
+    let expected = s.execute("export.resolve", json!({})).unwrap()["warnings"].clone();
+    let v = s.execute("export.queue.add", json!({"path":dir.path("default.wav"),"format":"wav"})).unwrap();
+    assert_eq!(v["warnings"], expected);
+    assert_eq!(v["added"].as_array().unwrap().len(), 1);
+    assert_eq!(v["items"].as_array().unwrap().len(), 1);
+    assert_eq!(v["items"][0]["id"], v["added"][0]);
+    assert_eq!(v["items"][0]["status"], "ready");
+    assert_eq!(v["items"][0]["range"], Value::Null, "default range is still resolved from the snapshot's marks");
+    s.execute("export.queue.clear", json!({"all":true})).unwrap();
+
+    // Each marked range contributes its advisory; later explicit ranges must not overwrite it.
+    let ranges = json!(["inOut", {"mode":"inOut"}, {"startFrame":12,"endFrame":13}, "entire"]);
+    let v = s.execute("export.queue.add", json!({"path":dir.path("ranges.wav"),"format":"wav","ranges":ranges})).unwrap();
+    assert_eq!(v["warnings"], json!([expected[0], expected[0]]));
+    assert_eq!(v["added"].as_array().unwrap().len(), 4);
+    let items = v["items"].as_array().unwrap();
+    assert_eq!(items.len(), 4);
+    for (i, range) in ranges.as_array().unwrap().iter().enumerate() {
+        let resolved = s.execute("export.resolve", json!({"range":range})).unwrap();
+        assert_eq!(items[i]["id"], v["added"][i]);
+        assert_eq!(items[i]["range"]["start"], resolved["range"]["start"]);
+        assert_eq!(items[i]["range"]["duration"], resolved["range"]["duration"]);
+    }
+    let quiet = s.execute("export.queue.add", json!({"path":dir.path("custom.wav"),"format":"wav","startFrame":12,"endFrame":13})).unwrap();
+    assert_eq!(quiet["warnings"], json!([]), "warnings describe this addition, not previously queued items");
+}
+
+#[test]
+fn single_frame_in_out_exports_warn_without_changing_the_output() {
+    let mut s = demo();
+    let dir = Scratch::new("single-frame-warning");
+    s.execute("markers.markIn", json!({"frame":12})).unwrap();
+    s.execute("markers.markOut", json!({"frame":12})).unwrap();
+    for wait in [true, false] {
+        let path = dir.path(&format!("marked-{wait}.wav"));
+        let v = s.execute("file.exportMedia", json!({"path":path,"format":"wav","wait":wait})).unwrap();
+        assert_eq!(v["warnings"].as_array().unwrap().len(), 1);
+        if !wait {
+            let job = s.jobs.iter().find(|j| Some(j.id) == v["job"].as_u64()).unwrap();
+            let start = std::time::Instant::now();
+            while !job.progress.finished.load(std::sync::atomic::Ordering::Relaxed) {
+                assert!(start.elapsed() < std::time::Duration::from_secs(30));
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+        }
+        let explicit = dir.path(&format!("explicit-{wait}.wav"));
+        let v = s.execute("file.exportMedia", json!({"path":explicit,"format":"wav","wait":true,"startFrame":12,"endFrame":13})).unwrap();
+        assert_eq!(v["warnings"], json!([]));
+        assert_eq!(std::fs::read(path).unwrap(), std::fs::read(explicit).unwrap());
+    }
+}
+
+#[test]
 fn export_integer_parameters_cannot_wrap_or_overflow() {
     let mut s = demo();
     for name in ["bitrateKbps", "maxBitrateKbps", "keyframeDistance"] {
@@ -106,6 +221,34 @@ fn mpeg2_b_pictures_are_a_parameter() {
     for bad in [json!(8), json!(-1), json!(1.5)] {
         assert!(s.execute("export.resolve", json!({"format":"mpeg2", "mpeg2BFrames":bad})).is_err());
     }
+}
+
+#[test]
+fn interlaced_mpeg2_is_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"mpeg2", "fieldOrder":"upperFirst"})).unwrap();
+    assert_eq!(r["settings"]["fieldOrder"], "upperFirst");
+    assert!(s.execute("export.resolve", json!({"format":"mpeg2", "fieldOrder":"sideways"})).is_err());
+}
+
+#[test]
+fn resolve_reports_hdr_encoder_audio_codec_and_sample_sizes() {
+    let mut s = demo();
+    let sizes = |r: &Value| -> Vec<bool> { r["sampleSizes"].as_array().unwrap().iter().map(|z| z["supported"].as_bool().unwrap()).collect() };
+    let r = s.execute("export.resolve", json!({"format":"hevc"})).unwrap();
+    assert_eq!((r["hdr"].as_bool(), r["videoFormat"].as_str(), r["audioCodec"].as_str()), (Some(false), Some("hevc"), Some("aac")));
+    assert_eq!(sizes(&r), [false; 4], "AAC has no sample size");
+    assert_eq!(r["sampleSizes"][3], json!({"bits": 32, "float": true, "supported": false}));
+    let r = s.execute("export.resolve", json!({"format":"flac"})).unwrap();
+    assert_eq!((r["audioCodec"].as_str(), sizes(&r)), (Some("flac"), vec![true, true, true, false]));
+    let r = s.execute("export.resolve", json!({"format":"wav"})).unwrap();
+    assert_eq!(sizes(&r), [true; 4]);
+    let r = s.execute("export.resolve", json!({"format":"mxf-op1a"})).unwrap();
+    assert_eq!((r["videoFormat"].as_str(), sizes(&r)), (Some("dnxhr"), vec![true, true, true, false]));
+    // an HDR sequence exports HDR unless SDR is asked for
+    s.execute("sequence.colorSettings", json!({"workingSpace": "Rec. 2100 PQ"})).unwrap();
+    assert_eq!(s.execute("export.resolve", json!({"format":"hevc"})).unwrap()["hdr"], true);
+    assert_eq!(s.execute("export.resolve", json!({"format":"hevc", "sdr": true})).unwrap()["hdr"], false);
 }
 
 #[test]
@@ -155,6 +298,23 @@ fn files_in(dir: &Path) -> Vec<String> {
     let mut v: Vec<String> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().to_string()).collect();
     v.sort();
     v
+}
+
+/// CFA4-PROCODEC-002 WP0: `export.formats` lists every format with whether it can be exported here
+/// and, when it cannot, the concrete reason (`null` otherwise); settings the encoders cannot honour
+/// are refused with the reason before any export starts.
+#[test]
+fn export_formats_and_resolve_say_why() {
+    let mut s = demo();
+    let list = s.execute("export.formats", json!({})).unwrap();
+    let list = list.as_array().unwrap();
+    assert_eq!(list.len(), cfa4_export::Format::ALL.len());
+    for f in list {
+        let available = f["available"].as_bool().unwrap();
+        assert_eq!(f["reason"].is_null(), available, "{f}");
+    }
+    let e = s.execute("export.resolve", json!({"format": "hevc", "bitrateMode": "vbr2Pass"})).unwrap_err().to_string();
+    assert!(e.contains("two-pass"), "{e}");
 }
 
 /// Every built-in preset: a quarter second of the demo sequence (seven frames at 23.976) exported
@@ -222,6 +382,30 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("jpeg2000"), Some("xyz12le")), "{name}");
                 assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), size, "{name}");
                 assert_eq!(v["r_frame_rate"], "24/1", "{name}: 23.976 becomes 24");
+            }
+            if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!(
+                    (a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()),
+                    (Some("pcm_s24le"), Some("48000"), Some(6)),
+                    "{name}"
+                );
+            }
+            continue;
+        }
+        if fmt == "imf" {
+            // a folder: the image and audio track files, CPL, PKL, asset map and volume index
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(Path::new(&out));
+            assert_eq!(files.len(), 6, "{name}: {files:?}");
+            assert!(files.iter().any(|f| f.starts_with("CPL_")) && files.iter().any(|f| f.starts_with("PKL_")), "{name}: {files:?}");
+            let pic = files.iter().find(|f| f.starts_with("VIDEO_")).unwrap();
+            let snd = files.iter().find(|f| f.starts_with("AUDIO_")).unwrap();
+            if let Some(j) = probe(&Path::new(&out).join(pic).to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!(v["codec_name"], "jpeg2000", "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (w, h), "{name}");
+                assert_eq!(v["r_frame_rate"], "24000/1001", "{name}: an App 2E rate stays");
             }
             if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
                 let a = stream(&j, "audio").unwrap();
@@ -307,6 +491,26 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 let v = stream(&j, "video").unwrap();
                 assert_eq!(v["codec_name"], "gif");
                 assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (640, 360));
+                continue;
+            }
+            "mxf-op1a" if settings["mxfVideoCodec"] == "d10" => {
+                // D-10 / IMX: the stored frame with its vertical interval lines, 4-channel AES3
+                assert_eq!(fmt_name, "mxf", "{name}");
+                let v = stream(&j, "video").unwrap();
+                let stored = if h == 576 { 608 } else { 512 };
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("mpeg2video"), Some(w), Some(stored)), "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("48000"), Some(4)), "{name}");
+                continue;
+            }
+            "mxf-op1a" if settings["mxfVideoCodec"] == "xdcamHd422" => {
+                // RDD 9: 4:2:2 MPEG-2, one mono AES3 track per channel
+                assert_eq!(fmt_name, "mxf", "{name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str(), v["width"].as_u64()), (Some("mpeg2video"), Some("yuv422p"), Some(w)), "{name}");
+                let audio: Vec<&serde_json::Value> = j["streams"].as_array().unwrap().iter().filter(|s| s["codec_type"] == "audio").collect();
+                assert_eq!(audio.len(), 4, "{name}");
+                assert!(audio.iter().all(|a| a["channels"].as_u64() == Some(1) && a["sample_rate"] == "48000"), "{name}");
                 continue;
             }
             "mxf-opatom" => {
@@ -411,6 +615,9 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 let codec = match settings["mxfVideoCodec"].as_str().unwrap() {
                     "proRes" => "prores",
                     "h264" => "h264",
+                    "mpeg2" => "mpeg2video",
+                    "v210" => "v210",
+                    "uyvy" => "rawvideo",
                     _ => "dnxhd",
                 };
                 assert_eq!(v["codec_name"], codec, "{name}");
@@ -719,15 +926,15 @@ fn crf_param_picks_constant_quality() {
 
 #[test]
 fn exr_compression_param_is_parsed_and_defaults_to_none() {
-    use cfa4_export::ExrCompression::{None as Plain, Rle, Zip, Zips};
+    use cfa4_export::ExrCompression::{None as Plain, Piz, Rle, Zip, Zips};
     let s = demo();
     let setting = |p: Value| crate::export_tools::settings_from_params(&s, &p, "file.exportMedia").map(|(_, st)| st.exr_compression);
     assert_eq!(setting(json!({"path": "x.exr", "format": "exr"})).unwrap(), Plain);
-    for (name, want) in [("none", Plain), ("rle", Rle), ("zips", Zips), ("zip", Zip)] {
+    for (name, want) in [("none", Plain), ("rle", Rle), ("zips", Zips), ("zip", Zip), ("piz", Piz)] {
         assert_eq!(setting(json!({"path": "x.exr", "format": "exr", "exrCompression": name})).unwrap(), want);
     }
-    let e = setting(json!({"path": "x.exr", "format": "exr", "exrCompression": "piz"})).unwrap_err().to_string();
-    assert!(e.contains("none | rle | zips | zip"), "{e}");
+    let e = setting(json!({"path": "x.exr", "format": "exr", "exrCompression": "dwaa"})).unwrap_err().to_string();
+    assert!(e.contains("none | rle | zips | zip | piz"), "{e}");
     let old: cfa4_export::ExportSettings = serde_json::from_value(json!({"format": "exr"})).unwrap();
     assert_eq!(old.exr_compression, Plain);
 }
@@ -1042,6 +1249,39 @@ fn dcp_immersive_params_and_iab_info() {
     assert!(s.execute("export.iabInfo", json!({})).is_err());
 }
 
+/// #309: the DCP spoken language param and the ISDCF package name from `export.resolve`.
+#[test]
+fn dcp_language_param_and_isdcf_name() {
+    let s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpLanguage": " hu-HU "})).unwrap();
+    assert_eq!(st.dcp_language, "hu-HU");
+    let e = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpLanguage": "Hungarian"})).unwrap_err().to_string();
+    assert!(e.contains("RFC 5646"), "{e}");
+    let mut s = s;
+    let r = s.execute("export.resolve", json!({"format": "dcp", "dcpLanguage": "en-US", "dcpContentKind": "trailer", "dcpAspect": "scope"})).unwrap();
+    let name = r["dcpName"].as_str().unwrap().to_string();
+    let date = cfa4_export::dcp_isdcf_date();
+    assert!(name.ends_with(&format!("_TLR-1_S_EN-XX_51_2K_{date}_SMPTE_OV")), "{name}");
+    assert_eq!(r["settings"]["dcpLanguage"], "en-US");
+    assert!(s.execute("export.resolve", json!({"format": "h264"})).unwrap()["dcpName"].is_null());
+}
+
+/// #1011: the IMF params, the package folder path (no extension) and the resolved summary.
+#[test]
+fn imf_params() {
+    let s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "/tmp/pkg", "format": "imf", "imfLossless": true, "imfContentKind": "Episode", "dcpLanguage": "hu-HU"})).unwrap();
+    assert_eq!((st.format, st.imf_lossless, st.imf_content_kind.as_str(), st.dcp_language.as_str()), (cfa4_export::Format::Imf, true, "episode", "hu-HU"));
+    let e = setting(&s, json!({"path": "pkg", "format": "imf", "imfContentKind": "policy"})).unwrap_err().to_string();
+    assert!(e.contains("imfContentKind"), "{e}");
+    let mut s = s;
+    let r = s.execute("export.resolve", json!({"format": "imf", "fps": 48.0})).unwrap();
+    assert_eq!(r["settings"]["imfContentKind"], "");
+    assert!(r["summary"]["video"].as_str().unwrap().contains("JPEG 2000 IMF lossy, 10-bit R'G'B' 4:4:4"), "{r}");
+}
+
 /// A two-channel DLC bed (L, R) of silence.
 fn bed_frame(rate: cfa4_iab::FrameRate) -> cfa4_iab::Frame {
     use cfa4_iab::*;
@@ -1060,4 +1300,77 @@ fn bed_frame(rate: cfa4_iab::FrameRate) -> cfa4_iab::Frame {
         authoring_tool: None,
         user_data: vec![],
     }
+}
+
+/// #1216: `maxThreads` reaches the export settings from the command parameters (CLI, MCP, control
+/// channel), as a flat parameter or inside `settings`.
+#[test]
+fn max_threads_reaches_the_export_settings() {
+    let session = Session::default();
+    let settings_of = |params: Value| crate::export_tools::settings_from_params(&session, &params, "file.exportMedia").map(|(_, s)| s);
+    assert_eq!(settings_of(json!({"format": "mjpeg", "path": "out.mov", "maxThreads": 2})).unwrap().max_threads, 2);
+    assert_eq!(settings_of(json!({"format": "mjpeg", "path": "out.mov", "settings": {"maxThreads": 3}})).unwrap().max_threads, 3);
+    assert_eq!(settings_of(json!({"format": "mjpeg", "path": "out.mov"})).unwrap().max_threads, 0, "all cores unless asked");
+    assert!(settings_of(json!({"format": "mjpeg", "path": "out.mov", "maxThreads": -1})).is_err(), "a negative count is refused");
+    assert!(settings_of(json!({"format": "mjpeg", "path": "out.mov", "settings": {"maxThread": 2}})).is_err(), "a misspelt setting is refused, not ignored");
+}
+
+#[test]
+fn dash_manifest_is_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"hls"})).unwrap();
+    assert_eq!(r["settings"]["dashManifest"], false, "off by default");
+    let r = s.execute("export.resolve", json!({"format":"hls", "dashManifest":true})).unwrap();
+    assert_eq!(r["settings"]["dashManifest"], true);
+    let r = s.execute("export.resolve", json!({"format":"hls", "settings":{"dashManifest":true}})).unwrap();
+    assert_eq!(r["settings"]["dashManifest"], true);
+}
+
+/// #1004: MXF OP1a with `mxfAncCaptions` carries the caption track as ST 436-1 ANC data (one CDP
+/// per frame on VANC line 9): our reader gives the cues back, ffprobe sees the data stream next
+/// to the picture, and other rates, OP-Atom and D-10 are refused.
+#[test]
+fn mxf_op1a_writes_captions_as_anc_data() {
+    let dir = Scratch::new("mxf-anc");
+    let vtt = dir.path("in.vtt");
+    std::fs::write(&vtt, "WEBVTT\n\n00:00:00.500 --> 00:00:01.500\nHello ANC\n\n00:00:02.000 --> 00:00:02.800\nSecond line\n").unwrap();
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name":"ANC", "fps":29.97, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    s.execute("captions.import", json!({"path": vtt})).unwrap();
+    let out = dir.path("anc.mxf");
+    let p = json!({"format":"mxf-op1a", "path": out, "mxfAncCaptions": true, "range":"custom", "startSeconds":0.0, "endSeconds":3.0, "wait":true});
+    s.execute("file.exportMedia", p.clone()).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let anc = cfa4_mxf::read_anc(&bytes[..]).unwrap();
+    assert!(anc.warnings.is_empty(), "{:?}", anc.warnings);
+    assert_eq!(anc.edit_rate, cfa4_mxf::Rational::new(30000, 1001));
+    assert_eq!(anc.frames.len(), 90);
+    assert!(anc.frames.iter().all(|f| f.len() == 1 && f[0].is_cdp() && f[0].line == 9));
+    let rate = cfa4_time::FrameRate::FPS_29_97;
+    let doc = cfa4_captions::mcc::decode_cdps(anc.cdps().into_iter().map(|(f, p)| (f as i64, p)), rate);
+    let got: Vec<(i64, i64, &str)> = doc.cues.iter().map(|c| (rate.frame_at(c.start), rate.frame_at(c.end), c.text.as_str())).collect();
+    assert_eq!(got, vec![(15, 45, "Hello ANC"), (60, 84, "Second line")]);
+    // the picture still opens, and ffprobe (when installed) lists the ANC data stream
+    let m = cfa4_mxf::open(&bytes[..]).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    if let Some(j) = probe(&out) {
+        let streams = j["streams"].as_array().unwrap();
+        assert!(streams.iter().any(|s| s["codec_type"] == "video"), "{j}");
+        assert!(streams.iter().any(|s| s["codec_type"] == "data"), "{j}");
+    }
+    // without the option: no ANC track
+    let mut q = p.clone();
+    q["mxfAncCaptions"] = json!(false);
+    s.execute("file.exportMedia", q).unwrap();
+    assert!(!cfa4_mxf::has_anc(&std::fs::read(&out).unwrap()));
+    for (key, value) in [("format", json!("mxf-opatom")), ("mxfVideoCodec", json!("d10"))] {
+        let mut q = p.clone();
+        q[key] = value;
+        assert!(s.execute("file.exportMedia", q).is_err(), "{key}");
+    }
+    let mut s25 = Session::default();
+    s25.execute("file.newSequence", json!({"name":"ANC 25", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    s25.execute("captions.import", json!({"path": vtt})).unwrap();
+    let err = s25.execute("file.exportMedia", p).unwrap_err().to_string();
+    assert!(err.contains("29.97"), "{err}");
 }

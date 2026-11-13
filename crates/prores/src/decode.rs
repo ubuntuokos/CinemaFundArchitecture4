@@ -6,6 +6,10 @@ use crate::header::{FrameHeader, PictureHeader, row_slice_widths};
 use crate::tables::*;
 use crate::{AlphaType, ChromaFormat, Error, Frame, Interlace, Result};
 
+/// Maximum aggregate decoded plane storage for one ProRes frame (256 MiB).
+// 1 GiB: 8K ProRes 4444 with alpha is 283 MB of 16-bit planes
+const MAX_FRAME_BYTES: usize = 1 << 30;
+
 /// Decoder options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DecodeOptions {
@@ -120,6 +124,15 @@ pub fn decode_frame_into(data: &[u8], opts: &DecodeOptions, out: &mut Frame) -> 
     let width = hdr.width as usize;
     let height = hdr.height as usize;
     let cwidth = hdr.chroma.chroma_width(hdr.width as u32) as usize;
+    let luma = width.checked_mul(height).ok_or(Error::Invalid("frame dimensions overflow"))?;
+    let chroma = cwidth.checked_mul(height).ok_or(Error::Invalid("chroma dimensions overflow"))?;
+    let samples = luma
+        .checked_add(chroma.checked_mul(2).ok_or(Error::Invalid("chroma plane count overflows"))?)
+        .and_then(|n| if hdr.alpha == AlphaType::None { Some(n) } else { n.checked_add(luma) })
+        .ok_or(Error::Invalid("frame plane count overflows"))?;
+    if !samples.checked_mul(std::mem::size_of::<u16>()).is_some_and(|n| n <= MAX_FRAME_BYTES) {
+        return Err(Error::Invalid("frame dimensions exceed the decoder memory limit"));
+    }
     let interlaced = hdr.interlace != Interlace::Progressive;
     let mb_width = width.div_ceil(16);
     let mb_height = if interlaced { height.div_ceil(32) } else { height.div_ceil(16) };
@@ -186,7 +199,7 @@ pub fn decode_frame_into(data: &[u8], opts: &DecodeOptions, out: &mut Frame) -> 
     };
 
     let band_h = if interlaced { 32 } else { 16 };
-    let mut bands: Vec<Band> = Vec::with_capacity(mb_height);
+    let mut bands: Vec<Band<'_>> = Vec::with_capacity(mb_height);
     {
         let mut yc = y.chunks_mut(band_h * width);
         let mut cbc = cb.chunks_mut(band_h * cwidth);
@@ -200,7 +213,7 @@ pub fn decode_frame_into(data: &[u8], opts: &DecodeOptions, out: &mut Frame) -> 
     }
 
     let step = if interlaced { 2 } else { 1 };
-    let run_band = |(row, band): (usize, &mut Band), scratch: &mut Scratch| -> Result<()> {
+    let run_band = |(row, band): (usize, &mut Band<'_>), scratch: &mut Scratch| -> Result<()> {
         for (pi, (pic, widths)) in pics.iter().enumerate() {
             let mut mb_x = 0;
             for (k, &w) in widths.iter().enumerate() {
@@ -260,7 +273,7 @@ fn qfactors(qmat: &[u8; 64], qs: u32) -> [f32; 64] {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn decode_slice(ctx: &Ctx, d: &[u8], mb_x: usize, mbs: usize, band: &mut Band, step: usize, parity: usize, s: &mut Scratch) -> std::result::Result<(), ()> {
+fn decode_slice(ctx: &Ctx, d: &[u8], mb_x: usize, mbs: usize, band: &mut Band<'_>, step: usize, parity: usize, s: &mut Scratch) -> std::result::Result<(), ()> {
     if d.len() < 6 {
         return Err(());
     }

@@ -170,7 +170,82 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
     if dcp_content_kind(s).is_none() {
         return Err(ExportError::Unsupported(format!("unknown DCP content kind {:?}: choose one of {}", s.dcp_content_kind, DCP_CONTENT_KINDS.join(", "))));
     }
+    if dcp_language(s).is_none() {
+        return Err(ExportError::Unsupported(format!("DCP language {:?} is not an RFC 5646 tag such as en-US or hu-HU", s.dcp_language)));
+    }
     crate::dcp_iab::validate(s)
+}
+
+/// The DCP spoken language: `Some("")` when none is set, the tag (`en-US`, `hu`, `zh-Hans-CN`)
+/// when it has the RFC 5646 shape (a 2-3 letter primary language subtag, then 1-8 character
+/// alphanumeric subtags, at most 35 characters), `None` otherwise.
+pub fn dcp_language(s: &ExportSettings) -> Option<&str> {
+    let tag = s.dcp_language.trim();
+    if tag.is_empty() {
+        return Some("");
+    }
+    let mut parts = tag.split('-');
+    let primary = parts.next()?;
+    let ok = tag.len() <= 35
+        && (2..=3).contains(&primary.len())
+        && primary.bytes().all(|b| b.is_ascii_alphabetic())
+        && parts.all(|p| (1..=8).contains(&p.len()) && p.bytes().all(|b| b.is_ascii_alphanumeric()));
+    ok.then_some(tag)
+}
+
+/// Today's date (UTC) as the DCNC date field, `yyyymmdd`.
+pub fn dcp_isdcf_date() -> String {
+    let secs = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    let t = Timestamp::from_unix(i64::try_from(secs).unwrap_or(0));
+    format!("{:04}{:02}{:02}", t.year, t.month, t.day)
+}
+
+/// The ISDCF content type code of a content kind (DCNC field 2).
+fn isdcf_kind(kind: &str) -> &'static str {
+    match kind {
+        "trailer" => "TLR",
+        "teaser" => "TSR",
+        "short" => "SHR",
+        "advertisement" => "ADV",
+        "test" => "TST",
+        "transitional" => "XSN",
+        "rating" => "RTG",
+        "policy" => "POL",
+        "psa" => "PSA",
+        _ => "FTR",
+    }
+}
+
+/// A Digital Cinema Naming Convention name for the package (ISDCF), e.g.
+/// `MyFilm_FTR-1_F_EN-XX_51_2K_20261031_SMPTE_OV`: the title (CamelCase, at most 14 letters and
+/// digits), content type and version, container (F/S/C), language and subtitles (`XX` = none),
+/// audio (`51`, `IAB` for an immersive DCP), resolution, date (`yyyymmdd`), SMPTE, original
+/// version. The territory-rating, studio and facility fields are left out.
+pub fn dcp_isdcf_name(s: &ExportSettings, title: &str, date: &str) -> String {
+    let mut short = String::new();
+    for word in title.split(|c: char| !c.is_alphanumeric()) {
+        let mut chars = word.chars().filter(|c| c.is_ascii_alphanumeric());
+        if let Some(first) = chars.next() {
+            short.push(first.to_ascii_uppercase());
+            short.extend(chars);
+        }
+    }
+    let short: String = short.chars().take(14).collect();
+    let short = if short.is_empty() { "Untitled".to_string() } else { short };
+    let kind = isdcf_kind(dcp_content_kind(s).unwrap_or("feature"));
+    let aspect = match DcpAspect::of(s) {
+        DcpAspect::Flat => "F",
+        DcpAspect::Scope => "S",
+        DcpAspect::Full => "C",
+    };
+    let lang = match dcp_language(s).and_then(|t| t.split('-').next()).filter(|p| !p.is_empty()) {
+        Some(p) => p.to_ascii_uppercase(),
+        None => "XX".into(),
+    };
+    let audio = if DcpImmersive::of(s) == DcpImmersive::Off { "51" } else { "IAB" };
+    let res = if DcpResolution::of(s) == DcpResolution::FourK { "4K" } else { "2K" };
+    let date: String = date.chars().filter(char::is_ascii_digit).take(8).collect();
+    format!("{short}_{kind}-1_{aspect}_{lang}-XX_{audio}_{res}_{date}_SMPTE_OV")
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -200,20 +275,35 @@ pub fn dcdm_code(t: f32) -> i32 {
 /// chromatic adaptation), reference white at 48 cd/m².
 pub fn rgba_to_xyz12(rgba: &[u8], w: usize, h: usize) -> [Vec<i32>; 3] {
     let lut: Vec<f32> = (0..=255u8).map(srgb_linear).collect();
+    xyz12(w, h, |i| {
+        let lin = |c: usize| rgba.get(i * 4 + c).and_then(|v| lut.get(usize::from(*v))).copied().unwrap_or(0.0);
+        [lin(0), lin(1), lin(2)]
+    })
+}
+
+/// [`rgba_to_xyz12`] from straight sRGB R'G'B' floats (3 per pixel, 0..1), which keep the
+/// precision of 10/12-bit sources.
+pub fn rgbf_to_xyz12(rgb: &[f32], w: usize, h: usize) -> [Vec<i32>; 3] {
+    xyz12(w, h, |i| {
+        let lin = |c: usize| rgb.get(i * 3 + c).map_or(0.0, |&v| cfa4_color::srgb_to_linear(v.clamp(0.0, 1.0)));
+        [lin(0), lin(1), lin(2)]
+    })
+}
+
+/// X'Y'Z' planes of a `w` x `h` picture whose pixel `i` has linear sRGB `lin(i)`.
+fn xyz12(w: usize, h: usize, lin: impl Fn(usize) -> [f32; 3] + Sync) -> [Vec<i32>; 3] {
     let n = w.saturating_mul(h);
+    let w = w.max(1);
     let mut planes = [vec![0i32; n], vec![0i32; n], vec![0i32; n]];
     let [px, py, pz] = &mut planes;
-    let rows = rgba.par_chunks(w.max(1) * 4).zip(px.par_chunks_mut(w.max(1))).zip(py.par_chunks_mut(w.max(1))).zip(pz.par_chunks_mut(w.max(1)));
-    rows.for_each(|(((src, x), y), z)| {
-        for (k, p) in src.chunks_exact(4).enumerate() {
-            let lin = |i: usize| p.get(i).and_then(|v| lut.get(usize::from(*v))).copied().unwrap_or(0.0);
-            let (r, g, b) = (lin(0), lin(1), lin(2));
+    let rows = px.par_chunks_mut(w).zip(py.par_chunks_mut(w)).zip(pz.par_chunks_mut(w)).enumerate();
+    rows.for_each(|(row, ((x, y), z))| {
+        for (k, ((x, y), z)) in x.iter_mut().zip(y.iter_mut()).zip(z.iter_mut()).enumerate() {
+            let [r, g, b] = lin(row * w + k);
             let t = |m: [f32; 3]| m[0] * r + m[1] * g + m[2] * b;
-            if let (Some(x), Some(y), Some(z)) = (x.get_mut(k), y.get_mut(k), z.get_mut(k)) {
-                *x = dcdm_code(t(RGB_TO_XYZ[0]));
-                *y = dcdm_code(t(RGB_TO_XYZ[1]));
-                *z = dcdm_code(t(RGB_TO_XYZ[2]));
-            }
+            *x = dcdm_code(t(RGB_TO_XYZ[0]));
+            *y = dcdm_code(t(RGB_TO_XYZ[1]));
+            *z = dcdm_code(t(RGB_TO_XYZ[2]));
         }
     });
     planes
@@ -222,17 +312,26 @@ pub fn rgba_to_xyz12(rgba: &[u8], w: usize, h: usize) -> [Vec<i32>; 3] {
 /// JPEG 2000 for DCPs: X'Y'Z' in the DCI 2K or 4K profile. Frames are collected and coded
 /// [`DcpEncoder::batch`] at a time in parallel (each one is independent; the coder alone keeps a
 /// core busy), so packets come out up to a batch late and in order.
+/// A picture as the exporter hands it over: RGBA8, or sRGB R'G'B' floats from deep sources.
+enum Pixels {
+    Rgba8(Vec<u8>),
+    Float(Vec<f32>),
+}
+
 struct DcpEncoder {
     opts: cfa4_j2k::EncodeOptions,
     rate: FrameRate,
-    /// RGBA8 frames (width, height, pixels) waiting for their batch.
-    pending: Vec<(u32, u32, Vec<u8>)>,
+    /// Frames waiting for their batch.
+    pending: Vec<(u32, u32, Pixels)>,
     batch: usize,
 }
 
 impl DcpEncoder {
-    fn code(&self, w: u32, h: u32, rgba: &[u8]) -> Result<Vec<u8>> {
-        let [x, y, z] = timed(Stage::Convert, || rgba_to_xyz12(rgba, w as usize, h as usize));
+    fn code(&self, w: u32, h: u32, px: &Pixels) -> Result<Vec<u8>> {
+        let [x, y, z] = timed(Stage::Convert, || match px {
+            Pixels::Rgba8(rgba) => rgba_to_xyz12(rgba, w as usize, h as usize),
+            Pixels::Float(rgb) => rgbf_to_xyz12(rgb, w as usize, h as usize),
+        });
         let plane = |data: Vec<i32>| cfa4_j2k::Plane { width: w, height: h, precision: 12, signed: false, dx: 1, dy: 1, data };
         let image = cfa4_j2k::Image { width: w, height: h, components: vec![plane(x), plane(y), plane(z)], mct: false };
         cfa4_j2k::encode(&image, &self.opts).map_err(|e| ExportError::Encode(format!("JPEG 2000: {e}")))
@@ -255,8 +354,12 @@ impl VideoEncoder for DcpEncoder {
     fn timescale(&self) -> u32 {
         u32::try_from(self.rate.num).unwrap_or(24)
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
-        self.pending.push((f.width, f.height, f.rgba.to_vec()));
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
+        let px = match f.hdr {
+            Some(rgb) => Pixels::Float(rgb.to_vec()),
+            None => Pixels::Rgba8(f.rgba.to_vec()),
+        };
+        self.pending.push((f.width, f.height, px));
         if self.pending.len() >= self.batch { self.drain() } else { Ok(Vec::new()) }
     }
     fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
@@ -367,7 +470,7 @@ pub(crate) fn sha1(data: &[u8]) -> [u8; 20] {
 
 /// A version 4 (random) UUID made from a hash of `seed` (callers make the seed unique: output
 /// path, time, role).
-fn uuid(seed: &str) -> [u8; 16] {
+pub(crate) fn uuid(seed: &str) -> [u8; 16] {
     let h = sha1(seed.as_bytes());
     let mut u = [0u8; 16];
     u.copy_from_slice(&h[..16]);
@@ -376,13 +479,13 @@ fn uuid(seed: &str) -> [u8; 16] {
     u
 }
 
-fn uuid_text(u: &[u8; 16]) -> String {
+pub(crate) fn uuid_text(u: &[u8; 16]) -> String {
     let hex: String = u.iter().map(|b| format!("{b:02x}")).collect();
     format!("{}-{}-{}-{}-{}", &hex[0..8], &hex[8..12], &hex[12..16], &hex[16..20], &hex[20..32])
 }
 
 /// Text for XML element content.
-fn xml_text(s: &str) -> String {
+pub(crate) fn xml_text(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         match c {
@@ -397,16 +500,16 @@ fn xml_text(s: &str) -> String {
     out
 }
 
-fn base64(data: &[u8]) -> String {
+pub(crate) fn base64(data: &[u8]) -> String {
     cfa4_project::gtemplate::base64_encode(data)
 }
 
 /// `name` inside the folder `dir`.
-fn join(dir: &str, name: &str) -> String {
+pub(crate) fn join(dir: &str, name: &str) -> String {
     std::path::Path::new(dir).join(name).to_string_lossy().into_owned()
 }
 
-fn io(e: impl std::fmt::Display) -> ExportError {
+pub(crate) fn io(e: impl std::fmt::Display) -> ExportError {
     ExportError::Io(e.to_string())
 }
 
@@ -474,6 +577,8 @@ pub(crate) struct DcpMux {
     size: (u32, u32),
     /// The ST 429-16 active picture area: the fitted picture inside `size`.
     active: (u32, u32),
+    /// The RFC 5646 spoken language ("" = none).
+    language: String,
     issued: String,
     picture: Option<([u8; 16], String, MxfWriter<Out>)>,
     sound: Option<([u8; 16], String, MxfWriter<Out>)>,
@@ -492,9 +597,6 @@ fn ul_urn(ul: &[u8; 16]) -> String {
     format!("urn:smpte:ul:{}", hex.join("."))
 }
 
-/// ST 429-2 channel configuration 1: 5.1 with HI / VI-N (`L R C LFE Ls Rs`, 6 or 8 channels).
-const CHANNEL_CONFIG_1: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0B, 0x04, 0x02, 0x02, 0x10, 0x03, 0x01, 0x01, 0x00];
-
 /// The ST 429-16 active picture area for a picture of `content` inside a `stored` container:
 /// clipped to the container and made even (5.4.2.13), the whole container when nothing is left.
 pub(crate) fn active_area(content: (u32, u32), stored: (u32, u32)) -> (u32, u32) {
@@ -506,7 +608,7 @@ pub(crate) fn active_area(content: (u32, u32), stored: (u32, u32)) -> (u32, u32)
 }
 
 impl DcpMux {
-    pub fn new(s: DcpSetup) -> Result<Self> {
+    pub fn new(s: DcpSetup<'_>) -> Result<Self> {
         let settings = s.settings;
         let dir = settings.path.clone();
         if settings.sink.is_none() {
@@ -534,17 +636,21 @@ impl DcpMux {
         let pic_name = format!("j2c_{}.mxf", uuid_text(&pic_id));
         let picture = Some((pic_id, pic_name.clone(), MxfWriter::new(Out::create_path(settings, &join(&dir, &pic_name))?, pc).map_err(io)?));
         let immersive = DcpImmersive::of(settings) != DcpImmersive::Off;
+        let language = dcp_language(settings).unwrap_or_default().to_string();
         // immersive audio: the main sound is always there, 16 channels, Configuration 4
         let sound = if s.audio || immersive {
             let id = uuid(&format!("{seed}|sound"));
             let mut sc = config("sound", id);
             let channels = if immersive { crate::dcp_iab::MAIN_SOUND_CHANNELS } else { 6 };
             sc.sound = vec![SoundDesc { sample_rate: 48_000, channels, bits: 24 }];
-            sc.channel_assignment = Some(if immersive { crate::dcp_iab::CHANNEL_CONFIG_4 } else { CHANNEL_CONFIG_1 });
-            if immersive {
-                let label_id = |sym: &str| uuid(&format!("{seed}|mca|{sym}"));
-                sc.mca = crate::dcp_iab::main_sound_mca(crate::dcp_iab::IabFallback::of(settings), &label_id);
-            }
+            // ST 429-2 configuration 4: the channels are named by MCA labels (ST 377-4, RDD 52)
+            sc.channel_assignment = Some(crate::dcp_iab::CHANNEL_CONFIG_4);
+            let label_id = |sym: &str| uuid(&format!("{seed}|mca|{sym}"));
+            sc.mca = if immersive {
+                crate::dcp_iab::main_sound_mca(crate::dcp_iab::IabFallback::of(settings), &language, &label_id)
+            } else {
+                crate::dcp_iab::mca_51(&language, &label_id)
+            };
             let name = format!("pcm_{}.mxf", uuid_text(&id));
             Some((id, name.clone(), MxfWriter::new(Out::create_path(settings, &join(&dir, &name))?, sc).map_err(io)?))
         } else {
@@ -575,6 +681,7 @@ impl DcpMux {
             rate: s.rate,
             size: (s.width, s.height),
             active: active_area(s.active, (s.width, s.height)),
+            language,
             issued,
             picture,
             sound,
@@ -704,6 +811,18 @@ impl DcpMux {
             x.push_str(&format!("          <Duration>{}</Duration>\n", self.frames));
             x.push_str(&format!("          <Hash>{}</Hash>\n", base64(&a.hash)));
         };
+        // first and last frame of composition (RDD 52; offsets as DCP-o-matic writes them)
+        x.push_str("        <MainMarkers>\n");
+        x.push_str(&format!("          <Id>urn:uuid:{}</Id>\n", uuid_text(&uuid(&format!("{}|markers", self.seed)))));
+        x.push_str(&format!("          <EditRate>{rate}</EditRate>\n          <IntrinsicDuration>{0}</IntrinsicDuration>\n", self.frames));
+        x.push_str(&format!("          <EntryPoint>0</EntryPoint>\n          <Duration>{}</Duration>\n", self.frames));
+        x.push_str("          <MarkerList>\n");
+        for (label, offset) in [("FFOC", 1), ("LFOC", self.frames.saturating_sub(1).max(1))] {
+            x.push_str(&format!(
+                "            <Marker>\n              <Label>{label}</Label>\n              <Offset>{offset}</Offset>\n            </Marker>\n"
+            ));
+        }
+        x.push_str("          </MarkerList>\n        </MainMarkers>\n");
         x.push_str("        <MainPicture>\n");
         track(&mut x, picture);
         x.push_str(&format!("          <FrameRate>{rate}</FrameRate>\n"));
@@ -733,7 +852,8 @@ impl DcpMux {
         x.push_str("        <meta:CompositionMetadataAsset xmlns:meta=\"http://www.smpte-ra.org/schemas/429-16/2014/CPL-Metadata\">\n");
         x.push_str(&format!("          <Id>urn:uuid:{}</Id>\n", uuid_text(&uuid(&format!("{}|metadata", self.seed)))));
         x.push_str(&format!("          <EditRate>{rate}</EditRate>\n          <IntrinsicDuration>{}</IntrinsicDuration>\n", self.frames));
-        x.push_str(&format!("          <meta:FullContentTitleText>{}</meta:FullContentTitleText>\n", xml_text(&self.title)));
+        let lang = if self.language.is_empty() { String::new() } else { format!(" language=\"{}\"", xml_text(&self.language)) };
+        x.push_str(&format!("          <meta:FullContentTitleText{lang}>{}</meta:FullContentTitleText>\n", xml_text(&self.title)));
         x.push_str("          <meta:VersionNumber status=\"final\">1</meta:VersionNumber>\n");
         let config = match (self.fallback, sound) {
             (Some(f), _) => crate::dcp_iab::main_sound_configuration(f),
@@ -747,14 +867,15 @@ impl DcpMux {
                 "          <meta:{area}>\n            <meta:Width>{w}</meta:Width>\n            <meta:Height>{h}</meta:Height>\n          </meta:{area}>\n"
             ));
         }
-        if self.fallback.is_some() {
-            x.push_str("          <meta:ExtensionMetadataList>\n");
-            x.push_str("            <meta:ExtensionMetadata scope=\"http://isdcf.com/ns/cplmd/app\">\n");
-            x.push_str("              <meta:Name>Application</meta:Name>\n              <meta:PropertyList>\n                <meta:Property>\n");
-            x.push_str("                  <meta:Name>IAB Profile</meta:Name>\n                  <meta:Value>SMPTE-ST-2098-2:2019-P1</meta:Value>\n");
-            x.push_str("                </meta:Property>\n              </meta:PropertyList>\n            </meta:ExtensionMetadata>\n");
-            x.push_str("          </meta:ExtensionMetadataList>\n");
-        }
+        // the ISDCF application: IAB Profile 1 (Doc 15 4.2) or the RDD 52 DCP constraints profile
+        let (name, value) =
+            if self.fallback.is_some() { ("IAB Profile", "SMPTE-ST-2098-2:2019-P1") } else { ("DCP Constraints Profile", "SMPTE-RDD-52:2020-Bv2.1") };
+        x.push_str("          <meta:ExtensionMetadataList>\n");
+        x.push_str("            <meta:ExtensionMetadata scope=\"http://isdcf.com/ns/cplmd/app\">\n");
+        x.push_str("              <meta:Name>Application</meta:Name>\n              <meta:PropertyList>\n                <meta:Property>\n");
+        x.push_str(&format!("                  <meta:Name>{name}</meta:Name>\n                  <meta:Value>{value}</meta:Value>\n"));
+        x.push_str("                </meta:Property>\n              </meta:PropertyList>\n            </meta:ExtensionMetadata>\n");
+        x.push_str("          </meta:ExtensionMetadataList>\n");
         if !self.mca.is_empty() {
             x.push_str("          <mca:MCASubDescriptors xmlns:mca=\"http://isdcf.com/ns/cplmd/mca\" xmlns:r0=\"http://www.smpte-ra.org/reg/395/2014/13/1/aaf\" xmlns:r1=\"http://www.smpte-ra.org/reg/335/2012\">\n");
             for (m, instance) in &self.mca {
@@ -767,6 +888,9 @@ impl DcpMux {
                 x.push_str(&format!("              <r1:MCATagName>{}</r1:MCATagName>\n", xml_text(&m.name)));
                 if let Some(c) = m.channel {
                     x.push_str(&format!("              <r1:MCAChannelID>{c}</r1:MCAChannelID>\n"));
+                }
+                if let Some(l) = &m.language {
+                    x.push_str(&format!("              <r1:RFC5646SpokenLanguage>{}</r1:RFC5646SpokenLanguage>\n", xml_text(l)));
                 }
                 if let Some(g) = m.group {
                     x.push_str(&format!("              <r1:SoundfieldGroupLinkID>urn:uuid:{}</r1:SoundfieldGroupLinkID>\n", uuid_text(&g)));

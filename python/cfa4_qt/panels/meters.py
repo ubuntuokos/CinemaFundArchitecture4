@@ -184,7 +184,7 @@ def readout_rows(r: QRectF, units: bool) -> list[tuple[str, QPointF, QPointF]]:
     """The four readout rows: label and where its left text and right value sit."""
     pitch = _row_pitch()
     ys = [r.top() + pitch / 2.0 + 1.0 + k * pitch for k in range(4)]
-    return [(label, QPointF(r.left() + 6.0, y), QPointF(r.right() - 6.0, y)) for label, y in zip(("M", "S", "I", "TP"), ys)]
+    return [(label, QPointF(r.left() + 6.0, y), QPointF(r.right() - 6.0, y)) for label, y in zip(("M", "S", "I", "TP"), ys, strict=True)]
 
 
 class AudioMetersPanel(QWidget):
@@ -274,6 +274,27 @@ class AudioMetersPanel(QWidget):
         m, s, i, tp = (self.loudness + [None] * 4)[:4]
         chans = ", ".join(f"{n} {lv:.1f} dB" for n, lv in zip(names, self.levels, strict=False))
         self.setAccessibleDescription(f"{chans}; M {lufs_text(m)} S {lufs_text(s)} I {lufs_text(i)} LUFS TP {lufs_text(tp)} dBTP")
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ids for the painted parts (``ui.elements``): the loudness readout, each
+        channel's bar and the dB scale, with what they show."""
+        names = channel_names(len(self.levels))
+        pt = parts(QRectF(self.rect()), names)
+        out: list[tuple[str, QRectF, str]] = []
+        if pt.readout is not None:
+            m, s, i, tp = (self.loudness + [None] * 4)[:4]
+            out.append(("audioMeters.loudness", pt.readout[0],
+                        f"M {lufs_text(m)} S {lufs_text(s)} I {lufs_text(i)} LUFS TP {lufs_text(tp)} dBTP"))
+        w, pitch = bar_pitch(pt.area, len(names))
+        for c, name in enumerate(names):
+            r = QRectF(pt.area.left() + c * pitch, pt.area.top(), w, pt.area.height())
+            out.append((f"audioMeters.channel.{name}", r, f"{name} {self.levels[c]:.1f} dB"))
+        if pt.scale:
+            union = pt.scale[0][1]
+            for _db, r in pt.scale[1:]:
+                union = union.united(r)
+            out.append(("audioMeters.scale", union, " ".join(str(db) for db, _r in pt.scale)))
+        return out
 
     # ----- drawing -----
     def paintEvent(self, e: QPaintEvent) -> None:

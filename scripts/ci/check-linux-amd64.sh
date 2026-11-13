@@ -19,12 +19,15 @@ for script in \
   scripts/dev/audit-ffmpeg-hwaccel.sh \
   scripts/dev/recheck-libplacebo.sh \
   scripts/dev/audit-native-media-e2e.sh \
+  scripts/dev/setup-dcp-inspect.sh \
   scripts/ci/read-ffmpeg-audit-sha256.sh \
   scripts/ci/test-ffmpeg-audit-sha256.sh \
   scripts/ci/test-gpu-hardware-log.sh \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/check-package-docs.sh \
-  scripts/ci/install-ffmpeg-9.0.2.sh; do
+  scripts/ci/install-ffmpeg-oracle-deps.sh \
+  scripts/ci/install-ffmpeg-9.0.2.sh \
+  scripts/dev/fetch-ffmpeg-9.0.2.sh; do
   bash -n "$script"
 done
 # Strict GPU hardware log parser regression (only shell + temporary logs,
@@ -44,10 +47,13 @@ import tomllib
 root = Path.cwd()
 workflow = (root / ".github/workflows/ci-linux.yml").read_text()
 assert "  platform-scope:" in workflow
-assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 9
+assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 10
 assert "types: [opened, synchronize, reopened, labeled]" in workflow
-assert workflow.count("    needs: platform-scope") == 9
-assert workflow.count("    runs-on: ubuntu-26.04") == 11
+# Merge queue (owner decision 2026-11-07, #719): every full job also runs on merge_group.
+assert "\n  merge_group:\n" in workflow
+assert workflow.count("github.event_name == 'merge_group'") == 10
+assert workflow.count("    needs: platform-scope") == 10
+assert workflow.count("    runs-on: ubuntu-26.04") == 12
 # Required merge gate (owner decision 2026-10-31): fails unless every blocking full job succeeded.
 assert "  full-validation-gate:" in workflow and "    name: full-validation-gate" in workflow
 assert "if: always() && github.event_name != 'push'" in workflow

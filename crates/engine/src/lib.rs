@@ -29,16 +29,21 @@ mod fx_editor;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
+mod kdm;
 pub mod keyboard;
 mod keyframe_move;
+pub mod legibility;
+pub mod live;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
+pub mod media_route;
 pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+mod opatom;
 pub mod panels;
 pub mod paste_media;
 pub mod perf;
@@ -49,6 +54,7 @@ pub mod project_manager;
 pub mod project_panel;
 pub mod project_tools;
 pub mod proxies;
+pub mod qc;
 pub mod relink;
 pub mod remix;
 pub mod scene_detect;
@@ -58,9 +64,13 @@ pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod smart_cut;
+mod smart_cut_mpeg;
+mod smart_render;
 pub mod social;
 pub mod source_monitor;
 pub mod sync;
+pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
 pub mod variants;
@@ -80,6 +90,21 @@ pub use cfa4_render as render;
 pub use cfa4_time as time;
 pub use commands::{CommandSpec, command_specs, find as find_command};
 pub use media_pool::MediaPool;
+
+/// Draws a Program frame as opaque sRGB RGBA8 bytes off the CPU (the desktop monitors' GPU
+/// compositor), for [`Session::try_render_program_rgba8_using`]: `w`, `h`, pixels and whether the
+/// GPU drew it (false when the frame's plan already was a CPU picture it hands back). `None`
+/// leaves the frame to the CPU renderer.
+pub trait DisplayRenderer {
+    fn render_rgba8(
+        &mut self,
+        project: &Project,
+        seq: ItemId,
+        t: Tick,
+        opts: cfa4_render::RenderOptions,
+        sources: &dyn cfa4_render::SourceProvider,
+    ) -> Option<(usize, usize, Vec<u8>, bool)>;
+}
 
 /// The OS temp folder; `/tmp` on wasm32, where `std::env::temp_dir()` panics ("no filesystem on
 /// this platform"). Use this instead of `std::env::temp_dir()` in any code the web build runs.
@@ -111,6 +136,14 @@ pub type Result<T> = std::result::Result<T, EngineError>;
 pub trait Services: Send + Sync {
     fn read_file(&self, path: &str) -> std::io::Result<Vec<u8>>;
     fn write_file(&self, path: &str, data: &[u8]) -> std::io::Result<()>;
+    /// Publish a complete new file only when the final path is unoccupied. Publication must
+    /// reject a concurrent collision; a prior existence check alone is insufficient.
+    /// Return `ErrorKind::AlreadyExists` for an occupied final path so the importer can retry
+    /// with a numbered name; return other errors without publishing a partial file.
+    /// Hosts without this operation fail closed.
+    fn write_file_new(&self, _path: &str, _data: &[u8]) -> std::io::Result<()> {
+        Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "exclusive file creation is unavailable on this host"))
+    }
     /// Size of a file in bytes (an error when it is missing). Hosts should override this: the
     /// default reads the whole file.
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
@@ -168,6 +201,23 @@ impl Services for FsServices {
         // Atomic + durable: temp file in the same directory, fsync, rename, fsync the directory.
         cfa4_format::atomic_write(std::path::Path::new(path), data)
     }
+    fn write_file_new(&self, path: &str, data: &[u8]) -> std::io::Result<()> {
+        let path = std::path::Path::new(path);
+        let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or_else(|| std::path::Path::new("."));
+        std::fs::create_dir_all(dir).map_err(|error| {
+            if error.kind() == std::io::ErrorKind::AlreadyExists {
+                std::io::Error::new(std::io::ErrorKind::NotADirectory, format!("{} is not a directory: {error}", dir.display()))
+            } else {
+                error
+            }
+        })?;
+        match std::fs::symlink_metadata(path) {
+            Ok(_) => return Err(std::io::ErrorKind::AlreadyExists.into()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
+        cfa4_format::atomic_write_new(path, data)
+    }
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
         let m = std::fs::metadata(path)?;
         if m.is_file() { Ok(m.len()) } else { Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("{path} is not a file"))) }
@@ -180,7 +230,7 @@ impl Services for FsServices {
         Some(std::sync::Arc::new(|p: &str| std::fs::read(p)))
     }
     /// Media are read in place from the open file: a clip costs its index, not its size.
-    #[cfg(any(unix, windows))]
+    #[cfg(unix)]
     fn reader(&self, path: &str) -> Option<std::io::Result<cfa4_media::SharedReader>> {
         Some(cfa4_media::reader::FileReader::open(std::path::Path::new(path)).map(|r| std::sync::Arc::new(r) as cfa4_media::SharedReader))
     }
@@ -225,6 +275,22 @@ impl History {
     }
     pub fn can_redo(&self) -> bool {
         !self.redo.is_empty()
+    }
+    /// The History panel's Delete Redoable Actions: removes every step that Redo would bring
+    /// back. The project and the undo steps stay as they are. Returns how many steps were removed.
+    pub fn delete_redoable(&mut self) -> usize {
+        let n = self.redo.len();
+        self.redo.clear();
+        n
+    }
+    /// The History panel's Clear History: removes every undo and redo step. The project stays as
+    /// it is. Returns how many steps were removed.
+    pub fn clear(&mut self) -> usize {
+        let n = self.undo.len() + self.redo.len();
+        self.undo.clear();
+        self.redo.clear();
+        self.merge_key = None;
+        n
     }
 }
 
@@ -353,6 +419,10 @@ pub struct EditorState {
     /// Sequence ▸ Show Through Edits: the timeline marks cuts between continuous pieces of a clip.
     #[serde(default)]
     pub show_through_edits: bool,
+    /// Timeline Display Settings ▸ Show Duplicate Frame Markers: a stripe along the bottom of a
+    /// clip under the media frames another clip also shows.
+    #[serde(default)]
+    pub show_duplicate_frame_markers: bool,
     /// Markers ▸ Ripple Sequence Markers: ripple edits move (and delete) sequence markers too.
     #[serde(default)]
     pub ripple_sequence_markers: bool,
@@ -365,6 +435,11 @@ pub struct EditorState {
     /// Sequence markers copied with the clipboard clips (start relative to the copied range).
     #[serde(skip)]
     pub clipboard_markers: Vec<cfa4_project::Marker>,
+    /// Captions copied from the Timeline, with their caption track's index (starts relative to the
+    /// copied range). Copying clips empties it and copying captions empties `clipboard`, so Paste
+    /// places whichever was copied last.
+    #[serde(skip)]
+    pub caption_clipboard: Vec<(usize, cfa4_project::Caption)>,
     /// The last Edit ▸ Find… (Find Next continues it).
     #[serde(default)]
     pub find: Option<project_tools::FindState>,
@@ -419,12 +494,16 @@ pub struct Session {
     pub mcrec: multicam::Recorder,
     /// Voice-over recording: the input device and the take in progress.
     pub voiceover: voiceover::VoiceOver,
+    /// External timecode sync: what the devices report (Settings ▸ Timecode Sync).
+    pub timecode_sync: timecode_sync::SyncRuntime,
     /// The last `tts.preview` result, for the host to play (Text to Speech ▸ Preview).
     pub tts_preview: Option<Arc<cfa4_tts::Audio>>,
     /// Synthesized narrations (`tts.render` fills it from a background job).
     pub tts_cache: narration::SynthCache,
     /// Dynamic (J/K/L) trimming and trim-mode loop playback in progress.
     pub trim_play: trim::TrimPlayback,
+    /// Live graphics: cues, preview, program, the live page and the OBS link (`live.*`).
+    pub live: live::LiveState,
     /// Keyboard shortcuts (active bindings, presets; `shortcuts.*` commands).
     pub shortcuts: shortcuts::Shortcuts,
     /// Missing / offline media found by the last scan (Link Media dialog).
@@ -441,6 +520,8 @@ pub struct Session {
     pub export_presets: export_tools::ExportPresetLibrary,
     /// The export queue (session state, not saved with the project).
     pub export_queue: export_tools::ExportQueue,
+    /// Media QC jobs whose results are still to be applied (`qc.*` commands).
+    pub qc: qc::QcSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -531,9 +612,11 @@ impl Session {
             mixrec: Default::default(),
             mcrec: Default::default(),
             voiceover: Default::default(),
+            timecode_sync: Default::default(),
             tts_preview: None,
             tts_cache: Default::default(),
             trim_play: Default::default(),
+            live: Default::default(),
             shortcuts: shortcuts::Shortcuts::new(),
             offline: Default::default(),
             media_jobs: Vec::new(),
@@ -542,6 +625,7 @@ impl Session {
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
+            qc: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -577,7 +661,7 @@ impl Session {
                 break;
             }
         }
-        !self.stepped.is_empty() || self.export_queue.is_active()
+        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty()
     }
 
     /// Start auto-save and the crash-recovery journal (native frontends). Loads preferences from
@@ -635,6 +719,7 @@ impl Session {
         masks::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
+        qc::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
@@ -952,7 +1037,7 @@ impl Session {
     }
 
     /// Edit the active sequence with the edit-algebra context.
-    pub fn edit_sequence<R>(&mut self, label: &str, f: impl FnOnce(&mut Sequence, &mut EditCtx, &mut EditorState) -> Result<R>) -> Result<R> {
+    pub fn edit_sequence<R>(&mut self, label: &str, f: impl FnOnce(&mut Sequence, &mut EditCtx<'_>, &mut EditorState) -> Result<R>) -> Result<R> {
         self.edit_sequence_as(label, None, f)
     }
 
@@ -962,7 +1047,7 @@ impl Session {
         &mut self,
         label: &str,
         merge: Option<&str>,
-        f: impl FnOnce(&mut Sequence, &mut EditCtx, &mut EditorState) -> Result<R>,
+        f: impl FnOnce(&mut Sequence, &mut EditCtx<'_>, &mut EditorState) -> Result<R>,
     ) -> Result<R> {
         let seq_id = self.state.active_sequence.ok_or(EngineError::NoSequence)?;
         let media = self.media.clone();
@@ -1158,6 +1243,41 @@ impl Session {
         Ok((img, provider.offline_used()))
     }
 
+    /// [`Self::try_render_program_with_offline_at`] as opaque sRGB RGBA8 bytes (`w`, `h`, pixels):
+    /// a frame that is one opaque video picture goes straight to bytes
+    /// ([`cfa4_render::render_sequence_rgba8`]), without the linear float picture in between.
+    pub fn try_render_program_rgba8_with_offline_at(&self, scale: f32, t: Tick) -> Result<(usize, usize, Vec<u8>, Vec<media_pool::OfflineMedia>)> {
+        self.try_render_program_rgba8_using(scale, t, None).map(|(w, h, px, offline, _)| (w, h, px, offline))
+    }
+
+    /// [`Self::try_render_program_rgba8_with_offline_at`], composited by `display` (the GPU
+    /// compositor the desktop monitors use) when it takes the frame, else by the CPU renderer.
+    /// The last value is whether the GPU drew it.
+    #[expect(clippy::type_complexity, reason = "the frame, its offline media and who drew it")]
+    pub fn try_render_program_rgba8_using(
+        &self,
+        scale: f32,
+        t: Tick,
+        display: Option<&mut dyn DisplayRenderer>,
+    ) -> Result<(usize, usize, Vec<u8>, Vec<media_pool::OfflineMedia>, bool)> {
+        let provider = self.media.provider(self.project.clone(), self.services.clone()).recording();
+        let seq = self.renderable_sequence(scale)?;
+        let t = self.sequence_rate().snap(t.max(Tick::ZERO));
+        let opts = cfa4_render::RenderOptions { scale, captions: true, ..Default::default() };
+        if let Some((w, h, mut px, on_gpu)) = display.and_then(|d| d.render_rgba8(&self.project, seq, t, opts, &provider)) {
+            for a in px.iter_mut().skip(3).step_by(4) {
+                *a = 255;
+            }
+            return Ok((w, h, px, provider.offline_used(), on_gpu));
+        }
+        let (w, h, mut px) = cfa4_render::render_sequence_rgba8(&self.project, seq, t, opts, &provider);
+        // opaque, as `Image::over_black_rgba8`: the fallback keeps the picture's alpha in the fourth byte
+        for a in px.iter_mut().skip(3).step_by(4) {
+            *a = 255;
+        }
+        Ok((w, h, px, provider.offline_used(), false))
+    }
+
     fn render_program_with(&self, scale: f32, t: Tick, provider: &dyn cfa4_render::SourceProvider) -> Result<cfa4_render::Image> {
         let seq = self.renderable_sequence(scale)?;
         let t = self.sequence_rate().snap(t.max(Tick::ZERO));
@@ -1226,6 +1346,8 @@ mod audio_effects_tests;
 #[cfg(test)]
 mod audio_placement_tests;
 #[cfg(test)]
+mod auro_tests;
+#[cfg(test)]
 mod autosave_tests;
 #[cfg(test)]
 mod avi_import_tests;
@@ -1248,6 +1370,8 @@ mod file_tests;
 #[cfg(test)]
 mod gap_selection_tests;
 #[cfg(test)]
+mod history_tests;
+#[cfg(test)]
 mod image_sequence_tests;
 #[cfg(test)]
 mod individual_selection_tests;
@@ -1256,7 +1380,11 @@ mod interchange_auto_points_tests;
 #[cfg(test)]
 mod keyboard_tests;
 #[cfg(test)]
+mod legibility_tests;
+#[cfg(test)]
 mod linked_speed_tests;
+#[cfg(test)]
+mod linked_trim_tests;
 #[cfg(test)]
 mod locked_clip_edits_tests;
 #[cfg(test)]
@@ -1280,6 +1408,8 @@ mod nest_fidelity_tests;
 #[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
+mod opatom_tests;
+#[cfg(test)]
 mod panels_tests;
 #[cfg(test)]
 mod par_tests;
@@ -1297,6 +1427,8 @@ mod project_manager_tests;
 mod project_panel_tests;
 #[cfg(test)]
 mod proxies_tests;
+#[cfg(test)]
+mod qc_tests;
 #[cfg(test)]
 mod relink_tests;
 #[cfg(test)]
@@ -1320,6 +1452,12 @@ mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
 #[cfg(test)]
+mod smart_cut_mpeg_tests;
+#[cfg(test)]
+mod smart_cut_tests;
+#[cfg(test)]
+mod smart_render_tests;
+#[cfg(test)]
 mod social_tests;
 #[cfg(test)]
 mod split_edit_ripple_trim_tests;
@@ -1339,6 +1477,8 @@ mod trim_tests;
 mod vfx_tests;
 #[cfg(test)]
 mod voiceover_tests;
+#[cfg(test)]
+mod work_area_tests;
 
 #[cfg(test)]
 mod source_placement_tests;

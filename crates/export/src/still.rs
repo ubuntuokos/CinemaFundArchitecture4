@@ -96,8 +96,8 @@ pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> 
             StillFormat::Tiff => Format::TiffSequence,
             _ => Format::BmpSequence,
         };
-        // 8-bit TIFF stays RGB, as Export Frame wrote it before; 16-bit output keeps alpha.
-        return crate::encode_still(f, rgba, w, h, false);
+        // 8-bit TIFF and BMP stay RGB, as Export Frame wrote them before; PNG and 16-bit output keep alpha.
+        return crate::encode_still(f, rgba, w, h, format == StillFormat::Png);
     }
     let capacity = samples.checked_mul(2).ok_or_else(bad)?;
     let mut bytes = Vec::with_capacity(capacity);
@@ -146,6 +146,13 @@ mod tests {
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
     #[test]
     fn heic_heif_single_frame_exports_round_trip() {
+        if !cfa4_testkit::oracle::on_path_or_skip(
+            "heic_heif_single_frame_exports_round_trip",
+            &["heif-enc", "heif-dec"],
+            "Ubuntu packages libheif-examples, libheif-plugin-x265, libheif-plugin-libde265",
+        ) {
+            return;
+        }
         let source = Image::filled(64, 64, [0.25, 0.4, 0.6, 1.0]);
         for format in [StillFormat::Heic, StillFormat::Heif] {
             assert_eq!(StillFormat::parse(format.extension()).unwrap(), format);

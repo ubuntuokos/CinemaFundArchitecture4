@@ -1,0 +1,163 @@
+name: CFA4 four-format build on a hosted Ubuntu 26.04 runner (no publication)
+
+# F9 gate `real_four_format_build` (docs/audit/F9-RELEASE-DECISION-2026-10-23.md): build the
+# .deb, AppImage, Flatpak and tar.gz packages from a commit of `main` in the cloud.
+#
+# Owner decision (2026-11-08): development runs in the cloud, not on the owner's machine. Unlike
+# cfa4-release-candidate.yml (the trusted self-hosted runner, which never provisions anything),
+# this job provisions every tool itself on a fresh GitHub-hosted ubuntu-26.04 runner, each one
+# from the Ubuntu archive or pinned by version and SHA-256:
+#   - Ubuntu packages: build tools, GStreamer and FFmpeg codec development files, patchelf,
+#     flatpak, flatpak-builder, ostree;
+#   - the pinned nfpm (packaging/linux/nfpm.lock), built reproducibly from its Go module by
+#     scripts/release/install-nfpm.sh, which checks the module hash and the binary SHA-256 (#220);
+#   - appimagetool 1.9.1 (tagged GitHub release, SHA-256 pinned below);
+#   - Flatpak org.freedesktop.Platform and Sdk 25.08 from Flathub (user installation);
+#   - the PySide6 6.12.0 wheels pinned in requirements/linux-amd64.txt (pip download; their
+#     SHA-256 is checked against the pins when packaging/linux/stage-pyside6.py stages them);
+#   - CFA4's FFmpeg 9.0.2 prebuilt by cfa4-ffmpeg-prebuilt.yml (scripts/dev/fetch-ffmpeg-9.0.2.sh).
+#
+# RELEASE HOLD: no package leaves the runner. The job publishes only the SHA256SUMS and the F5
+# staged runtime report in the job summary; nothing is uploaded, released or signed.
+
+on:
+  workflow_dispatch:
+  # Changes to this workflow are proven by running it.
+  pull_request:
+    paths:
+      - '.github/workflows/cfa4-four-formats-hosted.yml'
+      - 'scripts/dev/fetch-ffmpeg-9.0.2.sh'
+      - 'scripts/release/install-nfpm.sh'
+      # the staged runtime audit, with the Smart Cut smoke of every package (WP-10)
+      - 'scripts/release/f5_staged_runtime.py'
+      - 'packaging/linux/nfpm.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-four-formats-hosted-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  four-formats:
+    name: Four CFA4 packages (deb, AppImage, Flatpak, tar.gz)
+    if: ${{ github.repository == 'ubuntuokos/CinemaFundArchitecture4' }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 180
+    env:
+      NFPM: ${{ github.workspace }}/../tools/nfpm/nfpm
+      APPIMAGETOOL_VERSION: 1.9.1
+      CFA4_APPIMAGETOOL_SHA256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+      APPIMAGETOOL: ${{ github.workspace }}/../tools/appimagetool-x86_64.AppImage
+      # The hosted runner has no FUSE; the AppImage runtime extracts itself instead.
+      APPIMAGE_EXTRACT_AND_RUN: '1'
+      CFA4_FFMPEG_BUILD: /opt/cfa4/ffmpeg-9.0.2
+      # AppImage and Flatpak carry the Qt GUI's PySide6 (docs/development/linux.md, 2026-11-09).
+      CFA4_PYSIDE6_WHEELS: ${{ github.workspace }}/../wheels
+      CARGO_TERM_COLOR: never
+    steps:
+      - name: Checkout CFA4 repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Assert Ubuntu 26.04 AMD64
+        run: bash scripts/ci/require-ubuntu-2604.sh
+      - name: Install build tools from the Ubuntu archive
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build nasm curl xz-utils \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            zlib1g-dev libva-dev libdrm-dev libffmpeg-nvenc-dev libvpl-dev \
+            libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev \
+            binutils patchelf libc-bin dpkg desktop-file-utils appstream \
+            flatpak flatpak-builder ostree elfutils golang-go \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
+            libxcb-util1 libxkbcommon-x11-0
+      - name: Allow unprivileged user namespaces for flatpak-builder (bubblewrap)
+        run: |
+          if [[ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+      - name: Build the pinned nfpm (module hash and binary SHA-256 from nfpm.lock)
+        run: |
+          bash scripts/release/install-nfpm.sh --dest "$(dirname "$NFPM")"
+          bash packaging/linux/check-nfpm.sh
+      - name: Install pinned appimagetool (SHA-256 verified)
+        run: |
+          tools="$(dirname "$APPIMAGETOOL")"
+          mkdir -p "$tools"
+          curl --fail --location --show-error --silent --retry 5 --proto '=https' --tlsv1.2 \
+            "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGETOOL_VERSION}/appimagetool-x86_64.AppImage" \
+            --output "$APPIMAGETOOL"
+          printf '%s  %s\n' "$CFA4_APPIMAGETOOL_SHA256" "$APPIMAGETOOL" | sha256sum --check
+          chmod +x "$APPIMAGETOOL"
+      - name: Install Flatpak Platform and SDK 25.08 (Flathub, user installation)
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive --arch=x86_64 flathub \
+            org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: Install CFA4 FFmpeg 9.0.2 (prebuilt, SHA-256 pinned; GPL-3 base build)
+        run: bash scripts/dev/fetch-ffmpeg-9.0.2.sh
+      - name: Fill the PySide6 wheelhouse (pinned wheels; stage-pyside6.py checks their SHA-256)
+        run: |
+          python3 -m pip download --no-deps --only-binary=:all: --platform manylinux_2_34_x86_64 \
+            --python-version 3.13 --implementation cp -d "$CFA4_PYSIDE6_WHEELS" \
+            pyside6-essentials==6.12.0 pyside6-addons==6.12.0 shiboken6==6.12.0
+          ls -l "$CFA4_PYSIDE6_WHEELS"
+      - name: Fetch every locked crate source (THIRD-PARTY-LICENSES runs cargo metadata --offline)
+        # cargo metadata resolves the dependencies of every target platform, but the Linux build
+        # downloads only its own; without this the licence list stops at a non-Linux crate.
+        run: cargo fetch --locked
+      - name: Verify offline packaging prerequisites
+        run: bash scripts/release/check-cfa4-package-prereqs.sh
+      - name: Build four private test packages and SHA256SUMS
+        env:
+          CFA4_ALLOW_LOCAL_PACKAGING: '1'
+        run: bash scripts/release/build-cfa4-four-formats.sh
+      - name: Stage package payloads and audit runtime (no host-wide installation)
+        run: |
+          python3 scripts/release/f5_staged_runtime.py \
+            --dist dist/release \
+            --report target/audit/f5-package-runtime.json
+      - name: Record evidence in the job summary (packages stay on the runner)
+        if: always()
+        run: |
+          {
+            echo "## CFA4 four-format build"
+            echo
+            echo "- Commit: \`${GITHUB_SHA}\` (${GITHUB_REF_NAME})"
+            echo "- Runner: GitHub-hosted ubuntu-26.04"
+            echo
+            if [[ -s dist/release/SHA256SUMS ]]; then
+              echo "### Packages"
+              echo
+              echo '```'
+              (cd dist/release && ls -l --block-size=K -- *.deb *.AppImage *.flatpak *.tar.gz 2>/dev/null || true)
+              echo
+              cat dist/release/SHA256SUMS
+              echo '```'
+            else
+              echo "No SHA256SUMS: the build did not finish."
+            fi
+            if [[ -s target/audit/f5-package-runtime.json ]]; then
+              echo
+              echo "### F5 staged runtime report"
+              echo
+              echo '```json'
+              head -c 60000 target/audit/f5-package-runtime.json
+              echo
+              echo '```'
+            fi
+            echo
+            echo "RELEASE HOLD: no package was uploaded or published."
+          } >> "$GITHUB_STEP_SUMMARY"

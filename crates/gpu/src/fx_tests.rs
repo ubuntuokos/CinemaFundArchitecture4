@@ -226,6 +226,20 @@ fn cases() -> Vec<(&'static str, Vec<(&'static str, ParamValue)>, bool)> {
         ("stereo_swap_eyes", vec![], false),
         ("stereo_swap_eyes", vec![("frame_layout", ch(1))], false),
         ("stereo_swap_eyes", vec![("frame_layout", ch(9))], false),
+        ("skin_smoothing", vec![], false),
+        ("skin_smoothing", vec![("amount", fl(100.0)), ("texture", fl(0.0)), ("radius", fl(4.0))], false),
+        ("skin_smoothing", vec![("amount", fl(80.0)), ("radius", fl(60.0)), ("smoothness", fl(100.0)), ("tolerance", fl(100.0))], false),
+        ("skin_smoothing", vec![("whole_image", ParamValue::Bool(true)), ("texture", fl(20.0))], false),
+        ("skin_smoothing", vec![("show_mask", ParamValue::Bool(true)), ("softness", fl(0.0))], false),
+        ("skin_smoothing", vec![("skin_tone", col(0.2, 0.4, 0.9)), ("tolerance", fl(60.0))], false),
+        ("skin_smoothing", vec![("texture", fl(100.0))], false),
+        ("skin_smoothing", vec![("radius", fl(0.0))], false),
+        ("low_light", vec![], false),
+        ("low_light", vec![("amount", fl(100.0)), ("radius", fl(4.0))], false),
+        ("low_light", vec![("amount", fl(80.0)), ("radius", fl(60.0)), ("max_gain", fl(150.0))], false),
+        ("low_light", vec![("radius", fl(0.0))], false),
+        ("low_light", vec![("amount", fl(0.0)), ("show_illumination", ParamValue::Bool(true))], false),
+        ("low_light", vec![("amount", fl(0.0))], false),
         ("stereo_to_2d", vec![], false),
         ("stereo_to_2d", vec![("eye", ch(1))], false),
         ("stereo_to_2d", vec![("frame_layout", ch(1))], false),
@@ -237,6 +251,23 @@ fn cases() -> Vec<(&'static str, Vec<(&'static str, ParamValue)>, bool)> {
         ("stereo_parallax", vec![("frame_layout", ch(1)), ("shift", fl(6.0))], false),
         ("stereo_parallax", vec![("frame_layout", ch(1)), ("shift", fl(-2.2)), ("repeat_edge", ParamValue::Bool(true))], false),
         ("stereo_parallax", vec![("shift", fl(1e9))], false),
+        // a curved screen: the edges bend inwards, the corners inset
+        (
+            "six_point_pin",
+            vec![
+                ("upper_left", pt(3.0, 2.0)),
+                ("upper_center", pt(33.5, 7.0)),
+                ("upper_right", pt(64.0, 1.0)),
+                ("lower_left", pt(1.0, 39.0)),
+                ("lower_center", pt(33.5, 33.0)),
+                ("lower_right", pt(65.0, 40.0)),
+            ],
+            false,
+        ),
+        // only the corners move (the centres stay on the frame edge midpoints)
+        ("six_point_pin", vec![("upper_left", pt(6.0, 4.0)), ("upper_right", pt(58.0, 0.0)), ("lower_right", pt(66.0, 37.0))], false),
+        // outward bows past the frame and an off-centre middle point
+        ("six_point_pin", vec![("upper_center", pt(25.0, -6.0)), ("lower_center", pt(40.0, 47.0))], false),
         ("mirror", vec![("center", pt(20.0, 10.0)), ("angle", fl(30.0))], false),
         ("mirror", vec![("angle", fl(200.0))], false),
         ("offset", vec![("shift", pt(10.0, 30.0)), ("blend", fl(25.0))], false),
@@ -456,6 +487,15 @@ fn gpu_effect_chains_match_cpu() {
             effect("invert", &[("channel", ParamValue::Choice(4))]),
             effect("directional_blur", &[("length", fl(6.0)), ("direction", fl(90.0))]),
         ],
+        // explicit slot routing starting mid-chain, then the Unsharp-style route, twice over
+        vec![
+            effect("brightness_contrast", &[("brightness", fl(10.0))]),
+            effect("skin_smoothing", &[("amount", fl(100.0)), ("texture", fl(10.0)), ("whole_image", ParamValue::Bool(true))]),
+            effect("low_light", &[("amount", fl(70.0))]),
+            effect("unsharp_mask", &[("amount", fl(80.0)), ("radius", fl(2.0))]),
+            effect("skin_smoothing", &[("radius", fl(3.0)), ("tolerance", fl(100.0))]),
+            effect("tint", &[("amount", fl(30.0))]),
+        ],
     ];
     for chain in chains {
         let ops: Vec<FxOp> = chain.iter().filter_map(|e| FxOp::eval(e, &cx(Tick::ZERO, 1.0), w as usize, h as usize)).collect();
@@ -538,6 +578,8 @@ fn hostile_parameters_are_bounded() {
         effect("lumetri", &[("temperature", fl(f64::INFINITY))]),
         effect("lumetri", &[("contrast", fl(f64::NAN))]),
         effect("lumetri", &[("vignette_amount", fl(f64::NAN))]),
+        effect("six_point_pin", &[("upper_center", pt(f64::INFINITY, 0.0))]),
+        effect("six_point_pin", &[("lower_left", pt(1e300, -1e300))]),
     ];
     for e in &nan {
         let op = FxOp::eval(e, &cx(Tick::ZERO, 1.0), w, h);

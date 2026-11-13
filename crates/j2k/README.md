@@ -1,11 +1,11 @@
 # cfa4-j2k
 
-Clean-room JPEG 2000 Part 1 and HTJ2K (Part 15) decoder, and a Part 1 encoder with the Digital
-Cinema profiles, in pure Rust: the picture codec of Digital Cinema Packages
+Clean-room JPEG 2000 Part 1 and HTJ2K (Part 15) decoder, and a Part 1 / HTJ2K encoder with the
+Digital Cinema profiles, in pure Rust: the picture codec of Digital Cinema Packages
 (SMPTE ST 429-4) and of JPEG 2000 in MXF / IMF. Layer L0: depends only on `thiserror`. No
 `unsafe`, no panics on malformed input. No OpenJPEG, Kakadu or FFmpeg code was consulted for
-Part 1. The HT block decoder (`src/ht.rs`, `src/ht_tables.rs`) is ported from OpenJPH
-(BSD-2-Clause, `src/LICENSE-OpenJPH`, register in `docs/licensing.md` §5). FFmpeg (its `jpeg2000`
+Part 1. The HT block decoder (`src/ht.rs`, `src/ht_tables.rs`) and the HT block encoder
+(`src/encode/ht.rs`) are ported from OpenJPH (BSD-2-Clause, `src/LICENSE-OpenJPH`, register in `docs/licensing.md` §5). FFmpeg (its `jpeg2000`
 encoder and `libopenjpeg`), OpenJPEG and Grok are used only as external fixture generators and
 test oracles.
 
@@ -85,8 +85,24 @@ and decoder cannot disagree on them.
   tile-parts), TLM; at most 250 Mbit/s per frame and 200 Mbit/s per component (1 302 083 and
   1 041 666 bytes at 24 fps). The image and options are checked against the profile.
 
-Not yet (#117): several quality layers, tiles, HTJ2K encoding, other code-block styles, SOP /
-EPH / PLT, IMF and broadcast profiles. DCP / MXF export is #115, speed #116.
+- `ImfProfile::select(width, height, components, fps, reversible, bitrate)` picks the IMF
+  profile (2K / 4K / 8K, lossy or reversible) and the smallest mainlevel and sublevel of
+  ST 2067-21 Annex E for the sample rate and bit rate; `EncodeOptions::imf(profile, …)` writes
+  its Rsiz (`0x04xx`–`0x09xx`) with the profile's constraints: CPRL, 32×32 code-blocks,
+  precincts 128 / 256, one layer, a tile-part per component, TLM, 5–7 decomposition levels, at
+  most the sublevel's bit rate per frame (lossy). The MXF IMF track file writer takes its coding
+  label from the Rsiz (#931).
+
+- `EncodeOptions { ht: true, .. }`: HTJ2K (ITU-T T.814 | ISO/IEC 15444-15). Every code-block is
+  one HT cleanup pass with all its bit-planes (missing MSBs Mb - 1), coded by the MEL, VLC and
+  MagSgn writers ported from OpenJPH 0.28.1 (`ojph_block_encoder.cpp`, the VLC encoder tables
+  built from the decoder's `ht_tables.rs`); Rsiz bit 14, the CAP marker (Pcap Part 15, Ccap15:
+  HT only, one HT set, no ROI, the irreversible flag and Bp from the largest Mb) and code-block
+  style 0x40. Lossless and fixed-step lossy, Part 1 profile only: rate control (a byte limit) and
+  the IMF HTJ2K profiles (ST 2067-21, edition to be decided) come later.
+
+Not yet (#117): several quality layers, tiles, rate-controlled HTJ2K, other code-block styles, SOP /
+EPH / PLT, broadcast profiles. DCP / MXF export is #115, speed #116.
 
 In MXF the decoder runs through `cfa4-codecs` (`j2k.rs`): Y'CbCr, R'G'B' and gray components
 become video frames, and the X'Y'Z' of the digital cinema profiles (`Header::digital_cinema`)
@@ -117,6 +133,12 @@ is converted to P3-D65 with the DCI transfer.
 - **Packed headers:** an ffmpeg tiled, layered stream rewritten with its packet headers in PPM and
   in PPT markers decodes to the same picture; truncated and damaged copies never panic.
 
+- **HTJ2K encoder (`src/encode/ht.rs`, `src/encode/tests.rs`, `tests/oracle.rs`):** random
+  blocks (1×1 to 1024×4 and 64×64, 1-30 bit-planes, all densities) round-trip through the HT
+  decoder; whole images lossless exact (1-16 bits, signed, sub-sampled, 4×4 to 1024×4
+  code-blocks) and lossy identical to the Part 1 coder's reconstruction; the codestreams decode
+  exactly (lossless) / within ±1 (lossy) in OpenJPEG 2.5 and in OpenJPH's `ojph_expand` (when on
+  the `PATH`), and in ffmpeg from 7.0 (6.1's HT decoder misdecodes OpenJPH's own streams).
 - **Encoder (`src/encode/tests.rs`, `tests/oracle.rs`):** lossless round trips exact for 1-4
   components, 1-16 bits, signed, 4:2:0 sub-sampling, 0-7 levels, all progressions and precincts;
   every truncation point of every code-block decodes to the distortion the encoder counted;

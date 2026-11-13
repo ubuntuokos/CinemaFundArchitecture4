@@ -46,6 +46,7 @@ except ImportError:  # pragma: no cover - depends on the PySide6 build
 
 POLL_MS = 150
 PAUSE_RE = re.compile(r"\[\s*pause[^\]]*\]", re.IGNORECASE)
+PITCHES = ("extraLow", "low", "default", "high", "extraHigh")  # egui's VocalPitch, camelCase
 PITCH_LABELS = (N_("Extra low"), N_("Low"), N_("Default"), N_("High"), N_("Extra high"))
 
 
@@ -53,6 +54,13 @@ def says_something(text: str, max_bytes: int) -> bool:
     """``cfa4_tts::check_text``: within the size limit, and some speech besides the pauses."""
     return len(text.encode()) <= max_bytes and any(ch.isalnum() for ch in PAUSE_RE.sub(" ", text))
 
+
+
+def selected_narration(sequence: dict[str, Any]) -> bool:
+    """A selected clip of ``sequence`` is a narration (``sequence.inspect``'s ``narration``)."""
+    sel = set(sequence.get("selection") or [])
+    tracks = [*(sequence.get("video") or []), *(sequence.get("audio") or [])]
+    return any(isinstance(it, dict) and it.get("narration") is True and it.get("clip") in sel for t in tracks if isinstance(t, dict) for it in t.get("items") or [])
 
 class TextToSpeechPanel(QWidget):
     command = Signal(str, dict)
@@ -278,13 +286,20 @@ class TextToSpeechPanel(QWidget):
             self.voice = "kokoro-heart" if natural_ready else str(self.catalog.get("defaultVoice") or "")
         self._sync()
 
-    def follow_selection(self) -> None:
+    def follow_selection(self, sequence: dict[str, Any] | None = None) -> None:
         """Load the selected narration clip into the draft when the selection moves to another
-        one (egui's ``follow_selection``); a deselect keeps the text for a new narration."""
+        one (egui's ``follow_selection``); a deselect keeps the text for a new narration. With the
+        ``sequence``, the engine is asked only while a narration clip is selected (asking without
+        one is a failed command, which the Events panel would list on every refresh)."""
         if not self.running:
             return
         if not self._asked:
             self.load_catalog()
+        if sequence is not None and not selected_narration(sequence):
+            if self.loaded_from is not None:
+                self.loaded_from = None
+                self._sync()
+            return
 
         def got(r: Any, _b: bytes | None) -> None:
             if not isinstance(r, dict) or r.get("clip") is None:
@@ -312,6 +327,51 @@ class TextToSpeechPanel(QWidget):
                 self._sync()
 
         self.engine.execute("tts.inspect", {}, on_reply=got, on_error=none)
+
+    # ----- egui's TtsDraft (ui.inspect → ui.tts, ui.set {tts}) -----
+    def ui_state(self) -> dict[str, Any]:
+        """The draft as egui's ``TtsDraft`` serialises it (camelCase)."""
+        return {
+            "text": self.text.toPlainText(),
+            "language": self.language,
+            "voice": self.voice,
+            "pitch": self.pitch,
+            "pace": round(self.pace, 2),
+            "advancedOpen": self.advanced_open,
+            "loadedFrom": list(self.loaded_from) if self.loaded_from is not None else None,
+            "pending": dict(self.pending) if self.pending is not None else None,
+            "confirmDownload": self.confirm_download,
+            "downloadJob": self.download_job,
+        }
+
+    def set_ui_state(self, patch: dict[str, Any]) -> None:
+        """Merge ``patch`` into the draft (egui's ``ui.set {tts}``); a bad value raises ValueError
+        and changes nothing. The narration it was loaded from, the pending job and the download
+        job are the engine's to set, so they are read only."""
+        known = ("text", "language", "voice", "pitch", "pace", "advancedOpen", "confirmDownload")
+        for k, v in patch.items():
+            if k in ("loadedFrom", "pending", "downloadJob"):
+                if v != self.ui_state()[k]:
+                    raise ValueError(f"{k} is read only")
+            elif k not in known:
+                raise ValueError(f"no field {k!r} (known: {', '.join(known)})")
+            elif k in ("text", "language", "voice") and not isinstance(v, str):
+                raise ValueError(f"{k} takes a string")
+            elif k == "pitch" and v not in PITCHES:
+                raise ValueError(f"pitch is one of {', '.join(PITCHES)}")
+            elif k == "pace" and (isinstance(v, bool) or not isinstance(v, (int, float)) or not 0.5 <= v <= 2.0):
+                raise ValueError("pace is 0.5 to 2")
+            elif k in ("advancedOpen", "confirmDownload") and not isinstance(v, bool):
+                raise ValueError(f"{k} takes true or false")
+        if "text" in patch:
+            self.text.setPlainText(patch["text"])
+        self.language = patch.get("language", self.language)
+        self.voice = patch.get("voice", self.voice)
+        self.pitch = patch.get("pitch", self.pitch)
+        self.pace = float(patch.get("pace", self.pace))
+        self.advanced_open = patch.get("advancedOpen", self.advanced_open)
+        self.confirm_download = patch.get("confirmDownload", self.confirm_download)
+        self._sync()
 
     def params(self) -> dict[str, Any]:
         return {"text": self.text.toPlainText(), "voice": self.voice, "pitch": self.pitch, "pace": round(self.pace, 2)}
@@ -643,7 +703,7 @@ class TextToSpeechPanel(QWidget):
         self.advanced_body.setVisible(self.advanced_open)
         self.pitch_combo.blockSignals(True)
         self.pitch_combo.clear()
-        pitches = self.catalog.get("pitches") or [{"id": p, "label": label} for p, label in zip(("extraLow", "low", "default", "high", "extraHigh"), PITCH_LABELS, strict=True)]
+        pitches = self.catalog.get("pitches") or [{"id": p, "label": label} for p, label in zip(PITCHES, PITCH_LABELS, strict=True)]
         for p in pitches:
             self.pitch_combo.addItem(tr(str(p.get("label"))), p.get("id"))
         self.pitch_combo.setCurrentIndex(max(0, self.pitch_combo.findData(self.pitch)))

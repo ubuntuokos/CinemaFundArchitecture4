@@ -8,7 +8,7 @@ use cfa4_media::FrameRequest;
 use cfa4_time::{TICKS_PER_SECOND, Tick};
 
 pub(crate) fn ffmpeg() -> Option<&'static str> {
-    ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists())
+    ["/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists())
 }
 
 fn fixture(name: &str, args: &[&str]) -> Option<Arc<[u8]>> {
@@ -169,6 +169,7 @@ fn dnxhd_and_dnxhr_movs_decode() {
         ("bars_dnxhr_hq.mov", &["-c:v", "dnxhd", "-profile:v", "dnxhr_hq", "-pix_fmt", "yuv422p"][..], "DNxHR HQ", "4:2:2"),
         ("bars_dnxhr_hqx.mov", &["-c:v", "dnxhd", "-profile:v", "dnxhr_hqx", "-pix_fmt", "yuv422p10le"][..], "DNxHR HQX", "4:2:2"),
         ("bars_dnxhd_1251.mov", &["-c:v", "dnxhd", "-b:v", "90M", "-pix_fmt", "yuv422p"][..], "CID 1251", "4:2:2"),
+        ("bars_dnxhr_444_rgb.mov", &["-c:v", "dnxhd", "-profile:v", "dnxhr_444", "-pix_fmt", "gbrp10le"][..], "DNxHR 444", "RGB 10-bit"),
     ] {
         let mut a = vec!["-f", "lavfi", "-i", if name.contains("1251") { "smptehdbars=s=1280x720:r=50:d=0.2" } else { "smptehdbars=s=640x360:r=24:d=0.5" }];
         a.extend_from_slice(args);
@@ -183,6 +184,54 @@ fn dnxhd_and_dnxhr_movs_decode() {
         // leftmost bars area is 40% grey
         let c = &px[(100 * w + 20) * 4..][..3];
         assert!((c[0] as i32 - 104).abs() < 6, "{name}: {c:?}");
+    }
+}
+
+/// DNx 4:4:4 RGB stays R'G'B' (PROCODEC-002 1b): the video-range codes are expanded to full range
+/// at the coded depth, one code to one code, instead of going through Y'CbCr.
+#[test]
+fn dnx_rgb_444_stays_rgb() {
+    for (bits, alpha) in [(10u8, false), (12, true), (8, true)] {
+        let (w, h) = (1024u32, 2u32);
+        let s = 1u32 << (bits - 8);
+        let mut f = cfa4_dnx::Frame::new(w, h, cfa4_dnx::ChromaFormat::Yuv444, bits, alpha);
+        f.rgb = true;
+        // G: every code across video range and beyond; B and R: video-range black and white
+        let top = (1u32 << bits) - 1;
+        f.y = (0..w * h).map(|i| ((i % w) * top / (w - 1)) as u16).collect();
+        f.cb = vec![(16 * s) as u16; (w * h) as usize];
+        f.cr = vec![(235 * s) as u16; (w * h) as usize];
+        if let Some(a) = f.alpha.as_mut() {
+            a.iter_mut().enumerate().for_each(|(i, v)| *v = if i % 2 == 0 { 0 } else { top as u16 });
+        }
+        let v = crate::video::dnx_to_video_frame(f.clone());
+        assert_eq!(v.color.range, cfa4_color::Range::Full);
+        let (planes, alpha_out): ([Vec<u16>; 3], Option<Vec<u16>>) = match &v.data {
+            cfa4_frame::PixelData::Rgb16 { planes, bits: b, alpha } => {
+                assert_eq!(*b, u32::from(bits));
+                (planes.clone().map(|p| p.to_vec()), alpha.as_ref().map(|a| a.to_vec()))
+            }
+            cfa4_frame::PixelData::Rgba8(px) => {
+                assert_eq!(bits, 8);
+                let c = |k: usize| px.iter().skip(k).step_by(4).map(|&v| u16::from(v)).collect::<Vec<u16>>();
+                ([c(0), c(1), c(2)], Some(c(3)))
+            }
+            _ => panic!("{bits}-bit RGB became {}", v.format_label()),
+        };
+        let [r, g, b] = planes;
+        assert!(r.iter().all(|&v| u32::from(v) == top), "video white is full white");
+        assert!(b.iter().all(|&v| v == 0), "video black is full black");
+        // the expansion keeps every video-range code distinct and in order
+        let inside: Vec<(u16, u16)> = f.y.iter().zip(&g).filter(|(c, _)| (16 * s..=235 * s).contains(&u32::from(**c))).map(|(&c, &o)| (c, o)).collect();
+        assert!(inside.windows(2).all(|p| p[0].0 >= p[1].0 || p[0].1 < p[1].1), "{bits}-bit: codes merged");
+        assert_eq!(alpha_out.is_some(), alpha, "{bits}-bit alpha");
+        if let Some(a) = alpha_out {
+            assert_eq!(a[0], 0);
+            assert_eq!(u32::from(a[1]), top);
+        }
+        // the picture reads as red where G is below video black (pixel 1 is opaque)
+        let px = v.to_rgba8();
+        assert_eq!(&px[4..7], &[255, 0, 0], "{bits}-bit");
     }
 }
 
@@ -207,6 +256,14 @@ fn cineform_in_mov_avi_and_mkv_decodes() {
         }
         let f = src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 10))).unwrap();
         assert_eq!((f.width, f.height), (128, 96));
+        if pix.starts_with("gbr") {
+            // CFA4-PROCODEC-002 1b: R'G'B' stays R'G'B' at 12 bits
+            assert!(
+                matches!(&f.data, cfa4_frame::PixelData::Rgb16 { bits: 12, alpha, .. } if alpha.is_some() == pix.contains('a')),
+                "{name}: {}",
+                f.format_label()
+            );
+        }
         let px = f.to_rgba8();
         let c = &px[(48 * 128 + 64) * 4..][..4];
         for (got, want) in c.iter().zip([0xe0u8, 0x80, 0x20, 0xff]) {
@@ -263,6 +320,33 @@ fn mp4_flac_audio() {
     let a = src.audio(24_000, 4800, 48_000).expect("audio");
     let peak = a.channels[0].iter().fold(0f32, |m, s| m.max(s.abs()));
     assert!(peak > 0.05 && peak < 1.0, "audio peak {peak}");
+}
+
+/// #2340: uncompressed QuickTime video (`raw ` 24-bit RGB, `2vuy`, `v210`) decodes, with fl32
+/// audio, instead of being reported unreadable.
+#[test]
+fn quicktime_uncompressed_video() {
+    let src = ["-f", "lavfi", "-i", "color=c=0x3060C0:s=64x36:r=24:d=0.5", "-f", "lavfi", "-i", "sine=frequency=1000:sample_rate=48000:d=0.5"];
+    for (name, vcodec) in [
+        ("raw_rgb24.mov", ["-c:v", "rawvideo", "-pix_fmt", "rgb24"]),
+        ("raw_2vuy.mov", ["-c:v", "rawvideo", "-pix_fmt", "uyvy422"]),
+        ("raw_v210.mov", ["-c:v", "v210", "-pix_fmt", "yuv422p10le"]),
+    ] {
+        let args: Vec<&str> = src.iter().copied().chain(vcodec).chain(["-c:a", "pcm_f32be", "-shortest"]).collect();
+        let Some(b) = fixture(name, &args) else { return };
+        let src = crate::open_bytes(name, b).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let f = src.video_frame(FrameRequest { time: Tick(TICKS_PER_SECOND / 4), scale: 1.0 }).unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert_eq!((f.width, f.height), (64, 36), "{name}");
+        assert!(src.info().video.as_ref().is_some_and(|v| v.codec.starts_with("Uncompressed")), "{name}: {:?}", src.info().video);
+        let rgba = f.to_rgba8();
+        let px = &rgba[(18 * 64 + 32) * 4..][..3];
+        for (got, want) in px.iter().zip([0x30u8, 0x60, 0xc0]) {
+            assert!((*got as i32 - want as i32).abs() <= 6, "{name}: {px:?}");
+        }
+        let a = src.audio(12_000, 4800, 48_000).expect("fl32 audio");
+        let peak = a.channels[0].iter().fold(0f32, |m, s| m.max(s.abs()));
+        assert!(peak > 0.05 && peak < 1.0, "{name}: audio peak {peak}");
+    }
 }
 
 #[test]
@@ -701,6 +785,35 @@ fn mkv_vp9_rgb() {
     for (got, want) in c.iter().zip([0xe0u8, 0x80, 0x20]) {
         assert!((*got as i32 - want as i32).abs() <= 2, "{c:?}");
     }
+}
+
+/// 10-bit VP9 RGB (profile 3) keeps its codes: planar R'G'B' equal to ffmpeg's lossless decode.
+#[test]
+fn mkv_vp9_rgb10_keeps_its_codes() {
+    let name = "ramp_vp9_gbrp10.mkv";
+    let Some(b) = fixture(
+        name,
+        &["-f", "lavfi", "-i", "testsrc2=s=64x48:r=25:d=0.2", "-c:v", "libvpx-vp9", "-pix_fmt", "gbrp10le", "-deadline", "realtime", "-lossless", "1"],
+    ) else {
+        return;
+    };
+    let Some(ff) = ffmpeg() else { return };
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/fixtures/codecs");
+    let o = Command::new(ff)
+        .args(["-v", "error", "-i"])
+        .arg(dir.join(name))
+        .args(["-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "gbrp10le", "-"])
+        .output()
+        .unwrap();
+    assert!(o.status.success());
+    let plane = |k: usize| -> Vec<u16> { o.stdout[k * 64 * 48 * 2..(k + 1) * 64 * 48 * 2].chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect() };
+    let src = crate::open_bytes(name, b).unwrap();
+    let f = src.video_frame(FrameRequest::full(Tick(0))).unwrap();
+    let cfa4_frame::PixelData::Rgb16 { planes, bits: 10, alpha: None } = &f.data else { panic!("10-bit R'G'B' expected, got {}", f.format_label()) };
+    // gbrp: G, B, R
+    assert_eq!((*planes[0]).clone(), plane(2), "R");
+    assert_eq!((*planes[1]).clone(), plane(0), "G");
+    assert_eq!((*planes[2]).clone(), plane(1), "B");
 }
 
 /// ffmpeg + libopus decode of a container fixture (pre-skip / codec delay / edit list applied) as

@@ -166,6 +166,14 @@ pub struct EncoderConfig {
     /// Requested level_idc (41 = level 4.1); None = the lowest level that fits. A level too low
     /// for the stream is raised to the one it needs.
     pub level: Option<u8>,
+    /// seq_parameter_set_id (0–31) and pic_parameter_set_id (0–255) of the stream. A stream spliced
+    /// into another one (Smart Render boundary re-encode) uses ids the other stream does not, so one
+    /// `avcC` can carry both parameter-set pairs.
+    pub sps_id: u8,
+    pub pps_id: u8,
+    /// idr_pic_id of the first IDR picture (later IDRs alternate with it), so a spliced segment
+    /// can differ from the IDR next to it.
+    pub first_idr_pic_id: u16,
 }
 
 impl EncoderConfig {
@@ -192,6 +200,9 @@ impl EncoderConfig {
             content_light: None,
             aud: true,
             level: None,
+            sps_id: 0,
+            pps_id: 0,
+            first_idr_pic_id: 0,
         }
     }
 }
@@ -361,6 +372,9 @@ impl Encoder {
         if cfg.bframes > 3 {
             return Err(Error::InvalidConfig("bframes must be 0..=3".into()));
         }
+        if cfg.sps_id > 31 {
+            return Err(Error::InvalidConfig("sps_id must be 0..=31".into()));
+        }
         if cfg.profile == Profile::Baseline {
             cfg.bframes = 0;
         }
@@ -455,6 +469,7 @@ impl Encoder {
         };
         let reorder = if cfg.bframes > 0 { 1 } else { 0 };
         let sps = Sps {
+            id: u32::from(cfg.sps_id),
             profile_idc,
             constraint_flags: constraint,
             level_idc: level,
@@ -477,7 +492,15 @@ impl Encoder {
                 max_dec_frame_buffering: max_refs as u32,
             },
         };
-        let pps = Pps { cabac, pic_init_qp: 26, chroma_qp_offset: params.chroma_qp_offset, transform_8x8: params.t8x8, high };
+        let pps = Pps {
+            id: u32::from(cfg.pps_id),
+            sps_id: u32::from(cfg.sps_id),
+            cabac,
+            pic_init_qp: 26,
+            chroma_qp_offset: params.chroma_qp_offset,
+            transform_8x8: params.t8x8,
+            high,
+        };
         let sps_nal = nal::nal(3, NAL_SPS, &sps.rbsp());
         let pps_nal = nal::nal(3, NAL_PPS, &pps.rbsp());
         let threads = if cfg.threads == 0 { std::thread::available_parallelism().map_or(1, |n| n.get()) } else { cfg.threads };
@@ -528,6 +551,13 @@ impl Encoder {
         &self.cfg
     }
 
+    /// Run `f` on the encoder's worker threads (the calling thread without the `threads`
+    /// feature). The pool is idle between pictures, so input preparation such as colour
+    /// conversion that runs here does not queue behind work on the global rayon pool.
+    pub fn install<R: Send>(&self, f: impl FnOnce() -> R + Send) -> R {
+        self.pool.install(f)
+    }
+
     /// The SPS and PPS NAL units (without start codes).
     pub fn sps_pps(&self) -> (Vec<u8>, Vec<u8>) {
         (self.sps_nal.clone(), self.pps_nal.clone())
@@ -564,21 +594,27 @@ impl Encoder {
     /// Encode one picture. Returns zero or more packets in decoding order, or
     /// [`Error::BadFrame`] if the planes are smaller than the configured size (same as
     /// [`Encoder::try_encode`]).
-    pub fn encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, Error> {
+    pub fn encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, Error> {
         self.try_encode(frame, pts)
     }
 
-    pub fn try_encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, Error> {
+    pub fn try_encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, Error> {
         let src = self.import(frame)?;
         let use_aq = self.cfg.aq_strength > 0.0 && !matches!(self.cfg.rate, RateControl::Qp(_));
         let (mbw, mbh, strength) = (self.params.mbw, self.params.mbh, self.cfg.aq_strength);
         let prev = self.prev_lowres.take();
-        let (lowres, cplx, aq) = self.pool.install(|| {
+        let analyse = || {
             let lowres = LowRes::new(&src);
             let cplx = lookahead::complexity(&lowres, prev.as_ref());
-            let aq = if use_aq { lookahead::aq_offsets(&src, mbw, mbh, strength) } else { Vec::new() };
-            (lowres, cplx, aq)
-        });
+            (lowres, cplx)
+        };
+        let aq_of = || if use_aq { lookahead::aq_offsets(&src, mbw, mbh, strength) } else { Vec::new() };
+        // the two analyses are independent: side by side, the pool's threads are not left idle
+        // at the end of each
+        #[cfg(feature = "threads")]
+        let ((lowres, cplx), aq) = self.pool.install(|| rayon::join(analyse, aq_of));
+        #[cfg(not(feature = "threads"))]
+        let ((lowres, cplx), aq) = (analyse(), aq_of());
         self.prev_lowres = Some(lowres);
         let display = self.display_count;
         self.display_count += 1;
@@ -648,7 +684,7 @@ impl Encoder {
         }
     }
 
-    fn import(&mut self, f: &YuvFrame) -> Result<Frame, Error> {
+    fn import(&mut self, f: &YuvFrame<'_>) -> Result<Frame, Error> {
         let (w, h) = (self.cfg.width as usize, self.cfg.height as usize);
         let (cw, ch) = (w / 2, h / 2);
         if f.y_stride < w
@@ -754,7 +790,8 @@ impl Encoder {
                 slice_type: st,
                 nal_ref_idc,
                 idr,
-                idr_pic_id: self.idr_count % 2,
+                idr_pic_id: (u32::from(self.cfg.first_idr_pic_id) + self.idr_count % 2) & 0xFFFF,
+                pps_id: u32::from(self.cfg.pps_id),
                 frame_num: self.next_frame_num % (1 << LOG2_MAX_FRAME_NUM),
                 log2_max_frame_num: LOG2_MAX_FRAME_NUM,
                 poc_lsb: (poc as u32) % (1 << LOG2_MAX_POC_LSB),
@@ -782,7 +819,7 @@ impl Encoder {
         let mut bufs: Vec<(Frame, Vec<MbInfo>)> = jobs.iter_mut().filter_map(|j| Some((j.rec.take()?, std::mem::take(&mut j.mbs)))).collect();
         {
             let this = &*self;
-            let fencs: Vec<FrameEnc> = jobs
+            let fencs: Vec<FrameEnc<'_>> = jobs
                 .iter()
                 .map(|j| FrameEnc {
                     p: &this.params,
@@ -812,7 +849,7 @@ impl Encoder {
                 .collect();
             let deblock: Vec<bool> = jobs.iter().map(|j| j.hdr.slice_type != SliceType::B || capture).collect();
             type Task<'t> = (usize, usize, usize, usize, &'t mut [u8], &'t mut [u8], &'t mut [u8], &'t mut [MbInfo]);
-            let mut tasks: Vec<Task> = Vec::new();
+            let mut tasks: Vec<Task<'_>> = Vec::new();
             for (pi, (rec, mbs)) in bufs.iter_mut().enumerate() {
                 let ys = rec.y.stride;
                 let cs = rec.u.stride;
@@ -835,7 +872,7 @@ impl Encoder {
             }
             let ys = jobs_stride_y(mbw);
             let cs = jobs_stride_c(mbw);
-            let run = |(pi, k, r0, r1, y, u, v, m): Task| -> (usize, usize, SliceOut) {
+            let run = |(pi, k, r0, r1, y, u, v, m): Task<'_>| -> (usize, usize, SliceOut) {
                 let out = SliceEnc::new(&fencs[pi], Band { y: &mut *y, u: &mut *u, v: &mut *v, ys, cs }, &mut *m, r0, r1, k as u16).encode();
                 if deblock[pi] {
                     let mut by = BandPlane { data: y, stride: ys, pad: LUMA_PAD };

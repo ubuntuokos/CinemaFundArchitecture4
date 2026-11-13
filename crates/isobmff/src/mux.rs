@@ -2,7 +2,7 @@
 
 use crate::bytes::BoxBuf;
 use crate::codec::{CodecConfig, SampleEntry, TimecodeConfig};
-use crate::demux::Edit;
+use crate::demux::{Chapter, Edit};
 use crate::error::{Error, Result};
 use std::io::{Read, Seek, SeekFrom, Write};
 
@@ -21,14 +21,33 @@ pub struct WriterOptions {
     pub brand: Brand,
     /// Movie timescale (`mvhd`); default 1000.
     pub movie_timescale: u32,
-    /// Text metadata written to `moov/udta` (keys like `©nam`, `©ART`, `©cmt`, `©too`).
+    /// Text metadata written to `moov/udta` (keys like `©nam`, `©ART`, `©cmt`, `©too`). Values are
+    /// cut to 65 535 bytes at a character boundary.
     pub metadata: Vec<(String, String)>,
+    /// Chapters written as a Nero `chpl` box in `moov/udta`, sorted by start. At most
+    /// [`MAX_CHAPTERS`] are written (the later ones are dropped) and titles are cut to
+    /// [`MAX_CHAPTER_TITLE_BYTES`] at a character boundary.
+    pub chapters: Vec<Chapter>,
 }
 
 impl WriterOptions {
     pub fn new(brand: Brand) -> Self {
-        WriterOptions { brand, movie_timescale: 1000, metadata: Vec::new() }
+        WriterOptions { brand, movie_timescale: 1000, metadata: Vec::new(), chapters: Vec::new() }
     }
+}
+
+/// Most chapters a `chpl` box holds (its count is one byte).
+pub const MAX_CHAPTERS: usize = 255;
+/// Longest chapter title in a `chpl` box, in UTF-8 bytes (its length is one byte).
+pub const MAX_CHAPTER_TITLE_BYTES: usize = 255;
+
+/// The longest prefix of `s` that is at most `max` bytes and ends on a character boundary.
+fn cut_utf8(s: &str, max: usize) -> &str {
+    let mut end = s.len().min(max);
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    s.get(..end).unwrap_or_default()
 }
 
 /// Per-track configuration.
@@ -46,11 +65,30 @@ pub struct TrackConfig {
     pub media_start: Option<i64>,
     /// `hdlr` name; a sensible default is used when `None`.
     pub handler_name: Option<String>,
+    /// `tkhd` display matrix (rotation of portrait footage…); the identity when `None`.
+    pub matrix: Option<[i32; 9]>,
+    /// `tkhd` enabled flag (true by default).
+    pub enabled: bool,
+    /// `tkhd` alternate group: tracks of one non-zero group are alternatives (0 by default).
+    pub alternate_group: u16,
+    /// `tkhd` volume (8.8 fixed point); `None` writes 1.0 for audio and 0 otherwise.
+    pub volume: Option<i16>,
 }
 
 impl TrackConfig {
     pub fn new(entry: SampleEntry, timescale: u32) -> Self {
-        TrackConfig { entry, timescale, language: "und".into(), edits: Vec::new(), media_start: None, handler_name: None }
+        TrackConfig {
+            entry,
+            timescale,
+            language: "und".into(),
+            edits: Vec::new(),
+            media_start: None,
+            handler_name: None,
+            matrix: None,
+            enabled: true,
+            alternate_group: 0,
+            volume: None,
+        }
     }
 }
 
@@ -70,12 +108,16 @@ enum Handler {
     Video,
     Audio,
     Timecode,
+    /// QuickTime text track (the chapter track).
+    Text,
     Other,
 }
 
 fn handler_of(e: &SampleEntry) -> Handler {
     if matches!(e.codec, CodecConfig::Timecode(_)) {
         Handler::Timecode
+    } else if e.format == b"text" {
+        Handler::Text
     } else if e.video.is_some() {
         Handler::Video
     } else if e.audio.is_some() {
@@ -131,6 +173,10 @@ struct WTrack {
     tmcd_ref: Option<u32>,
     /// For timecode tracks: (video track index, start frame).
     tmcd_source: Option<(usize, u32)>,
+    /// Track id of a linked QuickTime chapter track (`tref/chap`).
+    chap_ref: Option<u32>,
+    /// For chapter tracks: the chapters, written as samples at finish.
+    chapter_source: Option<Vec<Chapter>>,
 }
 
 fn pack_language(lang: &str) -> u16 {
@@ -221,7 +267,9 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
     let trak = b.start(b"trak");
     let dur = presentation_duration(t, movie_ts);
     let v1 = dur > u32::MAX as u64;
-    let m = b.start_full(b"tkhd", v1 as u8, 3);
+    // a chapter track is in the movie but disabled, so players don't show it as subtitles
+    let enabled = t.cfg.enabled && t.chapter_source.is_none();
+    let m = b.start_full(b"tkhd", v1 as u8, if enabled { 3 } else { 2 });
     if v1 {
         b.u64(0);
         b.u64(0);
@@ -237,10 +285,10 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
     }
     b.zeros(8);
     b.i16(0);
+    b.u16(t.cfg.alternate_group);
+    b.i16(t.cfg.volume.unwrap_or(if t.handler == Handler::Audio { 0x100 } else { 0 }));
     b.u16(0);
-    b.i16(if t.handler == Handler::Audio { 0x100 } else { 0 });
-    b.u16(0);
-    for v in MATRIX {
+    for v in t.cfg.matrix.unwrap_or(MATRIX) {
         b.i32(v);
     }
     let (w, h) = match &t.cfg.entry.video {
@@ -275,11 +323,14 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
         b.end(l);
         b.end(e);
     }
-    if let Some(id) = t.tmcd_ref {
+    let refs: Vec<(&[u8; 4], u32)> = [(b"tmcd", t.tmcd_ref), (b"chap", t.chap_ref)].into_iter().filter_map(|(k, id)| Some((k, id?))).collect();
+    if !refs.is_empty() {
         let r = b.start(b"tref");
-        let m = b.start(b"tmcd");
-        b.u32(id);
-        b.end(m);
+        for (kind, id) in refs {
+            let m = b.start(kind);
+            b.u32(id);
+            b.end(m);
+        }
         b.end(r);
     }
     let mdia = b.start(b"mdia");
@@ -303,6 +354,7 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
         Handler::Video => (b"vide", "VideoHandler"),
         Handler::Audio => (b"soun", "SoundHandler"),
         Handler::Timecode => (b"tmcd", "TimeCodeHandler"),
+        Handler::Text => (b"text", "ChapterHandler"),
         Handler::Other => (b"meta", "MetaHandler"),
     };
     let name = t.cfg.handler_name.clone().unwrap_or_else(|| default_name.into());
@@ -352,6 +404,24 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
             b.u8(0);
             b.end(m);
             b.end(tm);
+            b.end(g);
+        }
+        Handler::Text => {
+            // QuickTime base media header with a text media information atom (a display matrix)
+            let g = b.start(b"gmhd");
+            let m = b.start_full(b"gmin", 0, 0);
+            b.u16(0x40);
+            b.u16(0x8000);
+            b.u16(0x8000);
+            b.u16(0x8000);
+            b.i16(0);
+            b.u16(0);
+            b.end(m);
+            let m = b.start(b"text");
+            for v in MATRIX {
+                b.i32(v);
+            }
+            b.end(m);
             b.end(g);
         }
         Handler::Other => {
@@ -461,30 +531,77 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
     Ok(())
 }
 
-fn write_udta(b: &mut BoxBuf, md: &[(String, String)]) {
-    let items: Vec<([u8; 4], &str)> = md
+/// Media timescale of the QuickTime chapter track (milliseconds).
+const CHAPTER_TIMESCALE: u32 = 1000;
+
+/// Payload of a QuickTime `text` sample entry (QuickTime File Format, "Text sample description"):
+/// default display flags, justification, colours and text box, no font name.
+fn text_sample_entry() -> Vec<u8> {
+    let mut b = BoxBuf::new();
+    b.zeros(6);
+    b.u16(1); // data reference index
+    b.u32(0); // display flags
+    b.i32(0); // text justification: left
+    b.zeros(6); // background colour
+    b.zeros(8); // default text box
+    b.zeros(8); // reserved
+    b.u16(0); // font number
+    b.u16(0); // font face
+    b.u8(0); // reserved
+    b.u16(0); // reserved
+    b.zeros(6); // foreground colour
+    b.u8(0); // empty text name
+    b.buf
+}
+
+fn write_udta(b: &mut BoxBuf, opts: &WriterOptions) {
+    let items: Vec<([u8; 4], &str)> = opts
+        .metadata
         .iter()
         .filter_map(|(k, v)| {
             let mut chars = k.chars();
             if chars.next()? != '©' {
                 return None;
             }
-            let rest: Vec<u8> = chars.map(|c| c as u32 as u8).collect();
-            (rest.len() == 3).then(|| ([0xA9, rest[0], rest[1], rest[2]], v.as_str()))
+            let rest: Vec<u8> = chars.map(|c| u8::try_from(u32::from(c)).ok()).collect::<Option<_>>()?;
+            let [a, b, c] = rest[..] else { return None };
+            Some(([0xA9, a, b, c], cut_utf8(v, usize::from(u16::MAX))))
         })
         .collect();
-    if items.is_empty() {
+    if items.is_empty() && opts.chapters.is_empty() {
         return;
     }
     let u = b.start(b"udta");
     for (k, v) in items {
         let m = b.start(&k);
-        b.u16(v.len() as u16);
+        b.u16(u16::try_from(v.len()).unwrap_or(u16::MAX));
         b.u16(0x55C4);
         b.bytes(v.as_bytes());
         b.end(m);
     }
+    write_chpl(b, &opts.chapters);
     b.end(u);
+}
+
+/// Nero `chpl`: version 1, flags 0, 4 reserved bytes, a one-byte count, then per chapter the start
+/// in 100 ns units (u64), a one-byte title length and the UTF-8 title.
+fn write_chpl(b: &mut BoxBuf, chapters: &[Chapter]) {
+    if chapters.is_empty() {
+        return;
+    }
+    let mut sorted: Vec<&Chapter> = chapters.iter().collect();
+    sorted.sort_by_key(|c| c.start_100ns);
+    sorted.truncate(MAX_CHAPTERS);
+    let m = b.start_full(b"chpl", 1, 0);
+    b.u32(0);
+    b.u8(u8::try_from(sorted.len()).unwrap_or(u8::MAX));
+    for c in sorted {
+        let title = cut_utf8(&c.title, MAX_CHAPTER_TITLE_BYTES);
+        b.u64(c.start_100ns);
+        b.u8(u8::try_from(title.len()).unwrap_or(u8::MAX));
+        b.bytes(title.as_bytes());
+    }
+    b.end(m);
 }
 
 fn validate_track(cfg: &TrackConfig) -> Result<Option<u32>> {
@@ -537,7 +654,17 @@ impl<W: Write + Seek> Mp4Writer<W> {
         let handler = handler_of(&cfg.entry);
         let mut t = Tables::new();
         t.const_size = pcm;
-        self.tracks.push(WTrack { id: self.tracks.len() as u32 + 1, handler, pcm_frame_bytes: pcm, t, cfg, tmcd_ref: None, tmcd_source: None });
+        self.tracks.push(WTrack {
+            id: self.tracks.len() as u32 + 1,
+            handler,
+            pcm_frame_bytes: pcm,
+            t,
+            cfg,
+            tmcd_ref: None,
+            tmcd_source: None,
+            chap_ref: None,
+            chapter_source: None,
+        });
         Ok(self.tracks.len() - 1)
     }
 
@@ -573,13 +700,54 @@ impl<W: Write + Seek> Mp4Writer<W> {
         Ok(idx)
     }
 
+    /// Add a QuickTime chapter track (a disabled `text` track) referenced by `track` through
+    /// `tref/chap`, for Apple players, which don't read `chpl`. One sample per chapter, written at
+    /// finish: a chapter lasts until the next one, the last until the end of the longest media
+    /// track. Chapters are sorted; ones starting at or after that end are dropped, as are later
+    /// ones on the same millisecond. Titles are cut like the `chpl` ones and at most
+    /// [`MAX_CHAPTERS`] are kept, so both chapter lists agree.
+    pub fn add_chapter_track(&mut self, track: usize, chapters: &[Chapter]) -> Result<usize> {
+        if track >= self.tracks.len() {
+            return Err(Error::NoSuchTrack(track));
+        }
+        if self.tracks[track].chapter_source.is_some() || self.tracks[track].tmcd_source.is_some() {
+            return Err(Error::Mux("chapters must be referenced by a media track".into()));
+        }
+        if chapters.is_empty() {
+            return Err(Error::Mux("no chapters".into()));
+        }
+        if self.tracks.iter().any(|t| t.chapter_source.is_some()) {
+            return Err(Error::Mux("the file already has a chapter track".into()));
+        }
+        let entry = SampleEntry {
+            format: crate::bytes::FourCc(*b"text"),
+            data_reference_index: 1,
+            codec: CodecConfig::Unknown { fourcc: crate::bytes::FourCc(*b"text"), raw: text_sample_entry() },
+            video: None,
+            audio: None,
+            bitrate: None,
+        };
+        let mut cfg = TrackConfig::new(entry, CHAPTER_TIMESCALE);
+        cfg.handler_name = Some("Chapters".into());
+        let idx = self.add_track(cfg)?;
+        self.tracks[idx].chapter_source = Some(chapters.to_vec());
+        let id = self.tracks[idx].id;
+        self.tracks[track].chap_ref = Some(id);
+        Ok(idx)
+    }
+
     /// Append one sample to track `track` (decode order). For PCM tracks `data` may hold any whole
     /// number of audio frames.
-    pub fn write_sample(&mut self, track: usize, s: WriteSample) -> Result<()> {
+    pub fn write_sample(&mut self, track: usize, s: WriteSample<'_>) -> Result<()> {
         let tr = self.tracks.get(track).ok_or(Error::NoSuchTrack(track))?;
-        if tr.tmcd_source.is_some() {
-            return Err(Error::Mux("timecode track samples are written automatically".into()));
+        if tr.tmcd_source.is_some() || tr.chapter_source.is_some() {
+            return Err(Error::Mux("timecode and chapter track samples are written automatically".into()));
         }
+        self.push_sample(track, s)
+    }
+
+    fn push_sample(&mut self, track: usize, s: WriteSample<'_>) -> Result<()> {
+        let tr = self.tracks.get(track).ok_or(Error::NoSuchTrack(track))?;
         let (count, dur) = match tr.pcm_frame_bytes {
             Some(fb) => {
                 if !s.data.len().is_multiple_of(fb as usize) {
@@ -650,6 +818,7 @@ impl<W: Write + Seek> Mp4Writer<W> {
             t.media_duration = d as u64;
             t.chunks.push((off, 1));
         }
+        self.write_chapter_samples()?;
         let size = self.pos - self.mdat_pos;
         if size <= u32::MAX as u64 {
             self.w.seek(SeekFrom::Start(self.mdat_pos))?;
@@ -667,6 +836,58 @@ impl<W: Write + Seek> Mp4Writer<W> {
         Ok(())
     }
 
+    /// Chapter track samples: each is a 16-bit length, the UTF-8 title and an `encd` atom marking
+    /// the text as UTF-8 (QuickTime text otherwise defaults to Mac Roman).
+    fn write_chapter_samples(&mut self) -> Result<()> {
+        let Some(ci) = self.tracks.iter().position(|t| t.chapter_source.is_some()) else { return Ok(()) };
+        let end_ms = self
+            .tracks
+            .iter()
+            .filter(|t| matches!(t.handler, Handler::Video | Handler::Audio | Handler::Other))
+            .map(|t| rescale(t.t.comp_end.max(t.t.media_duration), t.cfg.timescale, CHAPTER_TIMESCALE))
+            .max()
+            .unwrap_or(0);
+        let mut chapters = self.tracks[ci].chapter_source.clone().unwrap_or_default();
+        chapters.sort_by_key(|c| c.start_100ns);
+        let mut starts: Vec<(u64, &str)> = Vec::new();
+        for c in &chapters {
+            let ms = c.start_100ns / 10_000;
+            if (ms < end_ms || end_ms == 0) && starts.last().is_none_or(|l| l.0 < ms) && starts.len() < MAX_CHAPTERS {
+                starts.push((ms, cut_utf8(&c.title, MAX_CHAPTER_TITLE_BYTES)));
+            }
+        }
+        let Some(&(first, _)) = starts.first() else {
+            // nothing left to point at: drop the reference, keep an empty (harmless) track
+            for t in &mut self.tracks {
+                t.chap_ref = None;
+            }
+            return Ok(());
+        };
+        let mut samples = Vec::with_capacity(starts.len());
+        for (i, &(ms, title)) in starts.iter().enumerate() {
+            let next = starts.get(i + 1).map_or(end_ms.max(ms + 1), |n| n.0);
+            let dur = u32::try_from(next - ms).unwrap_or(u32::MAX);
+            let mut s = Vec::with_capacity(title.len() + 14);
+            s.extend_from_slice(&(title.len() as u16).to_be_bytes());
+            s.extend_from_slice(title.as_bytes());
+            s.extend_from_slice(&[0, 0, 0, 12, b'e', b'n', b'c', b'd', 0, 0, 1, 0]);
+            samples.push((s, dur));
+        }
+        let movie_ts = self.opts.movie_timescale.max(1);
+        let total: u64 = samples.iter().map(|s| s.1 as u64).sum();
+        if first > 0 {
+            // the first chapter starts later: an empty edit holds the media back until then
+            self.tracks[ci].cfg.edits = vec![
+                Edit { segment_duration: rescale(first, CHAPTER_TIMESCALE, movie_ts), media_time: -1, media_rate: 0x10000 },
+                Edit { segment_duration: rescale(total, CHAPTER_TIMESCALE, movie_ts), media_time: 0, media_rate: 0x10000 },
+            ];
+        }
+        for (s, dur) in samples {
+            self.push_sample(ci, WriteSample { data: &s, duration: dur, composition_offset: 0, is_sync: true })?;
+        }
+        Ok(())
+    }
+
     fn build_moov(&self, shift: u64, force_co64: bool) -> Result<Vec<u8>> {
         let qt = self.opts.brand == Brand::Mov;
         let ts = self.opts.movie_timescale.max(1);
@@ -676,7 +897,7 @@ impl<W: Write + Seek> Mp4Writer<W> {
         for t in &self.tracks {
             write_trak(&mut b, t, ts, qt, shift, force_co64)?;
         }
-        write_udta(&mut b, &self.opts.metadata);
+        write_udta(&mut b, &self.opts);
         b.end(m);
         Ok(b.buf)
     }
@@ -758,7 +979,17 @@ impl<W: Write> FragmentedWriter<W> {
             return Err(Error::Mux("PCM is not supported by the fragmented writer".into()));
         }
         let handler = handler_of(&cfg.entry);
-        self.tracks.push(WTrack { id: self.tracks.len() as u32 + 1, handler, pcm_frame_bytes: None, t: Tables::new(), cfg, tmcd_ref: None, tmcd_source: None });
+        self.tracks.push(WTrack {
+            id: self.tracks.len() as u32 + 1,
+            handler,
+            pcm_frame_bytes: None,
+            t: Tables::new(),
+            cfg,
+            tmcd_ref: None,
+            tmcd_source: None,
+            chap_ref: None,
+            chapter_source: None,
+        });
         self.pending.push(Vec::new());
         self.next_dts.push(0);
         Ok(self.tracks.len() - 1)
@@ -785,7 +1016,7 @@ impl<W: Write> FragmentedWriter<W> {
             b.end(x);
         }
         b.end(mv);
-        write_udta(&mut b, &self.opts.metadata);
+        write_udta(&mut b, &self.opts);
         b.end(m);
         self.w.write_all(&b.buf)?;
         self.init_written = true;
@@ -807,7 +1038,7 @@ impl<W: Write> FragmentedWriter<W> {
     }
 
     /// Buffer a sample for the next fragment.
-    pub fn write_sample(&mut self, track: usize, s: WriteSample) -> Result<()> {
+    pub fn write_sample(&mut self, track: usize, s: WriteSample<'_>) -> Result<()> {
         let p = self.pending.get_mut(track).ok_or(Error::NoSuchTrack(track))?;
         if s.data.len() > u32::MAX as usize {
             return Err(Error::Mux("sample larger than 4 GiB".into()));
@@ -907,11 +1138,97 @@ mod tests {
         SampleEntry::avc(AvcConfig::new(vec![vec![0x67, 0x42, 0, 0x1E]], vec![vec![0x68, 0xCE]], 4), 64, 48)
     }
 
+    fn udta_of(opts: &WriterOptions) -> Vec<u8> {
+        let mut b = BoxBuf::new();
+        write_udta(&mut b, opts);
+        b.buf
+    }
+
+    fn chapter(start_100ns: u64, title: &str) -> Chapter {
+        Chapter { start_100ns, title: title.into() }
+    }
+
+    #[test]
+    fn chpl_bytes() {
+        // The layout ffmpeg writes and ffprobe reads: version 1, 4 reserved bytes, u8 count,
+        // then u64 start (100 ns) + u8 length + UTF-8 title per chapter.
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.chapters = vec![chapter(15_000_000, "Two"), chapter(0, "Első")];
+        let udta = udta_of(&opts);
+        let mut want = vec![0, 0, 0, 0x2B];
+        want.extend_from_slice(b"chpl");
+        want.extend_from_slice(&[1, 0, 0, 0, 0, 0, 0, 0, 2]);
+        want.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 5]);
+        want.extend_from_slice("Első".as_bytes());
+        want.extend_from_slice(&[0, 0, 0, 0, 0, 0xE4, 0xE1, 0xC0, 3]);
+        want.extend_from_slice(b"Two");
+        assert_eq!(&udta[..8], &[0, 0, 0, 0x33, b'u', b'd', b't', b'a']);
+        assert_eq!(&udta[8..], &want[..]);
+        let mut md = crate::Metadata::default();
+        crate::demux::parse_udta_for_tests(&udta[8..], &mut md);
+        assert_eq!(md.chapters, vec![chapter(0, "Első"), chapter(15_000_000, "Two")]);
+    }
+
+    #[test]
+    fn chpl_limits_cut_without_panicking() {
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.chapters = (0..300u64).rev().map(|i| chapter(i * 10, &format!("C{i}"))).collect();
+        // 254 ASCII bytes then a 2-byte character: the cut must not split it.
+        opts.chapters[0].title = format!("{}é{}", "a".repeat(254), "b".repeat(44));
+        let mut md = crate::Metadata::default();
+        crate::demux::parse_udta_for_tests(&udta_of(&opts)[8..], &mut md);
+        assert_eq!(md.chapters.len(), MAX_CHAPTERS);
+        assert_eq!(md.chapters[0], chapter(0, "C0"));
+        assert_eq!(md.chapters[254], chapter(2540, "C254"));
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.chapters = vec![chapter(0, &format!("{}é{}", "a".repeat(254), "b".repeat(44)))];
+        let mut md = crate::Metadata::default();
+        crate::demux::parse_udta_for_tests(&udta_of(&opts)[8..], &mut md);
+        assert_eq!(md.chapters[0].title, "a".repeat(254));
+    }
+
+    /// Regression: the length of a value over 65 535 bytes was written `as u16`, so the length
+    /// field disagreed with the atom size and the value read back was a wrapped-around prefix.
+    #[test]
+    fn long_udta_value_is_cut_not_wrapped() {
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.metadata = vec![("©cmt".into(), "é".repeat(40_000)), ("©nam".into(), "ok".into()), ("©\u{100}ab".into(), "dropped".into())];
+        let mut md = crate::Metadata::default();
+        crate::demux::parse_udta_for_tests(&udta_of(&opts)[8..], &mut md);
+        assert_eq!(md.get("©cmt"), Some("é".repeat(32_767).as_str()));
+        assert_eq!(md.title(), Some("ok"));
+        assert_eq!(md.entries.len(), 2);
+    }
+
     #[test]
     fn language_pack() {
         assert_eq!(pack_language("und"), 0x55C4);
         assert_eq!(pack_language("eng"), 0x15C7);
         assert_eq!(pack_language("EN"), 0x55C4);
+    }
+
+    /// The `tkhd` fields a stream copy keeps besides the matrix: enabled flag, alternate group
+    /// and volume; the defaults stay enabled, 0 and 1.0 for audio.
+    #[test]
+    fn track_header_fields_round_trip() {
+        let pcm = PcmConfig { bits: 16, float: false, big_endian: false, signed: true, channels: 2, sample_rate: 48000.0 };
+        for fast in [false, true] {
+            let mut w = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mov)).unwrap();
+            let v = w.add_track(TrackConfig::new(avc_entry(), 12800)).unwrap();
+            let a = w.add_track(TrackConfig::new(SampleEntry::pcm(pcm), 48000)).unwrap();
+            let mut cfg = TrackConfig::new(SampleEntry::pcm(pcm), 48000);
+            (cfg.enabled, cfg.alternate_group, cfg.volume) = (false, 1, Some(0x80));
+            let b = w.add_track(cfg).unwrap();
+            for i in 0..3u8 {
+                w.write_sample(v, WriteSample { data: &[i; 10], duration: 512, composition_offset: 0, is_sync: true }).unwrap();
+                w.write_sample(a, WriteSample { data: &[i; 40], duration: 0, composition_offset: 0, is_sync: true }).unwrap();
+                w.write_sample(b, WriteSample { data: &[i; 40], duration: 0, composition_offset: 0, is_sync: true }).unwrap();
+            }
+            let out = if fast { w.finish_faststart() } else { w.finish() }.unwrap().into_inner();
+            let f = crate::open(out.as_slice()).unwrap();
+            let got: Vec<_> = f.tracks.iter().map(|t| (t.enabled, t.alternate_group, t.volume)).collect();
+            assert_eq!(got, [(true, 0, 0), (true, 0, 0x100), (false, 1, 0x80)]);
+        }
     }
 
     #[test]

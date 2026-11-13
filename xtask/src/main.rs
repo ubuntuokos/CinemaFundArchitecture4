@@ -36,9 +36,13 @@ const LAYERS: &[(&str, u8)] = &[
     ("mxf", 0),
     ("cfb", 0),
     ("mpegts", 0),
+    ("st2110", 0),
     ("mpeg2v", 0),
+    ("dv", 0),
+    ("lcevc", 0),
     ("ac3", 0),
     ("dts", 0),
+    ("auro", 0),
     ("truehd", 0),
     ("mpa", 0),
     ("ogg", 0),
@@ -48,6 +52,16 @@ const LAYERS: &[(&str, u8)] = &[
     ("hevc", 0),
     ("heif", 0),
     ("vp8", 0),
+    ("adpcm", 0),
+    ("speex", 0),
+    ("amr", 0),
+    ("hap", 0),
+    ("utvideo", 0),
+    ("huffyuv", 0),
+    ("ffv1", 0),
+    ("dirac", 0),
+    ("tta", 0),
+    ("canopus", 0),
     ("vp9", 0),
     ("prores", 0),
     ("mjpeg", 0),
@@ -56,9 +70,11 @@ const LAYERS: &[(&str, u8)] = &[
     ("j2k", 0),
     ("jxl", 0),
     ("iab", 0),
+    ("dcp", 0),
     ("apv", 0),
     ("dng", 0),
     ("av1", 0),
+    ("av2", 0),
     ("aac", 0),
     ("flac", 0),
     ("opus", 0),
@@ -68,6 +84,10 @@ const LAYERS: &[(&str, u8)] = &[
     ("audio-dsp", 1),
     ("text", 1),
     ("route", 1),
+    ("tcsync", 1),
+    ("tcsync-io", 5),
+    ("metrics", 1),
+    ("live", 1),
     ("edit", 2),
     ("codecs", 2),
     ("keyframe", 2),
@@ -83,16 +103,23 @@ const LAYERS: &[(&str, u8)] = &[
     ("gpu", 3),
     ("golden", 3),
     ("scopes", 3),
+    ("qc", 3),
     ("playback", 3),
     ("export", 3),
+    ("dcp-validate", 3),
+    ("dcp-inspect", 3),
+    ("smart-edit", 3),
     ("format", 3),
     ("engine", 4),
     ("platform", 5),
     ("gstreamer", 5),
+    ("ffmpeg", 5),
+    ("obs", 5),
     ("ui-egui", 5),
     ("automation", 5),
     ("cfa4", 6),
     ("cli", 6),
+    ("studio-host", 6),
 ];
 
 /// L0 crates that are not codecs/containers (no `bitstream`-only restriction).
@@ -100,6 +127,7 @@ const L0_FOUNDATION: &[&str] = &["time", "geom", "color", "bitstream", "testkit"
 
 /// Allowed same-layer edges (from, to).
 const SAME_LAYER: &[(&str, &str)] = &[
+    ("dcp-inspect", "dcp-validate"),
     ("media", "frame"),
     ("project", "media"),
     ("project", "frame"),
@@ -108,6 +136,7 @@ const SAME_LAYER: &[(&str, &str)] = &[
     ("playback", "render"),
     ("playback", "gpu"),
     ("export", "render"),
+    ("export", "smart-edit"),
     ("scopes", "gpu"),
     ("gpu", "render"),
     ("cli", "cfa4"),
@@ -138,8 +167,9 @@ fn workspace_crates(md: &Value) -> Vec<(String, Vec<String>)> {
         .as_array()
         .into_iter()
         .flatten()
-        // External vendor crates have their own provenance checks; they are not CFA4 architecture layers.
-        .filter(|p| p["name"] != "xtask" && p["name"] != "cfa4-docpath" && p["name"] != "cfa4-ui")
+        // External vendor crates (vendor/cfa4-libs, vendor/ffmpeg-bindings) have their own provenance
+        // checks; they are not CFA4 architecture layers.
+        .filter(|p| !matches!(p["name"].as_str(), Some("xtask" | "cfa4-docpath" | "cfa4-ui" | "rsmedia" | "rsmpeg" | "rusty_ffmpeg")))
         .map(|p| {
             let deps = p["dependencies"]
                 .as_array()
@@ -298,11 +328,14 @@ const FIXTURE_GENERATORS: &[(&str, &str)] = &[
     ("codecs", "mxf_oracle"),
     ("codecs", "mpeg_oracle"),
     ("mpeg2v", "oracle"),
+    ("dv", "oracle"),
+    ("dv", "audio_oracle"),
     ("ac3", "oracle"),
     ("dts", "oracle"),
     ("truehd", "oracle"),
     ("mpa", "oracle"),
     ("codecs", "ogg_oracle"),
+    ("codecs", "dv_oracle"),
 ];
 
 fn fixtures(only: &[String]) -> Result<(), String> {

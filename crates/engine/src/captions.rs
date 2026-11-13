@@ -82,7 +82,11 @@ fn parse_color(v: &Value) -> Option<[u8; 4]> {
             _ => None,
         };
     }
-    let h = v.as_str()?.trim_start_matches('#');
+    let h = v.as_str()?;
+    let h = h.strip_prefix('#').unwrap_or(h);
+    if !h.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
     let b = |i: usize| u8::from_str_radix(h.get(i..i + 2)?, 16).ok();
     match h.len() {
         6 => Some([b(0)?, b(2)?, b(4)?, 255]),
@@ -108,7 +112,209 @@ pub fn detect(path: &str, bytes: &[u8]) -> Option<Format> {
 /// Import a caption file as a new caption track in the active sequence (a new sequence is made
 /// when none is open), snapped to the sequence's frames. One undo step.
 pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format, name: Option<&str>) -> Result<Value> {
-    let mut doc = cfa4_captions::parse(bytes, format).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    let doc = cfa4_captions::parse(bytes, format).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    import_document(s, path, doc, format.name(), format.track_format(), format == Format::Scc, name)
+}
+
+/// Bytes of a timed text document read from an MXF file, at most this many.
+const MAX_TIMED_TEXT_FILE: u64 = 1 << 30;
+
+/// Whether `bytes` is a D-Cinema subtitle XML file (ST 428-7 `SubtitleReel`, `.xml`).
+pub fn is_dcst(path: &str, bytes: &[u8]) -> bool {
+    let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    ext.as_deref() == Some("xml") && cfa4_captions::dcst::sniff(&cfa4_captions::decode_text(&bytes[..bytes.len().min(4096)]))
+}
+
+/// A timed text XML document (ST 428-7 D-Cinema subtitles or IMSC1 TTML) as captions, with the
+/// format name and the reel's language.
+fn parse_timed_text(xml: &[u8]) -> std::result::Result<(Document, &'static str, Option<String>), String> {
+    let text = cfa4_captions::decode_text(xml);
+    if cfa4_captions::dcst::sniff(&text) {
+        let reel = cfa4_captions::dcst::parse_reel(&text).map_err(|e| e.to_string())?;
+        return Ok((reel.document, "D-Cinema subtitles (ST 428-7)", reel.language));
+    }
+    let doc = cfa4_captions::ttml::parse(&text).map_err(|e| e.to_string())?;
+    Ok((doc, "IMSC1 / TTML", None))
+}
+
+/// Import a D-Cinema subtitle XML file (ST 428-7) as a caption track.
+pub fn import_dcst(s: &mut Session, path: &str, bytes: &[u8]) -> Result<Value> {
+    let (doc, format, _) = parse_timed_text(bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    import_document(s, path, doc, format, CaptionFormat::Subtitle, false, None)
+}
+
+/// Import a DCP or IMF timed text track file (SMPTE ST 429-5 / ST 2067-2 MXF) as a caption track.
+/// `None` when `path` is not an MXF timed text track file (other MXF files import as media).
+pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value>> {
+    let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    if ext.as_deref() != Some("mxf") {
+        return None;
+    }
+    let src: Box<dyn cfa4_mxf::ByteSource> = match s.services.reader(path) {
+        Some(Ok(r)) => Box::new(MxfReader(r)),
+        Some(Err(_)) => return None,
+        None => {
+            // hosts without random access: only small files are read whole
+            let b = s.services.read_file(path).ok()?;
+            if b.len() as u64 > MAX_TIMED_TEXT_FILE {
+                return None;
+            }
+            Box::new(b)
+        }
+    };
+    let mut head = vec![0u8; src.len().min(65_536 + 1024) as usize];
+    src.read_at(0, &mut head).ok()?;
+    if !cfa4_mxf::is_timed_text(&head) {
+        return None;
+    }
+    let parsed = cfa4_mxf::open_timed_text(src.as_ref()).map_err(|e| e.to_string()).and_then(|tt| {
+        let xml = tt.read_document(src.as_ref()).map_err(|e| e.to_string())?;
+        let (mut doc, format, language) = parse_timed_text(&xml)?;
+        doc.warnings.extend(tt.warnings);
+        Ok((doc, format, language))
+    });
+    Some(match parsed {
+        Ok((doc, format, language)) => {
+            let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Subtitles".into());
+            let name = match language {
+                Some(l) => format!("{stem} ({l})"),
+                None => stem,
+            };
+            import_document(s, path, doc, format, CaptionFormat::Subtitle, false, Some(&name))
+        }
+        Err(e) => Err(EngineError::Other(format!("{path}: {e}"))),
+    })
+}
+
+/// Import the closed captions carried in an MXF file's ANC data (SMPTE ST 436-1) as caption
+/// tracks, one per channel that holds captions: from ST 334-2 caption distribution packets
+/// CEA-608 CC1–CC4 and CEA-708 services 1–6 ("{stem} (CC1)", "{stem} (SERVICE2)"); then from
+/// the CEA-608 byte pairs of ST 334-1 packets and of digitised line 21 VI lines the CC1–CC4
+/// channels the packets did not already give. `None` when `path` is not
+/// an MXF file with ANC or VBI data or that data holds no captions; the file's picture and sound
+/// import as media either way.
+pub fn import_anc_captions(s: &mut Session, path: &str) -> Option<Result<Vec<Value>>> {
+    let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    if ext.as_deref() != Some("mxf") {
+        return None;
+    }
+    let src: Box<dyn cfa4_mxf::ByteSource> = match s.services.reader(path) {
+        Some(Ok(r)) => Box::new(MxfReader(r)),
+        Some(Err(_)) => return None,
+        None => {
+            // hosts without random access: only small files are read whole
+            let b = s.services.read_file(path).ok()?;
+            if b.len() as u64 > MAX_TIMED_TEXT_FILE {
+                return None;
+            }
+            Box::new(b)
+        }
+    };
+    let mut head = vec![0u8; src.len().min(65_536 + 1024) as usize];
+    src.read_at(0, &mut head).ok()?;
+    if !cfa4_mxf::has_anc(&head) {
+        return None;
+    }
+    let anc = match cfa4_mxf::read_anc(src.as_ref()) {
+        Ok(a) => a,
+        Err(e) => return Some(Err(EngineError::Other(format!("{path}: ANC data: {e}")))),
+    };
+    let rate = cfa4_time::FrameRate::new(i64::from(anc.edit_rate.num), i64::from(anc.edit_rate.den));
+    let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Captions".into());
+    let mut reports = Vec::new();
+    let mut warnings = anc.warnings.clone();
+    // channels taken from caption distribution packets: line 21 / ST 334-1 data of the same
+    // channel is the same captions and is not imported twice
+    let mut done: Vec<String> = Vec::new();
+    let cdps = anc.cdps();
+    if !cdps.is_empty() {
+        let (channels, w) = cfa4_captions::mcc::decode_cdp_channels(cdps.into_iter().map(|(f, b)| (f as i64, b)), rate);
+        warnings.extend(w);
+        for ch in channels {
+            // the file's warnings go with its first track
+            let doc = Document { cues: ch.cues, warnings: std::mem::take(&mut warnings), ..Default::default() };
+            let format = if ch.cea708 { CaptionFormat::Cea708 } else { CaptionFormat::Cea608 };
+            match import_document(s, path, doc, "MXF ANC captions", format, false, Some(&format!("{stem} ({})", ch.name))) {
+                Ok(r) => reports.push(r),
+                Err(e) => return Some(Err(e)),
+            }
+            done.push(ch.name);
+        }
+    }
+    let fields = line21_pairs(&anc);
+    for (name, field, channel2) in [("CC1", 0usize, false), ("CC2", 0, true), ("CC3", 1, false), ("CC4", 1, true)] {
+        if done.iter().any(|d| d == name) {
+            continue;
+        }
+        let Some(pairs) = fields.get(field) else { continue };
+        let cues = cfa4_captions::scc::decode_channel(pairs.iter().copied(), rate, channel2);
+        if cues.is_empty() {
+            continue;
+        }
+        let doc = Document { cues, warnings: std::mem::take(&mut warnings), ..Default::default() };
+        match import_document(s, path, doc, "MXF line 21 captions", CaptionFormat::Cea608, false, Some(&format!("{stem} ({name})"))) {
+            Ok(r) => reports.push(r),
+            Err(e) => return Some(Err(e)),
+        }
+    }
+    if reports.is_empty() { None } else { Some(Ok(reports)) }
+}
+
+/// The CEA-608 byte pairs `(frame, b1, b2)` of field 1 and field 2 in an MXF file's ST 334-1
+/// packets and digitised line 21 VI lines (the first line per frame and field that decodes), in
+/// frame order.
+fn line21_pairs(anc: &cfa4_mxf::AncData) -> [Vec<(i64, u8, u8)>; 2] {
+    let mut by_frame: std::collections::BTreeMap<(usize, bool), (u8, u8)> = std::collections::BTreeMap::new();
+    for p in anc.cea608() {
+        by_frame.entry((p.frame, p.field2)).or_insert((p.bytes[0], p.bytes[1]));
+    }
+    for (frame, lines) in anc.vi.iter().enumerate() {
+        for l in lines {
+            let decoded = match l.coding {
+                // luma only
+                1 | 4 | 7 => cfa4_captions::cea608::decode_line21(&l.samples),
+                // luma and colour difference, Cb Y Cr Y: the luma samples are the odd ones
+                3 | 6 | 9 => cfa4_captions::cea608::decode_line21(&l.samples.iter().skip(1).step_by(2).copied().collect::<Vec<u16>>()),
+                _ => None,
+            };
+            if let Some((a, b)) = decoded {
+                by_frame.entry((frame, l.field2())).or_insert((a, b));
+            }
+        }
+    }
+    let mut out = [Vec::new(), Vec::new()];
+    for ((frame, field2), (a, b)) in by_frame {
+        if let Some(v) = out.get_mut(usize::from(field2)) {
+            v.push((frame as i64, a, b));
+        }
+    }
+    // BTreeMap order is (frame, field): each field's pairs are already in frame order
+    out
+}
+
+/// The host's random-access reader as an MXF byte source.
+struct MxfReader(cfa4_media::SharedReader);
+
+impl cfa4_mxf::ByteSource for MxfReader {
+    fn len(&self) -> u64 {
+        self.0.len()
+    }
+    fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+        self.0.read_at(offset, buf)
+    }
+}
+
+/// Add parsed captions as a new caption track in the active sequence (a new sequence is made when
+/// none is open), snapped to the sequence's frames. One undo step.
+fn import_document(
+    s: &mut Session,
+    path: &str,
+    mut doc: Document,
+    format_name: &str,
+    track_format: CaptionFormat,
+    black_background: bool,
+    name: Option<&str>,
+) -> Result<Value> {
     let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Captions".into());
     let track_name = name.map(str::to_string).unwrap_or_else(|| stem.clone());
     let seq_id = match s.state.active_sequence.filter(|id| s.project.sequence(*id).is_some()) {
@@ -132,8 +338,8 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format, name: O
             next += 1;
             v
         };
-        let mut track = cfa4_captions::track_from_document(&doc, tid, &track_name, format.track_format(), &mut alloc);
-        if format == Format::Scc {
+        let mut track = cfa4_captions::track_from_document(&doc, tid, &track_name, track_format, &mut alloc);
+        if black_background {
             track.style.background_color = [0, 0, 0, 255];
         }
         p.next_id = next;
@@ -143,7 +349,7 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format, name: O
         st.caption_selection.clear();
         Ok(tid)
     })?;
-    Ok(json!({"format": format.name(), "sequence": seq_id.0, "track": tid.0, "captions": n, "warnings": warnings}))
+    Ok(json!({"format": format_name, "sequence": seq_id.0, "track": tid.0, "captions": n, "warnings": warnings}))
 }
 
 /// Delete captions (Clear / Ripple Delete with captions selected).
@@ -158,6 +364,58 @@ pub fn delete(s: &mut Session, ids: &[ClipId], ripple: bool) -> Result<Value> {
         Ok(n)
     })?;
     Ok(json!({"deleted": n}))
+}
+
+/// Copy the selected captions to the caption clipboard (Edit ▸ Copy / Cut with captions selected).
+/// Returns how many were copied.
+pub fn copy(s: &mut Session) -> usize {
+    let Some(q) = s.active_sequence() else { return 0 };
+    let sel = &s.state.caption_selection;
+    let picked: Vec<(usize, cfa4_project::Caption)> =
+        q.caption_tracks.iter().enumerate().flat_map(|(ti, t)| t.captions.iter().filter(|c| sel.contains(&c.id)).map(move |c| (ti, c.clone()))).collect();
+    let min = picked.iter().map(|(_, c)| c.start).min().unwrap_or_default();
+    s.state.caption_clipboard = picked.into_iter().map(|(ti, c)| (ti, cfa4_project::Caption { start: c.start - min, ..c })).collect();
+    s.state.clipboard.clear();
+    s.state.clipboard_markers.clear();
+    s.state.caption_clipboard.len()
+}
+
+/// Paste the caption clipboard at the playhead, each caption on the caption track it was copied
+/// from (the last one when that track is gone), overwriting what is there. Paste Insert first opens
+/// a gap the copied span long on those tracks. The pasted captions are selected and the playhead
+/// moves to their end.
+pub fn paste(s: &mut Session, insert: bool) -> Result<Value> {
+    let at = s.playhead();
+    let clip = s.state.caption_clipboard.clone();
+    let span = clip.iter().map(|(_, c)| c.end()).max().unwrap_or_default();
+    let mut by_track: Vec<(TrackId, Vec<cfa4_project::Caption>)> = Vec::new();
+    {
+        let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+        for (ti, c) in clip {
+            let Some(t) = q.caption_tracks.get(ti).or(q.caption_tracks.last()) else {
+                return Err(bad("edit.paste", "the sequence has no caption track to paste into"));
+            };
+            let c = cfa4_project::Caption { start: c.start + at, ..c };
+            match by_track.iter_mut().find(|(id, _)| *id == t.id) {
+                Some((_, v)) => v.push(c),
+                None => by_track.push((t.id, vec![c])),
+            }
+        }
+    }
+    let ids = s.edit_sequence(if insert { "Paste Insert Captions" } else { "Paste Captions" }, |q, ctx, st| {
+        let mut ids = Vec::new();
+        for (tid, caps) in &by_track {
+            if insert && let Some(tr) = q.caption_track_mut(*tid).filter(|t| !t.locked) {
+                edit::captions::insert_gap(tr, at, span, ctx);
+            }
+            ids.extend(edit::captions::overwrite_captions(q, *tid, caps, ctx)?);
+        }
+        st.caption_selection = ids.clone();
+        st.selection.clear();
+        Ok(ids)
+    })?;
+    s.set_playhead(at + span);
+    Ok(json!({"captions": ids.iter().map(|c| c.0).collect::<Vec<_>>()}))
 }
 
 fn caption_json(s: &Session, c: &cfa4_project::Caption) -> Value {
@@ -462,6 +720,44 @@ pub fn commands() -> Vec<CommandSpec> {
             let d = delta_p(s, p).ok_or_else(|| bad("captions.move", "need `delta` or `deltaFrames`"))?;
             let applied = s.edit_sequence("Move Captions", |q, _, _| Ok(edit::captions::move_captions(q, &ids, d)?))?;
             Ok(json!({"applied": applied.0}))
+        }),
+        spec("captions.duplicate", "Duplicate Captions", &[], None, r#"{"captions":[id]?,"delta":ticks|"deltaFrames":i64}"#, has_captions, |s, p| {
+            // Option-drag in the Timeline: copies `delta` later (or earlier) on their own
+            // tracks, overwriting what is there; the originals stay
+            let mut ids = caption_ids(s, p);
+            // each caption is copied once, however often it is named
+            let mut seen = std::collections::HashSet::new();
+            ids.retain(|id| seen.insert(*id));
+            if ids.is_empty() {
+                return Err(EngineError::Edit(edit::EditError::Nothing));
+            }
+            let d = delta_p(s, p).ok_or_else(|| bad("captions.duplicate", "need `delta` or `deltaFrames`"))?;
+            let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+            let mut by_track: Vec<(TrackId, Vec<cfa4_project::Caption>)> = Vec::new();
+            for id in &ids {
+                let (tid, c) = q.find_caption(*id).ok_or(EngineError::Edit(edit::EditError::NoItem(*id)))?;
+                match by_track.iter_mut().find(|(t, _)| *t == tid) {
+                    Some((_, v)) => v.push(c.clone()),
+                    None => by_track.push((tid, vec![c.clone()])),
+                }
+            }
+            // never before the start of the sequence
+            let earliest = by_track.iter().flat_map(|(_, v)| v.iter().map(|c| c.start)).min().unwrap_or_default();
+            let d = d.max(-earliest);
+            if d == Tick::ZERO {
+                return Err(EngineError::Edit(edit::EditError::Nothing));
+            }
+            let new = s.edit_sequence("Duplicate Captions", |q, ctx, st| {
+                let mut new = Vec::new();
+                for (tid, caps) in &by_track {
+                    let moved: Vec<_> = caps.iter().map(|c| cfa4_project::Caption { start: c.start + d, ..c.clone() }).collect();
+                    new.extend(edit::captions::overwrite_captions(q, *tid, &moved, ctx)?);
+                }
+                st.caption_selection = new.clone();
+                st.selection.clear();
+                Ok(new)
+            })?;
+            Ok(json!({"captions": new.iter().map(|c| c.0).collect::<Vec<_>>(), "delta": d.0}))
         }),
         spec("captions.delete", "Delete Captions", &[], None, r#"{"captions":[id]?,"ripple":bool=false}"#, has_captions, |s, p| {
             let ids = caption_ids(s, p);

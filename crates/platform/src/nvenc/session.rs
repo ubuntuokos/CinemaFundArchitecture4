@@ -34,8 +34,8 @@ fn load() -> Result<Api, String> {
     // The library lives alongside the immutable function table, for the process lifetime.
     unsafe {
         let library = libloading::Library::new("libnvidia-encode.so.1").map_err(|e| format!("no NVIDIA encoder driver: {e}"))?;
-        let version: libloading::Symbol<MaxSupportedVersionFn> = library.get(b"NvEncodeAPIGetMaxSupportedVersion\0").map_err(|e| e.to_string())?;
-        let create: libloading::Symbol<CreateInstanceFn> = library.get(b"NvEncodeAPICreateInstance\0").map_err(|e| e.to_string())?;
+        let version: libloading::Symbol<'_, MaxSupportedVersionFn> = library.get(b"NvEncodeAPIGetMaxSupportedVersion\0").map_err(|e| e.to_string())?;
+        let create: libloading::Symbol<'_, CreateInstanceFn> = library.get(b"NvEncodeAPICreateInstance\0").map_err(|e| e.to_string())?;
         let mut v = 0;
         if version(&mut v) != NV_ENC_SUCCESS {
             return Err("cannot query the NVENC version".into());
@@ -162,7 +162,7 @@ struct Slot {
 pub struct Session {
     api: &'static Api,
     enc: Handle,
-    // Keeps the Direct3D device / retained CUDA context alive through session destruction.
+    // Keeps the retained CUDA context alive through session destruction.
     _device: Device,
     slots: Vec<Slot>,
     size: (u32, u32),
@@ -181,7 +181,7 @@ pub struct Session {
 }
 
 // SAFETY: an encoder session and its buffers are driver objects used from one thread at a time (the
-// session is `&mut`-driven); Direct3D is free-threaded, and NVENC takes an explicit CUDA context.
+// session is `&mut`-driven), and NVENC takes an explicit CUDA context.
 unsafe impl Send for Session {}
 
 /// A readable form of a driver status.

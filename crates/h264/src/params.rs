@@ -4,6 +4,10 @@ use crate::error::{Result, ensure, unsupported};
 use crate::tables::*;
 use cfa4_bitstream::BitReader;
 
+/// Maximum supported reconstructed luma area. 8K UHD fits comfortably while
+/// hostile SPS dimensions cannot allocate full pictures and decoder work state.
+const MAX_LUMA_SAMPLES: u64 = 1 << 25;
+
 /// Scaling matrices after applying fall-back rules, stored in raster order (weightScale).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ScalingMatrices {
@@ -59,7 +63,7 @@ impl ZzLists {
 }
 
 /// Result of parsing one scaling_list(): Some(list) or None meaning "use default".
-fn parse_scaling_list<const N: usize>(r: &mut BitReader) -> Result<Option<[u8; N]>> {
+fn parse_scaling_list<const N: usize>(r: &mut BitReader<'_>) -> Result<Option<[u8; N]>> {
     let mut list = [0u8; N];
     let mut last = 8i32;
     let mut next = 8i32;
@@ -80,7 +84,7 @@ fn parse_scaling_list<const N: usize>(r: &mut BitReader) -> Result<Option<[u8; N
 
 /// Parse scaling lists with a fall-back rule. `fallback` gives the lists used for rule B
 /// (sequence-level) or None for rule A.
-fn parse_scaling_lists(r: &mut BitReader, count: usize, fallback: Option<&ZzLists>) -> Result<ZzLists> {
+fn parse_scaling_lists(r: &mut BitReader<'_>, count: usize, fallback: Option<&ZzLists>) -> Result<ZzLists> {
     let mut out = ZzLists::flat();
     for i in 0..count.max(8) {
         let present = if i < count { r.read_flag()? } else { false };
@@ -149,7 +153,7 @@ pub struct HrdParameters {
     pub time_offset_length: u8,
 }
 
-fn parse_hrd(r: &mut BitReader) -> Result<HrdParameters> {
+fn parse_hrd(r: &mut BitReader<'_>) -> Result<HrdParameters> {
     let cpb_cnt = r.read_ue()? + 1;
     ensure!(cpb_cnt <= 32, "cpb_cnt_minus1 out of range");
     let mut h = HrdParameters { cpb_cnt, bit_rate_scale: r.read_bits(4)? as u8, cpb_size_scale: r.read_bits(4)? as u8, ..Default::default() };
@@ -239,7 +243,7 @@ const SAR_TABLE: [(u16, u16); 17] = [
     (2, 1),
 ];
 
-fn parse_vui(r: &mut BitReader) -> Result<Vui> {
+fn parse_vui(r: &mut BitReader<'_>) -> Result<Vui> {
     let mut v = Vui::default();
     if r.read_flag()? {
         v.aspect_ratio_idc = r.read_bits(8)? as u8;
@@ -516,9 +520,8 @@ impl Sps {
     }
 
     pub fn check_supported(&self) -> Result<()> {
-        if self.chroma_format_idc == 0 {
-            // the decoding paths exist (chroma is skipped) but no 4:0:0 test stream is available yet (#279)
-            return unsupported("chroma_format_idc 0 (monochrome)");
+        if u64::from(self.width()).saturating_mul(u64::from(self.height())) > MAX_LUMA_SAMPLES {
+            return unsupported("picture dimensions exceed the decoder memory limit");
         }
         if self.separate_colour_plane {
             // #280

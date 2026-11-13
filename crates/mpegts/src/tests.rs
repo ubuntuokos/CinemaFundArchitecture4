@@ -118,7 +118,7 @@ pub(crate) fn mpeg2_frame(coding_type: u8, tref: u16, fields: bool, filler: usiz
 }
 
 /// MPEG-1 layer II frame, 48 kHz 192 kb/s (576 bytes).
-fn mp2_frame(k: u8) -> Vec<u8> {
+pub(crate) fn mp2_frame(k: u8) -> Vec<u8> {
     let mut v = vec![0xFF, 0xFD, 0xA4, 0x00];
     v.extend((0..572).map(|i| (i as u8) ^ k));
     v
@@ -329,6 +329,13 @@ fn timestamps_unwrap_across_the_33_bit_wrap() {
     // a B picture timestamp from just before the wrap
     assert_eq!(u.unwrap(near + 1000), near + 1000);
     assert_eq!(u.unwrap(4200), (1 << 33) + 4200);
+}
+
+/// A 1792-byte AC-3 syncframe (48 kHz, 448 kb/s, bsid 8) filled with `k`.
+pub(crate) fn ac3_frame(k: u8) -> Vec<u8> {
+    let mut v = vec![0x0B, 0x77, 0, 0, 30, 0x40];
+    v.extend(std::iter::repeat_n(k, 1792 - 6));
+    v
 }
 
 pub(crate) fn adts_frame(k: u8) -> Vec<u8> {

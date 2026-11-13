@@ -63,6 +63,10 @@ pub enum Transfer {
     Pq,
     /// ARIB STD-B67.
     Hlg,
+    /// SMPTE ST 428-1 (digital cinema X'Y'Z'): a pure 2.6 gamma over the code value, with 1.0 at
+    /// 52.37 cd/m² (ISO/IEC 23091-2 `transfer_characteristics` 17). Linear 1.0 is the DCI
+    /// reference white of 48 cd/m², so the curve's top is 52.37 / 48.
+    St428,
 }
 
 impl Transfer {
@@ -73,6 +77,7 @@ impl Transfer {
             8 => Some(Transfer::Linear),
             16 => Some(Transfer::Pq),
             18 => Some(Transfer::Hlg),
+            17 => Some(Transfer::St428),
             _ => None,
         }
     }
@@ -86,6 +91,24 @@ pub enum Primaries {
     Bt601_525,
     Bt2020,
     P3D65,
+    /// CIE 1931 XYZ itself, as digital cinema carries it (SMPTE ST 428-1; ISO/IEC 23091-2
+    /// `colour_primaries` 10). The three components are X, Y and Z, not RGB.
+    Xyz,
+}
+
+impl Primaries {
+    /// From an ISO/IEC 23091-2 `colour_primaries` code.
+    pub fn from_code(c: u8) -> Option<Primaries> {
+        match c {
+            1 => Some(Primaries::Bt709),
+            5 => Some(Primaries::Bt601_625),
+            6 => Some(Primaries::Bt601_525),
+            9 => Some(Primaries::Bt2020),
+            10 => Some(Primaries::Xyz),
+            12 => Some(Primaries::P3D65),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -195,6 +218,7 @@ pub fn to_linear(v: f32, t: Transfer) -> f32 {
         Transfer::Linear => v,
         Transfer::Pq => pq_eotf(v) * 100.0,
         Transfer::Hlg => hlg_inverse_oetf(v),
+        Transfer::St428 => st428_to_linear(v),
     }
 }
 
@@ -204,7 +228,20 @@ pub fn from_linear(v: f32, t: Transfer) -> f32 {
         Transfer::Linear => v,
         Transfer::Pq => pq_inverse_eotf(v / 100.0),
         Transfer::Hlg => hlg_oetf(v),
+        Transfer::St428 => st428_from_linear(v),
     }
+}
+
+/// SMPTE ST 428-1 code value (0..1) → linear light, 1.0 = 48 cd/m² (the DCI reference white).
+#[inline]
+pub fn st428_to_linear(v: f32) -> f32 {
+    v.max(0.0).powf(2.6) * (52.37 / 48.0)
+}
+
+/// Inverse of [`st428_to_linear`].
+#[inline]
+pub fn st428_from_linear(v: f32) -> f32 {
+    (v.max(0.0) * (48.0 / 52.37)).powf(1.0 / 2.6)
 }
 
 /// SMPTE ST 2084 EOTF, output normalised to 10 000 nits = 1.0.
@@ -243,8 +280,21 @@ pub fn linear_to_srgb_u8_table() -> &'static [u8; 4096] {
 
 #[inline]
 pub fn linear_to_srgb_u8(v: f32) -> u8 {
-    let i = (v.clamp(0.0, 1.0) * 4095.0 + 0.5) as usize;
-    linear_to_srgb_u8_table()[i]
+    linear_to_srgb_u8_in(linear_to_srgb_u8_table(), v)
+}
+
+/// [`linear_to_srgb_u8`] through a table fetched once ([`linear_to_srgb_u8_table`]), for
+/// per-pixel loops.
+#[inline]
+pub fn linear_to_srgb_u8_in(table: &[u8; 4096], v: f32) -> u8 {
+    table[linear_to_srgb_index(v) as usize & 4095]
+}
+
+/// The [`linear_to_srgb_u8_table`] entry for `v` (0 for NaN). Free of branches and table reads,
+/// so a loop computing it for a run of values vectorises.
+#[inline]
+pub fn linear_to_srgb_index(v: f32) -> u16 {
+    (v.clamp(0.0, 1.0) * 4095.0 + 0.5) as i32 as u16
 }
 
 /// Rec.709 luma of a linear or encoded RGB triple.
@@ -296,7 +346,11 @@ pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [f32; 3] {
 
 /// Parse `#rrggbb` / `#rrggbbaa` into 0..1 floats.
 pub fn parse_hex(s: &str) -> Option<[f32; 4]> {
-    let s = s.trim().trim_start_matches('#');
+    let s = s.trim();
+    let s = s.strip_prefix('#').unwrap_or(s);
+    if !s.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
     let b = |i: usize| u8::from_str_radix(s.get(i..i + 2)?, 16).ok().map(|v| v as f32 / 255.0);
     match s.len() {
         6 => Some([b(0)?, b(2)?, b(4)?, 1.0]),
@@ -318,6 +372,35 @@ pub fn to_hex(c: [f32; 4]) -> String {
 mod tests {
     use super::*;
 
+    /// CFA4-PROCODEC-002 1a: SMPTE ST 428-1 (gamma 2.6, code 1.0 = 52.37 cd/m², linear 1.0 =
+    /// 48 cd/m²) and the ISO/IEC 23091-2 codes of digital cinema X'Y'Z'.
+    #[test]
+    fn st428_curve_and_xyz_codes() {
+        assert_eq!(Transfer::from_code(17), Some(Transfer::St428));
+        assert_eq!(Primaries::from_code(10), Some(Primaries::Xyz));
+        assert_eq!(Primaries::from_code(12), Some(Primaries::P3D65));
+        assert_eq!(Primaries::from_code(2), None);
+        assert!((to_linear(1.0, Transfer::St428) - 52.37 / 48.0).abs() < 1e-6);
+        // the DCI reference white (48 cd/m²) sits at code (48 / 52.37)^(1/2.6)
+        let white = (48.0f32 / 52.37).powf(1.0 / 2.6);
+        assert!((to_linear(white, Transfer::St428) - 1.0).abs() < 1e-5);
+        for i in 0..=100 {
+            let v = i as f32 / 100.0;
+            assert!((from_linear(to_linear(v, Transfer::St428), Transfer::St428) - v).abs() < 1e-5, "{v}");
+        }
+        assert_eq!(to_linear(-0.5, Transfer::St428), 0.0);
+    }
+
+    #[test]
+    fn parse_hex_rejects_signs() {
+        assert_eq!(parse_hex("#+f+f+f"), None);
+        assert_eq!(parse_hex("#-f-f-f"), None);
+        assert_eq!(parse_hex("##0f0f0f"), None);
+        assert_eq!(parse_hex("#0f0f0"), None);
+        assert!(parse_hex("#0f0f0f").is_some());
+        assert!(parse_hex("0f0f0f80").is_some());
+    }
+
     #[test]
     fn ycbcr_roundtrip() {
         for m in [Matrix::Bt601, Matrix::Bt709, Matrix::Bt2020Ncl] {
@@ -330,6 +413,15 @@ mod tests {
         }
     }
 
+    #[test]
+    fn the_srgb_index_is_the_table_position_clamped_and_rounded() {
+        let old = |v: f32| ((v.clamp(0.0, 1.0) * 4095.0 + 0.5) as usize).min(4095);
+        let mut v = vec![f32::NAN, f32::INFINITY, f32::NEG_INFINITY, -0.0, 2.0, -1.0, 1e-30];
+        v.extend((0..=8190).map(|k| k as f32 * 0.5 / 4095.0).flat_map(|b| [b, f32::from_bits(b.to_bits() + 1), f32::from_bits(b.to_bits().saturating_sub(1))]));
+        for v in v {
+            assert_eq!(linear_to_srgb_index(v) as usize, old(v), "{v:e}");
+        }
+    }
     #[test]
     fn limited_range_levels() {
         assert_eq!(normalize_y(16, 8, Range::Limited), 0.0);

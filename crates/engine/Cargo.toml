@@ -32,24 +32,37 @@ cfa4-scopes = { workspace = true }
 cfa4-text = { workspace = true }
 cfa4-audio-dsp = { workspace = true }
 cfa4-export = { workspace = true }
+cfa4-mpegts = { workspace = true }
+cfa4-smart-edit = { workspace = true }
+cfa4-isobmff = { workspace = true }
 cfa4-mxf = { workspace = true }
+cfa4-dcp = { workspace = true }
 cfa4-format = { workspace = true }
 cfa4-interchange = { workspace = true }
 cfa4-captions = { workspace = true }
 cfa4-credits = { workspace = true }
+cfa4-live = { workspace = true }
 cfa4-speech = { workspace = true }
 cfa4-tts = { workspace = true }
 cfa4-route = { workspace = true }
+cfa4-tcsync = { workspace = true }
+cfa4-qc = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+chrono = { workspace = true }
 log = { workspace = true }
 cfa4-docpath = { workspace = true }
 web-time = "1"
 
 [dev-dependencies]
+base64 = { workspace = true }
 cfa4-testkit = { workspace = true }
+cfa4-h264enc = { workspace = true }
+cfa4-hevc = { workspace = true }
+cfa4-mpeg2v = { workspace = true }
 cfa4-dng = { workspace = true, features = ["writer"] }
-cfa4-isobmff = { workspace = true }
 cfa4-iab = { workspace = true }
+cfa4-auro = { workspace = true, features = ["test-util"] }
+cfa4-mxf = { workspace = true, features = ["test-util"] }
 image = { version = "0.25", default-features = false, features = ["png", "gif"] }

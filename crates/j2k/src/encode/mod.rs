@@ -12,8 +12,13 @@
 //! profiles (T.800 Amd. 1, SMPTE ST 429-4 / DCI): 12-bit X'Y'Z', 9/7, 32×32 code-blocks, CPRL,
 //! 128 / 256 precincts, one tile-part per component (and per progression for 4K), TLM, and the
 //! DCI byte limits per frame and per component.
+//!
+//! With [`EncodeOptions::ht`] the code-blocks are coded with the HTJ2K block coder instead
+//! (ITU-T T.814 | ISO/IEC 15444-15, [`ht`]): one HT cleanup pass per code-block with all its
+//! bit-planes, Rsiz bit 14 and the CAP marker. Rate control does not apply to it yet.
 
 mod dwt;
+mod ht;
 mod t1;
 mod t2;
 
@@ -25,8 +30,12 @@ use t2::Contribution;
 
 /// The forward lifting of a coefficient type ([`dwt`]).
 pub(crate) trait Coeff: Copy + Default + Send + Sync {
-    /// One-dimensional analysis of `n` rows of `w` samples, along the rows' index.
-    fn analysis_rows(data: &mut [Self], w: usize, n: usize);
+    /// Lifting steps, alternately updating the odd (high-pass) and the even (low-pass) samples.
+    const STEPS: usize;
+    /// Lifting step `step` on the samples `v` from their neighbours `a` (before) and `b` (after).
+    fn lift(step: usize, v: &mut [Self], a: &[Self], b: &[Self]);
+    /// The final scaling of the low-pass and high-pass samples (9/7 only).
+    fn scale(_lo: &mut [Self], _hi: &mut [Self]) {}
 }
 
 /// Packet progression order (A.6.1, B.12).
@@ -49,6 +58,127 @@ pub enum Profile {
     /// Digital Cinema 4K (Rsiz 4): at most 4096 × 2160, 1-6 levels, the 4K resolution in its own
     /// progression (POC).
     Cinema4k,
+    /// An IMF profile (Rsiz 0400h-0900h with the mainlevel and sublevel; see [`ImfProfile`]).
+    Imf(ImfProfile),
+}
+
+/// Frame size class of an IMF profile.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ImfSize {
+    /// At most 2048 × 1556.
+    TwoK,
+    /// At most 4096 × 3112.
+    FourK,
+    /// At most 8192 × 6224.
+    EightK,
+}
+
+impl ImfSize {
+    /// The smallest class that holds `width` × `height`.
+    pub fn of(width: u32, height: u32) -> Option<Self> {
+        [(ImfSize::TwoK, 2048, 1556), (ImfSize::FourK, 4096, 3112), (ImfSize::EightK, 8192, 6224)]
+            .into_iter()
+            .find(|&(_, w, h)| width <= w && height <= h)
+            .map(|(s, _, _)| s)
+    }
+    fn max(self) -> (u32, u32) {
+        match self {
+            ImfSize::TwoK => (2048, 1556),
+            ImfSize::FourK => (4096, 3112),
+            ImfSize::EightK => (8192, 6224),
+        }
+    }
+}
+
+/// An IMF profile of ISO/IEC 15444-1 (the 2K / 4K / 8K IMF Single Tile Lossy and Single/Multi
+/// Tile Reversible profiles that SMPTE ST 2067-21 lists) with its operating level.
+///
+/// Our codestreams use one tile, 32 × 32 code-blocks, CPRL, 128 × 128 precincts in the lowest
+/// resolution and 256 × 256 above, one quality layer and one tile-part per component.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ImfProfile {
+    pub size: ImfSize,
+    /// Reversible 5/3 (Single/Multi Tile Reversible profile); else 9/7 (Single Tile Lossy).
+    pub reversible: bool,
+    /// 1-10: the maximum component sampling rate (ST 2067-21 Table E.2).
+    pub mainlevel: u8,
+    /// 0 for the reversible profiles; 1..=max(1, mainlevel - 2) for the lossy ones: the maximum
+    /// compressed bit rate, 200 · 2^(sublevel - 1) Mbit/s (Table E.3).
+    pub sublevel: u8,
+}
+
+/// Maximum component sampling rate of each mainlevel, in MSamples/s (ST 2067-21 Table E.2).
+const IMF_MAINLEVEL_MSPS: [u64; 10] = [65, 130, 195, 260, 520, 1200, 2400, 4800, 9600, 19200];
+
+impl ImfProfile {
+    /// The codestream's Rsiz: profile in the high byte, sublevel in bits 4-7, mainlevel in
+    /// bits 0-3.
+    pub fn rsiz(&self) -> u16 {
+        let base: u16 = match (self.size, self.reversible) {
+            (ImfSize::TwoK, false) => 0x0400,
+            (ImfSize::FourK, false) => 0x0500,
+            (ImfSize::EightK, false) => 0x0600,
+            (ImfSize::TwoK, true) => 0x0700,
+            (ImfSize::FourK, true) => 0x0800,
+            (ImfSize::EightK, true) => 0x0900,
+        };
+        base | u16::from(self.sublevel & 0x0F) << 4 | u16::from(self.mainlevel & 0x0F)
+    }
+
+    /// The highest sublevel of a mainlevel (ST 2067-21 Table E.2).
+    pub fn max_sublevel(mainlevel: u8) -> u8 {
+        mainlevel.saturating_sub(2).max(1)
+    }
+
+    /// Maximum compressed bit rate of a lossy sublevel, in bits per second.
+    pub fn sublevel_bitrate(sublevel: u8) -> u64 {
+        200_000_000u64 << sublevel.clamp(1, 8).saturating_sub(1)
+    }
+
+    /// The smallest profile and levels (ST 2067-21 Annex E) for `width` × `height` pictures of
+    /// `components` components per pixel (3 for 4:4:4, 2 for 4:2:2) at `fps_num / fps_den`
+    /// frames per second, with 5 % headroom for speed-up; lossy profiles at `bitrate` bits per
+    /// second. `None` when the pictures exceed the 8K profiles or mainlevel 10.
+    pub fn select(width: u32, height: u32, components: u32, fps_num: u32, fps_den: u32, reversible: bool, bitrate: u64) -> Option<Self> {
+        let size = ImfSize::of(width, height)?;
+        let den = u128::from(fps_den.max(1));
+        // MSamples/s × 1.05, rounded up
+        let rate = u128::from(width) * u128::from(height) * u128::from(components) * u128::from(fps_num) * 105;
+        let msps = rate.div_ceil(den * 100 * 1_000_000);
+        let mainlevel = IMF_MAINLEVEL_MSPS.iter().position(|&m| u128::from(m) >= msps)? as u8 + 1;
+        let sublevel = if reversible {
+            0
+        } else {
+            let want = u128::from(bitrate) * 105 / 100;
+            (1..=Self::max_sublevel(mainlevel)).find(|&s| u128::from(Self::sublevel_bitrate(s)) >= want).unwrap_or(Self::max_sublevel(mainlevel))
+        };
+        Some(ImfProfile { size, reversible, mainlevel, sublevel })
+    }
+
+    /// Decomposition levels allowed for an image (tile) `width` wide.
+    fn levels(&self, width: u32) -> std::ops::RangeInclusive<u8> {
+        let max = match (self.reversible, self.size) {
+            (false, ImfSize::TwoK) => 5,
+            (false, ImfSize::FourK) => 6,
+            (false, ImfSize::EightK) => 7,
+            (true, s) => {
+                let cap = match s {
+                    ImfSize::TwoK => 5,
+                    ImfSize::FourK => 6,
+                    ImfSize::EightK => 7,
+                };
+                let by_width = match width {
+                    8192.. => 7,
+                    4096.. => 6,
+                    2048.. => 5,
+                    1024.. => 4,
+                    _ => cap,
+                };
+                by_width.min(cap)
+            }
+        };
+        1..=max
+    }
 }
 
 /// Encoder settings. Start from [`EncodeOptions::lossless`], [`EncodeOptions::lossy`] or a
@@ -80,6 +210,10 @@ pub struct EncodeOptions {
     /// A TLM marker (A.7.1) with the tile-part lengths.
     pub tlm: bool,
     pub profile: Profile,
+    /// HTJ2K (ITU-T T.814): the high-throughput block coder for every code-block. Part 1 profile
+    /// only (DCI has no HT; the IMF HTJ2K profiles are not written yet) and, for now, without a
+    /// byte limit.
+    pub ht: bool,
 }
 
 impl EncodeOptions {
@@ -98,6 +232,7 @@ impl EncodeOptions {
             tile_part_per_component: false,
             tlm: false,
             profile: Profile::Part1,
+            ht: false,
         }
     }
 
@@ -122,6 +257,7 @@ impl EncodeOptions {
             tile_part_per_component: true,
             tlm: true,
             profile,
+            ht: false,
         }
     }
 
@@ -134,6 +270,33 @@ impl EncodeOptions {
     /// Digital Cinema 4K at `fps` frames per second.
     pub fn cinema_4k(fps: u32) -> Self {
         Self::cinema(Profile::Cinema4k, 6, fps)
+    }
+
+    /// An IMF profile ([`ImfProfile`]) for `width` × `height` pictures at `fps_num / fps_den`
+    /// frames per second: the most decomposition levels the profile and the picture allow,
+    /// and, for the lossy profiles, the sublevel's bit rate as the byte limit of each frame.
+    pub fn imf(profile: ImfProfile, width: u32, height: u32, fps_num: u32, fps_den: u32) -> Self {
+        let fit = (width.min(height).max(1).ilog2()).min(32) as u8;
+        let levels = (*profile.levels(width).end()).min(fit).max(1);
+        let max_bytes = (!profile.reversible).then(|| {
+            let bits = u128::from(ImfProfile::sublevel_bitrate(profile.sublevel)) * u128::from(fps_den.max(1));
+            usize::try_from(bits / (8 * u128::from(fps_num.max(1)))).unwrap_or(usize::MAX)
+        });
+        EncodeOptions {
+            reversible: profile.reversible,
+            levels,
+            progression: Progression::Cprl,
+            code_block: (5, 5),
+            precincts: vec![(7, 7), (8, 8)],
+            mct: true,
+            step: 1.0,
+            max_bytes,
+            max_component_bytes: None,
+            tile_part_per_component: true,
+            tlm: true,
+            profile: Profile::Imf(profile),
+            ht: false,
+        }
     }
 }
 
@@ -167,6 +330,11 @@ struct Coded {
 
 /// Encodes `image` as a JPEG 2000 codestream (`.j2c`).
 pub fn encode(image: &Image, opts: &EncodeOptions) -> Result<Vec<u8>> {
+    encode_with(image, opts, true)
+}
+
+/// [`encode`]; `early` lets code-blocks stop below the predicted rate-control threshold.
+fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u8>> {
     validate(image, opts)?;
     let ncomp = image.components.len();
     let levels = opts.levels;
@@ -252,6 +420,9 @@ pub fn encode(image: &Image, opts: &EncodeOptions) -> Result<Vec<u8>> {
                     let band = res.bands.get(bi).ok_or(Error::Invalid("subband"))?;
                     for cb in &pb.blocks {
                         let rect = Rect { u0: cb.x0 - band.rect.u0, v0: cb.y0 - band.rect.v0, u1: cb.x1 - band.rect.u0, v1: cb.y1 - band.rect.v0 };
+                        if opts.ht && band.mb > crate::t1::MAX_PLANES {
+                            return Err(Error::Unsupported("HTJ2K subband with more than 30 bit-planes"));
+                        }
                         let limit = if band.mb >= 30 { (1 << 30) - 1 } else { (1u32 << band.mb) - 1 };
                         jobs.push(Job { c, r, bi, rect, band_w: band.rect.w(), orient: band.orient, step: band.step, limit });
                     }
@@ -260,55 +431,261 @@ pub fn encode(image: &Image, opts: &EncodeOptions) -> Result<Vec<u8>> {
         }
     }
     let weights = component_weights(ncomp, mct, opts.reversible);
-    let coded = map(&jobs, |j| {
+    // squared-error weight of a block's index units in the image
+    let weight = |j: &Job| {
+        let norm = norms.get(band_index(j.r, j.bi)).copied().unwrap_or(1.0);
+        let step = if opts.reversible { 1.0 } else { f64::from(j.step) };
+        (norm * step).powi(2) * weights.get(j.c).copied().unwrap_or(1.0)
+    };
+    // `stop`: the slope (weighted distortion per byte) below which a block's bit-planes are left
+    // uncoded
+    let code = |j: &Job, stop: f64| -> Result<Coded> {
         let cf = coeffs.get(j.c).ok_or(Error::Invalid("component"))?;
         let mb = comps.get(j.c).and_then(|tc| tc.res.get(j.r)).and_then(|res| res.bands.get(j.bi)).map_or(0, |b| b.mb);
-        let enc = code_block(cf, j)?;
-        let band = band_index(j.r, j.bi);
-        let norm = norms.get(band).copied().unwrap_or(1.0);
-        let step = if opts.reversible { 1.0 } else { f64::from(j.step) };
-        let w = (norm * step).powi(2) * weights.get(j.c).copied().unwrap_or(1.0);
+        let w = weight(j);
+        let enc = code_block(cf, j, opts.ht, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
         Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc })
-    })?;
-    // rate control
-    let all: Vec<u32> = coded.iter().map(|b| b.enc.passes.len() as u32).collect();
-    let measure = |sel: &[u32]| assemble(&main, opts, &comps, &order, &coded, sel, false).map(|(_, total, sizes)| (total, sizes));
+    };
+    let mut coded = if !early || (opts.max_bytes.is_none() && opts.max_component_bytes.is_none()) {
+        map(&jobs, |j| code(j, 0.0))?
+    } else {
+        // every SAMPLE-th block coded in full predicts the rate control's slope thresholds; the
+        // others stop well below them (most of the tier-1 work of a lossy frame is in bit-planes
+        // the byte limit cuts off)
+        let sample: Vec<usize> = (0..jobs.len()).step_by(SAMPLE).collect();
+        let full = map(&sample, |&k| code(jobs.get(k).ok_or(Error::Invalid("code-block"))?, 0.0))?;
+        let stops = predicted_thresholds(&jobs, &sample, &full, opts, ncomp);
+        let mut full = full.into_iter();
+        let rest = map(&jobs.iter().enumerate().collect::<Vec<_>>(), |&(k, j)| {
+            if k % SAMPLE == 0 { Ok(None) } else { code(j, stops.get(j.c).copied().unwrap_or(0.0) * STOP_MARGIN).map(Some) }
+        })?;
+        rest.into_iter().map(|b| b.or_else(|| full.next()).ok_or(Error::Invalid("code-block"))).collect::<Result<Vec<_>>>()?
+    };
+    // rate control; blocks whose coding stopped early and that it takes in full are coded
+    // completely and the search runs again
+    let measure = |coded: &[Coded], sel: &[u32]| assemble(&main, opts, &comps, &order, coded, sel, false).map(|(_, total, sizes)| (total, sizes));
     let fits =
         |total: usize, sizes: &[usize]| opts.max_bytes.is_none_or(|m| total <= m) && opts.max_component_bytes.is_none_or(|m| sizes.iter().all(|&s| s <= m));
-    let (total, sizes) = measure(&all)?;
-    let sel = if fits(total, &sizes) {
-        all
-    } else {
-        // per component: the smallest slope threshold within its own limit
-        let mut floor = vec![f64::NEG_INFINITY; ncomp];
-        if let Some(limit) = opts.max_component_bytes {
-            for (c, f) in floor.iter_mut().enumerate() {
-                if sizes.get(c).is_none_or(|&s| s <= limit) {
-                    continue;
-                }
-                let slopes = slopes(coded.iter().filter(|b| b.c == c));
-                let k = search(slopes.len(), |k| {
-                    let mut th = vec![f64::INFINITY; ncomp];
-                    th[c] = threshold(&slopes, k);
-                    let (_, s) = measure(&select(&coded, &th))?;
-                    Ok(s.get(c).is_some_and(|&s| s <= limit))
-                })?;
-                *f = threshold(&slopes, k);
+    let mut sel;
+    loop {
+        sel = rate_control(&coded, ncomp, opts, &measure, &fits)?;
+        let short: Vec<usize> =
+            coded.iter().zip(&sel).enumerate().filter(|(_, (b, n))| b.enc.truncated && b.hull.last().is_some_and(|h| h.0 <= **n)).map(|(k, _)| k).collect();
+        if short.is_empty() {
+            break;
+        }
+        let again = map(&short, |&k| code(jobs.get(k).ok_or(Error::Invalid("code-block"))?, 0.0))?;
+        for (k, b) in short.into_iter().zip(again) {
+            if let Some(slot) = coded.get_mut(k) {
+                *slot = b;
             }
         }
-        let slopes = slopes(coded.iter());
-        let at = |k: Option<usize>| -> Vec<f64> { floor.iter().map(|&f| f.max(threshold(&slopes, k))).collect() };
-        let k = search(slopes.len(), |k| {
-            let (total, sizes) = measure(&select(&coded, &at(k)))?;
-            Ok(fits(total, &sizes))
-        })?;
-        select(&coded, &at(k))
-    };
+    }
     let (out, total, sizes) = assemble(&main, opts, &comps, &order, &coded, &sel, true)?;
     if out.len() != total || !fits(total, &sizes) {
         return Err(Error::Invalid("byte limit below the size of the headers"));
     }
     Ok(out)
+}
+
+/// Every how many code-blocks one is coded in full to predict the slope thresholds.
+const SAMPLE: usize = 32;
+/// The other blocks stop coding below this fraction of the predicted threshold: lower bit-planes
+/// rarely gain more per byte than higher ones, and blocks that rate control takes in full are
+/// coded again anyway.
+const STOP_MARGIN: f64 = 0.25;
+
+/// The passes rate control keeps of each block: all when they fit, else the smallest slope
+/// threshold within the limits (per component first, then for the whole codestream).
+fn rate_control(
+    coded: &[Coded],
+    ncomp: usize,
+    opts: &EncodeOptions,
+    measure: &impl Fn(&[Coded], &[u32]) -> Result<(usize, Vec<usize>)>,
+    fits: &impl Fn(usize, &[usize]) -> bool,
+) -> Result<Vec<u32>> {
+    let all: Vec<u32> = coded.iter().map(|b| b.enc.passes.len() as u32).collect();
+    let (total, sizes) = measure(coded, &all)?;
+    if fits(total, &sizes) {
+        return Ok(all);
+    }
+    // Each search starts where the code-block bytes plus the header bytes of the last measured
+    // selection would put it (no packets assembled), then confirms against real measurements.
+    let mut headers = header_bytes(coded, &all, total, &sizes, ncomp);
+    let global = |floor: &[f64], headers: &mut (usize, Vec<usize>)| -> Result<(Vec<f64>, Option<usize>)> {
+        let slopes = slopes(coded.iter());
+        let at = |k: Option<usize>| -> Vec<f64> { floor.iter().map(|&f| f.max(threshold(&slopes, k))).collect() };
+        let mut guess = None;
+        for _ in 0..2 {
+            guess = search(slopes.len(), |k| {
+                let body = bodies(coded, &select(coded, &at(k)), ncomp);
+                let sizes: Vec<usize> = body.iter().zip(&headers.1).map(|(b, h)| b + h).collect();
+                Ok(fits(body.iter().sum::<usize>() + headers.0, &sizes))
+            })?;
+            let sel = select(coded, &at(guess));
+            let (total, sizes) = measure(coded, &sel)?;
+            *headers = header_bytes(coded, &sel, total, &sizes, ncomp);
+        }
+        let k = refine(slopes.len(), guess, |k| {
+            let (total, sizes) = measure(coded, &select(coded, &at(k)))?;
+            Ok(fits(total, &sizes))
+        })?;
+        // the first selection that does not fit: whether only the total limit stops it
+        let next = k.map_or(0, |k| k + 1);
+        let total_only = if next < slopes.len() {
+            let (_, sizes) = measure(coded, &select(coded, &at(Some(next))))?;
+            opts.max_component_bytes.is_none_or(|m| sizes.iter().all(|&s| s <= m))
+        } else {
+            true
+        };
+        Ok((at(k), total_only.then_some(0)))
+    };
+    // Without per-component floors first: when the next larger selection fails on the total
+    // alone, the floors (each component's smallest threshold within its own limit) would not
+    // change the result.
+    let (th, settled) = global(&vec![f64::NEG_INFINITY; ncomp], &mut headers)?;
+    if settled.is_some() {
+        return Ok(select(coded, &th));
+    }
+    // per component: the smallest slope threshold within its own limit
+    let mut floor = vec![f64::NEG_INFINITY; ncomp];
+    if let Some(limit) = opts.max_component_bytes {
+        for (c, f) in floor.iter_mut().enumerate() {
+            if sizes.get(c).is_none_or(|&s| s <= limit) {
+                continue;
+            }
+            let slopes = slopes(coded.iter().filter(|b| b.c == c));
+            let only = |k: Option<usize>| -> Vec<f64> {
+                let mut th = vec![f64::INFINITY; ncomp];
+                if let Some(t) = th.get_mut(c) {
+                    *t = threshold(&slopes, k);
+                }
+                th
+            };
+            let head = headers.1.get(c).copied().unwrap_or(0);
+            let guess = search(slopes.len(), |k| Ok(bodies(coded, &select(coded, &only(k)), ncomp).get(c).map_or(0, |&b| b + head) <= limit))?;
+            let k = refine(slopes.len(), guess, |k| {
+                let (_, s) = measure(coded, &select(coded, &only(k)))?;
+                Ok(s.get(c).is_some_and(|&s| s <= limit))
+            })?;
+            *f = threshold(&slopes, k);
+        }
+    }
+    let (th, _) = global(&floor, &mut headers)?;
+    Ok(select(coded, &th))
+}
+
+/// Code-block bytes of each component at selection `sel`.
+fn bodies(coded: &[Coded], sel: &[u32], ncomp: usize) -> Vec<usize> {
+    let mut out = vec![0; ncomp];
+    for (b, &n) in coded.iter().zip(sel) {
+        let len = (n as usize).checked_sub(1).and_then(|k| b.enc.passes.get(k)).map_or(0, |p| p.len);
+        if let Some(o) = out.get_mut(b.c) {
+            *o += len;
+        }
+    }
+    out
+}
+
+/// The bytes besides the code-blocks' of a measured selection: (whole codestream, per component).
+fn header_bytes(coded: &[Coded], sel: &[u32], total: usize, sizes: &[usize], ncomp: usize) -> (usize, Vec<usize>) {
+    let body = bodies(coded, sel, ncomp);
+    let per = sizes.iter().zip(&body).map(|(s, b)| s.saturating_sub(*b)).collect();
+    (total.saturating_sub(body.iter().sum()), per)
+}
+
+/// What [`search`] finds for a monotone `ok`, starting from the estimate `guess`: galloping away
+/// from it, then bisecting, so a good guess costs a few calls of `ok` instead of a full search.
+fn refine(n: usize, guess: Option<usize>, mut ok: impl FnMut(Option<usize>) -> Result<bool>) -> Result<Option<usize>> {
+    // positions 0..=n: 0 is `None` (assumed to hold), i is `Some(i - 1)`
+    let key = |i: usize| i.checked_sub(1);
+    let start = guess.map_or(0, |k| (k + 1).min(n));
+    let (mut lo, mut hi);
+    if start == 0 || ok(key(start))? {
+        lo = start;
+        hi = n + 1;
+        let mut step = 1;
+        while lo + step <= n {
+            if ok(key(lo + step))? {
+                lo += step;
+                step *= 2;
+            } else {
+                hi = lo + step;
+                break;
+            }
+        }
+    } else {
+        hi = start;
+        lo = 0;
+        let mut step = 1;
+        while hi > step {
+            if ok(key(hi - step))? {
+                lo = hi - step;
+                break;
+            }
+            hi -= step;
+            step *= 2;
+        }
+    }
+    while hi - lo > 1 {
+        let mid = lo + (hi - lo) / 2;
+        if ok(key(mid))? {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    Ok(key(lo))
+}
+
+/// The slope thresholds rate control would choose per component, predicted from the fully coded
+/// blocks `full` (the jobs at `sample`) against the byte limits scaled by their share of the
+/// samples. Packet headers are left out, which errs low. 0 where nothing is predicted.
+fn predicted_thresholds(jobs: &[Job], sample: &[usize], full: &[Coded], opts: &EncodeOptions, ncomp: usize) -> Vec<f64> {
+    let area = |j: &Job| j.rect.w() as f64 * j.rect.h() as f64;
+    let mut all_area = vec![0.0; ncomp];
+    for j in jobs {
+        if let Some(a) = all_area.get_mut(j.c) {
+            *a += area(j);
+        }
+    }
+    let mut sample_area = vec![0.0; ncomp];
+    for j in sample.iter().filter_map(|&k| jobs.get(k)) {
+        if let Some(a) = sample_area.get_mut(j.c) {
+            *a += area(j);
+        }
+    }
+    let share = |c: usize| sample_area.get(c).copied().unwrap_or(0.0) / all_area.get(c).copied().unwrap_or(0.0).max(1.0);
+    // bytes of component `c`'s sampled blocks at threshold `t`
+    let bytes =
+        |c: usize, t: f64| -> f64 { full.iter().filter(|b| b.c == c).map(|b| b.hull.iter().take_while(|h| h.2 >= t).last().map_or(0, |h| h.1) as f64).sum() };
+    let mut floor = vec![f64::NEG_INFINITY; ncomp];
+    if let Some(limit) = opts.max_component_bytes {
+        for (c, f) in floor.iter_mut().enumerate() {
+            let budget = limit as f64 * share(c);
+            let slopes = slopes(full.iter().filter(|b| b.c == c));
+            if bytes(c, f64::NEG_INFINITY) <= budget {
+                continue;
+            }
+            if let Ok(k) = search(slopes.len(), |k| Ok(bytes(c, threshold(&slopes, k)) <= budget)) {
+                *f = threshold(&slopes, k);
+            }
+        }
+    }
+    let mut th = floor.clone();
+    if let Some(limit) = opts.max_bytes {
+        let total_area: f64 = all_area.iter().sum();
+        let budget = limit as f64 * sample_area.iter().sum::<f64>() / total_area.max(1.0);
+        let slopes = slopes(full.iter());
+        let at = |t: f64| -> f64 { (0..ncomp).map(|c| bytes(c, floor.get(c).copied().unwrap_or(0.0).max(t))).sum() };
+        if at(f64::NEG_INFINITY) > budget
+            && let Ok(k) = search(slopes.len(), |k| Ok(at(threshold(&slopes, k)) <= budget))
+        {
+            let t = threshold(&slopes, k);
+            th = floor.iter().map(|&f| f.max(t)).collect();
+        }
+    }
+    th.into_iter().map(|t| if t.is_finite() && t > 0.0 { t } else { 0.0 }).collect()
 }
 
 /// Checks the image and the options before any work.
@@ -340,6 +717,13 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
     if samples > MAX_SAMPLES {
         return Err(Error::TooLarge);
     }
+    if opts.ht && (opts.max_bytes.is_some() || opts.max_component_bytes.is_some()) {
+        return Err(Error::Unsupported("HTJ2K with a byte limit"));
+    }
+    // DCI is Part 1 only; the IMF HTJ2K profiles (ST 2067-21) are not written yet
+    if opts.ht && opts.profile != Profile::Part1 {
+        return Err(Error::Unsupported("HTJ2K with a Digital Cinema or IMF profile"));
+    }
     let (xcb, ycb) = opts.code_block;
     if !(2..=10).contains(&xcb) || !(2..=10).contains(&ycb) || xcb + ycb > 12 {
         return Err(Error::Invalid("code-block size"));
@@ -352,8 +736,32 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
     if (0..=usize::from(opts.levels)).any(|r| precinct(r).0 > 15 || precinct(r).1 > 15 || r > 0 && (precinct(r).0 == 0 || precinct(r).1 == 0)) {
         return Err(Error::Invalid("precinct size"));
     }
+    if let Profile::Imf(imf) = opts.profile {
+        let (max_w, max_h) = imf.size.max();
+        let c = &image.components;
+        let components_ok = c.len() <= 3
+            && c.iter().all(|p| (8..=16).contains(&p.precision) && !p.signed && p.dy == 1)
+            && c.first().is_some_and(|p| p.dx == 1)
+            && c.iter().skip(1).all(|p| (p.dx == 1 || p.dx == 2) && p.dx == c[1].dx);
+        let levels_ok = (1..=10).contains(&imf.mainlevel)
+            && if imf.reversible { imf.sublevel == 0 } else { (1..=ImfProfile::max_sublevel(imf.mainlevel)).contains(&imf.sublevel) };
+        if !components_ok
+            || !levels_ok
+            || w > max_w
+            || h > max_h
+            || !imf.levels(w).contains(&opts.levels)
+            || opts.reversible != imf.reversible
+            || opts.code_block != (5, 5)
+            || opts.progression != Progression::Cprl
+            || opts.precincts.first() != Some(&(7, 7))
+            || opts.precincts.iter().skip(1).any(|&p| p != (8, 8))
+        {
+            return Err(Error::Invalid("image or options outside the IMF profile"));
+        }
+        return Ok(());
+    }
     let (max_w, max_h, levels) = match opts.profile {
-        Profile::Part1 => return Ok(()),
+        Profile::Part1 | Profile::Imf(_) => return Ok(()),
         Profile::Cinema2k => (2048, 1080, 1..=5),
         Profile::Cinema4k => (4096, 2160, 1..=6),
     };
@@ -491,8 +899,8 @@ fn component_weights(n: usize, mct: bool, reversible: bool) -> Vec<f64> {
     w
 }
 
-/// Quantizes and codes one code-block.
-fn code_block(cf: &Coeffs, j: &Job) -> Result<t1::Encoded> {
+/// Quantizes and codes one code-block, down to the bit-plane `stop` allows ([`t1::encode`]).
+fn code_block(cf: &Coeffs, j: &Job, ht: bool, stop: f64) -> Result<t1::Encoded> {
     let (w, h) = (j.rect.w(), j.rect.h());
     let mut q = Vec::with_capacity(w * h);
     let mut exact = Vec::with_capacity(w * h);
@@ -525,7 +933,17 @@ fn code_block(cf: &Coeffs, j: &Job) -> Result<t1::Encoded> {
             }
         }
     }
-    Ok(t1::encode(&q, &exact, w, h, j.orient))
+    if ht {
+        // one cleanup pass with every bit-plane: the decoder takes Mb - 1 missing MSBs
+        return Ok(match ht::encode(&q, w, h)? {
+            Some(data) => {
+                let dist = exact.iter().map(|&x| f64::from(x).powi(2)).sum();
+                t1::Encoded { passes: vec![t1::Pass { len: data.len(), dist }], data, planes: 1, truncated: false }
+            }
+            None => t1::Encoded::default(),
+        });
+    }
+    Ok(t1::encode(&q, &exact, w, h, j.orient, stop))
 }
 
 /// The convex hull of a block's truncation points (0, 0), (len_k, w·dist_k): (passes, bytes,
@@ -613,7 +1031,8 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
         Profile::Part1 => 0,
         Profile::Cinema2k => 3,
         Profile::Cinema4k => 4,
-    };
+        Profile::Imf(imf) => imf.rsiz(),
+    } | if opts.ht { 0x4000 } else { 0 };
     marker(&mut o, 0xFF51, |s| {
         s.extend(rsiz.to_be_bytes());
         for v in [image.width, image.height, 0, 0, image.width, image.height, 0, 0] {
@@ -624,6 +1043,22 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
             s.extend([(p.precision - 1) | if p.signed { 0x80 } else { 0 }, p.dx, p.dy]);
         }
     })?;
+    // CAP (T.814 A.3): Part 15 only, HT code-blocks only, one HT set each, no ROI, the
+    // irreversible flag and the largest subband magnitude bits Mb (B) as Bp
+    if opts.ht {
+        let b = quants.iter().flat_map(|q| q.steps.iter().map(move |&(e, _)| u32::from(q.guard) + u32::from(e))).max().unwrap_or(1).saturating_sub(1);
+        let bp = match b {
+            0..=8 => 0,
+            9..=27 => b - 8,
+            28..=47 => 13 + (b >> 2),
+            _ => 31,
+        } as u16;
+        let ccap15 = if opts.reversible { 0 } else { 0x20 } | bp;
+        marker(&mut o, 0xFF50, |s| {
+            s.extend(0x0002_0000u32.to_be_bytes());
+            s.extend(ccap15.to_be_bytes());
+        })?;
+    }
     // COD
     let defined = !opts.precincts.is_empty();
     marker(&mut o, 0xFF52, |s| {
@@ -631,7 +1066,8 @@ fn main_header(image: &Image, opts: &EncodeOptions, quants: &[Quant], mct: bool)
         s.push(opts.progression as u8);
         s.extend(1u16.to_be_bytes());
         s.push(u8::from(mct));
-        s.extend([opts.levels, opts.code_block.0 - 2, opts.code_block.1 - 2, 0, u8::from(opts.reversible)]);
+        let style = if opts.ht { crate::ht::STYLE_HT } else { 0 };
+        s.extend([opts.levels, opts.code_block.0 - 2, opts.code_block.1 - 2, style, u8::from(opts.reversible)]);
         if defined {
             for r in 0..=usize::from(opts.levels) {
                 let (x, y) = opts.precincts.get(r).or(opts.precincts.last()).copied().unwrap_or((15, 15));

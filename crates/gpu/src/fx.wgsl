@@ -17,8 +17,10 @@ struct U {
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var src: texture_2d<f32>;
 @group(0) @binding(2) var dst: texture_storage_2d<rgba32float, write>;
-// Unsharp Mask: the image before blurring.
+// Unsharp Mask and Low Light: the image before their first pass.
 @group(0) @binding(3) var aux: texture_2d<f32>;
+// Skin Smoothing: a second input plane.
+@group(0) @binding(4) var aux2: texture_2d<f32>;
 
 const OP_BRIGHTNESS_CONTRAST: u32 = 1u;
 const OP_PROC_AMP: u32 = 2u;
@@ -54,8 +56,18 @@ const OP_SWAP_EYES: u32 = 32u;
 const OP_STEREO_TO_2D: u32 = 33u;
 const OP_FILM_GRAIN: u32 = 34u;
 const OP_STEREO_PARALLAX: u32 = 35u;
-const OP_HALFTONE: u32 = 36u;
-const OP_DITHER: u32 = 37u;
+const OP_SIX_POINT_PIN: u32 = 36u;
+const OP_LOW_LIGHT_PEAK: u32 = 37u;
+const OP_LOW_LIGHT_COEF: u32 = 38u;
+const OP_LOW_LIGHT_APPLY: u32 = 39u;
+const OP_SKIN_STATS_A: u32 = 40u;
+const OP_SKIN_STATS_B: u32 = 41u;
+const OP_SKIN_COEF_A: u32 = 42u;
+const OP_SKIN_COEF_B: u32 = 43u;
+const OP_SKIN_APPLY: u32 = 44u;
+const OP_SKIN_MASK: u32 = 45u;
+const OP_HALFTONE: u32 = 46u;
+const OP_DITHER: u32 = 47u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -136,6 +148,44 @@ fn enc(c: vec3<f32>) -> vec3<f32> {
 fn dec(c: vec3<f32>) -> vec3<f32> {
     let m = clamp(c, vec3(0.0), vec3(1.0));
     return vec3(srgb_to_linear1(m.x), srgb_to_linear1(m.y), srgb_to_linear1(m.z));
+}
+
+// `effects::enc(Image::unpremul(p))`: straight sRGB-encoded colour (black where transparent).
+fn straight_srgb(p: vec4<f32>) -> vec3<f32> {
+    if p.a <= 1e-6 {
+        return vec3(0.0);
+    }
+    return enc(p.rgb / p.a);
+}
+
+// `gpufx::low_light_peak`
+fn low_light_peak(c: vec3<f32>) -> f32 {
+    return clamp(max(c.x, max(c.y, c.z)), 0.0, 1.0);
+}
+
+// `gpufx::skin_guide`
+fn skin_guide(c: vec3<f32>) -> f32 {
+    return 0.299 * c.x + 0.587 * c.y + 0.114 * c.z;
+}
+
+// `gpufx::skin_mask`: m = (Cb, Cr, tolerance, softness) of the skin tone; whole = every pixel
+fn skin_mask(c: vec3<f32>, m: vec4<f32>, whole: bool) -> f32 {
+    if whole {
+        return 1.0;
+    }
+    let y = skin_guide(c);
+    let cb = 0.564 * (c.z - y);
+    let cr = 0.713 * (c.x - y);
+    let d = sqrt((cb - m.x) * (cb - m.x) + (cr - m.y) * (cr - m.y));
+    let t = clamp((d - m.z) / max(m.w, 1e-4), 0.0, 1.0);
+    return 1.0 - t * t * (3.0 - 2.0 * t);
+}
+
+// `gpufx::skin_coeffs` for one channel group: a (all three channels) from the box means
+fn skin_a(ma: vec4<f32>, mb: vec4<f32>, eps: f32) -> vec3<f32> {
+    let v = max(ma.y - ma.x * ma.x, 0.0);
+    let mp = vec3(ma.z, ma.w, mb.x);
+    return (mb.yzw - ma.x * mp) / (v + eps);
 }
 
 fn luma709(c: vec3<f32>) -> f32 {
@@ -427,6 +477,66 @@ fn dither_px(e: vec3<f32>, d: f32, off: u32, len: u32, levels: f32, spread: f32)
 }
 
 // ---- per-pixel colour effects on straight colour (`Image::map_rgb`)
+
+// ---- Six-Point Pin (`gpufx::six_point_source`)
+
+const SIX_POINT_STEPS: i32 = 8;
+
+// A quadratic Bézier edge (start a, control c, end b) at t: xy = point, zw = derivative.
+fn bezier2(a: vec2<f32>, c: vec2<f32>, b: vec2<f32>, t: f32) -> vec4<f32> {
+    let s = 1.0 - t;
+    let m = 2.0 * t * (1.0 - t);
+    let d = t * t;
+    let p = vec2(a.x * s * s + c.x * m + b.x * d, a.y * s * s + c.y * m + b.y * d);
+    let dp = vec2(2.0 * s * (c.x - a.x) + 2.0 * t * (b.x - c.x), 2.0 * s * (c.y - a.y) + 2.0 * t * (b.y - c.y));
+    return vec4(p, dp);
+}
+
+// The residual P(u, v) - q and the Jacobian's columns d/du and d/dv.
+struct SixRes {
+    r: vec2<f32>,
+    ju: vec2<f32>,
+    jv: vec2<f32>,
+};
+
+fn six_residual(uv: vec2<f32>, q: vec2<f32>) -> SixRes {
+    let t = bezier2(u.p0.xy, u.p0.zw, u.p1.xy, uv.x);
+    let b = bezier2(u.p1.zw, u.p2.xy, u.p2.zw, uv.x);
+    var o: SixRes;
+    o.r = vec2(t.x + uv.y * (b.x - t.x) - q.x, t.y + uv.y * (b.y - t.y) - q.y);
+    o.ju = vec2(t.z + uv.y * (b.z - t.z), t.w + uv.y * (b.w - t.w));
+    o.jv = vec2(b.x - t.x, b.y - t.y);
+    return o;
+}
+
+// The source position in 0..1 of the frame, or (-9, -9) outside the warped frame.
+fn six_point_source(q: vec2<f32>) -> vec2<f32> {
+    // inverse homography, row-major: p3.xyzw, p4.xyzw, p5.x
+    let den = u.p4.z * q.x + u.p4.w * q.y + u.p5.x;
+    var uv = vec2(0.5, 0.5);
+    if abs(den) > 1e-12 {
+        let su = (u.p3.x * q.x + u.p3.y * q.y + u.p3.z) / den;
+        let sv = (u.p3.w * q.x + u.p4.x * q.y + u.p4.y) / den;
+        if abs(su) <= 3.0e38 && abs(sv) <= 3.0e38 {
+            uv = vec2(clamp(su, -1.0, 2.0), clamp(sv, -1.0, 2.0));
+        }
+    }
+    for (var i = 0; i < SIX_POINT_STEPS; i++) {
+        let k = six_residual(uv, q);
+        let det = k.ju.x * k.jv.y - k.jv.x * k.ju.y;
+        if !(abs(det) > 1e-12 && abs(det) <= 3.0e38) {
+            break;
+        }
+        uv.x = clamp(uv.x - (k.r.x * k.jv.y - k.jv.x * k.r.y) / det, -1.0, 2.0);
+        uv.y = clamp(uv.y - (k.ju.x * k.r.y - k.r.x * k.ju.y) / det, -1.0, 2.0);
+    }
+    let k = six_residual(uv, q);
+    let inside = uv.x >= -1e-3 && uv.x <= 1.0 + 1e-3 && uv.y >= -1e-3 && uv.y <= 1.0 + 1e-3;
+    if inside && k.r.x * k.r.x + k.r.y * k.r.y <= 0.01 {
+        return uv;
+    }
+    return vec2(-9.0, -9.0);
+}
 
 fn color_op(op: u32, c: vec3<f32>) -> vec3<f32> {
     switch op {
@@ -721,6 +831,77 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             }
             return o;
         }
+        case OP_LOW_LIGHT_PEAK: {
+            // `gpufx::low_light_peak` of the straight sRGB colour, and its square
+            let t = low_light_peak(straight_srgb(ld(p)));
+            return vec4(t, t * t, 0.0, 0.0);
+        }
+        case OP_LOW_LIGHT_COEF: {
+            // `gpufx::low_light_coeffs` from the box means
+            let m = ld(p);
+            let v = max(m.y - m.x * m.x, 0.0);
+            let a = v / (v + u.p0.x);
+            return vec4(a, m.x - a * m.x, 0.0, 0.0);
+        }
+        case OP_LOW_LIGHT_APPLY: {
+            // `gpufx::low_light_gain`: src = the averaged (a, b), aux = the original
+            let o = textureLoad(aux, p, 0);
+            let ab = ld(p);
+            let c = straight_srgb(o);
+            let t = clamp(ab.x * low_light_peak(c) + ab.y, 1e-3, 1.0);
+            var out = vec3(t);
+            if u.i1.x == 0u {
+                let g = min(powf(t, -u.p0.x), u.p0.y);
+                out = min(c * g, vec3(1.0));
+            }
+            return vec4(dec(out) * o.a, o.a);
+        }
+        case OP_SKIN_STATS_A: {
+            // the guide, its square, and the input's red and green (straight sRGB)
+            let c = straight_srgb(ld(p));
+            let g = skin_guide(c);
+            return vec4(g, g * g, c.x, c.y);
+        }
+        case OP_SKIN_STATS_B: {
+            // the input's blue, and guide × input
+            let c = straight_srgb(ld(p));
+            let g = skin_guide(c);
+            return vec4(c.z, g * c.x, g * c.y, g * c.z);
+        }
+        case OP_SKIN_COEF_A: {
+            // src = the statistics' means (A), aux = (B); eps in p0.x
+            return vec4(skin_a(ld(p), textureLoad(aux, p, 0), u.p0.x), 0.0);
+        }
+        case OP_SKIN_COEF_B: {
+            let ma = ld(p);
+            let mb = textureLoad(aux, p, 0);
+            let a = skin_a(ma, mb, u.p0.x);
+            let mp = vec3(ma.z, ma.w, mb.x);
+            return vec4(mp - a * ma.x, 0.0);
+        }
+        case OP_SKIN_APPLY: {
+            // `gpufx::skin_retouch`: src = averaged a, aux = the original, aux2 = averaged b;
+            // p0 = mask (Cb, Cr, tolerance, softness), p1.xy = amount, keep
+            let o = textureLoad(aux, p, 0);
+            let c = straight_srgb(o);
+            let m = skin_mask(c, u.p0, u.i1.x == 1u);
+            let amount = u.p1.x;
+            let keep = u.p1.y;
+            let k = amount * m;
+            if k <= 0.0 {
+                return o;
+            }
+            let g = skin_guide(c);
+            let smoothed = ld(p).xyz * g + textureLoad(aux2, p, 0).xyz;
+            let retouched = smoothed + (c - smoothed) * keep;
+            let out = c + (retouched - c) * k;
+            return vec4(dec(out) * o.a, o.a);
+        }
+        case OP_SKIN_MASK: {
+            let o = ld(p);
+            let m = skin_mask(straight_srgb(o), u.p0, u.i1.x == 1u);
+            return vec4(dec(vec3(m)) * o.a, o.a);
+        }
         case OP_CROP: {
             let x0 = u.p0.x; let x1 = u.p0.y; let y0 = u.p0.z; let y1 = u.p0.w; let fe = u.p1.x;
             let d = min(min(pc.x - x0, x1 - pc.x), min(pc.y - y0, y1 - pc.y));
@@ -811,6 +992,13 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             if lo >= 0.0 && lo < f32(vw) { a = ld(vec2(x0 + i32(lo), p.y)); }
             if lo + 1.0 >= 0.0 && lo + 1.0 < f32(vw) { b = ld(vec2(x0 + i32(lo + 1.0), p.y)); }
             return a + (b - a) * t;
+        }
+        case OP_SIX_POINT_PIN: {
+            let uv = six_point_source(pc);
+            if uv.x < -1.0 {
+                return vec4(0.0);
+            }
+            return sample_bilinear(uv.x * f32(s.x), uv.y * f32(s.y));
         }
         case OP_MIRROR: {
             let c = u.p0.xy; let nrm = u.p0.zw;

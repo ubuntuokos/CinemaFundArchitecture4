@@ -212,6 +212,48 @@ fn wipe_border_and_centre() {
 }
 
 #[test]
+fn keyhole_opens_from_the_centre_in_a_keyhole_shape() {
+    use crate::transitions::wipe::keyhole_dist;
+    // the head is wider than the slot: at the same distance, sideways in the head is inside a
+    // smaller keyhole than sideways in the slot
+    assert!(keyhole_dist(0.4, 0.3) < keyhole_dist(0.4, -0.5));
+    // scale-invariant metric: doubling the point doubles the value
+    for (x, y) in [(0.3, 0.2), (-0.1, -0.6), (0.0, 0.7)] {
+        assert!((keyhole_dist(2.0 * x, 2.0 * y) - 2.0 * keyhole_dist(x, y)).abs() < 1e-4);
+    }
+    assert_eq!(keyhole_dist(0.0, 0.0), 0.0);
+    assert!(keyhole_dist(f32::NAN, 1.0).is_finite());
+    // early on, the centre shows B and the corners still show A
+    let (a, b) = (frame_a(), frame_b());
+    let e = cfa4_project::find_effect("keyhole").unwrap().instance();
+    let o = apply(&e, &a, &b, 0.3);
+    let (cx, cy) = (o.w / 2, o.h / 2);
+    assert_eq!(o.get(cx, cy), b.get(cx, cy));
+    assert_eq!(o.get(0, 0), a.get(0, 0));
+}
+
+#[test]
+fn burn_away_leaves_an_ember_edge_between_the_clips() {
+    let (a, b) = (frame_a(), frame_b());
+    let e = cfa4_project::find_effect("burn_away").unwrap().instance();
+    let o = apply(&e, &a, &b, 0.5);
+    // pixels that are neither clip: the glowing rim (red well above blue) and the dark char
+    let near = |p: [f32; 4], q: [f32; 4]| (0..3).all(|k| (p[k] - q[k]).abs() < 0.02);
+    let between: Vec<[f32; 4]> = (0..o.h)
+        .flat_map(|y| (0..o.w).map(move |x| (x, y)))
+        .filter(|&(x, y)| !near(o.get(x, y), a.get(x, y)) && !near(o.get(x, y), b.get(x, y)))
+        .map(|(x, y)| o.get(x, y))
+        .collect();
+    let ember = between.iter().filter(|p| p[0] > 0.5 && p[0] > p[2] * 3.0).count();
+    let char_px = between.iter().filter(|p| p[0] + p[1] + p[2] < 0.15).count();
+    assert!(char_px > 0, "a charred band shows mid-transition");
+    assert!(ember > 0, "an orange ember edge shows mid-transition");
+    let from_a = (0..o.h).flat_map(|y| (0..o.w).map(move |x| (x, y))).filter(|&(x, y)| near(o.get(x, y), a.get(x, y))).count();
+    let from_b = (0..o.h).flat_map(|y| (0..o.w).map(move |x| (x, y))).filter(|&(x, y)| near(o.get(x, y), b.get(x, y))).count();
+    assert!(from_a > o.w * o.h / 20 && from_b > o.w * o.h / 20, "both clips show at the midpoint: {from_a} / {from_b}");
+}
+
+#[test]
 fn linear_wipe_reveals_from_the_trailing_side() {
     let (a, b) = (frame_a(), frame_b());
     let e = cfa4_project::find_effect("linear_wipe").unwrap().instance(); // 90° = left → right
@@ -231,6 +273,103 @@ fn push_moves_frames_by_the_eased_distance() {
         let got = m.get(x, 12);
         assert!(want.iter().zip(got).all(|(p, q)| (p - q).abs() < 1e-3), "x={x}: {got:?} vs {want:?}");
     }
+}
+
+fn close(got: [f32; 4], want: [f32; 4], tol: f32) -> bool {
+    want.iter().zip(got).all(|(p, q)| (p - q).abs() < tol)
+}
+
+fn tx<'a>(e: &'a cfa4_project::EffectInstance, a: &'a Image, b: &'a Image) -> Tx<'a> {
+    Tx { e, a, b, p: 0.5, w: a.w, h: a.h, wf: a.w as f32, hf: a.h as f32, scale: 1.0 }
+}
+
+#[test]
+fn slide_moves_diagonally_and_keeps_the_frame_covered() {
+    let (a, b) = (frame_a(), frame_b());
+    let (w, h) = (W as i64, H as i64);
+    // direction → B's offset at the eased half-way point (half a frame from its corner)
+    for (dir, (bx, by)) in [(4u32, (-w / 2, -h / 2)), (5, (w / 2, -h / 2)), (6, (w / 2, h / 2)), (7, (-w / 2, h / 2))] {
+        let mut e = cfa4_project::find_effect("slide").unwrap().instance();
+        e.params.get_mut("motion_blur").unwrap().value = ParamValue::Float(0.0);
+        e.params.get_mut("direction").unwrap().value = ParamValue::Choice(dir);
+        let m = apply(&e, &a, &b, 0.5);
+        // B fills its quarter; the other three quarters are A, still in place
+        for (qx, qy) in [(w / 4, h / 4), (3 * w / 4, h / 4), (w / 4, 3 * h / 4), (3 * w / 4, 3 * h / 4)] {
+            let in_b = (qx - bx) >= 0 && (qx - bx) < w && (qy - by) >= 0 && (qy - by) < h;
+            let want = if in_b { b.get((qx - bx) as usize, (qy - by) as usize) } else { a.get(qx as usize, qy as usize) };
+            assert!(close(m.get(qx as usize, qy as usize), want, 1e-3), "dir {dir}: ({qx}, {qy}) in B {in_b}");
+        }
+        assert!(m.px.chunks(4).all(|c| (c[3] - 1.0).abs() < 1e-3), "dir {dir}: every pixel opaque");
+    }
+}
+
+#[test]
+fn slide_cardinal_directions_and_push_are_unchanged() {
+    let (a, b) = (frame_a(), frame_b());
+    let def = cfa4_project::find_effect("slide").unwrap();
+    for dir in 0..4u32 {
+        let mut e = def.instance();
+        e.params.get_mut("direction").unwrap().value = ParamValue::Choice(dir);
+        let t = tx(&e, &a, &b);
+        let (dx, dy) = t.dir();
+        assert_eq!(t.shift8(), (dx * t.travel(), dy * t.travel()), "dir {dir}");
+    }
+    // out-of-range choices from a project file fall back to From West, as everywhere; Push has
+    // no diagonals (two cards moving diagonally would leave two quarters of the frame empty)
+    for (id, bad) in [("slide", u32::MAX), ("push", u32::MAX), ("push", 4)] {
+        let def = cfa4_project::find_effect(id).unwrap();
+        let mut e = def.instance();
+        e.params.get_mut("direction").unwrap().value = ParamValue::Choice(bad);
+        assert_eq!(apply(&e, &a, &b, 0.4), apply(&def.instance(), &a, &b, 0.4), "{id} {bad}");
+    }
+}
+
+#[test]
+fn motion_camera_negative_zoom_pulls_back_without_smeared_edges() {
+    let (a, b) = (frame_a(), frame_b());
+    let mut e = cfa4_project::find_effect("motion_camera").unwrap().instance();
+    for (k, v) in [("zoom", -30.0), ("rotation", 0.0), ("motion_blur", 0.0)] {
+        e.params.get_mut(k).unwrap().value = ParamValue::Float(v);
+    }
+    assert_eq!(apply(&e, &a, &b, 0.0), a);
+    assert_eq!(apply(&e, &a, &b, 1.0), b);
+    // before the cut A has shrunk: the corner shows the (magnified) blue B, not A's smeared edge
+    let m = apply(&e, &a, &b, 0.3);
+    let corner = m.get(1, 1);
+    assert!(corner[2] > 0.3 && (corner[3] - 1.0).abs() < 1e-3, "corner {corner:?}");
+    // while the centre is still the warm A
+    let centre = m.get(W / 2, H / 2);
+    assert!(centre[0] > 0.3, "centre {centre:?}");
+    // a hostile zoom (−1000 %) is clamped, never a division by zero
+    e.params.get_mut("zoom").unwrap().value = ParamValue::Float(-1000.0);
+    for p in [0.2, 0.5, 0.8] {
+        assert!(apply(&e, &a, &b, p).px.iter().all(|v| v.is_finite()), "p={p}");
+    }
+}
+
+#[test]
+fn grunge_feather_softens_the_torn_edge() {
+    let (a, b) = (frame_a(), frame_b());
+    let def = cfa4_project::find_effect("grunge").unwrap();
+    assert_eq!(def.instance().f64_at("feather", cfa4_time::Tick::ZERO), 0.0, "hard edge by default");
+    let mut soft = def.instance();
+    soft.params.get_mut("edge_width").unwrap().value = ParamValue::Float(0.0);
+    soft.params.get_mut("feather").unwrap().value = ParamValue::Float(40.0);
+    let mut sharp = soft.clone();
+    sharp.params.get_mut("feather").unwrap().value = ParamValue::Float(0.0);
+    // pixels that are a real blend of A and B (neither side within 2 %)
+    let blended = |m: &Image| {
+        (0..H)
+            .flat_map(|y| (0..W).map(move |x| (x, y)))
+            .filter(|&(x, y)| !close(m.get(x, y), a.get(x, y), 0.02) && !close(m.get(x, y), b.get(x, y), 0.02))
+            .count()
+    };
+    let (ns, nh) = (blended(&apply(&soft, &a, &b, 0.5)), blended(&apply(&sharp, &a, &b, 0.5)));
+    assert!(ns > nh * 2, "feather widens the blended edge ({ns} vs {nh} px)");
+    assert_eq!(apply(&soft, &a, &b, 0.0), a);
+    assert_eq!(apply(&soft, &a, &b, 1.0), b);
+    soft.params.get_mut("feather").unwrap().value = ParamValue::Float(1e30);
+    assert!(apply(&soft, &a, &b, 0.5).px.iter().all(|v| v.is_finite()));
 }
 
 #[test]
@@ -478,4 +617,41 @@ fn lens_blur_frame_time() {
         "1080p disc blur of one picture, radius {r}, {n} samples: {before:.1} ms per pixel offsets, {after:.1} ms shared offsets ({:.2}x)",
         before / after
     );
+}
+
+/// #3086: on a text layer the typewriter grid and caret follow the text, not the whole frame.
+#[test]
+fn typewriter_cursor_stays_on_the_text_block() {
+    let (x0, x1, y0, y1) = (40usize, 88usize, 30usize, 42usize);
+    let layer = paint(W, H, |x, y| {
+        let (xi, yi) = (x as usize, y as usize);
+        if (x0..x1).contains(&xi) && (y0..y1).contains(&yi) { [0.3, 0.3, 0.3, 1.0] } else { [0.0; 4] }
+    });
+    let def = transitions().find(|d| d.id == "typewriter").unwrap();
+    for rows in [1.0, 3.0] {
+        let mut e = def.instance();
+        e.params.get_mut("columns").unwrap().value = ParamValue::Float(8.0);
+        e.params.get_mut("rows").unwrap().value = ParamValue::Float(rows);
+        e.params.get_mut("cursor").unwrap().value = ParamValue::Bool(true);
+        for p in [0.3, 0.6] {
+            let m = apply(&e, &layer, &layer, p);
+            let (mut cx0, mut cx1, mut cy0, mut cy1) = (usize::MAX, 0, usize::MAX, 0);
+            for y in 0..H {
+                for x in 0..W {
+                    let i = (y * W + x) * 4;
+                    let (o, s) = (&m.px[i..i + 4], &layer.px[i..i + 4]);
+                    if s[3] == 0.0 {
+                        assert!(o[3] == 0.0, "rows={rows} p={p}: transparent pixel ({x}, {y}) painted");
+                    }
+                    if o.iter().zip(s).any(|(a, b)| (a - b).abs() > 1e-4) {
+                        (cx0, cx1, cy0, cy1) = (cx0.min(x), cx1.max(x + 1), cy0.min(y), cy1.max(y + 1));
+                    }
+                }
+            }
+            assert!(cx0 < cx1, "rows={rows} p={p}: no cursor visible");
+            assert!(cx0 >= x0 && cx1 <= x1 && cy0 >= y0 && cy1 <= y1, "rows={rows} p={p}: cursor x{cx0}..{cx1} y{cy0}..{cy1} outside block");
+            let max_h = ((y1 - y0) as f64 / rows).ceil() as usize;
+            assert!(cy1 - cy0 <= max_h, "rows={rows} p={p}: cursor {} px tall, row is {max_h}", cy1 - cy0);
+        }
+    }
 }

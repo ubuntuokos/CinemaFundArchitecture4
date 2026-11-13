@@ -16,6 +16,10 @@ use cfa4_time::Tick;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+/// Smallest full-size, opaque 8-bit Y'CbCr conversion that tabulates R' and B' per code pair
+/// (two tables of 65 536 values): below it the tables cost more than they save.
+const YUV8_PAIR_TABLE_MIN_PIXELS: usize = 1 << 18;
+
 /// Chroma subsampling of planar Y'CbCr.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Chroma {
@@ -52,6 +56,95 @@ pub enum PixelData {
     Yuv8 { planes: [Arc<Vec<u8>>; 3], chroma: Chroma, alpha: Option<Arc<Vec<u8>>> },
     /// 9–16-bit planar Y'CbCr stored in u16 (`bits` significant bits).
     Yuv16 { planes: [Arc<Vec<u16>>; 3], chroma: Chroma, bits: u32, alpha: Option<Arc<Vec<u16>>> },
+    /// 9–16-bit planar non-linear R'G'B' (or X'Y'Z' when [`ColorInfo::primaries`] is
+    /// [`cfa4_color::Primaries::Xyz`]) stored in u16, `bits` significant bits, full resolution,
+    /// planes in R, G, B order, optional straight alpha. The frame's transfer and primaries apply;
+    /// its matrix and range do not (every code is full range).
+    Rgb16 { planes: [Arc<Vec<u16>>; 3], bits: u32, alpha: Option<Arc<Vec<u16>>> },
+}
+
+/// How the two fields of an interlaced picture are ordered in time.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FieldOrder {
+    /// One picture sampled at one instant. The default when a stream says nothing.
+    #[default]
+    Progressive,
+    /// Interlaced, the top (first, even) line's field first in time.
+    TopFirst,
+    /// Interlaced, the bottom field first in time (DV, most PAL / NTSC SD tape).
+    BottomFirst,
+}
+
+impl FieldOrder {
+    pub fn is_interlaced(self) -> bool {
+        self != FieldOrder::Progressive
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            FieldOrder::Progressive => "progressive",
+            FieldOrder::TopFirst => "top field first",
+            FieldOrder::BottomFirst => "bottom field first",
+        }
+    }
+}
+
+/// Where a subsampled chroma sample sits relative to the luma samples it covers (ISO/IEC 23091-2
+/// `chroma_sample_loc_type`, the H.264 / HEVC VUI field of the same name). Meaningful only for
+/// 4:2:0 and 4:2:2 Y'CbCr.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ChromaLocation {
+    /// Type 0: horizontally co-sited with the left luma sample, vertically between the rows
+    /// (MPEG-2, H.264 and HEVC 4:2:0). The default when a stream says nothing.
+    #[default]
+    Left,
+    /// Type 1: centred between the luma samples (MPEG-1, JPEG / JFIF).
+    Center,
+    /// Type 2: co-sited with the top-left luma sample (BT.2020 / BT.2100 4:2:0, many HDR streams).
+    TopLeft,
+    /// Type 3: co-sited with the top luma row, centred horizontally.
+    Top,
+    /// Type 4: co-sited with the bottom-left luma sample.
+    BottomLeft,
+    /// Type 5: co-sited with the bottom luma row, centred horizontally.
+    Bottom,
+}
+
+impl ChromaLocation {
+    /// From an ISO/IEC 23091-2 `chroma_sample_loc_type` (0–5).
+    pub fn from_code(c: u8) -> Option<ChromaLocation> {
+        Some(match c {
+            0 => ChromaLocation::Left,
+            1 => ChromaLocation::Center,
+            2 => ChromaLocation::TopLeft,
+            3 => ChromaLocation::Top,
+            4 => ChromaLocation::BottomLeft,
+            5 => ChromaLocation::Bottom,
+            _ => return None,
+        })
+    }
+    /// The ISO/IEC 23091-2 code.
+    pub fn code(self) -> u8 {
+        match self {
+            ChromaLocation::Left => 0,
+            ChromaLocation::Center => 1,
+            ChromaLocation::TopLeft => 2,
+            ChromaLocation::Top => 3,
+            ChromaLocation::BottomLeft => 4,
+            ChromaLocation::Bottom => 5,
+        }
+    }
+}
+
+/// The sampling structure of a picture beyond its pixels: field order and chroma siting. Both
+/// default to what a stream that signals nothing means (progressive, chroma type 0); a decoder
+/// that knows better says so, and the value travels with the frame instead of being dropped.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FrameLayout {
+    pub field_order: FieldOrder,
+    pub chroma_location: ChromaLocation,
 }
 
 #[derive(Clone, Debug)]
@@ -64,6 +157,9 @@ pub struct VideoFrame {
     pub par: (u32, u32),
     /// Presentation time in media time (informational).
     pub pts: Tick,
+    /// Field order and chroma siting ([`FrameLayout`]; progressive, chroma type 0 unless the
+    /// decoder signals otherwise).
+    pub layout: FrameLayout,
 }
 
 /// A rectangle of pixels: `x`, `y` is its top-left corner.
@@ -101,11 +197,11 @@ fn row_extent<T>(row: &[T], on: impl Fn(&T) -> bool) -> Option<(usize, usize)> {
 impl VideoFrame {
     pub fn rgba8(width: u32, height: u32, data: Vec<u8>) -> Self {
         debug_assert_eq!(data.len(), (width * height * 4) as usize);
-        Self { width, height, data: PixelData::Rgba8(Arc::new(data)), color: ColorInfo::SRGB_FULL, par: (1, 1), pts: Tick::ZERO }
+        Self { width, height, data: PixelData::Rgba8(Arc::new(data)), color: ColorInfo::SRGB_FULL, par: (1, 1), pts: Tick::ZERO, layout: Default::default() }
     }
     pub fn rgba_f32(width: u32, height: u32, data: Vec<f32>) -> Self {
         debug_assert_eq!(data.len(), (width * height * 4) as usize);
-        Self { width, height, data: PixelData::RgbaF32(Arc::new(data)), color: ColorInfo::SRGB_FULL, par: (1, 1), pts: Tick::ZERO }
+        Self { width, height, data: PixelData::RgbaF32(Arc::new(data)), color: ColorInfo::SRGB_FULL, par: (1, 1), pts: Tick::ZERO, layout: Default::default() }
     }
     pub fn transparent_f32(width: u32, height: u32) -> Self {
         Self::rgba_f32(width, height, vec![0.0; (width * height * 4) as usize])
@@ -121,6 +217,7 @@ impl VideoFrame {
             PixelData::RgbaF32(_) => "RGBA 32-bit float".into(),
             PixelData::Yuv8 { chroma, .. } => format!("YUV {} 8-bit", chroma.label()),
             PixelData::Yuv16 { chroma, bits, .. } => format!("YUV {} {bits}-bit", chroma.label()),
+            PixelData::Rgb16 { bits, alpha, .. } => format!("{} {bits}-bit", if alpha.is_some() { "RGBA" } else { "RGB" }),
         }
     }
 
@@ -130,7 +227,9 @@ impl VideoFrame {
             PixelData::Rgba8(d) => d.len(),
             PixelData::RgbaF32(d) => d.len() * 4,
             PixelData::Yuv8 { planes, alpha, .. } => planes.iter().map(|p| p.len()).sum::<usize>() + alpha.as_ref().map_or(0, |a| a.len()),
-            PixelData::Yuv16 { planes, alpha, .. } => (planes.iter().map(|p| p.len()).sum::<usize>() + alpha.as_ref().map_or(0, |a| a.len())) * 2,
+            PixelData::Yuv16 { planes, alpha, .. } | PixelData::Rgb16 { planes, alpha, .. } => {
+                (planes.iter().map(|p| p.len()).sum::<usize>() + alpha.as_ref().map_or(0, |a| a.len())) * 2
+            }
         }
     }
 
@@ -139,6 +238,7 @@ impl VideoFrame {
     /// and bit depth unchanged. Reduced-resolution playback hands the GPU this instead of the full
     /// picture (a quarter / sixteenth of the upload). None for RGBA frames or `n` < 2.
     pub fn box_decimated(&self, n: usize) -> Option<VideoFrame> {
+        let n = self.bounded_decimation(n);
         if n < 2 {
             return None;
         }
@@ -174,9 +274,14 @@ impl VideoFrame {
                     alpha: alpha.as_ref().map(|a| Arc::new(box_plane(a, w, h, ow, oh, n))),
                 }
             }
+            PixelData::Rgb16 { planes, bits, alpha } => PixelData::Rgb16 {
+                planes: planes.clone().map(|p| Arc::new(box_plane(&p, w, h, ow, oh, n))),
+                bits: *bits,
+                alpha: alpha.as_ref().map(|a| Arc::new(box_plane(a, w, h, ow, oh, n))),
+            },
             PixelData::Rgba8(_) | PixelData::RgbaF32(_) => return None,
         };
-        Some(VideoFrame { width: ow as u32, height: oh as u32, data, color: self.color, par: self.par, pts: self.pts })
+        Some(VideoFrame { width: ow as u32, height: oh as u32, data, color: self.color, par: self.par, pts: self.pts, layout: self.layout })
     }
 
     /// The part of the frame inside `region` (a container's clean aperture). The region is clipped
@@ -187,7 +292,7 @@ impl VideoFrame {
         let (w, h) = (self.width as usize, self.height as usize);
         let (sx, sy) = match &self.data {
             PixelData::Yuv8 { chroma, .. } | PixelData::Yuv16 { chroma, .. } => chroma.shifts(),
-            PixelData::Rgba8(_) | PixelData::RgbaF32(_) => (0, 0),
+            PixelData::Rgba8(_) | PixelData::RgbaF32(_) | PixelData::Rgb16 { .. } => (0, 0),
         };
         let (mx, my) = ((1usize << sx) - 1, (1usize << sy) - 1);
         let (x, y) = (region.x.min(w) & !mx, region.y.min(h) & !my);
@@ -230,8 +335,13 @@ impl VideoFrame {
                     alpha: alpha.as_ref().map(|a| Arc::new(crop_plane(a, w, h, 1, r))),
                 }
             }
+            PixelData::Rgb16 { planes, bits, alpha } => PixelData::Rgb16 {
+                planes: planes.clone().map(|p| Arc::new(crop_plane(&p, w, h, 1, r))),
+                bits: *bits,
+                alpha: alpha.as_ref().map(|a| Arc::new(crop_plane(a, w, h, 1, r))),
+            },
         };
-        VideoFrame { width: r.w as u32, height: r.h as u32, data, color: self.color, par: self.par, pts: self.pts }
+        VideoFrame { width: r.w as u32, height: r.h as u32, data, color: self.color, par: self.par, pts: self.pts, layout: self.layout }
     }
 
     /// The frame turned clockwise by `quarter_turns` × 90° (a container's display rotation).
@@ -248,25 +358,30 @@ impl VideoFrame {
             PixelData::Rgba8(d) => PixelData::Rgba8(Arc::new(rotate_plane(d, w, h, 4, q))),
             PixelData::RgbaF32(d) => PixelData::RgbaF32(Arc::new(rotate_plane(d, w, h, 4, q))),
             PixelData::Yuv8 { planes, chroma, alpha } => {
-                let (c, chroma) = rotate_chroma(planes, *chroma, w, h, q);
+                let ([cb, cr], chroma) = rotate_chroma(planes, *chroma, w, h, q);
                 PixelData::Yuv8 {
-                    planes: [Arc::new(rotate_plane(&planes[0], w, h, 1, q)), Arc::new(c[0].clone()), Arc::new(c[1].clone())],
+                    planes: [Arc::new(rotate_plane(&planes[0], w, h, 1, q)), Arc::new(cb), Arc::new(cr)],
                     chroma,
                     alpha: alpha.as_ref().map(|a| Arc::new(rotate_plane(a, w, h, 1, q))),
                 }
             }
             PixelData::Yuv16 { planes, chroma, bits, alpha } => {
-                let (c, chroma) = rotate_chroma(planes, *chroma, w, h, q);
+                let ([cb, cr], chroma) = rotate_chroma(planes, *chroma, w, h, q);
                 PixelData::Yuv16 {
-                    planes: [Arc::new(rotate_plane(&planes[0], w, h, 1, q)), Arc::new(c[0].clone()), Arc::new(c[1].clone())],
+                    planes: [Arc::new(rotate_plane(&planes[0], w, h, 1, q)), Arc::new(cb), Arc::new(cr)],
                     chroma,
                     bits: *bits,
                     alpha: alpha.as_ref().map(|a| Arc::new(rotate_plane(a, w, h, 1, q))),
                 }
             }
+            PixelData::Rgb16 { planes, bits, alpha } => PixelData::Rgb16 {
+                planes: planes.clone().map(|p| Arc::new(rotate_plane(&p, w, h, 1, q))),
+                bits: *bits,
+                alpha: alpha.as_ref().map(|a| Arc::new(rotate_plane(a, w, h, 1, q))),
+            },
         };
         let (width, height, par) = if q % 2 == 1 { (self.height, self.width, (self.par.1, self.par.0)) } else { (self.width, self.height, self.par) };
-        VideoFrame { width, height, data, color: self.color, par, pts: self.pts }
+        VideoFrame { width, height, data, color: self.color, par, pts: self.pts, layout: self.layout }
     }
 
     /// Convert to premultiplied linear RGBA f32 (the compositor's working format).
@@ -285,7 +400,7 @@ impl VideoFrame {
     /// `decode` (a colour-managed curve: log, PQ, HLG scene light…) instead of the frame's
     /// transfer. Float frames are already linear and ignore it.
     pub fn to_linear_f32_decimated_with(&self, n: usize, decode: Option<&DecodeTable>) -> (usize, usize, Vec<f32>) {
-        let n = n.max(1);
+        let n = self.bounded_decimation(n);
         let (ow, oh) = self.decimated_size(n);
         // every element is written below, so a recycled buffer needs no zero-fill
         let mut out = pool::take_f32_overwritten(ow * oh * 4);
@@ -295,7 +410,7 @@ impl VideoFrame {
 
     /// The size of the picture after `n`×`n` box decimation.
     pub fn decimated_size(&self, n: usize) -> (usize, usize) {
-        let n = n.max(1);
+        let n = self.bounded_decimation(n);
         ((self.width as usize / n).max(1), (self.height as usize / n).max(1))
     }
 
@@ -304,7 +419,7 @@ impl VideoFrame {
     /// by row. Each pixel is exactly what the full conversion gives at that position. The buffer
     /// may come from the pool ([`pool::recycle_f32`] hands it back).
     pub fn to_linear_f32_region(&self, n: usize, decode: Option<&DecodeTable>, region: Region) -> (Region, Vec<f32>) {
-        let n = n.max(1);
+        let n = self.bounded_decimation(n);
         let (ow, oh) = self.decimated_size(n);
         let r = region.clip(ow, oh);
         let mut out = pool::take_f32_overwritten(r.w * r.h * 4);
@@ -312,6 +427,74 @@ impl VideoFrame {
         (r, out)
     }
 
+    /// The picture after `n`×`n` box decimation ([`VideoFrame::decimated_size`]) as opaque sRGB
+    /// RGBA8, for an opaque 8-bit Y'CbCr frame (`None` for any other): byte for byte what its linear
+    /// picture ([`VideoFrame::to_linear_f32_decimated`]) gives through [`linear_to_srgb_u8`] with
+    /// alpha 255, without the 16 bytes per pixel of floats in between. R' and B' are tabulated per
+    /// code pair as the float conversion does (at full size already as bytes); G' goes through the
+    /// table of its quantised signal.
+    pub fn to_opaque_srgb8(&self, n: usize) -> Option<Vec<u8>> {
+        let PixelData::Yuv8 { planes, chroma, alpha: None } = &self.data else { return None };
+        let (w, h) = (self.width as usize, self.height as usize);
+        let (sx, sy) = chroma.shifts();
+        let (cw, ch) = (w.div_ceil(1 << sx), h.div_ceil(1 << sy));
+        if w == 0 || h == 0 || planes[0].len() < w * h || planes[1].len() < cw * ch || planes[2].len() < cw * ch {
+            return None;
+        }
+        let n = self.bounded_decimation(n);
+        let (ow, oh) = self.decimated_size(n);
+        let info = self.color;
+        let lin: Vec<f32> = (0..4096).map(|i| to_linear(i as f32 / 4095.0, info.transfer)).collect();
+        let at = |v: f32| (v.clamp(0.0, 1.0) * 4095.0 + 0.5) as usize;
+        let ytab: Vec<f32> = (0..256).map(|v| normalize_y(v, 8, info.range)).collect();
+        let ctab: Vec<f32> = (0..256).map(|v| normalize_c(v, 8, info.range)).collect();
+        let (kr, kb) = info.matrix.kr_kb();
+        let kg = 1.0 - kr - kb;
+        let (cr_r, cb_b) = (2.0 * (1.0 - kr), 2.0 * (1.0 - kb));
+        let (cr_g, cb_g) = (cr_r * kr / kg, cb_b * kb / kg);
+        let pair =
+            |f: &(dyn Fn(f32, f32) -> f32 + Sync)| -> Vec<f32> { (0..1usize << 16).into_par_iter().map(|i| lin[at(f(ytab[i >> 8], ctab[i & 255]))]).collect() };
+        let rt = pair(&|yy, v| yy + cr_r * v);
+        let bt = pair(&|yy, u| yy + cb_b * u);
+        let mut out = vec![0u8; ow * oh * 4];
+        if n == 1 {
+            let bytes = |t: Vec<f32>| -> Vec<u8> { t.into_par_iter().map(linear_to_srgb_u8).collect() };
+            let (rt, bt) = (bytes(rt), bytes(bt));
+            let gt: Vec<u8> = lin.iter().map(|&l| linear_to_srgb_u8(l)).collect();
+            out.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                let cy = y >> sy;
+                let (ys, us, vs) = (&planes[0][y * w..(y + 1) * w], &planes[1][cy * cw..(cy + 1) * cw], &planes[2][cy * cw..(cy + 1) * cw]);
+                for (x, (o, &yc)) in row.as_chunks_mut::<4>().0.iter_mut().zip(ys).enumerate() {
+                    let (yc, uc, vc) = (usize::from(yc), usize::from(us[x >> sx]), usize::from(vs[x >> sx]));
+                    let (yy, u, v) = (ytab[yc], ctab[uc], ctab[vc]);
+                    *o = [rt[yc << 8 | vc], gt[at(yy - cr_g * v - cb_g * u)], bt[yc << 8 | uc], 255];
+                }
+            });
+            return Some(out);
+        }
+        // the float conversion's sums, in its order, each sample weighted by its alpha of 1
+        let inv = 1.0 / (n as f32 * n as f32);
+        out.par_chunks_mut(ow * 4).enumerate().for_each(|(oy, row)| {
+            for (ox, o) in row.as_chunks_mut::<4>().0.iter_mut().enumerate() {
+                let mut acc = [0f32; 3];
+                for dy in 0..n {
+                    let y = (oy * n + dy).min(h - 1);
+                    let cy = y >> sy;
+                    for dx in 0..n {
+                        let x = (ox * n + dx).min(w - 1);
+                        let cx = x >> sx;
+                        let (yc, uc, vc) = (usize::from(planes[0][y * w + x]), usize::from(planes[1][cy * cw + cx]), usize::from(planes[2][cy * cw + cx]));
+                        let (yy, u, v) = (ytab[yc], ctab[uc], ctab[vc]);
+                        acc[0] += rt[yc << 8 | vc] * 1.0;
+                        acc[1] += lin[at(yy - cr_g * v - cb_g * u)] * 1.0;
+                        acc[2] += bt[yc << 8 | uc] * 1.0;
+                    }
+                }
+                *o = [linear_to_srgb_u8(acc[0] * inv), linear_to_srgb_u8(acc[1] * inv), linear_to_srgb_u8(acc[2] * inv), 255];
+            }
+        });
+        Some(out)
+    }
     /// Convert the rectangle `r` (inside the decimated picture) into `out`, which must hold exactly
     /// `r.w * r.h * 4` floats; every one of them is written.
     fn convert_region(&self, n: usize, decode: Option<&DecodeTable>, r: Region, out: &mut [f32]) {
@@ -323,6 +506,7 @@ impl VideoFrame {
             out.fill(0.0);
             return;
         }
+        let n = n.min(w.max(h)).max(1);
         if let PixelData::RgbaF32(d) = &self.data
             && n == 1
         {
@@ -343,7 +527,7 @@ impl VideoFrame {
             Some(t) => t.lookup(v),
             None => lin[(v.clamp(0.0, 1.0) * 4095.0 + 0.5) as usize],
         };
-        let inv = 1.0 / (n * n) as f32;
+        let inv = 1.0 / (n as f32 * n as f32);
         match &self.data {
             PixelData::RgbaF32(d) => {
                 out.par_chunks_mut(r.w * 4).enumerate().for_each(|(ry, row)| {
@@ -408,6 +592,40 @@ impl VideoFrame {
                 let kg = 1.0 - kr - kb;
                 let (cr_r, cb_b) = (2.0 * (1.0 - kr), 2.0 * (1.0 - kb));
                 let (cr_g, cb_g) = (cr_r * kr / kg, cb_b * kb / kg);
+                let ch = h.div_ceil(1 << sy);
+                let fits = planes[0].len() >= w * h && planes[1].len() >= cw * ch && planes[2].len() >= cw * ch;
+                if n == 1 && alpha.is_none() && fits && r.w * r.h >= YUV8_PAIR_TABLE_MIN_PIXELS {
+                    // Full size and opaque (decoded video): R' depends on (Y', Cr) only and B' on
+                    // (Y', Cb), so their decoded values are tabulated once for all 65 536 code
+                    // pairs, with the very expressions the per-pixel loop below evaluates; G' is
+                    // decoded per pixel. Each value is the loop's `(0 + q * 1) * inv` exactly.
+                    let pair = |f: &(dyn Fn(f32, f32) -> f32 + Sync)| -> Vec<f32> {
+                        (0..1usize << 16).into_par_iter().map(|i| f(ytab[i >> 8], ctab[i & 255])).collect()
+                    };
+                    let rt = pair(&|yy, v| (0.0 + q(yy + cr_r * v) * 1.0) * inv);
+                    let bt = pair(&|yy, u| (0.0 + q(yy + cb_b * u) * 1.0) * inv);
+                    let opaque = (0.0f32 + 1.0) * inv;
+                    out.par_chunks_mut(r.w * 4).enumerate().for_each(|(ry, row)| {
+                        let y = r.y + ry;
+                        let cy = y >> sy;
+                        let (Some(ys), Some(us), Some(vs)) =
+                            (planes[0].get(y * w + r.x..y * w + r.x + r.w), planes[1].get(cy * cw..(cy + 1) * cw), planes[2].get(cy * cw..(cy + 1) * cw))
+                        else {
+                            row.fill(0.0);
+                            return;
+                        };
+                        for (rx, (o, &yc)) in row.as_chunks_mut::<4>().0.iter_mut().zip(ys).enumerate() {
+                            let cx = (r.x + rx) >> sx;
+                            let (yc, uc, vc) = (usize::from(yc), us.get(cx).copied().map_or(0, usize::from), vs.get(cx).copied().map_or(0, usize::from));
+                            let (yy, u, v) = (ytab[yc], ctab[uc], ctab[vc]);
+                            o[0] = rt[yc << 8 | vc];
+                            o[1] = (0.0 + q(yy - cr_g * v - cb_g * u) * 1.0) * inv;
+                            o[2] = bt[yc << 8 | uc];
+                            o[3] = opaque;
+                        }
+                    });
+                    return;
+                }
                 out.par_chunks_mut(r.w * 4).enumerate().for_each(|(ry, row)| {
                     let oy = r.y + ry;
                     for rx in 0..r.w {
@@ -440,6 +658,13 @@ impl VideoFrame {
                 let cw = w.div_ceil(1 << sx);
                 let bits = *bits;
                 let amax = ((1u32 << bits) - 1) as f32;
+                // Per-code tables (exactly the values `normalize_*` returns) instead of two
+                // divisions per sample; a code past the table (a corrupt plane) is computed.
+                let codes = if bits <= 12 { 1usize << bits } else { 0 };
+                let ytab: Vec<f32> = (0..codes as u32).map(|v| normalize_y(v, bits, info.range)).collect();
+                let ctab: Vec<f32> = (0..codes as u32).map(|v| normalize_c(v, bits, info.range)).collect();
+                let ny = |v: u16| ytab.get(usize::from(v)).copied().unwrap_or_else(|| normalize_y(u32::from(v), bits, info.range));
+                let nc = |v: u16| ctab.get(usize::from(v)).copied().unwrap_or_else(|| normalize_c(u32::from(v), bits, info.range));
                 out.par_chunks_mut(r.w * 4).enumerate().for_each(|(ry, row)| {
                     let oy = r.y + ry;
                     for rx in 0..r.w {
@@ -451,14 +676,45 @@ impl VideoFrame {
                             for dx in 0..n {
                                 let x = (ox * n + dx).min(w - 1);
                                 let cx = x >> sx;
-                                let yy = normalize_y(planes[0][y * w + x] as u32, bits, info.range);
-                                let u = normalize_c(planes[1][cy * cw + cx] as u32, bits, info.range);
-                                let v = normalize_c(planes[2][cy * cw + cx] as u32, bits, info.range);
+                                let yy = ny(planes[0][y * w + x]);
+                                let u = nc(planes[1][cy * cw + cx]);
+                                let v = nc(planes[2][cy * cw + cx]);
                                 let rgb = ycbcr_to_rgb(yy, u, v, info.matrix);
                                 let a = alpha.as_ref().map_or(1.0, |al| al[y * w + x] as f32 / amax);
                                 acc[0] += q(rgb[0]) * a;
                                 acc[1] += q(rgb[1]) * a;
                                 acc[2] += q(rgb[2]) * a;
+                                acc[3] += a;
+                            }
+                        }
+                        for k in 0..4 {
+                            row[rx * 4 + k] = acc[k] * inv;
+                        }
+                    }
+                });
+            }
+            PixelData::Rgb16 { planes, bits, alpha } => {
+                // full-range codes straight to the transfer: no matrix, no offsets
+                let max = ((1u32 << (*bits).clamp(1, 16)) - 1) as f32;
+                let px = w * h;
+                if planes.iter().any(|p| p.len() < px) || alpha.as_ref().is_some_and(|a| a.len() < px) {
+                    // a frame with less data than its size says: transparent
+                    out.fill(0.0);
+                    return;
+                }
+                out.par_chunks_mut(r.w * 4).enumerate().for_each(|(ry, row)| {
+                    let oy = r.y + ry;
+                    for rx in 0..r.w {
+                        let ox = r.x + rx;
+                        let mut acc = [0f32; 4];
+                        for dy in 0..n {
+                            let y = (oy * n + dy).min(h - 1);
+                            for dx in 0..n {
+                                let i = y * w + (ox * n + dx).min(w - 1);
+                                let a = alpha.as_ref().map_or(1.0, |al| (f32::from(al[i]) / max).min(1.0));
+                                for k in 0..3 {
+                                    acc[k] += q(f32::from(planes[k][i]) / max) * a;
+                                }
                                 acc[3] += a;
                             }
                         }
@@ -477,13 +733,15 @@ impl VideoFrame {
     /// or its alpha is not stored as integers), so nothing can be skipped. Pixels outside the
     /// rectangle have alpha exactly 0 and, in the premultiplied conversion, colour 0 as well.
     pub fn alpha_region(&self, n: usize) -> Option<Region> {
-        let n = n.max(1);
+        let n = self.bounded_decimation(n);
         let (w, h) = (self.width as usize, self.height as usize);
         let px = w.checked_mul(h)?;
         // the first and last x of non-transparent pixels in source row `y`
         let extent: Box<dyn Fn(usize) -> Option<(usize, usize)> + Sync + '_> = match &self.data {
             PixelData::Yuv8 { alpha: Some(a), .. } if a.len() == px => Box::new(move |y| row_extent(&a[y * w..(y + 1) * w], |v| *v != 0)),
-            PixelData::Yuv16 { alpha: Some(a), .. } if a.len() == px => Box::new(move |y| row_extent(&a[y * w..(y + 1) * w], |v| *v != 0)),
+            PixelData::Yuv16 { alpha: Some(a), .. } | PixelData::Rgb16 { alpha: Some(a), .. } if a.len() == px => {
+                Box::new(move |y| row_extent(&a[y * w..(y + 1) * w], |v| *v != 0))
+            }
             PixelData::Rgba8(d) if d.len() == px.checked_mul(4)? => {
                 Box::new(move |y| row_extent(d[y * w * 4..(y + 1) * w * 4].as_chunks::<4>().0, |p: &[u8; 4]| p[3] != 0))
             }
@@ -500,6 +758,12 @@ impl VideoFrame {
         let (rx0, ry0) = (x0 / n, y0 / n);
         let (rx1, ry1) = (x1 / n + 1, y1 / n + 1);
         Some(Region { x: rx0, y: ry0, w: rx1.saturating_sub(rx0), h: ry1.saturating_sub(ry0) }.clip(ow, oh))
+    }
+
+    /// Keep hostile decimation requests from doing work beyond the source picture.  Larger boxes
+    /// only resample the edge pixels, so clamping them has no useful effect on the reduced output.
+    fn bounded_decimation(&self, n: usize) -> usize {
+        n.clamp(1, (self.width as usize).max(self.height as usize).max(1))
     }
 
     /// Convert to straight-alpha sRGB RGBA8 for display (fast paths for 8-bit sources).
@@ -742,6 +1006,7 @@ mod tests {
             color: Default::default(),
             par: (1, 1),
             pts: Default::default(),
+            layout: Default::default(),
         };
         // an odd corner moves onto the chroma grid (1,1 -> 0,0), keeping the size
         let c = yuv(Chroma::C420).cropped(Region { x: 1, y: 1, w: 3, h: 3 });
@@ -793,6 +1058,7 @@ mod tests {
             color: ColorInfo::REC709,
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         };
         let r = yuv(Chroma::C420, vec![10, 20]).rotated(1);
         let PixelData::Yuv8 { planes, chroma, .. } = &r.data else { panic!() };
@@ -815,6 +1081,7 @@ mod tests {
             color: ColorInfo::REC709,
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         };
         let d = f.box_decimated(2).expect("yuv");
         assert_eq!((d.width, d.height), (3, 2));
@@ -827,6 +1094,25 @@ mod tests {
         assert_eq!(&planes[2][..], &[200, 200]);
         assert!(f.box_decimated(1).is_none());
         assert!(VideoFrame::rgba8(2, 2, vec![0; 16]).box_decimated(2).is_none());
+    }
+
+    #[test]
+    fn decimation_caps_hostile_factors_to_the_frame_size() {
+        let rgba = VideoFrame::rgba8(1, 1, vec![23, 42, 99, 255]);
+        let (w, h, pixels) = rgba.to_linear_f32_decimated(usize::MAX);
+        assert_eq!((w, h), (1, 1));
+        assert_eq!(pixels, rgba.to_linear_f32());
+
+        let yuv = VideoFrame {
+            width: 2,
+            height: 2,
+            data: PixelData::Yuv8 { planes: [Arc::new(vec![1, 2, 3, 4]), Arc::new(vec![128]), Arc::new(vec![128])], chroma: Chroma::C420, alpha: None },
+            color: ColorInfo::REC709,
+            par: (1, 1),
+            pts: Tick::ZERO,
+            layout: Default::default(),
+        };
+        assert_eq!(yuv.box_decimated(usize::MAX).expect("yuv").luma8(), vec![3]);
     }
     use super::*;
 
@@ -852,6 +1138,7 @@ mod tests {
             color: ColorInfo::REC709,
             par: (1, 1),
             pts: Tick::ZERO,
+            layout: Default::default(),
         };
         let rgb = f.to_rgba8();
         assert_eq!(&rgb[0..4], &[128, 128, 128, 255]);
@@ -897,7 +1184,8 @@ mod tests {
         let c16: Vec<u16> = (0..w * h).map(|i| (64 + i * 7 % 896) as u16).collect();
         let a16: Vec<u16> = (0..w * h).map(|i| (alpha(i % w, i / w) as u16) * 4).collect();
         let c422: Vec<u16> = (0..cw * h).map(|i| (64 + i * 7 % 896) as u16).collect();
-        let mk = |data| VideoFrame { width: w as u32, height: h as u32, data, color: ColorInfo::REC709, par: (1, 1), pts: Tick::ZERO };
+        let mk =
+            |data| VideoFrame { width: w as u32, height: h as u32, data, color: ColorInfo::REC709, par: (1, 1), pts: Tick::ZERO, layout: Default::default() };
         vec![
             ("rgba8", mk(PixelData::Rgba8(Arc::new(rgba8)))),
             ("rgba f32", mk(PixelData::RgbaF32(Arc::new(f32s)))),
@@ -1051,5 +1339,185 @@ mod tests {
             ..VideoFrame::rgba8(8, 8, vec![0; 256])
         };
         assert_eq!(short.alpha_region(1), None);
+    }
+
+    #[test]
+    fn full_size_yuv8_tables_give_the_per_pixel_values_bit_for_bit() {
+        // 640x480 takes the per-code-pair tables; single rows (below the size that builds them) take the
+        // per-pixel loop: every value must match to the bit, for each subsampling, range, matrix and curve.
+        let (w, h) = (640usize, 480usize);
+        let mut seed = 0x2545_f491u32;
+        let mut next = move || {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            (seed >> 24) as u8
+        };
+        let curve = cfa4_color::DecodeTable::new(0.0, 1.0, 4096, |v| v.max(0.0).powf(2.4));
+        for chroma in [Chroma::C420, Chroma::C422, Chroma::C444] {
+            let (sx, sy) = chroma.shifts();
+            let (cw, ch) = (w.div_ceil(1 << sx), h.div_ceil(1 << sy));
+            let y: Vec<u8> = (0..w * h).map(|_| next()).collect();
+            let u: Vec<u8> = (0..cw * ch).map(|_| next()).collect();
+            let v: Vec<u8> = (0..cw * ch).map(|_| next()).collect();
+            for range in [Range::Limited, Range::Full] {
+                for matrix in [Matrix::Bt601, Matrix::Bt709, Matrix::Bt2020Ncl] {
+                    let f = VideoFrame {
+                        width: w as u32,
+                        height: h as u32,
+                        data: PixelData::Yuv8 { planes: [Arc::new(y.clone()), Arc::new(u.clone()), Arc::new(v.clone())], chroma, alpha: None },
+                        color: ColorInfo { matrix, range, ..ColorInfo::REC709 },
+                        par: (1, 1),
+                        pts: Tick::ZERO,
+                        layout: Default::default(),
+                    };
+                    for decode in [None, Some(&curve)] {
+                        let (_, _, full) = f.to_linear_f32_decimated_with(1, decode);
+                        for row in [0, 1, 2, 239, 478, 479] {
+                            let (_, px) = f.to_linear_f32_region(1, decode, Region { x: 0, y: row, w, h: 1 });
+                            let want: Vec<u32> = px.iter().map(|x| x.to_bits()).collect();
+                            let got: Vec<u32> = full[row * w * 4..(row + 1) * w * 4].iter().map(|x| x.to_bits()).collect();
+                            assert!(want == got, "{chroma:?} {range:?} {matrix:?} decode {} row {row}", decode.is_some());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn opaque_yuv8_to_srgb_bytes_is_the_linear_picture_in_srgb() {
+        use cfa4_color::{Primaries, Transfer};
+        let mut seed = 0x9e37_79b9_u32;
+        let mut code = move || {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            (seed >> 24) as u8
+        };
+        // small and odd sizes take the per-pixel loop of the float conversion, 640x480 its pair tables
+        for (w, h) in [(1usize, 1usize), (7, 5), (33, 17), (640, 480)] {
+            for chroma in [Chroma::C420, Chroma::C422, Chroma::C444] {
+                let (sx, sy) = chroma.shifts();
+                let (cw, ch) = (w.div_ceil(1 << sx), h.div_ceil(1 << sy));
+                let mut plane = |n: usize| Arc::new((0..n).map(|_| code()).collect::<Vec<u8>>());
+                let planes = [plane(w * h), plane(cw * ch), plane(cw * ch)];
+                for matrix in [Matrix::Bt601, Matrix::Bt709, Matrix::Bt2020Ncl] {
+                    for range in [Range::Limited, Range::Full] {
+                        for transfer in [Transfer::Bt709, Transfer::Srgb, Transfer::Linear, Transfer::Pq] {
+                            let f = VideoFrame {
+                                width: w as u32,
+                                height: h as u32,
+                                data: PixelData::Yuv8 { planes: planes.clone(), chroma, alpha: None },
+                                color: ColorInfo { matrix, transfer, primaries: Primaries::Bt709, range },
+                                par: (1, 1),
+                                pts: Tick::ZERO,
+                                layout: Default::default(),
+                            };
+                            for n in [1, 2, 3, 4] {
+                                let (dw, dh, lin) = f.to_linear_f32_decimated(n);
+                                let mut want = vec![0u8; dw * dh * 4];
+                                linear_premul_to_srgb8(&lin, &mut want);
+                                assert!(f.to_opaque_srgb8(n) == Some(want), "{w}x{h} /{n} {chroma:?} {matrix:?} {range:?} {transfer:?}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // frames it leaves to the float path
+        let alpha = VideoFrame {
+            width: 2,
+            height: 2,
+            data: PixelData::Yuv8 {
+                planes: [Arc::new(vec![16; 4]), Arc::new(vec![128]), Arc::new(vec![128])],
+                chroma: Chroma::C420,
+                alpha: Some(Arc::new(vec![255; 4])),
+            },
+            color: Default::default(),
+            par: (1, 1),
+            pts: Tick::ZERO,
+            layout: Default::default(),
+        };
+        assert_eq!(alpha.to_opaque_srgb8(1), None);
+        assert_eq!(VideoFrame::rgba8(2, 2, vec![255; 16]).to_opaque_srgb8(1), None);
+        let short = VideoFrame {
+            data: PixelData::Yuv8 { planes: [Arc::new(vec![16; 3]), Arc::new(vec![128]), Arc::new(vec![128])], chroma: Chroma::C420, alpha: None },
+            ..alpha
+        };
+        assert_eq!(short.to_opaque_srgb8(1), None);
+    }
+
+    /// CFA4-PROCODEC-002 1a: field order and chroma siting default to what a silent stream
+    /// means, keep their ISO/IEC 23091-2 codes, and travel through crop, rotate and decimation.
+    #[test]
+    fn frame_layout_defaults_codes_and_survives_transforms() {
+        assert_eq!(FrameLayout::default(), FrameLayout { field_order: FieldOrder::Progressive, chroma_location: ChromaLocation::Left });
+        for c in 0..=5 {
+            assert_eq!(ChromaLocation::from_code(c).map(ChromaLocation::code), Some(c));
+        }
+        assert_eq!(ChromaLocation::from_code(6), None);
+        assert!(FieldOrder::BottomFirst.is_interlaced() && !FieldOrder::Progressive.is_interlaced());
+        assert_eq!(serde_json::to_value(FieldOrder::TopFirst).unwrap(), serde_json::json!("topFirst"));
+        assert_eq!(serde_json::to_value(ChromaLocation::TopLeft).unwrap(), serde_json::json!("topLeft"));
+        let layout = FrameLayout { field_order: FieldOrder::BottomFirst, chroma_location: ChromaLocation::TopLeft };
+        let n = 16 * 16;
+        let data =
+            PixelData::Yuv8 { planes: [Arc::new(vec![128; n]), Arc::new(vec![128; n / 4]), Arc::new(vec![128; n / 4])], chroma: Chroma::C420, alpha: None };
+        let f = VideoFrame { width: 16, height: 16, data, color: ColorInfo::REC709, par: (1, 1), pts: Tick::ZERO, layout };
+        for g in [f.cropped(Region { x: 2, y: 2, w: 8, h: 8 }), f.rotated(2), f.box_decimated(2).unwrap()] {
+            assert_eq!(g.layout, layout);
+        }
+        assert_eq!(VideoFrame::rgba8(1, 1, vec![0; 4]).layout, FrameLayout::default());
+    }
+
+    /// A 2×2 planar R'G'B' frame of `bits`-bit codes, R, G, B planes as given.
+    fn rgb16(bits: u32, r: [u16; 4], g: [u16; 4], b: [u16; 4], alpha: Option<[u16; 4]>, color: ColorInfo) -> VideoFrame {
+        let data = PixelData::Rgb16 { planes: [r, g, b].map(|p| Arc::new(p.to_vec())), bits, alpha: alpha.map(|a| Arc::new(a.to_vec())) };
+        VideoFrame { width: 2, height: 2, data, color, par: (1, 1), pts: Tick::ZERO, layout: FrameLayout::default() }
+    }
+
+    /// CFA4-PROCODEC-002 1a: planar R'G'B' codes go straight through the frame's transfer, full
+    /// range, with no matrix or offsets, and keep their bit depth through crop, rotate and decimate.
+    #[test]
+    fn rgb16_converts_full_range_through_its_transfer() {
+        let color = ColorInfo { transfer: cfa4_color::Transfer::Linear, ..ColorInfo::SRGB_FULL };
+        let max = 4095;
+        let f = rgb16(12, [0, max, 0, 2048], [0, 0, max, 2048], [max, 0, 0, 2048], None, color);
+        let lin = f.to_linear_f32();
+        let px: Vec<[f32; 4]> = lin.as_chunks::<4>().0.to_vec();
+        let close = |a: [f32; 4], b: [f32; 4]| a.iter().zip(b).all(|(x, y)| (x - y).abs() < 1e-3);
+        assert!(close(px[0], [0.0, 0.0, 1.0, 1.0]), "{:?}", px[0]);
+        assert!(close(px[1], [1.0, 0.0, 0.0, 1.0]), "{:?}", px[1]);
+        assert!(close(px[2], [0.0, 1.0, 0.0, 1.0]), "{:?}", px[2]);
+        assert!(close(px[3], [0.5, 0.5, 0.5, 1.0]), "{:?}", px[3]);
+        assert_eq!(f.format_label(), "RGB 12-bit");
+        assert_eq!(f.byte_size(), 3 * 4 * 2);
+        // the range flag does not apply to R'G'B' codes
+        let limited = VideoFrame { color: ColorInfo { range: Range::Limited, ..color }, ..f.clone() };
+        assert_eq!(limited.to_linear_f32(), lin);
+        for g in [f.cropped(Region { x: 1, y: 0, w: 1, h: 2 }), f.rotated(1), f.box_decimated(2).unwrap()] {
+            assert!(matches!(g.data, PixelData::Rgb16 { bits: 12, alpha: None, .. }), "{}", g.format_label());
+        }
+        // a 2×2 box of codes: the mean code of each channel, (0 + 4095 + 0 + 2048) / 4 rounded
+        let d = f.box_decimated(2).unwrap().to_linear_f32();
+        assert!(d[..3].iter().all(|v| (v - 1536.0 / 4095.0).abs() < 1e-3) && d[3] == 1.0, "{d:?}");
+    }
+
+    /// Straight alpha premultiplies, an alpha plane bounds the visible region, and a frame whose
+    /// planes are shorter than its size converts to transparent instead of reading past them.
+    #[test]
+    fn rgb16_alpha_and_short_planes() {
+        let color = ColorInfo { transfer: cfa4_color::Transfer::Linear, ..ColorInfo::SRGB_FULL };
+        let f = rgb16(10, [1023; 4], [1023; 4], [1023; 4], Some([0, 1023, 0, 0]), color);
+        let lin = f.to_linear_f32();
+        assert_eq!(&lin[0..4], &[0.0; 4]);
+        assert!(lin[4..8].iter().all(|v| (v - 1.0).abs() < 1e-6), "{:?}", &lin[4..8]);
+        assert_eq!(f.alpha_region(1), Some(Region { x: 1, y: 0, w: 1, h: 1 }));
+        assert_eq!(f.format_label(), "RGBA 10-bit");
+        let short =
+            VideoFrame { data: PixelData::Rgb16 { planes: [Arc::new(vec![1023]), Arc::new(vec![1023]), Arc::new(vec![1023])], bits: 10, alpha: None }, ..f };
+        assert!(short.to_linear_f32().iter().all(|v| *v == 0.0));
+        assert_eq!(short.to_rgba8().len(), 2 * 2 * 4);
     }
 }

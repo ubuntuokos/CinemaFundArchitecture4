@@ -8,6 +8,7 @@
 //!   allow (mono above 192 kbit/s, which is ffmpeg's default for mono, and stereo below 64 kbit/s)
 //!   decode with the allocation table their bit rate per channel selects (see [`Header`]).
 //! - Output: planar f32 at full scale ±1, 384 (Layer I) or 1152 (Layer II) samples per channel.
+//! - [`encode`]: a Layer II encoder (MP2) for mono, stereo and dual channel.
 //!
 //! Not decoded: Layer III (use an MP3 decoder; [`parse_header`] still reads its headers), the free
 //! format (bit rate index 0, whose frame length is only known from the next sync word) and the
@@ -15,6 +16,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod encode;
 mod tables;
 
 use cfa4_bitstream::BitReader;
@@ -228,7 +230,7 @@ impl Decoder {
     }
 }
 
-fn read(r: &mut BitReader, n: u32) -> Result<u32> {
+fn read(r: &mut BitReader<'_>, n: u32) -> Result<u32> {
     r.read_bits(n).map_err(|_| Error::Invalid("frame data runs past the frame"))
 }
 
@@ -239,7 +241,7 @@ fn requantize(v: u32, steps: u32) -> f32 {
 }
 
 /// Layer I audio data (§2.4.1.5): allocation, scalefactors and 12 samples per subband.
-fn layer1(r: &mut BitReader, h: &Header, out: &mut Subbands) -> Result<()> {
+fn layer1(r: &mut BitReader<'_>, h: &Header, out: &mut Subbands) -> Result<()> {
     let nch = h.channels();
     let bound = if nch == 1 { 32 } else { h.bound() };
     let mut alloc = [[0u32; 32]; 2];
@@ -288,7 +290,7 @@ fn layer1(r: &mut BitReader, h: &Header, out: &mut Subbands) -> Result<()> {
 }
 
 /// Read the three samples of one granule in a subband with `steps` quantization steps.
-fn granule(r: &mut BitReader, steps: u16) -> Result<[f32; 3]> {
+fn granule(r: &mut BitReader<'_>, steps: u16) -> Result<[f32; 3]> {
     let steps = u32::from(steps);
     let mut q = [0u32; 3];
     if let Some(bits) = tables::grouping(steps as u16) {
@@ -310,7 +312,7 @@ fn granule(r: &mut BitReader, steps: u16) -> Result<[f32; 3]> {
 
 /// Layer II audio data (§2.4.1.6): allocation, scalefactor selection, scalefactors and 12
 /// granules of three samples per subband.
-fn layer2(r: &mut BitReader, h: &Header, out: &mut Subbands) -> Result<()> {
+fn layer2(r: &mut BitReader<'_>, h: &Header, out: &mut Subbands) -> Result<()> {
     let nch = h.channels();
     let per_channel = h.bitrate_kbps / nch as u32;
     let table = AllocTable::select(h.version != Version::Mpeg1, h.sample_rate, per_channel);
@@ -322,7 +324,7 @@ fn layer2(r: &mut BitReader, h: &Header, out: &mut Subbands) -> Result<()> {
     for sb in 0..sblimit {
         let row = table.row(sb);
         let nbal = row.len().trailing_zeros();
-        let pick = |r: &mut BitReader| -> Result<u16> { Ok(row.get(read(r, nbal)? as usize).copied().unwrap_or(0)) };
+        let pick = |r: &mut BitReader<'_>| -> Result<u16> { Ok(row.get(read(r, nbal)? as usize).copied().unwrap_or(0)) };
         if sb < bound {
             for ch in 0..nch {
                 steps[ch][sb] = pick(r)?;

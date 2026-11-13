@@ -48,7 +48,7 @@ fn picture(w: usize, h: usize) -> Image {
     img
 }
 
-fn run(id: &str, e: &EffectInstance, img: &Image, cx: &FxCtx) -> Image {
+fn run(id: &str, e: &EffectInstance, img: &Image, cx: &FxCtx<'_>) -> Image {
     let mut o = img.clone();
     crate::effects::apply(&mut o, e, cx);
     let _ = id;
@@ -67,6 +67,8 @@ const NEW_IDS: &[&str] = &[
     "compound_blur",
     "focus_blur",
     "reduce_interlace_flicker",
+    "skin_smoothing",
+    "low_light",
     "asc_cdl",
     "video_limiter",
     "vignette",
@@ -107,6 +109,8 @@ const NEW_IDS: &[&str] = &[
     "rotate_3d",
     "auto_reframe",
     "camera_shake",
+    "film_gate",
+    "particles",
     "grow",
     "shrink",
     "move",
@@ -120,6 +124,12 @@ const NEW_IDS: &[&str] = &[
     "metadata_burnin",
     "echo",
     "slit_scan",
+    "bit_crush",
+    "block_glitch",
+    "databend",
+    "vhs",
+    "scan_line_jitter",
+    "tile_jitter",
     "lightning",
     "cell_pattern",
     "checkerboard",
@@ -232,6 +242,10 @@ fn neutral_parameters_are_identity() {
         ("channel_blur", vec![]),
         ("bokeh_blur", vec![("amount", ParamValue::Float(0.0))]),
         ("reduce_interlace_flicker", vec![]),
+        ("skin_smoothing", vec![("amount", ParamValue::Float(0.0))]),
+        ("skin_smoothing", vec![("texture", ParamValue::Float(100.0))]),
+        ("skin_smoothing", vec![("radius", ParamValue::Float(0.0))]),
+        ("low_light", vec![("amount", ParamValue::Float(0.0))]),
         ("vr_blur", vec![]),
         ("vr_sharpen", vec![]),
         ("vr_denoise", vec![]),
@@ -251,6 +265,13 @@ fn neutral_parameters_are_identity() {
         ("posterize_time", vec![]),
         ("echo", vec![]),
         ("slit_scan", vec![]),
+        ("film_gate", vec![("weave", ParamValue::Float(0.0)), ("weave_rotation", ParamValue::Float(0.0)), ("flicker", ParamValue::Float(0.0))]),
+        ("bit_crush", vec![("bits", ParamValue::Float(16.0))]),
+        ("block_glitch", vec![("count", ParamValue::Float(0.0))]),
+        ("databend", vec![("shift", ParamValue::Float(0.0)), ("color", ParamValue::Float(0.0))]),
+        ("vhs", ["bleed", "wobble", "snow", "tracking", "head", "scanlines"].iter().map(|k| (*k, ParamValue::Float(0.0))).collect()),
+        ("scan_line_jitter", vec![("amount", ParamValue::Float(0.0))]),
+        ("tile_jitter", vec![("amount", ParamValue::Float(0.0))]),
         ("warp_stabilizer", vec![]),
         ("track_matte", vec![]),
         ("noise", vec![]),
@@ -1004,6 +1025,112 @@ fn posterize_time_and_echo_read_other_frames() {
 }
 
 #[test]
+fn particles_are_a_pure_function_of_time() {
+    let img = solid(64, 48, [0.0, 0.0, 0.0]);
+    let mut e = inst("particles");
+    set(&mut e, "emitter", ParamValue::Vec2(cfa4_geom::Vec2::new(32.0, 40.0)));
+    setf(&mut e, "gravity", 0.0);
+    setf(&mut e, "speed", 20.0);
+    let at = |e: &EffectInstance, s: f64| run("particles", e, &img, &FxCtx { seconds: s, ..cx() });
+    // nothing before the first birth, something after
+    assert_eq!(max_diff(&at(&e, -1.0), &img), 0.0);
+    let one = at(&e, 1.0);
+    assert!(max_diff(&one, &img) > 0.1, "particles drawn after a second");
+    // deterministic: the same time gives the same frame, without rendering earlier frames
+    assert_eq!(max_diff(&one, &at(&e, 1.0)), 0.0);
+    // direction 0 sends them up: everything lit sits above the emitter (plus the dot radius)
+    for y in 45..48 {
+        for x in 0..64 {
+            assert_eq!(one.get(x, y)[3], 1.0);
+            assert!(one.get(x, y)[0] < 1e-6, "below the emitter at ({x},{y}): {:?}", one.get(x, y));
+        }
+    }
+    // without compositing the background is transparent
+    set(&mut e, "composite", ParamValue::Bool(false));
+    let alone = at(&e, 1.0);
+    assert_eq!(alone.get(0, 47)[3], 0.0);
+    assert!(alone.px.chunks(4).any(|p| p[3] > 0.5), "the particles stay opaque");
+}
+
+#[test]
+fn particles_survive_hostile_values() {
+    let img = picture(16, 12);
+    let mut e = inst("particles");
+    for v in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1e9, 1e9] {
+        for k in ["rate", "life", "direction", "spread", "speed", "speed_random", "gravity", "size", "seed"] {
+            setf(&mut e, k, v);
+        }
+        set(&mut e, "emitter", ParamValue::Vec2(cfa4_geom::Vec2::new(v, v)));
+        for s in [f64::NAN, -5.0, 0.0, 3.0, 1e12] {
+            let o = run("particles", &e, &img, &FxCtx { seconds: s, ..cx() });
+            assert!(o.px.iter().all(|c| c.is_finite()), "{v} at {s}s");
+        }
+    }
+}
+
+#[test]
+fn film_gate_holds_each_frame_and_changes_between_frames() {
+    let env = ClipEnv { w: 32, h: 24, fps: 24.0, secs: 10.0, now: 5.0, key: 79, seq: (32, 24), pic: |x, y, _| [x as f32 / 32.0, y as f32 / 24.0, 0.5] };
+    let img = picture(32, 24);
+    let mut e = inst("film_gate");
+    setf(&mut e, "weave", 4.0);
+    setf(&mut e, "flicker", 30.0);
+    let at = |e: &EffectInstance, s: f64| run("film_gate", e, &img, &FxCtx { seconds: s, env: Some(&env), ..cx() });
+    // held for the whole frame (frame 120 spans 5.0..5.0417 s)
+    assert_eq!(max_diff(&at(&e, 5.001), &at(&e, 5.04)), 0.0, "one frame, one gate position");
+    // and different from frame to frame
+    let changes = (0..12).filter(|i| max_diff(&at(&e, 5.0 + *i as f64 / 24.0), &at(&e, 5.0 + (*i + 1) as f64 / 24.0)) > 1e-3).count();
+    assert!(changes >= 10, "the gate moves or flickers on most frames: {changes}/12");
+    // a different seed gives a different film
+    let a = at(&e, 5.0);
+    setf(&mut e, "seed", 7.0);
+    assert!(max_diff(&a, &at(&e, 5.0)) > 1e-3);
+}
+
+#[test]
+fn film_gate_uses_the_sequence_rate_without_an_environment() {
+    // an adjustment layer at 60 fps: consecutive 60 fps frames differ
+    let img = picture(32, 24);
+    let mut e = inst("film_gate");
+    setf(&mut e, "weave", 4.0);
+    let at = |s: f64| run("film_gate", &e, &img, &FxCtx { seconds: s, env: None, frame_rate: 60.0, ..cx() });
+    let changes = (0..12).filter(|i| max_diff(&at(5.0 + (*i as f64 + 0.5) / 60.0), &at(5.0 + (*i as f64 + 1.5) / 60.0)) > 1e-3).count();
+    assert!(changes >= 10, "a new gate position on most 60 fps frames: {changes}/12");
+}
+
+#[test]
+fn film_gate_keeps_wide_frames_covered() {
+    // 16:9, strong weave and the largest rotation: no transparent corners on any frame
+    let img = solid(96, 54, [0.5, 0.5, 0.5]);
+    for (weave, rot) in [(0.0, 5.0), (10.0, 5.0), (10.0, 0.0)] {
+        let mut e = inst("film_gate");
+        setf(&mut e, "weave", weave);
+        setf(&mut e, "weave_rotation", rot);
+        setf(&mut e, "flicker", 0.0);
+        for f in 0..120 {
+            let o = run("film_gate", &e, &img, &FxCtx { seconds: f as f64 / 24.0, env: None, frame_rate: 24.0, ..cx() });
+            let min_alpha = o.px.chunks(4).map(|p| p[3]).fold(1.0f32, f32::min);
+            assert!(min_alpha > 0.999, "weave {weave} rotation {rot} frame {f}: alpha {min_alpha}");
+        }
+    }
+}
+
+#[test]
+fn film_gate_survives_hostile_values() {
+    let img = picture(16, 12);
+    let mut e = inst("film_gate");
+    for v in [f64::NAN, f64::INFINITY, -1e9, 1e9] {
+        for k in ["weave", "weave_rotation", "flicker", "seed"] {
+            setf(&mut e, k, v);
+        }
+        for s in [f64::NAN, -5.0, 1e12] {
+            let o = run("film_gate", &e, &img, &FxCtx { seconds: s, ..cx() });
+            assert!(o.px.iter().all(|c| c.is_finite()), "weave/flicker {v} at {s}s");
+        }
+    }
+}
+
+#[test]
 fn slit_scan_shows_a_different_time_in_each_band() {
     // the picture's grey level is its time / 10
     fn clock(_x: f64, _y: f64, t: f64) -> [f32; 3] {
@@ -1231,4 +1358,159 @@ fn transform_shutter_uses_the_sequence_frame_rate_without_env() {
     for frame in [60, 90, 120] {
         assert!(delta(frame) > 1e-3, "frame {frame} moves but is sharp");
     }
+}
+
+/// A picture of skin-coloured noise on the left half and a saturated blue, equally noisy, right
+/// half: smoothing has to quieten the left half and leave the right one alone.
+fn skin_and_blue(w: usize, h: usize) -> Image {
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let n = (noise3(x as f32 * 1.7, y as f32 * 1.3, 0.25, 3) - 0.5) * 0.2;
+            let base = if x < w / 2 { [0.86, 0.67, 0.56] } else { [0.1, 0.2, 0.9] };
+            let c = [(base[0] + n).clamp(0.0, 1.0), (base[1] + n).clamp(0.0, 1.0), (base[2] + n).clamp(0.0, 1.0)];
+            let l = dec(c);
+            img.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    img
+}
+
+/// Mean absolute difference between neighbouring pixels of a column band: how noisy it is.
+fn roughness(img: &Image, x0: usize, x1: usize) -> f32 {
+    let mut sum = 0.0;
+    let mut n = 0.0;
+    for y in 0..img.h {
+        for x in x0..x1.min(img.w).saturating_sub(1) {
+            sum += (img.get(x, y)[1] - img.get(x + 1, y)[1]).abs();
+            n += 1.0;
+        }
+    }
+    if n == 0.0 { 0.0 } else { sum / n }
+}
+
+#[test]
+fn skin_smoothing_quietens_skin_and_leaves_other_colours() {
+    let img = skin_and_blue(80, 24);
+    let mut e = inst("skin_smoothing");
+    setf(&mut e, "amount", 100.0);
+    setf(&mut e, "texture", 0.0);
+    setf(&mut e, "radius", 6.0);
+    let o = run("skin_smoothing", &e, &img, &cx());
+    let (w, h) = (img.w, img.h);
+    // bands kept clear of the colour boundary, which the filter window straddles
+    let skin = (roughness(&img, 2, w / 2 - 10), roughness(&o, 2, w / 2 - 10));
+    let blue = (roughness(&img, w / 2 + 10, w - 2), roughness(&o, w / 2 + 10, w - 2));
+    assert!(skin.1 < skin.0 * 0.5, "skin not smoothed: {} → {}", skin.0, skin.1);
+    assert!(blue.1 > blue.0 * 0.9, "the blue half was smoothed too: {} → {}", blue.0, blue.1);
+    // the skin keeps its colour: the smoothed half's mean is within a hair of the original's
+    let mean = |i: &Image, x0: usize, x1: usize| {
+        let mut s = 0.0;
+        for y in 0..h {
+            for x in x0..x1 {
+                s += i.get(x, y)[1];
+            }
+        }
+        s / ((x1 - x0) * h) as f32
+    };
+    let (a, b) = (mean(&img, 2, w / 2 - 10), mean(&o, 2, w / 2 - 10));
+    assert!((a - b).abs() < 0.02, "skin brightness drifted: {a} → {b}");
+}
+
+#[test]
+fn skin_smoothing_keeps_an_edge_inside_the_skin() {
+    // a hard light/dark edge in skin tones: a guided filter keeps it, a plain blur would not
+    let (w, h) = (32, 16);
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let c = if x < w / 2 { [0.86, 0.67, 0.56] } else { [0.43, 0.33, 0.28] };
+            let l = dec(c);
+            img.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    let mut e = inst("skin_smoothing");
+    setf(&mut e, "amount", 100.0);
+    setf(&mut e, "texture", 0.0);
+    let o = run("skin_smoothing", &e, &img, &cx());
+    let step = |i: &Image| enc_px(i, w / 2 - 1, h / 2)[1] - enc_px(i, w / 2, h / 2)[1];
+    // the same radius as a plain Gaussian, which is what an edge-preserving filter must beat
+    let mut plain = img.clone();
+    crate::effects::gaussian(&mut plain, 10.0, 10.0, true);
+    assert!(step(&o) > step(&img) * 0.5, "the edge was blurred away: {} → {}", step(&img), step(&o));
+    assert!(step(&o) > step(&plain) * 3.0, "no better than a Gaussian: {} vs {}", step(&o), step(&plain));
+}
+
+#[test]
+fn skin_smoothing_show_mask_marks_the_skin_only() {
+    let img = skin_and_blue(24, 8);
+    let mut e = inst("skin_smoothing");
+    set(&mut e, "show_mask", ParamValue::Bool(true));
+    let o = run("skin_smoothing", &e, &img, &cx());
+    assert!(enc_px(&o, 4, 4)[0] > 0.8, "skin is not in the mask: {:?}", enc_px(&o, 4, 4));
+    assert!(enc_px(&o, 20, 4)[0] < 0.1, "the blue half is in the mask: {:?}", enc_px(&o, 20, 4));
+    // Smooth Entire Image drops the mask
+    set(&mut e, "whole_image", ParamValue::Bool(true));
+    let o = run("skin_smoothing", &e, &img, &cx());
+    assert!(enc_px(&o, 20, 4)[0] > 0.8, "the mask is not everywhere: {:?}", enc_px(&o, 20, 4));
+}
+
+#[test]
+fn low_light_lifts_the_dark_side_and_keeps_the_lit_one() {
+    // left half in deep shadow, right half lit; both the same orange hue
+    let (w, h) = (48, 16);
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let c = if x < w / 2 { [0.16, 0.08, 0.04] } else { [0.96, 0.48, 0.24] };
+            let l = dec(c);
+            img.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    let mut e = inst("low_light");
+    setf(&mut e, "amount", 100.0);
+    let o = run("low_light", &e, &img, &cx());
+    let (dark_in, dark_out) = (enc_px(&img, 4, 8), enc_px(&o, 4, 8));
+    let (lit_in, lit_out) = (enc_px(&img, w - 4, 8), enc_px(&o, w - 4, 8));
+    assert!(dark_out[0] > dark_in[0] * 2.0, "shadow not lifted: {dark_in:?} → {dark_out:?}");
+    // 0.96 gets a gain of 0.96^-0.85 ≈ 1.035: a lit pixel moves by a few percent at most
+    assert!((lit_out[0] - lit_in[0]).abs() < 0.05, "lit side changed: {lit_in:?} → {lit_out:?}");
+    // one gain for all channels: the hue (channel ratios) stays
+    assert!(close(dark_out[1] / dark_out[0], 0.5, 0.02) && close(dark_out[2] / dark_out[0], 0.25, 0.02), "hue shifted: {dark_out:?}");
+    // the lamp edge between the halves survives the smoothing of the illumination
+    let step = enc_px(&o, w / 2, 8)[0] - enc_px(&o, w / 2 - 1, 8)[0];
+    assert!(step > 0.1, "edge lost: {step}");
+}
+
+#[test]
+fn low_light_caps_the_gain_in_near_black() {
+    let img = solid(8, 8, [0.01, 0.01, 0.01]);
+    let mut e = inst("low_light");
+    setf(&mut e, "amount", 100.0);
+    setf(&mut e, "max_gain", 200.0);
+    let o = run("low_light", &e, &img, &cx());
+    let v = enc_px(&o, 4, 4)[0];
+    assert!(v <= 0.02 + 1e-3 && v > 0.015, "gain not capped at 2×: {v}");
+    // Show Illumination draws the estimate, even with Amount at 0
+    let mut e = inst("low_light");
+    setf(&mut e, "amount", 0.0);
+    set(&mut e, "show_illumination", ParamValue::Bool(true));
+    let o = run("low_light", &e, &solid(8, 8, [0.5, 0.2, 0.1]), &cx());
+    assert!(close(enc_px(&o, 4, 4)[1], 0.5, 0.01), "{:?}", enc_px(&o, 4, 4));
+}
+
+#[test]
+fn film_gate_counts_exact_frame_boundaries_as_their_own_frame() {
+    // ticks per frame at 25 fps and at 30000/1001 fps are whole numbers
+    for (num, den) in [(25i64, 1i64), (24, 1), (30000, 1001), (60000, 1001), (50, 1)] {
+        let tpf = cfa4_time::TICKS_PER_SECOND / num * den;
+        let fps = num as f64 / den as f64;
+        for n in 0..2000i64 {
+            let t = cfa4_time::Tick(tpf * n);
+            assert_eq!(super::distort::gate_frame(t.seconds(), fps), n as f64, "frame {n} at {num}/{den}");
+            // the middle of the frame stays in it too
+            assert_eq!(super::distort::gate_frame(cfa4_time::Tick(tpf * n + tpf / 2).seconds(), fps), n as f64);
+        }
+    }
+    assert_eq!(super::distort::gate_frame(f64::NAN, 24.0), 0.0);
 }

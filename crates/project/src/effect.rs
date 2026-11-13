@@ -266,10 +266,15 @@ const TRANSFORM: &[&str] = &["Video Effects", "Transform"];
 pub const STEREO_3D: &[&str] = &["Video Effects", "Stereoscopic 3D"];
 /// CFA4's own folder (not in Premiere's bin): stylized looks (film grain, print and screen looks).
 pub const CREATIVE_LOOKS: &[&str] = &["Video Effects", "Creative Looks"];
+/// CFA4's own folder (not in Premiere's bin): retouch and picture-enhancement effects.
+pub const ENHANCE: &[&str] = &["Video Effects", "Enhance"];
+/// CFA4's own folder (not in Premiere's bin): digital and analogue damage looks.
+pub const GLITCH: &[&str] = &["Video Effects", "Glitch"];
 /// CFA4's own Video Effects folders, which Premiere's catalogue does not have.
-pub const CFA4_FOLDERS: &[&str] = &["Stereoscopic 3D", "Creative Looks"];
-/// CFA4's own effects that sit in one of Premiere's folders.
-pub const CFA4_OWN: &[&str] = &["slit_scan"];
+pub const CFA4_FOLDERS: &[&str] = &["Stereoscopic 3D", "Creative Looks", "Enhance", "Glitch"];
+/// CFA4's own effects that sit in one of Premiere's folders or in the Glitch folder.
+pub const CFA4_OWN: &[&str] =
+    &["slit_scan", "six_point_pin", "film_gate", "particles", "bit_crush", "block_glitch", "databend", "vhs", "scan_line_jitter", "tile_jitter"];
 const VIDEO: &[&str] = &["Video Effects", "Video"];
 const A_AMP: &[&str] = &["Audio Effects", "Amplitude and Compression"];
 const A_DELAY: &[&str] = &["Audio Effects", "Delay and Echo"];
@@ -973,5 +978,29 @@ mod tests {
         assert!(effect_defs().len() > 90);
         assert_eq!(find_effect_by_name("Gaussian Blur").unwrap().id, "gaussian_blur");
         assert_eq!(intrinsic_video().len(), 3);
+    }
+
+    /// Everything an artist can apply has to be in a folder the Effects panel draws
+    /// (`panels/effects.rs` walks [`crate::vtransition::EFFECT_TOP_FOLDERS`]), else the effect
+    /// exists but nothing in the interface leads to it. Only three kinds have no folder on
+    /// purpose: the intrinsic parameter groups (Motion, Opacity, Volume…), which the Effect
+    /// Controls panel always shows, the graphic layer kinds, which Graphics ▸ New Layer creates,
+    /// and the obsolete transitions kept so old projects still render.
+    #[test]
+    fn every_effect_is_in_a_folder_the_effects_panel_shows() {
+        for d in effect_defs() {
+            if d.intrinsic || crate::graphic::is_layer_id(d.id) {
+                assert!(d.category.is_empty(), "{} has a folder but is not applied from the panel", d.id);
+                continue;
+            }
+            let top = d.category.first().copied().unwrap_or_default();
+            if top == "Obsolete" {
+                continue;
+            }
+            assert!(crate::vtransition::EFFECT_TOP_FOLDERS.contains(&top), "{} is in {:?}, which the Effects panel does not show", d.id, d.category);
+            // a sub-folder, or none: the panel lists folderless items (Balance, Mute, Volume…)
+            // after the folders of their top-level bin
+            assert!(d.category.len() <= 2, "{} has a path deeper than the panel's two levels: {:?}", d.id, d.category);
+        }
     }
 }

@@ -25,6 +25,10 @@ pub const FRAME_LAYOUTS: &[&str] = &["Monoscopic", "Stereoscopic - Over/Under", 
 pub const EASINGS: &[&str] = &["Linear", "Ease In", "Ease Out", "Ease In and Out"];
 /// Slit Scan: the edge that shows the current frame (the opposite edge is the most delayed).
 pub const SLIT_DIRECTIONS: &[&str] = &["Top", "Bottom", "Left", "Right"];
+/// Glitch effects: which way the picture is pushed (Scan Line Jitter, Tile Jitter).
+pub const GLITCH_AXES: &[&str] = &["Horizontal", "Vertical"];
+/// Glitch effects: always on, or pulsing on and off at the Frequency.
+pub const GLITCH_INTERVALS: &[&str] = &["Infinite", "Periodic"];
 pub const ECHO_OPERATORS: &[&str] = &["Add", "Maximum", "Minimum", "Screen", "Composite In Back", "Composite In Front", "Blend"];
 pub const SIMPLE_BLEND: &[&str] = &["Normal", "Add", "Screen", "Multiply", "Overlay"];
 
@@ -63,6 +67,12 @@ pub fn auto_point(effect: &str, param: &str) -> Option<(f64, f64)> {
         ("corner_pin", "upper_right") => (1.0, 0.0),
         ("corner_pin", "lower_left") => (0.0, 1.0),
         ("corner_pin", "lower_right") => (1.0, 1.0),
+        ("six_point_pin", "upper_left") => (0.0, 0.0),
+        ("six_point_pin", "upper_center") => (0.5, 0.0),
+        ("six_point_pin", "upper_right") => (1.0, 0.0),
+        ("six_point_pin", "lower_left") => (0.0, 1.0),
+        ("six_point_pin", "lower_center") => (0.5, 1.0),
+        ("six_point_pin", "lower_right") => (1.0, 1.0),
         ("gradient", "start") => (0.5, 0.0),
         ("gradient", "end") => (0.5, 1.0),
         ("lightning", "start") => (0.1, 0.1),
@@ -262,6 +272,34 @@ pub(super) fn defs() -> Vec<EffectDef> {
             ],
         ),
         video("reduce_interlace_flicker", "Reduce Interlace Flicker", BLUR, vec![fs("softness", "Softness", 0.0, (0.0, 10.0), (0.0, 10.0), "", 2)]),
+        // ---- Enhance (CFA4's own folder) ----
+        video(
+            "skin_smoothing",
+            "Skin Smoothing",
+            ENHANCE,
+            vec![
+                pct("amount", "Amount", 50.0),
+                px("radius", "Radius", 10.0, 500.0, 60.0),
+                pct("smoothness", "Smoothness", 50.0),
+                pct("texture", "Keep Texture", 40.0),
+                col("skin_tone", "Skin Tone", [0.86, 0.67, 0.56, 1.0]),
+                pct("tolerance", "Tolerance", 40.0),
+                pct("softness", "Softness", 50.0),
+                b("whole_image", "Smooth Entire Image", false),
+                b("show_mask", "Show Mask", false),
+            ],
+        ),
+        video(
+            "low_light",
+            "Low Light",
+            ENHANCE,
+            vec![
+                pct("amount", "Amount", 50.0),
+                px("radius", "Radius", 15.0, 500.0, 60.0),
+                fs("max_gain", "Max Brightening", 400.0, (100.0, 2000.0), (100.0, 1000.0), "%", 0),
+                b("show_illumination", "Show Illumination", false),
+            ],
+        ),
         // ---- Color Correction ----
         video(
             "asc_cdl",
@@ -318,6 +356,21 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 pt("upper_left", "Upper Left", f64::NAN, f64::NAN),
                 pt("upper_right", "Upper Right", f64::NAN, f64::NAN),
                 pt("lower_left", "Lower Left", f64::NAN, f64::NAN),
+                pt("lower_right", "Lower Right", f64::NAN, f64::NAN),
+            ],
+        ),
+        // CFA4's own (not in Premiere): Corner Pin with the top and bottom edges bent through a
+        // middle point, for curved cinema screens.
+        video(
+            "six_point_pin",
+            "Six-Point Pin",
+            DISTORT,
+            vec![
+                pt("upper_left", "Upper Left", f64::NAN, f64::NAN),
+                pt("upper_center", "Upper Center", f64::NAN, f64::NAN),
+                pt("upper_right", "Upper Right", f64::NAN, f64::NAN),
+                pt("lower_left", "Lower Left", f64::NAN, f64::NAN),
+                pt("lower_center", "Lower Center", f64::NAN, f64::NAN),
                 pt("lower_right", "Lower Right", f64::NAN, f64::NAN),
             ],
         ),
@@ -403,6 +456,28 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 pct("scatter", "Gradient Scatter", 0.0),
                 pct("midpoint", "Midpoint", 50.0),
                 blend_orig(),
+            ],
+        ),
+        // CFA4's own (not in Premiere's bin): a seeded particle fountain, computed from the clip time
+        // alone so any frame renders the same without simulating the frames before it.
+        video(
+            "particles",
+            "Particles",
+            GENERATE,
+            vec![
+                pt("emitter", "Emitter Position", f64::NAN, f64::NAN),
+                fs("rate", "Birth Rate", 40.0, (0.0, 500.0), (0.0, 200.0), "/s", 1),
+                fs("life", "Lifetime (seconds)", 2.0, (0.05, 10.0), (0.05, 5.0), "", 2),
+                ang("direction", "Direction", 0.0),
+                fs("spread", "Spread", 60.0, (0.0, 360.0), (0.0, 360.0), "°", 0),
+                px("speed", "Velocity", 300.0, 5000.0, 1000.0),
+                pct("speed_random", "Velocity Random", 30.0),
+                fs("gravity", "Gravity", 200.0, (-5000.0, 5000.0), (-1000.0, 1000.0), "", 0),
+                px("size", "Particle Size", 6.0, 200.0, 50.0),
+                col("color", "Color", [1.0, 0.85, 0.4, 1.0]),
+                b("fade", "Fade Out", true),
+                b("composite", "Composite on Original", true),
+                seed(),
             ],
         ),
         // ---- Image Control ----
@@ -626,6 +701,86 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 grp(seed(), "Evolution Options"),
             ],
         ),
+        // ---- Glitch (CFA4's own folder) ----
+        video(
+            "bit_crush",
+            "Bit Crush",
+            GLITCH,
+            vec![
+                fs("bits", "Bits per Channel", 3.0, (1.0, 16.0), (1.0, 8.0), "", 0),
+                b("dither", "Ordered Dither", true),
+                fs("cell", "Dither Cell Size", 1.0, (1.0, 64.0), (1.0, 8.0), "", 0),
+            ],
+        ),
+        video(
+            "block_glitch",
+            "Block Glitch",
+            GLITCH,
+            vec![
+                fs("count", "Blocks Moved", 40.0, (0.0, 400.0), (0.0, 200.0), "", 0),
+                px("size", "Block Size", 48.0, 1024.0, 256.0),
+                fs("aspect", "Block Width", 2.0, (0.25, 4.0), (0.25, 4.0), "", 2),
+                px("distance", "Max Distance", 200.0, 4096.0, 1280.0),
+                b("snap", "Snap to Grid", true),
+                b("swap", "Swap Blocks", false),
+                fs("rate", "Changes per Second", 8.0, (0.0, 60.0), (0.0, 30.0), "", 1),
+                seed(),
+            ],
+        ),
+        video(
+            "databend",
+            "Databend",
+            GLITCH,
+            vec![
+                fs("breaks", "Breaks", 10.0, (1.0, 40.0), (1.0, 40.0), "", 0),
+                pct("shift", "Shift", 50.0),
+                pct("color", "Color Damage", 50.0),
+                px("size", "Block Size", 16.0, 256.0, 64.0),
+                fs("rate", "Changes per Second", 4.0, (0.0, 60.0), (0.0, 30.0), "", 1),
+                seed(),
+            ],
+        ),
+        video(
+            "vhs",
+            "VHS",
+            GLITCH,
+            vec![
+                px("bleed", "Color Bleed", 10.0, 100.0, 40.0),
+                px("wobble", "Wobble", 3.0, 100.0, 24.0),
+                pct("snow", "Snow", 25.0),
+                pct("tracking", "Tracking Bar", 50.0),
+                pct("head", "Head Switching", 50.0),
+                pct("scanlines", "Scan Lines", 50.0),
+                seed(),
+            ],
+        ),
+        video(
+            "scan_line_jitter",
+            "Scan Line Jitter",
+            GLITCH,
+            vec![
+                pct("amount", "Jitter", 10.0),
+                ch("direction", "Direction", GLITCH_AXES, 0),
+                ch("interval", "Interval", GLITCH_INTERVALS, 0),
+                fs("frequency", "Frequency", 1.0, (0.0, 25.0), (0.0, 25.0), "", 2),
+                fs("rate", "Changes per Second", 30.0, (0.0, 120.0), (0.0, 60.0), "", 1),
+                seed(),
+            ],
+        ),
+        video(
+            "tile_jitter",
+            "Tile Jitter",
+            GLITCH,
+            vec![
+                fs("tiles", "Tiles", 5.0, (1.0, 50.0), (1.0, 50.0), "", 0),
+                ch("bands", "Band Direction", GLITCH_AXES, 0),
+                ch("direction", "Jitter Direction", GLITCH_AXES, 0),
+                px("amount", "Amount", 10.0, 1000.0, 100.0),
+                pct("speed", "Speed", 35.0),
+                ch("interval", "Interval", GLITCH_INTERVALS, 0),
+                fs("frequency", "Frequency", 1.0, (0.0, 25.0), (0.0, 25.0), "", 2),
+            ],
+        ),
         // ---- Time ----
         video("posterize_time", "Posterize Time", TIME, vec![fs("rate", "Frame Rate", 12.0, (0.1, 99.0), (1.0, 60.0), "", 2)]),
         // CFA4's own (not in Premiere's bin): time displacement along one axis of the frame.
@@ -676,6 +831,19 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 fs("frequency", "Frequency", 4.0, (0.1, 60.0), (0.1, 20.0), "Hz", 2),
                 fs("complexity", "Complexity", 3.0, (1.0, 6.0), (1.0, 6.0), "", 0),
                 pct("motion_blur", "Motion Blur", 0.0),
+                seed(),
+            ],
+        ),
+        // CFA4's own (not in Premiere's bin): projected-film look, the frame wobbling in the gate
+        // and the exposure flickering from frame to frame.
+        video(
+            "film_gate",
+            "Film Gate",
+            STYLIZE,
+            vec![
+                fs("weave", "Gate Weave", 1.5, (0.0, 50.0), (0.0, 10.0), "", 2),
+                fs("weave_rotation", "Weave Rotation", 0.1, (0.0, 5.0), (0.0, 1.0), "°", 2),
+                pct("flicker", "Flicker", 6.0),
                 seed(),
             ],
         ),
@@ -1154,6 +1322,7 @@ pub(super) fn apply_badges(v: &mut [EffectDef]) {
                 | "mosaic"
                 | "rotate_3d"
                 | "camera_shake"
+                | "film_gate"
                 | "grow"
                 | "move"
                 | "shrink"

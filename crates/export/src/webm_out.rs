@@ -38,6 +38,26 @@ pub(crate) struct WebmSetup<'a> {
     pub rate: FrameRate,
     /// (sample rate, channels) of the audio, if any.
     pub audio: Option<(u32, usize)>,
+    /// Chapters ([`crate::export_chapters`]), written as Matroska chapters.
+    pub chapters: Vec<cfa4_isobmff::Chapter>,
+    /// Frames in the export: the last chapter ends with them.
+    pub frames: i64,
+}
+
+/// Export chapters as Matroska chapters: start in ns, each ending where the next starts and the
+/// last at the end of the export (`end_ns`).
+fn mkv_chapters(chapters: &[cfa4_isobmff::Chapter], end_ns: u64) -> Vec<cfa4_matroska::Chapter> {
+    let starts: Vec<u64> = chapters.iter().map(|c| c.start_100ns.saturating_mul(100)).collect();
+    chapters
+        .iter()
+        .zip(&starts)
+        .enumerate()
+        .map(|(i, (c, &start))| {
+            let mut m = cfa4_matroska::Chapter::new(start, c.title.clone());
+            m.end_ns = Some(starts.get(i + 1).copied().unwrap_or(end_ns)).filter(|&e| e > start);
+            m
+        })
+        .collect()
 }
 
 /// The Opus side of a WebM export: samples waiting for a whole frame, and how many were coded.
@@ -66,7 +86,7 @@ pub(crate) struct WebmMux {
 }
 
 impl WebmMux {
-    pub fn new(s: WebmSetup) -> Result<Self> {
+    pub fn new(s: WebmSetup<'_>) -> Result<Self> {
         let settings = s.settings;
         let mut v = TrackSpec::new(TrackKind::Video, "V_VP9");
         v.video_size = Some((s.width, s.height));
@@ -91,7 +111,9 @@ impl WebmMux {
             None => None,
         };
         let title = settings.metadata.title.trim();
+        let end_ns = u64::try_from(ns(i128::from(s.frames), i128::from(s.rate.den), i128::from(s.rate.num))).unwrap_or(0);
         let opts = MuxOptions {
+            chapters: mkv_chapters(&s.chapters, end_ns),
             doc_type: "webm".into(),
             title: (!title.is_empty()).then(|| title.to_string()),
             writing_app: format!("CFA4 {}", env!("CARGO_PKG_VERSION")),

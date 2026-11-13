@@ -1,4 +1,4 @@
-//! MacCaption MCC (`.mcc`): closed-caption data as text, one line per video frame, each line a
+//! MacCaption MCC (`.mcc`): closed-caption data as text, one line per frame carrying data, each line a
 //! SMPTE ST 334-2 caption distribution packet (CDP) carrying CEA-608 byte pairs and CEA-708
 //! (DTVCC) packets, written in hexadecimal with MacCaption's letter abbreviations.
 //!
@@ -19,8 +19,8 @@
 //!   bytes)), optional time code / service info sections, footer `74`, the counter again and a
 //!   checksum that makes the packet's byte sum 0 mod 256. The ancillary packet then ends with one ST 291 checksum byte
 //!   (low 8 bits of DID + SDID + data count + CDP bytes).
-//! - **Writing** (29.97 fps, `30DF` or `30` timecode labels): every frame from the first caption
-//!   data to one frame after the last carries a CDP with 20 cc_data triplets: field 1 CEA-608
+//! - **Writing** (29.97 fps, `30DF` or `30` timecode labels): each scheduled caption-data frame
+//!   carries a CDP with 20 cc_data triplets; empty frames are omitted. Each CDP contains field 1 CEA-608
 //!   pop-on data (the same schedule as [SCC](crate::scc)), a null field-2 pair, CEA-708
 //!   service 1 data and padding. The CEA-708 captions emulate pop-on with two windows: each
 //!   caption is defined (hidden) and loaded into one window while the other shows, then a
@@ -166,6 +166,39 @@ pub fn build_cdp(seq: u16, data: &FrameData) -> Vec<u8> {
     let anc_sum: u32 = out.iter().map(|&b| b as u32).sum();
     out.push((anc_sum & 0xff) as u8);
     out
+}
+
+/// Caption distribution packets for every frame of a 29.97 fps picture stream, for SMPTE ST 436-1
+/// ANC data in MXF: CEA-608 field 1 and CEA-708 service 1 of a document, scheduled as
+/// [`write`] schedules them, one CDP per frame (padding only where nothing is scheduled) with
+/// the sequence counter advancing every frame.
+#[derive(Clone, Debug, Default)]
+pub struct CdpStream {
+    f1: BTreeMap<i64, (u8, u8)>,
+    dtv: BTreeMap<i64, Vec<(bool, u8, u8)>>,
+    seq: u16,
+}
+
+impl CdpStream {
+    pub fn new(doc: &Document) -> Self {
+        CdpStream { f1: scc::schedule(doc), dtv: schedule_708(doc), seq: 0 }
+    }
+
+    /// The ancillary packet of frame `f` (frames counted from the document's zero): DID 61h,
+    /// SDID 01h, the data count and the CDP, without the ST 291 checksum word.
+    pub fn frame(&mut self, f: i64) -> Vec<u8> {
+        let data = FrameData { f1: self.f1.get(&f).copied(), dtvcc: self.dtv.get(&f).cloned().unwrap_or_default() };
+        let mut p = build_cdp(self.seq, &data);
+        self.seq = self.seq.wrapping_add(1);
+        let dc = p.get(2).map_or(0, |&n| n as usize);
+        p.truncate(3 + dc);
+        p
+    }
+
+    /// The last frame with scheduled caption data, if any.
+    pub fn last_frame(&self) -> Option<i64> {
+        self.f1.keys().next_back().copied().max(self.dtv.keys().next_back().copied())
+    }
 }
 
 /// The cc_data triplets of one line's bytes (an ancillary packet with a CDP, or a bare CDP).
@@ -344,9 +377,13 @@ struct Win {
     defined: bool,
     visible: bool,
     rows: Vec<String>,
+    max_rows: usize,
+    max_cols: usize,
 }
 
 struct Dec708 {
+    /// The caption service decoded (1–63).
+    service: u8,
     win: [Win; 8],
     cur: usize,
     packet: Vec<u8>,
@@ -356,8 +393,8 @@ struct Dec708 {
 }
 
 impl Dec708 {
-    fn new() -> Self {
-        Dec708 { win: Default::default(), cur: 0, packet: Vec::new(), want: 0, open: None, cues: Vec::new() }
+    fn for_service(service: u8) -> Self {
+        Dec708 { service, win: Default::default(), cur: 0, packet: Vec::new(), want: 0, open: None, cues: Vec::new() }
     }
     fn visible_text(&self) -> String {
         let mut lines = Vec::new();
@@ -404,7 +441,7 @@ impl Dec708 {
             }
             let (svc, skip) = if svc == 7 { (b.get(1).map_or(0, |x| x & 0x3f), 2) } else { (svc, 1) };
             let data = b.get(skip..skip + len).unwrap_or(&[]);
-            if svc == 1 {
+            if svc == self.service {
                 self.service_data(data);
             }
             b = b.get(skip + len..).unwrap_or(&[]);
@@ -416,8 +453,9 @@ impl Dec708 {
     fn put(&mut self, c: char) {
         let w = self.w();
         match w.rows.last_mut() {
-            Some(row) => row.push(c),
-            None => w.rows.push(c.to_string()),
+            Some(row) if row.chars().count() < w.max_cols => row.push(c),
+            None if w.max_rows > 0 && w.max_cols > 0 => w.rows.push(c.to_string()),
+            _ => {}
         }
     }
     fn bitmap(&mut self, m: u8, f: impl Fn(&mut Win)) {
@@ -441,7 +479,8 @@ impl Dec708 {
                     }
                 }
                 0x0c => self.w().rows = vec![String::new()],
-                0x0d => self.w().rows.push(String::new()),
+                0x0d if self.w().rows.len() < self.w().max_rows => self.w().rows.push(String::new()),
+                0x0d => {}
                 0x0e => {
                     if let Some(r) = self.w().rows.last_mut() {
                         r.clear();
@@ -500,11 +539,24 @@ impl Dec708 {
                 0x98..=0x9f => {
                     let n = (c - 0x98) as usize;
                     let vis = arg(i) & 0x20 != 0;
+                    let max_rows = (arg(i + 3) & 0x0f) as usize + 1;
+                    let max_cols = (arg(i + 4) & 0x3f) as usize + 1;
                     let w = &mut self.win[n];
                     if !w.defined {
-                        *w = Win { defined: true, visible: vis, rows: vec![String::new()] };
+                        *w = Win { defined: true, visible: vis, rows: vec![String::new()], max_rows, max_cols };
                     } else {
                         w.visible = vis;
+                        w.max_rows = max_rows;
+                        w.max_cols = max_cols;
+                        w.rows.truncate(max_rows);
+                        for row in &mut w.rows {
+                            if let Some((at, _)) = row.char_indices().nth(max_cols) {
+                                row.truncate(at);
+                            }
+                        }
+                        if w.rows.is_empty() {
+                            w.rows.push(String::new());
+                        }
                     }
                     self.cur = n;
                     i += 6;
@@ -525,14 +577,19 @@ pub fn write(doc: &Document, drop_frame: bool) -> String {
     write_with(doc, drop_frame, true, true)
 }
 
-/// [`write`] choosing which caption streams to include.
+/// Write MCC with independently selected CEA-608 field 1 and CEA-708 service 1 streams.
+///
+/// Emit only scheduled data frames, preserving their timestamps and explicit erase/hide
+/// commands. Empty time spans add no packets; CDP counters advance per emitted packet and
+/// wrap at 16 bits. `drop_frame` selects 30DF rather than 30 timecode labels at 29.97 fps.
+/// An empty document or two disabled streams produces a header with no data lines.
 pub fn write_with(doc: &Document, drop_frame: bool, cea608: bool, cea708: bool) -> String {
     let f1 = if cea608 { scc::schedule(doc) } else { BTreeMap::new() };
     let dtv = if cea708 { schedule_708(doc) } else { BTreeMap::new() };
     let mut out = String::from("File Format=MacCaption_MCC V1.0\n\n");
     out.push_str("///////////////////////////////////////////////////////////////////////////////////\n");
     out.push_str("// Closed captions written by CFA4: SMPTE ST 334-2 caption distribution packets\n");
-    out.push_str("// carrying CEA-608 field 1 and CEA-708 service 1 data, one packet per frame.\n");
+    out.push_str("// carrying CEA-608 field 1 and CEA-708 service 1 data; empty frames omitted.\n");
     out.push_str("///////////////////////////////////////////////////////////////////////////////////\n\n");
     let n = doc.cues.len() as u64;
     let h = doc.cues.iter().fold(0xcbf2_9ce4_8422_2325u64 ^ n, |h, c| (h ^ c.start.0 as u64 ^ (c.end.0 as u64).rotate_left(17)).wrapping_mul(0x100_0000_01b3));
@@ -546,15 +603,20 @@ pub fn write_with(doc: &Document, drop_frame: bool, cea608: bool, cea708: bool) 
     ));
     out.push_str("Creation Program=CFA4\n");
     out.push_str(&format!("Time Code Rate={}\n\n", if drop_frame { "30DF" } else { "30" }));
-    let first = f1.keys().next().copied().into_iter().chain(dtv.keys().next().copied()).min();
-    let last = f1.keys().next_back().copied().into_iter().chain(dtv.keys().next_back().copied()).max();
-    if let (Some(a), Some(b)) = (first, last) {
-        for (seq, f) in (a..=b + 1).enumerate() {
-            let data = FrameData { f1: f1.get(&f).copied(), dtvcc: dtv.get(&f).cloned().unwrap_or_default() };
-            let (_, hh, mm, ss, ff) = frames_to_fields(f, RATE, drop_frame);
-            let sep = if drop_frame { ';' } else { ':' };
-            out.push_str(&format!("{hh:02}:{mm:02}:{ss:02}{sep}{ff:02}\t{}\n", compress(&build_cdp(seq as u16, &data))));
-        }
+    // Merge the sparse schedules without walking (or allocating for) input-derived time gaps.
+    // Erase/hide commands are scheduled data too, so omitting padding preserves cue end times.
+    let mut f1 = f1.into_iter().peekable();
+    let mut dtv = dtv.into_iter().peekable();
+    let mut seq = 0u16;
+    while let Some(f) = f1.peek().map(|(f, _)| *f).into_iter().chain(dtv.peek().map(|(f, _)| *f)).min() {
+        let data = FrameData {
+            f1: f1.next_if(|(frame, _)| *frame == f).map(|(_, pair)| pair),
+            dtvcc: dtv.next_if(|(frame, _)| *frame == f).map(|(_, pairs)| pairs).unwrap_or_default(),
+        };
+        let (_, hh, mm, ss, ff) = frames_to_fields(f, RATE, drop_frame);
+        let sep = if drop_frame { ';' } else { ':' };
+        out.push_str(&format!("{hh:02}:{mm:02}:{ss:02}{sep}{ff:02}\t{}\n", compress(&build_cdp(seq, &data))));
+        seq = seq.wrapping_add(1);
     }
     out
 }
@@ -579,10 +641,8 @@ pub fn parse(text: &str) -> Result<Document> {
         _ => return Err(Error::NotFormat("MacCaption MCC")),
     }
     let mut rate = (RATE, true);
-    let mut doc = Document::default();
-    let mut f1: Vec<(i64, u8, u8)> = Vec::new();
-    let mut dtv: Vec<(i64, bool, u8, u8)> = Vec::new();
-    let mut any608 = false;
+    let mut packets: Vec<(i64, Vec<u8>)> = Vec::new();
+    let mut warnings = Vec::new();
     for (n, l) in lines {
         let l = l.trim_end();
         if l.trim().is_empty() || l.starts_with("//") {
@@ -605,11 +665,33 @@ pub fn parse(text: &str) -> Result<Document> {
         };
         let frame = fields_to_frames(h, m, s, f, rate.0, rate.1 || tc.contains(';'));
         let Some(bytes) = expand(data) else {
-            doc.warnings.push(format!("line {}: bad caption data", n + 1));
+            warnings.push(format!("line {}: bad caption data", n + 1));
             continue;
         };
+        if cc_triplets(&bytes).is_none() {
+            warnings.push(format!("line {}: not a caption distribution packet", n + 1));
+            continue;
+        }
+        packets.push((frame, bytes));
+    }
+    let mut doc = decode_cdps(packets, rate.0);
+    warnings.append(&mut doc.warnings);
+    doc.warnings = warnings;
+    Ok(doc)
+}
+
+/// Decode caption distribution packets (each with or without the `61 01` ancillary prefix) at
+/// their frames of `rate`: channel 1 CEA-608 field 1 when any is present, else CEA-708 service 1.
+/// Used for MCC files and for the CDPs of MXF ANC data (SMPTE ST 436-1).
+pub fn decode_cdps(packets: impl IntoIterator<Item = (i64, Vec<u8>)>, rate: FrameRate) -> Document {
+    let mut doc = Document::default();
+    let mut f1: Vec<(i64, u8, u8)> = Vec::new();
+    let mut dtv: Vec<(i64, bool, u8, u8)> = Vec::new();
+    let mut any608 = false;
+    let mut bad = 0usize;
+    for (frame, bytes) in packets {
         let Some(trips) = cc_triplets(&bytes) else {
-            doc.warnings.push(format!("line {}: not a caption distribution packet", n + 1));
+            bad += 1;
             continue;
         };
         for [m0, a, b] in trips {
@@ -626,31 +708,103 @@ pub fn parse(text: &str) -> Result<Document> {
             }
         }
     }
-    if any608 {
-        doc.cues = scc::decode_pairs(f1, rate.0);
-    } else {
-        let mut d = Dec708::new();
-        let mut last = 0;
-        for (f, start, a, b) in dtv {
-            d.pair(f, start, a, b);
-            last = f + 1;
-        }
-        if let Some((s, t)) = d.open.take() {
-            d.cues.push((s, last.max(s + 1), t));
-        }
-        doc.cues = d.cues.into_iter().map(|(s, e, text)| Cue { start: rate.0.tick_of(s), end: rate.0.tick_of(e), text, ..Default::default() }).collect();
+    if bad > 0 {
+        doc.warnings.push(format!("{bad} packets are not caption distribution packets"));
     }
-    Ok(doc)
+    if any608 {
+        doc.cues = scc::decode_pairs(f1, rate);
+    } else {
+        doc.cues = decode_708(&dtv, 1, rate);
+    }
+    doc
+}
+
+/// One caption channel of a run of caption distribution packets: `name` is "CC1"–"CC4" (CEA-608
+/// field 1 channel 1 / 2, field 2 channel 1 / 2) or "SERVICE1"–"SERVICE6" (CEA-708 caption
+/// services); `cea708` tells the two kinds apart.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdpChannel {
+    pub name: String,
+    pub cea708: bool,
+    pub cues: Vec<Cue>,
+}
+
+/// Decode caption distribution packets (as [`decode_cdps`] takes them) into every channel that
+/// has captions: CEA-608 CC1–CC4 and CEA-708 services 1–6, in that order. Warnings (packets that
+/// are not CDPs) are returned beside them.
+pub fn decode_cdp_channels(packets: impl IntoIterator<Item = (i64, Vec<u8>)>, rate: FrameRate) -> (Vec<CdpChannel>, Vec<String>) {
+    let mut fields: [Vec<(i64, u8, u8)>; 2] = [Vec::new(), Vec::new()];
+    let mut dtv: Vec<(i64, bool, u8, u8)> = Vec::new();
+    let mut bad = 0usize;
+    for (frame, bytes) in packets {
+        let Some(trips) = cc_triplets(&bytes) else {
+            bad += 1;
+            continue;
+        };
+        for [m0, a, b] in trips {
+            if m0 & 0x04 == 0 {
+                continue;
+            }
+            match m0 & 0x03 {
+                f @ (0 | 1) => {
+                    if let Some(v) = fields.get_mut(usize::from(f)) {
+                        v.push((frame, a, b));
+                    }
+                }
+                t => dtv.push((frame, t == 3, a, b)),
+            }
+        }
+    }
+    let mut warnings = Vec::new();
+    if bad > 0 {
+        warnings.push(format!("{bad} packets are not caption distribution packets"));
+    }
+    let mut out = Vec::new();
+    for (name, field, channel2) in [("CC1", 0usize, false), ("CC2", 0, true), ("CC3", 1, false), ("CC4", 1, true)] {
+        let Some(pairs) = fields.get(field) else { continue };
+        if !pairs.iter().any(|&(_, a, b)| a & 0x7f != 0 || b & 0x7f != 0) {
+            continue;
+        }
+        let cues = scc::decode_channel(pairs.iter().copied(), rate, channel2);
+        if !cues.is_empty() {
+            out.push(CdpChannel { name: name.into(), cea708: false, cues });
+        }
+    }
+    if !dtv.is_empty() {
+        for service in 1..=6u8 {
+            let cues = decode_708(&dtv, service, rate);
+            if !cues.is_empty() {
+                out.push(CdpChannel { name: format!("SERVICE{service}"), cea708: true, cues });
+            }
+        }
+    }
+    (out, warnings)
+}
+
+/// The cues of CEA-708 caption service `service` in DTVCC pairs `(frame, start, b1, b2)`.
+fn decode_708(dtv: &[(i64, bool, u8, u8)], service: u8, rate: FrameRate) -> Vec<Cue> {
+    let mut d = Dec708::for_service(service);
+    let mut last = 0;
+    for &(f, start, a, b) in dtv {
+        d.pair(f, start, a, b);
+        last = f + 1;
+    }
+    if let Some((s, t)) = d.open.take() {
+        d.cues.push((s, last.max(s + 1), t));
+    }
+    d.cues.into_iter().map(|(s, e, text)| Cue { start: rate.tick_of(s), end: rate.tick_of(e), text, ..Default::default() }).collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// Build a caption fixture from start/end frame indices on the MCC 29.97 fps grid.
     fn cue(s: i64, e: i64, text: &str) -> Cue {
         Cue { start: RATE.tick_of(s), end: RATE.tick_of(e), text: text.into(), ..Default::default() }
     }
 
+    /// Check that MCC abbreviations round-trip bytes and reject an incomplete hex pair.
     #[test]
     fn abbreviations_round_trip() {
         let b = [0x61, 0x01, 0x49, 0x96, 0x69, 0xfa, 0, 0, 0xfa, 0, 0, 0xfc, 0x80, 0x80, 0x00, 0x12, 0xe1, 0, 0, 0, 0xfb, 0x80, 0x80, 0xfd, 0x80, 0x80];
@@ -660,6 +814,7 @@ mod tests {
         assert_eq!(expand("T52S5"), None);
     }
 
+    /// Verify CDP framing, caption triplets, sequence fields, and both packet checksums.
     #[test]
     fn cdp_structure_and_checksum() {
         let d = FrameData { f1: Some((0x14, 0x20)), dtvcc: vec![(true, 0x02, 0x21), (false, 0x89, 0x01)] };
@@ -680,6 +835,7 @@ mod tests {
         assert_eq!(t[19], [0xfa, 0, 0]);
     }
 
+    /// Preserve caption text and timing through combined-stream and CEA-708-only exports.
     #[test]
     fn writes_and_reads_608_and_708() {
         let doc = Document {
@@ -698,5 +854,148 @@ mod tests {
         let got: Vec<(i64, i64, &str)> = back.cues.iter().map(|c| (RATE.frame_at(c.start), RATE.frame_at(c.end), c.text.as_str())).collect();
         assert_eq!(got, vec![(60, 120, "Hello, world!"), (120, 200, "Second caption\nwith two lines"), (260, 300, "Café “q” ♪")]);
         assert!(parse("garbage").is_err());
+    }
+
+    /// One CDP per frame for MXF ANC data: the sequence counter runs on, every packet is a
+    /// valid CDP without the ST 291 checksum word, and the packets decode to the cues.
+    #[test]
+    fn cdp_stream_gives_every_frame_a_packet() {
+        let doc = Document { cues: vec![cue(30, 90, "Hello, world!"), cue(120, 150, "Second")], ..Default::default() };
+        let mut st = CdpStream::new(&doc);
+        let last = st.last_frame().unwrap();
+        assert!((150..200).contains(&last), "{last}");
+        let packets: Vec<(i64, Vec<u8>)> = (0..=last + 5).map(|f| (f, st.frame(f))).collect();
+        for (f, p) in &packets {
+            assert_eq!(&p[..2], &[0x61, 0x01]);
+            assert_eq!(p.len(), 3 + p[2] as usize, "no checksum word");
+            assert_eq!(u16::from_be_bytes([p[8], p[9]]), *f as u16, "sequence counter");
+            assert!(cc_triplets(p).is_some());
+        }
+        let back = decode_cdps(packets, RATE);
+        let got: Vec<(i64, i64, &str)> = back.cues.iter().map(|c| (RATE.frame_at(c.start), RATE.frame_at(c.end), c.text.as_str())).collect();
+        assert_eq!(got, vec![(30, 90, "Hello, world!"), (120, 150, "Second")]);
+        assert_eq!(CdpStream::new(&Document::default()).last_frame(), None);
+    }
+
+    /// Keep separated short captions compact while preserving cues and valid CDP packets.
+    /// Exercise each stream combination with both drop-frame and non-drop timecode labels.
+    #[test]
+    fn export_size_depends_on_caption_data_not_empty_frames() {
+        // A small reproducer: the old writer emits thousands of padding-only lines.
+        let doc = Document { cues: vec![cue(60, 120, "First"), cue(3_600, 3_660, "Last")], ..Default::default() };
+        for drop_frame in [false, true] {
+            for (cea608, cea708) in [(true, true), (true, false), (false, true)] {
+                let text = std::panic::catch_unwind(|| write_with(&doc, drop_frame, cea608, cea708)).unwrap();
+                let lines: Vec<_> = text.lines().filter_map(|line| line.split_once('\t')).collect();
+                assert!(lines.len() < 100, "{} lines for two short captions", lines.len());
+                assert!(text.len() < 16_384);
+                assert_eq!(parse(&text).unwrap().cues, doc.cues);
+                for (seq, (_, data)) in lines.iter().enumerate() {
+                    let bytes = expand(data).unwrap();
+                    assert_eq!(u16::from_be_bytes([bytes[8], bytes[9]]), seq as u16);
+                    assert_eq!(bytes[3..76].iter().map(|&b| b as u32).sum::<u32>() % 256, 0);
+                    let trips = cc_triplets(&bytes).unwrap();
+                    assert!(trips.iter().any(|&[m, a, b]| m & 4 != 0 && (m & 3 >= 2 || a & 0x7f != 0 || b & 0x7f != 0)));
+                }
+            }
+        }
+    }
+
+    /// Bound output for distant or long cues near the tick limit without changing their timing.
+    #[test]
+    fn distant_and_long_cues_round_trip_near_tick_limit() {
+        let last = RATE.frame_at(crate::Tick(i64::MAX)) - 10;
+        for cues in [vec![cue(60, 120, "First"), cue(last - 60, last, "Last")], vec![cue(60, last, "Long")]] {
+            let doc = Document { cues, ..Default::default() };
+            for drop_frame in [false, true] {
+                for (cea608, cea708) in [(true, true), (true, false), (false, true)] {
+                    let text = std::panic::catch_unwind(|| write_with(&doc, drop_frame, cea608, cea708)).unwrap();
+                    assert!(text.len() < 16_384);
+                    assert_eq!(parse(&text).unwrap().cues, doc.cues);
+                }
+            }
+        }
+    }
+
+    /// Emit only the MCC header when the document is empty or both streams are disabled.
+    #[test]
+    fn empty_schedules_have_no_data_lines() {
+        let doc = Document { cues: vec![cue(60, 120, "Caption")], ..Default::default() };
+        assert!(!write_with(&doc, true, false, false).contains('\t'));
+        assert!(!write(&Document::default(), true).contains('\t'));
+    }
+
+    /// Prevent CEA-708 text and line breaks from overflowing a window's declared dimensions.
+    #[test]
+    fn decoder_keeps_708_text_within_declared_window_dimensions() {
+        let mut decoder = Dec708::for_service(1);
+        // Define window 0 with one row and one column, then try to overflow both.
+        decoder.service_data(&[0x98, 0, 0, 0, 0, 0, 0, b'A', b'B', 0x0d, b'C']);
+        assert_eq!(decoder.win[0].rows, ["A"]);
+    }
+
+    /// #1068: every caption channel of a CDP run comes back on its own: CEA-608 CC1 (field 1)
+    /// and CC4 (field 2, data channel 2), CEA-708 services 1 and 2; empty channels are left out.
+    #[test]
+    fn cdp_channels_decode_separately() {
+        let a = Document { cues: vec![cue(30, 90, "Channel one"), cue(120, 150, "Again one")], ..Default::default() };
+        let b = Document { cues: vec![cue(40, 100, "Field two")], ..Default::default() };
+        let c = Document { cues: vec![cue(400, 460, "Service two")], ..Default::default() };
+        // CC4: data channel 2 (control codes with 08h), field 2 miscellaneous codes 15h / 1Dh
+        let cc4 = |(x, y): (u8, u8)| {
+            if (0x10..=0x1f).contains(&x) {
+                let x = x | 0x08;
+                if x & 0x77 == 0x14 && (0x20..=0x2f).contains(&y) { (x | 0x01, y) } else { (x, y) }
+            } else {
+                (x, y)
+            }
+        };
+        let mut frames: BTreeMap<i64, Vec<[u8; 3]>> = BTreeMap::new();
+        for (f, p) in scc::schedule(&a) {
+            frames.entry(f).or_default().push([0xfc, with_parity(p.0), with_parity(p.1)]);
+        }
+        for (f, p) in scc::schedule(&b) {
+            let (x, y) = cc4(p);
+            frames.entry(f).or_default().push([0xfd, with_parity(x), with_parity(y)]);
+        }
+        for (f, pairs) in schedule_708(&a) {
+            frames.entry(f).or_default().extend(pairs.into_iter().map(|(st, x, y)| [if st { 0xff } else { 0xfe }, x, y]));
+        }
+        for (f, pairs) in schedule_708(&c) {
+            // the same blocks for service 2: the service number in each packet's block header
+            let v = pairs.into_iter().map(|(st, x, y)| if st { [0xff, x, (y & 0x1f) | 2 << 5] } else { [0xfe, x, y] });
+            frames.entry(f).or_default().extend(v);
+        }
+        let packets: Vec<(i64, Vec<u8>)> = frames
+            .into_iter()
+            .map(|(f, t)| {
+                assert!(t.len() < 32, "{f}");
+                let mut cdp = vec![0x96, 0x69, 0, 0x4f, 0x43, 0, f as u8, 0x72, 0xe0 | t.len() as u8];
+                cdp.extend(t.iter().flatten());
+                cdp.extend_from_slice(&[0x74, 0, f as u8, 0]);
+                cdp[2] = cdp.len() as u8;
+                (f, cdp)
+            })
+            .collect();
+        let (channels, warnings) = decode_cdp_channels(packets.clone(), RATE);
+        assert!(warnings.is_empty());
+        let got: Vec<(&str, bool, Vec<(i64, i64, &str)>)> = channels
+            .iter()
+            .map(|c| (c.name.as_str(), c.cea708, c.cues.iter().map(|q| (RATE.frame_at(q.start), RATE.frame_at(q.end), q.text.as_str())).collect()))
+            .collect();
+        assert_eq!(
+            got,
+            vec![
+                ("CC1", false, vec![(30, 90, "Channel one"), (120, 150, "Again one")]),
+                ("CC4", false, vec![(40, 100, "Field two")]),
+                ("SERVICE1", true, vec![(30, 90, "Channel one"), (120, 150, "Again one")]),
+                ("SERVICE2", true, vec![(400, 460, "Service two")]),
+            ]
+        );
+        // decode_cdps keeps its single document: channel 1 CEA-608
+        assert_eq!(decode_cdps(packets, RATE).cues.len(), 2);
+        let (none, warnings) = decode_cdp_channels([(0, vec![0x61, 0x01, 1]), (1, build_cdp(1, &FrameData::default()))], RATE);
+        assert!(none.is_empty());
+        assert_eq!(warnings.len(), 1);
     }
 }

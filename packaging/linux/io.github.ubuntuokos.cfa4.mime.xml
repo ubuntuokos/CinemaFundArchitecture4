@@ -8,4 +8,20 @@
     <icon name="io.github.ubuntuokos.cfa4"/>
     <glob pattern="*.fcproj"/>
   </mime-type>
+  <!-- Credits (docs/credits.md): CFA4's own types in CFA4's namespace; Cinecred's projects
+       (Styling.toml with a spreadsheet) are imported, never claimed. -->
+  <mime-type type="application/x-cfa4-credits">
+    <comment>CFA4 credits file</comment>
+    <comment xml:lang="hu">CFA4 stáblista-fájl</comment>
+    <sub-class-of type="application/json"/>
+    <icon name="io.github.ubuntuokos.cfa4"/>
+    <glob pattern="*.cfa4credits"/>
+  </mime-type>
+  <mime-type type="application/x-cfa4-credits-template">
+    <comment>CFA4 credits template</comment>
+    <comment xml:lang="hu">CFA4 stáblista-sablon</comment>
+    <sub-class-of type="application/json"/>
+    <icon name="io.github.ubuntuokos.cfa4"/>
+    <glob pattern="*.cfa4credtpl"/>
+  </mime-type>
 </mime-info>

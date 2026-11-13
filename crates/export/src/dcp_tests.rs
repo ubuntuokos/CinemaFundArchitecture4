@@ -104,6 +104,38 @@ fn rates_containers_and_names() {
 }
 
 /// 320×180 at 25 fps: a white matte over V1, a 440 Hz tone on A1.
+/// #309: the spoken language tag and the ISDCF (DCNC) package name.
+#[test]
+fn language_and_isdcf_name() {
+    let mut s = ExportSettings { format: Format::Dcp, ..Default::default() };
+    assert_eq!(crate::dcp_language(&s), Some(""));
+    for ok in ["en-US", "hu", "zh-Hans-CN", "es-419", " de-DE "] {
+        s.dcp_language = ok.into();
+        assert_eq!(crate::dcp_language(&s), Some(ok.trim()), "{ok}");
+        assert!(s.validate().is_ok());
+    }
+    for bad in ["english", "e", "en_US", "en-", "en--US", "1a", "en-abcdefghi", "hu-HU\"x"] {
+        s.dcp_language = bad.into();
+        assert_eq!(crate::dcp_language(&s), None, "{bad}");
+        assert!(s.validate().is_err(), "{bad}");
+    }
+    // as DCP-o-matic names the reference packages in samples/dcp/
+    s.dcp_language = "en-US".into();
+    s.dcp_content_kind = "trailer".into();
+    assert_eq!(crate::dcp_isdcf_name(&s, "Trinnov Mach1", "2024-03-22"), "TrinnovMach1_TLR-1_F_EN-XX_51_2K_20240322_SMPTE_OV");
+    s.dcp_language.clear();
+    s.dcp_aspect = "scope".into();
+    s.dcp_resolution = "4k".into();
+    assert_eq!(crate::dcp_isdcf_name(&s, "le repeater", "20240622"), "LeRepeater_TLR-1_S_XX-XX_51_4K_20240622_SMPTE_OV");
+    // immersive audio: the IAB audio type; a long title is cut to 14; no title at all
+    s.dcp_immersive = "bed".into();
+    s.dcp_aspect = "full".into();
+    s.dcp_content_kind.clear();
+    assert_eq!(crate::dcp_isdcf_name(&s, "The Extraordinarily Long Title", "20261031"), "TheExtraordina_FTR-1_C_XX-XX_IAB_4K_20261031_SMPTE_OV");
+    assert!(crate::dcp_isdcf_name(&s, "Árvíztűrő", "20261031").starts_with("Rvztr_"), "ASCII letters only");
+    assert!(crate::dcp_isdcf_name(&s, "", "20261031").starts_with("Untitled_FTR-1_"));
+}
+
 fn project() -> (Arc<Project>, ItemId, SourceMap) {
     let mut p = Project::new("dcp");
     let r = FrameRate::new(25, 1);
@@ -175,6 +207,7 @@ fn two_k_flat_package() {
         path: dir.clone(),
         range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(10))),
         dcp_content_kind: "test".into(),
+        dcp_language: "hu-HU".into(),
         ..Default::default()
     };
     let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
@@ -233,12 +266,38 @@ fn two_k_flat_package() {
     assert_eq!(element(&cpl, "Duration"), Some("10"));
     assert_eq!(element(&cpl, "ScreenAspectRatio"), Some("1998 1080"));
     assert!(cpl.contains("<MainSound>"));
-    // ST 429-16 composition metadata, no immersive application or MCA labels
+    // RDD 52: first and last frame of composition markers
+    let markers = block(&cpl, "MainMarkers").expect("MainMarkers");
+    assert!(cpl.find("<MainMarkers>") < cpl.find("<MainPicture>"));
+    assert!(markers.contains("<Label>FFOC</Label>\n              <Offset>1</Offset>"), "{markers}");
+    assert!(markers.contains("<Label>LFOC</Label>\n              <Offset>9</Offset>"), "{markers}");
+    // ST 429-16 composition metadata with the RDD 52 constraints profile and the 5.1 MCA labels
     let meta = block(&cpl, "meta:CompositionMetadataAsset").expect("composition metadata");
     assert_eq!(element(meta, "meta:MainSoundConfiguration"), Some("51/L,R,C,LFE,Ls,Rs"));
     assert_eq!(element(meta, "meta:MainSoundSampleRate"), Some("48000 1"));
     assert_eq!(element(meta, "IntrinsicDuration"), Some("10"));
-    assert!(!meta.contains("ExtensionMetadata") && !meta.contains("MCASubDescriptors"));
+    assert!(meta.contains("<meta:FullContentTitleText language=\"hu-HU\">DCP &lt;Test&gt; &amp; Co</meta:FullContentTitleText>"));
+    assert!(meta.contains("<meta:Name>DCP Constraints Profile</meta:Name>") && meta.contains("<meta:Value>SMPTE-RDD-52:2020-Bv2.1</meta:Value>"));
+    assert!(!meta.contains("IAB Profile"));
+    let labels = block(meta, "mca:MCASubDescriptors").expect("MCA labels");
+    let syms: Vec<&str> = labels.split("<r1:MCATagSymbol>").skip(1).filter_map(|t| t.split('<').next()).collect();
+    assert_eq!(syms, ["sg51", "chL", "chR", "chC", "chLFE", "chLs", "chRs"]);
+    assert_eq!(labels.matches("<r1:RFC5646SpokenLanguage>hu-HU</r1:RFC5646SpokenLanguage>").count(), 7);
+    assert!(labels.contains("<r1:MCAChannelID>6</r1:MCAChannelID>\n              <r1:RFC5646SpokenLanguage>"), "libdcp order");
+    // the labels are the sound track file's (instance ids), on ST 429-2 configuration 4
+    assert!(snd.windows(16).any(|w| w == crate::dcp_iab::CHANNEL_CONFIG_4));
+    for id in labels.split("<r1:InstanceID>urn:uuid:").skip(1).filter_map(|t| t.split('<').next()) {
+        let hex = id.replace('-', "");
+        let bytes: Vec<u8> = (0..16).map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).unwrap()).collect();
+        assert!(snd.windows(16).any(|w| w == bytes.as_slice()), "label {id} in the sound track file");
+    }
+    if let Ok(tool) = std::env::var("CFA4_ASDCP_INFO") {
+        let out = std::process::Command::new(&tool).args(["-H", &snd_path]).output().unwrap();
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(text.contains("MCATagSymbol = sg51") && text.contains("MCATagSymbol = chRs"), "{text}");
+        assert!(text.contains("RFC5646SpokenLanguage = hu-HU"), "{text}");
+        assert!(text.contains("ChannelAssignment = 060e2b34.0401010b.04020210.03010400"), "{text}");
+    }
     // stored: the 2K Flat container; active: the 16:9 picture between the pillarbox bars
     let area = |name| {
         let a = block(meta, name).unwrap();
@@ -538,6 +597,50 @@ fn immersive_bed_package() {
     assert!(iab.windows(12).any(|w| w == sub));
 }
 
+/// `bed` from a 7.1.2 Mix (#374): a 9.1OH bed channel for channel, the 5.1 fold of the Mix as the
+/// fallback; a 7.1 Mix gives a 7.1 DS bed channel for channel.
+#[test]
+fn immersive_bed_from_a_712_and_a_71_mix() {
+    for (master, ids) in [
+        (cfa4_project::AudioChannels::Surround712, vec![0x00, 0x04, 0x02, 0x0D, 0x05, 0x09, 0x07, 0x08, 0x0B, 0x0C]),
+        (cfa4_project::AudioChannels::Surround71, vec![0x00, 0x04, 0x02, 0x0D, 0x05, 0x09, 0x07, 0x08]),
+    ] {
+        let (p, seq, m) = project();
+        let mut p = (*p).clone();
+        p.sequence_mut(seq).unwrap().settings.audio_master = master;
+        let p = Arc::new(p);
+        let dir = tmp(&format!("iab-bed-{}", ids.len()));
+        let s = ExportSettings {
+            format: Format::Dcp,
+            path: dir.clone(),
+            range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(3))),
+            dcp_immersive: "bed".into(),
+            dcp_iab_fallback: "5.1".into(),
+            ..Default::default()
+        };
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let (iab, pcm) = check_immersive_package(&dir, 3, 1920);
+        let mi = cfa4_mxf::open(&iab).unwrap();
+        for i in 0..3 {
+            let f = cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap();
+            assert_eq!(f.beds.len(), 1);
+            let got: Vec<u32> = f.beds[0].channels.iter().map(|c| c.id).collect();
+            assert_eq!(got, ids, "frame {i}");
+            assert_eq!(f.max_rendered as usize, ids.len());
+            // the stereo track sits on L and R of the Mix: bed L / R = fallback L / R, the rest silent
+            for (asset, ch) in [(0, 0), (1, 1)] {
+                let bed: Vec<f32> = f.audio[asset].samples.iter().map(|v| *v as f32 / 2_147_483_648.0).collect();
+                assert_eq!(&bed[..], &pcm[ch][i * 1920..(i + 1) * 1920], "frame {i} channel {ch}");
+            }
+            for a in &f.audio[2..] {
+                assert!(a.samples.iter().all(|v| *v == 0), "frame {i} asset {}", a.id);
+            }
+        }
+        let rms = |c: &[f32]| (c.iter().map(|v| v * v).sum::<f32>() / c.len() as f32).sqrt();
+        assert!(rms(&pcm[0]) > 0.05 && rms(&pcm[1]) > 0.05, "the tone is on L and R");
+    }
+}
+
 /// A 7.1 DS bed frame at `rate` with PCM assets and an authoring tool, as a source file.
 fn source_frames(rate: cfa4_iab::FrameRate, n: usize) -> Vec<Vec<u8>> {
     (0..n)
@@ -764,4 +867,81 @@ fn immersive_real_iab_source() {
         assert_eq!(cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap(), want, "frame {i}");
     }
     assert!(pcm.iter().take(6).any(|c| c.iter().any(|v| *v != 0.0)), "the rendered fallback is not silent");
+}
+
+/// `file` with a Dolby Atmos TrueHD source (#347; `CFA4_ATMOS_THD`, e.g. the Altitude trailer;
+/// skipped when unset): its objects become IAB objects in a 24 fps DCP, with the IAB rendered to
+/// 5.1 as the fallback.
+#[test]
+fn immersive_atmos_truehd_source() {
+    let Ok(path) = std::env::var("CFA4_ATMOS_THD") else { return };
+    let info = probe_iab_source(&path).unwrap();
+    assert_eq!((info.container.as_str(), info.sample_rate), ("truehd", 48_000), "{info:?}");
+    assert!(info.seconds > 1.0 && info.max_objects > 0 && info.max_bed_channels <= 10, "{info:?}");
+    let (p, seq, m) = project();
+    let dir = tmp("iab-atmos");
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: dir.clone(),
+        frame_rate: Some(FrameRate::new(24, 1)),
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(48))),
+        dcp_immersive: "file".into(),
+        dcp_iab_source: path.clone(),
+        dcp_iab_fallback: "5.1".into(),
+        ..Default::default()
+    };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let (iab, _pcm) = check_immersive_package(&dir, r.frames as usize, 2000);
+    let mi = cfa4_mxf::open(&iab).unwrap();
+    let mut objects = 0;
+    for i in 0..r.frames as usize {
+        let f = cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap();
+        assert_eq!(f.beds.len(), 1);
+        assert!(matches!(f.beds[0].channels.len(), 8 | 10));
+        objects = objects.max(f.objects.len());
+    }
+    assert!(objects > 0, "the Atmos objects are IAB objects");
+}
+
+/// A TrueHD stream without an object presentation is refused as an Atmos source.
+/// A Matroska file is taken as a Dolby Atmos source and looked into: one without a TrueHD
+/// track says so instead of failing as a broken IAB stream (#411).
+#[test]
+fn a_matroska_file_without_truehd_is_not_an_atmos_source() {
+    use cfa4_matroska::{MkvWriter, MuxOptions, TrackKind, TrackSpec};
+    let dir = tmp("iab-mkv-no-truehd");
+    std::fs::create_dir_all(&dir).unwrap();
+    let mkv = Path::new(&dir).join("pcm.mkv");
+    let mut t = TrackSpec::new(TrackKind::Audio, "A_PCM/INT/LIT");
+    t.audio = Some((48_000.0, 2, Some(16)));
+    let mut w = MkvWriter::new(std::fs::File::create(&mkv).unwrap(), vec![t], MuxOptions { doc_type: "matroska".into(), ..Default::default() }).unwrap();
+    for i in 0..4 {
+        w.write_frame(0, i * 20_000_000, true, &[0u8; 3840], None).unwrap();
+    }
+    w.finish().unwrap();
+    let err = probe_iab_source(&mkv.to_string_lossy()).unwrap_err().to_string();
+    assert!(err.contains("no Dolby TrueHD track"), "{err}");
+}
+
+#[test]
+fn a_truehd_stream_without_objects_is_not_an_atmos_source() {
+    let dir = tmp("iab-not-atmos");
+    std::fs::create_dir_all(&dir).unwrap();
+    let thd = Path::new(&dir).join("plain.thd");
+    std::fs::write(&thd, cfa4_truehd::process::EXAMPLE_DATA).unwrap();
+    let thd = thd.to_string_lossy().to_string();
+    let err = probe_iab_source(&thd).unwrap_err().to_string();
+    assert!(err.contains("not a Dolby Atmos stream"), "{err}");
+    let (p, seq, m) = project();
+    let out = tmp("iab-not-atmos-out");
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: out,
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(2))),
+        dcp_immersive: "file".into(),
+        dcp_iab_source: thd,
+        ..Default::default()
+    };
+    let err = export(&p, seq, &s, &m, &Progress::default()).unwrap_err().to_string();
+    assert!(err.contains("not a Dolby Atmos stream"), "{err}");
 }

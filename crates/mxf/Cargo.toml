@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-mxf"
-description = "Clean-room MXF (SMPTE ST 377-1) demuxer and writer: OP1a and OP-Atom, index tables, AVC/VC-3/ProRes/MPEG-2/PCM essence"
+description = "Clean-room MXF (SMPTE ST 377-1) demuxer and writer: OP1a and OP-Atom, index tables, AVC/VC-3/ProRes/MPEG-2/PCM essence, DCP/IMF timed text track files"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,7 +9,15 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+# Synthetic MXF builders for other crates' tests.
+test-util = []
+
 [dependencies]
+aes = { workspace = true }
+chrono = { workspace = true }
+hmac = { workspace = true }
+sha1 = { workspace = true }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }

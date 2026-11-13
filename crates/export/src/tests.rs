@@ -126,6 +126,37 @@ fn prores_export_roundtrip() {
     assert!(f[0] > 240 && f[1] < 15 && f[2] < 15, "{:?}", &f[..4]);
 }
 
+/// Interlaced ProRes export (PROCODEC-002 1b / WP6): the field order reaches the encoder, which
+/// codes two field pictures per frame, and the MOV's `fiel` box; both read back.
+#[test]
+fn prores_interlaced_export_roundtrip() {
+    let (p, seq, m) = project();
+    for (order, want, detail, ff) in
+        [(FieldOrder::UpperFirst, cfa4_frame::FieldOrder::TopFirst, 1u8, "tt"), (FieldOrder::LowerFirst, cfa4_frame::FieldOrder::BottomFirst, 6, "bb")]
+    {
+        let path = tmp(&format!("pr_interlaced_{ff}.mov"));
+        let mut s = ExportSettings { format: Format::ProRes, path: path.clone(), field_order: order, ..Default::default() };
+        s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(6)));
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let bytes: Arc<[u8]> = std::fs::read(&path).unwrap().into();
+        let mov = cfa4_isobmff::open(&bytes[..]).unwrap();
+        let entry = mov.tracks.iter().flat_map(|t| &t.entries).find_map(|e| e.video.as_ref()).unwrap();
+        assert_eq!(entry.field_info, Some(cfa4_isobmff::FieldInfo { fields: 2, detail }), "{order:?}");
+        let src = cfa4_codecs::open_bytes("pr.mov", bytes).unwrap();
+        let f = src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 8))).unwrap();
+        assert_eq!(f.layout.field_order, want, "{order:?}");
+        let px = f.to_rgba8();
+        assert!(px[0] > 240 && px[1] < 15 && px[2] < 15, "{order:?}: {:?}", &px[..4]);
+        if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("ProRes field order") {
+            let out = std::process::Command::new(ffprobe)
+                .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=field_order", "-of", "csv=p=0", &path])
+                .output()
+                .unwrap();
+            assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), ff, "{order:?}");
+        }
+    }
+}
+
 /// #2142: SDR ProRes, DNxHR and APV (MOV) and H.264 (MP4) exports carry a `colr` box with the
 /// export's BT.709 colour: Apple's media stack reads the colour of the MOV codecs only from there.
 #[test]
@@ -219,7 +250,7 @@ fn dnxhr_export_roundtrip() {
 /// `burn_captions` or above the caption.
 #[test]
 fn caption_burn_in_h264_ffmpeg_oracle() {
-    let Some(ffmpeg) = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists()) else {
+    let Some(ffmpeg) = ["/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists()) else {
         eprintln!("ffmpeg not found; skipping oracle test");
         return;
     };
@@ -564,4 +595,46 @@ impl FrameRenderer for FakeRenderer {
     ) -> Option<cfa4_render::Image> {
         Some(cfa4_render::Image::new(320, 180))
     }
+}
+
+/// The render threads may convert H.264 input ahead ([`VideoEncoder::prepare_ahead`]): the packets
+/// are the same whether a picture was converted ahead (in any order), converted by the encoder
+/// itself (none ahead, or one ahead for another picture size), or never asked for.
+#[test]
+fn h264_input_converted_ahead_encodes_to_the_same_packets() {
+    let (w, h) = (96u32, 64u32);
+    let frames: Vec<Vec<u8>> = (0..8u32)
+        .map(|t| {
+            (0..w * h)
+                .flat_map(|i| {
+                    let (x, y) = (i % w, i / w);
+                    [(x * 3 + t * 7) as u8, (y * 5 + t) as u8, ((x + y) * 2 + t * 3) as u8, 255]
+                })
+                .collect()
+        })
+        .collect();
+    let s = ExportSettings { format: Format::H264, ..Default::default() };
+    let frame = |i: usize| EncoderFrame { width: w, height: h, rgba: &frames[i], hdr: None, index: i as u64 };
+    let encode_all = |ahead: bool| -> Vec<Vec<u8>> {
+        let mut enc = h264_factory(Format::H264, w, h, FrameRate::FPS_24, &s).unwrap().unwrap();
+        if ahead {
+            let prepare = enc.prepare_ahead().expect("the H.264 encoder converts ahead");
+            for i in (0..frames.len()).rev().filter(|&i| i != 3) {
+                prepare(&frame(i));
+            }
+            // a picture of another size under index 5: the encoder converts that one itself
+            prepare(&EncoderFrame { width: w / 2, height: h / 2, rgba: &frames[5][..(w * h) as usize], hdr: None, index: 5 });
+            // and one it is never asked to encode
+            prepare(&EncoderFrame { index: 99, ..frame(0) });
+        }
+        let mut out = Vec::new();
+        for i in 0..frames.len() {
+            out.extend(enc.encode(&frame(i)).unwrap().into_iter().map(|p| p.data));
+        }
+        out.extend(enc.flush().unwrap().into_iter().map(|p| p.data));
+        out
+    };
+    let plain = encode_all(false);
+    assert!(!plain.is_empty());
+    assert!(plain == encode_all(true), "converting ahead changed the packets");
 }

@@ -28,10 +28,11 @@
 //! * **Pan law.** Mono tracks pan with the −3 dB constant-power law (centre = −3 dB per side);
 //!   stereo tracks and sends use balance (centre = unity, the far side follows the same
 //!   constant-power curve normalised to the centre).
-//! * **Channels.** Buses are 2 channels wide, or 6 (L, R, C, LFE, Ls, Rs) for 5.1 tracks, 5.1
-//!   submixes and a 5.1 Mix (`SequenceSettings::audio_master`). A strip feeding a 5.1 bus pans with
-//!   the 5.1 panner (lanes `pan51.x`, `pan51.y`, `pan51.center`, `pan51.lfe`;
-//!   [`cfa4_audio_dsp::channels::pan51_matrix`]); a 5.1 strip feeding a stereo bus is folded
+//! * **Channels.** Buses are 2 channels wide, 6 (L, R, C, LFE, Ls, Rs) for 5.1, 8 (… Lss, Rss,
+//!   Lrs, Rrs) for 7.1 or 10 (… Lts, Rts) for 7.1.2 tracks, submixes and Mix
+//!   (`SequenceSettings::audio_master`). A strip feeding a surround bus pans with the surround
+//!   panner (lanes `pan51.x`, `pan51.y`, `pan51.center`, `pan51.lfe`;
+//!   [`cfa4_audio_dsp::channels::pan_matrix`]); a surround strip feeding a stereo bus is folded
 //!   with the ITU-R BS.775 downmix and then balanced. Sends convert between widths with the same
 //!   BS.775 matrices. [`mix_graph`] returns the Mix's width; [`crate::audio::mix_sequence`] always
 //!   returns stereo.
@@ -47,7 +48,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 use cfa4_audio_dsp::AudioEffect;
 use cfa4_audio_dsp::channels::{self as chans, Layout, Mixdown, Pan51};
 use cfa4_frame::AudioBuffer;
-use cfa4_project::mixer::{LANE_MUTE, LANE_PAN, LANE_PAN51_CENTER, LANE_PAN51_LFE, LANE_PAN51_X, LANE_PAN51_Y, LANE_VOLUME, fx_lane, send_lane};
+use cfa4_project::mixer::{
+    LANE_MUTE, LANE_PAN, LANE_PAN51_CENTER, LANE_PAN51_HEIGHT, LANE_PAN51_LFE, LANE_PAN51_X, LANE_PAN51_Y, LANE_VOLUME, fx_lane, send_lane,
+};
 use cfa4_project::{AudioChannels, EffectInstance, InputMap, Param, ParamValue, Project, Sequence, Track, TrackId};
 use cfa4_time::Tick;
 use rayon::prelude::*;
@@ -127,7 +130,7 @@ impl LiveMix {
     pub fn overrides(&self) -> HashMap<(TrackId, String), Override> {
         lock(&self.overrides).clone()
     }
-    /// Peak levels (linear, post-fader, one per channel of the strip: 2, or 6 for 5.1) per strip
+    /// Peak levels (linear, post-fader, one per channel of the strip: 2, or 6/8/10 for 5.1/7.1/7.1.2) per strip
     /// since the last call; [`MASTER`] is the Mix.
     pub fn take_meters(&self) -> HashMap<TrackId, Vec<f32>> {
         std::mem::take(&mut *lock(&self.meters))
@@ -289,7 +292,7 @@ struct Insert<'a> {
 struct Strip<'a> {
     track: Cow<'a, Track>,
     kind: Kind,
-    /// Bus width: 2, or 6 for 5.1.
+    /// Bus width: 2, or 6/8/10 for 5.1/7.1/7.1.2.
     width: usize,
     pre: Vec<Insert<'a>>,
     post: Vec<Insert<'a>>,
@@ -543,9 +546,9 @@ struct GraphState {
     latency: usize,
 }
 
-fn build_state(plan: &Plan, sr: u32) -> GraphState {
+fn build_state(plan: &Plan<'_>, sr: u32) -> GraphState {
     let mk =
-        |v: &[Insert], w: usize| -> Vec<Box<dyn AudioEffect>> { v.iter().filter_map(|i| cfa4_audio_dsp::create_effect(i.map.dsp, sr as f32, w)).collect() };
+        |v: &[Insert<'_>], w: usize| -> Vec<Box<dyn AudioEffect>> { v.iter().filter_map(|i| cfa4_audio_dsp::create_effect(i.map.dsp, sr as f32, w)).collect() };
     let mut strips: Vec<StripState> = plan
         .strips
         .iter()
@@ -593,16 +596,16 @@ fn silent(w: usize, n: usize) -> Bus {
     vec![vec![0.0; n]; w]
 }
 
-/// Internal bus width of a channel format: 6 for 5.1, 2 otherwise (mono strips carry the same
-/// signal on both channels).
+/// Internal bus width of a channel format: 6 for 5.1, 8 for 7.1, 10 for 7.1.2, 2 otherwise
+/// (mono strips carry the same signal on both channels).
 pub fn width_of(c: AudioChannels) -> usize {
-    if c == AudioChannels::Surround51 { 6 } else { 2 }
+    if c.is_surround() { c.fixed_channels().unwrap_or(2) } else { 2 }
 }
 
-/// The layout a strip's signal is positioned as by the 5.1 panner.
+/// The layout a strip's signal is positioned as by the surround panner.
 fn source_layout(tr: &Track, width: usize) -> Layout {
     match (width, tr.channels) {
-        (6, _) => Layout::Surround51,
+        (6 | 8 | 10, _) => Layout::from_channels(width),
         (_, AudioChannels::Mono) => Layout::Mono,
         _ => Layout::Stereo,
     }
@@ -615,8 +618,8 @@ fn convert_width(buf: &Bus, layout: Layout, to: usize) -> Bus {
     }
     let n = buf.first().map_or(0, Vec::len);
     match (layout, to) {
-        (Layout::Mono, 6) => {
-            let mut v = silent(6, n);
+        (Layout::Mono, 6 | 8 | 10) => {
+            let mut v = silent(to, n);
             v[chans::C] = buf[0].clone();
             v
         }
@@ -629,7 +632,7 @@ fn convert_width(buf: &Bus, layout: Layout, to: usize) -> Bus {
 
 /// Run `chain` over `buf` (input-time samples from `x0`) with parameters at content time
 /// `x - lat` updated on the absolute [`PARAM_BLOCK`] grid.
-fn run_inserts(chain: &mut [Box<dyn AudioEffect>], ins: &[Insert], buf: &mut Bus, x0: i64, lat: usize, sr: u32) {
+fn run_inserts(chain: &mut [Box<dyn AudioEffect>], ins: &[Insert<'_>], buf: &mut Bus, x0: i64, lat: usize, sr: u32) {
     if chain.is_empty() {
         return;
     }
@@ -683,7 +686,7 @@ fn apply_gain(buf: &mut Bus, g: Option<f32>, per: &[f32]) {
 }
 
 /// Apply a pan/balance lane (values −100 … 100) with `law`.
-fn apply_pan(buf: &mut Bus, lane: &Lane, c0: i64, sr: u32, law: fn(f32) -> (f32, f32), scratch: &mut [f32]) {
+fn apply_pan(buf: &mut Bus, lane: &Lane<'_>, c0: i64, sr: u32, law: fn(f32) -> (f32, f32), scratch: &mut [f32]) {
     match lane.fill(c0, sr, scratch, |v| v as f32) {
         Some(p) => {
             let (gl, gr) = law(p / 100.0);
@@ -710,21 +713,30 @@ struct StripOut {
     out: Option<Bus>,
 }
 
-/// The 5.1 panner of a strip feeding a 5.1 bus: `buf` (the strip's width) → 6 channels.
-fn pan51(buf: &Bus, layout: Layout, tr: &Track, id: TrackId, ovs: &HashMap<(TrackId, String), Override>, c0: i64, sr: u32) -> Bus {
+/// The surround panner of a strip feeding a 5.1, 7.1 or 7.1.2 bus: `buf` (the strip's width) →
+/// `out_w` channels (the 7.1.2 heights of a 7.1.2 strip pass through unpanned).
+#[allow(clippy::too_many_arguments)]
+fn pan_surround(buf: &Bus, layout: Layout, out_w: usize, tr: &Track, id: TrackId, ovs: &HashMap<(TrackId, String), Override>, c0: i64, sr: u32) -> Bus {
     let n = buf.first().map_or(0, Vec::len);
-    let lanes = [LANE_PAN51_X, LANE_PAN51_Y, LANE_PAN51_CENTER, LANE_PAN51_LFE].map(|k| Lane::new(tr, id, k, ovs));
+    let bus = Layout::from_channels(out_w);
+    let lanes = [LANE_PAN51_X, LANE_PAN51_Y, LANE_PAN51_CENTER, LANE_PAN51_LFE, LANE_PAN51_HEIGHT].map(|k| Lane::new(tr, id, k, ovs));
     let input: Vec<&[f32]> = if layout == Layout::Mono { vec![buf[0].as_slice()] } else { buf.iter().map(Vec::as_slice).collect() };
-    let pan = |v: [f64; 4]| Pan51 { x: (v[0] / 100.0) as f32, y: (v[1] / 100.0) as f32, center: (v[2] / 100.0) as f32, lfe: db_gain(v[3]) };
+    let pan = |v: [f64; 5]| Pan51 {
+        x: (v[0] / 100.0) as f32,
+        y: (v[1] / 100.0) as f32,
+        center: (v[2] / 100.0) as f32,
+        lfe: db_gain(v[3]),
+        height: (v[4] / 100.0) as f32,
+    };
     let consts: Vec<Option<f64>> = lanes.iter().map(Lane::constant).collect();
     if consts.iter().all(Option::is_some) {
-        let m = chans::pan51_matrix(layout, pan([0, 1, 2, 3].map(|i| consts[i].unwrap_or(0.0))));
+        let m = chans::pan_matrix(layout, bus, pan([0, 1, 2, 3, 4].map(|i| consts[i].unwrap_or(0.0))));
         return chans::apply_matrix(&m, &input);
     }
-    let mut out = silent(6, n);
+    let mut out = silent(out_w, n);
     for i in 0..n {
         let t = Tick::from_units(c0 + i as i64, sr as i64);
-        let m = chans::pan51_matrix(layout, pan([0, 1, 2, 3].map(|k| consts[k].unwrap_or_else(|| lanes[k].at(t)))));
+        let m = chans::pan_matrix(layout, bus, pan([0, 1, 2, 3, 4].map(|k| consts[k].unwrap_or_else(|| lanes[k].at(t)))));
         for (o, row) in m.iter().enumerate() {
             let mut acc = 0.0f32;
             for (g, x) in row.iter().zip(&input) {
@@ -737,7 +749,16 @@ fn pan51(buf: &Bus, layout: Layout, tr: &Track, id: TrackId, ovs: &HashMap<(Trac
 }
 
 #[allow(clippy::too_many_arguments)]
-fn run_strip(plan: &Plan, si: usize, st: &mut StripState, mut buf: Bus, x0: i64, skip: usize, sr: u32, ovs: &HashMap<(TrackId, String), Override>) -> StripOut {
+fn run_strip(
+    plan: &Plan<'_>,
+    si: usize,
+    st: &mut StripState,
+    mut buf: Bus,
+    x0: i64,
+    skip: usize,
+    sr: u32,
+    ovs: &HashMap<(TrackId, String), Override>,
+) -> StripOut {
     let s = &plan.strips[si];
     let tr: &Track = &s.track;
     let id = tr.id;
@@ -822,8 +843,8 @@ fn run_strip(plan: &Plan, si: usize, st: &mut StripState, mut buf: Bus, x0: i64,
         return StripOut { routes: outs, meter, out: Some(buf) };
     }
     let out_w = my_routes.iter().find(|(_, r)| r.tap == Tap::Out).map(|(_, r)| plan.strips[r.target].width).unwrap_or(2);
-    if out_w == 6 {
-        buf = pan51(&buf, layout, tr, id, ovs, c_c, sr);
+    if matches!(out_w, 6 | 8 | 10) {
+        buf = pan_surround(&buf, layout, out_w, tr, id, ovs, c_c, sr);
     } else {
         if buf.len() != 2 {
             buf = convert_width(&buf, layout, 2);
@@ -836,7 +857,7 @@ fn run_strip(plan: &Plan, si: usize, st: &mut StripState, mut buf: Bus, x0: i64,
 }
 
 /// Mix `frames` samples of the sequence starting at sample `start` through the mixer graph, at the
-/// Mix's width (2 channels, or 6 in L, R, C, LFE, Ls, Rs order for a 5.1 Mix). `live` adds the UI's
+/// Mix's width (2 channels, or 6/8/10 in L, R, C, LFE, Ls, Rs (Lss, Rss, Lrs, Rrs, Lts, Rts) order for a surround Mix). `live` adds the UI's
 /// held controls and receives the meters.
 pub fn mix_graph(project: &Project, seq: &Sequence, start: i64, frames: usize, sources: &dyn SourceProvider, live: Option<&LiveMix>) -> AudioBuffer {
     mix_graph_at(project, seq, start, frames, sources, live, 0)

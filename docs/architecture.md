@@ -1,6 +1,6 @@
 # Architecture
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** trivial (status line, revision history and roadmap link added; content checked against the crate list) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-27 · **Last updated:** 2026-10-27 · **Change:** minor (Ubuntu 26.04 only: VideoToolbox, Media Foundation and the macOS menu removed) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 CFA4 is a Cargo workspace of small crates with strictly enforced layering. The engine is
 headless: every feature can be reached without a window, and the egui UI is one client among the
@@ -22,19 +22,21 @@ Design principles:
 ## 1. Layers
 
 ```text
- L6  apps/cfa4 · apps/cfa4-cli
- L5  ui-egui · automation · platform · gstreamer (cfa4-gstreamer, optional)
+ L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-studio-host
+ L5  ui-egui · automation · tcsync-io · platform · gstreamer (cfa4-gstreamer, optional) · ffmpeg (cfa4-ffmpeg, optional) · obs (cfa4-obs)
  L4  engine
- L3  render · gpu · export · golden (test-only)
+ L3  render · gpu · export · smart-edit · qc · golden (test-only)
+     DCP validation: dcp-validate · dcp-inspect
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
- L1  frame · media · project · audio-dsp · text · route (cfa4-route)
+ L1  frame · media · project · audio-dsp · text · route (cfa4-route) · tcsync · metrics · live
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
-     codecs/containers: isobmff · matroska · mxf · cfb · mpegts · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
+     codecs/containers: isobmff · matroska · mxf · cfb · mpegts · st2110 · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · dv · lcevc · prores · dnx · apv · dng · aac · ac3 · dts · mpa · opus
+     documents: dcp
 ```
 
 Crates are named `cfa4-<dir>` (`crates/time` is `cfa4-time`); new CFA4 crates are named
-`cfa4-<dir>` (`crates/gstreamer` is `cfa4-gstreamer`). The apps are `cfa4`
-and `cfa4-cli`.
+`cfa4-<dir>` (`crates/gstreamer` is `cfa4-gstreamer`). The apps are `cfa4`,
+`cfa4-cli` and `cfa4-studio-host`.
 
 | Crate | Layer | Purpose |
 |---|---|---|
@@ -44,32 +46,49 @@ and `cfa4-cli`.
 | `bitstream` | L0 | bit reader/writer, Exp-Golomb, emulation prevention |
 | `isobmff` | L0 | MP4/MOV demux and mux |
 | `matroska` | L0 | MKV/WebM demux |
-| `mxf` | L0 | MXF demux and mux (SMPTE ST 377-1): OP1a / OP-Atom, index tables, AVC / VC-3 / ProRes / MPEG-2 identification, PCM / AES3 sound, timecode; writer for OP1a / OP-Atom with VC-3, ProRes, AVC and PCM ([README](../crates/mxf/README.md)) |
+| `mxf` | L0 | MXF demux and mux (SMPTE ST 377-1): OP1a / OP-Atom, index tables, AVC / VC-3 / ProRes / MPEG-2 identification, PCM / AES3 sound, timecode; ST 429-6 encrypted track files decrypted with keys from an in-memory key ring; writer for OP1a / OP-Atom with VC-3, ProRes, AVC and PCM ([README](../crates/mxf/README.md)) |
+| `dcp` | L0 | Digital Cinema Package documents: SMPTE and Interop asset map, volume index, packing list and composition playlist read into a serde model, problems as positioned issues (DCP-02); Key Delivery Messages (ST 430-1) opened with the recipient's RSA key ([README](../crates/dcp/README.md)) |
 | `cfb` | L0 | Compound File Binary ([MS-CFB] structured storage) reader and writer, the container of AAF ([README](../crates/cfb/README.md)) |
 | `mpegts` | L0 | MPEG-2 Systems demux and mux (H.222.0): transport streams (188 / 192-byte BDAV / 204), program streams (MPEG-2 / MPEG-1, VOB, MOD), PSI, PES, PTS / PCR, access-unit index built on open ([README](../crates/mpegts/README.md)) |
+| `st2110` | L0 | SMPTE ST 2110 essence formats for the live studio: RTP packets, SDP (`ts-refclk`, `mediaclk`, `fmtp`), ST 2110-20 video packing and reassembly (GPM / BPM, interlace, 4:2:0, key), the -21 / -10:2022 SDP parameters; no sockets or clocks yet ([README](../crates/st2110/README.md)) |
 | `ogg` | L0 | Ogg demux (RFC 3533), Ogg Opus timing (RFC 7845 granules, pre-skip, end trimming), Vorbis headers |
 | `h264`, `h264enc` | L0 | H.264 decoder; H.264 encoder |
 | `hevc` | L0 | H.265 Main/Main 10 decoder |
 | `heif` | L0 | HEIF / HEIC still-image container reader: items, grids, transforms, alpha references ([README](../crates/heif/README.md)) |
 | `prores` | L0 | ProRes decoder and encoder |
 | `dnx` | L0 | DNxHD / DNxHR (SMPTE ST 2019-1 VC-3) decoder and DNxHR encoder |
+| `hap` | L0 | Hap video decoder: `Hap1`, `Hap5`, `HapY`, `HapM`, `HapA`; Snappy, chunks, DXT1 / DXT5 / RGTC1 / scaled YCoCg textures to RGBA ([README](../crates/hap/README.md)) |
+| `dirac` | L0 | SMPTE VC-2 (ST 2042-1) decoder, the intra subset of Dirac: low-delay and high-quality pictures, all seven wavelets, symmetric and asymmetric transforms, 4:4:4 / 4:2:2 / 4:2:0 up to 16 bits, field coding ([README](../crates/dirac/README.md)) |
+| `ffv1` | L0 | FFV1 (IETF RFC 9043) lossless video decoder: versions 0, 1, 3, Golomb Rice and range coding, YCbCr / RGB, 8-16 bit, slices ([README](../crates/ffv1/README.md)) |
+| `huffyuv` | L0 | Huffyuv (`HFYU`) lossless video decoder: YUY2, RGB24, RGBA; left, gradient and median prediction; interlaced ([README](../crates/huffyuv/README.md)) |
+| `utvideo` | L0 | Ut Video lossless video decoder: 8-bit YUV 4:2:0 / 4:2:2 / 4:4:4, RGB, RGBA; slices; left, gradient and median prediction ([README](../crates/utvideo/README.md)) |
+| `canopus` | L0 | Canopus HQ, HQA and HQX intra video decoder (8-bit 4:2:2 with alpha, 12-bit 4:2:2 / 4:4:4 with alpha), ported from FFmpeg (LGPL-2.1-or-later) ([README](../crates/canopus/README.md)) |
 | `apv` | L0 | Advanced Professional Video (IETF RFC 9924) decoder and encoder ([README](../crates/apv/README.md)) |
 | `jxl` | L0 | JPEG XL decoder (ISO/IEC 18181): safe port of jxl-oxide, VarDCT and Modular, all restoration filters, patches, splines, noise; first frame of a file to interleaved floats; animation, ICC colour and encoder: #138–#141 ([README](../crates/jxl/README.md)) |
 | `dng` | L0 | DNG / CinemaDNG camera RAW decoder: TIFF container, uncompressed and lossless JPEG raw data, DNG processing to linear Rec. 709 ([README](../crates/dng/README.md)) |
 | `av1` | L0 | AV1 decoder (Main profile; bit-exact with libdav1d; see its README for the stage table) |
 | `mpeg2v` | L0 | MPEG-2 video (Main / 4:2:2 profile; frame and field pictures, dual prime) and MPEG-1 video decoder ([README](../crates/mpeg2v/README.md)) |
+| `dv` | L0 | DV video decoder: DV25 / DVCAM 4:1:1 and 4:2:0, DVCPRO 25 / 50, DVCPRO HD 1080i and 720p, 8-8 and 2-4-8 DCT ([README](../crates/dv/README.md)) |
+| `lcevc` | L0 | MPEG-5 LCEVC: finds enhancement data (T.35 SEI in H.264 / HEVC, `lvc1` tracks, TS stream type 0x36); no decoding yet ([README](../crates/lcevc/README.md)) |
 | `aac` | L0 | AAC-LC decoder and encoder |
 | `ac3` | L0 | AC-3 (ATSC A/52) decoder ([README](../crates/ac3/README.md)) |
 | `dts` | L0 | DTS core, DTS-HD MA / HRA decoder, FFmpeg-derived, LGPL-2.1-or-later ([README](../crates/dts/README.md)) |
 | `iab` | L0 | Immersive Audio Bitstream (SMPTE ST 2098-2, DCP / IMF object audio): parser, DLC lossless decoder and encoder, loudspeaker renderer, writer ([README](../crates/iab/README.md)) |
 | `mpa` | L0 | MPEG-1/2 Audio Layer I and II (MP1 / MP2) decoder ([README](../crates/mpa/README.md)) |
+| `speex` | L0 | Speex decoder (narrowband, wideband, ultra-wideband, VBR / DTX, in-band stereo), ported from the BSD-3-Clause libspeex 1.2.1 ([README](../crates/speex/README.md)) |
+| `adpcm` | L0 | G.711 μ-law / A-law, G.722, IMA ADPCM (WAV, QuickTime `ima4`) and Microsoft ADPCM decoders ([README](../crates/adpcm/README.md)) |
+| `amr` | L0 | AMR-NB and AMR-WB speech decoders, ported from opencore-amr (Apache-2.0) ([README](../crates/amr/README.md)) |
+| `tta` | L0 | TTA (True Audio) lossless audio decoder, ported from libtta (LGPL-3.0) ([README](../crates/tta/README.md)) |
 | `testkit` | L0 | test-only helpers, used only as a dev-dependency: ffmpeg/ffprobe discovery, fixture dirs, golden images ([testing.md](testing.md)) |
 | `frame` | L1 | `VideoFrame` (planar YUV / RGBA8 / linear RGBA f32, colour metadata), `AudioBuffer` |
-| `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV |
+| `media` | L1 | `MediaSource` trait, probing/openers, frame cache, generators, stills, image sequences, WAV / Broadcast WAV (PCM, G.711, G.722, ADPCM) |
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
+| `tcsync` | L1 | external timecode sync: SMPTE LTC frame, biphase-mark encoder and decoder (either direction, varying speed); MIDI Timecode quarter-frame / full-frame generation and parsing; chase state machine (locate, lock, drift re-seek, freewheel, scrub) ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)); depends only on `time` |
 | `text` | L1 | text engine: font database (bundled OFL fonts + system fonts), shaping (harfrust), bidi, line breaking, paragraph layout, glyph/path rasteriser, strokes ([crates/text/README.md](../crates/text/README.md)) |
 | `route` | L1 | `cfa4-route`: compute router: per-task choice of backend and device (GPU, NPU, CPU) from the routing table (`routing.toml`), the `/sys` device probe and the user's preferences, with reasons and fallback order; backend catalogue (implemented / planned, vendor-locked) and the vendor-neutrality coverage report; no `unsafe`, no workspace dependencies ([ADR 0004](adr/ADR-0004-compute-routing.md), [README](../crates/route/README.md)) |
+| `metrics` | L1 | image fidelity metrics for output comparison (docs/gaps.md G1): CIEDE2000 ΔE between sRGB images, SSIM of planes; depends on `color` only ([README](../crates/metrics/README.md)) |
+| `live` | L1 | `cfa4-live`: live graphics plumbing (credits plan C10): the live page server for OBS's Browser Source on **127.0.0.1 only** (the program picture as a transparent PNG, status, the cue's sound with byte ranges; other host names and methods refused), an obs-websocket 5 client over a minimal RFC 6455 WebSocket client; no rendering and no workspace dependencies ([README](../crates/live/README.md), [credits.md](credits.md)) |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
 | `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue + verified downloader (feature `download`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |
@@ -81,14 +100,22 @@ and `cfa4-cli`.
 | `gpu` | L3 | wgpu compositor (WGSL) |
 | `golden` | L3 | test-only: golden-image tests of the CPU renderer and GPU-vs-CPU parity; empty library, dev-dependencies only |
 | `scopes` | L3 | video scope maths: waveform, parade, histogram, YUV / HLS vectorscopes, numeric summaries ([crates/scopes/README.md](../crates/scopes/README.md)) |
+| `qc` | L3 | media quality control: QC profiles (`cfa4-qc-profile/1`, TOML) with mandatory/optional checks and PASS/WARN/FAIL bounds, the versioned QC report (`cfa4-qc-report/1`, JSON) with SHA-256 file identities, tool versions and human review, input and integrity checks on a full decode, loudness / true peak / clipping / silence and black / luma-clipping / contact-sheet analysis, and a verdict that never passes a skipped or failed mandatory check ([media-qc.md](media-qc.md)) |
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
+| `dcp-validate` | L3 | DCP validation API (DCP-03): `DcpValidator` trait, seven result states and the package verdict, versioned profiles, `cfa4-dcp-report/1` JSON / Markdown report, safe package discovery, native backend ([README](../crates/dcp-validate/README.md)) |
+| `dcp-inspect` | L3 | DCP validation backend (DCP-04) that runs the isolated dcp_inspect reference engine as a separate process: argument array, own process group, private `HOME`/`TMPDIR`, timeout and cancel, `--dump-result` mapped onto the rule catalogue ([README](../crates/dcp-inspect/README.md)) |
+| `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
 | `gstreamer` | L5 | `cfa4-gstreamer`: optional GStreamer backend (feature `gstreamer`): installation probe with plugin licences, media discovery; supplements the Rust engine ([ADR 0002](adr/ADR-0002-gstreamer-backend.md), [README](../crates/gstreamer/README.md)) |
+| `ffmpeg` | L5 | `cfa4-ffmpeg`: FFmpeg (≥ 9.0.2, GPL-3 build) supplementary backend (feature `ffmpeg`): probe with licence and restricted-codec check, native-bit-depth decoding of what the engine cannot read yet, first fallback before GStreamer, `ffmpeg` route ([ADR 0005](adr/ADR-0005-media-backends.md), [README](../crates/ffmpeg/README.md)) |
+| `obs` | L5 | `cfa4-obs`: live studio core (CFA4-LIVE-STUDIO-001 S0): the `StudioBackend` trait, the libobs 33.0.1 binding (loaded at run time; `unsafe` only in `libobs::sys`, ADR 0001 addendum 2026-11-07), the pure-Rust software backend (the fallback), the shared-memory frame ring and the supervisor of `cfa4-studio-host` ([plan](plans/CFA4-LIVE-STUDIO-001.md), [README](../crates/obs/README.md)) |
+| `tcsync-io` | L5 | `cfa4-tcsync-io`: external timecode sync devices: LTC in and out through cpal (a chosen channel of a chosen device), MIDI Timecode in and out through the ALSA sequencer (client `CFA4`, ports `Timecode In` / `Timecode Out`), and the `SyncManager` that opens what the settings ask for, feeds the chase and returns locate / stop for the player; used by `cfa4-cli serve` ([plan](plans/TIMECODE-SYNC-LTC-MTC-2026-11-11.md)) |
 | `automation` | L5 | MCP server (`rmcp`, stdio), headless or bridged to the running app |
-| `platform` | L5 | OS media FFI only: hardware video decoding (VideoToolbox H.264 / HEVC on macOS; Media Foundation / Direct3D 11 H.264 / HEVC / VP9 / AV1 on Windows; VA-API H.264 / HEVC on Linux, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and hardware H.264 encoding (VideoToolbox, opt-in) and H.265 encoding (VideoToolbox, the only H.265 encoder; the format exists only where a hardware encoder does) and NVIDIA NVENC H.264 (Windows and 64-bit Linux, opt-in) and H.265 (Windows, CFA4's only H.265 encoder there) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
-| `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, native macOS menu, TCP control server |
+| `platform` | L5 | OS media FFI only: hardware video decoding (NVDEC and VA-API H.264 / HEVC, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and NVIDIA NVENC H.264 (opt-in) and H.265 (CFA4's only H.265 encoder; the format exists only where it does) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
+| `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, TCP control server |
 | `cfa4-cli` | L6 | headless CLI: `exec`, `run`, `inspect`, `describe`, `commands`, `import`, `export`, `render`, `probe`, `mcp`; `--bridge` targets the running app |
+| `cfa4-studio-host` | L6 | the live studio's own process: runs libobs (or the software backend), writes program frames into the frame ring; started, watched and restarted by the engine (`live.studio.host.*`), so a libobs crash never ends the editor (plan D2) |
 
 ### What `cargo xtask layers` enforces
 
@@ -100,13 +127,13 @@ are exempt):
 |---|---|
 | Every crate has a layer | A new crate fails the check until it is added to `LAYERS`. |
 | Only downward edges | A crate may not depend on a crate in a higher layer. |
-| Same-layer edges are listed | From L1 up, a same-layer edge must be in `SAME_LAYER`: `media→frame`, `project→media`, `project→frame`, `gpu→render`, `export→render`, `cli→cfa4`, plus a few reserved for planned crates. |
+| Same-layer edges are listed | From L1 up, a same-layer edge must be in `SAME_LAYER`: `media→frame`, `project→media`, `project→frame`, `gpu→render`, `export→render`, `export→smart-edit`, `cli→cfa4`, plus a few reserved for planned crates. |
 | L0 codecs stay standalone | L0 crates other than `time`, `geom`, `color`, `bitstream`, `testkit` may depend on no workspace crate except `cfa4-bitstream`. External crates such as `thiserror` and `rayon` are allowed. |
 | No UI/OS crates below L5 | `egui`, `eframe`, `egui-wgpu`, `winit`, `rfd`, `cpal`, `muda` are allowed only in L5 and L6. |
 
-`cargo xtask wasm` (opt-in, not a CI or release gate) runs `cargo check --target
-wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only: the browser app
-`apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
+`cargo xtask wasm` (opt-in legacy, not a CI or release gate; nothing needs to build for wasm32) runs
+`cargo check --target wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only:
+the browser app `apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
 (`deny`, allowed only on its FFI modules; [ADR 0001](adr/0001-platform-ffi.md)).
 
 ## 2. Time base
@@ -176,7 +203,7 @@ pub struct CommandSpec {
     pub id: &'static str,                 // "sequence.addEdit"
     pub label: &'static str,              // "Add Edit"
     pub menu: &'static [&'static str],    // ["Sequence"]; empty = not in menus
-    pub shortcut: Option<&'static str>,   // "Cmd+K" (Cmd = ⌘ on macOS, Ctrl elsewhere)
+    pub shortcut: Option<&'static str>,   // "Cmd+K" (Cmd = Ctrl on Linux)
     pub params: &'static str,             // r#"{"time":ticks?}"#, shown to agents
     pub enabled: fn(&Session) -> Result<(), String>,  // Err carries the reason
     pub run: fn(&mut Session, &Value) -> Result<Value>,
@@ -213,7 +240,7 @@ pub struct CommandSpec {
 ```text
 file ──► codecs (MP4/MOV, MKV, audio)        demux + decode, GOP-aware seek
           │   decoder registry: h264, hevc, vp9, av1, prores, dnx, mjpeg (+ any registered first:
-          │   platform's VideoToolbox (macOS) or Media Foundation (Windows) H.264 / HEVC, falling back to ours)
+          │   platform's NVDEC or VA-API H.264 / HEVC, falling back to ours)
           ▼
         media::MediaSource ──► frame cache (byte-budgeted LRU, shared)
           ▼
@@ -253,45 +280,34 @@ file ──► codecs (MP4/MOV, MKV, audio)        demux + decode, GOP-aware see
   `codecs::VideoDecoder`. `register_video_decoder` puts a factory in front of the built-in ones, so a
   hardware decoder can take precedence. The GOP cache never holds its lock while decoding.
 - **Hardware decoding.** The apps (desktop, CLI / headless MCP, bench) call
-  `cfa4_platform::register()` at startup, which on macOS registers a VideoToolbox factory for
-  `avcC` / `hvcC` streams (8 / 10-bit, 4:2:0 and 4:2:2; elsewhere it does nothing), and on Windows a
-  Media Foundation one (below). The factory
+  `cfa4_platform::register()` at startup, which asks the compute router (`cfa4-route`) for the
+  hardware decoder to put in front of ours: NVDEC on NVIDIA GPUs with the proprietary driver,
+  then VA-API (Intel, AMD), for `avcC` / `hvcC` streams; with neither it does nothing. The factory
   declines (our decoder is used) when Settings ▸ Playback ▸ Hardware decoding is Off
   (`codecs::hw::set_hardware_decoding`, applied by the engine whenever preferences change), for
-  formats it does not take, and when the OS cannot create a *hardware* session for the stream.
-  Its decoder is a `platform::HybridDecoder`: VideoToolbox decodes asynchronously (two access
-  units in flight), a reorder buffer of the stream's own depth (`max_num_reorder_frames` /
-  `sps_max_num_reorder_pics`, from `codecs::hw::NalStreamInfo`) restores presentation order, and
-  the decoded biplanar `CVPixelBuffer` is copied into planar `Yuv8` / `Yuv16`. Colour, pixel
-  aspect, random-access and disposable answers come from the same helpers as the software
-  decoders (`video::vui_color`, `sar_par`, `h264_disposable`, `hevc_disposable`), so the two are
-  interchangeable (bit-exact in the parity tests). If the hardware fails mid-stream (decode error,
-  session lost to a GPU change or sleep, changed in-band parameter sets), the hybrid builds
-  `codecs::software_video_decoder` (built-in factories only), replays the samples since the last
-  restart point and continues in software for that instance; it is logged and counted. A source
-  already open keeps its decoder when the setting changes, until it is reopened. `perf.stats`
-  `decode.hardware` reports hardware vs software frames, sessions, declines and fallbacks, and the
-  registered `backend`.
-  On Windows the decoder (`platform::media_foundation`) is a Direct3D-aware decoder MFT driven at
-  the level of single access units (no Source Reader: the demuxer above already delivers the
-  samples): the `avcC` / `hvcC` sample becomes Annex B, the MFT is given the process's Direct3D 11
-  video device through an `IMFDXGIDeviceManager` so it decodes with DXVA, and its NV12 (8-bit) /
-  P010 (10-bit) texture is read back through a staging texture (the one GPU to CPU copy) into
-  planar `Yuv8` / `Yuv16`. H.264 Baseline / Main / High, HEVC Main / Main 10, VP9 profiles 0 / 2 and AV1 main
-  (8- and 10-bit), 4:2:0, progressive (VP9 / AV1 samples go in as they are, not as Annex B);
-  everything else, and any stream the GPU's DXVA decoder does not list, is declined. A decoder that
-  would hand back system-memory pictures (Microsoft's decoder MFTs do that when DXVA is not
-  available) fails the stream, so the hybrid continues with our decoder and Windows' software
-  decoding is never used in its place. Zero-copy (the texture straight to wgpu) is not done yet.
+  formats it does not take, and when the driver cannot create a *hardware* session for the stream.
+  Its decoder is a `platform::HybridDecoder` around the VA-API or NVDEC decoder, which uses our own
+  parsers and DPBs to drive the stateless hardware; a reorder buffer of the stream's own depth
+  (`max_num_reorder_frames` / `sps_max_num_reorder_pics`, from `codecs::hw::NalStreamInfo`)
+  restores presentation order, and the decoded biplanar surface is copied into planar `Yuv8` /
+  `Yuv16`. Colour, pixel aspect, random-access and disposable answers come from the same helpers
+  as the software decoders (`video::vui_color`, `sar_par`, `h264_disposable`, `hevc_disposable`),
+  so the two are interchangeable. If the hardware fails mid-stream (decode error, session lost,
+  changed in-band parameter sets), the hybrid builds `codecs::software_video_decoder` (built-in
+  factories only), replays the samples since the last restart point and continues in software for
+  that instance; it is logged and counted. A source already open keeps its decoder when the
+  setting changes, until it is reopened. `perf.stats` `decode.hardware` reports hardware vs
+  software frames, sessions, declines and fallbacks, and the registered `backend`. Zero-copy (the
+  surface straight to wgpu) is not done yet.
   Decoders run slices on rayon, so an export worker waiting inside a decode can pick up another
   frame of the same source. A request that finds the shared decoder busy decodes with a private
   decoder.
-- **Hardware encoding.** On Windows and 64-bit Linux, `platform::nvenc::export::factory` is registered with
+- **Hardware encoding.** On 64-bit Linux, `platform::nvenc::export::factory` is registered with
   `cfa4_export::register_encoder` (`register()` does this once), in front of the software H.264
   encoder. It takes an export only when Export ▸ Hardware encoding (`ExportSettings.hardwareEncoding`,
   `HardwareEncoding::Auto`) is Auto, which is off by default: hardware streams differ from ours, and
   exports are otherwise byte-identical from run to run. NVENC (`platform::nvenc`, the driver's
-  `nvEncodeAPI64.dll` / `libnvidia-encode.so.1` loaded at run time) then takes RGBA frames, converted to 4:2:0 by the software
+  `libnvidia-encode.so.1` loaded at run time) then takes RGBA frames, converted to 4:2:0 by the software
   encoder's own conversion, and produces the H.264 samples and `avcC` of an MP4 / MOV. It declines
   (the software encoder runs, counted in `export.hardware.declined`) two-pass VBR, HDR, MXF,
   interlaced output, sizes outside NVENC's limits, and systems without an NVIDIA GPU or driver.
@@ -301,7 +317,7 @@ file ──► codecs (MP4/MOV, MKV, audio)        demux + decode, GOP-aware see
   buffers, with the HDR10 static metadata as SEI on every IDR for PQ; the `hvcC` is built from the SPS
   the encoder wrote). An HDR sequence exports as HDR H.265 only where a registered probe says so
   (`cfa4_export::register_hdr_probe`, `hdr_available`; NVENC with 10-bit support), otherwise it is
-  tone-mapped to SDR as on macOS: `register()` hands `platform::nvenc::hevc_available` to
+  tone-mapped to SDR: `register()` hands `platform::nvenc::hevc_available` to
   `cfa4_export::register_format_probe`, so the H.265 format exists where an HEVC encoder does,
   and choosing it is the opt-in (the Hardware encoding toggle governs H.264 only). With no software
   H.265 encoder, what NVENC declines is counted and ends the export with an error that says why.
@@ -438,7 +454,8 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   `SequenceSettings::audio_master` (the Mix: Stereo, Mono, 5.1, Adaptive) existed already;
   `file.newSequence {mix, trackType}` and `sequence.settings {mix}` set them, `mixer.setStrip
   {channels}` / `mixer.addSubmix {channels}` per strip. The 5.1 panner is four lanes in
-  `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB): a
+  `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB,
+  `pan51.height` 0…100 %): a
   lane without keyframes stores the static value, so no new project fields were needed and the
   puck is automatable like any lane.
 - **Maths** (`audio_dsp::channels`). 5.1 order is L, R, C, LFE, Ls, Rs everywhere inside CFA4.
@@ -449,13 +466,27 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   Stereo sources sit at the puck ± 1 in x; 5.1 sources keep their layout moved by the puck's offset
   from front-centre (the default puck is the identity). LFE gets the source LFE (5.1) or the mean of
   the source channels (mono/stereo, default −∞) times the LFE level.
-- **Graph.** Buses are 2 or 6 channels wide (`render::mixer::width_of`); inserts are built for the
+- **Graph.** Buses are 2, 6, 8 or 10 channels wide (`render::mixer::width_of`); inserts are built for the
   strip's width; routes convert between widths (5.1 panner into 5.1 buses, BS.775 into stereo
   buses); meters have one value per channel. `mix_graph` returns the Mix's width;
   `audio::mix_sequence` always returns stereo, `mix_sequence_layout` any layout and mixdown. Clips
   on 5.1 tracks play the source's first six channels (or the six picked with Modify ▸ Audio
   Channels), mono/stereo sources upmixed; clip effects run on all six channels.
-- **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels; on a stereo
+- **7.1 and 7.1.2** (#374). Tracks, submixes and the Mix can also be 7.1 (8 ch: L R C LFE Lss Rss
+  Lrs Rrs, the SMPTE / DCP order) or 7.1.2 (10 ch: … Lts Rts). The surround panner
+  (`channels::pan_matrix`) puts a point source on the front, side and rear rows of a 7.1 bus
+  (`point_gains_71`, Σg² = 1); a 5.1 source's surrounds sit between the side and the rear speakers
+  (each split −3 dB); a 7.1.2 strip's heights pass through unpanned. On a 7.1.2 bus the lane
+  `pan51.height` (0…100 %, #406) lifts each floor source to Lts / Rts with constant power
+  (floor × cos(h·π/2), top × sin(h·π/2), left / right as on the floor); it is ignored on other
+  buses and recorded by a Write pass. Up- and downmixes go through 5.1 (`channels::matrix`): a 7.1 side and rear pair folds
+  into the 5.1 surround at −3 dB each, a 7.1.2 height folds into its side at −3 dB, the 5.1
+  surround splits −3 dB to side and rear. A 7.1 source plays as 7.1 on a 7.1 / 7.1.2 track (its
+  WAV-order back pair moved behind the sides). Exports stay mono / stereo / 5.1 except the DCP IAB
+  bed, which takes a 7.1 Mix as a 7.1 DS bed and a 7.1.2 Mix as a 9.1OH bed (the 5.1 fallback in
+  the main sound is the 5.1 fold).
+- **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels (a 7.1 / 7.1.2
+  Mix as its own channels on a device with as many, else as 5.1); on a stereo
   device it is folded with Preferences ▸ Audio ▸ 5.1 Mixdown Type (Front Only, Front + Rear
   Surround = BS.775, Front + LFE, Front + Rear Surround + LFE; `PreviewStore::mix_layout`).
 - **Export.** Audio Channels Mono / Stereo / 5.1: WAV writes `WAVE_FORMAT_EXTENSIBLE` with channel
@@ -541,13 +572,25 @@ with different vertex counts hold). Feather, Opacity and Expansion are ordinary 
   removeVertex / toggleVertexSmooth / roundCorners / select / list; `masks.add` takes a
   `cornerRadius` for a rounded rectangle); keyframe commands take `"mask": n`. The
   Program monitor overlay drags vertices, Bézier handles, the whole mask and the feather /
-  expansion handles; drags merge into one undo step.
+  expansion handles; a marquee from outside the shape or Shift-click selects several vertices,
+  which move together (`masks.moveVertex` `vertices`); drags merge into one undo step.
 - **Tracking** (`render::track`, `masks.track`): Shi–Tomasi features inside the mask, pyramidal
   Lucas–Kanade (4 levels, 15×15 window) with a forward–backward check, then RANSAC + least squares
   for Position / Position & Rotation / Position, Scale & Rotation (2D Procrustes). Each frame's
   transform moves the path, written as Mask Path keyframes while the background job runs (one undo
   step per run; `jobs.cancel` stops and keeps what was tracked). Frames are tracked at ≤ 960 px
   wide. On synthetic footage with known similarity motion the path stays within 0.3 px over 20 frames.
+- **Correlation tracker** (`render::cftrack`, `masks.track` with `"tracker": "correlation"`, stored
+  per mask as `Mask::tracker`, the wrench menu's Correlation tracker): an optional CFA4 mode for
+  objects the point tracker loses (little interior detail, deforming). A kernelized correlation
+  filter (KCF, Gaussian kernel) on HOG-like features (4 px cells, 9 orientations + intensity), a
+  Hann window multiplied by a spatial-reliability map from the mask's shape (after CSRT), a
+  DSST-style 1-D scale filter (16 scales, 2 % apart) for Position, Scale & Rotation, and a
+  peak-to-sidelobe confidence: below 6 the object counts as lost (occluded / gone) and the job
+  stops with what it tracked, below 10 the model is not updated. Position and scale only, no
+  rotation; the mask should outline the whole object. Own implementation from the papers (no
+  OpenCV code). On the synthetic disc (moving, turning 1.5°/frame, growing 1 %/frame) the centre
+  stays within 1.6 px over 16 frames and the scale within 5 %.
 
 ### 5.4 Colour management
 
@@ -596,9 +639,8 @@ frame (Y'CbCr/RGB + metadata) ─► source colour space: Interpret Footage over
   (MaxCLL/MaxFALL 0 = unknown, they are not measured) plus the matching H.264 SEI. `sdr: true`
   exports the tone-mapped SDR picture instead; render previews always do.
 - **Monitors / display colour management.** The monitors are SDR (sRGB-encoded RGBA8 textures):
-  HDR sequences are shown tone mapped. macOS EDR (extended-range `CAMetalLayer` output) is not
-  wired up: there is no `platform` crate yet and eframe/wgpu do not expose an EDR surface, so HDR
-  values above SDR white are never sent to the display. The scopes of an HDR sequence show the
+  HDR sequences are shown tone mapped. HDR display output is not wired up: eframe/wgpu do not
+  expose an HDR surface, so HDR values above SDR white are never sent to the display. The scopes of an HDR sequence show the
   working-space values (waveform in cd/m² on a PQ scale, BT.2020 vectorscope).
 - **LUTs.** Lumetri Input LUT and Creative Look reference `lib:<id>` (the project's LUT library,
   `Project::luts`, embedded `.cube`/`.3dl` text) or `builtin:<id>` (code-generated camera
@@ -675,9 +717,10 @@ file.exportMedia {path, preset?, settings?, format?, range?, …}     export.qui
 | `dnxhr` | `cfa4-dnx` (LB / SQ / HQ / HQX) | MOV (`AVdh`) |
 | `mjpeg` | built in | MOV |
 | `aac` | `cfa4-aac` (AAC-LC, the audio settings' bitrate) | audio only: MPEG-4 audio `.m4a` (`isobmff`, priming in an edit list), or raw ADTS when the path ends in `.aac` |
-| `mxf-op1a` | DNxHR (default), ProRes or H.264 (Annex B, long GOP), `mxfVideoCodec`; PCM 16/24/32-bit integer | MXF OP1a (`cfa4-mxf` writer: frame-wrapped, index with temporal offsets, start timecode) |
+| `mxf-op1a` | DNxHR (default), ProRes, H.264 (Annex B, long GOP) or MPEG-2 (`cfa4-mpeg2v` long GOP, HD only: MP@HL / MP@H-14 / 422P@HL; the `mpeg2Chroma`, `mpeg2BFrames`, `mpeg2Quantizer` and keyframe distance settings apply)) or D-10 / IMX (`d10`: intra-only 4:2:2P@ML at 30 / 40 / 50 Mbit/s, 720x576 at 25 fps or 720x486 / 480 at 29.97, SDTI-CP content packages with one 8-channel AES3 element; OP1a only) or XDCAM HD422 (`xdcamHd422`: MPEG-2 4:2:2P@HL long GOP at 1920x1080 / 1280x720 in the SMPTE RDD 9 layout: system items, one AES3 element per channel, body partitions every 5 s; up to 8 channels of 16 / 24-bit 48 kHz; OP1a only) or uncompressed Y'CbCr 4:2:2 (`v210`: 10-bit, `uyvy`: 8-bit; SMPTE ST 384, Rec. 709 narrow range, OP1a and OP-Atom), `mxfVideoCodec`; PCM 16/24/32-bit integer | MXF OP1a (`cfa4-mxf` writer: frame-wrapped, index with temporal offsets, start timecode) |
 | `mxf-opatom` | as `mxf-op1a` | Avid-style MXF OP-Atom: clip-wrapped picture at `path`, one mono PCM file per channel (`<stem>_A1.mxf` …, `Report::extra_files`) |
-| `mpeg2` | `cfa4-mpeg2v` (Main Profile 4:2:0, I/P pictures, average bitrate, keyframe distance = GOP) + 16-bit DVD LPCM or `cfa4-aac` | `cfa4-mpegts` muxer, `mpeg2Container` or the path's extension: program stream `.mpg` (LPCM), transport stream `.ts` / BDAV `.m2ts` (AAC in ADTS), elementary stream `.m2v` (no audio) |
+| `imf` | `cfa4-j2k` (the 2K / 4K / 8K IMF profile of the frame size, lossy or `imfLossless` reversible, 10-bit full-range R'G'B' 4:4:4) + 24-bit 48 kHz PCM | an IMF App 2E package folder at `path` (`imf_out.rs`, SMPTE ST 2067-21): image and audio track files (`cfa4-mxf` `Pattern::Imf`), CPL with RegXML essence descriptors, PKL, ASSETMAP, VOLINDEX; App 2E rates only (the nearest is chosen), at 29.97 / 59.94 the composition plays a multiple of 5 frames |
+| `mpeg2` | `cfa4-mpeg2v` (Main Profile 4:2:0, I/P pictures, average bitrate, keyframe distance = GOP) + 16- or 24-bit DVD LPCM or `cfa4-aac`, or AC-3 (`audioCodec: "ac3"`, `cfa4-ac3`), or MP2 (`audioCodec: "mp2"`, `cfa4-mpa` Layer II encoder, mono / stereo at 32 / 44.1 / 48 kHz and the MPEG-2 lower rates) | `cfa4-mpegts` muxer, `mpeg2Container` or the path's extension: program stream `.mpg` (LPCM, AC-3 or MP2), transport stream `.ts` / BDAV `.m2ts` (AAC in ADTS, AC-3 or MP2), elementary stream `.m2v` (no audio) |
 | `png`, `tiff`, `bmp`, `jpg` | `image` | numbered stills `<name>000.<ext>`, `<name>001.<ext>` … |
 | `tga`, `dpx`, `exr` | built in (`raster.rs`: uncompressed Targa 24/32-bit; DPX 10-bit RGB, SMPTE ST 268; OpenEXR half-float linear RGB(A), uncompressed scan lines) | numbered stills, as above |
 | `gif`, `wav`, `aiff` | built in / `image` | GIF / RIFF WAVE (`WAVE_FORMAT_EXTENSIBLE` for 5.1; `WAVE_FORMAT_IEEE_FLOAT` + `fact` for float) / AIFF (16-, 24- or 32-bit PCM; 32-bit float as AIFF-C `fl32`) |
@@ -778,4 +821,5 @@ native menus) in `apps/cfa4`. [roadmap.md](roadmap.md) has the milestone status 
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-27 | minor | CFA4 targets Ubuntu 26.04 only: platform row, hardware decoding / encoding and monitor sections describe NVDEC, VA-API and NVENC; macOS / Windows backends removed |
 | 2026-10-10 | trivial | Status line and revision history added; milestone link points at docs/roadmap.md |

@@ -119,6 +119,12 @@ pub struct EncoderConfig {
     /// Slices per picture, coded in parallel. 0 picks one per worker thread (at most 8, with at
     /// least 4 CTU rows each). The output depends on the slice count, never on the thread count.
     pub slices: u32,
+    /// Parameter-set ids written to the VPS (0–15), SPS (0–15) and PPS (0–63) and referred to by
+    /// the slices: a stream spliced into another (a Smart Cut boundary) uses ids the other
+    /// stream does not.
+    pub vps_id: u8,
+    pub sps_id: u8,
+    pub pps_id: u8,
 }
 
 impl EncoderConfig {
@@ -139,6 +145,9 @@ impl EncoderConfig {
             mastering_display: None,
             content_light: None,
             slices: 0,
+            vps_id: 0,
+            sps_id: 0,
+            pps_id: 0,
         }
     }
 }
@@ -229,6 +238,9 @@ impl Encoder {
         if cfg.bit_depth != 8 && cfg.bit_depth != 10 {
             return Err(EncodeError::InvalidConfig(format!("bit depth {} (8 or 10)", cfg.bit_depth)));
         }
+        if cfg.vps_id > 15 || cfg.sps_id > 15 || cfg.pps_id > 63 {
+            return Err(EncodeError::InvalidConfig(format!("parameter-set ids VPS {} SPS {} PPS {} (0–15, 0–15, 0–63)", cfg.vps_id, cfg.sps_id, cfg.pps_id)));
+        }
         let core = if cfg.bit_depth == 8 { Core::E8(Box::new(State::new(&cfg)?)) } else { Core::E16(Box::new(State::new(&cfg)?)) };
         Ok(Encoder { cfg, core })
     }
@@ -280,7 +292,7 @@ impl Encoder {
 
     /// Encode one picture; returns its access unit (pictures are coded in display order, so each
     /// call returns one packet).
-    pub fn encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, EncodeError> {
+    pub fn encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, EncodeError> {
         let cfg = &self.cfg;
         let p = match &mut self.core {
             Core::E8(st) => st.encode(cfg, frame, pts)?,
@@ -342,6 +354,9 @@ impl<S: Sample> State<S> {
             amp: false,
             sign_hiding: false,
             cu_qp_delta: false,
+            vps_id: u32::from(cfg.vps_id),
+            sps_id: u32::from(cfg.sps_id),
+            pps_id: u32::from(cfg.pps_id),
         };
         let vps = headers::vps(&seq);
         let sps_nal = headers::sps(&seq);
@@ -382,7 +397,7 @@ impl<S: Sample> State<S> {
     }
 
     /// The input at the coded size with edge replication, at the coded bit depth.
-    fn source(&self, f: &YuvFrame) -> Result<Source, EncodeError> {
+    fn source(&self, f: &YuvFrame<'_>) -> Result<Source, EncodeError> {
         let (w, h) = (self.seq.coded_w as usize, self.seq.coded_h as usize);
         let (vw, vh) = (self.seq.width as usize, self.seq.height as usize);
         let bd = self.seq.bit_depth;
@@ -420,7 +435,7 @@ impl<S: Sample> State<S> {
         if ok { Ok(src) } else { Err(EncodeError::BadFrame) }
     }
 
-    fn encode(&mut self, cfg: &EncoderConfig, frame: &YuvFrame, pts: i64) -> Result<Packet, EncodeError> {
+    fn encode(&mut self, cfg: &EncoderConfig, frame: &YuvFrame<'_>, pts: i64) -> Result<Packet, EncodeError> {
         let src = self.source(frame)?;
         let idr = self.frames == 0 || (self.keyint > 0 && self.frames.is_multiple_of(self.keyint as u64));
         if idr {

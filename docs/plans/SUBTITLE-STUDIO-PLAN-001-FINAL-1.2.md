@@ -5,7 +5,7 @@
 | Dokumentumadat | Érték |
 |---|---|
 | Verzió | FINAL 1.2 |
-| Állapot | **Jóváhagyva** a tulajdonos által, 2026-10-30; a D1–D4 döntések beépítve. A FINAL 1.1-et e változat váltja fel |
+| Állapot | **Jóváhagyva** a tulajdonos által, 2026-10-30; a D1–D4 döntések beépítve, a D5 kiegészítés 2026-11-07. A FINAL 1.1-et e változat váltja fel |
 | Dátum | 2026. október 30. |
 | Projekt | CFA4 — CinemaFundArchitecture4 |
 | Tulajdonos, jóváhagyó | ubuntuokos (Horváth H. István) |
@@ -112,6 +112,16 @@ rögzített, visszakeresett kivonatokra támaszkodnak, és nem pótolhatók kita
    `CEA-608`, `CEA-708`, `Teletext`). Az 1.1 §5 utolsó bekezdése szerint az ASS képi réteg, a
    nyelvi sáv és a CEA-szolgáltatás külön fogalom: az F1 ezt **visszafelé kompatibilisen**
    szétválasztja.
+5. **A meglévő feliratozó leváltása (D5).** Ez a feliratozó lesz a CFA4 **egyetlen** feliratozója,
+   és leváltja az upstreamtől örökölt feliratozót (feliratsávok az idővonalon, Text panel ▸
+   Captions, az egui- és a Qt6-felületen). Az örökölt kód (a `cfa4-project` feliratmodellje, a
+   `cfa4-captions` olvasói és írói, a `captions.*` parancsok) az 1–4. pont szerint kiindulási
+   alap lehet, de csak annyiban, amennyiben az új modellbe illeszkedik; a cél nem az örökölt
+   felület továbbfejlesztése. Az örökölt feliratozó **addig marad és használható**, amíg a
+   Qt6-felület el nem készül (D2), és amíg a teljes átállást igazoló tesztek el nem készülnek
+   (AC-26). Addig az upstream-szinkronból érkező változtatásai is bekerülhetnek (tulajdonosi
+   döntés, 2026-11-07). Az örökölt felület csak ezután szűnik meg. A régi projektek
+   feliratsávjai az új feliratozóban nyílnak meg (AC-23).
 
 ## 4. Termékszerkezet
 
@@ -229,12 +239,12 @@ Az 1.1 §8 táblázata érvényes, a következő szűréssel (`docs/licensing.md
 | libass | ISC | Elsődleges ASS-megjelenítési referencia (AC-06 orákulum); üzemi beépítése ADR-t igényel a „pure Rust” szabály miatt |
 | Rust-crate-ek (subparse, ass-rs stb.) | Egyenként, `cargo deny check licenses` | Csak ha jobbak a meglévő `cfa4-captions` olvasóknál; a meglévők nem cserélendők ok nélkül |
 | OxiMedia | Az 1.1 §8.1 szerint | Kísérleti; a #345 (metrikák) mintája szerint csak ellenőrzött részfunkció |
-| Kdenlive | GPL | Munkafolyamat-referencia (`docs/kdenlive-parity.md`) |
+| Kdenlive | GPL | Munkafolyamat-referencia (`docs/plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md`) |
 
 Ismeretlen licencű projekt (például a Samaku, ha az ellenőrzés nem talál licencet) csak
 funkcionális referencia lehet, kódja nem.
 
-## 9. Tulajdonosi döntések (2026-10-30)
+## 9. Tulajdonosi döntések (2026-10-30, D5: 2026-11-07)
 
 | # | Kérdés | Döntés | Előzmény |
 |---|---|---|---|
@@ -242,6 +252,11 @@ funkcionális referencia lehet, kódja nem.
 | D2 | Mikor induljon a fejlesztés? | **A Qt6-felület elkészülte után azonnal** (10. fejezet) | A `VISION.md` 6. pontja: a Qt6-felület az első prioritás |
 | D3 | Külső fordítószolgáltatás? | **Csak kapcsolható, külön folyamatként** (7. fejezet) | A `VISION.md` 8. pontjában nyitott kérdés, a feliratozóra eldöntve |
 | D4 | Függjön-e a kiadás egy nyelv (a magyar) hangjától? | **Nem:** a CFA4 többnyelvű, a magyar hang megléte nem mérvadó (7. fejezet, 12. fejezet) | Az 1.2 a narrációt a közös csomag feltételének tekintette |
+| D5 | Mi lesz a meglévő, upstreamtől örökölt feliratozóval? | **Ez a feliratozó váltja le; a CFA4-nek ez lesz a feliratozója** (3.3, 5. pont; AC-26) | Tulajdonosi döntés, 2026-11-07 |
+
+Az örökölt feliratfelületet érintő upstream-szinkron PR-ok (2026-11-07-én nyitva: #548, #560,
+#699) a tulajdonos 2026-11-07-i döntése szerint **bekerülhetnek**: az örökölt feliratozó a
+leváltásig marad, és az új feliratozó fejlesztése még nem indult el (D2).
 
 ## 10. Fejlesztési sorrend és kapuk
 
@@ -290,6 +305,7 @@ Az AC-01–AC-12 (1.1 §13) és az 1.2 AC-13–AC-22 feltételei érvényesek, a
 | **AC-23** (új) | A régi (mai sémájú) `.fcproj` feliratsávjai a bővített modellben változatlan tartalommal nyílnak meg és menthetők vissza |
 | **AC-24** (új) | Minden új olvasó (ASS, iTT, PGS, VobSub) mutációs fuzz-tesztje `catch_unwind` alatt összeomlás nélkül fut (`AGENTS.md` §0.8) |
 | **AC-25** (új) | Minden feliratozó művelet parancs, és a CLI-ről, a vezérlőcsatornáról és MCP-ről is elérhető, automatizálási azonosítókkal a Qt-felületen |
+| **AC-26** (D5) | Az örökölt feliratozó minden képessége (a `docs/captions.md` parancsai, formátumai, beégetés, sync lock) elérhető az új feliratozóban, tételes összevetéssel igazolva, mielőtt az örökölt felület megszűnik |
 
 ## 12. Kiadási fokozatok
 

@@ -1,25 +1,32 @@
 """Translation catalogs for the Qt GUI.
 
-Same TSV format as the shared catalogs (`context <TAB> source <TAB> translation`, documented at
-the top of ``crates/ui-egui/src/i18n/es.tsv``). The Qt GUI reads the shared catalogs, so menu
-and command labels translate the same way in both frontends while egui still exists, plus its own
-catalogs in ``python/cfa4_qt/i18n/`` (Hungarian, and Qt-only strings). A missing or malformed
-catalog never breaks the UI: the English source text is shown instead.
+Every CFA4 translation lives in the repository's top-level ``i18n/<code>.tsv``, one catalog per
+language shared with egui (owner decision 2026-11-09), so menu and command labels translate the
+same way in both frontends. Format: ``context <TAB> source <TAB> translation``, documented at the
+top of ``i18n/es.tsv``. An installed package has no checkout, so packaging/linux/package.sh copies
+the catalogs into ``cfa4_qt/i18n``. A missing or malformed catalog never breaks the UI: the English
+source text is shown instead.
 """
 
 from __future__ import annotations
 
 import locale
 import os
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-CATALOG_DIRS = (HERE / "i18n", ROOT / "crates" / "ui-egui" / "src" / "i18n")
+# the catalogs: an installed package's own copy (packaging/linux/package.sh), else the checkout's
+# top-level i18n/ (a checkout has no python/cfa4_qt/i18n/)
+PACKAGED_CATALOGS = HERE / "i18n"
+CATALOG_DIR = PACKAGED_CATALOGS if PACKAGED_CATALOGS.is_dir() else ROOT / "i18n"
 
 # language code -> name shown in the View ▸ Language menu (in that language)
 LANGUAGES = {
-    "en": "English",
+    "en": "English (US)",
+    "en-gb": "English (UK)",
+    "en-au": "English (Australia)",
     "hu": "Magyar",
     "de": "Deutsch",
     "es": "Español",
@@ -32,6 +39,27 @@ LANGUAGES = {
     "zh-cn": "简体中文",
     "ru": "Русский",
     "uk": "Українська",
+    "pl": "Polski",
+    "tr": "Türkçe",
+    "nl": "Nederlands",
+    "cs": "Čeština",
+    "vi": "Tiếng Việt",
+    "zh-hant": "繁體中文",
+    "el": "Ελληνικά",
+    "sv": "Svenska",
+    "sr-latn": "Srpski (latinica)",
+    "bg": "Български",
+    "ka": "ქართული",
+    "da": "Dansk",
+    "fi": "Suomi",
+    "lt": "Lietuvių",
+    "hr": "Hrvatski",
+    "kk": "Қазақ тілі",
+    "sl": "Slovenščina",
+    "et": "Eesti",
+    "sr": "Српски (ћирилица)",
+    # Qt GUI only: egui cannot shape Telugu (owner decision 2026-11-11)
+    "te": "తెలుగు",
 }
 
 
@@ -85,11 +113,12 @@ class Translator:
         self._plain, self._contextual = {}, {}
         if language == "en":
             return
-        # later directories never override earlier ones: the Qt catalog wins over the shared one
-        for directory in reversed(CATALOG_DIRS):
-            path = directory / f"{language}.tsv"
+        # a regional variant reads its base catalog first (Australian English on top of British)
+        for code in (BASE_CATALOG.get(language), language):
+            if code is None:
+                continue
             try:
-                text = path.read_text(encoding="utf-8")
+                text = (CATALOG_DIR / f"{code}.tsv").read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
                 continue
             plain, contextual = parse_catalog(text)
@@ -113,6 +142,23 @@ class Translator:
             out = out.replace("{" + key + "}", str(value))
         return out
 
+    def decimal(self, value: str) -> str:
+        """``value`` (a plain decimal such as ``4.00``) with the language's decimal separator:
+        ``4,00`` in Hungarian. Anything that is not a plain decimal comes back unchanged."""
+        if self.language in DECIMAL_COMMA and _DECIMAL.fullmatch(value):
+            return value.replace(".", ",")
+        return value
+
+
+# regional variants that read another catalog first, their own entries winning
+BASE_CATALOG = {"en-au": "en-gb"}
+# system locales with no catalog of their own that are shown in a close variant
+REGIONAL_FALLBACK = {"en-nz": "en-au", "en-ie": "en-gb"}
+
+# languages that write 4,00 instead of 4.00
+DECIMAL_COMMA = frozenset({"hu", "sr", "et", "sl", "kk", "hr", "lt", "fi", "da", "ka", "bg", "sr-latn", "sv", "el", "vi", "cs", "nl", "tr", "pl", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
+_DECIMAL = re.compile(r"-?\d+\.\d+")
+
 
 def system_language() -> str:
     """The best catalog for the user's locale (``CFA4_LANG`` overrides)."""
@@ -130,11 +176,20 @@ def system_language() -> str:
     tag = wanted.split(".")[0].replace("_", "-").lower()
     if tag in LANGUAGES:
         return tag
+    if tag in REGIONAL_FALLBACK:
+        return REGIONAL_FALLBACK[tag]
     base = tag.split("-")[0]
     if base == "pt":
         return "pt-br"
+    if base == "sr":
+        # Serbian: the Latin-script catalog when the locale names it (sr-Latn, sr_RS@latin), else
+        # Cyrillic, the default script (sr, sr-RS, sr-Cyrl…)
+        latin = "latn" in tag.split("-")[1:] or "@latin" in wanted.lower()
+        return "sr-latn" if latin else "sr"
     if base == "zh":
-        return "zh-cn"
+        # Traditional script or a Traditional region (zh-TW, zh-HK, zh-MO, zh-Hant…); else Simplified
+        traditional = {"hant", "tw", "hk", "mo"}
+        return "zh-hant" if traditional & set(tag.split("-")[1:]) else "zh-cn"
     return base if base in LANGUAGES else "en"
 
 
@@ -153,3 +208,7 @@ def tr(text: str) -> str:
 
 def fmt(template: str, **args: object) -> str:
     return TR.fmt(template, **args)
+
+
+def decimal(value: str) -> str:
+    return TR.decimal(value)

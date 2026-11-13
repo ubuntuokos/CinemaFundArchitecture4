@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-30 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-11-08 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -23,8 +23,10 @@ logóit vagy ikonjait.
 **Licenc:** a CFA4 egésze **GPL-3.0-or-later** (`LICENSE`, `NOTICE`). Így a lehető legkevesebbet
 kell újraírni: GPL-kompatibilis kód és könyvtár felhasználható. Ami nem használható fel, azt más
 módon kell megvalósítani. Az örökölt upstream kód eredeti MIT/Apache-megjegyzései (`NOTICE`) megmaradnak.
-**Üzleti modell:** a kész CFA4 ingyenes és szabadon terjeszthető; csak a pluszfunkciók és a
-hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](docs/licensing.md).
+**Nincs fizetős rész** (tulajdonosi döntés, 2026-11-08): a CFA4 minden része ingyenes és szabadon
+terjeszthető; nincs fizetős kiegészítő, licenckulcs, vízjel, használati korlát vagy fizetős
+támogatási idő. A CFA4 **önkéntes adománnyal** támogatható. A licencszabályok:
+[`docs/licensing.md`](docs/licensing.md).
 
 ## 2. Alapelvek (nem változnak külön döntés nélkül)
 
@@ -71,8 +73,8 @@ a GNOME-os és a Budgie csak Waylandet használ, több másik pedig még X11-et 
 | Változat (26.04 LTS) | Asztali környezet | Megjegyzés |
 |---|---|---|
 | Ubuntu | GNOME 50 | csak Wayland |
-| Kubuntu | KDE Plasma | **elsődleges fejlesztői környezet** (a referenciagép Kubuntu 26.04.1) |
-| Ubuntu Studio | KDE Plasma | kreatív célközönség, kiemelten fontos |
+| Kubuntu | KDE Plasma | **elsődleges fejlesztői környezet** |
+| Ubuntu Studio | KDE Plasma | kreatív célközönség, kiemelten fontos; **a tulajdonos referenciagépe** ([`docs/development/reference-machine.md`](docs/development/reference-machine.md)) |
 | Xubuntu | Xfce | |
 | Lubuntu | LXQt | Qt-alapú, könnyű |
 | Ubuntu Budgie | Budgie | csak Wayland |
@@ -90,7 +92,7 @@ Csomagformátumok: `.deb`, AppImage, Flatpak, `tar.gz` (lásd F3–F6 auditok).
 ## 4. Egyesítendő programok és képességeik
 
 A CFA4 ezeknek a programoknak a **képességeit** veszi át; a nevüket, logóikat és védjegyeiket nem.
-Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (2. pont, Licenc).
+Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (1. pont, Licenc).
 Zárt programok (Adobe Premiere, DaVinci Resolve) és GPL-2.0-only projektek (pl. HandBrake) kódja
 nem vehető át: ezek képességét saját kóddal kell megvalósítani. A kodekek és konténerek saját,
 clean-room megvalósításúak; külső kodek-crate függőségként használható. A szabályok:
@@ -106,18 +108,28 @@ clean-room megvalósításúak; külső kodek-crate függőségként használhat
 | **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
 | **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
 | **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
+| **Venturi** | vágás, hang (Rust, egui) | GPL-3.0-or-later, kódja átvehető forrásmegjelöléssel. Hardveres kódoló önellenőrzése próbakódolással; ügynökbiztos MCP (0600 Unix socket, visszatartás mozdulat alatt); inkrementális hangerőmérés; előre dekódoló puffer elvei; VST3 külön folyamatban; stabil azonosítók; felhasználói telepítő. Az MI-réteg után: Silero VAD szünettörlés, Whisper-kompatibilis átirat – [`docs/venturi-parity.md`](docs/venturi-parity.md) V1–V10 |
+| **Kinewright** | ügynökvezérelt vágás (Rust) | Atomikus, revízióhoz kötött ügynöki szerkesztési terv egy visszavonási lépéssel; ügynökönkénti idővonal-ág; típusos incidensek biztonságos javítással; kis MCP-felület; mért ügynöki teljesítmény; export utáni hang- és képellenőrzés; storyboard és ütemelemzés. Csak az elveket írjuk újra (GPL-3.0-only) – [`docs/open-editors-parity.md`](docs/open-editors-parity.md) E1, E2, E4–E6, E14, E15 |
+| **Cutlass** | MI-asszisztenses vágás (Rust) | Próba homokozóban, élesítés egy lépésben; MI-asszisztens panel helyi végponttal; Lottie-animációk; Python-szkriptelés – E1, E3, E5, E10, E11 |
+| **Concat** | CapCut-szerű vágás (Rust) | Csak ötlet, kód nem (AGPL): modelljegyzék rögzített SHA-256-tal és saját tükörrel, modelljelöltek (kivágás, felskálázás, hangklónozás) – E7–E9 |
+| **Gausian Native Editor** | natív vágás (Rust) | Automatikus proxydöntés a média és a hardver alapján; SQLite-séma minta a nyilvántartáshoz – E12, K17 |
+| **OpenCut** | vágás (Rust, GPUI) | A projektformátum géppel olvasható sémája és CLI-ellenőrzése – E13 |
+| **Lumina**, **RueyMediaEditor** | vágás (Rust + Qt/QML, Tauri) | Csak referencia: képességeik a CFA4-ben már megvannak, vagy még csak tervek |
 
 További, eddig hiányzó területek:
 
 - **Publikálás:** kész videó előkészítése és feltöltése videómegosztókra, platformonkénti előbeállításokkal.
 - **Szinkronizálás:** átirat → fordítás → helyi gépi hang vagy saját felvétel → időzítés az eredeti szájmozgáshoz és vágáshoz.
 - **3D animáció:** 3D-s jelenetek, címek és animáció (a pontos mélység külön döntés).
-- **Élő adás (tervezet):** a CFA4 grafikái (stáblista, alsó harmad, címek, szponzorkártya) élő
+- **Élő adás:** a CFA4 grafikái (stáblista, alsó harmad, címek, szponzorkártya) élő
   műsorban is használhatók: előnézet és program, előre felkészített elemek (cue-k) betöltése,
-  indítása (TAKE), léptetése (NEXT) és levétele (OUT), élő adatfrissítés. Az OBS külső
-  adáskezelőként kapcsolódik (Browser Source, obs-websocket), nem ő irányítja a CFA4-et.
-  Tulajdonosi döntés (2026-10-25): **kell**, de egyelőre **tervezet** – a megvalósítás
-  ütemezése és mélysége külön döntés.
+  indítása (TAKE), léptetése (NEXT) és levétele (OUT), élő adatfrissítés (C10). Amíg a CFA4 élő
+  stúdiója el nem készül, az OBS külső adáskezelőként kapcsolódhat (Browser Source,
+  obs-websocket), nem ő irányítja a CFA4-et.
+  Tulajdonosi döntés (2026-11-09): az **OBS Studio képességeit teljesen átveszi** a CFA4 egy
+  önálló „Élő” munkaterületen (jelenetek, források, stúdió mód, műsorterv, kimenetek, kódolók),
+  most a libobs-szal külön folyamatban, később részenként saját Rust kódra cserélve. Terv és
+  ütemezés: [`docs/plans/CFA4-LIVE-STUDIO-001.md`](docs/plans/CFA4-LIVE-STUDIO-001.md).
 
 ## 5. MI-funkciók (alapvetően helyi)
 
@@ -132,8 +144,11 @@ Tervezett irányok:
 - vágás: jelenetek és csendek felismerése, durva vágás átirat alapján;
 - konvertálás és publikálás: platformonkénti beállítás-javaslat.
 
-Szabály: a modellek a felhasználó gépén futnak: CPU-n, vagy bármely gyártó GPU-ján, illetve NPU-n,
-ha van (lásd 2.4: gyártófüggetlen gyorsítás). Minden modellnél
+Szabály: a modellek a felhasználó gépén futnak, bármely gyártó GPU-ján, illetve NPU-n, ha van (lásd
+2.4: gyártófüggetlen gyorsítás). Az AI-funkciók alsó határa legalább 12 GB-os GPU és 16 GB RAM
+(ajánlott 32 GB); ez alatt az AI nem támogatott, a CFA4 többi része fut. A CPU a GPU melletti másik
+igazolt út lehet, önálló, GPU nélküli AI-út nincs (tulajdonosi döntés, 2026-11-07; CFA4-AI_modules
+ADR 0008, 3. és 9. pont). A 2.4 CPU-s tartaléka a médiafeldolgozásra vonatkozik. Minden modellnél
 rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a felhasználó tudta nélkül.
 
 ## 6. Prioritási sorrend
@@ -143,8 +158,8 @@ rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a f
 2. **Futás minden grafikus Ubuntu-változaton** (3. pont): Wayland és X11 teszt.
 3. A meglévő vágóképességek átemelése a Qt6-felületre, Premiere-paritás folytatása.
 4. Új területek fokozatosan: konvertálás → feliratozás → hangszerkesztés → szinkron → publikálás
-   → 2D animáció → 3D/VFX. Az élő adás tervezet (4. pont); a helyét ebben a sorban külön döntés
-   jelöli ki.
+   → 2D animáció → 3D/VFX. Az élő stúdió (4. pont) a `CFA4-LIVE-STUDIO-001` terv szerint: az S0
+   most, az S1-től a Qt6-felület befejezése után (tulajdonosi döntés, 2026-11-09).
 5. MI-funkciók mindegyik területhez, helyben.
 
 ## 7. Kapcsolódó dokumentumok
@@ -165,7 +180,5 @@ A dokumentumok és a hozzájuk tartozó kód a `main`-ben vannak (#35, 2026-10-2
 
 - A 3D animáció és VFX mélysége (egyszerű 3D címek vagy teljes 3D jelenetszerkesztés).
 - Mely videómegosztókra lehessen publikálni.
-- Az élő adás ütemezése és mélysége: csak OBS-kapcsolat, vagy saját élő grafikai futtató és
-  műsorterv (rundown) is; mikor kerüljön sorra a 6. pont sorrendjében.
 - Mennyi MI-modell kerüljön a csomagba, és melyik legyen külön letölthető (a felhasználó jóváhagyásával).
 - Az „alapvetően helyi” MI mellett megengedett-e kivételesen, kifejezett felhasználói engedéllyel felhős szolgáltatás.

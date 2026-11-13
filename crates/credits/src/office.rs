@@ -33,6 +33,8 @@ pub struct Sheet {
     pub rows: Vec<Vec<String>>,
     pub sheets: Vec<String>,
     pub chosen: String,
+    /// Notes about reading it (e.g. what a Cinecred styling could not carry over).
+    pub notes: Vec<String>,
 }
 
 fn parse_xml(bytes: &[u8]) -> Result<String, CreditsError> {
@@ -49,7 +51,7 @@ fn fmt_err(m: impl Into<String>) -> CreditsError {
 }
 
 /// Detect the format of a ZIP-packaged spreadsheet.
-pub fn kind(zip: &Zip) -> Option<Kind> {
+pub fn kind(zip: &Zip<'_>) -> Option<Kind> {
     if zip.find("xl/workbook.xml").is_some() {
         return Some(Kind::Xlsx);
     }
@@ -163,7 +165,7 @@ fn child<'a, 'i>(n: Node<'a, 'i>, name: &str) -> Option<Node<'a, 'i>> {
 }
 
 /// The text of `t` elements under `n`, skipping phonetic runs.
-fn run_text(n: Node) -> String {
+fn run_text(n: Node<'_, '_>) -> String {
     let mut s = String::new();
     for d in n.descendants() {
         if d.is_element() && local(&d) == "t" && !d.ancestors().any(|a| a.is_element() && local(&a) == "rPh") {
@@ -178,7 +180,7 @@ fn resolve_target(target: &str) -> String {
     if t.starts_with("xl/") { t.to_string() } else { format!("xl/{t}") }
 }
 
-fn xlsx(zip: &Zip, sheet: Option<&str>, limits: Limits) -> Result<Sheet, CreditsError> {
+fn xlsx(zip: &Zip<'_>, sheet: Option<&str>, limits: Limits) -> Result<Sheet, CreditsError> {
     let wb_text = parse_xml(&zip.read_named("xl/workbook.xml")?)?;
     let wb = doc(&wb_text)?;
     let mut names = Vec::new();
@@ -231,7 +233,7 @@ fn xlsx(zip: &Zip, sheet: Option<&str>, limits: Limits) -> Result<Sheet, Credits
             grid.set(rr, cc, text.replace("\r\n", "\n"))?;
         }
     }
-    Ok(Sheet { rows: grid.rows, chosen: names.get(idx).cloned().unwrap_or_default(), sheets: names })
+    Ok(Sheet { rows: grid.rows, chosen: names.get(idx).cloned().unwrap_or_default(), sheets: names, notes: Vec::new() })
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -245,11 +247,11 @@ fn attr_local<'a>(n: &Node<'a, '_>, name: &str) -> Option<&'a str> {
     n.attributes().find(|a| a.name() == name).map(|a| a.value())
 }
 
-fn repeat(n: &Node, name: &str) -> usize {
+fn repeat(n: &Node<'_, '_>, name: &str) -> usize {
     attr_local(n, name).and_then(|v| v.parse::<usize>().ok()).unwrap_or(1).max(1)
 }
 
-fn para_text(n: Node, out: &mut String) {
+fn para_text(n: Node<'_, '_>, out: &mut String) {
     for c in n.children() {
         if c.is_text() {
             out.push_str(c.text().unwrap_or(""));
@@ -268,7 +270,7 @@ fn para_text(n: Node, out: &mut String) {
     }
 }
 
-fn ods_cell(c: Node) -> String {
+fn ods_cell(c: Node<'_, '_>) -> String {
     let paras: Vec<String> = c
         .children()
         .filter(|p| p.is_element() && local(p) == "p")
@@ -284,10 +286,10 @@ fn ods_cell(c: Node) -> String {
     attr_local(&c, "value").or_else(|| attr_local(&c, "string-value")).unwrap_or("").to_string()
 }
 
-fn ods(zip: &Zip, sheet: Option<&str>, limits: Limits) -> Result<Sheet, CreditsError> {
+fn ods(zip: &Zip<'_>, sheet: Option<&str>, limits: Limits) -> Result<Sheet, CreditsError> {
     let text = parse_xml(&zip.read_named("content.xml")?)?;
     let d = doc(&text)?;
-    let tables: Vec<Node> =
+    let tables: Vec<Node<'_, '_>> =
         d.descendants().filter(|n| n.is_element() && local(n) == "table" && n.tag_name().namespace().is_some_and(|ns| ns.contains(":table:"))).collect();
     let names: Vec<String> = tables.iter().map(|t| attr_local(t, "name").unwrap_or("").to_string()).collect();
     let idx = choose(&names, sheet)?;
@@ -321,5 +323,5 @@ fn ods(zip: &Zip, sheet: Option<&str>, limits: Limits) -> Result<Sheet, CreditsE
         }
         r = r.saturating_add(rep_r);
     }
-    Ok(Sheet { rows: grid.rows, chosen: names.get(idx).cloned().unwrap_or_default(), sheets: names })
+    Ok(Sheet { rows: grid.rows, chosen: names.get(idx).cloned().unwrap_or_default(), sheets: names, notes: Vec::new() })
 }

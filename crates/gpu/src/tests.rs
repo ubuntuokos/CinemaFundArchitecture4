@@ -66,6 +66,7 @@ fn yuv_code_range_gpu_matches_cpu() {
                     color: cfa4_color::ColorInfo { range, ..cfa4_color::ColorInfo::REC709 },
                     par: (1, 1),
                     pts: Default::default(),
+                    layout: Default::default(),
                 });
                 let cpu = frame.to_rgba8();
                 let plan = FramePlan::Layers { width: 256, height: 1, layers: vec![PlanLayer::new(frame, Affine::IDENTITY, 1.0, Blend::Normal)] };
@@ -99,6 +100,7 @@ fn yuv_frame(w: u32, h: u32) -> Arc<VideoFrame> {
         color: cfa4_color::ColorInfo::REC709,
         par: (1, 1),
         pts: Default::default(),
+        layout: Default::default(),
     })
 }
 
@@ -110,7 +112,8 @@ fn gpu_matches_cpu_plan() {
     };
     let mut c = GpuCompositor::new(&dev, &q);
     let pixels =
-        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24);
+        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24)
+            .unwrap();
     let rgba = Arc::new(VideoFrame::rgba8(320, 180, pixels));
     let (w, h) = (320usize, 180usize);
     let plan = FramePlan::Layers {
@@ -276,6 +279,7 @@ fn prepared_upload_matches_inline_conversion() {
         color: cfa4_color::ColorInfo::REC709,
         par: (1, 1),
         pts: Default::default(),
+        layout: Default::default(),
     });
     let f32_layer: Vec<f32> = (0..w * h * 4).map(|i| ((i * 37) % 1000) as f32 / 1000.0 * if i % 4 == 3 { 1.0 } else { 0.6 }).collect();
     let rgbaf = Arc::new(VideoFrame::rgba_f32(w, h, f32_layer.clone()));
@@ -438,7 +442,7 @@ fn yuv_alpha_frame(w: u32, h: u32, bits: u32) -> Arc<VideoFrame> {
             alpha: Some(Arc::new((0..n).map(ramp).collect())),
         }
     };
-    Arc::new(VideoFrame { width: w, height: h, data, color: cfa4_color::ColorInfo::REC709, par: (1, 1), pts: Default::default() })
+    Arc::new(VideoFrame { width: w, height: h, data, color: cfa4_color::ColorInfo::REC709, par: (1, 1), pts: Default::default(), layout: Default::default() })
 }
 
 /// A Y'CbCr layer with an alpha plane (ProRes 4444) is drawn with its alpha: the GPU result matches
@@ -451,7 +455,8 @@ fn gpu_draws_yuv_alpha_plane_like_the_cpu() {
     };
     let (w, h) = (320usize, 180usize);
     let pixels =
-        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24);
+        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::OceanSunset), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24)
+            .unwrap();
     let background = Arc::new(VideoFrame::rgba8(320, 180, pixels));
     for bits in [8, 10, 12] {
         let mut c = GpuCompositor::new(&dev, &q);
@@ -519,7 +524,7 @@ fn hdr_input_gpu_matches_cpu() {
         ("BT.2020 SDR", ColorInfo { primaries: Primaries::Bt2020, ..ColorInfo::REC709 }, None),
     ];
     for (name, color, peak) in cases {
-        let frame = Arc::new(VideoFrame { width: w, height: h, data: data.clone(), color, par: (1, 1), pts: Default::default() });
+        let frame = Arc::new(VideoFrame { width: w, height: h, data: data.clone(), color, par: (1, 1), pts: Default::default(), layout: Default::default() });
         let cs = ColorSpace::from_info(&color);
         let t = Arc::new(InputTransform::new(cs, color.range, &ColorPipeline::REC709, peak));
         assert!(t.gpu_params().is_some(), "{name}");
@@ -538,4 +543,71 @@ fn hdr_input_gpu_matches_cpu() {
         assert!(error <= 2, "{name}: GPU differs from the CPU by up to {error} codes");
         assert!(apart > 20, "{name}: colour management changed nothing ({apart})");
     }
+}
+
+/// Regression for #3418: several threads creating instances and devices, using them and dropping
+/// them at once deadlocked inside the NVIDIA driver (Vulkan loader critical section in
+/// `vkDestroyDevice` against other devices' `create_texture`/`submit`).
+/// Each thread makes its own instance and device, as concurrent windows and exports do.
+#[test]
+fn many_threads_create_use_and_drop_devices_at_once() {
+    use std::sync::mpsc;
+    use std::time::{Duration, Instant};
+    const THREADS: usize = 16;
+    const ROUNDS: usize = 4;
+    let (tx, rx) = mpsc::channel();
+    for _ in 0..THREADS {
+        let tx = tx.clone();
+        std::thread::spawn(move || {
+            let mut used = 0usize;
+            for _ in 0..ROUNDS {
+                let Some((device, queue)) = device() else { break };
+                let tex = device.create_texture(&wgpu::TextureDescriptor {
+                    label: None,
+                    size: wgpu::Extent3d { width: 64, height: 64, depth_or_array_layers: 1 },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Rgba8Unorm,
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+                    view_formats: &[],
+                });
+                let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
+                let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+                drop(enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::RED), store: wgpu::StoreOp::Store },
+                    })],
+                    ..Default::default()
+                }));
+                queue.submit([enc.finish()]);
+                let _ = device.poll(wgpu::PollType::wait_indefinitely());
+                used += 1;
+                drop((view, tex, queue, device));
+            }
+            let _ = tx.send(used);
+        });
+    }
+    drop(tx);
+    let deadline = Instant::now() + Duration::from_secs(120);
+    for i in 0..THREADS {
+        let left = deadline.saturating_duration_since(Instant::now());
+        assert!(rx.recv_timeout(left).is_ok(), "only {i} of {THREADS} threads finished within 120 s: device setup deadlocked");
+    }
+}
+
+/// CFA4-PROCODEC-002 1a: a planar R'G'B' frame uploads as the linear float texels of its CPU
+/// conversion (one RGBA f16 plane), with no GPU needed to prepare it.
+#[test]
+fn rgb16_frames_prepare_as_linear_float() {
+    use std::sync::Arc;
+    let data = PixelData::Rgb16 { planes: [Arc::new(vec![4095u16; 6]), Arc::new(vec![0u16; 6]), Arc::new(vec![2048u16; 6])], bits: 12, alpha: None };
+    let f =
+        VideoFrame { width: 3, height: 2, data, color: cfa4_color::ColorInfo::SRGB_FULL, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
+    let p = prepare_frame(&f).expect("planar R'G'B' is converted for upload");
+    assert_eq!(p.planes.len(), 1);
+    assert_eq!(p.planes[0], f32_to_f16_bytes(&f.to_linear_f32()));
 }

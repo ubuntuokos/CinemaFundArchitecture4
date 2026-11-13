@@ -24,7 +24,7 @@ mod es;
 pub use es::{FrameInfo, frame_bytes, frame_info};
 mod mux;
 mod pes;
-pub use mux::{MuxCodec, MuxError, MuxFormat, MuxResult, Muxer};
+pub use mux::{MuxCodec, MuxError, MuxFormat, MuxResult, Muxer, lpcm_unit_bytes};
 mod ps;
 mod ts;
 

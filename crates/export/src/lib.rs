@@ -11,16 +11,32 @@
 //! [`ExportSettings`] carries every Export-mode setting (frame size, rate, bitrate encoding, audio
 //! format, multiplexer, captions, effects, metadata) as serde data; [`presets`] defines the
 //! built-in presets.
+//!
+//! [`smart_cut`] runs the lossless Smart Cut plans of `cfa4-smart-edit`: H.264 samples copied
+//! unchanged from an MP4 / MOV source into a new MP4 / MOV file, and verified by reading it back.
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 use std::io::Write;
 
 mod aac_out;
+pub mod atomic;
+pub mod audio_copy;
 mod audio_out;
+pub mod boundary_reencode;
+mod boundary_reencode_hevc;
+#[cfg(test)]
+mod boundary_reencode_hevc_tests;
+pub mod boundary_reencode_mpeg;
+#[cfg(test)]
+mod boundary_reencode_mpeg_tests;
+pub mod copy;
+mod dash_out;
+mod dcp_atmos;
 mod dcp_iab;
 mod dcp_out;
 mod deflate;
 mod hls_out;
+mod imf_out;
 mod job;
 mod mpeg_out;
 mod mxf_out;
@@ -31,18 +47,27 @@ mod pipeline;
 pub mod presets;
 mod raster;
 pub mod settings;
+pub mod smart_cut;
+pub mod smart_cut_mpeg;
 pub mod still;
+pub mod timeline_audio;
+pub mod timeline_render;
 mod webm_out;
 pub use audio_out::LoudnessReport;
+pub use dash_out::{DashMedia, DashRepresentation, dash_files, dash_mpd};
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
-pub use dcp_out::{DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_rate, rgba_to_xyz12};
+pub use dcp_out::{
+    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
+};
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
+pub use imf_out::{IMF_CONTENT_KINDS, IMF_MAX_SIZE, IMF_RATES, imf_content_kind, imf_profile, imf_rate, rgba_to_rgb10};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
 pub use pcm::{image_sequence_path, write_aiff, write_wav};
-pub use pipeline::limit_rgba8;
+pub use pipeline::{Pipeline, limit_rgba8};
 pub use presets::{ExportPreset, builtin_presets};
+pub use raster::StillTiming;
 pub use settings::*;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
@@ -90,8 +115,8 @@ pub enum Format {
     /// WebM (Matroska), VP9 Profile 0 (8-bit 4:2:0) video by CFA4's own encoder + Opus audio.
     #[serde(rename = "webm", alias = "WebM")]
     WebM,
-    /// HTTP Live Streaming (RFC 8216): H.264 + AAC in CMAF fragmented-MP4 segments with a media
-    /// playlist and a multivariant playlist (the output path), see [`hls_files`].
+    /// HTTP Live Streaming (RFC 8216): H.264 and AAC in separate CMAF fragmented-MP4 segments, each
+    /// with a media playlist, and a multivariant playlist (the output path), see [`hls_files`].
     #[serde(rename = "hls", alias = "Hls")]
     Hls,
     /// QuickTime, Apple ProRes 422 (HQ unless the settings pick another flavour) + PCM.
@@ -155,7 +180,7 @@ pub enum Format {
     #[serde(rename = "mxf-opatom", alias = "MxfOpAtom")]
     MxfOpAtom,
     /// MPEG-2 video (ITU-T H.262, Main Profile 4:2:0 or 4:2:2 Profile, IBBP) in an MPEG-2 program stream
-    /// with 16-bit DVD LPCM (`.mpg`), a transport stream with AAC (`.ts`, `.m2ts`), or an
+    /// with 16- or 24-bit DVD LPCM (`.mpg`), a transport stream with AAC (`.ts`, `.m2ts`), or an
     /// elementary stream without audio (`.m2v`): [`Mpeg2Container`].
     #[serde(rename = "mpeg2", alias = "Mpeg2")]
     Mpeg2,
@@ -163,6 +188,11 @@ pub enum Format {
     /// in a DCI 2K or 4K container + 5.1 24-bit PCM, see [`DcpResolution`] and [`DcpAspect`].
     #[serde(rename = "dcp", alias = "Dcp")]
     Dcp,
+    /// Interoperable Master Package (SMPTE ST 2067-21 Application #2E) in a folder (the output
+    /// path): JPEG 2000 10-bit R'G'B' 4:4:4 + 24-bit 48 kHz PCM track files, see
+    /// [`ExportSettings::imf_lossless`] and [`IMF_CONTENT_KINDS`].
+    #[serde(rename = "imf", alias = "Imf")]
+    Imf,
 }
 
 impl Format {
@@ -196,6 +226,7 @@ impl Format {
             "opus" | "opusaudio" | "ogg" | "oggopus" => Format::Opus,
             "mpeg2" | "mpeg2video" | "h262" | "mpg" | "mpeg" | "m2v" | "m2p" | "ts" | "m2ts" | "mts" | "mpegts" | "mpegps" => Format::Mpeg2,
             "dcp" | "digitalcinema" | "digitalcinemapackage" | "smptedcp" => Format::Dcp,
+            "imf" | "imp" | "imfapp2e" | "app2e" | "interoperablemasterformat" | "interoperablemasterpackage" => Format::Imf,
             _ => return None,
         })
     }
@@ -229,6 +260,7 @@ impl Format {
             Format::MxfOpAtom => "mxf-opatom",
             Format::Mpeg2 => "mpeg2",
             Format::Dcp => "dcp",
+            Format::Imf => "imf",
         }
     }
     pub fn extension(self) -> &'static str {
@@ -253,7 +285,7 @@ impl Format {
             Format::MxfOp1a | Format::MxfOpAtom => "mxf",
             Format::Mpeg2 => "mpg",
             // a folder
-            Format::Dcp => "",
+            Format::Dcp | Format::Imf => "",
         }
     }
     pub fn label(self) -> &'static str {
@@ -285,6 +317,7 @@ impl Format {
             Format::MxfOpAtom => "MXF OP-Atom",
             Format::Mpeg2 => "MPEG-2",
             Format::Dcp => "DCP (Digital Cinema Package)",
+            Format::Imf => "IMF App 2E (Interoperable Master Package)",
         }
     }
     /// Numbered stills, one per frame ([`image_sequence_path`]).
@@ -299,6 +332,12 @@ impl Format {
                 | Format::DpxSequence
                 | Format::ExrSequence
         )
+    }
+    /// Whether the format's encoder codes interlaced video ([`ExportSettings::field_order`]):
+    /// MPEG-2 (frame pictures) and ProRes (two field pictures). The others write progressive
+    /// frames.
+    pub fn codes_interlaced(self) -> bool {
+        matches!(self, Format::Mpeg2 | Format::ProRes)
     }
     /// An MXF container format.
     pub fn is_mxf(self) -> bool {
@@ -326,7 +365,7 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 27] = [
+    pub const ALL: [Format; 28] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
@@ -354,6 +393,7 @@ impl Format {
         Format::MxfOpAtom,
         Format::Mpeg2,
         Format::Dcp,
+        Format::Imf,
     ];
 }
 
@@ -388,6 +428,13 @@ pub struct ExportSettings {
     /// `progress.total`, `finished` and the final status; this call only adds to `done`.
     #[serde(default)]
     pub part_of_batch: bool,
+    /// Most CPU threads the export may use (0 = all of them, as before). Rendering, the software
+    /// encoders and the rest of the export's parallel work run on a pool of this size; a number
+    /// above what the machine has (or above the pool the export already runs in) changes nothing.
+    /// The output does not depend on it. Hardware encoders and the decoders' own threads are not
+    /// counted.
+    #[serde(default)]
+    pub max_threads: u32,
     /// ProRes flavour: `proxy`, `lt`, `standard`, `hq`, `4444` or `4444xq` (empty = HQ).
     #[serde(default)]
     pub prores_profile: String,
@@ -408,6 +455,11 @@ pub struct ExportSettings {
     /// Video codec of the MXF formats (DNxHR unless set; the ProRes / DNxHR profile fields apply).
     #[serde(default)]
     pub mxf_video_codec: MxfVideoCodec,
+    /// MXF OP1a: write the sequence's first caption track as closed captions in an ANC data
+    /// track (SMPTE ST 436-1, ST 334-2 caption distribution packets with CEA-608 field 1 and
+    /// CEA-708 service 1, VANC line 9) at 29.97 fps. Off by default.
+    #[serde(default)]
+    pub mxf_anc_captions: bool,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -434,14 +486,27 @@ pub struct ExportSettings {
     /// IAB bed) or `file` (the IAB of [`ExportSettings::dcp_iab_source`]).
     #[serde(default)]
     pub dcp_immersive: String,
-    /// The IAB source of `dcp_immersive = file`: an IAB track file (IMF or DCP MXF) or a raw
-    /// IABitstream.
+    /// The IAB source of `dcp_immersive = file`: an IAB track file (IMF or DCP MXF), a raw
+    /// IABitstream, or Dolby Atmos TrueHD (a `.thd` stream, or the Atmos TrueHD track of a
+    /// Matroska, MP4 or MPEG-TS / M2TS file) whose objects become IAB objects.
     #[serde(default)]
     pub dcp_iab_source: String,
     /// Immersive audio DCPs: the 5.1 in the main sound track's channels 1-6 (`5.1`, also empty) or
     /// silence there (`none`).
     #[serde(default)]
     pub dcp_iab_fallback: String,
+    /// DCP spoken language, an RFC 5646 tag such as `en-US` or `hu-HU` (empty = none): the MCA
+    /// labels' `RFC5646SpokenLanguage`, the CPL title's language and the DCNC language field.
+    /// IMF exports use it too (MCA labels, the CPL locale).
+    #[serde(default)]
+    pub dcp_language: String,
+    /// IMF: reversible (lossless) JPEG 2000 instead of the lossy IMF profile.
+    #[serde(default)]
+    pub imf_lossless: bool,
+    /// IMF content kind ([`IMF_CONTENT_KINDS`], empty = `feature`). The spoken language is
+    /// [`ExportSettings::dcp_language`].
+    #[serde(default)]
+    pub imf_content_kind: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -449,7 +514,8 @@ pub struct ExportSettings {
     pub sdr: bool,
     /// Keep the alpha channel in PNG, TIFF, Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ
     /// QuickTime movies (straight alpha, Premiere's "Include Alpha Channel"; OpenEXR stores it
-    /// premultiplied, as the format defines). Off, every frame is flattened over black (#160).
+    /// premultiplied, as the format defines). GIF keeps binary transparency: RGBA8 alpha below
+    /// 128 becomes transparent, otherwise opaque. Off, every frame is flattened over black (#160).
     /// Other formats ignore it.
     #[serde(default)]
     pub alpha: bool,
@@ -474,8 +540,7 @@ pub struct ExportSettings {
     /// 18 is visually near-lossless.
     #[serde(default = "default_crf")]
     pub crf: f32,
-    /// May H.264 be encoded by the system's hardware encoder (VideoToolbox on macOS, NVENC on
-    /// Windows)? Off unless asked for: hardware output depends on the machine, so it is not
+    /// May H.264 be encoded by the system's hardware encoder (NVENC)? Off unless asked for: hardware output depends on the machine, so it is not
     /// byte-reproducible like the built-in encoder's (`determinism_tests`).
     #[serde(default)]
     pub hardware_encoding: HardwareEncoding,
@@ -501,6 +566,13 @@ pub struct ExportSettings {
     pub caption_sidecar: Option<String>,
     pub effects: ExportEffects,
     pub metadata: ExportMetadata,
+    /// Write the sequence's Chapter markers inside the export range as chapters: `chpl` plus a
+    /// QuickTime chapter track in MP4, MOV and M4A, `chpl` in the HLS init segments, Matroska
+    /// chapters in WebM. On by default.
+    pub chapters: bool,
+    /// HLS only: also write a DASH manifest (`<stem>.mpd`, see [`dash_files`]) over the same CMAF
+    /// segments, so the export plays in DASH players too. Off by default.
+    pub dash_manifest: bool,
     /// Two-pass state (set by the exporter).
     #[serde(skip)]
     pub h264_pass: H264Pass,
@@ -511,6 +583,11 @@ pub struct ExportSettings {
     /// writing `path` (hosts without a filesystem: the web app offers the file as a download).
     #[serde(skip)]
     pub sink: Option<OutputSink>,
+    /// An already-created primary output file. Internal callers use this to retain an exclusive
+    /// reservation made while choosing an output name, rather than reopening that path later.
+    /// MP4 video outputs require read and write access for fast-start finalization.
+    #[serde(skip)]
+    pub output_file: Option<Arc<std::fs::File>>,
 }
 
 /// Receives in-memory export output: `(path, bytes)` per finished file.
@@ -537,6 +614,10 @@ enum Out {
 
 impl Out {
     fn create(settings: &ExportSettings) -> Result<Out> {
+        if let Some(file) = &settings.output_file {
+            let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
+            return Ok(Out::File(std::io::BufWriter::new(file)));
+        }
         Out::create_path(settings, &settings.path)
     }
 
@@ -545,7 +626,19 @@ impl Out {
         if settings.sink.is_some() {
             return Ok(Out::Mem(std::io::Cursor::new(Vec::new())));
         }
-        let f = std::fs::File::create(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        if path == settings.path
+            && let Some(file) = &settings.output_file
+        {
+            let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
+            return Ok(Out::File(std::io::BufWriter::new(file)));
+        }
+        let f = std::fs::OpenOptions::new()
+            .read(settings.format.is_mp4_with(settings.multiplexer))
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
         Ok(Out::File(std::io::BufWriter::new(f)))
     }
 
@@ -587,6 +680,20 @@ impl Write for Out {
         match self {
             Out::File(w) => w.flush(),
             Out::Mem(w) => w.flush(),
+        }
+    }
+}
+
+impl std::io::Read for Out {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Out::File(w) => {
+                // Fast-start muxing reads media back to shift it in place. Commit buffered
+                // writes before reading through the same file handle and cursor.
+                w.flush()?;
+                std::io::Read::read(w.get_mut(), buf)
+            }
+            Out::Mem(w) => std::io::Read::read(w, buf),
         }
     }
 }
@@ -662,12 +769,14 @@ impl Default for ExportSettings {
             bitrate_kbps: 20_000,
             burn_captions: false,
             part_of_batch: false,
+            max_threads: 0,
             prores_profile: String::new(),
             dnx_profile: String::new(),
             apv_profile: String::new(),
             cineform_profile: String::new(),
             cineform_quality: String::new(),
             mxf_video_codec: MxfVideoCodec::default(),
+            mxf_anc_captions: false,
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -678,6 +787,9 @@ impl Default for ExportSettings {
             dcp_immersive: String::new(),
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
+            dcp_language: String::new(),
+            imf_lossless: false,
+            imf_content_kind: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -702,9 +814,12 @@ impl Default for ExportSettings {
             caption_sidecar: None,
             effects: ExportEffects::default(),
             metadata: ExportMetadata::default(),
+            chapters: true,
+            dash_manifest: false,
             h264_pass: H264Pass::Single,
             signal: ColorSignal::default(),
             sink: None,
+            output_file: None,
         }
     }
 }
@@ -744,19 +859,34 @@ impl ExportSettings {
         if self.audio.float && self.audio.bits != 32 {
             return Err(ExportError::Unsupported("floating-point audio is 32-bit: set the sample size to 32".into()));
         }
+        if self.has_audio() && self.audio_codec() == AudioCodec::Ac3 {
+            if !crate::mpeg_out::AC3_BITRATES.contains(&self.audio.bitrate_kbps) {
+                return Err(ExportError::Unsupported(format!(
+                    "AC-3 has no {} kbps: choose one of {}",
+                    self.audio.bitrate_kbps,
+                    crate::mpeg_out::AC3_BITRATES.map(|b| b.to_string()).join(", ")
+                )));
+            }
+            if self.audio.sample_rate.is_some_and(|r| !matches!(r, 32_000 | 44_100 | 48_000)) {
+                return Err(ExportError::Unsupported("AC-3 is 32, 44.1 or 48 kHz".into()));
+            }
+        }
         let sample_format = self.audio.sample_format();
         if (self.has_audio() || self.format.is_audio_only())
-            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus)
+            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus | AudioCodec::Ac3 | AudioCodec::Mp2)
             && !self.supports_sample_format(sample_format)
         {
             if self.format == Format::Mpeg2 {
-                return Err(ExportError::Unsupported("MPEG-2 program streams carry 16-bit LPCM: set the sample size to 16".into()));
+                return Err(ExportError::Unsupported("MPEG-2 program streams carry 16- or 24-bit LPCM: set the sample size to 16 or 24".into()));
             }
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        if self.field_order != FieldOrder::Progressive && self.has_video() {
-            return Err(ExportError::Unsupported(format!("{} field order: CFA4's encoders write progressive frames", self.field_order.label())));
+        if self.field_order != FieldOrder::Progressive && self.has_video() && !self.format.codes_interlaced() {
+            return Err(ExportError::Unsupported(format!(
+                "{} field order: only MPEG-2 and ProRes export code interlaced video; the other encoders write progressive frames",
+                self.field_order.label()
+            )));
         }
         if self.effects.image_overlay.enabled && self.effects.image_overlay.path.trim().is_empty() {
             return Err(ExportError::Unsupported("image overlay: no image file chosen".into()));
@@ -764,7 +894,38 @@ impl ExportSettings {
         if self.format == Format::Hevc && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("H.265 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
         }
-        if self.format == Format::Mpeg2 {
+        if self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::D10 {
+            if self.format == Format::MxfOpAtom {
+                return Err(ExportError::Unsupported("D-10 (IMX) is written as MXF OP1a".into()));
+            }
+            if !matches!(self.bitrate_kbps, 30_000 | 40_000 | 50_000) {
+                return Err(ExportError::Unsupported("D-10 (IMX) runs at 30, 40 or 50 Mbit/s: set the bitrate to 30000, 40000 or 50000 kbps".into()));
+            }
+            if self.has_audio()
+                && (self.audio.sample_rate.is_some_and(|r| r != 48_000) || !matches!(self.audio.bits, 16 | 24) || self.audio.float || self.audio.channels > 8)
+            {
+                return Err(ExportError::Unsupported("D-10 (IMX) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
+            }
+        }
+        if self.format.is_mxf() && self.mxf_anc_captions {
+            if self.format == Format::MxfOpAtom {
+                return Err(ExportError::Unsupported("closed captions (ANC) are written in MXF OP1a".into()));
+            }
+            if self.mxf_video_codec == MxfVideoCodec::D10 {
+                return Err(ExportError::Unsupported("D-10 (IMX) content packages carry no ANC data: closed captions need another MXF codec".into()));
+            }
+        }
+        if self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::XdcamHd422 {
+            if self.format == Format::MxfOpAtom {
+                return Err(ExportError::Unsupported("XDCAM HD422 (RDD 9) is written as MXF OP1a".into()));
+            }
+            if self.has_audio()
+                && (self.audio.sample_rate.is_some_and(|r| r != 48_000) || !matches!(self.audio.bits, 16 | 24) || self.audio.float || self.audio.channels > 8)
+            {
+                return Err(ExportError::Unsupported("XDCAM HD422 (RDD 9) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
+            }
+        }
+        if self.video_format() == Format::Mpeg2 {
             if self.mpeg2_quantizer.is_some_and(|q| !(1..=31).contains(&q)) {
                 return Err(ExportError::Unsupported("MPEG-2 quantiser must be between 1 and 31".into()));
             }
@@ -774,18 +935,30 @@ impl ExportSettings {
             if matches!(self.bitrate_mode, BitrateMode::Vbr2Pass | BitrateMode::Crf) {
                 return Err(ExportError::Unsupported("MPEG-2 export encodes to an average bitrate: choose CBR or VBR, 1 pass".into()));
             }
-            if !self.mpeg2_container.trim().is_empty() && Mpeg2Container::from_name(&self.mpeg2_container).is_none() {
+            if self.format == Format::Mpeg2 && !self.mpeg2_container.trim().is_empty() && Mpeg2Container::from_name(&self.mpeg2_container).is_none() {
                 return Err(ExportError::Unsupported(format!("unknown MPEG-2 container {:?}: choose ps, ts, m2ts or es", self.mpeg2_container)));
             }
-            if self.has_audio()
+            if self.format == Format::Mpeg2
+                && self.has_audio()
                 && self.audio_codec() == AudioCodec::Pcm
                 && self.audio.sample_rate.is_some_and(|r| ![48_000, 96_000, 44_100, 32_000].contains(&r))
             {
                 return Err(ExportError::Unsupported("MPEG-2 program streams carry LPCM at 48, 96, 44.1 or 32 kHz".into()));
             }
         }
+        if self.has_audio() && self.audio_codec() == AudioCodec::Mp2 {
+            if self.audio.channels > 2 {
+                return Err(ExportError::Unsupported("MP2 audio is mono or stereo: set 1 or 2 channels".into()));
+            }
+            if self.audio.sample_rate.is_some_and(|r| cfa4_mpa::encode::bitrates(r, 2).is_empty()) {
+                return Err(ExportError::Unsupported("MP2 audio runs at 32, 44.1 or 48 kHz (or 16, 22.05, 24 kHz)".into()));
+            }
+        }
         if self.format == Format::Dcp {
             dcp_out::validate(self)?;
+        }
+        if self.format == Format::Imf {
+            imf_out::validate(self)?;
         }
         if self.format == Format::Av1 && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("AV1 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
@@ -862,8 +1035,11 @@ pub struct EncodedPacket {
     pub composition_offset: i32,
 }
 
-/// Input picture for encoders: straight sRGB RGBA8 (encoders convert to their own YUV), or for
-/// HDR exports the encoded R'G'B' (PQ/HLG, BT.2020; 3 floats per pixel, 0..1) in `hdr`.
+/// Input picture for encoders: straight sRGB RGBA8 (encoders convert to their own YUV). `hdr`
+/// carries encoded R'G'B' floats (3 per pixel, 0..1) when the encoder should take them instead:
+/// PQ/HLG BT.2020 for HDR exports (`rgba` is then empty), or straight sRGB R'G'B' for SDR exports
+/// to deep formats (10 bits and more), so that 10/12-bit sources keep their precision; `rgba` is
+/// then filled as well and keeps the alpha.
 pub struct EncoderFrame<'a> {
     pub width: u32,
     pub height: u32,
@@ -872,11 +1048,15 @@ pub struct EncoderFrame<'a> {
     pub index: u64,
 }
 
+/// Per-picture work an encoder hands to the export's render threads, see
+/// [`VideoEncoder::prepare_ahead`].
+pub type PrepareAhead = std::sync::Arc<dyn Fn(&EncoderFrame<'_>) + Send + Sync>;
+
 pub trait VideoEncoder: Send {
     /// MP4/MOV sample entry (codec config) — may only be complete after the first frame.
     fn sample_entry(&self) -> SampleEntry;
     fn timescale(&self) -> u32;
-    fn encode(&mut self, frame: &EncoderFrame) -> Result<Vec<EncodedPacket>>;
+    fn encode(&mut self, frame: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>>;
     fn flush(&mut self) -> Result<Vec<EncodedPacket>>;
     /// Media start offset for an edit list (B-frame delay), in the encoder timescale.
     fn media_start(&self) -> Option<i64> {
@@ -886,6 +1066,31 @@ pub trait VideoEncoder: Send {
     fn pass_stats(&self) -> Option<cfa4_h264enc::PassStats> {
         None
     }
+    /// Work on a rendered picture that needs nothing of the encoder's state (H.264: the colour
+    /// conversion), for the render threads to do while earlier pictures are being encoded.
+    /// [`VideoEncoder::encode`] picks the result up by [`EncoderFrame::index`] and does the work
+    /// itself for a picture that has none; the encoded bytes are the same either way.
+    fn prepare_ahead(&self) -> Option<PrepareAhead> {
+        None
+    }
+    /// MPEG-2 video: what the MXF MPEG video descriptor records (ST 381-1 Table 7).
+    fn mpeg_video(&self) -> Option<MpegVideoInfo> {
+        None
+    }
+}
+
+/// The coding parameters of an MPEG-2 video stream, for the MXF MPEG video descriptor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MpegVideoInfo {
+    /// profile_and_level_indication of the sequence extension.
+    pub profile_and_level: u8,
+    /// Pictures per GOP.
+    pub gop: u32,
+    /// B pictures between anchors.
+    pub b_frames: u32,
+    pub closed_gop: bool,
+    /// The bit rate the sequence header signals (bit/s).
+    pub bit_rate: u64,
 }
 
 /// Audio encoder (AAC) plugged in by codec crates; PCM is built in.
@@ -923,11 +1128,13 @@ fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
             vp9_factory,
             prores_factory,
             dnx_factory,
+            uncompressed_factory,
             apv_factory,
             cineform_factory,
             mjpeg_factory,
             mpeg2_factory,
             dcp_out::dcp_factory,
+            imf_out::imf_factory,
         ])
     })
 }
@@ -985,7 +1192,8 @@ pub enum Stage {
     Render,
     /// Encoding the rendered frames, colour conversion included (serial).
     Encode,
-    /// The part of [`Stage::Encode`] spent converting RGB to the encoder's YUV.
+    /// Time spent converting RGB to the encoder's YUV: part of [`Stage::Encode`], or, when the encoder
+    /// converts ahead ([`crate::VideoEncoder::prepare_ahead`]), summed over the render threads.
     Convert,
     /// Mixing and encoding audio and writing it to the container.
     Audio,
@@ -1197,6 +1405,12 @@ pub fn available(format: Format) -> bool {
     format.has_builtin_encoder() || format_probes().read().unwrap_or_else(|e| e.into_inner()).iter().any(|(f, probe)| *f == format && probe())
 }
 
+/// Why `format` cannot be exported on this machine, or `None` when it can ([`available`]). The UI,
+/// the CLI and the control channel show this text next to a format they cannot offer.
+pub fn unavailable_reason(format: Format) -> Option<String> {
+    (!available(format)).then(|| format!("{}: no encoder for this format is available on this machine", format.label()))
+}
+
 struct MjpegEncoder {
     w: u16,
     h: u16,
@@ -1211,7 +1425,7 @@ impl VideoEncoder for MjpegEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let rgb: Vec<u8> = f.rgba.as_chunks::<4>().0.iter().flat_map(|p| [p[0], p[1], p[2]]).collect();
         let mut out = Vec::new();
         let mut enc = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, self.quality);
@@ -1230,6 +1444,8 @@ fn mjpeg_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
 /// MPEG-2 video (our encoder): BT.709 limited-range 4:2:0, average bitrate, IBBP (B pictures configurable).
 struct Mpeg2Encoder {
     enc: cfa4_mpeg2v::encode::Encoder,
+    /// GOP length, B pictures and closed GOPs of the configuration.
+    gop: (u32, u32, bool),
     rate: FrameRate,
     w: u16,
     h: u16,
@@ -1249,7 +1465,16 @@ impl VideoEncoder for Mpeg2Encoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn mpeg_video(&self) -> Option<MpegVideoInfo> {
+        Some(MpegVideoInfo {
+            profile_and_level: self.enc.profile_and_level(),
+            gop: self.gop.0,
+            b_frames: self.gop.1,
+            closed_gop: self.gop.2,
+            bit_rate: self.enc.signalled_bit_rate(),
+        })
+    }
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         if self.yuv422 {
             timed(Stage::Convert, || rgba_to_yuv422_8(f.rgba, w, h, &mut self.y, &mut self.u, &mut self.v));
@@ -1292,9 +1517,167 @@ fn mpeg2_aspect(w: u32, h: u32, par: Option<(u32, u32)>) -> cfa4_mpeg2v::encode:
         .map_or(AspectRatio::Square, |(_, a)| a)
 }
 
+/// A type D-10 (IMX) stream of an export: (Mbit/s, 625 or 525 lines) from the bitrate, the
+/// frame size and the frame rate.
+pub(crate) fn d10_params(s: &ExportSettings, w: u32, h: u32, rate: FrameRate) -> Result<(u8, u16)> {
+    let mbps = match s.bitrate_kbps {
+        30_000 => 30,
+        40_000 => 40,
+        50_000 => 50,
+        k => return Err(ExportError::Unsupported(format!("D-10 (IMX) runs at 30, 40 or 50 Mbit/s, not {k} kbit/s"))),
+    };
+    let lines = match (w, h, rate.num, rate.den) {
+        (720, 576, 25, 1) => 625,
+        (720, 486 | 480, 30000, 1001) => 525,
+        _ => {
+            return Err(ExportError::Unsupported(format!(
+                "D-10 (IMX) pictures are 720x576 at 25 fps or 720x486 / 720x480 at 29.97 fps, not {w}x{h} at {} fps",
+                rate.label()
+            )));
+        }
+    };
+    Ok((mbps, lines))
+}
+
+/// Type D-10 / IMX video (our MPEG-2 encoder): intra-only 4:2:2P@ML, ITU-R BT.601 4:2:2 in the
+/// 720 × 608 (720 × 512) frame whose first 32 (26) lines are the vertical interval, every
+/// picture at most the SMPTE 356 frame size (coded again with a coarser constant quantiser when
+/// the rate control overshoots; the MXF writer pads it to the fixed size).
+struct D10Encoder {
+    enc: cfa4_mpeg2v::encode::Encoder,
+    cfg: cfa4_mpeg2v::encode::Config,
+    frame_bytes: usize,
+    rate: FrameRate,
+    w: u16,
+    h: u16,
+    /// First stored line of the active picture.
+    top: usize,
+    y: Vec<u8>,
+    u: Vec<u8>,
+    v: Vec<u8>,
+}
+
+/// ITU-R BT.601 limited-range 8-bit 4:2:2 of straight RGBA8, written into the 720-sample stored
+/// planes from line `top` on.
+fn rgba_to_yuv422_601(rgba: &[u8], w: usize, h: usize, top: usize, y: &mut [u8], u: &mut [u8], v: &mut [u8]) {
+    let cw = w.div_ceil(2);
+    for row in 0..h {
+        let (Some(src), Some(yr), Some(ur), Some(vr)) = (
+            rgba.get(row * w * 4..(row + 1) * w * 4),
+            y.get_mut((top + row) * w..(top + row + 1) * w),
+            u.get_mut((top + row) * cw..(top + row + 1) * cw),
+            v.get_mut((top + row) * cw..(top + row + 1) * cw),
+        ) else {
+            return;
+        };
+        let mut us = vec![0f32; w];
+        let mut vs = vec![0f32; w];
+        for x in 0..w {
+            let (r, g, b) = (src[x * 4] as f32 / 255.0, src[x * 4 + 1] as f32 / 255.0, src[x * 4 + 2] as f32 / 255.0);
+            let yy = 0.299 * r + 0.587 * g + 0.114 * b;
+            yr[x] = (16.0 + 219.0 * yy).round().clamp(1.0, 254.0) as u8;
+            us[x] = (b - yy) / 1.772;
+            vs[x] = (r - yy) / 1.402;
+        }
+        for cx in 0..cw {
+            let (a, b2) = (cx * 2, (cx * 2 + 1).min(w - 1));
+            ur[cx] = (128.0 + 224.0 * (us[a] + us[b2]) * 0.5).round().clamp(1.0, 254.0) as u8;
+            vr[cx] = (128.0 + 224.0 * (vs[a] + vs[b2]) * 0.5).round().clamp(1.0, 254.0) as u8;
+        }
+    }
+}
+
+impl D10Encoder {
+    fn new(w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Result<Self> {
+        let (mbps, lines) = d10_params(s, w, h, rate)?;
+        let coding = cfa4_mxf::PictureCoding::D10 { mbps, lines };
+        let frame_bytes = coding.d10_frame_bytes().ok_or_else(|| ExportError::Unsupported("D-10: unsupported rate".into()))?;
+        let (stored, top) = match (lines, h) {
+            (625, _) => (608, 32),
+            (_, 480) => (512, 28),
+            _ => (512, 26),
+        };
+        let mut cfg = cfa4_mpeg2v::encode::Config::new(720, stored, rate.num as u32, rate.den as u32);
+        cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
+        cfg.gop = 1;
+        cfg.b_frames = 0;
+        cfg.intra_dc_precision = 10;
+        // aim below the frame size so the rate control rarely overshoots it
+        cfg.rate = cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(mbps) * 900_000 };
+        cfg.aspect = match mpeg2_aspect(w, h, s.pixel_aspect) {
+            cfa4_mpeg2v::encode::AspectRatio::Dar16x9 => cfa4_mpeg2v::encode::AspectRatio::Dar16x9,
+            _ => cfa4_mpeg2v::encode::AspectRatio::Dar4x3,
+        };
+        // ITU-R BT.470 B/G (625) or SMPTE 170M (525) primaries and matrix, BT.601 transfer
+        cfg.colour = Some(if lines == 625 { (5, 6, 5) } else { (6, 6, 6) });
+        cfg.adaptive_quantization = true;
+        let enc = cfa4_mpeg2v::encode::Encoder::new(cfg.clone()).map_err(|e| ExportError::Unsupported(format!("D-10: {e}")))?;
+        let n = 720 * stored as usize;
+        Ok(D10Encoder { enc, cfg, frame_bytes, rate, w: w as u16, h: h as u16, top, y: vec![16; n], u: vec![128; n / 2], v: vec![128; n / 2] })
+    }
+
+    /// The picture again, alone, at a constant quantiser (every D-10 picture is its own GOP).
+    fn recode(&self, q: u8) -> Result<Vec<u8>> {
+        let mut cfg = self.cfg.clone();
+        cfg.rate = cfa4_mpeg2v::encode::Rate::Quantizer(q);
+        let mut enc = cfa4_mpeg2v::encode::Encoder::new(cfg).map_err(|e| ExportError::Encode(format!("D-10: {e}")))?;
+        let input = cfa4_mpeg2v::encode::Input { y: &self.y, cb: &self.u, cr: &self.v, y_stride: 720, c_stride: 360 };
+        let mut data = Vec::new();
+        for p in enc.encode(&input).map_err(|e| ExportError::Encode(format!("D-10: {e}")))? {
+            data.extend_from_slice(&p.data);
+        }
+        for p in enc.flush().map_err(|e| ExportError::Encode(format!("D-10: {e}")))? {
+            data.extend_from_slice(&p.data);
+        }
+        Ok(data)
+    }
+
+    fn packet(&self, mut data: Vec<u8>) -> Result<EncodedPacket> {
+        // the rate control's quantiser is per picture; a picture over the frame size is coded
+        // again coarser until it fits
+        let mut q = 8;
+        while data.len() > self.frame_bytes {
+            if q > 31 {
+                return Err(ExportError::Encode(format!("D-10: a picture does not fit in {} bytes", self.frame_bytes)));
+            }
+            data = self.recode(q)?;
+            q += 4;
+        }
+        Ok(EncodedPacket { data, key: true, duration: self.rate.den as u32, composition_offset: 0 })
+    }
+}
+
+impl VideoEncoder for D10Encoder {
+    fn sample_entry(&self) -> SampleEntry {
+        // never written: D-10 goes to MXF only
+        let fourcc = cfa4_isobmff::FourCc(*b"mx5p");
+        SampleEntry::video(fourcc, cfa4_isobmff::CodecConfig::Unknown { fourcc, raw: Vec::new() }, self.w, self.h)
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
+        let (w, h) = (f.width as usize, f.height as usize);
+        if (w, h) != (usize::from(self.w), usize::from(self.h)) {
+            return Err(ExportError::Encode(format!("D-10: a {w}x{h} frame in a {}x{} export", self.w, self.h)));
+        }
+        timed(Stage::Convert, || rgba_to_yuv422_601(f.rgba, w, h, self.top, &mut self.y, &mut self.u, &mut self.v));
+        let input = cfa4_mpeg2v::encode::Input { y: &self.y, cb: &self.u, cr: &self.v, y_stride: 720, c_stride: 360 };
+        let packets = self.enc.encode(&input).map_err(|e| ExportError::Encode(format!("D-10: {e}")))?;
+        packets.into_iter().map(|p| self.packet(p.data)).collect()
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        let packets = self.enc.flush().map_err(|e| ExportError::Encode(format!("D-10: {e}")))?;
+        packets.into_iter().map(|p| self.packet(p.data)).collect()
+    }
+}
+
 fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     if format != Format::Mpeg2 {
         return None;
+    }
+    if s.format.is_mxf() && s.mxf_video_codec == MxfVideoCodec::D10 {
+        return Some(D10Encoder::new(w, h, rate, s).map(|e| Box::new(e) as Box<dyn VideoEncoder>));
     }
     Some((|| {
         if !mpeg_out::mpeg2_rate(rate) {
@@ -1306,19 +1689,38 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         let mut cfg = cfa4_mpeg2v::encode::Config::new(w, h, rate.num as u32, rate.den as u32);
         cfg.rate = match s.mpeg2_quantizer {
             Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
-            None => cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(s.bitrate_kbps.max(100)) * 1000 },
+            None => {
+                let kbps = s.bitrate_kbps.max(100);
+                let bps = u64::from(kbps) * 1000;
+                match s.bitrate_mode {
+                    // the level's VBV buffer, constant bitrate with stuffing
+                    BitrateMode::Cbr => cfa4_mpeg2v::encode::Rate::Cbr { bits_per_second: bps, buffer_bits: 0 },
+                    _ => {
+                        let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).map_or(bps * 3 / 2, |m| u64::from(m) * 1000);
+                        cfa4_mpeg2v::encode::Rate::ConstrainedVbr { bits_per_second: bps, max_bits_per_second: max, buffer_bits: 0 }
+                    }
+                }
+            }
         };
-        if s.mpeg2_422 {
+        // XDCAM HD422 is the 4:2:2 Profile whatever the chroma setting says
+        let yuv422 = s.mpeg2_422 || (s.format.is_mxf() && s.mxf_video_codec == MxfVideoCodec::XdcamHd422);
+        if yuv422 {
             cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
         }
         cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
         cfg.b_frames = u32::from(s.mpeg2_b_frames.unwrap_or(2).min(7));
+        cfg.interlaced = match s.field_order {
+            FieldOrder::Progressive => None,
+            FieldOrder::UpperFirst => Some(cfa4_mpeg2v::FieldOrder::TopFirst),
+            FieldOrder::LowerFirst => Some(cfa4_mpeg2v::FieldOrder::BottomFirst),
+        };
         cfg.aspect = mpeg2_aspect(w, h, s.pixel_aspect);
         // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
         cfg.colour = Some((1, 1, 1));
         cfg.adaptive_quantization = true;
+        let gop = (cfg.gop, cfg.b_frames, cfg.closed_gop);
         let enc = cfa4_mpeg2v::encode::Encoder::new(cfg).map_err(|e| ExportError::Unsupported(format!("MPEG-2: {e}")))?;
-        Ok(Box::new(Mpeg2Encoder { enc, rate, w: w16, h: h16, yuv422: s.mpeg2_422, y: Vec::new(), u: Vec::new(), v: Vec::new() }) as Box<dyn VideoEncoder>)
+        Ok(Box::new(Mpeg2Encoder { enc, gop, rate, w: w16, h: h16, yuv422, y: Vec::new(), u: Vec::new(), v: Vec::new() }) as Box<dyn VideoEncoder>)
     })())
 }
 
@@ -1400,7 +1802,7 @@ impl AudioEncoder for FlacAudio {
     }
 }
 
-fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
+pub(crate) fn aac_factory(_format: Format, sample_rate: u32, channels: u32, s: &ExportSettings) -> Option<Result<Box<dyn AudioEncoder>>> {
     // AAC caps a frame at 6144 bits per channel (ISO/IEC 14496-3 §4.5.3.2): 6 bits per sample, so
     // 264.6 kbps for stereo at 22.05 kHz; a higher setting is capped instead of refused
     let max = (6 * sample_rate as u64 * channels.max(1) as u64).min(u32::MAX as u64) as u32;
@@ -1422,20 +1824,32 @@ struct ProResEncoder {
     h: u32,
     rate: FrameRate,
     signal: ColorSignal,
+    /// Progressive, or the field order of interlaced frames (two field pictures each).
+    interlace: cfa4_prores::Interlace,
 }
 
 impl VideoEncoder for ProResEncoder {
     fn sample_entry(&self) -> SampleEntry {
         let mut e = SampleEntry::prores(cfa4_isobmff::FourCc(self.profile.fourcc()), self.w as u16, self.h as u16);
         self.signal.apply_to(&mut e, true);
+        // QuickTime `fiel`: two woven fields, the top (1) or the bottom (6) one first
+        let detail = match self.interlace {
+            cfa4_prores::Interlace::Progressive => None,
+            cfa4_prores::Interlace::TopFieldFirst => Some(1),
+            cfa4_prores::Interlace::BottomFieldFirst => Some(6),
+        };
+        if let (Some(detail), Some(v)) = (detail, e.video.as_mut()) {
+            v.field_info = Some(cfa4_isobmff::FieldInfo { fields: 2, detail });
+        }
         e
     }
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let chroma = self.profile.chroma();
         let mut fr = cfa4_prores::Frame::new(f.width, f.height, chroma, 10, self.alpha);
+        fr.interlace = self.interlace;
         let (w, h) = (f.width as usize, f.height as usize);
         timed(Stage::Convert, || match (chroma, f.hdr) {
             (cfa4_prores::ChromaFormat::Yuv444, hdr) => {
@@ -1458,7 +1872,7 @@ impl VideoEncoder for ProResEncoder {
 
 /// Limited-range 10-bit 4:4:4 with matrix (Kr, Kb) from straight RGBA8, or from encoded R'G'B'
 /// floats (3 per pixel) when `hdr` is given. `alpha` (full range, 0 = transparent) takes the
-/// RGBA8 alpha; it stays opaque for float input, which carries none.
+/// RGBA8 alpha; it stays opaque where `rgba` has none (HDR float input).
 #[allow(clippy::too_many_arguments)]
 pub fn to_yuv444_10(
     rgba: &[u8],
@@ -1490,7 +1904,7 @@ pub fn to_yuv444_10(
             *crv = (512.0 + 896.0 * (r - yy) / sr).round().clamp(4.0, 1019.0) as u16;
         }
     });
-    if let (Some(a), None) = (alpha, hdr) {
+    if let Some(a) = alpha {
         for (i, dst) in a.iter_mut().enumerate().take(n) {
             *dst = rgba.get(i * 4 + 3).map_or(1023, |&v| ((v as u32 * 1023 + 127) / 255) as u16);
         }
@@ -1587,7 +2001,12 @@ fn prores_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSet
         let alpha = s.keeps_alpha();
         cfg.encode_alpha = alpha;
         let enc = cfa4_prores::Encoder::with_config(cfg);
-        Ok(Box::new(ProResEncoder { enc, profile, alpha, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+        let interlace = match s.field_order {
+            FieldOrder::Progressive => cfa4_prores::Interlace::Progressive,
+            FieldOrder::UpperFirst => cfa4_prores::Interlace::TopFieldFirst,
+            FieldOrder::LowerFirst => cfa4_prores::Interlace::BottomFieldFirst,
+        };
+        Ok(Box::new(ProResEncoder { enc, profile, alpha, w, h, rate, signal: s.signal, interlace }) as Box<dyn VideoEncoder>)
     })
 }
 
@@ -1621,7 +2040,7 @@ impl VideoEncoder for DnxEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let mut fr = cfa4_dnx::Frame::new(f.width, f.height, cfa4_dnx::ChromaFormat::Yuv422, 10, false);
         match f.hdr {
             Some(rgb) => {
@@ -1648,6 +2067,58 @@ fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
         let enc = cfa4_dnx::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
         Ok(Box::new(DnxEncoder { enc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
     })
+}
+
+/// Uncompressed Y'CbCr 4:2:2 pictures for MXF (ST 384): `v210` (10-bit) or `UYVY` (8-bit),
+/// Rec. 709 narrow-range levels, one intra "packet" per picture packed by
+/// [`cfa4_mxf::UncompressedLayout::pack`].
+struct UncompressedEncoder {
+    layout: cfa4_mxf::UncompressedLayout,
+    w: u32,
+    h: u32,
+    rate: FrameRate,
+    signal: ColorSignal,
+}
+
+impl VideoEncoder for UncompressedEncoder {
+    fn sample_entry(&self) -> SampleEntry {
+        // MXF only: no ISO BMFF sample entry is written
+        let fourcc = cfa4_isobmff::FourCc(if self.layout == cfa4_mxf::UncompressedLayout::V210 { *b"v210" } else { *b"2vuy" });
+        SampleEntry::video(fourcc, cfa4_isobmff::CodecConfig::Unknown { fourcc, raw: Vec::new() }, self.w as u16, self.h as u16)
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
+        let (w, h) = (f.width as usize, f.height as usize);
+        let cw = w.div_ceil(2);
+        let (Some(n), Some(nc)) = (w.checked_mul(h), cw.checked_mul(h)) else {
+            return Err(ExportError::Unsupported(format!("picture size {w}x{h}")));
+        };
+        let (mut y, mut cb, mut cr) = (vec![0u16; n], vec![0u16; nc], vec![0u16; nc]);
+        match f.hdr {
+            Some(rgb) => {
+                let (kr, kb) = self.signal.kr_kb();
+                rgbf_to_yuv422_10(rgb, w, h, kr, kb, &mut y, &mut cb, &mut cr)
+            }
+            None => rgba_to_yuv422_10(f.rgba, w, h, &mut y, &mut cb, &mut cr),
+        }
+        if self.layout.depth() == 8 {
+            for v in y.iter_mut().chain(cb.iter_mut()).chain(cr.iter_mut()) {
+                *v = ((*v + 2) >> 2).min(255);
+            }
+        }
+        let data = self.layout.pack(f.width, f.height, [&y, &cb, &cr]);
+        Ok(vec![EncodedPacket { data, key: true, duration: self.rate.den as u32, composition_offset: 0 }])
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        Ok(Vec::new())
+    }
+}
+
+fn uncompressed_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
+    let layout = s.mxf_video_codec.uncompressed_layout().filter(|_| format == Format::MxfOp1a && s.format.is_mxf())?;
+    Some(Ok(Box::new(UncompressedEncoder { layout, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>))
 }
 
 /// The APV profile named by [`ExportSettings::apv_profile`].
@@ -1684,7 +2155,7 @@ impl VideoEncoder for ApvEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         let mut fr = cfa4_apv::Frame::new(f.width, f.height, self.chroma, 10, self.chroma == cfa4_apv::ChromaFormat::Yuv4444);
         let mut y422 = vec![0u16; w * h];
@@ -1810,7 +2281,7 @@ impl VideoEncoder for CineformEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         use cfa4_cineform::EncodedFormat;
         let (w, h) = (f.width as usize, f.height as usize);
         if (f.width, f.height) != (self.cfg.width, self.cfg.height) {
@@ -1833,12 +2304,12 @@ impl VideoEncoder for CineformEncoder {
                 let n = w * h;
                 let mut planes = vec![vec![0u16; n]; format.channels()];
                 let to12 = |v: u8| ((u32::from(v) * 4095 + 127) / 255) as u16;
-                for (i, px) in (0..n).zip(f.rgba.chunks_exact(4)) {
+                for i in 0..n {
                     for (c, plane) in planes.iter_mut().enumerate() {
+                        let byte = f.rgba.get(i * 4 + c).copied();
                         let v = match (f.hdr, c) {
                             (Some(rgb), 0..=2) => rgb.get(i * 3 + c).map_or(0, |&x| (x.clamp(0.0, 1.0) * 4095.0).round() as u16),
-                            (Some(_), _) => 4095,
-                            (None, _) => px.get(c).map_or(4095, |&x| to12(x)),
+                            _ => byte.map_or(4095, to12),
                         };
                         if let Some(d) = plane.get_mut(i) {
                             *d = v;
@@ -1881,6 +2352,22 @@ struct H264Encoder {
     u: Vec<u8>,
     v: Vec<u8>,
     signal: ColorSignal,
+    /// 4:2:0 planes the render threads converted ahead ([`VideoEncoder::prepare_ahead`]), by
+    /// picture index.
+    ready: Arc<Mutex<std::collections::HashMap<u64, Yuv420>>>,
+}
+
+type Yuv420 = (Vec<u8>, Vec<u8>, Vec<u8>);
+
+/// The encoder input of `f`: 8-bit limited-range 4:2:0 in the export's colour signal.
+fn h264_input(f: &EncoderFrame<'_>, signal: ColorSignal, y: &mut Vec<u8>, u: &mut Vec<u8>, v: &mut Vec<u8>) {
+    match f.hdr {
+        Some(rgb) => {
+            let (kr, kb) = signal.kr_kb();
+            rgbf_to_yuv420_8(rgb, f.width as usize, f.height as usize, kr, kb, y, u, v)
+        }
+        None => rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, y, u, v),
+    }
 }
 
 impl H264Encoder {
@@ -1904,14 +2391,24 @@ impl VideoEncoder for H264Encoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
-        timed(Stage::Convert, || match f.hdr {
-            Some(rgb) => {
-                let (kr, kb) = self.signal.kr_kb();
-                rgbf_to_yuv420_8(rgb, f.width as usize, f.height as usize, kr, kb, &mut self.y, &mut self.u, &mut self.v)
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
+        let ready = {
+            let mut ready = self.ready.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mine = ready.remove(&f.index);
+            // anything older belongs to a batch that was rendered and then not encoded
+            ready.retain(|&i, _| i > f.index);
+            mine
+        };
+        let (w, h) = (f.width as usize, f.height as usize);
+        let chroma = w.div_ceil(2) * h.div_ceil(2);
+        match ready.filter(|(y, u, v)| y.len() == w * h && u.len() == chroma && v.len() == chroma) {
+            Some((y, u, v)) => (self.y, self.u, self.v) = (y, u, v),
+            None => {
+                let (enc, y, u, v, signal) = (&self.enc, &mut self.y, &mut self.u, &mut self.v, self.signal);
+                // on the encoder's own threads: the global pool is busy rendering the next batch
+                timed(Stage::Convert, || enc.install(|| h264_input(f, signal, y, u, v)));
             }
-            None => rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, &mut self.y, &mut self.u, &mut self.v),
-        });
+        }
         let cw = (f.width as usize).div_ceil(2);
         let frame = cfa4_h264enc::YuvFrame { y: &self.y, u: &self.u, v: &self.v, y_stride: f.width as usize, uv_stride: cw };
         let ps = self.enc.try_encode(&frame, f.index as i64 * self.rate.den).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -1927,6 +2424,14 @@ impl VideoEncoder for H264Encoder {
     }
     fn pass_stats(&self) -> Option<cfa4_h264enc::PassStats> {
         self.enc.pass_stats()
+    }
+    fn prepare_ahead(&self) -> Option<PrepareAhead> {
+        let (ready, signal) = (self.ready.clone(), self.signal);
+        Some(Arc::new(move |f: &EncoderFrame<'_>| {
+            let (mut y, mut u, mut v) = (Vec::new(), Vec::new(), Vec::new());
+            timed(Stage::Convert, || h264_input(f, signal, &mut y, &mut u, &mut v));
+            ready.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(f.index, (y, u, v));
+        }))
     }
 }
 
@@ -1961,7 +2466,7 @@ impl VideoEncoder for Vp9Encoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         timed(Stage::Convert, || rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, &mut self.y, &mut self.u, &mut self.v));
         let input = cfa4_vp9::encode::Input { y: &self.y, u: &self.u, v: &self.v, y_stride: f.width as usize, uv_stride: (f.width as usize).div_ceil(2) };
         let p = self.enc.encode(&input, false).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -1997,34 +2502,78 @@ fn vp9_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
     })
 }
 
+/// `x.round().clamp(1.0, 254.0) as u8` for the finite values the conversions produce, without
+/// the `roundf` call. For `0.5 <= x < 2^23` the sum `x + 0.5` is a multiple of the spacing of
+/// `x` and never rounds up across an integer, so truncating it rounds half away from zero
+/// exactly as `round` does; anything below 0.5 clamps to 1 either way. NaN gives 0, as the
+/// `round`/`clamp`/`as` chain does.
+#[inline(always)]
+fn code8(x: f32) -> u8 {
+    if x.is_nan() {
+        return 0;
+    }
+    ((x + 0.5) as i32).clamp(1, 254) as u8
+}
+
 /// BT.709 limited-range 8-bit 4:2:0 from straight RGBA8 (2×2 chroma average).
 pub fn rgba_to_yuv420_8(rgba: &[u8], w: usize, h: usize, y: &mut Vec<u8>, u: &mut Vec<u8>, v: &mut Vec<u8>) {
     let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
     y.resize(w * h, 0);
     u.resize(cw * ch, 0);
     v.resize(cw * ch, 0);
-    y.par_chunks_mut(w * 2).zip(u.par_chunks_mut(cw).zip(v.par_chunks_mut(cw))).enumerate().for_each(|(cy, (yr, (ur, vr)))| {
-        let rows = yr.len() / w;
-        let mut us = vec![0f32; cw];
-        let mut vs = vec![0f32; cw];
-        let mut cnt = vec![0f32; cw];
-        for dy in 0..rows {
-            let row = cy * 2 + dy;
-            let src = &rgba[row * w * 4..(row + 1) * w * 4];
-            for x in 0..w {
-                let (r, g, b) = (src[x * 4] as f32 / 255.0, src[x * 4 + 1] as f32 / 255.0, src[x * 4 + 2] as f32 / 255.0);
-                let yy = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                yr[dy * w + x] = (16.0 + 219.0 * yy).round().clamp(1.0, 254.0) as u8;
-                us[x / 2] += (b - yy) / 1.8556;
-                vs[x / 2] += (r - yy) / 1.5748;
-                cnt[x / 2] += 1.0;
+    // per-code tables of exactly the products the formula takes: `c / 255.0` and `k * (c / 255.0)`
+    let unit: [f32; 256] = std::array::from_fn(|c| c as f32 / 255.0);
+    let (kr, kg, kb): ([f32; 256], [f32; 256], [f32; 256]) =
+        (std::array::from_fn(|c| 0.2126 * unit[c]), std::array::from_fn(|c| 0.7152 * unit[c]), std::array::from_fn(|c| 0.0722 * unit[c]));
+    // Per row: gather the luma sums, then the vectorisable part (codes, chroma differences) over
+    // whole rows, then add the differences pairwise in the order the per-pixel loop added them.
+    let rows_init = || (vec![0f32; w], vec![0f32; w], vec![0f32; w], vec![0f32; cw], vec![0f32; cw]);
+    y.par_chunks_mut(w * 2).zip(u.par_chunks_mut(cw).zip(v.par_chunks_mut(cw))).enumerate().for_each_init(
+        rows_init,
+        |(ty, tb, tr, us, vs), (cy, (yr, (ur, vr)))| {
+            let rows = yr.len() / w;
+            us.fill(0.0);
+            vs.fill(0.0);
+            for (dy, yrow) in yr.chunks_exact_mut(w).enumerate() {
+                let row = cy * 2 + dy;
+                let Some(src) = rgba.get(row * w * 4..(row + 1) * w * 4) else { continue };
+                for (p, (yy, (b, r))) in src.as_chunks::<4>().0.iter().zip(ty.iter_mut().zip(tb.iter_mut().zip(tr.iter_mut()))) {
+                    let (pr, pg, pb) = (usize::from(p[0]), usize::from(p[1]), usize::from(p[2]));
+                    *yy = kr[pr] + kg[pg] + kb[pb];
+                    *b = unit[pb];
+                    *r = unit[pr];
+                }
+                for (o, &yy) in yrow.iter_mut().zip(ty.iter()) {
+                    *o = code8(16.0 + 219.0 * yy);
+                }
+                for (b, &yy) in tb.iter_mut().zip(ty.iter()) {
+                    *b = (*b - yy) / 1.8556;
+                }
+                for (r, &yy) in tr.iter_mut().zip(ty.iter()) {
+                    *r = (*r - yy) / 1.5748;
+                }
+                for (acc, pair) in us.iter_mut().zip(tb.as_chunks::<2>().0) {
+                    *acc += pair[0];
+                    *acc += pair[1];
+                }
+                for (acc, pair) in vs.iter_mut().zip(tr.as_chunks::<2>().0) {
+                    *acc += pair[0];
+                    *acc += pair[1];
+                }
+                if w % 2 == 1 {
+                    // the odd last column has a chroma sample of its own
+                    us[cw - 1] += tb[w - 1];
+                    vs[cw - 1] += tr[w - 1];
+                }
             }
-        }
-        for cx in 0..cw {
-            ur[cx] = (128.0 + 224.0 * us[cx] / cnt[cx]).round().clamp(1.0, 254.0) as u8;
-            vr[cx] = (128.0 + 224.0 * vs[cx] / cnt[cx]).round().clamp(1.0, 254.0) as u8;
-        }
-    });
+            for (cx, (uo, vo)) in ur.iter_mut().zip(vr.iter_mut()).enumerate() {
+                // pixels averaged into this chroma sample: 2 per row (1 in an odd last column), `rows` rows
+                let cnt = ((w - 2 * cx).min(2) * rows) as f32;
+                *uo = code8(128.0 + 224.0 * us[cx] / cnt);
+                *vo = code8(128.0 + 224.0 * vs[cx] / cnt);
+            }
+        },
+    );
 }
 
 /// Limited-range 8-bit 4:2:0 from encoded R'G'B' floats with matrix (Kr, Kb).
@@ -2163,7 +2712,10 @@ fn h264_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
     }
     Some(
         cfa4_h264enc::Encoder::new(cfg)
-            .map(|enc| Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal }) as Box<dyn VideoEncoder>)
+            .map(|enc| {
+                Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal, ready: Default::default() })
+                    as Box<dyn VideoEncoder>
+            })
             .map_err(|e| ExportError::Encode(e.to_string())),
     )
 }
@@ -2203,7 +2755,7 @@ impl VideoEncoder for HevcEncoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         let cw = w.div_ceil(2);
         let main10 = self.enc.config().bit_depth > 8;
@@ -2336,7 +2888,7 @@ impl VideoEncoder for Av1Encoder {
     fn timescale(&self) -> u32 {
         self.rate.num as u32
     }
-    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
         let (w, h) = (f.width as usize, f.height as usize);
         let cw = w.div_ceil(2);
         let ten_bit = self.enc.config().bit_depth > 8;
@@ -2423,6 +2975,31 @@ fn av1_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
 }
 
 /// The range to export (settings → In/Out → whole sequence).
+/// The chapters of an export of `range`: the sequence's [`MarkerKind::Chapter`] markers that start
+/// inside it, in time order, measured from its start in 100 ns units (the `chpl` time base). A
+/// marker without a name takes its comment, else "Chapter N". Empty when `settings.chapters` is
+/// off.
+///
+/// [`MarkerKind::Chapter`]: cfa4_project::MarkerKind::Chapter
+pub fn export_chapters(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Vec<cfa4_isobmff::Chapter> {
+    let Some(q) = project.sequence(seq).filter(|_| settings.chapters) else { return Vec::new() };
+    let end = range.start.0.saturating_add(range.duration.0);
+    let mut marks: Vec<&cfa4_project::Marker> =
+        q.markers.iter().filter(|m| m.kind == cfa4_project::MarkerKind::Chapter && m.start.0 >= range.start.0 && m.start.0 < end).collect();
+    marks.sort_by_key(|m| m.start.0);
+    marks
+        .into_iter()
+        .enumerate()
+        .map(|(i, m)| {
+            let offset = i128::from(m.start.0) - i128::from(range.start.0);
+            let start_100ns = offset * 10_000_000 / i128::from(cfa4_time::TICKS_PER_SECOND);
+            let title =
+                [m.name.trim(), m.comment.trim()].into_iter().find(|s| !s.is_empty()).map(str::to_string).unwrap_or_else(|| format!("Chapter {}", i + 1));
+            cfa4_isobmff::Chapter { start_100ns: u64::try_from(start_100ns).unwrap_or(0), title }
+        })
+        .collect()
+}
+
 pub fn export_range(project: &Project, seq: ItemId, settings: &ExportSettings) -> Result<TimeRange> {
     let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
     q.check_bounds().map_err(ExportError::Unsupported)?;
@@ -2487,12 +3064,11 @@ impl Write for SharedBuf {
 
 /// Encode straight sRGB RGBA8 pixels as a PNG file (thumbnails, previews).
 pub fn encode_png(rgba: Vec<u8>, w: u32, h: u32) -> Result<Vec<u8>> {
-    encode_still(Format::PngSequence, rgba, w, h, false)
+    encode_still(Format::PngSequence, rgba, w, h, true)
 }
 
-/// Encode one still of an image sequence (also Export Frame). PNG always carries the alpha
-/// channel it is given; `alpha` keeps it in TIFF, Targa and OpenEXR too, which are otherwise written
-/// as RGB.
+/// Encode one still of an image sequence (also Export Frame). `alpha` keeps the alpha channel in
+/// PNG, TIFF, Targa and OpenEXR, which are otherwise written as RGB.
 /// JPEG uses the default export quality ([`encode_still_with_quality`] picks another).
 pub fn encode_still(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool) -> Result<Vec<u8>> {
     encode_still_with_quality(format, rgba, w, h, alpha, ExportSettings::default().quality)
@@ -2505,6 +3081,22 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
 
 /// [`encode_still_with_quality`] with the OpenEXR compression (ignored by the other formats).
 pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: bool, quality: u8, exr: ExrCompression) -> Result<Vec<u8>> {
+    encode_still_timed(format, rgba, w, h, alpha, quality, exr, None)
+}
+
+/// [`encode_still_with`] for a frame of a sequence: OpenEXR also records its time code and the
+/// frame rate (ignored by the other formats).
+#[allow(clippy::too_many_arguments)]
+pub fn encode_still_timed(
+    format: Format,
+    rgba: Vec<u8>,
+    w: u32,
+    h: u32,
+    alpha: bool,
+    quality: u8,
+    exr: ExrCompression,
+    timing: Option<StillTiming>,
+) -> Result<Vec<u8>> {
     let enc = |e: image::ImageError| ExportError::Encode(e.to_string());
     let mut out = std::io::Cursor::new(Vec::new());
     match format {
@@ -2521,9 +3113,13 @@ pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: b
         }
         Format::TgaSequence => return raster::tga(&rgba, w, h, alpha),
         Format::DpxSequence => return raster::dpx(&rgba, w, h),
-        Format::ExrSequence => return raster::exr(&rgba, w, h, alpha, exr),
-        Format::PngSequence => {
+        Format::ExrSequence => return raster::exr_with(&rgba, w, h, alpha, exr, timing),
+        Format::PngSequence if alpha => {
             image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
+        }
+        Format::PngSequence => {
+            let rgb = raster::rgb(&rgba, w, h)?;
+            image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut out), &rgb, w, h, image::ExtendedColorType::Rgb8).map_err(enc)?
         }
         Format::TiffSequence | Format::BmpSequence => {
             let img = image::RgbaImage::from_raw(w, h, rgba).ok_or_else(|| ExportError::Encode("frame size".into()))?;
@@ -2539,8 +3135,28 @@ pub fn encode_still_with(format: Format, rgba: Vec<u8>, w: u32, h: u32, alpha: b
     Ok(out.into_inner())
 }
 
-/// Run an export (blocking; call from a worker thread).
+/// A pool of `max_threads` threads to run an export on, or `None` when it should run where it is:
+/// no cap (0), a cap that is not below the pool the caller is in already, or no threads to spare
+/// (the browser).
+fn capped_pool(max_threads: u32) -> Option<rayon::ThreadPool> {
+    let cap = max_threads as usize;
+    if cap == 0 || cap >= rayon::current_num_threads() || cfg!(target_arch = "wasm32") {
+        return None;
+    }
+    rayon::ThreadPoolBuilder::new().num_threads(cap).thread_name(|i| format!("cfa4-export-{i}")).build().ok()
+}
+
+/// Run an export (blocking; call from a worker thread). With `settings.max_threads` set it runs on
+/// a pool of that many threads, so its rendering and software encoding use at most that many cores.
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
+    match capped_pool(settings.max_threads) {
+        Some(pool) => pool.install(|| export_here(project, seq, settings, sources, progress)),
+        None => export_here(project, seq, settings, sources, progress),
+    }
+}
+
+/// [`export`] on the threads it is called from.
+fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
     settings.validate()?;
     if stepped(settings.format) {
         let mut ex = Exporter::new(project.clone(), seq, settings, progress)?;
@@ -2652,7 +3268,18 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
                 let end = (f + batch).min(f1);
                 if let Some(enc) = gif.as_mut() {
                     let frames: Vec<Vec<u8>> = (f..end).into_par_iter().map(|fi| pipe.frame(fi, sources).0).collect();
-                    for (fi, rgba) in (f..end).zip(frames) {
+                    for (fi, mut rgba) in (f..end).zip(frames) {
+                        // GIF89a has one transparent palette index, not partial alpha. Decide
+                        // coverage before quantization and keep the straight colour of visible pixels.
+                        if settings.keeps_alpha() {
+                            for px in rgba.as_chunks_mut::<4>().0 {
+                                if px[3] < 128 {
+                                    *px = [0; 4];
+                                } else {
+                                    px[3] = 255;
+                                }
+                            }
+                        }
                         let img = image::RgbaImage::from_raw(w, h, rgba).ok_or_else(|| ExportError::Encode("frame".into()))?;
                         let delay = image::Delay::from_numer_denom_ms(u32::from(gif_delay_cs(pipe.rate, fi - f0)) * 10, 1);
                         enc.encode_frame(image::Frame::from_parts(img, 0, 0, delay)).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -2661,7 +3288,7 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
                     let written: Vec<Result<u64>> = (f..end)
                         .into_par_iter()
                         .map(|fi| {
-                            let data = encode_still_with(
+                            let data = encode_still_timed(
                                 settings.format,
                                 pipe.frame(fi, sources).0,
                                 w,
@@ -2669,6 +3296,7 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
                                 settings.alpha,
                                 settings.quality,
                                 settings.exr_compression,
+                                Some(pipe.still_timing(fi)),
                             )?;
                             write_output(settings, &pcm::image_sequence_path(&settings.path, (fi - f0) as u64, count), data)
                         })
@@ -2711,14 +3339,129 @@ mod settings_tests;
 mod surround_tests;
 
 #[cfg(test)]
+mod audio_copy_tests;
+#[cfg(test)]
+mod boundary_reencode_tests;
+#[cfg(test)]
 mod dcp_tests;
+#[cfg(test)]
+mod imf_tests;
 #[cfg(test)]
 mod mpeg2_tests;
 #[cfg(test)]
 mod mxf_tests;
+#[cfg(test)]
+mod smart_cut_av1_tests;
+#[cfg(test)]
+mod smart_cut_edge_tests;
+#[cfg(test)]
+mod smart_cut_hevc_tests;
+#[cfg(test)]
+mod smart_cut_mpeg_tests;
+#[cfg(test)]
+mod smart_cut_tests;
+#[cfg(test)]
+mod timeline_render_tests;
 
 #[cfg(test)]
 mod determinism_tests;
 
 #[cfg(test)]
 mod hdr_tests;
+
+#[cfg(test)]
+mod deep_sdr_tests;
+
+#[cfg(test)]
+mod convert_tests {
+    use super::*;
+
+    /// The straightforward float formula `rgba_to_yuv420_8` must reproduce bit for bit.
+    fn reference_420_8(rgba: &[u8], w: usize, h: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+        let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
+        let (mut y, mut u, mut v) = (vec![0u8; w * h], vec![0u8; cw * ch], vec![0u8; cw * ch]);
+        for cy in 0..ch {
+            let mut us = vec![0f32; cw];
+            let mut vs = vec![0f32; cw];
+            let mut cnt = vec![0f32; cw];
+            for row in cy * 2..(cy * 2 + 2).min(h) {
+                for x in 0..w {
+                    let p = &rgba[(row * w + x) * 4..];
+                    let (r, g, b) = (p[0] as f32 / 255.0, p[1] as f32 / 255.0, p[2] as f32 / 255.0);
+                    let yy = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                    y[row * w + x] = (16.0 + 219.0 * yy).round().clamp(1.0, 254.0) as u8;
+                    us[x / 2] += (b - yy) / 1.8556;
+                    vs[x / 2] += (r - yy) / 1.5748;
+                    cnt[x / 2] += 1.0;
+                }
+            }
+            for cx in 0..cw {
+                u[cy * cw + cx] = (128.0 + 224.0 * us[cx] / cnt[cx]).round().clamp(1.0, 254.0) as u8;
+                v[cy * cw + cx] = (128.0 + 224.0 * vs[cx] / cnt[cx]).round().clamp(1.0, 254.0) as u8;
+            }
+        }
+        (y, u, v)
+    }
+
+    fn check(rgba: &[u8], w: usize, h: usize) {
+        let (mut y, mut u, mut v) = (Vec::new(), Vec::new(), Vec::new());
+        rgba_to_yuv420_8(rgba, w, h, &mut y, &mut u, &mut v);
+        let (ry, ru, rv) = reference_420_8(rgba, w, h);
+        assert!(y == ry, "{w}x{h}: luma differs");
+        assert!(u == ru, "{w}x{h}: Cb differs");
+        assert!(v == rv, "{w}x{h}: Cr differs");
+    }
+
+    #[test]
+    fn code8_rounds_like_round_around_every_half() {
+        for n in 0..300 {
+            let half = n as f32 + 0.5;
+            let mut x = half;
+            let mut down = half;
+            for _ in 0..64 {
+                for v in [x, down] {
+                    assert_eq!(code8(v), v.round().clamp(1.0, 254.0) as u8, "{v}");
+                }
+                x = f32::from_bits(x.to_bits() + 1);
+                down = f32::from_bits(down.to_bits() - 1);
+            }
+        }
+        for v in [-3.0f32, -0.5, -0.0, 0.0, 0.25, 0.49999997, 0.5, 1.0, 253.5, 254.49998, 1e9, f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert_eq!(code8(v), v.round().clamp(1.0, 254.0) as u8, "{v}");
+        }
+    }
+
+    #[test]
+    fn yuv420_8_matches_the_float_formula_for_every_colour() {
+        // 4096 x 4096 holds each of the 2^24 colours once; neighbouring colours share chroma
+        let (w, h) = (4096, 4096);
+        let mut rgba = vec![255u8; w * h * 4];
+        for (i, p) in rgba.as_chunks_mut::<4>().0.iter_mut().enumerate() {
+            p[0] = (i >> 16) as u8;
+            p[1] = (i >> 8) as u8;
+            p[2] = i as u8;
+        }
+        check(&rgba, w, h);
+    }
+
+    #[test]
+    fn yuv420_8_matches_the_float_formula_at_odd_sizes() {
+        let mut seed = 0x9e37_79b9u32;
+        for (w, h) in [(1, 1), (2, 2), (3, 5), (17, 9), (64, 33), (1921, 3)] {
+            let rgba: Vec<u8> = (0..w * h * 4)
+                .map(|_| {
+                    seed ^= seed << 13;
+                    seed ^= seed >> 17;
+                    seed ^= seed << 5;
+                    (seed >> 24) as u8
+                })
+                .collect();
+            check(&rgba, w, h);
+        }
+        // the extremes, where rounding and clamping meet
+        for c in [[0u8, 0, 0], [255, 255, 255], [255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255], [255, 0, 255]] {
+            let rgba: Vec<u8> = (0..6 * 4).flat_map(|_| [c[0], c[1], c[2], 255]).collect();
+            check(&rgba, 6, 4);
+        }
+    }
+}

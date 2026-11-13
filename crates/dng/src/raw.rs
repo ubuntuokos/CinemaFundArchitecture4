@@ -1,14 +1,14 @@
 //! The raw image data of a DNG: finding the main raw IFD, and reading its strips or tiles
 //! (uncompressed or lossless JPEG) into one array of 16-bit samples.
 
-#[cfg(feature = "threads")]
-use rayon::prelude::*;
-
 use crate::tiff::{Ifd, Tiff, tags};
 use crate::{Error, Result, ljpeg};
 
 /// Largest raw image decoded, in samples (width × height × samples per pixel).
 pub const MAX_SAMPLES: usize = 1 << 27;
+/// Decoded tiles are padded to tile boundaries, so their aggregate can exceed the useful image.
+/// Keep that temporary work within the same bound as a complete decoded raw frame.
+const MAX_DECODED_TILE_SAMPLES: usize = MAX_SAMPLES;
 
 /// Photometric interpretations of DNG raw data.
 pub const PHOTOMETRIC_CFA: u64 = 32803;
@@ -36,7 +36,7 @@ pub struct RawImage {
     pub data: Vec<u16>,
 }
 
-fn uint_or(t: &Tiff, ifd: &Ifd, tag: u16, default: u64) -> Result<u64> {
+fn uint_or(t: &Tiff<'_>, ifd: &Ifd, tag: u16, default: u64) -> Result<u64> {
     match ifd.get(tag) {
         Some(e) => t.uint(e),
         None => Ok(default),
@@ -45,7 +45,7 @@ fn uint_or(t: &Tiff, ifd: &Ifd, tag: u16, default: u64) -> Result<u64> {
 
 /// The main raw image IFD: the largest full-resolution (NewSubFileType 0) IFD whose photometric
 /// interpretation is CFA or LinearRaw.
-pub fn find_raw_ifd<'i>(t: &Tiff, ifds: &'i [Ifd]) -> Result<&'i Ifd> {
+pub fn find_raw_ifd<'i>(t: &Tiff<'_>, ifds: &'i [Ifd]) -> Result<&'i Ifd> {
     let mut best: Option<(&Ifd, u64)> = None;
     for ifd in ifds {
         let Ok(kind) = uint_or(t, ifd, tags::NEW_SUBFILE_TYPE, 0) else { continue };
@@ -64,7 +64,7 @@ pub fn find_raw_ifd<'i>(t: &Tiff, ifds: &'i [Ifd]) -> Result<&'i Ifd> {
 }
 
 /// Read and check the layout tags of a raw IFD.
-pub fn layout(t: &Tiff, ifd: &Ifd) -> Result<RawLayout> {
+pub fn layout(t: &Tiff<'_>, ifd: &Ifd) -> Result<RawLayout> {
     let width = uint_or(t, ifd, tags::IMAGE_WIDTH, 0)?;
     let height = uint_or(t, ifd, tags::IMAGE_LENGTH, 0)?;
     let spp = uint_or(t, ifd, tags::SAMPLES_PER_PIXEL, 1)?;
@@ -193,7 +193,7 @@ pub fn unpack(bytes: &[u8], w: usize, h: usize, spp: usize, bits: u32, big_endia
 }
 
 /// Decode one chunk into `w` × `h` × `spp` samples.
-fn decode_chunk(c: &Chunk, l: &RawLayout, big_endian: bool) -> Result<Vec<u16>> {
+fn decode_chunk(c: &Chunk<'_>, l: &RawLayout, big_endian: bool) -> Result<Vec<u16>> {
     let need = c.w * c.h * l.samples_per_pixel;
     match l.compression {
         1 => unpack(c.bytes, c.w, c.h, l.samples_per_pixel, l.bits, big_endian),
@@ -212,7 +212,7 @@ fn decode_chunk(c: &Chunk, l: &RawLayout, big_endian: bool) -> Result<Vec<u16>> 
 }
 
 /// Read the raw image of `ifd`.
-pub fn read(t: &Tiff, ifd: &Ifd) -> Result<RawImage> {
+pub fn read(t: &Tiff<'_>, ifd: &Ifd) -> Result<RawImage> {
     let l = layout(t, ifd)?;
     let spp = l.samples_per_pixel;
     let total = l.width.checked_mul(l.height).and_then(|v| v.checked_mul(spp)).ok_or(Error::TooLarge)?;
@@ -225,23 +225,23 @@ pub fn read(t: &Tiff, ifd: &Ifd) -> Result<RawImage> {
     if total / 8 > coded {
         return Err(Error::Truncated);
     }
+    let mut decoded_samples = 0usize;
     for c in &chunks {
         let n = c.w.checked_mul(c.h).and_then(|v| v.checked_mul(spp)).ok_or(Error::TooLarge)?;
-        if n > MAX_SAMPLES {
+        decoded_samples = decoded_samples.checked_add(n).ok_or(Error::TooLarge)?;
+        if n > MAX_SAMPLES || decoded_samples > MAX_DECODED_TILE_SAMPLES {
             return Err(Error::TooLarge);
         }
         if n / 8 > c.bytes.len() {
             return Err(Error::Truncated);
         }
     }
-    #[cfg(feature = "threads")]
-    let decoded: Vec<Result<Vec<u16>>> = chunks.par_iter().map(|c| decode_chunk(c, &l, t.big_endian)).collect();
-    #[cfg(not(feature = "threads"))]
-    let decoded: Vec<Result<Vec<u16>>> = chunks.iter().map(|c| decode_chunk(c, &l, t.big_endian)).collect();
     let mut data = vec![0u16; total];
     let row_len = l.width * spp;
-    for (c, d) in chunks.iter().zip(decoded) {
-        let d = d?;
+    for c in &chunks {
+        // Copy each padded tile immediately. Retaining every decoded tile until assembly lets
+        // repeated ranges multiply memory beyond the final raw frame's bounded allocation.
+        let d = decode_chunk(c, &l, t.big_endian)?;
         let cw = c.w.min(l.width - c.x);
         let ch = c.h.min(l.height - c.y);
         for r in 0..ch {

@@ -109,8 +109,37 @@ fn mxf(format: Format, codec: MxfVideoCodec, profile: &str) -> ExportSettings {
             s.adaptive_bitrate = Some(0.3);
             s.bitrate_mode = BitrateMode::Vbr1Pass;
         }
+        MxfVideoCodec::Mpeg2 => {
+            // XDCAM HD422 style: 4:2:2 Profile at 50 Mbit/s, a closed GOP of 12 with IBBP
+            s.mpeg2_422 = true;
+            s.bitrate_kbps = 50_000;
+            s.max_bitrate_kbps = Some(50_000);
+            s.keyframe_distance = Some(12);
+            s.mpeg2_b_frames = Some(2);
+        }
+        MxfVideoCodec::XdcamHd422 => {
+            // XDCAM HD422 50: a closed GOP of 12 with IBBP, four 24-bit channels
+            s.bitrate_kbps = 50_000;
+            s.max_bitrate_kbps = Some(50_000);
+            s.keyframe_distance = Some(12);
+            s.mpeg2_b_frames = Some(2);
+            s.mpeg2_422 = true;
+            s.audio.channels = 4;
+        }
+        MxfVideoCodec::D10 => {
+            // IMX 50 with four audio channels, the usual D-10 configuration
+            s.bitrate_kbps = 50_000;
+            s.audio.channels = 4;
+        }
+        // uncompressed: no bitrate or profile
+        MxfVideoCodec::V210 | MxfVideoCodec::Uyvy => {}
     }
     s
+}
+
+/// MXF OP1a type D-10 (IMX 50): `size` at `rate` with pixel aspect `par` (4:3).
+fn d10(size: (u32, u32), rate: FrameRate, par: (u32, u32)) -> ExportSettings {
+    ExportSettings { frame_size: Some(size), frame_rate: Some(rate), pixel_aspect: Some(par), ..mxf(Format::MxfOp1a, MxfVideoCodec::D10, "") }
 }
 
 fn audio_only(format: Format, bits: u16) -> ExportSettings {
@@ -124,6 +153,16 @@ fn audio_only(format: Format, bits: u16) -> ExportSettings {
 /// A DCP of `resolution` (`2k` / `4k`) in the `aspect` container (`flat` / `scope`).
 fn dcp(resolution: &str, aspect: &str) -> ExportSettings {
     ExportSettings { format: Format::Dcp, dcp_resolution: resolution.into(), dcp_aspect: aspect.into(), ..Default::default() }
+}
+
+/// An IMF App 2E package of `size` pictures (lossy JPEG 2000) with 5.1 sound.
+fn imf(size: (u32, u32)) -> ExportSettings {
+    ExportSettings {
+        format: Format::Imf,
+        frame_size: Some(size),
+        audio: AudioSettings { codec: AudioCodec::Pcm, sample_rate: Some(48_000), channels: 6, bitrate_kbps: 0, bits: 24, ..Default::default() },
+        ..Default::default()
+    }
 }
 
 fn p(name: &str, category: &str, description: &str, settings: ExportSettings) -> ExportPreset {
@@ -209,6 +248,36 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
         p("MXF OP1a ProRes 422 HQ", bc, "MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode", mxf(Format::MxfOp1a, MxfVideoCodec::ProRes, "hq")),
         p("MXF OP1a H.264", bc, "MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM", mxf(Format::MxfOp1a, MxfVideoCodec::H264, "")),
         p(
+            "MXF OP1a MPEG-2 HD 4:2:2 50 Mbit/s",
+            bc,
+            "MXF OP1a, MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s in the XDCAM HD422 style, 24-bit 48 kHz PCM; HD frame sizes",
+            mxf(Format::MxfOp1a, MxfVideoCodec::Mpeg2, ""),
+        ),
+        p(
+            "MXF OP1a XDCAM HD422 (RDD 9) 50 Mbit/s",
+            bc,
+            "MXF OP1a in the SMPTE RDD 9 layout: MPEG-2 4:2:2 Profile long GOP (12 pictures, IBBP) at 50 Mbit/s, 1920x1080 or 1280x720 progressive, four 24-bit 48 kHz channels as per-channel AES3 elements",
+            mxf(Format::MxfOp1a, MxfVideoCodec::XdcamHd422, ""),
+        ),
+        p(
+            "MXF OP1a D-10 (IMX) 50 Mbit/s 625/25",
+            bc,
+            "MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x576 at 25 fps (4:3), four 24-bit 48 kHz audio channels",
+            d10((720, 576), FrameRate::new(25, 1), (16, 15)),
+        ),
+        p(
+            "MXF OP1a D-10 (IMX) 50 Mbit/s 525/29.97",
+            bc,
+            "MXF OP1a type D-10 (IMX 50): intra-only MPEG-2 4:2:2P@ML at 50 Mbit/s, 720x486 at 29.97 fps (4:3), four 24-bit 48 kHz audio channels",
+            d10((720, 486), FrameRate::new(30000, 1001), (9, 10)),
+        ),
+        p(
+            "MXF OP1a Uncompressed 10-bit 4:2:2 (v210)",
+            bc,
+            "MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode",
+            mxf(Format::MxfOp1a, MxfVideoCodec::V210, ""),
+        ),
+        p(
             "MXF OP-Atom DNxHR (Avid)",
             bc,
             "Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)",
@@ -237,6 +306,8 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
         p("DCP 2K Scope", "Digital Cinema", "SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM", dcp("2k", "scope")),
         p("DCP 4K Flat", "Digital Cinema", "SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM", dcp("4k", "flat")),
         p("DCP 4K Scope", "Digital Cinema", "SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM", dcp("4k", "scope")),
+        p("IMF App 2E HD", "Mastering", "SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM", imf((1920, 1080))),
+        p("IMF App 2E UHD", "Mastering", "SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM", imf((3840, 2160))),
         p(
             "PNG Sequence",
             "Image Sequence",

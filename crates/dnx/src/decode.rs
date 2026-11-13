@@ -54,9 +54,11 @@ pub fn decode_frame_with(data: &[u8], opts: &DecodeOptions) -> Result<Frame> {
     } else {
         (decode_unit(&h1, &data[..off], opts), decode_unit(&h2, &data[off..], opts))
     };
+    let (top, bottom) = if h1.field == FieldCode::Field2 { (p2?, p1?) } else { (p1?, p2?) };
+    // Both field payloads must be valid before committing the full-frame
+    // allocation; a damaged header alone must not allocate an output picture.
     let mut f = Frame::new_like(&h1, h1.width, h1.lines * 2);
     f.interlace = Interlace::TopFieldFirst;
-    let (top, bottom) = if h1.field == FieldCode::Field2 { (p2?, p1?) } else { (p1?, p2?) };
     top.copy_into(&mut f, 0, 2);
     bottom.copy_into(&mut f, 1, 2);
     Ok(f)
@@ -264,7 +266,7 @@ fn decode_unit(h: &FrameHeader, data: &[u8], opts: &DecodeOptions) -> Result<Cod
 }
 
 /// Decode one macroblock scan line into the 16-line bands of each plane.
-fn decode_row(ctx: &Ctx, data: &[u8], bands: [&mut [u16]; 4]) -> Result<Vec<bool>> {
+fn decode_row(ctx: &Ctx<'_>, data: &[u8], bands: [&mut [u16]; 4]) -> Result<Vec<bool>> {
     let h = ctx.h;
     let mut r = Reader::new(data);
     // DC predictors: Y/Ch1, Cb, Cr, R, G, B, A
@@ -342,7 +344,7 @@ fn scaled_weights(w: &[[u8; 63]; 2], qsf: u32) -> [[(u32, u32); 64]; 2] {
 
 /// Decode one DCT block into dequantised coefficients (raster order).
 #[inline]
-fn decode_block(ctx: &Ctx, r: &mut Reader, pred: &mut i32, wq: &[(u32, u32); 64], block: &mut [f32; 64]) -> Result<()> {
+fn decode_block(ctx: &Ctx<'_>, r: &mut Reader<'_>, pred: &mut i32, wq: &[(u32, u32); 64], block: &mut [f32; 64]) -> Result<()> {
     let v = ctx.vlc;
     *block = [0.0; 64];
     // DC (8.2.4)
@@ -393,7 +395,7 @@ fn decode_block(ctx: &Ctx, r: &mut Reader, pred: &mut i32, wq: &[(u32, u32); 64]
 
 /// IDCT a block and store it (with level adjustment and clipping) into a plane band.
 #[inline]
-fn store(ctx: &Ctx, band: &mut [u16], plane: usize, mb: usize, xo: usize, yo: usize, field: bool, block: &mut [f32; 64]) {
+fn store(ctx: &Ctx<'_>, band: &mut [u16], plane: usize, mb: usize, xo: usize, yo: usize, field: bool, block: &mut [f32; 64]) {
     idct8x8(block);
     let stride = ctx.strides[plane];
     let x0 = mb * ctx.mb_size[plane].0 + xo;
@@ -410,7 +412,7 @@ fn store(ctx: &Ctx, band: &mut [u16], plane: usize, mb: usize, xo: usize, yo: us
 
 /// `ConvertMacroblockColor` (8.1.1): BT.709 Y′CbCr → R′G′B′ on the quantised (video-range)
 /// signals, in place over the macroblock's three planes.
-fn convert_mb_to_rgb(ctx: &Ctx, bands: [&mut [u16]; 3], mb: usize) {
+fn convert_mb_to_rgb(ctx: &Ctx<'_>, bands: [&mut [u16]; 3], mb: usize) {
     let stride = ctx.strides[0];
     let s = (1u32 << (ctx.h.bit_depth - 8)) as f32;
     let (kr, kb) = match ctx.h.color_volume {
@@ -437,7 +439,7 @@ fn convert_mb_to_rgb(ctx: &Ctx, bands: [&mut [u16]; 3], mb: usize) {
 }
 
 /// Lossless (differential RLE) alpha macroblock (§7.3.1.2, §8.3).
-fn decode_rle_alpha(ctx: &Ctx, r: &mut Reader, band: &mut [u16], mb: usize) -> Result<()> {
+fn decode_rle_alpha(ctx: &Ctx<'_>, r: &mut Reader<'_>, band: &mut [u16], mb: usize) -> Result<()> {
     let d = ctx.h.bit_depth as u32;
     let mask = (1u32 << d) - 1;
     let stride = ctx.strides[3];

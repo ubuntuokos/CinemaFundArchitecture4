@@ -38,7 +38,6 @@ use cfa4_frame::{Chroma, PixelData, VideoFrame};
 use cfa4_render::Blend;
 use cfa4_render::plan::{FramePlan, PlanLayer, PlanStep};
 
-pub mod adapter;
 pub mod export_renderer;
 pub mod fx;
 pub mod lut;
@@ -249,6 +248,8 @@ pub fn prepare_frame(f: &VideoFrame) -> Option<Prepared> {
         PixelData::Yuv16 { planes, bits, alpha, .. } => {
             Some(Prepared { planes: planes.iter().chain(alpha.as_ref()).map(|p| codes_to_f16_bytes(p, *bits)).collect() })
         }
+        // planar R'G'B': converted on the CPU to the linear float texels it uploads as
+        PixelData::Rgb16 { .. } => Some(Prepared { planes: vec![f32_to_f16_bytes(&f.to_linear_f32())] }),
         PixelData::Rgba8(_) | PixelData::Yuv8 { .. } => None,
     }
 }
@@ -483,7 +484,7 @@ impl GpuCompositor {
             PixelData::Rgba8(d) => Arc::as_ptr(d) as *const u8 as usize,
             PixelData::RgbaF32(d) => Arc::as_ptr(d) as *const u8 as usize,
             PixelData::Yuv8 { planes, .. } => Arc::as_ptr(&planes[0]) as *const u8 as usize,
-            PixelData::Yuv16 { planes, .. } => Arc::as_ptr(&planes[0]) as *const u8 as usize,
+            PixelData::Yuv16 { planes, .. } | PixelData::Rgb16 { planes, .. } => Arc::as_ptr(&planes[0]) as *const u8 as usize,
         };
         let key = (id, f.width, f.height);
         self.clock += 1;
@@ -507,12 +508,17 @@ impl GpuCompositor {
                     _pixels: f.data.clone(),
                 }
             }
-            PixelData::RgbaF32(d) => {
+            PixelData::RgbaF32(_) | PixelData::Rgb16 { .. } => {
                 let owned;
-                let half = match prep {
-                    Some(p) => &p.planes[0],
-                    None => {
+                let half = match (prep, &f.data) {
+                    (Some(p), _) => &p.planes[0],
+                    (None, PixelData::RgbaF32(d)) => {
                         owned = f32_to_f16_bytes(d);
+                        &owned
+                    }
+                    // planar R'G'B' uploads as linear float, like a float frame
+                    (None, _) => {
+                        owned = f32_to_f16_bytes(&f.to_linear_f32());
                         &owned
                     }
                 };

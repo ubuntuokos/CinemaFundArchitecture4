@@ -1,6 +1,8 @@
 # .deb packaging on Ubuntu 26.04 AMD64 (nfpm: https://nfpm.goreleaser.com). package.sh stages
-# the file tree, substitutes its path for ${STAGE} (nfpm doesn't expand env vars in `src`) and
-# exports VERSION. The architecture is fixed to amd64 (Linux x86_64).
+# the file tree, substitutes its paths for ${STAGE} and ${FFMPEG_DEB} (nfpm doesn't expand env
+# vars in `src`), replaces the @FFMPEG_DEPENDS@ line with the Ubuntu packages the FFmpeg libraries
+# load (packaging/linux/stage-ffmpeg.sh) and exports VERSION. The architecture is fixed to amd64
+# (Linux x86_64). The patent-restricted codecs are in nfpm-restricted.yaml (cfa4-restricted-extras).
 #
 #   nfpm package -f packaging/linux/nfpm.yaml -p deb -t dist/release/
 name: cfa4
@@ -21,11 +23,16 @@ description: |-
   Timeline editing with source and program monitors, color grading and scopes,
   effects and keyframes, titles and captions, audio mixing with loudness meters,
   and export; GPU compositing (wgpu).
-  Includes cfa4-cli, a headless command runner, MCP server and exporter.
+  Includes cfa4-cli, a headless command runner, MCP server and exporter, and
+  cfa4-qt, the Qt 6 editor GUI driving the same engine.
+  Ships CFA4's own FFmpeg 9.0.2 build (GPL-3, shared libraries in /opt/cfa4/ffmpeg-9.0.2) as a
+  supplementary media backend; it never replaces the system FFmpeg. Patent-restricted encoders
+  (x264, x265) are in the separate cfa4-restricted-extras package.
 
-# The binaries link only glibc and libgcc_s directly. Windowing (X11/Wayland, xkbcommon) and the
-# GPU (Vulkan, EGL/GL) are loaded at runtime, so they are dependencies/recommendations here
-# rather than ELF NEEDED entries. Measured on Ubuntu 26.04: docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md.
+# The binaries link glibc, libgcc_s and, since ADR 0002 step 6 (owner decision 2026-10-25), the
+# system GStreamer libraries (LGPL-2.1-or-later, from Ubuntu's archive, never bundled). Windowing
+# (X11/Wayland, xkbcommon) and the GPU (Vulkan, EGL/GL) are loaded at runtime, so they are
+# dependencies/recommendations here rather than ELF NEEDED entries. Measured on Ubuntu 26.04: docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md.
 overrides:
   deb:
     depends:
@@ -34,7 +41,23 @@ overrides:
       - libxkbcommon0
       - libvulkan1 | libegl1
       - libasound2 | libasound2t64
+      # GStreamer supplementary backend (ADR 0002): linked by the release build, from Ubuntu.
+      - libgstreamer1.0-0
+      - libgstreamer-plugins-base1.0-0
+      # FFmpeg 9.0.2 supplementary backend (ADR 0005 step 4): the binaries link CFA4's own build
+      # in /opt/cfa4/ffmpeg-9.0.2 (below); the libraries it loads come from Ubuntu's archive.
+      # @FFMPEG_DEPENDS@
+      # The Qt 6 GUI (cfa4-qt, ADR F8): Python and PySide6 from Ubuntu's archive (LGPL-3.0),
+      # never bundled; 26.04 ships PySide6 6.10.
+      - python3 (>= 3.12)
+      - python3-pyside6.qtcore (>= 6.10)
+      - python3-pyside6.qtgui (>= 6.10)
+      - python3-pyside6.qtwidgets (>= 6.10)
+      - python3-pyside6.qtnetwork (>= 6.10)
+      - python3-pyside6.qttest (>= 6.10)
     recommends:
+      # cfa4-qt plays and records sound through QtMultimedia; without it playback is silent.
+      - python3-pyside6.qtmultimedia (>= 6.10)
       - libwayland-client0
       - libx11-6
       - libx11-xcb1
@@ -54,6 +77,12 @@ overrides:
       - libheif-plugin-libde265
       - libheif-plugin-x265
       - xdg-desktop-portal
+      # GStreamer plugins (ADR 0002): demuxers/decoders for import, and the VA-API encoders
+      # (vah264enc, vah265enc, vaav1enc in plugins-bad) for AMD / Intel hardware export. Without
+      # them the router falls back to the next backend. No ugly / libav sets (AGENTS.md).
+      - gstreamer1.0-plugins-base
+      - gstreamer1.0-plugins-good
+      - gstreamer1.0-plugins-bad
 contents:
   - src: ${STAGE}/usr/bin/cfa4
     dst: /usr/bin/cfa4
@@ -61,6 +90,17 @@ contents:
   - src: ${STAGE}/usr/bin/cfa4-cli
     dst: /usr/bin/cfa4-cli
     file_info: { mode: 0755 }
+  - src: ${STAGE}/usr/bin/cfa4-qt
+    dst: /usr/bin/cfa4-qt
+    file_info: { mode: 0755 }
+  - src: ${STAGE}/usr/lib/cfa4/python/
+    dst: /usr/lib/cfa4/python/
+    type: tree
+  # CFA4's FFmpeg 9.0.2, isolated from the system FFmpeg (ADR 0005, owner decision 2026-10-25),
+  # with its licences and source information in share/doc/ffmpeg.
+  - src: ${FFMPEG_DEB}/opt/cfa4/ffmpeg-9.0.2/
+    dst: /opt/cfa4/ffmpeg-9.0.2/
+    type: tree
   - src: ${STAGE}/usr/share/
     dst: /usr/share/
     type: tree

@@ -32,6 +32,7 @@ impl Decoder {
 
     /// Creates a decoder for a parsed header at `sample_rate` (8/12/16/24/48 kHz).
     pub fn from_head(head: OpusHead, sample_rate: u32) -> Result<Decoder> {
+        head.validate()?;
         let mut streams = Vec::with_capacity(head.streams);
         for s in 0..head.streams {
             let ch = if s < head.coupled_streams { 2 } else { 1 };
@@ -151,7 +152,7 @@ impl Decoder {
 }
 
 /// Rebuilds a regular (code 3 VBR) packet from a parsed self-delimited one.
-fn reframe(p: &Packet) -> Vec<u8> {
+fn reframe(p: &Packet<'_>) -> Vec<u8> {
     let mut v = vec![(p.toc.config << 3) | if p.toc.stereo { 4 } else { 0 } | 3];
     v.push(0x80 | p.frames.len() as u8);
     for f in &p.frames[..p.frames.len() - 1] {

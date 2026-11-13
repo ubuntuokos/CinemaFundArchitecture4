@@ -64,6 +64,8 @@ fn mix_name(c: AudioChannels) -> &'static str {
         AudioChannels::Mono => "Mono",
         AudioChannels::Stereo => "Stereo",
         AudioChannels::Surround51 => "5.1",
+        AudioChannels::Surround71 => "7.1",
+        AudioChannels::Surround712 => "7.1.2",
         AudioChannels::Adaptive => "Adaptive",
     }
 }

@@ -1,8 +1,9 @@
 //! Interface translations. Strings in code stay English and are the lookup keys; one catalog per
-//! language (`i18n/<code>.tsv`, format in the header of `es.tsv`) maps them to display text at draw
-//! time. Untranslated strings are shown in English, so coverage can grow incrementally. Command ids,
-//! automation ids, preference values, the control channel, the CLI and MCP stay English (an
-//! automation element's label is the text shown, so it follows the interface language).
+//! language (the repository's top-level `i18n/<code>.tsv`, shared with the Qt GUI; format in the
+//! header of `es.tsv`) maps them to display text at draw time. Untranslated strings are shown in
+//! English, so coverage can grow incrementally. Command ids, automation ids, preference values, the
+//! control channel, the CLI and MCP stay English (an automation element's label is the text shown,
+//! so it follows the interface language).
 //!
 //! # Looking strings up
 //! - `tl!` with a string literal: that UI string in the language the UI is drawn in (see
@@ -17,11 +18,19 @@
 //! a font already installed on the system ([`system_japanese_font`]); with neither, switching to
 //! Japanese is refused with a message.
 //!
-//! Simplified Chinese uses the Chinese fallback `theme::install` always adds (extra-fonts Hans/Hant
-//! faces, otherwise one installed system face, see `cjk.rs`); without one, switching to Chinese is
-//! refused the same way ([`chinese_font_available`]).
+//! Simplified and Traditional Chinese use the Chinese fallback `theme::install` always adds
+//! (extra-fonts Hans/Hant faces, otherwise one installed system face, see `cjk.rs`); without one,
+//! switching to either is refused the same way ([`chinese_font_available`]).
 
 mod catalog;
+
+/// The text of `i18n/<code>.tsv`, the top-level catalog every CFA4 frontend reads (owner decision
+/// 2026-11-09: all of CFA4's translations live there).
+macro_rules! catalog_file {
+    ($code:literal) => {
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../i18n/", $code, ".tsv"))
+    };
+}
 
 use std::cell::Cell;
 use std::sync::{Arc, OnceLock};
@@ -49,6 +58,55 @@ pub enum Language {
     It,
     /// Korean; Hangul needs an installed system font ([`korean_font_available`]).
     Ko,
+    /// Hungarian: the whole interface, Latin script (bundled fonts).
+    Hu,
+    /// Polish: the whole interface, Latin script (bundled fonts).
+    Pl,
+    /// Turkish: the whole interface, Latin script (bundled fonts).
+    Tr,
+    /// Dutch: the whole interface, Latin script (bundled fonts).
+    Nl,
+    /// Czech: the whole interface, Latin script (bundled fonts).
+    Cs,
+    /// Vietnamese: the whole interface, Latin script with tone marks (bundled fonts).
+    Vi,
+    /// Traditional Chinese, persisted as `zh-hant`; like Simplified Chinese it needs a Chinese face ([`chinese_font_available`]).
+    #[serde(rename = "zh-hant")]
+    ZhHant,
+    /// Greek: the whole interface, Greek script (bundled fonts).
+    El,
+    /// Swedish: the whole interface, Latin script (bundled fonts).
+    Sv,
+    /// Serbian in Latin script, persisted as `sr-latn`: the Serbian locales that name the Latin script (`sr-Latn`, `sr_RS@latin`).
+    #[serde(rename = "sr-latn")]
+    SrLatn,
+    /// Bulgarian, persisted as `bg`.
+    Bg,
+    /// Georgian, persisted as `ka`; Georgian script needs an installed font ([`georgian_font_available`]).
+    Ka,
+    /// Danish, persisted as `da`.
+    Da,
+    /// Finnish, persisted as `fi`.
+    Fi,
+    /// Lithuanian, persisted as `lt`.
+    Lt,
+    /// Croatian, persisted as `hr`.
+    Hr,
+    /// Kazakh, persisted as `kk`.
+    Kk,
+    /// Slovenian, persisted as `sl`.
+    Sl,
+    /// Estonian, persisted as `et`.
+    Et,
+    /// Serbian in Cyrillic script, persisted as `sr`: `sr`, `sr-RS`, `sr-Cyrl` and other Serbian locales without a Latin script tag.
+    Sr,
+    /// British English, persisted as `en-gb`: the source strings (US English) with British spelling
+    /// where it differs (`en-gb.tsv`).
+    #[serde(rename = "en-gb")]
+    EnGb,
+    /// Australian English, persisted as `en-au`: the British catalog with `en-au.tsv`'s entries on top.
+    #[serde(rename = "en-au")]
+    EnAu,
 }
 
 static JAPANESE: OnceLock<Catalog> = OnceLock::new();
@@ -62,13 +120,70 @@ static FRENCH: OnceLock<Catalog> = OnceLock::new();
 static KOREAN: OnceLock<Catalog> = OnceLock::new();
 static INDONESIAN: OnceLock<Catalog> = OnceLock::new();
 static ITALIAN: OnceLock<Catalog> = OnceLock::new();
+static HUNGARIAN: OnceLock<Catalog> = OnceLock::new();
+static POLISH: OnceLock<Catalog> = OnceLock::new();
+static TURKISH: OnceLock<Catalog> = OnceLock::new();
+static DUTCH: OnceLock<Catalog> = OnceLock::new();
+static CZECH: OnceLock<Catalog> = OnceLock::new();
+static VIETNAMESE: OnceLock<Catalog> = OnceLock::new();
+static TRADITIONAL: OnceLock<Catalog> = OnceLock::new();
+static GREEK: OnceLock<Catalog> = OnceLock::new();
+static SWEDISH: OnceLock<Catalog> = OnceLock::new();
+static SERBIAN_LATIN: OnceLock<Catalog> = OnceLock::new();
+static BULGARIAN: OnceLock<Catalog> = OnceLock::new();
+static GEORGIAN: OnceLock<Catalog> = OnceLock::new();
+static DANISH: OnceLock<Catalog> = OnceLock::new();
+static FINNISH: OnceLock<Catalog> = OnceLock::new();
+static LITHUANIAN: OnceLock<Catalog> = OnceLock::new();
+static CROATIAN: OnceLock<Catalog> = OnceLock::new();
+static KAZAKH: OnceLock<Catalog> = OnceLock::new();
+static SLOVENIAN: OnceLock<Catalog> = OnceLock::new();
+static ESTONIAN: OnceLock<Catalog> = OnceLock::new();
+static SERBIAN_CYRILLIC: OnceLock<Catalog> = OnceLock::new();
+static BRITISH: OnceLock<Catalog> = OnceLock::new();
+static AUSTRALIAN: OnceLock<Catalog> = OnceLock::new();
 
 impl Language {
-    pub const ALL: [Self; 12] = [Self::En, Self::Ja, Self::Es, Self::PtBr, Self::Uk, Self::ZhCn, Self::De, Self::Ru, Self::Fr, Self::Id, Self::Ko, Self::It];
+    pub const ALL: [Self; 34] = [
+        Self::En,
+        Self::Ja,
+        Self::Es,
+        Self::PtBr,
+        Self::Uk,
+        Self::ZhCn,
+        Self::De,
+        Self::Ru,
+        Self::Fr,
+        Self::Id,
+        Self::Ko,
+        Self::It,
+        Self::Hu,
+        Self::Pl,
+        Self::Tr,
+        Self::Nl,
+        Self::Cs,
+        Self::Vi,
+        Self::ZhHant,
+        Self::El,
+        Self::Sv,
+        Self::SrLatn,
+        Self::Bg,
+        Self::Ka,
+        Self::Da,
+        Self::Fi,
+        Self::Lt,
+        Self::Hr,
+        Self::Kk,
+        Self::Sl,
+        Self::Et,
+        Self::Sr,
+        Self::EnGb,
+        Self::EnAu,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
-            Self::En => "English",
+            Self::En => "English (US)",
             Self::Ja => "日本語",
             Self::Es => "Español",
             Self::PtBr => "Português (Brasil)",
@@ -80,6 +195,28 @@ impl Language {
             Self::Id => "Bahasa Indonesia",
             Self::It => "Italiano",
             Self::Ko => "한국어",
+            Self::Hu => "Magyar",
+            Self::Pl => "Polski",
+            Self::Tr => "Türkçe",
+            Self::Nl => "Nederlands",
+            Self::Cs => "Čeština",
+            Self::Vi => "Tiếng Việt",
+            Self::ZhHant => "繁體中文",
+            Self::El => "Ελληνικά",
+            Self::Sv => "Svenska",
+            Self::SrLatn => "Srpski (latinica)",
+            Self::Bg => "Български",
+            Self::Ka => "ქართული",
+            Self::Da => "Dansk",
+            Self::Fi => "Suomi",
+            Self::Lt => "Lietuvių",
+            Self::Hr => "Hrvatski",
+            Self::Kk => "Қазақ тілі",
+            Self::Sl => "Slovenščina",
+            Self::Et => "Eesti",
+            Self::Sr => "Српски (ћирилица)",
+            Self::EnGb => "English (UK)",
+            Self::EnAu => "English (Australia)",
         }
     }
 
@@ -97,6 +234,28 @@ impl Language {
             "id" => Some(Self::Id),
             "it" => Some(Self::It),
             "ko" => Some(Self::Ko),
+            "hu" => Some(Self::Hu),
+            "pl" => Some(Self::Pl),
+            "tr" => Some(Self::Tr),
+            "nl" => Some(Self::Nl),
+            "cs" => Some(Self::Cs),
+            "vi" => Some(Self::Vi),
+            "zh-hant" => Some(Self::ZhHant),
+            "el" => Some(Self::El),
+            "sv" => Some(Self::Sv),
+            "sr-latn" => Some(Self::SrLatn),
+            "bg" => Some(Self::Bg),
+            "ka" => Some(Self::Ka),
+            "da" => Some(Self::Da),
+            "fi" => Some(Self::Fi),
+            "lt" => Some(Self::Lt),
+            "hr" => Some(Self::Hr),
+            "kk" => Some(Self::Kk),
+            "sl" => Some(Self::Sl),
+            "et" => Some(Self::Et),
+            "sr" => Some(Self::Sr),
+            "en-gb" => Some(Self::EnGb),
+            "en-au" => Some(Self::EnAu),
             _ => None,
         }
     }
@@ -107,11 +266,13 @@ impl Language {
     /// any German (`de-AT`, `de_CH.UTF-8`…) gets the German one and any French (`fr-CA`, `fr_BE.UTF-8`…)
     /// the French one; any Indonesian (`id-ID`, `id_ID.UTF-8`, and the legacy `in-ID` that older Java
     /// and Android runtimes report) the Indonesian one; any Italian (`it-IT`, `it-CH`, `it_IT.UTF-8`…)
-    /// the Italian one. Chinese gets the Simplified catalog
-    /// only for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`); Traditional ones (`zh-TW`,
-    /// `zh-HK`, `zh-MO`, `zh-Hant…`) are skipped.
+    /// the Italian one; any Hungarian (`hu-HU`, `hu_HU.UTF-8`) the Hungarian one. Chinese gets the Simplified catalog
+    /// for Simplified locales (`zh`, `zh-CN`, `zh-SG`, `zh-Hans…`) and the Traditional one for
+    /// Traditional locales (`zh-TW`, `zh-HK`, `zh-MO`, `zh-Hant…`); other Chinese tags are skipped.
+    /// Serbian gets the Latin catalog when the tag names the Latin script (`sr-Latn…`, `sr_RS@latin`)
+    /// and the Cyrillic one otherwise.
     pub fn from_locales(tags: &[String]) -> Self {
-        const PRIMARY: [(&str, Language); 12] = [
+        const PRIMARY: [(&str, Language); 29] = [
             ("en", Language::En),
             ("ja", Language::Ja),
             ("es", Language::Es),
@@ -124,17 +285,61 @@ impl Language {
             ("in", Language::Id),
             ("it", Language::It),
             ("ko", Language::Ko),
+            ("hu", Language::Hu),
+            ("pl", Language::Pl),
+            ("tr", Language::Tr),
+            ("nl", Language::Nl),
+            ("cs", Language::Cs),
+            ("vi", Language::Vi),
+            ("el", Language::El),
+            ("sv", Language::Sv),
+            ("bg", Language::Bg),
+            ("ka", Language::Ka),
+            ("da", Language::Da),
+            ("fi", Language::Fi),
+            ("lt", Language::Lt),
+            ("hr", Language::Hr),
+            ("kk", Language::Kk),
+            ("sl", Language::Sl),
+            ("et", Language::Et),
         ];
         tags.iter()
             .find_map(|tag| {
                 let mut parts = tag.split(['-', '_', '.', '@']);
                 let primary = parts.next().unwrap_or_default();
+                if primary.eq_ignore_ascii_case("en") {
+                    // the region after `en`, if any: British spelling for the UK and Ireland,
+                    // Australian for Australia and New Zealand, US (the source) otherwise
+                    let rest = tag.get(primary.len()..).unwrap_or_default();
+                    let region = if rest.starts_with(['-', '_']) { parts.next().unwrap_or_default() } else { "" };
+                    let is = |codes: &[&str]| codes.iter().any(|c| region.eq_ignore_ascii_case(c));
+                    return Some(if is(&["gb", "uk", "ie"]) {
+                        Language::EnGb
+                    } else if is(&["au", "nz"]) {
+                        Language::EnAu
+                    } else {
+                        Language::En
+                    });
+                }
+                if primary.eq_ignore_ascii_case("sr") {
+                    // Latin script when the tag says so (`sr-Latn…`, `sr_RS@latin`); Cyrillic, the
+                    // default script of Serbian, otherwise (`sr`, `sr-RS`, `sr-Cyrl`, `sr_RS.UTF-8`)
+                    let rest = tag.get(primary.len()..).unwrap_or_default().to_ascii_lowercase();
+                    let latin = rest.split(['-', '_', '.', '@']).any(|p| p == "latn" || p == "latin");
+                    return Some(if latin { Language::SrLatn } else { Language::Sr });
+                }
                 if primary.eq_ignore_ascii_case("zh") {
                     // the subtag after `zh` (a script or a region), if any; `.UTF-8` / `@x` end it
                     let rest = tag.get(primary.len()..).unwrap_or_default();
                     let sub = if rest.starts_with(['-', '_']) { parts.next().unwrap_or_default() } else { "" };
-                    let simplified = sub.is_empty() || ["cn", "sg", "hans"].iter().any(|s| sub.eq_ignore_ascii_case(s));
-                    return simplified.then_some(Language::ZhCn);
+                    let is = |codes: &[&str]| codes.iter().any(|c| sub.eq_ignore_ascii_case(c));
+                    return if sub.is_empty() || is(&["cn", "sg", "hans"]) {
+                        Some(Language::ZhCn)
+                    } else if is(&["tw", "hk", "mo", "hant"]) {
+                        Some(Language::ZhHant)
+                    } else {
+                        None
+                    };
                 }
                 PRIMARY.iter().find(|(code, _)| primary.eq_ignore_ascii_case(code)).map(|(_, l)| *l)
             })
@@ -156,6 +361,28 @@ impl Language {
             Self::Id => "id",
             Self::It => "it",
             Self::Ko => "ko",
+            Self::Hu => "hu",
+            Self::Pl => "pl",
+            Self::Tr => "tr",
+            Self::Nl => "nl",
+            Self::Cs => "cs",
+            Self::Vi => "vi",
+            Self::ZhHant => "zh-hant",
+            Self::El => "el",
+            Self::Sv => "sv",
+            Self::SrLatn => "sr-latn",
+            Self::Bg => "bg",
+            Self::Ka => "ka",
+            Self::Da => "da",
+            Self::Fi => "fi",
+            Self::Lt => "lt",
+            Self::Hr => "hr",
+            Self::Kk => "kk",
+            Self::Sl => "sl",
+            Self::Et => "et",
+            Self::Sr => "sr",
+            Self::EnGb => "en-gb",
+            Self::EnAu => "en-au",
         }
     }
 
@@ -163,17 +390,40 @@ impl Language {
     fn catalog(self) -> Option<&'static Catalog> {
         match self {
             Self::En => None,
-            Self::Ja => Some(JAPANESE.get_or_init(|| Catalog::parse(include_str!("ja.tsv")))),
-            Self::Es => Some(SPANISH.get_or_init(|| Catalog::parse(include_str!("es.tsv")))),
-            Self::PtBr => Some(PORTUGUESE.get_or_init(|| Catalog::parse(include_str!("pt-br.tsv")))),
-            Self::Uk => Some(UKRAINIAN.get_or_init(|| Catalog::parse(include_str!("uk.tsv")))),
-            Self::ZhCn => Some(CHINESE.get_or_init(|| Catalog::parse(include_str!("zh-cn.tsv")))),
-            Self::De => Some(GERMAN.get_or_init(|| Catalog::parse(include_str!("de.tsv")))),
-            Self::Ru => Some(RUSSIAN.get_or_init(|| Catalog::parse(include_str!("ru.tsv")))),
-            Self::Fr => Some(FRENCH.get_or_init(|| Catalog::parse(include_str!("fr.tsv")))),
-            Self::Id => Some(INDONESIAN.get_or_init(|| Catalog::parse(include_str!("id.tsv")))),
-            Self::It => Some(ITALIAN.get_or_init(|| Catalog::parse(include_str!("it.tsv")))),
-            Self::Ko => Some(KOREAN.get_or_init(|| Catalog::parse(include_str!("ko.tsv")))),
+            Self::Ja => Some(JAPANESE.get_or_init(|| Catalog::parse(catalog_file!("ja")))),
+            Self::Es => Some(SPANISH.get_or_init(|| Catalog::parse(catalog_file!("es")))),
+            Self::PtBr => Some(PORTUGUESE.get_or_init(|| Catalog::parse(catalog_file!("pt-br")))),
+            Self::Uk => Some(UKRAINIAN.get_or_init(|| Catalog::parse(catalog_file!("uk")))),
+            Self::ZhCn => Some(CHINESE.get_or_init(|| Catalog::parse(catalog_file!("zh-cn")))),
+            Self::De => Some(GERMAN.get_or_init(|| Catalog::parse(catalog_file!("de")))),
+            Self::Ru => Some(RUSSIAN.get_or_init(|| Catalog::parse(catalog_file!("ru")))),
+            Self::Fr => Some(FRENCH.get_or_init(|| Catalog::parse(catalog_file!("fr")))),
+            Self::Id => Some(INDONESIAN.get_or_init(|| Catalog::parse(catalog_file!("id")))),
+            Self::It => Some(ITALIAN.get_or_init(|| Catalog::parse(catalog_file!("it")))),
+            Self::Ko => Some(KOREAN.get_or_init(|| Catalog::parse(catalog_file!("ko")))),
+            Self::Hu => Some(HUNGARIAN.get_or_init(|| Catalog::parse(catalog_file!("hu")))),
+            Self::Pl => Some(POLISH.get_or_init(|| Catalog::parse(catalog_file!("pl")))),
+            Self::Tr => Some(TURKISH.get_or_init(|| Catalog::parse(catalog_file!("tr")))),
+            Self::Nl => Some(DUTCH.get_or_init(|| Catalog::parse(catalog_file!("nl")))),
+            Self::Cs => Some(CZECH.get_or_init(|| Catalog::parse(catalog_file!("cs")))),
+            Self::Vi => Some(VIETNAMESE.get_or_init(|| Catalog::parse(catalog_file!("vi")))),
+            Self::ZhHant => Some(TRADITIONAL.get_or_init(|| Catalog::parse(catalog_file!("zh-hant")))),
+            Self::El => Some(GREEK.get_or_init(|| Catalog::parse(catalog_file!("el")))),
+            Self::Sv => Some(SWEDISH.get_or_init(|| Catalog::parse(catalog_file!("sv")))),
+            Self::SrLatn => Some(SERBIAN_LATIN.get_or_init(|| Catalog::parse(catalog_file!("sr-latn")))),
+            Self::Bg => Some(BULGARIAN.get_or_init(|| Catalog::parse(catalog_file!("bg")))),
+            Self::Ka => Some(GEORGIAN.get_or_init(|| Catalog::parse(catalog_file!("ka")))),
+            Self::Da => Some(DANISH.get_or_init(|| Catalog::parse(catalog_file!("da")))),
+            Self::Fi => Some(FINNISH.get_or_init(|| Catalog::parse(catalog_file!("fi")))),
+            Self::Lt => Some(LITHUANIAN.get_or_init(|| Catalog::parse(catalog_file!("lt")))),
+            Self::Hr => Some(CROATIAN.get_or_init(|| Catalog::parse(catalog_file!("hr")))),
+            Self::Kk => Some(KAZAKH.get_or_init(|| Catalog::parse(catalog_file!("kk")))),
+            Self::Sl => Some(SLOVENIAN.get_or_init(|| Catalog::parse(catalog_file!("sl")))),
+            Self::Et => Some(ESTONIAN.get_or_init(|| Catalog::parse(catalog_file!("et")))),
+            Self::Sr => Some(SERBIAN_CYRILLIC.get_or_init(|| Catalog::parse(catalog_file!("sr")))),
+            Self::EnGb => Some(BRITISH.get_or_init(|| Catalog::parse(catalog_file!("en-gb")))),
+            // later rows win, so the Australian entries override the British ones
+            Self::EnAu => Some(AUSTRALIAN.get_or_init(|| Catalog::parse(&format!("{}\n{}", catalog_file!("en-gb"), catalog_file!("en-au"))))),
         }
     }
 
@@ -320,7 +570,7 @@ pub fn install_japanese_font(ctx: &egui::Context) -> bool {
     true
 }
 
-/// Whether the interface can show Simplified Chinese: `theme::install` always adds a Chinese
+/// Whether the interface can show Chinese (Simplified or Traditional): `theme::install` always adds a Chinese
 /// fallback face when there is one (extra-fonts Hans/Hant faces, otherwise an installed system
 /// face, see `cjk.rs`), so nothing needs installing here. False on systems without either.
 pub fn chinese_font_available() -> bool {
@@ -328,10 +578,17 @@ pub fn chinese_font_available() -> bool {
 }
 
 /// Whether the interface can show Korean: `theme::install` adds an installed system Hangul face
-/// (Malgun Gothic, Apple SD Gothic Neo, Noto Sans CJK KR…, see `cjk.rs`) when there is one; none
+/// (Noto Sans CJK KR, NanumGothic…, see `cjk.rs`) when there is one; none
 /// is bundled. False on systems (and the web) without one.
 pub fn korean_font_available() -> bool {
     crate::cjk::korean_available()
+}
+
+/// Whether the interface can show Georgian: `theme::install` adds an extra-fonts `Geor` face or an
+/// installed system face covering Mkhedruli (Noto Sans Georgian, DejaVu Sans, FreeSans…, see
+/// `cjk.rs`) when there is one; none is bundled. False on systems without one.
+pub fn georgian_font_available() -> bool {
+    crate::cjk::georgian_available()
 }
 
 #[cfg(test)]
@@ -341,17 +598,39 @@ mod tests {
     #[test]
     fn catalogs_are_well_formed() {
         for (code, text) in [
-            ("es", include_str!("es.tsv")),
-            ("ja", include_str!("ja.tsv")),
-            ("pt-br", include_str!("pt-br.tsv")),
-            ("uk", include_str!("uk.tsv")),
-            ("zh-cn", include_str!("zh-cn.tsv")),
-            ("de", include_str!("de.tsv")),
-            ("ru", include_str!("ru.tsv")),
-            ("fr", include_str!("fr.tsv")),
-            ("id", include_str!("id.tsv")),
-            ("it", include_str!("it.tsv")),
-            ("ko", include_str!("ko.tsv")),
+            ("es", catalog_file!("es")),
+            ("ja", catalog_file!("ja")),
+            ("pt-br", catalog_file!("pt-br")),
+            ("uk", catalog_file!("uk")),
+            ("zh-cn", catalog_file!("zh-cn")),
+            ("de", catalog_file!("de")),
+            ("ru", catalog_file!("ru")),
+            ("fr", catalog_file!("fr")),
+            ("id", catalog_file!("id")),
+            ("it", catalog_file!("it")),
+            ("ko", catalog_file!("ko")),
+            ("hu", catalog_file!("hu")),
+            ("pl", catalog_file!("pl")),
+            ("tr", catalog_file!("tr")),
+            ("nl", catalog_file!("nl")),
+            ("cs", catalog_file!("cs")),
+            ("vi", catalog_file!("vi")),
+            ("zh-hant", catalog_file!("zh-hant")),
+            ("el", catalog_file!("el")),
+            ("sv", catalog_file!("sv")),
+            ("sr-latn", catalog_file!("sr-latn")),
+            ("bg", catalog_file!("bg")),
+            ("ka", catalog_file!("ka")),
+            ("da", catalog_file!("da")),
+            ("fi", catalog_file!("fi")),
+            ("lt", catalog_file!("lt")),
+            ("hr", catalog_file!("hr")),
+            ("kk", catalog_file!("kk")),
+            ("sl", catalog_file!("sl")),
+            ("et", catalog_file!("et")),
+            ("sr", catalog_file!("sr")),
+            ("en-gb", catalog_file!("en-gb")),
+            ("en-au", catalog_file!("en-au")),
         ] {
             let (entries, errors) = catalog::parse_entries(text);
             assert!(errors.is_empty(), "{code}: {errors:?}");
@@ -473,24 +752,22 @@ mod tests {
     }
 
     /// The core menus every other catalog must cover: the entries of the menus-only Ukrainian
-    /// catalog, which `ukrainian_entries_cover_the_original_menu_catalog` keeps to menu labels (and
-    /// the native macOS Settings menu). Brazilian Portuguese played this role while it was
+    /// catalog, which `ukrainian_entries_cover_the_original_menu_catalog` keeps to menu labels. Brazilian Portuguese played this role while it was
     /// menus-only.
     fn core_menu_labels() -> Vec<String> {
-        let (entries, _) = catalog::parse_entries(include_str!("uk.tsv"));
+        let (entries, _) = catalog::parse_entries(catalog_file!("uk"));
         entries.into_iter().map(|(_, en, _)| en).collect()
     }
 
-    /// Brazilian Portuguese covers the whole interface (the Spanish catalog's entries and the native
-    /// macOS Settings menu), but, like Japanese and French, the tests require only the menus, so
+    /// Brazilian Portuguese covers the whole interface (the Spanish catalog's entries), but, like Japanese and French, the tests require only the menus, so
     /// strings added later show in English until they are translated. Every entry must still have a
     /// Spanish counterpart: a renamed or removed source would otherwise leave a dead entry.
     #[test]
     fn portuguese_covers_the_menus_and_has_no_dead_entries() {
-        let (entries, errors) = catalog::parse_entries(include_str!("pt-br.tsv"));
+        let (entries, errors) = catalog::parse_entries(catalog_file!("pt-br"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "Portuguese entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "Portuguese entry without a Spanish one: {ctx:?} {en:?}");
         }
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let mut missing: Vec<String> = Vec::new();
@@ -499,7 +776,7 @@ mod tests {
                 missing.push(text.to_string());
             }
         };
-        for top in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for top in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             need(top);
         }
         for it in crate::menus::menu_items(&app) {
@@ -516,7 +793,6 @@ mod tests {
         // beyond the menus: panels, effects and their parameters, settings, status messages
         for (en, pt) in [
             ("File", "Arquivo"),
-            ("Settings", "Preferências"),
             ("Gaussian Blur", "Desfoque gaussiano"),
             ("Audio Track Mixer", "Misturador de faixas de áudio"),
             ("Keyboard Shortcuts", "Atalhos de teclado"),
@@ -646,8 +922,7 @@ mod tests {
                 if p.is_dir() {
                     dirs.push(p);
                 } else if p.extension().is_some_and(|e| e == "rs") {
-                    // a Windows checkout with core.autocrlf has CRLF, which the `\n` below would not match
-                    let text = std::fs::read_to_string(&p).unwrap_or_default().replace("\r\n", "\n");
+                    let text = std::fs::read_to_string(&p).unwrap_or_default();
                     let cut = text.find("#[cfg(test)]\nmod tests").unwrap_or(text.len());
                     out.push((p.display().to_string(), text[..cut].to_string()));
                 }
@@ -995,6 +1270,22 @@ mod tests {
         let mut restarted = cfa4_engine::Session::default();
         restarted.prefs = serde_json::from_str(&prefs).unwrap();
         assert_eq!(crate::Cfa4App::new(restarted).ui.language, Language::It);
+        let result = crate::menus::invoke(&mut app, &ctx, "app.language.hungarian", serde_json::json!({})).unwrap();
+        assert_eq!(result, serde_json::json!("hu"));
+        assert_eq!((app.ui.language, current()), (Language::Hu, Language::Hu));
+        assert_eq!(app.session.prefs.general.interface_language, "hu");
+        for it in crate::menus::menu_items(&app).iter().filter(|it| it.id.starts_with("app.language.")) {
+            assert_eq!(it.checked, Some(it.id == "app.language.hungarian"), "{}", it.id);
+        }
+        let items = crate::menus::menu_items(&app);
+        let label = |id: &str| items.iter().find(|it| it.id == id).map(|it| it.label.as_str());
+        assert_eq!(label("file.saveAs"), Some(Language::Hu.tr("Save As…")));
+        assert_ne!(label("file.saveAs"), Some("Save As…"));
+        assert_eq!(label("app.language.hungarian"), Some("Magyar"));
+        let prefs = serde_json::to_string(&app.session.prefs).unwrap();
+        let mut restarted = cfa4_engine::Session::default();
+        restarted.prefs = serde_json::from_str(&prefs).unwrap();
+        assert_eq!(crate::Cfa4App::new(restarted).ui.language, Language::Hu);
         crate::menus::invoke(&mut app, &ctx, "app.language.english", serde_json::json!({})).unwrap();
         assert_eq!(app.ui.language, Language::En);
         set_current(Language::En);
@@ -1016,10 +1307,16 @@ mod tests {
         for tag in ["zh", "zh-CN", "zh_CN.UTF-8", "zh-Hans", "zh-Hans-CN", "zh-SG", "ZH-cn", "zh.UTF-8"] {
             assert_eq!(l(&[tag]), Language::ZhCn, "{tag}");
         }
-        for tag in ["zh-TW", "zh_TW.UTF-8", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-TW"] {
-            assert_eq!(l(&[tag]), Language::En, "{tag}: Traditional Chinese has no catalog");
+        for tag in ["zh-TW", "zh_TW.UTF-8", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-TW", "ZH-hant"] {
+            assert_eq!(l(&[tag]), Language::ZhHant, "{tag}");
         }
-        assert_eq!(l(&["zh-TW", "ja-JP"]), Language::Ja);
+        for tag in ["sr-Latn", "sr-Latn-RS", "sr_RS@latin", "SR-latn", "sr_RS.UTF-8@latin"] {
+            assert_eq!(l(&[tag]), Language::SrLatn, "{tag}");
+        }
+        for tag in ["sr", "sr-RS", "sr_RS.UTF-8", "sr-Cyrl", "sr-Cyrl-RS", "SR", "sr_ME"] {
+            assert_eq!(l(&[tag]), Language::Sr, "{tag}");
+        }
+        assert_eq!(l(&["zh-Latn", "ja-JP"]), Language::Ja);
         for tag in ["de", "DE", "de-DE", "de-AT", "de-CH", "de-LI", "de-LU", "de_DE.UTF-8", "de_AT.UTF-8@euro", "de_CH"] {
             assert_eq!(l(&[tag]), Language::De, "{tag}");
         }
@@ -1040,12 +1337,29 @@ mod tests {
         for none in [&["ita"][..], &["i"], &["-it"]] {
             assert_eq!(l(none), Language::En, "{none:?}");
         }
-        assert_eq!(l(&["sv-SE", "nl", "es-MX", "ja"]), Language::Es, "the first one the interface has");
+        for tag in ["hu", "HU", "hu-HU", "hu-RO", "hu_HU.UTF-8", "hu_HU.UTF-8@euro", "hu_HU"] {
+            assert_eq!(l(&[tag]), Language::Hu, "{tag}");
+        }
+        assert_eq!(l(&["hu-SK", "sk", "de", "en"]), Language::Hu);
+        for none in [&["hun"][..], &["h"], &["-hu"]] {
+            assert_eq!(l(none), Language::En, "{none:?}");
+        }
+        assert_eq!(l(&["is-IS", "ga", "es-MX", "ja"]), Language::Es, "the first one the interface has");
         assert_eq!(l(&["rm-CH", "de-CH", "fr-CH", "en"]), Language::De);
         assert_eq!(l(&["rm-CH", "fr-CH", "de-CH", "en"]), Language::Fr);
-        assert_eq!(l(&["en-GB", "es"]), Language::En);
+        assert_eq!(l(&["en-GB", "es"]), Language::EnGb);
+        assert_eq!(l(&["en-US", "en-GB"]), Language::En, "the first one wins");
+        for tag in ["en-GB", "en_GB.UTF-8", "en-IE", "en_IE@euro", "EN-gb"] {
+            assert_eq!(l(&[tag]), Language::EnGb, "{tag}");
+        }
+        for tag in ["en-AU", "en_AU.UTF-8", "en-NZ", "en_NZ"] {
+            assert_eq!(l(&[tag]), Language::EnAu, "{tag}");
+        }
+        for tag in ["en", "en-US", "en_US.UTF-8", "en-CA", "en-IN", "en-Latn"] {
+            assert_eq!(l(&[tag]), Language::En, "{tag}");
+        }
         assert_eq!(l(&["en-US", "de"]), Language::En);
-        for none in [&[][..], &["nl"], &["C"], &["POSIX"], &[""], &["e"], &["esp"], &["-es"], &["deu"], &["d"], &["-de"], &["fra"], &["f"], &["-fr"]] {
+        for none in [&[][..], &["ga"], &["C"], &["POSIX"], &[""], &["e"], &["esp"], &["-es"], &["deu"], &["d"], &["-de"], &["fra"], &["f"], &["-fr"]] {
             assert_eq!(l(none), Language::En, "{none:?}");
         }
         assert_eq!(l(&[&"x".repeat(1 << 20), "es"]), Language::Es);
@@ -1068,7 +1382,7 @@ mod tests {
         let count = asked.clone();
         app.hooks.system_languages = Some(Box::new(move || {
             count.set(count.get() + 1);
-            vec!["nl-NL".into(), "es-ES".into()]
+            vec!["ga-IE".into(), "es-ES".into()]
         }));
         app.apply_prefs(&ctx);
         assert_eq!(app.ui.language, Language::Es);
@@ -1092,23 +1406,27 @@ mod tests {
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
-        let (entries, _) = catalog::parse_entries(include_str!("uk.tsv"));
+        // the first section (before the divider) is still the original menu catalog; the rest
+        // of the interface follows it and is checked by complete_languages_cover_the_whole_interface
+        let text = catalog_file!("uk");
+        let menus = text.split("\n# ------").next().unwrap_or(text);
+        let (entries, _) = catalog::parse_entries(menus);
+        assert!(entries.len() > 300, "the original menu section is there");
         for (_, en, _) in entries {
-            assert!(known(&en) || en == "Settings", "not a menu label: {en}");
+            assert!(known(&en), "not a menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert_ne!(Language::Uk.tr(en), en, "untranslated Ukrainian menu: {en}");
         }
     }
 
-    /// German covers the whole interface (every entry of the Spanish catalog, the native macOS app
-    /// menu included), but, like French, the tests require only the core menus and the native app
-    /// menu, so strings added later show in English until they are translated. Every entry must
+    /// German covers the whole interface (every entry of the Spanish catalog), but, like French,
+    /// the tests require only the core menus, so strings added later show in English until they are translated. Every entry must
     /// still have a Spanish counterpart: a renamed or removed source would otherwise leave a dead
     /// German entry.
     #[test]
     fn german_covers_the_menus_and_has_no_dead_entries() {
-        let (entries, errors) = catalog::parse_entries(include_str!("de.tsv"));
+        let (entries, errors) = catalog::parse_entries(catalog_file!("de"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
             assert!(ctx.is_empty() && Language::Es.has(en), "German entry without a Spanish one: {ctx:?} {en:?}");
@@ -1117,10 +1435,9 @@ mod tests {
             assert!(Language::De.has(&en), "missing German menu label: {en}");
         }
         // "Clip" and "Audio" are the same word in German, so check for an entry, not a change
-        for en in crate::menus::MENUS.into_iter().chain(["Audio"]).chain(crate::menus::NATIVE_APP_MENU) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::De.has(en), "untranslated German menu: {en}");
         }
-        assert_eq!(Language::De.tr("Settings"), "Voreinstellungen");
         assert_eq!(Language::De.tr("Quit CFA4"), "CFA4 beenden");
         // beyond the menus: panels, effects and their parameters, settings, status messages
         for (en, de) in [
@@ -1139,27 +1456,25 @@ mod tests {
         set_current(Language::En);
     }
 
-    /// French covers the whole interface (the Spanish catalog's entries and the native macOS
-    /// Settings menu), but, like Japanese, the tests require only the core menus, so strings added
+    /// French covers the whole interface (the Spanish catalog's entries), but, like
+    /// Japanese, the tests require only the core menus, so strings added
     /// later show in English until they are translated. Every entry must still have a Spanish
     /// counterpart: a renamed or removed source would otherwise leave a dead French entry.
     #[test]
     fn french_covers_the_menus_and_has_no_dead_entries() {
-        let (entries, errors) = catalog::parse_entries(include_str!("fr.tsv"));
+        let (entries, errors) = catalog::parse_entries(catalog_file!("fr"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "French entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "French entry without a Spanish one: {ctx:?} {en:?}");
         }
         for en in core_menu_labels() {
             assert!(Language::Fr.has(&en), "missing French menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::Fr.has(en), "untranslated French menu: {en}");
         }
         // beyond the menus: panels, effects and their parameters, settings, status messages
-        for (en, fr) in
-            [("Settings", "Préférences"), ("Gaussian Blur", "Flou gaussien"), ("Audio Track Mixer", "Mixeur de pistes audio"), ("Sequence", "Séquence")]
-        {
+        for (en, fr) in [("Gaussian Blur", "Flou gaussien"), ("Audio Track Mixer", "Mixeur de pistes audio"), ("Sequence", "Séquence")] {
             assert_eq!(Language::Fr.tr(en), fr);
         }
         set_current(Language::Fr);
@@ -1168,23 +1483,23 @@ mod tests {
         set_current(Language::En);
     }
 
-    /// Korean covers the whole interface (the Spanish catalog's entries and the native macOS
-    /// Settings menu); like French, the tests require the core menus, and every entry must still
+    /// Korean covers the whole interface (the Spanish catalog's entries); like
+    /// French, the tests require the core menus, and every entry must still
     /// have a Spanish counterpart so a renamed or removed source can't leave a dead Korean entry.
     #[test]
     fn korean_covers_the_menus_and_has_no_dead_entries() {
-        let (entries, errors) = catalog::parse_entries(include_str!("ko.tsv"));
+        let (entries, errors) = catalog::parse_entries(catalog_file!("ko"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "Korean entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "Korean entry without a Spanish one: {ctx:?} {en:?}");
         }
         for en in core_menu_labels() {
             assert!(Language::Ko.has(&en), "missing Korean menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::Ko.has(en), "untranslated Korean menu: {en}");
         }
-        for (en, ko) in [("File", "파일"), ("Edit", "편집"), ("Sequence", "시퀀스"), ("Settings", "설정")] {
+        for (en, ko) in [("File", "파일"), ("Edit", "편집"), ("Sequence", "시퀀스")] {
             assert_eq!(Language::Ko.tr(en), ko);
         }
         assert_eq!(Language::Ko.name(), "한국어");
@@ -1199,45 +1514,45 @@ mod tests {
         let app = crate::Cfa4App::new(cfa4_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
-        let (entries, _) = catalog::parse_entries(include_str!("ru.tsv"));
+        // the first section (before the divider) is still the original menu catalog; the rest
+        // of the interface follows it and is checked by complete_languages_cover_the_whole_interface
+        let text = catalog_file!("ru");
+        let menus = text.split("\n# ------").next().unwrap_or(text);
+        let (entries, _) = catalog::parse_entries(menus);
+        assert!(entries.len() > 300, "the original menu section is there");
         for (_, en, _) in entries {
-            assert!(known(&en) || en == "Settings", "not a menu label: {en}");
+            assert!(known(&en), "not a menu label: {en}");
         }
         for en in core_menu_labels() {
             assert!(Language::Ru.has(&en), "missing Russian menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert_ne!(Language::Ru.tr(en), en, "untranslated Russian menu: {en}");
         }
     }
 
-    /// Indonesian covers the whole interface (the Spanish catalog's entries and the native macOS
-    /// Settings menu), but, like Japanese and French, the tests require only the core menus (the
-    /// menus-only Ukrainian catalog, the top-level menus and the native macOS Settings menu), so
+    /// Indonesian covers the whole interface (the Spanish catalog's entries), but, like
+    /// Japanese and French, the tests require only the core menus (the menus-only Ukrainian
+    /// catalog and the top-level menus), so
     /// strings added later show in English until they are translated. Every entry must still have a
     /// Spanish counterpart: a renamed or removed source would otherwise leave a dead entry.
     #[test]
     fn indonesian_covers_the_menus_and_has_no_dead_entries() {
-        let (entries, errors) = catalog::parse_entries(include_str!("id.tsv"));
+        let (entries, errors) = catalog::parse_entries(catalog_file!("id"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "Indonesian entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "Indonesian entry without a Spanish one: {ctx:?} {en:?}");
         }
-        let (core, _) = catalog::parse_entries(include_str!("uk.tsv"));
+        let (core, _) = catalog::parse_entries(catalog_file!("uk"));
         for (_, en, _) in core {
             assert!(Language::Id.has(&en), "missing Indonesian menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::Id.has(en), "untranslated Indonesian menu: {en}");
         }
         // beyond the menus: panels, effects and their parameters, settings, status messages
-        for (en, id) in [
-            ("Settings", "Preferensi"),
-            ("Gaussian Blur", "Buram Gaussian"),
-            ("Audio Track Mixer", "Mixer Trek Audio"),
-            ("Sequence", "Sekuens"),
-            ("Playhead", "Kepala Putar"),
-        ] {
+        for (en, id) in [("Gaussian Blur", "Buram Gaussian"), ("Audio Track Mixer", "Mixer Trek Audio"), ("Sequence", "Sekuens"), ("Playhead", "Kepala Putar")]
+        {
             assert_eq!(Language::Id.tr(en), id);
         }
         set_current(Language::Id);
@@ -1246,27 +1561,26 @@ mod tests {
         set_current(Language::En);
     }
 
-    /// Italian covers the whole interface (the Spanish catalog's entries and the native macOS
-    /// Settings menu); like Indonesian, the tests require only the core menus, so strings added
+    /// Italian covers the whole interface (the Spanish catalog's entries); like
+    /// Indonesian, the tests require only the core menus, so strings added
     /// later show in English until they are translated, and every entry must have a Spanish
     /// counterpart.
     #[test]
     fn italian_covers_the_menus_and_has_no_dead_entries() {
-        let (entries, errors) = catalog::parse_entries(include_str!("it.tsv"));
+        let (entries, errors) = catalog::parse_entries(catalog_file!("it"));
         assert!(errors.is_empty(), "{errors:?}");
         for (ctx, en, _) in &entries {
-            assert!(ctx.is_empty() && (Language::Es.has(en) || en == "Settings"), "Italian entry without a Spanish one: {ctx:?} {en:?}");
+            assert!(ctx.is_empty() && Language::Es.has(en), "Italian entry without a Spanish one: {ctx:?} {en:?}");
         }
-        let (core, _) = catalog::parse_entries(include_str!("uk.tsv"));
+        let (core, _) = catalog::parse_entries(catalog_file!("uk"));
         for (_, en, _) in core {
             assert!(Language::It.has(&en), "missing Italian menu label: {en}");
         }
-        for en in crate::menus::MENUS.into_iter().chain(["Audio", "Settings"]) {
+        for en in crate::menus::MENUS.into_iter().chain(["Audio"]) {
             assert!(Language::It.has(en), "untranslated Italian menu: {en}");
         }
         // beyond the menus: panels, effects and their parameters, settings, status messages
         for (en, it) in [
-            ("Settings", "Impostazioni"),
             ("Gaussian Blur", "Sfocatura gaussiana"),
             ("Audio Track Mixer", "Mixer tracce audio"),
             ("Sequence", "Sequenza"),
@@ -1277,6 +1591,80 @@ mod tests {
         set_current(Language::It);
         assert!(matches_query("Gaussian Blur", "sfocatura"));
         assert!(matches_query("Gaussian Blur", "gaussian"));
+        set_current(Language::En);
+    }
+
+    /// Hungarian covers the whole interface: every entry of the Spanish catalog (the egui strings and
+    /// the Qt GUI's), the core menus and the top-level menus. Unlike the other languages it is
+    /// required to stay complete, so a new string needs its Hungarian entry in the same change.
+    #[test]
+    fn hungarian_covers_the_whole_interface() {
+        let (_, errors) = catalog::parse_entries(catalog_file!("hu"));
+        assert!(errors.is_empty(), "{errors:?}");
+        let (spanish, _) = catalog::parse_entries(catalog_file!("es"));
+        let missing: Vec<&str> = spanish.iter().filter(|(ctx, en, _)| ctx.is_empty() && !Language::Hu.has(en)).map(|(_, en, _)| en.as_str()).collect();
+        assert!(missing.is_empty(), "untranslated Hungarian entries: {missing:#?}");
+        for en in core_menu_labels().iter().map(String::as_str).chain(crate::menus::MENUS).chain(["Audio"]) {
+            assert!(Language::Hu.has(en), "untranslated Hungarian menu: {en}");
+        }
+        assert_eq!(Language::Hu.name(), "Magyar");
+        assert_eq!(Language::parse("hu"), Some(Language::Hu));
+        assert_eq!(Language::parse("hu-HU"), None, "the preference stores the bare code");
+        for (en, hu) in [
+            ("File", "Fájl"),
+            ("Sequence", "Szekvencia"),
+            ("Playhead", "Lejátszófej"),
+            ("Gaussian Blur", "Gauss-elmosás"),
+            ("Cross Dissolve", "Kereszt-áttűnés"),
+            ("Mixer", "Keverő"),
+            ("An untranslated label", "An untranslated label"),
+            ("Nyári vakáció.mp4", "Nyári vakáció.mp4"),
+        ] {
+            assert_eq!(Language::Hu.tr(en), hu);
+        }
+        set_current(Language::Hu);
+        assert!(matches_query("Gaussian Blur", "elmosás"));
+        assert!(matches_query("Gaussian Blur", "gaussian"));
+        set_current(Language::En);
+    }
+
+    /// British and Australian English: the source strings are US English, so `en-gb.tsv` lists only
+    /// the strings whose British spelling differs, each one a real source (it has a Spanish entry)
+    /// that it actually changes; Australian reads the British catalog with its own entries on top.
+    #[test]
+    fn english_variants_respell_only_what_differs() {
+        let (entries, errors) = catalog::parse_entries(catalog_file!("en-gb"));
+        assert!(errors.is_empty(), "{errors:?}");
+        assert!(entries.len() > 100, "{}", entries.len());
+        for (ctx, en, gb) in &entries {
+            assert!(ctx.is_empty() && Language::Es.has(en), "British entry for a string the interface does not have: {en:?}");
+            assert_ne!(en, gb, "a British entry that changes nothing");
+        }
+        let (australian, errors) = catalog::parse_entries(catalog_file!("en-au"));
+        assert!(errors.is_empty(), "{errors:?}");
+        for (_, en, au) in &australian {
+            assert!(Language::Es.has(en), "Australian entry for a string the interface does not have: {en:?}");
+            assert_ne!(Some(au.as_str()), Language::EnGb.catalog().and_then(|c| c.plain(en)), "an Australian entry the British one already gives: {en:?}");
+        }
+        for (en, gb) in [
+            ("Color", "Colour"),
+            ("Center", "Centre"),
+            ("Gaussian Blur", "Gaussian Blur"),
+            ("Normalize Max Peak to:", "Normalise Max Peak to:"),
+            ("Remove from Favorites", "Remove from Favourites"),
+            ("Title – Centered", "Title – Centred"),
+            ("File", "File"),
+        ] {
+            assert_eq!((Language::EnGb.tr(en), Language::EnAu.tr(en), Language::En.tr(en)), (gb, gb, en));
+        }
+        assert!(!Language::EnGb.has("File"), "unchanged strings have no entry");
+        assert_eq!([Language::En, Language::EnGb, Language::EnAu].map(Language::name), ["English (US)", "English (UK)", "English (Australia)"]);
+        for l in [Language::EnGb, Language::EnAu] {
+            assert_eq!(Language::parse(l.code()), Some(l));
+        }
+        set_current(Language::EnGb);
+        assert!(matches_query("Color Balance", "colour"));
+        assert!(matches_query("Color Balance", "color"));
         set_current(Language::En);
     }
 
@@ -1307,7 +1695,7 @@ mod tests {
 
     #[test]
     fn ukrainian_renders_with_bundled_fonts() {
-        let (entries, _) = catalog::parse_entries(include_str!("uk.tsv"));
+        let (entries, _) = catalog::parse_entries(catalog_file!("uk"));
         // Include the entire alphabet, even letters not yet used by a translated menu label.
         let alphabet = "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯабвгґдеєжзиіїйклмнопрстуфхцчшщьюя";
         assert_bundled_fonts_cover(alphabet.chars().chain(Language::Uk.name().chars()).chain(entries.iter().flat_map(|(_, _, uk)| uk.chars())));
@@ -1315,7 +1703,7 @@ mod tests {
 
     #[test]
     fn portuguese_renders_with_bundled_fonts() {
-        let (entries, _) = catalog::parse_entries(include_str!("pt-br.tsv"));
+        let (entries, _) = catalog::parse_entries(catalog_file!("pt-br"));
         // every Portuguese letter, even ones no entry uses yet, and every letter the entries use
         let alphabet = "ÁÂÃÀÇÉÊÍÓÔÕÚÜáâãàçéêíóôõúü";
         let letters = entries.iter().flat_map(|(_, _, pt)| pt.chars()).filter(|ch| ch.is_alphabetic());
@@ -1324,7 +1712,7 @@ mod tests {
 
     #[test]
     fn french_renders_with_bundled_fonts() {
-        let (entries, _) = catalog::parse_entries(include_str!("fr.tsv"));
+        let (entries, _) = catalog::parse_entries(catalog_file!("fr"));
         // every French letter and quotation mark, even ones no entry uses yet, and every letter the
         // entries use (symbols such as ✔ come from the English sources)
         let alphabet = "ÀÂÆÇÉÈÊËÎÏÔŒÙÛÜŸàâæçéèêëîïôœùûüÿ«»’";
@@ -1334,7 +1722,7 @@ mod tests {
 
     #[test]
     fn german_renders_with_bundled_fonts() {
-        let (entries, _) = catalog::parse_entries(include_str!("de.tsv"));
+        let (entries, _) = catalog::parse_entries(catalog_file!("de"));
         // every German letter and quotation mark, even ones no entry uses yet, and every letter,
         // dash and ellipsis the entries use (symbols such as ✔ come from the English sources)
         let alphabet = "ÄÖÜäöüß„“‚‘";
@@ -1344,7 +1732,7 @@ mod tests {
 
     #[test]
     fn indonesian_renders_with_bundled_fonts() {
-        let (entries, _) = catalog::parse_entries(include_str!("id.tsv"));
+        let (entries, _) = catalog::parse_entries(catalog_file!("id"));
         // Indonesian is written in basic Latin letters; any other letter an entry uses, and its
         // curly quotes, dashes and ellipses, must still render (symbols such as ✔ come from the
         // English sources)
@@ -1353,8 +1741,253 @@ mod tests {
     }
 
     #[test]
+    fn hungarian_renders_with_bundled_fonts() {
+        let (entries, _) = catalog::parse_entries(catalog_file!("hu"));
+        // the whole Hungarian alphabet (ő and ű are Latin Extended-A), even letters no entry uses
+        // yet, and every letter, quotation mark, dash and ellipsis the entries use (symbols such
+        // as ✔ come from the English sources)
+        let alphabet = "ÁÉÍÓÖŐÚÜŰáéíóöőúüű„”»«";
+        let letters = entries.iter().flat_map(|(_, _, hu)| hu.chars()).filter(|ch| ch.is_alphabetic() || "„”»«“’–—−…".contains(*ch));
+        assert_bundled_fonts_cover(alphabet.chars().chain(Language::Hu.name().chars()).chain(letters));
+    }
+
+    /// The languages translated in full from craft-i18n's locale list (2026-11-10 on): language, menu
+    /// command, catalog, alphabet (every letter the bundled fonts must draw, even ones no entry uses yet) and a
+    /// few spot checks. Like Hungarian, each must stay complete: a new string needs an entry in each
+    /// of them in the same change.
+    const COMPLETE: &[(Language, &str, &str, &str, &[(&str, &str)])] = &[
+        (
+            Language::Pl,
+            "app.language.polish",
+            catalog_file!("pl"),
+            "ĄĆĘŁŃÓŚŹŻąćęłńóśźż„”«»",
+            &[("File", "Plik"), ("Sequence", "Sekwencja"), ("Playhead", "Głowica odtwarzania"), ("Cross Dissolve", "Przenikanie krzyżowe")],
+        ),
+        (
+            Language::Tr,
+            "app.language.turkish",
+            catalog_file!("tr"),
+            "ÇĞİÖŞÜçğıöşü",
+            &[("File", "Dosya"), ("Sequence", "Sekans"), ("Playhead", "Oynatma Kafası"), ("Cross Dissolve", "Çapraz Çözülme")],
+        ),
+        (
+            Language::Nl,
+            "app.language.dutch",
+            catalog_file!("nl"),
+            "ÉËÏÖéëïöĳ",
+            &[("File", "Bestand"), ("Sequence", "Reeks"), ("Playhead", "Afspeelkop"), ("Cross Dissolve", "Kruisovervloeier")],
+        ),
+        (
+            Language::Cs,
+            "app.language.czech",
+            catalog_file!("cs"),
+            "ÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž„“",
+            &[("File", "Soubor"), ("Sequence", "Sekvence"), ("Playhead", "Přehrávací hlava"), ("Cross Dissolve", "Křížová prolínačka")],
+        ),
+        (
+            Language::Vi,
+            "app.language.vietnamese",
+            catalog_file!("vi"),
+            "ĂÂĐÊÔƠƯăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ",
+            &[("File", "Tệp"), ("Sequence", "Chuỗi"), ("Playhead", "Đầu phát"), ("Cross Dissolve", "Hòa tan chéo")],
+        ),
+        (
+            Language::ZhHant,
+            "app.language.traditionalChinese",
+            catalog_file!("zh-hant"),
+            // Han characters come from a Chinese face (cjk.rs), not the bundled fonts
+            "",
+            &[("File", "檔案"), ("Sequence", "序列"), ("Playhead", "播放指示器"), ("Cross Dissolve", "交叉溶解")],
+        ),
+        (
+            Language::El,
+            "app.language.greek",
+            catalog_file!("el"),
+            "ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΆΈΉΊΌΎΏΪΫαβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώϊϋΐΰ«»",
+            &[("File", "Αρχείο"), ("Sequence", "Ακολουθία"), ("Playhead", "Κεφαλή αναπαραγωγής"), ("Cross Dissolve", "Διασταυρούμενη διάλυση")],
+        ),
+        (
+            Language::Sv,
+            "app.language.swedish",
+            catalog_file!("sv"),
+            "ÅÄÖåäö”",
+            &[("File", "Arkiv"), ("Sequence", "Sekvens"), ("Playhead", "Uppspelningshuvud"), ("Cross Dissolve", "Korsövertoning")],
+        ),
+        (
+            Language::SrLatn,
+            "app.language.serbianLatin",
+            catalog_file!("sr-latn"),
+            "ČĆĐŠŽčćđšž„“",
+            &[("File", "Datoteka"), ("Sequence", "Sekvenca"), ("Playhead", "Glava za reprodukciju"), ("Cross Dissolve", "Unakrsno pretapanje")],
+        ),
+        (
+            Language::Bg,
+            "app.language.bulgarian",
+            catalog_file!("bg"),
+            "БГДЖЗЙЛПФЦЧШЩЪЬЮЯбгджзйлпфцчшщъьюя„“",
+            &[("File", "Файл"), ("Sequence", "Последователност"), ("Playhead", "Глава за възпроизвеждане"), ("Cross Dissolve", "Кръстосано преливане")],
+        ),
+        (
+            Language::Ka,
+            "app.language.georgian",
+            catalog_file!("ka"),
+            "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ„“",
+            &[("File", "ფაილი"), ("Sequence", "მიმდევრობა"), ("Playhead", "დაკვრის მაჩვენებელი"), ("Cross Dissolve", "ჯვარედინი გადადნობა")],
+        ),
+        (
+            Language::Da,
+            "app.language.danish",
+            catalog_file!("da"),
+            "ÆØÅæøå»«",
+            &[("File", "Fil"), ("Sequence", "Sekvens"), ("Playhead", "Afspilningshoved"), ("Cross Dissolve", "Krydsovertoning")],
+        ),
+        (
+            Language::Fi,
+            "app.language.finnish",
+            catalog_file!("fi"),
+            "ÄÖäö”",
+            &[("File", "Tiedosto"), ("Sequence", "Sekvenssi"), ("Playhead", "Toistopaikka"), ("Cross Dissolve", "Ristikuva")],
+        ),
+        (
+            Language::Lt,
+            "app.language.lithuanian",
+            catalog_file!("lt"),
+            "ĄČĘĖĮŠŲŪŽąčęėįšųūž„“",
+            &[("File", "Failas"), ("Sequence", "Seka"), ("Playhead", "Atkūrimo žymeklis"), ("Cross Dissolve", "Kryžminis išnykimas")],
+        ),
+        (
+            Language::Hr,
+            "app.language.croatian",
+            catalog_file!("hr"),
+            "ČĆĐŠŽčćđšž„”",
+            &[("File", "Datoteka"), ("Sequence", "Sekvenca"), ("Playhead", "Glava za reprodukciju"), ("Cross Dissolve", "Križno pretapanje")],
+        ),
+        (
+            Language::Kk,
+            "app.language.kazakh",
+            catalog_file!("kk"),
+            "ӘҒҚҢӨҰҮҺІәғқңөұүһі«»",
+            &[("File", "Файл"), ("Sequence", "Тізбек"), ("Playhead", "Ойнату көрсеткіші"), ("Cross Dissolve", "Айқас ауысу")],
+        ),
+        (
+            Language::Sl,
+            "app.language.slovenian",
+            catalog_file!("sl"),
+            "ČŠŽčšž»«",
+            &[("File", "Datoteka"), ("Sequence", "Sekvenca"), ("Playhead", "Predvajalna glava"), ("Cross Dissolve", "Navzkrižno pretapljanje")],
+        ),
+        (
+            Language::Et,
+            "app.language.estonian",
+            catalog_file!("et"),
+            "ÄÖÕÜŠŽäöõüšž„“",
+            &[("File", "Fail"), ("Sequence", "Jada"), ("Playhead", "Esitusnäidik"), ("Cross Dissolve", "Ristsulandus")],
+        ),
+        (
+            Language::Sr,
+            "app.language.serbianCyrillic",
+            catalog_file!("sr"),
+            "ЂЈЉЊЋЏђјљњћџ„“",
+            &[("File", "Датотека"), ("Sequence", "Секвенца"), ("Playhead", "Глава за репродукцију"), ("Cross Dissolve", "Унакрсно претапање")],
+        ),
+        (
+            Language::Ru,
+            "app.language.russian",
+            catalog_file!("ru"),
+            "ЁЪЫЭёъыэ«»",
+            &[("File", "Файл"), ("Make Subclip", "Создать субклип"), ("Merge Clips", "Объединить клипы"), ("Noise", "Шум")],
+        ),
+        (
+            Language::Uk,
+            "app.language.ukrainian",
+            catalog_file!("uk"),
+            "ҐЄІЇґєії’«»",
+            &[("File", "Файл"), ("Make Subclip", "Створити субкліп"), ("Merge Clips", "Об’єднати кліпи"), ("Noise", "Шум")],
+        ),
+    ];
+
+    #[test]
+    fn complete_languages_cover_the_whole_interface() {
+        let (spanish, _) = catalog::parse_entries(catalog_file!("es"));
+        for &(language, _, _, _, checks) in COMPLETE {
+            let code = language.code();
+            let missing: Vec<&str> = spanish.iter().filter(|(ctx, en, _)| ctx.is_empty() && !language.has(en)).map(|(_, en, _)| en.as_str()).collect();
+            assert!(missing.is_empty(), "{code}: untranslated entries: {missing:#?}");
+            for en in core_menu_labels().iter().map(String::as_str).chain(crate::menus::MENUS).chain(["Audio"]) {
+                assert!(language.has(en), "{code}: untranslated menu: {en}");
+            }
+            for &(en, tr) in checks {
+                assert_eq!(language.tr(en), tr, "{code}");
+            }
+            assert_eq!(language.tr("An untranslated label"), "An untranslated label");
+            assert_eq!(Language::parse(code), Some(language));
+            assert_eq!(Language::from_locales(&[code.to_string()]), language, "{code}");
+            assert_eq!(Language::from_locales(&[format!("{code}_XX.UTF-8")]), language, "{code}");
+        }
+    }
+
+    #[test]
+    fn complete_languages_render_with_bundled_fonts() {
+        // Traditional Chinese draws with the Chinese face theme::install adds (cjk.rs), like Simplified;
+        // Georgian with an extra-fonts or system Mkhedruli face (complete_georgian_renders_with_its_font)
+        for &(language, _, text, alphabet, _) in COMPLETE.iter().filter(|c| !matches!(c.0, Language::ZhHant | Language::Ka)) {
+            let (entries, _) = catalog::parse_entries(text);
+            // the alphabet, the name, and every letter, quotation mark, dash and ellipsis the entries
+            // use (symbols such as ✔ come from the English sources)
+            let letters = entries.iter().flat_map(|(_, _, tr)| tr.chars()).filter(|ch| ch.is_alphabetic() || "„”«»“‘’–—−…".contains(*ch));
+            assert_bundled_fonts_cover(alphabet.chars().chain(language.name().chars()).chain(letters));
+        }
+    }
+
+    #[test]
+    fn complete_georgian_renders_with_its_font() {
+        // Georgian has no bundled face: with one in extra-fonts or installed on the system,
+        // theme::install adds it after the UI fonts (cjk.rs) and every letter the catalog uses draws
+        let Some(&(language, _, text, alphabet, _)) = COMPLETE.iter().find(|c| c.0 == Language::Ka) else { panic!("Georgian is complete") };
+        if !georgian_font_available() {
+            return;
+        }
+        let (entries, _) = catalog::parse_entries(text);
+        let letters = entries.iter().flat_map(|(_, _, tr)| tr.chars()).filter(|ch| ch.is_alphabetic() || "„“–—…".contains(*ch));
+        assert_bundled_fonts_cover(alphabet.chars().chain(language.name().chars()).chain(letters));
+    }
+
+    #[test]
+    fn complete_languages_switch_from_the_language_menu() {
+        let ctx = egui::Context::default();
+        let mut app = crate::Cfa4App::new(cfa4_engine::Session::default());
+        for &(language, command, _, _, _) in COMPLETE {
+            if (language == Language::ZhHant && !chinese_font_available()) || (language == Language::Ka && !georgian_font_available()) {
+                // without a Chinese face it is refused and the interface keeps its language
+                let before = app.ui.language;
+                assert!(crate::menus::invoke(&mut app, &ctx, command, serde_json::json!({})).is_err());
+                assert_eq!(app.ui.language, before);
+                continue;
+            }
+            let result = crate::menus::invoke(&mut app, &ctx, command, serde_json::json!({})).unwrap();
+            assert_eq!(result, serde_json::json!(language.code()));
+            assert_eq!((app.ui.language, current()), (language, language));
+            assert_eq!(app.session.prefs.general.interface_language, language.code());
+            for it in crate::menus::menu_items(&app).iter().filter(|it| it.id.starts_with("app.language.")) {
+                assert_eq!(it.checked, Some(it.id == command), "{}", it.id);
+            }
+            let items = crate::menus::menu_items(&app);
+            let label = |id: &str| items.iter().find(|it| it.id == id).map(|it| it.label.clone());
+            assert_eq!(label("file.saveAs").as_deref(), Some(language.tr("Save As…")));
+            assert_ne!(label("file.saveAs").as_deref(), Some("Save As…"));
+            assert_eq!(label(command).as_deref(), Some(language.name()));
+            let prefs = serde_json::to_string(&app.session.prefs).unwrap();
+            let mut restarted = cfa4_engine::Session::default();
+            restarted.prefs = serde_json::from_str(&prefs).unwrap();
+            assert_eq!(crate::Cfa4App::new(restarted).ui.language, language);
+        }
+        crate::menus::invoke(&mut app, &ctx, "app.language.english", serde_json::json!({})).unwrap();
+        set_current(Language::En);
+    }
+
+    #[test]
     fn italian_renders_with_bundled_fonts() {
-        let (entries, _) = catalog::parse_entries(include_str!("it.tsv"));
+        let (entries, _) = catalog::parse_entries(catalog_file!("it"));
         // every Italian accented letter, even ones no entry uses yet, and every letter, curly quote,
         // dash and ellipsis the entries use (symbols such as ✔ come from the English sources)
         let alphabet = "ÀÈÉÌÍÎÒÓÙÚàèéìíîòóùú";

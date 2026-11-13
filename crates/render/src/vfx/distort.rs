@@ -45,7 +45,7 @@ pub(crate) fn h_apply(m: &H3, x: f64, y: f64) -> Option<(f64, f64)> {
 }
 
 /// Corner Pin: the layer's corners moved to four points (a projective warp).
-pub fn corner_pin(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn corner_pin(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let (w, h) = (img.w as f64, img.h as f64);
     let q = [pv(e, "upper_left", cx, img), pv(e, "upper_right", cx, img), pv(e, "lower_right", cx, img), pv(e, "lower_left", cx, img)];
     let ident = [Vec2::new(0.0, 0.0), Vec2::new(w, 0.0), Vec2::new(w, h), Vec2::new(0.0, h)];
@@ -60,7 +60,7 @@ pub fn corner_pin(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Magnify (and Magnify (Legacy)): a circular or square loupe.
-pub fn magnify(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn magnify(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = pv(e, "center", cx, img);
     let m = (fv(e, "magnification", cx) / 100.0).max(0.01) as f64;
     let r = fv(e, "size", cx) * cx.px_scale;
@@ -93,7 +93,7 @@ pub fn magnify(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Spherize: wraps the layer around a sphere of the given radius (centre magnified 2×).
-pub fn spherize(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn spherize(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let r = (fv(e, "radius", cx) * cx.px_scale) as f64;
     if r < 0.5 {
         return;
@@ -113,7 +113,7 @@ pub fn spherize(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Turbulent Displace: fractal-noise displacement (turbulent, bulge, twist, directional), with
 /// evolution, cycling and edge pinning.
-pub fn turbulent_displace(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn turbulent_displace(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let kind = chv(e, "displacement");
     let amount = fv(e, "amount", cx) * cx.px_scale;
     if amount.abs() < 1e-4 {
@@ -177,7 +177,7 @@ pub fn turbulent_displace(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// 3D Rotate: rotates the layer about its centre in 3-D (X, then Y, then Z) with perspective.
-pub fn rotate_3d(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn rotate_3d(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let (ax, ay, az) = ((fv(e, "rot_x", cx) as f64).to_radians(), (fv(e, "rot_y", cx) as f64).to_radians(), (fv(e, "rot_z", cx) as f64).to_radians());
     let z = fv(e, "z", cx) as f64 * cx.px_scale as f64;
     if ax.abs() < 1e-9 && ay.abs() < 1e-9 && az.abs() < 1e-9 && z.abs() < 1e-9 {
@@ -232,7 +232,7 @@ pub fn rotate_3d(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Transform: affine place, with optional shutter-angle motion blur when the override is on.
-pub fn transform_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn transform_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let fps = cx.frame_rate.max(1.0);
     let angle = fv(e, "shutter_angle", cx);
     let n = if bv(e, "shutter_override") && angle > 0.5 { 7 } else { 1 };
@@ -277,7 +277,7 @@ pub fn transform_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Grow / Shrink: scale animated across the clip from Scale From to Scale To.
-pub fn grow(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn grow(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let p = ease(chv(e, "easing"), clip_progress(cx));
     let (a, b) = (fv(e, "from", cx) as f64, fv(e, "to", cx) as f64);
     let s = (a + (b - a) * p) / 100.0;
@@ -305,7 +305,7 @@ fn motion_blurred(img: &mut Image, n: usize, f: impl Fn(&mut Image, f64) + Sync)
 }
 
 /// Move: the layer slides from Offset From to Offset To across the clip.
-pub fn move_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn move_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let p = clip_progress(cx);
     let kind = chv(e, "easing");
     let (a, b) = (offv(e, "from", cx), offv(e, "to", cx));
@@ -320,7 +320,7 @@ pub fn move_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Spin: rotates by Rotation Amount across the clip.
-pub fn spin(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn spin(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let p = ease(chv(e, "easing"), clip_progress(cx));
     let ang = fv(e, "amount", cx) as f64 * p;
     let s = fv(e, "scale", cx) as f64 / 100.0;
@@ -329,7 +329,7 @@ pub fn spin(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Wiggle: smooth random position / rotation / scale jitter.
-pub fn wiggle(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn wiggle(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let t = cx.seconds * fv(e, "frequency", cx) as f64;
     let seed = fv(e, "seed", cx).max(0.0) as u64;
     let amt = (fv(e, "amount", cx) * cx.px_scale) as f64;
@@ -343,7 +343,7 @@ pub fn wiggle(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Camera Shake: layered smooth noise on position, rotation and zoom, with optional motion blur.
-pub fn camera_shake(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn camera_shake(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let freq = fv(e, "frequency", cx) as f64;
     let seed = fv(e, "seed", cx).max(0.0) as u64;
     let amt = (fv(e, "amount", cx) * cx.px_scale) as f64;
@@ -374,9 +374,55 @@ pub fn camera_shake(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     });
 }
 
+/// The frame index at `seconds`. A tick time at an exact frame boundary can come out a hair
+/// under the whole frame in f64 (frame 29 at 25 fps is 28.999999999999996), so the index is
+/// nudged by far less than a frame before flooring.
+pub(crate) fn gate_frame(seconds: f64, fps: f64) -> f64 {
+    let f = (seconds * fps + 1e-6).floor();
+    if f.is_finite() { f } else { 0.0 }
+}
+
+/// Film Gate (CFA4): each frame sits slightly off in the projector gate (mostly vertically) and is
+/// exposed a little brighter or darker. Both are held for the whole frame, like real film.
+pub fn film_gate(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
+    let seed = fv(e, "seed", cx).max(0.0) as u64;
+    let finite = |v: f32, max: f32| if v.is_finite() { v.clamp(0.0, max) } else { 0.0 };
+    let short = img.w.min(img.h).max(1) as f64;
+    let weave = ((finite(fv(e, "weave", cx), 50.0) * cx.px_scale) as f64).min(short / 4.0);
+    let rot = finite(fv(e, "weave_rotation", cx), 5.0) as f64;
+    let flicker = finite(fv(e, "flicker", cx), 100.0) / 100.0;
+    // adjustment layers and nested temporal renders have no environment, only the sequence rate
+    let fps = cx.env.map_or(cx.frame_rate, |env| env.frame_rate());
+    let fps = if fps.is_finite() && fps > 0.0 { fps } else { 24.0 };
+    let frame = gate_frame(cx.seconds, fps);
+    // a slow drift plus a frame-to-frame jump, in about −1..1
+    let wobble = |ch: u64| -> f64 { (noise1(frame * 0.07, ch, seed) as f64 * 1.2 + noise1(frame * 0.9, ch + 10, seed) as f64 * 0.6).clamp(-1.5, 1.5) };
+    if weave > 0.0 || rot > 0.0 {
+        let c = Vec2::new(img.w as f64 / 2.0, img.h as f64 / 2.0);
+        let off = Vec2::new(wobble(0) * weave * 0.4, wobble(1) * weave);
+        // one steady zoom that keeps the frame covered at the largest shift and turn `wobble`
+        // can reach (|wobble| ≤ 1.5): every output corner must map back inside the source
+        let (hw, hh) = (c.x.max(0.5), c.y.max(0.5));
+        let (ax, ay) = (1.5 * 0.4 * weave, 1.5 * weave);
+        let (sn, cs) = (1.5 * rot).to_radians().sin_cos();
+        let reach_x = cs * (hw + ax) + sn.abs() * (hh + ay);
+        let reach_y = sn.abs() * (hw + ax) + cs * (hh + ay);
+        let s = ((reach_x / hw).max(reach_y / hh) + 1.0 / short).clamp(1.0, 4.0);
+        place(img, c, off, s, wobble(2) * rot);
+    }
+    if flicker > 0.0 {
+        let gain = (1.0 + flicker * (noise1(frame * 0.9, 3, seed) * 1.6).clamp(-1.0, 1.0)).max(0.0);
+        img.px.par_chunks_mut(4).for_each(|p| {
+            p[0] *= gain;
+            p[1] *= gain;
+            p[2] *= gain;
+        });
+    }
+}
+
 /// Spacer: insets the layer inside margins (scaled to fit), with rounded corners and an optional
 /// background fill.
-pub fn spacer(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn spacer(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let k = cx.px_scale as f64;
     let l = fv(e, "left", cx) as f64 * k;
     let (t, r, b) = if bv(e, "uniform") { (l, l, l) } else { (fv(e, "top", cx) as f64 * k, fv(e, "right", cx) as f64 * k, fv(e, "bottom", cx) as f64 * k) };
@@ -431,7 +477,7 @@ fn round_rect_alpha(img: &mut Image, x0: f64, y0: f64, x1: f64, y1: f64, r: f32,
 }
 
 /// Rounded Crop: crop edges with rounded corners, feather and an optional border.
-pub fn rounded_crop(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn rounded_crop(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let (w, h) = (img.w as f32, img.h as f32);
     let (l, t, r, b) = (fv(e, "left", cx) / 100.0 * w, fv(e, "top", cx) / 100.0 * h, w - fv(e, "right", cx) / 100.0 * w, h - fv(e, "bottom", cx) / 100.0 * h);
     let rad = (fv(e, "radius", cx) * cx.px_scale).min(((r - l).min(b - t) / 2.0).max(0.0));
@@ -461,7 +507,7 @@ pub fn rounded_crop(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Clone: the layer repeated in a grid of tiles (optionally mirrored alternately).
-pub fn clone_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn clone_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let cols = fv(e, "columns", cx).clamp(1.0, 16.0) as usize;
     let rows = fv(e, "rows", cx).clamp(1.0, 16.0) as usize;
     if cols == 1 && rows == 1 {
@@ -494,7 +540,7 @@ pub fn clone_fx(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Auto Align: moves the layer's visible content (alpha bounding box) to the chosen frame edge
 /// or centre.
-pub fn auto_align(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn auto_align(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let (hz, vt) = (chv(e, "horizontal"), chv(e, "vertical"));
     if hz == 0 && vt == 0 {
         return;
@@ -533,7 +579,7 @@ pub fn auto_align(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Mosaic (and Mosaic (Legacy)): solid blocks; Softness blends towards a smooth interpolation of
 /// the block colours.
-pub fn mosaic(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn mosaic(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let bx = fv(e, "horizontal", cx).max(1.0) as usize;
     let by = fv(e, "vertical", cx).max(1.0) as usize;
     let soft = (fv(e, "softness", cx) / 100.0).clamp(0.0, 1.0);

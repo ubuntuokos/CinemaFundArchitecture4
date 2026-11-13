@@ -10,7 +10,7 @@
 //! resample), otherwise the clip is rendered on the CPU as before.
 
 use cfa4_color::{hsl_to_rgb, linear_to_srgb, luma709, rgb_to_hsl};
-use cfa4_geom::Affine;
+use cfa4_geom::{Affine, Vec2};
 use cfa4_project::EffectInstance;
 use rayon::prelude::*;
 
@@ -106,6 +106,28 @@ pub enum FxOp {
         dy: f32,
         steps: u32,
     },
+    /// Skin Smoothing ([`skin_mask`], [`skin_retouch`]): a guided filter (luma guide) over
+    /// repeat-edge box-Gaussians of the given radii, inside the skin mask, with Keep Texture's
+    /// share of the removed detail added back. `show` draws the mask instead.
+    SkinSmoothing {
+        rx: Vec<u32>,
+        ry: Vec<u32>,
+        eps: f32,
+        amount: f32,
+        keep: f32,
+        mask: SkinMask,
+        show: bool,
+    },
+    /// Low Light ([`low_light_gain`]): the illumination (brightest channel) smoothed by a
+    /// self-guided filter over repeat-edge box-Gaussians of the given radii, then one gain per
+    /// pixel, `illumination ^ -k` capped at `max_gain`. `show` draws the illumination instead.
+    LowLight {
+        rx: Vec<u32>,
+        ry: Vec<u32>,
+        k: f32,
+        max_gain: f32,
+        show: bool,
+    },
     /// Unsharp mask over a repeat-edge Gaussian of the given box radii (per axis).
     Unsharp {
         rx: Vec<u32>,
@@ -142,6 +164,14 @@ pub enum FxOp {
         sbs: bool,
         shift: f32,
         repeat: bool,
+    },
+    /// Six-Point Pin: the frame mapped between two curved edges ([`six_point_source`]). `edges` is
+    /// the top edge's start, control and end point, then the bottom edge's, as x, y in working
+    /// pixels; `inv` is the inverse of the corners' homography (row-major), the Newton start.
+    SixPointPin {
+        edges: [f32; 12],
+        inv: [f32; 9],
+        identity: bool,
     },
     /// Film Grain: smooth value noise ([`grain_noise`]) on display-encoded colour, weighted by a
     /// shadows / midtones / highlights response. `inv_cell` is 1 / the grain cell in working
@@ -283,7 +313,10 @@ pub const GPU_EFFECTS: &[&str] = &[
     "stereo_swap_eyes",
     "stereo_to_2d",
     "stereo_parallax",
+    "six_point_pin",
     "film_grain",
+    "low_light",
+    "skin_smoothing",
     "halftone",
     "dither",
     "mirror",
@@ -523,6 +556,164 @@ pub fn stereo_parallax_sample(src: &Image, x: usize, y: usize, sbs: bool, shift:
     o
 }
 
+/// Newton steps of [`six_point_source`]: the corners' homography starts close enough that the
+/// error squares each step, so eight reach f32 precision for any sensible screen shape.
+pub const SIX_POINT_STEPS: usize = 8;
+
+/// The source position (`u`, `v` in 0..1 of the frame) that Six-Point Pin draws at output point
+/// (`qx`, `qy`), or `None` outside the warped frame. The frame's top edge runs along the quadratic
+/// Bézier `edges[0..6]` (start, control, end), its bottom edge along `edges[6..12]`, and each
+/// column `u` is the straight line between the two edges at `u`. Newton's method solves
+/// `P(u, v) = q` from the corners' inverse homography `inv`. `fx.wgsl` (`OP_SIX_POINT_PIN`)
+/// mirrors this in the same f32 order.
+pub fn six_point_source(edges: &[f32; 12], inv: &[f32; 9], qx: f32, qy: f32) -> Option<(f32, f32)> {
+    let e = |i: usize| edges.get(i).copied().unwrap_or(0.0);
+    // the point and the derivative of the Bézier edge starting at index `o`
+    let curve = |o: usize, t: f32| {
+        let (s, c, d) = (1.0 - t, 2.0 * t * (1.0 - t), t * t);
+        let p = (e(o) * s * s + e(o + 2) * c + e(o + 4) * d, e(o + 1) * s * s + e(o + 3) * c + e(o + 5) * d);
+        let dp = (2.0 * s * (e(o + 2) - e(o)) + 2.0 * t * (e(o + 4) - e(o + 2)), 2.0 * s * (e(o + 3) - e(o + 1)) + 2.0 * t * (e(o + 5) - e(o + 3)));
+        (p, dp)
+    };
+    let m = |i: usize| inv.get(i).copied().unwrap_or(0.0);
+    let den = m(6) * qx + m(7) * qy + m(8);
+    let (mut u, mut v) = (0.5f32, 0.5f32);
+    if den.abs() > 1e-12 {
+        let (su, sv) = ((m(0) * qx + m(1) * qy + m(2)) / den, (m(3) * qx + m(4) * qy + m(5)) / den);
+        if su.is_finite() && sv.is_finite() {
+            (u, v) = (su.clamp(-1.0, 2.0), sv.clamp(-1.0, 2.0));
+        }
+    }
+    let residual = |u: f32, v: f32| {
+        let ((t, dt), (b, db)) = (curve(0, u), curve(6, u));
+        let r = (t.0 + v * (b.0 - t.0) - qx, t.1 + v * (b.1 - t.1) - qy);
+        // columns of the Jacobian: d/du and d/dv
+        let ju = (dt.0 + v * (db.0 - dt.0), dt.1 + v * (db.1 - dt.1));
+        let jv = (b.0 - t.0, b.1 - t.1);
+        (r, ju, jv)
+    };
+    for _ in 0..SIX_POINT_STEPS {
+        let (r, ju, jv) = residual(u, v);
+        let det = ju.0 * jv.1 - jv.0 * ju.1;
+        if !det.is_finite() || det.abs() <= 1e-12 {
+            break;
+        }
+        u = (u - (r.0 * jv.1 - jv.0 * r.1) / det).clamp(-1.0, 2.0);
+        v = (v - (ju.0 * r.1 - r.0 * ju.1) / det).clamp(-1.0, 2.0);
+    }
+    let (r, _, _) = residual(u, v);
+    let inside = (-1e-3..=1.0 + 1e-3).contains(&u) && (-1e-3..=1.0 + 1e-3).contains(&v);
+    (inside && r.0 * r.0 + r.1 * r.1 <= 0.01).then_some((u, v))
+}
+
+/// Skin Smoothing's mask: the skin tone's Rec. 601 chroma, how far from it still counts as skin
+/// (`tol`), the falloff after that (`soft`), or every pixel (`whole`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SkinMask {
+    pub cb: f32,
+    pub cr: f32,
+    pub tol: f32,
+    pub soft: f32,
+    pub whole: bool,
+}
+
+/// Rec. 601 luma of a straight sRGB colour: Skin Smoothing's guide.
+#[inline]
+pub fn skin_guide(c: [f32; 3]) -> f32 {
+    0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+}
+
+/// Rec. 601 chroma (Cb, Cr) of a straight sRGB colour. Skin sits in a small, well-known patch of
+/// this plane whatever the exposure, so the mask is a distance here and ignores brightness.
+#[inline]
+pub fn skin_chroma(c: [f32; 3]) -> (f32, f32) {
+    let y = skin_guide(c);
+    (0.564 * (c[2] - y), 0.713 * (c[0] - y))
+}
+
+/// How much of a straight sRGB colour is skin, 0..1. `fx.wgsl` (`skin_mask`) mirrors this.
+#[inline]
+pub fn skin_mask(c: [f32; 3], m: &SkinMask) -> f32 {
+    if m.whole {
+        return 1.0;
+    }
+    let (cb, cr) = skin_chroma(c);
+    let d = ((cb - m.cb) * (cb - m.cb) + (cr - m.cr) * (cr - m.cr)).sqrt();
+    let t = ((d - m.tol) / m.soft.max(1e-4)).clamp(0.0, 1.0);
+    1.0 - t * t * (3.0 - 2.0 * t)
+}
+
+/// The guided filter's per-pixel model from the box means: `ma = [mean g, mean g², …]` packs the
+/// guide's mean and mean square and the input's red and green means, `mb` the input's blue mean
+/// and the guide × input means. Returns `(a, b)` per channel, `smoothed = a · g + b`. `fx.wgsl`
+/// (`OP_SKIN_COEF_A` / `_B`) mirrors this.
+#[inline]
+pub fn skin_coeffs(ma: [f32; 4], mb: [f32; 4], eps: f32) -> ([f32; 3], [f32; 3]) {
+    let var = (ma[1] - ma[0] * ma[0]).max(0.0);
+    let mp = [ma[2], ma[3], mb[0]];
+    let mut a = [0.0; 3];
+    let mut b = [0.0; 3];
+    for k in 0..3 {
+        a[k] = (mb[k + 1] - ma[0] * mp[k]) / (var + eps);
+        b[k] = mp[k] - a[k] * ma[0];
+    }
+    (a, b)
+}
+
+/// Skin Smoothing's output for straight sRGB `c` (mask `m`) given the guided filter's averaged
+/// coefficients: the smoothed colour plus Keep Texture's share of the detail it removed, mixed in
+/// by Amount × mask. `fx.wgsl` (`OP_SKIN_APPLY`) mirrors this.
+#[inline]
+pub fn skin_retouch(c: [f32; 3], m: f32, a: [f32; 3], b: [f32; 3], amount: f32, keep: f32) -> [f32; 3] {
+    let k = amount * m;
+    let g = skin_guide(c);
+    let mut out = [0.0; 3];
+    for ch in 0..3 {
+        let smoothed = a[ch] * g + b[ch];
+        let retouched = smoothed + (c[ch] - smoothed) * keep;
+        out[ch] = c[ch] + (retouched - c[ch]) * k;
+    }
+    out
+}
+
+/// Whether Skin Smoothing (not showing its mask) changes anything: some smoothing radius, some
+/// Amount, and less than all of the texture kept.
+pub fn skin_smoothing_runs(rx: &[u32], ry: &[u32], amount: f32, keep: f32) -> bool {
+    (rx.iter().chain(ry).any(|r| *r > 0)) && amount > 0.0 && keep < 1.0
+}
+
+/// Variance (display 0..1, squared) below which Low Light's illumination counts as flat and is
+/// smoothed by the guided filter; above it an edge (a lamp against a wall) is kept.
+pub const LOW_LIGHT_EPS: f32 = 0.01;
+
+/// The illumination estimate of a straight sRGB colour for Low Light: its brightest channel.
+#[inline]
+pub fn low_light_peak(c: [f32; 3]) -> f32 {
+    c[0].max(c[1]).max(c[2]).clamp(0.0, 1.0)
+}
+
+/// Low Light's per-pixel model of the self-guided filter from the box means of the peak `m` and
+/// its square `m2`: `(a, b)` with `smoothed = a · peak + b`. `fx.wgsl` (`OP_LOW_LIGHT_COEF`)
+/// mirrors this.
+#[inline]
+pub fn low_light_coeffs(m: f32, m2: f32) -> (f32, f32) {
+    let var = (m2 - m * m).max(0.0);
+    let a = var / (var + LOW_LIGHT_EPS);
+    (a, m - a * m)
+}
+
+/// Low Light's output for straight sRGB `c` under the smoothed illumination `t`. `fx.wgsl`
+/// (`OP_LOW_LIGHT_APPLY`) mirrors this.
+#[inline]
+pub fn low_light_gain(c: [f32; 3], t: f32, k: f32, max_gain: f32, show: bool) -> [f32; 3] {
+    let t = t.clamp(1e-3, 1.0);
+    if show {
+        return [t, t, t];
+    }
+    let g = t.powf(-k).min(max_gain);
+    [(c[0] * g).min(1.0), (c[1] * g).min(1.0), (c[2] * g).min(1.0)]
+}
+
 /// `Image::transformed` without the mip path: the destination rectangle it writes and the inverse.
 fn resample(w: usize, h: usize, m: &Affine, opacity: f32) -> Resample {
     let Some(inv) = m.inverse() else { return Resample { inv: None, rect: [0; 4], opacity } };
@@ -547,7 +738,7 @@ fn minifies(m: &Affine, w: usize, h: usize) -> bool {
 impl FxOp {
     /// Evaluate `e` at `cx.t` for a `w`×`h` working image. None for effects without a GPU
     /// implementation (and for disabled effects).
-    pub fn eval(e: &EffectInstance, cx: &FxCtx, w: usize, h: usize) -> Option<FxOp> {
+    pub fn eval(e: &EffectInstance, cx: &FxCtx<'_>, w: usize, h: usize) -> Option<FxOp> {
         if !e.enabled {
             return None;
         }
@@ -702,6 +893,36 @@ impl FxOp {
             "horizontal_flip" => FxOp::HFlip,
             "vertical_flip" => FxOp::VFlip,
             "stereo_swap_eyes" => FxOp::SwapEyes { sbs: choice(e, "frame_layout") == 1 },
+            "skin_smoothing" => {
+                let r = (f(e, "radius", cx) * cx.px_scale).clamp(0.0, 500.0);
+                let (rx, ry) = if r < 0.5 { (Vec::new(), Vec::new()) } else { gaussian_boxes(w, h, r, r) };
+                // Smoothness is the luma standard deviation (display 0..1) still counted as flat
+                // skin: 2 % at 0 (only sensor noise), 20 % at 100 (everything but a hard edge)
+                let sd = 0.02 + 0.18 * (f(e, "smoothness", cx) / 100.0).clamp(0.0, 1.0);
+                let tone = color(e, "skin_tone", cx);
+                let (cb, cr) = skin_chroma(enc(dec([tone[0], tone[1], tone[2]])));
+                let tol = (f(e, "tolerance", cx) / 100.0).clamp(0.0, 1.0) * 0.3;
+                FxOp::SkinSmoothing {
+                    rx,
+                    ry,
+                    eps: sd * sd,
+                    amount: (f(e, "amount", cx) / 100.0).clamp(0.0, 1.0),
+                    keep: (f(e, "texture", cx) / 100.0).clamp(0.0, 1.0),
+                    mask: SkinMask { cb, cr, tol, soft: (f(e, "softness", cx) / 100.0).clamp(0.0, 1.0) * 0.3, whole: b(e, "whole_image") },
+                    show: b(e, "show_mask"),
+                }
+            }
+            "low_light" => {
+                let r = (f(e, "radius", cx) * cx.px_scale).clamp(0.0, 500.0);
+                let (rx, ry) = if r < 0.5 { (Vec::new(), Vec::new()) } else { gaussian_boxes(w, h, r, r) };
+                FxOp::LowLight {
+                    rx,
+                    ry,
+                    k: (f(e, "amount", cx) / 100.0).clamp(0.0, 1.0) * 0.85,
+                    max_gain: (f(e, "max_gain", cx) / 100.0).clamp(1.0, 20.0),
+                    show: b(e, "show_illumination"),
+                }
+            }
             "stereo_to_2d" => FxOp::StereoTo2d { sbs: choice(e, "frame_layout") == 1, right: choice(e, "eye") == 1 },
             "stereo_parallax" => {
                 let sbs = choice(e, "frame_layout") == 1;
@@ -710,6 +931,25 @@ impl FxOp {
                 let pct = if pct.is_finite() { pct.clamp(-10.0, 10.0) } else { 0.0 };
                 let vw = if sbs { w / 2 } else { w };
                 FxOp::StereoParallax { sbs, shift: pct / 100.0 * vw as f32 / 2.0, repeat: b(e, "repeat_edge") }
+            }
+            "six_point_pin" => {
+                use crate::vfx::distort::{h_inverse, square_to_quad};
+                let img = Image { w, h, px: Vec::new() };
+                let names = ["upper_left", "upper_center", "upper_right", "lower_left", "lower_center", "lower_right"];
+                let p = names.map(|n| crate::vfx::pv(e, n, cx, &img));
+                let (fw, fh) = (w as f64, h as f64);
+                let rest = [(0.0, 0.0), (fw / 2.0, 0.0), (fw, 0.0), (0.0, fh), (fw / 2.0, fh), (fw, fh)];
+                let identity = p.iter().zip(rest).all(|(a, (x, y))| (a.x - x).abs() < 1e-6 && (a.y - y).abs() < 1e-6);
+                // the quadratic Bézier through start, middle (at t = 1/2) and end
+                let ctrl = |a: Vec2, m: Vec2, b: Vec2| Vec2::new(2.0 * m.x - (a.x + b.x) / 2.0, 2.0 * m.y - (a.y + b.y) / 2.0);
+                let [ul, uc, ur, ll, lc, lr] = p;
+                let pts = [ul, ctrl(ul, uc, ur), ur, ll, ctrl(ll, lc, lr), lr];
+                let mut edges = [0f32; 12];
+                for (d, v) in edges.chunks_exact_mut(2).zip(pts) {
+                    d.copy_from_slice(&[v.x as f32, v.y as f32]);
+                }
+                let inv = h_inverse(&square_to_quad([ul, ur, lr, ll])).map_or([0.0; 9], |m| m.map(|v| v as f32));
+                FxOp::SixPointPin { edges, inv, identity }
             }
             "halftone" => {
                 let cell = (f(e, "cell_size", cx).clamp(2.0, 128.0) * cx.px_scale).max(1.0);
@@ -950,6 +1190,8 @@ impl FxOp {
             FxOp::Tint { black, white, amount } => fin(black) && fin(white) && amount.is_finite(),
             FxOp::BlackWhite | FxOp::HFlip | FxOp::VFlip | FxOp::SwapEyes { .. } | FxOp::StereoTo2d { .. } => true,
             FxOp::StereoParallax { shift, .. } => shift.is_finite(),
+            // f32 pixel positions keep sub-pixel precision far beyond any frame size
+            FxOp::SixPointPin { edges, inv, .. } => edges.iter().all(|v| v.is_finite() && v.abs() < 1e6) && fin(inv),
             FxOp::ColorBalance { sh, md, hi, .. } => fin(sh) && fin(md) && fin(hi),
             FxOp::LeaveColor { amount, key_hue, tol, soft } => fin(&[*amount, *key_hue, *tol, *soft]),
             FxOp::ChangeToColor { from_hue, to_hue, tol, soft } => fin(&[*from_hue, *to_hue, *tol, *soft]),
@@ -962,6 +1204,8 @@ impl FxOp {
             FxOp::Gaussian { .. } => true,
             FxOp::DirectionalBlur { dx, dy, .. } => fin(&[*dx, *dy]),
             FxOp::Unsharp { amount, threshold, .. } => fin(&[*amount, *threshold]),
+            FxOp::LowLight { k, max_gain, .. } => fin(&[*k, *max_gain]),
+            FxOp::SkinSmoothing { eps, amount, keep, mask, .. } => fin(&[*eps, *amount, *keep, mask.cb, mask.cr, mask.tol, mask.soft]),
             FxOp::Crop { x0, x1, y0, y1, feather } => fin(&[*x0, *x1, *y0, *y1, *feather]),
             FxOp::Resample(r) => {
                 r.rect[0] != u32::MAX
@@ -1142,6 +1386,78 @@ impl FxOp {
             FxOp::Gaussian { rx, ry, repeat } => crate::effects::box_blur(img, rx, ry, *repeat),
             FxOp::DirectionalBlur { dx, dy, steps } => crate::effects::directional_taps(img, *dx, *dy, *steps as usize),
             FxOp::Unsharp { rx, ry, amount, threshold } => crate::effects::unsharp_boxes(img, rx, ry, *amount, *threshold),
+            FxOp::SkinSmoothing { rx, ry, eps, amount, keep, mask, show } => {
+                let (amount, keep, eps, mask) = (*amount, *keep, *eps, *mask);
+                let straight = |p: &[f32]| enc(Image::unpremul([p[0], p[1], p[2], p[3]]));
+                if *show {
+                    img.px.par_chunks_mut(4).for_each(|p| {
+                        let m = skin_mask(straight(p), &mask);
+                        let l = dec([m, m, m]);
+                        for ch in 0..3 {
+                            p[ch] = l[ch] * p[3];
+                        }
+                    });
+                    return;
+                }
+                if !skin_smoothing_runs(rx, ry, amount, keep) {
+                    return;
+                }
+                // the guide's and the input's statistics in two planes, box-blurred; then the
+                // model's coefficients in two more, box-blurred
+                let (mut sa, mut sb) = (img.clone(), img.clone());
+                sa.px.par_chunks_mut(4).zip(sb.px.par_chunks_mut(4)).for_each(|(a, b)| {
+                    let c = straight(a);
+                    let g = skin_guide(c);
+                    a.copy_from_slice(&[g, g * g, c[0], c[1]]);
+                    b.copy_from_slice(&[c[2], g * c[0], g * c[1], g * c[2]]);
+                });
+                crate::effects::box_blur(&mut sa, rx, ry, true);
+                crate::effects::box_blur(&mut sb, rx, ry, true);
+                sa.px.par_chunks_mut(4).zip(sb.px.par_chunks_mut(4)).for_each(|(a, b)| {
+                    let (ca, cb) = skin_coeffs([a[0], a[1], a[2], a[3]], [b[0], b[1], b[2], b[3]], eps);
+                    a.copy_from_slice(&[ca[0], ca[1], ca[2], 0.0]);
+                    b.copy_from_slice(&[cb[0], cb[1], cb[2], 0.0]);
+                });
+                crate::effects::box_blur(&mut sa, rx, ry, true);
+                crate::effects::box_blur(&mut sb, rx, ry, true);
+                img.px.par_chunks_mut(4).zip(sa.px.par_chunks(4).zip(sb.px.par_chunks(4))).for_each(|(p, (a, b))| {
+                    let c = straight(p);
+                    let m = skin_mask(c, &mask);
+                    if amount * m <= 0.0 {
+                        return;
+                    }
+                    let l = dec(skin_retouch(c, m, [a[0], a[1], a[2]], [b[0], b[1], b[2]], amount, keep));
+                    for ch in 0..3 {
+                        p[ch] = l[ch] * p[3];
+                    }
+                });
+            }
+            FxOp::LowLight { rx, ry, k, max_gain, show } => {
+                if *k <= 0.0 && !*show {
+                    return;
+                }
+                // the peak and its square, box-blurred; then the model's (a, b), box-blurred
+                let mut stats = img.clone();
+                stats.px.par_chunks_mut(4).for_each(|p| {
+                    let t = low_light_peak(enc(Image::unpremul([p[0], p[1], p[2], p[3]])));
+                    p.copy_from_slice(&[t, t * t, 0.0, 0.0]);
+                });
+                crate::effects::box_blur(&mut stats, rx, ry, true);
+                stats.px.par_chunks_mut(4).for_each(|p| {
+                    let (a, b) = low_light_coeffs(p[0], p[1]);
+                    p.copy_from_slice(&[a, b, 0.0, 0.0]);
+                });
+                crate::effects::box_blur(&mut stats, rx, ry, true);
+                let (k, max_gain, show) = (*k, *max_gain, *show);
+                img.px.par_chunks_mut(4).zip(stats.px.par_chunks(4)).for_each(|(p, ab)| {
+                    let c = enc(Image::unpremul([p[0], p[1], p[2], p[3]]));
+                    let t = ab[0] * low_light_peak(c) + ab[1];
+                    let l = dec(low_light_gain(c, t, k, max_gain, show));
+                    for ch in 0..3 {
+                        p[ch] = l[ch] * p[3];
+                    }
+                });
+            }
             FxOp::Crop { x0, x1, y0, y1, feather } => crate::effects::crop_px(img, *x0, *x1, *y0, *y1, *feather),
             FxOp::Resample(r) => {
                 let out = match (&r.inv, r.rect[0]) {
@@ -1205,6 +1521,24 @@ impl FxOp {
                     for x in 0..w {
                         if let Some(d) = row.get_mut(x * 4..x * 4 + 4) {
                             d.copy_from_slice(&stereo_parallax_sample(&src, x, y, sbs, shift, repeat));
+                        }
+                    }
+                });
+            }
+            FxOp::SixPointPin { edges, inv, identity } => {
+                if *identity {
+                    return;
+                }
+                let src = img.clone();
+                let (w, fw, fh) = (img.w, img.w as f32, img.h as f32);
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let px = match six_point_source(edges, inv, x as f32 + 0.5, y as f32 + 0.5) {
+                            Some((u, v)) => src.sample_bilinear(u * fw, v * fh),
+                            None => [0.0; 4],
+                        };
+                        if let Some(d) = row.get_mut(x * 4..x * 4 + 4) {
+                            d.copy_from_slice(&px);
                         }
                     }
                 });
@@ -1760,6 +2094,66 @@ mod tests {
             let mut img = src.clone();
             FxOp::eval(&stereo_to_2d(layout, 1), &eval_ctx(), w, h).unwrap().apply(&mut img);
             assert_eq!(img.px, src.px, "{w}x{h} layout {layout}");
+        }
+    }
+
+    fn six_point(pts: &[(&str, f64, f64)]) -> EffectInstance {
+        let mut e = find_effect("six_point_pin").unwrap().instance();
+        for (k, x, y) in pts {
+            e.params.get_mut(*k).unwrap().value = ParamValue::Vec2(Vec2::new(*x, *y));
+        }
+        e
+    }
+
+    #[test]
+    fn six_point_pin_defaults_leave_the_frame_alone() {
+        let op = FxOp::eval(&six_point(&[]), &eval_ctx(), 9, 7).unwrap();
+        assert!(matches!(op, FxOp::SixPointPin { identity: true, .. }), "{op:?}");
+        let mut img = numbered(9, 7);
+        op.apply(&mut img);
+        assert_eq!(img, numbered(9, 7));
+    }
+
+    #[test]
+    fn six_point_pin_inverts_the_curved_map() {
+        let e = six_point(&[("upper_center", 50.0, 12.0), ("lower_center", 45.0, 70.0), ("lower_right", 96.0, 78.0)]);
+        let Some(FxOp::SixPointPin { edges, inv, identity: false }) = FxOp::eval(&e, &eval_ctx(), 100, 80) else { panic!() };
+        // the forward map: the top Bézier passes through its middle point at u = 1/2
+        let bez = |o: usize, t: f32| {
+            let (s, c, d) = ((1.0 - t) * (1.0 - t), 2.0 * t * (1.0 - t), t * t);
+            (edges[o] * s + edges[o + 2] * c + edges[o + 4] * d, edges[o + 1] * s + edges[o + 3] * c + edges[o + 5] * d)
+        };
+        assert_eq!(bez(0, 0.5), (50.0, 12.0));
+        assert_eq!(bez(6, 0.5), (45.0, 70.0));
+        for (u, v) in [(0.1f32, 0.2f32), (0.5, 0.5), (0.9, 0.95), (0.02, 0.98), (0.7, 0.01)] {
+            let (t, b) = (bez(0, u), bez(6, u));
+            let q = (t.0 + v * (b.0 - t.0), t.1 + v * (b.1 - t.1));
+            let (su, sv) = six_point_source(&edges, &inv, q.0, q.1).unwrap_or_else(|| panic!("{u} {v}"));
+            assert!((su - u).abs() < 1e-5 && (sv - v).abs() < 1e-5, "{u} {v}: {su} {sv}");
+        }
+        // above the bent top edge there is no picture
+        assert_eq!(six_point_source(&edges, &inv, 50.0, 6.0), None);
+        let mut img = Image::filled(100, 80, [0.5, 0.25, 0.125, 1.0]);
+        FxOp::eval(&e, &eval_ctx(), 100, 80).unwrap().apply(&mut img);
+        assert_eq!(img.get(50, 5), [0.0; 4]);
+        assert_eq!(img.get(50, 40), [0.5, 0.25, 0.125, 1.0]);
+        assert_eq!(img.get(50, 75), [0.0; 4], "below the bent bottom edge");
+    }
+
+    #[test]
+    fn six_point_pin_survives_hostile_points() {
+        for pts in [
+            vec![("upper_center", f64::INFINITY, 0.0)],
+            vec![("lower_left", 1e300, -1e300), ("upper_right", f64::NEG_INFINITY, 3.0)],
+            // every point on top of each other: no area, nothing drawn
+            ["upper_left", "upper_center", "upper_right", "lower_left", "lower_center", "lower_right"].map(|k| (k, 4.0, 4.0)).to_vec(),
+            // edges crossing over (a folded frame)
+            vec![("upper_left", 9.0, 7.0), ("lower_right", 0.0, 0.0), ("upper_center", 4.0, 30.0)],
+        ] {
+            let op = FxOp::eval(&six_point(&pts), &eval_ctx(), 9, 7).unwrap();
+            let mut img = numbered(9, 7);
+            op.apply(&mut img);
+            assert!(img.px.iter().all(|v| v.is_finite()), "{pts:?}");
         }
     }
 

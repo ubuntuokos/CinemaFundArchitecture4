@@ -166,7 +166,7 @@ impl SequenceHeader {
     }
 }
 
-fn parse_color_config(r: &mut BitReader, profile: u8) -> Result<ColorConfig> {
+fn parse_color_config(r: &mut BitReader<'_>, profile: u8) -> Result<ColorConfig> {
     let mut c = ColorConfig::default();
     let high = r.flag()?;
     c.bit_depth = if profile == 2 && high {
@@ -475,7 +475,7 @@ fn tile_log2(blk: u32, target: u32) -> u32 {
 
 impl FrameHeader {
     /// uncompressed_header( ). `st` holds the cross-frame state.
-    pub(crate) fn parse(r: &mut BitReader, st: &mut HeaderState, temporal_id: u32, spatial_id: u32) -> Result<FrameHeader> {
+    pub(crate) fn parse(r: &mut BitReader<'_>, st: &mut HeaderState<'_>, temporal_id: u32, spatial_id: u32) -> Result<FrameHeader> {
         let seq = st.seq;
         let mut h = FrameHeader { temporal_id, spatial_id, ..Default::default() };
         let id_len = if seq.frame_id_numbers_present { seq.additional_frame_id_length_minus_1 + seq.delta_frame_id_length_minus_2 + 3 } else { 0 };
@@ -727,7 +727,7 @@ impl FrameHeader {
         Ok(h)
     }
 
-    fn superres_params(&mut self, r: &mut BitReader, seq: &SequenceHeader) -> Result<()> {
+    fn superres_params(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader) -> Result<()> {
         self.use_superres = if seq.enable_superres { r.flag()? } else { false };
         self.superres_denom = if self.use_superres { r.f(SUPERRES_DENOM_BITS as u32)? + SUPERRES_DENOM_MIN as u32 } else { SUPERRES_NUM as u32 };
         self.upscaled_width = self.frame_width;
@@ -740,7 +740,7 @@ impl FrameHeader {
         self.mi_rows = 2 * ((self.frame_height + 7) >> 3);
     }
 
-    fn frame_size(&mut self, r: &mut BitReader, seq: &SequenceHeader) -> Result<()> {
+    fn frame_size(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader) -> Result<()> {
         if self.frame_size_override_flag {
             self.frame_width = r.f(seq.frame_width_bits)? + 1;
             self.frame_height = r.f(seq.frame_height_bits)? + 1;
@@ -753,7 +753,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn render_size(&mut self, r: &mut BitReader) -> Result<()> {
+    fn render_size(&mut self, r: &mut BitReader<'_>) -> Result<()> {
         if r.flag()? {
             self.render_width = r.f(16)? + 1;
             self.render_height = r.f(16)? + 1;
@@ -841,7 +841,7 @@ impl FrameHeader {
         }
     }
 
-    fn tile_info(&mut self, r: &mut BitReader, seq: &SequenceHeader) -> Result<()> {
+    fn tile_info(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader) -> Result<()> {
         let sb128 = seq.use_128x128_superblock;
         let sb_cols = if sb128 { (self.mi_cols + 31) >> 5 } else { (self.mi_cols + 15) >> 4 };
         let sb_rows = if sb128 { (self.mi_rows + 31) >> 5 } else { (self.mi_rows + 15) >> 4 };
@@ -932,10 +932,10 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn quantization_params(&mut self, r: &mut BitReader, seq: &SequenceHeader) -> Result<()> {
+    fn quantization_params(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader) -> Result<()> {
         let q = &mut self.quant;
         q.base_q_idx = r.f(8)?;
-        let read_delta_q = |r: &mut BitReader| -> Result<i32> { if r.flag()? { r.su(7) } else { Ok(0) } };
+        let read_delta_q = |r: &mut BitReader<'_>| -> Result<i32> { if r.flag()? { r.su(7) } else { Ok(0) } };
         q.delta_q_y_dc = read_delta_q(r)?;
         if seq.color.num_planes > 1 {
             let diff_uv_delta = if seq.color.separate_uv_delta_q { r.flag()? } else { false };
@@ -958,7 +958,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn segmentation_params(&mut self, r: &mut BitReader, st: &mut HeaderState) -> Result<()> {
+    fn segmentation_params(&mut self, r: &mut BitReader<'_>, st: &mut HeaderState<'_>) -> Result<()> {
         const BITS: [u32; SEG_LVL_MAX] = [8, 6, 6, 6, 6, 3, 0, 0];
         const SIGNED: [bool; SEG_LVL_MAX] = [true, true, true, true, true, false, false, false];
         const MAX: [i32; SEG_LVL_MAX] = [255, 63, 63, 63, 63, 7, 0, 0];
@@ -1014,7 +1014,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn loop_filter_params(&mut self, r: &mut BitReader, seq: &SequenceHeader, st: &mut HeaderState) -> Result<()> {
+    fn loop_filter_params(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader, st: &mut HeaderState<'_>) -> Result<()> {
         let lf = &mut self.lf;
         if self.coded_lossless || self.allow_intrabc {
             lf.level = [0; 4];
@@ -1049,7 +1049,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn cdef_params(&mut self, r: &mut BitReader, seq: &SequenceHeader) -> Result<()> {
+    fn cdef_params(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader) -> Result<()> {
         let c = &mut self.cdef;
         if self.coded_lossless || self.allow_intrabc || !seq.enable_cdef {
             c.bits = 0;
@@ -1079,7 +1079,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn lr_params(&mut self, r: &mut BitReader, seq: &SequenceHeader) -> Result<()> {
+    fn lr_params(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader) -> Result<()> {
         const REMAP: [u8; 4] = [RESTORE_NONE as u8, RESTORE_SWITCHABLE as u8, RESTORE_WIENER as u8, RESTORE_SGRPROJ as u8];
         let l = &mut self.lr;
         if self.all_lossless || self.allow_intrabc || !seq.enable_restoration {
@@ -1117,7 +1117,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn skip_mode_params(&mut self, r: &mut BitReader, seq: &SequenceHeader, refs: &[RefInfo; NUM_REF_FRAMES]) -> Result<()> {
+    fn skip_mode_params(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader, refs: &[RefInfo; NUM_REF_FRAMES]) -> Result<()> {
         let mut allowed = false;
         if !(self.frame_is_intra || !self.reference_select || !seq.enable_order_hint) {
             let mut fwd = -1i32;
@@ -1160,7 +1160,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn global_motion_params(&mut self, r: &mut BitReader) -> Result<()> {
+    fn global_motion_params(&mut self, r: &mut BitReader<'_>) -> Result<()> {
         for rf in LAST_FRAME..=ALTREF_FRAME {
             self.gm_type[rf] = IDENTITY as u8;
             self.gm_params[rf] = default_gm_params()[rf];
@@ -1200,7 +1200,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn read_global_param(&mut self, r: &mut BitReader, typ: usize, rf: usize, idx: usize) -> Result<()> {
+    fn read_global_param(&mut self, r: &mut BitReader<'_>, typ: usize, rf: usize, idx: usize) -> Result<()> {
         let mut abs_bits = GM_ABS_ALPHA_BITS as u32;
         let mut prec_bits = GM_ALPHA_PREC_BITS as u32;
         if idx < 2 {
@@ -1223,7 +1223,7 @@ impl FrameHeader {
         Ok(())
     }
 
-    fn film_grain_params(&mut self, r: &mut BitReader, seq: &SequenceHeader, refs: &[RefInfo; NUM_REF_FRAMES]) -> Result<()> {
+    fn film_grain_params(&mut self, r: &mut BitReader<'_>, seq: &SequenceHeader, refs: &[RefInfo; NUM_REF_FRAMES]) -> Result<()> {
         if !seq.film_grain_params_present || (!self.show_frame && !self.showable_frame) {
             self.film_grain = FilmGrainParams::default();
             return Ok(());
@@ -1251,6 +1251,9 @@ impl FrameHeader {
             g.point_y_value[i] = r.f(8)? as u8;
             g.point_y_scaling[i] = r.f(8)? as u8;
         }
+        if !strictly_increasing(&g.point_y_value[..g.num_y_points]) {
+            return Err(Error::Invalid("point_y_value"));
+        }
         g.chroma_scaling_from_luma = if seq.color.mono_chrome { false } else { r.flag()? };
         if seq.color.mono_chrome || g.chroma_scaling_from_luma || (seq.color.subsampling_x == 1 && seq.color.subsampling_y == 1 && g.num_y_points == 0) {
             g.num_cb_points = 0;
@@ -1264,6 +1267,9 @@ impl FrameHeader {
                 g.point_cb_value[i] = r.f(8)? as u8;
                 g.point_cb_scaling[i] = r.f(8)? as u8;
             }
+            if !strictly_increasing(&g.point_cb_value[..g.num_cb_points]) {
+                return Err(Error::Invalid("point_cb_value"));
+            }
             g.num_cr_points = r.f(4)? as usize;
             if g.num_cr_points > 10 {
                 return Err(Error::Invalid("num_cr_points"));
@@ -1271,6 +1277,9 @@ impl FrameHeader {
             for i in 0..g.num_cr_points {
                 g.point_cr_value[i] = r.f(8)? as u8;
                 g.point_cr_scaling[i] = r.f(8)? as u8;
+            }
+            if !strictly_increasing(&g.point_cr_value[..g.num_cr_points]) {
+                return Err(Error::Invalid("point_cr_value"));
             }
         }
         g.grain_scaling_minus_8 = r.f(2)?;
@@ -1322,6 +1331,12 @@ pub(crate) fn default_gm_params() -> [[i32; 6]; 8] {
     p
 }
 
+/// Film grain scaling points must strictly increase (6.8.20); equal points would divide by zero when
+/// the scaling lookup is interpolated.
+fn strictly_increasing(values: &[u8]) -> bool {
+    values.windows(2).all(|w| w.first() < w.get(1))
+}
+
 fn inverse_recenter(r: i32, v: i32) -> i32 {
     if v > 2 * r {
         v
@@ -1332,17 +1347,17 @@ fn inverse_recenter(r: i32, v: i32) -> i32 {
     }
 }
 
-fn decode_signed_subexp_with_ref(r: &mut BitReader, low: i32, high: i32, rr: i32) -> Result<i32> {
+fn decode_signed_subexp_with_ref(r: &mut BitReader<'_>, low: i32, high: i32, rr: i32) -> Result<i32> {
     let x = decode_unsigned_subexp_with_ref(r, high - low, rr - low)?;
     Ok(x + low)
 }
 
-fn decode_unsigned_subexp_with_ref(r: &mut BitReader, mx: i32, rr: i32) -> Result<i32> {
+fn decode_unsigned_subexp_with_ref(r: &mut BitReader<'_>, mx: i32, rr: i32) -> Result<i32> {
     let v = decode_subexp(r, mx)?;
     Ok(if (rr << 1) <= mx { inverse_recenter(rr, v) } else { mx - 1 - inverse_recenter(mx - 1 - rr, v) })
 }
 
-fn decode_subexp(r: &mut BitReader, num_syms: i32) -> Result<i32> {
+fn decode_subexp(r: &mut BitReader<'_>, num_syms: i32) -> Result<i32> {
     let mut i = 0;
     let mut mk = 0;
     let k = 3;
@@ -1357,5 +1372,19 @@ fn decode_subexp(r: &mut BitReader, num_syms: i32) -> Result<i32> {
         } else {
             return Ok(r.f(b2 as u32)? as i32 + mk);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strictly_increasing;
+
+    #[test]
+    fn film_grain_points_must_strictly_increase() {
+        assert!(strictly_increasing(&[]));
+        assert!(strictly_increasing(&[7]));
+        assert!(strictly_increasing(&[0, 64, 255]));
+        assert!(!strictly_increasing(&[0, 64, 64]));
+        assert!(!strictly_increasing(&[128, 64]));
     }
 }

@@ -1,7 +1,7 @@
 //! Responsive design and per-character styles of graphic clips (M10.7).
 //!
 //! - **Per-character styles** ([`StyleRun`], [`CharStyle`]): a text layer's runs override font,
-//!   style, size, fill, faux bold / italic, underline, tracking, baseline shift and caps for a
+//!   style, size, fill, faux bold / italic, underline, strikethrough, tracking, baseline shift and caps for a
 //!   range of characters. Ranges are in *characters* (not bytes), sorted and non-overlapping;
 //!   [`apply_char_style`] merges a new style into a range and [`adjust_runs`] keeps runs on the
 //!   right characters when the text is edited (typed characters take the style of the character
@@ -69,6 +69,8 @@ pub struct CharStyle {
     pub faux_italic: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub underline: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strikethrough: Option<bool>,
     /// Tracking in 1/1000 em.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tracking: Option<f32>,
@@ -94,6 +96,7 @@ impl CharStyle {
             faux_bold: over.faux_bold.or(self.faux_bold),
             faux_italic: over.faux_italic.or(self.faux_italic),
             underline: over.underline.or(self.underline),
+            strikethrough: over.strikethrough.or(self.strikethrough),
             tracking: over.tracking.or(self.tracking),
             baseline_shift: over.baseline_shift.or(self.baseline_shift),
             caps: over.caps.or(self.caps),
@@ -401,6 +404,70 @@ pub struct GraphicMeta {
     /// The graphics template this graphic was made from, with its editable properties.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub template: Option<crate::gtemplate::TemplateLink>,
+    /// A page of a credits sequence made from a spreadsheet (`graphics.credits.*`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub credits: Option<Box<CreditsLink>>,
+}
+
+/// Links a credits page clip to its credits document, so the credits can be refreshed from
+/// their spreadsheet (`graphics.credits.refresh`). Every page of one import carries the same
+/// `group` and document; the document is the `.cfa4credits` JSON (format owned by
+/// `cfa4-credits`), kept as text so this crate does not depend on it.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct CreditsLink {
+    /// Same for every page (and picture) of one import.
+    pub group: u64,
+    /// 0-based page number.
+    pub page: u32,
+    /// The credits document as accepted at the last import or refresh.
+    pub doc: String,
+    /// Clips of the pictures that belong to this page.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub pictures: Vec<u64>,
+    /// Fingerprint of each generated layer by its stable key, to recognise manual edits.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub layers: Vec<LayerStamp>,
+}
+
+impl CreditsLink {
+    /// After clips are copied: a copy is a credits group of its own. `ids` maps original clip ids
+    /// to their copies; `groups` keeps one new group id per original group across the copies
+    /// (`alloc` makes one). Pictures that were not copied are dropped from the copy.
+    pub fn remap_copy(
+        &mut self,
+        ids: &std::collections::HashMap<crate::ClipId, crate::ClipId>,
+        groups: &mut std::collections::HashMap<u64, u64>,
+        mut alloc: impl FnMut() -> u64,
+    ) {
+        let g = self.group;
+        self.group = *groups.entry(g).or_insert_with(|| ids.get(&crate::ClipId(g)).map(|c| c.0).unwrap_or_else(&mut alloc));
+        self.pictures = self.pictures.iter().filter_map(|p| ids.get(&crate::ClipId(*p)).map(|c| c.0)).collect();
+    }
+}
+
+/// Make copied clips' credits links their own (see [`CreditsLink::remap_copy`]).
+pub fn remap_copied_credits<'a>(
+    items: impl IntoIterator<Item = &'a mut crate::TrackItem>,
+    ids: &std::collections::HashMap<crate::ClipId, crate::ClipId>,
+    mut alloc: impl FnMut() -> u64,
+) {
+    let mut groups = std::collections::HashMap::new();
+    for it in items {
+        if let Some(l) = it.graphic.as_mut().and_then(|g| g.credits.as_mut()) {
+            l.remap_copy(ids, &mut groups, &mut alloc);
+        }
+    }
+}
+
+/// A generated layer: its key (stable across refreshes while its block is unchanged), the
+/// layer's uid in the clip, and the fingerprint of its parameters as generated.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct LayerStamp {
+    pub key: String,
+    pub uid: u64,
+    pub fingerprint: u64,
 }
 
 fn is_roll_off(r: &Roll) -> bool {

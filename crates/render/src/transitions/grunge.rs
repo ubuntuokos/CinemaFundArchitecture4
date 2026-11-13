@@ -9,7 +9,7 @@ use crate::image::Image;
 
 /// Per-pixel A/B mix at weight `k`, both sampled (clamped) at (sx, sy).
 #[inline]
-fn ab(t: &Tx, sx: f32, sy: f32, k: f32) -> [f32; 4] {
+fn ab(t: &Tx<'_>, sx: f32, sy: f32, k: f32) -> [f32; 4] {
     if k <= 0.0 {
         t.sac(sx, sy)
     } else if k >= 1.0 {
@@ -21,7 +21,7 @@ fn ab(t: &Tx, sx: f32, sy: f32, k: f32) -> [f32; 4] {
 
 /// RGB-split sample: red from (+d), blue from (−d).
 #[inline]
-fn split(t: &Tx, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
+fn split(t: &Tx<'_>, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
     let c = ab(t, x, y, k);
     if d.abs() < 0.25 {
         return c;
@@ -31,7 +31,7 @@ fn split(t: &Tx, x: f32, y: f32, d: f32, k: f32) -> [f32; 4] {
     [r[0], c[1], b[2], c[3].max(r[3]).max(b[3])]
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let p = t.p;
     let (w, h) = (t.wf, t.hf);
     let env = bell(p);
@@ -54,6 +54,33 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
                 let kk = if swap { 1.0 } else { 0.0 };
                 let kk = mix([kk; 4], [k; 4], 1.0 - env)[0];
                 split(t, x - ox, y - oy, (fine - 0.5) * amt * env * 30.0 * u, kk)
+            })
+        }
+        "burn_away" => {
+            // A burns from seeded noise: B shows where the fire has passed, then a hot rim in the
+            // ember colour, a band of char, and scorched A fading back to clean A
+            let size = t.px("noise_size").max(4.0);
+            let ember = t.px("border_width").max(0.5);
+            let soft = t.px("feather").max(0.0) * 0.5 + 0.5;
+            let col = t.color("border_color");
+            let hot = [col[0] * 0.5 + 0.5, col[1] * 0.5 + 0.5, col[2] * 0.5 + 0.25, 1.0];
+            let char_col = [0.03, 0.018, 0.012, 1.0];
+            let m = 4.0 * ember + soft + 1.0;
+            let thr = -m + p * (size + 2.0 * m);
+            paint(t.w, t.h, |x, y| {
+                let d = fbm(x / size, y / size, s) * size - thr;
+                if d >= 4.0 * ember + soft {
+                    return t.pa(x, y);
+                }
+                let burnt = if d < ember {
+                    mix(hot, col, (d / ember).max(0.0))
+                } else if d < 2.0 * ember {
+                    mix(col, char_col, (d - ember) / ember)
+                } else {
+                    mix(char_col, t.pa(x, y), smoothstep(2.0 * ember, 4.0 * ember, d))
+                };
+                let kb = 1.0 - smoothstep(-soft, soft, d);
+                mix(burnt, t.pb(x, y), kb)
             })
         }
         "earthquake" => {
@@ -138,7 +165,8 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
         }
         "grunge" => {
             let scale = t.px("scale").max(4.0);
-            let st = WipeStyle { feather: 2.0 * t.scale, border: t.px("edge_width"), border_color: t.color("edge_color"), aa: 1.0 };
+            // Feather (0 by default) softens the torn edge into cloud-like blotches
+            let st = WipeStyle { feather: 2.0 * t.scale + t.px("feather"), border: t.px("edge_width"), border_color: t.color("edge_color"), aa: 1.0 };
             field_wipe(t, st, move |x, y| {
                 let n = fbm(x / scale, y / scale, s) * 0.8 + vnoise(x / (scale * 0.15), y / (scale * 0.15), s + 9) * 0.2;
                 n * scale * 3.0

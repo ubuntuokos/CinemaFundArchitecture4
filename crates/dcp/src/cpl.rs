@@ -1,0 +1,377 @@
+//! Composition playlist (SMPTE ST 429-7, Interop `PROTO-ASDCP-CPL-20040511`), with the reel assets of
+//! ST 429-10 / 437-Y (stereoscopic picture), ST 429-16 (composition metadata) and any extension asset.
+
+use std::collections::HashMap;
+
+use roxmltree::{Document, Node};
+use serde::{Deserialize, Serialize};
+
+use crate::xml::{Reader, qualified};
+use crate::{IssueKind, Pos, Rational, Standard, Uuid};
+
+/// The composition playlist: the reels and, in each, the track files played together.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Composition {
+    pub standard: Standard,
+    pub id: Option<Uuid>,
+    pub annotation: Option<String>,
+    pub issue_date: Option<String>,
+    pub issuer: Option<String>,
+    pub creator: Option<String>,
+    pub content_title: Option<String>,
+    /// `ContentKind` as written (`feature`, `trailer`, …; a `scope` attribute is not interpreted).
+    pub content_kind: Option<String>,
+    pub content_version: Option<ContentVersion>,
+    /// `RatingList/Rating`, in document order.
+    pub ratings: Vec<Rating>,
+    pub reels: Vec<Reel>,
+    /// A `Signer` element is present.
+    pub has_signer: bool,
+    /// A `ds:Signature` element is present (not verified here).
+    pub has_signature: bool,
+    /// Elements of the root the reader does not know, as `{namespace}name`.
+    pub extensions: Vec<String>,
+    pub issues: Vec<crate::Issue>,
+}
+
+/// One `RatingList/Rating`: the rating `Label` given by `Agency` (an URI).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Rating {
+    pub agency: Option<String>,
+    pub label: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ContentVersion {
+    /// `Id`: an URI, often a `urn:uuid:` (kept as text).
+    pub id: Option<String>,
+    pub label: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Reel {
+    pub id: Option<Uuid>,
+    pub annotation: Option<String>,
+    /// Every element child of the reel's `AssetList`, in document order.
+    pub assets: Vec<ReelAsset>,
+    pub pos: Pos,
+}
+
+/// What a reel asset is, from its element's local name.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AssetKind {
+    MainPicture,
+    /// ST 429-10 / Interop 437-Y.
+    MainStereoscopicPicture,
+    MainSound,
+    MainSubtitle,
+    MainCaption,
+    MainClosedCaption,
+    MainMarkers,
+    /// An auxiliary data track (immersive audio, D-BOX, …), any namespace.
+    AuxData,
+    /// ST 429-16 `CompositionMetadataAsset`.
+    CompositionMetadata,
+    /// Any other element: an extension asset this reader does not model.
+    Other,
+}
+
+impl AssetKind {
+    fn from_name(name: &str) -> AssetKind {
+        match name {
+            "MainPicture" => AssetKind::MainPicture,
+            "MainStereoscopicPicture" => AssetKind::MainStereoscopicPicture,
+            "MainSound" => AssetKind::MainSound,
+            "MainSubtitle" => AssetKind::MainSubtitle,
+            "MainCaption" => AssetKind::MainCaption,
+            "MainClosedCaption" | "ClosedCaption" => AssetKind::MainClosedCaption,
+            "MainMarkers" => AssetKind::MainMarkers,
+            "AuxData" => AssetKind::AuxData,
+            "CompositionMetadataAsset" => AssetKind::CompositionMetadata,
+            _ => AssetKind::Other,
+        }
+    }
+
+    /// Track-file assets whose child elements are fully known to this reader.
+    fn is_core(self) -> bool {
+        !matches!(self, AssetKind::AuxData | AssetKind::CompositionMetadata | AssetKind::Other)
+    }
+}
+
+/// A screen aspect ratio: SMPTE writes two integers (`1998 1080`), Interop a decimal (`1.85`).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ScreenAspectRatio {
+    Ratio(Rational),
+    Decimal(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Marker {
+    /// `Label` text (`FFOC`, `LFOC`, …).
+    pub label: Option<String>,
+    /// `Offset` in edit units from the reel's entry point.
+    pub offset: Option<u64>,
+    pub pos: Pos,
+}
+
+/// One asset of a reel. Fields that an asset kind does not have stay `None`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ReelAsset {
+    pub kind: AssetKind,
+    /// The element as `{namespace}name`.
+    pub element: String,
+    pub id: Option<Uuid>,
+    pub annotation: Option<String>,
+    pub edit_rate: Option<Rational>,
+    pub intrinsic_duration: Option<u64>,
+    pub entry_point: Option<u64>,
+    pub duration: Option<u64>,
+    /// The `Hash` text as written.
+    pub hash: Option<String>,
+    pub sha1: Option<[u8; 20]>,
+    pub key_id: Option<Uuid>,
+    pub frame_rate: Option<Rational>,
+    pub screen_aspect_ratio: Option<ScreenAspectRatio>,
+    pub language: Option<String>,
+    /// `DataType` of an `AuxData` asset (a `urn:smpte:ul:` label).
+    pub data_type: Option<String>,
+    pub markers: Vec<Marker>,
+    /// Child elements not read (for `AuxData`, `CompositionMetadataAsset` and other extension
+    /// assets these are listed without an issue).
+    pub extensions: Vec<String>,
+    pub pos: Pos,
+}
+
+/// ST 429-7 §6.8 (and the Interop CPL): the kinds of the default `ContentKind` scope.
+pub const CONTENT_KINDS: &[&str] = &["feature", "trailer", "test", "teaser", "rating", "advertisement", "short", "transitional", "psa", "policy"];
+const CONTENT_KIND_SCOPE: &str = "http://www.smpte-ra.org/schemas/429-7/2006/CPL#standard-content";
+
+const ROOT: &[&str] = &[
+    "Id",
+    "AnnotationText",
+    "IconId",
+    "IssueDate",
+    "Issuer",
+    "Creator",
+    "ContentTitleText",
+    "ContentKind",
+    "ContentVersion",
+    "RatingList",
+    "ReelList",
+    "Signer",
+    "Signature",
+];
+const REEL: &[&str] = &["Id", "AnnotationText", "AssetList"];
+const ASSET: &[&str] = &[
+    "Id",
+    "AnnotationText",
+    "EditRate",
+    "IntrinsicDuration",
+    "EntryPoint",
+    "Duration",
+    // TrackFileAssetType (ST 429-7 / Interop): KeyId, then Hash
+    "KeyId",
+    "Hash",
+    "FrameRate",
+    "ScreenAspectRatio",
+    "Language",
+    "DataType",
+    "MarkerList",
+];
+
+pub(crate) fn read(doc: &Document<'_>, standard: Standard) -> Composition {
+    let mut r = Reader::new(doc);
+    let root = doc.root_element();
+    let p = "CompositionPlaylist";
+    let id = r.uuid(root, p, "Id", true);
+    let annotation = r.text(root, p, "AnnotationText");
+    let issue_date = r.date_time(root, p, "IssueDate", true);
+    let issuer = r.text(root, p, "Issuer");
+    let creator = r.text(root, p, "Creator");
+    let content_title = r.required_text(root, p, "ContentTitleText");
+    let content_kind = r.value(root, p, "ContentKind", true).map(|(kind, n)| {
+        // The default scope allows only the ST 429-7 vocabulary; another scope is its own vocabulary.
+        let default_scope = n.attribute("scope").is_none_or(|sc| sc.trim() == CONTENT_KIND_SCOPE);
+        if default_scope && !CONTENT_KINDS.contains(&kind.as_str()) {
+            r.issue(
+                IssueKind::Invalid,
+                &format!("{p}/ContentKind"),
+                n,
+                format!("ContentKind '{kind}' is not one of the standard kinds ({})", CONTENT_KINDS.join(", ")),
+            );
+        }
+        kind
+    });
+    // SMPTE requires ContentVersion with both children; Interop makes it optional.
+    let smpte = standard == Standard::Smpte;
+    let content_version = match r.child(root, p, "ContentVersion") {
+        Some(cv) => {
+            let cp = format!("{p}/ContentVersion");
+            let id = r.value(cv, &cp, "Id", smpte).map(|(t, _)| t);
+            let label = r.value(cv, &cp, "LabelText", smpte).map(|(t, _)| t);
+            r.unknown(cv, &cp, &["Id", "LabelText"]);
+            Some(ContentVersion { id, label })
+        }
+        None => {
+            if smpte {
+                r.issue(IssueKind::Missing, &format!("{p}/ContentVersion"), root, "ContentVersion is missing");
+            }
+            None
+        }
+    };
+    // RatingList may be empty; each Rating needs Agency and Label.
+    let mut ratings = Vec::new();
+    if let Some(list) = r.child(root, p, "RatingList") {
+        let lp = format!("{p}/RatingList");
+        r.unknown(list, &lp, &["Rating"]);
+        for (i, rating) in Reader::children(list, "Rating").enumerate() {
+            let rp = format!("{lp}/Rating[{}]", i + 1);
+            let agency = r.required_text(rating, &rp, "Agency");
+            let label = r.required_text(rating, &rp, "Label");
+            r.unknown(rating, &rp, &["Agency", "Label"]);
+            ratings.push(Rating { agency, label });
+        }
+    }
+    let has_signer = r.child(root, p, "Signer").is_some();
+    let has_signature = crate::xml::has_signature(root);
+    let extensions = r.unknown(root, p, ROOT);
+    let mut reels = Vec::new();
+    match r.child(root, p, "ReelList") {
+        None => r.issue(IssueKind::Missing, "CompositionPlaylist/ReelList", root, "ReelList is missing"),
+        Some(list) => {
+            r.unknown(list, "CompositionPlaylist/ReelList", &["Reel"]);
+            for (i, reel) in Reader::children(list, "Reel").enumerate() {
+                let rp = format!("CompositionPlaylist/ReelList/Reel[{}]", i + 1);
+                reels.push(read_reel(&mut r, reel, &rp, standard));
+            }
+            if reels.is_empty() {
+                r.issue(IssueKind::Missing, "CompositionPlaylist/ReelList/Reel", list, "ReelList has no Reel");
+            }
+        }
+    }
+    Composition {
+        standard,
+        id,
+        annotation,
+        issue_date,
+        issuer,
+        creator,
+        content_title,
+        content_kind,
+        content_version,
+        ratings,
+        reels,
+        has_signer,
+        has_signature,
+        extensions,
+        issues: r.issues,
+    }
+}
+
+fn read_reel<'a, 'i>(r: &mut Reader<'a, 'i>, reel: Node<'a, 'i>, rp: &str, standard: Standard) -> Reel {
+    let id = r.uuid(reel, rp, "Id", true);
+    let annotation = r.text(reel, rp, "AnnotationText");
+    r.unknown(reel, rp, REEL);
+    let mut assets = Vec::new();
+    match r.child(reel, rp, "AssetList") {
+        None => r.issue(IssueKind::Missing, &format!("{rp}/AssetList"), reel, "AssetList is missing"),
+        Some(list) => {
+            let mut seen: HashMap<&str, usize> = HashMap::new();
+            for a in list.children().filter(|c| c.is_element()) {
+                let name = a.tag_name().name();
+                let n = seen.entry(name).or_insert(0);
+                *n += 1;
+                let n = *n;
+                let ap = format!("{rp}/AssetList/{name}[{n}]");
+                assets.push(read_asset(r, a, &ap, standard));
+            }
+            if assets.is_empty() {
+                r.issue(IssueKind::Missing, &format!("{rp}/AssetList"), list, "AssetList has no asset");
+            }
+        }
+    }
+    let pos = r.pos(reel);
+    Reel { id, annotation, assets, pos }
+}
+
+fn read_asset<'a, 'i>(r: &mut Reader<'a, 'i>, a: Node<'a, 'i>, ap: &str, standard: Standard) -> ReelAsset {
+    let kind = AssetKind::from_name(a.tag_name().name());
+    let picture = matches!(kind, AssetKind::MainPicture | AssetKind::MainStereoscopicPicture);
+    let element = qualified(a);
+    let id = r.uuid(a, ap, "Id", true);
+    let annotation = r.text(a, ap, "AnnotationText");
+    let edit_rate = r.rational(a, ap, "EditRate", kind.is_core());
+    let intrinsic_duration = r.u64(a, ap, "IntrinsicDuration", kind.is_core());
+    let entry_point = r.u64(a, ap, "EntryPoint", false);
+    let duration = r.u64(a, ap, "Duration", false);
+    let (hash, sha1) = r.hash(a, ap, "Hash", false);
+    let key_id = r.uuid(a, ap, "KeyId", false);
+    let frame_rate = r.rational(a, ap, "FrameRate", picture);
+    let screen_aspect_ratio = r.value(a, ap, "ScreenAspectRatio", picture).and_then(|(t, n)| {
+        if let Some(q) = Rational::parse(&t) {
+            return Some(ScreenAspectRatio::Ratio(q));
+        }
+        if is_decimal(&t) {
+            if standard == Standard::Smpte {
+                // ST 429-7 types it as a Rational; the decimal form is Interop's
+                r.issue(IssueKind::Invalid, &format!("{ap}/ScreenAspectRatio"), n, format!("ScreenAspectRatio '{t}' is a decimal; SMPTE writes two integers"));
+            }
+            return Some(ScreenAspectRatio::Decimal(t));
+        }
+        r.issue(IssueKind::Invalid, &format!("{ap}/ScreenAspectRatio"), n, format!("ScreenAspectRatio '{t}' is neither two integers nor a decimal"));
+        None
+    });
+    let language = r.text(a, ap, "Language");
+    // `DataType` belongs to the extension asset's own schema (e.g. `axd:DataType`), so any namespace
+    let data_type = a.children().find(|c| c.is_element() && c.tag_name().name() == "DataType").map(|c| c.text().unwrap_or("").trim().to_string());
+    let mut markers = Vec::new();
+    if let Some(ml) = r.child(a, ap, "MarkerList") {
+        let mp = format!("{ap}/MarkerList");
+        r.unknown(ml, &mp, &["Marker"]);
+        for (k, m) in Reader::children(ml, "Marker").enumerate() {
+            let kp = format!("{mp}/Marker[{}]", k + 1);
+            let label = r.required_text(m, &kp, "Label");
+            let offset = r.u64(m, &kp, "Offset", true);
+            r.unknown(m, &kp, &["Label", "AnnotationText", "Offset"]);
+            let pos = r.pos(m);
+            markers.push(Marker { label, offset, pos });
+        }
+    }
+    let extensions = if kind.is_core() {
+        r.unknown(a, ap, ASSET)
+    } else {
+        a.children()
+            .filter(|c| c.is_element() && c.tag_name().name() != "DataType" && !(ASSET.contains(&c.tag_name().name()) && crate::xml::in_document_ns(*c)))
+            .map(qualified)
+            .collect()
+    };
+    let pos = r.pos(a);
+    ReelAsset {
+        kind,
+        element,
+        id,
+        annotation,
+        edit_rate,
+        intrinsic_duration,
+        entry_point,
+        duration,
+        hash,
+        sha1,
+        key_id,
+        frame_rate,
+        screen_aspect_ratio,
+        language,
+        data_type,
+        markers,
+        extensions,
+        pos,
+    }
+}
+
+/// `1.85`, `2.39`, `1`: digits with at most one decimal point.
+fn is_decimal(t: &str) -> bool {
+    let mut parts = t.splitn(2, '.');
+    let int = parts.next().unwrap_or("");
+    let frac = parts.next();
+    !int.is_empty() && int.bytes().all(|b| b.is_ascii_digit()) && frac.is_none_or(|f| !f.is_empty() && f.bytes().all(|b| b.is_ascii_digit()))
+}

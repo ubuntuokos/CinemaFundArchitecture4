@@ -1,0 +1,27 @@
+[package]
+name = "cfa4-dcp-validate"
+description = "DCP validation API (DCP-03): validator trait, result states, profiles, report, package discovery and the native backend"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-dcp = { workspace = true }
+cfa4-j2k = { workspace = true }
+cfa4-mxf = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The round trip: a package written by CFA4's own DCP export, validated by the native backend.
+cfa4-export = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-project = { workspace = true }
+cfa4-render = { workspace = true }
+cfa4-time = { workspace = true }

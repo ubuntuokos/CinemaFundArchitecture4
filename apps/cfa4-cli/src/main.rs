@@ -31,14 +31,20 @@ macro_rules! out {
 }
 
 mod args;
+mod codecs_cmd;
 mod probe;
+mod qc;
 mod serve;
 mod serve_graphics;
+mod serve_live;
 mod serve_lumetri;
 mod serve_media_browser;
 mod serve_multicam;
 mod serve_project;
 mod serve_scopes;
+mod serve_shm;
+mod serve_shuttle;
+mod serve_tcsync;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;
@@ -79,14 +85,16 @@ USAGE
 SUBCOMMANDS
   exec <id> [key=value ...]     run one command; prints its result as JSON
   exec <id> '<json params>'     same, params as one JSON object
-  run <script.jsonl | ->        run commands, one {\"id\",\"params\"} per line (# comments ok)
+  run <script.jsonl | ->        run commands, one {\"id\",\"params\"} per line (# comments ok), in
+                                order: file.exportMedia waits for its file before the next line
+                                (and before exit) unless its params say \"wait\": false
   commands [filter] [--json]    list commands (id, label, shortcut, params)
   describe <id>                 one command as JSON (menu, shortcut, params, enabled now)
   inspect [project|sequence]    project tree or active sequence as JSON (default: both)
   import <file>...              import media into the project
   export <out> [--preset name] [--format f] [--range r] [--start s --end s] [--settings json]
          [--gpu-rendering auto|off]
-         [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]
+         [--scale f] [--quality 0-100] [--no-audio] [--dash] [--queue] [--allow-offline]
                                 export the active sequence and wait for it to finish: with an
                                 export preset (`export --list-presets`; built-in or the user's), or
                                 a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|gif|wav|aiff|aac, guessed
@@ -94,7 +102,8 @@ SUBCOMMANDS
                                 range in seconds; --settings is ExportSettings JSON merged over the
                                 preset; --scale renders at a fraction of the frame size (0.5 =
                                 half); --quality 0-100 for the formats that take one; --no-audio
-                                leaves the sound out; --queue adds to the export queue and runs it
+                                leaves the sound out; --dash also writes a DASH manifest (.mpd)
+                                next to an HLS export; --queue adds to the export queue and runs it
                                 instead. Offline media (missing, made offline, unreadable) renders
                                 as placeholder frames: the export then lists it in `offlineMedia`,
                                 warns on stderr and exits 1, unless --allow-offline accepts it
@@ -104,12 +113,22 @@ SUBCOMMANDS
   probe <media> [--image-sequence]
                                 media info as JSON, with MXF / Ogg / BWF details; with
                                 --image-sequence <media> is the first numbered still of a sequence
+  qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json]
+     [--contact-sheet sheet.png] [--no-decode]
+                                media QC (docs/media-qc.md): input, integrity, audio and picture
+                                checks with a QC profile (default delivery-web) against an
+                                optional render plan; prints the cfa4-qc-report/1 JSON, or saves
+                                it with --out; --contact-sheet writes the frame overview PNG.
+                                Exit code: 0 PASS, 3 WARN, 4 FAIL, 5 INCOMPLETE
   bench-decode <media> [--frames N]
   settings schema [category]    the Settings schema (groups, categories, fields, values) as JSON
   settings get [key]            the saved preferences of the data directory, or one key
   settings set '<json>'         set preferences (a JSON object of key: value); validated and saved
   settings reset [category]     a category (or everything) back to its defaults
   hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
+  codecs                        what this machine decodes and encodes (software, hardware, GStreamer)
+  codecs --markdown             the codec capability catalog as the table in docs/codec-parity.md
+  media-backends                engine + FFmpeg / GStreamer backends, status, restricted codecs
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
                                 stdin/stdout with binary frames (docs/qt-gui.md); --autosave
@@ -140,17 +159,36 @@ EXIT STATUS
 
 /// Writes one diagnostic line to `w`, dropping any write error. `eprintln!` panics (exit 101) when stderr's
 /// reader is gone, which would turn a usage error, a failure or a finished export into a crash.
-fn write_diag(w: &mut dyn std::io::Write, msg: std::fmt::Arguments) {
+fn write_diag(w: &mut dyn std::io::Write, msg: std::fmt::Arguments<'_>) {
     let _ = writeln!(w, "{msg}");
 }
 
-fn diag(msg: std::fmt::Arguments) {
+fn diag(msg: std::fmt::Arguments<'_>) {
     write_diag(&mut std::io::stderr(), msg);
 }
 
 fn usage(msg: impl std::fmt::Display) -> ! {
     diag(format_args!("cfa4-cli: {msg}\nRun `cfa4-cli help` for usage."));
     std::process::exit(2)
+}
+
+/// Read a file off the runtime thread: `cli` is async because MCP, bridge calls and control
+/// commands await, so a blocking `std::fs` read would stall every other task on that thread.
+async fn read_file(path: impl Into<std::path::PathBuf>) -> std::io::Result<Vec<u8>> {
+    let path = path.into();
+    tokio::task::spawn_blocking(move || std::fs::read(path)).await.map_err(std::io::Error::other)?
+}
+
+/// `read_file` for UTF-8 text.
+async fn read_text(path: impl Into<std::path::PathBuf>) -> std::io::Result<String> {
+    let path = path.into();
+    tokio::task::spawn_blocking(move || std::fs::read_to_string(path)).await.map_err(std::io::Error::other)?
+}
+
+/// Write a file off the runtime thread; see `read_file`.
+async fn write_file(path: impl Into<std::path::PathBuf>, data: Vec<u8>) -> std::io::Result<()> {
+    let path = path.into();
+    tokio::task::spawn_blocking(move || std::fs::write(path, data)).await.map_err(std::io::Error::other)?
 }
 
 fn fail(msg: impl std::fmt::Display) -> ! {
@@ -187,9 +225,21 @@ impl Backend {
         Backend::Local(Box::new(s))
     }
 
-    async fn exec(&mut self, id: &str, params: Value) -> Result<Value, String> {
+    async fn exec(&mut self, id: &str, mut params: Value) -> Result<Value, String> {
         match self {
-            Backend::Local(s) => s.execute(id, params).map_err(|e| e.to_string()),
+            // this process exits after the command, so a background export would never be written:
+            // long commands wait unless the caller says otherwise (#2342)
+            Backend::Local(s) => {
+                if cfa4_automation::long_job::LONG_COMMANDS.contains(&id)
+                    && let Some(p) = params.as_object_mut()
+                {
+                    // anything but an explicit `false` (missing, null, a typo'd value) waits
+                    if p.get("wait").and_then(Value::as_bool) != Some(false) {
+                        p.insert("wait".into(), json!(true));
+                    }
+                }
+                s.execute(id, params).map_err(|e| e.to_string())
+            }
             // a blocking export runs as an app job polled by the client (#91, #92)
             Backend::Bridge(b) => b.execute(id, params).await.map_err(|e| e.to_string()),
         }
@@ -237,7 +287,7 @@ fn format_for(path: &str) -> Option<&'static str> {
     })
 }
 
-/// OS hardware video decoders (VideoToolbox on macOS, Media Foundation on Windows) in front of our
+/// OS hardware video decoders (VA-API, NVDEC) in front of our
 /// own, as in the desktop app. Also what `mcp` and the headless commands decode with.
 /// The GPU export frame renderer (cfa4-gpu's off-screen compositor behind cfa4-export's
 /// frame-renderer hook): exports with GPU rendering Auto composite on the GPU and fall back to the
@@ -262,7 +312,20 @@ fn register_gpu_frame_renderer() {
 }
 /// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
 /// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
+/// Make FFmpeg the first fallback media backend (ADR 0005), before GStreamer, when this build has
+/// the `ffmpeg` feature and a GPL-3 FFmpeg 9.0.2 or later is linked; otherwise the built-in openers
+/// (and GStreamer) work as before. Its report is registered either way, for Settings ▸ Media
+/// Backends.
+fn register_ffmpeg() {
+    cfa4_ffmpeg::register_status();
+    match cfa4_ffmpeg::register() {
+        Ok(status) => log::info!("FFmpeg {} ({}) is a fallback media backend", status.version, status.license),
+        Err(e) => log::info!("FFmpeg fallback not used: {e}"),
+    }
+}
+
 fn register_gstreamer() {
+    cfa4_gstreamer::register_status();
     match cfa4_gstreamer::register() {
         Ok(status) => log::info!("GStreamer {} is the fallback media backend", status.version),
         Err(e) => log::info!("GStreamer fallback not used: {e}"),
@@ -274,8 +337,7 @@ fn register_hardware_decoders() -> cfa4_platform::Availability {
 }
 
 /// `path` made absolute against the working directory, as the project stores it. Unlike
-/// `canonicalize`, `std::path::absolute` keeps symlinks and adds no Windows verbatim `\\?\`
-/// prefix (#850). A path it cannot resolve is kept as given.
+/// `canonicalize`, `std::path::absolute` keeps symlinks (#850). A path it cannot resolve is kept as given.
 fn absolute(path: &str) -> String {
     std::path::absolute(path).ok().and_then(|p| p.into_os_string().into_string().ok()).unwrap_or_else(|| path.to_string())
 }
@@ -312,6 +374,7 @@ async fn cli() {
         return;
     }
     register_hardware_decoders();
+    register_ffmpeg();
     register_gstreamer();
     register_gpu_frame_renderer();
     let Some(cmd) = a.pos(0) else { usage("missing subcommand") };
@@ -325,10 +388,25 @@ async fn cli() {
                 Err(e) => fail(e),
             }
         }
+        "qc" => {
+            let path = a.pos(1).unwrap_or_else(|| {
+                usage("qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json] [--contact-sheet sheet.png] [--no-decode]")
+            });
+            let report = qc::run(path, a.opt("--profile"), a.opt("--expect"), !a.flag("--no-decode"), a.opt("--contact-sheet")).unwrap_or_else(|e| fail(e));
+            match a.opt("--out") {
+                Some(out) => {
+                    qc::save(&report, out).unwrap_or_else(|e| fail(e));
+                    outln!("{}: {:?} ({out})", path, report.summary.verdict);
+                }
+                None => print(&a, &serde_json::to_value(&report).unwrap_or_default()),
+            }
+            let _ = std::io::Write::flush(&mut std::io::stdout());
+            std::process::exit(qc::exit_code(report.summary.verdict));
+        }
         "bench-decode" => {
             let path = a.pos(1).unwrap_or_else(|| usage("bench-decode <media>"));
             let n: i64 = a.opt("--frames").and_then(|v| v.parse().ok()).unwrap_or(120);
-            let src = cfa4_codecs::open_bytes(path, std::fs::read(path).unwrap_or_else(|e| fail(e)).into()).unwrap_or_else(|e| fail(e));
+            let src = cfa4_codecs::open_bytes(path, read_file(path).await.unwrap_or_else(|e| fail(e)).into()).unwrap_or_else(|e| fail(e));
             let rate = src.info().frame_rate();
             let t0 = std::time::Instant::now();
             for f in 0..n {
@@ -393,7 +471,7 @@ async fn cli() {
             let text = if script == "-" {
                 std::io::read_to_string(std::io::stdin()).unwrap_or_else(|e| fail(e))
             } else {
-                std::fs::read_to_string(script).unwrap_or_else(|e| fail(format!("{script}: {e}")))
+                read_text(script).await.unwrap_or_else(|e| fail(format!("{script}: {e}")))
             };
             let mut b = Backend::open(&a);
             let mut failed = 0;
@@ -479,6 +557,9 @@ async fn cli() {
             if a.flag("--no-audio") {
                 p["audio"] = json!(false);
             }
+            if a.flag("--dash") {
+                p["dashManifest"] = json!(true);
+            }
             if let Some(v) = a.opt("--gpu-rendering") {
                 p["gpuRendering"] = json!(v); // off | auto (validated by the export command)
             }
@@ -498,6 +579,9 @@ async fn cli() {
                 Ok(v) => {
                     print(&a, &v);
                     let written = written_paths(&v, out).join(", ");
+                    for warning in v.get("warnings").and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str) {
+                        diag(format_args!("cfa4-cli: warning: {warning} (CLI: --range entire)"));
+                    }
                     check_offline(&a, &offline_media(&v), &format!("export: {written}"));
                     diag(format_args!("exported {written} in {:.1}s", t0.elapsed().as_secs_f64()));
                 }
@@ -517,7 +601,7 @@ async fn cli() {
             let (img, offline) = render_at_playhead(&s, scale).unwrap_or_else(|e| fail(e));
             let dt = t0.elapsed();
             let png = cfa4_automation::png_rgba(img.w as u32, img.h as u32, img.over_black_rgba8(), 0).unwrap_or_else(|e| fail(e));
-            std::fs::write(out, png).unwrap_or_else(|e| fail(format!("{out}: {e}")));
+            write_file(out, png).await.unwrap_or_else(|e| fail(format!("{out}: {e}")));
             let offline: Vec<Value> = offline.iter().filter_map(|o| serde_json::to_value(o).ok()).collect();
             check_offline(&a, &offline, &format!("render: {out}"));
             diag(format_args!("rendered {}x{} in {:.1} ms → {out}", img.w, img.h, dt.as_secs_f64() * 1000.0));
@@ -548,6 +632,15 @@ async fn cli() {
             }
         }
         "hardware" => print(&a, &settings_cmd::hardware()),
+        "codecs" if a.flag("--markdown") => print!("{}", codecs_cmd::markdown()),
+        "codecs" => print(&a, &codecs_cmd::codecs()),
+        "media-backends" => {
+            let dir = a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir);
+            match settings_cmd::media_backends(dir) {
+                Ok(v) => print(&a, &v),
+                Err(e) => fail(e),
+            }
+        }
         "mcp" => {
             if let Some(opt) = a.unknown_opt(&["--bridge", "--project", "--demo", "--data-dir"]) {
                 usage(format!("unknown mcp option `{opt}`"));
@@ -671,9 +764,8 @@ mod format_tests {
     #[test]
     fn startup_registers_the_hardware_decoders() {
         let hardware = super::register_hardware_decoders();
-        // always on macOS and Windows; on Linux when a VA-API driver or NVIDIA's driver (NVDEC) is there
-        let expected = cfg!(any(target_os = "macos", target_os = "windows"))
-            || (cfg!(target_os = "linux") && matches!(hardware, cfa4_platform::Availability::Available(_)));
+        // when a VA-API driver or NVIDIA's driver (NVDEC) is there
+        let expected = cfg!(target_os = "linux") && matches!(hardware, cfa4_platform::Availability::Available(_));
         assert_eq!(cfa4_platform::registered(), expected, "{hardware:?}");
     }
 
@@ -735,25 +827,20 @@ mod format_tests {
         assert!(p.get("range").is_none());
     }
 
-    /// `import` used `canonicalize`, which resolves symlinks and on Windows stores `\\?\C:\…`
-    /// verbatim paths in the project (#850).
+    /// `import` used `canonicalize`, which resolves symlinks (#850).
     #[test]
     fn imported_paths_are_absolute_without_resolving_links() {
         let cwd = std::env::current_dir().unwrap();
         assert_eq!(super::absolute("clip.mov"), cwd.join("clip.mov").to_string_lossy());
-        assert!(!super::absolute("clip.mov").starts_with(r"\\?\"));
         assert_eq!(super::absolute(""), "");
-        #[cfg(unix)]
-        {
-            let dir = std::env::temp_dir().join(format!("cfa4-cli-abs-{}", std::process::id()));
-            std::fs::create_dir_all(&dir).unwrap();
-            std::fs::write(dir.join("real.mov"), b"x").unwrap();
-            let link = dir.join("link.mov");
-            let _ = std::fs::remove_file(&link);
-            std::os::unix::fs::symlink(dir.join("real.mov"), &link).unwrap();
-            assert_eq!(super::absolute(&link.to_string_lossy()), link.to_string_lossy());
-            std::fs::remove_dir_all(&dir).unwrap();
-        }
+        let dir = std::env::temp_dir().join(format!("cfa4-cli-abs-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("real.mov"), b"x").unwrap();
+        let link = dir.join("link.mov");
+        let _ = std::fs::remove_file(&link);
+        std::os::unix::fs::symlink(dir.join("real.mov"), &link).unwrap();
+        assert_eq!(super::absolute(&link.to_string_lossy()), link.to_string_lossy());
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

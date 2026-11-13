@@ -96,7 +96,7 @@ pub struct PlaybackPrefs {
     /// a paused frame. Off by default.
     pub draft_decode: bool,
     /// "Hardware decoding": `auto` (default: the system's hardware decoder for streams it
-    /// supports, e.g. VideoToolbox H.264 / HEVC on macOS, falling back to CFA4's own decoder)
+    /// supports, e.g. VA-API or NVDEC H.264 / HEVC, falling back to CFA4's own decoder)
     /// or `off` (always CFA4's own decoders). Media already open keeps its decoder until it
     /// is reopened.
     pub hardware_decoding: String,
@@ -166,6 +166,7 @@ pub struct Preferences {
     pub graphics: settings::GraphicsPrefs,
     pub labels: settings::LabelPrefs,
     pub media: MediaPrefs,
+    pub media_backends: settings::MediaBackendPrefs,
     pub media_analysis: settings::MediaAnalysisPrefs,
     pub media_cache: settings::MediaCachePrefs,
     pub memory: settings::MemoryPrefs,
@@ -177,6 +178,8 @@ pub struct Preferences {
     pub guides: GuidePrefs,
     /// Voice-Over Record Settings (timeline track header ▸ right-click the microphone).
     pub voice_over: crate::voiceover::VoiceOverPrefs,
+    /// Settings ▸ Timecode Sync (LTC / MIDI Timecode chase and generate).
+    pub timecode_sync: crate::timecode_sync::TimecodeSyncPrefs,
     /// Project panel: view, List view columns and sort, view presets, Freeform options.
     pub project_panel: crate::project_panel::ProjectPanelPrefs,
     /// Media Browser: Favorites, recent directories, file types, view, columns.
@@ -196,6 +199,7 @@ impl Default for Preferences {
             graphics: Default::default(),
             labels: Default::default(),
             media: Default::default(),
+            media_backends: Default::default(),
             media_analysis: Default::default(),
             media_cache: Default::default(),
             memory: Default::default(),
@@ -206,6 +210,7 @@ impl Default for Preferences {
             essential_sound: Default::default(),
             guides: Default::default(),
             voice_over: Default::default(),
+            timecode_sync: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
         }
@@ -491,7 +496,7 @@ impl Preferences {
 }
 
 /// A file with this name next to the executable makes the install portable: its data directory is
-/// `<exe dir>/data` instead of the per-user one (the Windows portable zip ships it).
+/// `<exe dir>/data` instead of the per-user one.
 pub const PORTABLE_MARKER: &str = "portable.txt";
 
 /// `<exe_dir>/data` when `exe_dir` holds [`PORTABLE_MARKER`], else `None`.
@@ -500,9 +505,8 @@ pub fn portable_data_dir(exe_dir: &Path) -> Option<PathBuf> {
 }
 
 /// The data directory. `CFA4_DATA_DIR` overrides; a portable install ([`PORTABLE_MARKER`] next
-/// to the executable) uses `<exe dir>/data`; otherwise the per-user directory:
-/// macOS `~/Library/Application Support/CFA4`, Windows `%APPDATA%\CFA4`,
-/// elsewhere `$XDG_DATA_HOME/cfa4` or `~/.local/share/cfa4`.
+/// to the executable) uses `<exe dir>/data`; otherwise the per-user directory
+/// `$XDG_DATA_HOME/cfa4` or `~/.local/share/cfa4`.
 pub fn default_data_dir() -> Option<PathBuf> {
     let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
     if let Some(d) = env("CFA4_DATA_DIR") {
@@ -510,12 +514,6 @@ pub fn default_data_dir() -> Option<PathBuf> {
     }
     if let Some(d) = std::env::current_exe().ok().and_then(|exe| exe.parent().and_then(portable_data_dir)) {
         return Some(d);
-    }
-    if cfg!(target_os = "macos") {
-        return env("HOME").map(|h| h.join("Library/Application Support/CFA4"));
-    }
-    if cfg!(windows) {
-        return env("APPDATA").map(|h| h.join("CFA4"));
     }
     env("XDG_DATA_HOME").map(|d| d.join("cfa4")).or_else(|| env("HOME").map(|h| h.join(".local/share/cfa4")))
 }

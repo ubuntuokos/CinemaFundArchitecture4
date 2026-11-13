@@ -371,15 +371,7 @@ impl MpegSource {
         let raw: Vec<Option<i64>> = v.order.iter().map(|&i| units[v.units[i]].pts).collect();
         let rate = self.info.frame_rate();
         let dur = |k: i64| (k as i128 * 90_000 * rate.den as i128 / rate.num.max(1) as i128) as i64;
-        let known: Vec<usize> = (0..raw.len()).filter(|&i| raw[i].is_some()).collect();
-        (0..raw.len())
-            .map(|i| {
-                raw[i].or_else(|| {
-                    let j = known.iter().rev().find(|&&j| j < i).or_else(|| known.iter().find(|&&j| j > i))?;
-                    Some(raw[*j]? + dur(i as i64 - *j as i64))
-                })
-            })
-            .collect()
+        interpolate_pts(&raw, dur)
     }
 
     fn read_unit(&self, v: &VideoTrack, i: usize) -> crate::Result<Vec<u8>> {
@@ -440,7 +432,18 @@ impl MpegSource {
                 height = frame.height;
                 par = frame.par;
                 color = frame.color;
-                codec = if v.kind == VKind::H264 { "H.264".into() } else { "HEVC".into() };
+                let mut label: String = if v.kind == VKind::H264 { "H.264".into() } else { "HEVC".into() };
+                // LCEVC: its own elementary stream (stream_type 0x36), or T.35 SEI in the base's first pictures
+                let base = if v.kind == VKind::H264 { cfa4_lcevc::BaseCodec::H264 } else { cfa4_lcevc::BaseCodec::Hevc };
+                if self.file.as_ref().is_some_and(|f| f.streams.iter().any(|s| s.stream_type == cfa4_lcevc::TS_STREAM_TYPE)) {
+                    crate::lcevc::mark(&self.info.name, &mut label, "stream_type 0x36 stream");
+                } else if (0..v.units.len().min(crate::lcevc::SCAN_SAMPLES))
+                    .filter_map(|i| self.read_unit(v, i).ok())
+                    .any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, cfa4_lcevc::Framing::AnnexB))
+                {
+                    crate::lcevc::mark(&self.info.name, &mut label, "T.35 SEI");
+                }
+                codec = label;
                 rate = None;
                 pixel_format = match &frame.data {
                     cfa4_frame::PixelData::Yuv8 { chroma, .. } => format!("YUV {} 8-bit", chroma_name(*chroma)),
@@ -505,8 +508,13 @@ impl MpegSource {
             return None;
         }
         self.unsupported_audio = Some(why);
-        self.info.audio_streams =
-            vec![AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: format!("{codec_name} (unsupported)"), bits_per_sample: None }];
+        self.info.audio_streams = vec![AudioStreamInfo {
+            sample_rate: 48_000,
+            channels: 2,
+            codec: format!("{codec_name} (unsupported)"),
+            bits_per_sample: None,
+            speakers: Vec::new(),
+        }];
         None
     }
 
@@ -647,7 +655,13 @@ impl MpegSource {
                 self.info.kind = MediaKind::AudioOnly;
             }
         }
-        self.info.audio_streams.push(AudioStreamInfo { sample_rate: rate.max(1), channels: channels.max(1) as u32, codec: codec_name, bits_per_sample: bits });
+        self.info.audio_streams.push(AudioStreamInfo {
+            sample_rate: rate.max(1),
+            channels: channels.max(1) as u32,
+            codec: codec_name,
+            bits_per_sample: bits,
+            speakers: Vec::new(),
+        });
         Some(AudioTrack {
             stream: ai,
             codec,
@@ -716,6 +730,23 @@ impl MpegSource {
         }
         Ok(p)
     }
+}
+
+/// Fill missing timestamps from their closest preceding timestamp, or the next one when there is
+/// no predecessor.  The known positions are sorted, so binary search avoids rescanning them for
+/// every missing frame.
+fn interpolate_pts(raw: &[Option<i64>], dur: impl Fn(i64) -> i64) -> Vec<Option<i64>> {
+    let known: Vec<usize> = (0..raw.len()).filter(|&i| raw[i].is_some()).collect();
+    raw.iter()
+        .enumerate()
+        .map(|(i, &pts)| {
+            pts.or_else(|| {
+                let next = known.partition_point(|&j| j < i);
+                let j = next.checked_sub(1).or_else(|| known.get(next).map(|_| next))?;
+                Some(raw[known[j]]? + dur(i as i64 - known[j] as i64))
+            })
+        })
+        .collect()
 }
 
 fn chroma_name(c: cfa4_frame::Chroma) -> &'static str {
@@ -809,10 +840,15 @@ impl VideoSamples for MpegVideo<'_> {
     }
     fn sync_before(&self, i: usize) -> usize {
         let i = i.min(self.v.keys.len().saturating_sub(1));
-        let key = (0..=i).rev().find(|&k| self.v.keys[k]).unwrap_or(0);
+        let keys = &self.v.keys;
+        let pts = &self.v.pts;
         // a leading picture of an open GOP (shown before its random-access picture) needs the
         // previous GOP's pictures as references
-        if key > 0 && self.v.pts[i] < self.v.pts[key] { self.sync_before(key - 1) } else { key }
+        crate::gop::open_gop_sync(
+            i,
+            |i| (0..=i).rev().find(|&k| keys.get(k) == Some(&true)).unwrap_or(0),
+            |i, key| matches!((pts.get(i), pts.get(key)), (Some(a), Some(b)) if a < b),
+        )
     }
     fn sample_at(&self, t: i64) -> Option<usize> {
         usize::try_from(t).ok().and_then(|t| self.v.order.get(t).copied())
@@ -1114,5 +1150,17 @@ mod tests {
         let (pts, order) = presentation(&keys);
         assert_eq!(order, vec![0, 4, 5, 3]);
         assert_eq!(pts, vec![0, -2, -3, 3, 1, 2]);
+    }
+
+    #[test]
+    fn timestamp_interpolation_handles_long_missing_runs_without_rescanning() {
+        let mut raw = vec![None; 10_000];
+        raw[4_000] = Some(40_000);
+        raw[9_999] = Some(99_990);
+        let pts = interpolate_pts(&raw, |frames| frames * 10);
+        assert_eq!(pts[0], Some(0));
+        assert_eq!(pts[3_999], Some(39_990));
+        assert_eq!(pts[4_001], Some(40_010));
+        assert_eq!(pts[9_998], Some(99_980));
     }
 }

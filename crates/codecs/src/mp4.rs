@@ -21,12 +21,19 @@ use crate::{CodecError, make_video_decoder};
 /// Most bytes read from one AAC access unit when probing for HE-AAC at open (8 channels × 6144 bits).
 const MAX_AAC_PROBE_UNIT: usize = 8 * 6144 / 8;
 
+struct DecodedAudioPacket {
+    samples: Vec<Vec<f32>>,
+    failed: bool,
+}
+
 struct AudioState {
     decoder: Option<PacketDecoder>,
     /// Decoded packets by sample index.
-    packets: HashMap<usize, Arc<Vec<Vec<f32>>>>,
+    packets: HashMap<usize, Arc<DecodedAudioPacket>>,
     order: Vec<usize>,
     last_decoded: Option<usize>,
+    /// Saved decoder states for exact jumps (AMR).
+    checkpoints: crate::audio::Checkpoints,
 }
 
 /// One playable audio track with its own decoder state and timing tables.
@@ -48,6 +55,9 @@ pub struct Mp4Source {
     file: Mp4File,
     vtrack: Option<usize>,
     video: GopCache,
+    /// Look frames up by the start of their frame: the video track's timestamp unit is half a frame
+    /// or longer and its samples sit on the nominal frame grid ([`crate::gop::snap_coarse_units`]).
+    snap: bool,
     /// The playable audio tracks in file order: `info.audio_streams[k]` describes `audios[k]`.
     audios: Vec<Mp4Audio>,
 }
@@ -93,6 +103,20 @@ fn audio_starts(file: &Mp4File, bytes: &crate::Src, ti: usize, rate: u32) -> Vec
     contiguous_starts(packets, (frame / 2).max(unit.saturating_mul(2).saturating_add(1)))
 }
 
+/// Return source-rate buffer indices overlapped by a failed packet's concealment span.
+/// Packet positions are audio frames, but duration is raw track-timescale ticks
+/// treated as a frame count here; the span is clipped to the request.
+fn failed_audio_span(packet_start: i64, request_start: i64, duration: u32, request_len: usize) -> std::ops::Range<usize> {
+    let begin = usize::try_from(packet_start.saturating_sub(request_start).max(0)).unwrap_or(usize::MAX).min(request_len);
+    let end = if duration == 0 {
+        begin
+    } else {
+        let last = packet_start.saturating_add(i64::from(duration) - 1).saturating_sub(request_start);
+        usize::try_from((i128::from(last) + 1).max(0)).unwrap_or(usize::MAX).min(request_len)
+    };
+    begin..end
+}
+
 /// HDR static metadata from the sample entry's `mdcv` / `clli` boxes (0 = unknown).
 fn hdr_metadata(md: Option<&cfa4_isobmff::MasteringDisplay>, cll: Option<(u16, u16)>) -> Option<cfa4_color::HdrMetadata> {
     if md.is_none() && cll.is_none() {
@@ -133,6 +157,16 @@ fn clean_aperture(c: CleanAperture, (w, h): (u32, u32)) -> Option<Region> {
 /// unspecified, or all of it when there is none (ffmpeg writes MP4 without `colr` by default),
 /// comes from the stream's own description: `vpcC` / `apvC`, or the SPS VUI in `avcC` / `hvcC`
 /// and the sequence header in `av1C`. The rest defaults by frame size.
+/// The colour a track's `colr` box signals (resolved with the bitstream's, as playback applies
+/// it to decoded YUV frames), or `None` without one: then the decoder's own colour stands.
+pub fn container_color(entry: &cfa4_isobmff::SampleEntry, w: u32, h: u32) -> Option<ColorInfo> {
+    entry
+        .video
+        .as_ref()
+        .is_some_and(|v| matches!(v.color, Some(cfa4_isobmff::ColorInfo::Nclx { .. } | cfa4_isobmff::ColorInfo::Nclc { .. })))
+        .then(|| color_from(entry, w, h))
+}
+
 fn color_from(entry: &cfa4_isobmff::SampleEntry, w: u32, h: u32) -> ColorInfo {
     use crate::stream_color::ColorCodes;
     use cfa4_isobmff::ColorInfo as Colr;
@@ -219,7 +253,10 @@ impl Mp4Source {
         // A track needs samples, a sample description and a timescale to be playable (damaged
         // files can lack them: indexing `entries[0]` or dividing by the timescale used to panic).
         let playable = |t: &&cfa4_isobmff::Track, kind| t.kind == kind && !t.samples.is_empty() && !t.entries.is_empty() && t.timescale > 0;
-        let vtrack = file.tracks.iter().position(|t| playable(&t, TrackKind::Video));
+        // an LCEVC enhancement track ('lvc1') is not a picture of its own: the base track plays
+        let is_lcevc = |t: &cfa4_isobmff::Track| t.entries.first().is_some_and(|e| e.format.0 == cfa4_lcevc::SAMPLE_ENTRY);
+        let lcevc_track = file.tracks.iter().any(is_lcevc);
+        let vtrack = file.tracks.iter().position(|t| playable(&t, TrackKind::Video) && !is_lcevc(t));
         // every audio track is a stream (the track count comes from the file: capped)
         let atracks: Vec<usize> =
             file.tracks.iter().enumerate().filter(|(_, t)| playable(t, TrackKind::Audio)).map(|(i, _)| i).take(cfa4_media::MAX_AUDIO_STREAMS).collect();
@@ -288,6 +325,35 @@ impl Mp4Source {
                     info.has_alpha = h.alpha;
                 }
             }
+            // LCEVC: a separate enhancement track, or T.35 SEI in the base track's first samples
+            if lcevc_track {
+                crate::lcevc::mark(name, &mut info.codec, "separate 'lvc1' track");
+            } else if let Some((base, framing)) = crate::lcevc::base_of(&entry.codec) {
+                let heads =
+                    t.samples.iter().take(crate::lcevc::SCAN_SAMPLES).filter_map(|s| cfa4_media::reader::read_range(&*bytes.0, s.offset, s.size as usize).ok());
+                if heads.into_iter().any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, framing)) {
+                    crate::lcevc::mark(name, &mut info.codec, "T.35 SEI");
+                }
+            }
+            if matches!(entry.codec, CodecConfig::Dv { .. }) {
+                // format, sampling, aspect and colour are in the first frame's header and VAUX packs
+                let s0 = &t.samples[0];
+                if let Some(d) =
+                    cfa4_media::reader::read_range(&*bytes.0, s0.offset, (s0.size as usize).min(6 * 80)).ok().and_then(|d| crate::video::dv_stream_info(&d))
+                {
+                    info.codec = d.codec;
+                    info.pixel_format = d.pixel_format;
+                    // DV pixels are never square (720 samples per line); a 'pasp' of 1:1 is a
+                    // writer's default (ffmpeg writes one), not a measurement
+                    if vp.pixel_aspect.is_none_or(|a| a == (1, 1)) {
+                        info.par = d.par;
+                    }
+                    if explicit_color.is_none() {
+                        info.color = d.color;
+                        color = d.color;
+                    }
+                }
+            }
             if matches!(entry.codec, CodecConfig::Cineform) {
                 // format, depth and alpha are in the first sample's header
                 let s0 = &t.samples[0];
@@ -348,13 +414,18 @@ impl Mp4Source {
                     Some(CodecConfig::TrueHd { .. }) => (t.edit_offset, crate::audio::truehd_preroll(ainfo.sample_rate)),
                     _ => (t.edit_offset, 0),
                 };
-                let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
+                let state =
+                    Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None, checkpoints: Default::default() });
                 Some(Mp4Audio { track: i, state, starts, offset, preroll })
             })
             .collect();
         snap_to_frame_grid(&mut file, vtrack);
         rebase_unedited_video(&mut file, vtrack, &mut audios);
-        Ok(Self { info, bytes, file, vtrack, video: GopCache::new(explicit_color).with_rotation(rotation).with_crop(aperture), audios })
+        let snap = vtrack.zip(info.video.as_ref()).is_some_and(|(i, v)| {
+            let t = &file.tracks[i];
+            crate::gop::snap_coarse_units(t.samples.iter().map(|s| s.pts.saturating_add(t.edit_offset)), 1, i64::from(t.timescale), v.frame_rate)
+        });
+        Ok(Self { info, bytes, file, vtrack, video: GopCache::new(explicit_color).with_rotation(rotation).with_crop(aperture), snap, audios })
     }
 
     fn read(&self, track: usize, i: usize) -> crate::Result<Vec<u8>> {
@@ -364,54 +435,67 @@ impl Mp4Source {
     fn video_at(&self, t: Tick) -> crate::Result<Arc<VideoFrame>> {
         let ti = self.vtrack.ok_or_else(|| CodecError::Unsupported("no video".into()))?;
         let ts = self.file.tracks[ti].timescale as i64;
-        // Nearest, not floor: with a coarse timescale (1000) sample times are rounded, and a
-        // floored lookup lands one unit short of every frame whose time was rounded up.
-        let late = cfa4_media::cancel::catch_up().map(|m| (t - m).to_rational_round(1, ts));
-        self.video.frame_late(&Mp4Video { src: self, track: ti }, t.to_rational_round(1, ts), late)
+        let rate = self.info.video.as_ref().map(|v| v.frame_rate).unwrap_or_default();
+        let at = |t: Tick| crate::gop::lookup_time(t, 1, ts, rate, self.snap);
+        let late = cfa4_media::cancel::catch_up().map(|m| at(t - m));
+        self.video.frame_late(&Mp4Video { src: self, track: ti }, at(t), late)
     }
 
     /// Decoded packet `i` of audio stream `a` (`ainfo` is its `AudioStreamInfo`; `st` its decoder state).
-    fn audio_packet(&self, a: &Mp4Audio, ainfo: &AudioStreamInfo, st: &mut AudioState, i: usize) -> crate::Result<Arc<Vec<Vec<f32>>>> {
+    fn audio_packet(&self, a: &Mp4Audio, ainfo: &AudioStreamInfo, st: &mut AudioState, i: usize) -> crate::Result<Arc<DecodedAudioPacket>> {
         if let Some(p) = st.packets.get(&i) {
             return Ok(p.clone());
         }
         let ti = a.track;
         let track = self.file.tracks.get(ti).ok_or_else(|| CodecError::Unsupported("no audio track".into()))?;
         let entry = track.entries.first().ok_or_else(|| CodecError::Container("audio track without a sample description".into()))?;
-        let sample = track.samples.get(i).ok_or_else(|| CodecError::Container("audio packet out of range".into()))?;
+        track.samples.get(i).ok_or_else(|| CodecError::Container("audio packet out of range".into()))?;
         let pk_start = a.starts.get(i).copied().unwrap_or(0);
         let data = self.read(ti, i)?;
-        let decoded = match &entry.codec {
-            CodecConfig::Pcm(p) => decode_pcm(&data, p),
+        let (samples, failed) = match &entry.codec {
+            CodecConfig::Pcm(p) => (decode_pcm(&data, p), false),
             c => {
                 if st.decoder.is_none() {
-                    st.decoder = Some(PacketDecoder::for_isobmff(c, ainfo.sample_rate)?);
+                    st.decoder = Some(match qt_adpcm(c) {
+                        Some(codec) => PacketDecoder::adpcm(codec, ainfo.channels as usize)?,
+                        None => PacketDecoder::for_isobmff(c, ainfo.sample_rate)?,
+                    });
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
                 // a packet, more for DTS, or `OPUS_PRE_ROLL` worth for Opus).
                 if st.last_decoded.is_none_or(|l| l + 1 != i) {
                     let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
-                    d.reset();
-                    let from = if a.preroll > 0 {
-                        a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
-                    } else {
-                        i.saturating_sub(d.pre_roll_packets())
+                    // Codecs that never converge after a jump (AMR) restart from a saved state.
+                    let from = match st.checkpoints.restore(d, i) {
+                        Some(from) => from,
+                        None => {
+                            d.reset();
+                            if a.preroll > 0 {
+                                a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
+                            } else {
+                                i.saturating_sub(d.pre_roll_packets())
+                            }
+                        }
                     };
                     for j in from..i {
+                        st.checkpoints.record(d, j);
                         if let Ok(prev) = self.read(ti, j) {
                             let _ = d.decode(&prev, 0);
                         }
                     }
                 }
-                let r = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?.decode(&data, pk_start.max(0) as u64);
+                if let Some(d) = st.decoder.as_ref() {
+                    st.checkpoints.record(d, i);
+                }
+                let result = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?.decode(&data, pk_start.max(0) as u64);
                 st.last_decoded = Some(i);
-                match r {
-                    Ok(v) => v,
-                    Err(_) => vec![vec![0.0; sample.duration as usize]; ainfo.channels.max(1) as usize],
+                match result {
+                    Ok(samples) => (samples, false),
+                    Err(_) => (Vec::new(), true),
                 }
             }
         };
-        let p = Arc::new(decoded);
+        let p = Arc::new(DecodedAudioPacket { samples, failed });
         st.packets.insert(i, p.clone());
         st.order.push(i);
         if st.order.len() > 4096 {
@@ -470,25 +554,39 @@ impl MediaSource for Mp4Source {
         let ainfo = self.info.audio_streams.get(stream).ok_or(MediaError::NoStream("audio"))?;
         let src_rate = ainfo.sample_rate;
         let ch = ainfo.channels.max(1) as usize;
+        let source_frames = cfa4_media::resample_source_frames(frames, src_rate, sample_rate)?;
+        let need = source_frames.checked_add(2).ok_or_else(|| MediaError::Decode("audio source window overflows".into()))?;
+        cfa4_media::validate_audio_buffer_shape(ch, need)?;
+        cfa4_media::validate_audio_buffer_shape(ch, frames)?;
         // Map the requested window to source samples (edit list offset applied: presentation = pts + edit_offset).
         let ratio = src_rate as f64 / sample_rate as f64;
         let p0 = (start as f64 * ratio).floor() as i64;
         // (in i128: a hostile edit list can make the offset large enough to overflow i64)
         let offset = i128::from(a.offset) * i128::from(src_rate) / i128::from(track.timescale.max(1));
         let s0 = i64::try_from(i128::from(p0) - offset).unwrap_or(if offset > 0 { i64::MIN } else { i64::MAX });
-        let need = (frames as f64 * ratio).ceil() as i64 + 2;
-        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
+        let need_i64 = i64::try_from(need).unwrap_or(i64::MAX);
+        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need]; ch];
         let mut st = a.state.lock().unwrap_or_else(|e| e.into_inner());
         let first = a.starts.partition_point(|&x| x <= s0.max(0)).saturating_sub(1);
         let mut i = first;
-        while i < track.samples.len() {
+        while let Some(sample) = track.samples.get(i) {
             let Some(&pk_start) = a.starts.get(i) else { break };
-            if pk_start >= s0.saturating_add(need) {
+            if pk_start >= s0.saturating_add(need_i64) {
                 break;
             }
             let pk = self.audio_packet(a, ainfo, &mut st, i)?;
+            if pk.failed {
+                let range = failed_audio_span(pk_start, s0, sample.duration, src.first().map_or(0, Vec::len));
+                for dst in &mut src {
+                    if let Some(span) = dst.get_mut(range.clone()) {
+                        span.fill(0.0);
+                    }
+                }
+                i += 1;
+                continue;
+            }
             for (c, dst) in src.iter_mut().enumerate() {
-                let Some(chan) = pk.get(c.min(pk.len().saturating_sub(1))) else { continue };
+                let Some(chan) = pk.samples.get(c.min(pk.samples.len().saturating_sub(1))) else { continue };
                 for (k, v) in chan.iter().enumerate() {
                     let pos = pk_start.saturating_add(k as i64).saturating_sub(s0);
                     if pos >= 0 && (pos as usize) < dst.len() {
@@ -552,6 +650,9 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         ),
         CodecConfig::Pcm(p) => (p.sample_rate as u32, p.channels, Some(p.bits as u32)),
         CodecConfig::Opus(o) => (crate::audio::OPUS_RATE, (o.output_channels as u32).max(1), None),
+        // 3GPP TS 26.244 writes 2 channels into AMR sample entries; the codec is mono
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => (cfa4_amr::nb::SAMPLE_RATE, 1, None),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => (cfa4_amr::wb::SAMPLE_RATE, 1, None),
         _ => (if ap.sample_rate > 0.0 { ap.sample_rate as u32 } else { t.timescale }, ap.channels.max(1), None),
     };
     let codec = match &entry.codec {
@@ -565,10 +666,22 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         }
         c => codec_label(c),
     };
-    Some(AudioStreamInfo { sample_rate: rate.max(1), channels: ch.max(1), codec, bits_per_sample: bits })
+    let (rate, ch) = cfa4_media::bounded_audio_dimensions(rate, ch).ok()?;
+    Some(AudioStreamInfo { sample_rate: rate, channels: ch, codec, bits_per_sample: bits, speakers: Vec::new() })
+}
+
+/// QuickTime G.711 (`ulaw`, `alaw`) and IMA ADPCM (`ima4`) sample descriptions.
+fn qt_adpcm(c: &CodecConfig) -> Option<cfa4_adpcm::Codec> {
+    match c {
+        CodecConfig::Unknown { fourcc, .. } => cfa4_adpcm::Codec::from_fourcc(&fourcc.0),
+        _ => None,
+    }
 }
 
 fn codec_label(c: &CodecConfig) -> String {
+    if let Some(a) = qt_adpcm(c) {
+        return a.name().into();
+    }
     match c {
         CodecConfig::Avc(a) => format!(
             "H.264 ({})",
@@ -585,6 +698,14 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Hevc(_) => "HEVC".into(),
         CodecConfig::Vp9(c) => format!("VP9 (Profile {})", c.profile),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"vp08" => "VP8".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"raw " => "Uncompressed RGB".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"2vuy" => "Uncompressed YUV 4:2:2".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"v210" => "Uncompressed YUV 4:2:2 10-bit".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
+        CodecConfig::Av2 { .. } => "AV2 (unsupported)".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"drac" => "VC-2 / Dirac".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"samr" => "AMR-NB".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"sawb" => "AMR-WB".into(),
         CodecConfig::Av1(c) => format!("AV1 ({} Profile)", ["Main", "High", "Professional"].get(c.seq_profile as usize).unwrap_or(&"Main")),
         CodecConfig::Apv(a) => match cfa4_apv::Profile::from_idc(a.profile_idc) {
             Some(p) => p.name().into(),
@@ -602,6 +723,8 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Aac(a) => {
             if a.object_type == 5 || a.object_type == 29 {
                 "HE-AAC".into()
+            } else if a.object_type == 42 {
+                "xHE-AAC".into()
             } else {
                 "AAC".into()
             }
@@ -612,6 +735,7 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Dnx { fourcc } if fourcc.0 == *b"AVdh" => "Avid DNxHR".into(),
         CodecConfig::Dnx { .. } => "Avid DNxHD".into(),
         CodecConfig::Cineform => "GoPro CineForm".into(),
+        CodecConfig::Dv { .. } => "DV".into(),
         other => other.name().to_string(),
     }
 }
@@ -1334,5 +1458,97 @@ mod he_aac_tests {
             let buf = src.audio(0, 4800, 48_000).unwrap();
             assert!(buf.channels.iter().flatten().all(|v| v.is_finite() && v.abs() <= 1.0), "media_time {media_time}");
         }
+    }
+}
+
+#[cfg(test)]
+mod auro_cx_tests {
+    use cfa4_isobmff::{CodecConfig, FourCc};
+
+    /// #322: an Auro-CX track says what it is and why it does not play, instead of "unknown".
+    #[test]
+    fn auro_cx_tracks_are_named_and_refused_clearly() {
+        let c = CodecConfig::Unknown { fourcc: FourCc(*b"a3ds"), raw: vec![0; 8] };
+        assert_eq!(super::codec_label(&c), "Auro-CX (unsupported)");
+        let Err(crate::CodecError::Unsupported(why)) = crate::audio::PacketDecoder::for_isobmff(&c, 48_000) else { panic!("Auro-CX must be refused") };
+        assert_eq!(why, crate::audio::AURO_CX_UNSUPPORTED);
+    }
+}
+
+#[cfg(test)]
+mod corrupt_audio_tests {
+    use cfa4_isobmff::{Brand, Mp4Writer, SampleEntry, TrackConfig, WriteSample, WriterOptions};
+    use cfa4_media::MediaSource;
+
+    #[test]
+    fn failed_packet_span_matches_per_sample_silence_at_extreme_timestamps() {
+        let min = i64::MIN;
+        let max = i64::MAX;
+        for start in [min, min + 1, min + 2, -10, -1, 0, 1, 10, max - 2, max - 1, max] {
+            for request in [min, min + 1, min + 2, -10, -1, 0, 1, 10, max - 2, max - 1, max] {
+                for duration in [0, 1, 2, 5, 128] {
+                    let old: Vec<_> = (0..duration)
+                        .map(|k| start.saturating_add(i64::from(k)).saturating_sub(request))
+                        .filter(|&position| (0..8).contains(&position))
+                        .map(|position| position as usize)
+                        .collect();
+                    let range = super::failed_audio_span(start, request, duration, 8);
+                    let actual: Vec<_> = (0..8).filter(|position| range.contains(position)).collect();
+                    let expected: Vec<_> = old.into_iter().collect::<std::collections::BTreeSet<_>>().into_iter().collect();
+                    assert_eq!(actual, expected, "start={start}, request={request}, duration={duration}");
+                }
+            }
+        }
+        assert_eq!(super::failed_audio_span(0, 0, u32::MAX, 128), 0..128);
+    }
+
+    #[test]
+    fn failed_aac_packet_does_not_materialize_its_hostile_duration() {
+        // AAC-LC, 48 kHz stereo. The empty access unit cannot decode.
+        let asc = vec![0x11, 0x90];
+        let mut mux = Mp4Writer::new(std::io::Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+        let track = mux.add_track(TrackConfig::new(SampleEntry::aac(asc, 2, 48_000), 48_000)).unwrap();
+        mux.write_sample(track, WriteSample { data: &[], duration: 1_000_000, composition_offset: 0, is_sync: true }).unwrap();
+        let source = super::Mp4Source::open("damaged.m4a", mux.finish().unwrap().into_inner().into()).unwrap();
+        let audio = &source.audios[0];
+        let info = &source.info.audio_streams[0];
+        let mut state = audio.state.lock().unwrap();
+        let packet = source.audio_packet(audio, info, &mut state, 0).unwrap();
+        assert!(packet.failed);
+        assert!(packet.samples.is_empty(), "failed packet must not allocate from its untrusted duration");
+        drop(state);
+
+        let window = source.audio(0, 128, 48_000).unwrap();
+        assert_eq!(window.channels.len(), 2);
+        assert!(window.channels.iter().all(|ch| ch.len() == 128 && ch.iter().all(|&v| v == 0.0)));
+    }
+
+    #[test]
+    fn failed_aac_packet_silences_overlap_independent_of_request_boundary() {
+        let rate = 48_000u32;
+        let tone: Vec<f32> = (0..8192).map(|i| 0.3 * (i as f32 * 0.13).sin()).collect();
+        let mut encoder = cfa4_aac::Encoder::new(cfa4_aac::EncoderConfig::cbr(rate, 1, 64_000)).unwrap();
+        let mut units = encoder.encode(&[&tone]);
+        units.extend(encoder.flush());
+        assert!(units.len() >= 2);
+        let mut mux = Mp4Writer::new(std::io::Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+        let track = mux.add_track(TrackConfig::new(SampleEntry::aac(vec![0x11, 0x88], 1, rate), rate)).unwrap();
+        mux.write_sample(track, WriteSample { data: &units[0], duration: 1024, composition_offset: 0, is_sync: true }).unwrap();
+        mux.write_sample(track, WriteSample { data: &units[1], duration: 400, composition_offset: 0, is_sync: true }).unwrap();
+        mux.write_sample(track, WriteSample { data: &[], duration: 1024, composition_offset: 0, is_sync: true }).unwrap();
+        let source = super::Mp4Source::open("overlap.m4a", mux.finish().unwrap().into_inner().into()).unwrap();
+        // The failed packet starts at 1024 + 400 = 1424, after 124 frames of the crossing read.
+        let crossing = source.audio(1300, 256, rate).unwrap();
+        let isolated = source.audio(1424, 132, rate).unwrap();
+        let prior_packet_len = {
+            let audio = &source.audios[0];
+            let info = &source.info.audio_streams[0];
+            let mut state = audio.state.lock().unwrap();
+            source.audio_packet(audio, info, &mut state, 1).unwrap().samples.first().map_or(0, Vec::len)
+        };
+        assert!(prior_packet_len > 400, "valid packet must overlap the failed packet");
+        assert!(crossing.channels[0][..124].iter().any(|v| v.abs() > 0.001));
+        assert!(isolated.channels[0].iter().all(|&v| v == 0.0));
+        assert_eq!(&crossing.channels[0][124..], &isolated.channels[0]);
     }
 }

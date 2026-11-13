@@ -1,0 +1,22 @@
+[package]
+name = "cfa4-dcp"
+description = "Digital Cinema Package documents: SMPTE and Interop asset map, packing list and composition playlist reader (DCP-02)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+base64 = { workspace = true }
+chrono = { workspace = true }
+rsa = { workspace = true }
+sha1 = { workspace = true }
+roxmltree = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

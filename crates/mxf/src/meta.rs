@@ -185,6 +185,7 @@ pub mod tag {
     pub const ESSENCE_CONTAINER: u16 = 0x3004;
     pub const CODEC: u16 = 0x3005;
     pub const FRAME_LAYOUT: u16 = 0x320C;
+    pub const VIDEO_LINE_MAP: u16 = 0x320D;
     pub const STORED_WIDTH: u16 = 0x3203;
     pub const STORED_HEIGHT: u16 = 0x3202;
     pub const SAMPLED_WIDTH: u16 = 0x3205;
@@ -203,6 +204,18 @@ pub mod tag {
     pub const WHITE_REF_LEVEL: u16 = 0x3305;
     pub const ALPHA_SAMPLE_DEPTH: u16 = 0x3309;
     pub const PIXEL_LAYOUT: u16 = 0x3401;
+    pub const PALETTE: u16 = 0x3403;
+    pub const PALETTE_LAYOUT: u16 = 0x3404;
+    pub const COMPONENT_MAX_REF: u16 = 0x3406;
+    pub const COMPONENT_MIN_REF: u16 = 0x3407;
+    pub const REVERSED_BYTE_ORDER: u16 = 0x330B;
+    pub const PADDING_BITS: u16 = 0x3307;
+    pub const IMAGE_START_OFFSET: u16 = 0x3213;
+    pub const IMAGE_END_OFFSET: u16 = 0x3214;
+    pub const SAMPLED_X_OFFSET: u16 = 0x3206;
+    pub const SAMPLED_Y_OFFSET: u16 = 0x3207;
+    pub const DISPLAY_X_OFFSET: u16 = 0x320A;
+    pub const DISPLAY_Y_OFFSET: u16 = 0x320B;
     pub const AUDIO_SAMPLING_RATE: u16 = 0x3D03;
     pub const LOCKED: u16 = 0x3D02;
     pub const CHANNEL_COUNT: u16 = 0x3D07;

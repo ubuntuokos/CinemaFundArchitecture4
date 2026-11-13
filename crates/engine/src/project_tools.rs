@@ -1029,7 +1029,7 @@ fn inside(dir: &std::path::Path, root: &std::path::Path) -> bool {
 
 /// Remember the Scratch Disks folders chosen in this session, so projects naming them may use
 /// them later (see [`trusted_scratch`]).
-fn remember_scratch_folders(s: &mut Session, dirs: &[String]) {
+pub(crate) fn remember_scratch_folders(s: &mut Session, dirs: &[String]) {
     const KEEP: usize = 64;
     let mut prefs = s.prefs.clone();
     let list = &mut prefs.auto_save.scratch_folders;
@@ -1404,7 +1404,7 @@ pub fn system_report() -> Value {
         "family": std::env::consts::FAMILY,
         "arch": std::env::consts::ARCH,
         "cpuThreads": cpus,
-        "decoders": ["H.264 (AVC)", "H.265 (HEVC) Main / Main 10", "VP8", "VP9", "AV1 Main", "Apple ProRes", "Avid DNxHD / DNxHR", "Motion JPEG", "AAC-LC", "Opus", "PCM"],
+        "decoders": ["H.264 (AVC)", "H.265 (HEVC) Main / Main 10", "VP8", "VP9", "AV1 Main", "Apple ProRes", "Avid DNxHD / DNxHR", "Motion JPEG", "AAC-LC", "xHE-AAC (USAC)", "Opus", "PCM"],
         "containers": ["MP4 / MOV (ISO BMFF)", "Matroska / WebM", "WAV", "PNG / JPEG stills"],
         "exportFormats": formats,
         "speechToText": crate::transcript::speech_available(),

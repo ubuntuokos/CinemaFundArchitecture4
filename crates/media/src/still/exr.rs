@@ -1,16 +1,20 @@
 //! OpenEXR stills (and the frames of EXR image sequences), read from the public OpenEXR file layout:
 //! single-part scan-line files with no, RLE, ZIPS (one line per chunk), ZIP or PXR24 (16 lines)
-//! compression,
+//! or PIZ (32 lines, [`piz`]) compression,
 //! half, float or uint channels. R, G, B and A become the frame's channels (missing colour channels
 //! are 0, missing alpha is opaque); a luminance-only file (Y) is shown grey. EXR values are
 //! scene-linear with premultiplied alpha, which is exactly the compositor's working format, so the
 //! frame keeps them as 32-bit floats (values above 1.0 survive into effects and colour work).
 //!
+//! The `framesPerSecond` and `timeCode` attributes give a sequence its frame rate and start time
+//! code (a still's too).
+//!
 //! The display window is the frame; pixels of the data window outside it are cut, and the parts of
 //! it the data window does not cover are transparent. Tiled, deep and multi-part files, chroma
-//! subsampled channels and the PIZ, B44 and DWA compressions are refused with a clear error.
+//! subsampled channels and the B44 and DWA compressions are refused with a clear error.
 
 pub mod inflate;
+pub mod piz;
 
 use std::sync::Arc;
 
@@ -27,6 +31,10 @@ const MAGIC: [u8; 4] = [0x76, 0x2f, 0x31, 0x01];
 
 /// Largest picture we decode (each pixel takes 16 bytes as RGBA floats).
 const MAX_PIXELS: u64 = 1 << 26;
+/// Maximum memory retained while decoding the data window and, when different,
+/// the display window. Both buffers coexist during placement.
+/// 2 GiB: an 8K RGBA f32 plate is 566 MB and the data and display windows may both be held.
+const MAX_DECODED_BYTES: usize = 2 << 30;
 /// Most attributes / channels we read from a header.
 const MAX_ATTRIBUTES: usize = 4096;
 const MAX_CHANNELS: usize = 1024;
@@ -51,11 +59,14 @@ pub struct Decoded {
     pub has_alpha: bool,
     /// For the media info, e.g. "RGBA 16-bit float".
     pub pixel_format: String,
+    /// The `framesPerSecond` and `timeCode` attributes.
+    pub timing: super::Timing,
 }
 
 /// Open an EXR file as a still.
 pub fn still(name: &str, bytes: &[u8]) -> Result<StillSource> {
     let d = decode(name, bytes)?;
+    let (frame_rate, start_timecode) = d.timing.resolve(FrameRate::FPS_29_97);
     let info = MediaInfo {
         name: name.to_string(),
         kind: MediaKind::Still,
@@ -63,7 +74,7 @@ pub fn still(name: &str, bytes: &[u8]) -> Result<StillSource> {
         video: Some(VideoStreamInfo {
             width: d.frame.width,
             height: d.frame.height,
-            frame_rate: FrameRate::FPS_29_97,
+            frame_rate,
             par: (1, 1),
             codec: "EXR".into(),
             pixel_format: d.pixel_format,
@@ -74,7 +85,7 @@ pub fn still(name: &str, bytes: &[u8]) -> Result<StillSource> {
         }),
         audio_streams: Vec::new(),
         container: "Image".into(),
-        start_timecode: None,
+        start_timecode,
         file_size: Some(bytes.len() as u64),
     };
     Ok(StillSource { info, frame: Arc::new(d.frame) })
@@ -137,6 +148,8 @@ enum Compression {
     Zip,
     /// Lossy 24-bit floats: deflated byte planes of per-line differences.
     Pxr24,
+    /// Wavelet + Huffman, 32 scan lines per chunk.
+    Piz,
 }
 
 impl Compression {
@@ -144,6 +157,7 @@ impl Compression {
         match self {
             Compression::Zip if code == 3 => 16,
             Compression::Pxr24 => 16,
+            Compression::Piz => 32,
             _ => 1,
         }
     }
@@ -203,6 +217,7 @@ struct Header {
     display: Window,
     /// Offset of the line offset table.
     end: usize,
+    timing: super::Timing,
 }
 
 fn header(name: &str, b: &[u8]) -> Result<Header> {
@@ -220,6 +235,7 @@ fn header(name: &str, b: &[u8]) -> Result<Header> {
         }
     }
     let (mut chans, mut code, mut data, mut display) = (None, None, None, None);
+    let mut timing = super::Timing::default();
     let mut pos = 8;
     for _ in 0..MAX_ATTRIBUTES {
         let attr = cstr(b, &mut pos).ok_or_else(|| bad("header"))?;
@@ -231,13 +247,14 @@ fn header(name: &str, b: &[u8]) -> Result<Header> {
                 0 => Compression::None,
                 1 => Compression::Rle,
                 2 | 3 => Compression::Zip,
+                4 => Compression::Piz,
                 5 => Compression::Pxr24,
                 _ => {
                     let what = ["PIZ", "PXR24", "B44", "B44A", "DWAA", "DWAB"].get(usize::from(code).wrapping_sub(4)).copied().unwrap_or("unknown");
                     return Err(MediaError::Unsupported(format!("{name}: {what} compressed OpenEXR is not supported yet")));
                 }
             };
-            return Ok(Header { channels, compression, code, data, display: display.unwrap_or(data), end: pos });
+            return Ok(Header { channels, compression, code, data, display: display.unwrap_or(data), end: pos, timing });
         }
         let ty = cstr(b, &mut pos).ok_or_else(|| bad("header"))?;
         let size = le32(b, pos).ok_or_else(|| bad("header"))? as usize;
@@ -249,6 +266,14 @@ fn header(name: &str, b: &[u8]) -> Result<Header> {
             ("compression", "compression") => code = value.first().copied(),
             ("dataWindow", "box2i") => data = Some(window(value).ok_or_else(|| bad("dataWindow"))?),
             ("displayWindow", "box2i") => display = Some(window(value).ok_or_else(|| bad("displayWindow"))?),
+            // a damaged optional attribute is ignored, not an error
+            // OpenEXR names it framesPerSecond; OpenImageIO 2.4 and older write FramesPerSecond
+            ("framesPerSecond" | "FramesPerSecond", "rational") => {
+                timing.frame_rate = le32(value, 0).zip(le32(value, 4)).map(|(n, d)| (i64::from(n as i32), i64::from(d))).filter(|&(n, d)| n > 0 && d > 0);
+            }
+            // SMPTE ST 12-1 time and flags, packed as OpenEXR stores them (the same byte layout as
+            // the CinemaDNG TimeCodes tag); the user data word that follows is not used
+            ("timeCode", "timecode") => timing.timecode = value.get(..4).and_then(cfa4_dng::Timecode::from_bytes),
             _ => {}
         }
     }
@@ -418,6 +443,34 @@ pub fn decode(name: &str, b: &[u8]) -> Result<Decoded> {
     }
     let table = h.end;
     let px_len = dw.checked_mul(dh).and_then(|n| n.checked_mul(4)).ok_or_else(|| bad("size".into()))?;
+    let frame_len = fw.checked_mul(fh).and_then(|n| n.checked_mul(4)).ok_or_else(|| bad("display window size".into()))?;
+    let decoded_bytes = px_len
+        .checked_mul(std::mem::size_of::<f32>())
+        .and_then(|n| if h.data == h.display { Some(n) } else { frame_len.checked_mul(std::mem::size_of::<f32>()).and_then(|m| n.checked_add(m)) })
+        .ok_or_else(|| bad("decoded size".into()))?;
+    if decoded_bytes > MAX_DECODED_BYTES {
+        return Err(MediaError::Unsupported(format!("{name}: EXR decoded buffers exceed the {MAX_DECODED_BYTES}-byte limit")));
+    }
+    let chunks = dh.div_ceil(lpc);
+    let table_end = table.checked_add(chunks.checked_mul(8).ok_or_else(|| bad("offset table size".into()))?).ok_or_else(|| bad("offset table size".into()))?;
+    if table_end > b.len() {
+        return Err(bad("offset table is truncated".into()));
+    }
+    for i in 0..chunks {
+        let at = table + i * 8;
+        let off = le32(b, at).zip(le32(b, at + 4)).map(|(lo, hi)| u64::from(lo) | u64::from(hi) << 32);
+        let off = off.and_then(|o| usize::try_from(o).ok()).ok_or_else(|| bad(format!("offset of chunk {i}")))?;
+        let size = le32(b, off.checked_add(4).ok_or_else(|| bad(format!("chunk {i}")))?).ok_or_else(|| bad(format!("chunk {i}")))? as usize;
+        let end = off.checked_add(8).and_then(|n| n.checked_add(size)).ok_or_else(|| bad(format!("chunk {i}")))?;
+        if end > b.len() {
+            return Err(bad(format!("chunk {i} is truncated")));
+        }
+        let y = le32(b, off).map(|y| y as i32);
+        let want = i64::from(h.data.y0) + (i * lpc) as i64;
+        if y.map(i64::from) != Some(want) {
+            return Err(bad(format!("chunk {i} is not at line {want}")));
+        }
+    }
     let mut px = vec![0f32; px_len];
     if !alpha {
         px.par_chunks_mut(4).for_each(|p| {
@@ -439,7 +492,7 @@ pub fn decode(name: &str, b: &[u8]) -> Result<Decoded> {
         }
         let size = le32(b, off + 4).ok_or_else(|| bad(format!("chunk {i}")))? as usize;
         let data = b.get(off + 8..(off + 8).saturating_add(size)).ok_or_else(|| bad(format!("chunk {i} is truncated")))?;
-        let raw: std::borrow::Cow<[u8]> = if data.len() == expected {
+        let raw: std::borrow::Cow<'_, [u8]> = if data.len() == expected {
             // stored raw when compression would not shrink it
             data.into()
         } else {
@@ -452,6 +505,10 @@ pub fn decode(name: &str, b: &[u8]) -> Result<Decoded> {
                     let planes = per_line.and_then(|l| l.checked_mul(n)).ok_or_else(|| bad("chunk size".into()))?;
                     let inflated = inflate::zlib(data, planes).map_err(|e| bad(format!("chunk {i}: {e}")))?;
                     unpxr24(&inflated, &h.channels, dw, n).ok_or_else(|| bad(format!("chunk {i}: bad PXR24 data")))?.into()
+                }
+                Compression::Piz => {
+                    let chans: Vec<piz::PizChannel> = h.channels.iter().map(|c| piz::PizChannel { width: dw, lines: n, bytes: c.ty.size() }).collect();
+                    piz::decompress(data, &chans, expected).map_err(|e| bad(format!("chunk {i}: {e}")))?.into()
                 }
             }
         };
@@ -521,7 +578,7 @@ pub fn decode(name: &str, b: &[u8]) -> Result<Decoded> {
     let pixel_format = format!("{layout} {depth}");
     let mut frame = VideoFrame::rgba_f32(fw32, fh32, px);
     frame.color = LINEAR_709;
-    Ok(Decoded { frame, has_alpha, pixel_format })
+    Ok(Decoded { frame, has_alpha, pixel_format, timing: h.timing })
 }
 
 #[cfg(test)]

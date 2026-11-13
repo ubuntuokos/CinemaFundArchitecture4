@@ -1,0 +1,52 @@
+# CFA4 project rules for Semgrep (run by .github/workflows/cfa4-security.yml).
+# Each rule encodes an invariant from AGENTS.md / an ADR that clippy and ruff do not check.
+rules:
+  - id: cfa4-rust-listener-not-loopback
+    languages: [rust]
+    severity: ERROR
+    message: >-
+      CFA4 control, bridge and MCP servers listen on loopback only (AGENTS.md, control protocol).
+      Bind to 127.0.0.1 / ::1 / localhost, never to a public interface.
+    patterns:
+      - pattern-either:
+          - pattern: $L::bind("$ADDR")
+          - pattern: $L::bind(("$ADDR", $PORT))
+      - metavariable-regex:
+          metavariable: $ADDR
+          regex: ^(?!127\.|localhost|\[?::1\]?)
+  - id: cfa4-python-bind-not-loopback
+    languages: [python]
+    severity: ERROR
+    message: >-
+      The Qt bridge and dev tools listen on loopback only. Bind to 127.0.0.1, not "0.0.0.0" or "".
+    pattern-either:
+      - pattern: $S.bind(("0.0.0.0", $P))
+      - pattern: $S.bind(("", $P))
+      - pattern: $S.listen(QHostAddress.Any, ...)
+      - pattern: $S.listen(QHostAddress.SpecialAddress.Any, ...)
+  - id: cfa4-rust-shell-command
+    languages: [rust]
+    severity: ERROR
+    message: >-
+      Do not run commands through a shell: build the argument list with Command::new(program).args(..)
+      so file names and parameters from media, projects or MCP cannot inject shell syntax.
+    pattern-either:
+      - pattern: std::process::Command::new("sh")
+      - pattern: std::process::Command::new("bash")
+      - pattern: std::process::Command::new("/bin/sh")
+      - pattern: Command::new("sh")
+      - pattern: Command::new("bash")
+      - pattern: Command::new("/bin/sh")
+  - id: cfa4-unsafe-outside-platform
+    languages: [generic]
+    severity: ERROR
+    message: >-
+      `unsafe` is allowed only in crates/platform FFI modules (AGENTS.md §0.3, ADR 0001) and in the
+      binding modules of non-Rust components named in ADR 0001 addenda (2026-11-09: libobs::sys).
+    paths:
+      include:
+        - "*.rs"
+      exclude:
+        - "/crates/platform/**"
+        - "/crates/obs/src/libobs/sys.rs"
+    pattern-regex: '#!?\[allow\(\s*unsafe_code\s*\)\]'

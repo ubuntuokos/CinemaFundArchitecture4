@@ -26,7 +26,9 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from collections import deque
+from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QElapsedTimer, QEvent, QMimeData, QPointF, QRect, QRectF, QSettings, Qt, QTimer, Signal
@@ -35,6 +37,7 @@ from PySide6.QtGui import (
     QActionGroup,
     QColor,
     QDrag,
+    QGuiApplication,
     QImage,
     QKeyEvent,
     QMouseEvent,
@@ -43,6 +46,11 @@ from PySide6.QtGui import (
     QPen,
     QWheelEvent,
 )
+
+try:
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget
+except ImportError:  # pragma: no cover - a PySide6 without the OpenGL widgets keeps the raster view
+    QOpenGLWidget = None  # type: ignore[assignment, misc]
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -76,12 +84,13 @@ from .monitor_view import (
     res_label,
     social_safe_rect,
 )
+from .smart_cut import SmartCutDialog
 from .time_bar import ScrubBar
 from .timeline_media import TimelineMedia
 from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
 
 try:  # QtMultimedia is optional: without it playback is silent
-    from PySide6.QtMultimedia import QAudioFormat, QAudioSink, QMediaDevices
+    from PySide6.QtMultimedia import QAudio, QAudioFormat, QAudioSink, QMediaDevices
 
     HAVE_AUDIO = True
 except ImportError:  # pragma: no cover - depends on the PySide6 build
@@ -102,6 +111,26 @@ AUDIO_LEAD_SECONDS = 0.35
 METER_KEEP_SECONDS = 3.0
 SOURCE_SAMPLE_RATE = 48_000
 MAX_SPEED = 8.0
+# the sink errors that end its clock (an underrun is not one)
+SINK_FAILURES: tuple[Any, ...] = (
+    (QAudio.Error.OpenError, QAudio.Error.IOError, QAudio.Error.FatalError) if HAVE_AUDIO else ()
+)
+# A device that consumes no samples for this long hands the clock back to the wall clock (egui's).
+AUDIO_STALL_S = 1.0
+# How often (s) playback opens the output again after it failed to open, failed or stalled, while
+# playing goes on silently on the wall clock: what pause/play does by hand, on a timer, so the
+# sound (and the device clock) come back when the device recovers (egui's AUDIO_RETRY_S, #2555).
+AUDIO_RETRY_S = 2.0
+# Shuttling forward at these speeds is heard (pitch-corrected by Preferences ▸ Audio ▸ Maintain
+# pitch while shuttling); faster, slower and backwards it is silent (egui's shuttle_mix_rate).
+SHUTTLE_SOUND = (0.5, 4.0)
+
+
+def shuttle_sounds(speed: float) -> bool:
+    """Whether playback at ``speed`` is heard (1×, or shuttling at 0.5–4× forward)."""
+    return SHUTTLE_SOUND[0] <= speed <= SHUTTLE_SOUND[1]
+
+
 GREEN = QColor(0x4C, 0xC0, 0x5A)
 YELLOW = QColor(0xF0, 0xC8, 0x40)
 
@@ -115,6 +144,37 @@ def ticks_per_frame_from_fps(fps: Any) -> int:
     if not 1.0 <= value <= 1000.0:
         value = 30.0
     return max(1, round(TICKS_PER_SECOND / value))
+
+
+GRID_CELL = 8.0  # the Transparency Grid's squares (px) and its two grays (upstream #3233)
+GRID_LIGHT, GRID_DARK = QColor(0xFF, 0xFF, 0xFF), QColor(0xCC, 0xCC, 0xCC)
+MAX_GRID_SQUARES = 4096
+
+
+def frame_format(with_alpha: bool) -> QImage.Format:
+    """A frame's pixels: RGB over black, and with the Transparency Grid the frame's alpha (the
+    color is then the premultiplied picture)."""
+    return QImage.Format.Format_RGBA8888_Premultiplied if with_alpha else QImage.Format.Format_RGBA8888
+
+
+def paint_transparency_grid(p: QPainter, pic: QRectF, visible: QRectF) -> None:
+    """A white and light gray checkerboard behind the picture ``pic``, where it overlaps
+    ``visible`` (squares anchored to the picture's corner; a huge zoom draws a bounded number)."""
+    area = pic.intersected(visible)
+    if area.isEmpty():
+        return
+    p.fillRect(area, GRID_LIGHT)
+    c0 = max(0, int((area.left() - pic.left()) // GRID_CELL))
+    r0 = max(0, int((area.top() - pic.top()) // GRID_CELL))
+    c1 = int((area.right() - pic.left()) // GRID_CELL) + 1
+    r1 = int((area.bottom() - pic.top()) // GRID_CELL) + 1
+    if (c1 - c0) * (r1 - r0) > MAX_GRID_SQUARES:
+        return
+    for row in range(r0, r1):
+        for col in range(c0 + (row + c0 + 1) % 2, c1, 2):  # dark where row + col is odd
+            cell = QRectF(pic.left() + col * GRID_CELL, pic.top() + row * GRID_CELL, GRID_CELL, GRID_CELL).intersected(area)
+            if not cell.isEmpty():
+                p.fillRect(cell, GRID_DARK)
 
 
 def channel_image(image: QImage, display: str) -> QImage:
@@ -133,17 +193,129 @@ def channel_image(image: QImage, display: str) -> QImage:
     return QImage(plane, w, h, w, QImage.Format.Format_Grayscale8).copy()
 
 
-class FrameView(QWidget):
-    """The picture: fitted or magnified and panned, with the display mode, safe margins and the
-    dropped-frame light drawn over it."""
+class PlaybackMeter:
+    """egui's ``PlaybackMeter`` (``frames.rs``): frames shown and dropped while playing. Each
+    frame that falls due is shown when its own picture reached the screen before the next one
+    fell due, else dropped; frames skipped between two refreshes are dropped too."""
 
-    view_changed = Signal()  # magnification or pan
-    guides_changed = Signal()  # a guide added, moved or removed on the picture
-    drag_out = Signal()  # a left-button drag on the picture (the Source monitor lifts its clip)
+    def __init__(self) -> None:
+        self.start(1.0)
+
+    def start(self, speed: float) -> None:
+        self.shown = 0
+        self.dropped = 0
+        self.current: tuple[int, bool] | None = None  # the frame due and whether it was seen
+        self.step = max(1, int(abs(speed))) * (-1 if speed < 0 else 1)
+
+    def refresh(self, frame: int, exact: bool) -> None:
+        """``frame`` is due now; ``exact``: its picture is on screen."""
+        if self.current is None:
+            self.current = (frame, exact)
+            return
+        f, seen = self.current
+        if f == frame:
+            self.current = (f, seen or exact)
+            return
+        self._close(seen)
+        moved = (frame - f) // self.step
+        if 1 < moved < 1000:  # a jump back (a loop) or a huge one is not a drop
+            self.dropped += moved - 1
+        self.current = (frame, exact)
+
+    def _close(self, seen: bool) -> None:
+        if seen:
+            self.shown += 1
+        else:
+            self.dropped += 1
+
+    def resync(self, frame: int, exact: bool) -> None:
+        """Continue from ``frame`` without counting what happened since the last refresh (the
+        monitor was hidden, so nothing could be shown)."""
+        self.current = (frame, exact)
+
+    def finish(self) -> None:
+        """Playback stopped: account for the frame on screen."""
+        if self.current is not None:
+            self._close(self.current[1])
+            self.current = None
+
+    def counts(self) -> tuple[int, int]:
+        """Shown and dropped so far, the frame due counting as shown once it is."""
+        if self.current is not None and self.current[1]:
+            return self.shown + 1, self.dropped
+        return self.shown, self.dropped
+
+
+def monitor_gl_wanted() -> bool:
+    """``CFA4_QT_MONITOR_GL=1``: the monitors draw through OpenGL (qt-parity 5.5, step 1 of
+    docs/plans/CFA4-QT6-FINISH-001.md Q3), each frame uploaded as a texture straight from the
+    shared memory the engine wrote it to and scaled on the GPU. Off by default until it is
+    measured on the reference machine."""
+    return os.environ.get("CFA4_QT_MONITOR_GL", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+_GL_OK: bool | None = None
+
+
+def monitor_gl_available() -> bool:
+    """An OpenGL context can be made and made current here (not on ``offscreen``/``minimal``,
+    nor without a GL driver): checked once, so a machine without GL keeps the raster monitors."""
+    global _GL_OK
+    if _GL_OK is None:
+        _GL_OK = False
+        try:
+            if QGuiApplication.platformName() not in ("offscreen", "minimal", ""):
+                from PySide6.QtGui import QOffscreenSurface, QOpenGLContext
+
+                ctx = QOpenGLContext()
+                if ctx.create():
+                    surface = QOffscreenSurface()
+                    surface.setFormat(ctx.format())
+                    surface.create()
+                    if surface.isValid() and ctx.makeCurrent(surface):
+                        ctx.doneCurrent()
+                        _GL_OK = True
+                    surface.destroy()
+        except Exception:  # noqa: BLE001 - any GL failure means the raster path (AGENTS.md §0)
+            _GL_OK = False
+    return _GL_OK
+
+
+class PresentStats:
+    """How long drawing the monitor's picture takes (``perf.stats`` ``playback.present``): the
+    measure for qt-parity 5.5 on the reference machine, raster against OpenGL."""
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self.count = 0
+        self.total_ms = 0.0
+        self.max_ms = 0.0
+
+    def add(self, ms: float) -> None:
+        self.count += 1
+        self.total_ms += ms
+        self.max_ms = max(self.max_ms, ms)
+
+    def as_dict(self, path: str) -> dict[str, Any]:
+        mean = self.total_ms / self.count if self.count else 0.0
+        return {"path": path, "frames": self.count, "meanMs": round(mean, 3), "maxMs": round(self.max_ms, 3)}
+
+
+class _FrameViewBase:
+    """The picture: fitted or magnified and panned, with the display mode, safe margins and the
+    dropped-frame light drawn over it. Shared by :class:`FrameView` (raster) and
+    :class:`GLFrameView` (OpenGL); a plain mixin, as PySide6 cannot derive one class from two Qt
+    widget classes."""
+
+    present_path = "raster"
 
     def __init__(self, name: str = "program", mv: MonitorView | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.present = PresentStats()
         self.setObjectName(f"{name}.view")
+        self.view_name = name
         self.mv = mv or MonitorView()
         self.image: QImage | None = None  # as the engine rendered it
         self.shown: QImage | None = None  # in the display mode
@@ -187,6 +359,13 @@ class FrameView(QWidget):
             fw, fh = self.image.width(), self.image.height()
         dpr = max(0.1, self.devicePixelRatioF())
         return fw * self.par / dpr, fh / dpr
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``<monitor>.picture``: the picture where it shows (the compare view's reference
+        picture is a widget, ``program.compare.reference``)."""
+        if self.view_name == "program.compare":
+            return []
+        return [(f"{self.view_name}.picture", self.picture_rect().intersected(self.guides.area()), "picture")]
 
     def picture_rect(self) -> QRectF:
         """Fitted, or magnified about the centre plus the (clamped) pan (egui's picture_rect), in
@@ -331,12 +510,20 @@ class FrameView(QWidget):
             return
         super().keyPressEvent(e)
 
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+        if self.overlay is not None and e.key() == Qt.Key.Key_Control:
+            self.overlay.modifiers_changed(e.modifiers())
+        super().keyReleaseEvent(e)
+
     def inputMethodEvent(self, e) -> None:
         """An input method's finished text (Chinese, Japanese, Korean) goes into the text being
         edited on the monitor."""
         if self.overlay is not None and self.overlay.graphics.edit is not None:
-            if e.commitString():
-                self.overlay.graphics.type_text(e.commitString())
+            g = self.overlay.graphics
+            if e.commitString() and g.take_commit(e.commitString()):
+                g.type_text(e.commitString())
+            # the marked text still being composed: typed if the edit ends first (upstream #2445)
+            g.preedit = e.preeditString()
             e.accept()
             return
         super().inputMethodEvent(e)
@@ -349,16 +536,21 @@ class FrameView(QWidget):
             self.unsetCursor()
 
     # ----- drawing -----
-    def paintEvent(self, _e: QPaintEvent) -> None:
-        p = QPainter(self)
+    def _paint(self, p: QPainter) -> None:
         T = theme.current()
         p.fillRect(self.rect(), T.c("panel_bg"))
         img = self.shown
         if img is not None and not img.isNull():
+            clock = QElapsedTimer()
+            clock.start()
             pic = self.picture_rect()
-            p.fillRect(pic, QColor("#000000"))
+            if self.mv.transparency_grid and self.mv.display == "composite" and img.hasAlphaChannel():
+                paint_transparency_grid(p, pic, QRectF(self.rect()))
+            else:
+                p.fillRect(pic, QColor("#000000"))
             p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
             p.drawImage(pic, img)
+            self.present.add(clock.nsecsElapsed() / 1e6)
             if self.mv.safe_margins:
                 for f, alpha in ((0.9, 120), (0.8, 90)):
                     r = QRectF(0, 0, pic.width() * f, pic.height() * f)
@@ -389,7 +581,6 @@ class FrameView(QWidget):
         if self.message:
             p.setPen(T.c("text_dim"))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.message)
-
 
     def social_zone_rect(self) -> QRectF | None:
         """View ▸ Social Safe Zones: the platform's uncovered area on screen (automation:
@@ -424,6 +615,48 @@ class FrameView(QWidget):
         p.setFont(f)
         p.setPen(QColor(255, 255, 255, 170))
         p.drawText(safe.adjusted(4, 4, -4, -4), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, label)
+
+
+class FrameView(_FrameViewBase, QWidget):
+    """The monitor's picture drawn by Qt's raster engine (the default, and the fallback)."""
+
+    view_changed = Signal()  # magnification or pan
+    guides_changed = Signal()  # a guide added, moved or removed on the picture
+    drag_out = Signal()  # a left-button drag on the picture (the Source monitor lifts its clip)
+
+    def paintEvent(self, _e: QPaintEvent) -> None:
+        p = QPainter(self)
+        self._paint(p)
+        p.end()
+
+
+if QOpenGLWidget is not None:
+
+    class GLFrameView(_FrameViewBase, QOpenGLWidget):  # type: ignore[misc, valid-type]
+        """The monitor's picture drawn through OpenGL: the frame (a QImage over the engine's
+        shared-memory slot) goes up as a texture and is scaled on the GPU; the overlays are the
+        same QPainter drawing as the raster view's."""
+
+        present_path = "gl"
+        view_changed = Signal()
+        guides_changed = Signal()
+        drag_out = Signal()
+
+        def paintGL(self) -> None:
+            p = QPainter(self)
+            self._paint(p)
+            p.end()
+
+else:  # pragma: no cover - PySide6 without QtOpenGLWidgets
+    GLFrameView = None  # type: ignore[assignment, misc]
+
+
+def new_frame_view(name: str, mv: MonitorView | None = None, parent: QWidget | None = None) -> FrameView:
+    """The monitor's picture: OpenGL when asked for (``CFA4_QT_MONITOR_GL``) and a GL context
+    works here, else the raster view."""
+    if GLFrameView is not None and monitor_gl_wanted() and monitor_gl_available():
+        return GLFrameView(name, mv, parent)  # type: ignore[return-value]
+    return FrameView(name, mv, parent)
 
 
 class TimecodeField(QLineEdit):
@@ -511,7 +744,9 @@ class Monitor(QWidget):
         self._frame_busy = False
         self._frame_wanted: int | None = None
         self._shown: tuple[Any, ...] | None = None
-        self.view = FrameView(self.target, self.mv, self)
+        # Settings ▸ Playback ▸ Draft decoding, read when playback starts
+        self.draft_decode = False
+        self.view = new_frame_view(self.target, self.mv, self)
         self.view.view_changed.connect(self._view_changed)
         self.view.guides_changed.connect(self._guides_changed)
         self.program_peer: Monitor | None = None  # the Program monitor (Snap in Program Monitor)
@@ -579,6 +814,10 @@ class Monitor(QWidget):
         self.stop_at: int | None = None  # Play In to Out: stop here…
         self.rest_at: int | None = None  # …and rest the playhead here
         self.dropped = 0
+        self.meter = PlaybackMeter()  # perf.stats' shown / dropped
+        self._meter_speed = 1.0  # the last playback's speed, for perf.stats after it stopped
+        self._meter_hidden = False  # the monitor was hidden at the last refresh (egui's clock.hidden)
+        self._loop_restart = False  # a loop starts its range again: the same playback, counts kept
         self._clock = QElapsedTimer()
         self._play_from = 0
         self._timer = QTimer(self)
@@ -586,9 +825,25 @@ class Monitor(QWidget):
         self._timer.timeout.connect(self._tick)
         self._sink: Any = None
         self._sink_io: Any = None
+        # A/V sync as egui's: while the device plays, its played samples are the playback clock and
+        # the picture follows the sound; without a device (or after it fails or stalls) the wall clock
+        self.audio_clock = False
+        self._audio_seen = (0, 0)  # (µs the device had played, wall ns when that changed)
+        self._audio_given = False  # the device has been given sound since play()
+        # opens the output device for a sample rate (None: none); tests put a fake device here
+        self.make_sink: Callable[[int], Any] = self._open_sink
+        # when the output is opened again after it was lost (s on _retry_clock; None: not retrying)
+        self._audio_retry_at: float | None = None
+        self._retry_clock = QElapsedTimer()
+        self._retry_clock.start()
+        self._frame_memory: memoryview | None = None  # the shared-memory frame shown
         self._audio_next = 0
         self._audio_busy = False
         self._audio_rate = 48000
+        # the rate the engine mixes the timeline at: the device rate, or device rate / speed while
+        # shuttling (J / L at 0.5–4×, egui's shuttle sound); the sink always plays at the device rate
+        self._mix_rate = 48000
+        self._audio_on = False
         self._audio_channels = 2
         self._audio_pending = b""
         self.audio_generation = 0  # bumped when the played blocks restart (a new pass, a loop)
@@ -830,6 +1085,7 @@ class Monitor(QWidget):
             toggle("snapInProgramMonitor", N_("Snap in Program Monitor"), "snap")
         m.addSeparator()
         toggle("safeMargins", N_("Safe Margins"), "safe_margins")
+        toggle("transparencyGrid", N_("Transparency Grid"), "transparency_grid")
         toggle("showTransport", N_("Show Transport Controls"), "show_transport")
         toggle("loop", N_("Loop") if self.target == "program" else N_("Loop marked range"), "looping")
 
@@ -944,6 +1200,12 @@ class Monitor(QWidget):
             self.command.emit(command, {})
 
     # ----- frames -----
+
+    def _shows(self, t: int) -> bool:
+        """Whether the picture on screen is frame ``t`` of the current content: the same time,
+        edit revision, display mode and content, so stale pixels are not counted as shown."""
+        key = self._shown
+        return key is not None and key[0] == t and key[1] == self.revision and key[5] == self.mv.display and key[6] == self.content_key()
     def request_frame(self, at: int | None = None) -> None:
         if not self.has_content():
             return
@@ -956,7 +1218,8 @@ class Monitor(QWidget):
         t = self._frame_wanted
         width, height = self.view.wanted_size()
         scale = self.mv.scale(self.playing)
-        key = (t, self.revision, width, height, scale, self.mv.display, self.content_key())
+        draft = self.draft_frames(scale)
+        key = (t, self.revision, width, height, scale, self.mv.display, self.content_key(), draft, self.grid_on())
         self._frame_wanted = None
         if key == self._shown:
             return
@@ -964,8 +1227,13 @@ class Monitor(QWidget):
         params: dict[str, Any] = {"time": t, "maxWidth": width, "maxHeight": height, "scale": scale}
         if self.target != "program":
             params["target"] = self.target
-        if self.mv.display == "alpha":
+        if self.mv.display == "alpha" or self.grid_on():
             params["alpha"] = True  # the frame's own alpha, not the opaque monitor picture
+        if draft:
+            params["draft"] = True
+        if self.engine.frames.enabled:
+            # through shared memory, one ring per monitor: no copy per frame (qt-parity 5.5)
+            params["shm"] = self.target
         self.engine.call(
             "frame.render",
             params,
@@ -973,17 +1241,54 @@ class Monitor(QWidget):
             on_error=self._on_frame_error,
         )
 
+    def draft_frames(self, scale: float) -> bool:
+        """egui's ``draft_playback``: draft decoding only while playing at 1/2 resolution or
+        lower, with the preference on (a paused frame is never a draft)."""
+        return self.draft_decode and self.playing and scale <= 0.5
+
+    def _read_draft_decode(self) -> None:
+        def got(on: Any) -> None:
+            if (on is True) != self.draft_decode:
+                self.draft_decode = on is True
+                self.request_frame()
+
+        self.engine.execute("prefs.get", {"key": "playback.draftDecode"}, on_reply=lambda r, _b: got(r), on_error=lambda _m: None)
+
+    def grid_on(self) -> bool:
+        """Transparency Grid on the composite picture: the frame comes with its alpha."""
+        return bool(self.mv.transparency_grid) and self.mv.display == "composite"
+
     def _on_frame(self, key: tuple[Any, ...], result: Any, data: bytes | None) -> None:
         self._frame_busy = False
-        if isinstance(result, dict) and data:
+        image: QImage | None = None
+        if isinstance(result, dict) and "shmError" in result:
+            self.engine.frames.enabled = False  # the engine cannot: frames come through the pipe
+        if isinstance(result, dict) and "shm" in result:
+            shared = self.engine.frames.view(result["shm"])
+            w, h = int(result.get("w") or 0), int(result.get("h") or 0)
+            if shared is None or not (w > 0 and h > 0 and len(shared) == w * h * 4):
+                # the mapping failed: ask again through the pipe
+                self.engine.frames.enabled = False
+                if self._frame_wanted is None:
+                    self._frame_wanted = key[0]
+                self._pump_frame()
+                return
+            # straight from the engine's ring slot (not overwritten while shown: the monitor asks
+            # for one frame at a time and the ring has more slots); the image keeps the mapping
+            self._frame_memory = shared
+            image = QImage(shared, w, h, w * 4, frame_format(key[-1]))
+        elif isinstance(result, dict) and data:
             w, h = int(result.get("w") or 0), int(result.get("h") or 0)
             if w > 0 and h > 0 and len(data) == w * h * 4:
-                image = QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
-                offline = result.get("offline") or []
-                full = (int(result.get("fullW") or 0), int(result.get("fullH") or 0))
-                par = result.get("pixelAspect")
-                self.view.set_image(image, tr("Media offline") if offline else "", full, float(par) if isinstance(par, (int, float)) else None)
-                self._shown = key
+                image = QImage(data, w, h, w * 4, frame_format(key[-1])).copy()
+        if image is not None and isinstance(result, dict):
+            offline = result.get("offline") or []
+            full = (int(result.get("fullW") or 0), int(result.get("fullH") or 0))
+            par = result.get("pixelAspect")
+            self.view.set_image(image, tr("Media offline") if offline else "", full, float(par) if isinstance(par, (int, float)) else None)
+            self._shown = key
+            if self.playing and self._shows(self.playhead):
+                self._meter_refresh(self.playhead // self.frame(), True)
         self._pump_frame()
 
     def _on_frame_error(self, message: str) -> None:
@@ -1016,17 +1321,25 @@ class Monitor(QWidget):
             return
         self.playing = True
         self.speed = float(speed)
+        self._read_draft_decode()
         self.dropped = 0
         self.view.dropped = 0
+        if not self._loop_restart:
+            self.meter.start(self.speed)
+            self.view.present.reset()
+            self._meter_speed = self.speed
+            self._meter_hidden = False
+        # the first frame due (a loop's start too: the jump back is not a drop, the frame counts)
+        self._meter_refresh(self.playhead // self.frame(), self._shows(self.playhead))
         self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
-        if self.speed == 1.0:
+        if shuttle_sounds(self.speed):
             self._start_audio()
-            if self.target == "program" and not self._automation_pass:
-                # Audio Track Mixer: an automation pass runs while playing forward in real time (egui's)
-                self._automation_pass = True
-                self.command.emit("mixer.recordStart", {"time": int(self.playhead)})
+        if self.speed == 1.0 and self.target == "program" and not self._automation_pass:
+            # Audio Track Mixer: an automation pass runs while playing forward in real time (egui's)
+            self._automation_pass = True
+            self.command.emit("mixer.recordStart", {"time": int(self.playhead)})
         self._timer.start()
         self.playback_started.emit()
 
@@ -1053,8 +1366,38 @@ class Monitor(QWidget):
         self.stop_at = mark_out + self.frame() if mark_out is not None else None
         self.rest_at = mark_out
 
+    def _meter_refresh(self, frame: int, exact: bool) -> None:
+        # a hidden monitor shows nothing: go on from here without counting (egui's resync), also
+        # at the first refresh once it is visible again, as egui's monitor does
+        if not self.view.isVisible():
+            self._meter_hidden = True
+            self.meter.resync(frame, False)
+        elif self._meter_hidden:
+            self._meter_hidden = False
+            self.meter.resync(frame, exact)
+        else:
+            self.meter.refresh(frame, exact)
+
+    def playback_stats(self) -> dict[str, Any]:
+        """egui's ``perf.stats`` ``playback``: the playing state and the last (or current)
+        playback's shown and dropped frames."""
+        shown, dropped = self.meter.counts()
+        return {
+            "playing": self.playing,
+            "speed": self.speed if self.playing else self._meter_speed,
+            "shown": shown,
+            "dropped": dropped,
+            "dropRate": dropped / (shown + dropped) if shown + dropped else 0.0,
+            "resolution": next((label for key, label, _s in RESOLUTIONS if key == self.mv.res), "1/2"),
+            "draftDecode": self.draft_decode,
+            # drawing the picture since playback last started (qt-parity 5.5): "gl" or "raster"
+            "present": self.view.present.as_dict(self.view.present_path),
+        }
+
     def _halt(self) -> None:
         self.playing = False
+        self._audio_on = False
+        self._audio_retry_at = None
         self._timer.stop()
         self._stop_audio()
         if self._automation_pass:  # writes the pass's fader moves (also on a loop or a speed change)
@@ -1065,6 +1408,9 @@ class Monitor(QWidget):
         if not self.playing:
             return
         self._halt()
+        if self._meter_hidden:  # the frame due while hidden could not be shown: not a drop
+            self.meter.current = None
+        self.meter.finish()
         self.speed = 1.0
         self.view.dropped = None
         self.view.update()
@@ -1086,8 +1432,9 @@ class Monitor(QWidget):
     def _tick(self) -> None:
         if not self.playing or not self.has_content():
             return
-        elapsed = self._clock.nsecsElapsed()
-        t = self._play_from + int(elapsed * TICKS_PER_SECOND * self.speed) // 1_000_000_000
+        self._check_audio_clock()
+        self._retry_audio()
+        t = self._play_from + int(self._elapsed_ns() * TICKS_PER_SECOND * self.speed) // 1_000_000_000
         start, end = self.range()
         ft = self.frame()
         if self.speed > 0:
@@ -1095,16 +1442,26 @@ class Monitor(QWidget):
             if self.free_run and self.stop_at is None and not self.mv.looping:
                 limit = 0  # a voice-over take keeps playing (and recording) into the empty timeline past the end
             if limit and t >= limit:
+                last = max(start, limit - ft)
+                # frames passed over during a stall up to the boundary still fell due: through the
+                # last frame of the grid before the (exclusive) limit, which may fall between ticks
+                due = max(start, ((limit - 1) // ft) * ft)
+                self._meter_refresh(due // ft, self._shows(due))
                 if self.mv.looping and self.stop_at is None:
                     lo = self._range_marks()[0]
                     self._halt()
                     self.playhead = lo
-                    self.play(self.speed)
+                    self._loop_restart = True
+                    try:
+                        self.play(self.speed)
+                    finally:
+                        self._loop_restart = False
                     return
-                self.playhead = max(start, limit - ft)
+                self.playhead = last
                 self.stop()
                 return
         elif t <= start:
+            self._meter_refresh(start // ft, self._shows(start))
             self.playhead = start
             self.stop()
             return
@@ -1121,6 +1478,7 @@ class Monitor(QWidget):
             self.scrub.set_playhead(frame_t)
             self.playhead_moved.emit(frame_t)
             self.request_frame(frame_t)
+            self._meter_refresh(frame_t // ft, self._shows(frame_t))
         self._feed_audio()
 
     # ----- audio -----
@@ -1128,7 +1486,7 @@ class Monitor(QWidget):
         """The sample being heard now (by the playback clock), at ``audio_rate``."""
         if not self.playing:
             return self.playhead * self._audio_rate // TICKS_PER_SECOND
-        t = self._play_from + self._clock.nsecsElapsed() * TICKS_PER_SECOND // 1_000_000_000
+        t = self._play_from + int(self._elapsed_ns() * TICKS_PER_SECOND * self.speed) // 1_000_000_000
         return t * self._audio_rate // TICKS_PER_SECOND
 
     @property
@@ -1140,39 +1498,124 @@ class Monitor(QWidget):
             return
         rate = self.sample_rate()
         self._audio_rate = rate
+        self._mix_rate = rate if self.speed == 1.0 else max(1, round(rate / self.speed))
+        self._audio_on = True
         self._audio_channels = 2
-        self._audio_next = self.playhead * rate // TICKS_PER_SECOND
+        self._audio_next = self.playhead * self._mix_rate // TICKS_PER_SECOND
         self._audio_pending = b""
         self._audio_busy = False
         self.meter_blocks.clear()
         self.strip_blocks.clear()
         self.audio_generation += 1
-        if HAVE_AUDIO:
-            self._open_sink(rate)
+        # the clock restarts with the sound, from the playhead (also when the output changes)
+        self._play_from = self.playhead
+        self._clock.restart()
+        self._sink = self.make_sink(rate)
+        self._sink_io = self._sink.start() if self._sink is not None else None
+        self.audio_clock = self._sink is not None
+        self._audio_seen = (0, 0)
+        self._audio_given = False
+        # an output that could not be opened is tried again (a device that appears after Play)
+        self._audio_retry_at = None if self.audio_clock else self._retry_time()
         self._feed_audio()
 
-    def _open_sink(self, rate: int) -> None:
+    def _retry_time(self) -> float | None:
+        """When to open the output again: AUDIO_RETRY_S from now, or never where there is no
+        audio output at all (no QtMultimedia, and no output put in place of it)."""
+        if not HAVE_AUDIO and self.make_sink == self._open_sink:
+            return None
+        return self._retry_clock.elapsed() / 1000.0 + AUDIO_RETRY_S
+
+    def _retry_audio(self) -> None:
+        """egui's advance_playback: the output failed (or never opened) mid-play; open it again
+        where the picture got to, as pause/play does by hand, so a recovering device sounds again
+        and is the clock again. Another failure waits AUDIO_RETRY_S more."""
+        at = self._audio_retry_at
+        if self.audio_clock or at is None or not self._audio_on or self._retry_clock.elapsed() / 1000.0 < at:
+            return
+        self._stop_audio()
+        self._start_audio()
+
+    def _elapsed_ns(self) -> int:
+        """Playback time since play() (before the speed): the samples the device has played while
+        it is the clock (the picture waits for the sound), else the wall clock."""
+        if self.audio_clock and self._sink is not None:
+            return int(self._sink.processedUSecs()) * 1000
+        return int(self._clock.nsecsElapsed())
+
+    def _check_audio_clock(self) -> None:
+        """egui's advance_playback: a device that fails gives the clock back at the frame shown; one
+        that stops consuming samples for AUDIO_STALL_S gives it back where the sound got to. Either
+        way playback goes on without sound."""
+        if not self.audio_clock:
+            return
+        sink = self._sink
+        now = int(self._clock.nsecsElapsed())
+        failed = sink is None or sink.error() in SINK_FAILURES
+        if failed:
+            self._wall_clock_from(self.playhead)
+            self.message.emit(tr("Audio output failed: playing without sound (check Settings ▸ Audio Hardware)"))
+            return
+        used = int(sink.processedUSecs())
+        # (the stall is timed from the first sound the device was given: the engine mixes the first
+        # blocks while the device waits, as egui's pre-roll)
+        if used != self._audio_seen[0] or not self._audio_given:
+            self._audio_seen = (used, now)
+        elif now - self._audio_seen[1] >= AUDIO_STALL_S * 1_000_000_000:
+            self._wall_clock_from(self._play_from + int(used * 1000 * TICKS_PER_SECOND * self.speed) // 1_000_000_000)
+            self.message.emit(tr("Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)"))
+
+    def _wall_clock_from(self, t: int) -> None:
+        self.audio_clock = False
+        self._play_from = int(t)
+        self._clock.restart()
+        self._stop_audio()
+        self._audio_retry_at = self._retry_time()
+
+    def av_offset(self) -> int | None:
+        """How far the picture shown is behind the sound heard, in ticks (None: not playing with
+        sound). With the device as the clock it is under a frame: the playhead is the frame
+        holding the sample being heard."""
+        if not self.playing or not self.audio_clock or self._audio_rate <= 0:
+            return None
+        heard = self.play_sample() * TICKS_PER_SECOND // self._audio_rate
+        return int(heard - self.playhead) if self.speed > 0 else int(self.playhead - heard)
+
+    def _open_sink(self, rate: int) -> Any:
+        """A QAudioSink on Settings ▸ Audio Hardware ▸ Default Output at ``rate`` (stereo float),
+        sized for the lead; None without QtMultimedia or a device that takes the format."""
+        if not HAVE_AUDIO:
+            return None
         fmt = QAudioFormat()
         fmt.setSampleRate(rate)
         fmt.setChannelCount(2)
         fmt.setSampleFormat(QAudioFormat.SampleFormat.Float)
         device = output_device(self.audio_output)
         if device.isNull() or not device.isFormatSupported(fmt):
-            return  # silent: the meters still play
-        self._sink = QAudioSink(device, fmt, self)
-        self._sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
-        self._sink_io = self._sink.start()
+            return None  # silent: the meters still play
+        sink = QAudioSink(device, fmt, self)
+        sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
+        return sink
 
     def set_audio_output(self, name: str) -> None:
         """Play through another output; playback that is running moves to it at once."""
         if name == self.audio_output:
             return
         self.audio_output = name
-        if self.playing and self.speed == 1.0 and HAVE_AUDIO:
+        if self.playing and self._audio_on:
             self._stop_audio()
             self._start_audio()
 
     def _stop_audio(self) -> None:
+        if self.audio_clock and self.playing:  # the wall clock takes over where the sound got to
+            self.audio_clock = False
+            if self._sink is not None:
+                played = int(self._sink.processedUSecs()) * 1000
+                self._play_from += int(played * TICKS_PER_SECOND * self.speed) // 1_000_000_000
+            else:
+                self._play_from = self.playhead
+            self._clock.restart()
+        self.audio_clock = False
         if self._sink is not None:
             self._sink.stop()
             self._sink.deleteLater()
@@ -1181,28 +1624,34 @@ class Monitor(QWidget):
         self._audio_pending = b""
 
     def _feed_audio(self) -> None:
-        # Audio plays at normal speed only (play() starts it then); shuttle speeds stay silent.
-        if not self.playing or self.speed != 1.0 or not self.engine.running:
+        # Audio plays at 1× and while shuttling at 0.5–4× forward (play() starts it then); other
+        # speeds stay silent, as egui's. ``_audio_next`` counts frames at the mix rate.
+        if not self.playing or not self._audio_on or not self.engine.running:
             return
         if self._sink is not None and self._sink_io is not None:
             if self._audio_pending:
                 n = self._sink_io.write(self._audio_pending)
+                self._audio_given = self._audio_given or n > 0
                 self._audio_pending = self._audio_pending[max(0, n) :]
             frame_bytes = 4 * self._audio_channels
             queued = (self._sink.bufferSize() - self._sink.bytesFree()) // frame_bytes + len(
                 self._audio_pending
             ) // frame_bytes
         else:  # no device: keep just ahead of the clock, for the meters
-            queued = self._audio_next - self.play_sample()
+            t = self._play_from + int(self._clock.nsecsElapsed() * TICKS_PER_SECOND * self.speed) // 1_000_000_000
+            queued = self._audio_next - t * self._mix_rate // TICKS_PER_SECOND
         if self._audio_busy or queued > self._audio_rate * AUDIO_LEAD_SECONDS:
             return
         frames = int(self._audio_rate * AUDIO_CHUNK_SECONDS)
         self._audio_busy = True
         start = self._audio_next
         self._audio_next += frames
+        params = {**self.audio_params(start, frames), "meter": True}
+        if self.speed != 1.0:  # shuttling: no meters (egui's), the engine plays it faster
+            params = {**self.audio_params(start, frames), "speed": self.speed}
         self.engine.call(
             "audio.render",
-            {**self.audio_params(start, frames), "meter": True},
+            params,
             on_reply=self._on_audio,
             on_error=lambda _m: setattr(self, "_audio_busy", False),
         )
@@ -1297,6 +1746,11 @@ class ProgramMonitor(Monitor):
         self._ref_shown: tuple[Any, ...] | None = None
         self._ref_wanted = False
         self.grid.info_changed.connect(self._grid_info)
+        from .trim_monitor import TrimMonitor
+
+        # trim mode: the two-up Trim Monitor covers the Program monitor (egui's panels::show)
+        self.trim = TrimMonitor(engine, self)
+        self.trim.command.connect(self.command.emit)
         self._apply_view(request=False)
 
     def set_view(self, **changes: Any) -> None:
@@ -1464,6 +1918,11 @@ class ProgramMonitor(Monitor):
         if seq is not None and not self.playing and isinstance(seq.get("playhead"), int):
             self.playhead = seq["playhead"]
         self._content_changed()
+        self.trim.set_sequence(seq, revision)
+
+    def resizeEvent(self, e) -> None:
+        super().resizeEvent(e)
+        self.trim.setGeometry(self.rect())
 
     def has_content(self) -> bool:
         return self.sequence is not None
@@ -1565,6 +2024,15 @@ class SourceMonitor(Monitor):
             a.setObjectName(f"source.clips.{key}")
             a.setEnabled(current is not None)
             a.triggered.connect(lambda _c=False, c=cid: self.command.emit(c, {}))
+
+    def open_smart_cut(self) -> QDialog | None:
+        """Cut the clip's marked range into a new file, copying what needs no re-encoding
+        (Tools ▸ Video Tools ▸ Smart Cut Source…, ``tools_menu.py``)."""
+        item = (self.source or {}).get("item")
+        if not isinstance(item, int) or not self.has_video():
+            self.status.emit(tr("Open a video clip in the Source monitor first."))
+            return None
+        return self._show_dialog(SmartCutDialog(self.window(), self.engine, item, self.status.emit))
 
     def has_video(self) -> bool:
         return (self.source or {}).get("hasVideo") is not False

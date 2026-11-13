@@ -26,7 +26,9 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("window.dockPanel", "Dock Panel", [], None),
     uic!("window.floatPanel", "Undock Panel", [], None),
     uic!("window.closePanel", "Close Panel", [], None),
-    uic!("app.language.english", "English", ["Edit", "Language"], None),
+    uic!("app.language.english", "English (US)", ["Edit", "Language"], None),
+    uic!("app.language.british", "English (UK)", ["Edit", "Language"], None),
+    uic!("app.language.australian", "English (Australia)", ["Edit", "Language"], None),
     uic!("app.language.japanese", "日本語", ["Edit", "Language"], None),
     uic!("app.language.spanish", "Español", ["Edit", "Language"], None),
     uic!("app.language.portuguese", "Português (Brasil)", ["Edit", "Language"], None),
@@ -38,6 +40,26 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("app.language.indonesian", "Bahasa Indonesia", ["Edit", "Language"], None),
     uic!("app.language.italian", "Italiano", ["Edit", "Language"], None),
     uic!("app.language.korean", "한국어", ["Edit", "Language"], None),
+    uic!("app.language.hungarian", "Magyar", ["Edit", "Language"], None),
+    uic!("app.language.polish", "Polski", ["Edit", "Language"], None),
+    uic!("app.language.turkish", "Türkçe", ["Edit", "Language"], None),
+    uic!("app.language.dutch", "Nederlands", ["Edit", "Language"], None),
+    uic!("app.language.czech", "Čeština", ["Edit", "Language"], None),
+    uic!("app.language.vietnamese", "Tiếng Việt", ["Edit", "Language"], None),
+    uic!("app.language.traditionalChinese", "繁體中文", ["Edit", "Language"], None),
+    uic!("app.language.greek", "Ελληνικά", ["Edit", "Language"], None),
+    uic!("app.language.swedish", "Svenska", ["Edit", "Language"], None),
+    uic!("app.language.serbianLatin", "Srpski (latinica)", ["Edit", "Language"], None),
+    uic!("app.language.bulgarian", "Български", ["Edit", "Language"], None),
+    uic!("app.language.georgian", "ქართული", ["Edit", "Language"], None),
+    uic!("app.language.danish", "Dansk", ["Edit", "Language"], None),
+    uic!("app.language.finnish", "Suomi", ["Edit", "Language"], None),
+    uic!("app.language.lithuanian", "Lietuvių", ["Edit", "Language"], None),
+    uic!("app.language.croatian", "Hrvatski", ["Edit", "Language"], None),
+    uic!("app.language.kazakh", "Қазақ тілі", ["Edit", "Language"], None),
+    uic!("app.language.slovenian", "Slovenščina", ["Edit", "Language"], None),
+    uic!("app.language.estonian", "Eesti", ["Edit", "Language"], None),
+    uic!("app.language.serbianCyrillic", "Српски (ћирилица)", ["Edit", "Language"], None),
     uic!("source.playback.toggle", "Source Play/Stop", [], None),
     uic!("source.playback.play", "Play Source", [], None),
     uic!("source.playback.stop", "Stop Source", [], None),
@@ -197,18 +219,44 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             | "app.language.indonesian"
             | "app.language.italian"
             | "app.language.korean"
+            | "app.language.hungarian"
+            | "app.language.polish"
+            | "app.language.turkish"
+            | "app.language.dutch"
+            | "app.language.czech"
+            | "app.language.vietnamese"
+            | "app.language.traditionalChinese"
+            | "app.language.greek"
+            | "app.language.swedish"
+            | "app.language.serbianLatin"
+            | "app.language.bulgarian"
+            | "app.language.georgian"
+            | "app.language.danish"
+            | "app.language.finnish"
+            | "app.language.lithuanian"
+            | "app.language.croatian"
+            | "app.language.kazakh"
+            | "app.language.slovenian"
+            | "app.language.estonian"
+            | "app.language.serbianCyrillic"
+            | "app.language.british"
+            | "app.language.australian"
     ) {
         // Japanese needs the extra-fonts (built with CFA4_FONTS_DIR) or a font installed on the system
         if id == "app.language.japanese" && !crate::i18n::install_japanese_font(ctx) {
             return Err("no Japanese font is installed on this system (for example Noto Sans CJK JP); the interface stays in English".into());
         }
         // Chinese needs the Chinese fallback theme::install adds (extra-fonts or a system face)
-        if id == "app.language.chinese" && !crate::i18n::chinese_font_available() {
-            return Err("no Chinese font is installed on this system (for example Noto Sans CJK SC or Microsoft YaHei); the interface stays in English".into());
+        if matches!(id, "app.language.chinese" | "app.language.traditionalChinese") && !crate::i18n::chinese_font_available() {
+            return Err("no Chinese font is installed on this system (for example Noto Sans CJK SC); the interface stays in English".into());
         }
         // Korean needs an installed Hangul font (none is bundled; see cjk.rs)
         if id == "app.language.korean" && !crate::i18n::korean_font_available() {
-            return Err("no Korean font is installed on this system (for example Malgun Gothic or Noto Sans CJK KR); the interface stays in English".into());
+            return Err("no Korean font is installed on this system (for example Noto Sans CJK KR); the interface stays in English".into());
+        }
+        // Georgian needs an extra-fonts or installed face with Mkhedruli (none is bundled; see cjk.rs)
+        if id == "app.language.georgian" && !crate::i18n::georgian_font_available() {
+            return Err("no Georgian font is installed on this system (for example Noto Sans Georgian); the interface stays in English".into());
         }
         let language = match id {
             "app.language.japanese" => crate::i18n::Language::Ja,
@@ -222,6 +270,28 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             "app.language.indonesian" => crate::i18n::Language::Id,
             "app.language.italian" => crate::i18n::Language::It,
             "app.language.korean" => crate::i18n::Language::Ko,
+            "app.language.hungarian" => crate::i18n::Language::Hu,
+            "app.language.polish" => crate::i18n::Language::Pl,
+            "app.language.turkish" => crate::i18n::Language::Tr,
+            "app.language.dutch" => crate::i18n::Language::Nl,
+            "app.language.czech" => crate::i18n::Language::Cs,
+            "app.language.vietnamese" => crate::i18n::Language::Vi,
+            "app.language.traditionalChinese" => crate::i18n::Language::ZhHant,
+            "app.language.greek" => crate::i18n::Language::El,
+            "app.language.swedish" => crate::i18n::Language::Sv,
+            "app.language.serbianLatin" => crate::i18n::Language::SrLatn,
+            "app.language.bulgarian" => crate::i18n::Language::Bg,
+            "app.language.georgian" => crate::i18n::Language::Ka,
+            "app.language.danish" => crate::i18n::Language::Da,
+            "app.language.finnish" => crate::i18n::Language::Fi,
+            "app.language.lithuanian" => crate::i18n::Language::Lt,
+            "app.language.croatian" => crate::i18n::Language::Hr,
+            "app.language.kazakh" => crate::i18n::Language::Kk,
+            "app.language.slovenian" => crate::i18n::Language::Sl,
+            "app.language.estonian" => crate::i18n::Language::Et,
+            "app.language.serbianCyrillic" => crate::i18n::Language::Sr,
+            "app.language.british" => crate::i18n::Language::EnGb,
+            "app.language.australian" => crate::i18n::Language::EnAu,
             _ => crate::i18n::Language::En,
         };
         // The preference is updated in memory before it is written, so a failed write (read-only
@@ -468,7 +538,7 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             return Ok(json!({"dialog": "audioGain"}));
         }
         // Colour dialogs from the menus; with params the engine command applies directly.
-        "clip.interpretFootage" if params.get("colorSpace").is_none() && params.get("pixelAspect").is_none() => {
+        "clip.interpretFootage" if ["colorSpace", "pixelAspect", "auroDecoding"].iter().all(|k| params.get(k).is_none()) => {
             cfa4_engine::find_command(id).map_or(Ok(()), |c| (c.enabled)(&app.session))?;
             crate::panels::color_dialogs::open_interpret(app, &params);
             return Ok(json!({"dialog": "interpretFootage"}));
@@ -593,6 +663,14 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
     if let Err(e) = &r {
         app.ui.status = e.clone();
     }
+    if let Ok(v) = &r
+        && id == "graphics.checkLegibility"
+    {
+        app.ui.status = match v.get("count").and_then(Value::as_u64).unwrap_or(0) {
+            0 => tl!("Text legibility: no problems found").into(),
+            c => tlf!("Text legibility: {count} problems marked on the timeline (orange markers)", count = c),
+        };
+    }
     if r.is_ok() && matches!(id, "playhead.start" | "playhead.end") {
         crate::panels::timeline::reveal_playhead(app, ctx);
     }
@@ -623,7 +701,7 @@ fn clipboard_media_key(media: &crate::ClipboardMedia) -> String {
     }
 }
 
-/// Copied clips live in the session, but on Windows and Linux Ctrl+V only reaches the app when the
+/// Copied clips live in the session, but Ctrl+V only reaches the app when the
 /// system clipboard holds text (an empty clipboard sends no paste at all, #199). Put the copied
 /// clip names there, like other editors put their own data on the clipboard, so Ctrl+V pastes the
 /// clips right after a copy.
@@ -680,11 +758,6 @@ pub struct MenuItem {
 
 pub const MENUS: [&str; 9] = ["File", "Edit", "Clip", "Sequence", "Markers", "Graphics and Titles", "View", "Window", "Help"];
 
-/// Labels only the native macOS app menu shows, with no command in the menu tree behind them: the
-/// Settings submenu and the predefined Hide, Hide Others and Quit items. They are translated through
-/// the catalogs like menu labels (`apps/cfa4/src/native_menu.rs`).
-pub const NATIVE_APP_MENU: [&str; 4] = ["Settings", "Hide CFA4", "Hide Others", "Quit CFA4"];
-
 pub fn menu_items(app: &Cfa4App) -> Vec<MenuItem> {
     let mut v = menu_items_for(&app.session);
     for it in &mut v {
@@ -702,6 +775,28 @@ pub fn menu_items(app: &Cfa4App) -> Vec<MenuItem> {
             "app.language.indonesian" => it.checked = Some(app.ui.language == crate::i18n::Language::Id),
             "app.language.italian" => it.checked = Some(app.ui.language == crate::i18n::Language::It),
             "app.language.korean" => it.checked = Some(app.ui.language == crate::i18n::Language::Ko),
+            "app.language.hungarian" => it.checked = Some(app.ui.language == crate::i18n::Language::Hu),
+            "app.language.polish" => it.checked = Some(app.ui.language == crate::i18n::Language::Pl),
+            "app.language.turkish" => it.checked = Some(app.ui.language == crate::i18n::Language::Tr),
+            "app.language.dutch" => it.checked = Some(app.ui.language == crate::i18n::Language::Nl),
+            "app.language.czech" => it.checked = Some(app.ui.language == crate::i18n::Language::Cs),
+            "app.language.vietnamese" => it.checked = Some(app.ui.language == crate::i18n::Language::Vi),
+            "app.language.traditionalChinese" => it.checked = Some(app.ui.language == crate::i18n::Language::ZhHant),
+            "app.language.greek" => it.checked = Some(app.ui.language == crate::i18n::Language::El),
+            "app.language.swedish" => it.checked = Some(app.ui.language == crate::i18n::Language::Sv),
+            "app.language.serbianLatin" => it.checked = Some(app.ui.language == crate::i18n::Language::SrLatn),
+            "app.language.bulgarian" => it.checked = Some(app.ui.language == crate::i18n::Language::Bg),
+            "app.language.georgian" => it.checked = Some(app.ui.language == crate::i18n::Language::Ka),
+            "app.language.danish" => it.checked = Some(app.ui.language == crate::i18n::Language::Da),
+            "app.language.finnish" => it.checked = Some(app.ui.language == crate::i18n::Language::Fi),
+            "app.language.lithuanian" => it.checked = Some(app.ui.language == crate::i18n::Language::Lt),
+            "app.language.croatian" => it.checked = Some(app.ui.language == crate::i18n::Language::Hr),
+            "app.language.kazakh" => it.checked = Some(app.ui.language == crate::i18n::Language::Kk),
+            "app.language.slovenian" => it.checked = Some(app.ui.language == crate::i18n::Language::Sl),
+            "app.language.estonian" => it.checked = Some(app.ui.language == crate::i18n::Language::Et),
+            "app.language.serbianCyrillic" => it.checked = Some(app.ui.language == crate::i18n::Language::Sr),
+            "app.language.british" => it.checked = Some(app.ui.language == crate::i18n::Language::EnGb),
+            "app.language.australian" => it.checked = Some(app.ui.language == crate::i18n::Language::EnAu),
             _ => {}
         }
         if it.id.starts_with("view.") {
@@ -793,29 +888,27 @@ pub fn menu_items_for(session: &cfa4_engine::Session) -> Vec<MenuItem> {
     out
 }
 
-/// Shortcut text for menus in this OS's notation (`⇧⌘K` on macOS, `Ctrl+Shift+K` elsewhere).
+/// Shortcut text for menus (`Ctrl+Shift+K`).
 pub fn shortcut_text(s: &str) -> String {
     use cfa4_engine::shortcuts::{Chord, Platform};
     Chord::parse(s).map(|c| c.display(Platform::current())).unwrap_or_else(|_| s.to_string())
 }
 
-/// Parse "Cmd+Shift+K" into the modifiers a chord requires + its key. Off macOS the Control key
-/// is the primary modifier, so `Ctrl` and `Cmd` are one key and both mean `command` (the engine's
-/// `Chord::effective` says the same): a physical Ctrl press carries `command` there, and egui's
+/// Parse "Cmd+Shift+K" into the modifiers a chord requires + its key. The Control key is the
+/// primary modifier, so `Ctrl` and `Cmd` are one key and both mean `command` (the engine's
+/// `Chord::effective` says the same): a physical Ctrl press carries `command`, and egui's
 /// matching asks only for what the pattern names, so a `Ctrl+…` chord matches a `Cmd+…` binding
-/// and the other way round (#245). On a Mac they stay two keys.
+/// and the other way round (#245).
 pub fn parse_shortcut(s: &str) -> Option<(egui::Modifiers, egui::Key)> {
     let mut m = egui::Modifiers::NONE;
     let mut key = None;
     let parts: Vec<&str> = if s == "+" { vec!["+"] } else { s.split('+').collect() };
-    let mac = cfg!(target_os = "macos");
     for p in parts {
         match p {
             "Cmd" => m.command = true,
             "Shift" => m.shift = true,
             "Alt" => m.alt = true,
-            "Ctrl" if !mac => m.command = true,
-            "Ctrl" => m.ctrl = true,
+            "Ctrl" => m.command = true,
             k => {
                 key = match k {
                     ";" => Some(egui::Key::Semicolon),
@@ -902,7 +995,8 @@ pub fn menu_bar(app: &mut Cfa4App, ui: &mut egui::Ui) {
     let labels = app.session.prefs.labels.clone();
     let ctx = ui.ctx().clone();
     let mut clicked: Option<String> = None;
-    egui::MenuBar::new().config(egui::containers::menu::MenuConfig::new().style(crate::theme::menu_style)).ui(ui, |ui| {
+    // The bar's titles and their menus share one size and colour, as in a native menu bar.
+    egui::MenuBar::new().style(crate::theme::menu_style).config(egui::containers::menu::MenuConfig::new().style(crate::theme::menu_style)).ui(ui, |ui| {
         let mut titles = Vec::with_capacity(MENUS.len());
         for top in MENUS {
             let mine: Vec<&MenuItem> = items.iter().filter(|i| i.path.first().map(String::as_str) == Some(top)).collect();
@@ -923,7 +1017,7 @@ pub fn menu_bar(app: &mut Cfa4App, ui: &mut egui::Ui) {
     }
 }
 
-/// Like a native menu bar (Windows, macOS): while one top-level menu is open, hovering another
+/// Like a native menu bar: while one top-level menu is open, hovering another
 /// top-level title opens that menu instead (#1500). egui's `MenuBar` only switches on click.
 fn switch_on_hover(ctx: &egui::Context, titles: &[egui::Response]) {
     let ids: Vec<egui::Id> = titles.iter().map(egui::Popup::default_response_id).collect();
@@ -1051,25 +1145,19 @@ mod parse_shortcut_tests {
         assert_eq!(label_menu_swatch("edit.label.invalid", &labels), None);
     }
 
-    /// Off macOS `Ctrl` and `Cmd` are the same key, so either spelling parses to the modifiers a
+    /// `Ctrl` and `Cmd` are the same key, so either spelling parses to the modifiers a
     /// physical Ctrl press carries and matches a binding written the other way (#245).
     #[test]
-    fn ctrl_and_cmd_are_one_key_off_macos() {
+    fn ctrl_and_cmd_are_one_key() {
         let (ctrl, k) = parse_shortcut("Ctrl+Z").unwrap();
         let (cmd, k2) = parse_shortcut("Cmd+Z").unwrap();
         assert_eq!((k, k2), (egui::Key::Z, egui::Key::Z));
-        if cfg!(target_os = "macos") {
-            assert_eq!((ctrl.ctrl, ctrl.command), (true, false));
-            assert_eq!((cmd.ctrl, cmd.command), (false, true));
-            assert!(!ctrl.matches_logically(cmd) && !cmd.matches_logically(ctrl), "two different keys on a Mac");
-        } else {
-            assert_eq!((ctrl.ctrl, ctrl.command), (false, true));
-            assert_eq!(ctrl, cmd, "one key off a Mac");
-            // what egui-winit reports for the physical key, and a bare `command` as tests send it
-            let physical = egui::Modifiers { ctrl: true, command: true, ..Default::default() };
-            assert!(physical.matches_logically(cmd) && physical.matches_logically(ctrl));
-            assert!(egui::Modifiers::COMMAND.matches_logically(ctrl));
-        }
+        assert_eq!((ctrl.ctrl, ctrl.command), (false, true));
+        assert_eq!(ctrl, cmd, "one key");
+        // what egui-winit reports for the physical key, and a bare `command` as tests send it
+        let physical = egui::Modifiers { ctrl: true, command: true, ..Default::default() };
+        assert!(physical.matches_logically(cmd) && physical.matches_logically(ctrl));
+        assert!(egui::Modifiers::COMMAND.matches_logically(ctrl));
         assert!(!parse_shortcut("Z").unwrap().0.matches_logically(cmd), "a bare key never stands in for the chord");
         let (m, k) = parse_shortcut("Cmd+Shift+K").unwrap();
         assert!(m.command && m.shift && !m.alt && k == egui::Key::K);

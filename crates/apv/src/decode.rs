@@ -27,7 +27,7 @@ impl Default for DecodeOptions {
 
 /// Parse RFC 9924 §7.1.4 variable-length codeword (`h(v)`).
 #[inline]
-pub(crate) fn read_vlc(r: &mut BitReader, k_param: u32) -> Result<u32> {
+pub(crate) fn read_vlc(r: &mut BitReader<'_>, k_param: u32) -> Result<u32> {
     let mut symbol_value: u64 = 0;
     let mut k = k_param;
     let parse_exp_golomb = if r.read_bit().map_err(|_| Error::Truncated)? {
@@ -377,7 +377,20 @@ fn decode_tile_comp(hdr: &FrameHeader, tile_idx: usize, c: usize, comp_bytes: &[
     let blocks_x = blk_w / 8;
     let blocks_y = blk_h / 8;
 
-    let mut comp_buf = vec![0u16; tw_c * th_c];
+    // Every coded 8x8 block needs at least one bit for its DC code. Validate
+    // that the component can describe every required block before allocating
+    // its complete reconstructed plane.
+    let block_count = (num_mb_cols as usize)
+        .checked_mul(num_mb_rows as usize)
+        .and_then(|n| n.checked_mul(blocks_x))
+        .and_then(|n| n.checked_mul(blocks_y))
+        .ok_or(Error::CorruptTile(tile_idx))?;
+    if comp_bytes.len() < block_count.div_ceil(8) {
+        return Err(Error::CorruptTile(tile_idx));
+    }
+    let samples = tw_c.checked_mul(th_c).ok_or(Error::CorruptTile(tile_idx))?;
+
+    let mut comp_buf = vec![0u16; samples];
     let mut r = BitReader::new(comp_bytes);
 
     let mut prev_dc: i32 = 0;

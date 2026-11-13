@@ -278,11 +278,7 @@ impl Exporter<'_> {
         }
         let mut n = 0;
         for t in &seq.audio_tracks {
-            let ch = match t.channels {
-                AudioChannels::Mono => 1,
-                AudioChannels::Surround51 => 6,
-                AudioChannels::Stereo | AudioChannels::Adaptive => 2,
-            };
+            let ch = t.channels.fixed_channels().map_or(2, |n| n as u32);
             if media.breakout_to_mono {
                 for c in 0..ch {
                     n += 1;
@@ -698,7 +694,10 @@ pub(crate) fn to_project(doc: Document, opts: &ImportOptions, report: &mut Repor
             None => groups.push((k, vec![i])),
         }
     }
-    let doc_stem = opts.name.clone().unwrap_or_else(|| "Imported".into());
+    // This becomes a directory name for embedded AAF/OMF audio. `ImportOptions::name` normally
+    // comes from the document filename, where backslashes are ordinary Unix filename characters;
+    // `resolve_path` deliberately treats them as separators, so retain only one safe component.
+    let doc_stem = safe_path_component(opts.name.as_deref().unwrap_or("Imported"));
     let mut used_paths = std::collections::HashSet::new();
     for ((_, path), members) in &groups {
         let srcs: Vec<&Source> = members.iter().map(|&i| &doc.sources[i]).collect();
@@ -788,6 +787,13 @@ pub(crate) fn to_project(doc: Document, opts: &ImportOptions, report: &mut Repor
     Ok((b.finish(), extracted))
 }
 
+/// A display name used as a generated path component, never a caller-selected path fragment.
+fn safe_path_component(name: &str) -> String {
+    let safe: String = name.chars().map(|c| if c.is_alphanumeric() || " -_.".contains(c) { c } else { '_' }).collect();
+    let safe = safe.trim();
+    if safe.is_empty() || matches!(safe, "." | "..") { "Imported".into() } else { safe.into() }
+}
+
 fn build_sequence(
     b: &mut Builder,
     comp: &Composition,
@@ -807,6 +813,8 @@ fn build_sequence(
             track.channels = match t.channels {
                 1 => AudioChannels::Mono,
                 6 => AudioChannels::Surround51,
+                8 => AudioChannels::Surround71,
+                10 => AudioChannels::Surround712,
                 _ => AudioChannels::Stereo,
             };
         }
@@ -1001,4 +1009,16 @@ pub(crate) fn ticks_to_units(t: Tick, num: i64, den: i64) -> (i64, bool) {
     let r = x.rem_euclid(d);
     let n = q + if r * 2 >= d { 1 } else { 0 };
     (n.clamp(i64::MIN as i128, i64::MAX as i128) as i64, r == 0)
+}
+
+#[cfg(test)]
+mod path_tests {
+    use super::safe_path_component;
+
+    #[test]
+    fn generated_embedded_audio_folder_is_one_safe_component() {
+        for (input, expected) in [(r"..\escape", ".._escape"), ("../escape", ".._escape"), ("..", "Imported"), ("", "Imported")] {
+            assert_eq!(safe_path_component(input), expected, "{input:?}");
+        }
+    }
 }

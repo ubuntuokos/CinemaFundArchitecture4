@@ -128,7 +128,7 @@ In the UI, Save / Save As / Save a Copy without a `path` show a file dialog.
 
 ## Auto Save
 
-Preferences ▸ Auto Save (Edit ▸ Preferences ▸ Auto Save…, ⌘,; CFA4 ▸ Settings… on macOS) works
+Preferences ▸ Auto Save (Edit ▸ Preferences ▸ Auto Save…, Ctrl+,) works
 like Premiere's:
 
 | Setting | Key | Default |
@@ -141,9 +141,10 @@ like Premiere's:
 | Update it at least every N second(s) | `autoSave.recoveryIntervalSeconds` | 5 (1–600) |
 
 At each interval, if the project changed since the last auto-save, a copy is written to the
-`Auto-Save` folder next to the project as `<name>-YYYY-MM-DD_HH-MM-SS.fcproj` (local time). An
+`Auto-Save` folder next to the project as `<name>-YYYY-MM-DD_HH-MM-SS-<unix seconds>.fcproj` (local time, then the real time that orders
+the copies, so a clock change at the end of daylight saving time cannot reorder them). An
 unsaved project uses `<data dir>/Auto-Save/`. After each write the oldest copies beyond the limit are
-deleted. Only files named exactly `<name>-<timestamp>.fcproj` are ever deleted. An auto-save is an
+deleted. Only files named exactly `<name>-<timestamp>.fcproj` or `<name>-<timestamp>-<unix seconds>.fcproj` are ever deleted. An auto-save is an
 ordinary project file: open it with File ▸ Open Project. `file.listAutoSaves` lists them, newest
 first.
 
@@ -171,6 +172,8 @@ Premiere's auto-save can lose up to one interval of work. CFA4 also keeps a **re
   Recover unsaved changes from 2026-10-01 00:02:09?"*, with the buttons **Recover**, **Not Now** and
   **Discard**. Stale directories without a snapshot are removed. Journals of running sessions are
   never touched.
+- If discarding a recovery session fails, CFA4 reports the error and keeps that session and
+  the remaining candidates in the recovery list for retry. Sessions already deleted stay removed.
 - Recovering loads the snapshot as an **unsaved** project with its original path, so Save writes
   over the original file. The recovered state goes into the new session's own journal before the old
   journal is deleted.
@@ -183,10 +186,8 @@ Premiere's auto-save can lose up to one interval of work. CFA4 also keeps a **re
 
 Desktop flags: `--recover` recovers the newest candidate without asking. `--no-recover` starts
 without asking; the changes stay available through File ▸ Recover Unsaved Changes…. `--data-dir
-<dir>` (or `CFA4_DATA_DIR`) moves the data directory. The default is `~/Library/Application
-Support/CFA4` on macOS, `%APPDATA%\CFA4` on Windows, and `$XDG_DATA_HOME/cfa4` or
-`~/.local/share/cfa4` elsewhere. A `portable.txt` file next to the executable (the Windows
-portable zip ships one) makes it `data` next to the executable instead.
+<dir>` (or `CFA4_DATA_DIR`) moves the data directory. The default is `$XDG_DATA_HOME/cfa4` or
+`~/.local/share/cfa4`. A `portable.txt` file next to the executable makes it `data` next to the executable instead.
 
 ### Cost
 
@@ -222,8 +223,7 @@ UI automation ids: `recovery.recover`, `recovery.later`, `recovery.discard`, `re
 
 ## Settings
 
-Premiere's Settings dialog (app menu ▸ Settings ▸ <category> on macOS, Edit ▸ Preferences
-elsewhere; General is Cmd+,; the window is titled "Preferences"). The values are user preferences,
+Premiere's Settings dialog (Edit ▸ Preferences ▸ <category>; General is Ctrl+,; the window is titled "Preferences"). The values are user preferences,
 not project data: they live in `preferences.json` in the per-user data directory (written
 atomically on every change) and never touch the `.fcproj` schema. The file carries a `version`
 (currently 2); older files are migrated on load, unknown dropdown values, bad colours and

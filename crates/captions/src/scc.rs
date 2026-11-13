@@ -34,8 +34,12 @@ pub fn parse_timecode(s: &str) -> Option<i64> {
     let df = s.contains([';', '.', ',']);
     let parts: Vec<&str> = s.split([':', ';', '.', ',']).collect();
     let [h, m, sec, f] = parts.as_slice() else { return None };
-    let n = |p: &str| if (1..=3).contains(&p.len()) { p.parse::<i64>().ok() } else { None };
-    Some(fields_to_frames(n(h)?, n(m)?, n(sec)?, n(f)?, RATE, df))
+    let n = |p: &str| if (1..=3).contains(&p.len()) && p.bytes().all(|b| b.is_ascii_digit()) { p.parse::<i64>().ok() } else { None };
+    let (h, m, sec, f) = (n(h)?, n(m)?, n(sec)?, n(f)?);
+    if m >= 60 || sec >= 60 || f >= 30 {
+        return None;
+    }
+    Some(fields_to_frames(h, m, sec, f, RATE, df))
 }
 
 pub fn format_timecode(frame: i64, drop_frame: bool) -> String {
@@ -64,8 +68,10 @@ struct Decoder {
     col: usize,
     /// Last control pair (for redundancy filtering).
     last_ctrl: Option<(u8, u8)>,
-    /// Channel of the current data (true = channel 1).
+    /// The current data belongs to the decoded channel.
     ch1: bool,
+    /// Decode data channel 2 (CC2, or CC4 on field 2) instead of channel 1.
+    want_ch2: bool,
     /// Cue being shown: (start frame, text).
     open: Option<(i64, String)>,
     cues: Vec<(i64, i64, String)>,
@@ -85,6 +91,7 @@ impl Decoder {
             col: 0,
             last_ctrl: None,
             ch1: true,
+            want_ch2: false,
             open: None,
             cues: Vec::new(),
         }
@@ -125,7 +132,7 @@ impl Decoder {
                 return;
             }
             self.last_ctrl = Some((b1, b2));
-            self.ch1 = b1 & 0x08 == 0;
+            self.ch1 = (b1 & 0x08 != 0) == self.want_ch2;
             if !self.ch1 {
                 return;
             }
@@ -246,7 +253,15 @@ impl Decoder {
 /// ascending) into cues at `rate`. A caption still showing after the last pair stays up for one
 /// second more.
 pub fn decode_pairs(pairs: impl IntoIterator<Item = (i64, u8, u8)>, rate: FrameRate) -> Vec<Cue> {
+    decode_channel(pairs, rate, false)
+}
+
+/// [`decode_pairs`] for data channel 2 (`channel2`: CC2 on field 1, CC4 on field 2) or 1 (CC1,
+/// CC3). Field 2 pairs carry CC3 / CC4 with the same codes (misc codes 15h / 1Dh).
+pub fn decode_channel(pairs: impl IntoIterator<Item = (i64, u8, u8)>, rate: FrameRate, channel2: bool) -> Vec<Cue> {
     let mut dec = Decoder::new();
+    dec.want_ch2 = channel2;
+    dec.ch1 = !channel2;
     let mut last_frame = 0;
     for (f, b1, b2) in pairs {
         dec.pair(f, b1, b2);
@@ -304,7 +319,12 @@ pub fn wrap_rows(text: &str) -> Vec<String> {
     for line in text.lines() {
         let mut cur = String::new();
         for word in line.split_whitespace() {
-            let mut word = word.to_string();
+            if rows.len() == 15 {
+                return rows;
+            }
+            // SCC can emit at most 15 32-column rows.  Do not repeatedly copy an unbounded word
+            // only to discard all but that small prefix below.
+            let mut word: String = word.chars().take(COLS * (15 - rows.len())).collect();
             loop {
                 let need = if cur.is_empty() { word.chars().count() } else { cur.chars().count() + 1 + word.chars().count() };
                 if need <= COLS {
@@ -316,11 +336,17 @@ pub fn wrap_rows(text: &str) -> Vec<String> {
                 }
                 if !cur.is_empty() {
                     rows.push(std::mem::take(&mut cur));
+                    if rows.len() == 15 {
+                        return rows;
+                    }
                     continue;
                 }
                 let head: String = word.chars().take(COLS).collect();
                 word = word.chars().skip(COLS).collect();
                 rows.push(head);
+                if rows.len() == 15 {
+                    return rows;
+                }
                 if word.is_empty() {
                     break;
                 }
@@ -485,6 +511,21 @@ mod tests {
     }
 
     #[test]
+    fn timecode_rejects_signed_fields() {
+        assert_eq!(parse_timecode("00:00:-5:00"), None);
+        assert_eq!(parse_timecode("00:+1:00:00"), None);
+        assert_eq!(parse_timecode("00:00:00:"), None);
+        assert_eq!(parse_timecode("00:00:01:00"), Some(30));
+    }
+
+    #[test]
+    fn timecode_rejects_out_of_range_fields() {
+        assert_eq!(parse_timecode("00:60:00:00"), None);
+        assert_eq!(parse_timecode("00:00:60:00"), None);
+        assert_eq!(parse_timecode("00:00:00:30"), None);
+    }
+
+    #[test]
     fn timecodes() {
         assert_eq!(parse_timecode("00:01:00;02"), Some(1800));
         assert_eq!(parse_timecode("00:01:00:00"), Some(1800));
@@ -531,6 +572,13 @@ mod tests {
         let rows = wrap_rows("the quick brown fox jumps over the lazy dog and keeps running far away");
         assert!(rows.iter().all(|r| r.chars().count() <= 32));
         assert_eq!(rows.join(" "), "the quick brown fox jumps over the lazy dog and keeps running far away");
+    }
+
+    #[test]
+    fn wrapping_discards_an_unrepresentable_word_without_quadratic_copying() {
+        let rows = wrap_rows(&"x".repeat(100_000));
+        assert_eq!(rows.len(), 15);
+        assert!(rows.iter().all(|row| row.len() == COLS));
     }
 
     #[test]

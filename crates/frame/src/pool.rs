@@ -11,7 +11,7 @@
 //! frame they cost a zero-fill and fresh page faults every time.
 //!
 //! The shelves are sized for the busiest work, so they are a lot to keep once it is over: whoever
-//! finishes such work (a standalone export) calls [`trim_f32`].
+//! finishes such work (a standalone export) calls [`trim_f32`] and [`trim_planes`].
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -137,18 +137,29 @@ pub fn recycle(frame: Arc<VideoFrame>) {
         PixelData::Rgba8(d) => give(&U8, d),
         PixelData::RgbaF32(_) => {}
         PixelData::Yuv8 { planes, alpha, .. } => planes.into_iter().chain(alpha).for_each(|p| give(&U8, p)),
-        PixelData::Yuv16 { planes, alpha, .. } => planes.into_iter().chain(alpha).for_each(|p| give(&U16, p)),
+        PixelData::Yuv16 { planes, alpha, .. } | PixelData::Rgb16 { planes, alpha, .. } => planes.into_iter().chain(alpha).for_each(|p| give(&U16, p)),
     }
 }
 
 /// Free the idle float images. A standalone export leaves that shelf full (up to [`F32_MAX_BYTES`]
 /// of images, each the size of that export's frames) and nothing else asks for those sizes again,
 /// so they would sit idle until the next export. Images still in use are not touched. The 8- and
-/// 16-bit plane shelves are left alone: playback recycles decoded frames through them all the time.
+/// 16-bit plane shelves are left alone: playback recycles decoded frames through them all the time
+/// (see [`trim_planes`] for the end of such work).
 pub fn trim_f32() {
     // taken under the lock, freed after it: giving back hundreds of megabytes takes a moment
     let floats = std::mem::take(&mut *F32.lock().unwrap_or_else(PoisonError::into_inner));
     drop(floats);
+}
+
+/// Free the idle 8- and 16-bit plane buffers (up to [`MAX_BYTES`] each). A standalone export leaves
+/// both shelves full of planes the size of its sources' pictures, and nothing trims them. Planes
+/// still in use are not touched, and the shelves fill again as soon as decoding resumes.
+pub fn trim_planes() {
+    // taken under the lock, freed after it: giving back hundreds of megabytes takes a moment
+    let u8s = std::mem::replace(&mut *U8.lock().unwrap_or_else(PoisonError::into_inner), Shelf::new());
+    let u16s = std::mem::replace(&mut *U16.lock().unwrap_or_else(PoisonError::into_inner), Shelf::new());
+    drop((u8s, u16s));
 }
 
 /// Idle buffers held and buffers handed out again so far (`perf.stats`).
@@ -239,6 +250,7 @@ mod tests {
                 color: cfa4_color::ColorInfo::SRGB_FULL,
                 par: (1, 1),
                 pts: cfa4_time::Tick::ZERO,
+                layout: Default::default(),
             })
         };
         let plane_ptrs = |frame: &VideoFrame| match &frame.data {

@@ -26,7 +26,7 @@ kerning and ligatures, bidi, line breaking, all drawn as vectors in linear light
 
 | Group | Properties (parameter ids) |
 |---|---|
-| Text | `text` (Source Text), `font`, `font_style`, `size` (px), `align` (Left/Center/Right/Justify), `tracking` (1/1000 em), `kerning`, `ligatures`, `leading` (px added to the natural line height), `baseline_shift`, `faux_bold`, `faux_italic`, `caps` (Normal/All Caps/Small Caps), `underline`, `box_width` (0 = point text, else paragraph text wrapped at that width), `box_height` (paragraph text: lines that do not fit are not shown; 0 = as tall as the text) |
+| Text | `text` (Source Text), `font`, `font_style`, `size` (px), `align` (Left/Center/Right/Justify), `tracking` (1/1000 em), `kerning`, `ligatures`, `leading` (px added to the natural line height), `baseline_shift`, `faux_bold`, `faux_italic`, `caps` (Normal/All Caps/Small Caps), `underline`, `strikethrough`, `box_width` (0 = point text, else paragraph text wrapped at that width), `box_height` (paragraph text: lines that do not fit are not shown; 0 = as tall as the text) |
 | Text Animator | `anim` (None/Counter/Typewriter/Word by Word), `anim_duration` (s, default 1), `anim_delay` (s): changes the text shown over the first seconds of the clip without changing the Source Text; Graphics and Titles ▸ Text Animator (`graphics.textAnimator.*`). See [marketing-tools.md](marketing-tools.md) |
 | Shape | `shape` (Rectangle/Ellipse/Polygon/Path), `size` [w, h], `sides`, `corner_radius` (one radius for all four corners, at most half the shorter side; on the Program monitor, drag one of the four small circles just inside a selected rectangle's corners), `points` (path vertices relative to the layer origin) |
 | Appearance | `fill`, `fill_color`; `stroke`, `stroke_color`, `stroke_width`, `stroke_type` (Outer/Center/Inner) and the same for `stroke2`; `background`, `background_color`, `background_opacity`, `background_size` (padding), `background_radius`; `shadow`, `shadow_color`, `shadow_opacity`, `shadow_angle` (135° = down-right), `shadow_distance`, `shadow_size`, `shadow_blur` |
@@ -140,7 +140,7 @@ With a graphic clip selected, the Properties panel (and Essential Graphics) show
 **Align and Transform** (six align buttons, two distribute buttons, position, anchor, scale,
 rotation, opacity), **Text** (Source Text field, font family and style, size, paragraph alignment,
 tracking, leading, baseline shift, box width and height, faux bold / faux italic / all caps /
-small caps / underline, kerning and ligatures; the wrench in the section's header opens **Text
+small caps / underline / strikethrough, kerning and ligatures; the wrench in the section's header opens **Text
 Properties**: Text Layer Type and Ligatures), **Shape**, and **Appearance** (fill, two strokes, background,
 shadow). Automation ids: `graphics.layers.<n>`, `graphics.prop.<parameter id>`,
 `graphics.align.<how>`, `graphics.distribute.<axis>`, `graphics.sourceText`, `graphics.NewTextLayer`,
@@ -151,7 +151,7 @@ shadow). Automation ids: `graphics.layers.<n>`, `graphics.prop.<parameter id>`,
 ## Per-character styles
 
 Select characters with the Type tool and change font, style, size, colour, faux bold / italic,
-underline, tracking, baseline shift or caps in the Properties panel: the change applies to the
+underline, strikethrough, tracking, baseline shift or caps in the Properties panel: the change applies to the
 selection only (`graphics.setCharStyle`). Styles are stored on the layer as runs of characters
 (`EffectInstance::layer.runs`, character offsets, sorted and non-overlapping) and follow the text
 when it is edited (typed characters take the style of the character before them). The text engine
@@ -160,7 +160,7 @@ lines grow to fit the largest run, and each run can have its own fill colour.
 
 | Command | Params |
 |---|---|
-| `graphics.setCharStyle` | `clip`, `layer`, `start`, `end` (characters; default the whole text), `style` {`font`, `fontStyle`, `size`, `color`, `bold`, `italic`, `underline`, `tracking`, `baselineShift`, `caps`}, `clear` (remove styles from the range) |
+| `graphics.setCharStyle` | `clip`, `layer`, `start`, `end` (characters; default the whole text), `style` {`font`, `fontStyle`, `size`, `color`, `bold`, `italic`, `underline`, `strikethrough`, `tracking`, `baselineShift`, `caps`}, `clear` (remove styles from the range) |
 
 ## Responsive design
 
@@ -205,7 +205,11 @@ documented, versioned JSON (`cfa4_project::gtemplate`):
 | `resources.fonts` | optional embedded font files (base64) with their licence; registered on install |
 
 Placing a template on a sequence of another size scales and centres its layers (pin distances
-scale too).
+scale too). Scale and Scale Width, including their keyframes, use the same fit factor. Layers
+with Uniform Scale off therefore keep their authored proportions: a 3840×2160 template placed
+on a 1920×1080 sequence scales both axes by 0.5. Keyframe times and interpolation stay unchanged.
+Imported layers that omit either scale parameter use its definition default before fitting;
+explicit values and keyframes are retained and scaled.
 
 **CFA4 never reads or imports Adobe `.mogrt` files** (or any other application's template
 packages): Install refuses `.mogrt` paths without opening them, and the reader rejects ZIP
@@ -267,6 +271,28 @@ screen; 0° runs left to right across the layer's own bounds, and the ramp turns
 `gradient_end` and `gradient_angle`. A per-character fill colour still paints those characters
 as a solid; the rest of the text keeps the ramp. A singular layer transform falls back to the
 solid fill colour.
+
+## Text legibility check
+
+Graphics and Titles ▸ Check Text Legibility (`graphics.checkLegibility`, CFA4's own) checks every
+text layer of every graphic clip at the middle of the clip and marks problems with orange
+sequence markers (comment `Legibility check: <kind> …`); Markers ▸ Clear Legibility Markers
+(`markers.clearLegibility`) removes them, and running the check again replaces them.
+
+| kind | found when |
+|---|---|
+| `lowContrast` | the WCAG 2 contrast ratio between the text and the picture behind it is below `minContrast` (4.5:1), or `largeContrast` (3:1) for text at least 4 % of the frame height |
+| `smallText` | the font size (with the layer's Scale) is under `minSize` percent of the frame height (2.5 %) |
+| `titleSafe` | the text box reaches outside the project's title safe area (`titleSafe: false` skips it) |
+
+The background is the real frame: the sequence is rendered at a reduced size with the clip's text
+layers hidden, so shapes in the same graphic and clips below it count. The ratio is taken on the
+worst tenth of the pixels under the text box. A text background box is blended over the picture
+with its opacity; an opaque outer stroke at least 4 % of the font size wide lets the fill be
+measured against the stroke instead. Gradient fills are measured at both ends; drop shadows are not
+counted. The check works on the graphic's canvas before the clip's Motion. Result: `ok`,
+`checked` (text layers), `count`, `counts` per kind and `issues` (`kind`, `title`, `time`, `clip`,
+`layer`, `name`, `contrast`, `needed`); `markers: false` only reports.
 
 ## Not yet
 

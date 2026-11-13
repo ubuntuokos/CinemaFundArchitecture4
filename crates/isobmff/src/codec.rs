@@ -165,6 +165,11 @@ pub enum CodecConfig {
     Avc(AvcConfig),
     Hevc(HevcConfig),
     Av1(Av1Config),
+    /// AV2 (`av02`). `av2c` is the `av2C` payload, kept opaque: the AV2-in-ISOBMFF mapping is still
+    /// a working draft (AV2 plan II.1), so CFA4 only identifies the codec. Empty when absent.
+    Av2 {
+        av2c: Vec<u8>,
+    },
     Vp9(VpcConfig),
     /// Apple ProRes; fourcc is `apch`/`apcn`/`apcs`/`apco`/`ap4h`/`ap4x`.
     ProRes {
@@ -180,6 +185,10 @@ pub enum CodecConfig {
     },
     /// GoPro CineForm (`CFHD`).
     Cineform,
+    /// DV / DVCPRO / DVCPRO HD (`dvc `, `dvcp`, `dvpp`, `dv5n`, `dv5p`, `dvh1`…, `AVdv`, `AVd1`).
+    Dv {
+        fourcc: FourCc,
+    },
     /// Advanced Professional Video (`apv1` + `apvC`).
     Apv(ApvConfig),
     Aac(AacConfig),
@@ -225,11 +234,13 @@ impl CodecConfig {
             CodecConfig::Avc(_) => "h264",
             CodecConfig::Hevc(_) => "hevc",
             CodecConfig::Av1(_) => "av1",
+            CodecConfig::Av2 { .. } => "av2",
             CodecConfig::Vp9(_) => "vp9",
             CodecConfig::ProRes { .. } => "prores",
             CodecConfig::Jpeg { .. } => "mjpeg",
             CodecConfig::Dnx { .. } => "dnxhd",
             CodecConfig::Cineform => "cfhd",
+            CodecConfig::Dv { .. } => "dvvideo",
             CodecConfig::Apv(_) => "apv",
             CodecConfig::Aac(_) => "aac",
             CodecConfig::Mp3 => "mp3",
@@ -600,11 +611,11 @@ impl AacConfig {
 /// Decode (audio object type, sampling frequency, channel configuration) from an AudioSpecificConfig.
 pub fn parse_asc(asc: &[u8]) -> Option<(u8, u32, u8)> {
     let mut r = BitReader::new(asc);
-    let aot = |r: &mut BitReader| -> Option<u8> {
+    let aot = |r: &mut BitReader<'_>| -> Option<u8> {
         let t = r.read_bits(5).ok()? as u8;
         if t == 31 { Some(32 + r.read_bits(6).ok()? as u8) } else { Some(t) }
     };
-    let rate = |r: &mut BitReader| -> Option<u32> {
+    let rate = |r: &mut BitReader<'_>| -> Option<u32> {
         let i = r.read_bits(4).ok()? as usize;
         if i == 15 { r.read_bits(24).ok() } else { AAC_RATES.get(i).copied() }
     };
@@ -861,6 +872,7 @@ fn is_video_fourcc(f: &[u8; 4]) -> bool {
             | b"hvc1"
             | b"hev1"
             | b"av01"
+            | b"av02"
             | b"vp09"
             | b"vp08"
             | b"apch"
@@ -875,6 +887,20 @@ fn is_video_fourcc(f: &[u8; 4]) -> bool {
             | b"mjpb"
             | b"AVdn"
             | b"AVdh"
+            | b"dvc "
+            | b"dvcp"
+            | b"dvpp"
+            | b"dv5n"
+            | b"dv5p"
+            | b"dvh1"
+            | b"dvh2"
+            | b"dvh3"
+            | b"dvh5"
+            | b"dvh6"
+            | b"dvhp"
+            | b"dvhq"
+            | b"AVdv"
+            | b"AVd1"
             | b"mp4v"
             | b"encv"
             | b"raw "
@@ -967,6 +993,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
                 b"avcC" if matches!(f, b"avc1" | b"avc3") => codec = Some(CodecConfig::Avc(AvcConfig::parse(p)?)),
                 b"hvcC" if matches!(f, b"hvc1" | b"hev1") => codec = Some(CodecConfig::Hevc(HevcConfig::parse(p)?)),
                 b"av1C" if f == b"av01" => codec = Some(CodecConfig::Av1(Av1Config::parse(p)?)),
+                b"av2C" if f == b"av02" => codec = Some(CodecConfig::Av2 { av2c: p.to_vec() }),
                 b"vpcC" if f == b"vp09" => codec = Some(CodecConfig::Vp9(VpcConfig::parse(p)?)),
                 b"apvC" if f == b"apv1" => codec = Some(CodecConfig::Apv(ApvConfig::parse(p)?)),
                 b"colr" => v.color = parse_colr(p).ok(),
@@ -1001,7 +1028,11 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
                 b"jpeg" | b"mjpa" | b"mjpb" => CodecConfig::Jpeg { fourcc: format },
                 b"AVdn" | b"AVdh" => CodecConfig::Dnx { fourcc: format },
                 b"CFHD" => CodecConfig::Cineform,
+                b"dvc " | b"dvcp" | b"dvpp" | b"dv5n" | b"dv5p" | b"dvh1" | b"dvh2" | b"dvh3" | b"dvh5" | b"dvh6" | b"dvhp" | b"dvhq" | b"AVdv" | b"AVd1" => {
+                    CodecConfig::Dv { fourcc: format }
+                }
                 b"apv1" => CodecConfig::Apv(ApvConfig::default()),
+                b"av02" => CodecConfig::Av2 { av2c: Vec::new() },
                 _ => unknown(),
             },
         };
@@ -1145,7 +1176,7 @@ fn parse_colr(p: &[u8]) -> Result<ColorInfo> {
     })
 }
 
-fn descriptor(c: &mut Cur) -> Result<(u8, usize)> {
+fn descriptor(c: &mut Cur<'_>) -> Result<(u8, usize)> {
     let tag = c.u8()?;
     let mut len = 0usize;
     for _ in 0..4 {
@@ -1310,6 +1341,10 @@ impl SampleEntry {
     pub fn av1(cfg: Av1Config, width: u16, height: u16) -> Self {
         Self::video(FourCc(*b"av01"), CodecConfig::Av1(cfg), width, height)
     }
+    /// AV2 entry (`av02`); `av2c` is written as an opaque `av2C` box when not empty.
+    pub fn av2(av2c: Vec<u8>, width: u16, height: u16) -> Self {
+        Self::video(FourCc(*b"av02"), CodecConfig::Av2 { av2c }, width, height)
+    }
     /// ProRes entry; `fourcc` one of `apch`/`apcn`/`apcs`/`apco`/`ap4h`/`ap4x`.
     pub fn prores(fourcc: FourCc, width: u16, height: u16) -> Self {
         let mut e = Self::video(fourcc, CodecConfig::ProRes { fourcc }, width, height);
@@ -1334,6 +1369,15 @@ impl SampleEntry {
         if let Some(v) = e.video.as_mut() {
             v.depth = 24;
             v.compressor_name = "GoPro CineForm".into();
+        }
+        e
+    }
+    /// DV entry (`dvc ` for DV25, `dvcp` for DVCPRO 25 at 625 lines, …).
+    pub fn dv(fourcc: FourCc, width: u16, height: u16) -> Self {
+        let mut e = Self::video(fourcc, CodecConfig::Dv { fourcc }, width, height);
+        if let Some(v) = e.video.as_mut() {
+            v.depth = 24;
+            v.compressor_name = "DV".into();
         }
         e
     }
@@ -1424,6 +1468,7 @@ impl SampleEntry {
                 CodecConfig::Avc(c) => b.leaf(b"avcC", &c.to_bytes()),
                 CodecConfig::Hevc(c) => b.leaf(b"hvcC", &c.to_bytes()),
                 CodecConfig::Av1(c) => b.leaf(b"av1C", &c.to_bytes()),
+                CodecConfig::Av2 { av2c } if !av2c.is_empty() => b.leaf(b"av2C", av2c),
                 CodecConfig::Vp9(c) => b.leaf(b"vpcC", &c.to_bytes()),
                 CodecConfig::Apv(c) => b.leaf(b"apvC", &c.to_bytes()),
                 _ => {}
@@ -1638,6 +1683,18 @@ mod tests {
             assert_eq!(back.audio.unwrap().sample_rate, rate);
             assert_eq!(back.codec, e.codec);
         }
+    }
+
+    /// AV2 plan X/4: `av02` is identified as AV2 (not "unknown"), with or without `av2C`.
+    #[test]
+    fn av02_entry_is_identified_and_round_trips() {
+        let e = SampleEntry::av2(vec![0x81, 0x04, 0x08], 352, 288);
+        let back = roundtrip(&e, false, b"vide");
+        assert_eq!(back, e);
+        assert_eq!(back.codec.name(), "av2");
+        let bare = roundtrip(&SampleEntry::av2(Vec::new(), 64, 48), false, b"vide");
+        assert_eq!(bare.codec, CodecConfig::Av2 { av2c: Vec::new() });
+        assert_eq!(bare.video.map(|v| (v.width, v.height)), Some((64, 48)));
     }
 
     #[test]

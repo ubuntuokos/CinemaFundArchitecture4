@@ -36,6 +36,12 @@ pub enum Gamut {
     DGamut,
     /// RED REDWideGamutRGB.
     RedWideGamutRgb,
+    /// Fujifilm F-Gamut C (F-Log2 C). F-Gamut itself has the BT.2020 primaries.
+    FGamutC,
+    /// CIE 1931 XYZ (digital cinema X'Y'Z', SMPTE ST 428-1): the "RGB" channels are X, Y and Z,
+    /// so its matrix to XYZ is the identity. Picture mastered for a D65 white converts to the D65
+    /// gamuts here without adaptation.
+    Xyz,
 }
 
 impl Gamut {
@@ -54,6 +60,9 @@ impl Gamut {
             Gamut::Awg4 => [[0.7347, 0.2653], [0.1424, 0.8576], [0.0991, -0.0308]],
             Gamut::DGamut => [[0.71, 0.31], [0.21, 0.88], [0.09, -0.08]],
             Gamut::RedWideGamutRgb => [[0.780_308, 0.304_253], [0.121_595, 1.493_994], [0.095_612, -0.084_589]],
+            Gamut::FGamutC => [[0.7347, 0.2653], [0.0263, 0.9737], [0.1173, -0.0224]],
+            // the corners of the XYZ triangle (its matrix to XYZ is the identity, see `to_xyz`)
+            Gamut::Xyz => [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]],
         }
     }
 
@@ -61,6 +70,7 @@ impl Gamut {
         match p {
             Primaries::Bt2020 => Gamut::Bt2020,
             Primaries::P3D65 => Gamut::P3D65,
+            Primaries::Xyz => Gamut::Xyz,
             // BT.601 primaries are close enough to BT.709 that NLEs treat them as such.
             _ => Gamut::Bt709,
         }
@@ -68,6 +78,9 @@ impl Gamut {
 
     /// RGB → CIE XYZ (normalised so white Y = 1).
     pub fn to_xyz(self) -> Mat3 {
+        if self == Gamut::Xyz {
+            return IDENTITY;
+        }
         npm(self.primaries(), D65)
     }
 
@@ -170,12 +183,18 @@ pub enum ColorSpace {
     DLogDGamut,
     /// RED Log3G10 / REDWideGamutRGB (REDCINE-X exports, #91).
     Log3G10Rwg,
+    /// Fujifilm F-Log / F-Gamut (BT.2020 primaries).
+    FLogFGamut,
+    /// Fujifilm F-Log2 / F-Gamut (BT.2020 primaries).
+    FLog2FGamut,
+    /// Fujifilm F-Log2 C / F-Gamut C.
+    FLog2CFGamutC,
     /// Linear light with BT.709 primaries (EXR-style float sources).
     Linear709,
 }
 
 impl ColorSpace {
-    pub const ALL: [ColorSpace; 17] = [
+    pub const ALL: [ColorSpace; 20] = [
         ColorSpace::Rec709,
         ColorSpace::Srgb,
         ColorSpace::Rec2020,
@@ -192,6 +211,9 @@ impl ColorSpace {
         ColorSpace::AppleLog,
         ColorSpace::DLogDGamut,
         ColorSpace::Log3G10Rwg,
+        ColorSpace::FLogFGamut,
+        ColorSpace::FLog2FGamut,
+        ColorSpace::FLog2CFGamutC,
         ColorSpace::Linear709,
     ];
 
@@ -214,6 +236,9 @@ impl ColorSpace {
             ColorSpace::AppleLog => "applelog",
             ColorSpace::DLogDGamut => "dlog-dgamut",
             ColorSpace::Log3G10Rwg => "log3g10-rwg",
+            ColorSpace::FLogFGamut => "flog-fgamut",
+            ColorSpace::FLog2FGamut => "flog2-fgamut",
+            ColorSpace::FLog2CFGamutC => "flog2c-fgamutc",
             ColorSpace::Linear709 => "linear709",
         }
     }
@@ -236,6 +261,9 @@ impl ColorSpace {
             ColorSpace::AppleLog => "Apple Log / Rec. 2020",
             ColorSpace::DLogDGamut => "DJI D-Log / D-Gamut",
             ColorSpace::Log3G10Rwg => "RED Log3G10 / REDWideGamutRGB",
+            ColorSpace::FLogFGamut => "Fujifilm F-Log / F-Gamut",
+            ColorSpace::FLog2FGamut => "Fujifilm F-Log2 / F-Gamut",
+            ColorSpace::FLog2CFGamutC => "Fujifilm F-Log2 C / F-Gamut C",
             ColorSpace::Linear709 => "Linear (Rec. 709 primaries)",
         }
     }
@@ -250,7 +278,9 @@ impl ColorSpace {
     pub fn gamut(self) -> Gamut {
         match self {
             ColorSpace::Rec709 | ColorSpace::Srgb | ColorSpace::Linear709 => Gamut::Bt709,
-            ColorSpace::Rec2020 | ColorSpace::Rec2100Pq | ColorSpace::Rec2100Hlg | ColorSpace::AppleLog => Gamut::Bt2020,
+            ColorSpace::Rec2020 | ColorSpace::Rec2100Pq | ColorSpace::Rec2100Hlg | ColorSpace::AppleLog | ColorSpace::FLogFGamut | ColorSpace::FLog2FGamut => {
+                Gamut::Bt2020
+            }
             ColorSpace::P3D65 => Gamut::P3D65,
             ColorSpace::SLog3SGamut3Cine => Gamut::SGamut3Cine,
             ColorSpace::SLog3SGamut3 => Gamut::SGamut3,
@@ -260,6 +290,7 @@ impl ColorSpace {
             ColorSpace::LogC4Awg4 => Gamut::Awg4,
             ColorSpace::DLogDGamut => Gamut::DGamut,
             ColorSpace::Log3G10Rwg => Gamut::RedWideGamutRgb,
+            ColorSpace::FLog2CFGamutC => Gamut::FGamutC,
         }
     }
 
@@ -279,6 +310,8 @@ impl ColorSpace {
             ColorSpace::AppleLog => Curve::Log(LogCurve::AppleLog),
             ColorSpace::DLogDGamut => Curve::Log(LogCurve::DLog),
             ColorSpace::Log3G10Rwg => Curve::Log(LogCurve::Log3G10),
+            ColorSpace::FLogFGamut => Curve::Log(LogCurve::FLog),
+            ColorSpace::FLog2FGamut | ColorSpace::FLog2CFGamutC => Curve::Log(LogCurve::FLog2),
         }
     }
 
@@ -476,5 +509,21 @@ mod tests {
         let hdr = ColorInfo { transfer: Transfer::Hlg, primaries: Primaries::Bt2020, ..ColorInfo::REC709 };
         assert_eq!(ColorSpace::from_info(&hdr), ColorSpace::Rec2100Hlg);
         assert_eq!(ColorSpace::from_info(&ColorInfo::REC709), ColorSpace::Rec709);
+    }
+
+    /// CFA4-PROCODEC-002 1a: CIE XYZ is a gamut whose matrix to XYZ is the identity, so the D65
+    /// white (x 0.3127, y 0.3290, Y 1) lands on RGB (1, 1, 1) in every D65 gamut.
+    #[test]
+    fn xyz_gamut_converts_d65_white_to_rgb_white() {
+        assert_eq!(Gamut::Xyz.to_xyz(), IDENTITY);
+        assert_eq!(Gamut::from_primaries(Primaries::Xyz), Gamut::Xyz);
+        assert_eq!(Gamut::Xyz.luma(), [0.0, 1.0, 0.0]);
+        let white = [D65[0] / D65[1], 1.0, (1.0 - D65[0] - D65[1]) / D65[1]];
+        for g in [Gamut::Bt709, Gamut::Bt2020, Gamut::P3D65] {
+            let rgb = mul_vec(&gamut_matrix(Gamut::Xyz, g), white);
+            assert!(rgb.iter().all(|v| (v - 1.0).abs() < 1e-9), "{g:?}: {rgb:?}");
+            let back = mul_vec(&gamut_matrix(g, Gamut::Xyz), [1.0, 1.0, 1.0]);
+            assert!(back.iter().zip(white).all(|(a, b)| (a - b).abs() < 1e-9), "{g:?}: {back:?}");
+        }
     }
 }

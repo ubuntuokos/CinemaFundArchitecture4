@@ -75,7 +75,7 @@ pub fn decode(project: &Project, item: ItemId, frame: &VideoFrame, n: usize, pip
     }
     // RGB stills/generators carry full-range code values; YUV carries its own range flag
     let range = match frame.data {
-        cfa4_frame::PixelData::Rgba8(_) | cfa4_frame::PixelData::RgbaF32(_) => Range::Full,
+        cfa4_frame::PixelData::Rgba8(_) | cfa4_frame::PixelData::RgbaF32(_) | cfa4_frame::PixelData::Rgb16 { .. } => Range::Full,
         _ => frame.color.range,
     };
     let t = input_transform(cs, range, pipe, source_peak_nits(project, item));
@@ -91,14 +91,16 @@ pub fn decode(project: &Project, item: ItemId, frame: &VideoFrame, n: usize, pip
 
 /// Working space → monitor (SDR BT.709) for a non-plain pipeline; no-op otherwise.
 pub fn to_display(img: &mut Image, pipe: &ColorPipeline) {
-    if pipe.is_plain() {
+    if display_is_identity(pipe) {
         return;
     }
     let o = display_transform(pipe);
-    if o.is_identity() {
-        return;
-    }
     img.map_rgb(|c, _, _| o.apply(c));
+}
+
+/// Whether [`to_display`] leaves every picture as it is.
+pub fn display_is_identity(pipe: &ColorPipeline) -> bool {
+    pipe.is_plain() || display_transform(pipe).is_identity()
 }
 
 pub fn display_transform(pipe: &ColorPipeline) -> Arc<OutputTransform> {

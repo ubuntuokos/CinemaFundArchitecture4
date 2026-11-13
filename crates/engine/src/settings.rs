@@ -622,6 +622,23 @@ impl Session {
     }
 }
 
+/// Settings ▸ Media & Playback ▸ Media Backends (ADR 0005): which supplementary backends take
+/// files the own engine cannot open. Shown by the Qt Settings window (egui is frozen).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct MediaBackendPrefs {
+    /// FFmpeg (>= 9.0.2, GPL-3 build), tried first after the engine.
+    pub ffmpeg: bool,
+    /// The system's GStreamer (ADR 0002), tried after FFmpeg.
+    pub gstreamer: bool,
+}
+
+impl Default for MediaBackendPrefs {
+    fn default() -> Self {
+        Self { ffmpeg: true, gstreamer: true }
+    }
+}
+
 /// Settings ▸ Media Analysis & Transcription.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -1027,7 +1044,9 @@ static CATEGORIES: &[Category] = &[
                 "Interface Language",
                 Kind::Choice(&[
                     ("system", "System Language"),
-                    ("en", "English"),
+                    ("en", "English (US)"),
+                    ("en-gb", "English (UK)"),
+                    ("en-au", "English (Australia)"),
                     ("ja", "日本語"),
                     ("es", "Español"),
                     ("pt-br", "Português (Brasil)"),
@@ -1039,6 +1058,26 @@ static CATEGORIES: &[Category] = &[
                     ("id", "Bahasa Indonesia"),
                     ("it", "Italiano"),
                     ("ko", "한국어"),
+                    ("hu", "Magyar"),
+                    ("pl", "Polski"),
+                    ("tr", "Türkçe"),
+                    ("nl", "Nederlands"),
+                    ("cs", "Čeština"),
+                    ("vi", "Tiếng Việt"),
+                    ("zh-hant", "繁體中文"),
+                    ("el", "Ελληνικά"),
+                    ("sv", "Svenska"),
+                    ("sr-latn", "Srpski (latinica)"),
+                    ("bg", "Български"),
+                    ("ka", "ქართული"),
+                    ("da", "Dansk"),
+                    ("fi", "Suomi"),
+                    ("lt", "Lietuvių"),
+                    ("hr", "Hrvatski"),
+                    ("kk", "Қазақ тілі"),
+                    ("sl", "Slovenščina"),
+                    ("et", "Eesti"),
+                    ("sr", "Српски (ћирилица)"),
                 ]),
                 true,
             ),
@@ -1269,6 +1308,19 @@ static CATEGORIES: &[Category] = &[
             ),
         ],
     },
+    // ADR 0005: the own engine always goes first; these supplementary backends take over, in this
+    // order, only for files it cannot open. The Qt window adds the live status and the
+    // restricted codecs of the Ubuntu model (docs/licensing.md §7) under these switches
+    // (`cfa4-cli media-backends`, `media.backends`).
+    Category {
+        id: "mediaBackends",
+        group: "media",
+        title: "Media Backends",
+        rows: &[
+            b("mediaBackends.ffmpeg", "Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)", true),
+            b("mediaBackends.gstreamer", "Use the system's GStreamer for files neither the engine nor FFmpeg can open", true),
+        ],
+    },
     Category {
         id: "mediaAnalysis",
         group: "ai",
@@ -1344,7 +1396,7 @@ static CATEGORIES: &[Category] = &[
             b("playback.draftDecode", "Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)", true),
             f("playback.hardwareDecoding", "Hardware decoding", Kind::Choice(HW_DECODE), true),
             Row::Note(
-                "Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
+                "Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
             ),
         ],
     },
@@ -1355,6 +1407,49 @@ static CATEGORIES: &[Category] = &[
         rows: &[
             Row::Group("Plugins", &[b("plugins.developerMode", "Enable developer mode", false)]),
             Row::Note("No plugins are installed. Changes will take effect the next time you start CFA4."),
+        ],
+    },
+    Category {
+        id: "timecodeSync",
+        group: "hardware",
+        title: "Timecode Sync",
+        rows: &[
+            Row::Group(
+                "Chase",
+                &[
+                    b("timecodeSync.chase", "Follow external timecode during playback", true),
+                    sub("timecodeSync.source", "Source", Kind::Choice(crate::timecode_sync::SOURCES), "timecodeSync.chase", true),
+                    sub("timecodeSync.lockFrames", "Lock after", int(1.0, 30.0, "frames"), "timecodeSync.chase", true),
+                    sub("timecodeSync.freewheelFrames", "Keep playing without signal for", int(2.0, 300.0, "frames"), "timecodeSync.chase", true),
+                ],
+            ),
+            Row::Group(
+                "Timecode",
+                &[
+                    f("timecodeSync.rate", "External frame rate", Kind::Choice(crate::timecode_sync::RATES), true),
+                    f("timecodeSync.offset", "Offset (added to the external timecode)", Kind::Text, true),
+                ],
+            ),
+            Row::Group(
+                "LTC",
+                &[
+                    f("timecodeSync.ltcInput", "LTC input device", Kind::Device(DeviceList::Inputs), true),
+                    f("timecodeSync.ltcInputChannel", "LTC input channel", int(0.0, 63.0, ""), true),
+                    b("timecodeSync.generateLtc", "Send LTC during playback", true),
+                    sub("timecodeSync.ltcOutput", "LTC output device", Kind::Device(DeviceList::Outputs), "timecodeSync.generateLtc", true),
+                    sub("timecodeSync.ltcOutputChannel", "LTC output channel", int(0.0, 63.0, ""), "timecodeSync.generateLtc", true),
+                    sub("timecodeSync.ltcLevelDbfs", "LTC level", float(-60.0, 0.0, 1, "dBFS"), "timecodeSync.generateLtc", true),
+                ],
+            ),
+            Row::Group(
+                "MIDI Timecode",
+                &[
+                    f("timecodeSync.mtcInputPort", "MTC input port (empty = CFA4 port)", Kind::Text, true),
+                    b("timecodeSync.generateMtc", "Send MIDI Timecode during playback", true),
+                    sub("timecodeSync.mtcOutputPort", "MTC output port (empty = CFA4 port)", Kind::Text, "timecodeSync.generateMtc", true),
+                ],
+            ),
+            f("timecodeSync.outputLatencyMs", "Send timecode ahead of the picture by", int(0.0, 1000.0, "milliseconds"), true),
         ],
     },
     Category {
@@ -1429,6 +1524,9 @@ pub fn field(key: &str) -> Option<Field> {
 
 /// Check a value for `key` against the schema (choices, colours). Ranges are clamped later.
 pub fn validate(key: &str, v: &Value) -> std::result::Result<(), String> {
+    if key == "timecodeSync.offset" {
+        return crate::timecode_sync::validate_offset(v);
+    }
     if key == "appearance.favoriteThemes" {
         let items = v.as_array().ok_or("favorite themes must be a list")?;
         let mut seen = Vec::new();
@@ -1473,6 +1571,11 @@ pub fn is_unit_key(key: &str) -> bool {
 /// Repair a preferences value in place against the schema: unknown choices and bad colours go back
 /// to their defaults, numbers are clamped to their ranges.
 pub fn sanitize(v: &mut Value, defaults: &Value) {
+    if let Some(slot) = v.pointer_mut("/timecodeSync/offset")
+        && validate("timecodeSync.offset", slot).is_err()
+    {
+        *slot = defaults.pointer("/timecodeSync/offset").cloned().unwrap_or(json!("00:00:00:00"));
+    }
     if let Some(slot) = v.pointer_mut("/appearance/favoriteThemes")
         && validate("appearance.favoriteThemes", slot).is_err()
     {
@@ -1546,11 +1649,39 @@ pub fn migrate(v: &mut Value) {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Whether this test thread may move the process-wide hardware decoding switch
+    /// ([`crate::autosave::Preferences::apply_hardware_decoding`]).
+    pub(crate) static HW_SWITCH_OWNER: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 impl crate::autosave::Preferences {
     /// Settings ▸ Playback ▸ Hardware decoding as the process-wide switch the hardware decoder
     /// factories consult (new decoders only).
     pub fn apply_hardware_decoding(&self) {
+        // The switch is process-wide and the unit tests run in parallel: in them only the thread
+        // that asked for it moves the switch, so a Session another test creates or changes cannot
+        // flip it under the one test that checks it.
+        #[cfg(test)]
+        if !HW_SWITCH_OWNER.with(std::cell::Cell::get) {
+            self.apply_media_backends();
+            return;
+        }
         cfa4_codecs::hw::set_hardware_decoding(self.playback.hardware_decoding != "off");
+        self.apply_media_backends();
+    }
+
+    /// Settings ▸ Media Backends as the switches the supplementary backends consult before they
+    /// open a file (`cfa4_media::backends`; new files only).
+    pub fn apply_media_backends(&self) {
+        cfa4_media::set_backend_enabled("ffmpeg", self.media_backends.ffmpeg);
+        cfa4_media::set_backend_enabled("gstreamer", self.media_backends.gstreamer);
+        // the router orders the fallbacks this build registered (ADR 0005 step 2); our engine
+        // always opens a file first
+        let registered = cfa4_media::registered_fallbacks();
+        let backends: Vec<(&str, bool)> = registered.iter().map(|f| (f.id, cfa4_media::backend_enabled(f.id))).collect();
+        crate::media_route::apply(&backends);
     }
 
     /// Values of one category as a JSON object.
@@ -1644,10 +1775,16 @@ pub fn apply_media_scaling(ti: &mut cfa4_project::TrackItem, scaling: &str, fram
 
 // ------------------------------------------------------------------ media cache
 
-/// The media cache folder: the configured location, else `<data dir>/Media Cache`.
+/// The folder CFA4 makes inside a custom media cache location.
+pub const CUSTOM_CACHE_FOLDER: &str = "CFA4 Media Cache";
+
+/// The media cache folder: a folder of its own inside the configured location (as Premiere keeps
+/// its cache in a dedicated subfolder), else `<data dir>/Media Cache`. The cache policy and
+/// "Delete…" remove every file in this folder, so it must never be a folder the user chose: a
+/// location like the home folder or a footage folder would lose unrelated files (#2772).
 pub fn media_cache_dir(prefs: &MediaCachePrefs, data_dir: Option<&Path>) -> Option<PathBuf> {
     if !prefs.location.trim().is_empty() {
-        return Some(PathBuf::from(prefs.location.trim()));
+        return Some(PathBuf::from(prefs.location.trim()).join(CUSTOM_CACHE_FOLDER));
     }
     data_dir.map(|d| d.join("Media Cache"))
 }
@@ -1696,22 +1833,45 @@ fn remove_files(files: &[(PathBuf, u64, std::time::SystemTime)], keep: Option<&P
     n
 }
 
+/// Deepest folder level `prune_empty_dirs` descends to.
+const MAX_PRUNE_DEPTH: usize = 64;
+
+/// Remove empty folders under `dir`, except `keep` and its parents. A symlink or junction is never
+/// followed: `DirEntry::file_type` doesn't traverse it, where `Path::is_dir` would (#2772).
 fn prune_empty_dirs(dir: &Path, keep: Option<&Path>) {
+    prune_empty_dirs_at(dir, keep, 0);
+}
+
+fn prune_empty_dirs_at(dir: &Path, keep: Option<&Path>, depth: usize) {
+    if depth >= MAX_PRUNE_DEPTH {
+        return;
+    }
     let Ok(rd) = std::fs::read_dir(dir) else { return };
     for e in rd.flatten() {
+        if !e.file_type().is_ok_and(|t| t.is_dir()) {
+            continue;
+        }
         let p = e.path();
-        if p.is_dir() && keep.is_none_or(|k| !k.starts_with(&p)) {
-            prune_empty_dirs(&p, keep);
+        prune_empty_dirs_at(&p, keep, depth + 1);
+        if keep.is_none_or(|k| !k.starts_with(&p)) {
             let _ = std::fs::remove_dir(&p);
-        } else if p.is_dir() {
-            prune_empty_dirs(&p, keep);
         }
     }
 }
 
+/// Whether `dir` may be cleaned: a real folder, not a symlink or junction to one. The cache
+/// folder's name inside a custom location is known, so someone who can write to that location
+/// could put a link there to a folder of the user's, and cleaning would delete what's in it.
+fn cleanable(dir: &Path) -> bool {
+    std::fs::symlink_metadata(dir).is_ok_and(|m| m.file_type().is_dir())
+}
+
 /// Media Cache Management: apply the automatic deletion policy to `dir` at `now`, never touching
-/// `keep` (the open project's files). Returns (files, bytes) removed.
+/// `keep` (the open project's files). Returns (files, bytes) removed; nothing when `dir` is a link.
 pub fn enforce_policy(dir: &Path, prefs: &MediaCachePrefs, keep: Option<&Path>, now: std::time::SystemTime) -> (usize, u64) {
+    if !cleanable(dir) {
+        return (0, 0);
+    }
     let mut files = cache_files(dir);
     let removed = match prefs.management.as_str() {
         "olderThan" => {
@@ -1742,8 +1902,12 @@ pub fn enforce_policy(dir: &Path, prefs: &MediaCachePrefs, keep: Option<&Path>, 
     removed
 }
 
-/// Delete everything in the media cache except `keep` ("Delete…" ▸ unused files).
+/// Delete everything in the media cache except `keep` ("Delete…" ▸ unused files); nothing when
+/// `dir` is a link.
 pub fn clean(dir: &Path, keep: Option<&Path>) -> (usize, u64) {
+    if !cleanable(dir) {
+        return (0, 0);
+    }
     let files = cache_files(dir);
     let r = remove_files(&files, keep);
     prune_empty_dirs(dir, keep);

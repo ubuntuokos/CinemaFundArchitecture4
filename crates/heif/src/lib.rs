@@ -429,7 +429,7 @@ fn read_iref(body: &[u8], references: &mut HashMap<([u8; 4], u32), Vec<u32>>) ->
     let (v, _) = r.full()?;
     for b in boxes(r.rest()) {
         let mut r = Reader::new(b.body);
-        let id = |r: &mut Reader| -> Result<u32> { if v == 0 { Ok(u32::from(r.u16()?)) } else { r.u32() } };
+        let id = |r: &mut Reader<'_>| -> Result<u32> { if v == 0 { Ok(u32::from(r.u16()?)) } else { r.u32() } };
         let from = id(&mut r)?;
         let n = r.u16()?;
         let mut to = Vec::new();
@@ -574,7 +574,7 @@ impl Meta<'_> {
         let mut hvcc = None;
         for p in self.properties(item) {
             // every resolved association is a copy (a grid may repeat one tile many times)
-            budget.take_bytes(std::mem::size_of::<Property>())?;
+            budget.take_bytes(std::mem::size_of::<Property<'_>>())?;
             match p {
                 Property::Hvcc(h) => hvcc = Some(*h),
                 Property::Ispe(w, h) => size = Some((*w, *h)),
