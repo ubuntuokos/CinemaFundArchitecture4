@@ -4559,3 +4559,12 @@ export.summary	Low	laag
 	Chase External Timecode	Externe timecode volgen
 	Send LTC	LTC verzenden
 	Send MIDI Timecode	MIDI-timecode verzenden
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatische kleur
+	Auto Contrast	Automatisch contrast
+	Auto Levels	Automatische niveaus
+	Temporal Smoothing (seconds)	Tijdelijke afvlakking (seconden)
+	Scene Detect	Scènedetectie
+	Black Clip	Zwart afkappen
+	White Clip	Wit afkappen
+	Snap Neutral Midtones	Neutrale middentonen

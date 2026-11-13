@@ -4558,3 +4558,12 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	自動色彩
+	Auto Contrast	自動對比
+	Auto Levels	自動色階
+	Temporal Smoothing (seconds)	時間平滑（秒）
+	Scene Detect	場景偵測
+	Black Clip	黑色修剪
+	White Clip	白色修剪
+	Snap Neutral Midtones	中間調中性化

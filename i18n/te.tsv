@@ -4565,3 +4565,12 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	స్వయంచాలక రంగు
+	Auto Contrast	స్వయంచాలక కాంట్రాస్ట్
+	Auto Levels	స్వయంచాలక స్థాయిలు
+	Temporal Smoothing (seconds)	కాల సమతలీకరణ (సెకన్లు)
+	Scene Detect	దృశ్య గుర్తింపు
+	Black Clip	నలుపు కత్తిరింపు
+	White Clip	తెలుపు కత్తిరింపు
+	Snap Neutral Midtones	మధ్య టోన్లను తటస్థం చేయి

@@ -4562,3 +4562,12 @@ export.summary	Low	žema
 	Chase External Timecode	Sekti išorinį laiko kodą
 	Send LTC	Siųsti LTC
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	Automatinė spalva
+	Auto Contrast	Automatinis kontrastas
+	Auto Levels	Automatiniai lygiai
+	Temporal Smoothing (seconds)	Laikinis glotninimas (sekundės)
+	Scene Detect	Scenų aptikimas
+	Black Clip	Juodos apkirpimas
+	White Clip	Baltos apkirpimas
+	Snap Neutral Midtones	Neutralūs vidutiniai tonai

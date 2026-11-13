@@ -4562,3 +4562,12 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+# Auto Color, Auto Contrast, Auto Levels (EffectsSDK review)
+	Auto Color	ავტომატური ფერი
+	Auto Contrast	ავტომატური კონტრასტი
+	Auto Levels	ავტომატური დონეები
+	Temporal Smoothing (seconds)	დროითი გასწორება (წამი)
+	Scene Detect	სცენების აღმოჩენა
+	Black Clip	შავის მოჭრა
+	White Clip	თეთრის მოჭრა
+	Snap Neutral Midtones	ნეიტრალური შუა ტონები
