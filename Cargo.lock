@@ -1205,6 +1205,7 @@ dependencies = [
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-truehd",
+ "cfa4-tta",
  "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
@@ -2015,6 +2016,14 @@ version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
  "log",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-tta"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 
