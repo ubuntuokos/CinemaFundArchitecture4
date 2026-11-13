@@ -36,7 +36,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
 | SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h) and VI elements (element type 01h, VBI line essence container 0Dh, VBI Data Descriptor 5Bh, 1/8/10-bit sample codings), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate |
 | SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
-| SMPTE ST 429-6 | 2023 | Encrypted track files (reader): Cryptographic Context set, Encrypted Triplet pack, AES-128-CBC decryption with the Check Value, HMAC-SHA1 MIC |
+| SMPTE ST 429-6 | 2023 | Encrypted track files (reader): Cryptographic Context set, Encrypted Triplet pack, AES-128-CBC decryption with the Check Value, HMAC-SHA1 MIC (MDMK key or the Annex B legacy key) |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 2067-2 / 2067-5 | 2020 | IMF track files (writer): OP1a, KAG 1, at least 8 KiB of fill after the header, primary package, frame-wrapped pictures in 60 s essence partitions each followed by an index partition, clip-wrapped 24-bit sound at the sample rate with a constant-rate index, UMIDs, the MCA channel assignment, reference image edit rate and audio alignment level |
 | SMPTE ST 2067-21 | 2026 | IMF App 2E pictures (writer): RGBA (QE.1 / QE.2 component ranges) or CDCI (narrow-range levels) descriptor, the JPEG 2000 sub-descriptor with coding style, quantization and J2CLayout |
@@ -153,7 +153,9 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   track its Key ID (`EssenceTrack::encryption`); Encrypted Triplets are filed under the Source Key
   of the triplet they wrap, so tracks, samples and chunks build as usual. `read_sample` /
   `read_pcm` decrypt them (AES-128-CBC, Check Value test; the HMAC-SHA1 MIC is checked when a MIC
-  key is loaded) with the content key from the in-memory key ring (`crypt::add_key`, filled from a
+  key is loaded, or, without an MDMK in the KDM, with the key earlier editions derive from the
+  content key, ST 429-6 Annex B / FIPS 186-2 (`crypt::legacy_mic_key`), once the first triplet
+  matches it) with the content key from the in-memory key ring (`crypt::add_key`, filled from a
   KDM by `cfa4-dcp` and the engine's `dcp.loadKdm`); without it they fail with `Error::Encrypted`
   naming the Key ID. Keys are never written anywhere; `crypt::clear_keys` overwrites them.
 
@@ -170,8 +172,7 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
 
 Not supported: gaps (fillers) inside edit lists (#1008), external essence (OP-Atom
 material packages whose other tracks live in other files are opened track by track), partial
-essence, clip-wrapped encrypted essence, the legacy MIC key
-derivation of ST 429-6 Annex B (a MIC is checked only with an MDMK key), and descriptive metadata
+essence, clip-wrapped encrypted essence, and descriptive metadata
 (parsed sets are ignored).
 
 ## Writing a file
