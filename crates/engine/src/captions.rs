@@ -187,9 +187,10 @@ pub fn import_timed_text_mxf(s: &mut Session, path: &str) -> Option<Result<Value
 }
 
 /// Import the closed captions carried in an MXF file's ANC data (SMPTE ST 436-1) as caption
-/// tracks: ST 334-2 caption distribution packets (CEA-608 field 1, else CEA-708 service 1) as one
-/// track; without them, the CEA-608 byte pairs of ST 334-1 packets and of digitised line 21 VI
-/// lines as one track per data channel that holds captions (CC1–CC4). `None` when `path` is not
+/// tracks, one per channel that holds captions: from ST 334-2 caption distribution packets
+/// CEA-608 CC1–CC4 and CEA-708 services 1–6 ("{stem} (CC1)", "{stem} (SERVICE2)"); then from
+/// the CEA-608 byte pairs of ST 334-1 packets and of digitised line 21 VI lines the CC1–CC4
+/// channels the packets did not already give. `None` when `path` is not
 /// an MXF file with ANC or VBI data or that data holds no captions; the file's picture and sound
 /// import as media either way.
 pub fn import_anc_captions(s: &mut Session, path: &str) -> Option<Result<Vec<Value>>> {
@@ -220,24 +221,36 @@ pub fn import_anc_captions(s: &mut Session, path: &str) -> Option<Result<Vec<Val
     };
     let rate = cfa4_time::FrameRate::new(i64::from(anc.edit_rate.num), i64::from(anc.edit_rate.den));
     let stem = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Captions".into());
+    let mut reports = Vec::new();
+    let mut warnings = anc.warnings.clone();
+    // channels taken from caption distribution packets: line 21 / ST 334-1 data of the same
+    // channel is the same captions and is not imported twice
+    let mut done: Vec<String> = Vec::new();
     let cdps = anc.cdps();
     if !cdps.is_empty() {
-        let mut doc = cfa4_captions::mcc::decode_cdps(cdps.into_iter().map(|(f, b)| (f as i64, b)), rate);
-        if !doc.cues.is_empty() {
-            doc.warnings.extend(anc.warnings);
-            return Some(import_document(s, path, doc, "MXF ANC captions", CaptionFormat::Cea708, false, Some(&format!("{stem} (CC)"))).map(|r| vec![r]));
+        let (channels, w) = cfa4_captions::mcc::decode_cdp_channels(cdps.into_iter().map(|(f, b)| (f as i64, b)), rate);
+        warnings.extend(w);
+        for ch in channels {
+            // the file's warnings go with its first track
+            let doc = Document { cues: ch.cues, warnings: std::mem::take(&mut warnings), ..Default::default() };
+            let format = if ch.cea708 { CaptionFormat::Cea708 } else { CaptionFormat::Cea608 };
+            match import_document(s, path, doc, "MXF ANC captions", format, false, Some(&format!("{stem} ({})", ch.name))) {
+                Ok(r) => reports.push(r),
+                Err(e) => return Some(Err(e)),
+            }
+            done.push(ch.name);
         }
     }
     let fields = line21_pairs(&anc);
-    let mut reports = Vec::new();
-    let mut warnings = anc.warnings;
     for (name, field, channel2) in [("CC1", 0usize, false), ("CC2", 0, true), ("CC3", 1, false), ("CC4", 1, true)] {
+        if done.iter().any(|d| d == name) {
+            continue;
+        }
         let Some(pairs) = fields.get(field) else { continue };
         let cues = cfa4_captions::scc::decode_channel(pairs.iter().copied(), rate, channel2);
         if cues.is_empty() {
             continue;
         }
-        // the file's warnings go with its first track
         let doc = Document { cues, warnings: std::mem::take(&mut warnings), ..Default::default() };
         match import_document(s, path, doc, "MXF line 21 captions", CaptionFormat::Cea608, false, Some(&format!("{stem} ({name})"))) {
             Ok(r) => reports.push(r),

@@ -102,11 +102,12 @@ def _first_rate(otio: Any, composition: Any) -> float | None:
     """The rate CFA4 falls back to without a global start time: the first ``source_range`` found."""
     for child in composition:
         if getattr(child, "source_range", None) is not None:
-            return child.source_range.duration.rate
+            rate: float = child.source_range.duration.rate
+            return rate
         if isinstance(child, otio.schema.Track | otio.schema.Stack):
-            rate = _first_rate(otio, child)
-            if rate is not None:
-                return rate
+            inner = _first_rate(otio, child)
+            if inner is not None:
+                return inner
     return None
 
 
@@ -121,7 +122,7 @@ def expect_timeline(otio: Any, timeline: Any) -> dict[str, Any]:
         markers += [ticks_of(m.marked_range.start_time) for m in track.markers]
         children = list(track)
         cut = 0  # ticks: where the previous slot ends
-        for index, child in enumerate(children):
+        for _index, child in enumerate(children):
             if isinstance(child, otio.schema.Transition):
                 transitions += 1
                 inn, out = ticks_of(child.in_offset), ticks_of(child.out_offset)
@@ -428,7 +429,7 @@ def serialise(otio: Any, obj: Any, versions: dict[str, int] | None) -> str:
     """OTIO JSON at the given schema versions (``Marker: 1`` is converted here, the rest by OTIO)."""
     versions = dict(versions or {})
     legacy_markers = versions.pop("Marker", None) == 1
-    text = otio.adapters.otio_json.write_to_string(obj, target_schema_versions=versions or None)
+    text: str = otio.adapters.otio_json.write_to_string(obj, target_schema_versions=versions or None)
     if legacy_markers:
         text = json.dumps(_marker_v1(json.loads(text)), indent=4)
     return text

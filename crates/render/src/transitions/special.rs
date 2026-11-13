@@ -31,7 +31,7 @@ fn content_bounds(a: &Image, b: &Image) -> Option<(f32, f32, f32, f32)> {
     (x0 < x1 && y0 < y1).then_some((x0 as f32, y0 as f32, x1 as f32, y1 as f32))
 }
 
-pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
+pub(super) fn apply(id: &str, t: &Tx<'_>) -> Option<Image> {
     let p = t.p;
     let (w, h) = (t.wf, t.hf);
     let env = bell(p);

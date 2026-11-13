@@ -34,12 +34,12 @@ fn fin(v: f32, fallback: f32) -> f32 {
 }
 
 /// The Random Seed parameter.
-fn seed_of(e: &EffectInstance, cx: &FxCtx) -> u32 {
+fn seed_of(e: &EffectInstance, cx: &FxCtx<'_>) -> u32 {
     fin(fv(e, "seed", cx), 0.0).clamp(0.0, 1.0e6) as u32
 }
 
 /// The time step for an effect that re-rolls `rate` times a second (0 = never).
-fn step(cx: &FxCtx, rate: f32) -> u32 {
+fn step(cx: &FxCtx<'_>, rate: f32) -> u32 {
     let t = cx.seconds * f64::from(fin(rate, 0.0).max(0.0));
     if t.is_finite() && t > 0.0 { (t.floor() % 4.0e9) as u32 } else { 0 }
 }
@@ -98,7 +98,7 @@ const BAYER: [[u8; 4]; 4] = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 
 /// Bit Crush: keeps `Bits per Channel` bits of each sRGB-encoded channel, with an ordered 4×4
 /// Bayer dither (cells of `Dither Cell Size` pixels) so flat areas break into a pattern instead
 /// of bands.
-pub fn bit_crush(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn bit_crush(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     if !usable(img) {
         return;
     }
@@ -134,7 +134,7 @@ fn copy_rect(src: &Image, dst: &mut Image, sx: usize, sy: usize, dx: usize, dy: 
 /// Block Glitch: `Blocks Moved` rectangular blocks are copied (or swapped) to random places
 /// near where they came from, mostly snapped to the block grid, like corrupted macroblocks of a
 /// broken video stream. Blocks are always read from the untouched picture.
-pub fn block_glitch(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn block_glitch(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     if !usable(img) {
         return;
     }
@@ -196,7 +196,7 @@ struct Break {
 /// offsets its colours until the next restart marker. `Breaks` damaged spots are placed along the
 /// block stream; each changes the running shift and colour (or smears one block across the row).
 /// An imitation, drawn directly: fast, repeatable from the seed and at any frame size.
-pub fn databend(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn databend(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     if !usable(img) {
         return;
     }
@@ -301,7 +301,7 @@ fn run(dst: &mut [f32], src: &[f32], sx: usize, b: &Break) {
 /// with far less bandwidth than brightness), the rows wander sideways on a slow sine, a torn
 /// tracking bar drifts up the picture, the bottom rows are skewed where the heads switch, white
 /// snow dashes are scattered over it, and every other row is a little darker.
-pub fn vhs(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn vhs(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     if !usable(img) {
         return;
     }
@@ -381,7 +381,7 @@ pub fn vhs(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 // ------------------------------------------------------------------ Scan Line Jitter / Tile Jitter
 
 /// The Periodic interval's on/off pulse (1 for Infinite).
-fn strength(e: &EffectInstance, cx: &FxCtx) -> f32 {
+fn strength(e: &EffectInstance, cx: &FxCtx<'_>) -> f32 {
     if chv(e, "interval") == 1 {
         let f = fin(fv(e, "frequency", cx), 0.0);
         let s = 0.5 + 0.5 * (cx.seconds as f32 * f).cos();
@@ -404,7 +404,7 @@ fn wrapped(n: usize, pos: f32, get: impl Fn(usize) -> [f32; 4]) -> [f32; 4] {
 
 /// Scan Line Jitter: single rows (or columns) jump sideways and wrap around, more of them and
 /// further as Jitter rises, re-rolled `Changes per Second` times a second.
-pub fn scan_line_jitter(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn scan_line_jitter(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     if !usable(img) {
         return;
     }
@@ -444,7 +444,7 @@ pub fn scan_line_jitter(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Tile Jitter: the picture is cut into `Tiles` bands across (or down) the frame and every other
 /// band slides back and forth by up to Amount pixels, at Speed radians a second.
-pub fn tile_jitter(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn tile_jitter(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     if !usable(img) {
         return;
     }

@@ -100,7 +100,7 @@ fn get_pk(c: u32) -> usize {
     ARI_LOOKUP_M[i_max as usize] as usize
 }
 
-fn decode_symbol(src: &mut Lookahead, bit_count: &mut usize, s: &mut State, cum_freq: &[u16]) -> usize {
+fn decode_symbol(src: &mut Lookahead<'_>, bit_count: &mut usize, s: &mut State, cum_freq: &[u16]) -> usize {
     let range = s.high - s.low + 1;
     let cumulative = (((s.value - s.low + 1) << 14) - 1) / range;
     // binary search for the first symbol whose cumulative frequency is <= `cumulative`
@@ -145,7 +145,7 @@ fn decode_symbol(src: &mut Lookahead, bit_count: &mut usize, s: &mut State, cum_
 
 /// Decode one transform of `n_lines` spectral lines (`n_coded` of them coded, the rest zero) into
 /// `quant` and update `ctx`. `ctx.map()` must have been called for this transform size.
-pub fn decode_spectrum(br: &mut BitReader, ctx: &mut ArithContext, n_coded: usize, n_lines: usize, quant: &mut [i32]) -> Result<()> {
+pub fn decode_spectrum(br: &mut BitReader<'_>, ctx: &mut ArithContext, n_coded: usize, n_lines: usize, quant: &mut [i32]) -> Result<()> {
     let n = n_coded / 2;
     let pres_n = n_lines / 2;
     if pres_n + 2 > CTX_LEN || quant.len() < n_lines || n > pres_n {

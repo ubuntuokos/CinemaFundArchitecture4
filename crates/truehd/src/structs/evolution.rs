@@ -24,7 +24,7 @@ pub struct EvoPayloadConfig {
 }
 
 impl EvoPayloadConfig {
-    pub fn read(reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut config = Self::default();
 
         if reader.get()? {
@@ -82,7 +82,7 @@ pub struct EvoPayload {
 }
 
 impl EvoPayload {
-    pub fn read(reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut evo_payload = Self { evo_payload_id: reader.get_n(5)?, ..Default::default() };
 
         if evo_payload.evo_payload_id == 0 {
@@ -150,7 +150,7 @@ impl EvoProtectionStatus {
 impl EvoProtection {
     pub const SIZE: [usize; 4] = [0, 1, 4, 16];
 
-    pub fn read(reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let mut evo_protection = Self { protection_length_primary: reader.get_n(2)?, protection_length_secondary: reader.get_n(2)?, ..Default::default() };
 
         for i in 0..Self::SIZE[evo_protection.protection_length_primary as usize] {
@@ -178,7 +178,7 @@ pub struct EvoFrame {
 }
 
 impl EvoFrame {
-    pub fn read(reader: &mut BsIoSliceReader) -> Result<Self> {
+    pub fn read(reader: &mut BsIoSliceReader<'_>) -> Result<Self> {
         let frame_start = reader.position()?;
         let mut evo_frame = EvoFrame { evo_version: reader.get_n(2)?, ..Default::default() };
         if evo_frame.evo_version == 3 {

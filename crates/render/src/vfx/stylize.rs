@@ -9,7 +9,7 @@ use rayon::prelude::*;
 use super::*;
 
 /// Brush Strokes: a painterly look from short directional strokes (angle jittered per cell).
-pub fn brush_strokes(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn brush_strokes(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let base_ang = fv(e, "angle", cx).to_radians();
     let size = (fv(e, "size", cx) * cx.px_scale).max(0.0);
     let len = fv(e, "length", cx) * cx.px_scale;
@@ -71,7 +71,7 @@ pub fn brush_strokes(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Color Emboss: emboss relief that keeps the picture's colours.
-pub fn color_emboss(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn color_emboss(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let dir = (fv(e, "direction", cx) as f64).to_radians();
     let relief = fv(e, "relief", cx) * cx.px_scale.max(0.25);
     let contrast = fv(e, "contrast", cx) / 100.0;
@@ -89,7 +89,7 @@ pub fn color_emboss(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Roughen Edges: fractal-eroded alpha edges (Roughen, Cut, Spiky, Rusty, Photocopy…).
-pub fn roughen_edges(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn roughen_edges(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let kind = chv(e, "edge_type");
     let border = fv(e, "border", cx) * cx.px_scale;
     if border < 0.5 {
@@ -158,7 +158,7 @@ pub fn roughen_edges(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 
 /// Long Shadow: an extruded, optionally fading shadow behind the layer's alpha. The per-pixel
 /// step distance to the shape along the shadow direction is found by doubling (min-plus).
-pub fn long_shadow(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn long_shadow(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let ang = (fv(e, "angle", cx) as f64).to_radians();
     let len = fv(e, "length", cx) * cx.px_scale;
     if len < 0.5 {
@@ -260,7 +260,7 @@ pub(crate) fn distance_to(inside: &[bool], w: usize, h: usize) -> Vec<f32> {
 }
 
 /// Stroke: a solid outline around the layer's alpha (outside, centred or inside the edge).
-pub fn stroke(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn stroke(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let width = fv(e, "width", cx) * cx.px_scale;
     if width <= 0.0 {
         return;
@@ -303,7 +303,7 @@ pub fn stroke(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Gradient (26.2): linear / radial / reflected / diamond ramp with midpoint and scatter.
-pub fn gradient(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn gradient(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let s = pv(e, "start", cx, img);
     let en = pv(e, "end", cx, img);
     let sc = cv(e, "start_color", cx);
@@ -338,7 +338,7 @@ pub fn gradient(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Block Dissolve (Legacy): random blocks disappear as Transition Completion rises.
-pub fn block_dissolve(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn block_dissolve(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = fv(e, "completion", cx) / 100.0;
     if c <= 0.0 {
         return;
@@ -380,7 +380,7 @@ fn wipe_alpha(g: f32, c: f32, soft: f32) -> f32 {
 
 /// Gradient Wipe (Legacy): reveals by the luminance of a gradient layer (another track, or this
 /// layer's own luminance).
-pub fn gradient_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn gradient_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = fv(e, "completion", cx) / 100.0;
     if c <= 0.0 {
         return;
@@ -420,7 +420,7 @@ pub fn gradient_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Linear Wipe (Legacy): a straight edge sweeps across at Wipe Angle.
-pub fn linear_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn linear_wipe(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = fv(e, "completion", cx) / 100.0;
     if c <= 0.0 {
         return;
@@ -451,7 +451,7 @@ const MAX_PARTICLE_WORK: f64 = 4.0e7;
 
 /// Particles (CFA4): particle `i` is born at `i / rate` seconds into the clip and flies on a
 /// seeded path under gravity until its lifetime ends, so every frame is a pure function of time.
-pub fn particles(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn particles(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let finite = |v: f32, lo: f32, hi: f32, def: f32| if v.is_finite() { v.clamp(lo, hi) } else { def };
     let k = if cx.px_scale.is_finite() && cx.px_scale > 0.0 { cx.px_scale } else { 1.0 };
     let emitter = pv(e, "emitter", cx, img);
@@ -569,7 +569,7 @@ fn bolt(a: (f32, f32), b: (f32, f32), segs: usize, amp: f32, levels: usize, deta
 }
 
 /// Lightning (obsolete): a seeded, re-striking bolt with branches, glow and core colours.
-pub fn lightning(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn lightning(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let s = pv(e, "start", cx, img);
     let en = pv(e, "end", cx, img);
     let segs = fv(e, "segments", cx).clamp(1.0, 100.0) as usize;
@@ -646,7 +646,7 @@ pub fn lightning(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Cell Pattern (obsolete): Worley (cellular) noise patterns.
-pub fn cell_pattern(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn cell_pattern(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let pat = chv(e, "pattern");
     let invert = bv(e, "invert");
     let contrast = fv(e, "contrast", cx) / 100.0;
@@ -703,7 +703,7 @@ pub fn cell_pattern(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Checkerboard (obsolete): a checkerboard of Color and transparency.
-pub fn checkerboard(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn checkerboard(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let a = pv(e, "anchor", cx, img);
     let cw = (fv(e, "width", cx) * cx.px_scale).max(1.0);
     let ch = if bv(e, "square") { cw } else { (fv(e, "height", cx) * cx.px_scale).max(1.0) };
@@ -738,7 +738,7 @@ pub fn checkerboard(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Ellipse (obsolete): an anti-aliased elliptical ring, Inside Color at its core.
-pub fn ellipse(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn ellipse(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let c = pv(e, "center", cx, img);
     let (rx, ry) = ((fv(e, "width", cx) * cx.px_scale / 2.0).max(0.5), (fv(e, "height", cx) * cx.px_scale / 2.0).max(0.5));
     let th = (fv(e, "thickness", cx) * cx.px_scale).max(0.5);
@@ -766,7 +766,7 @@ pub fn ellipse(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Paint Bucket (obsolete): flood fill from Fill Point within Tolerance.
-pub fn paint_bucket(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn paint_bucket(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let pt = pv(e, "point", cx, img);
     let (w, h) = (img.w, img.h);
     let (sx, sy) = (pt.x.floor() as isize, pt.y.floor() as isize);
@@ -850,7 +850,7 @@ pub fn paint_bucket(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 }
 
 /// Write-on (obsolete): paints the animated Brush Position's path up to now.
-pub fn write_on(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+pub fn write_on(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) {
     let Some(param) = e.param("brush") else { return };
     let col = lin(cv(e, "color", cx));
     let r = (fv(e, "size", cx) * cx.px_scale / 2.0).max(0.5);

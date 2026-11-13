@@ -8,3 +8,6 @@ publish = false
 [dependencies]
 serde_json = { workspace = true }
 cfa4-testkit = { workspace = true }
+
+[lints]
+workspace = true

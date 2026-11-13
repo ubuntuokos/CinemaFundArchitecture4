@@ -82,7 +82,7 @@ pub(crate) fn loop_filter(fs: &mut FrameState, pool: &crate::par::Pool) {
             })
         })
         .collect();
-    let mut bands: Vec<([RowBand; 3], [Vec<u16>; 3])> = cur.row_bands(&luma).into_iter().zip(margins).collect();
+    let mut bands: Vec<([RowBand<'_>; 3], [Vec<u16>; 3])> = cur.row_bands(&luma).into_iter().zip(margins).collect();
     let changed = pool.map_mut(&mut bands, |b, (band, margin)| {
         let mut changed: [Vec<(usize, u16)>; 3] = Default::default();
         for &p in &planes {
@@ -109,11 +109,11 @@ pub(crate) fn loop_filter(fs: &mut FrameState, pool: &crate::par::Pool) {
 /// Both loop filter passes over the band of `plane` holding luma rows [start, end); `margin` is
 /// an unfiltered copy of the rows above the band (empty for the first band). Returns the samples
 /// of `margin` that the band's top horizontal edges changed, as (index, value).
-fn filter_band(fs: &FrameState, plane: usize, (start, end): (usize, usize), band: &mut RowBand, margin: &mut [u16]) -> Vec<(usize, u16)> {
+fn filter_band(fs: &FrameState, plane: usize, (start, end): (usize, usize), band: &mut RowBand<'_>, margin: &mut [u16]) -> Vec<(usize, u16)> {
     let mi_rows = fs.fh.mi_rows as usize;
     let (r0, r1) = (start / 4, mi_rows.min(end / 4));
     let sub_y = if plane == 0 { 0 } else { fs.ssy };
-    let edges = |band: &mut RowBand, mut above: Option<&mut RowBand>, pass: usize, rows: std::ops::Range<usize>| {
+    let edges = |band: &mut RowBand<'_>, mut above: Option<&mut RowBand<'_>>, pass: usize, rows: std::ops::Range<usize>| {
         let row_step = if plane == 0 { 1 } else { 1 << fs.ssy };
         let col_step = if plane == 0 { 1 } else { 1 << fs.ssx };
         let mi_cols = fs.fh.mi_cols as usize;
@@ -143,7 +143,7 @@ fn filter_band(fs: &FrameState, plane: usize, (start, end): (usize, usize), band
 
 /// One loop filter edge (7.14.2) at mode info position (row, col): 4 lines of samples across
 /// it. `above` holds the rows above `band` for horizontal edges on the band's top row.
-fn edge(fs: &FrameState, band: &mut RowBand, above: Option<&mut RowBand>, plane: usize, pass: usize, row: usize, col: usize) {
+fn edge(fs: &FrameState, band: &mut RowBand<'_>, above: Option<&mut RowBand<'_>>, plane: usize, pass: usize, row: usize, col: usize) {
     let (sub_x, sub_y) = if plane == 0 { (0, 0) } else { (fs.ssx, fs.ssy) };
     let (dx, dy) = if pass == 0 { (1i32, 0i32) } else { (0, 1) };
     let x = col * 4;
