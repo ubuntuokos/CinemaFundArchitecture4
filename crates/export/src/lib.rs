@@ -448,6 +448,11 @@ pub struct ExportSettings {
     /// Video codec of the MXF formats (DNxHR unless set; the ProRes / DNxHR profile fields apply).
     #[serde(default)]
     pub mxf_video_codec: MxfVideoCodec,
+    /// MXF OP1a: write the sequence's first caption track as closed captions in an ANC data
+    /// track (SMPTE ST 436-1, ST 334-2 caption distribution packets with CEA-608 field 1 and
+    /// CEA-708 service 1, VANC line 9) at 29.97 fps. Off by default.
+    #[serde(default)]
+    pub mxf_anc_captions: bool,
     /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
     /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
     #[serde(default)]
@@ -764,6 +769,7 @@ impl Default for ExportSettings {
             cineform_profile: String::new(),
             cineform_quality: String::new(),
             mxf_video_codec: MxfVideoCodec::default(),
+            mxf_anc_captions: false,
             mpeg2_container: String::new(),
             mpeg2_422: false,
             mpeg2_quantizer: None,
@@ -892,6 +898,14 @@ impl ExportSettings {
                 && (self.audio.sample_rate.is_some_and(|r| r != 48_000) || !matches!(self.audio.bits, 16 | 24) || self.audio.float || self.audio.channels > 8)
             {
                 return Err(ExportError::Unsupported("D-10 (IMX) carries up to 8 channels of 16- or 24-bit 48 kHz audio".into()));
+            }
+        }
+        if self.format.is_mxf() && self.mxf_anc_captions {
+            if self.format == Format::MxfOpAtom {
+                return Err(ExportError::Unsupported("closed captions (ANC) are written in MXF OP1a".into()));
+            }
+            if self.mxf_video_codec == MxfVideoCodec::D10 {
+                return Err(ExportError::Unsupported("D-10 (IMX) content packages carry no ANC data: closed captions need another MXF codec".into()));
             }
         }
         if self.format.is_mxf() && self.mxf_video_codec == MxfVideoCodec::XdcamHd422 {
@@ -1104,6 +1118,7 @@ fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
             vp9_factory,
             prores_factory,
             dnx_factory,
+            uncompressed_factory,
             apv_factory,
             cineform_factory,
             mjpeg_factory,
@@ -2025,6 +2040,58 @@ fn dnx_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
         let enc = cfa4_dnx::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
         Ok(Box::new(DnxEncoder { enc, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
     })
+}
+
+/// Uncompressed Y'CbCr 4:2:2 pictures for MXF (ST 384): `v210` (10-bit) or `UYVY` (8-bit),
+/// Rec. 709 narrow-range levels, one intra "packet" per picture packed by
+/// [`cfa4_mxf::UncompressedLayout::pack`].
+struct UncompressedEncoder {
+    layout: cfa4_mxf::UncompressedLayout,
+    w: u32,
+    h: u32,
+    rate: FrameRate,
+    signal: ColorSignal,
+}
+
+impl VideoEncoder for UncompressedEncoder {
+    fn sample_entry(&self) -> SampleEntry {
+        // MXF only: no ISO BMFF sample entry is written
+        let fourcc = cfa4_isobmff::FourCc(if self.layout == cfa4_mxf::UncompressedLayout::V210 { *b"v210" } else { *b"2vuy" });
+        SampleEntry::video(fourcc, cfa4_isobmff::CodecConfig::Unknown { fourcc, raw: Vec::new() }, self.w as u16, self.h as u16)
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+        let (w, h) = (f.width as usize, f.height as usize);
+        let cw = w.div_ceil(2);
+        let (Some(n), Some(nc)) = (w.checked_mul(h), cw.checked_mul(h)) else {
+            return Err(ExportError::Unsupported(format!("picture size {w}x{h}")));
+        };
+        let (mut y, mut cb, mut cr) = (vec![0u16; n], vec![0u16; nc], vec![0u16; nc]);
+        match f.hdr {
+            Some(rgb) => {
+                let (kr, kb) = self.signal.kr_kb();
+                rgbf_to_yuv422_10(rgb, w, h, kr, kb, &mut y, &mut cb, &mut cr)
+            }
+            None => rgba_to_yuv422_10(f.rgba, w, h, &mut y, &mut cb, &mut cr),
+        }
+        if self.layout.depth() == 8 {
+            for v in y.iter_mut().chain(cb.iter_mut()).chain(cr.iter_mut()) {
+                *v = ((*v + 2) >> 2).min(255);
+            }
+        }
+        let data = self.layout.pack(f.width, f.height, [&y, &cb, &cr]);
+        Ok(vec![EncodedPacket { data, key: true, duration: self.rate.den as u32, composition_offset: 0 }])
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        Ok(Vec::new())
+    }
+}
+
+fn uncompressed_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
+    let layout = s.mxf_video_codec.uncompressed_layout().filter(|_| format == Format::MxfOp1a && s.format.is_mxf())?;
+    Some(Ok(Box::new(UncompressedEncoder { layout, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>))
 }
 
 /// The APV profile named by [`ExportSettings::apv_profile`].

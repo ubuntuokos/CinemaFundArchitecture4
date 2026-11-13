@@ -30,7 +30,15 @@ impl MediaSource for Still {
 }
 
 fn frame(w: usize, h: usize, data: PixelData) -> Arc<VideoFrame> {
-    Arc::new(VideoFrame { width: w as u32, height: h as u32, data, color: cfa4_color::ColorInfo::REC709, par: (1, 1), pts: Tick::ZERO })
+    Arc::new(VideoFrame {
+        width: w as u32,
+        height: h as u32,
+        data,
+        color: cfa4_color::ColorInfo::REC709,
+        par: (1, 1),
+        pts: Tick::ZERO,
+        layout: Default::default(),
+    })
 }
 
 /// A camera-like picture: 8-bit 4:2:0, no alpha.

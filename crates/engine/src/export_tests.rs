@@ -616,6 +616,8 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                     "proRes" => "prores",
                     "h264" => "h264",
                     "mpeg2" => "mpeg2video",
+                    "v210" => "v210",
+                    "uyvy" => "rawvideo",
                     _ => "dnxhd",
                 };
                 assert_eq!(v["codec_name"], codec, "{name}");
@@ -1322,4 +1324,53 @@ fn dash_manifest_is_a_parameter() {
     assert_eq!(r["settings"]["dashManifest"], true);
     let r = s.execute("export.resolve", json!({"format":"hls", "settings":{"dashManifest":true}})).unwrap();
     assert_eq!(r["settings"]["dashManifest"], true);
+}
+
+/// #1004: MXF OP1a with `mxfAncCaptions` carries the caption track as ST 436-1 ANC data (one CDP
+/// per frame on VANC line 9): our reader gives the cues back, ffprobe sees the data stream next
+/// to the picture, and other rates, OP-Atom and D-10 are refused.
+#[test]
+fn mxf_op1a_writes_captions_as_anc_data() {
+    let dir = Scratch::new("mxf-anc");
+    let vtt = dir.path("in.vtt");
+    std::fs::write(&vtt, "WEBVTT\n\n00:00:00.500 --> 00:00:01.500\nHello ANC\n\n00:00:02.000 --> 00:00:02.800\nSecond line\n").unwrap();
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name":"ANC", "fps":29.97, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    s.execute("captions.import", json!({"path": vtt})).unwrap();
+    let out = dir.path("anc.mxf");
+    let p = json!({"format":"mxf-op1a", "path": out, "mxfAncCaptions": true, "range":"custom", "startSeconds":0.0, "endSeconds":3.0, "wait":true});
+    s.execute("file.exportMedia", p.clone()).unwrap();
+    let bytes = std::fs::read(&out).unwrap();
+    let anc = cfa4_mxf::read_anc(&bytes[..]).unwrap();
+    assert!(anc.warnings.is_empty(), "{:?}", anc.warnings);
+    assert_eq!(anc.edit_rate, cfa4_mxf::Rational::new(30000, 1001));
+    assert_eq!(anc.frames.len(), 90);
+    assert!(anc.frames.iter().all(|f| f.len() == 1 && f[0].is_cdp() && f[0].line == 9));
+    let rate = cfa4_time::FrameRate::FPS_29_97;
+    let doc = cfa4_captions::mcc::decode_cdps(anc.cdps().into_iter().map(|(f, p)| (f as i64, p)), rate);
+    let got: Vec<(i64, i64, &str)> = doc.cues.iter().map(|c| (rate.frame_at(c.start), rate.frame_at(c.end), c.text.as_str())).collect();
+    assert_eq!(got, vec![(15, 45, "Hello ANC"), (60, 84, "Second line")]);
+    // the picture still opens, and ffprobe (when installed) lists the ANC data stream
+    let m = cfa4_mxf::open(&bytes[..]).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    if let Some(j) = probe(&out) {
+        let streams = j["streams"].as_array().unwrap();
+        assert!(streams.iter().any(|s| s["codec_type"] == "video"), "{j}");
+        assert!(streams.iter().any(|s| s["codec_type"] == "data"), "{j}");
+    }
+    // without the option: no ANC track
+    let mut q = p.clone();
+    q["mxfAncCaptions"] = json!(false);
+    s.execute("file.exportMedia", q).unwrap();
+    assert!(!cfa4_mxf::has_anc(&std::fs::read(&out).unwrap()));
+    for (key, value) in [("format", json!("mxf-opatom")), ("mxfVideoCodec", json!("d10"))] {
+        let mut q = p.clone();
+        q[key] = value;
+        assert!(s.execute("file.exportMedia", q).is_err(), "{key}");
+    }
+    let mut s25 = Session::default();
+    s25.execute("file.newSequence", json!({"name":"ANC 25", "fps":25, "width":320, "height":180, "video":1, "audio":1})).unwrap();
+    s25.execute("captions.import", json!({"path": vtt})).unwrap();
+    let err = s25.execute("file.exportMedia", p).unwrap_err().to_string();
+    assert!(err.contains("29.97"), "{err}");
 }

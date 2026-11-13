@@ -1,0 +1,33 @@
+[package]
+name = "cfa4-obs"
+description = "Live studio core (layer L5): the libobs binding behind the StudioBackend trait, a pure-Rust software backend, the shared-memory frame ring and the supervisor of the cfa4-studio-host process (CFA4-LIVE-STUDIO-001 S0)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+# A binding of a non-Rust component (libobs, C; owner decision 2026-11-07, AGENTS.md §0.3,
+# docs/adr/0001-platform-ffi.md addendum of the same date). The workspace lints, except that
+# `unsafe_code` is `deny` instead of `forbid`: only `libobs::sys` opts in with
+# `#[allow(unsafe_code)]`, and every `unsafe` block carries a `// SAFETY:` comment. libobs itself
+# runs only inside the separate `cfa4-studio-host` process, never in the editor or the engine.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+too_many_arguments = "allow"
+needless_range_loop = "allow"
+type_complexity = "allow"
+undocumented_unsafe_blocks = "deny"
+
+[dependencies]
+log = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+# libobs, libX11 and libwayland-client are loaded at run time (ISC; already in the lockfile), so
+# building needs no libobs headers and a machine without the CFA4 libobs build uses the software
+# backend.
+libloading = "0.8"
