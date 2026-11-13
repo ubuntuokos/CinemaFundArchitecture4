@@ -4556,3 +4556,37 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	Add Content…	Tartalom hozzáadása…
+	Add the content files and choose a new film folder.	Adja hozzá a tartalomfájlokat, és válasszon egy új filmmappát.
+	Choose the film folder, the projector certificate and the KDM folder.	Válassza ki a filmmappát, a projektortanúsítványt és a KDM-mappát.
+	Cinema	Mozi
+	Content	Tartalom
+	DCP	DCP
+	DCP-o-matic	DCP-o-matic
+	DCP-o-matic is not available: {error} (DCP-o-matic {version} or newer is needed).	A DCP-o-matic nem érhető el: {error} (DCP-o-matic {version} vagy újabb kell).
+	DCP-o-matic job {job} started; follow it in the Progress panel.	A(z) {job}. DCP-o-matic feladat elindult; a Folyamat panelen követheti.
+	DCP-o-matic {version} is installed.	A DCP-o-matic {version} telepítve van.
+	DCP-o-matic…	DCP-o-matic…
+	Encrypt (KDMs are made from the film folder, so keep it)	Titkosítás (a KDM-ek a filmmappából készülnek, ezért őrizze meg)
+	Film folder	Filmmappa
+	Film folder (new)	Filmmappa (új)
+	Flat (1.85)	Flat (1,85)
+	Formulation	Formuláció
+	Frame rate	Képkockasebesség
+	From the content	A tartalom alapján
+	Full (1.90)	Teljes (1,90)
+	KDM	KDM
+	KDM folder	KDM-mappa
+	KDMs need dcpomatic2_kdm_cli, which was not found.	A KDM-ekhez a dcpomatic2_kdm_cli kell, de nem található.
+	Make DCP	DCP készítése
+	Make KDM	KDM készítése
+	Projector certificate	Projektortanúsítvány
+	Public Service Announcement	Közérdekű közlemény
+	Resolution	Felbontás
+	Scope (2.39)	Scope (2,39)
+	Valid for	Érvényesség
+	Valid from (UTC)	Érvényes ettől (UTC)
+	hours	óra
+	weeks	hét
+	years	év
+	{count} KDM written	{count} KDM elkészült

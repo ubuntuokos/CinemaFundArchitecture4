@@ -59,6 +59,7 @@ from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.dcpomatic_dialog import DcpomaticDialog
 from .panels.kdm_dialog import KdmDialog
 from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
@@ -872,6 +873,11 @@ class MainWindow(QMainWindow):
         self.forget_keys_action = QAction(tr("Forget DCP Keys"), self)
         self.forget_keys_action.setObjectName("qt.file.forgetDcpKeys")
         self.forget_keys_action.triggered.connect(self.forget_dcp_keys)
+        # DCP-o-matic (ADR 0011): DCPs and KDMs over dcpomatic.makeDcp / dcpomatic.makeKdm
+        self.dcpomatic_dialog: DcpomaticDialog | None = None
+        self.dcpomatic_action = QAction(tr("DCP-o-matic…"), self)
+        self.dcpomatic_action.setObjectName("qt.file.dcpomatic")
+        self.dcpomatic_action.triggered.connect(self.open_dcpomatic)
         # J / K / L shuttle, slow shuttle, Play Around and Play In to Out on the focused monitor,
         # dynamic trimming in trim mode (egui's playback.*)
         self.shuttle_actions: list[tuple[QAction, str]] = []
@@ -1015,7 +1021,7 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         self.registry.build_menus(
             self.menuBar(), self, {
-                "File": [self.load_kdm_action, self.forget_keys_action, self.quit_action],
+                "File": [self.dcpomatic_action, self.load_kdm_action, self.forget_keys_action, self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
                 "Edit": [self.shortcuts_action, self.preferences_menu.menuAction()],
                 "View": [self.fit_action, self.multicam_actions[0][0], self.dynamic_waveforms_action],
@@ -2198,6 +2204,8 @@ class MainWindow(QMainWindow):
             self.pick_and_run(cid, dict(params or {}))
         elif cid == "dcp.loadKdm" and not params:
             self.open_kdm()
+        elif cid in ("dcpomatic.makeDcp", "dcpomatic.makeKdm") and not params:
+            self.open_dcpomatic(kdm=cid == "dcpomatic.makeKdm")
         elif cid == "media.linkMedia" and not params:
             self.open_link_media(menu=True)
         elif cid in ("media.makeOffline", "media.createProxies", "file.projectManager") and not params:
@@ -3029,6 +3037,16 @@ class MainWindow(QMainWindow):
 
     def open_restricted_codecs(self) -> None:
         self._media_backends().show_restricted()
+
+    def open_dcpomatic(self, kdm: bool = False) -> None:
+        """File ▸ DCP-o-matic…: DCPs and KDMs made by DCP-o-matic (``dcpomatic.*``, ADR 0011)."""
+        if self.dcpomatic_dialog is None:
+            self.dcpomatic_dialog = DcpomaticDialog(self.engine, self)
+        else:
+            self.dcpomatic_dialog.refresh_status()
+        self.dcpomatic_dialog.tabs.setCurrentIndex(1 if kdm else 0)
+        self.dcpomatic_dialog.show()
+        self.dcpomatic_dialog.raise_()
 
     def open_kdm(self) -> None:
         """File ▸ Load KDM…: the KDM and private key dialog (``dcp.loadKdm``)."""

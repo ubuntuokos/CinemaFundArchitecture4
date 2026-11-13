@@ -14971,3 +14971,76 @@ def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_dcpomatic_dialog_drives_the_engine_commands(app, tmp_path: Path):
+    """File ▸ DCP-o-matic… (ADR 0011): the status line, then dcpomatic.makeDcp and
+    dcpomatic.makeKdm with the dialog's choices; an encrypted DCP's film folder carries over to
+    the KDM tab."""
+    from cfa4_qt.panels.dcpomatic_dialog import DcpomaticDialog, describe_status
+
+    calls: list[tuple[str, dict]] = []
+    replies = {
+        "dcpomatic.status": {"available": True, "version": "2.18.40", "kdm": None},
+        "dcpomatic.makeDcp": {"job": 7},
+        "dcpomatic.makeKdm": {"kdms": [str(tmp_path / "k.xml")]},
+    }
+
+    class Engine:
+        running = True
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            calls.append((command, dict(params or {})))
+            if on_reply:
+                on_reply(replies[command], None)
+            return len(calls)
+
+    dlg = DcpomaticDialog(Engine())
+    assert dlg.status.text().startswith("DCP-o-matic 2.18.40 is installed.") and "dcpomatic2_kdm_cli" in dlg.status.text()
+    assert "not available: missing" in describe_status({"available": False, "error": "missing", "minimumVersion": "2.18.20"})
+
+    dlg.make_dcp()
+    assert calls[-1][0] == "dcpomatic.status" and "film folder" in dlg.result.toPlainText()
+    dlg.content.addItem(str(tmp_path / "master.mov"))
+    dlg.dcp_output.setText(str(tmp_path / "film"))
+    dlg.dcp_name.setText(" My Film ")
+    dlg.kind.setCurrentIndex(dlg.kind.findData("feature"))
+    dlg.container.setCurrentIndex(dlg.container.findData("scope"))
+    dlg.fps.setCurrentIndex(dlg.fps.findData(24))
+    dlg.encrypt.setChecked(True)
+    dlg.make_dcp()
+    cmd, p = calls[-1]
+    assert cmd == "dcpomatic.makeDcp"
+    assert p == {
+        "content": [str(tmp_path / "master.mov")],
+        "output": str(tmp_path / "film"),
+        "name": "My Film",
+        "contentKind": "feature",
+        "standard": "smpte",
+        "encrypt": True,
+        "container": "scope",
+        "fps": 24,
+    }
+    assert "job 7" in dlg.result.toPlainText()
+    assert dlg.kdm_film.text() == str(tmp_path / "film")
+
+    dlg.kdm_cert.setText(str(tmp_path / "proj.pem"))
+    dlg.kdm_output.setText(str(tmp_path / "kdms"))
+    dlg.kdm_cinema.setText("Uránia")
+    dlg.valid_count.setValue(3)
+    dlg.valid_unit.setCurrentIndex(dlg.valid_unit.findData("days"))
+    dlg.make_kdm()
+    cmd, p = calls[-1]
+    assert cmd == "dcpomatic.makeKdm"
+    assert p == {
+        "film": str(tmp_path / "film"),
+        "certificate": str(tmp_path / "proj.pem"),
+        "output": str(tmp_path / "kdms"),
+        "validFrom": "now",
+        "validFor": {"count": 3, "unit": "days"},
+        "formulation": "modifiedTransitional1",
+        "cinema": "Uránia",
+    }
+    assert dlg.result.toPlainText().splitlines()[0] == "1 KDM written" and dlg.make_kdm_button.isEnabled()
+    for name in ("dcpomatic.dcp.make", "dcpomatic.kdm.make", "dcpomatic.dcp.encrypt", "dcpomatic.kdm.formulation", "dcpomatic.close"):
+        assert dlg.findChild(QtWidgets.QWidget, name) is not None, name

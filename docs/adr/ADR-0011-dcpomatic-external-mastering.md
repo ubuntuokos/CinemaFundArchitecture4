@@ -64,7 +64,8 @@ a licenc egyik bekötési módot sem zárja ki.
      választható, és a törvényszéki jelölés kikapcsolható. A CFA4 a kulcsokat nem olvassa és nem
      tárolja, a KDM-eket nem küldi el (a DCP-o-matic e-mail funkciója nincs bekötve). A kész KDM-et
      a CFA4 saját `dcp.loadKdm`-je le tudja játszani.
-   - **Qt GUI-panel: igen,** külön PR a `python/cfa4_qt/`-ben, ennek a parancsfelületére építve.
+   - **Qt GUI-panel: igen.** Fájl ▸ DCP-o-matic… (`python/cfa4_qt/panels/dcpomatic_dialog.py`):
+     DCP és KDM fül a fenti parancsokra építve; a fejléc a `dcpomatic.status` eredményét mutatja.
    - **Csomagolás:** a .deb `Suggests: dcpomatic` sort kaphat (a DCP-o-matic nincs az Ubuntu
      tárolóiban, ezért `Recommends` nem lehet). Ez nem része ennek az ADR-nek.
 5. **A DCP-o-matic beállításai** alapból a CFA4 saját könyvtárában vannak

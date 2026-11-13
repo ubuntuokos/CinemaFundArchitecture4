@@ -28,6 +28,9 @@ echo '{"id":1,"method":"engine.execute","params":{"command":"dcpomatic.status","
 
 ## Make a DCP
 
+In the Qt GUI: **File ▸ DCP-o-matic…** (DCP and KDM tabs; the top line says whether DCP-o-matic is
+installed). The same commands work over `cfa4-cli serve`, as below.
+
 1. Export a master from CFA4 (`file.exportMedia`), e.g. ProRes 4444 in MOV with PCM audio, or a
    TIFF sequence plus a WAV.
 2. Run `dcpomatic.makeDcp` (here over `cfa4-cli serve`, [qt-gui.md](../qt-gui.md)):
