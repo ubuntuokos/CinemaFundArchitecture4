@@ -26,7 +26,7 @@ const MARKER_LABELS: &[&str] = &["FFOC", "LFOC", "FFTC", "LFTC", "FFOI", "LFOI",
 /// Bytes read per step while hashing; cancellation and progress are checked between steps.
 const HASH_STEP: usize = 1 << 20;
 
-fn at(file: &str, element: Option<String>, pos: Option<Pos>, asset: Option<Uuid>) -> Location {
+pub(crate) fn at(file: &str, element: Option<String>, pos: Option<Pos>, asset: Option<Uuid>) -> Location {
     Location { file: Some(file.to_string()), element, line: pos.map(|p| p.line), column: pos.map(|p| p.column), asset }
 }
 
@@ -219,7 +219,7 @@ fn is_track_file(a: &ReelAsset) -> bool {
     }
 }
 
-fn asset_element(r: usize, a: &ReelAsset) -> Option<String> {
+pub(crate) fn asset_element(r: usize, a: &ReelAsset) -> Option<String> {
     Some(format!("ReelList/Reel[{}]/AssetList/{:?}", r + 1, a.kind))
 }
 

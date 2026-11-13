@@ -126,6 +126,37 @@ fn prores_export_roundtrip() {
     assert!(f[0] > 240 && f[1] < 15 && f[2] < 15, "{:?}", &f[..4]);
 }
 
+/// Interlaced ProRes export (PROCODEC-002 1b / WP6): the field order reaches the encoder, which
+/// codes two field pictures per frame, and the MOV's `fiel` box; both read back.
+#[test]
+fn prores_interlaced_export_roundtrip() {
+    let (p, seq, m) = project();
+    for (order, want, detail, ff) in
+        [(FieldOrder::UpperFirst, cfa4_frame::FieldOrder::TopFirst, 1u8, "tt"), (FieldOrder::LowerFirst, cfa4_frame::FieldOrder::BottomFirst, 6, "bb")]
+    {
+        let path = tmp(&format!("pr_interlaced_{ff}.mov"));
+        let mut s = ExportSettings { format: Format::ProRes, path: path.clone(), field_order: order, ..Default::default() };
+        s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::FPS_24.tick_of(6)));
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let bytes: Arc<[u8]> = std::fs::read(&path).unwrap().into();
+        let mov = cfa4_isobmff::open(&bytes[..]).unwrap();
+        let entry = mov.tracks.iter().flat_map(|t| &t.entries).find_map(|e| e.video.as_ref()).unwrap();
+        assert_eq!(entry.field_info, Some(cfa4_isobmff::FieldInfo { fields: 2, detail }), "{order:?}");
+        let src = cfa4_codecs::open_bytes("pr.mov", bytes).unwrap();
+        let f = src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 8))).unwrap();
+        assert_eq!(f.layout.field_order, want, "{order:?}");
+        let px = f.to_rgba8();
+        assert!(px[0] > 240 && px[1] < 15 && px[2] < 15, "{order:?}: {:?}", &px[..4]);
+        if let Some(ffprobe) = cfa4_testkit::ffprobe_or_skip("ProRes field order") {
+            let out = std::process::Command::new(ffprobe)
+                .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=field_order", "-of", "csv=p=0", &path])
+                .output()
+                .unwrap();
+            assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), ff, "{order:?}");
+        }
+    }
+}
+
 /// #2142: SDR ProRes, DNxHR and APV (MOV) and H.264 (MP4) exports carry a `colr` box with the
 /// export's BT.709 colour: Apple's media stack reads the colour of the MOV codecs only from there.
 #[test]

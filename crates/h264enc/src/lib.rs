@@ -594,11 +594,11 @@ impl Encoder {
     /// Encode one picture. Returns zero or more packets in decoding order, or
     /// [`Error::BadFrame`] if the planes are smaller than the configured size (same as
     /// [`Encoder::try_encode`]).
-    pub fn encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, Error> {
+    pub fn encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, Error> {
         self.try_encode(frame, pts)
     }
 
-    pub fn try_encode(&mut self, frame: &YuvFrame, pts: i64) -> Result<Vec<Packet>, Error> {
+    pub fn try_encode(&mut self, frame: &YuvFrame<'_>, pts: i64) -> Result<Vec<Packet>, Error> {
         let src = self.import(frame)?;
         let use_aq = self.cfg.aq_strength > 0.0 && !matches!(self.cfg.rate, RateControl::Qp(_));
         let (mbw, mbh, strength) = (self.params.mbw, self.params.mbh, self.cfg.aq_strength);
@@ -684,7 +684,7 @@ impl Encoder {
         }
     }
 
-    fn import(&mut self, f: &YuvFrame) -> Result<Frame, Error> {
+    fn import(&mut self, f: &YuvFrame<'_>) -> Result<Frame, Error> {
         let (w, h) = (self.cfg.width as usize, self.cfg.height as usize);
         let (cw, ch) = (w / 2, h / 2);
         if f.y_stride < w
@@ -819,7 +819,7 @@ impl Encoder {
         let mut bufs: Vec<(Frame, Vec<MbInfo>)> = jobs.iter_mut().filter_map(|j| Some((j.rec.take()?, std::mem::take(&mut j.mbs)))).collect();
         {
             let this = &*self;
-            let fencs: Vec<FrameEnc> = jobs
+            let fencs: Vec<FrameEnc<'_>> = jobs
                 .iter()
                 .map(|j| FrameEnc {
                     p: &this.params,
@@ -849,7 +849,7 @@ impl Encoder {
                 .collect();
             let deblock: Vec<bool> = jobs.iter().map(|j| j.hdr.slice_type != SliceType::B || capture).collect();
             type Task<'t> = (usize, usize, usize, usize, &'t mut [u8], &'t mut [u8], &'t mut [u8], &'t mut [MbInfo]);
-            let mut tasks: Vec<Task> = Vec::new();
+            let mut tasks: Vec<Task<'_>> = Vec::new();
             for (pi, (rec, mbs)) in bufs.iter_mut().enumerate() {
                 let ys = rec.y.stride;
                 let cs = rec.u.stride;
@@ -872,7 +872,7 @@ impl Encoder {
             }
             let ys = jobs_stride_y(mbw);
             let cs = jobs_stride_c(mbw);
-            let run = |(pi, k, r0, r1, y, u, v, m): Task| -> (usize, usize, SliceOut) {
+            let run = |(pi, k, r0, r1, y, u, v, m): Task<'_>| -> (usize, usize, SliceOut) {
                 let out = SliceEnc::new(&fencs[pi], Band { y: &mut *y, u: &mut *u, v: &mut *v, ys, cs }, &mut *m, r0, r1, k as u16).encode();
                 if deblock[pi] {
                     let mut by = BandPlane { data: y, stride: ys, pad: LUMA_PAD };

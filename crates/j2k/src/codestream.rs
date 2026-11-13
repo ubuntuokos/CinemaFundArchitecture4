@@ -256,7 +256,7 @@ fn parse_siz(s: &[u8]) -> Result<Header> {
 }
 
 /// SPcod / SPcoc, with Scod / Scoc's "precincts defined" flag.
-fn parse_sp(r: &mut Reader, precincts_defined: bool) -> Result<CodingStyle> {
+fn parse_sp(r: &mut Reader<'_>, precincts_defined: bool) -> Result<CodingStyle> {
     let levels = r.u8()?;
     let (cbw, cbh) = (r.u8()?.saturating_add(2), r.u8()?.saturating_add(2));
     let cblk_style = r.u8()?;
@@ -302,7 +302,7 @@ fn parse_cod(s: &[u8]) -> Result<(Global, CodingStyle)> {
 }
 
 /// The component index of a COC / QCC / RGN segment (8 bits below 257 components, else 16).
-fn component_index(r: &mut Reader, ncomp: usize) -> Result<usize> {
+fn component_index(r: &mut Reader<'_>, ncomp: usize) -> Result<usize> {
     let c = if ncomp < 257 { usize::from(r.u8()?) } else { usize::from(r.u16()?) };
     if c >= ncomp {
         return Err(Error::Invalid("marker for a component that does not exist"));
@@ -317,7 +317,7 @@ fn parse_coc(s: &[u8], ncomp: usize) -> Result<(usize, CodingStyle)> {
     Ok((c, parse_sp(&mut r, scoc & 1 != 0)?))
 }
 
-fn parse_quant(r: &mut Reader) -> Result<Quant> {
+fn parse_quant(r: &mut Reader<'_>) -> Result<Quant> {
     let s = r.u8()?;
     let (style, guard) = (s & 0x1F, s >> 5);
     let mut steps = Vec::new();
@@ -435,7 +435,7 @@ impl Defaults {
             POC => {
                 let mut r = Reader { d: seg, at: 0 };
                 while r.at < seg.len() {
-                    let comp = |r: &mut Reader| if ncomp < 257 { r.u8().map(u16::from) } else { r.u16() };
+                    let comp = |r: &mut Reader<'_>| if ncomp < 257 { r.u8().map(u16::from) } else { r.u16() };
                     let (rs, cs, layer_end, re) = (r.u8()?, comp(&mut r)?, r.u16()?, r.u8()?);
                     let ce = comp(&mut r)?;
                     let progression = r.u8()?;

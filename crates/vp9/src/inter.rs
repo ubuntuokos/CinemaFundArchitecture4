@@ -33,7 +33,7 @@ impl RefPlane<'_> {
 /// `(w + 7) * (h + 7)` (edge-clamped source window).
 #[allow(clippy::too_many_arguments)]
 pub fn predict(
-    r: &RefPlane,
+    r: &RefPlane<'_>,
     x: i32,
     y: i32,
     step_x: i32,
@@ -54,7 +54,7 @@ pub fn predict(
 }
 
 /// Copy the (w + 7) x (h + 7) source window starting at (x0 - 3, y0 - 3) with edge clamping.
-fn fetch_window(r: &RefPlane, x0: i32, y0: i32, w: usize, h: usize, win: &mut [u16]) -> usize {
+fn fetch_window(r: &RefPlane<'_>, x0: i32, y0: i32, w: usize, h: usize, win: &mut [u16]) -> usize {
     let ws = w + 7;
     for row in 0..h + 7 {
         let yy = (y0 - 3 + row as i32).clamp(0, r.last_y) as usize;
@@ -73,7 +73,7 @@ fn fetch_window(r: &RefPlane, x0: i32, y0: i32, w: usize, h: usize, win: &mut [u
 }
 
 #[allow(clippy::too_many_arguments)]
-fn predict_unscaled(r: &RefPlane, x: i32, y: i32, w: usize, h: usize, filter: u8, bit_depth: u8, out: &mut [u16], tmp: &mut [u16], win: &mut [u16]) {
+fn predict_unscaled(r: &RefPlane<'_>, x: i32, y: i32, w: usize, h: usize, filter: u8, bit_depth: u8, out: &mut [u16], tmp: &mut [u16], win: &mut [u16]) {
     let (x0, y0) = (x >> 4, y >> 4);
     let (fx, fy) = ((x & 15) as usize, (y & 15) as usize);
     let max = (1i32 << bit_depth) - 1;
@@ -239,7 +239,7 @@ fn filter_v_n<const W: usize>(s: &[u16], ss: usize, f: &[i16], max: i32, o: &mut
 
 /// General process of 8.5.2.4 (any step).
 #[allow(clippy::too_many_arguments)]
-fn predict_scaled(r: &RefPlane, x: i32, y: i32, step_x: i32, step_y: i32, w: usize, h: usize, filter: u8, bit_depth: u8, out: &mut [u16], tmp: &mut [u16]) {
+fn predict_scaled(r: &RefPlane<'_>, x: i32, y: i32, step_x: i32, step_y: i32, w: usize, h: usize, filter: u8, bit_depth: u8, out: &mut [u16], tmp: &mut [u16]) {
     let max = (1i32 << bit_depth) - 1;
     let ih = ((((h as i32 - 1) * step_y + 15) >> 4) + 8) as usize;
     for row in 0..ih {

@@ -738,7 +738,7 @@ fn minifies(m: &Affine, w: usize, h: usize) -> bool {
 impl FxOp {
     /// Evaluate `e` at `cx.t` for a `w`×`h` working image. None for effects without a GPU
     /// implementation (and for disabled effects).
-    pub fn eval(e: &EffectInstance, cx: &FxCtx, w: usize, h: usize) -> Option<FxOp> {
+    pub fn eval(e: &EffectInstance, cx: &FxCtx<'_>, w: usize, h: usize) -> Option<FxOp> {
         if !e.enabled {
             return None;
         }

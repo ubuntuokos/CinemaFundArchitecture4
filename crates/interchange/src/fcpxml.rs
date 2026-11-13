@@ -88,7 +88,7 @@ pub(crate) fn fmt_time(t: Tick, rate: FrameRate) -> String {
     if b == 1 { format!("{a}s") } else { format!("{a}/{b}s") }
 }
 
-fn attr_time(n: Node, name: &str) -> Option<Tick> {
+fn attr_time(n: Node<'_, '_>, name: &str) -> Option<Tick> {
     n.attribute(name).and_then(parse_time)
 }
 
@@ -191,7 +191,7 @@ pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> R
             }
         }
     }
-    let mut events: Vec<Node> = Vec::new();
+    let mut events: Vec<Node<'_, '_>> = Vec::new();
     if let Some(lib) = child(root, "library") {
         events.extend(children(lib, "event"));
     }
@@ -228,7 +228,7 @@ pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> R
     Ok(imp.b.finish())
 }
 
-fn flag(n: Node, name: &str) -> Option<bool> {
+fn flag(n: Node<'_, '_>, name: &str) -> Option<bool> {
     n.attribute(name).map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
 }
 
@@ -325,7 +325,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
     fn storyline(&mut self, seq: &mut Sequence, ctx: &Ctx, spine: Node<'a, 'i>, origin: Tick, lane: i32, primary: bool) {
         // (timeline start, timeline end, video clip on this storyline's track)
         let mut laid: Vec<(Tick, Tick, Option<cfa4_project::ClipId>)> = Vec::new();
-        let mut transitions: Vec<(usize, Node)> = Vec::new();
+        let mut transitions: Vec<(usize, Node<'_, '_>)> = Vec::new();
         for el in elements(spine) {
             let tag = el.tag_name().name();
             if tag == "transition" {
@@ -487,7 +487,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         (t0 + dur, vclip)
     }
 
-    fn markers(&mut self, el: Node, local_start: Tick, src_in: Tick, speed: f64, rate: FrameRate) -> Vec<Marker> {
+    fn markers(&mut self, el: Node<'_, '_>, local_start: Tick, src_in: Tick, speed: f64, rate: FrameRate) -> Vec<Marker> {
         let mut out = Vec::new();
         // FCPXML has no zero-duration marker: a point is written as one frame at the sequence rate.
         let frame = rate.frame_duration();
@@ -509,7 +509,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn adjustments(&mut self, ti: &mut TrackItem, el: Node, local_start: Tick, src_in: Tick, speed: f64, ctx: &Ctx, kind: TrackKind) {
+    fn adjustments(&mut self, ti: &mut TrackItem, el: Node<'_, '_>, local_start: Tick, src_in: Tick, speed: f64, ctx: &Ctx, kind: TrackKind) {
         // keyframe time (element-local) -> media time
         let kt = |t: Tick| src_in + scaled(t - local_start, speed);
         let (fw, fh) = (ctx.frame.0 as f64, ctx.frame.1 as f64);
@@ -582,7 +582,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
     }
 
     /// A parameter from an adjustment attribute plus optional `<param name><keyframeAnimation>`.
-    fn kparam(&mut self, a: Node, name: &str, kt: &dyn Fn(Tick) -> Tick, mut map: impl FnMut(&str) -> ParamValue) -> Option<Param> {
+    fn kparam(&mut self, a: Node<'_, '_>, name: &str, kt: &dyn Fn(Tick) -> Tick, mut map: impl FnMut(&str) -> ParamValue) -> Option<Param> {
         let attr = a.attribute(name);
         let pnode = children(a, "param").find(|p| p.attribute("name") == Some(name));
         let mut p = Param::new(map(attr.or(pnode.and_then(|p| p.attribute("value")))?));
@@ -617,7 +617,7 @@ fn parse_db(v: &str) -> f64 {
 }
 
 /// (speed, reverse, freeze, source time at the element's local start) from a `timeMap`.
-fn time_map(el: Node, local_start: Tick) -> (f64, bool, bool, Tick) {
+fn time_map(el: Node<'_, '_>, local_start: Tick) -> (f64, bool, bool, Tick) {
     let Some(tm) = child(el, "timeMap") else { return (1.0, false, false, local_start) };
     let pts: Vec<(Tick, Tick)> = children(tm, "timept").filter_map(|p| Some((attr_time(p, "time")?, attr_time(p, "value")?))).collect();
     if pts.len() < 2 {
