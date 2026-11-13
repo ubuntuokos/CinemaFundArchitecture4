@@ -2800,9 +2800,36 @@ fn build() -> Vec<CommandSpec> {
             "Export Markers as CSV…",
             ["Markers"],
             None,
-            r#"{"path":str} (all markers in the active sequence)"#,
-            has_seq,
+            r#"{"path":str,"target":"program|source"?,"item":id?} (all markers of the active sequence, or of a media item: its segments)"#,
+            crate::marker_import::has_target,
             crate::marker_export::export
+        ),
+        cmd!(
+            "markers.importCsv",
+            "Import Markers from CSV…",
+            ["Markers"],
+            None,
+            r#"{"path":str,"target":"program|source"?,"item":id?,"allowRateChange":bool=false} → {sequence|item, markers:[id], skipped} (the columns markers.exportCsv writes; a different frame rate is refused unless allowed; one undo step)"#,
+            always,
+            crate::marker_import::import_csv
+        ),
+        cmd!(
+            "markers.importEdl",
+            "Import Segments from EDL…",
+            ["Markers"],
+            None,
+            r#"{"path":str,"item":id? (default: the Source clip)} → {item, markers:[id], skipped} (each CMX 3600 event's source in/out as a range marker; one undo step)"#,
+            always,
+            crate::marker_import::import_edl
+        ),
+        cmd!(
+            "markers.exportEdl",
+            "Export Segments as EDL…",
+            ["Markers"],
+            None,
+            r#"{"path":str,"item":id? (default: the Source clip)} → {item, path, events} (the range markers of a media item as a CMX 3600 EDL that markers.importEdl reads back)"#,
+            always,
+            crate::marker_import::export_edl
         ),
         cmd!("markers.clearAll", "Clear Markers", ["Markers"], Some("Cmd+Alt+Shift+M"), r#"{"target":"program|source"}"#, always, |s, p| {
             if let Some(v) = crate::source_monitor::route(s, "markers.clearAll", p)? {

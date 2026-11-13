@@ -15184,3 +15184,12 @@ def test_export_frame_quality_and_size_options():
     assert frame_options("webp", 50, 0, 360) == {"height": 360}
     assert frame_path("/tmp", "still.webp", "png") == "/tmp/still.png"
 
+
+def test_marker_imports_ask_for_a_file():
+    """Markers ▸ Import Markers from CSV… / Import Segments from EDL… ask which file to read, and
+    Export Segments as EDL… where to save (K6)."""
+    from cfa4_qt.main_window import EXPORT_SAVES, IMPORT_OPENS
+
+    assert IMPORT_OPENS["markers.importCsv"][1] == "csv"
+    assert IMPORT_OPENS["markers.importEdl"][1] == "edl"
+    assert EXPORT_SAVES["markers.exportEdl"][1] == "edl"

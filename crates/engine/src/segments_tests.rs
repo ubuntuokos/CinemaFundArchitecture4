@@ -10,9 +10,9 @@ use serde_json::json;
 use crate::Session;
 use crate::smart_cut_tests::source_mp4;
 
-const RATE: FrameRate = FrameRate { num: 25, den: 1 };
+pub(crate) const RATE: FrameRate = FrameRate { num: 25, den: 1 };
 
-fn marker(id: u64, from: i64, frames: i64, name: &str) -> Marker {
+pub(crate) fn marker(id: u64, from: i64, frames: i64, name: &str) -> Marker {
     Marker {
         id: MarkerId(id),
         start: RATE.tick_of(from),
@@ -25,7 +25,7 @@ fn marker(id: u64, from: i64, frames: i64, name: &str) -> Marker {
 }
 
 /// A session with `clip.mp4` as a media item carrying `markers`.
-fn with_markers(tag: &str, markers: Vec<Marker>) -> (Session, ItemId, std::path::PathBuf) {
+pub(crate) fn with_markers(tag: &str, markers: Vec<Marker>) -> (Session, ItemId, std::path::PathBuf) {
     let dir = crate::media_test_util::tmp_dir(tag);
     let path = dir.join("clip.mp4");
     std::fs::write(&path, source_mp4()).unwrap();

@@ -135,6 +135,8 @@ struct Event {
     to_clip: Option<String>,
     files: Vec<String>,
     effect: Option<String>,
+    /// `* SEGMENT NAME:` (a CFA4 segment written by `markers.exportEdl`).
+    segment: Option<String>,
     /// (reel, fps, entry tc)
     m2: Vec<(String, f64)>,
     locs: Vec<(Tc, String, String)>,
@@ -178,6 +180,8 @@ fn parse(text: &str, report: &mut Report) -> Parsed {
                 ev.to_clip = Some(value("TO CLIP NAME:"));
             } else if cu.starts_with("SOURCE FILE:") {
                 ev.files.push(value("SOURCE FILE:"));
+            } else if cu.starts_with("SEGMENT NAME:") {
+                ev.segment = Some(value("SEGMENT NAME:"));
             } else if cu.starts_with("EFFECT NAME:") {
                 ev.effect = Some(value("EFFECT NAME:"));
             } else if cu.starts_with("LOC:") {
@@ -237,6 +241,52 @@ fn parse(text: &str, report: &mut Report) -> Parsed {
         report.warn(format!("unrecognised EDL line ignored: {}", l.chars().take(60).collect::<String>()));
     }
     p
+}
+
+/// One event of an EDL read as a source range (CFA4-LOSSLESS-MEDIA-TOOLS-001 K6): the source
+/// timecodes of the event's last (incoming) line, in frames at the rate asked for.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SourceRange {
+    /// The event number as written.
+    pub event: String,
+    pub reel: String,
+    /// `* TO CLIP NAME:` / `* FROM CLIP NAME:` when present.
+    pub clip: Option<String>,
+    /// `* SEGMENT NAME:` when present.
+    pub segment: Option<String>,
+    /// Source in and out (exclusive) in frames, timecode origin included.
+    pub src_in: i64,
+    pub src_out: i64,
+}
+
+/// The source ranges of an EDL's events, against `rate`. Refused (instead of converted) when the
+/// list cannot have been written at `rate`: a frame field at or above the rate's timecode base, or
+/// drop-frame timecode for a rate without drop frame.
+pub fn source_ranges(text: &str, rate: FrameRate) -> std::result::Result<Vec<SourceRange>, String> {
+    let mut report = Report::default();
+    let p = parse(text, &mut report);
+    let base = rate.timecode_base();
+    if p.max_ff >= base {
+        return Err(format!("the EDL counts frames up to {}, which {} fps timecode cannot hold: it was written at another frame rate", p.max_ff, rate.label()));
+    }
+    if p.any_df && !rate.supports_drop_frame() {
+        return Err(format!("the EDL uses drop-frame timecode, which {} fps does not have: it was written at another frame rate", rate.label()));
+    }
+    let mut out = Vec::new();
+    for ev in &p.events {
+        let Some(l) = ev.lines.last() else { continue };
+        let df = ev.df || l.tcs[0].df;
+        let frames = |t: Tc| fields_to_frames(t.h, t.m, t.s, t.f, rate, df && rate.supports_drop_frame());
+        out.push(SourceRange {
+            event: l.num.clone(),
+            reel: l.reel.clone(),
+            clip: ev.to_clip.clone().or_else(|| ev.from_clip.clone()),
+            segment: ev.segment.clone(),
+            src_in: frames(l.tcs[0]),
+            src_out: frames(l.tcs[1]),
+        });
+    }
+    Ok(out)
 }
 
 fn guess_rate(p: &Parsed) -> FrameRate {

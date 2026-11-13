@@ -35,6 +35,7 @@ mod keyframe_move;
 pub mod legibility;
 pub mod live;
 mod marker_export;
+mod marker_import;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
