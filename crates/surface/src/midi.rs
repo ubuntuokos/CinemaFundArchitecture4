@@ -42,30 +42,32 @@ pub fn info(p: &Port) -> DeviceInfo {
     }
 }
 
-/// The candidate ports, in sequencer order. An error when there is no ALSA sequencer.
-pub fn ports() -> Result<Vec<DeviceInfo>, String> {
-    let seq = Seq::open(None, None, true).map_err(|e| format!("MIDI: no ALSA sequencer ({e}); MIDI controllers are not listed"))?;
-    let own = seq.client_id().unwrap_or(-1);
+/// Every port of the sequencer, in sequencer order.
+pub fn all_ports(seq: &Seq) -> Vec<Port> {
     let mut out = Vec::new();
-    for c in ClientIter::new(&seq) {
+    for c in ClientIter::new(seq) {
         let client = c.get_client();
         let client_name = c.get_name().unwrap_or_default().to_string();
-        for p in PortIter::new(&seq, client) {
+        for p in PortIter::new(seq, client) {
             let caps = p.get_capability();
-            let port = Port {
+            out.push(Port {
                 client,
                 port: p.get_port(),
                 client_name: client_name.clone(),
                 port_name: p.get_name().unwrap_or_default().to_string(),
                 readable: caps.contains(PortCap::READ | PortCap::SUBS_READ),
                 writable: caps.contains(PortCap::WRITE | PortCap::SUBS_WRITE),
-            };
-            if is_candidate(&port, own) {
-                out.push(info(&port));
-            }
+            });
         }
     }
-    Ok(out)
+    out
+}
+
+/// The candidate ports, in sequencer order. An error when there is no ALSA sequencer.
+pub fn ports() -> Result<Vec<DeviceInfo>, String> {
+    let seq = Seq::open(None, None, true).map_err(|e| format!("MIDI: no ALSA sequencer ({e}); MIDI controllers are not listed"))?;
+    let own = seq.client_id().unwrap_or(-1);
+    Ok(all_ports(&seq).iter().filter(|p| is_candidate(p, own)).map(info).collect())
 }
 
 #[cfg(test)]

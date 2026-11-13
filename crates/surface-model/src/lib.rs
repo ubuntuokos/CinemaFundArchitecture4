@@ -12,6 +12,8 @@
 //!
 //! [ADR 0012]: ../../../docs/adr/ADR-0012-control-surface.md
 
+pub mod midi;
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 

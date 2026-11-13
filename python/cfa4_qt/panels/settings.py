@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPlainTextEdit,
     QPushButton,
     QRadioButton,
     QScrollArea,
@@ -324,6 +325,14 @@ class PreferencesDialog(QDialog):
         self.surfaces: dict[str, Any] | None = None  # surface.devices
         self.surface_profiles: list[dict[str, Any]] | None = None  # controlSurfaces.profiles
         self._surfaces_pending = self._surfaces_building = False
+        self.monitor_lines: list[str] = []  # the MIDI Monitor's lines, kept across page rebuilds
+        self.monitor_on = False
+        self.monitor_error = ""
+        self._monitor: dict[str, Any] = {}  # the monitor's widgets on the page shown now
+        event = getattr(engine, "event", None)
+        if event is not None:
+            event.connect(self._engine_event)
+        self.finished.connect(lambda _r: self._stop_monitor())
         self.label_w = LABEL_W  # narrower beside Label Colors (egui: at most 45 % of the width)
         self._enablers: list[tuple[QWidget, str]] = []
         self._watchers: list[Callable[[], None]] = []
@@ -939,7 +948,16 @@ class PreferencesDialog(QDialog):
     def _control_surfaces(self, parent: QWidget) -> QWidget:
         """Settings ▸ Control Surfaces: the MIDI controllers and jog/shuttle devices of this
         machine (``surface.devices``), each with Use and Profile; the choices go to the draft's
-        ``controlSurfaces.devices`` (OK applies them). Refresh looks for devices again."""
+        ``controlSurfaces.devices`` (OK applies them). Refresh looks for devices again. Below them
+        the MIDI Monitor."""
+        page = QWidget(parent)
+        col = QVBoxLayout(page)
+        col.setContentsMargins(0, 0, 0, 0)
+        col.addWidget(self._surface_devices(page))
+        col.addWidget(self._midi_monitor(page))
+        return page
+
+    def _surface_devices(self, parent: QWidget) -> QWidget:
         box = QGroupBox(tr("Devices"), parent)
         v = QVBoxLayout(box)
         if (self.surfaces is None or self.surface_profiles is None) and not self._surfaces_pending:
@@ -1009,6 +1027,121 @@ class PreferencesDialog(QDialog):
         row.addWidget(refresh)
         v.addLayout(row)
         return box
+
+    # ----- MIDI Monitor -----
+    MONITOR_LINES = 500
+
+    def _midi_monitor(self, parent: QWidget) -> QWidget:
+        """Every MIDI message from the controllers as it arrives (``surface.monitor``, events
+        ``surfaceMonitor``): time, device, bytes and what they mean. Reading stops with Stop or
+        when the dialog closes."""
+        box = QGroupBox(tr("MIDI Monitor"), parent)
+        box.setObjectName("settings.controlSurfaces.monitor")
+        v = QVBoxLayout(box)
+        v.addWidget(self._note(box, "Shows every MIDI message from the controllers as it arrives, to check that a "
+                                    "controller sends and what it sends. MIDI Clock and Active Sensing are left out."))
+        row = QHBoxLayout()
+        toggle = self._button("settings.controlSurfaces.monitor.toggle", tr("Stop Monitor") if self.monitor_on else tr("Start Monitor"))
+        toggle.setCheckable(True)
+        toggle.setChecked(self.monitor_on)
+        toggle.clicked.connect(self._toggle_monitor)
+        clear = self._button("settings.controlSurfaces.monitor.clear", tr("Clear"))
+        clear.clicked.connect(self._clear_monitor)
+        row.addWidget(toggle)
+        row.addWidget(clear)
+        row.addStretch(1)
+        v.addLayout(row)
+        log = QPlainTextEdit(box)
+        log.setObjectName("settings.controlSurfaces.monitor.log")
+        log.setReadOnly(True)
+        log.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        log.setMaximumBlockCount(self.MONITOR_LINES)
+        log.setStyleSheet("font-family: monospace;")
+        log.setMinimumHeight(180)
+        log.setPlaceholderText(tr("Press Start Monitor, then move a control."))
+        log.setPlainText("\n".join(self.monitor_lines))
+        v.addWidget(log)
+        error = self._note(box, self.monitor_error, "settings.controlSurfaces.monitor.error")
+        error.setVisible(bool(self.monitor_error))
+        v.addWidget(error)
+        self._monitor = {"toggle": toggle, "log": log, "error": error}
+        return box
+
+    def _monitor_widget(self, key: str) -> Any:
+        w = self._monitor.get(key)
+        try:
+            if w is not None:
+                w.objectName()  # raises once Qt deleted it (the page was rebuilt or closed)
+            return w
+        except RuntimeError:
+            return None
+
+    def _show_monitor_state(self) -> None:
+        toggle, error = self._monitor_widget("toggle"), self._monitor_widget("error")
+        if toggle is not None:
+            toggle.setChecked(self.monitor_on)
+            toggle.setText(tr("Stop Monitor") if self.monitor_on else tr("Start Monitor"))
+        if error is not None:
+            error.setText(self.monitor_error)
+            error.setVisible(bool(self.monitor_error))
+
+    def _toggle_monitor(self, on: bool) -> None:
+        def done(r: Any, _b: Any) -> None:
+            self.monitor_on = bool(r.get("enabled")) if isinstance(r, dict) else False
+            self._show_monitor_state()
+
+        def failed(m: str) -> None:
+            self.monitor_on = False
+            self.monitor_error = m
+            self._show_monitor_state()
+
+        self.monitor_error = ""
+        self.monitor_on = bool(on)
+        self._show_monitor_state()
+        self.engine.call("surface.monitor", {"enabled": bool(on)}, on_reply=done, on_error=failed)
+
+    def _stop_monitor(self) -> None:
+        if self.monitor_on:
+            self.monitor_on = False
+            self.engine.call("surface.monitor", {"enabled": False})
+
+    def _clear_monitor(self) -> None:
+        self.monitor_lines.clear()
+        log = self._monitor_widget("log")
+        if log is not None:
+            log.clear()
+
+    def _monitor_line(self, m: dict[str, Any]) -> str:
+        device = str(m.get("device") or "")
+        names = {str(d.get("device")): str(d.get("name") or "") for d in (self.surfaces or {}).get("devices") or [] if isinstance(d, dict)}
+        name = names.get(device) or device.removeprefix("midi:")
+        try:
+            at = float(m.get("at") or 0) / 1e9
+        except (TypeError, ValueError):
+            at = 0.0
+        return f"{at:9.3f}  {name[:24]:<24}  {str(m.get('raw') or ''):<11}  {m.get('decoded') or ''}"
+
+    def _engine_event(self, message: Any) -> None:
+        if not isinstance(message, dict) or not self.monitor_on:
+            return
+        kind = message.get("event")
+        if kind == "surfaceError":
+            self.monitor_on = False
+            self.monitor_error = str(message.get("error") or "")
+            self._show_monitor_state()
+            return
+        if kind != "surfaceMonitor":
+            return
+        new = [self._monitor_line(m) for m in message.get("messages") or [] if isinstance(m, dict)]
+        dropped = message.get("dropped")
+        if isinstance(dropped, int) and dropped > 0:
+            new.append(fmt("… {count} messages not shown (too many at once)", count=dropped))
+        if not new:
+            return
+        self.monitor_lines = (self.monitor_lines + new)[-self.MONITOR_LINES:]
+        log = self._monitor_widget("log")
+        if log is not None:
+            log.appendPlainText("\n".join(new))
 
     def _load_surfaces(self) -> None:
         def devices(r: Any, _b: Any) -> None:

@@ -8,10 +8,14 @@
 //!
 //! Discovery never fails as a whole: a machine without an ALSA sequencer (containers, CI) or
 //! without `/sys/class/hidraw` gives an empty list for that part and a note in
-//! [`Discovery::problems`]. Reading the devices, hot-plug and feedback come in the next steps.
+//! [`Discovery::problems`].
+//!
+//! [`midi_in::MidiReader`] reads the MIDI controllers (the MIDI Monitor). Reading the HID devices
+//! and feedback come in the next steps.
 
 pub mod hid;
 pub mod midi;
+pub mod midi_in;
 
 use cfa4_surface_model::{DeviceId, DeviceState, SurfaceProtocol};
 use serde::{Deserialize, Serialize};
