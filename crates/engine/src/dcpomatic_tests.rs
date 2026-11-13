@@ -18,6 +18,7 @@ fn params_map_onto_the_request() {
         "audioChannels": 8,
         "videoBitRateMbps": 200,
         "threeD": true,
+        "encrypt": true,
         "isdcfName": false,
         "threads": 4,
         "configDir": "/cfg",
@@ -34,7 +35,7 @@ fn params_map_onto_the_request() {
     assert_eq!(r.resolution, Some(Resolution::FourK));
     assert_eq!(r.container, Some(Container::Scope));
     assert_eq!((r.frame_rate, r.audio_channels, r.video_bit_rate_mbps, r.threads), (Some(24), Some(8), Some(200), Some(4)));
-    assert!(r.three_d && !r.isdcf_name);
+    assert!(r.three_d && r.encrypt && !r.isdcf_name);
     assert_eq!(r.config_dir, Some(PathBuf::from("/cfg")));
 
     let min = request_from_params("dcpomatic.makeDcp", &json!({"content": "/m/a.mov", "output": "/o/f", "name": "Short"})).unwrap();
@@ -60,8 +61,43 @@ fn bad_params_are_refused() {
 #[test]
 fn commands_are_registered() {
     let ids: Vec<&str> = crate::commands::command_specs().iter().map(|c| c.id).collect();
-    assert!(ids.contains(&"dcpomatic.status") && ids.contains(&"dcpomatic.makeDcp"));
+    assert!(ids.contains(&"dcpomatic.status") && ids.contains(&"dcpomatic.makeDcp") && ids.contains(&"dcpomatic.makeKdm"));
     let mut s = crate::Session::default();
     let st = status(&mut s, &json!({})).unwrap();
     assert!(st["available"].is_boolean() && st["minimumVersion"] == "2.18.20", "{st}");
+}
+
+#[test]
+fn kdm_params_map_onto_the_request() {
+    let cmd = "dcpomatic.makeKdm";
+    let r = kdm_request_from_params(
+        cmd,
+        &json!({
+            "film": "/o/f", "certificate": "/c/proj.pem", "output": "/o/kdm", "cinema": "Uránia", "screen": "1",
+            "validFrom": "2026-11-20 10:00:00", "validFor": {"count": 3, "unit": "days"}, "formulation": "dciSpecific",
+            "trustedDevices": ["/c/td.pem"], "disableForensicMarkingAudio": true,
+        }),
+    )
+    .unwrap();
+    assert_eq!(r.film_dir, PathBuf::from("/o/f"));
+    assert_eq!(r.validity, Validity::For { count: 3, unit: ValidityUnit::Days });
+    assert_eq!(r.formulation, Formulation::DciSpecific);
+    assert_eq!(r.trusted_devices, [PathBuf::from("/c/td.pem")]);
+    assert!(r.disable_forensic_marking_audio && !r.disable_forensic_marking_picture);
+    assert_eq!(r.valid_from.as_deref(), Some("2026-11-20 10:00:00"));
+
+    let now =
+        kdm_request_from_params(cmd, &json!({"film": "/f", "certificate": "/c", "output": "/o", "validFrom": "now", "validUntil": "2026-12-01 00:00:00"}))
+            .unwrap();
+    assert_eq!((now.valid_from, now.validity), (None, Validity::Until("2026-12-01 00:00:00".into())));
+
+    for (p, want) in [
+        (json!({"certificate": "/c", "output": "/o", "validUntil": "x"}), "film"),
+        (json!({"film": "/f", "certificate": "/c", "output": "/o"}), "exactly one"),
+        (json!({"film": "/f", "certificate": "/c", "output": "/o", "validUntil": "x", "validFor": {"count": 1, "unit": "days"}}), "exactly one"),
+        (json!({"film": "/f", "certificate": "/c", "output": "/o", "validFor": {"count": 1, "unit": "months"}}), "unit"),
+    ] {
+        let e = kdm_request_from_params(cmd, &p).unwrap_err().to_string();
+        assert!(e.contains(want), "{p}: {e}");
+    }
 }

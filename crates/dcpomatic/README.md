@@ -20,15 +20,16 @@ if let Some(d) = Dcpomatic::locate() {
 }
 ```
 
-Engine commands: `dcpomatic.status` and `dcpomatic.makeDcp` (`crates/engine/src/dcpomatic.rs`).
+Engine commands: `dcpomatic.status`, `dcpomatic.makeDcp` and `dcpomatic.makeKdm`
+(`crates/engine/src/dcpomatic.rs`).
 
-`Dcpomatic::locate` finds `dcpomatic2_create` and `dcpomatic2_cli` in `CFA4_DCPOMATIC_BIN_DIR`, or
-else on `PATH`. The oldest supported DCP-o-matic is **2.18.20** (`MIN_VERSION`), read from
+`Dcpomatic::locate` finds `dcpomatic2_create` and `dcpomatic2_cli` (and, if present,
+`dcpomatic2_kdm_cli`) in `CFA4_DCPOMATIC_BIN_DIR`, or else on `PATH`. The oldest supported DCP-o-matic is **2.18.20** (`MIN_VERSION`), read from
 `dcpomatic2_cli --version`.
 
 ## How a run works
 
-1. `dcpomatic2_create --config <cfg> --output <film> --name … --no-encrypt --dcp-content-type …
+1. `dcpomatic2_create --config <cfg> --output <film> --name … --no-encrypt|--encrypt --dcp-content-type …
    --standard SMPTE|interop [--twok|--fourk] [--container-ratio 185|239|190] [--dcp-frame-rate N]
    [--audio-channels N] [--video-bit-rate N] --twod|--threed [per content: --left-eye|--right-eye,
    --channel X, --gain dB] <absolute content paths>` writes the film directory.
@@ -47,12 +48,27 @@ else on `PATH`. The oldest supported DCP-o-matic is **2.18.20** (`MIN_VERSION`),
 - The request is checked before anything starts: the film directory must not exist, content must
   exist, frame rate one of 24/25/30/48/50/60, even channel count 2–16 large enough for the channel
   mapping, bit rate ≥ 10 Mbit/s, eyes only in 3D, UTF-8 paths.
-- `--no-encrypt` always (ADR 0011 §4); `--no-remote` always, so no frame goes to network encoders.
+- `--no-encrypt` unless `encrypt` is set; `--no-remote` always, so no frame goes to network encoders.
 - DCP-o-matic's configuration (signing chain) lives in `${XDG_CONFIG_HOME:-~/.config}/cfa4/dcpomatic`
   unless `config_dir` says otherwise.
+
+## Encrypted DCPs and KDMs
+
+With `encrypt: true` the track files are encrypted (ST 429-6). The content keys stay in the film
+directory's `metadata.xml`: keep that directory, KDMs are made from it.
+
+`Dcpomatic::make_kdm(&KdmRequest)` runs `dcpomatic2_kdm_cli --output <dir> --verbose --valid-from
+now|<UTC time> (--valid-duration "N hours|days|weeks|years" | --valid-to <UTC time>) --formulation …
+--projector-certificate <pem> [--cinema …] [--screen …] [--trusted-device-certificate …]…
+[--disable-forensic-marking-picture] [--disable-forensic-marking-audio=0] create <film>`. That tool has
+no `--config`, so the private `XDG_CONFIG_HOME/dcpomatic2` is a link to the configuration directory,
+and KDMs are signed with the same chain as the packages. It refuses a film that is not encrypted,
+checks the times (`YYYY-MM-DD HH:MM:SS`, UTC, until after from) and the certificate files, and returns
+the KDM files written by the run. CFA4 never reads or stores the keys, and never e-mails KDMs.
 
 ## Tests
 
 `cargo test -p cfa4-dcpomatic` drives fake tools (shell scripts): the exact argument arrays, the
 private cleared environment, progress, version check, refused requests, engine errors with their
-last message, missing tools, cancel (a background child in the group stops too) and timeout.
+last message, missing tools, cancel (a background child in the group stops too), timeout, the
+`--encrypt` flag, and the KDM tool (arguments, configuration link, refused requests, errors, missing tool).

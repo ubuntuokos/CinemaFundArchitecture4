@@ -18,22 +18,26 @@
 //! to files. Cancel sends `SIGINT` to the group, then `SIGKILL`; a timeout sends `SIGKILL`.
 //!
 //! What this backend adds next to CFA4's own DCP export (`cfa4-export`, `dcp_out.rs`): Interop
-//! packages, several content files in one composition, 3D, and DCP-o-matic's own resizing, colour
-//! conversion and audio mapping. Packages are always unencrypted (`--no-encrypt`); KDM creation is
-//! not part of this backend (ADR 0011 §4).
+//! packages, several content files in one composition, 3D, encrypted packages (ST 429-6) and
+//! their KDMs (`dcpomatic2_kdm_cli`, [`Dcpomatic::make_kdm`]), and DCP-o-matic's own resizing,
+//! colour conversion and audio mapping (ADR 0011).
 
+mod kdm;
 mod process;
 mod request;
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+pub use kdm::{Formulation, KdmOutcome, KdmRequest, Validity, ValidityUnit};
 pub use request::{Channel, Container, Content, ContentKind, DcpRequest, Eye, Resolution, Standard};
 
 /// The program that writes the film directory.
 pub const CREATE: &str = "dcpomatic2_create";
 /// The program that encodes the DCP.
 pub const CLI: &str = "dcpomatic2_cli";
+/// The program that makes KDMs for encrypted DCPs (optional: only KDMs need it).
+pub const KDM_CLI: &str = "dcpomatic2_kdm_cli";
 /// The variable that names the directory holding both programs (otherwise `PATH` is searched).
 pub const ENV_BIN_DIR: &str = "CFA4_DCPOMATIC_BIN_DIR";
 /// The oldest DCP-o-matic whose command line this adapter speaks (`--video-bit-rate`, `make-dcp`).
@@ -97,6 +101,8 @@ pub enum Phase {
     Create,
     /// `dcpomatic2_cli` is encoding the DCP.
     Encode,
+    /// `dcpomatic2_kdm_cli` is making KDMs.
+    Kdm,
 }
 
 /// Cancellation and progress for one run. Both hooks are called from the running thread.
@@ -151,13 +157,20 @@ pub struct DcpOutcome {
 pub struct Dcpomatic {
     create: PathBuf,
     cli: PathBuf,
+    kdm: Option<PathBuf>,
     timeout: Duration,
 }
 
 impl Dcpomatic {
     /// A backend that runs the given programs.
     pub fn new(create: impl Into<PathBuf>, cli: impl Into<PathBuf>) -> Dcpomatic {
-        Dcpomatic { create: create.into(), cli: cli.into(), timeout: Duration::from_secs(48 * 60 * 60) }
+        Dcpomatic { create: create.into(), cli: cli.into(), kdm: None, timeout: Duration::from_secs(48 * 60 * 60) }
+    }
+
+    /// The KDM program ([`KDM_CLI`]); without it [`Dcpomatic::make_kdm`] is unavailable.
+    pub fn with_kdm_program(mut self, kdm: impl Into<PathBuf>) -> Dcpomatic {
+        self.kdm = Some(kdm.into());
+        self
     }
 
     /// The installed tools: both in [`ENV_BIN_DIR`] if it is set, otherwise the first `PATH`
@@ -168,7 +181,11 @@ impl Dcpomatic {
             None => std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect()).unwrap_or_default(),
         };
         let find = |name: &str| dirs.iter().map(|d| d.join(name)).find(|p| p.is_file());
-        Some(Dcpomatic::new(find(CREATE)?, find(CLI)?))
+        let d = Dcpomatic::new(find(CREATE)?, find(CLI)?);
+        Some(match find(KDM_CLI) {
+            Some(k) => d.with_kdm_program(k),
+            None => d,
+        })
     }
 
     /// The longest a whole run may take (default 48 hours: a 4K feature on a small machine is
@@ -184,6 +201,10 @@ impl Dcpomatic {
 
     pub fn cli_program(&self) -> &Path {
         &self.cli
+    }
+
+    pub fn kdm_program(&self) -> Option<&Path> {
+        self.kdm.as_deref()
     }
 
     /// The installed version (from `dcpomatic2_cli --version`); `Unavailable` when it cannot be
@@ -234,7 +255,7 @@ impl Dcpomatic {
 }
 
 /// Creates `dir` (and its parents) with mode 0700 when it does not exist yet.
-fn create_private_dir(dir: &Path) -> std::io::Result<()> {
+pub(crate) fn create_private_dir(dir: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::DirBuilderExt as _;
     if dir.is_dir() {
         return Ok(());

@@ -1,7 +1,7 @@
 # ADR 0011 – DCP-o-matic bekötése külső DCP-mesterelő háttérként
 
-**Dátum:** 2026-11-13 · **Állapot:** javasolt (a tulajdonos, `ubuntuokos` kérte 2026-11-13-án:
-„A DCP-o-matic beépítése a CFA4-be”; a 4. pont döntései jóváhagyásra várnak) ·
+**Dátum:** 2026-11-13 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos` kérte 2026-11-13-án:
+„A DCP-o-matic beépítése a CFA4-be”; a 4. pont döntéseit ugyanaznap jóváhagyta) ·
 **Kapcsolódik:** [ADR 0001](0001-platform-ffi.md) (FFI, 2026-11-07-i kiegészítés: nem Rust
 komponensek), [ADR 0005](ADR-0005-media-backends.md) (kiegészítő médiahátterek),
 [DCP-00 audit](../audit/DCP-00-CAPABILITY-AUDIT-2026-10-27.md), a `cfa4-dcp-inspect` minta
@@ -44,7 +44,8 @@ a licenc egyik bekötési módot sem zárja ki.
    viszik magukkal. A felhasználó telepíti (a DCP-o-matic saját csomagjai vagy forrásból
    fordítás, `docs/development/dcpomatic.md`). Ha nincs telepítve, a háttér „nem elérhető”, a CFA4
    többi része változatlanul működik. Legkisebb támogatott változat: **2.18.20**
-   (`--video-bit-rate`, `make-dcp`); a `dcpomatic2_cli --version` alapján ellenőrizzük.
+   (`--video-bit-rate`, `make-dcp`); a `dcpomatic2_cli --version` alapján ellenőrizzük. A KDM-ekhez
+   a `dcpomatic2_kdm_cli` is kell; nélküle csak a KDM-készítés nem elérhető.
 3. **Parancsok** (minden kliens, a Qt GUI is a `cfa4-cli serve`-en át): `dcpomatic.status`
    (telepítve van-e, hol, milyen változat) és `dcpomatic.makeDcp` (tartalomfájlok → DCP
    háttérfeladatként, `jobs.list` / `jobs.cancel`, vagy `wait`-tel azonnal). A CFA4 saját
@@ -52,19 +53,25 @@ a licenc egyik bekötési módot sem zárja ki.
    (Interop, több tartalom, 3D, a DCP-o-matic saját skálázása, színkonverziója és
    hangkiosztása). A szokásos munkafolyamat: mesterfájl exportja a CFA4-ből (pl. ProRes 4444 vagy
    TIFF-sorozat + WAV), majd `dcpomatic.makeDcp` erre a fájlra.
-4. **A tulajdonos döntésére vár:**
-   - **Titkosított DCP és KDM-készítés.** A 2026-11-12-i döntés (#933) a titkosított DCP-t a
-     CFA4-ben lejátszásra és importra korlátozta. Ezért a háttér mindig `--no-encrypt`-tel fut,
-     és a `dcpomatic2_kdm_cli` nincs bekötve. Ha a tulajdonos titkosított DCP-t és KDM-et is
-     kér, az külön PR.
-   - **Qt GUI-panel** az export párbeszédben („DCP-o-matic” háttér választása): külön PR a
-     `python/cfa4_qt/`-ben, ennek a parancsfelületére építve.
+4. **Tulajdonosi döntések (2026-11-13, a 4. pont kérdéseire: „igen, igen”):**
+   - **Titkosított DCP és KDM-készítés: igen.** Ez a 2026-11-12-i döntést (#933: a CFA4 maga a
+     titkosított DCP-t csak lejátssza és importálja) nem változtatja meg, hanem kiegészíti: a
+     titkosítást és a KDM-et a DCP-o-matic készíti, külön folyamatban. A `dcpomatic.makeDcp`
+     `encrypt` paramétere `--encrypt`-tel futtat (alapból `--no-encrypt`). A tartalomkulcsok a
+     filmkönyvtár `metadata.xml`-jében maradnak, ezért azt meg kell őrizni. A
+     `dcpomatic.makeKdm` ebből a könyvtárból a `dcpomatic2_kdm_cli create`-tel KDM-et készít egy
+     projektor- (media block-) tanúsítványra. Az érvényesség UTC-ben értendő, a formuláció
+     választható, és a törvényszéki jelölés kikapcsolható. A CFA4 a kulcsokat nem olvassa és nem
+     tárolja, a KDM-eket nem küldi el (a DCP-o-matic e-mail funkciója nincs bekötve). A kész KDM-et
+     a CFA4 saját `dcp.loadKdm`-je le tudja játszani.
+   - **Qt GUI-panel: igen,** külön PR a `python/cfa4_qt/`-ben, ennek a parancsfelületére építve.
    - **Csomagolás:** a .deb `Suggests: dcpomatic` sort kaphat (a DCP-o-matic nincs az Ubuntu
-     tárolóiban, ezért `Recommends` nem lehet).
+     tárolóiban, ezért `Recommends` nem lehet). Ez nem része ennek az ADR-nek.
 5. **A DCP-o-matic beállításai** alapból a CFA4 saját könyvtárában vannak
-   (`${XDG_CONFIG_HOME:-~/.config}/cfa4/dcpomatic`, `--config`): az aláíró tanúsítványlánc
-   futásról futásra ugyanaz, és a felhasználó saját DCP-o-matic-beállításai érintetlenek. A
-   `configDir` paraméter más könyvtárat ad meg.
+   (`${XDG_CONFIG_HOME:-~/.config}/cfa4/dcpomatic`; a `--config` adja át, a `--config` opció
+   nélküli `dcpomatic2_kdm_cli`-nek pedig egy privát `XDG_CONFIG_HOME/dcpomatic2` hivatkozás). Így
+   az aláíró tanúsítványlánc futásról futásra ugyanaz, és a felhasználó saját
+   DCP-o-matic-beállításai érintetlenek. A `configDir` paraméter más könyvtárat ad meg.
 6. **Hálózat:** a `--no-remote` miatt a DCP-o-matic nem küld képkockát a beállításaiban
    esetleg felsorolt kódolószerverekre.
 

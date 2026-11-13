@@ -192,6 +192,10 @@ pub struct DcpRequest {
     pub video_bit_rate_mbps: Option<u32>,
     #[serde(default)]
     pub three_d: bool,
+    /// Encrypt the track files (ST 429-6). The content key stays in the film directory's
+    /// `metadata.xml`, so keep that directory: KDMs ([`crate::KdmRequest`]) are made from it.
+    #[serde(default)]
+    pub encrypt: bool,
     /// `false`: the folder is named exactly `name`.
     #[serde(default = "yes")]
     pub isdcf_name: bool,
@@ -223,6 +227,7 @@ impl DcpRequest {
             audio_channels: None,
             video_bit_rate_mbps: None,
             three_d: false,
+            encrypt: false,
             isdcf_name: true,
             threads: None,
             config_dir: None,
@@ -292,7 +297,7 @@ impl DcpRequest {
         push(&text(&film_dir)?);
         push("--name");
         push(name);
-        push("--no-encrypt");
+        push(if self.encrypt { "--encrypt" } else { "--no-encrypt" });
         push("--dcp-content-type");
         push(self.content_kind.isdcf());
         push("--standard");
@@ -377,16 +382,16 @@ pub(crate) struct Plan {
     pub cli_args: Vec<String>,
 }
 
-fn absolute(p: &Path) -> Result<PathBuf, DcpomaticError> {
+pub(crate) fn absolute(p: &Path) -> Result<PathBuf, DcpomaticError> {
     std::path::absolute(p).map_err(|e| DcpomaticError::Invalid(format!("{}: {e}", p.display())))
 }
 
 /// DCP-o-matic takes paths as text; a path that is not UTF-8 is refused instead of mangled.
-fn text(p: &Path) -> Result<String, DcpomaticError> {
+pub(crate) fn text(p: &Path) -> Result<String, DcpomaticError> {
     p.to_str().map(str::to_string).ok_or_else(|| DcpomaticError::Invalid(format!("{} is not a UTF-8 path", p.display())))
 }
 
-fn default_config_dir() -> Option<PathBuf> {
+pub(crate) fn default_config_dir() -> Option<PathBuf> {
     let var = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
     var("XDG_CONFIG_HOME").or_else(|| var("HOME").map(|h| h.join(".config"))).map(|c| c.join("cfa4/dcpomatic"))
 }

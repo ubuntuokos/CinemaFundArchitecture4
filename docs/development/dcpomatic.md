@@ -2,10 +2,10 @@
 
 [ADR 0011](../adr/ADR-0011-dcpomatic-external-mastering.md) · crate:
 [`cfa4-dcpomatic`](../../crates/dcpomatic/README.md) · commands: `dcpomatic.status`,
-`dcpomatic.makeDcp`.
+`dcpomatic.makeDcp`, `dcpomatic.makeKdm`.
 
-CFA4 runs DCP-o-matic's command-line tools (`dcpomatic2_create`, `dcpomatic2_cli`) as separate
-programs. They are not part of CFA4 and are not in Ubuntu's archive, so install them yourself.
+CFA4 runs DCP-o-matic's command-line tools (`dcpomatic2_create`, `dcpomatic2_cli`, and for KDMs
+`dcpomatic2_kdm_cli`) as separate programs. They are not part of CFA4 and are not in Ubuntu's archive, so install them yourself.
 Version **2.18.20 or newer** is needed.
 
 ## Install
@@ -54,5 +54,26 @@ with `{"path": …, "eye": "left" | "right"}` content, mono audio files mapped w
 `{"path": …, "channel": "L" | "R" | "C" | "Lfe" | "Ls" | "Rs" | "BsL" | "BsR" | "HI" | "VI", "gainDb": …}`,
 `isdcfName: false` (folder named exactly `name`), `threads`, `configDir`.
 
-Packages are unencrypted; encrypted DCPs and KDMs are not made by this backend (ADR 0011 §4).
 Check the result with CFA4's DCP validation ([dcp-validation.md](dcp-validation.md)).
+
+## Encrypted DCP and KDMs
+
+Add `"encrypt": true` to `dcpomatic.makeDcp`. The content keys stay in the film folder (`output`),
+so **keep that folder**: every KDM is made from it. Then, for each projector:
+
+```json
+{"id": 3, "method": "engine.execute", "params": {"command": "dcpomatic.makeKdm", "params": {
+  "film": "/work/MyFilm-dcpomatic",
+  "certificate": "/certs/projector-leaf.pem",
+  "output": "/work/kdms",
+  "cinema": "Urania", "screen": "1",
+  "validFrom": "2026-11-20 10:00:00",
+  "validFor": {"count": 2, "unit": "weeks"}
+}}}
+```
+
+Times are UTC (`now` or `YYYY-MM-DD HH:MM:SS`); give `validFor` or `validUntil`. Further options:
+`formulation` (`modifiedTransitional1` default, `multipleModifiedTransitional1`, `dciAny`,
+`dciSpecific`), `trustedDevices` (certificate files), `disableForensicMarkingPicture`,
+`disableForensicMarkingAudio`. The answer lists the KDM files. To check a KDM in CFA4 itself, load it
+with File ▸ Load KDM… (`dcp.loadKdm`) together with the recipient's private key.
