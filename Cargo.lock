@@ -1285,8 +1285,10 @@ dependencies = [
 name = "cfa4-dcp-validate"
 version = "0.10.0"
 dependencies = [
+ "cfa4-audio-dsp",
  "cfa4-dcp",
  "cfa4-export",
+ "cfa4-iab",
  "cfa4-j2k",
  "cfa4-media",
  "cfa4-mxf",
