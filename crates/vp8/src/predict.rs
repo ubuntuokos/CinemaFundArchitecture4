@@ -248,7 +248,7 @@ impl RefPlane<'_> {
 /// vector `(mvx, mvy)` in eighth pixels, using `filters` (8 x 6 taps: the six-tap or bilinear
 /// set, 18.3), writing into `dst` (same layout as the block's plane).
 pub fn predict_inter(
-    reference: &RefPlane,
+    reference: &RefPlane<'_>,
     dst: &mut [u8],
     dst_stride: usize,
     bx: usize,

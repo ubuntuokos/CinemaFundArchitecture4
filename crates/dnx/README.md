@@ -46,7 +46,9 @@ let sample: Vec<u8> = enc.encode(&frame)?;               // exactly enc.frame_si
 color_volume, cid, par }` holds planar samples without row padding. Interlaced frames are woven
 (field 1 = top field on even lines). RGB frames hold G, B, R in `y`, `cb`, `cr`. In MOV the
 sample entry is `AVdn` (DNxHD) or `AVdh` (DNxHR); `cfa4-codecs` reads the CID from the
-first frame header to label the stream.
+first frame header to label the stream. It hands RGB frames to the timeline as planar R′G′B′ (no Y′CbCr
+round trip): the video-range codes are expanded to full range at the coded depth, which keeps
+every code distinct.
 
 ## Decoder
 

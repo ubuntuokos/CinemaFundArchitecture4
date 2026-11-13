@@ -40,12 +40,15 @@ cfa4-format = { workspace = true }
 cfa4-qc = { workspace = true }
 cfa4-platform = { workspace = true }
 cfa4-gstreamer = { workspace = true }
+cfa4-obs = { workspace = true }
 cfa4-ffmpeg = { workspace = true }
 log = { workspace = true }
 cfa4-mxf = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-ogg = { workspace = true }
 cfa4-automation = { workspace = true }
+cfa4-tcsync = { workspace = true }
+cfa4-tcsync-io = { workspace = true }
 serde_json = { workspace = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 # the GPU compositor's backends, so `frame.render` composites on the GPU when this binary is built

@@ -59,6 +59,7 @@ from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.kdm_dialog import KdmDialog
 from .panels.live import LiveDialog
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
@@ -143,6 +144,7 @@ SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
     "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.detachProxies",
     "media.toggleProxies", "media.enableProxies", "media.reconnectFullRes", "clip.interpretFootage", "edit.undo", "edit.redo",
+    "dcp.loadKdm", "dcp.clearKeys",
 })
 
 # panels docked around the Program monitor, in the order they are created
@@ -862,6 +864,14 @@ class MainWindow(QMainWindow):
         self.restricted_codecs_action = QAction(tr("Restricted Codecs…"), self)
         self.restricted_codecs_action.setObjectName("qt.help.restrictedCodecs")
         self.restricted_codecs_action.triggered.connect(self.open_restricted_codecs)
+        # encrypted DCPs (#933, #1029): Qt-only File menu items over dcp.loadKdm / dcp.clearKeys
+        self.kdm_dialog: KdmDialog | None = None
+        self.load_kdm_action = QAction(tr("Load KDM…"), self)
+        self.load_kdm_action.setObjectName("qt.file.loadKdm")
+        self.load_kdm_action.triggered.connect(self.open_kdm)
+        self.forget_keys_action = QAction(tr("Forget DCP Keys"), self)
+        self.forget_keys_action.setObjectName("qt.file.forgetDcpKeys")
+        self.forget_keys_action.triggered.connect(self.forget_dcp_keys)
         # J / K / L shuttle, slow shuttle, Play Around and Play In to Out on the focused monitor,
         # dynamic trimming in trim mode (egui's playback.*)
         self.shuttle_actions: list[tuple[QAction, str]] = []
@@ -1005,7 +1015,7 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         self.registry.build_menus(
             self.menuBar(), self, {
-                "File": [self.quit_action],
+                "File": [self.load_kdm_action, self.forget_keys_action, self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
                 "Edit": [self.shortcuts_action, self.preferences_menu.menuAction()],
                 "View": [self.fit_action, self.multicam_actions[0][0], self.dynamic_waveforms_action],
@@ -2055,11 +2065,19 @@ class MainWindow(QMainWindow):
         self.engine.execute(
             command,
             params or {},
-            on_reply=lambda _r, _b, c=command: self._command_done(c),
+            on_reply=lambda r, _b, c=command: self._command_done(c, r),
             on_error=lambda m, c=command: self._command_failed(c, m),
         )
 
-    def _command_done(self, command: str) -> None:
+    def _command_done(self, command: str, result: Any = None) -> None:
+        if command == "graphics.checkLegibility" and isinstance(result, dict):
+            # egui's status line for Graphics and Titles ▸ Check Text Legibility
+            count = result.get("count")
+            count = count if isinstance(count, int) and not isinstance(count, bool) else 0
+            text = (tr("Text legibility: no problems found") if count == 0
+                    else fmt("Text legibility: {count} problems marked on the timeline (orange markers)", count=count))
+            self.events.log(text, source=command)
+            self.statusBar().showMessage(text, 6000)
         if command in SOURCE_COMMANDS:
             # the item keeps its id but shows other media (or comes back online): cached
             # thumbnails and waveforms keyed by that id are stale
@@ -2186,6 +2204,8 @@ class MainWindow(QMainWindow):
             self.generate_waveforms(dict(params or {}))
         elif (cid in EXPORT_SAVES or cid == "file.mediaPropertiesFile") and not (params or {}).get("path"):
             self.pick_and_run(cid, dict(params or {}))
+        elif cid == "dcp.loadKdm" and not params:
+            self.open_kdm()
         elif cid == "media.linkMedia" and not params:
             self.open_link_media(menu=True)
         elif cid in ("media.makeOffline", "media.createProxies", "file.projectManager") and not params:
@@ -3017,6 +3037,22 @@ class MainWindow(QMainWindow):
 
     def open_restricted_codecs(self) -> None:
         self._media_backends().show_restricted()
+
+    def open_kdm(self) -> None:
+        """File ▸ Load KDM…: the KDM and private key dialog (``dcp.loadKdm``)."""
+        if self.kdm_dialog is None:
+            self.kdm_dialog = KdmDialog(self.engine, self, changed=lambda: self._command_done("dcp.loadKdm"))
+        self.kdm_dialog.show()
+        self.kdm_dialog.raise_()
+
+    def forget_dcp_keys(self) -> None:
+        """File ▸ Forget DCP Keys: ``dcp.clearKeys``; encrypted clips go silent / black again."""
+
+        def got(_r: Any, _b: bytes | None) -> None:
+            self.statusBar().showMessage(tr("DCP keys forgotten"), 4000)
+            self._command_done("dcp.clearKeys")
+
+        self.engine.execute("dcp.clearKeys", {}, on_reply=got, on_error=lambda m: self._command_failed("dcp.clearKeys", m))
 
     # ----- credits -----
     def open_credits(self, path: str | None = None) -> None:

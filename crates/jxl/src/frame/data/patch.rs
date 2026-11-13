@@ -83,7 +83,7 @@ impl PatchBlendMode {
 impl Bundle<(&ImageHeader, &FrameHeader)> for Patches {
     type Error = crate::frame::Error;
 
-    fn parse(bitstream: &mut Bitstream, (image_header, frame_header): (&ImageHeader, &FrameHeader)) -> Result<Self> {
+    fn parse(bitstream: &mut Bitstream<'_>, (image_header, frame_header): (&ImageHeader, &FrameHeader)) -> Result<Self> {
         let num_extra = image_header.metadata.ec_info.len();
         let alpha_channel_indices =
             image_header.metadata.ec_info.iter().enumerate().filter_map(|(idx, info)| info.is_alpha().then_some(idx as u32)).collect::<Vec<_>>();

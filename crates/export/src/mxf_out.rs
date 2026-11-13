@@ -40,6 +40,7 @@ fn picture(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate, mpeg: Opt
         return Ok(d);
     }
     let coding = match settings.video_format() {
+        _ if let Some(layout) = settings.mxf_video_codec.uncompressed_layout() => PictureCoding::Uncompressed { layout },
         Format::Mpeg2 => {
             let m = mpeg.ok_or_else(|| ExportError::Encode("internal: MPEG-2 encoder without stream parameters".into()))?;
             if !matches!(m.profile_and_level, 0x44 | 0x46 | 0x82) {
@@ -112,6 +113,9 @@ pub(crate) struct MxfSetup<'a> {
     pub timecode: (i64, bool),
     /// MPEG-2 video: the encoder's stream parameters.
     pub mpeg: Option<MpegVideoInfo>,
+    /// Closed captions for the ANC data track (`ExportSettings::mxf_anc_captions`), timed from
+    /// the first exported frame.
+    pub captions: Option<cfa4_captions::Document>,
 }
 
 /// An MXF export in progress.
@@ -127,10 +131,12 @@ pub(crate) struct MxfMux {
     first_offset: Option<i64>,
     max_display: i64,
     frame_den: i64,
+    /// Closed captions: one caption distribution packet per content package.
+    cdp: Option<cfa4_captions::mcc::CdpStream>,
 }
 
 impl MxfMux {
-    pub fn new(s: MxfSetup) -> Result<Self> {
+    pub fn new(s: MxfSetup<'_>) -> Result<Self> {
         let settings = s.settings;
         let atom = settings.format == Format::MxfOpAtom;
         let rate = Rational::new(s.rate.num as i32, s.rate.den as i32);
@@ -147,6 +153,19 @@ impl MxfMux {
             cfg.sound = vec![SoundDesc { sample_rate: sr, channels: ch as u32, bits }];
         }
         cfg.rdd9 = settings.mxf_video_codec == MxfVideoCodec::XdcamHd422;
+        let cdp = match s.captions.as_ref().filter(|_| !atom) {
+            Some(doc) => {
+                if s.rate != cfa4_captions::mcc::RATE {
+                    return Err(ExportError::Unsupported(format!(
+                        "closed captions in MXF (ANC) are written at 29.97 fps for now (#1065), not {}",
+                        s.rate.label()
+                    )));
+                }
+                cfg.anc = true;
+                Some(cfa4_captions::mcc::CdpStream::new(doc))
+            }
+            None => None,
+        };
         let mut audio = Vec::new();
         if atom && let Some((sr, ch)) = s.audio {
             for (k, path) in opatom_audio_paths(&settings.path, ch).into_iter().enumerate() {
@@ -180,6 +199,7 @@ impl MxfMux {
             first_offset: None,
             max_display: -1,
             frame_den: s.rate.den.max(1),
+            cdp,
         })
     }
 
@@ -206,6 +226,13 @@ impl MxfMux {
                 self.max_display = self.max_display.max(display);
                 FrameInfo { key: p.key, kind, display: Some(display) }
             };
+            if let Some(c) = self.cdp.as_mut() {
+                // ST 436-1 5.2: the ANC elements are in display order, one per content package;
+                // the CDP rides on VANC line 9 (ST 334-1), 8-bit luma samples
+                let words = c.frame(self.stored);
+                let packet = cfa4_mxf::AncPacket { line: 9, wrapping: 0x01, coding: 4, words };
+                self.video.push_anc(&cfa4_mxf::anc_element(&[packet])).map_err(io)?;
+            }
             self.video.push_picture(&p.data, info).map_err(io)?;
             self.stored += 1;
         }

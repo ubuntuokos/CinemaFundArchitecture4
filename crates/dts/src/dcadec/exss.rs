@@ -42,15 +42,15 @@ pub(crate) enum ExssError {
 type R<T> = Result<T, ExssError>;
 
 #[inline]
-fn rb(gb: &mut BitReader, n: usize) -> R<u32> {
+fn rb(gb: &mut BitReader<'_>, n: usize) -> R<u32> {
     gb.read_bits(n).ok_or(ExssError::Bitstream)
 }
 #[inline]
-fn rb1(gb: &mut BitReader) -> R<bool> {
+fn rb1(gb: &mut BitReader<'_>) -> R<bool> {
     gb.read_bit().ok_or(ExssError::Bitstream)
 }
 #[inline]
-fn skip(gb: &mut BitReader, n: usize) -> R<()> {
+fn skip(gb: &mut BitReader<'_>, n: usize) -> R<()> {
     gb.skip_bits_long(n).ok_or(ExssError::Bitstream)
 }
 #[inline]
@@ -59,7 +59,7 @@ fn skip(gb: &mut BitReader, n: usize) -> R<()> {
 /// overrun, checked there) discards the whole read.
 #[allow(clippy::too_many_arguments)]
 fn parse_speculative_descriptor_tail(
-    gb: &mut BitReader,
+    gb: &mut BitReader<'_>,
     a: &mut ExssAsset,
     mix_metadata_present: bool,
     mix_metadata_enabled: bool,
@@ -86,7 +86,7 @@ fn parse_speculative_descriptor_tail(
     Ok(())
 }
 
-fn seek(gb: &mut BitReader, pos: usize) -> R<()> {
+fn seek(gb: &mut BitReader<'_>, pos: usize) -> R<()> {
     if gb.seek(pos) { Ok(()) } else { Err(ExssError::Invalid("seek past end")) }
 }
 
@@ -281,7 +281,7 @@ impl ExssParser {
         Ok(s)
     }
 
-    fn parse_descriptor(&mut self, gb: &mut BitReader) -> R<()> {
+    fn parse_descriptor(&mut self, gb: &mut BitReader<'_>) -> R<()> {
         let descr_pos = gb.position();
         let descr_size = rb(gb, 9)? as usize + 1;
         let a = &mut self.asset;
@@ -533,7 +533,7 @@ const DESCRIPTOR_MAX_BYTES: usize = 512;
 
 /// `bits` bits from `gb` into `out` (`bits.div_ceil(8)` bytes), MSB-first,
 /// a final partial byte left-aligned.
-fn read_tail(gb: &mut BitReader, bits: usize, out: &mut [u8]) -> R<()> {
+fn read_tail(gb: &mut BitReader<'_>, bits: usize, out: &mut [u8]) -> R<()> {
     let full_bytes = bits / 8;
     for byte in out.iter_mut().take(full_bytes) {
         *byte = rb(gb, 8)? as u8;
@@ -580,7 +580,7 @@ fn parse_xll_x_navigation(tail: &[u8]) -> Option<(usize, usize)> {
     Some((offset, size))
 }
 
-fn parse_xll_parameters(gb: &mut BitReader, a: &mut ExssAsset, exss_size_nbits: usize) -> R<()> {
+fn parse_xll_parameters(gb: &mut BitReader<'_>, a: &mut ExssAsset, exss_size_nbits: usize) -> R<()> {
     a.xll_size = rb(gb, exss_size_nbits)? as usize + 1;
     a.xll_sync_present = rb1(gb)?;
     if a.xll_sync_present {
@@ -595,7 +595,7 @@ fn parse_xll_parameters(gb: &mut BitReader, a: &mut ExssAsset, exss_size_nbits: 
     Ok(())
 }
 
-fn parse_lbr_parameters(gb: &mut BitReader) -> R<()> {
+fn parse_lbr_parameters(gb: &mut BitReader<'_>) -> R<()> {
     rb(gb, 14)?; // lbr_size-1
     if rb1(gb)? {
         skip(gb, 2)?;

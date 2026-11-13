@@ -48,7 +48,7 @@ fn picture(w: usize, h: usize) -> Image {
     img
 }
 
-fn run(id: &str, e: &EffectInstance, img: &Image, cx: &FxCtx) -> Image {
+fn run(id: &str, e: &EffectInstance, img: &Image, cx: &FxCtx<'_>) -> Image {
     let mut o = img.clone();
     crate::effects::apply(&mut o, e, cx);
     let _ = id;

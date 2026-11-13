@@ -2039,6 +2039,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP aplankas: JPEG 2000 3996×2160 (1,85:1), 5.1 24 bitų 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP aplankas: JPEG 2000 4096×1716 (2,39:1), 5.1 24 bitų 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (sąveikus pagrindinis paketas)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF aplankas: JPEG 2000 1920×1080, 5.1 24 bitų 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF aplankas: JPEG 2000 3840×2160, 5.1 24 bitų 48 kHz PCM
+	Episode	Epizodas
+	Event highlights	Renginio akimirkos
+	Event	Renginys
+	Lossless (reversible JPEG 2000)	Be nuostolių (grįžtamasis JPEG 2000)
+	Package language	Paketo kalba
 	4:2:0 (Main Profile)	4:2:0 (Main profilis)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profilis)
 	B pictures	B kadrai
@@ -2210,6 +2220,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bitų HDR)
 	10-bit RGB	10 bitų RGB
 	12-bit X'Y'Z'	12 bitų X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 bitų R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF su nuostoliais
+	JPEG 2000 IMF reversible	JPEG 2000 IMF grįžtamasis
 	16-bit half float	16 bitų pusinis slankusis kablelis
 	linear	linijinis
 	uncompressed	nesuspaustas
@@ -4326,6 +4339,7 @@ export.summary	Low	žema
 	Crawl	Bėganti eilutė
 	Picture: {file}	Paveikslėlis: {file}
 	Video: {file}	Vaizdo įrašas: {file}
+	Looped video: {file}	Kartojamas vaizdo įrašas: {file}
 	Into the next	Į kitą
 	Safe areas and spines	Saugios sritys ir ašys
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Veiksmo saugi sritis (93 %), titrų (90 %), centras ir puslapio ašys
@@ -4504,3 +4518,47 @@ export.summary	Low	žema
 	accept	priimtina
 	the engine did not start the check	variklis nepradėjo patikrinimo
 	the engine sent no report	variklis neatsiuntė ataskaitos
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nesuspaustas 10 bitų 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nesuspaustas 10 bitų Y'CbCr 4:2:2 v210 išdėstymu (SMPTE ST 384), 24 bitų 48 kHz PCM, pradinis laiko kodas
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Įrašyti subtitrus kaip ANC duomenis (CEA-608/708, 29,97 kadr./s)
+	Load KDM…	Įkelti KDM…
+	Forget DCP Keys	Pamiršti DCP raktus
+	Load KDM	Įkelti KDM
+	KDM file	KDM failas
+	Private key (PEM)	Privatusis raktas (PEM)
+	{title}: {count} keys loaded	{title}: įkelta raktų: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Raktai laikomi tik atmintyje, kol pasirenkama Pamiršti DCP raktus arba baigiasi seansas.
+	DCP keys forgotten	DCP raktai pamiršti
+	Choose the KDM file and the private key.	Pasirinkite KDM failą ir privatųjį raktą.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Laiko kodo sinchronizavimas
+	TimecodeSync	Laiko kodo sinchronizavimas
+	Chase	Sekimas
+	Follow external timecode during playback	Atkūrimo metu sekti išorinį laiko kodą
+	Lock after	Užfiksuoti po
+	Keep playing without signal for	Be signalo toliau leisti
+	External frame rate	Išorinis kadrų dažnis
+	Offset (added to the external timecode)	Poslinkis (pridedamas prie išorinio laiko kodo)
+	LTC	LTC
+	LTC input device	LTC įvesties įrenginys
+	LTC input channel	LTC įvesties kanalas
+	Send LTC during playback	Atkūrimo metu siųsti LTC
+	LTC output device	LTC išvesties įrenginys
+	LTC output channel	LTC išvesties kanalas
+	LTC level	LTC lygis
+	dBFS	dBFS
+	MIDI Timecode	MIDI laiko kodas
+	MTC input port (empty = CFA4 port)	MTC įvesties prievadas (tuščia = CFA4 prievadas)
+	Send MIDI Timecode during playback	Atkūrimo metu siųsti MIDI laiko kodą
+	MTC output port (empty = CFA4 port)	MTC išvesties prievadas (tuščia = CFA4 prievadas)
+	Send timecode ahead of the picture by	Siųsti laiko kodą anksčiau už vaizdą
+	LTC (audio input)	LTC (garso įvestis)
+	MIDI Timecode (MIDI input)	MIDI laiko kodas (MIDI įvestis)
+	Same as the sequence	Kaip sekoje
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Laiko kodo sinchronizavimo būsena
+	Chase External Timecode	Sekti išorinį laiko kodą
+	Send LTC	Siųsti LTC
+	Send MIDI Timecode	Siųsti MIDI laiko kodą

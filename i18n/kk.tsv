@@ -2048,6 +2048,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP бумасы: JPEG 2000 3996×2160 (1,85:1), 5.1 24 бит 48 кГц PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP бумасы: JPEG 2000 4096×1716 (2,39:1), 5.1 24 бит 48 кГц PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (үйлесімді мастер пакеті)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF бумасы: JPEG 2000 1920×1080, 5.1 24 бит 48 кГц PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF бумасы: JPEG 2000 3840×2160, 5.1 24 бит 48 кГц PCM
+	Episode	Эпизод
+	Event highlights	Іс-шара сәттері
+	Event	Іс-шара
+	Lossless (reversible JPEG 2000)	Шығынсыз (қайтымды JPEG 2000)
+	Package language	Пакет тілі
 	4:2:0 (Main Profile)	4:2:0 (Main профилі)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 профилі)
 	B pictures	B кадрлары
@@ -2217,6 +2227,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR үшін 10 бит)
 	10-bit RGB	10 биттік RGB
 	12-bit X'Y'Z'	12 биттік X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 биттік R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF шығынмен
+	JPEG 2000 IMF reversible	JPEG 2000 IMF қайтымды
 	16-bit half float	16 биттік жартылай жылжымалы нүкте
 	linear	сызықтық
 	uncompressed	сығылмаған
@@ -4325,6 +4338,7 @@ export.summary	Low	төмен
 	Crawl	Жүгіртпе жол
 	Picture: {file}	Сурет: {file}
 	Video: {file}	Бейне: {file}
+	Looped video: {file}	Циклды бейне: {file}
 	Into the next	Келесіге өту
 	Safe areas and spines	Қауіпсіз аймақтар мен осьтер
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Әрекет қауіпсіз аймағы (93 %), титр аймағы (90 %), орталық және бет осьтері
@@ -4503,3 +4517,47 @@ export.summary	Low	төмен
 	accept	қолайлы
 	the engine did not start the check	қозғалтқыш тексеруді бастамады
 	the engine sent no report	қозғалтқыш есеп жібермеді
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a сығылмаған 10 биттік 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, сығылмаған 10 биттік Y'CbCr 4:2:2, v210 орналасуы (SMPTE ST 384), 24 биттік 48 кГц PCM, бастапқы уақыт коды
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Субтитрлерді ANC деректері ретінде жазу (CEA-608/708, 29,97 fps)
+	Load KDM…	KDM жүктеу…
+	Forget DCP Keys	DCP кілттерін ұмыту
+	Load KDM	KDM жүктеу
+	KDM file	KDM файлы
+	Private key (PEM)	Жеке кілт (PEM)
+	{title}: {count} keys loaded	{title}: жүктелген кілттер: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Кілттер тек жадта сақталады, «DCP кілттерін ұмыту» командасына немесе сеанс соңына дейін.
+	DCP keys forgotten	DCP кілттері ұмытылды
+	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Уақыт кодын синхрондау
+	TimecodeSync	Уақыт кодын синхрондау
+	Chase	Ілесу
+	Follow external timecode during playback	Ойнату кезінде сыртқы уақыт кодына ілесу
+	Lock after	Бекіту уақыты
+	Keep playing without signal for	Сигналсыз ойнатуды жалғастыру
+	External frame rate	Сыртқы кадр жиілігі
+	Offset (added to the external timecode)	Ығысу (сыртқы уақыт кодына қосылады)
+	LTC	LTC
+	LTC input device	LTC кіріс құрылғысы
+	LTC input channel	LTC кіріс арнасы
+	Send LTC during playback	Ойнату кезінде LTC жіберу
+	LTC output device	LTC шығыс құрылғысы
+	LTC output channel	LTC шығыс арнасы
+	LTC level	LTC деңгейі
+	dBFS	dBFS
+	MIDI Timecode	MIDI уақыт коды
+	MTC input port (empty = CFA4 port)	MTC кіріс порты (бос = CFA4 порты)
+	Send MIDI Timecode during playback	Ойнату кезінде MIDI уақыт кодын жіберу
+	MTC output port (empty = CFA4 port)	MTC шығыс порты (бос = CFA4 порты)
+	Send timecode ahead of the picture by	Уақыт кодын кескіннен бұрын жіберу
+	LTC (audio input)	LTC (дыбыс кірісі)
+	MIDI Timecode (MIDI input)	MIDI уақыт коды (MIDI кірісі)
+	Same as the sequence	Тізбектегідей
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Уақыт кодын синхрондау күйі
+	Chase External Timecode	Сыртқы уақыт кодына ілесу
+	Send LTC	LTC жіберу
+	Send MIDI Timecode	MIDI уақыт кодын жіберу

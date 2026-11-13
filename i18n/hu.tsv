@@ -2147,6 +2147,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 3996×2160 (1,85:1), 5.1 24 bites 48 kHz-es PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 4096×1716 (2,39:1), 5.1 24 bites 48 kHz-es PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (interoperábilis mastercsomag)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF-mappa: JPEG 2000 1920×1080, 5.1 24 bites 48 kHz-es PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF-mappa: JPEG 2000 3840×2160, 5.1 24 bites 48 kHz-es PCM
+	Episode	Epizód
+	Event highlights	Összefoglaló
+	Event	Esemény
+	Lossless (reversible JPEG 2000)	Veszteségmentes (reverzibilis JPEG 2000)
+	Package language	Csomag nyelve
 	4:2:0 (Main Profile)	4:2:0 (Main profil)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
 	B pictures	B-képek
@@ -2327,6 +2337,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (HDR-hez 10 bites)
 	10-bit RGB	10 bites RGB
 	12-bit X'Y'Z'	12 bites X'Y'Z'
+	10-bit R'G'B' 4:4:4	10 bites R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF veszteséges
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reverzibilis
 	16-bit half float	16 bites, félpontos lebegőpontos
 	linear	lineáris
 	uncompressed	tömörítetlen
@@ -4322,6 +4335,7 @@ export.summary	Low	alacsony
 	Crawl	Futószöveg
 	Picture: {file}	Kép: {file}
 	Video: {file}	Videó: {file}
+	Looped video: {file}	Ismétlődő videó: {file}
 	Into the next	Átmenet a következőbe
 	Safe areas and spines	Biztonsági területek és gerincek
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Akcióbiztos (93 %), címbiztos (90 %) terület, a középvonalak és az oldal gerincei
@@ -4500,3 +4514,45 @@ export.summary	Low	alacsony
 	the engine sent no report	a motor nem küldött jelentést
 	The engine is not running.	A motor nem fut.
 	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Észrevétel {row}: az időkód nem létező időpont ebben a fájlban (ÓÓ:PP:MM:KK).
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a tömörítetlen 10 bites 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, tömörítetlen 10 bites Y'CbCr 4:2:2 v210 elrendezésben (SMPTE ST 384), 24 bites 48 kHz-es PCM, kezdő időkód
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Feliratok írása ANC-adatként (CEA-608/708, 29,97 fps)
+	Load KDM…	KDM betöltése…
+	Forget DCP Keys	DCP kulcsok elfelejtése
+	Load KDM	KDM betöltése
+	KDM file	KDM fájl
+	Private key (PEM)	Privát kulcs (PEM)
+	{title}: {count} keys loaded	{title}: {count} kulcs betöltve
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	A kulcsok csak a memóriában maradnak, a DCP kulcsok elfelejtéséig vagy a munkamenet végéig.
+	DCP keys forgotten	DCP kulcsok elfelejtve
+	Choose the KDM file and the private key.	Válassza ki a KDM fájlt és a privát kulcsot.
+	Timecode Sync	Időkód-szinkron
+	TimecodeSync	Időkód-szinkron
+	Chase	Követés
+	Follow external timecode during playback	Külső időkód követése lejátszáskor
+	Lock after	Zárolás ennyi után
+	Keep playing without signal for	Jel nélkül tovább játszik
+	External frame rate	Külső képkockasebesség
+	Offset (added to the external timecode)	Eltolás (a külső időkódhoz adva)
+	LTC	LTC
+	LTC input device	LTC-bemeneti eszköz
+	LTC input channel	LTC-bemeneti csatorna
+	Send LTC during playback	LTC küldése lejátszáskor
+	LTC output device	LTC-kimeneti eszköz
+	LTC output channel	LTC-kimeneti csatorna
+	LTC level	LTC-szint
+	dBFS	dBFS
+	MIDI Timecode	MIDI-időkód
+	MTC input port (empty = CFA4 port)	MTC-bemeneti port (üres = CFA4-port)
+	Send MIDI Timecode during playback	MIDI-időkód küldése lejátszáskor
+	MTC output port (empty = CFA4 port)	MTC-kimeneti port (üres = CFA4-port)
+	Send timecode ahead of the picture by	Időkód küldése a kép előtt ennyivel
+	LTC (audio input)	LTC (hangbemenet)
+	MIDI Timecode (MIDI input)	MIDI-időkód (MIDI-bemenet)
+	Same as the sequence	Mint a szekvencia
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Időkód-szinkron állapota
+	Chase External Timecode	Külső időkód követése
+	Send LTC	LTC küldése
+	Send MIDI Timecode	MIDI-időkód küldése

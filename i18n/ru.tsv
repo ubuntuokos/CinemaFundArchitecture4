@@ -3657,6 +3657,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Папка SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), 5.1, 24 бит, 48 кГц, PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Папка SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), 5.1, 24 бит, 48 кГц, PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Папка SMPTE IMF: JPEG 2000 1920×1080, 5.1, 24 бит, 48 кГц, PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Папка SMPTE IMF: JPEG 2000 3840×2160, 5.1, 24 бит, 48 кГц, PCM
+	Episode	Эпизод
+	Event highlights	Лучшие моменты события
+	Event	Событие
+	Lossless (reversible JPEG 2000)	Без потерь (обратимый JPEG 2000)
+	Package language	Язык пакета
 	Show Duplicate Frame Markers	Показывать маркеры дублированных кадров
 	Work Area Bar	Полоса рабочей области
 	Set Work Area Bar In Point	Задать точку входа полосы рабочей области
@@ -3938,6 +3948,9 @@
 	1 B picture between anchors	1 B-кадр между опорными
 	10-bit RGB	10-бит RGB
 	12-bit X'Y'Z'	12-бит X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-бит R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF с потерями
+	JPEG 2000 IMF reversible	JPEG 2000 IMF обратимый
 	16-bit half float	16-бит half float
 	AV1 Main (10-bit for HDR)	AV1 Main (10 бит для HDR)
 	BDAV Transport Stream	Транспортный поток BDAV
@@ -4308,6 +4321,7 @@
 	Crawl	Бегущая строка
 	Picture: {file}	Изображение: {file}
 	Video: {file}	Видео: {file}
+	Looped video: {file}	Видео по кругу: {file}
 	Into the next	В следующую
 	Safe areas and spines	Безопасные зоны и оси
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Безопасная зона действия (93 %), безопасная зона заголовков (90 %), центр и оси страницы
@@ -4486,3 +4500,47 @@
 	accept	допустимо
 	the engine did not start the check	движок не начал проверку
 	the engine sent no report	движок не прислал отчёт
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a без сжатия, 10 бит 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, несжатый 10-битный Y'CbCr 4:2:2 в раскладке v210 (SMPTE ST 384), 24-битный PCM 48 кГц, начальный тайм-код
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записать субтитры как данные ANC (CEA-608/708, 29,97 к/с)
+	Load KDM…	Загрузить KDM…
+	Forget DCP Keys	Забыть ключи DCP
+	Load KDM	Загрузить KDM
+	KDM file	Файл KDM
+	Private key (PEM)	Закрытый ключ (PEM)
+	{title}: {count} keys loaded	{title}: загружено ключей: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключи хранятся только в памяти, до команды «Забыть ключи DCP» или конца сеанса.
+	DCP keys forgotten	Ключи DCP забыты
+	Choose the KDM file and the private key.	Выберите файл KDM и закрытый ключ.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Синхронизация тайм-кода
+	TimecodeSync	Синхронизация тайм-кода
+	Chase	Следование
+	Follow external timecode during playback	Следовать за внешним тайм-кодом при воспроизведении
+	Lock after	Захват после
+	Keep playing without signal for	Продолжать без сигнала в течение
+	External frame rate	Внешняя частота кадров
+	Offset (added to the external timecode)	Смещение (прибавляется к внешнему тайм-коду)
+	LTC	LTC
+	LTC input device	Устройство ввода LTC
+	LTC input channel	Входной канал LTC
+	Send LTC during playback	Передавать LTC при воспроизведении
+	LTC output device	Устройство вывода LTC
+	LTC output channel	Выходной канал LTC
+	LTC level	Уровень LTC
+	dBFS	dBFS
+	MIDI Timecode	MIDI тайм-код
+	MTC input port (empty = CFA4 port)	Входной порт MTC (пусто = порт CFA4)
+	Send MIDI Timecode during playback	Передавать MIDI тайм-код при воспроизведении
+	MTC output port (empty = CFA4 port)	Выходной порт MTC (пусто = порт CFA4)
+	Send timecode ahead of the picture by	Опережение тайм-кода относительно изображения
+	LTC (audio input)	LTC (аудиовход)
+	MIDI Timecode (MIDI input)	MIDI тайм-код (вход MIDI)
+	Same as the sequence	Как у эпизода
+	29.97 fps drop-frame	29,97 к/с drop-frame
+	29.97 fps non-drop	29,97 к/с non-drop
+	Timecode Sync Status	Состояние синхронизации тайм-кода
+	Chase External Timecode	Следовать за внешним тайм-кодом
+	Send LTC	Передавать LTC
+	Send MIDI Timecode	Передавать MIDI тайм-код

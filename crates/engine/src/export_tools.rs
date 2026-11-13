@@ -313,7 +313,11 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.audio.flac_level = v.min(8) as u8;
     }
     if let Some(v) = str_p(p, "mxfVideoCodec") {
-        settings.mxf_video_codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264 | mpeg2 | d10 | xdcamHd422"))?;
+        settings.mxf_video_codec =
+            serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264 | mpeg2 | d10 | xdcamHd422 | v210 | uyvy"))?;
+    }
+    if let Some(v) = bool_p(p, "mxfAncCaptions") {
+        settings.mxf_anc_captions = v;
     }
     if let Some(v) = str_p(p, "mpeg2Container") {
         let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
@@ -355,6 +359,14 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         let tag = cfa4_export::dcp_language(&probe).ok_or_else(|| bad(cmd, "dcpLanguage: an RFC 5646 tag such as en-US or hu-HU (empty = none)"))?;
         settings.dcp_language = tag.to_string();
     }
+    if let Some(v) = str_p(p, "imfContentKind") {
+        let probe = ExportSettings { imf_content_kind: v.to_string(), ..Default::default() };
+        let kind = cfa4_export::imf_content_kind(&probe).ok_or_else(|| bad(cmd, format!("imfContentKind: {}", cfa4_export::IMF_CONTENT_KINDS.join(" | "))))?;
+        settings.imf_content_kind = kind.to_string();
+    }
+    if let Some(v) = bool_p(p, "imfLossless") {
+        settings.imf_lossless = v;
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
             0 => None,
@@ -375,7 +387,7 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.alpha = v;
     }
     if let Some(v) = str_p(p, "exrCompression") {
-        settings.exr_compression = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "exrCompression: none | rle | zips | zip"))?;
+        settings.exr_compression = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "exrCompression: none | rle | zips | zip | piz"))?;
     }
     match (crate::commands::checked_u32_p(p, "width", cmd)?, crate::commands::checked_u32_p(p, "height", cmd)?) {
         (Some(w), Some(h)) => settings.frame_size = Some((w, h)),
@@ -485,8 +497,8 @@ pub fn file_safe(n: &str) -> String {
 
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
-    // a DCP is a folder
-    if settings.format == Format::Dcp {
+    // a DCP or IMF package is a folder
+    if matches!(settings.format, Format::Dcp | Format::Imf) {
         return path.to_string();
     }
     let ext = settings.extension();
@@ -533,7 +545,7 @@ fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, s
     };
     let path = with_extension(&base, settings);
     match suffix {
-        Some(n) if n > 0 && settings.format == Format::Dcp => format!("{path}_{}", n + 1),
+        Some(n) if n > 0 && matches!(settings.format, Format::Dcp | Format::Imf) => format!("{path}_{}", n + 1),
         Some(n) if n > 0 => match path.rsplit_once('.') {
             Some((a, e)) => format!("{a}_{}.{e}", n + 1),
             None => format!("{path}_{}", n + 1),
@@ -1076,8 +1088,12 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
         let title = project.item(seq).map(|i| i.name.clone()).unwrap_or_default();
         cfa4_export::dcp_isdcf_name(&settings, &title, &cfa4_export::dcp_isdcf_date())
     });
+    // settings the encoders cannot honour (egui's red `export.problem` line): said before Export is
+    // pressed, and the Export / Send to Queue buttons stay off while it is set
+    let problem = settings.validate().err().map(|e| e.to_string());
     Ok(json!({
         "dcpName": dcp_name,
+        "problem": problem,
         "preset": preset.map(|x| x.name),
         "hdr": hdr,
         "videoFormat": settings.video_format().id(),
@@ -1272,7 +1288,8 @@ fn formats(_: &mut Session, _: &Value) -> Result<Value> {
             .map(|f| {
                 let st = ExportSettings { format: *f, ..Default::default() };
                 json!({"id": f.id(), "label": f.label(), "extension": f.extension(), "video": st.has_video(), "audio": st.has_audio() || !st.has_video(),
-                       "imageSequence": st.is_image_sequence(), "available": cfa4_export::available(*f)})
+                       "imageSequence": st.is_image_sequence(), "available": cfa4_export::available(*f),
+                       "reason": cfa4_export::unavailable_reason(*f)})
             })
             .collect(),
     ))

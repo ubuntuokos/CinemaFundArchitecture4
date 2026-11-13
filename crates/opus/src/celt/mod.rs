@@ -128,7 +128,7 @@ impl CeltDecoder {
         frame_size: usize,
         pcm: &mut [f32],
         accum: bool,
-        dec: Option<&mut RangeDecoder>,
+        dec: Option<&mut RangeDecoder<'_>>,
     ) -> Result<usize, crate::Error> {
         let n_full = frame_size * self.downsample;
         let lm = match n_full {
@@ -160,7 +160,7 @@ impl CeltDecoder {
         Ok(frame_size)
     }
 
-    fn decode_frame(&mut self, dec: &mut RangeDecoder, len: usize, n: usize, lm: usize) {
+    fn decode_frame(&mut self, dec: &mut RangeDecoder<'_>, len: usize, n: usize, lm: usize) {
         let cc = self.channels;
         let c = self.stream_channels;
         let m = self.m;
