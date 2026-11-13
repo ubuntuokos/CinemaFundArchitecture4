@@ -99,8 +99,8 @@ Gazdát csak a tulajdonos jelölhet ki vagy válthat le. Fejlesztő munkamenet n
    változott, a fejlesztőnek újra kell kérnie;
    (c) nincs megválaszolatlan CodeRabbit-megállapítás: sem szál
    (`GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads` a Claude Code munkamenetekben;
-   máshol a GitHub GraphQL `pullRequest.reviewThreads { isResolved }`), sem a legutóbbi
-   review törzsében szál nélkül közölt megállapítás, amelyre a fejlesztő nem válaszolt
+   máshol a GitHub GraphQL `pullRequest.reviewThreads { isResolved }`), sem a PR bármelyik
+   (korábbi vagy legutóbbi) CodeRabbit-review törzsében szál nélkül közölt megállapítás, amelyre a fejlesztő nem válaszolt
    PR-megjegyzésben. Egy megállapítás akkor lezárt, ha meg van oldva, vagy a fejlesztő
    indokolva válaszolt rá.
    Ha valamelyik hiányzik, a PR a „(c) frissíteni kell” kategóriába kerül, és a gazda a PR-ban

@@ -47,8 +47,8 @@ $ARGUMENTS
   (b) befejezett review: `gh api --paginate $R/pulls/<n>/reviews` – van `coderabbitai[bot]`
   review a mostani fejre (`commit_id`), az utolsó kérésnél későbbi;
   (c) nincs megválaszolatlan megállapítás: `gh api $R/pulls/<n>/ccr/review_threads` (a
-  Claude Code proxy végpontja; máshol GraphQL `reviewThreads { isResolved }`), és a legutóbbi
-  CodeRabbit-review törzsében szál nélkül közölt megállapításokra is van válasz a PR-megjegyzések között.
+  Claude Code proxy végpontja; máshol GraphQL `reviewThreads { isResolved }`), és a PR minden
+  (korábbi és legutóbbi) CodeRabbit-review törzsében szál nélkül közölt megállapításokra is van válasz a PR-megjegyzések között.
   Ha bármelyik hiányzik, ne olvaszd be és ne tedd kötegbe: a PR a (c) kategóriába kerül, és
   a PR-ban jelzed a fejlesztőnek. Dependabot-PR-ra és magára a köteg-PR-ra nem vonatkozik.
 - **Köteg** (`/gazda köteg #12 #15 …`, `docs/coordination.md` §3a): `scripts/dev/gazda-koteg.sh`
