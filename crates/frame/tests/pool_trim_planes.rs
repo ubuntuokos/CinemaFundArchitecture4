@@ -12,7 +12,15 @@ const BYTES: usize = 200_000;
 const WORDS: usize = 100_000;
 
 fn frame(data: PixelData) -> Arc<VideoFrame> {
-    Arc::new(VideoFrame { width: 1, height: 1, data, color: cfa4_color::ColorInfo::SRGB_FULL, par: (1, 1), pts: cfa4_time::Tick::ZERO })
+    Arc::new(VideoFrame {
+        width: 1,
+        height: 1,
+        data,
+        color: cfa4_color::ColorInfo::SRGB_FULL,
+        par: (1, 1),
+        pts: cfa4_time::Tick::ZERO,
+        layout: Default::default(),
+    })
 }
 
 /// Hand the pool one 8-bit and one 16-bit plane (the other planes are too small to be kept).

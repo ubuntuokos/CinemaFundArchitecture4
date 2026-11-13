@@ -972,6 +972,87 @@ fn clip_wrapped_uncompressed_without_an_index_splits_by_picture_size() {
     assert_eq!(f.read_sample(&bytes[..], 0, 2).unwrap(), pictures[2]);
 }
 
+/// Rewrites every frame-wrapped picture element of `bytes` as ST 384 line wrapping: a system
+/// element (start of stored data / start of line), a fill data element before the first line,
+/// then one picture element per stored line of `line` bytes.
+fn line_wrap(bytes: &[u8], line: usize) -> Vec<u8> {
+    let mut out = Vec::new();
+    let mut at = 0;
+    while at + 17 <= bytes.len() {
+        let key: [u8; 16] = bytes[at..at + 16].try_into().unwrap();
+        let (len, n) = crate::klv::ber_length(&bytes[at + 16..]).unwrap();
+        let v = &bytes[at + 16 + n..at + 16 + n + len as usize];
+        if key[12] == 0x15 && key[14] == 0x02 {
+            for (l, chunk) in v.chunks(line).enumerate() {
+                let mut sys = key;
+                sys[5] = 0x05;
+                sys[12..16].copy_from_slice(&[0x14, 0x01, if l == 0 { 0x01 } else { 0x02 }, 0x00]);
+                let mut pack = (l as u32 + 1).to_be_bytes().to_vec();
+                pack.extend_from_slice(&[0; 4]);
+                crate::testing::klv(&mut out, sys, &pack);
+                if l == 0 {
+                    let mut data = key;
+                    data[12..16].copy_from_slice(&[0x17, 0x01, 0x08, 0x01]);
+                    crate::testing::klv(&mut out, data, &[0xEE; 4]);
+                }
+                let mut pic = key;
+                pic[14] = 0x04;
+                crate::testing::klv(&mut out, pic, chunk);
+            }
+        } else {
+            out.extend_from_slice(&bytes[at..at + 16 + n + len as usize]);
+        }
+        at += 16 + n + len as usize;
+    }
+    // the essence container label: line wrapping (ST 384 Table 5)
+    for i in 0..out.len().saturating_sub(8) {
+        if out[i..i + 6] == [0x0D, 0x01, 0x03, 0x01, 0x02, 0x05] && out[i + 7] == 0x01 {
+            out[i + 7] = 0x03;
+        }
+    }
+    out
+}
+
+#[test]
+fn line_wrapped_uncompressed_pictures_are_gathered_line_by_line() {
+    use crate::uncompressed::{Layout, decode};
+    let layout = crate::UncompressedLayout::Uyvy8;
+    let (bytes, pictures) = build_uncompressed(Pattern::Op1a, layout);
+    let lined = line_wrap(&bytes, 96);
+    assert!(lined.len() > bytes.len());
+    let f = open(&lined[..]).unwrap();
+    let t = f.tracks.iter().position(|t| t.kind == TrackKind::Picture).unwrap();
+    let track = &f.tracks[t];
+    assert_eq!((track.codec, track.wrapping, track.samples.len()), (Codec::Uncompressed, Wrapping::Line, 3), "{:?}", f.warnings);
+    let pi = track.picture.as_ref().unwrap();
+    let l = Layout::of(pi).unwrap();
+    for (i, want) in pictures.iter().enumerate() {
+        let s = f.read_sample(&lined[..], t, i).unwrap();
+        assert_eq!(&s, want);
+        let pic = decode(&l, pi, &s).unwrap();
+        assert_eq!((pic.planes[0][0], pic.planes[2][0]), (16 + i as u16, 200 - i as u16));
+    }
+    // a picture with a line missing is left out; the system elements keep the others in step
+    let first_line = lined.windows(4).position(|w| w == [0x15, 0x01, 0x04, 0x01]).unwrap() - 12;
+    let mut short = lined[..first_line].to_vec();
+    short.extend_from_slice(&lined[first_line + 16 + 4 + 96..]);
+    let f = open(&short[..]).unwrap();
+    let track = &f.tracks[t];
+    assert_eq!(track.samples.len(), 2, "{:?}", f.warnings);
+    assert_eq!(f.read_sample(&short[..], t, 0).unwrap(), pictures[1]);
+    assert!(f.warnings.iter().any(|w| w.contains("1 line-wrapped picture(s)")), "{:?}", f.warnings);
+    // without system elements, the lines are counted
+    let mut bare = lined.clone();
+    for i in 0..bare.len() - 16 {
+        if bare[i..i + 4] == [0x06, 0x0E, 0x2B, 0x34] && bare[i + 12..i + 14] == [0x14, 0x01] {
+            bare[i..i + 16].copy_from_slice(&KLV_FILL);
+        }
+    }
+    let f = open(&bare[..]).unwrap();
+    assert_eq!(f.tracks[t].samples.len(), 3, "{:?}", f.warnings);
+    assert_eq!(f.read_sample(&bare[..], t, 2).unwrap(), pictures[2]);
+}
+
 #[test]
 fn peek_reads_the_packages_of_op_atom_files_without_the_essence() {
     let clip = PackageIds::from_seed("clip", "Clip");

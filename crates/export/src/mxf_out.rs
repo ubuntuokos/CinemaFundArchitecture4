@@ -40,6 +40,7 @@ fn picture(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate, mpeg: Opt
         return Ok(d);
     }
     let coding = match settings.video_format() {
+        _ if let Some(layout) = settings.mxf_video_codec.uncompressed_layout() => PictureCoding::Uncompressed { layout },
         Format::Mpeg2 => {
             let m = mpeg.ok_or_else(|| ExportError::Encode("internal: MPEG-2 encoder without stream parameters".into()))?;
             if !matches!(m.profile_and_level, 0x44 | 0x46 | 0x82) {

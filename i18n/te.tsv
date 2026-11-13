@@ -4521,6 +4521,8 @@ export.summary	Low	తక్కువ
 	accept	ఆమోదయోగ్యం
 	the engine did not start the check	ఇంజిన్ తనిఖీని ప్రారంభించలేదు
 	the engine sent no report	ఇంజిన్ నివేదికను పంపలేదు
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a కంప్రెస్ చేయని 10-బిట్ 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, v210 లేఅవుట్‌లో కంప్రెస్ చేయని 10-బిట్ Y'CbCr 4:2:2 (SMPTE ST 384), 24-బిట్ 48 kHz PCM, ప్రారంభ టైమ్‌కోడ్
 	Write the captions as ANC data (CEA-608/708)	ఉపశీర్షికలను ANC డేటాగా వ్రాయండి (CEA-608/708)
 	Load KDM…	KDM లోడ్ చేయి…
 	Forget DCP Keys	DCP కీలను మర్చిపో
@@ -4531,3 +4533,35 @@ export.summary	Low	తక్కువ
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	కీలు మెమరీలో మాత్రమే ఉంటాయి, DCP కీలను మర్చిపో లేదా సెషన్ ముగిసే వరకు.
 	DCP keys forgotten	DCP కీలు మర్చిపోబడ్డాయి
 	Choose the KDM file and the private key.	KDM ఫైల్‌ను మరియు ప్రైవేట్ కీని ఎంచుకోండి.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	టైమ్‌కోడ్ సమకాలీకరణ
+	TimecodeSync	టైమ్‌కోడ్ సమకాలీకరణ
+	Chase	అనుసరించు
+	Follow external timecode during playback	ప్లేబ్యాక్ సమయంలో బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
+	Lock after	ఇంత తర్వాత లాక్ చేయి
+	Keep playing without signal for	సిగ్నల్ లేకుండా ఇంతసేపు ప్లే చేయి
+	External frame rate	బాహ్య ఫ్రేమ్ రేట్
+	Offset (added to the external timecode)	ఆఫ్‌సెట్ (బాహ్య టైమ్‌కోడ్‌కు కలుపుతారు)
+	LTC	LTC
+	LTC input device	LTC ఇన్‌పుట్ పరికరం
+	LTC input channel	LTC ఇన్‌పుట్ ఛానెల్
+	Send LTC during playback	ప్లేబ్యాక్ సమయంలో LTC పంపు
+	LTC output device	LTC అవుట్‌పుట్ పరికరం
+	LTC output channel	LTC అవుట్‌పుట్ ఛానెల్
+	LTC level	LTC స్థాయి
+	dBFS	dBFS
+	MIDI Timecode	MIDI టైమ్‌కోడ్
+	MTC input port (empty = CFA4 port)	MTC ఇన్‌పుట్ పోర్ట్ (ఖాళీ = CFA4 పోర్ట్)
+	Send MIDI Timecode during playback	ప్లేబ్యాక్ సమయంలో MIDI టైమ్‌కోడ్ పంపు
+	MTC output port (empty = CFA4 port)	MTC అవుట్‌పుట్ పోర్ట్ (ఖాళీ = CFA4 పోర్ట్)
+	Send timecode ahead of the picture by	చిత్రం కంటే ఇంత ముందుగా టైమ్‌కోడ్ పంపు
+	LTC (audio input)	LTC (ఆడియో ఇన్‌పుట్)
+	MIDI Timecode (MIDI input)	MIDI టైమ్‌కోడ్ (MIDI ఇన్‌పుట్)
+	Same as the sequence	సీక్వెన్స్‌లాగే
+	29.97 fps drop-frame	29.97 fps డ్రాప్-ఫ్రేమ్
+	29.97 fps non-drop	29.97 fps నాన్-డ్రాప్
+	Timecode Sync Status	టైమ్‌కోడ్ సమకాలీకరణ స్థితి
+	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
+	Send LTC	LTC పంపు
+	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు

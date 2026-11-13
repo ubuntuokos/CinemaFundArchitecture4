@@ -4517,6 +4517,8 @@ export.summary	Low	låg
 	accept	godtagbart
 	the engine did not start the check	motorn startade inte kontrollen
 	the engine sent no report	motorn skickade ingen rapport
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a okomprimerad 10-bitars 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, okomprimerad 10-bitars Y'CbCr 4:2:2 i v210-layout (SMPTE ST 384), 24-bitars 48 kHz PCM, starttidkod
 	Write the captions as ANC data (CEA-608/708)	Skriv undertexterna som ANC-data (CEA-608/708)
 	Load KDM…	Läs in KDM…
 	Forget DCP Keys	Glöm DCP-nycklar
@@ -4527,3 +4529,35 @@ export.summary	Low	låg
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Nycklarna finns bara i minnet, tills Glöm DCP-nycklar eller sessionens slut.
 	DCP keys forgotten	DCP-nycklarna glömda
 	Choose the KDM file and the private key.	Välj KDM-filen och den privata nyckeln.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Tidskodssynkronisering
+	TimecodeSync	Tidskodssynkronisering
+	Chase	Följ
+	Follow external timecode during playback	Följ extern tidskod vid uppspelning
+	Lock after	Lås efter
+	Keep playing without signal for	Fortsätt spela utan signal i
+	External frame rate	Extern bildfrekvens
+	Offset (added to the external timecode)	Förskjutning (läggs till den externa tidskoden)
+	LTC	LTC
+	LTC input device	LTC-indataenhet
+	LTC input channel	LTC-ingångskanal
+	Send LTC during playback	Skicka LTC vid uppspelning
+	LTC output device	LTC-utdataenhet
+	LTC output channel	LTC-utgångskanal
+	LTC level	LTC-nivå
+	dBFS	dBFS
+	MIDI Timecode	MIDI-tidskod
+	MTC input port (empty = CFA4 port)	MTC-ingångsport (tom = CFA4-port)
+	Send MIDI Timecode during playback	Skicka MIDI-tidskod vid uppspelning
+	MTC output port (empty = CFA4 port)	MTC-utgångsport (tom = CFA4-port)
+	Send timecode ahead of the picture by	Skicka tidskoden före bilden med
+	LTC (audio input)	LTC (ljudingång)
+	MIDI Timecode (MIDI input)	MIDI-tidskod (MIDI-ingång)
+	Same as the sequence	Samma som sekvensen
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Status för tidskodssynkronisering
+	Chase External Timecode	Följ extern tidskod
+	Send LTC	Skicka LTC
+	Send MIDI Timecode	Skicka MIDI-tidskod

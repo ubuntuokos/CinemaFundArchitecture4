@@ -4515,6 +4515,8 @@ export.summary	Low	nízká
 	accept	přijatelné
 	the engine did not start the check	engine kontrolu nespustil
 	the engine sent no report	engine neposlal protokol
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nekomprimované 10bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nekomprimované 10bitové Y'CbCr 4:2:2 v rozložení v210 (SMPTE ST 384), 24bitové PCM 48 kHz, počáteční časový kód
 	Write the captions as ANC data (CEA-608/708)	Zapsat titulky jako data ANC (CEA-608/708)
 	Load KDM…	Načíst KDM…
 	Forget DCP Keys	Zapomenout klíče DCP
@@ -4525,3 +4527,35 @@ export.summary	Low	nízká
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Klíče zůstávají jen v paměti, do příkazu Zapomenout klíče DCP nebo do konce relace.
 	DCP keys forgotten	Klíče DCP zapomenuty
 	Choose the KDM file and the private key.	Vyberte soubor KDM a soukromý klíč.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Synchronizace časového kódu
+	TimecodeSync	Synchronizace časového kódu
+	Chase	Sledování
+	Follow external timecode during playback	Sledovat externí časový kód při přehrávání
+	Lock after	Zamknout po
+	Keep playing without signal for	Přehrávat bez signálu ještě
+	External frame rate	Externí snímková frekvence
+	Offset (added to the external timecode)	Posun (přičte se k externímu časovému kódu)
+	LTC	LTC
+	LTC input device	Vstupní zařízení LTC
+	LTC input channel	Vstupní kanál LTC
+	Send LTC during playback	Odesílat LTC při přehrávání
+	LTC output device	Výstupní zařízení LTC
+	LTC output channel	Výstupní kanál LTC
+	LTC level	Úroveň LTC
+	dBFS	dBFS
+	MIDI Timecode	Časový kód MIDI
+	MTC input port (empty = CFA4 port)	Vstupní port MTC (prázdné = port CFA4)
+	Send MIDI Timecode during playback	Odesílat časový kód MIDI při přehrávání
+	MTC output port (empty = CFA4 port)	Výstupní port MTC (prázdné = port CFA4)
+	Send timecode ahead of the picture by	Odesílat časový kód před obrazem o
+	LTC (audio input)	LTC (zvukový vstup)
+	MIDI Timecode (MIDI input)	Časový kód MIDI (vstup MIDI)
+	Same as the sequence	Stejná jako sekvence
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Stav synchronizace časového kódu
+	Chase External Timecode	Sledovat externí časový kód
+	Send LTC	Odesílat LTC
+	Send MIDI Timecode	Odesílat časový kód MIDI

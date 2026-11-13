@@ -467,6 +467,8 @@ struct Win {
 }
 
 struct Dec708 {
+    /// The caption service decoded (1–63).
+    service: u8,
     win: [Win; 8],
     cur: usize,
     packet: Vec<u8>,
@@ -476,8 +478,8 @@ struct Dec708 {
 }
 
 impl Dec708 {
-    fn new() -> Self {
-        Dec708 { win: Default::default(), cur: 0, packet: Vec::new(), want: 0, open: None, cues: Vec::new() }
+    fn for_service(service: u8) -> Self {
+        Dec708 { service, win: Default::default(), cur: 0, packet: Vec::new(), want: 0, open: None, cues: Vec::new() }
     }
     fn visible_text(&self) -> String {
         let mut lines = Vec::new();
@@ -524,7 +526,7 @@ impl Dec708 {
             }
             let (svc, skip) = if svc == 7 { (b.get(1).map_or(0, |x| x & 0x3f), 2) } else { (svc, 1) };
             let data = b.get(skip..skip + len).unwrap_or(&[]);
-            if svc == 1 {
+            if svc == self.service {
                 self.service_data(data);
             }
             b = b.get(skip + len..).unwrap_or(&[]);
@@ -797,18 +799,85 @@ pub fn decode_cdps(packets: impl IntoIterator<Item = (i64, Vec<u8>)>, rate: Fram
     if any608 {
         doc.cues = scc::decode_pairs(f1, rate);
     } else {
-        let mut d = Dec708::new();
-        let mut last = 0;
-        for (f, start, a, b) in dtv {
-            d.pair(f, start, a, b);
-            last = f + 1;
-        }
-        if let Some((s, t)) = d.open.take() {
-            d.cues.push((s, last.max(s + 1), t));
-        }
-        doc.cues = d.cues.into_iter().map(|(s, e, text)| Cue { start: rate.tick_of(s), end: rate.tick_of(e), text, ..Default::default() }).collect();
+        doc.cues = decode_708(&dtv, 1, rate);
     }
     doc
+}
+
+/// One caption channel of a run of caption distribution packets: `name` is "CC1"–"CC4" (CEA-608
+/// field 1 channel 1 / 2, field 2 channel 1 / 2) or "SERVICE1"–"SERVICE6" (CEA-708 caption
+/// services); `cea708` tells the two kinds apart.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdpChannel {
+    pub name: String,
+    pub cea708: bool,
+    pub cues: Vec<Cue>,
+}
+
+/// Decode caption distribution packets (as [`decode_cdps`] takes them) into every channel that
+/// has captions: CEA-608 CC1–CC4 and CEA-708 services 1–6, in that order. Warnings (packets that
+/// are not CDPs) are returned beside them.
+pub fn decode_cdp_channels(packets: impl IntoIterator<Item = (i64, Vec<u8>)>, rate: FrameRate) -> (Vec<CdpChannel>, Vec<String>) {
+    let mut fields: [Vec<(i64, u8, u8)>; 2] = [Vec::new(), Vec::new()];
+    let mut dtv: Vec<(i64, bool, u8, u8)> = Vec::new();
+    let mut bad = 0usize;
+    for (frame, bytes) in packets {
+        let Some(trips) = cc_triplets(&bytes) else {
+            bad += 1;
+            continue;
+        };
+        for [m0, a, b] in trips {
+            if m0 & 0x04 == 0 {
+                continue;
+            }
+            match m0 & 0x03 {
+                f @ (0 | 1) => {
+                    if let Some(v) = fields.get_mut(usize::from(f)) {
+                        v.push((frame, a, b));
+                    }
+                }
+                t => dtv.push((frame, t == 3, a, b)),
+            }
+        }
+    }
+    let mut warnings = Vec::new();
+    if bad > 0 {
+        warnings.push(format!("{bad} packets are not caption distribution packets"));
+    }
+    let mut out = Vec::new();
+    for (name, field, channel2) in [("CC1", 0usize, false), ("CC2", 0, true), ("CC3", 1, false), ("CC4", 1, true)] {
+        let Some(pairs) = fields.get(field) else { continue };
+        if !pairs.iter().any(|&(_, a, b)| a & 0x7f != 0 || b & 0x7f != 0) {
+            continue;
+        }
+        let cues = scc::decode_channel(pairs.iter().copied(), rate, channel2);
+        if !cues.is_empty() {
+            out.push(CdpChannel { name: name.into(), cea708: false, cues });
+        }
+    }
+    if !dtv.is_empty() {
+        for service in 1..=6u8 {
+            let cues = decode_708(&dtv, service, rate);
+            if !cues.is_empty() {
+                out.push(CdpChannel { name: format!("SERVICE{service}"), cea708: true, cues });
+            }
+        }
+    }
+    (out, warnings)
+}
+
+/// The cues of CEA-708 caption service `service` in DTVCC pairs `(frame, start, b1, b2)`.
+fn decode_708(dtv: &[(i64, bool, u8, u8)], service: u8, rate: FrameRate) -> Vec<Cue> {
+    let mut d = Dec708::for_service(service);
+    let mut last = 0;
+    for &(f, start, a, b) in dtv {
+        d.pair(f, start, a, b);
+        last = f + 1;
+    }
+    if let Some((s, t)) = d.open.take() {
+        d.cues.push((s, last.max(s + 1), t));
+    }
+    d.cues.into_iter().map(|(s, e, text)| Cue { start: rate.tick_of(s), end: rate.tick_of(e), text, ..Default::default() }).collect()
 }
 
 #[cfg(test)]
@@ -999,9 +1068,74 @@ mod tests {
     /// Prevent CEA-708 text and line breaks from overflowing a window's declared dimensions.
     #[test]
     fn decoder_keeps_708_text_within_declared_window_dimensions() {
-        let mut decoder = Dec708::new();
+        let mut decoder = Dec708::for_service(1);
         // Define window 0 with one row and one column, then try to overflow both.
         decoder.service_data(&[0x98, 0, 0, 0, 0, 0, 0, b'A', b'B', 0x0d, b'C']);
         assert_eq!(decoder.win[0].rows, ["A"]);
+    }
+
+    /// #1068: every caption channel of a CDP run comes back on its own: CEA-608 CC1 (field 1)
+    /// and CC4 (field 2, data channel 2), CEA-708 services 1 and 2; empty channels are left out.
+    #[test]
+    fn cdp_channels_decode_separately() {
+        let a = Document { cues: vec![cue(30, 90, "Channel one"), cue(120, 150, "Again one")], ..Default::default() };
+        let b = Document { cues: vec![cue(40, 100, "Field two")], ..Default::default() };
+        let c = Document { cues: vec![cue(400, 460, "Service two")], ..Default::default() };
+        // CC4: data channel 2 (control codes with 08h), field 2 miscellaneous codes 15h / 1Dh
+        let cc4 = |(x, y): (u8, u8)| {
+            if (0x10..=0x1f).contains(&x) {
+                let x = x | 0x08;
+                if x & 0x77 == 0x14 && (0x20..=0x2f).contains(&y) { (x | 0x01, y) } else { (x, y) }
+            } else {
+                (x, y)
+            }
+        };
+        let mut frames: BTreeMap<i64, Vec<[u8; 3]>> = BTreeMap::new();
+        for (f, p) in scc::schedule(&a) {
+            frames.entry(f).or_default().push([0xfc, with_parity(p.0), with_parity(p.1)]);
+        }
+        for (f, p) in scc::schedule(&b) {
+            let (x, y) = cc4(p);
+            frames.entry(f).or_default().push([0xfd, with_parity(x), with_parity(y)]);
+        }
+        for (f, pairs) in schedule_708(&a) {
+            frames.entry(f).or_default().extend(pairs.into_iter().map(|(st, x, y)| [if st { 0xff } else { 0xfe }, x, y]));
+        }
+        for (f, pairs) in schedule_708(&c) {
+            // the same blocks for service 2: the service number in each packet's block header
+            let v = pairs.into_iter().map(|(st, x, y)| if st { [0xff, x, (y & 0x1f) | 2 << 5] } else { [0xfe, x, y] });
+            frames.entry(f).or_default().extend(v);
+        }
+        let packets: Vec<(i64, Vec<u8>)> = frames
+            .into_iter()
+            .map(|(f, t)| {
+                assert!(t.len() < 32, "{f}");
+                let mut cdp = vec![0x96, 0x69, 0, 0x4f, 0x43, 0, f as u8, 0x72, 0xe0 | t.len() as u8];
+                cdp.extend(t.iter().flatten());
+                cdp.extend_from_slice(&[0x74, 0, f as u8, 0]);
+                cdp[2] = cdp.len() as u8;
+                (f, cdp)
+            })
+            .collect();
+        let (channels, warnings) = decode_cdp_channels(packets.clone(), RATE);
+        assert!(warnings.is_empty());
+        let got: Vec<(&str, bool, Vec<(i64, i64, &str)>)> = channels
+            .iter()
+            .map(|c| (c.name.as_str(), c.cea708, c.cues.iter().map(|q| (RATE.frame_at(q.start), RATE.frame_at(q.end), q.text.as_str())).collect()))
+            .collect();
+        assert_eq!(
+            got,
+            vec![
+                ("CC1", false, vec![(30, 90, "Channel one"), (120, 150, "Again one")]),
+                ("CC4", false, vec![(40, 100, "Field two")]),
+                ("SERVICE1", true, vec![(30, 90, "Channel one"), (120, 150, "Again one")]),
+                ("SERVICE2", true, vec![(400, 460, "Service two")]),
+            ]
+        );
+        // decode_cdps keeps its single document: channel 1 CEA-608
+        assert_eq!(decode_cdps(packets, RATE).cues.len(), 2);
+        let (none, warnings) = decode_cdp_channels([(0, vec![0x61, 0x01, 1]), (1, build_cdp(1, &FrameData::default()))], RATE);
+        assert!(none.is_empty());
+        assert_eq!(warnings.len(), 1);
     }
 }

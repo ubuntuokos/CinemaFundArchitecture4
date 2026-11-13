@@ -616,6 +616,8 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                     "proRes" => "prores",
                     "h264" => "h264",
                     "mpeg2" => "mpeg2video",
+                    "v210" => "v210",
+                    "uyvy" => "rawvideo",
                     _ => "dnxhd",
                 };
                 assert_eq!(v["codec_name"], codec, "{name}");
