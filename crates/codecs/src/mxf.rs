@@ -733,8 +733,8 @@ impl VideoDecoder for RawDecoder {
 }
 
 /// An unpacked uncompressed picture as a [`VideoFrame`] cut to its display rectangle: Y'CbCr as
-/// stored (samples under 8 bits widened to 8), 8-bit R'G'B'(A) as RGBA, deeper R'G'B' as
-/// video-range BT.709 Y'CbCr 4:4:4 with straight alpha.
+/// stored (samples under 8 bits widened to 8), 8-bit R'G'B'(A) as RGBA, deeper R'G'B' as planar
+/// [`PixelData::Rgb16`] with straight alpha.
 fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo) -> VideoFrame {
     use cfa4_frame::{Chroma, PixelData, Region};
     let (w, h) = (pic.width, pic.height);
@@ -751,17 +751,9 @@ fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo)
         }
         bits = 8;
     }
-    let data = if pic.rgb && bits == 8 {
-        let mut rgba = Vec::with_capacity(p0.len() * 4);
-        for (i, ((r, g), b)) in p0.iter().zip(&p1).zip(&p2).enumerate() {
-            let a = alpha.as_ref().and_then(|a| a.get(i)).map_or(255, |&a| a as u8);
-            rgba.extend_from_slice(&[*r as u8, *g as u8, *b as u8, a]);
-        }
-        PixelData::Rgba8(Arc::new(rgba))
+    let data = if pic.rgb {
+        crate::j2k::rgb_data([p0, p1, p2], bits, alpha)
     } else {
-        if pic.rgb {
-            crate::j2k::rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits);
-        }
         let chroma = match pic.subsampling {
             (2, 2) => Chroma::C420,
             (2, 1) => Chroma::C422,
@@ -991,10 +983,13 @@ mod tests {
         let f = raw_frame(picture(8, true, [vec![1, 2], vec![3, 4], vec![5, 6]], None), cfa4_color::ColorInfo::REC709);
         let PixelData::Rgba8(px) = &f.data else { panic!("RGBA expected") };
         assert_eq!(px[3], 255);
-        // 10-bit white and black become video-range Y'CbCr
-        let f = raw_frame(picture(10, true, [vec![1023, 0], vec![1023, 0], vec![1023, 0]], None), cfa4_color::ColorInfo::REC709);
-        let PixelData::Yuv16 { planes, bits: 10, chroma: cfa4_frame::Chroma::C444, .. } = &f.data else { panic!("10-bit 4:4:4 expected") };
-        assert_eq!((planes[0][0], planes[0][1], planes[1][0], planes[2][1]), (940, 64, 512, 512));
+        // 10-bit R'G'B'A keeps its codes, planar
+        let f = raw_frame(picture(10, true, [vec![1023, 0], vec![512, 1], vec![3, 1000]], Some(vec![1023, 7])), cfa4_color::ColorInfo::REC709);
+        let PixelData::Rgb16 { planes, bits: 10, alpha: Some(a) } = &f.data else { panic!("10-bit R'G'B' expected") };
+        assert_eq!(
+            (planes[0].as_slice(), planes[1].as_slice(), planes[2].as_slice(), a.as_slice()),
+            (&[1023, 0][..], &[512, 1][..], &[3, 1000][..], &[1023, 7][..])
+        );
         // under 8 bits widens to 8; the display rectangle crops
         let mut p = picture(4, false, [vec![15, 1], vec![8, 8], vec![8, 8]], None);
         p.display = (1, 0, 1, 1);

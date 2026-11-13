@@ -541,14 +541,17 @@ impl Vp9Decoder {
         let color = crate::hw_frame::vp9_color(p.width, p.height, p.color.color_space, p.color.full_range, self.transfer, self.primaries);
         let (pts, draft) = (p.pts, p.draft);
         if p.color.color_space == 7 {
-            // RGB (profiles 1 / 3, 4:4:4): the planes carry G, B, R.
-            let shift = p.bit_depth - 8;
-            let mut rgba = Vec::with_capacity(w * h * 4);
-            for i in 0..w * h {
-                rgba.extend_from_slice(&[(p.v.get(i) >> shift) as u8, (p.y.get(i) >> shift) as u8, (p.u.get(i) >> shift) as u8, 255]);
-            }
-            let mut frame = VideoFrame::rgba8(p.width, p.height, rgba);
-            frame.color = cfa4_color::ColorInfo { range: Range::Full, transfer: cfa4_color::Transfer::Srgb, ..color };
+            // RGB (profiles 1 / 3, 4:4:4): the planes carry G, B, R; 10 / 12 bits stay planar
+            // R'G'B' (CFA4-PROCODEC-002 1b)
+            let plane = |pl: &Plane| -> Vec<u16> {
+                match pl {
+                    Plane::U8(v) => v.iter().take(w * h).map(|&x| u16::from(x)).collect(),
+                    Plane::U16(v) => v.iter().take(w * h).copied().collect(),
+                }
+            };
+            let data = crate::j2k::rgb_data([plane(&p.v), plane(&p.y), plane(&p.u)], p.bit_depth, None);
+            let color = cfa4_color::ColorInfo { range: Range::Full, transfer: cfa4_color::Transfer::Srgb, ..color };
+            let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
             return Some(DecodedFrame { pts, frame, draft });
         }
         // 4:4:0 has no frame format of its own: chroma rows are repeated to 4:4:4.
@@ -1077,8 +1080,8 @@ pub fn dv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
 pub struct CineformDecoder;
 
 /// Convert a decoded CineForm frame to a [`VideoFrame`]: 4:2:2 YUV as is (video range, BT.601
-/// for SD and BT.709 above), full-range RGB(A) as video-range BT.709 Y'CbCr 4:4:4 at the coded
-/// depth with straight alpha.
+/// for SD and BT.709 above), full-range RGB(A) as R'G'B' at the coded depth (planar
+/// [`cfa4_frame::PixelData::Rgb16`] above 8 bits) with straight alpha.
 pub fn cineform_to_video_frame(f: cfa4_cineform::Frame) -> Result<VideoFrame> {
     use std::sync::Arc;
     let bits = u32::from(f.bit_depth);
@@ -1088,35 +1091,18 @@ pub fn cineform_to_video_frame(f: cfa4_cineform::Frame) -> Result<VideoFrame> {
     };
     let alpha = planes.next();
     let mut color = cfa4_color::ColorInfo::REC709;
-    let (planes, chroma) = match f.format {
+    let data = match f.format {
         cfa4_cineform::EncodedFormat::Yuv422 => {
             // the bitstream carries no matrix: BT.601 for SD, BT.709 for HD, as other decoders do
             color.matrix = cfa4_frame::default_matrix(f.width, f.height);
-            ([a, b, c], cfa4_frame::Chroma::C422)
+            cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(a), Arc::new(b), Arc::new(c)], chroma: cfa4_frame::Chroma::C422, bits, alpha: alpha.map(Arc::new) }
         }
         _ => {
-            // planes hold full-range R, G, B: video-range Y'CbCr 4:4:4 at the coded depth, so
-            // a container colour description (which rarely signals full range) still applies
-            let (kr, kb) = color.matrix.kr_kb();
-            let kg = 1.0 - kr - kb;
-            let max = ((1u32 << bits) - 1) as f32;
-            let s = (1u32 << bits.saturating_sub(8)) as f32;
-            let (ys, cs) = (219.0 * s / max, 224.0 * s / max);
-            let n = a.len().min(b.len()).min(c.len());
-            let (mut y, mut cb, mut cr) = (vec![0u16; n], vec![0u16; n], vec![0u16; n]);
-            let rgb = a.iter().zip(&b).zip(&c);
-            for (((&r, &g), &bl), ((y, cb), cr)) in rgb.zip(y.iter_mut().zip(cb.iter_mut()).zip(cr.iter_mut())) {
-                let (r, g, bl) = (f32::from(r), f32::from(g), f32::from(bl));
-                let yy = kr * r + kg * g + kb * bl;
-                *y = (16.0 * s + yy * ys + 0.5).clamp(0.0, max) as u16;
-                *cb = (128.0 * s + (bl - yy) / (2.0 * (1.0 - kb)) * cs + 0.5).clamp(0.0, max) as u16;
-                *cr = (128.0 * s + (r - yy) / (2.0 * (1.0 - kr)) * cs + 0.5).clamp(0.0, max) as u16;
-            }
-            ([y, cb, cr], cfa4_frame::Chroma::C444)
+            // planes hold full-range R, G, B (CFA4-PROCODEC-002 1b: kept as they are)
+            color.range = cfa4_color::Range::Full;
+            crate::j2k::rgb_data([a, b, c], bits, alpha)
         }
     };
-    let [y, cb, cr] = planes;
-    let data = cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits, alpha: alpha.map(Arc::new) };
     Ok(VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() })
 }
 

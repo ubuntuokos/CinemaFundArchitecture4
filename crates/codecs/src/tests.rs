@@ -207,6 +207,14 @@ fn cineform_in_mov_avi_and_mkv_decodes() {
         }
         let f = src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 10))).unwrap();
         assert_eq!((f.width, f.height), (128, 96));
+        if pix.starts_with("gbr") {
+            // CFA4-PROCODEC-002 1b: R'G'B' stays R'G'B' at 12 bits
+            assert!(
+                matches!(&f.data, cfa4_frame::PixelData::Rgb16 { bits: 12, alpha, .. } if alpha.is_some() == pix.contains('a')),
+                "{name}: {}",
+                f.format_label()
+            );
+        }
         let px = f.to_rgba8();
         let c = &px[(48 * 128 + 64) * 4..][..4];
         for (got, want) in c.iter().zip([0xe0u8, 0x80, 0x20, 0xff]) {
@@ -728,6 +736,35 @@ fn mkv_vp9_rgb() {
     for (got, want) in c.iter().zip([0xe0u8, 0x80, 0x20]) {
         assert!((*got as i32 - want as i32).abs() <= 2, "{c:?}");
     }
+}
+
+/// 10-bit VP9 RGB (profile 3) keeps its codes: planar R'G'B' equal to ffmpeg's lossless decode.
+#[test]
+fn mkv_vp9_rgb10_keeps_its_codes() {
+    let name = "ramp_vp9_gbrp10.mkv";
+    let Some(b) = fixture(
+        name,
+        &["-f", "lavfi", "-i", "testsrc2=s=64x48:r=25:d=0.2", "-c:v", "libvpx-vp9", "-pix_fmt", "gbrp10le", "-deadline", "realtime", "-lossless", "1"],
+    ) else {
+        return;
+    };
+    let Some(ff) = ffmpeg() else { return };
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/fixtures/codecs");
+    let o = Command::new(ff)
+        .args(["-v", "error", "-i"])
+        .arg(dir.join(name))
+        .args(["-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "gbrp10le", "-"])
+        .output()
+        .unwrap();
+    assert!(o.status.success());
+    let plane = |k: usize| -> Vec<u16> { o.stdout[k * 64 * 48 * 2..(k + 1) * 64 * 48 * 2].chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect() };
+    let src = crate::open_bytes(name, b).unwrap();
+    let f = src.video_frame(FrameRequest::full(Tick(0))).unwrap();
+    let cfa4_frame::PixelData::Rgb16 { planes, bits: 10, alpha: None } = &f.data else { panic!("10-bit R'G'B' expected, got {}", f.format_label()) };
+    // gbrp: G, B, R
+    assert_eq!((*planes[0]).clone(), plane(2), "R");
+    assert_eq!((*planes[1]).clone(), plane(0), "G");
+    assert_eq!((*planes[2]).clone(), plane(1), "B");
 }
 
 /// ffmpeg + libopus decode of a container fixture (pre-skip / codec delay / edit list applied) as
