@@ -1,0 +1,21 @@
+[package]
+name = "cfa4-studio-host"
+description = "CFA4 live studio host: runs the live studio backend (libobs) in its own process, supervised and restarted by the engine (CFA4-LIVE-STUDIO-001 D2)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "cfa4-studio-host"
+path = "src/main.rs"
+
+[dependencies]
+cfa4-obs = { workspace = true }
+serde_json = { workspace = true }
+# safe dup/dup2: the event channel keeps the original stdout, and fd 1 is pointed at stderr so
+# libobs's own log lines (printed to stdout) cannot corrupt it
+rustix = { version = "1", features = ["stdio"] }

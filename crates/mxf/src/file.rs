@@ -156,6 +156,8 @@ pub enum TrackKind {
 pub enum Wrapping {
     Frame,
     Clip,
+    /// One KLV element per stored line (uncompressed pictures, ST 384 6.3).
+    Line,
 }
 
 /// One picture edit unit, in stored (decode) order.
@@ -180,6 +182,9 @@ pub struct Chunk {
     /// Index of the chunk's first sample frame in the track.
     pub first_sample: u64,
     pub samples: u64,
+    /// AES3 elements (ST 331): sample frames of the element before the chunk's first one (an
+    /// edit list clip that starts inside the element). Always 0 for PCM chunks.
+    pub skip: u64,
 }
 
 /// A track of the file (source) package with essence in this file, as presented by the material
@@ -219,6 +224,17 @@ pub struct EssenceTrack {
     pub needs_reorder: bool,
     /// Random-access flags came from an index table.
     pub indexed: bool,
+    /// Blank stretches of an OP2x / OP3x edit list (fillers, and clips whose essence is not in
+    /// the file) as (presentation edit unit, length), ascending and apart. The stored essence
+    /// (`display_order`, `chunks`, `duration`) holds only the rest; [`Self::essence_position`]
+    /// maps between the two. Empty for every other file.
+    pub gaps: Vec<(i64, i64)>,
+    /// Line-wrapped pictures: the (offset, size) of each line element of the picture whose
+    /// sample starts at the key's offset. A sample in here is read piece by piece.
+    pub line_pieces: std::collections::BTreeMap<u64, Vec<(u64, u32)>>,
+    /// The essence is encrypted (ST 429-6): samples and chunks cover Encrypted Triplet values,
+    /// which `read_sample` / `read_pcm` decrypt with the content key of the key ring.
+    pub encryption: Option<crate::crypt::Encryption>,
 }
 
 impl EssenceTrack {
@@ -243,6 +259,58 @@ impl EssenceTrack {
     pub fn sync_before(&self, i: usize) -> usize {
         let i = i.min(self.samples.len().saturating_sub(1));
         (0..=i).rev().find(|&k| self.samples[k].key).unwrap_or(0)
+    }
+    /// Edit units of blank presentation (the sum of [`Self::gaps`]).
+    pub fn gap_edit_units(&self) -> i64 {
+        self.gaps.iter().fold(0i64, |a, g| a.saturating_add(g.1.max(0)))
+    }
+    /// The essence position (edit units of the stored essence, from its first presented one) of
+    /// presentation edit unit `p`, or `None` when `p` falls in a gap.
+    pub fn essence_position(&self, p: i64) -> Option<i64> {
+        let mut shift = 0i64;
+        for &(at, len) in &self.gaps {
+            if p < at {
+                break;
+            }
+            if p < at.saturating_add(len) {
+                return None;
+            }
+            shift = shift.saturating_add(len);
+        }
+        Some(p.saturating_sub(shift))
+    }
+    /// The sound sample frames `[a, b)` of the presentation as runs `(presentation start, essence
+    /// start, length)` of stored sample frames (counted from the first presented one); the frames
+    /// between runs are blank. Gap edges are rounded to whole sample frames.
+    pub fn sound_runs(&self, a: u64, b: u64) -> Vec<(u64, u64, u64)> {
+        let (n, d) = self.samples_per_edit_unit();
+        let (n, d) = (i128::from(n.max(1)), i128::from(d.max(1)));
+        let frames = |eu: i64| u64::try_from(i128::from(eu.max(0)) * n / d).unwrap_or(u64::MAX);
+        // the presented essence: from the first presented edit unit, for the duration
+        let stored = self.stored_sample_frames().saturating_sub(frames(self.first_edit_unit()));
+        let total = self.duration.map_or(stored, |du| frames(du).min(stored));
+        let mut out = Vec::new();
+        let (mut pos, mut ess) = (0u64, 0u64);
+        let run = |out: &mut Vec<(u64, u64, u64)>, pos: u64, ess: u64, end: u64| {
+            // presentation [pos, end) holds essence from `ess`, as far as there is essence
+            let end = end.min(pos.saturating_add(total.saturating_sub(ess)));
+            let (x, y) = (a.max(pos), b.min(end));
+            if x < y {
+                out.push((x, ess.saturating_add(x - pos), y - x));
+            }
+        };
+        for &(at, len) in &self.gaps {
+            let g0 = frames(at).max(pos);
+            let g1 = frames(at.saturating_add(len)).max(g0);
+            run(&mut out, pos, ess, g0);
+            ess = ess.saturating_add(g0 - pos);
+            pos = g1;
+            if pos >= b {
+                return out;
+            }
+        }
+        run(&mut out, pos, ess, u64::MAX);
+        out
     }
     /// The stored sample presented at display position `d`.
     pub fn sample_at(&self, d: i64) -> Option<usize> {
@@ -285,6 +353,9 @@ pub(crate) struct Element {
     pub(crate) truncated: bool,
     /// BodySID of the partition the element is in (0 when unknown).
     pub(crate) body_sid: u32,
+    /// An Encrypted Triplet (ST 429-6): `key` is its Source Key, `value_offset` / `size` cover the
+    /// whole encrypted value and this is the plaintext Source Length.
+    pub(crate) plain: Option<u64>,
 }
 
 pub(crate) struct WalkResult {
@@ -296,6 +367,12 @@ pub(crate) struct WalkResult {
     pub(crate) elements: Vec<Element>,
     /// Generic stream data elements (ST 410) with the BodySID of their partition.
     pub(crate) generic_streams: Vec<(u32, Element)>,
+    /// File offsets of the line-wrapped uncompressed picture system elements that start the
+    /// stored data of a picture (ST 384 7.3, element identifier 01h).
+    pub(crate) line_starts: Vec<u64>,
+    /// Line-wrapped VANC / HANC data elements (ST 384 7.2, types 09h / 0Ah): their value offset
+    /// and the line number of the system element before them (ST 384 Table 4).
+    pub(crate) anc_lines: Vec<(u64, u32)>,
     pub(crate) warnings: Vec<String>,
 }
 
@@ -334,11 +411,15 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
         index: Vec::new(),
         elements: Vec::new(),
         generic_streams: Vec::new(),
+        line_starts: Vec::new(),
+        anc_lines: Vec::new(),
         warnings: Vec::new(),
     };
     let mut win = Window { src, off: 0, buf: Vec::new() };
     let mut pos = run_in;
     let mut cur_meta: Option<usize> = None;
+    // the line number of the last line-wrapped system element (ST 384 Table 4)
+    let mut line: Option<u32> = None;
     let mut resync_budget = 64 << 20;
     while pos + 17 <= len {
         let hdr = win.get(pos, 25)?.to_vec();
@@ -369,7 +450,7 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
             if class == KeyClass::Essence && vstart < len && len - vstart > 0 && is_essence_item(&key) {
                 // keep a truncated clip-wrapped element's whole edit units
                 let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
-                w.elements.push(Element { key, value_offset: vstart, size: len - vstart, truncated: true, body_sid });
+                w.elements.push(Element { key, value_offset: vstart, size: len - vstart, truncated: true, body_sid, plain: None });
             }
             break;
         }
@@ -415,13 +496,41 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                 }
                 if is_essence_item(&key) {
                     let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
-                    w.elements.push(Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid });
+                    w.elements.push(Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid, plain: None });
+                } else if crate::crypt::is_encrypted_triplet(&key) {
+                    // an encrypted essence triplet: filed under the key of the triplet it wraps
+                    let head = win.get(vstart, (vlen as usize).min(128))?.to_vec();
+                    match crate::crypt::source_of(&head) {
+                        Some((source, plain)) if is_essence_item(&source) => {
+                            let body_sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                            w.elements.push(Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid, plain: Some(plain) });
+                        }
+                        // an encrypted ancillary resource of a timed text track file (ST 429-5)
+                        Some((source, plain)) if source.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
+                            let sid = w.partitions.last().map_or(0, |p| p.body_sid);
+                            w.generic_streams
+                                .push((sid, Element { key: source, value_offset: vstart, size: vlen, truncated: false, body_sid: sid, plain: Some(plain) }));
+                        }
+                        Some(_) => {}
+                        None => w.warnings.push(format!("unreadable encrypted triplet at byte {pos}")),
+                    }
+                }
+                if key.0[12..16] == [0x14, 0x01, 0x01, 0x00] {
+                    w.line_starts.push(pos);
+                }
+                if key.0[12..14] == [0x14, 0x01] && matches!(key.0[14], 0x01 | 0x02) {
+                    // the pack's line number is in the 25 header bytes read (4-byte BER length)
+                    let at = (vstart - pos) as usize;
+                    line = hdr.get(at..at + 4).filter(|_| vlen >= 4).and_then(|b| b.try_into().ok()).map(u32::from_be_bytes);
+                }
+                if key.0[12] == 0x17 && matches!(key.0[14], 0x09 | 0x0A) && w.anc_lines.len() < MAX_LINE_ANC_ELEMENTS {
+                    w.anc_lines.push((vstart, line.unwrap_or(0)));
                 }
             }
             KeyClass::Other if key.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
                 cur_meta = None;
                 let sid = w.partitions.last().map_or(0, |p| p.body_sid);
-                w.generic_streams.push((sid, Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid: sid }));
+                w.generic_streams.push((sid, Element { key, value_offset: vstart, size: vlen, truncated: false, body_sid: sid, plain: None }));
             }
             KeyClass::Fill | KeyClass::RandomIndexPack | KeyClass::Other => {}
         }
@@ -437,6 +546,9 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
 const GENERIC_STREAM_DATA_ITEM: [u8; 5] = [0x0D, 0x01, 0x05, 0x09, 0x01];
 
 /// Generic container picture / sound / data / compound items (not system items).
+/// Line-wrapped VANC / HANC data elements whose line numbers are kept.
+const MAX_LINE_ANC_ELEMENTS: usize = 1 << 20;
+
 fn is_essence_item(k: &Ul) -> bool {
     matches!(k.0[12], 0x05 | 0x06 | 0x07 | 0x15 | 0x16 | 0x17 | 0x18) || crate::klv::is_dcp_iab_element(k)
 }
@@ -561,6 +673,9 @@ fn picture_info(d: &Set) -> PictureInfo {
         display_x_offset: i(tag::DISPLAY_X_OFFSET),
         display_y_offset: i(tag::DISPLAY_Y_OFFSET),
         pixel_layout: d.get(tag::PIXEL_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
+        // a palette of up to 65 536 entries of at most 8 bytes
+        palette: d.get(tag::PALETTE).filter(|v| v.len() <= 1 << 19).map(<[u8]>::to_vec).unwrap_or_default(),
+        palette_layout: d.get(tag::PALETTE_LAYOUT).map(|v| v.chunks_exact(2).map(|c| (c[0], c[1])).take(8).collect()).unwrap_or_default(),
         component_min_ref: d.u(tag::COMPONENT_MIN_REF).map(|v| v as u32),
         component_max_ref: d.u(tag::COMPONENT_MAX_REF).map(|v| v as u32),
     }
@@ -591,6 +706,11 @@ struct TrackRef {
     sub_descriptors: Vec<Arc<Set>>,
     body_sid: u32,
     index_sid: u32,
+    /// Edit units of filler (or of clips whose essence is not in this file) played before this
+    /// clip in an OP2x / OP3x edit list, in this track's edit rate.
+    gap_before: i64,
+    /// The same after the last clip of the edit list.
+    gap_after: i64,
 }
 
 fn umid_of(s: &Set, t: u16) -> Option<[u8; 32]> {
@@ -661,6 +781,8 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<Vec<TrackRe
                 sub_descriptors: subs,
                 body_sid,
                 index_sid,
+                gap_before: 0,
+                gap_after: 0,
             });
         }
         None
@@ -675,18 +797,39 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<Vec<TrackRe
             // clips into one or more file packages, played one after another (ST 377-1 B.1,
             // ST 392 / ST 393 / ST 407 / ST 408).
             let clips: Vec<&Set> = comps.iter().copied().filter(|c| c.kind() == Some(st::SOURCE_CLIP)).collect();
-            let fillers: i64 = comps.iter().filter(|c| c.kind() == Some(st::FILLER)).filter_map(|c| c.i(tag::DURATION)).filter(|d| *d > 0).sum();
-            if fillers > 0 && !clips.is_empty() {
-                warnings.push(format!("material track {mtid}: {fillers} edit units of filler are left out (the clips play back to back)"));
-            }
             let single = clips.len() == 1;
+            let mrate = t.rational(tag::EDIT_RATE).unwrap_or_default();
+            // durations are in the material track's edit rate; convert when the file track's differs
+            let conv = |v: i64, to: Rational| -> i64 {
+                if mrate.is_valid() && to.is_valid() && mrate != to {
+                    i64::try_from(i128::from(v) * i128::from(to.num) * i128::from(mrate.den) / (i128::from(to.den) * i128::from(mrate.num)).max(1))
+                        .unwrap_or(i64::MAX)
+                } else {
+                    v
+                }
+            };
             let mut parts: Vec<TrackRef> = Vec::new();
-            for clip in clips {
-                let Some(umid) = umid_of(clip, tag::SOURCE_PACKAGE_ID) else { continue };
+            // fillers, and clips whose essence is not here, play as blank (material edit units)
+            let mut pending: i64 = 0;
+            for c in comps.iter().copied() {
+                let blank = c.i(tag::DURATION).filter(|d| *d > 0).unwrap_or(0);
+                if c.kind() == Some(st::FILLER) {
+                    pending = pending.saturating_add(blank);
+                    continue;
+                }
+                if c.kind() != Some(st::SOURCE_CLIP) {
+                    continue;
+                }
+                let clip = c;
+                let Some(umid) = umid_of(clip, tag::SOURCE_PACKAGE_ID) else {
+                    pending = pending.saturating_add(blank);
+                    continue;
+                };
                 let Some(pkg) = file_pkg(&umid) else {
                     if kind != TrackKind::Data {
                         warnings.push(format!("material track {mtid} refers to a package not in this file"));
                     }
+                    pending = pending.saturating_add(blank);
                     continue;
                 };
                 let src_track = clip.u(tag::SOURCE_TRACK_ID).map(|v| v as u32);
@@ -695,19 +838,22 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<Vec<TrackRe
                     continue;
                 }
                 let duration = clip.i(tag::DURATION).or_else(|| seq.filter(|_| single).and_then(|s| s.i(tag::DURATION))).filter(|d| *d >= 0);
-                // durations are in the material track's edit rate; convert when the file track's differs
-                let mrate = t.rational(tag::EDIT_RATE).unwrap_or_default();
                 if let Some(mut tr) = file_track(pkg, Some(kind), src_track, clip.i(tag::START_POSITION).unwrap_or(0), duration, t.string(tag::TRACK_NAME)) {
-                    if mrate.is_valid() && tr.edit_rate.is_valid() && mrate != tr.edit_rate {
-                        let conv = |v: i64| (v as i128 * tr.edit_rate.num as i128 * mrate.den as i128 / (tr.edit_rate.den as i128 * mrate.num as i128)) as i64;
-                        tr.duration = tr.duration.map(conv);
-                        tr.start_position = conv(tr.start_position);
-                    }
+                    let rate = tr.edit_rate;
+                    tr.duration = tr.duration.map(|v| conv(v, rate));
+                    tr.start_position = conv(tr.start_position, rate);
+                    tr.gap_before = conv(pending, rate);
+                    pending = 0;
                     if timecode.is_none() {
                         timecode = package_timecode(md, pkg);
                     }
                     parts.push(tr);
+                } else {
+                    pending = pending.saturating_add(blank);
                 }
+            }
+            if let Some(last) = parts.last_mut() {
+                last.gap_after = conv(pending, last.edit_rate);
             }
             let duplicate =
                 |o: &Vec<TrackRef>| o.len() == 1 && parts.len() == 1 && o[0].track_id == parts[0].track_id && o[0].track_number == parts[0].track_number;
@@ -766,6 +912,8 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
     let product_name = ident.and_then(|i| i.string(tag::PRODUCT_NAME));
     let company_name = ident.and_then(|i| i.string(tag::COMPANY_NAME));
     let (refs, timecode, material_name) = resolve_tracks(&md, &mut warnings);
+    // ST 429-6: one Cryptographic Context per encrypted track file
+    let encryption = md.sets.iter().find_map(crate::crypt::Encryption::from_set);
     if refs.iter().flatten().all(|r| r.kind == TrackKind::Data) && md.of_kind(crate::timed_text::TIMED_TEXT_DESCRIPTOR).next().is_some() {
         return Err(Error::Unsupported("timed text track file (read it with open_timed_text)".into()));
     }
@@ -783,6 +931,8 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
     };
     for parts in &refs {
         let mut built = Vec::new();
+        // a clip without essence here plays as blank: its length joins the next gap
+        let mut lost = 0i64;
         for r in parts {
             let number = r.track_number.to_be_bytes();
             let mut key4 = all_numbers.iter().find(|n| **n == number).copied();
@@ -801,6 +951,7 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
             }
             let Some(key4) = key4 else {
                 warnings.push(format!("no essence in this file for track {} (number {:08x})", r.track_id, r.track_number));
+                lost = lost.saturating_add(r.gap_before).saturating_add(r.duration.unwrap_or(0).max(0)).saturating_add(r.gap_after);
                 continue;
             };
             if !claimed.contains(&key4) {
@@ -810,11 +961,15 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
             // containers are told apart by body SID
             let by_sid = r.body_sid != 0 && w.elements.iter().any(|e| e.key.0[12..16] == key4 && e.body_sid == r.body_sid);
             let elements: Vec<Element> = w.elements.iter().filter(|e| e.key.0[12..16] == key4 && (!by_sid || e.body_sid == r.body_sid)).copied().collect();
-            built.push(build_track(src, r, &elements, key4, &w.index, &mut warnings)?);
+            let track = build_track(src, r, &elements, key4, &w.index, &w.line_starts, encryption, &mut warnings)?;
+            built.push(Part { track, gap_before: lost.saturating_add(r.gap_before), gap_after: r.gap_after });
+            lost = 0;
         }
-        let mut built = built.into_iter();
-        if let Some(first) = built.next() {
-            tracks.push(concat(first, built.collect(), &mut warnings));
+        if let Some(last) = built.last_mut() {
+            last.gap_after = last.gap_after.saturating_add(lost);
+        }
+        if let Some(t) = concat(built, &mut warnings) {
+            tracks.push(t);
         }
     }
     if tracks.is_empty() {
@@ -864,6 +1019,8 @@ fn build_track(
     elements: &[Element],
     key4: [u8; 4],
     index: &[IndexSegment],
+    line_starts: &[u64],
+    encryption: Option<crate::crypt::Encryption>,
     warnings: &mut Vec<String>,
 ) -> Result<EssenceTrack> {
     let desc = r.descriptor.as_ref();
@@ -891,7 +1048,18 @@ fn build_track(
         temporal_offsets: false,
         needs_reorder: false,
         indexed: false,
+        gaps: Vec::new(),
+        line_pieces: Default::default(),
+        encryption: None,
     };
+    let encrypted = elements.iter().any(|e| e.plain.is_some());
+    if encrypted {
+        t.encryption =
+            Some(encryption.unwrap_or(crate::crypt::Encryption { context_id: [0; 16], key_id: [0; 16], source_container: None, aes: true, mic: false }));
+        if encryption.is_none() {
+            warnings.push("encrypted essence without a Cryptographic Context: its key cannot be found".into());
+        }
+    }
     match r.kind {
         TrackKind::Picture => {
             let pi = desc.map(|d| picture_info(d)).unwrap_or_default();
@@ -902,7 +1070,7 @@ fn build_track(
             }
             // A wrong or missing label: trust the essence bytes (uncompressed samples are not
             // coded, so any pattern can start them).
-            if let Some(first) = elements.first().filter(|_| codec != Codec::Uncompressed) {
+            if let Some(first) = elements.first().filter(|_| codec != Codec::Uncompressed && !encrypted) {
                 let head = read_upto(src, first.value_offset, 64)?;
                 if let Some(sniffed) = sniff_picture(&head) {
                     let agree = std::mem::discriminant(&sniffed) == std::mem::discriminant(&codec);
@@ -915,9 +1083,7 @@ fn build_track(
             let line_wrapped = container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x05]) && c.0[15] == 0x03)
                 || elements.first().is_some_and(|e| e.key.0[12] == 0x15 && e.key.0[14] == 0x04);
             if codec == Codec::Uncompressed && line_wrapped {
-                warnings.push("line-wrapped uncompressed pictures are not supported".into());
-                t.codec = Codec::Unknown;
-                t.picture = Some(pi);
+                build_lines(&mut t, pi, elements, line_starts, warnings);
                 return Ok(t);
             }
             let unit = (codec == Codec::Uncompressed).then(|| crate::uncompressed::Layout::of(&pi).ok().map(|l| l.edit_unit_bytes(&pi))).flatten();
@@ -947,7 +1113,7 @@ fn build_track(
             t.sound = Some(SoundInfo { sample_rate: rate, bits: 24, ..Default::default() });
             build_pictures(src, &mut t, elements, index, warnings)?;
         }
-        TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements) => {
+        TrackKind::Sound if is_iab(desc.map(|d| &**d), container, key4, src, elements, encrypted) => {
             t.codec = Codec::Iab;
             t.sound_format = SoundFormat::Iab;
             t.sound = Some(desc.map(|d| sound_info(d)).unwrap_or_default());
@@ -979,11 +1145,12 @@ fn build_track(
             let fb = si.frame_bytes() as u64;
             let mut first = 0u64;
             for e in elements {
+                let plain = e.plain.unwrap_or(e.size);
                 let n = match t.sound_format {
-                    SoundFormat::Aes3Element => e.size.saturating_sub(4) / 32,
-                    _ => e.size / fb.max(1),
+                    SoundFormat::Aes3Element => plain.saturating_sub(4) / 32,
+                    _ => plain / fb.max(1),
                 };
-                t.chunks.push(Chunk { offset: e.value_offset, size: e.size, first_sample: first, samples: n });
+                t.chunks.push(Chunk { offset: e.value_offset, size: e.size, first_sample: first, samples: n, skip: 0 });
                 first += n;
             }
             t.wrapping = if elements.len() == 1 && r.duration.is_some_and(|d| d > 1) { Wrapping::Clip } else { Wrapping::Frame };
@@ -997,13 +1164,29 @@ fn build_track(
 /// One material track whose sequence holds several source clips (OP2x / OP3x): the clips' file
 /// package tracks played back to back as one track. Each clip contributes its presented range
 /// (from its start position, for its duration); pictures before that range that the first
-/// presented picture needs for decoding are kept as hidden (never presented) samples. Clips whose
-/// essence differs from the first clip's (codec, edit rate, picture size, sound format) are left
-/// out with a warning.
-fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<String>) -> EssenceTrack {
-    if rest.is_empty() {
-        return first;
+/// presented picture needs for decoding are kept as hidden (never presented) samples. Fillers,
+/// clips whose essence is not in the file and clips whose essence differs from the first clip's
+/// (codec, edit rate, picture size, sound format; with a warning) become [`EssenceTrack::gaps`].
+/// A single clip without gaps is returned as built.
+/// One clip of an edit list with the blank edit units around it.
+pub(crate) struct Part {
+    pub(crate) track: EssenceTrack,
+    pub(crate) gap_before: i64,
+    pub(crate) gap_after: i64,
+}
+
+pub(crate) fn concat(parts: Vec<Part>, warnings: &mut Vec<String>) -> Option<EssenceTrack> {
+    let mut gapped: Vec<(EssenceTrack, i64)> = Vec::with_capacity(parts.len());
+    let mut tail = 0i64;
+    for p in parts {
+        gapped.push((p.track, p.gap_before.max(0)));
+        tail = tail.saturating_add(p.gap_after.max(0));
     }
+    if gapped.len() == 1 && tail == 0 && gapped.first().is_some_and(|g| g.1 == 0) {
+        return gapped.pop().map(|g| g.0);
+    }
+    let mut gapped = gapped.into_iter();
+    let (first, first_gap) = gapped.next()?;
     let signature = |t: &EssenceTrack| {
         (
             t.kind,
@@ -1014,32 +1197,58 @@ fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<Strin
             t.sound.as_ref().map(|s| (s.sample_rate, s.channels, s.bits, s.frame_bytes())),
         )
     };
-    let mut parts = vec![first];
-    for t in rest {
-        if signature(&t) == signature(&parts[0]) {
-            parts.push(t);
+    let sig = signature(&first);
+    // each kept clip with the blank edit units before it; a clip with other essence is blank too
+    let mut parts: Vec<(EssenceTrack, i64)> = vec![(first, first_gap)];
+    let mut pending = 0i64;
+    for (t, gap) in gapped {
+        pending = pending.saturating_add(gap);
+        if signature(&t) == sig {
+            parts.push((t, pending));
+            pending = 0;
         } else {
-            warnings.push(format!("track {}: a clip with different essence ({}) is left out of the edit list", parts[0].track_id, t.codec.name()));
+            warnings.push(format!("track {}: a clip with different essence ({}) plays as blank", t.track_id, t.codec.name()));
+            pending = pending.saturating_add(t.duration.unwrap_or(0).max(0));
         }
     }
-    let mut out = parts[0].clone();
+    tail = tail.saturating_add(pending);
+    let mut out = parts[0].0.clone();
+    for (t, _) in parts.iter().skip(1) {
+        out.line_pieces.extend(t.line_pieces.iter().map(|(k, v)| (*k, v.clone())));
+    }
     out.origin = 0;
     out.start_position = 0;
     out.samples = Vec::new();
     out.display_order = Vec::new();
     out.chunks = Vec::new();
-    out.temporal_offsets = parts.iter().any(|t| t.temporal_offsets);
-    out.indexed = parts.iter().all(|t| t.indexed);
+    out.gaps = Vec::new();
+    out.temporal_offsets = parts.iter().any(|t| t.0.temporal_offsets);
+    out.indexed = parts.iter().all(|t| t.0.indexed);
     out.needs_reorder = false;
-    if parts.iter().any(|t| t.needs_reorder) {
+    if parts.len() > 1 && parts.iter().any(|t| t.0.needs_reorder) {
         warnings.push(format!("track {}: B pictures without index temporal offsets across several clips: the stored order is used", out.track_id));
+    } else {
+        out.needs_reorder = parts.iter().any(|t| t.0.needs_reorder);
     }
+    // presentation position, gaps included
+    let mut pos: i64 = 0;
+    let add_gap = |gaps: &mut Vec<(i64, i64)>, pos: &mut i64, len: i64| {
+        if len <= 0 {
+            return;
+        }
+        match gaps.last_mut() {
+            Some(g) if g.0.saturating_add(g.1) == *pos => g.1 = g.1.saturating_add(len),
+            _ => gaps.push((*pos, len)),
+        }
+        *pos = pos.saturating_add(len);
+    };
+    let mut gaps = Vec::new();
     let chunked = out.kind == TrackKind::Sound && matches!(out.sound_format, SoundFormat::Pcm | SoundFormat::Aes3Element);
     let mut total: i64 = 0;
     if chunked {
         let mut next = 0u64;
-        let mut partial = false;
-        for t in &parts {
+        for (t, gap) in &parts {
+            add_gap(&mut gaps, &mut pos, *gap);
             let (n, d) = t.samples_per_edit_unit();
             let (n, d) = (i128::from(n.max(1)), i128::from(d.max(1)));
             let frames = |eu: i64| u64::try_from(i128::from(eu.max(0)) * n / d).unwrap_or(u64::MAX);
@@ -1053,27 +1262,27 @@ fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<Strin
                 if ce <= a || cs >= b {
                     continue;
                 }
+                let (x, y) = (a.max(cs), b.min(ce));
                 if t.sound_format == SoundFormat::Pcm {
-                    let (x, y) = (a.max(cs), b.min(ce));
                     let offset = c.offset.saturating_add((x - cs).saturating_mul(fb));
-                    out.chunks.push(Chunk { offset, size: (y - x).saturating_mul(fb), first_sample: next, samples: y - x });
+                    out.chunks.push(Chunk { offset, size: (y - x).saturating_mul(fb), first_sample: next, samples: y - x, skip: 0 });
                     next = next.saturating_add(y - x);
                 } else {
-                    // AES3 elements are not cut: a clip boundary inside one keeps the whole element
-                    partial |= cs < a || ce > b;
-                    out.chunks.push(Chunk { first_sample: next, ..*c });
-                    next = next.saturating_add(c.samples);
+                    // an AES3 element is decoded whole; a clip boundary inside it skips the
+                    // sample frames before it and stops at the one after it
+                    out.chunks.push(Chunk { first_sample: next, samples: y - x, skip: c.skip.saturating_add(x - cs), ..*c });
+                    next = next.saturating_add(y - x);
                 }
             }
-            total = total.saturating_add(i64::try_from(i128::from(len) * d / n).unwrap_or(i64::MAX));
-        }
-        if partial {
-            warnings.push(format!("track {}: a clip boundary falls inside an AES3 element: the whole element is played", out.track_id));
+            let eu = i64::try_from(i128::from(len) * d / n).unwrap_or(i64::MAX);
+            total = total.saturating_add(eu);
+            pos = pos.saturating_add(eu);
         }
         out.wrapping = Wrapping::Frame;
     } else {
         let mut hidden = i64::MIN / 2;
-        for t in &parts {
+        for (t, gap) in &parts {
+            add_gap(&mut gaps, &mut pos, *gap);
             let first = usize::try_from(t.first_edit_unit()).unwrap_or(0).min(t.display_order.len());
             let avail = t.display_order.len() - first;
             let count = t.duration.and_then(|d| usize::try_from(d).ok()).map_or(avail, |d| d.min(avail));
@@ -1095,15 +1304,18 @@ fn concat(first: EssenceTrack, rest: Vec<EssenceTrack>, warnings: &mut Vec<Strin
             }
             out.display_order.extend(shown.iter().map(|&s| at + (s - start)));
             total = total.saturating_add(count as i64);
+            pos = pos.saturating_add(count as i64);
         }
     }
+    add_gap(&mut gaps, &mut pos, tail);
+    out.gaps = gaps;
     out.duration = Some(total);
-    out
+    Some(out)
 }
 
 /// An Immersive Audio track: the IAB descriptor, the IAB essence container or element key
 /// (ST 2067-201: item 0x16, element type 0x0D), or essence that starts as an IABitstream frame.
-fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl ByteSource + ?Sized), elements: &[Element]) -> bool {
+fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl ByteSource + ?Sized), elements: &[Element], encrypted: bool) -> bool {
     if desc.is_some_and(|d| d.kind() == Some(st::IAB_ESSENCE_DESCRIPTOR))
         || container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x1D]))
         || key4[0] == 0x16 && key4[2] == 0x0D
@@ -1114,7 +1326,7 @@ fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl 
     // tag, IAFrame tag) at the start of the essence
     let pcm_desc = desc.is_some_and(|d| matches!(d.kind(), Some(st::AES3_DESCRIPTOR) | Some(st::WAVE_DESCRIPTOR)));
     let pcm_coding = desc.and_then(|d| d.ul(tag::SOUND_ESSENCE_CODING)).is_some_and(|c| c.item_starts_with(&[0x04, 0x02, 0x02, 0x01]));
-    if pcm_desc || pcm_coding {
+    if pcm_desc || pcm_coding || encrypted {
         return false;
     }
     let Some(first) = elements.first() else { return false };
@@ -1125,6 +1337,85 @@ fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl 
 }
 
 /// Splits a clip-wrapped element into edit units of `unit` bytes.
+/// Line-wrapped uncompressed pictures (ST 384 6.3, 7.1–7.3): one picture element per stored line,
+/// with system elements (start of stored data, start of line) and data elements (fill, VANC,
+/// HANC) between them, which carry the image start / end fill. A picture starts at each "start of
+/// stored data" system element (`starts`, file offsets in order), or, without them, when the
+/// lines gathered so far hold one edit unit. Each picture becomes one sample read piece by piece;
+/// a picture whose lines do not add up to the stored size is left out.
+fn build_lines(t: &mut EssenceTrack, mut pi: PictureInfo, elements: &[Element], starts: &[u64], warnings: &mut Vec<String>) {
+    // the fill lives in data elements, not in the picture lines
+    pi.image_start_offset = 0;
+    pi.image_end_offset = 0;
+    let unit = crate::uncompressed::Layout::of(&pi).map(|l| l.edit_unit_bytes(&pi));
+    t.picture = Some(pi);
+    t.wrapping = Wrapping::Line;
+    let unit = match unit {
+        Ok(u) if u > 0 && u <= u64::from(u32::MAX) => u,
+        Ok(_) => {
+            warnings.push("line-wrapped uncompressed pictures without a usable stored size".into());
+            t.codec = Codec::Unknown;
+            return;
+        }
+        Err(e) => {
+            warnings.push(format!("line-wrapped uncompressed pictures: {e}"));
+            t.codec = Codec::Unknown;
+            return;
+        }
+    };
+    let mut pieces: Vec<(u64, u32)> = Vec::new();
+    let mut have = 0u64;
+    let mut bad = 0usize;
+    let mut next_start = 0usize;
+    let mut finish = |t: &mut EssenceTrack, pieces: &mut Vec<(u64, u32)>, have: &mut u64| {
+        if *have == unit {
+            let offset = pieces.first().map_or(0, |p| p.0);
+            let i = t.samples.len();
+            t.samples.push(Sample { offset, size: unit as u32, pts: i as i64, key: true, b_picture: false });
+            t.line_pieces.insert(offset, std::mem::take(pieces));
+        } else if !pieces.is_empty() || *have > 0 {
+            bad += 1;
+            pieces.clear();
+        }
+        *have = 0;
+    };
+    for e in elements.iter().filter(|e| !e.truncated && e.size > 0) {
+        // a start of stored data before this line closes the picture being gathered
+        let mut started = false;
+        while starts.get(next_start).is_some_and(|&s| s < e.value_offset) {
+            next_start += 1;
+            started = true;
+        }
+        if started {
+            finish(t, &mut pieces, &mut have);
+        }
+        let Ok(size) = u32::try_from(e.size) else { break };
+        if have.saturating_add(e.size) > unit {
+            if starts.is_empty() {
+                // without system elements this line starts the next picture
+                finish(t, &mut pieces, &mut have);
+            } else {
+                // too many lines: the picture is left out at the next start of stored data
+                have = u64::MAX;
+                continue;
+            }
+        }
+        if e.size > unit {
+            continue;
+        }
+        pieces.push((e.value_offset, size));
+        have += e.size;
+        if have == unit && starts.is_empty() {
+            finish(t, &mut pieces, &mut have);
+        }
+    }
+    finish(t, &mut pieces, &mut have);
+    if bad > 0 {
+        warnings.push(format!("{bad} line-wrapped picture(s) whose lines do not add up to {unit} bytes are left out"));
+    }
+    t.display_order = (0..t.samples.len()).collect();
+}
+
 fn split_constant(t: &mut EssenceTrack, e: &Element, unit: u64) {
     let n = e.size / unit;
     t.wrapping = Wrapping::Clip;
@@ -1177,7 +1468,7 @@ fn build_pictures(
 ) -> Result<()> {
     let (entries, eubc) = index_entries(index, t.index_sid);
     let expected = t.duration.map(|d| d.saturating_add(t.first_edit_unit()).max(0) as usize);
-    let clip = elements.len() == 1 && expected.is_none_or(|n| n > 1) && (eubc > 0 || entries.len() > 1);
+    let clip = elements.len() == 1 && expected.is_none_or(|n| n > 1) && (eubc > 0 || entries.len() > 1) && t.encryption.is_none();
     let mut samples: Vec<Sample> = Vec::new();
     if clip {
         t.wrapping = Wrapping::Clip;
@@ -1224,6 +1515,11 @@ fn build_pictures(
                 warnings.push("no index table with random-access flags: key frames found by scanning the essence".into());
             }
             for (i, s) in samples.iter_mut().enumerate() {
+                if t.encryption.is_some() {
+                    // the bitstream is cipher text: every picture is a key frame candidate
+                    s.key = true;
+                    continue;
+                }
                 let head = read_upto(src, s.offset, (s.size as usize).min(1024))?;
                 s.key = i == 0 || is_random_access(t.codec, &head);
             }
@@ -1299,12 +1595,27 @@ impl MxfFile {
     pub fn read_sample(&self, src: &(impl ByteSource + ?Sized), track: usize, i: usize) -> Result<Vec<u8>> {
         let t = self.tracks.get(track).ok_or_else(|| Error::Invalid(format!("no track {track}")))?;
         let s = t.samples.get(i).ok_or_else(|| Error::Invalid(format!("no sample {i}")))?;
+        if let Some(pieces) = t.line_pieces.get(&s.offset) {
+            let mut v = Vec::with_capacity(s.size as usize);
+            for &(at, n) in pieces {
+                if u64::from(n) > src.len().saturating_sub(at) || v.len() + n as usize > s.size as usize {
+                    return Err(Error::Invalid("picture line extends past the end of the source".into()));
+                }
+                let from = v.len();
+                v.resize(from + n as usize, 0);
+                src.read_at(at, &mut v[from..])?;
+            }
+            return Ok(v);
+        }
         if u64::from(s.size) > src.len().saturating_sub(s.offset) {
             return Err(Error::Invalid("picture sample extends past the end of the source".into()));
         }
         let mut v = vec![0u8; s.size as usize];
         src.read_at(s.offset, &mut v)?;
-        Ok(v)
+        match &t.encryption {
+            Some(e) => decrypt(e, &v),
+            None => Ok(v),
+        }
     }
 
     /// `frames` sound sample frames from stored sample `start` of track `track`, planar f32
@@ -1345,6 +1656,13 @@ impl MxfFile {
             let b = end.min(c.first_sample.saturating_add(c.samples));
             if b > a {
                 let decoded = match t.sound_format {
+                    SoundFormat::Pcm if t.encryption.is_some() => {
+                        let v = self.read_encrypted_chunk(src, t, c)?;
+                        let from = usize::try_from((a - c.first_sample).saturating_mul(fb as u64)).unwrap_or(usize::MAX);
+                        let bytes = ((b - a) as usize).saturating_mul(fb);
+                        let part = v.get(from..).map(|r| &r[..bytes.min(r.len()) / fb * fb]).unwrap_or_default();
+                        decode_pcm(part, SoundFormat::Pcm, ch, si.bits, fb)?
+                    }
                     SoundFormat::Pcm => {
                         let off = (a - c.first_sample)
                             .checked_mul(fb as u64)
@@ -1359,12 +1677,9 @@ impl MxfFile {
                         decode_pcm(&v, SoundFormat::Pcm, ch, si.bits, fb)?
                     }
                     SoundFormat::Aes3Element => {
-                        let size = c.size.min(src.len().saturating_sub(c.offset));
-                        let size = usize::try_from(size).map_err(|_| Error::Invalid("AES3 chunk exceeds the address space".into()))?;
-                        let mut v = vec![0u8; size];
-                        src.read_at(c.offset, &mut v)?;
+                        let v = self.read_encrypted_chunk(src, t, c)?;
                         let all = decode_pcm(&v, SoundFormat::Aes3Element, ch, si.bits, 0)?;
-                        let s0 = (a - c.first_sample) as usize;
+                        let s0 = usize::try_from(c.skip.saturating_add(a - c.first_sample)).unwrap_or(usize::MAX);
                         all.into_iter().map(|p| p.get(s0..).map(<[f32]>::to_vec).unwrap_or_default()).collect()
                     }
                     SoundFormat::Iab | SoundFormat::Other => return Err(Error::Unsupported("sound essence coding".into())),
@@ -1380,6 +1695,39 @@ impl MxfFile {
         }
         Ok(out)
     }
+
+    /// The bytes of sound chunk `c` of `t`, decrypted when the track is encrypted.
+    fn read_encrypted_chunk(&self, src: &(impl ByteSource + ?Sized), t: &EssenceTrack, c: &Chunk) -> Result<Vec<u8>> {
+        let size = c.size.min(src.len().saturating_sub(c.offset));
+        let size = usize::try_from(size).map_err(|_| Error::Invalid("sound chunk exceeds the address space".into()))?;
+        let mut v = vec![0u8; size];
+        src.read_at(c.offset, &mut v)?;
+        match &t.encryption {
+            Some(e) => decrypt(e, &v),
+            None => Ok(v),
+        }
+    }
+
+    /// Whether some track is encrypted and its content key is not in the key ring.
+    pub fn needs_key(&self) -> bool {
+        self.tracks.iter().any(|t| t.encryption.is_some_and(|e| crate::crypt::key(&e.key_id).is_none()))
+    }
+}
+
+/// Decrypts an Encrypted Triplet value of a track with context `e` (key from the key ring). When
+/// the KDM gave no MIC key and the triplets carry a MIC, the key that earlier editions of ST
+/// 429-6 derive from the content key (Annex B) is tried: once it matches, it joins the key ring
+/// and every later triplet of that key is checked with it.
+fn decrypt(e: &crate::crypt::Encryption, v: &[u8]) -> Result<Vec<u8>> {
+    let mut key = crate::crypt::key(&e.key_id).ok_or_else(|| Error::Encrypted(crate::crypt::uuid_text(&e.key_id)))?;
+    if key.mic.is_none() && e.mic {
+        let legacy = crate::crypt::legacy_mic_key(&key.cipher);
+        if crate::crypt::mic_matches(v, &legacy) {
+            crate::crypt::add_key(e.key_id, crate::crypt::ContentKey { cipher: [0; 16], mic: Some(legacy) });
+            key.mic = Some(legacy);
+        }
+    }
+    crate::crypt::decrypt(v, &key)
 }
 
 #[cfg(test)]

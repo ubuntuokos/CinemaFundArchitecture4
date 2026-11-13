@@ -55,7 +55,7 @@ pub(crate) fn core_transform(wavelet_index: u64, depth: u32) -> Result<Transform
     Ok(Transform { wavelet, wavelet_ho: wavelet, depth, depth_ho: 0, slices_x: 1, slices_y: 1, ld: None, hq: (0, 1), quant_matrix: Vec::new() })
 }
 
-fn transform_parameters(b: &mut Bits, seq: &Sequence, ld: bool) -> Result<Transform> {
+fn transform_parameters(b: &mut Bits<'_>, seq: &Sequence, ld: bool) -> Result<Transform> {
     let wavelet_index = b.read_uint()?;
     let depth = b.read_uint()?;
     let mut wavelet_index_ho = wavelet_index;
@@ -214,7 +214,7 @@ impl Slices<'_> {
     }
 
     /// `slice_band` for every subband of component `c`.
-    fn component(&mut self, b: &mut Bits, c: usize, sx: u64, sy: u64) -> Result<()> {
+    fn component(&mut self, b: &mut Bits<'_>, c: usize, sx: u64, sy: u64) -> Result<()> {
         for bi in 0..self.bands[c].len() {
             let q = self.qi.get(bi).copied().unwrap_or(0);
             let (x1, x2, y1, y2, w) = self.region(c, bi, sx, sy);
@@ -232,7 +232,7 @@ impl Slices<'_> {
     }
 
     /// `color_diff_slice_band` for every subband: the two colour difference components interleaved.
-    fn color_diff(&mut self, b: &mut Bits, sx: u64, sy: u64) -> Result<()> {
+    fn color_diff(&mut self, b: &mut Bits<'_>, sx: u64, sy: u64) -> Result<()> {
         for bi in 0..self.bands[1].len() {
             let q = self.qi.get(bi).copied().unwrap_or(0);
             let (x1, x2, y1, y2, w) = self.region(1, bi, sx, sy);
@@ -251,7 +251,7 @@ impl Slices<'_> {
         Ok(())
     }
 
-    fn ld_slice(&mut self, b: &mut Bits, sx: u64, sy: u64, (num, den): (u64, u64)) -> Result<()> {
+    fn ld_slice(&mut self, b: &mut Bits<'_>, sx: u64, sy: u64, (num, den): (u64, u64)) -> Result<()> {
         let n = sy.saturating_mul(self.t.slices_x).saturating_add(sx);
         let bytes = (n + 1).checked_mul(num).ok_or(Error::Invalid("slice bytes"))? / den - n.checked_mul(num).ok_or(Error::Invalid("slice bytes"))? / den;
         let total = bytes.checked_mul(8).filter(|&t| t <= b.remaining()).ok_or(Error::Truncated)?;
@@ -273,7 +273,7 @@ impl Slices<'_> {
         b.flush_inputb()
     }
 
-    fn hq_slice(&mut self, b: &mut Bits, sx: u64, sy: u64) -> Result<()> {
+    fn hq_slice(&mut self, b: &mut Bits<'_>, sx: u64, sy: u64) -> Result<()> {
         let (prefix, scaler) = self.t.hq;
         b.skip_bytes(prefix)?;
         let qindex = b.read_byte()?;

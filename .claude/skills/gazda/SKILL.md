@@ -38,6 +38,21 @@ $ARGUMENTS
 - Csak olyan PR-t, amit a tulajdonos **ebben a hívásban** kifejezetten jóváhagyott. Egy
   hívásban több PR is jóváhagyható; ilyenkor a megadott sorrendben, egymás után dolgozol.
 - Egyenként: ág frissítése a `main`-hez, zöld `full-validation-gate` azon a fejen, utána merge.
+- **CodeRabbit** (`docs/coordination.md` §2.9 és §3.4): csak **kockázatos** PR-ra vonatkozik.
+  Hogy egy PR kockázatos-e, azt a fájllistájából (`gh api --paginate $R/pulls/<n>/files`;
+  átnevezésnél a `previous_filename` is számít) magad döntöd el a §2.9 listája szerint, nem a leírásban álló jelzésből. Kockázatos PR-on
+  beolvasztás előtt (köteg esetén minden kötegbe szánt eredeti PR-on) ellenőrizd mindhárom
+  feltételt (`R=repos/ubuntuokos/CinemaFundArchitecture4`). Ha a keret elfogyott, a PR vár:
+  (a) kérés: `gh api --paginate $R/issues/<n>/comments` – van `@coderabbitai review`;
+  (b) befejezett review: `gh api --paginate "$R/commits/<fej-sha>/check-runs?check_name=CodeRabbit"` – a
+  legkésőbb indult `CodeRabbit` check-run
+  `success` („Finished”, nem `neutral` „Review rate limited”), és `completed_at`-je az utolsó
+  kérésnél későbbi;
+  (c) nincs megválaszolatlan megállapítás: `gh api $R/pulls/<n>/ccr/review_threads` (a
+  Claude Code proxy végpontja; máshol GraphQL `reviewThreads { isResolved }`), és a PR minden
+  (korábbi és legutóbbi) CodeRabbit-review törzsében szál nélkül közölt megállapításokra is van válasz a PR-megjegyzések között.
+  Ha bármelyik hiányzik, ne olvaszd be és ne tedd kötegbe: a PR a (c) kategóriába kerül, és
+  a PR-ban jelzed a fejlesztőnek. Dependabot-PR-ra és magára a köteg-PR-ra nem vonatkozik.
 - **Köteg** (`/gazda köteg #12 #15 …`, `docs/coordination.md` §3a): `scripts/dev/gazda-koteg.sh`
   összerakja a köteg-ágat és megnyitja a köteg-PR-t a `cfa4-full-validation` címkével. Zöld kapu
   után a köteg-PR-t **csak merge committal** olvasztod be, majd ellenőrzöd, hogy minden bekerült

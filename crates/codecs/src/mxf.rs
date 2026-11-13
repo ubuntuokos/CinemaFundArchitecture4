@@ -51,9 +51,11 @@ pub struct MxfSource {
     vpts: Vec<i64>,
     /// Display position → stored picture.
     vorder: Vec<usize>,
-    /// First presented display position, and the number presented.
+    /// First presented display position, and the number presented (edit list gaps included).
     vfirst: i64,
     vcount: i64,
+    /// The black picture shown in edit list gaps (made on first use).
+    blank: std::sync::OnceLock<Arc<VideoFrame>>,
     video: GopCache,
     /// Why the video cannot be decoded (no decoder for the coding).
     unsupported: Option<String>,
@@ -433,7 +435,8 @@ impl MxfSource {
             }
             vfirst = t.first_edit_unit().min(vorder.len() as i64);
             let avail = vorder.len() as i64 - vfirst;
-            vcount = t.duration.map_or(avail, |d| d.min(avail)).max(0);
+            // edit list gaps (OP2x / OP3x fillers) play as black between the stored pictures
+            vcount = t.duration.map_or(avail, |d| d.min(avail)).max(0).saturating_add(t.gap_edit_units());
             let rate = if t.edit_rate.is_valid() { FrameRate::new(t.edit_rate.num as i64, t.edit_rate.den as i64) } else { FrameRate::FPS_25 };
             // MPEG-2 (D-10 / IMX, XDCAM): the sequence header of the first picture
             let mpeg = (t.codec == Codec::Mpeg2)
@@ -554,19 +557,30 @@ impl MxfSource {
                     (2, 1) => "4:2:2",
                     _ => "4:4:4",
                 };
-                pixel_format =
-                    if l.rgb() { format!("{} {}-bit", if l.alpha() { "RGBA" } else { "RGB" }, l.depth()) } else { format!("YUV {chroma} {}-bit", l.depth()) };
+                pixel_format = if l.xyz() {
+                    format!("XYZ {}-bit", l.depth())
+                } else if l.rgb() {
+                    format!("{} {}-bit", if l.alpha() { "RGBA" } else { "RGB" }, l.depth())
+                } else {
+                    format!("YUV {chroma} {}-bit", l.depth())
+                };
                 has_alpha = l.alpha();
                 // the frames carry their colour: the descriptor's colorimetry; R'G'B' deeper than
                 // 8 bits becomes video-range BT.709 Y'CbCr 4:4:4
                 let s = descriptor_colorimetry(&p);
-                if l.rgb() {
+                if l.xyz() {
+                    // decoded to P3-D65 R'G'B' (`raw_frame`), like DCP JPEG 2000 pictures
+                    color =
+                        cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt709, primaries: cfa4_color::Primaries::P3D65, ..cfa4_color::ColorInfo::REC709 };
+                } else if l.rgb() {
                     color = cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt709, ..cfa4_color::ColorInfo::REC709 };
                 } else if let Some(m) = s.matrix {
                     color.matrix = m;
                 }
-                color.transfer = s.transfer.unwrap_or(color.transfer);
-                color.primaries = s.primaries.unwrap_or(color.primaries);
+                if !l.xyz() {
+                    color.transfer = s.transfer.unwrap_or(color.transfer);
+                    color.primaries = s.primaries.unwrap_or(color.primaries);
+                }
                 explicit_color = None;
             }
             let mut par = par;
@@ -616,7 +630,9 @@ impl MxfSource {
                 let first = (t.first_edit_unit() as i128 * n as i128 / d.max(1) as i128) as u64;
                 let stored = t.stored_sample_frames().saturating_sub(first);
                 let presented = t.duration.map_or(stored, |du| ((du as i128 * n as i128 / d.max(1) as i128) as u64).min(stored));
-                aframes = aframes.min(presented);
+                // edit list gaps play as silence
+                let gaps = u64::try_from(i128::from(t.gap_edit_units()) * i128::from(n) / i128::from(d.max(1))).unwrap_or(u64::MAX);
+                aframes = aframes.min(presented.saturating_add(gaps));
                 let next =
                     channels.checked_add(si.channels.max(1)).ok_or_else(|| CodecError::Unsupported("MXF: combined audio channel count overflows".into()))?;
                 if next > cfa4_media::MAX_AUDIO_CHANNELS {
@@ -672,6 +688,7 @@ impl MxfSource {
             vorder,
             vfirst,
             vcount,
+            blank: std::sync::OnceLock::new(),
             video: GopCache::new(explicit_color),
             unsupported,
             mpeg2_header,
@@ -688,6 +705,25 @@ impl MxfSource {
     /// The demuxed file (tracks, partitions, index, timecode).
     pub fn file(&self) -> &MxfFile {
         &self.file
+    }
+
+    /// The opaque black picture of an edit list gap, at the stream's size.
+    fn blank_frame(&self, pts: Tick) -> Result<Arc<VideoFrame>, MediaError> {
+        let v = self.info.video.as_ref().ok_or(MediaError::NoStream("video"))?;
+        let frame = match self.blank.get() {
+            Some(f) => f.clone(),
+            None => {
+                let bytes = (v.width as usize).checked_mul(v.height as usize).and_then(|n| n.checked_mul(4)).filter(|&n| n <= 1 << 30);
+                let bytes = bytes.ok_or_else(|| MediaError::Decode("MXF: picture too large for a blank frame".into()))?;
+                let px = [0u8, 0, 0, 255].iter().copied().cycle().take(bytes).collect();
+                let mut f = VideoFrame::rgba8(v.width, v.height, px);
+                f.par = v.par;
+                self.blank.get_or_init(|| Arc::new(f)).clone()
+            }
+        };
+        let mut f = (*frame).clone();
+        f.pts = pts;
+        Ok(Arc::new(f))
     }
 }
 
@@ -722,12 +758,16 @@ impl VideoDecoder for RawDecoder {
 }
 
 /// An unpacked uncompressed picture as a [`VideoFrame`] cut to its display rectangle: Y'CbCr as
-/// stored (samples under 8 bits widened to 8), 8-bit R'G'B'(A) as RGBA, deeper R'G'B' as
-/// video-range BT.709 Y'CbCr 4:4:4 with straight alpha.
+/// stored (samples under 8 bits widened to 8), 8-bit R'G'B'(A) as RGBA, deeper R'G'B' as planar
+/// [`PixelData::Rgb16`] with straight alpha.
 fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo) -> VideoFrame {
     use cfa4_frame::{Chroma, PixelData, Region};
     let (w, h) = (pic.width, pic.height);
     let [mut p0, mut p1, mut p2] = pic.planes;
+    if pic.xyz {
+        // DCDM X'Y'Z' (ST 428-1): to P3-D65 R'G'B', as the JPEG 2000 path does
+        crate::j2k::xyz_to_rgb(&mut p0, &mut p1, &mut p2, pic.depth.clamp(1, 16));
+    }
     let mut alpha = pic.alpha;
     let mut bits = pic.depth;
     if bits < 8 {
@@ -736,17 +776,9 @@ fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo)
         }
         bits = 8;
     }
-    let data = if pic.rgb && bits == 8 {
-        let mut rgba = Vec::with_capacity(p0.len() * 4);
-        for (i, ((r, g), b)) in p0.iter().zip(&p1).zip(&p2).enumerate() {
-            let a = alpha.as_ref().and_then(|a| a.get(i)).map_or(255, |&a| a as u8);
-            rgba.extend_from_slice(&[*r as u8, *g as u8, *b as u8, a]);
-        }
-        PixelData::Rgba8(Arc::new(rgba))
+    let data = if pic.rgb {
+        crate::j2k::rgb_data([p0, p1, p2], bits, alpha)
     } else {
-        if pic.rgb {
-            crate::j2k::rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits);
-        }
         let chroma = match pic.subsampling {
             (2, 2) => Chroma::C420,
             (2, 1) => Chroma::C422,
@@ -759,7 +791,7 @@ fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo)
             PixelData::Yuv16 { planes: [Arc::new(p0), Arc::new(p1), Arc::new(p2)], chroma, bits, alpha: alpha.map(Arc::new) }
         }
     };
-    let frame = VideoFrame { width: w, height: h, data, color, par: (1, 1), pts: Tick::ZERO };
+    let frame = VideoFrame { width: w, height: h, data, color, par: (1, 1), pts: Tick::ZERO, layout: Default::default() };
     let (x, y, dw, dh) = pic.display;
     frame.cropped(Region { x: x as usize, y: y as usize, w: dw as usize, h: dh as usize })
 }
@@ -832,8 +864,11 @@ impl MediaSource for MxfSource {
         }
         let rate = self.info.frame_rate();
         let f = rate.frame_at(req.time.max(Tick::ZERO)).clamp(0, self.vcount - 1);
-        let late = cfa4_media::cancel::catch_up().map(|m| self.vfirst + rate.frame_at(req.time - m));
-        let frame = self.video.frame_late(&MxfVideo { src: self, track: ti }, self.vfirst + f, late)?;
+        let t = self.file.tracks.get(ti).ok_or(MediaError::NoStream("video"))?;
+        // an edit list gap (filler) shows black
+        let Some(e) = t.essence_position(f) else { return self.blank_frame(rate.tick_of(f)) };
+        let late = cfa4_media::cancel::catch_up().and_then(|m| t.essence_position(rate.frame_at(req.time - m).max(0))).map(|p| self.vfirst + p);
+        let frame = self.video.frame_late(&MxfVideo { src: self, track: ti }, self.vfirst + e, late)?;
         Ok(frame)
     }
 
@@ -878,11 +913,15 @@ impl MediaSource for MxfSource {
             for &(m, ti, first) in &self.atracks {
                 let (bytes, file) =
                     if m == 0 { (&self.bytes, &self.file) } else { self.companions.get(m - 1).map(|c| (&c.0, &c.1)).ok_or(MediaError::NoStream("audio"))? };
-                let pcm = file.read_pcm(bytes, ti, first + a as u64, (b - a) as usize).map_err(|e| MediaError::Decode(e.to_string()))?;
-                for (k, p) in pcm.into_iter().enumerate() {
-                    if let Some(dst) = src.get_mut(c0 + k) {
-                        let at = (a - s0) as usize;
-                        dst[at..at + p.len()].copy_from_slice(&p);
+                let runs = file.tracks.get(ti).map(|t| t.sound_runs(a as u64, b as u64)).unwrap_or_default();
+                // edit list gaps between the runs stay silent
+                for (pres, ess, len) in runs {
+                    let pcm = file.read_pcm(bytes, ti, first.saturating_add(ess), len as usize).map_err(|e| MediaError::Decode(e.to_string()))?;
+                    let at = (pres as i64 - s0) as usize;
+                    for (k, p) in pcm.into_iter().enumerate() {
+                        if let Some(d) = src.get_mut(c0 + k).and_then(|dst| dst.get_mut(at..at.saturating_add(p.len()))) {
+                            d.copy_from_slice(&p);
+                        }
                     }
                 }
                 c0 += file.tracks.get(ti).and_then(|t| t.sound.as_ref()).map_or(1, |s| s.channels.max(1) as usize);
@@ -962,7 +1001,7 @@ mod tests {
     }
 
     fn picture(depth: u32, rgb: bool, planes: [Vec<u16>; 3], alpha: Option<Vec<u16>>) -> cfa4_mxf::uncompressed::Picture {
-        cfa4_mxf::uncompressed::Picture { width: 2, height: 1, depth, subsampling: (1, 1), rgb, planes, alpha, display: (0, 0, 2, 1) }
+        cfa4_mxf::uncompressed::Picture { width: 2, height: 1, depth, subsampling: (1, 1), rgb, xyz: false, planes, alpha, display: (0, 0, 2, 1) }
     }
 
     #[test]
@@ -976,10 +1015,13 @@ mod tests {
         let f = raw_frame(picture(8, true, [vec![1, 2], vec![3, 4], vec![5, 6]], None), cfa4_color::ColorInfo::REC709);
         let PixelData::Rgba8(px) = &f.data else { panic!("RGBA expected") };
         assert_eq!(px[3], 255);
-        // 10-bit white and black become video-range Y'CbCr
-        let f = raw_frame(picture(10, true, [vec![1023, 0], vec![1023, 0], vec![1023, 0]], None), cfa4_color::ColorInfo::REC709);
-        let PixelData::Yuv16 { planes, bits: 10, chroma: cfa4_frame::Chroma::C444, .. } = &f.data else { panic!("10-bit 4:4:4 expected") };
-        assert_eq!((planes[0][0], planes[0][1], planes[1][0], planes[2][1]), (940, 64, 512, 512));
+        // 10-bit R'G'B'A keeps its codes, planar
+        let f = raw_frame(picture(10, true, [vec![1023, 0], vec![512, 1], vec![3, 1000]], Some(vec![1023, 7])), cfa4_color::ColorInfo::REC709);
+        let PixelData::Rgb16 { planes, bits: 10, alpha: Some(a) } = &f.data else { panic!("10-bit R'G'B' expected") };
+        assert_eq!(
+            (planes[0].as_slice(), planes[1].as_slice(), planes[2].as_slice(), a.as_slice()),
+            (&[1023, 0][..], &[512, 1][..], &[3, 1000][..], &[1023, 7][..])
+        );
         // under 8 bits widens to 8; the display rectangle crops
         let mut p = picture(4, false, [vec![15, 1], vec![8, 8], vec![8, 8]], None);
         p.display = (1, 0, 1, 1);
@@ -1028,5 +1070,43 @@ mod tests {
         assert_eq!(src.info().audio().unwrap().channels, 1);
         assert!(MxfSource::open_group("x.mxf", vec![reader(&junk), reader(&v)], 0).is_err());
         assert!(MxfSource::open_group("x.mxf", Vec::new(), 0).is_err());
+    }
+
+    /// OP3a fillers play as black pictures and silence; the clips around them play their essence.
+    #[test]
+    fn edit_list_fillers_play_black_and_silent() {
+        use cfa4_mxf::testing::{Comp, build_edit_list};
+        let pic = |p: u8, i: usize| {
+            let mut v = vec![0, 0, 0, 40];
+            v.extend_from_slice(b"icpf");
+            v.extend(std::iter::repeat_n(i as u8 + p, 32));
+            v
+        };
+        let comps = [Comp::Filler(1), Comp::Clip { pkg: 1, start: 1, dur: 2 }, Comp::Filler(3), Comp::Clip { pkg: 0, start: 0, dur: 2 }, Comp::Filler(2)];
+        let f: Arc<[u8]> = build_edit_list(&comps, [2, 4], pic, &[], &[]).into();
+        let src = MxfSource::open("el.mxf", f).unwrap();
+        let info = src.info();
+        assert_eq!(info.duration, FrameRate::FPS_25.tick_of(10));
+        assert_eq!(info.video.as_ref().map(|v| (v.width, v.height)), Some((64, 32)));
+        for gap in [0, 3, 5, 8, 9] {
+            let fr = src.video_frame(FrameRequest::full(FrameRate::FPS_25.tick_of(gap))).unwrap();
+            assert_eq!((fr.width, fr.height), (64, 32));
+            let cfa4_frame::PixelData::Rgba8(px) = &fr.data else { panic!("not RGBA") };
+            assert!(px.chunks(4).all(|p| p == [0, 0, 0, 255]), "frame {gap}");
+            assert_eq!(fr.pts, FrameRate::FPS_25.tick_of(gap));
+        }
+        // sound: package 1 from its second edit unit (left = 10000 + k), silence, package 0
+        let value = |v: usize| v as f32 / 32768.0;
+        let at = |eu: i64, k: i64| eu * 1920 + k;
+        let buf = src.audio(at(1, 0) - 2, 4, 48_000).unwrap();
+        assert_eq!(buf.channels[0], vec![0.0, 0.0, value(10000 + 1920), value(10000 + 1921)]);
+        let buf = src.audio(at(3, 0) - 2, 4, 48_000).unwrap();
+        assert_eq!(buf.channels[0], vec![value(10000 + 3 * 1920 - 2), value(10000 + 3 * 1920 - 1), 0.0, 0.0]);
+        let buf = src.audio(at(6, 0) - 1, 2, 48_000).unwrap();
+        assert_eq!(buf.channels[1], vec![0.0, -value(0)]);
+        let buf = src.audio(at(8, 0) - 1, 3, 48_000).unwrap();
+        assert_eq!(buf.channels[0], vec![value(2 * 1920 - 1), 0.0, 0.0]);
+        // resampled reads cross the gaps too
+        assert!(src.audio(0, 4800, 44_100).is_ok());
     }
 }

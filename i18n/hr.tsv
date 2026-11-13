@@ -2043,6 +2043,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP mapa: JPEG 2000 3996×2160 (1,85:1), 5.1 24-bitni 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP mapa: JPEG 2000 4096×1716 (2,39:1), 5.1 24-bitni 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (interoperabilni master paket)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF mapa: JPEG 2000 1920×1080, 5.1 24-bitni 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF mapa: JPEG 2000 3840×2160, 5.1 24-bitni 48 kHz PCM
+	Episode	Epizoda
+	Event highlights	Najzanimljiviji trenuci događaja
+	Event	Događaj
+	Lossless (reversible JPEG 2000)	Bez gubitaka (reverzibilni JPEG 2000)
+	Package language	Jezik paketa
 	4:2:0 (Main Profile)	4:2:0 (Main profil)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
 	B pictures	B-slike
@@ -2218,6 +2228,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10 bita za HDR)
 	10-bit RGB	10-bitni RGB
 	12-bit X'Y'Z'	12-bitni X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-bitni R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF s gubicima
+	JPEG 2000 IMF reversible	JPEG 2000 IMF reverzibilni
 	16-bit half float	16-bitni polovični pomični zarez
 	linear	linearno
 	uncompressed	nekomprimirano
@@ -4504,3 +4517,47 @@ export.summary	Low	niska
 	accept	prihvatljivo
 	the engine did not start the check	pogon nije pokrenuo provjeru
 	the engine sent no report	pogon nije poslao izvješće
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a nekomprimirano 10-bitno 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, nekomprimirani 10-bitni Y'CbCr 4:2:2 u rasporedu v210 (SMPTE ST 384), 24-bitni PCM 48 kHz, početni vremenski kod
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Zapiši titlove kao ANC podatke (CEA-608/708, 29,97 fps)
+	Load KDM…	Učitaj KDM…
+	Forget DCP Keys	Zaboravi DCP ključeve
+	Load KDM	Učitaj KDM
+	KDM file	KDM datoteka
+	Private key (PEM)	Privatni ključ (PEM)
+	{title}: {count} keys loaded	{title}: učitano ključeva: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ključevi ostaju samo u memoriji, do naredbe Zaboravi DCP ključeve ili kraja sesije.
+	DCP keys forgotten	DCP ključevi zaboravljeni
+	Choose the KDM file and the private key.	Odaberite KDM datoteku i privatni ključ.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Sinkronizacija vremenskog koda
+	TimecodeSync	Sinkronizacija vremenskog koda
+	Chase	Praćenje
+	Follow external timecode during playback	Prati vanjski vremenski kod tijekom reprodukcije
+	Lock after	Zaključaj nakon
+	Keep playing without signal for	Nastavi reprodukciju bez signala još
+	External frame rate	Vanjska brzina sličica
+	Offset (added to the external timecode)	Pomak (dodaje se vanjskom vremenskom kodu)
+	LTC	LTC
+	LTC input device	Ulazni uređaj za LTC
+	LTC input channel	Ulazni kanal za LTC
+	Send LTC during playback	Šalji LTC tijekom reprodukcije
+	LTC output device	Izlazni uređaj za LTC
+	LTC output channel	Izlazni kanal za LTC
+	LTC level	Razina LTC-a
+	dBFS	dBFS
+	MIDI Timecode	MIDI vremenski kod
+	MTC input port (empty = CFA4 port)	Ulazni MTC priključak (prazno = priključak CFA4)
+	Send MIDI Timecode during playback	Šalji MIDI vremenski kod tijekom reprodukcije
+	MTC output port (empty = CFA4 port)	Izlazni MTC priključak (prazno = priključak CFA4)
+	Send timecode ahead of the picture by	Šalji vremenski kod ispred slike za
+	LTC (audio input)	LTC (audioulaz)
+	MIDI Timecode (MIDI input)	MIDI vremenski kod (MIDI ulaz)
+	Same as the sequence	Isto kao sekvenca
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Stanje sinkronizacije vremenskog koda
+	Chase External Timecode	Prati vanjski vremenski kod
+	Send LTC	Šalji LTC
+	Send MIDI Timecode	Šalji MIDI vremenski kod

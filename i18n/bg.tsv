@@ -1858,6 +1858,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP папка: JPEG 2000 3996×2160 (1,85:1), 5.1 24-битов 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP папка: JPEG 2000 4096×1716 (2,39:1), 5.1 24-битов 48 kHz PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (взаимно съвместим мастър пакет)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	SMPTE IMF папка: JPEG 2000 1920×1080, 5.1 24-битов 48 kHz PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	SMPTE IMF папка: JPEG 2000 3840×2160, 5.1 24-битов 48 kHz PCM
+	Episode	Епизод
+	Event highlights	Акценти от събитие
+	Event	Събитие
+	Lossless (reversible JPEG 2000)	Без загуби (обратим JPEG 2000)
+	Package language	Език на пакета
 	4:2:0 (Main Profile)	4:2:0 (Main Profile)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
 	B pictures	B кадри
@@ -2012,6 +2022,9 @@
 	AV1 Main (10-bit for HDR)	AV1 Main (10-битов за HDR)
 	10-bit RGB	10-битов RGB
 	12-bit X'Y'Z'	12-битов X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-битов R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF със загуби
+	JPEG 2000 IMF reversible	JPEG 2000 IMF обратим
 	16-bit half float	16-битова половинна плаваща запетая
 	linear	линейно
 	uncompressed	некомпресирано
@@ -4505,3 +4518,47 @@ export.summary	Low	ниско
 	accept	допустимо
 	the engine did not start the check	двигателят не стартира проверката
 	the engine sent no report	двигателят не изпрати отчет
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a некомпресиран 10-битов 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, некомпресиран 10-битов Y'CbCr 4:2:2 в подредба v210 (SMPTE ST 384), 24-битов PCM 48 kHz, начален тайм код
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записване на надписите като ANC данни (CEA-608/708, 29,97 fps)
+	Load KDM…	Зареждане на KDM…
+	Forget DCP Keys	Забравяне на DCP ключовете
+	Load KDM	Зареждане на KDM
+	KDM file	KDM файл
+	Private key (PEM)	Частен ключ (PEM)
+	{title}: {count} keys loaded	{title}: заредени ключове: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключовете остават само в паметта, до „Забравяне на DCP ключовете“ или края на сесията.
+	DCP keys forgotten	DCP ключовете са забравени
+	Choose the KDM file and the private key.	Изберете KDM файла и частния ключ.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Синхронизация на тайм код
+	TimecodeSync	Синхронизация на тайм код
+	Chase	Следване
+	Follow external timecode during playback	Следване на външен тайм код при възпроизвеждане
+	Lock after	Заключване след
+	Keep playing without signal for	Продължаване без сигнал за
+	External frame rate	Външна кадрова честота
+	Offset (added to the external timecode)	Отместване (добавя се към външния тайм код)
+	LTC	LTC
+	LTC input device	Входно устройство за LTC
+	LTC input channel	Входен канал за LTC
+	Send LTC during playback	Изпращане на LTC при възпроизвеждане
+	LTC output device	Изходно устройство за LTC
+	LTC output channel	Изходен канал за LTC
+	LTC level	Ниво на LTC
+	dBFS	dBFS
+	MIDI Timecode	MIDI тайм код
+	MTC input port (empty = CFA4 port)	Входен MTC порт (празно = порт на CFA4)
+	Send MIDI Timecode during playback	Изпращане на MIDI тайм код при възпроизвеждане
+	MTC output port (empty = CFA4 port)	Изходен MTC порт (празно = порт на CFA4)
+	Send timecode ahead of the picture by	Изпращане на тайм кода преди картината с
+	LTC (audio input)	LTC (аудиовход)
+	MIDI Timecode (MIDI input)	MIDI тайм код (MIDI вход)
+	Same as the sequence	Като последователността
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Състояние на синхронизацията на тайм код
+	Chase External Timecode	Следване на външен тайм код
+	Send LTC	Изпращане на LTC
+	Send MIDI Timecode	Изпращане на MIDI тайм код

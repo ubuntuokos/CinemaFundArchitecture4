@@ -120,7 +120,7 @@ impl Table {
 
     /// Decode one symbol; an invalid code marks the reader bad and gives 0.
     #[inline]
-    pub fn decode(&self, br: &mut BitReader) -> u8 {
+    pub fn decode(&self, br: &mut BitReader<'_>) -> u8 {
         let (s, l) = self.fast.get(br.peek(FAST_BITS) as usize).copied().unwrap_or((0, 0));
         if l != 0 {
             br.skip(u32::from(l));

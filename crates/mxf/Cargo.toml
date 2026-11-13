@@ -14,7 +14,10 @@ workspace = true
 test-util = []
 
 [dependencies]
+aes = { workspace = true }
 chrono = { workspace = true }
+hmac = { workspace = true }
+sha1 = { workspace = true }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }

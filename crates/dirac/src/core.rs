@@ -124,7 +124,7 @@ struct Motion {
     blocks: Vec<Block>,
 }
 
-pub(crate) fn header(b: &mut Bits, kind: Kind) -> Result<Header> {
+pub(crate) fn header(b: &mut Bits<'_>, kind: Kind) -> Result<Header> {
     let number = b.read_nbits(32)? as u32;
     let mut refs = Vec::with_capacity(kind.num_refs);
     for _ in 0..kind.num_refs {
@@ -134,7 +134,7 @@ pub(crate) fn header(b: &mut Bits, kind: Kind) -> Result<Header> {
     Ok(Header { number, refs, retire })
 }
 
-fn prediction(b: &mut Bits, seq: &Sequence, num_refs: usize) -> Result<Prediction> {
+fn prediction(b: &mut Bits<'_>, seq: &Sequence, num_refs: usize) -> Result<Prediction> {
     const DEFAULT_BLEN: [u64; 4] = [4, 12, 16, 24];
     b.byte_align();
     let index = b.read_uint()?;
@@ -313,7 +313,7 @@ fn global_mv(g: &Global, x: usize, y: usize) -> [i16; 2] {
 }
 
 /// Block motion data (§12).
-fn motion(b: &mut Bits, seq: &Sequence, num_refs: usize) -> Result<Motion> {
+fn motion(b: &mut Bits<'_>, seq: &Sequence, num_refs: usize) -> Result<Motion> {
     let pred = prediction(b, seq, num_refs)?;
     b.byte_align();
     let (w, h) = (seq.luma_width as usize, seq.luma_height as usize);
@@ -350,7 +350,7 @@ fn motion(b: &mut Bits, seq: &Sequence, num_refs: usize) -> Result<Motion> {
         return Err(Error::Invalid("superblock data overread"));
     }
     let mut modes = Arith::new(b.block()?);
-    let mut mvs: Vec<[Arith; 2]> = Vec::with_capacity(num_refs);
+    let mut mvs: Vec<[Arith<'_>; 2]> = Vec::with_capacity(num_refs);
     for _ in 0..num_refs {
         mvs.push([Arith::new(b.block()?), Arith::new(b.block()?)]);
     }
@@ -381,7 +381,7 @@ fn motion(b: &mut Bits, seq: &Sequence, num_refs: usize) -> Result<Motion> {
     Ok(m)
 }
 
-fn block(m: &Motion, modes: &mut Arith, mvs: &mut [[Arith; 2]], dcs: &mut [Arith; 3], num_refs: usize, x: usize, y: usize) -> Block {
+fn block(m: &Motion, modes: &mut Arith<'_>, mvs: &mut [[Arith<'_>; 2]], dcs: &mut [Arith<'_>; 3], num_refs: usize, x: usize, y: usize) -> Block {
     let mut blk = m.at(x, y);
     blk.refs = m.pred_mode(x, y, REF1) ^ u8::from(modes.bit(arith::PMODE_REF1));
     if num_refs == 2 {
@@ -425,7 +425,7 @@ struct CoreTransform {
     codeblock_mode: bool,
 }
 
-fn transform(b: &mut Bits, seq: &Sequence, num_refs: usize) -> Result<Option<CoreTransform>> {
+fn transform(b: &mut Bits<'_>, seq: &Sequence, num_refs: usize) -> Result<Option<CoreTransform>> {
     b.byte_align();
     if num_refs > 0 && b.read_bool()? {
         return Ok(None);
@@ -487,7 +487,7 @@ impl CoefficientCoding<'_> {
         if self.narrow { v as i16 as i32 } else { v }
     }
 
-    fn arith_subband(&self, s: &mut Subband, data: &[u8]) -> Result<()> {
+    fn arith_subband(&self, s: &mut Subband<'_>, data: &[u8]) -> Result<()> {
         let mut a = Arith::new(data);
         let (cw, ch) = s.codeblocks;
         let one = cw + ch == 2;
@@ -528,7 +528,7 @@ impl CoefficientCoding<'_> {
         Ok(())
     }
 
-    fn arith_coeff(&self, s: &Subband, a: &mut Arith, x: usize, y: usize) -> i32 {
+    fn arith_coeff(&self, s: &Subband<'_>, a: &mut Arith<'_>, x: usize, y: usize) -> i32 {
         let w = s.band.w;
         let get = |x: usize, y: usize| s.coeffs.get(y * w + x).copied().unwrap_or(0);
         let mut ctx = arith::ZPZN_F1;
@@ -557,7 +557,7 @@ impl CoefficientCoding<'_> {
         if a.bit(sctx) { m.wrapping_neg() } else { m }
     }
 
-    fn vlc_subband(&self, s: &mut Subband, data: &[u8]) -> Result<()> {
+    fn vlc_subband(&self, s: &mut Subband<'_>, data: &[u8]) -> Result<()> {
         let mut b = Bits::new(data);
         b.bits_left = (data.len() as u64).saturating_mul(8);
         let (cw, ch) = s.codeblocks;
@@ -595,7 +595,7 @@ impl CoefficientCoding<'_> {
 }
 
 /// Transform data of one component (§13.4.1): every subband's dequantised coefficients.
-fn component(b: &mut Bits, t: &CoreTransform, bands: &[Band], coding: &CoefficientCoding, intra: bool) -> Result<Coeffs> {
+fn component(b: &mut Bits<'_>, t: &CoreTransform, bands: &[Band], coding: &CoefficientCoding<'_>, intra: bool) -> Result<Coeffs> {
     let mut coeffs: Coeffs = bands.iter().map(|b| vec![0i32; b.w * b.h]).collect();
     for (i, band) in bands.iter().enumerate() {
         b.byte_align();
@@ -632,7 +632,7 @@ fn component(b: &mut Bits, t: &CoreTransform, bands: &[Band], coding: &Coefficie
 /// The residual of each component (`None`: zero residual), as `pw`-wide arrays.
 type Residual = [Option<(Vec<i32>, usize)>; 3];
 
-fn residual(b: &mut Bits, seq: &Sequence, kind: Kind) -> Result<Residual> {
+fn residual(b: &mut Bits<'_>, seq: &Sequence, kind: Kind) -> Result<Residual> {
     let Some(t) = transform(b, seq, kind.num_refs)? else { return Ok([None, None, None]) };
     let tr = picture::core_transform(t.wavelet, t.depth)?;
     let quant = Quant::new();
@@ -751,7 +751,7 @@ const EPEL: [[[u32; 4]; 4]; 4] = [
 
 /// The prediction of one block from one reference (`mc_subpel` and the pixel functions):
 /// `out` gets `xblen` x `yblen` samples.
-fn predict(planes: [&RefPlane; 4], g: &PlaneGeom, precision: u32, mv: [i16; 2], x0: i64, y0: i64, out: &mut [u8]) {
+fn predict(planes: [&RefPlane<'_>; 4], g: &PlaneGeom, precision: u32, mv: [i16; 2], x0: i64, y0: i64, out: &mut [u8]) {
     let (mut mx, mut my) = (i32::from(mv[0]), i32::from(mv[1]));
     mx >>= g.shift.0;
     my >>= g.shift.1;
@@ -843,7 +843,7 @@ fn compensate(m: &Motion, refs: &[&Reference], c: usize, g: &PlaneGeom, residual
     let ah = m.blheight * g.ybsep + g.yblen;
     let mut acc = vec![0u16; aw * ah];
     // the reference planes: F, H, V, C (H, V and C only with sub-pel vectors)
-    let planes: Vec<[RefPlane; 4]> = refs
+    let planes: Vec<[RefPlane<'_>; 4]> = refs
         .iter()
         .map(|r| {
             let f = r.bytes.get(c).map_or(&[][..], Vec::as_slice);

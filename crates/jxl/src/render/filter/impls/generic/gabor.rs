@@ -84,7 +84,7 @@ pub(crate) fn gabor_row_edge(row_c: &[f32], row_a: Option<&[f32]>, out: &mut [f3
 }
 
 #[inline(always)]
-pub(crate) fn run_gabor_row_generic(row: GaborRow) {
+pub(crate) fn run_gabor_row_generic(row: GaborRow<'_>) {
     let GaborRow { input_rows: [input_row_t, input_row_c, input_row_b], output_row, weights } = row;
     let width = output_row.len();
     assert_eq!(input_row_t.len(), width);

@@ -164,6 +164,10 @@ pub struct PictureInfo {
     pub display_y_offset: i32,
     /// RGBA Pixel Layout (G.2.40): (component code, bits) pairs up to the terminator.
     pub pixel_layout: Vec<(u8, u8)>,
+    /// RGBA Palette (G.2.37) and the layout of its entries (G.2.38), for a Pixel Layout with a
+    /// palette code `P`.
+    pub palette: Vec<u8>,
+    pub palette_layout: Vec<(u8, u8)>,
     /// RGBA Component Min / Max Ref: the codes of black and white.
     pub component_min_ref: Option<u32>,
     pub component_max_ref: Option<u32>,

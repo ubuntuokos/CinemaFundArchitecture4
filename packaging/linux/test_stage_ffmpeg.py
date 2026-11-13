@@ -6,11 +6,11 @@ script reads, and bin/ffmpeg is a shell script answering -version and -buildconf
 """
 
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 STAGE = HERE / "stage-ffmpeg.sh"
@@ -87,7 +87,7 @@ class StageFfmpegTests(unittest.TestCase):
 
     def stage(self, build: Path, *args: str):
         return subprocess.run(["bash", str(STAGE), "--build", str(build), "--dest", str(self.root / "dest"), *args],
-                              capture_output=True, text=True, timeout=60)
+                              capture_output=True, text=True, timeout=60, check=False)
 
     def test_bundle_has_sonames_origin_runpath_licences_and_depends(self):
         build = self.fake_build()
@@ -99,7 +99,7 @@ class StageFfmpegTests(unittest.TestCase):
         self.assertEqual(names, ["libavcodec.so.62", "libavformat.so.62", "libavutil.so.60", "libzstd.so.1"])
         self.assertFalse([p for p in lib.iterdir() if p.is_symlink()], "no development symlinks")
         for path in lib.iterdir():
-            runpath = subprocess.run(["patchelf", "--print-rpath", str(path)], capture_output=True, text=True).stdout
+            runpath = subprocess.run(["patchelf", "--print-rpath", str(path)], capture_output=True, text=True, check=False).stdout
             self.assertEqual(runpath.strip(), "$ORIGIN", path.name)
         self.assertTrue((self.root / "dest/share/doc/ffmpeg/BUILDINFO").is_file())
         self.assertTrue((self.root / "dest/share/doc/third-party/libzstd1.copyright").stat().st_size)

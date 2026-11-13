@@ -264,7 +264,7 @@ fn db_of(y: f32, r: Rect, range: f64) -> f64 {
 }
 
 /// Frequency-response plot with a log-frequency grid; returns the plot rect and response.
-fn response_plot(ui: &mut egui::Ui, ed: &mut Ed, size: egui::Vec2, range: f64) -> (Rect, egui::Response) {
+fn response_plot(ui: &mut egui::Ui, ed: &mut Ed<'_>, size: egui::Vec2, range: f64) -> (Rect, egui::Response) {
     let (r, resp) = ui.allocate_exact_size(size, Sense::click_and_drag());
     let p = ui.painter_at(r);
     let t = &ed.t;
@@ -313,7 +313,7 @@ const PEQ_NODES: [(&str, &str, bool); 9] = [
     ("LP", "lp", false),
 ];
 
-fn parametric(ui: &mut egui::Ui, ed: &mut Ed) {
+fn parametric(ui: &mut egui::Ui, ed: &mut Ed<'_>) {
     let range = 30.0;
     let (r, _) = response_plot(ui, ed, vec2(620.0, 260.0), range);
     for (label, pre, gain) in PEQ_NODES {
@@ -365,7 +365,7 @@ fn parametric(ui: &mut egui::Ui, ed: &mut Ed) {
 
 // --------------------------------------------------------------------------- graphic EQ
 
-fn graphic(ui: &mut egui::Ui, ed: &mut Ed) {
+fn graphic(ui: &mut egui::Ui, ed: &mut Ed<'_>) {
     let n = match ed.fx {
         "graphic_eq" => 10,
         "graphic_eq_20" => 20,
@@ -427,7 +427,7 @@ fn graphic(ui: &mut egui::Ui, ed: &mut Ed) {
 
 // --------------------------------------------------------------------- transfer curves
 
-fn transfer_plot(ui: &mut egui::Ui, ed: &mut Ed, size: f32, band: usize, auto: String) {
+fn transfer_plot(ui: &mut egui::Ui, ed: &mut Ed<'_>, size: f32, band: usize, auto: String) {
     let (r, _) = ui.allocate_exact_size(vec2(size, size), Sense::hover());
     let p = ui.painter_at(r);
     p.rect_filled(r, 2.0, ed.t.plot_bg);
@@ -454,7 +454,7 @@ fn transfer_plot(ui: &mut egui::Ui, ed: &mut Ed, size: f32, band: usize, auto: S
 
 // ------------------------------------------------------------------- multiband compressor
 
-fn multiband(ui: &mut egui::Ui, ed: &mut Ed) {
+fn multiband(ui: &mut egui::Ui, ed: &mut Ed<'_>) {
     // Spectrum strip with draggable crossover handles.
     let (r, _) = ui.allocate_exact_size(vec2(640.0, 70.0), Sense::hover());
     ui.painter().rect_filled(r, 2.0, ed.t.plot_bg);
@@ -518,7 +518,7 @@ fn multiband(ui: &mut egui::Ui, ed: &mut Ed) {
 
 // ------------------------------------------------------------------------------- dynamics
 
-fn dynamics(ui: &mut egui::Ui, ed: &mut Ed) {
+fn dynamics(ui: &mut egui::Ui, ed: &mut Ed<'_>) {
     ui.horizontal_top(|ui| {
         transfer_plot(ui, ed, 220.0, 0, format!("fxEditor.{}.curve", ed.fx));
         ui.vertical(|ui| {

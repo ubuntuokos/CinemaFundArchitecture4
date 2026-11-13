@@ -3657,6 +3657,16 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Тека SMPTE DCP: JPEG 2000 3996×2160 (1.85:1), 5.1, 24 біти, 48 кГц, PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Тека SMPTE DCP: JPEG 2000 4096×1716 (2.39:1), 5.1, 24 біти, 48 кГц, PCM
+	IMF App 2E (Interoperable Master Package)	IMF App 2E (Interoperable Master Package)
+	IMF App 2E HD	IMF App 2E HD
+	SMPTE IMF folder: JPEG 2000 1920×1080, 5.1 24-bit 48 kHz PCM	Тека SMPTE IMF: JPEG 2000 1920×1080, 5.1, 24 біти, 48 кГц, PCM
+	IMF App 2E UHD	IMF App 2E UHD
+	SMPTE IMF folder: JPEG 2000 3840×2160, 5.1 24-bit 48 kHz PCM	Тека SMPTE IMF: JPEG 2000 3840×2160, 5.1, 24 біти, 48 кГц, PCM
+	Episode	Епізод
+	Event highlights	Найкращі моменти події
+	Event	Подія
+	Lossless (reversible JPEG 2000)	Без втрат (оборотний JPEG 2000)
+	Package language	Мова пакета
 	Show Duplicate Frame Markers	Показувати маркери дубльованих кадрів
 	Work Area Bar	Смуга робочої області
 	Set Work Area Bar In Point	Задати точку входу смуги робочої області
@@ -3938,6 +3948,9 @@
 	1 B picture between anchors	1 B-кадр між опорними
 	10-bit RGB	10-бітний RGB
 	12-bit X'Y'Z'	12-бітний X'Y'Z'
+	10-bit R'G'B' 4:4:4	10-бітний R'G'B' 4:4:4
+	JPEG 2000 IMF lossy	JPEG 2000 IMF із втратами
+	JPEG 2000 IMF reversible	JPEG 2000 IMF оборотний
 	16-bit half float	16-бітний half float
 	AV1 Main (10-bit for HDR)	AV1 Main (10 біт для HDR)
 	BDAV Transport Stream	Транспортний потік BDAV
@@ -4487,3 +4500,47 @@
 	accept	допустимо
 	the engine did not start the check	рушій не почав перевірку
 	the engine sent no report	рушій не надіслав звіт
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a без стиснення, 10 біт 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, нестиснений 10-бітний Y'CbCr 4:2:2 у розкладці v210 (SMPTE ST 384), 24-бітний PCM 48 кГц, початковий таймкод
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Записати субтитри як дані ANC (CEA-608/708, 29,97 кадр/с)
+	Load KDM…	Завантажити KDM…
+	Forget DCP Keys	Забути ключі DCP
+	Load KDM	Завантажити KDM
+	KDM file	Файл KDM
+	Private key (PEM)	Закритий ключ (PEM)
+	{title}: {count} keys loaded	{title}: завантажено ключів: {count}
+	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Ключі зберігаються лише в пам’яті, до команди «Забути ключі DCP» або кінця сеансу.
+	DCP keys forgotten	Ключі DCP забуто
+	Choose the KDM file and the private key.	Виберіть файл KDM і закритий ключ.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Синхронізація тайм-коду
+	TimecodeSync	Синхронізація тайм-коду
+	Chase	Стеження
+	Follow external timecode during playback	Стежити за зовнішнім тайм-кодом під час відтворення
+	Lock after	Захоплення після
+	Keep playing without signal for	Продовжувати без сигналу протягом
+	External frame rate	Зовнішня частота кадрів
+	Offset (added to the external timecode)	Зсув (додається до зовнішнього тайм-коду)
+	LTC	LTC
+	LTC input device	Пристрій введення LTC
+	LTC input channel	Вхідний канал LTC
+	Send LTC during playback	Надсилати LTC під час відтворення
+	LTC output device	Пристрій виведення LTC
+	LTC output channel	Вихідний канал LTC
+	LTC level	Рівень LTC
+	dBFS	dBFS
+	MIDI Timecode	MIDI тайм-код
+	MTC input port (empty = CFA4 port)	Вхідний порт MTC (порожньо = порт CFA4)
+	Send MIDI Timecode during playback	Надсилати MIDI тайм-код під час відтворення
+	MTC output port (empty = CFA4 port)	Вихідний порт MTC (порожньо = порт CFA4)
+	Send timecode ahead of the picture by	Випередження тайм-коду відносно зображення
+	LTC (audio input)	LTC (аудіовхід)
+	MIDI Timecode (MIDI input)	MIDI тайм-код (вхід MIDI)
+	Same as the sequence	Як у послідовності
+	29.97 fps drop-frame	29,97 кадр/с drop-frame
+	29.97 fps non-drop	29,97 кадр/с non-drop
+	Timecode Sync Status	Стан синхронізації тайм-коду
+	Chase External Timecode	Стежити за зовнішнім тайм-кодом
+	Send LTC	Надсилати LTC
+	Send MIDI Timecode	Надсилати MIDI тайм-код

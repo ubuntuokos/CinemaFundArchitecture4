@@ -413,7 +413,7 @@ where
 }
 
 /// Bit position of a reader, for the checks that hold one.
-pub fn bit_position(reader: &mut BitstreamIoReader) -> Option<u64> {
+pub fn bit_position(reader: &mut BitstreamIoReader<'_>) -> Option<u64> {
     reader.position().ok()
 }
 
