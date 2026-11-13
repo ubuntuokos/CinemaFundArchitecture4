@@ -156,6 +156,8 @@ pub enum TrackKind {
 pub enum Wrapping {
     Frame,
     Clip,
+    /// One KLV element per stored line (uncompressed pictures, ST 384 6.3).
+    Line,
 }
 
 /// One picture edit unit, in stored (decode) order.
@@ -227,6 +229,9 @@ pub struct EssenceTrack {
     /// (`display_order`, `chunks`, `duration`) holds only the rest; [`Self::essence_position`]
     /// maps between the two. Empty for every other file.
     pub gaps: Vec<(i64, i64)>,
+    /// Line-wrapped pictures: the (offset, size) of each line element of the picture whose
+    /// sample starts at the key's offset. A sample in here is read piece by piece.
+    pub line_pieces: std::collections::BTreeMap<u64, Vec<(u64, u32)>>,
     /// The essence is encrypted (ST 429-6): samples and chunks cover Encrypted Triplet values,
     /// which `read_sample` / `read_pcm` decrypt with the content key of the key ring.
     pub encryption: Option<crate::crypt::Encryption>,
@@ -362,6 +367,9 @@ pub(crate) struct WalkResult {
     pub(crate) elements: Vec<Element>,
     /// Generic stream data elements (ST 410) with the BodySID of their partition.
     pub(crate) generic_streams: Vec<(u32, Element)>,
+    /// File offsets of the line-wrapped uncompressed picture system elements that start the
+    /// stored data of a picture (ST 384 7.3, element identifier 01h).
+    pub(crate) line_starts: Vec<u64>,
     pub(crate) warnings: Vec<String>,
 }
 
@@ -400,6 +408,7 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
         index: Vec::new(),
         elements: Vec::new(),
         generic_streams: Vec::new(),
+        line_starts: Vec::new(),
         warnings: Vec::new(),
     };
     let mut win = Window { src, off: 0, buf: Vec::new() };
@@ -499,6 +508,9 @@ pub(crate) fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
                         Some(_) => {}
                         None => w.warnings.push(format!("unreadable encrypted triplet at byte {pos}")),
                     }
+                }
+                if key.0[12..16] == [0x14, 0x01, 0x01, 0x00] {
+                    w.line_starts.push(pos);
                 }
             }
             KeyClass::Other if key.item_starts_with(&GENERIC_STREAM_DATA_ITEM) => {
@@ -932,7 +944,7 @@ pub fn open(src: &(impl ByteSource + ?Sized)) -> Result<MxfFile> {
             // containers are told apart by body SID
             let by_sid = r.body_sid != 0 && w.elements.iter().any(|e| e.key.0[12..16] == key4 && e.body_sid == r.body_sid);
             let elements: Vec<Element> = w.elements.iter().filter(|e| e.key.0[12..16] == key4 && (!by_sid || e.body_sid == r.body_sid)).copied().collect();
-            let track = build_track(src, r, &elements, key4, &w.index, encryption, &mut warnings)?;
+            let track = build_track(src, r, &elements, key4, &w.index, &w.line_starts, encryption, &mut warnings)?;
             built.push(Part { track, gap_before: lost.saturating_add(r.gap_before), gap_after: r.gap_after });
             lost = 0;
         }
@@ -990,6 +1002,7 @@ fn build_track(
     elements: &[Element],
     key4: [u8; 4],
     index: &[IndexSegment],
+    line_starts: &[u64],
     encryption: Option<crate::crypt::Encryption>,
     warnings: &mut Vec<String>,
 ) -> Result<EssenceTrack> {
@@ -1019,6 +1032,7 @@ fn build_track(
         needs_reorder: false,
         indexed: false,
         gaps: Vec::new(),
+        line_pieces: Default::default(),
         encryption: None,
     };
     let encrypted = elements.iter().any(|e| e.plain.is_some());
@@ -1052,9 +1066,7 @@ fn build_track(
             let line_wrapped = container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x05]) && c.0[15] == 0x03)
                 || elements.first().is_some_and(|e| e.key.0[12] == 0x15 && e.key.0[14] == 0x04);
             if codec == Codec::Uncompressed && line_wrapped {
-                warnings.push("line-wrapped uncompressed pictures are not supported".into());
-                t.codec = Codec::Unknown;
-                t.picture = Some(pi);
+                build_lines(&mut t, pi, elements, line_starts, warnings);
                 return Ok(t);
             }
             let unit = (codec == Codec::Uncompressed).then(|| crate::uncompressed::Layout::of(&pi).ok().map(|l| l.edit_unit_bytes(&pi))).flatten();
@@ -1184,6 +1196,9 @@ pub(crate) fn concat(parts: Vec<Part>, warnings: &mut Vec<String>) -> Option<Ess
     }
     tail = tail.saturating_add(pending);
     let mut out = parts[0].0.clone();
+    for (t, _) in parts.iter().skip(1) {
+        out.line_pieces.extend(t.line_pieces.iter().map(|(k, v)| (*k, v.clone())));
+    }
     out.origin = 0;
     out.start_position = 0;
     out.samples = Vec::new();
@@ -1305,6 +1320,85 @@ fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl 
 }
 
 /// Splits a clip-wrapped element into edit units of `unit` bytes.
+/// Line-wrapped uncompressed pictures (ST 384 6.3, 7.1–7.3): one picture element per stored line,
+/// with system elements (start of stored data, start of line) and data elements (fill, VANC,
+/// HANC) between them, which carry the image start / end fill. A picture starts at each "start of
+/// stored data" system element (`starts`, file offsets in order), or, without them, when the
+/// lines gathered so far hold one edit unit. Each picture becomes one sample read piece by piece;
+/// a picture whose lines do not add up to the stored size is left out.
+fn build_lines(t: &mut EssenceTrack, mut pi: PictureInfo, elements: &[Element], starts: &[u64], warnings: &mut Vec<String>) {
+    // the fill lives in data elements, not in the picture lines
+    pi.image_start_offset = 0;
+    pi.image_end_offset = 0;
+    let unit = crate::uncompressed::Layout::of(&pi).map(|l| l.edit_unit_bytes(&pi));
+    t.picture = Some(pi);
+    t.wrapping = Wrapping::Line;
+    let unit = match unit {
+        Ok(u) if u > 0 && u <= u64::from(u32::MAX) => u,
+        Ok(_) => {
+            warnings.push("line-wrapped uncompressed pictures without a usable stored size".into());
+            t.codec = Codec::Unknown;
+            return;
+        }
+        Err(e) => {
+            warnings.push(format!("line-wrapped uncompressed pictures: {e}"));
+            t.codec = Codec::Unknown;
+            return;
+        }
+    };
+    let mut pieces: Vec<(u64, u32)> = Vec::new();
+    let mut have = 0u64;
+    let mut bad = 0usize;
+    let mut next_start = 0usize;
+    let mut finish = |t: &mut EssenceTrack, pieces: &mut Vec<(u64, u32)>, have: &mut u64| {
+        if *have == unit {
+            let offset = pieces.first().map_or(0, |p| p.0);
+            let i = t.samples.len();
+            t.samples.push(Sample { offset, size: unit as u32, pts: i as i64, key: true, b_picture: false });
+            t.line_pieces.insert(offset, std::mem::take(pieces));
+        } else if !pieces.is_empty() || *have > 0 {
+            bad += 1;
+            pieces.clear();
+        }
+        *have = 0;
+    };
+    for e in elements.iter().filter(|e| !e.truncated && e.size > 0) {
+        // a start of stored data before this line closes the picture being gathered
+        let mut started = false;
+        while starts.get(next_start).is_some_and(|&s| s < e.value_offset) {
+            next_start += 1;
+            started = true;
+        }
+        if started {
+            finish(t, &mut pieces, &mut have);
+        }
+        let Ok(size) = u32::try_from(e.size) else { break };
+        if have.saturating_add(e.size) > unit {
+            if starts.is_empty() {
+                // without system elements this line starts the next picture
+                finish(t, &mut pieces, &mut have);
+            } else {
+                // too many lines: the picture is left out at the next start of stored data
+                have = u64::MAX;
+                continue;
+            }
+        }
+        if e.size > unit {
+            continue;
+        }
+        pieces.push((e.value_offset, size));
+        have += e.size;
+        if have == unit && starts.is_empty() {
+            finish(t, &mut pieces, &mut have);
+        }
+    }
+    finish(t, &mut pieces, &mut have);
+    if bad > 0 {
+        warnings.push(format!("{bad} line-wrapped picture(s) whose lines do not add up to {unit} bytes are left out"));
+    }
+    t.display_order = (0..t.samples.len()).collect();
+}
+
 fn split_constant(t: &mut EssenceTrack, e: &Element, unit: u64) {
     let n = e.size / unit;
     t.wrapping = Wrapping::Clip;
@@ -1484,6 +1578,18 @@ impl MxfFile {
     pub fn read_sample(&self, src: &(impl ByteSource + ?Sized), track: usize, i: usize) -> Result<Vec<u8>> {
         let t = self.tracks.get(track).ok_or_else(|| Error::Invalid(format!("no track {track}")))?;
         let s = t.samples.get(i).ok_or_else(|| Error::Invalid(format!("no sample {i}")))?;
+        if let Some(pieces) = t.line_pieces.get(&s.offset) {
+            let mut v = Vec::with_capacity(s.size as usize);
+            for &(at, n) in pieces {
+                if u64::from(n) > src.len().saturating_sub(at) || v.len() + n as usize > s.size as usize {
+                    return Err(Error::Invalid("picture line extends past the end of the source".into()));
+                }
+                let from = v.len();
+                v.resize(from + n as usize, 0);
+                src.read_at(at, &mut v[from..])?;
+            }
+            return Ok(v);
+        }
         if u64::from(s.size) > src.len().saturating_sub(s.offset) {
             return Err(Error::Invalid("picture sample extends past the end of the source".into()));
         }
@@ -1591,9 +1697,19 @@ impl MxfFile {
     }
 }
 
-/// Decrypts an Encrypted Triplet value of a track with context `e` (key from the key ring).
+/// Decrypts an Encrypted Triplet value of a track with context `e` (key from the key ring). When
+/// the KDM gave no MIC key and the triplets carry a MIC, the key that earlier editions of ST
+/// 429-6 derive from the content key (Annex B) is tried: once it matches, it joins the key ring
+/// and every later triplet of that key is checked with it.
 fn decrypt(e: &crate::crypt::Encryption, v: &[u8]) -> Result<Vec<u8>> {
-    let key = crate::crypt::key(&e.key_id).ok_or_else(|| Error::Encrypted(crate::crypt::uuid_text(&e.key_id)))?;
+    let mut key = crate::crypt::key(&e.key_id).ok_or_else(|| Error::Encrypted(crate::crypt::uuid_text(&e.key_id)))?;
+    if key.mic.is_none() && e.mic {
+        let legacy = crate::crypt::legacy_mic_key(&key.cipher);
+        if crate::crypt::mic_matches(v, &legacy) {
+            crate::crypt::add_key(e.key_id, crate::crypt::ContentKey { cipher: [0; 16], mic: Some(legacy) });
+            key.mic = Some(legacy);
+        }
+    }
     crate::crypt::decrypt(v, &key)
 }
 

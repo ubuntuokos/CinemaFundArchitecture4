@@ -4515,6 +4515,9 @@ export.summary	Low	thấp
 	accept	chấp nhận
 	the engine did not start the check	engine không bắt đầu kiểm tra
 	the engine sent no report	engine không gửi báo cáo
+	MXF OP1a Uncompressed 10-bit 4:2:2 (v210)	MXF OP1a không nén 10-bit 4:2:2 (v210)
+	MXF OP1a, uncompressed 10-bit Y'CbCr 4:2:2 in the v210 layout (SMPTE ST 384), 24-bit 48 kHz PCM, start timecode	MXF OP1a, Y'CbCr 4:2:2 10-bit không nén theo bố cục v210 (SMPTE ST 384), PCM 24-bit 48 kHz, mã thời gian bắt đầu
+	Write the captions as ANC data (CEA-608/708, 29.97 fps)	Ghi phụ đề dưới dạng dữ liệu ANC (CEA-608/708, 29,97 fps)
 	Load KDM…	Tải KDM…
 	Forget DCP Keys	Quên khóa DCP
 	Load KDM	Tải KDM
@@ -4524,3 +4527,35 @@ export.summary	Low	thấp
 	The keys stay in memory only, until Forget DCP Keys or the end of the session.	Các khóa chỉ nằm trong bộ nhớ, cho đến khi chọn Quên khóa DCP hoặc kết thúc phiên.
 	DCP keys forgotten	Đã quên khóa DCP
 	Choose the KDM file and the private key.	Chọn tệp KDM và khóa riêng.
+
+# Settings ▸ Timecode Sync (TC-4)
+	Timecode Sync	Đồng bộ timecode
+	TimecodeSync	Đồng bộ timecode
+	Chase	Bám theo
+	Follow external timecode during playback	Bám theo timecode bên ngoài khi phát
+	Lock after	Khóa sau
+	Keep playing without signal for	Tiếp tục phát khi mất tín hiệu trong
+	External frame rate	Tốc độ khung hình bên ngoài
+	Offset (added to the external timecode)	Độ lệch (cộng vào timecode bên ngoài)
+	LTC	LTC
+	LTC input device	Thiết bị đầu vào LTC
+	LTC input channel	Kênh đầu vào LTC
+	Send LTC during playback	Gửi LTC khi phát
+	LTC output device	Thiết bị đầu ra LTC
+	LTC output channel	Kênh đầu ra LTC
+	LTC level	Mức LTC
+	dBFS	dBFS
+	MIDI Timecode	Timecode MIDI
+	MTC input port (empty = CFA4 port)	Cổng vào MTC (trống = cổng CFA4)
+	Send MIDI Timecode during playback	Gửi timecode MIDI khi phát
+	MTC output port (empty = CFA4 port)	Cổng ra MTC (trống = cổng CFA4)
+	Send timecode ahead of the picture by	Gửi timecode trước hình ảnh
+	LTC (audio input)	LTC (đầu vào âm thanh)
+	MIDI Timecode (MIDI input)	Timecode MIDI (đầu vào MIDI)
+	Same as the sequence	Giống sequence
+	29.97 fps drop-frame	29,97 fps drop-frame
+	29.97 fps non-drop	29,97 fps non-drop
+	Timecode Sync Status	Trạng thái đồng bộ timecode
+	Chase External Timecode	Bám theo timecode bên ngoài
+	Send LTC	Gửi LTC
+	Send MIDI Timecode	Gửi timecode MIDI

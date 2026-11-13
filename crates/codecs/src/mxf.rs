@@ -799,7 +799,7 @@ fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo)
             PixelData::Yuv16 { planes: [Arc::new(p0), Arc::new(p1), Arc::new(p2)], chroma, bits, alpha: alpha.map(Arc::new) }
         }
     };
-    let frame = VideoFrame { width: w, height: h, data, color, par: (1, 1), pts: Tick::ZERO };
+    let frame = VideoFrame { width: w, height: h, data, color, par: (1, 1), pts: Tick::ZERO, layout: Default::default() };
     let (x, y, dw, dh) = pic.display;
     frame.cropped(Region { x: x as usize, y: y as usize, w: dw as usize, h: dh as usize })
 }
