@@ -275,20 +275,35 @@ pub fn dcdm_code(t: f32) -> i32 {
 /// chromatic adaptation), reference white at 48 cd/m².
 pub fn rgba_to_xyz12(rgba: &[u8], w: usize, h: usize) -> [Vec<i32>; 3] {
     let lut: Vec<f32> = (0..=255u8).map(srgb_linear).collect();
+    xyz12(w, h, |i| {
+        let lin = |c: usize| rgba.get(i * 4 + c).and_then(|v| lut.get(usize::from(*v))).copied().unwrap_or(0.0);
+        [lin(0), lin(1), lin(2)]
+    })
+}
+
+/// [`rgba_to_xyz12`] from straight sRGB R'G'B' floats (3 per pixel, 0..1), which keep the
+/// precision of 10/12-bit sources.
+pub fn rgbf_to_xyz12(rgb: &[f32], w: usize, h: usize) -> [Vec<i32>; 3] {
+    xyz12(w, h, |i| {
+        let lin = |c: usize| rgb.get(i * 3 + c).map_or(0.0, |&v| cfa4_color::srgb_to_linear(v.clamp(0.0, 1.0)));
+        [lin(0), lin(1), lin(2)]
+    })
+}
+
+/// X'Y'Z' planes of a `w` x `h` picture whose pixel `i` has linear sRGB `lin(i)`.
+fn xyz12(w: usize, h: usize, lin: impl Fn(usize) -> [f32; 3] + Sync) -> [Vec<i32>; 3] {
     let n = w.saturating_mul(h);
+    let w = w.max(1);
     let mut planes = [vec![0i32; n], vec![0i32; n], vec![0i32; n]];
     let [px, py, pz] = &mut planes;
-    let rows = rgba.par_chunks(w.max(1) * 4).zip(px.par_chunks_mut(w.max(1))).zip(py.par_chunks_mut(w.max(1))).zip(pz.par_chunks_mut(w.max(1)));
-    rows.for_each(|(((src, x), y), z)| {
-        for (k, p) in src.chunks_exact(4).enumerate() {
-            let lin = |i: usize| p.get(i).and_then(|v| lut.get(usize::from(*v))).copied().unwrap_or(0.0);
-            let (r, g, b) = (lin(0), lin(1), lin(2));
+    let rows = px.par_chunks_mut(w).zip(py.par_chunks_mut(w)).zip(pz.par_chunks_mut(w)).enumerate();
+    rows.for_each(|(row, ((x, y), z))| {
+        for (k, ((x, y), z)) in x.iter_mut().zip(y.iter_mut()).zip(z.iter_mut()).enumerate() {
+            let [r, g, b] = lin(row * w + k);
             let t = |m: [f32; 3]| m[0] * r + m[1] * g + m[2] * b;
-            if let (Some(x), Some(y), Some(z)) = (x.get_mut(k), y.get_mut(k), z.get_mut(k)) {
-                *x = dcdm_code(t(RGB_TO_XYZ[0]));
-                *y = dcdm_code(t(RGB_TO_XYZ[1]));
-                *z = dcdm_code(t(RGB_TO_XYZ[2]));
-            }
+            *x = dcdm_code(t(RGB_TO_XYZ[0]));
+            *y = dcdm_code(t(RGB_TO_XYZ[1]));
+            *z = dcdm_code(t(RGB_TO_XYZ[2]));
         }
     });
     planes
@@ -297,17 +312,26 @@ pub fn rgba_to_xyz12(rgba: &[u8], w: usize, h: usize) -> [Vec<i32>; 3] {
 /// JPEG 2000 for DCPs: X'Y'Z' in the DCI 2K or 4K profile. Frames are collected and coded
 /// [`DcpEncoder::batch`] at a time in parallel (each one is independent; the coder alone keeps a
 /// core busy), so packets come out up to a batch late and in order.
+/// A picture as the exporter hands it over: RGBA8, or sRGB R'G'B' floats from deep sources.
+enum Pixels {
+    Rgba8(Vec<u8>),
+    Float(Vec<f32>),
+}
+
 struct DcpEncoder {
     opts: cfa4_j2k::EncodeOptions,
     rate: FrameRate,
-    /// RGBA8 frames (width, height, pixels) waiting for their batch.
-    pending: Vec<(u32, u32, Vec<u8>)>,
+    /// Frames waiting for their batch.
+    pending: Vec<(u32, u32, Pixels)>,
     batch: usize,
 }
 
 impl DcpEncoder {
-    fn code(&self, w: u32, h: u32, rgba: &[u8]) -> Result<Vec<u8>> {
-        let [x, y, z] = timed(Stage::Convert, || rgba_to_xyz12(rgba, w as usize, h as usize));
+    fn code(&self, w: u32, h: u32, px: &Pixels) -> Result<Vec<u8>> {
+        let [x, y, z] = timed(Stage::Convert, || match px {
+            Pixels::Rgba8(rgba) => rgba_to_xyz12(rgba, w as usize, h as usize),
+            Pixels::Float(rgb) => rgbf_to_xyz12(rgb, w as usize, h as usize),
+        });
         let plane = |data: Vec<i32>| cfa4_j2k::Plane { width: w, height: h, precision: 12, signed: false, dx: 1, dy: 1, data };
         let image = cfa4_j2k::Image { width: w, height: h, components: vec![plane(x), plane(y), plane(z)], mct: false };
         cfa4_j2k::encode(&image, &self.opts).map_err(|e| ExportError::Encode(format!("JPEG 2000: {e}")))
@@ -331,7 +355,11 @@ impl VideoEncoder for DcpEncoder {
         u32::try_from(self.rate.num).unwrap_or(24)
     }
     fn encode(&mut self, f: &EncoderFrame<'_>) -> Result<Vec<EncodedPacket>> {
-        self.pending.push((f.width, f.height, f.rgba.to_vec()));
+        let px = match f.hdr {
+            Some(rgb) => Pixels::Float(rgb.to_vec()),
+            None => Pixels::Rgba8(f.rgba.to_vec()),
+        };
+        self.pending.push((f.width, f.height, px));
         if self.pending.len() >= self.batch { self.drain() } else { Ok(Vec::new()) }
     }
     fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
