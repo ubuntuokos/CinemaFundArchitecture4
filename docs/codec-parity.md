@@ -2,12 +2,15 @@
 
 > **Nem cél / Non-goal (2026-10-30):** a Windows-, macOS- és Android-paritás nem cél. A CFA4 kizárólag Ubuntu/Kubuntu 26.04 AMD64-re készül; a célalkalmazás más platformokon elérhető funkciói csak a Linuxra átültethető részükben számítanak. Az Apple-formátumok (ProRes, Apple Log, QuickTime/MOV) támogatása formátum, nem platform, ezért marad. / Windows, macOS and Android parity is not a goal; CFA4 targets Ubuntu 26.04 AMD64 only. Apple formats stay supported.
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-11 · **Change:** minor (Dolby Atmos in E-AC-3 and Auro-3D rows; the only status for cinema codecs) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-13 · **Change:** minor (intro aligned with AGENTS.md §2 on ported codecs) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Video and audio codecs, decode and encode, with fidelity and how each is tested. Containers,
 project and interchange files are in [file-format-parity.md](file-format-parity.md); hardware
-paths per platform in [hardware-parity.md](hardware-parity.md). All our codecs are clean-room
-pure Rust from public specifications ([AGENTS.md](../AGENTS.md) §2); ffmpeg is a test oracle only.
+paths per platform in [hardware-parity.md](hardware-parity.md). Our own codecs are Rust, written
+from public specifications by default; porting an existing implementation is allowed when its
+licence is permitted by [licensing.md](licensing.md) §3 and the port is recorded in the reused-code
+register (§5) ([AGENTS.md](../AGENTS.md) §2); the ported ones are named in their rows. FFmpeg is
+the test oracle and an optional fallback backend ([ADR 0005](adr/ADR-0005-media-backends.md)).
 
 Premiere's list comes from Adobe's published supported-formats pages and the names of the
 installed bundle's `MediaIO/systempresets` and `Frameworks` entries (listings only, never their
@@ -85,6 +88,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX specifications, licences and patents are
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-13 | minor | Intro aligned with AGENTS.md §2: codecs come from public specifications by default, ports of permitted, registered implementations are allowed |
 | 2026-11-12 | minor | AV2 early decoder behind a feature flag: out-of-process dav2d helper and Rust adapter, bit-exact with the AVM oracle on the `Main_420_10_IP0` corpus (AV2 plan X/6) |
 | 2026-11-11 | minor | AV2 identified (Annex B, IVF, MP4 `av02`) and reported as unsupported (AV2 plan X/4) |
 | 2026-11-11 | minor | Matrox MPEG-2 I-frame in AVI (`MMES`, `M701`–`M705`; codec backlog CB-7.1) |
