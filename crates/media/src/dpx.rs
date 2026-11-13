@@ -7,8 +7,10 @@
 //! 16-bit words the same two ways; packed 10/12-bit components (packing 0) follow each other with no
 //! padding, the first in the low bits of a 32-bit word, a component crossing into the next word
 //! continuing in its low bits. Scan lines start on a 32-bit boundary and may carry end-of-line
-//! padding. Orientations 0–3 (either scan direction, either line order) are honoured. RGB and luma
-//! code values map linearly onto 8 bits (full range); a logarithmic (printing density) transfer is
+//! padding. Orientations 0–3 (either scan direction, either line order) are honoured.
+//! [`decode_deep`] keeps 10, 12 and 16-bit components as stored (planar R'G'B' or Y'CbCr, with
+//! the time code and frame rate of the television / film headers); [`decode`] maps RGB and luma
+//! code values linearly onto 8 bits (full range). A logarithmic (printing density) transfer is
 //! shown as stored, without a film-log conversion. Y'CbCr is converted with the matrix the
 //! colorimetric field names (BT.709, or BT.601 for the 601 and composite video codes; by picture
 //! size when unspecified), in video range unless the reference low / high data codes span the
@@ -17,9 +19,14 @@
 //! Not decoded (an "unsupported" error): run-length encoded elements, 1-bit and floating-point
 //! components, transposed orientations.
 
-use cfa4_color::{Matrix, Range, normalize_c, normalize_y, ycbcr_to_rgb};
+use std::sync::Arc;
 
-use crate::{MediaError, Result, still::Raster};
+use cfa4_color::{ColorInfo, Matrix, Range, normalize_c, normalize_y, ycbcr_to_rgb};
+use cfa4_frame::{Chroma, PixelData, VideoFrame};
+use cfa4_time::FrameRate;
+
+use crate::still::{DEFAULT_STILL_DURATION, Raster, StillSource, Timing};
+use crate::{MediaError, MediaInfo, MediaKind, Result, VideoStreamInfo};
 
 /// Generic file + image information header: everything we read lies below this.
 const HEADER: usize = 1408;
@@ -170,8 +177,40 @@ impl Components {
     }
 }
 
-/// Decode the first image element of a DPX file to straight-alpha RGBA8, top row first.
-pub fn decode(name: &str, bytes: &[u8]) -> Result<Raster> {
+/// The first image element of a DPX file: its geometry, how its samples are stored, and where.
+struct Element<'a> {
+    order: Order,
+    w: usize,
+    h: usize,
+    bits: u32,
+    layout: Packing,
+    components: Components,
+    flip_x: bool,
+    flip_y: bool,
+    stride: usize,
+    data: &'a [u8],
+}
+
+impl Element<'_> {
+    /// Unpack every scan line, calling `put(source x, destination x, destination y, line)` for each
+    /// pixel (the orientation already applied).
+    fn for_each(&self, mut put: impl FnMut(usize, usize, usize, &[u16])) {
+        let comps = self.w * self.components.per_pixel();
+        let mut line = Vec::with_capacity(comps);
+        for y in 0..self.h {
+            let src = self.data.get(y * self.stride..).unwrap_or_default();
+            self.layout.unpack(src, comps, self.order, &mut line);
+            let dy = if self.flip_y { self.h - 1 - y } else { y };
+            for x in 0..self.w {
+                let dx = if self.flip_x { self.w - 1 - x } else { x };
+                put(x, dx, dy, &line);
+            }
+        }
+    }
+}
+
+/// Parse the headers of a DPX file down to its first image element.
+fn element<'a>(name: &str, bytes: &'a [u8]) -> Result<Element<'a>> {
     let order = match bytes.get(..4) {
         Some(b"SDPX") => Order { big: true },
         Some(b"XPDS") => Order { big: false },
@@ -195,7 +234,7 @@ pub fn decode(name: &str, bytes: &[u8]) -> Result<Raster> {
     if w == 0 || h == 0 {
         return Err(err(name, "empty picture"));
     }
-    let pixels = w.checked_mul(h).filter(|&n| n <= MAX_PIXELS).ok_or_else(|| err(name, "picture too large"))?;
+    w.checked_mul(h).filter(|&n| n <= MAX_PIXELS).ok_or_else(|| err(name, "picture too large"))?;
     if encoding != 0 {
         return Err(unsupported(name, "run-length encoding".into()));
     }
@@ -247,23 +286,139 @@ pub fn decode(name: &str, bytes: &[u8]) -> Result<Raster> {
     // the last line needs no end-of-line padding
     let size = stride.checked_mul(h - 1).and_then(|s| s.checked_add(stride - pad)).ok_or_else(|| err(name, "picture too large"))?;
     let data = offset.checked_add(size).and_then(|end| bytes.get(offset..end)).ok_or_else(|| err(name, "truncated image data"))?;
-    let bits = u32::from(bits);
-    let mut rgba = vec![0u8; pixels * 4];
-    let mut line = Vec::with_capacity(comps);
-    for y in 0..h {
-        let src = data.get(y * stride..).unwrap_or_default();
-        layout.unpack(src, comps, order, &mut line);
-        let dy = if flip_y { h - 1 - y } else { y };
-        for x in 0..w {
-            let dx = if flip_x { w - 1 - x } else { x };
-            let o = (dy * w + dx) * 4;
-            if let Some(px) = rgba.get_mut(o..o + 4) {
-                px.copy_from_slice(&components.pixel(&line, x, bits));
-            }
+    Ok(Element { order, w, h, bits: u32::from(bits), layout, components, flip_x, flip_y, stride, data })
+}
+
+/// Decode the first image element of a DPX file to straight-alpha RGBA8, top row first.
+pub fn decode(name: &str, bytes: &[u8]) -> Result<Raster> {
+    let e = element(name, bytes)?;
+    let mut rgba = vec![0u8; e.w * e.h * 4];
+    e.for_each(|x, dx, dy, line| {
+        let o = (dy * e.w + dx) * 4;
+        if let Some(px) = rgba.get_mut(o..o + 4) {
+            px.copy_from_slice(&e.components.pixel(line, x, e.bits));
         }
+    });
+    let has_alpha = e.components.has_alpha() && rgba.as_chunks::<4>().0.iter().any(|p| p[3] != 255);
+    Ok(Raster { width: e.w as u32, height: e.h as u32, rgba, has_alpha })
+}
+
+/// A DPX picture at its stored depth, with the time code and frame rate of its headers.
+pub struct Decoded {
+    /// RGBA8 at 8 bits; above, planar R'G'B' ([`PixelData::Rgb16`], luma in all three planes) or
+    /// Y'CbCr ([`PixelData::Yuv16`]) with the stored code values.
+    pub frame: VideoFrame,
+    /// Whether any pixel is not fully opaque.
+    pub has_alpha: bool,
+    /// For the media info, e.g. "RGB 10-bit".
+    pub pixel_format: String,
+    pub timing: Timing,
+}
+
+/// Decode the first image element of a DPX file without reducing its depth: 10, 12 and 16-bit
+/// components stay as they are stored (the 8-bit picture of [`decode`] otherwise).
+pub fn decode_deep(name: &str, bytes: &[u8]) -> Result<Decoded> {
+    let e = element(name, bytes)?;
+    let timing = timing(e.order, bytes);
+    if e.bits <= 8 {
+        let r = decode(name, bytes)?;
+        let pixel_format = if r.has_alpha { "RGBA 8-bit" } else { "RGB 8-bit" }.to_string();
+        return Ok(Decoded { frame: VideoFrame::rgba8(r.width, r.height, r.rgba), has_alpha: r.has_alpha, pixel_format, timing });
     }
-    let has_alpha = components.has_alpha() && rgba.as_chunks::<4>().0.iter().any(|p| p[3] != 255);
-    Ok(Raster { width: w as u32, height: h as u32, rgba, has_alpha })
+    let (w, h, n) = (e.w, e.h, e.w * e.h);
+    let max = ((1u32 << e.bits) - 1) as u16;
+    let at = |line: &[u16], i: usize| line.get(i).copied().unwrap_or(0);
+    let (data, has_alpha, label, color) = match e.components {
+        Components::Rgb { n: per, map } => {
+            let mut planes = [vec![0u16; n], vec![0u16; n], vec![0u16; n]];
+            let mut alpha = map[3].map(|_| vec![max; n]);
+            e.for_each(|x, dx, dy, line| {
+                let o = dy * w + dx;
+                for (plane, slot) in planes.iter_mut().zip(map) {
+                    plane[o] = slot.map_or(0, |i| at(line, x * per + i));
+                }
+                if let (Some(a), Some(i)) = (alpha.as_mut(), map[3]) {
+                    a[o] = at(line, x * per + i);
+                }
+            });
+            let has_alpha = alpha.as_ref().is_some_and(|a| a.iter().any(|&v| v != max));
+            let label = if alpha.is_some() { "RGBA" } else { "RGB" };
+            let data = PixelData::Rgb16 { planes: planes.map(Arc::new), bits: e.bits, alpha: alpha.map(Arc::new) };
+            (data, has_alpha, label.to_string(), ColorInfo::SRGB_FULL)
+        }
+        Components::YCbCr { n: per, sub, alpha, matrix, range } => {
+            let cw = if sub { w.div_ceil(2) } else { w };
+            let mid = 1u16 << (e.bits - 1);
+            let (mut y, mut cb, mut cr) = (vec![0u16; n], vec![mid; cw * h], vec![mid; cw * h]);
+            let mut a = alpha.then(|| vec![max; n]);
+            e.for_each(|x, dx, dy, line| {
+                let base = x * per;
+                y[dy * w + dx] = at(line, base + 1);
+                let (b, r) = if sub {
+                    // Cb on the even pixel of a pair, Cr on the odd one; a missing Cr is neutral
+                    let pair = (x & !1) * per;
+                    (at(line, pair), line.get(pair + per).copied().unwrap_or(mid))
+                } else {
+                    (at(line, base), at(line, base + 2))
+                };
+                let c = dy * cw + if sub { dx / 2 } else { dx };
+                cb[c] = b;
+                cr[c] = r;
+                if let Some(a) = a.as_mut() {
+                    a[dy * w + dx] = at(line, base + per - 1);
+                }
+            });
+            let has_alpha = a.as_ref().is_some_and(|a| a.iter().any(|&v| v != max));
+            let chroma = if sub { Chroma::C422 } else { Chroma::C444 };
+            let label = format!("YUV{} {}", if alpha { "A" } else { "" }, chroma.label());
+            let color = ColorInfo { matrix, range, ..ColorInfo::SRGB_FULL };
+            (PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits: e.bits, alpha: a.map(Arc::new) }, has_alpha, label, color)
+        }
+    };
+    let frame = VideoFrame { width: w as u32, height: h as u32, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
+    Ok(Decoded { frame, has_alpha, pixel_format: format!("{label} {}-bit", e.bits), timing })
+}
+
+/// The time code (television header) and frame rate (television header, else film header) of a
+/// DPX file; undefined fields (all ones) give none.
+fn timing(order: Order, bytes: &[u8]) -> Timing {
+    let tc = order.u32(bytes, 1920);
+    // SMPTE ST 12-1 BCD, hours in the high byte: the CinemaDNG / OpenEXR packing read backwards
+    let timecode = (tc != UNDEFINED).then(|| cfa4_dng::Timecode::from_bytes(&tc.to_le_bytes())).flatten();
+    let rate = |at: usize| Some(f32::from_bits(order.u32(bytes, at))).filter(|r| r.is_finite() && *r > 0.0 && *r < 1000.0);
+    let frame_rate = rate(1940).or_else(|| rate(1724)).map(|r| {
+        let r = FrameRate::from_f64(f64::from(r));
+        (r.num, r.den)
+    });
+    Timing { frame_rate, timecode }
+}
+
+/// Open a DPX file as a still at its stored depth, with its time code and frame rate.
+pub fn still(name: &str, bytes: &[u8]) -> Result<StillSource> {
+    let d = decode_deep(name, bytes)?;
+    let (frame_rate, start_timecode) = d.timing.resolve(FrameRate::FPS_29_97);
+    let info = MediaInfo {
+        name: name.to_string(),
+        kind: MediaKind::Still,
+        duration: DEFAULT_STILL_DURATION,
+        video: Some(VideoStreamInfo {
+            width: d.frame.width,
+            height: d.frame.height,
+            frame_rate,
+            par: (1, 1),
+            codec: "DPX".into(),
+            pixel_format: d.pixel_format,
+            color: d.frame.color,
+            has_alpha: d.has_alpha,
+            bitrate: None,
+            hdr: None,
+        }),
+        audio_streams: Vec::new(),
+        container: "Image".into(),
+        start_timecode,
+        file_size: Some(bytes.len() as u64),
+    };
+    Ok(StillSource::from_frame(info, d.frame))
 }
 
 #[cfg(test)]
@@ -288,6 +443,85 @@ mod tests {
         p32(&mut f, ELEMENT + 32, UNDEFINED);
         f.extend_from_slice(data);
         f
+    }
+
+    /// 10/12/16-bit DPX stays at its depth (PROCODEC-002 WP3): planar R'G'B' or Y'CbCr with the
+    /// stored codes, the orientation applied, and the same picture as the 8-bit path.
+    #[test]
+    fn deep_components_keep_their_codes() {
+        let deep = |f: &[u8]| decode_deep("a.dpx", f).unwrap();
+        let close = |f: &[u8]| {
+            let (a, b) = (deep(f).frame.to_rgba8(), decode("a.dpx", f).unwrap().rgba);
+            assert!(a.iter().zip(&b).all(|(x, y)| x.abs_diff(*y) <= 1), "{a:?} vs {b:?}");
+        };
+        // 10-bit RGB filled (method A), little-endian, mirrored (orientation 1): 3 pixels
+        let word = |a: u32, b: u32, c: u32| ((a << 22) | (b << 12) | (c << 2)).to_le_bytes();
+        let f = file(false, 3, 1, 50, 10, 1, 1, &[word(1, 2, 3), word(1021, 1022, 1023), word(500, 501, 502)].concat());
+        let d = deep(&f);
+        assert_eq!((d.pixel_format.as_str(), d.has_alpha, d.frame.color.range), ("RGB 10-bit", false, Range::Full));
+        let PixelData::Rgb16 { planes, bits: 10, alpha: None } = &d.frame.data else { panic!("{}", d.frame.format_label()) };
+        assert_eq!([planes[0].to_vec(), planes[1].to_vec(), planes[2].to_vec()], [vec![500, 1021, 1], vec![501, 1022, 2], vec![502, 1023, 3]]);
+        close(&f);
+        // 12-bit RGBA (method B words), alpha kept
+        let v = |x: u16| x.to_be_bytes();
+        let f = file(true, 1, 1, 51, 12, 2, 0, &[v(4095), v(2048), v(1), v(1000)].concat());
+        let d = deep(&f);
+        assert_eq!((d.pixel_format.as_str(), d.has_alpha), ("RGBA 12-bit", true));
+        let PixelData::Rgb16 { planes, bits: 12, alpha: Some(a) } = &d.frame.data else { panic!("{}", d.frame.format_label()) };
+        assert_eq!((planes[0][0], planes[1][0], planes[2][0], a[0]), (4095, 2048, 1, 1000));
+        close(&f);
+        // 16-bit luma: the same code in R, G and B
+        let d = deep(&file(true, 1, 1, 6, 16, 0, 0, &[v(40000), v(0)].concat()));
+        let PixelData::Rgb16 { planes, bits: 16, .. } = &d.frame.data else { panic!() };
+        assert!(planes.iter().all(|p| p[0] == 40000));
+        // 10-bit CbYCrY 4:2:2 packed (packing 0), 3 pixels: Cb Y Cr Y Cb Y (the last Cr missing)
+        let comps = [400u64, 64, 600, 940, 512, 300];
+        let packed: u64 = comps.iter().enumerate().map(|(i, &c)| c << (10 * i)).sum();
+        let f = file(false, 3, 1, 100, 10, 0, 0, &packed.to_le_bytes());
+        let d = deep(&f);
+        assert_eq!(d.pixel_format, "YUV 4:2:2 10-bit");
+        let PixelData::Yuv16 { planes, chroma: Chroma::C422, bits: 10, alpha: None } = &d.frame.data else { panic!("{}", d.frame.format_label()) };
+        assert_eq!([planes[0].to_vec(), planes[1].to_vec(), planes[2].to_vec()], [vec![64, 940, 300], vec![400, 512], vec![600, 512]]);
+        // no colorimetric code: the matrix follows the picture size (SD: BT.601)
+        assert_eq!((d.frame.color.range, d.frame.color.matrix), (Range::Limited, Matrix::Bt601));
+        // 16-bit CbYCrA 4:4:4: white at half opacity, as the 8-bit path
+        let f = file(true, 1, 1, 103, 16, 0, 0, &[v(32768), v(60160), v(32768), v(32768)].concat());
+        let d = deep(&f);
+        assert_eq!((d.pixel_format.as_str(), d.has_alpha), ("YUVA 4:4:4 16-bit", true));
+        close(&f);
+        // 8 bits stay RGBA8
+        let d = deep(&file(true, 1, 1, 50, 8, 0, 0, &[1, 2, 3, 0]));
+        assert!(matches!(d.frame.data, PixelData::Rgba8(_)));
+        assert_eq!(d.pixel_format, "RGB 8-bit");
+    }
+
+    /// The time code (television header) and frame rate (television, else film header).
+    #[test]
+    fn time_code_and_frame_rate() {
+        let mut f = file(true, 1, 1, 50, 8, 0, 0, &[0; 4]);
+        let zeroed = timing(Order { big: true }, &f);
+        assert_eq!(zeroed.frame_rate, None, "zero is no rate");
+        assert_eq!(zeroed.timecode.map(|t| (t.hours, t.minutes, t.seconds, t.frames)), Some((0, 0, 0, 0)));
+        f[1920..1924].copy_from_slice(&0x0102_0304_u32.to_be_bytes());
+        f[1940..1944].copy_from_slice(&25.0f32.to_bits().to_be_bytes());
+        let t = decode_deep("a.dpx", &f).unwrap().timing;
+        assert_eq!(t.frame_rate, Some((25, 1)));
+        assert_eq!(t.timecode.map(|t| (t.hours, t.minutes, t.seconds, t.frames)), Some((1, 2, 3, 4)));
+        // film header rate when the television one is undefined; undefined time code
+        f[1920..1924].fill(0xFF);
+        f[1940..1944].fill(0xFF);
+        f[1724..1728].copy_from_slice(&23.976f32.to_bits().to_be_bytes());
+        let t = decode_deep("a.dpx", &f).unwrap().timing;
+        assert_eq!((t.frame_rate, t.timecode), (Some((24000, 1001)), None));
+        // a still opens with them
+        f[1920..1924].copy_from_slice(&0x0000_0010_u32.to_be_bytes());
+        let s = crate::still::StillSource::decode("a.dpx", &f).unwrap();
+        let s: &dyn crate::MediaSource = &s;
+        assert_eq!(s.info().start_timecode, Some(10));
+        assert_eq!(s.info().video.as_ref().unwrap().codec, "DPX");
+        // hostile rates are ignored
+        f[1724..1728].copy_from_slice(&f32::NAN.to_bits().to_be_bytes());
+        assert_eq!(decode_deep("a.dpx", &f).unwrap().timing.frame_rate, None);
     }
 
     #[test]
