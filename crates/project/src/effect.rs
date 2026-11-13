@@ -157,6 +157,9 @@ pub const DITHER_PALETTES: &[&str] = &["Input Colors", "Black & White", "Green P
 pub const CRT_MASKS: &[&str] = &["None", "Aperture Grille", "Shadow Mask", "Slot Mask"];
 /// Oil Paint brush styles (`gpufx::FxOp::OilPaint`, in this order).
 pub const OIL_STYLES: &[&str] = &["Facet", "Daubs", "Dry Brush", "Fresco", "Knife", "Sponge"];
+/// Pixel Sort keys and directions.
+pub const PIXEL_SORT_KEYS: &[&str] = &["Brightness", "Hue", "Saturation"];
+pub const PIXEL_SORT_ORDERS: &[&str] = &["Ascending", "Descending"];
 /// The view a Stereoscopic 3D effect keeps.
 pub const STEREO_EYES: &[&str] = &["Left", "Right"];
 
@@ -705,6 +708,19 @@ fn build_effects() -> Vec<EffectDef> {
                 fs("detail", "Detail", 50.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
                 fs("texture", "Texture", 20.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
                 fs("seed", "Random Seed", 1.0, (1.0, 9999.0), (1.0, 100.0), "", 0),
+            ],
+        ),
+        video(
+            "pixel_sort",
+            "Pixel Sort",
+            CREATIVE_LOOKS,
+            vec![
+                ang("angle", "Angle", 0.0),
+                ch("sort_by", "Sort By", PIXEL_SORT_KEYS, 0),
+                fs("lower", "Lower Threshold", 25.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("upper", "Upper Threshold", 80.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                ch("order", "Order", PIXEL_SORT_ORDERS, 0),
+                fs("blend", "Blend With Original", 0.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
             ],
         ),
         video(

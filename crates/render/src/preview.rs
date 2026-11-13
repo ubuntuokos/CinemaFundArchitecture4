@@ -423,6 +423,7 @@ pub fn effect_cost_ms(id: &str) -> f64 {
         | "edge_glow"
         | "volumetric_rays"
         | "brush_strokes"
+        | "pixel_sort"
         | "roughen_edges"
         | "lighting_effects"
         | "vr_blur"

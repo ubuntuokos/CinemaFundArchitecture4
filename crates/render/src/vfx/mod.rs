@@ -521,6 +521,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx<'_>) -> bool {
         "ellipse" => stylize::ellipse(img, e, cx),
         "paint_bucket" => stylize::paint_bucket(img, e, cx),
         "write_on" => stylize::write_on(img, e, cx),
+        "pixel_sort" => stylize::pixel_sort(img, e, cx),
         // Glitch (CFA4's own folder)
         "bit_crush" => glitch::bit_crush(img, e, cx),
         "block_glitch" => glitch::block_glitch(img, e, cx),

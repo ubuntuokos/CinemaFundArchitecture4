@@ -4578,3 +4578,9 @@ export.summary	Low	低
 	Fresco	壁畫
 	Knife	刮刀
 	Sponge	海綿
+# Creative Looks: Pixel Sort (P5)
+	Pixel Sort	像素排序
+	Sort By	排序依據
+	Lower Threshold	下限臨界值
+	Upper Threshold	上限臨界值
+	Ascending	遞增
