@@ -45,6 +45,15 @@ The Qt system headers/tools (Qt Widgets, Qt Multimedia, Qt Designer, CMake) are 
 PySide6 provides its own Qt shared libraries via the wheel, so do not combine the wheel's
 libraries with the distro's Qt binaries in a single process.
 
+Python checks, as in CI (`cfa4-gate`):
+
+~~~bash
+.venv/bin/python -m ruff check python
+.venv/bin/python -m mypy   # strict; blocking. Files still to be fixed are listed in pyproject.toml
+                           # ([[tool.mypy.overrides]]); the list may only shrink, new files must pass
+.venv/bin/python -m pytest -q python/tests --ignore=python/tests/test_qt_gui.py
+~~~
+
 ## Developer tools / commands
 
 ~~~bash
