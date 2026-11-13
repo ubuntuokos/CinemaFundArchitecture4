@@ -70,6 +70,7 @@ Measured: NVENC HEVC round trip 48.9 dB luma PSNR (8-bit), 71.1 dB (10-bit) on a
 | Second computer monitor full-screen playback | yes | full screen inside the app window; no separate-display output or floating windows on other screens (#466) | 40% |
 | HDR display | macOS EDR, Windows HDR | no (SDR display of HDR sequences; Wayland HDR not used yet) | 0% |
 | Control surfaces (EUCON, Mackie HUI / MCU) | yes | no | 0% |
+| Jog/shuttle (Contour ShuttlePRO / ShuttleXpress) and generic MIDI controllers (CC, notes, 14-bit, encoders, MIDI Learn) | through the vendor's key-emulation driver; no MIDI mapping | specified, not built: CFA4-CONTROL-SURFACE-001 F0 ([ADR 0012](adr/ADR-0012-control-surface.md)); ShuttlePRO over hidraw in F1a, generic MIDI over the ALSA sequencer in F1, profiles and banks in F2; development starts after the Qt 6 GUI gate | 0% |
 | LTC timecode input | yes | no | 0% |
 | Tape / deck control | legacy | no | n/a |
 
@@ -88,3 +89,4 @@ one encoder ~4–8 h ([target-app-parity.md](target-app-parity.md#calibration)).
 |---|---|---|
 | 2026-10-10 | major | Created from ROADMAP.md's performance-and-hardware row and `crates/platform/README.md`; added Linux NVDEC (#549), GPU export and Lumetri on the GPU (#421), Premiere's per-platform hardware list, devices and I/O |
 | 2026-10-27 | minor | Ubuntu 26.04 is the only platform: macOS and Windows columns, VideoToolbox / Media Foundation backends and their measurements removed; HEVC NVENC listed for Linux; 120–200 → 100–170 h |
+| 2026-11-13 | minor | Jog/shuttle and generic MIDI controller row added (CFA4-CONTROL-SURFACE-001 F0, specified only) |
