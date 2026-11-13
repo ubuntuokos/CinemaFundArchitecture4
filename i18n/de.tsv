@@ -4532,5 +4532,7 @@
 	DCP keys forgotten	DCP-Schlüssel vergessen
 	Choose the KDM file and the private key.	Wählen Sie die KDM-Datei und den privaten Schlüssel.
 	Load even if the certificate chain is not verified	Auch mit ungeprüfter Zertifikatskette laden
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {loaded} von {total} KDMs geladen, {other} für andere Empfänger
+	Not loaded: {path}: {problem}	Nicht geladen: {path}: {problem}
 	Signature verified: {chain}	Signatur geprüft: {chain}
 	Signature not verified: {problem}	Signatur nicht geprüft: {problem}

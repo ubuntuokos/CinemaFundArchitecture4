@@ -4510,5 +4510,7 @@
 	DCP keys forgotten	Ключи DCP забыты
 	Choose the KDM file and the private key.	Выберите файл KDM и закрытый ключ.
 	Load even if the certificate chain is not verified	Загружать и с непроверенной цепочкой сертификатов
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: загружено {loaded} из {total} KDM, {other} для других получателей
+	Not loaded: {path}: {problem}	Не загружено: {path}: {problem}
 	Signature verified: {chain}	Подпись проверена: {chain}
 	Signature not verified: {problem}	Подпись не проверена: {problem}

@@ -4519,5 +4519,7 @@
 	DCP keys forgotten	DCP 키를 지웠습니다
 	Choose the KDM file and the private key.	KDM 파일과 개인 키를 선택하십시오.
 	Load even if the certificate chain is not verified	인증서 체인이 확인되지 않아도 불러오기
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	번들: KDM {total}개 중 {loaded}개 불러옴, {other}개는 다른 수신자용
+	Not loaded: {path}: {problem}	불러오지 않음: {path}: {problem}
 	Signature verified: {chain}	서명 확인됨: {chain}
 	Signature not verified: {problem}	서명 확인 안 됨: {problem}

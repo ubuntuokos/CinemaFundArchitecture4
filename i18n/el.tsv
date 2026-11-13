@@ -4527,5 +4527,7 @@ export.summary	Low	χαμηλή
 	DCP keys forgotten	Τα κλειδιά DCP διαγράφηκαν
 	Choose the KDM file and the private key.	Επιλέξτε το αρχείο KDM και το ιδιωτικό κλειδί.
 	Load even if the certificate chain is not verified	Φόρτωση ακόμη και με μη επαληθευμένη αλυσίδα πιστοποιητικών
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Πακέτο: φορτώθηκαν {loaded} από {total} KDM, {other} για άλλους παραλήπτες
+	Not loaded: {path}: {problem}	Δεν φορτώθηκε: {path}: {problem}
 	Signature verified: {chain}	Η υπογραφή επαληθεύτηκε: {chain}
 	Signature not verified: {problem}	Η υπογραφή δεν επαληθεύτηκε: {problem}

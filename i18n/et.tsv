@@ -4527,5 +4527,7 @@ export.summary	Low	madal
 	DCP keys forgotten	DCP võtmed unustatud
 	Choose the KDM file and the private key.	Vali KDM-fail ja privaatvõti.
 	Load even if the certificate chain is not verified	Laadi ka kontrollimata sertifikaadiahelaga
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Kogum: laaditud {loaded} KDM-i {total}-st, {other} teistele saajatele
+	Not loaded: {path}: {problem}	Laadimata: {path}: {problem}
 	Signature verified: {chain}	Allkiri kontrollitud: {chain}
 	Signature not verified: {problem}	Allkiri kontrollimata: {problem}

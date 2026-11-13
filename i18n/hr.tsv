@@ -4527,5 +4527,7 @@ export.summary	Low	niska
 	DCP keys forgotten	DCP ključevi zaboravljeni
 	Choose the KDM file and the private key.	Odaberite KDM datoteku i privatni ključ.
 	Load even if the certificate chain is not verified	Učitaj i s neprovjerenim lancem certifikata
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: učitano {loaded} od {total} KDM-ova, {other} za druge primatelje
+	Not loaded: {path}: {problem}	Nije učitano: {path}: {problem}
 	Signature verified: {chain}	Potpis provjeren: {chain}
 	Signature not verified: {problem}	Potpis nije provjeren: {problem}

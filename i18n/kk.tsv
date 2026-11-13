@@ -4527,5 +4527,7 @@ export.summary	Low	төмен
 	DCP keys forgotten	DCP кілттері ұмытылды
 	Choose the KDM file and the private key.	KDM файлын және жеке кілтті таңдаңыз.
 	Load even if the certificate chain is not verified	Тексерілмеген сертификаттар тізбегімен де жүктеу
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Бума: {total} KDM ішінен {loaded} жүктелді, {other} басқа алушыларға
+	Not loaded: {path}: {problem}	Жүктелмеді: {path}: {problem}
 	Signature verified: {chain}	Қолтаңба тексерілді: {chain}
 	Signature not verified: {problem}	Қолтаңба тексерілмеді: {problem}

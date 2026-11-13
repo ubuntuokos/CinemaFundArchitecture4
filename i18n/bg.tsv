@@ -4528,5 +4528,7 @@ export.summary	Low	ниско
 	DCP keys forgotten	DCP ключовете са забравени
 	Choose the KDM file and the private key.	Изберете KDM файла и частния ключ.
 	Load even if the certificate chain is not verified	Зареждане дори при непроверена верига от сертификати
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Пакет: заредени {loaded} от {total} KDM, {other} за други получатели
+	Not loaded: {path}: {problem}	Не е заредено: {path}: {problem}
 	Signature verified: {chain}	Подписът е проверен: {chain}
 	Signature not verified: {problem}	Подписът не е проверен: {problem}

@@ -4533,5 +4533,7 @@
 	DCP keys forgotten	Kunci DCP dilupakan
 	Choose the KDM file and the private key.	Pilih file KDM dan kunci privat.
 	Load even if the certificate chain is not verified	Muat juga dengan rantai sertifikat yang belum diverifikasi
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {loaded} dari {total} KDM dimuat, {other} untuk penerima lain
+	Not loaded: {path}: {problem}	Tidak dimuat: {path}: {problem}
 	Signature verified: {chain}	Tanda tangan terverifikasi: {chain}
 	Signature not verified: {problem}	Tanda tangan tidak terverifikasi: {problem}

@@ -4526,5 +4526,7 @@ export.summary	Low	düşük
 	DCP keys forgotten	DCP anahtarları unutuldu
 	Choose the KDM file and the private key.	KDM dosyasını ve özel anahtarı seçin.
 	Load even if the certificate chain is not verified	Doğrulanmamış sertifika zinciriyle de yükle
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Paket: {total} KDM'den {loaded} tanesi yüklendi, {other} tanesi başka alıcılar için
+	Not loaded: {path}: {problem}	Yüklenmedi: {path}: {problem}
 	Signature verified: {chain}	İmza doğrulandı: {chain}
 	Signature not verified: {problem}	İmza doğrulanmadı: {problem}

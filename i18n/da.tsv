@@ -4527,5 +4527,7 @@ export.summary	Low	lav
 	DCP keys forgotten	DCP-nøgler glemt
 	Choose the KDM file and the private key.	Vælg KDM-filen og den private nøgle.
 	Load even if the certificate chain is not verified	Indlæs også med en ubekræftet certifikatkæde
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Pakke: {loaded} af {total} KDM'er indlæst, {other} til andre modtagere
+	Not loaded: {path}: {problem}	Ikke indlæst: {path}: {problem}
 	Signature verified: {chain}	Signatur bekræftet: {chain}
 	Signature not verified: {problem}	Signatur ikke bekræftet: {problem}

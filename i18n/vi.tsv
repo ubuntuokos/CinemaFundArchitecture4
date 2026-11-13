@@ -4525,5 +4525,7 @@ export.summary	Low	thấp
 	DCP keys forgotten	Đã quên khóa DCP
 	Choose the KDM file and the private key.	Chọn tệp KDM và khóa riêng.
 	Load even if the certificate chain is not verified	Tải cả khi chuỗi chứng chỉ chưa được xác minh
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	Gói: đã tải {loaded}/{total} KDM, {other} cho người nhận khác
+	Not loaded: {path}: {problem}	Chưa tải: {path}: {problem}
 	Signature verified: {chain}	Đã xác minh chữ ký: {chain}
 	Signature not verified: {problem}	Chưa xác minh chữ ký: {problem}

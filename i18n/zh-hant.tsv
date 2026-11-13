@@ -4524,5 +4524,7 @@ export.summary	Low	低
 	DCP keys forgotten	已清除 DCP 金鑰
 	Choose the KDM file and the private key.	請選擇 KDM 檔案和私密金鑰。
 	Load even if the certificate chain is not verified	即使憑證鏈未經驗證也載入
+	Bundle: {loaded} of {total} KDMs loaded, {other} for other recipients	套件：已載入 {total} 個 KDM 中的 {loaded} 個，{other} 個屬於其他接收者
+	Not loaded: {path}: {problem}	未載入：{path}：{problem}
 	Signature verified: {chain}	簽章已驗證：{chain}
 	Signature not verified: {problem}	簽章未驗證：{problem}
