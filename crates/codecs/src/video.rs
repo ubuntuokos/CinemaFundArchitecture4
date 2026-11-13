@@ -897,8 +897,9 @@ pub fn apv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
 /// Our DNxHD / DNxHR (VC-3) decoder (every frame is intra; macroblock rows decode in parallel).
 pub struct DnxDecoder;
 
-/// Convert a decoded VC-3 frame to a [`VideoFrame`]. RGB (4:4:4) frames are converted to
-/// BT.709 video-range Y'CbCr 4:4:4 at the coded depth.
+/// Convert a decoded VC-3 frame to a [`VideoFrame`]. RGB (4:4:4) frames stay R'G'B': their
+/// video-range codes are expanded to full range at the coded depth (one code to one code, so
+/// nothing is lost) and returned as planar R'G'B' (RGBA8 at 8 bits).
 pub fn dnx_to_video_frame(f: cfa4_dnx::Frame) -> VideoFrame {
     use std::sync::Arc;
     let chroma = match f.chroma {
@@ -911,43 +912,65 @@ pub fn dnx_to_video_frame(f: cfa4_dnx::Frame) -> VideoFrame {
         color.matrix = cfa4_color::Matrix::Bt2020Ncl;
         color.primaries = cfa4_color::Primaries::Bt2020;
     }
-    let (mut y, mut cb, mut cr) = (f.y, f.cb, f.cr);
-    if f.rgb {
-        // planes hold G, B, R (video range); derive Y'CbCr with the stream's matrix
-        let (kr, kb) = color.matrix.kr_kb();
-        let kg = 1.0 - kr - kb;
-        let s = (1u32 << (f.bit_depth - 8)) as f32;
-        let max = ((1u32 << f.bit_depth) - 1) as f32;
-        let c = 224.0 / 219.0;
-        for i in 0..y.len() {
-            let (g, b, r) = (y[i] as f32, cb[i] as f32, cr[i] as f32);
-            let yy = kr * r + kg * g + kb * b;
-            let u = (b - yy) / (2.0 * (1.0 - kb)) * c + 128.0 * s;
-            let v = (r - yy) / (2.0 * (1.0 - kr)) * c + 128.0 * s;
-            y[i] = (yy + 0.5).clamp(0.0, max) as u16;
-            cb[i] = (u + 0.5).clamp(0.0, max) as u16;
-            cr[i] = (v + 0.5).clamp(0.0, max) as u16;
-        }
-    }
-    let par = match f.par {
-        (n, d) if n > 0 && d > 0 => (n as u32, d as u32),
-        // thin rasters (1440 / 960 wide) are anamorphic 16:9
-        _ if matches!(f.cid, 1244 | 1259 | 1260) => (4, 3),
-        _ if f.cid == 1258 => (4, 3),
-        _ => (1, 1),
+    let field_order = match f.interlace {
+        cfa4_dnx::Interlace::Progressive => cfa4_frame::FieldOrder::Progressive,
+        cfa4_dnx::Interlace::TopFieldFirst => cfa4_frame::FieldOrder::TopFirst,
     };
+    let layout = cfa4_frame::FrameLayout { field_order, ..Default::default() };
+    let par = dnx_par(&f);
+    if f.rgb {
+        color.range = cfa4_color::Range::Full;
+        let data = dnx_rgb_data(f.y, f.cb, f.cr, f.alpha, f.bit_depth, f.width as usize * f.height as usize);
+        return VideoFrame { width: f.width, height: f.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout };
+    }
+    let (y, cb, cr) = (f.y, f.cb, f.cr);
     let data = if f.bit_depth == 8 {
         let to8 = |p: Vec<u16>| Arc::new(p.into_iter().map(|v| v as u8).collect::<Vec<u8>>());
         cfa4_frame::PixelData::Yuv8 { planes: [to8(y), to8(cb), to8(cr)], chroma, alpha: f.alpha.map(to8) }
     } else {
         cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits: f.bit_depth as u32, alpha: f.alpha.map(Arc::new) }
     };
-    let field_order = match f.interlace {
-        cfa4_dnx::Interlace::Progressive => cfa4_frame::FieldOrder::Progressive,
-        cfa4_dnx::Interlace::TopFieldFirst => cfa4_frame::FieldOrder::TopFirst,
-    };
-    let layout = cfa4_frame::FrameLayout { field_order, ..Default::default() };
     VideoFrame { width: f.width, height: f.height, data, color, par, pts: cfa4_time::Tick::ZERO, layout }
+}
+
+/// Pixel aspect ratio of a VC-3 frame: signalled, or implied by the thin rasters.
+fn dnx_par(f: &cfa4_dnx::Frame) -> (u32, u32) {
+    match f.par {
+        (n, d) if n > 0 && d > 0 => (n as u32, d as u32),
+        // thin rasters (1440 / 960 wide) are anamorphic 16:9
+        _ if matches!(f.cid, 1244 | 1259 | 1260 | 1258) => (4, 3),
+        _ => (1, 1),
+    }
+}
+
+/// Full-range R'G'B' pixel data of `n` pixels from VC-3 planes in coded order G, B, R
+/// (video range, `bits` deep) and a full-range alpha. Video range spans fewer codes than full
+/// range, so the expansion keeps every code distinct; codes outside video range clip.
+fn dnx_rgb_data(g: Vec<u16>, b: Vec<u16>, r: Vec<u16>, alpha: Option<Vec<u16>>, bits: u8, n: usize) -> cfa4_frame::PixelData {
+    use std::sync::Arc;
+    let bits = u32::from(bits.clamp(8, 16));
+    let s = f64::from(1u32 << (bits - 8));
+    let max = f64::from((1u32 << bits) - 1);
+    let (lo, span) = (16.0 * s, 219.0 * s);
+    let full = |p: Vec<u16>| -> Vec<u16> {
+        let mut out: Vec<u16> = p.into_iter().take(n).map(|v| ((f64::from(v) - lo) / span * max).round().clamp(0.0, max) as u16).collect();
+        out.resize(n, 0);
+        out
+    };
+    let alpha = alpha.map(|mut a| {
+        a.resize(n, (max as u16).max(1));
+        a
+    });
+    let (r, g, b) = (full(r), full(g), full(b));
+    if bits == 8 {
+        let mut rgba = Vec::with_capacity(n * 4);
+        for i in 0..n {
+            let a = alpha.as_ref().map_or(255, |a| a[i].min(255) as u8);
+            rgba.extend_from_slice(&[r[i] as u8, g[i] as u8, b[i] as u8, a]);
+        }
+        return cfa4_frame::PixelData::Rgba8(Arc::new(rgba));
+    }
+    cfa4_frame::PixelData::Rgb16 { planes: [Arc::new(r), Arc::new(g), Arc::new(b)], bits, alpha: alpha.map(Arc::new) }
 }
 
 impl VideoDecoder for DnxDecoder {

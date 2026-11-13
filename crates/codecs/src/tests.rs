@@ -169,6 +169,7 @@ fn dnxhd_and_dnxhr_movs_decode() {
         ("bars_dnxhr_hq.mov", &["-c:v", "dnxhd", "-profile:v", "dnxhr_hq", "-pix_fmt", "yuv422p"][..], "DNxHR HQ", "4:2:2"),
         ("bars_dnxhr_hqx.mov", &["-c:v", "dnxhd", "-profile:v", "dnxhr_hqx", "-pix_fmt", "yuv422p10le"][..], "DNxHR HQX", "4:2:2"),
         ("bars_dnxhd_1251.mov", &["-c:v", "dnxhd", "-b:v", "90M", "-pix_fmt", "yuv422p"][..], "CID 1251", "4:2:2"),
+        ("bars_dnxhr_444_rgb.mov", &["-c:v", "dnxhd", "-profile:v", "dnxhr_444", "-pix_fmt", "gbrp10le"][..], "DNxHR 444", "RGB 10-bit"),
     ] {
         let mut a = vec!["-f", "lavfi", "-i", if name.contains("1251") { "smptehdbars=s=1280x720:r=50:d=0.2" } else { "smptehdbars=s=640x360:r=24:d=0.5" }];
         a.extend_from_slice(args);
@@ -183,6 +184,54 @@ fn dnxhd_and_dnxhr_movs_decode() {
         // leftmost bars area is 40% grey
         let c = &px[(100 * w + 20) * 4..][..3];
         assert!((c[0] as i32 - 104).abs() < 6, "{name}: {c:?}");
+    }
+}
+
+/// DNx 4:4:4 RGB stays R'G'B' (PROCODEC-002 1b): the video-range codes are expanded to full range
+/// at the coded depth, one code to one code, instead of going through Y'CbCr.
+#[test]
+fn dnx_rgb_444_stays_rgb() {
+    for (bits, alpha) in [(10u8, false), (12, true), (8, true)] {
+        let (w, h) = (1024u32, 2u32);
+        let s = 1u32 << (bits - 8);
+        let mut f = cfa4_dnx::Frame::new(w, h, cfa4_dnx::ChromaFormat::Yuv444, bits, alpha);
+        f.rgb = true;
+        // G: every code across video range and beyond; B and R: video-range black and white
+        let top = (1u32 << bits) - 1;
+        f.y = (0..w * h).map(|i| ((i % w) * top / (w - 1)) as u16).collect();
+        f.cb = vec![(16 * s) as u16; (w * h) as usize];
+        f.cr = vec![(235 * s) as u16; (w * h) as usize];
+        if let Some(a) = f.alpha.as_mut() {
+            a.iter_mut().enumerate().for_each(|(i, v)| *v = if i % 2 == 0 { 0 } else { top as u16 });
+        }
+        let v = crate::video::dnx_to_video_frame(f.clone());
+        assert_eq!(v.color.range, cfa4_color::Range::Full);
+        let (planes, alpha_out): ([Vec<u16>; 3], Option<Vec<u16>>) = match &v.data {
+            cfa4_frame::PixelData::Rgb16 { planes, bits: b, alpha } => {
+                assert_eq!(*b, u32::from(bits));
+                (planes.clone().map(|p| p.to_vec()), alpha.as_ref().map(|a| a.to_vec()))
+            }
+            cfa4_frame::PixelData::Rgba8(px) => {
+                assert_eq!(bits, 8);
+                let c = |k: usize| px.iter().skip(k).step_by(4).map(|&v| u16::from(v)).collect::<Vec<u16>>();
+                ([c(0), c(1), c(2)], Some(c(3)))
+            }
+            _ => panic!("{bits}-bit RGB became {}", v.format_label()),
+        };
+        let [r, g, b] = planes;
+        assert!(r.iter().all(|&v| u32::from(v) == top), "video white is full white");
+        assert!(b.iter().all(|&v| v == 0), "video black is full black");
+        // the expansion keeps every video-range code distinct and in order
+        let inside: Vec<(u16, u16)> = f.y.iter().zip(&g).filter(|(c, _)| (16 * s..=235 * s).contains(&u32::from(**c))).map(|(&c, &o)| (c, o)).collect();
+        assert!(inside.windows(2).all(|p| p[0].0 >= p[1].0 || p[0].1 < p[1].1), "{bits}-bit: codes merged");
+        assert_eq!(alpha_out.is_some(), alpha, "{bits}-bit alpha");
+        if let Some(a) = alpha_out {
+            assert_eq!(a[0], 0);
+            assert_eq!(u32::from(a[1]), top);
+        }
+        // the picture reads as red where G is below video black (pixel 1 is opaque)
+        let px = v.to_rgba8();
+        assert_eq!(&px[4..7], &[255, 0, 0], "{bits}-bit");
     }
 }
 
