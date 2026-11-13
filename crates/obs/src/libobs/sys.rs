@@ -11,7 +11,7 @@
 use super::ffi;
 use crate::{Frame, PixelFormat, Result, StudioError};
 use libloading::Library;
-use std::ffi::{CStr, CString, c_void};
+use std::ffi::{CStr, CString, c_char, c_void};
 use std::path::Path;
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::time::Duration;
@@ -31,7 +31,7 @@ unsafe fn symbol<T: Copy>(lib: &Library, name: &[u8]) -> Result<T> {
     Ok(*s)
 }
 
-/// The libobs entry points the S0 binding uses, with the library that holds them.
+/// The libobs entry points the binding uses, with the library that holds them.
 pub struct Api {
     get_version_string: ffi::FnGetVersionString,
     set_nix_platform: ffi::FnSetNixPlatform,
@@ -39,12 +39,25 @@ pub struct Api {
     startup: ffi::FnStartup,
     shutdown: ffi::FnShutdown,
     reset_video: ffi::FnResetVideo,
+    /// `obs_scene_create_private`: CFA4's scenes are private. A public scene belongs to libobs's
+    /// main canvas, which keeps it (and its sources) alive until `obs_shutdown`, so a replaced
+    /// scene would never be freed.
     scene_create: ffi::FnSceneCreate,
     scene_get_source: ffi::FnSceneGetSource,
     scene_release: ffi::FnSceneRelease,
     set_output_source: ffi::FnSetOutputSource,
     add_raw_video_callback: ffi::FnAddRawVideoCallback,
     remove_raw_video_callback: ffi::FnRemoveRawVideoCallback,
+    register_source: ffi::FnRegisterSource,
+    source_create_private: ffi::FnSourceCreatePrivate,
+    source_release: ffi::FnSourceRelease,
+    source_output_video: ffi::FnSourceOutputVideo,
+    source_set_async_unbuffered: ffi::FnSourceSetAsyncUnbuffered,
+    scene_add: ffi::FnSceneAdd,
+    sceneitem_set_pos: ffi::FnSceneitemSetVec2,
+    sceneitem_set_scale: ffi::FnSceneitemSetVec2,
+    sceneitem_set_rot: ffi::FnSceneitemSetRot,
+    sceneitem_set_crop: ffi::FnSceneitemSetCrop,
     // last: dropped after nothing can call the pointers above any more
     _lib: Library,
 }
@@ -72,12 +85,22 @@ impl Api {
                 startup: symbol(&lib, b"obs_startup\0")?,
                 shutdown: symbol(&lib, b"obs_shutdown\0")?,
                 reset_video: symbol(&lib, b"obs_reset_video\0")?,
-                scene_create: symbol(&lib, b"obs_scene_create\0")?,
+                scene_create: symbol(&lib, b"obs_scene_create_private\0")?,
                 scene_get_source: symbol(&lib, b"obs_scene_get_source\0")?,
                 scene_release: symbol(&lib, b"obs_scene_release\0")?,
                 set_output_source: symbol(&lib, b"obs_set_output_source\0")?,
                 add_raw_video_callback: symbol(&lib, b"obs_add_raw_video_callback\0")?,
                 remove_raw_video_callback: symbol(&lib, b"obs_remove_raw_video_callback\0")?,
+                register_source: symbol(&lib, b"obs_register_source_s\0")?,
+                source_create_private: symbol(&lib, b"obs_source_create_private\0")?,
+                source_release: symbol(&lib, b"obs_source_release\0")?,
+                source_output_video: symbol(&lib, b"obs_source_output_video\0")?,
+                source_set_async_unbuffered: symbol(&lib, b"obs_source_set_async_unbuffered\0")?,
+                scene_add: symbol(&lib, b"obs_scene_add\0")?,
+                sceneitem_set_pos: symbol(&lib, b"obs_sceneitem_set_pos\0")?,
+                sceneitem_set_scale: symbol(&lib, b"obs_sceneitem_set_scale\0")?,
+                sceneitem_set_rot: symbol(&lib, b"obs_sceneitem_set_rot\0")?,
+                sceneitem_set_crop: symbol(&lib, b"obs_sceneitem_set_crop\0")?,
                 _lib: lib,
             })
         }
@@ -146,12 +169,12 @@ impl Api {
         // SAFETY: NUL-terminated name, copied by libobs.
         let scene = unsafe { (self.scene_create)(name.as_ptr()) };
         if scene.is_null() {
-            return Err(StudioError::Backend("obs_scene_create failed".into()));
+            return Err(StudioError::Backend("obs_scene_create_private failed".into()));
         }
         // SAFETY: `scene` is a live scene we own a reference to; the source is borrowed from it.
         let source = unsafe { (self.scene_get_source)(scene) };
         if source.is_null() {
-            // SAFETY: releasing the reference `obs_scene_create` gave us.
+            // SAFETY: releasing the reference `obs_scene_create_private` gave us.
             unsafe { (self.scene_release)(scene) };
             return Err(StudioError::Backend("obs_scene_get_source failed".into()));
         }
@@ -161,11 +184,185 @@ impl Api {
         Ok(Scene { ptr: scene })
     }
 
+    /// Registers the CFA4 picture source type ([`PICTURE_SOURCE_ID`]): an asynchronous video
+    /// source that shows the frame CFA4 gives it, with no settings, properties or plugin. Call
+    /// after [`Api::startup`]; libobs keeps the type until `obs_shutdown`.
+    pub fn register_picture_source(&self) {
+        let info = ffi::obs_source_info {
+            id: PICTURE_SOURCE_ID.as_ptr(),
+            type_: ffi::OBS_SOURCE_TYPE_INPUT,
+            // private to CFA4: not offered in source lists, never duplicated
+            output_flags: ffi::OBS_SOURCE_ASYNC_VIDEO | ffi::OBS_SOURCE_DO_NOT_DUPLICATE | ffi::OBS_SOURCE_CAP_DISABLED,
+            get_name: Some(picture_get_name),
+            create: Some(picture_create),
+            destroy: Some(picture_destroy),
+            get_width: None,
+            get_height: None,
+            get_defaults: None,
+            get_properties: None,
+            update: None,
+            activate: None,
+            deactivate: None,
+            show: None,
+            hide: None,
+            video_tick: None,
+            video_render: None,
+            filter_video: None,
+            filter_audio: None,
+            enum_active_sources: None,
+            save: None,
+            load: None,
+            mouse_click: None,
+            mouse_move: None,
+            mouse_wheel: None,
+            focus: None,
+            key_click: None,
+            filter_remove: None,
+            type_data: std::ptr::null_mut(),
+            free_type_data: None,
+            audio_render: None,
+            enum_all_sources: None,
+            transition_start: None,
+            transition_stop: None,
+            get_defaults2: None,
+            get_properties2: None,
+            audio_mix: None,
+            icon_type: 0,
+            media_play_pause: None,
+            media_restart: None,
+            media_stop: None,
+            media_next: None,
+            media_previous: None,
+            media_get_duration: None,
+            media_get_time: None,
+            media_set_time: None,
+            media_get_state: None,
+            version: 0,
+            unversioned_id: std::ptr::null(),
+            missing_files: None,
+            video_get_color_space: None,
+            filter_add: None,
+            get_dark_icon: None,
+            get_light_icon: None,
+        };
+        // SAFETY: `info` is a complete `obs_source_info` (layout checked by `ffi::abi_tests`)
+        // passed with its full size; libobs copies it (and duplicates the id string) during the
+        // call. The callbacks are `extern "C"` functions that never unwind.
+        unsafe { (self.register_source)(&info, std::mem::size_of::<ffi::obs_source_info>()) };
+    }
+
+    /// Builds a private scene of `layers` (bottom first), each a CFA4 picture source placed as
+    /// an OBS scene item, and puts it on output channel 0. The scene shown before stays the
+    /// caller's to release.
+    pub fn show_layers(&self, name: &str, layers: &[crate::scene::LoadedLayer]) -> Result<Scene> {
+        let name = CString::new(name).map_err(|_| StudioError::Invalid("scene name contains NUL".into()))?;
+        // SAFETY: NUL-terminated name, copied by libobs.
+        let scene = unsafe { (self.scene_create)(name.as_ptr()) };
+        if scene.is_null() {
+            return Err(StudioError::Backend("obs_scene_create_private failed".into()));
+        }
+        let scene = Scene { ptr: scene };
+        for layer in layers {
+            if let Err(e) = self.add_layer(&scene, layer) {
+                // SAFETY: the reference `obs_scene_create_private` gave us, released once; the sources
+                // added so far go with it.
+                unsafe { (self.scene_release)(scene.ptr) };
+                return Err(e);
+            }
+        }
+        // SAFETY: `scene` is alive; the source is borrowed from it.
+        let source = unsafe { (self.scene_get_source)(scene.ptr) };
+        if source.is_null() {
+            // SAFETY: as above.
+            unsafe { (self.scene_release)(scene.ptr) };
+            return Err(StudioError::Backend("obs_scene_get_source failed".into()));
+        }
+        // SAFETY: the source is alive (the scene holds it); channel 0 is valid. libobs takes its
+        // own reference and drops the one of the scene shown before.
+        unsafe { (self.set_output_source)(0, source) };
+        Ok(scene)
+    }
+
+    fn add_layer(&self, scene: &Scene, layer: &crate::scene::LoadedLayer) -> Result<()> {
+        let pic = &layer.picture;
+        if pic.rgba.len() != pic.width as usize * pic.height as usize * 4 {
+            return Err(StudioError::Invalid(format!("layer {}: picture data does not match its size", layer.id)));
+        }
+        let name = CString::new(format!("CFA4 layer {}", layer.id)).map_err(|_| StudioError::Invalid("layer name".into()))?;
+        // SAFETY: the id is the type registered by `register_picture_source`; NULL settings make
+        // libobs create empty ones. We own the returned reference.
+        let source = unsafe { (self.source_create_private)(PICTURE_SOURCE_ID.as_ptr(), name.as_ptr(), std::ptr::null_mut()) };
+        if source.is_null() {
+            return Err(StudioError::Backend("obs_source_create_private failed (is the CFA4 picture source registered?)".into()));
+        }
+        // SAFETY: `source` is alive; unbuffered shows each frame as soon as it arrives.
+        unsafe { (self.source_set_async_unbuffered)(source, true) };
+        let mut data = [std::ptr::null_mut::<u8>(); ffi::MAX_AV_PLANES];
+        data[0] = pic.rgba.as_ptr() as *mut u8;
+        let mut linesize = [0u32; ffi::MAX_AV_PLANES];
+        linesize[0] = pic.width * 4;
+        let mut matrix = [0f32; 16];
+        for i in 0..4 {
+            matrix[i * 5] = 1.0;
+        }
+        let frame = ffi::obs_source_frame {
+            data,
+            linesize,
+            width: pic.width,
+            height: pic.height,
+            timestamp: 0,
+            format: ffi::VIDEO_FORMAT_RGBA,
+            color_matrix: matrix,
+            full_range: true,
+            max_luminance: 0,
+            color_range_min: [0.0; 3],
+            color_range_max: [1.0; 3],
+            flip: false,
+            flags: 0,
+            trc: 0,
+            refs: 0,
+            prev_frame: false,
+        };
+        // SAFETY: `frame` describes `pic.rgba` (checked size, rows `width * 4` bytes) for the
+        // duration of the call; libobs copies the pixels into its own frame cache before
+        // returning (`obs_source_output_video` → `cache_video`). libobs only reads through the
+        // `*mut` plane pointer.
+        unsafe { (self.source_output_video)(source, &frame) };
+        // SAFETY: both are alive; the scene takes its own reference to the source.
+        let item = unsafe { (self.scene_add)(scene.ptr, source) };
+        // SAFETY: our reference from `obs_source_create_private`, released once; the scene item
+        // keeps the source alive.
+        unsafe { (self.source_release)(source) };
+        if item.is_null() {
+            return Err(StudioError::Backend(format!("obs_scene_add failed for layer {}", layer.id)));
+        }
+        let t = &layer.transform;
+        let pos = ffi::vec2 { x: t.x as f32, y: t.y as f32 };
+        let scale = ffi::vec2 { x: t.scale_x as f32, y: t.scale_y as f32 };
+        let side = |v: u32| i32::try_from(v).unwrap_or(i32::MAX);
+        let crop = ffi::obs_sceneitem_crop { left: side(t.crop[0]), top: side(t.crop[1]), right: side(t.crop[2]), bottom: side(t.crop[3]) };
+        // SAFETY: `item` is a live item of `scene` (the scene holds it); the vec2 and crop
+        // values live across the calls and libobs copies them.
+        unsafe {
+            (self.sceneitem_set_pos)(item, &pos);
+            (self.sceneitem_set_scale)(item, &scale);
+            (self.sceneitem_set_rot)(item, t.rotation as f32);
+            (self.sceneitem_set_crop)(item, &crop);
+        }
+        Ok(())
+    }
+
+    /// Releases a scene that is no longer on the output (one replaced by [`Api::show_layers`]).
+    pub fn release_offscreen_scene(&self, scene: Scene) {
+        // SAFETY: `scene` holds the one reference `obs_scene_create_private` gave us; consumed here.
+        unsafe { (self.scene_release)(scene.ptr) };
+    }
+
     /// Takes the scene off output channel 0 and releases it.
     pub fn release_scene(&self, scene: Scene) {
         // SAFETY: clearing channel 0 is always valid (drops libobs's reference).
         unsafe { (self.set_output_source)(0, std::ptr::null_mut()) };
-        // SAFETY: `scene` holds the one reference `obs_scene_create` gave us; it is consumed here.
+        // SAFETY: `scene` holds the one reference `obs_scene_create_private` gave us; it is consumed here.
         unsafe { (self.scene_release)(scene.ptr) };
     }
 
@@ -189,7 +386,22 @@ impl Api {
     }
 }
 
-/// A scene created by [`Api::show_empty_scene`].
+/// The id of CFA4's picture source type.
+pub const PICTURE_SOURCE_ID: &CStr = c"cfa4_picture";
+
+unsafe extern "C" fn picture_get_name(_type_data: *mut c_void) -> *const c_char {
+    c"CFA4 picture".as_ptr()
+}
+
+/// The source keeps no state of its own (libobs caches its frame); a non-null pointer tells
+/// libobs it was created, and the source pointer itself is one that needs no freeing.
+unsafe extern "C" fn picture_create(_settings: *mut ffi::obs_data_t, source: *mut ffi::obs_source_t) -> *mut c_void {
+    source.cast()
+}
+
+unsafe extern "C" fn picture_destroy(_data: *mut c_void) {}
+
+/// A scene created by [`Api::show_empty_scene`] or [`Api::show_layers`].
 pub struct Scene {
     ptr: *mut ffi::obs_scene_t,
 }

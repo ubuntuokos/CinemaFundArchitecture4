@@ -22,6 +22,7 @@ pub mod mask;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+pub mod studio;
 pub mod text_animator;
 pub mod transcript;
 pub mod vtransition;
@@ -43,6 +44,7 @@ pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod, Tracker};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
 pub use narration::{Narration, VocalPitch};
+pub use studio::{LiveStudio, SourceKind, SourceTransform, StudioScene, StudioSource};
 pub use transcript::{Speaker, Transcript, Word};
 
 macro_rules! id_type {
@@ -1308,6 +1310,10 @@ pub struct Project {
     /// each `.cfa4credtpl`, owned by `cfa4-credits`). Optional: older projects have none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub credits_templates: Vec<String>,
+    /// The live studio's scenes and sources (CFA4-LIVE-STUDIO-001 S1; `live.studio.scene.*`).
+    /// Schema v16.
+    #[serde(default, skip_serializing_if = "LiveStudio::is_empty")]
+    pub studio: LiveStudio,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1413,6 +1419,7 @@ impl Project {
             narrations: BTreeMap::new(),
             notes: String::new(),
             credits_templates: Vec::new(),
+            studio: LiveStudio::default(),
         }
     }
 
@@ -1440,6 +1447,7 @@ impl Project {
             }
         }
         self.search_bins.iter().for_each(|b| see(b.id.0));
+        self.studio.ids().for_each(&mut see);
         // deleting an item leaves these entries behind: a new item taking that id would inherit them
         self.transcripts.keys().chain(self.source_graphics.keys()).chain(self.narrations.keys()).for_each(|i| see(i.0));
         // `lut.import` names LUTs `lut<id>`
