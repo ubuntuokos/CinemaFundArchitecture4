@@ -24,18 +24,27 @@
 
 pub mod apv;
 pub mod audio;
+pub mod av2;
+#[cfg(feature = "av2-external")]
+pub mod av2_external;
 pub mod avi;
 pub mod dif;
+pub mod dirac;
+pub mod ffv1;
 pub mod gop;
+pub mod hap;
+pub mod huffyuv;
 pub mod hw;
 mod hw_frame;
 pub mod j2k;
+pub mod lcevc;
 pub mod mkv;
 pub mod mp4;
 pub mod mpeg;
 pub mod mxf;
 pub mod ogg;
 mod stream_color;
+pub mod utvideo;
 pub mod video;
 mod webm_alpha;
 pub mod y4m;
@@ -81,7 +90,7 @@ impl From<CodecError> for cfa4_media::MediaError {
 }
 
 /// Our own (pure-Rust) decoders, in the order they are tried.
-const BUILTIN_FACTORIES: [VideoDecoderFactory; 13] = [
+const BUILTIN_FACTORIES: [VideoDecoderFactory; 18] = [
     video::h264_factory,
     video::hevc_factory,
     video::vp8_factory,
@@ -95,6 +104,11 @@ const BUILTIN_FACTORIES: [VideoDecoderFactory; 13] = [
     video::mpeg2_factory,
     video::raw_factory,
     video::dv_factory,
+    hap::hap_factory,
+    ffv1::ffv1_factory,
+    dirac::dirac_factory,
+    huffyuv::huffyuv_factory,
+    utvideo::utvideo_factory,
 ];
 
 fn factories() -> &'static RwLock<Vec<VideoDecoderFactory>> {
@@ -123,7 +137,15 @@ pub fn make_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<dyn V
             return r;
         }
     }
-    Err(CodecError::Unsupported(format!("no decoder for {} video", entry.codec.name())))
+    Err(no_decoder(entry))
+}
+
+/// The error for a sample entry no factory takes: AV2 is named as recognised (AV2 plan X/4).
+fn no_decoder(entry: &cfa4_isobmff::SampleEntry) -> CodecError {
+    match entry.codec {
+        cfa4_isobmff::CodecConfig::Av2 { .. } => CodecError::Unsupported(av2::unsupported_message(av2::Framing::Mp4)),
+        _ => CodecError::Unsupported(format!("no decoder for {} video", entry.codec.name())),
+    }
 }
 
 /// Create one of our own (software) decoders for a sample entry, skipping registered factories:
@@ -134,13 +156,14 @@ pub fn software_video_decoder(entry: &cfa4_isobmff::SampleEntry) -> Result<Box<d
             return r;
         }
     }
-    Err(CodecError::Unsupported(format!("no decoder for {} video", entry.codec.name())))
+    Err(no_decoder(entry))
 }
 
 /// Openers for the engine's media pool (MP4/MOV, Matroska/WebM, MXF, Ogg Opus/Vorbis, MPEG TS/PS and
 /// MPEG-1/2 video elementary streams, APV raw bitstreams, YUV4MPEG2, raw DV, standalone audio).
+/// AV2 Annex B / IVF files are recognised and answered as unsupported ([`av2`]).
 pub fn openers() -> Vec<cfa4_media::Opener> {
-    vec![mp4::opener, mkv::opener, mxf::opener, ogg::opener, mpeg::opener, apv::opener, avi::opener, y4m::opener, dif::opener, audio::opener]
+    vec![mp4::opener, mkv::opener, mxf::opener, ogg::opener, mpeg::opener, apv::opener, avi::opener, y4m::opener, dif::opener, av2::opener, audio::opener]
 }
 
 fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
@@ -156,6 +179,7 @@ fn reader_registry() -> &'static RwLock<Vec<cfa4_media::ReaderOpener>> {
             y4m::reader_opener,
             avi::reader_opener,
             dif::reader_opener,
+            av2::reader_opener,
         ])
     })
 }
@@ -213,6 +237,8 @@ pub fn open_bytes(name: &str, bytes: Arc<[u8]>) -> std::result::Result<cfa4_medi
 
 #[cfg(test)]
 mod audio_timing_tests;
+#[cfg(test)]
+mod av2_tests;
 #[cfg(test)]
 mod avi_tests;
 #[cfg(test)]

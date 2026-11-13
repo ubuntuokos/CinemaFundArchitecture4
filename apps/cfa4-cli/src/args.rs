@@ -23,6 +23,9 @@ const VALUED: &[&str] = &[
     "--data-dir",
     "--settings",
     "--gpu-rendering",
+    "--profile",
+    "--expect",
+    "--contact-sheet",
 ];
 
 #[derive(Debug, Default)]

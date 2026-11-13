@@ -1,0 +1,216 @@
+# British English (en-gb) catalog. Same format as es.tsv: context <TAB> source <TAB> translation.
+# The source strings are US English; this catalog lists only the strings whose British spelling
+# differs (colour, centre, favourite, grey, analyse, licence, -ise verbs, labelling…). Any
+# string without an entry is shown as written.
+#
+# Clean-room: every entry was written from the plain meaning of the English text, applying ordinary
+# British spelling (Oxford English without -ize). No proprietary localisation resource, string table
+# or product UI was consulted or copied; add entries the same way. Product and technology names keep
+# their spelling.
+
+	Center Horizontally	Centre Horizontally
+	Center Vertically	Centre Vertically
+	Color	Colour
+	Color Burn	Colour Burn
+	Color Correction	Colour Correction
+	Color Dodge	Colour Dodge
+	Color Management…	Colour Management…
+	Color Matte…	Colour Matte…
+	Darker Color	Darker Colour
+	Lighter Color	Lighter Colour
+	Lumetri Color	Lumetri Colour
+	Normalize Mix Track…	Normalise Mix Track…
+	Show All Marker Colors	Show All Marker Colours
+	Stylize	Stylise
+	Synchronize…	Synchronise…
+	Color Space	Colour Space
+	Add Lumetri Color to clip	Add Lumetri Colour to clip
+	Color Match	Colour Match
+	Color Wheels & Match	Colour Wheels & Match
+	Color/Black	Colour/Black
+	Color/Gray	Colour/Grey
+	Add to Favorites	Add to Favourites
+	Favorites	Favourites
+	Remove from Favorites	Remove from Favourites
+	Align center	Align centre
+	Align Center Horizontally	Align Centre Horizontally
+	Align Center Vertically	Align Centre Vertically
+	Center	Centre
+	Center Align Text	Centre Align Text
+	Synthesizing narration…	Synthesising narration…
+	Synthesizing…	Synthesising…
+	Center at Cut	Centre at Cut
+	Eyedropper (pick a color from the Program monitor)	Eyedropper (pick a colour from the Program monitor)
+	Color Management · {n} item	Colour Management · {n} item
+	Color Management · {n} items	Colour Management · {n} items
+	Parametric Equalizer	Parametric Equaliser
+	Graphic Equalizer (10 Bands)	Graphic Equaliser (10 Bands)
+	Graphic Equalizer (20 Bands)	Graphic Equaliser (20 Bands)
+	Graphic Equalizer (30 Bands)	Graphic Equaliser (30 Bands)
+	Add to favorites	Add to favourites
+	Label Color Presets	Label Colour Presets
+	Label Colors	Label Colours
+	Remove from favorites	Remove from favourites
+	Revert to the preset's colors and names	Revert to the preset's colours and names
+	Accessible color contrast	Accessible colour contrast
+	Analyze all imported media to search for visuals or audio	Analyse all imported media to search for visuals or audio
+	Automation Keyframe Optimization	Automation Keyframe Optimisation
+	Color Theme	Colour Theme
+	Color…	Colour…
+	Display Color Management	Display Colour Management
+	Display Color Settings	Display Colour Settings
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	For colour management parameters, go to the Settings tab in the Lumetri Colour panel.
+	Highlight Color	Highlight Colour
+	Speaker Labeling	Speaker Labelling
+	Synchronize Clips	Synchronise Clips
+	Synchronize Point	Synchronise Point
+	Synchronized {n} clip group(s)	Synchronised {n} clip group(s)
+	Minimize All Tracks	Minimise All Tracks
+	Color Management	Colour Management
+	Composite in Linear Color	Composite in Linear Colour
+	Wide gamut color (composite in BT.2020)	Wide gamut colour (composite in BT.2020)
+	Working Color Space:	Working Colour Space:
+	Analyze	Analyse
+	Color Matte Color	Colour Matte Colour
+	Color:	Colour:
+	New Color Matte	New Colour Matte
+	Normalize Mix Track	Normalise Mix Track
+	Normalize Mix Track to:	Normalise Mix Track to:
+	Recognize when different speakers are talking	Recognise when different speakers are talking
+	Sequence Color Management	Sequence Colour Management
+	Working Color Space	Working Colour Space
+	Favorites only	Favourites only
+	Bottom Center	Bottom Centre
+	Center Left	Centre Left
+	Center Right	Centre Right
+	Loudness Normalization	Loudness Normalisation
+	Top Center	Top Centre
+	quantizer {q}	quantiser {q}
+	{n} Color	{n} Colour
+	Track Color	Track Colour
+	Analyzing the clip…	Analysing the clip…
+	Normalize Max Peak to:	Normalise Max Peak to:
+	Normalize All Peaks to:	Normalise All Peaks to:
+	Maximize Frame	Maximise Frame
+	4-Color Gradient	4-Colour Gradient
+	Ambience Light Color	Ambience Light Colour
+	Amount to Decolor	Amount to Decolour
+	Analog	Analogue
+	Analog Delay	Analogue Delay
+	Background Color	Background Colour
+	Binauralizer - Ambisonics	Binauraliser - Ambisonics
+	Border Color	Border Colour
+	Burn Color	Burn Colour
+	Center Channel Pan	Centre Channel Pan
+	Center Gradient	Centre Gradient
+	Center Input	Centre Input
+	Center Out	Centre Out
+	Center Point (Latitude)	Centre Point (Latitude)
+	Center Point (Longitude)	Centre Point (Longitude)
+	Center Split	Centre Split
+	Center of Sphere	Centre of Sphere
+	Change to Color	Change to Colour
+	Color & Alpha	Colour & Alpha
+	Color 1	Colour 1
+	Color 2	Colour 2
+	Color 3	Colour 3
+	Color 4	Colour 4
+	Color Balance	Colour Balance
+	Color Channel	Colour Channel
+	Color Distortion	Colour Distortion
+	Color Emboss	Colour Emboss
+	Color Key	Colour Key
+	Color Pass	Colour Pass
+	Color Replace	Colour Replace
+	Color To Leave	Colour To Leave
+	Color Tolerance	Colour Tolerance
+	Colorize	Colourise
+	Crystallize	Crystallise
+	Custom Color	Custom Colour
+	Dip to Color	Dip to Colour
+	Edge Color	Edge Colour
+	End Color	End Colour
+	Fill Color	Fill Colour
+	Flare Center	Flare Centre
+	Flare Color	Flare Colour
+	Frame Color	Frame Colour
+	Gamut Warning Color	Gamut Warning Colour
+	Gap Color	Gap Colour
+	Glow Color	Glow Colour
+	Horizontal Decentering	Horizontal Decentring
+	Hue Center	Hue Centre
+	Inside Color	Inside Colour
+	Key Color	Key Colour
+	Leave Color	Leave Colour
+	Light Color	Light Colour
+	Loudness Maximizer	Loudness Maximiser
+	Neon Color	Neon Colour
+	Outside Color	Outside Colour
+	Phosphor Color	Phosphor Colour
+	Photocopy Color	Photocopy Colour
+	Point 1 Color	Point 1 Colour
+	Point 2 Color	Point 2 Colour
+	Point 3 Color	Point 3 Colour
+	Posterize	Posterise
+	Posterize Time	Posterise Time
+	Ray Color	Ray Colour
+	Reflection Center	Reflection Centre
+	Replace Color	Replace Colour
+	Roughen Color	Roughen Colour
+	Rusty Color	Rusty Colour
+	Shadow Color	Shadow Colour
+	Sharp Colors	Sharp Colours
+	Shift Center To	Shift Centre To
+	Solarize	Solarise
+	Solid Colors	Solid Colours
+	Spherize	Spherise
+	Stabilization	Stabilisation
+	Stabilize Only	Stabilise Only
+	Stabilize, Crop	Stabilise, Crop
+	Stabilize, Crop, Auto-scale	Stabilise, Crop, Auto-scale
+	Stabilize, Synthesize Edges	Stabilise, Synthesise Edges
+	Start Color	Start Colour
+	Straight Color	Straight Colour
+	Strobe Color	Strobe Colour
+	Stroke 2 Color	Stroke 2 Colour
+	Stroke Color	Stroke Colour
+	Target Color	Target Colour
+	Text Color	Text Colour
+	Tint Color	Tint Colour
+	Tube-modeled Compressor	Tube-modelled Compressor
+	Twirl Center	Twirl Centre
+	Use Color Noise	Use Colour Noise
+	Use End Color	Use End Colour
+	Use Glow Color	Use Glow Colour
+	Use Tint Color	Use Tint Colour
+	VR Color Gradients	VR Colour Gradients
+	Vertical Decentering	Vertical Decentring
+	Warp Stabilizer	Warp Stabiliser
+	Center align text	Centre align text
+	Maximize or Restore Active Frame	Maximise or Restore Active Frame
+	Maximize or Restore Frame Under Cursor	Maximise or Restore Frame Under Cursor
+	Accent Color	Accent Colour
+	Bar Color	Bar Colour
+	Box Color	Box Colour
+	Dot Color	Dot Colour
+	Name Color	Name Colour
+	Pointer Color	Pointer Colour
+	Rule Color	Rule Colour
+	Slab Color	Slab Colour
+	Tag Color	Tag Colour
+	Title Color	Title Colour
+	Title – Centered	Title – Centred
+	Color Grain	Colour Grain
+	Upper Center	Upper Centre
+	Lower Center	Lower Centre
+	Analyze Source for Smart Cut	Analyse Source for Smart Cut
+# Easing presets, Film Gate, Particles, Keyhole, Burn Away, Check Text Legibility (#182)
+	Ember Color	Ember Colour
+# Glitch folder: Bit Crush, Block Glitch, Databend, VHS, Scan Line Jitter, Tile Jitter (#353)
+	Color Damage	Colour Damage
+	Color Bleed	Colour Bleed
+# Creative Looks: Halftone and Dither (#354)
+	Ink Color	Ink Colour
+	Paper Color	Paper Colour
+	Color (CMYK)	Colour (CMYK)
+	Input Colors	Input Colours

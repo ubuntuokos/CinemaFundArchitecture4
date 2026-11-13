@@ -10,13 +10,29 @@
 //!   placeholder layer for each so its size and roll include them.
 //! - `graphics.credits.preview` does the same without changing the project and reports pages,
 //!   durations and warnings.
+//! - `graphics.credits.validate` checks credits (names, fonts and missing letters, title-safe
+//!   area, contrast, text size, scroll speed, card length, pictures); the preview reports the
+//!   same `issues`.
+//! - **Fit to music.** `graphics.credits.music` analyses a music clip (length, where the sound
+//!   ends, beats) and offers lengths without changing anything; `graphics.credits.fit` fits
+//!   placed credits to a length (cards keep theirs, rolls stretch their gaps), optionally with
+//!   cards on the beat and the credits moved to where the music starts; the setting stays in the
+//!   credits document, so refreshing keeps it.
 //! - `graphics.credits.styles` lists the style names and returns a starter styling (JSON).
+//! - **Linked credits.** Every placed page remembers its credits document (`.cfa4credits`:
+//!   source, worksheet, styling, the accepted table) and a fingerprint of each layer it made.
+//!   `graphics.credits.save` writes the document to a file (portable: the table is embedded);
+//!   `graphics.credits.import` also opens such a file. `graphics.credits.diff` compares the
+//!   spreadsheet as it is now with the accepted table, row by row, and lists layers edited by
+//!   hand; `graphics.credits.refresh` applies the accepted changes, keeps the hand edits whose
+//!   block is unchanged, and replaces the pages in place, as one undo step.
 
+use cfa4_credits::doc::{CreditsDoc, SourceRef};
 use cfa4_credits::layout::{Frame, Measure};
 use cfa4_credits::{Laid, Styling};
 use cfa4_geom::Vec2;
 use cfa4_project::graphic::eval_layer;
-use cfa4_project::{ClipId, EffectInstance, Interpolation, ItemId, Keyframe, Param, ParamValue};
+use cfa4_project::{ClipId, CreditsLink, EffectInstance, Interpolation, ItemId, Keyframe, LayerStamp, Param, ParamValue};
 use cfa4_render::graphic_clip::layer_local_bounds;
 use cfa4_time::Tick;
 use serde_json::{Value, json};
@@ -37,14 +53,43 @@ struct EngineMeasure {
     sizes: std::cell::RefCell<Vec<(std::path::PathBuf, Option<(f64, f64)>)>>,
 }
 
+/// Fonts as the text engine finds them.
+struct EngineFonts;
+
+impl cfa4_credits::validate::FontInfo for EngineFonts {
+    fn check(&self, family: &str, style: &str, text: &str) -> cfa4_credits::validate::FontCheck {
+        let r = cfa4_text::resolve(family, style);
+        let face = cfa4_text::fonts::face(r.face);
+        let mut uncovered: Vec<char> = Vec::new();
+        for c in text.chars().filter(|c| !c.is_whitespace() && !c.is_control()) {
+            if !uncovered.contains(&c) && uncovered.len() < 32 && !face.has_char(c) {
+                uncovered.push(c);
+            }
+        }
+        cfa4_credits::validate::FontCheck { missing: r.missing, uncovered }
+    }
+}
+
 /// Largest picture file read for credits.
 const MAX_PICTURE: u64 = 256 << 20;
 
 /// The file a picture tag names: absolute, or relative to `base`.
-fn picture_path(base: Option<&std::path::Path>, file: &str) -> Option<std::path::PathBuf> {
+pub(crate) fn picture_path(base: Option<&std::path::Path>, file: &str) -> Option<std::path::PathBuf> {
     let f = std::path::Path::new(file.trim());
     let p = if f.is_absolute() { f.to_path_buf() } else { base?.join(f) };
-    p.is_file().then_some(p)
+    if p.is_file() {
+        return Some(p);
+    }
+    // Cinecred lets a sheet leave the extension out
+    if p.extension().is_none() {
+        for ext in ["png", "jpg", "jpeg", "svg", "webp", "tif", "tiff", "gif", "mp4", "mov", "mkv", "webm"] {
+            let c = p.with_extension(ext);
+            if c.is_file() {
+                return Some(c);
+            }
+        }
+    }
+    None
 }
 
 impl Measure for EngineMeasure {
@@ -52,6 +97,10 @@ impl Measure for EngineMeasure {
         let spec = eval_layer(layer, Tick::ZERO, self.canvas)?;
         let b = layer_local_bounds(&spec);
         Some(b.map(f64::from))
+    }
+
+    fn file_exists(&self, file: &str) -> bool {
+        picture_path(self.base.as_deref(), file).is_some()
     }
 
     fn picture_size(&self, file: &str) -> Option<(f64, f64)> {
@@ -67,26 +116,48 @@ impl Measure for EngineMeasure {
             .and_then(|_| std::fs::read(&path).ok())
             .and_then(|b| cfa4_media::still::decode_raster(file, &b).ok())
             .filter(|r| r.width > 0 && r.height > 0)
-            .map(|r| (f64::from(r.width), f64::from(r.height)));
+            .map(|r| (f64::from(r.width), f64::from(r.height)))
+            .or_else(|| video_size(&path));
         cache.push((path, sz));
         sz
     }
 }
 
-/// The folder pictures are read from: `pictureDir`, else the spreadsheet's folder.
-fn picture_base(p: &Value) -> Option<std::path::PathBuf> {
-    if let Some(d) = str_p(p, "pictureDir") {
-        return Some(std::path::PathBuf::from(d));
+/// Extensions read as video in the credits (`{{Video …}}`).
+const VIDEO_EXT: [&str; 10] = ["mp4", "mov", "m4v", "mkv", "webm", "mxf", "avi", "mpg", "mpeg", "ts"];
+
+/// A video's frame size: read from the file when it is small enough to open here, else (a long
+/// video) assumed 16:9.
+fn video_size(path: &std::path::Path) -> Option<(f64, f64)> {
+    let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if !VIDEO_EXT.contains(&ext.as_str()) {
+        return None;
     }
-    str_p(p, "path").and_then(|f| std::path::Path::new(f).parent().map(std::path::Path::to_path_buf))
+    let len = std::fs::metadata(path).ok()?.len();
+    if len > MAX_PICTURE {
+        return Some((1920.0, 1080.0));
+    }
+    let src = cfa4_media::open_path(path, &cfa4_codecs::openers()).ok()?;
+    let v = src.info().video.as_ref()?;
+    (v.width > 0 && v.height > 0).then(|| (f64::from(v.width), f64::from(v.height)))
 }
 
 fn read_file(cmd: &str, path: &str) -> Result<Vec<u8>> {
+    read_file_max(cmd, path, MAX_FILE)
+}
+
+fn read_file_max(cmd: &str, path: &str, max: u64) -> Result<Vec<u8>> {
     let meta = std::fs::metadata(path).map_err(|e| bad(cmd, format!("{path}: {e}")))?;
-    if meta.len() > MAX_FILE {
-        return Err(bad(cmd, format!("{path} is larger than {} MiB", MAX_FILE >> 20)));
+    if meta.len() > max {
+        return Err(bad(cmd, format!("{path} is larger than {} MiB", max >> 20)));
     }
     std::fs::read(path).map_err(|e| bad(cmd, format!("{path}: {e}")))
+}
+
+/// The largest file a credits command reads: a spreadsheet, or a credits document (which may be
+/// larger, up to the document limit).
+fn max_read() -> u64 {
+    MAX_FILE.max(cfa4_credits::doc::MAX_DOC_BYTES as u64)
 }
 
 fn styling_p(cmd: &str, p: &Value) -> Result<Styling> {
@@ -101,30 +172,183 @@ fn styling_p(cmd: &str, p: &Value) -> Result<Styling> {
     }
 }
 
-/// Read and lay out the spreadsheet a command names, for the active sequence.
-fn laid(s: &Session, cmd: &str, p: &Value) -> Result<(Laid, cfa4_credits::office::Sheet)> {
-    let styling = styling_p(cmd, p)?;
-    let bytes = match (str_p(p, "csv"), str_p(p, "path")) {
-        (Some(text), _) => text.as_bytes().to_vec(),
+/// Information about the worksheets of the file that was read.
+type SheetInfo = cfa4_credits::office::Sheet;
+
+/// The credits document a command names: a `.cfa4credits` file, a spreadsheet (`path`, read
+/// now) or inline CSV text (`csv`). `styling` and `pictureDir` override the document's.
+/// Returns the document, the worksheet information and the folder pictures are read from.
+pub(crate) fn doc_p(s: &Session, cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::path::PathBuf>)> {
+    // `styling` wins over `template`; a template brings its styling (and its fitting, below)
+    let template = match str_p(p, "template") {
+        Some(id) if p.get("styling").is_none_or(Value::is_null) => Some(find_template(s, cmd, id)?),
+        _ => None,
+    };
+    let styling = if p.get("styling").is_some_and(|v| !v.is_null()) { Some(styling_p(cmd, p)?) } else { template.as_ref().map(|t| t.styling.clone()) };
+    let (mut doc, info, file_dir) = match (str_p(p, "csv"), str_p(p, "path")) {
+        (Some(text), _) => {
+            let mut info = cfa4_credits::read_rows(text.as_bytes(), None).map_err(|e| bad(cmd, e.to_string()))?;
+            let table = std::mem::take(&mut info.rows);
+            (CreditsDoc { table, ..Default::default() }, info, None)
+        }
+        (None, Some(path)) if cinecred_dir(path).is_some() => {
+            let dir = cinecred_dir(path).ok_or_else(|| bad(cmd, "not a Cinecred project"))?;
+            cinecred_doc(cmd, &dir, str_p(p, "credits"), str_p(p, "sheet"))?
+        }
         (None, Some(path)) => {
             if path.to_lowercase().ends_with(".numbers") {
                 return Err(bad(cmd, "Apple Numbers files are not read; export the sheet as .xlsx or CSV"));
             }
-            read_file(cmd, path)?
+            let bytes = read_file_max(cmd, path, max_read())?;
+            let dir = std::path::Path::new(path).parent().map(std::path::Path::to_path_buf);
+            if cfa4_credits::doc::is_doc(&bytes) {
+                let mut d = CreditsDoc::from_bytes(&bytes).map_err(|e| bad(cmd, e.to_string()))?;
+                // pictures are next to the document unless it says otherwise: remember that
+                // folder, so a refresh (which starts from the spreadsheet) still finds them
+                if d.picture_dir.is_none()
+                    && let Some(dir) = &dir
+                {
+                    let abs = std::fs::canonicalize(dir).unwrap_or_else(|_| dir.clone());
+                    d.picture_dir = Some(abs.to_string_lossy().into_owned());
+                }
+                (d, SheetInfo::default(), dir)
+            } else if bytes.len() as u64 > MAX_FILE {
+                return Err(bad(cmd, format!("{path} is larger than {} MiB", MAX_FILE >> 20)));
+            } else {
+                let mut info = cfa4_credits::read_rows(&bytes, str_p(p, "sheet")).map_err(|e| bad(cmd, e.to_string()))?;
+                let table = std::mem::take(&mut info.rows);
+                let abs = std::fs::canonicalize(path).map(|x| x.to_string_lossy().into_owned()).unwrap_or_else(|_| path.to_string());
+                let name = std::path::Path::new(path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                let sheet = (!info.chosen.is_empty()).then(|| info.chosen.clone());
+                (CreditsDoc { table, source: Some(SourceRef { path: abs, name, sheet }), ..Default::default() }, info, dir)
+            }
         }
-        (None, None) => return Err(bad(cmd, "need `path` (.csv, .tsv, .xlsx or .ods) or `csv` (the table as text)")),
+        (None, None) => return Err(bad(cmd, "need `path` (.csv, .tsv, .xlsx, .ods or .cfa4credits) or `csv` (the table as text)")),
     };
-    let (credits, sheet) = cfa4_credits::read_with(&bytes, &styling, str_p(p, "sheet")).map_err(|e| bad(cmd, e.to_string()))?;
+    if let Some(st) = styling {
+        doc.styling = st;
+    }
+    if let Some(d) = str_p(p, "pictureDir") {
+        doc.picture_dir = Some(d.to_string());
+    }
+    if let Some(f) = template.and_then(|t| t.fit).filter(|_| doc.fit.is_none()) {
+        doc.fit = Some(f);
+    }
+    match p.get("fit") {
+        None => {}
+        Some(Value::Null) => doc.fit = None,
+        Some(v) => {
+            let f: cfa4_credits::fit::Fit = serde_json::from_value(v.clone()).map_err(|e| bad(cmd, format!("fit: {e}")))?;
+            doc.fit = (f.total > 0).then_some(f);
+        }
+    }
+    let base = doc.picture_dir.as_ref().map(std::path::PathBuf::from).or(file_dir);
+    Ok((doc, info, base))
+}
+
+/// The folder of a Cinecred project `path` names: the folder itself (holding `Styling.toml`) or
+/// its `Styling.toml`.
+fn cinecred_dir(path: &str) -> Option<std::path::PathBuf> {
+    let p = std::path::Path::new(path);
+    if p.is_dir() && p.join(cfa4_credits::cinecred::STYLING_FILE).is_file() {
+        return Some(p.to_path_buf());
+    }
+    let is_styling = p.file_name().is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case(cfa4_credits::cinecred::STYLING_FILE));
+    // a bare `Styling.toml` is in the current folder
+    if is_styling && p.is_file() { p.parent().map(|d| if d.as_os_str().is_empty() { std::path::PathBuf::from(".") } else { d.to_path_buf() }) } else { None }
+}
+
+/// A Cinecred project as a credits document: its `Styling.toml` as CFA4 styles and its credits
+/// spreadsheet (`credits`: a file name in the folder; else the one called "credits…", else the
+/// first). Pictures are found in the project folder.
+fn cinecred_doc(cmd: &str, dir: &std::path::Path, credits: Option<&str>, sheet: Option<&str>) -> Result<(CreditsDoc, SheetInfo, Option<std::path::PathBuf>)> {
+    let styling_path = dir.join(cfa4_credits::cinecred::STYLING_FILE);
+    let text = String::from_utf8_lossy(&read_file_max(cmd, &styling_path.to_string_lossy(), cfa4_credits::cinecred::MAX_STYLING_BYTES as u64)?).into_owned();
+    let imported = cfa4_credits::cinecred::read_styling(&text).map_err(|e| bad(cmd, e.to_string()))?;
+    let mut sheets: Vec<String> = std::fs::read_dir(dir)
+        .map_err(|e| bad(cmd, format!("{}: {e}", dir.display())))?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_file())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| {
+            let l = n.to_lowercase();
+            !l.starts_with('.') && [".csv", ".tsv", ".ods", ".xlsx"].iter().any(|x| l.ends_with(x))
+        })
+        .take(1_000)
+        .collect();
+    sheets.sort();
+    let chosen = match credits {
+        Some(c) => sheets
+            .iter()
+            .find(|n| n.eq_ignore_ascii_case(c))
+            .cloned()
+            .ok_or_else(|| bad(cmd, format!("there is no credits spreadsheet `{c}` in the Cinecred project")))?,
+        None => sheets
+            .iter()
+            .find(|n| n.to_lowercase().starts_with("credits"))
+            .or(sheets.first())
+            .cloned()
+            .ok_or_else(|| bad(cmd, "the Cinecred project has no credits spreadsheet (.csv, .ods or .xlsx)"))?,
+    };
+    let path = dir.join(&chosen);
+    let bytes = read_file(cmd, &path.to_string_lossy())?;
+    let mut info = cfa4_credits::read_rows(&bytes, sheet).map_err(|e| bad(cmd, e.to_string()))?;
+    let table = std::mem::take(&mut info.rows);
+    let abs_dir = std::fs::canonicalize(dir).unwrap_or_else(|_| dir.to_path_buf());
+    let abs = abs_dir.join(&chosen);
+    let sheet_name = (!info.chosen.is_empty()).then(|| info.chosen.clone());
+    info.notes = imported.notes.clone();
+    if sheets.len() > 1 {
+        info.notes.insert(0, format!("the Cinecred project has {} credits spreadsheets; `{chosen}` is used (choose another with `credits`)", sheets.len()));
+    }
+    let doc = CreditsDoc {
+        table,
+        styling: imported.styling,
+        source: Some(SourceRef { path: abs.to_string_lossy().into_owned(), name: chosen, sheet: sheet_name }),
+        picture_dir: Some(abs_dir.to_string_lossy().into_owned()),
+        pixel_scale: imported.scale,
+        ..Default::default()
+    };
+    Ok((doc, info, Some(abs_dir)))
+}
+
+/// Notes about reading the credits (before the layout's warnings), as warnings.
+fn notes_json(info: &SheetInfo, l: &Laid) -> Value {
+    let mut v: Vec<Value> = info.notes.iter().map(|n| json!({"row": 0, "message": n})).collect();
+    if let Value::Array(w) = warnings_json(l) {
+        v.extend(w);
+    }
+    Value::Array(v)
+}
+
+/// Lay out a credits document for the active sequence.
+pub(crate) fn lay_doc(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>) -> Result<Laid> {
+    lay_doc_report(s, cmd, doc, base).map(|(l, _)| l)
+}
+
+/// [`lay_doc`], with the fitting report when the document is fitted to a length.
+fn lay_doc_report(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>) -> Result<(Laid, Option<cfa4_credits::fit::FitReport>)> {
+    let credits = doc.credits().map_err(|e| bad(cmd, e.to_string()))?;
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let frame = Frame { width: q.settings.width, height: q.settings.height, rate: q.settings.frame_rate };
-    let l = cfa4_credits::layout(
-        &credits,
-        &styling,
-        frame,
-        &EngineMeasure { canvas: (frame.width, frame.height), base: picture_base(p), sizes: Default::default() },
-    )
-    .map_err(|e| bad(cmd, e.to_string()))?;
-    Ok((l, sheet))
+    let measure = EngineMeasure { canvas: (frame.width, frame.height), base, sizes: Default::default() };
+    match doc.fit.as_ref().filter(|f| f.total > 0) {
+        Some(fit) => {
+            let (_, l, r) = cfa4_credits::fit::fit_layout(&credits, &doc.styling, frame, &measure, fit).map_err(|e| bad(cmd, e.to_string()))?;
+            Ok((l, Some(r)))
+        }
+        None => cfa4_credits::layout(&credits, &doc.styling, frame, &measure).map(|l| (l, None)).map_err(|e| bad(cmd, e.to_string())),
+    }
+}
+
+/// The checks on laid-out credits (`cfa4_credits::validate`), as JSON.
+fn issues_json(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>, laid: &Laid) -> Result<Value> {
+    let credits = doc.credits().map_err(|e| bad(cmd, e.to_string()))?;
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let frame = Frame { width: q.settings.width, height: q.settings.height, rate: q.settings.frame_rate };
+    let measure = EngineMeasure { canvas: (frame.width, frame.height), base, sizes: Default::default() };
+    let issues = cfa4_credits::validate::validate(&credits, laid, frame, &measure, &EngineFonts);
+    Ok(serde_json::to_value(issues).unwrap_or(Value::Array(vec![])))
 }
 
 fn warnings_json(l: &Laid) -> Value {
@@ -135,82 +359,747 @@ fn behaviour_name(b: cfa4_credits::Behaviour) -> &'static str {
     match b {
         cfa4_credits::Behaviour::Card => "card",
         cfa4_credits::Behaviour::Scroll => "scroll",
+        cfa4_credits::Behaviour::Crawl => "crawl",
     }
 }
 
+/// A page's background and transition, as JSON for the preview.
+fn look_json(pg: &cfa4_credits::PageOut) -> (Value, Value) {
+    let bg = pg.background.as_ref().map(|b| serde_json::to_value(b).unwrap_or(Value::Null)).unwrap_or(Value::Null);
+    let tr = pg.transition.as_ref().map(|(id, d)| json!({"effect": id, "duration": d.0})).unwrap_or(Value::Null);
+    (bg, tr)
+}
+
+/// Most body cells of a block the preview lists (the rest are counted).
+const PREVIEW_BODY_CELLS: usize = 40;
+/// Longest text of a cell in the preview (characters).
+const PREVIEW_CELL_CHARS: usize = 200;
+
+fn cell_text(text: &str) -> String {
+    let t = cfa4_credits::markup::plain(text);
+    if t.chars().count() > PREVIEW_CELL_CHARS { t.chars().take(PREVIEW_CELL_CHARS - 1).chain(['…']).collect() } else { t }
+}
+
+/// A page's blocks for the Credits workspace: what each says, its style and rows, and the moment
+/// of the page (0–1, as `graphics.credits.thumbnail`'s `at`) that shows it best.
+fn blocks_json(page: Option<&cfa4_credits::Page>, out: &cfa4_credits::PageOut, frame_h: f64) -> Value {
+    let Some(page) = page else { return Value::Array(vec![]) };
+    let travel = frame_h + out.content_height.max(0.0);
+    Value::Array(
+        page.blocks
+            .iter()
+            .map(|b| {
+                let top = out.block_tops.iter().find(|(r, _)| *r == b.row).map(|x| x.1);
+                // a roll shows a block when its top reaches the middle of the frame
+                let at = match (out.behaviour, top) {
+                    (cfa4_credits::Behaviour::Scroll, Some(t)) if travel > 0.0 => ((frame_h / 2.0 + t) / travel).clamp(0.0, 1.0),
+                    _ => 0.5,
+                };
+                json!({
+                    "style": b.style,
+                    "head": b.head.as_deref().map(cell_text),
+                    "body": b.body.iter().take(PREVIEW_BODY_CELLS).map(|c| cell_text(c)).collect::<Vec<_>>(),
+                    "bodyCount": b.body.len(),
+                    "tails": b.tails.len(),
+                    "pictures": b.pictures.len() + b.portraits.iter().filter(|x| x.is_some()).count(),
+                    "row": b.row,
+                    "lastRow": b.body_rows.iter().copied().max().unwrap_or(b.row).max(b.row),
+                    "spine": b.spine,
+                    "parallel": b.parallel,
+                    "at": at,
+                })
+            })
+            .collect(),
+    )
+}
+
 fn preview(s: &mut Session, p: &Value) -> Result<Value> {
-    let (l, sheet) = laid(s, "graphics.credits.preview", p)?;
+    const CMD: &str = "graphics.credits.preview";
+    let (doc, sheet, base) = doc_p(s, CMD, p)?;
+    let l = lay_doc(s, CMD, &doc, base.clone())?;
+    let credits = doc.credits().map_err(|e| bad(CMD, e.to_string()))?;
+    let frame_h = s.active_sequence().map(|q| f64::from(q.settings.height)).unwrap_or(1080.0);
+    let issues = issues_json(s, CMD, &doc, base, &l)?;
     let total: i64 = l.pages.iter().fold(0i64, |a, pg| a.saturating_add(pg.duration.0).saturating_add(pg.gap_after.0));
     Ok(json!({
-        "pages": l.pages.iter().map(|pg| json!({
+        "pages": l.pages.iter().enumerate().map(|(i, pg)| json!({
             "name": pg.name,
+            "style": credits.pages.get(i).map(|x| x.style.clone()),
+            "row": credits.pages.get(i).map(|x| x.row),
+            "blocks": blocks_json(credits.pages.get(i), pg, frame_h),
             "behaviour": behaviour_name(pg.behaviour),
             "duration": pg.duration.0,
             "seconds": pg.duration.0 as f64 / cfa4_time::TICKS_PER_SECOND as f64,
             "gapAfter": pg.gap_after.0,
             "layers": pg.layers.len(),
             "contentHeight": pg.content_height,
+            "contentWidth": pg.content_width,
+            "background": look_json(pg).0,
+            "transition": look_json(pg).1,
         })).collect::<Vec<_>>(),
         "duration": total.max(0),
         "sheets": sheet.sheets,
         "sheet": sheet.chosen,
-        "warnings": warnings_json(&l),
+        "warnings": notes_json(&sheet, &l),
+        "issues": issues,
     }))
+}
+
+/// Check credits: the spreadsheet or file a command names, or placed credits (`clip` or the
+/// selection, as they were accepted).
+fn validate_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.validate";
+    let (doc, base) = if p.get("path").is_some() || p.get("csv").is_some() {
+        let (d, _, b) = doc_p(s, CMD, p)?;
+        (d, b)
+    } else {
+        let d = group_doc(CMD, &group_p(s, CMD, p)?)?;
+        let b = d
+            .picture_dir
+            .as_ref()
+            .map(std::path::PathBuf::from)
+            .or_else(|| d.source.as_ref().and_then(|x| std::path::Path::new(&x.path).parent().map(std::path::Path::to_path_buf)));
+        (d, b)
+    };
+    let l = lay_doc(s, CMD, &doc, base.clone())?;
+    let issues = issues_json(s, CMD, &doc, base, &l)?;
+    let count = |sev: &str| issues.as_array().map(|a| a.iter().filter(|i| i["severity"] == sev).count()).unwrap_or(0);
+    Ok(json!({"errors": count("error"), "warnings": count("warning"), "infos": count("info"), "issues": issues}))
+}
+
+/// Layers edited by hand, carried into a refresh: key → the layer as the user left it, and the
+/// layer as it was generated (when known), so only what the user changed is carried over.
+type Overrides = Vec<(String, EffectInstance, Option<EffectInstance>)>;
+
+/// The newly generated layer `new` with the user's changes to it: every parameter (and the
+/// per-character styles, and on/off) the user changed from `base` (the layer as generated before)
+/// is taken from `user`; the rest – where the layout put it, above all – stays new. Without
+/// `base`, the user's layer as a whole.
+fn rebase_edit(new: &EffectInstance, user: &EffectInstance, base: Option<&EffectInstance>) -> EffectInstance {
+    let Some(base) = base else { return user.clone() };
+    let mut out = new.clone();
+    for (k, v) in &user.params {
+        if base.params.get(k) != Some(v) {
+            out.params.insert(k.clone(), v.clone());
+        }
+    }
+    let runs = |e: &EffectInstance| e.layer.as_ref().map(|l| l.runs.clone()).unwrap_or_default();
+    if runs(user) != runs(base) {
+        out.layer.get_or_insert_with(Default::default).runs = runs(user);
+    }
+    if user.enabled != base.enabled {
+        out.enabled = user.enabled;
+    }
+    out
+}
+
+/// Place laid-out pages one after another from `t` (each with its background below it and its
+/// pictures above it), put the pages' transitions on the cuts, and link the pages to `doc`.
+/// `track` is where the lowest clip of each page goes (its background, else the page). Returns
+/// the placed pages as JSON and the end time.
+fn place_pages(
+    s: &mut Session,
+    cmd: &str,
+    label: &str,
+    laid: Laid,
+    doc: &CreditsDoc,
+    base: Option<std::path::PathBuf>,
+    start: Tick,
+    track: Option<u64>,
+    overrides: &Overrides,
+) -> Result<(Vec<Value>, Tick)> {
+    let rate = s.sequence_rate();
+    let (frame_w, frame_h) = s.active_sequence().map(|q| (f64::from(q.settings.width), f64::from(q.settings.height))).unwrap_or((1920.0, 1080.0));
+    let doc_text = doc.to_compact();
+    let mut t = start;
+    let mut placed = Vec::new();
+    let mut items: Vec<(std::path::PathBuf, ItemId)> = Vec::new();
+    let mut group = 0u64;
+    // (page clip, background clips (first, last), transition into the next page)
+    let mut cuts: Vec<(ClipId, Option<(ClipId, ClipId)>, Option<(String, Tick)>)> = Vec::new();
+    // every page on one track (so transitions can join them), backgrounds on the one below:
+    // the asked track, or the first above everything the credits cover
+    let any_bg = laid.pages.iter().any(|p| p.background.is_some());
+    let end = laid.pages.iter().fold(start.0, |a, p| a.saturating_add(p.duration.0).saturating_add(p.gap_after.0.max(0)));
+    let lowest = match track {
+        Some(tr) => tr,
+        None => s
+            .active_sequence()
+            .map(|q| {
+                let span = cfa4_time::TimeRange::new(start, Tick(end.saturating_sub(start.0).max(1)));
+                q.video_tracks.iter().rposition(|tr| tr.items.iter().any(|i| i.range().overlaps(&span))).map_or(0, |k| k + 1) as u64
+            })
+            .unwrap_or(0),
+    };
+    let text_track = lowest + u64::from(any_bg);
+    ensure_video_tracks(s, label, text_track as usize + 1)?;
+    for (index, pg) in laid.pages.into_iter().enumerate() {
+        // a looped video background is several clips one after another
+        let bg_clips = match &pg.background {
+            Some(b) => place_background(s, &base, &mut items, b, &pg, t, Some(lowest), (frame_w, frame_h))?,
+            None => Vec::new(),
+        };
+        let bg = bg_clips.first().copied();
+        let want = Some(text_track);
+        let mut pp = json!({"time": t.0});
+        if let Some(tr) = want {
+            pp["track"] = json!(tr);
+        }
+        // fingerprints of the layers as generated, then the hand edits put back
+        let mut layers = pg.layers.clone();
+        let mut stamps = Vec::with_capacity(layers.len());
+        let mut kept = 0usize;
+        for e in &mut layers {
+            let uid = cfa4_project::gtemplate::layer_uid(e);
+            let key = pg.keys.iter().find(|(u, _)| *u == uid).map(|(_, k)| k.clone()).unwrap_or_default();
+            stamps.push(LayerStamp { key: key.clone(), uid, fingerprint: cfa4_credits::doc::layer_fingerprint(e) });
+            if let Some((_, old, base)) = overrides.iter().find(|(k, _, _)| !key.is_empty() && *k == key) {
+                let mut o = rebase_edit(e, old, base.as_ref());
+                o.layer.get_or_insert_with(Default::default).uid = uid;
+                *e = o;
+                kept += 1;
+            }
+        }
+        let dur = pg.duration;
+        let source =
+            move |pr: &mut cfa4_project::Project, (w, h, rate): (u32, u32, cfa4_time::FrameRate)| (crate::graphics::graphic_source(pr, w, h, rate), dur);
+        // the asked track if it is free there, else the first free one above
+        let clip = match place_video_clip(s, cmd, &pg.name, &pp, label, layers.clone(), source) {
+            Ok(c) => c,
+            Err(_) if want.is_some() => place_video_clip(s, cmd, &pg.name, &json!({"time": t.0}), label, layers, source)?,
+            Err(e) => return Err(e),
+        };
+        if group == 0 {
+            group = clip.0;
+        }
+        let mut pics = Vec::new();
+        for pic in &pg.pictures {
+            if let Some(c) = place_picture(s, &base, &mut items, pic, &pg, t, (frame_w, frame_h))? {
+                pics.push(c.0);
+            }
+        }
+        // the background is replaced with the page on a refresh
+        let mut owned = pics.clone();
+        owned.extend(bg_clips.iter().map(|b| b.0));
+        let mut meta = pg.meta.clone();
+        meta.credits = Some(Box::new(CreditsLink { group, page: index as u32, doc: doc_text.clone(), pictures: owned, layers: stamps }));
+        s.edit_sequence(label, move |q, _, _| {
+            let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
+            it.graphic = Some(Box::new(meta));
+            Ok(())
+        })?;
+        placed.push(json!({
+            "clip": clip.0,
+            "name": pg.name,
+            "start": t.0,
+            "duration": dur.0,
+            "behaviour": behaviour_name(pg.behaviour),
+            "pictures": pics,
+            "background": bg.map(|b| b.0),
+            "backgroundClips": bg_clips.iter().map(|b| b.0).collect::<Vec<_>>(),
+            "keptEdits": kept,
+        }));
+        cuts.push((clip, bg.zip(bg_clips.last().copied()), pg.transition.clone()));
+        t = rate.snap(Tick(t.0.saturating_add(dur.0).saturating_add(pg.gap_after.0).max(0)));
+    }
+    let mut applied = vec![false; placed.len()];
+    for (i, w) in cuts.windows(2).enumerate() {
+        let (Some(a), Some(b)) = (w.first(), w.get(1)) else { continue };
+        let Some((id, d)) = &a.2 else { continue };
+        let done = add_cut_transition(s, label, a.0, b.0, id, *d)?;
+        // the backgrounds follow the pages when both have one (from the last clip of a looped
+        // video into the first of the next)
+        if let (Some((_, x)), Some((y, _))) = (a.1, b.1) {
+            add_cut_transition(s, label, x, y, id, *d)?;
+        }
+        if let Some(f) = applied.get_mut(i) {
+            *f = done;
+        }
+    }
+    for (v, done) in placed.iter_mut().zip(applied) {
+        v["transition"] = json!(done);
+    }
+    Ok((placed, t))
+}
+
+/// Make sure the active sequence has at least `n` video tracks (at most 99).
+fn ensure_video_tracks(s: &mut Session, label: &str, n: usize) -> Result<()> {
+    let n = n.min(99);
+    if s.active_sequence().is_none_or(|q| q.video_tracks.len() >= n) {
+        return Ok(());
+    }
+    s.edit_sequence(label, move |q, ctx, _| {
+        while q.video_tracks.len() < n {
+            let k = q.video_tracks.len() + 1;
+            q.video_tracks.push(cfa4_project::Track::new(cfa4_project::TrackId(ctx.alloc()), cfa4_project::TrackKind::Video, format!("Video {k}")));
+        }
+        Ok(())
+    })?;
+    Ok(())
+}
+
+/// Video-track index of a clip.
+fn clip_track(s: &Session, c: ClipId) -> Option<usize> {
+    let q = s.active_sequence()?;
+    q.video_tracks.iter().position(|tr| tr.items.iter().any(|it| it.id == c))
+}
+
+/// Put transition `id` on the cut between `from` and `to`, centred, when they are adjacent on
+/// one track. Returns whether it was placed.
+fn add_cut_transition(s: &mut Session, label: &str, from: ClipId, to: ClipId, id: &str, d: Tick) -> Result<bool> {
+    let Some(def) = cfa4_project::vtransition::find_transition(id, cfa4_project::EffectKind::VideoTransition) else { return Ok(false) };
+    let rate = s.sequence_rate();
+    let Some(q) = s.active_sequence() else { return Ok(false) };
+    let found = q.video_tracks.iter().find_map(|tr| {
+        let a = tr.items.iter().find(|it| it.id == from)?;
+        let b = tr.items.iter().find(|it| it.id == to)?;
+        (a.end() == b.start).then_some((tr.id, b.start, a.duration.min(b.duration)))
+    });
+    let Some((track, cut, room)) = found else { return Ok(false) };
+    let d = rate.snap(d.min(room)).max(rate.frame_duration());
+    let tr = cfa4_project::Transition {
+        id: cfa4_project::TransitionId(0),
+        effect: def.instance(),
+        start: rate.snap(cut - d.mul_ratio(1, 2)),
+        duration: d,
+        from: Some(from),
+        to: Some(to),
+        align: Default::default(),
+        reverse: false,
+    };
+    s.edit_sequence(label, move |q, ctx, _| Ok(cfa4_edit::add_transition(q, track, tr, ctx)?))?;
+    Ok(true)
+}
+
+/// Place a page's background as its own clip at `t`, below the page: a colour or gradient is a
+/// full-frame shape in a graphic clip; a picture or video fills or fits the frame. Opacity and
+/// blur are the clip's own effects, so they stay editable. A looped video shorter than the page
+/// is several clips of it one after another; the clips are returned in order (none: no
+/// background).
+#[allow(clippy::too_many_arguments)]
+fn place_background(
+    s: &mut Session,
+    base: &Option<std::path::PathBuf>,
+    items: &mut Vec<(std::path::PathBuf, ItemId)>,
+    bg: &cfa4_credits::Background,
+    pg: &cfa4_credits::PageOut,
+    t: Tick,
+    track: Option<u64>,
+    (fw, fh): (f64, f64),
+) -> Result<Vec<ClipId>> {
+    use cfa4_credits::{BackgroundFit, BackgroundKind as K};
+    // a looped video stops repeating after this many clips (a 2 s loop covers over 30 minutes)
+    const MAX_REPEATS: u64 = 1000;
+    const CMD: &str = "graphics.credits.import";
+    const LABEL: &str = "Import Credits";
+    let dur = pg.duration;
+    let mut pp = json!({"time": t.0});
+    if let Some(tr) = track {
+        pp["track"] = json!(tr);
+    }
+    let s1 = fh / 1080.0;
+    let clips = match bg.kind {
+        K::None => return Ok(Vec::new()),
+        K::Color | K::Gradient => {
+            let layer = background_layer(bg, (fw, fh));
+            let source =
+                move |pr: &mut cfa4_project::Project, (w, h, rate): (u32, u32, cfa4_time::FrameRate)| (crate::graphics::graphic_source(pr, w, h, rate), dur);
+            let name = format!("{} – background", pg.name);
+            vec![match place_video_clip(s, CMD, &name, &pp, LABEL, vec![layer.clone()], source) {
+                Ok(c) => c,
+                Err(_) if track.is_some() => place_video_clip(s, CMD, &name, &json!({"time": t.0}), LABEL, vec![layer], source)?,
+                Err(e) => return Err(e),
+            }]
+        }
+        K::Image | K::Video => {
+            let Some(path) = picture_path(base.as_deref(), &bg.file) else { return Ok(Vec::new()) };
+            let item = match items.iter().find(|(p, _)| *p == path) {
+                Some((_, i)) => *i,
+                None => {
+                    let r = s.execute("file.import", json!({"paths": [path.to_string_lossy()]}))?;
+                    let Some(i) = r["items"].as_array().and_then(|a| a.first()).and_then(Value::as_u64).map(ItemId) else { return Ok(Vec::new()) };
+                    items.push((path.clone(), i));
+                    i
+                }
+            };
+            // a video shorter than the page ends early, unless it loops: then it starts again
+            // from the beginning (each run its own clip, on frame boundaries) until the page ends
+            let media = s.project.item(item).map(|x| x.duration()).filter(|d| d.0 > 0 && bg.kind == K::Video);
+            let rate = s.sequence_rate();
+            let mut runs: Vec<(Tick, Tick)> = Vec::new();
+            match media {
+                Some(m) if bg.repeat && m < dur => {
+                    let end = t.0.saturating_add(dur.0);
+                    let mut at = t;
+                    while at.0 < end && (runs.len() as u64) < MAX_REPEATS {
+                        let next = Tick(at.0.saturating_add(m.0).min(end));
+                        let next = rate.snap(next).min(Tick(end));
+                        if next <= at {
+                            break;
+                        }
+                        runs.push((at, Tick(next.0 - at.0)));
+                        at = next;
+                    }
+                }
+                _ => {}
+            }
+            // not looped, or a video shorter than a frame: one clip, ending early when short
+            if runs.is_empty() {
+                runs.push((t, media.map_or(dur, |m| m.min(dur))));
+            }
+            let name = std::path::Path::new(&bg.file).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| bg.file.clone());
+            let (sw, sh) = s.project.source_size(item).map(|(w, h)| (f64::from(w), f64::from(h))).filter(|(w, h)| *w > 0.0 && *h > 0.0).unwrap_or((fw, fh));
+            let k = match bg.fit {
+                BackgroundFit::Fill => (fw / sw).max(fh / sh),
+                BackgroundFit::Fit => (fw / sw).min(fh / sh),
+            };
+            let scale = (k * 100.0).clamp(0.0, 10_000.0);
+            let mut placed = Vec::with_capacity(runs.len());
+            for (at, d) in runs {
+                let mut pp = json!({"time": at.0});
+                // the later runs go on the track of the first, right after it
+                match (placed.first(), track) {
+                    (Some(first), _) => {
+                        if let Some(tr) = s.active_sequence().and_then(|q| q.video_tracks.iter().position(|tr| tr.items.iter().any(|i| i.id == *first))) {
+                            pp["track"] = json!(tr as u64);
+                        }
+                    }
+                    (None, Some(tr)) => pp["track"] = json!(tr),
+                    (None, None) => {}
+                }
+                let c = match place_video_clip(s, CMD, &name, &pp, LABEL, Vec::new(), move |_, _| (item, d)) {
+                    Ok(c) => c,
+                    Err(_) if pp.get("track").is_some() => place_video_clip(s, CMD, &name, &json!({"time": at.0}), LABEL, Vec::new(), move |_, _| (item, d))?,
+                    Err(e) => return Err(e),
+                };
+                s.edit_sequence(LABEL, move |q, _, _| {
+                    let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
+                    if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
+                        m.params.insert("position".into(), Param::new(ParamValue::Vec2(Vec2::new(fw / 2.0, fh / 2.0))));
+                        m.params.insert("scale".into(), Param::new(ParamValue::Float(scale)));
+                    }
+                    Ok(())
+                })?;
+                placed.push(c);
+            }
+            placed
+        }
+    };
+    let opacity = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0);
+    let blur = (if bg.blur.is_finite() { bg.blur } else { 0.0 }).clamp(0.0, 1_000.0) * s1;
+    for &clip in &clips {
+        s.edit_sequence(LABEL, move |q, _, _| {
+            let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
+            if opacity < 100.0
+                && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
+            {
+                o.params.insert("opacity".into(), Param::new(ParamValue::Float(opacity)));
+            }
+            if blur > 0.0
+                && let Some(def) = cfa4_project::find_effect("gaussian_blur")
+            {
+                let mut e = def.instance();
+                e.params.insert("blurriness".into(), Param::new(ParamValue::Float(blur.min(3_000.0))));
+                e.params.insert("repeat_edge".into(), Param::new(ParamValue::Bool(true)));
+                it.effects.push(e);
+            }
+            Ok(())
+        })?;
+    }
+    Ok(clips)
+}
+
+/// A full-frame shape layer with a background's colour or gradient.
+fn background_layer(bg: &cfa4_credits::Background, (fw, fh): (f64, f64)) -> EffectInstance {
+    let black = [0.0, 0.0, 0.0, 1.0];
+    let colour = |c: &str| cfa4_credits::style::parse_color(c).unwrap_or(black);
+    let mut e = cfa4_project::graphic::new_shape_layer(0, Vec2::new(fw / 2.0, fh / 2.0), Vec2::new(fw, fh), vec![]);
+    let mut set = |k: &str, v: ParamValue| {
+        e.params.insert(k.into(), Param::new(v));
+    };
+    set("name", ParamValue::Text("Background".into()));
+    set("fill", ParamValue::Bool(true));
+    set("fill_color", ParamValue::Color(colour(&bg.color)));
+    if bg.kind == cfa4_credits::BackgroundKind::Gradient {
+        set("fill_kind", ParamValue::Choice(1));
+        set("gradient_start", ParamValue::Color(colour(&bg.color)));
+        set("gradient_end", ParamValue::Color(colour(&bg.color2)));
+        set("gradient_angle", ParamValue::Float(if bg.angle.is_finite() { bg.angle.rem_euclid(360.0) } else { 0.0 }));
+    }
+    e
 }
 
 fn import(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.import";
-    let (l, sheet) = laid(s, CMD, p)?;
-    let warnings = warnings_json(&l);
-    let rate = s.sequence_rate();
-    let mut t = crate::commands::time_p(s, p, "").unwrap_or_else(|| s.playhead());
-    let before = s.history.undo.len();
-    let mut placed = Vec::new();
-    let base = picture_base(p);
-    let frame_h = s.active_sequence().map(|q| f64::from(q.settings.height)).unwrap_or(1080.0);
-    let mut items: Vec<(std::path::PathBuf, ItemId)> = Vec::new();
-    let result = (|| -> Result<()> {
-        for pg in l.pages {
-            let mut pp = json!({"time": t.0});
-            if let Some(tr) = u64_p(p, "track") {
-                pp["track"] = json!(tr);
-            }
-            let dur = pg.duration;
-            let meta = pg.meta.clone();
-            let clip = place_video_clip(s, CMD, &pg.name, &pp, "Import Credits", pg.layers.clone(), move |pr, (w, h, rate)| {
-                (crate::graphics::graphic_source(pr, w, h, rate), dur)
-            })?;
-            s.edit_sequence("Import Credits", move |q, _, _| {
-                let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
-                it.graphic = Some(Box::new(meta));
-                Ok(())
-            })?;
-            let mut pics = Vec::new();
-            for pic in &pg.pictures {
-                if let Some(c) = place_picture(s, &base, &mut items, pic, &pg, t, frame_h)? {
-                    pics.push(c.0);
-                }
-            }
-            placed.push(json!({"clip": clip.0, "name": pg.name, "start": t.0, "duration": dur.0, "behaviour": behaviour_name(pg.behaviour), "pictures": pics}));
-            t = rate.snap(Tick(t.0.saturating_add(dur.0).saturating_add(pg.gap_after.0).max(0)));
-        }
-        Ok(())
-    })();
-    // one undo step for the whole sequence of pages
-    if s.history.undo.len() > before + 1 {
-        s.history.undo.truncate(before + 1);
-    }
-    if let Some(e) = s.history.undo.get_mut(before) {
-        e.0 = "Import Credits".to_string();
-    }
-    if let Err(e) = result {
-        if s.history.undo.len() > before {
-            let _ = s.execute("edit.undo", json!({}));
-        }
-        return Err(e);
-    }
+    let (doc, info, base) = doc_p(s, CMD, p)?;
+    let l = lay_doc(s, CMD, &doc, base.clone())?;
+    let warnings = notes_json(&info, &l);
+    let t = crate::commands::time_p(s, p, "").unwrap_or_else(|| s.playhead());
+    // one undo step, and nothing left behind if a page cannot be placed
+    let track = u64_p(p, "track");
+    let out = s.edit_group("Import Credits", |s| place_pages(s, CMD, "Import Credits", l, &doc, base, t, track, &Vec::new()))?;
     s.state.graphic_layers.clear();
-    Ok(json!({"clips": placed, "end": t.0, "sheet": sheet.chosen, "warnings": warnings}))
+    let group = out.0.first().and_then(|v| v["clip"].as_u64());
+    Ok(json!({"clips": out.0, "end": out.1.0, "group": group, "sheet": info.chosen, "warnings": warnings}))
+}
+
+// ------------------------------------------------------------------------------------------------
+// Linked credits: save, diff, refresh
+// ------------------------------------------------------------------------------------------------
+
+/// A placed credits group: its pages in time order (clip, page link, start, track index).
+struct Group {
+    id: u64,
+    pages: Vec<(ClipId, CreditsLink, Tick, usize)>,
+}
+
+fn link_of(it: &cfa4_project::TrackItem) -> Option<&CreditsLink> {
+    it.graphic.as_ref().and_then(|g| g.credits.as_deref())
+}
+
+/// The credits group of `clip` (default: the first selected credits page).
+fn group_p(s: &Session, cmd: &str, p: &Value) -> Result<Group> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let pick = |c: ClipId| q.find_item(c).and_then(|(_, it)| link_of(it)).map(|l| l.group);
+    let gid = match u64_p(p, "clip") {
+        Some(c) => pick(ClipId(c)).ok_or_else(|| bad(cmd, format!("clip {c} is not a credits page")))?,
+        None => s.state.selection.iter().find_map(|c| pick(*c)).ok_or_else(|| bad(cmd, "select a credits page (or give `clip`)"))?,
+    };
+    let mut pages = Vec::new();
+    for (ti, tr) in q.video_tracks.iter().enumerate() {
+        for it in &tr.items {
+            if let Some(l) = link_of(it).filter(|l| l.group == gid) {
+                pages.push((it.id, l.clone(), it.start, ti));
+            }
+        }
+    }
+    pages.sort_by_key(|(_, l, t, _)| (*t, l.page));
+    Ok(Group { id: gid, pages })
+}
+
+fn group_doc(cmd: &str, g: &Group) -> Result<CreditsDoc> {
+    let first = g.pages.first().ok_or_else(|| bad(cmd, "the credits have no pages left"))?;
+    CreditsDoc::from_bytes(first.1.doc.as_bytes()).map_err(|e| bad(cmd, e.to_string()))
+}
+
+fn has_credits_selection(s: &Session) -> std::result::Result<(), String> {
+    has_seq(s)?;
+    let q = s.active_sequence().ok_or("no sequence is open")?;
+    if s.state.selection.iter().any(|c| q.find_item(*c).is_some_and(|(_, it)| link_of(it).is_some())) { Ok(()) } else { Err("select a credits page".into()) }
+}
+
+/// Write a credits document: of a placed group (`clip` or the selection), or of a spreadsheet
+/// (`path`/`csv` and the other import parameters given as `from`).
+fn save(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.save";
+    let out = str_p(p, "to").or_else(|| str_p(p, "file")).ok_or_else(|| bad(CMD, "need `to` (the .cfa4credits file to write)"))?.to_string();
+    let doc = match p.get("from") {
+        Some(from) if from.is_object() => doc_p(s, CMD, from)?.0,
+        _ => group_doc(CMD, &group_p(s, CMD, p)?)?,
+    };
+    let out = if std::path::Path::new(&out).extension().is_some() { out } else { format!("{out}.{}", cfa4_credits::doc::EXTENSION) };
+    let text = doc.to_file_text().map_err(|e| bad(CMD, e.to_string()))?;
+    s.services.write_file(&out, text.as_bytes()).map_err(|e| EngineError::Other(format!("{out}: {e}")))?;
+    Ok(json!({"path": out, "rows": doc.table.len()}))
+}
+
+/// The spreadsheet a document came from, as it is now.
+fn source_rows(cmd: &str, doc: &CreditsDoc, alt_dir: Option<&std::path::Path>) -> Result<Vec<Vec<String>>> {
+    let src = doc.source.as_ref().ok_or_else(|| bad(cmd, "these credits were not made from a spreadsheet file, so there is nothing to refresh from"))?;
+    let mut candidates = vec![std::path::PathBuf::from(&src.path)];
+    if let Some(d) = alt_dir {
+        candidates.push(d.join(&src.name));
+    }
+    let path = candidates
+        .into_iter()
+        .find(|c| c.is_file())
+        .ok_or_else(|| bad(cmd, format!("the spreadsheet is gone: {} (give `source` with its new place)", src.path)))?;
+    let bytes = read_file(cmd, &path.to_string_lossy())?;
+    let info = cfa4_credits::read_rows(&bytes, src.sheet.as_deref()).map_err(|e| bad(cmd, e.to_string()))?;
+    Ok(info.rows)
+}
+
+/// What differs: the row changes and the layers edited by hand.
+struct Pending {
+    group: Group,
+    doc: CreditsDoc,
+    new_rows: Vec<Vec<String>>,
+    changes: Vec<cfa4_credits::diff::Change>,
+    /// (key, page, layer name, text, the edited layer)
+    manual: Vec<(String, u32, String, String, EffectInstance)>,
+}
+
+fn pending(s: &Session, cmd: &str, p: &Value) -> Result<Pending> {
+    let group = group_p(s, cmd, p)?;
+    let mut doc = group_doc(cmd, &group)?;
+    if let Some(src) = str_p(p, "source") {
+        let name = std::path::Path::new(src).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let sheet = doc.source.as_ref().and_then(|x| x.sheet.clone());
+        doc.source = Some(SourceRef { path: src.to_string(), name, sheet });
+    }
+    let alt = s.path.as_ref().and_then(|p| std::path::Path::new(p).parent().map(std::path::Path::to_path_buf));
+    let new_rows = source_rows(cmd, &doc, alt.as_deref())?;
+    let changes = cfa4_credits::diff::diff(&doc.table, &new_rows);
+    let manual = manual_edits(s, &group)?;
+    Ok(Pending { group, doc, new_rows, changes, manual })
+}
+
+/// Layers of a group edited by hand: (key, page, layer name, text, the edited layer).
+fn manual_edits(s: &Session, group: &Group) -> Result<Vec<(String, u32, String, String, EffectInstance)>> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let mut manual = Vec::new();
+    for (clip, link, _, _) in &group.pages {
+        let Some((_, it)) = q.find_item(*clip) else { continue };
+        for st in &link.layers {
+            let Some(e) = it.effects.iter().find(|e| cfa4_project::gtemplate::layer_uid(e) == st.uid) else { continue };
+            if cfa4_credits::doc::layer_fingerprint(e) != st.fingerprint {
+                let txt = |k: &str| match e.params.get(k).map(|x| &x.value) {
+                    Some(ParamValue::Text(t)) => t.clone(),
+                    _ => String::new(),
+                };
+                manual.push((st.key.clone(), link.page, txt("name"), txt("text"), e.clone()));
+            }
+        }
+    }
+    Ok(manual)
+}
+
+/// The folder a document's pictures are read from.
+fn doc_base(doc: &CreditsDoc) -> Option<std::path::PathBuf> {
+    doc.picture_dir
+        .as_ref()
+        .map(std::path::PathBuf::from)
+        .or_else(|| doc.source.as_ref().and_then(|x| std::path::Path::new(&x.path).parent().map(std::path::Path::to_path_buf)))
+}
+
+/// Replace a placed group with `doc` laid out anew, from `start` (default: where it was), keeping
+/// `overrides`; one undo step under `label`. Returns the placed pages and the end.
+fn replace_group(
+    s: &mut Session,
+    cmd: &str,
+    label: &str,
+    group: &Group,
+    doc: &CreditsDoc,
+    laid: Laid,
+    overrides: &Overrides,
+    start: Option<Tick>,
+) -> Result<(Vec<Value>, Tick)> {
+    let start = start.or_else(|| group.pages.first().map(|x| x.2)).unwrap_or_else(|| s.playhead());
+    let mut old: Vec<u64> = Vec::new();
+    for (clip, link, _, _) in &group.pages {
+        old.push(clip.0);
+        old.extend(link.pictures.iter().copied());
+    }
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    old.retain(|c| q.find_item(ClipId(*c)).is_some());
+    // the first page's lowest clip (its background, if it has one) keeps its track
+    let track = group.pages.first().and_then(|(_, link, _, ti)| {
+        let mut own = vec![*ti];
+        own.extend(link.pictures.iter().filter_map(|x| clip_track(s, ClipId(*x))));
+        own.into_iter().min().map(|i| i as u64)
+    });
+    // one undo step; on any failure the old pages are back as they were
+    let out = s.edit_group(label, |s| {
+        s.execute("edit.clear", json!({"clips": old}))?;
+        place_pages(s, cmd, label, laid, doc, doc_base(doc), start, track, overrides)
+    })?;
+    s.state.graphic_layers.clear();
+    Ok(out)
+}
+
+/// Hand edits with the layer each was generated as: `doc` (as accepted before) laid out again.
+fn baselined(s: &Session, cmd: &str, doc: &CreditsDoc, manual: &[(String, u32, String, String, EffectInstance)]) -> Overrides {
+    let generated: Vec<(String, EffectInstance)> = lay_doc(s, cmd, doc, doc_base(doc))
+        .map(|l| {
+            l.pages
+                .into_iter()
+                .flat_map(|pg| {
+                    let keys = pg.keys;
+                    pg.layers.into_iter().filter_map(move |e| {
+                        let uid = cfa4_project::gtemplate::layer_uid(&e);
+                        keys.iter().find(|(u, _)| *u == uid).map(|(_, k)| (k.clone(), e))
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    manual
+        .iter()
+        .map(|(k, _, _, _, e)| {
+            let base = generated.iter().find(|(gk, _)| gk == k).map(|(_, g)| g.clone());
+            (k.clone(), e.clone(), base)
+        })
+        .collect()
+}
+
+fn rows_json(rows: &[Vec<String>]) -> Value {
+    Value::Array(rows.iter().map(|r| json!(r)).collect())
+}
+
+fn diff_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.diff";
+    let pd = pending(s, CMD, p)?;
+    // which hand edits survive when every change is accepted (their block is unchanged)
+    let all: Vec<usize> = pd.changes.iter().map(|c| c.id).collect();
+    let merged = cfa4_credits::diff::merge(&pd.doc.table, &pd.new_rows, &pd.changes, &all);
+    let keys_after: Vec<String> = {
+        let d2 = CreditsDoc { table: merged, ..pd.doc.clone() };
+        let base = d2.picture_dir.as_ref().map(std::path::PathBuf::from);
+        lay_doc(s, CMD, &d2, base).map(|l| l.pages.into_iter().flat_map(|pg| pg.keys.into_iter().map(|(_, k)| k)).collect()).unwrap_or_default()
+    };
+    Ok(json!({
+        "group": pd.group.id,
+        // a page of the group, so a later refresh can name exactly these credits
+        "clip": pd.group.pages.first().map(|x| x.0.0),
+        "source": pd.doc.source.as_ref().map(|x| x.path.clone()),
+        "changes": pd.changes.iter().map(|c| json!({
+            "id": c.id,
+            "kind": c.kind,
+            // 1-based spreadsheet rows, as people count them
+            "oldRows": [c.old_rows.0 + 1, c.old_rows.1],
+            "newRows": [c.new_rows.0 + 1, c.new_rows.1],
+            "before": rows_json(&c.before),
+            "after": rows_json(&c.after),
+        })).collect::<Vec<_>>(),
+        "manual": pd.manual.iter().map(|(k, page, name, text, _)| json!({
+            "key": k, "page": page, "layer": name, "text": text, "survivesAll": keys_after.contains(k),
+        })).collect::<Vec<_>>(),
+    }))
+}
+
+fn refresh(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.refresh";
+    let pd = pending(s, CMD, p)?;
+    let accept: Vec<usize> = match p.get("accept") {
+        None | Some(Value::Null) => pd.changes.iter().map(|c| c.id).collect(),
+        Some(Value::String(a)) if a == "all" => pd.changes.iter().map(|c| c.id).collect(),
+        Some(Value::String(a)) if a == "none" => Vec::new(),
+        Some(Value::Array(ids)) => ids.iter().filter_map(Value::as_u64).map(|v| v as usize).collect(),
+        Some(_) => return Err(bad(CMD, "`accept` is \"all\", \"none\" or a list of change ids")),
+    };
+    let keep_manual = p.get("keepManual").and_then(Value::as_bool).unwrap_or(true);
+    let table = cfa4_credits::diff::merge(&pd.doc.table, &pd.new_rows, &pd.changes, &accept);
+    let mut doc = CreditsDoc { table, ..pd.doc.clone() };
+    if let Some(st) = p.get("styling").filter(|v| !v.is_null()) {
+        doc.styling = styling_p(CMD, &json!({"styling": st}))?;
+    }
+    let laid = lay_doc(s, CMD, &doc, doc_base(&doc))?;
+    let warnings = warnings_json(&laid);
+    let overrides: Overrides = if keep_manual { baselined(s, CMD, &pd.doc, &pd.manual) } else { Vec::new() };
+    let out = replace_group(s, CMD, "Refresh Credits", &pd.group, &doc, laid, &overrides, None)?;
+    let kept: u64 = out.0.iter().filter_map(|v| v["keptEdits"].as_u64()).sum();
+    // the pages are new clips: the group is named again by its first page, as on import
+    let new_group = out.0.first().and_then(|v| v["clip"].as_u64());
+    Ok(json!({
+        "clips": out.0,
+        "group": new_group,
+        "end": out.1.0,
+        "accepted": accept.len(),
+        "changes": pd.changes.len(),
+        "keptEdits": kept,
+        "lostEdits": if keep_manual { overrides.len() as u64 - kept.min(overrides.len() as u64) } else { pd.manual.len() as u64 },
+        "warnings": warnings,
+    }))
 }
 
 /// Place one picture of a page as its own clip above the page: it rolls with a scroll page
@@ -222,7 +1111,7 @@ fn place_picture(
     pic: &cfa4_credits::PicturePlace,
     pg: &cfa4_credits::PageOut,
     t: Tick,
-    frame_h: f64,
+    (frame_w, frame_h): (f64, f64),
 ) -> Result<Option<ClipId>> {
     const CMD: &str = "graphics.credits.import";
     let Some(path) = picture_path(base.as_deref(), &pic.file) else { return Ok(None) };
@@ -236,8 +1125,10 @@ fn place_picture(
         }
     };
     let dur = pg.duration;
+    // a video shorter than its page ends early (it is not looped)
+    let clip_dur = if pic.video { s.project.item(item).map(|x| x.duration()).filter(|d| d.0 > 0).map_or(dur, |m| m.min(dur)) } else { dur };
     let name = std::path::Path::new(&pic.file).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| pic.file.clone());
-    let clip = place_video_clip(s, CMD, &name, &json!({"time": t.0}), "Import Credits", Vec::new(), move |_, _| (item, dur))?;
+    let clip = place_video_clip(s, CMD, &name, &json!({"time": t.0}), "Import Credits", Vec::new(), move |_, _| (item, clip_dur))?;
     let src_h = s.project.source_size(item).map(|(_, h)| f64::from(h)).filter(|h| *h > 0.0).unwrap_or(pic.size.1);
     let scale = pic.size.1 / src_h * 100.0;
     let (cx, cy) = pic.center;
@@ -249,18 +1140,44 @@ fn place_picture(
             value: ParamValue::Vec2(Vec2::new(cx, cy + frame_h)),
             keyframes: vec![kf(Tick::ZERO, ParamValue::Vec2(Vec2::new(cx, cy + frame_h))), kf(dur, ParamValue::Vec2(Vec2::new(cx, cy - pg.content_height)))],
         },
+        // the Crawl moves the line from just right of the frame (offset = frame width − line
+        // start, which is 0) to just left of it (offset = −line end)
+        cfa4_credits::Behaviour::Crawl => Param {
+            value: ParamValue::Vec2(Vec2::new(cx + frame_w, cy)),
+            keyframes: vec![kf(Tick::ZERO, ParamValue::Vec2(Vec2::new(cx + frame_w, cy))), kf(dur, ParamValue::Vec2(Vec2::new(cx - pg.content_width, cy)))],
+        },
         cfa4_credits::Behaviour::Card => Param::new(ParamValue::Vec2(Vec2::new(cx, cy))),
     };
-    let (fin, fout) = (pg.fade_in, pg.fade_out);
     let card = pg.behaviour == cfa4_credits::Behaviour::Card;
+    // on a card the picture comes in and goes like the text: with the entrance, its delay and the
+    // fades (or half of a transition)
+    let (card_opacity, card_position) = if card {
+        let half = |d: Tick| Tick(d.0 / 2);
+        let fin = pg.fade_in.max(half(pg.transition_in));
+        let fout = pg.fade_out.max(half(pg.transition.as_ref().map(|(_, d)| *d).unwrap_or(Tick::ZERO)));
+        cfa4_credits::layout::card_params(dur, pic.delay, fin, fout, pg.entrance, (cx, cy))
+    } else {
+        (None, None)
+    };
+    let position = card_position.unwrap_or(position);
+    // a picture fades with its card, and across half of a transition at either end (it is a clip
+    // of its own, so the page's transition does not reach it)
+    let half = |d: Tick| Tick(d.0 / 2);
+    let tr_in = half(pg.transition_in);
+    let tr_out = half(pg.transition.as_ref().map(|(_, d)| *d).unwrap_or(Tick::ZERO));
+    let (fin, fout) = if card { (Tick::ZERO, Tick::ZERO) } else { (tr_in, tr_out) };
     s.edit_sequence("Import Credits", move |q, _, _| {
         let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
         if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
             m.params.insert("position".into(), position);
             m.params.insert("scale".into(), Param::new(ParamValue::Float(scale.clamp(0.0, 10_000.0))));
         }
-        if card
-            && (fin.0 > 0 || fout.0 > 0)
+        if let Some(op) = card_opacity
+            && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
+        {
+            o.params.insert("opacity".into(), op);
+        }
+        if (fin.0 > 0 || fout.0 > 0)
             && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
         {
             let mut k = vec![];
@@ -283,24 +1200,699 @@ fn place_picture(
     Ok(Some(clip))
 }
 
+/// A picture of one page at a moment, without changing the project: its background (a picture
+/// or video background is a grey stand-in), the page's text layers with the roll, crawl or fades
+/// applied, and each picture's place outlined (pictures themselves are clips of their own after
+/// the import). `guides` draws the action-safe (93 %) and title-safe (90 %) areas, the centre
+/// and the page's spines; `grid` the baseline grid (one gap unit apart, moving with the page).
+/// A laid-out credits page drawn at `t` (page time) into straight-alpha RGBA8, `w` pixels wide
+/// (the height follows the sequence), transparent where nothing is: the background (pictures and
+/// videos as grey when `stand_in`, else left to the caller), then the text with its roll, crawl or
+/// fades. `outline_pictures` draws the picture placeholders as grey frames (the Credits window).
+/// Returns the pixels, their size and the scale from frame pixels.
+pub(crate) fn render_page(
+    s: &Session,
+    cmd: &str,
+    pg: &cfa4_credits::PageOut,
+    t: Tick,
+    w: u32,
+    stand_in: bool,
+    outline_pictures: bool,
+) -> Result<(Vec<u8>, u32, u32, f64)> {
+    let (cw, ch) = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).ok_or(EngineError::NoSequence)?;
+    let rate = s.sequence_rate();
+    let h = ((f64::from(w) * f64::from(ch) / f64::from(cw.max(1))).round() as u32).max(1);
+    let mut layers = pg.layers.clone();
+    if outline_pictures {
+        for e in &mut layers {
+            if e.effect == "graphic_shape" {
+                e.params.insert("stroke".into(), Param::new(ParamValue::Bool(true)));
+                e.params.insert("stroke_color".into(), Param::new(ParamValue::Color([0.6, 0.6, 0.6, 1.0])));
+                e.params.insert("stroke_width".into(), Param::new(ParamValue::Float(f64::from(ch) / 360.0)));
+            }
+        }
+    }
+    let mut img = cfa4_render::image::Image::new(w as usize, h as usize);
+    let k = f64::from(w) / f64::from(cw.max(1));
+    let mut pr = cfa4_project::Project::new("credits preview");
+    let g = pr.add_item("G", cfa4_project::Label::Rose, cfa4_project::ItemKind::Graphic { width: cw, height: ch, rate }, None);
+    let range = cfa4_time::TimeRange::new(Tick::ZERO, pg.duration.max(rate.frame_duration()));
+    let mut render = |layers: Vec<EffectInstance>, meta: cfa4_project::GraphicMeta, img: &mut cfa4_render::image::Image| -> Result<()> {
+        let mut it = pr.make_track_item(g, cfa4_project::TrackKind::Video, Tick::ZERO, range, rate).ok_or_else(|| bad(cmd, "bad preview item"))?;
+        it.effects.extend(layers);
+        it.graphic = Some(Box::new(meta));
+        cfa4_render::graphic_clip::render_graphic(&it, it.source_in + t, (cw, ch), &cfa4_geom::Affine::scale(k, k), img);
+        Ok(())
+    };
+    // the background stands still behind the page
+    if let Some(bg) = &pg.background {
+        let file_kind = matches!(bg.kind, cfa4_credits::BackgroundKind::Image | cfa4_credits::BackgroundKind::Video);
+        if !file_kind || stand_in {
+            let mut stand = bg.clone();
+            if file_kind {
+                stand.kind = cfa4_credits::BackgroundKind::Color;
+                stand.color = "#3a3a3a".into();
+            }
+            let mut e = background_layer(&stand, (f64::from(cw), f64::from(ch)));
+            let opacity = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0);
+            e.params.insert("opacity".into(), Param::new(ParamValue::Float(opacity)));
+            render(vec![e], cfa4_project::GraphicMeta::default(), &mut img)?;
+        }
+    }
+    render(layers, pg.meta.clone(), &mut img)?;
+    Ok((img.to_rgba8(), w, h, k))
+}
+
+fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.thumbnail";
+    let (doc, _, base) = doc_p(s, CMD, p)?;
+    let l = lay_doc(s, CMD, &doc, base)?;
+    let index = u64_p(p, "page").unwrap_or(0) as usize;
+    let pages = l.pages.len();
+    let pg = l.pages.into_iter().nth(index).ok_or_else(|| bad(CMD, format!("there is no page {index} (pages: {pages})")))?;
+    let (cw, ch) = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).ok_or(EngineError::NoSequence)?;
+    let rate = s.sequence_rate();
+    let at = p.get("at").and_then(Value::as_f64).filter(|v| v.is_finite()).unwrap_or(0.5).clamp(0.0, 1.0);
+    let w = u64_p(p, "width").unwrap_or(480).clamp(16, 1920) as u32;
+    let t = rate.snap(Tick((pg.duration.0 as f64 * at) as i64)).min(Tick(pg.duration.0.saturating_sub(rate.frame_duration().0).max(0)));
+    let (mut rgba, w, h, k) = render_page(s, CMD, &pg, t, w, true, true)?;
+    let roll = pg.meta.roll.clone();
+    let mut lines: Vec<Guide> = Vec::new();
+    let (fw, fh) = (f64::from(cw), f64::from(ch));
+    if p.get("grid").and_then(Value::as_bool).unwrap_or(false) && pg.behaviour != cfa4_credits::Behaviour::Crawl {
+        let unit = (if doc.styling.unit_px.is_finite() { doc.styling.unit_px } else { 32.0 }).clamp(0.0, 10_000.0) * fh / 1080.0;
+        // where the content's top is now
+        let top = pg.content_top + cfa4_project::graphic_design::roll_offset(&roll, t, pg.duration, (cw, ch), [0.0, 0.0, fw, pg.content_height.max(0.0)]).1;
+        if unit * k >= 3.0 {
+            let first = top - ((top / unit).floor() * unit);
+            let mut y = first;
+            while y < fh && lines.len() < 2_000 {
+                lines.push(Guide::H(y, GRID));
+                y += unit;
+            }
+        }
+    }
+    if p.get("guides").and_then(Value::as_bool).unwrap_or(false) {
+        for (m, colour) in [(0.035, ACTION_SAFE), (0.05, TITLE_SAFE)] {
+            let (x0, x1, y0, y1) = (fw * m, fw * (1.0 - m), fh * m, fh * (1.0 - m));
+            lines.push(Guide::Rect(x0, y0, x1, y1, colour));
+        }
+        lines.push(Guide::H(fh / 2.0, CENTRE));
+        lines.push(Guide::V(fw / 2.0, CENTRE));
+        for x in pg.spines.iter().filter(|x| (*x - fw / 2.0).abs() > 0.5) {
+            lines.push(Guide::V(*x, SPINE));
+        }
+    }
+    draw_guides(&mut rgba, w as usize, h as usize, k, &lines);
+    let png = cfa4_export::encode_png(rgba, w, h).map_err(|x| EngineError::Other(x.to_string()))?;
+    Ok(json!({"width": w, "height": h, "page": index, "pages": pages, "time": t.0, "pngBase64": cfa4_project::gtemplate::base64_encode(&png)}))
+}
+
+/// A guide line in frame pixels.
+enum Guide {
+    H(f64, [u8; 4]),
+    V(f64, [u8; 4]),
+    Rect(f64, f64, f64, f64, [u8; 4]),
+}
+
+const ACTION_SAFE: [u8; 4] = [80, 200, 255, 200];
+const TITLE_SAFE: [u8; 4] = [255, 210, 60, 220];
+const CENTRE: [u8; 4] = [200, 200, 200, 140];
+const SPINE: [u8; 4] = [255, 90, 200, 200];
+const GRID: [u8; 4] = [120, 160, 255, 90];
+
+/// Blend one straight-RGBA8 pixel over another.
+fn blend(px: &mut [u8], c: [u8; 4]) {
+    let a = u32::from(c[3]);
+    for (d, s) in px.iter_mut().zip(c).take(3) {
+        *d = ((u32::from(s) * a + u32::from(*d) * (255 - a)) / 255) as u8;
+    }
+    if let Some(alpha) = px.get_mut(3) {
+        *alpha = (*alpha).max(c[3]);
+    }
+}
+
+/// Draw guides (frame pixels, scaled by `k`) on a straight-RGBA8 image `w`×`h`.
+fn draw_guides(rgba: &mut [u8], w: usize, h: usize, k: f64, guides: &[Guide]) {
+    let mut hline = |y: f64, x0: f64, x1: f64, c: [u8; 4]| {
+        let y = (y * k).round();
+        if !(0.0..h as f64).contains(&y) {
+            return;
+        }
+        let (a, b) = (((x0 * k).round().max(0.0)) as usize, ((x1 * k).round().min(w as f64 - 1.0)).max(0.0) as usize);
+        for x in a..=b.min(w.saturating_sub(1)) {
+            let i = (y as usize * w + x) * 4;
+            if let Some(px) = rgba.get_mut(i..i + 4) {
+                blend(px, c);
+            }
+        }
+    };
+    let mut vlines: Vec<(f64, f64, f64, [u8; 4])> = Vec::new();
+    let fw = w as f64 / k.max(1e-9);
+    let fh = h as f64 / k.max(1e-9);
+    for g in guides {
+        match *g {
+            Guide::H(y, c) => hline(y, 0.0, fw, c),
+            Guide::V(x, c) => vlines.push((x, 0.0, fh, c)),
+            Guide::Rect(x0, y0, x1, y1, c) => {
+                hline(y0, x0, x1, c);
+                hline(y1, x0, x1, c);
+                vlines.push((x0, y0, y1, c));
+                vlines.push((x1, y0, y1, c));
+            }
+        }
+    }
+    for (x, y0, y1, c) in vlines {
+        let x = (x * k).round();
+        if !(0.0..w as f64).contains(&x) {
+            continue;
+        }
+        let (a, b) = (((y0 * k).round().max(0.0)) as usize, ((y1 * k).round().min(h as f64 - 1.0)).max(0.0) as usize);
+        for y in a..=b.min(h.saturating_sub(1)) {
+            let i = (y * w + x as usize) * 4;
+            if let Some(px) = rgba.get_mut(i..i + 4) {
+                blend(px, c);
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// Fit to music
+// ------------------------------------------------------------------------------------------------
+
+/// Longest music analysed for beats (longer music still gives its length and where it ends).
+const MAX_BEAT_SECONDS: i64 = 15 * 60;
+/// Below this level (−50 dBFS RMS over 50 ms) the music counts as silent.
+const SILENCE_RMS: f32 = 0.003_16;
+
+/// The audio clip a command means: `audio`, else the first selected audio clip, else the audio
+/// clip that overlaps the credits most (without credits: the one at the playhead).
+fn audio_clip(s: &Session, cmd: &str, p: &Value, group: Option<&Group>) -> Result<ClipId> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let is_audio = |c: ClipId| q.find_item(c).and_then(|(t, _)| q.track(t)).is_some_and(|t| t.kind == cfa4_project::TrackKind::Audio);
+    if let Some(c) = u64_p(p, "audio") {
+        let c = ClipId(c);
+        return if is_audio(c) { Ok(c) } else { Err(bad(cmd, format!("clip {} is not an audio clip", c.0))) };
+    }
+    if let Some(c) = s.state.selection.iter().copied().find(|c| is_audio(*c)) {
+        return Ok(c);
+    }
+    // the audio clip that overlaps the credits most (or plays at the playhead)
+    let (a, b) = match group {
+        Some(g) => {
+            let a = g.pages.first().map(|x| x.2).unwrap_or_else(|| s.playhead());
+            let b = g.pages.iter().filter_map(|(c, _, _, _)| q.find_item(*c).map(|(_, it)| it.start + it.duration)).max().unwrap_or(a);
+            (a, b.max(a + q.settings.frame_rate.frame_duration()))
+        }
+        None => {
+            let t = s.playhead();
+            (t, t + q.settings.frame_rate.frame_duration())
+        }
+    };
+    q.audio_tracks
+        .iter()
+        .flat_map(|t| t.items.iter())
+        .map(|it| (it.id, (it.start + it.duration).min(b).0 - it.start.max(a).0))
+        .filter(|(_, overlap)| *overlap > 0)
+        .max_by_key(|(c, overlap)| (*overlap, std::cmp::Reverse(c.0)))
+        .map(|(c, _)| c)
+        .ok_or_else(|| bad(cmd, "select the music (an audio clip), or give `audio`"))
+}
+
+/// What the music clip is like: its length, where its sound ends, its beats (clip time).
+fn music_info(s: &Session, cmd: &str, clip: ClipId) -> Result<(String, Tick, cfa4_credits::fit::Music, f64)> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let (_, it) = q.find_item(clip).ok_or_else(|| bad(cmd, "no such clip"))?;
+    let it = it.clone();
+    let (dur, start, name) = (it.duration, it.start, it.name.clone());
+    let sr = q.settings.sample_rate.max(1);
+    let provider = s.media.provider(s.project.clone(), s.services.clone());
+    if cfa4_render::SourceProvider::source(&provider, it.item).is_none() {
+        return Err(bad(cmd, "the music's media is offline"));
+    }
+    // the music as it plays on the timeline: speed, reverse, Remix and clip effects applied
+    let x0 = start.to_units_floor(i64::from(sr));
+    let len = dur.to_units_floor(i64::from(sr)).max(0);
+    let read = |off: i64, n: i64| -> Result<[Vec<f32>; 2]> {
+        cfa4_render::audio::clip_signal(&it, x0 + off, n.max(0) as usize, sr, &provider).ok_or_else(|| bad(cmd, "the music clip has no sound"))
+    };
+    // where the sound ends: RMS over 50 ms windows, read in 10-second pieces
+    let win = (sr / 20).max(1) as i64;
+    let chunk = i64::from(sr) * 10;
+    let mut last_loud: Option<i64> = None;
+    let mut off = 0i64;
+    while off < len {
+        let n = chunk.min(len - off);
+        let buf = read(off, n)?;
+        let mut w0 = 0i64;
+        while w0 < n {
+            let w1 = (w0 + win).min(n);
+            let mut sum = 0f64;
+            let mut cnt = 0usize;
+            for ch in &buf {
+                for v in ch.get(w0 as usize..w1 as usize).unwrap_or(&[]) {
+                    sum += f64::from(*v) * f64::from(*v);
+                    cnt += 1;
+                }
+            }
+            if cnt > 0 && (sum / cnt as f64).sqrt() as f32 > SILENCE_RMS {
+                last_loud = Some(off + w1);
+            }
+            w0 = w1;
+        }
+        off += n;
+    }
+    let to_tick = |samples: i64| Tick::from_units(samples, i64::from(sr));
+    let sound_end = last_loud.map(to_tick);
+    // beats, as Remix finds them
+    let mut beats = Vec::new();
+    let mut bpm = 0.0;
+    if len > 0
+        && len <= MAX_BEAT_SECONDS * i64::from(sr)
+        && let Ok(buf) = read(0, len)
+    {
+        let refs: Vec<&[f32]> = buf.iter().map(Vec::as_slice).collect();
+        if let Ok(a) = cfa4_audio_dsp::remix::analyze(&refs, sr) {
+            beats = a.beats.iter().map(|b| to_tick(*b)).collect();
+            bpm = a.bpm;
+        }
+    }
+    Ok((name, start, cfa4_credits::fit::Music { duration: dur, sound_end, beats }, bpm))
+}
+
+fn group_or_none(s: &Session, cmd: &str, p: &Value) -> Option<Group> {
+    if u64_p(p, "clip").is_some()
+        || s.state.selection.iter().any(|c| s.active_sequence().and_then(|q| q.find_item(*c)).is_some_and(|(_, it)| link_of(it).is_some()))
+    {
+        group_p(s, cmd, p).ok()
+    } else {
+        None
+    }
+}
+
+/// Analyse the music and offer lengths. Changes nothing.
+fn music(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.music";
+    let group = group_or_none(s, CMD, p);
+    // without usable music the credits can still be fitted to a typed length: say so, and what
+    // the credits are, instead of failing
+    let found = audio_clip(s, CMD, p, group.as_ref()).and_then(|a| music_info(s, CMD, a).map(|m| (a, m)));
+    let (audio, (name, start, m, bpm)) = match found {
+        Ok(x) => x,
+        Err(e) if group.is_some() && p.get("audio").is_none() => {
+            let g = group.as_ref();
+            let natural = g.and_then(|g| group_doc(CMD, g).ok()).and_then(|mut d| {
+                d.fit = None;
+                lay_doc(s, CMD, &d, doc_base(&d)).ok().map(|l| cfa4_credits::fit::total_length(&l).0)
+            });
+            let fit = g.and_then(|g| group_doc(CMD, g).ok()).and_then(|d| d.fit);
+            return Ok(json!({
+                "audio": Value::Null,
+                "problem": e.to_string(),
+                "suggestions": [],
+                "credits": g.and_then(|g| g.pages.first()).map(|x| x.0.0),
+                "natural": natural,
+                "fit": fit,
+            }));
+        }
+        Err(e) => return Err(e),
+    };
+    let suggestions = cfa4_credits::fit::suggestions(&m);
+    let beat = cfa4_credits::fit::beat_period(&m.beats).map(|t| t.0);
+    let (natural, fit) = match &group {
+        Some(g) => {
+            let mut doc = group_doc(CMD, g)?;
+            let fit = doc.fit.take();
+            let l = lay_doc(s, CMD, &doc, doc_base(&doc))?;
+            (Some(cfa4_credits::fit::total_length(&l).0), fit)
+        }
+        None => (None, None),
+    };
+    Ok(json!({
+        "audio": audio.0,
+        "name": name,
+        "start": start.0,
+        "duration": m.duration.0,
+        "soundEnd": m.sound_end.map(|t| t.0),
+        "bpm": if bpm > 0.0 { json!((bpm * 10.0).round() / 10.0) } else { Value::Null },
+        "beat": beat,
+        "beats": m.beats.len(),
+        "suggestions": suggestions,
+        "credits": group.as_ref().and_then(|g| g.pages.first()).map(|x| x.0.0),
+        "natural": natural,
+        "fit": fit,
+    }))
+}
+
+/// Fit placed credits to a length – the music's, or one given – in place, as one undo step.
+fn fit_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.fit";
+    let group = group_p(s, CMD, p)?;
+    let mut doc = group_doc(CMD, &group)?;
+    let off = p.get("off").and_then(Value::as_bool).unwrap_or(false);
+    let mut start = None;
+    if off {
+        doc.fit = None;
+    } else {
+        let wants_music = p.get("use").is_some()
+            || p.get("audio").is_some()
+            || p.get("cardsOnBeat").and_then(Value::as_bool).unwrap_or(false)
+            || p.get("alignToAudio").and_then(Value::as_bool).unwrap_or(false);
+        let music = if wants_music || (p.get("total").is_none() && p.get("seconds").is_none()) {
+            let audio = audio_clip(s, CMD, p, Some(&group))?;
+            Some(music_info(s, CMD, audio)?)
+        } else {
+            None
+        };
+        let total = if let Some(t) = p.get("total").and_then(Value::as_i64) {
+            Tick(t)
+        } else if let Some(sec) = p.get("seconds").and_then(Value::as_f64).filter(|v| v.is_finite()) {
+            Tick::from_seconds_f64(sec)
+        } else {
+            let (_, _, m, _) = music.as_ref().ok_or_else(|| bad(CMD, "need `total`, `seconds` or music"))?;
+            let want = str_p(p, "use").unwrap_or("musicLength");
+            let sug = cfa4_credits::fit::suggestions(m);
+            Tick(
+                sug.iter()
+                    .find(|x| x.id == want)
+                    .ok_or_else(|| {
+                        bad(CMD, format!("no `{want}` length for this music (offered: {})", sug.iter().map(|x| x.id).collect::<Vec<_>>().join(", ")))
+                    })?
+                    .total,
+            )
+        };
+        if total.0 <= 0 || total.0 > 24 * 3600 * cfa4_time::TICKS_PER_SECOND {
+            return Err(bad(CMD, "the length must be between one frame and 24 hours"));
+        }
+        let card_beat = if p.get("cardsOnBeat").and_then(Value::as_bool).unwrap_or(false) {
+            let (_, _, m, _) = music.as_ref().ok_or_else(|| bad(CMD, "cards on the beat need music"))?;
+            cfa4_credits::fit::beat_period(&m.beats).ok_or_else(|| bad(CMD, "no beat was found in the music"))?.0
+        } else {
+            0
+        };
+        if p.get("alignToAudio").and_then(Value::as_bool).unwrap_or(false)
+            && let Some((_, st, _, _)) = &music
+        {
+            start = Some(*st);
+        }
+        // where the beats fall, counted from where the credits will start
+        let credits_start = start.or_else(|| group.pages.first().map(|x| x.2)).unwrap_or_default();
+        let beat_offset = match (&music, card_beat) {
+            (Some((_, music_start, m, _)), period) if period > 0 => {
+                m.beats.first().map(|b| (music_start.0.saturating_add(b.0).saturating_sub(credits_start.0)).rem_euclid(period)).unwrap_or(0)
+            }
+            _ => 0,
+        };
+        let name = music.as_ref().map(|m| m.0.clone()).unwrap_or_default();
+        doc.fit = Some(cfa4_credits::fit::Fit { total: total.0, card_beat, music: name, beat_offset });
+    }
+    let (laid, report) = lay_doc_report(s, CMD, &doc, doc_base(&doc))?;
+    let warnings = warnings_json(&laid);
+    let manual = manual_edits(s, &group)?;
+    let overrides: Overrides = baselined(s, CMD, &group_doc(CMD, &group)?, &manual);
+    let label = if off { "Unfit Credits" } else { "Fit Credits to Music" };
+    let out = replace_group(s, CMD, label, &group, &doc, laid, &overrides, start)?;
+    let group = out.0.first().and_then(|v| v["clip"].as_u64());
+    Ok(json!({"clips": out.0, "group": group, "end": out.1.0, "fit": doc.fit, "report": report, "warnings": warnings}))
+}
+
 fn styles(_: &mut Session, p: &Value) -> Result<Value> {
     let styling = styling_p("graphics.credits.styles", p)?;
     let (pages, contents) = styling.names();
+    let mut inline: Vec<String> = styling.inline_styles.iter().map(|x| x.name.clone()).collect();
+    for (b, _) in cfa4_credits::markup::builtin_inline_styles() {
+        if !inline.iter().any(|n| n.eq_ignore_ascii_case(&b.name)) {
+            inline.push(b.name);
+        }
+    }
     let starter = Styling {
         page_styles: cfa4_credits::style::builtin_page_styles(),
         content_styles: cfa4_credits::style::builtin_content_styles(),
+        inline_styles: vec![cfa4_credits::markup::InlineStyle {
+            name: "Gold".into(),
+            font_style: Some("SemiBold".into()),
+            color: Some("#d4af37".into()),
+            ..Default::default()
+        }],
         ..Styling::default()
     };
     Ok(json!({
         "pageStyles": pages,
         "contentStyles": contents,
+        "inlineStyles": inline,
         "starter": serde_json::to_value(&starter).unwrap_or(Value::Null),
         "columns": ["Head", "Body", "Tail", "Vertical Gap", "Content Style", "Spine Position", "Page Style", "Page Runtime", "Page Gap"],
     }))
 }
 
+// ------------------------------------------------------------------------------------------------
+// Templates
+// ------------------------------------------------------------------------------------------------
+
+use cfa4_credits::template::{Category, CreditsTemplate};
+
+/// Where user credits templates live: `<data dir>/Credits Templates` (the data directory of the
+/// app's settings, or the headless engine's `--data-dir`).
+fn user_templates_dir(s: &Session) -> Option<std::path::PathBuf> {
+    s.prefs_path.as_ref().and_then(|p| p.parent()).or_else(|| s.export_presets.dir()).map(|d| d.join("Credits Templates"))
+}
+
+/// Every template: built in, the user's (files that fail to read are skipped) and the project's.
+/// With the file each user template was read from.
+fn template_library(s: &Session) -> Vec<(CreditsTemplate, Option<String>)> {
+    let mut v: Vec<(CreditsTemplate, Option<String>)> = cfa4_credits::template::builtin_templates().into_iter().map(|t| (t, None)).collect();
+    if let Some(dir) = user_templates_dir(s)
+        && let Some(Ok(mut names)) = s.services.list_dir(&dir.to_string_lossy())
+    {
+        names.sort();
+        let ext = format!(".{}", cfa4_credits::template::EXTENSION);
+        for n in names.into_iter().filter(|n| n.to_lowercase().ends_with(&ext)).take(1_000) {
+            let path = dir.join(&n).to_string_lossy().into_owned();
+            // a file too large to be a template is skipped without reading it
+            if s.services.file_size(&path).map_or(true, |n| n > cfa4_credits::template::MAX_TEMPLATE_BYTES as u64) {
+                continue;
+            }
+            if let Ok(b) = s.services.read_file(&path)
+                && let Ok(mut t) = CreditsTemplate::from_bytes(&b)
+            {
+                t.category = Category::User;
+                v.push((t, Some(path)));
+            }
+        }
+    }
+    for text in &s.project.credits_templates {
+        if let Ok(mut t) = CreditsTemplate::from_bytes(text.as_bytes()) {
+            t.category = Category::Project;
+            v.push((t, None));
+        }
+    }
+    v
+}
+
+/// A template by id or name (case-insensitive), or a `.cfa4credtpl` path. The project's and the
+/// user's come before the built-in ones of the same id.
+fn find_template(s: &Session, cmd: &str, id: &str) -> Result<CreditsTemplate> {
+    if id.to_lowercase().ends_with(&format!(".{}", cfa4_credits::template::EXTENSION)) {
+        let b = read_file_max(cmd, id, cfa4_credits::template::MAX_TEMPLATE_BYTES as u64)?;
+        return CreditsTemplate::from_bytes(&b).map_err(|e| bad(cmd, e.to_string()));
+    }
+    let lib = template_library(s);
+    let want = id.trim().to_lowercase();
+    lib.iter()
+        .rev()
+        .find(|(t, _)| t.id.to_lowercase() == want)
+        .or_else(|| lib.iter().rev().find(|(t, _)| t.name.trim().to_lowercase() == want))
+        .map(|(t, _)| t.clone())
+        .ok_or_else(|| bad(cmd, format!("there is no credits template `{id}`")))
+}
+
+fn template_json(t: &CreditsTemplate, path: Option<&String>) -> Value {
+    json!({
+        "id": t.id,
+        "name": t.name,
+        "description": t.description,
+        "category": t.category,
+        "source": t.source,
+        "license": t.license,
+        "path": path,
+        "pages": t.styling.page_styles.iter().map(|p| p.name.clone()).collect::<Vec<_>>(),
+        "fit": t.fit,
+    })
+}
+
+fn templates_cmd(s: &mut Session, _p: &Value) -> Result<Value> {
+    Ok(json!({"templates": template_library(s).iter().map(|(t, p)| template_json(t, p.as_ref())).collect::<Vec<_>>()}))
+}
+
+/// One template in full, with its sample sheet as CSV.
+fn template_get(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.get";
+    let id = str_p(p, "id").ok_or_else(|| bad(CMD, "need `id`"))?;
+    let t = find_template(s, CMD, id)?;
+    Ok(json!({"template": serde_json::to_value(&t).unwrap_or(Value::Null), "sampleCsv": t.sample_csv()}))
+}
+
+/// Save a template: from placed credits (`clip` or the selection: their styling, table and
+/// fitting) or from `styling` (and an optional `sample` table) – to the user's templates
+/// (`where: "user"`, the default), the project (`"project"`, one undo step) or a file (`to`).
+fn template_save(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.save";
+    let name = str_p(p, "name").map(str::trim).filter(|n| !n.is_empty()).ok_or_else(|| bad(CMD, "need `name`"))?.to_string();
+    let mut t = CreditsTemplate {
+        id: cfa4_credits::template::slug(&name),
+        name: name.clone(),
+        description: str_p(p, "description").unwrap_or("").to_string(),
+        source: str_p(p, "source").unwrap_or("").to_string(),
+        license: str_p(p, "license").unwrap_or("").to_string(),
+        ..Default::default()
+    };
+    let mut base: Option<std::path::PathBuf> = None;
+    if let Some(from) = p.get("from").filter(|f| f.is_object()) {
+        // a spreadsheet with its styling or template, as the Credits window has them
+        let (doc, _, b) = doc_p(s, CMD, from)?;
+        base = b;
+        t.styling = doc.styling;
+        t.sample = doc.table.into_iter().take(200).collect();
+        t.fit = doc.fit;
+    } else if p.get("styling").is_some_and(|v| !v.is_null()) {
+        t.styling = styling_p(CMD, p)?;
+        if let Some(rows) = p.get("sample").and_then(Value::as_array) {
+            t.sample = rows
+                .iter()
+                .take(1_000)
+                .filter_map(Value::as_array)
+                .map(|r| r.iter().take(256).map(|c| c.as_str().unwrap_or("").to_string()).collect())
+                .collect();
+        }
+    } else {
+        let doc = group_doc(CMD, &group_p(s, CMD, p)?)?;
+        base = doc_base(&doc);
+        t.styling = doc.styling;
+        // the first rows show the structure; a long sheet is not a template
+        t.sample = doc.table.into_iter().take(200).collect();
+        t.fit = doc.fit;
+    }
+    if t.id.starts_with("cfa4-") {
+        t.id = format!("user-{}", t.id);
+    }
+    // a background picture or video is named where it was found, so the template finds it from
+    // any spreadsheet
+    absolute_backgrounds(&mut t.styling, base.as_deref());
+    let place = str_p(p, "where").unwrap_or(if p.get("to").is_some() { "file" } else { "user" });
+    match place {
+        "project" => {
+            t.category = Category::Project;
+            let text = t.to_json();
+            let id = t.id.clone();
+            s.edit("Save Credits Template", move |pr, _| {
+                pr.credits_templates.retain(|x| CreditsTemplate::from_bytes(x.as_bytes()).map(|o| o.id != id).unwrap_or(true));
+                pr.credits_templates.push(text);
+                Ok(())
+            })?;
+            Ok(json!({"id": t.id, "category": "project"}))
+        }
+        "user" | "file" => {
+            let path = match str_p(p, "to") {
+                Some(to) => to.to_string(),
+                None => {
+                    let dir = user_templates_dir(s).ok_or_else(|| bad(CMD, "there is no data directory for user templates (give `to`)"))?;
+                    std::fs::create_dir_all(&dir).map_err(|e| EngineError::Other(format!("{}: {e}", dir.display())))?;
+                    dir.join(format!("{}.{}", t.id, cfa4_credits::template::EXTENSION)).to_string_lossy().into_owned()
+                }
+            };
+            s.services.write_file(&path, t.to_json().as_bytes()).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+            Ok(json!({"id": t.id, "category": "user", "path": path}))
+        }
+        other => Err(bad(CMD, format!("`where` is user, project or file, not `{other}`"))),
+    }
+}
+
+/// Background files of `styling` named relative to `base` become absolute where they exist.
+fn absolute_backgrounds(styling: &mut Styling, base: Option<&std::path::Path>) {
+    for ps in &mut styling.page_styles {
+        let bg = &mut ps.background;
+        if matches!(bg.kind, cfa4_credits::BackgroundKind::Image | cfa4_credits::BackgroundKind::Video)
+            && !std::path::Path::new(bg.file.trim()).is_absolute()
+            && let Some(p) = picture_path(base, &bg.file)
+        {
+            bg.file = std::fs::canonicalize(&p).unwrap_or(p).to_string_lossy().into_owned();
+        }
+    }
+}
+
+/// Delete a user or project template (built-in ones stay).
+fn template_delete(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.delete";
+    let id = str_p(p, "id").ok_or_else(|| bad(CMD, "need `id`"))?.to_string();
+    let lib = template_library(s);
+    let (t, path) = lib.iter().rev().find(|(t, _)| t.id == id).ok_or_else(|| bad(CMD, format!("there is no credits template `{id}`")))?;
+    match t.category {
+        Category::Builtin => Err(bad(CMD, "built-in templates cannot be deleted")),
+        Category::User => {
+            let path = path.clone().ok_or_else(|| bad(CMD, "the template has no file"))?;
+            std::fs::remove_file(&path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+            Ok(json!({"deleted": id}))
+        }
+        Category::Project => {
+            s.edit("Delete Credits Template", move |pr, _| {
+                pr.credits_templates.retain(|x| CreditsTemplate::from_bytes(x.as_bytes()).map(|o| o.id != id).unwrap_or(true));
+                Ok(())
+            })?;
+            Ok(json!({"deleted": str_p(p, "id")}))
+        }
+    }
+}
+
+/// Give placed credits a template's look: its styling (and fitting, unless they are fitted
+/// already), keeping their rows and hand edits; one undo step.
+fn template_apply(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.apply";
+    let id = str_p(p, "id").ok_or_else(|| bad(CMD, "need `id`"))?;
+    let t = find_template(s, CMD, id)?;
+    let group = group_p(s, CMD, p)?;
+    let old = group_doc(CMD, &group)?;
+    let mut doc = old.clone();
+    doc.styling = t.styling.clone();
+    if doc.fit.is_none() {
+        doc.fit = t.fit.clone();
+    }
+    let laid = lay_doc(s, CMD, &doc, doc_base(&doc))?;
+    let warnings = warnings_json(&laid);
+    let manual = manual_edits(s, &group)?;
+    let mut overrides = baselined(s, CMD, &old, &manual);
+    // a template can change the blocks' (default) style, and with it their keys: follow each
+    // block by its place in the sheet, which a new look does not change
+    if let (Ok(a), Ok(b)) = (old.credits(), doc.credits()) {
+        let (from, to) = (cfa4_credits::layout::block_prefixes(&a), cfa4_credits::layout::block_prefixes(&b));
+        if from.len() == to.len() {
+            for (k, _, _) in &mut overrides {
+                let (prefix, rest) = k.split_once('/').unwrap_or((k.as_str(), ""));
+                if let Some(i) = from.iter().position(|x| x == prefix)
+                    && let Some(new) = to.get(i)
+                {
+                    *k = format!("{new}/{rest}");
+                }
+            }
+        }
+    }
+    let out = replace_group(s, CMD, "Apply Credits Template", &group, &doc, laid, &overrides, None)?;
+    let group = out.0.first().and_then(|v| v["clip"].as_u64());
+    Ok(json!({"clips": out.0, "group": group, "end": out.1.0, "template": t.id, "warnings": warnings}))
+}
+
+/// Write a template's sample sheet as a CSV file to start new credits from.
+fn template_sheet(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.newSheet";
+    let id = str_p(p, "id").ok_or_else(|| bad(CMD, "need `id`"))?;
+    let to = str_p(p, "to").ok_or_else(|| bad(CMD, "need `to` (the .csv file to write)"))?.to_string();
+    let t = find_template(s, CMD, id)?;
+    s.services.write_file(&to, t.sample_csv().as_bytes()).map_err(|e| EngineError::Other(format!("{to}: {e}")))?;
+    Ok(json!({"path": to, "rows": t.sample.len()}))
+}
+
 pub fn commands() -> Vec<CommandSpec> {
-    const P: &str = r#"{"path":str (.csv, .tsv, .xlsx, .ods)?,"sheet":name|number (a worksheet of an .xlsx / .ods; default the first)?,"pictureDir":str (folder of {{Pic file}} pictures; default the spreadsheet's folder)?,"csv":str (the table as text)?,"styling":object|JSON text|path of a .json?,"time":ticks?,"track":index?}"#;
+    const P: &str = r#"{"path":str (.csv, .tsv, .xlsx, .ods, .cfa4credits)?,"sheet":name|number (a worksheet of an .xlsx / .ods; default the first)?,"pictureDir":str (folder of {{Pic file}} pictures; default the spreadsheet's folder)?,"csv":str (the table as text)?,"styling":object|JSON text|path of a .json?,"template":id|name|path (its styling and fitting; `styling` wins)?,"time":ticks?,"track":index?}"#;
     vec![
         CommandSpec {
             id: "graphics.credits.import",
@@ -320,6 +1912,136 @@ pub fn commands() -> Vec<CommandSpec> {
             params: P,
             enabled: has_seq,
             run: preview,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.thumbnail",
+            label: "Credits Page Picture",
+            menu: &[],
+            shortcut: None,
+            params: r#"as graphics.credits.preview, plus {"page":index=0,"at":0..1=0.5 (moment in the page),"width":px=480}"#,
+            enabled: has_seq,
+            run: thumbnail,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.validate",
+            label: "Check Credits",
+            menu: &[],
+            shortcut: None,
+            params: r#"as graphics.credits.preview, or {"clip":id?} for placed credits (default the selection) → {errors, warnings, infos, issues:[{code, severity, page?, row?, values, message}]}"#,
+            enabled: has_seq,
+            run: validate_cmd,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.music",
+            label: "Analyse Music for Credits",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"audio":clip? (default: the selected audio clip, else the one under the credits),"clip":credits page?} → {audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions:[{id: musicLength|soundEnd|lastBar, total}], natural, fit}; changes nothing"#,
+            enabled: has_seq,
+            run: music,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.fit",
+            label: "Fit Credits to Music…",
+            menu: &["Graphics and Titles"],
+            shortcut: None,
+            params: r#"{"clip":credits page?,"total":ticks?|"seconds":n?|"use":"musicLength|soundEnd|lastBar"="musicLength","audio":clip?,"cardsOnBeat":bool=false,"alignToAudio":bool=false,"off":bool=false}"#,
+            enabled: has_credits_selection,
+            run: fit_cmd,
+            journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.save",
+            label: "Save Credits File…",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"to":path (.cfa4credits),"clip":id? (a page of placed credits; default the selection),"from":{import parameters}? (save a spreadsheet instead)}"#,
+            enabled: has_seq,
+            run: save,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.diff",
+            label: "Compare Credits with Spreadsheet",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"clip":id? (a page of the credits; default the selection),"source":path? (the spreadsheet's new place)}"#,
+            enabled: has_credits_selection,
+            run: diff_cmd,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.refresh",
+            label: "Refresh Credits from Spreadsheet…",
+            menu: &["Graphics and Titles"],
+            shortcut: None,
+            params: r#"{"clip":id?,"source":path?,"accept":"all"|"none"|[change id]="all","keepManual":bool=true,"styling":object|JSON text|path?}"#,
+            enabled: has_credits_selection,
+            run: refresh,
+            journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.templates",
+            label: "Credits Templates",
+            menu: &[],
+            shortcut: None,
+            params: "{}",
+            enabled: always,
+            run: templates_cmd,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.get",
+            label: "Credits Template",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"id":id|name|.cfa4credtpl path}"#,
+            enabled: always,
+            run: template_get,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.save",
+            label: "Save Credits Template…",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"name":str,"description":str?,"license":str?,"source":str?,"where":"user"|"project"|"file"?,"to":path?,"clip":id? (placed credits; default the selection),"from":{import parameters}? (a spreadsheet with its styling or template),"styling":object|JSON|path? (instead of placed credits),"sample":[[str]]?}"#,
+            enabled: always,
+            run: template_save,
+            journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.delete",
+            label: "Delete Credits Template",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"id":id}"#,
+            enabled: always,
+            run: template_delete,
+            journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.apply",
+            label: "Apply Credits Template…",
+            menu: &["Graphics and Titles"],
+            shortcut: None,
+            params: r#"{"id":id|name|path,"clip":id? (default the selection)}"#,
+            enabled: has_credits_selection,
+            run: template_apply,
+            journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.newSheet",
+            label: "New Credits Spreadsheet from Template",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"id":id|name|path,"to":path (.csv)}"#,
+            enabled: always,
+            run: template_sheet,
             journal: false,
         },
         CommandSpec {

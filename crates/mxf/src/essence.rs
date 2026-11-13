@@ -149,6 +149,28 @@ pub struct PictureInfo {
     pub transfer_characteristic: Option<Ul>,
     pub coding_equations: Option<Ul>,
     pub color_primaries: Option<Ul>,
+    /// Luma precedes the colour difference samples (CDCI, deprecated; G.2.35).
+    pub reversed_byte_order: bool,
+    /// Bits after each pixel (CDCI; G.2.30).
+    pub padding_bits: u32,
+    /// Unused bytes before / after each stored picture (G.2.23, G.2.24).
+    pub image_start_offset: u32,
+    pub image_end_offset: u32,
+    /// Offsets of the sampled rectangle in the stored one and of the display rectangle in the
+    /// sampled one (G.1).
+    pub sampled_x_offset: i32,
+    pub sampled_y_offset: i32,
+    pub display_x_offset: i32,
+    pub display_y_offset: i32,
+    /// RGBA Pixel Layout (G.2.40): (component code, bits) pairs up to the terminator.
+    pub pixel_layout: Vec<(u8, u8)>,
+    /// RGBA Palette (G.2.37) and the layout of its entries (G.2.38), for a Pixel Layout with a
+    /// palette code `P`.
+    pub palette: Vec<u8>,
+    pub palette_layout: Vec<(u8, u8)>,
+    /// RGBA Component Min / Max Ref: the codes of black and white.
+    pub component_min_ref: Option<u32>,
+    pub component_max_ref: Option<u32>,
 }
 
 impl PictureInfo {

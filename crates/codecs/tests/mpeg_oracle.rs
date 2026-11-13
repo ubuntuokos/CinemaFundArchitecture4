@@ -140,6 +140,19 @@ fn spec(name: &str) -> Vec<String> {
             &["-f", "lavfi", "-i", "testsrc2=size=1920x1080:rate=50,tinterlace=mode=interleave_top,setfield=tff"],
             &["-t", "0.4", "-c:v", "mpeg2video", "-pix_fmt", "yuv422p", "-flags", "+ilme+ildct", "-bf", "2", "-g", "12", "-b:v", "50M"],
         ]),
+        // Matrox MPEG-2 I-frame in AVI: HD 4:2:2 interlaced (`MMES`) and SD 4:2:2 (`M701`), 4:2:0 (`M705`)
+        "avi_matrox_mmes.avi" => cat(&[
+            &["-f", "lavfi", "-i", "testsrc2=size=1920x1080:rate=50,tinterlace=mode=interleave_top,setfield=tff"],
+            &["-t", "0.48", "-c:v", "mpeg2video", "-pix_fmt", "yuv422p", "-flags", "+ilme+ildct", "-g", "1", "-bf", "0", "-b:v", "80M", "-vtag", "MMES"],
+        ]),
+        "avi_matrox_m701.avi" => cat(&[
+            &["-f", "lavfi", "-i", "testsrc2=size=720x576:rate=25"],
+            &["-t", "0.6", "-c:v", "mpeg2video", "-pix_fmt", "yuv422p", "-g", "1", "-bf", "0", "-b:v", "30M", "-vtag", "M701"],
+        ]),
+        "avi_matrox_m705.avi" => cat(&[
+            &["-f", "lavfi", "-i", "testsrc2=size=720x480:rate=30000/1001"],
+            &["-t", "0.5", "-c:v", "mpeg2video", "-g", "1", "-bf", "0", "-b:v", "15M", "-vtag", "M705"],
+        ]),
         "mp4_mpeg2.mp4" => cat(&[&["-f", "lavfi", "-i", "testsrc2=size=320x240:rate=25"], &["-t", "0.6", "-c:v", "mpeg2video", "-bf", "2", "-g", "6"]]),
         "mkv_mpeg2.mkv" => {
             cat(&[&["-f", "lavfi", "-i", "testsrc2=size=320x240:rate=25"], NOISE, &["-t", "0.6", "-c:v", "mpeg2video", "-bf", "2", "-g", "6", "-c:a", "mp2"]])
@@ -172,6 +185,9 @@ pub const ALL: &[&str] = &[
     "mov_xdcam_hd422.mov",
     "mp4_mpeg2.mp4",
     "mkv_mpeg2.mkv",
+    "avi_matrox_mmes.avi",
+    "avi_matrox_m701.avi",
+    "avi_matrox_m705.avi",
     "audio.mp2",
     "audio_mono.mp2",
     "ts_mpeg2_mono_mp2.ts",
@@ -372,6 +388,11 @@ fn transport_stream_mpeg2_and_mp2() {
     assert!(v.codec.starts_with("MPEG-2 Video (Main@"), "{}", v.codec);
     assert_eq!(v.pixel_format, "YUV 4:2:0 8-bit, interlaced (upper field first)");
     assert_eq!((v.width, v.height, v.par), (720, 576, (1, 1)));
+    // CFA4-PROCODEC-002 1a: the field order travels with every decoded frame, and the chroma
+    // siting is MPEG-2's type 0
+    let first = src.video_frame(FrameRequest { time: cfa4_time::Tick::ZERO, scale: 1.0 }).unwrap();
+    assert_eq!(first.layout.field_order, cfa4_frame::FieldOrder::TopFirst);
+    assert_eq!(first.layout.chroma_location, cfa4_frame::ChromaLocation::Left);
     let (worst, psnr) = check_video(&ff, &f, 4, 12);
     assert!(psnr >= 58.0, "PSNR {psnr}");
     println!("ts_mpeg2_mp2: video max diff {worst}, PSNR {psnr:.2} dB");
@@ -387,6 +408,8 @@ fn transport_stream_h264_and_aac() {
     let f = make(&ff, "ts_h264_aac.ts");
     let src = open(&f);
     assert_eq!(src.info().video.as_ref().unwrap().codec, "H.264");
+    let first = src.video_frame(FrameRequest { time: cfa4_time::Tick::ZERO, scale: 1.0 }).unwrap();
+    assert_eq!(first.layout.field_order, cfa4_frame::FieldOrder::Progressive);
     check_video(&ff, &f, 0, 10);
     let e = check_audio(&ff, &f, 1e-4);
     println!("ts_h264_aac: AAC max error {e:.2e}");
@@ -493,9 +516,16 @@ fn video_elementary_stream() {
 }
 
 #[test]
-fn mpeg2_in_quicktime_mp4_and_matroska() {
+fn mpeg2_in_quicktime_mp4_matroska_and_avi() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    for (name, chroma) in [("mov_xdcam_hd422.mov", (2, 1)), ("mp4_mpeg2.mp4", (2, 2)), ("mkv_mpeg2.mkv", (2, 2))] {
+    for (name, chroma) in [
+        ("mov_xdcam_hd422.mov", (2, 1)),
+        ("mp4_mpeg2.mp4", (2, 2)),
+        ("mkv_mpeg2.mkv", (2, 2)),
+        ("avi_matrox_mmes.avi", (2, 1)),
+        ("avi_matrox_m701.avi", (2, 1)),
+        ("avi_matrox_m705.avi", (2, 2)),
+    ] {
         let f = make(&ff, name);
         let src = cfa4_codecs::open_bytes(name, bytes(&f)).unwrap();
         let v = src.info().video.clone().unwrap();
@@ -505,7 +535,9 @@ fn mpeg2_in_quicktime_mp4_and_matroska() {
         let fsize = w * h + 2 * cw * ch;
         let n = raw.len() / fsize;
         assert!(n >= 10, "{name}: {n} frames");
-        for i in 0..n {
+        // the intra-only AVI files are also read back to front (every picture decodes on its own)
+        let order: Vec<usize> = if name.ends_with(".avi") { (0..n).chain((0..n).rev()).collect() } else { (0..n).collect() };
+        for i in order {
             let fr = src.video_frame(FrameRequest::full(v.frame_rate.tick_of(i as i64))).unwrap();
             let d = max_diff(&planes(&fr), &raw_planes(&raw[i * fsize..(i + 1) * fsize], w, h, cw, ch, 1));
             assert!(d <= 4, "{name}: frame {i} differs by {d}");

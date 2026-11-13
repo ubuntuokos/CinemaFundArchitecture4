@@ -67,6 +67,26 @@ class InstallTests(unittest.TestCase):
         self.assertIn(f'Exec="{prefix}/bin/cfa4" %F\n', desktop.read_text())
         if shutil.which("desktop-file-validate"):
             subprocess.run(["desktop-file-validate", str(desktop)], check=True)
+        # no Qt GUI in this bundle: no credits entry either
+        self.assertFalse((prefix / "share/applications" / f"{APP_ID}.credits.desktop").exists())
+
+    def test_credits_entry_points_at_the_installed_qt_gui(self):
+        shutil.copyfile(
+            HERE / f"{APP_ID}.credits.desktop", self.share / "applications" / f"{APP_ID}.credits.desktop"
+        )
+        prefix = self.root / "with qt"
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((prefix / "share/applications" / f"{APP_ID}.credits.desktop").exists())
+        self.add_qt_gui("def main():\n    return 0\n")
+        result = self.install("--prefix", prefix)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entry = (prefix / "share/applications" / f"{APP_ID}.credits.desktop").read_text()
+        self.assertIn(f'Exec="{prefix}/bin/cfa4-qt" %f\n', entry)
+        self.assertIn(f"TryExec={prefix}/bin/cfa4-qt\n", entry)
+        self.assertIn("MimeType=application/x-cfa4-credits;application/x-cfa4-credits-template;", entry)
+        if shutil.which("desktop-file-validate"):
+            subprocess.run(["desktop-file-validate", str(prefix / "share/applications" / f"{APP_ID}.credits.desktop")], check=True)
 
     @unittest.skipUnless(shutil.which("gio"), "gio is needed to exercise the desktop launcher")
     def test_desktop_launch_escapes_paths_and_preserves_file_arguments(self):
@@ -269,8 +289,8 @@ class InstallTests(unittest.TestCase):
             self.assertEqual(qt.mode & 0o777, 0o755)
             self.assertEqual(archive.extractfile(qt).read(), (HERE / "cfa4-qt").read_bytes())
             for path in ("lib/cfa4/python/cfa4_qt/__main__.py", "lib/cfa4/python/cfa4_qt/i18n/hu.tsv",
-                         "lib/cfa4/python/cfa4_qt/i18n/shared/de.tsv",
-                         "lib/cfa4/python/cfa4_qt/i18n/shared/fr.tsv.attribution"):
+                         "lib/cfa4/python/cfa4_qt/i18n/de.tsv",
+                         "lib/cfa4/python/cfa4_qt/i18n/fr.tsv.attribution"):
                 self.assertTrue(any(n.endswith("/" + path) for n in names), path)
             self.assertFalse([n for n in names if "__pycache__" in n])
             self.assertTrue(any(n.endswith("/share/doc/cfa4/THIRD-PARTY-LICENSES.txt") for n in names), names)

@@ -29,8 +29,11 @@ mod fx_editor;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
+mod kdm;
 pub mod keyboard;
 mod keyframe_move;
+pub mod legibility;
+pub mod live;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;
@@ -40,6 +43,7 @@ pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
 pub mod narration;
+mod opatom;
 pub mod panels;
 pub mod paste_media;
 pub mod perf;
@@ -50,6 +54,7 @@ pub mod project_manager;
 pub mod project_panel;
 pub mod project_tools;
 pub mod proxies;
+pub mod qc;
 pub mod relink;
 pub mod remix;
 pub mod scene_detect;
@@ -65,6 +70,7 @@ mod smart_render;
 pub mod social;
 pub mod source_monitor;
 pub mod sync;
+pub mod timecode_sync;
 pub mod transcript;
 pub mod trim;
 pub mod variants;
@@ -488,12 +494,16 @@ pub struct Session {
     pub mcrec: multicam::Recorder,
     /// Voice-over recording: the input device and the take in progress.
     pub voiceover: voiceover::VoiceOver,
+    /// External timecode sync: what the devices report (Settings ▸ Timecode Sync).
+    pub timecode_sync: timecode_sync::SyncRuntime,
     /// The last `tts.preview` result, for the host to play (Text to Speech ▸ Preview).
     pub tts_preview: Option<Arc<cfa4_tts::Audio>>,
     /// Synthesized narrations (`tts.render` fills it from a background job).
     pub tts_cache: narration::SynthCache,
     /// Dynamic (J/K/L) trimming and trim-mode loop playback in progress.
     pub trim_play: trim::TrimPlayback,
+    /// Live graphics: cues, preview, program, the live page and the OBS link (`live.*`).
+    pub live: live::LiveState,
     /// Keyboard shortcuts (active bindings, presets; `shortcuts.*` commands).
     pub shortcuts: shortcuts::Shortcuts,
     /// Missing / offline media found by the last scan (Link Media dialog).
@@ -510,6 +520,8 @@ pub struct Session {
     pub export_presets: export_tools::ExportPresetLibrary,
     /// The export queue (session state, not saved with the project).
     pub export_queue: export_tools::ExportQueue,
+    /// Media QC jobs whose results are still to be applied (`qc.*` commands).
+    pub qc: qc::QcSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -600,9 +612,11 @@ impl Session {
             mixrec: Default::default(),
             mcrec: Default::default(),
             voiceover: Default::default(),
+            timecode_sync: Default::default(),
             tts_preview: None,
             tts_cache: Default::default(),
             trim_play: Default::default(),
+            live: Default::default(),
             shortcuts: shortcuts::Shortcuts::new(),
             offline: Default::default(),
             media_jobs: Vec::new(),
@@ -611,6 +625,7 @@ impl Session {
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
+            qc: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -646,7 +661,7 @@ impl Session {
                 break;
             }
         }
-        !self.stepped.is_empty() || self.export_queue.is_active()
+        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty()
     }
 
     /// Start auto-save and the crash-recovery journal (native frontends). Loads preferences from
@@ -704,6 +719,7 @@ impl Session {
         masks::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
+        qc::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
@@ -1364,6 +1380,8 @@ mod interchange_auto_points_tests;
 #[cfg(test)]
 mod keyboard_tests;
 #[cfg(test)]
+mod legibility_tests;
+#[cfg(test)]
 mod linked_speed_tests;
 #[cfg(test)]
 mod linked_trim_tests;
@@ -1390,6 +1408,8 @@ mod nest_fidelity_tests;
 #[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
+mod opatom_tests;
+#[cfg(test)]
 mod panels_tests;
 #[cfg(test)]
 mod par_tests;
@@ -1407,6 +1427,8 @@ mod project_manager_tests;
 mod project_panel_tests;
 #[cfg(test)]
 mod proxies_tests;
+#[cfg(test)]
+mod qc_tests;
 #[cfg(test)]
 mod relink_tests;
 #[cfg(test)]

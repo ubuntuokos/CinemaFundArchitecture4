@@ -27,7 +27,11 @@ fut. Mind a négy csomagban a csomagolt `cfa4-cli`-t futtatja:
    - `export.analyze`: a forrás `mpeg2-video`;
    - `export.plan` a [10, 50) képtartományra, `gop-boundary` módban: veszteségmentes, 40 másolt kép, 0 újrakódolt;
    - `export.start`: `verified: true`, 40 minta, 1 hangsáv; a fájl mérete egyezik a jelentettel;
-   - `export.analyze` a kimeneten: `mpeg2-video`, 40 kép.
+   - `export.analyze` a kimeneten: `mpeg2-video`, 40 kép;
+   - képkocka-pontos vágás az [5, 45) tartományra `"confirm": true`-val (frissítés, WP-09e után):
+     - a terv `boundaryReencode.ready = true`;
+     - a vágás ellenőrzött, 40 kép, másolt és újrakódolt képekkel, a legkisebb luma PSNR ≥ 30 dB;
+     - a kimenet újra elemezve 40 kép.
 3. Bármelyik eltérés `AuditError`, és a munkafolyamat elbukik.
 
 A végrehajtás végig CFA4 saját Rust kódja (`cfa4-engine`, `cfa4-export`, `cfa4-mpegts`, `cfa4-smart-edit`). Nem használ GOPchopot, és FFmpeg-et sem linkel (owner-döntés, 2026-10-27).
@@ -35,6 +39,8 @@ A végrehajtás végig CFA4 saját Rust kódja (`cfa4-engine`, `cfa4-export`, `c
 ## Helyi bizonyíték
 
 - A `smart_cut_smoke` a `main`-ből (f948beac) épített `cfa4-cli`-vel lefutott: 40 másolt kép, 1 hangsáv, 113 740 bájt, `verified: true`.
+- A képkocka-pontos lépés a WP-09e motor-bekötésével épített `cfa4-cli`-vel is lefutott: 40 kép, ebből 34 másolt és 6 újrakódolt, a legkisebb PSNR 46,1 dB. A forrás FFmpeg-gel készült, tehát idegen kódoló MPEG-2 streamjén is működik.
+- A négy valódi csomagon a GOP-határos próba a #912 négyformátumú futásán (42946728123) átment.
 - A `test_f5_staging.py` szintetikus tesztjei lefedik:
   - az elfogadást;
   - az öt elutasítási ágat és az eltérő fájlméretet;
@@ -43,5 +49,4 @@ A végrehajtás végig CFA4 saját Rust kódja (`cfa4-engine`, `cfa4-export`, `c
 ## Amit ez nem bizonyít
 
 - Grafikus indítást (AppRun, `flatpak run`) és rendszerszintű `.deb`-telepítést.
-- Képkocka-pontos MPEG-2 vágást a csomagban: a határ-újrakódolás motor-bekötése a WP-09e után kerül be, akkor a próba `frame-accurate` lépéssel bővül.
 - Hardveres kódolókat (WP-09 jelentés, 24. eset, 🟡).

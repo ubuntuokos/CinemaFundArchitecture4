@@ -90,6 +90,11 @@ environment, because rust-cache hashes those into its key: change them together.
 The older `cargo xtask wasm` code remains in source for historical compatibility,
 but WASM is **not** a supported CFA4 target or quality gate.
 
+## DCP validation
+
+Development dependencies of the planned DCP validation (isolated dcp_inspect reference engine,
+no system changes): [dcp-validation.md](dcp-validation.md).
+
 ## HEIF / HEIC still images (local libheif, Ubuntu 26.04 AMD64)
 
 CFA4 recognizes `.heic`, `.heif` and `.hif` image files. Its Rust
@@ -118,6 +123,10 @@ sudo apt-get install --no-install-recommends \
 heif-dec --version
 heif-enc --version
 ~~~
+
+The libheif tests (`cfa4-media --test heif_oracle`, the `cfa4-export` HEIC/HEIF round trip)
+are external-oracle tests: without `heif-enc` and `heif-dec` on `PATH` they print `SKIPPED`,
+and with `CFA4_REQUIRE_ORACLES=1` (as in CI) they fail instead of skipping.
 
 The `.deb` package **recommends** these Ubuntu packages rather than
 bundling their binaries. Other distributions are not CFA4 release targets; Ubuntu 26.04 HEIF runtime dependencies

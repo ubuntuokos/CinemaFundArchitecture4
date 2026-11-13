@@ -111,9 +111,11 @@ def test_sizes_and_english():
 
 
 def test_language_without_the_templates_keeps_english_fragments():
-    """Russian (partial, no Qt catalog) has no Summary templates: the fragments stay English,
-    numbers untouched."""
+    """A language whose catalog lacks the Summary templates (every finished language has them now:
+    a catalog emptied for the test stands in) keeps the fragments English, numbers untouched."""
     TR.set_language("ru")
+    TR._plain.clear()
+    TR._contextual.clear()
     try:
         assert es.line("CBR 4.00 Mbps, keyframe every 50 frames") == "CBR 4.00 Mbps, keyframe every 50 frames"
     finally:
@@ -151,9 +153,9 @@ def test_every_template_and_word_is_translated_into_hungarian():
 
 # names and pieces of patterns that rightly stay as the engine writes them
 PASS_THROUGH = {
-    "2K", "4K", "AAC", "Opus", "HQ", "MP4", "QuickTime", "SMPTE", "VP9 Profile 0", "auto level", "float",
+    "2K", "4K", "AAC", "MP2", "Opus", "HQ", "MP4", "QuickTime", "SMPTE", "VP9 Profile 0", "auto level", "float",
     "ProRes 422", "ProRes 422 HQ", "ProRes 422 LT", "ProRes 422 Proxy", "ProRes 4444", "ProRes 4444 XQ",
-    "Flat 1.85:1", "Scope 2.39:1", "Full 1.90:1",
+    "Flat 1.85:1", "Scope 2.39:1", "Full 1.90:1", "SMPTE ST 2067-21",
 }  # fmt: skip
 
 

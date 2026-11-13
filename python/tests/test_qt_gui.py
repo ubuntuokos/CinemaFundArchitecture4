@@ -288,6 +288,12 @@ def test_system_language(monkeypatch):
     assert system_language() == "hu"
     monkeypatch.setenv("LANG", "pt_PT.UTF-8")
     assert system_language() == "pt-br"
+    for lang, code in (("zh_TW.UTF-8", "zh-hant"), ("zh_HK", "zh-hant"), ("zh_CN.UTF-8", "zh-cn"), ("zh", "zh-cn")):
+        monkeypatch.setenv("LANG", lang)
+        assert system_language() == code, lang
+    for lang, code in (("sr_RS.UTF-8", "sr"), ("sr", "sr"), ("sr_RS@latin", "sr-latn"), ("sr-Latn-RS", "sr-latn"), ("te_IN.UTF-8", "te")):
+        monkeypatch.setenv("LANG", lang)
+        assert system_language() == code, lang
     monkeypatch.setenv("CFA4_LANG", "zz")
     assert system_language() == "en"
 
@@ -2374,12 +2380,35 @@ def test_export_sends_the_audio_bitrate(app):
 
 
 # egui's Export ids the Qt window has no widget for yet, and why
+# Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs), frozen
+# here so the Qt check keeps working once egui is removed (CFA4-QT6-FINISH-001 Q5); while the egui
+# source is there, the test checks this list still matches it.
+EGUI_EXPORT_IDS: frozenset[str] = frozenset({
+    "export.audio.bitrate", "export.audio.bits", "export.audio.channels", "export.audio.codec",
+    "export.audio.flacLevel", "export.audio.include", "export.audio.sampleRate", "export.button",
+    "export.captions.format", "export.captions.mode", "export.destination.mediaFile", "export.effects.imageOverlay",
+    "export.effects.imageOverlay.browse", "export.effects.imageOverlay.opacity", "export.effects.imageOverlay.path",
+    "export.effects.imageOverlay.position", "export.effects.imageOverlay.size", "export.effects.loudness",
+    "export.effects.loudness.target", "export.effects.loudness.truePeak", "export.effects.nameOverlay",
+    "export.effects.timecodeOverlay", "export.effects.videoLimiter", "export.effects.videoLimiter.max",
+    "export.effects.videoLimiter.min", "export.estimate", "export.fileName", "export.format", "export.gpuRendering",
+    "export.location", "export.location.browse", "export.multiplexer", "export.preset", "export.preset.more",
+    "export.preview", "export.queue.clear", "export.queue.start", "export.queue.stop", "export.range",
+    "export.range.end", "export.range.start", "export.scaling", "export.sendToQueue", "export.summary",
+    "export.video.alpha", "export.video.apvProfile", "export.video.aspect", "export.video.bitrateMode",
+    "export.video.cineformProfile", "export.video.cineformQuality", "export.video.crf", "export.video.dashManifest", "export.video.dnxProfile",
+    "export.video.exrCompression", "export.video.fieldOrder", "export.video.fixedBitrate", "export.video.fps",
+    "export.video.hardwareEncoding", "export.video.height", "export.video.keyframe", "export.video.keyframeOn",
+    "export.video.level", "export.video.matchRate", "export.video.matchSize", "export.video.max",
+    "export.video.maxDepth", "export.video.maxQuality", "export.video.mxfCodec", "export.video.profile",
+    "export.video.proresProfile", "export.video.quality", "export.video.target", "export.video.width",
+})
 EXPORT_IDS_NOT_IN_QT: dict[str, str] = {}
 
 
 def test_export_widgets_carry_eguis_automation_ids(app):
-    """Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs) names
-    the same control in the Qt Export window, once, so an agent drives both frontends by the same
+    """Every widget id egui's Export mode registers (``EGUI_EXPORT_IDS``) names the same control in
+    the Qt Export window, once, so an agent drives both frontends by the same
     ids; the few Qt has no widget for are listed with the reason."""
     import re
 
@@ -2391,10 +2420,13 @@ def test_export_widgets_carry_eguis_automation_ids(app):
         def execute(self, command, params=None, on_reply=None, on_error=None):
             return 0
 
-    src = (Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs").read_text()
-    pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
-    egui = set(re.findall(pattern, src))
-    assert len(egui) > 60 and "export.video.bitrateMode" in egui, "the egui source still registers its ids this way"
+    egui = set(EGUI_EXPORT_IDS)
+    rs = Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs"
+    if rs.exists():  # egui is still in the tree: the frozen list is its current one
+        pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
+        source = set(re.findall(pattern, rs.read_text()))
+        assert len(source) > 60 and "export.video.bitrateMode" in source, "the egui source still registers its ids this way"
+        assert source == egui, ("update EGUI_EXPORT_IDS", sorted(source ^ egui))
     dlg = ExportDialog(Engine())  # type: ignore[arg-type]
     names = [w.objectName() for w in dlg.findChildren(QtWidgets.QWidget) if w.objectName().startswith("export.")]
     missing = sorted(i for i in egui - set(names) if i not in EXPORT_IDS_NOT_IN_QT)
@@ -2479,6 +2511,88 @@ def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
         win.close()
 
 
+def test_export_unavailable_format_says_why(app):
+    """A format the engine cannot write here is greyed out and its tooltip carries the engine's reason."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    why = "H.265 (HEVC): no encoder for this format is available on this machine"
+    dlg._on_formats([{"id": "h264", "label": "H.264", "available": True, "reason": None},
+                     {"id": "hevc", "label": "H.265 (HEVC)", "available": False, "reason": why}], None)
+    item = dlg.format.model().item(dlg.format.findData("hevc"))
+    assert not item.isEnabled() and item.toolTip() == why
+    assert dlg.format.model().item(dlg.format.findData("h264")).toolTip() == ""
+    dlg.deleteLater()
+
+
+def test_export_dash_manifest_switch_only_for_hls(app):
+    """egui's "DASH Manifest" row: shown for HLS only, and sent as ``dashManifest`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "hls", "label": "HLS"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.dashManifest")
+    assert box is dlg.dash_manifest and box.text() == "Also write a DASH manifest (.mpd)"
+    assert dlg.video_form.labelForField(box).text() == "DASH Manifest"
+    dlg.format.setCurrentIndex(dlg.format.findData("hls"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    assert "dashManifest" not in dlg.params()  # untouched: the preset's value stands
+    box.setChecked(True)
+    assert dlg.params()["dashManifest"] is True
+    dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "dashManifest" not in dlg.params()
+    dlg._show_settings({"dashManifest": False})  # touched: the user's choice is kept
+    assert box.isChecked()
+    dlg.deleteLater()
+
+
+def test_export_mxf_anc_captions_switch_only_for_op1a(app):
+    """#1004: the closed-captions-as-ANC switch shows for MXF OP1a (not D-10, not OP-Atom) and is
+    sent as ``mxfAncCaptions`` once changed."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    dlg._on_formats([{"id": "h264", "label": "H.264"}, {"id": "mxf-op1a", "label": "MXF OP1a"}, {"id": "mxf-opatom", "label": "MXF OP-Atom"}], None)
+    box = dlg.findChild(QtWidgets.QCheckBox, "export.video.mxfAncCaptions")
+    assert box is dlg.mxf_anc and box.text() == "Write the captions as ANC data (CEA-608/708, 29.97 fps)"
+    assert dlg.video_form.labelForField(box).text() == "Closed Captions"
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-op1a"))
+    dlg._sync_format_rows()
+    assert not box.isHidden()
+    assert "mxfAncCaptions" not in dlg.params()
+    box.setChecked(True)
+    assert dlg.params()["mxfAncCaptions"] is True
+    codec = dlg.format_choices["mxfVideoCodec"]
+    codec.setCurrentIndex(codec.findData("d10"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "mxfAncCaptions" not in dlg.params()
+    codec.setCurrentIndex(codec.findData("dnxhr"))
+    dlg.format.setCurrentIndex(dlg.format.findData("mxf-opatom"))
+    dlg._sync_format_rows()
+    assert box.isHidden() and "mxfAncCaptions" not in dlg.params()
+    dlg.deleteLater()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
     """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""
@@ -2545,6 +2659,211 @@ def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path)
         win.close()
 
 
+def test_qc_window_helpers():
+    from cfa4_qt.panels.qc import bounds_text, frame_rate_of, parse_position, value_text
+
+    assert value_text({"value": -14.25, "unit": "LUFS"}) == "-14.25 LUFS"
+    assert value_text({"value": True}) == "" and value_text({}) == ""
+    assert bounds_text({"pass": {"min": -15.0, "max": -13.0}, "accept": {"min": -16.0, "max": -12.0}}).startswith("-15…-13 (")
+    assert bounds_text({"pass": {"max": 0.0}}) == "≤ 0"
+    report = {"checks": [{"id": "probe.video", "detail": {"frameRate": "25/1"}}]}
+    assert frame_rate_of(report) == (25, 1)
+    assert frame_rate_of({"checks": [{"id": "probe.video", "detail": {"frameRate": "0/0"}}]}) is None
+    pos = parse_position("00:00:01:05", (25, 1))
+    assert pos == {"timecode": "00:00:01:05", "frame": 30, "tick": 30 * TICKS_PER_SECOND // 25}
+    assert parse_position("00:00:01:05", None) == {"timecode": "00:00:01:05"}
+    for bad in ("", "1:2", "aa:bb:cc:dd", "-1:00:00:00", "00:60:00:00", "00:00:60:00", "00:00:00:25",
+                "00:00:00:-1", "00:00;00;00", "1:2:3:4:5", "0000:00:00:00", "00:00:00:٣"):
+        assert parse_position(bad, (25, 1)) is None, bad
+    assert parse_position("00:60:00:00", None) is None  # range is checked without a rate too
+    # 23.976 counts 24 frames a second; drop-frame exists only at 29.97 / 59.94 / 119.88
+    assert parse_position("00:00:00:23", (24000, 1001)) is not None
+    assert parse_position("00:00:00:24", (24000, 1001)) is None
+    assert parse_position("00;00;01;00", (24000, 1001)) is None
+    ntsc = (30000, 1001)
+    assert parse_position("00;01;00;00", ntsc) is None and parse_position("00;01;00;01", ntsc) is None  # skipped
+    assert parse_position("00;01;00;02", ntsc)["frame"] == 1800  # the picture after 00;00;59;29
+    assert parse_position("00;00;59;29", ntsc)["frame"] == 1799
+    assert parse_position("00;10;00;00", ntsc)["frame"] == 17982  # every tenth minute keeps its labels
+    assert parse_position("01;00;00;00", ntsc)["frame"] == 107892
+    assert parse_position("00;01;00;04", (60000, 1001))["frame"] == 3600
+    assert parse_position("00:01:00:00", ntsc)["frame"] == 1800  # non-drop at 29.97 counts every label
+
+
+def test_qc_window_drops_stale_replies_and_reports_failures(app):
+    """Regressions from the stage E2 review: a reply for the file the window showed before must
+    not replace the current report; a failed run, a missing report, a failed save and a time code
+    that is no time in the file each leave the window usable with a message."""
+    from cfa4_qt.panels.qc import QcDialog
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.pending = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.pending.append((command, dict(params or {}), on_reply, on_error))
+            return 0
+
+        def take(self, command, path=None):
+            for i, (c, params, ok, err) in enumerate(self.pending):
+                if c == command and (path is None or params.get("path") == path):
+                    del self.pending[i]
+                    return ok, err
+            raise AssertionError(f"no pending {command} {path}")
+
+    def report(name, verdict):
+        full = {"profile": {"id": "delivery-web", "version": 1}, "output": {"path": name},
+                "checks": [{"id": "probe.video", "status": "PASS", "detail": {"frameRate": "25/1"}}]}
+        return {"full": full, "verdict": verdict, "summary": {"reasons": [name]}, "questions": [], "report": name + ".cfa4qc.json"}
+
+    engine = Engine()
+    dlg = QcDialog(engine)  # type: ignore[arg-type]
+    try:
+        dlg.open_for("a.mp4")
+        dlg.open_for("b.mp4")
+        ok_a, _ = engine.take("qc.report.get", "a.mp4")
+        ok_b, _ = engine.take("qc.report.get", "b.mp4")
+        ok_b(report("b.mp4", "PASS"), None)
+        ok_a(report("a.mp4", "FAIL"), None)  # late answer for the previous file
+        assert dlg.report["output"]["path"] == "b.mp4" and dlg.reasons.item(0).text() == "b.mp4"
+
+        # a check started for a, then the window turned to b: a's job is no longer followed
+        dlg.open_for("a.mp4", run=True)
+        started_a, _ = engine.take("qc.run")
+        dlg.open_for("b.mp4")
+        started_a({"job": 7}, None)
+        assert dlg._job is None and not dlg._poll.isActive() and dlg.run_button.isEnabled()
+        engine.take("qc.report.get", "b.mp4")[0](report("b.mp4", "PASS"), None)
+
+        # qc.run refused
+        dlg.run_check()
+        _, err = engine.take("qc.run")
+        err("no such file")
+        assert dlg.message.text() == "no such file" and dlg.run_button.isEnabled() and dlg._job is None
+        # the job finished with an error
+        dlg.run_check()
+        engine.take("qc.run")[0]({"job": 9}, None)
+        assert dlg._poll.isActive()
+        dlg._poll_job()
+        engine.take("jobs.list")[0]([{"id": 9, "finished": True, "result": {"error": "decode failed"}}], None)
+        assert dlg.message.text() == "decode failed" and dlg.run_button.isEnabled() and not dlg._poll.isActive()
+
+        # no report: nothing to save
+        dlg.load()
+        engine.take("qc.report.get", "b.mp4")[1]("no report next to b.mp4")
+        assert dlg.message.text() == "no report next to b.mp4" and not dlg.save_button.isEnabled()
+
+        dlg.load()
+        engine.take("qc.report.get", "b.mp4")[0](report("b.mp4", "PASS"), None)
+        # a time code that is no picture of this 25 fps file is refused before anything is sent
+        dlg.add_finding("flash", "major", "00:00:01:25")
+        dlg.save_review()
+        assert not engine.pending and "Finding 1" in dlg.message.text() and dlg.save_button.isEnabled()
+        dlg.findings.item(0, 2).setText("00:00:01:24")
+        dlg.save_review()
+        command, params, _, err = engine.pending[-1]
+        assert command == "qc.review.save" and params["review"]["findings"][0]["at"]["frame"] == 49
+        assert not dlg.save_button.isEnabled()
+        engine.take("qc.review.save")[1]("disk full")
+        assert dlg.message.text() == "disk full" and dlg.save_button.isEnabled()
+
+        # a save answered after the window moved on still reaches the queue, for its own file
+        saved = []
+        dlg.review_saved.connect(lambda media, verdict: saved.append((media, verdict)))
+        dlg.save_review()
+        dlg.open_for("c.mp4")
+        engine.take("qc.review.save")[0]({"verdict": "WARN"}, None)
+        assert saved == [("b.mp4", "WARN")]
+        assert [c for c, p, *_ in engine.pending] == ["qc.report.get"] and engine.pending[0][1]["path"] == "c.mp4"
+
+        engine.running = False
+        dlg.run_check()
+        assert dlg.message.text() == "The engine is not running." and dlg.run_button.isEnabled()
+    finally:
+        dlg._poll.stop()
+        dlg.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_quality_check_through_the_export_window(app, tmp_path: Path):
+    """Media QC stage E: export with "Check quality after export", read the report in the QC
+    window, add a time-coded finding and save it into the report next to the export."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(160)
+        dlg.height_spin.setValue(90)
+        out = tmp_path / "qc" / "cut.mp4"
+        dlg.path.setText(str(out))
+        dlg.qc_after.setChecked(True)
+        assert dlg.params()["qc"] == "delivery-web"
+        assert wait_until(app, lambda: "160×90" in dlg.summary.text(), 10_000), dlg.summary.text()
+        dlg.export_button.click()
+
+        from cfa4_qt.panels.export import QUEUE_QC_COL
+
+        def qc_state() -> str:
+            cell = dlg.table.item(0, QUEUE_QC_COL)
+            return str(cell.data(QtCore.Qt.ItemDataRole.UserRole)) if cell is not None else ""
+
+        assert wait_until(app, lambda: qc_state() not in ("", "notChecked", "running"), 240_000), qc_state()
+        report_file = Path(str(out) + ".cfa4qc.json")
+        assert report_file.is_file() and Path(str(out) + ".cfa4qc.png").is_file()
+        # render and QC state stay apart: the render is done whatever QC says
+        assert dlg.table.item(0, 3).data(QtCore.Qt.ItemDataRole.UserRole) == "done"
+
+        dlg.table.selectRow(0)
+        dlg.open_quality_check()
+        qc = dlg.qc_dialog
+        assert qc is not None and qc.isVisible()
+        assert qc.media == str(out), "the whole path, not the queue's file name"
+        assert wait_until(app, lambda: qc.checks.rowCount() > 10, 30_000), qc.message.text()
+        assert qc.verdict.text()
+        assert not qc.sheet.pixmap().isNull(), "the contact sheet is shown"
+        assert len(qc.answers) == 4
+        combo, _note = qc.answers["picture.defect"]
+        combo.setCurrentIndex(combo.findData("no"))
+        row = qc.add_finding("flash frame", "major", "00:00:00:12", "check the source")
+        assert row == 0
+        qc.reviewer.setText("QC tester")
+        qc.review_done.setChecked(True)
+        saved: list[str] = []
+        qc.review_saved.connect(lambda _p, v: saved.append(v))
+        qc.save_button.click()
+        assert wait_until(app, lambda: bool(saved), 30_000), qc.message.text()
+        report = json.loads(report_file.read_text(encoding="utf-8"))
+        human = report["human"]
+        assert human["state"] == "done" and human["reviewer"] == "QC tester"
+        assert human["findings"][0]["at"]["timecode"] == "00:00:00:12"
+        assert human["findings"][0]["severity"] == "major"
+        assert human["answers"] == [{"question": "picture.defect", "answer": "no"}]
+        # a major finding never leaves a PASS
+        assert report["summary"]["verdict"] in ("WARN", "FAIL")
+        assert wait_until(app, lambda: qc.findings.rowCount() == 1, 10_000), "the saved review is read back"
+    finally:
+        if win.export_dialog is not None:
+            if win.export_dialog.qc_dialog is not None:
+                win.export_dialog.qc_dialog.hide()
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
     """MPEG-2: the Container choice sets the file extension and the audio, and the engine writes
@@ -2572,10 +2891,19 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         assert dlg.format.currentData() == "mpeg2" and dlg.container.isEnabled()
         assert dlg.container.currentData() == "ts"
         dlg.container.setCurrentIndex(dlg.container.findData("es"))
-        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled()
+        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled() and not dlg.audio_codec.isEnabled()
         dlg.container.setCurrentIndex(dlg.container.findData("ts"))
-        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled()
+        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled() and dlg.audio_codec.isEnabled()
         assert dlg.params()["mpeg2Container"] == "ts"
+        # AC-3 instead of the container's own audio (#268)
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("ac3"))
+        assert dlg.params()["audioCodec"] == "ac3"
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("auto"))
+        # MP2 audio (#267) instead of the container's default
+        assert dlg.audio_codec.isEnabled()
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("mp2"))
+        assert dlg.params()["audioCodec"] == "mp2"
+        dlg.audio_codec.setCurrentIndex(dlg.audio_codec.findData("auto"))
         # GOP, quantiser and chroma go to the engine once chosen
         dlg.gop.setValue(12)
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("422"))
@@ -2589,6 +2917,15 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.b_frames.setValue(0)
         assert dlg.params()["mpeg2BFrames"] == 0
         dlg.b_frames.setValue(2)
+        # progressive unless an interlaced field order is chosen: egui's one Field Order row
+        # (export.video.fieldOrder), its interlaced orders open for MPEG-2 only
+        fo = dlg.rows.field_order
+        assert dlg.findChild(QtWidgets.QComboBox, "export.fieldOrder") is None, "one Field Order control"
+        assert fo.currentData() == "progressive" and "fieldOrder" not in p.get("settings", {}) and "fieldOrder" not in p
+        assert all(fo.model().item(i).isEnabled() for i in range(fo.count()))
+        fo.setCurrentIndex(fo.findData("lowerFirst"))
+        assert dlg.params()["settings"]["fieldOrder"] == "lowerFirst"
+        fo.setCurrentIndex(fo.findData("progressive"))
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
@@ -2692,6 +3029,70 @@ def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_imf_export_writes_a_package_folder(app, tmp_path: Path):
+    """IMF App 2E (#1011): the preset sets the frame size, the output is a folder, the content
+    kinds are IMF's, lossless and the language go to the engine, which writes the package."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.imf_lossless.isEnabled()
+        assert "imfLossless" not in dlg.params()
+        dlg.preset.setCurrentIndex(dlg.preset.findData("IMF App 2E HD"))
+        assert dlg.format.currentData() == "imf"
+        assert dlg.imf_lossless.isEnabled() and dlg.dcp_kind.isEnabled() and dlg.dcp_language.isEnabled()
+        assert not dlg.dcp_resolution.isEnabled() and not dlg.bitrate.isEnabled() and dlg.width_spin.isEnabled()
+        assert Path(dlg.path.text()).suffix == "", dlg.path.text()
+        kinds = [dlg.dcp_kind.itemData(i) for i in range(dlg.dcp_kind.count())]
+        assert "episode" in kinds and "policy" not in kinds, kinds
+        dlg.dcp_kind.setCurrentIndex(dlg.dcp_kind.findData("episode"))
+        dlg.dcp_language.setCurrentText("hu-HU")
+        dlg.imf_lossless.setChecked(True)
+        p = dlg.params()
+        assert (p["imfContentKind"], p["imfLossless"], p["dcpLanguage"]) == ("episode", True, "hu-HU")
+        assert "dcpResolution" not in p and "bitrateKbps" not in p
+        # a small picture keeps the test quick
+        dlg.match_size.setChecked(False)
+        dlg.width_spin.setValue(320)
+        dlg.height_spin.setValue(180)
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(0.25)
+        out = tmp_path / "out" / "Demo_IMP"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "320×180" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        names = sorted(f.name for f in out.iterdir())
+        assert "ASSETMAP.xml" in names and "VOLINDEX.xml" in names, names
+        assert sum(n.startswith("VIDEO_") for n in names) == 1 and sum(n.startswith("AUDIO_") for n in names) == 1, names
+        cpl = next(out.glob("CPL_*.xml")).read_text()
+        assert "<ContentKind>episode</ContentKind>" in cpl and "<Language>hu-HU</Language>" in cpl
+        assert "http://www.smpte-ra.org/ns/2067-21/5ED" in cpl
+        # back to a DCP: its own kinds again
+        dlg.format.setCurrentIndex(dlg.format.findData("dcp"))
+        kinds = [dlg.dcp_kind.itemData(i) for i in range(dlg.dcp_kind.count())]
+        assert "policy" in kinds and "episode" not in kinds and not dlg.imf_lossless.isEnabled()
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
     """DCP immersive audio (#343): the IAB choice, the source row only for "from a file", the
     engine's report on the source, and packages with an IAB track file and its CPL AuxData."""
@@ -2714,10 +3115,11 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         assert dlg.params()["dcpImmersive"] == "off" and "dcpIabFallback" not in dlg.params()
         assert not dlg.dcp_iab_source.isEnabled() and not dlg.dcp_iab_fallback.isEnabled()
 
-        # a 7.1 DS bed from the 5.1 mix
+        # a bed from the mix: 7.1 DS, or 9.1OH from a 7.1.2 Mix (#374)
         dlg.dcp_immersive.setCurrentIndex(dlg.dcp_immersive.findData("bed"))
         assert dlg.dcp_iab_fallback.isEnabled() and not dlg.dcp_iab_source.isEnabled()
-        assert "7.1 DS" in dlg.dcp_iab_info.text()
+        assert "7.1 DS" in dlg.dcp_iab_info.text() and "9.1OH" in dlg.dcp_iab_info.text()
+        assert "9.1OH" in dlg.dcp_immersive.itemText(dlg.dcp_immersive.findData("bed"))
         p = dlg.params()
         # ST 429-19:2023: no fallback unless asked (#348); here the 5.1 mix is asked for
         assert (p["dcpImmersive"], p["dcpIabFallback"]) == ("bed", "none") and "dcpIabSource" not in p
@@ -4482,6 +4884,89 @@ def test_app_identifies_as_cfa4_to_the_desktop():
     assert (ROOT / "packaging" / "linux" / "io.github.ubuntuokos.cfa4.desktop").is_file()
 
 
+def test_credits_seconds_format():
+    from cfa4_qt.panels.credits import format_seconds
+
+    assert format_seconds(0) == "0:00.0"
+    assert format_seconds(int(83.5 * TICKS_PER_SECOND)) == "1:23.5"
+    assert format_seconds(3725 * TICKS_PER_SECOND) == "1:02:05.0"
+    assert format_seconds("x") == "" and format_seconds(None) == ""
+    # rounded, not cut: 27.986 s is 0:28.0
+    assert format_seconds(int(27.986 * TICKS_PER_SECOND)) == "0:28.0" and format_seconds(int(59.97 * TICKS_PER_SECOND)) == "1:00.0"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_window(app, tmp_path: Path):
+    """The Credits window: the menu command opens it, it shows the engine's pages, warnings and a
+    page picture, and places the credits on the timeline in one undo step."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Fej,Törzs,Láb,Stílus,Oldal,Játékidő\n"
+        ",A HOSSZÚ ÚT HAZA,,Title,Card,4s\n"
+        "Rendező,Kiss Anna,,Centered,Scroll,\n"
+        ",,,,,\n"
+        "Szereplők,Nagy Béla,Béla szerepében,Gutter,,\n"
+        ",{{Pic nincs.png}},,,,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.import" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible()
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2, 30_000), dlg.status.text()
+        assert dlg.pages.item(0, 1).text() and dlg.pages.item(1, 4).text()
+        assert dlg.pages.item(0, 4).text() == "0:04.0"
+        # the missing picture is a warning with its row (the checks may list more)
+        texts = [dlg.warnings.item(i).text() for i in range(dlg.warnings.count())]
+        assert any("6" in t and "nincs.png" in t for t in texts), texts
+        assert dlg.check_summary.text()
+        assert wait_until(app, lambda: dlg.picture.pixmap() is not None and not dlg.picture.pixmap().isNull(), 30_000)
+        # guides change the page picture
+        before = dlg.picture.pixmap().toImage()
+        dlg.guides.setChecked(True)
+        assert wait_until(app, lambda: dlg.picture.pixmap().toImage() != before, 30_000)
+        # a styling with a background, a transition and a crawl shows in the pages table
+        styling = tmp_path / "look.json"
+        styling.write_text(
+            '{"pageStyles":[{"name":"Card","behaviour":"card","transition":"dissolve",'
+            '"background":{"kind":"gradient","color":"#203060","color2":"#000000","opacity":80}},'
+            '{"name":"Scroll","behaviour":"crawl"}]}',
+            encoding="utf-8",
+        )
+        dlg.styling.setText(str(styling))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2 and "80" in (dlg.pages.item(0, 2).text() if dlg.pages.item(0, 2) else ""), 30_000)
+        assert dlg.pages.item(0, 3).text().endswith("0:00.5"), dlg.pages.item(0, 3).text()
+        assert dlg.pages.item(1, 1).text() == "Crawl" and dlg.pages.item(1, 3).text() == ""
+        dlg.styling.setText("")
+        # a broken path is an error in the window, not a crash
+        dlg.path.setText(str(tmp_path / "missing.ods"))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 0 and dlg.status.text(), 30_000)
+        assert not dlg.import_button.isEnabled()
+        # place: two clips, one undo step
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2 and dlg.import_button.isEnabled(), 30_000)
+        undo_before = win.history.list.count()
+        dlg.place()
+        assert wait_until(app, lambda: "2" in dlg.status.text(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo_before + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 # ----- desktop entry for checkout runs -----
 def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, monkeypatch):
     """Regression: run from a checkout, KDE's panel showed "python3" (no .desktop for the app
@@ -4594,6 +5079,70 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert not errors, errors
         live = next(a for a in win.findChildren(QtGui.QAction, "window.panel.Project"))
         assert live.isChecked()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_tools_menu_groups_video_audio_and_publication_tools(app, fake_engine: Path, tmp_path: Path):
+    """Owner request (2026-11-10): a Tools menu before Window with Video Tools (Smart Cut moved
+    here from the Source monitor's wrench menu, Smart Export, GOP boundaries), Audio Tools and
+    Publication Tools; rebuilt (not duplicated) when the language changes."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: "file.save" in win.registry.actions)
+
+        def tools_menu():
+            menus = [a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.Tools"]
+            assert len(menus) == 1, menus
+            return menus[0]
+
+        top = [a.menu().objectName() for a in win.menuBar().actions() if a.menu()]
+        assert top.index("menu.Tools") == top.index("menu.Window") - 1, top
+        tools = tools_menu()
+        assert tools.title() == "Tools"
+        subs = [a.menu() for a in tools.actions() if a.menu()]
+        assert [m.objectName() for m in subs] == ["menu.Tools.Video", "menu.Tools.Audio", "menu.Tools.Publication"]
+        assert [m.title() for m in subs] == ["Video Tools", "Audio Tools", "Publication Tools"]
+        video, audio, publication = subs
+        video.aboutToShow.emit()
+        ids = {a.objectName(): a for a in video.actions() if not a.isSeparator()}
+        assert list(ids) == ["tools.video.smartCut", "tools.video.smartExport", "tools.video.showGopMarks"]
+        assert not ids["tools.video.smartCut"].isEnabled()  # no clip in the Source monitor
+        ids["tools.video.smartCut"].trigger()  # says what to do instead of failing
+        # the GOP boundary marks follow the timeline's own toggle both ways
+        gop = ids["tools.video.showGopMarks"]
+        assert not gop.isChecked()
+        gop.setChecked(True)
+        assert win.timeline.canvas.show_gop_marks
+        win.timeline.canvas.set_show_gop_marks(False)
+        video.aboutToShow.emit()
+        assert not gop.isChecked()
+        # Audio Tools shows the audio panels
+        names = [a.objectName() for a in audio.actions() if not a.isSeparator()]
+        assert "tools.audio.essentialSound" in names and "tools.audio.trackMixer" in names, names
+        win.docks["Essential Sound"].hide()
+        next(a for a in audio.actions() if a.objectName() == "tools.audio.essentialSound").trigger()
+        assert wait_until(app, lambda: not win.docks["Essential Sound"].isHidden(), 2_000)
+        # Publication Tools starts with Export Media and Quick Export
+        names = [a.objectName() for a in publication.actions() if not a.isSeparator()]
+        assert names[:2] == ["tools.publication.exportMedia", "tools.publication.quickExport"], names
+        # a rebuild translates the menu and leaves exactly one
+        win.set_language("hu")
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+        tools = tools_menu()
+        assert tools.title() == "Eszközök"
+        assert [a.menu().title() for a in tools.actions() if a.menu()] == ["Videoeszközök", "Hangeszközök", "Publikációs eszközök"]
+        win.set_language("en")
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+        assert tools_menu().title() == "Tools"
     finally:
         win._quit_confirmed = True
         win.close()
@@ -7636,6 +8185,10 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     from cfa4_qt.panels.export import encoder_format, supports_alpha
 
     assert encoder_format("mxf-op1a", "proRes") == "prores" and encoder_format("hls", "") == "h264"
+    assert encoder_format("mxf-op1a", "mpeg2") == "mpeg2"
+    assert encoder_format("mxf-op1a", "d10") == "mpeg2"
+    assert encoder_format("mxf-op1a", "xdcamHd422") == "mpeg2"
+    assert encoder_format("mxf-op1a", "v210") == "mxf-op1a" and encoder_format("mxf-opatom", "uyvy") == "mxf-op1a"
     assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
     assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
     assert supports_alpha("gif", "", ""), "GIF keeps binary transparency, as the engine says (#3423)"
@@ -7695,6 +8248,38 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
         p = dlg.params()
         assert p["mxfVideoCodec"] == "proRes" and "dnxProfile" not in p
         assert resolved()["mxfVideoCodec"] == "proRes"
+        # MPEG-2 in MXF (#928): its GOP, B picture and chroma rows, no MPEG-2 container
+        pick(c["mxfVideoCodec"], "mpeg2")
+        assert dlg.gop.isEnabled() and dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        assert form.isRowVisible(dlg.gop) and not shown("proresProfile")
+        dlg.b_frames.setValue(3)
+        p = dlg.params()
+        assert p["mxfVideoCodec"] == "mpeg2" and p["mpeg2BFrames"] == 3 and "mpeg2Container" not in p
+        assert resolved()["mxfVideoCodec"] == "mpeg2"
+        # D-10 / IMX (#949): MPEG-2 video with fixed GOP, B pictures and chroma
+        pick(c["mxfVideoCodec"], "d10")
+        assert not dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        p = dlg.params()
+        assert p["mxfVideoCodec"] == "d10" and "mpeg2BFrames" not in p
+        # D-10 runs at 30, 40 or 50 Mbit/s only (#1017): 50 unless one of them was chosen
+        assert p["bitrateKbps"] == 50_000 and dlg.bitrate.value() == 50.0
+        s = resolved()
+        assert s["mxfVideoCodec"] == "d10" and s["bitrateKbps"] == 50_000
+        dlg.bitrate.setValue(33.0)
+        assert dlg.params()["bitrateKbps"] == 30_000 and resolved()["bitrateKbps"] == 30_000
+        # XDCAM HD422 / RDD 9 (#949): GOP and B pictures, the 4:2:2 chroma fixed
+        pick(c["mxfVideoCodec"], "xdcamHd422")
+        assert dlg.gop.isEnabled() and not dlg.chroma.isEnabled() and not dlg.container.isEnabled()
+        assert dlg.params()["mxfVideoCodec"] == "xdcamHd422"
+        assert resolved()["mxfVideoCodec"] == "xdcamHd422"
+        # uncompressed (#946): no encoder rows, the MPEG-2 settings off
+        for codec in ("v210", "uyvy"):
+            pick(c["mxfVideoCodec"], codec)
+            assert not dlg.gop.isEnabled() and not shown("proresProfile") and not shown("dnxProfile")
+            assert dlg.params()["mxfVideoCodec"] == codec and resolved()["mxfVideoCodec"] == codec
+        pick(c["mxfVideoCodec"], "proRes")
+        assert not dlg.gop.isEnabled()
+        assert dlg.bitrate.maximum() == 800.0, "other codecs get the full bitrate range back"
         # CineForm: encoding and quality; RGBA keeps alpha
         pick(dlg.format, "cineform")
         assert shown("cineformProfile") and shown("cineformQuality") and not shown("alpha")
@@ -9239,6 +9824,19 @@ def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
         win.docks["Audio Track Mixer"].raise_()
         assert wait_until(app, lambda: [s.ref for s in mixer.strips if s.isVisible()] == ["A1", "A2", "A3", "Mix"], 10_000)
         a1 = mixer.strips[0]
+        # meter bars per channel format, 7.1 and 7.1.2 included (#374)
+        saved = a1.data
+        for fmt, n in (("Stereo", 2), ("5.1", 6), ("7.1", 8), ("7.1.2", 10), ("Adaptive", 2)):
+            a1.data = {**saved, "channels": fmt}
+            assert a1.channels() == n, fmt
+        a1.data = saved
+        # a strip feeding a 7.1.2 bus has a Height control (#406); others do not
+        a1.data = {**saved, "pans51": True, "panHeight": True, "pan51": {"x": 0, "y": 100, "center": 100, "lfeDb": -96, "height": 40}}
+        regions = a1.layout_regions()
+        assert "pan51.height" in regions and regions["pan51.height"].bottom() <= regions["mode"].top(), regions
+        a1.data = {**saved, "pans51": True}
+        assert "pan51.height" not in a1.layout_regions()
+        a1.data = saved
 
         def strip(ref: str) -> dict:
             return next(s for s in mixer.strips_data if s.get("ref") == ref)
@@ -11717,9 +12315,20 @@ def test_real_engine_control_channel_names_project_rows_as_egui(app, tmp_path: P
         item = min(i for i in els() if re.fullmatch(r"project\.item\.\d+", i))
         assert c.call("ui.click", {"id": item})["ok"]
         assert wait_until(app, lambda: win.project_panel.main.selected_items() == [int(item.rsplit(".", 1)[1])], 10_000), (item, win.project_panel.main.selected_items())
-        # the Icon view's cards carry the same ids
+        # the Icon view's cards carry the same ids: it shows the bins at the root as cards (the item
+        # opened in place inside a bin is not on them), so a bin's row id now names its card
+        rows = {b: e[b]["rect"] for b in bins}
         win.execute("project.view.set", {"view": "icon"})
-        assert wait_until(app, lambda: item in els() and "project.list.header.Name" not in els(), 10_000), sorted(els())
+
+        def cards() -> bool:
+            now = els()
+            return (
+                "project.tree" not in now
+                and "project.list.header.Name" not in now
+                and all(b in now and now[b]["rect"] != rows[b] and f"{b}.toggle" not in now for b in bins)
+            )
+
+        assert wait_until(app, cards, 10_000), (rows, {k: v["rect"] for k, v in els().items()})
     finally:
         server.close()
         win._quit_confirmed = True
@@ -13250,7 +13859,14 @@ def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
                     return False
                 snap.clear()
                 snap.update(els())
-                return "project.empty" in snap and any(re.fullmatch(r"project\.(bin|item)\.\d+", i) for i in snap)
+                # and only this view's rows: the other view's container gone from the snapshot, every
+                # row a list line (with the bin's arrow) or a card (no arrow)
+                other = "project.tree" if mode == "icon" else "project.icons"
+                rows = [k for k in snap if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
+                arrows = [k for k in rows if k.startswith("project.bin.") and f"{k}.toggle" in snap]
+                bins = [k for k in rows if k.startswith("project.bin.")]
+                shaped = arrows == bins if mode == "list" else not arrows
+                return other not in snap and "project.empty" in snap and bool(rows) and shaped
 
             assert wait_until(app, ready, 20_000), (mode, sorted(snap))
             e = dict(snap)
@@ -13492,9 +14108,12 @@ def test_real_engine_source_monitor_smart_cut(app, tmp_path: Path):
         src.seek(74 * ft)
         win.run_command(win.registry.commands["markers.markOut"])
         assert wait_until(app, lambda: (win.source_state or {}).get("markOut") == 74 * ft, 10_000), win.source_state
-        # the wrench menu offers the action
+        # Tools ▸ Video Tools offers the action (no longer the Source monitor's wrench menu)
         src._fill_wrench_menu()
-        action = next(a for a in src.wrench.menu().actions() if a.objectName() == "source.settings.smartCut")
+        assert not any(a.objectName() == "source.settings.smartCut" for a in src.wrench.menu().actions())
+        video = win.menuBar().findChild(QtWidgets.QMenu, "menu.Tools.Video")
+        video.aboutToShow.emit()
+        action = next(a for a in video.actions() if a.objectName() == "tools.video.smartCut")
         assert action.isEnabled()
         d = src.open_smart_cut()
         assert d is not None
@@ -13666,6 +14285,578 @@ def test_real_engine_timeline_shows_gop_boundaries(app, tmp_path: Path):
         win.close()
 
 
+def test_credits_refresh_text_helpers():
+    from cfa4_qt.panels.credits_refresh import row_text, rows_label
+
+    assert rows_label([3, 3]) == "3" and rows_label([3, 5]) == "3–5" and rows_label([4, 3]) == "–"
+    assert rows_label(None) == "" and rows_label(["x", 1]) == ""
+    assert row_text([["Rendező", "Kiss Anna", ""], ["", ""]]).splitlines()[0] == "Rendező | Kiss Anna"
+    assert row_text("bad") == "" and len(row_text([["x" * 500]])) <= 200
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_save_and_refresh(app, tmp_path: Path):
+    """Linked credits through the Qt windows: save a .cfa4credits file, place the credits, change
+    the spreadsheet, see the changes row by row, apply only some, keep the rest."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "stablista.csv"
+    sheet.write_text(
+        "Fej,Törzs,Oldal\n"
+        "Rendező,Kiss Anna,Scroll\n"
+        ",,\n"
+        "Szereplők,Nagy Béla,\n"
+        ",Tóth Cili,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.refresh" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1 and dlg.save_button.isEnabled(), 30_000), dlg.status.text()
+        # save a portable credits file
+        dlg.save_to(str(tmp_path / "stablista"))
+        assert wait_until(app, lambda: (tmp_path / "stablista.cfa4credits").is_file(), 30_000), dlg.status.text()
+        assert "Kiss Anna" in (tmp_path / "stablista.cfa4credits").read_text(encoding="utf-8")
+        # place, then change the sheet: the director renamed, a new actor
+        dlg.place()
+        assert wait_until(app, lambda: "1" in dlg.status.text() and dlg.import_button.isEnabled(), 30_000), dlg.status.text()
+        sheet.write_text(
+            "Fej,Törzs,Oldal\n"
+            "Rendező,Kiss Anna Mária,Scroll\n"
+            ",,\n"
+            "Szereplők,Nagy Béla,\n"
+            ",Tóth Cili,\n"
+            ",Új Ede,\n",
+            encoding="utf-8",
+        )
+        # the placed page is selected: the menu command opens the Refresh window
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.refresh"].enabled, 30_000)
+        win.invoke("graphics.credits.refresh")
+        ref = win.credits_refresh
+        assert ref is not None and ref.isVisible()
+        assert wait_until(app, lambda: ref.changes.rowCount() == 2, 30_000), ref.status.text()
+        assert "Kiss Anna Mária" in ref.changes.item(0, 3).text()
+        # the window is tied to the credits it compared, whatever is selected afterwards
+        assert isinstance(ref.clip, int)
+        win.execute("timeline.select", {"clips": []})
+        # apply only the first change
+        ref.changes.cellWidget(1, 0).findChild(QtWidgets.QCheckBox).setChecked(False)
+        assert ref.accepted_ids() == [0]
+        undo = win.history.list.count()
+        ref.apply()
+        # after the refresh the window compares again: the rejected change is still offered
+        assert wait_until(app, lambda: ref.changes.rowCount() == 1 and "Új Ede" in ref.changes.item(0, 3).text(), 30_000), ref.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_credits_issue_text_is_worded_from_code_and_values():
+    from cfa4_qt.panels.credits import ISSUE_TEXT, issue_text
+
+    i = {"code": "name-spelling", "severity": "warning", "row": 5, "values": {"name": "Kiss Ánna", "other": "Kiss Anna", "otherRow": "3"}}
+    text = issue_text(i)
+    assert "Kiss Ánna" in text and "Kiss Anna" in text and "5" in text
+    assert issue_text({"code": "fast-scroll", "page": 1, "values": {"seconds": "4.8"}}).count("4.8") == 1
+    # unknown codes fall back to the engine's message
+    assert issue_text({"code": "new-check", "message": "something new"}) == "something new"
+    assert issue_text({}) == ""
+    # every check the engine has is worded
+    import re
+
+    src = (ROOT / "crates" / "credits" / "src" / "validate.rs").read_text(encoding="utf-8")
+    codes = set(re.findall(r'^//! \| `([a-z-]+)` \|', src, re.MULTILINE))
+    assert codes and codes <= set(ISSUE_TEXT), codes - set(ISSUE_TEXT)
+
+
+def test_credits_page_look_texts(monkeypatch):
+    from cfa4_qt import i18n
+    from cfa4_qt.panels.credits import background_text, issue_text, transition_text
+
+    monkeypatch.setattr(i18n.TR, "language", "en")
+    assert background_text(None) == "" and background_text({"kind": "none"}) == "" and background_text("x") == ""
+    assert background_text({"kind": "color", "opacity": 100}) == "Color"
+    assert background_text({"kind": "gradient", "opacity": 80}) == "Gradient (80 %)"
+    assert background_text({"kind": "image", "file": "/a/b/sky.png", "opacity": 12.5}) == "Picture: sky.png (12.5 %)"
+    assert background_text({"kind": "video", "file": "walk.mp4", "loop": True}) == "Looped video: walk.mp4"
+    assert background_text({"kind": "video", "file": "walk.mp4"}) == "Video: walk.mp4"
+    assert transition_text(None) == "" and transition_text([]) == ""
+    assert transition_text({"effect": "cross_dissolve", "duration": TICKS_PER_SECOND // 2}) == "Dissolve, 0:00.5"
+    assert transition_text({"effect": "iris_round", "duration": TICKS_PER_SECOND}) == "iris round, 0:01.0"
+    on_bg = issue_text({"code": "low-contrast", "values": {"text": "A", "ratio": "1.2", "against": "background"}})
+    on_black = issue_text({"code": "low-contrast", "values": {"text": "A", "ratio": "1.2", "against": "black"}})
+    assert "background" in on_bg and "black" in on_black
+    i18n.TR.set_language("hu")
+    try:
+        assert background_text({"kind": "gradient", "opacity": 12.5}) == "Színátmenet (12,5 %)"
+        assert transition_text({"effect": "push", "duration": TICKS_PER_SECOND}) == "Tolás, 0:01,0"
+    finally:
+        i18n.TR.set_language("en")
+
+
+def test_credits_numbers_use_the_languages_decimal_separator(monkeypatch):
+    from cfa4_qt import i18n
+    from cfa4_qt.panels.credits import format_seconds, local_number
+
+    monkeypatch.setattr(i18n.TR, "language", "hu")
+    assert local_number("7.47") == "7,47" and local_number("12") == "12" and local_number("v1.2.3") == "v1.2.3"
+    assert format_seconds(28 * TICKS_PER_SECOND) == "0:28,0"
+    monkeypatch.setattr(i18n.TR, "language", "en")
+    assert local_number("7.47") == "7.47"
+
+
+def _music_wav(path: Path, seconds: float = 32.0, silent_tail: float = 4.0, bpm: float = 120.0) -> None:
+    """A click track: a short tone burst on every beat, then silence."""
+    import math
+    import struct
+    import wave
+
+    sr = 48_000
+    n = int(seconds * sr)
+    loud = int((seconds - silent_tail) * sr)
+    beat = int(sr * 60 / bpm)
+    frames = bytearray()
+    for i in range(n):
+        v = 0.0
+        if i < loud:
+            k = i % beat
+            if k < sr // 20:
+                v = 0.6 * math.sin(2 * math.pi * 880 * i / sr) * (1 - k / (sr / 20))
+            v += 0.05 * math.sin(2 * math.pi * 110 * i / sr)
+        s = int(max(-1.0, min(1.0, v)) * 32767)
+        frames += struct.pack("<hh", s, s)
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes(bytes(frames))
+
+
+def test_credits_fit_helpers():
+    from cfa4_qt.panels.credits_fit import audio_clips
+
+    seq = {"audio": [{"items": [{"clip": 5, "start": 10}, {"clip": "x"}]}, {"items": [{"clip": 3, "start": 2}]}]}
+    assert [c["clip"] for c in audio_clips(seq)] == [3, 5]
+    assert audio_clips(None) == [] and audio_clips({"audio": None}) == []
+
+
+def test_credits_fit_window_keeps_the_typed_length_choice(app, fake_engine: Path):
+    """Regression: a second analysis deleted the "this length" choice (RuntimeError after); and
+    without music a typed length is offered."""
+    from cfa4_qt.panels.credits_fit import CreditsFitDialog
+
+    engine = EngineClient(str(fake_engine), [])
+    dlg = CreditsFitDialog(engine)
+    music = {"audio": 7, "credits": 3, "duration": 30 * TICKS_PER_SECOND, "suggestions": [{"id": "musicLength", "total": 30 * TICKS_PER_SECOND}]}
+    dlg._show(music)
+    dlg._show(music)
+    app.processEvents()
+    assert dlg.custom in dlg.choices.buttons() and dlg.custom.text()
+    dlg._show({"audio": None, "credits": 3, "natural": 20 * TICKS_PER_SECOND, "suggestions": [], "problem": "no music"})
+    app.processEvents()
+    assert dlg.custom.isChecked() and dlg.apply_button.isEnabled() and not dlg.align.isEnabled()
+    assert dlg.fit_params() == {"cardsOnBeat": False, "alignToAudio": False, "clip": 3, "seconds": 20.0}
+    dlg.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_fit_credits_to_music(app, tmp_path: Path):
+    """Place credits and music, open Fit Credits to Music, see the offered lengths, fit to where
+    the sound ends: one undo step, the credits as long as asked."""
+    from cfa4_qt.main_window import MainWindow
+
+    wav = tmp_path / "zene.wav"
+    _music_wav(wav)
+    sheet = tmp_path / "stablista.csv"
+    sheet.write_text("Törzs,Oldal,Térköz\nCÍM,Card,\nA,Scroll,\nB,,4\nC,,4\nD,,4\nVÉGE,Card,\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    replies: list = []
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.fit" in win.registry.commands, 60_000)
+        # the music on an audio track far after the demo clips, then the credits at the same place
+        engine.execute("file.import", {"paths": [str(wav)]}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: replies, 30_000)
+        item = replies[-1]["items"][0]
+        engine.execute("timeline.place", {"item": item, "audioTrack": "A2", "seconds": 600}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: len(replies) == 2, 30_000), replies
+        music = replies[-1]["clips"][0]
+        engine.execute("graphics.credits.import", {"path": str(sheet), "seconds": 600}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: len(replies) == 3, 30_000), replies
+        page = replies[-1]["clips"][0]["clip"]
+        win.execute("timeline.select", {"clips": [page]})
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.fit"].enabled, 30_000)
+        win.invoke("graphics.credits.fit")
+        dlg = win.credits_fit
+        assert dlg is not None and dlg.isVisible()
+        # the music under the credits is found; its lengths are offered
+        assert wait_until(app, lambda: dlg.info is not None and dlg.apply_button.isEnabled(), 60_000), dlg.status.text()
+        assert dlg.info["audio"] == music and dlg.credits is not None
+        names = [b.objectName() for b in dlg.choices.buttons()]
+        assert "creditsFit.use.musicLength" in names and "creditsFit.use.soundEnd" in names, names
+        assert "28" in dlg.findChild(QtWidgets.QRadioButton, "creditsFit.use.soundEnd").text()
+        assert dlg.cards_on_beat.isEnabled(), dlg.facts.text()
+        dlg.findChild(QtWidgets.QRadioButton, "creditsFit.use.soundEnd").setChecked(True)
+        assert dlg.fit_params()["use"] == "soundEnd"
+        undo = win.history.list.count()
+        dlg.apply()
+        assert wait_until(app, lambda: "0:28" in dlg.status.text(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+        assert dlg.off_button.isVisible()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_templates(app, tmp_path: Path, monkeypatch):
+    """Credits window: a built-in template gives a new spreadsheet and its look; the look is
+    saved as the user's template; Apply Credits Template… restyles placed credits."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.template.apply" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert wait_until(app, lambda: dlg.template.count() > 4, 30_000)
+        dlg.template.setCurrentIndex(dlg.template.findData("cfa4-cards-and-roll"))
+        sheet = tmp_path / "uj.csv"
+        dlg.new_sheet_to(str(sheet))
+        assert wait_until(app, lambda: sheet.is_file() and dlg.path.text() == str(sheet), 30_000)
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 3 and dlg.pages.item(0, 2) is not None and dlg.pages.item(0, 2).text(), 30_000), dlg.status.text()
+        dlg.save_template("Fesztivál")
+        assert wait_until(app, lambda: dlg.template.currentData() == "fesztivál", 30_000), dlg.status.text()
+        dlg.place()
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.template.apply"].enabled, 30_000)
+        undo = win.history.list.count()
+        monkeypatch.setattr(QtWidgets.QInputDialog, "getItem", staticmethod(lambda *a, **k: ("Classic Roll", True)))
+        win.invoke("graphics.credits.template.apply")
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_window_opens_a_cinecred_project(app, tmp_path: Path):
+    """A Cinecred project folder in the Credits window: its styles and sheet, and what could not
+    be carried over among the warnings."""
+    from cfa4_qt.main_window import MainWindow
+
+    proj = tmp_path / "Film"
+    proj.mkdir()
+    (proj / "Styling.toml").write_text(
+        '[global]\nresolution = "1920x1080"\n[[pageStyle]]\nname = "Card"\nbehavior = "CARD"\n'
+        '[[contentStyle]]\nname = "Gutter"\nblockOrientation = "HORIZONTAL"\n[[tapeStyle]]\nname = "T"\n',
+        encoding="utf-8",
+    )
+    (proj / "Credits.csv").write_text("@Kopf,@Körper,@Seitenstil\nRegie,Anna Kiss,Card\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.import" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        dlg.path.setText(str(proj))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1, 30_000), dlg.status.text()
+        texts = [dlg.warnings.item(i).text() for i in range(dlg.warnings.count())]
+        assert any("tape" in t for t in texts), texts
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_credits_workspace_strip_and_block_helpers(app):
+    from cfa4_qt.panels.credits_workspace import TimelineStrip, block_label, page_spans
+
+    pages = [{"duration": 100, "gapAfter": 0}, {"duration": 50, "gapAfter": -20}, {"duration": 30}, {"duration": "x"}]
+    assert page_spans(pages) == [(0.0, 100.0), (100.0, 150.0), (130.0, 160.0), (160.0, 160.0)]
+    assert page_spans([{"duration": float("nan"), "gapAfter": float("inf")}]) == [(0.0, 0.0)]
+    strip = TimelineStrip()
+    strip.resize(162, 34)
+    strip.set_pages([*pages[:3], "bad"])
+    assert strip.index_at(10) == 0 and strip.index_at(140) == 2 and strip.index_at(500) == -1
+    chosen = []
+    strip.page_clicked.connect(chosen.append)
+    QtTest.QTest.mouseClick(strip, QtCore.Qt.MouseButton.LeftButton, pos=QtCore.QPoint(110, 17))
+    assert chosen == [1]
+    strip.set_current(1, 7)
+    assert strip.at == 1.0
+    strip.grab()  # paints without pages and with them
+    TimelineStrip().grab()
+    assert block_label({"head": "Cast", "body": ["A", "B"], "bodyCount": 2}) == "Cast  (+2)"
+    assert block_label({"body": ["A", "B"], "bodyCount": 5}) == "A  (+4)"
+    assert block_label({}) and block_label({"body": [None, 3]})
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_workspace(app, tmp_path: Path):
+    """C8: the Credits window opens compact from the editor; the full view shows the page's
+    blocks, their properties, the pages along time, the checks and the credits tools; choosing a
+    block of a roll moves the preview to it."""
+    from cfa4_qt.i18n import tr
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Head,Body,Tail,Content Style,Page Style\n"
+        ",THE LONG WAY HOME,,Heading,Card\n"
+        "Directed by,Jordan Lee,,Centered,Scroll\n"
+        ",,,,\n"
+        "Cast,Ann Smith,as Ann,Gutter,\n"
+        ",Bob Jones,,,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.refresh" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible() and not dlg.full_view
+        assert not dlg.blocks.isVisible() and not dlg.properties.isVisible() and not dlg.timeline.isVisible()
+        assert not dlg.styling.isVisible() and dlg.path.isVisible() and dlg.import_button.isVisible()
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2, 30_000), dlg.status.text()
+        dlg.findChild(QtWidgets.QPushButton, "credits.fullView").click()
+        assert dlg.full_view and dlg.blocks.isVisible() and dlg.properties.isVisible() and dlg.timeline.isVisible()
+        assert dlg.styling.isVisible() and all(b.isVisible() for b in dlg.tools)
+        assert dlg.timeline.spans and len(dlg.timeline.spans) == 2
+        # the roll's blocks and their properties
+        dlg.timeline.page_clicked.emit(1)
+        assert dlg.pages.currentRow() == 1 and dlg.blocks.count() == 2
+        assert dlg.properties.value("page.kind") == tr("Roll") and dlg.properties.value("page.blocks") == "2"
+        before = dlg.position.value()
+        dlg.blocks.setCurrentRow(1)
+        assert dlg.properties.value("block.rows") == "5–6" and dlg.properties.value("block.cells") == "2"
+        assert "Bob Jones" in dlg.properties.block_text.text() and dlg.properties.value("block.style") == "Gutter"
+        assert dlg.position.value() != before
+        assert wait_until(app, lambda: dlg.picture.pixmap() is not None and not dlg.picture.pixmap().isNull(), 30_000)
+        # the tools are the editor's commands: refresh opens its window
+        dlg.findChild(QtWidgets.QPushButton, "credits.tool.refresh").click()
+        assert wait_until(app, lambda: win.credits_refresh is not None and win.credits_refresh.isVisible(), 10_000)
+        win.credits_refresh.close()
+        # reopened from the editor while open, the view stays as chosen
+        win.invoke("graphics.credits.import")
+        assert dlg.full_view
+        dlg.close()
+        win.invoke("graphics.credits.import")
+        assert not dlg.full_view
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_credits_files_from_the_command_line(tmp_path: Path):
+    from cfa4_qt.__main__ import credits_file
+
+    assert credits_file(str(tmp_path / "a.cfa4credits")) == str((tmp_path / "a.cfa4credits").resolve())
+    assert credits_file(str(tmp_path / "B.CFA4CREDTPL"))
+    assert credits_file(str(tmp_path / "film.fcproj")) is None and credits_file(None) is None and credits_file("") is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_file_and_template_open_in_the_workspace(app, tmp_path: Path):
+    """C9: a credits file or template handed over by the file manager opens in the full Credits
+    workspace; a template with no spreadsheet brings its sample."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text("Head,Body\nDirected by,Jordan Lee\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.save" in win.registry.commands, 60_000)
+        saved = tmp_path / "film.cfa4credits"
+        engine.execute("graphics.credits.save", {"to": str(saved), "from": {"path": str(sheet)}})
+        assert wait_until(app, saved.is_file, 20_000)
+        win.open_credits_file(str(saved))
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible() and dlg.full_view
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1, 30_000), dlg.status.text()
+        dlg.close()
+        # a template file: chosen as the template, its sample sheet opened
+        got: list = []
+        engine.execute("graphics.credits.templates", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: bool(got), 20_000)
+        tid = got[0]["templates"][0]["id"]
+        tpl = tmp_path / "look.cfa4credtpl"
+        engine.execute("graphics.credits.template.save", {"name": "Look", "where": "file", "to": str(tpl), "from": {"path": str(sheet), "template": tid}})
+        assert wait_until(app, tpl.is_file, 20_000)
+        dlg.path.setText("")
+        win.open_credits_file(str(tpl))
+        assert dlg.isVisible() and dlg.full_view
+        assert wait_until(app, lambda: dlg.path.text().endswith("look.sample.csv") and dlg.pages.rowCount() >= 1, 30_000), dlg.status.text()
+        assert dlg.template.currentData() == str(tpl) and dlg.params().get("template") == str(tpl)
+        # the templates reload when the window opens again: the file stays chosen
+        dlg.load_templates()
+        assert wait_until(app, lambda: dlg.template.findData(str(tpl)) >= 0 and dlg.template.currentData() == str(tpl), 20_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_live_window_helpers(app):
+    from cfa4_qt.panels.live import cue_text, png_pixmap
+
+    text = cue_text({"name": "End", "kind": "credits", "pages": 3, "duration": 4 * TICKS_PER_SECOND, "audio": "/m.wav"})
+    assert "End" in text and "3" in text and "0:04" in text and text.endswith("♪")
+    assert cue_text({}) and cue_text({"pages": "x", "duration": None})
+    assert png_pixmap(None) is None and png_pixmap({"pngBase64": "not base64!"}) is None and png_pixmap({"pngBase64": ""}) is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_live_window(app, tmp_path: Path):
+    """C10: Graphics and Titles ▸ Live Graphics… prepares cues, shows PREVIEW and PROGRAM, runs
+    TAKE / NEXT / HOLD / CONTINUE / OUT, serves the live page on 127.0.0.1 and keeps it moving."""
+    import urllib.request
+
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Head,Body,Page Style,Page Runtime\n,THE LONG WAY HOME,Card,4s\nDirected by,Jordan Lee,Scroll,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "live.window" in win.registry.commands, 60_000)
+        win.invoke("live.window")
+        dlg = win.live_dialog
+        assert dlg is not None and dlg.isVisible()
+        assert not dlg.buttons["live.take"].isEnabled()
+        dlg.add_selected_clip()
+        assert wait_until(app, lambda: bool(dlg.status.text()), 5_000)
+        dlg.add_credits(str(sheet))
+        assert wait_until(app, lambda: dlg.cues.count() == 1 and dlg.buttons["live.take"].isEnabled(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: dlg.preview_monitor.pixmap_ is not None, 30_000)
+        dlg.buttons["live.take"].click()
+        assert wait_until(app, lambda: (dlg.state.get("program") or {}).get("cue") is not None, 30_000), dlg.status.text()
+        assert dlg.buttons["live.out"].isEnabled() and dlg.tick_timer.isActive()
+        assert wait_until(app, lambda: dlg.program_monitor.pixmap_ is not None, 30_000)
+        dlg.buttons["live.next"].click()
+        assert wait_until(app, lambda: (dlg.state.get("program") or {}).get("page") == 1, 30_000)
+        dlg.buttons["live.hold"].click()
+        assert wait_until(app, lambda: dlg.buttons["live.continue"].isEnabled(), 30_000)
+        dlg.buttons["live.continue"].click()
+        assert wait_until(app, lambda: dlg.buttons["live.hold"].isEnabled(), 30_000)
+        # the live page, on this computer only
+        dlg.page_button.click()
+        assert wait_until(app, lambda: dlg.url.text().startswith("http://127.0.0.1:"), 30_000)
+        page = urllib.request.urlopen(dlg.url.text(), timeout=5).read().decode()
+        assert "frame.png" in page
+        seq0 = json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())["seq"]
+        assert wait_until(app, lambda: json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())["seq"] > seq0, 10_000)
+        dlg.audio.setCurrentIndex(1)
+        assert wait_until(app, lambda: dlg.state.get("audioMode") == "separate", 10_000)
+        dlg.buttons["live.out"].click()
+        assert wait_until(app, lambda: dlg.state.get("program") is None and dlg.program_label.text() == tr_("Off air"), 30_000)
+        # the page keeps being served after OUT, with nothing on it
+        status = json.loads(urllib.request.urlopen(dlg.url.text() + "status.json", timeout=5).read())
+        assert status["onAir"] is False
+        dlg.page_button.click()
+        assert wait_until(app, lambda: dlg.url.text() == "" and not dlg.tick_timer.isActive(), 30_000)
+        # nothing to connect to: an error in the window, not a crash
+        dlg.obs_port.setValue(1)
+        dlg.connect_obs()
+        assert wait_until(app, lambda: "OBS" in dlg.status.text() and "Connecting" not in dlg.status.text(), 30_000), dlg.status.text()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def tr_(text: str) -> str:
+    from cfa4_qt.i18n import tr
+
+    return tr(text)
+
+
+def test_credits_engine_notes_are_translated():
+    """Every note the credits engine writes has a template in credits_messages (so it is shown in
+    the user's language), and the values come through."""
+    import re as _re
+    from pathlib import Path as _P
+
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.credits_messages import NOTES, note_text
+
+    root = _P(__file__).resolve().parents[2] / "crates" / "credits" / "src"
+    engine = _P(__file__).resolve().parents[2] / "crates" / "engine" / "src" / "credits.rs"
+    # literal openings of the engine's notes (up to the first value): each must be matched by one
+    found = set()
+    for src in [*root.glob("*.rs"), engine]:
+        # tests, and the checks (validate.rs: issues with codes, shown by issue_text) are not notes
+        if "test" in src.name or src.name == "validate.rs":
+            continue
+        text = src.read_text(encoding="utf-8")
+        for m in _re.finditer(r'(?:warn\([^,]+,\s*|message:\s*|notes\.(?:push|insert)\((?:0,\s*)?)(?:format!\(\s*)?"([^"]+)"', text):
+            found.add(m.group(1))
+    assert len(found) >= 20, found
+    samples = {
+        "letter style `Bold` does not exist; the text keeps the block's style": "Bold",
+        "page 3: there is no transition `wobble`; the pages cut": "wobble",
+        "the cards and gaps alone are 12.5 s; the asked length is shorter, so the scroll pages keep their natural length": "12.5",
+        "the Cinecred project has 2 credits spreadsheets; `Credits.csv` is used (choose another with `credits`)": "Credits.csv",
+    }
+    TR.set_language("hu")
+    try:
+        for message, value in samples.items():
+            out = note_text(message)
+            assert out != message and value in out, (message, out)
+        # every template is in the Hungarian catalog
+        for _pattern, template in NOTES:
+            assert TR.has(template), template
+        # an unknown note stays as the engine wrote it
+        assert note_text("something new") == "something new"
+    finally:
+        TR.set_language("en")
+    # each engine note (its fixed opening) is matched by a pattern, with any value put in
+    for literal in found:
+        filled = _re.sub(r"\{[^}]*\}", "1", literal)
+        filled = filled.replace("`1`", "`x`")
+        # the three reasons and the three kinds of style each have their own pattern
+        if "{why}" in literal or literal.startswith("{what} are"):
+            continue
+        if literal.startswith("{what}"):
+            filled = "picture" + filled[1:]
+        assert any(p.match(filled) for p, _t in NOTES), literal
+
+
 def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     """qt-parity 5.5: ``CFA4_QT_MONITOR_GL=1`` asks for the OpenGL picture, but where no GL
     context can be made (Qt's ``offscreen`` platform here) the monitor keeps the raster view; either
@@ -13689,3 +14880,94 @@ def test_monitor_picture_falls_back_to_raster_without_opengl(app, monkeypatch):
     monkeypatch.setenv("CFA4_QT_MONITOR_GL", "0")
     assert not monitor.monitor_gl_wanted()
     view.deleteLater()
+
+
+def _openssl_kdm(tmp_path: Path) -> bool:
+    """A recipient key (``key.pem``), another key (``other.pem``) and a KDM (``kdm.xml``) for the
+    first, built with the openssl command line (ST 430-1 RSA-OAEP SHA-1 CipherData)."""
+    import shutil
+    import subprocess
+
+    ossl = shutil.which("openssl")
+    if ossl is None:
+        return False
+
+    def run(*args: str) -> None:
+        subprocess.run([ossl, *args], cwd=tmp_path, check=True, capture_output=True)
+
+    for name in ("key.pem", "other.pem"):
+        run("genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048", "-out", name)
+    structure = bytes.fromhex("f1dc124460169a0e85bc300642f866ab")
+    plain = structure + b"\x77" * 20 + b"\x11" * 16 + b"MDAK" + b"\x5a" * 16
+    plain += b"2020-01-01T00:00:00+00:00" + b"2099-12-31T23:59:59+00:00" + os.urandom(16)
+    (tmp_path / "p.bin").write_bytes(plain)
+    run("pkeyutl", "-encrypt", "-inkey", "key.pem", "-pkeyopt", "rsa_padding_mode:oaep", "-pkeyopt", "rsa_oaep_md:sha1",
+        "-pkeyopt", "rsa_mgf1_md:sha1", "-in", "p.bin", "-out", "c.bin")
+    b64 = base64.b64encode((tmp_path / "c.bin").read_bytes()).decode()
+    (tmp_path / "kdm.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<DCinemaSecurityMessage xmlns="http://www.smpte-ra.org/schemas/430-3/2006/ETM">'
+        "<AuthenticatedPublic><AnnotationText>Reel 1 KDM</AnnotationText><RequiredExtensions>"
+        '<KDMRequiredExtensions xmlns="http://www.smpte-ra.org/schemas/430-1/2006/KDM">'
+        "<CompositionPlaylistId>urn:uuid:11111111-1111-1111-1111-111111111111</CompositionPlaylistId>"
+        "<ContentTitleText>Encrypted Test</ContentTitleText></KDMRequiredExtensions></RequiredExtensions></AuthenticatedPublic>"
+        '<AuthenticatedPrivate><enc:EncryptedKey xmlns:enc="http://www.w3.org/2001/04/xmlenc#"><enc:CipherData>'
+        f"<enc:CipherValue>{b64}</enc:CipherValue></enc:CipherData></enc:EncryptedKey></AuthenticatedPrivate>"
+        "</DCinemaSecurityMessage>",
+        encoding="utf-8",
+    )
+    return True
+
+
+def test_kdm_dialog_describes_the_reply_never_a_key():
+    from cfa4_qt.panels.kdm_dialog import describe
+
+    text = describe({"title": "Film", "composition": "1111", "keys": [{"keyId": "5a5a", "type": "MDIK", "notValidBefore": "a", "notValidAfter": "b"}]})
+    assert text.splitlines()[0] == "Film: 1 keys loaded" and "MDIK  5a5a  a – b" in text and "CPL 1111" in text
+    assert describe(None) == "" and describe({"keys": "x"}).startswith("KDM: 0 keys")
+
+
+def test_real_engine_load_kdm_dialog(app, tmp_path: Path):
+    """File ▸ Load KDM… (#1029): a wrong private key shows the engine's message, the right one the
+    KDM's title and key types (never the key); Forget DCP Keys empties the key ring."""
+    from cfa4_qt.main_window import MainWindow
+
+    if not _openssl_kdm(tmp_path):
+        assert not os.environ.get("CFA4_REQUIRE_ORACLES"), "openssl not found"
+        pytest.skip("openssl not found")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
+        names = {a.objectName() for m in win.menuBar().actions() if m.menu() for a in m.menu().actions()}
+        assert {"qt.file.loadKdm", "qt.file.forgetDcpKeys"} <= names
+        # dcp.loadKdm without parameters (menu, control channel) opens the dialog
+        win.run_command(win.registry.commands["dcp.loadKdm"])
+        dlg = win.kdm_dialog
+        assert dlg is not None and dlg.isVisible()
+        dlg.load()
+        assert dlg.result.toPlainText() == "Choose the KDM file and the private key."
+        dlg.kdm_path.setText(str(tmp_path / "kdm.xml"))
+        dlg.key_path.setText(str(tmp_path / "other.pem"))
+        dlg.load()
+        assert wait_until(app, lambda: "not made for this private key" in dlg.result.toPlainText(), 20_000), dlg.result.toPlainText()
+        dlg.key_path.setText(str(tmp_path / "key.pem"))
+        dlg.load()
+        assert wait_until(app, lambda: dlg.result.toPlainText().startswith("Encrypted Test: 1 keys loaded"), 20_000), dlg.result.toPlainText()
+        assert "MDAK" in dlg.result.toPlainText() and "5a5a5a5a-5a5a" in dlg.result.toPlainText()
+        got: list = []
+        engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == ["5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a"]
+        dlg.forget()
+        assert wait_until(app, lambda: dlg.result.toPlainText() == "DCP keys forgotten", 10_000)
+        got.clear()
+        engine.execute("dcp.keys", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["keyIds"] == []
+        dlg.close()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

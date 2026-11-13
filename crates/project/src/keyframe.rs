@@ -115,10 +115,18 @@ pub enum Interpolation {
     ContinuousBezier,
     EaseIn,
     EaseOut,
+    // CFA4 easing presets (not in Premiere): each shapes the segment leaving the keyframe with a
+    // fixed curve; Overshoot, Elastic and Bounce leave the [from, to] range on purpose.
+    Sine,
+    Expo,
+    Circ,
+    Overshoot,
+    Elastic,
+    Bounce,
 }
 
 impl Interpolation {
-    pub const ALL: [Interpolation; 7] = [
+    pub const ALL: [Interpolation; 13] = [
         Interpolation::Linear,
         Interpolation::Bezier,
         Interpolation::AutoBezier,
@@ -126,6 +134,12 @@ impl Interpolation {
         Interpolation::Hold,
         Interpolation::EaseIn,
         Interpolation::EaseOut,
+        Interpolation::Sine,
+        Interpolation::Expo,
+        Interpolation::Circ,
+        Interpolation::Overshoot,
+        Interpolation::Elastic,
+        Interpolation::Bounce,
     ];
     pub fn label(self) -> &'static str {
         match self {
@@ -136,6 +150,30 @@ impl Interpolation {
             Interpolation::ContinuousBezier => "Continuous Bezier",
             Interpolation::EaseIn => "Ease In",
             Interpolation::EaseOut => "Ease Out",
+            Interpolation::Sine => "Sine",
+            Interpolation::Expo => "Exponential",
+            Interpolation::Circ => "Circular",
+            Interpolation::Overshoot => "Overshoot",
+            Interpolation::Elastic => "Elastic",
+            Interpolation::Bounce => "Bounce",
+        }
+    }
+
+    /// Whether this is one of CFA4's fixed easing presets (no editable handles).
+    pub fn is_preset(self) -> bool {
+        self.preset_curve().is_some()
+    }
+
+    /// Fixed curve of a preset: maps u∈[0,1] to eased progress, 0 at u=0 and 1 at u=1.
+    fn preset_curve(self) -> Option<fn(f64) -> f64> {
+        match self {
+            Interpolation::Sine => Some(ease_sine),
+            Interpolation::Expo => Some(ease_expo),
+            Interpolation::Circ => Some(ease_circ),
+            Interpolation::Overshoot => Some(ease_overshoot),
+            Interpolation::Elastic => Some(ease_elastic),
+            Interpolation::Bounce => Some(ease_bounce),
+            _ => None,
         }
     }
 }
@@ -328,6 +366,10 @@ impl Param {
 
 /// Temporal easing for u∈[0,1] between two keyframes (1D cubic Bezier in time/value space).
 fn ease(a: &Keyframe, b: &Keyframe, u: f64) -> f64 {
+    if let Some(curve) = a.interp.preset_curve() {
+        let v = curve(if u.is_finite() { u.clamp(0.0, 1.0) } else { 0.0 });
+        return if v.is_finite() { v } else { u };
+    }
     let out_ease = matches!(a.interp, Interpolation::Bezier | Interpolation::AutoBezier | Interpolation::ContinuousBezier | Interpolation::EaseOut);
     let in_ease = matches!(b.interp, Interpolation::Bezier | Interpolation::AutoBezier | Interpolation::ContinuousBezier | Interpolation::EaseIn)
         || matches!(a.interp, Interpolation::Bezier | Interpolation::ContinuousBezier);
@@ -340,6 +382,65 @@ fn ease(a: &Keyframe, b: &Keyframe, u: f64) -> f64 {
     let x2 = if in_ease { 1.0 - b.in_influence.clamp(0.01, 1.0) } else { 2.0 / 3.0 };
     let y2 = if in_ease { 1.0 } else { 2.0 / 3.0 };
     cubic_bezier_y_for_x(x1, y1, x2, y2, u)
+}
+
+// Easing presets, after Robert Penner's easing equations (the curves CSS and most motion tools
+// share). In-out for the smooth ones; out-only for the ones that overshoot or bounce at the end.
+
+fn ease_sine(u: f64) -> f64 {
+    (1.0 - (std::f64::consts::PI * u).cos()) / 2.0
+}
+
+fn ease_expo(u: f64) -> f64 {
+    if u <= 0.0 {
+        0.0
+    } else if u >= 1.0 {
+        1.0
+    } else if u < 0.5 {
+        2f64.powf(20.0 * u - 10.0) / 2.0
+    } else {
+        (2.0 - 2f64.powf(10.0 - 20.0 * u)) / 2.0
+    }
+}
+
+fn ease_circ(u: f64) -> f64 {
+    if u < 0.5 { (1.0 - (1.0 - (2.0 * u).powi(2)).max(0.0).sqrt()) / 2.0 } else { ((1.0 - (2.0 - 2.0 * u).powi(2)).max(0.0).sqrt() + 1.0) / 2.0 }
+}
+
+/// Passes the target by about 10% and settles back ("back out").
+fn ease_overshoot(u: f64) -> f64 {
+    const C1: f64 = 1.70158;
+    const C3: f64 = C1 + 1.0;
+    1.0 + C3 * (u - 1.0).powi(3) + C1 * (u - 1.0).powi(2)
+}
+
+/// Springs past the target and rings down ("elastic out").
+fn ease_elastic(u: f64) -> f64 {
+    if u <= 0.0 {
+        0.0
+    } else if u >= 1.0 {
+        1.0
+    } else {
+        2f64.powf(-10.0 * u) * ((10.0 * u - 0.75) * std::f64::consts::TAU / 3.0).sin() + 1.0
+    }
+}
+
+/// Lands on the target and bounces three times ("bounce out").
+fn ease_bounce(u: f64) -> f64 {
+    const N1: f64 = 7.5625;
+    const D1: f64 = 2.75;
+    if u < 1.0 / D1 {
+        N1 * u * u
+    } else if u < 2.0 / D1 {
+        let v = u - 1.5 / D1;
+        N1 * v * v + 0.75
+    } else if u < 2.5 / D1 {
+        let v = u - 2.25 / D1;
+        N1 * v * v + 0.9375
+    } else {
+        let v = u - 2.625 / D1;
+        N1 * v * v + 0.984375
+    }
 }
 
 /// Solve a CSS-style cubic-bezier(x1,y1,x2,y2) for y at x (Newton + bisection).
@@ -402,6 +503,61 @@ mod tests {
             let v = p.vec2_at(Tick(i * 10)).x;
             assert!(v >= last - 1e-9);
             last = v;
+        }
+    }
+
+    #[test]
+    fn presets_start_and_end_on_the_keyframes() {
+        for interp in Interpolation::ALL.into_iter().filter(|i| i.is_preset()) {
+            let mut p = Param::new(ParamValue::Float(10.0));
+            p.toggle_animation(Tick(0));
+            p.set_at(Tick(1000), ParamValue::Float(20.0));
+            p.keyframes[0].interp = interp;
+            assert_eq!(p.f64_at(Tick(0)), 10.0, "{interp:?}");
+            assert_eq!(p.f64_at(Tick(1000)), 20.0, "{interp:?}");
+            assert!((p.f64_at(Tick(1)) - 10.0).abs() < 0.1, "{interp:?} starts at the first keyframe");
+            assert!((p.f64_at(Tick(999)) - 20.0).abs() < 0.1, "{interp:?} ends at the second keyframe");
+            assert_eq!(p.scalar_at(Tick(250)), p.f64_at(Tick(250)), "{interp:?}: mixer path agrees");
+            for i in 0..=1000 {
+                let v = p.f64_at(Tick(i));
+                assert!(v.is_finite() && (9.99..=24.0).contains(&v), "{interp:?} at {i}: {v}");
+            }
+        }
+    }
+
+    #[test]
+    fn preset_shapes() {
+        assert!((ease_sine(0.5) - 0.5).abs() < 1e-12);
+        assert!((ease_expo(0.5) - 0.5).abs() < 1e-12);
+        assert!((ease_circ(0.5) - 0.5).abs() < 1e-12);
+        assert!(ease_sine(0.1) < 0.1 && ease_sine(0.9) > 0.9, "in-out curves start and end slowly");
+        let peak = (0..=100).map(|i| ease_overshoot(i as f64 / 100.0)).fold(f64::MIN, f64::max);
+        assert!(peak > 1.05 && peak < 1.15, "overshoot passes the target by about 10%: {peak}");
+        assert!((0..=100).any(|i| ease_elastic(i as f64 / 100.0) > 1.0), "elastic rings past the target");
+        let bounce: Vec<f64> = (0..=1000).map(|i| ease_bounce(i as f64 / 1000.0)).collect();
+        assert!(bounce.iter().all(|v| (0.0..=1.0 + 1e-9).contains(v)), "bounce never passes the target");
+        let landings = bounce.windows(3).filter(|w| w[1] > w[0] && w[1] > w[2]).count();
+        assert_eq!(landings, 3, "bounce lands and comes back up three times");
+    }
+
+    #[test]
+    fn presets_survive_hostile_progress() {
+        for interp in Interpolation::ALL.into_iter().filter(|i| i.is_preset()) {
+            let kf = |t: i64| Keyframe::new(Tick(t), ParamValue::Float(0.0));
+            let mut a = kf(0);
+            a.interp = interp;
+            for u in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1.0, 2.0] {
+                let e = ease(&a, &kf(1), u);
+                assert!(e.is_finite(), "{interp:?} at {u}: {e}");
+            }
+        }
+    }
+
+    #[test]
+    fn presets_round_trip_through_json() {
+        for interp in Interpolation::ALL {
+            let s = serde_json::to_string(&interp).unwrap();
+            assert_eq!(serde_json::from_str::<Interpolation>(&s).unwrap(), interp);
         }
     }
 

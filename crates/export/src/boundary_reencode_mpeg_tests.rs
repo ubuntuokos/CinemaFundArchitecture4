@@ -13,7 +13,7 @@ use cfa4_smart_edit::plan::{CopyGuarantee, SegmentMode, SegmentReason};
 use cfa4_smart_edit::timestamp::{MediaTime, Rational};
 
 use crate::boundary_reencode::BoundaryEncoding;
-use crate::boundary_reencode_mpeg::{check_mpeg_boundary_reencode, execute_mpeg_boundary_reencode, mpeg2_stream_format, verify_mpeg_boundary_reencode};
+use crate::boundary_reencode_mpeg::{check_mpeg_boundary_reencode, execute_mpeg_boundary_reencode, mpeg2_source_format, verify_mpeg_boundary_reencode};
 use crate::smart_cut::SmartCutError;
 use crate::smart_cut_mpeg::{MpegCopySource, container_of, index_mpeg_video};
 
@@ -40,7 +40,7 @@ fn source(format: MuxFormat, closed: bool, pts: impl Fn(i64) -> i64) -> Vec<u8> 
         packets.extend(enc.encode(&Input { y: &y, cb: &c, cr: &c, y_stride: w, c_stride: w / 2 }).unwrap());
     }
     packets.extend(enc.flush().unwrap());
-    let audio = if format == MuxFormat::Ps { MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2 } } else { MuxCodec::MpegAudio };
+    let audio = if format == MuxFormat::Ps { MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2, bits: 16 } } else { MuxCodec::MpegAudio };
     let mut m = Muxer::new(Vec::new(), format, &[MuxCodec::Mpeg2Video, audio], 20_000_000).unwrap();
     // DTS: the decode position, one frame behind (B pictures reorder by one anchor)
     for p in &packets {
@@ -85,10 +85,7 @@ impl Fixture {
         MpegCopySource { file: &self.file, bytes: &self.bytes, video: self.video, audio: true }
     }
     fn stream_format(&self) -> StreamFormat {
-        let data = self.file.read_unit(&self.bytes, self.video, 0).unwrap();
-        let mut dec = cfa4_mpeg2v::Decoder::new();
-        let _ = dec.decode(&data, 0);
-        mpeg2_stream_format(dec.sequence().unwrap())
+        mpeg2_source_format(&self.file, &self.bytes, self.video).unwrap()
     }
     /// Plan presented pictures `[from, to)`.
     fn plan(&self, from: i64, to: i64, mode: CutMode) -> SmartCutPlan {

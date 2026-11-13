@@ -2,9 +2,10 @@
 //!
 //! - Video: H.264 / AVC-Intra (Annex B byte stream, our decoder), MPEG-2 (D-10 / IMX, XDCAM HD /
 //!   HD422; our decoder), VC-3 (DNxHD/DNxHR) and ProRes through the decoder factories, JPEG 2000
-//!   (broadcast and DCP picture tracks, X'Y'Z' included; [`crate::j2k`]). Other codings (DV,
-//!   MPEG-4 visual…) are identified and reported as unsupported; the file still opens so its audio
-//!   can be used.
+//!   (broadcast and DCP picture tracks, X'Y'Z' included; [`crate::j2k`]), DV, uncompressed
+//!   pictures (ST 384, unpacked by `cfa4_mxf::uncompressed`; 8-bit R'G'B'(A) as RGBA, deeper
+//!   R'G'B' as BT.709 Y'CbCr 4:4:4). Other codings (MPEG-4 visual…) are identified and reported
+//!   as unsupported; the file still opens so its audio can be used.
 //! - Presentation order: the index table's temporal offsets; for AVC whose index marks B pictures
 //!   but carries no temporal offsets, the picture order counts of the slice headers (8.2.1).
 //! - Audio: every PCM sound track (Broadcast Wave / AES3, ST 382; ST 331 AES3 elements in D-10)
@@ -12,6 +13,8 @@
 //!   (IAB, ST 2098-2) track of a DCP or IMF package is decoded with `cfa4-iab` and rendered to
 //!   7.1 (L R C LFE Lrs Rrs Lss Rss).
 //! - Start timecode: the material package's timecode track.
+//! - OP-Atom clips over several files (Avid, P2): [`MxfSource::open_group`] opens the picture
+//!   file and the sound files of one clip as one source (the engine finds them by material package).
 
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -58,8 +61,14 @@ pub struct MxfSource {
     mpeg2_header: Vec<u8>,
     /// How the JPEG 2000 picture track's components are read.
     j2k_hints: crate::j2k::J2kHints,
-    /// Sound tracks combined into one stream: (track, first stored sample frame).
-    atracks: Vec<(usize, u64)>,
+    /// Uncompressed pictures (ST 384): the stored layout, the descriptor and the frames' colour.
+    raw: Option<(cfa4_mxf::uncompressed::Layout, cfa4_mxf::PictureInfo, cfa4_color::ColorInfo)>,
+    /// The other OP-Atom files of the clip (ST 390: one essence track per file, one material
+    /// package): sound tracks may live there. Member 0 is `bytes`/`file`, member `k` is
+    /// `companions[k - 1]`.
+    companions: Vec<(crate::Src, MxfFile)>,
+    /// Sound tracks combined into one stream: (member, track, first stored sample frame).
+    atracks: Vec<(usize, usize, u64)>,
     /// Presented sample frames.
     aframes: u64,
     /// An IAB track rendered to loudspeakers, when there is no PCM.
@@ -318,22 +327,54 @@ impl MxfSource {
 
     /// Open from a random-access reader: only the KLV headers, metadata and index are read now.
     pub fn open_reader(name: &str, reader: cfa4_media::SharedReader) -> crate::Result<Self> {
-        let bytes = crate::Src(reader);
-        let file = cfa4_mxf::open(&bytes).map_err(|e| match e {
-            cfa4_mxf::Error::Unsupported(s) => CodecError::Unsupported(format!("MXF: {s}")),
-            other => CodecError::Container(other.to_string()),
-        })?;
-        for w in &file.warnings {
-            log::warn!("{name}: {w}");
+        Self::open_group(name, vec![reader], 0)
+    }
+
+    /// Open the OP-Atom files of one clip (ST 390: each file holds one essence track; the files
+    /// share the material package) as one source: the picture from the file that has one, and the
+    /// PCM sound tracks of every file, in the order given, as one multichannel stream. Reader
+    /// `asked` is the file asked for: it must open; a companion that does not is skipped.
+    pub fn open_group(name: &str, readers: Vec<cfa4_media::SharedReader>, asked: usize) -> crate::Result<Self> {
+        let mut members: Vec<(crate::Src, MxfFile)> = Vec::new();
+        for (i, reader) in readers.into_iter().enumerate() {
+            let bytes = crate::Src(reader);
+            match cfa4_mxf::open(&bytes) {
+                Ok(f) => {
+                    for w in &f.warnings {
+                        log::warn!("{name}: {w}");
+                    }
+                    members.push((bytes, f));
+                }
+                Err(e) if i == asked => {
+                    return Err(match e {
+                        cfa4_mxf::Error::Unsupported(s) => CodecError::Unsupported(format!("MXF: {s}")),
+                        other => CodecError::Container(other.to_string()),
+                    });
+                }
+                Err(e) => log::warn!("{name}: companion OP-Atom file {i} skipped: {e}"),
+            }
         }
+        let primary = members.iter().position(|(_, f)| f.track_of_kind(TrackKind::Picture).is_some()).unwrap_or(0);
+        if primary >= members.len() {
+            return Err(CodecError::Container("MXF: no file to open".into()));
+        }
+        let (bytes, file) = members.remove(primary);
+        let companions = members;
         let vtrack = file.track_of_kind(TrackKind::Picture);
-        let atracks: Vec<usize> = file
-            .tracks
-            .iter()
+        let pcm_tracks = |f: &MxfFile| -> Vec<usize> {
+            f.tracks
+                .iter()
+                .enumerate()
+                .filter(|(_, t)| t.kind == TrackKind::Sound && !t.chunks.is_empty() && t.sound_format != cfa4_mxf::SoundFormat::Other)
+                .map(|(i, _)| i)
+                .collect()
+        };
+        let atracks: Vec<(usize, usize)> = std::iter::once(&file)
+            .chain(companions.iter().map(|c| &c.1))
             .enumerate()
-            .filter(|(_, t)| t.kind == TrackKind::Sound && !t.chunks.is_empty() && t.sound_format != cfa4_mxf::SoundFormat::Other)
-            .map(|(i, _)| i)
+            .flat_map(|(m, f)| pcm_tracks(f).into_iter().map(move |t| (m, t)))
             .collect();
+        let member_file = |m: usize| if m == 0 { Some(&file) } else { companions.get(m - 1).map(|c| &c.1) };
         // IAB, when there is no PCM: its first frame gives the rates
         let iab = if atracks.is_empty() {
             file.tracks.iter().enumerate().filter(|(_, t)| t.codec == Codec::Iab && !t.samples.is_empty()).find_map(|(i, t)| {
@@ -366,6 +407,7 @@ impl MxfSource {
         let mut explicit_color = None;
         let mut mpeg2_header = Vec::new();
         let mut j2k_hints = crate::j2k::J2kHints::default();
+        let mut raw = None;
         if let Some(vi) = vtrack {
             let t = &file.tracks[vi];
             let p = t.picture.clone().unwrap_or_default();
@@ -412,8 +454,12 @@ impl MxfSource {
                     }
                     (crate::j2k::components(&h, j2k_hints), h)
                 });
+            // DV: format, coded size, sampling, aspect and colour are in the first frame's header and VAUX packs
+            let dv = (t.codec == Codec::Dv).then(|| file.read_sample(&bytes, vi, 0).ok()).flatten().and_then(|s| crate::video::dv_stream_info(&s));
             let (w, h) = match (&mpeg, &j2k) {
                 (Some((info, _, _)), _) => (info.width, info.height),
+                // DVCPRO HD descriptors give the display size (1920x1080); frames are coded smaller
+                _ if dv.as_ref().is_some_and(|d| d.profile.is_supported()) => dv.as_ref().map_or((0, 0), |d| (d.profile.width, d.profile.height)),
                 (_, Some((_, hd))) => (hd.width(), if j2k_hints.separate_fields { hd.height().saturating_mul(2) } else { hd.height() }),
                 _ => (p.frame_width(), p.frame_height()),
             };
@@ -425,8 +471,6 @@ impl MxfSource {
             } else {
                 (1, 1)
             };
-            // DV: format, sampling, aspect and colour are in the first frame's header and VAUX packs
-            let dv = (t.codec == Codec::Dv).then(|| file.read_sample(&bytes, vi, 0).ok()).flatten().and_then(|s| crate::video::dv_stream_info(&s));
             let codec = match t.codec {
                 Codec::Dv if dv.is_some() => dv.as_ref().map(|d| d.codec.clone()).unwrap_or_default(),
                 Codec::Vc3 => file
@@ -438,6 +482,17 @@ impl MxfSource {
                 Codec::ProRes { profile } => prores_name(profile).into(),
                 c @ Codec::Avc { .. } => c.name().into(),
                 Codec::Mpeg2 if mpeg.is_some() => mpeg.as_ref().map(|m| m.0.codec_name()).unwrap_or_default(),
+                Codec::Uncompressed => match cfa4_mxf::uncompressed::Layout::of(&p) {
+                    Ok(l) => {
+                        let name = l.name();
+                        raw = Some((l, p.clone(), cfa4_color::ColorInfo::REC709));
+                        name
+                    }
+                    Err(e) => {
+                        unsupported = Some(e.to_string());
+                        "Uncompressed (unsupported)".into()
+                    }
+                },
                 Codec::Jpeg2000 => match &j2k {
                     Some((Ok(_), hd)) if hd.digital_cinema() => "JPEG 2000 (digital cinema)".into(),
                     Some((Ok(_), _)) => "JPEG 2000".into(),
@@ -492,6 +547,39 @@ impl MxfSource {
                 color.range = cfa4_color::Range::Full;
                 explicit_color = Some(color);
             }
+            let mut has_alpha = p.alpha_depth > 0;
+            if let Some((l, _, _)) = &raw {
+                let chroma = match l.subsampling() {
+                    (2, 2) => "4:2:0",
+                    (2, 1) => "4:2:2",
+                    _ => "4:4:4",
+                };
+                pixel_format = if l.xyz() {
+                    format!("XYZ {}-bit", l.depth())
+                } else if l.rgb() {
+                    format!("{} {}-bit", if l.alpha() { "RGBA" } else { "RGB" }, l.depth())
+                } else {
+                    format!("YUV {chroma} {}-bit", l.depth())
+                };
+                has_alpha = l.alpha();
+                // the frames carry their colour: the descriptor's colorimetry; R'G'B' deeper than
+                // 8 bits becomes video-range BT.709 Y'CbCr 4:4:4
+                let s = descriptor_colorimetry(&p);
+                if l.xyz() {
+                    // decoded to P3-D65 R'G'B' (`raw_frame`), like DCP JPEG 2000 pictures
+                    color =
+                        cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt709, primaries: cfa4_color::Primaries::P3D65, ..cfa4_color::ColorInfo::REC709 };
+                } else if l.rgb() {
+                    color = cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt709, ..cfa4_color::ColorInfo::REC709 };
+                } else if let Some(m) = s.matrix {
+                    color.matrix = m;
+                }
+                if !l.xyz() {
+                    color.transfer = s.transfer.unwrap_or(color.transfer);
+                    color.primaries = s.primaries.unwrap_or(color.primaries);
+                }
+                explicit_color = None;
+            }
             let mut par = par;
             if let Some(d) = &dv {
                 pixel_format = d.pixel_format.clone();
@@ -504,6 +592,9 @@ impl MxfSource {
             }
             let secs = vcount as f64 / rate.as_f64().max(1e-9);
             let bytes_total: u64 = t.samples.iter().map(|s| s.size as u64).sum();
+            if let Some(r) = raw.as_mut() {
+                r.2 = color;
+            }
             video = Some(VideoStreamInfo {
                 width: w,
                 height: h,
@@ -512,7 +603,7 @@ impl MxfSource {
                 codec,
                 pixel_format,
                 color,
-                has_alpha: p.alpha_depth > 0,
+                has_alpha,
                 bitrate: (secs > 0.0).then(|| (bytes_total as f64 * 8.0 / (t.samples.len().max(1) as f64 / rate.as_f64().max(1e-9))) as u64),
                 hdr: None,
             });
@@ -521,12 +612,13 @@ impl MxfSource {
         let mut audio = None;
         let mut combined = Vec::new();
         let mut aframes = u64::MAX;
-        if let Some(&a0) = atracks.first() {
-            let si0 = file.tracks[a0].sound.clone().unwrap_or_default();
+        if let Some(t0) = atracks.first().and_then(|&(m, t)| member_file(m)?.tracks.get(t)) {
+            let si0 = t0.sound.clone().unwrap_or_default();
+            let codec0 = t0.codec.name();
             let rate = si0.sample_rate;
             let mut channels: u32 = 0;
-            for &ai in &atracks {
-                let t = &file.tracks[ai];
+            for &(m, ai) in &atracks {
+                let Some(t) = member_file(m).and_then(|f| f.tracks.get(ai)) else { continue };
                 let Some(si) = t.sound.as_ref() else { continue };
                 if si.sample_rate != rate {
                     continue;
@@ -542,17 +634,11 @@ impl MxfSource {
                     return Err(CodecError::Unsupported(format!("MXF: combined audio exceeds {} channels", cfa4_media::MAX_AUDIO_CHANNELS)));
                 }
                 channels = next;
-                combined.push((ai, first));
+                combined.push((m, ai, first));
             }
             let sr = if rate.is_valid() { (rate.num as f64 / rate.den as f64).round() as u32 } else { 48_000 };
             if let Ok((sr, channels)) = cfa4_media::bounded_audio_dimensions(sr, channels) {
-                audio = Some(AudioStreamInfo {
-                    sample_rate: sr,
-                    channels,
-                    codec: file.tracks[a0].codec.name().into(),
-                    bits_per_sample: Some(si0.bits),
-                    speakers: Vec::new(),
-                });
+                audio = Some(AudioStreamInfo { sample_rate: sr, channels, codec: codec0.into(), bits_per_sample: Some(si0.bits), speakers: Vec::new() });
             }
         }
         if let Some(ia) = &iab {
@@ -580,9 +666,13 @@ impl MxfSource {
             duration,
             video,
             audio_streams: audio.into_iter().collect(),
-            container: format!("MXF {}", file.operational_pattern.name()),
+            container: if companions.is_empty() {
+                format!("MXF {}", file.operational_pattern.name())
+            } else {
+                format!("MXF {} ({} files)", file.operational_pattern.name(), companions.len() + 1)
+            },
             start_timecode: None,
-            file_size: Some(bytes.0.len()),
+            file_size: Some(companions.iter().fold(bytes.0.len(), |n, c| n.saturating_add(c.0.0.len()))),
         };
         info.start_timecode = file.timecode.as_ref().map(|tc| start_frames(tc, info.frame_rate()));
         Ok(Self {
@@ -597,7 +687,9 @@ impl MxfSource {
             unsupported,
             mpeg2_header,
             j2k_hints,
+            raw,
             atracks: combined,
+            companions,
             aframes,
             iab,
             file,
@@ -608,6 +700,83 @@ impl MxfSource {
     pub fn file(&self) -> &MxfFile {
         &self.file
     }
+}
+
+/// Uncompressed pictures (ST 384): every edit unit unpacked by [`cfa4_mxf::uncompressed`].
+struct RawDecoder {
+    layout: cfa4_mxf::uncompressed::Layout,
+    info: cfa4_mxf::PictureInfo,
+    color: cfa4_color::ColorInfo,
+}
+
+impl VideoDecoder for RawDecoder {
+    fn decode(&mut self, sample: &[u8], pts: i64) -> crate::Result<Vec<crate::video::DecodedFrame>> {
+        let pic = cfa4_mxf::uncompressed::decode(&self.layout, &self.info, sample).map_err(|e| match e {
+            cfa4_mxf::Error::Unsupported(s) => CodecError::Unsupported(s),
+            other => CodecError::Decode(other.to_string()),
+        })?;
+        Ok(vec![crate::video::DecodedFrame { pts, frame: raw_frame(pic, self.color), draft: false }])
+    }
+    fn flush(&mut self) -> Vec<crate::video::DecodedFrame> {
+        Vec::new()
+    }
+    fn reset(&mut self) {}
+    fn name(&self) -> &str {
+        "CFA4 uncompressed"
+    }
+    fn intra_only(&self) -> bool {
+        true
+    }
+    fn is_random_access(&self, _sample: &[u8]) -> Option<bool> {
+        Some(true)
+    }
+}
+
+/// An unpacked uncompressed picture as a [`VideoFrame`] cut to its display rectangle: Y'CbCr as
+/// stored (samples under 8 bits widened to 8), 8-bit R'G'B'(A) as RGBA, deeper R'G'B' as
+/// video-range BT.709 Y'CbCr 4:4:4 with straight alpha.
+fn raw_frame(pic: cfa4_mxf::uncompressed::Picture, color: cfa4_color::ColorInfo) -> VideoFrame {
+    use cfa4_frame::{Chroma, PixelData, Region};
+    let (w, h) = (pic.width, pic.height);
+    let [mut p0, mut p1, mut p2] = pic.planes;
+    if pic.xyz {
+        // DCDM X'Y'Z' (ST 428-1): to P3-D65 R'G'B', as the JPEG 2000 path does
+        crate::j2k::xyz_to_rgb(&mut p0, &mut p1, &mut p2, pic.depth.clamp(1, 16));
+    }
+    let mut alpha = pic.alpha;
+    let mut bits = pic.depth;
+    if bits < 8 {
+        for p in [&mut p0, &mut p1, &mut p2].into_iter().chain(alpha.as_mut()) {
+            p.iter_mut().for_each(|v| *v <<= 8 - bits);
+        }
+        bits = 8;
+    }
+    let data = if pic.rgb && bits == 8 {
+        let mut rgba = Vec::with_capacity(p0.len() * 4);
+        for (i, ((r, g), b)) in p0.iter().zip(&p1).zip(&p2).enumerate() {
+            let a = alpha.as_ref().and_then(|a| a.get(i)).map_or(255, |&a| a as u8);
+            rgba.extend_from_slice(&[*r as u8, *g as u8, *b as u8, a]);
+        }
+        PixelData::Rgba8(Arc::new(rgba))
+    } else {
+        if pic.rgb {
+            crate::j2k::rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits);
+        }
+        let chroma = match pic.subsampling {
+            (2, 2) => Chroma::C420,
+            (2, 1) => Chroma::C422,
+            _ => Chroma::C444,
+        };
+        if bits == 8 {
+            let to8 = |p: Vec<u16>| Arc::new(p.into_iter().map(|v| v as u8).collect::<Vec<u8>>());
+            PixelData::Yuv8 { planes: [to8(p0), to8(p1), to8(p2)], chroma, alpha: alpha.map(to8) }
+        } else {
+            PixelData::Yuv16 { planes: [Arc::new(p0), Arc::new(p1), Arc::new(p2)], chroma, bits, alpha: alpha.map(Arc::new) }
+        }
+    };
+    let frame = VideoFrame { width: w, height: h, data, color, par: (1, 1), pts: Tick::ZERO, layout: Default::default() };
+    let (x, y, dw, dh) = pic.display;
+    frame.cropped(Region { x: x as usize, y: y as usize, w: dw as usize, h: dh as usize })
 }
 
 fn gcd(a: u64, b: u64) -> u64 {
@@ -654,6 +823,10 @@ impl VideoSamples for MxfVideo<'_> {
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
             Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
             Codec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
+            Codec::Uncompressed => match &self.src.raw {
+                Some((layout, info, color)) => Ok(Box::new(RawDecoder { layout: layout.clone(), info: info.clone(), color: *color })),
+                None => Err(CodecError::Unsupported("uncompressed video in MXF without a known layout".into())),
+            },
             other => Err(CodecError::Unsupported(format!("{} video in MXF", other.name()))),
         }
     }
@@ -717,15 +890,17 @@ impl MediaSource for MxfSource {
             }
         } else if b > a {
             let mut c0 = 0;
-            for &(ti, first) in &self.atracks {
-                let pcm = self.file.read_pcm(&self.bytes, ti, first + a as u64, (b - a) as usize).map_err(|e| MediaError::Decode(e.to_string()))?;
+            for &(m, ti, first) in &self.atracks {
+                let (bytes, file) =
+                    if m == 0 { (&self.bytes, &self.file) } else { self.companions.get(m - 1).map(|c| (&c.0, &c.1)).ok_or(MediaError::NoStream("audio"))? };
+                let pcm = file.read_pcm(bytes, ti, first + a as u64, (b - a) as usize).map_err(|e| MediaError::Decode(e.to_string()))?;
                 for (k, p) in pcm.into_iter().enumerate() {
                     if let Some(dst) = src.get_mut(c0 + k) {
                         let at = (a - s0) as usize;
                         dst[at..at + p.len()].copy_from_slice(&p);
                     }
                 }
-                c0 += self.file.tracks[ti].sound.as_ref().map_or(1, |s| s.channels.max(1) as usize);
+                c0 += file.tracks.get(ti).and_then(|t| t.sound.as_ref()).map_or(1, |s| s.channels.max(1) as usize);
             }
         }
         if exact {
@@ -799,5 +974,74 @@ mod tests {
         assert_eq!((s.transfer, s.primaries, s.matrix), (Some(Transfer::Pq), Some(Primaries::Bt2020), Some(Matrix::Bt2020Ncl)));
         let p = cfa4_mxf::PictureInfo { transfer_characteristic: label(1, 1, 0x7F), ..Default::default() };
         assert_eq!(descriptor_colorimetry(&p), crate::j2k::Signalled::default());
+    }
+
+    fn picture(depth: u32, rgb: bool, planes: [Vec<u16>; 3], alpha: Option<Vec<u16>>) -> cfa4_mxf::uncompressed::Picture {
+        cfa4_mxf::uncompressed::Picture { width: 2, height: 1, depth, subsampling: (1, 1), rgb, xyz: false, planes, alpha, display: (0, 0, 2, 1) }
+    }
+
+    #[test]
+    fn uncompressed_rgb_frames() {
+        use cfa4_frame::PixelData;
+        // 8-bit R'G'B'A stays RGBA
+        let f = raw_frame(picture(8, true, [vec![1, 2], vec![3, 4], vec![5, 6]], Some(vec![7, 8])), cfa4_color::ColorInfo::REC709);
+        let PixelData::Rgba8(px) = &f.data else { panic!("RGBA expected") };
+        assert_eq!(**px, vec![1, 3, 5, 7, 2, 4, 6, 8]);
+        // without alpha: opaque
+        let f = raw_frame(picture(8, true, [vec![1, 2], vec![3, 4], vec![5, 6]], None), cfa4_color::ColorInfo::REC709);
+        let PixelData::Rgba8(px) = &f.data else { panic!("RGBA expected") };
+        assert_eq!(px[3], 255);
+        // 10-bit white and black become video-range Y'CbCr
+        let f = raw_frame(picture(10, true, [vec![1023, 0], vec![1023, 0], vec![1023, 0]], None), cfa4_color::ColorInfo::REC709);
+        let PixelData::Yuv16 { planes, bits: 10, chroma: cfa4_frame::Chroma::C444, .. } = &f.data else { panic!("10-bit 4:4:4 expected") };
+        assert_eq!((planes[0][0], planes[0][1], planes[1][0], planes[2][1]), (940, 64, 512, 512));
+        // under 8 bits widens to 8; the display rectangle crops
+        let mut p = picture(4, false, [vec![15, 1], vec![8, 8], vec![8, 8]], None);
+        p.display = (1, 0, 1, 1);
+        let f = raw_frame(p, cfa4_color::ColorInfo::REC709);
+        let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit Y'CbCr expected") };
+        assert_eq!((f.width, f.height, planes[0][0], planes[1][0]), (1, 1, 16, 128));
+    }
+
+    /// An Avid / P2 style clip: a picture file and two mono sound files sharing the material
+    /// package, opened as one source with the sound files' channels in the order given.
+    #[test]
+    fn op_atom_files_of_one_clip_open_as_one_source() {
+        use cfa4_mxf::{FrameInfo, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc, Rational, Umid, WriterConfig, write_opatom_pcm};
+        let clip = PackageIds::from_seed("clip", "Clip");
+        let mut cfg = WriterConfig::new(Pattern::OpAtom, Rational::new(25, 1), PackageIds { file: Umid::from_seed(b"v1"), ..clip.clone() });
+        cfg.picture = Some(PictureDesc::new(PictureCoding::Vc3 { cid: 1272 }, 64, 36));
+        let mut w = MxfWriter::new(std::io::Cursor::new(Vec::new()), cfg).unwrap();
+        for i in 0..10u8 {
+            let mut f = vec![0x00, 0x00, 0x02, 0x80, 0x01];
+            f.extend(std::iter::repeat_n(i, 600));
+            w.push_picture(&f, FrameInfo::intra()).unwrap();
+        }
+        let v: Arc<[u8]> = w.finish().unwrap().into_inner().into();
+        let pcm = |seed: &[u8], value: i32| -> Arc<[u8]> {
+            let ids = PackageIds { file: Umid::from_seed(seed), ..clip.clone() };
+            let opts = OpAtomPcm { sample_rate: 48_000, bits: 16, channels: 1, edit_rate: Some(Rational::new(25, 1)), ids, timecode: None };
+            write_opatom_pcm(&opts, &vec![value; 19_200]).unwrap().into()
+        };
+        let (a1, a2) = (pcm(b"a1", 8192), pcm(b"a2", -16384));
+        let reader = |b: &Arc<[u8]>| Arc::new(cfa4_media::reader::MemReader(b.clone())) as cfa4_media::SharedReader;
+        // asked for the second sound file; given in name order A01, A02, V01
+        let src = MxfSource::open_group("clipA02.mxf", vec![reader(&a1), reader(&a2), reader(&v)], 1).unwrap();
+        let info = src.info();
+        assert_eq!(info.kind, MediaKind::Movie);
+        assert_eq!(info.container, "MXF OP-Atom (3 files)");
+        assert_eq!(info.video.as_ref().map(|v| (v.width, v.height)), Some((64, 36)));
+        let a = info.audio().unwrap();
+        assert_eq!((a.sample_rate, a.channels), (48_000, 2));
+        assert_eq!(info.duration, FrameRate::FPS_25.tick_of(10));
+        let buf = src.audio(100, 4, 48_000).unwrap();
+        assert_eq!(buf.channels[0], vec![0.25; 4]);
+        assert_eq!(buf.channels[1], vec![-0.5; 4]);
+        // a damaged companion is skipped; a damaged asked-for file fails
+        let junk: Arc<[u8]> = Arc::from(vec![0u8; 100]);
+        let src = MxfSource::open_group("clipV01.mxf", vec![reader(&junk), reader(&v), reader(&a2)], 1).unwrap();
+        assert_eq!(src.info().audio().unwrap().channels, 1);
+        assert!(MxfSource::open_group("x.mxf", vec![reader(&junk), reader(&v)], 0).is_err());
+        assert!(MxfSource::open_group("x.mxf", Vec::new(), 0).is_err());
     }
 }

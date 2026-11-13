@@ -36,12 +36,14 @@ szabadalommal védett formátumot.
 | H.264 / AVC | kódolás | `crates/h264enc`; `crates/platform` (NVENC); x264 (FFmpeg-háttér) | alap; x264: kiegészítő | függőben | | |
 | H.265 / HEVC (Main, Main 10, RExt 4:2:2 / 4:4:4, 12 bit) | dekódolás | `crates/hevc`; `crates/platform` (VA-API, NVDEC); FFmpeg-háttér | alap | függőben | | |
 | H.265 / HEVC | kódolás | `crates/hevc` (szoftveres, Main / Main 10); `crates/platform` (NVENC); x265 (FFmpeg-háttér) | alap; x265: kiegészítő | függőben | | |
+| LCEVC (MPEG-5 Part 2, ISO/IEC 23094-2) | csak felismerés (H.264 / HEVC SEI, MP4 `lvc1`, TS 0x36; a javítóréteget nem dekódolja) | `crates/lcevc` | alap | függőben | | |
 | MPEG-1 / MPEG-2 videó (H.262) | dekódolás | `crates/mpeg2v`; FFmpeg-háttér | alap | függőben | | |
 | MPEG-4 Part 2 (Visual) | dekódolás, kódolás | FFmpeg-háttér | alap | függőben | | |
 | VC-1 / WMV | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
-| DV / DVCPRO 25 (IEC 61834-2, SMPTE 314M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
+| DV / DVCPRO 25 / 50, DVCPRO HD (IEC 61834-2, SMPTE 314M, SMPTE 370M) | dekódolás | `crates/dv`; FFmpeg-háttér | alap | függőben | | |
 | AV1 | dekódolás | `crates/av1`; FFmpeg-háttér (dav1d) | alap | függőben | | |
 | AV1 | kódolás | tervezett (rav1e) | – | függőben | | |
+| AV2 | bitfolyam-elemzés (OBU, sequence header); dekódolás csak fejlesztői kapcsolóval (AV2-LAB) | `crates/av2`; `cfa4-av2-decode` segédprogram (dav2d, külön folyamat, ADR 0010) | alap | függőben | | |
 | VP8 | dekódolás | `crates/vp8`; FFmpeg-háttér (libvpx) | alap | függőben | | |
 | VP8 | kódolás | FFmpeg-háttér (libvpx) | alap | függőben | | |
 | VP9 | dekódolás | `crates/vp9`; FFmpeg-háttér (libvpx) | alap | függőben | | |
@@ -56,6 +58,11 @@ szabadalommal védett formátumot.
 | HEIF / HEIC állókép | olvasás (a képelemek HEVC-dekódolása a `crates/hevc` sorában) | `crates/heif` | alap | függőben | | |
 | Animált WebP | dekódolás (VP8 / VP8L) | `crates/media` (a VP8-dekódolás a `crates/vp8` sorában) | alap | függőben | | |
 | DNG / CinemaDNG (lossless JPEG) | dekódolás | `crates/dng` | alap | függőben | | |
+| FFV1 (RFC 9043) | dekódolás | `crates/ffv1` | alap | függőben | | |
+| SMPTE VC-2 (ST 2042-1) | dekódolás; QuickTime / MP4, AVI és Matroska olvasása | `crates/dirac` (a BBC VC-2 referencia-pszeudokódjának portja) | alap | függőben | | |
+| Huffyuv (HFYU) | dekódolás | `crates/huffyuv` | alap | függőben | | |
+| Ut Video | dekódolás | `crates/utvideo` | alap | függőben | | |
+| Hap (Hap, Hap Alpha, Hap Q, Hap Q Alpha, Hap Alpha-Only) | dekódolás | `crates/hap` | alap | függőben | | |
 
 ## Hang
 
@@ -75,6 +82,10 @@ szabadalommal védett formátumot.
 | FLAC | kódolás | `crates/flac` | alap | függőben | | |
 | Vorbis | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
 | WMA | dekódolás | FFmpeg-háttér; GStreamer | alap | függőben | | |
+| Speex | dekódolás; Ogg Speex (`.spx`) olvasása | `crates/speex` (a libspeex portja) | alap | függőben | | |
+| SMPTE LTC időkód (ST 12-1) és MIDI Timecode (MTC) | dekódolás, kódolás (hangjel, MIDI-üzenetek) | `crates/tcsync` | alap | függőben | | |
+| G.711 (µ-law, A-law), G.722, IMA ADPCM, Microsoft ADPCM | dekódolás | `crates/adpcm` | alap | függőben | | |
+| AMR-NB, AMR-WB | dekódolás | `crates/amr` (az opencore-amr portja) | alap | függőben | | |
 
 ## Konténerek
 
@@ -84,6 +95,7 @@ szabadalommal védett formátumot.
 | Matroska / WebM | olvasás, írás | `crates/matroska` | alap | függőben | | |
 | MXF | olvasás, írás | `crates/mxf` | alap | függőben | | |
 | MPEG-2 TS / PS (AVCHD, VOB) | olvasás | `crates/mpegts` | alap | függőben | | |
+| SMPTE ST 2110-20 (tömörítetlen kép RTP-n, RFC 4175), RTP, SDP | csomagolás, bontás | `crates/st2110` | alap | függőben | | |
 | AVI / OpenDML | olvasás | `crates/avi`; FFmpeg-háttér | alap | függőben | | |
 | Ogg | olvasás | `crates/ogg` | alap | függőben | | |
 | ASF | olvasás | FFmpeg-háttér; GStreamer | alap | függőben | | |

@@ -1,5 +1,6 @@
-//! WP-09c: `export.analyze`, `export.plan` and `export.start` with MPEG-2 program and transport
-//! stream sources (lossless GOP copies with their audio).
+//! WP-09c/e: `export.analyze`, `export.plan` and `export.start` with MPEG-2 program and transport
+//! stream sources (lossless GOP copies with their audio, and frame-accurate cuts that re-encode the
+//! boundary pictures).
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
@@ -41,7 +42,7 @@ fn source(format: MuxFormat) -> Vec<u8> {
         packets.extend(enc.encode(&Input { y: &y, cb: &c, cr: &c, y_stride: w, c_stride: w / 2 }).unwrap());
     }
     packets.extend(enc.flush().unwrap());
-    let audio = if format == MuxFormat::Ps { MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2 } } else { MuxCodec::MpegAudio };
+    let audio = if format == MuxFormat::Ps { MuxCodec::LpcmDvd { sample_rate: 48_000, channels: 2, bits: 16 } } else { MuxCodec::MpegAudio };
     let mut m = Muxer::new(Vec::new(), format, &[MuxCodec::Mpeg2Video, audio], 20_000_000).unwrap();
     for p in &packets {
         let (pts, dts) = (p.index as i64 * FRAME, p.dts * FRAME);
@@ -123,11 +124,9 @@ fn a_gop_cut_of_an_mpeg_source_is_copied_with_its_audio_and_verified() {
 fn mpeg_cuts_the_executor_cannot_run_are_refused_before_writing() {
     let (mut s, files) = session();
     let run = |s: &mut Session, p: Value| s.execute("export.start", p).unwrap_err().to_string();
-    // frame accurate: MPEG-2 boundaries cannot be re-encoded yet; the plan says so
-    let p = json!({"path": "clip.ts", "in": frame(5), "out": frame(30), "mode": "frame-accurate", "output": "x.ts", "confirm": true});
-    let r = s.execute("export.plan", p.clone()).unwrap();
-    assert_eq!(r["boundaryReencode"]["ready"], false, "{r}");
-    assert!(run(&mut s, p).contains("gop-boundary"));
+    // frame accurate: nothing is re-encoded without "confirm"
+    let p = json!({"path": "clip.ts", "in": frame(5), "out": frame(30), "mode": "frame-accurate", "output": "x.ts"});
+    assert!(run(&mut s, p).contains("\"confirm\": true"));
     // an MP4 or Matroska output: MPEG-2 is copied into program and transport streams only
     assert!(run(&mut s, json!({"path": "clip.ts", "in": frame(10), "out": frame(30), "output": "x.mp4"})).contains(".ts"));
     assert!(run(&mut s, json!({"path": "clip.ts", "in": frame(10), "out": frame(30), "output": "x.mkv"})).contains(".ts"));
@@ -162,4 +161,37 @@ fn a_project_mpeg_item_is_cut_on_its_marked_range() {
     let r = s.execute("export.start", json!({"item": item.0, "output": out})).unwrap();
     assert_eq!((r["verified"].as_bool(), r["report"]["samples"].as_u64()), (Some(true), Some(20)), "{r}");
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Frame accurate: the whole GOPs are copied, the boundary pictures re-encoded with CFA4's MPEG-2
+/// encoder, the result verified (decoded, PSNR measured) and the audio of the cut copied along.
+#[test]
+fn a_frame_accurate_mpeg_cut_re_encodes_its_boundaries_once_confirmed() {
+    let (mut s, files) = session();
+    for (path, output) in [("clip.ts", "fa.ts"), ("clip.mpg", "fa.mpg")] {
+        let p = json!({"path": path, "in": frame(5), "out": frame(33), "mode": "frame-accurate", "output": output, "confirm": true});
+        let r = s.execute("export.plan", p.clone()).unwrap();
+        assert_eq!(r["boundaryReencode"], json!({"ready": true, "problem": null}), "{r}");
+        assert_eq!(r["summary"]["requiresConfirmation"], true, "{r}");
+        assert_eq!(r["audio"]["tracks"].as_array().unwrap().len(), 1, "{r}");
+        let r = s.execute("export.start", p).unwrap();
+        assert_eq!(r["verified"], true, "{r}");
+        let report = &r["report"];
+        assert_eq!(report["samples"], 28, "{r}");
+        assert!(report["reencoded"].as_u64().unwrap() > 0 && report["copied"].as_u64().unwrap() >= 20, "{r}");
+        assert!(report["minPsnr"].as_f64().unwrap() >= 30.0, "{r}");
+        assert_eq!(r["audio"]["tracks"].as_array().unwrap().len(), 1, "{r}");
+        // the output is a stream Smart Cut reads again: 28 pictures, from an access point
+        let back = s.execute("export.analyze", json!({"path": output})).unwrap();
+        assert_eq!((back["codec"].as_str(), back["frames"].as_u64()), (Some("mpeg2-video"), Some(28)), "{back}");
+        assert!(files.0.lock().unwrap().contains_key(output));
+    }
+    // `crf` sets the quantiser of the re-encoded pictures: a coarser one measures lower
+    let fine = s.execute("export.plan", json!({"path": "clip.ts", "in": frame(5), "out": frame(33), "mode": "frame-accurate", "output": "c.ts"})).unwrap();
+    assert_eq!(fine["boundaryReencode"]["ready"], true);
+    let psnr = |s: &mut Session, crf: f64| {
+        let p = json!({"path": "clip.ts", "in": frame(5), "out": frame(33), "mode": "frame-accurate", "output": "c.ts", "confirm": true, "crf": crf});
+        s.execute("export.start", p).unwrap()["report"]["minPsnr"].as_f64().unwrap()
+    };
+    assert!(psnr(&mut s, 4.0) > psnr(&mut s, 51.0));
 }

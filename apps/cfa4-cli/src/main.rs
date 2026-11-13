@@ -33,8 +33,10 @@ macro_rules! out {
 mod args;
 mod codecs_cmd;
 mod probe;
+mod qc;
 mod serve;
 mod serve_graphics;
+mod serve_live;
 mod serve_lumetri;
 mod serve_media_browser;
 mod serve_multicam;
@@ -91,7 +93,7 @@ SUBCOMMANDS
   import <file>...              import media into the project
   export <out> [--preset name] [--format f] [--range r] [--start s --end s] [--settings json]
          [--gpu-rendering auto|off]
-         [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]
+         [--scale f] [--quality 0-100] [--no-audio] [--dash] [--queue] [--allow-offline]
                                 export the active sequence and wait for it to finish: with an
                                 export preset (`export --list-presets`; built-in or the user's), or
                                 a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|gif|wav|aiff|aac, guessed
@@ -99,7 +101,8 @@ SUBCOMMANDS
                                 range in seconds; --settings is ExportSettings JSON merged over the
                                 preset; --scale renders at a fraction of the frame size (0.5 =
                                 half); --quality 0-100 for the formats that take one; --no-audio
-                                leaves the sound out; --queue adds to the export queue and runs it
+                                leaves the sound out; --dash also writes a DASH manifest (.mpd)
+                                next to an HLS export; --queue adds to the export queue and runs it
                                 instead. Offline media (missing, made offline, unreadable) renders
                                 as placeholder frames: the export then lists it in `offlineMedia`,
                                 warns on stderr and exits 1, unless --allow-offline accepts it
@@ -109,6 +112,13 @@ SUBCOMMANDS
   probe <media> [--image-sequence]
                                 media info as JSON, with MXF / Ogg / BWF details; with
                                 --image-sequence <media> is the first numbered still of a sequence
+  qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json]
+     [--contact-sheet sheet.png] [--no-decode]
+                                media QC (docs/media-qc.md): input, integrity, audio and picture
+                                checks with a QC profile (default delivery-web) against an
+                                optional render plan; prints the cfa4-qc-report/1 JSON, or saves
+                                it with --out; --contact-sheet writes the frame overview PNG.
+                                Exit code: 0 PASS, 3 WARN, 4 FAIL, 5 INCOMPLETE
   bench-decode <media> [--frames N]
   settings schema [category]    the Settings schema (groups, categories, fields, values) as JSON
   settings get [key]            the saved preferences of the data directory, or one key
@@ -376,6 +386,21 @@ async fn cli() {
                 Err(e) => fail(e),
             }
         }
+        "qc" => {
+            let path = a.pos(1).unwrap_or_else(|| {
+                usage("qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json] [--contact-sheet sheet.png] [--no-decode]")
+            });
+            let report = qc::run(path, a.opt("--profile"), a.opt("--expect"), !a.flag("--no-decode"), a.opt("--contact-sheet")).unwrap_or_else(|e| fail(e));
+            match a.opt("--out") {
+                Some(out) => {
+                    qc::save(&report, out).unwrap_or_else(|e| fail(e));
+                    outln!("{}: {:?} ({out})", path, report.summary.verdict);
+                }
+                None => print(&a, &serde_json::to_value(&report).unwrap_or_default()),
+            }
+            let _ = std::io::Write::flush(&mut std::io::stdout());
+            std::process::exit(qc::exit_code(report.summary.verdict));
+        }
         "bench-decode" => {
             let path = a.pos(1).unwrap_or_else(|| usage("bench-decode <media>"));
             let n: i64 = a.opt("--frames").and_then(|v| v.parse().ok()).unwrap_or(120);
@@ -529,6 +554,9 @@ async fn cli() {
             }
             if a.flag("--no-audio") {
                 p["audio"] = json!(false);
+            }
+            if a.flag("--dash") {
+                p["dashManifest"] = json!(true);
             }
             if let Some(v) = a.opt("--gpu-rendering") {
                 p["gpuRendering"] = json!(v); // off | auto (validated by the export command)

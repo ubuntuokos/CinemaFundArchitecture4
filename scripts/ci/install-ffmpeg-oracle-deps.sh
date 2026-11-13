@@ -32,6 +32,16 @@ sudo apt-get install -y --no-install-recommends \
   libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
   libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils libjxl-tools \
   "${oracle_dev_packages[@]}"
+# RFC 4175 / ST 2110-20 oracle (cfa4-st2110 tests): gst-launch-1.0 with rtpvrawpay / rtpvrawdepay
+sudo apt-get install -y --no-install-recommends gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 # JPEG 2000 / HTJ2K oracles (the tests skip without them)
 sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
   || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
+# Speex reference encoder / decoder (speexenc, speexdec 1.2.1, built from source) for the Speex
+# oracle tests (they skip without them)
+bash "$(dirname "$0")/install-speex.sh" \
+  || echo "::warning::speex tools unavailable: Speex oracle tests skip"
+# AMR oracle `cfa4-amr-oracle` (opencore-amr + vo-amrwbenc, built from the pinned upstream tags;
+# the AMR oracle tests skip without it)
+bash "$(dirname "$0")/install-amr-oracle.sh" \
+  || echo "::warning::cfa4-amr-oracle build failed: the AMR oracle tests skip"

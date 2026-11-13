@@ -206,7 +206,7 @@ fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>, samp
             }
         }
     };
-    let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO };
+    let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
     Ok(Rgba { width: p.width, height: p.height, px: frame.to_rgba8() })
 }
 

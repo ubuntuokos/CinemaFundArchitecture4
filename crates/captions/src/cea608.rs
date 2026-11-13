@@ -177,6 +177,120 @@ pub fn encode_pac(row: usize, indent: usize) -> (u8, u8) {
     (b1, (if hi { 0x60 } else { 0x40 }) | attr)
 }
 
+// ---------------------------------------------------------------------------------------------
+// Line 21 waveform (CTA-608-E Annex A / 47 CFR §15.119(b))
+// ---------------------------------------------------------------------------------------------
+
+/// Bit period of the line 21 signal in luma samples of a 720-sample (13.5 MHz) active line:
+/// 13.5 MHz / (32 × fH), fH = 15 734.264 Hz.
+const BIT_SAMPLES_720: f64 = 26.8125;
+
+/// The line 21 waveform of the byte pair `(b1, b2)` (parity bits included as given) as `n`
+/// 10-bit luma samples of the active line: seven cycles of clock run-in from sample `start`, two
+/// logic-zero and one logic-one start bits, then the 16 data bits least significant first, at
+/// blanking (64) and 50 IRE (502) with softened edges. Used to test [`decode_line21`] and by
+/// writers of digitised vertical interval lines.
+pub fn line21_samples(b1: u8, b2: u8, n: usize, start: f64) -> Vec<u16> {
+    let w = BIT_SAMPLES_720 * n as f64 / 720.0;
+    let (lo, hi) = (64.0, 502.0);
+    let mut bits = vec![false, false, true];
+    for b in [b1, b2] {
+        bits.extend((0..8).map(|k| b >> k & 1 == 1));
+    }
+    let level = |t: f64| -> f64 {
+        let x = (t - start) / w;
+        if x < 0.0 {
+            return lo;
+        }
+        if x < 7.0 {
+            return lo + (hi - lo) * 0.5 * (1.0 - (2.0 * std::f64::consts::PI * x).cos());
+        }
+        let k = x - 7.0;
+        let at = |i: f64| -> f64 { if i >= 0.0 && bits.get(i as usize).copied().unwrap_or(false) { hi } else { lo } };
+        // raised-cosine transitions over a fifth of a bit around each boundary
+        let i = k.floor();
+        let frac = k - i;
+        let (cur, prev, next) = (at(i), at(i - 1.0), at(i + 1.0));
+        if frac < 0.1 {
+            let m = 0.5 + frac / 0.2;
+            prev + (cur - prev) * 0.5 * (1.0 - (std::f64::consts::PI * m).cos())
+        } else if frac > 0.9 {
+            let m = (frac - 0.9) / 0.2;
+            cur + (next - cur) * 0.5 * (1.0 - (std::f64::consts::PI * m).cos())
+        } else {
+            cur
+        }
+    };
+    (0..n).map(|i| level(i as f64).round().clamp(0.0, 1023.0) as u16).collect()
+}
+
+/// The byte pair of a digitised line 21 (CTA-608-E): `samples` are the luma samples of the
+/// active line (any count; the bit period scales with it), 10-bit or any other range. The
+/// decoder slices at the middle of the line's range, finds the clock run-in (at least five
+/// rising edges a bit period apart) and the logic-one start bit after it, and reads the 16 data
+/// bits at their centres. Returns the two bytes with their parity bits, or `None` when there is
+/// no line 21 signal or a byte fails its odd parity.
+pub fn decode_line21(samples: &[u16]) -> Option<(u8, u8)> {
+    let n = samples.len();
+    if n < 64 {
+        return None;
+    }
+    let w = BIT_SAMPLES_720 * n as f64 / 720.0;
+    let lo = *samples.iter().min()?;
+    let hi = *samples.iter().max()?;
+    if hi.saturating_sub(lo) < 32 {
+        return None;
+    }
+    let thr = (f64::from(lo) + f64::from(hi)) / 2.0;
+    // a box filter of about a sixth of a bit against noise
+    let r = ((w / 12.0) as usize).max(1);
+    let mut sum = vec![0f64; n + 1];
+    for (i, &v) in samples.iter().enumerate() {
+        sum[i + 1] = sum[i] + f64::from(v);
+    }
+    let y: Vec<f64> = (0..n).map(|i| (sum[(i + r + 1).min(n)] - sum[i.saturating_sub(r)]) / ((i + r + 1).min(n) - i.saturating_sub(r)) as f64).collect();
+    // rising mid-level crossings, interpolated between samples
+    let mut rises: Vec<f64> = Vec::new();
+    for i in 1..n {
+        let (a, b) = (y[i - 1], y[i]);
+        if a < thr && b >= thr {
+            rises.push(i as f64 - 1.0 + (thr - a) / (b - a));
+        }
+    }
+    let near = |gap: f64, want: f64, tol: f64| (gap - want * w).abs() <= tol * w;
+    // the clock run-in: five or more rising edges one bit period apart
+    let mut i = 0;
+    let last = loop {
+        let j = i + rises.get(i..)?.windows(2).take_while(|p| near(p[1] - p[0], 1.0, 0.25)).count();
+        if j - i >= 4 {
+            break j;
+        }
+        i = j + 1;
+        if i >= rises.len() {
+            return None;
+        }
+    };
+    let run_in_end = *rises.get(last)?;
+    // the logic-one start bit: about 2.75 bit periods after the last run-in edge
+    let start = *rises.iter().find(|&&r| r > run_in_end && near(r - run_in_end, 2.75, 0.6))?;
+    let bit = |k: usize| -> Option<bool> {
+        let c = start + w * (1.5 + k as f64);
+        Some(*y.get(c.round() as usize)? >= thr)
+    };
+    let mut bytes = [0u8; 2];
+    for (b, byte) in bytes.iter_mut().enumerate() {
+        for k in 0..8 {
+            if bit(b * 8 + k)? {
+                *byte |= 1 << k;
+            }
+        }
+    }
+    if bytes.iter().any(|b| b.count_ones() % 2 == 0) {
+        return None;
+    }
+    Some((bytes[0], bytes[1]))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,5 +325,44 @@ mod tests {
         assert!(matches!(encode_char('{'), Some(Encoded::Pair { b1: 0x13, b2: 0x29, .. })));
         assert!(matches!(encode_char('*'), Some(Encoded::Pair { b1: 0x12, b2: 0x28, .. })));
         assert_eq!(encode_char('漢'), None);
+    }
+}
+
+#[cfg(test)]
+mod line21_tests {
+    use super::*;
+
+    /// Waveforms made here decode at every line width and position, with noise, offsets and a
+    /// smaller range; lines without the signal, and damaged ones, give `None`, never a panic.
+    #[test]
+    fn line21_round_trip() {
+        let pairs = [(with_parity(0x14), with_parity(0x2c)), (with_parity(b'H'), with_parity(b'i')), (0x80, 0x80), (with_parity(0x7f), with_parity(0x01))];
+        for &(a, b) in &pairs {
+            // the 26 bit periods end inside the line, as they do in a real one (about 51.6 of 52.7 µs)
+            for (n, start) in [(720, 20.0), (720, 12.3), (1440, 30.0), (1920, 40.7), (704, 15.0)] {
+                let s = line21_samples(a, b, n, start);
+                assert_eq!(decode_line21(&s), Some((a, b)), "{a:02x} {b:02x} n {n} start {start}");
+                // noise of ±12 codes and a raised, compressed range (8-bit samples ≪ 2)
+                let noisy: Vec<u16> = s.iter().enumerate().map(|(i, &v)| (v / 2 + 200 + ((i * 7919) % 25) as u16).saturating_sub(12)).collect();
+                assert_eq!(decode_line21(&noisy), Some((a, b)), "noisy {a:02x} {b:02x} n {n}");
+                let eight: Vec<u16> = s.iter().map(|&v| v >> 2 << 2).collect();
+                assert_eq!(decode_line21(&eight), Some((a, b)));
+            }
+        }
+        // no signal, a flat line, a short line, a run-in only, a byte with even parity
+        assert_eq!(decode_line21(&vec![64; 720]), None);
+        assert_eq!(decode_line21(&[]), None);
+        assert_eq!(decode_line21(&[64, 940, 64]), None);
+        let mut run_in = line21_samples(0x80, 0x80, 720, 20.0);
+        for v in run_in.iter_mut().skip(20 + 8 * 27) {
+            *v = 64;
+        }
+        assert_eq!(decode_line21(&run_in), None);
+        assert_eq!(decode_line21(&line21_samples(0x14, 0x2c, 720, 20.0)), None, "even parity");
+        for cut in 0..200 {
+            let s = line21_samples(0x94, 0x2c, 720, 20.0);
+            let _ = decode_line21(&s[cut * 3..]);
+            let _ = decode_line21(&s[..720 - cut * 3]);
+        }
     }
 }

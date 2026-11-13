@@ -726,12 +726,15 @@ impl Cfa4App {
             if language == i18n::Language::Ja && !i18n::install_japanese_font(ctx) {
                 self.ui.language = i18n::Language::En;
                 self.ui.status = tl!("no Japanese font is installed on this system; the interface stays in English").into();
-            } else if language == i18n::Language::ZhCn && !i18n::chinese_font_available() {
+            } else if matches!(language, i18n::Language::ZhCn | i18n::Language::ZhHant) && !i18n::chinese_font_available() {
                 self.ui.language = i18n::Language::En;
                 self.ui.status = tl!("no Chinese font is installed on this system; the interface stays in English").into();
             } else if language == i18n::Language::Ko && !i18n::korean_font_available() {
                 self.ui.language = i18n::Language::En;
                 self.ui.status = tl!("no Korean font is installed on this system; the interface stays in English").into();
+            } else if language == i18n::Language::Ka && !i18n::georgian_font_available() {
+                self.ui.language = i18n::Language::En;
+                self.ui.status = tl!("no Georgian font is installed on this system; the interface stays in English").into();
             } else {
                 self.ui.language = language;
             }
@@ -2062,11 +2065,12 @@ impl eframe::App for Cfa4App {
             theme::install(ctx, &self.tokens);
             // theme::install replaces the fonts: add the system Japanese font back (or fall back to
             // English when a saved Japanese setting meets a system without one)
-            // (likewise Chinese without a Chinese face, Korean without a Hangul one)
+            // (likewise Chinese without a Chinese face, Korean without a Hangul one, Georgian without a Mkhedruli one)
             let japanese_missing = self.ui.language == i18n::Language::Ja && !i18n::install_japanese_font(ctx);
             if japanese_missing
-                || (self.ui.language == i18n::Language::ZhCn && !i18n::chinese_font_available())
+                || (matches!(self.ui.language, i18n::Language::ZhCn | i18n::Language::ZhHant) && !i18n::chinese_font_available())
                 || (self.ui.language == i18n::Language::Ko && !i18n::korean_font_available())
+                || (self.ui.language == i18n::Language::Ka && !i18n::georgian_font_available())
             {
                 self.ui.language = i18n::Language::En;
             }
@@ -2186,9 +2190,17 @@ pub fn playback_mix(session: &Session, seq_id: cfa4_project::ItemId, sr: u32) ->
         };
         let n = buf.len() / ch.max(1);
         let seq_sr = seq.settings.sample_rate;
-        // a 5.1 Mix plays as six channels (L, R, C, LFE, Ls, Rs) on a device with at least six
+        // a surround Mix plays as its own channels (L, R, C, LFE, Ls, Rs …) on a device with as
+        // many, a wider Mix as 5.1 on a device with six to nine
         use cfa4_audio_dsp::channels::Layout;
-        let layout = if ch >= 6 && seq.settings.audio_master == cfa4_project::AudioChannels::Surround51 { Layout::Surround51 } else { Layout::Stereo };
+        let master = cfa4_render::audio::master_layout(seq);
+        let layout = if master.channels() >= 6 && ch >= master.channels() {
+            master
+        } else if master.channels() > 6 && ch >= 6 {
+            Layout::Surround51
+        } else {
+            Layout::Stereo
+        };
         let mix = if seq_sr == sr {
             previews.mix_layout(&project, seq_id, cursor, n, &provider, layout, mixdown)
         } else {
@@ -2205,11 +2217,11 @@ pub fn playback_mix(session: &Session, seq_id: cfa4_project::ItemId, sr: u32) ->
             let channels = r.process(cursor, n, |s0, m| previews.mix_layout(&project, seq_id, s0, m, &provider, layout, mixdown).channels);
             cfa4_frame::AudioBuffer { sample_rate: sr, channels }
         };
-        if layout == Layout::Surround51 {
+        if layout.is_surround() {
             buf.fill(0.0);
             for (i, frame) in buf.chunks_mut(ch).enumerate() {
-                for (c, x) in frame.iter_mut().take(6).enumerate() {
-                    *x = mix.channels[c][i];
+                for (x, c) in frame.iter_mut().zip(&mix.channels) {
+                    *x = c.get(i).copied().unwrap_or(0.0);
                 }
             }
         } else {
