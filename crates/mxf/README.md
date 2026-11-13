@@ -34,9 +34,9 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
 | SMPTE ST 429-5 | 2023 | Timed text track files (reader): TimedTextDescriptor (set 0x64) and TimedTextResourceSubDescriptor (set 0x65) with their dynamic properties, the clip-wrapped timed text element (item type 0x17), the timed text essence container label; also the IMF timed text track files of ST 2067-2 |
-| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h) and VI elements (element type 01h, VBI line essence container 0Dh, VBI Data Descriptor 5Bh, 1/8/10-bit sample codings), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate |
+| SMPTE ST 436-1 | 2013 (revision of 436M-2006) | ANC packets (reader): the ANC packet essence container (mapping 0Eh), frame-wrapped ANC elements (item 17h, element type 02h) and VI elements (element type 01h, VBI line essence container 0Dh, VBI Data Descriptor 5Bh, 1/8/10-bit sample codings), ANC structures with 8-bit and 10-bit payload codings and every Annex B padding scheme, the ANC Data Descriptor (set 5Ch) sample rate; writer: the ANC data track with 8-bit coded packets |
 | SMPTE ST 410 | (via ST 429-5 clause 6) | generic stream partitions: the ancillary resources (fonts, PNG subpictures) of timed text track files, found by BodySID |
-| SMPTE ST 429-6 | 2023 | Encrypted track files (reader): Cryptographic Context set, Encrypted Triplet pack, AES-128-CBC decryption with the Check Value, HMAC-SHA1 MIC |
+| SMPTE ST 429-6 | 2023 | Encrypted track files (reader): Cryptographic Context set, Encrypted Triplet pack, AES-128-CBC decryption with the Check Value, HMAC-SHA1 MIC (MDMK key or the Annex B legacy key) |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 | SMPTE ST 2067-2 / 2067-5 | 2020 | IMF track files (writer): OP1a, KAG 1, at least 8 KiB of fill after the header, primary package, frame-wrapped pictures in 60 s essence partitions each followed by an index partition, clip-wrapped 24-bit sound at the sample rate with a constant-rate index, UMIDs, the MCA channel assignment, reference image edit rate and audio alignment level |
 | SMPTE ST 2067-21 | 2026 | IMF App 2E pictures (writer): RGBA (QE.1 / QE.2 component ranges) or CDCI (narrow-range levels) descriptor, the JPEG 2000 sub-descriptor with coding style, quantization and J2CLayout |
@@ -72,7 +72,16 @@ have only them: `AncData::vi` holds each frame's `ViLine`s (line number, wrappin
 samples as 10-bit values: 1-bit samples black 64 / white 940, 8-bit ones shifted up, 10-bit ones
 three per word), and `ViLine::field2` tells the field. The engine decodes digitised line 21 from
 them with `cfa4_captions::cea608::decode_line21` and imports each CEA-608 channel (CC1–CC4) as
-a caption track when there are no CDPs (#1005). Writing ANC data on export is still to come.
+a caption track when there are no CDPs (#1005).
+
+Writing (#1004): `WriterConfig::anc` adds an ANC data track to an OP1a file with pictures (also
+RDD 9; not D-10, whose content packages have no data item): the ANC Data Descriptor (set 5Ch),
+the ST 436 essence container label, and per content package one frame-wrapped ANC element after
+the picture and sound, from `MxfWriter::push_anc` (an empty element when none was pushed), in
+its own index slice. `anc_element(packets)` builds an element value with the 8-bit luma coding
+(04h). `cfa4-export` uses it for `ExportSettings::mxf_anc_captions`: the first caption track as
+one CDP per frame (`cfa4_captions::mcc::CdpStream`, CEA-608 field 1 and CEA-708 service 1) on
+VANC line 9, at 29.97 fps (other rates: #1065).
 
 ## Peeking at the header
 
@@ -134,8 +143,11 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   rectangle given from the sampled and display offsets. G.2.25 draws every layout as big-endian
   bit-fields; v210 and planar 10-bit are read as files store them: little-endian 32-bit words,
   first component in the low bits (FFmpeg decodes our v210 files identically). A clip-wrapped
-  element without an index is split by the edit unit size. Not supported: line wrapping (the
-  track is listed as unknown with a warning), palettes with float entries.
+  element without an index is split by the edit unit size. Line wrapping (ST 384 6.3): the
+  picture elements (one per stored line) are gathered into pictures, each starting at a "start of
+  stored data" system element (14h 01h 01h), or counted by the stored size when a file has no
+  system elements; a picture whose lines do not add up is left out with a warning, and the
+  fill / VANC / HANC data elements are skipped (#1060). Not supported: palettes with float entries.
   `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
@@ -150,7 +162,9 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   track its Key ID (`EssenceTrack::encryption`); Encrypted Triplets are filed under the Source Key
   of the triplet they wrap, so tracks, samples and chunks build as usual. `read_sample` /
   `read_pcm` decrypt them (AES-128-CBC, Check Value test; the HMAC-SHA1 MIC is checked when a MIC
-  key is loaded) with the content key from the in-memory key ring (`crypt::add_key`, filled from a
+  key is loaded, or, without an MDMK in the KDM, with the key earlier editions derive from the
+  content key, ST 429-6 Annex B / FIPS 186-2 (`crypt::legacy_mic_key`), once the first triplet
+  matches it) with the content key from the in-memory key ring (`crypt::add_key`, filled from a
   KDM by `cfa4-dcp` and the engine's `dcp.loadKdm`); without it they fail with `Error::Encrypted`
   naming the Key ID. Keys are never written anywhere; `crypt::clear_keys` overwrites them.
 
@@ -167,8 +181,7 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
 
 Not supported: gaps (fillers) inside edit lists (#1008), external essence (OP-Atom
 material packages whose other tracks live in other files are opened track by track), partial
-essence, clip-wrapped encrypted essence, the legacy MIC key
-derivation of ST 429-6 Annex B (a MIC is checked only with an MDMK key), and descriptive metadata
+essence, clip-wrapped encrypted essence, and descriptive metadata
 (parsed sets are ignored).
 
 ## Writing a file
@@ -301,6 +314,9 @@ w.finish()?;
 - `src/uncompressed/tests.rs`: every labelled layout packed and unpacked at three sizes, the bit
   order of each table entry by hand, descriptor fallbacks (CDCI, RGBA with fill and video-range
   codes, X'Y'Z', split components, HALF / f32 / f64 floats, palettes), field weaving with start / end fill, display rectangles, hostile sizes. `cargo xtask fixtures codecs` pre-generates them.
+- `src/write/tests.rs` `line_wrapped_uncompressed_pictures_are_gathered_line_by_line`: our
+  frame-wrapped UYVY file rewritten line by line (system, fill data and picture elements), a
+  missing line, and a file without system elements.
 - `src/write/tests.rs`: writer output read back by `open`: OP1a with two sound tracks pushed in
   uneven chunks (durations, codec label, aspect, PCM exact, index slices, closed partitions),
   29.97 sound per edit unit (1601/1602), a long-GOP AVC index (presentation order, key and B

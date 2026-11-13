@@ -66,6 +66,7 @@ fn yuv_code_range_gpu_matches_cpu() {
                     color: cfa4_color::ColorInfo { range, ..cfa4_color::ColorInfo::REC709 },
                     par: (1, 1),
                     pts: Default::default(),
+                    layout: Default::default(),
                 });
                 let cpu = frame.to_rgba8();
                 let plan = FramePlan::Layers { width: 256, height: 1, layers: vec![PlanLayer::new(frame, Affine::IDENTITY, 1.0, Blend::Normal)] };
@@ -99,6 +100,7 @@ fn yuv_frame(w: u32, h: u32) -> Arc<VideoFrame> {
         color: cfa4_color::ColorInfo::REC709,
         par: (1, 1),
         pts: Default::default(),
+        layout: Default::default(),
     })
 }
 
@@ -277,6 +279,7 @@ fn prepared_upload_matches_inline_conversion() {
         color: cfa4_color::ColorInfo::REC709,
         par: (1, 1),
         pts: Default::default(),
+        layout: Default::default(),
     });
     let f32_layer: Vec<f32> = (0..w * h * 4).map(|i| ((i * 37) % 1000) as f32 / 1000.0 * if i % 4 == 3 { 1.0 } else { 0.6 }).collect();
     let rgbaf = Arc::new(VideoFrame::rgba_f32(w, h, f32_layer.clone()));
@@ -439,7 +442,7 @@ fn yuv_alpha_frame(w: u32, h: u32, bits: u32) -> Arc<VideoFrame> {
             alpha: Some(Arc::new((0..n).map(ramp).collect())),
         }
     };
-    Arc::new(VideoFrame { width: w, height: h, data, color: cfa4_color::ColorInfo::REC709, par: (1, 1), pts: Default::default() })
+    Arc::new(VideoFrame { width: w, height: h, data, color: cfa4_color::ColorInfo::REC709, par: (1, 1), pts: Default::default(), layout: Default::default() })
 }
 
 /// A Y'CbCr layer with an alpha plane (ProRes 4444) is drawn with its alpha: the GPU result matches
@@ -521,7 +524,7 @@ fn hdr_input_gpu_matches_cpu() {
         ("BT.2020 SDR", ColorInfo { primaries: Primaries::Bt2020, ..ColorInfo::REC709 }, None),
     ];
     for (name, color, peak) in cases {
-        let frame = Arc::new(VideoFrame { width: w, height: h, data: data.clone(), color, par: (1, 1), pts: Default::default() });
+        let frame = Arc::new(VideoFrame { width: w, height: h, data: data.clone(), color, par: (1, 1), pts: Default::default(), layout: Default::default() });
         let cs = ColorSpace::from_info(&color);
         let t = Arc::new(InputTransform::new(cs, color.range, &ColorPipeline::REC709, peak));
         assert!(t.gpu_params().is_some(), "{name}");
@@ -602,7 +605,8 @@ fn many_threads_create_use_and_drop_devices_at_once() {
 fn rgb16_frames_prepare_as_linear_float() {
     use std::sync::Arc;
     let data = PixelData::Rgb16 { planes: [Arc::new(vec![4095u16; 6]), Arc::new(vec![0u16; 6]), Arc::new(vec![2048u16; 6])], bits: 12, alpha: None };
-    let f = VideoFrame { width: 3, height: 2, data, color: cfa4_color::ColorInfo::SRGB_FULL, par: (1, 1), pts: cfa4_time::Tick::ZERO };
+    let f =
+        VideoFrame { width: 3, height: 2, data, color: cfa4_color::ColorInfo::SRGB_FULL, par: (1, 1), pts: cfa4_time::Tick::ZERO, layout: Default::default() };
     let p = prepare_frame(&f).expect("planar R'G'B' is converted for upload");
     assert_eq!(p.planes.len(), 1);
     assert_eq!(p.planes[0], f32_to_f16_bytes(&f.to_linear_f32()));

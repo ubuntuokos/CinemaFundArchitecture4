@@ -78,7 +78,7 @@ pub fn to_frame(src: &Biplanar, g: &Geometry) -> Result<VideoFrame, String> {
         }
         PixelData::Yuv16 { planes: [Arc::new(yp), Arc::new(u), Arc::new(v)], chroma: Chroma::C420, bits: g.bits, alpha: None }
     };
-    Ok(VideoFrame { width: w as u32, height: h as u32, data, color: g.color, par: g.par, pts: cfa4_time::Tick::ZERO })
+    Ok(VideoFrame { width: w as u32, height: h as u32, data, color: g.color, par: g.par, pts: cfa4_time::Tick::ZERO, layout: Default::default() })
 }
 
 #[cfg(test)]
