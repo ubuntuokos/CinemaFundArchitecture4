@@ -1,6 +1,6 @@
 //! OpenEXR stills (and the frames of EXR image sequences), read from the public OpenEXR file layout:
 //! single-part scan-line files with no, RLE, ZIPS (one line per chunk), ZIP or PXR24 (16 lines)
-//! compression,
+//! or PIZ (32 lines, [`piz`]) compression,
 //! half, float or uint channels. R, G, B and A become the frame's channels (missing colour channels
 //! are 0, missing alpha is opaque); a luminance-only file (Y) is shown grey. EXR values are
 //! scene-linear with premultiplied alpha, which is exactly the compositor's working format, so the
@@ -8,9 +8,10 @@
 //!
 //! The display window is the frame; pixels of the data window outside it are cut, and the parts of
 //! it the data window does not cover are transparent. Tiled, deep and multi-part files, chroma
-//! subsampled channels and the PIZ, B44 and DWA compressions are refused with a clear error.
+//! subsampled channels and the B44 and DWA compressions are refused with a clear error.
 
 pub mod inflate;
+pub mod piz;
 
 use std::sync::Arc;
 
@@ -141,6 +142,8 @@ enum Compression {
     Zip,
     /// Lossy 24-bit floats: deflated byte planes of per-line differences.
     Pxr24,
+    /// Wavelet + Huffman, 32 scan lines per chunk.
+    Piz,
 }
 
 impl Compression {
@@ -148,6 +151,7 @@ impl Compression {
         match self {
             Compression::Zip if code == 3 => 16,
             Compression::Pxr24 => 16,
+            Compression::Piz => 32,
             _ => 1,
         }
     }
@@ -235,6 +239,7 @@ fn header(name: &str, b: &[u8]) -> Result<Header> {
                 0 => Compression::None,
                 1 => Compression::Rle,
                 2 | 3 => Compression::Zip,
+                4 => Compression::Piz,
                 5 => Compression::Pxr24,
                 _ => {
                     let what = ["PIZ", "PXR24", "B44", "B44A", "DWAA", "DWAB"].get(usize::from(code).wrapping_sub(4)).copied().unwrap_or("unknown");
@@ -484,6 +489,10 @@ pub fn decode(name: &str, b: &[u8]) -> Result<Decoded> {
                     let planes = per_line.and_then(|l| l.checked_mul(n)).ok_or_else(|| bad("chunk size".into()))?;
                     let inflated = inflate::zlib(data, planes).map_err(|e| bad(format!("chunk {i}: {e}")))?;
                     unpxr24(&inflated, &h.channels, dw, n).ok_or_else(|| bad(format!("chunk {i}: bad PXR24 data")))?.into()
+                }
+                Compression::Piz => {
+                    let chans: Vec<piz::PizChannel> = h.channels.iter().map(|c| piz::PizChannel { width: dw, lines: n, bytes: c.ty.size() }).collect();
+                    piz::decompress(data, &chans, expected).map_err(|e| bad(format!("chunk {i}: {e}")))?.into()
                 }
             }
         };

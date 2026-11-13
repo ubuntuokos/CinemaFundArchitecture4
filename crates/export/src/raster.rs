@@ -254,6 +254,11 @@ pub(crate) fn exr(rgba: &[u8], w: u32, h: u32, alpha: bool, compression: ExrComp
             ExrCompression::None => None,
             ExrCompression::Rle => Some(rle(&predict(&raw))),
             ExrCompression::Zips | ExrCompression::Zip => Some(crate::deflate::zlib(&predict(&raw))),
+            ExrCompression::Piz => {
+                let rows = raw.len() / line;
+                let chans = vec![cfa4_media::still::exr::piz::PizChannel { width: wn, lines: rows, bytes: 2 }; names.len()];
+                Some(cfa4_media::still::exr::piz::compress(&raw, &chans).map_err(ExportError::Encode)?)
+            }
         };
         // a chunk that does not shrink is stored as it is (readers compare the sizes)
         let data = packed.as_deref().filter(|p| p.len() < raw.len()).unwrap_or(&raw);
@@ -492,7 +497,7 @@ mod tests {
         for alpha in [false, true] {
             let plain = exr(&px, w, h, alpha, ExrCompression::None).unwrap();
             let lines: Vec<&[u8]> = chunks(&plain, h as usize).into_iter().map(|(_, d)| d).collect();
-            for c in [ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip] {
+            for c in [ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip, ExrCompression::Piz] {
                 let f = exr(&px, w, h, alpha, c).unwrap();
                 let cmp = find(&f, b"compression\0compression\0") + 24;
                 assert_eq!(f[cmp + 4], c.code());
@@ -505,6 +510,10 @@ mod tests {
                         data.to_vec()
                     } else if c == ExrCompression::Rle {
                         unpredict(&unrle(data))
+                    } else if c == ExrCompression::Piz {
+                        let rows = want.len() / (w as usize * if alpha { 8 } else { 6 });
+                        let chans = vec![cfa4_media::still::exr::piz::PizChannel { width: w as usize, lines: rows, bytes: 2 }; if alpha { 4 } else { 3 }];
+                        cfa4_media::still::exr::piz::decompress(data, &chans, want.len()).unwrap()
                     } else {
                         unpredict(&crate::deflate::tests::inflate(data).unwrap())
                     };
@@ -547,6 +556,41 @@ mod tests {
                     }
                 }
             }
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// OpenImageIO (the OpenEXR library, an external test oracle) reads our PIZ files: its
+    /// uncompressed re-write of them holds exactly the half floats of our uncompressed file.
+    #[test]
+    fn exr_piz_reads_in_openexr() {
+        let ok = |args: &[&std::ffi::OsStr]| std::process::Command::new("oiiotool").args(args).status().is_ok_and(|s| s.success());
+        if !ok(&["--version".as_ref()]) {
+            eprintln!("SKIPPED: oiiotool is not installed");
+            return;
+        }
+        let dir = cfa4_testkit::fixtures::workspace_root().join("target").join("export-tests").join(format!("exr-piz-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let decode = |b: Vec<u8>| match &cfa4_media::open_bytes("still.exr", b.into(), &[])
+            .unwrap()
+            .video_frame(cfa4_media::FrameRequest::full(cfa4_time::Tick(0)))
+            .unwrap()
+            .data
+        {
+            cfa4_frame::PixelData::RgbaF32(p) => p.to_vec(),
+            _ => panic!("EXR frames are float"),
+        };
+        let (px, w, h) = picture();
+        for alpha in [false, true] {
+            let ours = dir.join(format!("piz-{alpha}.exr"));
+            let theirs = dir.join(format!("plain-{alpha}.exr"));
+            std::fs::write(&ours, exr(&px, w, h, alpha, ExrCompression::Piz).unwrap()).unwrap();
+            assert!(
+                ok(&[ours.as_os_str(), "-d".as_ref(), "half".as_ref(), "--compression".as_ref(), "none".as_ref(), "-o".as_ref(), theirs.as_os_str()]),
+                "oiiotool reads our PIZ file"
+            );
+            let plain = decode(exr(&px, w, h, alpha, ExrCompression::None).unwrap());
+            assert_eq!(decode(std::fs::read(&theirs).unwrap()), plain, "alpha {alpha}");
         }
         let _ = std::fs::remove_dir_all(&dir);
     }

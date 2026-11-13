@@ -211,16 +211,20 @@ pub enum ExrCompression {
     Zips,
     /// zlib (deflate) per block of 16 scan lines (ZIP_COMPRESSION).
     Zip,
+    /// Wavelet and Huffman coding per block of 32 scan lines (PIZ_COMPRESSION); the usual choice
+    /// for grainy film scans and renders.
+    Piz,
 }
 
 impl ExrCompression {
-    pub const ALL: [ExrCompression; 4] = [ExrCompression::None, ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip];
+    pub const ALL: [ExrCompression; 5] = [ExrCompression::None, ExrCompression::Rle, ExrCompression::Zips, ExrCompression::Zip, ExrCompression::Piz];
     pub fn label(self) -> &'static str {
         match self {
             ExrCompression::None => "None",
             ExrCompression::Rle => "RLE",
             ExrCompression::Zips => "ZIP (1 scan line)",
             ExrCompression::Zip => "ZIP (16 scan lines)",
+            ExrCompression::Piz => "PIZ",
         }
     }
     /// The value of the OpenEXR `compression` attribute.
@@ -230,11 +234,16 @@ impl ExrCompression {
             ExrCompression::Rle => 1,
             ExrCompression::Zips => 2,
             ExrCompression::Zip => 3,
+            ExrCompression::Piz => 4,
         }
     }
     /// Scan lines per chunk.
     pub(crate) fn lines(self) -> usize {
-        if self == ExrCompression::Zip { 16 } else { 1 }
+        match self {
+            ExrCompression::Zip => 16,
+            ExrCompression::Piz => 32,
+            _ => 1,
+        }
     }
 }
 
