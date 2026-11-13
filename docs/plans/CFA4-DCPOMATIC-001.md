@@ -38,7 +38,7 @@ Ezeket a DCP-o-matic (GPL-2.0-or-later, C++) végezze, a CFA4 pedig vezérelje. 
 | D3 | Honnan kapja a DCP-o-matic a képet és a hangot? | **a)** a felhasználó előbb exportál egy mestert, és azt adja át (egyszerű, már megvan). **b)** egy parancs az idővonalból maga készíti el a köztes mestert, majd átadja (kényelmesebb, sok lemezhelyet kér). Javaslat: előbb a), a b) a 4. fázisban. | |
 | D4 | Titkosított DCP és KDM a DCP-o-matic-kal | Igen (2026-11-13-án igent mondtál rá a szálban). A kulcsok a DCP-o-matic filmkönyvtárában maradnak, a CFA4 nem olvassa és nem tárolja őket. | |
 | D5 | Feliratok (SRT, SubRip, DCP XML) átadása | 3. fázis, a Subtitle Studio terv kimenetére építve. | |
-| D6 | Qt GUI | Fájl ▸ DCP-o-matic… párbeszédablak, DCP és KDM füllel (2026-11-13-án igent mondtál rá). | |
+| D6 | Felület | A DCP-o-matic a CFA4 designját követi (lásd 4. fázis). Saját ablaka (wxWidgets) soha nem nyílik meg, és nincs külön „DCP-o-matic” stílusú ablak. Javaslat a módjára: a DCP-o-matic a meglévő Export ablak DCP formátumának egy választható motorja („CFA4” / „DCP-o-matic”), a futás az export sorában (Queue) látszik, a KDM-készítés pedig a Fájl ▸ Load KDM… mellé kerül, ugyanolyan párbeszédablakként. | **A CFA4 designját kövesse** (István, 2026-11-13). A javasolt mód még jóváhagyásra vár. |
 | D7 | Hol legyen a DCP-o-matic aláíró lánca és beállítása? | A CFA4 saját könyvtárában (`~/.config/cfa4/dcpomatic`), hogy a felhasználó DCP-o-matic-beállításai ne változzanak. | |
 | D8 | Legkisebb DCP-o-matic változat | 2.18.x, a pontos szám az 1. fázis mérése után. | |
 | D9 | Csomagolás | A `.deb` kapjon `Suggests: dcpomatic` sort. Más nem kell: nem töltünk le és nem szállítunk DCP-o-matic-ot. | |
@@ -78,13 +78,27 @@ Ez a fázis kódot nem ír a termékbe.
 
 **Elfogadás:** a CI-ben titkosított DCP és hozzá egy tesztanúsítványra készült KDM készül, és a CFA4 `dcp.loadKdm`-mel, a teszt magánkulcsával lejátssza.
 
-### 4. fázis – Qt GUI és közvetlen út az idővonalból (DCPOM-4)
+### 4. fázis – Felület a CFA4 designjával, és közvetlen út az idővonalból (DCPOM-4)
 
-- Fájl ▸ DCP-o-matic… (`python/cfa4_qt/panels/dcpomatic_dialog.py`) DCP és KDM füllel, automation id minden vezérlőn, magyar fordítással.
-- Ha a D3 b) is elfogadott: „Idővonal → DCP-o-matic”, amely a köztes mestert ideiglenes mappába exportálja, átadja, majd törli. Előtte kiírja a becsült lemezigényt.
+A tulajdonos döntése (D6): a DCP-o-matic **a CFA4 designját követi**. A felhasználó nem DCP-o-matic-ot lát, hanem a CFA4 egy újabb exportlehetőségét.
 
-**Elfogadás:** a `--smoke --screenshot` képen a párbeszédablak látszik, a Qt-teszt a valódi engine-en át futtat egy hamis eszközös DCP-készítést.
+- **Nincs külön DCP-o-matic-ablak.** A DCP-o-matic saját grafikus felülete soha nem indul el. A CFA4 nem másolja a DCP-o-matic elrendezését (tartalomlista, fülek, ikonok) sem.
+- **Export ablak** (`panels/export.py`, `docs/qt-gui.md`): a DCP formátumnál új választó jelenik meg: „Motor: CFA4 / DCP-o-matic”. A DCP-o-matic csak akkor választható, ha a `dcpomatic.status` elérhetőnek mutatja. Ha nem, a választó letiltott, és a tippje megmondja, miért.
+  - A DCP-o-matic-hoz tartozó beállítások (Interop, 3D, csatornakiosztás, titkosítás) ugyanazokkal a sor-vezérlőkkel (`export_rows.py`) jelennek meg, mint a többi exportbeállítás. Csak azok a sorok látszanak, amelyeket a választott motor tud.
+  - Az Összegzés (`export_summary.py`) írja ki, hogy a DCP-t a DCP-o-matic készíti, és mekkora a becsült lemezigény.
+  - A futás az export sorában (Queue) látszik, ugyanazzal a haladásjelzéssel és megszakítással, mint a CFA4 saját exportjainál.
+- **KDM-készítés:** Fájl ▸ Create KDM… párbeszédablak a meglévő Load KDM… (`panels/kdm_dialog.py`) mintájára, ugyanazzal az elrendezéssel és viselkedéssel.
+- **Közös szabályok** (`docs/qt-gui.md`):
+  - a `theme.py` design-tokenjei (Darkest, Dark, Light), saját színek és stíluslap nélkül;
+  - a panelek csak az engine válaszát mutatják, saját logikájuk nincs;
+  - minden vezérlőnek automation id-ja van;
+  - minden felirat a fordításon (`i18n`) megy át, magyarul is;
+  - dokkok esetén a `main_window.py` dokkszabályai.
+- Ha a D3 b) is elfogadott: az Export ablak az idővonalból maga készíti el a köztes mestert ideiglenes mappába, átadja, majd törli. Előtte kiírja a becsült lemezigényt.
 
+**Elfogadás:**
+- A `--smoke --screenshot` képen az Export ablak DCP-o-matic motorral mind a három témában a CFA4 többi exportjával egyező kinézetű. Összevetés a `plan/premiere/screenshots/` és az egui Export ablak képeivel.
+- A Qt-teszt a valódi engine-en át hamis eszközös DCP-készítést futtat a sorból.
 ### 5. fázis – Csomagolás és dokumentáció (DCPOM-5)
 
 - `Suggests: dcpomatic` (D9).
