@@ -171,6 +171,10 @@ pub struct PtpStatus {
     /// The offset from the master in nanoseconds.
     pub master_offset_ns: Option<i64>,
     pub port_state: Option<PortState>,
+    /// TAI − UTC in seconds as the grandmaster announces it (`currentUtcOffset`, `GET
+    /// TIME_PROPERTIES_DATA_SET`), and whether it is valid.
+    pub utc_offset: Option<i32>,
+    pub utc_offset_valid: Option<bool>,
 }
 
 impl PtpStatus {
@@ -191,10 +195,20 @@ impl PtpStatus {
                 "domainNumber" => s.domain = Some(value.parse().map_err(|_| bad())?),
                 "master_offset" => s.master_offset_ns = Some(value.parse().map_err(|_| bad())?),
                 "portState" => s.port_state = Some(PortState::parse(value).ok_or_else(bad)?),
+                "currentUtcOffset" => s.utc_offset = Some(value.parse().map_err(|_| bad())?),
+                "currentUtcOffsetValid" => s.utc_offset_valid = Some(matches!(value, "1" | "true")),
                 _ => {}
             }
         }
         Ok(s)
+    }
+
+    /// TAI − UTC to use: the grandmaster's valid offset, else the 2017 value.
+    pub fn tai_minus_utc(&self) -> i64 {
+        match (self.utc_offset, self.utc_offset_valid) {
+            (Some(o), Some(true)) => i64::from(o),
+            _ => TAI_UTC_OFFSET_2017,
+        }
     }
 
     /// Locked to a grandmaster: a slave port with a grandmaster present, its identity and
@@ -332,6 +346,12 @@ sending: GET PORT_DATA_SET
 \t3c2c30.fffe.a1b2c3-1 seq 2 RESPONSE MANAGEMENT PORT_DATA_SET
 \t\tportIdentity            3c2c30.fffe.a1b2c3-1
 \t\tportState               SLAVE
+sending: GET TIME_PROPERTIES_DATA_SET
+\t3c2c30.fffe.a1b2c3-0 seq 3 RESPONSE MANAGEMENT TIME_PROPERTIES_DATA_SET
+\t\tcurrentUtcOffset      38
+\t\tleap61                0
+\t\tcurrentUtcOffsetValid 1
+\t\tptpTimescale          1
 ";
 
     #[test]
@@ -341,6 +361,8 @@ sending: GET PORT_DATA_SET
         assert_eq!((s.domain, s.master_offset_ns, s.port_state, s.gm_present), (Some(127), Some(-87), Some(PortState::Slave), Some(true)));
         assert!(s.locked(DEFAULT_LOCK_LIMIT_NS));
         assert!(!s.locked(50));
+        assert_eq!(s.tai_minus_utc(), 38);
+        assert_eq!(PtpStatus::default().tai_minus_utc(), 37);
         let mac = [0x02, 0, 0, 0, 0, 1];
         let (r, m) = sender_clocks(Some(&s), mac, DEFAULT_LOCK_LIMIT_NS);
         assert_eq!(r.to_value(), "ptp=IEEE1588-2008:0C-4F-5A-FF-FE-10-E2-D4:127");
