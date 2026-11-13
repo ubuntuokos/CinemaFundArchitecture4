@@ -4566,3 +4566,13 @@
 	Chase External Timecode	Externem Timecode folgen
 	Send LTC	LTC senden
 	Send MIDI Timecode	MIDI-Timecode senden
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Zeilenstärke
+	Line Count	Zeilenanzahl
+	Mask	Maske
+	Mask Strength	Maskenstärke
+	Corner Darkening	Eckenabdunklung
+	Aperture Grille	Streifenmaske
+	Shadow Mask	Lochmaske
+	Slot Mask	Schlitzmaske

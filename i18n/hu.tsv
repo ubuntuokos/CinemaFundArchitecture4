@@ -4556,3 +4556,13 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Pásztázósorok erőssége
+	Line Count	Sorok száma
+	Mask	Maszk
+	Mask Strength	Maszk erőssége
+	Corner Darkening	Sarkok sötétítése
+	Aperture Grille	Csíkmaszk
+	Shadow Mask	Árnyékmaszk
+	Slot Mask	Résmaszk

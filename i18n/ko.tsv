@@ -4553,3 +4553,13 @@
 	Chase External Timecode	외부 타임코드 체이스
 	Send LTC	LTC 보내기
 	Send MIDI Timecode	MIDI 타임코드 보내기
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	주사선 강도
+	Line Count	주사선 수
+	Mask	마스크
+	Mask Strength	마스크 강도
+	Corner Darkening	모서리 어둡게
+	Aperture Grille	어퍼처 그릴
+	Shadow Mask	섀도 마스크
+	Slot Mask	슬롯 마스크

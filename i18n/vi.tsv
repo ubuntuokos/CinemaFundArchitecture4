@@ -4559,3 +4559,13 @@ export.summary	Low	thấp
 	Chase External Timecode	Bám theo timecode bên ngoài
 	Send LTC	Gửi LTC
 	Send MIDI Timecode	Gửi timecode MIDI
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Cường độ dòng quét
+	Line Count	Số dòng
+	Mask	Mặt nạ
+	Mask Strength	Cường độ mặt nạ
+	Corner Darkening	Làm tối góc
+	Aperture Grille	Lưới khe
+	Shadow Mask	Mặt nạ bóng
+	Slot Mask	Mặt nạ khe

@@ -4568,3 +4568,13 @@
 	Chase External Timecode	外部タイムコードにチェイス
 	Send LTC	LTC を送信
 	Send MIDI Timecode	MIDI タイムコードを送信
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	走査線の強さ
+	Line Count	走査線の数
+	Mask	マスク
+	Mask Strength	マスクの強さ
+	Corner Darkening	四隅の減光
+	Aperture Grille	アパーチャーグリル
+	Shadow Mask	シャドウマスク
+	Slot Mask	スロットマスク

@@ -68,6 +68,7 @@ const OP_SKIN_APPLY: u32 = 44u;
 const OP_SKIN_MASK: u32 = 45u;
 const OP_HALFTONE: u32 = 46u;
 const OP_DITHER: u32 = 47u;
+const OP_CRT: u32 = 48u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -483,6 +484,50 @@ fn dither_px(e: vec3<f32>, d: f32, off: u32, len: u32, levels: f32, spread: f32)
 const SIX_POINT_STEPS: i32 = 8;
 
 // A quadratic Bézier edge (start a, control c, end b) at t: xy = point, zw = derivative.
+// `gpufx::crt_warp`: tube coordinates of a pixel centre, x < -2 outside the curved screen.
+fn crt_warp(pc: vec2<f32>, w: f32, h: f32, curve: f32) -> vec2<f32> {
+    let uu = pc.x / w * 2.0 - 1.0;
+    let vv = pc.y / h * 2.0 - 1.0;
+    let cu = uu * (1.0 + curve * vv * vv);
+    let cv = vv * (1.0 + curve * uu * uu);
+    if abs(cu) > 1.0 || abs(cv) > 1.0 {
+        return vec2(-4.0, 0.0);
+    }
+    return vec2(cu, cv);
+}
+
+fn crt_odd(v: f32) -> bool {
+    return v - 2.0 * floor(v * 0.5) >= 1.0;
+}
+
+// `gpufx::crt_shade`
+fn crt_shade(c: vec2<f32>, pc: vec2<f32>, scan: f32, lines: f32, mask: u32, mask_amt: f32, pitch: f32, corner: f32) -> vec3<f32> {
+    let t = (c.y + 1.0) * 0.5 * lines;
+    let beam = 1.0 - scan * (1.0 - sin(3.14159265358979 * (t - floor(t))));
+    var m = vec3(1.0);
+    if mask > 0u && mask_amt > 0.0 {
+        let tx = pc.x / pitch;
+        let col = floor(tx);
+        var lit = true;
+        var sx = tx;
+        if mask == 2u {
+            if crt_odd(floor(pc.y / pitch * 2.0)) {
+                sx += 0.5;
+            }
+        } else if mask == 3u {
+            let ty = pc.y / pitch + select(0.0, 0.5, crt_odd(col));
+            lit = ty - floor(ty) >= 0.25;
+        }
+        let k = min(u32(floor((sx - floor(sx)) * 3.0)), 2u);
+        m = vec3(1.0 - mask_amt);
+        if lit {
+            m[k] = 1.0;
+        }
+    }
+    let rim = sqrt(sqrt(max((1.0 - c.x * c.x) * (1.0 - c.y * c.y), 0.0)));
+    return m * (beam * (1.0 - corner * (1.0 - rim)));
+}
+
 fn bezier2(a: vec2<f32>, c: vec2<f32>, b: vec2<f32>, t: f32) -> vec4<f32> {
     let s = 1.0 - t;
     let m = 2.0 * t * (1.0 - t);
@@ -1085,6 +1130,23 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
                 return vec4(0.0);
             }
             return vec4(dec(c) * a, a);
+        }
+        case OP_CRT: {
+            let curve = u.p1.x;
+            let c = crt_warp(pc, f32(s.x), f32(s.y), curve);
+            if c.x < -2.0 {
+                return vec4(0.0);
+            }
+            var q = ld(p);
+            if curve != 0.0 {
+                q = sample_clamped((c.x + 1.0) * 0.5 * f32(s.x), (c.y + 1.0) * 0.5 * f32(s.y));
+            }
+            let a = q.a;
+            if a <= 1e-6 {
+                return q;
+            }
+            let k = crt_shade(c, pc, u.p0.x, u.p0.y, u.i1.x, u.p0.z, u.p0.w, u.p1.y);
+            return vec4(dec(enc(q.rgb / a) * k * u.p1.z) * a, a);
         }
         case OP_FILM_GRAIN: {
             let o = ld(p);

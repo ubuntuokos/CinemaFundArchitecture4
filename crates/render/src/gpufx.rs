@@ -173,6 +173,21 @@ pub enum FxOp {
         inv: [f32; 9],
         identity: bool,
     },
+    /// CRT: a curved tube (`curve` = barrel factor, 0 = flat) showing the picture through
+    /// `lines` scanlines (`scan` = depth of the gaps), a phosphor mask (`mask` 0 none, 1 aperture
+    /// grille, 2 shadow mask, 3 slot mask; `mask_amt` = how dark the other phosphors are, `pitch` =
+    /// one triad in working pixels), darker corners and a per-frame brightness `gain` (flicker).
+    /// See [`crt_warp`] and [`crt_shade`].
+    Crt {
+        scan: f32,
+        lines: f32,
+        mask: u32,
+        mask_amt: f32,
+        pitch: f32,
+        curve: f32,
+        corner: f32,
+        gain: f32,
+    },
     /// Film Grain: smooth value noise ([`grain_noise`]) on display-encoded colour, weighted by a
     /// shadows / midtones / highlights response. `inv_cell` is 1 / the grain cell in working
     /// pixels; `seed` already folds in the frame when the grain is animated.
@@ -319,6 +334,7 @@ pub const GPU_EFFECTS: &[&str] = &[
     "skin_smoothing",
     "halftone",
     "dither",
+    "crt",
     "mirror",
     "offset",
     "asc_cdl",
@@ -395,6 +411,55 @@ pub fn halftone_ink(px: f32, py: f32, cs: f32, sn: f32, inv_cell: f32, soft: f32
     // the threshold reaches past the spot's range so 0 and 1 are exactly no ink and solid ink
     let th = (1.0 - 2.0 * v) * (1.0 + soft);
     ((spot - th) / (2.0 * soft) + 0.5).clamp(0.0, 1.0)
+}
+
+/// CRT tube coordinates (−1…1 across the frame) of pixel centre (`px`, `py`) in a `w` × `h`
+/// frame, bent by the barrel factor `curve`; `None` outside the curved screen. `fx.wgsl`
+/// (`crt_warp`) mirrors this.
+pub fn crt_warp(px: f32, py: f32, w: f32, h: f32, curve: f32) -> Option<(f32, f32)> {
+    let u = px / w * 2.0 - 1.0;
+    let v = py / h * 2.0 - 1.0;
+    let cu = u * (1.0 + curve * v * v);
+    let cv = v * (1.0 + curve * u * u);
+    (cu.abs() <= 1.0 && cv.abs() <= 1.0).then_some((cu, cv))
+}
+
+/// The per-channel brightness of the CRT look at tube coordinates (`cu`, `cv`) and output pixel
+/// centre (`px`, `py`): the scanline beam profile, the phosphor mask and the corner falloff (see
+/// [`FxOp::Crt`]). `fx.wgsl` (`crt_shade`) mirrors this.
+#[allow(clippy::too_many_arguments)]
+pub fn crt_shade(cu: f32, cv: f32, px: f32, py: f32, scan: f32, lines: f32, mask: u32, mask_amt: f32, pitch: f32, corner: f32) -> [f32; 3] {
+    // the beam: brightest in the middle of each scanline, darkest between two
+    let t = (cv + 1.0) * 0.5 * lines;
+    let beam = 1.0 - scan * (1.0 - (std::f32::consts::PI * (t - t.floor())).sin());
+    // the phosphors: one lit, the other two dimmed by `mask_amt`
+    let mut m = [1.0f32; 3];
+    if mask > 0 && mask_amt > 0.0 {
+        let odd = |v: f32| v - 2.0 * (v * 0.5).floor() >= 1.0;
+        let tx = px / pitch;
+        let col = tx.floor();
+        let mut lit = true;
+        let mut sx = tx;
+        if mask == 2 {
+            // shadow mask: each row of triads shifted by half a triad
+            if odd((py / pitch * 2.0).floor()) {
+                sx += 0.5;
+            }
+        } else if mask == 3 {
+            // slot mask: grille stripes broken by staggered horizontal gaps
+            let ty = py / pitch + if odd(col) { 0.5 } else { 0.0 };
+            lit = ty - ty.floor() >= 0.25;
+        }
+        let k = (((sx - sx.floor()) * 3.0).floor() as usize).min(2);
+        m = [1.0 - mask_amt; 3];
+        if lit && let Some(c) = m.get_mut(k) {
+            *c = 1.0;
+        }
+    }
+    // the tube's corners: dark at the rim of the screen
+    let rim = ((1.0 - cu * cu) * (1.0 - cv * cv)).max(0.0).sqrt().sqrt();
+    let k = beam * (1.0 - corner * (1.0 - rim));
+    [m[0] * k, m[1] * k, m[2] * k]
 }
 
 /// The fixed palettes of Dither (`cfa4_project::effect::DITHER_PALETTES` after "Input Colors"),
@@ -988,6 +1053,31 @@ impl FxOp {
                 levels: f(e, "levels", cx).round().clamp(2.0, 16.0),
                 blend: (f(e, "blend", cx) / 100.0).clamp(0.0, 1.0),
             },
+            "crt" => {
+                let pct = |k: &str| {
+                    let v = f(e, k, cx) / 100.0;
+                    if v.is_finite() { v.clamp(0.0, 1.0) } else { 0.0 }
+                };
+                let lines = f(e, "line_count", cx);
+                let mask = choice(e, "mask").min(3);
+                // (`as` saturates: NaN → 0)
+                let user = f(e, "seed", cx).round().clamp(0.0, 1e6) as u32;
+                let t = crate::effects::noise_frame_seed(cx);
+                // 24 bits, exact in f32: [0, 1)
+                let n = (pcg3d(user, (t ^ (t >> 32)) as u32, 0x6372_7421) >> 8) as f32 / 16_777_216.0;
+                FxOp::Crt {
+                    scan: pct("scanlines"),
+                    lines: if lines.is_finite() { lines.round().clamp(60.0, 1080.0) } else { 240.0 },
+                    mask,
+                    mask_amt: if mask == 0 { 0.0 } else { pct("mask_strength") },
+                    // a triad is three working pixels at full resolution
+                    pitch: (3.0 * cx.px_scale).max(1.0),
+                    // up to a quarter: the corners bend in by about a fifth of the frame
+                    curve: pct("curvature") * 0.25,
+                    corner: pct("corner_darkening"),
+                    gain: 1.0 - pct("flicker") * 0.3 * n,
+                }
+            }
             "film_grain" => {
                 let pct = |k: &str| (f(e, k, cx) / 100.0).clamp(0.0, 2.0);
                 // a grain cell under a quarter pixel only aliases; 0 / NaN sizes land here too
@@ -1179,6 +1269,15 @@ impl FxOp {
         FxOp::Crop { x0: l * w, x1: w * (1.0 - r), y0: t * h, y1: h * (1.0 - b), feather: feather.max(0.0) }
     }
 
+    /// Whether this op leaves every pixel as it is, so both the CPU and the GPU skip it (only the
+    /// effects whose neutral settings would otherwise still round-trip the colours answer).
+    pub fn is_identity(&self) -> bool {
+        match self {
+            FxOp::Crt { scan, mask_amt, curve, corner, gain, .. } => *scan == 0.0 && *mask_amt == 0.0 && *curve == 0.0 && *corner == 0.0 && *gain == 1.0,
+            _ => false,
+        }
+    }
+
     /// Whether the GPU shader reproduces [`apply`](Self::apply) for this op: every number finite
     /// (the CPU's NaN / infinity behaviour is left to the CPU) and resamples that the CPU does
     /// not pre-filter.
@@ -1223,6 +1322,7 @@ impl FxOp {
                 fin(&[*inv_cell, *soft, *blend]) && screens.iter().all(|s| fin(s)) && fin(ink) && fin(paper)
             }
             FxOp::Dither { threshold, levels, blend, .. } => fin(&[*threshold, *levels, *blend]),
+            FxOp::Crt { scan, lines, mask_amt, pitch, curve, corner, gain, .. } => fin(&[*scan, *lines, *mask_amt, *pitch, *curve, *corner, *gain]),
             FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, .. } => {
                 fin(&[*amount, *inv_cell, *shadows, *midtones, *highlights, *color])
             }
@@ -1680,6 +1780,35 @@ impl FxOp {
                         }
                         let c = dec(c);
                         p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
+                    }
+                });
+            }
+            FxOp::Crt { scan, lines, mask, mask_amt, pitch, curve, corner, gain } => {
+                let (scan, lines, mask, amt, pitch, curve, corner, gain) = (*scan, *lines, *mask, *mask_amt, *pitch, *curve, *corner, *gain);
+                if ![scan, lines, amt, pitch, curve, corner, gain].iter().all(|v| v.is_finite()) || self.is_identity() {
+                    return;
+                }
+                let src = img.clone();
+                let (w, fw, fh) = (img.w, img.w as f32, img.h as f32);
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
+                        let Some(d) = row.get_mut(x * 4..x * 4 + 4) else { continue };
+                        let Some((cu, cv)) = crt_warp(px, py, fw, fh, curve) else {
+                            d.copy_from_slice(&[0.0; 4]);
+                            continue;
+                        };
+                        // a flat tube shows each pixel as it is
+                        let q = if curve == 0.0 { src.get(x, y) } else { src.sample_bilinear_clamped((cu + 1.0) * 0.5 * fw, (cv + 1.0) * 0.5 * fh) };
+                        let a = q[3];
+                        if a <= 1e-6 {
+                            d.copy_from_slice(&q);
+                            continue;
+                        }
+                        let e = enc([q[0] / a, q[1] / a, q[2] / a]);
+                        let k = crt_shade(cu, cv, px, py, scan, lines, mask, amt, pitch, corner);
+                        let c = dec([e[0] * k[0] * gain, e[1] * k[1] * gain, e[2] * k[2] * gain]);
+                        d.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
                     }
                 });
             }

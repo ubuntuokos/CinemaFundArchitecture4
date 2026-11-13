@@ -4561,3 +4561,13 @@ export.summary	Low	төмен
 	Chase External Timecode	Сыртқы уақыт кодына ілесу
 	Send LTC	LTC жіберу
 	Send MIDI Timecode	MIDI уақыт кодын жіберу
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Жолақтар күші
+	Line Count	Жолдар саны
+	Mask	Маска
+	Mask Strength	Маска күші
+	Corner Darkening	Бұрыштарды күңгірттеу
+	Aperture Grille	Апертуралық тор
+	Shadow Mask	Көлеңкелі маска
+	Slot Mask	Саңылаулы маска

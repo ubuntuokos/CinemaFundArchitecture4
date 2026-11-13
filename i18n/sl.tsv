@@ -4562,3 +4562,13 @@ export.summary	Low	nizka
 	Chase External Timecode	Sledi zunanji časovni kodi
 	Send LTC	Pošlji LTC
 	Send MIDI Timecode	Pošlji časovno kodo MIDI
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Moč vrstic
+	Line Count	Število vrstic
+	Mask	Maska
+	Mask Strength	Moč maske
+	Corner Darkening	Temnenje kotov
+	Aperture Grille	Mreža odprtin
+	Shadow Mask	Senčna maska
+	Slot Mask	Režna maska

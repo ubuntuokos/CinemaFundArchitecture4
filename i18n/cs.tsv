@@ -4559,3 +4559,13 @@ export.summary	Low	nízká
 	Chase External Timecode	Sledovat externí časový kód
 	Send LTC	Odesílat LTC
 	Send MIDI Timecode	Odesílat časový kód MIDI
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Síla řádků
+	Line Count	Počet řádků
+	Mask	Maska
+	Mask Strength	Síla masky
+	Corner Darkening	Ztmavení rohů
+	Aperture Grille	Aperturní mřížka
+	Shadow Mask	Stínová maska
+	Slot Mask	Štěrbinová maska

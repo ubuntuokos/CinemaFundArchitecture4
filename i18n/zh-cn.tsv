@@ -4557,3 +4557,13 @@
 	Chase External Timecode	追随外部时间码
 	Send LTC	发送 LTC
 	Send MIDI Timecode	发送 MIDI 时间码
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	扫描线强度
+	Line Count	扫描线数
+	Mask	遮罩
+	Mask Strength	遮罩强度
+	Corner Darkening	四角暗化
+	Aperture Grille	栅条荫罩
+	Shadow Mask	荫罩
+	Slot Mask	槽形荫罩

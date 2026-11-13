@@ -4562,3 +4562,13 @@ export.summary	Low	žema
 	Chase External Timecode	Sekti išorinį laiko kodą
 	Send LTC	Siųsti LTC
 	Send MIDI Timecode	Siųsti MIDI laiko kodą
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Skleidimo linijų stiprumas
+	Line Count	Linijų skaičius
+	Mask	Kaukė
+	Mask Strength	Kaukės stiprumas
+	Corner Darkening	Kampų patamsinimas
+	Aperture Grille	Apertūrinės grotelės
+	Shadow Mask	Šešėlinė kaukė
+	Slot Mask	Plyšinė kaukė

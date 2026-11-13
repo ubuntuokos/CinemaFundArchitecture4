@@ -4567,3 +4567,13 @@
 	Chase External Timecode	Ikuti Timecode Eksternal
 	Send LTC	Kirim LTC
 	Send MIDI Timecode	Kirim Timecode MIDI
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Kekuatan Garis Pindai
+	Line Count	Jumlah Garis
+	Mask	Masker
+	Mask Strength	Kekuatan Masker
+	Corner Darkening	Penggelapan Sudut
+	Aperture Grille	Kisi Aperture
+	Shadow Mask	Masker Bayangan
+	Slot Mask	Masker Celah

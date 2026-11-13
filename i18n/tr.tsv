@@ -4560,3 +4560,13 @@ export.summary	Low	düşük
 	Chase External Timecode	Harici Zaman Kodunu Takip Et
 	Send LTC	LTC Gönder
 	Send MIDI Timecode	MIDI Zaman Kodu Gönder
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Tarama çizgisi gücü
+	Line Count	Çizgi sayısı
+	Mask	Maske
+	Mask Strength	Maske gücü
+	Corner Darkening	Köşe kararması
+	Aperture Grille	Açıklık ızgarası
+	Shadow Mask	Gölge maskesi
+	Slot Mask	Yarık maskesi

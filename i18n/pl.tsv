@@ -4559,3 +4559,13 @@ export.summary	Low	niska
 	Chase External Timecode	Podążaj za zewnętrznym kodem czasowym
 	Send LTC	Wysyłaj LTC
 	Send MIDI Timecode	Wysyłaj kod czasowy MIDI
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Siła linii
+	Line Count	Liczba linii
+	Mask	Maska
+	Mask Strength	Siła maski
+	Corner Darkening	Przyciemnienie narożników
+	Aperture Grille	Maskownica szczelinowa
+	Shadow Mask	Maska perforowana
+	Slot Mask	Maska szczelinowa

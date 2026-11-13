@@ -4561,3 +4561,13 @@ export.summary	Low	χαμηλή
 	Chase External Timecode	Παρακολούθηση εξωτερικού χρονοκώδικα
 	Send LTC	Αποστολή LTC
 	Send MIDI Timecode	Αποστολή χρονοκώδικα MIDI
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Ένταση γραμμών σάρωσης
+	Line Count	Αριθμός γραμμών
+	Mask	Μάσκα
+	Mask Strength	Ένταση μάσκας
+	Corner Darkening	Σκούρυνση γωνιών
+	Aperture Grille	Πλέγμα διαφράγματος
+	Shadow Mask	Μάσκα σκιάς
+	Slot Mask	Μάσκα σχισμών

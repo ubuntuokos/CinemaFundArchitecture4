@@ -4561,3 +4561,13 @@ export.summary	Low	matala
 	Chase External Timecode	Seuraa ulkoista aikakoodia
 	Send LTC	Lähetä LTC
 	Send MIDI Timecode	Lähetä MIDI-aikakoodi
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	Juovien voimakkuus
+	Line Count	Juovien määrä
+	Mask	Maski
+	Mask Strength	Maskin voimakkuus
+	Corner Darkening	Kulmien tummennus
+	Aperture Grille	Aukkoritilä
+	Shadow Mask	Varjomaski
+	Slot Mask	Rakomaski

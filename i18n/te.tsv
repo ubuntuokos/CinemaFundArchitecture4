@@ -4565,3 +4565,13 @@ export.summary	Low	తక్కువ
 	Chase External Timecode	బాహ్య టైమ్‌కోడ్‌ను అనుసరించు
 	Send LTC	LTC పంపు
 	Send MIDI Timecode	MIDI టైమ్‌కోడ్ పంపు
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	స్కాన్‌లైన్ తీవ్రత
+	Line Count	లైన్ల సంఖ్య
+	Mask	మాస్క్
+	Mask Strength	మాస్క్ తీవ్రత
+	Corner Darkening	మూలలను చీకటి చేయడం
+	Aperture Grille	అపర్చర్ గ్రిల్
+	Shadow Mask	షాడో మాస్క్
+	Slot Mask	స్లాట్ మాస్క్

@@ -68,6 +68,7 @@ const OP_SKIN_APPLY: u32 = 44;
 const OP_SKIN_MASK: u32 = 45;
 const OP_HALFTONE: u32 = 46;
 const OP_DITHER: u32 = 47;
+const OP_CRT: u32 = 48;
 
 /// Working textures an op with explicit routing ([`Step::slots`]) may use: its input and four more.
 const SLOTS: usize = 5;
@@ -289,6 +290,11 @@ fn steps(op: &FxOp) -> Vec<Step> {
             }
             let spread = if len > 0 { 1.0 / (len as f32).cbrt() } else { 0.0 };
             out.push(step(OP_DITHER, [*pattern, (*block).max(1), off, len], &[*threshold, *levels, *blend, spread]));
+        }
+        FxOp::Crt { scan, lines, mask, mask_amt, pitch, curve, corner, gain } => {
+            if !op.is_identity() {
+                out.push(step(OP_CRT, [*mask, 0, 0, 0], &[*scan, *lines, *mask_amt, *pitch, *curve, *corner, *gain]));
+            }
         }
         FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
             if *amount > 0.0 {

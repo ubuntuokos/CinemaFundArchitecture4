@@ -4562,3 +4562,13 @@ export.summary	Low	დაბალი
 	Chase External Timecode	გარე დროის კოდისთვის მიყოლა
 	Send LTC	LTC-ის გაგზავნა
 	Send MIDI Timecode	MIDI დროის კოდის გაგზავნა
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	სკანირების ხაზების სიძლიერე
+	Line Count	ხაზების რაოდენობა
+	Mask	ნიღაბი
+	Mask Strength	ნიღბის სიძლიერე
+	Corner Darkening	კუთხეების დაბნელება
+	Aperture Grille	აპერტურული ბადე
+	Shadow Mask	ჩრდილის ნიღაბი
+	Slot Mask	ჭრილოვანი ნიღაბი

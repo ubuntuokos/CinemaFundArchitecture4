@@ -4558,3 +4558,13 @@ export.summary	Low	低
 	Chase External Timecode	追隨外部時間碼
 	Send LTC	傳送 LTC
 	Send MIDI Timecode	傳送 MIDI 時間碼
+# Creative Looks: CRT (P3)
+	CRT	CRT
+	Scanline Strength	掃描線強度
+	Line Count	掃描線數
+	Mask	遮罩
+	Mask Strength	遮罩強度
+	Corner Darkening	四角暗化
+	Aperture Grille	柵條蔭罩
+	Shadow Mask	蔭罩
+	Slot Mask	槽形蔭罩
