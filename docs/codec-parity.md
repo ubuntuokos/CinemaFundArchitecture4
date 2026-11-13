@@ -6,8 +6,9 @@
 
 Video and audio codecs, decode and encode, with fidelity and how each is tested. Containers,
 project and interchange files are in [file-format-parity.md](file-format-parity.md); hardware
-paths per platform in [hardware-parity.md](hardware-parity.md). All our codecs are clean-room
-pure Rust from public specifications ([AGENTS.md](../AGENTS.md) §2); ffmpeg is a test oracle only.
+paths per platform in [hardware-parity.md](hardware-parity.md). Our codecs are pure Rust, written
+from public specifications or ported from licence-compatible projects (the catalog's Origin column,
+[AGENTS.md](../AGENTS.md) §2); ffmpeg is a test oracle only.
 
 Premiere's list comes from Adobe's published supported-formats pages and the names of the
 installed bundle's `MediaIO/systempresets` and `Frameworks` entries (listings only, never their
@@ -15,6 +16,66 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 Dolby, DTS, JPEG 2000 / DCP and OpenMAX specifications, licences and patents are in
 [cinema-codecs.md](cinema-codecs.md); their status is tracked only here and in
 [file-format-parity.md](file-format-parity.md).
+
+## Capability catalog (generated)
+
+What CFA4 itself implements, one row per codec: the crates, where the code comes from (`own`:
+written from the public specification; `ported`: taken over from a licence-compatible project, see
+the [reused code register](licensing.md#5-reused-code-register); `dependency`: a third-party Rust
+crate), whether it is opened on import and whether it can be exported. The single source is the
+catalog of `cfa4-cli codecs` (`apps/cfa4-cli/src/codecs_cmd.rs`); this table is generated from it
+(`cfa4-cli codecs --markdown`), and the CLI tests fail when the table, the crate list or the
+[patent register](patent-review.md) drifts. Hardware decoders and encoders found on a machine are
+in the JSON output of `cfa4-cli codecs`, not here. The rows below the catalog add Premiere's side,
+fidelity and the remaining work.
+
+<!-- BEGIN GENERATED: cfa4-cli codecs --markdown -->
+| Codec | Kind | Crates | Origin | Decode (import) | Encode (export) |
+|---|---|---|---|---|---|
+| H.264 / AVC | video | `crates/h264`, `crates/h264enc` | own | yes: 4:2:0 / 4:2:2 / 4:4:4, 8-14 bit, MBAFF / PAFF, lossless; encoder 8-bit 4:2:0 | yes: H.264 |
+| HEVC / H.265 | video | `crates/hevc` | own | yes: up to 12-bit 4:4:4; no RExt coding tools; encoder Main / Main 10 4:2:0 | yes: H.265 (HEVC) |
+| AV1 | video | `crates/av1` | own | yes: Main 8/10-bit | yes: AV1 |
+| AV2 | video | `crates/av2` | own | detect only: bitstream parsing only | no |
+| VP8 | video | `crates/vp8` | own | yes: RFC 6386 | no |
+| VP9 | video | `crates/vp9` | own | yes: profiles 0-3, 8/10/12-bit | yes: WebM |
+| Apple ProRes | video | `crates/prores` | own | yes: all six profiles, alpha | yes: Apple ProRes |
+| Avid DNxHD / DNxHR | video | `crates/dnx` | own | yes: all CIDs, 8/10/12-bit, interlaced, alpha | yes: Avid DNxHR |
+| GoPro CineForm | video | `crates/cineform` | ported | yes: intra samples | yes: GoPro CineForm |
+| APV | video | `crates/apv` | own | yes | yes: APV |
+| MPEG-2 / MPEG-1 | video | `crates/mpeg2v` | own | yes: 4:2:2, interlaced | yes: MPEG-2 |
+| Motion JPEG | video | — | dependency | yes | yes: QuickTime (Motion JPEG) |
+| JPEG 2000 | video | `crates/j2k` | ported | yes: Part 1 and HTJ2K; DCP and IMF App 2E packages | yes: DCP (Digital Cinema Package) |
+| SMPTE VC-2 (Dirac) | video | `crates/dirac` | ported | yes: ST 2042-1 | no |
+| FFV1 | video | `crates/ffv1` | own | yes: versions 0, 1, 3, 8-16 bit | no |
+| Hap | video | `crates/hap` | own | yes | no |
+| Huffyuv | video | `crates/huffyuv` | own | yes | no |
+| Ut Video | video | `crates/utvideo` | own | yes | no |
+| DV / DVCPRO | video | `crates/dv` | ported | yes: DV, DVCAM, DVCPRO 25 / 50, DVCPRO HD | no |
+| Animated GIF | video | — | dependency | yes | yes: Animated GIF |
+| CinemaDNG / DNG | video | `crates/dng` | own | yes: uncompressed and lossless JPEG raw | no |
+| LCEVC | video | `crates/lcevc` | own | detect only: enhancement layer detected, not decoded | no |
+| MPEG-4 Part 2 | video | — | none | no | no |
+| WMV / VC-1 | video | — | none | no | no |
+| Camera RAW (R3D, ARRIRAW, BRAW…) | video | — | none | no | no |
+| JPEG XL | image | `crates/jxl` | ported | yes | no |
+| HEIF / HEIC | image | `crates/heif` | own | yes: HEVC image items | no |
+| PCM (WAV, AIFF, BWF) | audio | — | own | yes | yes: Waveform Audio |
+| AAC | audio | `crates/aac` | ported | yes: LC, HE core, LATM, USAC | yes: AAC Audio |
+| AC-3 / E-AC-3 | audio | `crates/ac3` | own | yes | yes: AC-3 audio in video exports |
+| DTS, DTS-HD MA | audio | `crates/dts` | ported | yes: core and lossless up to 7.1 | no |
+| Dolby TrueHD | audio | `crates/truehd` | ported | yes: up to 7.1 | no |
+| MPEG-1 Layer I / II (MP1 / MP2) | audio | `crates/mpa` | own | yes | yes: MP2 audio in MPEG-2 program and transport streams |
+| MP3 | audio | — | dependency | yes | no |
+| Opus | audio | `crates/opus` | ported | yes | yes: Opus Audio |
+| FLAC | audio | `crates/flac` | own | yes | yes: FLAC |
+| ALAC, Vorbis | audio | — | dependency | yes | no |
+| AMR-NB / AMR-WB | audio | `crates/amr` | ported | yes | no |
+| Speex | audio | `crates/speex` | ported | yes: Ogg Speex | no |
+| ADPCM, G.711, G.722 | audio | `crates/adpcm` | own | yes | no |
+| IAB (SMPTE ST 2098-2) | audio | `crates/iab` | own | yes: decode and render | yes: IAB track in DCP exports |
+| Auro-3D | audio | `crates/auro` | ported | yes: side channel in 24-bit PCM | no |
+| WMA | audio | — | none | no | no |
+<!-- END GENERATED: cfa4-cli codecs --markdown -->
 
 ## Video
 
@@ -30,7 +91,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX specifications, licences and patents are
 | AV1 | decode (hardware on Windows); export through Media Encoder plug-ins / recent versions | own decoder Main 8/10-bit, all tools, film grain, bit-exact vs libdav1d on 41 vectors | own software encoder Main 8/10-bit (HDR), CRF / CBR / VBR, ~10% smaller than x265 medium (P-frames) | decode ~4 fps 1080p single-thread; encode ~0.5 fps 1080p per core | 75% | 20–40 h (encoder tools, references, speed) |
 | AV2 (AOM v1.0.0) | — (not in Premiere) | **AV2-LAB only**: recognised (Annex B `.obu`, IVF `AV02`, MP4 `av02`) and reported as unsupported by default; with the `av2-external` feature and `CFA4_AV2_DECODER`, Annex B decodes through the out-of-process dav2d helper ([ADR 0010](adr/ADR-0010-av2-external-decoder.md)); router registration after G1 ([AV2 plan](plans/AV2-CODEC-PLAN-2026-10-29.md) X/7) | — | identification tests; external decoder vs the AVM v1.0.0 oracle: 7/8 corpus vectors bit-exact, every `Main_420_10_IP0` vector (4:4:4 inter differs, known dav2d issue) | 0% (not enabled by default) | see the AV2 plan |
 | APV (RFC 9924) | — (Samsung's pro codec; not in Premiere) | own decode | own encode | spec tests | ahead | — |
-| MPEG-2 / MPEG-1 | decode incl. 4:2:2 (IMX, XDCAM); encode DVD / Blu-ray / MXF | own decoder (4:2:2, interlaced, field pictures, IEEE 1180 IDCT); also Matrox MPEG-2 I-frame in AVI (`MMES`, `M701`–`M705`, backlog CB-7.1) | **none** | conformance fixtures; Matrox AVI within the IDCT tolerance of ffmpeg's decode, also read back to front | 60% | 20–35 h (encoder) |
+| MPEG-2 / MPEG-1 | decode incl. 4:2:2 (IMX, XDCAM); encode DVD / Blu-ray / MXF | own decoder (4:2:2, interlaced, field pictures, IEEE 1180 IDCT); also Matrox MPEG-2 I-frame in AVI (`MMES`, `M701`–`M705`, backlog CB-7.1) | own encoder (`cfa4-mpeg2v`: TM5 rate control, VBV; export format MPEG-2) | conformance fixtures; Matrox AVI within the IDCT tolerance of ffmpeg's decode, also read back to front | 60% | 20–35 h (encoder) |
 | Motion JPEG | decode + encode | yes | yes (MOV) | — | 90% | — |
 | JPEG 2000 (MXF, DCP) | decode + encode (Kakadu) | own Part 1 decoder (`cfa4-j2k`): codestreams and JP2, tiles, all progressions, layers, 5/3 and 9/7, RCT / ICT, DCI 2K / 4K X'Y'Z'; bypass style, POC, PPM / PPT, Maxshift ROI (#79); HTJ2K (Part 15) decode, HT block decoder ported from OpenJPH (#80); MXF import (OP1a / OP-Atom, DCP picture tracks; Y'CbCr, R'G'B', gray and X'Y'Z' → P3-D65) since #77, DCP composition (CPL) import #101, interlaced / stereoscopic #102; ~150 ms per 2K frame on 4 cores (~360 ms single-threaded, #78) | own Part 1 encoder (#81): lossless 5/3, rate-controlled 9/7, DCI 2K / 4K profiles (CPRL, tile-part per component, POC, TLM, DCI byte limits), ~0.37 s per 2K and ~0.8 s per 4K frame on 4 cores (grainy synthetic frame; code-blocks stop below the predicted rate-control threshold, #116); wired into SMPTE DCP export (#115) and IMF App 2E package export (10-bit R'G'B' 4:4:4, the 2K / 4K / 8K IMF profiles, #1011), **not yet into the OP1a / OP-Atom MXF export** | 5/3 bit-exact to the input, 9/7 and DCI 2K within ±1 of ffmpeg on 17 fixtures; HTJ2K: 10 Grok streams bit-exact / ±1 of OpenJPEG, refinement passes on a local sample; damaged-stream fuzzing; encoder output read by OpenJPEG and ffmpeg (lossless exact, lossy / DCI ±1) | 45% | 25–45 h (DCP composition #101, tier-1 speed #401, layers / HT encoding #117) |
 | JPEG XS | decode (`libjpegxs`) | none | none | — | 0% | 20–40 h |
@@ -85,6 +146,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX specifications, licences and patents are
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | Generated capability catalog from `cfa4-cli codecs` (CFA4-PROCODEC-002 work package 0) |
 | 2026-11-12 | minor | AV2 early decoder behind a feature flag: out-of-process dav2d helper and Rust adapter, bit-exact with the AVM oracle on the `Main_420_10_IP0` corpus (AV2 plan X/6) |
 | 2026-11-11 | minor | AV2 identified (Annex B, IVF, MP4 `av02`) and reported as unsupported (AV2 plan X/4) |
 | 2026-11-11 | minor | Matrox MPEG-2 I-frame in AVI (`MMES`, `M701`–`M705`; codec backlog CB-7.1) |

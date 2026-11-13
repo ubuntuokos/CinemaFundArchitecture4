@@ -126,6 +126,7 @@ SUBCOMMANDS
   settings reset [category]     a category (or everything) back to its defaults
   hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
   codecs                        what this machine decodes and encodes (software, hardware, GStreamer)
+  codecs --markdown             the codec capability catalog as the table in docs/codec-parity.md
   media-backends                engine + FFmpeg / GStreamer backends, status, restricted codecs
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
@@ -630,6 +631,7 @@ async fn cli() {
             }
         }
         "hardware" => print(&a, &settings_cmd::hardware()),
+        "codecs" if a.flag("--markdown") => print!("{}", codecs_cmd::markdown()),
         "codecs" => print(&a, &codecs_cmd::codecs()),
         "media-backends" => {
             let dir = a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir);
