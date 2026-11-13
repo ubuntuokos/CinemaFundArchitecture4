@@ -80,6 +80,7 @@ from .panels.project import ProjectPanel
 from .panels.properties import PropertiesPanel
 from .panels.quick_export import QuickExport
 from .panels.readouts import ProgressPanel, TimecodePanel
+from .panels.tasks import TaskManagerPanel
 from .panels.recovery import RecoveryDialog, recovery_lines
 from .panels.reference import ReferenceMonitor
 from .panels.remix import RemixPropertiesDialog
@@ -138,7 +139,7 @@ TRACK_HEIGHT_COMMANDS = {
 }
 MAX_RESTARTS = 3
 RESTART_WINDOW_S = 60.0
-LAYOUT_VERSION = 20  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries
+LAYOUT_VERSION = 21  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries; 21: Task Manager
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
     "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
@@ -165,6 +166,7 @@ DOCK_PLAN = (
     ("Reference Monitor", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Lumetri Scopes", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Progress", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Task Manager", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Essential Graphics", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Text", Qt.DockWidgetArea.RightDockWidgetArea),
@@ -344,6 +346,8 @@ class MainWindow(QMainWindow):
         self.progress = ProgressPanel(self)
         self.progress.attach_settings(self.settings)
         self.progress.poll.timeout.connect(self.update_jobs)
+        self.task_manager = TaskManagerPanel(engine, self)
+        self.task_manager.attach_settings(self.settings)
         self.mixer = TrackMixerPanel(self)
         self.mixer.transport.connect(self._mixer_transport)
         self.clip_mixer = ClipMixerPanel(self)
@@ -416,6 +420,7 @@ class MainWindow(QMainWindow):
             "Project Notes": self.notes,
             "Timecode": self.timecode_panel,
             "Progress": self.progress,
+            "Task Manager": self.task_manager,
             "Audio Track Mixer": self.mixer,
             "Audio Clip Mixer": self.clip_mixer,
             "Reference Monitor": self.reference,
@@ -467,6 +472,7 @@ class MainWindow(QMainWindow):
             self.metadata,
             self.notes,
             self.progress,
+            self.task_manager,
             self.mixer,
             self.clip_mixer,
             self.lumetri,
@@ -537,6 +543,7 @@ class MainWindow(QMainWindow):
         self.source_monitor.playhead_moved.connect(lambda _t: self.update_timecode())
         self.docks["Timecode"].visibilityChanged.connect(lambda shown: shown and self.update_timecode())
         self.docks["Progress"].visibilityChanged.connect(lambda shown: shown and self.update_jobs())
+        self.docks["Task Manager"].visibilityChanged.connect(self.task_manager.watch)
         self.docks["Audio Track Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_mixer())
         self.docks["Audio Clip Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_clip_mixer())
         self.docks["Lumetri Color"].visibilityChanged.connect(lambda shown: shown and self.update_lumetri())
@@ -596,7 +603,8 @@ class MainWindow(QMainWindow):
         win.tabifyDockWidget(d["History"], d["Project Notes"])
         win.tabifyDockWidget(d["Project Notes"], d["Timecode"])
         win.tabifyDockWidget(d["Timecode"], d["Progress"])
-        for closed in ("Project Notes", "Timecode", "Progress"):  # opened from the Window menu
+        win.tabifyDockWidget(d["Progress"], d["Task Manager"])
+        for closed in ("Project Notes", "Timecode", "Progress", "Task Manager"):  # opened from the Window menu
             d[closed].hide()
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
