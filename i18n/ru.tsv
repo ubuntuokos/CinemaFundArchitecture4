@@ -4544,3 +4544,9 @@
 	Chase External Timecode	Следовать за внешним тайм-кодом
 	Send LTC	Передавать LTC
 	Send MIDI Timecode	Передавать MIDI тайм-код
+	No signal	Нет сигнала
+	Locating	Поиск
+	Locked	Синхронизировано
+	Freewheel	Свободный ход
+	Scrubbing	Прокрутка
+	Sending	Отправка

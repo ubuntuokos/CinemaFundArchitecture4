@@ -4556,3 +4556,9 @@ export.summary	Low	alacsony
 	Chase External Timecode	Külső időkód követése
 	Send LTC	LTC küldése
 	Send MIDI Timecode	MIDI-időkód küldése
+	No signal	Nincs jel
+	Locating	Keresés
+	Locked	Szinkronban
+	Freewheel	Szabadonfutás
+	Scrubbing	Léptetés
+	Sending	Küldés
