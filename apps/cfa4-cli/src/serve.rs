@@ -928,6 +928,29 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 "linkMediaPrompt": s.offline.prompt,
             }),
         ),
+        // live studio host (CFA4-LIVE-STUDIO-001 S0; serve_live.rs)
+        "live.studio.host.start" => match crate::serve_live::start(&params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err(id, e),
+        },
+        "live.studio.host.status" => Reply::ok(id, crate::serve_live::status()),
+        "live.studio.host.stop" => Reply::ok(id, crate::serve_live::stop()),
+        "live.studio.frame" => match crate::serve_live::frame() {
+            Ok((mut meta, bytes)) => match params.get("shm").and_then(Value::as_str) {
+                Some(ring) => match crate::serve_shm::put(ring, &bytes) {
+                    Ok(shm) => {
+                        meta["shm"] = shm;
+                        Reply::ok(id, meta)
+                    }
+                    Err(e) => {
+                        meta["shmError"] = json!(e);
+                        Reply::with_binary(id, meta, bytes)
+                    }
+                },
+                None => Reply::with_binary(id, meta, bytes),
+            },
+            Err(e) => Reply::err(id, e),
+        },
         "app.quit" => return None,
         other => Reply::err(id, format!("unknown method `{other}`")),
     };
@@ -1000,6 +1023,7 @@ pub fn run(mut s: Session) {
     }
     s.shutdown();
     crate::serve_shm::cleanup();
+    crate::serve_live::stop();
 }
 
 #[cfg(test)]
