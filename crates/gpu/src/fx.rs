@@ -69,6 +69,7 @@ const OP_SKIN_MASK: u32 = 45;
 const OP_HALFTONE: u32 = 46;
 const OP_DITHER: u32 = 47;
 const OP_CRT: u32 = 48;
+const OP_OIL_PAINT: u32 = 49;
 
 /// Working textures an op with explicit routing ([`Step::slots`]) may use: its input and four more.
 const SLOTS: usize = 5;
@@ -296,6 +297,7 @@ fn steps(op: &FxOp) -> Vec<Step> {
                 out.push(step(OP_CRT, [*mask, 0, 0, 0], &[*scan, *lines, *mask_amt, *pitch, *curve, *corner, *gain]));
             }
         }
+        FxOp::OilPaint { style, radius, q, texture, seed } => out.push(step(OP_OIL_PAINT, [*style, (*radius).clamp(1, 24), *seed, 0], &[*q, *texture])),
         FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
             if *amount > 0.0 {
                 out.push(step(OP_FILM_GRAIN, [*seed, 0, 0, 0], &[*amount, *inv_cell, *shadows, *midtones, *highlights, *color]));

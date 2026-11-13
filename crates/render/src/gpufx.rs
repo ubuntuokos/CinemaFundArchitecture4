@@ -188,6 +188,17 @@ pub enum FxOp {
         corner: f32,
         gain: f32,
     },
+    /// Oil Paint: a generalized Kuwahara filter (the mean of each sector of a `radius` neighbourhood,
+    /// weighted towards the calmest sectors with sharpness `q`; see [`oil_sectors`]) on the
+    /// premultiplied image, then the style's canvas texture ([`oil_texture`]) scaled by `texture`.
+    /// `style` is the index into `cfa4_project::effect::OIL_STYLES`.
+    OilPaint {
+        style: u32,
+        radius: u32,
+        q: f32,
+        texture: f32,
+        seed: u32,
+    },
     /// Film Grain: smooth value noise ([`grain_noise`]) on display-encoded colour, weighted by a
     /// shadows / midtones / highlights response. `inv_cell` is 1 / the grain cell in working
     /// pixels; `seed` already folds in the frame when the grain is animated.
@@ -335,6 +346,7 @@ pub const GPU_EFFECTS: &[&str] = &[
     "halftone",
     "dither",
     "crt",
+    "oil_paint",
     "mirror",
     "offset",
     "asc_cdl",
@@ -460,6 +472,46 @@ pub fn crt_shade(cu: f32, cv: f32, px: f32, py: f32, scan: f32, lines: f32, mask
     let rim = ((1.0 - cu * cu) * (1.0 - cv * cv)).max(0.0).sqrt().sqrt();
     let k = beam * (1.0 - corner * (1.0 - rim));
     [m[0] * k, m[1] * k, m[2] * k]
+}
+
+/// The Kuwahara sectors of Oil Paint `style` that offset (`dx`, `dy`) belongs to, as a bit mask
+/// (0: outside the brush of radius `r`). Facet uses four square quadrants; Knife four quadrants
+/// of a disc; the other styles eight octants of a disc. Boundary taps belong to both neighbours
+/// and the centre to every sector; integer tests only, so `fx.wgsl` (`oil_sectors`) matches
+/// exactly.
+pub fn oil_sectors(style: u32, dx: i32, dy: i32, r: i32) -> u32 {
+    if style != 0 && dx * dx + dy * dy > r * r {
+        return 0;
+    }
+    let (e, n, w, s) = (dx >= 0, dy >= 0, dx <= 0, dy <= 0);
+    if style == 0 || style == 4 {
+        return (e && n) as u32 | ((w && n) as u32) << 1 | ((w && s) as u32) << 2 | ((e && s) as u32) << 3;
+    }
+    (e && n && dx >= dy) as u32
+        | ((e && n && dy >= dx) as u32) << 1
+        | ((w && n && dy >= -dx) as u32) << 2
+        | ((w && n && -dx >= dy) as u32) << 3
+        | ((w && s && -dx >= -dy) as u32) << 4
+        | ((w && s && -dy >= -dx) as u32) << 5
+        | ((e && s && -dy >= dx) as u32) << 6
+        | ((e && s && dx >= -dy) as u32) << 7
+}
+
+/// The canvas texture of Oil Paint `style` at pixel (`x`, `y`) for brush radius `r`, within
+/// ±0.6: a woven canvas, dry-brush streaks (Dry Brush), mottled plaster (Fresco) or sponge
+/// pores (Sponge). `fx.wgsl` (`oil_texture`) mirrors this.
+pub fn oil_texture(style: u32, x: usize, y: usize, r: u32, seed: u32) -> f32 {
+    let weave = ((x / 2 + y / 2) % 2) as f32 - 0.5;
+    let r = r.max(1) as f32;
+    match style {
+        2 => {
+            let (ix, iy) = (((x as f32 + 0.5) / (8.0 * r)).floor() as i32, ((y as f32 + 0.5) / (r / 3.0).max(1.0)).floor() as i32);
+            0.2 * weave + lattice(ix, iy, seed, 0)
+        }
+        3 => 0.2 * weave + grain_noise(x, y, 1.0 / (4.0 * r), seed, 0),
+        5 => (2.0 * grain_noise(x, y, 2.0 / r, seed, 0)).clamp(-0.5, 0.5),
+        _ => 0.4 * weave,
+    }
 }
 
 /// The fixed palettes of Dither (`cfa4_project::effect::DITHER_PALETTES` after "Input Colors"),
@@ -1078,6 +1130,23 @@ impl FxOp {
                     gain: 1.0 - pct("flicker") * 0.3 * n,
                 }
             }
+            "oil_paint" => {
+                let pct = |k: &str| {
+                    let v = f(e, k, cx) / 100.0;
+                    if v.is_finite() { v.clamp(0.0, 1.0) } else { 0.0 }
+                };
+                let style = choice(e, "style").min(5);
+                // (`as` saturates: NaN → 0, then at least 1; 24 px covers a 2× render)
+                let radius = ((f(e, "brush_size", cx).clamp(1.0, 12.0) * cx.px_scale).round() as u32).clamp(1, 24);
+                FxOp::OilPaint {
+                    style,
+                    radius,
+                    // Knife: always the calmest sector, hard edges
+                    q: if style == 4 { 16.0 } else { 1.0 + 15.0 * pct("detail") },
+                    texture: pct("texture"),
+                    seed: f(e, "seed", cx).round().clamp(0.0, 1e6) as u32,
+                }
+            }
             "film_grain" => {
                 let pct = |k: &str| (f(e, k, cx) / 100.0).clamp(0.0, 2.0);
                 // a grain cell under a quarter pixel only aliases; 0 / NaN sizes land here too
@@ -1323,6 +1392,7 @@ impl FxOp {
             }
             FxOp::Dither { threshold, levels, blend, .. } => fin(&[*threshold, *levels, *blend]),
             FxOp::Crt { scan, lines, mask_amt, pitch, curve, corner, gain, .. } => fin(&[*scan, *lines, *mask_amt, *pitch, *curve, *corner, *gain]),
+            FxOp::OilPaint { q, texture, .. } => fin(&[*q, *texture]),
             FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, .. } => {
                 fin(&[*amount, *inv_cell, *shadows, *midtones, *highlights, *color])
             }
@@ -1808,6 +1878,69 @@ impl FxOp {
                         let e = enc([q[0] / a, q[1] / a, q[2] / a]);
                         let k = crt_shade(cu, cv, px, py, scan, lines, mask, amt, pitch, corner);
                         let c = dec([e[0] * k[0] * gain, e[1] * k[1] * gain, e[2] * k[2] * gain]);
+                        d.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
+                    }
+                });
+            }
+            FxOp::OilPaint { style, radius, q, texture, seed } => {
+                let (style, r, q, tex, seed) = (*style, (*radius).clamp(1, 24) as i32, *q, *texture, *seed);
+                if !q.is_finite() || !tex.is_finite() {
+                    return;
+                }
+                let n = if style == 0 || style == 4 { 4 } else { 8 };
+                let taps: Vec<(isize, isize, u32)> =
+                    (-r..=r).flat_map(|dy| (-r..=r).map(move |dx| (dx as isize, dy as isize, oil_sectors(style, dx, dy, r)))).filter(|t| t.2 != 0).collect();
+                let src = img.clone();
+                let w = img.w;
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let mut sum = [[0.0f32; 4]; 8];
+                        let mut sq = [[0.0f32; 3]; 8];
+                        let mut cnt = [0.0f32; 8];
+                        for &(dx, dy, m) in &taps {
+                            let c = src.get_clamped(x as isize + dx, y as isize + dy);
+                            for k in 0..n {
+                                if (m >> k) & 1 == 1 {
+                                    for i in 0..4 {
+                                        sum[k][i] += c[i];
+                                    }
+                                    for i in 0..3 {
+                                        sq[k][i] += c[i] * c[i];
+                                    }
+                                    cnt[k] += 1.0;
+                                }
+                            }
+                        }
+                        // each sector's mean and spread (the summed variance of its colour)
+                        let mut mean = [[0.0f32; 4]; 8];
+                        let mut sd = [0.0f32; 8];
+                        let mut lo = f32::INFINITY;
+                        for k in 0..n {
+                            let c = cnt[k].max(1.0);
+                            mean[k] = sum[k].map(|v| v / c);
+                            let var = (0..3).map(|i| sq[k][i] / c - mean[k][i] * mean[k][i]).sum::<f32>();
+                            sd[k] = var.max(0.0).sqrt();
+                            lo = lo.min(sd[k]);
+                        }
+                        let mut o = [0.0f32; 4];
+                        let mut wsum = 0.0f32;
+                        for k in 0..n {
+                            let wk = 1.0 / (1.0 + (sd[k] / (lo + 1e-4)).powf(q));
+                            for i in 0..4 {
+                                o[i] += mean[k][i] * wk;
+                            }
+                            wsum += wk;
+                        }
+                        let o = o.map(|v| v / wsum.max(1e-12));
+                        let Some(d) = row.get_mut(x * 4..x * 4 + 4) else { continue };
+                        let a = o[3];
+                        if a <= 1e-6 {
+                            d.copy_from_slice(&[0.0; 4]);
+                            continue;
+                        }
+                        let t = 1.0 + tex * oil_texture(style, x, y, r as u32, seed);
+                        let e = enc([o[0] / a, o[1] / a, o[2] / a]);
+                        let c = dec([e[0] * t, e[1] * t, e[2] * t]);
                         d.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
                     }
                 });

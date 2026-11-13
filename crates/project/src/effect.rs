@@ -155,6 +155,8 @@ pub const DITHER_PATTERNS: &[&str] = &["Bayer 2×2", "Bayer 4×4", "Bayer 8×8",
 pub const DITHER_PALETTES: &[&str] = &["Input Colors", "Black & White", "Green Phosphor", "Amber Monitor", "Game Boy", "CGA", "EGA", "ZX Spectrum", "PICO-8"];
 /// CRT phosphor masks (`gpufx::FxOp::Crt`, in this order).
 pub const CRT_MASKS: &[&str] = &["None", "Aperture Grille", "Shadow Mask", "Slot Mask"];
+/// Oil Paint brush styles (`gpufx::FxOp::OilPaint`, in this order).
+pub const OIL_STYLES: &[&str] = &["Facet", "Daubs", "Dry Brush", "Fresco", "Knife", "Sponge"];
 /// The view a Stereoscopic 3D effect keeps.
 pub const STEREO_EYES: &[&str] = &["Left", "Right"];
 
@@ -690,6 +692,18 @@ fn build_effects() -> Vec<EffectDef> {
                 fs("curvature", "Curvature", 10.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
                 fs("corner_darkening", "Corner Darkening", 30.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
                 fs("flicker", "Flicker", 5.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("seed", "Random Seed", 1.0, (1.0, 9999.0), (1.0, 100.0), "", 0),
+            ],
+        ),
+        video(
+            "oil_paint",
+            "Oil Paint",
+            CREATIVE_LOOKS,
+            vec![
+                ch("style", "Style", OIL_STYLES, 1),
+                fs("brush_size", "Brush Size", 6.0, (1.0, 12.0), (1.0, 12.0), "px", 0),
+                fs("detail", "Detail", 50.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("texture", "Texture", 20.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
                 fs("seed", "Random Seed", 1.0, (1.0, 9999.0), (1.0, 100.0), "", 0),
             ],
         ),

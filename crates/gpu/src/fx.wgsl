@@ -69,6 +69,7 @@ const OP_SKIN_MASK: u32 = 45u;
 const OP_HALFTONE: u32 = 46u;
 const OP_DITHER: u32 = 47u;
 const OP_CRT: u32 = 48u;
+const OP_OIL_PAINT: u32 = 49u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -526,6 +527,47 @@ fn crt_shade(c: vec2<f32>, pc: vec2<f32>, scan: f32, lines: f32, mask: u32, mask
     }
     let rim = sqrt(sqrt(max((1.0 - c.x * c.x) * (1.0 - c.y * c.y), 0.0)));
     return m * (beam * (1.0 - corner * (1.0 - rim)));
+}
+
+// `gpufx::oil_sectors`
+fn oil_sectors(style: u32, dx: i32, dy: i32, r: i32) -> u32 {
+    if style != 0u && dx * dx + dy * dy > r * r {
+        return 0u;
+    }
+    let e = dx >= 0; let n = dy >= 0; let w = dx <= 0; let s = dy <= 0;
+    if style == 0u || style == 4u {
+        return select(0u, 1u, e && n) | select(0u, 2u, w && n) | select(0u, 4u, w && s) | select(0u, 8u, e && s);
+    }
+    return select(0u, 1u, e && n && dx >= dy)
+        | select(0u, 2u, e && n && dy >= dx)
+        | select(0u, 4u, w && n && dy >= -dx)
+        | select(0u, 8u, w && n && -dx >= dy)
+        | select(0u, 16u, w && s && -dx >= -dy)
+        | select(0u, 32u, w && s && -dy >= -dx)
+        | select(0u, 64u, e && s && -dy >= dx)
+        | select(0u, 128u, e && s && dx >= -dy);
+}
+
+// `gpufx::oil_texture`
+fn oil_texture(style: u32, p: vec2<i32>, r: u32, seed: u32) -> f32 {
+    let weave = f32((u32(p.x) / 2u + u32(p.y) / 2u) % 2u) - 0.5;
+    let rf = f32(max(r, 1u));
+    switch style {
+        case 2u: {
+            let ix = i32(floor((f32(p.x) + 0.5) / (8.0 * rf)));
+            let iy = i32(floor((f32(p.y) + 0.5) / max(rf / 3.0, 1.0)));
+            return 0.2 * weave + grain_lattice(ix, iy, seed, 0u);
+        }
+        case 3u: {
+            return 0.2 * weave + grain_noise(p, 1.0 / (4.0 * rf), seed, 0u);
+        }
+        case 5u: {
+            return clamp(2.0 * grain_noise(p, 2.0 / rf, seed, 0u), -0.5, 0.5);
+        }
+        default: {
+            return 0.4 * weave;
+        }
+    }
 }
 
 fn bezier2(a: vec2<f32>, c: vec2<f32>, b: vec2<f32>, t: f32) -> vec4<f32> {
@@ -1147,6 +1189,55 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             }
             let k = crt_shade(c, pc, u.p0.x, u.p0.y, u.i1.x, u.p0.z, u.p0.w, u.p1.y);
             return vec4(dec(enc(q.rgb / a) * k * u.p1.z) * a, a);
+        }
+        case OP_OIL_PAINT: {
+            let style = u.i1.x;
+            let r = i32(clamp(u.i1.y, 1u, 24u));
+            let q = u.p0.x;
+            let n = select(8u, 4u, style == 0u || style == 4u);
+            var sum: array<vec4<f32>, 8>;
+            var sq: array<vec3<f32>, 8>;
+            var cnt: array<f32, 8>;
+            for (var dy = -r; dy <= r; dy++) {
+                for (var dx = -r; dx <= r; dx++) {
+                    let m = oil_sectors(style, dx, dy, r);
+                    if m == 0u {
+                        continue;
+                    }
+                    let c = ld(clamp(p + vec2(dx, dy), vec2(0), s - vec2(1)));
+                    for (var k = 0u; k < n; k++) {
+                        if ((m >> k) & 1u) == 1u {
+                            sum[k] += c;
+                            sq[k] += c.rgb * c.rgb;
+                            cnt[k] += 1.0;
+                        }
+                    }
+                }
+            }
+            var mean: array<vec4<f32>, 8>;
+            var sd: array<f32, 8>;
+            var lo = 3.4e38;
+            for (var k = 0u; k < n; k++) {
+                let c = max(cnt[k], 1.0);
+                mean[k] = sum[k] / c;
+                let v = sq[k] / c - mean[k].rgb * mean[k].rgb;
+                sd[k] = sqrt(max(v.x + v.y + v.z, 0.0));
+                lo = min(lo, sd[k]);
+            }
+            var o = vec4(0.0);
+            var wsum = 0.0;
+            for (var k = 0u; k < n; k++) {
+                let wk = 1.0 / (1.0 + powf(sd[k] / (lo + 1e-4), q));
+                o += mean[k] * wk;
+                wsum += wk;
+            }
+            o = o / max(wsum, 1e-12);
+            let a = o.a;
+            if a <= 1e-6 {
+                return vec4(0.0);
+            }
+            let t = 1.0 + u.p0.y * oil_texture(style, p, u32(r), u.i1.z);
+            return vec4(dec(enc(o.rgb / a) * t) * a, a);
         }
         case OP_FILM_GRAIN: {
             let o = ld(p);
