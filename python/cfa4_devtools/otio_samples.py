@@ -74,8 +74,13 @@ def expect_media(otio: Any, clip: Any) -> dict[str, Any]:
     if isinstance(ref, otio.schema.ExternalReference) and ref.target_url.strip():
         return {"ref": "file", "path": file_path(ref.target_url), "offline": False}
     if isinstance(ref, otio.schema.ImageSequenceReference) and ref.target_url_base.strip():
-        # how CFA4 keeps an image sequence is OTIO-2.3; here only that it is a file and online
-        return {"ref": "file", "path": None, "offline": False}
+        # CFA4 keeps an image sequence as image-sequence media at its first frame (OTIO-2.3)
+        return {
+            "ref": "file",
+            "path": file_path(ref.target_url_for_image_number(0)),
+            "image_sequence": True,
+            "offline": False,
+        }
     if isinstance(ref, otio.schema.GeneratorReference):
         return {
             "ref": "generator",
